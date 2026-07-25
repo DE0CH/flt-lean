@@ -59,21 +59,25 @@ owners adding different leaves touch different lines, and git merges
 them without a human. Do not re-wrap it.
 
 - `finite_setOf_isHardlyRamified_frames`
-- `exists_smul_eq_of_commute_of_isIrreducible`
-- `exists_isStrictlyUniversalOnFrames_of_finite_lifts`
+- `exists_isStrictlyUniversalOnFrames_of_deformationCondition`
+- `hasFlatProlongationAt_of_pi_surjection`
+- `isHardlyRamified_of_fibreProduct`
+- `finite_setOf_isHardlyRamified_frames_of_discreteTopology`
+- `isHardlyRamified_of_forall_isOpen_quotient`
 - `exists_ringHom_matrix_quotient_of_finite`
 - `isNoetherianRing_of_fg_maximalIdeal`
 - `exists_pow_comap_le_pow_maximalIdeal_traceSubring`
 - `fg_comap_maximalIdeal_traceSubring`
 - `exists_framedGaloisRep_traceSubring`
 - `subring_closure_charFrob_coeff_eq_top`
-- `isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
-- `surjective_of_mvPowerSeries_ringHom`
-- `ker_le_of_minimal_mvPowerSeries_ringHom`
+- `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
 - `exists_relations_lt_le_smul_of_minimal_mvPowerSeries_presentation`
 
 Both former strata above them were narrowed on 2026-07-25 into those
-ten, and every statement they replace is now PROVEN here.
+leaves, and every statement they replace is now PROVEN here — including
+the surjectivity and minimality strata of the minimal presentation,
+`surjective_of_mvPowerSeries_ringHom` and
+`ker_le_of_minimal_mvPowerSeries_ringHom`, PROVEN the same day.
 
 * The three UNIVERSALITY leaves were narrowed so that the universality
   leaf carries the representation-level classifying datum rather than
@@ -102,7 +106,32 @@ ten, and every statement they replace is now PROVEN here.
   deformation-theoretic core
   `exists_isStrictlyUniversalOnFrames_of_finite_lifts`, over which it is
   now PROVEN (the bundling glue, `charFrob_compat` from the residual
-  identification).
+  identification). **H4 was then PROVEN outright (2026-07-26)** over the
+  new complex-conjugation vocabulary
+  `GaloisRepresentation/ComplexConjugation.lean` — `complexConj : Γ ℚ`,
+  its involutivity, and `cyclotomicCharacter_complexConj` (the character
+  sends it to `−1`) — leaving H3 and the deformation-theoretic core as
+  the two leaves of that cut; the core has since been proven as well (the
+  next item), so **H3 is the only leaf of the 2026-07-26 cut still open**.
+* That deformation-theoretic core was CUT AGAIN (2026-07-25) along the
+  seam between Schlessinger's abstract machine and the arithmetic, and is
+  now PROVEN as an assembly. Everything specific to the hardly ramified
+  problem enters an application of Schlessinger's theorem through the
+  statement that the four local conditions form a DEFORMATION CONDITION
+  (Mazur §§18–23, Conrad–Diamond–Taylor §2): closed under pushforward
+  along maps of Artinian coefficient rings, under gluing along fibre
+  products (H1, H2), and under passage to the pro-limit. So the core
+  became the arithmetic-free
+  `exists_isStrictlyUniversalOnFrames_of_deformationCondition` plus those
+  three clauses — the first of which is PROVEN here, as
+  `isHardlyRamified_pushforwardFrame` over the single flatness leaf
+  `isFlatAt_baseChange` (this needed the base-change transfer block,
+  formerly ~2900 lines below, to be hoisted; the hoist is a separate
+  commit) — plus `finite_setOf_isHardlyRamified_frames_of_discreteTopology`,
+  which closes a genuine gap: the raw test objects of
+  `IsStrictlyUniversalOnFrames` carry an ARBITRARY finite ring topology,
+  while the H3 leaf is stated for the discrete one, and a finite local
+  ring does admit strictly coarser ring topologies.
 * The two PRESENTATION leaves became proven assemblies over the four
   commutative-algebra strata of the minimal presentation and the
   arithmetic relation count: `exists_minimal_mvPowerSeries_presentation`
@@ -144,7 +173,17 @@ ten, and every statement they replace is now PROVEN here.
   form `isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
   (the Frobenius traces of the mod-`ℓ` specialization are algebraic over
   `𝔽_ℓ`) and the pure commutative algebra
-  `eq_maximalIdeal_of_isPrime_of_isIntegral_quotient`.
+  `eq_maximalIdeal_of_isPrime_of_isIntegral_quotient`. The TRACE form was
+  in turn PROVEN on 2026-07-26 over the potential-modularity leaf
+  `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+  (there is a FINITE-INDEX `H ≤ G_ℚ` — the Galois group of the totally
+  real field over which potential modularity gives `R = T` with `T` a
+  finite `ℤ_ℓ`-algebra — on which all traces are already integral), the
+  Khare–Wintenberger descent from `H` back to `ℚ` being the elementary
+  `isIntegral_trace_of_isIntegral_trace_pow` (the Dickson identity
+  `tr(Mᵐ) = Dₘ(tr M, det M)` with `Dₘ` monic of degree `m`) together with
+  `exists_pow_mem_of_finiteIndex`; the determinant coefficient is a
+  cyclotomic value, and the remaining coefficients are `1` and `0`.
 
 * The CARAYOL leaf was then decomposed once more, into
   `exists_isLocalRing_traceSubring` (the ring-theoretic half of
@@ -212,6 +251,12 @@ import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- (`exists_conj_of_charFrob_eq_away`), from which the `{2, ℓ}` leaf
 -- below is derived.
 import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
+-- proof-only: complex conjugation as an element of `Γ ℚ`
+-- (`complexConj`, `complexConj_mul_self`,
+-- `cyclotomicCharacter_complexConj`) — the oddness vocabulary consumed by
+-- the H4 Schur stratum below. Its own import cone is pure mathlib, so it
+-- cannot close the forbidden Khare–Wintenberger cycle.
+import Fermat.FLT.GaloisRepresentation.ComplexConjugation
 -- proof-only: the characteristic of a finite field, `ℤ_ℓ`-unit lemmas.
 import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.NumberTheory.Padics.RingHoms
@@ -238,6 +283,17 @@ import Mathlib.RingTheory.Nakayama
 -- the substitution homomorphism of the de Smit–Lenstra presentation.
 import Mathlib.RingTheory.MvPowerSeries.Evaluation
 import Mathlib.RingTheory.AdicCompletion.Topology
+-- proof-only: the two ingredients of the PROVEN surjectivity stratum
+-- `surjective_of_mvPowerSeries_ringHom` — mathlib's complete-Nakayama
+-- criterion `surjective_of_mk_map_comp_surjective` (Functoriality), the
+-- `(x₁,…,x_g)`-adic completeness of `MvPowerSeries` over a finite
+-- variable set (Completeness), and Hausdorffness of a proper ideal in a
+-- Noetherian local ring (Noetherian); plus `IsLocalHom.of_surjective`
+-- and `map_nonunit`, used by both presentation strata.
+import Mathlib.RingTheory.AdicCompletion.Functoriality
+import Mathlib.RingTheory.AdicCompletion.Completeness
+import Mathlib.RingTheory.AdicCompletion.Noetherian
+import Mathlib.RingTheory.LocalRing.RingHom.Basic
 -- proof-only imports for the topology glue
 -- `isModuleTopology_of_isAdic_maximalIdeal`.
 import Mathlib.NumberTheory.Padics.ProperSpace
@@ -258,6 +314,19 @@ import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 import Mathlib.LinearAlgebra.Charpoly.BaseChange
 import Mathlib.LinearAlgebra.TensorProduct.Pi
 import Mathlib.LinearAlgebra.Dimension.Constructions
+-- `Subgroup.FiniteIndex` and `LinearMap.charpoly`: both appear in the
+-- exposed statement of the potential-modularity leaf
+-- `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`.
+public import Mathlib.GroupTheory.Index
+public import Mathlib.LinearAlgebra.Charpoly.Basic
+-- the Dickson recursion `tr(Mⁿ) = Dₙ(tr M, det M)` and the 2×2 charpoly
+-- coefficient dictionary, the two ingredients of the descent glue
+-- `isIntegral_trace_of_isIntegral_trace_pow`; and integral transitivity
+-- through `integralClosure`. All three are exposed in the statements of
+-- that glue and of the Dickson lemmas it rests on.
+public import Mathlib.RingTheory.Polynomial.Dickson
+public import Mathlib.LinearAlgebra.Matrix.Charpoly.Coeff
+public import Mathlib.RingTheory.IntegralClosure.IsIntegralClosure.Basic
 -- proof-only: the Cohen coefficient ring `exists_coefficientRing_ringHom`
 -- is built as `AdjoinRoot` of a monic `ℤ_ℓ`-lift of the minimal
 -- polynomial of a generator of `kˣ`, so it needs the `AdjoinRoot`
@@ -1043,7 +1112,7 @@ theorem finite_setOf_isHardlyRamified_frames {A : Type u} [CommRing A]
       IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite :=
   sorry
 
-/-- **Schur plus oddness: `End_{k[Γ]}(ρbar) = k`** (sorry node —
+/-- **Schur plus oddness: `End_{k[Γ]}(ρbar) = k`** (PROVEN 2026-07-26 —
 Schlessinger's H4 stratum of the 2026-07-26 cut of
 `exists_isStrictlyUniversalOnFiniteFrames`): every `k`-linear
 endomorphism of `V` commuting with the whole image of an irreducible
@@ -1052,31 +1121,45 @@ irreducible; equivalently the framed deformation functor is a torsor
 over the unframed one, which is Schlessinger's H4 (`dim_k t_F` finite
 and the hull unobstructed by automorphisms).
 
-Mathematical content, in two steps.
+The missing repository vocabulary — complex conjugation as an element of
+`Γ ℚ`, together with the evaluation of `cyclotomicCharacter` at it — is
+now `GaloisRepresentation/ComplexConjugation.lean`: `complexConj : Γ ℚ`,
+`complexConj_mul_self` (it is an involution) and
+`cyclotomicCharacter_complexConj` (the character sends it to `−1` for odd
+`p`). Those three facts are exactly what this proof consumes from the
+oddness side.
 
-1. *Schur.* `ρbar` is irreducible, so `V` is a simple `k[Γ]`-module
-   (`Representation.isIrreducible_iff_isSimpleModule`) and every nonzero
-   intertwiner is bijective (`Representation.IsIrreducible.bijective_or_eq_zero`);
-   hence `E := End_{k[Γ]}(V)` is a division ring, finite-dimensional over
-   the finite field `k`, so by Wedderburn's little theorem it is a finite
-   FIELD extension `k'/k` — and `V` is a `k'`-vector space with
-   `dim_k V = [k' : k] · dim_{k'} V = 2`.
-2. *Oddness kills `[k' : k] = 2`.* Suppose `[k' : k] = 2`. Then
-   `dim_{k'} V = 1`, so every `ρbar g` — which commutes with `E = k'` by
-   construction — acts as multiplication by a scalar `λ_g ∈ k'`. Complex
-   conjugation `c ∈ Γ ℚ` satisfies `c² = 1`, so `λ_c² = 1` and hence
-   `λ_c = ±1 ∈ k` (`ℓ` odd, so `k` has no other square roots of `1`);
-   therefore `ρbar c = ±id` and `det (ρbar c) = 1`. But `ρbar` is ODD:
-   `IsHardlyRamified.det` identifies `det ∘ ρbar` with the mod-`ℓ`
-   cyclotomic character, which sends complex conjugation to `−1`, and
-   `−1 ≠ 1` in `k` because `ℓ` is odd. Contradiction, so `k' = k`.
+**The proof written here is NOT the Wedderburn route** that this
+docstring previously sketched (`End_{k[Γ]}(V)` a division ring, hence by
+Wedderburn's little theorem a field extension `k'/k` with
+`[k':k] · dim_{k'} V = 2`, then oddness killing `[k':k] = 2`). That route
+needs Wedderburn plus a `k'`-module structure on `V`; in dimension two
+one can do without both. The argument used instead, with `J := ρbar c`
+for `c` complex conjugation:
+
+1. *Schur*, in the only form needed: an endomorphism commuting with the
+   whole image of the irreducible `ρbar` is an intertwiner, hence zero or
+   bijective (`Representation.IsIrreducible.bijective_or_eq_zero`, through
+   `LinearMap.intertwiningMap_of_isIntertwiningMap`).
+2. *Oddness*: `J * J = 1` since `c² = 1`, and `det J = −1` by
+   `IsHardlyRamified.det` composed with `cyclotomicCharacter_complexConj`;
+   `−1 ≠ 1` in `k` because `char k = ℓ` (`natCast_self_eq_zero`) is odd.
+   So `J ≠ 1` and `J ≠ −1` (the determinant of `±1` on a rank-two module
+   is `1`).
+3. *A `+1`-eigenvector exists*: `(J − 1)(J + 1) = J² − 1 = 0`, so if
+   `J − 1` were injective then `J + 1 = 0`, i.e. `J = −1`, excluded. Pick
+   `w ≠ 0` with `J w = w`.
+4. *`f w` is a multiple of `w`*: `f` commutes with `J`, so `J (f w) = f w`
+   too. Were `w` and `f w` independent they would be a basis of the
+   rank-two `V` (`basisOfLinearIndependentOfCardEqFinrank`), and `J`,
+   fixing both, would be `1` — excluded. So `f w = a • w` for some `a`
+   (`linearIndependent_fin2`).
+5. *Conclude*: `f − a` commutes with the image and kills `w ≠ 0`, so it is
+   not injective, so by Schur it is `0`, i.e. `f = a • 1`.
 
 The hypothesis `h : IsHardlyRamified hℓOdd hdim ρbar` is used ONLY
-through its `det` field (step 2); `hirr` only through step 1. The
-missing repository vocabulary for a proof is complex conjugation as an
-element of `Γ ℚ` together with the evaluation of `cyclotomicCharacter`
-at it — a self-contained sub-node, and the reason this is stated as a
-leaf rather than proven here.
+through its `det` field (step 2); `hirr` only through step 1; `hdim` only
+to know `finrank k V = 2` (steps 2 and 4).
 
 Both-ways audit: classically this is the standard "odd irreducible
 two-dimensional mod-`ℓ` representation is absolutely irreducible", true
@@ -1084,17 +1167,140 @@ outright for `ℓ` odd; abstractly the hypothesis package contains an
 irreducible hardly ramified `ρbar`, which the section audit of
 `Interface.lean` shows to be classically unsatisfiable, so the statement
 holds vacuously as well — but see the circularity guard: that vacuity is
-NOT available as a proof route here.
+NOT available as a proof route here, and the proof below does not use it.
 
 CIRCULARITY GUARD: `not_isIrreducible_of_isHardlyRamified_of_five_le`
 refutes exactly this hypothesis package and is itself proven over pillar
-α, which is what this file's cone proves; Lean rejects the cycle. -/
+α, which is what this file's cone proves; Lean rejects the cycle. The
+proof below imports only `ComplexConjugation.lean`, whose own cone is
+pure mathlib. -/
 theorem exists_smul_eq_of_commute_of_isIrreducible
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible) (f : Module.End k V)
     (hf : ∀ g, Commute f (ρbar g)) :
-    ∃ c : k, f = c • 1 :=
-  sorry
+    ∃ c : k, f = c • 1 := by
+  haveI : Representation.IsIrreducible ρbar.toRepresentation := hirr
+  have hfr : Module.finrank k V = 2 := Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
+  -- **Schur's lemma**: an endomorphism commuting with the whole image is zero or bijective.
+  have schur : ∀ e : Module.End k V, (∀ g, Commute e (ρbar g)) →
+      e = 0 ∨ Function.Bijective e := by
+    intro e he
+    have hint : ∀ (g : Field.absoluteGaloisGroup ℚ) (x : V),
+        e (ρbar.toRepresentation g x) = ρbar.toRepresentation g (e x) := by
+      intro g x
+      have h9 := congrArg (fun m : Module.End k V => m x) (he g).eq
+      simp only [Module.End.mul_apply] at h9
+      exact h9
+    have hb := Representation.IsIrreducible.bijective_or_eq_zero
+      (LinearMap.intertwiningMap_of_isIntertwiningMap ρbar.toRepresentation
+        ρbar.toRepresentation e hint)
+    rcases hb with hbij | h0
+    · exact Or.inr hbij
+    · left
+      have h10 := congrArg
+        (fun F : Representation.IntertwiningMap ρbar.toRepresentation ρbar.toRepresentation =>
+          F.toLinearMap) h0
+      simp only [Representation.IntertwiningMap.zero_toLinearMap] at h10
+      exact h10
+  -- **`−1 ≠ 1` in `k`**, because `char k = ℓ` is odd.
+  have hne1 : (-1 : k) ≠ 1 := by
+    intro hcon
+    have h2 : ((2 : ℕ) : k) = 0 := by
+      push_cast
+      linear_combination -hcon
+    haveI hc : CharP k (ringChar k) := ringChar.charP k
+    have hp : (ringChar k).Prime :=
+      (CharP.char_is_prime_or_zero k (ringChar k)).resolve_right
+        (CharP.char_ne_zero_of_finite k (ringChar k))
+    have hd2 : ringChar k ∣ 2 := (CharP.cast_eq_zero_iff k (ringChar k) 2).mp h2
+    have hdl : ringChar k ∣ ℓ :=
+      (CharP.cast_eq_zero_iff k (ringChar k) ℓ).mp natCast_self_eq_zero
+    have hr2 : ringChar k = 2 := (Nat.prime_dvd_prime_iff_eq hp Nat.prime_two).mp hd2
+    rw [hr2] at hdl
+    exact (Nat.not_odd_iff_even.mpr (even_iff_two_dvd.mpr hdl)) hℓOdd
+  -- **Complex conjugation**: an involution of determinant `−1`.
+  set J : Module.End k V := ρbar complexConj with hJdef
+  have hJJ : J * J = 1 := by
+    rw [hJdef, ← map_mul ρbar]
+    convert map_one ρbar using 2
+    exact complexConj_mul_self
+  have hdetJ : LinearMap.det J = -1 := by
+    have hd := h.det complexConj
+    rw [GaloisRep.det_apply, cyclotomicCharacter_complexConj ℓ hℓOdd] at hd
+    rw [hJdef, hd]
+    simp
+  have hJnot1 : J ≠ 1 := by
+    intro hcJ
+    rw [hcJ, show LinearMap.det (1 : Module.End k V) = 1 from LinearMap.det_id] at hdetJ
+    exact hne1 hdetJ.symm
+  have hJnotneg1 : J ≠ -1 := by
+    intro hcJ
+    have h12 : LinearMap.det J = 1 := by
+      rw [hcJ, show (-1 : Module.End k V) = (-1 : k) • 1 by simp,
+        LinearMap.det_smul, hfr]
+      simp
+    rw [h12] at hdetJ
+    exact hne1 hdetJ.symm
+  -- **A `+1`-eigenvector exists**: otherwise `J − 1` is injective, forcing `J = −1`.
+  have hprod : (J - 1) * (J + 1) = 0 := by
+    have h13 : (J - 1) * (J + 1) = J * J - 1 := by noncomm_ring
+    rw [h13, hJJ, sub_self]
+  have hex : ∃ w : V, w ≠ 0 ∧ J w = w := by
+    by_contra hcon
+    push Not at hcon
+    have hinj : Function.Injective ((J - 1 : Module.End k V) : V →ₗ[k] V) := by
+      rw [← LinearMap.ker_eq_bot, Submodule.eq_bot_iff]
+      intro x hx
+      rw [LinearMap.mem_ker] at hx
+      by_contra hx0
+      refine hcon x hx0 ?_
+      have h14 : J x - x = 0 := by simpa using hx
+      linear_combination (norm := module) h14
+    have hJ1 : J + 1 = 0 := by
+      apply LinearMap.ext
+      intro x
+      have h15 : (J - 1) ((J + 1) x) = (J - 1) 0 := by
+        have h16 := congrArg (fun m : Module.End k V => m x) hprod
+        simpa [Module.End.mul_apply] using h16
+      simpa using hinj h15
+    exact hJnotneg1 (by linear_combination (norm := noncomm_ring) hJ1)
+  obtain ⟨w, hw0, hwJ⟩ := hex
+  -- `f w` lies in the same eigenspace, `f` commuting with `J`.
+  have hfwJ : J (f w) = f w := by
+    have h17 := congrArg (fun m : Module.End k V => m w) (hf complexConj).eq
+    simp only [Module.End.mul_apply] at h17
+    rw [← hJdef] at h17
+    rw [← h17, hwJ]
+  -- `w` and `f w` cannot be independent: they would span `V` and force `J = 1`.
+  have hdep : ¬ LinearIndependent k ![f w, w] := by
+    intro hli
+    have hcard : Fintype.card (Fin 2) = Module.finrank k V := by simp [hfr]
+    refine hJnot1 ?_
+    apply (basisOfLinearIndependentOfCardEqFinrank hli hcard).ext
+    intro i
+    fin_cases i <;>
+      simp [coe_basisOfLinearIndependentOfCardEqFinrank, hfwJ, hwJ]
+  have hav : ∃ a : k, f w = a • w := by
+    rw [linearIndependent_fin2] at hdep
+    push Not at hdep
+    obtain ⟨a, ha⟩ := hdep hw0
+    exact ⟨a, by simpa using ha.symm⟩
+  obtain ⟨a, ha⟩ := hav
+  -- `f − a` kills `w ≠ 0`, so Schur forces it to vanish.
+  refine ⟨a, ?_⟩
+  have hcomm : ∀ g, Commute (f - a • (1 : Module.End k V)) (ρbar g) := by
+    intro g
+    have h18 := (hf g).eq
+    unfold Commute SemiconjBy
+    rw [sub_mul, mul_sub, h18]
+    congr 1
+    simp [Algebra.smul_def, Algebra.commutes]
+  rcases schur (f - a • 1) hcomm with h0 | hbij
+  · linear_combination (norm := noncomm_ring) h0
+  · exfalso
+    have hzero : (f - a • (1 : Module.End k V)) w = (f - a • (1 : Module.End k V)) 0 := by
+      simp [ha]
+    exact hw0 (hbij.1 hzero)
 
 open scoped TensorProduct in
 /-- **Residual identification of a RAW framed package** — verbatim
@@ -1152,178 +1358,6 @@ def IsStrictlyUniversalOnFrames
          (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
        ∃ e : (A ⊗[R] (Fin 2 → R)) ≃ₗ[A] (Fin 2 → A),
          (ρuniv.baseChange A).conj e = ρA)
-
-open scoped TensorProduct in
-/-- **Schlessinger's hull for the hardly ramified problem** (sorry node —
-the deformation-theoretic core of the 2026-07-26 cut of
-`exists_isStrictlyUniversalOnFiniteFrames`, which is now PROVEN over this
-leaf, the H3 finiteness leaf `finite_setOf_isHardlyRamified_frames` and
-the H4 Schur leaf `exists_smul_eq_of_commute_of_isIrreducible`): GIVEN
-Schlessinger's H3 (`hfin`, restricted-ramification finiteness at every
-Artinian level) and H4 (`hschur`, `End_{k[Γ]}(ρbar) = k`), the hardly
-ramified deformation problem of an irreducible hardly ramified `ρbar`
-(`ℓ ≥ 5`) has a hull: a complete Noetherian local topological
-`ℤ_ℓ`-algebra `R` with the `𝔪`-adic topology, carrying a hardly ramified
-framed representation `ρuniv`, a surjective continuous reduction `πuniv`
-identifying `ρuniv ⊗_R k` with `ρbar`, which classifies every FINITE raw
-framed test object *strictly* — by a continuous `ℤ_ℓ`-algebra map
-compatible with the reductions along which `ρuniv` pushes forward to the
-test representation up to the framing ambiguity.
-
-WHAT IS AND IS NOT IN THIS LEAF. In: Schlessinger's criteria H1 and H2
-on framed lifts, the relative representability of the hardly ramified
-local conditions (Ramakrishna's flat condition at `ℓ`, the CDT tame
-condition at `2`), the de Smit–Lenstra presentation of the hull and the
-Mazur-category ring clauses read off it. Out: (i) H3, the leaf
-`finite_setOf_isHardlyRamified_frames`, supplied as `hfin`; (ii) H4, the
-leaf `exists_smul_eq_of_commute_of_isIrreducible`, supplied as `hschur`;
-(iii) the passage from Artinian test objects to the whole of Mazur's
-category — the separate leaf
-`isWeaklyUniversalOnIdentifiedFrames_of_finite`, pure commutative algebra
-and topology; (iv) the Chebotarev–Brauer–Nesbitt matching that
-manufactures the residual identification, supplied by
-`exists_conj_of_charFrob_eq` through the proven assembly
-`exists_isWeaklyUniversal`; (v) the `charFrob` shadow of the conjugation
-clause, discharged by `exists_isWeaklyUniversalOnIdentified` through
-`charpoly_baseChange_conj` — and, at this level, by the assembly
-`exists_isStrictlyUniversalOnFiniteFrames` below, which is exactly why
-this leaf delivers the honest residual identification
-(`IsResidualIdentifiedFrame`) and not a `charFrob` clause.
-
-Mathematical content: `hschur` says `End_{k[Γ]}(ρbar) = k`, so the
-framing is a torsor and Schlessinger's H4 holds; `hfin` is H3 (the
-framed tangent space, a subset of the hardly ramified lifts over the
-dual numbers `k[ε]`, is finite). H1 and H2 are formal for the FRAMED
-functor — a lift over a fibre product `A₁ ×_{A₀} A₂` of coefficient
-rings is exactly a compatible pair of lifts, the frame removing the
-gluing ambiguity — and the hardly ramified local conditions are checked
-componentwise: cyclotomic determinant and unramifiedness outside
-`{2, ℓ}` are limit-stable, flatness at `ℓ` is a deformation condition by
-Ramakrishna, and the tame quadratic quotient at `2` is an ordinary-type
-condition by Conrad–Diamond–Taylor. Hence by Schlessinger's theorem
-(Trans. AMS 130 (1968), Thm. 2.11) and Mazur (§1.2) the functor has a
-hull, presented by the de Smit–Lenstra generators-and-relations
-construction as `W(k)[[x₁,…,x_g]]/I` with `g = dim_k` of the tangent
-space; that quotient is Noetherian, local, `𝔪`-adically complete and
-carries the `𝔪`-adic topology — the three Mazur-category clauses of the
-conclusion — and the classifying map of a residually identified finite
-test object is the required `ψ`.
-
-NOTE ON THE MAZUR-CATEGORY CLAUSES. They are delivered by this leaf
-rather than cut out as commutative algebra over the presentation
-(`IsNoetherianRing`/`IsAdicComplete` from a surjection
-`ℤ_ℓ[[x₁,…,x_g]] ↠ R`, as `Patching.lean` cuts them) because this
-file's power-series section — including the PROVEN
-`isNoetherianRing_mvPowerSeries` — is declared far BELOW this point and
-depends on the currying machinery developed there; separating them here
-would mean either moving that section above the deformation-theoretic
-section or re-sorrying an already proven lemma. Once the section is
-moved, the split is available at no mathematical cost.
-
-PARALLEL COPY, NOT IMPORTABLE. `Modularity/Patching.lean` proves the
-same statement (`exists_weaklyUniversalOnIdentified_hardlyRamifiedDeformation`)
-over the same finite-tangent/finite-tests cut, its Artinian-level leaf
-being `exists_framedStrictlyUniversal_hardlyRamified_finiteTests` (whose
-`IsStrictlyUniversalOnFramedFiniteLifts` is the unbundled twin of
-`IsStrictlyUniversalOnFiniteFrames` above). It cannot be imported here:
-`Patching.lean` imports `Modularity/KhareWintenberger.lean`, which
-consumes pillar α — which is what this file proves. See
-`~/.flt-design-deformation-patching-dedup.md`: the de-duplication is a
-module split of `Patching.lean` into a KW-free upstream module, to be
-done when that file is quiet.
-
-CIRCULARITY GUARD. This leaf carries the `IsHardlyRamified` +
-`IsIrreducible` + `5 ≤ ℓ` package that the odd-prime dichotomy
-`not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and that
-dichotomy is proven over pillar α — which is what this file's cone
-proves. Discharging this leaf vacuously through it is circular and Lean
-rejects it. Likewise no import from `Family.lean`, `Lift.lean` or
-`Modularity/*` may be added to this module.
-
-References: Mazur, *Deforming Galois representations*, MSRI Publ. 16
-(1989), §1.2; Ramakrishna, *On a variation of Mazur's deformation
-functor*, Compositio 87 (1994); Conrad–Diamond–Taylor, JAMS 12 (1999),
-§2; de Smit–Lenstra, *Explicit construction of universal deformation
-rings*, Prop. 2.3; Böckle's appendix to Khare's Serre-conjecture
-notes. -/
-theorem exists_isStrictlyUniversalOnFrames_of_finite_lifts (hℓ5 : 5 ≤ ℓ)
-    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (hschur : ∀ f : Module.End k V, (∀ g, Commute f (ρbar g)) →
-      ∃ c : k, f = c • 1)
-    (hfin : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
-      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
-      [DiscreteTopology A],
-      {ρ : FramedGaloisRep ℚ A (Fin 2) |
-        IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite) :
-    ∃ (R : Type u) (_ : CommRing R) (_ : TopologicalSpace R)
-      (_ : IsTopologicalRing R) (_ : IsLocalRing R) (_ : Algebra ℤ_[ℓ] R)
-      (_ : IsNoetherianRing R) (_ : IsAdic (IsLocalRing.maximalIdeal R))
-      (_ : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
-      (ρuniv : FramedGaloisRep ℚ R (Fin 2))
-      (_ : IsHardlyRamified hℓOdd (rank_finTwoFun R) ρuniv)
-      (πuniv : R →+* k) (_ : Function.Surjective πuniv)
-      (hπcont : Continuous πuniv),
-      IsResidualIdentifiedFrame (ℓ := ℓ) ρbar ρuniv πuniv hπcont ∧
-      IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv :=
-  sorry
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **Mazur/Ramakrishna representability at the ARTINIAN level** (PROVEN
-2026-07-26 over the Schlessinger cut — the H3 finiteness leaf
-`finite_setOf_isHardlyRamified_frames`, the H4 Schur leaf
-`exists_smul_eq_of_commute_of_isIrreducible` and the deformation-theoretic
-core leaf `exists_isStrictlyUniversalOnFrames_of_finite_lifts`): the hardly
-ramified deformation problem of an irreducible hardly ramified `ρbar`
-(`ℓ ≥ 5`) admits an object `D` of Mazur's category that classifies every
-FINITE residually identified framed test object *strictly* — by a
-continuous `ℤ_ℓ`-algebra map compatible with the reductions along which
-`D.ρ` pushes forward to the test representation up to the framing
-ambiguity.
-
-The glue proven here is the BUNDLING of the raw hull into an object of
-this file's deformation category. The core leaf delivers the coefficient
-ring with its Mazur-category clauses, the hardly ramified framed
-representation, the surjective continuous reduction and the residual
-identification `ρuniv ⊗_R k ≅ ρbar`; what the structure
-`HardlyRamifiedDeformation` additionally demands is `charFrob_compat`,
-the `charFrob` shadow of that identification, and it is exactly
-`charpoly_baseChange_conj` evaluated at `globalFrob`: conjugation and
-base change carry the characteristic polynomial of `ρuniv` at a
-Frobenius onto that of `ρbar` through the coefficient map
-`algebraMap R k = πuniv`. The universality clause then transfers with
-nothing to do, `IsStrictlyUniversalOnFrames` being the raw transcription
-of `IsStrictlyUniversalOnFiniteFrames`.
-
-CIRCULARITY GUARD (inherited by the three leaves): the hypothesis package
-is the one `not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and
-that dichotomy is proven over pillar α, i.e. over this file's cone; no
-leaf below this node may be discharged vacuously through it. -/
-theorem exists_isStrictlyUniversalOnFiniteFrames (hℓ5 : 5 ≤ ℓ)
-    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
-    (hirr : ρbar.IsIrreducible) :
-    ∃ D : HardlyRamifiedDeformation hℓOdd ρbar,
-      D.IsStrictlyUniversalOnFiniteFrames := by
-  obtain ⟨R, iCR, iTS, iTR, iLR, iAlg, iNoeth, hadic, hcomplete, ρuniv,
-      hρuniv, πuniv, hπsurj, hπcont, hident, huniv⟩ :=
-    exists_isStrictlyUniversalOnFrames_of_finite_lifts hℓOdd hdim hℓ5 h hirr
-      (fun f hf =>
-        exists_smul_eq_of_commute_of_isIrreducible hℓOdd hdim h hirr f hf)
-      (fun A => finite_setOf_isHardlyRamified_frames hℓOdd)
-  refine ⟨{ R := R, isAdic := hadic, isAdicComplete := hcomplete,
-            ρ := ρuniv, isHardlyRamified := hρuniv, π := πuniv,
-            π_surjective := hπsurj, charFrob_compat := ?_ }, huniv⟩
-  intro q hq hq2 hqℓ
-  letI : Algebra R k := πuniv.toAlgebra
-  letI : ContinuousSMul R k := continuousSMul_of_algebraMap R k
-    (by rw [RingHom.algebraMap_toAlgebra]; exact hπcont)
-  obtain ⟨e, he⟩ := hident
-  have hcp := charpoly_baseChange_conj ρuniv e
-    (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
-  rw [he] at hcp
-  rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
-    GaloisRep.charFrob_eq_charpoly_globalFrob, hcp,
-    RingHom.algebraMap_toAlgebra]
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
@@ -1561,6 +1595,896 @@ lemma isHardlyRamified_baseChange_quotient {R : Type u} [CommRing R]
     exact isFlatAt_baseChange_quotient P h.isFlat
   · -- tameness at 2 (proven transfer)
     exact isTameAtTwo_baseChange (R ⧸ P) h.isTameAtTwo
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Hardly-ramifiedness transfers along conjugation** by a linear
+isomorphism of the representation space (PROVEN 2026-07-22): the
+determinant is conjugation-invariant, the kernels of the local
+representations only grow, flatness transports through
+`HasFlatProlongationAt.of_equiv` along the base-changed isomorphism, and
+the tame quadratic quotient is composed with the inverse isomorphism. -/
+lemma isHardlyRamified_conj {R : Type u} [CommRing R] [TopologicalSpace R]
+    [IsTopologicalRing R] [IsLocalRing R] [Algebra ℤ_[ℓ] R]
+    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    {N : Type v} [AddCommGroup N] [Module R N] [Module.Finite R N]
+    [Module.Free R N]
+    {hdimM : Module.rank R M = 2} (hdimN : Module.rank R N = 2)
+    {ρ : GaloisRep ℚ R M} (h : IsHardlyRamified hℓOdd hdimM ρ)
+    (e : M ≃ₗ[R] N) :
+    IsHardlyRamified hℓOdd hdimN (ρ.conj e) := by
+  constructor
+  · -- determinant: conjugation-invariant
+    intro g
+    rw [GaloisRep.det_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply,
+      LinearMap.comp_assoc, LinearMap.det_conj]
+    exact h.det g
+  · -- unramifiedness: the kernel of the local representation only grows
+    intro p hp hpp
+    have hun := h.isUnramified p hp hpp
+    refine ⟨le_trans hun.localInertiaGroup_le ?_⟩
+    intro σ hσ
+    have h1 : ρ.toLocal hp.toHeightOneSpectrumRingOfIntegersRat σ = 1 := hσ
+    show (ρ.conj e).toLocal hp.toHeightOneSpectrumRingOfIntegersRat σ = 1
+    rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply,
+      ← GaloisRep.toLocal_apply, h1]
+    refine LinearMap.ext fun w => ?_
+    simp
+  · -- flatness: transport along the base-changed equivariant isomorphism
+    constructor
+    intro I hI
+    refine (h.isFlat.cond I hI).of_equiv _
+      (LinearEquiv.baseChange R (R ⧸ I) M N e).toAddEquiv ?_
+    intro g x
+    show (LinearEquiv.baseChange R (R ⧸ I) M N e)
+        (((ρ.baseChange (R ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime)) g) x) =
+      (((ρ.conj e).baseChange (R ⧸ I)).toLocal
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime)) g)
+        ((LinearEquiv.baseChange R (R ⧸ I) M N e) x)
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c m =>
+      simp only [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+        LinearEquiv.baseChange_tmul, GaloisRep.conj_apply,
+        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply]
+  · -- tameness at 2: compose the quotient with the inverse isomorphism
+    obtain ⟨π, hπsurj, δ, hδ⟩ := h.isTameAtTwo
+    refine ⟨π.comp (e.symm : N →ₗ[R] M), ?_, δ, ?_⟩
+    · intro r
+      obtain ⟨m, hm⟩ := hπsurj r
+      exact ⟨e m, by simp [hm]⟩
+    · intro g w
+      refine ⟨?_, (hδ 1 0).2.1, (hδ 1 0).2.2⟩
+      have h1 := (hδ g (e.symm w)).1
+      show π (e.symm ((ρ.conj e).map (algebraMap ℚ ℚ_[2]) g w)) =
+        δ g (π (e.symm w))
+      rw [GaloisRep.map_apply, GaloisRep.conj_apply,
+        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply,
+        ← GaloisRep.map_apply, h1]
+
+open scoped TensorProduct in
+/-- **Pushforward of a framed representation along a continuous ring
+homomorphism**: base change along `ψ.toAlgebra`, followed by the standard
+identification `A ⊗_B (Fin 2 → B) ≅ (Fin 2 → A)`
+(`TensorProduct.piScalarRight`) — concretely, "apply `ψ` to the matrix
+entries of `ρ`".
+
+Bundled as a definition rather than written inline because the base
+change needs an `Algebra B A` and a `ContinuousSMul B A` in scope, so the
+inline form drags a `letI` block into every statement that mentions it
+(the elaborator constraint already recorded on `IsResidualIdentified` and
+`IsStrictlyUniversalOnFrames`). Every leaf of the deformation-condition
+cut below is phrased through it, which is what lets the assembly
+`exists_isStrictlyUniversalOnFrames_of_finite_lifts` discharge the
+hypotheses of its core leaf by name.
+
+This is the CANONICAL pushforward, carrying no framing ambiguity; the
+universality predicates deliberately quantify over an arbitrary framing
+`e` instead, because a classifying map only ever determines the
+pushforward up to the choice of frame. -/
+noncomputable def pushforwardFrame {B : Type u} [CommRing B]
+    [TopologicalSpace B] [IsTopologicalRing B] {A : Type u} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A] (ψ : B →+* A)
+    (hψ : Continuous ψ) (ρ : FramedGaloisRep ℚ B (Fin 2)) :
+    FramedGaloisRep ℚ A (Fin 2) :=
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  (ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))
+
+/-- **Raynaud closure for flat prolongations, in surjection-from-a-finite-power
+form** (sorry node, cut 2026-07-25 out of `isFlatAt_baseChange` below): if the
+local space of `ρ₁` is the geometric-point group of a finite flat group scheme
+over `𝒪ᵥ`, then so is every `Γ Kᵥ`-equivariant additive QUOTIENT of a finite
+POWER of it.
+
+This is the only genuinely deep input to `isFlatAt_baseChange`: everything else
+in that proof is tensor plumbing, carried out below. Mathematically it is the
+statement that the essential image of the generic-fibre functor
+(finite flat group schemes over the DVR `𝒪ᵥ`) ⟶ (finite `Γ Kᵥ`-modules)
+is closed under finite products and under equivariant quotients. Products are
+represented by the tensor product of the Hopf algebras; quotients come from the
+schematic-closure construction — an equivariant surjection of point groups is
+induced by a surjection of the finite étale generic-fibre Hopf algebras, and the
+image of a Hopf order under a surjective bialgebra map is again a Hopf order.
+Note that the EXISTENCE direction used here needs no `e < ℓ − 1` bound; Raynaud's
+bound enters only for the UNIQUENESS of the prolongation, which is not asserted.
+
+DUPLICATION / HOME AUDIT (please read before restating this anywhere). Two
+other copies of this content already exist in the tree, both import-unreachable
+from this module:
+* `IsFlatPointsGroupAt.of_surjective` in `Modularity/Interface.lean`, a PROVEN
+  assembly over the single leaf `exists_etale_subBialgebra_of_points_surjective`
+  — together with `IsFlatPointsGroupAt.pi` it is exactly this statement;
+* `hasFlatProlongationAt_of_surjective` in `Modularity/KhareWintenberger.lean`,
+  a `sorry` in the `n = 1` special case of this one.
+Both live ABOVE this module (`Interface` imports `KhareWintenberger`, which
+imports this file), so neither can be consumed here — the circularity guard at
+the head of this module forbids importing `Modularity/*`. The declaration below
+is therefore the LOWEST home for the content and strictly generalizes
+KhareWintenberger's copy (take `n = 1`); whoever unifies them should redirect
+both upward copies at this one — or move this one further down still, into
+`Deformations/RepresentationTheory/FlatProlongation.lean`, which is the neutral
+home KhareWintenberger's own audit nominates — rather than adding a fourth.
+
+References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
+(1974), §3; Tate–Oort, *A classification of group schemes of order p*, Ann.
+Sci. ÉNS 3 (1970). -/
+theorem hasFlatProlongationAt_of_pi_surjection
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+    {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
+    {M₁ : Type*} [AddCommGroup M₁] [Module A₁ M₁]
+    {A₂ : Type*} [CommRing A₂] [TopologicalSpace A₂]
+    {M₂ : Type*} [AddCommGroup M₂] [Module A₂ M₂]
+    {ρ₁ : GaloisRep ℚ A₁ M₁} {ρ₂ : GaloisRep ℚ A₂ M₂} (n : ℕ)
+    (h : ρ₁.HasFlatProlongationAt w)
+    (π : (Fin n → (ρ₁.toLocal w).Space) →+ (ρ₂.toLocal w).Space)
+    (hsurj : Function.Surjective π)
+    (hequiv : ∀ (g : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ w))
+        (x : Fin n → (ρ₁.toLocal w).Space), π (g • x) = g • π x) :
+    ρ₂.HasFlatProlongationAt w :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Flatness at `ℓ` transfers along an arbitrary base change to a
+FINITE coefficient algebra** (PROVEN 2026-07-25 over the single Raynaud
+leaf `hasFlatProlongationAt_of_pi_surjection` above — Ramakrishna's half
+of "the hardly ramified conditions form a deformation condition"; the
+QUOTIENT case is the PROVEN `isFlatAt_baseChange_quotient` just above,
+and this is the general-coefficient-map form that the Schlessinger cut
+below needs).
+
+Route (the quotient proof does NOT cover this: it identifies
+`((R ⧸ P) ⧸ I)` with a quotient `R ⧸ J` of `R` itself, which is exactly
+what a general coefficient map does not give you). Let `I` be an open
+ideal of `B` and put `J := (algebraMap R B)⁻¹ I`, an open ideal of `R`
+because the structure map is continuous (`ContinuousSMul R B`, whence
+`continuous_algebraMap`). `hflat` then supplies a finite flat
+prolongation of `(R ⧸ J) ⊗_R M`, and what remains is that the
+prolongation survives the COEFFICIENT EXTENSION `R ⧸ J → B ⧸ I` of
+finite rings.
+
+That is done as an explicit equivariant SURJECTION rather than through a
+second tensor cancellation, which is what keeps the cut shallow: `B ⧸ I`
+is finite, so enumerating it as `b₀, …, b_{n−1}` gives an additive
+surjection
+`(Fin n → (R ⧸ J) ⊗_R M) ↠ (B ⧸ I) ⊗_R M`, `(xᵢ) ↦ Σᵢ bᵢ • ι(xᵢ)`,
+where `ι` is `id ⊗ (R ⧸ J → B ⧸ I)`; surjectivity holds already on the
+generators `c ⊗ m = b_{e(c)} • (1 ⊗ m)`, and `Γ Kᵥ`-equivariance holds
+because the Galois action lives on the `M`-factor while both `bᵢ • −`
+and `ι` act on the coefficient factor. Composing with the inverse of
+`TensorProduct.AlgebraTensorModule.cancelBaseChange`, which identifies
+`(B ⧸ I) ⊗_B (B ⊗_R M)` — the space actually named by the goal — with
+`(B ⧸ I) ⊗_R M`, this is exactly the hypothesis of
+`hasFlatProlongationAt_of_pi_surjection`. Crucially this route needs NO
+`(R ⧸ J)`-algebra structure on `B ⧸ I`, and in particular neither
+`IsScalarTower R (R ⧸ J) (B ⧸ I)` nor `ContinuousSMul (R ⧸ J) (B ⧸ I)`,
+neither of which is available as an instance.
+
+WHY `[Finite B]` IS PART OF THE STATEMENT AND NOT A CONVENIENCE (found
+2026-07-25 while cutting this leaf; the unrestricted form is FALSE).
+`GaloisRep.HasFlatProlongationAt` demands a Hopf algebra `G` that is
+`Module.Finite` and `Module.Flat` over `𝒪ᵥ` together with a BIJECTION
+from its geometric points onto the space of the local representation.
+A finite flat `𝒪ᵥ`-algebra has only finitely many geometric points, so
+`HasFlatProlongationAt` forces the space to be FINITE — hence `IsFlatAt`
+forces `(B ⧸ I) ⊗_R M` to be finite for every open ideal `I` of `B`.
+Dropping `[Finite B]` therefore makes the conclusion fail for, say, `B`
+an infinite discrete `𝔽_ℓ`-algebra over `R = 𝔽_ℓ`, where the source
+`ρ` is flat and the target space is infinite. Every consumer of this
+lemma lives in the Artinian (equivalently finite) category, so the
+restriction costs nothing.
+
+References: Ramakrishna, *On a variation of Mazur's deformation
+functor*, Compositio 87 (1994), §1; Raynaud, *Schémas en groupes de type
+`(p,…,p)`*, Bull. SMF 102 (1974), Thm. 3.3.1; Conrad–Diamond–Taylor,
+JAMS 12 (1999), §2. -/
+theorem isFlatAt_baseChange {R : Type u} [CommRing R] [TopologicalSpace R]
+    [IsTopologicalRing R] [IsLocalRing R]
+    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    (B : Type*) [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Finite B] [Algebra R B] [ContinuousSMul R B]
+    {ρ : GaloisRep ℚ R M}
+    (hflat : ρ.IsFlatAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime))) :
+    (ρ.baseChange B).IsFlatAt
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) := by
+  classical
+  set w := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)
+  constructor
+  intro I hI
+  -- the contracted open ideal of `R`
+  set J : Ideal R := I.comap (algebraMap R B)
+  have hJopen : IsOpen (J : Set R) := hI.preimage (continuous_algebraMap R B)
+  have hflatJ : (ρ.baseChange (R ⧸ J)).HasFlatProlongationAt w := hflat.cond J hJopen
+  -- an enumeration of the finite ring `B ⧸ I`
+  haveI : Finite (B ⧸ I) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+  obtain ⟨n, ⟨enum⟩⟩ := Finite.exists_equiv_fin (B ⧸ I)
+  -- the coefficient map `R ⧸ J → B ⧸ I`, `R`-linearly
+  let cmap : (R ⧸ J) →ₗ[R] (B ⧸ I) :=
+    Submodule.liftQ J (Algebra.linearMap R (B ⧸ I)) (by
+      intro r hr
+      show algebraMap R (B ⧸ I) r = 0
+      rw [IsScalarTower.algebraMap_apply R B (B ⧸ I)]
+      exact Ideal.Quotient.eq_zero_iff_mem.mpr hr)
+  have hcmap : ∀ r : R, cmap (Ideal.Quotient.mk J r) = algebraMap R (B ⧸ I) r :=
+    fun _ => rfl
+  let ι : ((R ⧸ J) ⊗[R] M) →ₗ[R] ((B ⧸ I) ⊗[R] M) := LinearMap.rTensor M cmap
+  let can := TensorProduct.AlgebraTensorModule.cancelBaseChange R B (B ⧸ I) (B ⧸ I) M
+  -- the equivariant surjection out of a finite power of `(R ⧸ J) ⊗ M`
+  let π₀ : (Fin n → ((R ⧸ J) ⊗[R] M)) →+ ((B ⧸ I) ⊗[R] M) :=
+    { toFun := fun x => ∑ i, (enum.symm i) • ι (x i)
+      map_zero' := by simp
+      map_add' := fun x y => by simp [smul_add, Finset.sum_add_distrib] }
+  let π : (Fin n → ((ρ.baseChange (R ⧸ J)).toLocal w).Space) →+
+      (((ρ.baseChange B).baseChange (B ⧸ I)).toLocal w).Space :=
+    (can.symm.toAddEquiv.toAddMonoidHom).comp π₀
+  refine hasFlatProlongationAt_of_pi_surjection w n hflatJ π ?_ ?_
+  · -- surjectivity: already on the generators `c ⊗ m = b_{e c} • (1 ⊗ m)`
+    have hsurj0 : Function.Surjective π₀ := by
+      intro z
+      induction z using TensorProduct.induction_on with
+      | zero => exact ⟨0, map_zero _⟩
+      | tmul c m =>
+        refine ⟨(Pi.single (enum c) ((1 : R ⧸ J) ⊗ₜ[R] m) :
+          Fin n → ((R ⧸ J) ⊗[R] M)), ?_⟩
+        show ∑ i, (enum.symm i) • ι ((Pi.single (enum c) ((1 : R ⧸ J) ⊗ₜ[R] m) :
+          Fin n → ((R ⧸ J) ⊗[R] M)) i) = c ⊗ₜ[R] m
+        rw [Finset.sum_eq_single_of_mem (enum c) (Finset.mem_univ _)]
+        · rw [Pi.single_eq_same]
+          show (enum.symm (enum c)) • (cmap 1 ⊗ₜ[R] m) = c ⊗ₜ[R] m
+          rw [Equiv.symm_apply_apply,
+            show cmap 1 = 1 from (hcmap 1).trans (map_one _)]
+          rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+        · intro i _ hne
+          rw [Pi.single_eq_of_ne hne]
+          simp
+      | add a b ha hb =>
+        obtain ⟨u, hu⟩ := ha
+        obtain ⟨t, ht⟩ := hb
+        exact ⟨u + t, by rw [map_add, hu, ht]⟩
+    exact can.symm.surjective.comp hsurj0
+  · -- `Γ Kᵥ`-equivariance: the action is on the `M`-factor throughout
+    intro g x
+    have key : ∀ (i : Fin n) (y : (R ⧸ J) ⊗[R] M),
+        can.symm ((enum.symm i) • ι (((ρ.baseChange (R ⧸ J)).toLocal w) g y))
+          = (((ρ.baseChange B).baseChange (B ⧸ I)).toLocal w) g
+              (can.symm ((enum.symm i) • ι y)) := by
+      intro i y
+      induction y using TensorProduct.induction_on with
+      | zero => simp
+      | add a b ha hb => simp only [map_add, smul_add, ha, hb]
+      | tmul a m => rfl
+    show can.symm (∑ i, (enum.symm i) • ι (((ρ.baseChange (R ⧸ J)).toLocal w) g (x i)))
+        = (((ρ.baseChange B).baseChange (B ⧸ I)).toLocal w) g
+            (can.symm (∑ i, (enum.symm i) • ι (x i)))
+    rw [map_sum, map_sum, map_sum]
+    exact Finset.sum_congr rfl fun i _ => key i (x i)
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Hardly-ramifiedness transfers along an arbitrary base change to a
+FINITE coefficient algebra** (PROVEN 2026-07-25 over the single leaf
+`isFlatAt_baseChange`, everything else being already available in this
+module): the general-coefficient-map form of
+`isHardlyRamified_baseChange_quotient`, which is the shape Schlessinger's
+functoriality needs — the deformation functor must push a lift forward
+along EVERY map of Artinian coefficient rings, not only along
+surjections.
+
+Same four clauses, same proofs: the determinant maps along the structure
+morphism (`LinearMap.det_baseChange`, then `IsScalarTower` for the
+`ℤ_ℓ`-compatibility — which is the substitute for the quotient case's
+`IsScalarTower.algebraMap_apply`), unramifiedness passes to any base
+change by the existing instance, tameness at `2` is the already general
+`isTameAtTwo_baseChange`, and flatness at `ℓ` is the one genuinely open
+clause, isolated as `isFlatAt_baseChange` above. -/
+lemma isHardlyRamified_baseChange {R : Type u} [CommRing R]
+    [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
+    [Algebra ℤ_[ℓ] R]
+    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M] {hdimM : Module.rank R M = 2}
+    (B : Type u) [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Finite B] [Algebra ℤ_[ℓ] B] [Algebra R B]
+    [ContinuousSMul R B] [IsScalarTower ℤ_[ℓ] R B]
+    (hdimB : Module.rank B (B ⊗[R] M) = 2)
+    {ρ : GaloisRep ℚ R M} (h : IsHardlyRamified hℓOdd hdimM ρ) :
+    IsHardlyRamified hℓOdd hdimB (ρ.baseChange B) := by
+  constructor
+  · -- the determinant maps along the structure morphism
+    intro g
+    have hdet : (ρ.baseChange B).det g = algebraMap R B (ρ.det g) := by
+      show LinearMap.det ((ρ.baseChange B) g) = _
+      rw [show ((ρ.baseChange B) g : Module.End B (B ⊗[R] M)) =
+        LinearMap.baseChange B (ρ g) from rfl, LinearMap.det_baseChange]
+      rfl
+    rw [hdet, h.det g, ← IsScalarTower.algebraMap_apply]
+  · -- unramifiedness passes to the base change (existing instance)
+    intro p hp hpp
+    letI : ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
+      h.isUnramified p hp hpp
+    infer_instance
+  · -- flatness at `ℓ` (the sorried transfer leaf)
+    exact isFlatAt_baseChange B h.isFlat
+  · -- tameness at `2` (proven transfer)
+    exact isTameAtTwo_baseChange B h.isTameAtTwo
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Hardly-ramifiedness of a pushed-forward frame** (PROVEN 2026-07-25):
+`pushforwardFrame` applied to a hardly ramified framed representation is
+hardly ramified, provided the pushforward map is a `ℤ_ℓ`-algebra map
+(`halg`) and the target is finite.
+
+This is `isHardlyRamified_baseChange` (which supplies the base change)
+composed with `isHardlyRamified_conj` (which absorbs the framing
+identification `A ⊗_B (Fin 2 → B) ≅ (Fin 2 → A)`), exactly the two-step
+pattern of `exists_hardlyRamified_lift_of_five_le`'s specialization step.
+`halg` is what manufactures the `IsScalarTower ℤ_[ℓ] B A` instance, the
+`ℤ_ℓ`-structure being what the cyclotomic determinant condition is
+stated against.
+
+It is Schlessinger's functoriality clause: the framed hardly ramified
+lifts form a FUNCTOR on the Artinian category, which is the hypothesis
+`hbase` of the core leaf below. -/
+theorem isHardlyRamified_pushforwardFrame
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[ℓ] B]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Finite A] [Algebra ℤ_[ℓ] A]
+    (ψ : B →+* A) (hψ : Continuous ψ)
+    (halg : ψ.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A)
+    {ρ : FramedGaloisRep ℚ B (Fin 2)}
+    (hρ : IsHardlyRamified hℓOdd (rank_finTwoFun B) ρ) :
+    IsHardlyRamified hℓOdd (rank_finTwoFun A) (pushforwardFrame ψ hψ ρ) := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  letI : IsScalarTower ℤ_[ℓ] B A := IsScalarTower.of_algebraMap_eq' (by
+    rw [RingHom.algebraMap_toAlgebra]
+    exact halg.symm)
+  have hrank : Module.rank A (A ⊗[B] (Fin 2 → B)) = 2 := by
+    rw [Module.rank_baseChange, rank_finTwoFun]
+    simp
+  exact isHardlyRamified_conj hℓOdd (rank_finTwoFun A)
+    (isHardlyRamified_baseChange hℓOdd A hrank hρ)
+    (TensorProduct.piScalarRight B A A (Fin 2))
+
+/-- **Schlessinger's H1/H2 for the hardly ramified problem: the local
+conditions are checked componentwise on a fibre product** (sorry node —
+the gluing half of "the hardly ramified conditions form a deformation
+condition", the arithmetic input of the Schlessinger core leaf below).
+
+`B` is the fibre product `A₁ ×_{A₀} A₂` of finite local `ℤ_ℓ`-algebras
+along a SURJECTION `f₂` — presented not as a construction but by its
+universal property: `hcart` says every compatible pair `(a₁, a₂)` comes
+from `B`, and `hemb` says `B` carries the induced topology and injects,
+so `B` really is the fibre product AS A TOPOLOGICAL RING. The claim is
+that a framed representation over `B` whose two projections are hardly
+ramified is itself hardly ramified.
+
+WHY THIS IS THE WHOLE OF H1 AND H2. For the FRAMED functor the gluing
+map `F(A₁ ×_{A₀} A₂) → F(A₁) ×_{F(A₀)} F(A₂)` is bijective on the
+underlying representations for free: a homomorphism into
+`GL₂(A₁ ×_{A₀} A₂) = GL₂(A₁) ×_{GL₂(A₀)} GL₂(A₂)` is exactly a
+compatible pair, the frame removing the conjugation ambiguity that makes
+the unframed functor only *versal*. So the only content is that the four
+hardly ramified clauses descend, which is this statement.
+
+WHAT EACH CLAUSE COSTS. The determinant clause is formal: `det` commutes
+with `pushforwardFrame` (`LinearMap.det_baseChange` plus conjugation
+invariance), so `p_i (det ρ g) = p_i (algebraMap ℤ_ℓ B (χ g))` for
+`i = 1, 2` by `halg₁`/`halg₂`, and `hemb.injective` concludes.
+Unramifiedness is formal for the same reason: an endomorphism of
+`Fin 2 → B` killed by both projections is the identity. The two REAL
+clauses are the local conditions: flatness at `ℓ` glues by Ramakrishna
+(the finite flat prolongations of the two projections agree over `A₀`
+because for `e = 1 < ℓ − 1` a prolongation is unique, so they glue over
+the fibre product), and the tame quadratic quotient at `2` glues by
+Conrad–Diamond–Taylor.
+
+SUBTLETY IN THE TAME CLAUSE, FLAGGED FOR ITS PROVER. `IsHardlyRamified`
+states tameness at `2` as an EXISTENTIAL — some surjection
+`π : V ↠ R` and some unramified quadratic `δ`. `h₁` and `h₂` therefore
+hand you data over `A₁` and over `A₂` with no compatibility over `A₀`,
+and gluing needs them to agree there. This is not a defect of the
+statement but the reason the CDT condition is proved to be a deformation
+condition rather than observed to be one: the line is unique once the
+residual local representation at `2` is not scalar, and that uniqueness
+is what makes the two choices agree after replacing them by the induced
+ones. Any proof must go through such a uniqueness step.
+
+References: Schlessinger, *Functors of Artin rings*, Trans. AMS 130
+(1968), Thm. 2.11 (H1, H2); Mazur, *Deforming Galois representations*,
+MSRI Publ. 16 (1989), §§18–23 (deformation conditions); Ramakrishna,
+Compositio 87 (1994), §1; Conrad–Diamond–Taylor, JAMS 12 (1999), §2. -/
+theorem isHardlyRamified_of_fibreProduct
+    {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
+    {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+    [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
+    {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+    [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
+    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀) (hf₂ : Function.Surjective f₂)
+    (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁) (hp₂ : Continuous p₂)
+    (halg₁ : p₁.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A₁)
+    (halg₂ : p₂.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A₂)
+    (hcomm : f₁.comp p₁ = f₂.comp p₂)
+    (hemb : Topology.IsEmbedding fun b : B => (p₁ b, p₂ b))
+    (hcart : ∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂)
+    {ρ : FramedGaloisRep ℚ B (Fin 2)}
+    (h₁ : IsHardlyRamified hℓOdd (rank_finTwoFun A₁) (pushforwardFrame p₁ hp₁ ρ))
+    (h₂ : IsHardlyRamified hℓOdd (rank_finTwoFun A₂) (pushforwardFrame p₂ hp₂ ρ)) :
+    IsHardlyRamified hℓOdd (rank_finTwoFun B) ρ :=
+  sorry
+
+/-- **Restricted-ramification finiteness across arbitrary FINITE ring
+topologies — Schlessinger's H3 as the Artinian category actually needs
+it** (sorry node, cut 2026-07-25: a genuine gap between the H3 leaf
+`finite_setOf_isHardlyRamified_frames` and its consumers, found while
+decomposing the Schlessinger core).
+
+THE GAP. `finite_setOf_isHardlyRamified_frames` is stated for `A` with
+the DISCRETE topology, which is the only sensible topology on an Artinian
+object of Mazur's category — the maximal ideal is nilpotent, so the adic
+topology is discrete. But `IsStrictlyUniversalOnFrames` and
+`HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames` quantify
+over RAW test objects: a finite local topological `ℤ_ℓ`-algebra with NO
+`IsAdic` clause, deliberately, so that a test object carries no
+`IsModuleTopology` datum. A finite ring can carry a strictly coarser ring
+topology: for `A = k[ε]` the topology whose opens are the unions of
+cosets of `(ε)` — the preimage of the discrete topology of `k` — is a
+ring topology, `A` is local and finite, and the reduction `A ↠ k` is
+continuous, so `A` is a legitimate test object that is NOT discrete.
+Over such an `A` continuity of a framed representation only constrains it
+modulo `(ε)`, so a priori there are far more hardly ramified lifts than
+the discrete count, and H3 as stated says nothing about them. The gap is
+unavoidable: Schlessinger's tangent-space step applies H3 to the dual
+numbers with the topology INDUCED FROM THE TEST OBJECT, not with the
+discrete one.
+
+WHY IT IS NEVERTHELESS TRUE (the route this leaf records). A hardly
+ramified `ρ` over such an `A` is unramified outside `{2, ℓ}`, so it kills
+every inertia subgroup away from `{2, ℓ}` and hence factors — as an
+ABSTRACT homomorphism — through the Galois group `G_S` of the maximal
+extension unramified outside `S = {2, ℓ, ∞}`. `G_S` is topologically
+finitely generated (Hermite–Minkowski: only finitely many number fields
+of bounded degree are unramified outside `S`), and by the
+Nikolov–Segal theorem every finite-index subgroup of a topologically
+finitely generated profinite group is OPEN. So every abstract
+homomorphism from `G_S` to a finite group is automatically continuous:
+the kernel of `ρ` is open, `ρ` is continuous for the DISCRETE topology on
+`A`, and the discrete count of `hdisc` bounds the coarse one. Formally
+the conclusion is a `Set.Finite` for the coarse-topology type, into which
+the discrete-topology set injects; what has to be produced is the reverse
+inclusion, i.e. exactly the automatic continuity.
+
+IF IT IS FALSE, THE FIX IS UPSTREAM, NOT HERE. Should automatic
+continuity fail (it would have to fail through the abstract normal
+closure of the inertia subgroups being strictly smaller than its
+closure), then `IsStrictlyUniversalOnFrames` and
+`HardlyRamifiedDeformation.IsStrictlyUniversalOnFiniteFrames` are
+themselves too strong and must be narrowed by adding
+`[DiscreteTopology A]` to their test objects — which costs their
+consumers nothing, since the bundled deformations they are applied to are
+`IsAdic` and finite, hence discrete. This leaf is stated so that the
+question is confronted once, in one place, rather than rediscovered
+inside a representability proof.
+
+References: Nikolov–Segal, *On finitely generated profinite groups I*,
+Ann. of Math. 165 (2007); Serre, *Galois cohomology*, I §4.2 (Hermite
+–Minkowski and the finite generation of `G_S`). -/
+theorem finite_setOf_isHardlyRamified_frames_of_discreteTopology
+    (hdisc : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+      [DiscreteTopology A],
+      {ρ : FramedGaloisRep ℚ A (Fin 2) |
+        IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite)
+    (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] :
+    {ρ : FramedGaloisRep ℚ A (Fin 2) |
+      IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite :=
+  sorry
+
+/-- **Hardly-ramifiedness is detected on the finite levels** (sorry node
+— the pro-limit clause of the deformation-condition package, and the one
+place where the Schlessinger core has to leave the Artinian category).
+
+A framed representation over a complete Noetherian local `ℤ_ℓ`-algebra
+`R` with the `𝔪`-adic topology, all of whose reductions modulo the open
+ideals are hardly ramified, is hardly ramified. This is what produces the
+clause `IsHardlyRamified hℓOdd (rank_finTwoFun R) ρuniv` of the hull:
+Schlessinger's construction only ever produces the Artinian truncations
+`ρ_n` over `R ⧸ 𝔪ⁿ`, and hardly-ramifiedness of the limit is a separate
+(easy but nonempty) statement about them.
+
+Clause by clause. The determinant condition and the unramifiedness
+condition are equalities in `R` respectively kernel containments, and `R`
+is `𝔪`-adically SEPARATED (`IsAdicComplete`), so holding modulo every
+`𝔪ⁿ` gives them outright. Flatness at `ℓ` is *literally* a condition on
+the reductions modulo open ideals (`GaloisRep.IsFlatAt.cond` quantifies
+over open ideals of the coefficient ring), so it transfers with a
+re-indexing — the open ideals of `R ⧸ I` are the images of the open
+ideals of `R` above `I`. The tame quotient at `2` is the only clause
+needing a limit: the pairs `(π_n, δ_n)` over `R ⧸ 𝔪ⁿ` form an inverse
+system of nonempty finite sets (`R ⧸ 𝔪ⁿ` is finite, `R` being Noetherian
+with finite residue field), so `nonempty_sections_of_finite_inverse_system`
+produces a compatible system and completeness assembles it — the same
+Kőnig step as in `isWeaklyUniversalOnIdentifiedFrames_of_finite`, one
+level simpler because no conjugation datum rides along.
+
+The hypothesis is stated over ALL open ideals rather than over the powers
+`𝔪ⁿ` because that is the form `IsFlatAt` consumes; `hadic` makes the two
+interchangeable. -/
+theorem isHardlyRamified_of_forall_isOpen_quotient
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {ρ : FramedGaloisRep ℚ R (Fin 2)}
+    (hq : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hmk : Continuous (Ideal.Quotient.mk I)),
+      IsHardlyRamified hℓOdd (rank_finTwoFun (R ⧸ I))
+        (pushforwardFrame (Ideal.Quotient.mk I) hmk ρ)) :
+    IsHardlyRamified hℓOdd (rank_finTwoFun R) ρ :=
+  sorry
+
+open scoped TensorProduct in
+/-- **Schlessinger's hull for the hardly ramified problem, over the
+deformation-condition package** (sorry node — the FORMAL core of the
+2026-07-25 cut of `exists_isStrictlyUniversalOnFrames_of_finite_lifts`,
+which is now PROVEN over this leaf and the four arithmetic leaves it
+takes as hypotheses).
+
+GIVEN Schlessinger's H4 (`hschur`, `End_{k[Γ]}(ρbar) = k`), H3 (`hfin`,
+restricted-ramification finiteness at every Artinian level and for every
+ring topology on it), and the three clauses that say the hardly ramified
+conditions form a DEFORMATION CONDITION — functoriality (`hbase`),
+gluing along fibre products, i.e. H1 and H2 (`hglue`), and detection on
+the finite levels (`hlim`) — the hardly ramified deformation problem of
+an irreducible hardly ramified `ρbar` (`ℓ ≥ 5`) has a hull: a complete
+Noetherian local topological `ℤ_ℓ`-algebra `R` with the `𝔪`-adic
+topology, carrying a hardly ramified framed representation `ρuniv`, a
+surjective continuous reduction `πuniv` identifying `ρuniv ⊗_R k` with
+`ρbar`, which classifies every FINITE raw framed test object *strictly*
+— by a continuous `ℤ_ℓ`-algebra map compatible with the reductions along
+which `ρuniv` pushes forward to the test representation up to the framing
+ambiguity.
+
+WHAT IS AND IS NOT IN THIS LEAF. This leaf contains NO ARITHMETIC. In:
+the construction of the hull — Schlessinger's inductive small-extension
+argument over H1–H4, the de Smit–Lenstra generators-and-relations
+presentation `W(k)[[x₁,…,x_g]] ↠ R` with `g` the dimension of the framed
+tangent space, and the Mazur-category ring clauses read off it. Out:
+(i) H4, the now-PROVEN node `exists_smul_eq_of_commute_of_isIrreducible`
+(2026-07-26), supplied
+as `hschur`; (ii) H3, the leaf `finite_setOf_isHardlyRamified_frames`
+through `finite_setOf_isHardlyRamified_frames_of_discreteTopology`,
+supplied as `hfin`; (iii) the deformation-condition clauses — the PROVEN
+`isHardlyRamified_pushforwardFrame` (whose own residue is the flatness
+leaf `isFlatAt_baseChange`), the leaf
+`isHardlyRamified_of_fibreProduct` and the leaf
+`isHardlyRamified_of_forall_isOpen_quotient` — supplied as `hbase`,
+`hglue` and `hlim`; (iv) the passage from Artinian test objects to the
+whole of Mazur's category, the separate leaf
+`isWeaklyUniversalOnIdentifiedFrames_of_finite`; (v) the
+Chebotarev–Brauer–Nesbitt matching that manufactures the residual
+identification, supplied by `exists_conj_of_charFrob_eq` through the
+proven assembly `exists_isWeaklyUniversal`; (vi) the `charFrob` shadow of
+the conjugation clause, discharged by
+`exists_isStrictlyUniversalOnFiniteFrames` through
+`charpoly_baseChange_conj` — which is exactly why this leaf delivers the
+honest residual identification (`IsResidualIdentifiedFrame`) and not a
+`charFrob` clause.
+
+Mathematical content. `hschur` says `End_{k[Γ]}(ρbar) = k`, so the
+framing is a torsor and Schlessinger's H4 holds; `hfin` is H3, the framed
+tangent space (a subset of the hardly ramified lifts over the dual
+numbers `k[ε]`) being finite; `hglue` is H1 and H2, which for the FRAMED
+functor reduce to the componentwise character of the local conditions
+because a homomorphism into `GL₂` of a fibre product is exactly a
+compatible pair. Hence by Schlessinger's theorem (Trans. AMS 130 (1968),
+Thm. 2.11) and Mazur (§1.2) the functor has a hull, presented by the de
+Smit–Lenstra construction as `W(k)[[x₁,…,x_g]]/I`; that quotient is
+Noetherian, local, `𝔪`-adically complete and carries the `𝔪`-adic
+topology — the three Mazur-category clauses of the conclusion — the
+classifying map of a residually identified finite test object is the
+required `ψ`, and `hlim` upgrades the compatible system of Artinian
+truncations of `ρuniv` to a hardly ramified representation over `R`
+itself.
+
+NOTE ON THE MAZUR-CATEGORY CLAUSES. They are delivered by this leaf
+rather than cut out as commutative algebra over the presentation
+(`IsNoetherianRing`/`IsAdicComplete` from a surjection
+`ℤ_ℓ[[x₁,…,x_g]] ↠ R`, as `Patching.lean` cuts them) because this file's
+power-series section — including the PROVEN
+`isNoetherianRing_mvPowerSeries` — is declared far BELOW this point and
+depends on the currying machinery developed there; separating them here
+would mean either moving that section above the deformation-theoretic
+section or re-sorrying an already proven lemma. Once the section is
+moved, the split is available at no mathematical cost. (The base-change
+transfer block WAS hoisted, 2026-07-25, which is what turns the
+functoriality clause `hbase` from a leaf into the proven
+`isHardlyRamified_pushforwardFrame`.)
+
+PARALLEL COPY, NOT IMPORTABLE. `Modularity/Patching.lean` proves the same
+statement (`exists_weaklyUniversalOnIdentified_hardlyRamifiedDeformation`)
+over the same finite-tangent/finite-tests cut, its Artinian-level leaf
+being `exists_framedStrictlyUniversal_hardlyRamified_finiteTests` (whose
+`IsStrictlyUniversalOnFramedFiniteLifts` is the unbundled twin of
+`IsStrictlyUniversalOnFiniteFrames` above). It cannot be imported here:
+`Patching.lean` imports `Modularity/KhareWintenberger.lean`, which
+consumes pillar α — which is what this file proves. See
+`~/.flt-design-deformation-patching-dedup.md`.
+
+CIRCULARITY GUARD. This leaf carries the `IsHardlyRamified` +
+`IsIrreducible` + `5 ≤ ℓ` package that the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and that
+dichotomy is proven over pillar α — which is what this file's cone
+proves. Discharging this leaf vacuously through it is circular and Lean
+rejects it. Likewise no import from `Family.lean`, `Lift.lean` or
+`Modularity/*` may be added to this module.
+
+References: Schlessinger, *Functors of Artin rings*, Trans. AMS 130
+(1968), Thm. 2.11; Mazur, *Deforming Galois representations*, MSRI Publ.
+16 (1989), §1.2; de Smit–Lenstra, *Explicit construction of universal
+deformation rings*, Prop. 2.3; Böckle's appendix to Khare's
+Serre-conjecture notes. -/
+theorem exists_isStrictlyUniversalOnFrames_of_deformationCondition (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (hschur : ∀ f : Module.End k V, (∀ g, Commute f (ρbar g)) →
+      ∃ c : k, f = c • 1)
+    (hfin : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A],
+      {ρ : FramedGaloisRep ℚ A (Fin 2) |
+        IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite)
+    (hbase : ∀ {B : Type u} [CommRing B] [TopologicalSpace B]
+      [IsTopologicalRing B] [IsLocalRing B] [Algebra ℤ_[ℓ] B]
+      {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+      [IsLocalRing A] [Finite A] [Algebra ℤ_[ℓ] A]
+      (ψ : B →+* A) (hψ : Continuous ψ),
+      ψ.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A →
+      ∀ {ρ : FramedGaloisRep ℚ B (Fin 2)},
+      IsHardlyRamified hℓOdd (rank_finTwoFun B) ρ →
+      IsHardlyRamified hℓOdd (rank_finTwoFun A) (pushforwardFrame ψ hψ ρ))
+    (hglue : ∀ {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀]
+      [IsTopologicalRing A₀] [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
+      {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+      [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
+      {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+      [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
+      {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+      [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
+      (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀), Function.Surjective f₂ →
+      ∀ (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁)
+        (hp₂ : Continuous p₂),
+      p₁.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A₁ →
+      p₂.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A₂ →
+      f₁.comp p₁ = f₂.comp p₂ →
+      Topology.IsEmbedding (fun b : B => (p₁ b, p₂ b)) →
+      (∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂) →
+      ∀ {ρ : FramedGaloisRep ℚ B (Fin 2)},
+      IsHardlyRamified hℓOdd (rank_finTwoFun A₁) (pushforwardFrame p₁ hp₁ ρ) →
+      IsHardlyRamified hℓOdd (rank_finTwoFun A₂) (pushforwardFrame p₂ hp₂ ρ) →
+      IsHardlyRamified hℓOdd (rank_finTwoFun B) ρ)
+    (hlim : ∀ {R : Type u} [CommRing R] [TopologicalSpace R]
+      [IsTopologicalRing R] [IsLocalRing R] [Algebra ℤ_[ℓ] R]
+      [IsNoetherianRing R],
+      IsAdic (IsLocalRing.maximalIdeal R) →
+      IsAdicComplete (IsLocalRing.maximalIdeal R) R →
+      ∀ {ρ : FramedGaloisRep ℚ R (Fin 2)},
+      (∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+        (hmk : Continuous (Ideal.Quotient.mk I)),
+        IsHardlyRamified hℓOdd (rank_finTwoFun (R ⧸ I))
+          (pushforwardFrame (Ideal.Quotient.mk I) hmk ρ)) →
+      IsHardlyRamified hℓOdd (rank_finTwoFun R) ρ) :
+    ∃ (R : Type u) (_ : CommRing R) (_ : TopologicalSpace R)
+      (_ : IsTopologicalRing R) (_ : IsLocalRing R) (_ : Algebra ℤ_[ℓ] R)
+      (_ : IsNoetherianRing R) (_ : IsAdic (IsLocalRing.maximalIdeal R))
+      (_ : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+      (ρuniv : FramedGaloisRep ℚ R (Fin 2))
+      (_ : IsHardlyRamified hℓOdd (rank_finTwoFun R) ρuniv)
+      (πuniv : R →+* k) (_ : Function.Surjective πuniv)
+      (hπcont : Continuous πuniv),
+      IsResidualIdentifiedFrame (ℓ := ℓ) ρbar ρuniv πuniv hπcont ∧
+      IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv :=
+  sorry
+
+open scoped TensorProduct in
+/-- **Schlessinger's hull for the hardly ramified problem** (PROVEN
+2026-07-25 over the deformation-condition cut — the statement is
+unchanged and its consumer `exists_isStrictlyUniversalOnFiniteFrames`
+below is untouched; what changed is that the node is now an ASSEMBLY):
+GIVEN Schlessinger's H3 (`hfin`, restricted-ramification finiteness at
+every Artinian level) and H4 (`hschur`, `End_{k[Γ]}(ρbar) = k`), the
+hardly ramified deformation problem of an irreducible hardly ramified
+`ρbar` (`ℓ ≥ 5`) has a hull: a complete Noetherian local topological
+`ℤ_ℓ`-algebra `R` with the `𝔪`-adic topology, carrying a hardly ramified
+framed representation `ρuniv`, a surjective continuous reduction `πuniv`
+identifying `ρuniv ⊗_R k` with `ρbar`, which classifies every FINITE raw
+framed test object *strictly* — by a continuous `ℤ_ℓ`-algebra map
+compatible with the reductions along which `ρuniv` pushes forward to the
+test representation up to the framing ambiguity.
+
+THE CUT: ARITHMETIC OUT OF THE ABSTRACT MACHINE. Schlessinger's theorem
+takes a functor on Artinian rings satisfying H1–H4 and returns a hull;
+everything specific to the hardly ramified problem enters through the
+statement that the four local conditions form a DEFORMATION CONDITION,
+in the sense of Mazur §§18–23 and Conrad–Diamond–Taylor §2 — a subfunctor
+closed under (i) pushforward along maps of Artinian coefficient rings,
+(ii) gluing along fibre products, and (iii) passage to the pro-limit. The
+cut splits the node exactly along that seam:
+
+* `exists_isStrictlyUniversalOnFrames_of_deformationCondition` — the
+  FORMAL core (Schlessinger's induction, the de Smit–Lenstra
+  presentation, the Mazur-category ring clauses), carrying NO arithmetic;
+* `isHardlyRamified_pushforwardFrame` — clause (i), PROVEN above, its
+  only residue being the flatness leaf `isFlatAt_baseChange`
+  (Ramakrishna, Raynaud);
+* `isHardlyRamified_of_fibreProduct` — clause (ii), i.e. H1 and H2, whose
+  content is Ramakrishna at `ℓ` and Conrad–Diamond–Taylor at `2`;
+* `isHardlyRamified_of_forall_isOpen_quotient` — clause (iii);
+* `finite_setOf_isHardlyRamified_frames_of_discreteTopology` — H3 for the
+  ARBITRARY finite ring topologies that the raw test objects of
+  `IsStrictlyUniversalOnFrames` allow, a gap between the H3 leaf
+  `finite_setOf_isHardlyRamified_frames` (stated for discrete `A`) and
+  this statement's quantifier; see that leaf for why it is not vacuous.
+
+Each of those leaves carries its own docstring; the proof below is
+nothing but the application.
+
+PARALLEL COPY, NOT IMPORTABLE. `Modularity/Patching.lean` proves the
+same statement (`exists_weaklyUniversalOnIdentified_hardlyRamifiedDeformation`)
+over the same finite-tangent/finite-tests cut, its Artinian-level leaf
+being `exists_framedStrictlyUniversal_hardlyRamified_finiteTests` (whose
+`IsStrictlyUniversalOnFramedFiniteLifts` is the unbundled twin of
+`IsStrictlyUniversalOnFiniteFrames` above). It cannot be imported here:
+`Patching.lean` imports `Modularity/KhareWintenberger.lean`, which
+consumes pillar α — which is what this file proves. See
+`~/.flt-design-deformation-patching-dedup.md`: the de-duplication is a
+module split of `Patching.lean` into a KW-free upstream module, to be
+done when that file is quiet.
+
+CIRCULARITY GUARD (inherited by all five leaves of the cut). This node
+carries the `IsHardlyRamified` + `IsIrreducible` + `5 ≤ ℓ` package that
+the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and that
+dichotomy is proven over pillar α — which is what this file's cone
+proves. Discharging any leaf below it vacuously through that dichotomy is
+circular and Lean rejects it. Likewise no import from `Family.lean`,
+`Lift.lean` or `Modularity/*` may be added to this module.
+
+References: Mazur, *Deforming Galois representations*, MSRI Publ. 16
+(1989), §1.2; Ramakrishna, *On a variation of Mazur's deformation
+functor*, Compositio 87 (1994); Conrad–Diamond–Taylor, JAMS 12 (1999),
+§2; de Smit–Lenstra, *Explicit construction of universal deformation
+rings*, Prop. 2.3; Böckle's appendix to Khare's Serre-conjecture
+notes. -/
+theorem exists_isStrictlyUniversalOnFrames_of_finite_lifts (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (hschur : ∀ f : Module.End k V, (∀ g, Commute f (ρbar g)) →
+      ∃ c : k, f = c • 1)
+    (hfin : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
+      [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
+      [DiscreteTopology A],
+      {ρ : FramedGaloisRep ℚ A (Fin 2) |
+        IsHardlyRamified hℓOdd (rank_finTwoFun A) ρ}.Finite) :
+    ∃ (R : Type u) (_ : CommRing R) (_ : TopologicalSpace R)
+      (_ : IsTopologicalRing R) (_ : IsLocalRing R) (_ : Algebra ℤ_[ℓ] R)
+      (_ : IsNoetherianRing R) (_ : IsAdic (IsLocalRing.maximalIdeal R))
+      (_ : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+      (ρuniv : FramedGaloisRep ℚ R (Fin 2))
+      (_ : IsHardlyRamified hℓOdd (rank_finTwoFun R) ρuniv)
+      (πuniv : R →+* k) (_ : Function.Surjective πuniv)
+      (hπcont : Continuous πuniv),
+      IsResidualIdentifiedFrame (ℓ := ℓ) ρbar ρuniv πuniv hπcont ∧
+      IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv := by
+  refine exists_isStrictlyUniversalOnFrames_of_deformationCondition hℓOdd hdim
+    hℓ5 h hirr hschur ?_ ?_ ?_ ?_
+  · -- H3, across arbitrary finite ring topologies
+    exact finite_setOf_isHardlyRamified_frames_of_discreteTopology hℓOdd hfin
+  · -- functoriality of the deformation condition
+    intro B _ _ _ _ _ A _ _ _ _ _ _ ψ hψ halg ρ hρ
+    exact isHardlyRamified_pushforwardFrame hℓOdd ψ hψ halg hρ
+  · -- H1 and H2: gluing along a fibre product
+    intro A₀ _ _ _ _ _ _ A₁ _ _ _ _ _ _ A₂ _ _ _ _ _ _ B _ _ _ _ _ _
+      f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ halg₁ halg₂ hcomm hemb hcart ρ h₁ h₂
+    exact isHardlyRamified_of_fibreProduct hℓOdd f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂
+      halg₁ halg₂ hcomm hemb hcart h₁ h₂
+  · -- detection on the finite levels
+    intro R _ _ _ _ _ _ hadic hcomplete ρ hq
+    exact isHardlyRamified_of_forall_isOpen_quotient hℓOdd hadic hcomplete hq
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Mazur/Ramakrishna representability at the ARTINIAN level** (PROVEN
+2026-07-26 over the Schlessinger cut — the H3 finiteness leaf
+`finite_setOf_isHardlyRamified_frames`, the H4 Schur node
+`exists_smul_eq_of_commute_of_isIrreducible` (itself PROVEN 2026-07-26)
+and the deformation-theoretic core
+`exists_isStrictlyUniversalOnFrames_of_finite_lifts` (itself PROVEN
+2026-07-25 over the deformation-condition cut)): the hardly
+ramified deformation problem of an irreducible hardly ramified `ρbar`
+(`ℓ ≥ 5`) admits an object `D` of Mazur's category that classifies every
+FINITE residually identified framed test object *strictly* — by a
+continuous `ℤ_ℓ`-algebra map compatible with the reductions along which
+`D.ρ` pushes forward to the test representation up to the framing
+ambiguity.
+
+The glue proven here is the BUNDLING of the raw hull into an object of
+this file's deformation category. The core leaf delivers the coefficient
+ring with its Mazur-category clauses, the hardly ramified framed
+representation, the surjective continuous reduction and the residual
+identification `ρuniv ⊗_R k ≅ ρbar`; what the structure
+`HardlyRamifiedDeformation` additionally demands is `charFrob_compat`,
+the `charFrob` shadow of that identification, and it is exactly
+`charpoly_baseChange_conj` evaluated at `globalFrob`: conjugation and
+base change carry the characteristic polynomial of `ρuniv` at a
+Frobenius onto that of `ρbar` through the coefficient map
+`algebraMap R k = πuniv`. The universality clause then transfers with
+nothing to do, `IsStrictlyUniversalOnFrames` being the raw transcription
+of `IsStrictlyUniversalOnFiniteFrames`.
+
+CIRCULARITY GUARD (inherited by the three leaves): the hypothesis package
+is the one `not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and
+that dichotomy is proven over pillar α, i.e. over this file's cone; no
+leaf below this node may be discharged vacuously through it. -/
+theorem exists_isStrictlyUniversalOnFiniteFrames (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible) :
+    ∃ D : HardlyRamifiedDeformation hℓOdd ρbar,
+      D.IsStrictlyUniversalOnFiniteFrames := by
+  obtain ⟨R, iCR, iTS, iTR, iLR, iAlg, iNoeth, hadic, hcomplete, ρuniv,
+      hρuniv, πuniv, hπsurj, hπcont, hident, huniv⟩ :=
+    exists_isStrictlyUniversalOnFrames_of_finite_lifts hℓOdd hdim hℓ5 h hirr
+      (fun f hf =>
+        exists_smul_eq_of_commute_of_isIrreducible hℓOdd hdim h hirr f hf)
+      (fun A => finite_setOf_isHardlyRamified_frames hℓOdd)
+  refine ⟨{ R := R, isAdic := hadic, isAdicComplete := hcomplete,
+            ρ := ρuniv, isHardlyRamified := hρuniv, π := πuniv,
+            π_surjective := hπsurj, charFrob_compat := ?_ }, huniv⟩
+  intro q hq hq2 hqℓ
+  letI : Algebra R k := πuniv.toAlgebra
+  letI : ContinuousSMul R k := continuousSMul_of_algebraMap R k
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hπcont)
+  obtain ⟨e, he⟩ := hident
+  have hcp := charpoly_baseChange_conj ρuniv e
+    (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+  rw [he] at hcp
+  rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+    GaloisRep.charFrob_eq_charpoly_globalFrob, hcp,
+    RingHom.algebraMap_toAlgebra]
 
 omit [TopologicalSpace k] [DiscreteTopology k] [Algebra ℤ_[ℓ] k] in
 /-- **Finiteness from `𝔪`-primarity** (PROVEN 2026-07-25, pure
@@ -3761,8 +4685,266 @@ theorem eq_maximalIdeal_of_isPrime_of_isIntegral_quotient {R : Type*} [CommRing 
   rw [Subring.coe_map] at hfin
   exact eq_maximalIdeal_of_isPrime_of_finite_image hadic hgen hp hfin
 
-/-- **Mod-`ℓ` fibre leaf, TRACE form** (sorry node — the arithmetic core
-of the finiteness stratum; NARROWED TWICE on 2026-07-25: first from the
+/-- **The Dickson polynomials are monic of the expected degree** (PROVEN
+2026-07-26, elementary; auxiliary two-step-induction form). `dickson 1 a n`
+is the polynomial family with `D₀ = 2`, `D₁ = X`,
+`D_{n+2} = X · D_{n+1} − a · D_n`, i.e. the one satisfying
+`Dₙ(x + y) = xⁿ + yⁿ` when `x y = a` — the trace of the `n`-th power of a
+2×2 matrix as a polynomial in its trace and determinant. Monicity of
+degree exactly `n` (for `n ≥ 1`) is what makes it a WITNESS OF
+INTEGRALITY: `tr M` is a root of the monic `Dₙ(X) − tr(Mⁿ)` over any
+subring containing `det M` and `tr(Mⁿ)`. -/
+lemma monic_natDegree_dickson_one_aux {R : Type*} [CommRing R] [Nontrivial R]
+    (a : R) : ∀ n : ℕ,
+    ((dickson 1 a (n + 1)).Monic ∧ (dickson 1 a (n + 1)).natDegree = n + 1) ∧
+    ((dickson 1 a (n + 2)).Monic ∧ (dickson 1 a (n + 2)).natDegree = n + 2) := by
+  intro n
+  induction n with
+  | zero =>
+    have hC2 : (C (2 : R) : R[X]) = 2 := map_ofNat C 2
+    have h2 : dickson 1 a 2 = X ^ 2 - C (2 * a) := by
+      rw [dickson_two, C_mul, hC2]
+      push_cast
+      ring
+    refine ⟨⟨?_, ?_⟩, ?_, ?_⟩
+    · rw [dickson_one]; exact monic_X
+    · rw [dickson_one]; exact natDegree_X
+    · rw [h2]; exact monic_X_pow_sub_C _ (by norm_num)
+    · rw [h2]; exact natDegree_X_pow_sub_C
+  | succ m ih =>
+    obtain ⟨⟨hm1, hd1⟩, hm2, hd2⟩ := ih
+    have hXmul : (X * dickson 1 a (m + 2)).Monic := monic_X.mul hm2
+    have hXdeg : (X * dickson 1 a (m + 2)).natDegree = m + 3 := by
+      rw [monic_X.natDegree_mul hm2, natDegree_X, hd2]; omega
+    have hCdeg : (C a * dickson 1 a (m + 1)).degree ≤ ((m + 1 : ℕ) : WithBot ℕ) := by
+      refine le_trans (degree_mul_le _ _) ?_
+      have h1 : (C a).degree ≤ 0 := degree_C_le
+      have h2 : (dickson 1 a (m + 1)).degree ≤ ((m + 1 : ℕ) : WithBot ℕ) := by
+        have hle := degree_le_natDegree (p := dickson 1 a (m + 1))
+        rwa [hd1] at hle
+      calc (C a).degree + (dickson 1 a (m + 1)).degree
+          ≤ 0 + ((m + 1 : ℕ) : WithBot ℕ) := add_le_add h1 h2
+        _ = ((m + 1 : ℕ) : WithBot ℕ) := by rw [zero_add]
+    have hCnat : (C a * dickson 1 a (m + 1)).natDegree ≤ m + 1 :=
+      natDegree_le_iff_degree_le.mpr hCdeg
+    have hrec : dickson 1 a (m + 3) =
+        X * dickson 1 a (m + 2) - C a * dickson 1 a (m + 1) := dickson_add_two 1 a (m + 1)
+    have hltN : (C a * dickson 1 a (m + 1)).natDegree <
+        (X * dickson 1 a (m + 2)).natDegree := by
+      rw [hXdeg]; exact lt_of_le_of_lt hCnat (by omega)
+    have hlt : (C a * dickson 1 a (m + 1)).degree < (X * dickson 1 a (m + 2)).degree := by
+      refine lt_of_le_of_lt hCdeg ?_
+      rw [degree_eq_natDegree hXmul.ne_zero, hXdeg]
+      exact_mod_cast (by omega : m + 1 < m + 3)
+    refine ⟨⟨hm2, hd2⟩, ?_, ?_⟩
+    · rw [hrec]; exact hXmul.sub_of_left hlt
+    · rw [hrec, natDegree_sub_eq_left_of_natDegree_lt hltN, hXdeg]
+
+/-- **The Dickson polynomials are monic of the expected degree** (PROVEN
+2026-07-26, elementary): for `n ≥ 1`, `dickson 1 a n` is monic of degree
+`n`. See `monic_natDegree_dickson_one_aux`. -/
+lemma monic_natDegree_dickson_one {R : Type*} [CommRing R] [Nontrivial R]
+    (a : R) (n : ℕ) (hn : n ≠ 0) :
+    (dickson 1 a n).Monic ∧ (dickson 1 a n).natDegree = n := by
+  obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+  exact (monic_natDegree_dickson_one_aux a m).1
+
+/-- **Cayley–Hamilton in rank 2** (PROVEN 2026-07-26, elementary):
+`M² = (tr M)·M − (det M)·1` for a 2×2 matrix over any nontrivial
+commutative ring. This is `Matrix.aeval_self_charpoly` read through
+`Matrix.charpoly_fin_two`, and it is what makes the trace of the powers of
+`M` satisfy the Dickson recursion. -/
+lemma sq_eq_trace_smul_sub_det_smul {A : Type*} [CommRing A] [Nontrivial A]
+    (M : Matrix (Fin 2) (Fin 2) A) : M ^ 2 = M.trace • M - M.det • 1 := by
+  have h := Matrix.aeval_self_charpoly M
+  rw [Matrix.charpoly_fin_two, map_add, map_sub, map_mul, aeval_X_pow, aeval_C, aeval_X,
+    aeval_C, Algebra.algebraMap_eq_smul_one, Algebra.algebraMap_eq_smul_one, smul_mul_assoc,
+    one_mul] at h
+  have hab : M ^ 2 - (M.trace • M - M.det • 1) = M ^ 2 - M.trace • M + M.det • 1 := by abel
+  rw [← sub_eq_zero, hab, h]
+
+/-- **Traces of powers follow the Dickson recursion** (PROVEN 2026-07-26,
+elementary; auxiliary two-step-induction form):
+`tr (Mⁿ) = Dₙ(tr M)` where `Dₙ = dickson 1 (det M) n`. The recursion is
+Cayley–Hamilton `Mⁿ⁺² = (tr M)·Mⁿ⁺¹ − (det M)·Mⁿ` traced. -/
+lemma trace_pow_eq_eval_dickson_aux {A : Type*} [CommRing A] [Nontrivial A]
+    (M : Matrix (Fin 2) (Fin 2) A) : ∀ n : ℕ,
+    (M ^ n).trace = (dickson 1 M.det n).eval M.trace ∧
+    (M ^ (n + 1)).trace = (dickson 1 M.det (n + 1)).eval M.trace := by
+  have hrec : ∀ n : ℕ, M ^ (n + 2) = M.trace • M ^ (n + 1) - M.det • M ^ n := by
+    intro n
+    have hsplit : M ^ (n + 2) = M ^ n * M ^ 2 := pow_add M n 2
+    rw [hsplit, sq_eq_trace_smul_sub_det_smul, mul_sub, mul_smul_comm, mul_smul_comm,
+      mul_one, ← pow_succ]
+  intro n
+  induction n with
+  | zero =>
+    refine ⟨?_, ?_⟩
+    · rw [pow_zero, Matrix.trace_one, dickson_zero]
+      norm_num
+    · rw [pow_one, dickson_one, eval_X]
+  | succ m ih =>
+    refine ⟨ih.2, ?_⟩
+    rw [hrec m, Matrix.trace_sub, Matrix.trace_smul, Matrix.trace_smul, ih.1, ih.2,
+      dickson_add_two]
+    simp only [eval_sub, eval_mul, eval_X, eval_C]
+    ring
+
+/-- **Traces of powers follow the Dickson recursion** (PROVEN 2026-07-26,
+elementary): `tr (Mⁿ) = (dickson 1 (det M) n).eval (tr M)`. -/
+lemma trace_pow_eq_eval_dickson {A : Type*} [CommRing A] [Nontrivial A]
+    (M : Matrix (Fin 2) (Fin 2) A) (n : ℕ) :
+    (M ^ n).trace = (dickson 1 M.det n).eval M.trace :=
+  (trace_pow_eq_eval_dickson_aux M n).1
+
+/-- **Descent of integrality from a power** (PROVEN 2026-07-26, elementary
+— this is the algebraic half of the Khare–Wintenberger base-change
+descent): if the determinant of a 2×2 matrix `M` and the trace of ONE
+positive power `Mⁿ` are integral over a base ring, then so is `tr M`.
+
+Proof: `tr M` is a root of `dickson 1 (det M) n − C (tr (Mⁿ))`, which is
+MONIC of degree `n ≥ 1` with coefficients in `integralClosure R A`
+(`monic_natDegree_dickson_one`, `trace_pow_eq_eval_dickson`); so `tr M` is
+integral over the integral closure, hence over `R` by transitivity
+(`isIntegral_trans`).
+
+Arithmetic use: if `F/ℚ` is finite and `Frob_q^f` lies in `G_F`, the trace
+of `ρ(Frob_q)` is integral over anything the traces of `ρ|_{G_F}` are
+integral over — the determinant being a cyclotomic value, hence already
+defined over the base. -/
+theorem isIntegral_trace_of_isIntegral_trace_pow {Rb A : Type*} [CommRing Rb] [CommRing A]
+    [Nontrivial A] [Algebra Rb A] {n : ℕ} (hn : n ≠ 0) (M : Matrix (Fin 2) (Fin 2) A)
+    (hdet : IsIntegral Rb M.det) (htr : IsIntegral Rb (M ^ n).trace) :
+    IsIntegral Rb M.trace := by
+  set S := integralClosure Rb A with hS
+  have hd : M.det ∈ S := hdet
+  have hs : (M ^ n).trace ∈ S := htr
+  have hmon := monic_natDegree_dickson_one (⟨M.det, hd⟩ : S) n hn
+  refine isIntegral_trans (A := S) M.trace ?_
+  refine ⟨dickson 1 (⟨M.det, hd⟩ : S) n - C (⟨(M ^ n).trace, hs⟩ : S), ?_, ?_⟩
+  · refine hmon.1.sub_of_left ?_
+    refine lt_of_le_of_lt degree_C_le ?_
+    rw [degree_eq_natDegree hmon.1.ne_zero, hmon.2]
+    exact_mod_cast Nat.pos_of_ne_zero hn
+  · rw [eval₂_sub, eval₂_eq_eval_map, Polynomial.map_dickson, eval₂_C]
+    have hmapd : (algebraMap S A) (⟨M.det, hd⟩ : S) = M.det := rfl
+    rw [hmapd, ← trace_pow_eq_eval_dickson M n]
+    simp
+
+/-- **Some positive power of any element lands in a finite-index subgroup**
+(PROVEN 2026-07-26, elementary): the powers `gⁱ` cannot lie in pairwise
+distinct cosets of a finite-index `H`, so `g^{j−i} ∈ H` for some `i < j`.
+This is the group-theoretic half of the base-change descent: with `H = G_F`
+for a number field `F` of degree `d`, it produces the residue degree
+`f ≤ d` with `Frob_q^f ∈ G_F`, without needing `F/ℚ` normal or `H` open. -/
+theorem exists_pow_mem_of_finiteIndex {G : Type*} [Group G] (H : Subgroup G)
+    [H.FiniteIndex] (g : G) : ∃ m : ℕ, 0 < m ∧ g ^ m ∈ H := by
+  have key : ∀ i j : ℕ, i < j →
+      (QuotientGroup.mk (g ^ i) : G ⧸ H) = QuotientGroup.mk (g ^ j) →
+      ∃ m : ℕ, 0 < m ∧ g ^ m ∈ H := by
+    intro i j hij heq
+    refine ⟨j - i, by omega, ?_⟩
+    have hmem : (g ^ i)⁻¹ * g ^ j ∈ H := QuotientGroup.eq.mp heq
+    have hpow : g ^ i * g ^ (j - i) = g ^ j := by
+      rw [← pow_add]; congr 1; omega
+    have hrw : (g ^ i)⁻¹ * g ^ j = g ^ (j - i) := by rw [← hpow, inv_mul_cancel_left]
+    rwa [hrw] at hmem
+  obtain ⟨i, j, hne, heq⟩ :=
+    Finite.exists_ne_map_eq_of_infinite (fun i : ℕ => (QuotientGroup.mk (g ^ i) : G ⧸ H))
+  rcases lt_or_gt_of_ne hne with hij | hij
+  · exact key i j hij heq
+  · exact key j i hij heq.symm
+
+/-- **Potential-modularity leaf** (sorry node — the single genuinely deep
+arithmetic node of the lifting core, isolated on 2026-07-26 as the residue
+of the trace form after the Khare–Wintenberger DESCENT was proven): in the
+weakly universal, trace-generated hardly ramified deformation ring there is
+a FINITE-INDEX subgroup `H ≤ G_ℚ` on which the Frobenius-free traces of the
+universal deformation are already integral over `ℤ_ℓ` modulo any prime
+`p ∋ ℓ` — i.e. `−(coeff 1)` of the characteristic polynomial of `D.ρ g` is
+integral for every `g ∈ H`.
+
+WHAT `H` IS. Verbatim the potential-modularity input: `H = G_F` for the
+totally real solvable-at-the-relevant-places field `F/ℚ` produced by
+Taylor's Moret-Bailly argument, over which `ρbar|_{G_F}` becomes modular.
+Over `F` the Taylor–Wiles–Kisin patching method proves `R_F = T_F` with
+`T_F` a Hecke algebra of Hilbert modular forms of fixed weight and level,
+hence a FINITE `ℤ_ℓ`-algebra; the deformation `D.ρ|_{G_F}` is classified by
+a map `R_F → D.R`, so every trace `tr D.ρ(g)`, `g ∈ G_F`, is the image of
+an element integral over `ℤ_ℓ`. `[F : ℚ] < ∞` is exactly `H.FiniteIndex`.
+The mod-`p` quotient is kept in the statement deliberately: it is the
+weakest form that still supports the consumer, and it is strictly weaker
+than `Module.Finite ℤ_[ℓ] D.R`, which is what the un-quotiented form would
+give back through the completeness bootstrap
+`moduleFinite_of_finite_quotient_span`.
+
+WHY THIS JOINT (2026-07-26). The predecessor leaf — every `charFrob`
+coefficient at every good prime is integral mod `p` — contains three pieces
+of pure algebra that are now discharged and must never be re-proved:
+* only the coefficient `1` (the trace) has content. The constant
+  coefficient is the DETERMINANT, i.e. `algebraMap ℤ_[ℓ]` of a cyclotomic
+  value by `IsHardlyRamified.det`, so it is integral for free; the leading
+  coefficient is `1` and every coefficient above the second vanishes,
+  the charpoly being monic of degree `2`.
+* the trace at a Frobenius element descends from the trace on a
+  finite-index subgroup, by the Dickson identity `tr(Mⁿ) = Dₙ(tr M, det M)`
+  with `Dₙ` MONIC of degree `n`: this is
+  `isIntegral_trace_of_isIntegral_trace_pow`, and it is precisely
+  Khare–Wintenberger's descent of the `F`-level statement to `ℚ` (the
+  residue degree `f` of `q` in `F` being the `n`). Nothing about `q`
+  survives it — which is why the leaf is now a statement about the
+  representation, not about Frobenius elements.
+* the passage from `Frob_q` to a power in `H` is
+  `exists_pow_mem_of_finiteIndex`, elementary coset counting.
+So the surviving obligation is exactly the modularity input, with every
+piece of algebra that used to be entangled with it removed.
+
+WHERE THE PROOF WILL HAVE TO COME FROM (audit, 2026-07-25, unchanged and
+NOT to be redone). `Fermat/FLT/Modularity/Patching.lean` proves both halves
+of `R = T` for its own deformation vocabulary —
+`surjective_ringHom_of_charFrob_eq` and
+`injective_ringHom_of_isWeaklyUniversal`, the latter through the patched-
+module engine — but it carries `Module.Finite ℤ_[ℓ] T` as a HYPOTHESIS on
+the Hecke side and produces no finiteness of any deformation ring, so even
+the Hecke-algebra input is not yet available in the repository. Nor are its
+declarations reachable from here: `Patching.lean` imports
+`Modularity/KhareWintenberger.lean`, which imports THIS module, so
+consuming it would close the dependency cycle this module's circularity
+guard exists to prevent. Discharging this leaf therefore needs either
+(i) the KW-free module split recorded in
+`~/.flt-design-deformation-patching-dedup.md` plus genuine finiteness of
+`T`, or (ii) the Hilbert-modular potential-modularity route, which is the
+one the statement is now shaped for. CIRCULARITY GUARD: the odd-prime
+dichotomy `not_isIrreducible_of_isHardlyRamified_of_five_le` must NOT be
+used to discharge this vacuously — it is itself proven over pillar α, which
+this cluster proves.
+
+References: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
+Thm. 4.1 and §4, and *(II)*; Taylor, *Remarks on a conjecture of Fontaine
+and Mazur* and *On the meromorphic continuation of degree two L-functions*;
+Kisin, *Moduli of finite flat group schemes, and modularity*;
+Darmon–Diamond–Taylor, *Fermat's Last Theorem*, §3; Buzzard's 2026 EPSRC
+course, Lecture 4. -/
+theorem exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.topologicalSpace
+    letI := D.isTopologicalRing; letI := D.algebra
+    ∃ H : Subgroup (Field.absoluteGaloisGroup ℚ), H.FiniteIndex ∧
+      ∀ p : Ideal D.R, p.IsPrime → ((ℓ : ℕ) : D.R) ∈ p →
+        ∀ g ∈ H, IsIntegral ℤ_[ℓ]
+          (Ideal.Quotient.mk p ((D.ρ g).charpoly.coeff 1)) :=
+  sorry
+
+/-- **Mod-`ℓ` fibre leaf, TRACE form** (PROVEN 2026-07-26 over the
+potential-modularity leaf
+`exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+above, the Dickson descent `isIntegral_trace_of_isIntegral_trace_pow` and
+the coset counting `exists_pow_mem_of_finiteIndex`; NARROWED TWICE before
+that, on 2026-07-25: first from the
 `𝔪`-primarity form `∃ n, 𝔪 ^ n ≤ (ℓ)` to the pointwise statement "every
 prime containing `ℓ` is `𝔪`" — the dévissage being the pure commutative
 algebra `exists_maximalIdeal_pow_le_span_of_forall_isPrime` above — and
@@ -3815,19 +4997,25 @@ presentation stratum gives a prime strictly below `𝔪`
 `dim D.R ≥ 1`), so this leaf is exactly the matching upper bound
 `dim D.R ≤ 1` in the fibre-wise form.
 
-This is the potential-modularity / Taylor–Wiles–Kisin input of
-Khare–Wintenberger — the single genuinely deep arithmetic node of the
-lifting core. The residual-modularity hypothesis is bypassed via
-potential modularity (Taylor's Moret-Bailly argument), which after a
-solvable base change `F/ℚ` (totally real, in which the deformation
-problem's conditions remain balanced) proves an `R = T` theorem by the
-Taylor–Wiles–Kisin patching method; `T` is a finite `ℤ_ℓ`-algebra, so
-`T/ℓT` — and with it the mod-`ℓ` fibre of the `ℚ`-level ring, by
-Khare–Wintenberger's descent — is finite. The mod-`ℓ` form is chosen
-over `Module.Finite ℤ_[ℓ] D.R` because it is what the patching
-literature produces directly (cf. the Böckle presentation stratum); the
-lift back to `ℤ_ℓ`-module finiteness is the pure commutative-algebra
-completeness bootstrap `moduleFinite_of_finite_quotient_span` below.
+HOW IT IS NOW PROVEN (2026-07-26). Three of the four coefficient cases
+carry no arithmetic at all and are discharged here: the constant
+coefficient is the determinant of `D.ρ (globalFrob q)`, which
+`IsHardlyRamified.det` pins to `algebraMap ℤ_[ℓ]` of a cyclotomic value,
+hence integral for free; `coeff 2 = 1` and `coeff n = 0` for `n ≥ 3`, the
+characteristic polynomial of a rank-2 endomorphism being monic of degree
+`2`. The remaining coefficient — the TRACE — is obtained from the
+potential-modularity leaf
+`exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
+above by the Khare–Wintenberger base-change descent, which is proven here
+in two elementary pieces: `exists_pow_mem_of_finiteIndex` produces `m > 0`
+with `Frob_q^m ∈ H` (the residue degree of `q` in `F`), and
+`isIntegral_trace_of_isIntegral_trace_pow` — the Dickson identity
+`tr(Mᵐ) = Dₘ(tr M, det M)` with `Dₘ` MONIC of degree `m` — brings the
+integrality back down from `tr(ρ(Frob_q)^m)` to `tr ρ(Frob_q)`, the
+determinant being available as a cyclotomic value. So everything that
+remains open here is the modularity input, and it is stated in the leaf
+above; see its docstring for the audit of what discharging it requires.
+
 The hypotheses characterize `D` up to canonical isomorphism (weak
 universality + trace generation = universality, by
 `isUniversal_of_isWeaklyUniversal_isTraceGenerated` and the rigidity
@@ -3835,29 +5023,9 @@ theorem `exists_ringEquiv_of_isUniversal`), so a future proof may
 construct its own universal datum, prove ITS mod-`ℓ` fibre a point, and
 transport the result along the canonical isomorphism.
 
-WHERE THE PROOF WILL HAVE TO COME FROM (audit, 2026-07-25).
-`Fermat/FLT/Modularity/Patching.lean` proves both halves of `R = T` for
-its own deformation vocabulary — `surjective_ringHom_of_charFrob_eq`
-and `injective_ringHom_of_isWeaklyUniversal`, the latter through the
-patched-module engine — but it carries `Module.Finite ℤ_[ℓ] T` as a
-HYPOTHESIS on the Hecke side and produces no finiteness of any
-deformation ring, so even the Hecke-algebra input is not yet available
-in the repository. Nor are its declarations reachable from here:
-`Patching.lean` imports `Modularity/KhareWintenberger.lean`, which
-imports THIS module, so consuming it would close the dependency cycle
-this module's circularity guard exists to prevent. Discharging this
-leaf therefore needs either (i) the KW-free module split recorded in
-`~/.flt-design-deformation-patching-dedup.md` plus genuine finiteness of
-`T`, or (ii) the Hilbert-modular potential-modularity route. CIRCULARITY
-GUARD: the odd-prime dichotomy
-`not_isIrreducible_of_isHardlyRamified_of_five_le` must NOT be used to
-discharge this vacuously — it is itself proven over pillar α, which
-this cluster proves.
-
 References: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
 Thm. 4.1 and §4, and *(II)*; Taylor, *Remarks on a conjecture of
-Fontaine and Mazur* and *On the meromorphic continuation of degree two
-L-functions*; Kisin, *Moduli of finite flat group schemes, and
+Fontaine and Mazur*; Kisin, *Moduli of finite flat group schemes, and
 modularity*; Buzzard's 2026 EPSRC course, Lecture 4. -/
 theorem isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated
     (hℓ5 : 5 ≤ ℓ)
@@ -3870,8 +5038,118 @@ theorem isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated
     ∀ p : Ideal D.R, p.IsPrime → ((ℓ : ℕ) : D.R) ∈ p →
       ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ → ∀ n : ℕ,
         IsIntegral ℤ_[ℓ] (Ideal.Quotient.mk p
-          ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff n)) :=
-  sorry
+          ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff n)) := by
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  obtain ⟨H, hHfi, hH⟩ :=
+    exists_finiteIndex_isIntegral_charpolyCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated
+      hℓOdd hdim hℓ5 h hirr D hw ht
+  intro p hp hℓp q hq hq2 hqℓ n
+  haveI := hp
+  haveI : IsDomain (D.R ⧸ p) := Ideal.Quotient.isDomain p
+  have hcard : Fintype.card (Fin 2) - 1 = 1 := by simp
+  have hcoeffR : ∀ P : Matrix (Fin 2) (Fin 2) D.R, P.charpoly.coeff 1 = -P.trace := by
+    intro P
+    have hh := Matrix.trace_eq_neg_charpoly_coeff P
+    rw [hcard] at hh
+    rw [hh, neg_neg]
+  have hcoeffQ : ∀ P : Matrix (Fin 2) (Fin 2) (D.R ⧸ p), P.charpoly.coeff 1 = -P.trace := by
+    intro P
+    have hh := Matrix.trace_eq_neg_charpoly_coeff P
+    rw [hcard] at hh
+    rw [hh, neg_neg]
+  -- the Frobenius element, and the endomorphism the deformation attaches to it
+  set g : Field.absoluteGaloisGroup ℚ :=
+    globalFrob hq.toHeightOneSpectrumRingOfIntegersRat
+  have hchar : D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat = (D.ρ g).charpoly :=
+    GaloisRep.charFrob_eq_charpoly_globalFrob D.ρ _
+  have hfinrank : Module.finrank D.R (Fin 2 → D.R) = 2 := by simp
+  -- the constant coefficient is the determinant: a cyclotomic value from `ℤ_ℓ`
+  have hdetR : ∀ x : Field.absoluteGaloisGroup ℚ,
+      (D.ρ x).charpoly.coeff 0 = algebraMap ℤ_[ℓ] D.R
+        (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ x.toRingEquiv) := by
+    intro x
+    have hdet := LinearMap.det_eq_sign_charpoly_coeff (D.ρ x)
+    rw [hfinrank] at hdet
+    have h1 : LinearMap.det (D.ρ x) = (D.ρ x).charpoly.coeff 0 := by rw [hdet]; ring
+    rw [← h1, ← GaloisRep.det_apply, D.isHardlyRamified.det x]
+  have hintdet : ∀ x : Field.absoluteGaloisGroup ℚ,
+      IsIntegral ℤ_[ℓ] (Ideal.Quotient.mk p ((D.ρ x).charpoly.coeff 0)) := by
+    intro x
+    rw [hdetR x]
+    have hqa : Ideal.Quotient.mk p (algebraMap ℤ_[ℓ] D.R
+        (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ x.toRingEquiv)) =
+        algebraMap ℤ_[ℓ] (D.R ⧸ p)
+          (cyclotomicCharacter (AlgebraicClosure ℚ) ℓ x.toRingEquiv) := rfl
+    rw [hqa]
+    exact isIntegral_algebraMap
+  rw [hchar]
+  match n with
+  | 0 => exact hintdet g
+  | 1 =>
+    -- the TRACE: descend from the finite-index subgroup by the Dickson recursion
+    obtain ⟨m, hm0, hmH⟩ := exists_pow_mem_of_finiteIndex H g
+    set Mx : Matrix (Fin 2) (Fin 2) D.R := LinearMap.toMatrixAlgEquiv' (D.ρ g) with hMx
+    set N : Matrix (Fin 2) (Fin 2) (D.R ⧸ p) := Mx.map (Ideal.Quotient.mk p) with hN
+    have hpow : ∀ j : ℕ, (LinearMap.toMatrixAlgEquiv' (D.ρ (g ^ j)) :
+        Matrix (Fin 2) (Fin 2) D.R) = Mx ^ j := by
+      intro j
+      rw [hMx, map_pow, map_pow]
+    have hcharMx : ∀ x : Field.absoluteGaloisGroup ℚ,
+        (D.ρ x).charpoly =
+          (LinearMap.toMatrixAlgEquiv' (D.ρ x) : Matrix (Fin 2) (Fin 2) D.R).charpoly := by
+      intro x
+      have hb := LinearMap.charpoly_toMatrix (D.ρ x) (Pi.basisFun D.R (Fin 2))
+      rw [LinearMap.toMatrix_eq_toMatrix'] at hb
+      rw [← hb]
+      rfl
+    have hmapcoeff : ∀ P : Matrix (Fin 2) (Fin 2) D.R,
+        Ideal.Quotient.mk p (P.charpoly.coeff 1) =
+          (P.map (Ideal.Quotient.mk p)).charpoly.coeff 1 := by
+      intro P
+      rw [Matrix.charpoly_map, Polynomial.coeff_map]
+    have hNdet : IsIntegral ℤ_[ℓ] N.det := by
+      have hd : N.det = Ideal.Quotient.mk p Mx.det := by
+        rw [hN, ← RingHom.mapMatrix_apply, ← RingHom.map_det]
+      have hMxdet : Mx.det = (D.ρ g).charpoly.coeff 0 := by
+        have h0 := hcharMx g
+        have hsign := Matrix.det_eq_sign_charpoly_coeff Mx
+        simp only [Fintype.card_fin] at hsign
+        rw [h0, ← hMx, hsign]
+        ring
+      rw [hd, hMxdet]
+      exact hintdet g
+    have hNtr : IsIntegral ℤ_[ℓ] ((N ^ m).trace) := by
+      have hNm : N ^ m = (Mx ^ m).map (Ideal.Quotient.mk p) := by
+        rw [hN, ← RingHom.mapMatrix_apply, ← map_pow, RingHom.mapMatrix_apply]
+      have htr : (N ^ m).trace = Ideal.Quotient.mk p ((Mx ^ m).trace) := by
+        rw [hNm, ← AddMonoidHom.map_trace]
+      have hMxm : (Mx ^ m).trace = -((D.ρ (g ^ m)).charpoly.coeff 1) := by
+        rw [hcharMx (g ^ m), hpow m, hcoeffR, neg_neg]
+      rw [htr, hMxm, map_neg]
+      exact (hH p hp hℓp (g ^ m) hmH).neg
+    have hNtrace := isIntegral_trace_of_isIntegral_trace_pow
+      (Rb := ℤ_[ℓ]) hm0.ne' N hNdet hNtr
+    have hfin : Ideal.Quotient.mk p ((D.ρ g).charpoly.coeff 1) = -N.trace := by
+      rw [hcharMx g, ← hMx, hmapcoeff Mx, ← hN, hcoeffQ]
+    rw [hfin]
+    exact hNtrace.neg
+  | 2 =>
+    have hmonic : (D.ρ g).charpoly.Monic := LinearMap.charpoly_monic _
+    have hdeg : (D.ρ g).charpoly.natDegree = 2 := by
+      rw [LinearMap.charpoly_natDegree, hfinrank]
+    have h1 : (D.ρ g).charpoly.coeff 2 = 1 := by
+      have hlead := hmonic.coeff_natDegree
+      rwa [hdeg] at hlead
+    rw [h1, map_one]
+    exact isIntegral_one
+  | (j + 3) =>
+    have hdeg : (D.ρ g).charpoly.natDegree = 2 := by
+      rw [LinearMap.charpoly_natDegree, hfinrank]
+    have h0 : (D.ρ g).charpoly.coeff (j + 3) = 0 :=
+      Polynomial.coeff_eq_zero_of_natDegree_lt (by rw [hdeg]; omega)
+    rw [h0, map_zero]
+    exact isIntegral_zero
 
 /-- **Mod-`ℓ` fibre stratum** (PROVEN 2026-07-25 over the trace-form leaf
 `isIntegral_charFrobCoeff_quotient_of_isWeaklyUniversal_isTraceGenerated`
@@ -4438,6 +5716,230 @@ theorem exists_minimal_span_sup_of_isNoetherianRing {R : Type*} [CommRing R]
   exact ⟨Nat.find hex, t, ht, hspan,
     fun n s hs hspans => Nat.find_le ⟨s, hs, hspans⟩⟩
 
+/-- **The variable ideal is the kernel of the constant term** (PROVEN
+2026-07-25): a multivariate power series in FINITELY many variables
+whose constant term vanishes lies in the ideal generated by the
+variables, i.e. it can be written `∑ᵢ xᵢ gᵢ`.
+
+Mathlib has no such lemma (`MvPowerSeries.X_dvd_iff` covers divisibility
+by ONE variable), and both presentation strata below need it: the
+maximal ideal of `Λ[[x₁,…,x_g]]` is `𝔪_Λ + (x₁,…,x_g)`, which is what
+turns a kernel element into a linear form modulo `𝔪²`.
+
+Proof: split `f` into the chunks `c i` collecting the monomials whose
+LEAST variable of positive exponent is `xᵢ` — a finite decomposition
+because `Fin g` is finite and every nonzero monomial has a least such
+variable (`Finsupp.support.min'`). Each chunk has all coefficients
+supported in `{m | m i ≠ 0}`, hence is divisible by `xᵢ`
+(`MvPowerSeries.X_dvd_iff`), and the chunks sum to `f` because the
+constant term is zero. -/
+theorem mem_span_range_X_of_constantCoeff_eq_zero {Λ : Type*} [CommRing Λ] {g : ℕ}
+    {f : MvPowerSeries (Fin g) Λ} (hf : MvPowerSeries.constantCoeff f = 0) :
+    f ∈ Ideal.span (Set.range (MvPowerSeries.X : Fin g → MvPowerSeries (Fin g) Λ)) := by
+  classical
+  -- `c i` collects the monomials of `f` whose least variable of positive
+  -- exponent is `x i`; every monomial of `f` occurs in exactly one `c i`.
+  set c : Fin g → MvPowerSeries (Fin g) Λ := fun i m =>
+    if (∀ j, j < i → m j = 0) ∧ m i ≠ 0 then MvPowerSeries.coeff m f else 0 with hc
+  have hcoeff : ∀ (i : Fin g) (m : Fin g →₀ ℕ), MvPowerSeries.coeff m (c i) =
+      if (∀ j, j < i → m j = 0) ∧ m i ≠ 0 then MvPowerSeries.coeff m f else 0 :=
+    fun _ _ => rfl
+  have hdvd : ∀ i, (MvPowerSeries.X i : MvPowerSeries (Fin g) Λ) ∣ c i := by
+    intro i
+    rw [MvPowerSeries.X_dvd_iff]
+    intro m hm
+    rw [hcoeff, if_neg]
+    rintro ⟨-, h2⟩
+    exact h2 hm
+  have hsum : f = ∑ i, c i := by
+    ext m
+    rw [map_sum]
+    by_cases hm0 : m = 0
+    · subst hm0
+      rw [MvPowerSeries.coeff_zero_eq_constantCoeff_apply, hf, Finset.sum_eq_zero]
+      intro i _
+      rw [hcoeff, if_neg]
+      rintro ⟨-, h2⟩
+      exact h2 rfl
+    · have hne : m.support.Nonempty := Finsupp.support_nonempty_iff.mpr hm0
+      set i₀ := m.support.min' hne with hi₀
+      have hi₀mem : m i₀ ≠ 0 := Finsupp.mem_support_iff.mp (Finset.min'_mem _ hne)
+      have hlt : ∀ j, j < i₀ → m j = 0 := by
+        intro j hj
+        by_contra hj0
+        exact absurd (Finset.min'_le _ _ (Finsupp.mem_support_iff.mpr hj0)) (not_le.mpr hj)
+      rw [Finset.sum_eq_single i₀]
+      · rw [hcoeff, if_pos ⟨hlt, hi₀mem⟩]
+      · intro i _ hi
+        rw [hcoeff, if_neg]
+        rintro ⟨h1, h2⟩
+        rcases lt_or_gt_of_ne hi with h | h
+        · exact h2 (hlt i h)
+        · exact hi₀mem (h1 i₀ h)
+      · intro h
+        exact absurd (Finset.mem_univ i₀) h
+  rw [hsum]
+  refine Ideal.sum_mem _ fun i _ => ?_
+  obtain ⟨d, hd⟩ := hdvd i
+  rw [hd]
+  exact Ideal.mul_mem_right _ _ (Ideal.subset_span ⟨i, rfl⟩)
+
+/-- Membership in the maximal ideal of a power series ring over a local
+ring is membership of the CONSTANT TERM in the maximal ideal downstairs
+(PROVEN 2026-07-25, from `MvPowerSeries.isUnit_iff_constantCoeff`). -/
+theorem mem_maximalIdeal_mvPowerSeries_iff {Λ : Type*} [CommRing Λ] [IsLocalRing Λ]
+    {σ : Type*} (f : MvPowerSeries σ Λ) :
+    f ∈ IsLocalRing.maximalIdeal (MvPowerSeries σ Λ) ↔
+      MvPowerSeries.constantCoeff f ∈ IsLocalRing.maximalIdeal Λ := by
+  simp only [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+    MvPowerSeries.isUnit_iff_constantCoeff]
+
+/-- **The maximal ideal of a power series ring** (PROVEN 2026-07-25):
+`𝔪_{Λ[[x₁,…,x_g]]} = 𝔪_Λ · Λ[[x]] + (x₁, …, x_g)`. At `𝔪_Λ = (ℓ)` this
+is the `(ℓ, x₁, …, x_g)` used by the minimality bound below. -/
+theorem maximalIdeal_mvPowerSeries_eq {Λ : Type*} [CommRing Λ] [IsLocalRing Λ] {g : ℕ} :
+    IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) =
+      (IsLocalRing.maximalIdeal Λ).map
+          (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ) ⊔
+        Ideal.span (Set.range (MvPowerSeries.X : Fin g → MvPowerSeries (Fin g) Λ)) := by
+  refine le_antisymm (fun f hf => ?_) (sup_le ?_ ?_)
+  · have hcf : MvPowerSeries.constantCoeff f ∈ IsLocalRing.maximalIdeal Λ :=
+      (mem_maximalIdeal_mvPowerSeries_iff f).mp hf
+    have hsplit : f = MvPowerSeries.C (MvPowerSeries.constantCoeff f) +
+        (f - MvPowerSeries.C (MvPowerSeries.constantCoeff f)) := by ring
+    rw [hsplit]
+    exact Submodule.add_mem_sup (Ideal.mem_map_of_mem _ hcf)
+      (mem_span_range_X_of_constantCoeff_eq_zero (by simp))
+  · rw [Ideal.map_le_iff_le_comap]
+    intro a ha
+    exact (mem_maximalIdeal_mvPowerSeries_iff _).mpr (by simpa using ha)
+  · rw [Ideal.span_le]
+    rintro _ ⟨i, rfl⟩
+    exact (mem_maximalIdeal_mvPowerSeries_iff _).mpr (by simp)
+
+/-- **Precompleteness transfers along a linear equivalence** (PROVEN
+2026-07-25): `IsPrecomplete` is a property of the filtration `I^n • ⊤`,
+which a linear equivalence carries across in both directions
+(`Submodule.map_smul''` at `⊤`). -/
+theorem isPrecomplete_of_linearEquiv {A : Type*} [CommRing A] {M N : Type*}
+    [AddCommGroup M] [Module A M] [AddCommGroup N] [Module A N] {I : Ideal A}
+    [IsPrecomplete I M] (e : M ≃ₗ[A] N) : IsPrecomplete I N := by
+  have hmap : ∀ (n : ℕ) (x y : M), x ≡ y [SMOD (I ^ n • ⊤ : Submodule A M)] →
+      e x ≡ e y [SMOD (I ^ n • ⊤ : Submodule A N)] := by
+    intro n x y h
+    rw [SModEq.sub_mem] at h ⊢
+    have hx : e x - e y ∈ (I ^ n • (⊤ : Submodule A M)).map (e : M →ₗ[A] N) := by
+      rw [← map_sub]
+      exact Submodule.mem_map_of_mem h
+    rwa [Submodule.map_smul'', Submodule.map_top, LinearMap.range_eq_top.mpr
+      e.surjective] at hx
+  have hmapsymm : ∀ (n : ℕ) (x y : N), x ≡ y [SMOD (I ^ n • ⊤ : Submodule A N)] →
+      e.symm x ≡ e.symm y [SMOD (I ^ n • ⊤ : Submodule A M)] := by
+    intro n x y h
+    rw [SModEq.sub_mem] at h ⊢
+    have hx : e.symm x - e.symm y ∈ (I ^ n • (⊤ : Submodule A N)).map (e.symm : N →ₗ[A] M) := by
+      rw [← map_sub]
+      exact Submodule.mem_map_of_mem h
+    rwa [Submodule.map_smul'', Submodule.map_top, LinearMap.range_eq_top.mpr
+      e.symm.surjective] at hx
+  constructor
+  intro f hf
+  obtain ⟨L, hL⟩ := IsPrecomplete.prec' (I := I) (fun n => e.symm (f n))
+    fun {m n} hmn => hmapsymm m _ _ (hf hmn)
+  refine ⟨e L, fun n => ?_⟩
+  have := hmap n _ _ (hL n)
+  rwa [e.apply_symm_apply] at this
+
+/-- **Precompleteness passes to finite products** (PROVEN 2026-07-25):
+`J • ⊤` in `ι → A` is the coordinatewise `J` (one direction by
+`Submodule.smul_induction_on`, the other by writing `x` as the finite
+sum of its `Pi.single` components), so a Cauchy sequence is Cauchy in
+each of the finitely many coordinates and the limits assemble. -/
+theorem isPrecomplete_pi {A : Type*} [CommRing A] {ι : Type*} [Fintype ι] {I : Ideal A}
+    [IsPrecomplete I A] : IsPrecomplete I (ι → A) := by
+  classical
+  have hmem : ∀ (J : Ideal A) (x : ι → A),
+      x ∈ J • (⊤ : Submodule A (ι → A)) ↔ ∀ i, x i ∈ J := by
+    intro J x
+    constructor
+    · intro hx
+      refine Submodule.smul_induction_on hx (fun a ha y _ i => ?_) (fun p q hp hq i => ?_)
+      · simp only [Pi.smul_apply, smul_eq_mul]
+        exact Ideal.mul_mem_right _ _ ha
+      · exact Submodule.add_mem _ (hp i) (hq i)
+    · intro h
+      have hsum : x = ∑ i, Pi.single i (x i) := by
+        ext j
+        simp
+      rw [hsum]
+      refine Submodule.sum_mem _ fun i _ => ?_
+      have hsingle : (Pi.single i (x i) : ι → A) = x i • (Pi.single i 1 : ι → A) := by
+        ext j
+        by_cases hij : j = i <;> simp [hij]
+      rw [hsingle]
+      exact Submodule.smul_mem_smul (h i) Submodule.mem_top
+  have hself : ∀ (J : Ideal A) (a : A), a ∈ J • (⊤ : Submodule A A) ↔ a ∈ J := by
+    intro J a
+    rw [Ideal.smul_eq_mul, Ideal.mul_top]
+  constructor
+  intro f hf
+  have hco : ∀ i, ∃ L : A, ∀ n, f n i ≡ L [SMOD (I ^ n • ⊤ : Submodule A A)] := by
+    intro i
+    refine IsPrecomplete.prec' (I := I) (fun n => f n i) fun {m n} hmn => ?_
+    have h := hf hmn
+    rw [SModEq.sub_mem] at h ⊢
+    rw [hself]
+    have := (hmem _ _).mp h i
+    simpa using this
+  choose L hL using hco
+  refine ⟨L, fun n => ?_⟩
+  rw [SModEq.sub_mem, hmem]
+  intro i
+  have := hL i n
+  rw [SModEq.sub_mem, hself] at this
+  simpa using this
+
+/-- **A module-finite FREE module over an `I`-adically precomplete ring
+is `I`-adically precomplete** (PROVEN 2026-07-25): choose a basis, which
+is finite by module-finiteness, and transport `isPrecomplete_pi` along
+`Basis.equivFun`.
+
+Mathlib has no such statement — its `IsPrecomplete` producers are the
+trivial ideals, Artinian local rings, `PadicInt`, `WittVector`, the
+`X`-adic (Mv)PowerSeries rings, and adic completions themselves — so
+this is the missing bridge from "`ℤ_ℓ` is complete" to "a coefficient
+ring finite over `ℤ_ℓ` is complete". -/
+theorem isPrecomplete_of_free_finite {A : Type*} [CommRing A] {M : Type*}
+    [AddCommGroup M] [Module A M] [Module.Free A M] [Module.Finite A M] {I : Ideal A}
+    [IsPrecomplete I A] : IsPrecomplete I M := by
+  classical
+  haveI : IsPrecomplete I (Module.Free.ChooseBasisIndex A M → A) := isPrecomplete_pi
+  exact isPrecomplete_of_linearEquiv (Module.Free.chooseBasis A M).equivFun.symm
+
+omit [Field k] [Finite k] [Algebra ℤ_[ℓ] k] [TopologicalSpace k]
+  [DiscreteTopology k] in
+/-- **`(ℓ)`-adic precompleteness of a finite free `ℤ_ℓ`-algebra** (PROVEN
+2026-07-25): `ℤ_ℓ` is `𝔪`-adically complete (mathlib), `𝔪 = (ℓ)`
+(`PadicInt.maximalIdeal_eq_span_p`), so `isPrecomplete_of_free_finite`
+makes `A` precomplete as a `ℤ_ℓ`-MODULE, and
+`IsPrecomplete.map_algebraMap_iff` converts that into precompleteness for
+the ideal `(ℓ)` of `A` itself.
+
+This is what discharges the `IsPrecomplete` clause of
+`exists_coefficientRing_ringHom` for the `AdjoinRoot` coefficient ring:
+`AdjoinRoot G` is free over `ℤ_ℓ` on the power basis of the monic `G`. -/
+theorem isPrecomplete_span_natCast_of_free_finite (A : Type*) [CommRing A] [Algebra ℤ_[ℓ] A]
+    [Module.Free ℤ_[ℓ] A] [Module.Finite ℤ_[ℓ] A] :
+    IsPrecomplete (Ideal.span {(ℓ : A)}) A := by
+  haveI : IsPrecomplete (IsLocalRing.maximalIdeal ℤ_[ℓ]) A := isPrecomplete_of_free_finite
+  have hmap : (IsLocalRing.maximalIdeal ℤ_[ℓ]).map (algebraMap ℤ_[ℓ] A)
+      = Ideal.span {(ℓ : A)} := by
+    rw [PadicInt.maximalIdeal_eq_span_p, Ideal.map_span]
+    congr 1
+    simp
+  rw [← hmap]
+  exact IsPrecomplete.map_algebraMap_iff.mpr inferInstance
+
 omit [TopologicalSpace k] [DiscreteTopology k] in
 /-- **The residue field has characteristic `ℓ`** (PROVEN 2026-07-25):
 `natCast_self_eq_zero` says `(ℓ : k) = 0`, so `ringChar k` divides the
@@ -4670,6 +6172,17 @@ COEFFICIENT RING `Λ` — an unramified complete local domain,
 module-finite over `ℤ_ℓ`, with maximal ideal `(ℓ)`, mapping to `R` by a
 `ℤ_ℓ`-algebra map `ι` that is onto the residue field.
 
+CLAUSE ADDED 2026-07-25, after the proof below was written:
+`IsPrecomplete (𝔪_Λ) Λ`. The surjectivity stratum
+`surjective_of_mvPowerSeries_ringHom` is FALSE without it (see its
+docstring for the counterexample `Λ = ℤ_(ℓ)`, `R = ℤ_ℓ`), and the
+`AdjoinRoot` construction below delivers it with no extra arithmetic:
+`Λ` is FREE over `ℤ_ℓ` on the power basis of the monic `G`, so
+`isPrecomplete_span_natCast_of_free_finite` applies. (The clause was
+originally justified through `WittVector.isAdicCompleteIdealSpanP`; the
+proof does not go through Witt vectors, and does not need to — freeness
+over `ℤ_ℓ` is what completeness actually rests on in either route.)
+
 CAVEAT retained from the pre-proof docstring, still live: the CLAUSES do
 not by themselves pin `Λ ≅ W(k)` — a finite field satisfies every one of
 them (local Noetherian domain, module-finite over `ℤ_ℓ`, and
@@ -4729,7 +6242,8 @@ theorem exists_coefficientRing_ringHom {R : Type*} [CommRing R]
     (π : R →+* k) (hπsurj : Function.Surjective π) :
     ∃ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
       (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
-      (_ : Module.Finite ℤ_[ℓ] Λ),
+      (_ : Module.Finite ℤ_[ℓ] Λ)
+      (_ : IsPrecomplete (IsLocalRing.maximalIdeal Λ) Λ),
       IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} ∧
       ∃ ι : Λ →+* R,
         ι.comp (algebraMap ℤ_[ℓ] Λ) = algebraMap ℤ_[ℓ] R ∧
@@ -4801,8 +6315,19 @@ theorem exists_coefficientRing_ringHom {R : Type*} [CommRing R]
     hkerψ' ▸ RingHom.ker_isMaximal_of_surjective (ψ.comp E) hψ'surj
   haveI : IsLocalRing (Shrink.{u} (AdjoinRoot G)) :=
     isLocalRing_of_span_isMaximal hmaxΛ natCast_mem_jacobson
+  -- `(ℓ)`-adic precompleteness: `AdjoinRoot G` is FREE over `ℤ_ℓ` on the
+  -- power basis of the monic `G`, and `ℤ_ℓ` is `(ℓ)`-adically complete
+  haveI : Module.Free ℤ_[ℓ] (AdjoinRoot G) :=
+    Module.Free.of_basis (AdjoinRoot.powerBasis' hGm).basis
+  haveI : Module.Free ℤ_[ℓ] (Shrink.{u} (AdjoinRoot G)) :=
+    Module.Free.of_equiv e.symm.toLinearEquiv
+  haveI : IsPrecomplete (IsLocalRing.maximalIdeal (Shrink.{u} (AdjoinRoot G)))
+      (Shrink.{u} (AdjoinRoot G)) := by
+    rw [← IsLocalRing.eq_maximalIdeal hmaxΛ]
+    exact isPrecomplete_span_natCast_of_free_finite _
   refine ⟨Shrink.{u} (AdjoinRoot G), inferInstance, inferInstance, inferInstance, inferInstance,
-    inferInstance, inferInstance, (IsLocalRing.eq_maximalIdeal hmaxΛ).symm, ι₀.comp E, ?_, ?_⟩
+    inferInstance, inferInstance, inferInstance,
+    (IsLocalRing.eq_maximalIdeal hmaxΛ).symm, ι₀.comp E, ?_, ?_⟩
   · refine RingHom.ext fun x => ?_
     show ι₀ (e (algebraMap ℤ_[ℓ] (Shrink.{u} (AdjoinRoot G)) x)) = algebraMap ℤ_[ℓ] R x
     rw [AlgEquiv.commutes, AdjoinRoot.algebraMap_eq, hι₀, AdjoinRoot.lift_of]
@@ -4870,30 +6395,53 @@ theorem exists_mvPowerSeries_ringHom_of_mem_maximalIdeal {R : Type*}
     rw [RingHom.comp_apply, MvPowerSeries.coe_eval₂Hom, MvPowerSeries.eval₂_C]
   · rw [MvPowerSeries.coe_eval₂Hom, MvPowerSeries.eval₂_X]
 
-/-- **Surjectivity leaf of the de Smit–Lenstra presentation** (sorry
-node — pure commutative algebra, the third stratum of the 2026-07-25
-decomposition of `exists_minimal_mvPowerSeries_presentation`): the
-substitution map `φ : Λ[[x₁, …, x_g]] → R` of
+omit [Fact (Nat.Prime ℓ)] [Finite k] [Algebra ℤ_[ℓ] k] [TopologicalSpace k]
+  [DiscreteTopology k] in
+/-- **Surjectivity stratum of the de Smit–Lenstra presentation** (PROVEN
+2026-07-25 — pure commutative algebra, the third stratum of the
+same-day decomposition of `exists_minimal_mvPowerSeries_presentation`):
+the substitution map `φ : Λ[[x₁, …, x_g]] → R` of
 `exists_mvPowerSeries_ringHom_of_mem_maximalIdeal` is SURJECTIVE as
 soon as `Λ` covers the residue field (`π ∘ ι` onto) and the `tᵢ`
 generate `𝔪_R` modulo `𝔪_R² + ℓR`.
 
-Proof (successive approximation): let `A` be the image of `φ`, a
-subring containing `ι(Λ)` and every `tᵢ`. Residue surjectivity gives
-`R = ι(Λ) + 𝔪_R`; the spanning hypothesis plus `ℓ = ι(ℓ) ∈ A` and
-`𝔪_Λ = (ℓ)` give `𝔪_R ⊆ A·𝔪_R + 𝔪_R²`, so by induction
-`R = A + 𝔪_R^n` for every `n`. For `r ∈ R` this produces a sequence
-`a_n ∈ A` with `r − a_n ∈ 𝔪_R^n` and `a_{n+1} − a_n ∈ 𝔪_R^n`; lifting
-the increments through `φ` and summing them in the COMPLETE power
-series ring `Λ[[x₁, …, x_g]]` (the increments lie in `𝔪_S^n`, so the
-sum converges coefficientwise) gives a preimage of `r` — `IsHausdorff`
-turning "agrees modulo every `𝔪_R^n`" into equality. Classically
-phrased: the image of a complete ring is closed, and it is dense by the
-generation hypothesis. -/
+**HYPOTHESIS ADDED 2026-07-25: `Λ` must be `𝔪_Λ`-adically precomplete,
+because without it the statement is FALSE.** Counterexample at `g = 0`:
+`Λ = ℤ_(ℓ)` (the localisation of `ℤ` at `ℓ`, local with `𝔪 = (ℓ)`),
+`R = ℤ_ℓ`, `k = 𝔽_ℓ`, `t` the empty family — every hypothesis holds and
+`φ` is the inclusion `ℤ_(ℓ) ↪ ℤ_ℓ`, which is not onto. Completeness of
+the coefficient ring is what makes the successive approximation
+converge, and it is free at the point of use: the coefficient-ring leaf
+`exists_coefficientRing_ringHom` now hands out `Λ = W(k)` together with
+its `IsAdicComplete`, which mathlib proves
+(`WittVector.isAdicCompleteIdealSpanP`).
+
+Proof, in two applications of mathlib's complete-Nakayama surjectivity
+criterion `surjective_of_mk_map_comp_surjective` — a map out of an
+`I`-adically precomplete ring onto an `I·S`-adically Hausdorff ring is
+onto as soon as it is onto modulo `I·S`:
+
+* in the VARIABLE direction, with `I = (x₁, …, x_g)`, precompleteness is
+  mathlib's `IsAdicComplete (span (range X)) (MvPowerSeries σ Λ)` for
+  finite `σ`, and `I·R = (t₁, …, t_g) =: T` is Hausdorff because `R` is
+  Noetherian local (`IsHausdorff.of_isLocalRing`); so it suffices that
+  `φ` be onto `R ⧸ T`;
+* in the `ℓ` direction, with `I = 𝔪_Λ = (ℓ)`, applied to
+  `Λ → R ⧸ T`: this is where the added precompleteness of `Λ` is used,
+  and it suffices that `Λ` be onto `(R ⧸ T) ⧸ (ℓ)`.
+
+The last surjectivity is residue-field surjectivity plus NAKAYAMA:
+`hspan` says `𝔪_R = T + 𝔪_R² + ℓR`, so
+`Submodule.le_of_le_smul_of_le_jacobson_bot` (over the Noetherian `𝔪_R`,
+contained in the Jacobson radical) upgrades it to `𝔪_R = T + ℓR` on the
+nose; given `r ∈ R`, residue surjectivity of `π ∘ ι` supplies `a ∈ Λ`
+with `r − ι a ∈ ker π = 𝔪_R = T + ℓR`, which is exactly the required
+congruence. -/
 theorem surjective_of_mvPowerSeries_ringHom {R : Type*} [CommRing R]
     [IsLocalRing R] [IsNoetherianRing R]
     [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
     {Λ : Type*} [CommRing Λ] [IsLocalRing Λ]
+    [IsPrecomplete (IsLocalRing.maximalIdeal Λ) Λ]
     (hΛℓ : IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)})
     (π : R →+* k) (ι : Λ →+* R) (hι : Function.Surjective (π.comp ι))
     {g : ℕ} (t : Fin g → R)
@@ -4902,12 +6450,111 @@ theorem surjective_of_mvPowerSeries_ringHom {R : Type*} [CommRing R]
     (φ : MvPowerSeries (Fin g) Λ →+* R)
     (hφC : φ.comp (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ) = ι)
     (hφX : ∀ i, φ (MvPowerSeries.X i) = t i) :
-    Function.Surjective φ :=
-  sorry
+    Function.Surjective φ := by
+  classical
+  have hπsurj : Function.Surjective π := Function.Surjective.of_comp hι
+  have hkerπ : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.ker_eq_maximalIdeal π hπsurj
+  -- Nakayama: the `tᵢ` and `ℓ` generate `𝔪_R` on the nose
+  have hle : IsLocalRing.maximalIdeal R ≤
+      Ideal.span (Set.range t) ⊔ Ideal.span {(ℓ : R)} := by
+    refine Submodule.le_of_le_smul_of_le_jacobson_bot
+      (Ideal.fg_of_isNoetherianRing _) (IsLocalRing.maximalIdeal_le_jacobson _) ?_
+    have hsq : IsLocalRing.maximalIdeal R • IsLocalRing.maximalIdeal R
+        = IsLocalRing.maximalIdeal R ^ 2 := by
+      rw [Ideal.smul_eq_mul, ← pow_two]
+    rw [hsq]
+    conv_lhs => rw [hspan]
+    exact sup_le (le_sup_of_le_left le_sup_left)
+      (sup_le le_sup_right (le_sup_of_le_left le_sup_right))
+  set T : Ideal R := Ideal.span (Set.range t) with hTdef
+  have hmapT : Ideal.map φ
+      (Ideal.span (Set.range (MvPowerSeries.X : Fin g → MvPowerSeries (Fin g) Λ))) = T := by
+    rw [hTdef, Ideal.map_span]
+    congr 1
+    ext r
+    constructor
+    · rintro ⟨_, ⟨i, rfl⟩, rfl⟩
+      exact ⟨i, (hφX i).symm⟩
+    · rintro ⟨i, rfl⟩
+      exact ⟨MvPowerSeries.X i, ⟨i, rfl⟩, hφX i⟩
+  have hTle : T ≤ IsLocalRing.maximalIdeal R := by
+    rw [hTdef]; conv_rhs => rw [hspan]
+    exact le_sup_left
+  have hTne : T ≠ ⊤ := by
+    intro h
+    rw [h, top_le_iff] at hTle
+    exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top hTle
+  haveI : Nontrivial (R ⧸ T) := Ideal.Quotient.nontrivial_iff.mpr hTne
+  haveI : IsLocalRing (R ⧸ T) :=
+    IsLocalRing.of_surjective' (Ideal.Quotient.mk T) Ideal.Quotient.mk_surjective
+  haveI : IsNoetherianRing (R ⧸ T) :=
+    isNoetherianRing_of_surjective R (R ⧸ T) (Ideal.Quotient.mk T)
+      Ideal.Quotient.mk_surjective
+  haveI : IsHausdorff (Ideal.map φ
+      (Ideal.span (Set.range (MvPowerSeries.X : Fin g → MvPowerSeries (Fin g) Λ)))) R := by
+    rw [hmapT]
+    exact IsHausdorff.of_isLocalRing T R hTne
+  refine surjective_of_mk_map_comp_surjective
+    (I := Ideal.span (Set.range (MvPowerSeries.X : Fin g → MvPowerSeries (Fin g) Λ))) φ ?_
+  rw [hmapT]
+  -- it suffices that `Λ` already surjects onto `R ⧸ T`
+  have hℓΛ : (ℓ : Λ) ∈ IsLocalRing.maximalIdeal Λ := by
+    rw [hΛℓ]; exact Ideal.subset_span rfl
+  have hbar : Function.Surjective ((Ideal.Quotient.mk T).comp ι) := by
+    haveI : IsHausdorff (Ideal.map ((Ideal.Quotient.mk T).comp ι)
+        (IsLocalRing.maximalIdeal Λ)) (R ⧸ T) := by
+      refine IsHausdorff.of_isLocalRing _ _ ?_
+      refine ne_of_lt (lt_of_le_of_lt ?_
+        (lt_top_iff_ne_top.mpr (IsLocalRing.maximalIdeal.isMaximal (R ⧸ T)).ne_top))
+      rw [Ideal.map_le_iff_le_comap]
+      intro a ha
+      simp only [Ideal.mem_comap, RingHom.comp_apply]
+      haveI : IsLocalHom (Ideal.Quotient.mk T) :=
+        IsLocalHom.of_surjective _ Ideal.Quotient.mk_surjective
+      refine map_nonunit (Ideal.Quotient.mk T) _ ?_
+      rw [← hkerπ, RingHom.mem_ker]
+      have := IsLocalRing.ker_eq_maximalIdeal (π.comp ι) hι
+      rw [← this, RingHom.mem_ker] at ha
+      exact ha
+    refine surjective_of_mk_map_comp_surjective (I := IsLocalRing.maximalIdeal Λ) _ ?_
+    intro y
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective y
+    obtain ⟨r, rfl⟩ := Ideal.Quotient.mk_surjective x
+    obtain ⟨a, ha⟩ := hι (π r)
+    refine ⟨a, ?_⟩
+    rw [RingHom.comp_apply, Ideal.Quotient.eq]
+    have hdiff : ι a - r ∈ T ⊔ Ideal.span {(ℓ : R)} := by
+      refine hle ?_
+      rw [← hkerπ, RingHom.mem_ker, map_sub, sub_eq_zero]
+      exact ha
+    obtain ⟨x₁, hx₁, x₂, hx₂, hx⟩ := Submodule.mem_sup.mp hdiff
+    obtain ⟨s, rfl⟩ := Ideal.mem_span_singleton'.mp hx₂
+    have hkey : (Ideal.Quotient.mk T) (ι a) - (Ideal.Quotient.mk T) r
+        = (Ideal.Quotient.mk T) ((ℓ : R) * s) := by
+      rw [← map_sub, ← hx, map_add, Ideal.Quotient.eq_zero_iff_mem.mpr hx₁, zero_add,
+        mul_comm]
+    rw [RingHom.comp_apply, hkey]
+    have hmem : ((Ideal.Quotient.mk T).comp ι) (ℓ : Λ) ∈
+        Ideal.map ((Ideal.Quotient.mk T).comp ι) (IsLocalRing.maximalIdeal Λ) :=
+      Ideal.mem_map_of_mem _ hℓΛ
+    have hcast : ((Ideal.Quotient.mk T).comp ι) (ℓ : Λ)
+        = (Ideal.Quotient.mk T) ((ℓ : R)) := by
+      rw [RingHom.comp_apply, map_natCast, map_natCast]
+    rw [hcast] at hmem
+    rw [map_mul]
+    exact Ideal.mul_mem_right _ _ hmem
+  intro y
+  obtain ⟨a, ha⟩ := hbar y
+  exact ⟨MvPowerSeries.C a, by
+    rw [RingHom.comp_apply,
+      show φ (MvPowerSeries.C a) = ι a from RingHom.congr_fun hφC a]
+    exact ha⟩
 
-/-- **Minimality (kernel-bound) leaf of the de Smit–Lenstra
-presentation** (sorry node — pure commutative algebra, the fourth
-stratum of the 2026-07-25 decomposition of
+omit [Fact (Nat.Prime ℓ)] in
+/-- **Minimality (kernel-bound) stratum of the de Smit–Lenstra
+presentation** (PROVEN 2026-07-25 — pure commutative algebra, the fourth
+stratum of the same-day decomposition of
 `exists_minimal_mvPowerSeries_presentation`): when the `tᵢ` are a
 MINIMAL family generating `𝔪_R` modulo `𝔪_R² + ℓR` — the length `g` is
 least among all such families, as produced by
@@ -4915,19 +6562,21 @@ least among all such families, as produced by
 `φ` has `ker φ ≤ 𝔪_S² + (ℓ)`, i.e. `φ` is an isomorphism on mod-`ℓ`
 cotangent spaces and the presentation is minimal.
 
-Proof: `𝔪_Λ = (ℓ)` makes `𝔪_S = (ℓ, x₁, …, x_g)`, so
-`𝔪_S² + (ℓ) = (ℓ) + (xᵢxⱼ)` and every `f ∈ S` decomposes as
-`f = C c + ∑ᵢ C aᵢ · xᵢ + h` with `h ∈ 𝔪_S²` — the power-series
-ingredient being that a series with vanishing constant term is
-`∑ᵢ xᵢ gᵢ` (split each monomial off its least variable of positive
-exponent), applied twice. Now let `f ∈ ker φ` and suppose
-`f ∉ 𝔪_S² + (ℓ)`; then some `aⱼ` is a unit of `Λ` (all `aᵢ ∈ (ℓ)` and
-`c ∈ (ℓ)` would put `f` back inside). Applying `φ` gives
-`ι(c) + ∑ᵢ ι(aᵢ) tᵢ ∈ 𝔪_R²`, and `ι(c) ∈ 𝔪_R² + ℓR` since `c ∈ 𝔪_Λ` is
-forced by `φ(f) = 0` and `tᵢ ∈ 𝔪_R`; multiplying by `ι(aⱼ)⁻¹` exhibits
-`tⱼ ∈ span {tᵢ : i ≠ j} ⊔ (𝔪_R² ⊔ ℓR)`. Hence the family with `tⱼ`
-deleted still generates `𝔪_R` modulo `𝔪_R² + ℓR`, contradicting
-minimality of `g` (`hmin` applied at `g − 1`). -/
+Proof: `𝔪_Λ = (ℓ)` makes `𝔪_S = (ℓ) + (x₁, …, x_g)`
+(`maximalIdeal_mvPowerSeries_eq`, over the power-series ingredient
+`mem_span_range_X_of_constantCoeff_eq_zero`: a series with vanishing
+constant term is `∑ᵢ xᵢ gᵢ`). So a kernel element `f`, which lies in
+`𝔪_S` because `φ f = 0` is not a unit, is `f = y + ∑ᵢ cᵢ xᵢ` with
+`y ∈ (ℓ)`, and replacing each `cᵢ` by its constant term `aᵢ` costs only
+`𝔪_S²` — whence `f ≡ ∑ᵢ C(aᵢ) xᵢ` modulo `𝔪_S² + (ℓ)`.
+
+Now suppose `f ∉ 𝔪_S² + (ℓ)`; then some `aⱼ` is a unit of `Λ` (all
+`aᵢ ∈ 𝔪_Λ = (ℓ)` would put `f` back inside). Applying `φ` — a local hom,
+being surjective — sends `𝔪_S² + (ℓ)` into `𝔪_R² + ℓR =: J`, so
+`∑ᵢ ι(aᵢ) tᵢ ∈ J`; multiplying by the unit `ι(aⱼ)⁻¹` exhibits
+`tⱼ ∈ span {tᵢ : i ≠ j} ⊔ J`. Hence the family with `tⱼ` deleted (indexed
+by `Fin.succAbove j`) still generates `𝔪_R` modulo `𝔪_R² + ℓR`,
+contradicting minimality of `g` (`hmin` applied at `g − 1`). -/
 theorem ker_le_of_minimal_mvPowerSeries_ringHom {R : Type*} [CommRing R]
     [IsLocalRing R] [IsNoetherianRing R] {Λ : Type*} [CommRing Λ]
     [IsLocalRing Λ]
@@ -4945,9 +6594,130 @@ theorem ker_le_of_minimal_mvPowerSeries_ringHom {R : Type*} [CommRing R]
     (hφX : ∀ i, φ (MvPowerSeries.X i) = t i) :
     RingHom.ker φ ≤
       IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
-        Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} :=
-  sorry
+        Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} := by
+  classical
+  intro f hf
+  by_contra hfK
+  -- `f` lies in the maximal ideal, since `φ f = 0` is not a unit
+  have hfm : f ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) := by
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+    intro hu
+    have h0 : IsUnit (0 : R) := by
+      have := hu.map φ
+      rwa [RingHom.mem_ker.mp hf] at this
+    exact not_isUnit_zero h0
+  -- `𝔪_S = (ℓ) + (x₁, …, x_g)`
+  have hCℓ : (MvPowerSeries.C : Λ →+* MvPowerSeries (Fin g) Λ) '' {(ℓ : Λ)}
+      = {((ℓ : ℕ) : MvPowerSeries (Fin g) Λ)} := by
+    simp
+  rw [maximalIdeal_mvPowerSeries_eq, hΛℓ, Ideal.map_span, hCℓ] at hfm
+  obtain ⟨y, hy, z, hz, hyz⟩ := Submodule.mem_sup.mp hfm
+  obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun _).mp hz
+  -- the linear part of `f`, read off from the constant terms of the `cᵢ`
+  set a : Fin g → Λ := fun i => MvPowerSeries.constantCoeff (c i) with hadef
+  have hrem : f - ∑ i, MvPowerSeries.C (a i) * MvPowerSeries.X i ∈
+      IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+        Ideal.span {((ℓ : ℕ) : MvPowerSeries (Fin g) Λ)} := by
+    have hrw : f - ∑ i, MvPowerSeries.C (a i) * MvPowerSeries.X i
+        = y + ∑ i, (c i - MvPowerSeries.C (a i)) * MvPowerSeries.X i := by
+      rw [← hyz, ← hc]
+      simp only [smul_eq_mul, sub_mul, Finset.sum_sub_distrib]
+      ring
+    rw [hrw]
+    refine Submodule.add_mem _ (Ideal.mem_sup_right hy) (Ideal.sum_mem _ fun i _ => ?_)
+    refine Ideal.mem_sup_left ?_
+    rw [pow_two]
+    refine Ideal.mul_mem_mul ?_ ?_
+    · exact (mem_maximalIdeal_mvPowerSeries_iff _).mpr (by simp [hadef])
+    · exact (mem_maximalIdeal_mvPowerSeries_iff _).mpr (by simp)
+  -- minimality forces one of the `aᵢ` to be a unit
+  have hex : ∃ j, a j ∉ IsLocalRing.maximalIdeal Λ := by
+    by_contra hall
+    have hall' : ∀ i, a i ∈ IsLocalRing.maximalIdeal Λ :=
+      fun i => not_not.mp fun h => hall ⟨i, h⟩
+    refine hfK ?_
+    have hlin : ∑ i, MvPowerSeries.C (a i) * MvPowerSeries.X i ∈
+        IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+          Ideal.span {((ℓ : ℕ) : MvPowerSeries (Fin g) Λ)} := by
+      refine Ideal.sum_mem _ fun i _ => Ideal.mem_sup_right ?_
+      obtain ⟨b, hb⟩ := Ideal.mem_span_singleton'.mp (hΛℓ ▸ hall' i)
+      refine Ideal.mul_mem_right _ _ ?_
+      rw [← hb]
+      simpa using Ideal.mul_mem_left _ (MvPowerSeries.C b)
+        (Ideal.subset_span (Set.mem_singleton ((ℓ : ℕ) : MvPowerSeries (Fin g) Λ)))
+    simpa using Ideal.add_mem _ hrem hlin
+  obtain ⟨j, hj⟩ := hex
+  obtain ⟨n, rfl⟩ : ∃ n, g = n + 1 := ⟨g - 1, (Nat.succ_pred_eq_of_pos j.pos).symm⟩
+  -- the family with `t j` deleted
+  set s : Fin n → R := fun i => t (j.succAbove i) with hsdef
+  -- `φ` is a local hom, so it carries the relation down to `R`
+  haveI : IsLocalHom φ := IsLocalHom.of_surjective φ hφsurj
+  have hmapK : Ideal.map φ (IsLocalRing.maximalIdeal (MvPowerSeries (Fin (n + 1)) Λ) ^ 2 ⊔
+      Ideal.span {((ℓ : ℕ) : MvPowerSeries (Fin (n + 1)) Λ)}) ≤
+      IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)} := by
+    rw [Ideal.map_sup, Ideal.map_pow, Ideal.map_span]
+    refine sup_le (le_sup_of_le_left ?_) (le_sup_of_le_right ?_)
+    · rw [pow_two, pow_two]
+      exact Ideal.mul_mono (IsLocalRing.map_maximalIdeal_le φ)
+        (IsLocalRing.map_maximalIdeal_le φ)
+    · simp
+  have hφsum : ∑ i, ι (a i) * t i ∈
+      IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)} := by
+    have himg := hmapK (Ideal.mem_map_of_mem φ hrem)
+    rw [map_sub, RingHom.mem_ker.mp hf, map_sum] at himg
+    simp only [map_mul, show ∀ i, φ (MvPowerSeries.C (a i)) = ι (a i) from
+      fun i => RingHom.congr_fun hφC (a i), hφX] at himg
+    simpa using neg_mem himg
+  -- hence `t j` is redundant
+  have hkey : t j ∈ Ideal.span (Set.range s) ⊔
+      (IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}) := by
+    have hother : ∀ i ∈ Finset.univ.erase j, ι (a i) * t i ∈
+        Ideal.span (Set.range s) ⊔
+          (IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}) := by
+      intro i hi
+      obtain ⟨kk, hkk⟩ := Fin.exists_succAbove_eq (Finset.mem_erase.mp hi).1
+      exact Ideal.mem_sup_left (Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨kk, by
+        rw [hsdef]; exact congrArg t hkk⟩))
+    have h1 : ι (a j) * t j ∈ Ideal.span (Set.range s) ⊔
+        (IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}) := by
+      have hsplit : ι (a j) * t j
+          = (∑ i, ι (a i) * t i) - ∑ i ∈ Finset.univ.erase j, ι (a i) * t i := by
+        rw [Finset.sum_erase_eq_sub (Finset.mem_univ j)]
+        ring
+      rw [hsplit]
+      exact Ideal.sub_mem _ (Ideal.mem_sup_right hφsum) (Ideal.sum_mem _ hother)
+    have hunit : IsUnit (ι (a j)) := by
+      refine IsUnit.map ι ?_
+      by_contra hcon
+      exact hj ((IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hcon))
+    obtain ⟨u, hu⟩ := hunit
+    have hfin : t j = (↑u⁻¹ : R) * (ι (a j) * t j) := by
+      rw [← hu, ← mul_assoc, Units.inv_mul, one_mul]
+    rw [hfin]
+    exact Ideal.mul_mem_left _ _ h1
+  -- contradiction with minimality of `g = n + 1`
+  have hgen : IsLocalRing.maximalIdeal R = Ideal.span (Set.range s) ⊔
+      (IsLocalRing.maximalIdeal R ^ 2 ⊔ Ideal.span {(ℓ : R)}) := by
+    refine le_antisymm ?_ ?_
+    · conv_lhs => rw [hspan]
+      refine sup_le ?_ le_sup_right
+      rw [Ideal.span_le]
+      rintro _ ⟨i, rfl⟩
+      by_cases hij : i = j
+      · rw [hij]; exact hkey
+      · obtain ⟨kk, hkk⟩ := Fin.exists_succAbove_eq hij
+        exact Ideal.mem_sup_left (Ideal.subset_span ⟨kk, by
+          rw [hsdef]; exact congrArg t hkk⟩)
+    · refine sup_le ?_ ?_
+      · rw [Ideal.span_le]
+        rintro _ ⟨i, rfl⟩
+        exact ht _
+      · conv_rhs => rw [hspan]
+        exact le_sup_right
+  have := hmin n s (fun i => ht _) hgen
+  omega
 
+omit [TopologicalSpace k] [DiscreteTopology k] in
 /-- **Minimal-presentation stratum** (DECOMPOSED 2026-07-25 into the
 four commutative-algebra leaves `exists_coefficientRing_ringHom`
 (Cohen/Witt coefficient ring),
@@ -5026,10 +6796,10 @@ theorem exists_minimal_mvPowerSeries_presentation {R : Type*} [CommRing R]
   obtain ⟨g, t, ht, hspan, hmin⟩ :=
     exists_minimal_span_sup_of_isNoetherianRing _ hJ
   -- the coefficient ring and the substitution map
-  obtain ⟨Λ, iCR, iDom, iLoc, iNoeth, iAlg, iFin, hΛℓ, ι, hιcomp, hιsurj⟩ :=
+  obtain ⟨Λ, iCR, iDom, iLoc, iNoeth, iAlg, iFin, iPre, hΛℓ, ι, hιcomp, hιsurj⟩ :=
     exists_coefficientRing_ringHom (ℓ := ℓ) (k := k) π hπsurj
   letI := iCR; letI := iDom; letI := iLoc; letI := iNoeth; letI := iAlg
-  letI := iFin
+  letI := iFin; letI := iPre
   obtain ⟨φ, hφC, hφX⟩ :=
     exists_mvPowerSeries_ringHom_of_mem_maximalIdeal ι t ht
   have hφsurj : Function.Surjective φ :=
@@ -5932,77 +7702,6 @@ theorem exists_finite_lift (hℓ5 : 5 ≤ ℓ)
   exact ⟨D.R, D.commRing, D.topologicalSpace, D.isTopologicalRing,
     D.isLocalRing, D.algebra, hfin, hmt, hinj, D.ρ, D.isHardlyRamified,
     D.π, D.π_surjective, D.charFrob_compat⟩
-
-set_option backward.isDefEq.respectTransparency false in
-open scoped TensorProduct in
-/-- **Hardly-ramifiedness transfers along conjugation** by a linear
-isomorphism of the representation space (PROVEN 2026-07-22): the
-determinant is conjugation-invariant, the kernels of the local
-representations only grow, flatness transports through
-`HasFlatProlongationAt.of_equiv` along the base-changed isomorphism, and
-the tame quadratic quotient is composed with the inverse isomorphism. -/
-lemma isHardlyRamified_conj {R : Type u} [CommRing R] [TopologicalSpace R]
-    [IsTopologicalRing R] [IsLocalRing R] [Algebra ℤ_[ℓ] R]
-    {M : Type v} [AddCommGroup M] [Module R M] [Module.Finite R M]
-    [Module.Free R M]
-    {N : Type v} [AddCommGroup N] [Module R N] [Module.Finite R N]
-    [Module.Free R N]
-    {hdimM : Module.rank R M = 2} (hdimN : Module.rank R N = 2)
-    {ρ : GaloisRep ℚ R M} (h : IsHardlyRamified hℓOdd hdimM ρ)
-    (e : M ≃ₗ[R] N) :
-    IsHardlyRamified hℓOdd hdimN (ρ.conj e) := by
-  constructor
-  · -- determinant: conjugation-invariant
-    intro g
-    rw [GaloisRep.det_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply,
-      LinearMap.comp_assoc, LinearMap.det_conj]
-    exact h.det g
-  · -- unramifiedness: the kernel of the local representation only grows
-    intro p hp hpp
-    have hun := h.isUnramified p hp hpp
-    refine ⟨le_trans hun.localInertiaGroup_le ?_⟩
-    intro σ hσ
-    have h1 : ρ.toLocal hp.toHeightOneSpectrumRingOfIntegersRat σ = 1 := hσ
-    show (ρ.conj e).toLocal hp.toHeightOneSpectrumRingOfIntegersRat σ = 1
-    rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply,
-      ← GaloisRep.toLocal_apply, h1]
-    refine LinearMap.ext fun w => ?_
-    simp
-  · -- flatness: transport along the base-changed equivariant isomorphism
-    constructor
-    intro I hI
-    refine (h.isFlat.cond I hI).of_equiv _
-      (LinearEquiv.baseChange R (R ⧸ I) M N e).toAddEquiv ?_
-    intro g x
-    show (LinearEquiv.baseChange R (R ⧸ I) M N e)
-        (((ρ.baseChange (R ⧸ I)).toLocal
-          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-            (Fact.out : ℓ.Prime)) g) x) =
-      (((ρ.conj e).baseChange (R ⧸ I)).toLocal
-          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-            (Fact.out : ℓ.Prime)) g)
-        ((LinearEquiv.baseChange R (R ⧸ I) M N e) x)
-    induction x using TensorProduct.induction_on with
-    | zero => simp
-    | add a b ha hb => simp only [map_add, ha, hb]
-    | tmul c m =>
-      simp only [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
-        LinearEquiv.baseChange_tmul, GaloisRep.conj_apply,
-        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply]
-  · -- tameness at 2: compose the quotient with the inverse isomorphism
-    obtain ⟨π, hπsurj, δ, hδ⟩ := h.isTameAtTwo
-    refine ⟨π.comp (e.symm : N →ₗ[R] M), ?_, δ, ?_⟩
-    · intro r
-      obtain ⟨m, hm⟩ := hπsurj r
-      exact ⟨e m, by simp [hm]⟩
-    · intro g w
-      refine ⟨?_, (hδ 1 0).2.1, (hδ 1 0).2.2⟩
-      have h1 := (hδ g (e.symm w)).1
-      show π (e.symm ((ρ.conj e).map (algebraMap ℚ ℚ_[2]) g w)) =
-        δ g (π (e.symm w))
-      rw [GaloisRep.map_apply, GaloisRep.conj_apply,
-        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply,
-        ← GaloisRep.map_apply, h1]
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
