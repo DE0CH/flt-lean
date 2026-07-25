@@ -3713,14 +3713,38 @@ theorem spanSingleton_pointEval_mul_fiberProd_pow {ι : Type*} [Fintype ι]
           (pointEval (constHom W) hpn.left z) *
         fiberProd W val (sec 0) ^ Multiset.card D := by
   classical
-  -- ── The Dedekind substrate of `F[W]`.  `W.Δ ≠ 0` makes the affine
-  -- curve smooth, so its coordinate ring — a finite `F[X]`-algebra,
-  -- hence noetherian, of dimension one, and integrally closed at every
-  -- (smooth) point — is a Dedekind domain.  Not in mathlib for
-  -- `CoordinateRing`; established here, where the rest of the proof
-  -- consumes it, rather than as a free-floating instance.
-  haveI : IsDedekindDomain W.CoordinateRing := by
+  -- ── The Dedekind substrate of `F[W]`, absent from mathlib for
+  -- `CoordinateRing` and established here, where the rest of the proof
+  -- consumes it, rather than as a free-floating instance.  `F[W]` is a
+  -- free rank-two `F[X]`-module, hence integral over `F[X]`: that gives
+  -- noetherianity (a quotient of the noetherian `F[X][Y]`) and dimension
+  -- one (`Ring.DimensionLEOne.of_isIntegral` over the PID `F[X]`).  Only
+  -- integral closedness needs the geometry, and it is exactly where
+  -- `W.Δ ≠ 0` enters: the affine curve is smooth, hence normal.
+  haveI : Module.Finite (Polynomial F) W.CoordinateRing :=
+    Polynomial.Monic.finite_adjoinRoot WeierstrassCurve.Affine.monic_polynomial
+  haveI hNoeth : IsNoetherianRing W.CoordinateRing :=
+    isNoetherianRing_of_surjective (Polynomial (Polynomial F)) W.CoordinateRing
+      (CoordinateRing.mk W) AdjoinRoot.mk_surjective
+  haveI hDim : Ring.DimensionLEOne W.CoordinateRing :=
+    Ring.DimensionLEOne.of_isIntegral (R := Polynomial F) W.CoordinateRing
+  /- **Normality of the smooth affine curve** (the geometric input of the
+  Dedekind property): every element of the function field `K` integral
+  over `F[W]` already lies in `F[W]`.  With `W.Δ ≠ 0` the affine curve is
+  nonsingular, so each local ring `F[W]_m` at an affine point is regular
+  — the maximal ideal `⟨X − x, Y − y⟩` becomes principal after
+  localization, since the Jacobian criterion makes one of the two
+  generators a unit multiple of the other plus higher order — hence a
+  DVR, and a one-dimensional noetherian domain whose localizations are
+  DVRs is integrally closed. -/
+  have hIC : ∀ {x : W.FunctionField}, IsIntegral W.CoordinateRing x →
+      ∃ y : W.CoordinateRing,
+        algebraMap W.CoordinateRing W.FunctionField y = x := by
     sorry
+  haveI : IsDedekindRing W.CoordinateRing :=
+    (isDedekindRing_iff (A := W.CoordinateRing) W.FunctionField).mpr
+      ⟨hNoeth, hDim, hIC⟩
+  haveI : IsDedekindDomain W.CoordinateRing := inferInstance
   -- ── Point ideals at affine points are maximal: the quotient of `F[W]`
   -- by `⟨X − x, Y − y⟩` is `F` itself
   -- (`CoordinateRing.quotientXYIdealEquiv`).
@@ -3744,8 +3768,6 @@ theorem spanSingleton_pointEval_mul_fiberProd_pow {ι : Type*} [Fintype ι]
       ∃ S : W.Point, S ≠ 0 ∧ v.asIdeal = pointIdeal W S := by
     intro v
     haveI hmMax : v.asIdeal.IsMaximal := v.isPrime.isMaximal v.ne_bot
-    haveI : Module.Finite (Polynomial F) W.CoordinateRing :=
-      Polynomial.Monic.finite_adjoinRoot WeierstrassCurve.Affine.monic_polynomial
     haveI hqMax : (v.asIdeal.comap
         (algebraMap (Polynomial F) W.CoordinateRing)).IsMaximal :=
       Ideal.isMaximal_comap_of_isIntegral_of_isMaximal v.asIdeal
