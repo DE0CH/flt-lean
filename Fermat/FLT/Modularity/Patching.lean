@@ -264,6 +264,19 @@ import Mathlib.Topology.Connected.TotallyDisconnected
 -- `IsUltrametricDist ℤ_[p] → TotallySeparatedSpace → TotallyDisconnectedSpace`
 -- is unavailable and `TotallyDisconnectedSpace ℤ_[p]` fails to synthesize
 -- with no hint of the cause
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.Deformation
+-- PROOF-ONLY (added 2026-07-25 for the quotient-tower leaf
+-- `exists_ringHom_quotient_padicTower_of_finiteTests`):
+-- `isHardlyRamified_baseChange_quotient`, the transfer of the four hardly
+-- ramified conditions along a surjection of coefficient rings, together
+-- with its already-proven ingredients `isFlatAt_baseChange_quotient`
+-- (Ramakrishna's flat condition, the only deep one) and
+-- `isTameAtTwo_baseChange`.  This module was ALREADY in this file's
+-- transitive import cone through `Modularity/KhareWintenberger.lean`; the
+-- import is made direct because a private import is not transitive.  The
+-- circularity guard is respected: the import closure of
+-- `HardlyRamified/Deformation.lean` contains no `Modularity/*`, no
+-- `Family.lean` and no `Lift.lean` (checked 2026-07-25).
 
 @[expose] public section
 
@@ -2405,48 +2418,135 @@ end Tower
 
 end ProfinitePadicTower
 
-/-- **Quotient-tower classifying maps** (sorry node — the ONLY
-remaining stratum of the pro-finite upgrade
-`isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests` below, whose
+/-- **Conjugation composes** (PROVEN 2026-07-25): conjugating a Galois
+representation by `e₁` and then by `e₂` is conjugating it by
+`e₁.trans e₂`.  Both sides evaluate to `e₂ ∘ e₁ ∘ ρ σ ∘ e₁.symm ∘ e₂.symm`
+definitionally, so the proof is `rfl` after `GaloisRep.conj_apply`.
+
+(`GaloisRep.conj_trans` in `HardlyRamified/Deformation.lean` is the same
+statement carrying `Module.Finite`/`Module.Free` hypotheses on all three
+spaces, which the tensor products of the residual-identification
+transport below would force one to synthesize for no reason; this
+hypothesis-free form is stated here rather than generalizing the other
+copy, since that copy is under an active owner.  Whoever unifies them
+should keep THIS statement.) -/
+lemma conj_trans {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    {N : Type*} [AddCommGroup N] [Module A N]
+    {P : Type*} [AddCommGroup P] [Module A P]
+    (ρ : GaloisRep ℚ A M) (e₁ : M ≃ₗ[A] N) (e₂ : N ≃ₗ[A] P) :
+    (ρ.conj e₁).conj e₂ = ρ.conj (e₁.trans e₂) := by
+  refine GaloisRep.ext fun σ => LinearMap.ext fun x => ?_
+  rw [GaloisRep.conj_apply, GaloisRep.conj_apply, GaloisRep.conj_apply]
+  rfl
+
+open scoped TensorProduct in
+/-- **An intermediate base change cancels** (PROVEN 2026-07-25): for a
+tower `A → B → kk` of topological algebras, the double base change
+`kk ⊗_B (B ⊗_A M)` of `ρ` is, through the canonical cancellation
+`TensorProduct.AlgebraTensorModule.cancelBaseChange`, the single base
+change `kk ⊗_A M` — as GALOIS REPRESENTATIONS, not merely as modules.
+
+Checked on pure tensors, where both sides send `c ⊗ (1 ⊗ m)` to
+`c ⊗ ρ σ m` (`cancelBaseChange` multiplies the middle coefficient into
+`c`, and here it is `1`).  This is what transports a residual
+identification along a quotient of the coefficient ring: the
+identification of `D` lives on `k ⊗_A Vd`, while the base-changed
+deformation's lives on `k ⊗_{A/I} ((A/I) ⊗_A Vd)`. -/
+lemma baseChange_baseChange_conj_cancel
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [Algebra A B] [ContinuousSMul A B]
+    {kk : Type*} [CommRing kk] [TopologicalSpace kk] [IsTopologicalRing kk]
+    [Algebra A kk] [Algebra B kk] [IsScalarTower A B kk]
+    [ContinuousSMul A kk] [ContinuousSMul B kk]
+    {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M]
+    [Module.Free A M] (ρ : GaloisRep ℚ A M) :
+    ((ρ.baseChange B).baseChange kk).conj
+        (TensorProduct.AlgebraTensorModule.cancelBaseChange A B kk kk M) =
+      ρ.baseChange kk := by
+  refine GaloisRep.ext fun σ => LinearMap.ext fun x => ?_
+  rw [GaloisRep.conj_apply, LinearEquiv.conj_apply_apply]
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | tmul c m =>
+      rw [TensorProduct.AlgebraTensorModule.cancelBaseChange_symm_tmul,
+        GaloisRep.baseChange_tmul, GaloisRep.baseChange_tmul,
+        GaloisRep.baseChange_tmul,
+        TensorProduct.AlgebraTensorModule.cancelBaseChange_tmul, one_smul]
+  | add x y hx hy => simp only [map_add, hx, hy]
+
+/-- **Quotient-tower classifying maps** (PROVEN 2026-07-25 — with it the
+pro-finite upgrade `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests`
+below, whose
 other three strata — finiteness of the classifying sets, König, and
-the `p`-adic assembly with its clause passage — are PROVEN over the
-tower vocabulary above): the finite-tests universality of
+the `p`-adic assembly with its clause passage — were already proven over the
+tower vocabulary above, is complete): the finite-tests universality of
 `(Runiv, ρuniv, πuniv)` produces a classifying map at every level of
 the `p`-adic tower of a residually identified test deformation `D`,
 compatible with the `ℤ_p`-structures, with the level-`n` reduction map
 `A/pⁿ⁺¹A →+* k` induced by `D.π`, and with the linear `charFrob`
 coefficients at EVERY prime.
 
-Classical proof (step (1) of the upgrade's docstring, QUOTIENT TOWER,
-together with the nonemptiness half of step (2)): base-change `D`
-along the surjection `D.A ↠ D.A/pⁿ⁺¹D.A` onto a FINITE local
-`ℤ_p`-algebra (finite by `finite_quotient_padicTowerIdeal`, local by
-`isLocalRing_quotient_padicTowerIdeal`, and carrying the discrete
-topology, which is its `ℤ_p`-module topology since it is finite and
-`p`-power torsion).  The hardly ramified conditions push forward along
-this surjective base change: the determinant clause and the tame
-quotient at `2` transport by functoriality of `baseChange`
-(`LinearMap.det_baseChange`, base change of the quotient character),
-unramifiedness outside `2p` is the existing base-change instance
-`GaloisRep.IsUnramifiedAt` of `baseChange`, and flatness at `p` is
-preserved because the open ideals of the finite discrete quotient pull
-back to open ideals of `D.A` — `IsFlatAt` is a condition on ALL
-Artinian quotients, so it is inherited by any further quotient.  The
-residual identification composes with the canonical isomorphism
-`k ⊗_{A/pⁿ⁺¹A} ((A/pⁿ⁺¹A) ⊗_A V) ≅ k ⊗_A V`, and the residual
-`charFrob` datum transports by `charFrob_baseChange`.  Applying the
-finite-tests hypothesis `h` to the resulting Artinian test deformation
-gives the classifying map, whose three clauses are exactly the three
-clauses below (the trace clause holds at every prime with no
-exceptional set, which is why
-`IsWeaklyUniversalOnIdentifiedFiniteTests` is stated with that
-strengthening).
+Proof (step (1) of the upgrade's docstring, QUOTIENT TOWER, together
+with the nonemptiness half of step (2)): base-change `D` along the
+surjection `D.A ↠ D.A/pⁿ⁺¹D.A` onto a FINITE local `ℤ_p`-algebra
+(finite by `finite_quotient_padicTowerIdeal`, local by
+`isLocalRing_quotient_padicTowerIdeal`) and feed the resulting Artinian
+test deformation `Dₙ` to `h`.  Its three clauses are literally the three
+clauses below, once `Dₙ.ρ = D.ρ ⊗ (D.A/pⁿ⁺¹)`'s `charFrob` is computed
+by `charFrob_baseChange` (`Polynomial.coeff_map` and
+`Ideal.Quotient.algebraMap_eq` turn the third clause into the asserted
+`Ideal.Quotient.mk`), and `Dₙ.π := Ideal.Quotient.lift _ D.π hker` is
+definitionally the map named in the statement.
+
+WHAT THE PROOF ACTUALLY DOES, where it differs from the sketch this
+docstring used to carry.
+
+* TOPOLOGY.  The level ring carries the QUOTIENT topology
+  (`topologicalRingQuotientTopology`), not an asserted discrete one: it
+  is again the `ℤ_p`-module topology because the module topology
+  pushes forward along a surjective linear map
+  (`ModuleTopology.eq_coinduced_of_surjective` applied to
+  `Ideal.Quotient.mkₐ ℤ_[p] _`, which is exactly how mathlib's
+  `IsModuleTopology.instQuot` handles a submodule quotient — that
+  instance does not apply verbatim, the ideal quotient and the
+  `ℤ_p`-submodule quotient being different `HasQuotient` instances).
+  Discreteness is TRUE here but never needed, so it is not proven; what
+  the structure demands is `IsModuleTopology`, and continuity of the
+  level reduction map then comes from
+  `continuous_ringHom_of_isModuleTopology` rather than from
+  `continuous_of_discreteTopology`.
+* HARDLY RAMIFIED CLAUSES.  All four transfer in ONE step, by the
+  imported `GaloisRepresentation.isHardlyRamified_baseChange_quotient`
+  (`HardlyRamified/Deformation.lean`) — determinant by
+  `LinearMap.det_baseChange`, unramifiedness by the base-change instance
+  of `GaloisRep.IsUnramifiedAt`, tameness at `2` by
+  `isTameAtTwo_baseChange`, and flatness at `p` by the PROVEN
+  `isFlatAt_baseChange_quotient` (open ideals of the quotient pull back
+  to open ideals of `D.A`, and the double base change collapses by
+  tensor cancellation).  Note this is the QUOTIENT transfer, which is
+  sorry-free; the general-coefficient-map transfer
+  `isHardlyRamified_baseChange` in the same module rests on the open
+  Raynaud leaf `hasFlatProlongationAt_of_pi_surjection` and is NOT used.
+  That module was already in this file's import cone through
+  `Modularity/KhareWintenberger.lean`; only the directness of the import
+  is new.
+* RESIDUAL IDENTIFICATION.  `Dₙ`'s identification is `D`'s composed with
+  the tensor cancellation
+  `k ⊗_{A/pⁿ⁺¹A} ((A/pⁿ⁺¹A) ⊗_A Vd) ≅ k ⊗_A Vd`, which is equivariant by
+  `baseChange_baseChange_conj_cancel` above; `conj_trans` then collapses
+  the two conjugations into one.  The scalar tower
+  `IsScalarTower D.A (D.A/pⁿ⁺¹) k` needed to form the cancellation is
+  `Ideal.Quotient.lift_mk`, i.e. `rfl`.
 
 Both-ways audit: a base-change statement about abstract packages, with
 no arithmetic content beyond that of the finite-tests hypothesis it
 consumes; classically true outright as stated.  CIRCULARITY GUARD
-(inherited): must not be proven through `Family.lean` or anything
-downstream of it (`Lift.lean` included). -/
+(inherited, and RE-CHECKED at the new import 2026-07-25): must not be
+proven through `Family.lean` or anything downstream of it (`Lift.lean`
+included) — the import closure of `HardlyRamified/Deformation.lean`
+contains neither, nor any `Modularity/*`. -/
 theorem exists_ringHom_quotient_padicTower_of_finiteTests.{s, uK, uW, uR}
     {p : ℕ} {hpodd : Odd p} [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [TopologicalSpace k]
@@ -2477,12 +2577,87 @@ theorem exists_ringHom_quotient_padicTower_of_finiteTests.{s, uK, uW, uR}
           ∀ (q : ℕ) (hq : q.Prime),
             ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
               Ideal.Quotient.mk (padicTowerIdeal p D.A n)
-                ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) :=
-  sorry
+                ((D.ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) := by
+  letI := D.commRing
+  letI := D.topologicalSpace
+  letI := D.isTopologicalRing
+  letI := D.isLocalRing
+  letI := D.algebra
+  letI := D.moduleFinite
+  letI := D.isModuleTopology
+  letI := D.addCommGroup
+  letI := D.module
+  letI := D.moduleFiniteVd
+  letI := D.moduleFreeVd
+  intro hker
+  -- the level-`n` coefficient ring: a finite local `ℤ_p`-algebra whose
+  -- QUOTIENT topology is again the `ℤ_p`-module topology
+  haveI : Module.Finite ℤ_[p] (D.A ⧸ padicTowerIdeal p D.A n) :=
+    Module.Finite.of_surjective (Ideal.Quotient.mkₐ ℤ_[p] _).toLinearMap
+      Ideal.Quotient.mk_surjective
+  haveI : IsModuleTopology ℤ_[p] (D.A ⧸ padicTowerIdeal p D.A n) := by
+    constructor
+    rw [ModuleTopology.eq_coinduced_of_surjective
+      (φ := (Ideal.Quotient.mkₐ ℤ_[p] (padicTowerIdeal p D.A n)).toLinearMap)
+      Ideal.Quotient.mk_surjective]
+    rfl
+  have hrank : Module.rank (D.A ⧸ padicTowerIdeal p D.A n)
+      ((D.A ⧸ padicTowerIdeal p D.A n) ⊗[D.A] D.Vd) = 2 := by
+    rw [Module.rank_baseChange, D.rank_eq]
+    simp
+  set πn : (D.A ⧸ padicTowerIdeal p D.A n) →+* k :=
+    Ideal.Quotient.lift (padicTowerIdeal p D.A n) D.π hker
+  have hπnmk : ∀ a : D.A, πn (Ideal.Quotient.mk _ a) = D.π a := fun _ => rfl
+  -- the level-`n` test deformation: `D` base-changed to the tower quotient
+  let Dn : HardlyRamifiedFiniteDeformation.{s, s, uK, uW} hpodd ρbar :=
+    { A := D.A ⧸ padicTowerIdeal p D.A n
+      Vd := (D.A ⧸ padicTowerIdeal p D.A n) ⊗[D.A] D.Vd
+      rank_eq := hrank
+      ρ := D.ρ.baseChange (D.A ⧸ padicTowerIdeal p D.A n)
+      isHardlyRamified := isHardlyRamified_baseChange_quotient hpodd
+        (padicTowerIdeal p D.A n) hrank D.isHardlyRamified
+      π := πn
+      π_surjective := fun y => by
+        obtain ⟨a, ha⟩ := D.π_surjective y
+        exact ⟨Ideal.Quotient.mk _ a, by rw [hπnmk]; exact ha⟩
+      S := D.S
+      charFrob_compat := by
+        intro q hq hqS
+        rw [charFrob_baseChange, Polynomial.coeff_map,
+          Ideal.Quotient.algebraMap_eq, hπnmk]
+        exact D.charFrob_compat q hq hqS }
+  have hfin : Finite Dn.A :=
+    inferInstanceAs (Finite (D.A ⧸ padicTowerIdeal p D.A n))
+  -- its residual identification is `D`'s, moved along the tensor cancellation
+  have hid : Dn.IsResidualIdentified := by
+    letI : Algebra D.A k := D.π.toAlgebra
+    letI : ContinuousSMul D.A k := continuousSMul_of_algebraMap D.A k
+      (by rw [RingHom.algebraMap_toAlgebra]; exact D.continuous_pi)
+    letI : Algebra (D.A ⧸ padicTowerIdeal p D.A n) k := πn.toAlgebra
+    letI : ContinuousSMul (D.A ⧸ padicTowerIdeal p D.A n) k :=
+      continuousSMul_of_algebraMap _ k
+        (by
+          rw [RingHom.algebraMap_toAlgebra]
+          exact continuous_ringHom_of_isModuleTopology (p := p) πn)
+    haveI : IsScalarTower D.A (D.A ⧸ padicTowerIdeal p D.A n) k :=
+      IsScalarTower.of_algebraMap_eq fun _ => rfl
+    obtain ⟨e₀, he₀⟩ := hDid
+    refine ⟨(TensorProduct.AlgebraTensorModule.cancelBaseChange D.A
+        (D.A ⧸ padicTowerIdeal p D.A n) k k D.Vd).trans e₀, ?_⟩
+    rw [← conj_trans, baseChange_baseChange_conj_cancel]
+    exact he₀
+  -- the finite-tests hypothesis at `Dn` is the conclusion
+  obtain ⟨ψ, h1, h2, h3⟩ := h Dn hfin hid
+  refine ⟨ψ, h1, h2, fun q hq => ?_⟩
+  rw [h3 q hq]
+  show ((D.ρ.baseChange (D.A ⧸ padicTowerIdeal p D.A n)).charFrob
+    hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1 = _
+  rw [charFrob_baseChange, Polynomial.coeff_map, Ideal.Quotient.algebraMap_eq]
 
-/-- **Pro-finite limit upgrade** (PROVEN 2026-07-25 over the single
-quotient-tower leaf `exists_ringHom_quotient_padicTower_of_finiteTests`
-— the limit stratum of the strict Mazur core, after the LEVEL cut of
+/-- **Pro-finite limit upgrade** (PROVEN 2026-07-25, and SORRY-FREE
+since its quotient-tower leaf
+`exists_ringHom_quotient_padicTower_of_finiteTests` was proven the same
+day — the limit stratum of the strict Mazur core, after the LEVEL cut of
 2026-07-24): a
 Noetherian package that factors every residually identified
 standard-framed test deformation with FINITE coefficient ring factors
@@ -2504,8 +2679,8 @@ surjective `D.π` onto the field `k` is a maximal ideal, hence THE
 maximal ideal, so every tower ideal is killed by `D.π` and induces a
 level reduction map `πₙ : A/pⁿ⁺¹A →+* k`.
 
-(1) QUOTIENT TOWER — the one remaining leaf,
-`exists_ringHom_quotient_padicTower_of_finiteTests`: base-changing `D`
+(1) QUOTIENT TOWER (PROVEN,
+`exists_ringHom_quotient_padicTower_of_finiteTests`): base-changing `D`
 along `A →+* A/pⁿ⁺¹A` yields residually identified test deformations
 `Dₙ` with finite coefficient rings (the hardly ramified conditions
 push forward along surjective base change, and the residual
@@ -2649,10 +2824,10 @@ H1/H2/H4, Schur via oddness, Ramakrishna's flat condition at `p`,
 CDT's tame condition at `2`, de Smit–Lenstra presentation — tested
 against FINITE coefficient rings only) and the pro-finite limit
 upgrade `isWeaklyUniversalOnIdentifiedDeformation_of_finiteTests`
-(itself PROVEN 2026-07-25 over its own quotient-tower leaf
+(itself PROVEN 2026-07-25, together with its quotient-tower leaf
 `exists_ringHom_quotient_padicTower_of_finiteTests`: König finiteness
-of the classifying sets, and the `p`-adic assembly, are proven
-there)): GIVEN the finiteness of the dual-number tangent space
+of the classifying sets, the `p`-adic assembly, and the level-wise
+base change are all proven there)): GIVEN the finiteness of the dual-number tangent space
 (Schlessinger's H3, supplied by the restricted-ramification finiteness
 leaf through the proven glue of the pillar assembly), the hardly
 ramified deformation problem of an irreducible hardly ramified `ρbar`
