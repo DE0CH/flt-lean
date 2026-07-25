@@ -109,13 +109,19 @@ genuinely modular-curve-theoretic inputs:
   `MazurPointOrder.mem_of_no_forbidden_divisor`): Mazur's uniform
   bound — the order of a rational torsion point lies in
   `{1, …, 10, 12}` (Mazur 1977, Thm 8).
-* `no_prime_torsion_ge_eleven` (sorry node): no rational point of
-  prime order `ℓ ≥ 11` (Mazur 1977, Thm 7; Mazur 1978, "Rational
-  isogenies of prime degree").
-* `no_composite_torsion_order` (sorry node): no rational point of
+* `no_prime_torsion_ge_eleven` (sorry node — IRREDUCIBLE literature
+  citation, audited 2026-07-25): no rational point of prime order
+  `ℓ ≥ 11` (Mazur 1977, Thm 7; Mazur 1978, "Rational isogenies of
+  prime degree"). See its docstring for the two elementary shortcuts
+  that were checked and fail (Mazur's isogeny theorem, reduction plus
+  the Hasse bound).
+* `no_composite_torsion_order` (PROVEN 2026-07-25 as the eleven-way
+  case split over its `Finset` hypothesis): no rational point of
   order `n ∈ {14, 15, 16, 18, 20, 21, 24, 25, 27, 35, 49}` — the
-  minimal composite orders outside the list (Kubert, Ligozat, Kenku;
-  subsumed in Mazur 1977, Thm 8).
+  minimal composite orders outside the list. The content sits in the
+  eleven per-level sorry nodes `no_torsion_order_14`, …,
+  `no_torsion_order_49`, one classical theorem each (Kubert, Ligozat,
+  Kenku; subsumed in Mazur 1977, Thm 8).
 * `torsion_finite_rat` (DERIVED from `mazur_point_order`): the
   rational torsion subgroup is finite — every rational torsion point
   is killed by `2520 = lcm(1, …, 10, 12)`, and the geometric
@@ -138,9 +144,14 @@ genuinely modular-curve-theoretic inputs:
   non-cuspidal rational points; part of the fifteen-groups list of
   Mazur 1977).
 * `not_two_torsion_and_five_point`, `not_two_four_torsion_and_three_point`
-  (sorry nodes): the same exclusions in their literature form — full
-  rational `2`-torsion plus a point of order `5`, resp. a rational
+  (sorry nodes — IRREDUCIBLE literature citations, audited 2026-07-25):
+  the same exclusions in their literature form — full rational
+  `2`-torsion plus a point of order `5`, resp. a rational
   `ℤ/2 × ℤ/4` plus a point of order `3` (Kenku; Mazur 1977, Thm 8).
+  Both are boundary cases of the fifteen-groups list (`ℤ/2 × ℤ/10`,
+  `ℤ/2 × ℤ/12`), so neither follows from any other node here; their
+  docstrings record why the elementary halving machinery and the
+  reduction/Hasse bound both fall short.
 * `not_two_cube_torsion` (PROVEN): no rational `(ℤ/2)³` — the geometric
   `2`-torsion has only `2² = 4` points.
 * `AddCommGroup.exists_rank_le_two_decomposition` (PROVEN — pure
@@ -155,28 +166,193 @@ node): no elliptic curve over `ℚ` has a rational point of order `ℓ` for
 a prime `ℓ ≥ 11`. Mazur, "Modular curves and the Eisenstein ideal"
 (Publ. Math. IHÉS 47, 1977), Thm 7, completed by "Rational isogenies of
 prime degree" (Invent. Math. 44, 1978): the modular curve `X_1(ℓ)` has
-genus `≥ 1` for `ℓ ≥ 11` and its only rational points are cusps. -/
+genus `≥ 1` for `ℓ ≥ 11` and its only rational points are cusps.
+
+IRREDUCIBLE at this mathlib pin (audit 2026-07-25). The recorded route
+is the literature route and needs `X_1(ℓ)` as an arithmetic curve
+together with the Eisenstein-ideal descent on `J_0(ℓ)`; none of that
+exists here. Two candidate shortcuts were checked and both fail:
+
+* *Mazur's isogeny theorem does not close the node.* An order-`ℓ` point
+  generates a rational cyclic subgroup of order `ℓ`, hence a rational
+  `ℓ`-isogeny; but rational `ℓ`-isogenies of prime degree `ℓ ≥ 11` DO
+  exist, for `ℓ ∈ {11, 13, 17, 19, 37, 43, 67, 163}`. The isogeny
+  theorem would only reduce this uniform statement to those eight
+  individual levels, each still a separate deep computation
+  (`X_1(11)`: Billing–Mahler; `X_1(13)`: Mazur–Tate; …).
+* *Reduction at a good prime plus the Hasse bound does not close it.*
+  Torsion injects into `Ẽ(𝔽_p)` for odd `p` of good reduction (and odd
+  torsion does at `p = 2`), so `ℓ ≤ p + 1 + 2√p` there; for `ℓ ≥ 11`
+  this only forbids good reduction at `2, 3, 5` (and at `7` once
+  `ℓ ≥ 17`), i.e. it forces `2 · 3 · 5 ∣ N_E` and stops. -/
 theorem WeierstrassCurve.no_prime_torsion_ge_eleven (E : WeierstrassCurve ℚ)
     [E.IsElliptic] {ℓ : ℕ} (hℓ : ℓ.Prime) (h11 : 11 ≤ ℓ) (Q : (E⁄ℚ).Point) :
     addOrderOf Q ≠ ℓ :=
   sorry
 
+/-!
+#### The eleven critical composite levels, one node each
+
+`no_composite_torsion_order` is PROVEN below as the eleven-way case
+split over its `Finset` hypothesis; the mathematical content sits in the
+eleven per-level nodes `no_torsion_order_14`, …, `no_torsion_order_49`.
+Each of the eleven is one classical theorem — "the modular curve
+`X_1(n)` has no non-cuspidal rational point" for that single `n` — and
+each is an IRREDUCIBLE literature citation at this mathlib pin (audit
+2026-07-25): there is no modular-curve theory available here, and the
+two elementary routes that could conceivably shortcut a level both fail
+uniformly.
+
+* *Divisor reduction fails by design.* Every proper divisor of each of
+  the eleven levels lies in Mazur's allowed set `{1, …, 10, 12}`, so no
+  level follows from another level, nor from
+  `no_prime_torsion_ge_eleven`; that minimality is exactly what
+  `MazurPointOrder.mem_of_no_forbidden_divisor` consumes.
+* *Reduction at a good prime plus the Hasse bound fails.* Rational
+  torsion injects into `Ẽ(𝔽_p)` for every odd prime `p` of good
+  reduction (and the odd part does at `p = 2`), so a rational point of
+  order `n` forces `n ≤ p + 1 + 2√p` at every such `p`. For `n = 14`
+  that only excludes good reduction at `2, 3, 5` — a lower bound on the
+  conductor, never a contradiction, since curves of every such
+  conductor exist.
+
+A formal proof of any one node needs `X_1(n)` as an arithmetic curve
+over `ℚ` together with a determination of its rational points: a
+rank-`0` Mordell–Weil computation for the genus-one levels `14, 15`,
+and Chabauty/Kenku-style arguments (or the Eisenstein-ideal descent)
+for the higher-genus levels. Genera, computed from the standard formula
+`g(X_1(N)) = 1 + (N²/24)∏_{p ∣ N}(1 − p⁻²) − ¼ Σ_{d ∣ N} φ(d)φ(N/d)`:
+`14 ↦ 1`, `15 ↦ 1`, `16 ↦ 2`, `18 ↦ 2`, `20 ↦ 3`, `21 ↦ 5`, `24 ↦ 5`,
+`25 ↦ 12`, `27 ↦ 13`, `35 ↦ 25`, `49 ↦ 69`.
+
+CORRECTION (2026-07-25) to the route previously recorded here: the
+levels `35` and `49` do reduce to `X_0`-nonexistence (a rational point
+of order `n` gives a rational cyclic `n`-isogeny, and `35`, `49` are
+absent from Kenku's list `{1, …, 19, 21, 25, 27, 37, 43, 67, 163}` of
+cyclic isogeny degrees over `ℚ`), but `25` and `27` do NOT: rational
+cyclic isogenies of degree `25` and `27` exist (isogeny classes `11a`
+and `27a` realize them — verified with PARI/GP `ellisomat`), so those
+two levels genuinely need `X_1(25)`, `X_1(27)`.
+-/
+
+/-- **No rational point of order `14`** (sorry node — irreducible
+literature citation): `X_1(14)` has genus `1` and its Jacobian has
+Mordell–Weil rank `0` over `ℚ`, so `X_1(14)(ℚ)` is finite and consists
+of cusps (Kubert–Ligozat; subsumed in Mazur 1977, Thm 8). -/
+theorem WeierstrassCurve.no_torsion_order_14 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 14 :=
+  sorry
+
+/-- **No rational point of order `15`** (sorry node — irreducible
+literature citation): `X_1(15)` has genus `1` and its Jacobian has
+Mordell–Weil rank `0` over `ℚ`, so `X_1(15)(ℚ)` is finite and consists
+of cusps (Kubert–Ligozat; subsumed in Mazur 1977, Thm 8). -/
+theorem WeierstrassCurve.no_torsion_order_15 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 15 :=
+  sorry
+
+/-- **No rational point of order `16`** (sorry node — irreducible
+literature citation): `X_1(16)` has genus `2` and no non-cuspidal
+rational point (Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8).
+Note the elementary halving criterion behind `not_full_four_torsion_rat`
+does not reach this level: a point of order `16` makes ONE `2`-torsion
+abscissa `4`-divisible, giving a single square condition rather than the
+three simultaneous ones that the sign argument needs. -/
+theorem WeierstrassCurve.no_torsion_order_16 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 16 :=
+  sorry
+
+/-- **No rational point of order `18`** (sorry node — irreducible
+literature citation): `X_1(18)` has genus `2` and no non-cuspidal
+rational point (Kenku–Ligozat–Kubert; subsumed in Mazur 1977,
+Thm 8). -/
+theorem WeierstrassCurve.no_torsion_order_18 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 18 :=
+  sorry
+
+/-- **No rational point of order `20`** (sorry node — irreducible
+literature citation): `X_1(20)` has genus `3` and no non-cuspidal
+rational point (Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8).
+Not reducible to `not_two_torsion_and_five_point`: a point of order `20`
+supplies only ONE rational `2`-torsion point, not the full `(ℤ/2)²`. -/
+theorem WeierstrassCurve.no_torsion_order_20 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 20 :=
+  sorry
+
+/-- **No rational point of order `21`** (sorry node — irreducible
+literature citation): `X_1(21)` has genus `5` and no non-cuspidal
+rational point (Kenku–Ligozat–Kubert; subsumed in Mazur 1977,
+Thm 8). -/
+theorem WeierstrassCurve.no_torsion_order_21 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 21 :=
+  sorry
+
+/-- **No rational point of order `24`** (sorry node — irreducible
+literature citation): `X_1(24)` has genus `5` and no non-cuspidal
+rational point (Kenku–Ligozat–Kubert; subsumed in Mazur 1977,
+Thm 8). -/
+theorem WeierstrassCurve.no_torsion_order_24 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 24 :=
+  sorry
+
+/-- **No rational point of order `25`** (sorry node — irreducible
+literature citation): `X_1(25)` has genus `12` and no non-cuspidal
+rational point (subsumed in Mazur 1977, Thm 8). The `X_0` shortcut is
+NOT available at this level: a rational cyclic `25`-isogeny does exist
+(the class `11a` contains one), so `X_0(25)` has non-cuspidal rational
+points and only the `X_1` statement excludes an order-`25` point. -/
+theorem WeierstrassCurve.no_torsion_order_25 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 25 :=
+  sorry
+
+/-- **No rational point of order `27`** (sorry node — irreducible
+literature citation): `X_1(27)` has genus `13` and no non-cuspidal
+rational point (subsumed in Mazur 1977, Thm 8). As at level `25` the
+`X_0` shortcut fails: a rational cyclic `27`-isogeny exists (the class
+`27a` contains one). -/
+theorem WeierstrassCurve.no_torsion_order_27 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 27 :=
+  sorry
+
+/-- **No rational point of order `35`** (sorry node — irreducible
+literature citation): `X_1(35)` has genus `25` and no non-cuspidal
+rational point. Here the `X_0` route is genuinely available: an
+order-`35` point generates a rational cyclic subgroup of order `35`,
+and `35` is not a cyclic isogeny degree over `ℚ` (Kenku's list
+`{1, …, 19, 21, 25, 27, 37, 43, 67, 163}`), so `X_0(35)` already has no
+non-cuspidal rational point. Subsumed in Mazur 1977, Thm 8. -/
+theorem WeierstrassCurve.no_torsion_order_35 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 35 :=
+  sorry
+
+/-- **No rational point of order `49`** (sorry node — irreducible
+literature citation): `X_1(49)` has genus `69` and no non-cuspidal
+rational point; as at level `35` the `X_0(49)` statement suffices, `49`
+being absent from Kenku's list of cyclic isogeny degrees over `ℚ`.
+Subsumed in Mazur 1977, Thm 8. -/
+theorem WeierstrassCurve.no_torsion_order_49 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 49 :=
+  sorry
+
 /-- **No rational torsion point of the critical composite orders**
-(sorry node): no elliptic curve over `ℚ` has a rational point of order
-`n` for `n ∈ {14, 15, 16, 18, 20, 21, 24, 25, 27, 35, 49}` — the
-composite values that are minimal outside Mazur's list `{1, …, 10, 12}`
-(every proper divisor is in the list) and have all prime factors
-`≤ 7`. Each is the statement that the modular curve `X_1(n)` (genus
-`≥ 1` for these `n`) has no non-cuspidal rational point: the levels
-`14, 15` are Kubert–Ligozat (genus one, rank zero), `16, 18, 20, 21,
-24` are Kenku–Ligozat–Kubert, and `25, 27, 35, 49` follow from the
-corresponding `X_0`-nonexistence results; all are subsumed in the
-proof of Mazur 1977, Thm 8. -/
+(PROVEN 2026-07-25 — the eleven-way case split over the `Finset`
+hypothesis, dispatching to the eleven per-level nodes above): no
+elliptic curve over `ℚ` has a rational point of order `n` for
+`n ∈ {14, 15, 16, 18, 20, 21, 24, 25, 27, 35, 49}` — the composite
+values that are minimal outside Mazur's list `{1, …, 10, 12}` (every
+proper divisor is in the list) and have all prime factors `≤ 7`. -/
 theorem WeierstrassCurve.no_composite_torsion_order (E : WeierstrassCurve ℚ)
     [E.IsElliptic] {n : ℕ}
     (hn : n ∈ ({14, 15, 16, 18, 20, 21, 24, 25, 27, 35, 49} : Finset ℕ))
-    (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ n :=
-  sorry
+    (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ n := by
+  simp only [Finset.mem_insert, Finset.mem_singleton] at hn
+  rcases hn with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  exacts [E.no_torsion_order_14 Q, E.no_torsion_order_15 Q,
+    E.no_torsion_order_16 Q, E.no_torsion_order_18 Q,
+    E.no_torsion_order_20 Q, E.no_torsion_order_21 Q,
+    E.no_torsion_order_24 Q, E.no_torsion_order_25 Q,
+    E.no_torsion_order_27 Q, E.no_torsion_order_35 Q,
+    E.no_torsion_order_49 Q]
 
 set_option maxRecDepth 8000 in
 /-- **The divisor-closure reduction behind Mazur's uniform bound**
@@ -781,7 +957,28 @@ Such a curve would carry a rational level structure classified by the
 modular curve `X_1(2,10)`, a genus-one curve of Mordell–Weil rank `0`
 over `ℚ` whose finitely many rational points are all cusps (Kenku,
 "Certain torsion points on elliptic curves defined over the rationals";
-subsumed in Mazur 1977, Thm 8). -/
+subsumed in Mazur 1977, Thm 8).
+
+IRREDUCIBLE at this mathlib pin (audit 2026-07-25). The hypotheses say
+exactly that `E(ℚ)` contains `ℤ/2 × ℤ/10` (order `20`), the first
+`ℤ/2 × ℤ/2m` beyond Mazur's list, so the node is a boundary case of the
+fifteen-groups theorem and cannot follow from any other node here: all
+of `ℤ/10`, `ℤ/2 × ℤ/8`, `(ℤ/2)²` are permitted torsion. Routes checked
+and rejected:
+
+* *The elementary halving machinery is not enough.* Full rational
+  `2`-torsion plus an order-`5` point gives the split model
+  `y² = x(x − α)(x − β)` and a rational root of the `5`-division
+  polynomial, but no halving hypothesis at all — the three simultaneous
+  square conditions that drive `not_full_four_torsion_rat`
+  (`cubic_vieta` + `halving_square`) are simply absent.
+* *Reduction plus Hasse only bounds the conductor.* `20 ∣ #Ẽ(𝔽_p)` at
+  every odd prime `p` of good reduction forces bad reduction at
+  `3, 5, 7, 11` (`p + 1 + 2√p < 20` for `p ≤ 11`) and gives nothing at
+  `p = 2` or `p ≥ 13`.
+
+A formal proof needs `X_1(2,10)` as an arithmetic curve plus a rank-`0`
+Mordell–Weil computation for its Jacobian. -/
 theorem WeierstrassCurve.not_two_torsion_and_five_point (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (φ₂ : (ZMod 2 × ZMod 2) →+ (E⁄ℚ).Point)
     (hφ₂ : Function.Injective φ₂) (Q : (E⁄ℚ).Point) (hQ : addOrderOf Q = 5) :
@@ -819,7 +1016,26 @@ rational point of order `3` simultaneously. Such a curve would carry a
 rational level structure classified by the modular curve `X_1(2,12)`,
 a genus-one curve of Mordell–Weil rank `0` over `ℚ` whose finitely
 many rational points are all cusps (Kenku; subsumed in Mazur 1977,
-Thm 8). -/
+Thm 8).
+
+IRREDUCIBLE at this mathlib pin (audit 2026-07-25). The hypotheses say
+exactly that `E(ℚ)` contains `ℤ/2 × ℤ/12` (order `24`), the second
+`ℤ/2 × ℤ/2m` beyond Mazur's list; `ℤ/12`, `ℤ/2 × ℤ/6` and
+`ℤ/2 × ℤ/8` are all permitted, so no other node here implies it.
+Routes checked and rejected:
+
+* *The elementary halving machinery is not enough.* The `ℤ/2 × ℤ/4`
+  gives full rational `2`-torsion with exactly ONE of the three
+  abscissae halved, hence ONE square condition
+  `(θ₂ − θ₁)(θ₂ − θ₃) = □` from `halving_square`; the sign contradiction
+  of `not_full_four_torsion_rat` needs all three, and the order-`3`
+  point contributes no square condition.
+* *Reduction plus Hasse only bounds the conductor.* `24 ∣ #Ẽ(𝔽_p)` at
+  every odd prime `p` of good reduction forces bad reduction at
+  `3, 5, 7, 11, 13` and gives nothing at `p = 2` or `p ≥ 17`.
+
+A formal proof needs `X_1(2,12)` as an arithmetic curve plus the
+determination of its rational points. -/
 theorem WeierstrassCurve.not_two_four_torsion_and_three_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (ψ : (ZMod 2 × ZMod 4) →+ (E⁄ℚ).Point) (hψ : Function.Injective ψ)
@@ -2267,23 +2483,37 @@ seams:
   ordinary prime `p ≠ 2` (the reduced curve has a nonzero geometric
   `p`-torsion point), the connected line of the connected-étale
   sequence of `E[p]/ℤ_p` has inertia-trivial quotient.
-* `exists_localTorsionQuotient_of_good_ordinary` (sorry node — the
-  surviving local content of the ordinary case, same seam as the
-  PROVEN multiplicative quotients): the local `p`-torsion surjects
-  onto `ℤ/p` inertia-invariantly; the kernel is the formal-group
-  line.
+* `exists_localTorsionQuotient_of_good_ordinary` (DERIVED 2026-07-25
+  from the two bricks below): the local `p`-torsion surjects onto
+  `ℤ/p` inertia-invariantly; the kernel is the formal-group line. The
+  quotient is `red` corestricted to `Ẽ(𝔽̄_p)[p]`, which is cyclic of
+  order `p`, hence `≅ ℤ/p` (`zmodAddEquivOfGenerator`).
+  * `exists_localReductionHom_of_good_reduction` (sorry node — the
+    GEOMETRY): an inertia-invariant reduction homomorphism from the
+    local `p`-torsion onto the `p`-torsion of the reduced curve.
+  * `card_torsion_reduction_of_good_ordinary` (sorry node — the
+    CHARACTERISTIC-`p` content): ordinarity makes `Ẽ(𝔽̄_p)[p]` of
+    order exactly `p`.
 * `not_inertia_stable_line_of_good_of_supersingular` (DERIVED
   2026-07-23 from the local eigenvector leaf below by transporting a
   generator of the stable line along the chosen embedding
   `ℚ̄ ↪ ℚ̂̄_p`): at a good supersingular prime `p ≠ 2` (the reduced
   curve has trivial geometric `p`-torsion), no line of `E[p]` is
   inertia-stable.
-* `not_local_inertia_eigenvector_of_good_of_supersingular` (sorry
-  node — the local fundamental-character content): no nonzero local
-  `p`-torsion point is an inertia eigenvector — inertia acts through
-  the level-2 fundamental character, whose eigenvalues are
-  `𝔽_{p²}`-conjugate and not `𝔽_p`-rational (Serre, Propriétés
-  galoisiennes…, Invent. Math. 15 (1972), §1.11–1.12, Prop. 12).
+* `not_local_inertia_eigenvector_of_good_of_supersingular` (skeleton
+  written 2026-07-25 over two bricks): no nonzero local `p`-torsion
+  point is an inertia eigenvector — inertia acts through the level-2
+  fundamental character, whose eigenvalues are `𝔽_{p²}`-conjugate and
+  not `𝔽_p`-rational (Serre, Propriétés galoisiennes…, Invent. Math.
+  15 (1972), §1.11–1.12, Prop. 12). The two bricks are
+  * `exists_local_inertia_torsion_order_of_good_of_supersingular`
+    (sorry node — the ARITHMETIC: an inertia element no power of which
+    acts trivially unless `p + 1` divides the exponent, i.e. the
+    order-`(p² − 1)` nonsplit-Cartan generator), and
+  * the sorried `hborel` step inside the proof (the LINEAR ALGEBRA: an
+    eigenvector makes the whole inertia image upper-triangular, hence
+    of exponent dividing `p (p − 1)`), the two being contradictory
+    because `p + 1 ∤ p (p − 1)` — proven arithmetic in the same proof.
 * `exists_etale_line_or_no_stable_line_of_good` (DERIVED 2026-07-23
   from the preceding leaf by the tautological fork on the existence
   of an inertia-stable line).
@@ -3119,6 +3349,123 @@ noncomputable instance instDecidableEqAlgClosureResidueFieldAtPrimeRat
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
+/-- **The local reduction homomorphism on the `p`-torsion at a good
+prime** (sorry node, cut 2026-07-25 out of
+`exists_localTorsionQuotient_of_good_ordinary` — the first of the two
+bricks of the ordinary case, and the one carrying the *geometry*): for
+an elliptic curve over `ℚ` with good reduction at `p`, the `p`-torsion
+of the completed base change over the local algebraic closure maps to
+the geometric points of the reduced curve `Ẽ/𝔽̄_p` by a group
+homomorphism `red` which
+
+* is invariant under the local INERTIA: inertia is by definition the
+  subgroup acting trivially on the residue field of the local algebraic
+  closure (`localInertiaGroup` is the inertia subgroup of the maximal
+  ideal of the integral closure), and reduction is Galois-equivariant,
+  so `red (σ P) = red P` for `σ` inertial;
+* hits every `p`-torsion point of `Ẽ`: reduction is surjective on
+  points over the local algebraic closure (Hensel's lemma, the residue
+  field being algebraically closed), and the kernel of reduction — the
+  points of the formal group over the valuation ring of the local
+  algebraic closure — is `p`-divisible there, so a `p`-torsion point of
+  `Ẽ` lifts first to a point of `E` and then, after correcting by a
+  `p`-th root inside the kernel of reduction, to a `p`-torsion point.
+
+The kernel of `red` on the `p`-torsion is exactly the connected
+(formal-group) part of the connected-étale sequence of `E[p]/ℤ_p`.
+Silverman AEC VII.2 (reduction and its kernel), VII.3.1, IV.2–IV.3
+(formal groups, `p`-divisibility); Silverman ATAEC IV.6; the
+kernel-of-reduction lemmas of `Flat.lean`
+(`kernel_add_abscissa_notMem`,
+`kernel_sub_abscissa_notMem_of_residue_eq`) are the intended supply
+line for the valuation-theoretic half. -/
+theorem WeierstrassCurve.exists_localReductionHom_of_good_reduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)] :
+    ∃ red : AddSubgroup.torsionBy
+        ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ) →+
+        ((E.reduction
+          (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+          (AlgebraicClosure (IsLocalRing.ResidueField
+            (Localization.AtPrime
+              hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point,
+      (∀ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+        ∀ (P Q : AddSubgroup.torsionBy
+          ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))).Point ((p : ℕ) : ℤ)),
+          (Q : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))).Point) =
+            WeierstrassCurve.Affine.Point.map
+              (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat)))
+              ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat))
+                ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat]
+                (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat)))).toAlgHom
+              (P : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+                (HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat))).Point) →
+          red Q = red P) ∧
+      ∀ y ∈ AddSubgroup.torsionBy
+          ((E.reduction
+            (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+            (AlgebraicClosure (IsLocalRing.ResidueField
+              (Localization.AtPrime
+                hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point
+          ((p : ℕ) : ℤ),
+        ∃ P, red P = y :=
+  sorry
+
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+/-- **Ordinary reduction: the geometric `p`-torsion of the reduced curve
+has order exactly `p`** (sorry node, cut 2026-07-25 out of
+`exists_localTorsionQuotient_of_good_ordinary` — the second brick of the
+ordinary case, and the one carrying the *characteristic-`p`* content):
+if the reduction `Ẽ` of a curve with good reduction at `p` has a nonzero
+geometric `p`-torsion point (this is the definition of ordinarity used
+here), then `Ẽ(𝔽̄_p)[p]` has exactly `p` elements.
+
+In characteristic `p` the multiplication-by-`p` isogeny of an elliptic
+curve has degree `p²` and inseparable degree `p` or `p²`; hence its
+kernel of geometric points is either cyclic of order `p` (ordinary) or
+trivial (supersingular). Ordinarity excludes the second case, and the
+first is exactly the claim. Silverman AEC V.3.1 (a)–(b) and III.6.4;
+Silverman ATAEC IV.6. -/
+theorem WeierstrassCurve.card_torsion_reduction_of_good_ordinary
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (hord : ∃ P : ((E.reduction
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point,
+      P ≠ 0 ∧ (p : ℤ) • P = 0) :
+    Nat.card (AddSubgroup.torsionBy
+      ((E.reduction
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point
+      ((p : ℕ) : ℤ)) = p :=
+  sorry
+
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
 /-- **The local connected-étale torsion quotient at a good ORDINARY
 prime** (sorry node — the surviving local content of the ordinary
 case, cut 2026-07-23 at the same seam as the PROVEN multiplicative
@@ -3136,7 +3483,7 @@ ATAEC IV.6, V; the finite-flat infrastructure of `Flat.lean`
 (`torsion_flat_of_good_reduction`, the kernel-of-reduction lemmas) is
 the intended supply line. -/
 theorem WeierstrassCurve.exists_localTorsionQuotient_of_good_ordinary
-    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime) (hodd : p ≠ 2)
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime) (_hodd : p ≠ 2)
     [E.HasGoodReduction
       (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
     (hord : ∃ P : ((E.reduction
@@ -3175,8 +3522,45 @@ theorem WeierstrassCurve.exists_localTorsionQuotient_of_good_ordinary
                 hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
                 (HeightOneSpectrum.adicCompletion ℚ
                   hp.toHeightOneSpectrumRingOfIntegersRat))).Point) →
-          π Q = π P :=
-  sorry
+          π Q = π P := by
+  classical
+  haveI : Fact p.Prime := ⟨hp⟩
+  -- the two bricks: the reduction homomorphism, and the order of `Ẽ(𝔽̄_p)[p]`
+  obtain ⟨red, hredinv, hredsurj⟩ :=
+    E.exists_localReductionHom_of_good_reduction hp
+  have hcard := E.card_torsion_reduction_of_good_ordinary hp hord
+  -- a group of prime order is cyclic, hence isomorphic to `ℤ/p`
+  have hcyc := isAddCyclic_of_prime_card hcard
+  obtain ⟨g, hg⟩ := hcyc.exists_generator
+  have e := zmodAddEquivOfGenerator hg hcard
+  -- `red` lands in the `p`-torsion of the reduced curve: it is a homomorphism out of a
+  -- group killed by `p`
+  have hmem : ∀ P, red P ∈ AddSubgroup.torsionBy
+      ((E.reduction
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point
+      ((p : ℕ) : ℤ) := by
+    intro P
+    refine AddSubgroup.torsionBy.nsmul_iff.mpr ?_
+    calc (p : ℕ) • red P = red ((p : ℕ) • P) := (map_nsmul red p P).symm
+      _ = red 0 := by rw [AddSubgroup.torsionBy.nsmul P]
+      _ = 0 := map_zero red
+  refine ⟨e.symm.toAddMonoidHom.comp (red.codRestrict _ hmem), ?_, ?_⟩
+  · -- surjectivity: every element of `ℤ/p` is `e.symm` of a value of `red`
+    intro c
+    obtain ⟨P, hP⟩ := hredsurj _ (e c).2
+    refine ⟨P, ?_⟩
+    have hPT : (red.codRestrict _ hmem) P = e c := Subtype.ext hP
+    show e.symm ((red.codRestrict _ hmem) P) = c
+    rw [hPT, AddEquiv.symm_apply_apply]
+  · -- inertia invariance: inherited from the invariance of `red`
+    intro σ hσ P Q hQ
+    have h1 : red Q = red P := hredinv σ hσ P Q hQ
+    have h2 : (red.codRestrict _ hmem) Q = (red.codRestrict _ hmem) P := Subtype.ext h1
+    show e.symm ((red.codRestrict _ hmem) Q) = e.symm ((red.codRestrict _ hmem) P)
+    rw [h2]
 
 open IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
@@ -3209,6 +3593,64 @@ theorem WeierstrassCurve.exists_etale_line_of_good_of_ordinary
   obtain ⟨π, hπsurj, hπinv⟩ :=
     E.exists_localTorsionQuotient_of_good_ordinary hp hodd hord
   exact E.exists_etale_line_of_localTorsionQuotient hp π hπsurj hπinv
+
+open ValuativeRel IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+/-- **Serre's level-2 fundamental character: an inertia element whose
+action on the local `p`-torsion has order divisible by `p + 1`** (sorry
+node, cut 2026-07-25 out of
+`not_local_inertia_eigenvector_of_good_of_supersingular` — the
+*arithmetic* brick of the supersingular case; the *linear-algebra*
+brick, the Borel bound, is the sorried step inside that theorem's
+proof): for an elliptic curve over `ℚ` with good supersingular
+reduction at an odd prime `p` there is an element `σ` of the local
+inertia at `p` such that no power `σ ^ k` with `p + 1 ∤ k` acts
+trivially on the local `p`-torsion.
+
+This is the group-order half of Serre, *Propriétés galoisiennes des
+points d'ordre fini des courbes elliptiques*, Invent. Math. 15 (1972),
+§1.9–1.12, Prop. 12. Supersingularity puts all of `E[p]` inside the
+kernel of reduction, i.e. inside the `p`-torsion of the formal group,
+which has height `2`; the Newton polygon of `[p](T)` then has the single
+slope `1/(p² − 1)`, so every nonzero point of `E[p]` generates a totally
+ramified extension of degree divisible by `(p² − 1)/2` of the
+unramified quadratic extension of `ℚ_p`. Consequently the inertia image
+in `Aut(E[p]) ≅ GL₂(𝔽_p)` contains the full nonsplit Cartan subgroup
+`𝔽_{p²}ˣ` — inertia acts through the level-2 fundamental character
+`φ₂`, whose image is cyclic of order `p² − 1 = (p − 1)(p + 1)` — and a
+generator `σ` of the tame quotient has order exactly `p² − 1` on
+`E[p]`; the conclusion below records only the divisibility by `p + 1`,
+which is what the eigenvector contradiction needs. Silverman ATAEC
+IV.6, V; Serre, op. cit. -/
+theorem WeierstrassCurve.exists_local_inertia_torsion_order_of_good_of_supersingular
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime) (hodd : p ≠ 2)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (hss : ∀ P : ((E.reduction
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point,
+      (p : ℤ) • P = 0 → P = 0) :
+    ∃ σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ k : ℕ,
+        (∀ Q : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+            (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat))).Point,
+          ((p : ℕ) : ℤ) • Q = 0 →
+          WeierstrassCurve.Affine.Point.map
+            (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat)))
+            ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat))
+                ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat]
+                (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                  hp.toHeightOneSpectrumRingOfIntegersRat))) ^ k).toAlgHom Q = Q) →
+        (p + 1) ∣ k :=
+  sorry
 
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
@@ -3253,8 +3695,69 @@ theorem WeierstrassCurve.not_local_inertia_eigenvector_of_good_of_supersingular
             (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
               hp.toHeightOneSpectrumRingOfIntegersRat)))).toAlgHom Q =
         c.val • Q) :
-    False :=
-  sorry
+    False := by
+  classical
+  -- ARITHMETIC BRICK (Serre's level-2 fundamental character): an inertia element whose
+  -- action on the local `p`-torsion has order divisible by `p + 1`.
+  obtain ⟨σ, hσI, hσord⟩ :=
+    E.exists_local_inertia_torsion_order_of_good_of_supersingular hp hodd hss
+  -- LINEAR-ALGEBRA BRICK (the Borel bound): if some nonzero `p`-torsion point is an
+  -- eigenvector of the whole inertia, then the line it spans is inertia-stable, so every
+  -- inertia element acts on the `2`-dimensional `𝔽_p`-space `E[p]` (of cardinality `p²`,
+  -- `TorsionCard.card_torsionBy`) by an upper-triangular matrix `[[χ, α], [0, ψ]]` in a
+  -- basis `(Q, w)` with `w ∉ ⟨Q⟩`. Since `χ, ψ ∈ 𝔽_pˣ` satisfy `χ ^ (p - 1) = ψ ^ (p - 1)
+  -- = 1` (Fermat), the `(p - 1)`-st power of any inertia element is unipotent, hence
+  -- killed by a further `p`-th power: the whole inertia acts through a group of exponent
+  -- dividing `p * (p - 1)`.
+  have hborel : σ ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat →
+      (∀ σ' ∈ localInertiaGroup hp.toHeightOneSpectrumRingOfIntegersRat,
+        ∃ c : ZMod p,
+          WeierstrassCurve.Affine.Point.map
+            (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+              hp.toHeightOneSpectrumRingOfIntegersRat)))
+            ((σ' : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat))
+              ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat]
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat)))).toAlgHom Q =
+          c.val • Q) →
+      ((p : ℕ) : ℤ) • Q = 0 → Q ≠ 0 →
+      ∀ Q' : ((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat))).Point,
+        ((p : ℕ) : ℤ) • Q' = 0 →
+        WeierstrassCurve.Affine.Point.map
+          (W' := E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+            hp.toHeightOneSpectrumRingOfIntegersRat)))
+          ((σ : (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat))
+              ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat]
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+                hp.toHeightOneSpectrumRingOfIntegersRat))) ^
+            (p * (p - 1))).toAlgHom Q' = Q' := by
+    sorry
+  -- `p + 1` does not divide `p * (p - 1)`: the product is `2` modulo `p + 1`
+  have harith : ¬ ((p + 1) ∣ p * (p - 1)) := by
+    intro hdvd
+    have h2 := hp.two_le
+    have h3 : 3 ≤ p := by omega
+    have hid : p * (p - 1) = (p + 1) * (p - 2) + 2 := by
+      obtain ⟨q, hq⟩ : ∃ q, p = q + 3 := ⟨p - 3, by omega⟩
+      rw [hq]
+      have e1 : q + 3 - 1 = q + 2 := by omega
+      have e2 : q + 3 - 2 = q + 1 := by omega
+      rw [e1, e2]
+      ring
+    rw [hid] at hdvd
+    have h4 : (p + 1) ∣ 2 := by
+      have h5 := Nat.dvd_sub hdvd (dvd_mul_right (p + 1) (p - 2))
+      rwa [Nat.add_sub_cancel_left] at h5
+    have h6 := Nat.le_of_dvd (by norm_num) h4
+    omega
+  exact harith (hσord (p * (p - 1)) (hborel hσI heig hQtor hQ0))
 
 open IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
@@ -4250,8 +4753,19 @@ end TwoTorsion
   `ℓ = 2` the unique nonzero element of `C` is Galois-fixed and
   descends to a rational `2`-torsion point).
 * `WeierstrassCurve.exists_quotient_isogeny_of_rational_two_torsion`
-  (sorry node) — the classical `2`-isogeny by a rational `2`-torsion
-  point (Vélu 1971; Silverman AEC III.4.5, X.4.9).
+  (DERIVED 2026-07-25 from the two bricks below) — the classical
+  `2`-isogeny by a rational `2`-torsion point (Vélu 1971; Silverman
+  AEC III.4.5, X.4.9). The derivation composes the normalising
+  isomorphism with the normal-form isogeny.
+  * `WeierstrassCurve.exists_normalForm_pointEquiv_of_rational_two_torsion`
+    (sorry node) — the `ℚ`-isomorphism to `y² = x³ + a x² + b x` taking
+    the `2`-torsion point to `(0, 0)` (completing the square, then
+    translating), packaged as a Galois-equivariant isomorphism on
+    `ℚ̄`-points.
+  * `WeierstrassCurve.exists_quotient_isogeny_of_normalForm_two_torsion`
+    (sorry node) — the explicit `2`-isogeny
+    `(x, y) ↦ (y²/x², y (b − x²)/x²)` onto
+    `y² = x³ − 2 a x² + (a² − 4 b) x`, with kernel `{0, (0, 0)}`.
 * `WeierstrassCurve.exists_quotient_isogeny_of_odd_prime_card` (sorry
   node) — the true Vélu core, cut at the literature statement: the
   quotient by a Galois-stable CYCLIC subgroup of ODD prime order
@@ -4268,6 +4782,78 @@ pushes the rational `2`-torsion through (injectively, because the
 kernel has odd exponent `p`), and descends both to `ℚ`-points by
 `exists_point_eq_baseChange_of_fixed`.
 -/
+
+/-- **Normal form for a rational `2`-torsion point** (sorry node, cut
+2026-07-25 out of `exists_quotient_isogeny_of_rational_two_torsion`):
+an elliptic curve over `ℚ` carrying a nonzero rational `2`-torsion
+point `T` is `ℚ`-isomorphic to a curve in the normal form
+`y² = x³ + a x² + b x` (that is, `⟨0, a, 0, b, 0⟩`) by an isomorphism
+taking `T` to the point `(0, 0)`; the isomorphism induces a
+Galois-equivariant isomorphism of the groups of `ℚ̄`-points.
+
+Route (`char ℚ ≠ 2`): completing the square — the variable change
+`(u, r, s, t) = (1, 0, -a₁/2, -a₃/2)` — brings `E` to the form
+`y² = x³ + a₂' x² + a₄' x + a₆'`, in which the `2`-torsion points are
+exactly the points `(x₀, 0)` with `x₀` a root of the cubic
+(`2y + a₁x + a₃ = 0` characterises `2`-torsion, Silverman AEC III.2.3),
+so `T` becomes `(x₀, 0)` with `x₀ ∈ ℚ`; the translation `x ↦ x + x₀`
+— the variable change `(1, x₀, 0, 0)` — then moves `T` to `(0, 0)` and
+makes the constant term vanish, leaving `y² = x³ + a x² + b x`. Both
+changes are defined over `ℚ`, so the induced map on `ℚ̄`-points
+(`Affine.Point.equivVariableChange` after base change) commutes with
+the Galois action, its coordinate formulas having `ℚ`-coefficients.
+Silverman AEC III.1, III.2.3. -/
+theorem WeierstrassCurve.exists_normalForm_pointEquiv_of_rational_two_torsion
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (T : (E⁄ℚ).Point) (hT2 : T + T = 0) (hT0 : T ≠ 0) :
+    ∃ (a b : ℚ) (_ : (⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic)
+      (h00 : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular
+        0 0)
+      (Ψ : (E⁄(AlgebraicClosure ℚ)).Point ≃+
+        ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point),
+      (∀ (σ : Field.absoluteGaloisGroup ℚ) (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        Ψ (Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+          Affine.Point.map
+            (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (Ψ Pt)) ∧
+      Ψ (Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) T) =
+        Affine.Point.some 0 0 h00 :=
+  sorry
+
+/-- **The classical `2`-isogeny, in normal form** (sorry node, cut
+2026-07-25 out of `exists_quotient_isogeny_of_rational_two_torsion` —
+this is the literature computation proper): for
+`E₀ : y² = x³ + a x² + b x` over `ℚ`, an elliptic curve (so
+`Δ = 16 b² (a² − 4 b) ≠ 0`), the quotient of `E₀` by the order-`2`
+subgroup `{0, (0, 0)}` is the elliptic curve
+`E₀' : y² = x³ − 2 a x² + (a² − 4 b) x`, and the quotient isogeny on
+points is
+
+  `φ(x, y) = (y²/x², y (b − x²)/x²)` for `x ≠ 0`,
+  `φ(0, 0) = φ(0) = 0`,
+
+a group homomorphism with kernel exactly `{0, (0, 0)}`, Galois-
+equivariant because its coordinate functions are rational functions
+with `ℚ`-coefficients (so they commute with every `σ ∈ Gal(ℚ̄/ℚ)`).
+The dual isogeny is given by the same formulas for `E₀'`, and
+`φ̂ ∘ φ = [2]`. Vélu 1971 (kernel `{0, (0,0)}`); Silverman AEC III.4.5,
+X.4.9 and Exercise 3.13. -/
+theorem WeierstrassCurve.exists_quotient_isogeny_of_normalForm_two_torsion
+    (a b : ℚ) [(⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ).IsElliptic]
+    (h00 : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Nonsingular
+      0 0) :
+    ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
+      (φ : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point →+
+        (E'⁄(AlgebraicClosure ℚ)).Point),
+      (∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point),
+        φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
+      (∀ Pt : ((⟨0, a, 0, b, 0⟩ : WeierstrassCurve ℚ)⁄(AlgebraicClosure ℚ)).Point,
+        φ Pt = 0 ↔ Pt = 0 ∨ Pt = Affine.Point.some 0 0 h00) :=
+  sorry
 
 /-- **The rational two-torsion quotient isogeny — the classical
 `2`-isogeny** (sorry node, cut out of
@@ -4294,8 +4880,33 @@ theorem WeierstrassCurve.exists_quotient_isogeny_of_rational_two_torsion
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
       (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
         φ Pt = 0 ↔ Pt = 0 ∨
-          Pt = Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) T) :=
-  sorry
+          Pt = Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) T) := by
+  classical
+  -- normalise: `E ≅ y² = x³ + a x² + b x` with `T ↦ (0, 0)`
+  obtain ⟨a, b, hell, h00, Ψ, hΨgal, hΨT⟩ :=
+    E.exists_normalForm_pointEquiv_of_rational_two_torsion T hT2 hT0
+  haveI := hell
+  -- the explicit `2`-isogeny of the normal form
+  obtain ⟨E', hE', φ₀, hφ₀gal, hφ₀ker⟩ :=
+    WeierstrassCurve.exists_quotient_isogeny_of_normalForm_two_torsion a b h00
+  -- transport it back along the normalising isomorphism
+  refine ⟨E', hE', φ₀.comp Ψ.toAddMonoidHom, ?_, ?_⟩
+  · intro σ Pt
+    show φ₀ (Ψ (Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt)) =
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ₀ (Ψ Pt))
+    rw [hΨgal σ Pt, hφ₀gal σ (Ψ Pt)]
+  · intro Pt
+    show φ₀ (Ψ Pt) = 0 ↔ _
+    rw [hφ₀ker (Ψ Pt)]
+    constructor
+    · rintro (h | h)
+      · exact Or.inl (Ψ.injective (h.trans (map_zero Ψ).symm))
+      · exact Or.inr (Ψ.injective (h.trans hΨT.symm))
+    · rintro (rfl | rfl)
+      · exact Or.inl (map_zero Ψ)
+      · exact Or.inr hΨT
 
 /-- **The odd-prime-order quotient-isogeny leaf — Vélu's construction**
 (sorry node, sharpened 2026-07-23 from the general prime-order
@@ -4309,7 +4920,46 @@ III.4.12 and Exercise 3.13) give the quotient curve's Weierstrass
 coefficients as symmetric functions of the coordinates of the nonzero
 points of `C` — rational because `C` is Galois-stable — and the
 isogeny's coordinate functions as explicit rational functions; none of
-this is in mathlib yet. -/
+this is in mathlib yet.
+
+**Route audit (2026-07-25).** This node did NOT decompose further at
+this level: unlike the `2`-isogeny case — now split into a
+normalisation brick and a normal-form-formula brick — the odd case has
+no coordinate normalisation to hide behind (the points of `C` are not
+individually rational), so every honest cut still has to produce the
+quotient curve and the map together, i.e. it remains a single
+construction. The recommended shape for a dedicated attack, in its own
+module (say `Fermat/FLT/EllipticCurve/Velu.lean`), over an arbitrary
+base field and an arbitrary finite subgroup, is:
+
+1. Choose a `Finset S` of representatives of `C \ {0}` modulo `±`
+   (`(ℓ − 1)/2` points, `ℓ` odd, so no point of order `2` occurs).
+2. For `Q = (x_Q, y_Q) ∈ S` set, following Vélu 1971 (p. 238; see also
+   Kohel's thesis §2.4, which transcribes them in this normalisation),
+   `gˣ_Q = 3x_Q² + 2a₂x_Q + a₄ − a₁y_Q`,
+   `gʸ_Q = −2y_Q − a₁x_Q − a₃`, `t_Q = 2gˣ_Q − a₁gʸ_Q`,
+   `u_Q = (gʸ_Q)²`, `w_Q = u_Q + t_Q x_Q`, and
+   `t = Σ_{Q ∈ S} t_Q`, `w = Σ_{Q ∈ S} w_Q`.
+3. The quotient curve is
+   `E' : y² + a₁xy + a₃y = x³ + a₂x² + (a₄ − 5t)x
+        + (a₆ − (a₁² + 4a₂)t − 7w)`,
+   and the isogeny is `x' = x + Σ_Q [t_Q/(x − x_Q) + u_Q/(x − x_Q)²]`
+   with the matching expression for `y'` (transcribe it from the
+   source; it is the `x`-derivative combination
+   `y' = y − Σ_Q [2u_Q(y + …)/(x − x_Q)³ + …]`).
+4. First sub-brick, and the natural entry point: `t, w ∈ ℚ` — each
+   summand is invariant under `Q ↦ −Q` and Galois permutes `C`, hence
+   permutes `S` up to sign, so the sums are Galois-fixed and descend by
+   `InfiniteGalois.mem_range_algebraMap_iff_fixed` (the scalar analogue
+   of `exists_point_eq_baseChange_of_fixed` above).
+5. The remaining bricks are the geometry: `E'.IsElliptic`, the
+   well-definedness (nonsingularity of the image point), ADDITIVITY,
+   and the kernel. Additivity by direct coordinate algebra is
+   prohibitive; the standard route is the function-field one — `φ`
+   corresponds to the inclusion of the `C`-invariant subfield of
+   `W.FunctionField` (mathlib's `WeierstrassCurve.Affine.FunctionField`
+   is available), under which additivity is inherited from the
+   translation action rather than computed. -/
 theorem WeierstrassCurve.exists_quotient_isogeny_of_odd_prime_card
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))

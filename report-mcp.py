@@ -49,6 +49,10 @@ class PipeLsp:
         # publishDiagnostics notification. `diags` alone cannot be trusted
         # as "clean": see the guard at the end of `diagnostics`.
         self.published = set()
+        # uri -> content hash the ADOPTED (persisted) diagnostics belong to,
+        # so an inherited payload is only trusted for the content it was
+        # actually produced from.
+        self.published_hashes = {}
         self.doc_versions = {}
         self.doc_hashes = {}
         self.initialized = False
@@ -192,11 +196,32 @@ class PipeLsp:
         for uri, rec in docs.items():
             self.doc_versions.setdefault(uri, rec.get("version", 0))
             self.doc_hashes.setdefault(uri, rec.get("hash"))
+            # Adopt the last published diagnostics too, not just the version.
+            #
+            # `publishDiagnostics` is a one-shot notification to whichever
+            # client was attached when the server produced it. Without this,
+            # a fresh client that attaches to an already-elaborated document
+            # has an empty table and cannot tell "clean" from "never heard" —
+            # which produced a false clean on a file with six sorries
+            # (2026-07-25, reported independently by two agents). Persisting
+            # the payload lets the attaching client return the REAL answer
+            # instead of forcing a content edit to re-provoke a publish.
+            #
+            # Trust it only when the recorded hash matches what we are about
+            # to elaborate; `diagnostics` re-checks this against the file it
+            # just read before using the adopted value.
+            if "diags" in rec:
+                self.diags.setdefault(uri, rec["diags"])
+                self.published_hashes[uri] = rec.get("hash")
 
     def _save_docs(self):
         """Persist the open-document map, preserving the init marker."""
         docs = {
-            uri: {"version": v, "hash": self.doc_hashes.get(uri)}
+            uri: {
+                "version": v,
+                "hash": self.doc_hashes.get(uri),
+                **({"diags": self.diags[uri]} if uri in self.diags else {}),
+            }
             for uri, v in self.doc_versions.items()
         }
         try:
@@ -333,6 +358,14 @@ class PipeLsp:
                 {"uri": uri, "version": version},
                 timeout,
             )
+            # Persist AGAIN now that the publish has arrived: the first save
+            # runs before `waitForDiagnostics` and so cannot contain the
+            # payload. This second write is what lets the next client process
+            # in this server session return a real answer instead of an
+            # unheard-empty one.
+            if uri in self.published:
+                self.published_hashes[uri] = self.doc_hashes.get(uri)
+                self._save_docs()
             # FALSE-CLEAN GUARD (2026-07-25, after an agent was told a file
             # with five sorries had zero diagnostics).
             #
@@ -353,6 +386,16 @@ class PipeLsp:
             # file on every client restart, i.e. 60+ concurrent rebuilds of
             # the largest modules in the fleet — the exact thundering herd
             # the shared map exists to prevent.
+            if uri not in self.published and self.published_hashes.get(uri) == content_hash:
+                # We did not hear the publish ourselves, but an earlier client
+                # in this server session persisted the diagnostics it heard,
+                # AND they were produced from exactly the content we just
+                # elaborated. That is a real answer, not a guess.
+                return {
+                    "diagnostics": self.diags.get(uri, []),
+                    "verified": True,
+                    "source": "adopted from this server session's persisted publish",
+                }
             if uri not in self.published:
                 return {
                     "diagnostics": [],
