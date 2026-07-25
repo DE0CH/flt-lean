@@ -5909,31 +5909,43 @@ theorem isFlatPointsGroupAt_of_hopfOrder {X : Type*} [AddCommGroup X]
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **Étale–Galois, existence half** (sorry node — step (β1) of the
-subobject closure, added 2026-07-25 by the decomposition of
+/-- **Étale–Galois, existence half** (PROVEN 2026-07-25 — step (β1) of
+the subobject closure, opened the same day by the decomposition of
 `IsFlatPointsGroupAt.of_injective`): a `Γ Kᵥ`-module `Y` that embeds
 `Γ Kᵥ`-equivariantly into the `Kᵥᵃˡᵍ`-points of a finite étale
 `Kᵥ`-Hopf algebra `Q` is ITSELF the point group of a finite étale
 `Kᵥ`-Hopf algebra. This is Grothendieck's anti-equivalence between
 finite étale `Kᵥ`-algebras and finite discrete `Γ Kᵥ`-sets, with the
-group structure carried along. Intended proof, entirely inside the
+group structure carried along. The proof runs entirely inside the
 PROVEN Gelfand-duality machinery of
 `KnownIn1980s/EllipticCurves/Flat.lean`:
 * `Y` is FINITE: `Q` is module-finite over `Kᵥ`, so it has finitely
   many `Kᵥᵃˡᵍ`-points (`Finite.algHom` is an instance on the pin) and
   `j` is injective.
 * the action of `Γ Kᵥ` on `Y` factors through a FINITE Galois
-  quotient `Gal(L/Kᵥ)`: the action on the points of `Q` does — the
-  finitely many points take values in a finite subextension `L` of
-  `Kᵥᵃˡᵍ`, which may be enlarged to be Galois — and `j` is
-  equivariant and injective, so the same `L` works for `Y`.
+  quotient `Gal(L/Kᵥ)`. Concretely: a `Kᵥ`-basis `b` of `Q` is finite,
+  so the values `φ (b i)` over the finitely many points `φ` form a
+  FINITE subset `T` of `Kᵥᵃˡᵍ`; `L₀ := Kᵥ(T)` is finite over `Kᵥ`
+  (`IntermediateField.finiteDimensional_adjoin`, every element being
+  integral) and contains the whole image of every point, since points
+  are `Kᵥ`-linear in `b`; its normal closure `L` in `Kᵥᵃˡᵍ` is finite
+  (`normalClosure.is_finiteDimensional`) and Galois (normal, and
+  separable in characteristic zero). Two absolute automorphisms with
+  the same restriction to `L` therefore act identically on the points
+  of `Q` (`AlgEquiv.restrictNormalHom_apply`), hence — `j` being
+  equivariant and injective — identically on `Y`. The descended
+  `ρ : Gal(L/Kᵥ) →* AddMonoid.End Y` is built from the canonical lift
+  `AlgEquiv.liftNormal`, whose `restrictNormalHom` is the identity
+  (`AlgEquiv.restrict_liftNormal`), so `map_one`/`map_mul` are
+  instances of that same "agree on `L` ⇒ agree on `Y`" lemma.
 * `exists_finiteQuotient_galoisModule_etale_package` (`Small.{0} Kᵥ`
   holds, `Ωᵥ` is a separable closure in characteristic zero) then
   produces exactly `H`, `Module.Finite`, `Algebra.Etale` and an
   equivariant additive bijection of its points with `Y`; the
   `WithConv` wrapper of that statement is the same monoid as the
   vendored bare-hom one by `vendored_mul_eq_convMul` /
-  `vendored_one_eq_convOne`.
+  `vendored_one_eq_convOne`, which is how the `≃+` it returns becomes
+  the bare-hom `AddMonoidHom` demanded here.
 Unconditionally TRUE; no hypothesis package. -/
 theorem exists_etaleHopfAlgebra_of_points_embedding
     (Q : Type) [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
@@ -5944,8 +5956,115 @@ theorem exists_etaleHopfAlgebra_of_points_embedding
     ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra Kᵥ H) (_ : Module.Finite Kᵥ H)
       (_ : Algebra.Etale Kᵥ H) (e : Additive (H →ₐ[Kᵥ] Ωᵥ) →+ Y),
       Function.Bijective e ∧
-        ∀ (g : Γᵥ) (y : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • y) = g • e y :=
-  sorry
+        ∀ (g : Γᵥ) (y : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • y) = g • e y := by
+  classical
+  haveI : Finite Y := Finite.of_injective j hj
+  -- a finite `Kᵥ`-basis of `Q`, and the finite set of all the values taken by
+  -- all the (finitely many) points of `Q` on that basis
+  set n := Module.finrank Kᵥ Q
+  set b := Module.finBasis Kᵥ Q
+  set T : Set Ωᵥ := Set.range (fun p : (Q →ₐ[Kᵥ] Ωᵥ) × Fin n => p.1 (b p.2))
+  haveI : Finite T := Set.Finite.to_subtype (Set.finite_range _)
+  -- the finite subextension over which every point of `Q` is defined, and its
+  -- normal (hence Galois, characteristic zero) closure
+  set L₀ : IntermediateField Kᵥ Ωᵥ := IntermediateField.adjoin Kᵥ T
+  haveI : FiniteDimensional Kᵥ L₀ :=
+    IntermediateField.finiteDimensional_adjoin
+      (fun x _ => (Algebra.IsIntegral.isIntegral (R := Kᵥ) x))
+  set L : IntermediateField Kᵥ Ωᵥ := IntermediateField.normalClosure Kᵥ L₀ Ωᵥ
+  -- every point of `Q` takes values in `L`
+  have hbT : ∀ (φ : Q →ₐ[Kᵥ] Ωᵥ) (i : Fin n), φ (b i) ∈ L₀ :=
+    fun φ i => IntermediateField.subset_adjoin Kᵥ T ⟨(φ, i), rfl⟩
+  have hL₀L : L₀ ≤ L := IntermediateField.le_normalClosure L₀
+  have hval : ∀ (φ : Q →ₐ[Kᵥ] Ωᵥ) (x : Q), φ x ∈ L := by
+    intro φ x
+    rw [← b.sum_repr x, map_sum]
+    refine sum_mem (fun i _ => ?_)
+    rw [Algebra.smul_def, map_mul, AlgHom.commutes]
+    exact mul_mem (L.algebraMap_mem _) (hL₀L (hbT φ i))
+  -- two absolute automorphisms agreeing on `L` act the same on the points of `Q`
+  have hagreepts : ∀ (σ τ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ),
+      AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L σ =
+        AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L τ →
+      ∀ φ : Q →ₐ[Kᵥ] Ωᵥ, σ.toAlgHom.comp φ = τ.toAlgHom.comp φ := by
+    intro σ τ h φ
+    refine AlgHom.ext fun x => ?_
+    have h1 := AlgEquiv.restrictNormalHom_apply (F := Kᵥ) (K₁ := Ωᵥ) L σ ⟨φ x, hval φ x⟩
+    have h2 := AlgEquiv.restrictNormalHom_apply (F := Kᵥ) (K₁ := Ωᵥ) L τ ⟨φ x, hval φ x⟩
+    show σ (φ x) = τ (φ x)
+    rw [← h1, ← h2, h]
+  -- hence the same on `Y`, by injectivity of the embedding
+  have hagree : ∀ (σ τ : Γᵥ),
+      AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L σ =
+        AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L τ →
+      ∀ z : Y, σ • z = τ • z := by
+    intro σ τ h z
+    apply hj
+    rw [hje, hje]
+    exact congrArg Additive.ofMul (hagreepts σ τ h (Additive.toMul (j z)))
+  -- the canonical lift of an automorphism of `L` to `Kᵥᵃˡᵍ`
+  set lft : (L ≃ₐ[Kᵥ] L) → Γᵥ := fun s => (AlgEquiv.liftNormal s Ωᵥ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)
+  have hlftr : ∀ s : L ≃ₐ[Kᵥ] L,
+      AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (lft s) = s :=
+    fun s => AlgEquiv.restrict_liftNormal (E := Ωᵥ) s
+  -- the descended action of the finite Galois quotient `Gal(L/Kᵥ)` on `Y`
+  obtain ⟨ρ, hρ⟩ : ∃ ρ : (L ≃ₐ[Kᵥ] L) →* AddMonoid.End Y, ∀ s z, ρ s z = lft s • z := by
+    refine ⟨{ toFun := fun s => DistribMulAction.toAddMonoidEnd Γᵥ Y (lft s)
+              map_one' := ?_, map_mul' := ?_ }, fun _ _ => rfl⟩
+    · refine DFunLike.ext _ _ fun z => ?_
+      have h1 : AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (lft 1) =
+          AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (1 : Γᵥ) := by
+        rw [hlftr, map_one]
+      show lft 1 • z = z
+      rw [hagree _ _ h1, one_smul]
+    · intro s t
+      rw [← map_mul]
+      refine DFunLike.ext _ _ fun z => ?_
+      have h1 : AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (lft (s * t)) =
+          AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (lft s * lft t) := by
+        rw [hlftr, map_mul, hlftr, hlftr]
+      exact hagree _ _ h1 z
+  -- Grothendieck's construction: `Y` is the point group of a finite étale Hopf algebra
+  obtain ⟨HK, iCR, iHopf, iFin, iEt, f, hf⟩ :
+      ∃ (HK : Type) (_ : CommRing HK) (_ : HopfAlgebra Kᵥ HK)
+        (_ : Module.Finite Kᵥ HK) (_ : Algebra.Etale Kᵥ HK)
+        (f : Additive (WithConv (HK →ₐ[Kᵥ] Ωᵥ)) ≃+ Y),
+        ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : HK →ₐ[Kᵥ] Ωᵥ),
+          f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
+            ρ (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L σ)
+              (f (Additive.ofMul (WithConv.toConv φ))) :=
+    exists_finiteQuotient_galoisModule_etale_package Kᵥ Ωᵥ Y L ρ
+  letI := iCR
+  letI := iHopf
+  letI := iFin
+  letI := iEt
+  -- transport across the vendored/`WithConv` convolution bridge
+  obtain ⟨e, he⟩ : ∃ e : Additive (HK →ₐ[Kᵥ] Ωᵥ) →+ Y,
+      ∀ y, e y = f (Additive.ofMul (WithConv.toConv (Additive.toMul y))) := by
+    refine ⟨{ toFun := fun y => f (Additive.ofMul (WithConv.toConv (Additive.toMul y)))
+              map_zero' := ?_, map_add' := ?_ }, fun _ => rfl⟩
+    · show f (Additive.ofMul (1 : WithConv (HK →ₐ[Kᵥ] Ωᵥ))) = 0
+      rw [ofMul_one, map_zero]
+    · intro y₁ y₂
+      show f (Additive.ofMul (WithConv.toConv
+        (Additive.toMul y₁ * Additive.toMul y₂))) = _
+      rw [vendored_mul_eq_convMul, WithConv.toConv_ofConv, ofMul_mul, map_add]
+  refine ⟨HK, iCR, iHopf, iFin, iEt, e, ?_, ?_⟩
+  · have hfe : ⇑e = fun y : Additive (HK →ₐ[Kᵥ] Ωᵥ) =>
+        f (Additive.ofMul (WithConv.toConv (Additive.toMul y))) := funext he
+    rw [hfe]
+    exact f.bijective.comp (Additive.ofMul.bijective.comp
+      (WithConv.toConv_bijective.comp Additive.toMul.bijective))
+  · intro g y
+    have h1 := hf (g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (Additive.toMul y)
+    have h2 : AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L
+        (lft (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L g)) =
+        AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L g := hlftr _
+    rw [he, he]
+    show f (Additive.ofMul (WithConv.toConv
+      ((g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ).toAlgHom.comp (Additive.toMul y)))) = _
+    rw [h1, hρ]
+    exact hagree _ _ h2 _
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -6002,15 +6121,16 @@ points of a finite flat group scheme over the DVR `𝒪ᵥ` is the
 generic-fibre point group of a finite flat group scheme, by schematic
 closure): a `Γ Kᵥ`-equivariantly embedded subgroup of a flat
 point-group at `v` is a flat point-group at `v`. The assembly below is
-PROVEN over the four steps of the classical argument; only the two
-étale–Galois leaves remain sorried:
+PROVEN over the four steps of the classical argument; of the two
+étale–Galois leaves the existence half is now PROVEN too, so only the
+full-faithfulness half remains sorried:
 * (α) *transport*: the witness `f` of `hX` identifies `X`
   equivariantly with the `Kᵥᵃˡᵍ`-points of the generic fibre
   `Q := Kᵥ ⊗[𝒪ᵥ] G`, so `j` becomes an equivariant injection
   `j' : Y ↪ points(Q)` (PROVEN here);
 * (β) *étale–Galois*: `Y` is the point group of a finite étale
   `Kᵥ`-Hopf algebra `H` (`exists_etaleHopfAlgebra_of_points_embedding`,
-  sorry leaf), and the induced inclusion of point groups comes from a
+  PROVEN), and the induced inclusion of point groups comes from a
   SURJECTIVE bialgebra homomorphism `π : Q → H`
   (`exists_surjective_bialgHom_of_points_injection`, sorry leaf) — the
   two halves of Grothendieck's anti-equivalence. The convolution
