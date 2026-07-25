@@ -8226,6 +8226,62 @@ the hypothesis set is classically unsatisfiable (the headline
 `not_isIrreducible_of_isHardlyRamified_of_five_le` below refutes
 `hirr`), so the statement is classically true for every package.
 
+DISCHARGE-ROUTE AUDIT (2026-07-25, independent re-check): three
+candidate discharges were enumerated; all three are closed, so the leaf
+stands at its irreducible size.
+
+* *From the carrier's own fields* — impossible. `ThreeadicRealization`
+  records only `S₁`, `A`, `τ`, `ιA`, `ιA_injective` and `compat`, and
+  `compat` pins characteristic polynomials only at primes `q ∉ S₁` with
+  `q ∉ {2, 3, ℓ}`. Nothing in the structure mentions the decomposition
+  group at `2`, and no formal argument recovers a local type at `2`
+  from Frobenius data away from `2` — that recovery IS strict
+  compatibility, i.e. the citation itself.
+* *The odd-prime dichotomy* (collapse) — closed by the circularity
+  guard below, and independently by declaration order: the only two
+  in-tree dichotomies are `Modularity/Interface.lean`'s
+  `not_isIrreducible_of_isHardlyRamified_of_odd` (banned) and this
+  module's own headline
+  `not_isIrreducible_of_isHardlyRamified_of_five_le`, declared BELOW
+  this leaf.
+* *The `3`-adic classification* — closed by circularity. This is the
+  route worth recording, because it is the one that looks promising:
+  `τ`'s determinant, unramifiedness and flatness are all established
+  ABOVE this leaf, so three of the four hardly ramified conditions for
+  `τ` are already in hand. But every theorem in that chain
+  (`ModThree.lean`'s `mod_three`, `mod_three_reducible`,
+  `mod_three_of_stable_line`; `Threeadic.lean`'s
+  `exists_global_triangular_of_residual_trivial_quotient`,
+  `exists_frobenius_triangular`, `three_adic`) takes the WHOLE
+  `IsHardlyRamified` structure as a single hypothesis — none takes the
+  four conditions separately — and the tame-at-`2` field is genuinely
+  consumed (`quotCharacter_unramified_at_two`, on the path
+  `mod_three → mod_three_of_stable_line`). Supplying it would require
+  `threeadicRealization_isTameAtTwo_of_witness`, which is proven THROUGH
+  this leaf.
+
+FAITHFULNESS RE-CHECK (2026-07-25): neither vacuous nor
+inertia-widened. NOT VACUOUS — `Rlz.A` is a local ring, hence
+nontrivial, so `Submodule.span Rlz.A {b 0}` is a PROPER submodule for
+every basis `b`; the congruence clause therefore carries real content
+(it says the rank-`1` quotient by that line is the character `δ`), and
+no junk witness can be assembled from the hypotheses alone. NOT
+WIDENED — `δ`'s unramifiedness is quantified over
+`AddSubgroup.inertia` only, while the congruence is quantified over the
+whole decomposition group `Γ ℚ_[2]`; that is the correct shape and it
+matches `IsHardlyRamified.isTameAtTwo` verbatim.
+
+PACKAGING NOTE (2026-07-25): demanding a BASIS rather than a bare
+surjection adds no literature content — over the local ring `A` the two
+forms are equivalent. A surjection `πq : A² ↠ A` has one of `πq e₀`,
+`πq e₁` a unit (the non-units of a local ring form an ideal), and the
+triangular change of basis this determines is invertible, yielding a
+basis `b` with `πq (b 0) = 0`, `πq (b 1) = 1`, hence
+`ker πq = A · b 0`. So restating this citation in quotient form would
+shrink nothing: it would merely reproduce the statement of
+`threeadicRealization_isTameAtTwo_of_witness`, which this leaf already
+implies through the two proven transports below.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`. In particular the odd-prime dichotomy
