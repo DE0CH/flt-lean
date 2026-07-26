@@ -4055,7 +4055,7 @@ theorem exists_twistedHilbertBlumenthalModuliTwist_of_five_le
           HasRationalPoint fX (ULift.{u} ℝ))) :=
   sorry
 
-/-- **Complex conjugation inverts roots of unity** (sorry leaf, cut
+/-- **Complex conjugation inverts roots of unity** (PROVEN 2026-07-26; cut
 2026-07-26 out of `hasRealHilbertBlumenthalObject_of_isHardlyRamified`):
 the `ℓ`-adic cyclotomic character takes the value `-1` at the image in
 `Γ_ℚ` of any NONTRIVIAL element of `Γ_ℝ`, for `ℓ` odd.
@@ -4079,28 +4079,171 @@ complex conjugation of `Γ_ℚ` is, by Artin–Schreier — and the cyclotomic
 character, being a homomorphism into an abelian group, is a class
 function, so the value is the same. That last step is the content here.
 
-PROOF SKETCH. Two routes, both short:
-(i) *class-function route* — `Γ_ℝ` has order two (Artin–Schreier: `ℝ` is
-real closed, `[ℝᵃˡᵍ : ℝ] = 2`), so `σ² = 1` and its image `g` satisfies
-`g² = 1`, whence `χ_ℓ(g)² = 1` and `χ_ℓ(g) = ±1` because `ℓ` is odd and
-`ℤ_[ℓ]` therefore contains no other square root of `1`; and
-`χ_ℓ(g) = 1` is impossible because `g ≠ 1` fixes the subfield
-`ℚ(μ_{ℓ^∞})ᵍ` pointwise, whereas the fixed field of an involution of
-`ℚᵃˡᵍ` is real closed and hence contains no primitive `ℓ`-th root of
-unity for `ℓ > 2`.
-(ii) *transport route* — exhibit `τ ∈ Γ_ℚ` with
-`Field.absoluteGaloisGroup.map (algebraMap ℚ ℝ) σ = τ * complexConj * τ⁻¹`
-and conclude by `map_mul` from `cyclotomicCharacter_complexConj`.
+THE PROOF ACTUALLY GIVEN is a variant of the "class-function route" that
+never has to mention `complexConj`, `[ℝᵃˡᵍ : ℝ] = 2`, the Galois
+correspondence, or Artin–Schreier conjugacy. It is in five steps.
 
-Route (i) reuses `complexConjRingEquiv_ne_of_isPrimitiveRoot`, which
-already carries the "a complex conjugation moves a primitive `ℓ`-th root
-of unity" argument for the distinguished conjugation. -/
+1. *`(ULift ℝ)ᵃˡᵍ` IS `ℂ`.* `AlgebraicClosure (ULift ℝ)` is an algebraic
+   extension of `ℝ` (mathlib supplies `Algebra ℝ (AlgebraicClosure L)`
+   and `IsScalarTower ℝ L (AlgebraicClosure L)` from `Algebra ℝ L`, and
+   `ULift ℝ` is algebraic over `ℝ` because `algebraMap ℝ (ULift ℝ)` is
+   surjective), so `Real.nonempty_algEquiv_or` gives an `ℝ`-algebra
+   isomorphism onto `ℝ` or onto `ℂ`. The first is impossible: an
+   algebraically closed field has a square root of `-1`, whose image
+   would be a real square equal to `-1`. So there is a ring isomorphism
+   `e : (ULift ℝ)ᵃˡᵍ ≃+* ℂ` carrying `ULift.up r` to `r`.
+2. *`σ` IS COMPLEX CONJUGATION THROUGH `e`.* Conjugating `σ` by `e`
+   gives an `ℝ`-algebra endomorphism of `ℂ` (it fixes the reals because
+   `σ` fixes `ULift ℝ` pointwise), and
+   `Complex.real_algHom_eq_id_or_conj` says there are only two: the
+   identity — which would force `σ = 1`, excluded by `hσ` — and
+   `conj`. So `e (σ x) = conj (e x)` for all `x`. This is the ONE place
+   the hypothesis `σ ≠ 1` is used, and it is what replaces the
+   Artin–Schreier conjugacy step: no choice of complex conjugation is
+   ever made, because `e` is produced together with `σ`'s description.
+3. *`g` IS AN INVOLUTION.* Writing `F = AlgebraicClosure.map` and
+   `g` for the image of `σ`, `Field.absoluteGaloisGroup.lift_map` gives
+   `F (g x) = σ (F x)`; `conj` is an involution, so `σ` is, so `g` is
+   (`F` is injective). Hence `χ_ℓ(g)² = 1`, and `χ_ℓ(g) = ±1` because
+   `ℤ_[ℓ]` is a domain.
+4. *IT IS NOT `+1`.* Otherwise `cyclotomicCharacter.spec` at level one
+   says `g` fixes a primitive `ℓ`-th root of unity `ζ` of `ℚᵃˡᵍ`; then
+   `conj` fixes `e (F ζ)`, which is therefore a REAL `ℓ`-th root of
+   unity, hence `1` for `ℓ` odd (`Odd.strictMono_pow` is injective on
+   `ℝ`) — contradicting primitivity for `ℓ > 1`.
+5. Oddness of `ℓ` is genuinely used in step 4, exactly as in
+   `cyclotomicCharacter_complexConj`: for `ℓ = 2` the level-one root of
+   unity is `−1`, which conjugation does fix.
+
+The historical alternative — exhibit `τ ∈ Γ_ℚ` with
+`Field.absoluteGaloisGroup.map (algebraMap ℚ ℝ) σ = τ * complexConj * τ⁻¹`
+and conclude by `map_mul` from `cyclotomicCharacter_complexConj` — was
+not taken: it needs Artin–Schreier conjugacy, which the tree does not
+have, whereas step 2 above obtains the same conclusion from the
+elementary classification of the `ℝ`-algebra endomorphisms of `ℂ`. -/
 theorem cyclotomicCharacter_absoluteGaloisGroupMap_real
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓodd : Odd ℓ)
     (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1) :
     cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
-      (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ).toRingEquiv = -1 :=
-  sorry
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ).toRingEquiv = -1 := by
+  have hℓ1 : 1 < ℓ := (Fact.out : ℓ.Prime).one_lt
+  -- STEP 1: an isomorphism `AlgebraicClosure (ULift ℝ) ≃+* ℂ` compatible with the reals.
+  obtain ⟨e, he⟩ : ∃ e : AlgebraicClosure (ULift.{u} ℝ) ≃+* ℂ,
+      ∀ r : ℝ, e (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) (ULift.up r))
+        = algebraMap ℝ ℂ r := by
+    haveI : Algebra.IsAlgebraic ℝ (ULift.{u} ℝ) := by
+      refine ⟨fun x => ?_⟩
+      have hx : x = algebraMap ℝ (ULift.{u} ℝ) x.down := rfl
+      rw [hx]
+      exact isAlgebraic_algebraMap _
+    haveI : Algebra.IsAlgebraic ℝ (AlgebraicClosure (ULift.{u} ℝ)) :=
+      Algebra.IsAlgebraic.trans ℝ (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ))
+    rcases Real.nonempty_algEquiv_or (AlgebraicClosure (ULift.{u} ℝ)) with hcase | hcase
+    · exfalso
+      obtain ⟨φ⟩ := hcase
+      obtain ⟨z, hz⟩ := IsAlgClosed.exists_pow_nat_eq
+        (-1 : AlgebraicClosure (ULift.{u} ℝ)) (n := 2) (by norm_num)
+      have h1 : (φ z) ^ 2 = -1 := by rw [← map_pow, hz, map_neg, map_one]
+      linarith [sq_nonneg (φ z)]
+    · obtain ⟨φ⟩ := hcase
+      refine ⟨φ.toRingEquiv, fun r => ?_⟩
+      have h2 : algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) (ULift.up r)
+          = algebraMap ℝ (AlgebraicClosure (ULift.{u} ℝ)) r :=
+        (IsScalarTower.algebraMap_apply ℝ (ULift.{u} ℝ)
+          (AlgebraicClosure (ULift.{u} ℝ)) r).symm
+      rw [h2]
+      exact φ.commutes r
+  -- STEP 2: notation for the transported element.
+  set f : ℚ →+* ULift.{u} ℝ := algebraMap ℚ (ULift.{u} ℝ) with hf
+  set F : AlgebraicClosure ℚ →+* AlgebraicClosure (ULift.{u} ℝ) :=
+    AlgebraicClosure.map f with hFdef
+  set g := Field.absoluteGaloisGroup.map f σ with hgdef
+  have hlift : ∀ x : AlgebraicClosure ℚ, F (g x) = σ (F x) :=
+    fun x => Field.absoluteGaloisGroup.lift_map f σ x
+  have hFinj : Function.Injective F := F.injective
+  -- STEP 3: through `e`, `σ` is complex conjugation.
+  have hσconj : ∀ x, e (σ x) = starRingEnd ℂ (e x) := by
+    have hcomm : ∀ r : ℝ,
+        (e.symm.trans ((AlgEquiv.toRingEquiv σ).trans e)) (algebraMap ℝ ℂ r)
+          = algebraMap ℝ ℂ r := by
+      intro r
+      have h1 : e.symm (algebraMap ℝ ℂ r)
+          = algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) (ULift.up r) := by
+        rw [← he r]
+        exact e.symm_apply_apply _
+      show e (σ (e.symm (algebraMap ℝ ℂ r))) = algebraMap ℝ ℂ r
+      rw [h1, AlgEquiv.commutes σ (ULift.up r)]
+      exact he r
+    let cA : ℂ →ₐ[ℝ] ℂ :=
+      { (e.symm.trans ((AlgEquiv.toRingEquiv σ).trans e)).toRingHom with commutes' := hcomm }
+    have hcA : ∀ z : ℂ, cA z = e (σ (e.symm z)) := fun _ => rfl
+    rcases Complex.real_algHom_eq_id_or_conj cA with h | h
+    · exfalso
+      refine hσ (AlgEquiv.ext fun x => ?_)
+      show σ x = x
+      have hx := DFunLike.congr_fun h (e x)
+      rw [hcA] at hx
+      simp only [AlgHom.coe_id, id_eq, RingEquiv.symm_apply_apply] at hx
+      exact e.injective hx
+    · intro x
+      have hx := DFunLike.congr_fun h (e x)
+      rw [hcA] at hx
+      simpa using hx
+  -- STEP 4: `g` is an involution, hence so is its `RingEquiv` shadow.
+  have hgg : ∀ x : AlgebraicClosure ℚ, g (g x) = x := by
+    intro x
+    apply hFinj
+    rw [hlift, hlift]
+    apply e.injective
+    rw [hσconj, hσconj, Complex.conj_conj]
+  have hRE : (AlgEquiv.toRingEquiv g) * (AlgEquiv.toRingEquiv g) = 1 := by
+    ext x
+    exact hgg x
+  -- STEP 5: the cyclotomic character of an involution that moves the roots of unity.
+  haveI : NeZero ((ℓ : ℕ) : ℚ) :=
+    ⟨by simpa using (Nat.cast_ne_zero (R := ℚ)).mpr (Fact.out : ℓ.Prime).ne_zero⟩
+  haveI : Fact (1 < ℓ ^ 1) := ⟨by simpa using hℓ1⟩
+  set u := cyclotomicCharacter (AlgebraicClosure ℚ) ℓ (AlgEquiv.toRingEquiv g) with hu
+  have husq : u * u = 1 := by rw [hu, ← map_mul, hRE, map_one]
+  have hval : (u : ℤ_[ℓ]) = 1 ∨ (u : ℤ_[ℓ]) = -1 := by
+    have h0 : ((u : ℤ_[ℓ]) - 1) * ((u : ℤ_[ℓ]) + 1) = 0 := by
+      have h1 : (u : ℤ_[ℓ]) * (u : ℤ_[ℓ]) = 1 := by
+        rw [← Units.val_mul, husq, Units.val_one]
+      linear_combination h1
+    rcases mul_eq_zero.mp h0 with h | h
+    · exact Or.inl (sub_eq_zero.mp h)
+    · exact Or.inr (eq_neg_of_add_eq_zero_left h)
+  have hne : (u : ℤ_[ℓ]) ≠ 1 := by
+    intro h1
+    obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) ℓ
+    have hspec := cyclotomicCharacter.spec (L := AlgebraicClosure ℚ) ℓ (n := 1)
+      (AlgEquiv.toRingEquiv g) ζ (by rw [pow_one]; exact hζ.pow_eq_one)
+    rw [← hu, h1, map_one, ZMod.val_one, pow_one] at hspec
+    have hgζ : g ζ = ζ := hspec
+    have hfix : σ (F ζ) = F ζ := by rw [← hlift, hgζ]
+    set z : ℂ := e (F ζ) with hzdef
+    have hzconj : starRingEnd ℂ z = z := by rw [hzdef, ← hσconj, hfix]
+    have hFζpow : (F ζ) ^ ℓ = 1 := by rw [← map_pow, hζ.pow_eq_one, map_one]
+    have hzpow : z ^ ℓ = 1 := by rw [hzdef, ← map_pow, hFζpow, map_one]
+    have him : z.im = 0 := Complex.conj_eq_iff_im.mp hzconj
+    have hre : z = (z.re : ℂ) := by apply Complex.ext <;> simp [him]
+    have hrepow : z.re ^ ℓ = 1 := by
+      have h3 : ((z.re ^ ℓ : ℝ) : ℂ) = ((1 : ℝ) : ℂ) := by
+        push_cast
+        rw [← hre, hzpow]
+      exact_mod_cast h3
+    have hre1 : z.re = 1 :=
+      (hℓodd.strictMono_pow (R := ℝ)).injective
+        (show z.re ^ ℓ = (1 : ℝ) ^ ℓ by simpa using hrepow)
+    have hz1 : z = 1 := by rw [hre, hre1]; norm_num
+    have hFζ : F ζ = 1 := by
+      have h4 := congrArg e.symm hz1
+      rw [hzdef, e.symm_apply_apply, map_one] at h4
+      exact h4
+    have hζ1 : ζ = 1 := hFinj (by rw [hFζ, map_one])
+    exact hζ.ne_one hℓ1 hζ1
+  refine Units.ext ?_
+  simpa using hval.resolve_left hne
 
 open CategoryTheory in
 /-- **The real Hilbert–Blumenthal object exists for any pair of ODD
