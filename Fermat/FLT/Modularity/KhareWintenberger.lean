@@ -8295,6 +8295,88 @@ continuous functions that are known to agree on a dense set, whereas
 `τ|_{I_ℓ} = 1` is not the agreement of two continuous functions known
 at Frobenii. So this is cut as a literature joint.
 
+ROUTE AUDIT, SECOND CLOSURE (2026-07-26): the `τF` ROUTE is closed too.
+It is the most natural remaining attempt, because the witness ALREADY
+carries a `3`-adic member — `Wit.τF`, the `3`-adic realization over `F`
+of the same eigensystem — and the Fontaine–Laffaille input really IS
+expressible on it with existing vocabulary, namely
+`∀ w, (ℓ : 𝓞 F) ∈ w.asIdeal → Wit.τF.IsUnramifiedAt w`, which is what
+"level prime to `ℓ`" amounts to once Carayol is applied over `F` at a
+place prime to `3`. It nonetheless does not reach `Rlz.τ`, for two
+INDEPENDENT reasons, either of which alone is fatal:
+
+* the interface nowhere relates `Rlz.τ|_{G_F}` to `Wit.τF`. The only
+  link between them is again Frobenius data — `Rlz.compat` and
+  `Wit.matchF₃` both factor through the same Hecke polynomials — so the
+  semisimplification obstruction recorded above applies verbatim, one
+  level down; and
+* even GRANTING `Rlz.τ|_{G_F} ≅ Wit.τF`, unramifiedness at the places
+  `w | ℓ` of `F` gives only `I_w ≤ ker`, whereas the conclusion here is
+  `I_ℓ ≤ ker` over `ℚ`; and `I_w ⊊ I_ℓ` unless `ℓ` is UNRAMIFIED in `F`,
+  which `PotentialModularityWitness` does not record (it carries only
+  `totallyReal` and `galoisF`) and which Moret–Bailly does not supply,
+  since `F` is chosen to kill local obstructions, not to be unramified.
+
+STRUCTURAL OPTION, EVALUATED (2026-07-26 — REJECTED AS A CLOSURE, and
+recorded so it is costed rather than rediscovered). The move flagged at
+the cut as most promising, "record level prime to `ℓ` in
+`PotentialModularityWitness`", is expressible (as the `τF` clause of the
+first bullet) and would be a genuine relocation of the
+Fontaine–Laffaille citation into the interface, where every other cited
+classical assertion of the witness already lives. But by the two bullets
+above it does NOT discharge this leaf: the residue is the descent step
+over `ℚ`, which is a citation of the same size as the whole. It would
+therefore turn one leaf into two without closing either, and is not
+taken.
+
+What WOULD close this leaf is a strictly larger seam change, namely
+giving `ThreeadicRealization` a `level` field carrying exactly the two
+clauses of `exists_conductor_threeadicRealization_of_witness` below.
+PRECEDENT: the reference project `~/cs/FLT` avoids leaves of this shape
+in precisely that way — its automorphy predicate
+`GaloisRep.IsAutomorphicOfLevel p hp hV S`
+(`FLT/GaloisRepresentation/Automorphic.lean`) asserts `ρ.IsUnramifiedAt v`
+for every `v ∉ S` with `v ∤ p` AS PART OF ITS DEFINITION, so the analogue
+of this leaf is definitional there. The cost is that this leaf, its
+sibling and the conductor node all collapse into the construction leaf
+`exists_threeadicRealization_of_witness`, hiding two distinct literature
+inputs inside one citation; and the predicate itself is NOT vendorable,
+being defined over that project's quaternionic Hecke-algebra
+development, which our pin does not have.
+
+MACHINERY AUDIT (2026-07-26, hard search of BOTH libraries — recorded so
+this leaf is not re-scoped as single-agent work). Restating it over a
+Weil–Deligne formalism is not a shortcut: NOTHING in the prerequisite
+chain exists in the pin or in the reference project.
+
+* `grep -rl 'WeilDeligne|weilGroup|WeilGroup'` over all of `Mathlib/`
+  and over `~/cs/FLT/FLT` returns EMPTY. There is no Weil group, hence
+  no `WD_v(−)` functor to restate anything over.
+* Mathlib's entire ramification-group development is
+  `Mathlib/RingTheory/Valuation/RamificationGroup.lean` — 54 lines,
+  carrying `decompositionSubgroup` and `inertiaSubgroup` and the comment
+  `TODO: Define higher ramification groups in lower numbering`. So there
+  is no wild/tame filtration, no tame quotient, and no `ℓ`-adic tame
+  character `t_ℓ : I_p ↠ ℤ_ℓ(1)` — the three inputs from which
+  Grothendieck's local monodromy theorem is built.
+* There is no local class field theory and no smooth or admissible
+  representations of `GL₂` of a `p`-adic field (`grep
+  'SmoothRep|AdmissibleRep|LocalLanglands'` over `Mathlib/` is empty).
+* Fontaine theory is present but far too early to help: `Mathlib/`
+  `RingTheory/Perfectoid/` has `FontaineTheta.lean`, `Untilt.lean` and
+  `BDeRham.lean` (`𝔹_dR⁺`, `𝔹_dR`, whose own TODO list still contains
+  "show `𝔹_dR⁺` is a discrete valuation ring"), and NOTHING for
+  `𝔹_cris`, crystalline or semistable representations, Hodge–Tate
+  weights, or the Fontaine–Laffaille functor (`grep
+  'BCris|B_cris|crystallineRep|HodgeTate'` and `grep 'semistable
+  representation'` over `Mathlib/` are both empty). So the flatness side
+  of the chain has no library statement to be restated over either.
+
+The honest prerequisite chain for a formal `WD_ℓ(−)` is therefore
+higher ramification groups → tame quotient → tame character → local
+monodromy → Weil group → Weil–Deligne representations. That is a
+multi-agent theory-building programme, not a leaf.
+
 SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the
 realization produced by the construction leaf this is the
 Fontaine–Laffaille/Carayol chain above, applied to the descended
@@ -8392,6 +8474,52 @@ polynomial of Frobenius as the split extension (any lift of Frobenius
 acts by an upper-triangular matrix with the same diagonal). So no
 formal route to an inertia statement exists in the
 interface, which is why this is cut as a literature joint.
+
+ROUTE AUDIT, SECOND CLOSURE (2026-07-26): the PIECEWISE ROUTE — prove
+the transfer on the Brauer pieces and induce — is UNSOUND, and is
+recorded here because the interface's `Wit.τF` invites it. Write, as
+classically one does, `τ ~ Σ nᵢ · Ind_{G_{Fᵢ}}^{G_ℚ}(τ_{fᵢ} ⊗ χᵢ)` with
+`Fᵢ = F^{Hᵢ}` the fixed fields of the Brauer subgroups. Neither half of
+the piecewise argument survives:
+
+* solvable base change does NOT preserve unramifiedness downwards. A
+  local component that is a RAMIFIED principal series `π(χ, χ⁻¹)` over
+  `Fᵢ` becomes UNRAMIFIED after base change to `F` (the ramified
+  character becomes unramified over the extension it cuts out), so "`f`
+  is unramified above `p`" does not make the descended `fᵢ` unramified
+  above `p`; and
+* `Ind_{G_{Fᵢ}}^{G_ℚ}` of an unramified representation is unramified at
+  `p` only when `p` is UNRAMIFIED in `Fᵢ`, which the witness does not
+  record and which fails in general — Moret–Bailly's `F` is chosen to
+  kill local obstructions, not to be unramified.
+
+Classically the ramification of the individual induced pieces CANCELS in
+the virtual sum; that cancellation is a property of the sum, invisible
+piece by piece. Which is exactly why the citation has to be taken on the
+sum — i.e. here — and cannot be pushed down onto the pieces.
+
+MACHINERY AUDIT (2026-07-26): see the sibling leaf
+`threeadicRealization_isUnramifiedAtEll_of_witness` above for the hard
+search. Summary: neither the pin nor `~/cs/FLT` has a Weil group, a
+Weil–Deligne representation, higher ramification groups, a tame
+character, local class field theory, or smooth representations of `GL₂`
+of a `p`-adic field — mathlib's whole ramification-group file is 54
+lines ending in a TODO, and its Fontaine theory stops at `𝔹_dR`. So
+restating this
+leaf over `WD_p(−)` is not a shortcut but a multi-agent theory-building
+programme; it is NOT single-agent-sized, and this leaf should not be
+re-scoped as though it were.
+
+EQUIVALENCE NOTE (2026-07-26, so the re-cut is not re-litigated): this
+leaf and its sibling together are EQUIVALENT, given `hρ`, to the single
+statement of `exists_conductor_threeadicRealization_of_witness` below —
+that node is currently PROVEN from the two of them, and conversely each
+of them follows from its two clauses (`p ∤ N` gives clause 1 directly;
+`p ∣ N` gives `p ≠ ℓ`, which kills the `ℓ` case, and
+`¬ ρ.IsUnramifiedAt p`, which kills the transfer case). Collapsing back
+to one leaf therefore changes no mathematics and LOSES the separation of
+the two distinct literature inputs, which is the whole point of the
+2026-07-25 split. Do not do it.
 
 SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the
 realization produced by the construction leaf this is Carayol's theorem
