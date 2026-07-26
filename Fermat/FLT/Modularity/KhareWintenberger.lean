@@ -142,6 +142,11 @@ public import Mathlib.FieldTheory.Galois.Basic
 -- 2026-07-24 audit note, which is corrected in the section docstring),
 -- so these are `public import`s: the names occur in leaf statements.
 public import Mathlib.AlgebraicGeometry.Geometrically.Irreducible
+-- `GeometricallyConnected` (2026-07-26): the Bertini genericity leaf is cut
+-- into "generic section is smooth" + "generic section is geometrically
+-- CONNECTED" + the formal upgrade connected ⟹ irreducible for a smooth
+-- scheme, so the class occurs in a leaf statement and must be re-exported.
+public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Morphisms.Separated
 public import Mathlib.AlgebraicGeometry.Morphisms.FiniteType
@@ -1115,11 +1120,16 @@ to be needed: in the Noetherian ring `A` the zerodivisors are the union of the
 FINITELY many associated primes, and each is dodged by one linear form
 obtained from the proper kernel of the `ℚ`-linear map `v ↦ ℓ_v`, so `F` is a
 product of finitely many LINEAR forms),
-`exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` (SORRY — the
-two BERTINI theorems in characteristic zero, smoothness and irreducibility of
-the generic hyperplane section, stated over the parameter space; this is the
-whole of item 3 of the missing-machinery list and by far the largest of the
-three),
+`exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` (**PROVEN
+2026-07-26** — no longer a leaf: the two BERTINI theorems separate into
+`exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible` (SORRY —
+Bertini smoothness; no `hdim`),
+`exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` (SORRY —
+Bertini/Lefschetz connectedness, **the sole consumer of `hdim`** and the
+deepest of the geometric leaves) and
+`geometricallyIrreducible_of_smooth_of_geometricallyConnected` (SORRY —
+smooth + connected ⟹ irreducible, formal and reusable), assembled by
+multiplying the two genericity polynomials),
 `exists_realApproximationBall_of_affine_geometricallyIrreducible` (SORRY —
 the `ℝ`-topology half: a whole BOX of parameters keeps a real point on the
 section, by the implicit function theorem on the real manifold `X(ℝ)`; needs
@@ -1186,10 +1196,18 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    hyperplane function by
    `exists_bertiniHyperplane_of_affine_geometricallyIrreducible` over the
    hyperplane PARAMETER SPACE — so what is left of item 3 is the two BERTINI
-   theorems alone, in
-   `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible`. The
-   real-topology approximation is now a SEPARATE item, 6 below, and the
-   elementary nonzerodivisor step a third,
+   theorems alone. Recut again the same day: those two are now
+   `exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible` (Bertini
+   smoothness plus openness of the relative smooth locus),
+   `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`
+   (projective closure, the Enriques–Severi–Zariski connectedness theorem,
+   and openness of the geometrically-connected locus — the only place `hdim`
+   is used) and `geometricallyIrreducible_of_smooth_of_geometricallyConnected`
+   ("smooth over a field ⟹ regular" and "connected + normal ⟹ irreducible",
+   both small and general), with
+   `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` PROVEN over
+   them. The real-topology approximation is now a SEPARATE item, 6 below, and
+   the elementary nonzerodivisor step a third,
    `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible`.
 6. **Real points of a smooth `ℚ`-variety as a real manifold**: mathlib has no
    functor from schemes to real manifolds, so `X(ℝ) ⊆ ℝⁿ` must be identified
@@ -1220,7 +1238,9 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
 Each is an independently ownable subproject; 1, 3, 5 and 6 are the ones that
 can be started without the others, and items 3 (Bertini), 5 (Lang–Weil +
 spreading out) and 6 (real points as a manifold) are now leaves of their own --
-`exists_bertiniGenericLocus_of_affine_geometricallyIrreducible`,
+`exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible` /
+`exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` /
+`geometricallyIrreducible_of_smooth_of_geometricallyConnected`,
 `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` together with
 `exists_bound_forall_formallySmooth_integralSystemModel`, and
 `exists_realApproximationBall_of_affine_geometricallyIrreducible` -- so each
@@ -1229,6 +1249,9 @@ can be attacked without any of the others. The elementary
 such starting point and is PROVEN (2026-07-26); it needed no missing-machinery
 item at all, and in particular not "smooth over a field implies reduced" --
 associated primes in the Noetherian ring `A` replace the domain property.
+Item 3 itself now splits into three mutually independent starting points — the
+smoothness leaf, the connectedness leaf and the formal upgrade — see item 3
+above for their names.
 
 Leaf list under the moduli cut, as of the DATUM recut (2026-07-26):
 `nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`
@@ -1455,7 +1478,10 @@ and Pop's theorem that `ℚ^tr` is a large/ample field. The argument is:
 (PROVEN 2026-07-26 over `exists_dimensionDrop_of_affine_geometricallyIrreducible`,
 itself PROVEN over `exists_bertiniHyperplane_of_affine_geometricallyIrreducible`,
 itself PROVEN over the hyperplane PARAMETER SPACE and its three leaves
-`exists_nonZeroDivisorLocus_...`, `exists_bertiniGenericLocus_...` and
+`exists_nonZeroDivisorLocus_...`, `exists_bertiniGenericLocus_...` (itself
+PROVEN 2026-07-26 over `exists_bertiniSmoothLocus_...`,
+`exists_bertiniConnectedLocus_...` and
+`geometricallyIrreducible_of_smooth_of_geometricallyConnected`) and
 `exists_realApproximationBall_of_affine_geometricallyIrreducible`, all SORRY)
 and steps (ii)+(iii) are `exists_normalRealPoint_of_affine_curve`
 (PROVEN 2026-07-26 over `exists_normalSplitPoint_of_affine_curve`, which is
@@ -1856,10 +1882,177 @@ theorem exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible
     simpa using hout
 
 open CategoryTheory AlgebraicGeometry in
+/-- **BERTINI SMOOTHNESS: the generic hyperplane section is smooth** (sorry
+node, 2026-07-26 — the first of the two classical Bertini theorems, cut out
+of `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` on the same
+day; that theorem is PROVEN over this one, the connectedness leaf below and
+the formal upgrade `geometricallyIrreducible_of_smooth_of_geometricallyConnected`).
+
+For a smooth affine `ℚ`-variety `Spec A` presented in coordinates
+`x : Fin n → A`, there is a nonzero `F ∈ ℚ[X₀,…,X_n]` such that for every
+rational parameter `v` off `F = 0` the hyperplane section `Spec (A ⧸ (ℓ_v))`
+is again smooth over `ℚ`.
+
+THE CLASSICAL STATEMENT. The general member of a base-point-free linear
+system on a smooth variety over a field of characteristic zero is smooth
+(Hartshorne, *Algebraic Geometry*, II.8.18 and III.7; Jouanolou, *Théorèmes
+de Bertini et applications*, Ch. I). The hyperplanes `ℓ_v = ∑ vᵢ xᵢ − v_last`
+of `𝔸ⁿ` cut out such a system on `Spec A` — base-point-freeness is exactly
+the fact that the `xᵢ` generate `A` as a ring over `ℚ`, so for every point
+`p` some `ℓ_v` vanishes at `p` with nonvanishing differential there — and
+characteristic zero removes the inseparability caveat.
+
+WHY THE GOOD LOCUS CONTAINS A BASIC OPEN `D(F)` DEFINED OVER `ℚ`. Smoothness
+of the fibres of a morphism of finite presentation is an OPEN condition on
+the base (EGA IV 12.2.4; in mathlib the affine shadow of this is
+`Algebra.isOpen_smoothLocus` together with `Algebra.smoothLocus_eq_univ_iff`).
+Applied to the incidence family `Z = {(p, v) : ℓ_v(p) = 0} ⟶ 𝔸^{n+1}` it says
+the good locus is open; it is nonempty by the theorem above; and the family
+is defined over `ℚ`, so the locus is a `ℚ`-rational open subset of the
+irreducible space `𝔸^{n+1}_ℚ` and therefore contains a nonempty basic open
+`D(F)` with `F ∈ ℚ[X₀,…,X_n]`, `F ≠ 0`. That is the `∃ F ≠ 0` packaging.
+
+NOTE ON HYPOTHESES. `hdim` is deliberately NOT assumed: Bertini SMOOTHNESS
+is true in every dimension. At `dim = 1` a generic section is a finite
+reduced set of `ℚ`-points, which is smooth (indeed étale) over `ℚ`; at
+`dim = 0` a generic `ℓ_v` is a unit and the section is the EMPTY scheme,
+which is smooth over `ℚ` vacuously. `hgi` is likewise probably not needed for
+this half — generic smoothness does not use irreducibility — but it is kept
+so that the two Bertini leaves have parallel hypotheses and the assembly can
+pass the same arguments to both.
+
+MACHINERY MISSING AT THIS PIN: Bertini's smoothness theorem in any form, and
+the openness of the smooth locus of a family (mathlib has the ABSOLUTE
+statement `Algebra.isOpen_smoothLocus` for a single algebra, not the relative
+one for the fibres of a morphism). A prover should expect to build the
+incidence variety `Z` and generic smoothness (the algebraic Sard theorem) —
+both reusable well beyond this leaf. -/
+theorem exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    {n : ℕ} (x : Fin n → A)
+    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+      Set.range x) = ⊤) :
+    ∃ F : MvPolynomial (Fin (n + 1)) ℚ, F ≠ 0 ∧
+      ∀ v : Fin (n + 1) → ℚ, MvPolynomial.eval v F ≠ 0 →
+        AlgebraicGeometry.Smooth (specQuotSpanSingleton
+          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **BERTINI CONNECTEDNESS: the generic hyperplane section of a variety of
+dimension `≥ 2` is geometrically connected** (sorry node, 2026-07-26 — the
+second of the two classical Bertini theorems, and **the only place `hdim` is
+used**).
+
+For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` of
+dimension `> 1`, presented in coordinates `x : Fin n → A`, there is a nonzero
+`F ∈ ℚ[X₀,…,X_n]` such that for every rational parameter `v` off `F = 0` the
+hyperplane section `Spec (A ⧸ (ℓ_v))` is geometrically CONNECTED over `ℚ` —
+in particular nonempty, since `ConnectedSpace` carries `Nonempty`.
+
+WHY CONNECTEDNESS AND NOT IRREDUCIBILITY. Bertini's irreducibility theorem
+(Jouanolou, *Théorèmes de Bertini et applications*, Ch. I, Thm 6.3) is the
+conjunction of two very unequal statements. The hard, genuinely
+Lefschetz-type half is CONNECTEDNESS; upgrading a connected section to an
+irreducible one is formal once the section is known to be SMOOTH, because a
+smooth scheme over a field is regular, hence normal, and a connected normal
+locally noetherian scheme is irreducible. That upgrade is isolated as
+`geometricallyIrreducible_of_smooth_of_geometricallyConnected`, so this leaf
+carries only the Lefschetz content.
+
+**`hdim` IS LOAD-BEARING AND THE STATEMENT IS FALSE WITHOUT IT.** At
+`dim Spec A = 1` a general hyperplane section of a curve is a finite set of
+`deg` points, which is disconnected as soon as `deg ≥ 2` — e.g. `A = ℚ[t]`,
+`x = (t)`, `n = 1`: the section `Spec (ℚ[t] ⧸ (v₀ t − v₁))` is a single
+reduced point and IS connected, but for `A = ℚ[s,t]/(s² + t² − 1)` in the
+coordinates `x = (s, t)` a general rational line meets the conic in two
+points and the section is disconnected. Dimension `≥ 2` is also what makes
+the section nonempty in the first place: the projective closure meets a
+general hyperplane in something of dimension `≥ 1`, which is therefore not
+contained in the hyperplane at infinity.
+
+THE CLASSICAL ARGUMENT. Pass to `ℚ̄` (geometric irreducibility of `Spec A` is
+exactly what makes `A ⊗ ℚ̄` a domain, so the argument may be run over an
+algebraically closed field and the good locus, being Galois-stable, descends
+to `ℚ`). Take the projective closure `X̄ ⊆ ℙⁿ` of `X = Spec A ⊆ 𝔸ⁿ`;
+`dim X̄ ≥ 2` and `X̄` is irreducible. For a general hyperplane `H`, `X̄ ∩ H` is
+connected — the Enriques–Severi–Zariski / Grothendieck connectedness theorem,
+or the incidence-variety plus Stein-factorization argument — and
+`X̄ ∩ H ∩ H_∞` has dimension `dim X − 2 < dim X − 1`, so the affine part
+`X ∩ H = (X̄ ∩ H) ∖ H_∞` is a nonempty dense open of a connected set, hence
+connected. Openness of the good locus in the parameter space `𝔸^{n+1}` and
+the descent to a basic open `D(F)` are as in the smoothness leaf.
+
+MACHINERY MISSING AT THIS PIN: the projective closure of an affine scheme,
+the connectedness theorem, and openness of the geometrically-connected locus
+of a family (EGA IV 9.7.7). This is the deepest of the surviving geometric
+leaves. -/
+theorem exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
+    {n : ℕ} (x : Fin n → A)
+    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+      Set.range x) = ⊤) :
+    ∃ F : MvPolynomial (Fin (n + 1)) ℚ, F ≠ 0 ∧
+      ∀ v : Fin (n + 1) → ℚ, MvPolynomial.eval v F ≠ 0 →
+        AlgebraicGeometry.GeometricallyConnected (specQuotSpanSingleton
+          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **SMOOTH + GEOMETRICALLY CONNECTED ⟹ GEOMETRICALLY IRREDUCIBLE** (sorry
+node, 2026-07-26 — the formal half of Bertini irreducibility, isolated so
+that the Lefschetz content lives alone in
+`exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`).
+
+A scheme smooth over `ℚ` whose geometric fibres are connected has
+irreducible geometric fibres. No Bertini theorem, no hyperplanes and no
+parameter space occur here: it is the standard chain
+
+* `X_K ⟶ Spec K` is smooth for every field extension `K/ℚ`, since `Smooth` is
+  stable under base change (`AlgebraicGeometry.Smooth` is a
+  `MorphismProperty.IsStableUnderBaseChange`);
+* a scheme smooth over a field is REGULAR, so all of its local rings are
+  regular local rings, hence integral domains;
+* a locally noetherian scheme whose local rings are domains has its
+  irreducible components equal to its connected components — through a point
+  lying on two components the local ring would have two minimal primes — so
+  CONNECTED ⟹ IRREDUCIBLE.
+
+`GeometricallyConnected` already carries nonemptiness (`ConnectedSpace`
+extends `Nonempty`), which is what `IrreducibleSpace` also demands, so no
+extra hypothesis is needed.
+
+MACHINERY MISSING AT THIS PIN: "smooth over a field ⟹ regular" is not stated
+in mathlib's `AlgebraicGeometry/Morphisms/Smooth.lean` at this pin (it only
+ever TAKES regularity/reducedness as a hypothesis), and neither is "connected
++ normal ⟹ irreducible" for schemes. Both are small, general and reusable —
+this leaf is the natural place to add them. Note that the sibling
+`exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` needs the
+same missing ingredient in its weaker form "smooth over a field ⟹ reduced",
+so a prover who builds it here discharges part of that leaf too.
+
+Stated for a general scheme `X` over `Spec (ULift ℚ)` rather than for the
+hyperplane sections alone, both because it is true at that generality and
+because the concrete base `ULift ℚ` is what every statement in this file
+uses, so the call site matches syntactically. -/
+theorem geometricallyIrreducible_of_smooth_of_geometricallyConnected
+    {X : AlgebraicGeometry.Scheme.{u}}
+    (h : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsm : AlgebraicGeometry.Smooth h)
+    (hconn : AlgebraicGeometry.GeometricallyConnected h) :
+    AlgebraicGeometry.GeometricallyIrreducible h :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
 /-- **BERTINI in characteristic zero: the generic hyperplane section is
-smooth and geometrically irreducible** (sorry node, 2026-07-26 — the purely
-algebro-geometric half of step (i) of Moret–Bailly's route, with the real
-topology entirely removed).
+smooth and geometrically irreducible** (**PROVEN 2026-07-26** over three
+leaves — the purely algebro-geometric half of step (i) of Moret–Bailly's
+route, with the real topology entirely removed).
 
 For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` of
 dimension `> 1`, presented in coordinates `x : Fin n → A`, there is a nonzero
@@ -1890,9 +2083,35 @@ it is nonempty by the two theorems above applied at the generic point, and a
 nonempty open subset of the irreducible space `𝔸^{n+1}_ℚ` contains a nonempty
 basic open `D(F)`. This is the content of the `∃ F ≠ 0` packaging.
 
-MACHINERY MISSING AT THIS PIN: Bertini's theorems in any form. This leaf is
-pure algebraic geometry — no arithmetic, no real analysis, no
-Galois-representation input — and is the largest of the three.
+THE CUT (2026-07-26, second cut of the day). Bertini's irreducibility
+theorem is the conjunction of a hard Lefschetz-type CONNECTEDNESS statement
+and a formal upgrade from connected to irreducible that is available as soon
+as the section is known to be SMOOTH. So the three conditions separate:
+
+* `exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible` (SORRY) —
+  a nonzero `F₁` off whose zero locus the section is smooth. No `hdim`: this
+  half is true in every dimension.
+* `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` (SORRY) —
+  a nonzero `F₂` off whose zero locus the section is geometrically connected.
+  **This is the sole consumer of `hdim`**, and it is false at `dim = 1`.
+* `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (SORRY) —
+  smooth + geometrically connected ⟹ geometrically irreducible, for any
+  scheme over `Spec (ULift ℚ)`. Pure formalities: smooth over a field ⟹
+  regular ⟹ local rings are domains, and a connected locally noetherian
+  scheme with domain local rings is irreducible.
+
+The assembly here is `F := F₁ * F₂`: `MvPolynomial (Fin (n+1)) ℚ` is a
+domain, so the product is nonzero, and a non-root of the product is a
+non-root of each factor. That is the same two-genericity-conditions-at-once
+device the parent `exists_bertiniHyperplane_of_affine_geometricallyIrreducible`
+already uses to combine this leaf with the nonzerodivisor leaf.
+
+MACHINERY MISSING AT THIS PIN, now distributed over the three leaves:
+Bertini's smoothness theorem and openness of the relative smooth locus (first
+leaf); the projective closure of an affine scheme, the Enriques–Severi–Zariski
+connectedness theorem, and openness of the geometrically-connected locus
+(second leaf, the deepest); "smooth over a field ⟹ regular" and "connected +
+normal ⟹ irreducible" (third leaf, the smallest and the most reusable).
 
 The parameter `x` is only assumed to GENERATE `A` as a ring over the base;
 that is exactly a closed embedding `Spec A ↪ 𝔸ⁿ_ℚ`, which is what makes
@@ -1911,8 +2130,16 @@ theorem exists_bertiniGenericLocus_of_affine_geometricallyIrreducible
         AlgebraicGeometry.Smooth (specQuotSpanSingleton
           (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) ∧
         AlgebraicGeometry.GeometricallyIrreducible (specQuotSpanSingleton
-          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) :=
-  sorry
+          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) := by
+  obtain ⟨F₁, hF₁0, hF₁⟩ :=
+    exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible g hsmooth hft hgi x hx
+  obtain ⟨F₂, hF₂0, hF₂⟩ :=
+    exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible g hsmooth hft hgi hdim x hx
+  refine ⟨F₁ * F₂, mul_ne_zero hF₁0 hF₂0, fun v hv => ?_⟩
+  rw [map_mul] at hv
+  have hsm := hF₁ v (left_ne_zero_of_mul hv)
+  have hcn := hF₂ v (right_ne_zero_of_mul hv)
+  exact ⟨hsm, geometricallyIrreducible_of_smooth_of_geometricallyConnected _ hsm hcn⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **THE REAL APPROXIMATION: a whole BOX of parameters keeps a real point**
@@ -1996,9 +2223,12 @@ short. So this is now proven over:
 * `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` (PROVEN
   2026-07-26, over associated primes) — off a proper `ℚ`-rational closed
   subset of the parameter space, `ℓ_v` is a nonzerodivisor;
-* `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` (SORRY —
-  the two Bertini theorems) — off a proper `ℚ`-rational closed subset, the
-  section is smooth and geometrically irreducible;
+* `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` (**PROVEN
+  2026-07-26** over `exists_bertiniSmoothLocus_…` (SORRY),
+  `exists_bertiniConnectedLocus_…` (SORRY) and
+  `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (SORRY)) —
+  off a proper `ℚ`-rational closed subset, the section is smooth and
+  geometrically irreducible;
 * `exists_realApproximationBall_of_affine_geometricallyIrreducible` (SORRY —
   the `ℝ`-topology and the implicit function theorem) — every rational
   parameter in a nonempty real BOX gives a section with a real point;
