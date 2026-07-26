@@ -725,6 +725,25 @@ become five separate literature nodes:
   `not_cyclicIsogeny_thirtyTwo`, `not_cyclicIsogeny_eightyOne`,
   `not_cyclicIsogeny_oneHundredTwentyFive`,
   `not_cyclicIsogeny_sq_of_prime_ge_seven`.
+
+  Two of those four were themselves decomposed on 2026-07-26 and are now
+  PROVEN rather than cited:
+
+  - `not_cyclicIsogeny_thirtyTwo` over `exists_x0Sixteen_hauptmodul`
+    (genus-`0` moduli at level `16`) and `exists_x0ThirtyTwo_point`
+    (the degree-`2` degeneracy map), with the Mordell–Weil half of
+    `X_0(32) : y² = x³ + 4x` PROVEN OUTRIGHT in
+    `Fermat/FLT/FreyCurve/QuarticDescent.lean` from Fermat's quartic
+    theorem `x⁴ − y⁴ ≠ z²`;
+  - `not_cyclicIsogeny_sq_of_prime_ge_seven` over
+    `not_cyclicIsogeny_sq_of_isogenyPrime`, Mazur's prime node cutting the
+    uniform `p ≥ 7` down to the nine primes
+    `{7, 11, 13, 17, 19, 37, 43, 67, 163}`.
+
+  The two still-cited ones carry route notes in their docstrings: level
+  `81` reduces to the single `j`-invariant `−12288000` as soon as the
+  level-`27` cluster is declared above it, and level `125` is the one with
+  no shallower intermediate level (`X_0(25)` has genus `0`).
 * the remaining half, `notPrimePow_mem_cyclicIsogenyDegrees`: a level
   with at least two distinct prime factors lies in
   `{6, 10, 12, 14, 15, 18, 21}` — exactly the non-prime-powers of the
@@ -816,9 +835,150 @@ lemma WeierstrassCurve.exists_stable_zmultiples_of_dvd (E : WeierstrassCurve ℚ
   rw [addOrderOf_nsmul' g hq0, hg, Nat.gcd_eq_right (Nat.div_dvd_of_dvd hd),
     Nat.div_div_self hd hN]
 
-/-- **No rational cyclic `32`-isogeny** (sorry node — the level `X_0(32)`
-of Kenku's prime-power determination): no elliptic curve over `ℚ`
-carries a Galois-stable cyclic subgroup of order `32`.
+/-!
+##### `X_0(32)` is `y² = x³ + 4x` — the Mordell–Weil half, PROVEN (2026-07-26)
+
+The level-`32` node below is now PROVEN over two moduli leaves, exactly on
+the pattern of `j_of_stable_cyclic_subgroup_order_27`. Its *arithmetic*
+half — the determination of `X_0(32)(ℚ)` — is no longer a citation: it is
+`QuarticDescent.rational_point_x0ThirtyTwo`, proven outright in
+`Fermat/FLT/FreyCurve/QuarticDescent.lean`.
+
+Magma's `SmallModularCurve(32)` (2026-07-26, untrusted searcher) returns
+`X_0(32) : y² = x³ + 4x`, the conductor-`32` curve, with `rank = 0` and
+`torsion ≅ ℤ/4`; so `X_0(32)(ℚ)` is `{O, (0,0), (2,4), (2,−4)}`, and all
+four points are cusps (`Σ_{d ∣ 32} φ(gcd(d, 32/d)) = 8` cusps, of which the
+`4` with `d ∈ {1, 2, 16, 32}` are rational — exactly the point count).
+
+**Why the rank-`0` half is reachable here and was mis-assessed as
+irreducible.** `y² = x³ + 4x` is `2`-isogenous, by the explicit Vélu map
+`(x, y) ↦ ((x² + 4)/(4x), y(x² − 4)/(8x²))`, to `y² = x³ − 16x ≅ y² = x³ − x`
+— the congruent-number-`1` curve. Its Mordell–Weil determination is
+Fermat's *other* quartic theorem `x⁴ − y⁴ ≠ z²`, which this development
+already proves by infinite descent. So level `32` stands to Fermat's
+quartic theorem exactly as level `27` stands to Fermat's cubic theorem
+(`MazurLevel27.rational_point_x0TwentySeven`, from
+`fermatLastTheoremThree`). Both Mordell–Weil halves are now PROVEN and only
+the moduli dictionary is open.
+
+What is left, and all that is left, is the moduli interpretation, split
+into the two leaves consumed below:
+
+* `exists_x0Sixteen_hauptmodul` — level `16`, on the **genus-`0`** curve
+  `X_0(16)`: a stable cyclic `16`-subgroup gives a rational Hauptmodul
+  value `s` with `j(E) = j₁₆(s)` for the explicit degree-`24` rational
+  function `j₁₆`. This is the direct analogue of `exists_x0Nine_hauptmodul`
+  and is elementary in principle (the universal curve with a cyclic
+  `16`-isogeny over the `s`-line, i.e. an iterated Vélu `2`-isogeny chain).
+  **Its hypothesis is satisfiable** — `16`-isogenies exist — so this leaf
+  carries genuine content.
+* `exists_x0ThirtyTwo_point` — level `32`: such an `s` is the image of a
+  rational point of `y² = x³ + 4x` under the degeneracy map
+  `π : (x, y) ↦ y/(x² + 4)`. **VACUITY AUDIT: this leaf's hypothesis is
+  unsatisfiable** (no curve has a cyclic `32`-isogeny — that is the theorem),
+  so the leaf is vacuously true and cannot be proven independently of the
+  node it serves. That is unavoidable for any level whose conclusion is
+  `False`, and it is the shape every sibling level in this file already has;
+  it is recorded here so nobody mistakes it for reducible content. The
+  mathematics of the level lives entirely in the two NON-vacuous pieces:
+  the `X_0(16)` leaf above and the PROVEN `X_0(32)` Mordell–Weil half.
+
+The `j`-map of `X_0(16)` used below is
+`j = M(s)³ / (s (1 − 2s)¹⁶ (1 + 2s)⁴ (1 + 4s²))` with `M` of degree `8`;
+`s = 1/(t + 2)` where `t` is Magma's `X_0(16)` Hauptmodul, a Möbius change
+chosen so that no rational point of `X_0(32)` is sent to `s = ∞`. Poles of
+`j₁₆` at `s = 0, 1/2, −1/2` and at the two conjugate points `s = ∓i/2`, of
+orders `1, 16, 4, 1, 1`, plus the simple pole at `s = ∞` (the cusp `t = −2`):
+`1 + 16 + 4 + 1 + 1 + 1 = 24 = [SL₂(ℤ) : Γ₀(16)]` ✓. Verified in PARI/GP:
+for `s = 1, …, 5, 1/3, 1/4, 1/5` the curve `ellfromj(j₁₆(s))` has cyclic
+isogeny degrees exactly `{1, 2, 4, 8, 16}`.
+-/
+
+/-- **`X_0(16)`, the genus-`0` level: a rational cyclic `16`-subgroup puts
+`j` on the explicit degree-`24` Hauptmodul curve** (sorry node — the moduli
+content at level `16`, introduced 2026-07-26): if the geometric points of an
+elliptic curve over `ℚ` contain a point `g` of order `16` whose cyclic
+subgroup is `Gal(ℚ̄/ℚ)`-stable, then there is a rational number `s` with
+
+  `j(E) · s(1 − 2s)¹⁶(1 + 2s)⁴(1 + 4s²) = M(s)³`,
+
+`M(s) = 256s⁸ + 15360s⁷ + 34560s⁶ + 26880s⁵ + 17504s⁴ + 6720s³ + 2160s²
+        + 240s + 1`.
+
+This is the statement that `(E, ⟨g⟩)` is a non-cuspidal rational point of
+`X_0(16)`, together with the explicit `j`-map of that modular curve.
+`X_0(16)` has **genus `0`** with a `ℚ`-rational cusp, so it is `ℙ¹_ℚ` and a
+rational point has a rational `s`-coordinate; `s ≠ ∞` (the cusp `t = −2`) is
+forced because `E` is an honest elliptic curve, hence not a cusp, and the
+displayed identity itself excludes the remaining cusps `s = 0, 1/2, −1/2`
+because `M` does not vanish there (`M(0) = 1`, `M(1/2) = 4096`,
+`M(−1/2) = 256`).
+
+Its intended proof is elementary and needs no modular curve as a scheme:
+exhibit the universal family over the `s`-line — a curve with a rational
+point of order `2` together with Vélu's formulae for the four `2`-isogenies
+in the chain `E → E/C₂ → E/C₄ → E/C₈ → E/C₁₆` — and compute its
+`j`-invariant. Compare `exists_x0Nine_hauptmodul`, which is the same
+statement one level down the `3`-power tower. -/
+theorem WeierstrassCurve.exists_x0Sixteen_hauptmodul
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 16)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ s : ℚ, E.j * (s * (1 - 2 * s) ^ 16 * (1 + 2 * s) ^ 4 * (1 + 4 * s ^ 2))
+      = (256 * s ^ 8 + 15360 * s ^ 7 + 34560 * s ^ 6 + 26880 * s ^ 5 + 17504 * s ^ 4
+          + 6720 * s ^ 3 + 2160 * s ^ 2 + 240 * s + 1) ^ 3 :=
+  sorry
+
+/-- **`X_0(32) → X_0(16)`: an `X_0(16)`-parameter of a curve with a rational
+cyclic `32`-subgroup lifts to `y² = x³ + 4x`** (sorry node — the level-`32`
+moduli content, introduced 2026-07-26): if `E` carries a `Gal(ℚ̄/ℚ)`-stable
+cyclic subgroup of order `32`, and `s` is a rational number lying over `j(E)`
+under the `X_0(16)` `j`-map, then `s` is the image of a rational point of
+`X_0(32) : y² = x³ + 4x` under the explicit degeneracy map
+`π : (x, y) ↦ y/(x² + 4)` — written denominator-free as `s(x² + 4) = y`.
+
+The map is regular on the whole affine curve because `x² + 4 > 0`, so the
+displayed relation is never vacuous at a point; that is why this coordinate
+was chosen over the equivalent `t = (y − 2x)/x`, which degenerates at
+`(0, 0)`.
+
+This is the node that carries the modular-curve content proper: the
+degeneracy map `π : X_0(32) → X_0(16)` of degree `2` and the model
+`y² = x³ + 4x` of `X_0(32)`. Its intended proof is the moduli dictionary —
+the pair `(E, C)` with `C` cyclic of order `32` gives a rational point of
+`X_0(32)` whose image in `X_0(16)` is `(E, 2C)` — for which nothing exists
+in this development yet.
+
+**VACUITY AUDIT.** By the very theorem it serves, the hypothesis
+`addOrderOf g = 32` together with stability is never satisfied, so this leaf
+is vacuously true and is NOT independently provable: whoever proves it will
+be proving the moduli dictionary in general and instantiating it. See the
+section note above. No rank or Mordell–Weil computation is left in this
+node: that half is `QuarticDescent.rational_point_x0ThirtyTwo`, PROVEN from
+`sq_ne_quartic_sub_quartic`. -/
+theorem WeierstrassCurve.exists_x0ThirtyTwo_point
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 32)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g)
+    (s : ℚ)
+    (hs : E.j * (s * (1 - 2 * s) ^ 16 * (1 + 2 * s) ^ 4 * (1 + 4 * s ^ 2))
+      = (256 * s ^ 8 + 15360 * s ^ 7 + 34560 * s ^ 6 + 26880 * s ^ 5 + 17504 * s ^ 4
+          + 6720 * s ^ 3 + 2160 * s ^ 2 + 240 * s + 1) ^ 3) :
+    ∃ x y : ℚ, y ^ 2 = x ^ 3 + 4 * x ∧ s * (x ^ 2 + 4) = y :=
+  sorry
+
+/-- **No rational cyclic `32`-isogeny** (PROVEN 2026-07-26 over the two
+moduli leaves `exists_x0Sixteen_hauptmodul` and `exists_x0ThirtyTwo_point`,
+replacing the former Ogg citation): no elliptic curve over `ℚ` carries a
+Galois-stable cyclic subgroup of order `32`.
 
 `32 = 2⁵` is the smallest power of `2` absent from the Mazur–Kenku list
 (`2, 4, 8, 16` are all present — realized simultaneously by the
@@ -827,14 +987,13 @@ conductor-`45` curve `[1,−1,0,0,−5]`, whose cyclic isogeny degrees are
 divisor descent this single statement disposes of every `2^k` with
 `k ≥ 5`.
 
-IRREDUCIBLE at this mathlib pin: `X_0(32)` has genus `1` (recomputed
-2026-07-25 from the standard formula: `μ = 48`, `ν₂ = ν₃ = 0`, `8`
-cusps, so `g = 1 + 4 − 4 = 1`), and the statement is that its Jacobian —
-an elliptic curve of Mordell–Weil rank `0` over `ℚ` — has only the eight
-cusps as rational points. No modular curve and no Jacobian exists in
-this development. (Ogg, "Rational points on certain elliptic modular
-curves", Proc. Sympos. Pure Math. 24 (1973); subsumed in the
-Mazur–Kenku classification.) -/
+Assembly (this proof): `2 • g` generates a stable cyclic subgroup of order
+`16` (`exists_stable_zmultiples_of_dvd`), which gives the `X_0(16)`
+Hauptmodul value `s`; the level-`32` leaf lifts `s` to a rational point of
+`y² = x³ + 4x`; and `QuarticDescent.no_x0ThirtyTwo_point` — Fermat's quartic
+theorem, through the `2`-isogeny to `y² = x³ − x`, plus the three explicit
+cusp evaluations `M(0)³`, `M(1/2)³`, `M(−1/2)³` — closes it. See the section
+note above for the modular data and its PARI/GP and Magma cross-checks. -/
 theorem WeierstrassCurve.not_cyclicIsogeny_thirtyTwo (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 32)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -842,8 +1001,13 @@ theorem WeierstrassCurve.not_cyclicIsogeny_thirtyTwo (E : WeierstrassCurve ℚ)
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
-    False :=
-  sorry
+    False := by
+  obtain ⟨g₁₆, hg₁₆, hstable₁₆⟩ :=
+    E.exists_stable_zmultiples_of_dvd g (N := 32) (d := 16) (by norm_num) (by norm_num)
+      hg hstable
+  obtain ⟨s, hs⟩ := E.exists_x0Sixteen_hauptmodul g₁₆ hg₁₆ hstable₁₆
+  obtain ⟨x, y, hxy, hsx⟩ := E.exists_x0ThirtyTwo_point g hg hstable s hs
+  exact QuarticDescent.no_x0ThirtyTwo_point E.j s x y hxy hsx hs
 
 /-- **No rational cyclic `81`-isogeny** (sorry node — the level `X_0(81)`
 of Kenku's prime-power determination): no elliptic curve over `ℚ`
@@ -854,11 +1018,35 @@ carries a Galois-stable cyclic subgroup of order `81`.
 divisor descent this single statement disposes of every `3^k` with
 `k ≥ 4`.
 
-IRREDUCIBLE at this mathlib pin: `X_0(81)` has genus `4` (recomputed
-2026-07-25: `μ = 108`, `ν₂ = ν₃ = 0`, `12` cusps, so
-`g = 1 + 9 − 6 = 4`), so this is a Chabauty/Jacobian-rank argument on a
-genus-`4` curve, not an elliptic-curve computation. Nothing of the kind
-exists in this development. (Kenku's series, 1979–1982.) -/
+`X_0(81)` has genus `4` (recomputed 2026-07-25: `μ = 108`,
+`ν₂ = ν₃ = 0`, `12` cusps, so `g = 1 + 9 − 6 = 4`), so the direct route is
+a Chabauty/Jacobian-rank argument on a genus-`4` curve.
+
+**THE ROUTE THAT AVOIDS THE GENUS-`4` CURVE, AND WHY IT IS NOT TAKEN HERE**
+(recorded 2026-07-26 so the next owner starts warm). `X_0(81) → X_0(27)` is
+a degree-`3` degeneracy map, and `X_0(27)(ℚ)` is completely determined in
+this file already: `j_of_stable_cyclic_subgroup_order_27` says a stable
+cyclic `27`-subgroup forces `j(E) = −12288000`. So `3 • g` gives a stable
+cyclic `27`-subgroup and this node reduces to the SINGLE-`j` statement
+
+  "no elliptic curve over `ℚ` with `j = −12288000` carries a stable cyclic
+   subgroup of order `81`",
+
+i.e. to the fibre of `X_0(81) → X_0(27)` over one point — three geometric
+points instead of a genus-`4` Mordell–Weil computation. That statement is
+true and checkable: PARI/GP (2026-07-26, untrusted searcher) reports
+`ellisomat(ellfromj(-12288000))` with cyclic isogeny degrees exactly
+`{1, 3, 9, 27}`. The curve is CM by the order of discriminant `−27`, and
+the `3`-power isogeny ladder of that order stops at `27`.
+
+**The reduction is NOT performed here purely because of DECLARATION ORDER**:
+`j_of_stable_cyclic_subgroup_order_27` and the `X_0(9)`/`X_0(27)` leaves it
+consumes are declared ~4500 lines further down this file, while this node is
+consumed by `composite_mem_cyclicIsogenyDegrees` a few hundred lines below.
+Whoever hoists the level-`27` cluster above this point (or moves it to its
+own module, as the level-`32` arithmetic was moved to
+`Fermat/FLT/FreyCurve/QuarticDescent.lean`) gets this reduction for five
+lines of assembly. (Kenku's series, 1979–1982.) -/
 theorem WeierstrassCurve.not_cyclicIsogeny_eightyOne (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 81)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -882,7 +1070,21 @@ IRREDUCIBLE at this mathlib pin: `X_0(125)` has genus `8` (recomputed
 2026-07-25: `μ = 150`, `ν₂ = 2`, `ν₃ = 0`, `10` cusps, so
 `g = 1 + 25/2 − 1/2 − 5 = 8`). This is precisely the level treated in
 Kenku, "On the modular curves `X_0(125)`, `X_1(25)` and `X_1(49)`",
-J. London Math. Soc. (2) 23 (1981), 415–427. -/
+J. London Math. Soc. (2) 23 (1981), 415–427.
+
+**Why this level is the hardest of the four prime powers, checked
+2026-07-26.** The other three all admit a reduction that shrinks the
+modular curve: level `32` drops to the genus-`0` curve `X_0(16)` plus a
+genus-`1` Mordell–Weil determination that is Fermat's quartic theorem (now
+PROVEN, see above); level `81` drops to a single `j`-invariant through the
+genus-`1` curve `X_0(27)`; the `p²` level drops to nine explicit primes
+through Mazur. Here the intermediate level is `X_0(25)`, which has genus
+`0` — so it pins nothing, and there are infinitely many curves with a
+cyclic `25`-isogeny. The genus-`8` curve `X_0(125)` therefore has to be
+faced directly (Kenku works through its Atkin–Lehner quotient). Splitting
+this node along `X_0(25)` would produce a genus-`0` Hauptmodul leaf plus a
+level-`125` leaf carrying the entire content — a decomposition that
+relocates the work without reducing it, so it was deliberately NOT done. -/
 theorem WeierstrassCurve.not_cyclicIsogeny_oneHundredTwentyFive
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
@@ -894,9 +1096,61 @@ theorem WeierstrassCurve.not_cyclicIsogeny_oneHundredTwentyFive
     False :=
   sorry
 
-/-- **No rational cyclic `p²`-isogeny for `p ≥ 7`** (sorry node — the
-levels `X_0(p²)` of Kenku's prime-power determination): for a prime
-`p ≥ 7`, no elliptic curve over `ℚ` carries a Galois-stable cyclic
+/-- **No rational cyclic `p²`-isogeny at the nine isogeny primes `≥ 7`**
+(sorry node — the levels `X_0(p²)` of Kenku's prime-power determination,
+introduced 2026-07-26 as the residue of
+`not_cyclicIsogeny_sq_of_prime_ge_seven` after Mazur's prime node): for
+`p ∈ {7, 11, 13, 17, 19, 37, 43, 67, 163}`, no elliptic curve over `ℚ`
+carries a Galois-stable cyclic subgroup of order `p²`.
+
+This is strictly shallower than the statement it serves: the uniform
+quantifier over all primes `p ≥ 7` has been discharged (a cyclic
+`p²`-isogeny yields a cyclic `p`-isogeny by divisor descent, and Mazur's
+`prime_mem_cyclicIsogenyDegrees` then confines `p` to
+`{2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`, of which `p ≥ 7` leaves
+nine). What remains is nine concrete modular curves rather than infinitely
+many.
+
+The two smallest cases are the classical ones — `X_0(49)` has genus `1`
+(`μ = 56`, `ν₂ = 0`, `ν₃ = 2`, `8` cusps; it is the conductor-`49` CM curve,
+of rank `0` with `X_0(49)(ℚ) ≅ ℤ/2`, and its two rational points are exactly
+its two rational cusps) and `X_0(169)` genus `8` (`μ = 182`,
+`ν₂ = ν₃ = 2`, `14` cusps), the latter being exactly Kenku, "The modular
+curve `X_0(169)` and rational isogeny", J. London Math. Soc. (2) 22 (1980),
+239–244. For the seven larger `p` the input is that only finitely many
+`j`-invariants admit a rational `p`-isogeny at all, all of them known
+explicitly and all CM except at `p = 17` and `p = 37`, and none of them
+admits a cyclic `p²`-isogeny.
+
+A route worth recording, since it is what makes the nine levels finite work
+rather than nine independent Chabauty computations: a cyclic `p²`-subgroup
+`C` makes `E/C[p]` carry TWO independent `p`-isogenies (with characters
+`λ̄` and `χλ̄⁻¹`), i.e. `E'[p]` is diagonalisable over `ℚ`; conversely two
+independent `p`-isogenies compose to a cyclic `p²`-isogeny. So the whole
+statement is "no elliptic curve over `ℚ` has diagonal mod-`p` representation
+for `p ≥ 7`", which is a statement about the isogeny characters this file
+already manufactures in `exists_isogenyCharacter`.
+
+IRREDUCIBLE at this mathlib pin: every known route still runs through the
+rational points of a modular curve of genus `≥ 1`, or through the CM theory
+that classifies the `j`-invariants with a rational `p`-isogeny; neither
+exists in this development. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_sq_of_isogenyPrime
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ}
+    (hp : p ∈ ({7, 11, 13, 17, 19, 37, 43, 67, 163} : Finset ℕ))
+    (hg : addOrderOf g = p ^ 2)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `p²`-isogeny for `p ≥ 7`** (PROVEN 2026-07-26 over
+the strictly narrower leaf `not_cyclicIsogeny_sq_of_isogenyPrime`): for a
+prime `p ≥ 7`, no elliptic curve over `ℚ` carries a Galois-stable cyclic
 subgroup of order `p²`.
 
 Together with the three explicit levels above this is the whole
@@ -905,21 +1159,13 @@ prime-power half: the composite prime powers in the Mazur–Kenku list are
 even the square is already excluded, and divisor descent removes every
 higher power at once.
 
-Only finitely many `p` actually require an argument, though the
-statement is uniform: by `prime_mem_cyclicIsogenyDegrees` (Mazur), a
-cyclic `p²`-isogeny yields a cyclic `p`-isogeny, so `p` would have to lie
-in `{7, 11, 13, 17, 19, 37, 43, 67, 163}`. The two smallest cases are the
-classical ones — `X_0(49)` has genus `1` (`μ = 56`, `ν₂ = 0`, `ν₃ = 2`,
-`8` cusps) and `X_0(169)` genus `8` (`μ = 182`, `ν₂ = ν₃ = 2`, `14`
-cusps), the latter being exactly Kenku, "The modular curve `X_0(169)` and
-rational isogeny", J. London Math. Soc. (2) 22 (1980), 239–244. For the
-larger `p` the input is that only finitely many `j`-invariants admit a
-rational `p`-isogeny at all, all of them known explicitly, and none of
-them a cyclic `p²`-isogeny.
-
-IRREDUCIBLE at this mathlib pin: every route runs through the rational
-points of a modular curve of genus `≥ 1`, and neither modular curves nor
-their Jacobians exist in this development. -/
+The uniform quantifier over primes is what is discharged here: `p • g`
+generates a stable cyclic subgroup of order `p`
+(`exists_stable_zmultiples_of_dvd`), so Mazur's
+`prime_mem_cyclicIsogenyDegrees` puts `p` in
+`{2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`, and `7 ≤ p` cuts that to
+the nine primes of the leaf above. The remaining content is nine explicit
+modular curves; see that leaf's docstring. -/
 theorem WeierstrassCurve.not_cyclicIsogeny_sq_of_prime_ge_seven
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ} (hp : p.Prime) (hp7 : 7 ≤ p)
@@ -929,8 +1175,13 @@ theorem WeierstrassCurve.not_cyclicIsogeny_sq_of_prime_ge_seven
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
-    False :=
-  sorry
+    False := by
+  obtain ⟨g', hg', hstable'⟩ :=
+    E.exists_stable_zmultiples_of_dvd g (N := p ^ 2) (d := p)
+      (pow_ne_zero 2 hp.pos.ne') (dvd_pow_self p two_ne_zero) hg hstable
+  have hmem := E.prime_mem_cyclicIsogenyDegrees g' hp hg' hstable'
+  refine E.not_cyclicIsogeny_sq_of_isogenyPrime g ?_ hg hstable
+  fin_cases hmem <;> simp_all
 
 /-!
 ##### Kenku's non-prime-power half, split into its individual levels (2026-07-25)

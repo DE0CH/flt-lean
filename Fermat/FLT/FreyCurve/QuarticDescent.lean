@@ -5,6 +5,7 @@ the FLT project).
 module
 
 public import Mathlib.NumberTheory.Zsqrtd.GaussianInt
+public import Mathlib.NumberTheory.PythagoreanTriples
 public import Mathlib.RingTheory.Int.Basic
 public import Mathlib.RingTheory.PrincipalIdealDomain
 public import Mathlib.Tactic
@@ -746,5 +747,607 @@ theorem quartic_no_solution {X Y e : ℤ} (hXY : IsCoprime X Y)
   refine not_isSquare_form ((X ^ 2).natAbs + (Y ^ 2).natAbs) (X ^ 2) (Y ^ 2) le_rfl
     (hXY.pow) (pow_ne_zero 2 hX) (pow_ne_zero 2 hY) ⟨X * Y * e, ?_⟩
   linear_combination (-(X ^ 2 * Y ^ 2)) * h
+
+/-!
+# `X_0(32) : y² = x³ + 4x` — the Mordell–Weil half of Kenku's level `32`
+
+Everything below (added 2026-07-26) is the *arithmetic* half of
+`WeierstrassCurve.not_cyclicIsogeny_thirtyTwo` in
+`Fermat/FLT/FreyCurve/MazurTorsion.lean`, and it is PROVEN outright.
+
+`X_0(32)` has genus `1`; its `ℚ`-model is the conductor-`32` elliptic
+curve `y² = x³ + 4x` (Magma `SmallModularCurve(32)`, 2026-07-26, which
+also reports `rank = 0` and `torsion ≅ ℤ/4`). Kenku's determination of
+`X_0(32)(ℚ)` is therefore the statement that this curve has exactly the
+four rational points `O`, `(0, 0)`, `(2, ±4)` — and all four are cusps.
+
+That determination is **not** out of reach here, because `y² = x³ + 4x`
+is `2`-isogenous to `y² = x³ − 16x ≅ y² = x³ − x`, whose Mordell–Weil
+group is the classical "`1` is not a congruent number" theorem — which
+is exactly `sq_ne_quartic_sub_quartic`, Fermat's *other* quartic
+theorem, already available in this file's sibling development. So the
+level-`32` Mordell–Weil input is to Fermat's `x⁴ − y⁴ ≠ z²` what the
+level-`27` input is to Fermat's `x³ + y³ ≠ z³`.
+
+The chain proved below is:
+
+* `sq_ne_quartic_sub_quartic` (re-proved here so that it is available
+  *upstream* of `MazurTorsion.lean`, where the level-`32` node lives far
+  above the copy in that file — this is a deliberate duplicate, see the
+  note on `sq_ne_quartic_sub_quartic` below);
+* `int_no_point_congruentOne` — the integral `2`-descent
+  `n² = p(p − e²)(p + e²)` with `gcd(p, e) = 1` forces `n = 0`, in four
+  sign/parity branches, each closing on `sq_ne_quartic_sub_quartic`;
+* `rat_no_point_congruentOne` — `y² = x³ − x` over `ℚ` forces `y = 0`
+  (the passage `ℚ → ℤ` is the usual `x = p/e²`, `y = n/e³`
+  normalisation, obtained here from `den ^ 3 = den ^ 2` bookkeeping);
+* `rational_point_x0ThirtyTwo` — the four rational points of
+  `y² = x³ + 4x`, via the explicit `2`-isogeny
+  `(x, y) ↦ ((x² + 4)/(4x), y(x² − 4)/(8x²))` onto `y² = x³ − x`.
+-/
+
+/-! ### Fermat's other quartic theorem, `x⁴ − y⁴ ≠ z²`
+
+**DELIBERATE DUPLICATE.** The seven declarations in this subsection are a
+verbatim copy of the block of the same name in
+`Fermat/FLT/FreyCurve/MazurTorsion.lean` (there in the root namespace).
+The copy exists purely for *declaration order*: `MazurTorsion.lean`
+proves `x⁴ − y⁴ ≠ z²` around line 3500, while the level-`32` node
+`not_cyclicIsogeny_thirtyTwo` sits around line 830 and is consumed by
+`composite_mem_cyclicIsogenyDegrees` well before that, so the theorem is
+unusable there. This module is imported by `MazurTorsion.lean`, so the
+copy here IS usable at the level-`32` node.
+
+At integration the root-namespace block in `MazurTorsion.lean` should be
+deleted and its consumers pointed at `QuarticDescent.*`; that edit was
+deliberately NOT made here, because that block is in a region of a
+heavily contended `15k`-line file and a delete there costs a merge
+conflict for no mathematical gain. -/
+
+/-- If a product of two coprime integers is a square and the first factor is
+positive, that factor is the square of a positive integer (PROVEN). -/
+lemma pos_sq_of_gcd_eq_one {u v w : ℤ} (h : Int.gcd u v = 1) (heq : u * v = w ^ 2)
+    (hu : 0 < u) : ∃ a : ℤ, 0 < a ∧ u = a ^ 2 := by
+  obtain ⟨a, ha | ha⟩ := Int.sq_of_gcd_eq_one h heq
+  · have ha0 : a ≠ 0 := by rintro rfl; rw [ha] at hu; norm_num at hu
+    exact ⟨|a|, abs_pos.mpr ha0, by rw [ha, sq_abs]⟩
+  · exfalso; rw [ha] at hu; linarith only [hu, sq_nonneg a]
+
+/-- If `u * v` is positive and `u` is positive then `v` is positive (PROVEN). -/
+lemma pos_right_of_mul_pos {u v : ℤ} (hu : 0 < u) (h : 0 < u * v) : 0 < v := by
+  rcases lt_trichotomy v 0 with hv | hv | hv
+  · exact absurd h (by nlinarith)
+  · exact absurd h (by simp [hv])
+  · exact hv
+
+/-- A positive integer is at most its own square (PROVEN). -/
+lemma self_le_sq {r : ℤ} (h : 0 < r) : r ≤ r ^ 2 := by nlinarith
+
+/-- A leg of a Pythagorean triple is shorter than its hypotenuse (PROVEN). -/
+lemma lt_of_sq_eq_add {M K x : ℤ} (hK : 0 < K) (hx : 0 < x) (h : x ^ 2 = M ^ 2 + K ^ 2) :
+    M < x := by
+  nlinarith [pow_pos hK 2, sq_nonneg (x - M), sq_nonneg (x + M)]
+
+/-- `ρ < (ρ²)² + (σ²)²` for positive `ρ`, `σ` — the size estimate that makes the
+second branch of the quartic descent strictly decreasing (PROVEN). -/
+lemma lt_of_eq_quartic {ρ σ x : ℤ} (hρ : 0 < ρ) (hσ : 0 < σ)
+    (h : x = (ρ ^ 2) ^ 2 + (σ ^ 2) ^ 2) : ρ < x :=
+  by linarith only [h, self_le_sq hρ, self_le_sq (pow_pos hρ 2), pow_pos (pow_pos hσ 2) 2]
+
+/-- **Fermat's other quartic theorem, in descent form** (PROVEN): there is no
+solution of `x ^ 4 - y ^ 4 = z ^ 2` in positive integers with `x.natAbs < N`.
+The induction on `N` is Fermat's infinite descent. -/
+theorem quartic_diff_aux : ∀ N : ℕ, ∀ x y z : ℤ, x.natAbs < N → 0 < x → 0 < y → 0 < z →
+    x ^ 4 - y ^ 4 ≠ z ^ 2 := by
+  intro N
+  induction N with
+  | zero => intro x y z hN; exact absurd hN (Nat.not_lt_zero _)
+  | succ N ih =>
+    intro x y z hN hx hy hz heq
+    by_cases hcop : Int.gcd x y = 1
+    case neg =>
+      obtain ⟨p, hp, hpx, hpy⟩ := Nat.Prime.not_coprime_iff_dvd.mp hcop
+      obtain ⟨x1, rfl⟩ := Int.natCast_dvd.mpr hpx
+      obtain ⟨y1, rfl⟩ := Int.natCast_dvd.mpr hpy
+      have hp0 : (0 : ℤ) < (p : ℤ) := by exact_mod_cast hp.pos
+      have hx1 : 0 < x1 := pos_right_of_mul_pos hp0 hx
+      have hy1 : 0 < y1 := pos_right_of_mul_pos hp0 hy
+      have hpz : ((p : ℤ) ^ 2) ∣ z := by
+        rw [← Int.pow_dvd_pow_iff (two_ne_zero), ← heq]
+        exact ⟨x1 ^ 4 - y1 ^ 4, by ring⟩
+      obtain ⟨z1, rfl⟩ := hpz
+      have hz1 : 0 < z1 := pos_right_of_mul_pos (pow_pos hp0 2) hz
+      refine ih x1 y1 z1 ?_ hx1 hy1 hz1 ?_
+      · have h1 : 0 < x1.natAbs := Int.natAbs_pos.mpr hx1.ne'
+        have h2 : 2 ≤ p := hp.two_le
+        have h3 : ((p : ℤ) * x1).natAbs = p * x1.natAbs := by
+          rw [Int.natAbs_mul, Int.natAbs_natCast]
+        rw [h3] at hN
+        have h4 : 2 * x1.natAbs ≤ p * x1.natAbs := Nat.mul_le_mul_right _ h2
+        omega
+      · have hp4 : ((p : ℤ)) ^ 4 ≠ 0 := pow_ne_zero _ hp0.ne'
+        apply mul_left_cancel₀ hp4
+        linear_combination heq
+    case pos =>
+      have hxy : IsCoprime x y := Int.isCoprime_iff_gcd_eq_one.mpr hcop
+      have hT : PythagoreanTriple (y ^ 2) z (x ^ 2) := by
+        delta PythagoreanTriple; linear_combination -heq
+      have hyz : Int.gcd (y ^ 2) z = 1 := by
+        apply Int.isCoprime_iff_gcd_eq_one.mp
+        have h1 : IsCoprime (x ^ 4) (y ^ 4) := hxy.pow
+        have h2 := h1.add_mul_right_left (-1)
+        rw [show x ^ 4 + (-1) * y ^ 4 = z ^ 2 by linear_combination heq] at h2
+        exact (h2.symm.of_isCoprime_of_dvd_left
+          (pow_dvd_pow y (by norm_num))).of_isCoprime_of_dvd_right (dvd_pow_self z two_ne_zero)
+      rcases hT.even_odd_of_coprime hyz with ⟨hye, hzo⟩ | ⟨hyo, hze⟩
+      · have hT' : PythagoreanTriple z (y ^ 2) (x ^ 2) := hT.symm
+        have hzy : Int.gcd z (y ^ 2) = 1 := by rw [Int.gcd_comm]; exact hyz
+        obtain ⟨M, K, e1, e2, e3, e4, e5, e6⟩ :=
+          hT'.coprime_classification' hzy hzo (by positivity)
+        have hy2 : (0 : ℤ) < y ^ 2 := pow_pos hy 2
+        have hM0 : M ≠ 0 := by
+          rintro rfl
+          rw [show (2 : ℤ) * 0 * K = 0 by ring] at e2
+          exact absurd e2 hy2.ne'
+        have hMpos : 0 < M := lt_of_le_of_ne e6 (Ne.symm hM0)
+        have hKpos : 0 < K :=
+          pos_right_of_mul_pos (show (0 : ℤ) < 2 * M by positivity) (by rw [← e2]; exact hy2)
+        obtain ⟨y1, hy1⟩ : ∃ y1, y = 2 * y1 := by
+          have h2 : (2 : ℤ) ∣ y ^ 2 := Int.dvd_of_emod_eq_zero hye
+          obtain ⟨y1, hy1⟩ := Int.Prime.dvd_pow' (k := 2) Nat.prime_two (by exact_mod_cast h2)
+          exact ⟨y1, hy1⟩
+        obtain ⟨a, b, ha, hb, hab, haodd, hxeq⟩ :
+            ∃ a b : ℤ, 0 < a ∧ 0 < b ∧ Int.gcd (a ^ 2) (2 * b ^ 2) = 1 ∧ (a ^ 2) % 2 = 1 ∧
+              x ^ 2 = (a ^ 2) ^ 2 + (2 * b ^ 2) ^ 2 := by
+          rcases e5 with ⟨hMe, hKo⟩ | ⟨hMo, hKe⟩
+          · obtain ⟨M1, hM1⟩ : ∃ M1, M = 2 * M1 := ⟨M / 2, by omega⟩
+            have hM1pos : 0 < M1 := by omega
+            have hprod : M1 * K = y1 ^ 2 := by
+              apply mul_left_cancel₀ (show (4 : ℤ) ≠ 0 by norm_num)
+              rw [hy1, hM1] at e2; linear_combination -e2
+            have hgcd : Int.gcd M1 K = 1 := by
+              apply Int.isCoprime_iff_gcd_eq_one.mp
+              exact (Int.isCoprime_iff_gcd_eq_one.mpr e4).of_isCoprime_of_dvd_left
+                ⟨2, by linarith only [hM1]⟩
+            obtain ⟨α, hα, hαe⟩ := pos_sq_of_gcd_eq_one hgcd hprod hM1pos
+            obtain ⟨β, hβ, hβe⟩ := pos_sq_of_gcd_eq_one (by rw [Int.gcd_comm]; exact hgcd)
+              (show K * M1 = y1 ^ 2 by linarith only [hprod]) hKpos
+            refine ⟨β, α, hβ, hα, ?_, ?_, ?_⟩
+            · rw [← hβe, show 2 * α ^ 2 = M by rw [hM1, hαe], Int.gcd_comm]; exact e4
+            · rw [← hβe]; exact hKo
+            · rw [e3, ← hβe, show 2 * α ^ 2 = M by rw [hM1, hαe]]; ring
+          · obtain ⟨K1, hK1⟩ : ∃ K1, K = 2 * K1 := ⟨K / 2, by omega⟩
+            have hK1pos : 0 < K1 := by omega
+            have hprod : M * K1 = y1 ^ 2 := by
+              apply mul_left_cancel₀ (show (4 : ℤ) ≠ 0 by norm_num)
+              rw [hy1, hK1] at e2; linear_combination -e2
+            have hgcd : Int.gcd M K1 = 1 := by
+              apply Int.isCoprime_iff_gcd_eq_one.mp
+              exact (Int.isCoprime_iff_gcd_eq_one.mpr e4).of_isCoprime_of_dvd_right
+                ⟨2, by linarith only [hK1]⟩
+            obtain ⟨α, hα, hαe⟩ := pos_sq_of_gcd_eq_one hgcd hprod hMpos
+            obtain ⟨β, hβ, hβe⟩ := pos_sq_of_gcd_eq_one (by rw [Int.gcd_comm]; exact hgcd)
+              (show K1 * M = y1 ^ 2 by linarith only [hprod]) hK1pos
+            refine ⟨α, β, hα, hβ, ?_, ?_, ?_⟩
+            · rw [← hαe, show 2 * β ^ 2 = K by rw [hK1, hβe]]; exact e4
+            · rw [← hαe]; exact hMo
+            · rw [e3, ← hαe, show 2 * β ^ 2 = K by rw [hK1, hβe]]
+        have hT2 : PythagoreanTriple (a ^ 2) (2 * b ^ 2) x := by
+          delta PythagoreanTriple; linear_combination -hxeq
+        obtain ⟨r, s, f1, f2, f3, f4, _f5, f6⟩ := hT2.coprime_classification' hab haodd hx
+        have hb2 : (0 : ℤ) < b ^ 2 := pow_pos hb 2
+        have hrs : r * s = b ^ 2 := by
+          apply mul_left_cancel₀ (show (2 : ℤ) ≠ 0 by norm_num); linear_combination -f2
+        have hrne : r ≠ 0 := by
+          rintro rfl; rw [zero_mul] at hrs; exact absurd hrs.symm hb2.ne'
+        have hr0 : 0 < r := lt_of_le_of_ne f6 (Ne.symm hrne)
+        have hs0 : 0 < s := pos_right_of_mul_pos hr0 (by rw [hrs]; exact hb2)
+        obtain ⟨ρ, hρ, hρe⟩ := pos_sq_of_gcd_eq_one f4 hrs hr0
+        obtain ⟨σ, hσ, hσe⟩ := pos_sq_of_gcd_eq_one (by rw [Int.gcd_comm]; exact f4)
+          (show s * r = b ^ 2 by linarith only [hrs]) hs0
+        refine ih ρ σ a ?_ hρ hσ ha ?_
+        · have h4 : ρ < x := lt_of_eq_quartic hρ hσ (by rw [f3, hρe, hσe])
+          have := Int.natAbs_lt_natAbs_of_nonneg_of_lt hρ.le h4
+          omega
+        · rw [hρe, hσe] at f1; linear_combination -f1
+      · obtain ⟨M, K, e1, e2, e3, e4, _e5, e6⟩ :=
+          hT.coprime_classification' hyz hyo (by positivity)
+        have hy2 : (0 : ℤ) < y ^ 2 := pow_pos hy 2
+        have hM0 : M ≠ 0 := by
+          rintro rfl
+          have h : y ^ 2 + K ^ 2 = 0 := by linear_combination e1
+          linarith only [h, hy2, sq_nonneg K]
+        have hMpos : 0 < M := lt_of_le_of_ne e6 (Ne.symm hM0)
+        have hKpos : 0 < K :=
+          pos_right_of_mul_pos (show (0 : ℤ) < 2 * M by positivity) (by rw [← e2]; exact hz)
+        have hMx : M < x := lt_of_sq_eq_add hKpos hx e3
+        refine ih M K (x * y) ?_ hMpos hKpos (by positivity) ?_
+        · have := Int.natAbs_lt_natAbs_of_nonneg_of_lt hMpos.le hMx
+          omega
+        · linear_combination (-(y ^ 2)) * e3 + (-(M ^ 2 + K ^ 2)) * e1
+
+/-- **Fermat's other quartic theorem** (PROVEN — absent from mathlib, which has
+only `not_fermat_42`): no nonzero integers satisfy `x ^ 4 - y ^ 4 = z ^ 2`. -/
+theorem sq_ne_quartic_sub_quartic {x y z : ℤ} (hx : x ≠ 0) (hy : y ≠ 0) (hz : z ≠ 0) :
+    x ^ 4 - y ^ 4 ≠ z ^ 2 := by
+  intro heq
+  refine quartic_diff_aux (|x|.natAbs + 1) |x| |y| |z| (by omega)
+    (abs_pos.mpr hx) (abs_pos.mpr hy) (abs_pos.mpr hz) ?_
+  have e1 : |x| ^ 4 = x ^ 4 := by rw [pow_abs]; exact abs_of_nonneg (by positivity)
+  have e2 : |y| ^ 4 = y ^ 4 := by rw [pow_abs]; exact abs_of_nonneg (by positivity)
+  have e3 : |z| ^ 2 = z ^ 2 := by rw [pow_abs]; exact abs_of_nonneg (by positivity)
+  rw [e1, e2, e3]; exact heq
+
+/-! ### Coprimality bookkeeping for the `y² = x³ − x` descent -/
+
+/-- `p` is coprime to `p - e²` whenever it is coprime to `e²` (PROVEN). -/
+lemma isCoprime_self_sub {p e : ℤ} (hcop : IsCoprime p (e ^ 2)) :
+    IsCoprime p (p - e ^ 2) := by
+  obtain ⟨u, v, huv⟩ := hcop
+  exact ⟨u + v, -v, by linear_combination huv⟩
+
+/-- `p` is coprime to `p + e²` whenever it is coprime to `e²` (PROVEN). -/
+lemma isCoprime_self_add {p e : ℤ} (hcop : IsCoprime p (e ^ 2)) :
+    IsCoprime p (p + e ^ 2) := by
+  obtain ⟨u, v, huv⟩ := hcop
+  exact ⟨u - v, v, by linear_combination huv⟩
+
+/-- The two outer factors `p ∓ e²` are coprime as soon as they are ODD: a common
+divisor divides `2p` and `2e²`, hence divides `2`, hence is `±1` (PROVEN). -/
+lemma isCoprime_sub_add {p e k : ℤ} (hcop : IsCoprime p (e ^ 2))
+    (hk : p - e ^ 2 = 2 * k + 1) :
+    IsCoprime (p - e ^ 2) (p + e ^ 2) := by
+  obtain ⟨u, v, huv⟩ := hcop
+  exact ⟨1 - k * (u - v), -(k * (u + v)), by linear_combination hk - 2 * k * huv⟩
+
+/-- Three pairwise coprime POSITIVE integers whose product is a square are each a
+square (PROVEN). -/
+lemma triple_sq {A B C n : ℤ} (hAB : IsCoprime A B) (hAC : IsCoprime A C)
+    (hBC : IsCoprime B C) (hA : 0 < A) (hB : 0 < B) (hC : 0 < C)
+    (h : A * B * C = n ^ 2) :
+    ∃ a b c : ℤ, 0 < a ∧ 0 < b ∧ 0 < c ∧ A = a ^ 2 ∧ B = b ^ 2 ∧ C = c ^ 2 := by
+  obtain ⟨a, ha, hae⟩ := pos_sq_of_gcd_eq_one
+    (Int.isCoprime_iff_gcd_eq_one.mp (hAB.mul_right hAC))
+    (show A * (B * C) = n ^ 2 by linear_combination h) hA
+  obtain ⟨b, hb, hbe⟩ := pos_sq_of_gcd_eq_one
+    (Int.isCoprime_iff_gcd_eq_one.mp (hAB.symm.mul_right hBC))
+    (show B * (A * C) = n ^ 2 by linear_combination h) hB
+  obtain ⟨c, hc, hce⟩ := pos_sq_of_gcd_eq_one
+    (Int.isCoprime_iff_gcd_eq_one.mp (hAC.symm.mul_right hBC.symm))
+    (show C * (A * B) = n ^ 2 by linear_combination h) hC
+  exact ⟨a, b, c, ha, hb, hc, hae, hbe, hce⟩
+
+/-! ### The integral `2`-descent on `y² = x³ − x` -/
+
+/-- **`n² = p(p − e²)(p + e²)` with `gcd(p, e) = 1` forces `n = 0`** (PROVEN).
+
+This is the integral form of "`1` is not a congruent number". The three
+factors `p`, `p − e²`, `p + e²` are pairwise coprime except that the outer
+two share a factor `2` exactly when `p` and `e` are both odd — equivalently
+exactly when `p − e²` is even — and in every branch the resulting system of
+squares is a difference of two fourth powers equal to a square, which
+`sq_ne_quartic_sub_quartic` forbids. The four branches are
+
+* `p ∓ e²` odd and `p > 0`: `p = a²`, `p − e² = b²`, `p + e² = c²`, so
+  `(bc)² = a⁴ − e⁴`;
+* `p ∓ e²` odd and `p < 0`: `−p = a²`, `e² − p = b²`, `p + e² = c²`, so
+  `(bc)² = e⁴ − a⁴`;
+* `p ∓ e²` even, `p > 0`: with `2u = p − e²`, `2v = p + e²` (so `p = u + v`
+  and `e² = v − u`, and `p`, `u`, `v` are pairwise coprime) one gets
+  `p = a²`, `u = b²`, `v = c²`, `c² − b² = e²`, `c² + b² = a²`, so
+  `(ea)² = c⁴ − b⁴`;
+* `p ∓ e²` even, `p < 0`: `−p = a²`, `−u = b²`, `v = c²`,
+  `b² + c² = e²`, `b² − c² = a²`, so `(ea)² = b⁴ − c⁴`. -/
+theorem int_no_point_congruentOne {p e n : ℤ} (he : e ≠ 0) (hcop : IsCoprime p e)
+    (h : n ^ 2 = p * (p - e ^ 2) * (p + e ^ 2)) : n = 0 := by
+  by_contra hn
+  have hn2 : 0 < n ^ 2 := lt_of_le_of_ne (sq_nonneg n) (Ne.symm (pow_ne_zero 2 hn))
+  have he2 : IsCoprime p (e ^ 2) := hcop.pow_right
+  have hpB : IsCoprime p (p - e ^ 2) := isCoprime_self_sub he2
+  have hpC : IsCoprime p (p + e ^ 2) := isCoprime_self_add he2
+  have hesq : 0 < e ^ 2 := lt_of_le_of_ne (sq_nonneg e) (Ne.symm (pow_ne_zero 2 he))
+  have hp0 : p ≠ 0 := by
+    rintro rfl
+    rw [show (0 : ℤ) * (0 - e ^ 2) * (0 + e ^ 2) = 0 by ring] at h
+    exact hn (pow_eq_zero_iff two_ne_zero |>.mp h)
+  rcases Int.even_or_odd (p - e ^ 2) with hBeven | hBodd
+  · -- the outer factors are both even; halve them
+    obtain ⟨u, hu'⟩ := hBeven
+    have hu : p - e ^ 2 = 2 * u := by linarith
+    obtain ⟨v, hvdef⟩ : ∃ v : ℤ, v = u + e ^ 2 := ⟨u + e ^ 2, rfl⟩
+    have hv : p + e ^ 2 = 2 * v := by rw [hvdef]; linarith
+    have hpuv : p = u + v := by rw [hvdef]; linarith
+    have he2uv : e ^ 2 = v - u := by rw [hvdef]; ring
+    obtain ⟨a₀, b₀, hab⟩ := he2
+    have hcopuv : IsCoprime u v :=
+      ⟨a₀ - b₀, a₀ + b₀, by linear_combination hab - a₀ * hpuv - b₀ * he2uv⟩
+    have hcoppu : IsCoprime p u :=
+      ⟨a₀ + b₀, -2 * b₀, by linear_combination hab - b₀ * (by linarith : e ^ 2 = p - 2 * u)⟩
+    have hcoppv : IsCoprime p v :=
+      ⟨a₀ - b₀, 2 * b₀, by linear_combination hab - b₀ * (by linarith : e ^ 2 = 2 * v - p)⟩
+    -- `n` is even; `n₁² = p u v`
+    have h2n : (2 : ℤ) ∣ n := by
+      have hdd : (2 : ℤ) ∣ n ^ 2 := ⟨2 * (p * u * v), by rw [h, hu, hv]; ring⟩
+      exact Int.Prime.dvd_pow' (k := 2) Nat.prime_two (by exact_mod_cast hdd)
+    obtain ⟨n₁, rfl⟩ := h2n
+    have hn1 : n₁ ≠ 0 := by rintro rfl; simp at hn
+    have hkey : p * u * v = n₁ ^ 2 := by
+      have h' : (2 * n₁) ^ 2 = p * (2 * u) * (2 * v) := by rw [← hu, ← hv]; exact h
+      linarith [h']
+    have hn12 : 0 < n₁ ^ 2 := lt_of_le_of_ne (sq_nonneg n₁) (Ne.symm (pow_ne_zero 2 hn1))
+    have hpuvpos : 0 < p * (u * v) := by rw [show p * (u * v) = p * u * v by ring, hkey]; exact hn12
+    have hvu : u < v := by linarith
+    rcases lt_trichotomy p 0 with hpneg | hpz | hppos
+    · -- `p < 0`: `u < 0 < v`
+      have huvneg : u * v < 0 := by
+        rcases lt_trichotomy (u * v) 0 with h1 | h1 | h1
+        · exact h1
+        · exact absurd hpuvpos (by rw [h1]; simp)
+        · exact absurd hpuvpos (by nlinarith)
+      have hune : u < 0 := by
+        rcases lt_trichotomy u 0 with h1 | h1 | h1
+        · exact h1
+        · exact absurd huvneg (by rw [h1]; simp)
+        · exact absurd huvneg (by nlinarith)
+      have hvpos : 0 < v := by nlinarith
+      obtain ⟨a, b, c, ha, hb, hc, hae, hbe, hce⟩ :=
+        triple_sq (A := -p) (B := -u) (C := v) (n := n₁)
+          hcoppu.neg_neg hcoppv.neg_left hcopuv.neg_left
+          (by linarith) (by linarith) hvpos (by linear_combination hkey)
+      refine sq_ne_quartic_sub_quartic hb.ne' hc.ne' (mul_ne_zero ha.ne' he) ?_
+      have h1 : b ^ 2 - c ^ 2 = a ^ 2 := by linarith
+      have h2 : b ^ 2 + c ^ 2 = e ^ 2 := by linarith
+      linear_combination (b ^ 2 + c ^ 2) * h1 + a ^ 2 * h2
+    · exact hp0 hpz
+    · -- `p > 0`: `0 < u < v`
+      have huvpos : 0 < u * v := by
+        rcases lt_trichotomy (u * v) 0 with h1 | h1 | h1
+        · exact absurd hpuvpos (by nlinarith)
+        · exact absurd hpuvpos (by rw [h1]; simp)
+        · exact h1
+      have hupos : 0 < u := by
+        rcases lt_trichotomy u 0 with h1 | h1 | h1
+        · exact absurd huvpos (by nlinarith)
+        · exact absurd huvpos (by rw [h1]; simp)
+        · exact h1
+      have hvpos : 0 < v := by linarith
+      obtain ⟨a, b, c, ha, hb, hc, hae, hbe, hce⟩ :=
+        triple_sq (A := p) (B := u) (C := v) (n := n₁)
+          hcoppu hcoppv hcopuv hppos hupos hvpos hkey
+      refine sq_ne_quartic_sub_quartic hc.ne' hb.ne' (mul_ne_zero he ha.ne') ?_
+      have h1 : c ^ 2 - b ^ 2 = e ^ 2 := by linarith
+      have h2 : c ^ 2 + b ^ 2 = a ^ 2 := by linarith
+      linear_combination (c ^ 2 + b ^ 2) * h1 + e ^ 2 * h2
+  · -- the outer factors are odd and coprime
+    obtain ⟨k, hk⟩ := hBodd
+    have hBC : IsCoprime (p - e ^ 2) (p + e ^ 2) := isCoprime_sub_add he2 hk
+    have hassoc : p * (p - e ^ 2) * (p + e ^ 2) = n ^ 2 := h.symm
+    rcases lt_trichotomy p 0 with hpneg | hpz | hppos
+    · have hBneg : p - e ^ 2 < 0 := by linarith
+      have hAB : 0 < p * (p - e ^ 2) := mul_pos_of_neg_of_neg hpneg hBneg
+      have hCpos : 0 < p + e ^ 2 :=
+        pos_right_of_mul_pos hAB (by rw [hassoc]; exact hn2)
+      obtain ⟨a, b, c, ha, hb, hc, hae, hbe, hce⟩ :=
+        triple_sq (A := -p) (B := -(p - e ^ 2)) (C := p + e ^ 2) (n := n)
+          hpB.neg_neg hpC.neg_left hBC.neg_left
+          (by linarith) (by linarith) hCpos (by linear_combination -h)
+      refine sq_ne_quartic_sub_quartic he ha.ne' (mul_ne_zero hb.ne' hc.ne') ?_
+      have hb2 : b ^ 2 = a ^ 2 + e ^ 2 := by linarith
+      have hc2 : c ^ 2 = e ^ 2 - a ^ 2 := by linarith
+      linear_combination (-(b ^ 2)) * hc2 - (e ^ 2 - a ^ 2) * hb2
+    · exact hp0 hpz
+    · have hCpos : 0 < p + e ^ 2 := by linarith
+      have heq2 : p * (p + e ^ 2) * (p - e ^ 2) = n ^ 2 := by linear_combination -h
+      have hBpos : 0 < p - e ^ 2 :=
+        pos_right_of_mul_pos (mul_pos hppos hCpos) (by rw [heq2]; exact hn2)
+      obtain ⟨a, b, c, ha, hb, hc, hae, hbe, hce⟩ :=
+        triple_sq (A := p) (B := p - e ^ 2) (C := p + e ^ 2) (n := n)
+          hpB hpC hBC hppos hBpos hCpos (by linear_combination -h)
+      refine sq_ne_quartic_sub_quartic ha.ne' he (mul_ne_zero hb.ne' hc.ne') ?_
+      have hb2 : b ^ 2 = a ^ 2 - e ^ 2 := by linarith
+      have hc2 : c ^ 2 = a ^ 2 + e ^ 2 := by linarith
+      linear_combination (-(b ^ 2)) * hc2 - (a ^ 2 + e ^ 2) * hb2
+
+/-! ### From `ℤ` to `ℚ` -/
+
+/-- If a positive natural number's cube is a square, it is itself a square
+(PROVEN): with `g = gcd q d` and `q = g q₁`, `d = g d₁` coprime, cancelling
+`g²` gives `g q₁³ = d₁²`, so `q₁ ∣ d₁²` and coprimality forces `q₁ = 1`. -/
+lemma sq_of_cube_eq_sq {q d : ℕ} (hq : 0 < q) (h : q ^ 3 = d ^ 2) :
+    ∃ e : ℕ, q = e ^ 2 := by
+  have hd : 0 < d := by
+    rcases Nat.eq_zero_or_pos d with rfl | hd
+    · simp at h; omega
+    · exact hd
+  have hg0 : 0 < Nat.gcd q d := Nat.gcd_pos_of_pos_left _ hq
+  have hqg : q = Nat.gcd q d * (q / Nat.gcd q d) :=
+    (Nat.mul_div_cancel' (Nat.gcd_dvd_left q d)).symm
+  have hdg : d = Nat.gcd q d * (d / Nat.gcd q d) :=
+    (Nat.mul_div_cancel' (Nat.gcd_dvd_right q d)).symm
+  have hcop : Nat.Coprime (q / Nat.gcd q d) (d / Nat.gcd q d) :=
+    Nat.coprime_div_gcd_div_gcd hg0
+  have hgq : Nat.gcd q d * (q / Nat.gcd q d) ^ 3 = (d / Nat.gcd q d) ^ 2 := by
+    refine Nat.eq_of_mul_eq_mul_left (show 0 < Nat.gcd q d ^ 2 by positivity) ?_
+    calc Nat.gcd q d ^ 2 * (Nat.gcd q d * (q / Nat.gcd q d) ^ 3)
+        = (Nat.gcd q d * (q / Nat.gcd q d)) ^ 3 := by ring
+      _ = q ^ 3 := by rw [← hqg]
+      _ = d ^ 2 := h
+      _ = (Nat.gcd q d * (d / Nat.gcd q d)) ^ 2 := by rw [← hdg]
+      _ = Nat.gcd q d ^ 2 * (d / Nat.gcd q d) ^ 2 := by ring
+  have hdvd : (q / Nat.gcd q d) ∣ (d / Nat.gcd q d) ^ 2 :=
+    ⟨Nat.gcd q d * (q / Nat.gcd q d) ^ 2, by rw [← hgq]; ring⟩
+  have hq1 : q / Nat.gcd q d = 1 := Nat.Coprime.eq_one_of_dvd (hcop.pow_right 2) hdvd
+  refine ⟨d / Nat.gcd q d, ?_⟩
+  have hgd1 : Nat.gcd q d = (d / Nat.gcd q d) ^ 2 := by rw [← hgq, hq1]; ring
+  calc q = Nat.gcd q d * (q / Nat.gcd q d) := hqg
+    _ = Nat.gcd q d * 1 := by rw [hq1]
+    _ = Nat.gcd q d := by ring
+    _ = (d / Nat.gcd q d) ^ 2 := hgd1
+
+/-- **`y² = x³ − x` has only the trivial rational points** (PROVEN): the
+Mordell–Weil group of the congruent-number-`1` curve `y² = x³ − x` is
+`ℤ/2 × ℤ/2`, so every rational point is `2`-torsion, i.e. `y = 0`.
+
+The passage from `ℚ` to `ℤ` is the classical normalisation: writing
+`x = p/q` in lowest terms, the equation forces `y.den ^ 2 = q ^ 3`, hence
+`q = e²` is a square, and `y.num ^ 2 = p(p − e²)(p + e²)` with
+`gcd(p, e) = 1`; `int_no_point_congruentOne` finishes. -/
+theorem rat_no_point_congruentOne (x y : ℚ) (h : y ^ 2 = x ^ 3 - x) : y = 0 := by
+  by_contra hy0
+  have hqQ : ((x.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr x.den_nz
+  have hdQ : ((y.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr y.den_nz
+  have hxq : (x.num : ℚ) = x * (x.den : ℚ) := (div_eq_iff hqQ).mp (Rat.num_div_den x)
+  have hyd : (y.num : ℚ) = y * (y.den : ℚ) := (div_eq_iff hdQ).mp (Rat.num_div_den y)
+  have hq0 : (0 : ℤ) < (x.den : ℤ) := by exact_mod_cast x.pos
+  have hd0 : (0 : ℤ) < (y.den : ℤ) := by exact_mod_cast y.pos
+  have key : y.num ^ 2 * (x.den : ℤ) ^ 3
+      = (y.den : ℤ) ^ 2 * (x.num ^ 3 - x.num * (x.den : ℤ) ^ 2) := by
+    have hQ : (y.num : ℚ) ^ 2 * (x.den : ℚ) ^ 3
+        = (y.den : ℚ) ^ 2 * ((x.num : ℚ) ^ 3 - (x.num : ℚ) * (x.den : ℚ) ^ 2) := by
+      rw [hxq, hyd]
+      linear_combination ((y.den : ℚ) ^ 2 * (x.den : ℚ) ^ 3) * h
+    exact_mod_cast hQ
+  have hpq : IsCoprime x.num ((x.den : ℤ)) := by
+    rw [Int.isCoprime_iff_gcd_eq_one]
+    simpa [Int.gcd] using x.reduced
+  have hnd : IsCoprime y.num ((y.den : ℤ)) := by
+    rw [Int.isCoprime_iff_gcd_eq_one]
+    simpa [Int.gcd] using y.reduced
+  -- `y.den ^ 2 = x.den ^ 3`
+  have hdq : ((y.den : ℤ)) ^ 2 ∣ ((x.den : ℤ)) ^ 3 := by
+    have h1 : ((y.den : ℤ)) ^ 2 ∣ y.num ^ 2 * ((x.den : ℤ)) ^ 3 :=
+      ⟨x.num ^ 3 - x.num * (x.den : ℤ) ^ 2, key⟩
+    exact (hnd.symm.pow (m := 2) (n := 2)).dvd_of_dvd_mul_left h1
+  have hqd : ((x.den : ℤ)) ^ 3 ∣ ((y.den : ℤ)) ^ 2 := by
+    have h0 : IsCoprime ((x.den : ℤ)) (x.num ^ 3) := hpq.symm.pow_right
+    have h1 := h0.add_mul_left_right (-(x.num * (x.den : ℤ)))
+    have hre : x.num ^ 3 + (x.den : ℤ) * -(x.num * (x.den : ℤ))
+        = x.num ^ 3 - x.num * (x.den : ℤ) ^ 2 := by ring
+    rw [hre] at h1
+    have h2 : ((x.den : ℤ)) ^ 3 ∣ ((y.den : ℤ)) ^ 2 * (x.num ^ 3 - x.num * (x.den : ℤ) ^ 2) :=
+      ⟨y.num ^ 2, by linear_combination -key⟩
+    exact (h1.pow_left (m := 3)).dvd_of_dvd_mul_right h2
+  have hsq : ((y.den : ℤ)) ^ 2 = ((x.den : ℤ)) ^ 3 :=
+    Int.dvd_antisymm (by positivity) (by positivity) hdq hqd
+  -- `x.den = e ^ 2`
+  obtain ⟨e₀, he₀⟩ : ∃ e : ℕ, x.den = e ^ 2 :=
+    sq_of_cube_eq_sq (q := x.den) (d := y.den) x.pos (by exact_mod_cast hsq.symm)
+  have hqe : ((x.den : ℤ)) = (e₀ : ℤ) ^ 2 := by rw [he₀]; push_cast; ring
+  have he : ((e₀ : ℤ)) ≠ 0 := by
+    intro hc
+    rw [hc, zero_pow (by norm_num : (2 : ℕ) ≠ 0)] at hqe
+    omega
+  have hfin : y.num ^ 2 = x.num * (x.num - (e₀ : ℤ) ^ 2) * (x.num + (e₀ : ℤ) ^ 2) := by
+    refine mul_right_cancel₀ (show ((x.den : ℤ)) ^ 3 ≠ 0 by positivity) ?_
+    rw [key, hsq, hqe]
+    ring
+  have hpe : IsCoprime x.num ((e₀ : ℤ)) :=
+    hpq.of_isCoprime_of_dvd_right ⟨(e₀ : ℤ), by rw [hqe]; ring⟩
+  exact hy0 (Rat.zero_iff_num_zero.mpr (int_no_point_congruentOne he hpe hfin))
+
+/-- **The rational points of `X_0(32) : y² = x³ + 4x`** (PROVEN 2026-07-26 from
+Fermat's quartic theorem `sq_ne_quartic_sub_quartic`): every rational point of
+the affine curve `y² = x³ + 4x` is `(0, 0)` or `(2, ±4)`.
+
+Together with the point at infinity these are the four points of
+`X_0(32)(ℚ) ≅ ℤ/4`, and this is the Mordell–Weil input of Kenku's
+determination of `X_0(32)` — the level-`32` analogue of
+`MazurLevel27.rational_point_x0TwentySeven`, which is `FLT₃`.
+
+The proof is the explicit `2`-isogeny onto the congruent-number curve: with
+`x ≠ 0` the point `((x² + 4)/(4x), y(x² − 4)/(8x²))` lies on `y² = x³ − x`,
+whose rational points all have `y = 0` (`rat_no_point_congruentOne`). Hence
+`y(x² − 4) = 0`; `y = 0` forces `x = 0`, `x = −2` is impossible over `ℝ`
+(`y² = −16`), and `x = 2` gives `y² = 16`. -/
+theorem rational_point_x0ThirtyTwo (x y : ℚ) (h : y ^ 2 = x ^ 3 + 4 * x) :
+    (x = 0 ∧ y = 0) ∨ (x = 2 ∧ (y = 4 ∨ y = -4)) := by
+  by_cases hx : x = 0
+  · subst hx
+    left
+    refine ⟨rfl, ?_⟩
+    have : y ^ 2 = 0 := by linear_combination h
+    exact pow_eq_zero_iff two_ne_zero |>.mp this
+  · have hx2 : x ^ 2 ≠ 0 := pow_ne_zero 2 hx
+    have hy2 : y ^ 2 = x * (x ^ 2 + 4) := by linear_combination h
+    have hcong : (y * (x ^ 2 - 4) / (8 * x ^ 2)) ^ 2
+        = ((x ^ 2 + 4) / (4 * x)) ^ 3 - ((x ^ 2 + 4) / (4 * x)) := by
+      rw [div_pow, mul_pow, hy2]
+      field_simp
+      ring
+    have hz := rat_no_point_congruentOne _ _ hcong
+    have hprod : y * (x ^ 2 - 4) = 0 := by
+      have h8 : (8 : ℚ) * x ^ 2 ≠ 0 := mul_ne_zero (by norm_num) hx2
+      rcases div_eq_zero_iff.mp hz with h1 | h1
+      · exact h1
+      · exact absurd h1 h8
+    rcases mul_eq_zero.mp hprod with hy | hx4
+    · exfalso
+      apply hx
+      have hxx : x * (x ^ 2 + 4) = 0 := by rw [hy] at h; linear_combination -h
+      rcases mul_eq_zero.mp hxx with h1 | h1
+      · exact h1
+      · nlinarith [sq_nonneg x]
+    · have hxv : x = 2 ∨ x = -2 := by
+        have : (x - 2) * (x + 2) = 0 := by linear_combination hx4
+        rcases mul_eq_zero.mp this with h1 | h1
+        · left; linarith
+        · right; linarith
+      rcases hxv with rfl | rfl
+      · right
+        refine ⟨rfl, ?_⟩
+        have hy16 : (y - 4) * (y + 4) = 0 := by linear_combination h
+        rcases mul_eq_zero.mp hy16 with h1 | h1
+        · left; linarith
+        · right; linarith
+      · exfalso
+        nlinarith [sq_nonneg y]
+
+/-- **Every rational point of `X_0(32)` is a cusp** (PROVEN 2026-07-26) — the
+whole arithmetic content of Kenku's level `32`, packaged so that the node in
+`MazurTorsion.lean` is a four-line assembly.
+
+The hypotheses say exactly that `(x, y)` is a rational point of
+`X_0(32) : y² = x³ + 4x`, that `s` is its image in `X_0(16) = ℙ¹` under the
+explicit degeneracy map `π : (x, y) ↦ y/(x² + 4)` (written denominator-free;
+note `x² + 4 > 0` always, so `π` is regular everywhere on the affine curve
+and the relation is never vacuous), and that `j` is the `j`-invariant read
+off `s` by the degree-`24` `j`-map of `X_0(16)`,
+
+  `j = M(s)³ / (s (1 − 2s)¹⁶ (1 + 2s)⁴ (1 + 4s²))`,
+  `M(s) = 256s⁸ + 15360s⁷ + 34560s⁶ + 26880s⁵ + 17504s⁴ + 6720s³
+          + 2160s² + 240s + 1`,
+
+again denominator-free. (Data from Magma's `SmallModularCurve`, 2026-07-26:
+`X_0(32)` is `y² = x³ + 4x`; `ProjectionMap(X_0(32), X_0(16))` is
+`t = (x − 2)²/(2x + y)`, which on the curve equals `(y − 2x)/x`; and
+`jInvariant(X_0(16), 16) = M₀(t)³/(t¹⁶(t + 2)(t + 4)⁴(t² + 4t + 8))`. The
+coordinate used here is `s = 1/(t + 2)`, chosen precisely so that no rational
+point of `X_0(32)` is sent to `s = ∞`; the substitution identity was verified
+symbolically in PARI/GP, and `j(s)` for `s = 1,…,5, 1/3, 1/4, 1/5` was checked
+to produce curves whose cyclic isogeny degrees are exactly `{1,2,4,8,16}`.)
+
+The conclusion is `False` because the three affine rational points
+`(0, 0)`, `(2, 4)`, `(2, −4)` of `X_0(32)` — all of them, by
+`rational_point_x0ThirtyTwo` — go to `s = 0`, `1/2`, `−1/2`, which are the
+three rational cusps `t = ∞, 0, −4` of `X_0(16)`; at each the left-hand side
+of the `j`-relation vanishes while `M(s)³` is `1`, `4096³` and `256³`
+respectively. That is exactly how a pole of `j` encodes a cusp. -/
+theorem no_x0ThirtyTwo_point (j s x y : ℚ)
+    (hxy : y ^ 2 = x ^ 3 + 4 * x)
+    (hsx : s * (x ^ 2 + 4) = y)
+    (hs : j * (s * (1 - 2 * s) ^ 16 * (1 + 2 * s) ^ 4 * (1 + 4 * s ^ 2))
+      = (256 * s ^ 8 + 15360 * s ^ 7 + 34560 * s ^ 6 + 26880 * s ^ 5 + 17504 * s ^ 4
+          + 6720 * s ^ 3 + 2160 * s ^ 2 + 240 * s + 1) ^ 3) :
+    False := by
+  rcases rational_point_x0ThirtyTwo x y hxy with ⟨hx0, hy0⟩ | ⟨hx2, hy4⟩
+  · subst hx0; subst hy0
+    have hs0 : s = 0 := by linear_combination hsx / 4
+    rw [hs0] at hs; norm_num at hs
+  · subst hx2
+    rcases hy4 with rfl | rfl
+    · have hs0 : s = 1 / 2 := by linear_combination hsx / 8
+      rw [hs0] at hs; norm_num at hs
+    · have hs0 : s = -(1 / 2) := by linear_combination hsx / 8
+      rw [hs0] at hs; norm_num at hs
 
 end QuarticDescent
