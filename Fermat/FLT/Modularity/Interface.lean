@@ -29380,17 +29380,31 @@ newform-level Carayol citation was SPLIT on 2026-07-26; Carayol, *Sur
 les représentations `ℓ`-adiques associées aux formes modulaires de
 Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A)): for a weight-2
 NEWFORM `g₀` of level `M₀`, an IRREDUCIBLE `τ` matching its Hecke
-polynomials away from a finite set is RAMIFIED at every prime
-`q ∣ M₀` with `q ≠ p`.
+polynomials away from a finite set is RAMIFIED at every prime `q ≠ p`
+with `q² ∣ M₀`.
 
-This is the `a_q ≠ 0` half of `ord_q (cond ρ_{g₀,λ}) = ord_q M₀`, and
-it is the half that BOTH classical local types deliver: `q ∥ M₀` gives
-an unramified twist of Steinberg (inertia acting through a nontrivial
-transvection) and `q² ∣ M₀` ramified principal series or supercuspidal.
-It carries no information about the SIZE of the conductor exponent —
-that is the business of the companion leaf
+This is the `a_q ≠ 0` half of `ord_q (cond ρ_{g₀,λ}) = ord_q M₀` in the
+DEEP-LEVEL case only, where the local type is ramified principal series
+or supercuspidal. It carries no information about the SIZE of the
+conductor exponent, and none is needed here: with `ord_q M₀ ≥ 2` the
+tame bound `2 − dim V^{I_q} ≤ ord_q M₀` is vacuous on a 2-dimensional
+space (`GaloisRep.tameExponent_le_finrank`), so ramifiedness is the
+whole content at these primes.
+
+HYPOTHESIS NARROWED FROM `q ∣ M₀` TO `q² ∣ M₀` (2026-07-26, eighth
+owner — this is the COORDINATION NOTE at the end of this docstring,
+EXECUTED). The `q ∥ M₀` case used to be covered here too, and was
+redundant: at `ord_q M₀ = 1` the classical Steinberg computation
+delivers that inertia acts through a NONTRIVIAL unipotent, and the
+companion leaf
 `exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one`
-below, which is needed only in the `q ∥ M₀` case.
+below now records that nontriviality — spelled `¬ IsUnramifiedAt` —
+alongside the fixed line it always asserted. Both conjuncts are read off
+ONE local computation, so nothing was added to the development's faith
+there, and this leaf's `q ∥ M₀` instance became dead weight. Removing it
+puts the `ord_q M₀ = 1` assumption where the local type is named, and
+leaves this leaf carrying exactly the deep-level half. **Total assumed
+content across the pair is unchanged.**
 
 WHY THE SPLIT (2026-07-26, fifth owner). Through
 `GaloisRep.HasConductorExponentAt` — whose wild summand is
@@ -29403,8 +29417,9 @@ representation never exceeds `2`
 (`GaloisRep.tameExponent_le_finrank`). That observation used to be
 prose in the FORMAL-CONTENT AUDIT of the composite leaf; it is now
 checked Lean, and the consequence is that the composite citation is
-needed only in the shape of THIS leaf plus a fixed line in the single
-case `ord_q M₀ = 1`.
+needed only in the shape of THIS leaf — ramifiedness where the tame
+bound is empty — plus the companion's ramifiedness-and-fixed-line in the
+single case `ord_q M₀ = 1`.
 
 This leaf is NOT a duplicate of
 `not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` below, which is
@@ -29431,8 +29446,8 @@ the reduction to the cited theorem is exact rather than approximate:
   Atkin–Lehner/strong multiplicity one is exactly newform-ness. Its
   inhabitants are therefore the classical weight-2 trivial-nebentypus
   newforms of level exactly `M₀`, and for those Carayol's identity
-  `ord_q (cond ρ_{g₀,λ}) = ord_q M₀` gives `ord_q ≥ 1` from `q ∣ M₀`,
-  i.e. ramifiedness.
+  `ord_q (cond ρ_{g₀,λ}) = ord_q M₀` gives `ord_q ≥ 2` from
+  `q² ∣ M₀` — a fortiori `≠ 0`, i.e. ramifiedness, with room to spare.
 * NOT VACUOUS relative to this tree: the hypothesis bundle is
   inhabited by the PROVEN pair
   `exists_galoisRep_charFrob_of_weightTwoNewform` (a matching `τ` with
@@ -29499,15 +29514,18 @@ pin — it is the residual away-from-`p` literature assumption of the
 development, and the split recorded above already reduced it to the
 smallest shape the conductor dictionary can measure.
 
-COORDINATION NOTE (not executed here — the sibling has its own owner).
-At `ord_q M₀ = 1` the classical Steinberg computation delivers that
-inertia acts through a NONTRIVIAL unipotent; the sibling currently
-asserts only the resulting fixed line. Were it strengthened to record
-the nontriviality as well — no additional classical content, it is one
-and the same local computation — THIS leaf would be needed only for
-`q² ∣ M₀`. Total assumed content would be unchanged; what would change
-is that the `ord_q M₀ = 1` assumption sits where the local type is
-named. -/
+COORDINATION NOTE — **EXECUTED 2026-07-26** (eighth owner, dispatched
+across both sides of the seam at once, so the two halves moved
+together). What it proposed is what the HYPOTHESIS NARROWED paragraph
+above records: the sibling now returns `¬ IsUnramifiedAt` together with
+its fixed line, and `hqM₀ : q ∣ M₀` here became
+`hord₂ : 2 ≤ M₀.factorization q`. Nothing else in this docstring needed
+to change — the TERMINALITY AUDIT and the `hqp` correction above are
+statements about the deep-level half and survive the narrowing verbatim,
+and the parent
+`hasConductorExponentAt_factorization_of_isWeightTwoNewform` now takes
+its ramifiedness from whichever of the two leaves owns the case it is
+in. -/
 theorem not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -29522,25 +29540,43 @@ theorem not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible
           - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
           + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
     (hirr : τ.IsIrreducible)
-    {q : ℕ} (hq : q.Prime) (_hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
+    {q : ℕ} (hq : q.Prime) (_hqp : q ≠ p) (hord₂ : 2 ≤ M₀.factorization q) :
     ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
   sorry
 
-/-- **Tame half of Carayol's conductor theorem at the NEWFORM level, in
-the only case where it carries content** (sorry node — the second of
-the two components of the 2026-07-26 split; Carayol, Théorème (A),
-together with the Langlands/Deligne local computation at a prime
+/-- **Carayol's conductor theorem at the NEWFORM level in the case
+`q ∥ M₀` — the whole of the local statement there** (sorry node — the
+second of the two components of the 2026-07-26 split; Carayol, Théorème
+(A), together with the Langlands/Deligne local computation at a prime
 exactly dividing the level): if `q ∥ M₀` — i.e. `ord_q M₀ = 1` — then
-inertia at `q` fixes a NONZERO vector of `τ`.
+`τ` is RAMIFIED at `q` AND inertia at `q` fixes a NONZERO vector.
 
 The local automorphic representation of `g₀` at such a `q` is an
 unramified twist of Steinberg, whose Weil–Deligne parameter is the
 special one with nonzero monodromy `N`; inertia acts through the
-unipotent `σ ↦ (1, t_p(σ); 0, 1)`, so `dim V^{I_q} = 1` and in
-particular a fixed line exists. Only the EXISTENCE of the fixed vector
-is asserted here — the dimension is not pinned, and need not be: a
-fixed line is exactly what the tame dictionary consumes
-(`GaloisRep.tameExponent_add_one_le_finrank_of_fixed`).
+NONTRIVIAL unipotent `σ ↦ (1, t_p(σ); 0, 1)`, so `dim V^{I_q} = 1` and
+the action is not trivial. The two conjuncts are the two halves of that
+one sentence — the fixed line is `dim V^{I_q} ≥ 1`, the ramifiedness is
+"the unipotent is `≠ 1`" — read off the SAME local computation, so the
+second conjunct adds nothing to what is taken on faith.
+
+SCOPE OF EACH CONJUNCT. The dimension is still deliberately not pinned,
+and need not be: a fixed line is exactly what the tame dictionary
+consumes (`GaloisRep.tameExponent_add_one_le_finrank_of_fixed`), and
+`¬ IsUnramifiedAt` is exactly what the conductor packaging consumes
+(`GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt`).
+Between them they are the entire input the parent needs at `q ∥ M₀`.
+
+WHY THE RAMIFIEDNESS CONJUNCT IS HERE (added 2026-07-26, eighth owner,
+executing the COORDINATION NOTE carried by the sibling
+`not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` above).
+Before this change, ramifiedness at `q ∥ M₀` was supplied by that
+sibling, whose hypothesis was the wider `q ∣ M₀`; the sibling is now
+narrowed to `2 ≤ M₀.factorization q` and this leaf owns the `q ∥ M₀`
+case outright. **Total assumed content across the pair is unchanged** —
+the same two facts about the same two ranges of `q` — but the
+`ord_q M₀ = 1` assumption now sits where the local type is named, which
+is the only place it can be audited against the classical statement.
 
 WHY THIS SHAPE RATHER THAN UNIPOTENCE. The classical statement is
 stronger — `(τσ − 1)² = 0` for every `σ ∈ I_q` — and assuming it would
@@ -29587,6 +29623,17 @@ Atkin–Lehner sign `a_q = ±1`, nothing about the shape of the monodromy
 statement deliberately does not, which is the same weakest-usable-form
 principle as the WHY THIS SHAPE paragraph above.)
 
+The SAME dictionary delivers the RAMIFIEDNESS conjunct just as cheaply,
+which is why adding it costs nothing: an unramified `V` has
+`dim V^{I_q} = 2` and `Sw_q = 0`, hence `a_q = 0`, contradicting
+`a_q = ord_q M₀ = 1`. So both conjuncts are consequences of the single
+number `a_q = 1`, and neither requires the local type to be identified.
+The sharpness of the pair is exactly the sharpness of `hord`, recorded
+next — and it is worth noting that the counterexample below refutes the
+weakening of BOTH conjuncts at once only for the fixed line: at
+`ord₁₁ 121 = 2` that `τ` is still ramified at `11`, which is precisely
+why the sibling keeps the deep-level range.
+
 SHARPNESS OF `hord`, machine-checked in PARI/GP (2026-07-26). Weakening
 `M₀.factorization q = 1` to `q ∣ M₀` makes the statement FALSE, with an
 explicit witness: let `E` be the quadratic twist by `−11` of `X₀(11)`
@@ -29626,10 +29673,17 @@ fixed line agree only modulo `det τ|_{I_q} = 1` (true, since the
 determinant is cyclotomic and `q ≠ p`, but not available here as a
 proven lemma), so pinning at unipotence would still assume formally
 more. What changes is the COST, not the choice — the unipotence form
-would now be a one-line derivation rather than a missing theorem. The
-same correction applies to step 3 of the repair plan in the FALSITY
-AUDIT below, which records the tame half as blocked on an absent
-Kolchin: it is not blocked. -/
+would now be a one-line derivation rather than a missing theorem.
+
+LOCATION CORRECTION (2026-07-26, eighth owner — checked against the file
+rather than recalled). An earlier version of this paragraph aimed the
+same correction at step 3 of the repair plan in the FALSITY AUDIT of
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` below. Step 3
+is already correct as written: it names the tame half as available
+through `GaloisRep.tameExponent_add_one_le_finrank_of_fixed`. The stale
+"Kolchin is absent" claim in that docstring lives instead in the
+"Neither half is provable on this pin" paragraph shortly above the
+FALSITY AUDIT, and has now been corrected in place there. -/
 theorem exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -29646,9 +29700,10 @@ theorem exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
     (hord : M₀.factorization q = 1) :
-    ∃ w₀ : Fin 2 → AlgebraicClosure ℚ_[p], w₀ ≠ 0 ∧
-      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
-        τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ w₀ = w₀ :=
+    ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat ∧
+      ∃ w₀ : Fin 2 → AlgebraicClosure ℚ_[p], w₀ ≠ 0 ∧
+        ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+          τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ w₀ = w₀ :=
   sorry
 
 /-- **Carayol's conductor theorem at the NEWFORM level** (PROVEN
@@ -29728,17 +29783,28 @@ observation is now CHECKED LEAN, via the trivial-but-decisive
 hence `≤ dim V = 2`), and the citation splits accordingly into
 
 * `not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` —
-  ramifiedness at `q`, needed for every `ord_q M₀ ≥ 1`; and
+  ramifiedness at `q`; and
 * `exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one` —
-  a nonzero inertia-fixed vector, needed ONLY when `ord_q M₀ = 1`.
+  ramifiedness at `q` TOGETHER WITH a nonzero inertia-fixed vector.
 
-What the development now takes on faith about the case `q² ∣ M₀` is
-therefore ramifiedness alone: the Steinberg/principal-series local-type
-computation is assumed only at `q ∥ M₀`, where the assumption is a
-single fixed line rather than a conductor identity. The two components
-are also independently reusable — the first is the away-from-`p`
-ramification input the level-lowering assemblies consume, and the second
-is the TAME half that the FALSITY AUDIT of
+**THE SPLIT IS BY RANGE OF `q`, NOT BY CONTENT** (re-cut 2026-07-26,
+eighth owner; the bullets above read differently before). The first leaf
+is hypothesised at `2 ≤ ord_q M₀` and the second at `ord_q M₀ = 1`, and
+between them they cover every `q ∣ M₀` exactly once. The earlier cut
+gave the first leaf the whole range `q ∣ M₀` and let the second carry
+only the fixed line; that was redundant, because at `ord_q M₀ = 1` the
+Steinberg computation that produces the fixed line produces the
+nontriviality of the unipotent in the same breath. Moving the
+ramifiedness conjunct into the second leaf therefore costs nothing and
+puts the `ord_q M₀ = 1` assumption where the local type is named.
+
+What the development takes on faith about `q² ∣ M₀` is ramifiedness
+alone: the Steinberg/principal-series local-type computation is assumed
+only at `q ∥ M₀`, where the assumption is a fixed line plus
+nontriviality rather than a conductor identity. Both components remain
+independently reusable — the first is the away-from-`p` ramification
+input the level-lowering assemblies consume, and the second contains the
+TAME half that the FALSITY AUDIT of
 `hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` requests in
 step 3 of its repair plan.
 
@@ -29747,21 +29813,24 @@ single citation, and the converse direction is elementary rather than
 asserted. From this statement one recovers
 `not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` by
 `GaloisRep.HasConductorExponentAt.not_isUnramifiedAt_of_ne_zero`
-(`ord_q M₀ ≥ 1` since `q ∣ M₀`), and, in the case `ord_q M₀ = 1`,
-`exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one`
-because `tameExponent ≤ 1` on a 2-dimensional space forces
-`dim V^{I_q} ≥ 1`, hence a nonzero inertia-fixed vector. So the sorry
-count rises by one while the assumed mathematics is unchanged; what the
-split buys is that the `q² ∣ M₀` half of the old leaf is now DISCHARGED
-outright, and that the two remaining assumptions are separately
-statable, separately attackable and separately reusable. (The converse
-lemmas are deliberately not added to the tree: nothing would consume
-them, so they would be free-floating code.)
+(`ord_q M₀ ≥ 2 > 0`), and, in the case `ord_q M₀ = 1`, both conjuncts of
+`exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one` —
+ramifiedness by the same `not_isUnramifiedAt_of_ne_zero`, the fixed
+vector because `tameExponent ≤ 1` on a 2-dimensional space forces
+`dim V^{I_q} ≥ 1`. So the sorry count rises by one while the assumed
+mathematics is unchanged; what the split buys is that the `q² ∣ M₀`
+tame content of the old leaf is DISCHARGED outright, and that the two
+remaining assumptions are separately statable, separately attackable and
+separately reusable. (The converse lemmas are deliberately not added to
+the tree: nothing would consume them, so they would be free-floating
+code.)
 
 The `q ≥ 2` arithmetic that makes the split exhaustive is elementary:
-`q ∣ M₀` with `0 < M₀` gives `1 ≤ ord_q M₀`, and `ord_q M₀ ≥ 2` is
-handled by `GaloisRep.hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt`,
-`ord_q M₀ = 1` by `GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt`. -/
+`q ∣ M₀` with `0 < M₀` gives `1 ≤ ord_q M₀`, so `Nat.lt_or_ge` at `2`
+splits into `ord_q M₀ = 1` — handled by the second leaf feeding
+`GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt` — and
+`ord_q M₀ ≥ 2`, handled by the first feeding
+`GaloisRep.hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt`. -/
 theorem hasConductorExponentAt_factorization_of_isWeightTwoNewform
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -29784,22 +29853,23 @@ theorem hasConductorExponentAt_factorization_of_isWeightTwoNewform
   -- dictionary is measured against
   have hfr : Module.finrank (AlgebraicClosure ℚ_[p])
       (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
-  -- ramifiedness at `q`: the half of the citation that both local types give
-  have hram : ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
-    not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible hM₀ hg₀ κ₀ hτ
-      hirr hq hqp hqM₀
   -- `q ∣ M₀` with `0 < M₀` makes the exponent positive
   have hpos : 0 < M₀.factorization q :=
     hq.factorization_pos_of_dvd hM₀.ne' hqM₀
   rcases Nat.lt_or_ge (M₀.factorization q) 2 with hlt | hge
-  · -- `q ∥ M₀`: the tame bound is real content, supplied by the fixed line
+  · -- `q ∥ M₀`: the local type is Steinberg, and the ONE local computation
+    -- there supplies both ramifiedness and the fixed line that makes the
+    -- tame bound real content
     have hord : M₀.factorization q = 1 := by omega
-    obtain ⟨w₀, hw₀, hfix⟩ :=
+    obtain ⟨hram, w₀, hw₀, hfix⟩ :=
       exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one hM₀ hg₀
         κ₀ hτ hirr hq hqp hord
     exact GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt hw₀
       hfix (by rw [hfr]; omega) hram
   · -- `q² ∣ M₀`: the tame bound is vacuous, ramifiedness is the whole content
+    have hram : ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+      not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible hM₀ hg₀ κ₀ hτ
+        hirr hq hqp hge
     exact GaloisRep.hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt
       (by rw [hfr]; omega) hram
 
@@ -30051,10 +30121,23 @@ belongs with the local computation, not in the level-lowering assembly.
   trivially and the Swan conductor — a sum over the wild ramification
   breaks — vanishes.
 
-Neither half is provable on this pin: the wild half needs the higher
+The WILD half is not provable on this pin: it needs the higher
 ramification filtration in the upper numbering (absent from mathlib —
-see `ArtinConductor.lean`), and the tame half needs Kolchin's theorem in
-dimension `2` (also absent). Both are honest, reusable, purely local
+see `ArtinConductor.lean`). **The TAME half is NOT blocked** — CORRECTION
+2026-07-26 (eighth owner). An earlier version of this paragraph said the
+tame half needs Kolchin's theorem in dimension `2` and that Kolchin is
+"also absent". That premise is FALSE: Kolchin in dimension `2` is PROVEN
+in this tree as `BrauerNesbitt.exists_fixed_of_unipotent` (a group of
+unipotent endomorphisms of a rank-2 space has a common nonzero fixed
+vector) and is already consumed three times, in
+`BrauerNesbittConjugacy.lean`, `Chebotarev.lean` and
+`Modularity/KhareWintenberger.lean`. Applied to `hsq` — which says
+exactly that every element of `I₂` acts unipotently, `(τσ − 1)² = 0` —
+it yields the common fixed vector directly, after which
+`GaloisRep.tameExponent_add_one_le_finrank_of_fixed` caps the tame
+exponent at `1`. So step 3 of the repair plan below is blocked only on
+the `opaque swanExponent` infrastructure and the WILD half, never on
+Kolchin. Both halves nevertheless remain honest, reusable, purely local
 targets, and neither is a restatement of an automorphic theorem — that
 is the point of factoring the old at-`2` citation this way.
 
