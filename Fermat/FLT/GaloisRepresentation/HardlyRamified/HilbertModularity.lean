@@ -69,11 +69,17 @@ The chain, in the order the assembly uses it:
 3. `HilbertDeformationDatum` / `IsWeaklyUniversal` — Mazur's category and
    its universal object over `F`, i.e. `R_F`;
    `exists_isWeaklyUniversal_hilbertDeformationDatum` is item 2 (LEAF).
-4. `HilbertHeckeAlgebra` — `T_F`, carrying `Module.Finite ℤ_[ℓ] T_F`,
-   generation by Hecke operators, and the residual eigensystem of
-   `ρbar|_{G_F}`; `PotentialHeckeDatum` bundles it with the totally real
-   `F` that Moret–Bailly produces, and
+4. `HilbertHeckeAlgebra` — `T_F`, carrying finiteness AND FREENESS of
+   `T_F` over `ℤ_[ℓ]`, generation by Hecke operators, and the
+   **Hecke-valued Galois representation** `ρT : G_F → GL₂(T_F)` reducing
+   to `ρbar|_{G_F}` (the residual eigensystem is now the PROVEN lemma
+   `HilbertHeckeAlgebra.residualT`, not a field). `PotentialHeckeDatum`
+   bundles it with the totally real `F` that Moret–Bailly produces, and
    `nonempty_potentialHeckeDatum_of_five_le` is items 3 + 5 (LEAF).
+   The last three of those components were added on 2026-07-26 after the
+   structure was found — and machine-checked — to be inhabited by a
+   residual junk witness, i.e. to record no modularity at all; see the
+   VACUITY AUDIT in its docstring and in the leaf's.
 5. `exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal` — **`R_F = T_F`**,
    item 4, Taylor–Wiles–Kisin patching in the Hilbert modular setting
    (LEAF).
@@ -419,26 +425,94 @@ theorem exists_isWeaklyUniversal_hilbertDeformationDatum
 of Hilbert modular forms over `F` of parallel weight `2` and fixed level,
 localized at the maximal ideal attached to `ρbar|_{G_F}`.
 
-The three components that carry the arithmetic:
+The components that carry the arithmetic:
 
-* the instance field `moduleFinite`, i.e. **`Module.Finite ℤ_[ℓ] T`**.
-  This is the whole point of the structure: it is the item
-  `Modularity/Patching.lean` takes as a HYPOTHESIS and that nothing in
-  the repository supplies. Classically it holds because the space of
-  Hilbert modular forms of fixed weight and level is a finitely generated
-  `ℤ_ℓ`-module on which `T` acts faithfully.
+* the instance fields `moduleFinite` and `moduleFree`, i.e. **`T` is a
+  finite FREE `ℤ_[ℓ]`-module**, together with `IsLocalRing T`. Finiteness
+  is the item `Modularity/Patching.lean` takes as a HYPOTHESIS and that
+  nothing in the repository supplies; classically it holds because the
+  space of Hilbert modular forms of fixed weight and level is a finitely
+  generated `ℤ_ℓ`-module on which `T` acts faithfully, and freeness because
+  `T` is then a torsion-free finitely generated module over a PID. Freeness
+  is not decoration — see the vacuity audit below, where it is what
+  distinguishes a Hecke algebra from its own residue ring.
 * `adjoin_heckeT` — `T` is generated over `ℤ_ℓ` by the good-place Hecke
   operators. Without it the structure would be inhabited by `ℤ_ℓ` itself
   with `heckeT` arbitrary, and would record nothing.
-* `residualT` — **residual modularity of `ρbar|_{G_F}`**: the reduction of
-  the Hecke eigensystem is the system of Frobenius traces of
-  `ρbar|_{G_F}`. This is the clause potential modularity produces and
-  `R_F = T_F` consumes; `−(charFrob w).coeff 1` is the trace of Frobenius
-  at `w`, the `charFrob` being monic of degree `2`.
+* `ρT`, `charFrobT` and `residT` — **modularity of `ρbar|_{G_F}`** in the
+  only form that has content: a hardly ramified `ρT : G_F → GL₂(T)` in
+  characteristic zero whose Frobenius traces are the Hecke operators and
+  which reduces to `ρbar|_{G_F}` along `πT`. The clause that used to stand
+  here, `residualT` (the reduced eigensystem is the system of Frobenius
+  traces of `ρbar|_{G_F}`), is now the PROVEN lemma of that name below;
+  `−(charFrob w).coeff 1` is the trace of Frobenius at `w`, the `charFrob`
+  being monic of degree `2`.
 
 No non-degeneracy clause is imposed on `bad`: every statement here
 quantifies over places OUTSIDE `bad`, so a larger bad set is a weaker
-datum, which is the direction that keeps the production leaf honest. -/
+datum, which is the direction that keeps the production leaf honest.
+
+## VACUITY AUDIT (2026-07-26) — the first form of this structure was EMPTY
+
+As first written this structure had exactly the fields `T`, `[CommRing T]`,
+`[Algebra ℤ_[ℓ] T]`, `[Module.Finite ℤ_[ℓ] T]`, `bad`, `heckeT`,
+`adjoin_heckeT`, `πT`, `residualT`. In that form it recorded **no
+automorphic content whatsoever**: it is inhabited for EVERY number field
+`F` and EVERY `ρbar` with finite coefficient field, by the junk witness
+
+* `T := Algebra.adjoin ℤ_[ℓ] (Set.range t) ⊆ k`, where
+  `t w = -((ρbar.map (algebraMap ℚ F)).charFrob w).coeff 1`;
+* `bad := ∅`, `heckeT w := ⟨t w, Algebra.subset_adjoin ⟨w, rfl⟩⟩`,
+  `πT := Subalgebra.val`.
+
+`Module.Finite ℤ_[ℓ] T` is FREE for that witness, because `T ⊆ k` is a
+finite set and `Module.Finite.of_finite` is an instance — i.e. the
+finiteness clause, the one this structure exists to carry, is satisfied by
+a **residual** (`ℓ`-torsion) ring; `adjoin_heckeT` is
+`Algebra.adjoin_adjoin_coe_preimage`, and `residualT` is `rfl`. The witness
+was written out in Lean and compiled against this file's imports before the
+repair below was made; it is not a sketch.
+
+Consequences, which is why this was repaired rather than exploited:
+`nonempty_potentialHeckeDatum_of_five_le` would have been a leaf with no
+content — a leaf that looks stronger than it is — and the ENTIRE modularity
+burden of the cluster would have sat silently on
+`exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal`, which, given a vacuous
+`T₀`, would be asked to prove `Module.Finite ℤ_[ℓ] R_F` with no automorphic
+input at all. That is exactly the circularity this module was built to
+avoid.
+
+**The repair.** Three instance fields and four fields are added, and one
+component (`residualT`) is REMOVED from what is assumed and proven instead
+(`HilbertHeckeAlgebra.residualT` below):
+
+* `[IsLocalRing T]` (hence `Nontrivial T`) and `[Module.Free ℤ_[ℓ] T]`.
+  Together these kill the residual witness outright: a residual `T` is
+  `ℓ`-torsion, hence not `ℤ_[ℓ]`-free unless trivial. `T` is now forced to
+  be a nonzero finite FREE `ℤ_[ℓ]`-algebra, i.e. genuinely of
+  characteristic zero — which is what a Hecke algebra of weight-`2` forms
+  is, and what its `ℤ_[ℓ]`-finiteness is supposed to be a theorem about.
+* `ρT`, `isHilbertHardlyRamified`, `charFrobT`, `residT` — the
+  **Hecke-valued Galois representation** (Carayol; Taylor for Hilbert
+  modular forms): a hardly ramified `ρT : G_F → GL₂(T)` whose Frobenius
+  traces ARE the Hecke operators and whose reduction along `πT` has the
+  characteristic polynomials of `ρbar|_{G_F}`. This is the component that
+  makes the datum SAY modularity — `ρbar|_{G_F}` admits a hardly ramified
+  characteristic-zero lift with coefficients in a finite flat `ℤ_[ℓ]`-
+  algebra generated by its own Frobenius traces — and it is the component
+  `exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal`'s docstring already
+  appealed to ("the traces of the deformation attached to the Hecke-valued
+  representation") but which did not exist.
+
+**Why NOT `Function.Surjective πT`**, though a deformation datum has it:
+`k` is only assumed to be the coefficient field of `ρbar`, and it may
+properly contain the field generated by the Frobenius traces (`ρbar`
+defined over `𝔽_ℓ` and viewed over `𝔽_{ℓ²}`, say), while `adjoin_heckeT`
+confines the image of `πT` to the `ℤ_[ℓ]`-algebra generated by those
+traces. Demanding surjectivity would make the production leaf FALSE in that
+case. A consumer that wants to see `T` as an object of the deformation
+category must therefore supply the residual-field bookkeeping itself; that
+is recorded here, not hidden. -/
 structure HilbertHeckeAlgebra (ℓ : ℕ) [Fact ℓ.Prime]
     (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k]
@@ -448,8 +522,15 @@ structure HilbertHeckeAlgebra (ℓ : ℕ) [Fact ℓ.Prime]
   /-- The Hecke algebra. -/
   T : Type u
   [commRing : CommRing T]
+  [topologicalSpace : TopologicalSpace T]
+  [isTopologicalRing : IsTopologicalRing T]
+  [isLocalRing : IsLocalRing T]
   [algebra : Algebra ℤ_[ℓ] T]
   [moduleFinite : Module.Finite ℤ_[ℓ] T]
+  /-- `T` is `ℤ_[ℓ]`-FREE: with `IsLocalRing T` this is what forces the
+  Hecke algebra to be of characteristic zero, and is what no residual junk
+  witness can satisfy. -/
+  [moduleFree : Module.Free ℤ_[ℓ] T]
   /-- The finite bad set: the level of the newform and the places over
   `2` and `ℓ`. -/
   bad : Finset (HeightOneSpectrum (𝓞 F))
@@ -459,13 +540,55 @@ structure HilbertHeckeAlgebra (ℓ : ℕ) [Fact ℓ.Prime]
   adjoin_heckeT : Algebra.adjoin ℤ_[ℓ] (heckeT '' {w | w ∉ bad}) = ⊤
   /-- The reduction map onto the residual coefficient field. -/
   πT : T →+* k
-  /-- Residual modularity of `ρbar|_{G_F}`: the reduced Hecke eigensystem
-  is its system of Frobenius traces. -/
-  residualT : ∀ w ∉ bad, πT (heckeT w) =
-    -((ρbar.map (algebraMap ℚ F)).charFrob w).coeff 1
+  /-- **The Hecke-valued Galois representation** `ρT : G_F → GL₂(T)`. -/
+  ρT : FramedGaloisRep F T (Fin 2)
+  /-- `ρT` satisfies the same `F`-level local conditions as the deformations
+  of `ρbar|_{G_F}` — this is what pins the level and the weight of the
+  Hilbert newform to the deformation problem. -/
+  isHilbertHardlyRamified : IsHilbertHardlyRamified ℓ F (rank_finTwoPi T) ρT
+  /-- **Hecke = Frobenius trace**: the Hecke operator at a good place is the
+  trace of `ρT` at the Frobenius there (`charFrob` is monic of degree `2`,
+  so its `coeff 1` is minus that trace). -/
+  charFrobT : ∀ w ∉ bad, (ρT.charFrob w).coeff 1 = -heckeT w
+  /-- **Residual modularity of `ρbar|_{G_F}`**: `ρT` reduces to it along
+  `πT`, at every element of `G_F`. -/
+  residT : ∀ g : Γ F, ((ρT g).charpoly).map πT =
+    ((ρbar.map (algebraMap ℚ F)) g).charpoly
 
 attribute [instance] HilbertHeckeAlgebra.commRing
+  HilbertHeckeAlgebra.topologicalSpace HilbertHeckeAlgebra.isTopologicalRing
+  HilbertHeckeAlgebra.isLocalRing
   HilbertHeckeAlgebra.algebra HilbertHeckeAlgebra.moduleFinite
+  HilbertHeckeAlgebra.moduleFree
+
+/-- **The reduced Hecke eigensystem is the system of Frobenius traces of
+`ρbar|_{G_F}`** (PROVEN — this was a FIELD of the structure before the
+vacuity audit above, and is now derived from `charFrobT` and `residT`; the
+citation assumes one component fewer).
+
+`charFrob w` is by definition the characteristic polynomial at the fixed
+arithmetic Frobenius `Field.AbsoluteGaloisGroup.adicArithFrob w`, pulled
+back along `F → F_w`, so `residT` at that ONE group element says exactly
+that `ρT.charFrob w` reduces to `(ρbar|_{G_F}).charFrob w`; taking
+`coeff 1` and feeding in `charFrobT` gives the eigenvalue statement. -/
+lemma HilbertHeckeAlgebra.residualT {ℓ : ℕ} [Fact ℓ.Prime]
+    {F : Type u} [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V} (H : HilbertHeckeAlgebra ℓ F ρbar)
+    (w : HeightOneSpectrum (𝓞 F)) (hw : w ∉ H.bad) :
+    H.πT (H.heckeT w) =
+      -((ρbar.map (algebraMap ℚ F)).charFrob w).coeff 1 := by
+  have key : (H.ρT.charFrob w).map H.πT = (ρbar.map (algebraMap ℚ F)).charFrob w :=
+    H.residT (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+      (Field.AbsoluteGaloisGroup.adicArithFrob w))
+  have hc : H.πT ((H.ρT.charFrob w).coeff 1) =
+      ((ρbar.map (algebraMap ℚ F)).charFrob w).coeff 1 := by
+    rw [← key, Polynomial.coeff_map]
+  have hh : H.heckeT w = -((H.ρT.charFrob w).coeff 1) := by
+    rw [H.charFrobT w hw, neg_neg]
+  rw [hh, map_neg, hc]
 
 /-- **The potential-modularity package**: the totally real field `F`
 produced by Taylor's Moret–Bailly argument, together with the Hecke
@@ -540,7 +663,72 @@ CIRCULARITY GUARD: this leaf may only ever be discharged by the
 independent Moret–Bailly/Taylor construction. Discharging it from the
 odd-prime dichotomy — under whose hypotheses it is vacuously true — would
 be circular, since that dichotomy is proven over pillar α, which is
-proven over this leaf. -/
+proven over this leaf.
+
+## AUDIT (2026-07-26): the leaf was VACUOUS, and is not any more
+
+Read against the FIRST form of `HilbertHeckeAlgebra` this leaf had no
+content, and the fact was not visible from the statement. Two independent
+collapses were available:
+
+1. `HilbertHeckeAlgebra ℓ F ρbar` was inhabited for every `F` and every
+   `ρbar` here (`k` is `Finite` and carries `Algebra ℤ_[ℓ] k`), by the
+   residual junk witness written out in that structure's VACUITY AUDIT and
+   compiled in Lean. So the only surviving obligations of
+   `PotentialHeckeDatum` were `totallyReal`, `galoisF` and `irreducibleF`.
+2. Those three are discharged by `F = ℚ`: `ℚ` is totally real, `IsGalois ℚ ℚ`
+   holds, and `ρbar.map (algebraMap ℚ ℚ)` is `ρbar` precomposed with an
+   automorphism of `Γ ℚ`, hence irreducible. Two obstacles remain, and
+   both are bookkeeping rather than arithmetic: `PotentialHeckeDatum.F` is
+   in `Type u` while `ℚ : Type`, so one needs a `NumberField (ULift.{u} ℚ)`
+   instance; and irreducibility has to be transported across
+   `Field.absoluteGaloisGroup.map (algebraMap ℚ F)` for that `F`, which is
+   a group isomorphism because `algebraMap ℚ F` is.
+
+So the leaf was a page of instance plumbing away from `exact ⟨{F := ULift ℚ,
+…}⟩`, with no automorphy anywhere in it. The repair was made in
+`HilbertHeckeAlgebra`, not here: the statement of this leaf is UNCHANGED,
+and it now asks for what it always claimed to. Collapse (2) alone is not
+enough any more — over `F = ℚ` the datum would still have to produce a
+hardly ramified characteristic-zero lift of `ρbar` itself, which is the
+`ℚ`-level statement that pillar α proves and that potential modularity
+exists to route around.
+
+## WHAT REMAINS, AND WHY IT IS TERMINAL AT THIS PIN
+
+The residue is a genuine citation, and it is not one leaf but two theorems
+that the literature proves together:
+
+* **Moret–Bailly / Taylor**: a totally real `F`, Galois over `ℚ` and
+  linearly disjoint from the splitting field of `ρbar`, over which
+  `ρbar|_{G_F}` is modular. The geometric half needs twisted
+  Hilbert–Blumenthal moduli varieties and a rational-point theorem over
+  totally real fields; the automorphic half needs residually dihedral
+  modularity, Jacquet–Langlands, and a modularity lifting theorem at an
+  auxiliary prime.
+* **Carayol / Taylor**: the Galois representation attached to a Hilbert
+  newform, with `Module.Finite` and `Module.Free` for the localized Hecke
+  algebra, and the local–global compatibility that makes `ρT` hardly
+  ramified at the places over `2` and `ℓ`. This last part silently
+  contains level lowering over totally real fields (Fujiwara, Jarvis,
+  Rajaei): the newform Taylor's theorem produces is of SOME level, and
+  `isHilbertHardlyRamified` demands the MINIMAL one. That minimality is
+  not decoration either — `HilbertHeckeAlgebra`'s own docstring records
+  that without it `R_F` is of unbounded level, not module-finite, and
+  `R_F = T_F` is false.
+
+Neither is reachable at this mathlib pin. A survey by the owner of the
+neighbouring `PotentialModularityWitness` interface established that there
+is NO Weil group anywhere in mathlib or in the reference FLT project, no
+local class field theory, no smooth or admissible representations, and a
+54-line ramification-group development with a TODO for the higher groups.
+The same survey killed the obvious piecewise route: solvable base change
+does not preserve unramifiedness downwards, and `Ind` of an unramified
+representation is unramified at `p` only when `p` is unramified in the
+intermediate field — classically the pieces' ramification cancels in the
+VIRTUAL SUM, which is invisible piecewise. That is why the citation has to
+be taken on the sum, and it is why no cut of this leaf into smaller Lean
+statements reduces what is assumed; it would only rename it. -/
 theorem nonempty_potentialHeckeDatum_of_five_le
     (ℓ : ℕ) [Fact ℓ.Prime] {hℓOdd : Odd ℓ} (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
