@@ -255,6 +255,12 @@ import Fermat.FLT.Modularity.KhareWintenberger
 -- `GaloisRep`, hence continuity of the twisting character — does not
 -- apply). Proof-body use only.
 import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
+-- Kolchin in dimension `2` (`BrauerNesbitt.exists_fixed_of_unipotent`),
+-- consumed by `tameExponent_two_le_one_of_inertia_sq_eq_zero`. This must be
+-- a `public import`: `BrauerNesbittConjugacy` above imports `BrauerNesbitt`
+-- PRIVATELY, and a private import in an INTERMEDIATE module withholds the
+-- names from proof bodies too, not merely from signatures.
+public import Fermat.FLT.GaloisRepresentation.BrauerNesbitt
 -- The deformation-theoretic pillars behind the Taylor–Wiles patching
 -- statement 3b (Mazur representability, Carayol surjectivity,
 -- Taylor–Wiles injectivity) and the `charFrob`/base-change bridge.
@@ -23018,10 +23024,10 @@ one identity yields BOTH per-place spellings mechanically:
   `weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`,
   which is now PROVEN from this leaf together with the purely local
   at-`2` bound `conductorExponent_two_le_one_of_inertia_sq_eq_zero`
-  below (itself the glue over the tame leaf
-  `tameExponent_two_le_one_of_inertia_sq_eq_zero` and the
-  wild-vanishing leaf
-  `swanExponent_two_eq_zero_of_inertia_sq_eq_zero`).
+  below (itself the glue over the tame node
+  `tameExponent_two_le_one_of_inertia_sq_eq_zero`, PROVEN 2026-07-26,
+  and the wild-vanishing leaf
+  `swanExponent_two_eq_zero_of_inertia_sq_eq_zero`, still open).
 
 The two classical local types behind the positivity are unchanged:
 `q ∥ M₀` gives an unramified twist of Steinberg — special Weil–Deligne
@@ -23112,9 +23118,10 @@ theorem hasConductorExponentAt_factorization_of_isNewAtPrime
   sorry
 
 /-- **THE TAME HALF of the at-`2` conductor bound: a square-zero-unipotent
-inertia action at `2` caps the TAME exponent at `1`** (sorry node —
-Kolchin's theorem in dimension `2`, plus the inertia-spelling bridge; cut
-out 2026-07-26 from the REFUTED leaf
+inertia action at `2` caps the TAME exponent at `1`** (**PROVEN
+2026-07-26, sorry-free** — Kolchin's theorem in dimension `2`
+(`BrauerNesbitt.exists_fixed_of_unipotent`), plus the inertia-spelling
+bridge; cut out 2026-07-26 from the REFUTED leaf
 `hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`, whose falsity
 audit is preserved in full below because the lesson generalizes): if every
 element of the inertia at `2` acts on the 2-dimensional `ℚ̄_p`-space
@@ -23169,12 +23176,21 @@ belongs with the local computation, not in the level-lowering assembly.
   trivially and the Swan conductor — a sum over the wild ramification
   breaks — vanishes.
 
-Neither half is provable on this pin: the wild half needs the higher
-ramification filtration in the upper numbering (absent from mathlib —
-see `ArtinConductor.lean`), and the tame half needs Kolchin's theorem in
-dimension `2` (also absent). Both are honest, reusable, purely local
-targets, and neither is a restatement of an automorphic theorem — that
-is the point of factoring the old at-`2` citation this way.
+CORRECTION (2026-07-26, when THIS half was proven). The original text
+here read "Neither half is provable on this pin: … the tame half needs
+Kolchin's theorem in dimension `2` (also absent)". **The second clause
+was FALSE**: Kolchin in dimension `2` is PRESENT and sorry-free as
+`BrauerNesbitt.exists_fixed_of_unipotent`
+(`GaloisRepresentation/BrauerNesbitt.lean`), and this leaf is now proven
+from it. Only the WILD half is genuinely blocked, and only on the higher
+ramification filtration in the UPPER numbering (absent from mathlib —
+see `ArtinConductor.lean`).
+
+The one real obstacle here was not mathematical but the spelling gap the
+paragraph above describes; see the proof's STEP 1. Both halves are
+honest, reusable, purely local targets, and neither is a restatement of
+an automorphic theorem — that is the point of factoring the old at-`2`
+citation this way.
 
 SOUNDNESS AUDIT (2026-07-25, restricted 2026-07-26 to the tame half):
 non-vacuously satisfiable — take `τ` unramified at `2` (then `τσ − 1 = 0`
@@ -23310,8 +23326,70 @@ theorem tameExponent_two_le_one_of_inertia_sq_eq_zero
         ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
         (Field.absoluteGaloisGroup ℚ_[2]),
       (τ.map (algebraMap ℚ ℚ_[2]) σ - 1) ^ 2 = 0) :
-    τ.tameExponent Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≤ 1 :=
-  sorry
+    τ.tameExponent Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≤ 1 := by
+  classical
+  -- STEP 1 (the spelling bridge): squaring to zero is CONJUGATION-INVARIANT,
+  -- so the hypothesis, stated over `Γ ℚ_[2]`, transports along
+  -- `localInertia_two_eq_map_padic` to the place-spelled inertia. The two
+  -- worlds name different `Algebra ℚ (adicCompletion ℚ v₂)` instances; the
+  -- gap is closed at the RING-HOM level by `Subsingleton (ℚ →+* _)`, which
+  -- is why `hmapeq` rewrites `toLocal` (whose ring hom is an EXPLICIT
+  -- argument of `GaloisRep.map`) rather than the applied term.
+  have hloc : ∀ σ ∈ localInertiaGroup
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      (τ.toLocal Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat σ - 1) ^ 2
+        = 0 := by
+    intro σ hσ
+    obtain ⟨ω, hω, c, hconj⟩ := IsHardlyRamified.localInertia_two_eq_map_padic hσ
+    have hmapeq : τ.toLocal Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
+        = τ.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+            Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) := by
+      show GaloisRep.map τ _ = GaloisRep.map τ _
+      congr 1
+      exact Subsingleton.elim _ _
+    have hN : (τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω) - 1) ^ 2
+        = 0 := hsq ω hω
+    have ha : τ c * τ c⁻¹ = 1 := by rw [← map_mul, mul_inv_cancel, map_one]
+    have ha' : τ c⁻¹ * τ c = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
+    rw [hmapeq, GaloisRep.map_apply, hconj, map_mul, map_mul]
+    have hfac : τ c * τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω)
+          * τ c⁻¹ - 1 =
+        τ c * (τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω) - 1)
+          * τ c⁻¹ := by
+      rw [mul_sub, mul_one, sub_mul, ha]
+    rw [hfac, pow_two]
+    have h1 : τ c * (τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω) - 1)
+          * τ c⁻¹ *
+          (τ c * (τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω) - 1)
+            * τ c⁻¹) =
+        τ c * ((τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω) - 1)
+          * (τ c⁻¹ * τ c) *
+          (τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω) - 1))
+          * τ c⁻¹ := by
+      simp only [mul_assoc]
+    rw [h1, ha', mul_one, ← pow_two, hN, mul_zero, zero_mul]
+  -- STEP 2 (Kolchin in dimension `2`): the image of the inertia consists of
+  -- square-zero unipotents, so it has a COMMON nonzero fixed vector. This is
+  -- `BrauerNesbitt.exists_fixed_of_unipotent`, which is where the conjugacy
+  -- slack of the bridge is absorbed — the hypothesis is conjugation-invariant.
+  obtain ⟨w₀, hw₀ne, hw₀fix⟩ :=
+    BrauerNesbitt.exists_fixed_of_unipotent
+      (F := AlgebraicClosure ℚ_[p]) (V := Fin 2 → AlgebraicClosure ℚ_[p])
+      (by simp)
+      (G := (localInertiaGroup
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat))
+      { toFun := fun g =>
+          τ.toLocal Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat g.1
+        map_one' := map_one _
+        map_mul' := fun g h => map_mul _ g.1 h.1 }
+      (fun g => hloc g.1 g.2)
+  -- STEP 3: a fixed line makes `dim V^{I₂} ≥ 1`, so the tame exponent
+  -- `2 − dim V^{I₂}` is at most `1`.
+  have hfin := GaloisRep.tameExponent_add_one_le_finrank_of_fixed τ
+    Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat hw₀ne
+    (fun σ hσ => hw₀fix ⟨σ, hσ⟩)
+  rw [Module.finrank_fin_fun] at hfin
+  omega
 
 include hpodd in
 /-- **THE WILD HALF of the at-`2` conductor bound: the Swan conductor at
@@ -23347,6 +23425,24 @@ Until that filtration exists, NOTHING about `swanExponentAux` is
 provable, so this leaf is terminal by construction. Its soundness is
 checked against the intended interpretation `swanExponentAux ρ v :=
 Sw_v(V)`, under which it is exactly the cited theorem.
+
+CONFIRMED TERMINAL 2026-07-26, and DO NOT re-derive it from the
+Oort–Tate side. This leaf's tame sibling
+`tameExponent_two_le_one_of_inertia_sq_eq_zero` was proven the same day,
+so this is now the ONLY open node of the at-`2` cut, which makes it an
+attractive and repeatedly mis-dispatched target. Two dead ends, both
+checked rather than assumed:
+
+* The higher-ramification machinery on branch `flt-lean-2`
+  (`exists_generator_pow_inertia_invariant`) does NOT unblock this. That
+  declaration reached no release, and the node it was cut for,
+  `OortTate.displacement_span_le_span_zeta_sub_one`
+  (`GroupScheme/ConnectedEtale.lean`), is already proven sorry-free on
+  `main` by a norm/valuation route that builds no filtration at all — so
+  there is no upper-numbering theory arriving from that direction.
+* Nothing else in the tree currently constructs the upper-numbering
+  filtration. Closing this leaf means BUILDING that theory as a genuine
+  subtree; it is not a matter of locating an existing lemma.
 
 PROVENANCE OF THE HYPOTHESIS SHAPE: `hsq` is stated over `Γ ℚ_[2]` (via
 `Z2bar`) because that is the spelling the at-`2` consumers already use,
@@ -24821,8 +24917,10 @@ Artin exponent formula `n(2, τ) = dim V/V^{I₂} + b(V)` (Duke 54 (1987)
 §1.2, (1.2.1)–(1.2.2)) together with (c) the single topological input
 this pin cannot supply — that the pro-`2` wild inertia has FINITE image
 in `GL₂(ℚ̄_p)` for odd `p` — live in the purely local, automorphic-input-free
-leaves `tameExponent_two_le_one_of_inertia_sq_eq_zero` and
-`swanExponent_two_eq_zero_of_inertia_sq_eq_zero`, joined by the PROVEN
+declarations `tameExponent_two_le_one_of_inertia_sq_eq_zero` (PROVEN
+2026-07-26 — (b)'s tame summand is Kolchin, not a citation) and
+`swanExponent_two_eq_zero_of_inertia_sq_eq_zero` (the ONE remaining
+citation leaf here, carrying (c)), joined by the PROVEN
 glue `conductorExponent_two_le_one_of_inertia_sq_eq_zero`. See
 those leaves' docstrings for the pieces named separately.
 
