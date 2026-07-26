@@ -37548,8 +37548,9 @@ on an open subgroup, for every finite place `p` of `F` and every finite set
 `S` of rational primes, there are a modulus `m` prime to `S` and to `p` and
 an OPEN subgroup `H ≤ Γ F` — the auxiliary field `E = (F̄)^H` — with
 
-* `0 < m`, `∀ q ∈ S, ¬ q ∣ m` and `(m : 𝓞 F) ∉ p.asIdeal`: `m` avoids `S`
-  and the residue characteristic of `p`;
+* `0 < m`, `∀ q ∈ S, q.Prime → ¬ q ∣ m` and `(m : 𝓞 F) ∉ p.asIdeal`: `m`
+  avoids the primes of `S` and the residue characteristic of `p`. The
+  `q.Prime` guard is not decoration — see the FALSITY AUDIT below;
 * `IsOpen H`: `E/F` is finite;
 * (i) `M ∩ E = F`, in group terms `ker χ · H = Γ F` — every `σ` factors as
   `τ ρ` with `χ τ = 1` and `ρ ∈ H`;
@@ -37578,7 +37579,90 @@ theorem on primes in arithmetic progressions, which IS in the pin
 (`Nat.forall_exists_prime_gt_and_eq_mod`, `Nat.infinite_setOf_prime_and_eq_mod`,
 `Mathlib/NumberTheory/LSeries/PrimesInAP.lean`). So this leaf is
 elementary-but-long rather than deep: it is the one ingredient of Artin
-reciprocity whose prerequisites are all already available. -/
+reciprocity whose prerequisites are all already available.
+
+**FALSITY AUDIT (2026-07-26): the leaf WAS FALSE AS STATED, and is
+repaired above.** The clause read `∀ q ∈ S, ¬ q ∣ m` with `S : Finset ℕ`
+UNRESTRICTED. Take `S = {1}`: the clause then demands `¬ (1 ∣ m)`, which
+holds for no `m` whatsoever, so the whole existential is unsatisfiable
+and the theorem was refuted by a one-element counterexample. Childress
+says "`S` a finite set of PRIMES" and the `1` is simply outside his
+hypothesis; the Lean transcription dropped that word.
+
+Repaired by guarding the clause with `q.Prime` rather than by adding a
+hypothesis `∀ q ∈ S, q.Prime`. The guarded form is the STRONGER of the
+two repairs — given the hypothesis the two are equivalent, and without it
+the guarded form still delivers everything a consumer can want — and it
+keeps the leaf usable at call sites that pass a set which happens to
+contain a non-prime. **The same clause inside the `hartin` hypothesis of
+`exists_artinIdealGroup_relIndex_ray_class` below was repaired in the
+same way, and had to be**: leaving it false there would have let (A3b) be
+discharged VACUOUSLY from an unsatisfiable hypothesis.
+
+**THE ROUTE, NOW IN FULL** (from Childress pp. 115–121, read 2026-07-26;
+this replaces the previous "elementary-but-long" hand-wave). The proof is
+Lemma 2.8 over Lemma 2.7 over Lemmas 2.3–2.6, and it splits cleanly into
+ONE arithmetic input and ONE piece of finite group theory.
+
+*The arithmetic input* (Childress 2.3–2.7). Lemma 2.3: for `r > 1`,
+`a > 1` and a prime `q` there is a prime `p` with `a` of order exactly
+`q^r` mod `p` — proved by taking `p ∣ t := (a^{q^r}-1)/(a^{q^{r-1}}-1)`,
+noting `t ≡ q (mod u)` with `u = a^{q^{r-1}}-1`, and ruling out the case
+"`t` a power of `q`" by a binomial-expansion argument that forces `q = 2`
+and then contradicts `2 + u ≡ 0 (mod 4)`. Corollary 2.4 (apply 2.3 to
+`q^{r+k}`) gives infinitely many such `p`, Lemma 2.5 assembles a modulus
+`d` prime to a given finite set with `n ∣ ord(a mod d)`, and **Lemma 2.6**
+is the statement to cut as the sub-leaf: *given `n > 1`, `a > 1` and a
+finite set `S` of primes there is `m > 0` prime to `S` such that `n`
+divides the order of `a` mod `m` AND there is `b` with `n` dividing the
+order of `b` mod `m` and `⟨a⟩ ∩ ⟨b⟩ = 1` in `(ℤ/mℤ)ˣ`* — proved by
+taking `m = d d'` and `b ≡ a (mod d)`, `b ≡ 1 (mod d')` by CRT. Lemma 2.7
+then transports this to `F` with `a = N p`: because `m` is prime to every
+prime ramifying in `F/ℚ`, `F ∩ ℚ(ζ_m)` is everywhere unramified over `ℚ`,
+so **by Minkowski it is `ℚ`**, and therefore `Gal(F(ζ_m)/F) ≅ (ℤ/mℤ)ˣ` —
+i.e. the cyclotomic character `Γ F → (ℤ/mℤ)ˣ` is SURJECTIVE for this `m`.
+
+*Note this is exactly the situation in which the standing warning of this
+cluster — "do not build the character `ψ` of `(ℤ/mℤ)ˣ`, the cyclotomic
+character need not be surjective" — does NOT apply.* The whole point of
+Lemma 2.7's choice of `m` is to force surjectivity; `F` cannot contain
+`ζ_m` for such an `m`. So a next owner may legitimately work with
+`(ℤ/mℤ)ˣ` here, unlike everywhere else in this cluster.
+
+*The group theory* (Childress 2.8), which in profinite form needs no
+fields at all. Write `N = ker χ` and `C_m = {σ | σ fixes μ_m pointwise}`,
+both open normal in `Γ F`. Clause (iii) is exactly `N · C_m = Γ F`, which
+says the map `q : Γ F → Γ F/N × Γ F/C_m` is SURJECTIVE, and `Γ F/N` is
+cyclic of some order `n` (a finite subgroup of a field's units) while
+`Γ F/C_m` is abelian, so the target of `q` is abelian. Pick `w` with
+`q w = (σ, τ)` where `σ` generates `Γ F/N` and `τ` is Lemma 2.7's
+independent element, put `f = globalFrob p`, and take
+
+    H := q⁻¹ (⟨q w, q f⟩).
+
+Then `H` is open (it contains the open subgroup `ker q = N ⊓ C_m`), and
+in a COMMUTATIVE target `Subgroup.mem_closure_pair` gives the exact
+membership test `h ∈ H ↔ ∃ i j : ℤ, (q w)^i (q f)^j = q h`, which is what
+makes the four clauses one-liners:
+
+* (iv) `f ∈ H` with `i = 0, j = 1`;
+* (i)  `N · H = Γ F` because the image of `H` in `Γ F/N` already contains
+  the generator `σ`;
+* (ii) if `h ∈ H ∩ C_m` then `(q w)^i (q f)^j` is trivial in the second
+  coordinate, so `τ^i (Frob)^j = 1` there; INDEPENDENCE splits this into
+  `τ^i = 1` and `Frob^j = 1`, and `n ∣ ord τ`, `n ∣ ord Frob` then give
+  `n ∣ i` and `n ∣ j`; since `Γ F/N` has order `n`, both first-coordinate
+  factors die and `h ∈ N`, which is `χ h = 1`;
+* (iii) is inherited from Lemma 2.7 verbatim.
+
+So the recommended cut is TWO sub-leaves — (A3a-1) Childress Lemma 2.6,
+pure elementary number theory in `ℕ`, and (A3a-2) Lemma 2.7's transport
+(Minkowski plus `Frob p ↦ N p`) — over a PROVEN abstract group lemma of
+the shape "in a group `Q` with normal `N`, `C` such that `Q/(N ⊓ C)` is
+abelian, `Q/N` cyclic of order `n` generated by `w`, and `w`, `f`
+independent modulo `C` with `n` dividing both their orders there, the
+subgroup `H = ⟨w, f⟩ (N ⊓ C)` satisfies `N H = Q` and `H ∩ C ≤ N`". That
+group lemma is the honest crux and it is finite group theory only. -/
 theorem exists_artinAuxiliaryField_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -37588,7 +37672,7 @@ theorem exists_artinAuxiliaryField_ray_class
     (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
     (S : Finset ℕ) :
     ∃ (m : ℕ) (H : Subgroup (Γ F)), 0 < m ∧
-      (∀ q ∈ S, ¬ q ∣ m) ∧
+      (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
       (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
       IsOpen (H : Set (Γ F)) ∧
       (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H ∧ σ = τ * ρ) ∧
@@ -37676,7 +37760,7 @@ theorem exists_artinIdealGroup_relIndex_ray_class
     (hartin : ∀ (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
       (S : Finset ℕ),
       ∃ (m : ℕ) (H : Subgroup (Γ F)), 0 < m ∧
-        (∀ q ∈ S, ¬ q ∣ m) ∧
+        (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
         (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
         IsOpen (H : Set (Γ F)) ∧
         (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H ∧ σ = τ * ρ) ∧
@@ -38118,9 +38202,170 @@ def IsRamifiedCharRayClass (F : Type*) [Field F] [NumberField F]
     χ (a * Field.absoluteGaloisGroup.map
       (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹) ≠ 1
 
+/-- **The archimedean adjustment** (PROVEN 2026-07-26; created the same
+day as sub-leaf (B1a-i-1-a) of `exists_ray_factorization_sup_ray_class`
+below): every residue class modulo a nonzero ideal `aa` of `𝓞 F` contains
+an element that is simultaneously NONZERO and TOTALLY POSITIVE.
+
+This is step 1's parenthetical "then adjust `u` for total positivity and
+nonvanishing without disturbing any congruence" of the sketch on
+`exists_ray_factorization_sup_ray_class`, isolated so that the CRT
+sub-leaf below has no archimedean content at all.
+
+**Proof.** Pick a nonzero `r` in `aa` and look at `y_M = x + M r^2` for
+`M : ℕ`; every one of them is congruent to `x` modulo `aa`, since
+`r^2` lies in `aa`. At a real embedding `φ` we get
+`φ(y_M) = φ(x) + M φ(r)^2` with `φ(r) ≠ 0` (a ring hom out of a field is
+injective, and `𝓞 F` embeds in `F`), so `φ(r)^2 > 0` and the value is
+positive as soon as `M > -φ(x)/φ(r)^2`. There are only finitely many
+real embeddings (`Fintype (F →+* ℝ)` from `NumberField.Embeddings`, whose
+instance applies to any field of characteristic zero), so a single `M`
+works for all of them; the uniform bound is taken as the SUM of the
+absolute values of the individual bounds, which dominates each one and —
+unlike a `max` — needs no nonemptiness hypothesis, so a totally
+imaginary `F` costs nothing.
+
+Nonvanishing is handled separately precisely because total positivity is
+vacuous when `F` has no real place: `y_M` and `y_{M+1}` differ by
+`r^2 ≠ 0`, so at most one of the two can vanish and the other is the
+witness. -/
+theorem exists_totallyPositive_sub_mem_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (aa : Ideal (NumberField.RingOfIntegers F)) (haa : aa ≠ ⊥)
+    (x : NumberField.RingOfIntegers F) :
+    ∃ y : NumberField.RingOfIntegers F, y - x ∈ aa ∧ y ≠ 0 ∧
+      ∀ φ : F →+* ℝ, 0 < φ (algebraMap (NumberField.RingOfIntegers F) F y) := by
+  classical
+  obtain ⟨r, hraa, hr0⟩ := (Submodule.ne_bot_iff aa).mp haa
+  have hinj : Function.Injective (algebraMap (NumberField.RingOfIntegers F) F) :=
+    IsFractionRing.injective (NumberField.RingOfIntegers F) F
+  -- the real embeddings never vanish on `r`
+  have hb : ∀ φ : F →+* ℝ,
+      φ (algebraMap (NumberField.RingOfIntegers F) F r) ≠ 0 := by
+    intro φ h
+    have h1 : algebraMap (NumberField.RingOfIntegers F) F r = 0 :=
+      φ.injective (by simpa using h)
+    exact hr0 (hinj (h1.trans (map_zero _).symm))
+  -- a single bound valid at every real embedding at once
+  set B : ℝ := ∑ φ : F →+* ℝ,
+      |(-(φ (algebraMap (NumberField.RingOfIntegers F) F x))) /
+        (φ (algebraMap (NumberField.RingOfIntegers F) F r)) ^ 2| with hB
+  obtain ⟨N, hN⟩ := exists_nat_gt B
+  have hmem : ∀ M : ℕ,
+      (x + (M : NumberField.RingOfIntegers F) * r ^ 2) - x ∈ aa := by
+    intro M
+    have hr2 : r ^ 2 ∈ aa := by
+      rw [pow_two]; exact Ideal.mul_mem_left aa r hraa
+    simpa using Ideal.mul_mem_left aa (M : NumberField.RingOfIntegers F) hr2
+  have hpos : ∀ M : ℕ, N ≤ M → ∀ φ : F →+* ℝ,
+      0 < φ (algebraMap (NumberField.RingOfIntegers F) F
+        (x + (M : NumberField.RingOfIntegers F) * r ^ 2)) := by
+    intro M hM φ
+    set a : ℝ := φ (algebraMap (NumberField.RingOfIntegers F) F x) with ha
+    set b : ℝ := φ (algebraMap (NumberField.RingOfIntegers F) F r) with hbb
+    have hbne : b ≠ 0 := hb φ
+    have hb2 : (0 : ℝ) < b ^ 2 :=
+      lt_of_le_of_ne (sq_nonneg b) (Ne.symm (pow_ne_zero 2 hbne))
+    have hle : (-a) / b ^ 2 ≤ B := by
+      rw [hB]
+      refine le_trans (le_abs_self _) ?_
+      exact Finset.single_le_sum (f := fun φ : F →+* ℝ =>
+        |(-(φ (algebraMap (NumberField.RingOfIntegers F) F x))) /
+          (φ (algebraMap (NumberField.RingOfIntegers F) F r)) ^ 2|)
+        (fun i _ => abs_nonneg _) (Finset.mem_univ φ)
+    have hMR : (B : ℝ) < (M : ℝ) := lt_of_lt_of_le hN (by exact_mod_cast hM)
+    have h1 : (-a) / b ^ 2 < (M : ℝ) := lt_of_le_of_lt hle hMR
+    have h2 : -a < (M : ℝ) * b ^ 2 := by rwa [div_lt_iff₀ hb2] at h1
+    have hrw : φ (algebraMap (NumberField.RingOfIntegers F) F
+        (x + (M : NumberField.RingOfIntegers F) * r ^ 2)) = a + (M : ℝ) * b ^ 2 := by
+      simp only [ha, hbb, map_add, map_mul, map_pow, map_natCast]
+    rw [hrw]
+    linarith
+  -- `x + N r^2` and `x + (N+1) r^2` differ by `r^2 ≠ 0`, so one of them is nonzero
+  have hr2 : r ^ 2 ≠ 0 := pow_ne_zero 2 hr0
+  rcases eq_or_ne (x + (N : NumberField.RingOfIntegers F) * r ^ 2) 0 with h0 | h0
+  · refine ⟨x + ((N + 1 : ℕ) : NumberField.RingOfIntegers F) * r ^ 2, hmem (N + 1), ?_,
+      hpos (N + 1) (Nat.le_succ N)⟩
+    have hsplit : x + ((N + 1 : ℕ) : NumberField.RingOfIntegers F) * r ^ 2
+        = (x + (N : NumberField.RingOfIntegers F) * r ^ 2) + r ^ 2 := by push_cast; ring
+    rw [hsplit, h0, zero_add]
+    exact hr2
+  · exact ⟨x + (N : NumberField.RingOfIntegers F) * r ^ 2, hmem N, h0, hpos N le_rfl⟩
+
 set_option maxHeartbeats 1000000 in
-/-- **The two narrow rays GENERATE the narrow ray at their gcd** (sorry
-node, created 2026-07-26 as the single sub-leaf (B1a-i-1) of
+/-- **The CRT core of the gcd-closure of the narrow rays** (sorry node,
+created 2026-07-26 as sub-leaf (B1a-i-1-b) of
+`exists_ray_factorization_sup_ray_class` just below, which is now PROVEN
+as glue over this leaf and the archimedean adjustment
+`exists_totallyPositive_sub_mem_ray_class` just above): there are a
+totally positive `u` congruent to `1` modulo `mm`, and a nonzero ideal
+`dd` COPRIME to `nn`, such that `γ β / u` is integral and congruent to
+`1` modulo `nn` for every `β` in `dd` with `β ≡ 1 (mod nn)`.
+
+This is steps 1 and 3 of the sketch on the consumer below, with all of
+the archimedean content and all of the `α`/`α'` bookkeeping removed.
+Nothing here mentions `χ`, `c`, a Galois group, the class group or the
+unit group: **it is simultaneous approximation in a Dedekind domain and
+nothing else.**
+
+**Route.** Write `v(·)` for the exponent at a height-one prime `v` of
+`𝓞 F`, and let `g` be the `nn`-part of the ideal `(γ)`, i.e. the product
+of `v^{v(γ)}` over the `v` dividing `nn`. Choose `u` by CRT with
+
+* `v(u - 1) ≥ v(mm)` at every `v` dividing `mm`;
+* `v(u - γ) ≥ v(nn) + v(γ)` at every `v` dividing `nn`,
+
+i.e. `u ≡ 1 (mod mm)` and `u ≡ γ (mod nn * g)`. These are consistent:
+`mm + nn*g = mm + nn` (the two sides have the same exponent at every
+prime — note `v(g) = 0` at every `v` dividing BOTH `mm` and `nn`, because
+`γ - 1 ∈ mm ⊔ nn` forces `v(γ) = 0` there, which is the ONLY use of
+`hγmem` and is exactly why the gcd appears), so `γ - 1 ∈ mm ⊔ nn` is
+precisely the CRT compatibility condition.
+
+**Taking the `nn`-part `g` rather than all of `(γ)` is essential.** At a
+`v` dividing `mm` with `v(γ) > 0` the congruence `u ≡ γ (mod nn*(γ))` is
+incompatible with `u ≡ 1 (mod mm)`, since `v(γ - 1) = 0` there — so the
+naive single-ideal congruence `u ≡ γ (mod nn*(γ))` is UNSOLVABLE, and
+restricting to the `nn`-part is what repairs it. This is the one place
+where a plausible-looking shortcut fails.
+
+Then adjust `u` by `exists_totallyPositive_sub_mem_ray_class` at the
+ideal `mm * nn * g` (which disturbs neither congruence) to make it
+nonzero and totally positive. Put `w = γ / u` in `F`; by construction
+`v(u) = v(γ)` at every `v` dividing `nn`, hence `v(w) = 0` and
+`v(w - 1) = v(γ - u) - v(γ) ≥ v(nn)` there. Take `dd` to be the
+denominator ideal of `w`, which is therefore coprime to `nn`; for `β` in
+`dd` the element `β' = w β` is integral, satisfies `u β' = γ β`, and
+`β' - 1 = β (w - 1) + (β - 1)` lies in `nn`.
+
+**FAITHFULNESS.** Non-vacuous: the final clause pins `β'` uniquely
+(`u ≠ 0` and `𝓞 F` is a domain), so junk data cannot discharge it — with
+`dd = ⊤` and `u = 1` the clause asserts `γ β ≡ 1 (mod nn)` for every
+`β ≡ 1 (mod nn)`, i.e. `γ ≡ 1 (mod nn)`, which is false in general (take
+`mm = (4)`, `nn = (9)`, `γ = 6` over `ℚ`, the consumer's own second
+worked example). `hγ0` is needed: at `γ = 0` the clause forces `β' = 0`,
+contradicting `β' ≡ 1 (mod nn)` for proper `nn`. `hγpos` is deliberately
+ABSENT — total positivity of `γ` is consumed only in the assembly below,
+where it gives positivity of `β'` from `u β' = γ β`. -/
+theorem exists_denominatorIdeal_ray_factorization_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (mm nn : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥) (hnn : nn ≠ ⊥)
+    (γ : NumberField.RingOfIntegers F) (hγ0 : γ ≠ 0)
+    (hγmem : γ - 1 ∈ mm ⊔ nn) :
+    ∃ (u : NumberField.RingOfIntegers F) (dd : Ideal (NumberField.RingOfIntegers F)),
+      u ≠ 0 ∧ (∀ φ : F →+* ℝ,
+        0 < φ (algebraMap (NumberField.RingOfIntegers F) F u)) ∧
+      u - 1 ∈ mm ∧ dd ≠ ⊥ ∧ dd ⊔ nn = ⊤ ∧
+      ∀ β ∈ dd, β - 1 ∈ nn →
+        ∃ β' : NumberField.RingOfIntegers F, u * β' = γ * β ∧ β' - 1 ∈ nn :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The two narrow rays GENERATE the narrow ray at their gcd** (PROVEN
+2026-07-26 as glue over its two sub-leaves (B1a-i-1-a)
+`exists_totallyPositive_sub_mem_ray_class` and (B1a-i-1-b)
+`exists_denominatorIdeal_ray_factorization_ray_class` just above;
+created the same day as the single sub-leaf (B1a-i-1) of
 `isAdmissibleModulus_sup_ray_class` just below, which is now PROVEN as
 elementary ideal arithmetic over it): for `γ ≫ 0` with
 `γ ≡ 1 (mod mm ⊔ nn)` there are `α, α' ≡ 1 (mod mm)` and
@@ -38229,8 +38474,54 @@ theorem exists_ray_factorization_sup_ray_class
         0 < φ (algebraMap (NumberField.RingOfIntegers F) F β)) ∧ β - 1 ∈ nn) ∧
       (β' ≠ 0 ∧ (∀ φ : F →+* ℝ,
         0 < φ (algebraMap (NumberField.RingOfIntegers F) F β')) ∧ β' - 1 ∈ nn) ∧
-      γ * α * β = α' * β' :=
-  sorry
+      γ * α * β = α' * β' := by
+  -- (B1a-i-1-b): the CRT core supplies `u ≡ 1 (mod mm)` and the denominator
+  -- ideal `dd` of `w = γ / u`, which is coprime to `nn`.
+  obtain ⟨u, dd, hu0, hupos, humem, hdd0, hddco, hkey⟩ :=
+    exists_denominatorIdeal_ray_factorization_ray_class F mm nn hmm hnn γ hγ0 hγmem
+  -- coprimality gives `1 = d + n` with `d ∈ dd`, `n ∈ nn`, so `d` is already a
+  -- representative of the class we need; only positivity is missing.
+  obtain ⟨d, hddd, n, hnnn, hdn⟩ : ∃ d ∈ dd, ∃ n ∈ nn, d + n = 1 :=
+    Submodule.mem_sup.mp (hddco ▸ Submodule.mem_top)
+  have hddnn : dd * nn ≠ ⊥ := by
+    rw [Ne, Ideal.mul_eq_bot]
+    rintro (h | h)
+    · exact hdd0 h
+    · exact hnn h
+  -- (B1a-i-1-a): move `d` inside its class mod `dd * nn` to a nonzero totally
+  -- positive representative.  Both memberships survive because `dd * nn ≤ dd`
+  -- and `dd * nn ≤ nn`.
+  obtain ⟨β, hβsub, hβ0, hβpos⟩ :=
+    exists_totallyPositive_sub_mem_ray_class F (dd * nn) hddnn d
+  have hβdd : β ∈ dd := by
+    have hsub : β - d ∈ dd := Ideal.mul_le_right hβsub
+    simpa using add_mem hsub hddd
+  have hβnn : β - 1 ∈ nn := by
+    have h1 : β - d ∈ nn := Ideal.mul_le_left hβsub
+    have h2 : d - 1 ∈ nn := by
+      have hneg : d - 1 = -n := by linear_combination hdn
+      rw [hneg]
+      exact neg_mem hnnn
+    simpa using add_mem h1 h2
+  obtain ⟨β', hβ'eq, hβ'nn⟩ := hkey β hβdd hβnn
+  have hβ'0 : β' ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at hβ'eq
+    exact (mul_ne_zero hγ0 hβ0) hβ'eq.symm
+  -- `u β' = γ β` with `u`, `γ`, `β` all totally positive forces `β' ≫ 0`.
+  have hβ'pos : ∀ φ : F →+* ℝ,
+      0 < φ (algebraMap (NumberField.RingOfIntegers F) F β') := by
+    intro φ
+    have hφ := congrArg
+      (fun z => φ (algebraMap (NumberField.RingOfIntegers F) F z)) hβ'eq
+    simp only [map_mul] at hφ
+    nlinarith [hupos φ, hγpos φ, hβpos φ, hφ]
+  -- `α = 1`, `α' = u`: the whole `mm`-side of the factorization is `u` itself.
+  refine ⟨1, u, β, β', ⟨one_ne_zero, ?_, by simp⟩, ⟨hu0, hupos, humem⟩,
+    ⟨hβ0, hβpos, hβnn⟩, ⟨hβ'0, hβ'pos, hβ'nn⟩, ?_⟩
+  · intro φ
+    simp
+  · rw [mul_one, hβ'eq]
 
 set_option maxHeartbeats 1000000 in
 /-- **The admissible moduli are closed under GCD** (PROVEN 2026-07-26 as
