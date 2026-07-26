@@ -66,10 +66,10 @@ allocation went wrong.
 RELEASE MODEL (Deyao, 2026-07-26). `main` is the only branch anything
 is dispatched from, and ONLY THE MERGER MOVES IT, only to a sha it has
 built green. The orchestrator never merges. When an agent finishes, its
-worktree name goes into ~/.flt-merge-batch (flt-batch.py) and sits
-there; the merger claims the batch, merges it, resolves conflicts,
+worktree name goes into ~/.flt-merge-batch (`flt-cycle.py done`) and
+sits there; the merger claims the batch, merges it, resolves conflicts,
 drives the build green, and moves main. That is a RELEASE. The
-orchestrator then runs flt-release.py, which fast-forwards idle
+orchestrator then runs `flt-cycle.py release`, which fast-forwards idle
 worktrees to main and seeds their `.lake` from the merger's own build,
 and only then dispatches queued work.
 
@@ -77,8 +77,8 @@ The merger is self-paced: the moment it finishes a batch it claims the
 next one. Nothing schedules it.
 
 Freeing a worktree, batching it, and pushing to the task queue are the
-orchestrator editing text files (or the two thin scripts flt-batch.py /
-flt-release.py). No merging on that side.
+orchestrator editing text files or running `flt-cycle.py`, the single
+entry point. No merging on that side.
 
 CONCURRENCY (fixed 2026-07-25). Everything below runs under ONE
 exclusive flock on the pool file, held for the whole dispatch decision:
@@ -129,8 +129,8 @@ SENTINEL = "{{FLT_QUEUE_POP}}"
 # it. Making it queue behind ordinary leaf tasks would deadlock the thing that
 # unblocks them.
 #
-# Its worktree tracks `staging-worker`, NOT `staging`, so that the source cannot
-# move under it while the orchestrator keeps merging into `staging`.
+# Its worktree tracks `merger`, its own branch, so the source cannot move under
+# it mid-batch. (`staging` and `staging-worker` were deleted on 2026-07-26.)
 STAGING_PLACEHOLDER = "{{FLT_STAGING}}"
 STAGING_WORKTREE = "/home/chend/flt-staging"
 DELIMITER = "=== TASK ==="
@@ -439,6 +439,9 @@ def pick_free(entries, candidate_state="ready"):
     # part of why whole machines sat idle.
     ours = {}
     for name, status, _ in entries:
+        # `batched` is deliberately absent: the agent has finished, so the slot
+        # holds no running elaboration and costs no CPU. Counting it would make
+        # a host look full while it is idle.
         if status in ("claimed", "reclaiming", "ready"):
             h = _host_of(name)
             if h:
