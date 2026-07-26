@@ -6395,43 +6395,425 @@ theorem no_homogeneous_dual_negOne (a e b : ℤ) (h : ¬ ((2 : ℤ) ∣ a ∧ (2
   · rw [← even_iff_zmod16, ← even_iff_zmod16]; exact h
   · exact_mod_cast congrArg (fun t : ℤ => (t : ZMod 16)) heq
 
-/-- **The `2`-descent on `X_0(49)`** (sorry node, introduced 2026-07-26 by
-the cut of `not_cyclicIsogeny_fortyNine`): if the four homogeneous spaces of
-the `2`-isogeny descent on `49a1` are empty, then the only affine rational
-point of `y² + x y = x³ − x² − 2x − 1` is `(2, −1)`.
+/-! #### The descent proper: from a rational point to a homogeneous space
+
+The three lemmas below are the arithmetic of the descent map
+`α : E(ℚ) → ℚˣ/(ℚˣ)²`, `(u, V) ↦ u`, for `E : V² = u(u² + 21u + 112)`,
+carried out on integers.  They are what turns
+`rational_point_of_selmer_empty` from a *framework* task — needing a
+Mordell–Weil theorem, a `2`-isogeny rank formula and a torsion bound —
+into two concrete quartic Diophantine statements.  **None of that
+machinery is needed any more**; see `exists_homogeneous_of_point`. -/
+
+/-- `Q³ = S²` with `Q > 0` forces `Q` to be a square and `S` its cube
+(PROVEN 2026-07-26).
+
+This is the statement that the denominator of the `u`-coordinate of a
+rational point of a Weierstrass curve is a square: writing `u = p/q` and
+`V = r/s` in lowest terms, coprimality forces `s² = q³`, and then `q = e²`,
+`s = e³`.  The proof is the squarefree decomposition `Q = c²d`: it gives
+`T² = d³` and hence `d` is both a square and squarefree, so `d = 1`. -/
+lemma exists_sq_cube_of_cube_eq_sq {Q S : ℕ} (hQ : 0 < Q) (h : Q ^ 3 = S ^ 2) :
+    ∃ e : ℕ, 0 < e ∧ Q = e ^ 2 ∧ S = e ^ 3 := by
+  obtain ⟨d, c, hcd, hsf⟩ := Nat.sq_mul_squarefree Q
+  have hc : 0 < c := by
+    rcases Nat.eq_zero_or_pos c with rfl | hc
+    · simp at hcd; omega
+    · exact hc
+  have hd : 0 < d := by
+    rcases Nat.eq_zero_or_pos d with rfl | hd
+    · simp at hcd; omega
+    · exact hd
+  have hQ3 : (c ^ 3) ^ 2 * d ^ 3 = S ^ 2 := by rw [← h, ← hcd]; ring
+  have hdvd : c ^ 3 ∣ S := by
+    have hsq : (c ^ 3) ^ 2 ∣ S ^ 2 := ⟨d ^ 3, hQ3.symm⟩
+    exact (Nat.pow_dvd_pow_iff two_ne_zero).mp hsq
+  obtain ⟨T, rfl⟩ := hdvd
+  have hT : T ^ 2 = d ^ 3 := by
+    have hc6 : 0 < (c ^ 3) ^ 2 := by positivity
+    have heq : (c ^ 3) ^ 2 * d ^ 3 = (c ^ 3) ^ 2 * T ^ 2 := by rw [hQ3]; ring
+    exact (Nat.eq_of_mul_eq_mul_left hc6 heq).symm
+  have hdT : d ∣ T := by
+    have hsq : d ^ 2 ∣ T ^ 2 := ⟨d, by rw [hT]; ring⟩
+    exact (Nat.pow_dvd_pow_iff two_ne_zero).mp hsq
+  obtain ⟨T', rfl⟩ := hdT
+  have hT' : T' ^ 2 = d := by
+    have hd2 : 0 < d ^ 2 := by positivity
+    have heq : d ^ 2 * T' ^ 2 = d ^ 2 * d := by
+      rw [show d ^ 2 * T' ^ 2 = (d * T') ^ 2 by ring, hT]; ring
+    exact Nat.eq_of_mul_eq_mul_left hd2 heq
+  have hT'1 : T' = 1 := Nat.isUnit_iff.mp (hsf T' ⟨1, by rw [← hT']; ring⟩)
+  have hd1 : d = 1 := by rw [← hT', hT'1]; ring
+  refine ⟨c, hc, ?_, ?_⟩
+  · rw [← hcd, hd1]; ring
+  · rw [hd1, hT'1]; ring
+
+/-- **The squarefree divisors of `112 = 2⁴ · 7` are `1, 2, 7, 14`** (PROVEN
+2026-07-26).  These are the four classes of `Im α ⊆ ℚˣ/(ℚˣ)²` allowed by the
+`2`-descent on `E : V² = u(u² + 21u + 112)`, whose constant term is `112`.
+
+`Squarefree` is not kernel-decidable here (its instance goes through
+`Nat.minSqFac`, which is defined by well-founded recursion), so the
+squarefreeness is used only through `4 ∤ d`, and *that* statement over the
+`113` candidates is one `decide`. -/
+lemma squarefree_dvd_oneHundredTwelve {d : ℕ} (hd : d ∣ 112) (hsf : Squarefree d) :
+    d = 1 ∨ d = 2 ∨ d = 7 ∨ d = 14 := by
+  have h4 : ¬ (4 ∣ d) := by
+    intro hdvd4
+    have hu : IsUnit (2 : ℕ) := hsf 2 (by simpa using hdvd4)
+    exact absurd (Nat.isUnit_iff.mp hu) (by norm_num)
+  have hle : d < 113 := Nat.lt_succ_of_le (Nat.le_of_dvd (by norm_num) hd)
+  have key : ∀ n < 113, n ∣ 112 → ¬ (4 ∣ n) → (n = 1 ∨ n = 2 ∨ n = 7 ∨ n = 14) := by
+    decide
+  exact key d hle hd h4
+
+/-- **The integral heart of the descent** (PROVEN 2026-07-26).
+
+From `R² = P (P² + 21 P E² + 112 E⁴)` with `gcd(P, E) = 1` and `P > 0`:
+`gcd(P, P² + 21PE² + 112E⁴) = gcd(P, 112E⁴) = gcd(P, 112)` divides `112`,
+the two cofactors are coprime with square product, hence squares, and
+splitting off the squarefree part `D` of that gcd gives `P = D A²` and
+`P² + 21PE² + 112E⁴ = D B²`, i.e.
+`B² = D A⁴ + 21 A² E² + C E⁴` with `D C = 112`. -/
+lemma descent_nat {P E R : ℕ} (hP : 0 < P) (hcop : Nat.Coprime P E)
+    (h : R ^ 2 = P * (P ^ 2 + 21 * P * E ^ 2 + 112 * E ^ 4)) :
+    ∃ D C A B : ℕ, D * C = 112 ∧ Squarefree D ∧ 0 < A ∧ P = D * A ^ 2 ∧
+      B ^ 2 = D * A ^ 4 + 21 * A ^ 2 * E ^ 2 + C * E ^ 4 := by
+  obtain ⟨M, hMdef⟩ : ∃ M, M = P ^ 2 + 21 * P * E ^ 2 + 112 * E ^ 4 := ⟨_, rfl⟩
+  rw [← hMdef] at h
+  have hM : 0 < M := by rw [hMdef]; positivity
+  obtain ⟨G, hGdef⟩ : ∃ G, G = Nat.gcd P M := ⟨_, rfl⟩
+  have hG0 : 0 < G := by rw [hGdef]; exact Nat.gcd_pos_of_pos_left _ hP
+  have hGP : G ∣ P := by rw [hGdef]; exact Nat.gcd_dvd_left _ _
+  have hGM : G ∣ M := by rw [hGdef]; exact Nat.gcd_dvd_right _ _
+  have hG112 : G ∣ 112 := by
+    have hsplit : M = P * (P + 21 * E ^ 2) + 112 * E ^ 4 := by rw [hMdef]; ring
+    have h1 : G ∣ P * (P + 21 * E ^ 2) := hGP.mul_right _
+    have h2 : G ∣ 112 * E ^ 4 := by
+      rw [hsplit] at hGM; exact (Nat.dvd_add_right h1).mp hGM
+    have hGE : Nat.Coprime G E := Nat.Coprime.coprime_dvd_left hGP hcop
+    exact Nat.Coprime.dvd_of_dvd_mul_right (hGE.pow_right 4) h2
+  obtain ⟨P₁, hP₁⟩ := hGP
+  obtain ⟨M₁, hM₁⟩ := hGM
+  have hcop₁ : Nat.Coprime P₁ M₁ := by
+    have hdd := Nat.coprime_div_gcd_div_gcd (m := P) (n := M) (by rw [← hGdef]; exact hG0)
+    rwa [← hGdef, hP₁, hM₁, Nat.mul_div_cancel_left _ hG0,
+      Nat.mul_div_cancel_left _ hG0] at hdd
+  have hGR : G ∣ R := by
+    have hsq : G ^ 2 ∣ R ^ 2 := ⟨P₁ * M₁, by rw [h, hP₁, hM₁]; ring⟩
+    exact (Nat.pow_dvd_pow_iff two_ne_zero).mp hsq
+  obtain ⟨R₁, rfl⟩ := hGR
+  have hR₁ : R₁ ^ 2 = P₁ * M₁ := by
+    have hG2 : 0 < G ^ 2 := by positivity
+    have heq : G ^ 2 * R₁ ^ 2 = G ^ 2 * (P₁ * M₁) := by
+      rw [← mul_pow, h, hP₁, hM₁]; ring
+    exact Nat.eq_of_mul_eq_mul_left hG2 heq
+  have hguL : IsUnit (gcd P₁ M₁) := by rw [Nat.isUnit_iff]; exact hcop₁
+  have hguR : IsUnit (gcd M₁ P₁) := by rw [Nat.isUnit_iff]; exact hcop₁.symm
+  obtain ⟨A₁, hA₁⟩ := exists_eq_pow_of_mul_eq_pow (a := P₁) (b := M₁) (c := R₁) (k := 2)
+    hguL hR₁.symm
+  obtain ⟨B₁, hB₁⟩ := exists_eq_pow_of_mul_eq_pow (a := M₁) (b := P₁) (c := R₁) (k := 2)
+    hguR (by rw [mul_comm]; exact hR₁.symm)
+  obtain ⟨D, c, hDc, hDsf⟩ := Nat.sq_mul_squarefree G
+  have hc : 0 < c := by
+    rcases Nat.eq_zero_or_pos c with rfl | hc
+    · simp at hDc; omega
+    · exact hc
+  have hD : 0 < D := by
+    rcases Nat.eq_zero_or_pos D with rfl | hD
+    · simp at hDc; omega
+    · exact hD
+  have hD112 : D ∣ 112 := dvd_trans ⟨c ^ 2, by rw [← hDc]; ring⟩ hG112
+  obtain ⟨C, hC⟩ := hD112
+  have hPval : P = D * (c * A₁) ^ 2 := by rw [hP₁, hA₁, ← hDc]; ring
+  have hMval : M = D * (c * B₁) ^ 2 := by rw [hM₁, hB₁, ← hDc]; ring
+  refine ⟨D, C, c * A₁, c * B₁, hC.symm, hDsf, ?_, hPval, ?_⟩
+  · rcases Nat.eq_zero_or_pos A₁ with rfl | hA
+    · exfalso; rw [hPval] at hP; simp at hP
+    · positivity
+  · have key : D * (c * B₁) ^ 2
+        = D * (D * (c * A₁) ^ 4 + 21 * (c * A₁) ^ 2 * E ^ 2 + C * E ^ 4) := by
+      rw [← hMval, hMdef, hPval, hC]; ring
+    exact Nat.eq_of_mul_eq_mul_left hD key
+
+/-- **Every affine rational point of `E : V² = u(u² + 21u + 112)` with
+`u ≠ 0` lies on one of the four homogeneous spaces** (PROVEN 2026-07-26).
+
+This is the descent map `α` made explicit.  The steps:
+
+1. `u² + 21u + 112` is positive definite (`4(u² + 21u + 112) = (2u + 21)² + 7`),
+   so `V² = u · (positive)` forces `u > 0`.
+2. Writing `u = p/q` and `V = r/s` in lowest terms and clearing denominators,
+   `r² q³ = s² (p³ + 21p²q + 112pq²)`; coprimality of `p` with `q` makes the
+   right-hand factor prime to `q`, so `q³ ∣ s²`, and coprimality of `r` with
+   `s` gives `s² ∣ q³`.  Hence `s² = q³`, so `q = e²` and `s = e³`
+   (`exists_sq_cube_of_cube_eq_sq`) and `r² = p(p² + 21pe² + 112e⁴)`.
+3. `descent_nat` splits off the squarefree part `D` of `gcd(p, 112)`.
+
+The conclusion is stated over `ℕ`: `A`, `B`, `E` may be taken nonnegative
+because only even powers of `A` and `E` occur, and `p > 0`. -/
+lemma exists_homogeneous_of_point (u V : ℚ)
+    (hV : V ^ 2 = u * (u ^ 2 + 21 * u + 112)) (hu : u ≠ 0) :
+    ∃ D C A B E : ℕ, D * C = 112 ∧ Squarefree D ∧ 0 < A ∧ 0 < E ∧ Nat.Coprime A E ∧
+      B ^ 2 = D * A ^ 4 + 21 * A ^ 2 * E ^ 2 + C * E ^ 4 := by
+  have hupos : 0 < u := by
+    rcases lt_trichotomy u 0 with hneg | h0 | hpos
+    · exfalso; nlinarith [sq_nonneg V, sq_nonneg (2 * u + 21)]
+    · exact absurd h0 hu
+    · exact hpos
+  have hq0 : (0 : ℤ) < (u.den : ℤ) := by exact_mod_cast u.pos
+  have hs0 : (0 : ℤ) < (V.den : ℤ) := by exact_mod_cast V.pos
+  have hp0 : (0 : ℤ) < u.num := Rat.num_pos.mpr hupos
+  have hqQ : ((u.den : ℚ)) ≠ 0 := by exact_mod_cast u.den_ne_zero
+  have hsQ : ((V.den : ℚ)) ≠ 0 := by exact_mod_cast V.den_ne_zero
+  have hcopq : IsCoprime u.num ((u.den : ℤ)) := by
+    rw [Int.isCoprime_iff_gcd_eq_one]; exact u.reduced
+  have hcoprs : IsCoprime V.num ((V.den : ℤ)) := by
+    rw [Int.isCoprime_iff_gcd_eq_one]; exact V.reduced
+  have hpQ : ((u.num : ℚ)) = u * ((u.den : ℚ)) := (div_eq_iff hqQ).mp (Rat.num_div_den u)
+  have hrQ : ((V.num : ℚ)) = V * ((V.den : ℚ)) := (div_eq_iff hsQ).mp (Rat.num_div_den V)
+  have keyQ : ((V.num : ℚ)) ^ 2 * ((u.den : ℚ)) ^ 3
+      = ((V.den : ℚ)) ^ 2 * (((u.num : ℚ)) ^ 3 + 21 * ((u.num : ℚ)) ^ 2 * ((u.den : ℚ))
+          + 112 * ((u.num : ℚ)) * ((u.den : ℚ)) ^ 2) := by
+    rw [hpQ, hrQ]
+    linear_combination (((V.den : ℚ)) ^ 2 * ((u.den : ℚ)) ^ 3) * hV
+  have key : V.num ^ 2 * ((u.den : ℤ)) ^ 3
+      = ((V.den : ℤ)) ^ 2 * (u.num ^ 3 + 21 * u.num ^ 2 * ((u.den : ℤ))
+          + 112 * u.num * ((u.den : ℤ)) ^ 2) := by
+    exact_mod_cast keyQ
+  have hcopNq : IsCoprime (u.num ^ 3 + 21 * u.num ^ 2 * ((u.den : ℤ))
+      + 112 * u.num * ((u.den : ℤ)) ^ 2) ((u.den : ℤ)) := by
+    have h1 : IsCoprime (u.num ^ 3) ((u.den : ℤ)) := hcopq.pow_left
+    have hrw : u.num ^ 3 + 21 * u.num ^ 2 * ((u.den : ℤ)) + 112 * u.num * ((u.den : ℤ)) ^ 2
+        = u.num ^ 3 + ((u.den : ℤ)) * (21 * u.num ^ 2 + 112 * u.num * ((u.den : ℤ))) := by
+      ring
+    rw [hrw]
+    exact h1.add_mul_left_left _
+  have hq3s2 : ((u.den : ℤ)) ^ 3 ∣ ((V.den : ℤ)) ^ 2 := by
+    have hdvd : ((u.den : ℤ)) ^ 3 ∣ ((V.den : ℤ)) ^ 2 * (u.num ^ 3
+        + 21 * u.num ^ 2 * ((u.den : ℤ)) + 112 * u.num * ((u.den : ℤ)) ^ 2) :=
+      ⟨V.num ^ 2, by linarith [key]⟩
+    exact (hcopNq.symm.pow_left (m := 3)).dvd_of_dvd_mul_right hdvd
+  have hs2q3 : ((V.den : ℤ)) ^ 2 ∣ ((u.den : ℤ)) ^ 3 := by
+    have hdvd : ((V.den : ℤ)) ^ 2 ∣ V.num ^ 2 * ((u.den : ℤ)) ^ 3 :=
+      ⟨u.num ^ 3 + 21 * u.num ^ 2 * ((u.den : ℤ)) + 112 * u.num * ((u.den : ℤ)) ^ 2, key⟩
+    exact (hcoprs.symm.pow (m := 2) (n := 2)).dvd_of_dvd_mul_left hdvd
+  have hqs : ((u.den : ℤ)) ^ 3 = ((V.den : ℤ)) ^ 2 :=
+    Int.dvd_antisymm (by positivity) (by positivity) hq3s2 hs2q3
+  obtain ⟨e, he0, hqe, hse⟩ :=
+    exists_sq_cube_of_cube_eq_sq (Q := u.den) (S := V.den) u.pos (by exact_mod_cast hqs)
+  have hqZ : ((u.den : ℤ)) = ((e : ℤ)) ^ 2 := by rw [hqe]; push_cast; ring
+  have hsZ : ((V.den : ℤ)) = ((e : ℤ)) ^ 3 := by rw [hse]; push_cast; ring
+  have hre : V.num ^ 2
+      = u.num * (u.num ^ 2 + 21 * u.num * ((e : ℤ)) ^ 2 + 112 * ((e : ℤ)) ^ 4) := by
+    have he6 : ((e : ℤ)) ^ 6 ≠ 0 := by positivity
+    have heq : V.num ^ 2 * ((e : ℤ)) ^ 6
+        = u.num * (u.num ^ 2 + 21 * u.num * ((e : ℤ)) ^ 2 + 112 * ((e : ℤ)) ^ 4)
+          * ((e : ℤ)) ^ 6 := by
+      rw [hqZ, hsZ] at key; linarith [key]
+    exact mul_right_cancel₀ he6 heq
+  have hcope : IsCoprime u.num ((e : ℤ)) := by
+    rw [hqZ] at hcopq
+    exact hcopq.of_isCoprime_of_dvd_right ⟨(e : ℤ), by ring⟩
+  have hPZ : ((u.num.toNat : ℤ)) = u.num := Int.toNat_of_nonneg hp0.le
+  have hPpos : 0 < u.num.toNat := by omega
+  have hcopPE : Nat.Coprime u.num.toNat e := by
+    have hg : Int.gcd u.num ((e : ℤ)) = 1 := Int.isCoprime_iff_gcd_eq_one.mp hcope
+    rw [Nat.coprime_iff_gcd_eq_one]
+    rwa [Int.gcd, Int.natAbs_natCast, show u.num.natAbs = u.num.toNat by omega] at hg
+  have hnatabs : ((V.num.natAbs : ℤ)) ^ 2 = V.num ^ 2 := by
+    rw [← Int.abs_eq_natAbs, sq_abs]
+  have hnat : V.num.natAbs ^ 2
+      = u.num.toNat * (u.num.toNat ^ 2 + 21 * u.num.toNat * e ^ 2 + 112 * e ^ 4) := by
+    have hZ : ((V.num.natAbs : ℤ)) ^ 2 = ((u.num.toNat : ℤ)) * (((u.num.toNat : ℤ)) ^ 2
+        + 21 * ((u.num.toNat : ℤ)) * ((e : ℤ)) ^ 2 + 112 * ((e : ℤ)) ^ 4) := by
+      rw [hnatabs, hPZ]; exact hre
+    exact_mod_cast hZ
+  obtain ⟨D, C, A, B, hDC, hDsf, hA, hPDA, hB⟩ := descent_nat hPpos hcopPE hnat
+  refine ⟨D, C, A, B, e, hDC, hDsf, hA, he0, ?_, hB⟩
+  have hAP : A ∣ u.num.toNat := ⟨D * A, by rw [hPDA]; ring⟩
+  exact Nat.Coprime.coprime_dvd_left hAP hcopPE
+
+/-! #### The two surviving homogeneous spaces
+
+`exists_homogeneous_of_point` sends a point of `E` with `u ≠ 0` to a
+coprime integral point of exactly one of
+
+    `d = 1 :  b² = a⁴ + 21a²e² + 112e⁴`
+    `d = 2 :  b² = 2a⁴ + 21a²e² + 56e⁴`   (empty: `no_homogeneous_two`)
+    `d = 7 :  b² = 7a⁴ + 21a²e² + 16e⁴`
+    `d = 14:  b² = 14a⁴ + 21a²e² + 8e⁴`   (empty: `no_homogeneous_fourteen`)
+
+so exactly two leaves remain, below.  **Both are TRUE**: `E(ℚ) = {O, (0,0)}`
+(`49a1` has rank `0` and torsion `ℤ/2`), and under `α` the class `d = 1` is
+realised only by `O` — which is the point `e = 0` of that space — and the
+class `d = 7` only by the `2`-torsion point `(0, 0)`, which is the point
+`a = 0`.  Excluding `e = 0` resp. `a = 0` therefore excludes everything.
+
+**What is left is one more descent step, and nothing else.**  This is the
+gain from the cut: the old formulation of `rational_point_of_selmer_empty`
+needed a Mordell–Weil finite-generation theorem, a `2`-isogeny rank formula
+and a torsion bound via reduction, none of which exists at this pin.  The
+two leaves below need none of them — only the passage to the `2`-isogenous
+curve `E' : W² = v(v² − 42v − 7)`, where the two ALREADY-PROVEN dual
+obstructions `no_homogeneous_dual_seven` and `no_homogeneous_dual_negOne`
+apply, together with a strict decrease in `|e|` (Fermat-style infinite
+descent).  Both are supplied to the leaves as hypotheses `h7`, `hm1` so
+that they are visibly the inputs of the remaining argument.
+
+The identity that opens the second descent, in each case (both are `ring`
+identities, and both exhibit the curve's CM by `√−7`):
+
+    `d = 1 :  (2b)² = (2a² + 21e²)² + 7(e²)²`
+    `d = 7 :  (2b)² = 7(2a² + 3e²)² + (e²)²` -/
+
+/-- **THE `d = 1` HOMOGENEOUS SPACE IS EMPTY** (sorry node, introduced
+2026-07-26 by the cut of `rational_point_of_selmer_empty`):
+`b² = a⁴ + 21a²e² + 112e⁴` has no integral solution with `gcd(a, e) = 1`
+and `e ≠ 0`.
+
+TRUE: this space is the fibre of `α : E(ℚ) → ℚˣ/(ℚˣ)²` over the trivial
+class for `E : V² = u(u² + 21u + 112)`, and that fibre is `φ'(E'(ℚ)) = {O}`,
+whose only representative here has `e = 0`.  (With `e = 0` the equation is
+`b² = a⁴`, satisfied by `b = ±a²`, so the hypothesis `e ≠ 0` is exactly what
+must be excluded and nothing more.)
+
+Route for a prover: `(2b)² = (2a² + 21e²)² + 7(e²)²`, so with
+`s = 2a² + 21e²` one has `(2b − s)(2b + s) = 7e⁴`; the coprimality of `a`
+and `e` bounds the common factor, and the resulting factorisation lands on
+the `2`-isogenous curve `E' : W² = v(v² − 42v − 7)`, where `h7` and `hm1`
+apply.  The descent then returns a solution with strictly smaller `|e|`. -/
+theorem no_homogeneous_one
+    (h7 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ 7 * a ^ 4 - 42 * a ^ 2 * e ^ 2 - e ^ 4)
+    (hm1 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ -a ^ 4 - 42 * a ^ 2 * e ^ 2 + 7 * e ^ 4)
+    (a e b : ℤ) (hcop : IsCoprime a e) (he : e ≠ 0) :
+    b ^ 2 ≠ a ^ 4 + 21 * a ^ 2 * e ^ 2 + 112 * e ^ 4 :=
+  sorry
+
+/-- **THE `d = 7` HOMOGENEOUS SPACE IS EMPTY AWAY FROM `a = 0`** (sorry
+node, introduced 2026-07-26 by the cut of `rational_point_of_selmer_empty`):
+`b² = 7a⁴ + 21a²e² + 16e⁴` has no integral solution with `gcd(a, e) = 1`
+and `a ≠ 0`.
+
+TRUE: this space is the fibre of `α` over the class of `112 ≡ 7`, which is
+realised in `E(ℚ)` only by the `2`-torsion point `(0, 0)` — the point
+`a = 0` of the space, where the equation reads `b² = 16e⁴`, satisfied by
+`b = ±4e²`.  So `a ≠ 0` is exactly the right exclusion.
+
+Route for a prover: `(2b)² = 7(2a² + 3e²)² + (e²)²`; the second descent then
+proceeds as for `no_homogeneous_one`, through `E' : W² = v(v² − 42v − 7)`
+with `h7` and `hm1`.
+
+Note the symmetry `(a, e) ↦ (e, a)` carries this space to
+`b² = 16a⁴ + 21a²e² + 7e⁴`, which is the `d = 16 ≡ 1` space — so the two
+leaves are twists of one another and a single descent lemma should
+discharge both. -/
+theorem no_homogeneous_seven
+    (h7 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ 7 * a ^ 4 - 42 * a ^ 2 * e ^ 2 - e ^ 4)
+    (hm1 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ -a ^ 4 - 42 * a ^ 2 * e ^ 2 + 7 * e ^ 4)
+    (a e b : ℤ) (hcop : IsCoprime a e) (ha : a ≠ 0) :
+    b ^ 2 ≠ 7 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 16 * e ^ 4 :=
+  sorry
+
+/-- **`E : V² = u(u² + 21u + 112)` has no rational point with `u ≠ 0`**
+(PROVEN 2026-07-26 from `exists_homogeneous_of_point` and the four
+homogeneous spaces).
+
+This is `E(ℚ) = {O, (0, 0)}` in the coordinates of the short model, i.e.
+the whole Mordell–Weil determination for `49a1`, and it is where the four
+Selmer obstructions are consumed: `h2` and `h14` here, `h7` and `hm1`
+inside the two remaining leaves. -/
+theorem u_eq_zero_of_selmer_empty
+    (h2 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ 2 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 56 * e ^ 4)
+    (h14 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ 14 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 8 * e ^ 4)
+    (h7 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ 7 * a ^ 4 - 42 * a ^ 2 * e ^ 2 - e ^ 4)
+    (hm1 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ -a ^ 4 - 42 * a ^ 2 * e ^ 2 + 7 * e ^ 4)
+    (u V : ℚ) (hV : V ^ 2 = u * (u ^ 2 + 21 * u + 112)) : u = 0 := by
+  by_contra hu
+  obtain ⟨D, C, A, B, E, hDC, hDsf, hA, hE, hcop, hB⟩ := exists_homogeneous_of_point u V hV hu
+  have hnot2 : ¬ ((2 : ℤ) ∣ (A : ℤ) ∧ (2 : ℤ) ∣ (E : ℤ)) := by
+    rintro ⟨hA2, hE2⟩
+    have hA2' : (2 : ℕ) ∣ A := by exact_mod_cast hA2
+    have hE2' : (2 : ℕ) ∣ E := by exact_mod_cast hE2
+    have h1 : (2 : ℕ) ∣ 1 := hcop ▸ Nat.dvd_gcd hA2' hE2'
+    omega
+  have hcopZ : IsCoprime (A : ℤ) (E : ℤ) := by
+    rw [Int.isCoprime_iff_gcd_eq_one]
+    simpa [Int.gcd] using hcop
+  have hAZ : (A : ℤ) ≠ 0 := by exact_mod_cast hA.ne'
+  have hEZ : (E : ℤ) ≠ 0 := by exact_mod_cast hE.ne'
+  rcases squarefree_dvd_oneHundredTwelve ⟨C, hDC.symm⟩ hDsf with rfl | rfl | rfl | rfl
+  · have hC : C = 112 := by omega
+    subst hC
+    refine no_homogeneous_one h7 hm1 (A : ℤ) (E : ℤ) (B : ℤ) hcopZ hEZ ?_
+    have hB' : (B : ℤ) ^ 2
+        = 1 * (A : ℤ) ^ 4 + 21 * (A : ℤ) ^ 2 * (E : ℤ) ^ 2 + 112 * (E : ℤ) ^ 4 := by
+      exact_mod_cast hB
+    linarith
+  · have hC : C = 56 := by omega
+    subst hC
+    refine h2 (A : ℤ) (E : ℤ) (B : ℤ) hnot2 ?_
+    exact_mod_cast hB
+  · have hC : C = 16 := by omega
+    subst hC
+    refine no_homogeneous_seven h7 hm1 (A : ℤ) (E : ℤ) (B : ℤ) hcopZ hAZ ?_
+    exact_mod_cast hB
+  · have hC : C = 8 := by omega
+    subst hC
+    refine h14 (A : ℤ) (E : ℤ) (B : ℤ) hnot2 ?_
+    exact_mod_cast hB
+
+/-- **The `ℚ`-isomorphism `49a1 ≅ E`** (PROVEN 2026-07-26): completing the
+square with `V = 8y + 4x` and `u = 4x − 8` carries
+`y² + x y = x³ − x² − 2x − 1` onto `V² = u(u² + 21u + 112)`, and the rational
+`2`-torsion point `(2, −1)` onto `(0, 0)`. -/
+theorem shortModel_of_point (x y : ℚ)
+    (hxy : y ^ 2 + x * y = x ^ 3 - x ^ 2 - 2 * x - 1) :
+    (8 * y + 4 * x) ^ 2
+      = (4 * x - 8) * ((4 * x - 8) ^ 2 + 21 * (4 * x - 8) + 112) := by
+  linear_combination 64 * hxy
+
+/-- **The `2`-descent on `X_0(49)`** (PROVEN 2026-07-26 over the two
+homogeneous-space leaves `no_homogeneous_one` and `no_homogeneous_seven`;
+formerly itself a sorry node): if the four homogeneous spaces of the
+`2`-isogeny descent on `49a1` are empty, then the only affine rational point
+of `y² + x y = x³ − x² − 2x − 1` is `(2, −1)`.
 
 **This leaf is NOT vacuous.** Its four hypotheses are satisfiable — they are
 exactly `no_homogeneous_two`, `no_homogeneous_fourteen`,
 `no_homogeneous_dual_seven` and `no_homogeneous_dual_negOne`, all PROVEN
-immediately above — and its conclusion is the honest Mordell–Weil
-determination `X_0(49)(ℚ) = {O, (2, −1)}`. What is left in it is a FRAMEWORK,
-not a computation: nothing curve-specific remains, because every congruence
-this curve needs has already been discharged.
+above — and its conclusion is the honest Mordell–Weil determination
+`X_0(49)(ℚ) = {O, (2, −1)}`.
 
-What a prover has to supply (see the section note above for the full
-derivation, with all constants):
+**WHAT THE 2026-07-26 CUT REMOVED, and what remains.**  The previous
+docstring listed five things a prover had to supply; items 1–3 are now
+PROVEN here and items 4–5 have been *eliminated*, not relocated:
 
-1. The `ℚ`-isomorphism `y² + x y = x³ − x² − 2x − 1 ≅ V² = u(u² + 21u + 112)`
-   given by `V = 8y + 4x`, `u = 4x − 8`, under which `(2, −1) ↦ (0, 0)`.
-2. The descent map `α : E(ℚ) → ℚˣ/(ℚˣ)²`, `(u, V) ↦ u`, `O ↦ 1`,
-   `(0, 0) ↦ 112 ≡ 7`, and the standard fact that `u = m/e²` in lowest terms
-   has squarefree part dividing `112` — which turns a point outside
-   `Im α = {1, 7}` into an integer point of `b² = d a⁴ + 21a²e² + (112/d)e⁴`
-   with `d ∈ {2, 14}` and `gcd(a, e) = 1`, contradicting hypotheses `h2`,
-   `h14`.
-3. The same for the `2`-isogenous curve `E' : W² = v(v² − 42v − 7)` with
-   `d' ∈ {7, −1}`, contradicting `h7`, `hm1`.
-4. The `2`-isogeny rank formula `2^rank = |Im α| · |Im α'| / 4`, giving
-   `rank = 0`.
-5. The torsion bound: `E` has good reduction at `3` and `5`, reduction is
-   injective on prime-to-`p` torsion, `#E(𝔽₃) = 4` and `#E(𝔽₅) = 6`, so
-   `#E(ℚ)_tors ∣ gcd(4, 6) = 2`.
+1. the `ℚ`-isomorphism onto `V² = u(u² + 21u + 112)` — `shortModel_of_point`;
+2. the descent map `α` and the "squarefree part divides `112`" step —
+   `exists_homogeneous_of_point`, via `descent_nat`;
+3. the case split over `d ∈ {1, 2, 7, 14}` — `squarefree_dvd_oneHundredTwelve`,
+   with `d = 2` and `d = 14` killed by `h2` and `h14`;
+4. **the `2`-isogeny rank formula `2^rank = |Im α| · |Im α'| / 4` is NO
+   LONGER NEEDED**, and neither is
+5. **Mordell–Weil finite generation or the torsion bound by reduction.**
 
-MISSING MACHINERY at this pin: mathlib has no `2`-descent, no Selmer group
-and no Mordell–Weil theorem, and this development has none either; items 4
-and 5 are the ones that need building. Item 5 alone (reduction mod a good
-prime is injective on torsion) would already cut this leaf in half, since
-`rank = 0` plus a torsion bound is the whole conclusion. -/
+Items 4 and 5 were the two pieces of missing machinery that made this a
+framework task.  They are unnecessary because the conclusion wanted here is
+not "`rank = 0`" but the sharper "`E(ℚ)` has no point with `u ≠ 0`", and the
+descent delivers that directly: *every* such point lands on one of the four
+homogeneous spaces, so emptiness of the four spaces is already the whole
+statement.  What is left is two concrete quartic Diophantine equations,
+`no_homogeneous_one` and `no_homogeneous_seven`, each one further descent
+step through the `2`-isogenous curve `E' : W² = v(v² − 42v − 7)`. -/
 theorem rational_point_of_selmer_empty
     (h2 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
       b ^ 2 ≠ 2 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 56 * e ^ 4)
@@ -6442,8 +6824,16 @@ theorem rational_point_of_selmer_empty
     (hm1 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
       b ^ 2 ≠ -a ^ 4 - 42 * a ^ 2 * e ^ 2 + 7 * e ^ 4)
     (x y : ℚ) (hxy : y ^ 2 + x * y = x ^ 3 - x ^ 2 - 2 * x - 1) :
-    x = 2 ∧ y = -1 :=
-  sorry
+    x = 2 ∧ y = -1 := by
+  have hu : (4 * x - 8 : ℚ) = 0 :=
+    u_eq_zero_of_selmer_empty h2 h14 h7 hm1 (4 * x - 8) (8 * y + 4 * x)
+      (shortModel_of_point x y hxy)
+  have hx : x = 2 := by linarith
+  subst hx
+  refine ⟨rfl, ?_⟩
+  have hsq : (y + 1) ^ 2 = 0 := by linear_combination hxy
+  have hy0 : y + 1 = 0 := pow_eq_zero_iff (n := 2) (by norm_num) |>.mp hsq
+  linarith
 
 /-- **The rational points of `X_0(49) : y² + x y = x³ − x² − 2x − 1`**
 (PROVEN 2026-07-26 over the single descent leaf
