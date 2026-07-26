@@ -6733,14 +6733,16 @@ coprime integral point of exactly one of
     `d = 7 :  b² = 7a⁴ + 21a²e² + 16e⁴`
     `d = 14:  b² = 14a⁴ + 21a²e² + 8e⁴`   (empty: `no_homogeneous_fourteen`)
 
-so exactly two leaves remain, below.  **Both are TRUE**: `E(ℚ) = {O, (0,0)}`
+so exactly two leaves remained here; **both are now PROVEN** (2026-07-26) by
+the joint infinite descent below.  **Both are TRUE**: `E(ℚ) = {O, (0,0)}`
 (`49a1` has rank `0` and torsion `ℤ/2`), and under `α` the class `d = 1` is
 realised only by `O` — which is the point `e = 0` of that space — and the
 class `d = 7` only by the `2`-torsion point `(0, 0)`, which is the point
 `a = 0`.  Excluding `e = 0` resp. `a = 0` therefore excludes everything.
 
-**What is left is one more descent step, and nothing else.**  This is the
-gain from the cut: the old formulation of `rational_point_of_selmer_empty`
+**What was left was one more descent step, and nothing else** — and it has
+now been taken.  This is the gain from the cut: the old formulation of
+`rational_point_of_selmer_empty`
 needed a Mordell–Weil finite-generation theorem, a `2`-isogeny rank formula
 and a torsion bound via reduction, none of which exists at this pin.  The
 two leaves below need none of them — only the passage to the `2`-isogenous
@@ -6756,8 +6758,830 @@ identities, and both exhibit the curve's CM by `√−7`):
     `d = 1 :  (2b)² = (2a² + 21e²)² + 7(e²)²`
     `d = 7 :  (2b)² = 7(2a² + 3e²)² + (e²)²` -/
 
-/-- **THE `d = 1` HOMOGENEOUS SPACE IS EMPTY** (sorry node, introduced
-2026-07-26 by the cut of `rational_point_of_selmer_empty`):
+/-! #### The second descent, and the proof that both spaces are empty
+
+**PROVEN 2026-07-26** by a joint infinite descent.  The two leaves below are
+NOT independent: each descends onto the other through the `2`-isogenous curve
+`E' : W² = v(v² − 42v − 7)`, so they are carried together with a THIRD
+statement — the `d = 1` space of `E'` — by ONE strong induction.  The cycle is
+
+    `d = 1  of E`  (`descentStep_one`)   ⟶  `h7`  or  `d = 1 of E'`
+    `d = 1  of E'` (`descentStep_dual`)  ⟶  `d = 1 of E`  or  `d = 7 of E`
+    `d = 7  of E`  (`descentStep_seven`) ⟶  `h7`, `d = 1 of E'`, or `d = 1 of E`
+
+on the measures `|a| + 2|e|` (for the two spaces of `E`) and `|a| + |e|` (for
+the space of `E'`), each transition strictly decreasing.  `descent_fortyNine`
+runs the three together by strong induction on that measure.
+
+**The engine, in one line.**  Each of the three equations is a difference of
+squares over `7·(4th power)`:
+
+    `d = 1  of E :  (2b)² − (2a² + 21e²)²      = 7 (e²)²`
+    `d = 7  of E :  (8b)² − (21a² + 32e²)²     = 7 (a²)²`
+    `d = 1  of E': (a² − 21e²)² − b²           = 7 (2e²)² · 16`
+
+The two factors are coprime (`isCoprime_of_diff_sevenPow4`), so
+`seven_pow_four_split` writes them as `7c⁴` and `d⁴` with `cd` the descended
+parameter, and their difference is exactly the next equation of the cycle.
+Three parity cases die on a mod-`8` obstruction instead
+(`modEight_homogeneous_one`, `modEight_homogeneous_oneB`, `modEight_dual_one`).
+
+**`hm1` IS REDUNDANT.**  `hm1 a e b` is literally `h7 e a b`: the `d = −1`
+space of `E'`, `b² = −a⁴ − 42a²e² + 7e⁴`, is the `d = 7` space
+`b² = 7a⁴ − 42a²e² − e⁴` with `a` and `e` exchanged.  So the descent below uses
+`h7` only, and both leaves carry `hm1` as an underscore-prefixed, unused
+hypothesis — kept in the signature because the consumer
+`u_eq_zero_of_selmer_empty` supplies it positionally. -/
+
+/-! ##### Elementary arithmetic helpers for the second descent -/
+
+lemma natAbs_sq_eq (x : ℤ) : ((x.natAbs : ℤ)) ^ 2 = x ^ 2 := by
+  rw [Int.natAbs_sq]
+
+lemma natAbs_pow_four_eq (x : ℤ) : ((x.natAbs : ℤ)) ^ 4 = x ^ 4 := by
+  have h : ((x.natAbs : ℤ)) ^ 2 = x ^ 2 := natAbs_sq_eq x
+  calc ((x.natAbs : ℤ)) ^ 4 = (((x.natAbs : ℤ)) ^ 2) ^ 2 := by ring
+    _ = (x ^ 2) ^ 2 := by rw [h]
+    _ = x ^ 4 := by ring
+
+lemma sq_emod_eight (b : ℤ) : b ^ 2 % 8 = 0 ∨ b ^ 2 % 8 = 1 ∨ b ^ 2 % 8 = 4 := by
+  obtain ⟨r, hr0, hr8, X, hX⟩ :
+      ∃ r : ℤ, 0 ≤ r ∧ r < 8 ∧ ∃ X : ℤ, b ^ 2 = 8 * X + r ^ 2 :=
+    ⟨b % 8, Int.emod_nonneg b (by norm_num), Int.emod_lt_of_pos b (by norm_num),
+      8 * (b / 8) ^ 2 + 2 * (b / 8) * (b % 8), by
+        conv_lhs => rw [show b = 8 * (b / 8) + b % 8 by omega]
+        ring⟩
+  rw [hX]
+  interval_cases r <;> norm_num
+
+lemma sq_ne_seven (b : ℤ) : b ^ 2 ≠ 7 := by
+  intro h
+  have := sq_emod_eight b
+  omega
+
+lemma sq_ne_oneHundredTwelve (b : ℤ) : b ^ 2 ≠ 112 := by
+  intro h
+  have h4 : (4 : ℤ) ∣ b := by
+    have h16 : (4 : ℤ) ^ 2 ∣ b ^ 2 := by rw [h]; exact ⟨7, by norm_num⟩
+    exact (Int.pow_dvd_pow_iff two_ne_zero).mp h16
+  obtain ⟨c, rfl⟩ := h4
+  have : c ^ 2 = 7 := by
+    have h16 : (16 : ℤ) * c ^ 2 = 16 * 7 := by linear_combination h
+    exact mul_left_cancel₀ (by norm_num) h16
+  exact sq_ne_seven c this
+
+lemma odd_sq_eq_eight_mul_add_one {x : ℤ} (h : x % 2 = 1) : ∃ k : ℤ, x ^ 2 = 8 * k + 1 := by
+  obtain ⟨s, rfl⟩ : ∃ s, x = 2 * s + 1 := ⟨x / 2, by omega⟩
+  obtain ⟨k, hk⟩ := Int.even_mul_succ_self s
+  exact ⟨k, by linear_combination 4 * hk⟩
+
+lemma odd_of_sq_odd {b k : ℤ} (h : b ^ 2 = 2 * k + 1) : b % 2 = 1 := by
+  rcases Int.emod_two_eq_zero_or_one b with hb | hb
+  · exfalso
+    obtain ⟨V, rfl⟩ : ∃ V, b = 2 * V := ⟨b / 2, by omega⟩
+    obtain ⟨M, hM⟩ : ∃ M : ℤ, (2 * V) ^ 2 = 2 * M := ⟨2 * V ^ 2, by ring⟩
+    omega
+  · exact hb
+
+lemma even_of_sq_even {b k : ℤ} (h : b ^ 2 = 2 * k) : ∃ V : ℤ, b = 2 * V := by
+  refine ⟨b / 2, ?_⟩
+  rcases Int.emod_two_eq_zero_or_one b with hb | hb
+  · omega
+  · exfalso
+    obtain ⟨V, hV⟩ : ∃ V, b = 2 * V + 1 := ⟨b / 2, by omega⟩
+    obtain ⟨M, hM⟩ : ∃ M : ℤ, b ^ 2 = 2 * M + 1 := ⟨2 * V ^ 2 + 2 * V, by rw [hV]; ring⟩
+    omega
+
+/-! ##### Coprimality of the two factors -/
+
+lemma two_le_natAbs_of_prime {p : ℤ} (hp : Prime p) : 2 ≤ p.natAbs :=
+  (Int.prime_iff_natAbs_prime.mp hp).two_le
+
+lemma prime_dvd_two_imp {p : ℤ} (hp : Prime p) (h : p ∣ 2) : (2 : ℤ) ∣ p := by
+  have h2 : |p| ≤ 2 := Int.le_of_dvd (by norm_num) ((abs_dvd _ _).mpr h)
+  have h3 : (2 : ℤ) ≤ |p| := by
+    rw [Int.abs_eq_natAbs]; exact_mod_cast two_le_natAbs_of_prime hp
+  have h4 : |p| = 2 := le_antisymm h2 h3
+  rcases abs_choice p with h5 | h5 <;> omega
+
+lemma not_sq_prime_dvd_seven {p : ℤ} (hp : Prime p) (h : p ^ 2 ∣ 7) : False := by
+  have habs : (2 : ℤ) ≤ |p| := by
+    rw [Int.abs_eq_natAbs]; exact_mod_cast two_le_natAbs_of_prime hp
+  have hsq : 4 ≤ p ^ 2 := by nlinarith [sq_abs p, abs_nonneg p]
+  have hle : p ^ 2 ≤ 7 := Int.le_of_dvd (by norm_num) h
+  obtain ⟨k, hk⟩ := h
+  have hk1 : k = 1 := by nlinarith
+  rw [hk1, mul_one] at hk
+  have hup : |p| ≤ 2 := by nlinarith [sq_abs p, abs_nonneg p]
+  have : |p| = 2 := le_antisymm hup habs
+  nlinarith [sq_abs p]
+
+lemma isCoprime_of_no_common_prime {X Y : ℤ}
+    (h : ∀ p : ℤ, Prime p → p ∣ X → p ∣ Y → False) : IsCoprime X Y := by
+  rw [Int.isCoprime_iff_gcd_eq_one]
+  by_contra hne
+  obtain ⟨p, hp, hpd⟩ :=
+    Int.exists_prime_and_dvd (n := ((Int.gcd X Y : ℕ) : ℤ)) (by simpa using hne)
+  exact h p hp (hpd.trans (Int.gcd_dvd_left X Y)) (hpd.trans (Int.gcd_dvd_right X Y))
+
+lemma no_common_prime_of_sevenPow4 {X Y n p : ℤ} (hp : Prime p)
+    (hpX : p ∣ X) (hpY : p ∣ Y) (hXY : X * Y = 7 * n ^ 4) (hpn : ¬ p ∣ n) : False := by
+  have hp2 : p ^ 2 ∣ 7 * n ^ 4 := by
+    rw [← hXY, sq]; exact mul_dvd_mul hpX hpY
+  have hcop : IsCoprime p n := (hp.coprime_iff_not_dvd).mpr hpn
+  have hcop4 : IsCoprime (p ^ 2) (n ^ 4) := hcop.pow
+  exact not_sq_prime_dvd_seven hp (hcop4.dvd_of_dvd_mul_right hp2)
+
+/-- The reusable coprimality step: `X`, `Y` are not both even, their difference is `M`,
+their product is `7 n⁴`, and no odd prime divides both `M` and `n`. -/
+lemma isCoprime_of_diff_sevenPow4 {X Y M n : ℤ} (hdiff : Y - X = M)
+    (hnot2 : ¬ ((2 : ℤ) ∣ X ∧ (2 : ℤ) ∣ Y))
+    (hXY : X * Y = 7 * n ^ 4)
+    (hMn : ∀ p : ℤ, Prime p → ¬ ((2 : ℤ) ∣ p) → p ∣ M → p ∣ n → False) :
+    IsCoprime X Y := by
+  refine isCoprime_of_no_common_prime ?_
+  intro p hp hpX hpY
+  have hp2 : ¬ ((2 : ℤ) ∣ p) := fun h2 => hnot2 ⟨h2.trans hpX, h2.trans hpY⟩
+  have hpM : p ∣ M := hdiff ▸ dvd_sub hpY hpX
+  by_cases hpn : p ∣ n
+  · exact hMn p hp hp2 hpM hpn
+  · exact no_common_prime_of_sevenPow4 hp hpX hpY hXY hpn
+
+/-! ##### Splitting a coprime factorisation of `7 n⁴` -/
+
+lemma pow_four_pos_inj {x y : ℤ} (hx : 0 < x) (hy : 0 < y) (h : x ^ 4 = y ^ 4) : x = y := by
+  have h1 : (x - y) * ((x + y) * (x ^ 2 + y ^ 2)) = 0 := by linear_combination h
+  have h2 : 0 < (x + y) * (x ^ 2 + y ^ 2) := by
+    have hxy : 0 < x + y := by linarith
+    have : 0 < x ^ 2 + y ^ 2 := by positivity
+    exact mul_pos hxy this
+  rcases mul_eq_zero.mp h1 with h3 | h3
+  · linarith
+  · linarith
+
+lemma lt_of_sq_lt_sq_of_nonneg {x y : ℤ} (hy : 0 ≤ y) (h : x ^ 2 < y ^ 2) : x < y := by
+  by_contra hc
+  rw [not_lt] at hc
+  nlinarith
+
+lemma pow_four_coprime_split {U V m : ℤ} (hU : 0 < U) (hV : 0 < V) (hm : 0 < m)
+    (hcop : IsCoprime U V) (h : U * V = m ^ 4) :
+    ∃ c d : ℤ, 0 < c ∧ 0 < d ∧ IsCoprime c d ∧ c * d = m ∧ U = c ^ 4 ∧ V = d ^ 4 := by
+  obtain ⟨c0, hc0⟩ := exists_associated_pow_of_mul_eq_pow' hcop h
+  obtain ⟨d0, hd0⟩ := exists_associated_pow_of_mul_eq_pow' hcop.symm (by rwa [mul_comm] at h)
+  have hcU : U = c0 ^ 4 := by
+    rcases Int.associated_iff.mp hc0 with h1 | h1
+    · exact h1.symm
+    · exfalso; have h2 : (0:ℤ) ≤ c0 ^ 4 := by positivity
+      linarith
+  have hdV : V = d0 ^ 4 := by
+    rcases Int.associated_iff.mp hd0 with h1 | h1
+    · exact h1.symm
+    · exfalso; have h2 : (0:ℤ) ≤ d0 ^ 4 := by positivity
+      linarith
+  have habs4 : ∀ x : ℤ, |x| ^ 4 = x ^ 4 := by
+    intro x
+    rw [← abs_pow]; exact abs_of_nonneg (by positivity)
+  have hc0' : |c0| ^ 4 = U := by rw [habs4, hcU]
+  have hd0' : |d0| ^ 4 = V := by rw [habs4, hdV]
+  have hcpos : 0 < |c0| := by
+    rcases lt_or_eq_of_le (abs_nonneg c0) with h1 | h1
+    · exact h1
+    · exfalso; rw [← h1] at hc0'; simp at hc0'; omega
+  have hdpos : 0 < |d0| := by
+    rcases lt_or_eq_of_le (abs_nonneg d0) with h1 | h1
+    · exact h1
+    · exfalso; rw [← h1] at hd0'; simp at hd0'; omega
+  refine ⟨|c0|, |d0|, hcpos, hdpos, ?_, ?_, hc0'.symm, hd0'.symm⟩
+  · have hcopUV : IsCoprime (|c0| ^ 4) (|d0| ^ 4) := by rw [hc0', hd0']; exact hcop
+    exact (hcopUV.of_isCoprime_of_dvd_left (dvd_pow_self _ (by norm_num))).of_isCoprime_of_dvd_right
+      (dvd_pow_self _ (by norm_num))
+  · refine pow_four_pos_inj (mul_pos hcpos hdpos) hm ?_
+    rw [mul_pow, hc0', hd0', h]
+
+lemma seven_pow_four_split {X Y n : ℤ} (hX : 0 < X) (hY : 0 < Y) (hn : 0 < n)
+    (hcop : IsCoprime X Y) (h : X * Y = 7 * n ^ 4) :
+    ∃ c d : ℤ, 0 < c ∧ 0 < d ∧ IsCoprime c d ∧ c * d = n ∧
+      ((X = 7 * c ^ 4 ∧ Y = d ^ 4) ∨ (X = d ^ 4 ∧ Y = 7 * c ^ 4)) := by
+  have hp7 : Prime (7 : ℤ) := Int.prime_iff_natAbs_prime.mpr (by norm_num)
+  have hdvd : (7 : ℤ) ∣ X * Y := ⟨n ^ 4, h⟩
+  rcases hp7.dvd_mul.mp hdvd with h7 | h7
+  · obtain ⟨X', rfl⟩ := h7
+    have hX' : 0 < X' := by nlinarith
+    have hprod : X' * Y = n ^ 4 := by
+      have : (7 : ℤ) * (X' * Y) = 7 * n ^ 4 := by linear_combination h
+      exact mul_left_cancel₀ (by norm_num) this
+    have hcop' : IsCoprime X' Y := hcop.of_isCoprime_of_dvd_left ⟨7, by ring⟩
+    obtain ⟨c, d, hc, hd, hcd, hcdn, hU, hV⟩ := pow_four_coprime_split hX' hY hn hcop' hprod
+    exact ⟨c, d, hc, hd, hcd, hcdn, Or.inl ⟨by rw [hU], hV⟩⟩
+  · obtain ⟨Y', rfl⟩ := h7
+    have hY' : 0 < Y' := by nlinarith
+    have hprod : Y' * X = n ^ 4 := by
+      have : (7 : ℤ) * (Y' * X) = 7 * n ^ 4 := by linear_combination h
+      exact mul_left_cancel₀ (by norm_num) this
+    have hcop' : IsCoprime Y' X := (hcop.of_isCoprime_of_dvd_right ⟨7, by ring⟩).symm
+    obtain ⟨c, d, hc, hd, hcd, hcdn, hU, hV⟩ := pow_four_coprime_split hY' hX hn hcop' hprod
+    exact ⟨c, d, hc, hd, hcd, hcdn, Or.inr ⟨hV, by rw [hU]⟩⟩
+
+/-! ##### The three mod-`8` obstructions -/
+
+lemma modEight_homogeneous_one {a e b : ℤ} (ha : a % 2 = 1) (he : e % 2 = 1)
+    (h : b ^ 2 = a ^ 4 + 21 * a ^ 2 * e ^ 2 + 112 * e ^ 4) : False := by
+  obtain ⟨J, hJ⟩ := odd_sq_eq_eight_mul_add_one ha
+  obtain ⟨I, hI⟩ := odd_sq_eq_eight_mul_add_one he
+  have hb : b ^ 2 = 8 * (8 * J ^ 2 + 168 * I * J + 896 * I ^ 2 + 23 * J + 245 * I + 16) + 6 := by
+    rw [show a ^ 4 = (a ^ 2) ^ 2 by ring, show e ^ 4 = (e ^ 2) ^ 2 by ring, hJ, hI] at h
+    rw [h]; ring
+  have := sq_emod_eight b
+  omega
+
+lemma modEight_homogeneous_oneB {a e b : ℤ} (ha : a % 2 = 1) (he : e % 2 = 1)
+    (h : b ^ 2 = a ^ 4 + 84 * a ^ 2 * e ^ 2 + 1792 * e ^ 4) : False := by
+  obtain ⟨J, hJ⟩ := odd_sq_eq_eight_mul_add_one ha
+  obtain ⟨I, hI⟩ := odd_sq_eq_eight_mul_add_one he
+  have hb : b ^ 2 =
+      8 * (8 * J ^ 2 + 672 * I * J + 14336 * I ^ 2 + 86 * J + 3668 * I + 234) + 5 := by
+    rw [show a ^ 4 = (a ^ 2) ^ 2 by ring, show e ^ 4 = (e ^ 2) ^ 2 by ring, hJ, hI] at h
+    rw [h]; ring
+  have := sq_emod_eight b
+  omega
+
+lemma modEight_dual_one {a e b : ℤ} (ha : a % 2 = 1) (he : e % 2 = 1)
+    (h : b ^ 2 = a ^ 4 - 42 * a ^ 2 * e ^ 2 - 7 * e ^ 4) : False := by
+  obtain ⟨J, hJ⟩ := odd_sq_eq_eight_mul_add_one ha
+  obtain ⟨I, hI⟩ := odd_sq_eq_eight_mul_add_one he
+  have hK : b ^ 2 = 16 * (4 * J ^ 2 - 168 * I * J - 28 * I ^ 2 - 20 * J - 28 * I - 3) := by
+    rw [show a ^ 4 = (a ^ 2) ^ 2 by ring, show e ^ 4 = (e ^ 2) ^ 2 by ring, hJ, hI] at h
+    rw [h]; ring
+  have h4 : (4 : ℤ) ∣ b := by
+    have h16 : (4 : ℤ) ^ 2 ∣ b ^ 2 := by
+      exact ⟨4 * J ^ 2 - 168 * I * J - 28 * I ^ 2 - 20 * J - 28 * I - 3, by rw [hK]; ring⟩
+    exact (Int.pow_dvd_pow_iff two_ne_zero).mp h16
+  obtain ⟨B, rfl⟩ := h4
+  have hB : B ^ 2 = 4 * J ^ 2 - 168 * I * J - 28 * I ^ 2 - 20 * J - 28 * I - 3 := by
+    have h16 : (16 : ℤ) * B ^ 2 =
+        16 * (4 * J ^ 2 - 168 * I * J - 28 * I ^ 2 - 20 * J - 28 * I - 3) := by
+      linear_combination hK
+    exact mul_left_cancel₀ (by norm_num) h16
+  obtain ⟨JJ, hJJ⟩ := Int.even_mul_succ_self J
+  obtain ⟨II, hII⟩ := Int.even_mul_succ_self I
+  have hB8 : B ^ 2 = 8 * (JJ - 3 * J - 21 * I * J - 7 * II - 1) + 5 := by
+    rw [hB]; linear_combination 4 * hJJ - 28 * hII
+  have := sq_emod_eight B
+  omega
+
+/-! ##### The descent step at the `d = 1` space of `E` -/
+
+lemma descentStep_one
+    (hyp7 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ 7 * a ^ 4 - 42 * a ^ 2 * e ^ 2 - e ^ 4)
+    (N : ℕ)
+    (ihQ : ∀ a e b : ℤ, IsCoprime a e → a.natAbs + e.natAbs < N →
+      b ^ 2 = a ^ 4 - 42 * a ^ 2 * e ^ 2 - 7 * e ^ 4 → e = 0) :
+    ∀ a e b : ℤ, IsCoprime a e → a.natAbs + 2 * e.natAbs ≤ N →
+      b ^ 2 = a ^ 4 + 21 * a ^ 2 * e ^ 2 + 112 * e ^ 4 → e = 0 := by
+  intro a e b hcop hN heq
+  by_contra he
+  obtain ⟨B, hBnn, hBsq⟩ : ∃ B : ℤ, 0 ≤ B ∧ B ^ 2 = b ^ 2 := ⟨|b|, abs_nonneg b, sq_abs b⟩
+  have heqB : B ^ 2 = a ^ 4 + 21 * a ^ 2 * e ^ 2 + 112 * e ^ 4 := by rw [hBsq, heq]
+  have hcop2 : ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) := by
+    rintro ⟨h1, h2⟩
+    have h3 := hcop.isUnit_of_dvd' h1 h2
+    rw [Int.isUnit_iff] at h3; omega
+  have ha : a ≠ 0 := by
+    rintro rfl
+    have hu : IsUnit e := isCoprime_zero_left.mp hcop
+    rcases Int.isUnit_iff.mp hu with rfl | rfl <;>
+      · norm_num at heqB; exact sq_ne_oneHundredTwelve B heqB
+  have ha2 : (0 : ℤ) < a ^ 2 := (sq_nonneg a).lt_of_ne (Ne.symm (pow_ne_zero 2 ha))
+  have he2 : (0 : ℤ) < e ^ 2 := (sq_nonneg e).lt_of_ne (Ne.symm (pow_ne_zero 2 he))
+  have he4 : (0 : ℤ) < e ^ 4 := by nlinarith
+  have hnpos : (0 : ℤ) < (e.natAbs : ℤ) := by exact_mod_cast Int.natAbs_pos.mpr he
+  rcases Int.emod_two_eq_zero_or_one a with hae | hao
+  · -- CASE A : `a` even, `e` odd
+    have heo : e % 2 = 1 := by
+      rcases Int.emod_two_eq_zero_or_one e with h | h
+      · exact absurd ⟨by omega, by omega⟩ hcop2
+      · exact h
+    obtain ⟨S, hSdef⟩ : ∃ S : ℤ, S = 2 * a ^ 2 + 21 * e ^ 2 := ⟨_, rfl⟩
+    have hSpos : 0 < S := by rw [hSdef]; linarith
+    have hident : (2 * B) ^ 2 = S ^ 2 + 7 * e ^ 4 := by rw [hSdef]; linear_combination 4 * heqB
+    have hSlt : S < 2 * B := by
+      refine lt_of_sq_lt_sq_of_nonneg (by linarith) ?_
+      rw [hident]; linarith
+    obtain ⟨X, hXdef⟩ : ∃ X : ℤ, X = 2 * B - S := ⟨_, rfl⟩
+    obtain ⟨Y, hYdef⟩ : ∃ Y : ℤ, Y = 2 * B + S := ⟨_, rfl⟩
+    have hXpos : 0 < X := by rw [hXdef]; linarith
+    have hYpos : 0 < Y := by rw [hYdef]; linarith
+    have hXY : X * Y = 7 * ((e.natAbs : ℤ)) ^ 4 := by
+      rw [hXdef, hYdef, natAbs_pow_four_eq]; linear_combination hident
+    obtain ⟨J, hJ⟩ := odd_sq_eq_eight_mul_add_one heo
+    obtain ⟨W, hW⟩ : ∃ W : ℤ, X = 2 * W + 1 :=
+      ⟨B - a ^ 2 - 84 * J - 11, by rw [hXdef, hSdef, hJ]; ring⟩
+    have hnot2 : ¬ ((2 : ℤ) ∣ X ∧ (2 : ℤ) ∣ Y) := by
+      rintro ⟨⟨k, hk⟩, -⟩; omega
+    have hdiff : Y - X = 2 * S := by rw [hXdef, hYdef]; ring
+    have hcopXY : IsCoprime X Y := by
+      refine isCoprime_of_diff_sevenPow4 hdiff hnot2 hXY ?_
+      intro p hp hp2 hpM hpn
+      have hps : p ∣ S := (hp.dvd_mul.mp hpM).resolve_left (fun h => hp2 (prime_dvd_two_imp hp h))
+      have hpe : p ∣ e := Int.dvd_natAbs.mp hpn
+      have hpe2 : p ∣ 21 * e ^ 2 := (dvd_pow hpe two_ne_zero).mul_left 21
+      have hpa2 : p ∣ 2 * a ^ 2 := by
+        have h2 := dvd_sub hps hpe2
+        rw [hSdef, show 2 * a ^ 2 + 21 * e ^ 2 - 21 * e ^ 2 = 2 * a ^ 2 by ring] at h2
+        exact h2
+      have hpa : p ∣ a := hp.dvd_of_dvd_pow
+        ((hp.dvd_mul.mp hpa2).resolve_left (fun h => hp2 (prime_dvd_two_imp hp h)))
+      exact hp.not_unit (hcop.isUnit_of_dvd' hpa hpe)
+    obtain ⟨c, d, hc, hd, hcd, hcdn, hcase⟩ := seven_pow_four_split hXpos hYpos hnpos hcopXY hXY
+    have hecd : e ^ 2 = c ^ 2 * d ^ 2 := by rw [← natAbs_sq_eq e, ← hcdn]; ring
+    have hc1 : (1 : ℤ) ≤ c := hc
+    have hd1 : (1 : ℤ) ≤ d := hd
+    have hcdle : c + d ≤ c * d + 1 := by
+      linarith [mul_nonneg (sub_nonneg.mpr hc1) (sub_nonneg.mpr hd1)]
+    rw [hcdn] at hcdle
+    have hnot2cd : ¬ ((2 : ℤ) ∣ c ∧ (2 : ℤ) ∣ d) := by
+      rintro ⟨h1, h2⟩
+      have h3 := hcd.isUnit_of_dvd' h1 h2
+      rw [Int.isUnit_iff] at h3; omega
+    rw [hSdef] at hdiff
+    rcases hcase with ⟨hX7, hYd⟩ | ⟨hXd, hY7⟩
+    · rw [hX7, hYd] at hdiff
+      have hQeq : (2 * a) ^ 2 = d ^ 4 - 42 * d ^ 2 * c ^ 2 - 7 * c ^ 4 := by
+        linear_combination -hdiff - 42 * hecd
+      have hmeas : d.natAbs + c.natAbs < N := by
+        have h1 : ((d.natAbs : ℤ)) = d := Int.natAbs_of_nonneg hd.le
+        have h2 : ((c.natAbs : ℤ)) = c := Int.natAbs_of_nonneg hc.le
+        have h5 : ((a.natAbs : ℤ)) + 2 * ((e.natAbs : ℤ)) ≤ (N : ℤ) := by exact_mod_cast hN
+        omega
+      exact absurd (ihQ d c (2 * a) hcd.symm hmeas hQeq) (by omega)
+    · rw [hXd, hY7] at hdiff
+      exact hyp7 c d (2 * a) hnot2cd (by linear_combination -hdiff - 42 * hecd)
+  · rcases Int.emod_two_eq_zero_or_one e with hee | heo
+    · -- CASE B : `a` odd, `e` even
+      obtain ⟨e1, he1eq⟩ : ∃ e1 : ℤ, e = 2 * e1 := ⟨e / 2, by omega⟩
+      rcases Int.emod_two_eq_zero_or_one e1 with he1e | he1o
+      · -- `4 ∣ e`
+        obtain ⟨e2, he2eq⟩ : ∃ e2 : ℤ, e1 = 2 * e2 := ⟨e1 / 2, by omega⟩
+        have heeq : e = 4 * e2 := by rw [he1eq, he2eq]; ring
+        have he2ne : e2 ≠ 0 := by rintro rfl; exact he (by rw [heeq]; ring)
+        have hEn : ((e.natAbs : ℤ)) = 4 * ((e2.natAbs : ℤ)) := by
+          rw [heeq]; simp [Int.natAbs_mul]
+        have heqB2 : B ^ 2 = a ^ 4 + 336 * a ^ 2 * e2 ^ 2 + 28672 * e2 ^ 4 := by
+          rw [heeq] at heqB; linear_combination heqB
+        have hn2pos : (0 : ℤ) < (e2.natAbs : ℤ) := by exact_mod_cast Int.natAbs_pos.mpr he2ne
+        have hn2 : (0 : ℤ) < 2 * ((e2.natAbs : ℤ)) := by linarith
+        have he2sq : (0 : ℤ) < e2 ^ 2 := (sq_nonneg e2).lt_of_ne (Ne.symm (pow_ne_zero 2 he2ne))
+        have he2q : (0 : ℤ) < e2 ^ 4 := by nlinarith
+        obtain ⟨S, hSdef⟩ : ∃ S : ℤ, S = a ^ 2 + 168 * e2 ^ 2 := ⟨_, rfl⟩
+        have hSpos : 0 < S := by rw [hSdef]; nlinarith
+        have hsig : B ^ 2 = S ^ 2 + 448 * e2 ^ 4 := by rw [hSdef]; linear_combination heqB2
+        obtain ⟨J, hJ⟩ := odd_sq_eq_eight_mul_add_one hao
+        obtain ⟨W, hW⟩ : ∃ W : ℤ, S = 2 * W + 1 :=
+          ⟨4 * J + 84 * e2 ^ 2, by rw [hSdef, hJ]; ring⟩
+        have hBodd : B % 2 = 1 := by
+          refine odd_of_sq_odd (k := 2 * W ^ 2 + 2 * W + 224 * e2 ^ 4) ?_
+          rw [hsig, hW]; ring
+        have hSlt : S < B := by
+          refine lt_of_sq_lt_sq_of_nonneg hBnn ?_
+          rw [hsig]; linarith
+        obtain ⟨X, hXdef⟩ : ∃ X : ℤ, 2 * X = B - S := ⟨(B - S) / 2, by omega⟩
+        obtain ⟨Y, hYdef⟩ : ∃ Y : ℤ, 2 * Y = B + S := ⟨(B + S) / 2, by omega⟩
+        have hXpos : 0 < X := by omega
+        have hYpos : 0 < Y := by omega
+        have hn4 : (2 * ((e2.natAbs : ℤ))) ^ 4 = 16 * e2 ^ 4 := by
+          have h := natAbs_pow_four_eq e2
+          calc (2 * ((e2.natAbs : ℤ))) ^ 4 = 16 * ((e2.natAbs : ℤ)) ^ 4 := by ring
+            _ = 16 * e2 ^ 4 := by rw [h]
+        have hXY : X * Y = 7 * (2 * ((e2.natAbs : ℤ))) ^ 4 := by
+          rw [hn4]
+          have h2 : (4 : ℤ) * (X * Y) = 4 * (7 * (16 * e2 ^ 4)) := by
+            have h3 : (2 * X) * (2 * Y) = B ^ 2 - S ^ 2 := by rw [hXdef, hYdef]; ring
+            have h4 : B ^ 2 - S ^ 2 = 448 * e2 ^ 4 := by linarith
+            linear_combination h3 + h4
+          exact mul_left_cancel₀ (by norm_num) h2
+        have hnot2 : ¬ ((2 : ℤ) ∣ X ∧ (2 : ℤ) ∣ Y) := by
+          rintro ⟨⟨k, hk⟩, ⟨l, hl⟩⟩; omega
+        have hdiff : Y - X = S := by omega
+        have hcopXY : IsCoprime X Y := by
+          refine isCoprime_of_diff_sevenPow4 hdiff hnot2 hXY ?_
+          intro p hp hp2 hpM hpn
+          have hpe2 : p ∣ e2 := by
+            have h1 : p ∣ ((e2.natAbs : ℤ)) :=
+              (hp.dvd_mul.mp hpn).resolve_left (fun h => hp2 (prime_dvd_two_imp hp h))
+            exact Int.dvd_natAbs.mp h1
+          have hpa : p ∣ a := by
+            refine hp.dvd_of_dvd_pow (n := 2) ?_
+            have h2 := dvd_sub hpM ((dvd_pow hpe2 two_ne_zero).mul_left 168)
+            rw [hSdef, show a ^ 2 + 168 * e2 ^ 2 - 168 * e2 ^ 2 = a ^ 2 by ring] at h2
+            exact h2
+          have hpe : p ∣ e := by rw [heeq]; exact hpe2.mul_left 4
+          exact hp.not_unit (hcop.isUnit_of_dvd' hpa hpe)
+        obtain ⟨c, d, hc, hd, hcd, hcdn, hcase⟩ := seven_pow_four_split hXpos hYpos hn2 hcopXY hXY
+        have hecd : c ^ 2 * d ^ 2 = 4 * e2 ^ 2 := by
+          have h1 : (c * d) ^ 2 = (2 * ((e2.natAbs : ℤ))) ^ 2 := by rw [hcdn]
+          have h2 : ((e2.natAbs : ℤ)) ^ 2 = e2 ^ 2 := natAbs_sq_eq e2
+          linear_combination h1 + 4 * h2
+        have hc1 : (1 : ℤ) ≤ c := hc
+        have hd1 : (1 : ℤ) ≤ d := hd
+        have hcdle : c + d ≤ c * d + 1 := by
+          linarith [mul_nonneg (sub_nonneg.mpr hc1) (sub_nonneg.mpr hd1)]
+        rw [hcdn] at hcdle
+        have hnot2cd : ¬ ((2 : ℤ) ∣ c ∧ (2 : ℤ) ∣ d) := by
+          rintro ⟨h1, h2⟩
+          have h3 := hcd.isUnit_of_dvd' h1 h2
+          rw [Int.isUnit_iff] at h3; omega
+        rw [hSdef] at hdiff
+        have hdn : ((d.natAbs : ℤ)) = d := Int.natAbs_of_nonneg hd.le
+        have hcn : ((c.natAbs : ℤ)) = c := Int.natAbs_of_nonneg hc.le
+        have hNz : ((a.natAbs : ℤ)) + 2 * ((e.natAbs : ℤ)) ≤ (N : ℤ) := by exact_mod_cast hN
+        have haN : (1 : ℤ) ≤ (a.natAbs : ℤ) := by
+          have : (0 : ℤ) < (a.natAbs : ℤ) := by exact_mod_cast Int.natAbs_pos.mpr ha
+          linarith
+        have hmeas : d.natAbs + c.natAbs < N := by omega
+        rcases hcase with ⟨hX7, hYd⟩ | ⟨hXd, hY7⟩
+        · rw [hX7, hYd] at hdiff
+          have hQeq : a ^ 2 = d ^ 4 - 42 * d ^ 2 * c ^ 2 - 7 * c ^ 4 := by
+            linear_combination -hdiff + 42 * hecd
+          exact absurd (ihQ d c a hcd.symm hmeas hQeq) (by omega)
+        · rw [hXd, hY7] at hdiff
+          exact hyp7 c d a hnot2cd (by linear_combination -hdiff + 42 * hecd)
+      · refine modEight_homogeneous_oneB (b := B) hao he1o ?_
+        rw [he1eq] at heqB; linear_combination heqB
+    · exact modEight_homogeneous_one hao heo heqB
+
+/-! ##### The descent step at the `d = 1` space of `E'` -/
+
+lemma descentStep_dual (N : ℕ)
+    (ihP : ∀ a e b : ℤ, IsCoprime a e → a.natAbs + 2 * e.natAbs < N →
+      b ^ 2 = a ^ 4 + 21 * a ^ 2 * e ^ 2 + 112 * e ^ 4 → e = 0)
+    (ihS : ∀ a e b : ℤ, IsCoprime a e → a.natAbs + 2 * e.natAbs < N →
+      b ^ 2 = 7 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 16 * e ^ 4 → a = 0) :
+    ∀ a e b : ℤ, IsCoprime a e → a.natAbs + e.natAbs ≤ N →
+      b ^ 2 = a ^ 4 - 42 * a ^ 2 * e ^ 2 - 7 * e ^ 4 → e = 0 := by
+  intro a e b hcop hN heq
+  by_contra he
+  obtain ⟨B, hBnn, hBsq⟩ : ∃ B : ℤ, 0 ≤ B ∧ B ^ 2 = b ^ 2 := ⟨|b|, abs_nonneg b, sq_abs b⟩
+  have heqB : B ^ 2 = a ^ 4 - 42 * a ^ 2 * e ^ 2 - 7 * e ^ 4 := by rw [hBsq, heq]
+  have hcop2 : ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) := by
+    rintro ⟨h1, h2⟩
+    have h3 := hcop.isUnit_of_dvd' h1 h2
+    rw [Int.isUnit_iff] at h3; omega
+  have he2 : (0 : ℤ) < e ^ 2 := (sq_nonneg e).lt_of_ne (Ne.symm (pow_ne_zero 2 he))
+  have he4 : (0 : ℤ) < e ^ 4 := by nlinarith
+  have ha : a ≠ 0 := by
+    rintro rfl
+    have h0 : (0 : ℤ) ≤ B ^ 2 := sq_nonneg B
+    rw [heqB] at h0
+    nlinarith
+  have ha2 : (0 : ℤ) < a ^ 2 := (sq_nonneg a).lt_of_ne (Ne.symm (pow_ne_zero 2 ha))
+  have hA2 : 42 * e ^ 2 < a ^ 2 := by
+    by_contra hcon
+    rw [not_lt] at hcon
+    have h1 : a ^ 2 * a ^ 2 ≤ a ^ 2 * (42 * e ^ 2) := mul_le_mul_of_nonneg_left hcon (sq_nonneg a)
+    nlinarith [sq_nonneg B]
+  have hnpos : (0 : ℤ) < (e.natAbs : ℤ) := by exact_mod_cast Int.natAbs_pos.mpr he
+  obtain ⟨S, hSdef⟩ : ∃ S : ℤ, S = a ^ 2 - 21 * e ^ 2 := ⟨_, rfl⟩
+  have hSpos : 0 < S := by rw [hSdef]; linarith
+  have hidS : B ^ 2 = S ^ 2 - 448 * e ^ 4 := by rw [hSdef]; linear_combination heqB
+  obtain ⟨W, hW⟩ : ∃ W : ℤ, S = 2 * W + 1 := by
+    rcases Int.emod_two_eq_zero_or_one a with hae | hao
+    · have heo : e % 2 = 1 := by
+        rcases Int.emod_two_eq_zero_or_one e with h | h
+        · exact absurd ⟨by omega, by omega⟩ hcop2
+        · exact h
+      obtain ⟨k, hk⟩ : ∃ k, a = 2 * k := ⟨a / 2, by omega⟩
+      obtain ⟨I, hI⟩ := odd_sq_eq_eight_mul_add_one heo
+      exact ⟨2 * k ^ 2 - 84 * I - 11, by rw [hSdef, hk, hI]; ring⟩
+    · rcases Int.emod_two_eq_zero_or_one e with hee | heo
+      · obtain ⟨k, hk⟩ : ∃ k, e = 2 * k := ⟨e / 2, by omega⟩
+        obtain ⟨J, hJ⟩ := odd_sq_eq_eight_mul_add_one hao
+        exact ⟨4 * J - 42 * k ^ 2, by rw [hSdef, hJ, hk]; ring⟩
+      · exact (modEight_dual_one hao heo heqB).elim
+  have hBodd : B % 2 = 1 := by
+    refine odd_of_sq_odd (k := 2 * W ^ 2 + 2 * W - 224 * e ^ 4) ?_
+    rw [hidS, hW]; ring
+  have hBlt : B < S := by
+    refine lt_of_sq_lt_sq_of_nonneg (le_of_lt hSpos) ?_
+    rw [hidS]; linarith
+  obtain ⟨X, hXdef⟩ : ∃ X : ℤ, 2 * X = S - B := ⟨(S - B) / 2, by omega⟩
+  obtain ⟨Y, hYdef⟩ : ∃ Y : ℤ, 2 * Y = S + B := ⟨(S + B) / 2, by omega⟩
+  have hXpos : 0 < X := by omega
+  have hYpos : 0 < Y := by omega
+  have hn4 : (2 * ((e.natAbs : ℤ))) ^ 4 = 16 * e ^ 4 := by
+    have h := natAbs_pow_four_eq e
+    calc (2 * ((e.natAbs : ℤ))) ^ 4 = 16 * ((e.natAbs : ℤ)) ^ 4 := by ring
+      _ = 16 * e ^ 4 := by rw [h]
+  have hn2 : (0 : ℤ) < 2 * ((e.natAbs : ℤ)) := by linarith
+  have hXY : X * Y = 7 * (2 * ((e.natAbs : ℤ))) ^ 4 := by
+    rw [hn4]
+    have h2 : (4 : ℤ) * (X * Y) = 4 * (7 * (16 * e ^ 4)) := by
+      have h3 : (2 * X) * (2 * Y) = S ^ 2 - B ^ 2 := by rw [hXdef, hYdef]; ring
+      have h4 : S ^ 2 - B ^ 2 = 448 * e ^ 4 := by linarith
+      linear_combination h3 + h4
+    exact mul_left_cancel₀ (by norm_num) h2
+  have hnot2 : ¬ ((2 : ℤ) ∣ X ∧ (2 : ℤ) ∣ Y) := by
+    rintro ⟨⟨k, hk⟩, ⟨l, hl⟩⟩; omega
+  have hdiff : Y - X = B := by omega
+  have hcopXY : IsCoprime X Y := by
+    refine isCoprime_of_diff_sevenPow4 hdiff hnot2 hXY ?_
+    intro p hp hp2 hpM hpn
+    have hpe : p ∣ e := by
+      have h1 : p ∣ ((e.natAbs : ℤ)) :=
+        (hp.dvd_mul.mp hpn).resolve_left (fun h => hp2 (prime_dvd_two_imp hp h))
+      exact Int.dvd_natAbs.mp h1
+    have hpa : p ∣ a := by
+      refine hp.dvd_of_dvd_pow (n := 4) ?_
+      have h2 : a ^ 4 = B ^ 2 + 42 * a ^ 2 * e ^ 2 + 7 * e ^ 4 := by linear_combination -heqB
+      rw [h2]
+      exact dvd_add (dvd_add (dvd_pow hpM two_ne_zero)
+        ((dvd_pow hpe two_ne_zero).mul_left (42 * a ^ 2)))
+        ((dvd_pow hpe (by norm_num)).mul_left 7)
+    exact hp.not_unit (hcop.isUnit_of_dvd' hpa hpe)
+  obtain ⟨c, d, hc, hd, hcd, hcdn, hcase⟩ := seven_pow_four_split hXpos hYpos hn2 hcopXY hXY
+  have hecd : c ^ 2 * d ^ 2 = 4 * e ^ 2 := by
+    have h1 : (c * d) ^ 2 = (2 * ((e.natAbs : ℤ))) ^ 2 := by rw [hcdn]
+    have h2 : ((e.natAbs : ℤ)) ^ 2 = e ^ 2 := natAbs_sq_eq e
+    linear_combination h1 + 4 * h2
+  have hsum : X + Y = S := by omega
+  have hXpY : X + Y = 7 * c ^ 4 + d ^ 4 := by
+    rcases hcase with ⟨h1, h2⟩ | ⟨h1, h2⟩
+    · linear_combination h1 + h2
+    · linear_combination h1 + h2
+  have hkey : 4 * a ^ 2 = 28 * c ^ 4 + 4 * d ^ 4 + 21 * c ^ 2 * d ^ 2 := by
+    have h1 : a ^ 2 - 21 * e ^ 2 = 7 * c ^ 4 + d ^ 4 := by rw [← hSdef, ← hsum]; exact hXpY
+    linear_combination 4 * h1 - 21 * hecd
+  have hbig : 6 * ((e.natAbs : ℤ)) < ((a.natAbs : ℤ)) := by
+    refine lt_of_sq_lt_sq_of_nonneg (by positivity) ?_
+    have h1 : ((e.natAbs : ℤ)) ^ 2 = e ^ 2 := natAbs_sq_eq e
+    have h2 : ((a.natAbs : ℤ)) ^ 2 = a ^ 2 := natAbs_sq_eq a
+    nlinarith
+  have hcd2 : (2 : ℤ) ∣ c * d := by rw [hcdn]; exact ⟨(e.natAbs : ℤ), rfl⟩
+  have hdn : ((d.natAbs : ℤ)) = d := Int.natAbs_of_nonneg hd.le
+  have hcn : ((c.natAbs : ℤ)) = c := Int.natAbs_of_nonneg hc.le
+  have hNz : ((a.natAbs : ℤ)) + ((e.natAbs : ℤ)) ≤ (N : ℤ) := by exact_mod_cast hN
+  have hc1 : (1 : ℤ) ≤ c := hc
+  have hd1 : (1 : ℤ) ≤ d := hd
+  rcases Int.emod_two_eq_zero_or_one c with hce | hco
+  · obtain ⟨c', hc'eq⟩ : ∃ c', c = 2 * c' := ⟨c / 2, by omega⟩
+    have hc'pos : (0 : ℤ) < c' := by omega
+    have hc'n : ((c'.natAbs : ℤ)) = c' := Int.natAbs_of_nonneg hc'pos.le
+    have hcdn' : c' * d = ((e.natAbs : ℤ)) := by
+      have h : (2 : ℤ) * (c' * d) = 2 * ((e.natAbs : ℤ)) := by rw [← hcdn, hc'eq]; ring
+      exact mul_left_cancel₀ (by norm_num) h
+    have hPeq : a ^ 2 = d ^ 4 + 21 * d ^ 2 * c' ^ 2 + 112 * c' ^ 4 := by
+      have h4 : (4 : ℤ) * a ^ 2 = 4 * (d ^ 4 + 21 * d ^ 2 * c' ^ 2 + 112 * c' ^ 4) := by
+        rw [hc'eq] at hkey; linear_combination hkey
+      exact mul_left_cancel₀ (by norm_num) h4
+    have hcopdc : IsCoprime d c' :=
+      (hcd.of_isCoprime_of_dvd_left ⟨2, by rw [hc'eq]; ring⟩).symm
+    have hbound : d + 2 * c' ≤ 2 * (c' * d) + 1 := by
+      linarith [mul_nonneg (sub_nonneg.mpr hd1)
+        (sub_nonneg.mpr (show (1 : ℤ) ≤ 2 * c' by omega))]
+    rw [hcdn'] at hbound
+    have hmeas : d.natAbs + 2 * c'.natAbs < N := by omega
+    exact absurd (ihP d c' a hcopdc hmeas hPeq) (by omega)
+  · have hde : d % 2 = 0 := by
+      rcases Int.emod_two_eq_zero_or_one d with h | h
+      · exact h
+      · exfalso
+        obtain ⟨u, hu⟩ : ∃ u, c = 2 * u + 1 := ⟨c / 2, by omega⟩
+        obtain ⟨v, hv⟩ : ∃ v, d = 2 * v + 1 := ⟨d / 2, by omega⟩
+        obtain ⟨t, ht⟩ := hcd2
+        obtain ⟨M, hM⟩ : ∃ M : ℤ, c * d = 2 * M + 1 :=
+          ⟨2 * u * v + u + v, by rw [hu, hv]; ring⟩
+        omega
+    obtain ⟨d', hd'eq⟩ : ∃ d', d = 2 * d' := ⟨d / 2, by omega⟩
+    have hd'pos : (0 : ℤ) < d' := by omega
+    have hd'n : ((d'.natAbs : ℤ)) = d' := Int.natAbs_of_nonneg hd'pos.le
+    have hcdn' : c * d' = ((e.natAbs : ℤ)) := by
+      have h : (2 : ℤ) * (c * d') = 2 * ((e.natAbs : ℤ)) := by rw [← hcdn, hd'eq]; ring
+      exact mul_left_cancel₀ (by norm_num) h
+    have hSeq : a ^ 2 = 7 * c ^ 4 + 21 * c ^ 2 * d' ^ 2 + 16 * d' ^ 4 := by
+      have h4 : (4 : ℤ) * a ^ 2 = 4 * (7 * c ^ 4 + 21 * c ^ 2 * d' ^ 2 + 16 * d' ^ 4) := by
+        rw [hd'eq] at hkey; linear_combination hkey
+      exact mul_left_cancel₀ (by norm_num) h4
+    have hcopcd : IsCoprime c d' := hcd.of_isCoprime_of_dvd_right ⟨2, by rw [hd'eq]; ring⟩
+    have hbound : c + 2 * d' ≤ 2 * (c * d') + 1 := by
+      linarith [mul_nonneg (sub_nonneg.mpr hc1)
+        (sub_nonneg.mpr (show (1 : ℤ) ≤ 2 * d' by omega))]
+    rw [hcdn'] at hbound
+    have hmeas : c.natAbs + 2 * d'.natAbs < N := by omega
+    exact absurd (ihS c d' a hcopcd hmeas hSeq) (by omega)
+
+/-! ##### The descent step at the `d = 7` space of `E` -/
+
+lemma descentStep_seven
+    (hyp7 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ 7 * a ^ 4 - 42 * a ^ 2 * e ^ 2 - e ^ 4)
+    (N : ℕ)
+    (ihP : ∀ a e b : ℤ, IsCoprime a e → a.natAbs + 2 * e.natAbs < N →
+      b ^ 2 = a ^ 4 + 21 * a ^ 2 * e ^ 2 + 112 * e ^ 4 → e = 0)
+    (ihQ : ∀ a e b : ℤ, IsCoprime a e → a.natAbs + e.natAbs < N →
+      b ^ 2 = a ^ 4 - 42 * a ^ 2 * e ^ 2 - 7 * e ^ 4 → e = 0) :
+    ∀ a e b : ℤ, IsCoprime a e → a.natAbs + 2 * e.natAbs ≤ N →
+      b ^ 2 = 7 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 16 * e ^ 4 → a = 0 := by
+  intro a e b hcop hN heq
+  by_contra ha
+  obtain ⟨B, hBnn, hBsq⟩ : ∃ B : ℤ, 0 ≤ B ∧ B ^ 2 = b ^ 2 := ⟨|b|, abs_nonneg b, sq_abs b⟩
+  have heqB : B ^ 2 = 7 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 16 * e ^ 4 := by rw [hBsq, heq]
+  have hcop2 : ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) := by
+    rintro ⟨h1, h2⟩
+    have h3 := hcop.isUnit_of_dvd' h1 h2
+    rw [Int.isUnit_iff] at h3; omega
+  have he : e ≠ 0 := by
+    rintro rfl
+    have hu : IsUnit a := isCoprime_zero_right.mp hcop
+    rcases Int.isUnit_iff.mp hu with rfl | rfl <;>
+      · norm_num at heqB; exact sq_ne_seven B heqB
+  have ha2 : (0 : ℤ) < a ^ 2 := (sq_nonneg a).lt_of_ne (Ne.symm (pow_ne_zero 2 ha))
+  have he2 : (0 : ℤ) < e ^ 2 := (sq_nonneg e).lt_of_ne (Ne.symm (pow_ne_zero 2 he))
+  have ha4 : (0 : ℤ) < a ^ 4 := by nlinarith
+  have haN : (0 : ℤ) < (a.natAbs : ℤ) := by exact_mod_cast Int.natAbs_pos.mpr ha
+  have heN : (0 : ℤ) < (e.natAbs : ℤ) := by exact_mod_cast Int.natAbs_pos.mpr he
+  have hNz : ((a.natAbs : ℤ)) + 2 * ((e.natAbs : ℤ)) ≤ (N : ℤ) := by exact_mod_cast hN
+  rcases Int.emod_two_eq_zero_or_one a with hae | hao
+  · -- `a` even, so `e` is odd
+    have heo : e % 2 = 1 := by
+      rcases Int.emod_two_eq_zero_or_one e with h | h
+      · exact absurd ⟨by omega, by omega⟩ hcop2
+      · exact h
+    obtain ⟨a1, ha1eq⟩ : ∃ a1, a = 2 * a1 := ⟨a / 2, by omega⟩
+    have ha1ne : a1 ≠ 0 := by rintro rfl; exact ha (by rw [ha1eq]; ring)
+    have ha1N : ((a.natAbs : ℤ)) = 2 * ((a1.natAbs : ℤ)) := by
+      rw [ha1eq]; simp [Int.natAbs_mul]
+    have ha1Npos : (0 : ℤ) < (a1.natAbs : ℤ) := by exact_mod_cast Int.natAbs_pos.mpr ha1ne
+    obtain ⟨B1, hB1eq⟩ := even_of_sq_even (b := B) (k := 56 * a1 ^ 4 + 42 * a1 ^ 2 * e ^ 2 + 8 * e ^ 4)
+      (by rw [heqB, ha1eq]; ring)
+    have hB1nn : (0 : ℤ) ≤ B1 := by omega
+    have heq1 : B1 ^ 2 = 28 * a1 ^ 4 + 21 * a1 ^ 2 * e ^ 2 + 4 * e ^ 4 := by
+      have h4 : (4 : ℤ) * B1 ^ 2 = 4 * (28 * a1 ^ 4 + 21 * a1 ^ 2 * e ^ 2 + 4 * e ^ 4) := by
+        rw [hB1eq, ha1eq] at heqB; linear_combination heqB
+      exact mul_left_cancel₀ (by norm_num) h4
+    rcases Int.emod_two_eq_zero_or_one a1 with ha1e | ha1o
+    · -- `4 ∣ a`: land on the `d = 1` space of `E`
+      obtain ⟨a2, ha2eq⟩ : ∃ a2, a1 = 2 * a2 := ⟨a1 / 2, by omega⟩
+      have ha2ne : a2 ≠ 0 := by rintro rfl; exact ha1ne (by rw [ha2eq]; ring)
+      have ha2Npos : (0 : ℤ) < (a2.natAbs : ℤ) := by exact_mod_cast Int.natAbs_pos.mpr ha2ne
+      have ha2N : ((a.natAbs : ℤ)) = 4 * ((a2.natAbs : ℤ)) := by
+        rw [ha1eq, ha2eq]; push_cast [Int.natAbs_mul]; ring
+      obtain ⟨B2, hB2eq⟩ := even_of_sq_even (b := B1)
+        (k := 224 * a2 ^ 4 + 42 * a2 ^ 2 * e ^ 2 + 2 * e ^ 4) (by rw [heq1, ha2eq]; ring)
+      have heq2 : B2 ^ 2 = e ^ 4 + 21 * e ^ 2 * a2 ^ 2 + 112 * a2 ^ 4 := by
+        have h4 : (4 : ℤ) * B2 ^ 2 = 4 * (e ^ 4 + 21 * e ^ 2 * a2 ^ 2 + 112 * a2 ^ 4) := by
+          rw [hB2eq, ha2eq] at heq1; linear_combination heq1
+        exact mul_left_cancel₀ (by norm_num) h4
+      have hcopEA : IsCoprime e a2 :=
+        (hcop.of_isCoprime_of_dvd_left ⟨4, by rw [ha1eq, ha2eq]; ring⟩).symm
+      have hmeas : e.natAbs + 2 * a2.natAbs < N := by omega
+      exact ha2ne (ihP e a2 B2 hcopEA hmeas heq2)
+    · -- `a ≡ 2 mod 4`: descend through `E'`
+      obtain ⟨M, hMdef⟩ : ∃ M : ℤ, M = 21 * a1 ^ 2 + 8 * e ^ 2 := ⟨_, rfl⟩
+      have ha1sq : (0 : ℤ) < a1 ^ 2 := (sq_nonneg a1).lt_of_ne (Ne.symm (pow_ne_zero 2 ha1ne))
+      have ha1q : (0 : ℤ) < a1 ^ 4 := by nlinarith
+      have hMpos : 0 < M := by rw [hMdef]; linarith
+      have hident : (4 * B1) ^ 2 = M ^ 2 + 7 * a1 ^ 4 := by
+        rw [hMdef]; linear_combination 16 * heq1
+      have hMlt : M < 4 * B1 := by
+        refine lt_of_sq_lt_sq_of_nonneg (by linarith) ?_
+        rw [hident]; linarith
+      obtain ⟨J, hJ⟩ := odd_sq_eq_eight_mul_add_one ha1o
+      obtain ⟨W, hW⟩ : ∃ W : ℤ, M = 2 * W + 1 :=
+        ⟨84 * J + 10 + 4 * e ^ 2, by rw [hMdef, hJ]; ring⟩
+      obtain ⟨X, hXdef⟩ : ∃ X : ℤ, X = 4 * B1 - M := ⟨_, rfl⟩
+      obtain ⟨Y, hYdef⟩ : ∃ Y : ℤ, Y = 4 * B1 + M := ⟨_, rfl⟩
+      have hXpos : 0 < X := by rw [hXdef]; linarith
+      have hYpos : 0 < Y := by rw [hYdef]; linarith
+      have hnA : (0 : ℤ) < ((a1.natAbs : ℤ)) := ha1Npos
+      have hXY : X * Y = 7 * ((a1.natAbs : ℤ)) ^ 4 := by
+        rw [hXdef, hYdef, natAbs_pow_four_eq]; linear_combination hident
+      have hnot2 : ¬ ((2 : ℤ) ∣ X ∧ (2 : ℤ) ∣ Y) := by
+        rintro ⟨⟨k, hk⟩, -⟩
+        rw [hXdef, hW] at hk; omega
+      have hdiff : Y - X = 2 * M := by rw [hXdef, hYdef]; ring
+      have hcopXY : IsCoprime X Y := by
+        refine isCoprime_of_diff_sevenPow4 hdiff hnot2 hXY ?_
+        intro p hp hp2 hpM hpn
+        have hpMm : p ∣ M := (hp.dvd_mul.mp hpM).resolve_left (fun h => hp2 (prime_dvd_two_imp hp h))
+        have hpa1 : p ∣ a1 := Int.dvd_natAbs.mp hpn
+        have hpe : p ∣ e := by
+          refine hp.dvd_of_dvd_pow (n := 2) ?_
+          have h8 : p ∣ 8 * e ^ 2 := by
+            have h2 := dvd_sub hpMm ((dvd_pow hpa1 two_ne_zero).mul_left 21)
+            rw [hMdef, show 21 * a1 ^ 2 + 8 * e ^ 2 - 21 * a1 ^ 2 = 8 * e ^ 2 by ring] at h2
+            exact h2
+          rcases hp.dvd_mul.mp h8 with h | h
+          · exact absurd (prime_dvd_two_imp hp (hp.dvd_of_dvd_pow (n := 3) (by
+              rw [show (2:ℤ)^3 = 8 by norm_num]; exact h))) hp2
+          · exact h
+        exact hp.not_unit (hcop.isUnit_of_dvd' (by rw [ha1eq]; exact hpa1.mul_left 2) hpe)
+      obtain ⟨c, d, hc, hd, hcd, hcdn, hcase⟩ := seven_pow_four_split hXpos hYpos hnA hcopXY hXY
+      have hacd : a1 ^ 2 = c ^ 2 * d ^ 2 := by rw [← natAbs_sq_eq a1, ← hcdn]; ring
+      have hc1 : (1 : ℤ) ≤ c := hc
+      have hd1 : (1 : ℤ) ≤ d := hd
+      have hcdle : c + d ≤ c * d + 1 := by
+        linarith [mul_nonneg (sub_nonneg.mpr hc1) (sub_nonneg.mpr hd1)]
+      rw [hcdn] at hcdle
+      have hdn : ((d.natAbs : ℤ)) = d := Int.natAbs_of_nonneg hd.le
+      have hcn : ((c.natAbs : ℤ)) = c := Int.natAbs_of_nonneg hc.le
+      have hnot2cd : ¬ ((2 : ℤ) ∣ c ∧ (2 : ℤ) ∣ d) := by
+        rintro ⟨h1, h2⟩
+        have h3 := hcd.isUnit_of_dvd' h1 h2
+        rw [Int.isUnit_iff] at h3; omega
+      rw [hMdef] at hdiff
+      have hmeas : d.natAbs + c.natAbs < N := by omega
+      rcases hcase with ⟨hX7, hYd⟩ | ⟨hXd, hY7⟩
+      · rw [hX7, hYd] at hdiff
+        have hQeq : (4 * e) ^ 2 = d ^ 4 - 42 * d ^ 2 * c ^ 2 - 7 * c ^ 4 := by
+          linear_combination -hdiff - 42 * hacd
+        exact absurd (ihQ d c (4 * e) hcd.symm hmeas hQeq) (by omega)
+      · rw [hXd, hY7] at hdiff
+        exact hyp7 c d (4 * e) hnot2cd (by linear_combination -hdiff - 42 * hacd)
+  · -- `a` odd: descend through `E'`
+    obtain ⟨M, hMdef⟩ : ∃ M : ℤ, M = 21 * a ^ 2 + 32 * e ^ 2 := ⟨_, rfl⟩
+    have hMpos : 0 < M := by rw [hMdef]; linarith
+    have hident : (8 * B) ^ 2 = M ^ 2 + 7 * a ^ 4 := by rw [hMdef]; linear_combination 64 * heqB
+    have hMlt : M < 8 * B := by
+      refine lt_of_sq_lt_sq_of_nonneg (by linarith) ?_
+      rw [hident]; linarith
+    obtain ⟨J, hJ⟩ := odd_sq_eq_eight_mul_add_one hao
+    obtain ⟨W, hW⟩ : ∃ W : ℤ, M = 2 * W + 1 :=
+      ⟨84 * J + 10 + 16 * e ^ 2, by rw [hMdef, hJ]; ring⟩
+    obtain ⟨X, hXdef⟩ : ∃ X : ℤ, X = 8 * B - M := ⟨_, rfl⟩
+    obtain ⟨Y, hYdef⟩ : ∃ Y : ℤ, Y = 8 * B + M := ⟨_, rfl⟩
+    have hXpos : 0 < X := by rw [hXdef]; linarith
+    have hYpos : 0 < Y := by rw [hYdef]; linarith
+    have hXY : X * Y = 7 * ((a.natAbs : ℤ)) ^ 4 := by
+      rw [hXdef, hYdef, natAbs_pow_four_eq]; linear_combination hident
+    have hnot2 : ¬ ((2 : ℤ) ∣ X ∧ (2 : ℤ) ∣ Y) := by
+      rintro ⟨⟨k, hk⟩, -⟩
+      rw [hXdef, hW] at hk; omega
+    have hdiff : Y - X = 2 * M := by rw [hXdef, hYdef]; ring
+    have hcopXY : IsCoprime X Y := by
+      refine isCoprime_of_diff_sevenPow4 hdiff hnot2 hXY ?_
+      intro p hp hp2 hpM hpn
+      have hpMm : p ∣ M := (hp.dvd_mul.mp hpM).resolve_left (fun h => hp2 (prime_dvd_two_imp hp h))
+      have hpa : p ∣ a := Int.dvd_natAbs.mp hpn
+      have hpe : p ∣ e := by
+        refine hp.dvd_of_dvd_pow (n := 2) ?_
+        have h32 : p ∣ 32 * e ^ 2 := by
+          have h2 := dvd_sub hpMm ((dvd_pow hpa two_ne_zero).mul_left 21)
+          rw [hMdef, show 21 * a ^ 2 + 32 * e ^ 2 - 21 * a ^ 2 = 32 * e ^ 2 by ring] at h2
+          exact h2
+        rcases hp.dvd_mul.mp h32 with h | h
+        · exact absurd (prime_dvd_two_imp hp (hp.dvd_of_dvd_pow (n := 5) (by
+            rw [show (2:ℤ)^5 = 32 by norm_num]; exact h))) hp2
+        · exact h
+      exact hp.not_unit (hcop.isUnit_of_dvd' hpa hpe)
+    obtain ⟨c, d, hc, hd, hcd, hcdn, hcase⟩ := seven_pow_four_split hXpos hYpos haN hcopXY hXY
+    have hacd : a ^ 2 = c ^ 2 * d ^ 2 := by rw [← natAbs_sq_eq a, ← hcdn]; ring
+    have hc1 : (1 : ℤ) ≤ c := hc
+    have hd1 : (1 : ℤ) ≤ d := hd
+    have hcdle : c + d ≤ c * d + 1 := by
+      linarith [mul_nonneg (sub_nonneg.mpr hc1) (sub_nonneg.mpr hd1)]
+    rw [hcdn] at hcdle
+    have hdn : ((d.natAbs : ℤ)) = d := Int.natAbs_of_nonneg hd.le
+    have hcn : ((c.natAbs : ℤ)) = c := Int.natAbs_of_nonneg hc.le
+    have hnot2cd : ¬ ((2 : ℤ) ∣ c ∧ (2 : ℤ) ∣ d) := by
+      rintro ⟨h1, h2⟩
+      have h3 := hcd.isUnit_of_dvd' h1 h2
+      rw [Int.isUnit_iff] at h3; omega
+    rw [hMdef] at hdiff
+    have hmeas : d.natAbs + c.natAbs < N := by omega
+    rcases hcase with ⟨hX7, hYd⟩ | ⟨hXd, hY7⟩
+    · rw [hX7, hYd] at hdiff
+      have hQeq : (8 * e) ^ 2 = d ^ 4 - 42 * d ^ 2 * c ^ 2 - 7 * c ^ 4 := by
+        linear_combination -hdiff - 42 * hacd
+      exact absurd (ihQ d c (8 * e) hcd.symm hmeas hQeq) (by omega)
+    · rw [hXd, hY7] at hdiff
+      exact hyp7 c d (8 * e) hnot2cd (by linear_combination -hdiff - 42 * hacd)
+
+/-! ##### The joint infinite descent -/
+
+theorem descent_fortyNine
+    (hyp7 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ 7 * a ^ 4 - 42 * a ^ 2 * e ^ 2 - e ^ 4) :
+    ∀ N : ℕ,
+      (∀ a e b : ℤ, IsCoprime a e → a.natAbs + 2 * e.natAbs ≤ N →
+        b ^ 2 = a ^ 4 + 21 * a ^ 2 * e ^ 2 + 112 * e ^ 4 → e = 0) ∧
+      (∀ a e b : ℤ, IsCoprime a e → a.natAbs + 2 * e.natAbs ≤ N →
+        b ^ 2 = 7 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 16 * e ^ 4 → a = 0) ∧
+      (∀ a e b : ℤ, IsCoprime a e → a.natAbs + e.natAbs ≤ N →
+        b ^ 2 = a ^ 4 - 42 * a ^ 2 * e ^ 2 - 7 * e ^ 4 → e = 0) := by
+  intro N
+  induction N using Nat.strong_induction_on with
+  | _ N ih =>
+    refine ⟨descentStep_one hyp7 N ?_, descentStep_seven hyp7 N ?_ ?_, descentStep_dual N ?_ ?_⟩
+    · exact fun a e b hc hlt hq => (ih _ hlt).2.2 a e b hc le_rfl hq
+    · exact fun a e b hc hlt hq => (ih _ hlt).1 a e b hc le_rfl hq
+    · exact fun a e b hc hlt hq => (ih _ hlt).2.2 a e b hc le_rfl hq
+    · exact fun a e b hc hlt hq => (ih _ hlt).1 a e b hc le_rfl hq
+    · exact fun a e b hc hlt hq => (ih _ hlt).2.1 a e b hc le_rfl hq
+
+/-- **THE `d = 1` HOMOGENEOUS SPACE IS EMPTY** (PROVEN 2026-07-26 by the
+joint infinite descent `descent_fortyNine` above; formerly a sorry node cut
+out of `rational_point_of_selmer_empty`):
 `b² = a⁴ + 21a²e² + 112e⁴` has no integral solution with `gcd(a, e) = 1`
 and `e ≠ 0`.
 
@@ -6767,22 +7591,26 @@ whose only representative here has `e = 0`.  (With `e = 0` the equation is
 `b² = a⁴`, satisfied by `b = ±a²`, so the hypothesis `e ≠ 0` is exactly what
 must be excluded and nothing more.)
 
-Route for a prover: `(2b)² = (2a² + 21e²)² + 7(e²)²`, so with
-`s = 2a² + 21e²` one has `(2b − s)(2b + s) = 7e⁴`; the coprimality of `a`
-and `e` bounds the common factor, and the resulting factorisation lands on
-the `2`-isogenous curve `E' : W² = v(v² − 42v − 7)`, where `h7` and `hm1`
-apply.  The descent then returns a solution with strictly smaller `|e|`. -/
+The route taken: `(2b)² = (2a² + 21e²)² + 7(e²)²`, so with `s = 2a² + 21e²`
+one has `(2b − s)(2b + s) = 7e⁴`; the coprimality of `a` and `e` forces the
+two factors to be coprime, so they are `7c⁴` and `d⁴` with `cd = |e|`, and
+their difference is `(2a)² = d⁴ − 42c²d² − 7c⁴` (the `d = 1` space of
+`E' : W² = v(v² − 42v − 7)`) or `(2a)² = 7c⁴ − 42c²d² − d⁴` (killed by `h7`).
+The parity `a` odd, `e` even runs the same way after `4 ∣ e` is forced by a
+mod-`8` obstruction; `a`, `e` both odd is itself impossible mod `8`.  See
+`descentStep_one` above. -/
 theorem no_homogeneous_one
     (h7 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
       b ^ 2 ≠ 7 * a ^ 4 - 42 * a ^ 2 * e ^ 2 - e ^ 4)
-    (hm1 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+    (_hm1 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
       b ^ 2 ≠ -a ^ 4 - 42 * a ^ 2 * e ^ 2 + 7 * e ^ 4)
     (a e b : ℤ) (hcop : IsCoprime a e) (he : e ≠ 0) :
-    b ^ 2 ≠ a ^ 4 + 21 * a ^ 2 * e ^ 2 + 112 * e ^ 4 :=
-  sorry
+    b ^ 2 ≠ a ^ 4 + 21 * a ^ 2 * e ^ 2 + 112 * e ^ 4 := fun heq =>
+  he ((descent_fortyNine h7 (a.natAbs + 2 * e.natAbs)).1 a e b hcop le_rfl heq)
 
-/-- **THE `d = 7` HOMOGENEOUS SPACE IS EMPTY AWAY FROM `a = 0`** (sorry
-node, introduced 2026-07-26 by the cut of `rational_point_of_selmer_empty`):
+/-- **THE `d = 7` HOMOGENEOUS SPACE IS EMPTY AWAY FROM `a = 0`** (PROVEN
+2026-07-26 by the joint infinite descent `descent_fortyNine` above; formerly a
+sorry node cut out of `rational_point_of_selmer_empty`):
 `b² = 7a⁴ + 21a²e² + 16e⁴` has no integral solution with `gcd(a, e) = 1`
 and `a ≠ 0`.
 
@@ -6791,9 +7619,12 @@ realised in `E(ℚ)` only by the `2`-torsion point `(0, 0)` — the point
 `a = 0` of the space, where the equation reads `b² = 16e⁴`, satisfied by
 `b = ±4e²`.  So `a ≠ 0` is exactly the right exclusion.
 
-Route for a prover: `(2b)² = 7(2a² + 3e²)² + (e²)²`; the second descent then
-proceeds as for `no_homogeneous_one`, through `E' : W² = v(v² − 42v − 7)`
-with `h7` and `hm1`.
+The route taken uses `(8b)² = (21a² + 32e²)² + 7(a²)²` (equivalent to the
+recorded `(2b)² = 7(2a² + 3e²)² + (e²)²`, but with the `4`th power on the
+side of `a`, which is what must be descended).  When `4 ∣ a` the space folds
+back onto `no_homogeneous_one` at `(e, a/4)`; otherwise the factorisation
+lands on the `d = 1` space of `E'` or is killed by `h7`.  See
+`descentStep_seven` above.
 
 Note the symmetry `(a, e) ↦ (e, a)` carries this space to
 `b² = 16a⁴ + 21a²e² + 7e⁴`, which is the `d = 16 ≡ 1` space — so the two
@@ -6802,11 +7633,11 @@ discharge both. -/
 theorem no_homogeneous_seven
     (h7 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
       b ^ 2 ≠ 7 * a ^ 4 - 42 * a ^ 2 * e ^ 2 - e ^ 4)
-    (hm1 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+    (_hm1 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
       b ^ 2 ≠ -a ^ 4 - 42 * a ^ 2 * e ^ 2 + 7 * e ^ 4)
     (a e b : ℤ) (hcop : IsCoprime a e) (ha : a ≠ 0) :
-    b ^ 2 ≠ 7 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 16 * e ^ 4 :=
-  sorry
+    b ^ 2 ≠ 7 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 16 * e ^ 4 := fun heq =>
+  ha ((descent_fortyNine h7 (a.natAbs + 2 * e.natAbs)).2.1 a e b hcop le_rfl heq)
 
 /-- **`E : V² = u(u² + 21u + 112)` has no rational point with `u ≠ 0`**
 (PROVEN 2026-07-26 from `exists_homogeneous_of_point` and the four
@@ -6900,9 +7731,11 @@ framework task.  They are unnecessary because the conclusion wanted here is
 not "`rank = 0`" but the sharper "`E(ℚ)` has no point with `u ≠ 0`", and the
 descent delivers that directly: *every* such point lands on one of the four
 homogeneous spaces, so emptiness of the four spaces is already the whole
-statement.  What is left is two concrete quartic Diophantine equations,
+statement.  What was left was two concrete quartic Diophantine equations,
 `no_homogeneous_one` and `no_homogeneous_seven`, each one further descent
-step through the `2`-isogenous curve `E' : W² = v(v² − 42v − 7)`. -/
+step through the `2`-isogenous curve `E' : W² = v(v² − 42v − 7)`; **both were
+PROVEN on 2026-07-26** by a joint infinite descent, so this whole subtree —
+`X_0(49)(ℚ) = {O, (2, −1)}` — is now unconditional. -/
 theorem rational_point_of_selmer_empty
     (h2 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
       b ^ 2 ≠ 2 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 56 * e ^ 4)
