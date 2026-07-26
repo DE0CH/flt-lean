@@ -225,6 +225,16 @@ public import Fermat.FLT.Mathlib.RingTheory.AdicCompletion.Finite
 public import Mathlib.RingTheory.Ideal.Over
 public import Mathlib.RingTheory.Finiteness.Quotient
 public import Mathlib.RingTheory.Artinian.Module
+-- the coefficient-ring LOCALITY brick (2026-07-25,
+-- `isLocalRing_of_finite_padicInt_domain`, which removes `IsLocalRing`
+-- from the Carayol citation). `IsPrecomplete` occurs in the STATEMENTS of
+-- the four supporting lemmas, so `AdicCompletion.Noetherian` — which also
+-- carries the pin's `IsHausdorff` half for finite modules — is public;
+-- Hensel's lemma and the finite-index quotient lemma are used only inside
+-- proofs.
+public import Mathlib.RingTheory.AdicCompletion.Noetherian
+import Mathlib.RingTheory.Henselian
+import Mathlib.RingTheory.Ideal.Quotient.Index
 
 @[expose] public section
 
@@ -4720,7 +4730,7 @@ theorem free_of_finite_of_algebraMap_padicInt_injective {p : ℕ}
   infer_instance
 
 /-- **`ℤ_p` embeds into every characteristic-zero field it maps to**
-(PROVEN, 2026-07-25; first of the four coefficient-ring bricks that
+(PROVEN, 2026-07-25; first of the five coefficient-ring bricks that
 shrink the Carayol/Taylor citation below): any ring homomorphism
 `ℤ_p → C` with `C` a field of characteristic zero is injective.
 
@@ -4808,6 +4818,308 @@ theorem isTopologicalRing_moduleTopology_of_finite (p : ℕ) [Fact p.Prime]
   letI := moduleTopology ℤ_[p] B
   IsModuleTopology.isTopologicalRing ℤ_[p] B
 
+/-- **Membership in `J • ⊤` inside a finite product is coordinatewise**
+(PROVEN, 2026-07-25; first step of the locality brick below): for a
+finite index type `ι`, an element of `ι → R` lies in `J • ⊤` exactly
+when each of its coordinates lies in `J`.
+
+One inclusion is `Submodule.smul_induction_on`; the other writes
+`x = ∑ i, Pi.single i (x i)` and observes
+`Pi.single i (x i) = x i • Pi.single i 1`. -/
+theorem mem_ideal_smul_top_pi {R : Type*} [CommRing R] (J : Ideal R)
+    {ι : Type*} [Fintype ι] [DecidableEq ι] (x : ι → R) :
+    x ∈ J • (⊤ : Submodule R (ι → R)) ↔ ∀ i, x i ∈ J := by
+  constructor
+  · intro hx
+    refine Submodule.smul_induction_on hx ?_ ?_
+    · intro r hr n _ i
+      exact J.mul_mem_right _ hr
+    · intro a b ha hb i
+      exact J.add_mem (ha i) (hb i)
+  · intro hx
+    rw [← Finset.univ_sum_single x]
+    refine Submodule.sum_mem _ fun i _ => ?_
+    have hsingle : Pi.single i (x i) = x i • (Pi.single i (1 : R) : ι → R) := by
+      ext j
+      by_cases h : j = i <;> simp [h]
+    rw [hsingle]
+    exact Submodule.smul_mem_smul (hx i) Submodule.mem_top
+
+/-- **A finite product of a `J`-precomplete ring is `J`-precomplete**
+(PROVEN, 2026-07-25): Cauchy sequences for the `J`-adic filtration on
+`ι → R` are Cauchy coordinatewise, by `mem_ideal_smul_top_pi`, so the
+limit can be assembled coordinate by coordinate. -/
+theorem isPrecomplete_pi {R : Type*} [CommRing R] (J : Ideal R)
+    {ι : Type*} [Fintype ι] [DecidableEq ι] [IsPrecomplete J R] :
+    IsPrecomplete J (ι → R) where
+  prec' := by
+    intro f hf
+    have hf' : ∀ i : ι, ∀ {m n : ℕ}, m ≤ n →
+        f m i ≡ f n i [SMOD J ^ m • (⊤ : Submodule R R)] := by
+      intro i m n hmn
+      have h := hf hmn
+      rw [SModEq.sub_mem] at h ⊢
+      rw [smul_eq_mul, Ideal.mul_top]
+      exact ((mem_ideal_smul_top_pi (J ^ m) _).mp h) i
+    choose L hL using fun i => IsPrecomplete.prec' (I := J) (fun k => f k i) (hf' i)
+    refine ⟨L, fun n => ?_⟩
+    rw [SModEq.sub_mem, mem_ideal_smul_top_pi]
+    intro i
+    have h := hL i n
+    rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] at h
+    exact h
+
+/-- **`IsPrecomplete` transports along a linear equivalence** (PROVEN,
+2026-07-25): a linear equivalence carries `J ^ n • ⊤` to `J ^ n • ⊤`
+(`Submodule.map_smul''` plus surjectivity), so it carries Cauchy
+sequences to Cauchy sequences and limits to limits. -/
+theorem isPrecomplete_of_linearEquiv {R : Type*} [CommRing R]
+    {M N : Type*} [AddCommGroup M] [Module R M]
+    [AddCommGroup N] [Module R N] (J : Ideal R) (e : M ≃ₗ[R] N)
+    [IsPrecomplete J M] : IsPrecomplete J N where
+  prec' := by
+    intro f hf
+    have key : ∀ (n : ℕ) (y : N), y ∈ J ^ n • (⊤ : Submodule R N) ↔
+        e.symm y ∈ J ^ n • (⊤ : Submodule R M) := by
+      intro n y
+      have hmap : Submodule.map (e.symm : N →ₗ[R] M) (J ^ n • (⊤ : Submodule R N)) =
+          J ^ n • (⊤ : Submodule R M) := by
+        rw [Submodule.map_smul'', Submodule.map_top]
+        congr 1
+        exact LinearMap.range_eq_top.mpr e.symm.surjective
+      constructor
+      · intro hy
+        rw [← hmap]
+        exact Submodule.mem_map_of_mem hy
+      · intro hy
+        rw [← hmap] at hy
+        obtain ⟨z, hz, hze⟩ := hy
+        have hyz : z = y := by
+          have h := congrArg e hze
+          simpa using h
+        exact hyz ▸ hz
+    have hf' : ∀ {m n : ℕ}, m ≤ n →
+        e.symm (f m) ≡ e.symm (f n) [SMOD J ^ m • (⊤ : Submodule R M)] := by
+      intro m n hmn
+      have h := hf hmn
+      rw [SModEq.sub_mem] at h ⊢
+      rw [← map_sub]
+      exact (key m _).mp h
+    obtain ⟨L, hL⟩ := IsPrecomplete.prec' (I := J) (fun n => e.symm (f n)) hf'
+    refine ⟨e L, fun n => ?_⟩
+    have h := hL n
+    rw [SModEq.sub_mem] at h ⊢
+    refine (key n _).mpr ?_
+    rw [map_sub]
+    simpa using h
+
+/-- **A finite free module over a `J`-precomplete ring is
+`J`-precomplete** (PROVEN, 2026-07-25): choose a basis and transport
+`isPrecomplete_pi` along `Basis.equivFun`.
+
+The pin has `IsHausdorff` for finite modules over a Noetherian local
+ring (`Mathlib/RingTheory/AdicCompletion/Noetherian.lean`) but NO
+precompleteness statement for finite modules — that half is supplied
+here, and the two together give `IsAdicComplete`. -/
+theorem isPrecomplete_of_free_finite {R : Type*} [CommRing R] [Nontrivial R]
+    (J : Ideal R) [IsPrecomplete J R]
+    {M : Type*} [AddCommGroup M] [Module R M] [Module.Free R M] [Module.Finite R M] :
+    IsPrecomplete J M := by
+  classical
+  let b := Module.Free.chooseBasis R M
+  have hfin : Finite (Module.Free.ChooseBasisIndex R M) := Module.Finite.finite_basis b
+  cases nonempty_fintype (Module.Free.ChooseBasisIndex R M)
+  haveI := isPrecomplete_pi (R := R) J (ι := Module.Free.ChooseBasisIndex R M)
+  exact isPrecomplete_of_linearEquiv J b.equivFun.symm
+
+/-- **In a finite monoid some positive power of every element is
+idempotent** (PROVEN, 2026-07-25): pigeonhole gives `a < b` with
+`x ^ a = x ^ b`; with `d = b - a` the exponent map is then `d`-periodic
+above `a`, and `n = (a + 1) * d` is both `≥ a` and a multiple of `d`,
+so `x ^ (2 * n) = x ^ n`. -/
+theorem exists_pos_pow_mul_self_eq {M : Type*} [Monoid M] [Finite M] (x : M) :
+    ∃ n : ℕ, 0 < n ∧ x ^ n * x ^ n = x ^ n := by
+  have aux : ∀ a b : ℕ, a < b → x ^ a = x ^ b → ∃ n : ℕ, 0 < n ∧ x ^ n * x ^ n = x ^ n := by
+    intro a b hab h
+    set d := b - a with hd
+    have hd0 : 0 < d := by omega
+    have hb : a + d = b := by omega
+    have key : ∀ k : ℕ, a ≤ k → x ^ (k + d) = x ^ k := by
+      intro k hk
+      obtain ⟨t, rfl⟩ := Nat.exists_eq_add_of_le hk
+      have hrw : a + t + d = a + d + t := by omega
+      rw [hrw, hb, pow_add, ← h, ← pow_add]
+    have key2 : ∀ (m : ℕ) (k : ℕ), a ≤ k → x ^ (k + m * d) = x ^ k := by
+      intro m
+      induction m with
+      | zero => intro k _; simp
+      | succ m ih =>
+        intro k hk
+        have hrw : k + (m + 1) * d = k + m * d + d := by ring
+        rw [hrw, key _ (le_trans hk (Nat.le_add_right _ _)), ih k hk]
+    refine ⟨(a + 1) * d, ?_, ?_⟩
+    · exact Nat.mul_pos (Nat.succ_pos a) hd0
+    · have hge : a ≤ (a + 1) * d := by
+        calc a ≤ a + 1 := by omega
+        _ = (a + 1) * 1 := by ring
+        _ ≤ (a + 1) * d := by exact Nat.mul_le_mul_left _ hd0
+      rw [← pow_add]
+      exact key2 (a + 1) _ hge
+  obtain ⟨i, j, hne, h⟩ := Finite.exists_ne_map_eq_of_infinite (fun n : ℕ => x ^ n)
+  rcases lt_or_gt_of_ne hne with hlt | hlt
+  · exact aux i j hlt h
+  · exact aux j i hlt h.symm
+
+/-- **The residue ring of `ℤ_p` is finite** (PROVEN, 2026-07-25):
+`PadicInt.residueField` identifies it with `ZMod p`. -/
+instance finite_quotient_maximalIdeal_padicInt (p : ℕ) [Fact p.Prime] :
+    Finite (ℤ_[p] ⧸ IsLocalRing.maximalIdeal ℤ_[p]) :=
+  Finite.of_equiv (ZMod p) (PadicInt.residueField (p := p)).symm.toEquiv
+
+/-- **A domain module-finite over `ℤ_p` is LOCAL** (PROVEN, 2026-07-25;
+fifth coefficient-ring brick, and the one the 2026-07-25 audit on the
+Carayol citation below recorded as still missing): if `B` is an
+integral domain, module-finite over `ℤ_p`, receiving `ℤ_p` injectively,
+then `B` is a local ring.
+
+This is the Henselian property of `ℤ_p` in the only form the citation
+needs, and it is proven here from the `p`-adic completeness of `B`
+rather than from valuation theory:
+
+* `B` is finite free over `ℤ_p`
+  (`free_of_finite_of_algebraMap_padicInt_injective`), hence
+  `p`-adically PRECOMPLETE (`isPrecomplete_of_free_finite`, built above
+  because the pin has only the `IsHausdorff` half for finite modules);
+  with the pin's Hausdorff instance this gives
+  `IsAdicComplete (𝔪 ℤ_p) B`, and `IsAdicComplete.map_algebraMap_iff`
+  moves it to the ideal `I = 𝔪 ℤ_p · B`;
+* hence `HenselianRing B I` (`IsAdicComplete.henselianRing`) and
+  `I ≤ jacobson ⊥`;
+* `B ⧸ I` is FINITE (`Submodule.finite_quotient_smul` over the finite
+  residue ring of `ℤ_p`), so for every `x` some positive power of its
+  class is idempotent (`exists_pos_pow_mul_self_eq`);
+* that idempotent lifts through `I` by Hensel applied to `X ^ 2 - X`
+  — whose derivative `2 * a - 1` is a unit mod `I` because
+  `(2 * a - 1) ^ 2 = 4 * (a ^ 2 - a) + 1` — and `B` is a DOMAIN, so the
+  lift is `0` or `1`;
+* if it is `1` then `x ^ n` is `1` modulo the Jacobson radical, hence a
+  unit, hence `x` is; if it is `0` then `x ^ n ∈ I`, and
+  `(∑ i < n, x ^ i) * (1 - x) = 1 - x ^ n` is a unit, hence `1 - x` is.
+
+So `∀ x, IsUnit x ∨ IsUnit (1 - x)`, which is
+`IsLocalRing.of_isUnit_or_isUnit_one_sub_self`.
+
+WHY THE OBVIOUS ROUTES DO NOT WORK (recorded so they are not
+re-derived). The 2026-07-25 audit on the citation proposed reading
+locality off the uniqueness of the extension of the `p`-adic valuation
+to `Frac B`; that needs the unbundled `spectralNorm` layer to be
+bundled first, a much larger project. The purely ideal-theoretic route
+— maximal ideals of `B` all lie over `(p)`, so it suffices to bound
+the maximal ideals of `B ⧸ I` — cannot be closed WITHOUT completeness:
+`ℤ[X]/(X ^ 2 + X + 1)` localized away from nothing is a domain,
+module-finite over `ℤ`, with two maximal ideals over `(7)`. Completeness
+is exactly what rules that out, and it enters only through the
+idempotent lift.
+
+Consequence for the cut below: `IsLocalRing B` is GONE from the
+Carayol citation. -/
+theorem isLocalRing_of_finite_padicInt_domain {p : ℕ} [Fact p.Prime]
+    {B : Type*} [CommRing B] [IsDomain B] [Algebra ℤ_[p] B]
+    [Module.Finite ℤ_[p] B]
+    (hinj : Function.Injective (algebraMap ℤ_[p] B)) : IsLocalRing B := by
+  classical
+  haveI : Module.Free ℤ_[p] B := free_of_finite_of_algebraMap_padicInt_injective hinj
+  haveI : IsPrecomplete (IsLocalRing.maximalIdeal ℤ_[p]) B := isPrecomplete_of_free_finite _
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal ℤ_[p]) B := ⟨⟩
+  set I : Ideal B := (IsLocalRing.maximalIdeal ℤ_[p]).map (algebraMap ℤ_[p] B)
+  haveI hcomp : IsAdicComplete I B :=
+    (IsAdicComplete.map_algebraMap_iff (IsLocalRing.maximalIdeal ℤ_[p]) B).mpr inferInstance
+  -- the residue ring `B ⧸ I` is finite
+  haveI hsub : Subsingleton (B ⧸ (⊤ : Submodule ℤ_[p] B)) := by
+    refine ⟨fun a b => ?_⟩
+    obtain ⟨a, rfl⟩ := Submodule.Quotient.mk_surjective _ a
+    obtain ⟨b, rfl⟩ := Submodule.Quotient.mk_surjective _ b
+    rw [Submodule.Quotient.eq]
+    exact Submodule.mem_top
+  haveI : Finite (B ⧸ (⊤ : Submodule ℤ_[p] B)) := Finite.of_subsingleton
+  haveI hfin1 : Finite (B ⧸ (IsLocalRing.maximalIdeal ℤ_[p]) • (⊤ : Submodule ℤ_[p] B)) :=
+    Submodule.finite_quotient_smul _ Module.Finite.fg_top
+  have hle : (IsLocalRing.maximalIdeal ℤ_[p]) • (⊤ : Submodule ℤ_[p] B) ≤
+      LinearMap.ker ((Ideal.Quotient.mkₐ ℤ_[p] I).toLinearMap) := by
+    intro y hy
+    have hmem : y ∈ Submodule.restrictScalars ℤ_[p] I := by
+      rw [← Ideal.smul_top_eq_map]; exact hy
+    simpa [Ideal.Quotient.eq_zero_iff_mem] using hmem
+  haveI hfinI : Finite (B ⧸ I) := by
+    refine Finite.of_surjective
+      (Submodule.liftQ ((IsLocalRing.maximalIdeal ℤ_[p]) • (⊤ : Submodule ℤ_[p] B))
+        ((Ideal.Quotient.mkₐ ℤ_[p] I).toLinearMap) hle) ?_
+    intro y
+    obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective y
+    exact ⟨Submodule.Quotient.mk b, rfl⟩
+  -- the Henselian dichotomy
+  have hjac : I ≤ (⊥ : Ideal B).jacobson := IsAdicComplete.le_jacobson_bot I
+  have hunit_one_sub : ∀ j ∈ I, IsUnit (1 - j) := by
+    intro j hj
+    have h := (Ideal.mem_jacobson_bot.mp (hjac hj)) (-1)
+    simpa [sub_eq_add_neg, add_comm] using h
+  refine IsLocalRing.of_isUnit_or_isUnit_one_sub_self fun x => ?_
+  obtain ⟨n, hn, hidem⟩ := exists_pos_pow_mul_self_eq (Ideal.Quotient.mk I x)
+  -- lift the idempotent `(mk x) ^ n` through the Henselian ideal `I`
+  have hasq : Ideal.Quotient.mk I (x ^ n) * Ideal.Quotient.mk I (x ^ n)
+      = Ideal.Quotient.mk I (x ^ n) := by
+    rw [map_pow]; exact hidem
+  have hz : Ideal.Quotient.mk I (x ^ n * x ^ n - x ^ n) = 0 := by
+    rw [map_sub, map_mul, hasq, sub_self]
+  have hmonic : (X ^ 2 - X : B[X]).Monic := by
+    refine Polynomial.monic_X_pow_sub (n := 2) (lt_of_le_of_lt Polynomial.degree_X_le ?_)
+    exact_mod_cast one_lt_two
+  have hroot : (X ^ 2 - X : B[X]).eval (x ^ n) ∈ I := by
+    have hev : (X ^ 2 - X : B[X]).eval (x ^ n) = x ^ n * x ^ n - x ^ n := by
+      simp [sq]
+    rw [hev, ← Ideal.Quotient.eq_zero_iff_mem]
+    exact hz
+  have hderiv : IsUnit (Ideal.Quotient.mk I ((X ^ 2 - X : B[X]).derivative.eval (x ^ n))) := by
+    have hd : (X ^ 2 - X : B[X]).derivative.eval (x ^ n) = 2 * x ^ n - 1 := by
+      simp [Polynomial.derivative_sub]
+      norm_num
+    rw [hd]
+    have hexp : (2 * x ^ n - 1) * (2 * x ^ n - 1)
+        = 4 * (x ^ n * x ^ n - x ^ n) + 1 := by ring
+    have hsq : Ideal.Quotient.mk I (2 * x ^ n - 1) * Ideal.Quotient.mk I (2 * x ^ n - 1) = 1 := by
+      rw [← map_mul, hexp, map_add, map_mul, hz, map_one, mul_zero, zero_add]
+    exact isUnit_iff_exists_inv.mpr ⟨_, hsq⟩
+  obtain ⟨e, he, hee⟩ :=
+    HenselianRing.is_henselian (R := B) (I := I) (X ^ 2 - X) hmonic (x ^ n) hroot hderiv
+  have hesq : e ^ 2 - e = 0 := by
+    have h := he
+    simp only [Polynomial.IsRoot, Polynomial.eval_sub, Polynomial.eval_pow,
+      Polynomial.eval_X] at h
+    exact h
+  have hidem2 : e * (e - 1) = 0 := by linear_combination hesq
+  rcases mul_eq_zero.mp hidem2 with h0 | h1
+  · -- `e = 0`: `x ^ n ∈ I`, so `1 - x` divides the unit `1 - x ^ n`
+    right
+    have hxn : x ^ n ∈ I := by
+      have h' := hee
+      rw [h0, zero_sub] at h'
+      exact neg_mem_iff.mp h'
+    have hunit : IsUnit (1 - x ^ n) := hunit_one_sub _ hxn
+    have hgeom : (∑ i ∈ Finset.range n, x ^ i) * (1 - x) = 1 - x ^ n := by
+      have h := geom_sum_mul x n
+      linear_combination -h
+    rw [← hgeom] at hunit
+    exact isUnit_of_mul_isUnit_right hunit
+  · -- `e = 1`: `1 - x ^ n ∈ I`, so `x ^ n` is a unit
+    left
+    have he1 : e = 1 := sub_eq_zero.mp h1
+    have hxn : (1 : B) - x ^ n ∈ I := by rw [← he1]; exact hee
+    have hunit : IsUnit (1 - (1 - x ^ n)) := hunit_one_sub _ hxn
+    simp only [sub_sub_cancel] at hunit
+    obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+    rw [pow_succ] at hunit
+    exact isUnit_of_mul_isUnit_right hunit
+
 /-- **The Hilbert-modular `3`-adic realization, geometric core**
 (sorry node — Carayol 1986, Théorème (A)/(B) / Taylor 1989; THE
 citation leaf of the `3`-adic realization node, in its narrowest form
@@ -4819,11 +5131,12 @@ representation `τF` of `G_F` on a rank-`2` lattice over a local DOMAIN
 completion `E_λ`, `λ | 3`), matching the Hecke polynomials through a
 place `ψ₃` of `E` over `3` and a comparison embedding `ιB`.
 
-CITATION-SHRINKING CUT (2026-07-25). This leaf replaces the earlier
-`exists_threeadic_realization_domain_of_heckePackage` citation, which
-is now a PROVEN assembly over it. Five of that statement's components
-were pulled out of the citation and proven in-tree as the four bricks
-above; the citation now asserts strictly less:
+CITATION-SHRINKING CUT (2026-07-25, extended the same day). This leaf
+replaces the earlier `exists_threeadic_realization_domain_of_heckePackage`
+citation, which is now a PROVEN assembly over it. Six of that
+statement's components were pulled out of the citation and proven
+in-tree as the five bricks above; the citation now asserts strictly
+less:
 
 * `TopologicalSpace B`, `IsTopologicalRing B`, `IsModuleTopology ℤ_3 B`
   — GONE. The coefficient ring's topology is not a choice: the three
@@ -4843,7 +5156,16 @@ above; the citation now asserts strictly less:
   This is the hypothesis that feeds the downstream free-lattice
   normalization `free_of_finite_of_algebraMap_padicInt_injective`, so
   `ℤ_3`-freeness of `B` is now TWO formal steps away from the citation
-  rather than one assumption plus one step.
+  rather than one assumption plus one step;
+* `IsLocalRing B` — GONE (2026-07-25, second pass), by
+  `isLocalRing_of_finite_padicInt_domain`: a DOMAIN module-finite over
+  `ℤ_3` is `3`-adically complete, hence Henselian, hence has no
+  nontrivial idempotents in `B ⧸ 3B` — and a finite ring with only
+  trivial idempotents is local. The 2026-07-25 audit below predicted
+  this needed the unbundled `spectralNorm` layer to be bundled first;
+  it does not — completeness enters ONLY through the idempotent lift,
+  and the missing pin half (precompleteness of a finite free module)
+  is four short lemmas, proven above.
 
 What remains is the genuinely geometric core: the automorphic
 construction of a `2`-dimensional `3`-adic representation of `G_F` with
@@ -4883,25 +5205,34 @@ representations of any kind (`grep Hilbert.*modular`, `grep Shimura`
 over `Mathlib/`: nothing in this direction), so the construction
 itself is irreducibly a citation. What the pin DOES have is the
 coefficient-ring commutative algebra and the module-topology layer,
-which is why those have been split off and proven (four bricks above,
-plus `free_of_finite_of_algebraMap_padicInt_injective`).
+which is why those have been split off and proven (five bricks above,
+plus `free_of_finite_of_algebraMap_padicInt_injective` and the four
+precompleteness lemmas that feed the locality brick).
 
-RESIDUAL BOOKKEEPING NOT YET PULLED OUT (audited 2026-07-25, recorded
-so it is not re-scanned from scratch): `IsLocalRing B` stays in the
-citation. It is TRUE for the produced ring but its formal proof from
-"domain, module-finite over `ℤ_3`" needs a Henselian/completeness
-input — the maximal ideals of such a `B` all lie over `(3)` (that part
-is formal, `Algebra.IsIntegral.isField_iff_isField`), but their
-UNIQUENESS is exactly uniqueness of the extension of the `3`-adic
-valuation to `Frac B`. The pin has `HenselianRing` and
-`IsAdicComplete.henselianRing` but no instance connecting them to
-module-finite algebras (no `HenselianLocalRing` use anywhere outside
-its defining file), no `IsNonarchimedeanLocalField` instance for finite
-extensions of `ℚ_p`, and only the unbundled `spectralNorm` layer — so
-the bridge would have to be built (idempotent lifting along
-`3`-adic completeness of a finite free `ℤ_3`-module, then
-"connected finite ring is local"). That is a self-contained
-commutative-algebra project, not a shrinking of the geometry.
+RESIDUAL BOOKKEEPING — NOW DISCHARGED (audited 2026-07-25 morning,
+CLOSED 2026-07-25 evening). The audit read: "`IsLocalRing B` stays in
+the citation; its formal proof from 'domain, module-finite over `ℤ_3`'
+needs a Henselian/completeness input, and the pin has `HenselianRing`
+and `IsAdicComplete.henselianRing` but no instance connecting them to
+module-finite algebras, no `IsNonarchimedeanLocalField` instance for
+finite extensions of `ℚ_p`, and only the unbundled `spectralNorm`
+layer — so the bridge would have to be built (idempotent lifting along
+`3`-adic completeness of a finite free `ℤ_3`-module, then 'connected
+finite ring is local')."
+
+That bridge IS the route, and it has been built: see
+`isLocalRing_of_finite_padicInt_domain` above. Two corrections to the
+audit for the record: (i) the valuation-uniqueness reading is a detour
+— idempotent lifting alone suffices, and never mentions a valuation;
+(ii) the only genuinely missing pin ingredient was PRECOMPLETENESS of a
+finite free module (the pin has the `IsHausdorff` half only), which is
+`isPrecomplete_of_free_finite` and its three supporting lemmas above.
+
+Nothing further is now scheduled to leave this citation: the remaining
+components (`B` with `CommRing`, `IsDomain`, `Algebra ℤ_3`,
+`Module.Finite ℤ_3`, the representation `τF`, the place `ψ₃`, the
+embedding `ιB` and the matching clause) are the automorphic
+construction itself.
 
 Also audited and deliberately NOT done: restating the matching clause
 as the pair `ιB (tr τF(Frob_w)) = ψ₃ a_w`, `ιB (det τF(Frob_w)) =
@@ -4984,7 +5315,7 @@ theorem carayol_threeadic_realization_of_heckePackage
     (hmod : ∀ w ∉ badF,
       ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
         (heckeF w).map ψℓ) :
-    ∃ (B : Type u) (_ : CommRing B) (_ : IsDomain B) (_ : IsLocalRing B)
+    ∃ (B : Type u) (_ : CommRing B) (_ : IsDomain B)
       (_ : Algebra ℤ_[3] B) (_ : Module.Finite ℤ_[3] B),
       letI : TopologicalSpace B := moduleTopology ℤ_[3] B
       letI : IsTopologicalRing B :=
@@ -5006,10 +5337,12 @@ over a local DOMAIN `B` which is module-finite over `ℤ_3`, carries the
 
 ASSEMBLY (2026-07-25): this used to BE the citation; it is now a
 proven assembly over the strictly narrower geometric core
-`carayol_threeadic_realization_of_heckePackage` plus the four
+`carayol_threeadic_realization_of_heckePackage` plus the five
 coefficient-ring bricks proven above — the module topology is a ring
 topology and is the module topology
-(`isTopologicalRing_moduleTopology_of_finite`), and both injectivity
+(`isTopologicalRing_moduleTopology_of_finite`), locality of the
+coefficient ring is the Henselian property of `ℤ_3`
+(`isLocalRing_of_finite_padicInt_domain`), and both injectivity
 components follow from the existence of the comparison embedding into
 the characteristic-zero field `ℚ̄_3`
 (`injective_of_finite_padicInt_charZero`,
@@ -5072,9 +5405,14 @@ theorem exists_threeadic_realization_domain_of_heckePackage
   -- back as a bare local domain, module-finite over `ℤ_3`, with no
   -- topology, no `ℤ_3`-injectivity and no injectivity of the comparison
   -- embedding asserted
-  obtain ⟨B, hCR, hDom, hLR, hAlg, hFin, τF, ψ₃, ιB, hmatch⟩ :=
+  obtain ⟨B, hCR, hDom, hAlg, hFin, τF, ψ₃, ιB, hmatch⟩ :=
     carayol_threeadic_realization_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW
       hρbar hirr π hπsurj hπ F hFtr hFgal E badF heckeF ψℓ ιO hιO hmod
+  -- locality of the coefficient ring is now a THEOREM of the Henselian
+  -- property of `ℤ_3`, not a component of the citation
+  have hLR : IsLocalRing B :=
+    isLocalRing_of_finite_padicInt_domain (p := 3)
+      (injective_algebraMap_of_ringHom_charZero ιB)
   -- (b) the coefficient-ring bookkeeping, all four components PROVEN
   -- above: the canonical module topology is a ring topology and is of
   -- course the module topology, and both injectivity statements follow
@@ -5108,8 +5446,9 @@ The node splits at its one genuine literature joint into
   module-finite over `ℤ_3`, containing `ℤ_3`. Since 2026-07-25 that
   half is itself PROVEN, over the strictly narrower geometric core
   `carayol_threeadic_realization_of_heckePackage` (which no longer
-  asserts the topology on the coefficient ring, nor either injectivity
-  component) — the sole residual sorry of the node is now that core;
+  asserts the topology on the coefficient ring, nor its LOCALITY, nor
+  either injectivity component) — the sole residual sorry of the node
+  is now that core;
 * (b) the FORMAL half, `free_of_finite_of_algebraMap_padicInt_injective`
   — the free-lattice normalization, PROVEN in-tree: `ℤ_3` is a DVR
   hence a PID, injectivity of `algebraMap ℤ_3 B` between domains is
