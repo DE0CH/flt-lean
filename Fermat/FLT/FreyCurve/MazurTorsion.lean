@@ -1623,37 +1623,217 @@ theorem WeierstrassCurve.exists_frobeniusTraceRelation_of_isogenySignature_six
     push_cast
     linear_combination h
 
-/-- **Class number one, in purely elementary form** (sorry leaf,
-introduced 2026-07-26 — this leaf IS Baker–Heegner–Stark and nothing else):
-if `N ≥ 23` is a prime with `N ≡ 3 (mod 4)` such that every odd prime
-`q < N/4` is INERT in `ℚ(√−N)` — equivalently `−N` is a non-square mod `q`
-— then `N ∈ {43, 67, 163}`.
+/-- **Square-root witness in natural-number form** (PROVEN 2026-07-26): if
+`q ∣ c² + N` for naturals `c, N`, then `−N` is a square mod `q`.
+
+This is the shape in which every concrete non-inertness witness below is
+supplied. `q ∣ c * c + N` is a statement about two numerals that `omega`
+discharges from a congruence on `N`, and it involves no evaluation of a
+`ZMod` numeral at all — which is what keeps the finite check cheap. Note
+`c = 0` is allowed and is genuinely useful: it says that a prime `q`
+DIVIDING `N` splits (`0` is a square), which is how composite `N` are
+excluded below without ever invoking primality. -/
+theorem mazurIsogeny_isSquare_neg_of_dvd {q N c : ℕ} (h : q ∣ c * c + N) :
+    IsSquare ((-(N : ℤ) : ZMod q)) := by
+  refine ⟨(c : ZMod q), ?_⟩
+  have h0 : ((c * c + N : ℕ) : ZMod q) = 0 := (ZMod.natCast_eq_zero_iff _ _).mpr h
+  push_cast at h0 ⊢
+  linear_combination -h0
+
+/-- **Large prime factors force primality** (PROVEN 2026-07-26): if `1 < n`,
+`n < m * m`, and every prime factor of `n` is `≥ m`, then `n` is prime.
+
+Proof. Write `n = p * k` with `p := n.minFac`. If `k = 1` then `n = p` is
+prime. Otherwise `k > 1` has a prime factor `r = k.minFac`, which also
+divides `n`; both `p ≥ m` and `r ≥ m` by hypothesis, and `r ≤ k`, so
+`n = p * k ≥ p * r ≥ m * m`, contradicting `n < m * m`.
+
+This is the sieve half of Rabinowitsch's argument: once every small prime
+has been excluded as a divisor, a value below `m²` has no room for two
+prime factors and is therefore prime. -/
+theorem mazurIsogeny_prime_of_large_factors {n m : ℕ} (h1 : 1 < n) (hlt : n < m * m)
+    (hfac : ∀ p : ℕ, p.Prime → p ∣ n → m ≤ p) : n.Prime := by
+  have hpp : n.minFac.Prime := Nat.minFac_prime (by omega)
+  obtain ⟨k, hk⟩ := Nat.minFac_dvd n
+  have hk0 : k ≠ 0 := by rintro rfl; omega
+  rcases eq_or_lt_of_le (show 1 ≤ k by omega) with hk1 | hk1
+  · rw [hk, ← hk1, mul_one]; exact hpp
+  · have hr : k.minFac.Prime := Nat.minFac_prime (by omega)
+    have hkn : k ∣ n := by rw [hk]; exact dvd_mul_left k n.minFac
+    have hrf : k.minFac ∣ n := (Nat.minFac_dvd k).trans hkn
+    have h1' : m ≤ n.minFac := hfac _ hpp (Nat.minFac_dvd n)
+    have h2' : m ≤ k.minFac := hfac _ hr hrf
+    have h3' : k.minFac ≤ k := Nat.minFac_le (by omega)
+    have hmm : m * m ≤ n.minFac * k := Nat.mul_le_mul h1' (le_trans h2' h3')
+    rw [← hk] at hmm
+    exact absurd hlt (not_lt.mpr hmm)
+
+/-- **The Rabinowitsch bridge** (PROVEN 2026-07-26): with `N + 1 = 4 * m` and
+`m ≥ 6`, if every odd prime `q` with `4q < N` is inert — `−N` a non-square
+mod `q` — then `x² + x + m` is PRIME for every `x ≤ m − 2`.
+
+This is the whole elementary content of the class-number-one hypothesis, and
+it removes Legendre symbols from the remaining deep leaf entirely. Three
+steps, all elementary.
+
+1. NO SMALL ODD PRIME DIVIDES A VALUE. If `p ∣ x² + x + m` with `p` odd, then
+   from the identity `(2x + 1)² + N = 4 * (x² + x + m)` — which is exactly
+   `N + 1 = 4m` — we get `(2x + 1)² ≡ −N (mod p)`, so `−N` is a square mod
+   `p` and `p` is not inert. Hence every odd prime `p < m` divides no value
+   of `x² + x + m` whatsoever. (`p < m` is equivalent to `4p < N`.)
+
+2. `m` IS ODD, hence `N ≡ 3 (mod 8)`. Suppose `m` even. If `m ≡ 2 (mod 4)`
+   then `k := m/2` is ODD and `≥ 3`, so `k.minFac` is an odd prime `< m`
+   dividing `m = 0² + 0 + m` — contradicting step 1 at `x = 0`. If
+   `m ≡ 0 (mod 4)` then `j := m/2 + 1` is ODD and `≥ 5`, so `j.minFac` is an
+   odd prime `< m` dividing `m + 2 = 1² + 1 + m` — contradicting step 1 at
+   `x = 1`. This is the elementary reason the branch `N ≡ 7 (mod 8)` cannot
+   occur, even though `q = 2` is outside the hypothesis: `2` splitting is
+   invisible to `hinert`, but it forces a SMALL ODD prime to split as well.
+
+3. THE VALUES ARE PRIME. For `x ≤ m − 2`, `x² + x` is even and `m` is odd, so
+   `f := x² + x + m` is odd; every prime factor of `f` is therefore odd, and
+   by step 1 is `≥ m`. And `f ≤ (m−2)² + (m−2) + m = m² − 2m + 2 < m²`. So
+   `mazurIsogeny_prime_of_large_factors` applies and `f` is prime.
+
+The converse direction (prime-generating implies inert) is classical and is
+not needed here. -/
+theorem mazurIsogeny_primeGenerating_of_inert {N m : ℕ} (hm6 : 6 ≤ m)
+    (hNm : N + 1 = 4 * m)
+    (hinert : ∀ q : ℕ, q.Prime → 2 < q → 4 * q < N →
+      ¬ IsSquare ((-(N : ℤ) : ZMod q))) :
+    ∀ x : ℕ, x + 1 < m → Nat.Prime (x ^ 2 + x + m) := by
+  have hkey : ∀ p : ℕ, p.Prime → p ≠ 2 → p < m → ∀ x : ℕ, ¬ p ∣ (x ^ 2 + x + m) := by
+    intro p hp hp2 hpm x hdvd
+    refine hinert p hp (lt_of_le_of_ne hp.two_le (Ne.symm hp2)) (by omega) ?_
+    obtain ⟨k, hk⟩ := hdvd
+    refine mazurIsogeny_isSquare_neg_of_dvd (c := 2 * x + 1) ⟨4 * k, ?_⟩
+    calc (2 * x + 1) * (2 * x + 1) + N = 4 * x ^ 2 + 4 * x + (N + 1) := by ring
+      _ = 4 * x ^ 2 + 4 * x + 4 * m := by rw [hNm]
+      _ = 4 * (x ^ 2 + x + m) := by ring
+      _ = 4 * (p * k) := by rw [hk]
+      _ = p * (4 * k) := by ring
+  have hmodd : m % 2 = 1 := by
+    by_contra hev
+    have he : m % 4 = 0 ∨ m % 4 = 2 := by omega
+    rcases he with h4 | h4
+    · set j := m / 2 + 1 with hj
+      have hjodd : j % 2 = 1 := by omega
+      have hp : j.minFac.Prime := Nat.minFac_prime (by omega)
+      have hpd : j.minFac ∣ j := Nat.minFac_dvd j
+      have hp2 : j.minFac ≠ 2 := by intro hh; rw [hh] at hpd; omega
+      have hplt : j.minFac < m := lt_of_le_of_lt (Nat.minFac_le (by omega)) (by omega)
+      refine hkey j.minFac hp hp2 hplt 1 ?_
+      have hval : (1 : ℕ) ^ 2 + 1 + m = m + 2 := by ring
+      rw [hval]
+      exact hpd.trans ⟨2, by omega⟩
+    · set k := m / 2 with hkdef
+      have hkodd : k % 2 = 1 := by omega
+      have hp : k.minFac.Prime := Nat.minFac_prime (by omega)
+      have hpd : k.minFac ∣ k := Nat.minFac_dvd k
+      have hp2 : k.minFac ≠ 2 := by intro hh; rw [hh] at hpd; omega
+      have hplt : k.minFac < m := lt_of_le_of_lt (Nat.minFac_le (by omega)) (by omega)
+      refine hkey k.minFac hp hp2 hplt 0 ?_
+      have hval : (0 : ℕ) ^ 2 + 0 + m = m := by ring
+      rw [hval]
+      exact hpd.trans ⟨2, by omega⟩
+  intro x hx
+  have hodd : (x ^ 2 + x + m) % 2 = 1 := by
+    have he : Even (x ^ 2 + x) := by
+      have hxx : x ^ 2 + x = x * (x + 1) := by ring
+      rw [hxx]; exact Nat.even_mul_succ_self x
+    have := Nat.even_iff.mp he
+    omega
+  have hlt : x ^ 2 + x + m < m * m := by
+    obtain ⟨d, hd⟩ : ∃ d, m = x + 2 + d := ⟨m - x - 2, by omega⟩
+    rw [hd]; nlinarith
+  refine mazurIsogeny_prime_of_large_factors (by omega) hlt ?_
+  intro p hp hpd
+  by_contra hpm
+  exact hkey p hp (by rintro rfl; omega) (by omega) x hpd
+
+/-- **Baker–Heegner–Stark, as a bound on prime-generating polynomials**
+(sorry leaf, introduced 2026-07-26, replacing the bare Legendre-symbol form
+that stood here — this leaf IS the class-number-one theorem and nothing
+else): if `m ≥ 2` and `x² + x + m` is PRIME for every `x ≤ m − 2`, then
+`m ≤ 41`.
+
+WHY THIS SHAPE. The previous cut had already removed number fields, ideal
+classes and Minkowski bounds; this one additionally removes Legendre
+symbols, quadratic reciprocity and the prime `N` itself. What is left is a
+single self-contained assertion about a prime-generating quadratic
+polynomial — Rabinowitsch's criterion — which is the classical statement of
+the class-number-one problem in its most elementary vocabulary. Everything
+connecting it back to the isogeny argument is now PROVEN, in
+`mazurIsogeny_primeGenerating_of_inert` and in
+`mazurIsogeny_classNumberOne_of_inert` below.
+
+The bound is SHARP and the leaf is NOT vacuous: the hypothesis is satisfied
+exactly by `m ∈ {2, 3, 5, 11, 17, 41}`, i.e. `4m − 1 ∈ {7, 11, 19, 43, 67,
+163}`, the class-number-one discriminants `≡ 3 (mod 4)`. Verified 2026-07-26
+by direct computation over every `m ≤ 1089` (the range in which `f(m−2)`
+stays inside a sieve of `1.2 · 10⁶`); `m = 41` attains the bound, so no
+smaller constant is provable.
+
+Routes to a proof, none of them short: Heegner–Stark via the Weber modular
+functions and the resulting quartic Diophantine equation; Baker via linear
+forms in logarithms; or Goldfeld–Gross–Zagier. Nothing in this file
+suggests a cheaper one, and the elementary reductions above provably do not
+bound `m` on their own — they are equivalent to `h(1 − 4m) = 1`, not to a
+bound on it. -/
+theorem mazurIsogeny_rabinowitsch_bound {m : ℕ} (hm : 2 ≤ m)
+    (hgen : ∀ x : ℕ, x + 1 < m → Nat.Prime (x ^ 2 + x + m)) : m ≤ 41 :=
+  sorry
+
+/-- **Class number one, in purely elementary form** (PROVEN 2026-07-26 over
+`mazurIsogeny_rabinowitsch_bound`, replacing the bare sorry this node was
+introduced with earlier the same day): if `N ≥ 23` is a prime with
+`N ≡ 3 (mod 4)` such that every odd prime `q < N/4` is INERT in `ℚ(√−N)` —
+equivalently `−N` is a non-square mod `q` — then `N ∈ {43, 67, 163}`.
 
 WHY THIS SHAPE. The old single sorry mixed three different things: the
 Hasse–Weil trace estimate, an elementary incompatibility of inequalities,
 and the class-number-one theorem. Only the last is deep, and stating it
 like this removes elliptic curves, ideal classes, Minkowski bounds and
-number fields from it altogether: it is a statement about Legendre symbols
-of `N`, and a future prover needs no algebraic-number-theory interface to
-attack it. The classical route back is unchanged — the hypothesis says every
-rational prime below the Minkowski bound `2√N/π` (which is `< N/4` for
-`N > 19`) is inert, hence every ideal of small norm is the principal ideal
-generated by a rational prime, hence `h(−N) = 1`, hence by
-Baker–Heegner–Stark `N ∈ {3, 7, 11, 19, 43, 67, 163}`, and `N ≥ 23` leaves
-three.
+number fields from it altogether. As of the third pass of 2026-07-26 it no
+longer contains the deep input either: the whole of it is now PROVEN over
+`mazurIsogeny_rabinowitsch_bound`, in two independent halves.
 
-FAITHFULNESS AUDIT (2026-07-26, PARI/GP as an untrusted searcher; the
-statement remains to be proven in-kernel). Every hypothesis is
-load-bearing, and the audit pins exactly which one excludes what. Running
-the inert condition over ALL `N ∈ [23, 3·10⁵]` with no primality and no
-congruence filter, the survivors are
+THE PROOF, and both halves are elementary.
 
-  `{28, 37, 43, 58, 67, 163}`
+* THE BOUND. `hmod` makes `N + 1 = 4m`, and `mazurIsogeny_primeGenerating_of_inert`
+  turns `hinert` into "`x² + x + m` is prime for every `x ≤ m − 2`" —
+  Rabinowitsch's criterion. The deep leaf then gives `m ≤ 41`, i.e. `N ≤ 163`.
+  This is the classical route back, made formal: instead of speaking of ideals
+  of small norm being principal, one observes directly that an odd prime
+  dividing a value of `x² + x + m` would split, so the values below `m²` are
+  forced to be prime.
+* THE FINITE CHECK. Seven congruence conditions, each a single application of
+  `hinert` through `mazurIsogeny_isSquare_neg_of_dvd`, cut `[23, 163]` down to
+  exactly `{43, 67, 163}`: `q = 3` with `c ∈ {0, 1}` gives `N ≡ 1 (mod 3)`;
+  `q = 5` with `c ∈ {0, 1, 2}` gives `N ≡ 2, 3 (mod 5)`; `q = 7, c = 3` kills
+  `103`; `q = 11, c = 4` kills `127`. The last two are stated with their
+  `4q < N` guards (`28 < N`, `44 < N`) so that `omega` may use them.
 
-so: `hN` (primality) is what kills `28` and `58`; `hmod` is what kills the
-PRIME `37` (`37 ≡ 1 (mod 4)`); `hN23` is what kills `3, 7, 11, 19`. Nothing
-else survives. Rerunning with the primality and congruence filters in place
-over `N ∈ [23, 2·10⁶]` leaves exactly `{43, 67, 163}`.
+FAITHFULNESS AUDIT (2026-07-26, re-run and EXTENDED on the third pass, by
+independent sieve; the original PARI/GP figures are reproduced exactly).
+Running the inert condition over ALL `N ≥ 1` with no primality and no
+congruence filter, the complete list of survivors below `3·10⁵` is
+
+  `{1, ..., 13, 16, 19, 22, 28, 37, 43, 58, 67, 163}`
+
+and restricted to `N ≥ 23` this is `{28, 37, 43, 58, 67, 163}`, as first
+reported. `hmod` alone leaves `{3, 7, 11, 19, 43, 67, 163}`, and `hN23` then
+leaves the three.
+
+CORRECTION to the earlier attribution, and it matters because the proof below
+depends on it: `hN` (primality) is NOT what kills `28` and `58` — `hmod` is,
+since `28 ≡ 0` and `58 ≡ 2 (mod 4)`. In fact NO composite at all survives
+`hmod` together with `hN23`, so `hN` is REDUNDANT: the proof below never uses
+it, and the statement is true without it. It is kept in the signature because
+the consumer supplies it anyway and because dropping a hypothesis from a leaf
+other agents have already built against buys nothing. The primality of `N` is
+of course still doing work upstream, in the sibling leaves.
 
 Note the pleasing symmetry with the sibling branch: `37` is excluded from
 the signature-`≠ 6` branch by `hN37` and from THIS branch by `hmod`, which
@@ -1662,8 +1842,34 @@ theorem mazurIsogeny_classNumberOne_of_inert {N : ℕ} (hN : N.Prime) (hN23 : 23
     (hmod : N % 4 = 3)
     (hinert : ∀ q : ℕ, q.Prime → 2 < q → 4 * q < N →
       ¬ IsSquare ((-(N : ℤ) : ZMod q))) :
-    N ∈ ({43, 67, 163} : Finset ℕ) :=
-  sorry
+    N ∈ ({43, 67, 163} : Finset ℕ) := by
+  have hbound : N ≤ 163 := by
+    obtain ⟨m, hNm⟩ : ∃ m, N + 1 = 4 * m := ⟨(N + 1) / 4, by omega⟩
+    have hm6 : 6 ≤ m := by omega
+    have hm41 := mazurIsogeny_rabinowitsch_bound (by omega : 2 ≤ m)
+      (mazurIsogeny_primeGenerating_of_inert hm6 hNm hinert)
+    omega
+  have step : ∀ q c : ℕ, q.Prime → 2 < q → 4 * q < N → q ∣ c * c + N → False :=
+    fun q c hq hq2 hqN hdvd => hinert q hq hq2 hqN (mazurIsogeny_isSquare_neg_of_dvd hdvd)
+  have hgoal : N = 43 ∨ N = 67 ∨ N = 163 → N ∈ ({43, 67, 163} : Finset ℕ) := by
+    rintro (rfl | rfl | rfl) <;> decide
+  refine hgoal ?_
+  have c3a : N % 3 ≠ 0 := fun h =>
+    step 3 0 (by norm_num) (by norm_num) (by omega) (by omega)
+  have c3b : N % 3 ≠ 2 := fun h =>
+    step 3 1 (by norm_num) (by norm_num) (by omega) (by omega)
+  have c5a : N % 5 ≠ 0 := fun h =>
+    step 5 0 (by norm_num) (by norm_num) (by omega) (by omega)
+  have c5b : N % 5 ≠ 4 := fun h =>
+    step 5 1 (by norm_num) (by norm_num) (by omega) (by omega)
+  have c5c : N % 5 ≠ 1 := fun h =>
+    step 5 2 (by norm_num) (by norm_num) (by omega) (by omega)
+  have c7 : 28 < N → N % 7 ≠ 5 := fun h1 h =>
+    step 7 3 (by norm_num) (by norm_num) (by omega) (by omega)
+  have c11 : 44 < N → N % 11 ≠ 6 := fun h1 h =>
+    step 11 4 (by norm_num) (by norm_num) (by omega) (by omega)
+  clear step hinert hgoal hN
+  interval_cases N <;> omega
 
 /-- **Signature `6` forces class number one** (PROVEN 2026-07-26 over the
 three declarations above, replacing the former bare sorry — the
@@ -1681,9 +1887,13 @@ open leaf. The proof below is the whole of [MJ, Prop. 4.4] over:
   (which already carries Serre–Tate and Hasse–Weil, and is where potential
   good reduction `hpg`, hence Mazur's formal-immersion theorem, is consumed)
   plus reciprocity and `ZMod N` arithmetic;
-* `mazurIsogeny_classNumberOne_of_inert` — the ONLY new sorry:
-  Baker–Heegner–Stark, stated as a condition on Legendre symbols with no
-  number field, ideal class or Minkowski bound in sight;
+* `mazurIsogeny_classNumberOne_of_inert` — PROVEN as of the third pass of
+  2026-07-26, over the single remaining leaf `mazurIsogeny_rabinowitsch_bound`:
+  Baker–Heegner–Stark, now stated with no number field, ideal class,
+  Minkowski bound OR Legendre symbol in sight — just "a prime-generating
+  quadratic `x² + x + m` forces `m ≤ 41`". The bridge from the inertness
+  hypothesis to that criterion is `mazurIsogeny_primeGenerating_of_inert`,
+  and the finite check over `[23, 163]` is discharged in-kernel;
 * `mazurIsogeny_traceRelation_impossible` — PROVEN: `a² ≤ 4q` and `4q < N`
   force `a² = q` or `a² = 4q`, and a prime is not a square.
 
