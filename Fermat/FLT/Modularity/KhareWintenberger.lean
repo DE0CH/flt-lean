@@ -3933,9 +3933,171 @@ theorem exists_bound_forall_formallySmooth_integralSystemModel
     (Localization.Away ((N : ℕ) : ℤ)) ℤ_[p]
 
 open CategoryTheory AlgebraicGeometry in
-/-- **Lang–Weil, NONEMPTINESS FORM** (SORRY LEAF — the second and by far the
-deeper of the two genuinely missing theorems behind
-`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible`; it does not exist
+/-- **Spreading out of GEOMETRIC IRREDUCIBILITY** (SORRY LEAF, cut 2026-07-26 out
+of `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` below).
+
+For all but finitely many primes `p`, the geometric fibre of the integral model
+is irreducible: the ideal cut out by `f` over an algebraic closure of `𝔽_p` has
+PRIME RADICAL.
+
+WHY IT IS TRUE (EGA IV 9.7.7; Poonen, *Rational Points on Varieties*, §3.2).
+Geometric irreducibility is a constructible condition in a finitely presented
+family. Spread `f` out over `Spec ℤ` exactly as in
+`exists_bound_forall_formallySmooth_integralSystemModel`: the locus of `s` in
+`Spec ℤ` over which the geometric fibre is irreducible is constructible, and by
+hypothesis it contains the generic point, hence contains a nonempty open, hence
+omits only finitely many primes. Take `B` past the largest of them.
+
+WHY `radical.IsPrime` AND NOT `IsPrime`. `Ideal.IsPrime I.radical` says exactly
+that `Spec` of the quotient is an irreducible topological space, which is the
+literal meaning of irreducibility and the only thing Lang–Weil consumes — point
+counts do not see nilpotents. `IsPrime` of the ideal itself would additionally
+assert reducedness of the fibre. That is also true here for large `p` (smooth
+implies reduced), but it is strictly more than the consumer needs, and asking a
+prover for it would be asking for spreading out of reducedness as well. The
+weaker form is the faithful one.
+
+WHY THE HYPOTHESES ARE IN THIS SHAPE. `A`, `π`, `hker` are carried rather than
+replaced by the model itself for the universe reason recorded on
+`exists_bound_forall_formallySmooth_integralSystemModel`: `A` lives in `Type u`
+while the model lives in `Type 0`, and `AlgebraicGeometry.GeometricallyIrreducible`
+is a property of a morphism of `Scheme.{u}`.
+
+FAITHFULNESS NOTE (checked 2026-07-26): the hypothesis is not vacuous and the
+conclusion is not trivially satisfiable. Mathlib's `GeometricallyIrreducible`
+carries `instance (priority := low) [GeometricallyIrreducible f] : Surjective f`
+and `IrreducibleSpace (f.fiber s)`, and mathlib's `IrreducibleSpace` extends
+`Nonempty`. So `hgi` forces `A` to be a nonzero ring and
+`integralSystemIdeal f ℚ` to be a proper ideal; and `Ideal.IsPrime` likewise
+forces the radical to be proper, i.e. the geometric fibre to be NONEMPTY. The
+leaf therefore really does carry the arithmetic it is supposed to.
+
+CIRCULARITY GUARD: inherited from the parent; pure algebraic geometry, no Galois
+representation. -/
+theorem exists_bound_forall_irreducibleFibre_of_geometricallyIrreducible
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (A : Type u) [CommRing A] [Algebra ℚ A]
+    (π : MvPolynomial (Fin n) ℚ →ₐ[ℚ] A) (hπ : Function.Surjective π)
+    (hker : RingHom.ker π.toRingHom = integralSystemIdeal f ℚ)
+    (hsmooth : AlgebraicGeometry.Smooth (specRatMap A))
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible (specRatMap A)) :
+    ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
+      (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime :=
+  sorry
+
+/-- **LANG–WEIL, NONEMPTINESS FORM, WITH THE SCHEME LAYER STRIPPED OFF** (SORRY
+LEAF, cut 2026-07-26 out of
+`exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` below). This is
+the arithmetic half of that leaf, and it is the deep one.
+
+A fixed integral polynomial system `f` whose geometric fibre at `p` is
+irreducible has an `𝔽_p`-point, for every `p` past a bound depending only on
+`f`. No schemes, no universes, no `ℚ`-algebra `A`: a prover at this leaf needs
+nothing from this file except `integralSystemIdeal` and
+`IntegralSystemSolvable`, so the leaf is dispatchable to a specialist in
+isolation.
+
+WHY IT IS TRUE. Lang–Weil: for `X` affine over `𝔽_q`, geometrically irreducible
+of dimension `d`, cut out in `n` variables by polynomials of bounded degree,
+`|#X(𝔽_q) − q^d| ≤ C q^(d − 1/2)` with `C` depending only on `n` and those
+degrees. Here `f` is FIXED, so `C`, `n` and `d` are all fixed and only `q = p`
+varies; the count is therefore positive once `p > C²`, and a positive count is
+an `𝔽_p`-point.
+
+WHY A DENSITY STATEMENT WILL NOT DO. The consumer
+`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible` forms its bound as
+`max B₁ B₂` of two NUMERIC bounds. A Chebotarev-style positive-density
+conclusion yields no bound at all. Geometric irreducibility is precisely what
+upgrades "positive density of `p`" to "all large `p`", and Lang–Weil is
+precisely the theorem performing that upgrade. This was re-checked on
+2026-07-26 and the cost is irreducible: the Weil bound, or something implying
+it, has to be built.
+
+MACHINERY INVENTORY, VERIFIED BY GREP 2026-07-26 (mathlib pin `a3364fa`,
+`~/cs/FLT`, and this project — all three trees searched; these are facts about
+the pin, not recollections, and each is refutable by one grep):
+
+* Riemann–Roch: ABSENT everywhere. No `RiemannRoch`, no `riemannRoch`.
+* Genus of a curve: ABSENT. No `def genus`.
+* Zeta function of a variety, point counts of schemes over finite fields:
+  ABSENT.
+* Weil bound / Hasse bound / `|a_p| ≤ 2√p`: ABSENT. The occurrences of
+  "Hasse–Weil" in `FreyCurve/MazurTorsion.lean` are prose in docstrings, not
+  declarations.
+* Stepanov's method: ABSENT. No occurrence of the string anywhere.
+* Bertini: ABSENT.
+* Degree of a projective or affine variety: ABSENT.
+* PRESENT and directly usable for the Stepanov route:
+  `Polynomial.hasseDeriv` (`Mathlib/Algebra/Polynomial/HasseDeriv.lean`),
+  `Polynomial.taylor_coeff` (which identifies the Taylor coefficient with
+  `(hasseDeriv n f).eval r`, the standard high-order-vanishing criterion in
+  any characteristic), `Polynomial.card_roots'`
+  (`Mathlib/Algebra/Polynomial/Roots.lean:80`), `Polynomial.rootMultiplicity`
+  and `Polynomial.le_rootMultiplicity_iff`, and
+  `MvPolynomial.char_dvd_card_solutions_of_sum_lt`
+  (`Mathlib/FieldTheory/ChevalleyWarning.lean:108`, Chevalley–Warning — which
+  settles this leaf only in the low-degree range `Σ deg f i < n`, not in
+  general).
+
+THE ROUTE TO BUILD, AND WHY THIS ONE. Prefer **Stepanov–Bombieri** to any
+cohomological approach: it proves the Weil bound for curves with NO `ℓ`-adic
+cohomology and NO Jacobian, which is what makes it tractable at this pin given
+that Riemann–Roch is absent. References: Bombieri, *Counting points on curves
+over finite fields*; Schmidt, *Equations over Finite Fields*, ch. II (Stepanov's
+method for arbitrary absolutely irreducible plane curves, elementary);
+Ireland–Rosen ch. 11 (the accessible treatment, for the Kummer curves
+`y^m = g(x)`, using only Hasse derivatives and root counting). Lang–Weil,
+*Number of points of varieties in finite fields*, for the reduction.
+
+The remaining sub-theorems, in dependency order, none of which exists at this
+pin:
+
+1. Stepanov zero-counting core: a nonzero `g` in `K[x]` of degree at most `D`
+   that vanishes to order at least `L` at each of `N` distinct points satisfies
+   `N * L ≤ D`. ELEMENTARY and provable today from `card_roots'` plus
+   `le_rootMultiplicity_iff`; `taylor_coeff` converts "order at least `L`" into
+   the vanishing of the first `L` Hasse derivatives, which is the form the
+   auxiliary-polynomial construction produces.
+2. The Stepanov auxiliary polynomial: a dimension count producing a nonzero
+   polynomial of controlled degree with high-order vanishing on the point set.
+   This is the genuinely hard step and is where the `√q` comes from.
+3. The Weil bound for absolutely irreducible PLANE curves,
+   `|#C(𝔽_q) − q| ≤ (D−1)(D−2)√q + C(D)`, from 1 and 2.
+4. Bertini over finite fields: slicing a geometrically irreducible variety of
+   dimension `d` by hyperplanes down to a geometrically irreducible curve, plus
+   a birational projection of that curve to a plane curve of bounded degree.
+5. The Lang–Weil induction on dimension assembling 3 and 4 into this leaf.
+
+NOTE ON SCOPE, recorded so the next owner is not misled: items 2–5 are each a
+substantial development, and item 1 is the only one that can be closed in a
+single task. This leaf is NOT a one-task leaf; it is the root of a subtree.
+
+NOTE ON THE FREE-FLOATING RULE, and why no Stepanov machinery was committed
+alongside this cut: proven bricks stacked in front of a sorried consumer are
+free-floating and not allowed here. Item 1 above therefore cannot land until
+item 3's skeleton is written to consume it, which requires items 2 and 4 to be
+STATED first. The next owner should write the skeleton top-down — state 3, 4, 5
+and the glue, then prove 1 inside 3 — rather than starting from 1.
+
+CIRCULARITY GUARD: inherited from the parent; this mentions no Galois
+representation, no modular form, and nothing from `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_bound_forall_zmodSolvable_of_irreducibleFibre
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ) :
+    ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
+      (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime →
+      IntegralSystemSolvable f (ZMod p) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Lang–Weil, NONEMPTINESS FORM** (PROVEN 2026-07-26 over the two leaves
+immediately above — spreading out of geometric irreducibility, and Lang–Weil
+nonemptiness over `𝔽_p`. It was itself a bare sorry until then. The mathematical
+content is untouched and still missing; what this cut buys is that the deep
+arithmetic half no longer drags the scheme layer, the universe gap or the
+`A`, `π`, `hker` packaging along with it, so it can be dispatched on its own.
+The verified machinery inventory lives on
+`exists_bound_forall_zmodSolvable_of_irreducibleFibre` above; it does not exist
 in mathlib and does not exist in `~/cs/FLT`).
 
 Let `f` be a system of polynomials with integer coefficients whose `ℚ`-model is
@@ -3966,7 +4128,10 @@ universe reason.
 
 CIRCULARITY GUARD: inherited from the parent — no route through `Family.lean`,
 `Lift.lean` or `Modularity/Interface.lean`; this is pure arithmetic geometry and
-mentions no Galois representation at all. -/
+mentions no Galois representation at all.
+
+DECOMPOSED 2026-07-26 into the two leaves immediately below, with the glue
+PROVEN. See their docstrings for the confirmed machinery inventory. -/
 theorem exists_bound_forall_zmodSolvable_of_geometricallyIrreducible
     {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
     (A : Type u) [CommRing A] [Algebra ℚ A]
@@ -3974,8 +4139,14 @@ theorem exists_bound_forall_zmodSolvable_of_geometricallyIrreducible
     (hker : RingHom.ker π.toRingHom = integralSystemIdeal f ℚ)
     (hsmooth : AlgebraicGeometry.Smooth (specRatMap A))
     (hgi : AlgebraicGeometry.GeometricallyIrreducible (specRatMap A)) :
-    ∃ B : ℕ, ∀ (p : ℕ), p.Prime → B < p → IntegralSystemSolvable f (ZMod p) :=
-  sorry
+    ∃ B : ℕ, ∀ (p : ℕ), p.Prime → B < p → IntegralSystemSolvable f (ZMod p) := by
+  obtain ⟨B₁, h₁⟩ :=
+    exists_bound_forall_irreducibleFibre_of_geometricallyIrreducible f A π hπ hker hsmooth hgi
+  obtain ⟨B₂, h₂⟩ := exists_bound_forall_zmodSolvable_of_irreducibleFibre f
+  refine ⟨max B₁ B₂, fun p hp hlt => ?_⟩
+  haveI : Fact p.Prime := ⟨hp⟩
+  exact h₂ p (lt_of_le_of_lt (le_max_right B₁ B₂) hlt)
+    (h₁ p (lt_of_le_of_lt (le_max_left B₁ B₂) hlt))
 
 /-- **`ZMod p` is the residue field of `ℤ_[p]`** (PROVEN): the reduction map
 `PadicInt.toZMod` is surjective with kernel the maximal ideal. This is the
