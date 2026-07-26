@@ -8319,8 +8319,23 @@ idempotent of `A` (`HenselianRing.exists_isIdempotentElem_mk_eq`),
 which in a DOMAIN is `0` or `1`; an artinian ring with only trivial
 idempotents is local
 (`IsLocalRing.of_isArtinianRing_isIdempotentElem`); and locality
-transfers back through the quotient because units lift. -/
-theorem IsLocalRing.of_henselianRing_of_isDomain {A : Type*} [CommRing A]
+transfers back through the quotient because units lift.
+
+`_root_.` IS LOAD-BEARING (build repair, 2026-07-26). This declaration
+sits inside `namespace GaloisRepresentation.Modularity`, so writing it as
+`IsLocalRing.of_henselianRing_of_isDomain` created the namespace
+`GaloisRepresentation.Modularity.IsLocalRing`. `open IsLocalRing` inside
+that namespace then resolved to the (nearly empty) project namespace
+instead of the root one, and `Patching.lean` — which opens it in
+`section ProfinitePadicTower` — lost `maximalIdeal`, `ResidueField`,
+`IsAdicTopology`, `jacobson_eq_maximalIdeal`, `local_hom_TFAE`,
+`maximalIdeal_le_jacobson` and `map_maximalIdeal_of_surjective` in one
+go, taking every module downstream of `Patching.lean` (i.e. all of
+`Interface.lean`) with it. Fully-qualified uses kept working, which is
+why the failure looked like a missing import. Keep mathlib-namespace
+declarations `_root_`-qualified in files that live inside a project
+namespace. -/
+theorem _root_.IsLocalRing.of_henselianRing_of_isDomain {A : Type*} [CommRing A]
     [IsDomain A] (J : Ideal A) [hHen : HenselianRing A J]
     [IsArtinianRing (A ⧸ J)] :
     IsLocalRing A := by

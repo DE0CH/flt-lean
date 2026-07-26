@@ -120,6 +120,14 @@ a future de-duplication can identify the two developments.
 module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
+-- BUILD REPAIR 2026-07-26: `Ideal.ramificationIdx_le_finrank`, used in
+-- `differentIdeal_exponent_le`'s tame bound, was reaching this file only
+-- transitively and stopped doing so; a full `lake build` reported it as
+-- `Unknown constant`.  (The OTHER errors in that same build — the whole
+-- `IsLocalRing` namespace going unknown in `section ProfinitePadicTower`
+-- — had a different cause and are fixed in `KhareWintenberger.lean`; see
+-- the `_root_.` note on `IsLocalRing.of_henselianRing_of_isDomain`.)
+public import Mathlib.NumberTheory.RamificationInertia.Basic
 public import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
 public import Mathlib.RingTheory.AdicCompletion.Basic
 public import Mathlib.RingTheory.Noetherian.Basic
