@@ -238,6 +238,13 @@ public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
 -- leaf `exists_discr_factorization_le_of_finrank_le`, and the Hermite
 -- theorem `NumberField.finite_of_discr_bdd` in the proofs
 public import Mathlib.NumberTheory.NumberField.Discriminant.Different
+-- proof-only: `Ideal.ramificationIdx_le_finrank`, the bound `e_Q ≤ [L : K]`
+-- used inside `exists_discr_factorization_le_of_finrank_le`'s per-prime
+-- different-exponent estimate. The DEFINITION `Ideal.ramificationIdx'` lives
+-- one file down in `RamificationInertia/Ramification.lean` and was already
+-- reachable, which is why only the LEMMA was an unknown constant — a shape
+-- that reads like a name error but is an import gap.
+import Mathlib.NumberTheory.RamificationInertia.Basic
 -- proof-only: `NumberField.not_dvd_discr_iff_forall_mem`, the
 -- unramified-implies-coprime-to-discriminant dictionary
 public import Mathlib.RingTheory.Ideal.Quotient.PowTransition
