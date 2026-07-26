@@ -852,7 +852,12 @@ def cmd_release(args):
         print("(--force to re-run anyway)")
         return 0
 
-    tag_release(head)
+    # NOT under --dry-run: a tag is a real, pushed, immutable ref, so creating
+    # one is exactly the kind of side effect a dry run exists to avoid. Found
+    # the honest way -- the first `release --dry-run` after the tagging change
+    # minted a real `v4` and it had to be deleted by hand.
+    if not args.dry_run:
+        tag_release(head)
 
     hook = load_hook()
 
