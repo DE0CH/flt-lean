@@ -11595,7 +11595,51 @@ records the full attack route (twist to a fixed model, then the degree-`(p−1)/
 isogeny-kernel factor, or equivalently the isogeny character), and why the
 split by technique into a CM half and a level-`37` half was left to whoever
 attacks it rather than being made here — it would raise the leaf count from
-one back to two for no immediate gain. -/
+one back to two for no immediate gain.
+
+**A THIRD ROUTE, UNIFORM OVER ALL FIVE, AND MUCH CHEAPER THAN EITHER — REDUCE
+MOD ONE PRIME** (found 2026-07-26; supersedes "prove Olson's theorem" as the
+recommended attack, and needs NO CM theory, NO modular curves, and NO
+degree-`81` polynomial).
+
+Every `E/ℚ` with `j(E) = j₀ ∉ {0, 1728}` is a QUADRATIC TWIST `E_d`, `d`
+squarefree, of one fixed model `E_{j₀}`. Fix a prime `ℓ` at which `E_{j₀}` has
+good reduction, `ℓ ≠ p`. Then for every `d`:
+
+* if `ℓ ∤ d`, `E_d` also has good reduction at `ℓ`, and `E_d ⊗ 𝔽_ℓ` is `E_{j₀}`
+  or its quadratic twist, so `#E_d(𝔽_ℓ) ∈ {ℓ + 1 − a_ℓ, ℓ + 1 + a_ℓ}`; a
+  rational point of order `p` injects (prime-to-`ℓ` torsion, good reduction),
+  so `p` divides one of those two numbers;
+* if `ℓ ∣ d`, `E_d` has ADDITIVE reduction at `ℓ`, and prime-to-`ℓ` torsion
+  injects into the `𝔽_ℓ`-points of the Néron special fibre, of order at most
+  `4ℓ`; so `p ∣ 4ℓ`, impossible for `p ≥ 37` with `p ≠ ℓ`.
+
+So a SINGLE prime `ℓ` with `p ∤ (ℓ + 1 − a_ℓ)` and `p ∤ (ℓ + 1 + a_ℓ)` kills
+every twist at once. Such an `ℓ` exists and is tiny at all five entries
+(PARI 2026-07-26, untrusted searcher — the point counts are what must be
+re-verified in Lean, and each is a `decide` over `𝔽_3` or `𝔽_13`):
+
+    p = 37, j = −9317                 ℓ = 13,  a = 2,  #E = 12, #E^tw = 16
+    p = 37, j = −162677523113838677   ℓ = 13,  a = 2,  #E = 12, #E^tw = 16
+    p = 43, j = −884736000            ℓ =  3,  a = 0,  #E =  4, #E^tw =  4
+    p = 67, j = −147197952000         ℓ = 13,  a = 0,  #E = 14, #E^tw = 14
+    p = 163, j = −262537412640768000  ℓ = 13,  a = 0,  #E = 14, #E^tw = 14
+
+At the three CM entries `a_ℓ = 0` — `ℓ` is inert in the CM field, so the
+reduction is supersingular and BOTH twists have exactly `ℓ + 1` points. That is
+Olson's argument stripped of its CM packaging: one does not need to know the
+curve has CM, only that `43 ∤ 4`, `67 ∤ 14`, `163 ∤ 14`.
+
+**WHAT IS ACTUALLY MISSING IS THEREFORE NOT OLSON BUT REDUCTION.** The only
+absent input is the standard "torsion injects into the reduction" package —
+good-reduction injectivity of prime-to-`ℓ` torsion, plus the additive-reduction
+bound `|Φ| ≤ 4`. Mathlib has neither, and this development has only
+`HasGoodReduction` (`Fermat/FLT/KnownIn1980s/EllipticCurves/GoodReduction.lean`)
+with no reduction map on points. That package is worth building on its own
+account: it is ALSO exactly what `curve11a3_isTorsion` / `curve11a3_points` in
+`Fermat/FLT/EllipticCurve/MordellWeil.lean` want, and what would let the `14a4`
+leaf there be closed by point-counting instead of by an infinite descent. One
+brick, four leaves. -/
 theorem WeierstrassCurve.no_rational_point_of_isogenyPrime_jInvariant
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ}
     (Q : (E⁄ℚ).Point) (hQ : addOrderOf Q = p)
