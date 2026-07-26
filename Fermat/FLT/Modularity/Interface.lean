@@ -24807,7 +24807,70 @@ the repair plan in the FALSITY AUDIT of
 for. That leaf is FALSE AS STATED because `HasConductorExponentAt`
 cannot carry an upper bound in HYPOTHESIS position; a fixed line, by
 contrast, is upper-bound information in a form that survives, so the
-statement here is available to whoever performs that repair. -/
+statement here is available to whoever performs that repair.
+
+FAITHFULNESS AUDIT (2026-07-26, sixth owner — **TRUE AS STATED**, and by
+a route STRICTLY SHORTER than the one the paragraphs above take). Those
+paragraphs justify the fixed line by identifying the local type at
+`q ∥ M₀` as an unramified twist of Steinberg. That identification is
+SUFFICIENT but NOT NECESSARY, and the necessary part is worth recording
+because it is what bounds the faith. Through the Artin conductor
+dictionary
+
+  `a_q(V) = (2 − dim V^{I_q}) + Sw_q(V)`
+
+Carayol's identity `a_q = ord_q M₀ = 1` gives `2 − dim V^{I_q} ≤ 1`,
+i.e. `dim V^{I_q} ≥ 1`, using nothing about the local type beyond
+`Sw_q ≥ 0`. So what is assumed here is strictly less than the Steinberg
+computation: nothing about the nebentypus, nothing about the
+Atkin–Lehner sign `a_q = ±1`, nothing about the shape of the monodromy
+`N`. (The Steinberg route additionally pins `dim V^{I_q} = 1`; the
+statement deliberately does not, which is the same weakest-usable-form
+principle as the WHY THIS SHAPE paragraph above.)
+
+SHARPNESS OF `hord`, machine-checked in PARI/GP (2026-07-26). Weakening
+`M₀.factorization q = 1` to `q ∣ M₀` makes the statement FALSE, with an
+explicit witness: let `E` be the quadratic twist by `−11` of `X₀(11)`
+(`[0, −1, 1, −10, −20]`). PARI reports conductor `121` and, at `q = 11`,
+reduction type `I₅*` with `f₁₁ = 2` and `v₁₁(j) = −5` — ADDITIVE but
+POTENTIALLY MULTIPLICATIVE. Take `p := 3` (so `q ≠ p`, and `3 ∤ 5`, so
+the inertia image is infinite). On `V₃(E) ⊗ ℚ̄₃` inertia at `11` acts by
+`σ ↦ χ(σ) · (1, t(σ); 0, 1)` with `χ` the RAMIFIED quadratic character
+of `ℚ₁₁(√−11)`, so `V^{I₁₁} = 0`, while the associated weight-2 newform
+has level `M₀ = 121` with `ord₁₁ M₀ = 2`.
+
+The same witness rules out every weakening of `hord` in the
+Grothendieck-monodromy family. It has NONZERO monodromy `N`, INFINITE
+inertia image, quasi-unipotent `τ|_{I₁₁}`, and `det τ|_{I₁₁} = χ² = 1` —
+i.e. every Galois-side symptom of the Steinberg case — and still no
+fixed vector. What distinguishes `q ∥ M₀` is exactly that the Steinberg
+twist is UNRAMIFIED, and that is automorphic input with no Galois-side
+shadow. There is therefore NO cut of this leaf into a weaker local
+hypothesis plus checked Lean: it is a citation, and it is a minimal one.
+Do not dispatch a decomposer at it.
+
+Non-vacuity, from the same PARI run: `X₀(11)` itself at `q = 11` has
+`f₁₁ = 1`, type `I₅`, `v₁₁(j) = −5`, so with `p := 3` the weight-2
+newform of level `11` and `τ := V₃(E) ⊗ ℚ̄₃` inhabit every hypothesis
+(irreducibility by Serre/Ribet), and there `dim V^{I₁₁} = 1`.
+
+KOLCHIN IS NOT ABSENT FROM THIS PIN (2026-07-26 — correcting the WHY
+THIS SHAPE RATHER THAN UNIPOTENCE paragraph above, which asserts it is).
+Kolchin's theorem in dimension `2` is PROVEN here as
+`BrauerNesbitt.exists_fixed_of_unipotent` (a group of unipotent
+endomorphisms of a rank-2 space has a common nonzero fixed vector), and
+is already consumed three times — in `BrauerNesbittConjugacy.lean`,
+`Chebotarev.lean` and `Modularity/KhareWintenberger.lean`. The shape
+chosen here nevertheless STANDS, but for the other half of that
+paragraph's reasoning only: pointwise unipotence on `I_q` and a common
+fixed line agree only modulo `det τ|_{I_q} = 1` (true, since the
+determinant is cyclotomic and `q ≠ p`, but not available here as a
+proven lemma), so pinning at unipotence would still assume formally
+more. What changes is the COST, not the choice — the unipotence form
+would now be a one-line derivation rather than a missing theorem. The
+same correction applies to step 3 of the repair plan in the FALSITY
+AUDIT below, which records the tame half as blocked on an absent
+Kolchin: it is not blocked. -/
 theorem exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
