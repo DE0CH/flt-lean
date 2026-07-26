@@ -3095,7 +3095,7 @@ into the two leaves consumed below:
   `16`-isogeny over the `s`-line, i.e. an iterated Vélu `2`-isogeny chain).
   **Its hypothesis is satisfiable** — `16`-isogenies exist — so this leaf
   carries genuine content. **PROVEN 2026-07-26** over the single moduli leaf
-  `MazurLevel16.exists_univCurve_param_of_stable`: the degree-`24` rational
+  `MazurLevel16.exists_univCurveV_param_of_stable`: the degree-`24` rational
   function is no longer a formula out of a table but the `j`-invariant of an
   explicit universal Weierstrass curve over the `s`-line, and the passage
   from that curve to the displayed identity is the `ring` identity
@@ -3183,9 +3183,17 @@ THE STATEMENT IS FAITHFUL AND NON-VACUOUS — checked both ways
 * *backwards*: sweeping every curve of conductor `≤ 300` in Magma's
   database, exactly `28` carry a cyclic `16`-isogeny (isogeny classes
   `15a, 45a, 75b, 195a, 210e, 225c, 240d`), and EVERY one of them yields
-  exactly TWO rational roots `s` of `j·D(s) = M(s)³` — an Atkin–Lehner
-  pair `{s, 1/(4s)}`, as it must be, since `w₁₆` acts on the `s`-line by
-  `s ↦ 1/(4s)` and the two roots are the two cyclic `16`-subgroups;
+  exactly TWO rational roots `s` of `j·D(s) = M(s)³`, namely the pair
+  `{s, 1/(4s)}` — the two cyclic `16`-subgroups of the same curve.
+  (CORRECTION 2026-07-26: `s ↦ 1/(4s)` is NOT the Atkin–Lehner `w₁₆`, as
+  this note previously said.  It is the deck involution of the degree-`2`
+  cover `X_0(16) → X_0(8)`, which exchanges the two cyclic `16`-subgroups
+  lying over one cyclic `8`-subgroup and therefore PRESERVES `j`; `w₁₆`
+  sends `(E, C)` to `(E/C, E[16]/C)` and changes `j`.  See the
+  `v`-coordinate section note below, where the involution is `v ↦ −v` and
+  the invariance of `j` is visible from the `j`-map being a function of
+  `v⁴`.  Both sheets are Galois-stable when one of them is, which is why
+  there are exactly two rational roots and not one.)
 * *negative control*: `15a1`, with `j = 111284641/50625`, has cyclic
   `2`-power isogenies only up to `4`, and the degree-`24` polynomial
   `j·D(s) − M(s)³` correctly has NO rational root for it.
@@ -3260,8 +3268,328 @@ lemma j16_of_param (s J : ℚ)
   refine mul_left_cancel₀ (a := (4096 : ℚ)) (by norm_num) ?_
   linear_combination hj
 
-/-- **`X_0(16)` moduli, in universal-family form** (sorry leaf — the whole
-remaining content of `exists_x0Sixteen_hauptmodul`, introduced 2026-07-26):
+/-! ### The `v`-coordinate: the same line, in `2`-isogeny-chain normal form
+
+(Introduced 2026-07-26, together with the `s ↦ v` dictionary and the
+transfer lemma below.  Every identity here is `ring`; the derivation was
+found by hand and re-checked in Magma, and the resulting statement was
+validated against Cremona's database — see the audit at the end of this
+note.)
+
+The `s`-coordinate above is the one in which the CUSPS are transparent
+(`univCurve_Δ` displays all four `ℚ`-cusp orbits with their widths), and
+it is the wrong one in which to PROVE anything: it makes the `j`-map a
+degree-`24` rational function with eight-digit coefficients.  There is a
+Möbius change of parameter
+
+    v = (1 + 2s)/(1 − 2s),        s = (v − 1)/(2(v + 1)),
+
+in which the universal curve becomes
+
+    univCurveV v : y² = x(x² + (4v⁴ − 2)x + 1),
+    c₄ = 16(16v⁸ − 16v⁴ + 1),      Δ = 256 v⁴(v⁴ − 1),
+
+so the `j`-map is `j = 16(16v⁸ − 16v⁴ + 1)³ / (v⁴(v⁴ − 1))`: still of
+degree `24`, but with a normalised `a₄ = 1` and coefficients one can read.
+`univCurve s` and `univCurveV v` are related by the honest rational
+variable change with `u = (v + 1)²/4`, which is why the transfer
+`exists_univCurve_param_of_univCurveV_param` below is a two-line scaling
+argument rather than a resultant computation.
+
+WHY THIS COORDINATE IS THE RIGHT ONE FOR THE MODULI LEAF: it IS the
+`2`-isogeny chain.  A curve over `ℚ` with a Galois-stable cyclic
+`16`-subgroup `C` has `C[2]`, `C[4]`, `C[8]`, `C` all Galois-stable, and
+the chain of level structures cuts the parameter down step by step, each
+step contributing one letter of the normal form:
+
+* `C[2]` stable makes `8 • g` Galois-fixed (the character `λ` of
+  `exists_isogenyCharacter` takes odd values, and `8λ ≡ 8 (mod 16)`), so
+  `E` has a rational point of order `2` and a model
+  `y² = x(x² + a x + b)`.  This is `X_0(2)`, whose Hauptmodul is the
+  weight-`0` invariant `a²/b`.
+* `C[4]` stable forces `b = β²` and `a + 2β = γ²` — halving `(0,0)` needs
+  `√b`, and the resulting point `(β, βγ)` of order `4` must be rational up
+  to sign.  Writing `β = δ²` (forced at the next step) the model becomes
+
+      y² = x(x² + (γ² − 2δ²)x + δ⁴),
+      c₄ = 16(γ⁴ − 4γ²δ² + δ⁴),   Δ = 16 δ⁸ γ²(γ − 2δ)(γ + 2δ).
+
+* `C[8]` stable is what forces `β` itself to be a square `δ²`: the quartic
+  halving `(β, βγ)` splits into two rational quadratics
+
+      x² − 2δ(δ − γ)x + δ⁴   and   x² − 2δ(δ + γ)x + δ⁴
+
+  exactly when `δ = √β` is rational (their discriminants are `16βγ²`), and
+  `C[8]` is one of the two.  Replacing `δ` by `−δ` swaps them, so the sign
+  of `δ` may be normalised.  The weight-`0` invariant `r = γ/δ` is the
+  `X_0(8)` Hauptmodul: `j = 256(r⁴ − 4r² + 1)³/(r²(r² − 4))`, of degree
+  `12 = [SL₂(ℤ) : Γ_0(8)]` ✓.
+* `C` itself stable is, finally, the single condition
+
+      **`r/2 = γ/(2δ)` is a rational SQUARE**, `r = 2v²`,
+
+  which is the degree-`2` cover `X_0(16) → X_0(8)`, `v ↦ 2v²`.  Scaling
+  `δ` to `1` (`j` is weight-`0`, so this is free) gives `γ = 2v²` and the
+  model `univCurveV v` displayed above.
+
+So `v` is not an arbitrary reparametrisation: `v²` is the `X_0(8)`
+Hauptmodul halved, and the deck involution `v ↦ −v` of
+`X_0(16) → X_0(8)` is the exchange of the two cyclic `16`-subgroups lying
+over one cyclic `8`-subgroup.  In the `s`-coordinate that involution is
+`s ↦ 1/(4s)`.
+
+CORRECTION TO THE SECTION NOTE ABOVE (2026-07-26): `s ↦ 1/(4s)` is that
+DECK involution, **not** the Atkin–Lehner `w₁₆`.  It visibly preserves
+`j` — the displayed `j`-map is a function of `v⁴` alone — whereas `w₁₆`
+sends `(E, C)` to `(E/C, E[16]/C)` and so changes `j` in general.  Magma
+(2026-07-26, untrusted searcher) confirms it: the eight curves of the
+isogeny class `15a` have eight DISTINCT `j`-invariants, so the
+`16`-isogenous partner of `15a5` is not `15a5`, while the two rational
+roots `v = ±3` of `15a5` do give the same `j` by construction.  This also
+explains the "exactly two" of the database sweep: if `C` is stable then so
+is the other cyclic `16`-subgroup `C'` above `C[8]`, because Galois
+permutes the two-element set of such subgroups and fixes one of them.
+
+FORWARD VALIDATION (Magma, 2026-07-26, untrusted searcher — the identity
+itself is `ring` in `exists_univCurve_param_of_univCurveV_param`).  For
+each curve of conductor `≤ 300` carrying a cyclic `16`-isogeny, the
+degree-`24` polynomial `j·v⁴(v⁴ − 1) − 16(16v⁸ − 16v⁴ + 1)³` has exactly
+two rational roots `±v`, and for the curves without one it has none:
+
+    15a5  v = ±3      15a6  v = ±1/3    15a7  v = ±2      15a8  v = ±1/2
+    45a1  v = ±1/2    75b1  v = ±1/2    195a1 v = ±3/2    210e1 v = ±3/4
+    225c1 v = ±1/2    240d1 v = ±1/2
+    15a1, 15a2, 15a3, 15a4 : no rational root (negative controls)
+
+`15a5` has `v = ±3`, i.e. `s = 1/4` and `s = 1`, agreeing with the
+`s`-side sweep recorded in the section note above. -/
+
+/-- **The `X_0(16)` universal curve in the `2`-isogeny-chain coordinate**:
+`y² = x(x² + (4v⁴ − 2)x + 1)`, i.e. `⟨0, 4v⁴ − 2, 0, 1, 0⟩`.
+
+This is `univCurve ((v − 1)/(2(v + 1)))` up to the rational variable change
+with `u = (v + 1)²/4`; see the section note just above for the derivation
+from the chain `C[2] ⊂ C[4] ⊂ C[8] ⊂ C`, in which `4v⁴ − 2 = γ² − 2δ²`
+and `1 = δ⁴` with `δ = 1`, `γ = 2v²`.
+
+Its rational `2`-torsion point is `(0, 0)` (that is `C[2]`), and
+`(1, 2v²)` is a rational point of order `4` doubling to it (that is
+`C[4]`, since `2 · (x, y) = ((x² − b)/(2y))²` and `x² − b = 0` at
+`x = b = 1`).  The two cyclic `8`-subgroups above it are cut out by
+`x² + (4v² − 2)x + 1` and `x² − (4v² + 2)x + 1`; neither is rational, which
+is exactly why `X_1(16)` has genus `2` and the parameter must be built on
+`X_0(16)`.
+
+Stated over an arbitrary commutative ring for the same reason as
+`univCurve`: the moduli argument runs over `ℚ̄`. -/
+def univCurveV {K : Type*} [CommRing K] (v : K) : WeierstrassCurve K :=
+  ⟨0, 4 * v ^ 4 - 2, 0, 1, 0⟩
+
+/-- **`c₄` in the `v`-coordinate** (PROVEN 2026-07-26):
+`c₄ = 16(16v⁸ − 16v⁴ + 1)`.  For `⟨0, a, 0, b, 0⟩` one has `b₂ = 4a`,
+`b₄ = 2b`, so `c₄ = 16(a² − 3b)`; here `a = 4v⁴ − 2`, `b = 1`. -/
+lemma univCurveV_c₄ {K : Type*} [CommRing K] (v : K) :
+    (univCurveV v).c₄ = 16 * (16 * v ^ 8 - 16 * v ^ 4 + 1) := by
+  simp only [univCurveV, WeierstrassCurve.c₄, WeierstrassCurve.b₂, WeierstrassCurve.b₄]
+  ring
+
+/-- **The discriminant in the `v`-coordinate** (PROVEN 2026-07-26):
+`Δ = 256 v⁴(v⁴ − 1)`.  For `⟨0, a, 0, b, 0⟩` one has `Δ = 16b²(a² − 4b)`;
+here that is `16((4v⁴ − 2)² − 4) = 256 v⁴(v⁴ − 1)`.
+
+The four `ℚ̄`-zeros `v = 0, ±1, ±i` are the cusps: `v = 0` and `v = ∞` are
+the images of `s = ∓1/2` and `s = 1/2`, `v = ±1` of `s = 0, ∞`, and
+`v = ±i` of the conjugate pair `s = ∓i/2`.  Since `16v⁸ − 16v⁴ + 1` has no
+rational root, `Δ = 0` never happens together with `c₄ ≠ 0`: that is what
+makes the leaf below self-policing. -/
+lemma univCurveV_Δ {K : Type*} [CommRing K] (v : K) :
+    (univCurveV v).Δ = 256 * v ^ 4 * (v ^ 4 - 1) := by
+  simp only [univCurveV, WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+  ring
+
+/-- **The `v ↦ s` dictionary** (PROVEN 2026-07-26): a `v`-parameter for `J`
+gives an `s`-parameter for `J`, via `s = (v − 1)/(2(v + 1))`.
+
+Both statements are denominator-free (`J · Δ = c₄³`), and no nondegeneracy
+hypothesis is needed: `v = −1` is excluded by the HYPOTHESIS itself, since
+`Δ(univCurveV (−1)) = 0` while `c₄(univCurveV (−1)) = 16 ≠ 0`, so the
+hypothesis would read `0 = 4096`.
+
+The proof is the scaling law for the variable change `u = (v + 1)²/4`,
+cleared of denominators into the two `ring` identities
+
+    Δ(univCurve s) · (v + 1)²⁴ = Δ(univCurveV v) · 2²⁴,
+    c₄(univCurve s) · (v + 1)⁸  = c₄(univCurveV v) · 2⁸,
+
+whose ratio is `(2⁸/(v+1)⁸)³ = 2²⁴/(v+1)²⁴` on the nose — which is the
+statement that the two curves have the same `j`.
+
+This lemma is what makes the `v`-coordinate usable: it is the ONLY place
+where the degree-`24` polynomials of the `s`-coordinate are touched, and
+everything downstream of it works with `4v⁴ − 2` and `1`. -/
+lemma exists_univCurve_param_of_univCurveV_param (v J : ℚ)
+    (h : J * (univCurveV v).Δ = (univCurveV v).c₄ ^ 3) :
+    ∃ s : ℚ, J * (univCurve s).Δ = (univCurve s).c₄ ^ 3 := by
+  have hv : v + 1 ≠ 0 := by
+    intro hv0
+    have hv' : v = -1 := by linarith
+    rw [hv', univCurveV_Δ, univCurveV_c₄] at h
+    norm_num at h
+  refine ⟨(v - 1) / (2 * (v + 1)), ?_⟩
+  have e1 : (1 : ℚ) - 2 * ((v - 1) / (2 * (v + 1))) = 2 / (v + 1) := by
+    field_simp
+    ring
+  have e2 : (1 : ℚ) + 2 * ((v - 1) / (2 * (v + 1))) = 2 * v / (v + 1) := by
+    field_simp; ring
+  have e3 : (1 : ℚ) + 4 * ((v - 1) / (2 * (v + 1))) ^ 2 = (2 * v ^ 2 + 2) / (v + 1) ^ 2 := by
+    field_simp; ring
+  have hΔ : (univCurve ((v - 1) / (2 * (v + 1)))).Δ * (v + 1) ^ 24
+      = (univCurveV v).Δ * 2 ^ 24 := by
+    rw [univCurve_Δ, univCurveV_Δ, e1, e2, e3]
+    field_simp
+    ring
+  have hc : (univCurve ((v - 1) / (2 * (v + 1)))).c₄ * (v + 1) ^ 8
+      = (univCurveV v).c₄ * 2 ^ 8 := by
+    rw [univCurve_c₄, univCurveV_c₄]
+    field_simp
+    ring
+  refine mul_right_cancel₀ (b := ((v + 1) ^ 24 : ℚ)) (pow_ne_zero _ hv) ?_
+  calc J * (univCurve ((v - 1) / (2 * (v + 1)))).Δ * (v + 1) ^ 24
+      = J * ((univCurve ((v - 1) / (2 * (v + 1)))).Δ * (v + 1) ^ 24) := by ring
+    _ = J * ((univCurveV v).Δ * 2 ^ 24) := by rw [hΔ]
+    _ = J * (univCurveV v).Δ * 2 ^ 24 := by ring
+    _ = (univCurveV v).c₄ ^ 3 * 2 ^ 24 := by rw [h]
+    _ = ((univCurveV v).c₄ * 2 ^ 8) ^ 3 := by ring
+    _ = ((univCurve ((v - 1) / (2 * (v + 1)))).c₄ * (v + 1) ^ 8) ^ 3 := by rw [hc]
+    _ = (univCurve ((v - 1) / (2 * (v + 1)))).c₄ ^ 3 * (v + 1) ^ 24 := by ring
+
+/-- **The `2`-torsion point of a stable cyclic `16`-subgroup is
+Galois-FIXED** (PROVEN 2026-07-26 — the Galois half of step 1 of the route
+described under `exists_univCurveV_param_of_stable` below): if `⟨g⟩` is
+`Gal(ℚ̄/ℚ)`-stable with `g` of order `16`, then `8 • g`, the unique point of
+order `2` in `⟨g⟩`, is fixed by every element of `Gal(ℚ̄/ℚ)` — not merely
+carried into `⟨g⟩`.
+
+This is the whole reason level `16` starts from a curve with a rational
+`2`-torsion point, and hence from the model `y² = x(x² + ax + b)` that
+`univCurveV` already has.  The argument is two lines of arithmetic in
+`ZMod 16`: `exists_isogenyCharacter` (PROVEN far above) gives
+`σ(g) = λ(σ) • g` with `λ(σ) ∈ (ℤ/16)ˣ`, every unit of `ℤ/16` is odd, and
+`8u = 8` in `ℤ/16` for every unit `u` — which is `decide`.
+
+Descending the fixed point to a RATIONAL point of order `2` is the other
+half of step 1; it is `WeierstrassCurve.exists_point_eq_baseChange_of_fixed`,
+PROVEN but declared later in this file, so it is not in scope here.  See the
+attack note under the leaf below. -/
+theorem eightNsmul_galois_fixed (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 16)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g)
+    (σ : Field.absoluteGaloisGroup ℚ) :
+    Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+        ((8 : ℕ) • g) = (8 : ℕ) • g := by
+  obtain ⟨lam, hlam⟩ := E.exists_isogenyCharacter g (by norm_num) hg hstable
+  have hred : ∀ n : ℕ, ((n : ZMod 16)).val • g = n • g := by
+    intro n
+    rw [ZMod.val_natCast, ← hg]
+    exact mod_addOrderOf_nsmul g n
+  have hunit : ∀ u : (ZMod 16)ˣ, (8 : ZMod 16) * ((u : ZMod 16)) = 8 := by decide
+  have hmap : Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+      ((8 : ℕ) • g) = (8 : ℕ) • (Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g) := by
+    simp only [map_nsmul]
+  rw [hmap, hlam σ, ← mul_nsmul', ← hred (8 * (lam σ : ZMod 16).val), ← hred 8]
+  congr 2
+  push_cast
+  rw [ZMod.natCast_val, ZMod.cast_id]
+  exact hunit (lam σ)
+
+/-- **`X_0(16)` moduli in the chain coordinate** (SORRY LEAF, cut
+2026-07-26 out of `exists_univCurve_param_of_stable`, which is now PROVEN
+over it): if the geometric points of an elliptic curve over `ℚ` contain a
+point `g` of order `16` whose cyclic subgroup is `Gal(ℚ̄/ℚ)`-stable, then
+`E` has the same `j`-invariant as `univCurveV v : y² = x(x² + (4v⁴ − 2)x + 1)`
+for some RATIONAL `v` — written denominator-free as
+`j(E) · Δ(univCurveV v) = c₄(univCurveV v)³`, i.e.
+
+  `j(E) · 256 v⁴(v⁴ − 1) = (16(16v⁸ − 16v⁴ + 1))³`.
+
+**THIS IS EQUIVALENT TO `exists_univCurve_param_of_stable`, NOT STRONGER.**
+`v ↦ s = (v − 1)/(2(v + 1))` is a bijection from `ℚ ∖ {−1}` onto
+`ℚ ∖ {1/2}` with inverse `s ↦ (1 + 2s)/(1 − 2s)`, and both excluded values
+are cusps (`Δ = 0` there), so a rational `s` exists iff a rational `v`
+does.  The `v`-form is stated because it is the one an attack can work in:
+see the section note above for the derivation of `4v⁴ − 2` from the
+`2`-isogeny chain, where `δ = 1`, `γ = 2v²` and the whole remaining content
+is the single condition that the `X_0(8)` Hauptmodul `r = γ/δ` be TWICE A
+SQUARE.
+
+**Self-policing, so no nondegeneracy hypothesis is needed and none is
+hidden.**  `Δ(univCurveV v) = 256v⁴(v⁴ − 1)` vanishes exactly at
+`v = 0, ±1`, and at each of those `c₄ = 16(16v⁸ − 16v⁴ + 1) = 16 ≠ 0`; the
+same holds at the excluded `v = −1`.  So any `v` satisfying the conclusion
+is automatically non-cuspidal.
+
+**FAITHFULNESS: satisfiable and non-vacuous.**  The forward validation
+table in the section note above exhibits ten curves of conductor `≤ 300`
+with an explicit rational `v`, and four negative controls with none.
+
+WHAT AN ATTACK LOOKS LIKE, and what it needs that is not yet in scope
+here.  The route is the four bullet points of the section note, and only
+the first is elementary:
+
+1. `8 • g` is Galois-FIXED.  **This half is PROVEN and is handed to you as
+   the hypothesis `hfix`** (`eightNsmul_galois_fixed`, just above).
+   Descending that fixed geometric point to a RATIONAL point of order `2`
+   is `WeierstrassCurve.exists_point_eq_baseChange_of_fixed`, which is also
+   PROVEN — but it currently lives at roughly line 12400 of this file, i.e.
+   AFTER this block, so a successor filling this leaf must first relocate
+   it (or this block) rather than assume it is in scope.  That ordering
+   constraint is the only reason the second half is not already discharged
+   here.
+2. Moving that rational `2`-torsion point to the origin is a
+   `VariableChange`, giving `y² = x(x² + ax + b)`; compare
+   `MazurLevel9.exists_tateParam`, whose proof does exactly this kind of
+   normalisation over `ℚ̄`.
+3. Rationality of `β = x(4 • g)` and of `γ` with `a + 2β = γ²`: `4 • g` is
+   fixed up to sign (`λ(σ) ≡ ±1 (mod 4)`), so its `x`-coordinate is fixed
+   outright.  The `X_0(8)` step is the same argument one level up, and it
+   is what forces `β = δ²`.
+4. The last step, `γ/(2δ)` a square, is the genuinely modular one, and it
+   is where `X_0(16) → X_0(8)` being a degree-`2` cover with BOTH sheets
+   Galois-stable (see the correction paragraph above) has to be used.
+
+`WeierstrassCurve.exists_quotient_isogeny` (PROVEN, later in this file) is
+the tool for the quotient-curve half of steps 3–4, should an attack prefer
+to run the chain through the isogenous curves rather than through
+coordinates.
+
+ON THE EXTRA HYPOTHESIS `hfix`.  It is DERIVABLE from `hg` and `hstable`
+(that is exactly `eightNsmul_galois_fixed`, and that is how the consumer
+`exists_univCurve_param_of_stable` discharges it), so carrying it here
+neither strengthens nor weakens the leaf: it is free information handed to
+whoever fills it, so that step 1 does not have to be redone.  Do not
+mistake it for a genuine hypothesis that could fail. -/
+theorem exists_univCurveV_param_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 16)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g)
+    (hfix : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+        ((8 : ℕ) • g) = (8 : ℕ) • g) :
+    ∃ v : ℚ, E.j * (univCurveV v).Δ = (univCurveV v).c₄ ^ 3 :=
+  sorry
+
+/-- **`X_0(16)` moduli, in universal-family form** (PROVEN 2026-07-26 over
+the single leaf `exists_univCurveV_param_of_stable`; was itself a sorry
+leaf, introduced the same day):
 if the geometric points of an elliptic curve over `ℚ` contain a point `g` of
 order `16` whose cyclic subgroup is `Gal(ℚ̄/ℚ)`-stable, then `E` has the same
 `j`-invariant as `univCurve s` for some RATIONAL `s` — written
@@ -3279,9 +3607,20 @@ Magma check in the section note above exhibits `28` of them below conductor
 `300`, each with exactly two rational `s`. This leaf is therefore genuine
 mathematics and not a vacuous placeholder.
 
-Its intended proof is the `X_0(16)` analogue of
-`MazurLevel9.exists_rat_hauptmodul_of_stable`; see the section note above
-for the route and for the elementary first step (`8 • g` is Galois-fixed,
+**WHAT CHANGED 2026-07-26.** This was the moduli leaf; it is now PROVEN
+over `exists_univCurveV_param_of_stable`, which is the SAME statement in
+the `2`-isogeny-chain coordinate `v = (1 + 2s)/(1 − 2s)` — see the
+`v`-coordinate section note above.  The passage between the two coordinates
+is `exists_univCurve_param_of_univCurveV_param`, a scaling argument for the
+rational variable change with `u = (v + 1)²/4`.  Nothing mathematical was
+discharged by this step: what it buys is that the open leaf is now stated
+with `a₄ = 1` and `a₂ = 4v⁴ − 2` instead of the degree-`24` Hauptmodul, and
+that the remaining content is visibly the single chain condition "the
+`X_0(8)` Hauptmodul is twice a square".
+
+The intended proof of the remaining leaf is still the `X_0(16)` analogue of
+`MazurLevel9.exists_rat_hauptmodul_of_stable`; see its docstring for the
+four-step route and for the elementary first step (`8 • g` is Galois-fixed,
 so `E` has a rational point of order `2`). -/
 theorem exists_univCurve_param_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 16)
@@ -3290,15 +3629,17 @@ theorem exists_univCurve_param_of_stable (E : WeierstrassCurve ℚ) [E.IsEllipti
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
-    ∃ s : ℚ, E.j * (univCurve s).Δ = (univCurve s).c₄ ^ 3 :=
-  sorry
+    ∃ s : ℚ, E.j * (univCurve s).Δ = (univCurve s).c₄ ^ 3 := by
+  obtain ⟨v, hv⟩ := exists_univCurveV_param_of_stable E g hg hstable
+    (eightNsmul_galois_fixed E g hg hstable)
+  exact exists_univCurve_param_of_univCurveV_param v E.j hv
 
 end MazurLevel16
 
 /-- **`X_0(16)`, the genus-`0` level: a rational cyclic `16`-subgroup puts
 `j` on the explicit degree-`24` Hauptmodul curve** (PROVEN 2026-07-26 over
-the single moduli leaf `MazurLevel16.exists_univCurve_param_of_stable`; was
-a sorry node, introduced the same day): if the geometric points of an
+the single moduli leaf `MazurLevel16.exists_univCurveV_param_of_stable`;
+was a sorry node, introduced the same day): if the geometric points of an
 elliptic curve over `ℚ` contain a point `g` of order `16` whose cyclic
 subgroup is `Gal(ℚ̄/ℚ)`-stable, then there is a rational number `s` with
 
@@ -3322,8 +3663,9 @@ because `M` does not vanish there (`M(0) = 1`, `M(1/2) = 4096`,
 `y² = x³ + 2N(s)x² + (1 − 2s)⁸x` with `N(s) = 16s⁴ + 96s³ + 24s² + 24s + 1`,
 whose `c₄` is `16 M(s)` and whose `Δ` is `4096 · s(1−2s)¹⁶(1+2s)⁴(1+4s²)`.
 So the displayed identity is a `ring` consequence, and what remains is
-exactly the moduli statement `(E, ⟨g⟩) ↦ s ∈ ℚ`, isolated as
-`MazurLevel16.exists_univCurve_param_of_stable`. Compare
+exactly the moduli statement `(E, ⟨g⟩) ↦ s ∈ ℚ`, isolated (2026-07-26, in
+the `2`-isogeny-chain coordinate `v = (1 + 2s)/(1 − 2s)`) as
+`MazurLevel16.exists_univCurveV_param_of_stable`. Compare
 `exists_x0Nine_hauptmodul`, which is the same statement one level down the
 `3`-power tower and is cut the same way. -/
 theorem WeierstrassCurve.exists_x0Sixteen_hauptmodul
