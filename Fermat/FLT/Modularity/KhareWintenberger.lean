@@ -15413,10 +15413,24 @@ higher ramification groups → tame quotient → tame character → local
 monodromy → Weil group → Weil–Deligne representations. That is a
 multi-agent theory-building programme, not a leaf.
 
-ROUTE AUDIT, THIRD CLOSURE (2026-07-26): the `τF`-FREE variant of the
-relocation is closed too — and by a DIFFERENT obstruction from the
-second closure's, which is worth naming because it is the only
-actionable one in this docstring.
+ROUTE AUDIT, THIRD CLOSURE (2026-07-26, 07:53 — **SUPERSEDED AT 09:17
+THE SAME DAY; READ THE REFUTATION ABOVE BEFORE ACTING ON ANY OF THIS**):
+the `τF`-FREE variant of the relocation is closed too — and by a
+DIFFERENT obstruction from the second closure's.
+
+**SUPERSESSION NOTICE (2026-07-26, third owner of this leaf).** The
+paragraph below ending "the four-declaration interface repair above" has
+been read as a WORK ORDER, and has now generated at least one dispatch at
+this leaf on that basis. It is not a work order. The audit titled *THE
+SEAM CHANGE IS COSTED AND REFUTED* above (commit `4947248b`, 09:17) was
+written 84 minutes AFTER this closure (commit `168afa7f`, 07:53) and
+refutes exactly the repair this closure proposes, on two independent
+grounds: the narrowing is EMPTY (the `I_w = I_ℓ` dichotomy), and the
+datum is not addable where this closure says it is. Both grounds were
+re-verified independently by a third owner; see the COST RE-DERIVATION at
+the end of this closure, which also corrects the four-declaration
+estimate below and makes the eventual repair cheaper than either audit
+says. Nothing in this closure is dispatchable as a leaf-level task.
 
 State the Fontaine–Laffaille input directly about `Rlz.τ` restricted to
 `G_F`, never mentioning `Wit.τF` at all:
@@ -15463,6 +15477,79 @@ not have. The nearest in-tree machinery,
 (`HardlyRamified/Threeadic.lean`, ~100 lines of instance plumbing), goes
 the OTHER way: it RESTRICTS inertia downwards, and what is needed here is
 lifting it upwards.
+
+COST RE-DERIVATION AND SHARPENING (2026-07-26, third owner; an
+independent re-trace of the Moret–Bailly stack, recorded because it both
+CONFIRMS the 09:17 refutation and makes the eventual repair materially
+cheaper than either audit above estimates).
+
+*Confirming the refutation.* `F` is produced by a chain of PROVEN
+assemblies — `exists_moretBailly_seed_of_five_le` →
+`exists_hilbertBlumenthalPoint_of_five_le` →
+`exists_totallyReal_point_of_geometricallyIrreducible` → … →
+`exists_normalRealPoint_of_affine_curve` — bottoming out at the sorried
+geometric leaf `exists_totallySplitPoint_of_affine_curve`. A clause added
+to the conclusion of `exists_moretBailly_seed_of_five_le` therefore
+breaks its proof and has to be threaded down all six rungs; it cannot be
+asserted there. That is precisely the 09:17 audit's claim, and it holds
+as written. "Four declarations" undercounts by about a factor of two
+before the new geometric leaves are counted at all.
+
+*The sharpening: record TOTAL SPLITTING, not unramifiedness.* Both audits
+frame the datum as "`ℓ` is unramified in `F`". That is the wrong formal
+choice in this pin, and choosing it is what makes the descent look
+expensive. Record `IsTotallySplitAt F ℓ` instead:
+
+- it is ALREADY the vocabulary the stack produces —
+  `exists_totallySplitPoint_of_affine_curve` returns exactly
+  `∀ p ∈ S, IsTotallySplitAt F p` — so no new definition and no new
+  threading vocabulary is introduced anywhere;
+- it needs no contact with mathlib's ramification theory, which is
+  `RingTheory/Valuation/RamificationGroup.lean`: 54 lines ending in a
+  TODO. `IsTotallySplitAt` is `Nat.card (F →+* ℚ_[p]) = finrank ℚ F`,
+  which is stateable today, whereas "`ℓ` is unramified in `F`" has no
+  clean statement against that file; and
+- **it deletes the "second half of the descent" above entirely.** Totally
+  split at `ℓ` means `F_w = ℚ_ℓ` for every `w | ℓ`, hence
+  `Γ_{F_w} = Γ_{ℚ_ℓ}` and `I_w = I_ℓ` by EQUALITY OF THE COMPLETIONS — no
+  inertia lifting, no `I_ℓ ≤ range (Field.absoluteGaloisGroup.map φ)`, no
+  surjectivity of `I_w → I_ℓ`. The paragraph above costs a lemma that the
+  merely-unramified formulation needs and the totally-split formulation
+  does not. Both formulations yield `I_w = I_ℓ` — that is the 09:17
+  dichotomy — and they differ only in what it costs to PROVE it here; the
+  gap between them is the whole of local-field inertia theory.
+
+  This is also the faithful reading of the source. Taylor's argument does
+  not choose `F` unramified at `ℓ` and hope; it prescribes the
+  `ℚ_ℓ`-point of the moduli space corresponding to the given flat local
+  deformation, which is exactly what makes `F ⊗ ℚ_ℓ ≅ ℚ_ℓ^{[F:ℚ]}` and
+  makes `ρ|_{G_F}` at the places over `ℓ` literally `ρ|_{G_{ℚ_ℓ}}`.
+
+*What survives, and why it is STILL NOT TAKEN.* The residue is the single
+input the 09:17 audit isolated: `ℓ` may be added to the Chebotarev set
+`S` only against `HasRationalPoint fC (ULift ℚ_[ℓ])` for the Bertini
+curve `C`, and `S` is currently populated only with primes ABOVE the
+Weil–Hensel bound `B` of
+`exists_bound_forall_padicPoint_of_geometricallyIrreducible`, which `ℓ`
+need not exceed. Supplying it needs a new conclusion
+`HasRationalPoint fX (ULift ℚ_[ℓ])` on
+`exists_twistedHilbertBlumenthalModuli_of_five_le` — classically true, it
+is the flat deformation point, but a NEW citation — plus preservation of
+that point through Bertini and the dimension drop, i.e. the `p`-adic
+approximation-ball leaf named above. So the sharpened repair is still two
+new leaves plus six rungs of threading, bought in exchange for a leaf
+that by the dichotomy is LITERALLY THE SAME CONDITION restated over `F`.
+The refutation stands. NOT TAKEN.
+
+A caution for whoever eventually does take it, since it was nearly
+recorded here as fact and is not: it is tempting to "prove" the datum
+unobtainable by exhibiting a geometrically irreducible affine `ℚ`-curve
+with a real point and `ℚ_p`-points beyond `B`, all of whose number-field
+points ramify at `ℓ`. No such counterexample was found, and the obvious
+candidates all fail (conics of the shape `y² = ℓ(x²+1)` absorb the
+constant into `x²+1` and in fact carry a `ℚ`-point, e.g. `(2, 5)` at
+`ℓ = 5`). The obstruction here is that the datum is NOT ASSERTED by the
+current leaf and must be produced — not that it is false.
 
 REFERENCE-PROJECT AUDIT, CORRECTED (2026-07-26, read at `~/cs/FLT`
 directly). The PRECEDENT note above is imprecise in a way that matters.
@@ -15752,6 +15839,32 @@ cannot give an isomorphism", but "the witness drops the irreducibility
 that would make rigidity applicable, and the ramified-in-`F` places
 need the cancellation regardless". Anyone reviving the `τF` route
 should attack those two, in that order.
+
+TWO NOTES ON THAT REVIVAL (2026-07-26, the owner of this leaf and its
+sibling; both are cheap and neither is acted on here).
+
+* *The irreducibility blocker is the cheap half, and the datum already
+  exists upstream.* `exists_moretBailly_seed_of_five_le` does not merely
+  produce `hirrF` internally — it already CARRIES
+  `(ρbar.map (algebraMap ℚ F)).IsIrreducible` in its conclusion, and
+  `exists_potentialModularityWitness_of_five_le` binds it as `hirrF`,
+  uses it to call `exists_heckePackage_of_seed`, and then drops it when
+  it builds the witness. So recording it as a field of
+  `PotentialModularityWitness` costs one field and one constructor entry,
+  needs no new leaf, and there is exactly ONE construction site in the
+  tree. It is NOT done here only because it would sit unconsumed until
+  the rest of the rigidity route exists — a decision for whoever owns
+  that route, not a difficulty.
+* *Use TOTAL SPLITTING, not unramifiedness, at the places where the
+  `I_p = I_w` identification is wanted.* See the COST RE-DERIVATION in
+  the sibling `threeadicRealization_isUnramifiedAtEll_of_witness` above:
+  `IsTotallySplitAt F p` gives `F_w = ℚ_p`, hence `I_w = I_p` by equality
+  of completions, whereas mere unramifiedness gives the same equality
+  only through inertia-lifting theory the pin does not have. The remark
+  above that "at a `p` UNRAMIFIED in `F` one has `I_p = I_w`" is
+  mathematically right and formally expensive; the totally-split form is
+  both. It does not help at the ramified-in-`F` places, which remain the
+  real obstruction for THIS leaf.
 
 MACHINERY NOTE for that route, since it names a concrete and plausibly
 provable missing lemma rather than a programme: the rigidity step is
