@@ -26,7 +26,10 @@ varieties:
   characteristic polynomials are already defined over `D` and are
   INDEPENDENT of `I`, i.e. the `T_I A` for varying `I` are members of one
   strictly compatible system. This is the deepest statement in the
-  chain.
+  chain. **It is currently FALSE AS STATED** — see the FAITHFULNESS
+  AUDIT in its own docstring, which refutes it with two explicit
+  counterexamples and gives the three-declaration seam repair. Do not
+  dispatch a prover at it before the repair lands.
 
 ## Why a DEFINITION is needed here, and what it buys
 
@@ -55,8 +58,20 @@ profinite machinery is needed to WRITE it: it is a subtype of
 
 Both leaves below then speak about `TatePt`: the first produces a FRAME
 — a `Γ_F`-equivariant additive bijection `(Fin 2 → O) ≃ T` — and the
-second consumes one. That is the link, and it is what makes the second
-leaf a true statement rather than a plausible-looking false one.
+second consumes one. That is the link, and it is what was supposed to
+make the second leaf a true statement rather than a plausible-looking
+false one.
+
+**It is not enough, and the second leaf is false because of it**
+(2026-07-26). An additive `Γ_F`-equivariant bijection ties `τ` to `A`
+but NOT to the real multiplication `m`: the coefficient ring `O` is
+pinned only up to "some commutative subring of `End_{Γ_F}(T)` over
+which `T` is free of rank two", and when `A_x` has endomorphisms beyond
+`𝒪_D` there are such rings that are not `𝒪_{D,I}` — including
+non-domains, for which the second leaf's conclusion fails outright. The
+frame notion must carry a ring map `𝒪_D →+* O` intertwining `φ` with
+`m.act`; see the FAITHFULNESS AUDIT on
+`exists_weilFrobeniusSystem_of_mult`.
 
 ## What is proven here
 
@@ -238,14 +253,165 @@ Four points are load-bearing in the way this is stated.
   since nothing would tie `τ` to `A` — a residual condition constrains a
   representation only modulo `I`. The frame is transported along a
   bijection, and characteristic polynomials are invariant under
-  conjugation, so no compatibility beyond additivity and Galois
-  equivariance is required of `φ`.
+  conjugation, so — the original claim continued — no compatibility
+  beyond additivity and Galois equivariance is required of `φ`. **That
+  last clause is exactly the falsity refuted below.**
 * The embeddings `ψ` of `D` and `ι` of `O` into `ℚ̄_q` are likewise
   produced per `I` (they are the place of `D` over `q` determined by
   `I`, and the structural embedding of the completion), whereas `P` is
   not; `ι` is required injective, which is the statement that `O` is a
   domain of characteristic zero — the Carayol normalization of the
-  coefficients. -/
+  coefficients. **`O` being a domain is not a consequence of any
+  hypothesis here**; see the audit.
+
+## FAITHFULNESS AUDIT (2026-07-26) — THIS LEAF IS FALSE AS STATED
+
+Two independent explicit counterexamples are given below. **Do not
+dispatch a prover at this statement**: it cannot be proven, and anything
+derived from it is worthless. The repair is a CUT-LEVEL change spanning
+three declarations with three different owners and is described at the
+end; it is REPORTED, not made here, because the frame is produced by the
+sibling `exists_tateFrame_of_levelStructure` (another owner, working
+concurrently) and consumed by the PROVEN assembly
+`nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`
+(`Modularity/KhareWintenberger.lean`), whose `HilbertBlumenthalPoint`
+fields `ιO₀_injective` / `ιC_injective` and `matchℓ` / `matchp` are
+exactly the two clauses refuted. Changing this statement in isolation
+turns a false leaf into a hard build error, which is worse.
+
+**The quantifier repair recorded in the second bullet DID hold up.**
+`bad`, `ψ` and `ι` are all produced after `q`, `I`, `π` and the frame;
+`P` alone is produced before `q`; every remaining binder (`D`, `m`, `x`,
+`hdim`) is genuinely independent of `q`. No sibling quantifier has the
+same defect. The falsity found here is a different one.
+
+### The defect
+
+`O`, `τ` and `φ` range over ALL frames of `TatePt m x I π` that are
+merely additive, bijective and `Γ_F`-equivariant. Nothing requires the
+frame to REMEMBER THE REAL MULTIPLICATION — that the `O`-module
+structure transported to `T` along `φ` is the one induced by `𝒪_D`
+through `m.act`. Additivity plus `Γ_F`-equivariance determine `τ`
+uniquely as `φ⁻¹ ∘ galSMul σ ∘ φ`, but they leave `O` free: any
+commutative subring `O ⊆ End_{Γ_F}(T)` that is `ℤ_q`-free of rank
+`[𝒪_{D,I} : ℤ_q]` and over which `T` is free of rank `2` is a legal
+frame. When `A_x` has endomorphisms beyond `𝒪_D`, such rings exist and
+are NOT `𝒪_{D,I}`.
+
+(`O` is automatically a `ℤ_q`-algebra even though nothing says so: `φ`
+forces `O ⊕ O ≅ T ≅ ℤ_q^{2d}` as abelian groups, and every additive
+endomorphism of `ℤ_q^n` is `ℤ_q`-linear, since divisibility by `q^n` is
+preserved. So the exotic frames below really are the general shape.)
+
+### Counterexample 1 — `Function.Injective ι` fails
+
+`D = ℚ(√5)` (totally real, `finrank ℚ D = 2`), `F` any number field,
+`E/F` any elliptic curve, `A = E × E` over `S = Spec F`, `x = 𝟙`. Then
+`f : A ⟶ S` is proper, smooth, with geometrically connected fibres, of
+relative dimension `2 = finrank ℚ D`, and `𝒪_D = ℤ[(1+√5)/2]` acts by
+the companion matrix `[[0,1],[1,1]] ∈ M₂(ℤ) ⊆ End(E × E)` of `X² − X − 1`
+(verified: `charpoly [0,1;1,1] = x² − x − 1`). Every hypothesis holds.
+
+Take `q = 13`, which is INERT in `ℚ(√5)` (`kronecker(5,13) = −1`), so
+`I = 13·𝒪_D` is maximal, `13 ∈ I`, `π = 13 ∉ I²`, and
+`T := TatePt m x I π = T₁₃(E × E) = W ⊗_{ℤ₁₃} T₁₃E` with `W = ℤ₁₃²` the
+"multiplicity space" on which `M₂(ℤ₁₃)` acts and `Γ_F` acts trivially.
+
+Now put `O := ℤ₁₃[N] ≅ ℤ₁₃[ε]/(ε²)`, `N = [[0,1],[0,0]] ∈ End(W)`. It is
+a commutative topological ring; `W` is free of rank `1` over it
+(`W = O·e₂`), so `T ≅ O ⊗_{ℤ₁₃} T₁₃E ≅ O²`; and `Γ_F`, acting only on
+the `T₁₃E` factor, is `O`-linear. So `(O, τ, φ)` is a legal frame — and
+note it even satisfies everything the sibling leaf produces (`O` is
+LOCAL, finite free over `ℤ₁₃`, with its module topology). But `O` has a
+nonzero nilpotent, so **there is no injective ring homomorphism
+`O →+* AlgebraicClosure ℚ₁₃` at all**, and the conclusion fails outright.
+
+### Counterexample 2 — the charpoly equation itself fails
+
+This one is the serious one: it survives any strengthening of `O` short
+of tying the frame to `𝒪_D`, and it shows the defect is not about `ι`.
+
+Same `D = ℚ(√5)` and `q = 13`, but take `F = ℚ(i)` and `E : y² = x³ − x`
+(conductor `32`), which has CM by `ℤ[i] ⊆ F`; `A = E × E` as before.
+`13 ≡ 1 mod 4`, so `13` SPLITS in `ℚ(i)`, whence
+`T₁₃E = T_𝔭 ⊕ T_𝔭̄` with `Γ_F` acting by two distinct characters
+`χ, χ̄ : Γ_F → ℤ₁₃^×`. Hence `T = U₁ ⊕ U₂` with `U_i ≅ ℤ₁₃²` and `Γ_F`
+acting on `U₁`, `U₂` by the SCALARS `χ(σ)`, `χ̄(σ)`.
+
+Frame: `O := ℤ₁₃ × ℤ₁₃` acting by the two projections. `T` is free of
+rank `2` over it (`e_iT ≅ ℤ₁₃²`), `Γ_F` is `O`-linear, and in the basis
+`t_i = u_i + v_i` one has `τ(σ) = (χ(σ), χ̄(σ))·id`, so
+
+    τ.charFrob w = (X − c_w)²  with  c_w = (χ(w), χ̄(w)) ∈ O.
+
+A ring hom out of a product into a field kills one of the two orthogonal
+idempotents, so EVERY `ι : O →+* ℚ̄₁₃` factors through a projection and
+`(τ.charFrob w).map ι` is a SQUARE `(X − ι(c_w))²` — whatever embedding
+of `ℤ₁₃` it uses (this is why possibly-discontinuous embeddings do not
+rescue the statement).
+
+Meanwhile the STANDARD frame at the same `(q, I, π)` — namely
+`O = 𝒪_{D,I} = ℤ₁₃[α]`, the unramified quadratic extension of `ℤ₁₃`,
+`α` the companion matrix acting on `W`, with `T ≅ 𝒪_{D,I} ⊗_{ℤ₁₃} T₁₃E`
+— has `τ.charFrob w = X² − a_w X + N(w)`, where `a_w ∈ ℤ` is the trace
+of `Frob_w` on `T₁₃E` and `N(w)` its norm; since `ψ` is a field
+embedding, hence injective, this
+FORCES `P w = X² − a_w X + N(w) ∈ ℚ[X] ⊆ D[X]`, and `ψ` fixes it. So the
+exotic frame demands that `X² − a_w X + N(w)` be a square, i.e.
+`a_w² = 4N(w)`, i.e. `χ(w) = χ̄(w)`, for all `w` outside a finite set.
+But `χ ≠ χ̄` (for `w` over a split `p`,
+`{χ(w), χ̄(w)}` is the pair of conjugate Hecke values, e.g. `{9, 2}` in
+`ℤ₁₃` at `w | 5`, since `a₅(E) = −2` and `π₅ = −1 + 2i`, `i ↦ 5`), so by
+Chebotarev they differ at infinitely many `w`. Contradiction.
+
+(Consistency check that the exotic frame is real rather than an
+arithmetic slip: the `ℤ₁₃`-characteristic polynomial of `Frob_w` on `T`
+must be the norm of the `O`-one, and indeed
+`(X−χ)²(X−χ̄)² = N_{O/ℤ₁₃}((X−c_w)²)` agrees with the value computed
+from the standard frame.)
+
+### The repair (REPORTED, not made here)
+
+Pin the frame to the real multiplication. Concretely, add to THIS leaf a
+ring homomorphism together with the intertwining it must satisfy,
+
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hj : ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+            (φ (j a • u)).1 n = m.act a ((φ u).1 n))
+
+as further hypotheses of the innermost `∀`. This is exactly the
+statement that `φ` is a frame of the Tate module AS AN `𝒪_D`-MODULE,
+and it repairs both counterexamples at once: `j` forces `O` to contain
+the image of `𝒪_D ⊗ ℤ_q` acting on `T`, which is `𝒪_{D,I}`, and the
+rank count `rank_{ℤ_q} O = [𝒪_{D,I} : ℤ_q]` together with `𝒪_{D,I}`
+being integrally closed then forces `O = 𝒪_{D,I}`. In particular `O` is
+a domain of characteristic `0`, so `Function.Injective ι` becomes
+automatic rather than an assumption smuggled into the conclusion, and
+`τ.charFrob` becomes the reduced (rank-two over `𝒪_{D,I}`) Frobenius
+polynomial, which is what Weil and Faltings are about.
+
+Neither counterexample survives: `ℤ₁₃[ε] = ℤ₁₃[N]` admits no `j`,
+because `j((1+√5)/2)` would have to act on `W` as the companion matrix
+`α`, which generates the unramified quadratic `ℤ₁₃[α] ≠ ℤ₁₃[N]`; and
+`ℤ₁₃ × ℤ₁₃` admits none either, because `𝒪_D` acts through the
+`W`-factor and is therefore not scalar on either `e_iT`.
+
+The seam therefore needs three coordinated edits, none of which is this
+declaration's owner's to make alone:
+
+1. `exists_tateFrame_of_levelStructure` must additionally PRODUCE `j`
+   and `hj`. This is free for its author: it constructs
+   `O = 𝒪_{D,I}` and `φ` from the `I`-adic Tate module, so `j` is the
+   structural map.
+2. This leaf takes `j`, `hj` as hypotheses (as displayed above).
+3. `nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`
+   threads them through its two `obtain`s.
+
+Until (1) lands, adding (2) alone would break (3), so the statement is
+left untouched and the falsity is recorded here instead. The sibling
+`exists_tateFrame_of_levelStructure` is NOT itself false — the honest
+`I`-adic Tate module does frame it — it is merely too weak, and that
+weakness is what this leaf inherited. -/
 theorem exists_weilFrobeniusSystem_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
