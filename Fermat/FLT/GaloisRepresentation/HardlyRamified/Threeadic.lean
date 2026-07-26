@@ -1921,8 +1921,118 @@ theorem exists_connectedEtale_subgroup_at_three_of_threePowTorsion
   exact inertiaFixed_connected_vector_eq_zero_of_hopf_package ρ' G e₀ he₀ hε₀
     hprim₀ hcomul₀ fG hfG N u (hNtors u) hu hufix
 
+/-- **`1` is the only cube root of unity in `ℤ_[3]`** (helper, proven).
+
+`y³ = 1` gives `(y-1)((y-1)² + 3(y-1) + 3) = 0`; if `y ≠ 1` the second
+factor vanishes, and reducing it mod `3` (`PadicInt.toZMod`) gives
+`(y-1)‾² = 0`, so `y - 1 ∈ 𝔪 = (3)`, say `y - 1 = 3s`. Substituting,
+`3 · (3s² + 3s + 1) = 0`, and `ℤ_[3]` is a domain with `3 ≠ 0`, so
+`3s² + 3s + 1 = 0` — which reduces mod `3` to `1 = 0`.
+
+Stated for a general prime `p` with a hypothesis `p = 3` so that it can be
+applied at `primesEquiv v` without any `Fact`-instance cast. -/
+theorem padicInt_eq_one_of_pow_three {p : ℕ} [Fact p.Prime] (hp3 : p = 3)
+    (y : ℤ_[p]) (hy : y ^ 3 = 1) : y = 1 := by
+  subst hp3
+  by_contra hne
+  have ht : y - 1 ≠ 0 := sub_ne_zero.mpr hne
+  have hfac : (y - 1) * ((y - 1) ^ 2 + 3 * (y - 1) + 3) = 0 := by
+    linear_combination hy
+  have hq : (y - 1) ^ 2 + 3 * (y - 1) + 3 = 0 :=
+    (mul_eq_zero.mp hfac).resolve_left ht
+  have hcast : ((3 : ℕ) : ℤ_[3]) = (3 : ℤ_[3]) := by norm_cast
+  have h3 : (PadicInt.toZMod (p := 3)) 3 = 0 := by
+    rw [← hcast, map_natCast, ZMod.natCast_self]
+  have h1 : (PadicInt.toZMod (p := 3) (y - 1)) ^ 2 = 0 := by
+    have h := congrArg (PadicInt.toZMod (p := 3)) hq
+    simp only [map_add, map_mul, map_pow, map_zero, h3, zero_mul, add_zero] at h
+    exact h
+  have h2 : PadicInt.toZMod (p := 3) (y - 1) = 0 :=
+    (pow_eq_zero_iff two_ne_zero).mp h1
+  have hmem : y - 1 ∈ Ideal.span {((3 : ℕ) : ℤ_[3])} := by
+    rw [← PadicInt.maximalIdeal_eq_span_p, ← PadicInt.ker_toZMod, RingHom.mem_ker]
+    exact h2
+  obtain ⟨s, hs⟩ := Ideal.mem_span_singleton'.mp hmem
+  rw [hcast] at hs
+  have hy1 : y - 1 = 3 * s := by rw [← hs]; ring
+  rw [hy1] at hq
+  have hkey : (3 : ℤ_[3]) * (3 * s ^ 2 + 3 * s + 1) = 0 := by linear_combination hq
+  have h3ne : (3 : ℤ_[3]) ≠ 0 := by norm_num
+  have hkey2 : 3 * s ^ 2 + 3 * s + 1 = 0 := (mul_eq_zero.mp hkey).resolve_left h3ne
+  have hcontra := congrArg (PadicInt.toZMod (p := 3)) hkey2
+  simp only [map_add, map_mul, map_pow, map_one, map_zero, h3, zero_mul] at hcontra
+  exact one_ne_zero hcontra
+
+/-- **`1` is the only cube root of unity in `ℚ_[3]`** (helper, proven):
+`‖x‖³ = 1` forces `‖x‖ = 1`, so `x` lies in `ℤ_[3]`, where
+`padicInt_eq_one_of_pow_three` applies. -/
+theorem padic_eq_one_of_pow_three {p : ℕ} [Fact p.Prime] (hp3 : p = 3)
+    (x : ℚ_[p]) (hx : x ^ 3 = 1) : x = 1 := by
+  have hnorm : ‖x‖ = 1 := by
+    have h : ‖x‖ ^ 3 = 1 := by rw [← norm_pow, hx, norm_one]
+    nlinarith [norm_nonneg x, sq_nonneg (‖x‖ - 1), sq_nonneg (‖x‖ + 1)]
+  obtain ⟨y, hy⟩ : ∃ y : ℤ_[p], (y : ℚ_[p]) = x := ⟨⟨x, le_of_eq hnorm⟩, rfl⟩
+  have hy3 : y ^ 3 = 1 := by
+    apply PadicInt.ext
+    rw [PadicInt.coe_pow, PadicInt.coe_one, hy]
+    exact hx
+  rw [← hy, padicInt_eq_one_of_pow_three hp3 y hy3, PadicInt.coe_one]
+
+/-- **`ζ₃ ∉ ℚ₃ᵥ`** (helper, proven): the completion of `ℚ` at the place
+of `3` contains no primitive cube root of unity — equivalently, its only
+cube root of unity is `1`.
+
+Route: mathlib's `Rat.HeightOneSpectrum.adicCompletion.padicEquiv`
+identifies `ℚ₃ᵥ` with `ℚ_[primesEquiv 𝔭₃]`, and
+`natGenerator_toHeightOneSpectrum` says `primesEquiv 𝔭₃ = 3`; the
+`Fact`-instance mismatch that this normally provokes is avoided by
+stating `padic_eq_one_of_pow_three` over a general `p` with `p = 3` as a
+hypothesis, so the two `Padic` instances never have to be identified. -/
+theorem adicCompletionThree_eq_one_of_pow_three (q : ℚ₃ᵥ) (hq : q ^ 3 = 1) :
+    q = 1 := by
+  haveI hfp : Fact ((Rat.HeightOneSpectrum.primesEquiv
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) : ℕ).Prime :=
+    ⟨(Rat.HeightOneSpectrum.primesEquiv
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat).2⟩
+  have hp3 : ((Rat.HeightOneSpectrum.primesEquiv
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat) : ℕ) = 3 := by
+    show Rat.HeightOneSpectrum.natGenerator _ = 3
+    exact natGenerator_toHeightOneSpectrum Nat.prime_three
+  let E := Rat.HeightOneSpectrum.adicCompletion.padicEquiv
+    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+  have h1 : (E q) ^ 3 = 1 := by rw [← map_pow, hq, map_one]
+  have h2 : E q = 1 := padic_eq_one_of_pow_three hp3 _ h1
+  have h4 : E.symm (E q) = E.symm 1 := by rw [h2]
+  rwa [ContinuousAlgEquiv.symm_apply_apply, map_one] at h4
+
+/-- **Triviality of `ω` at `σ` means `σ` fixes the cube roots of unity**
+(helper, proven): the defining specification of
+`modularCyclotomicCharacter` reads `σ ζ = ζ ^ (ω σ).val`, and `ω σ = 1`
+has `val = 1`. (This is the step that
+`exists_cyclotomicCharacterModL_three_ne_one` above performs inline; it is
+factored out here because the LOCAL statement below needs it at the
+element `Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) g`.) -/
+theorem fix_primitiveRoot_of_cyclotomicCharacterModL_three_eq_one
+    {ζ : AlgebraicClosure ℚ} (hζ : IsPrimitiveRoot ζ 3)
+    (σ : Γ ℚ) (hσ : cyclotomicCharacterModL 3 σ = 1) : σ ζ = ζ := by
+  have h2 := modularCyclotomicCharacter.spec (AlgebraicClosure ℚ)
+    (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) 3)
+    (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ)
+      (AlgebraicClosure ℚ) σ) hζ.toRootsOfUnity.2
+  rw [show modularCyclotomicCharacter (AlgebraicClosure ℚ)
+      (HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) 3)
+      (MulSemiringAction.toRingAut (Field.absoluteGaloisGroup ℚ)
+        (AlgebraicClosure ℚ) σ) = cyclotomicCharacterModL 3 σ from rfl,
+    hσ] at h2
+  have hcoe : ((hζ.toRootsOfUnity : (AlgebraicClosure ℚ)ˣ) :
+      AlgebraicClosure ℚ) = ζ := by
+    simp [IsPrimitiveRoot.toRootsOfUnity]
+  have hval : (((1 : (ZMod 3)ˣ) : ZMod 3)).val = 1 := rfl
+  rw [hval, pow_one, hcoe] at h2
+  exact h2
+
 /-- **The mod-3 cyclotomic character is nontrivial on the decomposition
-group at `3`** (SORRY LEAF, cut 2026-07-26 while repairing the
+group at `3`** (PROVEN 2026-07-26; cut 2026-07-26 while repairing the
 connected–étale cut below; see the FAITHFULNESS REPAIR note there).
 
 `ω = cyclotomicCharacterModL 3` cuts out `ℚ(ζ₃) = ℚ(√-3)`, in which the
@@ -1940,18 +2050,56 @@ with `ω g₀ ≠ 1`, and after the repair `g₀` has to come from `Γ ℚ₃ᵥ
 rather than from `Γ ℚ` (`exists_cyclotomicCharacterModL_three_ne_one`,
 which is proven above but produces a GLOBAL element).
 
-Intended proof, in the shape of `exists_cyclotomicCharacterModL_three_ne_one`
+Proof, in the shape of `exists_cyclotomicCharacterModL_three_ne_one`
 but over `ℚ₃ᵥ`: if `ω` were trivial on the image of `Γ ℚ₃ᵥ` then a
-primitive cube root of unity would be fixed by the whole decomposition
-group, hence would lie in `ℚ₃ᵥ`; but a `q ∈ ℤ₃` with `q³ = 1` reduces
-to a cube root of `1` in `𝔽₃`, i.e. to `1` (Frobenius is the identity
-there), so `q = 1 + 3a` and `q³ - 1 = 9a(1 + 3a + 3a²) = 0` forces
-`a = 0` since `1 + 3a + 3a²` is a unit. -/
+primitive cube root of unity `ζ ∈ ℚᵃˡᵍ` would be fixed by every
+`Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) g`
+(`fix_primitiveRoot_of_cyclotomicCharacterModL_three_eq_one`), hence — by
+`Field.absoluteGaloisGroup.lift_map`, which says
+`AlgebraicClosure.map f ∘ map f g = g ∘ AlgebraicClosure.map f` — its image
+`ζ' := AlgebraicClosure.map (algebraMap ℚ ℚ₃ᵥ) ζ` would be fixed by the
+WHOLE of `Γ ℚ₃ᵥ`, so `ζ' ∈ ℚ₃ᵥ` by infinite Galois theory
+(`InfiniteGalois.mem_bot_iff_fixed`). But `ℚ₃ᵥ` has no primitive cube root
+of unity (`adicCompletionThree_eq_one_of_pow_three` above: a `q ∈ ℤ₃` with
+`q³ = 1` reduces to a cube root of `1` in `𝔽₃`, i.e. to `1`, so `q = 1 + 3a`
+and `q³ - 1 = 9a(1 + 3a + 3a²) = 0` forces `a = 0` since `1 + 3a + 3a²` is a
+unit), and `ζ' ≠ 1` because `AlgebraicClosure.map` is injective. -/
 theorem exists_local_cyclotomicCharacterModL_three_ne_one :
     ∃ g : Γ ℚ₃ᵥ,
       cyclotomicCharacterModL 3
         (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) g) ≠ 1 := by
-  sorry
+  by_contra hall
+  push Not at hall
+  obtain ⟨ζ, hζ⟩ :=
+    HasEnoughRootsOfUnity.exists_primitiveRoot (AlgebraicClosure ℚ) 3
+  -- every element of the decomposition group at `3` fixes the image of `ζ`
+  have hfix : ∀ g : Γ ℚ₃ᵥ,
+      g (AlgebraicClosure.map (algebraMap ℚ ℚ₃ᵥ) ζ) =
+        AlgebraicClosure.map (algebraMap ℚ ℚ₃ᵥ) ζ := by
+    intro g
+    have h1 := fix_primitiveRoot_of_cyclotomicCharacterModL_three_eq_one hζ
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) g) (hall g)
+    have h2 := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚ₃ᵥ) g ζ
+    rw [h1] at h2
+    exact h2.symm
+  -- hence it lies in `ℚ₃ᵥ` itself
+  haveI : Algebra.IsIntegral ℚ₃ᵥ (AlgebraicClosure ℚ₃ᵥ) :=
+    Algebra.IsAlgebraic.isIntegral
+  haveI : IsGalois ℚ₃ᵥ (AlgebraicClosure ℚ₃ᵥ) := ⟨⟩
+  obtain ⟨q, hq⟩ := Set.mem_range.mp <| IntermediateField.mem_bot.mp <|
+    (InfiniteGalois.mem_bot_iff_fixed
+      (AlgebraicClosure.map (algebraMap ℚ ℚ₃ᵥ) ζ)).mpr hfix
+  have hq3 : q ^ 3 = 1 := by
+    have h3 : algebraMap ℚ₃ᵥ (AlgebraicClosure ℚ₃ᵥ) (q ^ 3) = 1 := by
+      rw [map_pow, hq, ← map_pow, hζ.pow_eq_one, map_one]
+    exact (algebraMap ℚ₃ᵥ (AlgebraicClosure ℚ₃ᵥ)).injective (by rw [h3, map_one])
+  have hqne : q ≠ 1 := by
+    intro h1
+    apply hζ.ne_one (by norm_num)
+    apply (AlgebraicClosure.map (algebraMap ℚ ℚ₃ᵥ)).injective
+    rw [map_one, ← hq, h1, map_one]
+  -- but `ℚ₃ᵥ` has no primitive cube root of unity
+  exact hqne (adicCompletionThree_eq_one_of_pow_three q hq3)
 
 /-- **The connected–étale line of the flat package at `3`** (SORRY
 LEAF, cut 2026-07-25 out of the invariant-functional node
