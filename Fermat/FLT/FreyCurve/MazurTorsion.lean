@@ -215,12 +215,14 @@ genuinely modular-curve-theoretic inputs:
     Mordell–Weil half is gone entirely, being
     `MazurLevel27.rational_point_x0TwentySeven`, PROVEN from mathlib's
     `fermatLastTheoremThree` because `X_0(27)` IS the Fermat cubic.
-    `exists_x0TwentySeven_point` is in turn PROVEN (2026-07-26) over the
-    single moduli leaf `exists_x0TwentySeven_moduliPoint`, the remaining
-    arithmetic — that the `j₉`-fibre over `−12288000` has the one
-    rational point `t = −3` — being `MazurLevel27.x0Nine_fibre_over_CM`.
-    So the surviving leaves at this level are pure moduli statements,
-    with no arithmetic left in them.
+    `exists_x0TwentySeven_point` is in turn PROVEN (2026-07-26) over
+    `exists_x0TwentySeven_moduliPoint`, the remaining arithmetic — that
+    the `j₉`-fibre over `−12288000` has the one rational point `t = −3` —
+    being `MazurLevel27.x0Nine_fibre_over_CM`; and
+    `exists_x0TwentySeven_moduliPoint` is itself PROVEN (2026-07-26) over
+    the single LEVEL-`3` leaf `exists_x0Three_chainParameters`, by the
+    `3`-isogeny chain, everything above level `3` having been reduced to
+    proven arithmetic over `ℚ`.
   The two levels `21, 25` are in Kenku's list and have no sharpening
   yet, so they are the only bare sorry nodes left among the eleven.
 * `torsion_finite_rat` (DERIVED from `mazur_point_order`): the
@@ -394,7 +396,9 @@ consequently PROVEN from two nodes,
   `j(E) = −12288000`, the CM value of discriminant `−27`; PROVEN
   2026-07-26 over two moduli leaves (`exists_x0Nine_hauptmodul`,
   `exists_x0TwentySeven_point`, the latter PROVEN 2026-07-26 in turn
-  over `exists_x0TwentySeven_moduliPoint`) plus the Mordell–Weil half
+  over `exists_x0TwentySeven_moduliPoint`, which is PROVEN 2026-07-26
+  over the level-`3` leaf `exists_x0Three_chainParameters`) plus the
+  Mordell–Weil half
   `MazurLevel27.rational_point_x0TwentySeven`, which is mathlib's
   `fermatLastTheoremThree` because `X_0(27)` IS the Fermat cubic;
 * `no_torsion_order_27_of_j` — stated as Olson's theorem that a CM
@@ -5819,11 +5823,319 @@ theorem x0Nine_fibre_over_CM (t : ℚ)
       nlinarith [sq_nonneg t.num, mul_pos hdpos hdpos]
   · exact absurd hQ (x0NineFibre_int t.num (t.den : ℤ) h7)
 
+/-!
+##### The `3`-isogeny chain: from three `X_0(3)`-parameters to a point of `27a1`
+
+(New 2026-07-26.) Everything in this section is PURE ARITHMETIC OVER `ℚ` —
+no curves, no subgroups, no moduli — and all of it is PROVEN. It is the
+Diophantine half of the level-`27` node, and it reduces the whole node to a
+statement about `X_0(3)` alone (`exists_x0Three_chainParameters` below).
+
+**The dictionary.** A curve with a `Gal(ℚ̄/ℚ)`-stable cyclic `27`-subgroup
+`C` gives a chain of three rational `3`-isogenies
+
+  `E = E₀ → E₁ = E₀/C[3] → E₂ = E₀/C[9] → E₃ = E₀/C`,
+
+and each step `(E_{i}, C_{i+1}/C_i)` is a rational point of `X_0(3)`, i.e.
+a value `uᵢ₊₁ ∈ ℚ` of the hauptmodul `t₃ = (η(τ)/η(3τ))¹²`, with
+
+  `j(source) = (u+27)(u+243)³/u³`,  `j(quotient) = (u+27)(u+3)³/u`.
+
+Matching the middle `j`-invariants gives, for consecutive parameters,
+`(u+27)(u+3)³v³ = (v+27)(v+243)³u`, whose LHS−RHS **factors** (verified by
+CAS, and here by `ring` inside every `linear_combination`) as
+
+  `(uv − 729) · (u³v² + 36u²v² + 729u²v + 270uv² + 26244uv + 531441u − v³)`.
+
+The first factor is the BACKTRACKING component `v = 729/u` — the Fricke
+involution `w₃`, i.e. the second isogeny being the dual of the first — which
+is exactly what cyclicity of the composite excludes. The second factor is
+the residual `(3,3)` curve, which is `X_0(9)`: it is rational, with the
+`X_0(9)` hauptmodul `s = (η(τ)/η(9τ))³` as parameter,
+
+  `u = s³/(s²+9s+27)`,   `v = s(s²+9s+27)`,   and `u·v = s⁴`.
+
+(Both parametrisations were found by fitting `q`-expansions of the
+`η`-quotients to `O(q¹²⁰)` — untrusted searcher — and are PROVEN here as
+polynomial identities.)
+
+**What is new and what it buys.** The inverse of that parametrisation is an
+explicit rational function (`exists_x0Nine_param_of_x0Three_pair`), and the
+`X_0(27)` plane model that results,
+
+  `s₁(s₁²+9s₁+27)(s₂²+9s₂+27) = s₂³`,
+
+is birational to `27a1 : y² + y = x³ − 7` by the completely explicit map
+
+  `x = (s₂+9)/(s₁+3)`,   `y = −s₂−5`,   inverse `s₁ = (4−3x−y)/x`,
+  `s₂ = −y−5`,
+
+which rests on the one-line identity `(s₂²+9s₂+27)(s₁+3)³ = (s₂+9)³`
+(`exists_x0TwentySeven_point_of_planeModel`). So the ENTIRE passage from
+level-`3` data to a rational point of `27a1` — previously assumed inside the
+level-`27` moduli leaf — is now proven algebra.
+
+**The one arithmetic obstruction, and how it is discharged.** Inverting the
+parametrisation divides by `D = uv + 9v − 243u + 729`, and `D` vanishes at
+base points. On the residual curve `D = 0` forces
+`(v+243)²(v²−486v−19683)² = 0`; the quadratic factor has roots
+`243 ± 162√3`, hence NO rational root (`x0Nine_denom_no_rat_root`, proven
+from `Rat.reduced` plus the integer bound `280² < 78732 < 281²`), so the only
+rational point with `D = 0` is `(u, v) = (−3, −243)` — where `uv = 729`, i.e.
+exactly a backtracking point. **So non-backtracking is precisely what makes
+the inversion legal**, which is a pleasant coincidence rather than a design
+choice.
+
+**Numerical anchor** (PARI/GP + Magma, untrusted searchers; every number
+below is re-derived by `ring` in the proofs). The conductor-`27` isogeny
+class has `j`-invariants `(0, −12288000, 0, −12288000)`; the unique cyclic
+`27`-isogeny joins the two `j = −12288000` curves through TWO `j = 0` curves,
+and the chain parameters are `(u₁, u₂, u₃) = (−3, −27, −243)`, with
+`s₁ = −3`, `s₂ = −9` and the `27a1` point `(x, y) = (3, 4)`. Note
+`u₁u₂ = 81 ≠ 729` and `u₂u₃ = 6561 ≠ 729`, as non-backtracking requires.
+-/
+
+/-- **`b² − 486b − 19683` has no rational root** (PROVEN): its roots are
+`243 ± 162√3`. Proof: clearing denominators against `b = b.num/b.den` shows
+`b.den ∣ b.num²`, so `b.den = 1` by `Rat.reduced`; then
+`(b.num − 243)² = 78732`, which is impossible because `280² = 78400` and
+`281² = 78961`. This is the arithmetic input that makes the `X_0(9)`
+parametrisation invertible at every non-backtracking rational point. -/
+lemma x0Nine_denom_no_rat_root (b : ℚ) (h : b ^ 2 - 486 * b - 19683 = 0) : False := by
+  have hd0 : ((b.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr b.den_nz
+  have hNq : ((b.num : ℚ)) = b * ((b.den : ℚ)) := (div_eq_iff hd0).mp (Rat.num_div_den b)
+  have key : ((b.num : ℚ)) ^ 2 =
+      486 * ((b.num : ℚ)) * ((b.den : ℚ)) + 19683 * ((b.den : ℚ)) ^ 2 := by
+    rw [hNq]; linear_combination ((b.den : ℚ)) ^ 2 * h
+  have keyZ : b.num ^ 2 = 486 * b.num * (b.den : ℤ) + 19683 * (b.den : ℤ) ^ 2 := by
+    exact_mod_cast key
+  have hdvd : (b.den : ℤ) ∣ b.num ^ 2 :=
+    ⟨486 * b.num + 19683 * (b.den : ℤ), by linarith [keyZ]⟩
+  have h2 : b.den ∣ b.num.natAbs ^ 2 := by
+    have := Int.natAbs_dvd_natAbs.mpr hdvd
+    simpa [Int.natAbs_pow] using this
+  have hden1 : b.den = 1 :=
+    Nat.Coprime.eq_one_of_dvd (Nat.Coprime.pow_right 2 b.reduced.symm) h2
+  rw [hden1] at keyZ
+  push_cast at keyZ
+  have hsq : (b.num - 243) ^ 2 = 78732 := by linarith [keyZ]
+  have habs : |b.num - 243| ^ 2 = 78732 := by rw [sq_abs]; exact hsq
+  have hm0 : (0 : ℤ) ≤ |b.num - 243| := abs_nonneg _
+  rcases le_or_gt |b.num - 243| 280 with hle | hgt
+  · nlinarith [habs, hm0, hle]
+  · nlinarith [habs, hgt]
+
+/-- **Away from backtracking the inverting denominator is nonzero** (PROVEN):
+on the residual `X_0(9)` curve, `D = ab + 9b − 243a + 729 = 0` forces
+`(b+243)²(b²−486b−19683)² = 0` (a polynomial identity, the pseudo-remainder of
+the curve equation by `D` in `a`), hence `b = −243` and then `a = −3`, where
+`ab = 729`. -/
+lemma x0Nine_param_denom_ne_zero (a b : ℚ)
+    (hG : a ^ 3 * b ^ 2 + 36 * a ^ 2 * b ^ 2 + 729 * a ^ 2 * b + 270 * a * b ^ 2
+      + 26244 * a * b + 531441 * a = b ^ 3) (hnb : a * b ≠ 729) :
+    a * b + 9 * b - 243 * a + 729 ≠ 0 := by
+  intro hD
+  have hfac : (b + 243) ^ 2 * (b ^ 2 - 486 * b - 19683) ^ 2 = 0 := by
+    linear_combination
+      ((b ^ 4 - 486 * b ^ 3 + 59049 * b ^ 2) * a ^ 2
+        + (27 * b ^ 4 - 15309 * b ^ 3 + 1948617 * b ^ 2 + 43046721 * b) * a
+        + 27 * b ^ 4 - 45927 * b ^ 3 + 11691702 * b ^ 2 + 1420541793 * b
+        + 31381059609) * hD - (b - 243) ^ 3 * hG
+  rcases mul_eq_zero.mp hfac with h1 | h1
+  · have hb : b = -243 := by
+      have := pow_eq_zero_iff (n := 2) (by norm_num) |>.mp h1
+      linarith
+    subst hb
+    exact hnb (by linarith [hD])
+  · exact x0Nine_denom_no_rat_root b (pow_eq_zero_iff (n := 2) (by norm_num) |>.mp h1)
+
+/-- **The `X_0(9)`-parameter of a non-backtracking pair of consecutive
+`3`-isogenies** (PROVEN): the explicit rational inverse of the degree-`3`
+parametrisation `a = s³/(s²+9s+27)`, `b = s(s²+9s+27)` of the residual
+`(3,3)` curve, namely
+
+  `s = (1458a + b(a²+18a+27)) / (ab + 9b − 243a + 729)`.
+
+Both defining identities are `ring` identities modulo the curve equation
+(cofactors `−(243a³+5103a²+6561a−19683)` and
+`−(a³b+27a²b+1458a²+243ab+729b+39366)`), so the kernel checks the whole
+inversion. -/
+lemma exists_x0Nine_param_of_x0Three_pair (a b : ℚ)
+    (hG : a ^ 3 * b ^ 2 + 36 * a ^ 2 * b ^ 2 + 729 * a ^ 2 * b + 270 * a * b ^ 2
+      + 26244 * a * b + 531441 * a = b ^ 3) (hnb : a * b ≠ 729) :
+    ∃ s : ℚ, a * (s ^ 2 + 9 * s + 27) = s ^ 3 ∧ b = s * (s ^ 2 + 9 * s + 27) := by
+  have hDne : a * b + 9 * b - 243 * a + 729 ≠ 0 := x0Nine_param_denom_ne_zero a b hG hnb
+  set D : ℚ := a * b + 9 * b - 243 * a + 729 with hDdef
+  set N : ℚ := 1458 * a + b * (a ^ 2 + 18 * a + 27) with hNdef
+  have e1 : a * (N ^ 2 + 9 * N * D + 27 * D ^ 2) * D = N ^ 3 := by
+    rw [hNdef, hDdef]
+    linear_combination (-(243 * a ^ 3 + 5103 * a ^ 2 + 6561 * a - 19683)) * hG
+  have e2 : b * D ^ 3 = N * (N ^ 2 + 9 * N * D + 27 * D ^ 2) := by
+    rw [hNdef, hDdef]
+    linear_combination
+      (-(a ^ 3 * b + 27 * a ^ 2 * b + 1458 * a ^ 2 + 243 * a * b + 729 * b + 39366)) * hG
+  have expand : (N / D) ^ 2 + 9 * (N / D) + 27 = (N ^ 2 + 9 * N * D + 27 * D ^ 2) / D ^ 2 := by
+    field_simp
+  refine ⟨N / D, ?_, ?_⟩
+  · rw [expand, div_pow, ← mul_div_assoc,
+      div_eq_div_iff (pow_ne_zero 2 hDne) (pow_ne_zero 3 hDne)]
+    linear_combination D ^ 2 * e1
+  · rw [expand, div_mul_div_comm,
+      eq_div_iff (mul_ne_zero hDne (pow_ne_zero 2 hDne))]
+    linear_combination e2
+
+/-- **The plane model of `X_0(27)` is birational to `27a1`** (PROVEN): from
+`s₁(s₁²+9s₁+27)(s₂²+9s₂+27) = s₂³` — the two `X_0(9)`-parameters of the two
+consecutive `9`-isogeny sub-chains, glued along their common middle
+`X_0(3)`-parameter — one reads off a rational point of `y² + y = x³ − 7`
+together with its image `s₁` under the degeneracy map `(x, y) ↦ (4−3x−y)/x`.
+
+The whole content is the identity `(s₂²+9s₂+27)(s₁+3)³ = (s₂+9)³`, which is
+the hypothesis plus `(s₁+3)³ = s₁(s₁²+9s₁+27) + 27`. Then `x = (s₂+9)/(s₁+3)`
+and `y = −s₂−5`, with `x³ = s₂²+9s₂+27` and `y²+y = s₂²+9s₂+20 = x³−7`. The
+base point `s₁ = −3` (which forces `s₂ = −9`) is exactly the CM point and is
+handled by exhibiting `(x, y) = (3, 4)` directly. -/
+lemma exists_x0TwentySeven_point_of_planeModel (s₁ s₂ : ℚ)
+    (h : s₁ * (s₁ ^ 2 + 9 * s₁ + 27) * (s₂ ^ 2 + 9 * s₂ + 27) = s₂ ^ 3) :
+    ∃ x y : ℚ, y ^ 2 + y = x ^ 3 - 7 ∧ s₁ * x = 4 - 3 * x - y := by
+  have key : (s₂ ^ 2 + 9 * s₂ + 27) * (s₁ + 3) ^ 3 = (s₂ + 9) ^ 3 := by
+    linear_combination h
+  by_cases h3 : s₁ + 3 = 0
+  · refine ⟨3, 4, by norm_num, ?_⟩
+    have hs : s₁ = -3 := by linarith
+    rw [hs]; norm_num
+  · refine ⟨(s₂ + 9) / (s₁ + 3), -s₂ - 5, ?_, ?_⟩
+    · rw [div_pow, ← sub_eq_zero]
+      field_simp
+      linear_combination key
+    · field_simp
+      ring
+
+/-- **The `j`-relation transported from level `3` to level `9`** (PROVEN):
+under `a(s²+9s+27) = s³` the `X_0(3)` `j`-map at `a` and the `X_0(9)` `j`-map
+`j₉` at `s` agree. The mechanism is that `(s+9)³ = (s²+9s+27)(a+27)` and
+`s³+243s²+2187s+6561 = (s²+9s+27)(a+243)`, so both sides differ by exactly
+`(s²+9s+27)⁴`. -/
+lemma j_relation_of_x0Three_param (J a s : ℚ)
+    (ha : J * a ^ 3 = (a + 27) * (a + 243) ^ 3)
+    (hs : a * (s ^ 2 + 9 * s + 27) = s ^ 3) :
+    J * (s ^ 9 * (s ^ 2 + 9 * s + 27))
+      = (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3 := by
+  have e1 : (s + 9) ^ 3 = (s ^ 2 + 9 * s + 27) * (a + 27) := by linear_combination -hs
+  have e2 : s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561 = (s ^ 2 + 9 * s + 27) * (a + 243) := by
+    linear_combination -hs
+  have e3 : s ^ 9 = a ^ 3 * (s ^ 2 + 9 * s + 27) ^ 3 := by
+    linear_combination
+      (-(s ^ 6 + s ^ 3 * a * (s ^ 2 + 9 * s + 27) + a ^ 2 * (s ^ 2 + 9 * s + 27) ^ 2)) * hs
+  rw [e1, e2, e3]
+  linear_combination (s ^ 2 + 9 * s + 27) ^ 4 * ha
+
+/-- **The whole Diophantine half of the level-`27` node** (PROVEN): three
+`X_0(3)`-parameters of a non-backtracking chain of three rational
+`3`-isogenies, together with the `j`-value of the first curve, produce a
+rational point of `27a1` lying over an `X_0(9)`-parameter of `E` with the
+`j₉`-compatibility. Everything below `exists_x0Three_chainParameters` is this
+lemma. -/
+lemma x0TwentySeven_moduliPoint_of_chainParameters (J u₁ u₂ u₃ : ℚ)
+    (hj : J * u₁ ^ 3 = (u₁ + 27) * (u₁ + 243) ^ 3)
+    (hG12 : u₁ ^ 3 * u₂ ^ 2 + 36 * u₁ ^ 2 * u₂ ^ 2 + 729 * u₁ ^ 2 * u₂ + 270 * u₁ * u₂ ^ 2
+      + 26244 * u₁ * u₂ + 531441 * u₁ = u₂ ^ 3)
+    (hG23 : u₂ ^ 3 * u₃ ^ 2 + 36 * u₂ ^ 2 * u₃ ^ 2 + 729 * u₂ ^ 2 * u₃ + 270 * u₂ * u₃ ^ 2
+      + 26244 * u₂ * u₃ + 531441 * u₂ = u₃ ^ 3)
+    (hnb1 : u₁ * u₂ ≠ 729) (hnb2 : u₂ * u₃ ≠ 729) :
+    ∃ x y s : ℚ, y ^ 2 + y = x ^ 3 - 7 ∧ s * x = 4 - 3 * x - y ∧
+      J * (s ^ 9 * (s ^ 2 + 9 * s + 27))
+        = (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3 := by
+  obtain ⟨s₁, hs₁a, hs₁b⟩ := exists_x0Nine_param_of_x0Three_pair u₁ u₂ hG12 hnb1
+  obtain ⟨s₂, hs₂a, -⟩ := exists_x0Nine_param_of_x0Three_pair u₂ u₃ hG23 hnb2
+  have hplane : s₁ * (s₁ ^ 2 + 9 * s₁ + 27) * (s₂ ^ 2 + 9 * s₂ + 27) = s₂ ^ 3 := by
+    rw [← hs₁b]; exact hs₂a
+  obtain ⟨x, y, hxy, hsx⟩ := exists_x0TwentySeven_point_of_planeModel s₁ s₂ hplane
+  exact ⟨x, y, s₁, hxy, hsx, j_relation_of_x0Three_param J u₁ s₁ hj hs₁a⟩
+
 end MazurLevel27
 
+/-- **`X_0(3)`: the three hauptmodul parameters of the `3`-isogeny chain of a
+rational cyclic `27`-subgroup** (sorry node — the ONLY remaining moduli
+content of the level-`27` node, cut 2026-07-26 out of
+`exists_x0TwentySeven_moduliPoint`): if `E` carries a `Gal(ℚ̄/ℚ)`-stable
+cyclic subgroup `C = ⟨g⟩` of order `27`, then the three consecutive rational
+`3`-isogenies
+
+  `E → E/C[3] → E/C[9] → E/C`
+
+have `X_0(3)`-hauptmodul parameters `u₁, u₂, u₃ ∈ ℚ` — values of
+`t₃ = (η(τ)/η(3τ))¹²` — satisfying
+
+* `j(E) · u₁³ = (u₁+27)(u₁+243)³` — the `j`-map of `X_0(3)` at the first step;
+* the two consecutive-`j` matching relations, in the form of the RESIDUAL
+  factor after the backtracking component has been divided out;
+* `u₁u₂ ≠ 729` and `u₂u₃ ≠ 729` — non-backtracking: the second isogeny of
+  each consecutive pair is not the dual of the first, which is exactly
+  CYCLICITY of the composite `9`-isogeny.
+
+**This is a statement about `X_0(3)` ONLY.** No modular curve of level `9` or
+`27` occurs in it, and no Jacobian: `X_0(3)` is `P¹` and its universal family
+is elementary (a curve with a rational `3`-isogeny is, up to quadratic twist —
+which does not move `j` — a Tate normal form `y² + a₁xy + a₃y = x³`, whence
+`j = h(h−24)³/(h−27)` with `h = a₁³/a₃`, i.e. `j·u³ = (u+27)(u+243)³` after
+`u = h − 27`; the quotient's `j` is then a Vélu computation on that explicit
+model). Everything of level `9` and `27` — the `X_0(9)` hauptmodul, the plane
+model of `X_0(27)`, its birational identification with `27a1`, and the
+Diophantine finish — is PROVEN above and below; this leaf is what is left.
+
+**Routes, in decreasing order of how much already exists here.**
+
+1. *Vélu chain + `X_0(3)` universal family.* `exists_quotient_isogeny_of_prime_card`
+   (above, over `Fermat/FLT/EllipticCurve/Velu.lean`) already builds the
+   quotient by a stable subgroup of prime order over `ℚ`, and
+   `exists_stable_zmultiples_of_dvd` / `stable_zmultiples_nsmul` (above) already
+   produce the stable subgroups `⟨9g⟩`, `⟨3·φ₁ g⟩`, `⟨φ₂ φ₁ g⟩` of order `3`.
+   So the chain itself is available; what must be added is the `X_0(3)`
+   parametrisation of each step.
+2. *Non-backtracking.* `u_i u_{i+1} = 729` says the two pairs
+   `(E_i, ker φ_{i+1})` and `(E_i, φ_i(E_{i-1}[3]))` have the SAME
+   `X_0(3)`-parameter, i.e. are isomorphic over `ℚ̄`. For `Aut(E_i) = ±1` that
+   forces equality of the subgroups, contradicting cyclicity. The two special
+   `j`-invariants are dealt with as follows, and BOTH need saying because the
+   real chain does pass through `j = 0`:
+   * `j = 1728` cannot occur at all: for `y² = x³ + ax` the `3`-division
+     polynomial is `3x⁴ + 6ax² − a²`, whose roots have `x² = a(−3±2√3)/3`, so
+     no `j = 1728` curve over `ℚ` has a rational `3`-isogeny.
+   * `j = 0` DOES occur (the middle two curves of the class `27a` have
+     `j = 0`). There `Aut = μ₆` and `ζ₃` permutes the three non-canonical
+     `3`-subgroups cyclically, fixing only `ker(√−3)`. But if two of those
+     three were Galois-stable then all four `3`-subgroups would be, so the
+     mod-`3` representation would be SCALAR, so its determinant — the mod-`3`
+     cyclotomic character, which cuts out `ℚ(ζ₃) ≠ ℚ` — would be a square,
+     hence trivial. Contradiction. So the parameter does separate stable
+     subgroups, and non-backtracking follows.
+
+**Faithfulness.** The statement is satisfied by the unique curve it can
+describe: `j(E) = −12288000` with `(u₁, u₂, u₃) = (−3, −27, −243)`, giving
+`u₁u₂ = 81` and `u₂u₃ = 6561`. Checked numerically against `ellisomat` of the
+class `27a` (PARI/GP) and `IsogenousCurves` (Magma). -/
+theorem WeierstrassCurve.exists_x0Three_chainParameters
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 27)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ u₁ u₂ u₃ : ℚ,
+      E.j * u₁ ^ 3 = (u₁ + 27) * (u₁ + 243) ^ 3 ∧
+      u₁ ^ 3 * u₂ ^ 2 + 36 * u₁ ^ 2 * u₂ ^ 2 + 729 * u₁ ^ 2 * u₂ + 270 * u₁ * u₂ ^ 2
+        + 26244 * u₁ * u₂ + 531441 * u₁ = u₂ ^ 3 ∧
+      u₂ ^ 3 * u₃ ^ 2 + 36 * u₂ ^ 2 * u₃ ^ 2 + 729 * u₂ ^ 2 * u₃ + 270 * u₂ * u₃ ^ 2
+        + 26244 * u₂ * u₃ + 531441 * u₂ = u₃ ^ 3 ∧
+      u₁ * u₂ ≠ 729 ∧ u₂ * u₃ ≠ 729 :=
+  sorry
+
 /-- **`X_0(27)`: a rational cyclic `27`-subgroup IS a rational point of
-`27a1`, lying over an `X_0(9)`-parameter of `E`** (sorry node — the
-level-`27` moduli content, introduced 2026-07-26, restated 2026-07-26):
+`27a1`, lying over an `X_0(9)`-parameter of `E`** (PROVEN 2026-07-26 over
+the single level-`3` leaf `exists_x0Three_chainParameters`; introduced and
+restated 2026-07-26):
 if `E` carries a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup `C` of order `27`,
 then there are rationals `x, y, s` with
 
@@ -5845,26 +6157,33 @@ input is left in the statement — the Mordell–Weil half is
 `MazurLevel27.x0Nine_fibre_over_CM` (PROVEN above), and the two are
 assembled in `exists_x0TwentySeven_point` below.
 
-The intended proof is genuinely the moduli one — a model of `X_0(27)`
-as a coarse moduli space of pairs `(E, C₂₇)`, the identification of that
-model with `27a1`, and the degeneracy map — for which nothing exists in
-this development yet. Concretely it needs: `X_0(N)` as a curve over `ℚ`
-with its moduli interpretation, the two degeneracy maps
-`π₁, π₃ : X_0(27) ⇉ X_0(9)` induced by `(E, C) ↦ (E, C[9])` and
-`(E, C) ↦ (E/C[3], C/C[3])`, and the explicit `q`-expansion
-identification of the Hauptmodul `t = (η(τ)/η(9τ))³` of `X_0(9)` with
-`(4 − 3x − y)/x` on `27a1` (verified here against `elltaniyama(27a1)` to
-`O(q⁵⁸)`, untrusted searcher). Diamond–Shurman ch. 7 and
-Cornell–Silverman–Stevens are the references.
+**PROVEN 2026-07-26 over the single level-`3` leaf
+`exists_x0Three_chainParameters`**, replacing the previous "irreducible,
+needs `X_0(27)` as a scheme" assessment. The route is the `3`-isogeny
+chain, and it removes every level above `3` from the frontier:
 
-**Cut note for the fleet.** Given this leaf, `exists_x0Nine_hauptmodul`
-is logically redundant in the level-`27` chain: this leaf already
-produces its own `X_0(9)`-parameter `s`, and everything downstream is
-proven arithmetic. The level-`9`/level-`27` split was therefore never a
-real split of the moduli content — it is all in this one node — and a
-re-cut, if one is wanted, has to be a decomposition of the moduli
-dictionary itself (universal families, Vélu quotients, `q`-expansions),
-not a further split along levels. -/
+1. `exists_x0Three_chainParameters` (the remaining leaf) gives the three
+   `X_0(3)` hauptmodul parameters `u₁, u₂, u₃` of the chain
+   `E → E/C[3] → E/C[9] → E/C`, the `j`-map relation at `u₁`, the two
+   consecutive-`j` matching relations in their residual form, and
+   non-backtracking `u₁u₂ ≠ 729`, `u₂u₃ ≠ 729`.
+2. `MazurLevel27.x0TwentySeven_moduliPoint_of_chainParameters` (PROVEN,
+   pure arithmetic over `ℚ`) does everything else: it inverts the `X_0(9)`
+   parametrisation `u = s³/(s²+9s+27)`, `v = s(s²+9s+27)` of the residual
+   `(3,3)` curve by an explicit rational function, glues the two halves into
+   the `X_0(27)` plane model `s₁(s₁²+9s₁+27)(s₂²+9s₂+27) = s₂³`, maps that
+   birationally onto `27a1` by `x = (s₂+9)/(s₁+3)`, `y = −s₂−5`, and
+   transports the `j`-relation from level `3` to level `9`.
+
+**Cut note for the fleet** (superseding the earlier one, which said the
+moduli dictionary was indivisible here). It IS divisible, and the cut is by
+LEVEL after all — but downwards, to level `3`, not sideways to level `9`.
+What made the earlier level-`9`/level-`27` split a rename is that both
+halves still needed a modular curve of positive genus; the level-`3` cut does
+not, because `X_0(3)` is `P¹` with an elementary universal family and
+because the Fricke involution `w₃ : u ↦ 729/u` — the backtracking component
+of the `j`-matching relation — is visible as an explicit factor of an
+explicit polynomial. -/
 theorem WeierstrassCurve.exists_x0TwentySeven_moduliPoint
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 27)
@@ -5875,8 +6194,11 @@ theorem WeierstrassCurve.exists_x0TwentySeven_moduliPoint
           AddSubgroup.zmultiples g) :
     ∃ x y s : ℚ, y ^ 2 + y = x ^ 3 - 7 ∧ s * x = 4 - 3 * x - y ∧
       E.j * (s ^ 9 * (s ^ 2 + 9 * s + 27))
-        = (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3 :=
-  sorry
+        = (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3 := by
+  obtain ⟨u₁, u₂, u₃, hj, hG12, hG23, hnb1, hnb2⟩ :=
+    E.exists_x0Three_chainParameters g hg hstable
+  exact MazurLevel27.x0TwentySeven_moduliPoint_of_chainParameters
+    E.j u₁ u₂ u₃ hj hG12 hG23 hnb1 hnb2
 
 /-- **`X_0(27) → X_0(9)`: an `X_0(9)`-parameter of a curve with a
 rational cyclic `27`-subgroup lifts to `27a1`** (PROVEN 2026-07-26 over
