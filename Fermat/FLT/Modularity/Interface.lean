@@ -20401,39 +20401,195 @@ theorem heckeOp_mul_comm {M : ℕ} (hM : 0 < M) {q r : ℕ} (hq : q.Prime)
         · simp only [hqM, hrM, hqm, hrm, if_false]
           all_goals ring_nf
 
+/-- **Multiplicity one for HONEST joint Hecke eigenvectors, at the
+coefficient level** (PROVEN 2026-07-26): if `v ∈ S₂(Γ₀(M))` satisfies
+`T_q v = a_q(g)·v` at EVERY prime `q` — the bad primes `q ∣ M` included,
+where `T_q` is `U_q` — for a normalized weight-2 eigenform `g`, then
+`a_m(v) = a_1(v)·a_m(g)` for every `m`.
+
+This is the first of the two classical statements that
+`exists_smul_of_heckeOp_generalizedEigen_of_newform` was cut over
+(Diamond–Shurman Thm 5.8.2), and the point worth recording is that on
+this pin it needs **no Atkin–Lehner theory at all** — no Petersson
+product, no oldform/newform decomposition, not even
+`eigensystem_minimal`. The reason is that the hypothesis ranges over
+ALL primes, `U_q` at `q ∣ M` included, so the coefficients of `v` are
+pinned by a bare recursion rather than by a spectral separation
+argument.
+
+PROOF: strong induction on `m`, the whole content being that
+`qCoeff_heckeOp` and `hecke_eigen_coeff_identity` are the SAME
+recursion, one for `v` and one for `g`. At `m = 0` both sides vanish
+(`qCoeff_zero`); at `m = 1` the claim is `a_1(v) = a_1(v)·1`
+(`hg.qCoeff_one`). For `m ≥ 2` pick any prime `q ∣ m`, write `m = q·m'`,
+and read the eigen-equation `T_q v = a_q(g)·v` in the `m'`-th
+coefficient:
+
+  `a_{q m'}(v) + 1_{q∤M} 1_{q∣m'}·q·a_{m'/q}(v) = a_q(g)·a_{m'}(v)`,
+
+which is `hecke_eigen_coeff_identity`'s identity with `v` in place of
+`g` on the left and `a_q(g)` — NOT `a_q(v)` — on the right. Solving
+both for the top index gives `a_m` as the same `ℂ`-linear expression in
+`a_{m'}` and `a_{m'/q}` for `v` and for `g`, and `m' < m`,
+`m'/q < m`, so the induction hypothesis closes it by `ring`. -/
+theorem qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g)
+    {v : CuspForm (Gamma0GL M) 2}
+    (hv : ∀ q : ℕ, q.Prime → heckeOp M q v = qCoeff M g q • v) :
+    ∀ m : ℕ, qCoeff M v m = qCoeff M v 1 * qCoeff M g m := by
+  intro m
+  induction m using Nat.strong_induction_on with
+  | _ m ih =>
+    rcases eq_or_ne m 0 with rfl | hm0
+    · rw [qCoeff_zero, qCoeff_zero]; ring
+    rcases eq_or_ne m 1 with rfl | hm1
+    · rw [hg.qCoeff_one]; ring
+    obtain ⟨q, hq, hqm⟩ := Nat.exists_prime_and_dvd hm1
+    obtain ⟨m', rfl⟩ := hqm
+    have hq2 : 2 ≤ q := hq.two_le
+    have hm'pos : 0 < m' := by
+      rcases Nat.eq_zero_or_pos m' with rfl | h
+      · exact absurd (by ring) hm0
+      · exact h
+    have hm'lt : m' < q * m' := by
+      have h2 : 2 * m' ≤ q * m' := Nat.mul_le_mul_right m' hq2
+      omega
+    have hdivlt : m' / q < q * m' := lt_of_le_of_lt (Nat.div_le_self _ _) hm'lt
+    have hvq : qCoeff M (heckeOp M q v) m' = qCoeff M (qCoeff M g q • v) m' := by
+      rw [hv q hq]
+    rw [qCoeff_heckeOp hM hq v m', qCoeff_smul] at hvq
+    have hgq := hecke_eigen_coeff_identity hg hq m'
+    have e1 := ih m' hm'lt
+    by_cases hqM : q ∣ M
+    · rw [if_pos hqM] at hvq hgq
+      linear_combination hvq - qCoeff M v 1 * hgq + qCoeff M g q * e1
+    · rw [if_neg hqM] at hvq hgq
+      by_cases hqmm : q ∣ m'
+      · rw [if_pos hqmm] at hvq hgq
+        have e2 := ih (m' / q) hdivlt
+        linear_combination hvq - qCoeff M v 1 * hgq + qCoeff M g q * e1
+          - (q : ℂ) * e2
+      · rw [if_neg hqmm] at hvq hgq
+        linear_combination hvq - qCoeff M v 1 * hgq + qCoeff M g q * e1
+
+/-- **Multiplicity one for HONEST joint Hecke eigenvectors** (PROVEN
+2026-07-26): the joint EIGENSPACE of the complex Hecke operators at a
+normalized eigenform `g`'s full prime eigensystem `{a_q(g)}` is exactly
+the line `ℂ·g`, and the scalar is read off the first coefficient.
+Immediate from `qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen` and
+`cuspForm_eq_of_forall_qCoeff_eq`, since a weight-2 cusp form is
+determined by its `q`-expansion. -/
+theorem eq_qCoeff_one_smul_of_heckeOp_eigen {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g)
+    {v : CuspForm (Gamma0GL M) 2}
+    (hv : ∀ q : ℕ, q.Prime → heckeOp M q v = qCoeff M g q • v) :
+    v = qCoeff M v 1 • g := by
+  refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+  rw [qCoeff_smul]
+  exact qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen hM hg hv m
+
+/-- **REDUCEDNESS of the newform's local factor of the complex Hecke
+algebra** (sorry node — cut 2026-07-26 out of
+`exists_smul_of_heckeOp_generalizedEigen_of_newform`, which is now
+PROVEN over it and over the honest-eigenvector multiplicity one
+`eq_qCoeff_one_smul_of_heckeOp_eigen`): for a weight-2 level-`M`
+NEWFORM `g`, every joint GENERALIZED eigenvector of the complex Hecke
+operators at the eigensystem `{a_q(g)}` is already an HONEST joint
+eigenvector — the exponents `n` in the hypothesis may be taken to be
+`1`.
+
+WHY THIS IS THE WHOLE RESIDUE. The classical proof of strong
+multiplicity one in generalized-eigenvector form has two halves
+(Diamond–Shurman §5.8): (i) the honest joint eigenspace at `{a_q(g)}`
+is the line `ℂ·g`, and (ii) the joint generalized eigenspace collapses
+onto it. Half (i) is now PROVEN unconditionally on this pin
+(`qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen`) — it needs no newform
+theory whatever, because the hypothesis ranges over ALL primes and so
+pins the coefficients by the Hecke recursion alone. Half (ii) is this
+leaf, and it is the genuinely analytic one: it says the local factor of
+`𝕋_ℂ = heckeSubalgebra (heckeOp M)` at the character `T_q ↦ a_q(g)` is
+`ℂ` itself, i.e. carries no nilpotents.
+
+EQUIVALENT FORMULATION, for whoever attacks it. Through the perfect
+pairing `𝕋_ℂ × S₂(Γ₀(M)) → ℂ`, `(T, f) ↦ a_1(T f)`, the joint
+generalized eigenspace at `{a_q(g)}` is dual to the local ring
+`(𝕋_ℂ)_{m_g}`, so this leaf is exactly `(𝕋_ℂ)_{m_g} = ℂ`. Concretely,
+subtracting `a_1(v)·g` from a generalized eigenvector `v` and reading
+coefficients turns the hypothesis into the DERIVATION relation
+
+  `a_{qm}(v) + 1_{q∤M}1_{q∣m}·q·a_{m/q}(v) = a_q(g)·a_m(v) + a_q(v)·a_m(g)`,
+
+i.e. `(a_m(g) + ε·a_m(v))` is an eigenform over `ℂ[ε]/ε²`; the leaf says
+every such first-order deformation of a level-`M` newform's eigensystem
+inside `S₂(Γ₀(M))` is trivial. The classical input that supplies it is
+the Atkin–Lehner decomposition
+`S₂(Γ₀(M)) = ⨁_{M'∣M} ⨁_{f new of level M'} ⨁_{d ∣ M/M'} ℂ·f(dz)`
+together with the fact that `T_q` for `q ∤ M` acts on each block by the
+scalar `a_q(f)`: a block can meet the generalized eigenspace only if
+`a_q(f) = a_q(g)` for all `q ∤ M`, which
+`IsWeightTwoNewform.eigensystem_minimal` forbids at `M' ≠ M` and which
+forces `f = g` (hence a ONE-dimensional block) at `M' = M`. None of
+that vocabulary exists on this pin.
+
+FAITHFULNESS AUDIT (2026-07-26). The statement is TRUE as stated, and
+`hg`'s minimality is genuinely used — weakening `IsWeightTwoNewform` to
+`IsWeightTwoEigenform` makes it FALSE. Explicit counterexample: let `f`
+be a newform of level `M'`, let `q ∤ M'` be prime and `M = M'·q³`. On
+the old block `span{f(z), f(qz), f(q²z), f(q³z)} ⊆ S₂(Γ₀(M))` the
+operator `U_q` acts by `U f = a_q(f)·f − q·f(q·)` and `f(qⁱ·) ↦
+f(q^{i−1}·)`, whose characteristic polynomial is `X²·(X² − a_q X + q)`
+while its kernel is the ONE-dimensional line spanned by the `q`-depleted
+form `g = f(z) − a_q(f)·f(qz) + q·f(q²z)`. That `g` is a normalized
+weight-2 eigenform of level `M` with `a_q(g) = 0`, every other `T_r`
+acts on the whole block by the scalar `a_r(f) = a_r(g)`, and so the
+joint GENERALIZED eigenspace at `g`'s eigensystem is 2-dimensional
+whereas `ℂ·g` is a line. `g` is of course not a newform of level `M`:
+its away-from-`M` eigensystem is `f`'s, realized at the proper divisor
+level `M'`, which is exactly what `eigensystem_minimal` excludes. So
+this leaf is not a widened restatement and cannot be discharged by the
+`eigensystem_minimal`-free argument that settles half (i). -/
+theorem heckeOp_apply_eq_smul_of_generalizedEigen_of_newform {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
+    {v : CuspForm (Gamma0GL M) 2}
+    (hv : ∀ q : ℕ, q.Prime → ∃ n : ℕ,
+      ((heckeOp M q - qCoeff M g q •
+        (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n) v = 0) :
+    ∀ q : ℕ, q.Prime → heckeOp M q v = qCoeff M g q • v :=
+  sorry
+
 /-- **Strong multiplicity one in `S₂(Γ₀(M))`, in GENERALIZED-EIGENVECTOR
-form** (sorry node — the CLASSICAL-ANALYTIC residue of the `ℂ → ℚ̄_p`
-Eichler–Shimura seam, isolated 2026-07-25 out of
-`exists_heckeOp_newform_etaleIdempotent`, whose remaining clauses are
-now PROVEN glue over it; Diamond–Shurman Theorem 5.8.2 together with
+form** (PROVEN 2026-07-26 — the CLASSICAL-ANALYTIC residue of the
+`ℂ → ℚ̄_p` Eichler–Shimura seam, isolated 2026-07-25 out of
+`exists_heckeOp_newform_etaleIdempotent`, and DECOMPOSED 2026-07-26 into
+its two classical halves; Diamond–Shurman Theorem 5.8.2 together with
 §5.8 and Proposition 5.8.5): for a weight-2 level-`M` NEWFORM `g`, the
 joint GENERALIZED eigenspace of the complex Hecke operators at the
 eigensystem `{a_q(g)}` is the LINE `ℂ·g` — every cusp form killed by a
 POWER of each `T_q − a_q(g)` is a scalar multiple of `g`.
 
-CLASSICAL CONTENT, and why it is true. Two analytic statements, in this
-order:
+ASSEMBLY (2026-07-26). The docstring this replaces named two analytic
+statements; exactly one of them survives as a leaf.
 
 * (multiplicity one, D–S Thm 5.8.2) the full prime eigensystem
-  `{a_q(g)}` of a newform of level EXACTLY `M` occurs in `S₂(Γ₀(M))` on
-  the line `ℂ·g` ALONE. An oldform component would realize the
-  away-from-`M` eigensystem at a proper divisor level `M' ∣ M`, which is
-  precisely what the carrier's own field
-  `IsWeightTwoNewform.eigensystem_minimal` forbids; the `U_q`-eigenvalues
-  at the bad primes `q ∣ M` are pinned by D–S Prop. 5.8.5.
+  `{a_q(g)}` occurs in `S₂(Γ₀(M))` on the line `ℂ·g` ALONE. This is now
+  PROVEN, and — the surprise of this cut — it needs no newform theory
+  at all, not even `eigensystem_minimal`: since the hypothesis ranges
+  over ALL primes, `U_q` at `q ∣ M` included, the eigen-equation read in
+  the `m`-th `q`-expansion coefficient is literally the recursion
+  `hecke_eigen_coeff_identity` satisfied by `g`, so `a_m(v)` and
+  `a_m(g)` obey the same recursion and differ by the constant factor
+  `a_1(v)`. See `qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen` and
+  `eq_qCoeff_one_smul_of_heckeOp_eigen`.
 * (reducedness) the newform's local factor of `𝕋_ℂ` carries no
-  nilpotents — all `U_q`-nonsemisimplicity of the Hecke algebra lives on
-  oldform components — so the GENERALIZED eigenspace coincides with the
-  honest eigenspace and the exponents `n` in `hv` may be taken to be `1`.
+  nilpotents, so the GENERALIZED eigenspace coincides with the honest
+  eigenspace. This is the surviving leaf
+  `heckeOp_apply_eq_smul_of_generalizedEigen_of_newform`, where the
+  Atkin–Lehner input and a counterexample showing `hg`'s minimality is
+  indispensable are recorded.
 
 Only the inclusion `⊆ ℂ·g` is asserted here; the reverse inclusion is
 `heckeOp_apply_eq_smul_of_isWeightTwoEigenform` and needs nothing new.
-
-FAITHFULNESS NOTE: the hypotheses are exactly those of the consumer, and
-the obstruction the proof must defeat (an oldform realizing the same
-away-from-`M` eigensystem) is the negation of `eigensystem_minimal`,
-which `hg` supplies — so this leaf is provable from what it is given
-rather than being a widened restatement. -/
+The scalar produced is `a_1(v)`, as it must be. -/
 theorem exists_smul_of_heckeOp_generalizedEigen_of_newform {M : ℕ} (hM : 0 < M)
     {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
     {v : CuspForm (Gamma0GL M) 2}
@@ -20441,7 +20597,9 @@ theorem exists_smul_of_heckeOp_generalizedEigen_of_newform {M : ℕ} (hM : 0 < M
       ((heckeOp M q - qCoeff M g q •
         (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n) v = 0) :
     ∃ c : ℂ, v = c • g :=
-  sorry
+  ⟨qCoeff M v 1,
+    eq_qCoeff_one_smul_of_heckeOp_eigen hM hg.toIsWeightTwoEigenform
+      (heckeOp_apply_eq_smul_of_generalizedEigen_of_newform hM hg hv)⟩
 
 /-- **Strong multiplicity one in `S₂(Γ₀(M))`, in idempotent form**
 (PROVEN 2026-07-25 over the single analytic leaf
