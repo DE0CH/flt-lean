@@ -5269,18 +5269,321 @@ lemma cycDiagEnd_apply_basis_one {A : Type*} [CommRing A] {W : Type*} [AddCommGr
   rw [cycDiagEnd, Matrix.toLin_self, Fin.sum_univ_two]
   simp [Matrix.diagonal]
 
-/-- **Flat prolongations of a PRODUCT** (sorry leaf; the group-scheme
-product): if `ρ₁` and `ρ₂` have flat prolongations at `v` and the space
-of `ρ` is, equivariantly, the product of their spaces, then `ρ` has one
-too. Intended proof: the witnessing Hopf orders `G₁, G₂` over `𝒪ᵥ` are
-combined into `G₁ ⊗[𝒪ᵥ] G₂` (mathlib's `HopfAlgebra S (B ⊗[R] A)`
-instance; finite and flat because each factor is), whose generic fibre
+/-! #### The group-scheme PRODUCT (PROVEN)
+
+The machinery below proves that a product of finite flat Hopf orders is
+one: the witnessing Hopf orders `G₁, G₂` over `𝒪ᵥ` combine into
+`G₁ ⊗[𝒪ᵥ] G₂` (mathlib's `HopfAlgebra S (B ⊗[R] A)` instance; finite
+and flat because each factor is), whose generic fibre
 `Kᵥ ⊗ (G₁ ⊗ G₂) ≃ₐ[Kᵥ] (Kᵥ ⊗ G₁) ⊗[Kᵥ] (Kᵥ ⊗ G₂)` is étale by
 `Algebra.Etale.baseChange` + `Algebra.Etale.comp`, and whose
-`Kᵥᵃˡᵍ`-points are the PRODUCT of the two point groups
-(`Algebra.TensorProduct.lift`, with the convolution product of the
-tensor Hopf algebra computing componentwise because
-`comul_{G₁ ⊗ G₂} = tensorTensorTensorComm ∘ (comul ⊗ comul)`). The
+`Kᵥᵃˡᵍ`-points are the PRODUCT of the two point groups.
+
+The one genuine proof obligation — as opposed to a mathlib lookup — is
+that CONVOLUTION on the tensor Hopf algebra is COMPONENTWISE. That is
+`tensorAlgHomEquiv_convMul` below, and it is reduced to mathlib's
+`AlgHom.convMul_comp_bialgHom_distrib` (precomposition with a BIALGEBRA
+hom distributes over convolution) applied to the two inclusions
+`a ↦ a ⊗ₜ 1` and `b ↦ 1 ⊗ₜ b`, which mathlib does NOT provide as
+bialgebra homs — `bialgIncludeLeft` / `bialgIncludeRight` supply them,
+their comultiplication compatibility coming from
+`comul_{G₁ ⊗ G₂} = tensorTensorTensorComm ∘ (comul ⊗ comul)`. -/
+
+section HopfProduct
+
+universe uHP
+
+section BialgTensor
+
+variable (R₀ : Type*) [CommRing R₀]
+variable (G₁ G₂ : Type*) [CommRing G₁] [CommRing G₂] [Bialgebra R₀ G₁] [Bialgebra R₀ G₂]
+
+/-- **`a ↦ a ⊗ₜ 1` is a bialgebra hom** (PROVEN; absent from mathlib,
+which has the algebra hom `Algebra.TensorProduct.includeLeft` only).
+The counit compatibility is `counit (a ⊗ₜ 1) = counit a`; the
+comultiplication compatibility unwinds
+`comul_{G₁ ⊗ G₂} = tensorTensorTensorComm ∘ (comul ⊗ comul)` at
+`a ⊗ₜ 1` and inducts over a representation of `comul a`. -/
+noncomputable def bialgIncludeLeft : G₁ →ₐc[R₀] G₁ ⊗[R₀] G₂ :=
+  BialgHom.ofAlgHom (Algebra.TensorProduct.includeLeft)
+    (by
+      refine AlgHom.ext fun a => ?_
+      simp [Bialgebra.TensorProduct.counitAlgHom_def R₀ R₀ G₁ G₂])
+    (by
+      refine AlgHom.ext fun a => ?_
+      show (Algebra.TensorProduct.map (Algebra.TensorProduct.includeLeft)
+            (Algebra.TensorProduct.includeLeft)) (Coalgebra.comul (R := R₀) a) =
+          (Coalgebra.comul (R := R₀) (A := G₁ ⊗[R₀] G₂)) (a ⊗ₜ[R₀] (1 : G₂))
+      rw [congr($(Bialgebra.TensorProduct.comul_eq_algHom_toLinearMap R₀ R₀ G₁ G₂)
+        (a ⊗ₜ[R₀] (1 : G₂)))]
+      simp only [AlgHom.toLinearMap_apply, AlgHom.coe_comp, Function.comp_apply,
+        Algebra.TensorProduct.map_tmul, Bialgebra.comulAlgHom_apply, map_one,
+        Algebra.TensorProduct.one_def]
+      induction Coalgebra.comul (R := R₀) a with
+      | zero => simp
+      | add x y hx hy => simp only [TensorProduct.add_tmul, map_add, hx, hy]
+      | tmul x y => simp)
+
+/-- **`b ↦ 1 ⊗ₜ b` is a bialgebra hom** (PROVEN), the mirror image of
+`bialgIncludeLeft`. -/
+noncomputable def bialgIncludeRight : G₂ →ₐc[R₀] G₁ ⊗[R₀] G₂ :=
+  BialgHom.ofAlgHom (Algebra.TensorProduct.includeRight)
+    (by
+      refine AlgHom.ext fun b => ?_
+      simp [Bialgebra.TensorProduct.counitAlgHom_def R₀ R₀ G₁ G₂])
+    (by
+      refine AlgHom.ext fun b => ?_
+      show (Algebra.TensorProduct.map (Algebra.TensorProduct.includeRight)
+            (Algebra.TensorProduct.includeRight)) (Coalgebra.comul (R := R₀) b) =
+          (Coalgebra.comul (R := R₀) (A := G₁ ⊗[R₀] G₂)) ((1 : G₁) ⊗ₜ[R₀] b)
+      rw [congr($(Bialgebra.TensorProduct.comul_eq_algHom_toLinearMap R₀ R₀ G₁ G₂)
+        ((1 : G₁) ⊗ₜ[R₀] b))]
+      simp only [AlgHom.toLinearMap_apply, AlgHom.coe_comp, Function.comp_apply,
+        Algebra.TensorProduct.map_tmul, Bialgebra.comulAlgHom_apply, map_one,
+        Algebra.TensorProduct.one_def]
+      induction Coalgebra.comul (R := R₀) b with
+      | zero => simp
+      | add x y hx hy => simp only [TensorProduct.tmul_add, map_add, hx, hy]
+      | tmul x y => simp)
+
+@[simp] lemma bialgIncludeLeft_toAlgHom :
+    ((bialgIncludeLeft R₀ G₁ G₂ : G₁ →ₐc[R₀] G₁ ⊗[R₀] G₂) : G₁ →ₐ[R₀] G₁ ⊗[R₀] G₂) =
+      Algebra.TensorProduct.includeLeft := rfl
+
+@[simp] lemma bialgIncludeRight_toAlgHom :
+    ((bialgIncludeRight R₀ G₁ G₂ : G₂ →ₐc[R₀] G₁ ⊗[R₀] G₂) : G₂ →ₐ[R₀] G₁ ⊗[R₀] G₂) =
+      Algebra.TensorProduct.includeRight := rfl
+
+section TensorPoints
+
+variable {R₀ G₁ G₂}
+variable {L₀ : Type*} [CommRing L₀] [Algebra R₀ L₀]
+
+/-- **The points of a tensor product of Hopf algebras are the PRODUCT
+of the points** (PROVEN, as a bare bijection): algebra maps out of
+`G₁ ⊗[R₀] G₂` into a COMMUTATIVE algebra are pairs of algebra maps,
+by `Algebra.TensorProduct.lift`. -/
+noncomputable def tensorAlgHomEquiv :
+    ((G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀) ≃ ((G₁ →ₐ[R₀] L₀) × (G₂ →ₐ[R₀] L₀)) where
+  toFun Φ :=
+    (Φ.comp Algebra.TensorProduct.includeLeft, Φ.comp Algebra.TensorProduct.includeRight)
+  invFun p := Algebra.TensorProduct.lift p.1 p.2 (fun _ _ => Commute.all _ _)
+  left_inv Φ := by
+    refine Algebra.TensorProduct.ext' fun a b => ?_
+    show Φ (a ⊗ₜ 1) * Φ (1 ⊗ₜ b) = Φ (a ⊗ₜ b)
+    rw [← map_mul, Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
+  right_inv p := by
+    refine Prod.ext ?_ ?_ <;> refine AlgHom.ext fun x => ?_ <;> simp
+
+@[simp] lemma tensorAlgHomEquiv_fst (Φ : (G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀) (a : G₁) :
+    (tensorAlgHomEquiv Φ).1 a = Φ (a ⊗ₜ 1) := rfl
+
+@[simp] lemma tensorAlgHomEquiv_snd (Φ : (G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀) (b : G₂) :
+    (tensorAlgHomEquiv Φ).2 b = Φ (1 ⊗ₜ b) := rfl
+
+/-- The pair decomposition takes the convolution UNIT to the pair of
+convolution units (PROVEN): the counit of `G₁ ⊗ G₂` restricts to the
+counits of the factors. -/
+lemma tensorAlgHomEquiv_convOne :
+    tensorAlgHomEquiv ((1 : WithConv ((G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀)).ofConv) =
+      ((1 : WithConv (G₁ →ₐ[R₀] L₀)).ofConv, (1 : WithConv (G₂ →ₐ[R₀] L₀)).ofConv) := by
+  have h1 : ((1 : WithConv ((G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀)).ofConv).comp
+      ((bialgIncludeLeft R₀ G₁ G₂ : G₁ →ₐc[R₀] _) : G₁ →ₐ[R₀] _) =
+      (1 : WithConv (G₁ →ₐ[R₀] L₀)).ofConv := by
+    show ((Algebra.ofId R₀ L₀).comp (Bialgebra.counitAlgHom R₀ (G₁ ⊗[R₀] G₂))).comp
+        ((bialgIncludeLeft R₀ G₁ G₂ : G₁ →ₐc[R₀] _) : G₁ →ₐ[R₀] _) =
+        (Algebra.ofId R₀ L₀).comp (Bialgebra.counitAlgHom R₀ G₁)
+    rw [AlgHom.comp_assoc, BialgHom.counitAlgHom_comp]
+  have h2 : ((1 : WithConv ((G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀)).ofConv).comp
+      ((bialgIncludeRight R₀ G₁ G₂ : G₂ →ₐc[R₀] _) : G₂ →ₐ[R₀] _) =
+      (1 : WithConv (G₂ →ₐ[R₀] L₀)).ofConv := by
+    show ((Algebra.ofId R₀ L₀).comp (Bialgebra.counitAlgHom R₀ (G₁ ⊗[R₀] G₂))).comp
+        ((bialgIncludeRight R₀ G₁ G₂ : G₂ →ₐc[R₀] _) : G₂ →ₐ[R₀] _) =
+        (Algebra.ofId R₀ L₀).comp (Bialgebra.counitAlgHom R₀ G₂)
+    rw [AlgHom.comp_assoc, BialgHom.counitAlgHom_comp]
+  simp only [bialgIncludeLeft_toAlgHom, bialgIncludeRight_toAlgHom] at h1 h2
+  exact Prod.ext h1 h2
+
+/-- **CONVOLUTION ON A TENSOR PRODUCT OF BIALGEBRAS IS COMPONENTWISE**
+(PROVEN) — the one genuine proof obligation of the product step. It is
+mathlib's `AlgHom.convMul_comp_bialgHom_distrib` (precomposition with a
+bialgebra hom distributes over convolution) applied to the two
+inclusions, which is exactly why they had to be upgraded to bialgebra
+homs above. -/
+lemma tensorAlgHomEquiv_convMul (Φ Ψ : WithConv ((G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀)) :
+    tensorAlgHomEquiv ((Φ * Ψ).ofConv) =
+      ((WithConv.toConv (tensorAlgHomEquiv Φ.ofConv).1 *
+          WithConv.toConv (tensorAlgHomEquiv Ψ.ofConv).1).ofConv,
+       (WithConv.toConv (tensorAlgHomEquiv Φ.ofConv).2 *
+          WithConv.toConv (tensorAlgHomEquiv Ψ.ofConv).2).ofConv) := by
+  have h1 := AlgHom.convMul_comp_bialgHom_distrib Φ Ψ (bialgIncludeLeft R₀ G₁ G₂)
+  have h2 := AlgHom.convMul_comp_bialgHom_distrib Φ Ψ (bialgIncludeRight R₀ G₁ G₂)
+  simp only [bialgIncludeLeft_toAlgHom, bialgIncludeRight_toAlgHom] at h1 h2
+  exact Prod.ext h1 h2
+
+/-- The pair decomposition commutes with postcomposition (PROVEN,
+definitional) — this is what makes the splitting `Γ Kᵥ`-equivariant. -/
+lemma tensorAlgHomEquiv_comp (h : L₀ →ₐ[R₀] L₀) (Φ : (G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀) :
+    tensorAlgHomEquiv (h.comp Φ) =
+      (h.comp (tensorAlgHomEquiv Φ).1, h.comp (tensorAlgHomEquiv Φ).2) := rfl
+
+end TensorPoints
+
+end BialgTensor
+
+section ProdPackage
+
+variable {Kf : Type uHP} [Field Kf] [NumberField Kf]
+variable (w : HeightOneSpectrum (NumberField.RingOfIntegers Kf))
+
+local notation "Kw" => IsDedekindDomain.HeightOneSpectrum.adicCompletion Kf w
+local notation "Ow" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers Kf w
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Flat prolongations of a PRODUCT** (PROVEN, over a general number
+field): if `ρ₁` and `ρ₂` have flat prolongations at `w` and the space of
+`ρ` is, equivariantly, the product of their spaces, then `ρ` has one
+too. The witness is `G₁ ⊗[𝒪ʷ] G₂`; the geometric points split as a pair
+by `tensorAlgHomEquiv` sandwiched between two instances of the
+tensor-hom adjunction `AlgHom.liftEquiv`, and that splitting carries the
+convolution product (`tensorAlgHomEquiv_convMul`), the convolution unit
+and the postcomposition action of `Γ Kʷ`. -/
+theorem hasFlatProlongationAt_of_prod_general
+    {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
+    {M₁ : Type*} [AddCommGroup M₁] [Module A₁ M₁]
+    {A₂ : Type*} [CommRing A₂] [TopologicalSpace A₂]
+    {M₂ : Type*} [AddCommGroup M₂] [Module A₂ M₂]
+    {ρ₁ : GaloisRep Kf A₁ M₁} {ρ₂ : GaloisRep Kf A₂ M₂}
+    (h₁ : ρ₁.HasFlatProlongationAt w) (h₂ : ρ₂.HasFlatProlongationAt w)
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (ρ : GaloisRep Kf A M) (e : (M₁ × M₂) ≃+ M)
+    (he : ∀ (σ : Field.absoluteGaloisGroup Kf) (x : M₁ × M₂),
+      e (ρ₁ σ x.1, ρ₂ σ x.2) = ρ σ (e x)) :
+    ρ.HasFlatProlongationAt w := by
+  classical
+  obtain ⟨G₁, i₁, hopf₁, flat₁, fin₁, et₁, f₁, hbij₁⟩ := h₁
+  obtain ⟨G₂, i₂, hopf₂, flat₂, fin₂, et₂, f₂, hbij₂⟩ := h₂
+  letI := i₁; letI := hopf₁; letI := flat₁; letI := fin₁; letI := et₁
+  letI := i₂; letI := hopf₂; letI := flat₂; letI := fin₂; letI := et₂
+  -- `letI` these two: the tensor Hopf order must be presented to the
+  -- convolution-monoid instance through ONE `CommRing`, otherwise the
+  -- `Monoid (Kw ⊗ (G₁ ⊗ G₂) →ₐ[Kw] Kwᵃˡᵍ)` search fails on the
+  -- `CommRing`/`Semiring` diamond
+  letI iG : CommRing (G₁ ⊗[Ow] G₂) := inferInstance
+  letI hopfG : HopfAlgebra Ow (G₁ ⊗[Ow] G₂) := inferInstance
+  -- the geometric points of the tensor Hopf order split as a PAIR
+  let T : ((Kw ⊗[Ow] (G₁ ⊗[Ow] G₂)) →ₐ[Kw] AlgebraicClosure Kw) ≃
+      (((Kw ⊗[Ow] G₁) →ₐ[Kw] AlgebraicClosure Kw) ×
+        ((Kw ⊗[Ow] G₂) →ₐ[Kw] AlgebraicClosure Kw)) :=
+    (AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂) (AlgebraicClosure Kw)).symm.trans
+      (tensorAlgHomEquiv.trans
+        ((AlgHom.liftEquiv Ow Kw G₁ (AlgebraicClosure Kw)).prodCongr
+          (AlgHom.liftEquiv Ow Kw G₂ (AlgebraicClosure Kw))))
+  have hTone : T 1 = (1, 1) := by
+    show ((AlgHom.liftEquiv Ow Kw G₁ (AlgebraicClosure Kw))
+        (tensorAlgHomEquiv ((AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂)
+          (AlgebraicClosure Kw)).symm 1)).1,
+      (AlgHom.liftEquiv Ow Kw G₂ (AlgebraicClosure Kw))
+        (tensorAlgHomEquiv ((AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂)
+          (AlgebraicClosure Kw)).symm 1)).2) = (1, 1)
+    rw [vendored_one_eq_convOne, liftEquiv_symm_convOne, tensorAlgHomEquiv_convOne]
+    rw [liftEquiv_convOne, liftEquiv_convOne]
+    exact Prod.ext vendored_one_eq_convOne.symm vendored_one_eq_convOne.symm
+  have hTmul : ∀ Φ Ψ : (Kw ⊗[Ow] (G₁ ⊗[Ow] G₂)) →ₐ[Kw] AlgebraicClosure Kw,
+      T (Φ * Ψ) = ((T Φ).1 * (T Ψ).1, (T Φ).2 * (T Ψ).2) := by
+    intro Φ Ψ
+    show ((AlgHom.liftEquiv Ow Kw G₁ (AlgebraicClosure Kw))
+        (tensorAlgHomEquiv ((AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂)
+          (AlgebraicClosure Kw)).symm (Φ * Ψ))).1,
+      (AlgHom.liftEquiv Ow Kw G₂ (AlgebraicClosure Kw))
+        (tensorAlgHomEquiv ((AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂)
+          (AlgebraicClosure Kw)).symm (Φ * Ψ))).2) = _
+    rw [vendored_mul_eq_convMul, liftEquiv_symm_convMul, tensorAlgHomEquiv_convMul]
+    rw [liftEquiv_convMul, liftEquiv_convMul]
+    rw [vendored_mul_eq_convMul, vendored_mul_eq_convMul]
+    rfl
+  have hTsmul : ∀ (σ : Field.absoluteGaloisGroup Kw)
+      (Φ : (Kw ⊗[Ow] (G₁ ⊗[Ow] G₂)) →ₐ[Kw] AlgebraicClosure Kw),
+      T (σ • Φ) = (σ • (T Φ).1, σ • (T Φ).2) := by
+    intro σ Φ
+    have hs0 : σ • Φ =
+        (σ.toAlgHom : AlgebraicClosure Kw →ₐ[Kw] AlgebraicClosure Kw).comp Φ :=
+      AlgHom.ext fun _ => rfl
+    have hs1 : ∀ ψ : (Kw ⊗[Ow] G₁) →ₐ[Kw] AlgebraicClosure Kw,
+        σ • ψ = (σ.toAlgHom : AlgebraicClosure Kw →ₐ[Kw] AlgebraicClosure Kw).comp ψ :=
+      fun _ => AlgHom.ext fun _ => rfl
+    have hs2 : ∀ ψ : (Kw ⊗[Ow] G₂) →ₐ[Kw] AlgebraicClosure Kw,
+        σ • ψ = (σ.toAlgHom : AlgebraicClosure Kw →ₐ[Kw] AlgebraicClosure Kw).comp ψ :=
+      fun _ => AlgHom.ext fun _ => rfl
+    show ((AlgHom.liftEquiv Ow Kw G₁ (AlgebraicClosure Kw))
+        (tensorAlgHomEquiv ((AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂)
+          (AlgebraicClosure Kw)).symm (σ • Φ))).1,
+      (AlgHom.liftEquiv Ow Kw G₂ (AlgebraicClosure Kw))
+        (tensorAlgHomEquiv ((AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂)
+          (AlgebraicClosure Kw)).symm (σ • Φ))).2) = _
+    rw [hs0, liftEquiv_symm_comp, tensorAlgHomEquiv_comp, liftEquiv_comp, liftEquiv_comp,
+      hs1, hs2]
+    rfl
+  have hTbij : Function.Bijective T := T.bijective
+  -- the generic fibre is étale: base change then composite
+  haveI : Algebra.Etale (Kw ⊗[Ow] G₁) ((Kw ⊗[Ow] G₁) ⊗[Kw] (Kw ⊗[Ow] G₂)) :=
+    Algebra.Etale.baseChange Kw (Kw ⊗[Ow] G₂) (Kw ⊗[Ow] G₁)
+  haveI : Algebra.Etale Kw ((Kw ⊗[Ow] G₁) ⊗[Kw] (Kw ⊗[Ow] G₂)) :=
+    Algebra.Etale.comp Kw (Kw ⊗[Ow] G₁) _
+  refine ⟨G₁ ⊗[Ow] G₂, iG, hopfG, inferInstance, inferInstance,
+    Algebra.Etale.of_equiv
+      ((Algebra.TensorProduct.cancelBaseChange Ow Kw Kw (Kw ⊗[Ow] G₁) G₂).trans
+        (Algebra.TensorProduct.assoc Ow Ow Kw Kw G₁ G₂)),
+    { toFun := fun Φ =>
+        e (f₁ (Additive.ofMul (T Φ.toMul).1), f₂ (Additive.ofMul (T Φ.toMul).2))
+      map_zero' := by
+        show e (f₁ (Additive.ofMul (T 1).1), f₂ (Additive.ofMul (T 1).2)) = 0
+        rw [hTone]
+        show e (f₁ 0, f₂ 0) = 0
+        rw [map_zero f₁, map_zero f₂]
+        exact map_zero e
+      map_add' := fun Φ Ψ => by
+        show e (f₁ (Additive.ofMul (T (Φ.toMul * Ψ.toMul)).1),
+            f₂ (Additive.ofMul (T (Φ.toMul * Ψ.toMul)).2)) = _
+        rw [hTmul]
+        show e (f₁ (Additive.ofMul (T Φ.toMul).1 + Additive.ofMul (T Ψ.toMul).1),
+            f₂ (Additive.ofMul (T Φ.toMul).2 + Additive.ofMul (T Ψ.toMul).2)) = _
+        rw [map_add f₁, map_add f₂]
+        exact map_add e
+          (f₁ (Additive.ofMul (T Φ.toMul).1), f₂ (Additive.ofMul (T Φ.toMul).2))
+          (f₁ (Additive.ofMul (T Ψ.toMul).1), f₂ (Additive.ofMul (T Ψ.toMul).2))
+      map_smul' := fun σ Φ => by
+        show e (f₁ (Additive.ofMul (T (σ • Φ.toMul)).1),
+            f₂ (Additive.ofMul (T (σ • Φ.toMul)).2)) =
+          (ρ.toLocal w) σ (e (f₁ (Additive.ofMul (T Φ.toMul).1),
+            f₂ (Additive.ofMul (T Φ.toMul).2)))
+        rw [hTsmul]
+        show e (f₁ (σ • Additive.ofMul (T Φ.toMul).1),
+            f₂ (σ • Additive.ofMul (T Φ.toMul).2)) = _
+        rw [map_smul f₁, map_smul f₂]
+        exact he _ (f₁ (Additive.ofMul (T Φ.toMul).1), f₂ (Additive.ofMul (T Φ.toMul).2)) },
+    ?_⟩
+  refine e.bijective.comp (Function.Bijective.prodMap hbij₁ hbij₂ |>.comp ?_)
+  exact (Function.Bijective.prodMap Additive.ofMul.bijective Additive.ofMul.bijective).comp
+    (hTbij.comp Additive.toMul.bijective)
+
+end ProdPackage
+
+end HopfProduct
+
+/-- **Flat prolongations of a PRODUCT** (PROVEN; the group-scheme
+product): if `ρ₁` and `ρ₂` have flat prolongations at `v` and the space
+of `ρ` is, equivariantly, the product of their spaces, then `ρ` has one
+too. This is `hasFlatProlongationAt_of_prod_general` at `K = ℚ`: the
+witnessing Hopf orders `G₁, G₂` over `𝒪ᵥ` are combined into
+`G₁ ⊗[𝒪ᵥ] G₂`, whose generic fibre is étale
+(`Algebra.Etale.baseChange` + `Algebra.Etale.comp` across
+`Kᵥ ⊗ (G₁ ⊗ G₂) ≃ₐ[Kᵥ] (Kᵥ ⊗ G₁) ⊗[Kᵥ] (Kᵥ ⊗ G₂)`) and whose
+`Kᵥᵃˡᵍ`-points are the PRODUCT of the two point groups, the convolution
+product computing componentwise (`tensorAlgHomEquiv_convMul`). The
 `Γ Kᵥ`-action is postcomposition on both factors, so the splitting is
 equivariant and `Additive` of it is the required additive
 isomorphism. -/
@@ -5298,7 +5601,7 @@ theorem hasFlatProlongationAt_of_prod
     (he : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : M₁ × M₂),
       e (ρ₁ σ x.1, ρ₂ σ x.2) = ρ σ (e x)) :
     ρ.HasFlatProlongationAt v :=
-  sorry
+  hasFlatProlongationAt_of_prod_general v h₁ h₂ ρ e he
 
 /-- **The CONSTANT group scheme** (sorry leaf): a Galois representation
 on a FINITE module with TRIVIAL action has a flat prolongation at every
