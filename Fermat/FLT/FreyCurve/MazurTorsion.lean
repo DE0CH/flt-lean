@@ -12301,13 +12301,115 @@ they are of two clearly separated kinds:
   which has FULL rational `2`-torsion (`ℤ/2 × ℤ/4`), so the classical
   complete `2`-descent applies and needs only squarefree divisors of a
   constant — the elementary descent, not class-group machinery.
+
+**STATUS UPDATE (2026-07-26). Two of the three leaves above are now closed,
+and the two bullets are both partly WRONG as written; the corrections are on
+the declarations themselves and are summarised here because leaf lists get
+harvested from this note.**
+
+* `exists_x0Three_hauptmodul` is **PROVEN**, and the first bullet is right
+  about it — but it needed no new work at all: this file already contained
+  `exists_x0Three_param_of_stableThreeSubgroup`, which hands back a nonzero
+  `X_0(3)` parameter `u` with `j(E)·u³ = (u + 27)(u + 243)³`, and the Fricke
+  involution `w₃ : t = 729/u` converts that into the stated relation in one
+  `field_simp`.
+* `exists_x0Seven_hauptmodul` is the one still open, and the first bullet
+  UNDERSTATES it. It is not of the same class as its level-`3` sibling: for
+  an order-`3` subgroup `C\{0} = {P, −P}` is a single `±`-pair, so `x(P)` is
+  Galois-fixed and hence rational, which is what makes the level-`3` Tate
+  normal form available. For order `7`, `C\{0}` is three `±`-pairs permuted
+  by `Gal` through `ℤ/3`, so `x(P)` generates a cubic field and only the
+  SYMMETRIC functions descend. A genuine `ℤ/3`-descent, not "explicit
+  polynomial algebra and Vélu", is what is missing. See that declaration for
+  the refutation of the claim that the `X_1(7)` sibling covers it.
+* `MazurLevel21.j_mem_of_hauptmodul_pair` is **PROVEN** over the single new
+  leaf `MazurLevel21.rational_point_x0TwentyOne`, which is the pure
+  plane-curve statement with `j` eliminated and the cusps excluded. The
+  second bullet's cost estimate is wrong: a complete `2`-descent bounds
+  `E(ℚ)/2E(ℚ)`, and turning that into rank `0` requires finite generation,
+  i.e. the Mordell–Weil theorem, which is NOT in this mathlib pin. Full
+  audit on `rational_point_x0TwentyOne`.
 -/
 
 namespace MazurLevel21
 
-/-- **The `X_0(21)` Diophantine leaf** (sorry node — the Mordell–Weil half
-of the `X_0(21)` determination, and the ONLY arithmetic citation left at
-this level): if a rational number `j` is simultaneously a value of the
+/-- **The rational points of the affine `X_0(21)` plane model** (sorry leaf,
+cut 2026-07-26 out of `j_mem_of_hauptmodul_pair`): the fibre product
+`X_0(3) ×_{X(1)} X_0(7) = X_0(21)`, cleared of denominators, is the affine
+plane curve
+
+  `(t₃ + 27)(t₃ + 3)³ t₇⁷ = t₃ (t₇² + 13t₇ + 49)(t₇² + 245t₇ + 2401)³`,
+
+and its rational points with `t₃ ≠ 0 ≠ t₇` are exactly the four listed pairs.
+
+**What this cut buys.** Everything in `j_mem_of_hauptmodul_pair` that is NOT
+Mordell–Weil is discharged in its proof and never has to be redone here: the
+elimination of `j` between the two hauptmodul relations, and the exclusion of
+the cusps `t₃ = 0` and `t₇ = 0` (each of which the denominator-free relations
+refute by themselves — at `t₃ = 0` the first reads `0 = 729`, at `t₇ = 0` the
+second reads `0 = 49·2401³`). So this leaf is the Mordell–Weil half and
+nothing else, stated with no elliptic curve, no Galois action and no moduli
+in it — a question purely about rational solutions of one polynomial.
+
+**Reconnaissance (Magma, 2026-07-26; untrusted searcher, never a prover).**
+The curve is irreducible of geometric genus `1`; its Jacobian, from the
+rational point `(−18, −49/2)`, has minimal model `[1,0,0,−4,−1] = 21a1`, of
+conductor `21`, `E(ℚ) ≅ ℤ/2 × ℤ/4` and **rank `0`**. Its only singular
+rational points are the two at infinity, so the model introduces no spurious
+rational point through a node with conjugate branches. Of the eight rational
+points four are cusps (`21` squarefree with two prime factors ⇒ `2² = 4`
+cusps); the affine cusp is `(0, 0)`, which lies on the curve and is exactly
+what `t₃ ≠ 0 ≠ t₇` removes, and the other three are at infinity. A
+height-`3000` search returns exactly the four pairs listed. The four
+Atkin–Lehner involutions act simply transitively on them: `w₃` is
+`t₃ ↦ 729/t₃` and `w₇` is `t₇ ↦ 49/t₇`, which pairs `−18 ↔ −81/2`,
+`−1152 ↔ −81/128` and `−49/2 ↔ −49/8`, `−2 ↔ −8`.
+
+**COST AUDIT — this leaf is NOT the elementary computation the section note
+above claimed, and the correction matters for whoever is dispatched at it
+(2026-07-26).** The note said the rank-`0` half "is the classical COMPLETE
+`2`-DESCENT over `ℚ` … a finite, elementary, fully formalizable computation".
+The descent bookkeeping is indeed elementary, but it is not the missing
+piece. What a complete `2`-descent delivers is that `E(ℚ)/2E(ℚ)` is finite of
+order `4`; **that implies rank `0` only for a FINITELY GENERATED group**, and
+finite generation is the Mordell–Weil theorem, which **this mathlib pin does
+not have**. There is no `Mathlib/…/EllipticCurve/MordellWeil.lean`; the only
+occurrence of the name in mathlib is `Mathlib/GroupTheory/Descent.lean`,
+which proves the ABSTRACT descent theorem `AddCommGroup.fg_of_descent'`
+(a group with a height function satisfying an approximate parallelogram law
+and a Northcott property, with `G/2G` finite, is finitely generated) and
+describes itself as supplying "one of the main ingredients of the standard
+proof of the Mordell-Weil Theorem".
+
+So the genuine ingredient list for this leaf is: (i) weak Mordell–Weil for
+`21a1`, i.e. finiteness of `E(ℚ)/2E(ℚ)` — this is the elementary complete
+`2`-descent, since `21a1` has full rational `2`-torsion, so it needs only
+squarefree divisors of a constant and a congruence per homogeneous space;
+(ii) the canonical-height machinery on `E(ℚ)` verifying the hypotheses of
+`AddCommGroup.fg_of_descent'` — absent, and by far the larger half;
+(iii) the birational map from this plane model to `21a1`, best stated in the
+`exists_…_point` direction (from a solution `(t₃, t₇)` produce a rational
+point of `21a1`) so that only the easy direction is ever needed. Magma
+produces that map in `0.1 s` but in a normalisation of projective degree
+`13` with `19`-digit coefficients, and every Riemann–Roch basis tried
+(poles at the rational point, poles at each of the three places at infinity)
+came out at `750–900` printed characters; finding a small model is itself
+open work, not a transcription. Contrast `MazurLevel27.rational_point_x0TwentySeven`,
+which the section note offers as the precedent: that one is PROVEN because it
+turned out to be literally `fermatLastTheoremThree`, i.e. it had a
+ready-made proof in the tree — it is not evidence that a rank-`0`
+Mordell–Weil statement is cheap here. -/
+theorem rational_point_x0TwentyOne (t₃ t₇ : ℚ) (ht₃ : t₃ ≠ 0) (ht₇ : t₇ ≠ 0)
+    (h : (t₃ + 27) * (t₃ + 3) ^ 3 * t₇ ^ 7
+      = t₃ * ((t₇ ^ 2 + 13 * t₇ + 49) * (t₇ ^ 2 + 245 * t₇ + 2401) ^ 3)) :
+    (t₃ = -18 ∧ t₇ = -49 / 2) ∨ (t₃ = -81 / 2 ∧ t₇ = -49 / 8) ∨
+      (t₃ = -1152 ∧ t₇ = -2) ∨ (t₃ = -81 / 128 ∧ t₇ = -8) :=
+  sorry
+
+/-- **The `X_0(21)` Diophantine leaf** (PROVEN 2026-07-26 over the single
+leaf `rational_point_x0TwentyOne`, which carries the Mordell–Weil half and
+is the ONLY arithmetic citation left at this level): if a rational number
+`j` is simultaneously a value of the
 `X_0(3)` `j`-map and of the `X_0(7)` `j`-map, at rational hauptmodul
 values `t₃` and `t₇`, then
 
@@ -12344,19 +12446,47 @@ from the plane model to `21a1` — best stated, as at level `27`, in the
 `exists_..._point` direction (from a solution `(t₃, t₇)` produce a
 rational point of `21a1` together with the values of the two degeneracy
 maps), so that only the EASY direction of the birational correspondence
-is ever needed. -/
+is ever needed.
+
+**CORRECTION (2026-07-26): the paragraph above understates what is missing,
+and the full cost audit now lives on `rational_point_x0TwentyOne`.** A
+complete `2`-descent bounds `E(ℚ)/2E(ℚ)`; deducing rank `0` from that needs
+`E(ℚ)` to be FINITELY GENERATED, and the Mordell–Weil theorem is absent from
+this mathlib pin (only the abstract `AddCommGroup.fg_of_descent'` of
+`Mathlib/GroupTheory/Descent.lean` is available). Read that audit before
+dispatching anyone at the remaining leaf.
+
+**Assembly (this proof, PROVEN 2026-07-26 over `rational_point_x0TwentyOne`).**
+Both cusps are excluded by the denominator-free relations themselves — at
+`t₃ = 0` the first reads `0 = 729` and at `t₇ = 0` the second reads
+`0 = 49·2401³` — so no side condition is needed and the four cusps of
+`X_0(21)` never enter. Eliminating `j` between the two relations
+(`t₇⁷·h₃ − t₃·h₇`) gives the plane equation, the leaf returns the four
+points, and `j` is read off each one from `h₃` alone. -/
 theorem j_mem_of_hauptmodul_pair (j t₃ t₇ : ℚ)
     (h₃ : j * t₃ = (t₃ + 27) * (t₃ + 3) ^ 3)
     (h₇ : j * t₇ ^ 7 =
       (t₇ ^ 2 + 13 * t₇ + 49) * (t₇ ^ 2 + 245 * t₇ + 2401) ^ 3) :
     j ∈ ({3375 / 2, -140625 / 8, -189613868625 / 128,
-      -1159088625 / 2097152} : Finset ℚ) :=
-  sorry
+      -1159088625 / 2097152} : Finset ℚ) := by
+  have ht₃ : t₃ ≠ 0 := by rintro rfl; norm_num at h₃
+  have ht₇ : t₇ ≠ 0 := by rintro rfl; norm_num at h₇
+  have hplane : (t₃ + 27) * (t₃ + 3) ^ 3 * t₇ ^ 7
+      = t₃ * ((t₇ ^ 2 + 13 * t₇ + 49) * (t₇ ^ 2 + 245 * t₇ + 2401) ^ 3) := by
+    linear_combination t₃ * h₇ - t₇ ^ 7 * h₃
+  simp only [Finset.mem_insert, Finset.mem_singleton]
+  rcases rational_point_x0TwentyOne t₃ t₇ ht₃ ht₇ hplane with
+    ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩
+  · exact Or.inl (by linear_combination (-1 / 18 : ℚ) * h₃)
+  · exact Or.inr (Or.inl (by linear_combination (-2 / 81 : ℚ) * h₃))
+  · exact Or.inr (Or.inr (Or.inl (by linear_combination (-1 / 1152 : ℚ) * h₃)))
+  · exact Or.inr (Or.inr (Or.inr (by linear_combination (-128 / 81 : ℚ) * h₃)))
 
 end MazurLevel21
 
-/-- **The hauptmodul of `X_0(3)`** (sorry node — a GENUS-`0` moduli
-statement): if the cyclic subgroup `⟨g⟩` generated by a geometric point
+/-- **The hauptmodul of `X_0(3)`** (PROVEN 2026-07-26 — a GENUS-`0` moduli
+statement, and it needed no new mathematics: see the ASSEMBLY note at the
+foot of this docstring): if the cyclic subgroup `⟨g⟩` generated by a geometric point
 `g` of `E/ℚ` has exact order `3` and is `Gal(ℚ̄/ℚ)`-stable, then there is a
 rational hauptmodul value `t` with
 
@@ -12383,7 +12513,33 @@ Checked with Magma (2026-07-26; untrusted searcher, never a proof): the
 four curves of the conductor-`162` class, of `j`-invariants `3375/2`,
 `−140625/8`, `−189613868625/128`, `−1159088625/2097152`, have hauptmodul
 values `t = −18`, `−81/2`, `−1152`, `−81/128` respectively, each the
-UNIQUE rational root of `(t + 27)(t + 3)³ − j t`. -/
+UNIQUE rational root of `(t + 27)(t + 3)³ − j t`.
+
+**ASSEMBLY (2026-07-26): the `ℤ/2`-descent described above was already in
+this file, and the rest is the Fricke involution.** The paragraph above
+identifies the modular content as the rationality of the hauptmodul for a
+merely STABLE subgroup and points at
+`MazurLevel9.exists_rat_hauptmodul_of_stable` for the pattern. That work is
+already done and lives, for this level, in
+`exists_x0Three_param_of_stableThreeSubgroup` (proven further up, over
+`exists_tateInvariants_of_stableThreeSubgroup` and
+`X0Three.param_of_tateInvariants`): from exactly the hypotheses of this
+node it returns a parameter `u ≠ 0` with
+
+  `j(E) · u³ = (u + 27)(u + 243)³`.
+
+That is the OTHER of the two `j`-maps of `X_0(3)`, i.e. the one for `3τ`
+rather than `τ`, and the two are exchanged by the Fricke involution
+`w₃ : u ↦ 3⁶/u = 729/u`. Substituting `t = 729/u`,
+
+  `t + 27 = 27(u + 27)/u`,  `t + 3 = 3(u + 243)/u`,
+
+so `(t + 27)(t + 3)³ = 729 (u + 27)(u + 243)³ / u⁴ = 729 · j(E) u³ / u⁴
+= j(E) · 729/u = j(E) · t`, which is the relation asserted here. The whole
+proof is `field_simp` plus `linear_combination 729 * h`. Numerical check of
+the involution against the four values quoted above: `729/(−18) = −81/2` and
+`729/(−1152) = −81/128`, so `w₃` pairs the four curves of the
+conductor-`162` class exactly as the Atkin–Lehner action predicts. -/
 theorem WeierstrassCurve.exists_x0Three_hauptmodul (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 3)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -12391,8 +12547,12 @@ theorem WeierstrassCurve.exists_x0Three_hauptmodul (E : WeierstrassCurve ℚ)
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
-    ∃ t : ℚ, E.j * t = (t + 27) * (t + 3) ^ 3 :=
-  sorry
+    ∃ t : ℚ, E.j * t = (t + 27) * (t + 3) ^ 3 := by
+  obtain ⟨u, _E', _hE', _φ, -, -, hu0, hEj, -⟩ :=
+    E.exists_x0Three_param_of_stableThreeSubgroup g hg hstable
+  refine ⟨729 / u, ?_⟩
+  field_simp
+  linear_combination (729 : ℚ) * hEj
 
 /-- **The hauptmodul of `X_0(7)`** (sorry node — a GENUS-`0` moduli
 statement): if the cyclic subgroup `⟨g⟩` generated by a geometric point
@@ -12408,13 +12568,127 @@ the degree-`8` `j`-map is the displayed relation. Its two cusps are
 denominator-free form already excludes `t = 0` (the right side there is
 `49 · 2401³ ≠ 0`), so again no side condition is needed.
 
-ELEMENTARY in principle, and STRICTLY WEAKER than the sibling
-`exists_levelSeven_jParam`, which is the `X_1(7)` statement: `X_1(7)` also
-has genus `0`, with Kubert parameter `d` and `j = c₄(d)³/Δ(d)` of degree
-`24`, and the degree-`3` covering `X_1(7) → X_0(7)` (the `(ℤ/7)ˣ/±1`
-quotient) sends `d` to `t`. So a proof of `exists_levelSeven_jParam`
-together with the `ℤ/3`-descent gives this node too; conversely this node
-needs only the isogeny, not a rational point of order `7`.
+**FALSE CLAIM RETIRED (2026-07-26). This node is NOT "strictly weaker than
+the sibling `exists_levelSeven_jParam`", and `exists_levelSeven_jParam` can
+NEVER discharge it — the refutation is already proven in this file.** The
+retired paragraph read: "`X_1(7)` also has genus `0`, with Kubert parameter
+`d` and `j = c₄(d)³/Δ(d)` of degree `24`, and the degree-`3` covering
+`X_1(7) → X_0(7)` sends `d` to `t`. So a proof of `exists_levelSeven_jParam`
+together with the `ℤ/3`-descent gives this node too." The task prompt that
+generated this cut repeated it in the sharper form "check whether that
+sibling has landed before proving this from scratch", which would send an
+agent to transcribe a covering map and find the node still open.
+
+The covering map is real and is written out below; what is false is that it
+suffices. `no_torsion_order_21`, PROVEN a few declarations down, derives its
+contradiction precisely from the fact that the FOUR `j`-values this whole
+`X_0(21)` cluster produces are NOT in the image of the `X_1(7)` `j`-map — it
+applies `MazurLevelSeven.j_ne_of_five_dvd` to each of `3375/2`,
+`−140625/8`, `−189613868625/128`, `−1159088625/2097152` in turn. So the four
+curves of the conductor-`162` class carry a rational `7`-ISOGENY while having
+no rational `7`-torsion point in any quadratic twist, and they are exactly
+the points this node has to reach. The `X_1(7)` route reaches none of them.
+
+The reason is structural, and is the same discriminating rule that separates
+this node from its level-`3` sibling. For a stable subgroup `C` of order `3`,
+`C\{0} = {P, −P}` is one `±`-pair, so `x(P)` is Galois-FIXED and therefore
+rational — which is what makes a Tate normal form available and is why
+`exists_x0Three_hauptmodul` fell out of machinery already in this file. For
+order `7`, `C\{0}` is three `±`-pairs, permuted by `Gal(ℚ̄/ℚ)` through
+`(ℤ/7)ˣ/±1 ≅ ℤ/3`. Each `x(iP)` generates a cyclic cubic field; only the
+SYMMETRIC functions descend to `ℚ`. So the `ℤ/3`-descent is not an addendum
+to a covering-map computation — it is the entire content of the node, and it
+is genuinely absent from this development.
+
+**THE COVERING MAP, worked out and verified so the next owner need not redo
+it** (2026-07-26; the polynomial identities below were checked exactly, and
+the resulting Lean lemma compiles — it is recorded here rather than added as
+a declaration because nothing in the cone would consume it, since it settles
+only the sub-case this node does not need). The degree-`3` map
+`X_1(7) → X_0(7)` in the coordinates of `MazurLevelSeven` is
+
+  `t = 49 · d(d − 1) / q(d)`,   `q(d) = d³ − 8d² + 5d + 1`,
+
+the third factor of `discPoly`. It is pinned by the pole structure: `j` has
+poles of order `7` at each of `d = 0, 1, ∞` (the three points over the cusp
+`t = 0`) and simple poles at the three roots of `q` (the three points over
+`t = ∞`), so `t` must be `λ·d(d − 1)/q(d)`, and `λ = 49`. Writing
+`m = 49d(d − 1)`, the two numerator factors clear as
+
+  `(t² + 13t + 49) q² = m² + 13mq + 49q² = 49 (d² − d + 1)³`,
+  `(t² + 245t + 2401) q² = m² + 245mq + 2401q² = 2401 · B(d)`,
+  `B(d) = d⁶ − 11d⁵ + 30d⁴ − 15d³ − 10d² + 5d + 1`,
+
+and the whole relation reduces to the factorisation
+
+  `cFourPoly d = (d² − d + 1) · B(d)`,  hence  `c₄³ = (d² − d + 1)³ · B³`,
+
+together with `49⁷ = 49 · 2401³ = 7¹⁴`. Concretely: from
+`j · discPoly d = cFourPoly d ³` with `discPoly d ≠ 0`, multiplying the goal
+through by `q⁸` and cancelling gives `j · t⁷ = (t² + 13t + 49)(t² + 245t +
+2401)³`, with every step a `ring` identity after one rewrite by
+`t · q = 49d(d − 1)`.
+
+**THE CUT THAT WOULD ACTUALLY REDUCE THIS NODE**, therefore, is not through
+`X_1(7)` but through the symmetric functions: (i) a moduli leaf producing,
+from the stable subgroup, the monic RATIONAL cubic
+`ψ_C(x) = ∏_{i=1}^{3} (x − x(iP))` — the kernel polynomial, rational because
+`Gal` permutes its roots — together with the curve in short Weierstrass form;
+and (ii) an algebra leaf computing `t` from `(c₄, c₆, ψ_C)`. Step (i) is the
+order-`7` analogue of what `exists_tateInvariants_of_stableThreeSubgroup`
+does at order `3`; step (ii) is a classical but bulky explicit computation
+that has NOT been done here.
+
+**THE CONTENT, IN ONE EQUATION — a sharp reformulation of step (ii), found
+and verified 2026-07-26.** Let `C` be the stable subgroup and `E' = E/C`
+Vélu's quotient, which is defined over `ℚ` and is what `Velu.lean` already
+produces. Then the hauptmodul is pinned by the DISCRIMINANT RATIO alone:
+
+  `t⁶ · Δ(E') = 7¹² · Δ(E)`.
+
+This is the eta-quotient identity `Δ(τ)/Δ(7τ) = (η(τ)/η(7τ))²⁴ = t⁶`, the
+`7¹²` being the scaling between the lattice model for `7τ` and Vélu's
+normalisation (`Δ` has weight `−12`). Checked exactly with Magma on three
+curves (untrusted searcher, never a prover), and the agreement is on the
+nose in every case — the quotient `(Δ(E)/Δ(E'))/t⁶` came out equal to
+`7⁻¹² = 1/13841287201` for all three:
+
+* `[1,−1,0,3,−1]` (conductor `162`, `j = 3375/2`): `Δ = −1458`,
+  `E' = [1,−1,0,−1077,13877]`, `Δ' = −93312`, `t = −49/2`;
+* `[1,−1,0,−42,−100]` (`j = −140625/8`): `Δ = −472392`,
+  `E' = [1,−1,0,−852,19664]`, `Δ' = −123834728448`, `t = −49/8`;
+* `26b1 = [1,−1,1,−3,3]` (`j = −2146689/1664`): `Δ = −1664`,
+  `E' = [1,−1,1,−213,−1257]`, `Δ' = −125497034`, `t = −98/13`.
+
+In each case `t` is the UNIQUE rational root of
+`(t² + 13t + 49)(t² + 245t + 2401)³ − j t⁷`, so the value is unambiguous.
+The first two are exactly the `t₇`-coordinates the `X_0(21)` reconnaissance
+predicts, and the third agrees with the covering map above at `d = 2`
+(`q(2) = −13`, `t = 49·2·1/(−13) = −98/13`) — an independent confirmation of
+that map, computed without reference to it.
+
+**So the whole obstruction is a sixth power.** `t⁶` is rational for free, and
+the node asserts that it has a rational sixth ROOT of the right sign. The
+factorisation `6 = 2 · 3` is exactly the two descents in play: the `ℤ/3` is
+the Galois action on the three `±`-pairs of `C\{0}`, and the `ℤ/2` is the
+quadratic-twist ambiguity that `j` cannot see. Note `t⁶` alone determines `t`
+only up to sign, and the `j`-relation is not even in `t`, so one bit still
+has to be supplied — the two square roots are the curve and its quadratic
+twist.
+
+**Worked instance of the `ℤ/3` obstruction, for anyone who doubts it is
+real.** For `[1,−1,0,3,−1]` the `7`-division polynomial factors as
+`(degree 3)·(degree 21)`, and the kernel polynomial is the IRREDUCIBLE
+cubic `ψ_C = x³ + 6x² + 3x − 1`, of discriminant `729 = 27²` — a square, so
+the cubic is CYCLIC and its splitting field is the real cyclotomic field
+`ℚ(ζ₉)⁺` (conductor `9`, field discriminant `81`). Hence `x(P)` is a
+non-rational cubic irrationality for every `P ∈ C\{0}`, precisely as the
+paragraph above predicts, and no Tate normal form for `P` exists over `ℚ`.
+The sibling curve `[1,−1,0,−42,−100]` behaves identically, with
+`ψ_C = x³ + 6x² − 15x − 73` of discriminant `59049 = 243²`. By contrast
+`26b1`, which HAS a rational point of order `7`, has `ψ_C = x³ − 3x² − x + 3
+= (x−1)(x+1)(x−3)` split over `ℚ` — the sub-case, and the only one the
+`X_1(7)` route can reach.
 
 Checked with Magma (2026-07-26; untrusted searcher, never a proof): the
 four curves of the conductor-`162` class have hauptmodul values
