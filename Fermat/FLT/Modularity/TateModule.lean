@@ -1204,7 +1204,53 @@ group structure `ab.addCommGroup`, so that it mentions only `ab`: no
 real multiplication, no rank count, no coefficient ring. It is the
 classical divisibility statement and nothing more. Its only consumer,
 `exists_mem_torsion_act_uniformizer_eq` below, converts it into
-divisibility by a nonzero element of `𝒪_D` through the absolute norm. -/
+divisibility by a nonzero element of `𝒪_D` through the absolute norm.
+
+## FAITHFULNESS: CONFIRMED TRUE (2026-07-26, audited by a later owner)
+
+The statement is faithful, and in particular there is no counterexample
+to hunt for.  Three checks:
+
+* `GeomFibrePt f x` is `RelPoint f (specAlgClos F ≫ x)`, i.e. the
+  `F̄`-points of `A ×_S Spec F̄`.  Base change of an abelian scheme is an
+  abelian scheme, and `F̄` is algebraically closed, so this really is the
+  point group of an abelian VARIETY, not of some larger object.
+* `ab`'s `proper`, `smooth` and `connected` fields are exactly what makes
+  each geometric fibre an abelian variety; the group structure is on the
+  functor of points, so by Yoneda the fibre is a group scheme.
+* Divisibility holds in EVERY characteristic — `[N]` is an isogeny for
+  every `N ≠ 0`, inseparable but still surjective when `p ∣ N`.  So the
+  absence of any characteristic hypothesis is correct and not an
+  oversight.  If the fibre is empty the statement is vacuously true.
+
+## IRREDUCIBLE AT THIS PIN, and why it is not worth decomposing yet
+
+Surveyed 2026-07-26: there is **no abelian-variety theory anywhere**.
+`grep AbelianVariety` over the whole of `Mathlib` returns nothing,
+`Mathlib/AlgebraicGeometry/` has no theorem of the cube, no isogeny, no
+degree and no fibre-dimension theory in a usable form, and `~/cs/FLT`
+has none either.
+
+The classical proof is a three-step chain — (a) `[N]` has FINITE kernel
+(theorem of the cube, via `[N]^* L ≅ L^{N²}` for a symmetric ample `L`);
+(b) a proper morphism with finite fibres between irreducible varieties of
+equal dimension is surjective; (c) surjective over an algebraically
+closed field gives surjectivity on points — and step (a) is genuinely
+unavoidable: for a connected commutative algebraic group that is *not*
+proper the statement is FALSE (`𝔾_a` in characteristic `p` with `N = p`
+has `[p] = 0`), so no argument can avoid using properness through
+something of the cube's strength.
+
+Writing (a)–(c) as Lean leaves is therefore **not** a decomposition into
+shallower nodes: it would require first introducing `[N]` as a morphism
+of schemes (this module has the group law only on the functor of points,
+so that needs representability of the fibre), then kernels as subgroup
+schemes, then dimension.  That is a large speculative interface whose
+leaves would be no closer to `Mathlib` than this one, and the risk of
+manufacturing a false or vacuous statement in it is high — this
+development has lost more to that than to open sorries.  So the node is
+deliberately left as ONE honest leaf.  The right next step is a general
+abelian-variety subtree, not a cut here. -/
 theorem exists_nsmul_eq_geomFibrePt
     {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
     {F : Type u} [Field F]
