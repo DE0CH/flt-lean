@@ -129,6 +129,13 @@ nothing else.
 module
 
 public import Fermat.FLT.Modularity.AbelianScheme
+-- `AlgebraicGeometry.IsFinite`, `LocallyQuasiFinite` and
+-- `IsFinite.of_isProper_of_locallyQuasiFinite` (Zariski's main theorem):
+-- the multiplication-by-`n` morphism of an abelian scheme and the
+-- reduction of `finite_torsion_span_natCast` to its quasi-finiteness
+public import Mathlib.AlgebraicGeometry.Morphisms.Finite
+public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
+public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
 -- `IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal`: the residue
 -- cardinality at `w` in the Frobenius specification of
@@ -843,10 +850,12 @@ varieties that no amount of algebra will supply:
   fixing `A[J]` pointwise is open, i.e. the `J`-torsion is defined over
   a finite extension of `F`. This is the whole content of *continuity*
   of the resulting representation. **PROVEN 2026-07-26** over the single
-  residual leaf `finite_torsion_span_natCast` (`A[N]` is finite for a
-  nonzero rational integer `N`); the spreading-out half — that ONE
-  geometric point is defined over a finite extension — is itself proven,
-  as `exists_fixingSubgroup_le_stabilizer_geomFibrePt`.
+  residual leaf `locallyQuasiFinite_mulByNat` (multiplication by a
+  nonzero `n` on the abelian scheme has finite fibres); finiteness of
+  `A[N]` (`finite_torsion_span_natCast`) is PROVEN from it since
+  2026-07-26, and the spreading-out half — that ONE geometric point is
+  defined over a finite extension — is itself proven, as
+  `exists_fixingSubgroup_le_stabilizer_geomFibrePt`.
 * `exists_galoisRep_of_isOpen_congruence` — TOPOLOGY. A homomorphism
   into `End_O(O²)` all of whose congruence subgroups mod `Pⁿ` are open
   is continuous for the module topology. This is where the `ℤ_q`-module
@@ -917,11 +926,11 @@ into two statements that belong to two different theories, plus three
 assemblies — one topological, one Galois-theoretic and one purely
 ideal-theoretic — that are all PROVEN below:
 
-* `finite_torsion_span_natCast` — ABELIAN VARIETIES, and the ONLY
-  residual sorry of this cluster. `A[N]` is a FINITE set for a nonzero
-  rational integer `N`. This is the textbook statement
-  `A[N] ≅ (ℤ/N)^{2g}`, minus the group structure: nothing about Galois,
-  nothing about topology, no ideal of `𝒪_D`.
+* `locallyQuasiFinite_mulByNat` — ABELIAN VARIETIES, and the ONLY
+  residual sorry of this cluster since 2026-07-26. Multiplication by a
+  nonzero `n` on the abelian scheme has FINITE FIBRES. `A[N]`-finiteness
+  itself (`finite_torsion_span_natCast`) is now PROVEN from it: see the
+  paragraph *The cut through the multiplication morphism* below.
 * `exists_fixingSubgroup_le_stabilizer_geomFibrePt` — SCHEME THEORY
   (spreading out). A SINGLE geometric point of the fibre is fixed by
   `Gal(F̄/E)` for some finite subextension `E/F`, i.e. it is defined over
@@ -937,39 +946,306 @@ of open sets is open). It is in the last of these that finiteness of
 `A[J]` is consumed: over an infinite torsion set the intersection would
 not be open, which is why the first leaf cannot be dropped or weakened
 to "each point is defined over a finite extension".
+
+#### The cut through the multiplication morphism (2026-07-26)
+
+`finite_torsion_span_natCast` used to be the sorry itself. It is now
+PROVEN, over the single geometric leaf `locallyQuasiFinite_mulByNat`,
+through the following chain — every step of which is proven here:
+
+* `AbelianSchemeStruct.mulByNat n : A ⟶ A`, the multiplication-by-`n`
+  MORPHISM. It exists with no fibre products and no Yoneda apparatus:
+  the functor of points `RelPoint f ·` has a tautological point
+  `RelPoint.self f = ⟨𝟙 A, _⟩` over the base point `f` itself, and
+  `mulByNat n` is the underlying morphism of `n • RelPoint.self f`.
+  Naturality of the group law (`pre_add`, `pre_zero`) upgrades to
+  `pre_nsmul`, and `RelPoint.pre_self` — the Yoneda lemma in the only
+  form needed — then gives `nsmul_val`: `(n • y).1 = y.1 ≫ mulByNat n`
+  for EVERY relative point `y`. Likewise `zero_val` expresses the zero
+  relative point through the zero section `zeroSection : S ⟶ A`.
+* Hence `A_x[n] ⊆ {u : Spec F̄ ⟶ A | u ≫ mulByNat n = g ≫ zeroSection}`
+  — the fibre of `mulByNat n` over one geometric point — and finiteness
+  of the torsion set is finiteness of that fibre
+  (`finite_nsmul_eq_zero_geomFibrePt`, `finite_fibre_mulByNat`).
+* `finite_hom_fibre_of_isFinite`: a FINITE morphism has finitely many
+  `Spec K`-points in each fibre. Proven by base change (`IsFinite` is
+  stable under it), affineness of a finite scheme over a field, and the
+  mathlib instance `Finite (S →ₐ[R] K)` for `Module.Finite R S`.
+* `isProper_mulByNat`: `mulByNat n` is PROPER, for free — it commutes
+  with `f` (`mulByNat_comp`), `f` is proper by `ab.proper`, and proper
+  morphisms cancel on the right against a separated one
+  (`IsProper.of_comp`).
+* So by Zariski's main theorem in mathlib's form
+  (`IsFinite.of_isProper_of_locallyQuasiFinite`) all that is left is
+  QUASI-FINITENESS of `mulByNat n`, which is the leaf.
+
+That is the honest residue: the whole arithmetic, Galois-theoretic and
+commutative-algebraic content has been discharged, and what remains is
+one statement of the theory of abelian varieties — `[n]` is an isogeny —
+stated about a morphism of schemes, with no real multiplication, no
+ideal of `𝒪_D`, no number field and no Galois action left in it.
 -/
 
-/-- **`A[N]` is finite for a nonzero rational integer `N`** (sorry leaf
-— abelian varieties; Mumford *Abelian Varieties* §18, Silverman *AEC*
-III.6, Milne *Abelian Varieties* I.7).
+section MulByNat
+
+variable {A S : Scheme.{u}} {f : A ⟶ S}
+
+/-- **The tautological relative point** of `f : A ⟶ S`: the identity of
+`A`, read as an `A`-point of `A` over the base point `f` itself. It is
+the universal element of the functor of points, and it is what makes
+`AbelianSchemeStruct.mulByNat` below constructible without any Yoneda
+apparatus. -/
+def RelPoint.self (f : A ⟶ S) : RelPoint f f := ⟨𝟙 A, Category.id_comp f⟩
+
+/-- **Every relative point is the tautological one, pulled back along
+itself.** This is the Yoneda lemma for `RelPoint`, in the only form
+needed here. -/
+theorem RelPoint.pre_self {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g) :
+    RelPoint.pre y.1 y.2 (RelPoint.self f) = y :=
+  Subtype.ext (Category.comp_id _)
+
+namespace AbelianSchemeStruct
+
+variable (ab : AbelianSchemeStruct f)
+
+/-- **Pullback of relative points commutes with `n`-fold addition.**
+This is `pre_add` and `pre_zero` — the naturality axioms of the group
+structure — read at the `ℕ`-action of the resulting `AddCommGroup`. -/
+theorem pre_nsmul {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (n : ℕ) (y : RelPoint f g) :
+    letI := ab.addCommGroup g
+    letI := ab.addCommGroup g'
+    RelPoint.pre h hg (n • y) = n • RelPoint.pre h hg y := by
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup g'
+  induction n with
+  | zero =>
+      show RelPoint.pre h hg (0 • y) = 0 • RelPoint.pre h hg y
+      rw [zero_nsmul, zero_nsmul]
+      exact ab.pre_zero h hg
+  | succ n ih =>
+      rw [succ_nsmul, succ_nsmul]
+      show RelPoint.pre h hg (ab.add (n • y) y)
+          = ab.add (n • RelPoint.pre h hg y) (RelPoint.pre h hg y)
+      rw [ab.pre_add h hg, ih]
+
+/-- **Multiplication by `n`, as a MORPHISM of schemes `A ⟶ A`**: the
+underlying morphism of the `n`-fold sum of the tautological relative
+point `RelPoint.self f`.
+
+By `nsmul_val` this really is `[n]`: precomposition with it computes
+`n • y` on every relative point, so it is the Yoneda realization of the
+endomorphism `y ↦ n • y` of the functor of points. No fibre products
+and no chosen pullbacks are needed to write it down. -/
+noncomputable def mulByNat (n : ℕ) : A ⟶ A :=
+  letI := ab.addCommGroup f
+  (n • RelPoint.self f).1
+
+/-- **`n`-fold addition of relative points IS precomposition with
+`mulByNat n`.** -/
+theorem nsmul_val {T : Scheme.{u}} {g : T ⟶ S} (n : ℕ) (y : RelPoint f g) :
+    letI := ab.addCommGroup g
+    (n • y).1 = y.1 ≫ ab.mulByNat n := by
+  letI := ab.addCommGroup g
+  letI := ab.addCommGroup f
+  conv_lhs => rw [← RelPoint.pre_self y]
+  rw [← ab.pre_nsmul y.1 y.2 n (RelPoint.self f)]
+  rfl
+
+/-- **The zero section** `S ⟶ A`, i.e. the unit of the group scheme. -/
+noncomputable def zeroSection : S ⟶ A := (ab.zero (𝟙 S)).1
+
+/-- **Every zero relative point is the zero section, precomposed.** -/
+theorem zero_val {T : Scheme.{u}} (g : T ⟶ S) :
+    (ab.zero g).1 = g ≫ ab.zeroSection :=
+  congrArg Subtype.val (ab.pre_zero (h := g) (g := 𝟙 S) (g' := g) (Category.comp_id g)).symm
+
+/-- **`mulByNat n` is a morphism over `S`.** -/
+theorem mulByNat_comp (n : ℕ) : ab.mulByNat n ≫ f = f :=
+  letI := ab.addCommGroup f
+  (n • RelPoint.self f).2
+
+/-- **`mulByNat n` is PROPER**, for free: it commutes with the structure
+morphism `f`, which is proper by `ab.proper`, and a morphism whose
+composite with a SEPARATED morphism is proper is itself proper
+(`IsProper.of_comp`). No abelian-variety input whatsoever. -/
+theorem isProper_mulByNat (n : ℕ) : IsProper (ab.mulByNat n) := by
+  haveI := ab.proper
+  haveI : IsProper (ab.mulByNat n ≫ f) := by rw [ab.mulByNat_comp]; exact ab.proper
+  exact IsProper.of_comp _ f
+
+end AbelianSchemeStruct
+
+open _root_.CategoryTheory.Limits in
+/-- **A finite scheme over a field has finitely many sections** (PROVEN
+2026-07-26).
+
+`Z` is affine because a finite morphism is affine and `Spec K` is
+affine, so `Z = Spec B` with `B = Γ(Z, ⊤)` a `Γ(Spec K, ⊤)`-algebra that
+is `Module.Finite` — this is exactly the affine characterization of
+`IsFinite`. A section `s : Spec K ⟶ Z` is determined by `s.appTop`
+(`ext_of_isAffine`, since the TARGET `Z` is affine), and the section
+identity `s ≫ g = 𝟙` says precisely that `s.appTop ≫ ΓSpecIso.hom` is a
+`Γ(Spec K, ⊤)`-ALGEBRA map `B → K`. Mathlib's instance
+`Finite (S →ₐ[R] K)` for `Module.Finite R S` and `K` a field finishes
+it. -/
+theorem finite_section_of_isFinite {Z : Scheme.{u}} {K : Type u} [Field K]
+    (g : Z ⟶ Spec (CommRingCat.of K)) [IsFinite g] :
+    {s : Spec (CommRingCat.of K) ⟶ Z | s ≫ g = 𝟙 _}.Finite := by
+  classical
+  haveI : IsAffine Z :=
+    (HasAffineProperty.iff_of_isAffine (P := @IsAffineHom) (f := g)).mp inferInstance
+  have hfin : RingHom.Finite (Scheme.Hom.appTop g).hom :=
+    ((HasAffineProperty.iff_of_isAffine (P := @IsFinite) (f := g)).mp inferInstance).2
+  letI : Algebra Γ(Spec (CommRingCat.of K), ⊤) K :=
+    ((Scheme.ΓSpecIso (CommRingCat.of K)).hom).hom.toAlgebra
+  letI : Algebra Γ(Spec (CommRingCat.of K), ⊤) Γ(Z, ⊤) := (Scheme.Hom.appTop g).hom.toAlgebra
+  haveI : Module.Finite Γ(Spec (CommRingCat.of K), ⊤) Γ(Z, ⊤) := hfin
+  set Φ : (Spec (CommRingCat.of K) ⟶ Z) → (Γ(Z, ⊤) ⟶ CommRingCat.of K) :=
+    fun s => Scheme.Hom.appTop s ≫ (Scheme.ΓSpecIso (CommRingCat.of K)).hom with hΦ
+  refine Set.Finite.of_finite_image (f := Φ) ?_ ?_
+  · refine (Set.finite_range
+      (fun ρ : Γ(Z, ⊤) →ₐ[Γ(Spec (CommRingCat.of K), ⊤)] K =>
+        CommRingCat.ofHom ρ.toRingHom)).subset ?_
+    rintro _ ⟨s, hs, rfl⟩
+    have hcomm : Scheme.Hom.appTop g ≫ Φ s = (Scheme.ΓSpecIso (CommRingCat.of K)).hom := by
+      rw [hΦ, ← Category.assoc, ← Scheme.Hom.comp_appTop, hs, Scheme.Hom.id_appTop,
+        Category.id_comp]
+    exact ⟨{ toRingHom := (Φ s).hom, commutes' := fun r => congrArg (fun t => t.hom r) hcomm },
+      CommRingCat.ofHom_hom _⟩
+  · intro s₁ _ s₂ _ h
+    refine ext_of_isAffine ?_
+    exact (CategoryTheory.cancel_mono (Scheme.ΓSpecIso (CommRingCat.of K)).hom).mp h
+
+open _root_.CategoryTheory.Limits in
+/-- **A finite morphism has finitely many `Spec K`-points in each
+fibre** (PROVEN 2026-07-26).
+
+The set `{u | u ≫ φ = w}` is the set of sections of the base change of
+`φ` along `w`, and `IsFinite` is stable under base change, so this is
+`finite_section_of_isFinite` transported through the universal property
+of the pullback. -/
+theorem finite_hom_fibre_of_isFinite {X Y : Scheme.{u}} (φ : X ⟶ Y) [IsFinite φ]
+    {K : Type u} [Field K] (w : Spec (CommRingCat.of K) ⟶ Y) :
+    {u : Spec (CommRingCat.of K) ⟶ X | u ≫ φ = w}.Finite := by
+  refine ((finite_section_of_isFinite (pullback.snd φ w)).image
+    (fun s => s ≫ pullback.fst φ w)).subset ?_
+  intro u hu
+  exact ⟨pullback.lift u (𝟙 _) (by simpa using hu), pullback.lift_snd _ _ _,
+    pullback.lift_fst _ _ _⟩
+
+/-- **Multiplication by a nonzero `n` on an abelian scheme is
+QUASI-FINITE** (sorry leaf — abelian varieties; Mumford *Abelian
+Varieties* §6 Application 2 and §18, Milne *Abelian Varieties* I.7,
+Silverman *AEC* III.6).
+
+Every fibre of `[n] : A ⟶ A` is a finite set of points. Equivalently —
+since `[n]` is PROPER for free (`isProper_mulByNat`) — `[n]` is a FINITE
+morphism, of degree `n^{2g}` on each fibre of `f`.
+
+This is the ONLY residual sorry of the `isOpen_stabilizer_torsion`
+cluster, and it is a pure statement of the theory of abelian varieties:
+no Galois action, no real multiplication, no ideal of `𝒪_D`, no number
+field, no topology.
+
+The argument. Fibrewise over `S` this is the classical statement that
+`[n]` is an isogeny of abelian varieties. Fix a geometric fibre `A_s`,
+of dimension `g`; for a symmetric ample line bundle `L` on `A_s` the
+theorem of the cube gives `[n]^* L ≅ L^{n²}`, which is again ample, and
+a morphism pulling an ample bundle back to an ample bundle has finite
+fibres. The fibres of `[n]` are then torsors under `ker[n]`, which is
+finite of order `n^{2g}`. The fibres of `mulByNat n` as a morphism of
+schemes are the fibres of the `[n]` of each fibre of `f`, so
+quasi-finiteness over `S` is exactly the fibrewise statement.
+
+`hn` is LOAD-BEARING: `mulByNat 0 = f ≫ zeroSection` is constant on each
+fibre, so its fibre over a point of the zero section is a whole fibre of
+`f`, infinite as soon as `g ≥ 1`.
+
+MISSING MACHINERY. Mathlib at this pin does have group schemes — as
+`GrpObj` objects of `Over (Spec K)`, with
+`AlgebraicGeometry.isCommMonObj_of_isProper_of_isIntegral_tensorObj_of_isAlgClosed`
+(a proper geometrically integral group scheme over a field is
+commutative) and `AlgebraicGeometry.smooth_of_grpObj` in
+`Mathlib/AlgebraicGeometry/Group/{Abelian,Smooth}.lean`. What it does
+NOT have is any isogeny theory: no `[n]`, no theorem of the cube, no
+degree, no `AbelianVariety`. Supplying that package is what this leaf
+asks for. (The blanket claim in the header of
+`Modularity/AbelianScheme.lean` that the pin has no group-scheme notion
+at all is therefore out of date; the search there predates
+`Mathlib/AlgebraicGeometry/Group/`.) -/
+theorem locallyQuasiFinite_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0) :
+    LocallyQuasiFinite (ab.mulByNat n) :=
+  sorry
+
+/-- **Multiplication by a nonzero `n` on an abelian scheme is a FINITE
+morphism** (PROVEN 2026-07-26 over `locallyQuasiFinite_mulByNat`).
+
+Properness is free (`isProper_mulByNat`), so this is Zariski's main
+theorem in mathlib's form, `IsFinite.of_isProper_of_locallyQuasiFinite`:
+proper plus quasi-finite is finite. -/
+theorem isFinite_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0) :
+    IsFinite (ab.mulByNat n) :=
+  haveI := ab.isProper_mulByNat n
+  haveI := locallyQuasiFinite_mulByNat ab n hn
+  IsFinite.of_isProper_of_locallyQuasiFinite _
+
+/-- **The fibres of `[n]` on geometric points are finite** (PROVEN
+2026-07-26). -/
+theorem finite_fibre_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0)
+    {K : Type u} [Field K] (w : Spec (CommRingCat.of K) ⟶ A) :
+    {u : Spec (CommRingCat.of K) ⟶ A | u ≫ ab.mulByNat n = w}.Finite :=
+  haveI := isFinite_mulByNat ab n hn
+  finite_hom_fibre_of_isFinite (ab.mulByNat n) w
+
+/-- **The `n`-torsion of the geometric points of a fibre is finite**
+(PROVEN 2026-07-26 over `locallyQuasiFinite_mulByNat`).
+
+This is `finite_torsion_span_natCast` with everything arithmetic
+stripped off: no `Mult`, no `𝒪_D`, no ideal, no number field. By
+`nsmul_val` and `zero_val` the condition `n • y = 0` says exactly that
+the underlying morphism `y.1` lies in the fibre of `mulByNat n` over the
+geometric point `(specAlgClos F ≫ x) ≫ zeroSection`, and `y ↦ y.1` is
+injective. -/
+theorem finite_nsmul_eq_zero_geomFibrePt (ab : AbelianSchemeStruct f)
+    {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S) (n : ℕ) (hn : n ≠ 0) :
+    letI := ab.addCommGroup (specAlgClos F ≫ x)
+    {y : GeomFibrePt f x | n • y = 0}.Finite := by
+  letI := ab.addCommGroup (specAlgClos F ≫ x)
+  refine Set.Finite.of_finite_image ?_
+    (fun a _ b _ h => Subtype.ext h : Set.InjOn Subtype.val {y : GeomFibrePt f x | n • y = 0})
+  refine (finite_fibre_mulByNat ab n hn ((specAlgClos F ≫ x) ≫ ab.zeroSection)).subset ?_
+  rintro _ ⟨y, hy, rfl⟩
+  show y.1 ≫ ab.mulByNat n = _
+  rw [← ab.nsmul_val n y, hy]
+  exact ab.zero_val _
+
+end MulByNat
+
+/-- **`A[N]` is finite for a nonzero rational integer `N`** (PROVEN
+2026-07-26 over the single abelian-variety leaf
+`locallyQuasiFinite_mulByNat`; Mumford *Abelian Varieties* §18,
+Silverman *AEC* III.6, Milne *Abelian Varieties* I.7).
 
 The set of geometric points of the fibre killed by `N` is finite.
 
-The argument. `A_x` is an abelian variety over the algebraically closed
-field `F̄` of characteristic zero — properness, smoothness and geometric
-connectedness of `f` are carried by `ab`, and the zero section makes it
-a group variety. Write `g` for its dimension; then multiplication by `N`
-is an isogeny of degree `N^{2g}` and `A_x[N] ≅ (ℤ/N)^{2g}`. Only
-FINITENESS is asked for here, so the degree count is not needed: it is
-enough that `[N]` is finite flat, i.e. quasi-finite and proper, which is
-where `ab.proper` enters.
+HOW IT IS PROVEN. `Ideal.span {(N : 𝒪_D)}` contains `(N : 𝒪_D)`, so a
+point of the torsion set satisfies `(N : 𝒪_D) • y = 0`, which is
+`N • y = 0` for the underlying `ℕ`-action (`Nat.cast_smul_eq_nsmul`) —
+this is the only place the real-multiplication datum `m` is used, and it
+is used only through the fact that `act` is a ring action. The rest is
+`finite_nsmul_eq_zero_geomFibrePt`: the `N`-torsion is a fibre of the
+multiplication morphism `mulByNat N`, which is proper for free and
+finite once quasi-finite. See the *cut through the multiplication
+morphism* paragraph above for the full chain.
 
 `hN` is load-bearing: `A_x[0]` is all of `A_x(F̄)`, which is infinite as
-soon as `g ≥ 1`.
+soon as `g ≥ 1`; it is consumed by `locallyQuasiFinite_mulByNat`.
 
 Note what is NOT needed: no `hdim`, no real-multiplication hypothesis,
 no totally-real assumption, and no faithfulness of `m` — the statement
-is about the ideal `(N)` generated by a rational integer, so `m` enters
-only through `m.act (N : 𝒪_D) = [N]`, which holds for any `Mult` datum
-because `act` is a ring action. That is why this leaf is stated with the
-bare binders of its consumer.
-
-MISSING MACHINERY. The pin has no `AbelianVariety` at all (see the
-header of `Modularity/AbelianScheme.lean`), so this cannot be reduced to
-a mathlib statement; what it needs is that `[N] : A_x ⟶ A_x` is finite,
-which in turn needs the rigidity/isogeny package of Mumford §6 and §18.
-It is the last piece of abelian-variety theory in the Tate-module
-cluster. -/
+is about the ideal `(N)` generated by a rational integer. That is why
+this statement carries the bare binders of its consumer. -/
 theorem finite_torsion_span_natCast
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D]
@@ -977,8 +1253,17 @@ theorem finite_torsion_span_natCast
     {F : Type u} [Field F] [NumberField F]
     (x : Spec (CommRingCat.of F) ⟶ S)
     (N : ℕ) (hN : N ≠ 0) :
-    ((m.torsion x (Ideal.span {(N : NumberField.RingOfIntegers D)})).1).Finite :=
-  sorry
+    ((m.torsion x (Ideal.span {(N : NumberField.RingOfIntegers D)})).1).Finite := by
+  letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+  letI : Module (NumberField.RingOfIntegers D) (GeomFibrePt f x) :=
+    m.module (specAlgClos F ≫ x)
+  refine (finite_nsmul_eq_zero_geomFibrePt ab x N hN).subset ?_
+  intro y hy
+  have h := (Submodule.mem_torsionBySet_iff _ _).mp hy
+    ⟨(N : NumberField.RingOfIntegers D), Ideal.mem_span_singleton_self _⟩
+  show N • y = 0
+  rw [← Nat.cast_smul_eq_nsmul (NumberField.RingOfIntegers D)]
+  exact h
 
 /-- **The `J`-torsion of a geometric fibre is finite** (PROVEN
 2026-07-26 over `finite_torsion_span_natCast`).
