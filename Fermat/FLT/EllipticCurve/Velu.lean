@@ -87,8 +87,19 @@ addition law in `velu_map_add_of_notMem`.
 These are the mathematical content of Vélu's theorem. NONE of it is in
 mathlib, and none of it is in the reference project `~/cs/FLT` either
 (both checked 2026-07-26): there is no isogeny, no quotient curve and no
-curve function field anywhere to build on, so closing the remaining leaves
-means building that theory, not finding a lemma.
+curve function field anywhere to build on.
+
+That does NOT make the remaining leaves a function-field project. All
+three rest on ONE elementary brick — Vélu's pair identity
+
+  `x(P+Q) + x(P−Q) = 2x_Q + t_Q/(x_P − x_Q) + u_Q/(x_P − x_Q)²`,
+
+with `t_Q = veluTTerm W Q` and `u_Q = veluWTerm W Q − x_Q · veluTTerm W Q`
+— which was COMPILED on 2026-07-26 (`field_simp`, then
+`linear_combination 2 * h₁ - 2 * hQ` from the two Weierstrass equations)
+and is reproduced ready to paste in `velu_coord_ne_neg`'s docstring, along
+with the reindexing that sums it over `S` with no choice of
+representatives. It is not committed only because nothing consumes it yet.
 -/
 module
 
@@ -762,14 +773,58 @@ Vélu's theorem:
   that leaf's docstring, i.e. the branch of the addition law in which the two images cancel.
 
 So this is the shared brick, and it should have the SAME OWNER as
-`velu_map_add_of_notMem`. Both express one fact — the Vélu map is a homomorphism with kernel
-exactly `S` — and neither mathlib nor the reference project `~/cs/FLT` contains any isogeny
-or quotient-curve machinery to lean on (checked 2026-07-26): the classical proof runs through
-the function field of `W` and the theorem that a morphism of elliptic curves fixing `O` is a
-homomorphism, none of which is formalised anywhere yet.
+`velu_map_add_of_notMem`. Both express one fact: the Vélu map is a homomorphism with kernel
+exactly `S`.
 
 Note `P + Q ∉ S` is what makes the statement true rather than vacuous: for `Q = −P` the two
-images ARE negatives of one another, by `veluCoordX_neg` and `veluCoordY_neg`. -/
+images ARE negatives of one another, by `veluCoordX_neg` and `veluCoordY_neg`.
+
+## The recommended route, and a foundation for it that is ALREADY VERIFIED
+
+Neither mathlib nor the reference project `~/cs/FLT` has ANY isogeny, quotient-curve or
+curve-function-field material (checked 2026-07-26: `grep -rl isogeny Mathlib/` is empty). But
+that does NOT mean this leaf needs a function-field development — the classical route through
+Vélu's RATIONAL FUNCTIONS is elementary, and its foundational identity was compiled on
+2026-07-26 and is reproduced here verbatim so the next owner can paste it:
+
+```
+theorem velu_addX_pair {x₁ y₁ ξ η : F} (h₁ : W.Equation x₁ y₁) (hQ : W.Equation ξ η)
+    (hne : x₁ ≠ ξ) :
+    W.addX x₁ ξ (W.slope x₁ ξ y₁ η) + W.addX x₁ ξ (W.slope x₁ ξ y₁ (W.negY ξ η))
+      = 2 * ξ + (6 * ξ ^ 2 + W.b₂ * ξ + W.b₄) / (x₁ - ξ)
+        + (2 * η + W.a₁ * ξ + W.a₃) ^ 2 / (x₁ - ξ) ^ 2 := by
+  have hd : x₁ - ξ ≠ 0 := sub_ne_zero.mpr hne
+  rw [equation_iff'] at h₁ hQ
+  rw [slope_of_X_ne hne, slope_of_X_ne hne]
+  simp only [addX, negY, b₂, b₄]
+  field_simp
+  ring_nf
+  linear_combination 2 * h₁ - 2 * hQ
+```
+
+i.e. `x(P+Q) + x(P−Q) = 2 x_Q + t_Q/(x_P − x_Q) + u_Q/(x_P − x_Q)²`, where `t_Q` is exactly
+`veluTTerm W Q` and `u_Q = (2y_Q + a₁x_Q + a₃)²` is exactly
+`veluWTerm W Q − x_Q * veluTTerm W Q`. It is NOT committed here only because nothing consumes
+it yet and free-floating declarations are banned.
+
+**It sums with NO choice of representatives**, which is what makes it fit this file's design.
+Summing over `Q ∈ S ∖ {0}` and reindexing the `x(P−Q)` terms by `Q ↦ −Q` — that is
+`velu_sum_neg`, already proven above — collapses the left side, giving
+
+  `2 (X P − x_P) = Σ_{Q ∈ S ∖ 0} [ t_Q/(x_P − x_Q) + u_Q/(x_P − x_Q)² ]`.
+
+Every summand is defined because `P ∉ S` forces `x_P ≠ x_Q` (equal `x` would make `P = ±Q`).
+
+From there the classical argument is polynomial, not function-theoretic: the right-hand side
+is `A(x_P)/g(x_P)²` with `g = ∏_{Q ∈ S₀} (T − x_Q)` of degree `(|S|−1)/2` and `deg A = |S|`,
+so `X P = X R` makes `x_R` a root of the degree-`|S|` polynomial `A(T) − (X P)·g(T)²`, whose
+roots are exactly the `x(P+Q)`, `Q ∈ S` — that is translation invariance,
+`veluCoordX_add_mem`, already proven. Hence `x_R = x(P+Q)` for some `Q ∈ S`, so `R = ±(P+Q)`,
+and the `Y`-clause of this statement fixes the sign. The one delicate step is the
+multiplicity bookkeeping when `Q ↦ x(P+Q)` is not injective on `S`, i.e. when `−2P ∈ S`.
+
+The same `A`, `g` are what `velu_equation` needs, so all three remaining leaves of this file
+rest on this one brick. -/
 theorem velu_coord_ne_neg (S : Finset W.Point) (_hS : IsPointSubgroup S) (_hodd : Odd S.card)
     {P Q : W.Point} (_hP : P ∉ S) (_hQ : Q ∉ S) (_hPQ : P + Q ∉ S) :
     ¬(W.veluCoordX S P = W.veluCoordX S Q ∧
@@ -994,9 +1049,11 @@ finite/rational-function route judged impractical above, whereas a function-fiel
 supplies all three at once. Take them as a map, not as a cut.
 
 So this leaf and `velu_coord_ne_neg` are two faces of one fact — that the Vélu map is a
-homomorphism with kernel exactly `S`, read on coordinates — and want ONE owner. Neither
-mathlib nor `~/cs/FLT` has any isogeny or quotient-curve machinery to build on (checked
-2026-07-26), so closing them means building that theory. -/
+homomorphism with kernel exactly `S`, read on coordinates — and want ONE owner. See
+`velu_coord_ne_neg`'s docstring for the recommended route: an ELEMENTARY one through Vélu's
+rational functions, whose foundational pair identity has been compiled and is reproduced
+there ready to paste. Nothing here needs a function-field development, and nothing can be
+lifted from mathlib or `~/cs/FLT`, neither of which has any isogeny material at all. -/
 theorem velu_map_add_of_notMem (S : Finset W.Point) (hS : IsPointSubgroup S)
     (hodd : Odd S.card) {P Q : W.Point} (_hP : P ∉ S) (_hQ : Q ∉ S) (_hPQ : P + Q ∉ S) :
     W.veluMap S hS hodd (P + Q) = W.veluMap S hS hodd P + W.veluMap S hS hodd Q :=
