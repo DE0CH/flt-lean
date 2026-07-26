@@ -67,7 +67,6 @@ them without a human. Do not re-wrap it.
 - `hasFlatProlongationAt_of_prod_injection`
 - `exists_cyclotomicCharacter_padicTwo_eq_two`
 - `exists_ringHom_matrix_quotient_of_finite`
-- `residual_isIrreducible_of_isHardlyRamified`
 - `exists_conj_entries_mem_of_single_mem`
 - `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`
 - `exists_framedGaloisRep_baseChange_traceSubring`
@@ -246,14 +245,17 @@ the surjectivity and minimality strata of the minimal presentation,
   a Galois basis of `M₂(D.R)` with nondegenerate trace form) and
   `exists_conj_entries_mem_of_basis_repr_mem` (the pure algebra —
   splitting the resulting `R'`-order). Both of THOSE were then PROVEN in
-  turn (2026-07-26): the first over `exists_residual_basis_toMatrix'`,
-  itself then PROVEN over the single leaf
+  turn (2026-07-26). The FIRST is now CLOSED OUTRIGHT, through
+  `exists_residual_basis_toMatrix'` and
   `residual_isIrreducible_of_isHardlyRamified` (absolute irreducibility of
-  the residual representation — the arithmetic input) with BURNSIDE's
-  theorem `span_range_eq_top_of_irreducible_of_commutant`, the basis
-  extraction `exists_basis_of_span_range_eq_top`, the Nakayama lift and
-  the trace-form nondegeneracy (`trace_single_mul`,
-  `det_traceGram_ne_zero`) all proven; the second over the single leaf
+  the residual representation, itself proven from
+  `exists_conj_of_charFrob_eq` and
+  `exists_smul_eq_of_commute_of_isIrreducible` by transport along
+  `irreducible_commutant_conj`), over BURNSIDE's theorem
+  `span_range_eq_top_of_irreducible_of_commutant`, the basis extraction
+  `exists_basis_of_span_range_eq_top`, the Nakayama lift and the
+  trace-form nondegeneracy (`trace_single_mul`, `det_traceGram_ne_zero`);
+  the second over the single leaf
   `exists_conj_entries_mem_of_single_mem` (the Peirce/grading core), with
   the `𝔪`-adic Newton iteration `exists_isIdempotentElem_mem_of_sq_sub_mem`
   and the idempotent conjugation `exists_conj_eq_single_of_mul_self` both
@@ -11087,9 +11089,110 @@ theorem exists_basis_of_span_range_eq_top
   rw [Module.Basis.reindex_apply, Equiv.symm_symm, hbt, Module.Basis.mk_apply]
   exact (hw i).symm
 
-/-- **The residual representation is ABSOLUTELY IRREDUCIBLE** (sorry leaf,
-cut 2026-07-26 out of `exists_residual_basis_toMatrix'`, which is PROVEN
-over it and Burnside below): the matrix representation
+/-- **Absolute irreducibility transports along a linear equivalence**
+(PROVEN 2026-07-26): if `τ' g = ε ∘ τ g ∘ ε⁻¹` for a `K`-linear
+equivalence `ε`, then `τ'` inherits both halves of absolute
+irreducibility from `τ` — the stable-subspace dichotomy (pull a stable
+subspace back along `ε` and push the answer forward, `ε` being bijective)
+and the scalar commutant (conjugate the commuting endomorphism back by
+`ε⁻¹`, apply the hypothesis, conjugate the scalar forward, and scalars are
+conjugation-invariant). No hypothesis on `G` beyond being an index type. -/
+theorem irreducible_commutant_conj
+    {K : Type*} [Field K] {W W' : Type*} [AddCommGroup W] [Module K W]
+    [AddCommGroup W'] [Module K W']
+    {G : Type*} {τ : G → Module.End K W} {τ' : G → Module.End K W'}
+    (ε : W ≃ₗ[K] W') (hε : ∀ g, τ' g = ε.conj (τ g))
+    (hirr : ∀ p : Submodule K W, (∀ g : G, ∀ w ∈ p, τ g w ∈ p) → p = ⊥ ∨ p = ⊤)
+    (hcomm : ∀ f : Module.End K W, (∀ g : G, f * τ g = τ g * f) →
+      ∃ c : K, f = c • 1) :
+    (∀ p : Submodule K W', (∀ g : G, ∀ w ∈ p, τ' g w ∈ p) → p = ⊥ ∨ p = ⊤) ∧
+    (∀ f : Module.End K W', (∀ g : G, f * τ' g = τ' g * f) →
+      ∃ c : K, f = c • 1) := by
+  have happ : ∀ (g : G) (w : W), τ' g (ε w) = ε (τ g w) := by
+    intro g w
+    rw [hε]
+    simp [LinearEquiv.conj_apply]
+  constructor
+  · intro p hp
+    set q : Submodule K W := p.comap ε.toLinearMap with hq
+    have hqs : ∀ g : G, ∀ w ∈ q, τ g w ∈ q := by
+      intro g w hw
+      have h1 : ε w ∈ p := hw
+      have h2 : τ' g (ε w) ∈ p := hp g _ h1
+      rw [happ] at h2
+      exact h2
+    have hpq : Submodule.map ε.toLinearMap q = p := by
+      rw [hq, Submodule.map_comap_eq, LinearMap.range_eq_top.mpr ε.surjective,
+        top_inf_eq]
+    rcases hirr q hqs with hbot | htop
+    · left; rw [← hpq, hbot]; simp
+    · right
+      rw [← hpq, htop, Submodule.map_top, LinearMap.range_eq_top.mpr ε.surjective]
+  · intro f hf
+    set f' : Module.End K W := ε.symm.conj f with hf'
+    have hfe : ∀ w : W, f' w = ε.symm (f (ε w)) := by
+      intro w
+      rw [hf']
+      simp [LinearEquiv.conj_apply]
+    have hcm : ∀ g : G, f' * τ g = τ g * f' := by
+      intro g
+      refine LinearMap.ext fun w => ?_
+      show f' (τ g w) = τ g (f' w)
+      rw [hfe, hfe, ← happ g w]
+      have h3 := congrArg (fun m : Module.End K W' => m (ε w)) (hf g)
+      simp only [Module.End.mul_apply] at h3
+      rw [h3]
+      have h5 := happ g (ε.symm (f (ε w)))
+      rw [LinearEquiv.apply_symm_apply] at h5
+      rw [h5, LinearEquiv.symm_apply_apply]
+    obtain ⟨c, hc⟩ := hcomm f' hcm
+    refine ⟨c, LinearMap.ext fun y => ?_⟩
+    have h6 : f' (ε.symm y) = c • (ε.symm y) := by
+      have h9 := congrArg (fun m : Module.End K W => m (ε.symm y)) hc
+      simpa using h9
+    rw [hfe, LinearEquiv.apply_symm_apply] at h6
+    have h7 : f y = ε (c • ε.symm y) := by
+      have h8 := congrArg ε h6
+      rw [LinearEquiv.apply_symm_apply] at h8
+      exact h8
+    rw [h7, map_smul, LinearEquiv.apply_symm_apply]
+    simp
+
+/-- **Conjugating by the coordinate isomorphism of a basis turns an
+endomorphism into its matrix** (PROVEN 2026-07-26): for `ε` the
+`Module.Basis.equiv` carrying a basis `cb` of `N` to the standard basis of
+`n → K`, `ε ∘ ψ ∘ ε⁻¹ = Matrix.toLin' (LinearMap.toMatrix cb cb ψ)`. Both
+sides are checked on the standard basis, where they are the same column
+`∑ᵢ Mᵢⱼ • eᵢ` (`Module.Basis.sum_repr` on the left, `Matrix.toLin_self` on
+the right). This is the bridge that lets the tensor-product base change be
+read as the entrywise reduction of a matrix. -/
+theorem conj_basisEquiv_eq_toLin' {K : Type*} [Field K] {n : Type*} [Fintype n]
+    [DecidableEq n] {N : Type*} [AddCommGroup N] [Module K N]
+    (cb : Module.Basis n K N) (ψ : Module.End K N) :
+    (cb.equiv (Pi.basisFun K n) (Equiv.refl n)).conj ψ
+      = Matrix.toLin' (LinearMap.toMatrix cb cb ψ) := by
+  classical
+  set ε : N ≃ₗ[K] (n → K) := cb.equiv (Pi.basisFun K n) (Equiv.refl n) with hε
+  have hεcb : ∀ i, ε (cb i) = Pi.basisFun K n i := by
+    intro i
+    rw [hε, Module.Basis.equiv_apply]
+    rfl
+  refine Module.Basis.ext (Pi.basisFun K n) fun j => ?_
+  have hsymm : ε.symm (Pi.basisFun K n j) = cb j := by
+    rw [← hεcb j, LinearEquiv.symm_apply_apply]
+  show ε (ψ (ε.symm (Pi.basisFun K n j))) = Matrix.toLin' _ (Pi.basisFun K n j)
+  rw [hsymm]
+  have hexp : ψ (cb j) = ∑ i, (LinearMap.toMatrix cb cb ψ) i j • cb i := by
+    conv_lhs => rw [← cb.sum_repr (ψ (cb j))]
+    exact Finset.sum_congr rfl fun i _ => by rw [LinearMap.toMatrix_apply]
+  rw [hexp, map_sum]
+  simp only [map_smul, hεcb]
+  rw [← Matrix.toLin_eq_toLin', Matrix.toLin_self]
+
+open scoped TensorProduct in
+/-- **The residual representation is ABSOLUTELY IRREDUCIBLE** (PROVEN
+2026-07-26; cut the same day out of `exists_residual_basis_toMatrix'`,
+which is PROVEN over it and Burnside below): the matrix representation
 `g ↦ D.ρ(g) mod 𝔪` on `k²` has no proper nonzero stable subspace, and its
 commutant in `End_k(k²)` is the scalars.
 
@@ -11099,25 +11202,40 @@ Théorème 1 — the density argument is now the PROVEN
 of a basis from a spanning family is the PROVEN
 `exists_basis_of_span_range_eq_top`.
 
-Route. `ρbar` is absolutely irreducible: irreducible by `hirr`, and its
-commutant is `k` by the PROVEN
+Route, as carried out below. `ρbar` is absolutely irreducible: irreducible
+by `hirr`, and its commutant is `k` by the PROVEN
 `exists_smul_eq_of_commute_of_isIrreducible` (oddness plus irreducibility
-in dimension two over a finite field of odd characteristic). The
-reduction of `D.ρ` has the same Frobenius characteristic polynomials as
-`ρbar` (`D.charFrob_compat` through `LinearMap.charpoly_baseChange`),
-hence is CONJUGATE to `ρbar` by the PROVEN Chebotarev–Brauer–Nesbitt node
-`exists_conj_of_charFrob_eq` — see the proven `exists_isWeaklyUniversal`
-for exactly this computation, which produces the conjugation for
-`D.ρ.baseChange k` on `k ⊗_{D.R} D.R²`. Both conclusions asserted here are
-invariant under conjugation by a linear isomorphism, so they transfer;
-the only work is identifying `k ⊗_{D.R} D.R²` with `k²` compatibly, i.e.
-matching `LinearMap.baseChange` with the entrywise `Matrix.map D.π`.
+in dimension two over a finite field of odd characteristic); the
+stable-subspace half is `hirr` itself, read through
+`Subrepresentation.mk` and `IsSimpleOrder.eq_bot_or_eq_top`.
+
+The residual representation is realised as `(D.ρ.baseChange k).conj ε`,
+where `ε` carries the base-changed basis
+`Algebra.TensorProduct.basis k (Pi.basisFun D.R (Fin 2))` of
+`k ⊗_{D.R} D.R²` to the standard basis of `k²`. Two identifications make
+that concrete, and both are proven above:
+`conj_basisEquiv_eq_toLin'` turns the conjugation into the matrix of the
+base change, and `LinearMap.toMatrix_baseChange` says that matrix is the
+entrywise image of `LinearMap.toMatrix' (D.ρ g)` under
+`algebraMap D.R k = D.π`. So the object of this statement really IS the
+base change, spelled in coordinates.
+
+Its Frobenius characteristic polynomials are then those of `ρbar` by
+`charpoly_baseChange_conj` plus `D.charFrob_compat` (the same computation
+as in the proven `exists_isWeaklyUniversal`), so the PROVEN
+Chebotarev–Brauer–Nesbitt node `exists_conj_of_charFrob_eq` conjugates it
+to `ρbar`, and the PROVEN `irreducible_commutant_conj` transports both
+conclusions back across that conjugation.
+
+`hℓ5` is not used (it is underscored): `5 ≤ ℓ` enters this cluster only
+through the consumers, not through absolute irreducibility, which needs
+only oddness of `ℓ`.
 
 FAITHFULNESS NOTE. Both clauses are about the RESIDUAL representation, not
 about `D.ρ` itself: `D.ρ` over the local ring `D.R` has plenty of stable
 `D.R`-submodules (e.g. `𝔪 · D.R²`), and the statement would be false if
 read there. The reduction is what makes the commutant a field. -/
-theorem residual_isIrreducible_of_isHardlyRamified (hℓ5 : 5 ≤ ℓ)
+theorem residual_isIrreducible_of_isHardlyRamified (_hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible)
     (D : HardlyRamifiedDeformation hℓOdd ρbar) :
@@ -11131,8 +11249,68 @@ theorem residual_isIrreducible_of_isHardlyRamified (hℓ5 : 5 ≤ ℓ)
         (∀ g : Field.absoluteGaloisGroup ℚ,
           f * Matrix.toLin' ((LinearMap.toMatrix' (D.ρ g)).map ⇑D.π)
             = Matrix.toLin' ((LinearMap.toMatrix' (D.ρ g)).map ⇑D.π) * f) →
-        ∃ c : k, f = c • 1) :=
-  sorry
+        ∃ c : k, f = c • 1) := by
+  classical
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  letI : Algebra D.R k := D.π.toAlgebra
+  letI : ContinuousSMul D.R k :=
+    continuousSMul_of_algebraMap D.R k
+      (by rw [RingHom.algebraMap_toAlgebra]; exact D.continuous_pi)
+  -- the base change of `D.ρ`, read in the coordinates of `k²`
+  set cb : Module.Basis (Fin 2) k (k ⊗[D.R] (Fin 2 → D.R)) :=
+    Algebra.TensorProduct.basis k (Pi.basisFun D.R (Fin 2)) with hcb
+  set ε : (k ⊗[D.R] (Fin 2 → D.R)) ≃ₗ[k] (Fin 2 → k) :=
+    cb.equiv (Pi.basisFun k (Fin 2)) (Equiv.refl (Fin 2)) with hεdef
+  set σ : GaloisRep ℚ k (Fin 2 → k) := (D.ρ.baseChange k).conj ε with hσdef
+  have hσapp : ∀ g : Field.absoluteGaloisGroup ℚ,
+      σ g = Matrix.toLin' ((LinearMap.toMatrix' (D.ρ g)).map ⇑D.π) := by
+    intro g
+    rw [hσdef, GaloisRep.conj_apply, hεdef, conj_basisEquiv_eq_toLin']
+    congr 1
+    show LinearMap.toMatrix cb cb ((D.ρ.baseChange k) g) = _
+    rw [show ((D.ρ.baseChange k) g) = LinearMap.baseChange k (D.ρ g) from rfl, hcb,
+      LinearMap.toMatrix_baseChange, LinearMap.toMatrix_eq_toMatrix',
+      RingHom.algebraMap_toAlgebra]
+  -- its Frobenius characteristic polynomials are those of `ρbar` …
+  have hrankW : Module.rank k (Fin 2 → k) = 2 := rank_finTwoFun k
+  have hcf : ∀ q (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      σ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro q hq hq2 hqℓ
+    have hcp := charpoly_baseChange_conj D.ρ ε
+      (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob]
+    show (σ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)).charpoly = _
+    rw [hσdef, hcp, RingHom.algebraMap_toAlgebra,
+      ← GaloisRep.charFrob_eq_charpoly_globalFrob]
+    exact D.charFrob_compat q hq hq2 hqℓ
+  -- … so it is conjugate to `ρbar`, which is absolutely irreducible
+  obtain ⟨e, he⟩ := exists_conj_of_charFrob_eq hdim hrankW hirr σ hcf
+  have hcommV : ∀ f : Module.End k V,
+      (∀ g : Field.absoluteGaloisGroup ℚ, f * ρbar g = ρbar g * f) →
+      ∃ c : k, f = c • 1 := fun f hf =>
+    exists_smul_eq_of_commute_of_isIrreducible hℓOdd hdim h hirr f (fun g => hf g)
+  have hρirr : ∀ p : Submodule k V,
+      (∀ g : Field.absoluteGaloisGroup ℚ, ∀ w ∈ p, ρbar g w ∈ p) → p = ⊥ ∨ p = ⊤ := by
+    intro p hp
+    haveI hsim : Representation.IsIrreducible ρbar.toRepresentation := hirr
+    rcases IsSimpleOrder.eq_bot_or_eq_top
+      (⟨p, fun g v hv => hp g v hv⟩ : Subrepresentation ρbar.toRepresentation)
+      with hb | ht
+    · left; exact congrArg Subrepresentation.toSubmodule hb
+    · right; exact congrArg Subrepresentation.toSubmodule ht
+  have hεconj : ∀ g : Field.absoluteGaloisGroup ℚ, σ g = e.symm.conj (ρbar g) := by
+    intro g
+    have h1 := congrArg (fun r : GaloisRep ℚ k V => r g) he
+    simp only [GaloisRep.conj_apply] at h1
+    refine LinearMap.ext fun y => ?_
+    rw [← h1]
+    simp [LinearEquiv.conj_apply]
+  obtain ⟨hA, hB⟩ := irreducible_commutant_conj (τ := fun g => ρbar g)
+    (τ' := fun g => σ g) e.symm hεconj hρirr hcommV
+  simp only [hσapp] at hA hB
+  exact ⟨hA, hB⟩
 
 open scoped Matrix in
 /-- **Carayol's Théorème 1, step 1a: four Galois elements whose RESIDUAL
@@ -11738,6 +11916,57 @@ theorem exists_conj_eq_single_of_mul_self
   rw [show E⁻¹ * u * E = E⁻¹ * (u * E) by noncomm_ring, hkey,
     ← mul_assoc, Matrix.nonsing_inv_mul E hdet, one_mul]
 
+/-- **Peirce decomposition in coordinates** (PROVEN 2026-07-26): a subring
+`A ⊆ M₂(B)` containing the matrix unit `E₁₁` — hence also
+`E₂₂ = 1 − E₁₁` — contains a matrix `M` if and only if it contains each of
+the four "corner" matrices `Mᵢⱼ · Eᵢⱼ`.
+
+Forward is `Eᵢᵢ M Eⱼⱼ = Mᵢⱼ · Eᵢⱼ` (`Matrix.single_mul_mul_single`);
+backward is `M = ∑ᵢⱼ Mᵢⱼ · Eᵢⱼ` (`Matrix.matrix_eq_sum_single`) and
+closure under addition.
+
+WHAT THIS IS FOR. It converts the module-theoretic Peirce decomposition
+`A = ⨁ᵢⱼ Eᵢᵢ A Eⱼⱼ` into a statement about the four `C`-submodules
+`Iᵢⱼ := {x : B | x · Eᵢⱼ ∈ A}` of `B`: the lemma says exactly
+`A = {M | ∀ i j, Mᵢⱼ ∈ Iᵢⱼ}`, and multiplicativity of `A` says
+`Iᵢⱼ · Iⱼₗ ⊆ Iᵢₗ`, with `1 ∈ I₁₁ ∩ I₂₂`. See the leaf below for how the
+rest of the argument runs from here. -/
+theorem mem_iff_smul_single_mem {B : Type*} [CommRing B]
+    (A : Subring (Matrix (Fin 2) (Fin 2) B))
+    (h11 : (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) ∈ A)
+    (M : Matrix (Fin 2) (Fin 2) B) :
+    M ∈ A ↔ ∀ i j : Fin 2,
+      (M i j) • (Matrix.single i j 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := by
+  classical
+  have hdiag : ∀ i : Fin 2,
+      (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := by
+    intro i
+    fin_cases i
+    · exact h11
+    · have h1 : (Matrix.single 1 1 1 : Matrix (Fin 2) (Fin 2) B)
+          = 1 - Matrix.single 0 0 1 := by
+        ext p q
+        fin_cases p <;> fin_cases q <;> simp [Matrix.single]
+      simpa [h1] using A.sub_mem A.one_mem h11
+  have hsingle : ∀ (i j : Fin 2), (Matrix.single i j (M i j)
+      : Matrix (Fin 2) (Fin 2) B) = (M i j) • Matrix.single i j 1 := by
+    intro i j
+    ext a c
+    simp [Matrix.single]
+  constructor
+  · intro hM i j
+    have hprod : (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) * M
+        * Matrix.single j j 1 = Matrix.single i j (M i j) := by
+      rw [Matrix.single_mul_mul_single]
+      simp
+    rw [← hsingle, ← hprod]
+    exact A.mul_mem (A.mul_mem (hdiag i) hM) (hdiag j)
+  · intro hM
+    rw [Matrix.matrix_eq_sum_single M]
+    refine Subring.sum_mem _ fun i _ => Subring.sum_mem _ fun j _ => ?_
+    rw [hsingle]
+    exact hM i j
+
 open scoped Matrix in
 /-- **Carayol's Théorème 1, step 2c: a `C`-order CONTAINING `E₁₁` is
 conjugate into `M₂(C)`** (sorry leaf, cut 2026-07-26 out of
@@ -11749,18 +11978,41 @@ the matrix unit `E₁₁` already lies in the order `A' = ∑ᵢ C·bᵢ`. The
 reduction of the general case to this one is PROVEN below, by lifting an
 idempotent and conjugating it to `E₁₁`.
 
-THE GRADING ARGUMENT. `A'` is a subring of `M₂(B)`, free of rank `4` over
-the local `C` (`isLocalRing_of_isClosed_subring`), and now contains the
-orthogonal idempotents `E₁₁` and `E₂₂ = 1 − E₁₁`. Peirce decomposition
-gives `A' = ⨁ᵢⱼ Eᵢᵢ A' Eⱼⱼ` as a `C`-module, each summand a direct
-summand of the free rank-`4` `A'`, hence finitely generated projective,
-hence FREE over the local `C`; and each is nonzero because `A'` spans
-`M₂(B)` over `B`. Four nonzero free summands of total rank `4` are each of
-rank one: `Eᵢᵢ A' Eⱼⱼ = C·aᵢⱼ` with `aᵢⱼ ∈ B` (a rank-one `C`-submodule of
-the `B`-line `B·Eᵢⱼ`). The diagonal summands are subrings containing `1`,
-so `a₁₁, a₂₂ ∈ C^×` and `A₁₁ = A₂₂ = C`; then `a₁₂a₂₁` generates
-`A₁₁ = C`, hence is a unit of `C`, and the further conjugation by
-`diag(1, a₁₂⁻¹)` — which fixes `E₁₁` — turns `A'` into exactly `M₂(C)`.
+THE GRADING ARGUMENT, IN THE COORDINATES THIS FILE ALREADY HAS. Work with
+the four `C`-submodules of `B`
+
+    Iᵢⱼ := {x : B | x · Eᵢⱼ ∈ A'},      A' = ∑ᵢ C·bᵢ.
+
+The PROVEN `mem_iff_smul_single_mem` above says exactly
+`A' = {M | ∀ i j, Mᵢⱼ ∈ Iᵢⱼ}` — that is the Peirce decomposition, with no
+direct sums to construct — and multiplicativity of `A'` gives
+`Iᵢⱼ · Iⱼₗ ⊆ Iᵢₗ`, while `E₁₁, E₂₂ ∈ A'` gives `1 ∈ I₁₁ ∩ I₂₂`. Five steps
+remain, and only the first is not routine:
+
+1. *Each `Iᵢⱼ` is a PRINCIPAL `C`-submodule* `Iᵢⱼ = C·aᵢⱼ`. This is the
+   one genuinely module-theoretic step: `A'` is free of rank `4` over the
+   local `C` (`isLocalRing_of_isClosed_subring`, `b` being `C`-linearly
+   independent because it is `B`-linearly independent), and the four
+   `Iᵢⱼ` are its `C`-module direct summands, hence finitely generated
+   projective, hence FREE over the local `C`, with ranks summing to `4`;
+   each is nonzero because `A'` contains a `B`-basis of `M₂(B)`, so each
+   rank is exactly `1`.
+2. *`a₁₂` and `a₂₁` are UNITS OF `B`.* The `B`-span of `A'` is
+   `{M | Mᵢⱼ ∈ B·Iᵢⱼ}` and equals `M₂(B)`, so `B·aᵢⱼ = B`; `B` is local,
+   so `aᵢⱼ ∉ 𝔪`.
+3. *`I₁₁ = I₂₂ = C`.* Write `1 = c·a₁₁` with `c ∈ C`. Then `c` is a unit
+   of `B`, so `c ∈ C^×` by the PROVEN
+   `isUnit_of_isClosed_of_notMem_maximalIdeal` — THIS is where closedness
+   and the finite residue field re-enter, and it is the only place — hence
+   `a₁₁ = c⁻¹ ∈ C` and `I₁₁ = C·a₁₁ = C`. Same for `I₂₂`.
+4. *`a₁₂·a₂₁ ∈ C^×`*: it lies in `I₁₁ = C` by step 1, and is a unit of `B`
+   by step 2, so again `isUnit_of_isClosed_of_notMem_maximalIdeal`.
+5. *Conjugate.* For `E = diag(1, a₁₂)` one has `(E⁻¹ M E)ᵢⱼ = dᵢ⁻¹ Mᵢⱼ dⱼ`,
+   so the corners become `I'₁₂ = I₁₂·a₁₂⁻¹ = C`, `I'₂₁ = a₁₂·I₂₁ =
+   C·a₁₂a₂₁ = C`, and `I'₁₁ = I'₂₂ = C` unchanged. By
+   `mem_iff_smul_single_mem` again, the conjugate of `A'` is exactly
+   `M₂(C)`. Note `diag(1, a₁₂)` fixes `E₁₁`, so it composes with the
+   caller's conjugation without disturbing step 2c's hypothesis.
 
 WHAT `hres` BUYS, AND WHY IT IS NOT DROPPABLE. `hres` is not used by the
 grading argument itself; it is what makes the CALLER able to produce an
