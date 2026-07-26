@@ -103,6 +103,79 @@ theorem RelPoint.pre_self {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g) :
     RelPoint.pre y.1 y.2 (RelPoint.self f) = y :=
   Subtype.ext (Category.comp_id _)
 
+/-! ### Relative points of a base change
+
+The functor of points of the base change `A ×_S T ⟶ T` along `g : T ⟶ S`
+is the functor of points of `A ⟶ S` restricted to base points that factor
+through `g`.  Concretely, for `h : U ⟶ T`,
+
+  `RelPoint (pullback.snd f g) h  ≃  RelPoint f (h ≫ g)`,
+
+by the universal property of the pullback.  That bijection is
+`baseChangeDown`/`baseChangeUp` below, and it is what transports the whole
+`AbelianSchemeStruct` — group law, naturality and all — from `f` to its
+base change.  Nothing here is specific to abelian schemes.
+-/
+
+section BaseChangePoints
+
+open _root_.CategoryTheory.Limits
+
+namespace RelPoint
+
+variable {T : Scheme.{u}} (g : T ⟶ S)
+
+/-- **A relative point of the base change, read as a relative point of `f`**:
+compose with the projection `A ×_S T ⟶ A`.  The base point moves from
+`h : U ⟶ T` to `h ≫ g : U ⟶ S`. -/
+noncomputable def baseChangeDown {U : Scheme.{u}} {h : U ⟶ T}
+    (x : RelPoint (pullback.snd f g) h) : RelPoint f (h ≫ g) :=
+  ⟨x.1 ≫ pullback.fst f g, by
+    rw [Category.assoc, pullback.condition, ← Category.assoc, x.2]⟩
+
+/-- **A relative point of `f` over a base point factoring through `g`, read
+as a relative point of the base change**: the universal property of the
+pullback.  Inverse to `baseChangeDown`. -/
+noncomputable def baseChangeUp {U : Scheme.{u}} {h : U ⟶ T}
+    (x : RelPoint f (h ≫ g)) : RelPoint (pullback.snd f g) h :=
+  ⟨pullback.lift x.1 h x.2, pullback.lift_snd _ _ _⟩
+
+@[simp] theorem baseChangeDown_val {U : Scheme.{u}} {h : U ⟶ T}
+    (x : RelPoint (pullback.snd f g) h) :
+    (baseChangeDown g x).1 = x.1 ≫ pullback.fst f g := rfl
+
+@[simp] theorem baseChangeUp_val {U : Scheme.{u}} {h : U ⟶ T} (x : RelPoint f (h ≫ g)) :
+    (baseChangeUp g x).1 = pullback.lift x.1 h x.2 := rfl
+
+theorem baseChangeDown_baseChangeUp {U : Scheme.{u}} {h : U ⟶ T} (x : RelPoint f (h ≫ g)) :
+    baseChangeDown g (baseChangeUp g x) = x :=
+  Subtype.ext (pullback.lift_fst _ _ _)
+
+theorem baseChangeUp_baseChangeDown {U : Scheme.{u}} {h : U ⟶ T}
+    (x : RelPoint (pullback.snd f g) h) : baseChangeUp g (baseChangeDown g x) = x := by
+  refine Subtype.ext ?_
+  refine pullback.hom_ext ?_ ?_
+  · simpa using pullback.lift_fst (C := Scheme.{u}) (x.1 ≫ pullback.fst f g) h _
+  · simpa [x.2] using pullback.lift_snd (C := Scheme.{u}) (x.1 ≫ pullback.fst f g) h _
+
+theorem baseChangeDown_injective {U : Scheme.{u}} {h : U ⟶ T} :
+    Function.Injective (baseChangeDown (f := f) g (U := U) (h := h)) :=
+  Function.LeftInverse.injective (baseChangeUp_baseChangeDown g)
+
+/-- **`baseChangeDown` is natural**: it commutes with precomposition of
+relative points.  Both sides are `h ≫ x.1 ≫ pullback.fst`, associated
+differently. -/
+theorem baseChangeDown_pre {U' U : Scheme.{u}} (h : U' ⟶ U) {k : U ⟶ T} {k' : U' ⟶ T}
+    (hk : h ≫ k = k') (x : RelPoint (pullback.snd f g) k) :
+    baseChangeDown g (RelPoint.pre h hk x) =
+      RelPoint.pre h (show h ≫ (k ≫ g) = k' ≫ g by rw [← Category.assoc, hk])
+        (baseChangeDown g x) :=
+  Subtype.ext (Category.assoc _ _ _)
+
+end RelPoint
+
+end BaseChangePoints
+
 /-- **Cancellation for `LocallyOfFinitePresentation`** (PROVEN 2026-07-26):
 if `f ≫ g` is locally of finite presentation and `g` is locally of finite
 TYPE, then `f` is locally of finite presentation.  Stacks 0562/01TS.
@@ -329,6 +402,122 @@ theorem exists_nsmul_of_exists_comp {T : Scheme.{u}} {g : T ⟶ S} (n : ℕ)
   rw [ab.nsmul_val n ⟨w, hwf⟩]
   exact hw
 
+/-! ### Base change of an abelian scheme
+
+An abelian scheme stays an abelian scheme after any base change `g : T ⟶ S`,
+and multiplication by `n` base-changes to multiplication by `n`.  Both are
+formal: the group law transports through the bijection of §"Relative points
+of a base change", and properness, smoothness and geometric connectedness
+are stable under base change in mathlib.
+
+This is what lets the finiteness leaf below be stated over a FIELD: the
+fibre `f.fiber s = A ×_S Spec κ(s)` carries an `AbelianSchemeStruct` over
+`Spec κ(s)`, i.e. it is an abelian VARIETY, and `[n]` on it is the
+restriction of `[n]` on `A`.
+-/
+
+section BaseChange
+
+open _root_.CategoryTheory.Limits
+
+/-- **Base change of an abelian scheme structure** along `g : T ⟶ S`.
+
+The group law is transported through the bijection
+`RelPoint (pullback.snd f g) h ≃ RelPoint f (h ≫ g)`; properness,
+smoothness and geometric connectedness come from mathlib's
+`IsStableUnderBaseChange` instances for the three properties. -/
+noncomputable def baseChange (ab : AbelianSchemeStruct f) {T : Scheme.{u}} (g : T ⟶ S) :
+    AbelianSchemeStruct (pullback.snd f g) where
+  add := fun {_} {_} x y =>
+    RelPoint.baseChangeUp g (ab.add (RelPoint.baseChangeDown g x) (RelPoint.baseChangeDown g y))
+  zero := fun {_} h => RelPoint.baseChangeUp g (ab.zero (h ≫ g))
+  neg := fun {_} {_} x => RelPoint.baseChangeUp g (ab.neg (RelPoint.baseChangeDown g x))
+  add_assoc := by
+    intro U h x y z
+    rw [RelPoint.baseChangeDown_baseChangeUp, RelPoint.baseChangeDown_baseChangeUp,
+      ab.add_assoc]
+  add_comm := by
+    intro U h x y
+    rw [ab.add_comm]
+  zero_add := by
+    intro U h x
+    rw [RelPoint.baseChangeDown_baseChangeUp, ab.zero_add,
+      RelPoint.baseChangeUp_baseChangeDown]
+  neg_add := by
+    intro U h x
+    rw [RelPoint.baseChangeDown_baseChangeUp, ab.neg_add]
+  pre_add := by
+    intro U' U h k k' hk x y
+    apply RelPoint.baseChangeDown_injective g
+    simp only [RelPoint.baseChangeDown_pre, RelPoint.baseChangeDown_baseChangeUp]
+    exact ab.pre_add h _ _ _
+  pre_zero := by
+    intro U' U h k k' hk
+    apply RelPoint.baseChangeDown_injective g
+    simp only [RelPoint.baseChangeDown_pre, RelPoint.baseChangeDown_baseChangeUp]
+    exact ab.pre_zero h _
+  proper := by haveI := ab.proper; infer_instance
+  smooth := by haveI := ab.smooth; infer_instance
+  connected := by haveI := ab.connected; infer_instance
+
+@[simp] theorem baseChange_add (ab : AbelianSchemeStruct f) {T : Scheme.{u}} (g : T ⟶ S)
+    {U : Scheme.{u}} {h : U ⟶ T} (x y : RelPoint (pullback.snd f g) h) :
+    (ab.baseChange g).add x y =
+      RelPoint.baseChangeUp g
+        (ab.add (RelPoint.baseChangeDown g x) (RelPoint.baseChangeDown g y)) := rfl
+
+@[simp] theorem baseChange_zero (ab : AbelianSchemeStruct f) {T : Scheme.{u}} (g : T ⟶ S)
+    {U : Scheme.{u}} (h : U ⟶ T) :
+    (ab.baseChange g).zero h = RelPoint.baseChangeUp g (ab.zero (h ≫ g)) := rfl
+
+/-- **`baseChangeDown` is additive**, hence commutes with the `ℕ`-action. -/
+theorem baseChangeDown_nsmul (ab : AbelianSchemeStruct f) {T : Scheme.{u}} (g : T ⟶ S)
+    {U : Scheme.{u}} {h : U ⟶ T} (n : ℕ) (x : RelPoint (pullback.snd f g) h) :
+    letI := (ab.baseChange g).addCommGroup h
+    letI := ab.addCommGroup (h ≫ g)
+    RelPoint.baseChangeDown g (n • x) = n • RelPoint.baseChangeDown g x := by
+  letI := (ab.baseChange g).addCommGroup h
+  letI := ab.addCommGroup (h ≫ g)
+  induction n with
+  | zero =>
+      show RelPoint.baseChangeDown g (0 • x) = 0 • RelPoint.baseChangeDown g x
+      rw [zero_nsmul, zero_nsmul]
+      show RelPoint.baseChangeDown g ((ab.baseChange g).zero h) = ab.zero (h ≫ g)
+      rw [baseChange_zero, RelPoint.baseChangeDown_baseChangeUp]
+  | succ n ih =>
+      rw [succ_nsmul, succ_nsmul]
+      show RelPoint.baseChangeDown g ((ab.baseChange g).add (n • x) x)
+          = ab.add (n • RelPoint.baseChangeDown g x) (RelPoint.baseChangeDown g x)
+      rw [baseChange_add, RelPoint.baseChangeDown_baseChangeUp, ih]
+
+/-- **`[n]` base-changes to `[n]`**: multiplication by `n` on the base
+change `A ×_S T` is the base change of multiplication by `n` on `A`,
+expressed as the commuting square with the projection `A ×_S T ⟶ A`.
+
+This is the compatibility that makes the reduction to a field base
+legitimate: on the fibre `f.fiber s ⟶ A` the morphism `[n]` of the fibre
+is the restriction of `[n]` on `A`, so the two have the same point-set
+fibres. -/
+theorem baseChange_mulByNat (ab : AbelianSchemeStruct f) {T : Scheme.{u}} (g : T ⟶ S) (n : ℕ) :
+    (ab.baseChange g).mulByNat n ≫ pullback.fst f g
+      = pullback.fst f g ≫ ab.mulByNat n := by
+  letI := (ab.baseChange g).addCommGroup (pullback.snd f g)
+  letI := ab.addCommGroup (pullback.snd f g ≫ g)
+  letI := ab.addCommGroup f
+  have hp : pullback.fst f g ≫ f = pullback.snd f g ≫ g := pullback.condition
+  have h1 : RelPoint.baseChangeDown g (n • RelPoint.self (pullback.snd f g))
+      = n • RelPoint.baseChangeDown g (RelPoint.self (pullback.snd f g)) :=
+    ab.baseChangeDown_nsmul g n _
+  have h2 : RelPoint.baseChangeDown g (RelPoint.self (pullback.snd f g))
+      = RelPoint.pre (pullback.fst f g) hp (RelPoint.self f) :=
+    Subtype.ext (by simp [RelPoint.baseChangeDown, RelPoint.self, RelPoint.pre])
+  have h3 : n • RelPoint.pre (pullback.fst f g) hp (RelPoint.self f)
+      = RelPoint.pre (pullback.fst f g) hp (n • RelPoint.self f) :=
+    (ab.pre_nsmul _ hp n _).symm
+  exact congrArg Subtype.val (h1.trans (by rw [h2, h3]))
+
+end BaseChange
+
 end AbelianSchemeStruct
 
 /-! ### The fibrewise reduction, and the theorem of the cube on a fibre
@@ -548,8 +737,8 @@ theorem flat_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0) :
       rw [ab.mulByNat_mul]
       infer_instance
 
-/-- **The fibres of `[n]` are FINITE** (sorry leaf — abelian varieties;
-same references as `flat_mulByNat`).
+/-- **The fibres of `[n]` on an abelian VARIETY are FINITE** (sorry leaf —
+abelian varieties; same references as `flat_mulByNat`).
 
 This is the SECOND cube input, and it is the one the torsion CARDINALITY
 arguments need.  It says exactly that `ker[n]` is a finite group scheme:
@@ -573,10 +762,89 @@ does have `ringKrullDim` and the dimension-drop lemmas; see the survey in
 `flat_of_flat_fiberMap` above), and finite fibres
 do not follow from flatness at all (`f` itself is flat with positive
 dimensional fibres).  Both are outputs of the theorem of the cube, and a
-prover who has the cube discharges both at once. -/
-theorem finite_preimage_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0)
-    (a : A) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite :=
+prover who has the cube discharges both at once.
+
+**THE BASE IS A FIELD** (2026-07-26).  This is the residue of
+`finite_preimage_mulByNat` after base change to the residue field of a
+point, so it is a statement about an abelian VARIETY over `K` — the setting
+of every textbook treatment — rather than about an abelian scheme over an
+arbitrary base.  Nothing else was removed: the reduction below is formal.
+
+**What a prover has to supply.**  Fibrewise this is "`ker[n]` is a finite
+group scheme", classically the statement that `[n]` is an isogeny, of degree
+`n^{2g}`.  The standard proof (Mumford *Abelian Varieties* §6, Application 2
+of the theorem of the cube; Milne *Abelian Varieties* I.7) takes a symmetric
+ample `L` on `A`, uses `[n]^* L ≅ L^{n²}` — which is again ample for
+`n ≠ 0` — and concludes that `[n]` has finite fibres because a morphism
+pulling an ample bundle back to an ample bundle is quasi-finite.
+
+**MISSING MACHINERY at this pin, checked 2026-07-26 rather than inherited.**
+`grep -rl Ample Mathlib/AlgebraicGeometry/` returns NOTHING: there are no
+ample line bundles (the only `Ample` in mathlib is
+`Analysis/Convex/AmpleSet.lean`), no `Proj`, no Picard scheme or functor,
+and no theorem of the cube.  There is also no Cohen–Macaulay theory
+(`grep -rl CohenMacaulay Mathlib/` is empty), which is what blocks the
+miracle-flatness route used by the sibling `flat_mulByNat`.  The claim
+that mathlib has "no notion of the dimension of a scheme" is however now
+STALE in one respect: `topologicalKrullDim` applies to a scheme's space and
+`Mathlib/AlgebraicGeometry/Artinian.lean` carries
+`IsLocallyArtinian.of_topologicalKrullDim_le_zero`, so "`ker[n]` is
+zero-dimensional" IS expressible; what is missing is any way to PROVE it.
+Each of these is refuted by a one-line grep if it goes stale.
+
+So this leaf is atomic at this pin: closing it means building ample line
+bundles and the theorem of the cube, not finding a lemma. -/
+theorem finite_preimage_mulByNat_of_field {X : Scheme.{u}} (K : CommRingCat.{u}) [Field K]
+    {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK) (n : ℕ) (hn : n ≠ 0)
+    (a : X) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite :=
   sorry
+
+open _root_.CategoryTheory.Limits in
+/-- **The fibres of `[n]` are FINITE** (PROVEN 2026-07-26 over the
+field-base leaf `finite_preimage_mulByNat_of_field`).
+
+Statement unchanged — its consumer `locallyQuasiFinite_mulByNat` in
+`Modularity/TateModule.lean` resolves exactly as before.
+
+**The reduction.**  Every point of `[n] ⁻¹' {a}` lies in the fibre of `f`
+through `a`, because `[n] ≫ f = f`.  That fibre is
+`f.fiber (f a) = A ×_S Spec κ(f a)`, which by
+`AbelianSchemeStruct.baseChange` is again an abelian scheme — now over a
+FIELD — and by `AbelianSchemeStruct.baseChange_mulByNat` its `[n]` is the
+restriction of `[n]` along the immersion `f.fiberι (f a)`.  So
+
+  `[n] ⁻¹' {a} = f.fiberι (f a) '' ([n]_{fibre} ⁻¹' {a as a point of the fibre})`,
+
+and the right-hand side is the image of a finite set.  `Scheme.Hom.asFiber`
+supplies `a` as a point of its own fibre and `Scheme.Hom.range_fiberι`
+identifies the range of the immersion with `f ⁻¹' {f a}`.
+
+No abelian-variety input is used here: `hn` is passed straight through to
+the field-base leaf. -/
+theorem finite_preimage_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0)
+    (a : A) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite := by
+  have hinj : Function.Injective (f.fiberι (f a)) := (f.fiberι (f a)).isEmbedding.injective
+  have hcomm : ∀ x : ↥(pullback f (S.fromSpecResidueField (f a)) : Scheme.{u}),
+      pullback.fst f (S.fromSpecResidueField (f a))
+          ((ab.baseChange (S.fromSpecResidueField (f a))).mulByNat n x)
+        = ab.mulByNat n (pullback.fst f (S.fromSpecResidueField (f a)) x) := by
+    intro x
+    rw [← Scheme.Hom.comp_apply, ← Scheme.Hom.comp_apply, ab.baseChange_mulByNat]
+  have hfin := finite_preimage_mulByNat_of_field (S.residueField (f a))
+      (ab.baseChange (S.fromSpecResidueField (f a))) n hn (f.asFiber a)
+  refine (hfin.image (f.fiberι (f a))).subset ?_
+  rintro x (hx : ab.mulByNat n x = a)
+  have hfx : f x = f a := by
+    have hcm : (ab.mulByNat n ≫ f).base x = f.base x := by rw [ab.mulByNat_comp]
+    simpa [hx] using hcm.symm
+  obtain ⟨x₀, hx₀⟩ : x ∈ Set.range (f.fiberι (f a)) := by
+    rw [Scheme.Hom.range_fiberι]; exact hfx
+  refine ⟨x₀, ?_, hx₀⟩
+  show (ab.baseChange (S.fromSpecResidueField (f a))).mulByNat n x₀ = f.asFiber a
+  apply hinj
+  have e1 : f.fiberι (f a) ((ab.baseChange (S.fromSpecResidueField (f a))).mulByNat n x₀)
+      = ab.mulByNat n (f.fiberι (f a) x₀) := hcomm x₀
+  rw [e1, hx₀, hx, Scheme.Hom.fiberι_asFiber]
 
 /-- **`[n]` is flat and locally of finite presentation** (PROVEN
 2026-07-26 over `flat_mulByNat`; the finite presentation is free).
