@@ -4020,9 +4020,169 @@ theorem exists_twistedHilbertBlumenthalModuliTwist_of_five_le
           HasRationalPoint fX (ULift.{u} ℝ))) :=
   sorry
 
-/-- **The twisted moduli problem is solvable over `ℝ`** (sorry node, cut
-2026-07-26 — the ARCHIMEDEAN half of Taylor §4, and the one place where
-the ODDNESS of `ρbar` is consumed): for an admissible auxiliary datum
+/-- **Complex conjugation inverts roots of unity** (sorry leaf, cut
+2026-07-26 out of `hasRealHilbertBlumenthalObject_of_isHardlyRamified`):
+the `ℓ`-adic cyclotomic character takes the value `-1` at the image in
+`Γ_ℚ` of any NONTRIVIAL element of `Γ_ℝ`, for `ℓ` odd.
+
+This is the ONE arithmetic input of the archimedean cut, and it is what
+turns `IsHardlyRamified`'s cyclotomic-determinant clause into the
+statement that `ρbar` is ODD on `Γ_ℝ`. It is the exact analogue, for the
+image of `Γ_ℝ` under `Field.absoluteGaloisGroup.map`, of the PROVEN
+`cyclotomicCharacter_complexConj`
+(`GaloisRepresentation/ComplexConjugation.lean`), which says the same at
+the distinguished `complexConj : Γ_ℚ` built there from an embedding
+`ℚᵃˡᵍ ↪ ℂ`.
+
+WHY IT IS NOT LITERALLY THAT LEMMA, and hence why it is a separate leaf:
+`Field.absoluteGaloisGroup.map` is built from an ARBITRARILY CHOSEN
+embedding of algebraic closures (see its docstring in
+`Deformations/RepresentationTheory/AbsoluteGaloisGroup.lean`), so
+`Field.absoluteGaloisGroup.map (algebraMap ℚ ℝ) σ` need not be the same
+element of `Γ_ℚ` as `complexConj`. It is only CONJUGATE to it — every
+complex conjugation of `Γ_ℚ` is, by Artin–Schreier — and the cyclotomic
+character, being a homomorphism into an abelian group, is a class
+function, so the value is the same. That last step is the content here.
+
+PROOF SKETCH. Two routes, both short:
+(i) *class-function route* — `Γ_ℝ` has order two (Artin–Schreier: `ℝ` is
+real closed, `[ℝᵃˡᵍ : ℝ] = 2`), so `σ² = 1` and its image `g` satisfies
+`g² = 1`, whence `χ_ℓ(g)² = 1` and `χ_ℓ(g) = ±1` because `ℓ` is odd and
+`ℤ_[ℓ]` therefore contains no other square root of `1`; and
+`χ_ℓ(g) = 1` is impossible because `g ≠ 1` fixes the subfield
+`ℚ(μ_{ℓ^∞})ᵍ` pointwise, whereas the fixed field of an involution of
+`ℚᵃˡᵍ` is real closed and hence contains no primitive `ℓ`-th root of
+unity for `ℓ > 2`.
+(ii) *transport route* — exhibit `τ ∈ Γ_ℚ` with
+`Field.absoluteGaloisGroup.map (algebraMap ℚ ℝ) σ = τ * complexConj * τ⁻¹`
+and conclude by `map_mul` from `cyclotomicCharacter_complexConj`.
+
+Route (i) reuses `complexConjRingEquiv_ne_of_isPrimitiveRoot`, which
+already carries the "a complex conjugation moves a primitive `ℓ`-th root
+of unity" argument for the distinguished conjugation. -/
+theorem cyclotomicCharacter_absoluteGaloisGroupMap_real
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓodd : Odd ℓ)
+    (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (hσ : σ ≠ 1) :
+    cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ).toRingEquiv = -1 :=
+  sorry
+
+open CategoryTheory in
+/-- **The real Hilbert–Blumenthal object exists for any pair of ODD
+archimedean characters** (sorry leaf, cut 2026-07-26 out of
+`hasRealHilbertBlumenthalObject_of_isHardlyRamified`): the whole
+GEOMETRIC content of the archimedean half of Taylor §4, with the
+Galois-representation packaging stripped off.
+
+The two level structures are prescribed by plain MONOID HOMOMORPHISMS
+`r : Γ_ℝ → End_k(W)` and `rp : Γ_ℝ → End_kp(kp²)` rather than by
+`GaloisRep`s: no continuity, no `ℓ`-adic coefficients and no
+`IsHardlyRamified` enter, because none of them is archimedean. All that
+is asked of `r` and `rp` is ODDNESS — determinant `-1` away from the
+identity — which is exactly the hypothesis `hoddp` that the seam already
+supplies for the `𝔭`-side, and which
+`cyclotomicCharacter_absoluteGaloisGroupMap_real` supplies for the
+`λ`-side out of `IsHardlyRamified.det`.
+
+INVOLUTIVITY IS NOT A HYPOTHESIS and must not be added: `r` is a monoid
+homomorphism out of `Γ_ℝ`, and `Γ_ℝ` has order two, so `(r σ)² = r (σ²)
+= r 1 = 1` for free. That is also why the two conditions can be stated
+for ALL `σ` rather than for a distinguished complex conjugation: the
+`σ = 1` case is `r 1 = 1` against `galSMul 1 = id`.
+
+INTENDED DISCHARGE (unchanged from the parent, and it is ELEMENTARY —
+no moduli space, no complex multiplication, no Shimura theory). Take
+`B = E ⊗_ℤ 𝒪_D` for a real elliptic curve `E`, an abelian variety over
+`ℝ` of dimension `[D:ℚ]` with real multiplication by `𝒪_D`. Then
+`B[I] ≅ E[m] ⊗_{𝔽_m} 𝒪_D/I` for any maximal `I ∋ m` — true even when `I`
+is RAMIFIED over `m`, since the `I`-torsion of `𝒪_D/m` is
+`I^{e-1}/I^e ≅ 𝒪_D/I`, one-dimensional over the residue field. Complex
+conjugation acts on `H₁(E(ℂ), ℤ) = ℤ²` by an involution `C ∈ GL₂(ℤ)` of
+determinant `-1`, hence on every `E[m] = H₁/m` by `C mod m`; there are
+exactly TWO conjugacy classes of such `C` over `ℤ` — `diag(1,-1)`, the
+rectangular lattice, realized by `Δ(E) > 0`, and the regular
+representation `[[1,1],[0,-1]]`, realized by `Δ(E) < 0` — and both are
+realized by a real elliptic curve.
+
+WHY ONE `E` SUFFICES FOR BOTH PRIMES, i.e. why `hk2` is exactly the
+right hypothesis and is not cosmetic. At `λ` the residue characteristic
+is odd (`hk2`), and in odd characteristic BOTH classes of `C` reduce to
+an involution of determinant `-1`, which is conjugate to `diag(1,-1)`;
+so any `E` realizes `r`, whatever `r` is. At `𝔭` the residue
+characteristic may be `2`, where `hrp` is vacuous and there are two
+possible involutions of `kp²` — the identity and a transvection —
+distinguished by `C mod 2`, i.e. by the SIGN of `Δ(E)`; choosing that
+sign realizes `rp`. The two demands never collide because `λ` and `𝔭`
+cannot both have residue characteristic `2`.
+
+WITHOUT `hk2` THE STATEMENT IS FALSE. If `char k = 2` as well, then
+`hr` and `hrp` are both vacuous and `r`, `rp` may independently be the
+identity and a transvection; but a single `E` reduces the SAME `C mod 2`
+at both primes, so no `B` can realize an ill-matched pair. This is not a
+convenience hypothesis — it is the discriminating condition, and it is
+available at the call site because `k` is the residue field at `λ`,
+whose characteristic is the odd prime `ℓ`.
+
+MISSING MACHINERY, in dependency order (all of it archimedean and
+elementary, and none of it present at this pin):
+1. *Elliptic curves as abelian schemes in the `Fermat.AbelianSchemeStruct`
+   presentation* — mathlib has `WeierstrassCurve` and the group law on
+   its point sets, but no `Scheme` model, no properness, and no
+   functor-of-points group structure. This is the bulk of the work.
+2. *The tensor construction* `E ⊗_ℤ 𝒪_D` with its `Fermat.Mult` by
+   `𝒪_D`, and `SmoothOfRelativeDimension [D:ℚ]` for it.
+3. *The action of complex conjugation on `E[m]`*, and the identification
+   `B[I] ≅ E[m] ⊗ 𝒪_D/I` of `Fermat.Mult.torsion` values.
+4. *`Γ_ℝ` has order two* (Artin–Schreier for `ULift ℝ`), used both for
+   involutivity and to know that `σ ≠ 1` pins a single conjugacy class.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
+discharged by the independent construction — never through
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_realHilbertBlumenthalObject_of_odd
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (lam frp : Ideal (NumberField.RingOfIntegers D)) (hne : lam ≠ frp)
+    {k : Type u} [Field k] [Finite k] (hk2 : (2 : k) ≠ 0)
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
+    (hW : Module.rank k W = 2)
+    {kp : Type u} [Field kp] [Finite kp]
+    (hres : Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k))
+    (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (r : Field.absoluteGaloisGroup (ULift.{u} ℝ) →* Module.End k W)
+    (hr : ∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 →
+      LinearMap.det (r σ) = -1)
+    (rp : Field.absoluteGaloisGroup (ULift.{u} ℝ) →* Module.End kp (Fin 2 → kp))
+    (hrp : ∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 →
+      LinearMap.det (rp σ) = -1) :
+    ∃ (B : AlgebraicGeometry.Scheme.{u})
+      (fB : B ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))
+      (abB : Fermat.AbelianSchemeStruct fB)
+      (m : Fermat.Mult abB (NumberField.RingOfIntegers D)),
+      AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB ∧
+      (∃ e : W → Fermat.GeomFibrePt fB
+          (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))),
+        (∀ w w' : W, e (w + w') = abB.add (e w) (e w')) ∧
+        Function.Injective e ∧
+        (∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (w : W),
+          e (r σ w) =
+            abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (e w)) ∧
+        (∀ y, y ∈ (m.torsion
+          (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) lam).1 ↔ ∃ w, e w = y)) ∧
+      (∃ e : (Fin 2 → kp) → Fermat.GeomFibrePt fB
+          (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))),
+        (∀ w w' : Fin 2 → kp, e (w + w') = abB.add (e w) (e w')) ∧
+        Function.Injective e ∧
+        (∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (w : Fin 2 → kp),
+          e (rp σ w) =
+            abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (e w)) ∧
+        (∀ y, y ∈ (m.torsion
+          (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) frp).1 ↔ ∃ w, e w = y)) :=
+  sorry
+
+/-- **The twisted moduli problem is solvable over `ℝ`** (PROVEN
+2026-07-26 as an assembly over the ODDNESS cut; formerly the sorry node
+cut 2026-07-26 — the ARCHIMEDEAN half of Taylor §4, and the one place
+where the ODDNESS of `ρbar` is consumed): for an admissible auxiliary datum
 `(D, λ, 𝔭, ρbarp)` there is an abelian variety over `ℝ` with real
 multiplication by `𝒪_D` of dimension `[D:ℚ]` whose `λ`-torsion realizes
 `ρbar|_{Γ_ℝ}` and whose `𝔭`-torsion realizes `ρbarp|_{Γ_ℝ}`.
@@ -4033,8 +4193,10 @@ that consumes this — see the section docstring), the two primes are
 distinct, and the `𝔭`-level representation is ODD. Oddness of `ρbar`
 itself is not hypothesized separately: it is contained in `hρbar`, whose
 `det` field says that `det ρbar` is the cyclotomic character, which
-`cyclotomicCharacter_complexConj` evaluates to `-1` at complex
-conjugation.
+`cyclotomicCharacter_absoluteGaloisGroupMap_real` (the arithmetic leaf of
+the proof below, itself the `Field.absoluteGaloisGroup.map` analogue of
+the PROVEN `cyclotomicCharacter_complexConj`) evaluates to `-1` at the
+image of any nontrivial element of `Γ_ℝ`.
 
 PROOF SKETCH, recorded in full in the section docstring above and
 summarized here because it decides the difficulty of this leaf: take
@@ -4054,7 +4216,40 @@ complex conjugation on `E[n]`.
 
 FAITHFULNESS: the conclusion mentions no moduli space, so it cannot be
 satisfied vacuously by a pointless variety — which is precisely why the
-cut was made here and not at any statement about `X`. -/
+cut was made here and not at any statement about `X`.
+
+PROOF (2026-07-26 — the ODDNESS cut; this node is no longer a sorry
+node). Nothing in the sketch above is archimedean *and* `ℓ`-adic at the
+same time: `IsHardlyRamified` is a global, `ℓ`-adic condition, and the
+only thing the construction over `ℝ` ever reads off it is that `ρbar` is
+ODD. So this proof does exactly three things and hands the geometry on:
+
+1. `k` has characteristic `ℓ`, hence `(2 : k) ≠ 0`. The `ℤ_[ℓ]`-algebra
+   structure on the finite field `k` forces this: if `char k = p ≠ ℓ`
+   then `(p : ℤ_[ℓ])` is a unit (its norm is `1`, as `ℓ ∤ p`) whose image
+   `(p : k) = 0` is not — so `p = ℓ`, and `ℓ` is odd. This is the
+   discriminating hypothesis `hk2` of the geometric leaf; see there for
+   why the leaf is FALSE without it.
+2. `ρbar` and `ρbarp`, restricted to `Γ_ℝ` along
+   `Field.absoluteGaloisGroup.map (algebraMap ℚ ℝ)`, are repackaged as
+   plain monoid homomorphisms `r`, `rp` into `Module.End`. Continuity and
+   the `ℓ`-adic coefficients play no archimedean role and are dropped.
+3. Both are ODD. For `rp` this is the hypothesis `hoddp` verbatim (modulo
+   `GaloisRep.det_apply`). For `r` it is `IsHardlyRamified.det` — which
+   says `det ρbar` is the `ℓ`-adic cyclotomic character — composed with
+   `cyclotomicCharacter_absoluteGaloisGroupMap_real`, the one arithmetic
+   leaf of this cut, which evaluates that character to `-1` at the image
+   of any nontrivial element of `Γ_ℝ`. This is where, and the only place
+   where, the ODDNESS of `ρbar` is consumed.
+
+The remaining geometric content is
+`exists_realHilbertBlumenthalObject_of_odd`, which is the same statement
+with `IsHardlyRamified`, `GaloisRep` and `ℓ` removed — purely
+archimedean, and stated so that its intended discharge (one real elliptic
+curve, tensored with `𝒪_D`) is all it can possibly need.
+
+INVOLUTIVITY IS NOT PASSED ON, because it is free: `r` and `rp` are
+monoid homomorphisms out of `Γ_ℝ`, which has order two. -/
 theorem hasRealHilbertBlumenthalObject_of_isHardlyRamified
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -4072,8 +4267,69 @@ theorem hasRealHilbertBlumenthalObject_of_isHardlyRamified
     (hne : lam ≠ frp)
     (hoddp : ∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 →
       ρbarp.det (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ) = -1) :
-    HasRealHilbertBlumenthalObject ρbar D lam frp ρbarp :=
-  sorry
+    HasRealHilbertBlumenthalObject ρbar D lam frp ρbarp := by
+  classical
+  -- **(1)** `k` has characteristic `ℓ`, and `ℓ` is odd, so `2 ≠ 0` in `k`.
+  have hlk : ((ℓ : ℕ) : k) = 0 := by
+    haveI : CharP k (ringChar k) := ringChar.charP k
+    have hpprime : Nat.Prime (ringChar k) := CharP.prime_ringChar k
+    have hpk : ((ringChar k : ℕ) : k) = 0 := CharP.cast_eq_zero k _
+    have hpl : ringChar k = ℓ := by
+      by_contra hne'
+      have hnd : ¬ ((ℓ : ℤ) ∣ ((ringChar k : ℕ) : ℤ)) := by
+        rw [Int.natCast_dvd_natCast]
+        exact fun h => hne' ((Nat.prime_dvd_prime_iff_eq Fact.out hpprime).mp h).symm
+      have hnorm : (1 : ℝ) ≤ ‖(((ringChar k : ℕ) : ℤ) : ℤ_[ℓ])‖ :=
+        not_lt.mp fun h => hnd ((PadicInt.norm_int_lt_one_iff_dvd _).mp h)
+      have hu : IsUnit (((ringChar k : ℕ)) : ℤ_[ℓ]) := by
+        rw [PadicInt.isUnit_iff]
+        refine le_antisymm (PadicInt.norm_le_one _) ?_
+        simpa using hnorm
+      have hu' := IsUnit.map (algebraMap ℤ_[ℓ] k) hu
+      rw [map_natCast, hpk] at hu'
+      exact not_isUnit_zero hu'
+    rw [← hpl]; exact hpk
+  haveI hchark : CharP k ℓ := (CharP.charP_iff_prime_eq_zero Fact.out).mpr hlk
+  have hk2 : (2 : k) ≠ 0 := by
+    intro h
+    have hdvd : (ℓ : ℕ) ∣ 2 := by
+      have h2 : ((2 : ℕ) : k) = 0 := by exact_mod_cast h
+      exact (CharP.cast_eq_zero_iff k ℓ 2).mp h2
+    have hl2 : ℓ = 2 := (Nat.prime_dvd_prime_iff_eq Fact.out Nat.prime_two).mp hdvd
+    exact (Nat.not_odd_iff_even.mpr (hl2 ▸ (even_two : Even 2))) hℓodd
+  -- **(2)** the two restricted representations, as plain monoid homomorphisms.
+  have hmapone : Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) 1 = 1 :=
+    map_one _
+  have hmapmul : ∀ a b : Field.absoluteGaloisGroup (ULift.{u} ℝ),
+      Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) (a * b) =
+        Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) a *
+          Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) b :=
+    fun a b => map_mul _ a b
+  let r : Field.absoluteGaloisGroup (ULift.{u} ℝ) →* Module.End k W :=
+    { toFun := fun σ => ρbar (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ)
+      map_one' := by rw [hmapone, map_one]
+      map_mul' := fun a b => by rw [hmapmul, map_mul] }
+  let rp : Field.absoluteGaloisGroup (ULift.{u} ℝ) →* Module.End kp (Fin 2 → kp) :=
+    { toFun := fun σ => ρbarp (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ)
+      map_one' := by rw [hmapone, map_one]
+      map_mul' := fun a b => by rw [hmapmul, map_mul] }
+  -- **(3)** both are ODD on `Γ_ℝ` — the one place the oddness of `ρbar` is used.
+  have hr : ∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 →
+      LinearMap.det (r σ) = -1 := by
+    intro σ hσ
+    have h := hρbar.det (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ)
+    rw [GaloisRep.det_apply] at h
+    show LinearMap.det (ρbar _) = -1
+    rw [h, cyclotomicCharacter_absoluteGaloisGroupMap_real ℓ hℓodd σ hσ]
+    simp
+  have hrp : ∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 →
+      LinearMap.det (rp σ) = -1 := by
+    intro σ hσ
+    have h := hoddp σ hσ
+    rw [GaloisRep.det_apply] at h
+    exact h
+  -- **(4)** the archimedean geometric leaf.
+  exact exists_realHilbertBlumenthalObject_of_odd D lam frp hne hk2 hW hres hresp r hr rp hrp
 
 /-- **The twisted Hilbert–Blumenthal moduli space, as a FORM** (PROVEN
 2026-07-26 as an assembly over the ARCHIMEDEAN cut — see the section
