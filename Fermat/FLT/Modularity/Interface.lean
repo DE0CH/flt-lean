@@ -24753,7 +24753,78 @@ carrier with `IsNewAtPrime` in place of newform-ness, and which is
 PROVEN — by descent through
 `hasConductorExponentAt_factorization_of_isNewAtPrime`, hence
 ultimately through this leaf. The dependency runs newform → eigenform,
-never back. -/
+never back.
+
+FAITHFULNESS AUDIT (2026-07-26, sixth owner). **TRUE AS STATED**, and
+the reduction to the cited theorem is exact rather than approximate:
+
+* `hτ` pins the Frobenius characteristic polynomials of `τ` at all but
+  finitely many primes to those of `ρ_{g₀,λ}`, so Chebotarev plus
+  Brauer–Nesbitt — the PROVEN `exists_linearEquiv_of_charFrob_eq` —
+  identifies `τ` with `ρ_{g₀,λ}` up to `Γ ℚ`-equivariant isomorphism,
+  and `GaloisRep.IsUnramifiedAt` is invariant under such an
+  isomorphism (`isUnramifiedAt_of_linearEquiv` above). So the
+  conclusion is exactly `q ∣ cond(ρ_{g₀,λ})`.
+* `IsWeightTwoNewform` is the classical carrier: `IsWeightTwoEigenform`
+  forces `a₁ = 1`, hence `g₀ ≠ 0`, and `eigensystem_minimal` is
+  minimality of the level among divisor levels, which by
+  Atkin–Lehner/strong multiplicity one is exactly newform-ness. Its
+  inhabitants are therefore the classical weight-2 trivial-nebentypus
+  newforms of level exactly `M₀`, and for those Carayol's identity
+  `ord_q (cond ρ_{g₀,λ}) = ord_q M₀` gives `ord_q ≥ 1` from `q ∣ M₀`,
+  i.e. ramifiedness.
+* NOT VACUOUS relative to this tree: the hypothesis bundle is
+  inhabited by the PROVEN pair
+  `exists_galoisRep_charFrob_of_weightTwoNewform` (a matching `τ` with
+  its exceptional set) and the PROVEN Ribet irreducibility below.
+* `hirr` is in fact REDUNDANT here, not merely convenient: any `τ`
+  satisfying `hτ` has `τ^ss ≅ ρ_{g₀,λ}`, which is irreducible by the
+  Ribet leaf, and a reducible `τ` has decomposable semisimplification.
+  It is retained because the consumer already holds it and because a
+  redundant hypothesis cannot enlarge what the leaf assumes.
+
+CORRECTION TO AN INHERITED CLAIM: `hqp` is **not** load-bearing for
+THIS leaf. Comparing constant terms in `hτ` gives
+`det τ (Frob_r) = r` for almost all `r`, so `det τ` is the `p`-adic
+cyclotomic character (Chebotarev again, both sides continuous), and
+that character is ramified at `p` — `ℚ(μ_{p^n})/ℚ` is totally ramified
+there — so `τ` is ramified at `p` unconditionally and the `q = p`
+instance of this conclusion is TRUE, indeed elementary. `q ≠ p` is
+load-bearing for the SIBLING
+`exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one`,
+where at `q = p` the Steinberg parameter is cyclotomically twisted and
+`V^{I_p}` can vanish; the claim was inherited from there when the
+composite leaf was split. `hqp` is nevertheless KEPT, because the only
+consumer calls at `q ≠ p` and a narrower hypothesis is a strictly
+smaller assumption.
+
+TERMINALITY AUDIT (2026-07-26, searched rather than recalled). What a
+proof needs is the equality of the newform level with the conductor of
+the local component — Casselman's newvector theory computing
+`cond(π_q) = ord_q M₀`, together with Deligne's compatibility of the
+local Langlands correspondence with conductors; geometrically, the
+Deligne–Rapoport model of `X₀(M₀)` at `q` plus
+Néron–Ogg–Shafarevich. The pin carries none of the prerequisites:
+mathlib has no higher ramification filtration, no Artin or Swan
+conductor, no automorphic representations and no local Langlands, and
+the reference project `~/cs/FLT` mentions Carayol only in one prose
+docstring and has nothing vendorable. Note also that the leaf cannot
+be attacked through `hτ` at `q` itself: `S_τ` is arbitrary, so the
+hypothesis supplies no information at the bad prime, and all of the
+content is genuinely global-to-local. This leaf is TERMINAL at this
+pin — it is the residual away-from-`p` literature assumption of the
+development, and the split recorded above already reduced it to the
+smallest shape the conductor dictionary can measure.
+
+COORDINATION NOTE (not executed here — the sibling has its own owner).
+At `ord_q M₀ = 1` the classical Steinberg computation delivers that
+inertia acts through a NONTRIVIAL unipotent; the sibling currently
+asserts only the resulting fixed line. Were it strengthened to record
+the nontriviality as well — no additional classical content, it is one
+and the same local computation — THIS leaf would be needed only for
+`q² ∣ M₀`. Total assumed content would be unchanged; what would change
+is that the `ord_q M₀ = 1` assumption sits where the local type is
+named. -/
 theorem not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
