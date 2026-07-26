@@ -1990,8 +1990,9 @@ theorem exists_generator_uniformizer_at (K : Type*) [Field K] [NumberField K]
   rw [he]
   exact intValuation_coeff_zero_minpoly K q hq v hmem hres x hgen hx hother
 
-/-- **From an integer Eisenstein approximation to Serre's bound** (sorry
-leaf, 2026-07-26 — steps 3–6 of the elementary global route recorded on
+open _root_.Polynomial in
+/-- **From an integer Eisenstein approximation to Serre's bound**
+(PROVEN 2026-07-26 — steps 3–6 of the elementary global route recorded on
 `differentIdeal_exponent_le_wild_of_residueDegreeOne`; polynomial
 division and valuation bookkeeping only, no local fields).
 
@@ -2001,27 +2002,38 @@ integer-coefficient approximate Eisenstein relation
 `exists_intCoeff_eisenstein_approx`, with `M` large compared with `d`
 and `e`, Serre's bound follows.
 
-Route, writing `F = minpoly ℤ x` and `g = X^e − ∑_{i<e} C (c i) · X^i`:
+Route as carried out, writing `F = minpoly ℤ x`,
+`g = X^e − ∑_{i<e} C (c i)·X^i` (monic of degree `e`), `H = F /ₘ g` and
+`Rm = F %ₘ g` (degree `< e`):
 
+* *The rigidity input.*  `ord_Q (a) ∈ e·ℤ` for every RATIONAL INTEGER
+  `a ≠ 0` (`intValuation_natCast_eq_exp_ramificationIdx`), so the terms
+  `a_i·x^i` of a sum with integer coefficients and `i < e` have
+  `Q`-orders `e·v_q(a_i) + i` that are PAIRWISE DISTINCT — they have
+  distinct residues mod `e`.  This is the whole content of the leaf: it
+  is what "the digits are rational integers" buys, and it is exactly
+  what fails for digits merely of order in `e·ℤ` (see the refutation
+  recorded on `exists_generator_uniformizer_at`'s sibling).
+  `valuation_term_le_valuation_sum` then bounds every single term by the
+  sum.
 * `aeval_derivative_mem_differentIdeal` (mathlib) gives
-  `𝔡_{𝓞_K/ℤ} ∣ (F'(x))`, hence `d ≤ ord_Q (F'(x))`.
-* Divide: `F = g·H + Rm` in `ℤ[X]` with `deg Rm < e` (`g` is monic).
-  From `F(x) = 0` we get `ord_Q (Rm(x)) ≥ M`; since `Rm` has integer
-  coefficients and degree `< e`, the terms `Rm_i · x^i` have `Q`-orders
-  `e·v_q(Rm_i) + i` that are pairwise distinct mod `e`, so
-  `valuation_term_le_valuation_sum` forces `ord_Q (Rm_i) ≥ M − i` for
-  every `i`, whence `ord_Q (Rm'(x)) ≥ M − e`.
-* The same distinct-residues argument applied to
-  `ord_Q (∑_{i<e} c_i x^i) = ord_Q (x^e) = e` forces `v_q(c_0) = 1` and
-  `v_q(c_i) ≥ 1` for `0 < i < e`: `g` is genuinely Eisenstein, and
-  `ord_Q (g(0)) = e`.
-* Hence `ord_Q (H(0)) = 0` from `hc0` and `F(0) = g(0)H(0) + Rm(0)`,
-  and then `ord_Q (H(x)) = 0` because `H(x) − H(0) ∈ Q`.
-* Finally `F'(x) = g'(x)H(x) + g(x)H'(x) + Rm'(x)` with the last two
-  terms of order `≥ M − e ≥ d`, so `ord_Q (g'(x)) ≥ d`; and
-  `ord_Q (g'(x)) ≤ e·v_q(e) + e − 1` by `valuation_term_le_valuation_sum`
-  and `intValuation_natCast_eq_exp_ramificationIdx`, exactly as in
-  `differentIdeal_exponent_le_wild` below. -/
+  `𝔡_{𝓞_K/ℤ} ∣ (F'(x))`, hence `d ≤ ord_Q (F'(x))` from `hd`.
+* `F(x) = 0` and `ord_Q (g(x)) ≥ M` give `ord_Q (Rm(x)) ≥ M`; the
+  rigidity input forces `ord_Q (Rm_i·x^i) ≥ M` for every `i < e`,
+  whence `ord_Q (Rm_i·x^{i−1}) ≥ M − 1` and `ord_Q (Rm'(x)) ≥ M − 1`.
+* *The cofactor is a `Q`-unit.*  `x ∈ Q` and `ord_Q (x^e − ∑ c_i x^i) > 0`
+  give `∑ c_i x^i ∈ Q`, and all terms with `i ≥ 1` are in `Q`, so the
+  rational integer `c_0` lies in `Q`; being a rational integer its order
+  is then `≥ e`, i.e. `ord_Q (g(0)) ≥ e`.  Comparing with
+  `F(0) = g(0)·H(0) + Rm(0)`, where `ord_Q (F(0)) = e` (`hc0`) and
+  `ord_Q (Rm(0)) ≥ M > e`, gives `ord_Q (g(0)·H(0)) = e` and hence
+  `ord_Q (H(0)) = 0`; then `ord_Q (H(x)) = 0` because `H(x) − H(0) ∈ (x) ⊆ Q`.
+* *Conclusion.*  `F' = Rm' + g'H + gH'`, and the three terms other than
+  `g'(x)H(x)` have order `≥ min (d, M−1, M) = d`, so `ord_Q (g'(x)) ≥ d`.
+  Finally the same distinct-residues argument applied to
+  `g'(x) = ∑_{i<e} (i+1)·g_{i+1}·x^i`, whose `i = e−1` term is
+  `e·x^{e−1}`, gives `ord_Q (g'(x)) ≤ e·v_q(e) + e − 1`.  Hence
+  `d ≤ e − 1 + e·v_q(e)`. -/
 theorem differentIdeal_exponent_le_of_intEisenstein_approx
     (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
     (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
@@ -2037,8 +2049,359 @@ theorem differentIdeal_exponent_le_of_intEisenstein_approx
       ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i) ≤ WithZero.exp (-(M : ℤ)))
     (d : ℕ) (hdM : d + 2 * e + 2 ≤ M)
     (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
-    d ≤ e - 1 + e * e.factorization q :=
-  sorry
+    d ≤ e - 1 + e * e.factorization q := by
+  classical
+  -- ## 0. Preliminaries
+  have hker : ∀ y, v.intValuation y = 0 → y = 0 := by
+    intro y hy
+    by_contra hy0
+    exact v.intValuation_ne_zero y hy0 hy
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : v.asIdeal.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff v.isPrime.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have he0 : 0 < e := by
+    rw [he]
+    exact Nat.pos_of_ne_zero
+      (Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver v.asIdeal hspan0)
+  -- ## 1. valuations of rational integers lie in `e·ℤ`
+  have hnat : ∀ m : ℕ, m ≠ 0 →
+      v.intValuation (m : NumberField.RingOfIntegers K)
+        = WithZero.exp (-((e * m.factorization q : ℕ) : ℤ)) := by
+    intro m hm
+    rw [he]
+    exact intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem m hm
+  have hZval : ∀ a : ℤ, a ≠ 0 → ∃ k : ℕ,
+      v.intValuation (a : NumberField.RingOfIntegers K)
+        = WithZero.exp (-((e * k : ℕ) : ℤ)) := by
+    intro a ha
+    obtain ⟨n, hn⟩ : ∃ n : ℕ, a = (n : ℤ) ∨ a = -(n : ℤ) := ⟨a.natAbs, Int.natAbs_eq a⟩
+    rcases hn with rfl | rfl
+    · exact ⟨n.factorization q, by push_cast; exact hnat n (by exact_mod_cast ha)⟩
+    · refine ⟨n.factorization q, ?_⟩
+      have hcast : ((-(n : ℤ) : ℤ) : NumberField.RingOfIntegers K)
+          = -((n : ℕ) : NumberField.RingOfIntegers K) := by push_cast; ring
+      rw [hcast, Valuation.map_neg]
+      exact hnat n (by simpa using ha)
+  have hxpow : ∀ i : ℕ, v.intValuation (x ^ i) = WithZero.exp (-(i : ℤ)) := by
+    intro i
+    rw [map_pow, hx, ← WithZero.exp_nsmul]
+    congr 1
+    simp
+  have hterm : ∀ (a : ℤ) (i : ℕ), a ≠ 0 → ∃ k : ℕ,
+      v.intValuation ((a : NumberField.RingOfIntegers K) * x ^ i)
+        = WithZero.exp (-((e * k : ℕ) : ℤ) - (i : ℤ)) := by
+    intro a i ha
+    obtain ⟨k, hk⟩ := hZval a ha
+    refine ⟨k, ?_⟩
+    rw [map_mul, hk, hxpow, ← WithZero.exp_add]
+    exact congrArg WithZero.exp (by ring)
+  have hmodkey : ∀ (k₁ k₂ i j : ℕ), i < e → j < e →
+      -((e * k₁ : ℕ) : ℤ) - (i : ℤ) = -((e * k₂ : ℕ) : ℤ) - (j : ℤ) → i = j := by
+    intro k₁ k₂ i j hi hj h
+    have h' : e * k₁ + i = e * k₂ + j := by
+      have h2 : ((e * k₁ + i : ℕ) : ℤ) = ((e * k₂ + j : ℕ) : ℤ) := by push_cast at h ⊢; linarith
+      exact_mod_cast h2
+    rcases le_total k₁ k₂ with hk | hk
+    · obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hk
+      rw [Nat.mul_add] at h'
+      rcases Nat.eq_zero_or_pos m with rfl | hm
+      · simp only [Nat.mul_zero, Nat.add_zero] at h'; omega
+      · exfalso
+        have hle : e ≤ e * m := Nat.le_mul_of_pos_right e hm
+        omega
+    · obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hk
+      rw [Nat.mul_add] at h'
+      rcases Nat.eq_zero_or_pos m with rfl | hm
+      · simp only [Nat.mul_zero, Nat.add_zero] at h'; omega
+      · exfalso
+        have hle : e ≤ e * m := Nat.le_mul_of_pos_right e hm
+        omega
+  have hpairwise : ∀ (b : ℕ → ℤ),
+      ∀ i ∈ Finset.range e, ∀ j ∈ Finset.range e, i ≠ j →
+        v.intValuation ((b i : NumberField.RingOfIntegers K) * x ^ i) ≠ 0 →
+        v.intValuation ((b j : NumberField.RingOfIntegers K) * x ^ j) ≠ 0 →
+        v.intValuation ((b i : NumberField.RingOfIntegers K) * x ^ i)
+          ≠ v.intValuation ((b j : NumberField.RingOfIntegers K) * x ^ j) := by
+    intro b i hi j hj hij hn1 hn2 heq
+    have hbi : b i ≠ 0 := by intro h0; rw [h0] at hn1; simp at hn1
+    have hbj : b j ≠ 0 := by intro h0; rw [h0] at hn2; simp at hn2
+    obtain ⟨k₁, hk₁⟩ := hterm (b i) i hbi
+    obtain ⟨k₂, hk₂⟩ := hterm (b j) j hbj
+    rw [hk₁, hk₂, WithZero.exp_inj] at heq
+    exact hij (hmodkey k₁ k₂ i j (Finset.mem_range.mp hi) (Finset.mem_range.mp hj) heq)
+  -- ## 2. the approximating Eisenstein polynomial `g`
+  set p : Polynomial ℤ := ∑ i ∈ Finset.range e, C (c i) * X ^ i with hp
+  have hpdeg : p.degree < (e : ℕ) := by
+    refine lt_of_le_of_lt (degree_sum_le _ _) ?_
+    refine (Finset.sup_lt_iff (by exact_mod_cast WithBot.bot_lt_coe e)).mpr ?_
+    intro i hi
+    exact lt_of_le_of_lt (degree_C_mul_X_pow_le i (c i))
+      (by exact_mod_cast Finset.mem_range.mp hi)
+  have hpcoeff : ∀ n : ℕ, e ≤ n → p.coeff n = 0 := by
+    intro n hn
+    rw [hp, finsetSum_coeff]
+    refine Finset.sum_eq_zero ?_
+    intro i hi
+    rw [coeff_C_mul, coeff_X_pow, if_neg (by have := Finset.mem_range.mp hi; omega), mul_zero]
+  have hpcoeff0 : p.coeff 0 = c 0 := by
+    rw [hp, finsetSum_coeff, Finset.sum_eq_single 0]
+    · simp
+    · intro i _ hne
+      rw [coeff_C_mul, coeff_X_pow, if_neg (Ne.symm hne), mul_zero]
+    · intro h; exact absurd (Finset.mem_range.mpr he0) h
+  set g : Polynomial ℤ := X ^ e - p with hgdef
+  have hgdeg : g.degree = (e : ℕ) := by
+    rw [hgdef, degree_sub_eq_left_of_degree_lt (by rwa [degree_X_pow]), degree_X_pow]
+  have hgnd : g.natDegree = e := natDegree_eq_of_degree_eq_some hgdeg
+  have hgcoeff : g.coeff e = 1 := by
+    rw [hgdef, coeff_sub, coeff_X_pow, if_pos rfl, hpcoeff e le_rfl, sub_zero]
+  have hgmonic : g.Monic := by
+    have hlc : g.leadingCoeff = 1 := by rw [Polynomial.leadingCoeff, hgnd, hgcoeff]
+    exact hlc
+  have hgcoeff0 : g.coeff 0 = -c 0 := by
+    rw [hgdef, coeff_sub, coeff_X_pow, if_neg (by omega), hpcoeff0, zero_sub]
+  have hgaeval : aeval x g = x ^ e - ∑ i ∈ Finset.range e,
+      ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i := by
+    rw [hgdef, hp]
+    simp
+  have hgx : v.intValuation (aeval x g) ≤ WithZero.exp (-(M : ℤ)) := by
+    rw [hgaeval]; exact happrox
+  -- ## 3. division of the minimal polynomial by `g`
+  set F : Polynomial ℤ := minpoly ℤ x with hFdef
+  set H : Polynomial ℤ := F /ₘ g with hHdef
+  set Rm : Polynomial ℤ := F %ₘ g with hRmdef
+  have hdivide : Rm + g * H = F := modByMonic_add_div F g
+  have hRmdeg : Rm.natDegree < e := by
+    rcases eq_or_ne Rm 0 with h0 | h0
+    · simp [h0, he0]
+    · have h1 : Rm.degree < g.degree := degree_modByMonic_lt F hgmonic
+      rw [hgdeg] at h1
+      exact (natDegree_lt_iff_degree_lt h0).mpr h1
+  have hFx : aeval x F = 0 := minpoly.aeval ℤ x
+  have hRmx : v.intValuation (aeval x Rm) ≤ WithZero.exp (-(M : ℤ)) := by
+    have h2 := congrArg (Polynomial.aeval x) hdivide
+    rw [map_add, map_mul] at h2
+    have h1 : aeval x Rm + aeval x g * aeval x H = 0 := h2.trans hFx
+    have h3 : aeval x Rm = -(aeval x g * aeval x H) := by linear_combination h1
+    rw [h3, Valuation.map_neg, map_mul]
+    refine le_trans (mul_le_mul' hgx (v.intValuation_le_one _)) ?_
+    rw [mul_one]
+  have hRmsum : aeval x Rm = ∑ i ∈ Finset.range e,
+      ((Rm.coeff i : ℤ) : NumberField.RingOfIntegers K) * x ^ i := by
+    rw [aeval_eq_sum_range' hRmdeg]
+    exact Finset.sum_congr rfl fun i _ => by rw [zsmul_eq_mul]
+  have hRmcoeff : ∀ i, i < e →
+      v.intValuation ((Rm.coeff i : NumberField.RingOfIntegers K) * x ^ i)
+        ≤ WithZero.exp (-(M : ℤ)) := by
+    intro i hi
+    have h1 := valuation_term_le_valuation_sum v.intValuation hker
+      (fun j => ((Rm.coeff j : ℤ) : NumberField.RingOfIntegers K) * x ^ j)
+      (Finset.mem_range.mpr hi) (hpairwise (fun j => Rm.coeff j))
+    rw [← hRmsum] at h1
+    exact h1.trans hRmx
+  -- ## 4. the shifted bound on the remainder's derivative
+  have hshift : ∀ j : ℕ, j + 1 ≤ e →
+      v.intValuation ((Rm.coeff (j + 1) : NumberField.RingOfIntegers K) * x ^ j)
+        ≤ WithZero.exp (-(M : ℤ) + 1) := by
+    intro j hj
+    rcases eq_or_lt_of_le hj with hje | hje
+    · have hzero : Rm.coeff (j + 1) = 0 :=
+        coeff_eq_zero_of_natDegree_lt (by omega)
+      rw [hzero]
+      simp
+    · have hkey : v.intValuation ((Rm.coeff (j + 1) : NumberField.RingOfIntegers K) * x ^ j)
+          * WithZero.exp (-1 : ℤ) ≤ WithZero.exp (-(M : ℤ)) := by
+        have h4 := hRmcoeff (j + 1) hje
+        rw [pow_succ, ← mul_assoc, map_mul, hx] at h4
+        exact h4
+      have h5 := mul_le_mul_left hkey (WithZero.exp (1 : ℤ))
+      rwa [mul_assoc, ← WithZero.exp_add, neg_add_cancel, WithZero.exp_zero, mul_one,
+        ← WithZero.exp_add] at h5
+  have hRmderiv : v.intValuation (aeval x (derivative Rm)) ≤ WithZero.exp (-(M : ℤ) + 1) := by
+    have hdnd : (derivative Rm).natDegree < e :=
+      lt_of_le_of_lt (natDegree_derivative_le Rm) (by omega)
+    rw [aeval_eq_sum_range' hdnd]
+    refine Valuation.map_sum_le _ ?_
+    intro i hi
+    have hi' : i < e := Finset.mem_range.mp hi
+    rw [zsmul_eq_mul, coeff_derivative]
+    have hrw : (((Rm.coeff (i + 1) * ((i : ℤ) + 1) : ℤ)) : NumberField.RingOfIntegers K) * x ^ i
+        = (((i : ℤ) + 1 : ℤ) : NumberField.RingOfIntegers K)
+          * ((Rm.coeff (i + 1) : NumberField.RingOfIntegers K) * x ^ i) := by
+      push_cast; ring
+    rw [hrw, map_mul]
+    refine le_trans (mul_le_mul' (v.intValuation_le_one _) (hshift i (by omega))) ?_
+    rw [one_mul]
+  -- ## 5. the extremal term of `g'(x)`
+  have hgdnd : (derivative g).natDegree < e := by
+    have h1 := natDegree_derivative_le g
+    rw [hgnd] at h1
+    omega
+  have hgderivsum : aeval x (derivative g) = ∑ i ∈ Finset.range e,
+      (((derivative g).coeff i : ℤ) : NumberField.RingOfIntegers K) * x ^ i := by
+    rw [aeval_eq_sum_range' hgdnd]
+    exact Finset.sum_congr rfl fun i _ => by rw [zsmul_eq_mul]
+  have hlead : (derivative g).coeff (e - 1) = (e : ℤ) := by
+    rw [coeff_derivative, show e - 1 + 1 = e from by omega, hgcoeff, one_mul]
+    have hc : ((e - 1 : ℕ) : ℤ) = (e : ℤ) - 1 := by omega
+    rw [hc]; ring
+  have hextremal : WithZero.exp (-((e * e.factorization q : ℕ) : ℤ) - ((e : ℤ) - 1))
+      ≤ v.intValuation (aeval x (derivative g)) := by
+    have h1 := valuation_term_le_valuation_sum v.intValuation hker
+      (fun i => (((derivative g).coeff i : ℤ) : NumberField.RingOfIntegers K) * x ^ i)
+      (Finset.mem_range.mpr (show e - 1 < e by omega))
+      (hpairwise (fun i => (derivative g).coeff i))
+    rw [← hgderivsum] at h1
+    refine le_trans (le_of_eq ?_) h1
+    have hEcast : (((e : ℤ)) : NumberField.RingOfIntegers K)
+        = ((e : ℕ) : NumberField.RingOfIntegers K) := by push_cast; ring
+    rw [hlead, map_mul, hEcast, hnat e (by omega), hxpow, ← WithZero.exp_add]
+    congr 1
+    have hc : ((e - 1 : ℕ) : ℤ) = (e : ℤ) - 1 := by omega
+    rw [hc]; ring
+  -- ## 6. the cofactor `H` is a `Q`-unit
+  have hxQ : x ∈ v.asIdeal := by
+    have h1 := (v.intValuation_le_pow_iff_mem x 1).mp (by rw [hx]; simp)
+    simpa using h1
+  have hsumQ : (∑ i ∈ Finset.range e,
+      ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i) ∈ v.asIdeal := by
+    have h1 : x ^ e - ∑ i ∈ Finset.range e,
+        ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i ∈ v.asIdeal := by
+      have h2 := (v.intValuation_le_pow_iff_mem _ 1).mp
+        (le_trans happrox (by rw [WithZero.exp_le_exp]; push_cast; omega))
+      simpa using h2
+    have h3 : x ^ e ∈ v.asIdeal := v.asIdeal.pow_mem_of_mem hxQ e he0
+    have h4 := Ideal.sub_mem _ h3 h1
+    simpa using h4
+  have hc0Q : ((c 0 : ℤ) : NumberField.RingOfIntegers K) ∈ v.asIdeal := by
+    have hsplit : ∑ i ∈ Finset.range e, ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i
+        = (∑ i ∈ Finset.range (e - 1),
+            ((c (i + 1) : ℤ) : NumberField.RingOfIntegers K) * x ^ (i + 1))
+          + ((c 0 : ℤ) : NumberField.RingOfIntegers K) := by
+      conv_lhs => rw [show e = (e - 1) + 1 from by omega]
+      rw [Finset.sum_range_succ']
+      simp
+    have hQsum : (∑ i ∈ Finset.range (e - 1),
+        ((c (i + 1) : ℤ) : NumberField.RingOfIntegers K) * x ^ (i + 1)) ∈ v.asIdeal :=
+      Ideal.sum_mem _ fun i _ =>
+        Ideal.mul_mem_left _ _ (v.asIdeal.pow_mem_of_mem hxQ _ (by omega))
+    have h5 := Ideal.sub_mem _ hsumQ hQsum
+    rw [hsplit] at h5
+    simpa using h5
+  have hgc0val : v.intValuation ((c 0 : NumberField.RingOfIntegers K))
+      ≤ WithZero.exp (-(e : ℤ)) := by
+    rcases eq_or_ne (c 0) 0 with h0 | h0
+    · rw [h0]; simp
+    · obtain ⟨k, hk⟩ := hZval (c 0) h0
+      rw [hk, WithZero.exp_le_exp]
+      have hk1 : 1 ≤ k := by
+        by_contra hcon
+        have hk0 : k = 0 := by omega
+        subst hk0
+        rw [Nat.mul_zero] at hk
+        simp only [Nat.cast_zero, neg_zero, WithZero.exp_zero] at hk
+        exact (IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff.mp hk) hc0Q
+      have h2 : e ≤ e * k := by
+        calc e = e * 1 := (mul_one e).symm
+          _ ≤ e * k := Nat.mul_le_mul_left e hk1
+      exact neg_le_neg (by exact_mod_cast h2)
+  have hRm0 : v.intValuation ((Rm.coeff 0 : NumberField.RingOfIntegers K))
+      ≤ WithZero.exp (-(M : ℤ)) := by
+    have h1 := hRmcoeff 0 he0
+    simpa using h1
+  have hcoeff0 : F.coeff 0 = Rm.coeff 0 + g.coeff 0 * H.coeff 0 := by
+    conv_lhs => rw [← hdivide]
+    rw [coeff_add, mul_coeff_zero]
+  have hgH0 : v.intValuation (((g.coeff 0 * H.coeff 0 : ℤ) : NumberField.RingOfIntegers K))
+      = WithZero.exp (-(e : ℤ)) := by
+    have h1 : ((g.coeff 0 * H.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+        = ((F.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+          - ((Rm.coeff 0 : ℤ) : NumberField.RingOfIntegers K) := by
+      rw [hcoeff0]; push_cast; ring
+    have hlt : v.intValuation ((Rm.coeff 0 : NumberField.RingOfIntegers K))
+        < v.intValuation ((F.coeff 0 : NumberField.RingOfIntegers K)) := by
+      rw [hc0]
+      exact lt_of_le_of_lt hRm0 (by rw [WithZero.exp_lt_exp]; omega)
+    rw [h1, Valuation.map_sub_eq_of_lt_left _ hlt, hc0]
+  have hH0 : v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K)) = 1 := by
+    have hmul : ((g.coeff 0 * H.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+        = ((g.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+          * ((H.coeff 0 : ℤ) : NumberField.RingOfIntegers K) := by push_cast; ring
+    rw [hmul, map_mul] at hgH0
+    have hg0le : v.intValuation ((g.coeff 0 : NumberField.RingOfIntegers K))
+        ≤ WithZero.exp (-(e : ℤ)) := by
+      rw [hgcoeff0, show (((-c 0 : ℤ)) : NumberField.RingOfIntegers K)
+        = -((c 0 : ℤ) : NumberField.RingOfIntegers K) by push_cast; ring, Valuation.map_neg]
+      exact hgc0val
+    have h1 : WithZero.exp (-(e : ℤ))
+        ≤ WithZero.exp (-(e : ℤ)) * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K)) := by
+      calc WithZero.exp (-(e : ℤ))
+            = v.intValuation ((g.coeff 0 : NumberField.RingOfIntegers K))
+              * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K)) := hgH0.symm
+        _ ≤ WithZero.exp (-(e : ℤ))
+              * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K)) :=
+            mul_le_mul_left hg0le _
+    have h2 : WithZero.exp (-(e : ℤ))
+        * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K))
+        ≤ WithZero.exp (-(e : ℤ)) := by
+      calc WithZero.exp (-(e : ℤ))
+            * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K))
+          ≤ WithZero.exp (-(e : ℤ)) * 1 := mul_le_mul_right (v.intValuation_le_one _) _
+        _ = WithZero.exp (-(e : ℤ)) := mul_one _
+    have h3 : WithZero.exp (-(e : ℤ))
+        * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K))
+        = WithZero.exp (-(e : ℤ)) * 1 := by rw [mul_one]; exact le_antisymm h2 h1
+    exact mul_left_cancel₀ (by simp) h3
+  have hHx : v.intValuation (aeval x H) = 1 := by
+    rw [IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff]
+    intro hcon
+    have h4 : ((H.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+        = aeval x H - x * aeval x H.divX := by
+      have h2 := congrArg (Polynomial.aeval x) (X_mul_divX_add H)
+      rw [map_add, map_mul, aeval_X, aeval_C] at h2
+      rw [← h2]
+      simp [algebraMap_int_eq]
+    have h3 : ((H.coeff 0 : ℤ) : NumberField.RingOfIntegers K) ∈ v.asIdeal := by
+      rw [h4]
+      exact Ideal.sub_mem _ hcon (Ideal.mul_mem_right _ _ hxQ)
+    exact (IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff.mp hH0) h3
+  -- ## 7. mathlib's different bound, and the assembly
+  have hdiffbound : v.intValuation (aeval x (derivative F)) ≤ WithZero.exp (-(d : ℤ)) := by
+    rw [v.intValuation_le_pow_iff_mem]
+    refine Ideal.le_of_dvd hd ?_
+    rw [hFdef]
+    exact aeval_derivative_mem_differentIdeal ℤ ℚ K x hgen
+  have hFderiv : derivative F = derivative Rm + (derivative g * H + g * derivative H) := by
+    conv_lhs => rw [← hdivide]
+    rw [derivative_add, derivative_mul]
+  have hgderivH : v.intValuation (aeval x (derivative g) * aeval x H)
+      ≤ WithZero.exp (-(d : ℤ)) := by
+    have h2 := congrArg (Polynomial.aeval x) hFderiv
+    rw [map_add, map_add, map_mul, map_mul] at h2
+    have hsplit : aeval x (derivative g) * aeval x H
+        = aeval x (derivative F) - aeval x (derivative Rm)
+          - aeval x g * aeval x (derivative H) := by rw [h2]; ring
+    rw [hsplit]
+    have hb1 : v.intValuation (aeval x (derivative Rm)) ≤ WithZero.exp (-(d : ℤ)) :=
+      hRmderiv.trans (by rw [WithZero.exp_le_exp]; omega)
+    have hb2 : v.intValuation (aeval x g * aeval x (derivative H))
+        ≤ WithZero.exp (-(d : ℤ)) := by
+      rw [map_mul]
+      refine le_trans (mul_le_mul' hgx (v.intValuation_le_one _)) ?_
+      rw [mul_one, WithZero.exp_le_exp]
+      omega
+    exact Valuation.map_sub_le _ (Valuation.map_sub_le _ hdiffbound hb1) hb2
+  have hgderivbound : v.intValuation (aeval x (derivative g)) ≤ WithZero.exp (-(d : ℤ)) := by
+    rw [map_mul, hHx, mul_one] at hgderivH
+    exact hgderivH
+  have hfinal := le_trans hextremal hgderivbound
+  rw [WithZero.exp_le_exp] at hfinal
+  obtain ⟨A, hA⟩ : ∃ A, e * e.factorization q = A := ⟨_, rfl⟩
+  rw [hA] at hfinal ⊢
+  omega
 
 /-- **The wild different bound when the residue degree is one** (PROVEN
 2026-07-26 over `differentIdeal_exponent_le_of_intEisenstein_approx`,
