@@ -366,6 +366,26 @@ import Mathlib.NumberTheory.Basic
 -- conductor leaf `hasConductorExponentAt_factorization_of_isNewAtPrime`
 -- below.
 public import Fermat.FLT.Deformations.RepresentationTheory.ArtinConductor
+-- The Galois theory of ramification: `Ideal.ramificationIdxIn`,
+-- `Ideal.inertiaDegIn`, the transitivity of the Galois action on the primes
+-- over a fixed prime (`Algebra.IsInvariant.orbit_eq_primesOver`) and the
+-- fundamental identity `efg = n`
+-- (`Ideal.ncard_primesOver_mul_ramificationIdxIn_mul_inertiaDegIn`). These are
+-- the inputs to `prod_galois_map_prime_eq_span_absNorm` below.
+public import Mathlib.NumberTheory.RamificationInertia.Galois
+-- `Ideal.map_algebraMap_eq_finsetProd_pow`: `p · B = ∏_{P ∣ p} P^{e_P}` in a
+-- Dedekind extension. The other half of the same computation.
+public import Mathlib.RingTheory.DedekindDomain.Factorization
+-- `Ideal.absNorm_pow_inertiaDeg`: `(N p)^{f} = N P` for `P` over `p`.
+public import Mathlib.RingTheory.RamificationInertia.Inertia
+-- `Ideal.absNorm`, `Ideal.absNorm_apply`, `Submodule.cardQuot_apply` and
+-- `Int.ideal_span_absNorm_eq_self`. PUBLIC: `Ideal.absNorm` appears in the
+-- SIGNATURE of `prod_galois_map_prime_eq_span_absNorm`.
+public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
+-- `IsGaloisGroup`, and in particular the instance `IsGaloisGroup G ℤ (𝓞 L)`
+-- attached to a Galois group of a number field, which is what makes the
+-- ramification-theoretic lemmas above applicable to `Gal(L/ℚ)` acting on `𝓞 L`.
+public import Mathlib.FieldTheory.Galois.IsGaloisGroup
 
 @[expose] public section
 
@@ -18151,7 +18171,7 @@ The classical chain, and what each link costs on this pin:
 
 So: (a) is mathlib, (c)/(d)/(d′)/(e) are PROVEN, and (b) — the only
 genuinely missing mathematics — is now stated and isolated. As of
-2026-07-26 the frontier of this whole chain is exactly TWO leaves:
+2026-07-26 the frontier of this whole chain is exactly ONE leaf:
 
 * `span_jacobiSum_le_twistedProd` — that the Stickelberger divisor
   DIVIDES ONE Jacobi sum `J(ψ, ψˢ)` of the `p`-th power residue
@@ -18162,9 +18182,13 @@ genuinely missing mathematics — is now stated and isolated. As of
   PROVEN from it (2026-07-26): apply it to the character AND to its
   reciprocal, multiply, and cancel against
   `prod_cycGalRingOfIntegers_map_eq_span_card`, so only the "easy
-  half" of Stickelberger — a lower bound on the valuation — is left;
-* `prod_cycGalRingOfIntegers_map_eq_span_card` — the standard
-  `∏_{σ ∈ Gal} σ(q) = (N q)`, absent from this pin.
+  half" of Stickelberger — a lower bound on the valuation — is left.
+
+The second leaf of the 2026-07-26 cut,
+`prod_cycGalRingOfIntegers_map_eq_span_card` — the standard
+`∏_{σ ∈ Gal} σ(q) = (N q)`, absent from this pin — is PROVEN (same day),
+for an ARBITRARY Galois number field, as
+`prod_galois_map_prime_eq_span_absNorm`.
 
 Everything between those two leaves and (e) is proven bookkeeping:
 `stickelbergerProd_one`, `stickelbergerProd_add_mul` (periodicity in
@@ -18699,43 +18723,6 @@ theorem stickelbergerProd_prime_eq_mul_galoisProd (CF : Type) [Field CF] [Number
   · exact absurd ((ZMod.val_eq_zero _).mp h) (Units.ne_zero u)
   · exact h
 
-/-- **The full Galois product of a prime is its absolute norm** (SORRY
-LEAF, cut 2026-07-26; standard algebraic number theory, e.g. Neukirch
-I.§6 or Washington §1): for `q` a nonzero prime of the ABELIAN number
-field `CF = ℚ(ζ_p)`,
-
-`∏_{σ ∈ Gal(CF/ℚ)} σ(q) = (N(q)) = (#(𝓞 CF ⧸ q))`.
-
-Indexing `σ` by `u ↦ σ_{u⁻¹}` is a bijection of the Galois group, so
-the product below is the product over the whole group. The classical
-proof: `N_{CF/ℚ}(q) · 𝓞 CF = ∏_σ σ(q)` for a Galois extension, and the
-absolute norm of a prime is the cardinality of its residue field
-(`Ideal.absNorm_apply`). Concretely, if `q` lies over `ℓ` with residue
-degree `f` and the `g = (p−1)/f` primes over `ℓ` are `𝔭_1, …, 𝔭_g`
-(unramified when `ℓ ≠ p`), then each `𝔭_i` occurs `|D| = f` times in
-the product, giving `(∏_i 𝔭_i)^f = (ℓ)^f = (ℓ^f) = (N q)`.
-
-This pin has NO packaged form of it: a grep of
-`Mathlib.RingTheory.Ideal.Norm.AbsNorm`,
-`Mathlib.RingTheory.Ideal.Norm.RelNorm` and
-`Mathlib.NumberTheory.NumberField.*` turns up `Ideal.absNorm`,
-`Ideal.spanNorm` and `Algebra.norm_eq_prod_automorphisms` (for
-ELEMENTS) but no "product of the Galois conjugates of an ideal is its
-norm". `IsCyclotomicExtension.Rat.galEquivZMod_stabilizer` — which
-identifies the decomposition group of a prime over `ℓ ∤ n` with
-`⟨[ℓ]⟩ ⊆ (ℤ/n)ˣ` — is the pin's closest relative and is the natural
-input to the `|D| = f` counting above.
-
-It is stated for a general nonzero prime because that is what the
-classical fact says; only the case `p ∉ q` is consumed here. -/
-theorem prod_cycGalRingOfIntegers_map_eq_span_card
-    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
-    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) :
-    (∏ u : (ZMod p)ˣ,
-        Ideal.map ((cycGalRingOfIntegersEquiv CF u⁻¹ : 𝓞 CF →+* 𝓞 CF)) q)
-      = Ideal.span {(Nat.card (𝓞 CF ⧸ q) : 𝓞 CF)} :=
-  sorry
-
 /-- **`x/P + y/P = n − 1` when `x + y = nP` and `P ∤ x`** (PROVEN
 2026-07-26; the ℕ-division bookkeeping behind the Stickelberger
 complementation `E(w) + E(−w) = 1` below). Both remainders are
@@ -18761,6 +18748,242 @@ theorem div_add_div_of_add_eq_mul {P x y n : ℕ} (hP : 0 < P) (hxy : x + y = n 
   have hn : (x + y) / P = n := by rw [hxy, Nat.mul_div_cancel _ hP]
   have hfin : x / P + y / P + 1 = n := by rw [← hdiv, hn]
   exact Nat.eq_sub_of_add_eq hfin
+
+/-- **Orbit–stabilizer, FIBREWISE** (PROVEN 2026-07-26; generic
+group-action bookkeeping, absent from this pin in this form): if
+`τ • x = y`, then `s ↦ τ * s` is a bijection from the stabilizer of `x`
+onto the fibre `{σ | σ • x = y}`, so every fibre of `σ ↦ σ • x` over a
+point of the orbit has the size of the stabilizer.
+
+Mathlib packages orbit–stabilizer only as the cardinality identity
+`|orbit| · |stab| = |G|` (`MulAction.orbitProdStabilizerEquivGroup`); what
+the Galois-norm computation below needs is the finer statement that each
+INDIVIDUAL fibre has size `|stab|`, which is what lets a product over `G`
+be refolded as a product over the orbit with a constant exponent. -/
+theorem card_fiber_smul_eq_card_stabilizer {G X : Type*} [Group G] [MulAction G X]
+    {x y : X} {τ : G} (hτ : τ • x = y) :
+    Nat.card {σ : G // σ • x = y} = Nat.card (MulAction.stabilizer G x) := by
+  refine Nat.card_congr ⟨fun σ => ⟨τ⁻¹ * σ.1, ?_⟩, fun s => ⟨τ * s.1, ?_⟩,
+    fun σ => Subtype.ext (by simp), fun s => Subtype.ext (by simp)⟩
+  · show (τ⁻¹ * σ.1) • x = x
+    rw [mul_smul, σ.2, ← hτ, inv_smul_smul]
+  · show (τ * s.1) • x = y
+    rw [mul_smul, MulAction.mem_stabilizer_iff.mp s.2, hτ]
+
+/-- **A product over a finite group of translates, refolded over the
+orbit** (PROVEN 2026-07-26; the combinatorial half of the Galois-norm
+computation, isolated from all ring theory): for a finite group `G`
+acting on `X` and any `f : X → M` into a commutative monoid,
+
+`∏_{σ ∈ G} f(σ • x) = ∏_{y ∈ orbit(x)} f(y)^{|Stab(x)|}`.
+
+Proof: partition `G` into the fibres of `σ ↦ σ • x`
+(`Finset.prod_fiberwise_of_maps_to`); on each fibre the factor is
+constant, and each fibre has `|Stab(x)|` elements by
+`card_fiber_smul_eq_card_stabilizer`. -/
+theorem prod_smul_eq_prod_orbit_pow {G X M : Type*} [Group G] [Fintype G] [MulAction G X]
+    [CommMonoid M] (f : X → M) (x : X) [Fintype (MulAction.orbit G x)] :
+    (∏ σ : G, f (σ • x))
+      = ∏ y ∈ (MulAction.orbit G x).toFinset,
+          f y ^ Nat.card (MulAction.stabilizer G x) := by
+  classical
+  have hmaps : ∀ σ ∈ (Finset.univ : Finset G), (σ • x) ∈ (MulAction.orbit G x).toFinset := by
+    intro σ _
+    simp only [Set.mem_toFinset]
+    exact MulAction.mem_orbit x σ
+  rw [← Finset.prod_fiberwise_of_maps_to hmaps (fun σ : G => f (σ • x))]
+  refine Finset.prod_congr rfl fun y hy => ?_
+  obtain ⟨τ, hτ⟩ : y ∈ MulAction.orbit G x := by simpa using hy
+  rw [Finset.prod_congr rfl (fun σ hσ => by rw [(Finset.mem_filter.mp hσ).2]),
+    Finset.prod_const]
+  congr 1
+  rw [← card_fiber_smul_eq_card_stabilizer hτ, Nat.card_eq_fintype_card, Fintype.card_subtype]
+
+-- INSTANCE-SHADOWING WORKAROUND (2026-07-26, diagnosed by bisecting this
+-- file's import list). `Fermat/FLT/Deformations/Lemmas.lean:122` carries a
+-- VENDORED `MulSemiringAction G (𝓞 K)` instance, written when this pin's
+-- mathlib lacked one; mathlib now has its own
+-- (`Mathlib/NumberTheory/NumberField/Basic.lean:124`), and the vendored copy
+-- wins instance search. The two are propositionally the same action but not
+-- the same TERM, so every mathlib lemma stated against mathlib's instance
+-- fails to unify — concretely `RingOfIntegers.instSMulDistribClass` does not
+-- apply, hence `SMulDistribClass Gal(L/ℚ) (𝓞 L) L` is unsynthesizable, hence
+-- so is `IsGaloisGroup Gal(L/ℚ) ℤ (𝓞 L)`, which is what the whole
+-- ramification-theory API below needs. `Chebotarev.lean` hit the same wall and
+-- worked around it by restating a lemma against the project instance; here the
+-- cheaper repair is to switch the vendored instance off for this ONE
+-- declaration, which mentions no group action in its statement. The real fix
+-- is to delete the vendored instance now that mathlib supplies it — a
+-- cross-file change with a wide blast radius, so it is left to an owner of
+-- `Deformations/Lemmas.lean`.
+open scoped Pointwise in
+attribute [-instance] instMulSemiringActionRingOfIntegers_fermat in
+/-- **The full Galois product of a prime is its absolute norm**, for an
+ARBITRARY Galois number field (PROVEN 2026-07-26; standard algebraic
+number theory — Neukirch I.§8–§9, Washington §1 — verified absent from
+this pin in any packaged form): for `L/ℚ` Galois and `q` a nonzero prime
+of `𝓞 L`,
+
+`∏_{σ ∈ Gal(L/ℚ)} σ(q) = (N q) = (#(𝓞 L ⧸ q))`.
+
+Stated in the general shape rather than the cyclotomic one because it is
+no harder there and is reusable; the cyclotomic consumer is
+`prod_cycGalRingOfIntegers_map_eq_span_card` below. Ramification is NOT
+excluded — the identity holds for every nonzero prime, ramified or not.
+
+**Proof.** Write `p₀ = q ∩ ℤ`, `e = e(q/p₀)`, `f = f(q/p₀)`,
+`g = #{P ∣ p₀}`.
+
+1. `Gal(L/ℚ)` acts on the primes over `p₀`, so the product over the group
+   refolds as `∏_{P ∣ p₀} P^{|D|}` where `D = Stab(q)` is the
+   decomposition group (`prod_smul_eq_prod_orbit_pow`, together with
+   `Algebra.IsInvariant.orbit_eq_primesOver`: the action is TRANSITIVE on
+   the primes over `p₀`, so the orbit is all of them).
+2. `|D| = e·f`, from orbit–stabilizer `g · |D| = #G` together with the
+   fundamental identity `g · e · f = #G`
+   (`Ideal.ncard_primesOver_mul_ramificationIdxIn_mul_inertiaDegIn`) and
+   `g ≠ 0`. This route avoids mathlib's `Ideal.card_stabilizer_eq`, which
+   would additionally demand `PerfectField p₀.ResidueField`.
+3. `∏_{P ∣ p₀} P^{ef} = (∏_{P ∣ p₀} P^e)^f = (p₀ · 𝓞 L)^f` by
+   `Ideal.map_algebraMap_eq_finsetProd_pow` (the exponents are all equal
+   by `Ideal.ramificationIdxIn_eq_ramificationIdx`).
+4. `(p₀ · 𝓞 L)^f = (p₀^f) · 𝓞 L` and `p₀^f = (N q)` inside `ℤ`, because
+   `absNorm` is multiplicative and `(N p₀)^f = N q`
+   (`Ideal.absNorm_pow_inertiaDeg`), while every ideal of `ℤ` is
+   generated by its absolute norm (`Int.ideal_span_absNorm_eq_self`). -/
+theorem prod_galois_map_prime_eq_span_absNorm (L : Type*) [Field L] [NumberField L]
+    [IsGalois ℚ L] {q : Ideal (𝓞 L)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) :
+    (∏ σ : L ≃ₐ[ℚ] L,
+        Ideal.map ((RingOfIntegers.mapRingEquiv (σ.toRingEquiv) : 𝓞 L ≃+* 𝓞 L) :
+          𝓞 L →+* 𝓞 L) q)
+      = Ideal.span {(Ideal.absNorm q : 𝓞 L)} := by
+  haveI := hq
+  set G := L ≃ₐ[ℚ] L with hG
+  -- the `Ideal.map` formulation of the product IS the pointwise Galois action
+  have hconv : ∀ σ : G,
+      Ideal.map ((RingOfIntegers.mapRingEquiv (σ.toRingEquiv) : 𝓞 L ≃+* 𝓞 L) :
+        𝓞 L →+* 𝓞 L) q = σ • q := by
+    intro σ
+    rw [Ideal.pointwise_smul_def]
+    congr 1
+  rw [Finset.prod_congr rfl (fun σ _ => hconv σ)]
+  set p₀ : Ideal ℤ := q.under ℤ with hp₀
+  -- `p₀` is a nonzero prime of `ℤ`, hence maximal
+  have hp0 : p₀ ≠ ⊥ := by
+    intro h
+    haveI : q.LiesOver (⊥ : Ideal ℤ) := ⟨h.symm⟩
+    exact hq0 (Ideal.eq_bot_of_liesOver_bot ℤ q)
+  haveI : p₀.IsMaximal := Ideal.isMaximal_of_isPrime_of_ne_bot p₀ hp0
+  haveI : Fintype (MulAction.orbit G q) := by
+    rw [Algebra.IsInvariant.orbit_eq_primesOver ℤ (𝓞 L) G p₀ q]
+    exact (Algebra.QuasiFinite.finite_primesOver p₀).fintype
+  -- Step 1: the product over the group is a product over the primes above `p₀`
+  have h1 : (∏ σ : G, σ • q)
+      = ∏ P ∈ (Ideal.primesOver p₀ (𝓞 L)).toFinset,
+          P ^ Nat.card (MulAction.stabilizer G q) := by
+    rw [prod_smul_eq_prod_orbit_pow (G := G) (fun I : Ideal (𝓞 L) => I) q]
+    congr 1
+    exact Set.toFinset_congr (Algebra.IsInvariant.orbit_eq_primesOver ℤ (𝓞 L) G p₀ q)
+  -- Step 2: the decomposition group has order `e · f`
+  have h2 : Nat.card (MulAction.stabilizer G q)
+      = p₀.ramificationIdxIn (𝓞 L) * p₀.inertiaDegIn (𝓞 L) := by
+    have horb : Nat.card (MulAction.orbit G q) * Nat.card (MulAction.stabilizer G q)
+        = Nat.card G := by
+      rw [← Nat.card_prod]
+      exact Nat.card_congr (MulAction.orbitProdStabilizerEquivGroup G q)
+    have hfund : (Ideal.primesOver p₀ (𝓞 L)).ncard *
+        (p₀.ramificationIdxIn (𝓞 L) * p₀.inertiaDegIn (𝓞 L)) = Nat.card G :=
+      Ideal.ncard_primesOver_mul_ramificationIdxIn_mul_inertiaDegIn p₀ (𝓞 L) G
+    have hcard : Nat.card (MulAction.orbit G q) = (Ideal.primesOver p₀ (𝓞 L)).ncard := by
+      rw [Nat.card_coe_set_eq]
+      exact congrArg Set.ncard (Algebra.IsInvariant.orbit_eq_primesOver ℤ (𝓞 L) G p₀ q)
+    rw [hcard] at horb
+    have hne : (Ideal.primesOver p₀ (𝓞 L)).ncard ≠ 0 := by
+      intro h
+      rw [h, zero_mul] at hfund
+      exact (Nat.card_pos (α := G)).ne hfund
+    exact Nat.eq_of_mul_eq_mul_left (Nat.pos_of_ne_zero hne) (horb.trans hfund.symm)
+  -- Step 3: `∏_{P ∣ p₀} P^{ef} = (p₀ · 𝓞 L)^f`
+  have h3 : (∏ P ∈ (Ideal.primesOver p₀ (𝓞 L)).toFinset,
+        P ^ (p₀.ramificationIdxIn (𝓞 L) * p₀.inertiaDegIn (𝓞 L)))
+      = (Ideal.map (algebraMap ℤ (𝓞 L)) p₀) ^ (p₀.inertiaDegIn (𝓞 L)) := by
+    rw [Ideal.map_algebraMap_eq_finsetProd_pow hp0, ← Finset.prod_pow]
+    refine Finset.prod_congr rfl fun P hP => ?_
+    have hP' : P ∈ Ideal.primesOver p₀ (𝓞 L) := by simpa using hP
+    haveI : P.IsPrime := hP'.1
+    haveI : P.LiesOver p₀ := hP'.2
+    rw [← pow_mul, Ideal.ramificationIdxIn_eq_ramificationIdx p₀ P G]
+  -- Step 4: `(p₀ · 𝓞 L)^f = (N q)`
+  have h4 : (Ideal.map (algebraMap ℤ (𝓞 L)) p₀) ^ (p₀.inertiaDegIn (𝓞 L))
+      = Ideal.span {(Ideal.absNorm q : 𝓞 L)} := by
+    rw [Ideal.inertiaDegIn_eq_inertiaDeg p₀ q G, ← Ideal.map_pow]
+    have key : p₀ ^ (q.inertiaDeg ℤ) = Ideal.span {(Ideal.absNorm q : ℤ)} := by
+      rw [← Int.ideal_span_absNorm_eq_self (p₀ ^ (q.inertiaDeg ℤ)), map_pow,
+        Ideal.absNorm_pow_inertiaDeg p₀ q]
+    rw [key, Ideal.map_span, Set.image_singleton]
+    norm_num
+  rw [h1, h2, h3, h4]
+
+/-- **The full Galois product of a prime is its absolute norm** (PROVEN
+2026-07-26 over `prod_galois_map_prime_eq_span_absNorm`; standard
+algebraic number theory, e.g. Neukirch I.§6 or Washington §1): for `q` a
+nonzero prime of the ABELIAN number field `CF = ℚ(ζ_p)`,
+
+`∏_{σ ∈ Gal(CF/ℚ)} σ(q) = (N(q)) = (#(𝓞 CF ⧸ q))`.
+
+Indexing `σ` by `u ↦ σ_{u⁻¹}` is a bijection of the Galois group, so
+the product below is the product over the whole group. The classical
+proof: `N_{CF/ℚ}(q) · 𝓞 CF = ∏_σ σ(q)` for a Galois extension, and the
+absolute norm of a prime is the cardinality of its residue field
+(`Ideal.absNorm_apply`). Concretely, if `q` lies over `ℓ` with residue
+degree `f` and the `g = (p−1)/f` primes over `ℓ` are `𝔭_1, …, 𝔭_g`
+(unramified when `ℓ ≠ p`), then each `𝔭_i` occurs `|D| = f` times in
+the product, giving `(∏_i 𝔭_i)^f = (ℓ)^f = (ℓ^f) = (N q)`.
+
+This pin has NO packaged form of it: a grep of
+`Mathlib.RingTheory.Ideal.Norm.AbsNorm`,
+`Mathlib.RingTheory.Ideal.Norm.RelNorm` and
+`Mathlib.NumberTheory.NumberField.*` turns up `Ideal.absNorm`,
+`Ideal.spanNorm` and `Algebra.norm_eq_prod_automorphisms` (for
+ELEMENTS) but no "product of the Galois conjugates of an ideal is its
+norm". `IsCyclotomicExtension.Rat.galEquivZMod_stabilizer` — which
+identifies the decomposition group of a prime over `ℓ ∤ n` with
+`⟨[ℓ]⟩ ⊆ (ℤ/n)ˣ` — is the pin's closest relative, and it turned out NOT
+to be needed: the decomposition group is counted abstractly, by
+orbit–stabilizer against the fundamental identity, so nothing cyclotomic
+enters. That is why the work is done once and for all in
+`prod_galois_map_prime_eq_span_absNorm` above, for an arbitrary Galois
+number field.
+
+**PROVEN 2026-07-26.** All that remains here is bookkeeping: `u ↦ σ_{u⁻¹}`
+is a bijection `(ℤ/p)ˣ ≃ Gal(CF/ℚ)` (the composite of `Equiv.inv` with
+`IsCyclotomicExtension.Rat.galEquivZMod`), so `Equiv.prod_comp` turns the
+indexed product into the product over the whole Galois group; and
+`Ideal.absNorm q` is by definition `#(𝓞 CF ⧸ q)`
+(`Ideal.absNorm_apply`, `Submodule.cardQuot_apply`).
+
+It is stated for a general nonzero prime because that is what the
+classical fact says; only the case `p ∉ q` is consumed here. -/
+theorem prod_cycGalRingOfIntegers_map_eq_span_card
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) :
+    (∏ u : (ZMod p)ˣ,
+        Ideal.map ((cycGalRingOfIntegersEquiv CF u⁻¹ : 𝓞 CF →+* 𝓞 CF)) q)
+      = Ideal.span {(Nat.card (𝓞 CF ⧸ q) : 𝓞 CF)} := by
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  haveI : IsGalois ℚ CF := IsCyclotomicExtension.isGalois {p} ℚ CF
+  have hprod : (∏ u : (ZMod p)ˣ,
+      Ideal.map ((cycGalRingOfIntegersEquiv (p := p) CF u⁻¹ : 𝓞 CF →+* 𝓞 CF)) q)
+      = ∏ σ : CF ≃ₐ[ℚ] CF,
+          Ideal.map ((RingOfIntegers.mapRingEquiv (σ.toRingEquiv) : 𝓞 CF ≃+* 𝓞 CF) :
+            𝓞 CF →+* 𝓞 CF) q :=
+    Equiv.prod_comp
+      ((Equiv.inv (ZMod p)ˣ).trans (IsCyclotomicExtension.Rat.galEquivZMod p CF).symm.toEquiv)
+      (fun σ : CF ≃ₐ[ℚ] CF =>
+        Ideal.map ((RingOfIntegers.mapRingEquiv (σ.toRingEquiv) : 𝓞 CF ≃+* 𝓞 CF) :
+          𝓞 CF →+* 𝓞 CF) q)
+  rw [hprod, prod_galois_map_prime_eq_span_absNorm CF hq hq0]
+  congr 2
 
 /-- **THE GAUSS-SUM LEAF of the Stickelberger cut, in its DIVISIBILITY
 form: the ideal that DIVIDES one Jacobi sum** (SORRY LEAF, re-cut
@@ -19191,9 +19414,11 @@ narrower leaves plus proven bookkeeping:
   multiply to `Q` by mathlib's `jacobiSum_mul_jacobiSum_inv`, and
   cancellation in the Dedekind ideal monoid turns both divisibilities
   into equalities.
-* `prod_cycGalRingOfIntegers_map_eq_span_card` (SORRY LEAF) — the
+* `prod_cycGalRingOfIntegers_map_eq_span_card` (PROVEN 2026-07-26) — the
   standard fact that `∏_{σ ∈ Gal(CF/ℚ)} σ(q)` is the principal ideal
-  generated by the absolute norm `#(𝓞 CF ⧸ q)`. Not on this pin.
+  generated by the absolute norm `#(𝓞 CF ⧸ q)`. Not on this pin, so it
+  was built here, in the general Galois shape, as
+  `prod_galois_map_prime_eq_span_absNorm`.
 * `stickelbergerProd_eq_span_prod_jacobiSum` (PROVEN) — the closed form
   `q^{(t − σ_t)θ} = (∏_{j=1}^{t−1} J(χ⁻¹, χ⁻¹ʲ))` for `1 ≤ t < p`, by
   induction from the first leaf and `stickelbergerProd_one`.
