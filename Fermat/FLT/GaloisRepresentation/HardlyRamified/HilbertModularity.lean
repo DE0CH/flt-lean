@@ -240,24 +240,26 @@ The chain, in the order the assembly uses it:
    as composition glue over `exists_hilbertTraceDescent` (itself PROVEN)
    and the two arithmetic strata of the Carayol package.  BOTH are now
    PROVEN, by two owners working concurrently:
-   `exists_isLocalRing_hilbertTraceSubring` (Lemme 1 — the trace subring
-   is again a coefficient ring; the content is NOETHERIANITY) as soft glue
-   over the single arithmetic leaf
-   `fg_comap_maximalIdeal_hilbertTraceSubring`; and
-   `exists_framedGaloisRep_hilbertTraceSubring` (Théorème 1 — the
+   `exists_isLocalRing_hilbertTraceSubring` (Lemme 1 — the trace subring is
+   again a coefficient ring; the content is NOETHERIANITY) as soft glue over
+   the single arithmetic leaf `fg_comap_maximalIdeal_hilbertTraceSubring`,
+   and `exists_framedGaloisRep_hilbertTraceSubring` (Théorème 1 — the
    conjugation of `𝒟.ρ` into `GL₂(R')`) over a three-way cut mirroring the
    `ℚ` level, leaving open the Rouquier–Nyssen descent
-   `exists_framedGaloisRep_baseChange_hilbertTraceSubring` and (on
-   the flat side only) the Raynaud sub-object closure
-   `hasFlatProlongationAt_of_injection_of_numberField`. The tame-at-`2`
-   descent `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` was
-   REFUTED as originally cut and PROVEN 2026-07-26 in repaired form: it is
-   FALSE without a ring retraction of the trace-subring inclusion (explicit
+   `exists_framedGaloisRep_baseChange_hilbertTraceSubring`.
+   The tame-at-`2` descent
+   `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` was REFUTED as
+   originally cut and PROVEN 2026-07-26 in repaired form: it is FALSE
+   without a ring retraction of the trace-subring inclusion (explicit
    witness over `F = ℚ(ζ₇)⁺` at `ℓ = 7` in its FALSITY AUDIT), and with one
    it is formal. The retraction is the new leaf
    `exists_ringHom_retraction_hilbertTraceSubring`, discharged from
-   `IsWeaklyUniversal` and hence invisible outside the Carayol section. The `ℚ` level's
-   THIRD leaf of the outer cut, the
+   `IsWeaklyUniversal` and hence invisible outside the Carayol section.
+   On the flat side the Raynaud sub-object closure
+   `hasFlatProlongationAt_of_injection_of_numberField` was PROVEN
+   2026-07-26 once `FlatPointsGroup.lean`'s base-field hoist landed, so
+   nothing on that side is open. The `ℚ` level's THIRD leaf of the outer
+   cut, the
    Chebotarev density step, has no `F`-level counterpart: this module's
    `IsTraceGenerated` is stated at every `g : Γ F`, so the generating set
    already contains every trace. Two hypotheses were added to the node in
@@ -9081,16 +9083,18 @@ hypothesis is `charpoly_coeff_mem_hilbertTraceSubring`, a one-liner. The
 **THE COMMUTATIVE-ALGEBRA HELPERS BELOW ARE LOCAL COPIES**, for the
 same reason as `rank_finTwoPi`, `teichmullerRootSet` and `framePushforward`
 above: their originals are in `Deformation.lean`, which is DOWNSTREAM. Two
-further copies (`charpoly_baseChange_conj_hilbert`,
-`one_tmul_injective_hilbert`) came with
-`exists_framedGaloisRep_hilbertTraceSubring`, a seventh
-(`exists_frameCoords_of_baseChange_conj_hilbert`) with the repaired
-`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring`, and three more
+further copies (`charpoly_baseChange_conj_hilbert`, `one_tmul_injective_hilbert`)
+came with `exists_framedGaloisRep_hilbertTraceSubring`, three more
 (`isUnit_of_isClosed_subring_of_notMem_maximalIdeal`,
 `isLocalRing_of_isClosed_subring_of_finite_residueField`,
 `maximalIdeal_eq_comap_of_isClosed_subring_of_finite_residueField`) with
-`exists_isLocalRing_hilbertTraceSubring` — all landing 2026-07-26.
-That makes FOURTEEN duplicated helpers in this module now.  The last three
+`exists_isLocalRing_hilbertTraceSubring`, and one more
+(`exists_frameCoords_of_baseChange_conj_hilbert`) with the repaired
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` — all three proofs
+landing 2026-07-26.
+That makes FOURTEEN duplicated helpers in this module now.  The three
+`_hilbert`-suffixed ones (`charpoly_baseChange_conj_hilbert`,
+`one_tmul_injective_hilbert`, `exists_frameCoords_of_baseChange_conj_hilbert`)
 carry names DIFFERENT from their `ℚ`-level originals on purpose, both files
 living in namespace `GaloisRepresentation`. Hoisting the shared
 originals into `Defs.lean` is the right fix and needs a single owner across
@@ -10050,7 +10054,7 @@ lemma one_tmul_injective_hilbert {A : Type*} [CommRing A] {B : Type*}
   exact hinj h3
 
 /-- **Raynaud closure for flat prolongations over a VARIABLE number field,
-in plain SUBOBJECT form** (LEAF — new 2026-07-26; the sub-object sibling of
+in plain SUBOBJECT form** (PROVEN 2026-07-26; the sub-object sibling of
 `hasFlatProlongationAt_of_pi_surjection_of_numberField` above, and the
 `K`-variable form of `Deformation.lean`'s PROVEN
 `hasFlatProlongationAt_of_injection`): if the local space of `ρ₂` at a
@@ -10065,21 +10069,34 @@ flat model is again finite flat over the DVR. The EXISTENCE direction needs
 no `e < ℓ − 1` bound; Raynaud's bound enters only for UNIQUENESS of the
 prolongation, which is not asserted.
 
-**WHY THIS IS OPEN HERE WHEN IT IS PROVEN AT `K = ℚ`, AND EXACTLY WHAT
-CLOSES IT.** Word for word the situation of the surjection sibling above,
-whose docstring carries the full analysis: at `K = ℚ` this is
-`Deformation.lean`'s two-line corollary of the leaf
-`hasFlatProlongationAt_of_prod_injection` (take the same object twice and
-kill the second coordinate: `x ↦ (j x, 0)` is injective and equivariant
-because `g • 0 = 0`), and that module lives DOWNSTREAM of this one. The
-honest fix is the same single edit: hoist
+**HOW IT WAS CLOSED, AND WHY IT WAS OPEN FOR A DAY.** Word for word the
+situation of the surjection sibling above, whose docstring carries the full
+analysis. The fix prescribed there — hoist
 `Deformations/RepresentationTheory/FlatPointsGroup.lean`'s
-`variable (v : HeightOneSpectrum (𝓞 ℚ))` to a general number field, after
-which BOTH `_of_numberField` leaves in this module close together with
-their `ℚ`-level originals. It is not done here because that is a
-cross-cutting edit to a file with concurrent owners, and because consuming
-`FlatPointsGroup.lean` from here would drag the Gelfand-duality machinery
-into this module's deliberately minimal import surface.
+`variable (v : HeightOneSpectrum (𝓞 ℚ))` to a general number field — HAS
+LANDED, and that file is now sorry-free at a variable `K`. So this is the
+same three-line assembly as its sibling, over the same three PROVEN
+ingredients: `hasFlatProlongationAt_iff_isFlatPointsGroupAt` to pass to the
+representation-free carrier, `IsFlatPointsGroupAt.of_injective` for the
+schematic closure of a `Γ K_w`-stable subgroup, and the `iff` again to come
+back. Note it does NOT route through `Deformation.lean`'s `ℚ`-level
+`hasFlatProlongationAt_of_prod_injection` corollary (which takes the same
+object twice and kills the second coordinate, `x ↦ (j x, 0)`); that module
+is DOWNSTREAM and unusable from here, and the direct subobject closure is
+shorter anyway.
+
+This leaf survived the hoist that was supposed to close it purely for a
+bookkeeping reason worth recording: the hoist task was pointed at
+`hasFlatProlongationAt_of_prod_injection_over_numberField`, **a name that
+exists nowhere in this file**, so its sibling closed and this one did not.
+A task aimed at a name that does not exist fails silently — it looks like a
+completed task, not a missed one.
+
+The import cost is nil: `FlatPointsGroup.lean` is already imported by this
+module for the surjection sibling, and its Gelfand-duality closure was
+audited there (38 `Fermat`-side modules, nothing from `HardlyRamified/`,
+`Family.lean`, `Lift.lean`, `Deformation.lean` or `Modularity/*`), so the
+circularity guard is intact.
 
 No finiteness hypothesis on `M₁` is needed: it is forced, `M₁` injecting
 into the finite `M₂`.
@@ -10105,8 +10122,13 @@ theorem hasFlatProlongationAt_of_injection_of_numberField
     (hinj : Function.Injective j)
     (hequiv : ∀ (g : Γ (w.adicCompletion K))
         (x : (ρ₁.toLocal w).Space), j (g • x) = g • j x) :
-    ρ₁.HasFlatProlongationAt w :=
-  sorry
+    ρ₁.HasFlatProlongationAt w := by
+  -- pass to the representation-free point-group carrier
+  have h₂ : Modularity.IsFlatPointsGroupAt w (ρ₂.toLocal w).Space :=
+    (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₂).mp h
+  -- subobjects: schematic closure over the DVR along the equivariant injection
+  exact (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₁).mpr
+    (h₂.of_injective j hinj hequiv)
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
