@@ -4975,6 +4975,280 @@ theorem WeierstrassCurve.no_torsion_order_24 (E : WeierstrassCurve ℚ)
   simp only [Finset.mem_insert, Finset.mem_singleton] at h
   omega
 
+/-! ### The plane model of `X_1(N)` in Tate coordinates, PROVEN
+
+`tateNormalForm b c` carries the origin `(0, 0)`, and "the origin has
+order `N`" is a POLYNOMIAL condition on `(b, c)` — that is exactly what
+makes the `(b, c)`-plane the affine model of `X_1(N)`. This section
+proves the dictionary and evaluates it, so that the levels below become
+concrete Diophantine statements about explicit plane curves rather than
+statements about torsion.
+
+The dictionary is `TorsionCard.smul_some_eq_zero_iff` (PROVEN, the
+division-polynomial torsion dictionary `n • P = 0 ↔ ΨSqₙ(x_P) = 0`),
+specialised to `x_P = 0`. Its right-hand side is a polynomial in `b, c`
+because the whole `normEDS` recursion of mathlib's `preΨ'` is closed
+under evaluation at a FIXED `x`: every term of `preΨ'_even` and
+`preΨ'_odd` is evaluated at the same point. So the values
+`wₙ := preΨ'ₙ(0)` satisfy a numerical recursion started from
+
+  `Ψ₂Sq(0) = b₆ = b²`,  `Ψ₃(0) = b₈ = −b³`,
+  `preΨ₄(0) = b₄b₈ − b₆² = −b⁴c`,
+
+and each `wₙ` factors as `b^{kₙ} · Fₙ(b, c)` with `Fₙ` the level-`n`
+plane curve. Since `b ≠ 0` on the whole family (`b = 0` makes the origin
+singular), `wₙ = 0` is equivalent to `Fₙ(b, c) = 0`. Only the `wₙ` that
+the levels below actually consume are recorded — `n = 5, 6, 7, 8, 11,
+13`; the recursion produces any other in the same two lines.
+
+The `Fₙ` were computed independently in PARI/GP (untrusted searcher,
+never a proof — every value below is re-derived inside Lean from the
+recursion, so a wrong guess is a compile error, not a false leaf) and
+checked over `𝔽₂₃, 𝔽₆₇` for `N = 11` and `𝔽₅₃, 𝔽₇₉` for `N = 13`: at
+every `(b, c)` where the origin of `tateNormalForm b c` has order `N`,
+`F_N(b, c) = 0`, with no exceptions. A search over all `b, c` of height
+`≤ 40` with denominator `≤ 12` found NO rational zero of `F₁₁` or `F₁₃`
+with `b ≠ 0`, consistent with the two leaves below. -/
+
+namespace MazurX1Plane
+
+/-- **The torsion dictionary over `ℚ` itself**: base-changing a curve
+over `ℚ` along `ℚ → ℚ` is the identity (`rfl`), so
+`TorsionCard.smul_some_eq_zero_iff` applies verbatim to a point of the
+curve itself. -/
+theorem zsmul_eq_zero_iff (W : WeierstrassCurve ℚ) [W.IsElliptic] {x y : ℚ}
+    (h : W.toAffine.Nonsingular x y) {n : ℤ} (hn : n ≠ 0) :
+    n • (Affine.Point.some x y h) = 0 ↔ (W.ΨSq n).eval x = 0 :=
+  TorsionCard.smul_some_eq_zero_iff W hn h
+
+/-- **`b ≠ 0` on the whole Tate family** (PROVEN): `a₄ = a₆ = 0` and
+`a₃ = −b`, so `Affine.nonsingular_zero` forces `−b ≠ 0`. -/
+theorem b_ne_zero {b c : ℚ}
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) : b ≠ 0 := by
+  rw [WeierstrassCurve.tateNormalForm, Affine.nonsingular_zero] at h00
+  rcases h00.2 with h | h
+  · simpa using h
+  · simp at h
+
+/-- `Ψ₂Sq(0) = b₆ = b²`. -/
+theorem eval_Ψ₂Sq (b c : ℚ) :
+    ((WeierstrassCurve.tateNormalForm b c).Ψ₂Sq).eval 0 = b ^ 2 := by
+  simp [WeierstrassCurve.Ψ₂Sq, WeierstrassCurve.tateNormalForm, WeierstrassCurve.b₂,
+    WeierstrassCurve.b₄, WeierstrassCurve.b₆]
+
+/-- `Ψ₃(0) = b₈ = −b³`. -/
+theorem eval_Ψ₃ (b c : ℚ) :
+    ((WeierstrassCurve.tateNormalForm b c).Ψ₃).eval 0 = -b ^ 3 := by
+  simp [WeierstrassCurve.Ψ₃, WeierstrassCurve.tateNormalForm, WeierstrassCurve.b₂,
+    WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+  ring
+
+/-- `preΨ₄(0) = b₄b₈ − b₆² = −b⁴c`. -/
+theorem eval_preΨ₄ (b c : ℚ) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ₄).eval 0 = -b ^ 4 * c := by
+  simp [WeierstrassCurve.preΨ₄, WeierstrassCurve.tateNormalForm, WeierstrassCurve.b₂,
+    WeierstrassCurve.b₄, WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+  ring
+
+/-- The even `normEDS` recursion, evaluated at a fixed point. -/
+theorem eval_preΨ'_even (W : WeierstrassCurve ℚ) (x : ℚ) (m : ℕ) :
+    (W.preΨ' (2 * (m + 3))).eval x =
+      (W.preΨ' (m + 2)).eval x ^ 2 * (W.preΨ' (m + 3)).eval x * (W.preΨ' (m + 5)).eval x -
+        (W.preΨ' (m + 1)).eval x * (W.preΨ' (m + 3)).eval x * (W.preΨ' (m + 4)).eval x ^ 2 := by
+  rw [W.preΨ'_even m]; simp
+
+/-- The odd `normEDS` recursion, evaluated at a fixed point. -/
+theorem eval_preΨ'_odd (W : WeierstrassCurve ℚ) (x : ℚ) (m : ℕ) :
+    (W.preΨ' (2 * (m + 2) + 1)).eval x =
+      (W.preΨ' (m + 4)).eval x * (W.preΨ' (m + 2)).eval x ^ 3 *
+          (if Even m then (W.Ψ₂Sq.eval x) ^ 2 else 1) -
+        (W.preΨ' (m + 1)).eval x * (W.preΨ' (m + 3)).eval x ^ 3 *
+          (if Even m then 1 else (W.Ψ₂Sq.eval x) ^ 2) := by
+  rw [W.preΨ'_odd m]; split <;> simp
+
+/-- At an ODD index `ΨSqₙ = preΨ'ₙ²`, with no `Ψ₂Sq` factor. -/
+theorem eval_ΨSq_odd (W : WeierstrassCurve ℚ) (x : ℚ) (n : ℕ) (hn : ¬ Even n) :
+    (W.ΨSq (n : ℤ)).eval x = (W.preΨ' n).eval x ^ 2 := by
+  rw [WeierstrassCurve.ΨSq_ofNat]; simp [hn]
+
+/-- A vanishing `preΨ'ₙ` value forces a vanishing `ΨSqₙ` value, at
+either parity. -/
+theorem eval_ΨSq_of_preΨ' (W : WeierstrassCurve ℚ) (x : ℚ) (n : ℕ)
+    (h : (W.preΨ' n).eval x = 0) : (W.ΨSq (n : ℤ)).eval x = 0 := by
+  rw [WeierstrassCurve.ΨSq_ofNat]; split <;> simp [h]
+
+/-! #### The level values `wₙ = preΨ'ₙ(0)` on `tateNormalForm b c` -/
+
+/-- `w₅ = b⁸(b − c)`: the origin has order `5` exactly on the line
+`b = c`, the classical genus-`0` model of `X_1(5)`. -/
+theorem eval_five (b c : ℚ) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 5).eval 0 = b ^ 8 * (b - c) := by
+  have h := eval_preΨ'_odd (WeierstrassCurve.tateNormalForm b c) 0 0
+  norm_num [Nat.even_iff, eval_Ψ₂Sq, eval_Ψ₃, eval_preΨ₄] at h
+  rw [h]; ring
+
+/-- `w₆ = b¹¹(−b + c² + c)`, the genus-`0` model of `X_1(6)`. -/
+theorem eval_six (b c : ℚ) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 6).eval 0 =
+      b ^ 11 * (-b + c ^ 2 + c) := by
+  have h := eval_preΨ'_even (WeierstrassCurve.tateNormalForm b c) 0 0
+  norm_num [Nat.even_iff, eval_Ψ₃, eval_preΨ₄, eval_five] at h
+  rw [h]; ring
+
+/-- `w₇ = b¹⁶(−b² + cb + c³)`, the genus-`0` model of `X_1(7)` — the
+same curve as `MazurLevelSeven`'s parametrisation `b = d³ − d²`,
+`c = d² − d`, in implicit form. -/
+theorem eval_seven (b c : ℚ) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 7).eval 0 =
+      b ^ 16 * (-b ^ 2 + c * b + c ^ 3) := by
+  have h := eval_preΨ'_odd (WeierstrassCurve.tateNormalForm b c) 0 1
+  norm_num [Nat.even_iff, eval_Ψ₂Sq, eval_Ψ₃, eval_preΨ₄, eval_five] at h
+  rw [h]; ring
+
+/-- `w₈ = b²⁰(2cb² − (c³ + 3c²)b + c³)`. -/
+theorem eval_eight (b c : ℚ) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 8).eval 0 =
+      b ^ 20 * (2 * c * b ^ 2 + (-c ^ 3 - 3 * c ^ 2) * b + c ^ 3) := by
+  have h := eval_preΨ'_even (WeierstrassCurve.tateNormalForm b c) 0 1
+  norm_num [Nat.even_iff, eval_Ψ₃, eval_preΨ₄, eval_five, eval_six] at h
+  rw [h]; ring
+
+/-- **`w₁₁ = b⁴⁰F₁₁`, the plane model of `X_1(11)`.** -/
+theorem eval_eleven (b c : ℚ) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 11).eval 0 =
+      b ^ 40 * (-b ^ 5 + 3 * c * b ^ 4 + (4 * c ^ 3 - 3 * c ^ 2) * b ^ 3
+        + (-3 * c ^ 5 - 9 * c ^ 4 + c ^ 3) * b ^ 2
+        + (c ^ 7 + 3 * c ^ 6 + 6 * c ^ 5) * b - c ^ 6) := by
+  have h := eval_preΨ'_odd (WeierstrassCurve.tateNormalForm b c) 0 3
+  norm_num [Nat.even_iff, eval_Ψ₂Sq, eval_preΨ₄, eval_five, eval_six, eval_seven] at h
+  rw [h]; ring
+
+/-- **`w₁₃ = b⁵⁶F₁₃`, the plane model of `X_1(13)`.** -/
+theorem eval_thirteen (b c : ℚ) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 13).eval 0 =
+      b ^ 56 * (b ^ 7 - 6 * c * b ^ 6 + (4 * c ^ 3 + 15 * c ^ 2) * b ^ 5
+        + (-9 * c ^ 5 - 15 * c ^ 4 - 20 * c ^ 3) * b ^ 4
+        + (5 * c ^ 7 + 24 * c ^ 6 + 21 * c ^ 5 + 15 * c ^ 4) * b ^ 3
+        + (-c ^ 9 - 6 * c ^ 8 - 21 * c ^ 7 - 13 * c ^ 6 - 6 * c ^ 5) * b ^ 2
+        + (6 * c ^ 8 + 3 * c ^ 7 + c ^ 6) * b + c ^ 10) := by
+  have h := eval_preΨ'_odd (WeierstrassCurve.tateNormalForm b c) 0 4
+  norm_num [Nat.even_iff, eval_Ψ₂Sq, eval_five, eval_six, eval_seven, eval_eight] at h
+  rw [h]; ring
+
+end MazurX1Plane
+
+/-- **`X_1(11)` has no non-cuspidal rational point, as a plane quintic**
+(sorry node — level `11` of the seven-level node below, in the explicit
+`(b, c)`-coordinates).
+
+The polynomial is `F₁₁`, the cofactor of `b⁴⁰` in
+`MazurX1Plane.eval_eleven`; by that PROVEN lemma and the PROVEN torsion
+dictionary, `F₁₁(b, c) = 0` with `b ≠ 0` says exactly that the origin of
+`tateNormalForm b c` has order `11`. So this node is the plane model of
+`X_1(11)` and nothing more: it carries the same content as the old
+`tateNormalForm_origin_order_ne_11`, with the modular curve replaced by
+the explicit affine quintic that IS its `(b, c)`-model.
+
+`X_1(11)` has genus `1`; it is the elliptic curve `11a3`,
+`y² + y = x³ − x²`, with `X_1(11)(ℚ) ≅ ℤ/5` generated by a cusp, so all
+five rational points are cusps and none is in the `b ≠ 0` chart.
+Billing–Mahler (J. London Math. Soc. 15, 1940); subsumed in Mazur 1977,
+Thm 7. A rank-`0` Mordell–Weil computation is what is missing; the
+`X_0` shortcut is NOT available, since `11` is in Kenku's list and
+`X_0(11)` has three non-cuspidal rational points.
+
+WHAT THIS BUYS over the previous statement: the leaf is now a
+DIOPHANTINE statement about an explicit plane curve, in the same shape
+as the elementary descents this file already carries out
+(`MazurTwoTwelve.Quartic`), rather than a statement about torsion that
+first has to be transported. -/
+theorem WeierstrassCurve.x1Eleven_plane_ne_zero (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic] (hb : b ≠ 0) :
+    -b ^ 5 + 3 * c * b ^ 4 + (4 * c ^ 3 - 3 * c ^ 2) * b ^ 3
+      + (-3 * c ^ 5 - 9 * c ^ 4 + c ^ 3) * b ^ 2
+      + (c ^ 7 + 3 * c ^ 6 + 6 * c ^ 5) * b - c ^ 6 ≠ 0 :=
+  sorry
+
+/-- **`X_1(13)` has no non-cuspidal rational point, as a plane curve of
+bidegree `(7, 10)`** (sorry node — level `13` of the seven-level node
+below, in the explicit `(b, c)`-coordinates).
+
+The polynomial is `F₁₃`, the cofactor of `b⁵⁶` in
+`MazurX1Plane.eval_thirteen`; as for level `11`, `F₁₃(b, c) = 0` with
+`b ≠ 0` says exactly that the origin of `tateNormalForm b c` has order
+`13`.
+
+`X_1(13)` has genus `2` and its Jacobian is `ℚ`-simple of dimension `2`
+with `LRatio(J, 1) = 1/361 ≠ 0`, hence Mordell–Weil rank `0`; its six
+rational points are its `φ(13)/2 = 6` rational cusps, and
+`min_p #X_1(13)(𝔽_p) = 6` matches. Mazur–Tate, "Points of order 13 on
+elliptic curves" (Invent. Math. 22, 1973); subsumed in Mazur 1977,
+Thm 7. As at level `11` the `X_0` shortcut is unavailable, `13` being in
+Kenku's list. -/
+theorem WeierstrassCurve.x1Thirteen_plane_ne_zero (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic] (hb : b ≠ 0) :
+    b ^ 7 - 6 * c * b ^ 6 + (4 * c ^ 3 + 15 * c ^ 2) * b ^ 5
+      + (-9 * c ^ 5 - 15 * c ^ 4 - 20 * c ^ 3) * b ^ 4
+      + (5 * c ^ 7 + 24 * c ^ 6 + 21 * c ^ 5 + 15 * c ^ 4) * b ^ 3
+      + (-c ^ 9 - 6 * c ^ 8 - 21 * c ^ 7 - 13 * c ^ 6 - 6 * c ^ 5) * b ^ 2
+      + (6 * c ^ 8 + 3 * c ^ 7 + c ^ 6) * b + c ^ 10 ≠ 0 :=
+  sorry
+
+/-- **The four residual rank-zero levels `17, 19, 25, 27`, in plane
+form** (sorry node — the residue of the seven-level node below after
+levels `11`, `13` are cut off as explicit plane curves and level `21` is
+discharged outright).
+
+STATEMENT. If the level-`N` value `wₙ = preΨ'ₙ(0)` vanishes on
+`tateNormalForm b c`, then so does `w_d` for some `0 < d < N`. By the
+PROVEN dictionary `MazurX1Plane.zsmul_eq_zero_iff` this says: the origin
+never has order EXACTLY `N`, only possibly a proper divisor of it.
+
+WHY IT IS TRUE, level by level, and why the `d`-clause is not optional:
+
+* `N = 17, 19` (prime): `w_N = 0` means the origin has order `N`, which
+  Mazur excludes; the hypothesis is unsatisfiable and any `d` will do.
+  Plane models: `F₁₇` has bidegree `(12, 18)`, `F₁₉` bidegree `(15, 22)`
+  — written out they are `~60` and `~90` terms, which is why they are
+  left in `preΨ'` form here rather than expanded like `F₁₁` and `F₁₃`.
+* `N = 25`: `w₂₅ = 0` means the order DIVIDES `25`, i.e. is `5` or `25`.
+  Order `5` really does occur — `X_1(5)` has genus `0` and `w₅ = 0` is
+  the line `b = c` (`MazurX1Plane.eval_five`) — so the conclusion `d = 5`
+  is the true content and the statement WOULD BE FALSE without the
+  `d`-clause. This is the trap that makes `w_N ≠ 0` the wrong shape for
+  composite levels.
+* `N = 27`: `w₂₇ = 0` means the order divides `27`. Order `3` forces
+  `Ψ₃(0) = −b³ = 0`, impossible; so the order is `9` or `27`, and `27`
+  being excluded leaves `d = 9`.
+
+BOOKKEEPING NOTE for whoever takes this leaf. The `N = 27` case is
+ALREADY PROVEN independently further down this file, at
+`WeierstrassCurve.no_torsion_order_27` — via the `X_0(27)` route
+(`j_of_stable_cyclic_subgroup_order_27`, `no_torsion_order_27_of_j`),
+which needs no modular curve of level `27` at all. It is included here
+only because those declarations are declared BELOW the seven-level node
+and Lean's declaration order forbids using them above it. The right
+repair is to relocate the seven-level node (and its two consumers
+`tateNormalForm_origin_order_ne_25`, `no_torsion_order_25`) below
+`no_torsion_order_27`, after which the `27` disjunct can simply be
+dropped from this leaf. That relocation touches other owners'
+declarations and so was not done here.
+
+CITATION for the three that remain: Mazur 1977, Thm 7; the ranks are
+`0` because every `ℚ`-simple factor of `J_1(N)` has `L(A, 1) ≠ 0`
+(`LRatio`: `17: 1/16, 1/21316`; `19: 1/9, 1/2134521`;
+`25: 1/5041, 1/10272025`), and `min_p #X_1(N)(𝔽_p) = φ(N)/2` equals the
+number of rational cusps (`8, 9, 10`). See the seven-level node's
+docstring below for the full audit. -/
+theorem WeierstrassCurve.tateNormalForm_origin_preΨ'_residual (N : ℕ)
+    (hN : N = 17 ∨ N = 19 ∨ N = 25 ∨ N = 27) (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0)
+    (h : ((WeierstrassCurve.tateNormalForm b c).preΨ' N).eval 0 = 0) :
+    ∃ d : ℕ, 0 < d ∧ d < N ∧
+      ((WeierstrassCurve.tateNormalForm b c).preΨ' d).eval 0 = 0 :=
+  sorry
+
 /-- **`X_1(N)(ℚ)` is cuspidal at the seven rank-zero levels: in Tate
 coordinates the origin never has order `N`, for
 `N ∈ {11, 13, 17, 19, 21, 25, 27}`** (sorry node — ONE literature
@@ -5183,15 +5457,122 @@ GENERALISED 2026-07-26. The whole of the above is now a corollary of the
 single node `tateNormalForm_origin_order_ne_of_cuspidalRankZero`
 immediately below, which states it uniformly for the SEVEN levels whose
 proof is the same theorem. That node, not this one, is where the work
-is; this one is PROVEN from it by instantiating `N := 25`. -/
+is; this one is PROVEN from it by instantiating `N := 25`.
+
+DECOMPOSED AND PARTLY PROVEN 2026-07-26. The node itself is no longer a
+`sorry`: it is now derived, level by level, from the plane model of
+`X_1(N)` in the `(b, c)`-coordinates (section `MazurX1Plane` above,
+PROVEN) together with three shallower nodes. The cut is:
+
+* `N = 21` is **PROVEN OUTRIGHT** here, from the file's own
+  `no_torsion_order_21` — the `X_0(21)` + genus-`0` `X_1(7)` route,
+  which involves no rank-`0` Jacobian input at all. So level `21` was
+  never part of the "same theorem" this node claims to state uniformly:
+  it was already free, and grouping it with the others overstated the
+  citation. That is a correction to the audit below, not a change of
+  statement.
+* `N = 11, 13` go to `x1Eleven_plane_ne_zero` and
+  `x1Thirteen_plane_ne_zero`: the EXPLICIT affine plane curves
+  `F₁₁(b, c) = 0` (bidegree `(5, 7)`) and `F₁₃(b, c) = 0` (bidegree
+  `(7, 10)`), which are the `(b, c)`-models of `X_1(11)` and `X_1(13)`.
+* `N = 17, 19, 25, 27` go to `tateNormalForm_origin_preΨ'_residual`,
+  stated in `preΨ'` form because those plane curves are too large to
+  write out (`~60`, `~90`, and several hundred terms). Its docstring
+  records that the `27` case is already proven independently below, and
+  is present only because of Lean's declaration order.
+
+The transport is the PROVEN division-polynomial torsion dictionary
+`TorsionCard.smul_some_eq_zero_iff`, specialised to the origin: the
+`normEDS` recursion behind mathlib's `preΨ'` is closed under evaluation
+at a fixed `x`, so `preΨ'ₙ(0)` is a polynomial in `(b, c)` computable
+from `Ψ₂Sq(0) = b²`, `Ψ₃(0) = −b³`, `preΨ₄(0) = −b⁴c`. Every level
+value used below is DERIVED inside Lean from that recursion, so the
+explicit polynomials are machine-checked rather than asserted.
+
+FAITHFULNESS NOTE, and it is the trap of this cut. The seemingly
+natural residual statement `preΨ'_N(0) ≠ 0` is FALSE at the composite
+levels: `preΨ'₂₅(0) = 0` says the order DIVIDES `25`, and order `5` is
+everywhere on this family (`preΨ'₅(0) = b⁸(b − c)`, the genus-`0` line
+`b = c`). The residual node therefore concludes with a proper divisor
+`d`, not with non-vanishing. -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero
     (N : ℕ)
     (hN : N = 11 ∨ N = 13 ∨ N = 17 ∨ N = 19 ∨ N = 21 ∨ N = 25 ∨ N = 27)
     (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
-    addOrderOf (Affine.Point.some 0 0 h00) ≠ N :=
-  sorry
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ N := by
+  intro hord
+  have hb : b ≠ 0 := MazurX1Plane.b_ne_zero h00
+  -- forward: the order condition makes the level polynomial vanish
+  have key : ∀ n : ℕ, ¬ Even n → addOrderOf (Affine.Point.some 0 0 h00) = n →
+      ((WeierstrassCurve.tateNormalForm b c).preΨ' n).eval 0 = 0 := by
+    intro n hodd hn
+    have hn0 : (n : ℤ) ≠ 0 := by
+      rintro h0
+      rw [show n = 0 from by exact_mod_cast h0] at hodd
+      exact hodd (by decide)
+    have hz : (n : ℤ) • (Affine.Point.some 0 0 h00) = 0 := by
+      rw [natCast_zsmul, ← hn]; exact addOrderOf_nsmul_eq_zero _
+    have hΨ :=
+      (MazurX1Plane.zsmul_eq_zero_iff (WeierstrassCurve.tateNormalForm b c) h00 hn0).mp hz
+    rw [MazurX1Plane.eval_ΨSq_odd _ _ n hodd] at hΨ
+    exact pow_eq_zero_iff two_ne_zero |>.mp hΨ
+  -- backward: a level value vanishing at a smaller index bounds the order
+  have back : ∀ d : ℕ, 0 < d →
+      ((WeierstrassCurve.tateNormalForm b c).preΨ' d).eval 0 = 0 →
+      addOrderOf (Affine.Point.some 0 0 h00) ≤ d := by
+    intro d hd hdz
+    have hd0 : (d : ℤ) ≠ 0 := by exact_mod_cast hd.ne'
+    have hz : (d : ℤ) • (Affine.Point.some 0 0 h00) = 0 :=
+      (MazurX1Plane.zsmul_eq_zero_iff (WeierstrassCurve.tateNormalForm b c) h00 hd0).mpr
+        (MazurX1Plane.eval_ΨSq_of_preΨ' _ _ d hdz)
+    rw [natCast_zsmul] at hz
+    exact Nat.le_of_dvd hd (addOrderOf_dvd_of_nsmul_eq_zero hz)
+  rcases hN with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · -- `N = 11`: the plane quintic `F₁₁`
+    have h := key 11 (by decide) hord
+    rw [MazurX1Plane.eval_eleven] at h
+    rcases mul_eq_zero.mp h with h0 | h0
+    · exact hb (pow_eq_zero_iff (by norm_num) |>.mp h0)
+    · exact WeierstrassCurve.x1Eleven_plane_ne_zero b c hb h0
+  · -- `N = 13`: the plane curve `F₁₃`
+    have h := key 13 (by decide) hord
+    rw [MazurX1Plane.eval_thirteen] at h
+    rcases mul_eq_zero.mp h with h0 | h0
+    · exact hb (pow_eq_zero_iff (by norm_num) |>.mp h0)
+    · exact WeierstrassCurve.x1Thirteen_plane_ne_zero b c hb h0
+  · -- `N = 17`
+    obtain ⟨d, hd0, hdN, hdz⟩ :=
+      WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 17 (by tauto) b c h00
+        (key 17 (by decide) hord)
+    have hle := back d hd0 hdz
+    rw [hord] at hle
+    omega
+  · -- `N = 19`
+    obtain ⟨d, hd0, hdN, hdz⟩ :=
+      WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 19 (by tauto) b c h00
+        (key 19 (by decide) hord)
+    have hle := back d hd0 hdz
+    rw [hord] at hle
+    omega
+  · -- `N = 21`: PROVEN, from the `X_0(21)` + `X_1(7)` route above
+    exact WeierstrassCurve.no_torsion_order_21 (WeierstrassCurve.tateNormalForm b c)
+      (Affine.Point.some 0 0 h00) hord
+  · -- `N = 25`
+    obtain ⟨d, hd0, hdN, hdz⟩ :=
+      WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 25 (by tauto) b c h00
+        (key 25 (by decide) hord)
+    have hle := back d hd0 hdz
+    rw [hord] at hle
+    omega
+  · -- `N = 27`
+    obtain ⟨d, hd0, hdN, hdz⟩ :=
+      WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 27 (by tauto) b c h00
+        (key 27 (by decide) hord)
+    have hle := back d hd0 hdz
+    rw [hord] at hle
+    omega
 
 /-- **No rational point of order `25`** (PROVEN 2026-07-26 by
 instantiating the seven-level node above at `N = 25`). All the
