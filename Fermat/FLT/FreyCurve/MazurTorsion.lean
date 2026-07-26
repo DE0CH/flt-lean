@@ -5378,7 +5378,85 @@ a `False`-conclusion level, it is TRUE, and it relocates no burden — the
 sibling that carries content is specified for exactly the content it
 carries. Do not dispatch a prover at it in isolation; it closes only as a
 corollary of a general moduli dictionary for `X_0(N)`, which does not exist
-in this development. -/
+in this development.
+
+**SHARPENING OF THE VACUITY AUDIT: THE CONCLUSION IS NOT MERELY UNPROVED, IT
+IS REFUTABLE** (2026-07-26, flt-lean-12). The audits above establish that the
+HYPOTHESES are unsatisfiable. The dual fact is stronger, is mechanically
+checkable, and is the one that matters to anyone tempted to attack this leaf
+directly: `QuarticDescent.no_x0ThirtyTwo_point` consumes this leaf's `hs`
+VERBATIM together with this leaf's CONCLUSION — `hxy` and `hsx` are exactly
+the two conjuncts of the `∃ x y` — and returns `False`. It is fully proven
+(`#print axioms` gives `[propext, Classical.choice, Quot.sound]`, checked
+2026-07-26; `QuarticDescent.lean` contains no `sorry` token at all). So
+
+    hs  ⊢  ¬ ∃ x y : ℚ, y ^ 2 = x ^ 3 + 4 * x ∧ s * (x ^ 2 + 4) = y
+
+outright. The pair `(hs, conclusion)` is contradictory on its own, with no
+reference to `E`, `g` or `hstable`: the `x, y` this leaf asks for PROVABLY DO
+NOT EXIST for any `s` satisfying `hs`. The leaf is true only through `hg` and
+`hstable`, and modulo its two siblings it is INTERDERIVABLE with
+`not_cyclicIsogeny_thirtyTwo` itself.
+
+Two consequences worth stating separately from "it is vacuous", because a
+vacuous leaf can still be attacked by constructing its conclusion and this one
+cannot. (i) Any attempt to build the point is an attempt to build a
+non-existent object, so it cannot fail informatively — it will simply not
+close, with no diagnostic distinguishing "I am not clever enough" from "there
+is nothing here". (ii) Conversely, an agent that ever reports closing this
+leaf by exhibiting `x, y` has made an error, and the error is detectable in
+one line by feeding its witness to `no_x0ThirtyTwo_point`.
+
+**Burden accounting, corrected.** "All of it is in the two siblings" above is
+a claim about where the CONTENT sits and remains right. As a statement of what
+is still OPEN it needs one qualifier: `exists_x0Sixteen_hauptmodul` is proven
+only down to `MazurLevel16.exists_univCurveV_param_of_stable`, which is itself
+a `sorry`. So level `32` currently has TWO open leaves — that one and this —
+not one, and closing this leaf alone would not close the level.
+
+**STALE-CLAIM CORRECTION: the general moduli dictionary DOES now exist**
+(2026-07-26, flt-lean-12). The sentence above — "it closes only as a corollary
+of a general moduli dictionary for `X_0(N)`, which does not exist in this
+development" — was true when written and is not any more, and the distinction
+matters because it changes what a future owner should go looking for.
+`Fermat/FLT/ModularCurve/X0.lean` exists and THIS FILE `public import`s it. It
+builds `Y_0(N)` as a coarse moduli scheme over `ℚ` and PROVES exactly the
+dictionary named:
+
+    nonempty_gamma0Datum_of_stable :
+      (E : WeierstrassCurve ℚ) [E.IsElliptic] (g) (hg : addOrderOf g = N)
+      (hstable : …) → Nonempty (Gamma0Datum N SpecQ)
+
+whose hypotheses are, verbatim, `hg` and `hstable` of this leaf. It also proves
+the bridge `false_of_stable_of_y0HasNoRationalPoint`, which is the shape the
+twelve composite levels of this file already go through.
+
+**Why this leaf is nevertheless still open, stated precisely so the next owner
+does not repeat the search.** The dictionary lands in the ABSTRACT coarse
+space; this leaf demands a point of the EXPLICIT plane model `y² = x³ + 4x`.
+What is missing is neither the dictionary nor the arithmetic (that is
+`no_x0ThirtyTwo_point`, fully proven) but the COMPARISON between the two — an
+isomorphism `Y_0(32) ≅` the affine curve, matching cusps to cusps. Nothing in
+`X0.lean` provides an explicit model for any level; it deliberately stops at
+the abstract coarse space.
+
+**A strictly better-shaped alternative route, for whoever revisits level `32`.**
+`false_of_stable_of_y0HasNoRationalPoint` applied at `N = 32` reduces
+`not_cyclicIsogeny_thirtyTwo` to the single leaf `Y0HasNoRationalPoint 32`.
+That leaf is *better shaped than this one in exactly the way this docstring's
+audits identify as the problem*: it has no unsatisfiable hypothesis, its
+conclusion is not refutable, and it can be attacked directly — it is a
+statement about a modular curve rather than glue whose conclusion provably has
+no witness. The catch, and the reason this is a suggestion rather than an
+edit: taking that route as stated would strand the genuinely proven arithmetic
+content of the level (`no_x0ThirtyTwo_point`, i.e. Fermat's quartic theorem),
+which is real mathematics and should be consumed, not discarded. The right
+version of the move is therefore to build the comparison and prove
+`Y0HasNoRationalPoint 32` FROM `no_x0ThirtyTwo_point`, retiring this leaf
+rather than merely relabelling it. Note the divisor descent
+`y0HasNoRationalPoint_of_dvd` does NOT reach `32` on its own: every proper
+divisor `1, 2, 4, 8, 16` of `32` has `Y_0(M)(ℚ) ≠ ∅`, since `16`-isogenies
+exist. -/
 theorem WeierstrassCurve.exists_x0ThirtyTwo_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 32)
@@ -6588,7 +6666,55 @@ is vacuously true and is NOT independently provable: whoever proves it will
 be proving the moduli dictionary in general and instantiating it. That is
 unavoidable for any level whose conclusion is `False`, and it is the shape
 `exists_x0ThirtyTwo_point` already has. All the NON-vacuous content of level
-`49` lives in `MazurLevelFortyNine` above. -/
+`49` lives in `MazurLevelFortyNine` above.
+
+**SHARPENING: THE CONCLUSION IS REFUTABLE, NOT MERELY UNPROVED**
+(2026-07-26, flt-lean-12; the same audit as the one now recorded under
+`exists_x0ThirtyTwo_point`, which this leaf's docstring already cites for its
+shape). The vacuity note above is about the HYPOTHESES. The dual fact is that
+the CONCLUSION is refuted by a sibling: `rational_point_x0FortyNine` says every
+affine rational point of `y² + x y = x³ − x² − 2x − 1` IS `(2, −1)`, which is
+precisely the negation of the `¬ (x = 2 ∧ y = −1)` demanded here. So
+
+    ⊢ ¬ ∃ x y : ℚ, y ^ 2 + x * y = x ^ 3 - x ^ 2 - 2 * x - 1 ∧ ¬ (x = 2 ∧ y = -1)
+
+with no reference to `E`, `g` or `hstable` at all. The point this leaf asks for
+does not exist; the leaf is true only through `hg` and `hstable`; and modulo
+that sibling it is INTERDERIVABLE with `not_cyclicIsogeny_fortyNine` itself.
+Do not dispatch a prover here in isolation, and treat any report of a witness
+`(x, y)` as an error detectable in one line against
+`rational_point_x0FortyNine`.
+
+One difference from level `32`, worth recording because it changes the
+strength of the refutation rather than its shape.
+`QuarticDescent.no_x0ThirtyTwo_point` is fully proven (`#print axioms` gives
+only `[propext, Classical.choice, Quot.sound]`), so there the refutation is
+unconditional. Here `rational_point_x0FortyNine` is proven only down to the
+single framework leaf `MazurLevelFortyNine.rational_point_of_selmer_empty`,
+which is still a `sorry`, so the refutation is conditional on that leaf. The
+practical accounting is the same either way: level `49` currently has TWO open
+leaves — `rational_point_of_selmer_empty` and this — and closing this one alone
+would not close the level.
+
+**STALE-CLAIM CORRECTION, and the better-shaped alternative route**
+(2026-07-26, flt-lean-12). The docstring above says the `j`-relation route "is
+not taken at level `49`" and treats a general moduli dictionary as unavailable.
+One exists now: `Fermat/FLT/ModularCurve/X0.lean`, `public import`ed by this
+file, proves `nonempty_gamma0Datum_of_stable` — whose hypotheses are verbatim
+this leaf's `hg` and `hstable` — and the bridge
+`false_of_stable_of_y0HasNoRationalPoint`. So `not_cyclicIsogeny_fortyNine`
+reduces to the single leaf `Y0HasNoRationalPoint 49`, which has no
+unsatisfiable hypothesis and no refutable conclusion and can therefore be
+attacked directly, unlike this one.
+
+The same caveat as at level `32` applies, and for the same reason: what
+`X0.lean` does NOT supply is a comparison between the abstract coarse space and
+the explicit model `y² + x y = x³ − x² − 2x − 1`, so taking that route as
+stated would strand the level's real arithmetic content — here the `2`-descent
+of `MazurLevelFortyNine`, with its four PROVEN mod-`16` obstructions. The right
+move is to build the comparison and prove `Y0HasNoRationalPoint 49` FROM
+`rational_point_x0FortyNine`. Divisor descent does not reach `49` by itself:
+its proper divisors are `1` and `7`, and `Y_0(7)(ℚ) ≠ ∅`. -/
 theorem WeierstrassCurve.exists_x0FortyNine_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 49)
@@ -7070,7 +7196,60 @@ IRREDUCIBLE at this mathlib pin, and the section note records why it is not
 split further: the moduli half would need the `j`-function on `X_0(p)` itself
 (no intermediate genus-`0` level exists for `p` prime), and the three Mordell–
 Weil determinations have no mathlib input to lean on, so the split would produce
-six irreducible leaves in place of one. -/
+six irreducible leaves in place of one.
+
+**INDEPENDENT RE-VERIFICATION — the table is SOUND *and* COMPLETE**
+(2026-07-26, flt-lean-12; PARI/GP and Magma as untrusted searchers, statement
+checks only). The six pairs were re-derived from scratch by a different route
+than the one that produced them, and the list is exactly right: no missing
+entry and no spurious one.
+
+* **Rank.** PARI `ellrank` returns the interval `[0, 0]` — rank PROVEN `0`,
+  not merely bounded above — for all three models, and `elltors` returns
+  orders `5, 4, 3` with generators `(5, 5)`, `(7, 13)`, `(5, 9)` and
+  conductors `11, 17, 19`. So `X_0(p)(ℚ)` IS the torsion group, hence finite
+  and fully enumerable, which is what makes the check below exhaustive.
+* **Every rational point, and its `j`.** Enumerating that group and evaluating
+  Magma's `jFunction(X, p)` at each point, with `∞` marking a pole (= a cusp):
+
+      p = 11 : (0:1:0) ↦ ∞,  (16, 60) ↦ ∞,
+               (5, 5) ↦ −24729001,  (5, −6) ↦ −32768,  (16, −61) ↦ −121
+      p = 17 : (0:1:0) ↦ ∞,  (7, 13) ↦ ∞,
+               (11/4, −15/8) ↦ −297756989/2,  (7, −21) ↦ −882216989/131072
+      p = 19 : (0:1:0) ↦ ∞,  (5, 9) ↦ ∞,
+               (5, −10) ↦ −884736
+
+  Exactly two cusps at each level, leaving exactly `3 + 2 + 1` non-cuspidal
+  values — the six in the statement, in agreement with the dictionary recorded
+  in the section note above, down to which affine point is the second cusp.
+* **Non-vacuity, re-confirmed pairwise.** `ellisomat` on `ellfromj(j)` returns
+  the degree matrix `[1, p; p, 1]` for each of the six, so each value really is
+  realised by a curve with a rational `p`-isogeny — and the same run certifies
+  what `not_cyclicIsogeny_sq_of_jInvariant` consumes, that the class is a
+  single edge.
+
+**The cost of the rejected split, now MEASURED rather than estimated.** The
+`j`-function that a "moduli half" would have to carry is, in Magma's model, a
+ratio of bivariate polynomials of total degree `8/8`, `12/12` and `13/13` at
+`p = 11, 17, 19`, with integer coefficients running to twenty-one decimal
+digits (`≈ 1.5 × 10^20` at `p = 17`). Writing those three relations into Lean
+is the whole price of the split, and it would still leave the three Mordell–
+Weil determinations open. The decision not to split is confirmed.
+
+**Nothing to vendor, either — but read the reference project carefully, because
+it assumes TWO different Mazur theorems by two different mechanisms and only
+one of them is findable by grepping for `axiom`.** In `~/cs/FLT`:
+
+* the TORSION bound is `axiom Mazur_statement` (`FLT/Assumptions/Mazur.lean`),
+  stated as `(AddCommGroup.torsion (E⁄ℚ).Point).ncard ≤ 16`;
+* the ISOGENY theorem — the one this leaf feeds — appears only through its
+  consequence `FreyPackage.mazur` (`FLT/FreyCurve/Mazur.lean`), the
+  irreducibility of the Frey curve's `p`-torsion, and that is discharged by
+  that project's `knownin1980s` assumption tactic, not by an `axiom`.
+
+So the isogeny theorem is assumed there as well, just not under a name an
+`axiom` grep would surface. "IRREDUCIBLE at this mathlib pin" is therefore not
+merely this development's assessment of its own reach. -/
 theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_genusOne
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ}
@@ -7110,7 +7289,45 @@ certificates in the section note above.
 
 This is the level of Mazur–Swinnerton-Dyer and Mazur–Vélu. IRREDUCIBLE at this
 mathlib pin: no modular curve, Jacobian, or Chabauty machinery exists in this
-development. -/
+development.
+
+**INDEPENDENT RE-VERIFICATION** (2026-07-26, flt-lean-12; PARI/GP as an
+untrusted searcher, statement checks only). Both literals equal their factored
+forms — `−7·11³ = −9317` and `−7·137³·2083³ = −162677523113838677` — and
+`ellisomat` on `ellfromj(j)` returns the degree matrix `[1, 37; 37, 1]` for
+each, so both are realised by a curve with a rational `37`-isogeny (the leaf is
+NOT vacuous) and neither is a vertex of degree `≥ 2`. The separation from
+`{43, 67, 163}` is confirmed too: `quaddisc(−37) = −148` with
+`qfbclassno(−148) = 2`, against class number `1` at `−43, −67, −163`, so `37`
+genuinely has no CM point and its two values are the non-CM pair.
+
+**Nothing to vendor.** `~/cs/FLT` assumes the isogeny theorem too, through
+`FreyPackage.mazur` and its `knownin1980s` tactic; see the fuller note under
+`jInvariant_mem_of_isogenyPrime_genusOne` for why its `axiom Mazur_statement`
+is a DIFFERENT theorem (the torsion bound) and not this one.
+
+**STALE-CLAIM CORRECTION: "no modular curve … machinery exists in this
+development" is no longer true as written** (2026-07-26, flt-lean-12). It was
+when this docstring was composed; since then
+`Fermat/FLT/ModularCurve/X0.lean` has been added and THIS FILE
+`public import`s it. That module builds the coarse moduli space `Y_0(N)` over
+`ℚ` as a scheme (`IsCoarseModuliY0`, `Gamma0Datum`, `CyclicSubgroupOfOrder`),
+proves the moduli dictionary `nonempty_gamma0Datum_of_stable` — a Galois-stable
+cyclic subgroup of order `N` IS a `Γ₀(N)`-structure — and derives
+`false_of_stable_of_y0HasNoRationalPoint`, the bridge this file's twelve
+composite levels already use. A sibling `ModularCurve/HyperellipticJacobian.lean`
+exists as well.
+
+The verdict on THIS leaf is unaffected, and it is worth being exact about why.
+`X0.lean` states the prime level as `y0HasNoRationalPoint_prime`, which is
+`Y_0(p)(ℚ) = ∅` for `p ∉ mazurIsogenyPrimes` — a statement about the primes
+NOT in the list, and `37` is IN it. So that module offers no route here: what
+this leaf needs is the complementary "and at the listed primes the rational
+points are exactly these", which `X0.lean` does not state and could not prove,
+since it stops at the affine coarse space and deliberately keeps `X_0(N)`'s
+compactification, its cusps and `J_0(N)` off the critical path. What remains
+absent is therefore the Jacobian, the Eisenstein ideal and Chabauty — not
+modular curves as such. -/
 theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_thirtySeven
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point)
@@ -7149,7 +7366,50 @@ for the newform decompositions) — in particular NOT `0`, so the cheap
 
 IRREDUCIBLE at this mathlib pin: these are the levels of the Eisenstein-ideal
 descent of Mazur, *Rational isogenies of prime degree*, and no modular curve,
-Jacobian, or Chabauty machinery exists in this development. -/
+Jacobian, or Chabauty machinery exists in this development.
+
+**INDEPENDENT RE-VERIFICATION — the three values are the class-polynomial
+roots, mechanically** (2026-07-26, flt-lean-12; PARI/GP as an untrusted
+searcher, statement checks only). This is the one leaf of the three whose
+table can be re-derived without any modular-curve input at all, because
+`h(−p) = 1` makes the Hilbert class polynomial LINEAR, so its root is forced:
+
+    polclass(−43)  = x + 884736000
+    polclass(−67)  = x + 147197952000
+    polclass(−163) = x + 262537412640768000
+
+Each is degree `1`, confirming `qfbclassno = 1`, and its unique root is exactly
+the value in the statement. The factored forms check too
+(`−2¹⁸·3³·5³`, `−2¹⁵·3³·5³·11³`, `−2¹⁸·3³·5³·23³·29³`), and `ellisomat` on
+`ellfromj(j)` returns `[1, p; p, 1]` at all three — so each really does carry a
+rational `p`-isogeny (NOT vacuous) and none is a vertex of degree `≥ 2`.
+
+**What that does and does not buy, since it is easy to over-read.** The
+computation above pins the CM `j`-invariant of discriminant `−p` and nothing
+more. The content of this leaf is the converse direction — that a rational
+`p`-isogeny FORCES CM by that discriminant, i.e. that the CM point is the only
+non-cuspidal rational point of `X_0(p)` — and no class-number computation
+reaches it. So a cut into "`E` has CM by an order of `ℚ(√−p)`" plus "`h = 1`
+pins `j`" is NOT a reduction: the first half is the whole of Mazur and the
+second half is the line above. It was considered and rejected on that ground.
+
+**Nothing to vendor.** `~/cs/FLT` assumes the isogeny theorem too, through
+`FreyPackage.mazur` and its `knownin1980s` tactic; its `axiom Mazur_statement`
+is the DIFFERENT Mazur theorem (the torsion bound). See the fuller note under
+`jInvariant_mem_of_isogenyPrime_genusOne`.
+
+**STALE-CLAIM CORRECTION: "no modular curve … machinery exists in this
+development"** (2026-07-26, flt-lean-12) — see the correction recorded under
+`jInvariant_mem_of_isogenyPrime_thirtySeven`, which applies verbatim here.
+`Fermat/FLT/ModularCurve/X0.lean` now exists and this file `public import`s
+it; the coarse moduli space `Y_0(N)` and the moduli dictionary
+`nonempty_gamma0Datum_of_stable` are available. It changes nothing for these
+three levels for the same reason as at `37`: `43`, `67` and `163` all lie IN
+`mazurIsogenyPrimes`, so `y0HasNoRationalPoint_prime` — which asserts
+`Y_0(p)(ℚ) = ∅` only OUTSIDE that list — says nothing about them, and the
+complementary "the rational points at the listed primes are exactly these" is
+not stated there and is out of that module's declared reach. What is still
+genuinely absent is `J_0(p)`, the Eisenstein ideal and Chabauty. -/
 theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_classNumberOne
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ}
