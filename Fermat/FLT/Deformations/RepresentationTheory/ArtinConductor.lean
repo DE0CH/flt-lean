@@ -169,6 +169,24 @@ lemma tameExponent_add_one_le_finrank_of_fixed {k : Type*} [Field k]
       ≤ (Module.finrank k W - 1) + 1 := Nat.add_le_add_right hsub 1
     _ = Module.finrank k W := Nat.sub_add_cancel hW
 
+/-- **The tame exponent never exceeds the dimension.** It is the
+codimension of a submodule, so `dim V − dim V^{I_v} ≤ dim V` holds
+unconditionally (indeed by `Nat` truncated subtraction alone).
+
+This trivial bound is the arithmetic that decides how much content a
+CITED conductor bound actually carries: since the tame part is all that
+`HasConductorExponentAt ρ v a` constrains at a ramified place
+(`hasConductorExponentAt_iff_tameExponent_le_of_not_isUnramifiedAt`), a
+citation `a_v(V) = a` with `a ≥ dim V` contributes NOTHING beyond
+ramifiedness. For the 2-dimensional representations of the
+level-lowering assemblies that means: a cited conductor exponent `≥ 2`
+is exactly the assertion "`ρ` is ramified at `v`", and only the
+`a = 1` case carries tame information. -/
+lemma tameExponent_le_finrank (ρ : GaloisRep K A M)
+    (v : HeightOneSpectrum (𝓞 K)) :
+    ρ.tameExponent v ≤ Module.finrank A M :=
+  Nat.sub_le _ _
+
 /-- **The Artin conductor exponent at a finite place**, as a relation
 between the representation and a natural number:
 `ρ.HasConductorExponentAt v a` says that `a` decomposes according to the
@@ -264,6 +282,53 @@ lemma hasConductorExponentAt_iff_tameExponent_le_of_not_isUnramifiedAt
     ρ.HasConductorExponentAt v a ↔ ρ.tameExponent v ≤ a := by
   refine ⟨HasConductorExponentAt.tameExponent_le, fun hle => ?_⟩
   exact ⟨a - ρ.tameExponent v, by omega, fun hu => absurd hu hram⟩
+
+/-- **A cited conductor exponent at least the dimension says exactly
+"ramified"** — the CONVERSE direction of `tameExponent_le_finrank`, and
+the lemma that measures how much of a Carayol-type citation is actually
+being assumed. At a place where `ρ` is ramified, every `a ≥ dim V`
+satisfies `ρ.HasConductorExponentAt v a` for free: the tame part is at
+most `dim V` and the wild summand absorbs the rest.
+
+Consequence for the level-lowering leaves, where `dim V = 2`: the
+literature statement "`a_q(ρ) = ord_q M₀`" needs to be assumed only in
+the case `ord_q M₀ = 1`; for `ord_q M₀ ≥ 2` the ONLY thing it delivers
+through this packaging is ramifiedness at `q`. -/
+lemma hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt
+    {ρ : GaloisRep K A M} {v : HeightOneSpectrum (𝓞 K)} {a : ℕ}
+    (hle : Module.finrank A M ≤ a) (hram : ¬ ρ.IsUnramifiedAt v) :
+    ρ.HasConductorExponentAt v a :=
+  (hasConductorExponentAt_iff_tameExponent_le_of_not_isUnramifiedAt hram).mpr
+    ((ρ.tameExponent_le_finrank v).trans hle)
+
+/-- **The remaining case, assembled from a nonzero inertia-fixed
+vector**: at a ramified place, a single nonzero `w₀` fixed by all of
+`I_v` gives `dim V^{I_v} ≥ 1`, hence `tameExponent ≤ dim V − 1`, which is
+`≤ a` as soon as `dim V ≤ a + 1`.
+
+Together with `hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt`
+this covers every `a ≥ 1` for a 2-dimensional `ρ`, and it isolates the
+TAME half of a conductor citation in the shape that is actually
+available from the local automorphic type — the fixed line of an
+unramified twist of Steinberg. Note it is stated in CONCLUSION position
+for `HasConductorExponentAt`, where the existential packaging of the
+wild summand is sound; the FALSITY AUDIT of
+`Fermat/FLT/Modularity/Interface.lean`'s
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` records what
+goes wrong when the same predicate is used to carry an upper bound in
+HYPOTHESIS position. -/
+lemma hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt {k : Type*}
+    [Field k] [TopologicalSpace k] {W : Type*} [AddCommGroup W]
+    [Module k W] [FiniteDimensional k W] {ρ : GaloisRep K k W}
+    {v : HeightOneSpectrum (𝓞 K)} {a : ℕ} {w₀ : W} (hw₀ : w₀ ≠ 0)
+    (hfix : ∀ σ ∈ localInertiaGroup v, ρ.toLocal v σ w₀ = w₀)
+    (hle : Module.finrank k W ≤ a + 1)
+    (hram : ¬ ρ.IsUnramifiedAt v) :
+    ρ.HasConductorExponentAt v a := by
+  refine (hasConductorExponentAt_iff_tameExponent_le_of_not_isUnramifiedAt
+    hram).mpr ?_
+  have h := ρ.tameExponent_add_one_le_finrank_of_fixed v hw₀ hfix
+  omega
 
 /-- **The conductor-exponent relation is upward closed at a ramified
 place**: if `ρ` is ramified at `v` and `a ≤ b`, then
