@@ -1066,16 +1066,26 @@ discharged) and
 `exists_bound_forall_padicPoint_of_geometricallyIrreducible` -- so each can
 be attacked without any of the others.
 
-Leaf list under the moduli cut, as of the FORM recut (2026-07-25):
+Leaf list under the moduli cut, as of the ARCHIMEDEAN recut (2026-07-26):
 `nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`
-(SORRY — Tate modules) and `exists_twistedHilbertBlumenthalModuliForm_of_five_le`
-(SORRY — Taylor §4, the moduli construction). `IsFormOver`,
-`hasRationalPoint_of_isFormOver`,
+(SORRY — Tate modules),
+`exists_twistedHilbertBlumenthalModuliTwist_of_five_le` (SORRY — Taylor
+§4 minus the archimedean place: Rapoport's split moduli space, its
+fineness, and Galois descent along the cocycle) and
+`hasRealHilbertBlumenthalObject_of_isHardlyRamified` (SORRY — the
+archimedean place, where the ODDNESS of `ρbar` is consumed; its intended
+discharge is one real elliptic curve, `B = E ⊗_ℤ 𝒪_D`, and it needs no
+moduli theory at all). `IsFormOver`, `HasRealHilbertBlumenthalObject`,
+`hasRationalPoint_of_isFormOver`, `isFormOver_refl`,
+`geometricallyIrreducible_of_isFormOver_isAlgClosed`,
 `exists_twistedHilbertBlumenthalModuliScheme_of_five_le` and — since
-2026-07-26 — `geometricallyIrreducible_of_isFormOver_isAlgClosed` are
-PROVEN. The last of those was expected to need Stacks 0364 (a genuine
-mathlib gap at this pin); it does not, because a FORM carries more than a
-single irreducible base change: see its own docstring. -/
+2026-07-26 — `exists_twistedHilbertBlumenthalModuliForm_of_five_le`
+itself are PROVEN. Two of those were expected to be hard and were not:
+the geometric-irreducibility descent does not need Stacks 0364 (a FORM
+carries more than a single irreducible base change), and the FORM leaf's
+`Y`-clause needs no second space at all, `Y = X` doing once `X` has a
+real point — which is what removed COMPLEX MULTIPLICATION from this
+subtree's missing machinery. -/
 
 /-- **The structure morphism of a `ℚ`-algebra's spectrum.** `ℚ` lives in
 `Type 0` while the number field produced by Moret–Bailly must land in
@@ -2878,8 +2888,343 @@ theorem geometricallyIrreducible_of_isFormOver_isAlgClosed
       w.base w.continuous.continuousOn
   rwa [Set.image_univ, Set.range_eq_univ.mpr w.surjective] at himg
 
-/-- **The twisted Hilbert–Blumenthal moduli space, as a FORM** (sorry
-node — the representability half of Taylor §4, recut 2026-07-25): for the
+/-! #### The ARCHIMEDEAN cut (2026-07-26): the only input to the FORM leaf
+that does not mention `X`
+
+`exists_twistedHilbertBlumenthalModuliForm_of_five_le` still joined two
+independent bodies of mathematics, and the seam between them is the
+ARCHIMEDEAN place:
+
+* the **representability half** — Rapoport §1 (the split moduli space of
+  `𝒪_D`-HBAVs with full `λ𝔭`-level structure is a FINE moduli space,
+  smooth and geometrically connected over `ℚ`) together with Galois
+  descent along the cocycle attached to `ρbar` (Taylor §4, Lemma 4.4).
+  This produces `X = X_ρ`, its moduli property, its geometry, and the
+  identification of `X` as a `ℚ̄`-form of the split space;
+* the **archimedean half** — that the twisted moduli problem is SOLVABLE
+  OVER `ℝ`. This is where the ODDNESS of `ρbar` is consumed, and it is
+  what Taylor's Lemma 4.5 (the CM point of `X_Dih`, plus
+  `X_ρ ≅ X_Dih` over `ℝ`) exists to supply.
+
+WHY THIS IS THE CUT, and why the obvious alternatives are not. The FORM
+section docstring above records that one may NOT split "the space exists"
+from "the space has a real point" by quantifying over an arbitrary `X`
+carrying a twisted family: the EVEN twists satisfy the moduli condition
+VACUOUSLY (`X_R(ℝ) = ∅` for `R` even, hence `X_R(F) = ∅` for every
+totally real `F`) while having no real point. That refutation kills every
+cut whose second leaf is a statement ABOUT `X`, because nothing
+`IsTwistedHilbertBlumenthalModuli` says can force a point to exist — it
+is a condition on the points there ARE, never a supply of points. The
+same objection kills the two other cuts that were tried on paper first:
+"`X` is a `ℚ̄`-form of some geometrically irreducible `X₀`" is satisfied
+by conics without real points, and "the DIHEDRAL twist `Y` has a rational
+point" is again vacuous for a pointless `Y`.
+
+`HasRealHilbertBlumenthalObject` below evades all of that because it
+mentions no space at all: it is a statement about `ρbar` and an abelian
+variety over `ℝ`. It is exactly the fibre of the moduli problem over the
+archimedean place, and it is TRUE precisely when the twisting cocycle is
+odd — the content Taylor extracts from the CM point.
+
+THE TWO LEAVES, and how the assembly composes them:
+
+* `exists_twistedHilbertBlumenthalModuliTwist_of_five_le` — the
+  representability half, stated so that it hands over the auxiliary datum
+  it chose (`D`, `λ`, `𝔭`, and the dihedral `𝔭`-level representation
+  `ρbarp`) together with the FINENESS consequence that it, and only it,
+  owns: a real object for that datum IS an `ℝ`-point of `X`.
+* `hasRealHilbertBlumenthalObject_of_isHardlyRamified` — the archimedean
+  half, quantified over an arbitrary ADMISSIBLE datum, so that whichever
+  datum the first leaf chose is covered.
+
+DATUM THREADING (the design constraint that fixed the shape of both
+statements). The two leaves must agree on `D`, `λ`, `𝔭` and `ρbarp`,
+while the seam `IsTwistedHilbertBlumenthalModuli` hides those inside an
+existential. Rather than refactor the seam — it has other consumers, and
+a parameterized copy would duplicate forty lines of level-structure
+conditions — the first leaf's conclusion carries a SECOND, independent
+copy of the datum together with the implication that consumes it. The two
+copies are the same object in the intended discharge, and the assembly
+never needs to know that.
+
+WHY THE RESIDUE-FIELD ISOMORPHISMS ARE NOT AN EXTRA ASSUMPTION on the
+first leaf: the first moduli condition of the seam demands an additive
+BIJECTION `W ≅ A[λ]`, and `A[λ]` is free of rank two over `𝒪_D/λ` while
+`W` is free of rank two over `k`; so `|𝒪_D/λ| = |k|` is FORCED by the
+seam, and finite fields of equal cardinality are isomorphic. Likewise
+`𝒪_D/𝔭 ≅ kp` is forced by the second moduli condition.
+
+WHY THE SECOND LEAF IS TRUE, and what it does NOT need — recorded so that
+nobody dispatched at it goes looking for Shimura theory. Let `E/ℝ` be an
+elliptic curve and put `B = E ⊗_ℤ 𝒪_D`, an abelian variety over `ℝ` of
+dimension `[D:ℚ]` with real multiplication by `𝒪_D`. For any maximal
+`λ ∋ ℓ` one has `B[λ] ≅ E[ℓ] ⊗_{𝔽_ℓ} 𝒪_D/λ` as `Γ_ℝ`-modules — this
+holds even when `λ` is RAMIFIED over `ℓ`, since the `λ`-torsion of
+`𝒪_D/ℓ` is `λ^{e-1}/λ^e ≅ 𝒪_D/λ`, one-dimensional over the residue
+field. So complex conjugation acts on the two-dimensional
+`𝒪_D/λ`-space `B[λ]` exactly as it acts on `E[ℓ]`: with determinant
+`-1`, because it acts on `H₁(E(ℂ), ℤ) = ℤ²` with determinant `-1`. In
+odd residue characteristic an involution of determinant `-1` on a
+two-dimensional space is conjugate to `diag(1, -1)`; there is exactly ONE
+odd two-dimensional representation of `Γ_ℝ = ℤ/2` up to isomorphism, so
+`B[λ] ≅ ρbar|_{Γ_ℝ}` as soon as `ρbar` is odd — which `IsHardlyRamified`
+gives, its determinant being the cyclotomic character and
+`cyclotomicCharacter_complexConj` being `-1`. The same argument at `𝔭`
+uses the oddness hypothesis on `ρbarp`; in residue characteristic `2`
+"odd" is vacuous, and the two involutions that can occur (the identity
+and a transvection) are BOTH realized, by choosing the sign of the
+discriminant of `E`: `c` acts trivially on `E[2]` iff `E(ℝ)` has full
+two-torsion. One real elliptic curve therefore suffices, and no moduli
+space, no complex multiplication and no Shimura variety enter. (Taylor
+reaches the archimedean conclusion through the CM point of `X_Dih`
+because he wants a `ℚ`-RATIONAL point of a specific twist; the FORM cut
+above already reduced that to the archimedean statement, and this cut
+isolates it.)
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing, and inherited
+in turn by both leaves): neither may be discharged through `Family.lean`,
+`Lift.lean`, or `Modularity/Interface.lean`. -/
+
+open CategoryTheory in
+/-- **Every scheme is a `K`-form of itself** (PROVEN): the identity
+isomorphism of the base change is compatible with the second projection.
+
+This is what lets the `Y`-clause of
+`exists_twistedHilbertBlumenthalModuliForm_of_five_le` be discharged with
+`Y = X` once `X` itself is known to have a real point: the clause
+`∃ Y fY, HasRationalPoint fY ℝ ∧ IsFormOver ℝ fX fY` is, up to this
+lemma, exactly `HasRationalPoint fX ℝ`. The `Y` in it is a memory of
+Taylor's route (`Y = X_Dih`), not an extra demand. -/
+theorem isFormOver_refl (K : Type u) [CommRing K] [Algebra ℚ K]
+    {X : AlgebraicGeometry.Scheme.{u}}
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) :
+    IsFormOver K fX fX :=
+  ⟨Iso.refl _, by simp⟩
+
+open CategoryTheory in
+/-- **A real object of the twisted Hilbert–Blumenthal moduli problem**:
+an abelian variety `B` over `ℝ`, with real multiplication by `𝒪_D` and
+of dimension `[D:ℚ]`, whose `λ`-torsion realizes `ρbar` restricted to
+`Γ_ℝ` and whose `𝔭`-torsion realizes `ρbarp` restricted to `Γ_ℝ`.
+
+This is the fibre over the archimedean place of the moduli problem whose
+`F`-points, for `F` a totally real number field, are described by
+`IsTwistedHilbertBlumenthalModuli`. It is stated with the SAME
+vocabulary — `Fermat.AbelianSchemeStruct`, `Fermat.Mult`,
+`Fermat.GeomFibrePt`, `Fermat.Mult.torsion` — with two differences forced
+by the place:
+
+* the base is `Spec ℝ` rather than `Spec ℚ`, so the point at which the
+  geometric fibre is taken is the identity of `Spec ℝ`;
+* `ρbar` cannot be restricted with `GaloisRep.map`, whose target field
+  must be a number field, so the restriction is written directly with
+  `Field.absoluteGaloisGroup.map (algebraMap ℚ ℝ) : Γ_ℝ →ₜ* Γ_ℚ` —
+  which is exactly what `GaloisRep.map` unfolds to (`GaloisRep.map_apply`).
+
+NO IRREDUCIBILITY, AND THAT IS NOT AN OVERSIGHT. The second moduli
+condition of the seam asks for a `ρbarp` that is irreducible over `F` and
+becomes reducible over a quadratic extension. Over `ℝ` the first half is
+IMPOSSIBLE: `Γ_ℝ = ℤ/2`, and an involution of a two-dimensional space
+over any field always has an invariant line (in odd characteristic it is
+diagonalizable; in characteristic two it is unipotent). So the dihedral
+condition is a GLOBAL condition on the twisting cocycle, not a condition
+on the objects it classifies, and demanding it here would make this
+definition unsatisfiable. What survives at `ℝ`, and all that the moduli
+interpretation needs there, is the level structure itself. -/
+def HasRealHilbertBlumenthalObject
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {W : Type v} [AddCommGroup W] [Module k W]
+    (ρbar : GaloisRep ℚ k W)
+    (D : Type u) [Field D] [NumberField D]
+    (lam frp : Ideal (NumberField.RingOfIntegers D))
+    {kp : Type u} [Field kp] [TopologicalSpace kp]
+    (ρbarp : GaloisRep ℚ kp (Fin 2 → kp)) : Prop :=
+  ∃ (B : AlgebraicGeometry.Scheme.{u})
+    (fB : B ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))
+    (abB : Fermat.AbelianSchemeStruct fB)
+    (m : Fermat.Mult abB (NumberField.RingOfIntegers D)),
+    AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB ∧
+    -- the `λ`-level structure: `B[λ]` realizes `ρbar|_{Γ_ℝ}`
+    (∃ e : W → Fermat.GeomFibrePt fB
+        (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))),
+      (∀ w w' : W, e (w + w') = abB.add (e w) (e w')) ∧
+      Function.Injective e ∧
+      (∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (w : W),
+        e (ρbar (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ) w) =
+          abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (e w)) ∧
+      (∀ y, y ∈ (m.torsion
+        (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) lam).1 ↔ ∃ w, e w = y)) ∧
+    -- the `𝔭`-level structure: `B[𝔭]` realizes `ρbarp|_{Γ_ℝ}`
+    (∃ e : (Fin 2 → kp) → Fermat.GeomFibrePt fB
+        (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))),
+      (∀ w w' : Fin 2 → kp, e (w + w') = abB.add (e w) (e w')) ∧
+      Function.Injective e ∧
+      (∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (w : Fin 2 → kp),
+        e (ρbarp (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ) w) =
+          abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (e w)) ∧
+      (∀ y, y ∈ (m.torsion
+        (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) frp).1 ↔ ∃ w, e w = y))
+
+/-- **The twisted Hilbert–Blumenthal moduli space as a twist** (sorry
+node, cut 2026-07-26 — the REPRESENTABILITY half of Taylor §4, all of
+`exists_twistedHilbertBlumenthalModuliForm_of_five_le` except the
+archimedean place): for the irreducible hardly ramified `ρbar` at
+`ℓ ≥ 5` there is a smooth, separated, finite-type, quasi-compact
+`ℚ`-variety `X` carrying an abelian scheme `A ⟶ X` satisfying
+`IsTwistedHilbertBlumenthalModuli`, which is a `ℚ̄`-form of a
+geometrically irreducible `X₀`, and which is FINE at the archimedean
+place: the auxiliary datum `(D, λ, 𝔭, ρbarp)` that the construction
+chose is handed over, together with the implication that a real object
+for that datum is an `ℝ`-point of `X`.
+
+Classically: `X₀` is Rapoport's split moduli space of `𝒪_D`-HBAVs with
+full `λ𝔭`-level structure (smooth and geometrically connected, the
+connectedness by the uniformization of its complex points by
+`𝔥^{[D:ℚ]}`, and FINE because `λ𝔭` is divisible by two primes of coprime
+residue characteristic), and `X = X_ρ` is its twist by the cocycle
+`R = ρbar ⊕ ρbarp` (Taylor §4, Lemma 4.4, whose description of the
+`F`-points of `X_{R,ψ}` is exactly `IsTwistedHilbertBlumenthalModuli`).
+The final conjunct is fineness read at `ℝ`: an `ℝ`-point of a fine
+moduli space is an isomorphism class of objects over `ℝ`.
+
+THE FOUR ADMISSIBILITY CONJUNCTS are exactly the hypotheses of
+`hasRealHilbertBlumenthalObject_of_isHardlyRamified`, so that the
+assembly is a single application; see the section docstring above for why
+the two residue-field isomorphisms are forced by the seam rather than
+assumed, and why the datum has to be handed over a second time.
+
+MISSING MACHINERY, IN DEPENDENCY ORDER (2026-07-25, updated 2026-07-26;
+item 1 is DONE, supplied by `Modularity/AbelianScheme.lean`; items 5–6 of
+the original list were removed by the FORM cut, and the archimedean cut
+has now removed complex multiplication as well — see
+`hasRealHilbertBlumenthalObject_of_isHardlyRamified`, which needs only a
+real elliptic curve):
+
+1. *Abelian schemes* — **DONE**: `Fermat.AbelianSchemeStruct`,
+   `Fermat.GeomFibrePt`, `Fermat.AbelianSchemeStruct.geomFibreAction`,
+   `Fermat.Mult`, `Fermat.Mult.torsion`.
+2. *Torsion subgroup schemes* `A[n]` for `n` invertible on the base:
+   finite étale of rank `n ^ (2 * relative dimension)`, so the torsion
+   Galois modules have the right size — needed to know `A[λ]` is free of
+   rank `2` over `𝒪_D/λ`, hence abstractly isomorphic to `W` (and hence
+   also to know `𝒪_D/λ ≅ k`, which this leaf must produce).
+3. *Moduli functors and their representability*: the functor of
+   Hilbert–Blumenthal abelian schemes with `𝒪_D`-action and full
+   `λ𝔭`-level structure is representable by a quasi-projective `ℚ`-scheme,
+   smooth of relative dimension `[D:ℚ]`; FINE because `λ𝔭` is divisible by
+   two primes of coprime residue characteristic, which kills the
+   automorphisms (Rapoport; Deligne–Pappas). Fineness is used TWICE here:
+   for the moduli condition, and for the archimedean implication.
+4. *Twisted forms*: Galois descent for quasi-projective schemes along a
+   continuous cocycle `Γ_ℚ → Γ ≤ Aut(level)`, giving `X_{R,ψ}` and the
+   description of its `F`-points (Taylor Lemma 4.4) — this is what
+   produces both the moduli condition and the `IsFormOver` clause.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
+discharged by the independent moduli construction — never through
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`.
+
+SOUNDNESS AUDIT (both ways): (i) direct — this is Taylor §4
+pp. 759–762 with the archimedean argument of Lemma 4.5 factored out;
+(ii) collapse — the hypothesis package (an irreducible hardly ramified
+mod-`ℓ` representation, `ℓ ≥ 5`) is classically unsatisfiable (headline
+of this module), so the statement is also vacuously sound. -/
+theorem exists_twistedHilbertBlumenthalModuliTwist_of_five_le
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible) :
+    ∃ (X : AlgebraicGeometry.Scheme.{u})
+      (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (A : AlgebraicGeometry.Scheme.{u}) (fA : A ⟶ X)
+      (ab : Fermat.AbelianSchemeStruct fA),
+      AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsSeparated fX ∧
+      AlgebraicGeometry.LocallyOfFiniteType fX ∧
+      AlgebraicGeometry.QuasiCompact fX ∧
+      IsTwistedHilbertBlumenthalModuli ℓ ρbar fX ab ∧
+      (∃ (X₀ : AlgebraicGeometry.Scheme.{u})
+        (fX₀ : X₀ ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+        (K : Type u) (_ : Field K) (_ : Algebra ℚ K),
+        IsAlgClosed K ∧ AlgebraicGeometry.GeometricallyIrreducible fX₀ ∧
+        IsFormOver K fX fX₀) ∧
+      -- the auxiliary datum, handed over with the fineness consequence at `ℝ`
+      (∃ (D : Type u) (_ : Field D) (_ : NumberField D)
+        (_ : NumberField.IsTotallyReal D)
+        (lam frp : Ideal (NumberField.RingOfIntegers D))
+        (kp : Type u) (_ : Field kp) (_ : Finite kp) (_ : TopologicalSpace kp)
+        (_ : DiscreteTopology kp) (ρbarp : GaloisRep ℚ kp (Fin 2 → kp)),
+        Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
+        Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
+        lam ≠ frp ∧
+        (∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 →
+          ρbarp.det (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ) = -1) ∧
+        (HasRealHilbertBlumenthalObject ρbar D lam frp ρbarp →
+          HasRationalPoint fX (ULift.{u} ℝ))) :=
+  sorry
+
+/-- **The twisted moduli problem is solvable over `ℝ`** (sorry node, cut
+2026-07-26 — the ARCHIMEDEAN half of Taylor §4, and the one place where
+the ODDNESS of `ρbar` is consumed): for an admissible auxiliary datum
+`(D, λ, 𝔭, ρbarp)` there is an abelian variety over `ℝ` with real
+multiplication by `𝒪_D` of dimension `[D:ℚ]` whose `λ`-torsion realizes
+`ρbar|_{Γ_ℝ}` and whose `𝔭`-torsion realizes `ρbarp|_{Γ_ℝ}`.
+
+ADMISSIBILITY is the four hypotheses `hres`, `hresp`, `hne`, `hoddp`:
+the residue fields of `λ` and `𝔭` are `k` and `kp` (forced by the seam
+that consumes this — see the section docstring), the two primes are
+distinct, and the `𝔭`-level representation is ODD. Oddness of `ρbar`
+itself is not hypothesized separately: it is contained in `hρbar`, whose
+`det` field says that `det ρbar` is the cyclotomic character, which
+`cyclotomicCharacter_complexConj` evaluates to `-1` at complex
+conjugation.
+
+PROOF SKETCH, recorded in full in the section docstring above and
+summarized here because it decides the difficulty of this leaf: take
+`B = E ⊗_ℤ 𝒪_D` for a real elliptic curve `E`. Then
+`B[λ] ≅ E[ℓ] ⊗_{𝔽_ℓ} 𝒪_D/λ` (true even for `λ` ramified over `ℓ`), so
+complex conjugation acts on it with determinant `-1`; in odd residue
+characteristic there is exactly ONE odd two-dimensional representation of
+`Γ_ℝ = ℤ/2` up to isomorphism, whence `B[λ] ≅ ρbar|_{Γ_ℝ}`. The same at
+`𝔭`, where in residue characteristic two the two possible involutions are
+separated by the sign of the discriminant of `E`. **No moduli space, no
+complex multiplication and no Shimura theory are needed** — this is
+elementary theory of real elliptic curves plus the tensor construction,
+and the machinery it really wants is (i) elliptic curves as abelian
+schemes in the `Fermat.AbelianSchemeStruct` presentation, (ii) the
+tensor `E ⊗_ℤ 𝒪_D` with its `Fermat.Mult`, and (iii) the action of
+complex conjugation on `E[n]`.
+
+FAITHFULNESS: the conclusion mentions no moduli space, so it cannot be
+satisfied vacuously by a pointless variety — which is precisely why the
+cut was made here and not at any statement about `X`. -/
+theorem hasRealHilbertBlumenthalObject_of_isHardlyRamified
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (lam frp : Ideal (NumberField.RingOfIntegers D))
+    {kp : Type u} [Field kp] [Finite kp] [TopologicalSpace kp]
+    [DiscreteTopology kp] (ρbarp : GaloisRep ℚ kp (Fin 2 → kp))
+    (hres : Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k))
+    (hresp : Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp))
+    (hne : lam ≠ frp)
+    (hoddp : ∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 →
+      ρbarp.det (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ) = -1) :
+    HasRealHilbertBlumenthalObject ρbar D lam frp ρbarp :=
+  sorry
+
+/-- **The twisted Hilbert–Blumenthal moduli space, as a FORM** (PROVEN
+2026-07-26 as an assembly over the ARCHIMEDEAN cut — see the section
+docstring above; formerly the representability half of Taylor §4, recut
+2026-07-25): for the
 irreducible hardly ramified `ρbar` at `ℓ ≥ 5` there is a smooth,
 separated, finite-type, quasi-compact `ℚ`-variety `X` carrying an
 abelian scheme `A ⟶ X` satisfying `IsTwistedHilbertBlumenthalModuli`,
@@ -2903,36 +3248,35 @@ the existence of a real point — are then formal consequences
 why they cannot be split off as statements about an arbitrary `X`
 carrying such a family: the even twists refute that.
 
-MISSING MACHINERY, IN DEPENDENCY ORDER (2026-07-25; item 1 is DONE,
-supplied by `Modularity/AbelianScheme.lean`, which is what makes this
-leaf stateable, and items 5–6 have been REMOVED from this leaf by the
-form cut — 5 is now `X₀`'s geometric irreducibility, an input rather than
-a theorem about `X`, and 6 is now `Y`'s real point):
+PROOF (2026-07-26 — the ARCHIMEDEAN cut; this node is no longer a sorry
+node). The two leaves it now rests on are
 
-1. *Abelian schemes* — **DONE**: `Fermat.AbelianSchemeStruct`,
-   `Fermat.GeomFibrePt`, `Fermat.AbelianSchemeStruct.geomFibreAction`,
-   `Fermat.Mult`, `Fermat.Mult.torsion`.
-2. *Torsion subgroup schemes* `A[n]` for `n` invertible on the base:
-   finite étale of rank `n ^ (2 * relative dimension)`, so the torsion
-   Galois modules have the right size — needed to know `A[λ]` is free of
-   rank `2` over `𝒪_D/λ`, hence abstractly isomorphic to `W`.
-3. *Moduli functors and their representability*: the functor of
-   Hilbert–Blumenthal abelian schemes with `𝒪_D`-action and full
-   `b₀`-level structure is representable by a quasi-projective `ℚ`-scheme,
-   smooth of relative dimension `[D:ℚ]`; FINE because `b₀` is divisible by
-   two primes of coprime residue characteristic, which kills the
-   automorphisms (Rapoport; Deligne–Pappas).
-4. *Twisted forms*: Galois descent for quasi-projective schemes along a
-   continuous cocycle `Γ_ℚ → Γ ≤ Aut(level)`, giving `X_{R,ψ}` and the
-   description of its `F`-points (Taylor Lemma 4.4) — this is what
-   produces both the moduli condition and the two `IsFormOver` clauses.
-5. *Complex multiplication*: the CM point of `X_Dih` (Taylor Lemma 4.5,
-   from [Lang] *Complex Multiplication* ch. 5 thm 5.1) — the source of
-   `Y`'s rational point.
+* `exists_twistedHilbertBlumenthalModuliTwist_of_five_le`, which supplies
+  `X`, its geometry, its moduli property, the `ℚ̄`-form clause, and the
+  auxiliary datum `(D, λ, 𝔭, ρbarp)` together with the fineness
+  implication "a real object for that datum is an `ℝ`-point of `X`";
+* `hasRealHilbertBlumenthalObject_of_isHardlyRamified`, which supplies
+  the real object for that datum — the archimedean place, where the
+  ODDNESS of `ρbar` is consumed.
+
+The `Y`-clause is then discharged with `Y = X` by `isFormOver_refl`: it
+demands a space with a real point of which `X` is an `ℝ`-form, and once
+`X` itself has a real point, `X` will do. `Y` was never an independent
+demand — it is a memory of Taylor's route through `X_Dih`, and the CM
+point of `X_Dih` was only ever a device for producing a real point of
+`X_ρ`. Removing it removes complex multiplication from the missing
+machinery of this subtree entirely; see
+`hasRealHilbertBlumenthalObject_of_isHardlyRamified`, whose intended
+discharge is one real elliptic curve.
+
+MISSING MACHINERY: moved onto the two leaves, where each item now has an
+owner — representability and Galois descent onto the twist leaf, the
+archimedean realization onto the real-object leaf.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
 discharged by the independent moduli construction — never through
-`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`.
+`Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. Both leaves
+inherit the guard.
 
 SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — this is Taylor
 §4 pp. 759–762; (ii) collapse — the hypothesis package (an irreducible
@@ -2963,8 +3307,15 @@ theorem exists_twistedHilbertBlumenthalModuliForm_of_five_le
         IsFormOver K fX fX₀) ∧
       (∃ (Y : AlgebraicGeometry.Scheme.{u})
         (fY : Y ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))),
-        HasRationalPoint fY (ULift.{u} ℝ) ∧ IsFormOver (ULift.{u} ℝ) fX fY) :=
-  sorry
+        HasRationalPoint fY (ULift.{u} ℝ) ∧ IsFormOver (ULift.{u} ℝ) fX fY) := by
+  obtain ⟨X, fX, A, fA, ab, hsm, hsep, hft, hqc, hmod, hform₀,
+    D, iDfield, iDnf, iDtr, lam, frp, kp, ikpfield, ikpfin, ikptop, ikpdisc, ρbarp,
+    hres, hresp, hne, hoddp, himp⟩ :=
+    exists_twistedHilbertBlumenthalModuliTwist_of_five_le hℓodd hℓ5 hW hρbar hirr
+  refine ⟨X, fX, A, fA, ab, hsm, hsep, hft, hqc, hmod, hform₀, X, fX, ?_,
+    isFormOver_refl _ fX⟩
+  exact himp (hasRealHilbertBlumenthalObject_of_isHardlyRamified hℓodd hW hρbar
+    D lam frp ρbarp hres hresp hne hoddp)
 
 /-- **The twisted Hilbert–Blumenthal moduli SPACE** (PROVEN 2026-07-25 as
 an assembly over the FORM cut — see the section docstring above): for the
