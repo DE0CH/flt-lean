@@ -1791,7 +1791,52 @@ number, it is what the degree formula actually gives, and — because
 `A[I]` is killed by `I` and so is automatically a vector space over the
 residue FIELD `𝒪_D/I` — it is equivalent to the rank statement at level
 one with no further geometry.  The passage from level one to level `n`
-is then pure algebra: see the section note above. -/
+is then pure algebra: see the section note above.
+
+CUT-OBSTRUCTION AUDIT (2026-07-26 — READ BEFORE CUTTING THIS LEAF).
+`Modularity/AbelianSchemeIsogeny.lean` now presents `[N]` as a finite
+locally free morphism, which makes one cut look very attractive: prove
+the INTEGER torsion count `#A[N] = N ^ (2g)` (the degree of `[N]`, with
+`g = [D : ℚ]`) as the geometric leaf, and deduce this statement from it
+by commutative algebra in the Dedekind domain `𝒪_D`. **That deduction
+does not exist**, for ANY collection of integer counts, and a successor
+should not spend a cycle looking for it.
+
+COUNTEREXAMPLE. Let `D` be real quadratic, so `g = 2`, and let `p` be a
+prime that SPLITS, `p 𝒪_D = J₁ J₂` with `e = f = 1` and
+`𝒪_D / Jᵢ ≅ 𝔽_p`. Write `W := D / 𝒪_D`, a divisible torsion
+`𝒪_D`-module with `W[N] ≅ 𝒪_D / N 𝒪_D`, so `#W[N] = N²`. The honest
+module is `M₀ := W ⊕ W`: it satisfies `#M₀[N] = N⁴` for every `N` and
+`#M₀[J] = #(𝒪_D/J)²` for every maximal `J`, exactly as this leaf
+asserts.
+
+Now build `M₁ := W ⊕ W'`, where `W'` agrees with `W` at every prime
+other than `p`, and at `p` has `W'[p^∞] := (D_{J₂} / 𝒪_{J₂})²` in place
+of `W[p^∞] = D_{J₁}/𝒪_{J₁} ⊕ D_{J₂}/𝒪_{J₂}`. Since `e = f = 1` at both
+`Jᵢ` we have `#(D_{J₂}/𝒪_{J₂})[p^n] = p^n`, hence
+`#W'[p^n] = p^(2n) = #W[p^n]`, and therefore `#M₁[N] = N⁴ = #M₀[N]` for
+EVERY `N`. But `M₁[J₁] = W[J₁] ⊕ 0` has order `p`, not `p²`. `M₁` is
+divisible, torsion, and a FAITHFUL `𝒪_D`-module, so neither a
+faithfulness nor a divisibility side condition rescues the count.
+
+WHAT THE COUNT MISSES, STATED POSITIVELY. For a divisible torsion
+`𝒪_D`-module with finite `J`-power torsion one has
+`M[J^∞] ≅ (D_J/𝒪_J)^(r_J)`, and the integer counts pin down only the
+WEIGHTED SUM `Σ_{J ∣ p} r_J e_J f_J = 2g`, never the individual `r_J`.
+This leaf is the assertion `r_J = 2` for every `J`, and what forces it
+is that `H₁(A, ℚ)` is a vector space over the FIELD `D`, hence free, of
+dimension `2g / [D : ℚ] = 2` — an input living over `ℚ` and invisible to
+every `ℤ`-level and `ℤ_q`-level count. That is the precise sense in
+which the rank enters through `hdim` TOGETHER with the real
+multiplication, and the precise sense in which this leaf is atomic at
+this pin.
+
+THE CHECK THAT WOULD REFUTE THIS AUDIT. Exhibit a route pinning `r_J` at
+a SINGLE maximal `J` without a rational-homology input (equivalently:
+without a `D`-vector-space, Betti, or complex-uniformization step) — for
+instance any constraint forcing the `r_J` to be equal to one another.
+Such a route defeats the counterexample, since `M₀` and `M₁` differ only
+in distributing `r_{J₁} + r_{J₂} = 4` as `2 + 2` versus `1 + 3`. -/
 theorem card_torsion_of_isMaximal
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -3368,11 +3413,24 @@ scheme, no `Mult` and no `TatePt` in sight.
 
 * `exists_tatePt_val_one_eq` — the reduction `T ↠ A[I]` is SURJECTIVE.
   **PROVEN** (2026-07-26) by countable dependent choice up the tower over
-  `exists_mem_torsion_act_uniformizer_eq`, which is itself proven over the
-  single geometric leaf `exists_nsmul_eq_geomFibrePt` (divisibility of the
-  group of geometric points of an abelian variety). It needed no new
-  geometric input: the divisibility this cut was expected to introduce was
-  already present in the file, as the input to the levelwise tower.
+  `exists_mem_torsion_act_uniformizer_eq`, which is itself proven over
+  `exists_nsmul_eq_geomFibrePt` (divisibility of the group of geometric
+  points of an abelian variety). It needed no new geometric input: the
+  divisibility this cut was expected to introduce was already present in
+  the file, as the input to the levelwise tower.
+
+  LABEL CORRECTION (2026-07-26). Earlier text here and below called
+  `exists_nsmul_eq_geomFibrePt` "the single geometric leaf". That is no
+  longer accurate in either direction, and the stale label was a
+  phantom-dispatch source. It is not "the single" geometric leaf of this
+  FILE — `card_torsion_of_isMaximal`, `locallyQuasiFinite_mulByNat` and
+  `det_eq_cyclotomicCharacter_of_tateFrame` are geometric leaves too; the
+  claim was only ever scoped to what
+  `exists_mem_torsion_act_uniformizer_eq` rests on. And it is no longer a
+  LEAF at all: it is PROVEN in `Modularity/AbelianSchemeIsogeny.lean`,
+  which builds `[N]` as a morphism and reduces divisibility to flatness
+  of `[N]`. The residual geometric leaves for divisibility are
+  `flat_mulByNat` and `finite_preimage_mulByNat` THERE, not here.
 * `exists_tatePt_act_eq_of_val_one_eq_zero` — its KERNEL is `π · T`
   (a shift of the inverse system, plus `I ^ n = (π ^ n) + I ^ (n+1)`,
   which holds because `π` generates the one-dimensional `𝒪_D/I`-vector
@@ -3404,11 +3462,17 @@ The inverse system
   `⋯ --·π--> A[I³] --·π--> A[I²] --·π--> A[I]`
 
 has SURJECTIVE transition maps — that is exactly
-`exists_mem_torsion_act_uniformizer_eq`, which in turn rests on the one
-geometric leaf `exists_nsmul_eq_geomFibrePt` (divisibility of `A(F̄)`,
-Mumford *Abelian Varieties* §6, Silverman *AEC* III.4/III.7) — so its
-limit `TatePt m x I π` surjects onto its first stage `A[I]`. This is the
+`exists_mem_torsion_act_uniformizer_eq`, which in turn rests on
+`exists_nsmul_eq_geomFibrePt` (divisibility of `A(F̄)`, Mumford *Abelian
+Varieties* §6, Silverman *AEC* III.4/III.7) — so its limit
+`TatePt m x I π` surjects onto its first stage `A[I]`. This is the
 ONLY place where surjectivity of the reduction is used.
+
+`exists_nsmul_eq_geomFibrePt` was called "the one geometric leaf" here
+until 2026-07-26; it is PROVEN in `Modularity/AbelianSchemeIsogeny.lean`
+over the flatness of `[N]`, so the live geometric leaves underneath this
+chain are `flat_mulByNat` and `finite_preimage_mulByNat` in that module.
+See the label correction in the section note above.
 
 THE ARGUMENT. Choice on the transition surjectivity gives a step
 function `step n : A[Iⁿ⁺¹] → A[Iⁿ⁺²]` with `π · step n w = w`, on the
@@ -5190,7 +5254,48 @@ No exceptional set appears: this is an identity of characters on the
 whole of `Γ_F`, ramified places included. The finite bad set of the
 consumer comes only from evaluating `χ_cyc` at a Frobenius, which is
 possible exactly away from `q`
-(`cyclotomicCharacter_adicArithFrob_absNorm`). -/
+(`cyclotomicCharacter_adicArithFrob_absNorm`).
+
+ROUTE AUDIT — `EllipticCurve/WeilPairing.lean` CANNOT SOURCE THIS, and
+the mismatch is larger than "a model for the argument" above suggests
+(checked 2026-07-26 against the released tree by reading the
+signatures, not by trusting this docstring).
+
+The tree's characteristic-zero pairing is
+`WeilPairing.exists_weilPairing`: for `E : WeierstrassCurve ℚ`, an
+alternating `ZMod p`-valued form on `E[p]` scaled by `χ_cyc mod p`. It
+is inapplicable here on four independent counts — relative dimension one
+against `[D : ℚ]`; base `ℚ` against a general `F`; a SINGLE level `p`
+against the `I`-adic limit; and `ZMod p` coefficients against `O`. The
+other two, `exists_weilPairing_mu` and `exists_weilPairing_frobenius`,
+are further away still: they live over `AlgebraicClosure (ZMod q)` and
+are equivariant for FROBENIUS rather than for `Γ_F`.
+
+WHAT IS WORTH COPYING IS THE ARCHITECTURE, AND IT IS NOT THE ONE
+PROPOSED ABOVE. `det_galoisRep_eq_cyclotomic`, the elliptic analogue of
+THIS leaf, is not proven from a characteristic-zero Weil pairing at all.
+It is proven by reducing at a good prime `q`, using the
+divisor-theoretic pairing ON THE REDUCTION to obtain
+`det (Frob_q) = q` (`det_frobeniusTorsionEnd`, then
+`det_galoisRep_globalFrob`), and then propagating from the Frobenius
+elements to all of `Γ_ℚ` by DENSITY. So the char-0 identity followed
+from a char-`q` pairing plus Chebotarev, and no dual abelian variety
+over a base was ever formed.
+
+That relocates the obstruction rather than removing it: what blocks the
+same route here is not the pairing but the absence of any integral model
+or reduction machinery for `f : A ⟶ S` — there is no good-reduction
+hypothesis on `x`, no reduction `A_q`, and no comparison of `A[I]` with
+the torsion of a reduction. The dual-and-polarization route described
+above remains correct and is owned elsewhere; this note records only
+that it is not the ONLY route, and that the elliptic proof already in
+this tree took the other one.
+
+For the same reason the elliptic torsion count is no source for the
+sibling `card_torsion_of_isMaximal` either:
+`TorsionCardSep.card_torsionBy` proves `#E(k̄)[n] = n²` by DIVISION
+POLYNOMIALS (`preΨ'`, `Ψ₂Sq`, `yQuad`), which are irreducibly a
+relative-dimension-one tool. -/
 theorem det_eq_cyclotomicCharacter_of_tateFrame
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]

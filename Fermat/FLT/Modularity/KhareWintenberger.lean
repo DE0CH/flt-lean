@@ -1391,11 +1391,15 @@ moduli theory at all), and the three leaves of the DATUM cut:
 `exists_totallyRealCoefficientDatum_of_residueField` (SORRY — a totally
 real field with a prescribed residue field at `ℓ` and a second prime over
 `3` OF RESIDUE DEGREE `≥ 2`; pure number theory),
-`exists_dihedralOddGaloisRep_of_charThree` (SORRY — an odd dihedral
-`ρbarp` over a residue field of characteristic three with MORE THAN THREE
-ELEMENTS, intended discharge `Ind_{Γ_M}^{Γ_ℚ} χ` for an imaginary
-quadratic `M`; pure representation theory — REFUTED as originally stated
-and repaired 2026-07-26, the cardinality bound is the repair) and
+`exists_dihedralOddGaloisRep_of_charThree` (PROVEN 2026-07-26 over three
+named leaves — an odd dihedral `ρbarp` over a residue field of
+characteristic three with MORE THAN THREE ELEMENTS; the discharge is
+`Ind_{Γ_M}^{Γ_ℚ} χ` for an imaginary quadratic `M`, carried out WITHOUT
+any `Ind` machinery by writing the anticyclotomic index-two induction as
+an explicit dihedral cocycle. REFUTED as originally stated and repaired
+2026-07-26, the cardinality bound being the repair. The only class field
+theory left in it is `exists_anticyclotomicDihedralCocycle`, whose
+docstring records what has to be built) and
 `exists_twistedHilbertBlumenthalModuliTwist_of_datum` (SORRY — the
 geometry: Rapoport's split moduli space, its fineness, and Galois descent
 along the cocycle, all of it now with the arithmetic choices moved into
@@ -9151,8 +9155,115 @@ theorem charP_of_padicIntAlgebra (ℓ : ℕ) [Fact ℓ.Prime] (k : Type*) [Field
   rw [← map_natCast (algebraMap ℤ_[ℓ] k) ℓ]
   exact hℓ0
 
+/-- **A finite field of characteristic `3` carrying a square root of `−1`
+has MORE THAN THREE elements** (PROVEN helper, 2026-07-26, and completely
+elementary): its cardinality is `3ⁿ`, and `n = 1` is impossible because `−1`
+is a non-square in `𝔽₃` (`0² = 0`, `(±1)² = 1`, and `−1 = 2`).
+
+This is the whole "`3` is inert" half of the quadratic-twist construction
+below, and it replaces the ramification-theoretic route the older plan
+proposed (splitting of `3` in `ℚ(√d)` via the Legendre symbol, plus
+multiplicativity of the residue degree in a tower). Nothing about `ℚ(√d)`,
+`𝒪_{ℚ(√d)}` or inertia degrees is needed: it is enough that SOME element of
+the residue field squares to `−1`, which a square root of a `d ≡ 2 (mod 3)`
+supplies for free at EVERY prime above `3` simultaneously. -/
+theorem three_lt_card_of_sq_eq_neg_one (F : Type*) [Field F] [Finite F]
+    (h3 : (3 : F) = 0) (y : F) (hy : y ^ 2 = -1) : 3 < Nat.card F := by
+  classical
+  haveI : Fintype F := Fintype.ofFinite _
+  haveI hchar : CharP F 3 :=
+    (CharP.charP_iff_prime_eq_zero (by norm_num)).mpr (by simpa using h3)
+  obtain ⟨n, -, hcardn⟩ := FiniteField.card F 3
+  rcases Nat.lt_or_ge (n : ℕ) 2 with hn | hn
+  · exfalso
+    have hnpos : 0 < (n : ℕ) := n.pos
+    have hn1 : (n : ℕ) = 1 := by omega
+    have hc3 : Fintype.card F = Fintype.card (ZMod 3) := by
+      rw [hcardn, hn1, pow_one]; simp
+    let e : F ≃+* ZMod 3 := FiniteField.ringEquivOfCardEq hc3
+    have hz : (e y) ^ 2 = -1 := by rw [← map_pow, hy, map_neg, map_one]
+    have hno : ∀ z : ZMod 3, z ^ 2 ≠ -1 := by decide
+    exact hno _ hz
+  · have h9 : 9 ≤ Fintype.card F := by
+      rw [hcardn]
+      calc (9 : ℕ) = 3 ^ 2 := by norm_num
+      _ ≤ 3 ^ (n : ℕ) := Nat.pow_le_pow_right (by norm_num) hn
+    rw [Nat.card_eq_fintype_card]
+    omega
+
+/-- **A real quadratic twist of a coefficient datum: the residue field at
+`λ` is UNCHANGED, and a prescribed positive integer acquires a square root**
+(sorry leaf, cut 2026-07-26 out of
+`exists_totallyRealCoefficientDatum_enlarge` below, which is PROVEN over it;
+PURE algebraic number theory, and now the only residual of that node).
+
+Given a coefficient datum as produced by
+`exists_totallyRealCoefficientDatum_core` and a positive `d` with
+`d ≡ 1 (mod ℓ)`, this produces a totally real number field `D` carrying a
+maximal ideal `λ ∋ ℓ` whose residue field is STILL `k`, together with an
+element `y ∈ 𝒪_D` with `y² = d`. Only the `λ`-half of `hdatum` is used; the
+`𝔭`-half is rebuilt from scratch by the consumer.
+
+INTENDED DISCHARGE — `D' := D · ℚ(√d)`:
+
+* `D'` is TOTALLY REAL because `d > 0`, so `√d ∈ ℝ`. Realise `D` inside `ℝ`
+  through any embedding (every embedding of a totally real field is real)
+  and take the join of the two subfields `D` and `ℚ(√d)`; mathlib's
+  `NumberField.isTotallyReal_sup` says a join of totally real subfields is
+  totally real.
+* `y := √d` lies in `𝒪_{D'}` because `y² = d ∈ ℤ`, so `y` is integral.
+* `λ` has a prime `λ'` of `D'` above it with `f(λ'∣λ) = 1`, i.e. with the
+  SAME residue field `k`. If `√d ∈ D` already then `D' = D` and `λ' = λ`.
+  Otherwise `[D' : D] = 2`, and `d ≡ 1 (mod ℓ)` with `ℓ` odd makes `d` a
+  square in `ℤ_ℓ` (Hensel lifting the root `1` of `x² − d ≡ x² − 1`, the
+  derivative `2` being a unit), hence a square in the unramified `D_λ`; so
+  `λ` SPLITS. Concretely and without completions:
+  `𝒪_D[√d]/λ ≅ k[x]/(x² − 1) ≅ k × k` has TWO maximal ideals over `λ` since
+  `ℓ` is odd; lying-over lifts both to `𝒪_{D'}` (which is integral over
+  `𝒪_D[√d]`), so there are at least two primes of `D'` over `λ`, and
+  `∑ eᵢfᵢ = [D' : D] = 2` (`Ideal.sum_ramification_inertia`) then forces
+  `e = f = 1` at each.
+
+WHY `d ≡ 2 (mod 3)` IS DELIBERATELY NOT HYPOTHESIZED. It is not needed for
+the truth of this statement, and the consumer is what turns it into the
+`3 < Nat.card kp` clause, through `three_lt_card_of_sq_eq_neg_one` above.
+Keeping it out makes this leaf strictly more general and keeps the two
+congruence conditions on `d` in the ONE place where each is used.
+
+FAITHFULNESS. This asks only for the existence of a number field with
+prescribed local behaviour at ONE rational prime, plus a square root of a
+rational integer, so it is not an instance of the `𝒪ᵥ`-descent trap. It is
+not vacuous either: taking `d` a perfect square would satisfy it with
+`D' = D`, but the consumer's `d = ℓ² + 1` is `≡ 2 (mod 3)` and hence never a
+perfect square, so the `y` it returns really does enlarge every residue
+field at `3`. -/
+theorem exists_totallyRealCoefficientDatum_sqrtAdjoin (ℓ : ℕ) [Fact ℓ.Prime]
+    (hℓ5 : 5 ≤ ℓ) (k : Type u) [Field k] [Finite k]
+    (d : ℕ) (hdpos : 0 < d) (hdℓ : d % ℓ = 1)
+    (hdatum : ∃ (D : Type u) (_ : Field D) (_ : NumberField D)
+      (_ : NumberField.IsTotallyReal D)
+      (lam frp : Ideal (NumberField.RingOfIntegers D))
+      (kp : Type u) (_ : Field kp) (_ : Finite kp) (_ : TopologicalSpace kp)
+      (_ : DiscreteTopology kp),
+      lam.IsMaximal ∧ frp.IsMaximal ∧ lam ≠ frp ∧
+      ((ℓ : ℕ) : NumberField.RingOfIntegers D) ∈ lam ∧
+      ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
+      (3 : kp) = 0) :
+    ∃ (D : Type u) (_ : Field D) (_ : NumberField D)
+      (_ : NumberField.IsTotallyReal D)
+      (lam : Ideal (NumberField.RingOfIntegers D)),
+      lam.IsMaximal ∧
+      ((ℓ : ℕ) : NumberField.RingOfIntegers D) ∈ lam ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
+      ∃ y : NumberField.RingOfIntegers D,
+        y ^ 2 = ((d : ℕ) : NumberField.RingOfIntegers D) :=
+  sorry
+
 /-- **Enlarging a coefficient datum so that the residue field at `3` has
-MORE THAN THREE elements** (sorry leaf, cut 2026-07-26 — the whole residual
+MORE THAN THREE elements** (**PROVEN 2026-07-26** over the single sub-leaf
+`exists_totallyRealCoefficientDatum_sqrtAdjoin` above — the whole residual
 of `exists_totallyRealCoefficientDatum_of_residueField` below, and PURE
 algebraic number theory: no representation and no geometry occurs in it).
 
@@ -9200,8 +9311,12 @@ because the prime-to-`3` part of the level then exceeds `4`), or by the
 quadratic route below. The quadratic route is chosen here because it keeps
 `_core` intact and consumed.
 
-INTENDED DISCHARGE — a real quadratic twist, and it is elementary. Choose a
-positive integer `d` with
+DISCHARGE AS CARRIED OUT (2026-07-26) — a real quadratic twist, and it is
+elementary. The construction of the twisted field is the single sub-leaf
+`exists_totallyRealCoefficientDatum_sqrtAdjoin` above; everything else is
+PROVEN below, and the `3`-half turned out to need NO ramification theory at
+all (see the correction at the end of this docstring). Take the EXPLICIT
+level `d = ℓ² + 1`. Generically one wants a positive integer `d` with
 
 * `d ≡ 2 (mod 3)`, so `d` is a non-residue mod `3` and `3` is INERT in
   `ℚ(√d)`; and
@@ -9220,13 +9335,19 @@ and `d` is not a perfect square, since squares are `0` or `1` mod `3`). Put
 * `λ' ≠ 𝔭'` because a common prime would contain `1 = aℓ + 3b` (`ℓ ≥ 5`, so
   `ℓ` and `3` are coprime), and `(3 : kp) = 0` because `3 ∈ 𝔭'`.
 
-MISSING MACHINERY, so that the next owner knows the shape of the work: the
-compositum of two number fields inside a common algebraic closure; the
-splitting of a rational prime in `ℚ(√d)` in terms of the Legendre symbol;
-and multiplicativity of the residue degree in a tower. None of these is
-represented in this file today, and the residue-degree multiplicativity is
-the only one for which mathlib's `Ideal.inertiaDeg` API should suffice
-directly (`Ideal.inertiaDeg_algebra_tower` and neighbours).
+**THE `3`-HALF NEEDS NO RAMIFICATION THEORY — corrected 2026-07-26.** This
+paragraph used to list as MISSING MACHINERY the compositum of number fields,
+the splitting of `3` in `ℚ(√d)` via the Legendre symbol, and multiplicativity
+of the residue degree in a tower. **Only the first is actually needed**, and
+it is inside the sub-leaf. The `3`-half is `three_lt_card_of_sq_eq_neg_one`
+above and is three lines of finite-field arithmetic: `y² = d ≡ 2 ≡ −1
+(mod 3)` holds in EVERY residue field `kp` at EVERY prime above `3`
+simultaneously, and `−1` is a non-square in `𝔽₃`, so `Nat.card kp ≠ 3`;
+being a power of `3` it is therefore at least `9`. No `Ideal.inertiaDeg`, no
+`Ideal.sum_ramification_inertia`, no `𝒪_{ℚ(√d)}`, and no case split on
+`d mod 4` occurs anywhere. The only surviving machinery gap is the one the
+sub-leaf carries: realising `D · ℚ(√d)` and showing `λ` does not grow its
+residue field there.
 
 FAITHFULNESS: this leaf asks only for the EXISTENCE of a number field with
 prescribed local behaviour at two rational primes, so it is not an instance
@@ -9256,8 +9377,83 @@ theorem exists_totallyRealCoefficientDatum_enlarge (ℓ : ℕ) [Fact ℓ.Prime]
       ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp ∧
       Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
       Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
-      (3 : kp) = 0 ∧ 3 < Nat.card kp :=
-  sorry
+      (3 : kp) = 0 ∧ 3 < Nat.card kp := by
+  classical
+  have hℓprime : Nat.Prime ℓ := Fact.out
+  have hℓ3 : ℓ ≠ 3 := by omega
+  -- the explicit twist level `d = ℓ² + 1`: it is `≡ 1 (mod ℓ)` and `≡ 2 (mod 3)`
+  have hdpos : 0 < ℓ ^ 2 + 1 := by positivity
+  have hdℓ : (ℓ ^ 2 + 1) % ℓ = 1 := by
+    have hrw : ℓ ^ 2 + 1 = 1 + ℓ * ℓ := by ring
+    rw [hrw, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt (by omega)]
+  have hd3 : (ℓ ^ 2) % 3 = 1 := by
+    have h3 : ¬ (3 ∣ ℓ) := fun hdvd =>
+      hℓ3 ((Nat.prime_dvd_prime_iff_eq (by norm_num) hℓprime).mp hdvd).symm
+    have hmod : ℓ % 3 = 1 ∨ ℓ % 3 = 2 := by omega
+    rcases hmod with h | h <;> rw [Nat.pow_mod, h]
+  obtain ⟨D, hDf, hDnf, hDtr, lam, hlammax, hℓlam, hkiso, y, hy⟩ :=
+    exists_totallyRealCoefficientDatum_sqrtAdjoin ℓ hℓ5 k (ℓ ^ 2 + 1) hdpos hdℓ hdatum
+  -- a maximal ideal above `3`, exactly as in `_core`
+  haveI hp3p : (Ideal.span {(3 : ℤ)}).IsPrime := by
+    rw [Ideal.span_singleton_prime (by norm_num)]
+    exact Int.prime_three
+  haveI hp3m : (Ideal.span {(3 : ℤ)}).IsMaximal := Ideal.IsPrime.isMaximal hp3p (by simp)
+  obtain ⟨⟨frp, hfrpmem⟩⟩ :=
+    (Ideal.span {(3 : ℤ)}).nonempty_primesOver (S := NumberField.RingOfIntegers D)
+  haveI : frp.IsPrime := hfrpmem.1
+  haveI : frp.LiesOver (Ideal.span {(3 : ℤ)}) := hfrpmem.2
+  haveI hfrpmax : frp.IsMaximal :=
+    Ideal.IsMaximal.of_liesOver_isMaximal frp (Ideal.span {(3 : ℤ)})
+  have h3frp : ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp := by
+    have h1 : (3 : ℤ) ∈ frp.under ℤ := by
+      rw [← Ideal.over_def frp (Ideal.span {(3 : ℤ)})]
+      exact Ideal.mem_span_singleton_self _
+    have h2 : (algebraMap ℤ (NumberField.RingOfIntegers D)) (3 : ℤ) ∈ frp := h1
+    simpa using h2
+  letI : Field (NumberField.RingOfIntegers D ⧸ frp) := Ideal.Quotient.field frp
+  haveI : Finite (NumberField.RingOfIntegers D ⧸ frp) := inferInstance
+  letI : TopologicalSpace (NumberField.RingOfIntegers D ⧸ frp) := ⊥
+  haveI : DiscreteTopology (NumberField.RingOfIntegers D ⧸ frp) := ⟨rfl⟩
+  have h3kp : (3 : NumberField.RingOfIntegers D ⧸ frp) = 0 := by
+    have h := (Ideal.Quotient.eq_zero_iff_mem (I := frp)).mpr h3frp
+    rw [map_natCast] at h
+    simpa using h
+  -- `λ ≠ 𝔭`, because a common maximal ideal would contain `1 = aℓ + 3b`
+  have hlamne : lam ≠ frp := by
+    intro hcon
+    have hℓfrp : ((ℓ : ℕ) : NumberField.RingOfIntegers D) ∈ frp := hcon ▸ hℓlam
+    have hcopn : Nat.Coprime ℓ 3 :=
+      (Nat.coprime_primes Fact.out (by norm_num)).mpr (by omega)
+    have hcop : IsCoprime (ℓ : ℤ) (3 : ℤ) := by
+      have h := Nat.isCoprime_iff_coprime.mpr hcopn
+      simpa using h
+    obtain ⟨a, b, hab⟩ := hcop
+    have hone : (1 : NumberField.RingOfIntegers D) ∈ frp := by
+      have hmem : ((a * (ℓ : ℤ) + b * 3 : ℤ) :
+          NumberField.RingOfIntegers D) ∈ frp := by
+        push_cast
+        exact frp.add_mem (frp.mul_mem_left _ hℓfrp) (frp.mul_mem_left _ h3frp)
+      rw [hab] at hmem
+      simpa using hmem
+    exact hfrpmax.ne_top (Ideal.eq_top_of_isUnit_mem _ hone isUnit_one)
+  -- THE NEW CLAUSE: `√(ℓ²+1)` is a square root of `−1` in every residue field at `3`
+  have hcard : 3 < Nat.card (NumberField.RingOfIntegers D ⧸ frp) := by
+    refine three_lt_card_of_sq_eq_neg_one _ h3kp (Ideal.Quotient.mk frp y) ?_
+    have hym : (Ideal.Quotient.mk frp y) ^ 2
+        = ((ℓ ^ 2 + 1 : ℕ) : NumberField.RingOfIntegers D ⧸ frp) := by
+      rw [← map_pow, hy, map_natCast]
+    rw [hym]
+    have hdiv : ℓ ^ 2 + 1 = 3 * (ℓ ^ 2 / 3) + 2 := by
+      have hdm := Nat.div_add_mod (ℓ ^ 2) 3
+      omega
+    rw [hdiv]
+    push_cast
+    linear_combination
+      (((ℓ ^ 2 / 3 : ℕ) : NumberField.RingOfIntegers D ⧸ frp) + 1) * h3kp
+  exact ⟨D, hDf, hDnf, hDtr, lam, frp,
+    (NumberField.RingOfIntegers D ⧸ frp), inferInstance, inferInstance,
+    inferInstance, inferInstance,
+    hlammax, hfrpmax, hlamne, hℓlam, h3frp, hkiso, ⟨RingEquiv.refl _⟩, h3kp, hcard⟩
 
 /-- **The auxiliary totally real coefficient field and its two primes**
 (PROVEN 2026-07-26 — the ARITHMETIC half of the representability leaf; no
@@ -9346,12 +9542,15 @@ already the LARGEST level prime to `ℓ` at which the residue field at `λ`
 is still `k`, and no strengthening of `_core` at its own level can
 deliver the clause. The full table, the machine cross-check and the
 corrected construction are in the docstring of
-`exists_totallyRealCoefficientDatum_enlarge` above, which is now the
-single residual leaf of this node.
+`exists_totallyRealCoefficientDatum_enlarge` above, which is itself PROVEN
+(2026-07-26) over the single residual leaf
+`exists_totallyRealCoefficientDatum_sqrtAdjoin` — the real quadratic twist
+at the explicit level `d = ℓ² + 1`.
 
 So this node is now PROVEN over one sub-leaf: `_core` supplies the datum,
-and `exists_totallyRealCoefficientDatum_enlarge` upgrades it by a real
-quadratic twist `ℚ(√d)` with `3` inert and `ℓ` split. -/
+`exists_totallyRealCoefficientDatum_enlarge` (PROVEN) upgrades it by the real
+quadratic twist `ℚ(√(ℓ²+1))`, and the ONE remaining sorry in the chain is
+`exists_totallyRealCoefficientDatum_sqrtAdjoin`, which constructs that twist. -/
 theorem exists_totallyRealCoefficientDatum_of_residueField
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (k : Type u) [Field k] [Finite k] [Algebra ℤ_[ℓ] k] :
@@ -9391,6 +9590,432 @@ theorem exists_totallyRealCoefficientDatum_of_residueField
   exact exists_totallyRealCoefficientDatum_enlarge ℓ hℓ5 k
     (exists_totallyRealCoefficientDatum_core ℓ (fp : ℕ) hℓ5 hfpos
       (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) k hcardk')
+
+/-! ## The dihedral matrix attached to a cocycle value -/
+
+section DihedralCocycleMatrix
+
+variable {kp : Type u} [Field kp]
+
+/-- `dihedralMat a s` is `diag (a, a⁻¹)` when `s = 1` and the antidiagonal
+`[[0, a], [a⁻¹, 0]]` when `s = -1`. -/
+noncomputable def dihedralMat (a : kpˣ) (s : ℤˣ) : Matrix (Fin 2) (Fin 2) kp :=
+  if s = 1 then !![(a : kp), 0; 0, ((a⁻¹ : kpˣ) : kp)]
+  else !![0, (a : kp); ((a⁻¹ : kpˣ) : kp), 0]
+
+lemma dihedralMat_pos (a : kpˣ) :
+    dihedralMat a (1 : ℤˣ) = !![(a : kp), 0; 0, ((a⁻¹ : kpˣ) : kp)] := by
+  simp [dihedralMat]
+
+lemma dihedralMat_neg (a : kpˣ) :
+    dihedralMat a (-1 : ℤˣ) = !![0, (a : kp); ((a⁻¹ : kpˣ) : kp), 0] := by
+  rw [dihedralMat, if_neg (by decide)]
+
+lemma dihedralMat_one : dihedralMat (1 : kpˣ) (1 : ℤˣ) = 1 := by
+  rw [dihedralMat_pos]
+  ext i j
+  fin_cases i <;> fin_cases j <;> simp
+
+lemma dihedralMat_det (a : kpˣ) (s : ℤˣ) :
+    (dihedralMat a s).det = if s = 1 then 1 else -1 := by
+  rcases Int.units_eq_one_or s with rfl | rfl
+  · rw [dihedralMat_pos, if_pos rfl, Matrix.det_fin_two_of]
+    simp
+  · rw [dihedralMat_neg, if_neg (by decide), Matrix.det_fin_two_of]
+    simp
+
+lemma dihedralMat_mul (a b : kpˣ) (s t : ℤˣ) :
+    dihedralMat a s * dihedralMat b t = dihedralMat (a * b ^ ((s : ℤ))) (s * t) := by
+  have ha0 : (a : kp) ≠ 0 := a.ne_zero
+  have hb0 : (b : kp) ≠ 0 := b.ne_zero
+  rcases Int.units_eq_one_or s with rfl | rfl <;> rcases Int.units_eq_one_or t with rfl | rfl
+  · rw [dihedralMat_pos, dihedralMat_pos, show ((1 : ℤˣ) * 1) = (1 : ℤˣ) from rfl,
+      show ((1 : ℤˣ) : ℤ) = 1 from rfl, zpow_one, dihedralMat_pos]
+    ext i j; fin_cases i <;> fin_cases j <;>
+      simp [Matrix.mul_apply, Fin.sum_univ_two, mul_comm]
+  · rw [dihedralMat_pos, dihedralMat_neg, show ((1 : ℤˣ) * (-1)) = (-1 : ℤˣ) from rfl,
+      show ((1 : ℤˣ) : ℤ) = 1 from rfl, zpow_one, dihedralMat_neg]
+    ext i j; fin_cases i <;> fin_cases j <;>
+      simp [Matrix.mul_apply, Fin.sum_univ_two, mul_comm]
+  · rw [dihedralMat_neg, dihedralMat_pos, show ((-1 : ℤˣ) * 1) = (-1 : ℤˣ) from rfl,
+      show ((-1 : ℤˣ) : ℤ) = -1 from rfl, zpow_neg_one, dihedralMat_neg]
+    ext i j; fin_cases i <;> fin_cases j <;>
+      simp [Matrix.mul_apply, Fin.sum_univ_two, mul_comm]
+  · rw [dihedralMat_neg, dihedralMat_neg, show ((-1 : ℤˣ) * (-1)) = (1 : ℤˣ) from rfl,
+      show ((-1 : ℤˣ) : ℤ) = -1 from rfl, zpow_neg_one, dihedralMat_pos]
+    ext i j; fin_cases i <;> fin_cases j <;>
+      simp [Matrix.mul_apply, Fin.sum_univ_two, mul_comm]
+
+lemma dihedralMat_apply_zero_zero (c : kpˣ) (r : ℤˣ) :
+    (dihedralMat c r) 0 0 = if r = 1 then (c : kp) else 0 := by
+  rcases Int.units_eq_one_or r with rfl | rfl
+  · rw [dihedralMat_pos]; simp
+  · rw [dihedralMat_neg, if_neg (by decide)]; simp
+
+lemma dihedralMat_apply_zero_one (c : kpˣ) (r : ℤˣ) :
+    (dihedralMat c r) 0 1 = if r = 1 then 0 else (c : kp) := by
+  rcases Int.units_eq_one_or r with rfl | rfl
+  · rw [dihedralMat_pos]; simp
+  · rw [dihedralMat_neg, if_neg (by decide)]; simp
+
+lemma dihedralMat_injective : Function.Injective (fun p : kpˣ × ℤˣ => dihedralMat p.1 p.2) := by
+  rintro ⟨a, s⟩ ⟨b, t⟩ h
+  simp only at h
+  have ha0 : (a : kp) ≠ 0 := a.ne_zero
+  have hb0 : (b : kp) ≠ 0 := b.ne_zero
+  have h00 : (dihedralMat a s) 0 0 = (dihedralMat b t) 0 0 := by rw [h]
+  have h01 : (dihedralMat a s) 0 1 = (dihedralMat b t) 0 1 := by rw [h]
+  rw [dihedralMat_apply_zero_zero, dihedralMat_apply_zero_zero] at h00
+  rw [dihedralMat_apply_zero_one, dihedralMat_apply_zero_one] at h01
+  have hst : s = t := by
+    by_cases hs : s = 1 <;> by_cases ht : t = 1
+    · rw [hs, ht]
+    · rw [if_pos hs, if_neg ht] at h00; exact absurd h00 ha0
+    · rw [if_neg hs, if_pos ht] at h00; exact absurd h00.symm hb0
+    · rw [(Int.units_eq_one_or s).resolve_left hs, (Int.units_eq_one_or t).resolve_left ht]
+  subst hst
+  by_cases hs : s = 1
+  · rw [if_pos hs, if_pos hs] at h00
+    have : a = b := Units.ext h00
+    rw [this]
+  · rw [if_neg hs, if_neg hs] at h01
+    have : a = b := Units.ext h01
+    rw [this]
+
+end DihedralCocycleMatrix
+
+/-! ## Two abstract two-dimensional representation lemmas -/
+
+section FinTwoIrreducibility
+
+variable {kp : Type u} [Field kp] {G : Type*} [Monoid G]
+
+/-- Coordinates of `Matrix.toLin'` in dimension two. -/
+lemma toLin'_apply_fin_two (M : Matrix (Fin 2) (Fin 2) kp) (v : Fin 2 → kp) (i : Fin 2) :
+    (Matrix.toLin' M v) i = M i 0 * v 0 + M i 1 * v 1 := by
+  rw [Matrix.toLin'_apply]
+  simp [Matrix.mulVec, dotProduct, Fin.sum_univ_two]
+
+/-- The two standard basis vectors of `Fin 2 → kp`. -/
+noncomputable abbrev dihAxisFst : Fin 2 → kp := ![1, 0]
+noncomputable abbrev dihAxisSnd : Fin 2 → kp := ![0, 1]
+
+lemma eq_smul_dihAxis_add_smul (x : Fin 2 → kp) :
+    x = x 0 • (dihAxisFst : Fin 2 → kp) + x 1 • dihAxisSnd := by
+  ext i; fin_cases i <;> simp
+
+/-- A two-dimensional representation containing a diagonal element with
+DISTINCT diagonal entries and an antidiagonal element is irreducible. -/
+lemma isIrreducible_finTwo_of_diag_antidiag (R : Representation kp G (Fin 2 → kp))
+    (u b : kpˣ) (hu : (u : kp) ≠ ((u⁻¹ : kpˣ) : kp)) (g₁ g₂ : G)
+    (h1 : R g₁ = Matrix.toLin' !![(u : kp), 0; 0, ((u⁻¹ : kpˣ) : kp)])
+    (h2 : R g₂ = Matrix.toLin' !![0, (b : kp); ((b⁻¹ : kpˣ) : kp), 0]) :
+    R.IsIrreducible := by
+  classical
+  have hb0 : (b : kp) ≠ 0 := b.ne_zero
+  have hbinv : ((b⁻¹ : kpˣ) : kp) = (b : kp)⁻¹ := by simp
+  have hud : (u : kp) - ((u⁻¹ : kpˣ) : kp) ≠ 0 := sub_ne_zero_of_ne hu
+  -- the antidiagonal element swaps the two axes
+  have hCf0 : R g₂ (dihAxisFst : Fin 2 → kp) = ((b : kp)⁻¹) • dihAxisSnd := by
+    rw [h2]; ext i; fin_cases i <;> simp [toLin'_apply_fin_two, hbinv]
+  have hCf1 : R g₂ (dihAxisSnd : Fin 2 → kp) = (b : kp) • dihAxisFst := by
+    rw [h2]; ext i; fin_cases i <;> simp [toLin'_apply_fin_two, hbinv]
+  -- the key: any nonzero subrepresentation contains both axes
+  have key : ∀ W : Subrepresentation R, W ≠ ⊥ → W = ⊤ := by
+    intro W hW
+    obtain ⟨v, hv, hv0⟩ : ∃ v, v ∈ W.toSubmodule ∧ v ≠ 0 := by
+      by_contra hc
+      push_neg at hc
+      refine hW (Subrepresentation.toSubmodule_injective ?_)
+      show W.toSubmodule = (⊥ : Submodule kp (Fin 2 → kp))
+      rw [Submodule.eq_bot_iff]; exact hc
+    have hDv : R g₁ v ∈ W.toSubmodule := W.apply_mem_toSubmodule g₁ hv
+    -- both axes lie in `W` as soon as one does
+    have both : (dihAxisFst : Fin 2 → kp) ∈ W.toSubmodule →
+        (dihAxisSnd : Fin 2 → kp) ∈ W.toSubmodule ∧
+        (dihAxisFst : Fin 2 → kp) ∈ W.toSubmodule := by
+      intro h0
+      refine ⟨?_, h0⟩
+      have := W.toSubmodule.smul_mem (b : kp) (W.apply_mem_toSubmodule g₂ h0)
+      rwa [hCf0, smul_smul, mul_inv_cancel₀ hb0, one_smul] at this
+    have both' : (dihAxisSnd : Fin 2 → kp) ∈ W.toSubmodule →
+        (dihAxisFst : Fin 2 → kp) ∈ W.toSubmodule ∧
+        (dihAxisSnd : Fin 2 → kp) ∈ W.toSubmodule := by
+      intro h1'
+      refine ⟨?_, h1'⟩
+      have := W.toSubmodule.smul_mem ((b : kp)⁻¹) (W.apply_mem_toSubmodule g₂ h1')
+      rwa [hCf1, smul_smul, inv_mul_cancel₀ hb0, one_smul] at this
+    -- extract an axis from `v`
+    have haxis : (dihAxisFst : Fin 2 → kp) ∈ W.toSubmodule ∨
+        (dihAxisSnd : Fin 2 → kp) ∈ W.toSubmodule := by
+      by_cases hv00 : v 0 = 0
+      · -- then `v 1 ≠ 0`
+        have hv11 : v 1 ≠ 0 := by
+          intro hv11
+          refine hv0 ?_
+          ext i; fin_cases i
+          · simpa using hv00
+          · simpa using hv11
+        right
+        have hw : R g₁ v - (u : kp) • v
+            = ((((u⁻¹ : kpˣ) : kp) - (u : kp)) * v 1) • (dihAxisSnd : Fin 2 → kp) := by
+          rw [h1]; ext i; fin_cases i <;>
+            simp [toLin'_apply_fin_two, hv00, Matrix.vecHead, Matrix.vecTail] <;> ring
+        have hmem : ((((u⁻¹ : kpˣ) : kp) - (u : kp)) * v 1) • (dihAxisSnd : Fin 2 → kp)
+            ∈ W.toSubmodule := by
+          rw [← hw]; exact W.toSubmodule.sub_mem hDv (W.toSubmodule.smul_mem _ hv)
+        have hne : (((u⁻¹ : kpˣ) : kp) - (u : kp)) * v 1 ≠ 0 :=
+          mul_ne_zero (sub_ne_zero_of_ne (Ne.symm hu)) hv11
+        have := W.toSubmodule.smul_mem ((((u⁻¹ : kpˣ) : kp) - (u : kp)) * v 1)⁻¹ hmem
+        rwa [smul_smul, inv_mul_cancel₀ hne, one_smul] at this
+      · left
+        have hw : R g₁ v - ((u⁻¹ : kpˣ) : kp) • v
+            = (((u : kp) - ((u⁻¹ : kpˣ) : kp)) * v 0) • (dihAxisFst : Fin 2 → kp) := by
+          rw [h1]; ext i; fin_cases i <;>
+            simp [toLin'_apply_fin_two, Matrix.vecHead, Matrix.vecTail] <;> ring
+        have hmem : (((u : kp) - ((u⁻¹ : kpˣ) : kp)) * v 0) • (dihAxisFst : Fin 2 → kp)
+            ∈ W.toSubmodule := by
+          rw [← hw]; exact W.toSubmodule.sub_mem hDv (W.toSubmodule.smul_mem _ hv)
+        have hne : ((u : kp) - ((u⁻¹ : kpˣ) : kp)) * v 0 ≠ 0 := mul_ne_zero hud hv00
+        have := W.toSubmodule.smul_mem (((u : kp) - ((u⁻¹ : kpˣ) : kp)) * v 0)⁻¹ hmem
+        rwa [smul_smul, inv_mul_cancel₀ hne, one_smul] at this
+    have hboth : (dihAxisFst : Fin 2 → kp) ∈ W.toSubmodule ∧
+        (dihAxisSnd : Fin 2 → kp) ∈ W.toSubmodule := by
+      rcases haxis with h0 | h1'
+      · exact ⟨h0, (both h0).1⟩
+      · exact ⟨(both' h1').1, h1'⟩
+    refine Subrepresentation.toSubmodule_injective ?_
+    show W.toSubmodule = (⊤ : Submodule kp (Fin 2 → kp))
+    rw [Submodule.eq_top_iff']
+    intro x
+    rw [eq_smul_dihAxis_add_smul x]
+    exact W.toSubmodule.add_mem (W.toSubmodule.smul_mem _ hboth.1)
+      (W.toSubmodule.smul_mem _ hboth.2)
+  have hbotne : (⊥ : Subrepresentation R) ≠ ⊤ := by
+    intro hbt
+    have h0 : (dihAxisFst : Fin 2 → kp) ∈ (⊤ : Subrepresentation R).toSubmodule := by
+      show (dihAxisFst : Fin 2 → kp) ∈ (⊤ : Submodule kp (Fin 2 → kp)); exact Submodule.mem_top
+    rw [← hbt] at h0
+    have hz : (dihAxisFst : Fin 2 → kp) = 0 := by
+      have : (dihAxisFst : Fin 2 → kp) ∈ (⊥ : Submodule kp (Fin 2 → kp)) := h0
+      simpa using this
+    have := congrFun hz 0
+    simp at this
+  exact { toNontrivial := ⟨⊥, ⊤, hbotne⟩
+          eq_bot_or_eq_top := fun W => or_iff_not_imp_left.mpr (key W) }
+
+/-- A two-dimensional representation all of whose operators are diagonal is
+NOT irreducible: the first coordinate axis is a proper subrepresentation. -/
+lemma not_isIrreducible_finTwo_of_forall_diag (R : Representation kp G (Fin 2 → kp))
+    (h : ∀ g, ∃ a c : kp, R g = Matrix.toLin' !![a, 0; 0, c]) :
+    ¬ R.IsIrreducible := by
+  classical
+  intro hirr
+  let W : Subrepresentation R :=
+    { toSubmodule := LinearMap.ker (LinearMap.proj 1 : (Fin 2 → kp) →ₗ[kp] kp)
+      apply_mem_toSubmodule := by
+        intro g v hv
+        obtain ⟨a, c, hg⟩ := h g
+        simp only [LinearMap.mem_ker, LinearMap.proj_apply] at hv ⊢
+        rw [hg, toLin'_apply_fin_two]
+        simp [hv] }
+  have hf0 : (dihAxisFst : Fin 2 → kp) ∈ W.toSubmodule := by
+    simp [W, LinearMap.mem_ker]
+  have hf1 : (dihAxisSnd : Fin 2 → kp) ∉ W.toSubmodule := by
+    simp [W, LinearMap.mem_ker]
+  rcases hirr.eq_bot_or_eq_top W with hb | ht
+  · rw [hb] at hf0
+    have hz : (dihAxisFst : Fin 2 → kp) = 0 := by
+      have : (dihAxisFst : Fin 2 → kp) ∈ (⊥ : Submodule kp (Fin 2 → kp)) := hf0
+      simpa using this
+    have := congrFun hz 0
+    simp at this
+  · rw [ht] at hf1
+    exact hf1 (by show (dihAxisSnd : Fin 2 → kp) ∈ (⊤ : Submodule kp (Fin 2 → kp));
+                  exact Submodule.mem_top)
+
+end FinTwoIrreducibility
+
+/-! ## The class field theory behind the odd dihedral representation -/
+
+/-- **THE CLASS FIELD THEORY LEAF: an anticyclotomic dihedral cocycle over
+`ℚ` with values in `kpˣ`** (sorry node, cut 2026-07-26 — this is the ONE
+genuinely class-field-theoretic input of
+`exists_dihedralOddGaloisRep_of_charThree`, and everything else in that
+node is now derived from it).
+
+WHAT IT SAYS. For a finite field `kp` of characteristic `3` with more than
+three elements there are an imaginary quadratic `ℚ(√d)` — presented by the
+rational `d < 0` together with a square root `x` of `d` in `ℚᵃˡᵍ` — and a
+pair `(ν, e)` with `e : Γ_ℚ →* ℤˣ` a quadratic character and
+`ν : Γ_ℚ → kpˣ` satisfying the TWISTED homomorphism law
+
+  `ν (g * h) = ν g * (ν h) ^ (e g)`.
+
+Equivalently: `g ↦ (ν g, e g)` is a continuous homomorphism of `Γ_ℚ` into
+the GENERALIZED DIHEDRAL GROUP `kpˣ ⋊ ⟨±1⟩` of `kpˣ`. The four remaining
+clauses pin it down: local constancy (the continuity of the resulting
+representation), that `e` cuts out exactly `ℚ(√d)` (`e g = 1 ↔ g x = x`),
+ODDNESS (`e` is `-1` at complex conjugation, which holds precisely because
+`d < 0`), and the QUANTITATIVE clause `∃ g ∈ ker e, ν g ^ 4 ≠ 1`.
+
+WHY THIS SHAPE, AND WHY IT AVOIDS `Ind`. The classical construction is
+`ρbarp = Ind_{Γ_M}^{Γ_ℚ} χ` for `M` imaginary quadratic and `χ` a
+character of `Γ_M`. Induction of GALOIS representations does not exist in
+this pin — mathlib's `Representation.ind` is purely algebraic, with no
+continuity — and building it in general is a large detour. But the
+induction here is from an index-TWO subgroup, and for a character with
+`χ^c = χ⁻¹` (an ANTICYCLOTOMIC, i.e. ring-class, character — which is what
+the class group of an imaginary quadratic field supplies, since complex
+conjugation inverts `Cl(M)`) the induced representation has completely
+explicit `2 × 2` matrices:
+
+  `g ∈ Γ_M`  ↦ `diag (χ g, (χ g)⁻¹)`,
+  `g ∉ Γ_M`  ↦ `[[0, χ (g c)], [(χ (g c))⁻¹, 0]]`,
+
+and the single function `ν` (equal to `χ` on `Γ_M` and to `g ↦ χ (g c)`
+off it) carries all of that data. So the twisted law above IS the
+statement that these matrices multiply correctly, and
+`dihedralMat_mul` is its verification. No `Ind` is needed.
+
+WHY `ν g ^ 4 ≠ 1` IS THE RIGHT QUANTITATIVE CLAUSE, and where the
+hypothesis `3 < Nat.card kp` is consumed. The FALSITY AUDIT of
+`exists_dihedralOddGaloisRep_of_charThree` shows the normal closure of
+complex conjugation acts irreducibly iff the character ratio `χ/χ^c = χ²`
+has an element of order `≥ 3`, i.e. iff some `χ(h)⁴ ≠ 1`. That is exactly
+this clause. It is SATISFIABLE precisely because `3 < Nat.card kp`: `kp`
+has `3 ^ f` elements with `f ≥ 2`, so `kpˣ` is cyclic of order
+`3 ^ f − 1 ≥ 8`, and a generator `ζ` has `ζ ^ 4 ≠ 1`. Over `𝔽₃` the clause
+is UNSATISFIABLE (`|𝔽₃ˣ| = 2`), which is the counterexample that refuted
+the original statement of the consuming node.
+
+HOW IT IS TO BE PROVED (and what is missing from the pin). Fix `M = ℚ(i)`
+(any imaginary quadratic will do). One needs a continuous character of
+`Γ_M` of order divisible by something `> 4`; class field theory supplies
+it as a RAY CLASS character of `M`, and — this is the simplification
+recorded by the previous owner of the consuming node, and it is what
+removes a research-level input — nothing here requires `χ` to be
+UNRAMIFIED, so ray class characters of a single fixed `M` suffice and the
+Nakagawa–Horie/Yamamoto theorem (an imaginary quadratic whose CLASS GROUP
+has an element of order `q − 1`) is NOT needed. Concretely, for a prime
+`𝔮` of `M` of large norm the ray class group mod `𝔮` surjects onto
+`(𝒪_M/𝔮)ˣ` modulo the four units of `ℚ(i)`, which is cyclic of order
+`(N𝔮 − 1)/4`; choosing `N𝔮` large gives a character of arbitrarily large
+order, and composing with an embedding of its cyclic image into `kpˣ`
+gives `χ`. Anticyclotomy (`χ^c = χ⁻¹`) is arranged by replacing `χ` with
+`χ/χ^c`, which is anticyclotomic by construction and still of order `> 4`.
+
+MISSING MACHINERY, precisely. Neither mathlib nor `~/cs/FLT` has ANY class
+field theory: there is no `RayClassGroup`, no Artin map, no idele class
+group, no reciprocity (`ClassGroup R` and `NumberField.classNumber` exist,
+but nothing connecting them to Galois theory). This tree's only Artin-map
+object is the sorried `exists_artinMap_classGroup_frobeniusIdeal`
+(`Modularity/Interface.lean`), which is stated for the Hilbert class field
+of `ℚ(μ_p)` and is not in a form usable here. So discharging this leaf
+means building the ray class group of an imaginary quadratic field and the
+Artin reciprocity map onto it — a genuinely new theory, and the correct
+next owner of this node.
+
+FAITHFULNESS. The conclusion is a statement about `Γ_ℚ` and `kpˣ` alone;
+it mentions no representation, so it cannot be discharged vacuously by a
+degenerate two-dimensional object. It is not vacuous in `d` either: `d < 0`
+is what forces `e` to be `-1` at complex conjugation, and `x ^ 2 = d`
+together with `e g = 1 ↔ g x = x` pins `ker e` to be `Γ_{ℚ(√d)}` rather
+than an arbitrary index-two subgroup. -/
+theorem exists_anticyclotomicDihedralCocycle (kp : Type u) [Field kp] [Finite kp]
+    (h3 : (3 : kp) = 0) (hcard : 3 < Nat.card kp) :
+    ∃ (d : ℚ) (x : AlgebraicClosure ℚ)
+      (ν : Field.absoluteGaloisGroup ℚ → kpˣ)
+      (e : Field.absoluteGaloisGroup ℚ →* ℤˣ),
+      d < 0 ∧
+      x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d ∧
+      (∀ g h, ν (g * h) = ν g * ν h ^ ((e g : ℤ))) ∧
+      (∀ g₀, IsOpen {g : Field.absoluteGaloisGroup ℚ | ν g = ν g₀ ∧ e g = e g₀}) ∧
+      (∀ g, e g = 1 ↔ g x = x) ∧
+      (∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 →
+        e (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ) = -1) ∧
+      (∃ g, e g = 1 ∧ ν g ^ (4 : ℕ) ≠ 1) :=
+  sorry
+
+/-- **THE REAL-PLACE LEAF: over a totally real base, the whole conjugacy
+class of complex conjugation is in the image of `Γ_F`** (sorry node, cut
+2026-07-26 — no class field theory in it; this is the archimedean half of
+`exists_dihedralOddGaloisRep_of_charThree`).
+
+WHAT IT SAYS, AND WHY IT IS TRUE. Let `F` be a totally real number field
+and view it inside `ℚᵃˡᵍ ⊆ ℂ`. For any `σ ∈ Γ_ℚ`, the field `σ⁻¹(F)` is
+again totally real, hence lands in `ℝ` under the inclusion, hence is fixed
+pointwise by complex conjugation `c`; so `c ∈ Γ_{σ⁻¹ F} = σ⁻¹ Γ_F σ`, i.e.
+`σ c σ⁻¹ ∈ Γ_F`. Thus the ENTIRE `Γ_ℚ`-conjugacy class of `c` lies in
+`Γ_F` — equivalently, the image of `Γ_F` contains the normal closure of
+`c`, which is the group-theoretic form the FALSITY AUDIT of the consuming
+node uses. Taking `σ = 1` also gives `c` itself, which is what makes the
+oddness clause non-vacuous.
+
+The leaf additionally asserts `Γ_ℝ` is NONTRIVIAL (the `τ ≠ 1`), which is
+just that `ℝ` is not algebraically closed; it is bundled here because the
+consumer needs an actual complex conjugation and the oddness clause of
+`exists_anticyclotomicDihedralCocycle` is quantified over `σ ≠ 1` and so
+supplies nothing on its own.
+
+WHY IT IS A SEPARATE LEAF. `Field.absoluteGaloisGroup.map` is built from an
+ARBITRARILY CHOSEN embedding of algebraic closures, so "the image of `Γ_F`
+in `Γ_ℚ`" is only well defined up to conjugacy, and the statement has to be
+made for that chosen map. That bookkeeping — not the mathematics, which is
+the two lines above — is the content of discharging it.
+
+FAITHFULNESS. It is not vacuous: `ℚ` itself is totally real, so the `F = ℚ`
+instance already asserts that `Γ_ℝ → Γ_ℚ` is nontrivial. -/
+theorem exists_realConj_mem_range_of_isTotallyReal
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F] :
+    ∃ τ : Field.absoluteGaloisGroup (ULift.{u} ℝ), τ ≠ 1 ∧
+      ∀ σ : Field.absoluteGaloisGroup ℚ,
+        σ * (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ) * σ⁻¹ ∈
+          Set.range (Field.absoluteGaloisGroup.map (algebraMap ℚ F)) :=
+  sorry
+
+/-- **THE QUADRATIC-DESCENT LEAF: `F(√d)` kills the quadratic character**
+(sorry node, cut 2026-07-26 — Kummer theory of a quadratic extension, no
+class field theory in it).
+
+WHAT IT SAYS. Given an imaginary quadratic `ℚ(√d)` presented by `d < 0`
+and a square root `x` of `d` in `ℚᵃˡᵍ`, and given that a character
+`e : Γ_ℚ →* ℤˣ` cuts it out (`e g = 1 ↔ g x = x`), every totally real `F`
+admits a QUADRATIC extension `L` on which `e` — pulled back along
+`Γ_L → Γ_F → Γ_ℚ` — is trivial. Of course `L = F(√d)`.
+
+WHY IT IS TRUE. `d < 0` and `F` totally real give `d ∉ (Fˣ)²` (a square in
+`F` is non-negative under every real embedding, and `F` has one), so
+`X² − d` is irreducible over `F` and `L := F[X]/(X² − d)` is a field with
+`finrank F L = 2`. Any `τ ∈ Γ_L` fixes the square root of `d` inside `L`,
+hence — chasing `Field.absoluteGaloisGroup.lift_map` twice — its image in
+`Γ_ℚ` fixes `x`, so `e` of it is `1`.
+
+WHY IT IS A SEPARATE LEAF, and it is the SAME reason as for the real-place
+leaf: `Field.absoluteGaloisGroup.map` is defined through arbitrarily chosen
+embeddings of algebraic closures, so it is NOT functorial on the nose —
+`map (algebraMap ℚ F) ∘ map (algebraMap F L)` is only conjugate to
+`map (algebraMap ℚ L)`, not equal to it. The genuine work in discharging
+this leaf is that chase, through `lift_map` and the injectivity of
+`AlgebraicClosure.map`, together with the observation that `L` contains
+BOTH square roots of `d` so the chase does not need to track a sign.
+
+FAITHFULNESS. `hd` and `hx` are both consumed (`hd` for irreducibility of
+`X² − d` over `F`, `hx` to identify what `Γ_L` must fix), and the
+conclusion mentions no representation, so it cannot be discharged
+vacuously. -/
+theorem exists_quadraticExtension_trivial_of_isTotallyReal
+    (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
+    (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
+    (e : Field.absoluteGaloisGroup ℚ →* ℤˣ)
+    (he : ∀ g, e g = 1 ↔ g x = x)
+    (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F] :
+    ∃ (L : Type u) (_ : Field L) (_ : Algebra F L),
+      Module.finrank F L = 2 ∧
+      ∀ τ : Field.absoluteGaloisGroup L,
+        e (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+            (Field.absoluteGaloisGroup.map (algebraMap F L) τ)) = 1 :=
+  sorry
 
 /-- **An odd dihedral auxiliary level representation** (sorry node, cut
 2026-07-26 — the second ARITHMETIC leaf of the representability half; no
@@ -9560,7 +10185,38 @@ FAITHFULNESS: the conclusion is a statement about `Γ_ℚ`-representations
 alone and mentions no space, so it cannot be discharged vacuously by a
 degenerate geometric object; and it is not vacuous in `F` either, since
 `ℚ` itself is a totally real number field, so the `F = ℚ` instance
-already forces `ρbarp` to be irreducible. -/
+already forces `ρbarp` to be irreducible.
+
+PROVED 2026-07-26 over three named leaves, and NO representation-theoretic
+`Ind` was needed. The route is the one this docstring proposes, in the
+guise that makes it formalizable: for an ANTICYCLOTOMIC character
+(`χ^c = χ⁻¹`, which is what a ring-class character of an imaginary
+quadratic field is) the index-two induction `Ind_{Γ_M}^{Γ_ℚ} χ` has
+explicit `2 × 2` matrices, and the whole datum is a single "dihedral
+cocycle" `(ν, e)` — a continuous homomorphism of `Γ_ℚ` into the
+generalized dihedral group `kpˣ ⋊ ⟨±1⟩` — supplied by
+`exists_anticyclotomicDihedralCocycle`. `framedGaloisRepOfMatrix` turns
+the resulting matrix family into `ρbarp`; oddness is
+`dihedralMat_det` at a reflection; irreducibility over every
+totally real `F` comes from `exists_realConj_mem_range_of_isTotallyReal`
+(which puts complex conjugation AND `g₀ c g₀⁻¹` into the image of `Γ_F`,
+whose product is the diagonal element `diag (ν g₀ ², ν g₀ ⁻²)`, of
+distinct eigenvalues exactly because `ν g₀ ⁴ ≠ 1`) fed to
+`isIrreducible_finTwo_of_diag_antidiag`; and reducibility over
+`L = F(√d)` comes from `exists_quadraticExtension_trivial_of_isTotallyReal`
+fed to `not_isIrreducible_finTwo_of_forall_diag`.
+
+WHERE THE REMAINING MATHEMATICS IS. Exactly one of the three leaves is
+class field theory — `exists_anticyclotomicDihedralCocycle` — and its
+docstring records what has to be built (the ray class group of an
+imaginary quadratic field and the Artin map onto it; NOTHING of the kind
+exists in mathlib, in this tree, or in `~/cs/FLT`). The other two are
+Galois-theoretic bookkeeping forced by the fact that
+`Field.absoluteGaloisGroup.map` is defined through arbitrarily chosen
+embeddings of algebraic closures and is therefore not functorial on the
+nose. Note also that the Nakagawa–Horie input is NOT needed: nothing
+requires `χ` unramified, so ray class characters of one fixed `M` suffice.
+-/
 theorem exists_dihedralOddGaloisRep_of_charThree
     (kp : Type u) [Field kp] [Finite kp] [TopologicalSpace kp]
     [DiscreteTopology kp] (h3 : (3 : kp) = 0) (hcard : 3 < Nat.card kp) :
@@ -9572,8 +10228,119 @@ theorem exists_dihedralOddGaloisRep_of_charThree
         (ρbarp.map (algebraMap ℚ F)).IsIrreducible ∧
         ∃ (L : Type u) (_ : Field L) (_ : Algebra F L),
           Module.finrank F L = 2 ∧
-          ¬ ((ρbarp.map (algebraMap ℚ F)).map (algebraMap F L)).IsIrreducible :=
-  sorry
+          ¬ ((ρbarp.map (algebraMap ℚ F)).map (algebraMap F L)).IsIrreducible := by
+  classical
+  obtain ⟨d, x, ν, e, hd, hxsq, hcoc, hopen, hker, hodd, g₀, hg₀e, hg₀ord⟩ :=
+    exists_anticyclotomicDihedralCocycle kp h3 hcard
+  haveI : IsTopologicalRing kp := inferInstance
+  -- the matrix family
+  obtain ⟨N, hNdef⟩ : ∃ N : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) kp,
+      ∀ g, N g = dihedralMat (ν g) (e g) := ⟨_, fun _ => rfl⟩
+  -- `ν 1 = 1`
+  have hν1 : ν 1 = 1 := by
+    have := hcoc 1 1
+    rw [mul_one, map_one] at this
+    simpa using this
+  have hN1 : N 1 = 1 := by
+    rw [hNdef]; simp only [hν1, map_one]; exact dihedralMat_one
+  have hNmul : ∀ g h, N (g * h) = N g * N h := by
+    intro g h
+    rw [hNdef, hNdef, hNdef]
+    simp only [map_mul, hcoc g h]
+    exact (dihedralMat_mul (ν g) (ν h) (e g) (e h)).symm
+  have hNopen : ∀ g₁, IsOpen {g : Field.absoluteGaloisGroup ℚ | N g = N g₁} := by
+    intro g₁
+    have hset : {g : Field.absoluteGaloisGroup ℚ | N g = N g₁}
+        = {g : Field.absoluteGaloisGroup ℚ | ν g = ν g₁ ∧ e g = e g₁} := by
+      ext g
+      simp only [Set.mem_setOf_eq, hNdef]
+      constructor
+      · intro hg
+        have := dihedralMat_injective (kp := kp) (a₁ := (ν g, e g)) (a₂ := (ν g₁, e g₁)) hg
+        exact ⟨congrArg Prod.fst this, congrArg Prod.snd this⟩
+      · rintro ⟨h1, h2⟩; rw [h1, h2]
+    rw [hset]; exact hopen g₁
+  refine ⟨framedGaloisRepOfMatrix N hN1 hNmul hNopen, ?_, ?_⟩
+  · -- ODDNESS
+    intro σ hσ
+    have hc : e (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ) = -1 := hodd σ hσ
+    rw [GaloisRep.det_apply, apply_framedGaloisRepOfMatrix, LinearMap.det_toLin',
+      hNdef, hc, dihedralMat_det, if_neg (by decide)]
+  · -- DIHEDRAL over every totally real base
+    -- inverse formula for the cocycle at an element of the kernel of `e`
+    have hνinv : ∀ g, e g = 1 → ν g⁻¹ = (ν g)⁻¹ := by
+      intro g hg
+      have h := hcoc g g⁻¹
+      rw [mul_inv_cancel, hν1, hg, show ((1 : ℤˣ) : ℤ) = 1 from rfl, zpow_one] at h
+      exact eq_inv_of_mul_eq_one_right h.symm
+    intro F iF iNF iTR
+    -- the representation, evaluated through the matrix family
+    have hR : ∀ g : Field.absoluteGaloisGroup F,
+        ((framedGaloisRepOfMatrix N hN1 hNmul hNopen).map (algebraMap ℚ F)).toRepresentation g
+          = Matrix.toLin' (N (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g)) := by
+      intro g
+      show (framedGaloisRepOfMatrix N hN1 hNmul hNopen).map (algebraMap ℚ F) g = _
+      rw [GaloisRep.map_apply, apply_framedGaloisRepOfMatrix]
+    refine ⟨?_, ?_⟩
+    · -- IRREDUCIBLE
+      obtain ⟨τ, hτ, hconj⟩ := exists_realConj_mem_range_of_isTotallyReal F
+      have hec : e (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ) = -1 :=
+        hodd τ hτ
+      obtain ⟨γc, hγc⟩ := hconj 1
+      rw [one_mul, inv_one, mul_one] at hγc
+      obtain ⟨γ', hγ'⟩ := hconj g₀
+      -- abbreviations
+      have hcoc' := hcoc
+      -- `e` on the two constructed elements
+      have heg₀inv : e g₀⁻¹ = 1 := by rw [map_inv, hg₀e, inv_one]
+      have he1 : e (g₀ * Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ) = -1 := by
+        rw [map_mul, hg₀e, hec, one_mul]
+      have he2 : e (g₀ * Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ * g₀⁻¹)
+          = -1 := by rw [map_mul, he1, heg₀inv, mul_one]
+      have he3 : e (g₀ * Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ * g₀⁻¹
+          * Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ) = 1 := by
+        rw [map_mul, he2, hec]; decide
+      -- `ν` on the two constructed elements
+      have hν2 : ν (g₀ * Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ)
+          = ν g₀ * ν (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ) := by
+        rw [hcoc', hg₀e, show ((1 : ℤˣ) : ℤ) = 1 from rfl, zpow_one]
+      have hν3 : ν (g₀ * Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ * g₀⁻¹)
+          = ν g₀ * ν (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ) * ν g₀ := by
+        rw [hcoc', hν2, he1, hνinv g₀ hg₀e,
+          show (((-1 : ℤˣ)) : ℤ) = -1 from rfl, zpow_neg_one, inv_inv]
+      have hν4 : ν (g₀ * Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ * g₀⁻¹
+          * Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ) = ν g₀ ^ 2 := by
+        rw [hcoc', hν3, he2, show (((-1 : ℤˣ)) : ℤ) = -1 from rfl, zpow_neg_one, sq]
+        simp [mul_comm, mul_assoc, mul_left_comm]
+      -- the diagonal element has distinct eigenvalues
+      have hu : ((ν g₀ ^ 2 : kpˣ) : kp) ≠ (((ν g₀ ^ 2 : kpˣ)⁻¹ : kpˣ) : kp) := by
+        intro hcon
+        exact hg₀ord (by
+          have : (ν g₀ ^ 2 : kpˣ) = (ν g₀ ^ 2 : kpˣ)⁻¹ := Units.ext hcon
+          have h2 := mul_eq_one_iff_eq_inv.mpr this
+          calc ν g₀ ^ (4 : ℕ) = (ν g₀ ^ 2) * (ν g₀ ^ 2) := by
+                rw [show (4 : ℕ) = 2 + 2 from rfl, pow_add]
+          _ = 1 := h2)
+      refine isIrreducible_finTwo_of_diag_antidiag _ (ν g₀ ^ 2)
+        (ν (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ)) hu (γ' * γc) γc
+        ?_ ?_
+      · rw [hR, map_mul, hγ', hγc, hNdef, he3, hν4, dihedralMat_pos]
+      · rw [hR, hγc, hNdef, hec, dihedralMat_neg]
+    · -- REDUCIBLE over a quadratic extension
+      obtain ⟨L, iL, iAlg, hrank, hL⟩ :=
+        exists_quadraticExtension_trivial_of_isTotallyReal d hd x hxsq e hker F
+      refine ⟨L, iL, iAlg, hrank, ?_⟩
+      apply not_isIrreducible_finTwo_of_forall_diag
+      intro g
+      refine ⟨((ν (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+          (Field.absoluteGaloisGroup.map (algebraMap F L) g))) : kp),
+        (((ν (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+          (Field.absoluteGaloisGroup.map (algebraMap F L) g)))⁻¹ : kpˣ) : kp), ?_⟩
+      show ((framedGaloisRepOfMatrix N hN1 hNmul hNopen).map (algebraMap ℚ F)).map
+        (algebraMap F L) g = _
+      rw [GaloisRep.map_apply, GaloisRep.map_apply, apply_framedGaloisRepOfMatrix, hNdef,
+        hL g, dihedralMat_pos]
+
 
 open CategoryTheory in
 /-- **The twisted Hilbert–Blumenthal moduli space for a GIVEN auxiliary
