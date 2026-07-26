@@ -7280,6 +7280,117 @@ theorem prod_sub_smul_dvd_sub_smul
   rw [hcoe] at hev
   exact ⟨_, hev⟩
 
+open _root_.Polynomial in
+/-- **THE MIRROR DIVISIBILITY: `(z − σ•z) ∣ Π_{h ∈ H}(θ − (σh)•θ)`**
+(PROVEN 2026-07-26 — the opposite half of Serre, *Corps Locaux*, IV §1
+Prop. 3 from `prod_sub_smul_dvd_sub_smul` above, and the sole arithmetic
+input of the UPWARD Herbrand transport, exactly as that one is of the
+downward transport).
+
+Serre's Prop. 3 is an EQUALITY, proven by showing that `a = z − σ•z` and
+`b = Π_{h ∈ H}(θ − (σh)•θ)` divide each other.  The downward transport
+uses only `b ∣ a`, which is the lemma above and needs `θ` to generate;
+the upward transport uses only `a ∣ b`, which is this lemma and needs
+instead that `z` generate the ring of `H`-INVARIANTS.  Neither half
+implies the other, and the two hypotheses are genuinely different — note
+that this statement does not mention `Algebra.adjoin R {θ} = ⊤` at all,
+and does not need the freeness of the action either.
+
+PROOF (Neukirch II §10 Prop. 10.5, and it is short).  Put
+`f = Π_{h ∈ H}(X − C (h•θ)) ∈ S[X]`.  Left translation by an `h₀ ∈ H`
+permutes `H`, so `f` is fixed by `H` acting on coefficients; hence every
+coefficient lies in `R[z]` by `hinv`.  For `c = P(z)` with `P` over `R`
+one has `σ•c − c = P(σ•z) − P(z)`, which `sub_dvd_eval_sub` says is
+divisible by `σ•z − z`; so `C (σ•z − z)` divides `f^σ − f` coefficientwise
+(`Polynomial.C_dvd_iff_dvd_coeff`).  Evaluating at `θ` and using
+`f.eval θ = 0` (the factor at `h = 1` vanishes) together with
+`f^σ = Π_h (X − C ((σh)•θ))` gives `(σ•z − z) ∣ Π_h (θ − (σh)•θ)`, and a
+sign flip finishes. -/
+theorem sub_smul_dvd_prod_sub_smul
+    {R S : Type*} [CommRing R] [CommRing S] [IsDomain S] [Algebra R S]
+    {Gr : Type*} [Group Gr] [Fintype Gr] [DecidableEq Gr]
+    [MulSemiringAction Gr S] [SMulCommClass Gr R S]
+    (θ z : S) (H : Subgroup Gr) [DecidablePred (fun h : Gr => h ∈ H)]
+    (hinv : ∀ s : S, (∀ h ∈ H, h • s = s) →
+      s ∈ Algebra.adjoin R ({z} : Set S))
+    (σ : Gr) :
+    (z - σ • z) ∣
+      (∏ h ∈ Finset.univ.filter (fun h : Gr => h ∈ H), (θ - (σ * h) • θ)) := by
+  classical
+  set Hs : Finset Gr := Finset.univ.filter (fun h : Gr => h ∈ H) with hHs
+  have hHs1 : (1 : Gr) ∈ Hs := by simp [hHs]
+  set f : S[X] := ∏ h ∈ Hs, (X - C (h • θ)) with hf
+  have hmapprod : ∀ ρ : Gr,
+      f.map (MulSemiringAction.toAlgHom R S ρ).toRingHom =
+        ∏ h ∈ Hs, (X - C ((ρ * h) • θ)) := by
+    intro ρ
+    rw [hf, Polynomial.map_prod]
+    refine Finset.prod_congr rfl fun h _ => ?_
+    rw [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C]
+    congr 1
+    exact congrArg C (mul_smul ρ h θ).symm
+  -- `f` is `H`-invariant, because left translation permutes `H`
+  have hfinv : ∀ h₀ ∈ H, f.map (MulSemiringAction.toAlgHom R S h₀).toRingHom = f := by
+    intro h₀ hh₀
+    have hinj : Set.InjOn (fun h : Gr => h₀ * h) (Hs : Set Gr) :=
+      fun x _ y _ hxy => mul_left_cancel hxy
+    have himg : Hs.image (fun h => h₀ * h) = Hs := by
+      ext g'
+      simp only [hHs, Finset.mem_image, Finset.mem_filter, Finset.mem_univ, true_and]
+      constructor
+      · rintro ⟨h, hh, rfl⟩
+        exact H.mul_mem hh₀ hh
+      · intro hg'
+        exact ⟨h₀⁻¹ * g', H.mul_mem (H.inv_mem hh₀) hg', by group⟩
+    have hpi : ∏ x ∈ Hs.image (fun h : Gr => h₀ * h), (X - C (x • θ)) =
+        ∏ h ∈ Hs, (X - C ((h₀ * h) • θ)) := Finset.prod_image hinj
+    rw [himg] at hpi
+    rw [hmapprod h₀, ← hpi]
+  -- hence every coefficient of `f` lies in `R[z]`
+  have hcoeff : ∀ i, f.coeff i ∈ Algebra.adjoin R ({z} : Set S) := by
+    intro i
+    refine hinv _ fun h hh => ?_
+    have hc := congrArg (fun p : S[X] => p.coeff i) (hfinv h hh)
+    rw [Polynomial.coeff_map] at hc
+    exact hc
+  -- and `σ • c − c` is divisible by `σ • z − z` for every `c ∈ R[z]`
+  have hdvdc : ∀ c ∈ Algebra.adjoin R ({z} : Set S), (σ • z - z) ∣ (σ • c - c) := by
+    intro c hc
+    rw [Algebra.adjoin_singleton_eq_range_aeval] at hc
+    obtain ⟨g, hg⟩ := hc
+    simp only [AlgHom.toRingHom_eq_coe, RingHom.coe_coe] at hg
+    set P : S[X] := g.map (algebraMap R S) with hP
+    have hPeval : ∀ y : S, P.eval y = aeval y g := by
+      intro y
+      rw [hP, eval_map, ← aeval_def]
+    have hz : P.eval z = c := by rw [hPeval, hg]
+    have hsz : P.eval (σ • z) = σ • c := by
+      rw [hPeval]
+      have h2 : aeval ((MulSemiringAction.toAlgHom R S σ) z) g
+          = (MulSemiringAction.toAlgHom R S σ) (aeval z g) :=
+        Polynomial.aeval_algHom_apply (MulSemiringAction.toAlgHom R S σ) z g
+      rw [show (σ • z) = (MulSemiringAction.toAlgHom R S σ) z from rfl, h2, hg]
+      rfl
+    rw [← hsz, ← hz]
+    exact sub_dvd_eval_sub (σ • z) z P
+  have hCdvd : C (σ • z - z) ∣
+      (f.map (MulSemiringAction.toAlgHom R S σ).toRingHom - f) := by
+    rw [Polynomial.C_dvd_iff_dvd_coeff]
+    intro i
+    rw [Polynomial.coeff_sub, Polynomial.coeff_map]
+    exact hdvdc _ (hcoeff i)
+  obtain ⟨q, hq⟩ := hCdvd
+  have hfθ : f.eval θ = 0 := by
+    rw [hf, eval_prod]
+    refine Finset.prod_eq_zero hHs1 ?_
+    simp
+  have hev := congrArg (Polynomial.eval θ) hq
+  rw [eval_sub, hfθ, sub_zero, hmapprod σ, eval_prod, eval_mul, eval_C] at hev
+  simp only [eval_sub, eval_X, eval_C] at hev
+  have hneg : z - σ • z = -(σ • z - z) := by ring
+  rw [hneg, neg_dvd]
+  exact ⟨q.eval θ, hev⟩
+
 section Counting
 
 variable {Gr Hr : Type*} [Group Gr] [Group Hr] [Fintype Gr]
@@ -9445,14 +9556,65 @@ theorem exists_level_forall_le_sum_card_filter_of_le_sum_depth
         exact le_trans hΦτ hlow1
       · exact hne1 _ (fun _ => hΦτ) τ' hτ'1
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **THE RELATIVE DEPTH WITNESS, WITH MONOGENICITY OF THE INVARIANTS**
+(sorry node, created 2026-07-26 by a fourth owner while PROVING
+`mul_le_sum_inertia_depth_fiber` below; it is the ONLY thing that leaf
+still needs).
+
+This is the PROVEN `exists_relative_depth_witness` above, VERBATIM, plus
+one extra conclusion: that the `z` it produces GENERATES the ring of
+`H`-invariants of `𝒪_N` over `𝒪₃ᵥ`, where `H = ker(res) = Gal(N/M)`.
+
+WHY THE EXTRA CLAUSE IS TRUE AND WHY IT IS NOT ALREADY AVAILABLE.  The
+`z` of `exists_relative_depth_witness` IS the image in `𝒪_N` of a
+monogenic generator `y` of `𝒪_M` — that is how its proof constructs it —
+and `𝒪_N^{Gal(N/M)} = 𝒪_M` by Galois descent, so
+`𝒪_N^H = 𝒪_M = 𝒪₃ᵥ[y] = 𝒪₃ᵥ[z]`.  But the STATEMENT of that theorem
+records only two properties of `z`, `H`-invariance and the exact relative
+depth `v_N(z − σ•z) = e·m`, and neither implies monogenicity (adding
+`3·(anything H-invariant)` to `z` preserves both while shrinking
+`𝒪₃ᵥ[z]`).  So the clause cannot be derived downstream and has to be put
+back into the witness itself.
+
+WHAT ITS PROOF NEEDS, beyond re-running the existing one:
+`exists_local_adjoin_eq_top M` (PROVEN above, giving `𝒪_M = 𝒪₃ᵥ[y]`) and
+the Galois descent `𝒪_N ∩ M = 𝒪_M` through the reification, exactly as in
+`restrictToLEHom_mem_inertia`.  No new ramification theory is involved —
+this is the LAST of the three items the old "WHAT IS STILL MISSING" list
+on the leaf below asked for; the other two are now proven
+(`sub_smul_dvd_prod_sub_smul` and the counting step inside that leaf). -/
+theorem exists_relative_depth_witness_adjoin
+    (M N : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hMN : M ≤ N)
+    [FiniteDimensional ℚ₃ᵥ M] [FiniteDimensional ℚ₃ᵥ N]
+    [IsGalois ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ N]
+    (τ : M ≃ₐ[ℚ₃ᵥ] M) (k₀ : ℕ)
+    (hτ : τ ∉ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ k₀).inertia
+      (M ≃ₐ[ℚ₃ᵥ] M)) :
+    ∃ (m : ℕ) (z : IntegralClosure 𝒪₃ᵥ N),
+      (∀ h ∈ (restrictToLEHom M N hMN).ker, h • z = z) ∧
+      (∀ k : ℕ, τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ k).inertia
+        (M ≃ₐ[ℚ₃ᵥ] M) ↔ k ≤ m) ∧
+      (∀ σ : N ≃ₐ[ℚ₃ᵥ] N, restrictToLEHom M N hMN σ = τ → ∀ j : ℕ,
+        (z - σ • z ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^ j ↔
+          j ≤ Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N)).inertia
+            (N ≃ₐ[ℚ₃ᵥ] N) ⊓ (restrictToLEHom M N hMN).ker) * m)) ∧
+      (∀ s : IntegralClosure 𝒪₃ᵥ N,
+        (∀ h ∈ (restrictToLEHom M N hMN).ker, h • s = s) →
+        s ∈ Algebra.adjoin 𝒪₃ᵥ ({z} : Set (IntegralClosure 𝒪₃ᵥ N))) := by
+  sorry
+
 open scoped Classical in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
-/-- **SERRE, *CORPS LOCAUX* IV §1 PROP. 3, THE `≥` HALF** (sorry node,
-created 2026-07-26 by decomposing
-`exists_level_forall_le_sum_card_filter_inertia_fiber`; the SOLE
-arithmetic input of the UPWARD Herbrand transport, exactly as
+/-- **SERRE, *CORPS LOCAUX* IV §1 PROP. 3, THE `≥` HALF** (PROVEN
+2026-07-26 by a fourth owner, over the single new node
+`exists_relative_depth_witness_adjoin` above; created the same day by
+decomposing `exists_level_forall_le_sum_card_filter_inertia_fiber`.  It
+is the SOLE arithmetic input of the UPWARD Herbrand transport, exactly as
 `exists_relative_depth_witness` is the sole arithmetic input of the
 downward one).
 
@@ -9473,27 +9635,34 @@ upward transport uses only the OPPOSITE divisibility `a ∣ b`, hence only
 `≥`.  Neither half implies the other, and the two transports genuinely
 need one each.
 
-WHAT IS STILL MISSING, in dependency order, and what is already here:
-(1) `a ∣ b`, i.e. `(z − σ₀•z) ∣ Π_{h ∈ H}(θ − (σ₀h)•θ)`.  This is the
-    MIRROR of the PROVEN `prod_sub_smul_dvd_sub_smul` and is proven the
-    same way, by Neukirch II §10 Prop. 10.5: put
-    `f = Π_{h ∈ H}(X − C (h•θ))`, whose coefficients are `H`-invariant, so
-    `f.eval θ = 0` while `(f.map σ₀).eval θ = Π_h (θ − (σ₀h)•θ)`; every
-    coefficient `c` of `f` satisfies `(z − σ₀•z) ∣ (σ₀ c − c)` once
-    `𝒪_N^H = 𝒪₃ᵥ[z]`, and passing to `𝒪_N ⧸ (z − σ₀•z)` kills the
-    difference of the two evaluations.
-(2) The MONOGENICITY of the fixed ring, `𝒪_N^{Gal(N/M)} = 𝒪₃ᵥ[z]`, for the
-    `z` of `exists_relative_depth_witness` (which is the image in `𝒪_N` of
-    a monogenic generator `y` of `𝒪_M`, but whose statement records only
-    `H`-invariance and the exact depth `v_N(z − σ•z) = e·m`).  Needs
-    `exists_local_adjoin_eq_top M` (PROVEN above) plus Galois descent
-    `𝒪_N ∩ M = 𝒪_M` through the reification, exactly as in
-    `restrictToLEHom_mem_inertia`.
-(3) The passage from the divisibility to the count: in the DVR `𝒪_N`
-    (`isDiscreteValuationRing_integralClosure`) each `θ − σθ` lies in
-    `𝔪_N^{w σ}` and not in `𝔪_N^{w σ + 1}`, so the product lies in
-    `𝔪_N^{Σ w σ}` and not beyond; with `v_N(z − σ₀ z) = e·m` from
-    `exists_relative_depth_witness`, `a ∣ b` forces `e·m ≤ Σ w σ`.
+PROOF AS CARRIED OUT (2026-07-26).  The docstring used to carry a
+three-item "WHAT IS STILL MISSING" list; two of the three are now PROVEN
+and the third is the single node this leaf consumes.
+
+(1) `a ∣ b`, i.e. `(z − σ₀•z) ∣ Π_{h ∈ H}(θ − (σ₀h)•θ)`, is now the
+    PROVEN `sub_smul_dvd_prod_sub_smul` above — the mirror of
+    `prod_sub_smul_dvd_sub_smul`, proven the same way (Neukirch II §10
+    Prop. 10.5) from `f = Π_{h ∈ H}(X − C (h•θ))`, whose coefficients are
+    `H`-invariant, hence lie in `𝒪₃ᵥ[z]`.
+(2) The MONOGENICITY of the fixed ring, `𝒪_N^{Gal(N/M)} = 𝒪₃ᵥ[z]`, is the
+    ONE remaining input, isolated as
+    `exists_relative_depth_witness_adjoin` above: the existing relative
+    depth witness with that clause added to its statement.  See its
+    docstring for why the clause is true and why it cannot be recovered
+    from the old statement.
+(3) The passage from the divisibility to the count is now proven inline
+    below, and it is pure DVR bookkeeping.  Each `θ − (σ₀h)•θ` has EXACT
+    depth `w (σ₀h)` — `span {θ − (σ₀h)•θ} = 𝔪_N^{w(σ₀h)}` by
+    `span_singleton_eq_maximalIdeal_pow_of_mem_iff`, fed the `hθiff` of
+    `exists_inertia_generator` composed with `hw` — so the span of the
+    PRODUCT is `𝔪_N^{Σ w}` (`Ideal.prod_span_singleton` plus
+    `Finset.prod_pow_eq_pow_sum`), while `span {z − σ₀•z} = 𝔪_N^{e·m}`
+    from the witness.  The divisibility is then
+    `𝔪_N^{Σ w} ≤ 𝔪_N^{e·m}`, and `maximalIdeal_pow_le_pow_iff` reads off
+    `e·m ≤ Σ w`.  The fibre of `τ` is the coset `σ₀·H`, so the sum over
+    the fibre is the sum over `H` (`Finset.sum_image`); at `m = 0` the
+    claim is trivial, and for `m ≥ 1` the fibre is nonempty by the PROVEN
+    inertia surjectivity `exists_restrictToLEHom_eq_of_mem_inertia`.
 
 NOT VACUOUS: `hm` is satisfiable exactly for `τ ≠ 1` (at `τ = 1` every
 level of the filtration contains `τ`, so no finite `m` works), and then
@@ -9518,7 +9687,93 @@ theorem mul_le_sum_inertia_depth_fiber
         (restrictToLEHom M N hMN).ker) * m ≤
       ∑ σ ∈ Finset.univ.filter
         (fun σ : N ≃ₐ[ℚ₃ᵥ] N => restrictToLEHom M N hMN σ = τ), w σ := by
-  sorry
+  classical
+  rcases Nat.eq_zero_or_pos m with rfl | hm0
+  · exact (mul_zero _).le.trans (Nat.zero_le _)
+  -- `τ` lies in the inertia group, so its fibre is nonempty
+  have hτ1 : τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ 1).inertia
+      (M ≃ₐ[ℚ₃ᵥ] M) := (hm 1 le_rfl).mpr hm0
+  obtain ⟨σ₀, -, hσ₀t⟩ := exists_restrictToLEHom_eq_of_mem_inertia M N hMN τ
+    (by simpa only [pow_one] using hτ1)
+  -- `τ` has exact depth `m`
+  have hτnot : τ ∉ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ (m + 1)).inertia
+      (M ≃ₐ[ℚ₃ᵥ] M) := by
+    intro h
+    have := (hm (m + 1) (by omega)).mp h
+    omega
+  obtain ⟨m', z, -, hmiff, hzval, hzadj⟩ :=
+    exists_relative_depth_witness_adjoin M N hMN τ (m + 1) hτnot
+  have hmm : m' = m := by
+    have h1 : ¬ (m + 1 ≤ m') := fun h => hτnot ((hmiff (m + 1)).mpr h)
+    have h2 : ¬ (m' + 1 ≤ m) := fun h => by
+      have := (hmiff (m' + 1)).mp ((hm (m' + 1) (by omega)).mpr h)
+      omega
+    omega
+  rw [hmm] at hzval
+  -- the monogenic generator of `𝒪_N` and its exact depths
+  obtain ⟨θ, -, -, hθiff⟩ := exists_inertia_generator N
+  -- the fibre of `τ` is the coset `σ₀ · ker`
+  have hset : Finset.univ.filter
+      (fun σ : N ≃ₐ[ℚ₃ᵥ] N => restrictToLEHom M N hMN σ = τ) =
+      (Finset.univ.filter
+        (fun h : N ≃ₐ[ℚ₃ᵥ] N => h ∈ (restrictToLEHom M N hMN).ker)).image
+        (fun h => σ₀ * h) := by
+    ext σ
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_image]
+    constructor
+    · intro hσ
+      exact ⟨σ₀⁻¹ * σ, by simp [MonoidHom.mem_ker, map_mul, hσ, hσ₀t], by group⟩
+    · rintro ⟨h, hh, rfl⟩
+      have hh1 : restrictToLEHom M N hMN h = 1 := hh
+      simp [map_mul, hh1, hσ₀t]
+  -- each factor `θ − (σ₀h)•θ` spans exactly `𝔪_N ^ w (σ₀ h)`
+  have hfacspan : ∀ h ∈ Finset.univ.filter
+      (fun h : N ≃ₐ[ℚ₃ᵥ] N => h ∈ (restrictToLEHom M N hMN).ker),
+      Ideal.span ({θ - (σ₀ * h) • θ} : Set (IntegralClosure 𝒪₃ᵥ N)) =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^ (w (σ₀ * h)) := by
+    intro h hh
+    have hres : restrictToLEHom M N hMN (σ₀ * h) = τ := by
+      have hh1 : restrictToLEHom M N hMN h = 1 := (Finset.mem_filter.mp hh).2
+      simp [map_mul, hh1, hσ₀t]
+    refine span_singleton_eq_maximalIdeal_pow_of_mem_iff _ _ _ (fun k => ?_)
+    have hneg : θ - (σ₀ * h) • θ = -((σ₀ * h) • θ - θ) := by ring
+    rw [hneg, neg_mem_iff]
+    rcases Nat.eq_zero_or_pos k with rfl | hk
+    · simp only [Nat.zero_le, iff_true, pow_zero, Ideal.one_eq_top]
+      exact Submodule.mem_top
+    · exact (hθiff (σ₀ * h) k).symm.trans (hw (σ₀ * h) hres k hk)
+  -- `z − σ₀•z` spans exactly `𝔪_N ^ (e · m)`
+  have hzspan : Ideal.span ({z - σ₀ • z} : Set (IntegralClosure 𝒪₃ᵥ N)) =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^
+        (Nat.card ↥((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ N)).inertia (N ≃ₐ[ℚ₃ᵥ] N) ⊓
+          (restrictToLEHom M N hMN).ker) * m) :=
+    span_singleton_eq_maximalIdeal_pow_of_mem_iff _ _ _ (hzval σ₀ hσ₀t)
+  -- the mirror divisibility of Serre IV §1 Prop. 3
+  have hdvd := sub_smul_dvd_prod_sub_smul (R := 𝒪₃ᵥ)
+    (S := IntegralClosure 𝒪₃ᵥ N) θ z (restrictToLEHom M N hMN).ker hzadj σ₀
+  have hprodspan : Ideal.span ({∏ h ∈ Finset.univ.filter
+      (fun h : N ≃ₐ[ℚ₃ᵥ] N => h ∈ (restrictToLEHom M N hMN).ker),
+      (θ - (σ₀ * h) • θ)} : Set (IntegralClosure 𝒪₃ᵥ N)) =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^
+        (∑ h ∈ Finset.univ.filter
+          (fun h : N ≃ₐ[ℚ₃ᵥ] N => h ∈ (restrictToLEHom M N hMN).ker),
+          w (σ₀ * h)) := by
+    rw [← Ideal.prod_span_singleton, Finset.prod_congr rfl hfacspan,
+      Finset.prod_pow_eq_pow_sum]
+  have hle : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^
+      (∑ h ∈ Finset.univ.filter
+        (fun h : N ≃ₐ[ℚ₃ᵥ] N => h ∈ (restrictToLEHom M N hMN).ker),
+        w (σ₀ * h)) ≤
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^
+        (Nat.card ↥((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ N)).inertia (N ≃ₐ[ℚ₃ᵥ] N) ⊓
+          (restrictToLEHom M N hMN).ker) * m) := by
+    rw [← hprodspan, ← hzspan]
+    exact Ideal.span_singleton_le_span_singleton.mpr hdvd
+  have hfin := (maximalIdeal_pow_le_pow_iff (IntegralClosure 𝒪₃ᵥ N) _ _).mp hle
+  rw [hset, Finset.sum_image (fun x _ y _ hxy => mul_left_cancel hxy)]
+  exact hfin
 
 open scoped Classical in
 set_option backward.isDefEq.respectTransparency false in
