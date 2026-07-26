@@ -79,7 +79,7 @@ frame notion must carry a ring map `𝒪_D →+* O` intertwining `φ` with
 
 ## What is proven here
 
-Two lemmas and one assembly.
+Five lemmas and one assembly.
 
 * `isIrreducible_map_of_restrictionSurjective`: irreducibility of a
   Galois representation descends along a restriction that preserves the
@@ -89,16 +89,30 @@ Two lemmas and one assembly.
 * `exists_mem_notMem_sq_of_isMaximal`: a nonzero maximal ideal of a
   Dedekind domain contains an element outside its square — the
   uniformizer `π` that `TatePt` is indexed by.
+* `exists_finset_forall_natCast_notMem`: only finitely many places of a
+  number field lie over a rational prime. This is the exceptional set
+  `bad` of the determinant clause, and the only reason one is needed.
+* `adicArithFrob_rootsOfUnity_pow_absNorm` and
+  `cyclotomicCharacter_adicArithFrob_absNorm`: away from `ℓ` the
+  arithmetic Frobenius at `w` raises `ℓ`-power roots of unity to the
+  `Nw`-th power, so the `ℓ`-adic cyclotomic character takes the value
+  `Nw` there. Pure algebraic number theory. (Both are reproductions of
+  proofs that live in the DOWNSTREAM `Modularity/KhareWintenberger.lean`
+  and are therefore unusable from here; since that module imports this
+  one, the intended cleanup is to delete the downstream copies rather
+  than these.)
 * `exists_tateFrame_of_levelStructure` itself is PROVEN (2026-07-26),
-  by assembly over three independent leaves, one per theory:
+  by assembly over four independent leaves, one per theory:
   `exists_adicCoefficientRing` (commutative algebra: the completion
   `𝒪_{D,I}` as a topological `ℤ_q`-algebra),
   `exists_tateFrame_of_adicCoefficientRing` (abelian varieties: `T_I A`
-  is free of rank two over it, equivariantly) and
+  is free of rank two over it, equivariantly),
   `exists_residualEmbedding_of_tateFrame` (representation theory: the
   reduction matches the level structure up to `Aut(k')` — the ONLY
   place `hirr` is used, and the step whose unconditional form was
-  refuted).
+  refuted) and `det_eq_cyclotomicCharacter_of_tateFrame` (the WEIL
+  PAIRING: `det τ = χ_cyc`, the whole content of the determinant
+  clause, cut out of the assembly on 2026-07-26).
 * `exists_adicCoefficientRing` is itself PROVEN (2026-07-26): `O` is
   mathlib's `v.adicCompletionIntegers D`, all three PIN conjuncts are
   discharged here (`isAdicComplete_span_uniformizer`,
@@ -116,6 +130,10 @@ module
 
 public import Fermat.FLT.Modularity.AbelianScheme
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
+-- `IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal`: the residue
+-- cardinality at `w` in the Frobenius specification of
+-- `adicArithFrob_rootsOfUnity_pow_absNorm`
+public import Fermat.FLT.Deformations.RepresentationTheory.CompletionTransport
 public import Mathlib.Topology.Algebra.Module.ModuleTopology
 public import Mathlib.NumberTheory.Padics.RingHoms
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
@@ -1742,6 +1760,322 @@ theorem exists_residualEmbedding_of_tateFrame
   congr 1
   rw [← Matrix.charpoly_toLin', Matrix.toLin'_toMatrix']
 
+/-! ### The determinant clause: the Weil pairing, and the cyclotomic
+character at a Frobenius
+
+The last conjunct of `exists_tateFrame_of_levelStructure` — that the
+determinant of Frobenius on the frame is the absolute norm `Nw` — was
+merged onto the assembly of that leaf on 2026-07-26 as a single opaque
+sorried `have`. It is cut here into three statements, of which exactly
+ONE is open and it is the only deep one:
+
+* `det_eq_cyclotomicCharacter_of_tateFrame` (SORRY NODE — the WEIL
+  PAIRING; the only new leaf): the determinant of the frame
+  representation IS the `q`-adic cyclotomic character, as a character
+  of the whole of `Γ_F`. No exceptional set and nothing local appears:
+  the bad places enter only at the second step.
+* `cyclotomicCharacter_adicArithFrob_absNorm` (PROVEN here): at a place
+  `w ∤ q` of `F` the `q`-adic cyclotomic character of `Γ_ℚ` takes the
+  value `Nw` on the global image of the arithmetic Frobenius at `w`.
+  Pure algebraic number theory, no geometry and no representation.
+* `exists_finset_forall_natCast_notMem` (PROVEN here): the places of
+  `F` above `q` are finite in number — this is the exceptional set
+  `bad`, and it is the only reason one is needed.
+
+Why the split is the right one. `det τ = χ_cyc` is an identity of
+CHARACTERS, so it is insensitive to ramification and to the choice of
+Frobenius lift; the exceptional set is an artefact of evaluating
+`χ_cyc` at a Frobenius, where the value `Nw` is available only away
+from `q` (at `w ∣ q` the character is ramified and no Frobenius lift
+has a well-defined cyclotomic value at all). Keeping the two apart
+means the geometric leaf carries no finite-set bookkeeping and the
+arithmetic lemma carries no abelian varieties. -/
+
+/-- **Only finitely many places of a number field lie above a rational
+prime** (PROVEN): the places `w` with `q ∈ w` are exactly the height-one
+primes dividing `(q)`, which is a nonzero ideal because `𝒪_F` has
+characteristic zero, and only finitely many primes divide a nonzero
+ideal of a Dedekind domain (`Ideal.finite_factors`).
+
+This is the exceptional set `bad` of the determinant clause of
+`exists_tateFrame_of_levelStructure`. It is stated in the "there is a
+`Finset` outside which the property holds" shape that the clause needs,
+rather than as a `Set.Finite`, so that the consumer never has to name
+the set — and for a general nonzero `n`, not just for the prime `q` it
+is used at, so that it is literally the same statement as the
+downstream `exists_finset_forall_natCast_notMem_asIdeal` of
+`Modularity/KhareWintenberger.lean` and that copy can be deleted in
+favour of this one. -/
+theorem exists_finset_forall_natCast_notMem {F : Type u} [Field F] [NumberField F]
+    (n : ℕ) (hn : n ≠ 0) :
+    ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ w ∉ bad, (n : NumberField.RingOfIntegers F) ∉ w.asIdeal := by
+  classical
+  have hspan : (Ideal.span {(n : NumberField.RingOfIntegers F)}) ≠ 0 := by
+    rw [Ne, Ideal.zero_eq_bot, Ideal.span_singleton_eq_bot]
+    exact Nat.cast_ne_zero.mpr hn
+  have hfin := Ideal.finite_factors (R := NumberField.RingOfIntegers F) hspan
+  refine ⟨hfin.toFinset, fun w hw hmem => hw ?_⟩
+  rw [Set.Finite.mem_toFinset]
+  exact Ideal.dvd_iff_le.mpr (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hmem))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **The arithmetic Frobenius at a place `w ∤ ℓ` of a number field `F`
+raises `ℓ`-power roots of unity to the `Nw`-th power** (PROVEN): for a
+root of unity `t` of `ℓ`-power order in `ℚᵃˡᵍ`, the image in `Γ_ℚ` of
+the arithmetic Frobenius at `w` — pushed down the tower
+`Γ_{F_w} → Γ_F → Γ_ℚ` — sends `t` to `t ^ Nw`.
+
+The Frobenius specification at `w` is read in `F_wᵃˡᵍ`, where the
+exponent is the residue cardinality — `Nw` by
+`IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal`
+(`CompletionTransport.lean`) and `Ideal.absNorm_apply` — and then
+descends TWO steps, each by `Field.absoluteGaloisGroup.lift_map`
+against injectivity of `AlgebraicClosure.map`. The hypothesis `hwℓ`
+enters exactly once and essentially: it makes `ℓⁿ` a unit in the
+completed integers at `w`, the side condition of
+`AlgHom.IsArithFrobAt.apply_of_pow_eq_one`.
+
+PROVENANCE (2026-07-26): this proof is the one written for
+`adicArithFrob_rootsOfUnity_pow_base` in `Modularity/KhareWintenberger.lean`,
+which is DOWNSTREAM of this module and therefore unusable here. It is
+reproduced rather than re-derived, and the intended cleanup is the
+reverse direction: `KhareWintenberger.lean` imports this module, so its
+copy can simply be deleted in favour of this one. -/
+theorem adicArithFrob_rootsOfUnity_pow_absNorm
+    {ℓ : ℕ} [hℓ : Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hwℓ : (ℓ : NumberField.RingOfIntegers F) ∉ w.asIdeal) (n : ℕ) :
+    ∀ t ∈ rootsOfUnity (ℓ ^ n) (AlgebraicClosure ℚ),
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+        (Field.absoluteGaloisGroup.map
+          (algebraMap F (HeightOneSpectrum.adicCompletion F w))
+          (Field.AbsoluteGaloisGroup.adicArithFrob w))).toRingEquiv) t =
+        t ^ ((Ideal.absNorm w.asIdeal : ZMod (ℓ ^ n)).val) := by
+  intro t ht
+  classical
+  set g : ℚ →+* F := algebraMap ℚ F with hgdef
+  set h : F →+* HeightOneSpectrum.adicCompletion F w :=
+    algebraMap F (HeightOneSpectrum.adicCompletion F w) with hhdef
+  -- the residue cardinality of the `IsArithFrobAt` specification at `w` is `Nw`
+  have hcard : Nat.card (↥(w.adicCompletionIntegers F) ⧸
+      (IsLocalRing.maximalIdeal (IntegralClosure ↥(w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F)))).under ↥(w.adicCompletionIntegers F)) =
+      Ideal.absNorm w.asIdeal := by
+    rw [IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal w,
+      Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  -- the root of unity and its images down the tower `ℚᵃˡᵍ → Fᵃˡᵍ → F_wᵃˡᵍ`
+  have htL : ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ (ℓ ^ n) = 1 := by
+    have h1 := (mem_rootsOfUnity _ _).mp ht
+    calc ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ (ℓ ^ n)
+        = ((t ^ (ℓ ^ n) : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) := by
+          push_cast; rfl
+      _ = 1 := by rw [h1]; rfl
+  set u : AlgebraicClosure F :=
+    AlgebraicClosure.map g ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) with hudef
+  have hupow : u ^ (ℓ ^ n) = 1 := by rw [hudef, ← map_pow, htL, map_one]
+  set ζ : AlgebraicClosure (HeightOneSpectrum.adicCompletion F w) :=
+    AlgebraicClosure.map h u with hζdef
+  have hζpow : ζ ^ (ℓ ^ n) = 1 := by rw [hζdef, ← map_pow, hupow, map_one]
+  -- `ζ` is integral over the completed integers (it kills `X^{ℓⁿ} - 1`)
+  have hint : IsIntegral (w.adicCompletionIntegers F) ζ := by
+    refine ⟨Polynomial.X ^ (ℓ ^ n) - 1, ?_, ?_⟩
+    · have := Polynomial.monic_X_pow_sub_C
+        (R := w.adicCompletionIntegers F) (1 : _) (n := ℓ ^ n)
+        (pow_ne_zero _ hℓ.out.pos.ne')
+      simpa [Polynomial.C_1] using this
+    · simp [Polynomial.eval₂_sub, hζpow]
+  set ζ' : IntegralClosure (w.adicCompletionIntegers F)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)) := ⟨ζ, hint⟩ with hζ'def
+  have hζ'pow : ζ' ^ (ℓ ^ n) = 1 := by
+    apply Subtype.ext
+    push_cast [hζ'def]
+    exact hζpow
+  -- `ℓ` is a unit at `w` (`w ∤ ℓ`), so `ℓⁿ` avoids the maximal ideal upstairs
+  have hpnotin : ((ℓ : ℕ) ^ n : IntegralClosure (w.adicCompletionIntegers F)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))) ∉
+      IsLocalRing.maximalIdeal _ := by
+    have hunit : IsUnit ((ℓ : ℕ) : w.adicCompletionIntegers F) := by
+      by_contra hnu
+      refine hwℓ ?_
+      have hover : w.asIdeal =
+          (HeightOneSpectrum.completionIdeal F w).under
+            (NumberField.RingOfIntegers F) := Ideal.LiesOver.over
+      rw [hover, Ideal.under_def, Ideal.mem_comap]
+      show algebraMap (NumberField.RingOfIntegers F) (w.adicCompletionIntegers F)
+        ((ℓ : ℕ) : NumberField.RingOfIntegers F) ∈ _
+      rw [map_natCast]
+      exact (IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hnu)
+    have hunitIC : IsUnit (((ℓ : ℕ) ^ n) : IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))) := by
+      have h1 := hunit.map (algebraMap (w.adicCompletionIntegers F)
+        (IntegralClosure (w.adicCompletionIntegers F)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))))
+      rw [map_natCast] at h1
+      exact h1.pow n
+    intro hmem
+    exact ((IsLocalRing.mem_maximalIdeal _).mp hmem) hunitIC
+  -- the Frobenius specification at `w`, read in `F_wᵃˡᵍ`
+  have hfrob := AlgHom.IsArithFrobAt.apply_of_pow_eq_one
+    (Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob (v := w))
+    hζ'pow (by exact_mod_cast hpnotin)
+  rw [hcard] at hfrob
+  have hfrobK : Field.AbsoluteGaloisGroup.adicArithFrob w ζ =
+      ζ ^ Ideal.absNorm w.asIdeal := by
+    have h1 := hfrob
+    rw [MulSemiringAction.toAlgHom_apply] at h1
+    have h2 := congrArg Subtype.val h1
+    rw [IntegralClosure.coe_smul] at h2
+    have h3 : ((⟨ζ, hint⟩ : IntegralClosure _ _) ^ Ideal.absNorm w.asIdeal).1 =
+        ζ ^ Ideal.absNorm w.asIdeal := SubmonoidClass.coe_pow _ _
+    simpa [hζ'def, AlgEquiv.smul_def] using h2.trans h3
+  -- descend one step: the value at `u ∈ Fᵃˡᵍ` of the image in `Γ F`
+  have hstepF : (Field.absoluteGaloisGroup.map h
+      (Field.AbsoluteGaloisGroup.adicArithFrob w)) u = u ^ Ideal.absNorm w.asIdeal := by
+    apply (AlgebraicClosure.map h).injective
+    rw [Field.absoluteGaloisGroup.lift_map h
+      (Field.AbsoluteGaloisGroup.adicArithFrob w) u, map_pow]
+    exact hfrobK
+  -- descend the second step: the value at `t ∈ ℚᵃˡᵍ` of the image in `Γ ℚ`
+  have hmain : (Field.absoluteGaloisGroup.map g
+      (Field.absoluteGaloisGroup.map h (Field.AbsoluteGaloisGroup.adicArithFrob w)))
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) =
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ Ideal.absNorm w.asIdeal := by
+    apply (AlgebraicClosure.map g).injective
+    rw [Field.absoluteGaloisGroup.lift_map g
+      (Field.absoluteGaloisGroup.map h (Field.AbsoluteGaloisGroup.adicArithFrob w))
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ), map_pow]
+    exact hstepF
+  show (Field.absoluteGaloisGroup.map g
+      (Field.absoluteGaloisGroup.map h (Field.AbsoluteGaloisGroup.adicArithFrob w)))
+      ((t : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) = _
+  rw [hmain]
+  -- the exponent-mod juggle: `t^Nw = t^(Nw mod ℓⁿ)` since `t^{ℓⁿ} = 1`
+  haveI : NeZero (ℓ ^ n) := ⟨pow_ne_zero _ hℓ.out.pos.ne'⟩
+  have hval : ((Ideal.absNorm w.asIdeal : ZMod (ℓ ^ n))).val =
+      Ideal.absNorm w.asIdeal % ℓ ^ n := ZMod.val_natCast _ _
+  conv_lhs => rw [show Ideal.absNorm w.asIdeal =
+    ℓ ^ n * (Ideal.absNorm w.asIdeal / ℓ ^ n) + Ideal.absNorm w.asIdeal % ℓ ^ n from
+    (Nat.div_add_mod _ (ℓ ^ n)).symm]
+  rw [pow_add, pow_mul, htL, one_pow, one_mul, hval]
+
+/-- **The `ℓ`-adic cyclotomic character at a Frobenius of the base `F`**
+(PROVEN — pure algebraic number theory, NO geometric or automorphic
+content): at a place `w` of a number field `F` not lying over `ℓ`, the
+`ℓ`-adic cyclotomic character of `Γ_ℚ` takes the value `Nw` on the
+global image of the arithmetic Frobenius at `w`.
+
+Classically this is the unramifiedness of the cyclotomic character away
+from `ℓ` together with `Frob_w(ζ) = ζ^{Nw}` for roots of unity of
+`ℓ`-power order (Serre, *Abelian ℓ-adic Representations*, I.1;
+Neukirch IV): `PadicInt.ext_of_toZModPow` reduces the identity to every
+level `ℓⁿ`, where `cyclotomicCharacter.toZModPow` and
+`modularCyclotomicCharacter.unique` identify the value with the exponent
+of the Frobenius action on `μ_{ℓⁿ}`, which is the lemma above.
+
+PROVENANCE: as for `adicArithFrob_rootsOfUnity_pow_absNorm` — the same
+statement is proven as `cyclotomicCharacter_adicArithFrob_base_eq_absNorm`
+in the DOWNSTREAM `Modularity/KhareWintenberger.lean`, and the intended
+cleanup is to delete that copy in favour of this one. -/
+theorem cyclotomicCharacter_adicArithFrob_absNorm
+    {ℓ : ℕ} [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hwℓ : (ℓ : NumberField.RingOfIntegers F) ∉ w.asIdeal) :
+    ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+        (Field.absoluteGaloisGroup.map
+          (algebraMap F (HeightOneSpectrum.adicCompletion F w))
+          (Field.AbsoluteGaloisGroup.adicArithFrob w))).toRingEquiv) :
+        ℤ_[ℓ]ˣ) : ℤ_[ℓ]) = (Ideal.absNorm w.asIdeal : ℤ_[ℓ]) := by
+  rw [← PadicInt.ext_of_toZModPow]
+  intro n
+  rw [map_natCast, cyclotomicCharacter.toZModPow]
+  exact (modularCyclotomicCharacter.unique
+    (hn := HasEnoughRootsOfUnity.natCard_rootsOfUnity (AlgebraicClosure ℚ) (ℓ ^ n))
+    _ _ (adicArithFrob_rootsOfUnity_pow_absNorm F w hwℓ n)).symm
+
+/-- **The determinant of a Tate frame is the cyclotomic character**
+(sorry node — the WEIL PAIRING; Silverman *AEC* III.8 for the elliptic
+case, Mumford *Abelian Varieties* §16/§20 for the polarized case in
+general, Taylor 2002 §2 and Carayol for the Hilbert–Blumenthal
+normalization used here).
+
+For a frame `φ` of the Tate module `TatePt m x I π` by
+`τ : Γ_F → GL₂(O)` over the completion `O = 𝒪_{D,I}` — additive,
+bijective, `Γ_F`-equivariant, and compatible with the real
+multiplication through `j` — the determinant of `τ` is the `q`-adic
+cyclotomic character:
+
+  `det (τ σ) = χ_cyc(σ)` for EVERY `σ ∈ Γ_F`.
+
+The argument. A polarization of the abelian variety `A_x` gives the
+`𝒪_D`-linear Weil pairing on `T_I A`, an alternating perfect pairing
+
+  `T_I A × T_I A → 𝔡_D⁻¹ ⊗_{𝒪_D} 𝒪_{D,I}(1)`
+
+which is `Γ_F`-equivariant with the Galois action on the target through
+the cyclotomic character alone (`Γ_F` acts trivially on the inverse
+different, which is a module of the base ring). Since `T_I A` is free
+of rank two over `O`, the pairing identifies `∧²_O T_I A` with a free
+rank-one `O`-module on which `Γ_F` acts by `χ_cyc`, and the determinant
+of an endomorphism of a rank-two free module is its action on the
+second exterior power. Hence `det ∘ τ = χ_cyc`.
+
+FAITHFULNESS. This is stated for a GIVEN frame, which the docstring of
+`exists_tateFrame_of_levelStructure` warns is FALSE without the
+real-multiplication tie: for a merely additive and `Γ_F`-equivariant
+frame the `O`-structure transported to `T` is an arbitrary embedding
+`O ↪ End_{ℤ_q[Γ_F]}(T)`, and when that commutant is larger than
+`𝒪_{D,I}` — `T ⊗ ℚ_q = χ₁ ⊕ χ₂` with `𝒪_{D,I}/ℤ_q` carrying a
+nontrivial automorphism `ψ`, so that `a ∗ (u₁, u₂) := (a u₁, ψ(a) u₂)`
+is a second free rank-two structure — the determinant becomes
+`χ₁ · ψ⁻¹(χ₂)` instead of `χ₁ · χ₂ = χ_cyc`. That is why the whole of
+`j`, `hφj`, `hcplt`, `hdense` and `hker` are hypotheses here and not
+just decoration: together they say that `j` is injective with `𝒪_D`
+`I`-adically dense in `O`, and that the `O`-action on `T` extends
+`m.act` — which forces `O = 𝒪_{D,I}` acting canonically, and kills the
+exotic frames. Do not weaken them.
+
+No exceptional set appears: this is an identity of characters on the
+whole of `Γ_F`, ramified places included. The finite bad set of the
+consumer comes only from evaluating `χ_cyc` at a Frobenius, which is
+possible exactly away from `q`
+(`cyclotomicCharacter_adicArithFrob_absNorm`). -/
+theorem det_eq_cyclotomicCharacter_of_tateFrame
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
+    [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (hφadd : ∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n))
+    (hφbij : Function.Bijective φ)
+    (hφequiv : ∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n))
+    (hφj : ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j a • u)).1 n = m.act a ((φ u).1 n)) :
+    ∀ σ : Field.absoluteGaloisGroup F,
+      LinearMap.det (τ σ) =
+        algebraMap ℤ_[q] O
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) :
+              ℤ_[q]ˣ) : ℤ_[q]) :=
+  sorry
+
 /-! ### The two leaves of the Tate-module construction -/
 
 /-- **Tate modules are free of rank two, and reduce to the torsion**
@@ -1903,7 +2237,28 @@ becomes `χ₁ · ψ⁻¹(χ₂)` instead of `χ₁ · χ₂ = Nw`.  A determina
 over a given frame therefore needs the real-multiplication tie
 (`j`/`hj`) that the sibling was repaired with; over a frame the prover
 chooses, it needs nothing.  Its consumer is the field
-`HilbertBlumenthalPoint.detσ`. -/
+`HilbertBlumenthalPoint.detσ`.
+
+DETERMINANT CLAUSE, DISCHARGED 2026-07-26 (later the same day).  The
+clause survived the merge of the two branches as a single opaque sorried
+`have` inside this assembly.  It is now cut into the three statements of
+the section "The determinant clause" above, and the assembly is closed
+over them:
+
+* the exceptional set is exactly the set of places over `q`, finite by
+  `exists_finset_forall_natCast_notMem` — the places of bad reduction do
+  NOT have to be excluded, since `det τ = χ_cyc` is an identity of
+  characters and is insensitive to ramification of `τ`;
+* `det τ = χ_cyc` on the whole of `Γ_F` is the one open leaf
+  `det_eq_cyclotomicCharacter_of_tateFrame` (the Weil pairing);
+* `χ_cyc(Frob_w) = Nw` for `w ∤ q` is PROVEN here as
+  `cyclotomicCharacter_adicArithFrob_absNorm`.
+
+Note the frame used for the geometric leaf is the one produced by
+`exists_tateFrame_of_adicCoefficientRing`, so it comes WITH `j` and
+`hφj`; that is what makes a given-frame determinant leaf faithful, per
+the audit above, and every one of `j`, `hφj`, `hcplt`, `hdense`, `hker`
+is passed to it. -/
 theorem exists_tateFrame_of_levelStructure
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -1960,19 +2315,25 @@ theorem exists_tateFrame_of_levelStructure
   obtain ⟨ι₀, hι₀⟩ :=
     exists_residualEmbedding_of_tateFrame m x I hI π hπ hπ2 O j hker τ φ hφadd hφbij hφequiv
       hφj hV ρ' hirr e headd heinj heequiv heimg
-  -- The determinant (Weil-pairing) clause, added 2026-07-26 by another owner
-  -- and merged onto this assembly: the `𝒪_D`-linear Weil pairing makes
-  -- `∧²_{𝒪_{D,I}} T_I A` the inverse different twisted by `χ_cyc`, so
-  -- `det τ = χ_cyc` and `χ_cyc(Frob_w) = Nw` away from the bad places.  It is
-  -- a statement about the pairing, which none of the three leaves above sees,
-  -- so it is the ONE clause of this conclusion still open.
-  have hdet : ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
-      ∀ w ∉ bad,
-        LinearMap.det (τ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)) =
-          (Ideal.absNorm w.asIdeal : O) := sorry
-  obtain ⟨bad, hbad⟩ := hdet
+  -- The determinant (Weil-pairing) clause, added 2026-07-26 by another owner and
+  -- merged onto this assembly.  It is now discharged from the three-way cut
+  -- above the leaf: the exceptional set is the (finite) set of places over `q`,
+  -- the identity `det τ = χ_cyc` is the Weil-pairing leaf
+  -- `det_eq_cyclotomicCharacter_of_tateFrame`, and the value of `χ_cyc` at an
+  -- arithmetic Frobenius away from `q` is `Nw` by
+  -- `cyclotomicCharacter_adicArithFrob_absNorm`.
+  obtain ⟨bad, hbad⟩ :=
+    exists_finset_forall_natCast_notMem (F := F) q (Fact.out : q.Prime).ne_zero
+  have hdet : ∀ w ∉ bad,
+      LinearMap.det (τ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)) =
+        (Ideal.absNorm w.asIdeal : O) := by
+    intro w hw
+    rw [GaloisRep.toLocal_apply,
+      det_eq_cyclotomicCharacter_of_tateFrame m x hdim q I hI hqI π hπ hπ2 O j hcplt hdense
+        hker τ φ hφadd hφbij hφequiv hφj _,
+      cyclotomicCharacter_adicArithFrob_absNorm F w (hbad w hw), map_natCast]
   exact ⟨π, hπ, hπ2, O, iCR, iTS, iTR, iAlg, iLoc, iFin, iFree, iMT, τ, φ, ι₀, j, bad,
-    hφadd, hφbij, hφequiv, hι₀, hφj, hbad⟩
+    hφadd, hφbij, hφequiv, hι₀, hφj, hdet⟩
 
 /-- **The Frobenius characteristic polynomials of the Tate modules form
 one `D`-rational compatible system** (sorry node — item 9 of the
