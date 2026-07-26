@@ -3957,9 +3957,232 @@ theorem WeierstrassCurve.not_cyclicIsogeny_oneHundredSixtyNine
     False :=
   sorry
 
+/-!
+##### The seven primes with `X_0(p)` of genus `≥ 1`, split by TECHNIQUE (2026-07-26)
+
+`jInvariant_mem_of_isogenyPrime_ge_eleven` — the leaf that SUPPLIES the
+eleven-element table — is now PROVEN from three shallower leaves. As with the
+split of `not_cyclicIsogeny_sq_of_isogenyPrime` one section above, the split is
+deliberately **not** "one leaf per prime": the seven primes fall into exactly
+three regimes, and which regime a prime is in is decided by the pair
+`(genus X_0(p), rank J_0(p)(ℚ))`, which is what decides what kind of argument
+determines `X_0(p)(ℚ)`.
+
+**Modular and arithmetic data, Magma 2026-07-26** (`Genus(Gamma0(p))`,
+`#Cusps(Gamma0(p))`, `Index(Gamma0(p))`; ranks from `NewformDecomposition` +
+`LRatio` + `AtkinLehnerOperator` on `ModularSymbols(p, 2)`; untrusted searcher,
+never a proof). For `p` prime `X_0(p)` has exactly `2` cusps, `0` and `∞`, both
+`ℚ`-rational, so the count of NON-cuspidal rational points is `#X_0(p)(ℚ) − 2`:
+
+    p     genus   index   rank J_0(p)(ℚ)   #non-cuspidal   regime
+    11      1       12          0                3         genus 1
+    17      1       18          0                2         genus 1
+    19      1       20          0                1         genus 1
+    37      2       38          1                2         Mazur–Vélu
+    43      3       44          1                1         CM, h(−p) = 1
+    67      5       68          2                1         CM, h(−p) = 1
+    163    13      164          6                1         CM, h(−p) = 1
+
+`3 + 2 + 1 + 2 + 1 + 1 + 1 = 11`, which is the length of the table.
+
+**The rank column is the reason the split is by technique and not by prime, and
+it also corrects a natural guess.** One expects the four higher-genus levels to
+be the "`J_0(p)` has rank `0`, so `X_0(p)(ℚ) ↪ J_0(p)(ℚ)_tors` and reduction at a
+small prime finishes" shape. **They are not**: none of `37, 43, 67, 163` has
+`rank J_0(p)(ℚ) = 0`. The newform decompositions (dimension, `LRatio(·, 1)`,
+`w_p`-eigenvalue) are
+
+    p = 37 : ⟨1, 0, +1⟩, ⟨1, 1/3, −1⟩
+    p = 43 : ⟨1, 0, +1⟩, ⟨2, 2/7, −1⟩
+    p = 67 : ⟨1, 1, −1⟩, ⟨2, 0, +1⟩, ⟨2, 4/11, −1⟩
+    p = 163: ⟨1, 0, +1⟩, ⟨5, 0, +1⟩, ⟨7, 64/27, −1⟩
+
+and each vanishing `L`-ratio sits on a `w_p = +1` factor, whose sign of
+functional equation is `−w_p = −1`, so every conjugate has ODD analytic rank and
+contributes its full dimension. That gives ranks `1, 1, 2, 6`. What is true, and
+is the useful half of this computation, is that **`rank J_0(p)(ℚ) < genus
+X_0(p)` in all four cases** (`1 < 2`, `1 < 3`, `2 < 5`, `6 < 13`), so
+**Chabauty–Coleman is applicable to `X_0(p)` itself** at every one of the four
+levels — none of them is beyond the reach of standard technique, only beyond the
+reach of this development. Contrast `not_cyclicIsogeny_oneHundredTwentyFive`,
+where the trap is that the positive-rank factor is exactly the Atkin–Lehner
+quotient's Jacobian.
+
+**The `j`-invariant dictionary at the three genus-`1` levels** (Magma
+`SmallModularCurve(p)` + `jFunction(X, p)` + `TorsionSubgroup`, 2026-07-26).
+Each `X_0(p)` is an elliptic curve of rank `0` whose full Mordell–Weil group is
+its torsion, `two` of whose points are the cusps (the point at infinity, and one
+affine point at which the `j`-function has a pole):
+
+    p = 11 : y² + y = x³ − x² − 10x − 20    (`11a1`), MW ≅ ℤ/5
+             ∞ and (16, 60) are the cusps
+             (5, 5) ↦ −24729001,  (5, −6) ↦ −32768,  (16, −61) ↦ −121
+    p = 17 : y² + xy + y = x³ − x² − x − 14 (`17a1`), MW ≅ ℤ/4
+             ∞ and (7, 13) are the cusps
+             (11/4, −15/8) ↦ −297756989/2,  (7, −21) ↦ −882216989/131072
+    p = 19 : y² + y = x³ + x² − 9x − 15     (`19a1`), MW ≅ ℤ/3
+             ∞ and (5, 9) are the cusps
+             (5, −10) ↦ −884736
+
+`RankBound` returns `0` for all three, and the torsion orders `5, 4, 3` minus
+the two cusps give `3, 2, 1`. This is the same shape as the level-`27` node
+`j_of_stable_cyclic_subgroup_order_27`, which is PROVEN in this file over a
+genus-`0` Hauptmodul leaf plus a genus-`1` Mordell–Weil determination — with one
+difference that is worth recording, because it is why the genus-`1` leaf below
+is NOT decomposed further here. At level `27` the intermediate level `X_0(9)` has
+genus `0`, so the moduli half is an explicit degree-`12` Hauptmodul relation in
+ONE variable. For `p` PRIME there is no intermediate level at all, so the moduli
+half would have to be the `j`-function on `X_0(p)` itself — a rational function
+of `(x, y)` whose numerator and denominator have degrees `10/11`, `16/17`,
+`18/19` with coefficients up to `10^19` (Magma prints them; they were inspected
+2026-07-26). Splitting the genus-`1` leaf into "moduli relation" plus "Mordell–
+Weil of `11a1`/`17a1`/`19a1`" would therefore replace one open leaf by six, all
+six still irreducible at this pin — mathlib has no descent machinery, and unlike
+`X_0(27)` (which is the Fermat cubic, so its Mordell–Weil half fell to mathlib's
+`fermatLastTheoremThree`) there is no coincidence to exploit at `11a1`, `17a1`
+or `19a1`. That is relocation, not reduction, so it was deliberately NOT done.
+
+**The CM column.** `h(−p) = 1` exactly for `p ∈ {11, 19, 43, 67, 163}` among the
+seven (Magma `ClassNumber`: the fundamental discriminants are `−11, −68, −19,
+−148, −43, −67, −163` with class numbers `1, 4, 1, 2, 1, 1, 1`), and in each of
+those five cases the CM `j`-invariant of discriminant `−p` is in the table:
+`−2¹⁵`, `−2¹⁵·3³`, `−2¹⁸·3³·5³`, `−2¹⁵·3³·5³·11³`, `−2¹⁸·3³·5³·23³·29³`. At
+`p ∈ {43, 67, 163}` that CM point is the ONLY non-cuspidal rational point, which
+is what makes those three one regime; at `p = 37` there is no CM point at all
+and the two non-cuspidal points are the non-CM pair `−7·11³` and
+`−7·137³·2083³`, which is why `37` is separated out (it is the level treated by
+Mazur–Swinnerton-Dyer and Mazur–Vélu, and it is always singled out in the
+literature).
+
+**Independent check of the eleven values** (PARI/GP, 2026-07-26): each literal in
+the table equals its factored form in the docstring below, and
+`ellisomat(ellfromj(j))` returns the degree matrix `[1, p; p, 1]` for all eleven
+— each `ℚ`-isogeny class is a single edge. That is what
+`not_cyclicIsogeny_sq_of_jInvariant` consumes.
+-/
+
+/-- **The `j`-invariants at the three isogeny primes with `X_0(p)` of genus
+`1`** (sorry leaf, introduced 2026-07-26 by the split of
+`jInvariant_mem_of_isogenyPrime_ge_eleven` by technique): if `E/ℚ` carries a
+Galois-stable cyclic subgroup of order `p` for `p ∈ {11, 17, 19}`, then
+`(p, j(E))` is one of the six pairs
+
+    p = 11 : −11·131³ = −24729001,  −2¹⁵ = −32768,  −11² = −121
+    p = 17 : −17²·101³/2 = −297756989/2,  −17·373³/2¹⁷ = −882216989/131072
+    p = 19 : −2¹⁵·3³ = −884736
+
+**NOT vacuous**: every one of the six is realised. `j = −32768` is the CM curve
+of discriminant `−11` and really does admit a rational `11`-isogeny; `−884736`
+is the CM curve of discriminant `−19`.
+
+This is the regime in which `X_0(p)` is itself an ELLIPTIC CURVE of rank `0`, so
+the arithmetic half is a Mordell–Weil TORSION determination rather than a
+Chabauty computation — see the section note above for the three models
+(`11a1`, `17a1`, `19a1`), their Mordell–Weil groups `ℤ/5`, `ℤ/4`, `ℤ/3`, and the
+complete point-to-`j` dictionary including which affine point is the second cusp.
+
+IRREDUCIBLE at this mathlib pin, and the section note records why it is not
+split further: the moduli half would need the `j`-function on `X_0(p)` itself
+(no intermediate genus-`0` level exists for `p` prime), and the three Mordell–
+Weil determinations have no mathlib input to lean on, so the split would produce
+six irreducible leaves in place of one. -/
+theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_genusOne
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ}
+    (hp : p ∈ ({11, 17, 19} : Finset ℕ))
+    (hg : addOrderOf g = p)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    (p, E.j) ∈ ([(11, -24729001), (11, -32768), (11, -121),
+        (17, -297756989 / 2), (17, -882216989 / 131072),
+        (19, -884736)] : List (ℕ × ℚ)) :=
+  sorry
+
+/-- **The two `j`-invariants at `p = 37`** (sorry leaf, introduced 2026-07-26 by
+the split of `jInvariant_mem_of_isogenyPrime_ge_eleven` by technique): if `E/ℚ`
+carries a Galois-stable cyclic subgroup of order `37`, then
+
+    j(E) = −7·11³ = −9317   or   j(E) = −7·137³·2083³ = −162677523113838677.
+
+**NOT vacuous**: both curves exist and carry a rational `37`-isogeny.
+
+`37` is the exceptional level of the seven and is separated from
+`{43, 67, 163}` for two independent reasons, both recorded with their Magma
+certificates in the section note above.
+
+* It is the only one of the four higher-genus levels with `h(−p) ≠ 1`
+  (the discriminant is `−148`, of class number `2`), so it carries **no CM
+  point**; its two non-cuspidal rational points are a non-CM pair. At
+  `43, 67, 163` the unique non-cuspidal point IS the CM point of the
+  class-number-one discriminant `−p`.
+* `X_0(37)` has genus `2` and is the lowest of the four, with
+  `rank J_0(37)(ℚ) = 1` (`J_0(37) ~ 37a × 37b`, of ranks `1` and `0`; the
+  `L`-ratios are `0` and `1/3`). Since `1 < 2`, Chabauty–Coleman applies
+  directly to the curve.
+
+This is the level of Mazur–Swinnerton-Dyer and Mazur–Vélu. IRREDUCIBLE at this
+mathlib pin: no modular curve, Jacobian, or Chabauty machinery exists in this
+development. -/
+theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_thirtySeven
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point)
+    (hg : addOrderOf g = 37)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ((37 : ℕ), E.j) ∈ ([(37, -9317), (37, -162677523113838677)] : List (ℕ × ℚ)) :=
+  sorry
+
+/-- **The three CM `j`-invariants at `p ∈ {43, 67, 163}`** (sorry leaf,
+introduced 2026-07-26 by the split of
+`jInvariant_mem_of_isogenyPrime_ge_eleven` by technique): if `E/ℚ` carries a
+Galois-stable cyclic subgroup of order `p` for `p ∈ {43, 67, 163}`, then
+
+    p = 43 : j(E) = −2¹⁸·3³·5³           = −884736000
+    p = 67 : j(E) = −2¹⁵·3³·5³·11³       = −147197952000
+    p = 163: j(E) = −2¹⁸·3³·5³·23³·29³   = −262537412640768000
+
+**NOT vacuous**: each value is the CM `j`-invariant of the class-number-one
+discriminant `−p` (`ClassNumber(ℚ(√−p)) = 1` for all three, Magma 2026-07-26),
+and that curve does carry a rational `p`-isogeny — `p` RAMIFIES in the order, so
+the unique prime `𝔭 ∣ p` gives a unique cyclic `p`-subgroup, which is also the
+conceptual reason the sibling `not_cyclicIsogeny_sq_of_jInvariant` is provable at
+these three primes.
+
+These are the three largest isogeny primes, `X_0(p)` of genus `3, 5, 13`. They
+form one regime because each has EXACTLY ONE non-cuspidal rational point and it
+is the CM point forced by `h(−p) = 1`; so the content is precisely "there are no
+others", uniformly. `rank J_0(p)(ℚ) = 1, 2, 6` respectively (see the section note
+for the newform decompositions) — in particular NOT `0`, so the cheap
+"`X(ℚ) ↪ J(ℚ)_tors`, reduce mod a small prime" argument is unavailable — but
+`1 < 3`, `2 < 5` and `6 < 13`, so Chabauty–Coleman does apply to `X_0(p)` itself.
+
+IRREDUCIBLE at this mathlib pin: these are the levels of the Eisenstein-ideal
+descent of Mazur, *Rational isogenies of prime degree*, and no modular curve,
+Jacobian, or Chabauty machinery exists in this development. -/
+theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_classNumberOne
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ}
+    (hp : p ∈ ({43, 67, 163} : Finset ℕ))
+    (hg : addOrderOf g = p)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    (p, E.j) ∈ ([(43, -884736000), (67, -147197952000),
+        (163, -262537412640768000)] : List (ℕ × ℚ)) :=
+  sorry
+
 /-- **The eleven `j`-invariants with a rational `p`-isogeny, `p` one of the
-seven isogeny primes with `X_0(p)` of genus `≥ 1`** (sorry node, introduced
-2026-07-26): if `E/ℚ` carries a Galois-stable cyclic subgroup of order
+seven isogeny primes with `X_0(p)` of genus `≥ 1`** (PROVEN 2026-07-26 over the
+three technique leaves of the section note above, replacing the former single
+citation): if `E/ℚ` carries a Galois-stable cyclic subgroup of order
 `p` for `p ∈ {11, 17, 19, 37, 43, 67, 163}`, then the pair `(p, j(E))` is
 one of eleven explicit pairs.
 
@@ -3992,9 +4215,24 @@ of the corresponding class-number-one discriminant. In factored form:
     p = 67 : −2¹⁵·3³·5³·11³
     p = 163: −2¹⁸·3³·5³·23³·29³
 
-IRREDUCIBLE at this mathlib pin for the same reason as the prime node it
-refines: the Eisenstein-ideal descent on `J_0(p)`, plus the explicit
-Mordell–Weil computations on the four genus-`1` and higher levels. -/
+The mathematics is irreducible at this mathlib pin for the same reason as the
+prime node it refines — the Eisenstein-ideal descent on `J_0(p)`, plus the
+explicit Mordell–Weil computations on the genus-`1` levels — and it is now
+distributed over the three leaves of the section note above, one per technique:
+
+* `jInvariant_mem_of_isogenyPrime_genusOne` — `p ∈ {11, 17, 19}`, where
+  `X_0(p)` is an elliptic curve of rank `0` and the arithmetic half is a
+  Mordell–Weil TORSION determination (`ℤ/5`, `ℤ/4`, `ℤ/3`);
+* `jInvariant_mem_of_isogenyPrime_thirtySeven` — `p = 37`, genus `2`, the
+  exceptional level with no CM point and a non-CM pair of `j`-invariants
+  (Mazur–Swinnerton-Dyer, Mazur–Vélu);
+* `jInvariant_mem_of_isogenyPrime_classNumberOne` — `p ∈ {43, 67, 163}`, genus
+  `3, 5, 13`, where the unique non-cuspidal point is the CM point of the
+  class-number-one discriminant `−p`.
+
+Assembly (this proof): case on the seven values of `p` given by `hp`, apply the
+leaf owning that regime, and inject its sublist into the eleven-element table
+(the three sublists are, in order, entries `1–6`, `7–8` and `9–11`). -/
 theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_ge_eleven
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ}
@@ -4010,8 +4248,27 @@ theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_ge_eleven
         (19, -884736),
         (37, -9317), (37, -162677523113838677),
         (43, -884736000), (67, -147197952000),
-        (163, -262537412640768000)] : List (ℕ × ℚ)) :=
-  sorry
+        (163, -262537412640768000)] : List (ℕ × ℚ)) := by
+  simp only [Finset.mem_insert, Finset.mem_singleton] at hp
+  have key : (p, E.j) ∈ ([(11, -24729001), (11, -32768), (11, -121),
+        (17, -297756989 / 2), (17, -882216989 / 131072),
+        (19, -884736)] : List (ℕ × ℚ)) ∨
+      (p, E.j) ∈ ([(37, -9317), (37, -162677523113838677)] : List (ℕ × ℚ)) ∨
+      (p, E.j) ∈ ([(43, -884736000), (67, -147197952000),
+        (163, -262537412640768000)] : List (ℕ × ℚ)) := by
+    rcases hp with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · exact Or.inl (E.jInvariant_mem_of_isogenyPrime_genusOne g (by decide) hg hstable)
+    · exact Or.inl (E.jInvariant_mem_of_isogenyPrime_genusOne g (by decide) hg hstable)
+    · exact Or.inl (E.jInvariant_mem_of_isogenyPrime_genusOne g (by decide) hg hstable)
+    · exact Or.inr (Or.inl (E.jInvariant_mem_of_isogenyPrime_thirtySeven g hg hstable))
+    · exact Or.inr (Or.inr
+        (E.jInvariant_mem_of_isogenyPrime_classNumberOne g (by decide) hg hstable))
+    · exact Or.inr (Or.inr
+        (E.jInvariant_mem_of_isogenyPrime_classNumberOne g (by decide) hg hstable))
+    · exact Or.inr (Or.inr
+        (E.jInvariant_mem_of_isogenyPrime_classNumberOne g (by decide) hg hstable))
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at key ⊢
+  tauto
 
 /-- **None of the eleven `j`-invariants admits a cyclic `p²`-isogeny**
 (sorry node, introduced 2026-07-26): if `j(E)` is the `j`-invariant attached
