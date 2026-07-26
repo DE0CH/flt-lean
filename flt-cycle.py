@@ -223,6 +223,87 @@ def deleted_floating_names():
             if n not in alive and n.rsplit(".", 1)[-1] not in alive}
 
 
+def report_superseded_tasks():
+    """Warn about queued tasks whose targets are all closed on the new release.
+
+    (Deyao's model calls this "correcting the queue against the release"; it was
+    done by eye and got it wrong twice on 2026-07-26, each time costing a worker
+    a dispatch into nothing.)
+
+    Three states per target name, and the middle one is what the eyeball check
+    kept confusing:
+
+      OPEN    -- a direct sorry on main. Real work.
+      PROVEN  -- declared on main, not sorried. The task is superseded.
+      ABSENT  -- not declared anywhere on main. Almost always a leaf created on
+                 a branch still sitting in the merge batch, i.e. FUTURE work
+                 that must be kept. Occasionally a leaf a release deleted.
+
+    The rule that failed was "drop only if every target is PROVEN": a task whose
+    targets are one PROVEN and one ABSENT survived it, and the ABSENT one turned
+    out to be a cut main had *abandoned* rather than one it had not yet seen.
+    So the honest signal is "no target is OPEN" -- that is a task with nothing to
+    work on right now, whatever the reason.
+
+    Deliberately REPORTS rather than deletes. ABSENT is genuinely ambiguous
+    (unlanded vs. deleted) and only the orchestrator can tell the two apart by
+    reading the branch; silently deleting queued work is the failure this file
+    already carries one scar from.
+    """
+    tasks = read_queue_tasks()
+    if not tasks:
+        return
+    decl = re.compile(
+        r"^\s*(?:@\[[^\]]*\]\s*)?(?:private\s+|protected\s+|noncomputable\s+|"
+        r"public\s+|scoped\s+)*"
+        r"(?:theorem|lemma|def|abbrev|instance|structure|class|inductive|"
+        r"opaque|axiom)\s+([^\s({\[:]+)", re.M)
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "flt_frontier", os.path.join(REPO, "flt-frontier.py"))
+        fr = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(fr)
+        declared, sorried = set(), set()
+        for p in pathlib.Path(REPO, "Fermat").rglob("*.lean"):
+            txt = p.read_text(encoding="utf-8")
+            for m in decl.finditer(txt):
+                n = m.group(1)
+                declared.add(n)
+                declared.add(n.rsplit(".", 1)[-1])
+            for n, _ in fr.scan(p):
+                sorried.add(n)
+                sorried.add(n.rsplit(".", 1)[-1])
+    except Exception as exc:                       # never block a release
+        print(f"  (queue/frontier cross-check skipped: {exc!r})")
+        return
+
+    def state(n):
+        b = n.rsplit(".", 1)[-1]
+        if n in sorried or b in sorried:
+            return "OPEN"
+        if n in declared or b in declared:
+            return "PROVEN"
+        return "ABSENT"
+
+    flagged = []
+    for i, t in enumerate(tasks):
+        tg = sorted(task_targets(t))
+        if not tg:
+            continue
+        st = {n: state(n) for n in tg}
+        if "OPEN" not in st.values():
+            flagged.append((i, st))
+    if not flagged:
+        return
+    print(f"  QUEUE CHECK: {len(flagged)} task(s) have NO open target on this "
+          "release -- read the branch before dispatching them:")
+    for i, st in flagged:
+        for n, s in sorted(st.items()):
+            print(f"    [task {i}] {s:<7} {n}")
+    print("    PROVEN -> superseded, delete the task. "
+          "ABSENT -> leaf not landed yet (keep) or deleted by a release (drop).")
+
+
 def prune_queue_for_floating(dry_run=False):
     """Delete queued tasks whose target was deleted as floating. Returns names."""
     gone = deleted_floating_names()
@@ -931,6 +1012,8 @@ def cmd_release(args):
                   f"block(s): {', '.join(names)}")
         if dropped:
             print(f"  queue: {len(dropped)} task(s) discarded, {remaining} left")
+
+        report_superseded_tasks()
 
         depth = queue_depth()
         want = args.seed if args.seed is not None else depth
