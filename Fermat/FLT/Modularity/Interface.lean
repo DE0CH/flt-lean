@@ -196,6 +196,20 @@ public import Fermat.FLT.Mathlib.RingTheory.PadicIntegralClosure
 -- unit — the arithmetic core of the at-`2` cyclotomic-inertia lemma
 -- `cyclotomicCharacter_eq_one_of_mem_inertia_two_upstream` (pillar E1a)
 import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
+-- the `p`-th power residue character of the Stickelberger cut lives in
+-- `MulChar (𝓞 CF ⧸ q) (𝓞 CF)`, which occurs in SIGNATURE position in
+-- `exists_powerResidueChar_of_prime_notMem` and
+-- `stickelbergerProd_isPrincipal_of_powerResidueChar`, so the defining
+-- module must be imported publicly rather than reached transitively.
+public import Mathlib.NumberTheory.MulChar.Basic
+-- `Ideal.finiteQuotientOfFreeOfNeBot` (the residue field at a nonzero prime
+-- of a number ring is finite) and the finite-field API behind
+-- `prime_dvd_card_residueField_sub_one`.
+public import Mathlib.LinearAlgebra.FreeModule.IdealQuotient
+public import Mathlib.FieldTheory.Finite.Basic
+-- `Polynomial.isRoot_cyclotomic_iff`, the separability input behind
+-- `residueField_isPrimitiveRoot_of_notMem`.
+public import Mathlib.RingTheory.Polynomial.Cyclotomic.Roots
 -- the base-change convolution lemmas (`liftEquiv_convMul` and friends) and
 -- the bare-hom/`WithConv` bridge, used by the Raynaud product-closure glue;
 -- PUBLIC because the glue lemmas' statements mention the `WithConv`
@@ -13106,94 +13120,500 @@ theorem isFlatPointsGroupAt_of_subquotient
     induction z using QuotientAddGroup.induction_on with
     | H x => exact hπe g x
 
-/-- **Barsotti–Tate comparison lattice for the `O`-structure**
-(Eisenstein pillar E2b′-flat, CITATION LEAF carved out 2026-07-25 —
-the sole classical `p`-adic-Hodge-theoretic input of the lattice
-flatness transfer): the `ℤ_p`-lattice `Fin 2 → O` underlying `ρO` is
-`Γ ℚ`-equivariantly commensurable with the Tate module of a
-`p`-divisible group over `ℤ_p`. Concretely the leaf produces a
-`ℤ_p`-lattice `T` with a `Γ ℚ`-action `ρT` all of whose `p`-power
-levels `T ⧸ p^k` have finite flat prolongations at `p`, together with
-an equivariant `ℤ_p`-linear `f : (Fin 2 → O) → T` and a `ℤ_p`-linear
-`g : T → (Fin 2 → O)` with `g ∘ f = p^c` — i.e. `f` realises
-`Fin 2 → O` as a sublattice of `T` up to the bounded `p`-power `p^c`,
-which is exactly commensurability of the two lattices inside the
-common `ℚ_p`-space they span.
+/-- **Open `p`-power ideals of a module-finite topological `ℤ_p`-algebra**
+(PROVEN 2026-07-26 — the converse of `exists_pow_p_mem_of_isOpen`, and
+the bookkeeping that reads `GaloisRep.IsFlatAt` off at the cofinal
+`p`-power subtower): `p^k A` is open in `A`. Choose a `ℤ_p`-linear
+surjection `F : ℤ_p^n ↠ A` (module-finiteness); it is an open map for the
+module topology (`IsModuleTopology.isOpenMap_of_surjective`); the box
+`(p^k ℤ_p)^n` is open (`p^k ℤ_p` is the closed ball of radius `p^{-k}`,
+which in `ℤ_p` is also the OPEN ball of radius `p^{-k+1}`), and its image
+under `F` is exactly `p^k A`. -/
+theorem isOpen_span_pow_p {A : Type*} [CommRing A] [Algebra ℤ_[p] A]
+    [TopologicalSpace A] [IsTopologicalRing A] [IsModuleTopology ℤ_[p] A]
+    [Module.Finite ℤ_[p] A] (k : ℕ) :
+    IsOpen ((Ideal.span {(p : A) ^ k} : Ideal A) : Set A) := by
+  classical
+  obtain ⟨n, F, hF⟩ := Module.Finite.exists_fin' ℤ_[p] A
+  have hopenmap : IsOpenMap F := IsModuleTopology.isOpenMap_of_surjective hF
+  set S : Set (Fin n → ℤ_[p]) :=
+    {x | ∀ i, x i ∈ (Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p])} with hS
+  have hspan : IsOpen ((Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p]) : Set ℤ_[p]) := by
+    have hset : ((Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p]) : Set ℤ_[p]) =
+        {x : ℤ_[p] | ‖x‖ < (p : ℝ) ^ (-(k : ℤ) + 1)} := by
+      ext x
+      rw [SetLike.mem_coe, ← PadicInt.norm_le_pow_iff_mem_span_pow]
+      exact PadicInt.norm_le_pow_iff_norm_lt_pow_add_one x (-(k : ℤ))
+    rw [hset]
+    exact isOpen_lt continuous_norm continuous_const
+  have hSopen : IsOpen S := by
+    rw [hS]
+    have : {x : Fin n → ℤ_[p] | ∀ i, x i ∈ (Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p])} =
+        Set.pi Set.univ (fun _ : Fin n =>
+          ((Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p]) : Set ℤ_[p])) := by
+      ext x; simp [Set.mem_pi]
+    rw [this]
+    exact isOpen_set_pi Set.finite_univ (fun i _ => hspan)
+  have himg : F '' S = ((Ideal.span {(p : A) ^ k} : Ideal A) : Set A) := by
+    have hpA : algebraMap ℤ_[p] A ((p : ℤ_[p]) ^ k) = (p : A) ^ k := by
+      rw [map_pow, map_natCast]
+    ext y
+    constructor
+    · rintro ⟨x, hx, rfl⟩
+      choose cc hcc using fun i => Ideal.mem_span_singleton'.mp (hx i)
+      have hxc : x = (p : ℤ_[p]) ^ k • cc := funext fun i => by
+        rw [Pi.smul_apply, smul_eq_mul, ← hcc i, mul_comm]
+      rw [hxc, map_smul, SetLike.mem_coe, Ideal.mem_span_singleton']
+      exact ⟨F cc, by rw [Algebra.smul_def, hpA, mul_comm]⟩
+    · intro hy
+      rw [SetLike.mem_coe, Ideal.mem_span_singleton'] at hy
+      obtain ⟨b, hb⟩ := hy
+      obtain ⟨z, rfl⟩ := hF b
+      refine ⟨(p : ℤ_[p]) ^ k • z, fun i => ?_, ?_⟩
+      · refine Ideal.mem_span_singleton'.mpr ⟨z i, ?_⟩
+        rw [Pi.smul_apply, smul_eq_mul, mul_comm]
+      · rw [map_smul, Algebra.smul_def, hpA, mul_comm]
+        exact hb
+  rw [← himg]
+  exact hopenmap _ hSopen
 
-CLASSICAL ROUTE (Fontaine; Raynaud; Tate, *`p`-divisible groups*, and
-Tate's article in Cornell–Silverman–Stevens ch. V):
-1. `hρ.isFlat` says every `p`-power level of the `R`-tower is finite
-   flat at `p`, i.e. `V` is the Tate module of a `p`-divisible group
-   over `ℤ_p`, so `V ⊗ ℚ_p` is Barsotti–Tate (crystalline with
-   Hodge–Tate weights in `{0, 1}`);
-2. every `ℚ̄_p`-fibre of the `O`-structure is an
-   `Aut(ℚ̄_p / ℚ_p)`-conjugate of a fibre of the `R`-structure: through
-   `e` the matrices of `ρO` over `ι(O) ⊆ ℚ̄_p` are a
-   `GL₂(ℚ̄_p)`-conjugate of those of `ρ` over `ι_R(R)`
-   (`hOinj`/`hZOcompat` make the two coefficient embeddings compatible
-   over `ℤ_p`), so applying `τ ∈ Aut(ℚ̄_p / ℚ_p)` carries the
-   `τ ∘ ι`-fibre of the `O`-structure to a `τ ∘ ι_R`-fibre of the
-   `R`-structure; being crystalline with weights in `{0, 1}` is
-   insensitive to such conjugation, so
-   `U := (Fin 2 → O) ⊗_{ℤ_p} ℚ_p` — whose `ℚ̄_p`-base change is the
-   direct sum of the embedding fibres — is again Barsotti–Tate;
-3. a Barsotti–Tate `ℚ_p`-representation contains a `Γ`-stable lattice
-   `T` which is the Tate module of a `p`-divisible group over `ℤ_p`
-   (Fontaine/Raynaud), and any two full-rank `Γ`-stable `ℤ_p`-lattices
-   in the same finite-dimensional `ℚ_p`-space are commensurable: after
-   scaling `T` by a `p`-power one may assume `f : (Fin 2 → O) ↪ T` is
-   the inclusion and `p^c T ⊆ (Fin 2 → O)`, whence `g` is
-   multiplication by `p^c` followed by that inclusion and
-   `g ∘ f = p^c`. Flatness of the levels `T ⧸ p^k` is the defining
-   property of the Tate module of a `p`-divisible group.
+/-- **Generic cover of the `O`-lattice by a power of the `R`-lattice**
+(Eisenstein pillar E2b′-flat, arithmetic half; CARVED 2026-07-26 — this
+leaf REPLACES the Barsotti–Tate/Fontaine citation that used to sit at
+`exists_flatIsogenousLattice_of_generic_iso`): there are `N`, `c` and a
+`Γ ℚ`-equivariant, `ℤ_p`-semilinear additive map
+`ψ : V^N → (Fin 2 → O)` whose image contains `p^c (Fin 2 → O)`.
 
-WHY NOT THE PI-EMBEDDING ROUTE (recorded 2026-07-24, re-audited
-2026-07-25): `e(Fin 2 → O)` and the image of `V` have different
-`ℤ_p`-ranks whenever `rank_ℤp O ≠ rank_ℤp R`, so no `p`-power scaling
-relates them inside `ℚ̄_p ⊗ V`; and a non-split level `(Fin 2 → O) ⧸ I`
-cannot embed `Γ ℚ_p`-equivariantly into a finite product of `R`-levels
-whose `p`-torsion socle is semisimple. Commensurability is legitimate
-only in `U`, which is what step 2 supplies — that is precisely the
-content isolated here.
+ROUTE — ELEMENTARY; no `p`-adic Hodge theory, no `p`-divisible groups,
+no crystalline representations. Write `U := (Fin 2 → O) ⊗ ℚ_p` and
+`W := V ⊗_{ℤ_p} ℚ_p` for the two generic fibres over `ℚ_p`, and `ι`,
+`ι_R` for the given embeddings of `O`, `R` into `ℚ̄_p`.
+1. `O` is a domain, module-finite over `ℤ_p`, and `hOinj` embeds it into
+   the characteristic-zero field `ℚ̄_p`; so `F_O := O ⊗_{ℤ_p} ℚ_p` is a
+   FIELD, finite over `ℚ_p`, hence separable, hence
+   `O ⊗_{ℤ_p} ℚ̄_p ≅ ∏_{τ ∈ Hom_{ℚ_p}(F_O, ℚ̄_p)} ℚ̄_p`. Since
+   `Fin 2 → O` is `O`-free, `U ⊗_{ℚ_p} ℚ̄_p ≅ ⊕_τ fibre_τ(ρO)`.
+2. Every `τ` is `τ′ ∘ ι` for some `ℚ_p`-automorphism `τ′` of `ℚ̄_p`
+   (two embeddings of a finite extension of `ℚ_p` into an algebraic
+   closure differ by an automorphism). Conjugating `e` by `τ′` — legitimate
+   because `Γ ℚ` acts `ℚ̄_p`-LINEARLY on both base changes, so coefficient
+   conjugation commutes with it — gives
+   `fibre_{τ′∘ι}(ρO) ≅ fibre_{τ′∘ι_R}(ρ)` as `ℚ̄_p[Γ ℚ]`-modules.
+3. `fibre_{τ′∘ι_R}(ρ) = V ⊗_{R, τ′∘ι_R} ℚ̄_p` is a `Γ ℚ`-equivariant
+   QUOTIENT of `V ⊗_{ℤ_p} ℚ̄_p = W ⊗_{ℚ_p} ℚ̄_p`, namely the base change
+   of `V` along the surjective `ℚ̄_p`-algebra map `R ⊗_{ℤ_p} ℚ̄_p ↠ ℚ̄_p`
+   induced by `τ′∘ι_R` (right-exactness of `⊗`; equivariant because `ρ`
+   is `R`-linear). *This is the step the retired Barsotti–Tate citation
+   did not use, and it is why no crystalline theory is needed: every
+   `ℚ̄_p`-fibre of the `R`-family is visible inside the `R`-lattice
+   itself, as a quotient — one does not have to reconstruct a lattice
+   from a Hodge-theoretic classification.*
+4. Steps 1–3 give a `Γ ℚ`-equivariant `ℚ̄_p`-surjection
+   `(W ⊗ ℚ̄_p)^d ↠ U ⊗ ℚ̄_p`, `d = [F_O : ℚ_p]`. Hom-descent:
+   `Hom_{ℚ_p[Γ]}(W^d, U) ⊗_{ℚ_p} ℚ̄_p = Hom_{ℚ̄_p[Γ]}((W ⊗ ℚ̄_p)^d, U ⊗ ℚ̄_p)`
+   (Hom between finite-dimensional spaces is the kernel of a linear map,
+   and base change is flat), so writing that surjection as `Σ_j φ_j ⊗ λ_j`
+   with `φ_j` defined over `ℚ_p` forces `Σ_j im φ_j = U`. Hence there is
+   already a `Γ ℚ`-equivariant `ℚ_p`-linear SURJECTION `ψ_ℚ : W^N ↠ U`
+   with `N = d·(number of `φ_j`)`.
+5. Clear denominators: for some `a`, `p^a ψ_ℚ` carries the lattice `V^N`
+   into `Fin 2 → O`; its image is a full-rank `ℤ_p`-lattice in `U`,
+   hence contains `p^c (Fin 2 → O)` for some `c`. Take `ψ := p^a ψ_ℚ`
+   restricted to `V^N`, which is `ℤ_p`-semilinear over `algebraMap ℤ_p R`
+   and `Γ ℚ`-equivariant by construction.
 
-Soundness: the hypothesis set is classically INHABITED (take `O = R`,
-`ρO` a frame of `ρ`, `e` the identity; then `T = Fin 2 → R` viewed
-over `ℤ_p`, `c = 0`, `f = g = id` works) and the conclusion holds for
-every inhabitant by the route above. Circularity guard (inherited from
-E2b′): must not route through `Family.lean` or `Reducible.lean`'s
-B5.
+WHAT THIS LEAF DOES NOT NEED: `hρ` (hardly-ramifiedness, in particular
+flatness) is NOT among its hypotheses — flatness enters only in the
+consumer, which pushes the flat `R`-levels along `ψ`. Nor does it need
+`hv` (rank two).
 
-TERMINAL CITATION — audited 2026-07-25, do NOT dispatch a proof effort
-here. Three findings, recorded so the leaf is not re-attacked:
+RETIRED CITATION (recorded so it is not reinstated): this position used
+to carry a Fontaine/Raynaud/Tate statement — `V ⊗ ℚ_p` is Barsotti–Tate,
+so every conjugate fibre is, so `U` is, so `U` contains a lattice that is
+the Tate module of a `p`-divisible group — audited on 2026-07-25 as a
+TERMINAL citation on the grounds that the pin has no `p`-divisible
+groups, no crystalline or Barsotti–Tate representations and nothing to
+vendor. That audit was correct about the substrate and wrong about the
+necessity: the classical route reconstructs a flat lattice from a
+Hodge-theoretic classification, whereas step 3 above PRODUCES one as the
+image of a power of the flat `R`-lattice already in hand. The audit’s
+other two findings still stand (do not cut at bare commensurability;
+this leaf is equivalent to its consumer, not weaker).
 
-1. *No substrate on this pin.* Steps 1–3 are Fontaine/Raynaud/Tate
-   `p`-adic Hodge theory, and the pin has none of it: a search of the
-   whole of mathlib for `pDivisible`, `BarsottiTate`, `IsCrystalline`
-   or `crystalline` returns only the unrelated `RingTheory.DividedPowers`
-   files — no `p`-divisible groups, no crystalline or Barsotti–Tate
-   representations, no Hodge–Tate weights. The reference project
-   `~/cs/FLT` has none either, so there is nothing to vendor.
-2. *Do not cut at commensurability instead.* With `p^κ·L ⊆ T ⊆ p^(−κ)·L`,
-   multiplication by `p^κ` embeds `L ⧸ p^m L` into `T ⧸ p^m T` with the
-   NONZERO kernel `p^(m−κ)L ⧸ p^m L`, and the transition map
-   `T ⧸ p^(m+κ)T → L ⧸ p^m L` has image only `p^κ L ⧸ p^m L`; so
-   `L ⧸ p^m L` is an EXTENSION assembled from levels of `T`, which is
-   exactly what `IsFlatPointsGroupAt.of_injective` and `.of_surjective`
-   do not provide. Cutting there would plant an unfaithful leaf.
-3. *This leaf is EQUIVALENT to its consumer, not weaker.* Granting
-   `hasFlatProlongationAt_lattice_pPow_of_generic_iso` for every `m`,
-   this statement is inhabited by `T := (Fin 2 → O)` regarded as a
-   `ℤ_p`-module (free, being finitely generated and torsion-free over
-   the PID `ℤ_p`), `ρT := ρO` with scalars restricted, `c = 0` and
-   `f = g = id`: the `ℤ_p`-level `p^k · (Fin 2 → O)` and the `O`-level
-   `(p : O)^k · (Fin 2 → O)` are the SAME subgroup, so the two level
-   representations coincide. Hence the E2b′-flat cut buys the classical
-   STATEMENT SHAPE — Tate module of a `p`-divisible group plus
-   commensurability, which is what a citation can actually supply —
-   and not a reduction in strength. Two consequences: further
-   decomposition can only relabel the content, never shrink it; and the
-   leaf is soundness-safe, being exactly as strong as the theorem it
-   serves, so it cannot be false while that theorem is true. -/
+Soundness: the hypothesis set is classically INHABITED (`O = R`, `ρO` a
+frame of `ρ`, `e` the identity — then `N = 1`, `c = 0`, `ψ` the frame
+identification). Circularity guard (inherited from E2b′): must not route
+through `Family.lean` or `Reducible.lean`’s B5. -/
+theorem exists_equivariantCover_of_generic_iso
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    (hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :
+    ∃ (N c : ℕ) (ψ : (Fin N → V) →+ (Fin 2 → O)),
+      (∀ (a : ℤ_[p]) (x : Fin N → V),
+        ψ ((algebraMap ℤ_[p] R a) • x) = a • ψ x) ∧
+      (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin N → V),
+        ψ (fun i => ρ σ (x i)) = ρO σ (ψ x)) ∧
+      (∀ y : Fin 2 → O, ∃ z, ψ z = (p : ℤ_[p]) ^ c • y) :=
+  sorry
+
+/-- **Isogeny packaging of an equivariant lattice cover** (PROVEN
+2026-07-26 — the module-theoretic half of E2b′-flat, stated in the
+generality it is proved in): if the `p`-power levels of a Galois lattice
+`W` over a module-finite topological `ℤ_p`-algebra `A` all have finite
+flat prolongations at `p`, and `ψ : W^N →+ (Fin 2 → O)` is
+`ℤ_p`-semilinear, `Γ ℚ`-equivariant and covers `p^c (Fin 2 → O)`, then
+the `O`-lattice is isogenous to a `ℤ_p`-lattice `T` all of whose
+`p`-power levels have finite flat prolongations at `p`.
+
+PROOF. Take `T := range ψ`, a `ℤ_p`-submodule of `Fin 2 → O`; it is
+module-finite (`ℤ_p` is noetherian) and FREE, because `algebraMap ℤ_p O`
+is injective (a nonzero kernel would make `p` nilpotent in the domain
+`O`, contradicting `hpO`) so `Fin 2 → O` is `ℤ_p`-torsion-free, and a
+finite torsion-free module over the PID `ℤ_p` is free.
+* GALOIS ACTION. `T` is `ρO`-stable by equivariance of `ψ`, and the
+  restricted action is CONTINUOUS: `T` is free, hence projective, so the
+  surjection `ψ : W^N ↠ T` has a `ℤ_p`-linear section `s`, and
+  `χ : φ ↦ ψ ∘ φ^N ∘ s` is a `ℤ_p`-LINEAR map `End_A W → End_{ℤ_p} T`
+  with `χ (ρ′ σ) = ρT σ` for every `σ` (this is where equivariance and
+  `ψ ∘ s = id` are used); a `ℤ_p`-linear map out of a module topology is
+  continuous, and `End_A W` does carry the `ℤ_p`-module topology because
+  a basis identifies it with `Matrix ι ι A` and `A` carries the
+  `ℤ_p`-module topology.
+* FLAT LEVELS. The level `(ℤ_p ⧸ p^k) ⊗ T` is an equivariant SUBQUOTIENT
+  of the flat level `(A ⧸ p^k) ⊗ W` in `N` copies: with `L := W^N`,
+  `F : x ↦ (1 ⊗ x i)_i` and `π : x ↦ 1 ⊗ ψ x`, one has
+  `ker F ⊆ ker π` — `F x = 0` forces each `x i ∈ p^k W`
+  (`exists_smul_of_tmul_one_eq_zero`), hence `ψ x ∈ p^k T`, hence
+  `π x = 0` — and `π` is surjective because `A ⧸ p^k` is generated by
+  `1`. So `IsFlatPointsGroupAt.pi` followed by
+  `isFlatPointsGroupAt_of_subquotient` gives the claim, through the
+  repackaging `hasFlatProlongationAt_iff_isFlatPointsGroupAt`.
+* ISOGENY. `f := p^c ·` lands in `T` by the covering hypothesis and is
+  equivariant since `ρO` is `ℤ_p`-linear; `g := ` the inclusion; so
+  `g ∘ f = p^c`. -/
+theorem exists_flatIsogenousLattice_of_equivariantCover
+    {A : Type u} [CommRing A] [Algebra ℤ_[p] A]
+    [Module.Finite ℤ_[p] A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsModuleTopology ℤ_[p] A]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W] [Module.Free A W]
+    {ρ' : GaloisRep ℚ A W}
+    (hflatW : ∀ k : ℕ,
+      (ρ'.baseChange (A ⧸ Ideal.span {(p : A) ^ k})).HasFlatProlongationAt 𝔭ᵥ)
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O]
+    (hpO : (p : O) ≠ 0)
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    {N c : ℕ} (ψ : (Fin N → W) →+ (Fin 2 → O))
+    (hψsmul : ∀ (a : ℤ_[p]) (x : Fin N → W),
+      ψ ((algebraMap ℤ_[p] A a) • x) = a • ψ x)
+    (hψeq : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin N → W),
+      ψ (fun i => ρ' σ (x i)) = ρO σ (ψ x))
+    (hψcov : ∀ y : Fin 2 → O, ∃ z, ψ z = (p : ℤ_[p]) ^ c • y) :
+    ∃ (T : Type u) (_ : AddCommGroup T) (_ : Module ℤ_[p] T)
+      (_ : Module.Finite ℤ_[p] T) (_ : Module.Free ℤ_[p] T)
+      (ρT : GaloisRep ℚ ℤ_[p] T) (c' : ℕ)
+      (f : (Fin 2 → O) →ₗ[ℤ_[p]] T) (g : T →ₗ[ℤ_[p]] (Fin 2 → O)),
+      (∀ k : ℕ,
+        (ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).HasFlatProlongationAt 𝔭ᵥ) ∧
+      (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin 2 → O),
+        f (ρO σ x) = ρT σ (f x)) ∧
+      (∀ x : Fin 2 → O, g (f x) = (p : ℤ_[p]) ^ c' • x) := by
+  classical
+  -- `ℤ_p` embeds in the domain `O` (a nonzero kernel would make `p` nilpotent)
+  have hZOinj : Function.Injective (algebraMap ℤ_[p] O) := by
+    rw [injective_iff_map_eq_zero]
+    intro a ha
+    by_contra hne
+    obtain ⟨k, u, hu⟩ :=
+      IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hne PadicInt.irreducible_p
+    have hunit : IsUnit ((algebraMap ℤ_[p] O) (u : ℤ_[p])) := u.isUnit.map _
+    have h1 : (algebraMap ℤ_[p] O) (u : ℤ_[p]) * ((p : O)) ^ k = 0 := by
+      have h2 := congrArg (algebraMap ℤ_[p] O) hu
+      rw [ha, map_mul, map_pow, map_natCast] at h2
+      exact h2.symm
+    have hzero : ((p : O)) ^ k = 0 := (hunit.mul_right_eq_zero).mp h1
+    rcases Nat.eq_zero_or_pos k with hk0 | hk0
+    · subst hk0
+      simp only [pow_zero] at hzero
+      exact one_ne_zero hzero
+    · exact hpO (pow_eq_zero_iff hk0.ne' |>.mp hzero)
+  haveI : Module.IsTorsionFree ℤ_[p] O :=
+    Module.IsTorsionFree.comap (M := O) (algebraMap ℤ_[p] O)
+      (fun r hr => by
+        rw [isRegular_iff_ne_zero] at hr ⊢
+        exact fun h => hr (hZOinj (by rw [h, map_zero])))
+      (fun r m => algebraMap_smul O r m)
+  -- the lattice: the image of the cover map
+  let Tsub : Submodule ℤ_[p] (Fin 2 → O) :=
+    { carrier := Set.range ψ
+      add_mem' := by rintro _ _ ⟨x, rfl⟩ ⟨y, rfl⟩; exact ⟨x + y, map_add ψ x y⟩
+      zero_mem' := ⟨0, map_zero ψ⟩
+      smul_mem' := by
+        rintro a _ ⟨x, rfl⟩
+        exact ⟨(algebraMap ℤ_[p] A a) • x, hψsmul a x⟩ }
+  haveI hfinT : Module.Finite ℤ_[p] Tsub := inferInstance
+  haveI hfreeT : Module.Free ℤ_[p] Tsub := inferInstance
+  -- the `ℤ_p`-structure on the source, through `A`
+  letI : Module ℤ_[p] W := Module.compHom W (algebraMap ℤ_[p] A)
+  -- `ψ`, corestricted to its image, as a `ℤ_p`-linear surjection
+  let ψlin : (Fin N → W) →ₗ[ℤ_[p]] Tsub :=
+    { toFun := fun x => ⟨ψ x, ⟨x, rfl⟩⟩
+      map_add' := fun x y => Subtype.ext (map_add ψ x y)
+      map_smul' := fun a x => Subtype.ext (hψsmul a x) }
+  have hψlinsurj : Function.Surjective ψlin := by
+    rintro ⟨_, x, rfl⟩
+    exact ⟨x, rfl⟩
+  have hψlincoe : ∀ x, ((ψlin x : Tsub) : Fin 2 → O) = ψ x := fun _ => rfl
+  -- a `ℤ_p`-linear section (the image is free, hence projective)
+  obtain ⟨sec, hsec⟩ :=
+    Module.projective_lifting_property ψlin (LinearMap.id : Tsub →ₗ[ℤ_[p]] Tsub) hψlinsurj
+  have hsecapp : ∀ t : Tsub, ψ (sec t) = (t : Fin 2 → O) := by
+    intro t
+    have := congrArg (fun F => (F t : Tsub)) hsec
+    exact congrArg (Subtype.val) this
+  -- the transported Galois action on the image
+  letI : Module ℤ_[p] (Module.End A W) := Module.compHom _ (algebraMap ℤ_[p] A)
+  letI : TopologicalSpace (Module.End A W) := moduleTopology A (Module.End A W)
+  letI : TopologicalSpace (Module.End ℤ_[p] Tsub) :=
+    moduleTopology ℤ_[p] (Module.End ℤ_[p] Tsub)
+  haveI : IsModuleTopology ℤ_[p] (Module.End ℤ_[p] Tsub) := ⟨rfl⟩
+  haveI : IsModuleTopology A (Module.End A W) := ⟨rfl⟩
+  haveI : ContinuousAdd (Module.End A W) :=
+    ModuleTopology.continuousAdd A (Module.End A W)
+  haveI : ContinuousSMul A (Module.End A W) :=
+    ModuleTopology.continuousSMul A (Module.End A W)
+  haveI hTOP : IsModuleTopology ℤ_[p] (Module.End A W) := by
+    classical
+    set ι := Module.Free.ChooseBasisIndex A W with hι
+    set b : Module.Basis ι A W := Module.Free.chooseBasis A W with hb
+    -- `End A W ≅ Matrix ι ι A`, both carrying their `A`-module topologies
+    set ee : Module.End A W ≃ₗ[A] (ι → ι → A) := LinearMap.toMatrix b b with hee
+    have hcont1 : Continuous (ee : Module.End A W → (ι → ι → A)) :=
+      IsModuleTopology.continuous_of_linearMap (ee : Module.End A W →ₗ[A] (ι → ι → A))
+    have hcont2 : Continuous (ee.symm : (ι → ι → A) → Module.End A W) :=
+      IsModuleTopology.continuous_of_linearMap (ee.symm : (ι → ι → A) →ₗ[A] Module.End A W)
+    -- the same equivalence, read `ℤ_p`-linearly
+    let ee2 : (ι → ι → A) ≃ₗ[ℤ_[p]] Module.End A W :=
+      { toFun := ee.symm
+        invFun := ee
+        map_add' := fun x y => ee.symm.map_add x y
+        map_smul' := fun a x => by
+          show ee.symm (a • x) = (algebraMap ℤ_[p] A a) • ee.symm x
+          rw [← algebraMap_smul A a x]
+          exact ee.symm.map_smul _ x
+        left_inv := ee.apply_symm_apply
+        right_inv := ee.symm_apply_apply }
+    exact IsModuleTopology.iso
+      ({ toLinearEquiv := ee2
+         continuous_toFun := hcont2
+         continuous_invFun := hcont1 } : (ι → ι → A) ≃L[ℤ_[p]] Module.End A W)
+  haveI : ContinuousAdd (Module.End ℤ_[p] Tsub) :=
+    ModuleTopology.continuousAdd ℤ_[p] (Module.End ℤ_[p] Tsub)
+  haveI : ContinuousSMul ℤ_[p] (Module.End ℤ_[p] Tsub) :=
+    ModuleTopology.continuousSMul ℤ_[p] (Module.End ℤ_[p] Tsub)
+  have hsecadd : ∀ (t t' : Tsub) (i : Fin N), sec (t + t') i = sec t i + sec t' i := by
+    intro t t' i; rw [map_add]; rfl
+  have hsecsmul : ∀ (a : ℤ_[p]) (t : Tsub) (i : Fin N),
+      sec (a • t) i = (algebraMap ℤ_[p] A a) • (sec t i) := by
+    intro a t i; rw [map_smul]; rfl
+  let χ : (Module.End A W) →ₗ[ℤ_[p]] (Module.End ℤ_[p] Tsub) :=
+    { toFun := fun φ =>
+        { toFun := fun t => ψlin (fun i => φ (sec t i))
+          map_add' := fun t t' => by
+            rw [← map_add ψlin]
+            congr 1
+            funext i
+            rw [Pi.add_apply, hsecadd t t' i, map_add]
+          map_smul' := fun a t => by
+            show ψlin (fun i => φ (sec (a • t) i)) = a • ψlin (fun i => φ (sec t i))
+            rw [← map_smul ψlin]
+            congr 1
+            funext i
+            rw [hsecsmul a t i, map_smul]
+            rfl }
+      map_add' := fun φ φ' => by
+        refine LinearMap.ext fun t => ?_
+        show ψlin (fun i => (φ + φ') (sec t i)) =
+          ψlin (fun i => φ (sec t i)) + ψlin (fun i => φ' (sec t i))
+        rw [← map_add ψlin]
+        congr 1
+      map_smul' := fun a φ => by
+        refine LinearMap.ext fun t => ?_
+        show ψlin (fun i => (a • φ) (sec t i)) = a • ψlin (fun i => φ (sec t i))
+        rw [← map_smul ψlin]
+        congr 1 }
+  have hχapp : ∀ (φ : Module.End A W) (t : Tsub),
+      ((χ φ t : Tsub) : Fin 2 → O) = ψ (fun i => φ (sec t i)) := fun _ _ => rfl
+  -- the transported action is the restriction of `ρO`
+  have hkey : ∀ (σ : Field.absoluteGaloisGroup ℚ) (t : Tsub),
+      ((χ (ρ' σ) t : Tsub) : Fin 2 → O) = ρO σ (t : Fin 2 → O) := by
+    intro σ t
+    rw [hχapp, hψeq, hsecapp]
+  let ρT : GaloisRep ℚ ℤ_[p] Tsub :=
+    { toFun := fun σ => χ (ρ' σ)
+      map_one' := by
+        refine LinearMap.ext fun t => Subtype.ext ?_
+        rw [hkey, map_one]
+        rfl
+      map_mul' := fun σ τ => by
+        refine LinearMap.ext fun t => Subtype.ext ?_
+        rw [hkey, map_mul]
+        show ρO σ (ρO τ (t : Fin 2 → O)) = _
+        rw [show ((χ (ρ' σ) * χ (ρ' τ)) t : Tsub) = χ (ρ' σ) (χ (ρ' τ) t) from rfl,
+          hkey, hkey]
+      continuous_toFun := by
+        have hcρ : Continuous (fun σ : Field.absoluteGaloisGroup ℚ =>
+            (ρ' σ : Module.End A W)) := ContinuousMonoidHom.continuous_toFun ρ'
+        exact (IsModuleTopology.continuous_of_linearMap χ).comp hcρ }
+  have hρTcoe : ∀ (σ : Field.absoluteGaloisGroup ℚ) (t : Tsub),
+      ((ρT σ t : Tsub) : Fin 2 → O) = ρO σ (t : Fin 2 → O) := hkey
+  -- the comparison maps
+  let g0 : Tsub →ₗ[ℤ_[p]] (Fin 2 → O) := Tsub.subtype
+  let f0 : (Fin 2 → O) →ₗ[ℤ_[p]] Tsub :=
+    { toFun := fun y => ⟨(p : ℤ_[p]) ^ c • y, hψcov y⟩
+      map_add' := fun x y => Subtype.ext (smul_add ((p : ℤ_[p]) ^ c) x y)
+      map_smul' := fun a x => Subtype.ext (smul_comm ((p : ℤ_[p]) ^ c) a x) }
+  have hflatT : ∀ k : ℕ,
+      (ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).HasFlatProlongationAt 𝔭ᵥ := by
+    intro k
+    refine (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt _).mpr ?_
+    -- the flat source: `N` copies of the level-`k` `A`-tower
+    have hpi : IsFlatPointsGroupAt 𝔭ᵥ (Fin N →
+        (((ρ'.baseChange (A ⧸ Ideal.span {(p : A) ^ k})).toLocal 𝔭ᵥ).Space)) :=
+      IsFlatPointsGroupAt.pi (fun _ =>
+        (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt _).mp (hflatW k))
+    -- the ambient lattice power, with its action as a first-order family
+    have hact1 : ∀ x : Fin N → W,
+        (fun i => ((ρ'.toLocal 𝔭ᵥ) 1) (x i)) = x := by
+      intro x; funext i; simp only [map_one, Module.End.one_apply]
+    have hactmul : ∀ (a b : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ 𝔭ᵥ)) (x : Fin N → W),
+        (fun i => ((ρ'.toLocal 𝔭ᵥ) (a * b)) (x i)) =
+          (fun i => ((ρ'.toLocal 𝔭ᵥ) a) (((ρ'.toLocal 𝔭ᵥ) b) (x i))) := by
+      intro a b x; funext i; simp only [map_mul, Module.End.mul_apply]
+    let act : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ 𝔭ᵥ) →
+          ((Fin N → W) →+ (Fin N → W)) := fun σ =>
+      { toFun := fun x i => ((ρ'.toLocal 𝔭ᵥ) σ) (x i)
+        map_zero' := by funext i; exact map_zero _
+        map_add' := fun x y => by funext i; exact map_add _ _ _ }
+    let F : (Fin N → W) →+
+        (Fin N → (((ρ'.baseChange (A ⧸ Ideal.span {(p : A) ^ k})).toLocal 𝔭ᵥ).Space)) :=
+      { toFun := fun x i => (1 : A ⧸ Ideal.span {(p : A) ^ k}) ⊗ₜ[A] (x i)
+        map_zero' := by funext i; exact TensorProduct.tmul_zero _ _
+        map_add' := fun x y => by funext i; exact TensorProduct.tmul_add _ _ _ }
+    let π : (Fin N → W) →+
+        (((ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).toLocal 𝔭ᵥ).Space) :=
+      { toFun := fun x =>
+          (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]] (ψlin x)
+        map_zero' := by rw [map_zero, TensorProduct.tmul_zero] <;> rfl
+        map_add' := fun x y => by rw [map_add, TensorProduct.tmul_add] <;> rfl }
+    refine isFlatPointsGroupAt_of_subquotient act hact1 hactmul hpi F ?_ π ?_ ?_ ?_
+    · intro σ x
+      funext i
+      show (1 : A ⧸ Ideal.span {(p : A) ^ k}) ⊗ₜ[A] (((ρ'.toLocal 𝔭ᵥ) σ) (x i)) =
+        ((ρ'.baseChange (A ⧸ Ideal.span {(p : A) ^ k})).toLocal 𝔭ᵥ) σ
+          ((1 : A ⧸ Ideal.span {(p : A) ^ k}) ⊗ₜ[A] (x i))
+      rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul]
+    · intro σ x
+      show (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]]
+          (ψlin (fun i => ((ρ'.toLocal 𝔭ᵥ) σ) (x i))) =
+        ((ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).toLocal 𝔭ᵥ) σ
+          ((1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]] (ψlin x))
+      rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul]
+      congr 1
+      refine Subtype.ext ?_
+      rw [hρTcoe]
+      exact hψeq _ x
+    · rintro z
+      induction z using TensorProduct.induction_on with
+      | zero => exact ⟨0, map_zero _⟩
+      | add a b ha hb =>
+        obtain ⟨x, hx⟩ := ha
+        obtain ⟨y, hy⟩ := hb
+        exact ⟨x + y, by rw [map_add, hx, hy] <;> rfl⟩
+      | tmul cc t =>
+        obtain ⟨cc', rfl⟩ := Ideal.Quotient.mk_surjective cc
+        obtain ⟨z0, hz0⟩ := hψlinsurj t
+        refine ⟨(algebraMap ℤ_[p] A cc') • z0, ?_⟩
+        show (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]]
+            (ψlin ((algebraMap ℤ_[p] A cc') • z0)) = _
+        rw [show ψlin ((algebraMap ℤ_[p] A cc') • z0) = cc' • ψlin z0 from
+          Subtype.ext (hψsmul cc' z0), TensorProduct.tmul_smul, TensorProduct.smul_tmul',
+          hz0]
+        congr 1
+        rw [Algebra.smul_def, mul_one]
+        rfl
+    · intro x hx
+      have hxi : ∀ i, ∃ y : W, x i = (p : A) ^ k • y := by
+        intro i
+        refine exists_smul_of_tmul_one_eq_zero ((p : A) ^ k) (x i) ?_
+        exact congrFun hx i
+      choose y hy using hxi
+      have hxy : x = (algebraMap ℤ_[p] A ((p : ℤ_[p]) ^ k)) • y := by
+        funext i
+        rw [hy i, Pi.smul_apply, map_pow, map_natCast]
+      show (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]] (ψlin x) = 0
+      rw [hxy, show ψlin ((algebraMap ℤ_[p] A ((p : ℤ_[p]) ^ k)) • y)
+          = (p : ℤ_[p]) ^ k • ψlin y from Subtype.ext (hψsmul _ y),
+        TensorProduct.tmul_smul, TensorProduct.smul_tmul']
+      have hz : ((p : ℤ_[p]) ^ k • (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})) = 0 := by
+        rw [Algebra.smul_def]; simp
+      rw [hz, TensorProduct.zero_tmul] <;> rfl
+  refine ⟨Tsub, inferInstance, inferInstance, hfinT, hfreeT, ρT, c, f0, g0, hflatT, ?_, ?_⟩
+  · intro σ x
+    refine Subtype.ext ?_
+    rw [hρTcoe]
+    show (p : ℤ_[p]) ^ c • (ρO σ x) = ρO σ ((p : ℤ_[p]) ^ c • x)
+    rw [← algebraMap_smul O ((p : ℤ_[p]) ^ c) x, LinearMap.map_smul,
+      algebraMap_smul]
+  · intro x
+    rfl
+
+/-- **Flat isogenous lattice for the `O`-structure** (Eisenstein pillar
+E2b′-flat; PROVEN 2026-07-26 over the single arithmetic leaf
+`exists_equivariantCover_of_generic_iso`, which REPLACED the
+Barsotti–Tate/Fontaine citation that used to sit here): the `ℤ_p`-lattice
+`Fin 2 → O` underlying `ρO` is `Γ ℚ`-equivariantly isogenous to a
+`ℤ_p`-lattice `T` all of whose `p`-power levels `T ⧸ p^k` have finite
+flat prolongations at `p`.
+
+PROOF: `exists_equivariantCover_of_generic_iso` produces an equivariant
+`ℤ_p`-semilinear `ψ : V^N →+ (Fin 2 → O)` covering `p^c (Fin 2 → O)`
+(elementary: conjugate fibres, Hom-descent from `ℚ̄_p` to `ℚ_p`, and
+clearing denominators — see its docstring), `hρ.isFlat` supplies the
+flatness of the `p`-power levels of the `R`-tower at the open ideals
+`p^k R` (`isOpen_span_pow_p`), and
+`exists_flatIsogenousLattice_of_equivariantCover` packages the image of
+`ψ` as the required lattice. `hpO` — `p ≠ 0` in `O` — is read off from
+the embedding of `O` into the characteristic-zero field `ℚ̄_p`.
+
+HISTORY (2026-07-25 → 2026-07-26): this node was a TERMINAL CITATION
+carrying Fontaine/Raynaud/Tate `p`-adic Hodge theory, audited as
+undischargeable on this pin (no `p`-divisible groups, no crystalline or
+Barsotti–Tate representations in mathlib, nothing to vendor from
+`~/cs/FLT`). The citation is now retired: the flat lattice is PRODUCED as
+the image of a power of the flat `R`-lattice rather than reconstructed
+from a Hodge-theoretic classification, so the whole subtree now rests on
+linear algebra and field theory that mathlib does have. The retired
+route, and why its audit did not imply necessity, are recorded on
+`exists_equivariantCover_of_generic_iso`. Circularity guard (inherited
+from E2b′): must not route through `Family.lean` or `Reducible.lean`’s
+B5. -/
 theorem exists_flatIsogenousLattice_of_generic_iso
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -13221,8 +13641,17 @@ theorem exists_flatIsogenousLattice_of_generic_iso
           (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))) ∧
       (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin 2 → O),
         f (ρO σ x) = ρT σ (f x)) ∧
-      (∀ x : Fin 2 → O, g (f x) = (p : ℤ_[p]) ^ c • x) :=
-  sorry
+      (∀ x : Fin 2 → O, g (f x) = (p : ℤ_[p]) ^ c • x) := by
+  obtain ⟨N, c, ψ, hψsmul, hψeq, hψcov⟩ :=
+    exists_equivariantCover_of_generic_iso (ρ := ρ) hOinj hZOcompat e he
+  have hpO : (p : O) ≠ 0 := by
+    intro h0
+    have h2 : ((p : ℕ) : AlgebraicClosure ℚ_[p]) = 0 := by
+      rw [← map_natCast (algebraMap O (AlgebraicClosure ℚ_[p])), h0, map_zero]
+    exact (Nat.cast_ne_zero.mpr (Fact.out : p.Prime).ne_zero) h2
+  exact exists_flatIsogenousLattice_of_equivariantCover
+    (ρ' := ρ) (fun k => hρ.isFlat.cond _ (isOpen_span_pow_p k))
+    hpO ψ hψsmul hψeq hψcov
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Lattice flatness at the `p`-power levels** (Eisenstein pillar
@@ -17469,11 +17898,13 @@ The classical chain, and what each link costs on this pin:
   2026-07-25). Two of the three resulting cases are discharged here:
   `A` principal, and `A` the ramified prime above `p`, which for the
   PRIME conductor `p` is `(ζ − 1)` and hence principal
-  (`cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`). THE ONE
-  REMAINING `sorry` of this chain is the third case —
-  `stickelberger_prod_map_prime_ideal_isPrincipal`, the theorem for a
-  single prime `q` with `p ∉ q`, whose own docstring carries the
-  dependency-ordered list of what is still missing from the pin.
+  (`cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`). The third case
+  — a single prime `q` with `p ∉ q` — is
+  `stickelberger_prod_map_prime_ideal_isPrincipal`, itself PROVEN
+  (2026-07-25) over the character-fed leaf
+  `stickelbergerProd_isPrincipal_of_powerResidueChar`, whose docstring
+  carries the dependency-ordered list of what is still missing from
+  the pin. THE ONE REMAINING `sorry` of this chain is that leaf.
 * **(d′) … annihilates the ideal class group** (Thm. 6.10, second
   sentence): PROVEN here as `stickelberger_annihilates_classGroup`,
   from (d) through the generic class-group brick
@@ -17485,15 +17916,15 @@ The classical chain, and what each link costs on this pin:
   floor arithmetic `sum_Ico_mul_two_mul_div_eq`.
 
 So: (a) is mathlib, (b) is folded into (d), (c)/(d′)/(e) are PROVEN,
-and (d) is now PROVEN too, over a single narrower citation. The next
-owner's frontier is exactly that citation,
-`stickelberger_prod_map_prime_ideal_isPrincipal`: one prime ideal `q`
-prime to `p`, for which the route is (b) plus §6.2's descent, or the
-shorter §15.1 route (Gauss sums attached to a degree-one prime
-`ℓ ≡ 1 (mod p)` lying in the given ideal class — so a
-Chebotarev/Dirichlet input as well — plus the same Kummer descent).
-Neither route is cheap on this pin; both are itemised, as statements,
-in that leaf's docstring. -/
+and (d) is now PROVEN too, over a single narrower citation which is
+itself PROVEN over the still narrower leaf
+`stickelbergerProd_isPrincipal_of_powerResidueChar` (2026-07-25). The
+next owner's frontier is exactly that leaf: one prime ideal `q` prime
+to `p`, together with a `p`-th power residue character at `q` supplied
+as a hypothesis (`exists_powerResidueChar_of_prime_notMem`, PROVEN),
+for which the route is (b) plus §6.2's Jacobi-sum descent — the §15.1
+route needs a Chebotarev/Dirichlet input this pin does not have. What
+remains is itemised, as statements, in that leaf's docstring. -/
 
 /-- **Principality of the twisted ideal product kills the ideal class**
 (PROVEN 2026-07-25; the generic class-group brick of the Stickelberger
@@ -17696,6 +18127,307 @@ noncomputable def stickelbergerProd (CF : Type) [Field CF] [NumberField CF]
   twistedIdealProd (fun u : (ZMod p)ˣ => cycGalRingOfIntegersEquiv CF u⁻¹)
     (fun u => t * ((u : ZMod p).val) / p) J
 
+/-- **The residue field of an unramified prime carries `μ_p`** (PROVEN
+2026-07-25; step 1 of the Stickelberger cut, item 1 of the list in
+`stickelberger_prod_map_prime_ideal_isPrincipal` below): if `q` is a
+prime ideal of `𝓞 CF` with `p ∉ q` — equivalently `q` lies over a
+rational prime `ℓ ≠ p` — then the reduction mod `q` of a primitive
+`p`-th root of unity `ζ ∈ 𝓞 CF` is again a primitive `p`-th root of
+unity in the residue ring `𝓞 CF ⧸ q`.
+
+This is the statement Washington uses silently at the top of the proof
+of Thm. 6.10 ("since the `(q−1)`st roots of unity are distinct mod
+`𝔭`"), and the pin has no packaged form of it. The proof is the
+separability of `Φ_p` away from `p`: `ζ` is a root of
+`cyclotomic p (𝓞 CF)` (`IsPrimitiveRoot.isRoot_cyclotomic`), the
+quotient map carries that to a root of `cyclotomic p (𝓞 CF ⧸ q)`
+(`Polynomial.map_cyclotomic`), and over a domain in which `p` is
+invertible — which is exactly `p ∉ q` — being a root of the `p`-th
+cyclotomic polynomial IS being a primitive `p`-th root of unity
+(`Polynomial.isRoot_cyclotomic_iff`, whose `NeZero (p : 𝓞 CF ⧸ q)`
+hypothesis is `Ideal.Quotient.eq_zero_iff_mem` applied to `hpq`).
+
+Note that `q ≠ ⊥` is NOT needed here: for `q = ⊥` the quotient is
+`𝓞 CF` itself and the statement is the hypothesis. -/
+theorem residueField_isPrimitiveRoot_of_notMem
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hpq : (p : 𝓞 CF) ∉ q)
+    {ζ : 𝓞 CF} (hζ : IsPrimitiveRoot ζ p) :
+    IsPrimitiveRoot (Ideal.Quotient.mk q ζ) p := by
+  haveI : q.IsPrime := hq
+  haveI : NeZero ((p : ℕ) : 𝓞 CF ⧸ q) := by
+    refine ⟨fun h => hpq ?_⟩
+    rw [← map_natCast (Ideal.Quotient.mk q) p, Ideal.Quotient.eq_zero_iff_mem] at h
+    exact h
+  rw [← Polynomial.isRoot_cyclotomic_iff]
+  have h1 : Polynomial.IsRoot (Polynomial.cyclotomic p (𝓞 CF)) ζ :=
+    hζ.isRoot_cyclotomic hp.out.pos
+  have h2 := h1.map (f := (Ideal.Quotient.mk q))
+  rwa [Polynomial.map_cyclotomic] at h2
+
+/-- **`p ∣ Q − 1` at a prime not above `p`** (PROVEN 2026-07-25; the
+numerical half of item 1 of the list in
+`stickelberger_prod_map_prime_ideal_isPrincipal`): writing
+`Q := #(𝓞 CF ⧸ q)` for the norm of a nonzero prime `q` of `𝓞 CF` with
+`p ∉ q`, the prime `p` divides `Q − 1`.
+
+This is what makes the exponent `(Q−1)/p` of the `p`-th power residue
+character an integer, and it is the reason `μ_p ⊆ F^×`. Proof: the
+residue ring is a finite field (`Ideal.IsPrime.isMaximal` in the
+Dedekind domain `𝓞 CF`, plus `Ideal.finiteQuotientOfFreeOfNeBot`), the
+reduction of `ζ` is a primitive `p`-th root of unity there
+(`residueField_isPrimitiveRoot_of_notMem`), so `p` is its order
+(`IsPrimitiveRoot.eq_orderOf`), and the order of a nonzero element of
+a finite field divides `Q − 1`
+(`FiniteField.pow_card_sub_one_eq_one`). -/
+theorem prime_dvd_card_residueField_sub_one
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) (hpq : (p : 𝓞 CF) ∉ q) :
+    p ∣ Nat.card (𝓞 CF ⧸ q) - 1 := by
+  haveI : q.IsPrime := hq
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  haveI : Finite (𝓞 CF ⧸ q) := Ideal.finiteQuotientOfFreeOfNeBot q hq0
+  haveI : Fintype (𝓞 CF ⧸ q) := Fintype.ofFinite _
+  have hζ : IsPrimitiveRoot (IsCyclotomicExtension.zeta p ℚ CF) p :=
+    IsCyclotomicExtension.zeta_spec p ℚ CF
+  have hprim : IsPrimitiveRoot (Ideal.Quotient.mk q hζ.toInteger) p :=
+    residueField_isPrimitiveRoot_of_notMem CF hq hpq hζ.toInteger_isPrimitiveRoot
+  have hz0 : (Ideal.Quotient.mk q hζ.toInteger) ≠ 0 := by
+    intro h
+    have h1 := hprim.pow_eq_one
+    rw [h, zero_pow hp.out.ne_zero] at h1
+    exact zero_ne_one h1
+  have hord : orderOf (Ideal.Quotient.mk q hζ.toInteger) = p := hprim.eq_orderOf.symm
+  have hcard : (Ideal.Quotient.mk q hζ.toInteger) ^ (Fintype.card (𝓞 CF ⧸ q) - 1) = 1 := by
+    refine FiniteField.pow_card_sub_one_eq_one (K := 𝓞 CF ⧸ q) _ ?_
+    intro h
+    exact hz0 h
+  rw [Nat.card_eq_fintype_card, ← hord]
+  exact orderOf_dvd_of_pow_eq_one hcard
+
+/-- **The `p`-th power residue character at a prime `q ∤ p`** (PROVEN
+2026-07-25; item 2 of the list in
+`stickelberger_prod_map_prime_ideal_isPrincipal` below, which recorded
+it as MISSING from this pin): for a nonzero prime `q` of `𝓞 CF` with
+`p ∉ q`, there is a multiplicative character
+
+`χ_q : (𝓞 CF ⧸ q) → 𝓞 CF`
+
+taking values in `μ_p(𝓞 CF)` and characterised by the congruence
+
+`χ_q(x) ≡ x^{(Q−1)/p}  (mod q)`,  `Q := #(𝓞 CF ⧸ q)`,
+
+together with nontriviality. This is Washington's `ω^{−d}` (§6.2,
+`d = (Q−1)/m`) written multiplicatively as a `MulChar`, i.e. the
+arithmetic Teichmüller character at `q`; it is the character whose
+Gauss sum factors as the Stickelberger divisor. (**Not** the
+Witt-vector Teichmüller lift of `Mathlib.RingTheory.Teichmuller`,
+which is unrelated.) The convention here is the reciprocal of
+Washington's `ω^{−d}`; the two differ by inversion, which changes
+`θ` into its complex conjugate and nothing else.
+
+Construction. The residue ring is a finite field with `p ∣ Q − 1`
+(`prime_dvd_card_residueField_sub_one`), so for `x ≠ 0` the element
+`x^{(Q−1)/p}` satisfies `(x^{(Q−1)/p})^p = x^{Q−1} = 1` and hence is a
+power of the reduction of `ζ`
+(`residueField_isPrimitiveRoot_of_notMem` and
+`IsPrimitiveRoot.eq_pow_of_pow_eq_one`); choosing such an exponent `k`
+and setting `χ_q(x) := ζ^k` (and `χ_q(0) := 0`) gives a well-defined
+map because reduction is INJECTIVE on `μ_p(𝓞 CF)`: `ζ` and its
+reduction both have exact order `p`, so `ζ^i ≡ ζ^j (mod q)` forces
+`i ≡ j (mod p)`. Multiplicativity is that same injectivity applied to
+`χ_q(xy)` and `χ_q(x)χ_q(y)`, both powers of `ζ` with the same
+reduction `(xy)^{(Q−1)/p}`. Nontriviality is `g^{(Q−1)/p} ≠ 1` for a
+generator `g` of the cyclic group `(𝓞 CF ⧸ q)ˣ`, which holds because
+`0 < (Q−1)/p < Q − 1`. -/
+theorem exists_powerResidueChar_of_prime_notMem
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) (hpq : (p : 𝓞 CF) ∉ q)
+    (hQ : p ∣ Nat.card (𝓞 CF ⧸ q) - 1) :
+    ∃ χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF),
+      χ ≠ 1 ∧ (∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1) ∧
+      (∀ x : 𝓞 CF ⧸ q,
+        Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) := by
+  classical
+  haveI : q.IsPrime := hq
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  haveI : Finite (𝓞 CF ⧸ q) := Ideal.finiteQuotientOfFreeOfNeBot q hq0
+  haveI : Fintype (𝓞 CF ⧸ q) := Fintype.ofFinite _
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  have hcard : Nat.card (𝓞 CF ⧸ q) = Fintype.card (𝓞 CF ⧸ q) := Nat.card_eq_fintype_card
+  have hQ2 : 2 ≤ Fintype.card (𝓞 CF ⧸ q) := Fintype.one_lt_card
+  have hQ' : p ∣ Fintype.card (𝓞 CF ⧸ q) - 1 := by rwa [hcard] at hQ
+  set d : ℕ := (Fintype.card (𝓞 CF ⧸ q) - 1) / p
+  have hdp : d * p = Fintype.card (𝓞 CF ⧸ q) - 1 := Nat.div_mul_cancel hQ'
+  have hd0 : 0 < d := by
+    rcases Nat.eq_zero_or_pos d with h | h
+    · rw [h, zero_mul] at hdp; omega
+    · exact h
+  have hdlt : d < Fintype.card (𝓞 CF ⧸ q) - 1 := by
+    have h2 : 2 ≤ p := hp.out.two_le
+    have hkey : d * 2 ≤ d * p := Nat.mul_le_mul (le_refl d) h2
+    rw [hdp] at hkey
+    omega
+  have hζ := IsCyclotomicExtension.zeta_spec p ℚ CF
+  set ζ : 𝓞 CF := hζ.toInteger
+  have hζp : IsPrimitiveRoot ζ p := hζ.toInteger_isPrimitiveRoot
+  have hzp : IsPrimitiveRoot (Ideal.Quotient.mk q ζ) p :=
+    residueField_isPrimitiveRoot_of_notMem CF hq hpq hζp
+  have hpowmodR : ∀ i : ℕ, ζ ^ i = ζ ^ (i % p) := by
+    intro i
+    conv_lhs => rw [← Nat.div_add_mod i p]
+    rw [pow_add, pow_mul, hζp.pow_eq_one, one_pow, one_mul]
+  have hpowmodF : ∀ i : ℕ, (Ideal.Quotient.mk q ζ) ^ i = (Ideal.Quotient.mk q ζ) ^ (i % p) := by
+    intro i
+    conv_lhs => rw [← Nat.div_add_mod i p]
+    rw [pow_add, pow_mul, hzp.pow_eq_one, one_pow, one_mul]
+  have hinj : ∀ i j : ℕ,
+      Ideal.Quotient.mk q (ζ ^ i) = Ideal.Quotient.mk q (ζ ^ j) → ζ ^ i = ζ ^ j := by
+    intro i j hij
+    rw [map_pow, map_pow, hpowmodF i, hpowmodF j] at hij
+    have h1 : i % p = j % p :=
+      hzp.pow_inj (Nat.mod_lt _ hp.out.pos) (Nat.mod_lt _ hp.out.pos) hij
+    rw [hpowmodR i, hpowmodR j, h1]
+  have hex : ∀ x : 𝓞 CF ⧸ q, ∃ k : ℕ, x ≠ 0 → (Ideal.Quotient.mk q ζ) ^ k = x ^ d := by
+    intro x
+    by_cases hx : x = 0
+    · exact ⟨0, fun h => absurd hx h⟩
+    · have hroot : (x ^ d) ^ p = 1 := by
+        rw [← pow_mul, hdp]
+        exact FiniteField.pow_card_sub_one_eq_one (K := 𝓞 CF ⧸ q) x hx
+      obtain ⟨i, -, hi⟩ := hzp.eq_pow_of_pow_eq_one hroot
+      exact ⟨i, fun _ => hi⟩
+  choose kf hkf using hex
+  set L : (𝓞 CF ⧸ q) → 𝓞 CF := fun x => if x = 0 then 0 else ζ ^ kf x with hLdef
+  have hLne : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → L x = ζ ^ kf x := by
+    intro x hx; simp [hLdef, hx]
+  have hLred : ∀ x : 𝓞 CF ⧸ q, Ideal.Quotient.mk q (L x) = x ^ d := by
+    intro x
+    by_cases hx : x = 0
+    · subst hx; simp [hLdef, zero_pow hd0.ne']
+    · rw [hLne x hx, map_pow, hkf x hx]
+  have hmul : ∀ x y : 𝓞 CF ⧸ q, L (x * y) = L x * L y := by
+    intro x y
+    by_cases hx : x = 0
+    · subst hx; simp [hLdef]
+    by_cases hy : y = 0
+    · subst hy; simp [hLdef]
+    have hxy : x * y ≠ 0 := mul_ne_zero hx hy
+    rw [hLne _ hxy, hLne x hx, hLne y hy, ← pow_add]
+    refine hinj _ _ ?_
+    rw [map_pow, map_pow, hkf _ hxy, pow_add, hkf x hx, hkf y hy, mul_pow]
+  have hone : L 1 = 1 := by
+    have h1 : (1 : 𝓞 CF ⧸ q) ≠ 0 := one_ne_zero
+    rw [hLne 1 h1]
+    have hz : ζ ^ kf 1 = ζ ^ 0 := by
+      refine hinj _ _ ?_
+      rw [map_pow, map_pow, hkf 1 h1, one_pow, pow_zero]
+    rw [hz, pow_zero]
+  refine ⟨{ toFun := L, map_one' := hone, map_mul' := hmul, map_nonunit' := ?_ }, ?_, ?_, ?_⟩
+  · intro a ha
+    have ha0 : a = 0 := by
+      by_contra h
+      exact ha (isUnit_iff_ne_zero.mpr h)
+    simp [hLdef, ha0]
+  · intro hone'
+    obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := (𝓞 CF ⧸ q)ˣ)
+    have hord : orderOf g = Fintype.card (𝓞 CF ⧸ q)ˣ := by
+      rw [orderOf_eq_card_of_forall_mem_zpowers hg, Nat.card_eq_fintype_card]
+    have hcu : Fintype.card (𝓞 CF ⧸ q)ˣ = Fintype.card (𝓞 CF ⧸ q) - 1 :=
+      Fintype.card_units (𝓞 CF ⧸ q)
+    have hgd : g ^ d ≠ 1 := by
+      intro h
+      have hdvd := orderOf_dvd_of_pow_eq_one h
+      rw [hord, hcu] at hdvd
+      exact absurd (Nat.le_of_dvd hd0 hdvd) (by omega)
+    have hval : ((g : 𝓞 CF ⧸ q)) ^ d ≠ 1 := by
+      intro h
+      apply hgd
+      ext
+      rw [Units.val_pow_eq_pow_val, h, Units.val_one]
+    apply hval
+    have hL1 : L (g : 𝓞 CF ⧸ q) = 1 := by
+      have hc := congrArg (fun (c : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) => c (g : 𝓞 CF ⧸ q)) hone'
+      simpa [MulChar.one_apply_coe] using hc
+    have hr := hLred (g : 𝓞 CF ⧸ q)
+    rw [hL1, map_one] at hr
+    exact hr.symm
+  · intro x hx
+    show L x ^ p = 1
+    rw [hLne x hx, ← pow_mul, mul_comm, pow_mul, hζp.pow_eq_one, one_pow]
+  · intro x
+    show Ideal.Quotient.mk q (L x) = _
+    rw [hLred x, hcard]
+
+/-- **Stickelberger's theorem for one prime, GIVEN the `p`-th power
+residue character** — THE SORRY LEAF of the Stickelberger cut as of
+2026-07-25 (Stickelberger 1890; Kummer 1847; Washington,
+*Introduction to Cyclotomic Fields*, Thm. 6.10, §6.1–§6.2): for a
+nonzero prime `q` of `𝓞 CF` with `p ∉ q` and a `p`-th power residue
+character `χ` at `q` — supplied by
+`exists_powerResidueChar_of_prime_notMem` — the ideal
+
+`q^{(t − σ_t)θ} = ∏_{a=1}^{p−1} σ_a⁻¹(q)^{⌊ta/p⌋}`
+
+is PRINCIPAL.
+
+**What this leaf carries, and what it no longer carries.** Items 1
+and 2 of the classical proof — the reduction of `μ_p` at `q` and the
+existence of the character `χ_q` with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)` —
+are now PROVEN above (`residueField_isPrimitiveRoot_of_notMem`,
+`prime_dvd_card_residueField_sub_one`,
+`exists_powerResidueChar_of_prime_notMem`), and `χ` reaches this leaf
+as a hypothesis rather than something to be built. What remains is the
+Gauss-sum core, items 3–6, in dependency order. Write `ℓ` for the
+rational prime under `q`, `F := 𝓞 CF ⧸ q`, `Q := #F = ℓ^f`.
+
+3. **The Gauss sum `g(χ) = −∑_{x ∈ F^×} χ(x)⁻¹ ψ(x)`** for a
+   nontrivial additive character `ψ : F → μ_ℓ`, as an element of the
+   ring of integers of the compositum `L := CF(ζ_ℓ)`. PARTLY PRESENT:
+   `gaussSum`, `gaussSum_mul_gaussSum_eq_card`, `gaussSum_frob` and
+   `Mathlib.NumberTheory.JacobiSum.Basic` are on this pin, and
+   `gaussSum` takes exactly a `MulChar F R'` and an `AddChar F R'`, so
+   `χ` above is already in the shape mathlib wants. MISSING: the
+   compositum `L` as a concrete cyclotomic extension, its ring of
+   integers, and its primes `𝒬` above `q`.
+4. **Stickelberger's congruence** (Washington Lemmas 6.11–6.12,
+   Prop. 6.13, Lemma 6.14): `v_𝒬(g(χ^{−h}))` is the `ℓ`-adic digit sum
+   of `h`, equivalently `v_𝒬(g(χ^{−h})) = (p−1) ∑_{i<f} {ℓ^i h/(Q−1)}`.
+   MISSING entirely, and it is the mathematical core: it is what
+   produces the fractional parts `{a/p}` that DEFINE `θ`.
+5. **The Jacobi descent.** `σ_t(g(χ)) = g(χ^t)`, because `σ_t` moves
+   `ζ_p` and fixes `ζ_ℓ`; and `g(χ)^t / g(χ^t)` is a product of Jacobi
+   sums `∏_{a<t} J(χ, χ^a)` (Washington Lemmas 6.2, 6.4), hence
+   already lies in `CF`. This is precisely WHY the annihilator is
+   `(t − σ_t)θ` and not `θ`, and — for THIS `ρ = t − σ_t`, unlike
+   Washington's general `ρ ∈ I'` — it makes the Kummer/unramifiedness
+   descent of Washington Lemma 6.15 UNNECESSARY: the generator is
+   manifestly in `CF` from the start.
+6. **Assembly.** Items 4 and 5 give `(g(χ)^{t−σ_t}) = q^{(t−σ_t)θ}` as
+   ideals of `𝓞 CF`, which is this leaf.
+
+Washington's §15.1 route replaces item 4 by a Chebotarev/Dirichlet
+input; this pin has no Chebotarev density theorem, so it is not
+cheaper here.
+
+Soundness of the exact form stated: for `t` prime to `p` the element
+`∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which lies in the Stickelberger
+ideal `I(ℚ(ζ_p)) = ℤ[G] ∩ θℤ[G]` by Washington Lemma 6.9, so Thm. 6.10
+applies verbatim. `hq0` is kept because `q = ⊥` has no residue field;
+`hpq` is what makes `q` unramified and gives `μ_p ⊆ F^×`. -/
+theorem stickelbergerProd_isPrincipal_of_powerResidueChar
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (t : ℕ) (ht : ¬ (p ∣ t)) {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) :
+    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) :=
+  sorry
+
 /-- **Stickelberger's theorem for ONE prime ideal prime to `p`** — THE
 SORRY LEAF of the Stickelberger cut (re-cut 2026-07-25; it replaces
 the former all-ideals citation, which is now PROVEN from this;
@@ -17724,52 +18456,22 @@ over `p` is `(ζ − 1)`
 principal and its Stickelberger product is principal for free. Hence
 the hypothesis `p ∉ q` here.
 
-**What remains — the classical proof, in dependency order, with each
-piece missing from this mathlib pin named as a statement.** Write `ℓ`
-for the rational prime under `q`, `F := 𝓞 CF ⧸ q` for the residue
-field, and `Q := #F = ℓ^f`.
+**PROVEN 2026-07-25 over a finer cut; this is no longer a leaf.** The
+classical proof was listed here in six steps; steps 1 and 2 — the
+reduction of `μ_p` at an unramified prime and the `p`-th power residue
+character `χ_q` with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)`, both of which
+that list recorded as MISSING from this pin — are now theorems above:
 
-1. **`p ∣ Q − 1`, and `F` carries `μ_p`.** The reduction of `ζ` has
-   exact order `p` in `Fˣ`, because `Φ_p` stays separable mod `q` when
-   `ℓ ≠ p`. MISSING as a statement: the pin has `IsPrimitiveRoot`,
-   `Ideal.absNorm` and the finite-field API, but nothing packaging
-   "the reduction of a primitive `p`-th root of unity at a prime not
-   above `p` is a primitive `p`-th root of unity in the residue
-   field".
-2. **The `p`-th power residue character `χ_q : Fˣ → μ_p(𝓞 CF)`**, the
-   unique character with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)`; this is the
-   Teichmüller character of the cut. MISSING: the pin has `MulChar`
-   and `MulChar.Duality` but no character attached to a prime ideal,
-   and `Mathlib.RingTheory.Teichmuller` is the Witt-vector
-   Teichmüller lift, unrelated.
-3. **The Gauss sum `g(χ_q) = −∑_{x ∈ Fˣ} χ_q(x)⁻¹ ψ(x)`** for a
-   nontrivial additive character `ψ : F → μ_ℓ`, as an element of the
-   ring of integers of the compositum `CF(ζ_ℓ)`. PARTLY PRESENT — this
-   is link (a): `gaussSum`, `gaussSum_mul_gaussSum_eq_card`,
-   `gaussSum_frob` and `Mathlib.NumberTheory.JacobiSum.Basic` are all
-   on the pin, so what is missing is only the compositum `CF(ζ_ℓ)` as
-   a concrete cyclotomic extension together with its ring of integers
-   and the primes of it above `q`.
-4. **Stickelberger's congruence** (Washington Prop. 6.13, from Lemmas
-   6.11 and 6.12; equivalently Lemma 6.14): the `𝒬`-adic valuation of
-   `g(χ_q^{−h})` at a prime `𝒬` of `CF(ζ_ℓ)` above `q` is the sum of
-   the `ℓ`-adic digits of `h`, i.e.
-   `v_𝒬(g(χ_q^{−h})) = (p−1) ∑_{i<f} {ℓ^i h/(Q−1)}`. MISSING
-   entirely, and this is the mathematical core of the leaf: it is what
-   produces the fractional parts `{a/p}` that DEFINE `θ`.
-5. **Galois descent of the Gauss sum.** `σ_t(g(χ)) = g(χ^t)`, because
-   `σ_t` moves `ζ_p` and fixes `ζ_ℓ`; and `g(χ)^t/g(χ^t)` is a product
-   of Jacobi sums, hence already lies in `CF` (Washington Lemmas 6.2
-   and 6.4). This is precisely WHY the annihilator is `(t − σ_t)θ` and
-   not `θ`: `g(χ)^{t−σ_t}` is the element of `CF` that generates
-   `q^{(t−σ_t)θ}`. The Jacobi-sum identities are on the pin; the
-   descent statement is not.
-6. **Assembly.** Steps 4 and 5 give
-   `(g(χ)^{t−σ_t}) = q^{(t−σ_t)θ}` as ideals of `𝓞 CF`, which is this
-   leaf. Washington's alternative §15.1 route replaces step 4 by a
-   Chebotarev/Dirichlet input — choose a degree-one prime `ℓ ≡ 1 mod
-   p` in the given class — plus the same Kummer descent; the pin has
-   no Chebotarev density theorem either, so it is not cheaper here.
+* `residueField_isPrimitiveRoot_of_notMem`,
+* `prime_dvd_card_residueField_sub_one`,
+* `exists_powerResidueChar_of_prime_notMem`.
+
+What is left, steps 3–6 (the Gauss sum `g(χ_q)` in the compositum
+`CF(ζ_ℓ)`, Stickelberger's congruence, the Jacobi descent, and the
+assembly), is the single leaf
+`stickelbergerProd_isPrincipal_of_powerResidueChar` above, which takes
+the character as a HYPOTHESIS. Its docstring itemises what remains;
+this theorem is now just the two of them composed.
 
 Soundness of the exact form stated: for `t` prime to `p` the element
 `∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which lies in the Stickelberger
@@ -17783,12 +18485,15 @@ theorem stickelberger_prod_map_prime_ideal_isPrincipal
     (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
     (t : ℕ) (ht : ¬ (p ∣ t)) {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
     (hpq : (p : 𝓞 CF) ∉ q) :
-    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) :=
-  sorry
+    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) := by
+  obtain ⟨χ, hχ1, hχp, hχcong⟩ :=
+    exists_powerResidueChar_of_prime_notMem CF hq hq0 hpq
+      (prime_dvd_card_residueField_sub_one CF hq hq0 hpq)
+  exact stickelbergerProd_isPrincipal_of_powerResidueChar CF t ht hq hq0 hpq χ hχ1 hχp hχcong
 
 /-- **Stickelberger's theorem, reduced to primes** (PROVEN 2026-07-25
-over the single leaf
-`stickelberger_prod_map_prime_ideal_isPrincipal`): the Stickelberger
+over `stickelberger_prod_map_prime_ideal_isPrincipal`, itself proven
+over `stickelbergerProd_isPrincipal_of_powerResidueChar`): the Stickelberger
 operator sends EVERY ideal of `𝓞 CF` to a principal ideal. This is
 `twistedIdealProd_isPrincipal_of_forall_prime` fed with the two prime
 cases — `cyclotomic_isPrincipal_of_isPrime_of_natCast_mem` together
@@ -17845,11 +18550,13 @@ everywhere, hence trivial by Lemma 6.15. §15.1 gives a shorter route
 at the cost of a Chebotarev input. Neither is available on this pin:
 mathlib has Gauss sums and Jacobi sums
 (`Mathlib.NumberTheory.GaussSum`, `.JacobiSum` — link (a)) but no
-Teichmüller character attached to a prime, no valuation of Gauss sums,
-and no Stickelberger/Herbrand material at all (grepped 2026-07-24 and
-re-verified 2026-07-25). The itemised remainder now lives on the leaf
-`stickelberger_prod_map_prime_ideal_isPrincipal`, which is the honest
-citation boundary.
+valuation of Gauss sums and no Stickelberger/Herbrand material at all
+(grepped 2026-07-24, re-verified 2026-07-25). The Teichmüller
+character at a prime, which the pin also lacked, is now PROVEN here
+(`exists_powerResidueChar_of_prime_notMem`), and the itemised
+remainder lives on the leaf
+`stickelbergerProd_isPrincipal_of_powerResidueChar`, which is the
+honest citation boundary.
 
 Soundness of the exact form stated: for `t` prime to `p` the element
 `∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which is in the Stickelberger
