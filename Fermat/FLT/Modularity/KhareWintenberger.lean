@@ -2541,7 +2541,36 @@ THE TWO CLASSICAL ROUTES, and what each needs that the pin lacks.
   `dim_κ 𝔪/𝔪² = rank Ω − trdeg(κ/K) = dim R`, which is regularity. Mathlib has
   `Mathlib/RingTheory/Smooth/Kaehler.lean`, so the exact sequence is the
   reachable part; what is missing is the dimension formula
-  `dim A_p + trdeg κ(p) = dim A` for a finite-type domain over a field.
+  `dim A_p + trdeg κ(p) = dim A` for a finite-type domain over a field. Do NOT
+  start there: dimension theory over a field is barely present at this pin —
+  even `dim k[x₁..xₙ] = n` is still a `proof_wanted`
+  (`MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing`,
+  `Mathlib/RingTheory/KrullDimension/Basic.lean:94`), and there is no
+  transcendence-degree/dimension material anywhere under `KrullDimension/`.
+
+* **THE THIRD ROUTE, AND THE ONE TO TAKE — smooth ASCENT of regularity from a
+  base mathlib already knows is regular** (measured 2026-07-26, and it
+  corrects the pessimistic reading above). The pin is much better supplied
+  than the "nothing exists" sweep suggests: `IsRegularRing k` for a field,
+  `IsRegularRing (MvPolynomial (Fin n) k)` and hence
+  `IsRegularLocalRing (Localization.AtPrime p)` for every prime `p` of a
+  polynomial ring over a field ALL discharge by `infer_instance`, out of
+  `Mathlib/RingTheory/RegularLocalRing/Polynomial.lean`
+  (`MvPolynomial.isRegularRing_of_isRegularRing`). `Noether normalization` is
+  also present (`Mathlib/RingTheory/NoetherNormalization.lean`), and
+  `Mathlib/RingTheory/KrullDimension/Regular.lean` carries the regular-sequence
+  dimension drop (`ringKrullDim_quotient_span_singleton_succ_eq_ringKrullDim_of_mem_nonZeroDivisors`
+  and `ringKrullDim_add_length_eq_ringKrullDim_of_isRegular`).
+
+  So the affine polynomial base is DONE, and the single genuinely missing
+  statement is that regularity ASCENDS along a smooth ring map — concretely,
+  via `Algebra.IsStandardSmooth`, that
+  `k[x₁..xₙ] ⧸ (f₁, …, f_c)` localized at a prime is regular when the Jacobian
+  is invertible there, i.e. that the `f_i` form a regular sequence whose images
+  are linearly independent in `𝔪/𝔪²`. That is one theorem over machinery that
+  exists, not a dimension theory built from scratch. Anyone taking this leaf
+  should start by reading `Mathlib/RingTheory/Smooth/StandardSmooth.lean` and
+  `StandardSmoothCotangent.lean`, NOT by formalizing Cohen or Noether–trdeg.
 
 A FIRST CUT THAT WOULD HELP whoever takes this: reduce to the AFFINE statement
 "`A` a smooth `K`-algebra, `p` prime ⟹ `IsRegularLocalRing (Localization.AtPrime p)`"
