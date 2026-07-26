@@ -68,7 +68,16 @@ The chain, in the order the assembly uses it:
    of a hardly ramified representation satisfies it (LEAF).
 3. `HilbertDeformationDatum` / `IsWeaklyUniversal` — Mazur's category and
    its universal object over `F`, i.e. `R_F`;
-   `exists_isWeaklyUniversal_hilbertDeformationDatum` is item 2 (LEAF).
+   `exists_isWeaklyUniversal_hilbertDeformationDatum` is item 2. It was
+   REFUTED and REPAIRED on 2026-07-26 (it needs the category to be
+   NONEMPTY; see the faithfulness section on it and the proven refutation
+   `rank_eq_two_of_hilbertDeformationDatum`), and is now PROVEN as an
+   assembly over SIX leaves — the arithmetic-free Schlessinger machine
+   `exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses` together
+   with the four deformation-condition clauses
+   `isHilbertBaseChangeClause`, `isHilbertFibreProductClause`,
+   `isHilbertFiniteFramesClause`, `isHilbertProLimitClause` and the
+   Brauer–Nesbitt clause `isHilbertResidualRigidityClause`.
 4. `HilbertHeckeAlgebra` — `T_F`, carrying `Module.Finite ℤ_[ℓ] T_F`,
    generation by Hecke operators, and the residual eigensystem of
    `ρbar|_{G_F}`; `PotentialHeckeDatum` bundles it with the totally real
@@ -121,6 +130,9 @@ public import Mathlib.RingTheory.Adjoin.Basic
 public import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
 public import Mathlib.RingTheory.AdicCompletion.Basic
 public import Mathlib.RingTheory.Finiteness.Basic
+public import Mathlib.LinearAlgebra.TensorProduct.Pi
+public import Mathlib.LinearAlgebra.Dimension.Constructions
+public import Mathlib.Topology.Algebra.Algebra
 
 @[expose] public section
 
@@ -380,36 +392,418 @@ def HilbertDeformationDatum.IsWeaklyUniversal {ℓ : ℕ} [Fact ℓ.Prime]
       𝒟'.π.comp f = 𝒟.π ∧
       ∀ g : Γ F, ((𝒟.ρ g).charpoly).map f = (𝒟'.ρ g).charpoly
 
-/-- **Existence of the `F`-level universal deformation ring `R_F`** (LEAF
-— item 2 of the audit's missing-machinery list).
+/-! #### The FAITHFULNESS REPAIR of `exists_isWeaklyUniversal_hilbertDeformationDatum`
+
+**The statement this module was created with was FALSE, and it is refuted
+mechanically by `rank_eq_two_of_hilbertDeformationDatum` just below**
+(2026-07-26). It read
+
+```
+theorem exists_isWeaklyUniversal_hilbertDeformationDatum
+    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible) :
+    ∃ 𝒟 : HilbertDeformationDatum ℓ F ρbar, 𝒟.IsWeaklyUniversal
+```
+
+— with NO constraint tying `V` to the `Fin 2` of `HilbertDeformationDatum.ρ`,
+and no hypothesis making the deformation category nonempty. An existential
+over a category is false as soon as the category is EMPTY, and it is empty
+here for two independent reasons:
+
+* **Dimension.** `HilbertDeformationDatum.resid` asks that the charpoly of
+  `𝒟.ρ g`, an endomorphism of `Fin 2 → 𝒟.R`, reduce to the charpoly of
+  `ρbar|_{G_F} g`, an endomorphism of `V`. Both are monic and `𝒟.π` lands in
+  a field, so `Monic.natDegree_map` forces `finrank k V = 2`. That is proven
+  below. A `1`-dimensional `ρbar` — say the trivial character on `V = k` — is
+  `IsIrreducible` (`IsSimpleOrder (Subrepresentation ρbar)` holds: the only
+  subrepresentations of a line are `⊥ ≠ ⊤`) and satisfies `hirrF` for `F = ℚ`,
+  so it meets every hypothesis of the old statement while
+  `HilbertDeformationDatum ℓ ℚ ρbar` is EMPTY. That is an explicit
+  counterexample.
+* **Arithmetic.** Even at `finrank k V = 2` the category is empty unless
+  `ρbar|_{G_F}` itself satisfies the `F`-level local conditions — `resid`
+  forces `det ρbar|_{G_F}` to be the reduction of the cyclotomic character,
+  and forces the whole residual eigensystem to be hardly ramified over `F`.
+  For a `ρbar` ramified outside `2ℓ` no `𝒟` exists at all.
+
+**THE REPAIR: the category is required to be nonempty, by a hypothesis
+`𝒟₀ : HilbertDeformationDatum ℓ F ρbar`.** This is not a weakening dressed
+up as a fix; it is the shape every representability theorem has. Mazur's
+theorem produces the universal object of a deformation problem whose
+residual object is GIVEN — Schlessinger's `F(k)` is a single point, not the
+empty set — and here `𝒟₀` is exactly that input: it pins `finrank k V = 2`
+(proven below) and it exhibits a hardly ramified `F`-level deformation of
+`ρbar|_{G_F}` to reduce, so its residual frame is the ρbar-frame the machine
+deforms. Nothing is lost downstream: the consumer
+`exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified` at the
+bottom of this module BUILDS such a datum out of its own `ρ` (that is the
+`𝒟'` of its proof), so the hypothesis is discharged there for free — the
+only change to the assembly is that `𝒟'` is now constructed BEFORE `R_F`
+is asked for rather than after. `Deformation.lean`'s consumer of that
+assembly is untouched, signature and all.
+
+VACUITY AUDIT: the repaired statement is NOT vacuous. `𝒟₀` makes the
+hypothesis-set satisfiable (the consumer satisfies it), and the conclusion
+is not satisfiable by `𝒟₀` itself — weak universality is a genuine
+condition on the produced `𝒟`, which is why the machine leaf below still
+carries the whole Schlessinger argument. Every hypothesis of the repaired
+statement is used: `𝒟₀` in the machine leaf and in the rank lemma,
+`hirrF` in the residual-rigidity clause. -/
+
+/-- **Nonemptiness of the `F`-level deformation category forces
+`Module.rank k V = 2`** (PROVEN — the mechanical half of the faithfulness
+repair recorded above).
+
+The proof is the degree count of `HilbertDeformationDatum.resid` at
+`g = 1`: the left-hand charpoly is that of an endomorphism of
+`Fin 2 → 𝒟.R`, hence monic of degree `2`, and monic polynomials keep their
+degree under a ring map into a nontrivial ring (`𝒟.π` lands in the field
+`k`); the right-hand charpoly is that of an endomorphism of `V`, of degree
+`finrank k V`.
+
+Consumed by the assembly below, which feeds it to the residual-rigidity
+clause; it is also the refutation of the module's original statement of
+`exists_isWeaklyUniversal_hilbertDeformationDatum`, since a `1`-dimensional
+irreducible `ρbar` satisfies that statement's hypotheses and this lemma
+shows it can have no datum at all. -/
+theorem rank_eq_two_of_hilbertDeformationDatum {ℓ : ℕ} [Fact ℓ.Prime]
+    {F : Type u} [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] {ρbar : GaloisRep ℚ k V}
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
+    Module.rank k V = 2 := by
+  have hres := 𝒟.resid 1
+  have hL : (((𝒟.ρ 1).charpoly).map 𝒟.π).natDegree = 2 := by
+    rw [(LinearMap.charpoly_monic (𝒟.ρ 1)).natDegree_map 𝒟.π,
+      LinearMap.charpoly_natDegree, Module.finrank_pi]
+    simp
+  rw [hres, LinearMap.charpoly_natDegree] at hL
+  rw [← Module.finrank_eq_rank, hL]
+  norm_num
+
+open scoped TensorProduct in
+/-- **Pushforward of an `F`-framed representation along a continuous ring
+homomorphism**: base change along `ψ.toAlgebra`, followed by the standard
+identification `A ⊗_B (Fin 2 → B) ≅ (Fin 2 → A)` — concretely, "apply `ψ`
+to the matrix entries".
+
+This is `Deformation.lean`'s `pushforwardFrame` with the base field `ℚ`
+replaced by an arbitrary number field; the two are the same definition and
+neither may be replaced by the other without moving a declaration across
+the import edge (the same situation as `rank_finTwoPi` above). The name
+differs because `Deformation.lean` `public import`s this module into the
+same namespace.
+
+Bundled as a definition rather than written inline because the base change
+needs an `Algebra B A` and a `ContinuousSMul B A` in scope, so the inline
+form drags a `letI` block into every statement that mentions it. -/
+noncomputable def framePushforward {F : Type u} [Field F] [NumberField F]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    (ψ : B →+* A) (hψ : Continuous ψ) (ρ : FramedGaloisRep F B (Fin 2)) :
+    FramedGaloisRep F A (Fin 2) :=
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  (ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))
+
+/-! #### The four deformation-condition clauses over `F`, and residual rigidity
+
+The cut of `exists_isWeaklyUniversal_hilbertDeformationDatum` below follows
+`Deformation.lean`'s cut of
+`exists_isStrictlyUniversalOnFrames_of_deformationCondition` one for one:
+the Schlessinger machine is separated from the ARITHMETIC of the local
+conditions, which enters it only through the four clauses that say
+`IsHilbertHardlyRamified` is a deformation condition in Mazur's sense —
+functoriality, gluing along fibre products, finiteness at every finite
+level, and detection on the finite levels — plus the residual rigidity that
+identifies an object's residual frame with `ρbar|_{G_F}`.
+
+Each clause is written ONCE, as a `Prop`-valued definition, so that the
+machine leaf can take it as a hypothesis and the assembly can discharge
+that hypothesis by naming the corresponding leaf, with no binder
+bookkeeping in between. This is deliberate: the `ℚ`-level twin spells the
+same five statements out twice, and the duplicated binder lists are what
+conflicted on five consecutive integrations there. -/
+
+/-- **Functoriality clause** (`hbase` of the `ℚ`-level twin): the `F`-level
+hardly ramified condition is stable under pushforward along a continuous
+`ℤ_ℓ`-algebra map into a FINITE local ring. -/
+def IsHilbertBaseChangeClause (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F] : Prop :=
+  ∀ {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[ℓ] B]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Finite A] [Algebra ℤ_[ℓ] A]
+    (ψ : B →+* A) (hψ : Continuous ψ),
+    ψ.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A →
+    ∀ {ρ : FramedGaloisRep F B (Fin 2)},
+    IsHilbertHardlyRamified ℓ F (rank_finTwoPi B) ρ →
+    IsHilbertHardlyRamified ℓ F (rank_finTwoPi A) (framePushforward ψ hψ ρ)
+
+/-- **Fibre-product clause** (`hglue` of the `ℚ`-level twin; Schlessinger's
+H1 and H2): a framed representation over a fibre product of finite local
+rings is hardly ramified over `F` as soon as both of its projections
+are. -/
+def IsHilbertFibreProductClause (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F] : Prop :=
+  ∀ {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀]
+    [IsTopologicalRing A₀] [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
+    {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+    [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
+    {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+    [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
+    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀), Function.Surjective f₂ →
+    ∀ (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁)
+      (hp₂ : Continuous p₂),
+    p₁.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A₁ →
+    p₂.comp (algebraMap ℤ_[ℓ] B) = algebraMap ℤ_[ℓ] A₂ →
+    f₁.comp p₁ = f₂.comp p₂ →
+    Topology.IsEmbedding (fun b : B => (p₁ b, p₂ b)) →
+    (∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂) →
+    ∀ {ρ : FramedGaloisRep F B (Fin 2)},
+    IsHilbertHardlyRamified ℓ F (rank_finTwoPi A₁) (framePushforward p₁ hp₁ ρ) →
+    IsHilbertHardlyRamified ℓ F (rank_finTwoPi A₂) (framePushforward p₂ hp₂ ρ) →
+    IsHilbertHardlyRamified ℓ F (rank_finTwoPi B) ρ
+
+/-- **Finiteness clause** (`hfin` of the `ℚ`-level twin; Schlessinger's H3):
+over a finite discrete local `ℤ_ℓ`-algebra there are only finitely many
+`F`-level hardly ramified frames. Classically this is the finiteness of the
+set of extensions of bounded ramification, i.e. Hermite–Minkowski for `F`
+together with the finiteness of the set of places of `F` above `2ℓ`. -/
+def IsHilbertFiniteFramesClause (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F] : Prop :=
+  ∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A],
+    {ρ : FramedGaloisRep F A (Fin 2) |
+      IsHilbertHardlyRamified ℓ F (rank_finTwoPi A) ρ}.Finite
+
+/-- **Pro-limit clause** (`hlim` of the `ℚ`-level twin): the `F`-level
+hardly ramified condition is DETECTED on the finite levels of a complete
+Noetherian local coefficient ring. This is what upgrades the compatible
+system of Artinian truncations produced by the Schlessinger machine to a
+representation over the limit ring itself. -/
+def IsHilbertProLimitClause (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F] : Prop :=
+  ∀ {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R],
+    IsAdic (IsLocalRing.maximalIdeal R) →
+    IsAdicComplete (IsLocalRing.maximalIdeal R) R →
+    ∀ {ρ : FramedGaloisRep F R (Fin 2)},
+    (∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hmk : Continuous (Ideal.Quotient.mk I)),
+      IsHilbertHardlyRamified ℓ F (rank_finTwoPi (R ⧸ I))
+        (framePushforward (Ideal.Quotient.mk I) hmk ρ)) →
+    IsHilbertHardlyRamified ℓ F (rank_finTwoPi R) ρ
+
+/-- **Residual rigidity clause over `F`** (Brauer–Nesbitt): a framed
+representation of `G_F` over `k` whose characteristic polynomials agree with
+those of the IRREDUCIBLE `ρbar|_{G_F}` at EVERY group element is conjugate
+to it.
+
+This is the `F`-level analogue of `Deformation.lean`'s PROVEN
+`exists_conj_of_charFrob_eq`, and it is strictly EASIER: the `ℚ`-level
+statement is given the charpolys only at Frobenius elements at good primes
+and must run Chebotarev density first, whereas here `HilbertDeformationDatum.resid`
+already supplies them at every `g ∈ G_F`, so only Brauer–Nesbitt itself is
+needed (equal characteristic polynomials ⟹ isomorphic semisimplifications;
+the semisimplification of `ρbar|_{G_F}` is itself, being irreducible; a
+`2`-dimensional representation whose semisimplification is irreducible is
+irreducible, hence equal to it).
+
+It is what lets the machine leaf classify an ARBITRARY object of the
+category: `HilbertDeformationDatum` pins the residual frame only up to
+charpolys, so an object's residual frame must first be conjugated onto the
+frame the universal object deforms — and conjugation is invisible to the
+conclusion of `IsWeaklyUniversal`, which speaks only of charpolys. -/
+def IsHilbertResidualRigidityClause (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) : Prop :=
+  Module.rank k V = 2 →
+  (ρbar.map (algebraMap ℚ F)).IsIrreducible →
+  ∀ τ : FramedGaloisRep F k (Fin 2),
+    (∀ g : Γ F, (τ g).charpoly = ((ρbar.map (algebraMap ℚ F)) g).charpoly) →
+    ∃ e : (Fin 2 → k) ≃ₗ[k] V, τ.conj e = ρbar.map (algebraMap ℚ F)
+
+/-- **Functoriality of the `F`-level condition** (LEAF).
+
+Over `ℚ` this is `Deformation.lean`'s PROVEN
+`isHardlyRamified_pushforwardFrame`, whose only genuine residue is the
+flatness transfer `isFlatAt_baseChange`; the other three clauses of
+`IsHardlyRamified` are formal. The same split applies here, place by place:
+the determinant clause is an identity in `R` pushed along `ψ`, the
+unramifiedness and tameness clauses are inclusions of kernels, and the
+flatness clause at each `w ∣ ℓ` is the base change of a finite flat group
+scheme along `𝒪_{F_w} → 𝒪_{F_w} ⊗ A`.
+
+None of that development exists over a general number field: `Threeadic.lean`
+and `Deformation.lean` state their flat-prolongation transfer over `ℚ`'s
+places. Hoisting it to a variable base field is the bulk of this leaf. -/
+theorem isHilbertBaseChangeClause (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F] :
+    IsHilbertBaseChangeClause ℓ F :=
+  sorry
+
+/-- **Gluing along fibre products** (LEAF; Schlessinger's H1 and H2).
+
+Over `ℚ` this is `Deformation.lean`'s leaf `isHardlyRamified_of_fibreProduct`.
+The mathematical content is that each clause of the local condition is
+detected componentwise: a homomorphism into `GL₂` of a fibre product is
+exactly a compatible pair of homomorphisms, the determinant clause and the
+order-`2` clause are equations that hold iff they hold in both components,
+and the inertia-kernel clauses are intersections. Only the flatness clause
+at `w ∣ ℓ` needs an argument — the fibre product of two finite flat group
+schemes over `𝒪_{F_w}` along a common quotient is again one, which is where
+the surjectivity of `f₂` and the embedding hypothesis are used. -/
+theorem isHilbertFibreProductClause (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F] :
+    IsHilbertFibreProductClause ℓ F :=
+  sorry
+
+/-- **Finiteness of the hardly ramified frames over a finite level** (LEAF;
+Schlessinger's H3).
+
+Over `ℚ` this is `Deformation.lean`'s leaf
+`finite_setOf_isHardlyRamified_frames`. The argument is Hermite–Minkowski:
+a hardly ramified frame over the finite ring `A` is a homomorphism
+`G_F → GL₂(A)` unramified outside the finitely many places of `F` above
+`2ℓ` and with bounded ramification at those, hence factors through the
+Galois group of an extension of `F` of bounded degree and bounded
+discriminant, of which there are finitely many; and `GL₂(A)` is finite. -/
+theorem isHilbertFiniteFramesClause (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F] :
+    IsHilbertFiniteFramesClause ℓ F :=
+  sorry
+
+/-- **Detection of the `F`-level condition on the finite levels** (LEAF).
+
+Over `ℚ` this is `Deformation.lean`'s leaf
+`isHardlyRamified_of_forall_isOpen_quotient`. The determinant,
+unramifiedness and tameness clauses are separation statements — a complete
+separated local ring injects into the inverse limit of its finite
+quotients, so an identity or a kernel inclusion holding at every level holds
+over `R`; the flatness clause is DEFINITIONALLY a statement about the open
+quotients (`GaloisRep.IsFlatAt.cond` quantifies over open ideals), which is
+why this clause is available at all rather than being a genuine limit
+theorem about group schemes. -/
+theorem isHilbertProLimitClause (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F] :
+    IsHilbertProLimitClause ℓ F :=
+  sorry
+
+/-- **Brauer–Nesbitt over `F`** (LEAF): equal characteristic polynomials at
+every element identify a framed representation with the irreducible
+`ρbar|_{G_F}` up to conjugation. See `IsHilbertResidualRigidityClause` for
+the argument and for why the `ℚ`-level twin is the harder statement. -/
+theorem isHilbertResidualRigidityClause (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] (ρbar : GaloisRep ℚ k V) :
+    IsHilbertResidualRigidityClause F ρbar :=
+  sorry
+
+/-- **Existence of the `F`-level universal deformation ring `R_F`, over the
+deformation-condition package** (LEAF — item 2 of the audit's
+missing-machinery list, after the 2026-07-26 cut; this is the
+ARITHMETIC-FREE half).
 
 Mazur's representability theorem for the hardly ramified deformation
 problem over the totally real field `F`, for a residually IRREDUCIBLE
-`ρbar|_{G_F}`: Schlessinger's criteria hold for the functor of `F`-level
-deformations (the local conditions of `IsHilbertHardlyRamified` form a
-deformation condition in the sense of Mazur §§18–23 / Conrad–Diamond–
-Taylor §2 — closed under subobjects, quotients and fibre products), and
-the tangent space is finite dimensional because `F` has finitely many
-places above `2ℓ` and the relevant Selmer group is finite.
+`ρbar|_{G_F}`. GIVEN that the local conditions of `IsHilbertHardlyRamified`
+form a deformation condition in the sense of Mazur §§18–23 /
+Conrad–Diamond–Taylor §2 (the four clauses `hbase`, `hglue`, `hfin`,
+`hlim`) and that the residual frame is rigid (`hrig`), Schlessinger's
+theorem produces a hull; the FRAMED functor needs no H4, since framed
+deformations have no automorphisms, so `IsWeaklyUniversal` — which asks
+only for the EXISTENCE of a classifying map, i.e. versality — follows from
+the hull without an irreducibility input beyond `hrig`.
 
-`Deformation.lean` carries the whole of this argument over `ℚ` — as the
-PROVEN assembly `exists_isWeaklyUniversalOnIdentifiedFrames` over the
-Schlessinger split — but that development is downstream of this module
-and specific to the `ℚ`-level conditions, so it cannot be reused here
-without the module split recorded in the leaf's docstring. Redoing it
-over `F` is the module-sized build the audit predicted.
+WHAT IS AND IS NOT IN THIS LEAF. In: Schlessinger's inductive
+small-extension argument over H1–H3, the passage to the inverse limit, the
+Noetherian/`IsAdic`/`IsAdicComplete` upgrade of the limit (Mazur's `Φ_ℓ`
+criterion — the pure commutative algebra of `ProfiniteLocalNoetherian.lean`,
+which is upstream of this module and may be imported when this leaf is
+attacked), the lifting of the classifying map from the Artinian levels to a
+complete Noetherian test object along `R' = lim R' ⧸ 𝔪'ⁿ`, and the
+conjugation of an arbitrary object's residual frame onto `ρbar|_{G_F}`
+supplied by `hrig`. Out: every arithmetic statement about
+`IsHilbertHardlyRamified`, which enters only through the four clauses.
 
-BLGGT §1 is the reference for the `F`-level ring in the shape used
-here. -/
+WHY `𝒟₀`. It is the nonemptiness of the category, i.e. Schlessinger's
+"`F(k)` is a point": it supplies the residual frame that the machine
+deforms and it pins `finrank k V = 2`. Without it the statement is FALSE —
+see the faithfulness repair recorded above.
+
+`Deformation.lean` carries the whole of this argument over `ℚ`, as the
+PROVEN assembly `exists_isWeaklyUniversalOnIdentifiedFrames` over the same
+construction/finiteness split, but that development is downstream of this
+module and specific to the `ℚ`-level conditions, so it cannot be reused
+here. Its architecture is nevertheless the map to follow: the two nodes
+`exists_universalFrame_profinite_of_deformationCondition` (construct a
+profinite pro-object) and
+`isNoetherianRing_isAdic_of_profinite_of_finite_ringHom` (upgrade it) are
+the natural sub-cut of this leaf, and only the second of them is already
+importable here.
+
+CIRCULARITY GUARD (inherited). Nothing from `Family.lean`, `Lift.lean`,
+`Modularity/*` or `Deformation.lean` may be imported to discharge this; in
+particular the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_five_le`, under whose hypotheses
+this node would be vacuous, is proven over pillar α, which is proven over
+this node.
+
+References: Schlessinger, *Functors of Artin rings*, Trans. AMS 130 (1968),
+Thm. 2.11; Mazur, *Deforming Galois representations*, MSRI Publ. 16 (1989),
+§1.2; de Smit–Lenstra, *Explicit construction of universal deformation
+rings*, Prop. 2.3; Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy
+and change of weight*, §1 (the `F`-level ring in the shape used here). -/
+theorem exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses
+    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
+    (hbase : IsHilbertBaseChangeClause ℓ F)
+    (hglue : IsHilbertFibreProductClause ℓ F)
+    (hfin : IsHilbertFiniteFramesClause ℓ F)
+    (hlim : IsHilbertProLimitClause ℓ F)
+    (hrig : IsHilbertResidualRigidityClause F ρbar) :
+    ∃ 𝒟 : HilbertDeformationDatum ℓ F ρbar, 𝒟.IsWeaklyUniversal :=
+  sorry
+
+/-- **Existence of the `F`-level universal deformation ring `R_F`** (item 2
+of the audit's missing-machinery list; PROVEN 2026-07-26 as an ASSEMBLY
+over the six leaves above, after the FAITHFULNESS REPAIR recorded at the
+head of this section — the statement previously carried no `𝒟₀` and was
+FALSE, refuted by `rank_eq_two_of_hilbertDeformationDatum`).
+
+The cut is the `ℚ`-level one: the Schlessinger machine
+(`exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses`, which
+contains no arithmetic) over the four clauses that make
+`IsHilbertHardlyRamified` a deformation condition, plus residual
+rigidity. -/
 theorem exists_isWeaklyUniversal_hilbertDeformationDatum
     (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible) :
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) :
     ∃ 𝒟 : HilbertDeformationDatum ℓ F ρbar, 𝒟.IsWeaklyUniversal :=
-  sorry
+  exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses ℓ F hirrF 𝒟₀
+    (isHilbertBaseChangeClause ℓ F) (isHilbertFibreProductClause ℓ F)
+    (isHilbertFiniteFramesClause ℓ F) (isHilbertProLimitClause ℓ F)
+    (isHilbertResidualRigidityClause F ρbar)
 
 /-! ### Items 3 and 5 — the Hecke algebra `T_F` and potential modularity -/
 
@@ -686,10 +1080,10 @@ theorem exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified
       ∀ g ∈ H, IsIntegral ℤ_[ℓ] ((ρ g).charpoly.coeff 1) := by
   -- (1) potential modularity: the totally real field `F` and `T_F`
   obtain ⟨P⟩ := nonempty_potentialHeckeDatum_of_five_le ℓ hℓ5 hbar hirr
-  -- (2) the `F`-level universal deformation ring `R_F`
-  obtain ⟨𝒟, h𝒟⟩ :=
-    exists_isWeaklyUniversal_hilbertDeformationDatum ℓ P.F P.irreducibleF
-  -- (3) `ρ|_{G_F}` as an object of the `F`-level category
+  -- (2) `ρ|_{G_F}` as an object of the `F`-level category. It is built FIRST
+  -- because it is also what makes that category nonempty, which is the
+  -- hypothesis `exists_isWeaklyUniversal_hilbertDeformationDatum` needs (see
+  -- the faithfulness repair recorded on that leaf).
   let 𝒟' : HilbertDeformationDatum ℓ P.F ρbar :=
     { R := R
       isAdic := hadic
@@ -702,6 +1096,9 @@ theorem exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified
       resid := fun g => by
         rw [GaloisRep.map_apply, GaloisRep.map_apply]
         exact hresid _ }
+  -- (3) the `F`-level universal deformation ring `R_F`
+  obtain ⟨𝒟, h𝒟⟩ :=
+    exists_isWeaklyUniversal_hilbertDeformationDatum ℓ P.F P.irreducibleF 𝒟'
   obtain ⟨f, hfalg, -, hfρ⟩ := h𝒟 𝒟'
   -- (4) `R_F` is module-finite over `ℤ_ℓ`, by `R_F = T_F`
   haveI : Module.Finite ℤ_[ℓ] 𝒟.R :=
