@@ -7215,8 +7215,254 @@ theorem count_pointEval_XClass_of_smul_ne_zero
     rootMultiplicity_Φ_sub_C_mul_ΨSq hΔ hp hΨa,
     count_smul_pair_eq hΔ hab hΨa h]
 
-/-- **L4-7 leaf (sorry): the `[p]`-pullback of a LINE, at an affine
-place lying over an affine point.**  Same setup as
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **A sign does not move a principal fractional ideal** (PROVEN):
+`⟨−z⟩ = ⟨z⟩`, because `−1` is a unit of `F[W]` and the coerced unit
+ideal is `1`.  Needed because the norm identity of a line
+(`CoordinateRing.C_addPolynomial_slope`) carries an overall `−`. -/
+lemma spanSingleton_neg' (z : W.FunctionField) :
+    FractionalIdeal.spanSingleton W.CoordinateRing⁰ (-z) =
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰ z := by
+  rw [show -z = algebraMap W.CoordinateRing W.FunctionField (-1) * z by simp,
+    ← FractionalIdeal.spanSingleton_mul_spanSingleton,
+    ← FractionalIdeal.coeIdeal_span_singleton,
+    Ideal.span_singleton_eq_top.mpr (isUnit_one.neg),
+    FractionalIdeal.coeIdeal_top, one_mul]
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The point ideal of an affine point is maximal** (PROVEN):
+`xyIdeal_isMaximal`, packaged for a `W.Point` that is merely known to
+be nonzero rather than presented as a `Point.some`. -/
+lemma pointIdeal_isMaximal_of_ne_zero {Q : W.Point} (hQ : Q ≠ 0) :
+    (pointIdeal W Q).IsMaximal := by
+  cases Q with
+  | zero => exact absurd rfl hQ
+  | some x y h => rw [pointIdeal_some]; exact xyIdeal_isMaximal h.left
+
+/-- **The point ideal of an affine point is a prime of the ideal
+monoid** (PROVEN): `prime_pointIdeal`, in the `Q ≠ 0` packaging. -/
+lemma prime_pointIdeal_of_ne_zero (hΔ : W.Δ ≠ 0) {Q : W.Point} (hQ : Q ≠ 0) :
+    Prime (pointIdeal W Q) := by
+  cases Q with
+  | zero => exact absurd rfl hQ
+  | some x y h => exact prime_pointIdeal hΔ h
+
+/-- **A function whose divisor is a three-point sum vanishes exactly at
+those three points** (PROVEN): if `⟨z⟩ = I_A·I_B·I_C` with `A`, `B`, `C`
+affine, then for an affine `Q` one has `z ∈ I_Q` iff `Q` is one of them.
+The forward direction is primality of `I_Q` (`prime_pointIdeal`) applied
+twice, followed by maximality to upgrade `I_R ≤ I_Q` to `I_R = I_Q` and
+`pointIdeal_injective` to `R = Q`; the reverse is `I_A·I_B·I_C ≤ I_R`
+for each factor.  This is the dictionary that turns both the line class
+and its hyperelliptic conjugate into point conditions. -/
+lemma mem_pointIdeal_iff_of_span_eq_prod_three (hΔ : W.Δ ≠ 0)
+    {A B C Q : W.Point} (hA : A ≠ 0) (hB : B ≠ 0) (hC : C ≠ 0) (hQ : Q ≠ 0)
+    {z : W.CoordinateRing}
+    (hspan : Ideal.span {z} =
+      pointIdeal W A * (pointIdeal W B * pointIdeal W C)) :
+    z ∈ pointIdeal W Q ↔ (Q = A ∨ Q = B ∨ Q = C) := by
+  haveI := isDedekindDomain_coordinateRing hΔ
+  have hQp : Prime (pointIdeal W Q) := prime_pointIdeal_of_ne_zero hΔ hQ
+  have key : ∀ R : W.Point, R ≠ 0 → pointIdeal W Q ∣ pointIdeal W R → Q = R := by
+    intro R hR hdvd
+    exact (pointIdeal_injective
+      ((pointIdeal_isMaximal_of_ne_zero hR).eq_of_le
+        (pointIdeal_isMaximal_of_ne_zero hQ).ne_top
+        (Ideal.dvd_iff_le.mp hdvd))).symm
+  constructor
+  · intro hz
+    have hdvd : pointIdeal W Q ∣
+        pointIdeal W A * (pointIdeal W B * pointIdeal W C) := by
+      rw [← hspan, Ideal.dvd_iff_le, Ideal.span_le, Set.singleton_subset_iff]
+      exact hz
+    rcases hQp.dvd_mul.mp hdvd with h | h
+    · exact Or.inl (key A hA h)
+    · rcases hQp.dvd_mul.mp h with h' | h'
+      · exact Or.inr (Or.inl (key B hB h'))
+      · exact Or.inr (Or.inr (key C hC h'))
+  · intro hQeq
+    have hle : Ideal.span {z} ≤ pointIdeal W Q := by
+      rw [hspan]
+      rcases hQeq with rfl | rfl | rfl
+      · exact Ideal.mul_le_right
+      · exact le_trans Ideal.mul_le_left Ideal.mul_le_right
+      · exact le_trans Ideal.mul_le_left Ideal.mul_le_left
+    exact hle (Ideal.mem_span_singleton_self z)
+
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **The divisor of a vertical** (PROVEN): `⟨X − a⟩ = I_P · I_{⊖P}` for
+`P = (a, b)` — mathlib's `CoordinateRing.XYIdeal_neg_mul`, restated in
+the `pointIdeal` vocabulary. -/
+lemma span_XClass_eq_pointIdeal_mul_neg {a b : F} (k : W.Nonsingular a b) :
+    Ideal.span {CoordinateRing.XClass W a} =
+      pointIdeal W (.some a b k) * pointIdeal W (-(.some a b k : W.Point)) := by
+  calc Ideal.span {CoordinateRing.XClass W a} = CoordinateRing.XIdeal W a := rfl
+    _ = CoordinateRing.XYIdeal W a (Polynomial.C (W.negY a b)) *
+        CoordinateRing.XYIdeal W a (Polynomial.C b) :=
+      (CoordinateRing.XYIdeal_neg_mul k).symm
+    _ = pointIdeal W (.some a b k) * pointIdeal W (-(.some a b k : W.Point)) := by
+      rw [Point.neg_some, pointIdeal_some, pointIdeal_some, mul_comm]
+
+/-- **The arithmetic core of the line brick** (PROVEN, pure integer
+arithmetic): two nonnegative orders `A`, `B` whose sum is `m + m'`, each
+positive exactly when its multiplicity is, and with the degenerate case
+`m, m' > 0` forcing `m = m' = 1`, satisfy `A = m`.  Isolated from the
+geometry so that the three cases of the line brick — `T ∉ D`,
+`⊖T ∉ D`, and `T = ⊖T ∈ D` — are discharged by `omega`. -/
+lemma count_arith {A B : ℤ} {m m' : ℕ}
+    (hsum : A + B = (m : ℤ) + (m' : ℤ)) (hA0 : 0 ≤ A) (hB0 : 0 ≤ B)
+    (hA : 1 ≤ A ↔ 0 < m) (hB : 1 ≤ B ↔ 0 < m')
+    (hboth : 0 < m → 0 < m' → m = 1 ∧ m' = 1) :
+    A = (m : ℤ) := by
+  by_cases hm : 0 < m
+  · by_cases hm' : 0 < m'
+    · obtain ⟨e, e'⟩ := hboth hm hm'
+      have h1 : 1 ≤ A := hA.mpr hm
+      have h2 : 1 ≤ B := hB.mpr hm'
+      subst e; subst e'; omega
+    · have hBle : B ≤ 0 := by by_contra hc; exact hm' (hB.mp (by omega))
+      have hz : m' = 0 := by omega
+      subst hz; omega
+  · have hz : m = 0 := by omega
+    subst hz
+    have hAle : A ≤ 0 := by by_contra hc; exact hm (hA.mp (by omega))
+    omega
+
+/-- **L4-7 leaf (sorry): the `[p]`-pullback is REGULAR at a place over
+an affine point.**  For `S ≠ O` affine with `p • S ≠ O`, and any nonzero
+`z ∈ F[W]`, the pulled-back function `[p]^* z = z ∘ [p]` has no pole at
+the place of `S`:
+
+`ord_S([p]^* z) ≥ 0`.
+
+Geometrically this is just that `[p]` carries `S` to the AFFINE point
+`p • S`, so a function regular on the affine curve stays regular after
+composing with `[p]`.  It is one of the two ingredients that the route
+recorded at `count_pointEval_YClass_of_smul_ne_zero` names — "together
+with `ord_S([p]^*z) ≥ 0` and the CENTER statement … it settles every
+case" — and it is the ingredient that is *not* about singling out a
+point.
+
+**Where the mathematics is.**  `F[W]` is generated over `F` by `coordX`
+and `coordY`, and `[p]^*` is a ring hom, so it suffices to bound the two
+coordinates:
+
+* `ord_S(xp) ≥ 0` is already available: `exists_smul_tautPoint_eq` gives
+  `xp · ΨSq_p(x) = Φ_p(x)`, the right-hand side lies in `F[W]` (order
+  `≥ 0`), and the denominator is a UNIT at `S` because `ΨSq_p(a) ≠ 0`
+  when `p • S ≠ O` (`TorsionCard.smul_some_eq_zero_iff`, exactly as in
+  the proof of `count_pointEval_XClass_of_smul_ne_zero`).
+* `ord_S(yp) ≥ 0` is the missing half.  Two routes, neither one line:
+  (i) the `ψ₂`-tracking of `TorsionCard.zsmul_some_aux_strong`,
+  `(2y' + a₁x' + a₃)·ψ_p⁴ = ψ_{2p}`, applied at the tautological point,
+  writes `2yp + a₁xp + a₃` as a quotient of two elements of `F[W]` whose
+  denominator is a unit at `S`; with `2 ≠ 0` in `F` this gives the bound,
+  and it degenerates exactly in characteristic `2` — the same
+  characteristic that blocks the last case of
+  `rootMultiplicity_Φ_sub_C_mul_ΨSq`; (ii) the curve equation
+  `yp² + a₁ xp yp + a₃ yp = xp³ + a₂xp² + a₄xp + a₆` makes `yp` integral
+  over the ring where `xp` already has nonnegative order, so a pole of
+  `yp` of order `m > 0` would make the left side have order `−2m` and the
+  right side order `≥ 0`.  Route (ii) is characteristic-free but needs an
+  ULTRAMETRIC lemma for `FractionalIdeal.count`
+  (`min(count a, count b) ≤ count (a + b)`), which mathlib's
+  `Factorization.lean` does not provide — it has `count_mul`,
+  `count_mono` and `count_coe_nonneg` but nothing about sums.  Supplying
+  that lemma (through `IsDedekindDomain.HeightOneSpectrum.intValuation`,
+  which IS a genuine valuation) would close this leaf and simplify the
+  next one. -/
+theorem count_pointEval_nonneg [IsDedekindDomain W.CoordinateRing]
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
+    (hptaut : (p : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xp yp hpn)
+    {S : W.Point} (hS0 : S ≠ 0) (hpS : (p : ℤ) • S ≠ 0)
+    {v : IsDedekindDomain.HeightOneSpectrum W.CoordinateRing}
+    (hvS : v.asIdeal = pointIdeal W S)
+    {z : W.CoordinateRing} (hz : z ≠ 0) :
+    0 ≤ FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left z)) := by
+  sorry
+
+/-- **L4-7 leaf (sorry): the CENTER of the `[p]`-pullback place.**  For
+`S ≠ O` affine with `T := p • S ≠ O`, and any nonzero `z ∈ F[W]`, the
+pullback `[p]^* z` vanishes at the place of `S` exactly when `z` vanishes
+at `T`:
+
+`ord_S([p]^* z) ≥ 1  ↔  z ∈ pointIdeal W (p • S)`.
+
+Equivalently: the prime `([p]^*)⁻¹(m_S)` of `F[W]` is `pointIdeal W T`.
+This is the "*center*" half of `count_pointEval_of_smul_ne_zero`, and it
+is the statement the previous owner of
+`count_pointEval_YClass_of_smul_ne_zero` identified as THE missing
+ingredient of the line brick ("*The missing ingredient is the center, and
+it is exactly the statement that the `y`-coordinate of `p • taut`
+specializes correctly*").
+
+**Where the mathematics is.**  Modulo `count_pointEval_nonneg` and an
+ultrametric lemma for `FractionalIdeal.count` (see that leaf), both
+directions reduce to ONE scalar fact.
+
+*`⟸`.*  `pointIdeal W T = ⟨X − x_T, Y − y_T⟩` is generated by two
+elements, so by the ultrametric it is enough to bound them:
+`ord_S(xp − x_T) ≥ 1` is FREE from the vertical brick
+`count_pointEval_XClass_of_smul_ne_zero` (its value at the vertical
+through `T` is `mult_T((T) + (⊖T)) ≥ 1`), and `ord_S(yp − y_T) ≥ 1` is
+the missing `y`-center.
+
+*`⟹`.*  Follows formally from `⟸` by maximality: if `z ∉ I_T` then
+`1 = c·z + w` with `w ∈ I_T`, and applying `[p]^*` gives an element of
+order `0` written as a sum of two elements of positive order.
+
+**The `y`-center, worked out but not formalized** (recorded by the
+previous owner and reproduced here because it is the whole remaining
+content).  `TorsionCard.zsmul_some_aux_strong` tracks the `ψ₂`-value as
+well as the `x`-coordinate: `(2y' + a₁x' + a₃)·ψ_p(x,y)⁴ = ψ_{2p}(x,y)`
+whenever the base point is not `2`-torsion.  Both `ψ_p` and `ψ_{2p}` are
+BIVARIATE, so `ψ_n(taut)` is `algebraMap (CoordinateRing.mk W (W.ψ n))`
+and `ψ_n(taut) − ψ_n(S)` lies in `pointIdeal S`
+(`mem_pointIdeal_of_coordEval_eq_zero`), i.e. has `ord_S ≥ 1`; since
+`ψ_p(S) ≠ 0` (as `p • S ≠ O`) the same survives division, giving
+`ord_S(ψ₂(p • taut) − ψ₂(T)) ≥ 1`.  Subtracting `a₁·(xp − x_T)`, whose
+order is `≥ 1` by the vertical brick, leaves `ord_S(2·(yp − y_T)) ≥ 1`,
+hence the claim when `2 ≠ 0`.  For a `2`-torsion `S` (where
+`zsmul_some_aux_strong` does not apply) one has `p • S = S` for odd `p`,
+so `T = ⊖T`, and the curve-equation identity
+`(yp − y_T)² = (xp − x_T)·(xp² + xp x_T + x_T² + a₂(xp + x_T) + a₄ − a₁yp)`
+gives `2·ord_S(yp − y_T) ≥ 1` directly.  What this does NOT cover is
+`char F = 2`, where `ψ₂ = a₁x + a₃` carries no `y`-information at all.
+
+Alternatively the center PROPAGATES along translations
+(`spanSingleton_pointEval_translate` together with
+`[p] ∘ τ_Q = τ_{p•Q} ∘ [p]`), so it suffices at ONE point `S₀` — and it
+is automatic at any `S₀` whose image is `2`-torsion, where `T = ⊖T`
+leaves nothing to disambiguate.  Such an `S₀` exists because `[p]` is
+surjective on the algebraically closed points (`TorsionCard.smul_surjective`,
+now PROVEN, with `TorsionCard.prime_torsion_card` for the count), applied
+to a nonzero `2`-torsion point — of which there is none exactly when
+`char F = 2` and `a₁ = 0`, so this route too has the characteristic-`2`
+residue and no other gap. -/
+theorem one_le_count_pointEval_iff_mem_pointIdeal_smul
+    [IsDedekindDomain W.CoordinateRing]
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
+    {xp yp : W.FunctionField} {hpn : (curveK W).Nonsingular xp yp}
+    (hptaut : (p : ℤ) • tautPoint W hΔ =
+      WeierstrassCurve.Affine.Point.some xp yp hpn)
+    {S : W.Point} (hS0 : S ≠ 0) (hpS : (p : ℤ) • S ≠ 0)
+    {v : IsDedekindDomain.HeightOneSpectrum W.CoordinateRing}
+    (hvS : v.asIdeal = pointIdeal W S)
+    {z : W.CoordinateRing} (hz : z ≠ 0) :
+    1 ≤ FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left z)) ↔
+      z ∈ pointIdeal W ((p : ℤ) • S) := by
+  sorry
+
+/-- **L4-7: the `[p]`-pullback of a LINE, at an affine place lying over
+an affine point** (PROVEN 2026-07-26 over the two center leaves
+`count_pointEval_nonneg` / `one_le_count_pointEval_iff_mem_pointIdeal_smul`).
+Same setup as
 `count_pointEval_XClass_of_smul_ne_zero`, for the line class
 `Y − (ℓ(X − x₁) + y₁)` through the pair `P₁ = (x₁, y₁)`,
 `P₂ = (x₂, y₂)` at the group-law slope `ℓ`.  Its affine divisor is
@@ -7233,14 +7479,26 @@ This is the `[p]`-analogue of the PROVEN translation brick
 pair-peeling induction over exactly these two bricks (already written
 and PROVEN below, over these two leaves).
 
-**State of play (2026-07-25): the vertical brick above is now PROVEN
-over a purely polynomial leaf, and this one reduces to it up to ONE
-missing ingredient.**  The reduction, worked out but not formalized:
+**State of play (2026-07-26): the reduction below is now FORMALIZED.**
+The proof is the one sketched here, over the two center leaves
+`count_pointEval_nonneg` (positivity) and
+`one_le_count_pointEval_iff_mem_pointIdeal_smul` (the center) — the two
+ingredients this docstring already named.  Everything else — the norm
+identity, the three vertical-brick evaluations, the divisor dictionary
+and the chord enumeration — is proven.
 
-*The norm identity.*  Let `ι = involHom W` be the hyperelliptic
-involution and `L` the line class.  Then `L·ι L` is a product of three
-verticals (mathlib's `CoordinateRing.YClass_mul` /
-`lineNumerator_mul_lineNumeratorNeg` here), i.e. a `polyClass`.
+*The norm identity.*  Let `ι` be the hyperelliptic involution and `L`
+the line class.  Then `L·ι L` is (minus) a product of three verticals.
+The implementation does not go through `involHom` at all: mathlib's
+`CoordinateRing.C_addPolynomial` already exhibits `ι L` as
+`mk W (negPolynomial − C ℓ₀)` and pairs it with `L`, and
+`CoordinateRing.C_addPolynomial_slope` identifies the product with
+`−(X − x₁)(X − x₂)(X − x₃)`.  The mirrored divisor
+`⟨ι L⟩ = I_{⊖P₁}·I_{⊖P₂}·I_{⊖P₃}` is then obtained by CANCELLING
+`⟨L⟩ = I_{P₁}·I_{P₂}·I_{P₃}` (`YIdeal_eq_prod_pointIdeal`) against
+`⟨X − x_i⟩ = I_{P_i}·I_{⊖P_i}` (`span_XClass_eq_pointIdeal_mul_neg`) in
+the cancellative ideal monoid of the Dedekind domain `F[W]` — cheaper
+than transporting ideals along `ι`.
 Applying the ring hom `[p]^*` and `FractionalIdeal.count_mul`,
 
 `ord_S([p]^*L) + ord_S([p]^*(ι L)) = Σ_{i=1,2,3} ord_S([p]^*(X − x_i))`,
@@ -7264,42 +7522,22 @@ case — `T` `2`-torsion and `T ∈ D` — the same enumeration gives
 forcing `A = 1`.  So only POSITIVITY is needed there, not the full
 center.
 
-*The missing ingredient is the center, and it is exactly the statement
-that the `y`-coordinate of `p • taut` specializes correctly*: the
-vertical brick pins `x(p • taut) ↦ x_T` at the place of `S`, which only
-determines the center up to `T ↔ ⊖T`.  Every quantity computable from
-`polyClass` data is `ι`-symmetric, so the ambiguity cannot be resolved
-that way (concretely `w = yp − y_T` and `w̄ = yp − y(⊖T)` differ by the
-constant `ψ₂(T)`, and `w·w̄` and `w + w̄` are both computable while
-neither singles out `w`).  What is needed is `ord_S(yp − y_T) ≥ 1`,
-i.e. a `y`-coordinate multiplication formula — `TorsionCard` supplies
-only the `x`-relation `x' · ΨSq_p(a) = Φ_p(a)`.  Alternatively, center
-propagates along translations (`spanSingleton_pointEval_translate` and
-`[p] ∘ τ_Q = τ_{p•Q} ∘ [p]`), so it suffices at ONE point `S₀` — and it
-is automatic at any `S₀` with `p • S₀` `2`-torsion, where `T = ⊖T`;
-that needs a nonzero `2`-torsion point in the image of `[p]`
-(`TorsionCard.smul_surjective`, and note there is no nonzero
-`2`-torsion at all when `char F = 2` and `a₁ = 0`).
-
-*A concrete proof of the center when `2 ≠ 0` in `F`* (worked out, not
-formalized): `TorsionCard.zsmul_some_aux_strong` tracks not only the
-`x`-coordinate but the `ψ₂`-value,
-`(2y' + a₁x' + a₃)·ψ_p(x, y)⁴ = ψ_{2p}(x, y)`, whenever the base point
-is not `2`-torsion.  Both `ψ_p` and `ψ_{2p}` are BIVARIATE polynomials,
-so `ψ_n(taut)` is `algebraMap (CoordinateRing.mk W (W.ψ n))` and
-`ψ_n(taut) − ψ_n(S)` lies in `pointIdeal S`
-(`mem_pointIdeal_of_coordEval_eq_zero`), i.e. has `ord_S ≥ 1`; since
-`ψ_p(S) ≠ 0` (as `p • S ≠ O`) the same holds after dividing, giving
-`ord_S(ψ₂(p • taut) − ψ₂(p • S)) ≥ 1`.  Subtracting `a₁·(xp − x_T)`,
-whose order is `≥ 1` by the vertical brick, leaves
-`ord_S(2·(yp − y_T)) ≥ 1`, hence `ord_S(yp − y_T) ≥ 1` when `2 ≠ 0`.
-For a `2`-torsion `S` (where `zsmul_some_aux_strong` does not apply)
-one has `p • S = S` for odd `p`, so `T = ⊖T`, and the curve-equation
-identity `(yp − y_T)² = (xp − x_T)·(xp² + xp x_T + x_T² + a₂(xp + x_T)
-+ a₄ − a₁ yp)` gives `2·ord_S(yp − y_T) ≥ 1` directly.  What this
-argument does NOT cover is `char F = 2`, where `ψ₂ = a₁x + a₃` carries
-no `y`-information at all — the same characteristic that blocks the
-last case of `rootMultiplicity_Φ_sub_C_mul_ΨSq`. -/
+*The remaining mathematics is the center, and it is exactly the
+statement that the `y`-coordinate of `p • taut` specializes correctly*:
+the vertical brick pins `x(p • taut) ↦ x_T` at the place of `S`, which
+only determines the center up to `T ↔ ⊖T`.  Every quantity computable
+from `polyClass` data is `ι`-symmetric, so the ambiguity cannot be
+resolved that way (concretely `w = yp − y_T` and `w̄ = yp − y(⊖T)` differ
+by the constant `ψ₂(T)`, and `w·w̄` and `w + w̄` are both computable while
+neither singles out `w`).  What is needed is `ord_S(yp − y_T) ≥ 1`.
+**Both known routes to it — the `ψ₂`-tracking of
+`TorsionCard.zsmul_some_aux_strong`, and propagation along translations
+off a base point whose image is `2`-torsion (`TorsionCard.smul_surjective`,
+now PROVEN) — are written out in full at
+`one_le_count_pointEval_iff_mem_pointIdeal_smul`, and both leave the same
+characteristic-`2` residue** that blocks the last case of
+`rootMultiplicity_Φ_sub_C_mul_ΨSq`.  Recorded there rather than here so
+that the two copies cannot drift apart. -/
 theorem count_pointEval_YClass_of_smul_ne_zero
     [IsDedekindDomain W.CoordinateRing]
     (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
@@ -7321,7 +7559,258 @@ theorem count_pointEval_YClass_of_smul_ne_zero
           WeierstrassCurve.Affine.Point.some x₂ y₂ h₂ ::ₘ
           (-(WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ +
             WeierstrassCurve.Affine.Point.some x₂ y₂ h₂) : W.Point) ::ₘ 0) : ℤ) := by
-  sorry
+  classical
+  haveI := isDedekindDomain_coordinateRing hΔ
+  obtain ⟨xp', yp', hpn', hptaut', hxrel⟩ :=
+    exists_smul_tautPoint_eq (W := W) hΔ hp
+  have hxx : xp = xp' := by
+    have hpts := hptaut.symm.trans hptaut'
+    injection hpts with hx _
+  subst hxx
+  have hinj : Function.Injective (pointEval (constHom W) hpn.left) :=
+    pointEval_injective_of_forall_ne_constHom hpn
+      (smul_taut_xCoord_ne_constHom hxrel)
+  have hspan0 : ∀ a : W.CoordinateRing, a ≠ 0 →
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (pointEval (constHom W) hpn.left a) ≠ 0 := by
+    intro a ha
+    refine (isUnit_spanSingleton_of_ne_zero ?_).ne_zero
+    intro h0
+    exact ha (hinj (by rw [h0, map_zero]))
+  have hadd := Point.add_some (h₁ := h₁) (h₂ := h₂) hxy
+  have h₃ : W.Nonsingular (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))
+      (W.negY (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))
+        (W.addY x₁ x₂ y₁ (W.slope x₁ x₂ y₁ y₂))) :=
+    (WeierstrassCurve.Affine.nonsingular_neg ..).mpr
+      (WeierstrassCurve.Affine.nonsingular_add h₁ h₂ hxy)
+  -- the three X-brick instances, taken BEFORE abstracting the points
+  have hV₁ := count_pointEval_XClass_of_smul_ne_zero (W := W) hΔ hp hptaut h₁ hS0 hpS hvS
+  have hV₂ := count_pointEval_XClass_of_smul_ne_zero (W := W) hΔ hp hptaut h₂ hS0 hpS hvS
+  have hV₃ := count_pointEval_XClass_of_smul_ne_zero (W := W) hΔ hp hptaut h₃ hS0 hpS hvS
+  have hLne : CoordinateRing.YClass W
+      (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂)) ≠ 0 :=
+    CoordinateRing.YClass_ne_zero _
+  have hnorm : CoordinateRing.YClass W
+        (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂)) *
+      CoordinateRing.mk W (W.negPolynomial -
+        Polynomial.C (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂))) =
+      -(CoordinateRing.XClass W x₁ * CoordinateRing.XClass W x₂ *
+        CoordinateRing.XClass W (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))) := by
+    rw [← CoordinateRing.C_addPolynomial_slope h₁.left h₂.left hxy,
+      CoordinateRing.C_addPolynomial, map_mul]
+    rfl
+  have hVne : (CoordinateRing.XClass W x₁ * CoordinateRing.XClass W x₂ *
+      CoordinateRing.XClass W (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))) ≠ 0 :=
+    mul_ne_zero (mul_ne_zero (CoordinateRing.XClass_ne_zero _)
+      (CoordinateRing.XClass_ne_zero _)) (CoordinateRing.XClass_ne_zero _)
+  have hL'ne : CoordinateRing.mk W (W.negPolynomial -
+      Polynomial.C (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂))) ≠ 0 := by
+    intro h0
+    rw [h0, mul_zero] at hnorm
+    exact hVne (neg_eq_zero.mp hnorm.symm)
+  -- ── abstract the three points
+  set P₁ : W.Point := WeierstrassCurve.Affine.Point.some x₁ y₁ h₁ with hP₁d
+  set P₂ : W.Point := WeierstrassCurve.Affine.Point.some x₂ y₂ h₂ with hP₂d
+  set P₃ : W.Point := WeierstrassCurve.Affine.Point.some _ _ h₃ with hP₃d
+  set L : W.CoordinateRing :=
+    CoordinateRing.YClass W (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂)) with hLd
+  set L' : W.CoordinateRing :=
+    CoordinateRing.mk W (W.negPolynomial -
+      Polynomial.C (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂))) with hL'd
+  have hP₃ : (-(P₁ + P₂) : W.Point) = P₃ := by
+    rw [hP₁d, hP₂d, hadd, Point.neg_some]
+  have hP₁0 : P₁ ≠ 0 := Point.some_ne_zero h₁
+  have hP₂0 : P₂ ≠ 0 := Point.some_ne_zero h₂
+  have hP₃0 : P₃ ≠ 0 := Point.some_ne_zero h₃
+  have hnegP₃ : (-P₃ : W.Point) = P₁ + P₂ := by rw [← hP₃, neg_neg]
+  have hne21 : P₂ ≠ -P₁ := by
+    rw [hP₁d, hP₂d, Point.neg_some]
+    intro hc
+    injection hc with hx hy
+    refine hxy ⟨hx.symm, ?_⟩
+    rw [hx, hy]
+    simp only [WeierstrassCurve.Affine.negY]
+    ring
+  -- ── the two ideal factorizations
+  have hLspan : Ideal.span {L} =
+      pointIdeal W P₁ * (pointIdeal W P₂ * pointIdeal W P₃) := by
+    rw [hLd, show Ideal.span {CoordinateRing.YClass W
+        (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂))} =
+        CoordinateRing.YIdeal W (linePolynomial x₁ y₁ (W.slope x₁ x₂ y₁ y₂)) from rfl,
+      YIdeal_eq_prod_pointIdeal h₁ h₂ hxy, hP₃]
+  have hprodne : pointIdeal W P₁ * (pointIdeal W P₂ * pointIdeal W P₃) ≠ 0 := by
+    rw [← hLspan]
+    simpa using hLne
+  have hs₁ : Ideal.span {CoordinateRing.XClass W x₁} =
+      pointIdeal W P₁ * pointIdeal W (-P₁) :=
+    span_XClass_eq_pointIdeal_mul_neg h₁
+  have hs₂ : Ideal.span {CoordinateRing.XClass W x₂} =
+      pointIdeal W P₂ * pointIdeal W (-P₂) :=
+    span_XClass_eq_pointIdeal_mul_neg h₂
+  have hs₃ : Ideal.span {CoordinateRing.XClass W
+      (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))} =
+      pointIdeal W P₃ * pointIdeal W (-P₃) :=
+    span_XClass_eq_pointIdeal_mul_neg h₃
+  have hL'span : Ideal.span {L'} =
+      pointIdeal W (-P₁) * (pointIdeal W (-P₂) * pointIdeal W (-P₃)) := by
+    refine mul_left_cancel₀ hprodne ?_
+    calc pointIdeal W P₁ * (pointIdeal W P₂ * pointIdeal W P₃) * Ideal.span {L'}
+        = Ideal.span {L} * Ideal.span {L'} := by rw [hLspan]
+      _ = Ideal.span {L * L'} :=
+          Ideal.span_singleton_mul_span_singleton L L'
+      _ = Ideal.span {CoordinateRing.XClass W x₁} *
+            Ideal.span {CoordinateRing.XClass W x₂} *
+            Ideal.span {CoordinateRing.XClass W
+              (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))} := by
+          rw [hnorm, Ideal.span_singleton_neg,
+            Ideal.span_singleton_mul_span_singleton,
+            Ideal.span_singleton_mul_span_singleton]
+      _ = pointIdeal W P₁ * pointIdeal W (-P₁) *
+            (pointIdeal W P₂ * pointIdeal W (-P₂)) *
+            (pointIdeal W P₃ * pointIdeal W (-P₃)) := by
+          rw [hs₁, hs₂, hs₃]
+      _ = pointIdeal W P₁ * (pointIdeal W P₂ * pointIdeal W P₃) *
+            (pointIdeal W (-P₁) *
+              (pointIdeal W (-P₂) * pointIdeal W (-P₃))) := by ring
+  -- ── the norm identity in orders
+  have hAB : FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (pointEval (constHom W) hpn.left L) *
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (pointEval (constHom W) hpn.left L') =
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (pointEval (constHom W) hpn.left (CoordinateRing.XClass W x₁)) *
+       FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (pointEval (constHom W) hpn.left (CoordinateRing.XClass W x₂))) *
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (pointEval (constHom W) hpn.left
+          (CoordinateRing.XClass W (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂)))) := by
+    rw [FractionalIdeal.spanSingleton_mul_spanSingleton,
+      FractionalIdeal.spanSingleton_mul_spanSingleton,
+      FractionalIdeal.spanSingleton_mul_spanSingleton, ← map_mul, ← map_mul,
+      ← map_mul, hnorm, map_neg, spanSingleton_neg']
+  have hV₁₂ne : FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (pointEval (constHom W) hpn.left (CoordinateRing.XClass W x₁)) *
+      FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (pointEval (constHom W) hpn.left (CoordinateRing.XClass W x₂)) ≠ 0 := by
+    rw [FractionalIdeal.spanSingleton_mul_spanSingleton, ← map_mul]
+    exact hspan0 _ (mul_ne_zero (CoordinateRing.XClass_ne_zero x₁)
+      (CoordinateRing.XClass_ne_zero x₂))
+  have hcnt : FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left L)) +
+      FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left L')) =
+      (FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left (CoordinateRing.XClass W x₁))) +
+      FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left (CoordinateRing.XClass W x₂)))) +
+      FractionalIdeal.count W.FunctionField v
+        (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+          (pointEval (constHom W) hpn.left
+            (CoordinateRing.XClass W (W.addX x₁ x₂ (W.slope x₁ x₂ y₁ y₂))))) := by
+    rw [← FractionalIdeal.count_mul W.FunctionField v
+        (hspan0 _ hLne) (hspan0 _ hL'ne), hAB,
+      FractionalIdeal.count_mul W.FunctionField v hV₁₂ne
+        (hspan0 _ (CoordinateRing.XClass_ne_zero _)),
+      FractionalIdeal.count_mul W.FunctionField v
+        (hspan0 _ (CoordinateRing.XClass_ne_zero x₁))
+        (hspan0 _ (CoordinateRing.XClass_ne_zero x₂))]
+  rw [hV₁, hV₂, hV₃] at hcnt
+  -- ── the enumeration of the chord divisor
+  have hkey : ∀ Q : W.Point, (Q = P₁ ∨ Q = P₂ ∨ Q = P₃) →
+      (Q = -P₁ ∨ Q = -P₂ ∨ Q = -P₃) → Q = -Q := by
+    rintro Q (rfl | rfl | rfl) (h | h | h)
+    · exact h
+    · exact absurd (by rw [h, neg_neg] : P₂ = -P₁) hne21
+    · rw [hnegP₃] at h; exact absurd (by simpa using h.symm : P₂ = 0) hP₂0
+    · exact absurd h hne21
+    · exact h
+    · rw [hnegP₃] at h; exact absurd (by simpa using h.symm : P₁ = 0) hP₁0
+    · exact absurd (by rw [← hnegP₃, h, neg_neg] : P₁ + P₂ = P₁) (by
+        simpa using hP₂0)
+    · exact absurd (by rw [← hnegP₃, h, neg_neg] : P₁ + P₂ = P₂) (by
+        simpa using hP₁0)
+    · exact h
+  have hex12 : ∀ Q : W.Point, Q = -Q → Q = P₁ → Q = P₂ → False := by
+    intro Q hQ e1 e2
+    exact hne21 (by rw [← e2, ← e1]; exact hQ)
+  have hex13 : ∀ Q : W.Point, Q = -Q → Q = P₁ → Q = P₃ → False := by
+    intro Q hQ e1 e3
+    have h1 : P₁ + P₂ = P₁ := by rw [← hnegP₃, ← e3, ← hQ]; exact e1
+    exact hP₂0 (by simpa using h1)
+  have hex23 : ∀ Q : W.Point, Q = -Q → Q = P₂ → Q = P₃ → False := by
+    intro Q hQ e2 e3
+    have h1 : P₁ + P₂ = P₂ := by rw [← hnegP₃, ← e3, ← hQ]; exact e2
+    exact hP₁0 (by simpa using h1)
+  have hle1 : ∀ Q : W.Point, Q = -Q →
+      Multiset.count Q (P₁ ::ₘ P₂ ::ₘ P₃ ::ₘ 0) ≤ 1 := by
+    intro Q hQ
+    simp only [Multiset.count_cons, Multiset.count_zero, zero_add]
+    by_cases e1 : Q = P₁
+    · by_cases e2 : Q = P₂
+      · exact (hex12 Q hQ e1 e2).elim
+      · by_cases e3 : Q = P₃
+        · exact (hex13 Q hQ e1 e3).elim
+        · rw [if_neg e3, if_neg e2, if_pos e1]
+    · by_cases e2 : Q = P₂
+      · by_cases e3 : Q = P₃
+        · exact (hex23 Q hQ e2 e3).elim
+        · rw [if_neg e3, if_pos e2, if_neg e1]
+      · by_cases e3 : Q = P₃
+        · rw [if_pos e3, if_neg e2, if_neg e1]
+        · rw [if_neg e3, if_neg e2, if_neg e1]
+          omega
+  have hnegiff : ∀ Q : W.Point, Q = -Q → ∀ R : W.Point, (Q = -R) ↔ (Q = R) := by
+    intro Q hQ R
+    constructor
+    · intro h; calc Q = -Q := hQ
+        _ = -(-R) := by rw [h]
+        _ = R := neg_neg R
+    · intro h; calc Q = -Q := hQ
+        _ = -R := by rw [h]
+  have hle2 : ∀ Q : W.Point, Q = -Q →
+      Multiset.count Q ((-P₁) ::ₘ (-P₂) ::ₘ (-P₃) ::ₘ 0) ≤ 1 := by
+    intro Q hQ
+    have hEq : Multiset.count Q ((-P₁) ::ₘ (-P₂) ::ₘ (-P₃) ::ₘ 0)
+        = Multiset.count Q (P₁ ::ₘ P₂ ::ₘ P₃ ::ₘ 0) := by
+      simp only [Multiset.count_cons, Multiset.count_zero, hnegiff Q hQ]
+    rw [hEq]; exact hle1 Q hQ
+  -- ── membership dictionaries
+  have hc1 := one_le_count_pointEval_iff_mem_pointIdeal_smul
+    (W := W) hΔ hp hptaut hS0 hpS hvS hLne
+  have hc2 := one_le_count_pointEval_iff_mem_pointIdeal_smul
+    (W := W) hΔ hp hptaut hS0 hpS hvS hL'ne
+  rw [mem_pointIdeal_iff_of_span_eq_prod_three hΔ hP₁0 hP₂0 hP₃0 hpS hLspan] at hc1
+  rw [mem_pointIdeal_iff_of_span_eq_prod_three hΔ (neg_ne_zero.mpr hP₁0)
+      (neg_ne_zero.mpr hP₂0) (neg_ne_zero.mpr hP₃0) hpS hL'span] at hc2
+  have hmpos : 0 < Multiset.count ((p : ℤ) • S) (P₁ ::ₘ P₂ ::ₘ P₃ ::ₘ 0) ↔
+      ((p : ℤ) • S = P₁ ∨ (p : ℤ) • S = P₂ ∨ (p : ℤ) • S = P₃) := by
+    simp [Multiset.count_pos]
+  have hm'pos : 0 < Multiset.count ((p : ℤ) • S)
+      ((-P₁) ::ₘ (-P₂) ::ₘ (-P₃) ::ₘ 0) ↔
+      ((p : ℤ) • S = -P₁ ∨ (p : ℤ) • S = -P₂ ∨ (p : ℤ) • S = -P₃) := by
+    simp [Multiset.count_pos]
+  rw [hP₃]
+  refine count_arith
+    (B := FractionalIdeal.count W.FunctionField v
+      (FractionalIdeal.spanSingleton W.CoordinateRing⁰
+        (pointEval (constHom W) hpn.left L')))
+    (m' := Multiset.count ((p : ℤ) • S)
+      ((-P₁) ::ₘ (-P₂) ::ₘ (-P₃) ::ₘ 0)) ?_ ?_ ?_ ?_ ?_ ?_
+  · rw [hcnt]
+    simp only [Multiset.count_cons, Multiset.count_zero, zero_add]
+    push_cast
+    ring
+  · exact count_pointEval_nonneg (W := W) hΔ hp hptaut hS0 hpS hvS hLne
+  · exact count_pointEval_nonneg (W := W) hΔ hp hptaut hS0 hpS hvS hL'ne
+  · rw [hc1, hmpos]
+  · rw [hc2, hm'pos]
+  · intro hm hm'
+    have hself := hkey _ (hmpos.mp hm) (hm'pos.mp hm')
+    exact ⟨le_antisymm (hle1 _ hself) hm, le_antisymm (hle2 _ hself) hm'⟩
 
 /-- **L4-7: the `[p]`-pullback is unramified over an affine
 point** (PROVEN over the two bricks
@@ -7359,7 +7848,9 @@ statement is proven first for the vertical generators
 `spanSingleton_pointEval_XClass` / `spanSingleton_pointEval_YClass`,
 now `count_pointEval_XClass_of_smul_ne_zero` (PROVEN 2026-07-25, over
 the purely polynomial leaf `rootMultiplicity_Φ_sub_C_mul_ΨSq`) and the
-still-sorried `count_pointEval_YClass_of_smul_ne_zero` — and then propagated to a
+`count_pointEval_YClass_of_smul_ne_zero` (PROVEN 2026-07-26, over the two
+center leaves `count_pointEval_nonneg` /
+`one_le_count_pointEval_iff_mem_pointIdeal_smul`) — and then propagated to a
 general `z` by the same Miller-style pair-peeling induction on the
 affine divisor of `z` that `spanSingleton_pointEval_translate` runs for
 `τ_Q^*`.  The induction is the whole proof below and is complete: the
@@ -8077,9 +8568,12 @@ second over the first; the open content has moved down into the two X/Y bricks),
   `[p]^*z` at the place of `S` is the order of `z` at `p • S`
   (multiplicity one from separability of `[p]`, `(p : F) ≠ 0`, via
   `Φ_p − x_R·Ψ_p²`) — PROVEN, by Miller-style pair-peeling induction
-  over the two sorried bricks `count_pointEval_XClass_of_smul_ne_zero` /
-  `count_pointEval_YClass_of_smul_ne_zero`, which are where the
-  separability of `[p]` is now localized;
+  over the two bricks `count_pointEval_XClass_of_smul_ne_zero` /
+  `count_pointEval_YClass_of_smul_ne_zero`, both now PROVEN in turn — the
+  vertical one over the polynomial leaves
+  `sq_wronskian_mul_Ψ₂Sq` / `rootMultiplicity_Φ_sub_C_mul_ΨSq_of_Ψ₂Sq_inseparable`
+  (separability of `[p]`), the line one over the center leaves
+  `count_pointEval_nonneg` / `one_le_count_pointEval_iff_mem_pointIdeal_smul`;
 * `count_pointEval_of_smul_eq_zero` (PROVEN): for `p • S = O`, that
   order is the pole order `−#D` of `z` at infinity — derived from the
   branch above by translation transport, since translating by `⊖S`
