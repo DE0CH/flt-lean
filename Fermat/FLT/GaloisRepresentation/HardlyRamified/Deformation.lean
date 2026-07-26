@@ -7750,10 +7750,20 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
     (𝒥 : Set (Ideal P))
     (hres : ∀ g : Field.absoluteGaloisGroup ℚ,
       (M g).map ⇑evbar = LinearMap.toMatrix' ((ρbar.conj e0) g))
+    -- `Function.Surjective πA` is part of this hypothesis (MERGE FIX
+    -- 2026-07-26): the caller
+    -- `exists_universalFrame_profinite_of_levelIdealSystem` was strengthened on
+    -- `main` to assume `hclass` only for SURJECTIVE reductions, after
+    -- `flt-lean-99` cut this leaf out of it. The two `hclass`es must agree
+    -- verbatim or the parent cannot pass its own hypothesis down. Nothing is
+    -- lost: `IsStrictlyUniversalOnFrames` itself quantifies over test objects
+    -- with `Function.Surjective πA`, so the eventual proof of this leaf has the
+    -- witness in hand at every point where it needs to invoke `hclass`.
     (hclass : ∀ (A : Type u) [CommRing A] [TopologicalSpace A]
       [IsTopologicalRing A] [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A]
-      [DiscreteTopology A] (πA : A →+* k) (hπA : Continuous πA)
-      (ρA : FramedGaloisRep ℚ A (Fin 2)),
+      [DiscreteTopology A] (πA : A →+* k) (hπA : Continuous πA),
+      Function.Surjective πA →
+      ∀ (ρA : FramedGaloisRep ℚ A (Fin 2)),
       IsHardlyRamified hℓOdd (rank_finTwoFun A) ρA →
       πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k →
       pushforwardFrame πA hπA ρA = ρbar.conj e0 →
