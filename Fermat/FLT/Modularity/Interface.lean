@@ -24860,7 +24860,11 @@ So the residual leaf is the descent
 supplied by `eC` descends to the `ℚ`-side, which keeps
 `exists_heckeOp_newform_etaleIdempotent` genuinely consumed — and it is
 now PROVEN (2026-07-26) over the FIRST bullet alone, isolated as
-`modularHeckeAlgebraQ_linearIndependent_complex`. Exact level enters
+`modularHeckeAlgebraQ_linearIndependent_complex` — which is in turn
+PROVEN (2026-07-26) from the `ℚ`-form of the `q`-expansion functionals,
+`exists_qCoeff_rational_relations`, so the residue of this whole
+cluster is the single `q`-expansion citation
+`integralCuspForms_span_eq_top`. Exact level enters
 only upstream of it: the line hypothesis on `eC` is what fails at an
 OLD maximal ideal (`g` of level `M' ∣ M`, `M' ≠ M`, seen at level `M`),
 where the oldform multiplicity makes the local factor of `𝕋_ℂ` a plane
@@ -26041,9 +26045,316 @@ end EtaleDescentSubalgebra
 
 
 
+/-- **`ℚ`-linear independence base-changes to `ℂ` for rational
+coordinate vectors** (pure linear algebra, no arithmetic): a finite
+family in `ℚ^ι` that is independent over `ℚ` stays independent over `ℂ`
+after the entrywise inclusion `ℚ ↪ ℂ`.
+
+Proof without matrices: `ℚ` is a field, so the injective `ℚ`-linear map
+`c ↦ ∑ᵢ cᵢ·rᵢ` has a `ℚ`-linear LEFT INVERSE `g`
+(`LinearMap.exists_leftInverse_of_injective`), which satisfies
+`g (rᵢ) = eᵢ`. The SAME coefficient array `g(e_j)` defines a `ℂ`-linear
+`G : ℂ^ι → ℂ^n` with `G ∘ (cast) = cast ∘ g`, so `G` still sends the
+image of `rᵢ` to `eᵢ` and no nontrivial `ℂ`-relation can survive. This
+is the concrete finite shape of flatness of `ℚ → ℂ`; it is stated
+separately because it is the ONLY place where the base change happens,
+and it is where the general counterexample (`ℚ(√2)·1 ⊆ ℂ`) is ruled out
+by the RATIONALITY of the coordinates rather than by any property of
+the ambient space. -/
+theorem linearIndependent_complex_of_rat {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {n : ℕ} (r : Fin n → ι → ℚ) (hr : LinearIndependent ℚ r) :
+    LinearIndependent ℂ (fun i => (fun j => ((r i j : ℚ) : ℂ))) := by
+  classical
+  set A : (Fin n → ℚ) →ₗ[ℚ] (ι → ℚ) :=
+    { toFun := fun c => ∑ i, c i • r i
+      map_add' := by
+        intro x y
+        simp only [Pi.add_apply, add_smul]
+        exact Finset.sum_add_distrib
+      map_smul' := by
+        intro a x
+        simp only [Pi.smul_apply, smul_eq_mul, mul_smul, RingHom.id_apply]
+        exact (Finset.smul_sum).symm } with hAdef
+  have hAapply : ∀ c : Fin n → ℚ, A c = ∑ i, c i • r i := fun _ => rfl
+  have hAker : LinearMap.ker A = ⊥ := by
+    rw [LinearMap.ker_eq_bot']
+    intro c hc
+    rw [hAapply] at hc
+    exact funext (Fintype.linearIndependent_iff.mp hr c hc)
+  obtain ⟨g, hg⟩ := A.exists_leftInverse_of_injective hAker
+  have hgA : ∀ x : Fin n → ℚ, g (A x) = x := fun x => LinearMap.congr_fun hg x
+  have hAsingle : ∀ i : Fin n, A (Pi.single i 1) = r i := by
+    intro i
+    rw [hAapply]
+    rw [Finset.sum_eq_single i]
+    · simp
+    · intro b _ hb
+      simp [hb]
+    · intro h
+      exact absurd (Finset.mem_univ i) h
+  have hgr : ∀ i : Fin n, g (r i) = Pi.single i 1 := by
+    intro i
+    rw [← hAsingle i, hgA]
+  set G : (ι → ℂ) →ₗ[ℂ] (Fin n → ℂ) :=
+    { toFun := fun x k => ∑ j, ((g (Pi.single j 1) k : ℚ) : ℂ) * x j
+      map_add' := by
+        intro x y
+        funext k
+        simp only [Pi.add_apply, mul_add]
+        exact Finset.sum_add_distrib
+      map_smul' := by
+        intro a x
+        funext k
+        simp only [Pi.smul_apply, smul_eq_mul, RingHom.id_apply, Finset.mul_sum]
+        exact Finset.sum_congr rfl fun j _ => by ring } with hGdef
+  have hGapply : ∀ (x : ι → ℂ) (k : Fin n),
+      G x k = ∑ j, ((g (Pi.single j 1) k : ℚ) : ℂ) * x j := fun _ _ => rfl
+  have hGcast : ∀ (y : ι → ℚ) (k : Fin n),
+      G (fun j => ((y j : ℚ) : ℂ)) k = ((g y k : ℚ) : ℂ) := by
+    intro y k
+    have hy : y = ∑ j, y j • (Pi.single j (1 : ℚ)) := by
+      funext j
+      simp [Finset.sum_apply, Pi.single_apply]
+    have hgy : g y k = ∑ j, y j * g (Pi.single j 1) k := by
+      conv_lhs => rw [hy]
+      rw [map_sum]
+      simp [Finset.sum_apply]
+    rw [hGapply, hgy]
+    push_cast
+    exact Finset.sum_congr rfl fun j _ => mul_comm _ _
+  rw [Fintype.linearIndependent_iff]
+  intro c hc i
+  have h0 : G (∑ i, c i • fun j => ((r i j : ℚ) : ℂ)) = 0 := by rw [hc, map_zero]
+  rw [map_sum] at h0
+  have h1 : ∀ i' : Fin n, G (c i' • fun j => ((r i' j : ℚ) : ℂ))
+      = c i' • fun k => (((Pi.single i' (1 : ℚ) : Fin n → ℚ) k : ℚ) : ℂ) := by
+    intro i'
+    rw [map_smul]
+    congr 1
+    funext k
+    rw [hGcast (r i') k, hgr i']
+  simp only [h1] at h0
+  have h2 := congrFun h0 i
+  simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply] at h2
+  rw [Finset.sum_eq_single i] at h2
+  · simpa using h2
+  · intro b _ hb
+    simp [hb]
+  · intro h
+    exact absurd (Finset.mem_univ i) h
+
+/-- **A `ℚ`-form of a `ℂ`-vector space cut out by a rational coefficient
+system makes `ℚ`-independence survive base change to `ℂ`** (PROVEN,
+2026-07-26; the abstract engine of
+`modularHeckeAlgebraQ_linearIndependent_complex` below).
+
+Data: a finite-dimensional `ℂ`-space `S`; a system of `ℂ`-linear
+functionals `a : ℕ → S^∨` that SEPARATES points (`hsep`); a finite
+subfamily `a_{nn 0}, …, a_{nn (D−1)}` with `D = dim_ℂ S` through which
+every `a m` is a `ℚ`-combination (`hrel`); and a set `gens` of
+endomorphisms each of which pulls the whole system back into that
+`ℚ`-span (`hgens`). Conclusion: on the `ℚ`-subalgebra
+`Algebra.adjoin ℚ gens ⊆ End_ℂ S`, `ℚ`-linear independence implies
+`ℂ`-linear independence — i.e. `(adjoin ℚ gens) ⊗_ℚ ℂ ↪ End_ℂ S`.
+
+`halg` pins the `Algebra ℚ (End_ℂ S)` instance to the one factoring
+through `ℚ → ℂ` (for the modular application this is
+`modularEnd_algebraMap_rat_apply`); it is a hypothesis rather than an
+instance so that no new global `Algebra ℚ (End_ℂ ·)` instance and no
+diamond is created.
+
+HOW IT WORKS. `Λ : S → ℂ^D`, `f ↦ (a_{nn i} f)ᵢ`, is injective by
+`hsep`+`hrel` and hence bijective by dimension count, so the chosen
+functionals are a coordinate system. `hgens` propagates along
+`Algebra.adjoin_induction` — the scalars are `ℚ` by `halg`, sums are
+componentwise, and a product `x·y` composes two rational matrices — so
+EVERY `T` in the adjoin has a RATIONAL matrix `ρ T` in those
+coordinates. `T ↦ ρ T` is injective (a vanishing matrix kills `Λ`,
+hence `T`), so a `ℚ`-independent family of `T`'s has `ℚ`-independent
+matrices; `linearIndependent_complex_of_rat` makes those matrices
+`ℂ`-independent; and evaluation at the `Λ`-preimages of the standard
+basis is a `ℂ`-LINEAR map `End_ℂ S → ℂ^{D×D}` realizing `ρ`, so
+`LinearIndependent.of_comp` transports the conclusion back. -/
+theorem linearIndependent_complex_of_ratCoeffSystem
+    {S : Type*} [AddCommGroup S] [Module ℂ S] [FiniteDimensional ℂ S]
+    [Algebra ℚ (Module.End ℂ S)]
+    (halg : ∀ (r : ℚ) (f : S), (algebraMap ℚ (Module.End ℂ S) r) f = (r : ℂ) • f)
+    (a : ℕ → (S →ₗ[ℂ] ℂ))
+    (hsep : ∀ f : S, (∀ m : ℕ, a m f = 0) → f = 0)
+    {D : ℕ} (hD : Module.finrank ℂ S = D) (nn : Fin D → ℕ)
+    (hrel : ∀ m : ℕ, ∃ c : Fin D → ℚ,
+      ∀ f : S, a m f = ∑ i, (c i : ℂ) * a (nn i) f)
+    {gens : Set (Module.End ℂ S)}
+    (hgens : ∀ T ∈ gens, ∀ m : ℕ, ∃ c : Fin D → ℚ,
+      ∀ f : S, a m (T f) = ∑ i, (c i : ℂ) * a (nn i) f)
+    {n : ℕ} (v : Fin n → ↥(Algebra.adjoin ℚ gens))
+    (hv : LinearIndependent ℚ v) :
+    LinearIndependent ℂ (fun i => ((v i : Module.End ℂ S))) := by
+  classical
+  set Λ : S →ₗ[ℂ] (Fin D → ℂ) := LinearMap.pi (fun i => a (nn i)) with hΛdef
+  have hΛapply : ∀ (f : S) (i : Fin D), Λ f i = a (nn i) f := fun _ _ => rfl
+  have hΛinj : Function.Injective Λ := by
+    rw [injective_iff_map_eq_zero]
+    intro f hf
+    refine hsep f fun m => ?_
+    obtain ⟨c, hc⟩ := hrel m
+    rw [hc f]
+    refine Finset.sum_eq_zero fun i _ => ?_
+    rw [← hΛapply f i, hf, Pi.zero_apply, mul_zero]
+  have hΛsurj : Function.Surjective Λ := by
+    have hfr : Module.finrank ℂ S = Module.finrank ℂ (Fin D → ℂ) := by
+      rw [hD]
+      simp
+    exact (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hfr).mp hΛinj
+  -- the rational-coefficient property, closed under the ℚ-algebra generated by `gens`
+  have hP : ∀ T ∈ Algebra.adjoin ℚ gens, ∀ m : ℕ, ∃ c : Fin D → ℚ,
+      ∀ f : S, a m (T f) = ∑ i, (c i : ℂ) * a (nn i) f := by
+    intro T hT
+    induction hT using Algebra.adjoin_induction with
+    | mem x hx => exact hgens x hx
+    | algebraMap r =>
+        intro m
+        obtain ⟨c, hc⟩ := hrel m
+        refine ⟨r • c, fun f => ?_⟩
+        rw [halg r f, map_smul, hc f, smul_eq_mul, Finset.mul_sum]
+        refine Finset.sum_congr rfl fun i _ => ?_
+        simp only [Pi.smul_apply, smul_eq_mul]
+        push_cast
+        ring
+    | add x y _ _ ihx ihy =>
+        intro m
+        obtain ⟨cx, hcx⟩ := ihx m
+        obtain ⟨cy, hcy⟩ := ihy m
+        refine ⟨cx + cy, fun f => ?_⟩
+        rw [LinearMap.add_apply, map_add, hcx f, hcy f, ← Finset.sum_add_distrib]
+        refine Finset.sum_congr rfl fun i _ => ?_
+        simp only [Pi.add_apply]
+        push_cast
+        ring
+    | mul x y _ _ ihx ihy =>
+        intro m
+        obtain ⟨c, hc⟩ := ihx m
+        choose d hd using fun i : Fin D => ihy (nn i)
+        refine ⟨fun k => ∑ i, c i * d i k, fun f => ?_⟩
+        rw [Module.End.mul_apply, hc (y f)]
+        have hstep : ∀ i : Fin D, (c i : ℂ) * a (nn i) (y f)
+            = ∑ k, ((c i * d i k : ℚ) : ℂ) * a (nn k) f := by
+          intro i
+          rw [hd i f, Finset.mul_sum]
+          refine Finset.sum_congr rfl fun k _ => ?_
+          push_cast
+          ring
+        rw [Finset.sum_congr rfl fun i _ => hstep i, Finset.sum_comm]
+        refine Finset.sum_congr rfl fun k _ => ?_
+        push_cast
+        rw [Finset.sum_mul]
+  -- rational matrices for the family `v`
+  have hrho : ∀ T ∈ Algebra.adjoin ℚ gens, ∃ ρ : Fin D × Fin D → ℚ,
+      ∀ (j : Fin D) (f : S), a (nn j) (T f) = ∑ i, (ρ (j, i) : ℂ) * a (nn i) f := by
+    intro T hT
+    choose ρ0 hρ0 using fun j : Fin D => hP T hT (nn j)
+    exact ⟨fun p => ρ0 p.1 p.2, hρ0⟩
+  choose ρ hρ using fun i : Fin n => hrho (v i) (v i).2
+  -- the ℚ-scalar action on `Module.End ℂ S` is the complex one
+  have hsmul : ∀ (r : ℚ) (T : Module.End ℂ S), r • T = (r : ℂ) • T := by
+    intro r T
+    rw [Algebra.smul_def]
+    refine LinearMap.ext fun f => ?_
+    rw [Module.End.mul_apply, halg r (T f), LinearMap.smul_apply]
+  have hcoe : ∀ (r : ℚ) (x : ↥(Algebra.adjoin ℚ gens)),
+      ((r • x : ↥(Algebra.adjoin ℚ gens)) : Module.End ℂ S)
+        = (r : ℂ) • (x : Module.End ℂ S) := by
+    intro r x
+    rw [← hsmul]
+    rfl
+  -- the rational matrices are ℚ-independent
+  have hρindep : LinearIndependent ℚ ρ := by
+    rw [Fintype.linearIndependent_iff]
+    intro g hg
+    refine Fintype.linearIndependent_iff.mp hv g ?_
+    refine Subtype.ext ?_
+    have hcoesum : ((∑ i, g i • v i : ↥(Algebra.adjoin ℚ gens)) : Module.End ℂ S)
+        = ∑ i, (g i : ℂ) • ((v i : Module.End ℂ S)) := by
+      rw [AddSubmonoidClass.coe_finsetSum]
+      exact Finset.sum_congr rfl fun i _ => hcoe (g i) (v i)
+    rw [hcoesum, ZeroMemClass.coe_zero]
+    refine LinearMap.ext fun f => ?_
+    rw [LinearMap.zero_apply]
+    refine hΛinj ?_
+    rw [map_zero]
+    funext j
+    rw [hΛapply, Pi.zero_apply]
+    have happ : (∑ i, (g i : ℂ) • ((v i : Module.End ℂ S))) f
+        = ∑ i, (g i : ℂ) • ((v i : Module.End ℂ S) f) := by
+      simp [LinearMap.sum_apply]
+    rw [happ, map_sum]
+    have hterm : ∀ i : Fin n, a (nn j) ((g i : ℂ) • ((v i : Module.End ℂ S) f))
+        = ∑ k, ((g i * ρ i (j, k) : ℚ) : ℂ) * a (nn k) f := by
+      intro i
+      rw [map_smul, hρ i j f, smul_eq_mul, Finset.mul_sum]
+      refine Finset.sum_congr rfl fun k _ => ?_
+      push_cast
+      ring
+    rw [Finset.sum_congr rfl fun i _ => hterm i, Finset.sum_comm]
+    refine Finset.sum_eq_zero fun k _ => ?_
+    have hzero : ∑ i, g i * ρ i (j, k) = 0 := by
+      have := congrFun hg (j, k)
+      simpa [Finset.sum_apply, smul_eq_mul] using this
+    rw [← Finset.sum_mul]
+    have : ∑ i, ((g i * ρ i (j, k) : ℚ) : ℂ) = ((∑ i, g i * ρ i (j, k) : ℚ) : ℂ) := by
+      push_cast
+      rfl
+    rw [this, hzero]
+    simp
+  -- base change of the rational independence
+  have hCindep : LinearIndependent ℂ
+      (fun i => (fun p : Fin D × Fin D => ((ρ i p : ℚ) : ℂ))) :=
+    linearIndependent_complex_of_rat ρ hρindep
+  -- transfer back through evaluation at a dual family
+  obtain ⟨e, he⟩ : ∃ e : Fin D → S, ∀ k, Λ (e k) = Pi.single k 1 :=
+    ⟨fun k => (hΛsurj (Pi.single k 1)).choose, fun k => (hΛsurj _).choose_spec⟩
+  set F : Module.End ℂ S →ₗ[ℂ] (Fin D × Fin D → ℂ) :=
+    { toFun := fun T p => a (nn p.1) (T (e p.2))
+      map_add' := by
+        intro T T'
+        funext p
+        simp
+      map_smul' := by
+        intro c T
+        funext p
+        simp } with hFdef
+  have hFapply : ∀ (T : Module.End ℂ S) (p : Fin D × Fin D),
+      F T p = a (nn p.1) (T (e p.2)) := fun _ _ => rfl
+  have hFv : ∀ i : Fin n,
+      F ((v i : Module.End ℂ S)) = fun p => ((ρ i p : ℚ) : ℂ) := by
+    intro i
+    funext p
+    rw [hFapply, hρ i p.1 (e p.2)]
+    have hcoord : ∀ k : Fin D,
+        a (nn k) (e p.2) = ((Pi.single p.2 (1 : ℂ) : Fin D → ℂ) k) := by
+      intro k
+      rw [← hΛapply (e p.2) k, he p.2]
+    rw [Finset.sum_congr rfl fun k _ => by rw [hcoord k]]
+    rw [Finset.sum_eq_single p.2]
+    · simp
+    · intro b _ hb
+      simp [hb]
+    · intro h
+      exact absurd (Finset.mem_univ p.2) h
+  refine LinearIndependent.of_comp F ?_
+  have hcomp : (F ∘ fun i => ((v i : Module.End ℂ S)))
+      = fun i => (fun p : Fin D × Fin D => ((ρ i p : ℚ) : ℂ)) := by
+    funext i
+    exact hFv i
+  rw [hcomp]
+  exact hCindep
+
 /-- **The rational structure of `S₂(Γ₀(M))`: `𝕋_ℚ ⊗_ℚ ℂ ↪ End_ℂ S₂(Γ₀(M))`**
-(sorry leaf, 2026-07-26 — the SINGLE arithmetic input of the newform
-factor, and the archimedean twin of `ModularTateModuleData.padic_indep`).
+(PROVEN, 2026-07-26, over the single `q`-expansion citation
+`integralCuspForms_span_eq_top` — it was the SINGLE arithmetic input of
+the newform factor, and it is now discharged from the SAME citation
+that already carries `exists_qCoeff_rational_relations`, so this leaf
+adds NO new arithmetic to the tree).
 
 A family of elements of the RATIONAL Hecke algebra that is linearly
 independent over `ℚ` stays linearly independent over `ℂ` inside
@@ -26053,30 +26364,95 @@ surjection `𝕋_ℚ ⊗_ℚ ℂ ↠ 𝕋_ℂ` is an isomorphism.
 WHY IT IS NOT FORMAL. It is FALSE for a general `ℚ`-subalgebra of a
 `ℂ`-algebra — `ℚ(√2)·1 ⊆ ℂ` is `2`-dimensional over `ℚ` and
 `1`-dimensional over `ℂ` — so it uses the rational structure of the
-cusp-form space and nothing less.
+cusp-form space and nothing less. In the proof below that rational
+structure enters exactly once, through
+`exists_qCoeff_rational_relations`: `D = dim_ℂ S₂(Γ₀(M))` of the
+`q`-expansion functionals span all the others over `ℚ`, i.e. the
+`ℚ`-span of `{a_m}` is a `ℚ`-FORM of the dual space. Everything else is
+linear algebra, packaged as
+`linearIndependent_complex_of_ratCoeffSystem`.
 
-CLASSICAL PROOF (Diamond–Shurman §6.5, Theorem 6.5.10; Ribet). The
-`q`-expansion pairing `𝕋_ℤ × S₂(Γ₀(M), ℤ) → ℤ`, `(T, f) ↦ a₁(T f)`, is
-PERFECT: `a₁(T_n f) = a_n(f)` makes it nondegenerate on the right, and
-an operator killing every `a₁(T_n ·)` kills every coefficient of every
-form, hence is `0`. Therefore `dim_ℚ (ℚ ⊗ 𝕋_ℤ) = dim_ℚ S₂(Γ₀(M), ℚ)
-= dim_ℂ S₂(Γ₀(M))`, and `𝕋_ℚ`, being a quotient of `ℚ ⊗ 𝕋_ℤ` whose
-`ℂ`-span is all of `𝕋_ℂ` (dimension `dim_ℂ S₂(Γ₀(M))` by the same
-pairing over `ℂ`), is squeezed into equality. The `q`-expansion
-principle — that `S₂(Γ₀(M), ℚ) ⊗ ℂ = S₂(Γ₀(M))` — is the arithmetic
-content, exactly as in the integral sibling
-`integralCuspForms_span_eq_top` (Katz), whose resolution should supply
-this one. -/
-theorem modularHeckeAlgebraQ_linearIndependent_complex {M : ℕ} (_hM : 0 < M)
+THE ARGUMENT (Diamond–Shurman §6.5, Theorem 6.5.10; Ribet). The
+`q`-expansion pairing `𝕋 × S₂(Γ₀(M)) → ℂ`, `(T, f) ↦ a₁(T f)`, is
+perfect, and the two sides of the perfection are supplied separately
+here:
+
+* NONDEGENERACY ON THE FORMS is `cuspForm_eq_of_forall_qCoeff_eq` — the
+  functionals `a_m` separate cusp forms, so
+  `Λ : f ↦ (a_{n i} f)_{i<D}` is injective, hence (dimension count) a
+  `ℂ`-coordinate system on `S₂(Γ₀(M))`;
+* RATIONALITY OF THE MATRIX ENTRIES is the coefficient formula
+  `qCoeff_heckeEndo`, `a_m(T_q f) = a_{qm}(f) + 1_{q∤M}·1_{q∣m}·q·a_{m/q}(f)`,
+  whose right-hand side is an INTEGER combination of coefficients of
+  `f` and therefore, after `exists_qCoeff_rational_relations`, a
+  `ℚ`-combination of the `D` chosen ones. This propagates from the
+  generators `T_q` to all of `𝕋_ℚ` by `Algebra.adjoin_induction`.
+
+So every `T ∈ 𝕋_ℚ` has a RATIONAL `D × D` matrix in the coordinate
+system `Λ`, the assignment is injective and `ℚ`-linear, and
+`linearIndependent_complex_of_rat` (flatness of `ℚ → ℂ` in its concrete
+finite form) turns a `ℚ`-independent family of such matrices into a
+`ℂ`-independent one; `LinearIndependent.of_comp` along the `ℂ`-linear
+realization of the matrix map carries that back to `End_ℂ S₂(Γ₀(M))`.
+
+NOT CIRCULAR. `exists_qCoeff_rational_relations` is stated far ABOVE
+this declaration and is proven from `integralCuspForms_span_eq_top`
+alone; nothing in the `q`-expansion cluster consumes this theorem. The
+earlier docstring's expectation — that the Katz `q`-expansion principle
+"should supply this one" — is exactly what happened, through the
+already-derived `ℚ`-form of the coefficient functionals rather than
+through the integral lattice directly. -/
+theorem modularHeckeAlgebraQ_linearIndependent_complex {M : ℕ} (hM : 0 < M)
     (n : ℕ) (v : Fin n → ↥(modularHeckeAlgebraQ M))
-    (_hv : LinearIndependent ℚ v) :
+    (hv : LinearIndependent ℚ v) :
     LinearIndependent ℂ
-      (fun i => ((v i : Module.End ℂ (CuspForm (Gamma0GL M) 2)))) :=
-  sorry
+      (fun i => ((v i : Module.End ℂ (CuspForm (Gamma0GL M) 2)))) := by
+  classical
+  haveI := cuspForm_finiteDimensional M hM
+  obtain ⟨nn, hnn⟩ := exists_qCoeff_rational_relations hM
+  have hsep : ∀ f : CuspForm (Gamma0GL M) 2,
+      (∀ m : ℕ, qCoeffL M m f = 0) → f = 0 := by
+    intro f hf
+    refine cuspForm_eq_of_forall_qCoeff_eq (g := 0) fun m => ?_
+    rw [qCoeff_zero_cuspForm]
+    exact hf m
+  have hrel : ∀ m : ℕ,
+      ∃ c : Fin (Module.finrank ℂ (CuspForm (Gamma0GL M) 2)) → ℚ,
+        ∀ f : CuspForm (Gamma0GL M) 2,
+          qCoeffL M m f = ∑ i, (c i : ℂ) * qCoeffL M (nn i) f := by
+    intro m
+    obtain ⟨c, hc⟩ := hnn m
+    exact ⟨c, fun f => hc f⟩
+  have hgens : ∀ T ∈ {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+        ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q},
+      ∀ m : ℕ, ∃ c : Fin (Module.finrank ℂ (CuspForm (Gamma0GL M) 2)) → ℚ,
+        ∀ f : CuspForm (Gamma0GL M) 2,
+          qCoeffL M m (T f) = ∑ i, (c i : ℂ) * qCoeffL M (nn i) f := by
+    rintro T ⟨q, hq, rfl⟩ m
+    obtain ⟨c1, hc1⟩ := hrel (q * m)
+    obtain ⟨c2, hc2⟩ := hrel (m / q)
+    refine ⟨c1 + (if q ∣ M then 0 else if q ∣ m then (q : ℚ) else 0) • c2,
+      fun f => ?_⟩
+    have hcoeff : qCoeffL M m (heckeOp M q f)
+        = qCoeffL M (q * m) f
+          + ((if q ∣ M then 0 else if q ∣ m then (q : ℚ) else 0 : ℚ) : ℂ)
+            * qCoeffL M (m / q) f := by
+      rw [qCoeffL_apply, heckeOp_eq_heckeEndo hM hq, qCoeff_heckeEndo hM hq f m,
+        qCoeffL_apply, qCoeffL_apply]
+      split_ifs <;> push_cast <;> ring
+    rw [hcoeff, hc1 f, hc2 f, Finset.mul_sum, ← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+    push_cast
+    ring
+  exact linearIndependent_complex_of_ratCoeffSystem
+    (fun r f => modularEnd_algebraMap_rat_apply (M := M) r f) (qCoeffL M) hsep rfl
+    nn hrel hgens v hv
 
 /-- **Rational descent of the newform idempotent** (PROVEN, 2026-07-26,
-over the single arithmetic leaf
-`modularHeckeAlgebraQ_linearIndependent_complex`).
+over `modularHeckeAlgebraQ_linearIndependent_complex`, which is itself
+now PROVEN from `exists_qCoeff_rational_relations` — so this node has
+no open leaf of its own).
 
 Hypotheses: `lam` is the eigenvalue character of the RATIONAL Hecke
 algebra (`exists_eigenvalueChar_modularHeckeAlgebraQ`); `e` is the
@@ -26196,9 +26572,14 @@ that factor, `ι 1` its unit idempotent — classically the sum of the
 étale idempotents of the `Gal(ℚ̄/ℚ)`-conjugates of `g` — and
 `ι (a_q(g)) = T_q · ι 1` the eigenvalue relation.
 
-STATUS (2026-07-26, second pass): PROVEN over ONE residual ARITHMETIC
-leaf, `modularHeckeAlgebraQ_linearIndependent_complex` — the rational
-structure of `S₂(Γ₀(M))`. The sub-cut suggested when this node was cut
+STATUS (2026-07-26, third pass): PROVEN OUTRIGHT, with NO residual leaf
+of its own. The last one,
+`modularHeckeAlgebraQ_linearIndependent_complex` — the rational
+structure of `S₂(Γ₀(M))` — is itself now proven, from the `ℚ`-form of
+the `q`-expansion functionals (`exists_qCoeff_rational_relations`), so
+the whole newform-factor cluster rests on the SINGLE citation
+`integralCuspForms_span_eq_top` that already carried that node. The
+sub-cut suggested when this node was cut
 had four steps, (a) `𝕋_ℂ` is the `ℂ`-span of `𝕋_ℚ`, (b)
 `dim_ℚ 𝕋_ℚ < ∞`, (c) the surjective eigenvalue character
 `λ : 𝕋_ℚ ↠ K_g`, (d) `ker λ` generated by an idempotent "from
@@ -29075,7 +29456,30 @@ where at `q = p` the Steinberg parameter is cyclotomically twisted and
 `V^{I_p}` can vanish; the claim was inherited from there when the
 composite leaf was split. `hqp` is nevertheless KEPT, because the only
 consumer calls at `q ≠ p` and a narrower hypothesis is a strictly
-smaller assumption.
+smaller assumption; it is UNDERSCORED (`_hqp`, 2026-07-26) so that its
+non-load-bearingness is mechanically visible and is not "restored" as
+though it carried content. Do not delete it: deleting it would ENLARGE
+the assumption, which is the opposite of what the underscore records.
+
+DISPATCH ORDER — THIS LEAF IS BLOCKED BY AN OPEN LEAF BELOW IT, NOT
+MERELY BY THE PIN (2026-07-26, seventh owner; checked against the tree
+rather than recalled). The TERMINALITY AUDIT above names the classical
+prerequisites; every one of them is inside the missing-theory list of
+`nonempty_modularTateModuleData` (the residual GEOMETRIC leaf of the
+modularity subtree, items 1 `X₀(M)` à la Deligne–Rapoport, 2 `J₀(M)`,
+5 good reduction and Eichler–Shimura). So this leaf cannot be proven
+before that one is: no proof of Carayol's identity exists that does not
+factor through the modular-curve geometry which this development is
+still ASSUMING. Dispatching a prover here is therefore premature by
+construction, and stays premature until the geometric carrier is built;
+work spent here is better spent at `nonempty_modularTateModuleData`.
+Two further routes were checked and closed off the same day: the leaf
+is NOT duplicated anywhere (the file's only other ramifiedness
+statement at a bad prime,
+`weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible`, is
+PROVEN — through this leaf, so it is a consumer and offers no
+deduplication), and the conductor-exponent leaf above is likewise a
+CONSUMER of this one, so neither can be run backwards to discharge it.
 
 TERMINALITY AUDIT (2026-07-26, searched rather than recalled). What a
 proof needs is the equality of the newform level with the conductor of
@@ -29118,7 +29522,7 @@ theorem not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible
           - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
           + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
     (hirr : τ.IsIrreducible)
-    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
+    {q : ℕ} (hq : q.Prime) (_hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
     ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
   sorry
 
@@ -29139,11 +29543,16 @@ fixed line is exactly what the tame dictionary consumes
 (`GaloisRep.tameExponent_add_one_le_finrank_of_fixed`).
 
 WHY THIS SHAPE RATHER THAN UNIPOTENCE. The classical statement is
-stronger — `(τσ − 1)² = 0` for every `σ ∈ I_q` — and deriving a COMMON
-fixed line from it needs Kolchin's theorem in dimension 2, absent from
-this pin. Assuming the stronger unipotence and proving Kolchin would
+stronger — `(τσ − 1)² = 0` for every `σ ∈ I_q` — and assuming it would
 make the development's faith LARGER, not smaller, so the pin is placed
-at the weakest form that the consumer actually needs.
+at the weakest form that the consumer actually needs. (An earlier
+version of this paragraph justified the choice by Kolchin's theorem in
+dimension `2` being absent from the pin. That premise is FALSE — see
+the KOLCHIN IS NOT ABSENT paragraph at the end of this docstring — but
+the conclusion is unaffected: pointwise unipotence on `I_q` is formally
+stronger than a common fixed line, they agree only modulo
+`det τ|_{I_q} = 1`, and that determinant fact is not available here as a
+proven lemma. Kolchin's absence was never the load-bearing reason.)
 
 `q ≠ p` is load-bearing: at `q = p` with `p ∥ M₀` the local
 representation is still special, but `ρ|_{I_p}` is not unipotent (the
@@ -30629,9 +31038,277 @@ theorem det_eq_cyclotomicCharacter_of_charFrob_coeff_zero
     trivial
   exact closure_minimal hsub hclosed hγ
 
+/-! #### Serre's peu-ramifiée / très-ramifiée dichotomy at `p`
+
+(Built 2026-07-26, seventh owner of
+`exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`, as
+the INFRASTRUCTURE target that leaf's SPLIT AUDIT names.)
+
+The SPLIT AUDIT of `not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero`
+records that the separating invariant of the at-`p` flatness question is
+neither the local SHAPE nor any Frobenius datum but the EXTENSION CLASS:
+Serre's unit class `u` (peu ramifiée, flat) against a Tate parameter `q`
+with `v_p(q) ≢ 0` (très ramifiée, not flat) — intrinsically Fontaine's
+crystalline subgroup `H¹_f ⊆ H¹(G_p, −)` — and that formalizing it needs
+"either a Barsotti–Tate/crystalline predicate or the Tate parameter with
+local class field theory and the Kummer sequence". This block builds the
+SECOND of those two alternatives, in the shape Serre actually uses it
+(Duke 1987, §2.8 Prop. 4 and §2.9 Prop. 5(ii)):
+
+* the predicate `IsPeuRamifiee n q` on `Fˣ` for a discretely valued
+  field `F`, namely `q ∈ 𝒪ᶠˣ · (Fˣ)ⁿ`;
+* its valuation criterion `dvd_log_valuation_of_isPeuRamifiee`
+  (`n ∣ v(q)`), PROVEN; and
+* the tower consequence `exists_forall_not_isPeuRamifiee_of_valuation_ne_one`,
+  PROVEN: a parameter of NONZERO valuation is très ramifiée at every
+  sufficiently large level `bⁿ`. This is the exact arithmetic that the
+  TOWER AUDIT of the consumer describes in prose ("a toric reduction has
+  `v_p(q) ≠ 0`, so only FINITELY many levels of the tower can be flat")
+  and it is now a proof term rather than part of the citation.
+
+The two remaining sorried leaves below are then, respectively, the pure
+LOCAL assertion (Serre/Raynaud) and the pure AUTOMORPHIC-TO-GALOIS
+assertion (Saito/Tilouine). Neither mentions the other's vocabulary,
+which is the point of the split.
+-/
+
+section PeuRamifiee
+
+variable {F : Type*} [Field F] [Valued F (WithZero (Multiplicative ℤ))]
+
+/-- **Peu ramifiée at exponent `n`** (Serre, *Sur les représentations
+modulaires de degré 2 de `Gal(ℚ̄/ℚ)`*, Duke Math. J. 54 (1987), §2.8):
+an element `q` of a discretely valued field `F` is *peu ramifiée* at
+exponent `n` when it is a unit times an `n`-th power,
+`q ∈ 𝒪_F^× · (F^×)^n`; the extension `F(q^{1/n})/F` is then the one
+Serre calls peu ramifiée, and its negation is *très ramifiée*.
+
+This is a DEFINITION and not a leaf; the arithmetic content is the
+proven `dvd_log_valuation_of_isPeuRamifiee` just below. Only the
+direction "peu ramifiée ⟹ `n ∣ v(q)`" is needed here, so the converse
+(true, by `q = (q π^{-v(q)}) · (π^{v(q)/n})^n`) is deliberately not
+stated. -/
+def IsPeuRamifiee (n : ℕ) (q : Fˣ) : Prop :=
+  ∃ u w : Fˣ, Valued.v (u : F) = 1 ∧ q = u * w ^ n
+
+/-- **The valuation criterion for peu ramifiée** (PROVEN): if `q` is a
+unit times an `n`-th power then `n` divides the valuation of `q`. The
+valuation of a unit is trivial and `v` is multiplicative, so
+`v q = (v w)^n`; passing to `WithZero.log` turns that into
+`v(q) = n · v(w)` in `ℤ`. -/
+theorem dvd_log_valuation_of_isPeuRamifiee {n : ℕ} {q : Fˣ}
+    (h : IsPeuRamifiee n q) :
+    (n : ℤ) ∣ WithZero.log (Valued.v (q : F)) := by
+  obtain ⟨u, w, hu, rfl⟩ := h
+  refine ⟨WithZero.log (Valued.v (w : F)), ?_⟩
+  rw [Units.val_mul, map_mul, hu, one_mul, Units.val_pow_eq_pow_val, map_pow,
+    WithZero.log_pow, nsmul_eq_mul]
+
+/-- **A nontrivial valuation has nonzero logarithm** (PROVEN): the
+valuation of a unit of `F` is nonzero in `ℤᵐ⁰`, so `exp ∘ log` is the
+identity on it and `log` can only vanish when the valuation is `1`. -/
+theorem log_valuation_ne_zero_of_valuation_ne_one {q : Fˣ}
+    (hq : Valued.v (q : F) ≠ 1) : WithZero.log (Valued.v (q : F)) ≠ 0 := by
+  intro h
+  have hq0 : Valued.v (q : F) ≠ 0 := by
+    simp [(Valuation.ne_zero_iff (Valued.v (R := F))).mpr q.ne_zero]
+  exact hq (((WithZero.exp_log hq0).symm.trans (by rw [h])).trans WithZero.exp_zero)
+
+/-- **The tower consequence: a parameter of nonzero valuation is très
+ramifiée at every sufficiently large level** (PROVEN — the arithmetic
+core of the at-`p` flatness obstruction, and the step the consumer's
+TOWER AUDIT previously carried only in prose).
+
+If `1 < b` and `v(q) ≠ 0`, then there is a threshold `n₀` beyond which
+`q` is très ramifiée at exponent `bⁿ`: `bⁿ ∣ v(q)` would force
+`bⁿ ≤ |v(q)|`, while `n₀ := |v(q)|` already gives `|v(q)| ≤ n < bⁿ`.
+So only FINITELY many levels of the `b`-adic tower can be peu ramifiée,
+which is exactly why the at-`p` obstruction lives in the infinite tower
+and not at any single level. -/
+theorem exists_forall_not_isPeuRamifiee_of_valuation_ne_one {b : ℕ} (hb : 1 < b)
+    {q : Fˣ} (hq : Valued.v (q : F) ≠ 1) :
+    ∃ n₀ : ℕ, ∀ n : ℕ, n₀ ≤ n → ¬ IsPeuRamifiee (b ^ n) q := by
+  set m : ℤ := WithZero.log (Valued.v (q : F)) with hm
+  have hm0 : m ≠ 0 := log_valuation_ne_zero_of_valuation_ne_one hq
+  refine ⟨m.natAbs, fun n hn hpeu => ?_⟩
+  have hdvd : ((b ^ n : ℕ) : ℤ) ∣ m := dvd_log_valuation_of_isPeuRamifiee hpeu
+  have hle : ((b ^ n : ℕ) : ℤ) ≤ |m| :=
+    Int.le_of_dvd (abs_pos.mpr hm0) ((dvd_abs _ _).mpr hdvd)
+  have hlt : n < b ^ n := Nat.lt_pow_self hb
+  rw [Int.abs_eq_natAbs] at hle
+  have hle' : ((b ^ n : ℕ) : ℤ) ≤ (m.natAbs : ℤ) := hle
+  omega
+
+end PeuRamifiee
+
+include hpodd in
+/-- **Serre's local criterion: the points of a finite flat group scheme
+over `ℤ_p` generate only PEU RAMIFIÉE Kummer extensions** (sorry leaf —
+the LOCAL half of the 2026-07-26 KUMMER CUT of
+`exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`
+below; Serre, *Sur les représentations modulaires de degré 2 de
+`Gal(ℚ̄/ℚ)`*, Duke Math. J. 54 (1987), §2.8 Prop. 4 and §2.9
+Prop. 5(ii), resting on Raynaud, *Schémas en groupes de type
+`(p, …, p)`*, Bull. SMF 102 (1974), th. 3.3.3 / cor. 3.4.4, and on
+Fontaine's ramification bound).
+
+Let `σ₀` be ANY Galois representation of `G_ℚ` on a finite free module
+over a coefficient ring `A` killed by `pⁿ`, and suppose `σ₀` has a
+finite flat prolongation at `p` — i.e. its underlying `G_{ℚ_p}`-module
+is the group of `ℚ̄_p`-points of a finite flat group scheme over
+`ℤ_p`. If some `pⁿ`-th root `r` of `q ∈ ℚ_pˣ` is fixed by every element
+of the kernel of `σ₀|_{G_p}` — that is, `ℚ_p(q^{1/pⁿ}) ⊆ ℚ_p(σ₀)`,
+the field cut out by the representation — then `q` is PEU RAMIFIÉE at
+exponent `pⁿ`.
+
+WHY THIS IS THE RIGHT SHAPE. Fontaine's bound says the upper-numbering
+ramification of `ℚ_p(G)` vanishes above `e(n + 1/(p−1))`, which for
+`e = 1` and `p` odd (`hpodd`; at `p = 2` the range `e = 1 < p − 1`
+closes and one needs Breuil/Fontaine–Laffaille instead) is exactly the
+bound that a très ramifiée `ℚ_p(q^{1/pⁿ})` violates. The EXPONENT and
+the ROOT LEVEL must MATCH: for `E_q` a Tate curve one has
+`ℚ_p(E[pⁿ]) = ℚ_p(μ_{pⁿ}, q^{1/pⁿ})`, killed by `pⁿ`, and the
+criterion `pⁿ ∣ v_p(q)` is stated at that same `n` — which is why
+`hkill` is a hypothesis here rather than an afterthought, and why the
+consumer below decouples the coefficient LEVEL `𝔪 ^ k` from the
+EXPONENT `n`.
+
+NON-VACUITY: the hypotheses are inhabited — at `n = 0` by any trivial
+coefficient ring, and genuinely by `σ₀ = ` the mod-`pⁿ` Tate module of
+a Tate curve with `pⁿ ∣ v_p(q)`, whose flat prolongation is the in-tree
+PROVEN `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction`.
+Nothing in the statement is a restatement of its consumer: it mentions
+no modular form, no Hecke datum and no coefficient ring of the
+deformation problem, only a Galois module, a flat prolongation and a
+Kummer radical. -/
+theorem isPeuRamifiee_of_hasFlatProlongationAt_of_natCast_pow_eq_zero
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
+    [Module.Free A W]
+    (σ₀ : GaloisRep ℚ A W) {n : ℕ} (hkill : ((p ^ n : ℕ) : A) = 0)
+    (hflat : σ₀.HasFlatProlongationAt 𝔭ᵥ)
+    (q : (ℚᵖᵥ)ˣ) (r : AlgebraicClosure ℚᵖᵥ)
+    (hr : r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ))
+    (hfix : ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+      σ₀.toLocal 𝔭ᵥ σ = 1 → σ r = r) :
+    IsPeuRamifiee (p ^ n) q :=
+  sorry
+
+include hpodd in
+/-- **The Tate parameter of a `p`-new weight-2 eigensystem**
+(sorry leaf — the AUTOMORPHIC half of the 2026-07-26 KUMMER CUT of
+`exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`
+below; Tilouine, *Hecke algebras and the Gorenstein property*, in
+Cornell–Silverman–Stevens §5 Step 1(a), for `p ∥ M`; Saito, *Modular
+forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997), for
+local–global compatibility at `p` in general).
+
+Under exactly the hypotheses of the consumer below, the restriction of
+`τ ≅ ρ ⊗ ℚ̄_p` to `G_p` is the Tate module of a curve with purely
+TORIC reduction, so there is a Tate parameter `q ∈ ℚ_pˣ` with
+
+* `v_p(q) ≠ 0` (spelled `Valued.v q ≠ 1`: toric, not potentially good);
+* at every EXPONENT `n` at least a given threshold, a LEVEL `k` of the
+  `𝔪`-adic tower at which the coefficient ring `R ⧸ 𝔪 ^ k` is killed by
+  `pⁿ` and the field cut out by `ρ ⊗ R ⧸ 𝔪 ^ k` contains a `pⁿ`-th
+  root of `q`.
+
+WHY THE TWO INDICES ARE DECOUPLED (the point that makes this leaf
+FAITHFUL rather than convenient). The consumer's tower is indexed by
+the IDEALS `𝔪 ^ k`, but Serre's criterion is indexed by the EXPONENT
+`pⁿ` of the module, and the two indices are NOT interchangeable when
+`R ≠ ℤ_p`: demanding both `pⁿ ∈ 𝔪 ^ k` (so that the level-`k` module is
+killed by `pⁿ`) and `𝔪 ^ k ⊆ pⁿ R` (so that the level-`k` field is at
+least as large as the mod-`pⁿ` field) would force `𝔪 ^ k = pⁿ R`, which
+holds only for `R = ℤ_p`. What is true, and what this leaf asserts, is
+that `n` may be taken to be the EXPONENT of `R ⧸ 𝔪 ^ k` — the least `n`
+with `pⁿ ∈ 𝔪 ^ k`: writing the lattice as `T ⊗_{ℤ_p} R` with `T` the
+`ℤ_p`-Tate module, `T ⊗ R ⧸ 𝔪 ^ k` has the SAME kernel as `T ⧸ pⁿ T`,
+so its field is `ℚ_p(E[pⁿ]) = ℚ_p(μ_{pⁿ}, q^{1/pⁿ})` on the nose. And
+that exponent tends to infinity with `k`, because `(p : R) ≠ 0`
+(`hpne`) and `R` is a Noetherian local domain, which is why the
+threshold `n₀` can be met. Stating the leaf with the two indices
+separated is what keeps it a THEOREM of the classical theory instead of
+a coincidence of `R = ℤ_p`.
+
+SOUNDNESS: inherited from the consumer's audit (`p = 11`, `M = 11`, the
+weight-2 newform of level `11`, `E = X₀(11)`), whose Tate parameter has
+`v_p(q) = 1 ≠ 0`.
+
+WHAT IS STILL CITED, AND WHAT IS NO LONGER. This leaf carries the
+automorphic-to-Galois bridge — the étale cohomology of modular curves
+at `p` (Deligne–Rapoport models, Tilouine's toric-reduction
+computation, Saito's local–global compatibility) — which the fourth and
+fifth owners' terminality audits identify as the genuinely missing
+geometry, absent from this pin and from `~/cs/FLT`. It NO LONGER
+carries Serre's local criterion (now the separate local leaf above) nor
+the tower arithmetic (now proven).
+
+INHERITED COEFFICIENT-RING FACTS. `hpne`, `hpmem`, `hkfin` and `hlat`
+are passed down unchanged from the consumer, where the sixth owner's
+COEFFICIENT-RING NARROWING turned each into a proof term
+(`natCast_prime_mem_maximalIdeal_of_moduleFinite`,
+`finite_quotient_maximalIdeal_pow_of_natCast_ne_zero`,
+`injective_algebraMap_algebraicClosure_of_moduleFinite`). They belong
+HERE rather than at the consumer, because they are exactly what the
+cited automorphic theory assumes about its coefficient ring: `hpmem`
+and `hpne` are what make the exponent of `R ⧸ 𝔪 ^ k` finite and
+unbounded in `k` — the "and that exponent tends to infinity with `k`"
+step above — `hkfin` is what keeps every level finite (so that
+`HasFlatProlongationAt`'s finiteness is not satisfied for a merely
+cardinal reason), and `hlat` is what makes "`ρ` is an `R`-lattice model
+of `τ`" a statement about a genuine lattice. -/
+theorem exists_tateParameter_of_weightTwoEigenform_pNew
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
+    (hpne : (p : R) ≠ 0)
+    (hpmem : (p : R) ∈ IsLocalRing.maximalIdeal R)
+    (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
+    ∃ q : (ℚᵖᵥ)ˣ, Valued.v (q : ℚᵖᵥ) ≠ 1 ∧
+      ∀ n₀ : ℕ, ∃ k n : ℕ, n₀ ≤ n ∧
+        ((p ^ n : ℕ) : R ⧸ (IsLocalRing.maximalIdeal R ^ k)) = 0 ∧
+        ∃ r : AlgebraicClosure ℚᵖᵥ,
+          r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ∧
+          ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+            (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).toLocal 𝔭ᵥ σ = 1 →
+              σ r = r :=
+  sorry
+
 include hpodd in
 /-- **Serre's flat-level criterion for a `p`-new eigensystem: SOME FINITE
-LEVEL of the `p`-adic tower admits no flat prolongation** (sorry node —
+LEVEL of the `p`-adic tower admits no flat prolongation** (PROVEN
+2026-07-26 by the KUMMER CUT over the two leaves just above; the record
+below, from "WHY THE PIN MOVED HERE" on, is what the six previous owners
+left and is preserved verbatim, because it is still the authority on
+this node's literature content — see the KUMMER CUT note at the END of
+this docstring for what changed. Formerly a sorry node —
 the residual literature leaf of the at-`p` conductor cut after the
 2026-07-25 TOWER CUT. The sharpened citations, the TOWER audit, the
 SPLIT audit and the two INFRASTRUCTURE audits all live in the docstring
@@ -30841,7 +31518,47 @@ separate points.
 SOUNDNESS: inherited verbatim from the consumer's SOUNDNESS AUDIT
 (`p = 11`, `M = 11`, the weight-2 newform of level `11`), whose witness
 has `v_p(q_E) = 1`, not divisible by `11`, and therefore already fails
-at the FIRST level `k = 1`. -/
+at the FIRST level `k = 1`.
+
+KUMMER CUT (2026-07-26, seventh owner — what this node now IS). The
+node is PROVEN, over the SPLIT AUDIT's own named infrastructure target
+rather than around it. Three pieces, in the order the proof uses them:
+
+1. `exists_tateParameter_of_weightTwoEigenform_pNew` (sorry leaf, the
+   AUTOMORPHIC half): the `p`-new eigensystem has a Tate parameter `q`
+   of nonzero valuation, together with, at every exponent threshold, a
+   level `k` of the `𝔪`-adic tower whose coefficient ring is killed by
+   `pⁿ` and whose cut-out field contains `q^{1/pⁿ}`. This carries the
+   automorphic-to-Galois bridge — Tilouine's toric reduction, Saito's
+   local–global compatibility — which the fourth and fifth owners'
+   audits identify as the genuinely missing geometry.
+2. `exists_forall_not_isPeuRamifiee_of_valuation_ne_one` (PROVEN): a
+   parameter of nonzero valuation is TRÈS RAMIFIÉE at every
+   sufficiently large exponent `pⁿ`. This is the TOWER AUDIT's prose
+   ("only FINITELY many levels can be flat") turned into a proof term.
+3. `isPeuRamifiee_of_hasFlatProlongationAt_of_natCast_pow_eq_zero`
+   (sorry leaf, the LOCAL half): a finite flat prolongation at `p` of a
+   module killed by `pⁿ` forces every Kummer radical inside its field
+   to be PEU RAMIFIÉE. This is Serre Duke 1987 §2.8 Prop. 4 / §2.9
+   Prop. 5(ii) over Raynaud and Fontaine's ramification bound.
+
+WHAT THE CUT DOES AND DOES NOT DO. It does NOT weaken the fifth
+owner's terminality finding: the automorphic-to-Galois bridge survives
+intact, in leaf 1, and no piece of it has been proven here. What it
+DOES is make the SPLIT AUDIT's separating invariant — the extension
+class, Serre's `u` against `q` with `v_p(q) ≢ 0` — an object in this
+development rather than a phrase in a docstring: `IsPeuRamifiee` is now
+a definition, its valuation criterion is a theorem, and the two
+citations that were previously fused into one leaf are now separately
+addressable, one purely local and one purely automorphic. The SPLIT
+AUDIT declared the split unavailable *at the level of the local SHAPE*
+— correctly, since the Steinberg and ordinary-crystalline shapes
+coincide — and named the Tate parameter with Kummer theory as the route
+that would work. That is the route taken here.
+
+WHY THE TWO INDICES `k` (level ideal) and `n` (exponent) ARE SEPARATE:
+see leaf 1's docstring. Fusing them would force `𝔪 ^ k = pⁿ R` and so
+silently restrict the statement to `R = ℤ_p`. -/
 theorem exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -30877,8 +31594,20 @@ theorem exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew
     (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
     ∃ k : ℕ,
       ¬ (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).HasFlatProlongationAt
-        (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+        (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat := by
+  -- the Tate parameter of the toric reduction at `p`
+  obtain ⟨q, hq, hlev⟩ :=
+    exists_tateParameter_of_weightTwoEigenform_pNew hpodd hM hpM hg hpnew κ hτ
+      hirr e he hdet hpne hpmem hkfin hlat
+  -- `v_p(q) ≠ 0`, so `q` is très ramifiée at every large enough exponent
+  obtain ⟨n₀, hn₀⟩ :=
+    exists_forall_not_isPeuRamifiee_of_valuation_ne_one hp.out.one_lt hq
+  -- a level of the `𝔪`-adic tower realizing one such exponent
+  obtain ⟨k, n, hle, hkill, r, hr, hfix⟩ := hlev n₀
+  -- flatness there would make `q` peu ramifiée at exponent `p ^ n`
+  exact ⟨k, fun hflat => hn₀ n hle
+    (isPeuRamifiee_of_hasFlatProlongationAt_of_natCast_pow_eq_zero hpodd _ hkill
+      hflat q r hr hfix)⟩
 
 include hpodd in
 /-- **The `p`-new exclusion over an INFINITE `p`-adic flat tower**
