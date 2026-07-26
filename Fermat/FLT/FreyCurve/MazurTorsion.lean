@@ -10825,24 +10825,235 @@ theorem j_ne_of_five_dvd {u : ℤ} {e : ℕ} {j₀ : ℚ} (hu : (5 : ℤ) ∣ u)
 
 end MazurLevelSeven
 
+/-!
+##### The `X_0(21)` cut: `X_0(21) = X_0(3) ×_{X(1)} X_0(7)` (2026-07-26)
+
+`j_mem_of_cyclic_twentyOne_isogeny` used to be a single opaque citation
+("the non-cuspidal rational points of `X_0(21)`"). It is now PROVEN over
+three strictly shallower leaves, along exactly the pattern that
+`j_of_stable_cyclic_subgroup_order_27` uses one level down: split the
+moduli content off into GENUS-`0` hauptmodul leaves, and leave a single
+statement of pure arithmetic over `ℚ` carrying the Mordell–Weil half.
+
+`21 = 3 · 7` is squarefree with coprime factors, so
+
+  `Γ_0(21) = Γ_0(3) ∩ Γ_0(7)`,  `X_0(21) = X_0(3) ×_{X(1)} X_0(7)`
+
+(degrees `4 · 8 = 32 = [PSL₂(ℤ) : Γ̄_0(21)]` ✓, and the fibre product is
+irreducible). Both factors are RATIONAL curves with classical
+`η`-quotient hauptmoduls, and both `j`-maps are explicit:
+
+* `X_0(3)`, `t = (η(τ)/η(3τ))¹²`, degree `4`:
+
+    `j = (t + 27)(t + 3)³ / t`;
+
+  its two cusps are `t = 0` (pole of order `1`) and `t = ∞` (order `3`).
+* `X_0(7)`, `t = (η(τ)/η(7τ))⁴`, degree `8`:
+
+    `j = (t² + 13t + 49)(t² + 245t + 2401)³ / t⁷`;
+
+  its two cusps are `t = 0` (order `7`) and `t = ∞` (order `1`).
+
+Written denominator-free — `j · t = (t + 27)(t + 3)³` and
+`j · t⁷ = (t² + 13t + 49)(t² + 245t + 2401)³` — the relation EXCLUDES the
+cusp `t = 0` by itself (at `t = 0` the left side vanishes and the right
+side is `729`, resp. `49 · 2401³`), exactly as the level-`9` relation of
+`exists_x0Nine_hauptmodul` does; so no side condition `t ≠ 0` is needed
+anywhere below, and the four cusps of `X_0(21)` never enter.
+
+So a Galois-stable cyclic `21`-subgroup gives, by divisor descent
+(`exists_stable_zmultiples_of_dvd`) applied at `d = 3` and `d = 7`, a
+rational pair `(t₃, t₇)` of hauptmodul values with a common `j`; and the
+whole remaining content is the determination of the rational points of
+the resulting affine plane curve
+
+  `(t₃ + 27)(t₃ + 3)³ · t₇⁷ = t₃ · (t₇² + 13t₇ + 49)(t₇² + 245t₇ + 2401)³`.
+
+**Reconnaissance with Magma (2026-07-26; untrusted searcher, never a
+prover).** That plane curve is irreducible of geometric genus `1`; its
+Jacobian, computed from the rational point `(−18, −49/2)`, has minimal
+model `[1, 0, 0, −4, −1] = 21a1`, of conductor `21`, Mordell–Weil group
+`ℤ/2 × ℤ/4` and **rank `0`** — so `#X_0(21)(ℚ) = 8`, of which `4` are the
+cusps (`21` squarefree with two prime factors ⇒ `2² = 4` cusps). Its only
+singular rational points are the two at infinity, i.e. cusps, so the
+model introduces no spurious rational point through a node with conjugate
+branches. A height-`3000` point search returns exactly the four affine
+non-cuspidal points
+
+  `(t₃, t₇) = (−18, −49/2), (−81/2, −49/8), (−1152, −2), (−81/128, −8)`,
+
+whose `j`-values `(t₃ + 27)(t₃ + 3)³/t₃` are
+
+  `3375/2`, `−140625/8`, `−189613868625/128`, `−1159088625/2097152`,
+
+matching on the nose the four curves `[1,−1,0,3,−1]`, `[1,−1,0,−42,−100]`,
+`[1,−1,0,−1077,13877]`, `[1,−1,0,−852,19664]` of the conductor-`162`
+isogeny class (`Magma`: `IsogenousCurves`, isogeny matrix entry `21`).
+
+**Where the difficulty now sits.** All three leaves below are open, but
+they are of two clearly separated kinds:
+
+* `exists_x0Three_hauptmodul` and `exists_x0Seven_hauptmodul` are
+  GENUS-`0` moduli statements — the same class as
+  `exists_x0Nine_hauptmodul`, which this file has already cut down to a
+  Tate-normal-form computation plus a `ℤ/3`-descent. Nothing beyond
+  explicit polynomial algebra and Vélu is involved.
+* `MazurLevel21.j_mem_of_hauptmodul_pair` is a statement about `ℚ` alone,
+  with no elliptic curve, no Galois action and no moduli in it at all.
+  Its intended proof is the rank-`0` Mordell–Weil computation for `21a1`,
+  which has FULL rational `2`-torsion (`ℤ/2 × ℤ/4`), so the classical
+  complete `2`-descent applies and needs only squarefree divisors of a
+  constant — the elementary descent, not class-group machinery.
+-/
+
+namespace MazurLevel21
+
+/-- **The `X_0(21)` Diophantine leaf** (sorry node — the Mordell–Weil half
+of the `X_0(21)` determination, and the ONLY arithmetic citation left at
+this level): if a rational number `j` is simultaneously a value of the
+`X_0(3)` `j`-map and of the `X_0(7)` `j`-map, at rational hauptmodul
+values `t₃` and `t₇`, then
+
+  `j ∈ {3375/2, −140625/8, −189613868625/128, −1159088625/2097152}`.
+
+Equivalently: the affine curve
+`(t₃ + 27)(t₃ + 3)³ t₇⁷ = t₃ (t₇² + 13t₇ + 49)(t₇² + 245t₇ + 2401)³`,
+which is the fibre product `X_0(3) ×_{X(1)} X_0(7) = X_0(21)` with its
+four cusps removed, has exactly four rational points. See the section
+note above for the full reconnaissance.
+
+**Note what this statement does NOT contain.** No elliptic curve, no
+Galois group, no moduli interpretation, no modular curve: it is a
+question about rational solutions of two polynomial equations, and it can
+be attacked with nothing but the arithmetic of `ℚ`. That is the whole
+point of routing the node through the two genus-`0` hauptmodul leaves.
+
+**Intended attack**, recorded so the next owner need not rediscover it.
+The plane model has geometric genus `1` and Jacobian `21a1 :
+y² + xy = x³ − 4x − 1`, of rank `0` with `E(ℚ) = ℤ/2 × ℤ/4` — the eight
+points `O`, `(−2, 1)`, `(−1, −1)`, `(−1, 2)`, `(2, −1)`, `(5, 8)`,
+`(5, −13)`, `(−1/4, 1/8)`. Since the torsion is full `2`-torsion, the
+rank-`0` half is the classical COMPLETE `2`-DESCENT over `ℚ`: the
+homogeneous spaces are `d₁ u² = ...` with `d₁, d₂` ranging over squarefree
+divisors of a fixed integer, each ruled out by a congruence, and the
+`2`-Selmer group comes out equal to the image of the torsion. That is a
+finite, elementary, fully formalizable computation — compare
+`MazurLevel27.rational_point_x0TwentySeven`, the corresponding
+Mordell–Weil statement at level `27`, which turned out to be literally
+`fermatLastTheoremThree` and is PROVEN.
+
+What still has to be supplied on top of the descent is the birational map
+from the plane model to `21a1` — best stated, as at level `27`, in the
+`exists_..._point` direction (from a solution `(t₃, t₇)` produce a
+rational point of `21a1` together with the values of the two degeneracy
+maps), so that only the EASY direction of the birational correspondence
+is ever needed. -/
+theorem j_mem_of_hauptmodul_pair (j t₃ t₇ : ℚ)
+    (h₃ : j * t₃ = (t₃ + 27) * (t₃ + 3) ^ 3)
+    (h₇ : j * t₇ ^ 7 =
+      (t₇ ^ 2 + 13 * t₇ + 49) * (t₇ ^ 2 + 245 * t₇ + 2401) ^ 3) :
+    j ∈ ({3375 / 2, -140625 / 8, -189613868625 / 128,
+      -1159088625 / 2097152} : Finset ℚ) :=
+  sorry
+
+end MazurLevel21
+
+/-- **The hauptmodul of `X_0(3)`** (sorry node — a GENUS-`0` moduli
+statement): if the cyclic subgroup `⟨g⟩` generated by a geometric point
+`g` of `E/ℚ` has exact order `3` and is `Gal(ℚ̄/ℚ)`-stable, then there is a
+rational hauptmodul value `t` with
+
+  `j(E) · t = (t + 27)(t + 3)³`.
+
+`X_0(3)` has genus `0` and is `ℙ¹_ℚ`; its hauptmodul is the `η`-quotient
+`t = (η(τ)/η(3τ))¹² = q⁻¹ − 12 + 54q − 76q² − 243q³ + ⋯`, defined over
+`ℚ`, and the degree-`4` `j`-map is the displayed relation. Its two cusps
+are `t = 0` and `t = ∞`; the denominator-free form above already excludes
+`t = 0` (at `t = 0` the right side is `27 · 27 = 729 ≠ 0`), so the
+statement carries no side condition.
+
+ELEMENTARY in principle, exactly like `exists_x0Nine_hauptmodul` one
+level up: a curve with a rational `3`-isogeny is `y² + a₁xy + a₃y = x³`
+in Tate normal form for the order-`3` point (or the twist thereof cut out
+by the `ℤ/2`-descent `X_1(3) → X_0(3)`), whose `j`-invariant is
+`s(s − 24)³/(s − 27)` with `s = a₁³/a₃`; the substitution
+`t = −27 · (…)` matching the `η`-quotient normalisation turns that into
+the relation above. The `ℤ/2`-descent — rationality of the hauptmodul for
+a merely STABLE, not pointwise-fixed, subgroup — is the modular content,
+and is the exact analogue of `MazurLevel9.exists_rat_hauptmodul_of_stable`.
+
+Checked with Magma (2026-07-26; untrusted searcher, never a proof): the
+four curves of the conductor-`162` class, of `j`-invariants `3375/2`,
+`−140625/8`, `−189613868625/128`, `−1159088625/2097152`, have hauptmodul
+values `t = −18`, `−81/2`, `−1152`, `−81/128` respectively, each the
+UNIQUE rational root of `(t + 27)(t + 3)³ − j t`. -/
+theorem WeierstrassCurve.exists_x0Three_hauptmodul (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 3)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ t : ℚ, E.j * t = (t + 27) * (t + 3) ^ 3 :=
+  sorry
+
+/-- **The hauptmodul of `X_0(7)`** (sorry node — a GENUS-`0` moduli
+statement): if the cyclic subgroup `⟨g⟩` generated by a geometric point
+`g` of `E/ℚ` has exact order `7` and is `Gal(ℚ̄/ℚ)`-stable, then there is a
+rational hauptmodul value `t` with
+
+  `j(E) · t⁷ = (t² + 13t + 49)(t² + 245t + 2401)³`.
+
+`X_0(7)` has genus `0` and is `ℙ¹_ℚ`; its hauptmodul is the `η`-quotient
+`t = (η(τ)/η(7τ))⁴ = q⁻¹ − 4 + 2q + 8q² − 5q³ + ⋯`, defined over `ℚ`, and
+the degree-`8` `j`-map is the displayed relation. Its two cusps are
+`t = 0` (a pole of order `7`) and `t = ∞` (order `1`); the
+denominator-free form already excludes `t = 0` (the right side there is
+`49 · 2401³ ≠ 0`), so again no side condition is needed.
+
+ELEMENTARY in principle, and STRICTLY WEAKER than the sibling
+`exists_levelSeven_jParam`, which is the `X_1(7)` statement: `X_1(7)` also
+has genus `0`, with Kubert parameter `d` and `j = c₄(d)³/Δ(d)` of degree
+`24`, and the degree-`3` covering `X_1(7) → X_0(7)` (the `(ℤ/7)ˣ/±1`
+quotient) sends `d` to `t`. So a proof of `exists_levelSeven_jParam`
+together with the `ℤ/3`-descent gives this node too; conversely this node
+needs only the isogeny, not a rational point of order `7`.
+
+Checked with Magma (2026-07-26; untrusted searcher, never a proof): the
+four curves of the conductor-`162` class have hauptmodul values
+`t = −49/2`, `−49/8`, `−2`, `−8` respectively, each the UNIQUE rational
+root of `(t² + 13t + 49)(t² + 245t + 2401)³ − j t⁷`. -/
+theorem WeierstrassCurve.exists_x0Seven_hauptmodul (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 7)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ t : ℚ, E.j * t ^ 7 =
+      (t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3 :=
+  sorry
+
 /-- **The `j`-invariants of the four curves with a rational cyclic
-`21`-isogeny** (sorry node — the `X_0(21)` input, and the ONLY modular
-citation left at this level): if the cyclic subgroup `⟨g⟩` generated by a
+`21`-isogeny** (PROVEN 2026-07-26 over the three leaves
+`exists_x0Three_hauptmodul`, `exists_x0Seven_hauptmodul` and
+`MazurLevel21.j_mem_of_hauptmodul_pair`, replacing the former opaque
+`X_0(21)` citation): if the cyclic subgroup `⟨g⟩` generated by a
 geometric point `g` of an elliptic curve `E/ℚ` has exact order `21` and is
 stable under `Gal(ℚ̄/ℚ)`, then
 
   `j(E) ∈ {3375/2, −140625/8, −189613868625/128, −1159088625/2097152}`.
 
-This is the determination of the non-cuspidal rational points of `X_0(21)`.
-That modular curve has genus `1`; concretely it is the elliptic curve
-`21a1 = [1,0,0,−4,−1]`, whose Mordell–Weil group is `ℤ/4 × ℤ/2` — rank `0`,
-`8` rational points. Level `21` is squarefree with two prime factors, so
-`X_0(21)` has `2² = 4` cusps, leaving exactly `4` non-cuspidal rational
-points; they are the four curves of the conductor-`162` isogeny class, whose
-`j`-invariants are the values above.
+This is the determination of the non-cuspidal rational points of
+`X_0(21)`. That modular curve has genus `1`; concretely its Jacobian is
+the elliptic curve `21a1 = [1,0,0,−4,−1]`, whose Mordell–Weil group is
+`ℤ/2 × ℤ/4` — rank `0`, `8` rational points. Level `21` is squarefree with
+two prime factors, so `X_0(21)` has `2² = 4` cusps, leaving exactly `4`
+non-cuspidal rational points; they are the four curves of the
+conductor-`162` isogeny class, whose `j`-invariants are the values above.
 
 STRICTLY WEAKER than the genus-`5` `X_1(21)` citation this node replaced:
-`X_0(21)` is a rank-`0` ELLIPTIC curve, so its rational points are a
+`X_0(21)` is a rank-`0` curve of genus `1`, so its rational points are a
 Mordell–Weil computation, not a Chabauty argument on a genus-`5` Jacobian.
 It is also a refinement of the same Kenku input that
 `composite_mem_cyclicIsogenyDegrees` already carries — that node records
@@ -10850,9 +11061,13 @@ that `21` occurs as a cyclic isogeny degree, this one records WHICH curves
 realise it — so the tree gains no new source, only a sharper reading of one
 it already cites.
 
-IRREDUCIBLE at this mathlib pin, for the same reason as the neighbouring
-`X_0` nodes: no modular curve, no Jacobian and no Mordell–Weil machinery
-exists in this development. -/
+Assembly (this proof), all three steps now reduced to shallower leaves:
+divisor descent (`exists_stable_zmultiples_of_dvd`) splits `⟨g⟩` into its
+stable cyclic subgroups of orders `3` and `7`; the two genus-`0`
+hauptmodul leaves turn those into rational parameters `t₃`, `t₇` sharing
+the single `j`-invariant `j(E)`; and the Diophantine leaf — the rank-`0`
+Mordell–Weil half, stated with no moduli in it — reads off the four
+possible values. See the section note above. -/
 theorem WeierstrassCurve.j_mem_of_cyclic_twentyOne_isogeny (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 21)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -10861,8 +11076,16 @@ theorem WeierstrassCurve.j_mem_of_cyclic_twentyOne_isogeny (E : WeierstrassCurve
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     E.j ∈ ({3375 / 2, -140625 / 8, -189613868625 / 128,
-      -1159088625 / 2097152} : Finset ℚ) :=
-  sorry
+      -1159088625 / 2097152} : Finset ℚ) := by
+  obtain ⟨g₃, hg₃, hstable₃⟩ :=
+    E.exists_stable_zmultiples_of_dvd g (N := 21) (d := 3) (by norm_num) (by norm_num)
+      hg hstable
+  obtain ⟨g₇, hg₇, hstable₇⟩ :=
+    E.exists_stable_zmultiples_of_dvd g (N := 21) (d := 7) (by norm_num) (by norm_num)
+      hg hstable
+  obtain ⟨t₃, ht₃⟩ := E.exists_x0Three_hauptmodul g₃ hg₃ hstable₃
+  obtain ⟨t₇, ht₇⟩ := E.exists_x0Seven_hauptmodul g₇ hg₇ hstable₇
+  exact MazurLevel21.j_mem_of_hauptmodul_pair E.j t₃ t₇ ht₃ ht₇
 
 /-- **A rational point of order `21` pins down `j`** (PROVEN 2026-07-25 — the
 same base-change bookkeeping as `mem_cyclicIsogenyDegrees_of_addOrderOf`,
