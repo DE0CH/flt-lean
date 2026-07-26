@@ -73,8 +73,8 @@ Also PROVEN, 2026-07-26:
   (`velu_baseChange_curve` and the lemmas around it), and the parity
   argument `velu_twoTorsion_notMem` placing `2`-torsion outside a subgroup
   of odd order.
-* `velu_exists_three_twoTorsion`, assembled over the single leaf
-  `velu_coordX_twoTorsion_ne` below.
+* `velu_coordX_twoTorsion_ne`, and with it `velu_exists_three_twoTorsion`,
+  over the single leaf `velu_coord_ne_neg` below.
 
 Also PROVEN, 2026-07-26: `velu_pole_identity` itself, the `y`-free
 rational-function identity in `x` alone that remains of the verification of
@@ -110,16 +110,38 @@ without circularity):
 SORRY LEAVES (two, each stated over an arbitrary field of characteristic
 zero for a finite subgroup of odd order):
 
-* `WeierstrassCurve.velu_coordX_twoTorsion_ne` — the Vélu `x`-coordinates
-  of two distinct `2`-torsion points outside the kernel differ.
+* `WeierstrassCurve.velu_coord_ne_neg` — two points outside the kernel
+  have Vélu images that are negatives of one another only if their sum
+  lies in the kernel (injectivity of the coordinate map modulo `S`).
 * `WeierstrassCurve.velu_map_add_of_notMem` — additivity in the generic
   case, `P`, `Q`, `P + Q` all outside the kernel.
 
-The last two are two faces of one fact — that the Vélu map is a
-homomorphism read on coordinates — and are worth attacking together.
+The two are two faces of one fact — that the Vélu map is a homomorphism
+with kernel exactly `S`, read on coordinates — and want one owner:
+`velu_coord_ne_neg` is literally the degenerate branch of the addition
+law in `velu_map_add_of_notMem`.
 
-These are the mathematical content of Vélu's theorem; none of it is in
-mathlib.
+(`velu_equation` was listed here as a third leaf until 2026-07-26; it is
+now PROVEN, over `velu_equation_pole` and `velu_pole_identity`, both also
+proven. `velu_coordX_twoTorsion_ne` is likewise proven, over
+`velu_coord_ne_neg`.)
+
+These are the mathematical content of Vélu's theorem. NONE of it is in
+mathlib, and none of it is in the reference project `~/cs/FLT` either
+(both checked 2026-07-26): there is no isogeny, no quotient curve and no
+curve function field anywhere to build on.
+
+That does NOT make the remaining leaves a function-field project. All
+three rest on ONE elementary brick — Vélu's pair identity
+
+  `x(P+Q) + x(P−Q) = 2x_Q + t_Q/(x_P − x_Q) + u_Q/(x_P − x_Q)²`,
+
+with `t_Q = veluTTerm W Q` and `u_Q = veluWTerm W Q − x_Q · veluTTerm W Q`
+— which was COMPILED on 2026-07-26 (`field_simp`, then
+`linear_combination 2 * h₁ - 2 * hQ` from the two Weierstrass equations)
+and is reproduced ready to paste in `velu_coord_ne_neg`'s docstring, along
+with the reindexing that sums it over `S` with no choice of
+representatives. It is not committed only because nothing consumes it yet.
 -/
 module
 
@@ -2740,35 +2762,129 @@ theorem velu_equation (S : Finset W.Point) (hS : IsPointSubgroup S)
   rw [velu_coordX_eq hS hP, velu_coordY_eq hS hP]
   exact W.velu_equation_pole S hS hodd hP
 
-/-- **SORRY LEAF: the Vélu `x`-coordinates of two distinct `2`-torsion points differ**, cut
-2026-07-26 out of `velu_exists_three_twoTorsion`. This is the WHOLE remaining content of that
-node — everything else in it (base change, the existence of the three `2`-torsion points over
-the algebraic closure, their lying outside the kernel, and the quotient equation) is proven.
+/-- **SORRY LEAF (2026-07-26): the Vélu images of two points outside the kernel are negatives
+of one another only if their sum lies in the kernel.** Equivalently — via `veluCoordX_neg`
+and `veluCoordY_neg`, which say that the coordinate pair of `−Q` is `negY` of that of `Q` —
+this is the injectivity of the Vélu coordinate map MODULO the kernel:
 
-Why it is true: by Vélu's theorem the images of the three nonzero `2`-torsion points of `W`
-are the three nonzero `2`-torsion points of the quotient, which are distinct because the
-quotient is nonsingular. That reasoning may NOT be used here, since `velu_isElliptic` is
-exactly what is being proved.
+  `X P = X R ∧ Y P = Y R  →  P − R ∈ S`,   read at `R = −Q`.
 
-Route without circularity. If `X(T₁) = X(T₂)` then, both images being `2`-torsion — their
-`Y` is forced to `negY(X, Y)` by `veluCoordY_neg`, hence to `−(a₁X + a₃)/2` — the two images
-coincide as coordinate pairs. The third `2`-torsion point `T₃ = T₁ + T₂` also lies outside
-the kernel, and the addition law of the quotient applied to the two coinciding images returns
-`0`, whereas the coordinates of `T₃` are those of an affine point. Carried out at the level of
-the `addX`/`addY` formulas this needs no nonsingularity of the quotient, hence no
-circularity; it is the coordinate shadow of the additivity leaf `velu_map_add_of_notMem`, and
-the two are worth attacking together.
+It is stated at the level of COORDINATES only: no `veluMap`, no `IsElliptic`, hence no
+circularity with `velu_isElliptic`. That is deliberate, because it is needed on both sides of
+Vélu's theorem:
 
-Hypotheses `_hS`, `_hodd`, `_hT₁`, `_hT₂`, `_hn₁`, `_hn₂`, `_hne` are all genuinely needed:
-dropping the `2`-torsion clauses makes the statement FALSE (take `T₂ = −T₁`, or
-`T₂ = T₁ + Q` for `Q ∈ S`, both of which have the same Vélu `x`-coordinate by
-`veluCoordX_neg` and `veluCoordX_add_mem`); they are underscored only because no proof
-consumes them yet. -/
-theorem velu_coordX_twoTorsion_ne (S : Finset W.Point) (_hS : IsPointSubgroup S)
-    (_hodd : Odd S.card) {T₁ T₂ : W.Point} (_hT₁ : T₁ ∉ S) (_hT₂ : T₂ ∉ S)
-    (_hn₁ : -T₁ = T₁) (_hn₂ : -T₂ = T₂) (_hne : T₁ ≠ T₂) :
-    W.veluCoordX S T₁ ≠ W.veluCoordX S T₂ :=
+* `velu_coordX_twoTorsion_ne` below — hence `velu_exists_three_twoTorsion`, hence
+  `velu_isElliptic` — is PROVEN from it;
+* it is also goal (1) of the three-goal reduction of `velu_map_add_of_notMem` recorded in
+  that leaf's docstring, i.e. the branch of the addition law in which the two images cancel.
+
+So this is the shared brick, and it should have the SAME OWNER as
+`velu_map_add_of_notMem`. Both express one fact: the Vélu map is a homomorphism with kernel
+exactly `S`.
+
+Note `P + Q ∉ S` is what makes the statement true rather than vacuous: for `Q = −P` the two
+images ARE negatives of one another, by `veluCoordX_neg` and `veluCoordY_neg`.
+
+## The recommended route, and a foundation for it that is ALREADY VERIFIED
+
+Neither mathlib nor the reference project `~/cs/FLT` has ANY isogeny, quotient-curve or
+curve-function-field material (checked 2026-07-26: `grep -rl isogeny Mathlib/` is empty). But
+that does NOT mean this leaf needs a function-field development — the classical route through
+Vélu's RATIONAL FUNCTIONS is elementary, and its foundational identity was compiled on
+2026-07-26 and is reproduced here verbatim so the next owner can paste it:
+
+```
+theorem velu_addX_pair {x₁ y₁ ξ η : F} (h₁ : W.Equation x₁ y₁) (hQ : W.Equation ξ η)
+    (hne : x₁ ≠ ξ) :
+    W.addX x₁ ξ (W.slope x₁ ξ y₁ η) + W.addX x₁ ξ (W.slope x₁ ξ y₁ (W.negY ξ η))
+      = 2 * ξ + (6 * ξ ^ 2 + W.b₂ * ξ + W.b₄) / (x₁ - ξ)
+        + (2 * η + W.a₁ * ξ + W.a₃) ^ 2 / (x₁ - ξ) ^ 2 := by
+  have hd : x₁ - ξ ≠ 0 := sub_ne_zero.mpr hne
+  rw [equation_iff'] at h₁ hQ
+  rw [slope_of_X_ne hne, slope_of_X_ne hne]
+  simp only [addX, negY, b₂, b₄]
+  field_simp
+  ring_nf
+  linear_combination 2 * h₁ - 2 * hQ
+```
+
+i.e. `x(P+Q) + x(P−Q) = 2 x_Q + t_Q/(x_P − x_Q) + u_Q/(x_P − x_Q)²`, where `t_Q` is exactly
+`veluTTerm W Q` and `u_Q = (2y_Q + a₁x_Q + a₃)²` is exactly
+`veluWTerm W Q − x_Q * veluTTerm W Q`. It is NOT committed here only because nothing consumes
+it yet and free-floating declarations are banned.
+
+**It sums with NO choice of representatives**, which is what makes it fit this file's design.
+Summing over `Q ∈ S ∖ {0}` and reindexing the `x(P−Q)` terms by `Q ↦ −Q` — that is
+`velu_sum_neg`, already proven above — collapses the left side, giving
+
+  `2 (X P − x_P) = Σ_{Q ∈ S ∖ 0} [ t_Q/(x_P − x_Q) + u_Q/(x_P − x_Q)² ]`.
+
+Every summand is defined because `P ∉ S` forces `x_P ≠ x_Q` (equal `x` would make `P = ±Q`).
+
+From there the classical argument is polynomial, not function-theoretic: the right-hand side
+is `A(x_P)/g(x_P)²` with `g = ∏_{Q ∈ S₀} (T − x_Q)` of degree `(|S|−1)/2` and `deg A = |S|`,
+so `X P = X R` makes `x_R` a root of the degree-`|S|` polynomial `A(T) − (X P)·g(T)²`, whose
+roots are exactly the `x(P+Q)`, `Q ∈ S` — that is translation invariance,
+`veluCoordX_add_mem`, already proven. Hence `x_R = x(P+Q)` for some `Q ∈ S`, so `R = ±(P+Q)`,
+and the `Y`-clause of this statement fixes the sign. The one delicate step is the
+multiplicity bookkeeping when `Q ↦ x(P+Q)` is not injective on `S`, i.e. when `−2P ∈ S`.
+
+The same `A`, `g` are what `velu_equation` needs, so all three remaining leaves of this file
+rest on this one brick. -/
+theorem velu_coord_ne_neg (S : Finset W.Point) (_hS : IsPointSubgroup S) (_hodd : Odd S.card)
+    {P Q : W.Point} (_hP : P ∉ S) (_hQ : Q ∉ S) (_hPQ : P + Q ∉ S) :
+    ¬(W.veluCoordX S P = W.veluCoordX S Q ∧
+      W.veluCoordY S P = (W.veluCurve S).negY (W.veluCoordX S Q) (W.veluCoordY S Q)) :=
   sorry
+
+/-- **PROVEN 2026-07-26 from `velu_coord_ne_neg`: the Vélu `x`-coordinates of two distinct
+points of order dividing `2` outside the kernel differ.** This is the distinctness clause of
+`velu_exists_three_twoTorsion`.
+
+Why the obvious argument is CIRCULAR and is not used: by Vélu's theorem the images of the
+three nonzero `2`-torsion points of `W` are the three nonzero `2`-torsion points of the
+quotient, distinct because the quotient is nonsingular — but nonsingularity of the quotient
+is exactly `velu_isElliptic`, which consumes this lemma.
+
+Proof. Suppose `X T₁ = X T₂`. Both images have order dividing `2`: `veluCoordY_neg` at
+`−Tᵢ = Tᵢ` gives `Y Tᵢ = negY (X Tᵢ) (Y Tᵢ)`, i.e. `2 Y Tᵢ + a₁ X Tᵢ + a₃ = 0`, so equal `x`
+forces `Y T₁ = Y T₂` (dividing by `2` is the only use of `CharZero`). The two coordinate
+pairs therefore coincide, and in particular `Y T₁ = negY (X T₂) (Y T₂)`. Meanwhile
+`T₁ + T₂` is again of order dividing `2` and is nonzero (else `T₂ = −T₁ = T₁`), so it lies
+outside the kernel by `velu_twoTorsion_notMem` — and that is precisely the hypothesis under
+which `velu_coord_ne_neg` forbids the two images from being negatives of one another. Since
+an image of order dividing `2` IS its own negative, this is the contradiction.
+
+Every hypothesis is load-bearing, and each is used: dropping the `2`-torsion clauses makes
+the statement FALSE, since `T₂ = −T₁` and `T₂ = T₁ + Q` for `Q ∈ S` have the same Vélu
+`x`-coordinate by `veluCoordX_neg` and `veluCoordX_add_mem`. -/
+theorem velu_coordX_twoTorsion_ne (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) {T₁ T₂ : W.Point} (hT₁ : T₁ ∉ S) (hT₂ : T₂ ∉ S)
+    (hn₁ : -T₁ = T₁) (hn₂ : -T₂ = T₂) (hne : T₁ ≠ T₂) :
+    W.veluCoordX S T₁ ≠ W.veluCoordX S T₂ := by
+  intro hx
+  -- `T₁ + T₂` is again of order dividing `2` and nonzero, hence outside the kernel
+  have hsum0 : T₁ + T₂ ≠ 0 := fun hc => hne ((add_eq_zero_iff_eq_neg.mp hc).trans hn₂)
+  have hsumneg : -(T₁ + T₂) = T₁ + T₂ := by
+    rw [show -(T₁ + T₂) = -T₁ + -T₂ by abel, hn₁, hn₂]
+  have hsummem : T₁ + T₂ ∉ S := velu_twoTorsion_notMem hS hodd hsum0 hsumneg
+  -- both Vélu images are of order dividing `2`
+  have hy₁ : W.veluCoordY S T₁
+      = (W.veluCurve S).negY (W.veluCoordX S T₁) (W.veluCoordY S T₁) := by
+    rw [← veluCoordY_neg hS hT₁, hn₁]
+  have hy₂ : W.veluCoordY S T₂
+      = (W.veluCurve S).negY (W.veluCoordX S T₂) (W.veluCoordY S T₂) := by
+    rw [← veluCoordY_neg hS hT₂, hn₂]
+  -- equal `x` plus order dividing `2` forces equal `y`
+  have h1' := hy₁
+  have h2' := hy₂
+  rw [veluCurve_negY] at h1' h2'
+  simp only [WeierstrassCurve.Affine.negY] at h1' h2'
+  have hyeq : W.veluCoordY S T₁ = W.veluCoordY S T₂ := by
+    linear_combination (h1' - h2') / 2 - (W.a₁ / 2) * hx
+  refine velu_coord_ne_neg W S hS hodd hT₁ hT₂ hsummem ⟨hx, ?_⟩
+  rw [← hx, ← hyeq]
+  exact hy₁
 
 /-- **PROVEN 2026-07-26 over the single leaf `velu_coordX_twoTorsion_ne`: the Vélu quotient
 acquires three affine `2`-torsion points over the algebraic closure.**
@@ -2927,23 +3043,23 @@ need not be rediscovered.** Writing `X = veluCoordX W S`, `Y = veluCoordY W S` a
 `V = W.veluCurve S`, the three `veluMap`s unfold by `veluMap_of_notMem` and the case split
 `by_cases hxy : X P = X Q ∧ Y P = V.negY (X Q) (Y Q)` leaves EXACTLY three goals:
 
-1. `hxy → False`. By `veluCoordX_neg` and `veluCoordY_neg` the hypothesis says precisely that
-   `P` and `−Q` have the same Vélu coordinate pair, while `P − (−Q) = P + Q ∉ S`; so this
-   goal is the coordinate form of "the fibres of the Vélu map are exactly the cosets of `S`",
-   i.e. injectivity modulo the kernel. It is the same fact that
-   `velu_coordX_twoTorsion_ne` needs for its distinctness clause.
+1. `hxy → False` — this is EXACTLY the leaf `velu_coord_ne_neg` above, already stated and
+   already consumed elsewhere in this file, so nothing new is needed for it here.
 2. `X (P + Q) = V.addX (X P) (X Q) (V.slope (X P) (X Q) (Y P) (Y Q))`.
 3. `Y (P + Q) = V.addY (X P) (X Q) (Y P) (V.slope (X P) (X Q) (Y P) (Y Q))`.
 
 (The remaining glue is `Affine.Point.add_some hxy` and `velu_point_some_eq`.)
 
-That decomposition is deliberately NOT committed as three sorried leaves: goals 2 and 3
-commit the proof to the finite/rational-function route judged impractical above, and a
-function-field development would supply all three at once. Take it as a map, not as a cut.
+Goals 2 and 3 are deliberately NOT committed as sorried leaves: they commit the proof to the
+finite/rational-function route judged impractical above, whereas a function-field development
+supplies all three at once. Take them as a map, not as a cut.
 
-So this leaf and `velu_coordX_twoTorsion_ne` are two faces of one fact — that the Vélu map
-is a homomorphism with kernel exactly `S`, read on coordinates — and are worth attacking
-together, by one owner. -/
+So this leaf and `velu_coord_ne_neg` are two faces of one fact — that the Vélu map is a
+homomorphism with kernel exactly `S`, read on coordinates — and want ONE owner. See
+`velu_coord_ne_neg`'s docstring for the recommended route: an ELEMENTARY one through Vélu's
+rational functions, whose foundational pair identity has been compiled and is reproduced
+there ready to paste. Nothing here needs a function-field development, and nothing can be
+lifted from mathlib or `~/cs/FLT`, neither of which has any isogeny material at all. -/
 theorem velu_map_add_of_notMem (S : Finset W.Point) (hS : IsPointSubgroup S)
     (hodd : Odd S.card) {P Q : W.Point} (_hP : P ∉ S) (_hQ : Q ∉ S) (_hPQ : P + Q ∉ S) :
     W.veluMap S hS hodd (P + Q) = W.veluMap S hS hodd P + W.veluMap S hS hodd Q :=
