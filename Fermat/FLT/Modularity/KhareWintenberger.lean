@@ -11338,6 +11338,194 @@ theorem exists_finset_superset_of_places_mem {F : Type*} [Field F]
   intro w hw
   exact Finset.mem_union_right _ (by simpa using hw)
 
+/-- **A ring that is module-finite over `ℤ` has number-field-valued
+images in `ℚ̄_ℓ`** (PROVEN 2026-07-26; pure commutative algebra, no
+arithmetic input).
+
+Given any commutative ring `T` with `Module.Finite ℤ T` and any ring
+homomorphism `ιT : T → ℚ̄_ℓ`, there is a NUMBER FIELD `E`, an embedding
+`ψ : E ↪ ℚ̄_ℓ`, and a function `g : T → E` with `ψ ∘ g = ιT`.  Equivalently:
+the image of `ιT` lies inside a number subfield of `ℚ̄_ℓ`.
+
+PROOF.  `T` is spanned over `ℤ` by a finite set `S`, so every `t : T` is
+integral over `ℤ` (`IsIntegral.of_finite`) and `ιT t` is integral over `ℤ`,
+hence over `ℚ`.  Put `E₀ := ℚ(ιT '' S) ⊆ ℚ̄_ℓ`, which is finite-dimensional
+over `ℚ` because `S` is finite and each generator is integral
+(`IntermediateField.finiteDimensional_adjoin`), so `E₀` is a number field.
+Every `ιT t` lies in `E₀`: `t` is a `ℤ`-combination of `S`, and `E₀` is
+closed under addition and under multiplication by `Int.cast`
+(`Submodule.span_induction`).  Finally `E₀ : Type 0`, so it is transported
+to `Type u` along `ULift.ringEquiv` / `ULift.algEquiv`, exactly as
+`exists_numberField_surjection_of_finite` above does.
+
+WHY THIS IS NOT THE DELETED `isIntegral_heckeEigenvalues` (2026-07-26 — read
+this before concluding the retired Carayol/Shimura sub-cut has been
+resurrected).  That node was asked to prove `IsIntegral ℚ (aF w)` from
+hypotheses that pinned `aF w` only inside `ιO O ⊆ ℚ̄_ℓ`, where `O` is
+module-finite over `ℤ_[ℓ]`; integrality over `ℤ_[ℓ]` is orthogonal to
+integrality over `ℤ`, so it had no admissible discharge and was correctly
+deleted.  The hypothesis HERE is module-finiteness over `ℤ`, not over
+`ℤ_[ℓ]`, and that single change makes the statement not merely provable but
+easy.  It is also the mechanism the FAITHFULNESS REPAIR of
+`exists_heckeEigensystem_of_congruentSeed` below already names in prose —
+"`𝕋` is generated over `ℤ` by the Hecke operators `T_w`, so a point of `𝕋`
+has values in a finite extension of `ℚ` by construction" — and all that is
+done here is to make that sentence mechanical, so that the citation below
+need not also assert it. -/
+theorem exists_numberField_ringHom_of_moduleFinite_int
+    {ℓ : ℕ} [Fact ℓ.Prime]
+    (T : Type u) [CommRing T] [Module.Finite ℤ T]
+    (ιT : T →+* AlgebraicClosure ℚ_[ℓ]) :
+    ∃ (E : Type u) (_ : Field E) (_ : NumberField E)
+      (ψ : E →+* AlgebraicClosure ℚ_[ℓ]) (g : T → E),
+      ∀ t : T, ψ (g t) = ιT t := by
+  classical
+  obtain ⟨S, hS⟩ : (⊤ : Submodule ℤ T).FG := Module.finite_def.mp inferInstance
+  have hint : ∀ t : T, IsIntegral ℚ (ιT t) := fun t =>
+    ((IsIntegral.of_finite ℤ t).map ιT.toIntAlgHom).tower_top
+  set E₀ : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ]) :=
+    IntermediateField.adjoin ℚ (ιT '' (S : Set T))
+  haveI : FiniteDimensional ℚ E₀ :=
+    IntermediateField.finiteDimensional_adjoin (fun x hx => by
+      obtain ⟨t, _, rfl⟩ := hx
+      exact hint t)
+  haveI : NumberField E₀ := {}
+  have hmem : ∀ t : T, ιT t ∈ E₀ := by
+    intro t
+    have ht : t ∈ Submodule.span ℤ (S : Set T) := by rw [hS]; trivial
+    induction ht using Submodule.span_induction with
+    | mem x hx => exact IntermediateField.subset_adjoin _ _ ⟨x, hx, rfl⟩
+    | zero => simp
+    | add x y _ _ hx hy => simpa [map_add] using E₀.add_mem hx hy
+    | smul c x _ hx =>
+        have hc : ιT (c • x) = (c : AlgebraicClosure ℚ_[ℓ]) * ιT x := by
+          simp [zsmul_eq_mul, map_mul, map_intCast]
+        rw [hc]
+        exact E₀.mul_mem (E₀.intCast_mem c) hx
+  haveI : CharZero (ULift.{u} E₀) := (ULift.ringEquiv (R := E₀)).toRingHom.charZero
+  haveI : FiniteDimensional ℚ (ULift.{u} E₀) :=
+    LinearEquiv.finiteDimensional (ULift.algEquiv (R := ℚ) (A := E₀)).toLinearEquiv.symm
+  haveI : NumberField (ULift.{u} E₀) := {}
+  exact ⟨ULift.{u} E₀, inferInstance, inferInstance,
+    E₀.subtype.comp (ULift.ringEquiv (R := E₀)).toRingHom,
+    fun t => ULift.up ⟨ιT t, hmem t⟩, fun t => rfl⟩
+
+/-- **`R = 𝕋` over the totally real base, in Hecke-algebra form** (SORRY
+node, cut 2026-07-26 out of `exists_heckeEigensystem_of_congruentSeed`
+below — it carries ALL of that node's automorphic content and none of its
+commutative algebra).
+
+Same hypotheses as `exists_heckeEigensystem_of_congruentSeed`; the
+conclusion produces, instead of a number field and an `E`-valued
+eigensystem, the object the Taylor–Wiles–Kisin argument actually
+constructs: a HECKE ALGEBRA `T` that is **module-finite over `ℤ`**, an
+embedding `ιT : T → ℚ̄_ℓ`, a genuine level `badF` containing the places
+over `ℓ`, and Hecke operators `t w ∈ T` whose images are the Frobenius
+traces of `ρ|_{G_F}` away from `badF`.
+
+WHY THIS IS THE RIGHT PLACE TO CUT (2026-07-26).  The FAITHFULNESS REPAIR
+recorded on the node below observes, correctly, that rationality is not a
+theorem downstream of `R = 𝕋` but part of what `R = 𝕋` asserts — because
+`𝕋` is generated over `ℤ` by the Hecke operators, so a point of `𝕋` has
+values in a finite extension of `ℚ` "by construction".  That last phrase
+was doing real work in PROSE and none in Lean.  Splitting it off turns it
+into `exists_numberField_ringHom_of_moduleFinite_int` above (PROVEN, three
+lines of commutative algebra), and leaves here exactly the automorphic
+assertion.  Nothing is duplicated and nothing is deferred twice: the node
+below is now an assembly of these two.
+
+NON-VACUITY.  The `ℤ`-module-finiteness of `T` is what carries the whole
+statement, and it is not satisfiable by the objects already in scope:
+`T := O` fails because `O` is module-finite over `ℤ_[ℓ]`, which contains
+an uncountable copy of `ℤ_[ℓ]` and is not a finite `ℤ`-module (this is
+precisely the distinction on which the deleted `isIntegral_heckeEigenvalues`
+foundered); `T := ℤ` fails because it would force every Frobenius trace to
+be a rational integer.  `badF` is a `Finset` over the infinite place set of
+`F`, so the clause is a genuine statement about cofinitely many places, and
+the required `badF ⊇ {w ∣ ℓ}` only weakens it (enlarging `badF` is free —
+`exists_finset_superset_of_places_mem` above).
+
+RELATION TO `HardlyRamified/HilbertModularity.lean` — READ THIS BEFORE
+ATTACKING (2026-07-26; this module's MISSING MACHINERY list was STALE).
+That file, which is in this module's import cone through
+`HardlyRamified/Deformation.lean`, already carries an `R_F = T_F`
+development over a totally real base:
+
+* `HilbertHeckeAlgebra ℓ F ρbar` — an abstract Hecke algebra `T` with
+  `heckeT : places → T`, `charFrobT` (`(ρT.charFrob w).coeff 1 = -heckeT w`,
+  literally the shape of the conclusion here) and residual modularity;
+* `exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal` — `R_F ≃ₐ[ℤ_[ℓ]] T`,
+  PROVEN over its own leaves, i.e. Taylor–Wiles–Kisin patching over `F`;
+* `nonempty_potentialHeckeDatum_of_five_le` — the potential-modularity
+  production leaf.
+
+So item (4) of the missing-machinery list below EXISTS IN THIS TREE, and
+item (2) exists in abstract form.  What is genuinely missing, and is the
+whole remaining gap of THIS leaf, is narrower than that list suggests:
+
+1. `HilbertHeckeAlgebra.T` is module-finite over **`ℤ_[ℓ]`**, not over `ℤ`.
+   The `ℚ`-rational structure of the Hecke algebra — that it is the
+   `ℤ_[ℓ]`-completion of a `ℤ`-finite algebra of Hecke operators acting on a
+   `ℚ`-rational space of cusp forms, i.e. Shimura rationality — is recorded
+   nowhere.  This is the ONLY reason the development there yields
+   `IsIntegral ℤ_[ℓ]` (`exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified`)
+   and cannot yield a number field.
+2. The base fields do not match.  That development PRODUCES its own totally
+   real `F` (inside `PotentialHeckeDatum`) and needs it to satisfy
+   `residueCardTwo`; this leaf is handed `F` and a `MoretBaillySeed` by its
+   consumer, and a seed is strictly weaker than a `HilbertHeckeAlgebra` —
+   as `PotentialHeckeDatum`'s own docstring says, "a single modular lift
+   does not make the whole universal family Hecke".
+
+Consequently a discharge along the in-tree route is a CUT-LEVEL repair, not
+a proof to be written here: it would add the `ℚ`-rational structure to
+`HilbertHeckeAlgebra` and re-plumb this leaf's consumer chain so that `F`
+comes from `PotentialHeckeDatum` rather than from `MoretBaillySeed`.  That
+spans `MoretBaillySeed`, `exists_moretBailly_seed_of_five_le`,
+`exists_heckePackage_of_seed` and this node, and belongs to whoever owns
+that cut.  It is recorded here so it is not rediscovered a fourth time.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_heckeTraceAlgebra_of_congruentSeed
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F)))
+    (badρ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (hcong : ∀ w ∉ badρ,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map π =
+        (ρbar.map (algebraMap ℚ F)).charFrob w)
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO) :
+    ∃ (T : Type u) (_ : CommRing T) (_ : Module.Finite ℤ T)
+      (ιT : T →+* AlgebraicClosure ℚ_[ℓ])
+      (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+      (t : HeightOneSpectrum (NumberField.RingOfIntegers F) → T),
+      (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+          (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) ∧
+      ∀ w ∉ badF,
+        ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ιT (t w) :=
+  sorry
+
 /-- **`R = 𝕋` over the totally real base** (sub-leaf (a) of
 the modularity-lifting cut — Kisin 2009 / Taylor 2006, the
 Taylor–Wiles patching argument over `F`): given the modular seed `σ`
@@ -11500,18 +11688,47 @@ discharged by the shape of `charFrob`, and it has no junk witness:
   package is classically unsatisfiable at `ℓ ≥ 5`, this module's
   headline) remains available as before.
 
+ASSEMBLY (2026-07-26 — THIS NODE IS NO LONGER A SORRY NODE).  It is now
+a two-line assembly over the cut immediately above:
+
+* `exists_heckeTraceAlgebra_of_congruentSeed` (SORRY — the citation)
+  produces the Hecke algebra `T`, **module-finite over `ℤ`**, its
+  embedding `ιT : T ↪ ℚ̄_ℓ`, the level `badF ⊇ {w ∣ ℓ}`, and the Hecke
+  operators whose images are the Frobenius traces;
+* `exists_numberField_ringHom_of_moduleFinite_int` (PROVEN) turns
+  `ℤ`-module-finiteness into a number field `E`, the place `ψℓ`, and the
+  `E`-valued `a`.
+
+The split is exactly the sentence of the FAITHFULNESS REPAIR above —
+"`𝕋` is generated over `ℤ` by the Hecke operators, so a point of `𝕋` has
+values in a finite extension of `ℚ` by construction" — made mechanical.
+Note it is NOT a revival of the deleted Carayol/Shimura sub-cut: see the
+paragraph WHY THIS IS NOT THE DELETED `isIntegral_heckeEigenvalues` on
+the brick, whose hypothesis is finiteness over `ℤ` where the deleted node
+had only finiteness over `ℤ_[ℓ]`.
+
 MISSING MACHINERY, in dependency order, for a discharge along route
-(i): (1) Hilbert modular forms of parallel weight `2` over a totally
-real field; (2) the Hecke operators `T_w` and the Hecke algebra of a
-given level, acting on a finite-dimensional space of cusp forms with a
-`ℚ`-rational structure — which is exactly what makes the eigensystem
-number-field-valued and is the reason `E` belongs in THIS conclusion;
-(3) Carayol/Taylor attachment of `λ`-adic representations with
-local-global compatibility; (4) the Taylor–Wiles–Kisin patching
-argument over `F`, i.e. `R = 𝕋` proper.  The mathlib pin has none of
-(1)–(4) (`grep Hilbert` over `Mathlib/NumberTheory/`: only Hilbert's
-theorem 90 and Hilbert basis), and `~/cs/FLT` has no vendorable
-substitute.
+(i) — PARTIALLY STALE AS WRITTEN, CORRECTED 2026-07-26: (1) Hilbert
+modular forms of parallel weight `2` over a totally real field; (2) the
+Hecke operators `T_w` and the Hecke algebra of a given level, acting on a
+finite-dimensional space of cusp forms with a `ℚ`-rational structure —
+which is exactly what makes the eigensystem number-field-valued and is
+the reason `E` belongs in THIS conclusion; (3) Carayol/Taylor attachment
+of `λ`-adic representations with local-global compatibility; (4) the
+Taylor–Wiles–Kisin patching argument over `F`, i.e. `R = 𝕋` proper.
+
+The claim that the tree has none of (1)–(4) is true of the MATHLIB PIN
+(`grep Hilbert` over `Mathlib/NumberTheory/`: only Hilbert's theorem 90
+and Hilbert basis) and of `~/cs/FLT`, but it is FALSE of this project:
+`HardlyRamified/HilbertModularity.lean` — in this module's import cone
+through `HardlyRamified/Deformation.lean` — carries (4) as
+`exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal` (PROVEN over its own
+leaves) and (2) in abstract `ℤ_[ℓ]` form as `HilbertHeckeAlgebra`.  The
+two obstructions that remain — the absent `ℚ`-rational structure, and the
+base-field mismatch between `PotentialHeckeDatum` and `MoretBaillySeed` —
+are stated precisely on `exists_heckeTraceAlgebra_of_congruentSeed` above,
+which is where the remaining sorry now lives.  Anyone attacking this
+cluster should read that paragraph FIRST.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
@@ -11552,8 +11769,18 @@ theorem exists_heckeEigensystem_of_congruentSeed
       (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
           (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) ∧
       ∀ w ∉ badF,
-        ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ψℓ (a w) :=
-  sorry
+        ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ψℓ (a w) := by
+  -- the automorphic half: the Hecke algebra, module-finite over `ℤ`
+  obtain ⟨T, iT, hTfin, ιT, badF, t, hbadℓ, htr⟩ :=
+    exists_heckeTraceAlgebra_of_congruentSeed hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr π hπsurj hπ F hFtr hFgal hirrF seed badρ hcong ιO hιO
+  letI : CommRing T := iT
+  haveI : Module.Finite ℤ T := hTfin
+  -- the commutative-algebra half: its image lies in a number field
+  obtain ⟨E, iE, hNE, ψℓ, g, hg⟩ :=
+    exists_numberField_ringHom_of_moduleFinite_int (ℓ := ℓ) T ιT
+  refine ⟨E, iE, hNE, ψℓ, badF, fun w => g (t w), hbadℓ, fun w hw => ?_⟩
+  rw [htr w hw, hg (t w)]
 
 /-! ### The Carayol/Shimura sub-cut — RETIRED 2026-07-26
 
