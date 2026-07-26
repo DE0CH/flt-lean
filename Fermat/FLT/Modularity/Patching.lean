@@ -120,13 +120,21 @@ a future de-duplication can identify the two developments.
 module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
--- BUILD REPAIR 2026-07-26: `Ideal.ramificationIdx_le_finrank`, used in
--- `differentIdeal_exponent_le`'s tame bound, was reaching this file only
--- transitively and stopped doing so; a full `lake build` reported it as
--- `Unknown constant`.  (The OTHER errors in that same build — the whole
--- `IsLocalRing` namespace going unknown in `section ProfinitePadicTower`
--- — had a different cause and are fixed in `KhareWintenberger.lean`; see
--- the `_root_.` note on `IsLocalRing.of_henselianRing_of_isDomain`.)
+-- BUILD REPAIR (2026-07-26). This module was a HARD ERROR — 101 errors, the
+-- `maxErrors` cap — which made every consumer of `Modularity/Interface.lean`
+-- unbuildable, and which no sorry scan can see. Two independent causes:
+-- (1) `Ideal.ramificationIdx_le_finrank`, used by the discriminant bound of
+--     `exists_discr_factorization_le_of_finrank_le`, was not imported;
+-- (2) the three `open IsLocalRing` below sit inside
+--     `namespace GaloisRepresentation.Modularity`, and
+--     `PatchingVendored/AdicTopology.lean` declares a namespace `IsLocalRing`
+--     INSIDE that same namespace — so `open IsLocalRing` opened
+--     `GaloisRepresentation.Modularity.IsLocalRing` and SHADOWED the root
+--     one, making `maximalIdeal`, `ResidueField`, `local_hom_TFAE`,
+--     `jacobson_eq_maximalIdeal`, … all unknown. They are now
+--     `open _root_.IsLocalRing`.
+public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Defs
+public import Mathlib.NumberTheory.Padics.PadicIntegers
 public import Mathlib.NumberTheory.RamificationInertia.Basic
 public import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
 public import Mathlib.RingTheory.AdicCompletion.Basic
@@ -200,6 +208,11 @@ public import Mathlib.RingTheory.Ideal.Quotient.Noetherian
 public import Mathlib.LinearAlgebra.Basis.VectorSpace
 -- `Module.Free.of_divisionRing`: the dimension-zero base case
 public import Mathlib.LinearAlgebra.Charpoly.BaseChange
+-- `Ideal.ramificationIdx_le_finrank` (used in the different-ideal bound) and
+-- `IsLocalRing.maximalIdeal` (the `p`-adic tower) were both reached only
+-- transitively, hence not re-exported; both are used here directly.
+public import Mathlib.NumberTheory.RamificationInertia.Basic
+public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic
 public import Mathlib.NumberTheory.Padics.ProperSpace
 -- the `CompactSpace ℤ_[p]` instance behind closedness of `ψ`'s range
 public import Mathlib.Topology.Algebra.Module.Compact
@@ -246,15 +259,29 @@ public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
 -- leaf `exists_discr_factorization_le_of_finrank_le`, and the Hermite
 -- theorem `NumberField.finite_of_discr_bdd` in the proofs
 public import Mathlib.NumberTheory.NumberField.Discriminant.Different
--- proof-only: `Ideal.ramificationIdx_le_finrank`, the bound `e_Q ≤ [L : K]`
--- used inside `exists_discr_factorization_le_of_finrank_le`'s per-prime
--- different-exponent estimate. The DEFINITION `Ideal.ramificationIdx'` lives
--- one file down in `RamificationInertia/Ramification.lean` and was already
--- reachable, which is why only the LEMMA was an unknown constant — a shape
--- that reads like a name error but is an import gap.
-import Mathlib.NumberTheory.RamificationInertia.Basic
 -- proof-only: `NumberField.not_dvd_discr_iff_forall_mem`, the
 -- unramified-implies-coprime-to-discriminant dictionary
+public import Mathlib.RingTheory.DedekindDomain.AdicValuation
+-- `IsDedekindDomain.HeightOneSpectrum.intValuation` and its
+-- `WithZero.exp`-valued API, the `Q`-adic order used in the wild
+-- different-exponent bound `differentIdeal_exponent_le_wild`
+public import Mathlib.NumberTheory.RamificationInertia.Basic
+-- `Ideal.ramificationIdx_le_finrank`, consumed by
+-- `exists_discr_factorization_le_of_finrank_le`.  Explicit and PUBLIC
+-- because as of 2026-07-26 it no longer arrives transitively as a
+-- public name: the module system re-exports only public imports, and
+-- the intermediate module that used to carry it now imports it
+-- privately, which made the constant unknown here.
+public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic
+public import Mathlib.RingTheory.LocalRing.ResidueField.Defs
+public import Mathlib.RingTheory.LocalRing.RingHom.Basic
+-- `IsLocalRing.maximalIdeal`, `IsLocalRing.ResidueField`,
+-- `IsLocalRing.jacobson_eq_maximalIdeal`,
+-- `IsLocalRing.map_maximalIdeal_of_surjective`,
+-- `IsLocalRing.local_hom_TFAE`: the `open IsLocalRing` of section
+-- `ProfinitePadicTower` below opens a namespace whose members were
+-- reaching this file only through private imports, so every use read
+-- as `Unknown identifier maximalIdeal`.  Same remedy as above.
 public import Mathlib.RingTheory.Ideal.Quotient.PowTransition
 -- `Ideal.Quotient.factorPow`: the transition maps `R ⧸ I ^ m → R ⧸ I ^ n`
 -- of the `p`-adic quotient tower in the pro-finite limit upgrade
@@ -267,6 +294,16 @@ public import Mathlib.CategoryTheory.CofilteredSystem
 -- compactness step assembling a compatible system of level-`n`
 -- classifying maps
 public import Fermat.FLT.Modularity.PatchingVendored.System
+-- `IsLocalRing.maximalIdeal` / `IsLocalRing.ResidueField` and the local-hom
+-- API, and `Ideal.ramificationIdx_le_finrank`. Both were reaching this file
+-- only through the pre-module-system import leak of `PatchingVendored/`;
+-- once that cluster became `module`s, names used in the bodies of this
+-- file's `@[expose] public section` declarations must come from a PUBLIC
+-- import here. Named explicitly (2026-07-26).
+public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic
+public import Mathlib.RingTheory.LocalRing.ResidueField.Defs
+public import Mathlib.RingTheory.LocalRing.RingHom.Basic
+public import Mathlib.NumberTheory.RamificationInertia.Basic
 -- the vendored FLT abstract patching development (`PatchingAlgebra`,
 -- `PatchingModule`, `quotientToOver`, `quotientEquivOver`, `smulData`,
 -- `smul_lemma`), instantiated by `exists_patchedModule_of_fields` below
@@ -1156,8 +1193,10 @@ its FINITENESS — Schlessinger's H3 — is the arithmetic input, isolated
 below as the restricted-ramification finiteness statement
 `finite_setOf_isHardlyRamified` (Hermite–Minkowski; itself PROVEN
 2026-07-24 over the single discriminant-exponent leaf, itself PROVEN
-2026-07-25 over the wild different-exponent leaf
-`differentIdeal_exponent_le_wild`); everything else —
+2026-07-25 over the wild different-exponent bound
+`differentIdeal_exponent_le_wild`, itself PROVEN 2026-07-26 over the
+local Eisenstein leaf `exists_eisensteinDerivative_dvd_of_wild`);
+everything else —
 Schlessinger's H1, H2, H4, the relative representability of the hardly
 ramified conditions, and the de Smit–Lenstra presentation
 `R_univ = ℤ_p[[x₁,…,x_g]]/(f₁,…,f_m)` in `g = dim` tangent-space
@@ -1232,8 +1271,10 @@ discriminants are divisible only by `2` and `p`
 dictionary `isUnramifiedAt_of_inertia_le_fixingSubgroup` of
 `MazurTorsion`), with exponents bounded in terms of the degree alone
 (`exists_discr_factorization_le_of_finrank_le`, PROVEN 2026-07-25 over
-the single sorried leaf of the cut, the WILD half of the
-different-exponent bound `differentIdeal_exponent_le_wild`), so the fields have
+the WILD half of the different-exponent bound
+`differentIdeal_exponent_le_wild`, itself PROVEN 2026-07-26 over the
+single sorried leaf of the cut, the local Eisenstein presentation
+`exists_eisensteinDerivative_dvd_of_wild`), so the fields have
 bounded discriminant and mathlib's Hermite theorem
 `NumberField.finite_of_discr_bdd` applies.
 -/
@@ -1257,8 +1298,252 @@ def InertiaTrivialAt {q : ℕ} (hq : q.Prime)
       (HeightOneSpectrum.adicCompletion ℚ
         hq.toHeightOneSpectrumRingOfIntegersRat))) σ ∈ N
 
-/-- **The WILD different-exponent bound at a prime** (sorry node —
-after the recut of 2026-07-25 the *single* arithmetic leaf of the
+/-- **(M4) Ultrametric sums: pairwise distinct term valuations force
+the valuation of the sum to be the extremal one** (PROVEN 2026-07-26).
+For a valuation `v` on a commutative ring with values in a linearly
+ordered commutative group with zero, if the terms of a finite sum have
+*pairwise distinct* valuations then `v (∑ i ∈ t, f i)` is the supremum
+of the `v (f i)` — in the multiplicative normalisation of `Valuation`,
+"supremum" is the *smallest order*, i.e. Serre's `v(Σ) = min v(xᵢ)`.
+
+This is the last of the four missing ingredients (M1)–(M4) recorded in
+the route of `differentIdeal_exponent_le_wild` below; mathlib has the
+two-term case `Valuation.map_add_of_distinct_val` but not the finite-sum
+one.  Proof: induction on the (nonempty) index set, using that the
+supremum over the tail is *attained* (`Finset.exists_mem_eq_sup'`), so
+the head's valuation differs from it and the two-term lemma applies. -/
+theorem valuation_sum_eq_sup'_of_pairwise_ne {R Γ₀ ι : Type*} [CommRing R]
+    [LinearOrderedCommGroupWithZero Γ₀] (v : Valuation R Γ₀)
+    {t : Finset ι} (ht : t.Nonempty) (f : ι → R)
+    (hne : ∀ i ∈ t, ∀ j ∈ t, i ≠ j → v (f i) ≠ v (f j)) :
+    v (∑ i ∈ t, f i) = t.sup' ht fun i => v (f i) := by
+  revert hne
+  induction ht using Finset.Nonempty.cons_induction with
+  | singleton a => intro _; simp
+  | cons a s h hs ih =>
+      intro hne
+      have hne' : ∀ i ∈ s, ∀ j ∈ s, i ≠ j → v (f i) ≠ v (f j) := fun i hi j hj hij =>
+        hne i (Finset.mem_cons_of_mem hi) j (Finset.mem_cons_of_mem hj) hij
+      obtain ⟨b, hb, hbeq⟩ := Finset.exists_mem_eq_sup' hs fun i => v (f i)
+      have hab : a ≠ b := fun hh => h (hh ▸ hb)
+      have hdist : v (f a) ≠ v (∑ i ∈ s, f i) := by
+        rw [ih hne', hbeq]
+        exact hne a (Finset.mem_cons_self a s) b (Finset.mem_cons_of_mem hb) hab
+      rw [Finset.sum_cons, Finset.sup'_cons, v.map_add_of_distinct_val hdist, ih hne']
+
+/-- **(M4) The form actually consumed: one term bounds the sum**
+(PROVEN 2026-07-26).  Same hypothesis as
+`valuation_sum_eq_sup'_of_pairwise_ne`, but distinctness is only
+required among the terms of *nonzero* valuation (equivalently, the
+nonzero terms — the hypothesis `hker` says the valuation has trivial
+kernel, which holds for the adic valuation of a Dedekind domain).  That
+weakening is essential: the derivative of an Eisenstein polynomial
+routinely has several *vanishing* coefficients, so several terms of the
+sum are literally `0` and their valuations coincide.  Conclusion, in
+additive language: `ord (∑ f i) ≤ ord (f i₀)` for every index `i₀`. -/
+theorem valuation_term_le_valuation_sum {R Γ₀ ι : Type*} [CommRing R]
+    [LinearOrderedCommGroupWithZero Γ₀] (v : Valuation R Γ₀)
+    (hker : ∀ x : R, v x = 0 → x = 0)
+    {t : Finset ι} (f : ι → R) {i₀ : ι} (hi₀ : i₀ ∈ t)
+    (hne : ∀ i ∈ t, ∀ j ∈ t, i ≠ j → v (f i) ≠ 0 → v (f j) ≠ 0 → v (f i) ≠ v (f j)) :
+    v (f i₀) ≤ v (∑ i ∈ t, f i) := by
+  classical
+  rcases eq_or_ne (v (f i₀)) 0 with h0 | h0
+  · rw [h0]; exact zero_le
+  have hsum : ∑ i ∈ t.filter (fun i => v (f i) ≠ 0), f i = ∑ i ∈ t, f i :=
+    Finset.sum_filter_of_ne fun x _ hx hv => hx (hker (f x) hv)
+  have hi₀' : i₀ ∈ t.filter (fun i => v (f i) ≠ 0) := Finset.mem_filter.mpr ⟨hi₀, h0⟩
+  have hne' : ∀ i ∈ t.filter (fun i => v (f i) ≠ 0), ∀ j ∈ t.filter (fun i => v (f i) ≠ 0),
+      i ≠ j → v (f i) ≠ v (f j) := by
+    intro i hi j hj hij
+    rw [Finset.mem_filter] at hi hj
+    exact hne i hi.1 j hj.1 hij hi.2 hj.2
+  rw [← hsum, valuation_sum_eq_sup'_of_pairwise_ne v ⟨i₀, hi₀'⟩ f hne']
+  exact Finset.le_sup' (fun i => v (f i)) hi₀'
+
+/-- **The `Q`-adic order of a rational integer is `e · v_q(m)`**
+(PROVEN 2026-07-26): for a prime `Q` of `𝓞_K` above the rational prime
+`q`, with ramification index `e = e(Q∣q)`, every nonzero natural number
+`m` satisfies `ord_Q(m) = e · v_q(m)`.
+
+This is the arithmetic input that makes the distinct-valuations
+argument of `differentIdeal_exponent_le_wild` work: it says the
+valuations of rational integers all lie in `e·ℤ`, so the term
+`i·a_i·π^{i−1}` of `g'(π)` has `Q`-order congruent to `i−1` mod `e`.
+It also supplies the *value* of the extremal term, `ord_Q(e·π^{e−1}) =
+e·v_q(e) + e − 1`, which is exactly the bound being proven.
+
+Proof: write `m = q^k·m'` with `q ∤ m'`
+(`Nat.ordProj_mul_ordCompl_eq_self`).  Bézout for the coprime pair
+`(q, m')` shows `m' ∉ Q` (otherwise `1 ∈ Q`), so `ord_Q(m') = 0`; and
+`ord_Q(q) = e` because the exact factorization
+`q·𝓞_K = Q^e·J` with `Q ⊔ J = ⊤` (`Ideal.eq_prime_pow_mul_coprime`
+together with the `normalizedFactors`-count characterization of `e`)
+gives `Q^e ∣ (q)` and, by cancellation in the ideal monoid,
+`Q^{e+1} ∤ (q)`. -/
+theorem intValuation_natCast_eq_exp_ramificationIdx
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (m : ℕ) (hm : m ≠ 0) :
+    v.intValuation (m : NumberField.RingOfIntegers K)
+      = WithZero.exp (-((Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal *
+          m.factorization q : ℕ) : ℤ)) := by
+  classical
+  set R := NumberField.RingOfIntegers K
+  set Q := v.asIdeal
+  have hQ : Q.IsPrime := v.isPrime
+  have hQ0 : Q ≠ ⊥ := v.ne_bot
+  set e := Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q with hedef
+  -- the exact factorization of `q·𝓞_K`
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : Q.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff hQ.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have hmap0 : (Ideal.span {((q : ℕ) : ℤ)}).map (algebraMap ℤ R) ≠ ⊥ :=
+    Ideal.map_ne_bot_of_ne_bot hspan0
+  haveI hQmax : Q.IsMaximal := hQ.isMaximal hQ0
+  obtain ⟨J, hsup, hfac⟩ := Ideal.eq_prime_pow_mul_coprime hmap0 Q
+  rw [← Ideal.IsDedekindDomain.ramificationIdx'_eq_normalizedFactors_count
+    hmap0 hQ hQ0, ← hedef] at hfac
+  have hspanq : Ideal.span {(q : R)} = (Ideal.span {((q : ℕ) : ℤ)}).map (algebraMap ℤ R) := by
+    rw [Ideal.map_span]
+    congr 1
+    simp
+  -- `Q ^ e ∣ (q)` and `¬ Q ^ (e+1) ∣ (q)`
+  have hdvd : Q ^ e ∣ Ideal.span {(q : R)} := by
+    rw [hspanq, hfac]; exact Dvd.intro _ rfl
+  have hnotdvd : ¬ Q ^ (e + 1) ∣ Ideal.span {(q : R)} := by
+    rw [hspanq, hfac, pow_succ]
+    intro hcon
+    have hQJ : Q ∣ J := (mul_dvd_mul_iff_left (pow_ne_zero e hQ0)).mp hcon
+    have : Q ⊔ J = Q := sup_eq_left.mpr (Ideal.le_of_dvd hQJ)
+    rw [hsup] at this
+    exact hQ.ne_top this.symm
+  -- hence `ord_Q (q) = e`
+  have hqne : (q : R) ≠ 0 := by
+    simpa using (Nat.cast_ne_zero (R := R)).mpr hq.ne_zero
+  have hvq : v.intValuation (q : R) = WithZero.exp (-(e : ℤ)) := by
+    obtain ⟨n, hn⟩ : ∃ n : ℕ, v.intValuation (q : R) = WithZero.exp (-(n : ℤ)) := by
+      rw [v.intValuation_if_neg hqne]
+      exact ⟨_, rfl⟩
+    have h1 : e ≤ n := by
+      have := (v.intValuation_le_pow_iff_dvd (q : R) e).mpr hdvd
+      rw [hn, WithZero.exp_le_exp] at this
+      omega
+    have h2 : n ≤ e := by
+      by_contra hcon
+      apply hnotdvd
+      rw [← v.intValuation_le_pow_iff_dvd, hn, WithZero.exp_le_exp]
+      push_cast
+      omega
+    rw [hn]
+    congr 2
+    omega
+  -- the `q`-free part has `Q`-order zero
+  set k := m.factorization q
+  set m' := m / q ^ k
+  have hmfac : q ^ k * m' = m := Nat.ordProj_mul_ordCompl_eq_self m q
+  have hnd : ¬ q ∣ m' := Nat.not_dvd_ordCompl hq hm
+  have hm'mem : (m' : R) ∉ Q := by
+    intro hcon
+    have hcop : Nat.Coprime q m' := (Nat.Prime.coprime_iff_not_dvd hq).mpr hnd
+    obtain ⟨u, w, huw⟩ : ∃ u w : ℤ, u * (q : ℤ) + w * (m' : ℤ) = 1 := by
+      refine ⟨Nat.gcdA q m', Nat.gcdB q m', ?_⟩
+      have := Nat.gcd_eq_gcd_ab q m'
+      rw [hcop] at this
+      push_cast at this ⊢
+      linarith [this]
+    have hone : (1 : R) ∈ Q := by
+      have hq' : ((u : R) * (q : R) + (w : R) * (m' : R)) ∈ Q :=
+        Ideal.add_mem _ (Ideal.mul_mem_left _ _ hmem) (Ideal.mul_mem_left _ _ hcon)
+      have hcast : ((u : R) * (q : R) + (w : R) * (m' : R)) = 1 := by
+        have h2 : ((u * (q : ℤ) + w * (m' : ℤ) : ℤ) : R) = ((1 : ℤ) : R) := by rw [huw]
+        rw [Int.cast_add, Int.cast_mul, Int.cast_mul, Int.cast_natCast, Int.cast_natCast,
+          Int.cast_one] at h2
+        exact h2
+      rwa [hcast] at hq'
+    exact hQ.ne_top (Ideal.eq_top_of_isUnit_mem _ hone isUnit_one)
+  have hvm' : v.intValuation (m' : R) = 1 :=
+    IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff.mpr hm'mem
+  -- put the two halves together
+  have hcast : ((m : ℕ) : R) = (q : R) ^ k * (m' : R) := by
+    rw [← hmfac, Nat.cast_mul, Nat.cast_pow]
+  rw [hcast, map_mul, map_pow, hvq, hvm', mul_one, ← WithZero.exp_nsmul]
+  congr 1
+  push_cast
+  ring
+
+/-- **(M1)+(M2)+(M3) The local Eisenstein presentation of the different
+at a wild prime** (sorry leaf — after the recut of 2026-07-26 the
+*single* arithmetic leaf under `differentIdeal_exponent_le_wild`, hence
+under the whole Hermite–Minkowski cut of
+`finite_setOf_isHardlyRamified`).
+
+Statement: at a prime `Q` of `𝓞_K` over the rational prime `q`, with
+`e = e(Q∣q)`, if `Q^d ∣ 𝔡_{K/ℚ}` then there are a uniformizer `π ∈ 𝓞_K`
+at `Q` (`ord_Q π = 1`) and "coefficients" `a : ℕ → 𝓞_K` with `a e = 1`,
+each `a i` for `0 < i < e` having `Q`-order in `e·ℤ` (or being zero at
+`Q`), such that
+
+  `Q^d ∣ (g'(π))`,  where  `g'(π) = Σ_{j<e} (j+1)·a_{j+1}·π^j`.
+
+This is precisely Serre, *Corps Locaux* I §6 Prop. 18 + III §6 Prop. 12
+transported back to the global ring, i.e. the bundle (M1)–(M3) of the
+route recorded on `differentIdeal_exponent_le_wild`:
+
+* **(M1) `differentIdeal` under localization/completion** — that
+  `ord_Q 𝔡_{𝓞_K/ℤ}` is the different exponent of the local extension
+  `ℤ_q → 𝓞_{K_Q}`.  mathlib has the different only for a *global*
+  Dedekind pair and nothing relating it to one prime; this is the gate
+  on everything else and the first thing to build.
+* **(M2) the maximal unramified subextension** `ℚ_q ⊆ L₀ ⊆ K_Q`, with
+  `K_Q/L₀` totally ramified of degree `e`; the tower formula
+  `differentIdeal_eq_differentIdeal_mul_differentIdeal` together with
+  "unramified ⟺ does not divide the different"
+  (`not_dvd_differentIdeal_iff`) discards the `L₀/ℚ_q` factor.  This is
+  what makes the coefficients' orders lie in `e·ℤ`: they come from
+  `𝓞_{L₀}`, on which `ord_Q` takes values in `e·ℤ`.
+* **(M3) monogenicity of a totally ramified extension of DVRs**
+  (Serre I §6 Prop. 18): `𝓞_{K_Q} = 𝓞_{L₀}[π]` for any uniformizer `π`,
+  whose minimal polynomial `g` over `𝓞_{L₀}` is Eisenstein of degree
+  `e`, and `𝔡 = (g'(π))` by `conductor_mul_differentIdeal` with unit
+  conductor.  Nakayama suffices — completeness is not needed — since
+  `𝓞_{K_Q}/𝔪_{L₀}𝓞_{K_Q}` is generated by `π̄` over the (common)
+  residue field.
+
+Finally the data are pushed back to `𝓞_K` by approximation: `ord_Q`
+only sees a bounded number of `Q`-adic digits, so `π` and the `a_i` may
+be taken in `𝓞_K` without changing any of the orders involved.
+
+Faithfulness: the statement is *equivalent in strength* to the wild
+bound — a prover of it must do the local work — but it is the honest
+joint, because everything downstream of it (the three lines of
+valuation arithmetic) is proven in
+`differentIdeal_exponent_le_wild` below.  It is not vacuous: `a e = 1`
+pins the extremal term to `e·π^{e−1}`, whose `Q`-order is exactly
+`e·v_q(e) + e − 1`, so no junk witness can satisfy the last clause. -/
+theorem exists_eisensteinDerivative_dvd_of_wild
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (d : ℕ) (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    ∃ π : NumberField.RingOfIntegers K, ∃ a : ℕ → NumberField.RingOfIntegers K,
+      v.intValuation π = WithZero.exp (-1 : ℤ) ∧
+      a e = 1 ∧
+      (∀ i, 0 < i → i < e → v.intValuation (a i) = 0 ∨
+        ∃ c : ℕ, v.intValuation (a i) = WithZero.exp (-((e * c : ℕ) : ℤ))) ∧
+      v.asIdeal ^ d ∣ Ideal.span {∑ j ∈ Finset.range e,
+        ((j + 1 : ℕ) : NumberField.RingOfIntegers K) * a (j + 1) * π ^ j} :=
+  sorry
+
+/-- **The WILD different-exponent bound at a prime** (PROVEN 2026-07-26
+over the single leaf `exists_eisensteinDerivative_dvd_of_wild`, which
+inherits its position as the *single* arithmetic leaf of the
 Hermite–Minkowski cut of `finite_setOf_isHardlyRamified`; Serre,
 *Corps Locaux* III §6 Prop. 13, wild half): for a number field `K`, a
 rational prime `q` and a prime `Q` of `𝓞_K` over `q` whose
@@ -1279,38 +1564,33 @@ in `ModThree.lean` as `not_pow_ramificationIdx_dvd_differentIdeal`
 `differentIdeal_exponent_le`; only the wild case is left open, which is
 why this leaf carries `hwild` as a hypothesis.
 
-Route, and the machinery it needs that mathlib does not have (in
-dependency order — the argument itself is three lines of valuation
-arithmetic, and every gap is in getting to a local Eisenstein
-polynomial):
+The cut of 2026-07-26 splits the classical proof into the part that
+needs local-field theory mathlib does not have and the part that is
+pure valuation arithmetic, and PROVES the second part here:
 
-* **(M1) `differentIdeal` under localization/completion.**  `v_Q` of
-  `𝔡_{𝓞_K/ℤ}` equals the different exponent of the extension of DVRs
-  `ℤ_(q) → (𝓞_K)_Q` (equivalently of `ℚ_q → K_Q`).  mathlib has the
-  different only for a global Dedekind pair; nothing relates it to a
-  localization at one prime.
-* **(M2) the maximal unramified subextension.**  `K_Q/ℚ_q` factors as
-  `ℚ_q ⊆ L₀ ⊆ K_Q` with `L₀/ℚ_q` unramified of degree `f` and
-  `K_Q/L₀` totally ramified of degree `e`; the tower formula
-  `differentIdeal_eq_differentIdeal_mul_differentIdeal` plus
-  "unramified ⟺ does not divide the different"
-  (mathlib's `not_dvd_differentIdeal_iff`) reduce to `K_Q/L₀`.
-* **(M3) monogenicity of a totally ramified extension of DVRs**
-  (Serre I §6 Prop. 18): `𝓞_{K_Q} = 𝓞_{L₀}[π]` for any uniformizer
-  `π`, its minimal polynomial `g` over `𝓞_{L₀}` is Eisenstein of
-  degree `e`, and `𝔡 = (g'(π))` (mathlib's
-  `conductor_mul_differentIdeal` with unit conductor).
-* **(M4) the ultrametric "distinct valuations" lemma**: if the terms
-  of a finite sum have pairwise distinct valuations then the sum's
-  valuation is their minimum.
+* the local half — reaching an Eisenstein presentation of the
+  different at `Q` — is the leaf
+  `exists_eisensteinDerivative_dvd_of_wild` above, which bundles
+  Serre's (M1) localization/completion of `differentIdeal`, (M2) the
+  maximal unramified subextension, and (M3) monogenicity of a totally
+  ramified extension of DVRs.  Its docstring records the route.
+* the arithmetic half is the proof below, over the PROVEN
+  `valuation_term_le_valuation_sum` (Serre's (M4), the ultrametric
+  distinct-valuations lemma) and the PROVEN
+  `intValuation_natCast_eq_exp_ramificationIdx` (`ord_Q(m) = e·v_q(m)`
+  for a rational integer `m`).
 
-With those, the bound is immediate: writing
-`g = X^e + a_{e−1}X^{e−1} + ⋯ + a_0` with `a_i ∈ 𝓞_{L₀}`, every
-nonzero value of `v_Q` on `L₀` lies in `e·ℤ` (total ramification), so
-`v_Q(i·a_i·π^{i−1}) ≡ i − 1 (mod e)` for `1 ≤ i ≤ e`: the `e`
+Concretely, with `g = X^e + a_{e−1}X^{e−1} + ⋯ + a_0` Eisenstein over
+the maximal unramified subring, every nonzero value of `ord_Q` on that
+subring lies in `e·ℤ` (total ramification), and so does `ord_Q` of a
+rational integer, so
+`ord_Q(i·a_i·π^{i−1}) ≡ i − 1 (mod e)` for `1 ≤ i ≤ e`: the `e`
 summands of `g'(π) = e·π^{e−1} + Σ_{i<e} i·a_i·π^{i−1}` have PAIRWISE
-DISTINCT valuations, whence `v_Q(g'(π))` is their minimum, which is at
-most the `i = e` term `v_Q(e·π^{e−1}) = e·v_q(e) + e − 1`.
+DISTINCT orders, whence `ord_Q(g'(π))` is their minimum, which is at
+most the `i = e` term `ord_Q(e·π^{e−1}) = e·v_q(e) + e − 1`.  (Terms
+whose coefficient vanishes are dropped first — that is exactly why
+`valuation_term_le_valuation_sum` only demands distinctness among the
+terms of nonzero valuation.)
 
 Alternative route, entirely inside the material already PROVEN in
 `ModThree.lean` but only for the Galois case, and needing its own
@@ -1341,8 +1621,110 @@ theorem differentIdeal_exponent_le_wild (K : Type*) [Field K]
     (hd : Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
     d ≤ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q - 1 +
       Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q *
-        (Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q).factorization q :=
-  sorry
+        (Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q).factorization q := by
+  classical
+  set R := NumberField.RingOfIntegers K
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : Q.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff hQ.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have hmap0 : (Ideal.span {((q : ℕ) : ℤ)}).map (algebraMap ℤ R) ≠ ⊥ :=
+    Ideal.map_ne_bot_of_ne_bot hspan0
+  have hQ0 : Q ≠ ⊥ := ne_bot_of_le_ne_bot hmap0
+    (Ideal.map_le_of_le_comap (Q.over_def (Ideal.span {((q : ℕ) : ℤ)})).le)
+  set v : HeightOneSpectrum R := ⟨Q, hQ, hQ0⟩
+  have hvQ : v.asIdeal = Q := rfl
+  set e := Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q with hedef
+  have he0 : e ≠ 0 :=
+    Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver Q hspan0
+  obtain ⟨π, a, hπ, hae, hacoef, hgd⟩ :=
+    exists_eisensteinDerivative_dvd_of_wild K q hq v (hvQ ▸ hmem) (hvQ ▸ hwild) e
+      (hvQ ▸ hedef) d (hvQ ▸ hd)
+  set F : ℕ → R := fun j => ((j + 1 : ℕ) : R) * a (j + 1) * π ^ j with hFdef
+  have hgd' : Q ^ d ∣ Ideal.span {∑ j ∈ Finset.range e, F j} := hgd
+  have hFval : ∀ j : ℕ, v.intValuation (F j) =
+      v.intValuation (((j + 1 : ℕ)) : R) * v.intValuation (a (j + 1)) *
+        (v.intValuation π) ^ j := by
+    intro j; simp only [hFdef, map_mul, map_pow]
+  have hexpπ : ∀ j : ℕ, (v.intValuation π) ^ j = WithZero.exp (-(j : ℤ)) := by
+    intro j
+    rw [hπ, ← WithZero.exp_nsmul]
+    congr 1
+    simp
+  have hje : (e - 1) + 1 = e := Nat.succ_pred_eq_of_pos (Nat.pos_of_ne_zero he0)
+  -- the extremal term `e·π^{e−1}`, of `Q`-order `e·v_q(e) + e − 1`
+  have hlast : v.intValuation (F (e - 1)) =
+      WithZero.exp (-((e * e.factorization q + (e - 1) : ℕ) : ℤ)) := by
+    have h1 := intValuation_natCast_eq_exp_ramificationIdx K q hq v (hvQ ▸ hmem) ((e - 1) + 1)
+      (Nat.succ_ne_zero _)
+    rw [hvQ, ← hedef, hje] at h1
+    have h2 : v.intValuation (a e) = 1 := by rw [hae]; exact map_one _
+    rw [hFval, hje, h1, h2, mul_one, hexpπ, ← WithZero.exp_add]
+    congr 1
+    rw [Nat.cast_add]
+    ring
+  -- every term of `g'(π)` has `Q`-order `≡ j (mod e)`
+  have hterm : ∀ j, j < e → v.intValuation (F j) = 0 ∨
+      ∃ c : ℕ, v.intValuation (F j) = WithZero.exp (-((e * c + j : ℕ) : ℤ)) := by
+    intro j hj
+    have h1 := intValuation_natCast_eq_exp_ramificationIdx K q hq v (hvQ ▸ hmem) (j + 1)
+      (Nat.succ_ne_zero _)
+    rw [hvQ, ← hedef] at h1
+    by_cases hjq : j + 1 = e
+    · right
+      refine ⟨e.factorization q, ?_⟩
+      rw [hjq] at h1
+      have h2 : v.intValuation (a e) = 1 := by rw [hae]; exact map_one _
+      rw [hFval, hjq, h1, h2, mul_one, hexpπ, ← WithZero.exp_add]
+      congr 1
+      rw [Nat.cast_add]
+      ring
+    · have hjlt : j + 1 < e := lt_of_le_of_ne (Nat.succ_le_of_lt hj) hjq
+      rcases hacoef (j + 1) (Nat.succ_pos j) hjlt with h0 | ⟨c, hc⟩
+      · left
+        rw [hFval, h0, mul_zero, zero_mul]
+      · right
+        refine ⟨(j + 1).factorization q + c, ?_⟩
+        rw [hFval, h1, hc, hexpπ, ← WithZero.exp_add, ← WithZero.exp_add]
+        congr 1
+        push_cast
+        ring
+  -- distinct residues mod `e` ⟹ pairwise distinct orders
+  have hne : ∀ i ∈ Finset.range e, ∀ j ∈ Finset.range e, i ≠ j →
+      v.intValuation (F i) ≠ 0 → v.intValuation (F j) ≠ 0 →
+      v.intValuation (F i) ≠ v.intValuation (F j) := by
+    intro i hi j hj hij hi0 hj0
+    rw [Finset.mem_range] at hi hj
+    rcases hterm i hi with h | ⟨c, hc⟩
+    · exact absurd h hi0
+    rcases hterm j hj with h' | ⟨c', hc'⟩
+    · exact absurd h' hj0
+    rw [hc, hc']
+    intro hcon
+    rw [WithZero.exp_inj, neg_inj] at hcon
+    have hnat : (e * c + i : ℕ) = (e * c' + j : ℕ) := by exact_mod_cast hcon
+    have := congrArg (fun n : ℕ => n % e) hnat
+    simp only [Nat.mul_add_mod, Nat.mod_eq_of_lt hi, Nat.mod_eq_of_lt hj] at this
+    exact hij this
+  -- assemble
+  have hker : ∀ x : R, v.intValuation x = 0 → x = 0 := by
+    intro x hx
+    by_contra hx0
+    exact v.intValuation_ne_zero x hx0 hx
+  have hsum_le : v.intValuation (F (e - 1)) ≤ v.intValuation (∑ j ∈ Finset.range e, F j) :=
+    valuation_term_le_valuation_sum v.intValuation hker F
+      (Finset.mem_range.mpr (Nat.pred_lt he0)) hne
+  have hdvd_le : v.intValuation (∑ j ∈ Finset.range e, F j) ≤ WithZero.exp (-(d : ℤ)) :=
+    (v.intValuation_le_pow_iff_dvd _ d).mpr hgd'
+  rw [hlast] at hsum_le
+  have hfin := le_trans hsum_le hdvd_le
+  rw [WithZero.exp_le_exp] at hfin
+  have hM : d ≤ e * e.factorization q + (e - 1) := by
+    have h := neg_le_neg_iff.mp hfin
+    exact_mod_cast h
+  exact le_trans hM (le_of_eq (Nat.add_comm _ _))
 
 /-- **The different-exponent bound at a prime** (PROVEN over the wild
 leaf — Serre, *Corps Locaux* III §6 Prop. 13 in full): for a prime `Q`
@@ -1370,8 +1752,10 @@ theorem differentIdeal_exponent_le (K : Type*) [Field K]
     exact le_trans (Nat.le_pred_of_lt hlt) (Nat.le_add_right _ _)
 
 /-- **Discriminant-exponent bound by the degree** (PROVEN 2026-07-25
-over the single wild different-exponent leaf
-`differentIdeal_exponent_le_wild` — the arithmetic leaf of the
+over the wild different-exponent bound
+`differentIdeal_exponent_le_wild`, which since 2026-07-26 is itself
+PROVEN over the local Eisenstein leaf
+`exists_eisensteinDerivative_dvd_of_wild` — the arithmetic leaf of the
 Hermite–Minkowski cut of `finite_setOf_isHardlyRamified`): for a fixed
 prime `q` and degree bound `n`, the exponent of `q` in the
 discriminant of a number field of degree at most `n` is bounded by a
@@ -1753,8 +2137,10 @@ theorem finite_setOf_galoisRep_isUnramifiedAt.{uA} (p : ℕ)
 /-- **Restricted-ramification finiteness leaf** (DECOMPOSED 2026-07-24
 along the Hermite–Minkowski cut above — PROVEN over the
 discriminant-exponent statement `exists_discr_factorization_le_of_finrank_le`,
-itself PROVEN 2026-07-25 over the single sorried leaf of the cut,
-the wild different-exponent bound `differentIdeal_exponent_le_wild`;
+itself PROVEN 2026-07-25 over the wild different-exponent bound
+`differentIdeal_exponent_le_wild`, itself PROVEN 2026-07-26 over the
+single sorried leaf of the cut, the local Eisenstein presentation
+`exists_eisensteinDerivative_dvd_of_wild`;
 the arithmetic finiteness input of the FOUNDER cut, and the only
 number-theoretic content of Schlessinger's H3 for the hardly ramified
 problem): over a FINITE discrete local coefficient `ℤ_p`-algebra `A`,
@@ -2415,7 +2801,7 @@ what the upgrade consumes, all of it pure commutative algebra:
 
 section ProfinitePadicTower
 
-open IsLocalRing
+open _root_.IsLocalRing
 
 universe uTA uTR
 
@@ -4452,7 +4838,7 @@ parameters `(p, x₁, …, x_q)` spanning the maximal ideal
 
 section AuslanderBuchsbaum
 
-open RingTheory.Sequence IsLocalRing Pointwise CategoryTheory Abelian Limits
+open RingTheory.Sequence _root_.IsLocalRing Pointwise CategoryTheory Abelian Limits
 
 /-- **Coset prime avoidance** (E. Davis; Kaplansky, *Commutative
 Rings*, Thm. 124; PROVEN): if none of the finitely many primes
@@ -6646,7 +7032,7 @@ theorem nonempty_patchedModule_of_patchingData.{v, w, s, uR, u}
 
 section PatchingInstantiation
 
-open IsLocalRing
+open _root_.IsLocalRing
 open scoped MvPowerSeries.WithPiTopology
 
 attribute [local instance] Module.quotientAnnihilator

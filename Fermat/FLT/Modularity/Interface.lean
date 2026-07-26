@@ -207,6 +207,11 @@ import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
 -- `stickelbergerProd_isPrincipal_of_powerResidueChar`, so the defining
 -- module must be imported publicly rather than reached transitively.
 public import Mathlib.NumberTheory.MulChar.Basic
+-- `jacobiSum`, the Jacobi sums of the Stickelberger cut: they occur in
+-- SIGNATURE position in `span_jacobiSum_mul_stickelbergerProd` and
+-- `stickelbergerProd_eq_span_prod_jacobiSum`, so the defining module must be
+-- imported publicly rather than reached transitively.
+public import Mathlib.NumberTheory.JacobiSum.Basic
 -- `Ideal.finiteQuotientOfFreeOfNeBot` (the residue field at a nonzero prime
 -- of a number ring is finite) and the finite-field API behind
 -- `prime_dvd_card_residueField_sub_one`.
@@ -2385,7 +2390,20 @@ therefore fully discharged here; only the arithmetic finiteness of
 prime — exactly the hypotheses under which the slash-sum is known to
 preserve `S₂(Γ₀(N))`. The function-level slash-sum `heckeTransform`
 stays the primitive; this is the operator-level packaging that the
-Hecke-algebra material below needs. -/
+Hecke-algebra material below needs.
+
+DUPLICATION NOTICE (2026-07-26): `heckeOp`/`heckeOp_coe`, in the
+`ComplexHeckeAlgebra` section far below, is the SAME construction,
+built concurrently by another owner for the Eichler–Shimura seam. The
+two cannot presently be merged in either direction by their authors
+alone: this one is needed at THIS point of the file (the bounded
+denominators assembly is consumed by
+`exists_integral_qExpansion_spanning` a few hundred lines below),
+while `heckeOp` is defined ~18k lines later. Consolidation is a
+one-declaration move for whichever owner touches the later section —
+delete `exists_heckeOpLinear_total`/`heckeOp` and let `heckeOp` be
+notation for `heckeEndo`, whose `coe_heckeEndo` is exactly
+`heckeOp_coe`. -/
 noncomputable def heckeEndo (N q : ℕ) :
     Module.End ℂ (CuspForm (Gamma0GL N) 2) :=
   if h : 0 < N ∧ q.Prime then
@@ -10590,13 +10608,453 @@ theorem exists_residual_trivialSub_or_psiSub
       rw [hd1 g, one_smul] at he
       exact ⟨e, by rw [← hτapp g, ← hb0]; exact he⟩
 
+open scoped Matrix in
+/-- **Ribet's walked lattice, in frame form** (Ribet cut E2a-ii-walk,
+item (b), support lemma; PROVEN 2026-07-25): if the residual
+representation `kk' ⊗_O Λ` of the standard lattice `Λ = Fin 2 → O` has a
+nonzero `ψ`-eigenvector `u₀` whose line carries the QUOTIENT character
+`1`, then there is a second continuous representation `ρO'` on
+`Fin 2 → O` together with an `O`-linear `f : Λ → Λ` of nonzero
+determinant intertwining `ρO'` with `ρO` — so the two lattices have the
+same generic fibre — whose reduction carries the two characters in the
+OPPOSITE order: a Galois-FIXED nonzero residual vector `v₀`, with `ψ`
+acting on the quotient by its line.
+
+This is one step of Ribet's tree of lattices (Ribet, *A modular
+construction of unramified `p`-extensions of `ℚ(μ_p)`*, Invent. Math. 34
+(1976), Prop. 2.1; Bellaïche–Chenevier, Astérisque 324 (2009), ch. 1).
+Abstractly the walked lattice is `Λ' = red⁻¹(kk'·u₀) ⊆ Λ`, the preimage
+of the residual `ψ`-line; the point of the statement is that `Λ'` is
+again free of rank `2`, so it can be PRESENTED on `Fin 2 → O`, the
+inclusion `Λ' ⊆ Λ` becoming the frame map `f`.
+
+EXECUTED ROUTE (all of it compiled; the whole argument is carried out in
+`2 × 2` matrices over `O`, which is what makes the freeness and the
+residual order swap computations rather than module theory):
+
+1. *The residual coordinate isomorphism.*
+   `E := (Algebra.TensorProduct.basis kk' (Pi.basisFun O (Fin 2))).equivFun`
+   identifies `kk' ⊗_O Λ` with `Fin 2 → kk'`, sending `1 ⊗ₜ x` to the
+   reduced coordinate vector `i ↦ algebraMap O kk' (x i)`. Since
+   `algebraMap O kk'` is SURJECTIVE, every tensor is of the form
+   `1 ⊗ₜ x`, so `E` turns every residual statement into a statement about
+   `kk'`-vectors, and base change acts through the reduced matrix:
+   `E ((σ.baseChange kk') g v) = (toMatrix' (σ g)).map (algebraMap O kk') *ᵥ E v`.
+2. *`O` is compact Hausdorff.* `algebraMap ℤ_p O` is injective because
+   `algebraMap O ℚ̄_p` is and the two structure maps commute
+   (`isScalarTower_padicInt_of_continuousSMul`), so `O` is a TORSION-FREE
+   module-finite `ℤ_p`-module, hence free (`ℤ_p` is a PID), hence
+   HOMEOMORPHIC to `ι → ℤ_p` for the module topology (both directions are
+   linear, so both are continuous); `ℤ_p` is compact Hausdorff.
+3. *Continuous division by a uniformiser.* For `π` irreducible,
+   `t ↦ π * t` is a continuous injection of the compact `O` into the
+   Hausdorff `O`, hence a HOMEOMORPHISM onto its image `𝔪`
+   (`Continuous.homeoOfEquivCompactToT2`). This is the one genuinely
+   topological ingredient, and it is what makes the walked cocycle
+   CONTINUOUS: the lower-left entry of the walked matrix is an entry of
+   `ρO` divided by `π`.
+4. *An adapted frame.* Pick `w` with `(E u₀) 0 * w 1 - w 0 * (E u₀) 1 ≠ 0`
+   (explicitly `![-1,0]` or `![0,1]` according to which coordinate of
+   `E u₀` is nonzero), lift `E u₀` and `w` to columns `y, z` of a matrix
+   `A` over `O`. Its determinant reduces to a nonzero element of `kk'`,
+   hence lies outside `𝔪`, hence is a UNIT — so `A` is invertible over
+   `O` and `B g := A⁻¹ * toMatrix' (ρO g) * A` is again integral.
+5. *The residual columns of `B`.* `Ā` is invertible over `kk'`, so
+   `Ā * B̄ g = ρ̄ g * Ā` determines `B̄ g` column by column: the first
+   column is `ψ g • ![1,0]` (because `Ā ![1,0] = E u₀` is the
+   `ψ`-eigenvector) and the second has lower entry `1` (because the
+   quotient character is `1`). So `B g 1 0 ∈ 𝔪` and `B g 0 0 ↦ ψ g`,
+   `B g 1 1 ↦ 1`.
+6. *The walked cocycle.* With `γ g := (B g 1 0) / π` (step 3) and
+   `D := !![1,0;0,π]`, put `M' g := !![B g 0 0, π * B g 0 1; γ g, B g 1 1]`;
+   then `D * M' g = B g * D`, and left multiplication by `D` is injective
+   on matrices (`π ≠ 0` in the domain `O`), which transports the cocycle
+   identities `B 1 = 1`, `B (g h) = B g * B h` to `M'`. Continuity of the
+   four entries comes from step 3 and from `ρO`'s own continuity through
+   the `O`-linear entry functionals on `Module.End O (Fin 2 → O)`, so
+   `ρO' := Matrix.toLin' ∘ M'` is an honest `GaloisRep`.
+7. *The conclusions.* `f := Matrix.toLin' (A * D)` has determinant
+   `det A * π ≠ 0`, and `(A * D) * M' g = toMatrix' (ρO g) * (A * D)` is
+   the intertwining. Residually `M̄' g = !![ψ g, 0; γ̄ g, 1]`, since
+   `π ↦ 0`; so `v₀ := 1 ⊗ₜ Pi.single 1 1` — the second frame vector of the
+   walked lattice, i.e. the image of `𝔪Λ / 𝔪Λ'` — is FIXED, and for every
+   `x` the vector `ρ̄' g x - ψ g • x` lies on its line. That is exactly
+   the swapped order. -/
+theorem exists_ribet_walked_frame
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    {kk' : Type u} [Field kk'] [TopologicalSpace kk'] [IsTopologicalRing kk']
+    [Algebra O kk'] [ContinuousSMul O kk']
+    (hsurj' : Function.Surjective (algebraMap O kk'))
+    (hker' : RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O)
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk')
+    {u₀ : kk' ⊗[O] (Fin 2 → O)} (hu₀ : u₀ ≠ 0)
+    (hfixψ : ∀ g, (ρO.baseChange kk') g u₀ = ψ g • u₀)
+    (hquo1 : ∀ g x, ∃ c : kk', (ρO.baseChange kk') g x - x = c • u₀) :
+    ∃ (ρO' : GaloisRep ℚ O (Fin 2 → O))
+      (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O)),
+      LinearMap.det f ≠ 0 ∧
+      (∀ g x, f (ρO' g x) = ρO g (f x)) ∧
+      ∃ v₀ : kk' ⊗[O] (Fin 2 → O), v₀ ≠ 0 ∧
+        (∀ g, (ρO'.baseChange kk') g v₀ = v₀) ∧
+        (∀ g x, ∃ c : kk',
+          (ρO'.baseChange kk') g x - ψ g • x = c • v₀) := by
+  classical
+  -- ## 0. The residual coordinate isomorphism `E : kk' ⊗ O² ≃ kk'²`.
+  set E := (Algebra.TensorProduct.basis kk' (Pi.basisFun O (Fin 2))).equivFun with hEdef
+  have hE : ∀ x : Fin 2 → O,
+      E ((1 : kk') ⊗ₜ[O] x) = fun i => algebraMap O kk' (x i) := by
+    intro x
+    funext i
+    simp [hEdef, Module.Basis.equivFun_apply, Algebra.TensorProduct.basis_repr_tmul]
+  have hEsurj : ∀ v : kk' ⊗[O] (Fin 2 → O), ∃ x : Fin 2 → O,
+      (1 : kk') ⊗ₜ[O] x = v := by
+    intro v
+    induction v using TensorProduct.induction_on with
+    | zero => exact ⟨0, by simp⟩
+    | tmul r x =>
+        obtain ⟨a, ha⟩ := hsurj' r
+        refine ⟨a • x, ?_⟩
+        have h2 : (1 : kk') ⊗ₜ[O] (a • x) = (algebraMap O kk' a) ⊗ₜ[O] x := by
+          rw [← TensorProduct.smul_tmul, Algebra.smul_def, mul_one]
+        rw [h2, ha]
+    | add v₁ v₂ h₁ h₂ =>
+        obtain ⟨x₁, rfl⟩ := h₁
+        obtain ⟨x₂, rfl⟩ := h₂
+        exact ⟨x₁ + x₂, by rw [TensorProduct.tmul_add]⟩
+  -- the dictionary: base change acts through the reduced matrix
+  have hdict : ∀ (σ : GaloisRep ℚ O (Fin 2 → O))
+      (g : Field.absoluteGaloisGroup ℚ) (v : kk' ⊗[O] (Fin 2 → O)),
+      E ((σ.baseChange kk') g v) =
+        ((LinearMap.toMatrix' (σ g)).map (algebraMap O kk')) *ᵥ (E v) := by
+    intro σ g v
+    obtain ⟨x, rfl⟩ := hEsurj v
+    rw [GaloisRep.baseChange_tmul, hE, hE]
+    funext i
+    have hmv : ((LinearMap.toMatrix' (σ g)) *ᵥ x) i = (σ g x) i := by
+      rw [← Matrix.toLin'_apply, Matrix.toLin'_toMatrix']
+    rw [← hmv]
+    simp [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.map_apply]
+  -- ## 1. `O` is compact Hausdorff.
+  haveI : IsScalarTower ℤ_[p] O (AlgebraicClosure ℚ_[p]) :=
+    isScalarTower_padicInt_of_continuousSMul
+  have hZinj : Function.Injective (algebraMap ℤ_[p] O) := by
+    intro a b hab
+    refine algebraMap_padicInt_algebraicClosure_injective (ℓ := p) ?_
+    rw [IsScalarTower.algebraMap_apply ℤ_[p] O (AlgebraicClosure ℚ_[p]),
+      IsScalarTower.algebraMap_apply ℤ_[p] O (AlgebraicClosure ℚ_[p]), hab]
+  haveI : Module.IsTorsionFree ℤ_[p] O :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
+  obtain ⟨hO⟩ : Nonempty (O ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[p] O → ℤ_[p])) := by
+    let bO := Module.Free.chooseBasis ℤ_[p] O
+    have hc1 : Continuous bO.equivFun :=
+      IsModuleTopology.continuous_of_linearMap bO.equivFun.toLinearMap
+    have hc2 : Continuous bO.equivFun.symm :=
+      IsModuleTopology.continuous_of_linearMap bO.equivFun.symm.toLinearMap
+    exact ⟨Homeomorph.mk bO.equivFun.toEquiv hc1 hc2⟩
+  haveI : CompactSpace O := hO.symm.compactSpace
+  haveI : T2Space O := hO.symm.t2Space
+  -- ## 2. A uniformiser, and continuous division by it.
+  obtain ⟨π, hπirr⟩ := IsDiscreteValuationRing.exists_irreducible O
+  have hπ0 : π ≠ 0 := hπirr.ne_zero
+  have hmaxπ : IsLocalRing.maximalIdeal O = Ideal.span {π} := hπirr.maximalIdeal_eq
+  have hπbar : algebraMap O kk' π = 0 := by
+    have h : π ∈ RingHom.ker (algebraMap O kk') := by
+      rw [hker', hmaxπ]
+      exact Ideal.mem_span_singleton_self π
+    exact RingHom.mem_ker.mp h
+  have hμinj : Function.Injective (fun t : O => π * t) := fun _ _ h =>
+    mul_left_cancel₀ hπ0 h
+  have hμcont : Continuous (fun t : O => π * t) := continuous_const.mul continuous_id
+  have heμcont : Continuous (Equiv.ofInjective (fun t : O => π * t) hμinj) :=
+    Continuous.subtype_mk hμcont _
+  let hμ : O ≃ₜ Set.range (fun t : O => π * t) :=
+    Continuous.homeoOfEquivCompactToT2 heμcont
+  have hμspec : ∀ y : Set.range (fun t : O => π * t), π * (hμ.symm y) = (y : O) :=
+    fun y => congrArg Subtype.val (hμ.apply_symm_apply y)
+  -- ## 3. The adapted frame `A` of the lattice.
+  have huu0 : E u₀ ≠ 0 := fun h => hu₀ (E.injective (by rw [h, map_zero]))
+  obtain ⟨w, hw⟩ : ∃ w : Fin 2 → kk',
+      (E u₀) 0 * w 1 - w 0 * (E u₀) 1 ≠ 0 := by
+    by_cases h0 : (E u₀) 0 = 0
+    · have h1 : (E u₀) 1 ≠ 0 := by
+        intro h1
+        refine huu0 ?_
+        funext i
+        fin_cases i
+        · simpa using h0
+        · simpa using h1
+      refine ⟨![-1, 0], ?_⟩
+      simpa [h0] using h1
+    · exact ⟨![0, 1], by simpa using h0⟩
+  obtain ⟨y, hy⟩ : ∃ y : Fin 2 → O, ∀ i, algebraMap O kk' (y i) = (E u₀) i :=
+    ⟨fun i => (hsurj' ((E u₀) i)).choose, fun i => (hsurj' ((E u₀) i)).choose_spec⟩
+  obtain ⟨z, hz⟩ : ∃ z : Fin 2 → O, ∀ i, algebraMap O kk' (z i) = w i :=
+    ⟨fun i => (hsurj' (w i)).choose, fun i => (hsurj' (w i)).choose_spec⟩
+  set A : Matrix (Fin 2) (Fin 2) O := !![y 0, z 0; y 1, z 1] with hAdef
+  have hAdetbar : algebraMap O kk' A.det = (E u₀) 0 * w 1 - w 0 * (E u₀) 1 := by
+    rw [hAdef, Matrix.det_fin_two_of]
+    simp only [map_sub, map_mul, hy, hz]
+  have hAdet : IsUnit A.det := by
+    by_contra hcon
+    have hm : A.det ∈ IsLocalRing.maximalIdeal O :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hcon
+    rw [← hker', RingHom.mem_ker, hAdetbar] at hm
+    exact hw hm
+  set Ab : Matrix (Fin 2) (Fin 2) kk' := A.map (algebraMap O kk') with hAbdef
+  have hAbdet : Ab.det ≠ 0 := by
+    rw [hAbdef, ← RingHom.mapMatrix_apply, ← RingHom.map_det, hAdetbar]
+    exact hw
+  have hAbinj : ∀ a b : Fin 2 → kk', Ab *ᵥ a = Ab *ᵥ b → a = b := by
+    intro a b hab
+    by_contra hne
+    have h0 : Ab *ᵥ (a - b) = 0 := by
+      rw [Matrix.mulVec_sub, hab, sub_self]
+    exact hAbdet (Matrix.exists_mulVec_eq_zero_iff.mp ⟨a - b, sub_ne_zero.mpr hne, h0⟩)
+  have hAbe0 : Ab *ᵥ ![1, 0] = E u₀ := by
+    funext i
+    fin_cases i <;>
+      simp [hAbdef, hAdef, Matrix.mulVec, dotProduct, Fin.sum_univ_two,
+        Matrix.map_apply, hy]
+  have hAbe1 : Ab *ᵥ ![0, 1] = w := by
+    funext i
+    fin_cases i <;>
+      simp [hAbdef, hAdef, Matrix.mulVec, dotProduct, Fin.sum_univ_two,
+        Matrix.map_apply, hz]
+  -- ## 4. The conjugated matrix cocycle `B`, and its residual columns.
+  set Mt : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) O :=
+    fun g => LinearMap.toMatrix' (ρO g) with hMtdef
+  have hMtapp : ∀ g, Mt g = LinearMap.toMatrix' (ρO g) := fun _ => rfl
+  set B : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) O :=
+    fun g => A⁻¹ * Mt g * A with hBdef
+  have hBapp : ∀ g, B g = A⁻¹ * Mt g * A := fun _ => rfl
+  have hAB : ∀ g, A * B g = Mt g * A := by
+    intro g
+    rw [hBapp, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+      Matrix.mul_nonsing_inv A hAdet, Matrix.one_mul]
+  have hB1 : B 1 = 1 := by
+    rw [hBapp, hMtapp, map_one, Module.End.one_eq_id, LinearMap.toMatrix'_id,
+      Matrix.mul_one]
+    exact Matrix.nonsing_inv_mul A hAdet
+  have hBmul : ∀ g h, B (g * h) = B g * B h := by
+    intro g h
+    have hMtmul : Mt (g * h) = Mt g * Mt h := by
+      rw [hMtapp, hMtapp, hMtapp, map_mul]
+      exact LinearMap.toMatrix'_mul _ _
+    rw [hBapp, hBapp, hBapp, hMtmul]
+    simp only [Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc A A⁻¹, Matrix.mul_nonsing_inv A hAdet, Matrix.one_mul]
+  have hABbar : ∀ g, Ab * ((B g).map (algebraMap O kk')) =
+      ((Mt g).map (algebraMap O kk')) * Ab := by
+    intro g
+    have h := congrArg (fun M : Matrix (Fin 2) (Fin 2) O =>
+      M.map (algebraMap O kk')) (hAB g)
+    simpa [hAbdef, Matrix.map_mul] using h
+  have hMtbar : ∀ g (v : kk' ⊗[O] (Fin 2 → O)),
+      ((Mt g).map (algebraMap O kk')) *ᵥ (E v) = E ((ρO.baseChange kk') g v) := by
+    intro g v
+    rw [hMtapp]
+    exact (hdict ρO g v).symm
+  have hcol0 : ∀ g, ((B g).map (algebraMap O kk')) *ᵥ ![1, 0]
+      = ψ g • ![(1 : kk'), 0] := by
+    intro g
+    refine hAbinj _ _ ?_
+    calc Ab *ᵥ (((B g).map (algebraMap O kk')) *ᵥ ![1, 0])
+        = (Ab * ((B g).map (algebraMap O kk'))) *ᵥ ![1, 0] :=
+          Matrix.mulVec_mulVec _ _ _
+      _ = (((Mt g).map (algebraMap O kk')) * Ab) *ᵥ ![1, 0] := by rw [hABbar]
+      _ = ((Mt g).map (algebraMap O kk')) *ᵥ (Ab *ᵥ ![1, 0]) :=
+          (Matrix.mulVec_mulVec _ _ _).symm
+      _ = ((Mt g).map (algebraMap O kk')) *ᵥ (E u₀) := by rw [hAbe0]
+      _ = E ((ρO.baseChange kk') g u₀) := hMtbar g u₀
+      _ = ψ g • (E u₀) := by rw [hfixψ, map_smul]
+      _ = ψ g • (Ab *ᵥ ![1, 0]) := by rw [hAbe0]
+      _ = Ab *ᵥ (ψ g • ![(1 : kk'), 0]) := (Matrix.mulVec_smul _ _ _).symm
+  have hcol1 : ∀ g, ∃ c : kk',
+      ((B g).map (algebraMap O kk')) *ᵥ ![0, 1] = ![(0 : kk'), 1] + c • ![1, 0] := by
+    intro g
+    obtain ⟨c, hc⟩ := hquo1 g (E.symm w)
+    have hc' : (ρO.baseChange kk') g (E.symm w) = c • u₀ + E.symm w :=
+      sub_eq_iff_eq_add.mp hc
+    refine ⟨c, hAbinj _ _ ?_⟩
+    calc Ab *ᵥ (((B g).map (algebraMap O kk')) *ᵥ ![0, 1])
+        = (Ab * ((B g).map (algebraMap O kk'))) *ᵥ ![0, 1] :=
+          Matrix.mulVec_mulVec _ _ _
+      _ = (((Mt g).map (algebraMap O kk')) * Ab) *ᵥ ![0, 1] := by rw [hABbar]
+      _ = ((Mt g).map (algebraMap O kk')) *ᵥ (Ab *ᵥ ![0, 1]) :=
+          (Matrix.mulVec_mulVec _ _ _).symm
+      _ = ((Mt g).map (algebraMap O kk')) *ᵥ (E (E.symm w)) := by
+          rw [hAbe1, E.apply_symm_apply]
+      _ = E ((ρO.baseChange kk') g (E.symm w)) := hMtbar g _
+      _ = c • (E u₀) + w := by rw [hc', map_add, map_smul, E.apply_symm_apply]
+      _ = c • (Ab *ᵥ ![1, 0]) + (Ab *ᵥ ![0, 1]) := by rw [hAbe0, hAbe1]
+      _ = Ab *ᵥ (![(0 : kk'), 1] + c • ![1, 0]) := by
+          rw [Matrix.mulVec_add, Matrix.mulVec_smul]
+          exact add_comm _ _
+  have hB00 : ∀ g, algebraMap O kk' (B g 0 0) = ψ g := by
+    intro g
+    have h := congrFun (hcol0 g) 0
+    simpa [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.map_apply] using h
+  have hB10 : ∀ g, algebraMap O kk' (B g 1 0) = 0 := by
+    intro g
+    have h := congrFun (hcol0 g) 1
+    simpa [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.map_apply] using h
+  have hB11 : ∀ g, algebraMap O kk' (B g 1 1) = 1 := by
+    intro g
+    obtain ⟨c, hc⟩ := hcol1 g
+    have h := congrFun hc 1
+    simpa [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.map_apply] using h
+  -- ## 5. Dividing the lower-left entry by the uniformiser.
+  have hmemrange : ∀ g, B g 1 0 ∈ Set.range (fun t : O => π * t) := by
+    intro g
+    have hm : B g 1 0 ∈ IsLocalRing.maximalIdeal O := by
+      rw [← hker', RingHom.mem_ker]
+      exact hB10 g
+    rw [hmaxπ, Ideal.mem_span_singleton] at hm
+    obtain ⟨t, ht⟩ := hm
+    exact ⟨t, ht.symm⟩
+  set γ : Field.absoluteGaloisGroup ℚ → O :=
+    fun g => hμ.symm ⟨B g 1 0, hmemrange g⟩ with hγdef
+  have hγspec : ∀ g, π * γ g = B g 1 0 := fun g => hμspec ⟨_, hmemrange g⟩
+  -- ## 6. Continuity of all the entries.
+  letI : TopologicalSpace (Module.End O (Fin 2 → O)) :=
+    moduleTopology O (Module.End O (Fin 2 → O))
+  haveI : ContinuousAdd (Module.End O (Fin 2 → O)) :=
+    ModuleTopology.continuousAdd O _
+  haveI : ContinuousSMul O (Module.End O (Fin 2 → O)) :=
+    ModuleTopology.continuousSMul O _
+  have hMtcont : ∀ i j, Continuous fun g => Mt g i j := by
+    intro i j
+    have hc : Continuous fun g => (ρO g) (Pi.single j (1 : O)) i :=
+      (IsModuleTopology.continuous_of_linearMap
+        ({ toFun := fun T : Module.End O (Fin 2 → O) => T (Pi.single j (1 : O)) i
+           map_add' := fun _ _ => rfl
+           map_smul' := fun _ _ => rfl } : Module.End O (Fin 2 → O) →ₗ[O] O)).comp
+        (ContinuousMonoidHom.continuous_toFun ρO)
+    simpa only [hMtapp, LinearMap.toMatrix'_apply] using hc
+  have hBcont : ∀ i j, Continuous fun g => B g i j := by
+    intro i j
+    have hexp : (fun g => B g i j) = fun g =>
+        (A⁻¹ i 0 * Mt g 0 0 + A⁻¹ i 1 * Mt g 1 0) * A 0 j +
+        (A⁻¹ i 0 * Mt g 0 1 + A⁻¹ i 1 * Mt g 1 1) * A 1 j := by
+      funext g
+      rw [hBapp]
+      simp [Matrix.mul_apply, Fin.sum_univ_two]
+    rw [hexp]
+    exact (((continuous_const.mul (hMtcont 0 0)).add
+      (continuous_const.mul (hMtcont 1 0))).mul continuous_const).add
+      (((continuous_const.mul (hMtcont 0 1)).add
+      (continuous_const.mul (hMtcont 1 1))).mul continuous_const)
+  have hγcont : Continuous γ :=
+    hμ.symm.continuous.comp (Continuous.subtype_mk (hBcont 1 0) _)
+  -- ## 7. The walked matrix cocycle.
+  set D : Matrix (Fin 2) (Fin 2) O := !![1, 0; 0, π] with hDdef
+  set M' : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) O :=
+    fun g => !![B g 0 0, π * B g 0 1; γ g, B g 1 1] with hM'def
+  have hM'app : ∀ g, M' g = !![B g 0 0, π * B g 0 1; γ g, B g 1 1] := fun _ => rfl
+  have hDrow : ∀ (X : Matrix (Fin 2) (Fin 2) O) (j : Fin 2),
+      (D * X) 0 j = X 0 j ∧ (D * X) 1 j = π * X 1 j := by
+    intro X j
+    constructor <;> simp [hDdef, Matrix.mul_apply, Fin.sum_univ_two]
+  have hDcancel : ∀ X Y : Matrix (Fin 2) (Fin 2) O, D * X = D * Y → X = Y := by
+    intro X Y hXY
+    have hent : ∀ (i j : Fin 2), (D * X) i j = (D * Y) i j := fun i j => by rw [hXY]
+    ext i j
+    fin_cases i
+    · have h := hent 0 j
+      rw [(hDrow X j).1, (hDrow Y j).1] at h
+      exact h
+    · have h := hent 1 j
+      rw [(hDrow X j).2, (hDrow Y j).2] at h
+      exact mul_left_cancel₀ hπ0 h
+  have hDM : ∀ g, D * M' g = B g * D := by
+    intro g
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [hDdef, hM'app, Matrix.mul_apply, Fin.sum_univ_two, hγspec g, mul_comm]
+  have hM'one : M' 1 = 1 := by
+    refine hDcancel _ _ ?_
+    rw [hDM, hB1, Matrix.one_mul, Matrix.mul_one]
+  have hM'mul : ∀ g h, M' (g * h) = M' g * M' h := by
+    intro g h
+    refine hDcancel _ _ ?_
+    rw [hDM, hBmul, Matrix.mul_assoc, ← hDM h, ← Matrix.mul_assoc, ← hDM g,
+      Matrix.mul_assoc]
+  have hM'decomp : ∀ g, M' g =
+      (B g 0 0) • !![1, 0; 0, 0] + (π * B g 0 1) • !![0, 1; 0, 0] +
+        (γ g) • !![0, 0; 1, 0] + (B g 1 1) • !![0, 0; 0, 1] := by
+    intro g
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp [hM'app]
+  -- ## 8. The walked representation.
+  let ρO' : GaloisRep ℚ O (Fin 2 → O) :=
+    { toFun := fun g => Matrix.toLin' (M' g)
+      map_one' := by rw [hM'one, Matrix.toLin'_one]; rfl
+      map_mul' := fun g h => by rw [hM'mul g h, Matrix.toLin'_mul]; rfl
+      continuous_toFun := by
+        simp only [hM'decomp, map_add, map_smul]
+        exact ((((hBcont 0 0).smul continuous_const).add
+          ((continuous_const.mul (hBcont 0 1)).smul continuous_const)).add
+          (hγcont.smul continuous_const)).add
+          ((hBcont 1 1).smul continuous_const) }
+  have hρO'app : ∀ g, ρO' g = Matrix.toLin' (M' g) := fun _ => rfl
+  have hρO'mat : ∀ g, LinearMap.toMatrix' (ρO' g) = M' g := by
+    intro g
+    rw [hρO'app, LinearMap.toMatrix'_toLin']
+  -- ## 9. Assembly.
+  refine ⟨ρO', Matrix.toLin' (A * D), ?_, ?_,
+    (1 : kk') ⊗ₜ[O] (fun i => if i = 1 then (1 : O) else 0), ?_, ?_, ?_⟩
+  · rw [LinearMap.det_toLin', Matrix.det_mul]
+    have hDdetv : D.det = π := by rw [hDdef, Matrix.det_fin_two_of]; ring
+    rw [hDdetv]
+    exact mul_ne_zero hAdet.ne_zero hπ0
+  · intro g x
+    have hmat : (A * D) * M' g = Mt g * (A * D) := by
+      rw [Matrix.mul_assoc, hDM, ← Matrix.mul_assoc, hAB, Matrix.mul_assoc]
+    have hρ : ∀ v : Fin 2 → O, ρO g v = Mt g *ᵥ v := by
+      intro v
+      rw [hMtapp]
+      exact (LinearMap.toMatrix'_mulVec _ _).symm
+    rw [hρO'app, Matrix.toLin'_apply, Matrix.toLin'_apply, Matrix.toLin'_apply,
+      hρ, Matrix.mulVec_mulVec, Matrix.mulVec_mulVec, hmat]
+  · -- `v₀ ≠ 0`
+    intro hcon
+    have h := congrArg E hcon
+    rw [hE, map_zero] at h
+    have h1 := congrFun h 1
+    simp at h1
+  · -- `v₀` is fixed
+    intro g
+    refine E.injective ?_
+    rw [hdict, hρO'mat, hE]
+    funext i
+    fin_cases i <;>
+      simp [hM'app, Matrix.mulVec, dotProduct,
+        Matrix.map_apply, hπbar, hB11 g]
+  · -- the quotient character is `ψ`
+    intro g x
+    obtain ⟨t, rfl⟩ := hEsurj x
+    refine ⟨algebraMap O kk' (γ g) * algebraMap O kk' (t 0) +
+      (1 - ψ g) * algebraMap O kk' (t 1), ?_⟩
+    refine E.injective ?_
+    simp only [map_sub, map_smul, hdict, hρO'mat, hE]
+    funext i
+    fin_cases i <;>
+      simp [hM'app, Matrix.mulVec, dotProduct, Fin.sum_univ_two,
+        Matrix.map_apply, hπbar, hB00 g, hB11 g]
+    ring
+
 set_option linter.unusedVariables false in
 set_option backward.isDefEq.respectTransparency false in
 /-- **One step of Ribet's walk: swapping the order of the residual
-characters** (Ribet cut E2a-ii-walk, item (b); PARTIALLY PROVEN — the
-lattice construction and the generic identification are proven, one
-sorried `have hwalk` remains; carved out
-2026-07-25 from `exists_ribet_walk_stable_line`): if the reduction of
+characters** (Ribet cut E2a-ii-walk, item (b); PROVEN 2026-07-25 —
+carved out from `exists_ribet_walk_stable_line`, decomposed the same
+day, and its last leaf `hwalk` discharged by the frame-form walk lemma
+`exists_ribet_walked_frame` above): if the reduction of
 the given lattice has `ψ` as its SUB-character — a residual
 `ψ`-eigenvector `v₀` whose line carries the quotient character `1` —
 then some commensurable stable lattice, again presented on
@@ -10628,8 +11086,18 @@ continuously, and `hOinj` is what makes the generic fibres of `Λ` and
 hypothesis, which is exactly what makes `Λ'` a PROPER intermediate
 lattice.
 
-DECOMPOSITION (2026-07-25): the assembly below is PROVEN and the leaf
-is now the single sorried `have hwalk`. What is proven here:
+DECOMPOSITION (2026-07-25): the assembly below was first cut down to a
+single sorried `have hwalk`, which is now PROVEN by
+`exists_ribet_walked_frame` (see its docstring for the executed route —
+the walked lattice is framed by an explicit `2 × 2` change of basis
+rather than as a submodule, so its freeness and the residual order swap
+become matrix computations, and its continuity comes from division by a
+uniformiser being a homeomorphism onto the maximal ideal). Note that
+`hwalk` consumes only the quotient-character hypothesis: the submodule
+`N`, its stability, properness and `𝔪Λ ⊆ N` — all constructed and proven
+below — are what MOTIVATE the walked lattice, but the frame-form lemma
+rebuilds the same lattice from `u₀` directly, so they are passed and
+discarded. What is proven here:
 * the walked lattice itself is CONSTRUCTED as real code —
   `Λ' = red⁻¹(kk'·u₀)` for the reduction `red : Λ →ₗ[O] kk' ⊗_O Λ`,
   `x ↦ 1 ⊗ₜ x`, i.e. `Submodule.comap red ((kk' ∙ u₀).restrictScalars O)`
@@ -10640,17 +11108,19 @@ is now the single sorried `have hwalk`. What is proven here:
   `kk' ⊗_O Λ`, since `r ⊗ₜ x = r • (1 ⊗ₜ x)` — would lie in the LINE
   `kk'·u₀`, contradicting `finrank = 2`), and `𝔪Λ ⊆ Λ'` (for
   `m ∈ 𝔪 = ker(O → kk')`, `1 ⊗ₜ (m • x) = (algebraMap m) ⊗ₜ x = 0`).
-* the GENERIC IDENTIFICATION: the sorried step returns the inclusion
+* the GENERIC IDENTIFICATION: the walk step returns the inclusion
   `Λ' ⊆ Λ` in frame form, an `O`-linear `f` with `det f ≠ 0`
   intertwining `ρO'` and `ρO`; base-changing `f` to `ℚ̄_p` gives
   `det (f ⊗ ℚ̄_p) = algebraMap (det f) ≠ 0` by `hOinj`, hence an
   isomorphism (`LinearMap.isUnit_iff_isUnit_det` + `Module.End.isUnit_iff`),
   and its equivariance is `TensorProduct.induction_on` over `f`'s.
-The residual order swap and the freeness/framing of `Λ'` (finitely
-generated torsion-free over the DVR `O`, hence free, of rank `2`
-because it contains `𝔪Λ`) are what remains inside `hwalk`, which is
-handed exactly the three lattice properties plus the quotient-character
-hypothesis it consumes. -/
+The residual order swap and the freeness/framing of `Λ'` are what
+`hwalk` supplies. The abstract route to the latter — `Λ'` is finitely
+generated and torsion-free over the DVR `O`, hence free, of rank `2`
+because it contains `𝔪Λ` — is NOT the route taken:
+`exists_ribet_walked_frame` instead exhibits an explicit frame
+`(y, π z)` of `Λ'` inside a frame `(y, z)` of `Λ` adapted to `u₀`, which
+is what turns the whole step into `2 × 2` matrix algebra. -/
 theorem exists_ribet_walk_swap_order
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
@@ -10746,7 +11216,8 @@ theorem exists_ribet_walk_swap_order
           (∀ g, (ρO'.baseChange kk') g v₀ = v₀) ∧
           (∀ g x, ∃ c : kk',
             (ρO'.baseChange kk') g x - ψ g • x = c • v₀) := by
-    sorry
+    intro _ _ _ hq
+    exact exists_ribet_walked_frame (p := p) hsurj' hker' ψ hu₀ hfixψ hq
   obtain ⟨ρO', f, hfdet, hfequiv, v₀, hv₀, hfix, hquo⟩ :=
     hwalk hNstable hNtop hNmax hquo1
   -- the generic identification: base change `f` and invert it over `ℚ̄_p`
@@ -13313,8 +13784,8 @@ theorem exists_flatIsogenousLattice_of_equivariantCover
         (((ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).toLocal 𝔭ᵥ).Space) :=
       { toFun := fun x =>
           (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]] (ψlin x)
-        map_zero' := by rw [map_zero, TensorProduct.tmul_zero] <;> rfl
-        map_add' := fun x y => by rw [map_add, TensorProduct.tmul_add] <;> rfl }
+        map_zero' := by rw [map_zero, TensorProduct.tmul_zero]; rfl
+        map_add' := fun x y => by rw [map_add, TensorProduct.tmul_add]; rfl }
     refine isFlatPointsGroupAt_of_subquotient act hact1 hactmul hpi F ?_ π ?_ ?_ ?_
     · intro σ x
       funext i
@@ -13338,7 +13809,7 @@ theorem exists_flatIsogenousLattice_of_equivariantCover
       | add a b ha hb =>
         obtain ⟨x, hx⟩ := ha
         obtain ⟨y, hy⟩ := hb
-        exact ⟨x + y, by rw [map_add, hx, hy] <;> rfl⟩
+        exact ⟨x + y, by rw [map_add, hx, hy]; rfl⟩
       | tmul cc t =>
         obtain ⟨cc', rfl⟩ := Ideal.Quotient.mk_surjective cc
         obtain ⟨z0, hz0⟩ := hψlinsurj t
@@ -13366,7 +13837,7 @@ theorem exists_flatIsogenousLattice_of_equivariantCover
         TensorProduct.tmul_smul, TensorProduct.smul_tmul']
       have hz : ((p : ℤ_[p]) ^ k • (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})) = 0 := by
         rw [Algebra.smul_def]; simp
-      rw [hz, TensorProduct.zero_tmul] <;> rfl
+      rw [hz, TensorProduct.zero_tmul]
   refine ⟨Tsub, inferInstance, inferInstance, hfinT, hfreeT, ρT, c, f0, g0, hflatT, ?_, ?_⟩
   · intro σ x
     refine Subtype.ext ?_
@@ -16403,7 +16874,7 @@ theorem cc_eq_zero_of_tame_frobenius_generator {kk' : Type*} [Field kk']
   ring
 
 set_option maxHeartbeats 800000 in
-/-- **Tame killing of the cocycle on inertia at `2`** (sorry node — the
+/-- **Tame killing of the cocycle on inertia at `2`** (PROVEN — the
 genuine tame-Frobenius stroke of pillar E3b, the FIRST consumption
 point of `hp5`): for a hardly ramified mod-`p` extension with TRIVIAL
 sub-character and `p ≥ 5`, the upper-right entry `cc` vanishes on the
@@ -17695,9 +18166,8 @@ The classical chain, and what each link costs on this pin:
   — a single prime `q` with `p ∉ q` — is
   `stickelberger_prod_map_prime_ideal_isPrincipal`, itself PROVEN
   (2026-07-25) over the character-fed leaf
-  `stickelbergerProd_isPrincipal_of_powerResidueChar`, whose docstring
-  carries the dependency-ordered list of what is still missing from
-  the pin. THE ONE REMAINING `sorry` of this chain is that leaf.
+  `stickelbergerProd_isPrincipal_of_powerResidueChar`, itself PROVEN
+  (2026-07-26) over the two leaves named below.
 * **(d′) … annihilates the ideal class group** (Thm. 6.10, second
   sentence): PROVEN here as `stickelberger_annihilates_classGroup`,
   from (d) through the generic class-group brick
@@ -17708,16 +18178,27 @@ The classical chain, and what each link costs on this pin:
   (d′), the index conversion `sum_units_zmod_val_eq_sum_Ico` and the
   floor arithmetic `sum_Ico_mul_two_mul_div_eq`.
 
-So: (a) is mathlib, (b) is folded into (d), (c)/(d′)/(e) are PROVEN,
-and (d) is now PROVEN too, over a single narrower citation which is
-itself PROVEN over the still narrower leaf
-`stickelbergerProd_isPrincipal_of_powerResidueChar` (2026-07-25). The
-next owner's frontier is exactly that leaf: one prime ideal `q` prime
-to `p`, together with a `p`-th power residue character at `q` supplied
-as a hypothesis (`exists_powerResidueChar_of_prime_notMem`, PROVEN),
-for which the route is (b) plus §6.2's Jacobi-sum descent — the §15.1
-route needs a Chebotarev/Dirichlet input this pin does not have. What
-remains is itemised, as statements, in that leaf's docstring. -/
+So: (a) is mathlib, (c)/(d)/(d′)/(e) are PROVEN, and (b) — the only
+genuinely missing mathematics — is now stated and isolated. As of
+2026-07-26 the frontier of this whole chain is exactly TWO leaves:
+
+* `span_jacobiSum_mul_stickelbergerProd` — the ideal generated by ONE
+  Jacobi sum `J(χ⁻¹, χ⁻¹ˢ)` of the `p`-th power residue character,
+  which is (b) plus §6.2's Gauss-sum descent, packaged so that its
+  statement mentions only `jacobiSum` (mathlib) and objects of
+  `𝓞 CF` — no compositum, no valuation, nothing to define first;
+* `prod_cycGalRingOfIntegers_map_eq_span_card` — the standard
+  `∏_{σ ∈ Gal} σ(q) = (N q)`, absent from this pin.
+
+Everything between those two leaves and (e) is proven bookkeeping:
+`stickelbergerProd_one`, `stickelbergerProd_add_mul` (periodicity in
+`t`), `stickelbergerProd_prime_eq_mul_galoisProd` (the `t = p` case)
+and the induction `stickelbergerProd_eq_span_prod_jacobiSum`, which
+records Stickelberger's theorem in the sharp form naming the generator
+`∏_{j=1}^{t−1} J(χ⁻¹, χ⁻¹ʲ)`. That closed form was CHECKED
+NUMERICALLY in PARI/GP before being written (see the first leaf's
+docstring): it is `χ⁻¹`, not `χ`, that appears, and getting that wrong
+produces the complex-conjugate ideal. -/
 
 /-- **Principality of the twisted ideal product kills the ideal class**
 (PROVEN 2026-07-25; the generic class-group brick of the Stickelberger
@@ -18154,9 +18635,237 @@ theorem exists_powerResidueChar_of_prime_notMem
     show Ideal.Quotient.mk q (L x) = _
     rw [hLred x, hcard]
 
+/-- **The Stickelberger operator at `t = 1` is trivial** (PROVEN
+2026-07-26; base case of the Jacobi induction below): every exponent
+`⌊1 · u/p⌋` vanishes because `u ∈ (ℤ/p)ˣ` is represented by
+`0 ≤ (u : ZMod p).val < p`, so `stickelbergerProd CF 1 J = ⊤`. This is
+the ideal-level counterpart of the empty Jacobi product. -/
+theorem stickelbergerProd_one (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (J : Ideal (𝓞 CF)) :
+    stickelbergerProd (p := p) CF 1 J = ⊤ := by
+  classical
+  simp only [stickelbergerProd, twistedIdealProd, one_mul]
+  rw [← Ideal.one_eq_top, ← Finset.prod_const_one (s := (Finset.univ : Finset (ZMod p)ˣ))]
+  refine Finset.prod_congr rfl fun u _ => ?_
+  rw [Nat.div_eq_of_lt (ZMod.val_lt _), pow_zero]
+
+/-- **Periodicity of the Stickelberger operator in `t`** (PROVEN
+2026-07-26; the reduction of an arbitrary `t` to `1 ≤ t < p`):
+
+`J^{(t+kp − σ_{t+kp})θ} = J^{(t − σ_t)θ} · (J^{pθ})^k`.
+
+Pure exponent arithmetic in `ℕ`: writing `v = (u : ZMod p).val`, the
+Stickelberger exponent at `u` is `⌊(t + kp)v/p⌋ = ⌊tv/p⌋ + k·v` and
+`⌊p·v/p⌋ = v`, so the exponent family for `t + kp` is the one for `t`
+plus `k` copies of the one for `p`; `Finset.prod_pow` and
+`Finset.prod_mul_distrib` then split the product. Group-theoretically
+this is the identity `(t + kp) − σ_{t+kp} = (t − σ_t) + k·p` in `ℤ[G]`
+together with `pθ ∈ ℤ[G]` (Washington Lemma 6.9), which is why
+Stickelberger's theorem for all `t` follows from the range
+`1 ≤ t ≤ p`. -/
+theorem stickelbergerProd_add_mul (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (t k : ℕ) (J : Ideal (𝓞 CF)) :
+    stickelbergerProd (p := p) CF (t + k * p) J
+      = stickelbergerProd (p := p) CF t J * (stickelbergerProd (p := p) CF p J) ^ k := by
+  classical
+  have hp0 : 0 < p := hp.out.pos
+  simp only [stickelbergerProd, twistedIdealProd]
+  rw [← Finset.prod_pow, ← Finset.prod_mul_distrib]
+  refine Finset.prod_congr rfl fun u _ => ?_
+  rw [← pow_mul, ← pow_add]
+  congr 1
+  set v := ((u : ZMod p).val) with hv
+  have h1 : (t + k * p) * v = t * v + (k * v) * p := by ring
+  have h2 : p * v / p = v := Nat.mul_div_cancel_left _ hp0
+  rw [h1, Nat.add_mul_div_right _ _ hp0, h2]
+  ring
+
+/-- **The `t = p` operator is the `t = p−1` operator times the full
+Galois product** (PROVEN 2026-07-26): at each `u ∈ (ℤ/p)ˣ` the
+exponent of `stickelbergerProd CF p J` is `⌊p·v/p⌋ = v` while that of
+`stickelbergerProd CF (p−1) J` is `⌊(p−1)v/p⌋ = v − 1`, because
+`(p−1)v = (p − v) + p(v − 1)` with `0 < p − v < p` for
+`1 ≤ v = (u : ZMod p).val ≤ p − 1` (the unit `u` has nonzero
+representative, `ZMod.val_eq_zero`). So the two exponent families
+differ by exactly `1` at every `u`, and `pow_succ` splits off
+`∏_u σ_{u⁻¹}(J)`. Combined with
+`prod_cycGalRingOfIntegers_map_eq_span_card` below — which identifies
+that full Galois product with the principal ideal generated by the
+absolute norm — this is what makes the `t = p` factor of
+`stickelbergerProd_add_mul` principal. -/
+theorem stickelbergerProd_prime_eq_mul_galoisProd (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (J : Ideal (𝓞 CF)) :
+    stickelbergerProd (p := p) CF p J
+      = stickelbergerProd (p := p) CF (p - 1) J *
+        ∏ u : (ZMod p)ˣ,
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u⁻¹ : 𝓞 CF →+* 𝓞 CF)) J := by
+  classical
+  simp only [stickelbergerProd, twistedIdealProd]
+  rw [← Finset.prod_mul_distrib]
+  refine Finset.prod_congr rfl fun u _ => ?_
+  rw [← pow_succ]
+  congr 1
+  have key : ∀ P V : ℕ, 1 ≤ V → V < P → P * V / P = (P - 1) * V / P + 1 := by
+    intro P V h1 h2
+    have hP : 0 < P := by omega
+    have e1 : P * V / P = V := Nat.mul_div_cancel_left _ hP
+    have e2 : (P - 1) * V = (P - V) + P * (V - 1) := by
+      obtain ⟨z, rfl⟩ : ∃ z, V = 1 + z := ⟨V - 1, by omega⟩
+      obtain ⟨w, rfl⟩ : ∃ w, P = (1 + z) + w := ⟨P - (1 + z), by omega⟩
+      have a1 : (1 + z) + w - 1 = z + w := by omega
+      have a2 : (1 + z) + w - (1 + z) = w := by omega
+      have a3 : (1 + z) - 1 = z := by omega
+      rw [a1, a2, a3]; ring
+    rw [e1, e2, Nat.add_mul_div_left _ _ hP, Nat.div_eq_of_lt (by omega)]
+    omega
+  refine key p ((u : ZMod p).val) ?_ (ZMod.val_lt _)
+  rcases Nat.eq_zero_or_pos ((u : ZMod p).val) with h | h
+  · exact absurd ((ZMod.val_eq_zero _).mp h) (Units.ne_zero u)
+  · exact h
+
+/-- **THE GAUSS-SUM LEAF of the Stickelberger cut: the ideal factored
+off by ONE Jacobi sum** (SORRY LEAF, cut 2026-07-26; Stickelberger
+1890; Washington, *Introduction to Cyclotomic Fields*, §6.1–§6.2,
+Lemmas 6.2, 6.11–6.12, Prop. 6.13, Lemma 6.14): with `q` a nonzero
+prime of `𝓞 CF` prime to `p` and `χ` the `p`-th power residue
+character at `q` (`exists_powerResidueChar_of_prime_notMem`), for
+`1 ≤ s` and `s + 1 < p`
+
+`(J(χ⁻¹, χ⁻¹ˢ)) · q^{(s − σ_s)θ} = q^{(s+1 − σ_{s+1})θ}`.
+
+Equivalently: the single Jacobi sum `J(χ⁻¹, χ⁻¹ˢ) ∈ 𝓞 CF` generates
+exactly the ideal `∏_u σ_{u⁻¹}(q)^{⌊(s+1)u/p⌋ − ⌊su/p⌋}`, whose
+exponents are the `0/1` indicator of `{su/p} + {u/p} ≥ 1` — the
+classical prime factorization of a Jacobi sum.
+
+**Why `χ⁻¹` and not `χ`** (established numerically 2026-07-26 with
+PARI/GP, and it is the one place this cut can silently go wrong). The
+character handed over by `exists_powerResidueChar_of_prime_notMem`
+satisfies `χ(x) ≡ x^{(Q−1)/p} (mod q)`, i.e. it is the RECIPROCAL of
+Washington's `ω^{−d}`; its Jacobi sums generate the CONJUGATE ideal.
+Concretely for `p = 5`, `ℓ = 11`, `q` the prime with `ζ ↦ 4 ∈ 𝔽₁₁`, one
+computes `(J(χ,χ)) = σ_1(q)·σ_3(q)` whereas
+`stickelbergerProd CF 2 q = σ_2(q)·σ_4(q)`; the two are exchanged by
+complex conjugation, and `(J(χ⁻¹,χ⁻¹))` is the latter. The corrected
+statement was then checked to hold for EVERY `1 ≤ t < p` in the cases
+`(p,ℓ) = (5,11)` (split, `f = 1`), `(5,19)` (`f = 2`), `(5,3)` (inert,
+`f = 4`), `(7,29)` (`f = 1`), `(7,2)` (`f = 3`), `(11,23)` (`f = 1`)
+and `(11,3)` (`f = 5`) — i.e. across split, partially split and inert
+`q`, and for three different `p`.
+
+**What a prover must still build**, in dependency order (this is the
+whole of Washington §6.2 minus the Kummer descent, which for
+`ρ = t − σ_t` is unnecessary — see the section docstring):
+
+1. the compositum `L := CF(ζ_ℓ)` for `ℓ` the rational prime under `q`,
+   its ring of integers, and a prime `𝒬 ∣ q` of `𝓞 L`;
+2. the Gauss sum `g(χ⁻¹) = ∑_x χ⁻¹(x) ψ(x) ∈ 𝓞 L` for a nontrivial
+   additive character `ψ : 𝓞 CF ⧸ q → μ_ℓ` — mathlib's `gaussSum`
+   already takes exactly a `MulChar` and an `AddChar`;
+3. **Stickelberger's congruence** (Washington Prop. 6.13 / Lemma 6.14):
+   `v_𝒬(g(χ^{−h}))` is the `ℓ`-adic digit sum of `h`, equivalently
+   `(p−1) ∑_{i<f} {ℓⁱ h/(Q−1)}` — the mathematical core, and what
+   produces the fractional parts defining `θ`;
+4. the descent `g(χ⁻¹)^{s+1} = g(χ⁻¹ˢ⁺¹) · ∏_{j<s+1} J(χ⁻¹, χ⁻¹ʲ)`,
+   which is ALREADY IN MATHLIB as
+   `gaussSum_pow_eq_prod_jacobiSum_aux` (valid for `0 < n < orderOf χ`,
+   and `orderOf χ⁻¹ = p` here), so only `orderOf χ⁻¹ = p` and the
+   transport of the identity along `𝓞 CF ↪ 𝓞 L` are needed;
+5. reading off the ideal generated in `𝓞 CF`: the Jacobi sums lie in
+   `𝓞 CF` from the start (`jacobiSum χ⁻¹ (χ⁻¹ ^ s) : 𝓞 CF` is
+   literally the statement above), which is exactly why no Kummer /
+   unramifiedness argument is required. -/
+theorem span_jacobiSum_mul_stickelbergerProd
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (s : ℕ) (hs1 : 1 ≤ s) (hsp : s + 1 < p)
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) :
+    Ideal.span {jacobiSum χ⁻¹ (χ⁻¹ ^ s)} * stickelbergerProd (p := p) CF s q
+      = stickelbergerProd (p := p) CF (s + 1) q :=
+  sorry
+
+/-- **The Stickelberger ideal of a prime, in closed form, for
+`1 ≤ t < p`** (PROVEN 2026-07-26 from
+`span_jacobiSum_mul_stickelbergerProd` and `stickelbergerProd_one`):
+
+`q^{(t − σ_t)θ} = (∏_{j=1}^{t−1} J(χ⁻¹, χ⁻¹ʲ))`.
+
+This is Stickelberger's theorem in the sharp form that names the
+generator, and the generator is a product of Jacobi sums of the `p`-th
+power residue character — manifestly an element of `𝓞 CF`. The proof
+is the induction `Nat.le_induction` on `t` starting at `t = 1`, whose
+base is `stickelbergerProd_one` against the empty product and whose
+step is the leaf above together with
+`Ideal.span_singleton_mul_span_singleton` and
+`Finset.prod_Ico_succ_top`. -/
+theorem stickelbergerProd_eq_span_prod_jacobiSum
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (t : ℕ) (ht1 : 1 ≤ t) (htp : t < p)
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) :
+    stickelbergerProd (p := p) CF t q
+      = Ideal.span {∏ j ∈ Finset.Ico 1 t, jacobiSum χ⁻¹ (χ⁻¹ ^ j)} := by
+  classical
+  induction t, ht1 using Nat.le_induction with
+  | base =>
+      rw [stickelbergerProd_one]
+      simp
+  | succ s hs ih =>
+      rw [← span_jacobiSum_mul_stickelbergerProd CF s hs htp hq hq0 hpq χ hχ1 hχp hχcong,
+        ih (by omega), Ideal.span_singleton_mul_span_singleton,
+        Finset.prod_Ico_succ_top hs]
+      rw [mul_comm]
+
+/-- **The full Galois product of a prime is its absolute norm** (SORRY
+LEAF, cut 2026-07-26; standard algebraic number theory, e.g. Neukirch
+I.§6 or Washington §1): for `q` a nonzero prime of the ABELIAN number
+field `CF = ℚ(ζ_p)`,
+
+`∏_{σ ∈ Gal(CF/ℚ)} σ(q) = (N(q)) = (#(𝓞 CF ⧸ q))`.
+
+Indexing `σ` by `u ↦ σ_{u⁻¹}` is a bijection of the Galois group, so
+the product below is the product over the whole group. The classical
+proof: `N_{CF/ℚ}(q) · 𝓞 CF = ∏_σ σ(q)` for a Galois extension, and the
+absolute norm of a prime is the cardinality of its residue field
+(`Ideal.absNorm_apply`). Concretely, if `q` lies over `ℓ` with residue
+degree `f` and the `g = (p−1)/f` primes over `ℓ` are `𝔭_1, …, 𝔭_g`
+(unramified when `ℓ ≠ p`), then each `𝔭_i` occurs `|D| = f` times in
+the product, giving `(∏_i 𝔭_i)^f = (ℓ)^f = (ℓ^f) = (N q)`.
+
+This pin has NO packaged form of it: a grep of
+`Mathlib.RingTheory.Ideal.Norm.AbsNorm`,
+`Mathlib.RingTheory.Ideal.Norm.RelNorm` and
+`Mathlib.NumberTheory.NumberField.*` turns up `Ideal.absNorm`,
+`Ideal.spanNorm` and `Algebra.norm_eq_prod_automorphisms` (for
+ELEMENTS) but no "product of the Galois conjugates of an ideal is its
+norm". `IsCyclotomicExtension.Rat.galEquivZMod_stabilizer` — which
+identifies the decomposition group of a prime over `ℓ ∤ n` with
+`⟨[ℓ]⟩ ⊆ (ℤ/n)ˣ` — is the pin's closest relative and is the natural
+input to the `|D| = f` counting above.
+
+It is stated for a general nonzero prime because that is what the
+classical fact says; only the case `p ∉ q` is consumed here. -/
+theorem prod_cycGalRingOfIntegers_map_eq_span_card
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) :
+    (∏ u : (ZMod p)ˣ,
+        Ideal.map ((cycGalRingOfIntegersEquiv CF u⁻¹ : 𝓞 CF →+* 𝓞 CF)) q)
+      = Ideal.span {(Nat.card (𝓞 CF ⧸ q) : 𝓞 CF)} :=
+  sorry
+
 /-- **Stickelberger's theorem for one prime, GIVEN the `p`-th power
-residue character** — THE SORRY LEAF of the Stickelberger cut as of
-2026-07-25 (Stickelberger 1890; Kummer 1847; Washington,
+residue character** — PROVEN 2026-07-26 over the two leaves
+`span_jacobiSum_mul_stickelbergerProd` and
+`prod_cycGalRingOfIntegers_map_eq_span_card` (Stickelberger 1890;
+Kummer 1847; Washington,
 *Introduction to Cyclotomic Fields*, Thm. 6.10, §6.1–§6.2): for a
 nonzero prime `q` of `𝓞 CF` with `p ∉ q` and a `p`-th power residue
 character `χ` at `q` — supplied by
@@ -18166,44 +18875,48 @@ character `χ` at `q` — supplied by
 
 is PRINCIPAL.
 
-**What this leaf carries, and what it no longer carries.** Items 1
-and 2 of the classical proof — the reduction of `μ_p` at `q` and the
-existence of the character `χ_q` with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)` —
-are now PROVEN above (`residueField_isPrimitiveRoot_of_notMem`,
+**What this theorem now carries, and what it no longer carries.**
+Items 1 and 2 of the classical proof — the reduction of `μ_p` at `q`
+and the existence of the character `χ_q` with
+`χ_q(x) ≡ x^{(Q−1)/p} (mod q)` — are PROVEN above
+(`residueField_isPrimitiveRoot_of_notMem`,
 `prime_dvd_card_residueField_sub_one`,
-`exists_powerResidueChar_of_prime_notMem`), and `χ` reaches this leaf
-as a hypothesis rather than something to be built. What remains is the
-Gauss-sum core, items 3–6, in dependency order. Write `ℓ` for the
-rational prime under `q`, `F := 𝓞 CF ⧸ q`, `Q := #F = ℓ^f`.
+`exists_powerResidueChar_of_prime_notMem`), and `χ` reaches this
+theorem as a hypothesis. Items 3–6, the Gauss-sum core, were a single
+opaque `sorry` here until 2026-07-26; they are now cut into TWO
+narrower leaves plus proven bookkeeping:
 
-3. **The Gauss sum `g(χ) = −∑_{x ∈ F^×} χ(x)⁻¹ ψ(x)`** for a
-   nontrivial additive character `ψ : F → μ_ℓ`, as an element of the
-   ring of integers of the compositum `L := CF(ζ_ℓ)`. PARTLY PRESENT:
-   `gaussSum`, `gaussSum_mul_gaussSum_eq_card`, `gaussSum_frob` and
-   `Mathlib.NumberTheory.JacobiSum.Basic` are on this pin, and
-   `gaussSum` takes exactly a `MulChar F R'` and an `AddChar F R'`, so
-   `χ` above is already in the shape mathlib wants. MISSING: the
-   compositum `L` as a concrete cyclotomic extension, its ring of
-   integers, and its primes `𝒬` above `q`.
-4. **Stickelberger's congruence** (Washington Lemmas 6.11–6.12,
-   Prop. 6.13, Lemma 6.14): `v_𝒬(g(χ^{−h}))` is the `ℓ`-adic digit sum
-   of `h`, equivalently `v_𝒬(g(χ^{−h})) = (p−1) ∑_{i<f} {ℓ^i h/(Q−1)}`.
-   MISSING entirely, and it is the mathematical core: it is what
-   produces the fractional parts `{a/p}` that DEFINE `θ`.
-5. **The Jacobi descent.** `σ_t(g(χ)) = g(χ^t)`, because `σ_t` moves
-   `ζ_p` and fixes `ζ_ℓ`; and `g(χ)^t / g(χ^t)` is a product of Jacobi
-   sums `∏_{a<t} J(χ, χ^a)` (Washington Lemmas 6.2, 6.4), hence
-   already lies in `CF`. This is precisely WHY the annihilator is
-   `(t − σ_t)θ` and not `θ`, and — for THIS `ρ = t − σ_t`, unlike
-   Washington's general `ρ ∈ I'` — it makes the Kummer/unramifiedness
-   descent of Washington Lemma 6.15 UNNECESSARY: the generator is
-   manifestly in `CF` from the start.
-6. **Assembly.** Items 4 and 5 give `(g(χ)^{t−σ_t}) = q^{(t−σ_t)θ}` as
-   ideals of `𝓞 CF`, which is this leaf.
+* `span_jacobiSum_mul_stickelbergerProd` (SORRY LEAF) — the ideal
+  factored off by ONE Jacobi sum `J(χ⁻¹, χ⁻¹ˢ)`, for `1 ≤ s`,
+  `s + 1 < p`. This carries the whole Gauss-sum theory: the compositum
+  `CF(ζ_ℓ)`, Stickelberger's congruence (Washington Prop. 6.13 /
+  Lemma 6.14), and the descent — whose mathlib half,
+  `gaussSum_pow_eq_prod_jacobiSum_aux`, is already available. Its
+  docstring itemises what a prover must build.
+* `prod_cycGalRingOfIntegers_map_eq_span_card` (SORRY LEAF) — the
+  standard fact that `∏_{σ ∈ Gal(CF/ℚ)} σ(q)` is the principal ideal
+  generated by the absolute norm `#(𝓞 CF ⧸ q)`. Not on this pin.
+* `stickelbergerProd_eq_span_prod_jacobiSum` (PROVEN) — the closed form
+  `q^{(t − σ_t)θ} = (∏_{j=1}^{t−1} J(χ⁻¹, χ⁻¹ʲ))` for `1 ≤ t < p`, by
+  induction from the first leaf and `stickelbergerProd_one`.
+* `stickelbergerProd_add_mul` and
+  `stickelbergerProd_prime_eq_mul_galoisProd` (PROVEN) — the exponent
+  arithmetic reducing an ARBITRARY `t` to the range `1 ≤ t ≤ p`, and
+  the `t = p` case to the Galois product.
 
-Washington's §15.1 route replaces item 4 by a Chebotarev/Dirichlet
-input; this pin has no Chebotarev density theorem, so it is not
-cheaper here.
+The assembly below is then: write `t = (t mod p) + (t / p)·p` with
+`1 ≤ t mod p < p` (this uses `¬ p ∣ t`); `stickelbergerProd_add_mul`
+splits the operator; the `t mod p` factor is principal by the closed
+form; the `t = p` factor is `stickelbergerProd (p−1)` times the Galois
+product, both principal; and products and powers of principal ideals
+are principal.
+
+Washington's §15.1 route replaces Stickelberger's congruence by a
+Chebotarev/Dirichlet input; this pin has no Chebotarev density
+theorem, so it is not cheaper here. The Kummer/unramifiedness descent
+of Washington Lemma 6.15 is NOT needed for `ρ = t − σ_t`, because the
+generator is a product of Jacobi sums and those lie in `𝓞 CF` from the
+start.
 
 Soundness of the exact form stated: for `t` prime to `p` the element
 `∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which lies in the Stickelberger
@@ -18218,8 +18931,37 @@ theorem stickelbergerProd_isPrincipal_of_powerResidueChar
     (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
     (hχcong : ∀ x : 𝓞 CF ⧸ q,
       Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) :
-    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) :=
-  sorry
+    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) := by
+  classical
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  haveI : Finite (𝓞 CF ⧸ q) := Ideal.finiteQuotientOfFreeOfNeBot q hq0
+  haveI : Fintype (𝓞 CF ⧸ q) := Fintype.ofFinite _
+  have hp0 : 0 < p := hp.out.pos
+  have hp2 : 2 ≤ p := hp.out.two_le
+  -- the operator is principal for every `1 ≤ s < p`, by the closed form
+  have hlt : ∀ s : ℕ, 1 ≤ s → s < p →
+      Submodule.IsPrincipal (stickelbergerProd (p := p) CF s q) := by
+    intro s hs1 hsp
+    rw [stickelbergerProd_eq_span_prod_jacobiSum CF s hs1 hsp hq hq0 hpq χ hχ1 hχp hχcong]
+    exact ⟨_, rfl⟩
+  -- the `t = p` factor: `stickelbergerProd (p−1)` times the full Galois product
+  have hpp : Submodule.IsPrincipal (stickelbergerProd (p := p) CF p q) := by
+    rw [stickelbergerProd_prime_eq_mul_galoisProd CF q,
+      prod_cycGalRingOfIntegers_map_eq_span_card CF hq hq0]
+    exact ideal_isPrincipal_mul (hlt (p - 1) (by omega) (by omega)) ⟨_, rfl⟩
+  have hpow : ∀ k : ℕ, Submodule.IsPrincipal ((stickelbergerProd (p := p) CF p q) ^ k) := by
+    intro k
+    obtain ⟨a, ha⟩ := hpp.principal
+    rw [ha, Ideal.span_singleton_pow]
+    exact ⟨_, rfl⟩
+  have hr1 : 1 ≤ t % p := by
+    rcases Nat.eq_zero_or_pos (t % p) with h | h
+    · exact absurd (Nat.dvd_of_mod_eq_zero h) ht
+    · exact h
+  have hrp : t % p < p := Nat.mod_lt _ hp0
+  have hsplit : t = t % p + (t / p) * p := by rw [Nat.mod_add_div' t p]
+  rw [hsplit, stickelbergerProd_add_mul CF (t % p) (t / p) q]
+  exact ideal_isPrincipal_mul (hlt (t % p) hr1 hrp) (hpow (t / p))
 
 /-- **Stickelberger's theorem for ONE prime ideal prime to `p`** — THE
 SORRY LEAF of the Stickelberger cut (re-cut 2026-07-25; it replaces
@@ -24972,7 +25714,7 @@ theorem hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero
   sorry
 
 /-- **Ramification at `q` of the representation attached to a `q`-NEW
-eigenform** (sorry node — the single residual literature leaf of the
+eigenform** (PROVEN — the single residual literature leaf of the
 at-`q` conductor cut, isolated 2026-07-25: Carayol, *Sur les
 représentations `ℓ`-adiques associées aux formes modulaires de
 Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A) — local–global
