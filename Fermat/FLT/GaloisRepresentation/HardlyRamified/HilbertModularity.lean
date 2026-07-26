@@ -1850,7 +1850,9 @@ of `Deformation.lean`'s `det_pushforwardFrame`).
 `LinearMap.det_baseChange` turns the base-changed determinant into
 `algebraMap B A` of the original, which is `ψ` by
 `RingHom.algebraMap_toAlgebra`. This is the direction that lets a
-determinant identity be REFLECTED BACK from the two projections to `B`. -/
+determinant identity be REFLECTED BACK from the two projections to `B`,
+and equally lets the determinant clause of `isHilbertProLimitClause` be
+reflected back from the levels to `R`. -/
 lemma det_framePushforward {F : Type u} [Field F] [NumberField F]
     {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
     {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
@@ -3102,32 +3104,6 @@ lemma framePushforward_apply {F : Type u} [Field F] [NumberField F]
   funext j
   rw [TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
   exact hsm _
-
-open scoped TensorProduct in
-/-- **`det` commutes with `framePushforward`** (PROVEN; the `F`-level twin of
-`Deformation.lean`'s `det_pushforwardFrame`): `LinearMap.det_conj` absorbs
-the framing identification and `LinearMap.det_baseChange` turns the
-base-changed determinant into `algebraMap B A` of the original, which is `ψ`
-by `RingHom.algebraMap_toAlgebra`.
-
-This is what lets the determinant clause of `isHilbertProLimitClause` be
-REFLECTED BACK from the levels to `R`. -/
-lemma det_framePushforward {F : Type u} [Field F] [NumberField F]
-    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
-    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
-    (ψ : B →+* A) (hψ : Continuous ψ) (ρ : FramedGaloisRep F B (Fin 2))
-    (g : Γ F) :
-    (framePushforward ψ hψ ρ).det g = ψ (ρ.det g) := by
-  letI : Algebra B A := ψ.toAlgebra
-  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
-    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
-  show LinearMap.det
-    ((((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g)) = _
-  rw [GaloisRep.conj_apply, LinearEquiv.conj_apply, LinearMap.comp_assoc,
-    LinearMap.det_conj]
-  show LinearMap.det (LinearMap.baseChange A (ρ g)) = _
-  rw [LinearMap.det_baseChange, RingHom.algebraMap_toAlgebra]
-  rfl
 
 open scoped TensorProduct in
 /-- **A flat prolongation descends through the base change to `A ⧸ ⊥`**

@@ -6514,12 +6514,38 @@ def IsTateParam (E : WeierstrassCurve ℚ) (P : (E⁄(AlgebraicClosure ℚ)).Poi
         P = Affine.Point.some C.r C.t h
 
 /-- **Tate normal form over `ℚ̄` at a geometric point of order `9`**
-(PROVEN 2026-07-26): an elliptic curve over `ℚ` whose
-geometric points contain a point `P` of order `9` acquires, over `ℚ̄`, a
-Kubert parameter `d` — nondegenerate, and computing `j(E)`.
+(SORRY LEAF, re-opened at integration 2026-07-26 against the REPAIRED
+`IsTateParam`): an elliptic curve over `ℚ` whose geometric points contain
+a point `P` of order `9` acquires, over `ℚ̄`, a Kubert parameter `d` —
+nondegenerate, and computing `j(E)`.
 
-**THIS WAS A MECHANICAL GENERALISATION OF PROVEN CODE, NOT NEW
-MATHEMATICS**, and that is exactly how it was done.
+**WHY THIS IS OPEN AGAIN, AND WHAT IS LEFT.** This node HAD a complete
+proof, but of the WEAKER, superseded form of `IsTateParam`, which asked
+only for an abstract group isomorphism
+`Ψ : (E⁄ℚ̄).Point ≃+ (tateCurve d).Point` carrying `P` to `(0,0)`. That
+form is too weak to be the Tate normal form: it does not say the two
+curves are related by a CHANGE OF VARIABLES at all, so nothing about the
+diamond operator or Galois naturality can be read off it. `IsTateParam`
+was accordingly repaired (same day) to carry the variable change itself,
+
+  `∃ C : VariableChange ℚ̄, C • (E⁄ℚ̄) = tateCurve d ∧ P = some C.r C.t _`,
+
+which is what `nondegenerate_of_isTateParam`, `isTateParam_unique`,
+`isTateParam_two_nsmul`, `isTateParam_galois` and hence
+`exists_rat_hauptmodul_of_stable` all consume. The old proof establishes
+the old statement and does NOT establish this one, so it was not carried
+over — see git history for it.
+
+**The remaining work is small and is bookkeeping, not mathematics.**
+`exists_tateNF_of_order_nine` already CONSTRUCTS the required change of
+variables internally (`C₁ := ⟨1, X, s₀, Y⟩` and the two after it) and
+then discards it, exposing only the induced `Ψ`. Widening that lemma's
+conclusion to return the composite `C` — and `P = some C.r C.t _` in
+place of `Ψ P = some 0 0 _` — closes this leaf immediately, since every
+step of its proof already goes through `Point.equivVariableChange`.
+
+**THE REST OF THIS NODE WAS A MECHANICAL GENERALISATION OF PROVEN CODE,
+NOT NEW MATHEMATICS**, and that is exactly how it was done.
 `WeierstrassCurve.exists_tateNormalForm_jInvariant_of_order_nine`
 proves this over `ℚ`, and `MazurLevel18.exists_param` turns its
 `(b, c)` into the Kubert `d`; both proofs are pure field algebra — three
@@ -6562,34 +6588,8 @@ argument rather than re-choosing it. -/
 theorem exists_tateParam (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 9) :
     ∃ d : AlgebraicClosure ℚ, IsTateParam E P d ∧ (tateCurve d).Δ ≠ 0 ∧
-      algebraMap ℚ (AlgebraicClosure ℚ) E.j * (tateCurve d).Δ = (tateCurve d).c₄ ^ 3 := by
-  haveI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
-    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
-  obtain ⟨b, c, hb, hΔ, h00, Ψ, hΨ, hjmul⟩ :=
-    exists_tateNF_of_order_nine (E⁄(AlgebraicClosure ℚ)) P hP
-  have h1 : (⟨1 - c, -b, -b, 0, 0⟩ :
-      WeierstrassCurve (AlgebraicClosure ℚ)).toAffine.a₁ = 1 - c := rfl
-  have h2 : (⟨1 - c, -b, -b, 0, 0⟩ :
-      WeierstrassCurve (AlgebraicClosure ℚ)).toAffine.a₂ = -b := rfl
-  have h3 : (⟨1 - c, -b, -b, 0, 0⟩ :
-      WeierstrassCurve (AlgebraicClosure ℚ)).toAffine.a₃ = -b := rfl
-  have h4 : (⟨1 - c, -b, -b, 0, 0⟩ :
-      WeierstrassCurve (AlgebraicClosure ℚ)).toAffine.a₄ = 0 := rfl
-  have hP9 : (9 : ℕ) • P = 0 := by rw [← hP]; exact addOrderOf_nsmul_eq_zero _
-  have h9 : (9 : ℕ) • (Affine.Point.some 0 0 h00) = 0 := by
-    rw [← hΨ, ← map_nsmul, hP9, map_zero]
-  have hpsi := psi3_eq_zero h1 h2 h3 h4 hb h00 h9
-  have hc0 : c ≠ 0 := by
-    rintro rfl
-    exact hb (pow_eq_zero_iff (n := 3) (by norm_num) |>.mp (by linear_combination -hpsi))
-  obtain ⟨d, hcd, hbd⟩ := exists_param hc0 hpsi
-  have hEq : (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve (AlgebraicClosure ℚ)) = tateCurve d := by
-    rw [hbd, hcd]; rfl
-  have hjE : (E⁄(AlgebraicClosure ℚ)).j = algebraMap ℚ (AlgebraicClosure ℚ) E.j :=
-    WeierstrassCurve.map_j E (algebraMap ℚ (AlgebraicClosure ℚ))
-  refine ⟨d, ⟨hEq ▸ h00, Ψ.trans (Point.equivOfEq hEq), ?_⟩, hEq ▸ hΔ, ?_⟩
-  · rw [AddEquiv.trans_apply, hΨ, Point.equivOfEq_some]
-  · rw [← hEq, ← hjE]; exact hjmul
+      algebraMap ℚ (AlgebraicClosure ℚ) E.j * (tateCurve d).Δ = (tateCurve d).c₄ ^ 3 :=
+  sorry
 
 /-- **A Kubert parameter is nondegenerate** (PROVEN 2026-07-26): if `d` is a
 Kubert parameter of `(E, P)` then `d ≠ 0` and `d³ − 6d² + 3d + 1 ≠ 0`.
@@ -6894,10 +6894,18 @@ note carries the geometry. The cut runs through the Kubert line of
 `X_1(9)`, NOT through Vélu: `X_0(9) = X_1(9)/⟨diamond⟩` with the diamond
 operator acting as the order-`3` Möbius map `γ(d) = (d − 1)/d`, and the
 Hauptmodul is the invariant `R(d) = 27d(d − 1)/(d³ − 6d² + 3d + 1)`. What
-is left open is exactly TWO things (label updated 2026-07-26, when
-`exists_rat_hauptmodul_of_stable` was PROVEN over these two smaller leaves
-after its `IsTateParam` hypothesis had to be repaired — see that docstring):
+is left open is exactly three things (updated 2026-07-26, when
+`exists_rat_hauptmodul_of_stable` was PROVEN over two smaller leaves after
+its `IsTateParam` hypothesis had to be repaired — see that docstring):
 
+* `MazurLevel9.exists_tateParam` — the Tate normal form over `ℚ̄`, a
+  mechanical re-basing of the PROVEN
+  `exists_tateNormalForm_jInvariant_of_order_nine`. It was briefly PROVEN
+  against the pre-repair `IsTateParam`, which asked only for an abstract
+  group isomorphism; against the repaired statement, which carries the
+  CHANGE OF VARIABLES, it is open again and needs only
+  `exists_tateNF_of_order_nine` to stop discarding the variable change it
+  already builds. See its docstring;
 * `MazurLevel9.isTateParam_unique` — rigidity of the Tate normal form, i.e.
   that the Kubert parameter is a function of the pair `(E, P)`;
 * `MazurLevel9.isTateParam_two_nsmul` — the diamond operator
