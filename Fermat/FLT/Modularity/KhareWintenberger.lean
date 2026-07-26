@@ -147,6 +147,18 @@ public import Mathlib.AlgebraicGeometry.Morphisms.QuasiCompact
 -- 2026-07-25) is stated with `Limits.pullback`, so the `HasPullbacks`
 -- instance for `Scheme` must be re-exported, not merely available.
 public import Mathlib.AlgebraicGeometry.Pullbacks
+-- Descent of geometric irreducibility along a form
+-- (`geometricallyIrreducible_of_isFormOver_isAlgClosed`, PROVEN
+-- 2026-07-26) needs, in its PROOF BODY: the base-change stability of
+-- `AlgebraicGeometry.Surjective` (`PullbackCarrier`), the nontriviality
+-- of `L ⊗[ℚ] K` (`Flat.Basic`, `TensorProduct.Basic`) and the existence
+-- of a maximal ideal together with `Ideal.Quotient.field` (`Ideal.Maximal`).
+-- `public` because an intermediate module importing them privately makes
+-- them unavailable even in proof bodies.
+public import Mathlib.AlgebraicGeometry.PullbackCarrier
+public import Mathlib.RingTheory.Flat.Basic
+public import Mathlib.RingTheory.TensorProduct.Basic
+public import Mathlib.RingTheory.Ideal.Maximal
 -- (`Mathlib.RingTheory.Ideal.Norm.AbsNorm` is imported once, above:
 -- `Ideal.absNorm` is the residue cardinality `Nw` of a place of the
 -- Moret–Bailly base `F`, and appears in the STATEMENTS both of the two
@@ -895,11 +907,14 @@ be started without the other two.
 
 Leaf list under the moduli cut, as of the FORM recut (2026-07-25):
 `nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`
-(SORRY — Tate modules), `exists_twistedHilbertBlumenthalModuliForm_of_five_le`
-(SORRY — Taylor §4, the moduli construction) and
-`geometricallyIrreducible_of_isFormOver_isAlgClosed` (SORRY — Stacks
-0364, a mathlib gap). `IsFormOver`, `hasRationalPoint_of_isFormOver` and
-`exists_twistedHilbertBlumenthalModuliScheme_of_five_le` are PROVEN. -/
+(SORRY — Tate modules) and `exists_twistedHilbertBlumenthalModuliForm_of_five_le`
+(SORRY — Taylor §4, the moduli construction). `IsFormOver`,
+`hasRationalPoint_of_isFormOver`,
+`exists_twistedHilbertBlumenthalModuliScheme_of_five_le` and — since
+2026-07-26 — `geometricallyIrreducible_of_isFormOver_isAlgClosed` are
+PROVEN. The last of those was expected to need Stacks 0364 (a genuine
+mathlib gap at this pin); it does not, because a FORM carries more than a
+single irreducible base change: see its own docstring. -/
 
 /-- **The structure morphism of a `ℚ`-algebra's spectrum.** `ℚ` lives in
 `Type 0` while the number field produced by Moret–Bailly must land in
@@ -1420,39 +1435,144 @@ theorem hasRationalPoint_of_isFormOver {K : Type u} [CommRing K] [Algebra ℚ K]
   rw [Category.assoc, Limits.pullback.condition, ← Category.assoc, hsec,
     Category.id_comp]
 
-/-- **Geometric irreducibility descends along a form over an
-algebraically closed field** (sorry node — a gap in mathlib, not
-arithmetic): if `fX` and `fX₀` are `K`-forms of each other for some
-ALGEBRAICALLY CLOSED `ℚ`-algebra field `K`, and `fX₀` is geometrically
-irreducible, then so is `fX`.
+open CategoryTheory AlgebraicGeometry TensorProduct in
+/-- **Geometric irreducibility descends along a form** (PROVEN
+2026-07-26): if `fX` and `fX₀` are `K`-forms of each other over a
+`ℚ`-algebra field `K`, and `fX₀` is geometrically irreducible, then so
+is `fX`.
 
-This is the statement that geometric irreducibility may be tested over a
-SINGLE algebraically closed extension — Stacks 0364 / EGA IV 4.5.9: for a
-scheme `X` over a field `k` the conditions "`X_{k'}` is irreducible for
-every field extension `k'`" and "`X_{k̄}` is irreducible for one
-algebraically closed extension `k̄`" are equivalent. At this pin
-`AlgebraicGeometry.GeometricallyIrreducible` is by definition the FORMER
-(`geometrically (IrreducibleSpace ·)`, i.e. `X ×_Y Spec K` irreducible
-for EVERY field `K` and every `Spec K ⟶ Y`), and mathlib records its
-stability under base change but not this descent; so the content here is
-exactly the missing direction.
+Classically this is read off Stacks 0364 / EGA IV 4.5.9 ("geometric
+irreducibility may be tested over a SINGLE algebraically closed
+extension"), and at this pin that criterion is genuinely absent from
+mathlib: `AlgebraicGeometry.GeometricallyIrreducible` is *defined* as the
+all-extensions form (`geometrically (IrreducibleSpace ·)`, i.e.
+`X ×_Y Spec L` irreducible for EVERY field `L` and every
+`Spec L ⟶ Y`), and only its stability under base change is recorded.
 
-Given it, the conclusion is immediate: `fX₀` geometrically irreducible
-gives `X₀ ×_ℚ K` irreducible, the form isomorphism carries that to
-`X ×_ℚ K`, and the criterion promotes it back to all extensions.
+PROOF (2026-07-26) — the Stacks criterion is NOT needed, because a form
+carries more information than a single irreducible base change, and that
+surplus makes the descent elementary. Write `S = Spec ℚ`.
+
+1. `(X₀)_K ⟶ Spec K` is geometrically irreducible (base change of `fX₀`).
+   The form isomorphism `e` satisfies `e.hom ≫ pr₂ = pr₂`, and
+   `GeometricallyIrreducible` respects isomorphisms, so `X_K ⟶ Spec K` is
+   geometrically irreducible too. This is the only place `hform` is used.
+2. Let `L` be ANY field with a map `Spec L ⟶ S`; we must show `X_L` is
+   irreducible. Since `ℚ` is a field, `L ⊗_ℚ K ≠ 0`, so it has a maximal
+   ideal; let `Ω` be the quotient field. Then `Ω` is a field extension of
+   BOTH `L` and `K`, and the two composites `ℚ → Ω` agree automatically —
+   a ring map out of `ℚ` into a field is unique.
+3. `X_Ω = (X_K) ×_K Ω` is irreducible, directly by step 1 applied to the
+   extension `K ⊆ Ω`. (Note this needs no algebraic closedness: it is the
+   *geometric* irreducibility of `X_K` over `K`, not the irreducibility
+   of a single base change.)
+4. `X_Ω ⟶ X_L` is the base change of `Spec Ω ⟶ Spec L` along
+   `X_L ⟶ Spec L` (pasting the two pullback squares), and
+   `Spec Ω ⟶ Spec L` is surjective because both spaces are single points;
+   surjectivity is stable under base change. A continuous surjective
+   image of an irreducible space is irreducible, so `X_L` is irreducible.
+
+HYPOTHESIS NOT CONSUMED: `_hK : IsAlgClosed K`. The statement is true for
+an arbitrary `ℚ`-algebra field `K`, as the proof above shows — the
+algebraically closed case is merely how Taylor's argument supplies it
+(`X = X_ρ` is a `ℚ̄`-form of the split moduli space `X₀`). The hypothesis
+is KEPT in the signature so that the consumer
+`exists_twistedHilbertBlumenthalModuli_of_five_le` and the leaf
+`exists_twistedHilbertBlumenthalModuliForm_of_five_le` need not change;
+underscored so that its non-use is mechanically visible. Anyone extracting
+this for mathlib should drop it and generalise `ℚ` to an arbitrary base.
 
 SOUNDNESS: no hypothesis on `X` beyond the form — no finiteness, no
-smoothness — is needed, because the Stacks statement holds for arbitrary
-schemes over a field. -/
+smoothness, no separatedness — is used; the argument is valid for
+arbitrary schemes over a field. -/
 theorem geometricallyIrreducible_of_isFormOver_isAlgClosed
-    {K : Type u} [Field K] [Algebra ℚ K] (hK : IsAlgClosed K)
+    {K : Type u} [Field K] [Algebra ℚ K] (_hK : IsAlgClosed K)
     {X X₀ : AlgebraicGeometry.Scheme.{u}}
     (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (fX₀ : X₀ ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (hform : IsFormOver K fX fX₀)
     (h₀ : AlgebraicGeometry.GeometricallyIrreducible fX₀) :
-    AlgebraicGeometry.GeometricallyIrreducible fX :=
-  sorry
+    AlgebraicGeometry.GeometricallyIrreducible fX := by
+  obtain ⟨e, he⟩ := hform
+  -- STEP 1: `X_K ⟶ Spec K` is geometrically irreducible, transported
+  -- across the form isomorphism (which is compatible with `pr₂`).
+  have hK₀ : GeometricallyIrreducible (Limits.pullback.snd fX₀ (specRatMap K)) := inferInstance
+  have hKX : GeometricallyIrreducible (Limits.pullback.snd fX (specRatMap K)) := by
+    rw [← he]
+    exact (MorphismProperty.cancel_left_of_respectsIso
+      (P := @GeometricallyIrreducible) e.hom _).mpr hK₀
+  -- STEP 2: test irreducibility after an arbitrary field extension `L`.
+  refine ⟨?_⟩
+  rw [geometrically_iff_of_isClosedUnderIsomorphisms]
+  intro L _ y
+  obtain ⟨ψ, rfl⟩ := Spec.map_surjective y
+  letI : Algebra ℚ L :=
+    (ψ.hom.comp (ULift.ringEquiv.symm : ℚ ≃+* ULift.{u} ℚ).toRingHom).toAlgebra
+  -- STEP 3: a common field extension `Ω` of `L` and of `K`, obtained as a
+  -- residue field of the (nonzero, since `ℚ` is a field) ring `L ⊗_ℚ K`.
+  haveI : Nontrivial (L ⊗[ℚ] K) :=
+    Algebra.TensorProduct.nontrivial_of_algebraMap_injective_of_flat_left
+      (R := ℚ) L K (algebraMap ℚ K).injective
+  obtain ⟨m, hm⟩ := Ideal.exists_maximal (L ⊗[ℚ] K)
+  haveI := hm
+  let Ω : Type u := (L ⊗[ℚ] K) ⧸ m
+  letI : Field Ω := Ideal.Quotient.field m
+  let φL : L →+* Ω := (Ideal.Quotient.mk m).comp Algebra.TensorProduct.includeLeftRingHom
+  let φK : K →+* Ω :=
+    (Ideal.Quotient.mk m).comp
+      (Algebra.TensorProduct.includeRight (R := ℚ) (A := L) (B := K)).toRingHom
+  let u : Spec (CommRingCat.of Ω) ⟶ Spec (CommRingCat.of K) :=
+    Spec.map (CommRingCat.ofHom φK)
+  let v : Spec (CommRingCat.of Ω) ⟶ Spec (CommRingCat.of L) :=
+    Spec.map (CommRingCat.ofHom φL)
+  -- the two structure maps `Spec Ω ⟶ Spec ℚ` agree: a ring map out of `ℚ`
+  -- into a field is unique, and `ULift ℚ ≃+* ℚ`.
+  have huniq : ∀ f g : (ULift.{u} ℚ) →+* Ω, f = g := by
+    intro f g
+    have h := RingHom.ext_rat (R := Ω)
+      (f.comp (ULift.ringEquiv.symm : ℚ ≃+* ULift.{u} ℚ).toRingHom)
+      (g.comp (ULift.ringEquiv.symm : ℚ ≃+* ULift.{u} ℚ).toRingHom)
+    ext x
+    have hx := RingHom.congr_fun h (ULift.ringEquiv x)
+    simp only [RingHom.comp_apply, RingEquiv.toRingHom_eq_coe, RingHom.coe_coe,
+      RingEquiv.symm_apply_apply] at hx
+    exact hx
+  have hcompat : u ≫ specRatMap K = v ≫ Spec.map ψ := by
+    simp only [u, v, specRatMap, ← Spec.map_comp]
+    congr 1
+    apply CommRingCat.hom_ext
+    exact huniq _ _
+  -- STEP 4: paste `X_Ω = (X_K) ×_K Ω` over `X_L`, exhibiting
+  -- `X_Ω ⟶ X_L` as the base change of `Spec Ω ⟶ Spec L`.
+  have sqTop : IsPullback
+      (Limits.pullback.snd (Limits.pullback.snd fX (specRatMap K)) u)
+      (Limits.pullback.fst (Limits.pullback.snd fX (specRatMap K)) u) u
+      (Limits.pullback.snd fX (specRatMap K)) :=
+    (IsPullback.of_hasPullback _ _).flip
+  have sqMid : IsPullback (Limits.pullback.snd fX (specRatMap K))
+      (Limits.pullback.fst fX (specRatMap K)) (specRatMap K) fX :=
+    (IsPullback.of_hasPullback _ _).flip
+  have sqBig := sqTop.paste_vert sqMid
+  rw [hcompat] at sqBig
+  have sqBot : IsPullback (Limits.pullback.snd fX (Spec.map ψ))
+      (Limits.pullback.fst fX (Spec.map ψ)) (Spec.map ψ) fX :=
+    (IsPullback.of_hasPullback _ _).flip
+  obtain ⟨w, hw⟩ : ∃ w : Limits.pullback (Limits.pullback.snd fX (specRatMap K)) u ⟶
+      Limits.pullback fX (Spec.map ψ),
+      IsPullback (Limits.pullback.snd (Limits.pullback.snd fX (specRatMap K)) u) w v
+        (Limits.pullback.snd fX (Spec.map ψ)) :=
+    ⟨_, IsPullback.of_bot' sqBig sqBot⟩
+  -- STEP 5: `w` is surjective and its source is irreducible.
+  haveI : Surjective v := inferInstance
+  haveI : Surjective w := MorphismProperty.of_isPullback hw ‹Surjective v›
+  have hirr : IrreducibleSpace
+      ↥(Limits.pullback (Limits.pullback.snd fX (specRatMap K)) u) :=
+    pullback_of_geometrically hKX.geometrically_irreducibleSpace Ω u
+  rw [irreducibleSpace_def]
+  have himg := (IrreducibleSpace.isIrreducible_univ
+    ↥(Limits.pullback (Limits.pullback.snd fX (specRatMap K)) u)).image
+      w.base w.continuous.continuousOn
+  rwa [Set.image_univ, Set.range_eq_univ.mpr w.surjective] at himg
 
 /-- **The twisted Hilbert–Blumenthal moduli space, as a FORM** (sorry
 node — the representability half of Taylor §4, recut 2026-07-25): for the
@@ -1566,9 +1686,9 @@ complex multiplication; `X` is an `ℝ`-form of it, because `ρbar` is
 odd). The two remaining properties are then formal:
 
 * geometric irreducibility from `X₀`, by
-  `geometricallyIrreducible_of_isFormOver_isAlgClosed` (a mathlib gap:
-  geometric irreducibility may be tested over one algebraically closed
-  extension, Stacks 0364);
+  `geometricallyIrreducible_of_isFormOver_isAlgClosed` (PROVEN here
+  2026-07-26; it does not in fact need the Stacks 0364 criterion, and
+  does not use the algebraic closedness of `K` either);
 * the real point from `Y`, by `hasRationalPoint_of_isFormOver` (PROVEN
   here).
 
