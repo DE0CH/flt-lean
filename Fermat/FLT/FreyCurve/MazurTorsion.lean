@@ -148,6 +148,14 @@ import Mathlib.NumberTheory.FLT.Three
 -- `p`-torsion in characteristic `p`, the inseparability input of
 -- `exists_zsmul_eq_of_mem_torsionBy_of_charP` below.
 import Fermat.FLT.EllipticCurve.TorsionCharP
+-- The genus-`2` hyperelliptic layer: the smooth projective model of a monic
+-- sextic in `ℙ(1,3,1)`, its integral weighted-projective coordinates, the
+-- reduction map `X(ℚ) → X(𝔽ₚ)`, and the Jacobian package (`Pic⁰` + Abel–Jacobi
+-- + reduction + rank `0`).  Supplies
+-- `Fermat.Hyperelliptic.X18.no_noncuspidal_point`, the smooth-model form of
+-- `MazurLevel18.no_noncuspidal_point_on_smooth_model` below, together with the
+-- machine-checked count `#X_1(18)(𝔽₅) = 6`.
+import Fermat.FLT.ModularCurve.HyperellipticJacobian
 -- The Gaussian-integer infinite descent on `e² = X⁴ − 11X²Y² − Y⁴`: the
 -- arithmetic input of the `X_1(2,10)` node
 -- (`MazurTwoTen.quartic_no_solution`).
@@ -11389,11 +11397,33 @@ nondegenerate solutions: `73087` values of `s` solving the resulting
 cubic in `d`; `43849` values of `z = s(d − 1)` solving a quartic in `d`;
 `43847` nondegenerate `d` solving a cubic in `s`. The first two solve
 for `d`, so they see points whose `d` has enormous height, which a naive
-`d`-scan cannot. Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8. -/
+`d`-scan cannot. Kenku–Ligozat–Kubert; subsumed in Mazur 1977, Thm 8.
+
+STATUS (2026-07-26): **NO LONGER A LEAF.** The dispatch asked for above
+happened, and the definitional layer now exists in
+`Fermat/FLT/ModularCurve/HyperellipticJacobian.lean`. What is PROVEN
+there: the smooth projective model as the `R`-points of a monic sextic in
+`ℙ(1,3,1)` (two rational points at infinity, since the leading
+coefficient is a square); integral weighted-projective coordinates of a
+rational point (`exists_int_coords`, the one non-formal step being that
+`ℤ` is integrally closed in `ℚ`); the reduction map `X(ℚ) → X(𝔽ₚ)`
+(`redPt`, total because `(x.num, x.den)` are coprime); `#X(𝔽₅) = 6`
+**verified by the kernel** with `decide`; the seven points below being
+pairwise distinct; and the derivation `X(ℚ) ↪ X(𝔽₅)` from finiteness of
+`J(ℚ)` plus torsion-freeness of the kernel of reduction.
+
+Items 1–4 above survive as the SINGLE leaf
+`Fermat.Hyperelliptic.X18.exists_jacobianPackage`, whose fields are
+exactly those four. Two remarks worth carrying: the reduction map on
+POINTS is constructed rather than postulated (a package with an
+existentially quantified point-reduction would be discharged by the very
+theorem it is meant to prove); and `#J(ℚ)` coprime to `5` is NOT needed —
+finiteness plus a torsion-free kernel already forces injectivity, so the
+sharper `#J(𝔽₅) = 21` is not an input either. -/
 theorem no_noncuspidal_point_on_smooth_model (x y : ℚ) (hx0 : x ≠ 0) (hx1 : x ≠ 1)
     (hxy : y ^ 2 = x ^ 6 - 4 * x ^ 5 + 10 * x ^ 4 - 10 * x ^ 3 + 5 * x ^ 2 - 2 * x + 1) :
     False :=
-  sorry
+  _root_.Fermat.Hyperelliptic.X18.no_noncuspidal_point x y hx0 hx1 hxy
 
 /-- **The `(d, s)` plane model of `X_1(18)` has no non-cuspidal rational
 point** (PROVEN 2026-07-26 over the smooth model
