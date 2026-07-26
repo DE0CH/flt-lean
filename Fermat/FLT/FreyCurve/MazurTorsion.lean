@@ -8265,418 +8265,6 @@ theorem WeierstrassCurve.x1Thirteen_plane_ne_zero (b c : ℚ)
       + (6 * c ^ 8 + 3 * c ^ 7 + c ^ 6) * b + c ^ 10 ≠ 0 :=
   sorry
 
-/-- **The four residual rank-zero levels `17, 19, 25, 27`, in plane
-form** (sorry node — the residue of the seven-level node below after
-levels `11`, `13` are cut off as explicit plane curves and level `21` is
-discharged outright).
-
-STATEMENT. If the level-`N` value `wₙ = preΨ'ₙ(0)` vanishes on
-`tateNormalForm b c`, then so does `w_d` for some `0 < d < N`. By the
-PROVEN dictionary `MazurX1Plane.zsmul_eq_zero_iff` this says: the origin
-never has order EXACTLY `N`, only possibly a proper divisor of it.
-
-WHY IT IS TRUE, level by level, and why the `d`-clause is not optional:
-
-* `N = 17, 19` (prime): `w_N = 0` means the origin has order `N`, which
-  Mazur excludes; the hypothesis is unsatisfiable and any `d` will do.
-  Plane models: `F₁₇` has bidegree `(12, 18)`, `F₁₉` bidegree `(15, 22)`
-  — written out they are `~60` and `~90` terms, which is why they are
-  left in `preΨ'` form here rather than expanded like `F₁₁` and `F₁₃`.
-* `N = 25`: `w₂₅ = 0` means the order DIVIDES `25`, i.e. is `5` or `25`.
-  Order `5` really does occur — `X_1(5)` has genus `0` and `w₅ = 0` is
-  the line `b = c` (`MazurX1Plane.eval_five`) — so the conclusion `d = 5`
-  is the true content and the statement WOULD BE FALSE without the
-  `d`-clause. This is the trap that makes `w_N ≠ 0` the wrong shape for
-  composite levels.
-* `N = 27`: `w₂₇ = 0` means the order divides `27`. Order `3` forces
-  `Ψ₃(0) = −b³ = 0`, impossible; so the order is `9` or `27`, and `27`
-  being excluded leaves `d = 9`.
-
-BOOKKEEPING NOTE for whoever takes this leaf. The `N = 27` case is
-ALREADY PROVEN independently further down this file, at
-`WeierstrassCurve.no_torsion_order_27` — via the `X_0(27)` route
-(`j_of_stable_cyclic_subgroup_order_27`, `no_torsion_order_27_of_j`),
-which needs no modular curve of level `27` at all. It is included here
-only because `no_torsion_order_27_of_j` is declared BELOW this node and
-Lean's declaration order forbids using it above.
-
-**The repair is now cheap, and its feasibility was verified on
-2026-07-26.** Half of the obstruction is already gone: the `X_0(27)`
-cluster ending in `j_of_stable_cyclic_subgroup_order_27` was hoisted to
-the top of this file that day (to unblock level `81`), so it is now far
-ABOVE this node. What is still below is only the `MazurLevel27` CM-line
-block and `no_torsion_order_27_of_j` / `no_torsion_order_27`, roughly
-`600` lines down, and that block's backward dependencies are
-`MazurLevel18.{order_three_of_a₂_eq_zero, psi3_eq_zero, exists_param}`
-and `MazurLevel9.{cFour_cube_eq, jInvariant_of_variableChange}` — ALL of
-which are already above this node. So that block can be hoisted here
-verbatim, after which the `27` disjunct can simply be dropped from this
-leaf. It was left alone because dropping the disjunct also restates this
-leaf and its four consumers, which belong to another owner.
-
-CITATION for the three that remain: Mazur 1977, Thm 7; the ranks are
-`0` because every `ℚ`-simple factor of `J_1(N)` has `L(A, 1) ≠ 0`
-(`LRatio`: `17: 1/16, 1/21316`; `19: 1/9, 1/2134521`;
-`25: 1/5041, 1/10272025`), and `min_p #X_1(N)(𝔽_p) = φ(N)/2` equals the
-number of rational cusps (`8, 9, 10`). See the seven-level node's
-docstring below for the full audit. -/
-theorem WeierstrassCurve.tateNormalForm_origin_preΨ'_residual (N : ℕ)
-    (hN : N = 17 ∨ N = 19 ∨ N = 25 ∨ N = 27) (b c : ℚ)
-    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
-    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0)
-    (h : ((WeierstrassCurve.tateNormalForm b c).preΨ' N).eval 0 = 0) :
-    ∃ d : ℕ, 0 < d ∧ d < N ∧
-      ((WeierstrassCurve.tateNormalForm b c).preΨ' d).eval 0 = 0 :=
-  sorry
-
-/-- **`X_1(N)(ℚ)` is cuspidal at the seven rank-zero levels: in Tate
-coordinates the origin never has order `N`, for
-`N ∈ {11, 13, 17, 19, 21, 25, 27}`** (sorry node — ONE literature
-citation for SEVEN levels; GENERALISED from the level-`25` node
-2026-07-26, whose audit this docstring is and remains).
-
-WHY THESE SEVEN AND NOT OTHERS. The proof is the same theorem at each,
-and it is the one described in the REFUTED block below: `X_1(N)/ℚ` with
-its rational cusps, `rank J_1(N)(ℚ) = 0` (from `L(A, 1) ≠ 0` for every
-`ℚ`-simple factor `A`, via Kolyvagin–Logachev or Kato), and injectivity
-of torsion under reduction at a good odd prime. It applies exactly when
-BOTH inputs hold, and both were re-verified independently with Magma on
-2026-07-26 (untrusted searcher; statement check only, never a proof):
-
-* every `ℚ`-simple factor of `J_1(N)` has `LRatio(A, 1) ≠ 0` for
-  `N ∈ {11, 13, 17, 19, 21, 25, 27}` — the factor dimensions and ratios
-  are `11`: `(1, 1/25)`; `13`: `(2, 1/361)`; `17`: `(1, 1/16), (4,
-  1/21316)`; `19`: `(1, 1/9), (6, 1/2134521)`; `21`: `(1, 1/8), (2,
-  1/169), (2, 1/49)`; `25`: `(4, 1/5041), (8, 1/10272025)`; `27`:
-  `(1, 1/9), (12, 1/8267805027)`;
-* `min_p #X_1(N)(𝔽_p) = φ(N)/2 = #(rational cusps)` at each, with
-  `#X_1(N)(𝔽_p) = p + 1 − Tr(T_p ∣ S_2(Γ_1(N)))`: the minima are
-  `5, 6, 8, 9, 6, 10, 9` and the genera `1, 2, 5, 7, 5, 12, 13`.
-
-Embedding `X_1(N)(ℚ) ↪ J_1(N)(ℚ)` at a rational cusp and reducing at a
-good odd prime realising the minimum is then injective on the finite
-group `J_1(N)(ℚ)`, so `#X_1(N)(ℚ) ≤ φ(N)/2`, which the rational cusps
-already exhaust. Hence every rational point is a cusp — which IS this
-node.
-
-**IT BREAKS AT `37`, AND EXACTLY THERE.** `J_1(37)` has a factor of
-dimension `1` with `LRatio(1) = 0` (the elliptic curve `37a`, of rank
-`1`), alongside seven factors with `LRatio ≠ 0`. So the whole-Jacobian
-argument fails and levels `37, 43, 67, 163` need the winding /
-Eisenstein quotient instead — they are deliberately NOT in the
-hypothesis of this node. Levels `16, 18, 24` satisfy the `L(1) ≠ 0`
-half but not the point-count half, and are anyway already closed
-elementarily elsewhere in this file.
-
-Of the seven, `21` and `27` are at present closed in this file by other
-routes (`no_torsion_order_21`'s structural argument and
-`no_torsion_order_27_of_j`, Olson's CM theorem), so the levels this node
-is *currently* wired to serve are `11, 13, 17, 19, 25` — but the
-statement is proved for all seven at once, and the two extra levels cost
-nothing.
-
-Everything below is the level-`25` audit, kept verbatim because it is
-the instance where the seven-level structure was found.
-
-`X_1(25)` has genus
-`12` and no non-cuspidal
-rational point (subsumed in Mazur 1977, Thm 8). The `X_0` shortcut is
-NOT available at this level: a rational cyclic `25`-isogeny does exist
-(the class `11a` contains one), so `X_0(25)` has non-cuspidal rational
-points and only the `X_1` statement excludes an order-`25` point.
-
-IRREDUCIBLE at this mathlib pin — meaning no OTHER node of this file
-implies it, which is still true; but NOT "no shallower node exists",
-which was the 2026-07-25 verdict and is refuted below (audit
-2026-07-25, re-audited the same
-day when level `27` — the other level of Kenku's list where `X_0` still
-bites — was reduced to its `X_0(27)` `j`-determination). The
-genus `12` is the standard formula
-`g(X_1(N)) = 1 + (N²/24)∏_{p ∣ N}(1 − p⁻²) − ¼ Σ_{d ∣ N} φ(d)φ(N/d)`
-evaluated at `N = 25` (recomputed 2026-07-25). Routes checked and
-rejected:
-
-* *The `X_0` route that closes `27` and `49` has no analogue here.*
-  `X_0(25)` has genus `0`, so its rational points are a rational
-  one-parameter family and a rational cyclic `25`-subgroup puts NO
-  constraint on `j(E)` — unlike level `27`, where `X_0(27)` is a
-  rank-`0` genus-`1` curve with a single non-cuspidal rational point.
-  Verified with PARI/GP: `ellisomat` on `11a1 = [0,-1,1,-10,-20]`
-  returns the degree matrix `[1,5,5; 5,1,25; 5,25,1]`, so a rational
-  cyclic `25`-isogeny genuinely exists.
-* *Divisor reduction fails by design.* The proper divisors of `25` are
-  `1` and `5`, both in Mazur's allowed set, so nothing here implies the
-  node.
-* *Reduction plus Hasse fails, even in its sharp congruence form.* A
-  rational point of order `25` makes the mod-`25` representation
-  `(1 ∗; 0 ω)` (the rational cyclic subgroup is the trivial character,
-  and the determinant is cyclotomic), so `a_p ≡ 1 + p (mod 25)` at
-  every prime `p ≠ 5` of good reduction, while `|a_p| ≤ 2√p`. That
-  congruence is strictly stronger than the bare bound `25 ≤ p+1+2√p`,
-  but at this level it forces exactly the same thing: bad reduction at
-  `p ∈ {2, 3, 7, 11, 13}` and nothing at any `p ≥ 17` (checked to
-  `p < 400` with PARI/GP). A conductor lower bound is not a
-  contradiction — curves of every such conductor exist.
-
-A formal proof needs `X_1(25)` as an arithmetic curve over `ℚ` together
-with a determination of its rational points (Chabauty/Kenku-style, or
-the Eisenstein-ideal descent). The one structural observation worth
-recording for a future attack: if `P` has order `25` then
-`E' = E/⟨5P⟩` carries the rational point `φ(P)` of order `5` AND the
-rational subgroup `ker φ̂` of order `5`, and these are independent
-(`P ∉ E[5]`), so `E'[5] ≅ ℤ/5 ⊕ μ_5` as a Galois module. That is a
-level-`25` structure again, not a simplification — but it is the shape
-in which the classical proofs proceed.
-
-RE-AUDITED 2026-07-25 against the route that closed level `27`
-(`no_torsion_order_27_of_j`), and it does NOT transfer. That proof works
-because a point of order `27` yields a point of order `9`, and `X_1(9)`
-has genus `0`: the Tate normal form is then a rational LINE
-(`c = d²(d − 1)`, `b = c(d² − d + 1)`), on which the extra hypothesis —
-there, a prescribed `j`-invariant — becomes a one-variable polynomial
-equation that can be refuted by a congruence. Here the descent by one
-prime power gives only a point of order `5`, i.e. the genus-`0` line
-`b = c` of `X_1(5)`; but the residual condition that the order-`5` point
-be `5` times a rational point of order `25` is `X_1(25)` itself, and
-there is no auxiliary hypothesis (no `j`-invariant, no isogeny
-obstruction — see the `X_0(25)` bullet above) to cut it down to a curve
-of genus `0`. That much stands.
-
-**REFUTED 2026-07-26: "the only intermediate quotient is the genus-`0`
-one, so `25` is the only level of the eleven with no shallower node".**
-Both halves are wrong, and what replaces them is a complete classical
-proof with every number checked. All computations below are Magma —
-untrusted searcher, statement check only, never a proof.
-
-* *There IS a genus-`4` intermediate curve.* The diamond group is
-  `(ℤ/25)^× / ±1 ≅ ℤ/10`, so the curves between `X_1(25)` and `X_0(25)`
-  are the `X_Δ(25)` for the subgroups `Δ ⊆ (ℤ/25)^×` containing `−1`:
-  `{±1}`, `⟨7⟩ = {±1, ±7}`, the squares, and everything. Each genus is
-  `Σ_χ dim S_2(25, χ)` over the `χ` trivial on `Δ`, and
-  `dim S_2(25, χ) = 0, 0, 1, 2` for `χ` even of order `1, 2, 5, 10`
-  (total `0 + 0 + 4·1 + 4·2 = 12 = g(X_1(25))` ✓). So the four genera
-  are `12`, **`4`**, `0`, `0`. The earlier audit found the genus-`0`
-  quotient and stopped; the genus-`4` curve `X_{⟨7⟩}(25)` — a point of
-  order `25` remembered up to `P ↦ ±P, ±7P` — was missed.
-  Confirmed twice more, independently of modular symbols. (i) The
-  congruence-subgroup genus formula: `Γ_{⟨7⟩}(25)` has index
-  `[SL₂(ℤ) : Γ_1(25)]/|⟨7⟩| = 600/4 = 150` in `PSL₂(ℤ)` (unchanged by
-  `±`, as `−I ∈ Γ_{⟨7⟩}`), `ν₂ = 10`, `ν₃ = 0`, `ν_∞ = 14`, giving
-  `1 + 150/12 − 10/4 − 14/2 = 4`. (ii) Riemann–Hurwitz for the
-  degree-`2` diamond quotient `X_1(25) → X_{⟨7⟩}(25)`: `⟨7⟩` fixes
-  `(E, P)` exactly when some automorphism `α` of `E` has `αP = 7P`,
-  which forces `α = i` and `j = 1728` (since `7² = 49 ≡ −1 mod 25`),
-  and there are `10` such points; `2·12 − 2 = 2(2g − 2) + 10` gives
-  `g = 4`.
-* *`J_1(25)` has Mordell–Weil rank `0`.* It is `ℚ`-isogenous to
-  `A₄ × A₈`, of dimensions `4` and `8` (the quintic- and
-  order-`10`-character parts), and `L(A, 1) ≠ 0` for BOTH:
-  `LRatio(A, 1) = 1/5041` and `1/10272025`. By Kolyvagin–Logachev
-  (or Kato) the rank is `0`, so `J_1(25)(ℚ)` is FINITE.
-  `Jac X_{⟨7⟩}(25) = A₄`, hence also rank `0`.
-* *The point count then closes the level outright — no Chabauty.*
-  `X_1(25)` has good reduction away from `5`, and
-  `#X_1(25)(𝔽_p) = p + 1 − Tr(T_p ∣ S_2(Γ_1(25))) = 10` for
-  `p = 2, 3, 7, 13`. Its rational cusps are exactly the `φ(25)/2 = 10`
-  carried by the Néron `25`-gon (the point of order `25` meets every
-  component, so the pair is rational); the `10` on the `1`-gon `𝔾_m`
-  have `P ∈ μ₂₅` and form ONE Galois orbit over `ℚ(ζ₂₅)⁺`, and the `8`
-  of denominator `5` lie over the irrational denominator-`5` cusps of
-  `X_0(25)`. Embedding `X_1(25)(ℚ) ↪ J_1(25)(ℚ)` at a rational cusp and
-  reducing at the odd good prime `3` (injective on torsion) gives
-  `#X_1(25)(ℚ) ≤ #X_1(25)(𝔽_3) = 10 = #(rational cusps)`. So every
-  rational point is a cusp — which IS this node. The genus-`4` quotient
-  gives the same conclusion independently:
-  `#X_{⟨7⟩}(25)(𝔽_3) = #X_{⟨7⟩}(25)(𝔽_13) = 5`, and it has exactly `5`
-  rational cusps (`⟨7⟩/±` acts freely on the `10`, since `7P = ±P` is
-  impossible for `P` of order `25`, and the other cusp orbits stay
-  irrational because they stay irrational already on `X_0(25)` or are
-  permuted transitively by `Gal(ℚ(ζ₂₅)⁺/ℚ)`).
-* *Cross-check that the pipeline is sound.* The identical computation
-  returns `#X_1(11)(𝔽_3) = 5 = φ(11)/2` and `#X_1(13)(𝔽_3) = 6 =
-  φ(13)/2`, reproducing Billing–Mahler and Mazur–Tate exactly.
-* *Cross-check of the genus-`4` claim itself.* It predicts that the
-  `11a` cyclic `25`-isogeny does NOT give a non-cuspidal rational point
-  of `X_{⟨7⟩}(25)`: its kernel character must have order `5`, `10` or
-  `20`, not dividing `4`. Since the only cyclic quartic field
-  unramified outside `{5, 11}` is `ℚ(ζ₅)`, that is testable, and it
-  holds — the torsion of `11a1, 11a2, 11a3` over `ℚ(ζ₅)` is
-  `ℤ/5 × ℤ/5`, `ℤ/5`, `ℤ/5`, with no `25`-torsion anywhere. (This also
-  corrects the old text: the cyclic `25`-isogeny of the class joins
-  `11a2` and `11a3`; `11a1` itself has only the two `5`-isogenies, and
-  its `ℤ/5 × ℤ/5` over `ℚ(ζ₅)` is exactly the split `ℤ/5 ⊕ μ₅` that
-  makes the class work.)
-
-**THIS IS ONE MISSING THEORY FOR SEVEN LEVELS, NOT ONE.** Every
-`ℚ`-simple factor of `J_1(N)` has `L(1) ≠ 0` for
-`N ∈ {11, 13, 16, 17, 18, 19, 21, 24, 25, 27}`, and
-`min_p #X_1(N)(𝔽_p) = φ(N)/2 = #(rational cusps)` for
-`N ∈ {11, 13, 17, 19, 21, 25, 27}`. So the single theory — `X_1(N)/ℚ`
-with its cusps, `rank J_1(N)(ℚ) = 0` from `L(1) ≠ 0`, and injectivity
-of torsion under good reduction — closes levels
-`11, 13, 17, 19, 21, 25, 27` in one blow, i.e. seven of this file's
-sorried nodes rather than this one. It breaks at `37` in a precisely
-identifiable place: `J_1(37)` has a rank-`1` factor (`LRatio(1) = 0`,
-the elliptic curve `37a`), so `37, 43, 67, 163` need the
-winding/Eisenstein quotient instead of the whole Jacobian. None of it
-exists here: `grep ModularCurve` over mathlib returns nothing, and
-`~/cs/FLT` takes the Mazur bound as a bare `axiom`.
-
-STATED IN TATE COORDINATES (2026-07-26), matching levels `11, 13, 17,
-19, 37, 43, 67, 163`. The general form of this level — no rational
-point of order `25` on ANY elliptic curve over `ℚ` — is
-`no_torsion_order_25` just below, and is PROVEN from this node. Here
-the curve is the explicit two-parameter family `tateNormalForm b c` and
-the point is the origin, so this node IS the plane model of `X_1(25)`
-in the `(b, c)`-coordinates rather than a statement quantified over all
-curves. The passage between the two is the PROVEN
-`exists_tateNormalForm`; everything above about genus, witnesses and
-citation is unchanged by the restatement.
-
-GENERALISED 2026-07-26. The whole of the above is now a corollary of the
-single node `tateNormalForm_origin_order_ne_of_cuspidalRankZero`
-immediately below, which states it uniformly for the SEVEN levels whose
-proof is the same theorem. That node, not this one, is where the work
-is; this one is PROVEN from it by instantiating `N := 25`.
-
-DECOMPOSED AND PARTLY PROVEN 2026-07-26. The node itself is no longer a
-`sorry`: it is now derived, level by level, from the plane model of
-`X_1(N)` in the `(b, c)`-coordinates (section `MazurX1Plane` above,
-PROVEN) together with three shallower nodes. The cut is:
-
-* `N = 21` is **PROVEN OUTRIGHT** here, from the file's own
-  `no_torsion_order_21` — the `X_0(21)` + genus-`0` `X_1(7)` route,
-  which involves no rank-`0` Jacobian input at all. So level `21` was
-  never part of the "same theorem" this node claims to state uniformly:
-  it was already free, and grouping it with the others overstated the
-  citation. That is a correction to the audit below, not a change of
-  statement.
-* `N = 11, 13` go to `x1Eleven_plane_ne_zero` and
-  `x1Thirteen_plane_ne_zero`: the EXPLICIT affine plane curves
-  `F₁₁(b, c) = 0` (bidegree `(5, 7)`) and `F₁₃(b, c) = 0` (bidegree
-  `(7, 10)`), which are the `(b, c)`-models of `X_1(11)` and `X_1(13)`.
-* `N = 17, 19, 25, 27` go to `tateNormalForm_origin_preΨ'_residual`,
-  stated in `preΨ'` form because those plane curves are too large to
-  write out (`~60`, `~90`, and several hundred terms). Its docstring
-  records that the `27` case is already proven independently below, and
-  is present only because of Lean's declaration order.
-
-The transport is the PROVEN division-polynomial torsion dictionary
-`TorsionCard.smul_some_eq_zero_iff`, specialised to the origin: the
-`normEDS` recursion behind mathlib's `preΨ'` is closed under evaluation
-at a fixed `x`, so `preΨ'ₙ(0)` is a polynomial in `(b, c)` computable
-from `Ψ₂Sq(0) = b²`, `Ψ₃(0) = −b³`, `preΨ₄(0) = −b⁴c`. Every level
-value used below is DERIVED inside Lean from that recursion, so the
-explicit polynomials are machine-checked rather than asserted.
-
-FAITHFULNESS NOTE, and it is the trap of this cut. The seemingly
-natural residual statement `preΨ'_N(0) ≠ 0` is FALSE at the composite
-levels: `preΨ'₂₅(0) = 0` says the order DIVIDES `25`, and order `5` is
-everywhere on this family (`preΨ'₅(0) = b⁸(b − c)`, the genus-`0` line
-`b = c`). The residual node therefore concludes with a proper divisor
-`d`, not with non-vanishing. -/
-theorem WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero
-    (N : ℕ)
-    (hN : N = 11 ∨ N = 13 ∨ N = 17 ∨ N = 19 ∨ N = 21 ∨ N = 25 ∨ N = 27)
-    (b c : ℚ)
-    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
-    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
-    addOrderOf (Affine.Point.some 0 0 h00) ≠ N := by
-  intro hord
-  have hb : b ≠ 0 := MazurX1Plane.b_ne_zero h00
-  -- forward: the order condition makes the level polynomial vanish
-  have key : ∀ n : ℕ, ¬ Even n → addOrderOf (Affine.Point.some 0 0 h00) = n →
-      ((WeierstrassCurve.tateNormalForm b c).preΨ' n).eval 0 = 0 := by
-    intro n hodd hn
-    have hn0 : (n : ℤ) ≠ 0 := by
-      rintro h0
-      rw [show n = 0 from by exact_mod_cast h0] at hodd
-      exact hodd (by decide)
-    have hz : (n : ℤ) • (Affine.Point.some 0 0 h00) = 0 := by
-      rw [natCast_zsmul, ← hn]; exact addOrderOf_nsmul_eq_zero _
-    have hΨ :=
-      (MazurX1Plane.zsmul_eq_zero_iff (WeierstrassCurve.tateNormalForm b c) h00 hn0).mp hz
-    rw [MazurX1Plane.eval_ΨSq_odd _ _ n hodd] at hΨ
-    exact pow_eq_zero_iff two_ne_zero |>.mp hΨ
-  -- backward: a level value vanishing at a smaller index bounds the order
-  have back : ∀ d : ℕ, 0 < d →
-      ((WeierstrassCurve.tateNormalForm b c).preΨ' d).eval 0 = 0 →
-      addOrderOf (Affine.Point.some 0 0 h00) ≤ d := by
-    intro d hd hdz
-    have hd0 : (d : ℤ) ≠ 0 := by exact_mod_cast hd.ne'
-    have hz : (d : ℤ) • (Affine.Point.some 0 0 h00) = 0 :=
-      (MazurX1Plane.zsmul_eq_zero_iff (WeierstrassCurve.tateNormalForm b c) h00 hd0).mpr
-        (MazurX1Plane.eval_ΨSq_of_preΨ' _ _ d hdz)
-    rw [natCast_zsmul] at hz
-    exact Nat.le_of_dvd hd (addOrderOf_dvd_of_nsmul_eq_zero hz)
-  rcases hN with rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  · -- `N = 11`: the plane quintic `F₁₁`
-    have h := key 11 (by decide) hord
-    rw [MazurX1Plane.eval_eleven] at h
-    rcases mul_eq_zero.mp h with h0 | h0
-    · exact hb (pow_eq_zero_iff (by norm_num) |>.mp h0)
-    · exact WeierstrassCurve.x1Eleven_plane_ne_zero b c hb h0
-  · -- `N = 13`: the plane curve `F₁₃`
-    have h := key 13 (by decide) hord
-    rw [MazurX1Plane.eval_thirteen] at h
-    rcases mul_eq_zero.mp h with h0 | h0
-    · exact hb (pow_eq_zero_iff (by norm_num) |>.mp h0)
-    · exact WeierstrassCurve.x1Thirteen_plane_ne_zero b c hb h0
-  · -- `N = 17`
-    obtain ⟨d, hd0, hdN, hdz⟩ :=
-      WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 17 (by tauto) b c h00
-        (key 17 (by decide) hord)
-    have hle := back d hd0 hdz
-    rw [hord] at hle
-    omega
-  · -- `N = 19`
-    obtain ⟨d, hd0, hdN, hdz⟩ :=
-      WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 19 (by tauto) b c h00
-        (key 19 (by decide) hord)
-    have hle := back d hd0 hdz
-    rw [hord] at hle
-    omega
-  · -- `N = 21`: PROVEN, from the `X_0(21)` + `X_1(7)` route above
-    exact WeierstrassCurve.no_torsion_order_21 (WeierstrassCurve.tateNormalForm b c)
-      (Affine.Point.some 0 0 h00) hord
-  · -- `N = 25`
-    obtain ⟨d, hd0, hdN, hdz⟩ :=
-      WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 25 (by tauto) b c h00
-        (key 25 (by decide) hord)
-    have hle := back d hd0 hdz
-    rw [hord] at hle
-    omega
-  · -- `N = 27`
-    obtain ⟨d, hd0, hdN, hdz⟩ :=
-      WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 27 (by tauto) b c h00
-        (key 27 (by decide) hord)
-    have hle := back d hd0 hdz
-    rw [hord] at hle
-    omega
-
-/-- **No rational point of order `25`** (PROVEN 2026-07-26 by
-instantiating the seven-level node above at `N = 25`). All the
-mathematical content, the citation and the audit are in that node's
-docstring and in this one; nothing is specific to `25` any more. -/
-theorem WeierstrassCurve.tateNormalForm_origin_order_ne_25 (b c : ℚ)
-    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
-    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
-    addOrderOf (Affine.Point.some 0 0 h00) ≠ 25 :=
-  WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero 25
-    (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))) b c h00
-
-/-- **No rational point of order `25`** (PROVEN 2026-07-26 from the
-Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
-a point of order `25 ≥ 4` puts its curve in Tate normal form at the
-origin, so the general statement follows from the one about the
-explicit family. All the mathematical content is in the node above,
-whose docstring carries this level's citation and audit. -/
-theorem WeierstrassCurve.no_torsion_order_25 (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 25 :=
-  WeierstrassCurve.no_torsion_order_of_tateNormalForm (by norm_num)
-    (fun b c hell h00 =>
-      @WeierstrassCurve.tateNormalForm_origin_order_ne_25 b c hell h00) E Q
-
 namespace MazurLevel27
 
 /-! ### The CM `j`-invariant along the `X_1(9)` line
@@ -9033,6 +8621,427 @@ theorem WeierstrassCurve.no_torsion_order_27 (E : WeierstrassCurve ℚ)
     E.exists_stable_cyclic_subgroup_of_rational_point Q hQ
   exact E.no_torsion_order_27_of_j
     (E.j_of_stable_cyclic_subgroup_order_27 g hgord hstable) Q hQ
+
+/-- **The three residual rank-zero levels `17, 19, 25`, in plane
+form** (sorry node — the residue of the seven-level node below after
+levels `11`, `13` are cut off as explicit plane curves and levels `21`
+and `27` are discharged outright).
+
+STATEMENT. If the level-`N` value `wₙ = preΨ'ₙ(0)` vanishes on
+`tateNormalForm b c`, then so does `w_d` for some `0 < d < N`. By the
+PROVEN dictionary `MazurX1Plane.zsmul_eq_zero_iff` this says: the origin
+never has order EXACTLY `N`, only possibly a proper divisor of it.
+
+WHY IT IS TRUE, level by level, and why the `d`-clause is not optional:
+
+* `N = 17, 19` (prime): `w_N = 0` means the origin has order `N`, which
+  Mazur excludes; the hypothesis is unsatisfiable and any `d` will do.
+  Plane models: `F₁₇` has bidegree `(12, 18)`, `F₁₉` bidegree `(15, 22)`
+  — written out they are `~60` and `~90` terms, which is why they are
+  left in `preΨ'` form here rather than expanded like `F₁₁` and `F₁₃`.
+* `N = 25`: `w₂₅ = 0` means the order DIVIDES `25`, i.e. is `5` or `25`.
+  Order `5` really does occur — `X_1(5)` has genus `0` and `w₅ = 0` is
+  the line `b = c` (`MazurX1Plane.eval_five`) — so the conclusion `d = 5`
+  is the true content and the statement WOULD BE FALSE without the
+  `d`-clause. This is the trap that makes `w_N ≠ 0` the wrong shape for
+  composite levels.
+BOOKKEEPING NOTE — the `27` disjunct is GONE, and this is DONE, not
+pending (2026-07-26). Level `27` used to be a fourth disjunct here even
+though `WeierstrassCurve.no_torsion_order_27` proves it outright by the
+`X_0(27)` route (`j_of_stable_cyclic_subgroup_order_27`,
+`no_torsion_order_27_of_j`), which needs no modular curve of level `27`
+at all. The duplication existed for one reason only: Lean's declaration
+order. `no_torsion_order_27` was declared BELOW this node, so the
+seven-level node could not reach it and had to route level `27` through
+this leaf instead.
+
+The obstruction has now been removed. The `X_0(27)` cluster ending in
+`j_of_stable_cyclic_subgroup_order_27` had already been hoisted to the
+top of this file (to unblock level `81`); on 2026-07-26 the remaining
+piece — the `MazurLevel27` CM-line namespace together with
+`exists_tateNormalForm_jInvariant_of_order_nine`,
+`no_torsion_order_27_of_j` and `no_torsion_order_27` — was moved
+verbatim to sit immediately ABOVE this docstring. That block's backward
+dependencies are `MazurLevel18.{order_three_of_a₂_eq_zero, psi3_eq_zero,
+exists_param}` and `MazurLevel9.{cFour_cube_eq,
+jInvariant_of_variableChange}`, all of which were already above it, so
+the hoist needed no other change. The seven-level node's `N = 27` branch
+now discharges level `27` by `no_torsion_order_27` directly, exactly as
+its `N = 21` branch discharges level `21`, and this leaf carries only
+the three levels that genuinely have no shallower node.
+
+So do NOT reintroduce a `27` case here: there is nothing left to prove
+at that level, and a `27` disjunct would only recreate a proof
+obligation that is already discharged a few hundred lines above.
+
+CITATION for the three that remain: Mazur 1977, Thm 7; the ranks are
+`0` because every `ℚ`-simple factor of `J_1(N)` has `L(A, 1) ≠ 0`
+(`LRatio`: `17: 1/16, 1/21316`; `19: 1/9, 1/2134521`;
+`25: 1/5041, 1/10272025`), and `min_p #X_1(N)(𝔽_p) = φ(N)/2` equals the
+number of rational cusps (`8, 9, 10`). See the seven-level node's
+docstring below for the full audit. -/
+theorem WeierstrassCurve.tateNormalForm_origin_preΨ'_residual (N : ℕ)
+    (hN : N = 17 ∨ N = 19 ∨ N = 25) (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0)
+    (h : ((WeierstrassCurve.tateNormalForm b c).preΨ' N).eval 0 = 0) :
+    ∃ d : ℕ, 0 < d ∧ d < N ∧
+      ((WeierstrassCurve.tateNormalForm b c).preΨ' d).eval 0 = 0 :=
+  sorry
+
+/-- **`X_1(N)(ℚ)` is cuspidal at the seven rank-zero levels: in Tate
+coordinates the origin never has order `N`, for
+`N ∈ {11, 13, 17, 19, 21, 25, 27}`** (sorry node — ONE literature
+citation for SEVEN levels; GENERALISED from the level-`25` node
+2026-07-26, whose audit this docstring is and remains).
+
+WHY THESE SEVEN AND NOT OTHERS. The proof is the same theorem at each,
+and it is the one described in the REFUTED block below: `X_1(N)/ℚ` with
+its rational cusps, `rank J_1(N)(ℚ) = 0` (from `L(A, 1) ≠ 0` for every
+`ℚ`-simple factor `A`, via Kolyvagin–Logachev or Kato), and injectivity
+of torsion under reduction at a good odd prime. It applies exactly when
+BOTH inputs hold, and both were re-verified independently with Magma on
+2026-07-26 (untrusted searcher; statement check only, never a proof):
+
+* every `ℚ`-simple factor of `J_1(N)` has `LRatio(A, 1) ≠ 0` for
+  `N ∈ {11, 13, 17, 19, 21, 25, 27}` — the factor dimensions and ratios
+  are `11`: `(1, 1/25)`; `13`: `(2, 1/361)`; `17`: `(1, 1/16), (4,
+  1/21316)`; `19`: `(1, 1/9), (6, 1/2134521)`; `21`: `(1, 1/8), (2,
+  1/169), (2, 1/49)`; `25`: `(4, 1/5041), (8, 1/10272025)`; `27`:
+  `(1, 1/9), (12, 1/8267805027)`;
+* `min_p #X_1(N)(𝔽_p) = φ(N)/2 = #(rational cusps)` at each, with
+  `#X_1(N)(𝔽_p) = p + 1 − Tr(T_p ∣ S_2(Γ_1(N)))`: the minima are
+  `5, 6, 8, 9, 6, 10, 9` and the genera `1, 2, 5, 7, 5, 12, 13`.
+
+Embedding `X_1(N)(ℚ) ↪ J_1(N)(ℚ)` at a rational cusp and reducing at a
+good odd prime realising the minimum is then injective on the finite
+group `J_1(N)(ℚ)`, so `#X_1(N)(ℚ) ≤ φ(N)/2`, which the rational cusps
+already exhaust. Hence every rational point is a cusp — which IS this
+node.
+
+**IT BREAKS AT `37`, AND EXACTLY THERE.** `J_1(37)` has a factor of
+dimension `1` with `LRatio(1) = 0` (the elliptic curve `37a`, of rank
+`1`), alongside seven factors with `LRatio ≠ 0`. So the whole-Jacobian
+argument fails and levels `37, 43, 67, 163` need the winding /
+Eisenstein quotient instead — they are deliberately NOT in the
+hypothesis of this node. Levels `16, 18, 24` satisfy the `L(1) ≠ 0`
+half but not the point-count half, and are anyway already closed
+elementarily elsewhere in this file.
+
+Of the seven, `21` and `27` are at present closed in this file by other
+routes (`no_torsion_order_21`'s structural argument and
+`no_torsion_order_27_of_j`, Olson's CM theorem), so the levels this node
+is *currently* wired to serve are `11, 13, 17, 19, 25` — but the
+statement is proved for all seven at once, and the two extra levels cost
+nothing.
+
+Everything below is the level-`25` audit, kept verbatim because it is
+the instance where the seven-level structure was found.
+
+`X_1(25)` has genus
+`12` and no non-cuspidal
+rational point (subsumed in Mazur 1977, Thm 8). The `X_0` shortcut is
+NOT available at this level: a rational cyclic `25`-isogeny does exist
+(the class `11a` contains one), so `X_0(25)` has non-cuspidal rational
+points and only the `X_1` statement excludes an order-`25` point.
+
+IRREDUCIBLE at this mathlib pin — meaning no OTHER node of this file
+implies it, which is still true; but NOT "no shallower node exists",
+which was the 2026-07-25 verdict and is refuted below (audit
+2026-07-25, re-audited the same
+day when level `27` — the other level of Kenku's list where `X_0` still
+bites — was reduced to its `X_0(27)` `j`-determination). The
+genus `12` is the standard formula
+`g(X_1(N)) = 1 + (N²/24)∏_{p ∣ N}(1 − p⁻²) − ¼ Σ_{d ∣ N} φ(d)φ(N/d)`
+evaluated at `N = 25` (recomputed 2026-07-25). Routes checked and
+rejected:
+
+* *The `X_0` route that closes `27` and `49` has no analogue here.*
+  `X_0(25)` has genus `0`, so its rational points are a rational
+  one-parameter family and a rational cyclic `25`-subgroup puts NO
+  constraint on `j(E)` — unlike level `27`, where `X_0(27)` is a
+  rank-`0` genus-`1` curve with a single non-cuspidal rational point.
+  Verified with PARI/GP: `ellisomat` on `11a1 = [0,-1,1,-10,-20]`
+  returns the degree matrix `[1,5,5; 5,1,25; 5,25,1]`, so a rational
+  cyclic `25`-isogeny genuinely exists.
+* *Divisor reduction fails by design.* The proper divisors of `25` are
+  `1` and `5`, both in Mazur's allowed set, so nothing here implies the
+  node.
+* *Reduction plus Hasse fails, even in its sharp congruence form.* A
+  rational point of order `25` makes the mod-`25` representation
+  `(1 ∗; 0 ω)` (the rational cyclic subgroup is the trivial character,
+  and the determinant is cyclotomic), so `a_p ≡ 1 + p (mod 25)` at
+  every prime `p ≠ 5` of good reduction, while `|a_p| ≤ 2√p`. That
+  congruence is strictly stronger than the bare bound `25 ≤ p+1+2√p`,
+  but at this level it forces exactly the same thing: bad reduction at
+  `p ∈ {2, 3, 7, 11, 13}` and nothing at any `p ≥ 17` (checked to
+  `p < 400` with PARI/GP). A conductor lower bound is not a
+  contradiction — curves of every such conductor exist.
+
+A formal proof needs `X_1(25)` as an arithmetic curve over `ℚ` together
+with a determination of its rational points (Chabauty/Kenku-style, or
+the Eisenstein-ideal descent). The one structural observation worth
+recording for a future attack: if `P` has order `25` then
+`E' = E/⟨5P⟩` carries the rational point `φ(P)` of order `5` AND the
+rational subgroup `ker φ̂` of order `5`, and these are independent
+(`P ∉ E[5]`), so `E'[5] ≅ ℤ/5 ⊕ μ_5` as a Galois module. That is a
+level-`25` structure again, not a simplification — but it is the shape
+in which the classical proofs proceed.
+
+RE-AUDITED 2026-07-25 against the route that closed level `27`
+(`no_torsion_order_27_of_j`), and it does NOT transfer. That proof works
+because a point of order `27` yields a point of order `9`, and `X_1(9)`
+has genus `0`: the Tate normal form is then a rational LINE
+(`c = d²(d − 1)`, `b = c(d² − d + 1)`), on which the extra hypothesis —
+there, a prescribed `j`-invariant — becomes a one-variable polynomial
+equation that can be refuted by a congruence. Here the descent by one
+prime power gives only a point of order `5`, i.e. the genus-`0` line
+`b = c` of `X_1(5)`; but the residual condition that the order-`5` point
+be `5` times a rational point of order `25` is `X_1(25)` itself, and
+there is no auxiliary hypothesis (no `j`-invariant, no isogeny
+obstruction — see the `X_0(25)` bullet above) to cut it down to a curve
+of genus `0`. That much stands.
+
+**REFUTED 2026-07-26: "the only intermediate quotient is the genus-`0`
+one, so `25` is the only level of the eleven with no shallower node".**
+Both halves are wrong, and what replaces them is a complete classical
+proof with every number checked. All computations below are Magma —
+untrusted searcher, statement check only, never a proof.
+
+* *There IS a genus-`4` intermediate curve.* The diamond group is
+  `(ℤ/25)^× / ±1 ≅ ℤ/10`, so the curves between `X_1(25)` and `X_0(25)`
+  are the `X_Δ(25)` for the subgroups `Δ ⊆ (ℤ/25)^×` containing `−1`:
+  `{±1}`, `⟨7⟩ = {±1, ±7}`, the squares, and everything. Each genus is
+  `Σ_χ dim S_2(25, χ)` over the `χ` trivial on `Δ`, and
+  `dim S_2(25, χ) = 0, 0, 1, 2` for `χ` even of order `1, 2, 5, 10`
+  (total `0 + 0 + 4·1 + 4·2 = 12 = g(X_1(25))` ✓). So the four genera
+  are `12`, **`4`**, `0`, `0`. The earlier audit found the genus-`0`
+  quotient and stopped; the genus-`4` curve `X_{⟨7⟩}(25)` — a point of
+  order `25` remembered up to `P ↦ ±P, ±7P` — was missed.
+  Confirmed twice more, independently of modular symbols. (i) The
+  congruence-subgroup genus formula: `Γ_{⟨7⟩}(25)` has index
+  `[SL₂(ℤ) : Γ_1(25)]/|⟨7⟩| = 600/4 = 150` in `PSL₂(ℤ)` (unchanged by
+  `±`, as `−I ∈ Γ_{⟨7⟩}`), `ν₂ = 10`, `ν₃ = 0`, `ν_∞ = 14`, giving
+  `1 + 150/12 − 10/4 − 14/2 = 4`. (ii) Riemann–Hurwitz for the
+  degree-`2` diamond quotient `X_1(25) → X_{⟨7⟩}(25)`: `⟨7⟩` fixes
+  `(E, P)` exactly when some automorphism `α` of `E` has `αP = 7P`,
+  which forces `α = i` and `j = 1728` (since `7² = 49 ≡ −1 mod 25`),
+  and there are `10` such points; `2·12 − 2 = 2(2g − 2) + 10` gives
+  `g = 4`.
+* *`J_1(25)` has Mordell–Weil rank `0`.* It is `ℚ`-isogenous to
+  `A₄ × A₈`, of dimensions `4` and `8` (the quintic- and
+  order-`10`-character parts), and `L(A, 1) ≠ 0` for BOTH:
+  `LRatio(A, 1) = 1/5041` and `1/10272025`. By Kolyvagin–Logachev
+  (or Kato) the rank is `0`, so `J_1(25)(ℚ)` is FINITE.
+  `Jac X_{⟨7⟩}(25) = A₄`, hence also rank `0`.
+* *The point count then closes the level outright — no Chabauty.*
+  `X_1(25)` has good reduction away from `5`, and
+  `#X_1(25)(𝔽_p) = p + 1 − Tr(T_p ∣ S_2(Γ_1(25))) = 10` for
+  `p = 2, 3, 7, 13`. Its rational cusps are exactly the `φ(25)/2 = 10`
+  carried by the Néron `25`-gon (the point of order `25` meets every
+  component, so the pair is rational); the `10` on the `1`-gon `𝔾_m`
+  have `P ∈ μ₂₅` and form ONE Galois orbit over `ℚ(ζ₂₅)⁺`, and the `8`
+  of denominator `5` lie over the irrational denominator-`5` cusps of
+  `X_0(25)`. Embedding `X_1(25)(ℚ) ↪ J_1(25)(ℚ)` at a rational cusp and
+  reducing at the odd good prime `3` (injective on torsion) gives
+  `#X_1(25)(ℚ) ≤ #X_1(25)(𝔽_3) = 10 = #(rational cusps)`. So every
+  rational point is a cusp — which IS this node. The genus-`4` quotient
+  gives the same conclusion independently:
+  `#X_{⟨7⟩}(25)(𝔽_3) = #X_{⟨7⟩}(25)(𝔽_13) = 5`, and it has exactly `5`
+  rational cusps (`⟨7⟩/±` acts freely on the `10`, since `7P = ±P` is
+  impossible for `P` of order `25`, and the other cusp orbits stay
+  irrational because they stay irrational already on `X_0(25)` or are
+  permuted transitively by `Gal(ℚ(ζ₂₅)⁺/ℚ)`).
+* *Cross-check that the pipeline is sound.* The identical computation
+  returns `#X_1(11)(𝔽_3) = 5 = φ(11)/2` and `#X_1(13)(𝔽_3) = 6 =
+  φ(13)/2`, reproducing Billing–Mahler and Mazur–Tate exactly.
+* *Cross-check of the genus-`4` claim itself.* It predicts that the
+  `11a` cyclic `25`-isogeny does NOT give a non-cuspidal rational point
+  of `X_{⟨7⟩}(25)`: its kernel character must have order `5`, `10` or
+  `20`, not dividing `4`. Since the only cyclic quartic field
+  unramified outside `{5, 11}` is `ℚ(ζ₅)`, that is testable, and it
+  holds — the torsion of `11a1, 11a2, 11a3` over `ℚ(ζ₅)` is
+  `ℤ/5 × ℤ/5`, `ℤ/5`, `ℤ/5`, with no `25`-torsion anywhere. (This also
+  corrects the old text: the cyclic `25`-isogeny of the class joins
+  `11a2` and `11a3`; `11a1` itself has only the two `5`-isogenies, and
+  its `ℤ/5 × ℤ/5` over `ℚ(ζ₅)` is exactly the split `ℤ/5 ⊕ μ₅` that
+  makes the class work.)
+
+**THIS IS ONE MISSING THEORY FOR SEVEN LEVELS, NOT ONE.** Every
+`ℚ`-simple factor of `J_1(N)` has `L(1) ≠ 0` for
+`N ∈ {11, 13, 16, 17, 18, 19, 21, 24, 25, 27}`, and
+`min_p #X_1(N)(𝔽_p) = φ(N)/2 = #(rational cusps)` for
+`N ∈ {11, 13, 17, 19, 21, 25, 27}`. So the single theory — `X_1(N)/ℚ`
+with its cusps, `rank J_1(N)(ℚ) = 0` from `L(1) ≠ 0`, and injectivity
+of torsion under good reduction — closes levels
+`11, 13, 17, 19, 21, 25, 27` in one blow, i.e. seven of this file's
+sorried nodes rather than this one. It breaks at `37` in a precisely
+identifiable place: `J_1(37)` has a rank-`1` factor (`LRatio(1) = 0`,
+the elliptic curve `37a`), so `37, 43, 67, 163` need the
+winding/Eisenstein quotient instead of the whole Jacobian. None of it
+exists here: `grep ModularCurve` over mathlib returns nothing, and
+`~/cs/FLT` takes the Mazur bound as a bare `axiom`.
+
+STATED IN TATE COORDINATES (2026-07-26), matching levels `11, 13, 17,
+19, 37, 43, 67, 163`. The general form of this level — no rational
+point of order `25` on ANY elliptic curve over `ℚ` — is
+`no_torsion_order_25` just below, and is PROVEN from this node. Here
+the curve is the explicit two-parameter family `tateNormalForm b c` and
+the point is the origin, so this node IS the plane model of `X_1(25)`
+in the `(b, c)`-coordinates rather than a statement quantified over all
+curves. The passage between the two is the PROVEN
+`exists_tateNormalForm`; everything above about genus, witnesses and
+citation is unchanged by the restatement.
+
+GENERALISED 2026-07-26. The whole of the above is now a corollary of the
+single node `tateNormalForm_origin_order_ne_of_cuspidalRankZero`
+immediately below, which states it uniformly for the SEVEN levels whose
+proof is the same theorem. That node, not this one, is where the work
+is; this one is PROVEN from it by instantiating `N := 25`.
+
+DECOMPOSED AND PARTLY PROVEN 2026-07-26. The node itself is no longer a
+`sorry`: it is now derived, level by level, from the plane model of
+`X_1(N)` in the `(b, c)`-coordinates (section `MazurX1Plane` above,
+PROVEN) together with three shallower nodes. The cut is:
+
+* `N = 21` is **PROVEN OUTRIGHT** here, from the file's own
+  `no_torsion_order_21` — the `X_0(21)` + genus-`0` `X_1(7)` route,
+  which involves no rank-`0` Jacobian input at all. So level `21` was
+  never part of the "same theorem" this node claims to state uniformly:
+  it was already free, and grouping it with the others overstated the
+  citation. That is a correction to the audit below, not a change of
+  statement. **The same correction now applies to `N = 27`** (see the
+  next bullet): so of the seven levels named in the headline, only
+  `11, 13, 17, 19, 25` rest on the rank-`0` citation at all, and of
+  those only `17, 19, 25` are still open. Read "ONE citation for SEVEN
+  levels" as historical.
+* `N = 11, 13` go to `x1Eleven_plane_ne_zero` and
+  `x1Thirteen_plane_ne_zero`: the EXPLICIT affine plane curves
+  `F₁₁(b, c) = 0` (bidegree `(5, 7)`) and `F₁₃(b, c) = 0` (bidegree
+  `(7, 10)`), which are the `(b, c)`-models of `X_1(11)` and `X_1(13)`.
+* `N = 27` goes to `no_torsion_order_27`, the `X_0(27)` route, which
+  needs no modular curve of level `27` at all — so, like `21`, it is
+  free of any rank-`0` Jacobian input. It used to be routed through the
+  residual node below purely because Lean's declaration order put
+  `no_torsion_order_27` further down the file; that block was hoisted
+  above the residual node on 2026-07-26 and the duplicated obligation
+  dropped.
+* `N = 17, 19, 25` go to `tateNormalForm_origin_preΨ'_residual`,
+  stated in `preΨ'` form because those plane curves are too large to
+  write out (`~60`, `~90`, and several hundred terms). Those three are
+  the ONLY levels here that still rest on the rank-`0` citation.
+
+The transport is the PROVEN division-polynomial torsion dictionary
+`TorsionCard.smul_some_eq_zero_iff`, specialised to the origin: the
+`normEDS` recursion behind mathlib's `preΨ'` is closed under evaluation
+at a fixed `x`, so `preΨ'ₙ(0)` is a polynomial in `(b, c)` computable
+from `Ψ₂Sq(0) = b²`, `Ψ₃(0) = −b³`, `preΨ₄(0) = −b⁴c`. Every level
+value used below is DERIVED inside Lean from that recursion, so the
+explicit polynomials are machine-checked rather than asserted.
+
+FAITHFULNESS NOTE, and it is the trap of this cut. The seemingly
+natural residual statement `preΨ'_N(0) ≠ 0` is FALSE at the composite
+levels: `preΨ'₂₅(0) = 0` says the order DIVIDES `25`, and order `5` is
+everywhere on this family (`preΨ'₅(0) = b⁸(b − c)`, the genus-`0` line
+`b = c`). The residual node therefore concludes with a proper divisor
+`d`, not with non-vanishing. -/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero
+    (N : ℕ)
+    (hN : N = 11 ∨ N = 13 ∨ N = 17 ∨ N = 19 ∨ N = 21 ∨ N = 25 ∨ N = 27)
+    (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ N := by
+  intro hord
+  have hb : b ≠ 0 := MazurX1Plane.b_ne_zero h00
+  -- forward: the order condition makes the level polynomial vanish
+  have key : ∀ n : ℕ, ¬ Even n → addOrderOf (Affine.Point.some 0 0 h00) = n →
+      ((WeierstrassCurve.tateNormalForm b c).preΨ' n).eval 0 = 0 := by
+    intro n hodd hn
+    have hn0 : (n : ℤ) ≠ 0 := by
+      rintro h0
+      rw [show n = 0 from by exact_mod_cast h0] at hodd
+      exact hodd (by decide)
+    have hz : (n : ℤ) • (Affine.Point.some 0 0 h00) = 0 := by
+      rw [natCast_zsmul, ← hn]; exact addOrderOf_nsmul_eq_zero _
+    have hΨ :=
+      (MazurX1Plane.zsmul_eq_zero_iff (WeierstrassCurve.tateNormalForm b c) h00 hn0).mp hz
+    rw [MazurX1Plane.eval_ΨSq_odd _ _ n hodd] at hΨ
+    exact pow_eq_zero_iff two_ne_zero |>.mp hΨ
+  -- backward: a level value vanishing at a smaller index bounds the order
+  have back : ∀ d : ℕ, 0 < d →
+      ((WeierstrassCurve.tateNormalForm b c).preΨ' d).eval 0 = 0 →
+      addOrderOf (Affine.Point.some 0 0 h00) ≤ d := by
+    intro d hd hdz
+    have hd0 : (d : ℤ) ≠ 0 := by exact_mod_cast hd.ne'
+    have hz : (d : ℤ) • (Affine.Point.some 0 0 h00) = 0 :=
+      (MazurX1Plane.zsmul_eq_zero_iff (WeierstrassCurve.tateNormalForm b c) h00 hd0).mpr
+        (MazurX1Plane.eval_ΨSq_of_preΨ' _ _ d hdz)
+    rw [natCast_zsmul] at hz
+    exact Nat.le_of_dvd hd (addOrderOf_dvd_of_nsmul_eq_zero hz)
+  rcases hN with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · -- `N = 11`: the plane quintic `F₁₁`
+    have h := key 11 (by decide) hord
+    rw [MazurX1Plane.eval_eleven] at h
+    rcases mul_eq_zero.mp h with h0 | h0
+    · exact hb (pow_eq_zero_iff (by norm_num) |>.mp h0)
+    · exact WeierstrassCurve.x1Eleven_plane_ne_zero b c hb h0
+  · -- `N = 13`: the plane curve `F₁₃`
+    have h := key 13 (by decide) hord
+    rw [MazurX1Plane.eval_thirteen] at h
+    rcases mul_eq_zero.mp h with h0 | h0
+    · exact hb (pow_eq_zero_iff (by norm_num) |>.mp h0)
+    · exact WeierstrassCurve.x1Thirteen_plane_ne_zero b c hb h0
+  · -- `N = 17`
+    obtain ⟨d, hd0, hdN, hdz⟩ :=
+      WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 17 (by tauto) b c h00
+        (key 17 (by decide) hord)
+    have hle := back d hd0 hdz
+    rw [hord] at hle
+    omega
+  · -- `N = 19`
+    obtain ⟨d, hd0, hdN, hdz⟩ :=
+      WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 19 (by tauto) b c h00
+        (key 19 (by decide) hord)
+    have hle := back d hd0 hdz
+    rw [hord] at hle
+    omega
+  · -- `N = 21`: PROVEN, from the `X_0(21)` + `X_1(7)` route above
+    exact WeierstrassCurve.no_torsion_order_21 (WeierstrassCurve.tateNormalForm b c)
+      (Affine.Point.some 0 0 h00) hord
+  · -- `N = 25`
+    obtain ⟨d, hd0, hdN, hdz⟩ :=
+      WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 25 (by tauto) b c h00
+        (key 25 (by decide) hord)
+    have hle := back d hd0 hdz
+    rw [hord] at hle
+    omega
+  · -- `N = 27`: PROVEN, from the `X_0(27)` route hoisted above
+    exact WeierstrassCurve.no_torsion_order_27 (WeierstrassCurve.tateNormalForm b c)
+      (Affine.Point.some 0 0 h00) hord
+
+/-- **No rational point of order `25`** (PROVEN 2026-07-26 by
+instantiating the seven-level node above at `N = 25`). All the
+mathematical content, the citation and the audit are in that node's
+docstring and in this one; nothing is specific to `25` any more. -/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_25 (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 25 :=
+  WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero 25
+    (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))) b c h00
+
+/-- **No rational point of order `25`** (PROVEN 2026-07-26 from the
+Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
+a point of order `25 ≥ 4` puts its curve in Tate normal form at the
+origin, so the general statement follows from the one about the
+explicit family. All the mathematical content is in the node above,
+whose docstring carries this level's citation and audit. -/
+theorem WeierstrassCurve.no_torsion_order_25 (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 25 :=
+  WeierstrassCurve.no_torsion_order_of_tateNormalForm (by norm_num)
+    (fun b c hell h00 =>
+      @WeierstrassCurve.tateNormalForm_origin_order_ne_25 b c hell h00) E Q
 
 /-- **No rational point of order `35`** (PROVEN 2026-07-25 along the
 route recorded for this level, from the `X_0` node
