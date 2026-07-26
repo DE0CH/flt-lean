@@ -11,18 +11,22 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Yang, Kevin Buzzard
 -/
 
-import Mathlib.RingTheory.AdicCompletion.Basic
-import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
-import Mathlib.RingTheory.Artinian.Defs
-import Mathlib.RingTheory.LocalRing.ResidueField.Defs
-import Mathlib.RingTheory.Noetherian.Defs
-import Mathlib.Topology.Algebra.Module.ModuleTopology
-import Mathlib.Topology.Algebra.Ring.Ideal
-import Fermat.FLT.Modularity.PatchingVendored.InverseLimit
-import Fermat.FLT.Modularity.PatchingVendored.Lemmas
-import Mathlib.Topology.Algebra.Algebra
-import Mathlib.Topology.Algebra.Ring.Compact
-import Mathlib.Topology.Connected.Separation
+module
+
+public import Mathlib.RingTheory.AdicCompletion.Basic
+public import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
+public import Mathlib.RingTheory.Artinian.Defs
+public import Mathlib.RingTheory.LocalRing.ResidueField.Defs
+public import Mathlib.RingTheory.Noetherian.Defs
+public import Mathlib.Topology.Algebra.Module.ModuleTopology
+public import Mathlib.Topology.Algebra.Ring.Ideal
+public import Fermat.FLT.Modularity.PatchingVendored.InverseLimit
+public import Fermat.FLT.Modularity.PatchingVendored.Lemmas
+public import Mathlib.Topology.Algebra.Algebra
+public import Mathlib.Topology.Algebra.Ring.Compact
+public import Mathlib.Topology.Connected.Separation
+
+@[expose] public section
 
 set_option autoImplicit false
 set_option relaxedAutoImplicit false
