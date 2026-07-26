@@ -999,9 +999,12 @@ a leaf: it is now BLGGT Prop. 3.1.1's own assembly over the next three
 names),
 `exists_bound_forall_padicPoint_of_geometricallyIrreducible` (SORRY — Weil
 bounds + Hensel: good local solvability at all but finitely many primes),
-`exists_primes_forall_sup_eq_top_of_isOpen` (SORRY — Chebotarev: the
-auxiliary primes at which complete splitting buys the avoidance/linear
-disjointness conjunct),
+`exists_primes_forall_sup_eq_top_of_isOpen` (**PROVEN 2026-07-26** — no
+longer a leaf: Chebotarev plus the decomposition-group dictionary, over the
+four new helper names `exists_conj_absoluteGaloisGroup_map_comp`,
+`normal_range_absoluteGaloisGroup_map`,
+`range_absoluteGaloisGroup_map_le_of_ringHom` and
+`exists_isOpen_normal_finiteIndex_le`, all PROVEN),
 `exists_normalSplitPoint_of_affine_curve` (SORRY — Moret–Bailly 1989
 Thm 1.3 on a CURVE, steps (ii)+(iii) WITHOUT the avoidance datum; the
 arithmetic heart), and
@@ -1028,10 +1031,11 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    local–global principle usable. Owned by
    `exists_normalSplitPoint_of_affine_curve` (2026-07-26: the avoidance
    datum was moved off that leaf onto `exists_primes_forall_sup_eq_top_of_isOpen`,
-   which needs only Chebotarev — already PROVEN in this project's
+   which needed only Chebotarev — already PROVEN in this project's
    `GaloisRepresentation/Chebotarev.lean` — and the decomposition-group
-   description of complete splitting; so items 2 and 4 no longer carry the
-   linear-disjointness burden).
+   description of complete splitting, and is itself now PROVEN; so items 2
+   and 4 no longer carry the linear-disjointness burden, and neither does
+   anything else: the disjointness conjunct is fully discharged.)
 3. **Bertini over a field of characteristic zero**: a smooth
    geometrically irreducible quasi-projective variety of dimension `> 1`
    has a smooth geometrically irreducible hyperplane section, plus a
@@ -1803,8 +1807,11 @@ theorem exists_bound_forall_padicPoint_of_geometricallyIrreducible
       HasRationalPoint fC (ULift.{u} ℚ_[p]) :=
   sorry
 
-/-- **The avoidance primes** (sorry node — Chebotarev density plus the
-decomposition-group dictionary; BLGGT Prop. 3.1.1, proof, sentences 1 and 3).
+/-! #### The avoidance primes: `exists_primes_forall_sup_eq_top_of_isOpen`
+
+**PROVEN 2026-07-26** — Chebotarev density plus the decomposition-group
+dictionary; BLGGT Prop. 3.1.1, proof, sentences 1 and 3. This block comment
+states the mathematics; the four helper lemmas and the theorem itself follow.
 
 Given an OPEN subgroup `N ≤ Γ ℚ` — the avoidance datum — and any bound `B`,
 there is a finite set `S` of primes, all larger than `B`, such that EVERY
@@ -1830,33 +1837,398 @@ subgroup of `G`, hence contained in some maximal normal `H_i`, so
 subfield `E`, hence in `L_i` — contradicting the choice of `p_i`. So
 `E = ℚ`, i.e. `Γ F · M = Γ ℚ`, and a fortiori `N ⊔ Γ F = ⊤`.
 
-WHAT IS AVAILABLE HERE. `Fermat/FLT/GaloisRepresentation/Chebotarev.lean`
-already PROVES Chebotarev density in exactly the shape this argument wants
+WHAT WAS AVAILABLE, AND WHAT THE DICTIONARY TURNED OUT TO COST.
+`Fermat/FLT/GaloisRepresentation/Chebotarev.lean` already PROVES Chebotarev
+density in exactly the shape this argument wants
 (`dense_conjClasses_globalFrob`: for any finite set of finite places, the
 union of the conjugacy classes of `globalFrob v` over the remaining places
 is dense in `Γ ℚ`), and defines `globalFrob v : Γ ℚ` as the image of the
 local Frobenius. Density against the open set `gM` gives the prime, and
-excluding a finite set of places is how `p > B` is arranged. The piece that
-is NOT yet available is the dictionary between `Nonempty (F →+* ℚ_[p])` and
-`globalFrob p ∈ Γ F`, i.e. the decomposition-group description of complete
-splitting; that is where a prover should expect to spend the effort, and it
-is the natural place for a further cut.
+excluding a finite set of places is how `p > B` is arranged.
+
+The missing piece was the dictionary between `Nonempty (F →+* ℚ_[p])` and
+`globalFrob p ∈ Γ F`. It is now PROVEN, and it needs NO ramification or
+inertia theory at all — that is the point of writing complete splitting as a
+ring map. `globalFrob v` is BY DEFINITION in the image of `Γ ℚ_v → Γ ℚ`;
+`Chebotarev.lean`'s `exists_padicGalois_map_eq_conj_globalFrob` moves that
+image to `Γ ℚ_[p]` up to conjugacy; a ring map `j : F →+* ℚ_[p]` satisfies
+`algebraMap ℚ ℚ_[p] = j ∘ algebraMap ℚ F` automatically (there is only one
+ring map out of `ℚ`), so `exists_conj_absoluteGaloisGroup_map_comp` puts the
+image of `Γ ℚ_[p]` inside a CONJUGATE of the image of `Γ F`; and
+`normal_range_absoluteGaloisGroup_map` — this is the second, load-bearing use
+of `Normal ℚ F` — absorbs every conjugation. The three lemmas are stated and
+proven for arbitrary fields, immediately below.
 
 EDGE CASE, and why the statement is not vacuous in the degenerate direction:
-if `N = ⊤` then `r = 0` and `S = ∅`, and the conclusion holds trivially — as
-it must. The content is entirely in the case of a small `N`.
+if `N = ⊤` then the conclusion holds trivially — as it must. The content is
+entirely in the case of a small `N`. (The formal proof does not special-case
+this; see the assembly note on the theorem itself.)
 
 CIRCULARITY GUARD: a statement of Galois theory and analytic number theory
 with no geometry and no representation `ρbar` in it, so no route through
 `Family.lean`, `Lift.lean` or `Modularity/Interface.lean` is relevant. -/
+/-- **Functoriality of `Field.absoluteGaloisGroup.map` UP TO CONJUGACY**
+(PROVEN 2026-07-26).
+
+`Field.absoluteGaloisGroup.map` is built from an arbitrarily chosen
+`IsAlgClosed.lift`, so a strict `map_comp` equation is NOT available and none
+exists in the tree (see the note above
+`cyclotomicCharacter_adicArithFrob_base_eq_absNorm`, which routes around the
+question by descending one step at a time). What IS true, and is all any
+conjugation-invariant statement needs, is functoriality up to a SINGLE
+conjugator `c : Γ K` depending only on `f` and `g`, not on `σ`.
+
+PROOF. Both `ι_g ∘ ι_f` and `ι_{g∘f}` are `K`-algebra maps `Kᵃˡᵍ → Mᵃˡᵍ`
+(where `ι_f := AlgebraicClosure.map f` and `Mᵃˡᵍ` is a `K`-algebra through
+`g ∘ f`), so `Normal.algHomEquivAut` — `Kᵃˡᵍ/K` being normal — produces the
+unique `c : Γ K` with `ι_g (ι_f x) = ι_{g∘f} (c x)`. The identity then follows
+pointwise through the injective `ι_{g∘f}` from
+`Field.absoluteGaloisGroup.lift_map` applied three times. This is the same
+device as `exists_padicGalois_map_eq_conj_globalFrob` in `Chebotarev.lean`,
+stated once and in general. -/
+theorem exists_conj_absoluteGaloisGroup_map_comp
+    {K L M : Type*} [Field K] [Field L] [Field M] (f : K →+* L) (g : L →+* M) :
+    ∃ c : Field.absoluteGaloisGroup K, ∀ σ : Field.absoluteGaloisGroup M,
+      Field.absoluteGaloisGroup.map (g.comp f) σ =
+        c * Field.absoluteGaloisGroup.map f (Field.absoluteGaloisGroup.map g σ) * c⁻¹ := by
+  classical
+  set ιf := AlgebraicClosure.map f with hιf
+  set ιg := AlgebraicClosure.map g with hιg
+  set ιh := AlgebraicClosure.map (g.comp f) with hιh
+  letI : Algebra K (AlgebraicClosure M) :=
+    ((algebraMap M (AlgebraicClosure M)).comp (g.comp f)).toAlgebra
+  letI : Algebra (AlgebraicClosure K) (AlgebraicClosure M) := ιh.toAlgebra
+  haveI : IsScalarTower K (AlgebraicClosure K) (AlgebraicClosure M) :=
+    IsScalarTower.of_algebraMap_eq' (by
+      ext x
+      exact (AlgebraicClosure.map_algebraMap (g.comp f) x).symm)
+  set F0 : AlgebraicClosure K →ₐ[K] AlgebraicClosure M :=
+    { toRingHom := ιg.comp ιf
+      commutes' := fun x => by
+        show ιg (ιf (algebraMap K (AlgebraicClosure K) x)) = _
+        rw [hιf, AlgebraicClosure.map_algebraMap, hιg, AlgebraicClosure.map_algebraMap]
+        rfl } with hF0
+  set c : Field.absoluteGaloisGroup K :=
+    (Normal.algHomEquivAut (F := K) (K₁ := AlgebraicClosure M)
+      (E := AlgebraicClosure K)) F0 with hc
+  have hfc : ∀ x : AlgebraicClosure K, ιg (ιf x) = ιh (c x) := by
+    intro x
+    have hsym : F0 = (Normal.algHomEquivAut (F := K) (K₁ := AlgebraicClosure M)
+        (E := AlgebraicClosure K)).symm c := by
+      rw [hc, Equiv.symm_apply_apply]
+    have hval : F0 x = ιh (c x) := by rw [hsym]; rfl
+    exact hval
+  have hcc : ∀ x : AlgebraicClosure K, c (c⁻¹ x) = x := by
+    intro x
+    show (c * c⁻¹) x = x
+    rw [mul_inv_cancel]
+    rfl
+  refine ⟨c, fun σ => ?_⟩
+  apply AlgEquiv.ext
+  intro x
+  apply ιh.injective
+  rw [Field.absoluteGaloisGroup.lift_map (g.comp f) σ x]
+  show σ (ιh x) = ιh ((c * Field.absoluteGaloisGroup.map f
+    (Field.absoluteGaloisGroup.map g σ) * c⁻¹) x)
+  have hstep1 : (c * Field.absoluteGaloisGroup.map f
+      (Field.absoluteGaloisGroup.map g σ) * c⁻¹) x =
+      c (Field.absoluteGaloisGroup.map f (Field.absoluteGaloisGroup.map g σ) (c⁻¹ x)) := rfl
+  rw [hstep1, ← hfc]
+  rw [Field.absoluteGaloisGroup.lift_map f (Field.absoluteGaloisGroup.map g σ) (c⁻¹ x)]
+  rw [Field.absoluteGaloisGroup.lift_map g σ (ιf (c⁻¹ x))]
+  rw [hfc, hcc]
+
+/-- **`Γ L ≤ Γ K` is NORMAL when `L/K` is normal** (PROVEN 2026-07-26). This
+is the half of the section docstring's "normality is load-bearing twice" that
+makes the subgroup `Γ F ≤ Γ ℚ` independent of the arbitrary embedding of
+algebraic closures inside `Field.absoluteGaloisGroup.map`.
+
+PROOF. `L/K` normal is in particular algebraic, so `Lᵃˡᵍ` is algebraic over
+`Kᵃˡᵍ` through `ι := AlgebraicClosure.map (algebraMap K L)`, and an algebraic
+extension of an algebraically closed field is trivial
+(`IsAlgClosed.algebraMap_bijective_of_isIntegral`): `ι` is BIJECTIVE. Pulling
+`L` back along it gives a `K`-embedding `φ : L →ₐ[K] Kᵃˡᵍ`, whose field range
+`Z` is `K`-isomorphic to `L` and hence normal over `K`
+(`Normal.of_algEquiv`). One then checks
+`range (Γ L → Γ K) = Z.fixingSubgroup` — `⊆` because an element of `Γ L`
+fixes `L`, `⊇` because conjugating `τ` by `ι` produces an `L`-automorphism of
+`Lᵃˡᵍ` exactly when `τ` fixes `Z` — and `Z.fixingSubgroup` is the kernel of
+`AlgEquiv.restrictNormalHom Z` (`IntermediateField.restrictNormalHom_ker`,
+available because `Normal K Z`), hence normal.
+
+INSTANCE NOTE: do NOT introduce `Algebra K (AlgebraicClosure L)` or
+`IsScalarTower K L (AlgebraicClosure L)` by hand — mathlib already supplies
+both from `[Algebra K L]`, and a hand-built copy carries the wrong `SMul`
+(`AlgebraicClosure.instSMulOfIsScalarTower`) and fails to unify. -/
+theorem normal_range_absoluteGaloisGroup_map {K L : Type*} [Field K] [Field L]
+    [Algebra K L] [Normal K L] :
+    ((Field.absoluteGaloisGroup.map (algebraMap K L)).toMonoidHom.range).Normal := by
+  classical
+  haveI : Algebra.IsAlgebraic K (AlgebraicClosure L) :=
+    Algebra.IsAlgebraic.trans (R := K) (S := L) (A := AlgebraicClosure L)
+  set ι : AlgebraicClosure K →+* AlgebraicClosure L :=
+    AlgebraicClosure.map (algebraMap K L) with hι
+  letI : Algebra (AlgebraicClosure K) (AlgebraicClosure L) := ι.toAlgebra
+  haveI : IsScalarTower K (AlgebraicClosure K) (AlgebraicClosure L) :=
+    IsScalarTower.of_algebraMap_eq' (by
+      ext x
+      exact (AlgebraicClosure.map_algebraMap (algebraMap K L) x).symm)
+  haveI : Algebra.IsAlgebraic (AlgebraicClosure K) (AlgebraicClosure L) :=
+    Algebra.IsAlgebraic.tower_top (K := K) (AlgebraicClosure K) (A := AlgebraicClosure L)
+  have hbij : Function.Bijective ι :=
+    IsAlgClosed.algebraMap_bijective_of_isIntegral (k := AlgebraicClosure K)
+      (K := AlgebraicClosure L)
+  set ε : AlgebraicClosure K ≃+* AlgebraicClosure L := RingEquiv.ofBijective ι hbij with hε
+  have hεapp : ∀ x, ε x = ι x := fun _ => rfl
+  -- the copy of `L` sitting inside `AlgebraicClosure K`
+  set φr : L →+* AlgebraicClosure K :=
+    (ε.symm : AlgebraicClosure L →+* AlgebraicClosure K).comp
+      (algebraMap L (AlgebraicClosure L)) with hφr
+  set φ : L →ₐ[K] AlgebraicClosure K :=
+    { toRingHom := φr
+      commutes' := fun x => by
+        show ε.symm (algebraMap L (AlgebraicClosure L) (algebraMap K L x)) = _
+        have h1 : (algebraMap L (AlgebraicClosure L)) (algebraMap K L x)
+            = ι (algebraMap K (AlgebraicClosure K) x) := by
+          rw [hι, AlgebraicClosure.map_algebraMap]
+        rw [h1, ← hεapp, RingEquiv.symm_apply_apply] } with hφ
+  have hφapp : ∀ y : L, φ y = ε.symm (algebraMap L (AlgebraicClosure L) y) := fun _ => rfl
+  set Z : IntermediateField K (AlgebraicClosure K) := φ.fieldRange with hZ
+  haveI : Normal K Z := Normal.of_algEquiv φ.equivFieldRange
+  have hrange : (Field.absoluteGaloisGroup.map (algebraMap K L)).toMonoidHom.range
+      = Z.fixingSubgroup := by
+    apply le_antisymm
+    · intro τ hτ
+      obtain ⟨σ, hσ⟩ := MonoidHom.mem_range.mp hτ
+      rw [IntermediateField.mem_fixingSubgroup_iff]
+      rintro z ⟨y, rfl⟩
+      show τ (φ y) = φ y
+      have h1 : ι (τ (φ y)) = σ (ι (φ y)) := by
+        rw [← hσ]
+        exact Field.absoluteGaloisGroup.lift_map (algebraMap K L) σ (φ y)
+      have h2 : ι (φ y) = algebraMap L (AlgebraicClosure L) y := by
+        rw [hφapp, ← hεapp, RingEquiv.apply_symm_apply]
+      apply ι.injective
+      rw [h1, h2]
+      exact σ.commutes y
+    · intro τ hτ
+      rw [IntermediateField.mem_fixingSubgroup_iff] at hτ
+      have hfix : ∀ y : L, τ (φ y) = φ y := fun y => hτ (φ y) ⟨y, rfl⟩
+      set σ0 : AlgebraicClosure L ≃+* AlgebraicClosure L :=
+        (ε.symm.trans τ.toRingEquiv).trans ε with hσ0
+      have hσ0app : ∀ w, σ0 w = ε (τ (ε.symm w)) := fun _ => rfl
+      have hcomm : ∀ y : L, σ0 (algebraMap L (AlgebraicClosure L) y)
+          = algebraMap L (AlgebraicClosure L) y := by
+        intro y
+        rw [hσ0app, ← hφapp, hfix y, hφapp, RingEquiv.apply_symm_apply]
+      set σ : Field.absoluteGaloisGroup L := AlgEquiv.ofRingEquiv (f := σ0) hcomm with hσ
+      refine MonoidHom.mem_range.mpr ⟨σ, ?_⟩
+      apply AlgEquiv.ext
+      intro x
+      apply ι.injective
+      have hx : ε.symm (ι x) = x := by rw [← hεapp]; exact ε.symm_apply_apply x
+      have hrhs : σ (ι x) = ι (τ x) := by
+        show σ0 (ι x) = ι (τ x)
+        rw [hσ0app, hx, hεapp]
+      exact (Field.absoluteGaloisGroup.lift_map (algebraMap K L) σ x).trans hrhs
+  rw [hrange, ← IntermediateField.restrictNormalHom_ker Z]
+  exact MonoidHom.normal_ker _
+
+/-- **The decomposition-group inclusion** (PROVEN 2026-07-26): if `L/K` is
+normal and `L` embeds into `M` over `K` (i.e. `M` "splits `L` completely" in
+the sense the section docstring records), then the image of `Γ M` in `Γ K`
+sits inside the image of `Γ L`.
+
+This is the whole of the "dictionary between `Nonempty (F →+* ℚ_[p])` and
+`globalFrob p ∈ Γ F`" that the docstring above flags as the expected cost:
+`exists_conj_absoluteGaloisGroup_map_comp` reduces `Γ M → Γ K` to
+`Γ M → Γ L → Γ K` up to one conjugation, and
+`normal_range_absoluteGaloisGroup_map` absorbs that conjugation. NO
+ramification or inertia API is used anywhere. -/
+theorem range_absoluteGaloisGroup_map_le_of_ringHom
+    {K L M : Type*} [Field K] [Field L] [Field M] [Algebra K L] [Normal K L]
+    (j : L →+* M) :
+    (Field.absoluteGaloisGroup.map (j.comp (algebraMap K L))).toMonoidHom.range ≤
+      (Field.absoluteGaloisGroup.map (algebraMap K L)).toMonoidHom.range := by
+  obtain ⟨c, hc⟩ := exists_conj_absoluteGaloisGroup_map_comp (algebraMap K L) j
+  have hnr := normal_range_absoluteGaloisGroup_map (K := K) (L := L)
+  intro y hy
+  obtain ⟨σ, hσ⟩ := MonoidHom.mem_range.mp hy
+  have hy' : y = c * Field.absoluteGaloisGroup.map (algebraMap K L)
+      (Field.absoluteGaloisGroup.map j σ) * c⁻¹ := by
+    rw [← hσ, ← hc σ]; rfl
+  rw [hy']
+  exact hnr.conj_mem _ (MonoidHom.mem_range.mpr ⟨_, rfl⟩) c
+
+/-- **Every open subgroup of `Γ K` contains an open NORMAL subgroup of finite
+index** (PROVEN 2026-07-26) — the "normal core" step of the avoidance
+argument, obtained without any normal-core computation.
+
+`N` open means `N ∈ 𝓝 1`, and `krullTopology_mem_nhds_one_iff_of_normal`
+(applicable because `Kᵃˡᵍ/K` is normal) delivers a FINITE and NORMAL
+intermediate field `E` with `E.fixingSubgroup ≤ N`. That subgroup is open
+(`IntermediateField.fixingSubgroup_isOpen`), of finite index
+(`finiteIndex_fixingSubgroup`), and normal because `Normal K E` makes it the
+kernel of `AlgEquiv.restrictNormalHom E`. -/
+theorem exists_isOpen_normal_finiteIndex_le {K : Type*} [Field K]
+    (N : Subgroup (Field.absoluteGaloisGroup K))
+    (hN : IsOpen (N : Set (Field.absoluteGaloisGroup K))) :
+    ∃ M : Subgroup (Field.absoluteGaloisGroup K),
+      M ≤ N ∧ IsOpen (M : Set (Field.absoluteGaloisGroup K)) ∧ M.Normal ∧ M.FiniteIndex := by
+  have hmem : (N : Set (Field.absoluteGaloisGroup K)) ∈ nhds (1 : Field.absoluteGaloisGroup K) :=
+    hN.mem_nhds N.one_mem
+  obtain ⟨E, hEfin, hEnormal, hEsub⟩ :=
+    (krullTopology_mem_nhds_one_iff_of_normal K (AlgebraicClosure K) _).mp hmem
+  haveI := hEfin
+  haveI := hEnormal
+  refine ⟨E.fixingSubgroup, hEsub, IntermediateField.fixingSubgroup_isOpen E, ?_, inferInstance⟩
+  rw [← IntermediateField.restrictNormalHom_ker E]
+  exact MonoidHom.normal_ker _
+
+open scoped Pointwise in
+/-- **The avoidance primes** (PROVEN 2026-07-26 over the four lemmas above;
+the docstring immediately above this block states the mathematics and the
+faithfulness audit).
+
+WHAT THE PROOF ACTUALLY DOES, and how it differs from the sketch above: the
+maximal-normal-subgroup enumeration is unnecessary. Let `M ≤ N` be open,
+normal and of finite index (`exists_isOpen_normal_finiteIndex_le`) and let
+`π : Γ ℚ → Q := Γ ℚ ⧸ M` be the (finite) quotient. Chebotarev
+(`dense_conjClasses_globalFrob`, PROVEN in
+`GaloisRepresentation/Chebotarev.lean`) applied to the OPEN coset
+`σ • M = π⁻¹{q}` produces, for EVERY subgroup `P ≤ Q` that is proper and
+normal and every `q ∉ P`, a place `v ∉ S₀` with `π (globalFrob v)` conjugate
+to `q`, hence outside the normal `P`; excluding the finitely many places over
+primes `≤ B` from `S₀` is what makes the prime exceed `B`. Since `Q` is
+finite, `Subgroup Q` is finite, so one prime per subgroup gives the finite set
+`S`. Then for `F` normal and split at every `p ∈ S`, put
+`P := π(Γ F)` — normal because `Γ F` is (`normal_range_absoluteGaloisGroup_map`)
+and `π` is surjective. If `P ≠ ⊤` its own prime `p_P ∈ S` contradicts
+`globalFrob v_{p_P} ∈ Γ F`, which is the dictionary
+(`range_absoluteGaloisGroup_map_le_of_ringHom` composed with
+`exists_padicGalois_map_eq_conj_globalFrob`). So `P = ⊤`, i.e. `Γ F · M = Γ ℚ`,
+and a fortiori `N ⊔ Γ F = ⊤`.
+
+Enumerating ALL proper normal subgroups of `Q` rather than the maximal ones
+is what removes the "every proper normal subgroup lies in a maximal normal
+one" step; it costs only a larger `S`, which the statement does not
+constrain.
+
+FAITHFULNESS (audited 2026-07-26): the quantifier order is the correct one —
+`S` is produced AFTER `N` and `B` and BEFORE `F`, and the proof genuinely
+uses it that way (`S` is built from `Q`, which depends only on `N`). The
+degenerate case `N = ⊤` is not special-cased: it is absorbed because
+`P = π(Γ F)` is then already `⊤`. -/
 theorem exists_primes_forall_sup_eq_top_of_isOpen
     (N : Subgroup (Field.absoluteGaloisGroup ℚ))
     (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ))) (B : ℕ) :
     ∃ S : Finset ℕ, (∀ p ∈ S, p.Prime ∧ B < p) ∧
       ∀ (F : Type u) (_ : Field F) (_ : NumberField F) (_ : Normal ℚ F),
         (∀ (p : ℕ) [Fact p.Prime], p ∈ S → Nonempty (F →+* ℚ_[p])) →
-        N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ :=
-  sorry
+        N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ := by
+  classical
+  obtain ⟨M, hMle, hMopen, hMnormal, hMfin⟩ := exists_isOpen_normal_finiteIndex_le N hNopen
+  haveI := hMnormal
+  haveI := hMfin
+  haveI : Finite (Field.absoluteGaloisGroup ℚ ⧸ M) := M.finite_quotient_of_finiteIndex
+  set π : Field.absoluteGaloisGroup ℚ →* (Field.absoluteGaloisGroup ℚ ⧸ M) :=
+    QuotientGroup.mk' M with hπ
+  -- the finite set of places lying over primes `≤ B`
+  set S₀ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+    (((Finset.range (B + 1)).filter Nat.Prime).attach.image
+      (fun x => Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+        (Finset.mem_filter.mp x.2).2)) with hS₀
+  have hstep : ∀ P : Subgroup (Field.absoluteGaloisGroup ℚ ⧸ M),
+      ∃ (p : ℕ) (hp : p.Prime), B < p ∧
+        (P ≠ ⊤ → P.Normal →
+          π (globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hp)) ∉ P) := by
+    intro P
+    obtain ⟨p₀, hp₀B, hp₀⟩ := Nat.exists_infinite_primes (B + 1)
+    by_cases hPtop : P = ⊤
+    · exact ⟨p₀, hp₀, hp₀B, fun h _ => absurd hPtop h⟩
+    by_cases hPn : P.Normal
+    swap
+    · exact ⟨p₀, hp₀, hp₀B, fun _ h => absurd h hPn⟩
+    obtain ⟨q, hq⟩ : ∃ q : Field.absoluteGaloisGroup ℚ ⧸ M, q ∉ P := by
+      by_contra h
+      exact hPtop ((Subgroup.eq_top_iff' P).mpr fun q => not_not.mp fun hq => h ⟨q, hq⟩)
+    obtain ⟨σ, hσ⟩ := QuotientGroup.mk'_surjective M q
+    have hUopen : IsOpen (σ • (M : Set (Field.absoluteGaloisGroup ℚ))) := hMopen.smul σ
+    have hUne : (σ • (M : Set (Field.absoluteGaloisGroup ℚ))).Nonempty :=
+      ⟨σ, Set.mem_smul_set.mpr ⟨1, M.one_mem, by simp⟩⟩
+    obtain ⟨x, hxU, hxD⟩ :=
+      (dense_conjClasses_globalFrob (K := ℚ) S₀).inter_open_nonempty _ hUopen hUne
+    obtain ⟨v, hvS₀, g, hxg⟩ := hxD
+    obtain ⟨p, hp, hv⟩ := exists_prime_toHeightOneSpectrum v
+    subst hv
+    refine ⟨p, hp, ?_, fun _ _ => ?_⟩
+    · by_contra hlt
+      refine hvS₀ ?_
+      rw [hS₀]
+      refine Finset.mem_image.mpr ⟨⟨p, ?_⟩, Finset.mem_attach _ _, rfl⟩
+      exact Finset.mem_filter.mpr
+        ⟨Finset.mem_range.mpr (Nat.lt_succ_of_le (Nat.not_lt.mp hlt)), hp⟩
+    · -- `π x = q`, so `π (globalFrob v)` is conjugate to `q`, which is outside the normal `P`
+      have hmm : σ⁻¹ * x ∈ M := by
+        have h1 := Set.mem_smul_set_iff_inv_smul_mem.mp hxU
+        rwa [smul_eq_mul] at h1
+      have hπx : π σ = π x := by
+        simp only [hπ, QuotientGroup.mk'_apply]
+        exact QuotientGroup.eq.mpr hmm
+      intro hmem
+      refine hq ?_
+      rw [← hσ, hπx, hxg, map_mul, map_mul, map_inv]
+      exact hPn.conj_mem _ hmem (π g)
+  choose pr hprPrime hprGt hprNot using hstep
+  haveI : Fintype (Subgroup (Field.absoluteGaloisGroup ℚ ⧸ M)) := Fintype.ofFinite _
+  refine ⟨Finset.univ.image pr, ?_, ?_⟩
+  · intro p hp
+    obtain ⟨P, -, rfl⟩ := Finset.mem_image.mp hp
+    exact ⟨hprPrime P, hprGt P⟩
+  · intro F hF hNF hnorm hsplit
+    have hRnormal := normal_range_absoluteGaloisGroup_map (K := ℚ) (L := F)
+    -- THE DECOMPOSITION-GROUP DICTIONARY, at an arbitrary prime `p` split completely in `F`
+    have hdict : ∀ (p : ℕ) [Fact p.Prime], Nonempty (F →+* ℚ_[p]) →
+        globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) ∈
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range := by
+      intro p _ hj
+      obtain ⟨j⟩ := hj
+      set hp : p.Prime := Fact.out with hpdef
+      obtain ⟨g, c, hgc⟩ := exists_padicGalois_map_eq_conj_globalFrob (q := p)
+      have hcomp : (algebraMap ℚ ℚ_[p]) = j.comp (algebraMap ℚ F) := Subsingleton.elim _ _
+      have hle : (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p])).toMonoidHom.range ≤
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range := by
+        rw [hcomp]
+        exact range_absoluteGaloisGroup_map_le_of_ringHom j
+      have h1 : c * globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hp) * c⁻¹ ∈
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range := by
+        rw [← hgc]
+        exact hle (MonoidHom.mem_range.mpr ⟨g, rfl⟩)
+      have h2 : globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hp) =
+          c⁻¹ * (c * globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat hp) * c⁻¹) *
+            c⁻¹⁻¹ := by
+        group
+      rw [h2]
+      exact hRnormal.conj_mem _ h1 c⁻¹
+    set R := (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range with hRdef
+    have hRtop : R.map π = ⊤ := by
+      by_contra hne
+      have hPn : (R.map π).Normal := hRnormal.map π (QuotientGroup.mk'_surjective M)
+      haveI : Fact (pr (R.map π)).Prime := ⟨hprPrime (R.map π)⟩
+      refine hprNot (R.map π) hne hPn (Subgroup.mem_map_of_mem π ?_)
+      exact hdict (pr (R.map π))
+        (hsplit (pr (R.map π)) (Finset.mem_image_of_mem _ (Finset.mem_univ (R.map π))))
+    rw [Subgroup.eq_top_iff']
+    intro x
+    have hx : π x ∈ R.map π := by rw [hRtop]; trivial
+    obtain ⟨r, hr, hrx⟩ := hx
+    have hmem : r⁻¹ * x ∈ M := by
+      simp only [hπ, QuotientGroup.mk'_apply] at hrx
+      exact QuotientGroup.eq.mp hrx
+    have hxr : x = r * (r⁻¹ * x) := by group
+    rw [hxr]
+    exact Subgroup.mul_mem _ ((le_sup_right : R ≤ N ⊔ R) hr)
+      ((le_sup_left : N ≤ N ⊔ R) (hMle hmem))
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Steps (ii)+(iii) of Moret–Bailly's route: the CURVE case** (sorry
@@ -1945,7 +2317,8 @@ above, which is BLGGT Prop. 3.1.1's own proof; see the section docstring
 ASSEMBLY. `exists_bound_forall_padicPoint_of_geometricallyIrreducible`
 (Weil + Hensel) gives a bound `B` beyond which every prime is a place of
 good local solvability for `C`;
-`exists_primes_forall_sup_eq_top_of_isOpen` (Chebotarev) chooses the
+`exists_primes_forall_sup_eq_top_of_isOpen` (Chebotarev, PROVEN 2026-07-26)
+chooses the
 auxiliary primes `S` above that bound, so that complete splitting at `S`
 forces the disjointness conjunct for ANY normal `F`;
 `exists_normalSplitPoint_of_affine_curve` (Moret–Bailly Thm 1.3) produces
