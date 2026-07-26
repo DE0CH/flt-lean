@@ -2290,9 +2290,428 @@ lemma x0TwentySeven_moduliPoint_of_chainParameters (J u₁ u₂ u₃ : ℚ)
 
 end MazurLevel27
 
+/-!
+##### Level `3`: the `X_0(3)` universal family, and the chain glue (2026-07-26)
+
+`exists_x0Three_chainParameters` is PROVEN below over TWO shallower leaves.
+The cut separates, once and for all, the *arithmetic* of `X_0(3)` — which is
+elementary and is proven here — from the *moduli* content, which is not.
+
+**The dictionary, in Tate coordinates.** A pair `(E, C)` with `C` a
+`Gal(ℚ̄/ℚ)`-stable subgroup of order `3` has `x(P) ∈ ℚ` for the two nonzero
+`P ∈ C` (the pair `±P` is stable and `x(−P) = x(P)`), so after translating
+`x(P)` to the origin and twisting quadratically — which does not move `j` —
+the curve is `y² + a₁xy + a₃y = x³` with `C = ⟨(0,0)⟩`. There
+
+  `b₂ = a₁²`, `b₄ = a₁a₃`, `b₆ = a₃²`, `b₈ = 0`,
+  `c₄ = a₁(a₁³ − 24a₃)`, `Δ = a₃³(a₁³ − 27a₃)`,
+
+so `a₃ ≠ 0` and `a₁³ − 27a₃ ≠ 0` are exactly nonsingularity, and
+
+  `j(E) = a₁³(a₁³ − 24a₃)³ / (a₃³(a₁³ − 27a₃))`.
+
+Vélu's formulas at the kernel `{0, (0,0), (0,−a₃)}` give `t = b₄ = a₁a₃` and
+`w = a₃²` (both terms are `±`-invariant and equal at the two nonzero points),
+hence `E/C : y² + a₁xy + a₃y = x³ − 5a₁a₃x − (a₁³a₃ + 7a₃²)` with
+`c₄' = a₁(a₁³ + 216a₃)` and `Δ' = a₃(a₁³ − 27a₃)³`, so
+
+  `j(E/C) = a₁³(a₁³ + 216a₃)³ / (a₃(a₁³ − 27a₃)³)`.
+
+With the `X_0(3)` hauptmodul `t₃ = (η(τ)/η(3τ))¹²` the parameter of `(E, C)`
+is `u = 729a₃/(a₁³ − 27a₃)` — always defined and nonzero — and the two
+displayed `j`-values become the two classical `j`-maps
+
+  `j(source) = (u+27)(u+243)³/u³`,   `j(quotient) = (u+27)(u+3)³/u`,
+
+which are exchanged by the Fricke involution `w₃ : u ↦ 729/u`. That last
+translation is `X0Three.param_of_tateInvariants`, PROVEN below by clearing
+`(a₁³ − 27a₃)⁴` and one `linear_combination`.
+
+**Numerical anchor.** For the class `27a` the chain is
+`j = (−12288000, 0, 0, −12288000)` with `(u₁, u₂, u₃) = (−3, −27, −243)`;
+`u₁ = −3` corresponds to `h := a₁³/a₃ = −216`, and indeed
+`h(h−24)³/(h−27) = −12288000` and `h(h+216)³/(h−27)³ = 0`.
+-/
+
+namespace X0Three
+
+/-- **From Tate invariants to the `X_0(3)` hauptmodul parameter** (PROVEN):
+if `J`, `J'` are the `j`-invariants of `y² + a₁xy + a₃y = x³` and of its
+quotient by `⟨(0,0)⟩`, written denominator-free against
+`Δ = a₃³(a₁³ − 27a₃)` and `Δ' = a₃(a₁³ − 27a₃)³`, then `u = 729a₃/(a₁³−27a₃)`
+is a nonzero rational satisfying the two `X_0(3)` `j`-map relations.
+
+The whole proof is the three linear identities
+`(u+27)(a₁³−27a₃) = 27a₁³`, `(u+243)(a₁³−27a₃) = 243(a₁³−24a₃)` and
+`(u+3)(a₁³−27a₃) = 3(a₁³+216a₃)` together with `u³(a₁³−27a₃)³ = 729³a₃³`;
+cancelling `(a₁³−27a₃)⁴` turns each goal into `729³ ·` resp. `729 ·` the
+hypothesis. -/
+lemma param_of_tateInvariants (J J' a₁ a₃ : ℚ) (h3 : a₃ ≠ 0)
+    (hD : a₁ ^ 3 - 27 * a₃ ≠ 0)
+    (hJ : J * (a₃ ^ 3 * (a₁ ^ 3 - 27 * a₃)) = a₁ ^ 3 * (a₁ ^ 3 - 24 * a₃) ^ 3)
+    (hJ' : J' * (a₃ * (a₁ ^ 3 - 27 * a₃) ^ 3) = a₁ ^ 3 * (a₁ ^ 3 + 216 * a₃) ^ 3) :
+    ∃ u : ℚ, u ≠ 0 ∧ J * u ^ 3 = (u + 27) * (u + 243) ^ 3 ∧
+      J' * u = (u + 27) * (u + 3) ^ 3 := by
+  obtain ⟨u, hu⟩ : ∃ u : ℚ, u * (a₁ ^ 3 - 27 * a₃) = 729 * a₃ :=
+    ⟨729 * a₃ / (a₁ ^ 3 - 27 * a₃), div_mul_cancel₀ _ hD⟩
+  have hu0 : u ≠ 0 := by
+    rintro rfl
+    exact h3 (by linarith [hu])
+  have hA : u ^ 3 * (a₁ ^ 3 - 27 * a₃) ^ 3 = 729 ^ 3 * a₃ ^ 3 := by
+    rw [← mul_pow, hu]; ring
+  have hB : (u + 27) * (a₁ ^ 3 - 27 * a₃) = 27 * a₁ ^ 3 := by linear_combination hu
+  have hC : (u + 243) * (a₁ ^ 3 - 27 * a₃) = 243 * (a₁ ^ 3 - 24 * a₃) := by
+    linear_combination hu
+  have hE : (u + 3) * (a₁ ^ 3 - 27 * a₃) = 3 * (a₁ ^ 3 + 216 * a₃) := by
+    linear_combination hu
+  refine ⟨u, hu0, ?_, ?_⟩
+  · refine mul_right_cancel₀ (pow_ne_zero 4 hD) ?_
+    have hL : J * u ^ 3 * (a₁ ^ 3 - 27 * a₃) ^ 4
+        = J * (u ^ 3 * (a₁ ^ 3 - 27 * a₃) ^ 3) * (a₁ ^ 3 - 27 * a₃) := by ring
+    have hR : (u + 27) * (u + 243) ^ 3 * (a₁ ^ 3 - 27 * a₃) ^ 4
+        = ((u + 27) * (a₁ ^ 3 - 27 * a₃)) * ((u + 243) * (a₁ ^ 3 - 27 * a₃)) ^ 3 := by
+      ring
+    rw [hL, hR, hA, hB, hC]
+    linear_combination (387420489 : ℚ) * hJ
+  · refine mul_right_cancel₀ (pow_ne_zero 4 hD) ?_
+    have hL : J' * u * (a₁ ^ 3 - 27 * a₃) ^ 4
+        = J' * (u * (a₁ ^ 3 - 27 * a₃)) * (a₁ ^ 3 - 27 * a₃) ^ 3 := by ring
+    have hR : (u + 27) * (u + 3) ^ 3 * (a₁ ^ 3 - 27 * a₃) ^ 4
+        = ((u + 27) * (a₁ ^ 3 - 27 * a₃)) * ((u + 3) * (a₁ ^ 3 - 27 * a₃)) ^ 3 := by
+      ring
+    rw [hL, hR, hu, hB, hE]
+    linear_combination (729 : ℚ) * hJ'
+
+/-- **The residual factor of the `j`-matching relation** (PROVEN): if the
+middle curve of two consecutive `3`-isogenies has `X_0(3)`-parameter `u` as a
+quotient and `v` as a source, then eliminating its `j` gives
+`(u+27)(u+3)³v³ = (v+27)(v+243)³u`, whose two sides differ by
+
+  `(uv − 729) · (u³v² + 36u²v² + 729u²v + 270uv² + 26244uv + 531441u − v³)`.
+
+The first factor is the BACKTRACKING component `v = 729/u` — the Fricke
+involution `w₃`, i.e. the second isogeny being the dual of the first — so once
+non-backtracking `uv ≠ 729` is known the residual `(3,3)` curve equation holds.
+That residual curve is `X_0(9)`; everything downstream of it is proven in
+`MazurLevel27` above. -/
+lemma residual_of_matching (J u v : ℚ)
+    (h1 : J * u = (u + 27) * (u + 3) ^ 3)
+    (h2 : J * v ^ 3 = (v + 27) * (v + 243) ^ 3)
+    (hnb : u * v ≠ 729) :
+    u ^ 3 * v ^ 2 + 36 * u ^ 2 * v ^ 2 + 729 * u ^ 2 * v + 270 * u * v ^ 2
+      + 26244 * u * v + 531441 * u = v ^ 3 := by
+  have hfac : (u * v - 729) *
+      (u ^ 3 * v ^ 2 + 36 * u ^ 2 * v ^ 2 + 729 * u ^ 2 * v + 270 * u * v ^ 2
+        + 26244 * u * v + 531441 * u - v ^ 3) = 0 := by
+    linear_combination (-(v ^ 3)) * h1 + u * h2
+  rcases mul_eq_zero.mp hfac with h | h
+  · exact absurd (by linarith : u * v = 729) hnb
+  · linarith
+
+section Groups
+
+variable {G H I : Type*} [AddCommGroup G] [AddCommGroup H] [AddCommGroup I]
+
+/-- **A nonzero element killed by a prime has that prime as its order**
+(PROVEN): elementary, and used twice below to certify that each kernel of the
+`3`-isogeny chain really has order `3`. -/
+lemma addOrderOf_eq_of_prime {A : Type*} [AddGroup A] {p : ℕ} (hp : p.Prime) (x : A)
+    (h0 : x ≠ 0) (hpx : p • x = 0) : addOrderOf x = p := by
+  rcases (Nat.dvd_prime hp).mp (addOrderOf_dvd_of_nsmul_eq_zero hpx) with h | h
+  · exact absurd (AddMonoid.addOrderOf_eq_one_iff.mp h) h0
+  · exact h
+
+/-- **Stability of a cyclic subgroup pushes forward along an equivariant
+homomorphism** (PROVEN): if `⟨x⟩` is stable under a family of additive
+operators `aG` and `φ` intertwines `aG` with `aH`, then `⟨φ x⟩` is stable
+under `aH`. This is the abstract form of "the image of a rational subgroup
+under a rational isogeny is rational", and it is what carries Galois
+stability along the `3`-isogeny chain. -/
+lemma stable_map {Γ : Type*} (aG : Γ → G →+ G) (aH : Γ → H →+ H) (φ : G →+ H)
+    (hgal : ∀ (σ : Γ) (x : G), φ (aG σ x) = aH σ (φ x)) (x : G)
+    (hst : ∀ σ : Γ, ∀ y ∈ AddSubgroup.zmultiples x,
+      aG σ y ∈ AddSubgroup.zmultiples x) :
+    ∀ σ : Γ, ∀ y ∈ AddSubgroup.zmultiples (φ x),
+      aH σ y ∈ AddSubgroup.zmultiples (φ x) := by
+  intro σ y hy
+  obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hy
+  obtain ⟨m, hm⟩ := AddSubgroup.mem_zmultiples_iff.mp
+    (hst σ x (AddSubgroup.mem_zmultiples x))
+  have key : aH σ (k • φ x) = (k * m) • φ x := by
+    rw [map_zsmul, ← hgal σ x, ← hm, map_zsmul, smul_smul]
+  rw [key]
+  exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples _) _
+
+/-- **The second kernel of the chain is nonzero** (PROVEN): if `g` has order
+`27` and `φ` has kernel exactly `⟨9g⟩`, then `φ(3g) ≠ 0`. Otherwise
+`3g = k·9g` in `⟨g⟩ ≅ ℤ/27`, i.e. `27 ∣ 9k − 3`, which fails already
+modulo `9`. -/
+lemma map_three_ne_zero (φ : G →+ H) (g : G) (hg : addOrderOf g = 27)
+    (hker : ∀ x, φ x = 0 ↔ x ∈ AddSubgroup.zmultiples ((9 : ℕ) • g)) :
+    φ ((3 : ℕ) • g) ≠ 0 := by
+  intro h
+  obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp ((hker _).mp h)
+  have hz : ((9 * k - 3 : ℤ)) • g = 0 := by
+    have h9 : (9 * k : ℤ) • g = (3 : ℤ) • g := by
+      calc (9 * k : ℤ) • g = k • ((9 : ℤ) • g) := by rw [smul_smul, mul_comm]
+        _ = k • ((9 : ℕ) • g) := by norm_cast
+        _ = (3 : ℕ) • g := hk
+        _ = (3 : ℤ) • g := by norm_cast
+    rw [sub_smul, h9, sub_self]
+  have hdvd : ((27 : ℤ)) ∣ (9 * k - 3) := by
+    have := addOrderOf_dvd_iff_zsmul_eq_zero.mpr hz
+    rw [hg] at this
+    exact_mod_cast this
+  omega
+
+/-- **The third kernel of the chain is nonzero** (PROVEN): with `g` of order
+`27`, `ker φ = ⟨9g⟩` and `ker ψ = ⟨φ(3g)⟩`, one has `ψ(φ g) ≠ 0`. Otherwise
+`φ g = k·φ(3g)`, so `φ((3k − 1)g) = 0`, so `(3k − 1)g ∈ ⟨9g⟩` and
+`27 ∣ 9m − 3k + 1`, impossible modulo `3`. This is exactly the CYCLICITY of
+`⟨g⟩` being used: it is what makes the three quotients a chain rather than a
+product. -/
+lemma map_map_ne_zero (φ : G →+ H) (ψ : H →+ I) (g : G) (hg : addOrderOf g = 27)
+    (hkerφ : ∀ x, φ x = 0 ↔ x ∈ AddSubgroup.zmultiples ((9 : ℕ) • g))
+    (hkerψ : ∀ y, ψ y = 0 ↔ y ∈ AddSubgroup.zmultiples (φ ((3 : ℕ) • g))) :
+    ψ (φ g) ≠ 0 := by
+  intro h
+  obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp ((hkerψ _).mp h)
+  have h3 : φ ((3 : ℕ) • g) = (3 : ℤ) • φ g := by rw [map_nsmul]; norm_cast
+  rw [h3, smul_smul] at hk
+  have hφ : φ (((k * 3 - 1 : ℤ)) • g) = 0 := by
+    rw [map_zsmul, sub_smul, one_smul, hk, sub_self]
+  obtain ⟨m, hm⟩ := AddSubgroup.mem_zmultiples_iff.mp ((hkerφ _).mp hφ)
+  have hz : ((9 * m - (k * 3 - 1) : ℤ)) • g = 0 := by
+    have h9 : (9 * m : ℤ) • g = ((k * 3 - 1 : ℤ)) • g := by
+      calc (9 * m : ℤ) • g = m • ((9 : ℤ) • g) := by rw [smul_smul, mul_comm]
+        _ = m • ((9 : ℕ) • g) := by norm_cast
+        _ = ((k * 3 - 1 : ℤ)) • g := hm
+    rw [sub_smul, h9, sub_self]
+  have hdvd : ((27 : ℤ)) ∣ (9 * m - (k * 3 - 1)) := by
+    have := addOrderOf_dvd_iff_zsmul_eq_zero.mpr hz
+    rw [hg] at this
+    exact_mod_cast this
+  omega
+
+end Groups
+
+end X0Three
+
+/-- **`X_0(3)`: the Tate invariants of a rational `3`-isogeny** (sorry leaf,
+cut 2026-07-26 out of `exists_x0Three_chainParameters`). For an elliptic curve
+`E/ℚ` and a `Gal(ℚ̄/ℚ)`-stable subgroup `⟨P⟩` of order `3` in `E(ℚ̄)`, there
+are `a₁, a₃ ∈ ℚ` and a quotient isogeny `φ : E(ℚ̄) → E'(ℚ̄)` over `ℚ` with
+kernel exactly `⟨P⟩` such that
+
+* `a₃ ≠ 0` and `a₁³ − 27a₃ ≠ 0` (i.e. `Δ = a₃³(a₁³ − 27a₃) ≠ 0`);
+* `j(E) · a₃³(a₁³ − 27a₃) = a₁³(a₁³ − 24a₃)³`;
+* `j(E/⟨P⟩) · a₃(a₁³ − 27a₃)³ = a₁³(a₁³ + 216a₃)³`.
+
+This is the `X_0(3)` universal family, stated denominator-free. See the
+section note above for the derivation of both formulas; they are elementary
+algebra ONCE the normal form is available, and the normal form is the content.
+
+**Route.** Three steps, in this order.
+
+1. *The `x`-coordinate is rational.* `⟨P⟩ = {0, P, −P}` is stable and
+   `x(−P) = x(P)`, so `x(P)` is fixed by `Gal(ℚ̄/ℚ)`, hence lies in `ℚ`
+   (`WeierstrassCurve.exists_point_eq_baseChange_of_fixed` is the analogous
+   descent already used for the `2`-isogeny leaf; here only the coordinate
+   descends, not the point).
+2. *The normal form.* Translate `x(P)` to `0`; then `x(2P) = x(−P) = 0`
+   forces `b₈ = 0`, and after the `y`-shift and tangent normalisation
+   available over `ℚ(y(P))` the model is `y² + a₁xy + a₃y = x³` with
+   `P = (0, 0)`. `y(P)` generates a quadratic extension in general, so what
+   descends is the QUADRATIC TWIST class: twisting does not move `j`, and
+   `(E/C)^d = E^d/C^d`, so BOTH displayed identities are twist-invariant and
+   may be verified on the untwisted model.
+   `WeierstrassCurve.exists_tateNormalForm` (PROVEN above) is the order-`≥ 4`
+   analogue and is the pattern to copy;
+   `WeierstrassCurve.three_nsmul_origin_eq_zero` (PROVEN above) is the
+   converse direction already available.
+3. *The quotient.* `WeierstrassCurve.exists_velu_quotient_isogeny`
+   (`Fermat/FLT/EllipticCurve/Velu.lean`, and NOT the `MazurTorsion`
+   re-packaging `exists_quotient_isogeny_of_prime_card`, which is declared
+   far BELOW this point and so is unavailable here) already produces `φ`, and
+   its quotient curve is literally `E.veluModel t w`. At the kernel
+   `{0, (0,0), (0,−a₃)}` both Vélu terms are `±`-invariant and equal at the
+   two nonzero points, so `t = b₄ = a₁a₃` and `w = a₃²`, giving
+   `E/C : y² + a₁xy + a₃y = x³ − 5a₁a₃x − (a₁³a₃ + 7a₃²)`,
+   `c₄' = a₁(a₁³ + 216a₃)`, `Δ' = a₃(a₁³ − 27a₃)³` — three `ring` identities.
+   What `exists_velu_quotient_isogeny` does NOT currently expose is the
+   identity of `E'` with `E.veluModel t w`; strengthening its conclusion to
+   name the model is the cheapest way to get this leaf.
+
+**Faithfulness.** The statement is an existential over `(a₁, a₃, E', φ)`
+JOINTLY, so it does not assert anything about an arbitrary group homomorphism
+with kernel `⟨P⟩` — it asserts that the Vélu quotient exists and has the
+stated `j`. Non-vacuous: for `E` in the class `27a` with `j = −12288000` and
+`u₁ = −3` the invariants satisfy `a₁³ = −216a₃`, and both identities hold with
+`j(E/C) = 0`. -/
+theorem WeierstrassCurve.exists_tateInvariants_of_stableThreeSubgroup
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 3)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples P,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples P) :
+    ∃ (a₁ a₃ : ℚ) (E' : WeierstrassCurve ℚ) (_hE' : E'.IsElliptic)
+      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point),
+      (∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+        φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples P) ∧
+      a₃ ≠ 0 ∧ a₁ ^ 3 - 27 * a₃ ≠ 0 ∧
+      E.j * (a₃ ^ 3 * (a₁ ^ 3 - 27 * a₃)) = a₁ ^ 3 * (a₁ ^ 3 - 24 * a₃) ^ 3 ∧
+      E'.j * (a₃ * (a₁ ^ 3 - 27 * a₃) ^ 3) = a₁ ^ 3 * (a₁ ^ 3 + 216 * a₃) ^ 3 :=
+  sorry
+
+/-- **`X_0(3)`: the hauptmodul parameter of a rational `3`-isogeny** (PROVEN
+2026-07-26 over the single leaf
+`exists_tateInvariants_of_stableThreeSubgroup`): a `Gal(ℚ̄/ℚ)`-stable subgroup
+`⟨P⟩` of order `3` in `E(ℚ̄)` has an `X_0(3)` hauptmodul value `u ∈ ℚ∖{0}`
+together with the quotient isogeny, and
+
+* `j(E) · u³ = (u+27)(u+243)³` — the `j`-map of `X_0(3)` at the source;
+* `j(E/⟨P⟩) · u = (u+27)(u+3)³` — the `j`-map at the quotient.
+
+The proof is `X0Three.param_of_tateInvariants` applied to the Tate invariants:
+`u = 729a₃/(a₁³ − 27a₃)`. Note the two `j`-maps are exchanged by the Fricke
+involution `u ↦ 729/u`, which is why the second one appears with `u` rather
+than `u³`. -/
+theorem WeierstrassCurve.exists_x0Three_param_of_stableThreeSubgroup
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 3)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples P,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples P) :
+    ∃ (u : ℚ) (E' : WeierstrassCurve ℚ) (_hE' : E'.IsElliptic)
+      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point),
+      (∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+        φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples P) ∧
+      u ≠ 0 ∧
+      E.j * u ^ 3 = (u + 27) * (u + 243) ^ 3 ∧
+      E'.j * u = (u + 27) * (u + 3) ^ 3 := by
+  obtain ⟨a₁, a₃, E', hE', φ, hgal, hker, ha3, hDne, hJ, hJ'⟩ :=
+    E.exists_tateInvariants_of_stableThreeSubgroup P hP hstable
+  haveI := hE'
+  obtain ⟨u, hu0, h1, h2⟩ :=
+    X0Three.param_of_tateInvariants E.j E'.j a₁ a₃ ha3 hDne hJ hJ'
+  exact ⟨u, E', hE', φ, hgal, hker, hu0, h1, h2⟩
+
+/-- **Non-backtracking along a cyclic `9`-isogeny** (sorry leaf, cut
+2026-07-26 out of `exists_x0Three_chainParameters`): for a chain
+`E → E' → E''` of two rational `3`-isogenies whose composite has CYCLIC
+kernel `⟨h⟩` of order `9` (`9h = 0`, `3h ≠ 0`, `ker φ = ⟨3h⟩`,
+`ker ψ = ⟨φ h⟩`, everything `Gal(ℚ̄/ℚ)`-stable and equivariant), the two
+`X_0(3)` hauptmodul parameters satisfy `uv ≠ 729`.
+
+**Why this is not free, and why skipping it states a FALSE leaf.** `uv = 729`
+is the Fricke locus `v = w₃(u)`: it says `(E', ker ψ)` and
+`(E', φ(E[3])) = (E', ker φ̂)` have the SAME `X_0(3)`-parameter, i.e. the
+second isogeny is the dual of the first, i.e. the composite kernel is `E[3]`
+rather than cyclic. So this IS the cyclicity hypothesis, and it must be paid
+for. Concretely, `uv = 729` forces `j(E'') = j(E)`: substituting `v = 729/u`
+into `j(E'')v = (v+27)(v+3)³` returns `(u+27)(u+243)³/u³`.
+
+**Route.** Two ingredients, and the second is where the real work is.
+
+1. *The subgroups differ.* `ker ψ = ⟨φ h⟩` and `φ(E[3]) = ⟨φ(3h)⟩` are
+   distinct, because `φ h ∈ ⟨φ(3h)⟩` would give `(3k−1)h ∈ ker φ = ⟨3h⟩`,
+   i.e. `9 ∣ 3m − 3k + 1`, impossible modulo `3`. (This is
+   `X0Three.map_map_ne_zero` one level down and is already proven.)
+2. *Distinct stable `3`-subgroups have distinct parameters.* For
+   `Aut(E') = ±1` the `X_0(3)`-parameter separates subgroups outright. The
+   two exceptional `j` must BOTH be handled, because the real chain DOES pass
+   through `j = 0`:
+   * `j = 1728` cannot occur at all: for `y² = x³ + ax` the `3`-division
+     polynomial is `3x⁴ + 6ax² − a²`, with `x² = a(−3 ± 2√3)/3`, so no
+     `j = 1728` curve over `ℚ` has a rational `3`-isogeny.
+   * `j = 0` DOES occur (the middle two curves of the class `27a`). There
+     `Aut = μ₆` and `ζ₃` permutes the three non-canonical `3`-subgroups
+     cyclically, fixing only `ker(√−3)`. If two of the three were
+     Galois-stable then all four `3`-subgroups would be, so the mod-`3`
+     representation would be SCALAR, its determinant — the mod-`3` cyclotomic
+     character cutting out `ℚ(ζ₃) ≠ ℚ` — would be a square, hence trivial.
+     Contradiction. So at most one non-canonical subgroup is stable, and the
+     parameter does separate the stable ones.
+
+**FAITHFULNESS AUDIT.** The statement is TRUE but is very slightly STRONGER
+than the geometric non-backtracking, and the gap is worth recording because it
+is where a future prover will get stuck.
+
+`u` and `v` are pinned here only by their `j`-relations, not by a normal form.
+The map `u ↦ (j_src(u), j_quot(u))` from `X_0(3)` to `X(1) × X(1)` fails to be
+injective exactly when `E'` admits two `3`-subgroups in different `Aut`-orbits
+with isomorphic quotients — which, composing one isogeny with the dual of the
+other, produces a PRIMITIVE endomorphism of degree `9`, hence complex
+multiplication by an order in which `3` splits or is non-maximal. Among the
+thirteen class-number-one discriminants only `−8` and `−11` split at `3`, and
+neither curve carries a rational cyclic `9`-isogeny (complex conjugation swaps
+`𝔭` and `𝔭̄`, hence swaps `E[𝔭²]` and `E[𝔭̄²]`); the two CM `j`-invariants
+that DO admit one, `0` (disc `−3`) and `−12288000` (disc `−27`), have no
+primitive norm-`9` element at all — every solution of `a² − ab + b² = 9`
+resp. `a² − 3ab + 9b² = 9` is divisible by `3`. So under the hypotheses of
+this leaf the extra strength is vacuous. A prover who finds the gap
+obstructive should thread the Tate invariants of
+`exists_tateInvariants_of_stableThreeSubgroup` through instead of the bare
+`j`-relations; that is a cut-level repair, not a refutation.
+
+Numerical anchor (Magma `IsogenousCurves`, PARI/GP `ellisomat` — untrusted
+searchers): for the class `27a`, `(u₁, u₂, u₃) = (−3, −27, −243)` with
+`u₁u₂ = 81` and `u₂u₃ = 6561`, both `≠ 729`. -/
+theorem WeierstrassCurve.x0Three_param_mul_ne_729
+    (E E' E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E'.IsElliptic] [E''.IsElliptic]
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
+    (ψ : (E'⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
+    (hφgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt))
+    (hψgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E'⁄(AlgebraicClosure ℚ)).Point),
+        ψ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (ψ Pt))
+    (h : (E⁄(AlgebraicClosure ℚ)).Point)
+    (h9 : (9 : ℕ) • h = 0) (h3 : (3 : ℕ) • h ≠ 0)
+    (hhstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h)
+    (hφker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples ((3 : ℕ) • h))
+    (hψker : ∀ Pt : (E'⁄(AlgebraicClosure ℚ)).Point,
+      ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples (φ h))
+    (u v : ℚ) (hu0 : u ≠ 0) (hv0 : v ≠ 0)
+    (hju : E.j * u ^ 3 = (u + 27) * (u + 243) ^ 3)
+    (hju' : E'.j * u = (u + 27) * (u + 3) ^ 3)
+    (hjv : E'.j * v ^ 3 = (v + 27) * (v + 243) ^ 3)
+    (hjv' : E''.j * v = (v + 27) * (v + 3) ^ 3) :
+    u * v ≠ 729 :=
+  sorry
+
 /-- **`X_0(3)`: the three hauptmodul parameters of the `3`-isogeny chain of a
-rational cyclic `27`-subgroup** (sorry node — the ONLY remaining moduli
-content of the level-`27` node, cut 2026-07-26 out of
+rational cyclic `27`-subgroup** (PROVEN 2026-07-26 over the two level-`3`
+leaves `exists_tateInvariants_of_stableThreeSubgroup` and
+`x0Three_param_mul_ne_729`; cut 2026-07-26 out of
 `exists_x0TwentySeven_moduliPoint`): if `E` carries a `Gal(ℚ̄/ℚ)`-stable
 cyclic subgroup `C = ⟨g⟩` of order `27`, then the three consecutive rational
 `3`-isogenies
@@ -2314,37 +2733,29 @@ have `X_0(3)`-hauptmodul parameters `u₁, u₂, u₃ ∈ ℚ` — values of
 is elementary (a curve with a rational `3`-isogeny is, up to quadratic twist —
 which does not move `j` — a Tate normal form `y² + a₁xy + a₃y = x³`, whence
 `j = h(h−24)³/(h−27)` with `h = a₁³/a₃`, i.e. `j·u³ = (u+27)(u+243)³` after
-`u = h − 27`; the quotient's `j` is then a Vélu computation on that explicit
-model). Everything of level `9` and `27` — the `X_0(9)` hauptmodul, the plane
-model of `X_0(27)`, its birational identification with `27a1`, and the
-Diophantine finish — is PROVEN above and below; this leaf is what is left.
+`u = 729/(h − 27)`; the quotient's `j` is then a Vélu computation on that
+explicit model). Everything of level `9` and `27` — the `X_0(9)` hauptmodul,
+the plane model of `X_0(27)`, its birational identification with `27a1`, and
+the Diophantine finish — is PROVEN above and below.
 
-**Routes, in decreasing order of how much already exists here.**
+**The proof here is ALL GLUE — no moduli content is left in it.** Divisor
+descent (`exists_stable_zmultiples_of_dvd` / `stable_zmultiples_nsmul`, both
+proven above) gives the stable subgroups `⟨9g⟩ ⊂ ⟨3g⟩ ⊂ ⟨g⟩`. Three
+applications of `exists_x0Three_param_of_stableThreeSubgroup` build the chain
 
-1. *Vélu chain + `X_0(3)` universal family.* `exists_quotient_isogeny_of_prime_card`
-   (above, over `Fermat/FLT/EllipticCurve/Velu.lean`) already builds the
-   quotient by a stable subgroup of prime order over `ℚ`, and
-   `exists_stable_zmultiples_of_dvd` / `stable_zmultiples_nsmul` (above) already
-   produce the stable subgroups `⟨9g⟩`, `⟨3·φ₁ g⟩`, `⟨φ₂ φ₁ g⟩` of order `3`.
-   So the chain itself is available; what must be added is the `X_0(3)`
-   parametrisation of each step.
-2. *Non-backtracking.* `u_i u_{i+1} = 729` says the two pairs
-   `(E_i, ker φ_{i+1})` and `(E_i, φ_i(E_{i-1}[3]))` have the SAME
-   `X_0(3)`-parameter, i.e. are isomorphic over `ℚ̄`. For `Aut(E_i) = ±1` that
-   forces equality of the subgroups, contradicting cyclicity. The two special
-   `j`-invariants are dealt with as follows, and BOTH need saying because the
-   real chain does pass through `j = 0`:
-   * `j = 1728` cannot occur at all: for `y² = x³ + ax` the `3`-division
-     polynomial is `3x⁴ + 6ax² − a²`, whose roots have `x² = a(−3±2√3)/3`, so
-     no `j = 1728` curve over `ℚ` has a rational `3`-isogeny.
-   * `j = 0` DOES occur (the middle two curves of the class `27a` have
-     `j = 0`). There `Aut = μ₆` and `ζ₃` permutes the three non-canonical
-     `3`-subgroups cyclically, fixing only `ker(√−3)`. But if two of those
-     three were Galois-stable then all four `3`-subgroups would be, so the
-     mod-`3` representation would be SCALAR, so its determinant — the mod-`3`
-     cyclotomic character, which cuts out `ℚ(ζ₃) ≠ ℚ` — would be a square,
-     hence trivial. Contradiction. So the parameter does separate stable
-     subgroups, and non-backtracking follows.
+  `E --φ₁--> E₁ --φ₂--> E₂ --φ₃--> E₃`,   `ker φ₁ = ⟨9g⟩`,
+  `ker φ₂ = ⟨φ₁(3g)⟩`,   `ker φ₃ = ⟨φ₂(φ₁ g)⟩`,
+
+each kernel having order exactly `3` by `X0Three.map_three_ne_zero` and
+`X0Three.map_map_ne_zero` (this is where CYCLICITY of `⟨g⟩` enters — the two
+lemmas are congruences modulo `9` resp. `3` inside `ℤ/27`) and being stable by
+`X0Three.stable_map`. Each application returns BOTH `j`-maps, so each middle
+curve is described twice: `j(E₁)u₁ = (u₁+27)(u₁+3)³` from step `1` and
+`j(E₁)u₂³ = (u₂+27)(u₂+243)³` from step `2`. Eliminating `j(E₁)` gives the
+matching relation, whose two sides differ by `(u₁u₂ − 729)` times the residual
+`X_0(9)` polynomial (`X0Three.residual_of_matching`); non-backtracking
+(`x0Three_param_mul_ne_729`) kills the first factor. Identically for `u₂, u₃`
+with `j(E₂)`.
 
 **Faithfulness.** The statement is satisfied by the unique curve it can
 describe: `j(E) = −12288000` with `(u₁, u₂, u₃) = (−3, −27, −243)`, giving
@@ -2364,8 +2775,83 @@ theorem WeierstrassCurve.exists_x0Three_chainParameters
         + 26244 * u₁ * u₂ + 531441 * u₁ = u₂ ^ 3 ∧
       u₂ ^ 3 * u₃ ^ 2 + 36 * u₂ ^ 2 * u₃ ^ 2 + 729 * u₂ ^ 2 * u₃ + 270 * u₂ * u₃ ^ 2
         + 26244 * u₂ * u₃ + 531441 * u₂ = u₃ ^ 3 ∧
-      u₁ * u₂ ≠ 729 ∧ u₂ * u₃ ≠ 729 :=
-  sorry
+      u₁ * u₂ ≠ 729 ∧ u₂ * u₃ ≠ 729 := by
+  classical
+  -- divisor descent inside `⟨g⟩ ≅ ℤ/27`
+  have hst9 := E.stable_zmultiples_nsmul g 9 hstable
+  have hst3 := E.stable_zmultiples_nsmul g 3 hstable
+  have hord9 : addOrderOf ((9 : ℕ) • g) = 3 := by
+    rw [addOrderOf_nsmul' g (by norm_num), hg]; norm_num
+  have h33 : ((3 : ℕ) • ((3 : ℕ) • g)) = (9 : ℕ) • g := by rw [smul_smul]; norm_num
+  have h39 : ((9 : ℕ) • ((3 : ℕ) • g)) = (27 : ℕ) • g := by rw [smul_smul]; norm_num
+  have h9ne : (9 : ℕ) • g ≠ 0 := by
+    intro hc
+    simp [hc] at hord9
+  -- STEP 1 : the isogeny with kernel `⟨9g⟩`
+  obtain ⟨u₁, E₁, hE₁, φ₁, hφ₁gal, hφ₁ker, hu₁0, hj1, hj1'⟩ :=
+    E.exists_x0Three_param_of_stableThreeSubgroup ((9 : ℕ) • g) hord9 hst9
+  haveI := hE₁
+  have hg₁ne : φ₁ ((3 : ℕ) • g) ≠ 0 := X0Three.map_three_ne_zero φ₁ g hg hφ₁ker
+  have hg₁3 : (3 : ℕ) • φ₁ ((3 : ℕ) • g) = 0 := by
+    rw [← map_nsmul, h33]
+    exact (hφ₁ker _).mpr (AddSubgroup.mem_zmultiples _)
+  have hord₁ : addOrderOf (φ₁ ((3 : ℕ) • g)) = 3 :=
+    X0Three.addOrderOf_eq_of_prime (by norm_num) _ hg₁ne hg₁3
+  have hst₁ := X0Three.stable_map
+    (fun σ : Field.absoluteGaloisGroup ℚ =>
+      Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)
+    (fun σ : Field.absoluteGaloisGroup ℚ =>
+      Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)
+    φ₁ hφ₁gal ((3 : ℕ) • g) hst3
+  -- STEP 2 : the isogeny with kernel `⟨φ₁(3g)⟩`
+  obtain ⟨u₂, E₂, hE₂, φ₂, hφ₂gal, hφ₂ker, hu₂0, hj2, hj2'⟩ :=
+    E₁.exists_x0Three_param_of_stableThreeSubgroup (φ₁ ((3 : ℕ) • g)) hord₁ hst₁
+  haveI := hE₂
+  have hg₂ne : φ₂ (φ₁ g) ≠ 0 := X0Three.map_map_ne_zero φ₁ φ₂ g hg hφ₁ker hφ₂ker
+  have hg₂3 : (3 : ℕ) • φ₂ (φ₁ g) = 0 := by
+    rw [← map_nsmul, ← map_nsmul]
+    exact (hφ₂ker _).mpr (AddSubgroup.mem_zmultiples _)
+  have hord₂ : addOrderOf (φ₂ (φ₁ g)) = 3 :=
+    X0Three.addOrderOf_eq_of_prime (by norm_num) _ hg₂ne hg₂3
+  have hstg1 := X0Three.stable_map
+    (fun σ : Field.absoluteGaloisGroup ℚ =>
+      Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)
+    (fun σ : Field.absoluteGaloisGroup ℚ =>
+      Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)
+    φ₁ hφ₁gal g hstable
+  have hst₂ := X0Three.stable_map
+    (fun σ : Field.absoluteGaloisGroup ℚ =>
+      Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)
+    (fun σ : Field.absoluteGaloisGroup ℚ =>
+      Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)
+    φ₂ hφ₂gal (φ₁ g) hstg1
+  -- STEP 3 : the isogeny with kernel `⟨φ₂(φ₁ g)⟩`
+  obtain ⟨u₃, E₃, hE₃, φ₃, hφ₃gal, hφ₃ker, hu₃0, hj3, hj3'⟩ :=
+    E₂.exists_x0Three_param_of_stableThreeSubgroup (φ₂ (φ₁ g)) hord₂ hst₂
+  haveI := hE₃
+  -- non-backtracking of the first consecutive pair, over `⟨3g⟩`
+  have hA9 : (9 : ℕ) • ((3 : ℕ) • g) = 0 := by
+    rw [h39, ← hg]; exact addOrderOf_nsmul_eq_zero g
+  have hA3 : (3 : ℕ) • ((3 : ℕ) • g) ≠ 0 := by rw [h33]; exact h9ne
+  have hAker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ₁ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples ((3 : ℕ) • ((3 : ℕ) • g)) := by
+    intro Pt; rw [h33]; exact hφ₁ker Pt
+  have hnb1 : u₁ * u₂ ≠ 729 :=
+    WeierstrassCurve.x0Three_param_mul_ne_729 E E₁ E₂ φ₁ φ₂ hφ₁gal hφ₂gal
+      ((3 : ℕ) • g) hA9 hA3 hst3 hAker hφ₂ker u₁ u₂ hu₁0 hu₂0 hj1 hj1' hj2 hj2'
+  -- non-backtracking of the second consecutive pair, over `⟨φ₁ g⟩`
+  have hB9 : (9 : ℕ) • φ₁ g = 0 := by
+    rw [← map_nsmul]; exact (hφ₁ker _).mpr (AddSubgroup.mem_zmultiples _)
+  have hB3 : (3 : ℕ) • φ₁ g ≠ 0 := by rw [← map_nsmul]; exact hg₁ne
+  have hBker : ∀ Pt : (E₁⁄(AlgebraicClosure ℚ)).Point,
+      φ₂ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples ((3 : ℕ) • φ₁ g) := by
+    intro Pt; rw [← map_nsmul]; exact hφ₂ker Pt
+  have hnb2 : u₂ * u₃ ≠ 729 :=
+    WeierstrassCurve.x0Three_param_mul_ne_729 E₁ E₂ E₃ φ₂ φ₃ hφ₂gal hφ₃gal
+      (φ₁ g) hB9 hB3 hstg1 hBker hφ₃ker u₂ u₃ hu₂0 hu₃0 hj2 hj2' hj3 hj3'
+  exact ⟨u₁, u₂, u₃, hj1,
+    X0Three.residual_of_matching E₁.j u₁ u₂ hj1' hj2 hnb1,
+    X0Three.residual_of_matching E₂.j u₂ u₃ hj2' hj3 hnb2, hnb1, hnb2⟩
 
 /-- **`X_0(27)`: a rational cyclic `27`-subgroup IS a rational point of
 `27a1`, lying over an `X_0(9)`-parameter of `E`** (PROVEN 2026-07-26 over
