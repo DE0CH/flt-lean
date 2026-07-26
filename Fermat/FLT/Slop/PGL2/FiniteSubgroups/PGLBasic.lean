@@ -70,7 +70,12 @@ scoped instance instFintypeSylow {p : ℕ} {G : Type*} [Group G] [Finite G] :
 scoped instance instFintypeGaloisField {p m : ℕ} [Fact p.Prime] :
     Fintype (GaloisField p m) := Fintype.ofFinite _
 
-lemma Nat.factorization_eq_one {n m p : ℕ}
+-- `_root_.` IS LOAD-BEARING on both of these: they sit inside
+-- `namespace Dickson`, and bare `Nat.…` names would create a nested
+-- `Dickson.Nat` namespace shadowing the root `Nat` for every `open Dickson`
+-- (`PSLBasic.lean`) and every file inside `namespace Dickson`
+-- (`CyclicPartition.lean`).
+lemma _root_.Nat.factorization_eq_one {n m p : ℕ}
     (h_eq : n = m * p)
     (hp : p.Prime)
     (h_ndvd : ¬ p ∣ m) :
@@ -79,7 +84,7 @@ lemma Nat.factorization_eq_one {n m p : ℕ}
       Finsupp.add_apply, Nat.factorization_eq_zero_of_not_dvd h_ndvd,
       hp.factorization, Finsupp.single_eq_same, zero_add]
 
-lemma Nat.factorization_eq_two {n m p : ℕ}
+lemma _root_.Nat.factorization_eq_two {n m p : ℕ}
     (h_eq : n = m * p * p)
     (hp : p.Prime)
     (h_ndvd : ¬ p ∣ m) :

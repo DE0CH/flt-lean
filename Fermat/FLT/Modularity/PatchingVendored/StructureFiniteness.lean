@@ -11,10 +11,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Yang, Kevin Buzzard
 -/
 
-import Fermat.FLT.Modularity.PatchingVendored.TopologicallyFG
-import Mathlib.Topology.Algebra.Module.Equiv
-import Mathlib.Algebra.Algebra.TransferInstance
-import Mathlib.Algebra.Ring.Ext
+module
+
+public import Fermat.FLT.Modularity.PatchingVendored.TopologicallyFG
+public import Mathlib.Topology.Algebra.Module.Equiv
+public import Mathlib.Algebra.Algebra.TransferInstance
+public import Mathlib.Algebra.Ring.Ext
+
+@[expose] public section
 
 set_option autoImplicit false
 set_option relaxedAutoImplicit false
