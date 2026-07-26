@@ -12764,8 +12764,8 @@ theorem exists_flatIsogenousLattice_of_equivariantCover
         (((ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).toLocal 𝔭ᵥ).Space) :=
       { toFun := fun x =>
           (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]] (ψlin x)
-        map_zero' := by rw [map_zero, TensorProduct.tmul_zero] <;> rfl
-        map_add' := fun x y => by rw [map_add, TensorProduct.tmul_add] <;> rfl }
+        map_zero' := by rw [map_zero, TensorProduct.tmul_zero]; rfl
+        map_add' := fun x y => by rw [map_add, TensorProduct.tmul_add]; rfl }
     refine isFlatPointsGroupAt_of_subquotient act hact1 hactmul hpi F ?_ π ?_ ?_ ?_
     · intro σ x
       funext i
@@ -12789,7 +12789,7 @@ theorem exists_flatIsogenousLattice_of_equivariantCover
       | add a b ha hb =>
         obtain ⟨x, hx⟩ := ha
         obtain ⟨y, hy⟩ := hb
-        exact ⟨x + y, by rw [map_add, hx, hy] <;> rfl⟩
+        exact ⟨x + y, by rw [map_add, hx, hy]; rfl⟩
       | tmul cc t =>
         obtain ⟨cc', rfl⟩ := Ideal.Quotient.mk_surjective cc
         obtain ⟨z0, hz0⟩ := hψlinsurj t
@@ -12817,7 +12817,7 @@ theorem exists_flatIsogenousLattice_of_equivariantCover
         TensorProduct.tmul_smul, TensorProduct.smul_tmul']
       have hz : ((p : ℤ_[p]) ^ k • (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})) = 0 := by
         rw [Algebra.smul_def]; simp
-      rw [hz, TensorProduct.zero_tmul] <;> rfl
+      rw [hz, TensorProduct.zero_tmul]
   refine ⟨Tsub, inferInstance, inferInstance, hfinT, hfreeT, ρT, c, f0, g0, hflatT, ?_, ?_⟩
   · intro σ x
     refine Subtype.ext ?_
