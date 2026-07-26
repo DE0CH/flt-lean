@@ -5229,7 +5229,11 @@ noncomputable def cycScalarRep {ℓ : ℕ} [Fact ℓ.Prime] {B : Type*} [CommRin
   haveI : ContinuousAdd (Module.End B B) := ModuleTopology.continuousAdd B _
   haveI : ContinuousSMul B (Module.End B B) := ModuleTopology.continuousSMul B _
   { toFun := fun g => (cycUnitChar ℓ B g) • (LinearMap.id : Module.End B B)
-    map_one' := by rw [cycUnitChar_one, one_smul]
+    -- the closing `Module.End.one_eq_id.symm` is needed: after the rewrites the
+    -- goal is `LinearMap.id = 1`, and although that is `rfl`, it is `rfl` only
+    -- at DEFAULT transparency — `rw`'s own trailing `rfl` runs at reducible
+    -- transparency and will not unfold `Module.End`'s `One` instance.
+    map_one' := by rw [cycUnitChar_one, one_smul]; exact Module.End.one_eq_id.symm
     map_mul' := fun g h => by
       rw [cycUnitChar_mul]
       ext x
