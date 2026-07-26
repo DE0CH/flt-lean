@@ -608,6 +608,38 @@ because the tree was committed-clean. Rules: never `rm -rf` a path
 that differs from a real path only by case; prefer `git clean -n`
 (dry run); keep the tree committed before destructive operations.
 
+## What the merge batch is for: Lean edits that could turn a green build red
+
+(Deyao, 2026-07-26.) **The batch exists to protect a green build, and nothing
+else.** So the dividing line is not "who wrote it" but "can it break the
+build":
+
+- **Lean code edits** — anything under `Fermat/` — go to a branch and into
+  `~/.flt-merge-batch`, always. They can turn green into red, which is exactly
+  what the merger exists to catch.
+- **Tooling unrelated to the math content** — `.claude/*`, `flt-*.py`,
+  `CLAUDE.md`, memory files — the orchestrator **commits directly to `main`**.
+  It cannot make the Lean build red, so routing it through a merge worker buys
+  nothing and costs a release cycle of latency: the fix is inert on an
+  unmerged branch precisely while the bug it fixes is live.
+
+Deyao amended this the same day he first objected to a tooling commit on
+`main`, so both halves are his: the objection was to the orchestrator doing it
+*silently and by accident*, not to the act itself.
+
+**One asymmetry to remember either way.** The merger's release step is
+`git branch -f main <the sha it built>`, so a commit on `main` that the merger
+has not merged is not in its history and that force-move would discard it. In
+practice the merger merges `main` before moving it (it has done so at every
+release), which is what makes direct tooling commits safe. If you ever see a
+release drop one, that is the mechanism.
+
+And note it is effectively irreversible: worktrees fast-forward to `main` at
+every dispatch, so within minutes a dozen sit ON the commit, and rewinding
+`main` makes their branches non-ancestors of it — which the dispatch hook
+hard-crashes on, by design. So the bar for a direct commit is "certainly not
+Lean", not "probably fine".
+
 ## git is allowed — except force-push
 
 Claude may run `git` commands; exercise ordinary caution with
