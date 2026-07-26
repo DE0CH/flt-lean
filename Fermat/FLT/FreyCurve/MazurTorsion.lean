@@ -5630,10 +5630,11 @@ IRREDUCIBLE at this mathlib pin: `X_0(125)`, `J_0(125)`, the Atkin–Lehner
 involution, Kolyvagin–Logachev and the theory of complex multiplication are
 all absent. Missing machinery in dependency order, for whoever continues:
 (1) modular curves as schemes over `ℚ` with their cuspidal divisors —
-note `Fermat/FLT/ModularCurve/X0.lean` is building exactly this layer for
-the twelve composite levels, and its `Y0HasNoRationalPoint` /
-`false_of_stable_of_y0HasNoRationalPoint` pair is the natural home for
-this leaf once it lands on `main`; (2) `Pic⁰`/`J_0(N)` and Mordell–Weil;
+`Fermat/FLT/ModularCurve/X0.lean` builds part of this layer and HAS LANDED
+on `main`; it is `public import`ed at the head of this file, so its
+interface is already in scope here at zero import cost, but see the X0 note
+below for why this leaf must NOT be routed through it; (2) `Pic⁰`/`J_0(N)`
+and Mordell–Weil;
 (3) the Atkin–Lehner involution and the eigenspace decomposition of
 `J_0(N)`; (4) the analytic-rank input — Eichler–Shimura plus
 Kolyvagin–Logachev — to turn `L(A_f, 1) ≠ 0` into `rank = 0`; (5) CM theory
@@ -5643,10 +5644,90 @@ conductor-`5` order in `ℚ(√−5)`. Steps (1)–(4) are shared verbatim with
 `not_isogenyCharacter_of_prime_ge_twentyThree`, which is the argument for
 building them once.
 
+Checked 2026-07-26 rather than assumed, so nobody repeats it: NONE of
+`Isogeny`, `AtkinLehner`, `HilbertClassPolynomial`, complex multiplication,
+`Pic⁰`/Jacobian-of-a-curve or any rank function exists in mathlib at this
+pin, and none exists in the reference project `~/cs/FLT` either — that
+project takes Mazur as a bare `axiom` (`FLT/Assumptions/Mazur.lean:105`).
+So there is nothing to vendor for this node; items (1)–(5) have to be
+built.
+
+**FAITHFULNESS: THE LITERAL IS VERIFIED, BY TWO INDEPENDENT CAS**
+(2026-07-26). The truth of this leaf rests entirely on the polynomial above
+being the genuine `H_{−500}`: a single wrong digit would make the statement
+FALSE, would make its PROVEN consumer `not_cyclicIsogeny_oneHundredTwentyFive`
+worthless, and no Lean check anywhere in the tree could detect it — the
+sibling `classPoly500_no_rat_root` proves "no rational root" of whatever
+literal it is handed. So it was checked against two independent sources:
+PARI/GP `polclass(-500)` and Magma `HilbertClassPolynomial(-500)` reproduce
+all eleven coefficients, sign for sign, and agree with the literal written
+here and in the sibling. Both also give `h(−500) = 10` and report the
+polynomial irreducible over `ℚ`; Magma gives `h(−20) = 2`, which is the
+input to the conductor-formula recomputation in the section note. Untrusted
+searchers, as always — but two of them, disagreeing with neither each other
+nor the source.
+
+**DO NOT ROUTE THIS NODE THROUGH `X0.lean` — it would undo the cut.** Now
+that `Y0HasNoRationalPoint` / `false_of_stable_of_y0HasNoRationalPoint` are
+in scope here, and the latter is PROVEN for ARBITRARY `N` with a hypothesis
+triple verbatim identical to this leaf's, it is tempting to discharge this
+leaf in one line from a new `Y0HasNoRationalPoint 125`. That is a step
+BACKWARDS, for two reasons. First, `Y0HasNoRationalPoint 125` is the whole
+level-`125` node again: proving it still requires identifying the
+`w_125`-fixed points and still requires showing their `j` is irrational, so
+the arithmetic that `classPoly500_no_rat_root` has already PROVEN would have
+to be redone inside the new leaf — the class-number half would be swallowed
+back up, leaving the H_{−500} apparatus as decoration on a proof from
+`False`. Second, `X0.lean` deliberately builds only the AFFINE coarse moduli
+space `Y_0(N)`: it has no compactification, no cusps, no divisors, no
+Jacobian and no Atkin–Lehner involution, so it cannot express the descent
+`[(P) − (w_125 P)] ∈ ker(1 + w_125)` even in principle. It is the right home
+for the twelve composite levels, whose leaves really are "this curve has no
+rational point"; it is not the right home for this one.
+
+**CUT-OBSTRUCTION AUDIT: the obvious next cut does not work, and here is
+why** (2026-07-26). The natural way to split this leaf further is to peel
+the descent off the CM theory: a leaf `D` concluding "`(E, C)` is
+`w_125`-fixed", i.e. `E ≅ E/C`, and a leaf `C` turning that into
+`H_{−500}(j(E)) = 0`. Both halves are stated over hypotheses that are
+jointly unsatisfiable, so neither can be FALSE; the objection is that the
+cut is USELESS, in the precise sense that `C` could not then be discharged
+by CM theory. Two independent obstructions, each concrete:
+
+* *`j(E) = j(E/C)` is too weak to pin the discriminant.* Over `ℚ̄` take
+  `j = 1728`, with CM by `ℤ[i]`, and `α = 11 + 2i`, of norm
+  `11² + 2² = 125`. Factoring, `α = i·(2 − i)³` with `(2 − i)` a degree-one
+  prime above the split prime `5`, so `ℤ[i]/(α) ≅ ℤ/125` is CYCLIC and
+  `C := ker α` is a cyclic subgroup of order `125` with `E/C ≅ E`. Yet
+  `1728` is not a root of `H_{−500}` (it is the root of `H_{−4}`). So the
+  bare isomorphism carries no `−500` content; the Atkin–Lehner condition is
+  the strictly stronger `ψ² = [−125]` (equivalently `ψ̂ = −ψ`), which is
+  what forces `ℤ[√−125]`, the conductor-`5` order of discriminant `−500`.
+  Consistently with vacuity, this `C` is NOT `G_ℚ`-stable — complex
+  conjugation carries `ker α` to `ker ᾱ` — which is exactly the point: the
+  ℚ̄-geometric half of the cut retains the whole `ℚ`-rationality burden
+  instead of decoupling from it.
+* *`ψ² = [−125]` cannot be stated here at all.* It needs an endomorphism —
+  a MORPHISM of curves — and this development has no isogeny-as-morphism
+  vocabulary: `exists_quotient_isogeny` (PROVEN, this file) yields only an
+  additive `G_ℚ`-equivariant map on `ℚ̄`-points, `Velu.lean` yields explicit
+  quotient MODELS, and there is no degree, no dual isogeny, no composition
+  and no endomorphism ring anywhere in the tree. Substituting an abstract
+  additive map is not merely weaker, it is empty: `E(ℚ̄)_tors ≅ (ℚ/ℤ)²` has
+  endomorphism ring `M₂(ẑ)`, in which `[[0, −125], [1, 0]]` squares to
+  `−125` and has cyclic kernel of order `125` — on EVERY elliptic curve. A
+  cut phrased with additive maps therefore hands leaf `C` a hypothesis
+  satisfied by every curve in existence, and `C` becomes unprovable except
+  by re-proving this whole node.
+
+The conclusion is that this leaf is a genuine atom until item (1) of the
+missing-machinery list grows an isogeny/endomorphism API; the next useful
+move on this node is to build that, not to subdivide the statement.
+
 The polynomial is written out rather than named because the development has
-no Hilbert class polynomial; the coefficients are PARI/GP `polclass(-500)`
-(2026-07-26, untrusted searcher — the values are classical), and the SAME
-literal appears in the sibling leaf, which is what makes the two
+no Hilbert class polynomial; the coefficients are PARI/GP `polclass(-500)`,
+independently confirmed by Magma (see the faithfulness note above), and the
+SAME literal appears in the sibling leaf, which is what makes the two
 compose. -/
 theorem WeierstrassCurve.classPoly500_of_stable_cyclic_subgroup_order_125
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
