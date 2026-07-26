@@ -4278,7 +4278,49 @@ the one produced for `E`. A successor needs the moduli statement itself —
 that the hauptmodul is a bijection `X_0(9)(ℚ) → P¹(ℚ)` — or the cheaper
 level-`27` cut above. Do not attempt to assemble the two conjuncts from two
 separate applications of the hauptmodul node; that route is a dead end and
-this paragraph exists to say so. -/
+this paragraph exists to say so.
+
+**A SECOND TEMPTING CUT, AND IT MUST NOT BE MADE** (recorded 2026-07-26 by
+an agent who tried it first): do NOT split this leaf into "conjunct 1,
+which is free from `exists_x0Nine_hauptmodul`" plus a residual leaf
+"conjunct 2, GIVEN any rational `s` satisfying conjunct 1".  That cut
+moves the difficulty in the WRONG direction and very likely produces a
+FALSE residual leaf.
+
+The reason is the degree-`12` fact above, read the other way round.
+Conjunct 1 constrains `s` only through `j(E)`, so a rational `s`
+satisfying it names SOME cyclic `9`-subgroup of a curve with that
+`j`-invariant — not necessarily `⟨h⟩`.  But `E''` is `E/⟨h⟩`
+specifically.  A successor handed an arbitrary such `s` therefore has
+strictly LESS information than one handed the chain, and conjunct 2 need
+not hold for it.  So handing over the "free" conjunct discharges
+NOTHING: the entire content of this leaf is the pinning of `s` to `⟨h⟩`,
+and none of it is conjunct 1.  Contrast the level-`16` cut
+`exists_univCurveV_param_of_ratTwoTorsion`, where the free half really
+was a proof (step 1) and really was discharged; here there is no such
+half.
+
+WHAT A PARI SWEEP SAYS ABOUT THE PINNING (2026-07-26; `gp` is an
+untrusted searcher, so this is reconnaissance, NOT proof).  For each of
+`376` rational `s₀` — integers `±1 … ±60` and fractions `±a/b` with
+`a ≤ 15`, `b ≤ 15` — the degree-`12` polynomial
+`numerator(j₉(x) − j₉(s₀))` was factored over `ℚ`, and in EVERY case `s₀`
+was the ONLY rational root.  Two things follow, and they point the same
+way:
+
+* the pinning is not obstructed by any easy rational ambiguity, so the
+  moduli route — the hauptmodul is injective on `X_0(9)(ℚ)`, and `w₉`
+  acts on it as `s ↦ 27/s` — is the right one and is not doomed;
+* but "a singleton in `376` sampled fibres" is evidence, not a theorem,
+  and that uniqueness statement IS precisely the missing moduli input.
+  It is what a successor has to build or vendor; it will not fall out of
+  the algebra already present in this block.
+
+The same run independently re-checked the PROVEN `X0Nine.fricke_clear`
+numerically, verifying `j₉(27/s) =` the conjunct-2 expression at
+`s = 7, 5/3, −4`; all three agree, which is a small extra guard on the
+cusp normalisation that the docstring of that lemma explains is
+load-bearing. -/
 theorem WeierstrassCurve.exists_x0Nine_frickePair_of_cyclicNineChain
     (E E' E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E'.IsElliptic] [E''.IsElliptic]
     (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
