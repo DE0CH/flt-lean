@@ -6248,12 +6248,144 @@ theorem maximalIdeal_eq_comap_of_isClosed_subring_of_finite_residueField
     have hunit : IsUnit (a : A) := by simpa using hu.map C.subtype
     exact IsLocalRing.notMem_maximalIdeal.mpr hunit ha
 
-/-- **Finite generation of `𝔪' = 𝔪 ∩ R'`, at the `F` level** (LEAF — new
-2026-07-26, the SINGLE arithmetic input of Carayol's Lemme 1 here; the
-`F`-level twin of `Deformation.lean`'s PROVEN
-`fg_comap_maximalIdeal_traceSubring`): the maximal ideal of Carayol's
-closed trace subring `R' = hilbertTraceSubring ℓ 𝒟.ρ` is finitely
-generated.
+/-- **A uniform generator bound from level-wise surjections** (PROVEN,
+pure commutative algebra with no arithmetic input; another local copy of
+a `Deformation.lean` helper — `exists_uniform_span_maximalIdeal_of_forall_surjective`
+— which lives DOWNSTREAM of this module and so is unusable here; see the
+duplication-debt note in the "Formal prerequisites (local copies)"
+subsection above).
+
+If ONE fixed Noetherian local ring `S` surjects onto every quotient
+`C ⧸ J n` of a local ring `C`, then the number `r` of generators of
+`𝔪_S` bounds, UNIFORMLY in `n`, the number of elements of `𝔪_C` needed
+to generate it modulo `J n`. The proof is the obvious one: pull a
+generating family of `𝔪_S` through the surjection `S ↠ C ⧸ J n`, lift it
+along `C ↠ C ⧸ J n`, and note that the maximal ideal of a local ring maps
+onto the maximal ideal of any surjective image
+(`IsLocalRing.map_maximalIdeal_of_surjective`). The level `J n = ⊤` is
+handled separately, with the empty span. -/
+theorem exists_uniform_span_maximalIdeal_of_forall_surjective_hilbert
+    {C : Type*} [CommRing C] [IsLocalRing C]
+    {S : Type*} [CommRing S] [IsLocalRing S] [IsNoetherianRing S]
+    (J : ℕ → Ideal C)
+    (hf : ∀ n : ℕ, ∃ f : S →+* (C ⧸ J n), Function.Surjective f) :
+    ∃ r : ℕ, ∀ n : ℕ, ∃ z : Fin r → C,
+      Ideal.span (Set.range z) ≤ IsLocalRing.maximalIdeal C ∧
+        IsLocalRing.maximalIdeal C ≤ Ideal.span (Set.range z) ⊔ J n := by
+  obtain ⟨r, s, hs⟩ :=
+    Submodule.fg_iff_exists_fin_generating_family.mp
+      (IsNoetherian.noetherian (IsLocalRing.maximalIdeal S))
+  refine ⟨r, fun n => ?_⟩
+  by_cases hJ : J n = ⊤
+  · refine ⟨fun _ => 0, ?_, ?_⟩
+    · exact Ideal.span_le.mpr (by rintro x ⟨i, rfl⟩; exact Submodule.zero_mem _)
+    · rw [hJ, sup_top_eq]
+      exact le_top
+  · haveI : Nontrivial (C ⧸ J n) := Ideal.Quotient.nontrivial_iff.mpr hJ
+    obtain ⟨f, hfsurj⟩ := hf n
+    haveI : IsLocalRing (C ⧸ J n) := IsLocalRing.of_surjective' f hfsurj
+    have hq : Function.Surjective (Ideal.Quotient.mk (J n)) :=
+      Ideal.Quotient.mk_surjective
+    have hmapS : Ideal.map f (IsLocalRing.maximalIdeal S) =
+        IsLocalRing.maximalIdeal (C ⧸ J n) :=
+      IsLocalRing.map_maximalIdeal_of_surjective f hfsurj
+    have hmapC : Ideal.map (Ideal.Quotient.mk (J n)) (IsLocalRing.maximalIdeal C) =
+        IsLocalRing.maximalIdeal (C ⧸ J n) :=
+      IsLocalRing.map_maximalIdeal_of_surjective _ hq
+    have hmem : ∀ i : Fin r, f (s i) ∈
+        Ideal.map (Ideal.Quotient.mk (J n)) (IsLocalRing.maximalIdeal C) := by
+      intro i
+      rw [hmapC, ← hmapS]
+      exact Ideal.mem_map_of_mem f (by rw [← hs]; exact Ideal.subset_span ⟨i, rfl⟩)
+    choose z hz hzq using fun i => Ideal.mem_map_iff_of_surjective _ hq |>.mp (hmem i)
+    refine ⟨z, Ideal.span_le.mpr ?_, ?_⟩
+    · rintro x ⟨i, rfl⟩; exact hz i
+    · intro x hx
+      have hx' : (Ideal.Quotient.mk (J n)) x ∈
+          Ideal.map (Ideal.Quotient.mk (J n)) (Ideal.span (Set.range z)) := by
+        have h1 : Ideal.map (Ideal.Quotient.mk (J n)) (Ideal.span (Set.range z)) =
+            Ideal.span (Set.range (fun i => (Ideal.Quotient.mk (J n)) (z i))) := by
+          rw [Ideal.map_span, ← Set.range_comp]; rfl
+        have h2 : Ideal.span (Set.range (fun i => (Ideal.Quotient.mk (J n)) (z i))) =
+            IsLocalRing.maximalIdeal (C ⧸ J n) := by
+          rw [show (fun i => (Ideal.Quotient.mk (J n)) (z i)) = fun i => f (s i) from
+            funext hzq, ← hmapS, ← hs, Ideal.map_span, ← Set.range_comp]
+          rfl
+        rw [h1, h2, ← hmapC]
+        exact Ideal.mem_map_of_mem _ hx
+      have hcm := (Ideal.comap_map_of_surjective _ hq (Ideal.span (Set.range z))) ▸
+        (Ideal.mem_comap.mpr hx')
+      rwa [← RingHom.ker_eq_comap_bot, Ideal.mk_ker] at hcm
+
+/-- **Carayol's Théorème 1 at each FINITE level, over `F`** (LEAF — new
+2026-07-26; the SOLE arithmetic input of
+`fg_comap_maximalIdeal_hilbertTraceSubring` below, which is now PROVEN
+over it): ONE fixed Noetherian local ring `S` surjects onto EVERY level
+quotient `R' ⧸ (𝔪 ^ n ∩ R')` of Carayol's trace subring.
+
+This is step 1 of the `ℚ`-level route that the leaf's docstring below
+records, and it is the `F`-level twin of `Deformation.lean`'s PROVEN
+`exists_noetherianLocal_surjective_quotient_traceSubring`. The witness
+there is the WEAKLY UNIVERSAL ring of the deformation problem, which
+surjects onto every finite level because at a FINITE level the trace
+subring carries no ring-theoretic burden at all — it is finite, hence
+Noetherian; closed, hence local; and its maximal ideal is nilpotent,
+hence adic and complete. Level `0` is separate: the quotient is the zero
+ring.
+
+NOT CIRCULAR. The finite-level conjugation input is the sibling leaf
+`exists_framedGaloisRep_hilbertTraceSubring`, which takes the locality of
+the trace subring as its HYPOTHESIS `hloc` rather than proving it; at
+finite level that locality is free, which is exactly why the two may be
+used in this order.
+
+WHY THIS AND NOT THE WHOLE LEAF. Everything else in
+`fg_comap_maximalIdeal_hilbertTraceSubring` is formal and is now written
+out below: the uniform generator bound is
+`exists_uniform_span_maximalIdeal_of_forall_surjective_hilbert` above
+(pure commutative algebra), and the passage from level-wise tuples to a
+SINGLE tuple is `ProfiniteLocal.fg_comap_of_uniform_span`, already
+UPSTREAM of this module. So this leaf is where the counterexample
+`k[[x, xy, xy², …]] ⊂ k[[x,y]]` bites, and the Carayol hypotheses
+(`hℓ5`, irreducibility of `ρbar|_{G_F}`, and the local conditions inside
+`𝒟.isHilbertHardlyRamified`) are load-bearing HERE and nowhere else in
+the package. -/
+theorem exists_noetherianLocal_surjective_quotient_hilbertTraceSubring
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V} (hlk : ((ℓ : ℕ) : k) = 0)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
+    ∃ (S : Type u) (_ : CommRing S) (_ : IsLocalRing S) (_ : IsNoetherianRing S),
+      ∀ n : ℕ, ∃ f : S →+* (hilbertTraceSubring ℓ 𝒟.ρ ⧸
+          Ideal.comap (hilbertTraceSubring ℓ 𝒟.ρ).subtype
+            ((IsLocalRing.maximalIdeal 𝒟.R) ^ n)),
+        Function.Surjective f :=
+  sorry
+
+/-- **Finite generation of `𝔪' = 𝔪 ∩ R'`, at the `F` level** (PROVEN
+2026-07-26 over the SINGLE arithmetic leaf
+`exists_noetherianLocal_surjective_quotient_hilbertTraceSubring` above —
+it was itself a leaf until then; the `F`-level twin of
+`Deformation.lean`'s PROVEN `fg_comap_maximalIdeal_traceSubring`): the
+maximal ideal of Carayol's closed trace subring
+`R' = hilbertTraceSubring ℓ 𝒟.ρ` is finitely generated.
+
+THE THREE-STEP ROUTE RECORDED BELOW IS NOW EXECUTED, and only step 1 is
+left open. Step 1 is the leaf above; step 2 is
+`exists_uniform_span_maximalIdeal_of_forall_surjective_hilbert`, proven
+above as pure commutative algebra; step 3 is
+`ProfiniteLocal.fg_comap_of_uniform_span`, already UPSTREAM. What this
+proof adds is the profiniteness package the transfer needs: the residue
+field of `𝒟.R` is `k`, hence finite, so every `𝒟.R ⧸ 𝔪 ^ n` is finite
+and `𝒟.R` is compact (`compactSpace_of_isAdic_of_finite_quotient`) and
+Hausdorff (`t2Space_of_isAdic_of_isHausdorff`); `R'` is a topological
+closure, hence closed; and `𝔪' = 𝔪 ∩ R'`
+(`maximalIdeal_eq_comap_of_isClosed_subring_of_finite_residueField`),
+which is what lets the level-wise tuples of step 2 be read as tuples for
+`𝔪'`.
 
 **THIS IS THE WHOLE CONTENT of `exists_isLocalRing_hilbertTraceSubring`
 below**, which is otherwise soft: `R'` is a closed subring of the
@@ -6319,11 +6451,55 @@ theorem fg_comap_maximalIdeal_hilbertTraceSubring
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
     (Ideal.comap (hilbertTraceSubring ℓ 𝒟.ρ).subtype
-      (IsLocalRing.maximalIdeal 𝒟.R)).FG :=
-  sorry
+      (IsLocalRing.maximalIdeal 𝒟.R)).FG := by
+  classical
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.R := 𝒟.isAdicComplete
+  haveI : IsHausdorff (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.R :=
+    (𝒟.isAdicComplete).toIsHausdorff
+  -- the residue field of `𝒟.R` is `k`, hence FINITE
+  have hker : RingHom.ker 𝒟.π = IsLocalRing.maximalIdeal 𝒟.R :=
+    IsLocalRing.ker_eq_maximalIdeal 𝒟.π 𝒟.π_surjective
+  haveI hresfin : Finite (IsLocalRing.ResidueField 𝒟.R) := by
+    have hlift : IsLocalRing.ResidueField 𝒟.R →+* k :=
+      Ideal.Quotient.lift (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.π
+        (fun a ha => by rwa [← RingHom.mem_ker, hker])
+    exact Finite.of_injective hlift hlift.injective
+  haveI hqfin : Finite (𝒟.R ⧸ IsLocalRing.maximalIdeal 𝒟.R) := hresfin
+  -- **`𝒟.R` is profinite**, and `R'` is CLOSED in it
+  haveI hT2 : T2Space 𝒟.R := t2Space_of_isAdic_of_isHausdorff 𝒟.isAdic
+  have hmfg : (IsLocalRing.maximalIdeal 𝒟.R).FG :=
+    IsNoetherian.noetherian (IsLocalRing.maximalIdeal 𝒟.R)
+  haveI hcompact : CompactSpace 𝒟.R :=
+    _root_.ProfiniteLocal.compactSpace_of_isAdic_of_finite_quotient 𝒟.isAdic
+      (fun n => Ideal.finite_quotient_pow hmfg n)
+  have hclosed : IsClosed ((hilbertTraceSubring ℓ 𝒟.ρ : Subring 𝒟.R) :
+      Set 𝒟.R) := Subring.isClosed_topologicalClosure _
+  haveI hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ) :=
+    isLocalRing_of_isClosed_subring_of_finite_residueField 𝒟.isAdic hclosed
+  have hmax : IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ) =
+      Ideal.comap (hilbertTraceSubring ℓ 𝒟.ρ).subtype
+        (IsLocalRing.maximalIdeal 𝒟.R) :=
+    maximalIdeal_eq_comap_of_isClosed_subring_of_finite_residueField 𝒟.isAdic
+      hclosed
+  -- **the arithmetic input**: one Noetherian local ring onto every level
+  obtain ⟨S, _, _, _, hS⟩ :=
+    exists_noetherianLocal_surjective_quotient_hilbertTraceSubring ℓ hℓ5 F hlk
+      hirrF 𝒟
+  -- **the uniform bound**, then ONE tuple by compactness of `R'ʳ`
+  obtain ⟨r, hr⟩ :=
+    exists_uniform_span_maximalIdeal_of_forall_surjective_hilbert (S := S)
+      (fun n => Ideal.comap (hilbertTraceSubring ℓ 𝒟.ρ).subtype
+        ((IsLocalRing.maximalIdeal 𝒟.R) ^ n)) hS
+  refine _root_.ProfiniteLocal.fg_comap_of_uniform_span 𝒟.isAdic _ hclosed
+    (r := r) (fun n => ?_)
+  obtain ⟨z, hz1, hz2⟩ := hr n
+  rw [hmax] at hz1 hz2
+  exact ⟨z, hz1, hz2⟩
 
-/-- **Carayol's Lemme 1 at the `F` level** (PROVEN 2026-07-26 over the
-SINGLE arithmetic leaf `fg_comap_maximalIdeal_hilbertTraceSubring` above;
+/-- **Carayol's Lemme 1 at the `F` level** (PROVEN 2026-07-26 over
+`fg_comap_maximalIdeal_hilbertTraceSubring` above — which is ITSELF now
+proven, over the single arithmetic leaf
+`exists_noetherianLocal_surjective_quotient_hilbertTraceSubring`;
 the `F`-level twin of `Deformation.lean`'s `exists_isLocalRing_traceSubring`,
 which is PROVEN there over its own four-way cut): the closed trace subring
 `R' = hilbertTraceSubring ℓ 𝒟.ρ` is again a COEFFICIENT RING — local,
