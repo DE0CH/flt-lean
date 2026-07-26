@@ -386,6 +386,25 @@ public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
 -- attached to a Galois group of a number field, which is what makes the
 -- ramification-theoretic lemmas above applicable to `Gal(L/ℚ)` acting on `𝓞 L`.
 public import Mathlib.FieldTheory.Galois.IsGaloisGroup
+-- The flat-base-change layer behind the Eisenstein E2b′-flat arithmetic leaf
+-- `exists_equivariantHomFamily_spanFullRank_of_generic_iso` below:
+-- `Module.Flat.ker_lTensor_eq` (flat base change commutes with kernels),
+-- `TensorProduct.piRight` (tensor commutes with finite products),
+-- `Algebra.TensorProduct.equivPiOfFiniteBasis` (base change of a finite free
+-- module, used both for artinianness of `Ω ⊗ M` and for injectivity of
+-- `x ↦ 1 ⊗ x`), `IsLocalization.flat` + `Module.Flat.trans` (a field
+-- extension of a domain is flat) and `TensorProduct.exists_finset`.
+-- PUBLIC because the statements of the four helper lemmas added with that
+-- leaf mention `AlgebraTensorModule.lTensor` and `Module.Flat`, and this
+-- file is one `@[expose] public section`.
+public import Mathlib.RingTheory.Flat.Equalizer
+public import Mathlib.RingTheory.Flat.Localization
+public import Mathlib.RingTheory.Flat.Stability
+public import Mathlib.RingTheory.Localization.FractionRing
+public import Mathlib.LinearAlgebra.TensorProduct.Pi
+public import Mathlib.LinearAlgebra.TensorProduct.Free
+public import Mathlib.LinearAlgebra.TensorProduct.Finiteness
+public import Mathlib.LinearAlgebra.Finsupp.VectorSpace
 
 @[expose] public section
 
@@ -13187,6 +13206,260 @@ theorem isOpen_span_pow_p {A : Type*} [CommRing A] [Algebra ℤ_[p] A]
   rw [← himg]
   exact hopenmap _ hSopen
 
+/-- **A field extension of a domain is flat** (PROVEN 2026-07-26): if `A` is
+a domain and `Ω` is a FIELD `A`-algebra into which `A` embeds, then `Ω` is a
+flat `A`-module.
+
+`A` here is NOT assumed integrally closed — in this development it is a
+module-finite `ℤ_p`-order, which need not be a DVR — so "torsion-free implies
+flat" is unavailable. The argument instead factors `A → Ω` through the
+fraction field: `A → Frac A` is a localization, hence flat
+(`IsLocalization.flat`); `Frac A → Ω` exists because `hinj` makes
+`IsFractionRing.lift` applicable, and `Ω` is free (indeed a vector space) over
+the field `Frac A`; `Module.Flat.trans` composes the two. -/
+theorem flat_of_injective_algebraMap_to_field
+    {A : Type*} [CommRing A] [IsDomain A] {Ω : Type*} [Field Ω] [Algebra A Ω]
+    (hinj : Function.Injective (algebraMap A Ω)) : Module.Flat A Ω := by
+  letI : Algebra (FractionRing A) Ω :=
+    (IsFractionRing.lift (g := algebraMap A Ω) hinj).toAlgebra
+  haveI : IsScalarTower A (FractionRing A) Ω := by
+    refine IsScalarTower.of_algebraMap_eq fun x => ?_
+    exact (IsFractionRing.lift_algebraMap hinj x).symm
+  haveI : Module.Flat A (FractionRing A) :=
+    IsLocalization.flat (FractionRing A) (nonZeroDivisors A)
+  exact Module.Flat.trans A (FractionRing A) Ω
+
+/-- **Flat descent for an ARBITRARY family of kernels over a field**
+(PROVEN 2026-07-26; the mathematical core of the Eisenstein E2b′-flat
+arithmetic leaf below, stated as pure commutative algebra): let `A` be a
+domain, `Ω` a field `A`-algebra into which `A` embeds, `M` a finite FREE
+`A`-module and `D : G → End_A M` an arbitrary — in the application, PROFINITE
+— family of endomorphisms. Then, inside `Ω ⊗_A M`,
+
+  `⋂_σ ker (1 ⊗ D σ)  =  Ω · (⋂_σ ker (D σ))`.
+
+`≥` is formal. `≤` is the content, and the point is that neither flatness nor
+noetherianness gives it directly: flat base change commutes with the kernel of
+ONE map (`Module.Flat.ker_lTensor_eq`) and hence with FINITE intersections, but
+an infinite intersection of submodules is in general strictly smaller than
+every finite subintersection — over `A` there need be no finite `F` with
+`⋂_{σ ∈ F} ker (D σ) = ⋂_{σ ∈ G} ker (D σ)` (already false for `A = ℤ_p`,
+`M = ℤ_p`, `D_n =` multiplication by `p^n`). An EARLIER draft of the leaf below
+asserted exactly that, justified by noetherianness; it is FALSE, since
+noetherian gives maximal elements of a family of submodules, not minimal ones.
+
+What is true is the same statement one level up, over `Ω`: `Ω ⊗_A M` is a
+finite-dimensional `Ω`-vector space, hence `IsArtinian`, so the family of
+FINITE subintersections `K_F := ⋂_{σ ∈ F} ker (1 ⊗ D σ)` has a MINIMAL member
+`K_{F₀}`, and minimality against `F₀ ∪ {σ}` forces `K_{F₀} ⊆ ker (1 ⊗ D σ)` for
+every `σ ∈ G`. So the infinite intersection is already a finite one after base
+change.
+
+Transporting that back to `A` is what makes the argument close: bundle the
+finitely many `D σ`, `σ ∈ F₀`, into a single `d : M →ₗ[A] (F₀ → M)`, so that
+`ker d = ⋂_{σ ∈ F₀} ker (D σ)` and — by `TensorProduct.piRight`, tensor
+commuting with FINITE products — `ker (1 ⊗ d) = K_{F₀}`. Flat base change of
+that single kernel gives `K_{F₀} = Ω · ker d`. Finally `ker d` is already the
+FULL intersection over `G`: for `x ∈ ker d` one has `1 ⊗ x ∈ K_{F₀}`, hence
+`1 ⊗ D σ x = 0` for every `σ ∈ G`, and `x ↦ 1 ⊗ x` is injective because `M` is
+`A`-free and `A ↪ Ω` (`Algebra.TensorProduct.equivPiOfFiniteBasis` reads the
+coordinates off as `algebraMap ∘ b.repr x`). -/
+theorem iInf_ker_lTensor_eq_range_lTensor_iInf_ker
+    {A : Type*} [CommRing A] [IsDomain A]
+    {Ω : Type*} [Field Ω] [Algebra A Ω]
+    (hinj : Function.Injective (algebraMap A Ω))
+    {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M] [Module.Free A M]
+    {G : Type*} (D : G → (M →ₗ[A] M)) :
+    (⨅ σ : G, LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω (D σ))) =
+      LinearMap.range (TensorProduct.AlgebraTensorModule.lTensor Ω Ω
+        (⨅ σ : G, LinearMap.ker (D σ)).subtype) := by
+  classical
+  haveI : Module.Flat A Ω := flat_of_injective_algebraMap_to_field hinj
+  set κ := Module.Free.ChooseBasisIndex A M with hκ
+  haveI : Fintype κ := inferInstanceAs (Fintype (Module.Free.ChooseBasisIndex A M))
+  set b : Module.Basis κ A M := Module.Free.chooseBasis A M with hb
+  set eq1 : (Ω ⊗[A] M) ≃ₗ[Ω] (κ → Ω) :=
+    Algebra.TensorProduct.equivPiOfFiniteBasis Ω b with heq1
+  haveI : IsArtinian Ω (Ω ⊗[A] M) := isArtinian_of_linearEquiv eq1.symm
+  have hmu : ∀ x : M, (1 : Ω) ⊗ₜ[A] x = 0 → x = 0 := by
+    intro x hx
+    have h := congrArg eq1 hx
+    rw [map_zero] at h
+    have hcoord : ∀ j, algebraMap A Ω (b.repr x j) = 0 := by
+      intro j
+      have hj := congrFun h j
+      simpa [heq1, Algebra.smul_def] using hj
+    have hrepr : b.repr x = 0 := by
+      ext j
+      exact hinj (by simpa using hcoord j)
+    simpa using congrArg b.repr.symm hrepr
+  -- the family of finite subintersections, and a minimal one
+  set KF : Finset G → Submodule Ω (Ω ⊗[A] M) := fun F =>
+    ⨅ σ ∈ F, LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω (D σ)) with hKF
+  obtain ⟨K0, hK0mem, hmin⟩ :=
+    IsArtinian.set_has_minimal (Set.range KF) ⟨KF ∅, ⟨∅, rfl⟩⟩
+  obtain ⟨F0, hF0⟩ := hK0mem
+  have hKF0 : ∀ σ : G, KF F0 ≤ LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω (D σ)) := by
+    intro σ
+    have hsub : KF (insert σ F0) ≤ KF F0 := by
+      rw [hKF]
+      exact biInf_mono (Finset.subset_insert σ F0)
+    have hnlt : ¬ KF (insert σ F0) < K0 := hmin _ ⟨insert σ F0, rfl⟩
+    rw [← hF0] at hnlt
+    have heq : KF (insert σ F0) = KF F0 := eq_of_le_of_not_lt hsub hnlt
+    rw [← heq, hKF]
+    exact biInf_le _ (Finset.mem_insert_self σ F0)
+  -- the `F0`-indexed bundle of the `D σ`
+  set dF : M →ₗ[A] (↥(F0 : Finset G) → M) :=
+    LinearMap.pi (fun σ : ↥(F0 : Finset G) => D (σ : G)) with hdF
+  have hkerdF : LinearMap.ker dF = ⨅ σ : ↥(F0 : Finset G), LinearMap.ker (D (σ : G)) := by
+    ext x
+    simp only [LinearMap.mem_ker, hdF, LinearMap.pi_apply, Submodule.mem_iInf,
+      funext_iff, Pi.zero_apply]
+  have hpi : ∀ (z : Ω ⊗[A] M) (σ : ↥(F0 : Finset G)),
+      (TensorProduct.piRight A Ω Ω (fun _ : ↥(F0 : Finset G) => M))
+        (TensorProduct.AlgebraTensorModule.lTensor Ω Ω dF z) σ
+        = TensorProduct.AlgebraTensorModule.lTensor Ω Ω (D (σ : G)) z := by
+    intro z σ
+    induction z using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a x => simp [hdF]
+    | add x y hx hy => simp only [map_add, Pi.add_apply, hx, hy]
+  have hkerlt : LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω dF)
+      = ⨅ σ : ↥(F0 : Finset G),
+          LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω (D (σ : G))) := by
+    ext z
+    rw [LinearMap.mem_ker, Submodule.mem_iInf]
+    constructor
+    · intro h σ
+      rw [LinearMap.mem_ker, ← hpi z σ, h, map_zero]
+      rfl
+    · intro h
+      refine (TensorProduct.piRight A Ω Ω (fun _ : ↥(F0 : Finset G) => M)).injective ?_
+      rw [map_zero]
+      funext σ
+      rw [hpi z σ]
+      exact LinearMap.mem_ker.mp (h σ)
+  have hKFsub : KF F0 = ⨅ σ : ↥(F0 : Finset G),
+      LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω (D (σ : G))) := by
+    rw [hKF]
+    exact iInf_subtype'
+  -- the full intersection over `G` already equals the `F0`-intersection
+  have hTeq : (⨅ σ : G, LinearMap.ker (D σ)) = LinearMap.ker dF := by
+    refine le_antisymm ?_ ?_
+    · rw [hkerdF]
+      exact le_iInf fun σ => iInf_le _ (σ : G)
+    · intro x hx
+      rw [Submodule.mem_iInf]
+      intro σ
+      rw [LinearMap.mem_ker]
+      refine hmu _ ?_
+      have h1 : (1 : Ω) ⊗ₜ[A] x ∈ LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω dF) := by
+        rw [LinearMap.mem_ker, TensorProduct.AlgebraTensorModule.lTensor_tmul,
+          LinearMap.mem_ker.mp hx, TensorProduct.tmul_zero]
+      rw [hkerlt, ← hKFsub] at h1
+      have h2 := hKF0 σ h1
+      rw [LinearMap.mem_ker, TensorProduct.AlgebraTensorModule.lTensor_tmul] at h2
+      exact h2
+  rw [hTeq, ← Module.Flat.ker_lTensor_eq (S := Ω) (M := Ω) dF, hkerlt, ← hKFsub]
+  refine le_antisymm ?_ (le_iInf fun σ => ?_)
+  · rw [hKFsub]
+    exact le_iInf fun σ => iInf_le _ (σ : G)
+  · exact hKF0 σ
+
+/-- **A nonzero element of a domain module-finite over `ℤ_p` divides a power
+of `p`** (PROVEN 2026-07-26): if `O` is a domain and a module-finite
+`ℤ_p`-algebra and `a ≠ 0` in `O`, then `p^c ∈ a·O` for some `c`.
+
+Note that `algebraMap ℤ_[p] O` is NOT assumed injective — if it is not, `O` is
+an `𝔽_p`-algebra, `(p : O) = 0` and the statement is trivially true; the proof
+below covers both cases uniformly and never needs the distinction.
+
+Proof: `a` is integral (`Module.Finite`), so it kills a monic `P`. Split off
+the `X`-part, `P = X^m · Q` with `Q.coeff 0 ≠ 0`
+(`Polynomial.exists_eq_pow_rootMultiplicity_mul_and_not_dvd` at `0`, plus
+`Polynomial.X_dvd_iff`); since `O` is a domain and `a ≠ 0`, `Q` still kills `a`.
+Then `Q = Q.divX · X + C (Q.coeff 0)` evaluates to
+`algebraMap (Q.coeff 0) = a · (−aeval a Q.divX)`, so a NONZERO element of `ℤ_p`
+lands in `a·O`; and `ℤ_p` is a DVR, so that element is a unit times `p^c`
+(`IsDiscreteValuationRing.eq_unit_mul_pow_irreducible` with
+`PadicInt.irreducible_p`). -/
+theorem exists_pow_natCast_eq_mul_of_ne_zero
+    {O : Type*} [CommRing O] [IsDomain O] [Algebra ℤ_[p] O] [Module.Finite ℤ_[p] O]
+    {a : O} (ha : a ≠ 0) : ∃ (c : ℕ) (b : O), (p : O) ^ c = a * b := by
+  classical
+  haveI : Algebra.IsIntegral ℤ_[p] O := Algebra.IsIntegral.of_finite ℤ_[p] O
+  obtain ⟨P, hPmonic, hPa⟩ := Algebra.IsIntegral.isIntegral (R := ℤ_[p]) a
+  have hPaeval : Polynomial.aeval a P = 0 := hPa
+  obtain ⟨Q, hPQ, hQnd⟩ :=
+    Polynomial.exists_eq_pow_rootMultiplicity_mul_and_not_dvd P hPmonic.ne_zero 0
+  simp only [map_zero, sub_zero] at hPQ hQnd
+  have hQ0 : Q.coeff 0 ≠ 0 := fun h => hQnd (Polynomial.X_dvd_iff.mpr h)
+  have hQaeval : Polynomial.aeval a Q = 0 := by
+    have h := hPaeval
+    rw [hPQ, map_mul, map_pow, Polynomial.aeval_X] at h
+    rcases mul_eq_zero.mp h with h1 | h1
+    · exact absurd h1 (pow_ne_zero _ ha)
+    · exact h1
+  have hkey : algebraMap ℤ_[p] O (Q.coeff 0) = a * (-(Polynomial.aeval a Q.divX)) := by
+    have hd := congrArg (Polynomial.aeval a) (Polynomial.divX_mul_X_add Q)
+    rw [map_add, map_mul, Polynomial.aeval_X, Polynomial.aeval_C, hQaeval] at hd
+    linear_combination hd
+  obtain ⟨n, u, hu⟩ :=
+    IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hQ0 PadicInt.irreducible_p
+  refine ⟨n, algebraMap ℤ_[p] O ((u⁻¹ : ℤ_[p]ˣ) : ℤ_[p]) * (-(Polynomial.aeval a Q.divX)), ?_⟩
+  have h1 : ((p : O)) ^ n
+      = algebraMap ℤ_[p] O ((u⁻¹ : ℤ_[p]ˣ) : ℤ_[p]) * algebraMap ℤ_[p] O (Q.coeff 0) := by
+    rw [hu, map_mul, map_pow, map_natCast, ← mul_assoc, ← map_mul]
+    simp
+  rw [h1, hkey]
+  ring
+
+/-- **A vector killed by `Ω ⊗ −` is `p`-power torsion** (PROVEN 2026-07-26):
+if `O` is a domain, module-finite over `ℤ_p`, embedded in a field `Ω`, and
+`q` is an element of an `O`-module `Q` with `1 ⊗ q = 0` in `Ω ⊗_O Q`, then
+`p^c · q = 0` for some `c`. NO finiteness is needed on `Q`.
+
+Proof: `Ω` is flat over `O` (`flat_of_injective_algebraMap_to_field`), so
+`Module.Flat.ker_lTensor_eq` applied to `g : O →ₗ[O] Q`, `x ↦ x • q`, turns
+`1 ⊗ 1 ∈ ker (1 ⊗ g)` into `1 ⊗ 1 ∈ Ω · ker g`. Were `ker g = Ann q` zero,
+that range would be `⊥` and `1 ⊗ 1 = 0` in `Ω ⊗_O O ≅ Ω`, i.e. `1 = 0`. So
+`Ann q ≠ 0`; a nonzero annihilator divides a power of `p`
+(`exists_pow_natCast_eq_mul_of_ne_zero`), which therefore annihilates `q`. -/
+theorem exists_pow_natCast_smul_eq_zero_of_one_tmul_eq_zero
+    {O : Type*} [CommRing O] [IsDomain O] [Algebra ℤ_[p] O] [Module.Finite ℤ_[p] O]
+    {Ω : Type*} [Field Ω] [Algebra O Ω] (hOinj : Function.Injective (algebraMap O Ω))
+    {Q : Type*} [AddCommGroup Q] [Module O Q] (q : Q)
+    (hq : (1 : Ω) ⊗ₜ[O] q = 0) :
+    ∃ c : ℕ, ((p : O) ^ c) • q = 0 := by
+  classical
+  haveI : Module.Flat O Ω := flat_of_injective_algebraMap_to_field hOinj
+  have h1 : (1 : Ω) ⊗ₜ[O] (1 : O) ∈ LinearMap.ker
+      (TensorProduct.AlgebraTensorModule.lTensor Ω Ω (LinearMap.toSpanSingleton O Q q)) := by
+    rw [LinearMap.mem_ker, TensorProduct.AlgebraTensorModule.lTensor_tmul,
+      LinearMap.toSpanSingleton_apply, one_smul]
+    exact hq
+  rw [Module.Flat.ker_lTensor_eq] at h1
+  have hne : LinearMap.ker (LinearMap.toSpanSingleton O Q q) ≠ ⊥ := by
+    intro hbot
+    rw [hbot] at h1
+    have hz : (TensorProduct.AlgebraTensorModule.lTensor Ω Ω ((⊥ : Submodule O O).subtype)) = 0 := by
+      have hb : ((⊥ : Submodule O O).subtype) = 0 := by
+        refine LinearMap.ext fun x => ?_
+        exact (Submodule.mem_bot O).mp x.2
+      rw [hb, map_zero]
+    rw [hz, LinearMap.range_zero, Submodule.mem_bot] at h1
+    have h2 := congrArg (TensorProduct.rid O Ω) h1
+    rw [map_zero, TensorProduct.rid_tmul, one_smul] at h2
+    exact one_ne_zero h2
+  obtain ⟨a, hamem, ha0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hne
+  obtain ⟨c, b, hcb⟩ := exists_pow_natCast_eq_mul_of_ne_zero (p := p) ha0
+  refine ⟨c, ?_⟩
+  have haq : a • q = 0 := by
+    have h := LinearMap.mem_ker.mp hamem
+    rwa [LinearMap.toSpanSingleton_apply] at h
+  rw [hcb, mul_comm, mul_smul, haq, smul_zero]
+
 /-- **Equivariant `O`-span cover of the `O`-lattice by finitely many
 `Γ ℚ`-maps out of `V`** (Eisenstein pillar E2b′-flat, arithmetic half;
 CARVED 2026-07-26 out of `exists_equivariantCover_of_generic_iso`, whose
@@ -13201,6 +13474,25 @@ Write `Λ := Fin 2 → O`, `Ω := AlgebraicClosure ℚ_p`, and let
 to be the standard inclusion `ℤ_p ⊆ ℚ_p ⊆ Ω`; the argument below is
 written for an arbitrary `j` and needs only that `Ω` is an algebraically
 closed field of characteristic zero. Put `k := j(ℚ_p) ⊆ Ω`.
+
+PROVEN 2026-07-26, over the three general-algebra lemmas immediately above
+(`flat_of_injective_algebraMap_to_field`,
+`iInf_ker_lTensor_eq_range_lTensor_iInf_ker`,
+`exists_pow_natCast_smul_eq_zero_of_one_tmul_eq_zero`), none of which
+mentions Galois theory. The route below is the one that was carried out,
+with ONE correction, recorded in full because the erroneous version is a
+plausible thing to re-derive: see the CORRECTION note inside step 2.
+
+Implementation note: the `Hom`-module `P` of the route is handled in
+COORDINATES, as `ι → Λ` for a `ℤ_p`-basis `ι` of `V` (`Basis.constr O` is
+already an `O`-linear equivalence `(ι → Λ) ≃ₗ[O] (V →ₗ[ℤ_p] Λ)` — the
+`O`-linearity of step 2 is exactly its `SMulCommClass ℤ_p O Λ` hypothesis).
+That removes the need for any base-change-of-`Hom` isomorphism, and with it
+the pin's missing bijectivity lemma for `LinearMap.tensorProduct`: the only
+tensor identity used is `TensorProduct.piRight`, which is an equivalence for
+a FINITE index. The `ℤ_p`-module structure on `V` is
+`Module.restrictScalars ℤ_[p] R V` (there is no ambient instance, and the
+statement's `(algebraMap ℤ_[p] R a) • x` is definitionally its `a • x`).
 
 ROUTE — ELEMENTARY, and much cheaper than the conjugate-fibre route
 recorded on the parent (see WHY, below). No `p`-adic Hodge theory, no
@@ -13218,8 +13510,21 @@ recorded on the parent (see WHY, below). No `p`-adic Hodge theory, no
    `a • φ` is equivariant whenever `φ` is. *This is the observation the
    whole simplification rests on.* `P ≅ Λ ^ (rank_{ℤ_p} V)` is finite
    free over `O`, and `T = ⋂_σ ker (φ ↦ φ ∘ ρ σ − ρO σ ∘ φ)` is an
-   intersection of `O`-submodules; `O` is noetherian, so that
-   intersection is already a FINITE subintersection.
+   intersection of `O`-submodules.
+
+   **CORRECTION (2026-07-26).** The original text continued "`O` is
+   noetherian, so that intersection is already a FINITE subintersection".
+   That is FALSE: noetherianness produces MAXIMAL elements of a family of
+   submodules, not minimal ones, and an infinite intersection can be
+   strictly smaller than every finite subintersection — `⋂_n p^n ℤ_p = 0`
+   while each finite subintersection is `p^N ℤ_p ≠ 0`. The repair does not
+   change any other step: the finite subintersection is achieved AFTER base
+   change, over the field `Ω`, where `Ω ⊗_O P` is a finite-dimensional
+   vector space and hence artinian, so the family of finite subintersections
+   has a MINIMAL member. `iInf_ker_lTensor_eq_range_lTensor_iInf_ker` above
+   packages exactly this, and also shows that the finite subintersection
+   over `O` selected this way is already the full one (because
+   `x ↦ 1 ⊗ x` is injective on a free `A`-module when `A ↪ Ω`).
 3. **Descent along the single embedding `ι : O → Ω`.** `Ω` is flat over
    `O`: `O → K_O := O[1/p]` is a localization and, `K_O` being a finite
    field extension of `k` (a finite `k`-algebra that is a domain),
@@ -13274,28 +13579,28 @@ flat descent of a `Hom` module along `O → Ω`. A twist of `ρO` by an
 unramified character changes `e`'s existence, not the descent, so the
 counterexample shape cannot arise.
 
-MATHLIB POINTERS for the two technical steps (checked against our pin
-2026-07-26, so start here rather than building the machinery):
-* step 3, flat base change of a kernel/equaliser:
-  `Mathlib/RingTheory/Flat/Equalizer.lean` — `LinearMap.tensorKerEquiv`
-  (`M ⊗[R] ker f ≃ ker (1 ⊗ f)` for `M` flat) and
-  `LinearMap.tensorEqLocusEquiv` (the same for `LinearMap.eqLocus`, which
-  is the shape `φ ∘ ρ σ = ρO σ ∘ φ` takes directly), together with
-  `Module.Flat.ker_lTensor_eq` / `Module.Flat.eqLocus_lTensor_eq`.
-* step 3, base change of a `Hom` module: `LinearMap.tensorProduct` in
-  `Mathlib/RingTheory/TensorProduct/Maps.lean` is the natural map
-  `A ⊗[R] (M →ₗ[R] N) →ₗ[A] (A ⊗[R] M →ₗ[A] A ⊗[R] N)`. WARNING: the pin
-  carries NO bijectivity lemma for it, so that has to be proved here —
-  for `M` finite FREE (which is what step 1 establishes for `V` over
-  `ℤ_p`) by choosing a basis and reducing to
-  `Ω ⊗_O Λ^m ≅ (Ω ⊗_O Λ)^m`.
-* step 6, "finite `ℤ_p`-module, pointwise `p`-power torsion ⟹ uniformly
-  killed by one `p^c`": `Module.Finite.exists_fin'` for the generators,
-  then `IsDiscreteValuationRing.eq_unit_mul_pow_irreducible` together
-  with `PadicInt.irreducible_p` to turn each annihilator into a `p`-power
-  (this is exactly the manoeuvre already used in
-  `exists_flatIsogenousLattice_of_equivariantCover` above, to prove
-  `algebraMap ℤ_[p] O` injective).
+MATHLIB INPUTS ACTUALLY USED (recorded so the next reader does not repeat
+the search):
+* step 3, flat base change of a kernel: `Module.Flat.ker_lTensor_eq` in
+  `Mathlib/RingTheory/Flat/Equalizer.lean`. `LinearMap.tensorEqLocusEquiv`
+  in the same file is the `eqLocus` version and was NOT needed — one map
+  per `σ`, bundled over the chosen finite `F₀` into a single kernel, is
+  enough. `LinearMap.tensorProduct` and its missing bijectivity lemma were
+  likewise not needed, see the implementation note above.
+* step 3, tensor vs finite products: `TensorProduct.piRight`.
+* the finite-dimensional input: `Algebra.TensorProduct.equivPiOfFiniteBasis`
+  (`Mathlib/LinearAlgebra/TensorProduct/Free.lean`) gives both
+  `IsArtinian Ω (Ω ⊗_O P)` and the injectivity of `x ↦ 1 ⊗ x`;
+  `IsArtinian.set_has_minimal` supplies the minimal finite subintersection.
+* flatness of `O → Ω`: `IsLocalization.flat` + `Module.Flat.trans` through
+  `FractionRing O`. `O` is a module-finite `ℤ_p`-order and need NOT be
+  integrally closed, so no "torsion-free ⟹ flat" shortcut exists.
+* step 6, `p`-power torsion: `Polynomial.exists_eq_pow_rootMultiplicity_mul_and_not_dvd`
+  + `Polynomial.divX_mul_X_add` to produce a nonzero element of `ℤ_p` inside
+  `a·O`, then `IsDiscreteValuationRing.eq_unit_mul_pow_irreducible` with
+  `PadicInt.irreducible_p`. Uniformity of `c` is read off the two-element
+  `O`-basis of `Λ = Fin 2 → O`, so `Module.Finite.exists_fin'` was not
+  needed either.
 
 SOUNDNESS: the hypothesis set is classically INHABITED (`O = R`, `ρO` a
 frame of `ρ`, `e` the identity — then `N = 1`, `c = 0`, `φ 0` the frame
@@ -13324,8 +13629,252 @@ theorem exists_equivariantHomFamily_spanFullRank_of_generic_iso
       (∀ (i : Fin N) (σ : Field.absoluteGaloisGroup ℚ) (x : V),
         φ i (ρ σ x) = ρO σ (φ i x)) ∧
       (∀ y : Fin 2 → O, (p : ℤ_[p]) ^ c • y ∈
-        Submodule.span O (⋃ i, Set.range (φ i))) :=
-  sorry
+        Submodule.span O (⋃ i, Set.range (φ i))) := by
+  classical
+  -- ## Step 1: `ℤ_p` embeds into `O` and into `R`.
+  have hpne : ((p : ℕ) : AlgebraicClosure ℚ_[p]) ≠ 0 :=
+    Nat.cast_ne_zero.mpr hp.out.ne_zero
+  obtain ⟨f, hf⟩ : ∃ f : ℤ_[p] →+* AlgebraicClosure ℚ_[p],
+      ∀ x, f x = algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) :=
+    ⟨(algebraMap O (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] O), fun _ => rfl⟩
+  have hfp : f ((p : ℕ) : ℤ_[p]) = ((p : ℕ) : AlgebraicClosure ℚ_[p]) := by
+    rw [map_natCast]
+  have hjinj : Function.Injective f := by
+    rw [RingHom.injective_iff_ker_eq_bot]
+    by_contra hne
+    obtain ⟨n, hn⟩ := PadicInt.ideal_eq_span_pow_p hne
+    have hmem : (((p : ℕ) : ℤ_[p]) ^ n) ∈ RingHom.ker f := by
+      rw [hn]; exact Ideal.mem_span_singleton_self _
+    rw [RingHom.mem_ker, map_pow, hfp] at hmem
+    exact hpne (pow_eq_zero_iff'.mp hmem).1
+  have hZpO : Function.Injective (algebraMap ℤ_[p] O) := by
+    intro x y hxy
+    exact hjinj (by rw [hf, hf, hxy])
+  have hZpR : Function.Injective (algebraMap ℤ_[p] R) := by
+    intro x y hxy
+    refine hjinj ?_
+    rw [hf, hf, hZOcompat, hZOcompat, hxy]
+  -- ## Step 2: `V` is a finite free `ℤ_p`-module.
+  letI : Module ℤ_[p] V := Module.restrictScalars ℤ_[p] R V
+  haveI : IsScalarTower ℤ_[p] R V := IsScalarTower.restrictScalars ℤ_[p] R V
+  haveI : Module.Finite ℤ_[p] V := Module.Finite.trans R V
+  haveI : Module.IsTorsionFree ℤ_[p] R :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZpR
+  haveI : Module.Free ℤ_[p] V := Module.Free.trans (R := ℤ_[p]) (S := R) (M := V)
+  set ι := Module.Free.ChooseBasisIndex ℤ_[p] V with hιdef
+  haveI : Fintype ι := inferInstanceAs (Fintype (Module.Free.ChooseBasisIndex ℤ_[p] V))
+  set bV : Module.Basis ι ℤ_[p] V := Module.Free.chooseBasis ℤ_[p] V with hbV
+  -- ## Step 3: the `O`-module `ι → Λ` of coordinatised `ℤ_p`-linear maps `V → Λ`.
+  obtain ⟨C, hCb⟩ : ∃ C : (ι → (Fin 2 → O)) ≃ₗ[O] (V →ₗ[ℤ_[p]] (Fin 2 → O)),
+      ∀ w i, C w (bV i) = w i :=
+    ⟨bV.constr O, fun w i => by simp⟩
+  obtain ⟨cc, hccsum⟩ : ∃ cc : Field.absoluteGaloisGroup ℚ → ι → ι → ℤ_[p],
+      ∀ σ i, ∑ k, cc σ i k • bV k = ρ σ (bV i) :=
+    ⟨fun σ i k => bV.repr (ρ σ (bV i)) k, fun σ i => bV.sum_repr _⟩
+  have hCsum : ∀ (w : ι → (Fin 2 → O)) σ i, C w (ρ σ (bV i)) = ∑ k, cc σ i k • w k := by
+    intro w σ i
+    rw [← hccsum σ i, map_sum]
+    exact Finset.sum_congr rfl fun k _ => by rw [map_smul, hCb]
+  obtain ⟨D, hDapp⟩ : ∃ D : Field.absoluteGaloisGroup ℚ →
+      ((ι → (Fin 2 → O)) →ₗ[O] (ι → (Fin 2 → O))),
+      ∀ σ w i, D σ w i = C w (ρ σ (bV i)) - ρO σ (w i) :=
+    ⟨fun σ =>
+      { toFun := fun w i => C w (ρ σ (bV i)) - ρO σ (w i)
+        map_add' := by
+          intro w w'
+          funext i
+          simp only [map_add, LinearMap.add_apply, Pi.add_apply]
+          abel
+        map_smul' := by
+          intro a w
+          funext i
+          simp only [map_smul, LinearMap.smul_apply, Pi.smul_apply, RingHom.id_apply,
+            smul_sub] },
+      fun _ _ _ => rfl⟩
+  set T : Submodule O (ι → (Fin 2 → O)) := ⨅ σ, LinearMap.ker (D σ) with hTdef
+  -- membership in `T` is exactly `Γ ℚ`-equivariance of the associated map
+  have hTequiv : ∀ w ∈ T, ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : V),
+      C w (ρ σ x) = ρO σ (C w x) := by
+    intro w hw σ
+    have hker : D σ w = 0 := by
+      have h : w ∈ LinearMap.ker (D σ) := (Submodule.mem_iInf _).mp hw σ
+      exact LinearMap.mem_ker.mp h
+    have hpt : ∀ i, C w (ρ σ (bV i)) = ρO σ (C w (bV i)) := by
+      intro i
+      have h2 : C w (ρ σ (bV i)) - ρO σ (w i) = 0 := by
+        rw [← hDapp σ w i, hker]; rfl
+      rw [hCb, ← sub_eq_zero]
+      exact h2
+    have hmaps : (C w).comp ((ρ σ).restrictScalars ℤ_[p])
+        = ((ρO σ).restrictScalars ℤ_[p]).comp (C w) :=
+      bV.ext fun i => by simpa using hpt i
+    intro x
+    exact congrArg (fun F : V →ₗ[ℤ_[p]] (Fin 2 → O) => F x) hmaps
+  -- ## Step 4: the `Ω`-side.
+  set piR := TensorProduct.piRight O (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p])
+      (fun _ : ι => (Fin 2 → O)) with hpiR
+  set U : ι → ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)) :=
+    fun i => e.symm ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV i) with hU
+  have hsmul : ∀ (c : ℤ_[p]) (a : AlgebraicClosure ℚ_[p]) (x : Fin 2 → O),
+      a ⊗ₜ[O] (c • x) = f c • (a ⊗ₜ[O] x) := by
+    intro c a x
+    rw [← algebraMap_smul O c x, TensorProduct.tmul_smul, hf,
+      algebraMap_smul (AlgebraicClosure ℚ_[p])]
+  have key : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (z : (AlgebraicClosure ℚ_[p]) ⊗[O] (ι → (Fin 2 → O))) (i : ι),
+      piR (TensorProduct.AlgebraTensorModule.lTensor (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p])
+          (D σ) z) i
+        = (∑ k, f (cc σ i k) • piR z k)
+            - (ρO.baseChange (AlgebraicClosure ℚ_[p])) σ (piR z i) := by
+    intro σ z i
+    induction z using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a w =>
+        simp only [TensorProduct.AlgebraTensorModule.lTensor_tmul, hpiR, TensorProduct.piRight_apply,
+          TensorProduct.piRightHom_tmul, hDapp, GaloisRep.baseChange_tmul]
+        rw [hCsum, TensorProduct.tmul_sub, TensorProduct.tmul_sum]
+        exact congrArg (· - a ⊗ₜ[O] (ρO σ) (w i))
+          (Finset.sum_congr rfl fun k _ => hsmul _ _ _)
+    | add x y hx hy =>
+        simp only [map_add, Pi.add_apply, hx, hy, Finset.sum_add_distrib, smul_add]
+        abel
+  have hUeq : ∀ (σ : Field.absoluteGaloisGroup ℚ) (i : ι),
+      (∑ k, f (cc σ i k) • U k)
+        - (ρO.baseChange (AlgebraicClosure ℚ_[p])) σ (U i) = 0 := by
+    intro σ i
+    have h1 : (ρO.baseChange (AlgebraicClosure ℚ_[p])) σ (U i)
+        = e.symm ((ρ.baseChange (AlgebraicClosure ℚ_[p])) σ
+            ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV i)) := by
+      rw [hU]
+      refine e.injective ?_
+      rw [he, LinearEquiv.apply_symm_apply, LinearEquiv.apply_symm_apply]
+    have h2 : (ρ.baseChange (AlgebraicClosure ℚ_[p])) σ
+        ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV i)
+          = ∑ k, f (cc σ i k) • ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV k) := by
+      rw [GaloisRep.baseChange_tmul, ← hccsum σ i, TensorProduct.tmul_sum]
+      refine Finset.sum_congr rfl fun k _ => ?_
+      show (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] ((algebraMap ℤ_[p] R (cc σ i k)) • bV k) = _
+      rw [TensorProduct.tmul_smul, hf, hZOcompat,
+        algebraMap_smul (AlgebraicClosure ℚ_[p])]
+    rw [h1, h2, map_sum]
+    simp only [map_smul, hU]
+    exact sub_self _
+  have hUspan : Submodule.span (AlgebraicClosure ℚ_[p]) (Set.range U) = ⊤ := by
+    have hbase : Submodule.span (AlgebraicClosure ℚ_[p])
+        (Set.range (fun i => (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV i)) = ⊤ := by
+      rw [eq_top_iff]
+      rintro z -
+      induction z using TensorProduct.induction_on with
+      | zero => exact Submodule.zero_mem _
+      | tmul a x =>
+          have hx : x = ∑ k, (bV.repr x k) • bV k := (bV.sum_repr x).symm
+          rw [hx, TensorProduct.tmul_sum]
+          refine Submodule.sum_mem _ fun k _ => ?_
+          have h1 : a ⊗ₜ[R] ((bV.repr x k) • bV k)
+              = (algebraMap R (AlgebraicClosure ℚ_[p])
+                  (algebraMap ℤ_[p] R (bV.repr x k)))
+                • (a • ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV k)) := by
+            show a ⊗ₜ[R] ((algebraMap ℤ_[p] R (bV.repr x k)) • bV k) = _
+            rw [TensorProduct.tmul_smul, ← algebraMap_smul (AlgebraicClosure ℚ_[p])
+              (algebraMap ℤ_[p] R (bV.repr x k))]
+            congr 1
+            rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+          rw [h1]
+          exact Submodule.smul_mem _ _
+            (Submodule.smul_mem _ _ (Submodule.subset_span ⟨k, rfl⟩))
+      | add x y hx hy => exact Submodule.add_mem _ hx hy
+    have hrange : Set.range U
+        = (e.symm : (AlgebraicClosure ℚ_[p]) ⊗[R] V →ₗ[AlgebraicClosure ℚ_[p]]
+            (AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)) ''
+          (Set.range fun i => (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV i) := by
+      rw [← Set.range_comp]; rfl
+    rw [hrange, ← Submodule.map_span, hbase, Submodule.map_top]
+    exact LinearMap.range_eq_top.mpr e.symm.surjective
+  -- ## Step 5: flat descent — `W` comes from the integral equivariant module `T`.
+  set W := piR.symm U with hW
+  have hpiRW : piR W = U := piR.apply_symm_apply U
+  have hWker : ∀ σ, W ∈ LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor
+      (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p]) (D σ)) := by
+    intro σ
+    rw [LinearMap.mem_ker]
+    refine piR.injective ?_
+    rw [map_zero]
+    funext i
+    rw [key σ W i, hpiRW]
+    simpa using hUeq σ i
+  have hWmem : W ∈ LinearMap.range (TensorProduct.AlgebraTensorModule.lTensor
+      (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p]) T.subtype) := by
+    rw [hTdef, ← iInf_ker_lTensor_eq_range_lTensor_iInf_ker hOinj D]
+    exact (Submodule.mem_iInf _).mpr hWker
+  obtain ⟨zz, hzz⟩ := hWmem
+  obtain ⟨s, hs⟩ := TensorProduct.exists_finset zz
+  have hUi : ∀ i, U i = ∑ x ∈ s, x.1 ⊗ₜ[O] ((x.2 : ι → (Fin 2 → O)) i) := by
+    intro i
+    rw [← hpiRW, ← hzz, hs, map_sum, map_sum, Finset.sum_apply]
+    exact Finset.sum_congr rfl fun x _ => rfl
+  -- ## Step 6: read the finite family of equivariant maps off `s`.
+  set N := s.card with hN
+  set ev : Fin N ≃ {x // x ∈ s} := s.equivFin.symm with hev
+  set φ : Fin N → (V →+ (Fin 2 → O)) :=
+    fun n => (C ((ev n : (AlgebraicClosure ℚ_[p]) × ↥T).2 : ι → (Fin 2 → O))).toAddMonoidHom
+    with hφ
+  set S : Submodule O (Fin 2 → O) := Submodule.span O (⋃ n, Set.range (φ n)) with hS
+  have hτmem : ∀ x ∈ s, ∀ i, ((x.2 : ι → (Fin 2 → O)) i) ∈ S := by
+    intro x hx i
+    refine Submodule.subset_span (Set.mem_iUnion.mpr ⟨ev.symm ⟨x, hx⟩, ⟨bV i, ?_⟩⟩)
+    rw [hφ]
+    simp only [Equiv.apply_symm_apply]
+    exact hCb _ i
+  have hφsemi : ∀ (n : Fin N) (a : ℤ_[p]) (y : V),
+      φ n ((algebraMap ℤ_[p] R a) • y) = a • φ n y := by
+    intro n a y
+    exact (C ((ev n : (AlgebraicClosure ℚ_[p]) × ↥T).2 : ι → (Fin 2 → O))).map_smul a y
+  have hφequiv : ∀ (n : Fin N) (σ : Field.absoluteGaloisGroup ℚ) (y : V),
+      φ n (ρ σ y) = ρO σ (φ n y) := by
+    intro n σ y
+    exact hTequiv _ ((ev n : (AlgebraicClosure ℚ_[p]) × ↥T).2).2 σ y
+  -- ## Step 7: the quotient `Λ ⧸ S` dies after `⊗ Ω`, hence is `p`-power torsion.
+  have hFzero : ∀ y : Fin 2 → O, (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] (S.mkQ y) = 0 := by
+    intro y
+    have hker : LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor
+        (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p]) S.mkQ) = ⊤ := by
+      rw [← top_le_iff, ← hUspan, Submodule.span_le]
+      rintro _ ⟨i, rfl⟩
+      rw [SetLike.mem_coe, LinearMap.mem_ker, hUi i, map_sum]
+      refine Finset.sum_eq_zero fun x hx => ?_
+      rw [TensorProduct.AlgebraTensorModule.lTensor_tmul, Submodule.mkQ_apply,
+        (Submodule.Quotient.mk_eq_zero S).mpr (hτmem x hx i), TensorProduct.tmul_zero]
+    have hzero := LinearMap.ker_eq_top.mp hker
+    have h2 := congrArg (fun F => F ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] y)) hzero
+    simpa using h2
+  have hquot : ∀ y : Fin 2 → O, ∃ c : ℕ, ((p : O) ^ c) • y ∈ S := by
+    intro y
+    obtain ⟨c, hc⟩ := exists_pow_natCast_smul_eq_zero_of_one_tmul_eq_zero
+      (p := p) hOinj (S.mkQ y) (hFzero y)
+    exact ⟨c, by rwa [← map_smul, Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at hc⟩
+  choose cf hcf using fun j : Fin 2 => hquot (Pi.single j (1 : O))
+  set c := max (cf 0) (cf 1) with hcdef
+  have hgen : ∀ j : Fin 2, ((p : O) ^ c) • (Pi.single j (1 : O) : Fin 2 → O) ∈ S := by
+    intro j
+    have hle : cf j ≤ c := by fin_cases j <;> simp [hcdef]
+    have hsplit : ((p : O) ^ c) = (p : O) ^ (c - cf j) * (p : O) ^ (cf j) := by
+      rw [← pow_add]; congr 1; omega
+    rw [hsplit, mul_smul]
+    exact Submodule.smul_mem _ _ (hcf j)
+  have hall : ∀ y : Fin 2 → O, ((p : O) ^ c) • y ∈ S := by
+    intro y
+    have hy : y = ∑ j, (y j) • (Pi.single j (1 : O) : Fin 2 → O) := by
+      funext k
+      simp [Pi.single_apply]
+    rw [hy, Finset.smul_sum]
+    refine Submodule.sum_mem _ fun j _ => ?_
+    rw [smul_comm]
+    exact Submodule.smul_mem _ _ (hgen j)
+  refine ⟨N, c, φ, hφsemi, hφequiv, fun y => ?_⟩
+  have hconv : ((p : ℤ_[p]) ^ c) • y = ((p : O) ^ c) • y := by
+    rw [← algebraMap_smul O ((p : ℤ_[p]) ^ c) y, map_pow, map_natCast]
+  rw [hconv]
+  exact hall y
 
 /-- **Generic cover of the `O`-lattice by a power of the `R`-lattice**
 (Eisenstein pillar E2b′-flat, arithmetic half; CARVED 2026-07-26 — this
