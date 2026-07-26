@@ -9593,21 +9593,391 @@ theorem exists_restrictToLEHom_eq_of_lt_two_mul_sum_card_inertia
     (by simpa only [pow_one] using hlt)
   simpa only [pow_one] using key
 
+open scoped Classical in
+/-- **THE QUANTITATIVE CORE OF THE UPWARD HERBRAND TRANSPORT** (PROVEN
+2026-07-26): the same three lines of double counting that prove
+`lt_two_mul_sum_card_of_le_sum_fiber`, but stopping one step earlier, at
+the RATIO comparison `Σ↑ ≥ e·Σ↓` rather than at the qualitative Herbrand
+inequality.  The qualitative form loses exactly the information Yoshida's
+argument needs: it says `φ > 1/2` upstairs, whereas the transport must
+say `φ_{N} (n+1) ≥ φ_{M}(m'+1)` — the SAME rational number, not merely
+one that is again `> 1/2`. -/
+theorem mul_sum_card_le_sum_card_of_le_sum_fiber
+    {G H : Type*} [Group G] [Group H] [Fintype G] [Fintype H]
+    (res : G →* H)
+    (𝒢 : ℕ → Subgroup G) (𝒢' : ℕ → Subgroup H)
+    (m' n : ℕ)
+    (hfib : ∀ τ : H,
+      Nat.card ↥(𝒢 1 ⊓ res.ker) *
+          ((Finset.range (m' + 1)).filter (fun i => τ ∈ 𝒢' (i + 2))).card ≤
+        ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ),
+          ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card) :
+    Nat.card ↥(𝒢 1 ⊓ res.ker) *
+        ∑ i ∈ Finset.range (m' + 1), Nat.card ↥(𝒢' (i + 2)) ≤
+      ∑ i ∈ Finset.range (n + 1), Nat.card ↥(𝒢 (i + 2)) := by
+  classical
+  have hcard : ∀ K : Subgroup G,
+      Nat.card ↥K = (Finset.univ.filter (fun σ : G => σ ∈ K)).card := by
+    intro K
+    rw [Nat.card_eq_fintype_card, Fintype.card_subtype]
+  have hcard' : ∀ K : Subgroup H,
+      Nat.card ↥K = (Finset.univ.filter (fun τ : H => τ ∈ K)).card := by
+    intro K
+    rw [Nat.card_eq_fintype_card, Fintype.card_subtype]
+  have hdc : ∑ i ∈ Finset.range (n + 1), Nat.card ↥(𝒢 (i + 2)) =
+      ∑ σ : G, ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card := by
+    simp only [hcard, Finset.card_filter]
+    exact Finset.sum_comm
+  have hdc' : ∑ i ∈ Finset.range (m' + 1), Nat.card ↥(𝒢' (i + 2)) =
+      ∑ τ : H, ((Finset.range (m' + 1)).filter (fun i => τ ∈ 𝒢' (i + 2))).card := by
+    simp only [hcard', Finset.card_filter]
+    exact Finset.sum_comm
+  have hpart : ∑ σ : G, ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card =
+      ∑ τ : H, ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ),
+        ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card :=
+    (Finset.sum_fiberwise Finset.univ (fun σ : G => res σ)
+      (fun σ => ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card)).symm
+  calc Nat.card ↥(𝒢 1 ⊓ res.ker) *
+        ∑ i ∈ Finset.range (m' + 1), Nat.card ↥(𝒢' (i + 2))
+      = Nat.card ↥(𝒢 1 ⊓ res.ker) *
+          ∑ τ : H, ((Finset.range (m' + 1)).filter (fun i => τ ∈ 𝒢' (i + 2))).card := by
+        rw [hdc']
+    _ = ∑ τ : H, Nat.card ↥(𝒢 1 ⊓ res.ker) *
+          ((Finset.range (m' + 1)).filter (fun i => τ ∈ 𝒢' (i + 2))).card := by
+        rw [Finset.mul_sum]
+    _ ≤ ∑ τ : H, ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ),
+          ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card :=
+        Finset.sum_le_sum fun τ _ => hfib τ
+    _ = ∑ σ : G, ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card := hpart.symm
+    _ = ∑ i ∈ Finset.range (n + 1), Nat.card ↥(𝒢 (i + 2)) := hdc.symm
+
+open scoped Classical in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **SERRE IV §3 PROP. 14 IN QUANTITATIVE `φ`-FREE FORM: the upward
+transport PRESERVES THE HERBRAND VALUE, not merely the inequality
+`> 1/2`** (PROVEN 2026-07-26 over the single arithmetic leaf
+`exists_level_forall_le_sum_card_filter_inertia_fiber`).  This is the
+strengthening of `exists_restrictToLEHom_eq_of_lt_two_mul_sum_card_inertia`
+that Yoshida's argument needs.  With `Ḡ_i = inertia(𝔪_M^(i+1))` and
+`G_i = inertia(𝔪_N^(i+1))`, the last conjunct is
+`#Ḡ_0 · Σ_{i=1}^{n+1} #G_i ≥ #G_0 · Σ_{i=1}^{m'+1} #Ḡ_i`, i.e. exactly
+`φ_{N/ℚ₃ᵥ}(n+1) ≥ φ_{M/ℚ₃ᵥ}(m'+1)` cleared of both denominators.
+WHY THE QUALITATIVE FORM IS NOT ENOUGH.  Yoshida's proof of
+`m_{L/K} = u_{L/K}` compares `u_{LK'/K} − 1/e_{LK'/K}` against a FIXED
+number `u_{L/K}(σ)`, and lets `e_{LK'/K} → ∞`.  A hypothesis of the
+shape `φ > 1/2` upstairs is invariant under that limit and therefore
+carries none of the needed slack; the actual value `φ_{L}(n+1)`, which
+this lemma transports unchanged, does. -/
+theorem exists_restrictToLEHom_eq_mul_sum_card_le
+    (M N : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ)
+    [FiniteDimensional ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ M]
+    [FiniteDimensional ℚ₃ᵥ N] [IsGalois ℚ₃ᵥ N]
+    (hMN : M ≤ N)
+    (m' : ℕ) (τ : M ≃ₐ[ℚ₃ᵥ] M)
+    (hτ : τ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ M) ^ (m' + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) :
+    ∃ (n : ℕ) (σ : N ≃ₐ[ℚ₃ᵥ] N),
+      σ ∈ (IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ N) ^ (n + 2)).inertia (N ≃ₐ[ℚ₃ᵥ] N) ∧
+      restrictToLEHom M N hMN σ = τ ∧
+      Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ N)).inertia (N ≃ₐ[ℚ₃ᵥ] N)) *
+          ∑ i ∈ Finset.range (m' + 1),
+            Nat.card ((IsLocalRing.maximalIdeal
+              (IntegralClosure 𝒪₃ᵥ M) ^ (i + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) ≤
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) *
+          ∑ i ∈ Finset.range (n + 1),
+            Nat.card ((IsLocalRing.maximalIdeal
+              (IntegralClosure 𝒪₃ᵥ N) ^ (i + 2)).inertia (N ≃ₐ[ℚ₃ᵥ] N)) := by
+  classical
+  obtain ⟨n, ⟨σ, hσ, hres⟩, hge⟩ :=
+    exists_level_forall_le_sum_card_filter_inertia_fiber M N hMN m' τ hτ
+  refine ⟨n, σ, hσ, hres, ?_⟩
+  have hcomb := mul_sum_card_le_sum_card_of_le_sum_fiber (restrictToLEHom M N hMN)
+    (fun j => (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ N) ^ j).inertia (N ≃ₐ[ℚ₃ᵥ] N))
+    (fun j => (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ M) ^ j).inertia (M ≃ₐ[ℚ₃ᵥ] M))
+    m' n
+    (fun τ' => by simpa only [pow_one] using hge τ')
+  simp only [pow_one] at hcomb
+  have htower := card_inertia_inf_ker_mul M N hMN
+  calc Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ N)).inertia (N ≃ₐ[ℚ₃ᵥ] N)) *
+        ∑ i ∈ Finset.range (m' + 1),
+          Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ M) ^ (i + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M))
+      = (Nat.card ↥((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ N)).inertia (N ≃ₐ[ℚ₃ᵥ] N) ⊓
+            (restrictToLEHom M N hMN).ker) *
+          Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M))) *
+          ∑ i ∈ Finset.range (m' + 1),
+            Nat.card ((IsLocalRing.maximalIdeal
+              (IntegralClosure 𝒪₃ᵥ M) ^ (i + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) := by
+        rw [htower]
+    _ = Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) *
+          (Nat.card ↥((IsLocalRing.maximalIdeal
+              (IntegralClosure 𝒪₃ᵥ N)).inertia (N ≃ₐ[ℚ₃ᵥ] N) ⊓
+              (restrictToLEHom M N hMN).ker) *
+            ∑ i ∈ Finset.range (m' + 1),
+              Nat.card ((IsLocalRing.maximalIdeal
+                (IntegralClosure 𝒪₃ᵥ M) ^ (i + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M))) := by
+        ring
+    _ ≤ Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) *
+          ∑ i ∈ Finset.range (n + 1),
+            Nat.card ((IsLocalRing.maximalIdeal
+              (IntegralClosure 𝒪₃ᵥ N) ^ (i + 2)).inertia (N ≃ₐ[ℚ₃ᵥ] N)) :=
+        mul_le_mul_right hcomb _
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **The inclusion `𝒪_M ↪ 𝒪_L` of integral closures induced by
+`M ≤ L`** (PROVEN 2026-07-26 — pure plumbing, the analogue for a pair
+of finite subextensions of `LocalInertiaFixedField`'s
+`integralClosureInclusion`, which lands in the integral closure of the
+FULL algebraic closure and therefore cannot be composed with a map out
+of `𝒪_L`). -/
+noncomputable def integralClosureLE
+    (M L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hML : M ≤ L) :
+    IntegralClosure 𝒪₃ᵥ M →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ L :=
+  letI : IsScalarTower 𝒪₃ᵥ ℚ₃ᵥ M := IsScalarTower.of_algebraMap_eq' rfl
+  letI : IsScalarTower 𝒪₃ᵥ ℚ₃ᵥ L := IsScalarTower.of_algebraMap_eq' rfl
+  AlgHom.codRestrict
+    (((IntermediateField.inclusion hML).restrictScalars 𝒪₃ᵥ).comp
+      (IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ M) M))
+    (integralClosure 𝒪₃ᵥ L)
+    (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) x).map
+      (((IntermediateField.inclusion hML).restrictScalars 𝒪₃ᵥ).comp
+        (IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ M) M)))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **A `ℚ₃ᵥ`-embedding of a NORMAL subextension into another
+subextension is an INCLUSION** (PROVEN 2026-07-26): a `ℚ₃ᵥ`-algebra map
+`F →ₐ E` composed with `E.val` has field range `F`
+(`AlgHom.fieldRange_of_normal`) and visibly lands in `E`, so `F ≤ E`.
+This is what turns Yoshida's "there exists a `K`-embedding `L ↪ E`" into
+the containment `L ⊆ E` that lets the two embeddings of `N` and of the
+auxiliary tame field be combined into one of their compositum. -/
+theorem le_of_nonempty_algHom_of_normal
+    (F E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [Normal ℚ₃ᵥ F]
+    (h : Nonempty (F →ₐ[ℚ₃ᵥ] E)) : F ≤ E := by
+  obtain ⟨f⟩ := h
+  have hfr : (E.val.comp f).fieldRange = F := AlgHom.fieldRange_of_normal (E.val.comp f)
+  intro x hx
+  rw [← hfr] at hx
+  obtain ⟨y, hy⟩ := hx
+  exact hy ▸ (f y).2
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **A TAMELY RAMIFIED GALOIS EXTENSION OF `ℚ₃ᵥ` OF ARBITRARILY LARGE
+RAMIFICATION INDEX** (sorry node, created 2026-07-26 — leaf (Y-1) of the
+Yoshida cut of `eq_one_of_mem_inertia_of_forall_nonempty_algHom`).  For
+every `d` there is a finite Galois `K'/ℚ₃ᵥ` whose FIRST higher
+ramification group vanishes — `G_1 = inertia(𝔪_{K'}^2) = ⊥`, i.e. `K'/ℚ₃ᵥ`
+is tamely ramified — and whose inertia group has more than `d` elements,
+i.e. `e_{K'/ℚ₃ᵥ} > d`.
+WITNESS.  Take `q = 3^f` with `3^f − 1 > d` and put
+`K' = ℚ₃ᵥ(ζ_{q−1}, 3^{1/(q−1)})`.  The unramified subextension
+`ℚ₃ᵥ(ζ_{q−1})` supplies all `(q−1)`-st roots of unity, so the Kummer
+extension is Galois over `ℚ₃ᵥ`; it is totally ramified of degree
+`q − 1`, which is prime to `3`, hence tame, so `G_1 = ⊥` (Serre, *Corps
+Locaux*, IV §2, Cor. 2 to Prop. 7: `G_1` is the unique Sylow
+`p`-subgroup of `G_0`, trivial exactly when `p ∤ e`).  Its inertia group
+is cyclic of order `q − 1 > d`.
+WHY IT IS NEEDED, and why `d` must be allowed to grow.  In Yoshida's
+proof of `m_{L/K} = u_{L/K}` (arXiv:0905.1171, Prop. 3.3) the auxiliary
+tame extension enters ONLY through the size of `e_{LK'/K}`: Fontaine's
+inequality is applied to the COMPOSITUM `L·K'` over the SAME base `K`,
+and the loss `1/e_{L K'/K}` it carries must be driven below the fixed
+positive gap `φ_{L/K}(n+1) − 1/2`.  Nothing else about `K'` is used
+beyond `u_{K'/K} ≤ 1`, which is precisely tameness. -/
+theorem exists_isGalois_inertia_pow_two_eq_bot_lt_card_inertia (d : ℕ) :
+    ∃ (K' : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (_ : FiniteDimensional ℚ₃ᵥ K')
+      (_ : IsGalois ℚ₃ᵥ K'),
+      (IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ K') ^ 2).inertia (K' ≃ₐ[ℚ₃ᵥ] K') = ⊥ ∧
+      d < Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ K')).inertia (K' ≃ₐ[ℚ₃ᵥ] K')) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **FONTAINE'S PROPERTY `(P_m)` HOLDS FOR A TAME EXTENSION AT EVERY
+LEVEL `m > 1`** (sorry node, created 2026-07-26 — leaf (Y-2) of the
+Yoshida cut; this is the EASY half of Fontaine, *Il n'y a pas de variété
+abélienne sur ℤ*, Invent. Math. 81 (1985), Prop. 1.5 (i), specialised to
+the only case the assembly consumes).  Let `F/ℚ₃ᵥ` be finite Galois with
+`G_1 = inertia(𝔪_F^2) = ⊥` (tame, so `u_{F/ℚ₃ᵥ} = 0` in Serre's
+numbering and `1` in Fontaine's), let `E/ℚ₃ᵥ` be finite with
+`v_E(3) = e`, and let `k > e`, i.e. `m = k/e > 1 = u^{(F)}_{F/ℚ₃ᵥ}`.
+Then an `𝒪₃ᵥ`-algebra map `𝒪_F → 𝒪_E/𝔪_E^k` forces a `ℚ₃ᵥ`-embedding
+`F ↪ E`.
+INTENDED PROOF (Fontaine Prop. 1.5 (i), or Yoshida Prop. 2.1's Krasner
+argument run at the sharp threshold).  Write `𝒪_F = 𝒪₃ᵥ[α]`, `P` the
+minimal polynomial of `α` and `α = α_1, …, α_n` its roots.  A lift
+`β ∈ 𝒪_E` of `η(α)` satisfies `v_{ℚ₃}(P(β)) ≥ k/e > 1`, and Fontaine's
+Prop. 1.4 (`v_{ℚ₃}(P(β)) = φ̃_{F/ℚ₃ᵥ}(sup_i v_{ℚ₃}(β − α_i))`) converts
+that into `sup_i v_{ℚ₃}(β − α_i) > sup_{i ≠ 1} v_{ℚ₃}(α − α_i)`, because
+for a TAME extension `φ̃` has its last break at `1` and is the identity
+beyond it.  Krasner's lemma then gives `ℚ₃ᵥ(α_{i_0}) ⊆ ℚ₃ᵥ(β) ⊆ E`, and
+`F/ℚ₃ᵥ` being normal, `F = ℚ₃ᵥ(α_{i_0}) ⊆ E`.
+NOT VACUOUS: at `F = ℚ₃ᵥ(√3)` (`e_{F/ℚ₃ᵥ} = 2`, tame) and `E = ℚ₃ᵥ`
+(`e = 1`) the hypothesis `k > 1` is satisfiable while the conclusion
+fails — there is no `ℚ₃ᵥ`-embedding `F ↪ ℚ₃ᵥ` — so the leaf genuinely
+asserts that no such `η` exists there, which is the content of `(P_m)`
+for `m > 1`. -/
+theorem nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot
+    (F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F]
+    (htame : (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ F) ^ 2).inertia (F ≃ₐ[ℚ₃ᵥ] F) = ⊥)
+    (E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ E]
+    (e k : ℕ)
+    (he : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ e)
+    (hk : e < k)
+    (η : IntegralClosure 𝒪₃ᵥ F →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) :
+    Nonempty (F →ₐ[ℚ₃ᵥ] E) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **FONTAINE'S PROP. 1.5 (ii) IN `φ`-FREE INTEGER FORM: a NONTRIVIAL
+element of a deep ramification group MANUFACTURES A COUNTEREXAMPLE to
+`(P_m)`** (sorry node, created 2026-07-26 — leaf (Y-3), the genuine
+citation of the Yoshida cut; Fontaine, *Il n'y a pas de variété
+abélienne sur ℤ*, Invent. Math. 81 (1985), Prop. 1.5 (ii), = Yoshida,
+arXiv:0905.1171, Prop. 3.2 (ii)).
+STATEMENT IN CLASSICAL LANGUAGE.  Write `G_i = inertia(𝔪_L^(i+1))`,
+`g₀ = #G_0 = e_{L/ℚ₃ᵥ}` and `S = Σ_{i=1}^{j+1} #G_i`, so that
+`φ_{L/ℚ₃ᵥ}(j+1) = S/g₀` and a `τ ≠ 1` lying in `G_{j+1}` has Fontaine upper
+ramification index `u^{(F)}_{L/ℚ₃ᵥ}(τ) = 1 + φ_{L/ℚ₃ᵥ}(i_L(τ) − 1) ≥
+1 + S/g₀`.  Fontaine's Prop. 1.5 (ii) says `(P_m) ⟹ m > u^{(F)} − 1/e`;
+contrapositively `(P_m)` FAILS at `m = u^{(F)} − 1/e`, hence a fortiori
+at the smaller `m = 1 + (S − 1)/g₀`.  Failure of `(P_m)` is exactly the
+conclusion below: a finite `E/ℚ₃ᵥ` and a truncation level `k` with
+`k/e_E ≥ m` — written integrally as `e·(g₀ + S) ≤ g₀·k + e` — carrying an
+`𝒪₃ᵥ`-algebra map `𝒪_L → 𝒪_E/𝔪_E^k` while admitting NO `ℚ₃ᵥ`-embedding
+`L ↪ E`.
+INTENDED PROOF (Fontaine's).  With `𝒪_L = 𝒪₃ᵥ[α]`, `P` the minimal
+polynomial of `α` and `E := L^{⟨τ⟩}·(an auxiliary field)`, one exhibits a
+point `x` of the affinoid `{x | v_{ℚ₃}(P(x)) ≥ m}` whose distance to the
+nearest root is exactly `ψ̃(m)` — this is Fontaine's Prop. 1.4, i.e.
+`v_{ℚ₃}(P(x)) = φ̃_{L/ℚ₃ᵥ}(sup_i v_{ℚ₃}(x − α_i))`, the same identity
+that powers the easy direction — and which is equidistant from `α` and
+`τ(α)`, so that Krasner cannot be applied and `ℚ₃ᵥ(x)` contains no root
+of `P`.  Reducing `α ↦ x` modulo `𝔪_E^k` gives `η`; `L/ℚ₃ᵥ` being normal,
+`L ↪ E` would force `L ⊆ ℚ₃ᵥ(x)`, i.e. a root of `P` in `ℚ₃ᵥ(x)`.
+THE `−1/e` IS REAL AND CANNOT BE REMOVED HERE.  For the peu-ramifié
+`L = ℚ₃(ζ₃, u^{1/3})` (`g₀ = 6`, `#G_1 = 3`, `G_2 = ⊥`) at `j = 0`, i.e.
+`τ ∈ G_1`, one has `S = #G_1 = 3` and `φ(1) = 1/2`, so `u^{(F)} = 3/2`
+while this leaf asserts failure of `(P_m)` only at
+`m = 1 + (3 − 1)/6 = 4/3 = u^{(F)} − 1/e < 3/2`.
+That gap is exactly why the consumer must first ENLARGE `L` by a tame
+extension of large ramification index before invoking this leaf: over the
+compositum the loss `1/g₀` shrinks while the Herbrand value is preserved
+(`exists_restrictToLEHom_eq_mul_sum_card_le`), and that is the whole of
+Yoshida's Prop. 3.3.
+WHY THE BASE FIELD NEVER CHANGES, correcting the note previously left on
+`eq_one_of_mem_inertia_of_forall_nonempty_algHom`.  Yoshida's Prop. 2.2
+(tame base change `K ↝ K'`) is used in his §3 only to reduce to a
+totally ramified `L/K`; the proof of Prop. 3.3 itself applies Fontaine's
+Prop. 1.5 (ii) to the compositum `L·K'` OVER `K`, not over `K'`.  So the
+whole argument fits the present `ℚ₃ᵥ`-hard-wired encoding, and no
+generalisation to a variable local base field is required. -/
+theorem exists_isEmpty_algHom_of_ne_one_of_mem_inertia
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L] [IsGalois ℚ₃ᵥ L]
+    (j : ℕ) (τ : L ≃ₐ[ℚ₃ᵥ] L) (hτ1 : τ ≠ 1)
+    (hτ : τ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L) ^ (j + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) :
+    ∃ (E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (_ : FiniteDimensional ℚ₃ᵥ E) (e k : ℕ),
+      Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+          IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ e ∧
+        0 < e ∧
+        e * (Nat.card ((IsLocalRing.maximalIdeal
+              (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) +
+            ∑ i ∈ Finset.range (j + 1),
+              Nat.card ((IsLocalRing.maximalIdeal
+                (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L))) ≤
+          Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) * k + e ∧
+        Nonempty (IntegralClosure 𝒪₃ᵥ L →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+          IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) ∧
+        IsEmpty (L →ₐ[ℚ₃ᵥ] E) := by
+  sorry
+
+/-- **THE ARITHMETIC OF YOSHIDA'S LIMIT `e' → ∞`, as a statement about
+five natural numbers** (PROVEN 2026-07-26).  Read `g₀N = #G_0(N/ℚ₃ᵥ)`,
+`SN = Σ_{i=1}^{n+1} #G_i(N/ℚ₃ᵥ)` and likewise upstairs at the compositum
+`L = N·K'`, with `g₀K = e_{K'/ℚ₃ᵥ}`.  The hypotheses are, in order: the
+Herbrand condition `φ_N(n+1) > 1/2` (`hlt`), its transport
+`φ_L(n'+1) ≥ φ_N(n+1)` (`hquant`), the choice of a tame auxiliary field
+with `e_{K'/ℚ₃ᵥ} > 2·e_{N/ℚ₃ᵥ}` (`hbig`) whose ramification divides that
+of the compositum (`hle`), and Fontaine's level `m = 1 + (S−1)/g₀`
+(`hmk`).  The conclusion `3e < 2k` is `m > 3/2`, i.e. exactly what makes
+the Fontaine counterexample at `L` feedable to the hypothesis `(P_{3/2})`
+at `N`.
+THE TWO INEQUALITIES, spelled out.  First `φ_L(n'+1) − 1/g₀L > 1/2`:
+from `2·SN ≥ g₀N + 1` and `g₀L·SN ≤ g₀N·SL` one gets
+`g₀N·(g₀L + 2) < g₀L·(g₀N + 1) ≤ 2·g₀N·SL`, i.e. `2·SL > g₀L + 2` — the
+place where `g₀L > 2·g₀N` (hence `e_{L/N} ≥ 3`) is consumed, and the
+whole reason the auxiliary tame field must be taken large.  Then
+`2(g₀L + SL) ≥ 3(g₀L + 1)` turns `hmk` into `3·e·g₀L + e ≤ 2·g₀L·k`. -/
+theorem three_mul_lt_two_mul_of_herbrand
+    (g₀N SN g₀L SL g₀K e k : ℕ)
+    (he : 0 < e)
+    (hlt : g₀N < 2 * SN)
+    (hquant : g₀L * SN ≤ g₀N * SL)
+    (hbig : 2 * g₀N < g₀K)
+    (hle : g₀K ≤ g₀L)
+    (hmk : e * (g₀L + SL) ≤ g₀L * k + e) :
+    3 * e < 2 * k := by
+  have h3 : 2 * g₀N < g₀L := lt_of_lt_of_le hbig hle
+  have h4 : g₀L * (g₀N + 1) ≤ 2 * (g₀N * SL) := by
+    calc g₀L * (g₀N + 1) ≤ g₀L * (2 * SN) := mul_le_mul_right (by omega) g₀L
+      _ = 2 * (g₀L * SN) := by ring
+      _ ≤ 2 * (g₀N * SL) := mul_le_mul_right hquant 2
+  have h5 : g₀N * (g₀L + 2) < g₀N * (2 * SL) := by
+    calc g₀N * (g₀L + 2) = g₀N * g₀L + 2 * g₀N := by ring
+      _ < g₀N * g₀L + g₀L := Nat.add_lt_add_left h3 _
+      _ = g₀L * (g₀N + 1) := by ring
+      _ ≤ 2 * (g₀N * SL) := h4
+      _ = g₀N * (2 * SL) := by ring
+  have hkey : g₀L + 2 < 2 * SL := Nat.lt_of_mul_lt_mul_left h5
+  have h7 : g₀L * (3 * e) + 3 * e ≤ g₀L * (2 * k) + 2 * e := by
+    calc g₀L * (3 * e) + 3 * e = e * (3 * g₀L + 3) := by ring
+      _ ≤ e * (2 * g₀L + 2 * SL) := mul_le_mul_right (by omega) e
+      _ = 2 * (e * (g₀L + SL)) := by ring
+      _ ≤ 2 * (g₀L * k + e) := mul_le_mul_right hmk 2
+      _ = g₀L * (2 * k) + 2 * e := by ring
+  have h8 : g₀L * (3 * e) < g₀L * (2 * k) := by
+    generalize g₀L * (3 * e) = X at h7 ⊢
+    generalize g₀L * (2 * k) = Y at h7 ⊢
+    omega
+  exact Nat.lt_of_mul_lt_mul_left h8
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **FONTAINE'S THÉORÈME A AT `3`, FOR A SINGLE FIELD: `(P_{3/2})`
-forces the ramification bound** (sorry node, created 2026-07-26 by
-decomposing `eq_one_of_mem_inertia_of_le_of_forall_nonempty_algHom`;
-this is the CITATION node of the pair — Fontaine, *Il n'y a pas de
-variété abélienne sur ℤ*, Invent. Math. 81 (1985), Prop. 1.5 (ii),
-SHARPENED by M. Yoshida, *Ramification of local fields and Fontaine's
-property* `(P_m)`, arXiv:0905.1171, Prop. 3.3).  Let `N/ℚ₃ᵥ` be finite
-Galois and assume `hP`: for every finite `E/ℚ₃ᵥ` with `v_E(3) = e` and
-every truncation level `k` with `3e < 2k`, the mere EXISTENCE of an
-`𝒪₃ᵥ`-algebra map `𝒪_N → 𝒪_E/𝔪_E^k` already forces a `ℚ₃ᵥ`-embedding
-`N ↪ E`.  That is Fontaine's property `(P_m)` for `N/ℚ₃ᵥ` at every
-rational level `m = k/e > 3/2`, i.e. `m_{N/ℚ₃ᵥ} ≤ 3/2`.  Then every
+forces the ramification bound** (PROVEN 2026-07-26 over the three
+Yoshida leaves below it; previously a bare `sorry` believed to be
+uncuttable).  Let `N/ℚ₃ᵥ` be finite Galois and assume `hP`: for every
+finite `E/ℚ₃ᵥ` with `v_E(3) = e` and every truncation level `k` with
+`3e < 2k`, the mere EXISTENCE of an `𝒪₃ᵥ`-algebra map
+`𝒪_N → 𝒪_E/𝔪_E^k` already forces a `ℚ₃ᵥ`-embedding `N ↪ E`.  That is
+Fontaine's property `(P_m)` for `N/ℚ₃ᵥ` at every rational level
+`m = k/e > 3/2`, i.e. `m_{N/ℚ₃ᵥ} ≤ 3/2`.  Then every
 `σ ∈ G_{n+1} = inertia(𝔪_N^(n+2))` whose level satisfies the Herbrand
 condition `#G_0 < 2·Σ_{i=1}^{n+1} #G_i` is the identity.
 
@@ -9620,36 +9990,55 @@ arguments), and `σ ∈ G_{n+1}` therefore lies in the Serre-upper group
 `n₀ = 1`, `p = 3`, so `u_{N/ℚ₃ᵥ} ≤ 1/2` (Serre numbering) forces
 `σ = 1`.
 
-WHY FONTAINE'S OWN PROP. 1.5 (ii) IS NOT ENOUGH, arithmetically — do
-not attempt this leaf through it.  Prop. 1.5 (ii) gives only
-`m > u^{(F)} − 1/e_{N/ℚ₃ᵥ}` for every `m` with `(P_m)`; letting `m ↓ 3/2`
-over `hP` yields `u^{(F)} ≤ 3/2 + 1/#G_0`, i.e. Serre
-`u ≤ 1/2 + 1/#G_0`.  Now `hlt` says `φ(n+1) > 1/2`, and `φ(n+1)` lies in
-`(1/#G_0)·ℤ`, so the strongest consequence is `φ(n+1) ≥ 1/2 + 1/#G_0`
-(for `#G_0` even) or `≥ 1/2 + 1/(2#G_0)` (for `#G_0` odd) — in BOTH
-cases `φ(n+1) ≤ 1/2 + 1/#G_0` is possible, so the STRICT inequality
+WHY FONTAINE'S OWN PROP. 1.5 (ii) IS NOT ENOUGH, arithmetically.
+Prop. 1.5 (ii) gives only `m > u^{(F)} − 1/e_{N/ℚ₃ᵥ}` for every `m` with
+`(P_m)`; letting `m ↓ 3/2` over `hP` yields `u^{(F)} ≤ 3/2 + 1/#G_0`,
+i.e. Serre `u ≤ 1/2 + 1/#G_0`.  Now `hlt` says `φ(n+1) > 1/2`, and
+`φ(n+1)` lies in `(1/#G_0)·ℤ`, so the strongest consequence is
+`φ(n+1) ≥ 1/2 + 1/#G_0` (for `#G_0` even) — in which case
+`φ(n+1) ≤ 1/2 + 1/#G_0` is still possible, so the STRICT inequality
 `φ(n+1) > u` that `σ = 1` requires is never available.  The two sides
 can be exactly equal, and for the peu-ramifié `N = ℚ₃(ζ₃, u^{1/3})`
 (`#G_0 = 6`, `#G_1 = 3`, `G_2 = ⊥`) at `n = 1` they ARE:
 `φ(2) = (3+1)/6 = 2/3 = 1/2 + 1/6`.  What removes the `1/e` is
-YOSHIDA'S TAME BASE CHANGE (his Prop. 2.2: `(P_m)` for `L/K` implies
-`(P_{e'm})` for `LK'/K'` with `K'/K` totally tamely ramified of degree
-`e'`; then `e' → ∞`), which upgrades Fontaine's inequality to the
-EQUALITY `m_{L/K} = u^{(F)}_{L/K}` (his Prop. 3.3).  With it,
-`u ≤ 1/2` outright and `φ(n+1) > 1/2 ≥ u` closes with room to spare.
-PROVE THIS LEAF THROUGH YOSHIDA'S EQUALITY, NOT FONTAINE'S INEQUALITY.
+YOSHIDA'S EQUALITY `m_{L/K} = u^{(F)}_{L/K}` (arXiv:0905.1171,
+Prop. 3.3), and that is what the proof below carries out.
 
-WHY THIS LEAF CANNOT BE CUT FURTHER INSIDE THE PRESENT ENCODING
-(recorded 2026-07-26 so the next owner does not rediscover it).
-Yoshida's argument CHANGES THE BASE FIELD, from `ℚ₃ᵥ` to a totally
-tamely ramified `K'`, and compares `u_{LK'/K'} = e'·u_{L/K}` across the
-two bases.  Every statement in this development's Fontaine cluster is
-hard-wired to the base `ℚ₃ᵥ` — `𝒪₃ᵥ`-algebra maps, `ℚ₃ᵥ`-embeddings,
-`inertia (M ≃ₐ[ℚ₃ᵥ] M)` — and the comparison across bases needs `φ` as
-a FUNCTION, which this encoding deliberately does not have.  So a
-finer cut would first have to generalise the whole cluster to a
-variable local base field; short of that, this declaration is the
-atom.
+PROOF AS ACTUALLY CARRIED OUT (2026-07-26), which is Yoshida's proof of
+Prop. 3.3 specialised to the single element `σ` and stripped of every
+`φ`.  Suppose `σ ≠ 1`.
+(1) Choose a TAME Galois `K'/ℚ₃ᵥ` with `e_{K'/ℚ₃ᵥ} > 2·#G_0(N)`
+    (`exists_isGalois_inertia_pow_two_eq_bot_lt_card_inertia`) and put
+    `L := N ⊔ K'`, finite Galois over `ℚ₃ᵥ`.
+(2) Transport `σ` UPWARD to a `σ' ∈ G_{n'+1}(L)` with `σ'|_N = σ`, hence
+    `σ' ≠ 1`, and with the Herbrand VALUE preserved,
+    `φ_L(n'+1) ≥ φ_N(n+1)`
+    (`exists_restrictToLEHom_eq_mul_sum_card_le`).  Since
+    `#G_0(L) ≥ e_{K'/ℚ₃ᵥ} > 2·#G_0(N)`, the loss `1/#G_0(L)` is now
+    strictly smaller than the slack `φ_N(n+1) − 1/2`, so
+    `φ_L(n'+1) − 1/#G_0(L) > 1/2`
+    (`three_mul_lt_two_mul_of_herbrand`).
+(3) Fontaine's Prop. 1.5 (ii) at `L` and `σ'`
+    (`exists_isEmpty_algHom_of_ne_one_of_mem_inertia`) then produces a
+    finite `E/ℚ₃ᵥ` and a level `k` with `3·v_E(3) < 2k` carrying an
+    `𝒪₃ᵥ`-algebra map `𝒪_L → 𝒪_E/𝔪_E^k` and NO `ℚ₃ᵥ`-embedding
+    `L ↪ E`.
+(4) Restricting that map along `𝒪_N ↪ 𝒪_L` and feeding it to `hP` gives
+    `N ≤ E`; restricting it along `𝒪_{K'} ↪ 𝒪_L` and feeding it to
+    `(P_m)` for the TAME `K'` at the level `m = k/v_E(3) > 3/2 > 1`
+    (`nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot`)
+    gives `K' ≤ E`.  Hence `L = N ⊔ K' ≤ E`, contradicting (3).
+
+CORRECTION OF A PREVIOUS NOTE (2026-07-26).  An earlier docstring here
+recorded that this leaf "cannot be cut further inside the present
+encoding" because Yoshida's argument changes the base field from `ℚ₃ᵥ`
+to a tamely ramified `K'`.  That is a misreading of arXiv:0905.1171:
+Yoshida's Prop. 2.2 (tame base change) is used in his §3 ONLY to reduce
+to a totally ramified `L/K`, a reduction the present single-element form
+does not need, while the proof of Prop. 3.3 applies Fontaine's
+Prop. 1.5 (ii) to the compositum `L·K'` OVER THE ORIGINAL BASE `K`.  No
+generalisation of the Fontaine cluster to a variable local base field is
+required, and none is performed here.
 
 SHARPNESS — the bound is attained, so no slack can be extracted.  For
 the peu-ramifié `N = ℚ₃(ζ₃, u^{1/3})` one has `#G_0 = 6`, `#G_1 = 3`,
@@ -9679,7 +10068,62 @@ theorem eq_one_of_mem_inertia_of_forall_nonempty_algHom
     (hσ : σ ∈ (IsLocalRing.maximalIdeal
       (IntegralClosure 𝒪₃ᵥ N) ^ (n + 2)).inertia (N ≃ₐ[ℚ₃ᵥ] N)) :
     σ = 1 := by
-  sorry
+  classical
+  by_contra hσ1
+  -- STEP 1: a TAME auxiliary Galois extension of large ramification index
+  obtain ⟨K', hK'fd, hK'gal, hK'tame, hK'big⟩ :=
+    exists_isGalois_inertia_pow_two_eq_bot_lt_card_inertia
+      (2 * Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ N)).inertia (N ≃ₐ[ℚ₃ᵥ] N)))
+  haveI := hK'fd
+  haveI := hK'gal
+  -- STEP 2: the compositum `L = N ⊔ K'`, again finite Galois over `ℚ₃ᵥ`
+  obtain ⟨L, hLdef⟩ : ∃ L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ, L = N ⊔ K' := ⟨_, rfl⟩
+  have hNL : N ≤ L := by rw [hLdef]; exact le_sup_left
+  have hK'L : K' ≤ L := by rw [hLdef]; exact le_sup_right
+  haveI : FiniteDimensional ℚ₃ᵥ L := by
+    rw [hLdef]; exact IntermediateField.finiteDimensional_sup N K'
+  haveI : Normal ℚ₃ᵥ L := by
+    rw [hLdef]; infer_instance
+  haveI : CharZero ℚ₃ᵥ :=
+    charZero_of_injective_algebraMap (algebraMap ℚ ℚ₃ᵥ).injective
+  haveI : Algebra.IsSeparable ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI : Algebra.IsSeparable ℚ₃ᵥ L :=
+    Algebra.isSeparable_tower_bot_of_isSeparable ℚ₃ᵥ L ℚ₃ᵥᵃˡᵍ
+  haveI : IsGalois ℚ₃ᵥ L := ⟨⟩
+  -- STEP 3: transport `σ` upward, preserving the Herbrand VALUE
+  obtain ⟨n', σ', hσ', hres, hquant⟩ :=
+    exists_restrictToLEHom_eq_mul_sum_card_le N L hNL n σ hσ
+  have hσ'1 : σ' ≠ 1 := by
+    intro h
+    exact hσ1 (by rw [← hres, h, map_one])
+  -- STEP 4: Fontaine's counterexample to `(P_m)` at `L`
+  obtain ⟨E, hEfd, e, k, he, he0, hmk, ⟨η⟩, hemp⟩ :=
+    exists_isEmpty_algHom_of_ne_one_of_mem_inertia L n' σ' hσ'1 hσ'
+  haveI := hEfd
+  -- `e_{K'/ℚ₃ᵥ}` divides `e_{L/ℚ₃ᵥ}`, so the compositum is ramified enough
+  have hK'le : Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ K')).inertia (K' ≃ₐ[ℚ₃ᵥ] K')) ≤
+      Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) := by
+    rw [← card_inertia_inf_ker_mul K' L hK'L]
+    exact Nat.le_mul_of_pos_left _ Nat.card_pos
+  -- STEP 5: the level of the counterexample already exceeds `3/2`
+  have h3e : 3 * e < 2 * k :=
+    three_mul_lt_two_mul_of_herbrand _ _ _ _ _ e k he0
+      hlt hquant hK'big hK'le hmk
+  have hek : e < k := by omega
+  -- STEP 6: `(P_{3/2})` at `N` and `(P_m)` for the tame `K'` both apply
+  have hNE : N ≤ E :=
+    le_of_nonempty_algHom_of_normal N E
+      (hP E e k he h3e (η.comp (integralClosureLE N L hNL)))
+  have hK'E : K' ≤ E :=
+    le_of_nonempty_algHom_of_normal K' E
+      (nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot K' hK'tame E e k he hek
+        (η.comp (integralClosureLE K' L hK'L)))
+  -- STEP 7: hence `L = N ⊔ K' ≤ E`, contradicting `hemp`
+  exact hemp.elim (IntermediateField.inclusion (by rw [hLdef]; exact sup_le hNE hK'E))
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -9742,9 +10186,13 @@ mentions the other's subject matter:
 * `eq_one_of_mem_inertia_of_forall_nonempty_algHom` — ingredient (a),
   Fontaine's Prop. 1.5 (ii) sharpened by Yoshida's `m_{L/K} = u_{L/K}`,
   for a SINGLE field.  Its docstring records the arithmetic reason
-  Fontaine's inequality alone cannot close the gap, and the reason the
-  Yoshida step cannot be cut finer without generalising this whole
-  cluster to a variable local base field.
+  Fontaine's inequality alone cannot close the gap.  (An earlier version
+  of this list added that the Yoshida step could not be cut finer
+  without generalising the cluster to a variable local base field; that
+  was a misreading of arXiv:0905.1171 and was corrected on 2026-07-26 —
+  Yoshida's Prop. 3.3 applies Fontaine's inequality to the compositum
+  `L·K'` over the ORIGINAL base.  That declaration is now PROVEN over
+  three strictly smaller leaves.)
 WHY THE CUT IS THIS WAY ROUND, and not "`(P_m)` descends from `N` to
 `M`, then Fontaine at `M`".  That alternative is equally true — it is
 Yoshida's Lemma 3.1 — but its descent half is provable ONLY through the
