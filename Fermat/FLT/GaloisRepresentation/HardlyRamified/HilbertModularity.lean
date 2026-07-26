@@ -109,9 +109,11 @@ The chain, in the order the assembly uses it:
    residue is FALSE at `ℓ = 3`, by the `ℚ`-level counterexample recorded in
    `Deformation.lean`, which applies here verbatim at `F = ℚ`.
 
-   The FIRST of those clauses is PROVEN (2026-07-26), over the single
-   leaf `hasFlatProlongationAt_of_pi_surjection_of_numberField` — Raynaud
-   closure over a VARIABLE number field — via the proven transfers
+   The FIRST of those clauses is PROVEN (2026-07-26), through
+   `hasFlatProlongationAt_of_pi_surjection_of_numberField` — Raynaud
+   closure over a VARIABLE number field, itself PROVEN 2026-07-26 by
+   hoisting `Deformations/RepresentationTheory/FlatPointsGroup.lean` from
+   `ℚ` to a variable number field — via the proven transfers
    `isHilbertTameAtTwo_baseChange`, `isFlatAt_baseChange_of_numberField`,
    `isHilbertHardlyRamified_conj` and
    `isHilbertHardlyRamified_baseChange`.
@@ -277,6 +279,24 @@ import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 -- `HenselianLocalRing`, for the Teichmüller-root existence lemma
 -- `exists_mem_teichmullerRootSet_map_eq` in the Carayol trace-descent section.
 import Mathlib.RingTheory.Henselian
+-- proof-only: the representation-free Raynaud-closure carrier
+-- `GaloisRepresentation.Modularity.IsFlatPointsGroupAt` with its product and
+-- quotient halves (`.pi`, `.of_surjective`) and the repackaging
+-- `GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt`, which together
+-- discharge `hasFlatProlongationAt_of_pi_surjection_of_numberField` below.
+--
+-- CIRCULARITY GUARD: this is SAFE and costs the guard nothing.
+-- `FlatPointsGroup.lean` sits in `Deformations/RepresentationTheory/` and its
+-- `Fermat`-side import closure (38 modules, through
+-- `FlatProlongation.lean` and `KnownIn1980s/EllipticCurves/Flat.lean`)
+-- contains NOTHING from `HardlyRamified/`, `Family.lean`, `Lift.lean`,
+-- `Deformation.lean` or `Modularity/*` — so no cycle is created. And the sole
+-- consumer of this module, `Deformation.lean`, ALREADY imports
+-- `FlatPointsGroup.lean` itself (for the `K = ℚ` instance
+-- `hasFlatProlongationAt_of_pi_surjection`), so this line adds not one module
+-- to any DOWNSTREAM import cone; the only cost is this module's own
+-- elaboration.
+import Fermat.FLT.Deformations.RepresentationTheory.FlatPointsGroup
 
 @[expose] public section
 
@@ -2148,9 +2168,10 @@ def IsHilbertResidualRigidityClause (F : Type u) [Field F] [NumberField F]
 
 /-! #### The functoriality clause, and the base-field hoist it needed
 
-`isHilbertBaseChangeClause` is now PROVEN (2026-07-26), over the single
-leaf `hasFlatProlongationAt_of_pi_surjection_of_numberField` below. The
-cut is `Deformation.lean`'s `ℚ`-level cut of
+`isHilbertBaseChangeClause` is now PROVEN (2026-07-26), through
+`hasFlatProlongationAt_of_pi_surjection_of_numberField` below — which is
+itself PROVEN as of the same day, so this whole clause is now sorry-free.
+The cut is `Deformation.lean`'s `ℚ`-level cut of
 `isHardlyRamified_pushforwardFrame`, one for one:
 
 * `isHilbertTameAtTwo_baseChange` — the tame quadratic quotient at a place
@@ -2193,8 +2214,11 @@ The EXISTENCE direction used here needs no `e < ℓ − 1` bound; Raynaud's
 bound enters only for UNIQUENESS of the prolongation, which is not
 asserted.
 
-**WHY THIS IS OPEN HERE WHEN IT IS PROVEN AT `K = ℚ`, AND EXACTLY WHAT
-CLOSES IT.** At `K = ℚ` this is `Deformation.lean`'s PROVEN
+**PROVEN 2026-07-26, BY THE HOIST THE PREVIOUS OWNER SCOUTED** — and the
+sorry count went down by one while the COPY COUNT went down too. The
+route, recorded because the reasoning is reusable:
+
+At `K = ℚ` this is `Deformation.lean`'s PROVEN
 `hasFlatProlongationAt_of_pi_surjection`, which lives DOWNSTREAM of this
 module and so is unreachable from here. That proof is four lines: it
 passes to the representation-free carrier
@@ -2202,25 +2226,33 @@ passes to the representation-free carrier
 `IsFlatPointsGroupAt.pi` and `IsFlatPointsGroupAt.of_surjective`, both
 PROVEN, in `Deformations/RepresentationTheory/FlatPointsGroup.lean`.
 
-That whole file — 1950 sorry-free lines — mentions `ℚ` exactly EIGHT
+That whole file — 1950 sorry-free lines — mentioned `ℚ` exactly EIGHT
 times, all of them inside `variable (v : HeightOneSpectrum (𝓞 ℚ))` and the
 four `local notation`s `Kᵥ`/`𝒪ᵥ`/`Γᵥ`/`Ωᵥ` derived from it, plus one
 `CharZero (adicCompletion ℚ v)` instance step. Nothing in its mathematics
-is about `ℚ`: every argument is about the local field `K_w` and the DVR
-`𝒪_w`. So the honest way to close THIS leaf is to hoist that `variable`
-line to a general `(K : Type u) [Field K] [NumberField K]`, after which the
-`ℚ` statement becomes an instance of the general one and BOTH leaves close
-together — a strictly copy-count-reducing change.
+was about `ℚ`: every argument is about the local field `K_w` and the DVR
+`𝒪_w`. So that `variable` line was HOISTED to
+`{K : Type u} [Field K] [NumberField K]`, together with the fifteen
+`Type`-valued binders for the Hopf algebras, which had to move from
+`Type 0` to `Type u` (`HasFlatProlongationAt` itself already quantifies
+its witness over `Type uK`, so this only restores the alignment; over a
+base field in `Type u` with `u > 0` a `Type 0` binder would have made the
+witnesses' existentials vacuous, since a field in `Type u` does not embed
+in a `Type 0` algebra). The whole file then re-elaborated CLEAN in 32 s
+with no other change, and the `ℚ` statement is now literally an instance
+of the general one, so `Deformation.lean`'s `ℚ`-level theorem is
+unchanged and no second copy of the argument exists.
 
-It was not done in this task because it is a cross-cutting edit to a file
-with several concurrent owners, and because consuming
-`FlatPointsGroup.lean` from here would pull
-`KnownIn1980s/EllipticCurves/Flat.lean` (the Gelfand-duality machinery,
-itself over the division-polynomial cone) into this module's deliberately
-minimal import surface — which is what lets `Deformation.lean`
-`public import` this module without touching the circularity guard. The
-right sequencing is: hoist `FlatPointsGroup.lean` first, then decide where
-the shared statement lives.
+The one concern the previous owner raised — that importing
+`FlatPointsGroup.lean` here widens this module's deliberately minimal
+import surface, since it pulls `KnownIn1980s/EllipticCurves/Flat.lean` —
+was CHECKED and is not a cost to anyone but this file's own elaboration:
+`FlatPointsGroup.lean`'s `Fermat`-side import closure is 38 modules and
+contains nothing from `HardlyRamified/`, `Family.lean`, `Lift.lean`,
+`Deformation.lean` or `Modularity/*`, so the circularity guard is intact;
+and `Deformation.lean` — the SOLE consumer of this module — already
+imports `FlatPointsGroup.lean` directly, so no downstream cone grows by a
+single module. See the import comment at the head of this file.
 
 FAITHFULNESS: the hypotheses are exactly those of the `ℚ`-level theorem
 with `ℚ` replaced by `K`, and the conclusion asks only for EXISTENCE of a
@@ -2243,8 +2275,18 @@ theorem hasFlatProlongationAt_of_pi_surjection_of_numberField
     (hsurj : Function.Surjective π)
     (hequiv : ∀ (g : Γ (w.adicCompletion K))
         (x : Fin n → (ρ₁.toLocal w).Space), π (g • x) = g • π x) :
-    ρ₂.HasFlatProlongationAt w :=
-  sorry
+    ρ₂.HasFlatProlongationAt w := by
+  -- pass to the representation-free point-group carrier
+  have h₁ : Modularity.IsFlatPointsGroupAt w (ρ₁.toLocal w).Space :=
+    (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₁).mp h
+  -- products: the finite power is the point group of the tensor power of the
+  -- witness Hopf algebra
+  have hpow : Modularity.IsFlatPointsGroupAt w
+      (∀ _ : Fin n, (ρ₁.toLocal w).Space) :=
+    Modularity.IsFlatPointsGroupAt.pi fun _ => h₁
+  -- quotients: schematic closure over the DVR along the equivariant surjection
+  exact (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₂).mpr
+    (hpow.of_surjective π hsurj hequiv)
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
@@ -2573,8 +2615,8 @@ lemma isHilbertHardlyRamified_baseChange (ℓ : ℕ) [Fact ℓ.Prime]
     exact isHilbertTameAtTwo_baseChange B w (h.isTameAtTwo w hw)
 
 open scoped TensorProduct in
-/-- **Functoriality of the `F`-level condition** (PROVEN 2026-07-26 over the
-single leaf `hasFlatProlongationAt_of_pi_surjection_of_numberField`).
+/-- **Functoriality of the `F`-level condition** (PROVEN 2026-07-26, through
+the now also PROVEN `hasFlatProlongationAt_of_pi_surjection_of_numberField`).
 
 `framePushforward ψ hψ ρ` is by definition `(ρ.baseChange A).conj
 (TensorProduct.piScalarRight B A A (Fin 2))`, so this is
