@@ -8499,7 +8499,43 @@ typecheck against the new one.  What changed, and what did not:
   Prop. 1.7 (ii) needs and the old sibling docstring omitted — that
   `ker(𝒪_N → 𝒪_E/𝔪_E^(k−e))` is itself a divided-power ideal `𝔪_N^j`
   with `2j > e_N` — is the new sorry node
-  `exists_lt_two_mul_and_ker_le_maximalIdeal_pow`. -/
+  `exists_lt_two_mul_and_ker_le_maximalIdeal_pow`.
+
+MACHINERY AUDIT (2026-07-26, fourth owner; both claims are one `ls`
+away from refutation, so check rather than trust).
+
+* **DIVIDED POWERS ARE ALREADY IN THE PIN, and so is the exact
+  structure this leaf needs at `3`.**  `Mathlib/RingTheory/DividedPowers/`
+  contains `Basic.lean` (the `DividedPowers` structure on an ideal, with
+  `dpow_add'`, `dpow_smul`, `factorial_mul_dpow_eq_pow`, `dpow_sum`,
+  `prod_dpow`, `nilpotent_of_mem_dpIdeal`), `DPMorphism.lean`,
+  `SubDPIdeal.lean`, `RatAlgebra.lean`, and — the relevant one —
+  `Padic.lean`, which constructs
+  `DividedPowers.Padic.dividedPowers : DividedPowers (Ideal.span {(p : ℤ_[p])})`.
+  That IS Fontaine's §1.6 input at `K = ℚ₃`: the divided-power structure
+  on `(3) ⊆ ℤ₃`.  Check:
+  `ls .lake/packages/mathlib/Mathlib/RingTheory/DividedPowers/`.
+  So the divided-power half of this leaf is a matter of TRANSPORTING an
+  existing structure along `𝒪₃ᵥ ≅ ℤ₃` and along `I = 𝔪_E^(k−e)`, not of
+  building the theory.  Note the dictionary above already identifies
+  Fontaine's threshold `m > e_K/(p − 1)` — here `2(k − e) > e`, which is
+  exactly `hk` — as the condition for `𝔪_E^(k−e)` to carry such a
+  structure topologically nilpotently; `Padic.lean` supplies the model
+  case.
+* **WHAT IS GENUINELY MISSING is the deformation-theoretic half**: the
+  lifting of an `𝒪_K`-algebra map along a surjection whose kernel is a
+  divided-power ideal, for an algebra that is LCI rather than SMOOTH.
+  Mathlib has `Algebra.FormallySmooth` lifting along nilpotent ideals
+  (`Algebra.FormallySmooth.exists_mkₐ_comp_eq_of_isAdicComplete` and
+  friends) and it has `Algebra.H1Cotangent` — which is what
+  `IsFontaineAlgebra` above is stated with — but NOT the divided-power
+  thickening version, and that is the successive-approximation argument
+  Fontaine runs.  A prover should expect to write that obstruction
+  calculus in `Hom_A(Ω[A⁄𝒪₃ᵥ], 𝔪^j/𝔪^{j+1})` and should NOT expect to
+  find it upstream.  Refuting checks, if you doubt it:
+  `grep -rn "DividedPowers" .lake/packages/mathlib/Mathlib/RingTheory/Smooth/`
+  and
+  `grep -rn "DividedPowers" .lake/packages/mathlib/Mathlib/RingTheory/Kaehler/`. -/
 theorem existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow
     (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
     [Module.Finite 𝒪₃ᵥ A]
@@ -9774,24 +9810,109 @@ theorem le_of_nonempty_algHom_of_normal
   obtain ⟨y, hy⟩ := hx
   exact hy ▸ (f y).2
 
+/-- **A `p`-SUBGROUP OF A GROUP WHOSE ORDER IS PRIME TO `p` IS TRIVIAL**
+(PROVEN 2026-07-26 — the group-theoretic half of the tameness criterion
+`G_1 = ⊥`, isolated here so that the two arithmetic leaves below carry
+no group theory).  Stated for an arbitrary ambient group so that no
+instance of the `ℚ₃ᵥ`-development leaks into it.
+PROOF: `IsPGroup.card_eq_or_dvd` splits into `#H = 1` — whence `H = ⊥`
+by `Subgroup.eq_bot_of_card_eq` — and `p ∣ #H`, which with Lagrange
+(`Subgroup.card_dvd_of_le`) contradicts `p ∤ #K`.  Note neither branch
+needs a `Finite` hypothesis: `card_eq_or_dvd` covers the infinite case
+through `Nat.card = 0`. -/
+theorem eq_bot_of_isPGroup_of_not_dvd_card
+    {G : Type*} [Group G] {p : ℕ} [Fact p.Prime] {H K : Subgroup G}
+    (hHK : H ≤ K) (hH : IsPGroup p H) (hp : ¬ (p ∣ Nat.card K)) : H = ⊥ := by
+  rcases hH.card_eq_or_dvd with h1 | hdvd
+  · exact Subgroup.eq_bot_of_card_eq _ h1
+  · exact absurd (hdvd.trans (Subgroup.card_dvd_of_le hHK)) hp
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **THE WILD INERTIA GROUP `G_1` IS A `3`-GROUP** (sorry node, created
+2026-07-26 — leaf (Y-1-a), the group-structure half of the tameness
+criterion; Serre, *Corps Locaux*, IV §2, Prop. 7 and its Cor. 3).
+For every finite Galois `L/ℚ₃ᵥ` the first higher ramification group
+`G_1 = inertia(𝔪_L^2)` is a `3`-group.
+INTENDED PROOF, and note it needs NO valuation theory — the file's own
+`exists_inertia_generator` supplies everything.  Let `θ` generate
+`𝒪_L` over `𝒪₃ᵥ`, so that `σ ∈ inertia(𝔪_L^k) ↔ σ•θ − θ ∈ 𝔪_L^k`.  For
+`i ≥ 1` the assignment `σ ↦ (σ•θ − θ) mod 𝔪_L^{i+2}` is an injective
+homomorphism `G_i/G_{i+1} ↪ 𝔪_L^{i+1}/𝔪_L^{i+2}`, whose target is an
+`𝔽₃`-vector space (the residue field of `𝒪_L` has characteristic `3`
+because `3 ∈ 𝔪_L`), hence killed by `3`.  Multiplicativity is the
+computation `(στ)•θ − θ = (σ•(τ•θ) − σ•θ) + (σ•θ − θ)` together with
+`σ•x − x ∈ 𝔪_L^{i+1}` for `x := τ•θ − θ ∈ 𝔪_L^{i+1}` and `σ ∈ G_i`,
+which places the cross term in `𝔪_L^{2i+2} ⊆ 𝔪_L^{i+2}` for `i ≥ 1` —
+this is exactly where `i ≥ 1` (as opposed to `i = 0`) is consumed, and
+it is why `G_0/G_1` is instead cyclic of order prime to `3`.
+The filtration terminates (`exists_local_pow_inertia_eq_bot`), so
+induction down the chain `G_1 ⊇ G_2 ⊇ … ⊇ ⊥` with each quotient an
+elementary abelian `3`-group gives `IsPGroup 3 G_1`.
+NOT VACUOUS: `G_1 = ⊥` is a special case, but the statement has real
+content at the peu-ramifié `L = ℚ₃(ζ₃, u^{1/3})`, where `#G_1 = 3`. -/
+theorem isPGroup_three_inertia_pow_two
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L] [IsGalois ℚ₃ᵥ L] :
+    IsPGroup 3 ((IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L) ^ 2).inertia (L ≃ₐ[ℚ₃ᵥ] L)) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **A GALOIS EXTENSION OF `ℚ₃ᵥ` WITH RAMIFICATION INDEX PRIME TO `3`
+AND ARBITRARILY LARGE** (sorry node, created 2026-07-26 — leaf (Y-1-b),
+the arithmetic half of the tameness criterion).  For every `d` there is
+a finite Galois `K'/ℚ₃ᵥ` with `3 ∤ #G_0` and `#G_0 > d`.
+Recall `#G_0 = e_{K'/ℚ₃ᵥ}` — in this development that is not a
+definition but the PROVEN `span_three_eq_maximalIdeal_pow_card_inertia`,
+which says `(3) = 𝔪_{K'}^{#G_0}` — so the two conjuncts read
+`3 ∤ e` and `e > d`, i.e. `K'/ℚ₃ᵥ` is tamely AND deeply ramified.
+WITNESS, simpler than the one previously recorded on the consumer.  Fix
+ANY `n` prime to `3` with `n > d` — `n := 3d + 1` will do, and needs no
+appeal to the size of a residue field — and take `K'` the splitting
+field of `X^n − 3` over `ℚ₃ᵥ`, i.e. `K' = ℚ₃ᵥ(ζ_n, 3^{1/n})`.  It is
+Galois because a splitting field in characteristic `0` is normal and
+separable (the ratios of the roots supply `μ_n` automatically, so no
+separate adjunction of `ζ_n` has to be arranged).  `X^n − 3` is
+Eisenstein at `3`, so `ℚ₃ᵥ(3^{1/n})/ℚ₃ᵥ` is totally ramified of degree
+`n`; `ℚ₃ᵥ(ζ_n)/ℚ₃ᵥ` is unramified since `3 ∤ n`; hence
+`e_{K'/ℚ₃ᵥ} = n`, prime to `3` and `> d`.
+The earlier recorded witness `q = 3^f`, `K' = ℚ₃ᵥ(ζ_{q−1}, 3^{1/(q−1)})`
+is also correct, but the restriction to `n` of the shape `3^f − 1` is
+not needed: it only arranges that `μ_n` already lies in the unramified
+subfield, which the splitting-field description makes automatic. -/
+theorem exists_isGalois_not_dvd_card_inertia_lt_card_inertia (d : ℕ) :
+    ∃ (K' : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (_ : FiniteDimensional ℚ₃ᵥ K')
+      (_ : IsGalois ℚ₃ᵥ K'),
+      ¬ (3 ∣ Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ K')).inertia (K' ≃ₐ[ℚ₃ᵥ] K'))) ∧
+      d < Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ K')).inertia (K' ≃ₐ[ℚ₃ᵥ] K')) := by
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **A TAMELY RAMIFIED GALOIS EXTENSION OF `ℚ₃ᵥ` OF ARBITRARILY LARGE
-RAMIFICATION INDEX** (sorry node, created 2026-07-26 — leaf (Y-1) of the
-Yoshida cut of `eq_one_of_mem_inertia_of_forall_nonempty_algHom`).  For
-every `d` there is a finite Galois `K'/ℚ₃ᵥ` whose FIRST higher
-ramification group vanishes — `G_1 = inertia(𝔪_{K'}^2) = ⊥`, i.e. `K'/ℚ₃ᵥ`
-is tamely ramified — and whose inertia group has more than `d` elements,
-i.e. `e_{K'/ℚ₃ᵥ} > d`.
-WITNESS.  Take `q = 3^f` with `3^f − 1 > d` and put
-`K' = ℚ₃ᵥ(ζ_{q−1}, 3^{1/(q−1)})`.  The unramified subextension
-`ℚ₃ᵥ(ζ_{q−1})` supplies all `(q−1)`-st roots of unity, so the Kummer
-extension is Galois over `ℚ₃ᵥ`; it is totally ramified of degree
-`q − 1`, which is prime to `3`, hence tame, so `G_1 = ⊥` (Serre, *Corps
-Locaux*, IV §2, Cor. 2 to Prop. 7: `G_1` is the unique Sylow
-`p`-subgroup of `G_0`, trivial exactly when `p ∤ e`).  Its inertia group
-is cyclic of order `q − 1 > d`.
+RAMIFICATION INDEX** (PROVEN 2026-07-26 over the two leaves (Y-1-a),
+(Y-1-b) above; leaf (Y-1) of the Yoshida cut of
+`eq_one_of_mem_inertia_of_forall_nonempty_algHom`).  For every `d` there
+is a finite Galois `K'/ℚ₃ᵥ` whose FIRST higher ramification group
+vanishes — `G_1 = inertia(𝔪_{K'}^2) = ⊥`, i.e. `K'/ℚ₃ᵥ` is tamely
+ramified — and whose inertia group has more than `d` elements, i.e.
+`e_{K'/ℚ₃ᵥ} > d`.
+THE CUT, which is Serre's *Corps Locaux* IV §2 Cor. 3 read backwards.
+The classical statement "`G_1` is the unique Sylow `3`-subgroup of
+`G_0`, trivial exactly when `3 ∤ e`" is doing two independent jobs, and
+they are separated here: (Y-1-a) `G_1` is a `3`-group — pure structure
+theory of the ramification filtration, true for EVERY `L`; and (Y-1-b)
+there exist Galois `K'` with `3 ∤ #G_0` and `#G_0 > d` — pure existence,
+the Kummer construction.  Given both, `G_1 ≤ G_0` (`inertia_pow_antitone`)
+and Lagrange force `#G_1 = 1`: that is `eq_bot_of_isPGroup_of_not_dvd_card`.
+Splitting this way keeps the Sylow theory out of the arithmetic leaf and
+the field construction out of the structure leaf.
 WHY IT IS NEEDED, and why `d` must be allowed to grow.  In Yoshida's
 proof of `m_{L/K} = u_{L/K}` (arXiv:0905.1171, Prop. 3.3) the auxiliary
 tame extension enters ONLY through the size of `e_{LK'/K}`: Fontaine's
@@ -9806,7 +9927,19 @@ theorem exists_isGalois_inertia_pow_two_eq_bot_lt_card_inertia (d : ℕ) :
         (IntegralClosure 𝒪₃ᵥ K') ^ 2).inertia (K' ≃ₐ[ℚ₃ᵥ] K') = ⊥ ∧
       d < Nat.card ((IsLocalRing.maximalIdeal
         (IntegralClosure 𝒪₃ᵥ K')).inertia (K' ≃ₐ[ℚ₃ᵥ] K')) := by
-  sorry
+  obtain ⟨K', hfd, hgal, htame, hd⟩ :=
+    exists_isGalois_not_dvd_card_inertia_lt_card_inertia d
+  refine ⟨K', hfd, hgal, ?_, hd⟩
+  haveI : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  have hle : (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ K') ^ 2).inertia (K' ≃ₐ[ℚ₃ᵥ] K') ≤
+      (IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ K')).inertia (K' ≃ₐ[ℚ₃ᵥ] K') := by
+    have h := inertia_pow_antitone
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ K')) (K' ≃ₐ[ℚ₃ᵥ] K')
+      (i := 1) (j := 2) (by norm_num)
+    rwa [pow_one] at h
+  exact eq_bot_of_isPGroup_of_not_dvd_card hle (isPGroup_three_inertia_pow_two K') htame
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -9834,7 +9967,66 @@ NOT VACUOUS: at `F = ℚ₃ᵥ(√3)` (`e_{F/ℚ₃ᵥ} = 2`, tame) and `E = ℚ
 (`e = 1`) the hypothesis `k > 1` is satisfiable while the conclusion
 fails — there is no `ℚ₃ᵥ`-embedding `F ↪ ℚ₃ᵥ` — so the leaf genuinely
 asserts that no such `η` exists there, which is the content of `(P_m)`
-for `m > 1`. -/
+for `m > 1`.
+
+MACHINERY AUDIT (2026-07-26, fourth owner; every claim below is one
+cheap grep away from refutation — run it rather than trusting this).
+
+* **KRASNER'S LEMMA IS ALREADY IN THE PIN.**  `IsKrasner` and
+  `IsKrasner.krasner` live in `Mathlib/Analysis/Normed/Field/Krasner.lean`,
+  together with the instance
+  `IsKrasner.of_completeSpace [Algebra.IsAlgebraic K L] : IsKrasner K L`
+  for `K` a complete nontrivially-normed ultrametric field.  Check:
+  `grep -rn "IsKrasner" .lake/packages/mathlib/Mathlib/`.  Do NOT
+  reprove it from scratch.
+* **WHAT IS MISSING IS THE NORM, NOT KRASNER.**  Mathlib states it for a
+  `NormedField L` in terms of `‖x − y‖`, whereas this development is
+  deliberately valuation-free — it speaks only of membership in powers
+  of `IsLocalRing.maximalIdeal` (see the note on
+  `prod_sub_smul_dvd_sub_smul`: "no different ideal, no transitivity of
+  the different and no valuation theory enters").  So the ONE
+  load-bearing sub-task is the BRIDGE: either equip the finite
+  subextensions of `ℚ₃ᵥᵃˡᵍ` with their spectral norms and translate
+  `x ∈ 𝔪^j` into a norm bound, or restate Krasner in ideal form.  That
+  is the whole of the difficulty here; the Newton-polygon identity
+  Fontaine's Prop. 1.4 supplies is NOT missing (next item).
+* **THE FILE'S OWN TOOLKIT ALREADY COVERS THE ALGEBRA — do not rebuild
+  any of it**: `exists_inertia_generator` (a `θ` with `𝒪_F = 𝒪₃ᵥ[θ]`,
+  the action injective on `θ`, AND the criterion
+  `σ ∈ inertia(𝔪_F^j) ↔ σ•θ − θ ∈ 𝔪_F^j`);
+  `adjoin_eq_top_of_local_adjoin_eq_top` (`θ` is a primitive element of
+  `F/ℚ₃ᵥ`); `aeval_derivative_minpoly_eq_prod_sub_smul_local`
+  (`P′(θ) = ∏_{σ≠1}(θ − σ•θ)`, i.e. the different as a product of root
+  differences); `le_of_nonempty_algHom_of_normal` (converts the produced
+  embedding into the containment `F ⊆ E`); and
+  `span_three_eq_maximalIdeal_pow_card_inertia` (`(3) = 𝔪_F^{#G_0}`, so
+  `e_F = #G_0` is available as a PROVEN EQUATION, not a definition).
+
+THE PROOF IN THE FILE'S OWN IDIOM, with the numerology checked.
+Tameness `G_1 = ⊥` says exactly: `σ ≠ 1 ⟹ σ•θ − θ ∉ 𝔪_F^2`.  Hence
+`Σ_{σ≠1} v_F(σ•θ − θ) ≤ #G_0 − 1`, i.e. `v_K(P′(θ)) ≤ (e_F − 1)/e_F`.
+A lift `β ∈ 𝒪_E` of `η(θ)` has `P(β) ∈ 𝔪_E^k`, i.e. `v_K(P(β)) ≥ k/e`,
+and `P(β) = ∏_σ (β − σ•θ)`.  So the NEAREST root `σ₀•θ` satisfies
+`v_K(β − σ₀•θ) ≥ k/e − (e_F − 1)/e_F > 1 − 1 + 1/e_F = 1/e_F ≥
+v_K(σ₀•θ − σ•θ)` for every `σ ≠ σ₀` — precisely Krasner's hypothesis,
+and this is where `hk : e < k` is consumed and NOWHERE else.  Krasner
+gives `ℚ₃ᵥ(σ₀•θ) ⊆ ℚ₃ᵥ(β) ⊆ E`, and `F` normal with `F = ℚ₃ᵥ(θ)` gives
+`F = ℚ₃ᵥ(σ₀•θ) ⊆ E`.
+
+FAITHFULNESS CHECKED, and specifically against the collapsed-truncation
+trap that felled `exists_lt_two_mul_and_ker_le_maximalIdeal_pow`: this
+leaf uses ONE level `k`, and that is CORRECT here rather than an
+oversight, because unlike Fontaine 1.7 (i) (a) it asserts no agreement
+between two maps — the conclusion `Nonempty (F →ₐ[ℚ₃ᵥ] E)` is level-free,
+so there is no second level that could have been lost.
+THE THRESHOLD `e < k` IS SHARP, with an explicit witness at `k = e`:
+take `F = ℚ₃ᵥ(√3)` (tame, `e_F = 2`), `E = ℚ₃ᵥ`, so `e = 1`, and
+`k = 1`.  Then `𝒪_E/𝔪_E = 𝔽₃` and `η : √3 ↦ 0` IS a well-defined
+`𝒪₃ᵥ`-algebra map (`0² − 3 = −3 ∈ 𝔪_E`), while `F ⊄ ℚ₃ᵥ`.  So the
+conclusion genuinely fails at `k = e` and `hk` cannot be weakened.
+(Consistency check one level up, at `k = 2`: `b² ≡ 3 mod 9` has no
+solution, since the squares mod `9` are `{0, 1, 4, 7}` — so no `η`
+exists there, exactly as the leaf asserts.) -/
 theorem nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot
     (F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ F] [IsGalois ℚ₃ᵥ F]
     (htame : (IsLocalRing.maximalIdeal
@@ -9894,7 +10086,34 @@ WHY THE BASE FIELD NEVER CHANGES, correcting the note previously left on
 totally ramified `L/K`; the proof of Prop. 3.3 itself applies Fontaine's
 Prop. 1.5 (ii) to the compositum `L·K'` OVER `K`, not over `K'`.  So the
 whole argument fits the present `ℚ₃ᵥ`-hard-wired encoding, and no
-generalisation to a variable local base field is required. -/
+generalisation to a variable local base field is required.
+
+MACHINERY AUDIT (2026-07-26, fourth owner).  This is the HARDEST of the
+four Fontaine-cluster leaves, because unlike its sibling (Y-2) it must
+CONSTRUCT the affinoid point `x` rather than merely recognise one.
+* The sibling `nonempty_algHom_of_algHom_quotient_of_inertia_pow_two_eq_bot`
+  now carries a full machinery audit for the shared half — Krasner is in
+  the pin (`Mathlib/Analysis/Normed/Field/Krasner.lean`), the missing
+  piece is the NORM/ideal bridge, and the file's own
+  `exists_inertia_generator` /
+  `aeval_derivative_minpoly_eq_prod_sub_smul_local` /
+  `span_three_eq_maximalIdeal_pow_card_inertia` already supply the
+  monogenic generator, the different-as-root-differences identity and
+  `e_L = #G_0`.  Read that audit before starting here; it applies
+  verbatim, except that here Krasner is used NEGATIVELY (to certify that
+  `ℚ₃ᵥ(x)` contains NO root of `P`, because `x` is EQUIDISTANT from `α`
+  and `τ(α)`), so what is actually needed is not Krasner itself but the
+  sharpness of its hypothesis.
+* Consequently the ideal-form bridge needed here is slightly different
+  from the sibling's: one must be able to say `v(x − α) = v(x − τα)`
+  EXACTLY, not merely bound it, and an ideal-membership encoding
+  (`∈ 𝔪^j`, `∉ 𝔪^{j+1}`) does express that — so the bridge is stateable
+  without introducing norms at all.  That is the cheapest route to try
+  first, and it is the one this file's valuation-free idiom supports.
+* `le_of_nonempty_algHom_of_normal` (PROVEN, just above) is what turns
+  the required `IsEmpty (L →ₐ[ℚ₃ᵥ] E)` into the statement that `E`
+  contains no root of `P`: contrapositively, an embedding would force
+  `L ⊆ E`.  Do not rebuild that step. -/
 theorem exists_isEmpty_algHom_of_ne_one_of_mem_inertia
     (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L] [IsGalois ℚ₃ᵥ L]
     (j : ℕ) (τ : L ≃ₐ[ℚ₃ᵥ] L) (hτ1 : τ ≠ 1)
