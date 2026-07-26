@@ -752,20 +752,104 @@ theorem false_of_trace_toModuleEnd_eq_zero
     exact one_ne_zero hcontr
 
 /-!
+## Step 5b: rank-two Cayley–Hamilton, and trace extraction from charpolys
+
+Two bookkeeping facts about `2`-dimensional endomorphisms, both used by
+the CHARACTERISTIC-ZERO branch of Step 6 and Step 8 below (added
+2026-07-26 with the char-`≠ 2` generalization).
+
+`two_mul_det_eq_of_finrank_two` is the reason the char-`≠ 2` Galois node
+of Step 8 needs only the *trace* to be continuous: once `2` is a unit,
+the determinant is a polynomial in the traces of `f` and `f²`, so
+trace agreement at every group element upgrades by itself to charpoly
+agreement at every group element. Over the discrete finite fields of
+Step 7 that upgrade is unnecessary (the whole charpoly locus is open and
+closed), which is why it appears only now.
+-/
+
+/-- **Cayley–Hamilton in rank two**: on a free module of rank `2`,
+`2 · det f = (tr f)² − tr (f²)`. Take the trace of
+`f² − (tr f)·f + (det f)·1 = 0`, which is `LinearMap.aeval_self_charpoly`
+read through `charpoly_eq_quadratic_of_finrank_two`; the identity
+endomorphism contributes `tr 1 = finrank = 2`. -/
+lemma two_mul_det_eq_of_finrank_two
+    {F : Type*} [CommRing F] [Nontrivial F] {V : Type*} [AddCommGroup V]
+    [Module F V] [Module.Finite F V] [Module.Free F V]
+    (hfr : Module.finrank F V = 2) (f : V →ₗ[F] V) :
+    2 * LinearMap.det f =
+      LinearMap.trace F V f * LinearMap.trace F V f
+        - LinearMap.trace F V (f * f) := by
+  have hCH : (Polynomial.aeval f) f.charpoly = 0 :=
+    LinearMap.aeval_self_charpoly f
+  rw [charpoly_eq_quadratic_of_finrank_two hfr f] at hCH
+  have hexp : (f * f) - (LinearMap.trace F V f) • f
+      + (LinearMap.det f) • (1 : Module.End F V) = 0 := by
+    rw [← hCH]
+    simp only [map_add, map_sub, map_mul, Polynomial.aeval_X,
+      Polynomial.aeval_C, map_pow, Algebra.smul_def]
+    simp only [pow_two, mul_one]
+  have htr := congrArg (LinearMap.trace F V) hexp
+  simp only [map_add, map_sub, map_smul, smul_eq_mul, LinearMap.trace_one,
+    map_zero, hfr, Nat.cast_ofNat] at htr
+  linear_combination htr
+
+/-- **Traces agree when charpolys do**, in rank two: read off the linear
+coefficient of `X² − (tr)·X + det`. -/
+lemma trace_eq_of_charpoly_eq_finrank_two
+    {F : Type*} [CommRing F] [Nontrivial F]
+    {V : Type*} [AddCommGroup V] [Module F V] [Module.Finite F V]
+    [Module.Free F V]
+    {V' : Type*} [AddCommGroup V'] [Module F V'] [Module.Finite F V']
+    [Module.Free F V']
+    (hV : Module.finrank F V = 2) (hV' : Module.finrank F V' = 2)
+    {f : V →ₗ[F] V} {f' : V' →ₗ[F] V'} (h : f.charpoly = f'.charpoly) :
+    LinearMap.trace F V f = LinearMap.trace F V' f' := by
+  have hq : X ^ 2 - C (LinearMap.trace F V f) * X + C (LinearMap.det f) =
+      X ^ 2 - C (LinearMap.trace F V' f') * X + C (LinearMap.det f') := by
+    rw [← charpoly_eq_quadratic_of_finrank_two hV f,
+      ← charpoly_eq_quadratic_of_finrank_two hV' f']
+    exact h
+  have h3 := congrArg (fun p => p.coeff 1) hq
+  simp only [coeff_one_quadratic] at h3
+  exact neg_inj.mp h3
+
+/-!
 ## Step 6: the main abstract theorem
+
+Refactored 2026-07-26 into a CORE plus two witnesses. The core
+`exists_linearEquiv_of_charpoly_eq_of_traceWitness` carries the whole
+Brauer–Nesbitt argument and takes, as its last hypothesis, exactly the
+one thing the finite-field proof of Step 5 supplied: that not every
+element of the group algebra acts on `W` with trace zero. The two
+witnesses are then:
+
+* `[Finite k]`, any characteristic — Step 5's little-Wedderburn theorem
+  `false_of_trace_toModuleEnd_eq_zero`; and
+* `(2 : k) ≠ 0`, any field finite or not — the identity `1` of the group
+  algebra already has trace `finrank k W = 2 ≠ 0`.
+
+Neither subsumes the other: `𝔽₂ⁿ`-coefficients need the first, and
+characteristic-zero coefficients (`ℚ_p`, a finite extension of it, `ℂ`)
+need the second, since they are not finite.
 -/
 
 set_option backward.isDefEq.respectTransparency false in
 set_option maxHeartbeats 800000 in
-/-- **Brauer–Nesbitt conjugacy, dimension 2, finite coefficient field**
-(the abstract core of the Chebotarev–Brauer–Nesbitt conjugacy leaves):
-two representations of a group `G` on 2-dimensional `k`-spaces with
-equal characteristic polynomials at every group element, the second
-irreducible, are intertwined by a `k`-linear isomorphism. Valid in every
-characteristic (Curtis–Reiner §30.16 at dimension 2;
-Diamond–Darmon–Taylor Lemma 3.27). -/
-theorem exists_linearEquiv_of_charpoly_eq
-    [Finite k]
+/-- **Brauer–Nesbitt conjugacy, dimension 2, over an arbitrary
+coefficient field, parameterized by a trace witness** (the abstract core
+of the Chebotarev–Brauer–Nesbitt conjugacy leaves): two representations
+of a group `G` on 2-dimensional `k`-spaces with equal characteristic
+polynomials at every group element, the second irreducible, are
+intertwined by a `k`-linear isomorphism — provided the image of the
+group algebra `k[G]` in `End k W` is not everywhere traceless.
+
+That last hypothesis is the ONLY place the coefficient field enters. The
+Jacobson-density dichotomy of Step 4 shows that if no nonzero
+equivariant map `W' → W` exists then every `b ∈ k[G]` is traceless on
+`W`; `hwit` is precisely the refutation of that, and its two standard
+sources are recorded in the section header above (Curtis–Reiner §30.16 at
+dimension 2; Diamond–Darmon–Taylor Lemma 3.27). -/
+theorem exists_linearEquiv_of_charpoly_eq_of_traceWitness
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     {W' : Type uW'} [AddCommGroup W'] [Module k W'] [Module.Finite k W']
@@ -773,7 +857,9 @@ theorem exists_linearEquiv_of_charpoly_eq
     (hW : Module.finrank k W = 2) (hW' : Module.finrank k W' = 2)
     (ρ : Representation k G W) (τ : Representation k G W')
     (hirr : ρ.IsIrreducible)
-    (hcp : ∀ g, (τ g).charpoly = (ρ g).charpoly) :
+    (hcp : ∀ g, (τ g).charpoly = (ρ g).charpoly)
+    (hwit : ¬ ∀ x : MonoidAlgebra k G,
+      LinearMap.trace k W (Representation.asAlgebraHom ρ x) = 0) :
     ∃ e : W' ≃ₗ[k] W, ∀ g w, e (τ g w) = ρ g (e w) := by
   classical
   have hτirr : τ.IsIrreducible :=
@@ -886,45 +972,116 @@ theorem exists_linearEquiv_of_charpoly_eq
       exists_projector_smul_id_and_smul_zero (k := k) (P := W') (M := W)
         hex hMP
     -- the toModuleEnd/asAlgebraHom bridge for traces
-    have htrEnd : ∀ x : MonoidAlgebra k G,
-        LinearMap.trace k W'
-            (Module.toModuleEnd k (S := MonoidAlgebra k G) W' x) =
-          LinearMap.trace k W
-            (Module.toModuleEnd k (S := MonoidAlgebra k G) W x) := by
-      intro x
-      have hE1 : Module.toModuleEnd k (S := MonoidAlgebra k G) W' x =
+    have hE1 : ∀ x : MonoidAlgebra k G,
+        Module.toModuleEnd k (S := MonoidAlgebra k G) W' x =
           Representation.asAlgebraHom τ x :=
-        LinearMap.ext fun w => hsmulW' x w
-      have hE2 : Module.toModuleEnd k (S := MonoidAlgebra k G) W x =
+      fun x => LinearMap.ext fun w => hsmulW' x w
+    have hE2 : ∀ x : MonoidAlgebra k G,
+        Module.toModuleEnd k (S := MonoidAlgebra k G) W x =
           Representation.asAlgebraHom ρ x :=
-        LinearMap.ext fun w => hsmulW x w
-      rw [hE1, hE2]
-      exact htrA x
-    -- every algebra element is traceless on `W`
-    have htr0 : ∀ b : MonoidAlgebra k G,
-        LinearMap.trace k W
-          (Module.toModuleEnd k (S := MonoidAlgebra k G) W b) = 0 := by
-      intro b
-      have hEb : Module.toModuleEnd k (S := MonoidAlgebra k G) W (r * b) =
-          Module.toModuleEnd k (S := MonoidAlgebra k G) W b := by
-        refine LinearMap.ext fun x => ?_
-        show (r * b) • x = b • x
-        rw [mul_smul, hrW]
-      have hEb' : Module.toModuleEnd k (S := MonoidAlgebra k G) W' (r * b) =
-          0 := by
-        refine LinearMap.ext fun x => ?_
-        show (r * b) • x = 0
-        rw [mul_smul, hrW']
-      calc LinearMap.trace k W
-            (Module.toModuleEnd k (S := MonoidAlgebra k G) W b)
-          = LinearMap.trace k W
-            (Module.toModuleEnd k (S := MonoidAlgebra k G) W (r * b)) := by
-            rw [hEb]
-        _ = LinearMap.trace k W'
-            (Module.toModuleEnd k (S := MonoidAlgebra k G) W' (r * b)) :=
-            (htrEnd (r * b)).symm
-        _ = 0 := by rw [hEb', map_zero]
-    exact false_of_trace_toModuleEnd_eq_zero hW htr0
+      fun x => LinearMap.ext fun w => hsmulW x w
+    -- every algebra element is traceless on `W`, refuting `hwit`
+    refine hwit fun b => ?_
+    have hEb : Module.toModuleEnd k (S := MonoidAlgebra k G) W (r * b) =
+        Module.toModuleEnd k (S := MonoidAlgebra k G) W b := by
+      refine LinearMap.ext fun x => ?_
+      show (r * b) • x = b • x
+      rw [mul_smul, hrW]
+    have hEb' : Module.toModuleEnd k (S := MonoidAlgebra k G) W' (r * b) =
+        0 := by
+      refine LinearMap.ext fun x => ?_
+      show (r * b) • x = 0
+      rw [mul_smul, hrW']
+    calc LinearMap.trace k W (Representation.asAlgebraHom ρ b)
+        = LinearMap.trace k W
+          (Module.toModuleEnd k (S := MonoidAlgebra k G) W b) := by
+          rw [hE2]
+      _ = LinearMap.trace k W
+          (Module.toModuleEnd k (S := MonoidAlgebra k G) W (r * b)) := by
+          rw [hEb]
+      _ = LinearMap.trace k W'
+          (Module.toModuleEnd k (S := MonoidAlgebra k G) W' (r * b)) := by
+          rw [hE1, hE2]; exact (htrA (r * b)).symm
+      _ = 0 := by rw [hEb', map_zero]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Brauer–Nesbitt conjugacy, dimension 2, finite coefficient field**
+(unchanged statement; since 2026-07-26 a five-line delegation to
+`exists_linearEquiv_of_charpoly_eq_of_traceWitness` above): two
+representations of a group `G` on 2-dimensional `k`-spaces with equal
+characteristic polynomials at every group element, the second
+irreducible, are intertwined by a `k`-linear isomorphism. Valid in every
+characteristic (Curtis–Reiner §30.16 at dimension 2;
+Diamond–Darmon–Taylor Lemma 3.27).
+
+The trace witness is Step 5's `false_of_trace_toModuleEnd_eq_zero`, i.e.
+little Wedderburn plus separability of the finite extension `D/k`. -/
+theorem exists_linearEquiv_of_charpoly_eq
+    [Finite k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    {W' : Type uW'} [AddCommGroup W'] [Module k W'] [Module.Finite k W']
+    [Module.Free k W']
+    (hW : Module.finrank k W = 2) (hW' : Module.finrank k W' = 2)
+    (ρ : Representation k G W) (τ : Representation k G W')
+    (hirr : ρ.IsIrreducible)
+    (hcp : ∀ g, (τ g).charpoly = (ρ g).charpoly) :
+    ∃ e : W' ≃ₗ[k] W, ∀ g w, e (τ g w) = ρ g (e w) := by
+  classical
+  letI : Module (MonoidAlgebra k G) W :=
+    Module.compHom W (Representation.asAlgebraHom ρ).toRingHom
+  have hsmulW : ∀ (x : MonoidAlgebra k G) (w : W),
+      x • w = Representation.asAlgebraHom ρ x w := fun _ _ => rfl
+  haveI : IsScalarTower k (MonoidAlgebra k G) W := ⟨fun cc x w => by
+    rw [hsmulW, hsmulW, map_smul]
+    rfl⟩
+  haveI hsimpW : IsSimpleModule (MonoidAlgebra k G) W := by
+    haveI h1 : IsSimpleModule (MonoidAlgebra k G) ρ.asModule :=
+      (Representation.irreducible_iff_isSimpleModule_asModule ρ).mp hirr
+    exact IsSimpleModule.congr
+      ({ toFun := id, invFun := id, map_add' := fun _ _ => rfl,
+         map_smul' := fun _ _ => rfl, left_inv := fun _ => rfl,
+         right_inv := fun _ => rfl } :
+        W ≃ₗ[MonoidAlgebra k G] ρ.asModule)
+  refine exists_linearEquiv_of_charpoly_eq_of_traceWitness hW hW' ρ τ hirr hcp
+    fun hall => ?_
+  refine false_of_trace_toModuleEnd_eq_zero (A := MonoidAlgebra k G) hW
+    fun b => ?_
+  have hE2 : Module.toModuleEnd k (S := MonoidAlgebra k G) W b =
+      Representation.asAlgebraHom ρ b :=
+    LinearMap.ext fun w => hsmulW b w
+  rw [hE2]
+  exact hall b
+
+/-- **Brauer–Nesbitt conjugacy, dimension 2, coefficient field of
+characteristic `≠ 2`** (new 2026-07-26 — the CHARACTERISTIC-ZERO
+analogue of `exists_linearEquiv_of_charpoly_eq`, which is restricted to
+FINITE coefficient fields): the same conclusion over an arbitrary,
+possibly infinite, coefficient field in which `2 ≠ 0`.
+
+The whole content is that the trace witness is now free: the identity of
+the group algebra acts as the identity of `End k W`, whose trace is
+`finrank k W = 2 ≠ 0`. Concretely this covers every characteristic-zero
+coefficient field — `ℚ_p`, a finite extension of `ℚ_p`, the fraction
+field of a coefficient ring module-finite over `ℤ_p`, a number field,
+`ℂ` — none of which is finite, so none of which is reachable from
+`exists_linearEquiv_of_charpoly_eq`. -/
+theorem exists_linearEquiv_of_charpoly_eq_of_two_ne_zero
+    (h2 : (2 : k) ≠ 0)
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    {W' : Type uW'} [AddCommGroup W'] [Module k W'] [Module.Finite k W']
+    [Module.Free k W']
+    (hW : Module.finrank k W = 2) (hW' : Module.finrank k W' = 2)
+    (ρ : Representation k G W) (τ : Representation k G W')
+    (hirr : ρ.IsIrreducible)
+    (hcp : ∀ g, (τ g).charpoly = (ρ g).charpoly) :
+    ∃ e : W' ≃ₗ[k] W, ∀ g w, e (τ g w) = ρ g (e w) := by
+  refine exists_linearEquiv_of_charpoly_eq_of_traceWitness hW hW' ρ τ hirr hcp
+    fun hall => h2 ?_
+  have h1 := hall 1
+  rw [map_one, LinearMap.trace_one, hW] at h1
+  simpa using h1
 
 /-!
 ## Step 7: the Chebotarev upgrade — the shared Galois-level conjugacy node
@@ -936,11 +1093,16 @@ set_option backward.isDefEq.respectTransparency false in
 Galois representation: `charpoly (ρ (g·x·g⁻¹)) = charpoly (ρ x)`, since
 `ρ (g·x·g⁻¹)` is the conjugate of `ρ x` by the invertible `ρ g`
 (bookkeeping shared by the density steps of the twins in `Lift.lean` and
-`Modularity/KhareWintenberger.lean`). -/
-lemma charpoly_conj_mul_inv {k : Type uk} [CommRing k] [TopologicalSpace k]
+`Modularity/KhareWintenberger.lean`).
+
+(Generalized 2026-07-26 from the base field `ℚ` to an arbitrary field
+`K`, for the general-base Galois node of Step 8; the proof is unchanged
+and every existing call site infers `K = ℚ` positionally.) -/
+lemma charpoly_conj_mul_inv {K : Type*} [Field K]
+    {k : Type uk} [CommRing k] [TopologicalSpace k]
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
-    (ρ : GaloisRep ℚ k W) (g x : Field.absoluteGaloisGroup ℚ) :
+    (ρ : GaloisRep K k W) (g x : Field.absoluteGaloisGroup K) :
     (ρ (g * x * g⁻¹)).charpoly = (ρ x).charpoly := by
   have hgu : (ρ g).comp (ρ g⁻¹) = LinearMap.id := by
     have hmul : ρ g * ρ g⁻¹ = 1 := by
@@ -1058,5 +1220,179 @@ theorem exists_conj_of_charFrob_eq_away
   calc (τ.conj e) σ x = (e.conj (τ σ)) x := by rw [GaloisRep.conj_apply]
     _ = e (τ σ (e.symm x)) := by rw [LinearEquiv.conj_apply]; rfl
     _ = ρbar σ x := h1
+
+/-!
+## Step 8: the same node over a GENERAL number field and in characteristic `≠ 2`
+
+(New 2026-07-26.) Step 7 is pinned twice over: to the base field `ℚ`,
+and to a FINITE DISCRETE coefficient field. Both pins are removed here.
+
+What the two versions have in common is the Chebotarev density node
+(`dense_conjClasses_globalFrob`, already stated over an arbitrary number
+field `K`) and the abstract dimension-2 Brauer–Nesbitt core of Step 6.
+What differs is how the agreement locus is shown CLOSED:
+
+* over a finite discrete `k` (Step 7) the whole charpoly locus is a
+  preimage of a clopen set, and nothing has to be continuous;
+* over a Hausdorff topological field (here) only the TRACE is available
+  as a continuous function — it is `k`-linear, and `Module.End k W`
+  carries the module topology by the very definition of `GaloisRep`, so
+  `IsModuleTopology.continuous_of_linearMap` applies. The determinant is
+  not linear, and is instead recovered *after* the density argument from
+  Step 5b's rank-two Cayley–Hamilton identity
+  `2 · det f = (tr f)² − tr (f²)`, using `tr (τ (g·g)) = tr ((τ g)²)`.
+  This is the only place `2 ≠ 0` is used a second time.
+
+Neither node subsumes the other: a finite field of characteristic `2`
+is out of reach here, and an infinite (e.g. characteristic-zero)
+coefficient field is out of reach there.
+-/
+
+open IsDedekindDomain NumberField in
+set_option backward.isDefEq.respectTransparency false in
+/-- **Chebotarev–Brauer–Nesbitt conjugacy over a general number field
+and a coefficient field of characteristic `≠ 2`** — the
+characteristic-zero/general-base analogue of
+`exists_conj_of_charFrob_eq_away` (Step 7), which is pinned to the base
+`ℚ` and to a finite discrete coefficient field.
+
+A continuous representation `τ` of `Gal(K̄/K)`, `K` any number field, on
+a 2-dimensional space over a Hausdorff topological field `k` with
+`2 ≠ 0`, whose Frobenius characteristic polynomials agree with those of
+an *irreducible* 2-dimensional `ρbar` at all finite places outside a
+finite set `S`, is conjugate to `ρbar`.
+
+Route: charpoly agreement at the places off `S` gives TRACE agreement
+there (`trace_eq_of_charpoly_eq_finrank_two`); the trace-agreement locus
+is conjugation-stable (`charpoly_conj_mul_inv`) and CLOSED, because the
+trace is `k`-linear out of the module-topology endomorphism space that
+`GaloisRep` is continuous into and `k` is Hausdorff; Chebotarev density
+(`dense_conjClasses_globalFrob`) makes it everything; rank-two
+Cayley–Hamilton (`two_mul_det_eq_of_finrank_two`) with `2` a unit turns
+traces everywhere back into charpolys everywhere; and
+`exists_linearEquiv_of_charpoly_eq_of_two_ne_zero` produces the
+intertwining isomorphism (Carayol, Contemp. Math. 165 (1994),
+Théorème 1; Diamond–Darmon–Taylor, Lemma 3.27).
+
+NOT a statement about coefficient RINGS. Over a coefficient ring `O`
+module-finite over `ℤ_p` the analogous statement is FALSE without a
+further residual hypothesis — two `O`-lattices in the same `Frac O`
+representation have identical Frobenius charpolys and need not be
+`O`-conjugate — so the ring-level version requires residual
+irreducibility and a lattice-uniqueness argument, which is NOT proved
+here. What IS immediate from this theorem is the statement after
+inverting `p`, i.e. over `Frac O`. -/
+theorem exists_conj_of_charFrob_eq_away_of_two_ne_zero
+    {K : Type*} [Field K] [NumberField K]
+    {k : Type uk} [Field k] [TopologicalSpace k] [IsTopologicalRing k]
+    [T2Space k] (h2 : (2 : k) ≠ 0)
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2)
+    {ρbar : GaloisRep K k W} (hirr : ρbar.IsIrreducible)
+    {W' : Type uW'} [AddCommGroup W'] [Module k W'] [Module.Finite k W']
+    [Module.Free k W']
+    (hW' : Module.rank k W' = 2)
+    (τ : GaloisRep K k W')
+    (S : Finset (HeightOneSpectrum (𝓞 K)))
+    (hcf : ∀ v : HeightOneSpectrum (𝓞 K), v ∉ S →
+      τ.charFrob v = ρbar.charFrob v) :
+    ∃ e : W' ≃ₗ[k] W, τ.conj e = ρbar := by
+  classical
+  have hfrW : Module.finrank k W = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW)
+  have hfrW' : Module.finrank k W' = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hW')
+  letI : TopologicalSpace (Module.End k W) :=
+    moduleTopology k (Module.End k W)
+  letI : TopologicalSpace (Module.End k W') :=
+    moduleTopology k (Module.End k W')
+  haveI : IsModuleTopology k (Module.End k W) := ⟨rfl⟩
+  haveI : IsModuleTopology k (Module.End k W') := ⟨rfl⟩
+  -- the trace-agreement locus is closed: the trace is `k`-linear out of a
+  -- module-topology endomorphism space, and `k` is Hausdorff
+  have hcont1 : Continuous fun g : Field.absoluteGaloisGroup K =>
+      LinearMap.trace k W' (τ g) :=
+    (IsModuleTopology.continuous_of_linearMap
+      (LinearMap.trace k W')).comp (ContinuousMonoidHom.continuous_toFun τ)
+  have hcont2 : Continuous fun g : Field.absoluteGaloisGroup K =>
+      LinearMap.trace k W (ρbar g) :=
+    (IsModuleTopology.continuous_of_linearMap
+      (LinearMap.trace k W)).comp (ContinuousMonoidHom.continuous_toFun ρbar)
+  have hclosed : IsClosed {g : Field.absoluteGaloisGroup K |
+      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} :=
+    isClosed_eq hcont1 hcont2
+  -- … and it contains the dense set of Frobenius conjugates off `S`
+  have hsub : {x : Field.absoluteGaloisGroup K |
+      ∃ v : HeightOneSpectrum (𝓞 K), v ∉ S ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} ⊆
+      {g : Field.absoluteGaloisGroup K |
+        LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} := by
+    rintro x ⟨v, hvS, g, rfl⟩
+    have hval := hcf v hvS
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+      GaloisRep.charFrob_eq_charpoly_globalFrob] at hval
+    have hcpx : (τ (g * globalFrob v * g⁻¹)).charpoly =
+        (ρbar (g * globalFrob v * g⁻¹)).charpoly := by
+      rw [charpoly_conj_mul_inv τ, charpoly_conj_mul_inv ρbar]
+      exact hval
+    exact trace_eq_of_charpoly_eq_finrank_two hfrW' hfrW hcpx
+  have halltr : ∀ g : Field.absoluteGaloisGroup K,
+      LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g) := by
+    intro g
+    have hdense := dense_conjClasses_globalFrob (K := K) S
+    have huniv : (Set.univ : Set (Field.absoluteGaloisGroup K)) ⊆
+        {g : Field.absoluteGaloisGroup K |
+          LinearMap.trace k W' (τ g) = LinearMap.trace k W (ρbar g)} :=
+      hdense.closure_eq ▸ hclosed.closure_subset_iff.mpr hsub
+    exact huniv (Set.mem_univ g)
+  -- traces everywhere ⟹ determinants everywhere (Cayley–Hamilton, `2` a unit)
+  have hall : ∀ g : Field.absoluteGaloisGroup K,
+      (τ g).charpoly = (ρbar g).charpoly := by
+    intro g
+    have hsq : LinearMap.trace k W' (τ g * τ g) =
+        LinearMap.trace k W (ρbar g * ρbar g) := by
+      rw [← map_mul, ← map_mul]
+      exact halltr (g * g)
+    have hdet : LinearMap.det (τ g) = LinearMap.det (ρbar g) := by
+      refine mul_left_cancel₀ h2 ?_
+      rw [two_mul_det_eq_of_finrank_two hfrW' (τ g),
+        two_mul_det_eq_of_finrank_two hfrW (ρbar g), halltr g, hsq]
+    rw [charpoly_eq_quadratic_of_finrank_two hfrW' (τ g),
+      charpoly_eq_quadratic_of_finrank_two hfrW (ρbar g), halltr g, hdet]
+  obtain ⟨e, he⟩ := exists_linearEquiv_of_charpoly_eq_of_two_ne_zero h2
+    hfrW hfrW' ρbar.toRepresentation τ.toRepresentation hirr hall
+  refine ⟨e, GaloisRep.ext fun σ => LinearMap.ext fun x => ?_⟩
+  have h1 : e (τ σ (e.symm x)) = ρbar σ (e (e.symm x)) := he σ (e.symm x)
+  rw [e.apply_symm_apply] at h1
+  calc (τ.conj e) σ x = (e.conj (τ σ)) x := by rw [GaloisRep.conj_apply]
+    _ = e (τ σ (e.symm x)) := by rw [LinearEquiv.conj_apply]; rfl
+    _ = ρbar σ x := h1
+
+open IsDedekindDomain NumberField in
+/-- **Chebotarev–Brauer–Nesbitt conjugacy in characteristic zero** — the
+form in which the previous theorem is meant to be applied, the `2 ≠ 0`
+hypothesis being automatic. Covers `k = ℚ_p`, any finite extension of
+it, and the fraction field of a coefficient ring module-finite over
+`ℤ_p` — precisely the coefficient fields of the `p`-adic members of a
+compatible system, none of which is finite and so none of which is in
+range of `exists_conj_of_charFrob_eq_away`. -/
+theorem exists_conj_of_charFrob_eq_away_of_charZero
+    {K : Type*} [Field K] [NumberField K]
+    {k : Type uk} [Field k] [CharZero k] [TopologicalSpace k]
+    [IsTopologicalRing k] [T2Space k]
+    {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2)
+    {ρbar : GaloisRep K k W} (hirr : ρbar.IsIrreducible)
+    {W' : Type uW'} [AddCommGroup W'] [Module k W'] [Module.Finite k W']
+    [Module.Free k W']
+    (hW' : Module.rank k W' = 2)
+    (τ : GaloisRep K k W')
+    (S : Finset (HeightOneSpectrum (𝓞 K)))
+    (hcf : ∀ v : HeightOneSpectrum (𝓞 K), v ∉ S →
+      τ.charFrob v = ρbar.charFrob v) :
+    ∃ e : W' ≃ₗ[k] W, τ.conj e = ρbar :=
+  exists_conj_of_charFrob_eq_away_of_two_ne_zero two_ne_zero hW hirr hW' τ S hcf
 
 end GaloisRepresentation
