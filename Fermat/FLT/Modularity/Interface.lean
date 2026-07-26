@@ -2293,12 +2293,374 @@ theorem integralCuspForms_fg {N : ℕ} (hN : 0 < N) : (integralCuspForms N).FG :
   haveI := isNoetherian_of_injective ψ hinj
   exact Module.Finite.iff_fg.mp inferInstance
 
-/-- **The `q`-expansion principle over `ℤ`** (sorry node — THE
-arithmetic citation behind the integral structure of `S₂(Γ₀(N))`,
-isolated 2026-07-26 as the residue of `exists_heckeStable_lattice`
-after finite generation and Hecke stability were proven): the cusp
-forms with integral `q`-expansion span the whole complex cusp space,
-i.e. `S₂(Γ₀(N); ℤ)` is a lattice of FULL RANK.
+/-! #### The Hecke algebra `𝕋` and bounded denominators
+
+Decomposition of the bounded-denominator citation node (2026-07-25).
+The classical statement "a rational weight-2 form has a single
+denominator" is here PROVEN from ONE finiteness statement about the
+Hecke algebra — `heckeSubring_moduleFinite` — over the Hecke machinery
+this file already carries: `exists_cuspForm_heckeTransform` (the
+slash-sum preserves `S₂(Γ₀(N))`) and `qExpansion_heckeTransform_coeff`
+(the coefficient formula `a_m(T_q f) = a_{qm}(f) + 1_{q∤N}·q·a_{m/q}(f)`),
+both PROVEN 2026-07-24. The `q`-expansion side of the argument is
+therefore fully discharged here; only the arithmetic finiteness of
+`𝕋` remains a citation. -/
+
+/-- **The weight-2 Hecke operator as a linear endomorphism** (PROVEN,
+2026-07-25): `T_q` (`U_q` when `q ∣ N`) packaged as an element of
+`End_ℂ(S₂(Γ₀(N)))`, over the proven stability
+`exists_cuspForm_heckeTransform` together with the additivity and
+`ℂ`-homogeneity of the slash-sum (`heckeTransform_add`,
+`heckeTransform_smul`); the form is recovered from its coefficients by
+`DFunLike.coe_injective`. Junk value `0` unless `0 < N` and `q` is
+prime — exactly the hypotheses under which the slash-sum is known to
+preserve `S₂(Γ₀(N))`. The function-level slash-sum `heckeTransform`
+stays the primitive; this is the operator-level packaging that the
+Hecke-algebra material below needs.
+
+DUPLICATION NOTICE (2026-07-26): `heckeOp`/`heckeOp_coe`, in the
+`ComplexHeckeAlgebra` section far below, is the SAME construction,
+built concurrently by another owner for the Eichler–Shimura seam. The
+two cannot presently be merged in either direction by their authors
+alone: this one is needed at THIS point of the file (the bounded
+denominators assembly is consumed by
+`exists_integral_qExpansion_spanning` a few hundred lines below),
+while `heckeOp` is defined ~18k lines later. Consolidation is a
+one-declaration move for whichever owner touches the later section —
+delete `exists_heckeOpLinear_total`/`heckeOp` and let `heckeOp` be
+notation for `heckeEndo`, whose `coe_heckeEndo` is exactly
+`heckeOp_coe`. -/
+noncomputable def heckeEndo (N q : ℕ) :
+    Module.End ℂ (CuspForm (Gamma0GL N) 2) :=
+  if h : 0 < N ∧ q.Prime then
+    { toFun := fun f => (exists_cuspForm_heckeTransform h.1 h.2 f).choose
+      map_add' := fun f g => DFunLike.coe_injective <| by
+        rw [(exists_cuspForm_heckeTransform h.1 h.2 (f + g)).choose_spec,
+          CuspForm.coe_add, heckeTransform_add, CuspForm.coe_add,
+          (exists_cuspForm_heckeTransform h.1 h.2 f).choose_spec,
+          (exists_cuspForm_heckeTransform h.1 h.2 g).choose_spec]
+      map_smul' := fun c f => DFunLike.coe_injective <| by
+        rw [RingHom.id_apply,
+          (exists_cuspForm_heckeTransform h.1 h.2 (c • f)).choose_spec,
+          CuspForm.IsGLPos.coe_smul, heckeTransform_smul,
+          CuspForm.IsGLPos.coe_smul,
+          (exists_cuspForm_heckeTransform h.1 h.2 f).choose_spec] }
+  else 0
+
+/-- `heckeEndo` is the slash-sum, at a prime and a positive level. -/
+theorem coe_heckeEndo {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime)
+    (f : CuspForm (Gamma0GL N) 2) :
+    ⇑(heckeEndo N q f) = heckeTransform N q ⇑f := by
+  rw [heckeEndo, dif_pos (⟨hN, hq⟩ : 0 < N ∧ q.Prime)]
+  exact (exists_cuspForm_heckeTransform hN hq f).choose_spec
+
+/-- The classical coefficient formula for `T_q`, transported to the
+operator packaging: `a_m(T_q f) = a_{qm}(f) + 1_{q ∤ N}·1_{q ∣ m}·q·a_{m/q}(f)`
+(Diamond–Shurman Proposition 5.2.2 at weight 2). -/
+theorem qCoeff_heckeEndo {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime)
+    (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
+    qCoeff N (heckeEndo N q f) m =
+      qCoeff N f (q * m) +
+        (if q ∣ N then 0 else
+          if q ∣ m then (q : ℂ) * qCoeff N f (m / q) else 0) := by
+  have h := qExpansion_heckeTransform_coeff hN hq f m
+  rw [← coe_heckeEndo hN hq f] at h
+  exact h
+
+/-- **`S₂(Γ₀(N); ℤ)` is Hecke stable** (PROVEN, 2026-07-26): the
+coefficient formula `qCoeff_heckeEndo` writes each coefficient of
+`T_q f` as the `ℤ`-combination `a_{qm}(f) + 1_{q∤N}·1_{q∣m}·q·a_{m/q}(f)`
+of coefficients of `f`, so integrality of the expansion is preserved.
+No arithmetic input; this is the second of the two conjuncts of
+`exists_heckeStable_lattice` that are theorems rather than citations. -/
+theorem heckeEndo_mem_integralCuspForms {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime)
+    {f : CuspForm (Gamma0GL N) 2} (hf : f ∈ integralCuspForms N) :
+    heckeEndo N q f ∈ integralCuspForms N := by
+  intro m
+  obtain ⟨x, hx⟩ := hf (q * m)
+  obtain ⟨y, hy⟩ := hf (m / q)
+  refine ⟨x + (if q ∣ N then 0 else if q ∣ m then (q : ℤ) * y else 0), ?_⟩
+  rw [qCoeff_heckeEndo hN hq f m, hx, hy]
+  split_ifs <;> push_cast <;> ring
+
+/-- **The Hecke algebra `𝕋 ⊆ End_ℂ(S₂(Γ₀(N)))`**: the subring generated
+by the operators `T_q` at ALL primes (so the `U_q` at the bad primes
+too) — the image in `End_ℂ(S₂)` of the classical full Hecke algebra of
+level `N` and weight `2`. Subring and `ℤ`-subalgebra agree because the
+prime ring of `End_ℂ(S₂)` is the image of `ℤ`; the subring spelling is
+used so that the `ℤ`-module structure is the ambient additive one. -/
+noncomputable def heckeSubring (N : ℕ) :
+    Subring (Module.End ℂ (CuspForm (Gamma0GL N) 2)) :=
+  Subring.closure {T | ∃ q : ℕ, q.Prime ∧ T = heckeEndo N q}
+
+/-- Each `T_q` lies in the Hecke algebra. -/
+theorem heckeEndo_mem_heckeSubring (N : ℕ) {q : ℕ} (hq : q.Prime) :
+    heckeEndo N q ∈ heckeSubring N :=
+  Subring.subset_closure ⟨q, hq, rfl⟩
+
+/-- **Every coefficient functional is `a₁ ∘ T` for a single `T ∈ 𝕋`**
+(PROVEN, 2026-07-25): for each `m` there is one Hecke operator `T` with
+`a_m(f) = a₁(T f)` for ALL `f ∈ S₂(Γ₀(N))`. This is the operator form
+of `a_m = a₁ ∘ T_m` and it is what makes the coefficients of a fixed
+form range over the image of a single finitely generated `ℤ`-module.
+
+Proof by strong induction on `m`, using only `qCoeff_heckeEndo`: `m = 0`
+takes `T = 0` (`qCoeff_zero`: cusp forms vanish at `∞`), `m = 1` takes
+`T = 1`, and for `m ≥ 2` we split off the least prime factor
+`q = m.minFac`, `m = q·k`, and read the coefficient formula backwards,
+`a_{qk}(f) = a_k(T_q f) − 1_{q∤N}·1_{q∣k}·q·a_{k/q}(f)`, so that
+`T = T_k·T_q − c·T_{k/q}` with `c ∈ ℤ` works by the inductive
+hypotheses at `k < m` and `k/q ≤ k < m`. Note the `T_n` for composite
+`n` are never DEFINED — only their existence inside `𝕋` is produced,
+which is all the denominator argument uses. -/
+theorem exists_mem_heckeSubring_qCoeff {N : ℕ} (hN : 0 < N) (m : ℕ) :
+    ∃ T ∈ heckeSubring N, ∀ f : CuspForm (Gamma0GL N) 2,
+      qCoeff N f m = qCoeff N (T f) 1 := by
+  induction m using Nat.strong_induction_on with
+  | _ m ih =>
+    rcases eq_or_ne m 0 with rfl | hm0
+    · exact ⟨0, zero_mem _, fun f => by
+        rw [qCoeff_zero, LinearMap.zero_apply, qCoeff_zero_cuspForm]⟩
+    rcases eq_or_ne m 1 with rfl | hm1
+    · exact ⟨1, one_mem _, fun f => by rw [Module.End.one_apply]⟩
+    have hq : (m.minFac).Prime := Nat.minFac_prime hm1
+    obtain ⟨k, hk⟩ := Nat.minFac_dvd m
+    have hk0 : k ≠ 0 := by rintro rfl; simp at hk; omega
+    have hkm : k < m := by
+      have h2 : 2 ≤ m.minFac := hq.two_le
+      have h1 : 1 ≤ k := Nat.one_le_iff_ne_zero.mpr hk0
+      calc k < 2 * k := by omega
+        _ ≤ m.minFac * k := Nat.mul_le_mul_right k h2
+        _ = m := hk.symm
+    obtain ⟨A, hA, hAe⟩ := ih k hkm
+    obtain ⟨B, hB, hBe⟩ := ih (k / m.minFac)
+      (lt_of_le_of_lt (Nat.div_le_self k m.minFac) hkm)
+    set c : ℤ := if m.minFac ∣ N then 0 else
+      if m.minFac ∣ k then (m.minFac : ℤ) else 0 with hcdef
+    refine ⟨A * heckeEndo N m.minFac - c • B, ?_, ?_⟩
+    · exact sub_mem (mul_mem hA (heckeEndo_mem_heckeSubring N hq))
+        (Subring.zsmul_mem _ hB c)
+    · intro f
+      have hstep : qCoeff N (heckeEndo N m.minFac f) k
+          = qCoeff N f m + (c : ℂ) * qCoeff N f (k / m.minFac) := by
+        rw [qCoeff_heckeEndo hN hq f k, ← hk, hcdef]
+        split_ifs <;> push_cast <;> ring
+      have hval : ((A * heckeEndo N m.minFac - c • B :
+            Module.End ℂ (CuspForm (Gamma0GL N) 2)) f)
+          = A (heckeEndo N m.minFac f) - c • (B f) := by
+        simp [Module.End.mul_apply]
+      have hlin : qCoeff N ((A * heckeEndo N m.minFac - c • B :
+            Module.End ℂ (CuspForm (Gamma0GL N) 2)) f) 1
+          = qCoeff N (A (heckeEndo N m.minFac f)) 1
+            - (c : ℂ) * qCoeff N (B f) 1 := by
+        rw [hval, ← qCoeffL_apply, map_sub, map_zsmul, qCoeffL_apply,
+          qCoeffL_apply, zsmul_eq_mul]
+      rw [hlin, ← hAe (heckeEndo N m.minFac f), ← hBe f, hstep]
+      ring
+
+/-! #### Hecke duality and the `ℤ`-FORM of `𝕋`
+
+Added 2026-07-26, executing ROUTE B of `integralCuspForms_span_eq_top`
+below — the route that node's own docstring worked out in full and left
+unwritten, blocked only by declaration order.
+
+THE FILE-ORDER OBSTACLE IS GONE. That docstring recorded route B as
+unavailable because `heckeEndo`, `qCoeff_heckeEndo` and
+`exists_mem_heckeSubring_qCoeff` sat several hundred lines BELOW the
+node. The block has been relocated above it (a pure move; every
+dependency — `exists_cuspForm_heckeTransform`,
+`qExpansion_heckeTransform_coeff`, `heckeTransform_add/smul`, `qCoeffL`,
+`cuspForm_eq_of_forall_qCoeff_eq`, `cuspForm_finiteDimensional` — already
+sat above `integralCuspForms`), so route B is now available AT the node.
+
+A CORRECTION TO THAT DOCSTRING, which is what made this cheap. It
+presents route B step (ii) — "`a_n(g) = a₁(P_n g)` for a polynomial in
+the Hecke operators" — as worked out but NOT written, to be produced by
+strong induction from `qCoeff_heckeEndo`. It was in fact already PROVEN,
+the day before, as `exists_mem_heckeSubring_qCoeff` immediately above.
+So the only genuinely missing pieces of route B were step (i)'s
+nondegeneracy and the `ℤ`-form citation, both supplied here. -/
+
+/-- **The abstract spanning step of the duality argument** (PROVEN,
+2026-07-26): if a `ℂ`-linear map from a `D`-dimensional space to `ℂ^D`
+is injective, then the preimage of `ℤ^D` spans the source over `ℂ`.
+
+Stated over an ABSTRACT vector space deliberately, per this development's
+standing rule that helpers be stated generically: at the concrete
+`CuspForm (Gamma0GL N) 2` the finite-dimensionality arrives as a locally
+bound instance rather than a global one, and keeping the step abstract
+stops the cusp-form API from entering the unification problems at all. -/
+theorem span_preimage_int_eq_top {V : Type*} [AddCommGroup V] [Module ℂ V]
+    {D : ℕ} (hD : Module.finrank ℂ V = D) [FiniteDimensional ℂ V]
+    (Φ : V →ₗ[ℂ] (Fin D → ℂ)) (hinj : Function.Injective Φ) :
+    Submodule.span ℂ {f : V | ∀ i, ∃ z : ℤ, Φ f i = (z : ℂ)} = ⊤ := by
+  have hrank : Module.finrank ℂ V = Module.finrank ℂ (Fin D → ℂ) := by
+    rw [hD, Module.finrank_fintype_fun_eq_card, Fintype.card_fin]
+  have hsurj : Function.Surjective Φ :=
+    (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hrank).mp hinj
+  let e : V ≃ₗ[ℂ] (Fin D → ℂ) := LinearEquiv.ofBijective Φ ⟨hinj, hsurj⟩
+  rw [eq_top_iff]
+  intro v _
+  have hv : v = ∑ i : Fin D, (Φ v i) • e.symm (Pi.single i 1) := by
+    apply e.injective
+    rw [map_sum]
+    simp only [map_smul, LinearEquiv.apply_symm_apply]
+    funext j
+    simp [Finset.sum_apply, Pi.single_apply]
+    rfl
+  rw [hv]
+  refine Submodule.sum_mem _ fun i _ => Submodule.smul_mem _ _ ?_
+  refine Submodule.subset_span ?_
+  intro j
+  refine ⟨if j = i then 1 else 0, ?_⟩
+  have : Φ (e.symm (Pi.single i 1)) = Pi.single i 1 := e.apply_symm_apply _
+  rw [this, Pi.single_apply]
+  split_ifs with h <;> simp
+
+/-- **`S ↦ a₁(S f)` vanishes on a whole `ℤ`-span once it vanishes on the
+spanning family** (PROVEN, 2026-07-26). Pure `ℤ`-linearity of evaluation
+in the OPERATOR variable; stated abstractly for the same reason as
+`span_preimage_int_eq_top`. -/
+theorem ev_eq_zero_of_mem_span_int {V : Type*} [AddCommGroup V] [Module ℂ V]
+    {D : ℕ} (T : Fin D → Module.End ℂ V) (ev : V →ₗ[ℂ] ℂ) (f : V)
+    (hzero : ∀ i, ev (T i f) = 0)
+    {S : Module.End ℂ V} (hS : S ∈ Submodule.span ℤ (Set.range T)) :
+    ev (S f) = 0 := by
+  induction hS using Submodule.span_induction with
+  | mem x hx => obtain ⟨i, rfl⟩ := hx; exact hzero i
+  | zero => simp
+  | add x y _ _ hx hy => simp [LinearMap.add_apply, hx, hy]
+  | smul c x _ hx => simp [hx]
+
+/-- **`S ↦ a₁(S f)` stays INTEGRAL on a whole `ℤ`-span once it is integral
+on the spanning family** (PROVEN, 2026-07-26). The integral companion of
+`ev_eq_zero_of_mem_span_int`, and the step that carries integrality from
+the finitely many chosen operators to all of `𝕋`. -/
+theorem exists_int_ev_of_mem_span_int {V : Type*} [AddCommGroup V] [Module ℂ V]
+    {D : ℕ} (T : Fin D → Module.End ℂ V) (ev : V →ₗ[ℂ] ℂ) (f : V)
+    (hint : ∀ i, ∃ z : ℤ, ev (T i f) = (z : ℂ))
+    {S : Module.End ℂ V} (hS : S ∈ Submodule.span ℤ (Set.range T)) :
+    ∃ z : ℤ, ev (S f) = (z : ℂ) := by
+  induction hS using Submodule.span_induction with
+  | mem x hx => obtain ⟨i, rfl⟩ := hx; exact hint i
+  | zero => exact ⟨0, by simp⟩
+  | add x y _ _ hx hy =>
+      obtain ⟨a, ha⟩ := hx; obtain ⟨b, hb⟩ := hy
+      exact ⟨a + b, by simp [LinearMap.add_apply, ha, hb]⟩
+  | smul c x _ hx =>
+      obtain ⟨a, ha⟩ := hx
+      exact ⟨c * a, by simp [ha]⟩
+
+/-- **RIGHT-NONDEGENERACY of the Hecke duality pairing `𝕋 × S₂ → ℂ`,
+`(T, f) ↦ a₁(T f)`** (PROVEN, 2026-07-26): a cusp form killed by every
+`T ∈ 𝕋` under `f ↦ a₁(T f)` is zero.
+
+This is step (i) of route B, and it is immediate from the two theorems
+that were already here: `exists_mem_heckeSubring_qCoeff` writes each
+coefficient functional `a_m` as `a₁ ∘ T` for a single `T ∈ 𝕋`, so the
+hypothesis kills every `a_m(f)`, and `cuspForm_eq_of_forall_qCoeff_eq`
+(the `q`-expansion principle) concludes `f = 0`.
+
+Together with `exists_heckeSubring_zForm` below this is what makes the
+pairing PERFECT, hence `S₂(Γ₀(N)) ≅ Hom_ℂ(𝕋_ℂ, ℂ)` — the statement the
+node's docstring named as route B's step (i). -/
+theorem cuspForm_eq_zero_of_forall_qCoeff_one_heckeSubring {N : ℕ} (hN : 0 < N)
+    {f : CuspForm (Gamma0GL N) 2}
+    (hf : ∀ T ∈ heckeSubring N, qCoeff N (T f) 1 = 0) :
+    f = 0 := by
+  refine cuspForm_eq_of_forall_qCoeff_eq (g := 0) fun m => ?_
+  obtain ⟨T, hT, hTe⟩ := exists_mem_heckeSubring_qCoeff hN m
+  rw [hTe f, hf T hT, qCoeff_zero_cuspForm]
+
+/-- **`𝕋` IS A `ℤ`-FORM: `rank_ℤ 𝕋 = dim_ℂ S₂(Γ₀(N))`** (sorry node —
+the EICHLER–SHIMURA citation, isolated 2026-07-26 as the single
+arithmetic input of `integralCuspForms_span_eq_top` under route B):
+there are `D = dim_ℂ S₂(Γ₀(N))` Hecke operators, themselves in `𝕋`,
+which generate `𝕋` as a `ℤ`-module.
+
+WHY THIS IS THE RIGHT CITATION, and not a weakening. The node below
+records as its DEAD END 6 that `Module.Finite ℤ 𝕋` alone does NOT imply
+the `q`-expansion principle, with the counterexample `D = 1`,
+`𝕋 = ℤ[√2] ⊆ ℂ = End_ℂ(S₂)`: finite over `ℤ`, faithful, and yet the
+forms with integral expansion are `0`. It states in the same breath what
+a recut MUST cite instead — that `𝕋` is a `ℤ`-FORM, i.e. finite over `ℤ`
+*and* of `ℤ`-rank equal to `dim_ℂ S₂`. That is exactly this statement,
+and the `√2` counterexample is exactly a violation of it (`rank_ℤ 𝕋 = 2`
+against `D = 1`), so this node is NOT vacuous and NOT the trap.
+
+NON-VACUITY, mechanically. The spanning clause with `D` operators is the
+whole content: `𝕋` is already known finite over `ℤ`
+(`heckeSubring_moduleFinite`, far below), so the statement is equivalent
+to `rank_ℤ 𝕋 ≤ D`; the reverse inequality is free from
+`cuspForm_eq_zero_of_forall_qCoeff_one_heckeSubring` above. A junk
+witness would have to make a rank-`> D` lattice fit inside a `ℤ`-span of
+`D` elements, which is impossible.
+
+MEMBERSHIP CLAUSE. `∀ i, T i ∈ heckeSubring N` is not consumed by the
+derivation below — the spanning clause alone suffices — but it is kept
+because it is what makes the statement the classical `ℤ`-form of the
+Hecke algebra rather than a statement about some larger lattice
+containing `𝕋`. A successor discharging this must produce operators
+genuinely in `𝕋`.
+
+CLASSICAL CONTENT AND NON-CIRCULARITY. This is Eichler–Shimura: the
+Hecke-stable lattice `H₁(X₀(N), ℤ)` in `H₁(X₀(N), ℝ)` is free of rank
+`2D` and `𝕋` acts on it faithfully with `𝕋 ⊗ ℝ` of rank `D`
+(Diamond–Shurman §8.5 and Theorem 8.5.1; Mazur, *Eisenstein ideal*,
+ch. II §§6–9; Ribet, *Invent. Math.* 100 (1990), §2). It is stated ABOVE
+everything in the `q`-expansion cluster, so Lean's declaration order
+makes any attempt to derive it from `exists_heckeStable_lattice`,
+`heckeSubring_moduleFinite`, `exists_qExpansion_denominator` or
+`exists_integral_qExpansion_spanning` a hard error rather than a silent
+cycle — which matters here, since `heckeSubring_moduleFinite` is now
+proven THROUGH this node.
+
+TRADE-OFF, recorded so it can be undone deliberately. Route A (the
+integral model `X₀(N)/ℤ`, properness and flatness, cohomology and base
+change) remains the alternative and is what the node cited before. This
+route trades algebraic geometry over `ℤ` for Riemann surfaces plus
+`H₁(X₀(N), ℤ)`, on a pin that has group cohomology and no schemes over
+`ℤ`. An owner who proves route A should restore the old citation and
+delete this one. -/
+theorem exists_heckeSubring_zForm {N : ℕ} (hN : 0 < N) :
+    ∃ T : Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2)) →
+        Module.End ℂ (CuspForm (Gamma0GL N) 2),
+      (∀ i, T i ∈ heckeSubring N) ∧
+      ∀ S ∈ heckeSubring N, S ∈ Submodule.span ℤ (Set.range T) :=
+  sorry
+
+/-- **The `q`-expansion principle over `ℤ`** (PROVEN 2026-07-26 via
+ROUTE B, over the single Eichler–Shimura citation
+`exists_heckeSubring_zForm` above; formerly itself THE arithmetic
+citation behind the integral structure of `S₂(Γ₀(N))`, isolated
+2026-07-26 as the residue of `exists_heckeStable_lattice` after finite
+generation and Hecke stability were proven): the cusp forms with
+integral `q`-expansion span the whole complex cusp space, i.e.
+`S₂(Γ₀(N); ℤ)` is a lattice of FULL RANK.
+
+ROUTE B, EXECUTED (2026-07-26). Everything below this paragraph was
+written while this node was still a citation, and is preserved because
+its dead ends and its audit remain valid; but the node is now PROVEN,
+and the two obstacles the "IF YOU ATTACK IT" section at the end records
+have both been removed. The derivation is exactly the one sketched
+there:
+
+* step (ii), `a_m(f) = a₁(T f)` for a single `T ∈ 𝕋`, was ALREADY PROVEN
+  as `exists_mem_heckeSubring_qCoeff` — the sketch below calls it
+  unwritten, which was stale;
+* step (i)'s right-nondegeneracy is now
+  `cuspForm_eq_zero_of_forall_qCoeff_one_heckeSubring`;
+* the FILE-ORDER OBSTACLE has been removed by relocating the
+  `heckeEndo`/`heckeSubring` block above this node, as that section
+  predicted would be mechanical;
+* what remains is the `ℤ`-FORM citation `exists_heckeSubring_zForm`,
+  which is precisely what DEAD END 6 below says a recut must cite.
+
+Concretely: the `ℤ`-form gives `D = dim_ℂ S₂` operators `ℤ`-spanning
+`𝕋`; `Φ f = (a₁(T i f))_i : S₂ → ℂ^D` is injective by
+right-nondegeneracy; injective between spaces of equal finrank, so
+bijective; and `Φ⁻¹(ℤ^D)` therefore spans `S₂` over `ℂ` and consists of
+forms with integral expansion (`span_preimage_int_eq_top`).
 
 This is the `ℤ`-form of the `q`-expansion principle of Katz and
 Deligne–Rapoport on the INTEGRAL model `X₀(N)/ℤ` (Diamond–Shurman
@@ -2477,8 +2839,50 @@ IF YOU ATTACK IT, the two real routes and what each costs.
   the move is mechanical — but it is a large relocation in a shared
   22k-line file and belongs to whoever actually executes route B. -/
 theorem integralCuspForms_span_eq_top {N : ℕ} (hN : 0 < N) :
-    Submodule.span ℂ ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤ :=
-  sorry
+    Submodule.span ℂ ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤ := by
+  haveI := cuspForm_finiteDimensional N hN
+  -- The `ℤ`-form citation supplies `D = dim_ℂ S₂` operators `ℤ`-spanning `𝕋`.
+  obtain ⟨T, -, hTspan⟩ := exists_heckeSubring_zForm hN
+  -- The duality map `Φ f = (a₁(T i f))_i : S₂ → ℂ^D`.
+  set Φ : CuspForm (Gamma0GL N) 2 →ₗ[ℂ]
+      (Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2)) → ℂ) :=
+    LinearMap.pi (fun i => (qCoeffL N 1).comp (T i)) with hΦ
+  have hΦapp : ∀ (f : CuspForm (Gamma0GL N) 2)
+      (i : Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2))),
+      Φ f i = qCoeff N (T i f) 1 := by
+    intro f i
+    rw [hΦ]
+    simp [LinearMap.pi_apply, qCoeffL_apply]
+  -- Φ is injective: right-nondegeneracy of the duality pairing.
+  have hinj : Function.Injective Φ := by
+    refine (injective_iff_map_eq_zero Φ).mpr fun f hf => ?_
+    refine cuspForm_eq_zero_of_forall_qCoeff_one_heckeSubring hN fun S hS => ?_
+    have hz : ∀ i : Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2)),
+        (qCoeffL N 1) (T i f) = 0 := by
+      intro i
+      rw [qCoeffL_apply, ← hΦapp f i, hf]
+      rfl
+    have := ev_eq_zero_of_mem_span_int T (qCoeffL N 1) f hz (hTspan S hS)
+    rwa [qCoeffL_apply] at this
+  -- The preimage of `ℤ^D` consists of forms with INTEGRAL `q`-expansion.
+  have hsub : {f : CuspForm (Gamma0GL N) 2 | ∀ i, ∃ z : ℤ, Φ f i = (z : ℂ)}
+      ⊆ ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2))) := by
+    intro f hf
+    show ∀ m : ℕ, ∃ z : ℤ, qCoeff N f m = (z : ℂ)
+    intro m
+    obtain ⟨S, hS, hSe⟩ := exists_mem_heckeSubring_qCoeff hN m
+    have hint : ∀ i : Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2)),
+        ∃ z : ℤ, (qCoeffL N 1) (T i f) = (z : ℂ) := by
+      intro i
+      obtain ⟨z, hz⟩ := hf i
+      exact ⟨z, by rw [qCoeffL_apply, ← hΦapp f i]; exact hz⟩
+    obtain ⟨z, hz⟩ := exists_int_ev_of_mem_span_int T (qCoeffL N 1) f hint (hTspan S hS)
+    rw [qCoeffL_apply] at hz
+    exact ⟨z, by rw [hSe f]; exact hz⟩
+  -- and that preimage already spans, so a fortiori the integral forms do.
+  refine top_le_iff.mp ?_
+  rw [← span_preimage_int_eq_top (V := CuspForm (Gamma0GL N) 2) rfl Φ hinj]
+  exact Submodule.span_mono hsub
 
 /-- **The `ℚ`-structure of the `q`-expansion coefficient functionals**
 (PROVEN, 2026-07-26, over the single `q`-expansion-principle citation
@@ -2831,110 +3235,6 @@ theorem exists_rational_qExpansion_spanning {N : ℕ} (hN : 0 < N) :
         Finset.sum_congr rfl fun i _ => hterm i
     _ = ((c m k : ℂ)) := by simp
 
-/-! #### The Hecke algebra `𝕋` and bounded denominators
-
-Decomposition of the bounded-denominator citation node (2026-07-25).
-The classical statement "a rational weight-2 form has a single
-denominator" is here PROVEN from ONE finiteness statement about the
-Hecke algebra — `heckeSubring_moduleFinite` — over the Hecke machinery
-this file already carries: `exists_cuspForm_heckeTransform` (the
-slash-sum preserves `S₂(Γ₀(N))`) and `qExpansion_heckeTransform_coeff`
-(the coefficient formula `a_m(T_q f) = a_{qm}(f) + 1_{q∤N}·q·a_{m/q}(f)`),
-both PROVEN 2026-07-24. The `q`-expansion side of the argument is
-therefore fully discharged here; only the arithmetic finiteness of
-`𝕋` remains a citation. -/
-
-/-- **The weight-2 Hecke operator as a linear endomorphism** (PROVEN,
-2026-07-25): `T_q` (`U_q` when `q ∣ N`) packaged as an element of
-`End_ℂ(S₂(Γ₀(N)))`, over the proven stability
-`exists_cuspForm_heckeTransform` together with the additivity and
-`ℂ`-homogeneity of the slash-sum (`heckeTransform_add`,
-`heckeTransform_smul`); the form is recovered from its coefficients by
-`DFunLike.coe_injective`. Junk value `0` unless `0 < N` and `q` is
-prime — exactly the hypotheses under which the slash-sum is known to
-preserve `S₂(Γ₀(N))`. The function-level slash-sum `heckeTransform`
-stays the primitive; this is the operator-level packaging that the
-Hecke-algebra material below needs.
-
-DUPLICATION NOTICE (2026-07-26): `heckeOp`/`heckeOp_coe`, in the
-`ComplexHeckeAlgebra` section far below, is the SAME construction,
-built concurrently by another owner for the Eichler–Shimura seam. The
-two cannot presently be merged in either direction by their authors
-alone: this one is needed at THIS point of the file (the bounded
-denominators assembly is consumed by
-`exists_integral_qExpansion_spanning` a few hundred lines below),
-while `heckeOp` is defined ~18k lines later. Consolidation is a
-one-declaration move for whichever owner touches the later section —
-delete `exists_heckeOpLinear_total`/`heckeOp` and let `heckeOp` be
-notation for `heckeEndo`, whose `coe_heckeEndo` is exactly
-`heckeOp_coe`. -/
-noncomputable def heckeEndo (N q : ℕ) :
-    Module.End ℂ (CuspForm (Gamma0GL N) 2) :=
-  if h : 0 < N ∧ q.Prime then
-    { toFun := fun f => (exists_cuspForm_heckeTransform h.1 h.2 f).choose
-      map_add' := fun f g => DFunLike.coe_injective <| by
-        rw [(exists_cuspForm_heckeTransform h.1 h.2 (f + g)).choose_spec,
-          CuspForm.coe_add, heckeTransform_add, CuspForm.coe_add,
-          (exists_cuspForm_heckeTransform h.1 h.2 f).choose_spec,
-          (exists_cuspForm_heckeTransform h.1 h.2 g).choose_spec]
-      map_smul' := fun c f => DFunLike.coe_injective <| by
-        rw [RingHom.id_apply,
-          (exists_cuspForm_heckeTransform h.1 h.2 (c • f)).choose_spec,
-          CuspForm.IsGLPos.coe_smul, heckeTransform_smul,
-          CuspForm.IsGLPos.coe_smul,
-          (exists_cuspForm_heckeTransform h.1 h.2 f).choose_spec] }
-  else 0
-
-/-- `heckeEndo` is the slash-sum, at a prime and a positive level. -/
-theorem coe_heckeEndo {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime)
-    (f : CuspForm (Gamma0GL N) 2) :
-    ⇑(heckeEndo N q f) = heckeTransform N q ⇑f := by
-  rw [heckeEndo, dif_pos (⟨hN, hq⟩ : 0 < N ∧ q.Prime)]
-  exact (exists_cuspForm_heckeTransform hN hq f).choose_spec
-
-/-- The classical coefficient formula for `T_q`, transported to the
-operator packaging: `a_m(T_q f) = a_{qm}(f) + 1_{q ∤ N}·1_{q ∣ m}·q·a_{m/q}(f)`
-(Diamond–Shurman Proposition 5.2.2 at weight 2). -/
-theorem qCoeff_heckeEndo {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime)
-    (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
-    qCoeff N (heckeEndo N q f) m =
-      qCoeff N f (q * m) +
-        (if q ∣ N then 0 else
-          if q ∣ m then (q : ℂ) * qCoeff N f (m / q) else 0) := by
-  have h := qExpansion_heckeTransform_coeff hN hq f m
-  rw [← coe_heckeEndo hN hq f] at h
-  exact h
-
-/-- **`S₂(Γ₀(N); ℤ)` is Hecke stable** (PROVEN, 2026-07-26): the
-coefficient formula `qCoeff_heckeEndo` writes each coefficient of
-`T_q f` as the `ℤ`-combination `a_{qm}(f) + 1_{q∤N}·1_{q∣m}·q·a_{m/q}(f)`
-of coefficients of `f`, so integrality of the expansion is preserved.
-No arithmetic input; this is the second of the two conjuncts of
-`exists_heckeStable_lattice` that are theorems rather than citations. -/
-theorem heckeEndo_mem_integralCuspForms {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime)
-    {f : CuspForm (Gamma0GL N) 2} (hf : f ∈ integralCuspForms N) :
-    heckeEndo N q f ∈ integralCuspForms N := by
-  intro m
-  obtain ⟨x, hx⟩ := hf (q * m)
-  obtain ⟨y, hy⟩ := hf (m / q)
-  refine ⟨x + (if q ∣ N then 0 else if q ∣ m then (q : ℤ) * y else 0), ?_⟩
-  rw [qCoeff_heckeEndo hN hq f m, hx, hy]
-  split_ifs <;> push_cast <;> ring
-
-/-- **The Hecke algebra `𝕋 ⊆ End_ℂ(S₂(Γ₀(N)))`**: the subring generated
-by the operators `T_q` at ALL primes (so the `U_q` at the bad primes
-too) — the image in `End_ℂ(S₂)` of the classical full Hecke algebra of
-level `N` and weight `2`. Subring and `ℤ`-subalgebra agree because the
-prime ring of `End_ℂ(S₂)` is the image of `ℤ`; the subring spelling is
-used so that the `ℤ`-module structure is the ambient additive one. -/
-noncomputable def heckeSubring (N : ℕ) :
-    Subring (Module.End ℂ (CuspForm (Gamma0GL N) 2)) :=
-  Subring.closure {T | ∃ q : ℕ, q.Prime ∧ T = heckeEndo N q}
-
-/-- Each `T_q` lies in the Hecke algebra. -/
-theorem heckeEndo_mem_heckeSubring (N : ℕ) {q : ℕ} (hq : q.Prime) :
-    heckeEndo N q ∈ heckeSubring N :=
-  Subring.subset_closure ⟨q, hq, rfl⟩
 
 /-- **A Hecke-stable `ℤ`-lattice of full rank** (PROVEN, 2026-07-26,
 over the single `q`-expansion-principle citation
@@ -3187,65 +3487,6 @@ theorem heckeSubring_moduleFinite (N : ℕ) :
     haveI := isNoetherian_of_injective ρ hinj
     infer_instance
 
-/-- **Every coefficient functional is `a₁ ∘ T` for a single `T ∈ 𝕋`**
-(PROVEN, 2026-07-25): for each `m` there is one Hecke operator `T` with
-`a_m(f) = a₁(T f)` for ALL `f ∈ S₂(Γ₀(N))`. This is the operator form
-of `a_m = a₁ ∘ T_m` and it is what makes the coefficients of a fixed
-form range over the image of a single finitely generated `ℤ`-module.
-
-Proof by strong induction on `m`, using only `qCoeff_heckeEndo`: `m = 0`
-takes `T = 0` (`qCoeff_zero`: cusp forms vanish at `∞`), `m = 1` takes
-`T = 1`, and for `m ≥ 2` we split off the least prime factor
-`q = m.minFac`, `m = q·k`, and read the coefficient formula backwards,
-`a_{qk}(f) = a_k(T_q f) − 1_{q∤N}·1_{q∣k}·q·a_{k/q}(f)`, so that
-`T = T_k·T_q − c·T_{k/q}` with `c ∈ ℤ` works by the inductive
-hypotheses at `k < m` and `k/q ≤ k < m`. Note the `T_n` for composite
-`n` are never DEFINED — only their existence inside `𝕋` is produced,
-which is all the denominator argument uses. -/
-theorem exists_mem_heckeSubring_qCoeff {N : ℕ} (hN : 0 < N) (m : ℕ) :
-    ∃ T ∈ heckeSubring N, ∀ f : CuspForm (Gamma0GL N) 2,
-      qCoeff N f m = qCoeff N (T f) 1 := by
-  induction m using Nat.strong_induction_on with
-  | _ m ih =>
-    rcases eq_or_ne m 0 with rfl | hm0
-    · exact ⟨0, zero_mem _, fun f => by
-        rw [qCoeff_zero, LinearMap.zero_apply, qCoeff_zero_cuspForm]⟩
-    rcases eq_or_ne m 1 with rfl | hm1
-    · exact ⟨1, one_mem _, fun f => by rw [Module.End.one_apply]⟩
-    have hq : (m.minFac).Prime := Nat.minFac_prime hm1
-    obtain ⟨k, hk⟩ := Nat.minFac_dvd m
-    have hk0 : k ≠ 0 := by rintro rfl; simp at hk; omega
-    have hkm : k < m := by
-      have h2 : 2 ≤ m.minFac := hq.two_le
-      have h1 : 1 ≤ k := Nat.one_le_iff_ne_zero.mpr hk0
-      calc k < 2 * k := by omega
-        _ ≤ m.minFac * k := Nat.mul_le_mul_right k h2
-        _ = m := hk.symm
-    obtain ⟨A, hA, hAe⟩ := ih k hkm
-    obtain ⟨B, hB, hBe⟩ := ih (k / m.minFac)
-      (lt_of_le_of_lt (Nat.div_le_self k m.minFac) hkm)
-    set c : ℤ := if m.minFac ∣ N then 0 else
-      if m.minFac ∣ k then (m.minFac : ℤ) else 0 with hcdef
-    refine ⟨A * heckeEndo N m.minFac - c • B, ?_, ?_⟩
-    · exact sub_mem (mul_mem hA (heckeEndo_mem_heckeSubring N hq))
-        (Subring.zsmul_mem _ hB c)
-    · intro f
-      have hstep : qCoeff N (heckeEndo N m.minFac f) k
-          = qCoeff N f m + (c : ℂ) * qCoeff N f (k / m.minFac) := by
-        rw [qCoeff_heckeEndo hN hq f k, ← hk, hcdef]
-        split_ifs <;> push_cast <;> ring
-      have hval : ((A * heckeEndo N m.minFac - c • B :
-            Module.End ℂ (CuspForm (Gamma0GL N) 2)) f)
-          = A (heckeEndo N m.minFac f) - c • (B f) := by
-        simp [Module.End.mul_apply]
-      have hlin : qCoeff N ((A * heckeEndo N m.minFac - c • B :
-            Module.End ℂ (CuspForm (Gamma0GL N) 2)) f) 1
-          = qCoeff N (A (heckeEndo N m.minFac f)) 1
-            - (c : ℂ) * qCoeff N (B f) 1 := by
-        rw [hval, ← qCoeffL_apply, map_sub, map_zsmul, qCoeffL_apply,
-          qCoeffL_apply, zsmul_eq_mul]
-      rw [hlin, ← hAe (heckeEndo N m.minFac f), ← hBe f, hstep]
-      ring
 
 /-- **Bounded denominators for rational `q`-expansions** (PROVEN
 assembly, 2026-07-25, over the Hecke-finiteness node
