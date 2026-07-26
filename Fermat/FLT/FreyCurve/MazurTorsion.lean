@@ -103,6 +103,11 @@ public import Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction
 -- and the going-up prime lifting, used in the Minkowski assembly proof.
 import Mathlib.NumberTheory.NumberField.ExistsRamified
 import Mathlib.RingTheory.Ideal.GoingUp
+-- Quadratic reciprocity (`legendreSym.quadratic_reciprocity'`, `legendreSym.at_neg`,
+-- `ZMod.χ₄_eq_neg_one_pow`): the bridge `(−N/q) = (q/N)` valid for `N ≡ 3 (mod 4)`,
+-- proven as `mazurIsogeny_isSquare_of_isSquare_neg` and consumed by the
+-- signature-`6` branch of Mazur's isogeny theorem.
+import Mathlib.NumberTheory.LegendreSymbol.QuadraticReciprocity
 -- The local inertia-fixed-field node (`e(M/ℚ_q) = 1` for finite
 -- subextensions of `ℚ_qᵃˡᵍ` fixed by the local inertia), consumed by
 -- the transport proof of the Minkowski surjectivity theorem below.
@@ -1388,8 +1393,140 @@ theorem mazurIsogeny_traceRelation_impossible {N q : ℕ} (hq : q.Prime)
     obtain ⟨b, rfl⟩ := heven
     exact hnsq b (by nlinarith)
 
-/-- **The Frobenius trace relation at a non-inert prime** (sorry leaf,
-introduced 2026-07-26 as the elliptic-curve half of
+/-- **Reciprocity bridge: `(−N/q) = (q/N)` when `N ≡ 3 (mod 4)`** (PROVEN
+2026-07-26): for distinct odd primes `N, q` with `N ≡ 3 (mod 4)`, if `−N` is
+a square mod `q` then `q` is a square mod `N`.
+
+Proof. `legendreSym q (−N) = χ₄(q) · legendreSym q N` (`legendreSym.at_neg`),
+and `legendreSym q N = (−1)^{(N/2)(q/2)} · legendreSym N q`
+(`legendreSym.quadratic_reciprocity'`). `N ≡ 3 (mod 4)` makes `N/2` ODD, so
+`(−1)^{(N/2)(q/2)} = (−1)^{q/2} = χ₄(q)`, and `χ₄(q)² = 1`. The two copies of
+`χ₄(q)` cancel, leaving `legendreSym q (−N) = legendreSym N q`.
+
+This is the only place the signature-`6` branch needs reciprocity, and it is
+what lets `mazurIsogeny_classNumberOne_of_inert` be stated in terms of `−N`
+mod `q` — the form the class-number-one theorem needs — while the Frobenius
+argument works with `q` mod `N`. -/
+theorem mazurIsogeny_isSquare_of_isSquare_neg {N q : ℕ} [Fact N.Prime] [Fact q.Prime]
+    (hmod : N % 4 = 3) (hq2 : q ≠ 2) (hqN : q ≠ N)
+    (h : IsSquare ((-(N : ℤ) : ZMod q))) : IsSquare ((q : ℕ) : ZMod N) := by
+  have hN2 : N ≠ 2 := by omega
+  have hNz : ((N : ℕ) : ZMod q) ≠ 0 := ZMod.prime_ne_zero q N hqN
+  have hqz : ((q : ℕ) : ZMod N) ≠ 0 := ZMod.prime_ne_zero N q (fun hh => hqN hh.symm)
+  have hne : ((-(N : ℤ) : ℤ) : ZMod q) ≠ 0 := by
+    rw [Int.cast_neg, Int.cast_natCast]; exact neg_ne_zero.mpr hNz
+  have hqodd : q % 2 = 1 := by
+    rcases (Nat.Prime.eq_two_or_odd (Fact.out : q.Prime)) with h' | h'
+    · exact absurd h' hq2
+    · exact h'
+  have h1 : legendreSym q (-(N : ℤ)) = 1 :=
+    (legendreSym.eq_one_iff (p := q) hne).mpr (by rw [Int.cast_neg]; exact h)
+  have hhalf : N / 2 % 2 = 1 := by omega
+  have hchi : ZMod.χ₄ (q : ℕ) * ZMod.χ₄ (q : ℕ) = 1 := by
+    rw [ZMod.χ₄_eq_neg_one_pow (n := q) hqodd, ← pow_add]
+    exact Even.neg_one_pow ⟨q / 2, rfl⟩
+  have hqr : legendreSym q (N : ℤ) = (-1 : ℤ) ^ (N / 2 * (q / 2)) * legendreSym N (q : ℤ) :=
+    legendreSym.quadratic_reciprocity' hN2 hq2
+  have hpow : (-1 : ℤ) ^ (N / 2 * (q / 2)) = ZMod.χ₄ (q : ℕ) := by
+    rw [pow_mul, Odd.neg_one_pow (Nat.odd_iff.mpr hhalf)]
+    exact (ZMod.χ₄_eq_neg_one_pow (n := q) hqodd).symm
+  have h2 : legendreSym N (q : ℤ) = 1 := by
+    rw [legendreSym.at_neg hq2, hqr, hpow] at h1
+    calc legendreSym N (q : ℤ)
+        = (ZMod.χ₄ (q : ℕ) * ZMod.χ₄ (q : ℕ)) * legendreSym N (q : ℤ) := by rw [hchi, one_mul]
+      _ = 1 := by rw [mul_assoc]; exact h1
+  have hqz' : ((q : ℤ) : ZMod N) ≠ 0 := by rw [Int.cast_natCast]; exact hqz
+  have hres := (legendreSym.eq_one_iff (p := N) hqz').mp h2
+  rwa [Int.cast_natCast] at hres
+
+/-- **The sixth-power refinement** (PROVEN 2026-07-26): in `ZMod N` with `N`
+prime and `N ≡ 3 (mod 4)`, if `x¹² = Q⁶` with `x ≠ 0`, `Q ≠ 0` and `Q` a
+SQUARE, then already `x⁶ = Q³`.
+
+This is the step that converts "the isogeny signature is `6`" into "`ψ²` is a
+CUBE root of unity" rather than merely a sixth root, and it is exactly where
+the non-inertness of `q` is spent: `Q = q` is a square mod `N` precisely
+because `q` is not inert in `ℚ(√−N)`.
+
+Proof, and it needs no `orderOf` reasoning. `x¹² = Q⁶` factors as
+`(x⁶ − Q³)(x⁶ + Q³) = 0`, so in the field `ZMod N` either `x⁶ = Q³` — the
+conclusion — or `x⁶ = −Q³`. In the second case write `Q = c·c` and put
+`m := (N−1)/2`, which is ODD because `N ≡ 3 (mod 4)`. Fermat gives
+`x^{N−1} = c^{N−1} = 1`, so `(x⁶)^m = (x^{N−1})³ = 1` and likewise
+`(c⁶)^m = 1`; but `(x⁶)^m = (−c⁶)^m = (−1)^m·(c⁶)^m = −1` since `m` is odd.
+Hence `1 = −1`, i.e. `N ∣ 2`, contradicting `N ≡ 3 (mod 4)`. -/
+theorem mazurIsogeny_sixthPower_of_isSquare {N : ℕ} [Fact N.Prime] (hmod : N % 4 = 3)
+    {x Qv : ZMod N} (hx : x ≠ 0) (hQ : Qv ≠ 0) (hsq : IsSquare Qv)
+    (h12 : x ^ 12 = Qv ^ 6) : x ^ 6 = Qv ^ 3 := by
+  obtain ⟨c, hc⟩ := hsq
+  have hc0 : c ≠ 0 := by rintro rfl; rw [mul_zero] at hc; exact hQ hc
+  have hfac : (x ^ 6 - Qv ^ 3) * (x ^ 6 + Qv ^ 3) = 0 := by linear_combination h12
+  rcases mul_eq_zero.mp hfac with h | h
+  · exact sub_eq_zero.mp h
+  · exfalso
+    have hneg : x ^ 6 = -(Qv ^ 3) := add_eq_zero_iff_eq_neg.mp h
+    have hm : N - 1 = 2 * ((N - 1) / 2) := by omega
+    have hmodd : (N - 1) / 2 % 2 = 1 := by omega
+    set m := (N - 1) / 2 with hmdef
+    have hxf : x ^ (N - 1) = 1 := ZMod.pow_card_sub_one_eq_one hx
+    have hcf : c ^ (N - 1) = 1 := ZMod.pow_card_sub_one_eq_one hc0
+    have e1 : (x ^ 6) ^ m = 1 := by
+      rw [← pow_mul, show 6 * m = 2 * m * 3 by ring, ← hm, pow_mul, hxf, one_pow]
+    have e2 : (c ^ 6) ^ m = 1 := by
+      rw [← pow_mul, show 6 * m = 2 * m * 3 by ring, ← hm, pow_mul, hcf, one_pow]
+    have e3 : Qv ^ 3 = c ^ 6 := by rw [hc]; ring
+    have e4 : (x ^ 6) ^ m = -(1 : ZMod N) := by
+      rw [hneg, e3, neg_pow, Odd.neg_one_pow (Nat.odd_iff.mpr hmodd), e2, mul_one]
+    have h11 : (1 : ZMod N) = -1 := e1.symm.trans e4
+    have h2 : ((2 : ℤ) : ZMod N) = 0 := by push_cast; linear_combination h11
+    have hdvd2 : (N : ℤ) ∣ (2 : ℤ) := (ZMod.intCast_zmod_eq_zero_iff_dvd 2 N).mp h2
+    have := Int.le_of_dvd (by norm_num) hdvd2
+    omega
+
+/-- **The two admissible values of `a²` mod `N`** (PROVEN 2026-07-26): if `x`
+is a nonzero root of `X² − aX + q` in `ZMod N` with `x¹² = q⁶`, `q ≢ 0` and
+`q` a square, then `a² ≡ q` or `a² ≡ 4q (mod N)`.
+
+Proof. `mazurIsogeny_sixthPower_of_isSquare` upgrades `x¹² = q⁶` to
+`x⁶ = q³`, which factors as `(x² − q)(x⁴ + qx² + q²) = 0`. From the
+characteristic equation, `ax = x² + q`, so `a²x² = (x² + q)²`. In the first
+branch `x² = q` and `(x² + q)² = 4q·x²`; in the second
+`(x² + q)² = q·x² + (x⁴ + qx² + q²) = q·x²`. Cancelling `x² ≠ 0` gives
+`a² = 4q` and `a² = q` respectively.
+
+Both branches really occur, which is why the conclusion is a disjunction and
+why the consumer must refute BOTH: `a² = q` is the case `ψ²(σ_q) ≠ 1` and
+`a² = 4q` is the case `ψ²(σ_q) = 1`. -/
+theorem mazurIsogeny_traceRelation_of_signature_six {N q : ℕ} [Fact N.Prime]
+    (hmod : N % 4 = 3) {x : ZMod N} (hx : x ≠ 0) (hqz : ((q : ℕ) : ZMod N) ≠ 0)
+    (h12 : x ^ 12 = ((q : ℕ) : ZMod N) ^ 6) (hsq : IsSquare ((q : ℕ) : ZMod N))
+    {a : ℤ} (hchar : x ^ 2 - (a : ZMod N) * x + ((q : ℕ) : ZMod N) = 0) :
+    (a : ZMod N) ^ 2 = ((q : ℕ) : ZMod N) ∨
+      (a : ZMod N) ^ 2 = 4 * ((q : ℕ) : ZMod N) := by
+  set Qv : ZMod N := ((q : ℕ) : ZMod N) with hQdef
+  have hkey : x ^ 6 = Qv ^ 3 := mazurIsogeny_sixthPower_of_isSquare hmod hx hqz hsq h12
+  have hax : (a : ZMod N) * x = x ^ 2 + Qv := by linear_combination -hchar
+  have hx2ne : x ^ 2 ≠ 0 := pow_ne_zero 2 hx
+  have hfac : (x ^ 2 - Qv) * (x ^ 4 + Qv * x ^ 2 + Qv ^ 2) = 0 := by linear_combination hkey
+  rcases mul_eq_zero.mp hfac with h | h
+  · right
+    have hx2 : x ^ 2 = Qv := sub_eq_zero.mp h
+    have hmul : ((a : ZMod N) ^ 2 - 4 * Qv) * x ^ 2 = 0 := by
+      linear_combination ((a : ZMod N) * x + x ^ 2 + Qv) * hax + (x ^ 2 - Qv) * hx2
+    rcases mul_eq_zero.mp hmul with h' | h'
+    · exact sub_eq_zero.mp h'
+    · exact absurd h' hx2ne
+  · left
+    have hmul : ((a : ZMod N) ^ 2 - Qv) * x ^ 2 = 0 := by
+      linear_combination ((a : ZMod N) * x + x ^ 2 + Qv) * hax + h
+    rcases mul_eq_zero.mp hmul with h' | h'
+    · exact sub_eq_zero.mp h'
+    · exact absurd h' hx2ne
+
+/-- **The Frobenius trace relation at a non-inert prime** (PROVEN 2026-07-26
+over the SIBLING leaf `exists_frobeniusTrace_of_potentiallyGoodReduction`,
+replacing the sorry this node was introduced with earlier the same day — the
+elliptic-curve half of
 `mem_classNumberOnePrimes_of_isogenySignature_six`; [Michaud-Jacobs,
 Prop. 4.4]): under isogeny signature `6` and `N ≡ 3 (mod 4)`, if `2 < q` is
 a prime with `4q < N` which is NOT inert in `ℚ(√−N)` — equivalently `−N` is
@@ -1412,13 +1549,19 @@ for `a` and substituting gives `a² − 2q ≡ q·(ψ²(σ_q) + ψ^{−2}(σ_q))
 `ψ²(σ_q)` is a cube root of unity, so the bracket is `2` or `−1`. That is
 `a² ≡ 4q` or `a² ≡ q (mod N)`, which is the conclusion.
 
-MACHINERY AUDIT (2026-07-26). What is missing here is exactly what the
-sibling `exists_frobeniusTrace_of_potentiallyGoodReduction` is missing —
-Serre–Tate integrality of the trace plus the Hasse–Weil bound — together
-with the character bookkeeping above (order of `ψ`, quadratic reciprocity,
-cube roots of unity in `ZMod N`). Nothing modular, no Eisenstein ideal, and
-NO class field theory: the class-number-one input has been moved out
-entirely, into `mazurIsogeny_classNumberOne_of_inert`. -/
+WHAT IS ACTUALLY FORMALISED BELOW, and it is the whole thing. The only
+external input is the sibling leaf
+`exists_frobeniusTrace_of_potentiallyGoodReduction`, which already carries
+Serre–Tate and Hasse–Weil and already consumes `hpg`; everything else is
+`ZMod N` arithmetic over the three PROVEN lemmas above. In particular the
+`ψ⁶ = 1` bookkeeping of the classical write-up is replaced by the sharper
+and much cheaper `mazurIsogeny_sixthPower_of_isSquare`: one does not need
+`ψ` at all, only that `x⁶ = q³` follows from `x¹² = q⁶` once `q` is a
+square mod `N`, and the non-inertness hypothesis is exactly what supplies
+that square (through `mazurIsogeny_isSquare_of_isSquare_neg`, i.e.
+reciprocity). So this node introduces NO new deep input: after this commit
+the entire signature-`6` branch rests on `hpg` (the formal-immersion leaf),
+the Frobenius-trace leaf, and Baker–Heegner–Stark — nothing else. -/
 theorem WeierstrassCurve.exists_frobeniusTraceRelation_of_isogenySignature_six
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
@@ -1436,8 +1579,41 @@ theorem WeierstrassCurve.exists_frobeniusTraceRelation_of_isogenySignature_six
     {q : ℕ} (hq : q.Prime) (hq2 : 2 < q) (hq4 : 4 * q < N)
     (hsplit : IsSquare ((-(N : ℤ) : ZMod q))) :
     ∃ a : ℤ, a ^ 2 ≤ 4 * (q : ℤ) ∧
-      ((N : ℤ) ∣ a ^ 2 - (q : ℤ) ∨ (N : ℤ) ∣ a ^ 2 - 4 * (q : ℤ)) :=
-  sorry
+      ((N : ℤ) ∣ a ^ 2 - (q : ℤ) ∨ (N : ℤ) ∣ a ^ 2 - 4 * (q : ℤ)) := by
+  haveI : Fact N.Prime := ⟨hN⟩
+  haveI : Fact q.Prime := ⟨hq⟩
+  have hqN : q ≠ N := by omega
+  have hq2' : q ≠ 2 := by omega
+  -- The sibling leaf: Frobenius at `q` satisfies its characteristic polynomial
+  -- `X² − aX + q` mod `N`, with `a` a RATIONAL integer bounded by `2√q`.
+  obtain ⟨a, ha, hchar⟩ :=
+    E.exists_frobeniusTrace_of_potentiallyGoodReduction g hN hN23 hg lam hlam hpg hq hq2' hqN
+  refine ⟨a, ha, ?_⟩
+  set σq := GaloisRepresentation.globalFrob hq.toHeightOneSpectrumRingOfIntegersRat with hσq
+  -- `χ_N(σ_q) = q` (`cyclotomicCharacterModL_globalFrob`), hence `λ(σ_q)¹² = q⁶`.
+  have hcyc : ((@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σq : (ZMod N)ˣ) : ZMod N)
+      = ((q : ℕ) : ZMod N) :=
+    @GaloisRepresentation.cyclotomicCharacterModL_globalFrob N q ⟨hN⟩ hq hqN
+  have h12 : ((lam σq : (ZMod N)ˣ) : ZMod N) ^ 12 = ((q : ℕ) : ZMod N) ^ 6 := by
+    have h3 := congrArg (fun u : (ZMod N)ˣ => (u : ZMod N)) (hsig σq)
+    simp only [Units.val_pow_eq_pow_val] at h3
+    rw [h3, hcyc]
+  have hx : ((lam σq : (ZMod N)ˣ) : ZMod N) ≠ 0 := Units.ne_zero _
+  have hqz : ((q : ℕ) : ZMod N) ≠ 0 := ZMod.prime_ne_zero N q (fun hh => hqN hh.symm)
+  -- Non-inertness of `q` in `ℚ(√−N)` says `−N` is a square mod `q`; reciprocity
+  -- turns that into `q` a square mod `N`, which is what sharpens `x¹² = q⁶` to
+  -- `x⁶ = q³` and so pins `a²` to one of two values.
+  have hsq : IsSquare ((q : ℕ) : ZMod N) :=
+    mazurIsogeny_isSquare_of_isSquare_neg hmod hq2' hqN hsplit
+  rcases mazurIsogeny_traceRelation_of_signature_six hmod hx hqz h12 hsq hchar with h | h
+  · left
+    rw [← ZMod.intCast_zmod_eq_zero_iff_dvd]
+    push_cast
+    linear_combination h
+  · right
+    rw [← ZMod.intCast_zmod_eq_zero_iff_dvd]
+    push_cast
+    linear_combination h
 
 /-- **Class number one, in purely elementary form** (sorry leaf,
 introduced 2026-07-26 — this leaf IS Baker–Heegner–Stark and nothing else):
@@ -1489,28 +1665,33 @@ Baker–Heegner–Stark): if the signature is `6` and `N ≥ 23`, then
 class-number-one curve with CM by the order of discriminant `−N` has a
 rational `N`-isogeny, since `N` ramifies.
 
-THE CUT. The proof below is the whole of [MJ, Prop. 4.4] except for two
-inputs, which are now separate leaves resting on disjoint mathematics:
+THE CUT, and after the second pass of 2026-07-26 it leaves exactly ONE new
+open leaf. The proof below is the whole of [MJ, Prop. 4.4] over:
 
-* `exists_frobeniusTraceRelation_of_isogenySignature_six` — Serre–Tate and
-  Hasse–Weil at a non-inert `q`, plus the `ψ⁶ = 1` character bookkeeping.
-  This is where potential good reduction (`hpg`), and hence Mazur's
-  formal-immersion theorem, is consumed;
-* `mazurIsogeny_classNumberOne_of_inert` — Baker–Heegner–Stark, stated as a
-  condition on Legendre symbols with no number field in sight.
+* `exists_frobeniusTraceRelation_of_isogenySignature_six` — PROVEN, from the
+  pre-existing sibling leaf `exists_frobeniusTrace_of_potentiallyGoodReduction`
+  (which already carries Serre–Tate and Hasse–Weil, and is where potential
+  good reduction `hpg`, hence Mazur's formal-immersion theorem, is consumed)
+  plus reciprocity and `ZMod N` arithmetic;
+* `mazurIsogeny_classNumberOne_of_inert` — the ONLY new sorry:
+  Baker–Heegner–Stark, stated as a condition on Legendre symbols with no
+  number field, ideal class or Minkowski bound in sight;
+* `mazurIsogeny_traceRelation_impossible` — PROVEN: `a² ≤ 4q` and `4q < N`
+  force `a² = q` or `a² = 4q`, and a prime is not a square.
 
-Everything between them is `mazurIsogeny_traceRelation_impossible`, which is
-PROVEN: `a² ≤ 4q` and `4q < N` force `a² = q` or `a² = 4q`, and a prime is
-not a square. So the assembly is: for each odd prime `q < N/4`, a failure of
-inertness would produce that impossible relation, so every such `q` IS
-inert, and the class-number-one leaf reads off `{43, 67, 163}`.
+So the assembly is: for each odd prime `q < N/4`, a failure of inertness
+would produce that impossible relation, so every such `q` IS inert, and the
+class-number-one leaf reads off `{43, 67, 163}`.
 
-What this buys over the old single sorry: the class-number-one theorem is a
+What this buys over the old single sorry. The class-number-one theorem is a
 DIFFERENT deep input from the Eisenstein ideal — it is the one that produces
 three of the four exceptional primes — and it is now stated in a vocabulary
 (Legendre symbols of a rational prime) that needs no ideal-class machinery
 to attack, rather than being welded to a Frobenius-trace argument about
-elliptic curves. -/
+elliptic curves. And the Frobenius-trace half turned out to need no new deep
+input at all: it is the sibling leaf plus quadratic reciprocity, so the
+signature-`6` branch adds exactly one open problem to this file rather than
+the two the first cut suggested. -/
 theorem WeierstrassCurve.mem_classNumberOnePrimes_of_isogenySignature_six
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
