@@ -886,13 +886,92 @@ geometric fibre as a `Γ_ℚ`-module is exactly what rules that out, and it
 is also precisely what the descent leaf needs as input, so the two fit
 without an intermediate interface.
 
-IRREDUCIBLE at this mathlib pin: `Mathlib` has `WeierstrassCurve`,
-`IsElliptic`, `WeierstrassCurve.Projective` and the group law on
-`(E⁄K).Point` for a field `K`, but the elliptic curve as a *group
-scheme* — the functor of points of the projective model, with the group
-law as a natural transformation — does not exist anywhere in
-`Mathlib`, and `~/cs/FLT` has no abelian schemes either (surveyed
-2026-07-26).  This is the larger of the two theories. -/
+**MISSING MACHINERY, resurveyed 2026-07-26 against a SEEDED `.lake`.**
+This replaces an earlier one-line "IRREDUCIBLE at this pin" note, which
+was correct but far too coarse to route work against.
+
+The obstruction is NOT that `Mathlib` lacks elliptic curves.  It is that
+`AbelianSchemeStruct.add` is a group law on `RelPoint f g` for an
+ARBITRARY test scheme `T`, and there is no functor-of-points description
+of `Proj` anywhere at this pin — `ProjectiveSpectrum/Functor.lean` is
+only functoriality `Proj ℬ ⟶ Proj 𝒜` in the graded ring, not a
+description of `Hom(T, Proj 𝒜)`.  So `add` cannot be written by hand on
+`T`-points, and that, rather than the geometry, is why no glue-first
+skeleton is writable here: what remains after the definitions is a chain
+of existentials, which is the shape this development forbids.  The node
+therefore stays a single `sorry` until the items below land.
+
+PRESENT and directly usable, each verified BY NAME at this pin:
+
+* `WeierstrassCurve.Projective.addXYZ`, `addX`, `addY`, `addZ`
+  (`EllipticCurve/Projective/Formula.lean`) — the addition FORMULAS, over
+  an arbitrary `[CommRing R]`.  Only the group AXIOMS are field-only:
+  every `AddCommGroup W.Point` instance at this pin
+  (`Projective/Point.lean:572`, `Jacobian/Point.lean:588`,
+  `Affine/Point.lean:768`) is stated for `W` over `[Field F]`, the affine
+  one via the class group of the coordinate ring.
+* `AlgebraicGeometry.Proj`, and `IsProper (Proj.toSpecZero 𝒜)` under
+  `[Algebra.FiniteType (𝒜 0) A]` (`ProjectiveSpectrum/Proper.lean:368`).
+* `HasPullbacks Scheme` (`AlgebraicGeometry/Pullbacks.lean:479`),
+  `SmoothOfRelativeDimension` (`Morphisms/Smooth.lean:135`),
+  `GeometricallyConnected` (`Geometrically/Connected.lean:40`).
+* `WeierstrassCurve.Projective.toAffineAddEquiv`, giving
+  `W.Point ≃+ W.toAffine.Point` over a field — the field-level half of
+  the identification in the last conjunct.
+
+ABSENT, as exact statements to route:
+
+1. `GradedRing` on a quotient by a homogeneous ideal.  All of
+   `Mathlib/RingTheory/GradedAlgebra/` was searched: `Ideal.IsHomogeneous`
+   exists, the induced grading on `A ⧸ I` does NOT.  Without it `Proj` of
+   the Weierstrass cubic cannot be FORMED, so this blocks even writing
+   down `A`.  Shape needed: for `[GradedRing 𝒜]` and
+   `hI : I.IsHomogeneous 𝒜`, a `GradedRing` structure on `A ⧸ I` graded
+   by the images of the `𝒜 i`.
+2. `WeierstrassCurve.Projective.proj : Scheme.{u}` together with
+   `projToSpec : proj ⟶ Spec (CommRingCat.of R)` — the projective model
+   as a scheme over its base, built from item 1.
+3. THE CRUX: the group law as SCHEME MORPHISMS rather than on points.
+   `m : pullback f f ⟶ A`, `e : S ⟶ A`, `i : A ⟶ A`, satisfying
+   `m ≫ f = pullback.fst ≫ f`, `e ≫ f = 𝟙 S`, `i ≫ f = f`, with
+   associativity, commutativity, unit and inverse stated as EQUATIONS OF
+   MORPHISMS.
+4. The formal bridge from item 3 to this file's interface — real code,
+   and the only cheap part:
+   `AbelianSchemeStruct.ofMorphisms f m e i (axioms) (proper) (smooth)
+   (connected) : AbelianSchemeStruct f`, defining
+   `add x y := pullback.lift x.1 y.1 _ ≫ m`, `zero g := g ≫ e` and
+   `neg x := x.1 ≫ i`.  Naturality — the `pre_add` and `pre_zero` fields —
+   is then AUTOMATIC, from compatibility of `pullback.lift` with
+   precomposition.  That is exactly why the morphism-level route is
+   writable where the point-level one is not.  **Build this item FIRST:**
+   it is independent of all Weierstrass geometry, needs none of items 1,
+   2, 5, 6, 7, 8, and is provable today.
+5. Item 3 for the cubic specifically: that `addXYZ` and its companions
+   glue to a morphism on `pullback f f`.  The formulas degenerate on the
+   locus where the naive chart fails, so this needs the standard
+   three-chart cover of `A ×_S A` and agreement on the overlaps.  This is
+   the substantial geometric work.
+6. Associativity of `m` as an equation of morphisms — classically the
+   rigidity lemma or the theorem of the cube, or a reduction to the field
+   case using reducedness and density of the generic fibre.
+7. `SmoothOfRelativeDimension 1` from the Jacobian criterion with `Δ`
+   invertible, and `GeometricallyConnected` for the cubic.  Both CLASSES
+   exist at the pin; there is no Jacobian criterion for `Proj`.
+8. `Spec ℚ̄`-points of `proj` identified with `W.Point`, which composed
+   with `toAffineAddEquiv` yields the `≃+` of the last conjunct.
+
+`Fermat/FLT/Modularity/AbelianSchemeIsogeny.lean` does NOT help, and was
+checked rather than assumed: it is not on `main` at all, and everything in
+it — `flat_mulByNat`, `finite_preimage_mulByNat`, `surjective_mulByNat` —
+takes an `AbelianSchemeStruct` as INPUT.  Those are CONSUMERS of this
+node, not producers of it, so no amount of progress there closes this
+leaf.  `~/cs/FLT` has no abelian schemes and no elliptic-curve-as-scheme
+construction either (rechecked 2026-07-26).  Nor does any declaration
+anywhere in this project yet CONSTRUCT an `AbelianSchemeStruct`: every
+occurrence in `X0.lean`, `KhareWintenberger.lean` and `TateModule.lean`
+is a hypothesis binder or an existential, so this node is the first
+producer and item 4 is the interface it will go through. -/
 theorem exists_ellipticScheme_of_weierstrass (E : WeierstrassCurve ℚ) [E.IsElliptic] :
     ∃ (A : Scheme.{0}) (f : A ⟶ SpecQ) (ab : AbelianSchemeStruct f),
       SmoothOfRelativeDimension 1 f ∧

@@ -62,15 +62,30 @@ the kernel:
   the compatibility square makes `redPt` injective.
 * `X18.no_noncuspidal_point` (PROVEN modulo the single leaf) — `7 ≤ 6`.
 
-## The single remaining leaf
+## The remaining leaves — one per level, and the SAME statement shape
 
 `X18.redPt_injective_five : Function.Injective (redPt 1 (-2) 5 (-10) 10 (-4) (p := 5))`
 
-**This replaced the former leaf `X18.exists_jacobianPackage`, which is now
-PROVEN** (2026-07-26).  The two are equivalent — `redPt_injective` is one
-direction and `nonempty_jacobianPackage_of_redPt_injective` the other, both
-proven here — so no statement was weakened; what was removed is the obligation
-to exhibit a *structure*.
+`X13.redPt_injective_three : Function.Injective (redPt 1 4 6 2 1 2 (p := 3))`
+
+**These replaced the former leaves `X18.exists_jacobianPackage` and
+`X13.exists_jacobianPackage`, both of which are now PROVEN** (2026-07-26; level
+`18` first, level `13` the same day by the identical route).  In each case the
+two are equivalent — `redPt_injective` is one direction and
+`nonempty_jacobianPackage_of_redPt_injective` the other, both proven here and
+both stated for an ARBITRARY sextic and prime — so no statement was weakened;
+what was removed is the obligation to exhibit a *structure*.
+
+Neither replacement changed the sorry COUNT: one leaf closed, one opened, at
+each level.  That is not the point of them.  The point is that the surviving
+obligation is a statement about already-defined concrete objects, identical in
+shape at the two levels, so **one future genus-`2` Jacobian development
+discharges both at once** — and until it lands, nobody needs to design a Lean
+interface for `Pic⁰` in order to work on either.
+
+Note that the earlier level-`18`-only phrasing of this section ("the single
+remaining leaf") was already stale when the `X13` namespace was added below it;
+it is corrected here.
 
 **FORMAL-CONTENT AUDIT: `JacobianPackage`'s abelian-variety structure is not
 load-bearing, and the previous audit in this docstring was WRONG.**  It
@@ -531,6 +546,172 @@ theorem no_noncuspidal_point (x y : ℚ) (hx0 : x ≠ 0) (hx1 : x ≠ 1)
   omega
 
 end X18
+
+namespace X13
+
+local instance factThree : Fact (Nat.Prime 3) := ⟨by norm_num⟩
+
+/-- The `X_1(13)` sextic in the coefficient form used by this module.
+
+This is Sutherland's optimal model of `X_1(13)`, the genus-`2` curve of
+conductor `169`: completing the square in `y² + (x³ + x² + 1)y = x² + x`
+gives `(2y + x³ + x² + 1)² = x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1`. -/
+theorem sext13 {R : Type*} [CommRing R] (x : R) :
+    sext 1 4 6 2 1 2 x
+      = x ^ 6 + 2 * x ^ 5 + x ^ 4 + 2 * x ^ 3 + 6 * x ^ 2 + 4 * x + 1 := by
+  simp only [sext]
+  push_cast
+  ring
+
+/-- **`#X(𝔽₃) = 6`** (PROVEN BY `decide`).
+
+Modulo `3` the sextic is `x⁶ + 2x⁵ + x⁴ + 2x³ + x + 1`, whose values at
+`x = 0, 1, 2` are `1, 2, 1`.  Squares in `𝔽₃` are `{0, 1}`, so `x = 0` and
+`x = 2` each give two affine points and `x = 1` gives none: `4` affine
+points, plus the `2` points at infinity, is `6`.  This is the point count
+the whole rank-`0` argument turns on, and the kernel verifies it.
+
+`3` is a prime of good reduction: the sextic has discriminant `−2¹²·13²`
+(PARI, untrusted), and `J_1(13)` has conductor `169 = 13²`.  It also
+satisfies the formal-group hypothesis `p > e + 1 = 2` that
+`red_ker_torsionFree` needs. -/
+theorem card_X13_F3 : Fintype.card (Pt 1 4 6 2 1 2 (ZMod 3)) = 6 := by decide
+
+/-- **THE REMAINING LEAF, in its honest minimal form: reduction at `3` is
+injective on `X_1(13)(ℚ)`.**
+
+This *replaces* the former leaf `exists_jacobianPackage`, which is now PROVEN
+from it by `nonempty_jacobianPackage_of_redPt_injective`.  The two are
+equivalent (that lemma and `redPt_injective` are the two directions), so
+nothing has been weakened; what has gone is the obligation to exhibit a
+*structure*.  Whoever discharges this needs no Lean interface for `Pic⁰`, no
+group law and no scheme theory in the STATEMENT — only in the proof.  See the
+FORMAL-CONTENT AUDIT on `nonempty_jacobianPackage_of_redPt_injective` for why
+the bundled form carried no extra arithmetic.
+
+Exactly the shape of `X18.redPt_injective_five`, and deliberately so: one
+future development of genus-`2` Jacobians discharges both at once.  The four
+parts are those recorded in this module's docstring:
+
+1. `Pic⁰` of a genus-`2` hyperelliptic curve, with the Mumford representation
+   and Cantor's group law — the group `J = J(ℚ)` and its reduction `J(𝔽₃)`;
+2. Abel–Jacobi from a rational base point, injective for genus `≥ 1`;
+3. good reduction at `3` (the sextic's discriminant is `−2¹²·13²`, and the
+   conductor of `J_1(13)` is `169`), the reduction homomorphism, its
+   compatibility with `redPt`, and torsion-freeness of its kernel — the kernel
+   is the formal group over `ℤ₃`, torsion-free since `3 > e + 1 = 2`;
+4. `rank J(ℚ) = 0`.  Externally (untrusted searchers): `J_1(13)`
+   is `ℚ`-simple of dimension `2` with `J(ℚ)_tors ≅ ℤ/19`, and a `2`-descent
+   gives `rank J(ℚ) = 0`, so `J(ℚ) ≅ ℤ/19`; equivalently `LRatio(J, 1) =
+   1/361 ≠ 0`.  Only FINITENESS is used.
+
+Given 1–4 the derivation is `redPt_injective` applied to the resulting package,
+and that derivation is already written and proven here.
+
+**NUMERICAL CORROBORATION (PARI/GP, 2026-07-26; untrusted searcher, verified
+against the Lean-side `decide` where it overlaps).**  For
+`f = x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1`:
+
+* `factor(poldisc(f)) = −2¹² · 13²`, so `3 ∤ disc` — `3` really is a prime of
+  good reduction, confirming step 3's hypothesis;
+* `hyperellcharpoly(Mod(1,3)*f) = T⁴ + 2T³ + T² + 6T + 9`, whose `T³`
+  coefficient gives `#X(𝔽₃) = 3 + 1 + 2 = 6` — an independent check of
+  `card_X13_F3`, which the kernel proves by `decide`;
+* the same polynomial evaluated at `1` gives `#J(𝔽₃) = 1 + 2 + 1 + 6 + 9 = 19`.
+
+That last number is the reason this leaf is true and worth stating in this
+form: `J(ℚ) ≅ ℤ/19` injects into `J(𝔽₃)`, which also has order exactly `19`,
+so reduction on the Jacobian is an *isomorphism* — in particular injective —
+and `redPt` injectivity follows through Abel–Jacobi.  A future prover can use
+`19` as the sharp target rather than rediscovering it.
+
+This is Mazur–Tate, *Points of order 13 on elliptic curves*, Invent. Math. 22
+(1973); subsumed in Mazur, IHÉS 47 (1977), Thm 7.
+
+**Not vacuous.**  `#X(𝔽₃) = 6` is proven by `decide` just above, so this leaf
+asserts `#X(ℚ) ≤ 6` — a genuine finiteness statement about the rational points
+of a curve, and exactly the statement `no_noncuspidal_point` consumes.  **Not
+overstated**: it is TRUE, since `X(ℚ)` consists of the six cusps and reduction
+is injective on them. -/
+theorem redPt_injective_three :
+    Function.Injective (redPt 1 4 6 2 1 2 (p := 3)) := sorry
+
+/-- **The Jacobian package of `X_1(13)` exists** (PROVEN from
+`redPt_injective_three`).
+
+Formerly the leaf of this namespace.  It is retained — rather than bypassed in
+`no_noncuspidal_point` — because it is the intended plug-in point for the
+honest `Pic⁰(X/ℚ)`: when the abelian-variety machinery lands, a real package
+discharges `redPt_injective_three` through `redPt_injective`, and no consumer
+changes.  Read the audit on `nonempty_jacobianPackage_of_redPt_injective`
+before recording this as progress on abelian varieties: it is not — the net
+sorry count is unchanged, and the value is that the surviving obligation is now
+a statement about already-defined concrete objects, shared in shape with level
+`18`. -/
+theorem exists_jacobianPackage :
+    Nonempty (JacobianPackage 1 4 6 2 1 2 3) :=
+  nonempty_jacobianPackage_of_redPt_injective redPt_injective_three
+
+/-- The six cusps of `X_1(13)` — `(0, ±1)`, `(−1, ±1)` and the two points at
+infinity — together with a putative seventh point of abscissa `u`.
+
+`φ(13)/2 = 6`, so these six are all of them; the sextic takes the value `1` at
+both `0` and `−1`, which is what makes the four affine cusps rational. -/
+noncomputable def sevenPts (u v : ℚ) (h : v ^ 2 = sext 1 4 6 2 1 2 u) :
+    Fin 7 → Pt 1 4 6 2 1 2 ℚ :=
+  ![Sum.inl ⟨(u, v), h⟩,
+    Sum.inl ⟨(0, 1), by rw [sext13]; norm_num⟩,
+    Sum.inl ⟨(0, -1), by rw [sext13]; norm_num⟩,
+    Sum.inl ⟨(-1, 1), by rw [sext13]; norm_num⟩,
+    Sum.inl ⟨(-1, -1), by rw [sext13]; norm_num⟩,
+    Sum.inr true,
+    Sum.inr false]
+
+/-- **The seven points are pairwise distinct** (PROVEN) as soon as
+`u ∉ {0, −1}`.
+
+As at level `18`, the argument is carried out after forgetting the defining
+equations — on the underlying data in `(ℚ × ℚ) ⊕ Bool` — because the curve
+equation, kept in context, is a rewrite rule that `simp_all` orients as
+`1 ↦ sext …` and loops on. -/
+lemma sevenPts_injective (u v : ℚ) (h : v ^ 2 = sext 1 4 6 2 1 2 u)
+    (hx0 : u ≠ 0) (hx1 : u ≠ -1) : Function.Injective (sevenPts u v h) := by
+  have hdata : Function.Injective (![Sum.inl (u, v), Sum.inl (0, 1), Sum.inl (0, -1),
+      Sum.inl (-1, 1), Sum.inl (-1, -1), Sum.inr true, Sum.inr false] :
+      Fin 7 → (ℚ × ℚ) ⊕ Bool) := by
+    intro i j hij
+    fin_cases i <;> fin_cases j <;>
+      (try rfl) <;> (try exfalso) <;> (try norm_num at hij) <;> (try tauto)
+  have hmap : ∀ i, Sum.map Subtype.val id (sevenPts u v h i)
+      = (![Sum.inl (u, v), Sum.inl (0, 1), Sum.inl (0, -1),
+          Sum.inl (-1, 1), Sum.inl (-1, -1), Sum.inr true, Sum.inr false] :
+          Fin 7 → (ℚ × ℚ) ⊕ Bool) i := by
+    intro i; fin_cases i <;> rfl
+  intro a b hab
+  refine hdata ?_
+  rw [← hmap a, ← hmap b]
+  exact congrArg _ hab
+
+/-- **`X_1(13)` has no non-cuspidal rational point on its smooth model**
+(PROVEN modulo `exists_jacobianPackage`).
+
+`X(ℚ) ↪ X(𝔽₃)` by `redPt_injective`, and `#X(𝔽₃) = 6`; but a rational point
+with `x ∉ {0, −1}` would be a seventh point of `X(ℚ)` alongside the six cusps.
+`7 ≤ 6` is the contradiction.  No Chabauty and no Mordell–Weil sieve: only
+rank `0` and one point count. -/
+theorem no_noncuspidal_point (x y : ℚ) (hx0 : x ≠ 0) (hx1 : x ≠ -1)
+    (hxy : y ^ 2 = x ^ 6 + 2 * x ^ 5 + x ^ 4 + 2 * x ^ 3 + 6 * x ^ 2 + 4 * x + 1) :
+    False := by
+  obtain ⟨D⟩ := exists_jacobianPackage
+  have hq : y ^ 2 = sext 1 4 6 2 1 2 x := by rw [sext13]; exact hxy
+  have hcard : Fintype.card (Fin 7)
+      ≤ Fintype.card (Pt 1 4 6 2 1 2 (ZMod 3)) :=
+    Fintype.card_le_of_injective _
+      ((redPt_injective D).comp (sevenPts_injective x y hq hx0 hx1))
+  rw [Fintype.card_fin, card_X13_F3] at hcard
+  omega
+
+end X13
 
 end Hyperelliptic
 

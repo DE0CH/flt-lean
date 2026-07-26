@@ -142,24 +142,44 @@ kernels, all of which behave in characteristic `p`.
 
 ## Open leaves left by this file
 
-`IsRationalMap.add`, `IsRationalMap.isIsogeny`, `Isogeny.isRationalMap_dualHom`.
-That is the whole frontier of this file; everything else here is proven.
+`IsRationalMap.add`, `IsRationalMap.isIsogeny`,
+`Isogeny.isRationalMap_dualHom`. Those THREE are the whole remaining frontier
+of this module; the list is stated from the file's actual sorry set at
+integration 2026-07-26, not inherited from either side of the merge.
 
-`IsRationalMap.neg` was on this list and is now PROVEN. So, as of 2026-07-26, are
-all three of `nsmul_surjective`, `finite_nsmulKer` and `Isogeny.degree_comp` — see
-the two sections below — and also `IsRationalMap.comp`, hence `IsIsogeny.comp`.
-`IsRationalMap.comp` rests on `homogSubst` (substitute `A/B`, clear denominators),
-`eval_homogSubst`, `exists_const_of_homogSubst_eq_zero` (the degeneracy criterion)
-and `IsRationalMap.comp_of_constX` (the constant-`x` case) — all proven here.
+`IsRationalMap.neg` was on this list and is now PROVEN. So, as of 2026-07-26,
+are `nsmul_surjective`, `finite_nsmulKer` and `Isogeny.degree_comp` (see the
+two sections below), and `IsRationalMap.comp` — now **PROVEN and axiom-clean**,
+hence so is `IsIsogeny.comp`. It rests on `homogSubst` (substitute `A/B`, clear
+denominators), `eval_homogSubst`, `exists_const_of_homogSubst_eq_zero` (the
+degeneracy criterion) and `IsRationalMap.comp_of_constX` (the constant-`x`
+case) — all proven here. `IsIsogeny.add` was on this list too; it is now PROVEN
+from `IsRationalMap.add` and `IsRationalMap.isIsogeny`, after being refuted and
+restated (above).
 
-`IsIsogeny.add` was on this list; it is now PROVEN from `IsRationalMap.add` and
-`IsRationalMap.isIsogeny`, after being refuted and restated (above).
-
-**All three remaining leaves were REFUTED as originally stated and restated on
-2026-07-26**, with machine-checked counterexamples in `NotIsIsogenyAdd`,
+**All three remaining leaves were REFUTED as originally stated, and restated, on
+2026-07-26** — machine-checked counterexamples in `NotIsIsogenyAdd`,
 `NotIsRationalMapAdd` and `Isogeny.NotIsRationalMapDualHom`. Their present
-hypotheses are load-bearing, not decoration; do not try to weaken them without
-reading those audits.
+hypotheses are load-bearing, not decoration; do not weaken them without reading
+those audits.
+
+## Correction to the characteristic caveat above
+
+The design note says this file is "correct only in characteristic zero". That
+remains true of the *interpretation* of `degree` as the classical degree (which
+needs separability) — and the FALSITY AUDIT of `Isogeny.isRationalMap_dualHom`
+below shows that caveat has real teeth, since Frobenius makes the dual
+construction outright FALSE in characteristic `p`. But it is **not** a
+restriction on the two geometric
+inputs: both are proven below over an arbitrary algebraically closed field, in
+every characteristic, with no hypothesis beyond `n ≠ 0`. The project's
+`TorsionCard.smul_surjective` needs `(n : k) ≠ 0` only because it works over a
+*separably* closed field, where the root is produced by
+`exists_root_of_derivative_ne_zero` and the derivative of
+`Φₙ − ξ·ΨSqₙ` genuinely vanishes when `char k ∣ n`. Over an algebraically closed
+field no separability is needed: the polynomial is monic of degree `n²` (its
+`n²`-coefficient is `1`, `WeierstrassCurve.coeff_Φ`, while `ΨSqₙ` has degree at
+most `n² − 1`), so it has a root outright, and the `y`-fibre quadratic likewise.
 
 ## Two techniques from `IsRationalMap.comp` that the remaining leaves will want
 
@@ -175,23 +195,6 @@ reading those audits.
    The `B ≠ 0` side condition of `IsRationalMap` is the whole difficulty in
    `comp`, and `exists_const_of_homogSubst_eq_zero` reduces it to a single
    degenerate case. Expect the same shape elsewhere.
-
-## Correction to the characteristic caveat above
-
-The design note says this file is "correct only in characteristic zero". That
-remains true of the *interpretation* of `degree` as the classical degree (which
-needs separability) — and the FALSITY AUDIT of `Isogeny.isRationalMap_dualHom`
-below shows the caveat has real teeth there, since Frobenius makes the dual
-construction outright false in characteristic `p`. But it is **not** a restriction
-on the two geometric inputs: both are proven below over an arbitrary algebraically
-closed field, in every characteristic, with no hypothesis beyond `n ≠ 0`. The
-project's `TorsionCard.smul_surjective` needs `(n : k) ≠ 0` only because it works
-over a *separably* closed field, where the root is produced by
-`exists_root_of_derivative_ne_zero` and the derivative of `Φₙ − ξ·ΨSqₙ` genuinely
-vanishes when `char k ∣ n`. Over an algebraically closed field no separability is
-needed: the polynomial is monic of degree `n²` (its `n²`-coefficient is `1`,
-`WeierstrassCurve.coeff_Φ`, while `ΨSqₙ` has degree at most `n² − 1`), so it has a
-root outright, and the `y`-fibre quadratic likewise.
 -/
 
 

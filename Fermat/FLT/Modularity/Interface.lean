@@ -9471,7 +9471,8 @@ theorem exists_frobenius_conj_localInertia_of_natCard_residue
 
 
 /-- **Frobenius conjugates the inertia at `p` by `p`-th powers, modulo
-wild inertia** (sorry node — leaf (i) of the two-leaf cut of the Serre
+wild inertia** (PROVEN — label corrected 2026-07-26, formerly a sorry
+node; leaf (i) of the two-leaf cut of the Serre
 §1.3 tame development): there is an element `φ` of the local Galois
 group at `p` — any lift of the residual Frobenius — such that for every
 `σ` in the local inertia, `φ σ φ⁻¹ = σ^p · w` with `w` again in the
@@ -23490,7 +23491,8 @@ theorem stickelberger_upperHalf_annihilates_omega_inv_eigenvector
   exact hann2
 
 /-- **Herbrand's theorem at `B₂`: the `ω^{−1}`-eigenspace of
-`Cl(ℚ(μ_p)) ⊗ 𝔽_p` vanishes** (E3c support leaf (iii); sorry node —
+`Cl(ℚ(μ_p)) ⊗ 𝔽_p` vanishes** (E3c support leaf (iii); PROVEN — label
+corrected 2026-07-26, formerly a sorry node;
 the citation-shaped arithmetic input of the Eisenstein cut;
 Herbrand 1932; Washington, *Introduction to Cyclotomic Fields*,
 Thm. 6.17): for `p ≥ 5` and an abstract `p`-th cyclotomic field `CF`,
@@ -28138,7 +28140,8 @@ theorem mem_oldSubspace_of_qCoeff_coprime_eq_zero {M : ℕ} (hM : 0 < M)
   exact haw ▸ ha
 
 /-- **NEWFORM DECOMPOSITION: an eigenvector in the old subspace has its
-eigensystem realized at a PROPER divisor level** (sorry leaf — cut 2026-07-26
+eigensystem realized at a PROPER divisor level** (PROVEN — label
+corrected 2026-07-26, formerly the sorry leaf cut 2026-07-26
 out of `exists_weightTwoEigenform_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero`;
 Diamond–Shurman Theorem 5.8.2 with Proposition 5.8.5): a NONZERO `w` in the old
 subspace which is an honest eigenvector of every GOOD Hecke operator `T_q`,
@@ -37604,6 +37607,79 @@ a primitive root `g` mod `pⁿ`, and `g − 1` is a unit mod `p`, so
 `L = ℚ_3(μ_3, 2^{1/3})`, where `Gal = S₃`, `H¹(S₃, μ_3) ≅ ℤ/3` is
 NON-zero, and its nontrivial class is realised by `x = 2^{1/3}` with
 `v₃(2) = 0` — peu ramifiée, as the leaf predicts.
+
+THE WHOLE TATE-CURVE FAMILY IS RULED OUT AS A COUNTEREXAMPLE, AT EVERY
+`n` (2026-07-26, third owner — a strict generalisation of the
+`L = ℚ_p(μ_{pⁿ})` case just above, from `μ_{pⁿ}` to every flat
+`pⁿ`-division field of a Tate curve, which is the first family anybody
+searching for a counterexample will reach for).
+
+  *Proposition.* Let `p` be odd, `n ≥ 1`, and let `q₀ ∈ ℚ_pˣ` satisfy
+  `pⁿ ∣ v_p(q₀)` — exactly the condition making `E_{q₀}[pⁿ]` finite flat
+  over `ℤ_p`. Put `L = ℚ_p(E_{q₀}[pⁿ]) = ℚ_p(μ_{pⁿ}, q₀^{1/pⁿ})`. If
+  `q ∈ ℚ_pˣ` has some `pⁿ`-th root in `L`, then `pⁿ ∣ v_p(q)`.
+
+  *Proof.* Write `q₀ = p^{pⁿ c} · u` with `u ∈ ℤ_pˣ`; then
+  `q₀^{1/pⁿ} = p^c ζ u^{1/pⁿ}`, so `L = K(u^{1/pⁿ})` for
+  `K = ℚ_p(μ_{pⁿ})`. As `μ_{pⁿ} ⊂ K`, Kummer theory matches the
+  subextensions of `L/K` with the subgroups of
+  `⟨u⟩(Kˣ)^{pⁿ}/(Kˣ)^{pⁿ}`, so `q^{1/pⁿ} ∈ L` gives `q = u^a z^{pⁿ}`
+  with `a ∈ ℤ`, `z ∈ Kˣ`. For `σ ∈ Δ = Gal(K/ℚ_p)` we get
+  `(σz/z)^{pⁿ} = σ(q u^{-a})/(q u^{-a}) = 1` because `q, u ∈ ℚ_p`, so
+  `σ ↦ σz/z` is a cocycle in `H¹(Δ, μ_{pⁿ}) = H¹((ℤ/pⁿ)ˣ, ℤ/pⁿ(1))`,
+  which VANISHES for `p` odd by the very computation recorded above.
+  Hence `z = ζ y` with `ζ ∈ μ_{pⁿ}`, `y ∈ ℚ_pˣ`, so `q = u^a y^{pⁿ}`
+  and `v_p(q) = pⁿ v_p(y)`. ∎
+
+Note the descent is taken over `K`, NOT over `L`: that is why the
+NON-vanishing of `H¹(S₃, μ_3)` recorded above for
+`L = ℚ_3(μ_3, 2^{1/3})` is no obstruction. So no Tate curve — at any
+`n`, any parameter — refutes this leaf, and the search for a
+counterexample has to leave that family entirely (finite flat `G`
+killed by `pⁿ` that is NOT an extension of `ℤ/pⁿ` by `μ_{pⁿ}`: good
+supersingular `E[pⁿ]`, or a Raynaud `𝔽`-module of higher type).
+
+THE RAMIFICATION AUDIT ABOVE IS CONFIRMED IN UPPER NUMBERING, AND THE
+FAILURE AT `s ≥ 1` IS EXACTLY ON THE BOUNDARY (same owner, same day).
+The audit above is stated with DIFFERENTS; Fontaine's theorem is really
+a statement about the upper-numbering ramification groups of
+`Gal(K(G)/K)`, namely `G^{(u)} = 1` for `u > e(n + 1/(p−1)) − 1`, here
+`u > n − 1 + 1/(p−1)`. That form is sharper than the different form, so
+it is worth knowing that it STILL does not close the leaf. Breaks, from
+different exponents computed in PARI/GP (`nfinit` + `idealval` on
+`nf.diff`, `e = 6`, `f = 1` in both cases) and converted by
+`d = Σ_i (|G_i| − 1)` and `φ`:
+
+* `ℚ_3(μ_3, 2^{1/3})` (PEU ramifiée): `d = 7`, so `G_0 = S₃`,
+  `G_1 = ℤ/3`, `G_2 = 1`; largest upper break `φ(1) = 1/2`.
+* `ℚ_3(μ_3, 3^{1/3})` (TRÈS ramifiée): `d = 11`, so `G_0 = S₃`,
+  `G_1 = G_2 = G_3 = ℤ/3`, `G_4 = 1`; largest upper break `φ(3) = 3/2`.
+* `ℚ_p(μ_{pⁿ})`: largest upper break `n − 1`.
+
+At `n = 1` the threshold is `1/(p−1) = 1/2`: the peu ramifiée field sits
+EXACTLY at it and is allowed, the très ramifiée one at `3/2` is
+excluded — Serre's criterion, and the constant is sharp in both
+directions. At `n = 2` the threshold is `3/2`. For `v_p(q) = p^s m`,
+`p ∤ m`, `s < n`, the field `ℚ_p(μ_{pⁿ}, q^{1/pⁿ})` contains a très
+ramifiée core at level `j = n − s`, and upper numbering passes to
+quotients (Herbrand), so its largest break is the max over the tower.
+At `n = 2, s = 1` that max is `max(1, 3/2) = 3/2` — equal to the
+threshold, hence NOT excluded, by exactly nothing. Extrapolating the
+level-`j` core to `j + 1/(p−1)` (VERIFIED only at `j = 1`) the
+exclusion `j + 1/(p−1) > n − 1 + 1/(p−1)` holds iff `j ≥ n` iff
+`s = 0`. So the audit's verdict is exactly right in the sharper form
+too: ramification alone yields `p ∣ v_p(q)` and never more, and at
+`s = 1` it misses by a margin of zero rather than by a wide one — which
+is consistent with the leaf being TRUE and needing Raynaud, not with it
+being false.
+
+WHY THE GENERAL CASE REALLY IS NEEDED (checked against the consumer,
+not assumed): `exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`
+applies this leaf inside `fun hflat => …`, i.e. to a HYPOTHETICAL flat
+prolongation introduced only to be contradicted. So the Proposition
+above, which covers the Tate case the geometry actually produces, does
+NOT discharge the consumer, and restricting the leaf to Tate-curve
+prolongations would break it.
 
 THE PROOF ROUTE, AND THE MACHINERY IT NEEDS. Serre's own argument for
 §2.8 Prop. 4 is the fppf Kummer sequence over `Spec ℤ_p`:
