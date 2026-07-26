@@ -12904,24 +12904,163 @@ theorem WeierstrassCurve.no_torsion_order_27 (E : WeierstrassCurve ℚ)
   exact E.no_torsion_order_27_of_j
     (E.j_of_stable_cyclic_subgroup_order_27 g hgord hstable) Q hQ
 
+/-! ### The residual rank-zero levels `17`, `19`, `25`, one leaf each
+
+RELOCATED AND SPLIT 2026-07-26. The block from here to
+`no_torsion_order_25` used to sit immediately after the two plane-curve
+leaves `x1Eleven_plane_ne_zero` / `x1Thirteen_plane_ne_zero`, i.e. above
+the `MazurLevel27` CM-line block and `no_torsion_order_27_of_j` /
+`no_torsion_order_27` (the other half of the `X_0(27)` development, the
+cluster ending in `j_of_stable_cyclic_subgroup_order_27`, had already
+been hoisted to the top of the file to unblock level `81`). It was moved
+down to here, unchanged except as recorded below, for one reason: level
+`27` of the residual node is a THEOREM of this file —
+`WeierstrassCurve.no_torsion_order_27`, just above — and only Lean's
+declaration order was keeping it a `sorry`. This is the repair the
+previous docstring of the residual node called for and costed.
+With the block below `no_torsion_order_27` the `N = 27` disjunct is now
+discharged outright, and what remains is three genuinely independent
+levels, one leaf each:
+
+* `x1Seventeen_preΨ'_ne_zero` — `X_1(17)`, genus `5`;
+* `x1Nineteen_preΨ'_ne_zero` — `X_1(19)`, genus `7`;
+* `x1TwentyFive_plane_eq_line` — `X_1(25)`, genus `12`.
+
+Nothing between the old and the new position uses any declaration of the
+block, and the block uses nothing declared between them, so the move is
+purely positional.
+
+THE SHAPE OF THE THREE LEAVES, and it is not uniform. At the PRIME
+levels `17, 19` the sharp statement `w_N ≠ 0` is correct. At the
+COMPOSITE level `25` it is FALSE — `w₂₅ = 0` says only that the order
+DIVIDES `25`, and order `5` is everywhere on this family — so that leaf
+concludes `b = c` (the `X_1(5)` line) instead. See its docstring. -/
+
+/-- **`X_1(17)` has no non-cuspidal rational point, in `preΨ'` form**
+(sorry node — level `17` of the seven-level node below; SPLIT OFF
+2026-07-26 from the former four-level residual node, which is now PROVEN
+from this leaf and its two siblings).
+
+STATEMENT. On the Tate family the level-`17` value `w₁₇ = preΨ'₁₇(0)`
+never vanishes. `17` being PRIME, the sharp non-vanishing form is the
+right one here — unlike at the composite level `25`, where it is false;
+see `x1TwentyFive_plane_eq_line`.
+
+WHY IT IS TRUE. `w₁₇ = 0` forces `17 • (0, 0) = 0` (the PROVEN
+dictionary `MazurX1Plane.zsmul_eq_zero_iff` together with
+`MazurX1Plane.eval_ΨSq_of_preΨ'`), so the order of the origin divides
+`17`; it is not `1`, the origin being an affine point, hence it is
+exactly `17`, which Mazur excludes.
+
+THE PLANE MODEL. `w₁₇ = b⁹⁶ · F₁₇` with `F₁₇` of bidegree `(12, 18)`,
+recomputed 2026-07-26 in PARI/GP from the very `normEDS` recursion Lean
+uses (untrusted searcher, statement check only — the recursion itself is
+PROVEN in `MazurX1Plane`). `F₁₇` runs to `~60` terms, which is why this
+level stays in `preΨ'` form rather than being written out like `F₁₁` and
+`F₁₃`. Since `b ≠ 0` on the whole family (`MazurX1Plane.b_ne_zero`),
+`w₁₇ ≠ 0` is equivalent to `F₁₇(b, c) ≠ 0`: this IS the `(b, c)`-model
+of `X_1(17)`.
+
+CITATION. Mazur 1977, Thm 7. `X_1(17)` has genus `5`; every `ℚ`-simple
+factor of `J_1(17)` has `L(A, 1) ≠ 0` (dimensions and `LRatio`s
+`(1, 1/16)` and `(4, 1/21316)`), so `rank J_1(17)(ℚ) = 0`, and
+`min_p #X_1(17)(𝔽_p) = 8 = φ(17)/2 = #(rational cusps)`. The `X_0`
+shortcut that closed levels `21` and `27` is NOT available: `17` is in
+Kenku's list, so `X_0(17)` — the rank-`0` elliptic curve `17a1`, torsion
+`ℤ/4` — carries two non-cuspidal rational points and puts only a
+`j`-invariant constraint on `E`, not a contradiction. See the
+seven-level node's docstring below for the full rank-`0` audit. -/
+theorem WeierstrassCurve.x1Seventeen_preΨ'_ne_zero (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 17).eval 0 ≠ 0 :=
+  sorry
+
+/-- **`X_1(19)` has no non-cuspidal rational point, in `preΨ'` form**
+(sorry node — level `19` of the seven-level node below; SPLIT OFF
+2026-07-26 from the former four-level residual node).
+
+STATEMENT and PROOF SHAPE are exactly as at level `17`
+(`x1Seventeen_preΨ'_ne_zero`): `19` is prime, so `w₁₉ = preΨ'₁₉(0) = 0`
+forces the origin to have order exactly `19`, which Mazur excludes.
+
+THE PLANE MODEL. `w₁₉ = b¹²⁰ · F₁₉` with `F₁₉` of bidegree `(15, 22)`
+(PARI/GP, 2026-07-26, from the `normEDS` recursion of `MazurX1Plane`);
+`~90` terms, hence the `preΨ'` form. `F₁₉ = 0` is the `(b, c)`-model of
+`X_1(19)`.
+
+CITATION. Mazur 1977, Thm 7. `X_1(19)` has genus `7`; the `ℚ`-simple
+factors of `J_1(19)` have dimensions and `LRatio`s `(1, 1/9)` and
+`(6, 1/2134521)`, both nonzero, so `rank J_1(19)(ℚ) = 0`, and
+`min_p #X_1(19)(𝔽_p) = 9 = φ(19)/2 = #(rational cusps)`. As at `17`, the
+`X_0` shortcut is unavailable — `19` is in Kenku's list. -/
+theorem WeierstrassCurve.x1Nineteen_preΨ'_ne_zero (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 19).eval 0 ≠ 0 :=
+  sorry
+
+/-- **`X_1(25)`: every zero of `w₂₅` on the Tate family lies on the
+`X_1(5)` line `b = c`** (sorry node — level `25` of the seven-level node
+below; SPLIT OFF 2026-07-26 from the former four-level residual node).
+
+**FAITHFULNESS — WHY THIS IS NOT `w₂₅ ≠ 0`, AND WHY THAT WOULD BE A
+FALSE LEAF.** `w₂₅ = preΨ'₂₅(0) = 0` says only that the order of the
+origin DIVIDES `25`, and order `5` really does occur on this family:
+`w₅ = b⁸(b − c)` (`MazurX1Plane.eval_five` — PROVEN), the genus-`0` line
+`b = c` of `X_1(5)`. So the seemingly natural sharp form `w₂₅ ≠ 0` is
+FALSE, with the whole line `b = c` as counterexample. Verified as a
+polynomial identity in PARI/GP 2026-07-26, directly from the `normEDS`
+recursion: `w₂₅ = b²⁰⁸ · (b − c) · G₂₅` with `G₂₅` of bidegree
+`(25, 38)`. The factor `(b − c)` is literally present, so the honest
+statement is the implication below.
+
+WHY IT IS TRUE. The order divides `25`, hence is `1`, `5` or `25`; not
+`1` (the origin is an affine point), and not `25` (Mazur), so it is `5`,
+whence `w₅ = b⁸(b − c) = 0`, and `b ≠ 0` on the family
+(`MazurX1Plane.b_ne_zero`) gives `b = c`. Equivalently: `G₂₅(b, c) = 0`
+has no rational solution with `b ≠ 0` off the line `b = c`, and
+`G₂₅ = 0` IS the `(b, c)`-model of `X_1(25)`.
+
+CITATION. Mazur 1977, Thm 8. `X_1(25)` has genus `12`; `J_1(25)` is
+`ℚ`-isogenous to `A₄ × A₈` with `LRatio(A₄, 1) = 1/5041` and
+`LRatio(A₈, 1) = 1/10272025`, both nonzero, so `rank J_1(25)(ℚ) = 0` by
+Kolyvagin–Logachev (or Kato), and `#X_1(25)(𝔽_3) = 10 = φ(25)/2 =
+#(rational cusps)`. The `X_0` shortcut is unavailable in the strongest
+possible sense: `X_0(25)` has genus `0`, and a rational cyclic
+`25`-isogeny genuinely exists (the class `11a`), so a rational
+`25`-subgroup puts NO constraint on `j(E)`. The full audit — including
+the genus-`4` intermediate curve `X_{⟨7⟩}(25)`, which gives the same
+conclusion independently — is in the seven-level node's docstring
+below. -/
+theorem WeierstrassCurve.x1TwentyFive_plane_eq_line (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0)
+    (h : ((WeierstrassCurve.tateNormalForm b c).preΨ' 25).eval 0 = 0) : b = c :=
+  sorry
+
 /-- **The three residual rank-zero levels `17, 19, 25`, in plane
-form** (sorry node — the residue of the seven-level node below after
-levels `11`, `13` are cut off as explicit plane curves and levels `21`
-and `27` are discharged outright).
+form** (PROVEN 2026-07-26 over the three leaves immediately above —
+formerly a `sorry` node; levels `11`, `13` are cut off as explicit
+plane curves and levels `21` and `27` are discharged outright).
 
 STATEMENT. If the level-`N` value `wₙ = preΨ'ₙ(0)` vanishes on
 `tateNormalForm b c`, then so does `w_d` for some `0 < d < N`. By the
 PROVEN dictionary `MazurX1Plane.zsmul_eq_zero_iff` this says: the origin
 never has order EXACTLY `N`, only possibly a proper divisor of it.
 
-WHY IT IS TRUE, level by level, and why the `d`-clause is not optional:
+HOW EACH LEVEL IS DISCHARGED, and why the `d`-clause is not optional:
 
 * `N = 17, 19` (prime): `w_N = 0` means the origin has order `N`, which
-  Mazur excludes; the hypothesis is unsatisfiable and any `d` will do.
+  Mazur excludes, so the hypothesis is contradictory and any `d` will
+  do — this is exactly `x1Seventeen_preΨ'_ne_zero` and
+  `x1Nineteen_preΨ'_ne_zero` above.
   Plane models: `F₁₇` has bidegree `(12, 18)`, `F₁₉` bidegree `(15, 22)`
   — written out they are `~60` and `~90` terms, which is why they are
   left in `preΨ'` form here rather than expanded like `F₁₁` and `F₁₃`.
 * `N = 25`: `w₂₅ = 0` means the order DIVIDES `25`, i.e. is `5` or `25`.
+  `x1TwentyFive_plane_eq_line` above forces `b = c`, whence
+  `w₅ = b⁸(b − c) = 0` and `d = 5`.
   Order `5` really does occur — `X_1(5)` has genus `0` and `w₅ = 0` is
   the line `b = c` (`MazurX1Plane.eval_five`) — so the conclusion `d = 5`
   is the true content and the statement WOULD BE FALSE without the
@@ -12968,8 +13107,16 @@ theorem WeierstrassCurve.tateNormalForm_origin_preΨ'_residual (N : ℕ)
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0)
     (h : ((WeierstrassCurve.tateNormalForm b c).preΨ' N).eval 0 = 0) :
     ∃ d : ℕ, 0 < d ∧ d < N ∧
-      ((WeierstrassCurve.tateNormalForm b c).preΨ' d).eval 0 = 0 :=
-  sorry
+      ((WeierstrassCurve.tateNormalForm b c).preΨ' d).eval 0 = 0 := by
+  rcases hN with rfl | rfl | rfl
+  · -- `N = 17`: prime, so the hypothesis is contradictory
+    exact absurd h (WeierstrassCurve.x1Seventeen_preΨ'_ne_zero b c h00)
+  · -- `N = 19`: likewise
+    exact absurd h (WeierstrassCurve.x1Nineteen_preΨ'_ne_zero b c h00)
+  · -- `N = 25`: the origin drops to level `5`, i.e. to the line `b = c`
+    refine ⟨5, by norm_num, by norm_num, ?_⟩
+    rw [MazurX1Plane.eval_five, WeierstrassCurve.x1TwentyFive_plane_eq_line b c h00 h]
+    ring
 
 /-- **`X_1(N)(ℚ)` is cuspidal at the seven rank-zero levels: in Tate
 coordinates the origin never has order `N`, for
@@ -13184,7 +13331,10 @@ is; this one is PROVEN from it by instantiating `N := 25`.
 DECOMPOSED AND PARTLY PROVEN 2026-07-26. The node itself is no longer a
 `sorry`: it is now derived, level by level, from the plane model of
 `X_1(N)` in the `(b, c)`-coordinates (section `MazurX1Plane` above,
-PROVEN) together with three shallower nodes. The cut is:
+PROVEN) together with shallower nodes. Levels `11`, `13`, `21` and `27`
+are PROVEN outright; only `17`, `19`, `25` are still open, and as of
+2026-07-26 they are one leaf each below the now-PROVEN residual node.
+The cut is:
 
 * `N = 21` is **PROVEN OUTRIGHT** here, from the file's own
   `no_torsion_order_21` — the `X_0(21)` + genus-`0` `X_1(7)` route,
@@ -13201,17 +13351,23 @@ PROVEN) together with three shallower nodes. The cut is:
   `x1Thirteen_plane_ne_zero`: the EXPLICIT affine plane curves
   `F₁₁(b, c) = 0` (bidegree `(5, 7)`) and `F₁₃(b, c) = 0` (bidegree
   `(7, 10)`), which are the `(b, c)`-models of `X_1(11)` and `X_1(13)`.
-* `N = 27` goes to `no_torsion_order_27`, the `X_0(27)` route, which
-  needs no modular curve of level `27` at all — so, like `21`, it is
-  free of any rank-`0` Jacobian input. It used to be routed through the
-  residual node below purely because Lean's declaration order put
-  `no_torsion_order_27` further down the file; that block was hoisted
-  above the residual node on 2026-07-26 and the duplicated obligation
-  dropped.
-* `N = 17, 19, 25` go to `tateNormalForm_origin_preΨ'_residual`,
-  stated in `preΨ'` form because those plane curves are too large to
-  write out (`~60`, `~90`, and several hundred terms). Those three are
-  the ONLY levels here that still rest on the rank-`0` citation.
+* `N = 27` is **PROVEN OUTRIGHT** here, from the file's own
+  `no_torsion_order_27` — the `X_0(27)` route, which needs no modular
+  curve of level `27` at all, so, like `21`, it is free of any rank-`0`
+  Jacobian input. It used to be routed through the residual node below
+  purely because Lean's declaration order put `no_torsion_order_27`
+  further down the file; that block was hoisted above the residual node
+  on 2026-07-26 and the duplicated obligation dropped.
+* `N = 17, 19, 25` go through the now-PROVEN
+  `tateNormalForm_origin_preΨ'_residual` to one leaf each —
+  `x1Seventeen_preΨ'_ne_zero`, `x1Nineteen_preΨ'_ne_zero`,
+  `x1TwentyFive_plane_eq_line` — stated in `preΨ'` form because those
+  plane curves are too large to write out (`F₁₇` `~60` terms of bidegree
+  `(12, 18)`, `F₁₉` `~90` of bidegree `(15, 22)`, `G₂₅` several hundred
+  of bidegree `(25, 38)`). Those three are the ONLY levels here that
+  still rest on the rank-`0` citation. Note the level-`25` leaf does NOT
+  say `w₂₅ ≠ 0` — that is false, the line `b = c` being a counterexample
+  — but that `w₂₅ = 0` forces `b = c`.
 
 The transport is the PROVEN division-polynomial torsion dictionary
 `TorsionCard.smul_some_eq_zero_iff`, specialised to the origin: the
