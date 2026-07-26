@@ -2273,8 +2273,19 @@ exactly when `χ̄²|_{G_w} = 1`, i.e. exactly when
 Over `ℚ` the only place over `2` has `N(w) = 2`, so this reads `ℓ ∣ 3`,
 i.e. `ℓ = 3`, and `5 ≤ ℓ` is an exact restatement of its negation. Over a
 general `F` it reads `ℓ ∣ 2^{2f(w|2)} − 1`, which `5 ≤ ℓ` does not exclude
-— `ℓ = 5` and `f = 2` already violate it, and `F = ℚ(μ₅)` above realises
-that.
+— `ℓ = 5` violates it at `f = 2` (`4² − 1 = 15`) and at `f = 4`
+(`16² − 1 = 255`), and `F = ℚ(μ₅)` above realises the second, `2` being
+inert there of residue degree `4`.
+
+**A TOTALLY REAL witness, needed one level up** (added 2026-07-26 by the
+owner of `nonempty_potentialHeckeDatum_of_five_le`). `ℚ(μ₅)` refutes this
+leaf, whose `F` is an arbitrary number field, but it CANNOT be used to show
+that `PotentialHeckeDatum.residueCardTwo` is independent of that structure's
+other fields, because `ℚ(μ₅)` is CM and so fails `totallyReal`. The witness
+that does that job is `F = ℚ(√5)`: totally real (signature `[2, 0]`,
+discriminant `5`), Galois over `ℚ`, with `2` INERT — one place `w ∣ 2`,
+`e = 1`, `f = 2`, `N(w) = 4`, `N(w)² − 1 = 15`, and `5 ∣ 15`. Machine-checked
+in PARI/GP.
 
 THE REPAIR, PERFORMED 2026-07-26. The hypothesis `hqw` below is the sharp
 condition just derived, and it SUBSUMES the `ℚ`-level `hℓ5` (at `F = ℚ`,
@@ -7261,9 +7272,44 @@ The components that carry the arithmetic:
   `−(charFrob w).coeff 1` is the trace of Frobenius at `w`, the `charFrob`
   being monic of degree `2`.
 
-No non-degeneracy clause is imposed on `bad`: every statement here
-quantifies over places OUTSIDE `bad`, so a larger bad set is a weaker
-datum, which is the direction that keeps the production leaf honest.
+No non-degeneracy clause is imposed on `bad`. **The reason given here
+before 2026-07-26 was wrong**, and it is worth recording both the error and
+the correct reason, because the false version was used downstream to license
+the production leaf `nonempty_potentialHeckeDatum_of_five_le` enlarging `bad`
+at will. It read: *"every statement here quantifies over places OUTSIDE
+`bad`, so a larger bad set is a weaker datum"*. That conflates two quantifier
+POSITIONS, and the two clauses mentioning `bad` move in OPPOSITE directions:
+
+* `charFrobT : ∀ w ∉ bad, …` is a hypothesis, so it does weaken as `bad`
+  grows;
+* `adjoin_heckeT` has `heckeT '' {w | w ∉ bad}` in **generating-set**
+  position, so it SHRINKS as `bad` grows and `= ⊤` gets strictly HARDER.
+
+So the datum is not monotone in `bad` in either direction, and no purely
+formal argument licenses enlarging `bad`.
+
+**The conclusion nevertheless survives, for a different and non-formal
+reason** (audit 2026-07-26, by the owner of the production leaf): enlarging
+`bad` by any FINITE set is harmless, because of `moduleFinite` plus
+Chebotarev.
+
+* `A := Algebra.adjoin ℤ_[ℓ] (teichmüller roots ∪ heckeT '' {w ∉ bad})` is in
+  particular a `ℤ_[ℓ]`-SUBMODULE of `T`; `T` is module-finite over the
+  Noetherian ring `ℤ_[ℓ]`, so `A` is finitely generated, and a finitely
+  generated submodule of a finitely generated module over a complete
+  Noetherian local ring is CLOSED. Hence `A` is closed in `T`.
+* By Chebotarev the Frobenii at the places outside any finite set are still
+  DENSE in `Γ F`; `charFrobT` identifies `heckeT w` with `−(ρT.charFrob w).coeff 1`,
+  i.e. with a trace of `ρT`, and `ρT` is continuous. So the closed set `A`
+  contains every trace of `ρT`, whatever finite `bad` is.
+
+Classically `𝕋_𝔪` is generated over `ℤ_[ℓ]` by exactly those traces and the
+Teichmüller roots supply the `W(k)` factor, so `adjoin_heckeT` holds for
+every finite `bad` — but as a THEOREM about the classical object, not as a
+formal consequence of the interface. `moduleFinite` is load-bearing for it:
+without it the algebraic `Algebra.adjoin` and the closure of the traces come
+apart, and `adjoin_heckeT` would be a strictly topological statement that a
+dense subalgebra need not satisfy.
 
 ## VACUITY AUDIT (2026-07-26) — the first form of this structure was EMPTY
 
@@ -7573,10 +7619,22 @@ structure PotentialHeckeDatum (ℓ : ℕ) [Fact ℓ.Prime]
   `N(w) = 2` turns that into `ℓ ∤ 3`, which is `5 ≤ ℓ`.
 
   It costs nothing in Taylor's argument: Moret–Bailly's theorem lets one
-  prescribe the behaviour of `F` at any finite set of places, and demanding
-  that `2` split completely in `F` is the standard way to keep the local
-  condition at `2` rigid. Note that it does NOT ask `F/ℚ` to be unramified
-  at `2` — only that the residue extension be trivial. -/
+  prescribe the behaviour of `F` at any finite set `S` of places, and
+  demanding that `2 ∈ S` — hence that `2` split completely in `F` — is the
+  standard way to keep the local condition at `2` rigid. Under `hbar` the
+  ramification of `ρbar` is confined to `{2, ℓ}`, so `2` is in `S` already;
+  what the field genuinely costs the citation is the nonemptiness of the
+  local point set `Ω_2 ⊆ X(ℚ_2)`. See THE CITATION, STATED IN FULL in the
+  docstring of `nonempty_potentialHeckeDatum_of_five_le`.
+
+  Note that it does NOT ask `F/ℚ` to be unramified at `2` — only that the
+  residue extension be trivial; complete splitting supplies both.
+
+  It is INDEPENDENT of `totallyReal` and `galoisF`: `F = ℚ(√5)` satisfies
+  both and has `2` inert, `N(w) = 4`, `N(w)² − 1 = 15`, which `ℓ = 5`
+  divides. (The `ℚ(μ₅)` counterexample cited above refutes
+  `isHilbertTameAtTwo_of_fibreProduct`, but is CM and so cannot witness
+  independence here.) -/
   residueCardTwo : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
     Nat.card (𝓞 F ⧸ w.asIdeal) = 2
   /-- The Hecke algebra of the attached Hilbert newform over `F`. -/
@@ -7696,13 +7754,23 @@ classical `ℤ_ℓ`-Hecke algebra `𝕋_𝔪` but its unramified base change to
   construction of a `GL₂(𝕋_𝔪)`-valued representation (as opposed to a
   pseudo-representation) needs `ρbar|_{G_F}` ABSOLUTELY irreducible; the
   next section shows that `hbar` and `hirr` already give it.
-* `[TopologicalSpace T]`, `[IsTopologicalRing T]`, `bad`, `heckeT` — free:
-  these are FIELDS, so this leaf chooses them (the `ℓ`-adic topology; `bad`
-  the places dividing the level, `2` or `ℓ`; `heckeT` the Hecke operators).
-  The interface does not PIN the topology to the adic one, which the
-  consumer `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` records as a
-  defect — it is a defect on the consuming side, and it makes this leaf
-  easier rather than harder.
+* `[TopologicalSpace T]`, `[IsTopologicalRing T]`, `bad`, `heckeT` — these
+  are FIELDS, so this leaf chooses them: the `ℓ`-adic topology; `bad` the
+  places dividing the level, `2` or `ℓ`; `heckeT` the Hecke operators.
+  **Two things about this bullet were stale and are corrected here**
+  (2026-07-26):
+  - It said the interface "does not PIN the topology to the adic one". It
+    does now — `isAdic` and `isAdicComplete` were added by the INTERFACE
+    REPAIR recorded in `HilbertHeckeAlgebra`'s docstring. The choice of
+    topology is therefore no longer free; it costs this leaf the two facts
+    listed under WHAT REMAINS below, both of which the classical witness
+    supplies (`T ≅ ℤ_[ℓ] ^ n` as a module, `T/ℓT` Artinian local).
+  - It counted `bad` as free on the strength of the monotonicity claim in
+    `HilbertHeckeAlgebra`'s docstring, which was FALSE — `bad` sits in
+    generating-set position in `adjoin_heckeT`, where enlarging it makes the
+    clause harder. `bad` is still effectively free, but by Chebotarev plus
+    the closedness of `ℤ_[ℓ]`-submodules of `T`, not by quantifier
+    monotonicity; the corrected argument is written out there.
 * `isHilbertHardlyRamified` — the deep clause; see WHAT REMAINS below.
 
 ## `hbar` + `hirr` ALREADY GIVE ABSOLUTE IRREDUCIBILITY
@@ -7721,6 +7789,136 @@ ABELIAN. Complex conjugation then satisfies `ρbar c ∈ k'ˣ` and
 but `hbar`'s determinant clause forces `det (ρbar c) = χ̄_ℓ(c) = −1`, and
 `−1 ≠ 1` since `ℓ` is odd. So the hypotheses this leaf carries are the
 classical ones and nothing needs to be added to them.
+
+## THE CITATION, STATED IN FULL (2026-07-26)
+
+Everything above audits the leaf. This section is the leaf's positive
+content: WHAT is cited, WHERE, and WHY each hypothesis in the Lean statement
+is the hypothesis the cited theorem asks for. It is written out because a
+citation that names only an author is not checkable, and because the
+`residueCardTwo` field (added later than the two audits above) had no
+justification recorded anywhere.
+
+### The two theorems
+
+**(MB) Moret–Bailly**, *Groupes de Picard et problèmes de Skolem II*, Ann.
+Sci. É.N.S. (4) **22** (1989), 181–194, **Théorème 1.3**. Let `K` be a
+number field, `X/K` a smooth geometrically irreducible quasi-projective
+variety, `S` a FINITE set of places of `K`, and for each `v ∈ S` a nonempty
+open `Ω_v ⊆ X(K_v)`. Then there is a finite extension `F/K` — which may be
+taken GALOIS over `K`, and totally real when `K` is totally real and the
+archimedean `Ω_v` are chosen inside `X(ℝ)` — in which **every `v ∈ S`
+splits completely**, together with a point of `X(F)` lying in `Ω_v` above
+each `v ∈ S`. The only input the theorem needs about `S` is that it be
+finite and that each `Ω_v` be nonempty.
+
+**(T) Taylor**, *Remarks on a conjecture of Fontaine and Mazur*, J. Inst.
+Math. Jussieu **1** (2002), 125–143, **Theorem B** (proof in §§2–3). Let
+`ℓ ≥ 5` and let `ρbar : G_ℚ → GL₂(k)`, `k` finite of characteristic `ℓ`, be
+irreducible and odd. Then `ρbar` is POTENTIALLY MODULAR: there is a totally
+real `F`, Galois over `ℚ` and linearly disjoint from the splitting field of
+`ρbar`, such that `ρbar|_{G_F}` is the residual representation of a Hilbert
+newform over `F` of parallel weight `2`. The proof applies (MB) to a twisted
+Hilbert–Blumenthal moduli variety to produce an abelian variety over `F`
+whose `ℓ`-torsion realizes `ρbar|_{G_F}` and whose torsion at an auxiliary
+prime is residually dihedral, hence modular (theta series / Jacquet–Langlands,
+*Automorphic Forms on GL(2)*, LNM **114**, 1970); a modularity lifting
+theorem over totally real fields at that auxiliary prime (Fujiwara,
+*Deformation rings and Hecke algebras in the totally real case*;
+Skinner–Wiles, *Nearly ordinary deformations of irreducible residual
+representations*, Ann. Fac. Sci. Toulouse **10** (2001)) then transfers
+modularity to `ρbar|_{G_F}`.
+
+The Hecke side of the datum is a THIRD body of work, cited for the fields of
+`HilbertHeckeAlgebra`:
+
+**(C) Carayol**, *Sur les représentations `ℓ`-adiques associées aux formes
+modulaires de Hilbert*, Ann. Sci. É.N.S. **19** (1986), 409–468, together
+with **Taylor**, *On Galois representations associated to Hilbert modular
+forms*, Invent. Math. **98** (1989), 265–280 — existence and local–global
+compatibility of the Galois representation attached to a Hilbert newform;
+and **Carayol**, *Formes modulaires et représentations galoisiennes à
+valeurs dans un anneau local complet*, Contemp. Math. **165** (1994),
+213–237 — the upgrade from a pseudo-representation to a genuine
+`GL₂(𝕋_𝔪)`-valued `ρT`, which is what needs `ρbar|_{G_F}` ABSOLUTELY
+irreducible (supplied above from `hbar` + `hirr`, no extra hypothesis).
+
+**(LL) Level lowering over totally real fields** — Fujiwara (op. cit.);
+Jarvis, *Mazur's principle for totally real fields of odd degree*,
+Compositio **116** (1999), 39–79, and *Level lowering for modular mod `ℓ`
+representations over totally real fields*, Math. Ann. **313** (1999),
+141–160; Rajaei, *On the levels of mod `ℓ` Hilbert modular forms*, J. Reine
+Angew. Math. **537** (2001), 33–65. The newform (T) produces has SOME level;
+`isHilbertHardlyRamified` demands the MINIMAL one, and (LL) is what closes
+that gap.
+
+### Hypothesis-by-hypothesis match
+
+| Lean hypothesis | what the citation uses it for |
+| --- | --- |
+| `hℓ5 : 5 ≤ ℓ` | (T)'s standing `ℓ ≥ 5`, and — see below — `ℓ ∤ 3` for the consumer's tame-at-`2` gluing |
+| `hℓOdd : Odd ℓ` | absolute irreducibility (via `det (ρbar c) = −1 ≠ 1`), and the unique square root `ε^{1/2}` of the nebentypus |
+| `[Finite k]`, `[Algebra ℤ_[ℓ] k]` | forces `char k = ℓ` (a nonzero kernel, else `ℚ_ℓ ⊆ k`), so `k` is a finite field of characteristic `ℓ` and `W(k)` is defined — this is the lemma `natCast_eq_zero_of_finite_algebra` the consumer already uses |
+| `hdim : Module.rank k V = 2` | `GL₂`, i.e. that `ρbar` is a two-dimensional representation at all |
+| `hirr` | (T)'s irreducibility hypothesis, and (C)'s absolute irreducibility after the argument below |
+| `hbar.det = χ̄_ℓ` | oddness of `ρbar` (evaluate at complex conjugation), which (T) requires; and it forces the nebentypus to be trivial mod `ℓ` |
+| `hbar.isUnramified`, `hbar.isFlat`, `hbar.isTameAtTwo` | the MINIMAL level and weight of the newform, i.e. what (LL) lowers to and what `isHilbertHardlyRamified` then asserts of `ρT` |
+
+### Field-by-field, on the `PotentialHeckeDatum` side
+
+`F`, `totallyReal`, `galoisF` and `irreducibleF` are (T) verbatim; `hecke`
+is (C) + (LL), audited clause by clause in the SECOND AUDIT above. That
+leaves the one field neither audit covers:
+
+**`residueCardTwo : ∀ w ∣ 2, Nat.card (𝓞 F ⧸ w.asIdeal) = 2`.** It is
+supplied by putting `2` into the set `S` of (MB): a place that splits
+completely has `e = f = 1`, so `N(w) = 2^{f(w|2)} = 2` at every `w ∣ 2`.
+Three things make this the right reading rather than an extra assumption:
+
+* **`S` is at the citation's disposal.** (MB) constrains `S` only by
+  finiteness, and (T) already prescribes behaviour at the archimedean
+  places, at `ℓ`, at the auxiliary prime, and at the primes where `ρbar`
+  ramifies. Under `hbar` the ramification of `ρbar` is confined to `{2, ℓ}`,
+  so **`2` is already in `S`** in any version of the argument that pins the
+  local behaviour at every ramified prime. The field costs the citation
+  nothing it was not already paying.
+* **What it does cost is one nonemptiness**, `Ω_2 ≠ ∅`, i.e. a `ℚ_2`-point
+  of the twisted Hilbert–Blumenthal variety. That is precisely the kind of
+  local condition (MB) exists to absorb, and it is part of (T)'s own set-up
+  at every place of `S`; but it is an obligation, not a freebie, and it is
+  recorded here so that nobody discharging this leaf assumes `S` is free.
+* **Complete splitting at `2` over-delivers**, and usefully: it gives
+  `e(w|2) = 1` as well, and it makes `ρbar|_{G_{F_w}} = ρbar|_{G_{ℚ_2}}`, so
+  the tame-at-`2` clause of `hbar` descends to `F` verbatim rather than
+  merely surviving.
+
+**`residueCardTwo` is INDEPENDENT of the other fields** — it is not
+derivable from `totallyReal` + `galoisF`, and the counterexample recorded
+above the refuted `isHilbertTameAtTwo_of_fibreProduct` (`ℓ = 5`,
+`F = ℚ(μ₅)`, `N(w) = 16`) **cannot** be used to see this, because `ℚ(μ₅)`
+is a CM field and so fails `totallyReal`. A witness that does the job:
+
+> `F = ℚ(√5)` is totally real (signature `[2, 0]`, discriminant `5`) and
+> Galois over `ℚ`, and `2` is INERT in it — one place `w ∣ 2`, `e = 1`,
+> `f = 2`, `N(w) = 4`. Then `N(w)² − 1 = 15` and `5 ∣ 15`, so at `ℓ = 5`
+> the tame-at-`2` gluing clause fails for a field satisfying every other
+> field of `PotentialHeckeDatum`. (Machine-checked in PARI/GP.)
+
+Nor is it derivable from `hecke`: `IsHilbertHardlyRamified.isTameAtTwo` is a
+condition on `ρT` at the places over `2` and holds for every residue degree.
+The two are about different things — `isTameAtTwo` says the DATUM is tame at
+`2`, `residueCardTwo` says the deformation problem is CLOSED UNDER FIBRE
+PRODUCTS there — which is why the consumer
+`exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified` needs both.
+
+### One obligation that IS discharged from another
+
+`adjoin_heckeT` does not have to be checked for the particular `bad` this
+leaf chooses. It follows from `moduleFinite` for EVERY finite `bad`, by
+Chebotarev plus the closedness of `ℤ_[ℓ]`-submodules of a module-finite
+`ℤ_[ℓ]`-algebra; the argument is written out in `HilbertHeckeAlgebra`'s
+docstring, where it replaces a monotonicity claim that was false. So the
+`bad`-dependence of the interface, which looked like a trap, is not one.
 
 ## WHAT REMAINS, AND WHY IT IS TERMINAL AT THIS PIN
 
@@ -7761,11 +7959,6 @@ that the literature proves together:
   because `IsHilbertHardlyRamified` is a continuity condition and so depends
   on which topology `T` carries; producing `ρT` continuous for an
   unspecified topology would have recorded nothing.
-
-Neither is reachable at this mathlib pin. A survey by the owner of the
-neighbouring `PotentialModularityWitness` interface established that there
-is NO Weil group anywhere in mathlib or in the reference FLT project, no
-local class field theory, no smooth or admissible representations, and a
 
 One further component hides inside `isHilbertHardlyRamified.det`, which asks
 for the cyclotomic determinant ON THE NOSE. A parallel-weight-`2` Hilbert
