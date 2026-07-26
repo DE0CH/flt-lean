@@ -40,6 +40,7 @@ Usage:
 """
 import argparse
 import fcntl
+import pathlib
 import importlib.util
 import os
 import re
@@ -499,10 +500,35 @@ def cmd_nscheck(args):
     whose name is dotted and whose first component is a known root namespace,
     when it appears inside a project `namespace`. Verify each hit by eye.
     """
-    ref = args.ref or "main"
-    diff = run(["git", "-C", REPO, "diff", "-U0", ref])
-    if diff.returncode != 0:
-        raise SystemExit(f"git diff {ref} failed: {diff.stderr.strip()}")
+    # --all scans the WHOLE TREE instead of a diff. The diff mode cannot see a
+    # PRE-EXISTING bad declaration -- it only inspects added lines -- and two
+    # live instances of this bug were sitting in the tree unflagged for exactly
+    # that reason. Diff mode stays the default because it is the cheap
+    # per-merge gate; --all is the audit.
+    ref = "the whole tree" if getattr(args, "all", False) else (args.ref or "main")
+    if getattr(args, "all", False):
+        body = []
+        for f in sorted((pathlib.Path(REPO) / "Fermat").rglob("*.lean")):
+            rel = f.relative_to(REPO)
+            ns = None
+            for i, line in enumerate(f.read_text(errors="replace").splitlines(), 1):
+                if line.startswith("namespace "):
+                    ns = line[len("namespace "):].strip()
+                elif line.startswith("end ") and ns and line[4:].strip() == ns:
+                    ns = None
+                # only declarations INSIDE a namespace can shadow a root
+                if ns:
+                    body.append(f"+{line}\t{rel}:{i}:{ns}")
+        diff_out = "\n".join(body)
+    else:
+        d = run(["git", "-C", REPO, "diff", "-U0", ref])
+        if d.returncode != 0:
+            raise SystemExit(f"git diff {ref} failed: {d.stderr.strip()}")
+        diff_out = d.stdout
+
+    class _D:
+        stdout = diff_out
+    diff = _D()
     # Root namespaces this project opens and could shadow. Mathlib roots that
     # are commonly `open`ed are the ones that actually bite.
     roots = {"IsLocalRing", "Ideal", "Polynomial", "Matrix", "Module", "Finset",
@@ -516,6 +542,7 @@ def cmd_nscheck(args):
         r"([A-Za-z_][A-Za-z0-9_.']*)")
     hits = []
     for line in diff.stdout.splitlines():
+        line, _, loc = line.partition("\t")
         m = decl.match(line)
         if not m:
             continue
@@ -524,7 +551,7 @@ def cmd_nscheck(args):
             continue
         head = name.split(".", 1)[0]
         if head in roots:
-            hits.append((m.group(1), name))
+            hits.append((m.group(1), name + (f"   [{loc}]" if loc else "")))
     if not hits:
         print(f"nscheck vs {ref}: clean -- no root-namespace shadowing")
         return 0
@@ -892,6 +919,8 @@ def main():
     p = sub.add_parser("nscheck",
                        help="MERGER: flag root-namespace shadowing in a diff")
     p.add_argument("ref", nargs="?", help="base ref (default main)")
+    p.add_argument("--all", action="store_true",
+                   help="audit the whole tree, not just a diff")
     p.set_defaults(fn=cmd_nscheck)
 
     p = sub.add_parser("claim", help="MERGER: take the batch atomically")
