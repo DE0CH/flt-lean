@@ -374,7 +374,8 @@ scheme, no `Mult` and no `TatePt` in sight.
 * `exists_tatePt_act_eq_of_val_one_eq_zero` — its KERNEL is `π · T`
   (a shift of the inverse system, plus `I ^ n = (π ^ n) + I ^ (n+1)`,
   which holds because `π` generates the one-dimensional `𝒪_D/I`-vector
-  space `I / I ^ 2`).
+  space `I / I ^ 2`). **PROVEN** — it needed no new input beyond the
+  hypotheses it was cut with.
 * `exists_residualEmbedding_of_residualComparison` — the Noether–Skolem
   step, over an abstract comparison map.
 
@@ -413,8 +414,9 @@ theorem exists_tatePt_val_one_eq
     ∃ t : TatePt m x I π, t.1 1 = y :=
   sorry
 
-/-- **The kernel of the reduction of the Tate module is `π · T`** (sorry
-node — the inverse-limit computation, plus one ideal-theoretic identity).
+/-- **The kernel of the reduction of the Tate module is `π · T`**
+(PROVEN 2026-07-26 — the inverse-limit computation, plus one
+ideal-theoretic identity).
 
 If `t ∈ T = TatePt m x I π` reduces to zero, i.e. `t.1 1 = 0`, then `t`
 is `π` times another element of `T`. The witness is the SHIFT
@@ -441,8 +443,92 @@ theorem exists_tatePt_act_eq_of_val_one_eq_zero
     (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
     (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
     (t : TatePt m x I π) (ht : t.1 1 = ab.zero (specAlgClos F ≫ x)) :
-    ∃ t' : TatePt m x I π, ∀ n, m.act π (t'.1 n) = t.1 n :=
-  sorry
+    ∃ t' : TatePt m x I π, ∀ n, m.act π (t'.1 n) = t.1 n := by
+  classical
+  letI := ab.addCommGroup (specAlgClos F ≫ x)
+  letI := m.module (specAlgClos F ≫ x)
+  -- `I` is nonzero: it contains `π`, which is not in `I ^ 2`.
+  have hI0 : I ≠ 0 := by
+    rintro rfl
+    rw [Ideal.zero_eq_bot, Ideal.mem_bot] at hπ
+    exact hπ2 (by rw [hπ]; exact Ideal.zero_mem _)
+  have hπspan : Ideal.span {π} ≤ I := Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hπ)
+  -- `π` generates `I / I ^ 2`: the ideal `(π) + I ^ 2` lies between `I ^ 2` and
+  -- `I`, so it is `I * A` with `A ∣ I`, whence `A = I` (excluded by `hπ2`) or
+  -- `A = ⊤`.
+  have hbase : I ≤ Ideal.span {π} ⊔ I ^ 2 := by
+    have hJI : Ideal.span {π} ⊔ I ^ 2 ≤ I := sup_le hπspan (Ideal.pow_le_self two_ne_zero)
+    obtain ⟨Aa, hA⟩ : I ∣ Ideal.span {π} ⊔ I ^ 2 := Ideal.dvd_iff_le.mpr hJI
+    have hdvd : I * Aa ∣ I * I := by
+      rw [← hA, ← pow_two]
+      exact Ideal.dvd_iff_le.mpr le_sup_right
+    have hAI : I ≤ Aa := Ideal.dvd_iff_le.mp ((mul_dvd_mul_iff_left hI0).mp hdvd)
+    by_cases hAtop : Aa = ⊤
+    · rw [hA, hAtop, Ideal.mul_top]
+    · exfalso
+      have hIA : I = Aa := hI.eq_of_le hAtop hAI
+      refine hπ2 ?_
+      have hJ2 : Ideal.span {π} ⊔ I ^ 2 = I ^ 2 := by rw [hA, ← hIA, ← pow_two]
+      exact hJ2 ▸ Submodule.mem_sup_left (Ideal.mem_span_singleton_self π)
+  have hspan : ∀ n : ℕ, Ideal.span {π ^ n} ≤ I ^ n := fun n =>
+    Ideal.span_le.mpr (Set.singleton_subset_iff.mpr (Ideal.pow_mem_pow hπ n))
+  -- `I ^ n = (π ^ n) + I ^ (n + 1)`, by induction from the case `n = 1`.
+  have hstep : ∀ n : ℕ, I ^ n ≤ Ideal.span {π ^ n} ⊔ I ^ (n + 1) := by
+    intro n
+    induction n with
+    | zero => simp
+    | succ n ih =>
+      have h1 : I ^ (n + 1) ≤ (Ideal.span {π ^ n} ⊔ I ^ (n + 1)) * (Ideal.span {π} ⊔ I ^ 2) := by
+        rw [pow_succ]
+        exact Ideal.mul_mono ih hbase
+      refine h1.trans ?_
+      rw [Ideal.sup_mul, Ideal.mul_sup, Ideal.mul_sup]
+      refine sup_le (sup_le ?_ ?_) (sup_le ?_ ?_)
+      · refine le_trans (le_of_eq ?_) le_sup_left
+        rw [Ideal.span_singleton_mul_span_singleton, ← pow_succ]
+      · refine le_trans ?_ le_sup_right
+        calc Ideal.span {π ^ n} * I ^ 2 ≤ I ^ n * I ^ 2 := Ideal.mul_mono (hspan n) le_rfl
+          _ = I ^ (n + 1 + 1) := by rw [← pow_add]
+      · refine le_trans ?_ le_sup_right
+        calc I ^ (n + 1) * Ideal.span {π} ≤ I ^ (n + 1) * I := Ideal.mul_mono le_rfl hπspan
+          _ = I ^ (n + 1 + 1) := (pow_succ I (n + 1)).symm
+      · refine le_trans ?_ le_sup_right
+        calc I ^ (n + 1) * I ^ 2 = I ^ (n + 3) := by rw [← pow_add]
+          _ ≤ I ^ (n + 1 + 1) := Ideal.pow_le_pow_right (by omega)
+  -- Iterating the defining relation: `π ^ n` carries the `(n+1)`-st stage to the first.
+  have hpow : ∀ n : ℕ, m.act (π ^ n) (t.1 (n + 1)) = t.1 1 := by
+    intro n
+    induction n with
+    | zero => simpa using m.act_one (t.1 1)
+    | succ n ih =>
+      have hrel := t.2.2 (n + 1)
+      have hsplit : m.act (π ^ (n + 1)) (t.1 (n + 1 + 1)) =
+          m.act (π ^ n) (m.act π (t.1 (n + 1 + 1))) := by
+        rw [← m.act_mul, pow_succ]
+      rw [hsplit, hrel, ih]
+  -- The shift is the witness.
+  refine ⟨⟨fun n => t.1 (n + 1), ?_, fun n => t.2.2 (n + 1)⟩, fun n => t.2.2 n⟩
+  intro n
+  show t.1 (n + 1) ∈ (m.torsion x (I ^ n)).1
+  show t.1 (n + 1) ∈ Submodule.torsionBySet (NumberField.RingOfIntegers D)
+    (GeomFibrePt f x) ((I ^ n : Ideal (NumberField.RingOfIntegers D)) : Set _)
+  refine (Submodule.mem_torsionBySet_iff _ _).mpr ?_
+  rintro ⟨a, ha⟩
+  show m.act a (t.1 (n + 1)) = 0
+  obtain ⟨y, hy, z, hz, hyz⟩ := Submodule.mem_sup.mp (hstep n ha)
+  subst hyz
+  rw [m.act_add]
+  have h1 : m.act y (t.1 (n + 1)) = 0 := by
+    obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.mp hy
+    rw [m.act_mul, hpow n, ht]
+    exact smul_zero c
+  have h2 : m.act z (t.1 (n + 1)) = 0 := by
+    have ht1 : t.1 (n + 1) ∈ Submodule.torsionBySet (NumberField.RingOfIntegers D)
+        (GeomFibrePt f x) ((I ^ (n + 1) : Ideal (NumberField.RingOfIntegers D)) : Set _) :=
+      t.2.1 (n + 1)
+    exact (Submodule.mem_torsionBySet_iff _ _).mp ht1 ⟨z, hz⟩
+  rw [h1, h2]
+  exact add_zero _
 
 /-- **Two rank-two structures on one irreducible residual representation
 differ by a ring map** (sorry node — representation theory: Schur,
@@ -703,7 +789,7 @@ theorem exists_residualEmbedding_of_tateFrame
   refine ⟨ι₀, fun w => ?_⟩
   set σw := Field.absoluteGaloisGroup.map
       (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w))
-      (Field.AbsoluteGaloisGroup.adicArithFrob w) with hσw
+      (Field.AbsoluteGaloisGroup.adicArithFrob w)
   have h1 : τ.charFrob w = (τ σw).charpoly := rfl
   have h2 : ρ'.charFrob w = (ρ' σw).charpoly := rfl
   rw [h1, h2, hE σw, LinearEquiv.charpoly_conj, Matrix.charpoly_toLin', Matrix.charpoly_map]
