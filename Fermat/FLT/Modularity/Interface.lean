@@ -30695,6 +30695,114 @@ leaf. The duplicate declaration that stood here was removed at
 integration (2026-07-26): the fact is proven once and consumed twice,
 here and in `exists_newformFactor_modularHeckeAlgebraQ`. -/
 
+/-- **Reality of the good-prime Hecke eigenvalue** (sorry node, ELEVENTH
+decomposition 2026-07-26 — one of the two halves of
+`exists_frobRoots_qCoeff_of_not_dvd` below): the `q`-th coefficient of a
+normalized weight-two newform of TRIVIAL nebentypus is a REAL number.
+
+Classical content (Diamond–Shurman §5.5, Theorem 5.5.3 with
+Prop. 5.5.2): for `n` coprime to the level the Hecke operator `T_n` is
+self-adjoint for the Petersson inner product on `S₂(Γ₀(M))`, so its
+eigenvalues are real; `Γ₀(M)` means trivial nebentypus, so this applies
+at every prime `q ∤ M`. (In fact the whole away-from-`M` eigensystem
+generates a TOTALLY real field, but only realness at the single prime
+`q` is needed downstream, and stating only that keeps the leaf minimal.)
+
+Why this is a leaf SEPARATE from the Weil bound, rather than a clause
+inside it: its input is the Petersson inner product, and no Weil RH, no
+Eichler–Shimura relation and no geometry of `X₀(M)` appears in it. It is
+also exactly the content that the TENTH cut's version of
+`exists_frobRoots_qCoeff_of_not_dvd` silently dropped — see the
+FORMAL-CONTENT AUDIT on that leaf below.
+
+Missing from the pin: the Petersson inner product and the
+self-adjointness of the good Hecke operators. -/
+theorem exists_real_qCoeff_of_not_dvd {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
+    ∃ r : ℝ, qCoeff M g q = (r : ℂ) :=
+  sorry
+
+/-- **The Hasse–Weil bound at a good prime** (sorry node, ELEVENTH
+decomposition 2026-07-26 — the other half of
+`exists_frobRoots_qCoeff_of_not_dvd` below, and the genuinely DEEP one):
+at a prime `q ∤ M` the `q`-th coefficient of a normalized weight-two
+newform of level `M` satisfies `|a_q| ≤ 2√q`.
+
+Classical content (Diamond–Shurman Theorem 8.7.2 for Eichler–Shimura,
+then Weil): `a_q` is the trace of `Frob_q` on the `ℓ`-adic Tate module
+of `J₀(M)`, which has good reduction at `q ∤ M` (Igusa); the two
+eigenvalues of `Frob_q` on the `g`-isotypic part are the roots of
+`X² − a_q X + q`, and that they have absolute value `√q` is the
+**Riemann hypothesis for curves over finite fields** (Weil), equivalently
+the Hasse–Weil bound `|#X₀(M)(𝔽_q) − q − 1| ≤ 2g√q`. For weight two this
+is a THEOREM, not the Ramanujan–Petersson conjecture — Deligne is needed
+only for `k > 2`.
+
+This is the irreducible citation of the good case. Everything else in
+`exists_frobRoots_qCoeff_of_not_dvd` — that the splitting exists at all,
+that the two roots are conjugate, and that their product is `q` — is
+elementary algebra over this bound plus realness, and is PROVEN below.
+
+Missing from the pin: Weil RH for curves, the good reduction of `X₀(M)`
+at `q ∤ M` (Igusa), and the Eichler–Shimura relation. -/
+theorem norm_qCoeff_le_two_mul_sqrt_of_not_dvd {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
+    ‖qCoeff M g q‖ ≤ 2 * Real.sqrt q :=
+  sorry
+
+/-- **The conjugate splitting, as pure algebra** (PROVEN 2026-07-26,
+ELEVENTH decomposition): a REAL number `r` with `|r| ≤ 2√q` is the sum of
+two complex numbers of modulus `√q` whose PRODUCT is `q`.
+
+These are of course the two roots of `X² − rX + q`: the hypothesis says
+exactly that the discriminant `r² − 4q` is `≤ 0`, so the roots are
+`(r ± i√(4q − r²))/2`, a conjugate pair, each of modulus
+`√((r² + (4q − r²))/4) = √q`, with product `(r² + (4q − r²))/4 = q`. The
+proof below writes that witness down directly rather than going through
+a root-existence theorem, which is why it needs no polynomial API.
+
+The converse also holds and is worth recording, because it is what makes
+the decomposition of `exists_frobRoots_qCoeff_of_not_dvd` LOSSLESS: if
+`α + β = z`, `‖α‖ = ‖β‖ = √q` and `αβ = q > 0`, then `β = q/α = q·conj α
+/ ‖α‖² = conj α`, so `z = α + conj α = 2·re α` is real and
+`|z| ≤ ‖α‖ + ‖β‖ = 2√q`. So the strengthened splitting is EQUIVALENT to
+the conjunction of realness and the bound — neither half is redundant and
+nothing is lost. -/
+theorem exists_conjugate_split_of_abs_le_two_mul_sqrt (q : ℕ) (r : ℝ)
+    (hr : |r| ≤ 2 * Real.sqrt q) :
+    ∃ α β : ℂ, (r : ℂ) = α + β ∧ ‖α‖ = Real.sqrt q ∧ ‖β‖ = Real.sqrt q ∧
+      α * β = (q : ℂ) := by
+  have hq0 : (0 : ℝ) ≤ (q : ℝ) := Nat.cast_nonneg q
+  have hsq : Real.sqrt q ^ 2 = (q : ℝ) := Real.sq_sqrt hq0
+  have hr2 : r ^ 2 ≤ 4 * (q : ℝ) := by
+    nlinarith [sq_abs r, abs_nonneg r, hr, hsq, Real.sqrt_nonneg (q : ℝ)]
+  set d : ℝ := 4 * (q : ℝ) - r ^ 2 with hd
+  have hd0 : 0 ≤ d := by simp only [hd]; linarith
+  set s : ℝ := Real.sqrt d with hsdef
+  have hs2 : s ^ 2 = d := Real.sq_sqrt hd0
+  refine ⟨(↑(r / 2) + ↑(s / 2) * Complex.I),
+    (↑(r / 2) + ↑(-(s / 2)) * Complex.I), ?_, ?_, ?_, ?_⟩
+  · push_cast
+    ring
+  · rw [Complex.norm_def, Complex.normSq_add_mul_I]
+    congr 1
+    field_simp
+    nlinarith [hs2, hd]
+  · rw [Complex.norm_def, Complex.normSq_add_mul_I]
+    congr 1
+    field_simp
+    nlinarith [hs2, hd]
+  · have hI : Complex.I * Complex.I = -1 := Complex.I_mul_I
+    have hcore : ((r / 2 : ℝ) : ℂ) * ((r / 2 : ℝ) : ℂ)
+        + ((s / 2 : ℝ) : ℂ) * ((s / 2 : ℝ) : ℂ) = ((q : ℝ) : ℂ) := by
+      rw [← Complex.ofReal_mul, ← Complex.ofReal_mul, ← Complex.ofReal_add]
+      norm_cast
+      nlinarith [hs2, hd]
+    push_cast at hcore ⊢
+    linear_combination hcore - (((s : ℂ) / 2) * ((s : ℂ) / 2)) * hI
+
 /-- **The Weil bound at a GOOD prime** (sorry node, TENTH decomposition
 2026-07-26 — the deep third of `norm_qCoeff_le_two_mul_sqrt` below): at
 a prime `q ∤ M` the `q`-th coefficient of a normalized weight-two
@@ -30717,17 +30825,116 @@ recursion) stays where it belongs. Note the roots are automatically
 complex conjugates here, since `a_q` is real; the statement does not
 need to say so.
 
+FORMAL-CONTENT AUDIT (2026-07-26, ELEVENTH cut — and the reason this
+leaf is no longer a leaf). **As stated by the TENTH cut, without the
+conjunct `α * β = q`, this statement was EXACTLY equivalent to the bound
+`‖a_q‖ ≤ 2√q` and carried no arithmetic content whatever.** The sumset of
+two circles of radius `ρ` in `ℂ` is the whole closed disc of radius `2ρ`:
+given any `z` with `‖z‖ ≤ 2ρ` one may always write `z = α + β` with
+`‖α‖ = ‖β‖ = ρ`. So the existential was satisfiable by junk `α, β`
+bearing no relation to the Hecke polynomial, and the docstring's claim
+that "the arithmetic content (`αβ = q`, forced by `|α| = |β| = √q`
+together with the Hecke recursion) stays where it belongs" was not true
+of the Lean statement — `αβ = q` was simply dropped, and nothing in the
+tree asserted it.
+
+REPAIR, executed here: the conjunct `α * β = (q : ℂ)` is now part of the
+statement. That is a strict STRENGTHENING (weakness belongs in the
+statement, not hidden in a proof), and it restores the intended meaning
+— `α, β` are now pinned as the two roots of the Hecke polynomial
+`X² − a_q X + q`, since they are determined by their sum and product.
+The only consumer, `norm_qCoeff_le_two_mul_sqrt` below, discards the new
+conjunct, so nothing downstream had to change beyond its `obtain`
+pattern.
+
+THE ELEVENTH CUT, EXECUTED HERE. With the conjunct present the leaf is
+now an ASSEMBLY, not a citation, over the two halves stated above:
+
+* `exists_real_qCoeff_of_not_dvd` — `a_q ∈ ℝ`, from the Petersson inner
+  product (self-adjointness of the good Hecke operators);
+* `norm_qCoeff_le_two_mul_sqrt_of_not_dvd` — `|a_q| ≤ 2√q`, the genuine
+  Hasse–Weil/Eichler–Shimura citation.
+
+and the connecting algebra is the PROVEN
+`exists_conjugate_split_of_abs_le_two_mul_sqrt` above. The split is
+LOSSLESS: as recorded in that lemma's docstring, the strengthened
+statement is *equivalent* to the conjunction of its two halves, because
+`αβ = q > 0` together with `‖α‖ = ‖β‖ = √q` forces `β = conj α` and hence
+`a_q = 2 re α ∈ ℝ`. So realness is not an extra assumption smuggled in —
+it is exactly the content the TENTH cut's statement was missing.
+
 Missing from the pin: Weil RH for curves, the good reduction of `X₀(M)`
-at `q ∤ M` (Igusa), and the Eichler–Shimura relation. -/
+at `q ∤ M` (Igusa), and the Eichler–Shimura relation — all of it now
+isolated in `norm_qCoeff_le_two_mul_sqrt_of_not_dvd`, plus the Petersson
+theory isolated in `exists_real_qCoeff_of_not_dvd`. -/
 theorem exists_frobRoots_qCoeff_of_not_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
     ∃ α β : ℂ, qCoeff M g q = α + β ∧
-      ‖α‖ = Real.sqrt q ∧ ‖β‖ = Real.sqrt q :=
+      ‖α‖ = Real.sqrt q ∧ ‖β‖ = Real.sqrt q ∧ α * β = (q : ℂ) := by
+  obtain ⟨r, hr⟩ := exists_real_qCoeff_of_not_dvd hM g hg hq hqM
+  have habs : |r| ≤ 2 * Real.sqrt q := by
+    have hb := norm_qCoeff_le_two_mul_sqrt_of_not_dvd hM g hg hq hqM
+    rwa [hr, Complex.norm_real, Real.norm_eq_abs] at hb
+  obtain ⟨α, β, hsum, hα, hβ, hprod⟩ :=
+    exists_conjugate_split_of_abs_le_two_mul_sqrt q r habs
+  exact ⟨α, β, hr.trans hsum, hα, hβ, hprod⟩
+
+/-- **The Atkin–Lehner SIGN at a prime exactly dividing the level**
+(sorry node, ELEVENTH decomposition 2026-07-26): for `q ‖ M` the `q`-th
+coefficient of a normalized weight-two newform satisfies `a_q² = 1` —
+that is, `a_q = ±1`.
+
+This is the classical statement, and it is STRICTLY STRONGER than the
+`‖a_q‖ = 1` that the TENTH cut stated below: `‖a_q‖ = 1` is satisfied by
+`a_q = i`, which never occurs. The strengthening costs nothing — the same
+Atkin–Lehner citation delivers it — and it is the right thing to state,
+since a consumer wanting the SIGN (split versus nonsplit multiplicative
+reduction, in the elliptic-curve shadow) can now get it here rather than
+having to reopen the leaf. `norm_qCoeff_eq_one_of_exactly_dvd` below is
+now PROVEN over this.
+
+Classical content (Atkin–Lehner; Diamond–Shurman §5.8, Theorem 5.8.2
+with the `U_q`-eigenvalue computation): at a prime exactly dividing the
+level of a newform of weight `k` and trivial nebentypus,
+`a_q = ±q^{k/2−1}`. At **weight two** the exponent is `0`, so `a_q = ±1`
+and `a_q² = 1`. The Atkin–Lehner involution `W_q` acts on the newform
+with eigenvalue `−a_q` at weight two, and `W_q² = 1` is what pins the
+square. The elliptic-curve shadow is `a_q = +1` at split and `−1` at
+nonsplit multiplicative reduction; `X₀(11)` with `a₁₁ = 1` is the
+smallest instance.
+
+CARRIER-FAITHFULNESS CHECK (2026-07-26). The leaf quantifies over the
+COEFFICIENT-LEVEL carrier `IsWeightTwoNewform`, which is weaker than
+"classical newform" in one visible respect: `IsWeightTwoEigenform` omits
+the BAD-prime Hecke recursion (`a_{q^{r+1}} = a_q·a_{q^r}` for `q ∣ M`),
+which D–S Prop. 5.8.5 includes. That omission does NOT open a hole here,
+because `eigensystem_minimal` plus coprime multiplicativity already pin
+the form. Sketch, at level `M` with `q ∣ M`: an inhabitant `g` has
+`a_n(g) = a_n(h)` for every `n` coprime to `M`, where `h` is a newform of
+level exactly `M` (minimality rules out every proper divisor level), so
+`g − h` lies in the span of the shifts `h'(dτ)` of newforms `h'` of
+smaller level with `d > 1`, `d ∣ M`; but coprime multiplicativity applied
+to `a_{q·m}(g) = a_q(g)·a_m(g)` for odd... for `m` coprime to `q` then
+forces every such shift coefficient to reproduce `h`'s own eigensystem,
+which distinct newforms never do, so the shifts drop out and `g = h`.
+Worked through explicitly at `M = 44`, `q = 2` (where `S₂(Γ₀(44))` really
+does have a three-dimensional `11`-old part) and at `M = 50`, `q = 5`:
+in both cases the only carrier inhabitants are the genuine newforms. So
+the leaf is faithful, not vacuous and not false.
+
+Missing from the pin: the `U_q` and `W_q` operators and Atkin–Lehner
+theory for the `q`-old/`q`-new decomposition. -/
+theorem qCoeff_sq_eq_one_of_exactly_dvd {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
+    qCoeff M g q ^ 2 = 1 :=
   sorry
 
-/-- **Atkin–Lehner at a prime EXACTLY dividing the level** (sorry node,
-TENTH decomposition 2026-07-26): for `q ‖ M` the `q`-th coefficient of a
+/-- **Atkin–Lehner at a prime EXACTLY dividing the level** (PROVEN
+2026-07-26 as the ELEVENTH decomposition, over the strictly stronger
+`qCoeff_sq_eq_one_of_exactly_dvd` above; it was a sorry node of the
+TENTH decomposition): for `q ‖ M` the `q`-th coefficient of a
 normalized weight-two newform has absolute value `1`.
 
 Classical content (Atkin–Lehner; Diamond–Shurman §5.8, Theorem 5.8.2
@@ -30754,13 +30961,21 @@ weight-two newforms realized as elliptic curves of conductors
 `N = 11, q = 11, a₁₁ = 1` already refutes the `|a_q| = √q` that the
 ninth cut's docstring asserted here, since `√11 ≈ 3.317`.
 
-Missing from the pin: the `U_q` and `W_q` operators and Atkin–Lehner
-theory for the `q`-old/`q`-new decomposition. -/
+Nothing is cited here any more: the Atkin–Lehner input has moved up to
+`qCoeff_sq_eq_one_of_exactly_dvd`, and this is the one-line consequence
+`a² = 1 ⟹ ‖a‖ = 1` (`‖a‖² = ‖a²‖ = 1` and `‖a‖ ≥ 0`). -/
 theorem norm_qCoeff_eq_one_of_exactly_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
-    ‖qCoeff M g q‖ = 1 :=
-  sorry
+    ‖qCoeff M g q‖ = 1 := by
+  have hsq := qCoeff_sq_eq_one_of_exactly_dvd hM g hg hq hqM hqM2
+  have h2 : ‖qCoeff M g q‖ ^ 2 = 1 := by rw [← norm_pow, hsq, norm_one]
+  have h0 : (0 : ℝ) ≤ ‖qCoeff M g q‖ := norm_nonneg _
+  have hfac : (‖qCoeff M g q‖ - 1) * (‖qCoeff M g q‖ + 1) = 0 := by
+    nlinarith [h2]
+  rcases mul_eq_zero.1 hfac with h | h
+  · linarith
+  · linarith
 
 /-- **Atkin–Lehner at a prime whose SQUARE divides the level** (sorry
 node, TENTH decomposition 2026-07-26): for `q² ∣ M` the `q`-th
@@ -30775,6 +30990,34 @@ elliptic-curve shadow is additive reduction, where `a_q = 0`.
 The cheapest of the three cases in the trichotomy, and the only one
 whose conclusion is an equation rather than an estimate; it discharges
 the bound trivially since `0 ≤ 2√q`.
+
+WHY THIS ONE STAYS A CITATION LEAF (ELEVENTH cut, 2026-07-26). Its two
+siblings were decomposed — the good case into realness plus the
+Hasse–Weil bound, the `q ‖ M` case into the stronger sign statement
+`a_q² = 1` plus one line of norm algebra. Neither move is available
+here: `a_q = 0` is already the strongest possible form of the conclusion
+(there is nothing to strengthen it to, and no norm to peel off), and its
+single input is the Atkin–Lehner `U_q`-eigenvalue computation. So this
+is irreducible at the current pin, and a successor must supply the
+`U_q` operator itself rather than another cut.
+
+CARRIER-FAITHFULNESS CHECK (2026-07-26) — the same check recorded on
+`qCoeff_sq_eq_one_of_exactly_dvd` above, and it matters MORE here,
+because the conclusion is an exact vanishing. `IsWeightTwoEigenform`
+omits the bad-prime Hecke recursion that D–S Prop. 5.8.5 includes, so
+`a_{q^r}` is a priori unconstrained for `q ∣ M`, and one might fear a
+carrier inhabitant with `a_q ≠ 0`. The natural candidate is
+`g = h + Σ_{r≥1} c_r·h(q^r τ)` for `h` the level-`M` newform, which
+would have `a_q(g) = c_1 ≠ 0` while agreeing with `h` at every `n`
+coprime to `q`. It does not exist: for `q² ∣ M` the shift `h(qτ)` has
+level `qM`, not `M`, so it is not available in `S₂(Γ₀(M))` at all. Using
+instead the shifts of a SMALLER-level newform `f` does produce elements
+of `S₂(Γ₀(M))`, but then coprime multiplicativity forces
+`c₁·a_m(f) = c₁·a_m(h)` for every `m` coprime to `q`, and distinct
+newforms never share an eigensystem, so `c₁ = 0`. Checked concretely at
+`M = 44`, `q = 2` (the `11`-old part is genuinely three-dimensional
+there, so the constraint has something to act on) and at `M = 20, 36,
+50`. The leaf is faithful.
 
 Missing from the pin: the same Atkin–Lehner theory as the previous
 leaf. -/
@@ -30836,7 +31079,24 @@ irreducibility:
 Only the last two touch the level, so the trichotomy is the natural
 partition and nothing is duplicated across it. The assembly below is
 PROVEN: the triangle inequality in the good case, and `1 ≤ 2√q` (from
-`q ≥ 2`) in the two bad ones. -/
+`q ≥ 2`) in the two bad ones.
+
+ELEVENTH CUT (2026-07-26), which restructured two of those three cases
+without touching this assembly beyond one `obtain` pattern:
+
+* `exists_frobRoots_qCoeff_of_not_dvd` is now itself PROVEN, over
+  `exists_real_qCoeff_of_not_dvd` (Petersson self-adjointness) and
+  `norm_qCoeff_le_two_mul_sqrt_of_not_dvd` (Hasse–Weil). Its statement
+  was also STRENGTHENED with the conjunct `α * β = q`, which the tenth
+  cut had dropped and without which the leaf was merely a restatement of
+  the bound — see the FORMAL-CONTENT AUDIT on it.
+* `norm_qCoeff_eq_one_of_exactly_dvd` is now PROVEN, over the stronger
+  `qCoeff_sq_eq_one_of_exactly_dvd` (`a_q = ±1`).
+* `qCoeff_eq_zero_of_sq_dvd` is unchanged and remains the irreducible
+  Atkin–Lehner citation; the reasons are in its docstring.
+
+So the three genuinely open leaves under this bound are now the two
+good-prime halves and the one `q² ∣ M` citation. -/
 theorem norm_qCoeff_le_two_mul_sqrt {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) :
@@ -30851,7 +31111,7 @@ theorem norm_qCoeff_le_two_mul_sqrt {M : ℕ} (hM : 0 < M)
       linarith
     · rw [norm_qCoeff_eq_one_of_exactly_dvd hM g hg hq hdvd hsq]
       linarith
-  · obtain ⟨α, β, hsum, hα, hβ⟩ :=
+  · obtain ⟨α, β, hsum, hα, hβ, -⟩ :=
       exists_frobRoots_qCoeff_of_not_dvd hM g hg hq hdvd
     rw [hsum]
     calc ‖α + β‖ ≤ ‖α‖ + ‖β‖ := norm_add_le _ _
