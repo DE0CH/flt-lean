@@ -103,6 +103,60 @@ theorem RelPoint.pre_self {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g) :
     RelPoint.pre y.1 y.2 (RelPoint.self f) = y :=
   Subtype.ext (Category.comp_id _)
 
+/-- **Cancellation for `LocallyOfFinitePresentation`** (PROVEN 2026-07-26):
+if `f ≫ g` is locally of finite presentation and `g` is locally of finite
+TYPE, then `f` is locally of finite presentation.  Stacks 0562/01TS.
+
+This is general scheme theory with no abelian-variety content, and it is a
+gap in mathlib at this pin: `LocallyOfFiniteType` has
+`locallyOfFiniteType_of_comp` and `LocallyQuasiFinite` has
+`LocallyQuasiFinite.of_comp`, both via `HasRingHomProperty.of_comp`, but
+`LocallyOfFinitePresentation` has neither — and it cannot use
+`HasRingHomProperty.of_comp` as it stands, because that helper's
+hypothesis `Q (g ∘ f) → Q g` admits no side condition, whereas the ring
+statement `RingHom.FinitePresentation.of_comp_finiteType` genuinely needs
+`f` of finite type.  (It must: `LocallyOfFinitePresentation` is not
+cancellable outright.  A closed immersion `Spec (R/I) ⟶ Spec R` with `I`
+not finitely generated is not locally of finite presentation, while its
+composite with `Spec R ⟶ Spec (R/I)`'s base need not see that.)
+
+So the proof re-runs `HasRingHomProperty.of_comp`'s four-step reduction —
+affine target, affine middle, affine source, then the ring statement —
+carrying the auxiliary hypothesis through each step.  `LocallyOfFiniteType`
+is Zariski-local at source and target, which is exactly what makes the
+extra hypothesis survive the restrictions. -/
+theorem locallyOfFinitePresentation_of_comp {X Y Z : Scheme.{u}} {p : X ⟶ Y} {q : Y ⟶ Z}
+    (h : LocallyOfFinitePresentation (p ≫ q)) (h' : LocallyOfFiniteType q) :
+    LocallyOfFinitePresentation p := by
+  wlog hZ : IsAffine Z generalizing X Y Z
+  · rw [IsZariskiLocalAtTarget.iff_of_iSup_eq_top (P := @LocallyOfFinitePresentation) _
+      (q.iSup_preimage_eq_top (iSup_affineOpens_eq_top Z))]
+    intro U
+    have H := IsZariskiLocalAtTarget.restrict h U.1
+    rw [morphismRestrict_comp] at H
+    exact this H (IsZariskiLocalAtTarget.restrict h' U.1) inferInstance
+  wlog hY : IsAffine Y generalizing X Y
+  · rw [IsZariskiLocalAtTarget.iff_of_iSup_eq_top (P := @LocallyOfFinitePresentation) _
+      (iSup_affineOpens_eq_top Y)]
+    intro U
+    have H := HasRingHomProperty.comp_of_isOpenImmersion @LocallyOfFinitePresentation
+      (p ⁻¹ᵁ U.1).ι (p ≫ q) h
+    rw [← morphismRestrict_ι_assoc] at H
+    exact this H (HasRingHomProperty.comp_of_isOpenImmersion @LocallyOfFiniteType U.1.ι q h')
+      inferInstance
+  wlog hX : IsAffine X generalizing X
+  · rw [IsZariskiLocalAtSource.iff_of_iSup_eq_top (P := @LocallyOfFinitePresentation) _
+      (iSup_affineOpens_eq_top X)]
+    intro U
+    have H := HasRingHomProperty.comp_of_isOpenImmersion @LocallyOfFinitePresentation
+      U.1.ι (p ≫ q) h
+    rw [← Category.assoc] at H
+    exact this H inferInstance
+  rw [HasRingHomProperty.iff_of_isAffine (P := @LocallyOfFinitePresentation)] at h ⊢
+  rw [HasRingHomProperty.iff_of_isAffine (P := @LocallyOfFiniteType)] at h'
+  rw [Scheme.Hom.comp_appTop, CommRingCat.hom_comp] at h
+  exact RingHom.FinitePresentation.of_comp_finiteType _ h h'
+
 namespace AbelianSchemeStruct
 
 variable (ab : AbelianSchemeStruct f)
@@ -208,6 +262,24 @@ theorem locallyOfFiniteType_mulByNat (n : ℕ) : LocallyOfFiniteType (ab.mulByNa
     rw [ab.mulByNat_comp]; infer_instance
   exact locallyOfFiniteType_of_comp (ab.mulByNat n) f
 
+/-- **`[n]` is LOCALLY OF FINITE PRESENTATION**, also for free (PROVEN
+2026-07-26).
+
+`[n] ≫ f = f` is locally of finite presentation because `f` is smooth,
+and `f` is locally of finite type, so `locallyOfFinitePresentation_of_comp`
+above cancels the second factor.
+
+This matters for the leaf below: it is the reason the theorem of the cube
+has to supply only FLATNESS.  Mathlib's `UniversallyOpen.of_flat` wants
+`Flat` *and* `LocallyOfFinitePresentation`, and the second of the two is
+not an abelian-variety fact at all. -/
+theorem locallyOfFinitePresentation_mulByNat (n : ℕ) :
+    LocallyOfFinitePresentation (ab.mulByNat n) := by
+  haveI := ab.smooth
+  haveI : LocallyOfFinitePresentation (ab.mulByNat n ≫ f) := by
+    rw [ab.mulByNat_comp]; infer_instance
+  exact locallyOfFinitePresentation_of_comp this inferInstance
+
 /-- **The Yoneda translation of divisibility** (PROVEN): a relative point
 `y` is `n`-divisible in the group `RelPoint f g` exactly when its
 underlying morphism factors through `[n]`.
@@ -235,16 +307,30 @@ end AbelianSchemeStruct
 
 /-! ### The theorem of the cube, in its minimal usable form -/
 
-/-- **Multiplication by a nonzero `n` on an abelian scheme is FLAT and of
-FINITE PRESENTATION** (sorry leaf — abelian varieties; Mumford *Abelian
-Varieties* §6 (Application 2 of the theorem of the cube) and §18,
-Milne *Abelian Varieties* I.7, Silverman *AEC* III.6).
+/-- **Multiplication by a nonzero `n` on an abelian scheme is FLAT**
+(sorry leaf — abelian varieties; Mumford *Abelian Varieties* §6
+(Application 2 of the theorem of the cube) and §18, Milne *Abelian
+Varieties* I.7, Silverman *AEC* III.6).
 
-Together with `isProper_mulByNat` (free) this says `[n]` is **finite
-locally free**, of degree `n^{2g}` on each fibre of `f` — the classical
-statement that `[n]` is an isogeny.  Only the flatness and the finite
-presentation are asked for here, because properness is already available
-without any abelian-variety input.
+**This is now the WHOLE of the flatness half of the cube input.**  The
+leaf that used to stand here asked for `Flat ∧ LocallyOfFinitePresentation`;
+the second conjunct was discharged on 2026-07-26 by
+`locallyOfFinitePresentation_mulByNat` above, which is free from
+`[n] ≫ f = f` and the smoothness of `f`.  So the abelian-variety content
+has been isolated to the single word `Flat`.
+
+Together with `isProper_mulByNat` and `locallyOfFinitePresentation_mulByNat`
+(both free) this says `[n]` is **finite locally free**, of degree `n^{2g}`
+on each fibre of `f` — the classical statement that `[n]` is an isogeny.
+Only the flatness is asked for here, because properness and finite
+presentation are already available without any abelian-variety input.
+
+**Entry point for a prover.**  `AlgebraicGeometry.Flat.of_stalkMap`
+reduces this to: for every `x : A` the induced map of local rings
+`𝒪_{A, [n] x} ⟶ 𝒪_{A, x}` is flat.  That is where a miracle-flatness
+argument would be applied — and note that mathlib at this pin has **no**
+Cohen–Macaulay theory and **no** notion of the dimension of a scheme, so
+miracle flatness has to be built before it can be used.
 
 **The argument.** Fibrewise over `S`, fix a geometric fibre `A_s` of
 dimension `g` and a symmetric ample line bundle `L` on it.  The theorem of
@@ -286,10 +372,48 @@ is the point of cutting here: the dimension count lives inside its proof,
 not in its statement, and the two consequences that the rest of this module
 draws from it — universal openness and then surjectivity — are pure
 topology over the already-available properness and connectedness. -/
+theorem flat_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0) :
+    Flat (ab.mulByNat n) :=
+  sorry
+
+/-- **The fibres of `[n]` are FINITE** (sorry leaf — abelian varieties;
+same references as `flat_mulByNat`).
+
+This is the SECOND cube input, and it is the one the torsion CARDINALITY
+arguments need.  It says exactly that `ker[n]` is a finite group scheme:
+the fibre of `[n]` over a point `a` is a torsor under the kernel taken in
+the fibre of `f` through `a`, so all the fibres are finite as soon as one
+of them is.
+
+**Why it is stated on point-set fibres rather than as `LocallyQuasiFinite`.**
+Its consumer, `locallyQuasiFinite_mulByNat` in `Modularity/TateModule.lean`,
+used to BE the leaf.  But `LocallyQuasiFinite` is (locally of finite type)
++ (quasi-finite fibres), and the first half is already free here
+(`locallyOfFiniteType_mulByNat`), so the old leaf was redundantly asking a
+prover for something already proven.  Mathlib's
+`LocallyQuasiFinite.of_finite_preimage_singleton` needs only
+`[LocallyOfFiniteType]` plus this statement, so this is the exact residue.
+
+**Independent of `flat_mulByNat`.**  Neither leaf implies the other at this
+pin: flatness would follow from finite fibres only via miracle flatness
+(absent — no Cohen–Macaulay theory, no scheme dimension), and finite fibres
+do not follow from flatness at all (`f` itself is flat with positive
+dimensional fibres).  Both are outputs of the theorem of the cube, and a
+prover who has the cube discharges both at once. -/
+theorem finite_preimage_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0)
+    (a : A) : (⇑(ab.mulByNat n) ⁻¹' {a}).Finite :=
+  sorry
+
+/-- **`[n]` is flat and locally of finite presentation** (PROVEN
+2026-07-26 over `flat_mulByNat`; the finite presentation is free).
+
+Retained with its original name and statement so that every existing
+consumer resolves unchanged; the abelian-variety content is now entirely
+in `flat_mulByNat`. -/
 theorem flat_locallyOfFinitePresentation_mulByNat (ab : AbelianSchemeStruct f)
     (n : ℕ) (hn : n ≠ 0) :
     Flat (ab.mulByNat n) ∧ LocallyOfFinitePresentation (ab.mulByNat n) :=
-  sorry
+  ⟨flat_mulByNat ab n hn, ab.locallyOfFinitePresentation_mulByNat n⟩
 
 /-- **`[n]` is UNIVERSALLY OPEN** (PROVEN over the leaf): a flat morphism
 locally of finite presentation is universally open,

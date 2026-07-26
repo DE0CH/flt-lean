@@ -2321,18 +2321,28 @@ theorem finite_hom_fibre_of_isFinite {X Y : Scheme.{u}} (φ : X ⟶ Y) [IsFinite
     pullback.lift_fst _ _ _⟩
 
 /-- **Multiplication by a nonzero `n` on an abelian scheme is
-QUASI-FINITE** (sorry leaf — abelian varieties; Mumford *Abelian
-Varieties* §6 Application 2 and §18, Milne *Abelian Varieties* I.7,
-Silverman *AEC* III.6).
+QUASI-FINITE** (PROVEN 2026-07-26 over `finite_preimage_mulByNat` in
+`Modularity/AbelianSchemeIsogeny.lean`; Mumford *Abelian Varieties* §6
+Application 2 and §18, Milne *Abelian Varieties* I.7, Silverman *AEC*
+III.6).
 
 Every fibre of `[n] : A ⟶ A` is a finite set of points. Equivalently —
 since `[n]` is PROPER for free (`isProper_mulByNat`) — `[n]` is a FINITE
 morphism, of degree `n^{2g}` on each fibre of `f`.
 
-This is the ONLY residual sorry of the `isOpen_stabilizer_torsion`
-cluster, and it is a pure statement of the theory of abelian varieties:
-no Galois action, no real multiplication, no ideal of `𝒪_D`, no number
-field, no topology.
+**This used to be the leaf, and it is now one step above it.**
+`LocallyQuasiFinite` is (locally of finite type) + (quasi-finite fibres),
+and the first half is FREE (`locallyOfFiniteType_mulByNat`, from
+`[n] ≫ f = f` and the smoothness of `f`), so stating the leaf at this
+level asked a prover for something already proven. Mathlib's
+`LocallyQuasiFinite.of_finite_preimage_singleton` needs exactly
+`[LocallyOfFiniteType]` plus finiteness of the point-set fibres, so the
+residual abelian-variety content is precisely `finite_preimage_mulByNat`,
+which is where the sorry now lives.
+
+The remaining leaf is a pure statement of the theory of abelian
+varieties: no Galois action, no real multiplication, no ideal of `𝒪_D`,
+no number field, no topology.
 
 The argument. Fibrewise over `S` this is the classical statement that
 `[n]` is an isogeny of abelian varieties. Fix a geometric fibre `A_s`,
@@ -2362,7 +2372,8 @@ at all is therefore out of date; the search there predates
 `Mathlib/AlgebraicGeometry/Group/`.) -/
 theorem locallyQuasiFinite_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0) :
     LocallyQuasiFinite (ab.mulByNat n) :=
-  sorry
+  haveI := ab.locallyOfFiniteType_mulByNat n
+  LocallyQuasiFinite.of_finite_preimage_singleton _ (finite_preimage_mulByNat ab n hn)
 
 /-- **Multiplication by a nonzero `n` on an abelian scheme is a FINITE
 morphism** (PROVEN 2026-07-26 over `locallyQuasiFinite_mulByNat`).
