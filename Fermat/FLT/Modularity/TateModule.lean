@@ -483,16 +483,19 @@ This is the exceptional set `bad` of the determinant clause of
 `exists_tateFrame_of_levelStructure`. It is stated in the "there is a
 `Finset` outside which the property holds" shape that the clause needs,
 rather than as a `Set.Finite`, so that the consumer never has to name
-the set. -/
+the set — and for a general nonzero `n`, not just for the prime `q` it
+is used at, so that it is literally the same statement as the
+downstream `exists_finset_forall_natCast_notMem_asIdeal` of
+`Modularity/KhareWintenberger.lean` and that copy can be deleted in
+favour of this one. -/
 theorem exists_finset_forall_natCast_notMem {F : Type u} [Field F] [NumberField F]
-    (q : ℕ) [Fact q.Prime] :
+    (n : ℕ) (hn : n ≠ 0) :
     ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
-      ∀ w ∉ bad, (q : NumberField.RingOfIntegers F) ∉ w.asIdeal := by
+      ∀ w ∉ bad, (n : NumberField.RingOfIntegers F) ∉ w.asIdeal := by
   classical
-  have hq0 : (q : NumberField.RingOfIntegers F) ≠ 0 := by
-    simpa using (Fact.out : q.Prime).ne_zero
-  have hspan : (Ideal.span {(q : NumberField.RingOfIntegers F)}) ≠ 0 := by
-    simpa [Ideal.span_singleton_eq_bot] using hq0
+  have hspan : (Ideal.span {(n : NumberField.RingOfIntegers F)}) ≠ 0 := by
+    rw [Ne, Ideal.zero_eq_bot, Ideal.span_singleton_eq_bot]
+    exact Nat.cast_ne_zero.mpr hn
   have hfin := Ideal.finite_factors (R := NumberField.RingOfIntegers F) hspan
   refine ⟨hfin.toFinset, fun w hw hmem => hw ?_⟩
   rw [Set.Finite.mem_toFinset]
@@ -1001,7 +1004,8 @@ theorem exists_tateFrame_of_levelStructure
   -- `det_eq_cyclotomicCharacter_of_tateFrame`, and the value of `χ_cyc` at an
   -- arithmetic Frobenius away from `q` is `Nw` by
   -- `cyclotomicCharacter_adicArithFrob_absNorm`.
-  obtain ⟨bad, hbad⟩ := exists_finset_forall_natCast_notMem (F := F) q
+  obtain ⟨bad, hbad⟩ :=
+    exists_finset_forall_natCast_notMem (F := F) q (Fact.out : q.Prime).ne_zero
   have hdet : ∀ w ∉ bad,
       LinearMap.det (τ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)) =
         (Ideal.absNorm w.asIdeal : O) := by
