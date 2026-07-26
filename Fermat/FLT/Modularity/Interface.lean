@@ -31194,9 +31194,256 @@ theorem isPeuRamifiee_of_hasFlatProlongationAt_of_natCast_pow_eq_zero
     IsPeuRamifiee (p ^ n) q :=
   sorry
 
+omit [TopologicalSpace R] [IsTopologicalRing R] [IsModuleTopology ℤ_[p] R] in
+/-- **Every level of the `𝔪`-adic tower has characteristic an EXACT
+power of `p`, and those powers are UNBOUNDED** (PROVEN 2026-07-26,
+eighth owner of the at-`p` flatness cut — the EXPONENT CUT; this is the
+step that the leaf
+`exists_tateParameter_of_weightTwoEigenform_pNew` below previously
+carried only as prose, namely "and that exponent tends to infinity with
+`k`, because `(p : R) ≠ 0` and `R` is a Noetherian local domain, which
+is why the threshold `n₀` can be met").
+
+For a coefficient ring of the standard package — a local DOMAIN,
+module-finite over `ℤ_p` — in which `p` is not zero, and for any
+threshold `n₀`, there is a level `k` of the `𝔪`-adic tower and an
+exponent `n ≥ n₀` such that the level ring `R ⧸ 𝔪 ^ k` has
+characteristic EXACTLY `p ^ n`.
+
+WHY `CharP` AND NOT MERELY `(p ^ n : R ⧸ 𝔪 ^ k) = 0`. The two indices
+`k` (level ideal) and `n` (exponent) are genuinely independent — fusing
+them would force `𝔪 ^ k = p ^ n R`, which holds only for `R = ℤ_p` —
+and what the classical local computation consumes is not that `p ^ n`
+KILLS the level ring but that it is its EXACT additive exponent:
+`ℤ ⧸ p ^ n ↪ R ⧸ 𝔪 ^ k`, i.e. the level ring is a FAITHFUL
+`ℤ ⧸ p ^ n`-module. That faithfulness is exactly what makes
+`ker (ρ ⊗ R ⧸ 𝔪 ^ k)|_{G_p}` equal to `ker (T ⧸ p ^ n T)|_{G_p}` for a
+`ℤ_p`-lattice `T` with `V = T ⊗_{ℤ_p} R`, hence what identifies the
+level field with `ℚ_p(E[p ^ n]) = ℚ_p(μ_{p ^ n}, q^{1/p ^ n})` ON THE
+NOSE rather than up to an inclusion. A merely-killing hypothesis is
+strictly weaker and would make the leaf below FALSE, since any `n`
+larger than the true exponent also kills.
+
+PROOF, in three steps.
+
+* `p` lies in `𝔪` (`natCast_prime_mem_maximalIdeal_of_moduleFinite`),
+  so `p ^ k ∈ 𝔪 ^ k` and the set of exponents killing the level ring is
+  NONEMPTY at every level; `n` is its least element (`Nat.find`).
+* `R` is a domain and `(p : R) ≠ 0`, so `(p : R) ^ n₀ ≠ 0`; `R` is
+  Noetherian (module-finite over `ℤ_p`) and local, so Krull's
+  intersection theorem `Ideal.iInf_pow_eq_bot_of_isLocalRing` gives
+  `⨅ i, 𝔪 ^ i = ⊥` and hence a level `k` with `(p : R) ^ n₀ ∉ 𝔪 ^ k`.
+  Minimality then forces `n₀ ≤ n`. This is where `hpne` does its work,
+  and it is the formal content of "the tower is infinite": over a
+  coefficient ring killing `p` the levels would all have characteristic
+  dividing a fixed power and the threshold could not be met.
+* For `CharP` one needs `(a : R ⧸ 𝔪 ^ k) = 0 ↔ p ^ n ∣ a` for EVERY
+  natural `a`, not just for powers of `p`. Split `a = p ^ j · a'` with
+  `p ∤ a'` (`Nat.ordProj_mul_ordCompl_eq_self`): `a'` is coprime to `p`,
+  and in a local ring whose residue characteristic is `p` a Bézout
+  relation `x p + y a' = 1` shows `a'` cannot lie in `𝔪`, so `(a' : R)`
+  is a UNIT and `(a : R) ∈ 𝔪 ^ k` collapses to `(p : R) ^ j ∈ 𝔪 ^ k`,
+  whence `n ≤ j` by minimality. -/
+theorem exists_charP_quotient_maximalIdeal_pow_of_natCast_ne_zero
+    (hpne : (p : R) ≠ 0) (n₀ : ℕ) :
+    ∃ k n : ℕ, n₀ ≤ n ∧
+      CharP (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) (p ^ n) := by
+  classical
+  haveI : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[p] R
+  have hpm : (p : R) ∈ IsLocalRing.maximalIdeal R :=
+    natCast_prime_mem_maximalIdeal_of_moduleFinite
+  -- a natural number prime to `p` is a UNIT of the local ring `R`
+  have hunit : ∀ u : ℕ, Nat.Coprime p u → IsUnit ((u : R)) := by
+    intro u hu
+    rw [← IsLocalRing.notMem_maximalIdeal]
+    intro humem
+    obtain ⟨x, y, hxy⟩ :=
+      (Nat.isCoprime_iff_coprime.mpr hu).map (Int.castRingHom R)
+    simp only [eq_intCast, Int.cast_natCast] at hxy
+    refine (IsLocalRing.maximalIdeal.isMaximal R).ne_top ?_
+    rw [Ideal.eq_top_iff_one, ← hxy]
+    exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hpm) (Ideal.mul_mem_left _ _ humem)
+  -- Krull's intersection theorem: some power of `𝔪` misses `p ^ n₀`
+  have hkex : ∃ k : ℕ, ((p : R)) ^ n₀ ∉ (IsLocalRing.maximalIdeal R ^ k : Ideal R) := by
+    by_contra hall
+    have hbot : ((p : R)) ^ n₀ ∈ (⊥ : Ideal R) := by
+      rw [← Ideal.iInf_pow_eq_bot_of_isLocalRing (IsLocalRing.maximalIdeal R)
+        (IsLocalRing.maximalIdeal.isMaximal R).ne_top]
+      exact Submodule.mem_iInf _ |>.mpr fun k => not_not.mp fun h => hall ⟨k, h⟩
+    exact pow_ne_zero _ hpne (Ideal.mem_bot.mp hbot)
+  obtain ⟨k, hk⟩ := hkex
+  -- the EXACT exponent of the level ring at that level
+  have hex : ∃ m : ℕ, ((p : R)) ^ m ∈ (IsLocalRing.maximalIdeal R ^ k : Ideal R) :=
+    ⟨k, Ideal.pow_mem_pow hpm k⟩
+  set n := Nat.find hex with hndef
+  have hmem : ((p : R)) ^ n ∈ (IsLocalRing.maximalIdeal R ^ k : Ideal R) := Nat.find_spec hex
+  have hmin : ∀ m : ℕ, m < n → ((p : R)) ^ m ∉ (IsLocalRing.maximalIdeal R ^ k : Ideal R) :=
+    fun m hm => Nat.find_min hex hm
+  have hn₀ : n₀ ≤ n := by
+    by_contra hlt
+    have hlt' : n < n₀ := Nat.lt_of_not_le hlt
+    refine hk ?_
+    have hsplit : ((p : R)) ^ n₀ = ((p : R)) ^ n * ((p : R)) ^ (n₀ - n) := by
+      rw [← pow_add]; congr 1; omega
+    rw [hsplit]
+    exact Ideal.mul_mem_right _ _ hmem
+  refine ⟨k, n, hn₀, ⟨fun a => ?_⟩⟩
+  -- `(a : R ⧸ 𝔪 ^ k) = 0 ↔ (a : R) ∈ 𝔪 ^ k`
+  have hcast : ((a : ℕ) : R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) = 0 ↔
+      ((a : ℕ) : R) ∈ (IsLocalRing.maximalIdeal R ^ k : Ideal R) := by
+    rw [← map_natCast (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R ^ k : Ideal R)) a,
+      Ideal.Quotient.eq_zero_iff_mem]
+  rw [hcast]
+  refine ⟨fun hmemA => ?_, ?_⟩
+  · rcases eq_or_ne a 0 with rfl | ha
+    · exact dvd_zero _
+    -- split off the `p`-part of `a`; the cofactor is a unit of `R`
+    have hsplit : ordProj[p] a * ordCompl[p] a = a := Nat.ordProj_mul_ordCompl_eq_self a p
+    have hcop : Nat.Coprime p (ordCompl[p] a) := Nat.coprime_ordCompl hp.out ha
+    have hj : ((p : R)) ^ (a.factorization p) ∈
+        (IsLocalRing.maximalIdeal R ^ k : Ideal R) := by
+      refine (Ideal.mul_unit_mem_iff_mem _ (hunit _ hcop)).mp ?_
+      have hprod : ((p : R)) ^ (a.factorization p) * ((ordCompl[p] a : ℕ) : R) =
+          ((a : ℕ) : R) := by
+        rw [← Nat.cast_pow, ← Nat.cast_mul, hsplit]
+      rw [hprod]
+      exact hmemA
+    have hle : n ≤ a.factorization p := by
+      by_contra hlt
+      exact hmin _ (Nat.lt_of_not_le hlt) hj
+    exact dvd_trans (pow_dvd_pow p hle) (Nat.ordProj_dvd a p)
+  · rintro ⟨b, rfl⟩
+    have hprod : ((p ^ n * b : ℕ) : R) = ((p : R)) ^ n * ((b : ℕ) : R) := by push_cast; ring
+    rw [hprod]
+    exact Ideal.mul_mem_right _ _ hmem
+
+include hpodd in
+/-- **The Tate parameter of a `p`-new weight-2 eigensystem, AT ONE LEVEL
+OF THE TOWER** (sorry leaf — the AUTOMORPHIC half of the 2026-07-26
+KUMMER CUT, narrowed 2026-07-26 by the EXPONENT CUT of the eighth owner:
+the tower bookkeeping has been removed from it and is now the proven
+`exists_charP_quotient_maximalIdeal_pow_of_natCast_ne_zero` just above,
+so what remains is a statement AT A SINGLE LEVEL, which is where the
+classical sources state it;
+Tilouine, *Hecke algebras and the Gorenstein property*, in
+Cornell–Silverman–Stevens §5 Step 1(a), for `p ∥ M`; Saito, *Modular
+forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997), for
+local–global compatibility at `p` in general).
+
+Under exactly the hypotheses of the consumer below, the restriction of
+`τ ≅ ρ ⊗ ℚ̄_p` to `G_p` is the Tate module of a curve with purely
+TORIC reduction, so there is a Tate parameter `q ∈ ℚ_pˣ` with
+
+* `v_p(q) ≠ 0` (spelled `Valued.v q ≠ 1`: toric, not potentially good);
+* at EVERY level `k` of the `𝔪`-adic tower, and for the EXACT
+  characteristic `p ^ n` of the level ring `R ⧸ 𝔪 ^ k`, the field cut
+  out by `ρ ⊗ R ⧸ 𝔪 ^ k` contains a `p ^ n`-th root of `q`.
+
+WHY THE HYPOTHESIS IS `CharP … (p ^ n)` AND NOT `(p ^ n) = 0` (the point
+that makes this leaf FAITHFUL rather than convenient, and the reason the
+two indices `k` and `n` are separate). The consumer's tower is indexed by
+the IDEALS `𝔪 ^ k`, but Serre's criterion is indexed by the EXPONENT
+`p ^ n` of the module, and the two indices are NOT interchangeable when
+`R ≠ ℤ_p`: demanding both `p ^ n ∈ 𝔪 ^ k` (so that the level module is
+killed by `p ^ n`) and `𝔪 ^ k ⊆ p ^ n R` (so that the level field is at
+least as large as the mod-`p ^ n` field) would force `𝔪 ^ k = p ^ n R`,
+which holds only for `R = ℤ_p`. What is true, and what this leaf
+asserts, is that `n` may be taken to be the EXACT exponent of
+`R ⧸ 𝔪 ^ k`, i.e. that the level ring is a FAITHFUL `ℤ ⧸ p ^ n`-module:
+writing the lattice as `T ⊗_{ℤ_p} R` with `T` the `ℤ_p`-Tate module,
+`T ⧸ p ^ n T` is free of rank `2` over `ℤ ⧸ p ^ n` and so
+`T ⊗ R ⧸ 𝔪 ^ k ≅ (R ⧸ 𝔪 ^ k) ²` as a `G_p`-set has the SAME kernel as
+`T ⧸ p ^ n T` — an entry of `σ − 1` annihilates a faithful module only
+if it is zero. Its field is therefore
+`ℚ_p(E[p ^ n]) = ℚ_p(μ_{p ^ n}, q^{1/p ^ n})` on the nose, which is what
+supplies the radical. Weakening `CharP` to "killed by `p ^ n`" would make
+the statement FALSE, since every `n` beyond the exact exponent also
+kills while its field is strictly larger than the level field.
+
+WHAT THE EXPONENT CUT REMOVED. The previous form of this leaf quantified
+`∀ n₀, ∃ k n, n₀ ≤ n ∧ …`, so it also carried the assertion that the
+exponents are UNBOUNDED in `k`. That is pure coefficient-ring
+arithmetic — Krull's intersection theorem in the Noetherian local domain
+`R`, given `(p : R) ≠ 0` and `p ∈ 𝔪` — and it is now the proven
+`exists_charP_quotient_maximalIdeal_pow_of_natCast_ne_zero` above. What
+is left here is only the automorphic-to-Galois geometry.
+
+SOUNDNESS: inherited from the consumer's audit (`p = 11`, `M = 11`, the
+weight-2 newform of level `11`, `E = X₀(11)`), whose Tate parameter has
+`v_p(q) = 1 ≠ 0`.
+
+WHAT IS STILL CITED, AND WHAT IS NO LONGER. This leaf carries the
+automorphic-to-Galois bridge — the étale cohomology of modular curves
+at `p` (Deligne–Rapoport models, Tilouine's toric-reduction
+computation, Saito's local–global compatibility) — which the fourth and
+fifth owners' terminality audits identify as the genuinely missing
+geometry, absent from this pin and from `~/cs/FLT`. It NO LONGER
+carries Serre's local criterion (the separate local leaf
+`isPeuRamifiee_of_hasFlatProlongationAt_of_natCast_pow_eq_zero` above),
+the tower arithmetic (proven in
+`exists_forall_not_isPeuRamifiee_of_valuation_ne_one` above), nor the
+`𝔪`-adic exponent bookkeeping (proven in
+`exists_charP_quotient_maximalIdeal_pow_of_natCast_ne_zero` above).
+
+INHERITED COEFFICIENT-RING FACTS. `hpne`, `hpmem`, `hkfin` and `hlat`
+are passed down unchanged from the consumer, where the sixth owner's
+COEFFICIENT-RING NARROWING turned each into a proof term
+(`natCast_prime_mem_maximalIdeal_of_moduleFinite`,
+`finite_quotient_maximalIdeal_pow_of_natCast_ne_zero`,
+`injective_algebraMap_algebraicClosure_of_moduleFinite`). They belong
+HERE rather than at the consumer, because they are exactly what the
+cited automorphic theory assumes about its coefficient ring: `hpmem`
+and `hpne` are what make the exponent of `R ⧸ 𝔪 ^ k` finite and
+unbounded in `k`, `hkfin` is what keeps every level finite (so that
+`HasFlatProlongationAt`'s finiteness is not satisfied for a merely
+cardinal reason), and `hlat` is what makes "`ρ` is an `R`-lattice model
+of `τ`" a statement about a genuine lattice. -/
+theorem exists_tateParameter_atLevel_of_weightTwoEigenform_pNew
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
+    (hpne : (p : R) ≠ 0)
+    (hpmem : (p : R) ∈ IsLocalRing.maximalIdeal R)
+    (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
+    ∃ q : (ℚᵖᵥ)ˣ, Valued.v (q : ℚᵖᵥ) ≠ 1 ∧
+      ∀ k n : ℕ, CharP (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) (p ^ n) →
+        ∃ r : AlgebraicClosure ℚᵖᵥ,
+          r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ∧
+          ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+            (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).toLocal 𝔭ᵥ σ = 1 →
+              σ r = r :=
+  sorry
+
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem**
-(sorry leaf — the AUTOMORPHIC half of the 2026-07-26 KUMMER CUT of
+(PROVEN 2026-07-26 by the EXPONENT CUT — the AUTOMORPHIC half of the
+2026-07-26 KUMMER CUT of
 `exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`
 below; Tilouine, *Hecke algebras and the Gorenstein property*, in
 Cornell–Silverman–Stevens §5 Step 1(a), for `p ∥ M`; Saito, *Modular
@@ -31213,51 +31460,77 @@ TORIC reduction, so there is a Tate parameter `q ∈ ℚ_pˣ` with
   `pⁿ` and the field cut out by `ρ ⊗ R ⧸ 𝔪 ^ k` contains a `pⁿ`-th
   root of `q`.
 
-WHY THE TWO INDICES ARE DECOUPLED (the point that makes this leaf
-FAITHFUL rather than convenient). The consumer's tower is indexed by
-the IDEALS `𝔪 ^ k`, but Serre's criterion is indexed by the EXPONENT
+THE EXPONENT CUT (2026-07-26, EIGHTH owner — what this node now IS).
+The node is PROVEN, as a two-step assembly:
+
+1. `exists_tateParameter_atLevel_of_weightTwoEigenform_pNew` (sorry
+   leaf, just above): the SAME statement AT ONE LEVEL — for every level
+   `k` and every `n` such that `R ⧸ 𝔪 ^ k` has characteristic EXACTLY
+   `p ^ n`, the field cut out by `ρ ⊗ R ⧸ 𝔪 ^ k` contains a `p ^ n`-th
+   root of `q`. This is where the automorphic-to-Galois geometry lives,
+   and it is the shape in which Tilouine and Saito state it.
+2. `exists_charP_quotient_maximalIdeal_pow_of_natCast_ne_zero` (PROVEN,
+   above): there are levels `k` whose exact characteristic `p ^ n` has
+   `n` beyond any given threshold. Krull's intersection theorem in the
+   Noetherian local domain `R`, given `(p : R) ≠ 0` (`hpne`) and
+   `p ∈ 𝔪` (`hpmem`).
+
+What the cut buys: the "and that exponent tends to infinity with `k`"
+step below — previously prose inside the citation — is now a proof
+term, and the residual leaf has no tower content at all, only geometry
+at a single level. What it does NOT buy: the automorphic-to-Galois
+bridge is untouched, and no piece of it has been proven here.
+
+WHY THE TWO INDICES ARE DECOUPLED (the point that makes the residual
+leaf FAITHFUL rather than convenient). The consumer's tower is indexed
+by the IDEALS `𝔪 ^ k`, but Serre's criterion is indexed by the EXPONENT
 `pⁿ` of the module, and the two indices are NOT interchangeable when
 `R ≠ ℤ_p`: demanding both `pⁿ ∈ 𝔪 ^ k` (so that the level-`k` module is
 killed by `pⁿ`) and `𝔪 ^ k ⊆ pⁿ R` (so that the level-`k` field is at
 least as large as the mod-`pⁿ` field) would force `𝔪 ^ k = pⁿ R`, which
-holds only for `R = ℤ_p`. What is true, and what this leaf asserts, is
-that `n` may be taken to be the EXPONENT of `R ⧸ 𝔪 ^ k` — the least `n`
-with `pⁿ ∈ 𝔪 ^ k`: writing the lattice as `T ⊗_{ℤ_p} R` with `T` the
-`ℤ_p`-Tate module, `T ⊗ R ⧸ 𝔪 ^ k` has the SAME kernel as `T ⧸ pⁿ T`,
-so its field is `ℚ_p(E[pⁿ]) = ℚ_p(μ_{pⁿ}, q^{1/pⁿ})` on the nose. And
-that exponent tends to infinity with `k`, because `(p : R) ≠ 0`
-(`hpne`) and `R` is a Noetherian local domain, which is why the
-threshold `n₀` can be met. Stating the leaf with the two indices
-separated is what keeps it a THEOREM of the classical theory instead of
-a coincidence of `R = ℤ_p`.
+holds only for `R = ℤ_p`. What is true, and what the residual leaf
+asserts, is that `n` may be taken to be the EXACT EXPONENT of
+`R ⧸ 𝔪 ^ k` — spelled as `CharP (R ⧸ 𝔪 ^ k) (pⁿ)`, i.e. the level ring
+is a FAITHFUL `ℤ ⧸ pⁿ`-module, not merely one killed by `pⁿ`. That is
+the hypothesis the classical computation consumes: writing the lattice
+as `T ⊗_{ℤ_p} R` with `T` the `ℤ_p`-Tate module, `T ⧸ pⁿ T` is free of
+rank `2` over `ℤ ⧸ pⁿ`, so `T ⊗ R ⧸ 𝔪 ^ k` has the SAME kernel as
+`T ⧸ pⁿ T` — an entry of `σ − 1` annihilates a faithful module only if
+it is zero — and its field is `ℚ_p(E[pⁿ]) = ℚ_p(μ_{pⁿ}, q^{1/pⁿ})` on
+the nose. The `= 0` spelling retained in THIS statement is the weaker
+consequence `CharP.cast_eq_zero`, which is all the consumer needs; it
+would be the wrong hypothesis to hand the geometry, since every `n`
+beyond the exact exponent also kills. Stating the leaf with the two
+indices separated is what keeps it a THEOREM of the classical theory
+instead of a coincidence of `R = ℤ_p`.
 
 SOUNDNESS: inherited from the consumer's audit (`p = 11`, `M = 11`, the
 weight-2 newform of level `11`, `E = X₀(11)`), whose Tate parameter has
 `v_p(q) = 1 ≠ 0`.
 
-WHAT IS STILL CITED, AND WHAT IS NO LONGER. This leaf carries the
-automorphic-to-Galois bridge — the étale cohomology of modular curves
-at `p` (Deligne–Rapoport models, Tilouine's toric-reduction
+WHAT IS STILL CITED, AND WHAT IS NO LONGER. The residual leaf carries
+the automorphic-to-Galois bridge — the étale cohomology of modular
+curves at `p` (Deligne–Rapoport models, Tilouine's toric-reduction
 computation, Saito's local–global compatibility) — which the fourth and
 fifth owners' terminality audits identify as the genuinely missing
 geometry, absent from this pin and from `~/cs/FLT`. It NO LONGER
-carries Serre's local criterion (now the separate local leaf above) nor
-the tower arithmetic (now proven).
+carries Serre's local criterion (the separate local leaf above), the
+peu-ramifiée tower arithmetic (proven above), nor the `𝔪`-adic exponent
+bookkeeping (proven above by the EXPONENT CUT).
 
 INHERITED COEFFICIENT-RING FACTS. `hpne`, `hpmem`, `hkfin` and `hlat`
 are passed down unchanged from the consumer, where the sixth owner's
 COEFFICIENT-RING NARROWING turned each into a proof term
 (`natCast_prime_mem_maximalIdeal_of_moduleFinite`,
 `finite_quotient_maximalIdeal_pow_of_natCast_ne_zero`,
-`injective_algebraMap_algebraicClosure_of_moduleFinite`). They belong
-HERE rather than at the consumer, because they are exactly what the
-cited automorphic theory assumes about its coefficient ring: `hpmem`
-and `hpne` are what make the exponent of `R ⧸ 𝔪 ^ k` finite and
-unbounded in `k` — the "and that exponent tends to infinity with `k`"
-step above — `hkfin` is what keeps every level finite (so that
-`HasFlatProlongationAt`'s finiteness is not satisfied for a merely
-cardinal reason), and `hlat` is what makes "`ρ` is an `R`-lattice model
-of `τ`" a statement about a genuine lattice. -/
+`injective_algebraMap_algebraicClosure_of_moduleFinite`). `hpmem` and
+`hpne` are what make the exponent of `R ⧸ 𝔪 ^ k` finite and unbounded
+in `k` — the step the EXPONENT CUT now proves — `hkfin` is what keeps
+every level finite (so that `HasFlatProlongationAt`'s finiteness is not
+satisfied for a merely cardinal reason), and `hlat` is what makes
+"`ρ` is an `R`-lattice model of `τ`" a statement about a genuine
+lattice; the last two are forwarded to the residual leaf, where the
+cited automorphic theory consumes them. -/
 theorem exists_tateParameter_of_weightTwoEigenform_pNew
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -31298,8 +31571,20 @@ theorem exists_tateParameter_of_weightTwoEigenform_pNew
           r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ∧
           ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
             (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).toLocal 𝔭ᵥ σ = 1 →
-              σ r = r :=
-  sorry
+              σ r = r := by
+  -- the per-level automorphic statement: a Tate parameter, with a radical
+  -- inside the field cut out at every level whose EXACT characteristic is
+  -- a power of `p`
+  obtain ⟨q, hq, hlev⟩ :=
+    exists_tateParameter_atLevel_of_weightTwoEigenform_pNew hpodd hM hpM hg hpnew κ hτ
+      hirr e he hdet hpne hpmem hkfin hlat
+  refine ⟨q, hq, fun n₀ => ?_⟩
+  -- the tower bookkeeping: a level whose exact characteristic is `p ^ n`
+  -- with `n` beyond the threshold (Krull, from `hpne` and `p ∈ 𝔪`)
+  obtain ⟨k, n, hn, hchar⟩ :=
+    exists_charP_quotient_maximalIdeal_pow_of_natCast_ne_zero hpne n₀
+  haveI := hchar
+  exact ⟨k, n, hn, CharP.cast_eq_zero _ _, hlev k n hchar⟩
 
 include hpodd in
 /-- **Serre's flat-level criterion for a `p`-new eigensystem: SOME FINITE
@@ -31524,14 +31809,21 @@ KUMMER CUT (2026-07-26, seventh owner — what this node now IS). The
 node is PROVEN, over the SPLIT AUDIT's own named infrastructure target
 rather than around it. Three pieces, in the order the proof uses them:
 
-1. `exists_tateParameter_of_weightTwoEigenform_pNew` (sorry leaf, the
+1. `exists_tateParameter_of_weightTwoEigenform_pNew` (PROVEN
+   2026-07-26 by the EXPONENT CUT, over the residual sorry leaf
+   `exists_tateParameter_atLevel_of_weightTwoEigenform_pNew`, the
    AUTOMORPHIC half): the `p`-new eigensystem has a Tate parameter `q`
    of nonzero valuation, together with, at every exponent threshold, a
    level `k` of the `𝔪`-adic tower whose coefficient ring is killed by
-   `pⁿ` and whose cut-out field contains `q^{1/pⁿ}`. This carries the
-   automorphic-to-Galois bridge — Tilouine's toric reduction, Saito's
-   local–global compatibility — which the fourth and fifth owners'
-   audits identify as the genuinely missing geometry.
+   `pⁿ` and whose cut-out field contains `q^{1/pⁿ}`. The residual leaf
+   is the SAME assertion at ONE level, with the exact-characteristic
+   hypothesis `CharP (R ⧸ 𝔪 ^ k) (pⁿ)`; the tower bookkeeping between
+   the two is the proven
+   `exists_charP_quotient_maximalIdeal_pow_of_natCast_ne_zero`. The
+   residual leaf carries the automorphic-to-Galois bridge — Tilouine's
+   toric reduction, Saito's local–global compatibility — which the
+   fourth and fifth owners' audits identify as the genuinely missing
+   geometry.
 2. `exists_forall_not_isPeuRamifiee_of_valuation_ne_one` (PROVEN): a
    parameter of nonzero valuation is TRÈS RAMIFIÉE at every
    sufficiently large exponent `pⁿ`. This is the TOWER AUDIT's prose
