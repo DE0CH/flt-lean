@@ -318,6 +318,11 @@ Khare–Wintenberger pillar α
 module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
+-- The Hilbert-modular (`R_F = T_F`) development over a totally real field,
+-- which discharges the potential-modularity node of pillar α. It is KW-free
+-- and imports only `Defs.lean` and mathlib, so this import does not touch
+-- the circularity guard recorded in the module docstring above.
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.HilbertModularity
 -- `IsAdic` / `IsAdicComplete`: they appear in the exposed field types of
 -- the deformation-category structure `HardlyRamifiedDeformation`.
 public import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
@@ -14922,8 +14927,12 @@ lemma isIntegral_quotient_of_le {R A : Type*} [CommRing R] [CommRing A]
   rwa [show f (Ideal.Quotient.mk q x) = Ideal.Quotient.mk p x from
     Ideal.Quotient.factor_mk hle x] at h2
 
-/-- **Potential-modularity leaf, MINIMAL-PRIME form** (sorry node — the single
-genuinely deep arithmetic node of the lifting core; isolated on 2026-07-26 as
+/-- **Potential-modularity leaf, MINIMAL-PRIME form** (PROVEN 2026-07-26 over
+the Hilbert-modular development of
+`HardlyRamified/HilbertModularity.lean` — see "HOW IT IS NOW PROVEN" at the
+end of this docstring; formerly the single genuinely deep arithmetic node of
+the lifting core, and its arithmetic content now lives in the five leaves of
+that module. Isolated on 2026-07-26 as
 the residue of the trace form after the Khare–Wintenberger DESCENT was proven,
 and RECUT the same day from the uniform `∃ H, ∀ p ∋ ℓ` shape into the present
 per-prime `∀ q, ∃ H` one): in the weakly universal, trace-generated hardly
@@ -15122,6 +15131,54 @@ owner does not spend a cycle rediscovering them.
   i.e. items 2–4 (`R_F`, `Module.Finite ℤ_[ℓ] T_F`, and `R_F = T_F`), which
   genuinely do not exist anywhere in the repository.
 
+HOW IT IS NOW PROVEN (2026-07-26) — route (ii), built out in
+`HardlyRamified/HilbertModularity.lean`, which is KW-free (it imports only
+`Defs.lean` and mathlib) and is therefore importable here without touching
+the circularity guard. That module's PROVEN assembly
+`exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified` says: for
+a hardly ramified deformation `ρ` of an irreducible hardly ramified `ρbar`
+at `ℓ ≥ 5`, the traces of `ρ` are integral over `ℤ_ℓ` on a finite-index
+subgroup of `G_ℚ` — namely `G_F` for the totally real `F` of potential
+modularity, `R_F` being module-finite over `ℤ_ℓ` because `R_F = T_F`. It is
+proven there over exactly five leaves, one per item of the
+missing-machinery list above:
+
+* `finiteIndex_galoisSubgroup` (item 1);
+* `isHilbertHardlyRamified_map_of_isHardlyRamified` (the local half of
+  item 1, consumed by item 2);
+* `exists_isWeaklyUniversal_hilbertDeformationDatum` — `R_F` (item 2);
+* `nonempty_potentialHeckeDatum_of_five_le` — Taylor's Theorem B together
+  with `Module.Finite ℤ_[ℓ] T_F` (items 5 and 3);
+* `exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal` — **`R_F = T_F`**
+  (item 4).
+
+Two things are supplied HERE, because they need declarations of this
+module which live downstream of `HilbertModularity.lean`:
+
+* the residual charpoly identity `∀ g, (D.ρ g).charpoly.map D.π =
+  (ρbar g).charpoly`, which the `F`-level deformation category needs at
+  EVERY group element and which `HardlyRamifiedDeformation` records only at
+  Frobenius elements at good primes. It is obtained from the PROVEN
+  `charpoly_pushforwardFrame` (the reduction `pushforwardFrame D.π … D.ρ`
+  has `charFrob` the reduction of `D.ρ`'s) and the PROVEN
+  Chebotarev–Brauer–Nesbitt conjugacy `exists_conj_of_charFrob_eq`;
+* the descent of integrality into `D.R ⧸ q`, which is
+  `IsIntegral.map_of_comp_eq` along `Ideal.Quotient.mk q`.
+
+Neither weak universality nor trace generation is used, and that is not an
+oversight: potential modularity applies to ANY hardly ramified deformation,
+universal or not. The two binders are therefore underscore-prefixed
+(`_hw`, `_ht`) so that the emptiness is mechanically visible; they are kept
+in the signature because the consumer supplies them positionally and
+because narrowing a proven statement's hypotheses is a separate, riskier
+edit than this one.
+
+Nothing above this paragraph was weakened: the statement is byte-identical
+to the one the three audits examined, and the strengthening they forbade —
+restating the leaf without the quotient — was NOT performed. The stronger
+form appears only inside `HilbertModularity.lean`, where it is what the
+literature genuinely produces.
+
 References: Khare–Wintenberger, *Serre's modularity conjecture (I)*,
 Thm. 4.1 and §4, and *(II)*; Taylor, *Remarks on a conjecture of Fontaine
 and Mazur* and *On the meromorphic continuation of degree two L-functions*;
@@ -15133,15 +15190,48 @@ theorem exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isW
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
     (hirr : ρbar.IsIrreducible)
     (D : HardlyRamifiedDeformation hℓOdd ρbar)
-    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    (_hw : D.IsWeaklyUniversal) (_ht : D.IsTraceGenerated) :
     letI := D.commRing; letI := D.topologicalSpace
     letI := D.isTopologicalRing; letI := D.algebra
     ∀ q : Ideal D.R, q ∈ (Ideal.span {((ℓ : ℕ) : D.R)}).minimalPrimes →
       Infinite (D.R ⧸ q) →
       ∃ H : Subgroup (Field.absoluteGaloisGroup ℚ), H.FiniteIndex ∧
         ∀ g ∈ H, IsIntegral ℤ_[ℓ]
-          (Ideal.Quotient.mk q ((D.ρ g).charpoly.coeff 1)) :=
-  sorry
+          (Ideal.Quotient.mk q ((D.ρ g).charpoly.coeff 1)) := by
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  letI := D.isNoetherianRing
+  intro q _hq _hinf
+  -- the residual reduction of `D.ρ`, as a framed representation over `k`
+  let τ : FramedGaloisRep ℚ k (Fin 2) :=
+    pushforwardFrame D.π D.continuous_pi D.ρ
+  have hτcp : ∀ g : Field.absoluteGaloisGroup ℚ,
+      (τ g).charpoly = ((D.ρ g).charpoly).map D.π := fun g =>
+    charpoly_pushforwardFrame D.π D.continuous_pi D.ρ g
+  -- its Frobenius charpolys are those of `ρbar`, by `charFrob_compat`
+  have hcf : ∀ q' (hq' : q'.Prime), q' ≠ 2 → q' ≠ ℓ →
+      τ.charFrob hq'.toHeightOneSpectrumRingOfIntegersRat =
+        ρbar.charFrob hq'.toHeightOneSpectrumRingOfIntegersRat := by
+    intro q' hq' h2 hl
+    rw [← D.charFrob_compat q' hq' h2 hl]
+    simp only [GaloisRep.charFrob, GaloisRep.toLocal_apply]
+    exact hτcp _
+  -- Chebotarev + Brauer–Nesbitt: `τ` is conjugate to `ρbar`
+  obtain ⟨e, he⟩ := exists_conj_of_charFrob_eq hdim (rank_finTwoFun k) hirr τ hcf
+  have hresid : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ((D.ρ g).charpoly).map D.π = (ρbar g).charpoly := by
+    intro g
+    have hconj : ((τ.conj e) g).charpoly = (τ g).charpoly := by
+      rw [GaloisRep.conj_apply, LinearEquiv.charpoly_conj]
+    rw [← hτcp g, ← hconj, he]
+  -- the Hilbert-modular input, over the totally real field of potential
+  -- modularity
+  obtain ⟨H, hHfi, hHint⟩ :=
+    exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified ℓ hℓ5 h hirr
+      D.isAdic D.isAdicComplete D.ρ D.isHardlyRamified D.π D.π_surjective hresid
+  refine ⟨H, hHfi, fun g hg => ?_⟩
+  exact IsIntegral.map_of_comp_eq (RingHom.id ℤ_[ℓ]) (Ideal.Quotient.mk q)
+    (by rw [RingHom.comp_id]; rfl) (hHint g hg)
 
 /-- **Potential-modularity leaf, UNIFORM form** (PROVEN 2026-07-26 over the
 minimal-prime form

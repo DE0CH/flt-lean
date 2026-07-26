@@ -3899,7 +3899,7 @@ theorem exists_sextic_point (E : WeierstrassCurve ℚ) [E.IsElliptic]
 end MazurSixteen
 
 /-- **No rational point of order `8` that is twice a rational point**
-(sorry node — the `X_1(16)` content in its descent form): if
+(PROVEN — the `X_1(16)` content in its descent form): if
 `P ∈ E(ℚ)` has order `8` then `P ∉ 2 · E(ℚ)`. This is exactly the
 statement that the degree-`2` covering `X_1(16) → X_1(8)` — halving the
 level-`8` point — has no non-cuspidal rational point in its image;
@@ -11515,7 +11515,7 @@ open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 /-- **The local connected-étale torsion quotient at a good ORDINARY
-prime** (sorry node — the surviving local content of the ordinary
+prime** (PROVEN — the surviving local content of the ordinary
 case, cut 2026-07-23 at the same seam as the PROVEN multiplicative
 quotients `exists_localTorsionQuotient_of_split` /
 `_of_nonsplit`): for an elliptic curve over `ℚ` with good ordinary
@@ -13812,9 +13812,13 @@ end TwoTorsion
   `WeierstrassCurve.exists_velu_quotient_isogeny`, where Vélu's map is
   written in group-law form; the Galois descent of the quotient
   curve's coefficients, the equivariance and the kernel are PROVEN
-  there, and the three remaining leaves are
-  `WeierstrassCurve.velu_isElliptic`, `WeierstrassCurve.velu_equation`
-  and `WeierstrassCurve.velu_map_add` (Vélu 1971; Silverman AEC
+  there. **`velu_isElliptic`, `velu_equation` and `velu_map_add` are
+  PROVEN** (as of 2026-07-26) and are NOT leaves — they are transitively
+  sorried consumers, so do not dispatch at them. The actual leaves, all
+  in `Velu.lean`, are `WeierstrassCurve.isElliptic_of_three_twoTorsion`,
+  `WeierstrassCurve.velu_exists_three_twoTorsion`,
+  `WeierstrassCurve.velu_pole_identity` and
+  `WeierstrassCurve.velu_map_add_of_notMem` (Vélu 1971; Silverman AEC
   III.4.12).
 * `FreyPackage.freyCurve_two_torsion_embedding` (PROVEN 2026-07-16,
   moved above this section) — the Frey curve's full rational
@@ -13829,7 +13833,7 @@ kernel has odd exponent `p`), and descends both to `ℚ`-points by
 `exists_point_eq_baseChange_of_fixed`.
 -/
 
-/-- **Normal form for a rational `2`-torsion point** (sorry node, cut
+/-- **Normal form for a rational `2`-torsion point** (PROVEN, cut
 2026-07-25 out of `exists_quotient_isogeny_of_rational_two_torsion`):
 an elliptic curve over `ℚ` carrying a nonzero rational `2`-torsion
 point `T` is `ℚ`-isomorphic to a curve in the normal form
@@ -14640,7 +14644,7 @@ theorem WeierstrassCurve.exists_quotient_isogeny_of_normalForm_two_torsion
     exact WeierstrassCurve.twoIsogenyFun_eq_zero_iff a b h00 Pt
 
 /-- **The rational two-torsion quotient isogeny — the classical
-`2`-isogeny** (sorry node, cut out of
+`2`-isogeny** (PROVEN, cut out of
 `exists_quotient_isogeny_of_prime_card` 2026-07-23): for a RATIONAL
 `2`-torsion point `T ≠ 0` of an elliptic curve `E/ℚ` there are an
 elliptic curve `E'/ℚ` (the quotient `E/⟨T⟩`) and a Galois-equivariant
@@ -14697,7 +14701,8 @@ theorem WeierstrassCurve.exists_quotient_isogeny_of_rational_two_torsion
 in `Fermat/FLT/EllipticCurve/Velu.lean`, which performs Vélu's
 construction for an ARBITRARY finite Galois-stable subgroup of ODD order
 — primality is never used — and where the remaining sorry leaves now
-live: `velu_isElliptic`, `velu_equation`, `velu_map_add`): for a
+live: `isElliptic_of_three_twoTorsion`, `velu_exists_three_twoTorsion`,
+`velu_pole_identity`, `velu_map_add_of_notMem`): for a
 Galois-stable cyclic subgroup `C` of ODD prime order `ℓ` in the
 geometric points of an elliptic curve `E/ℚ` there are an elliptic
 curve `E'/ℚ` (the quotient `E/C`) and a Galois-equivariant group
@@ -14729,11 +14734,19 @@ makes Galois equivariance and the kernel immediate rather than a
 rational-function computation. Both are proven there, as is the descent of
 `t` and `w` to `ℚ` by `InfiniteGalois.mem_range_algebraMap_iff_fixed`.
 
-What survives as open is exactly the geometry, as the three leaves
-`velu_isElliptic` (the quotient curve is nonsingular), `velu_equation`
-(the image satisfies the quotient equation) and `velu_map_add`
-(additivity); see their docstrings for routes. Vélu 1971 p. 238; Kohel's
-thesis §2.4; Washington, *Elliptic Curves*, ch. 12. -/
+What survives as open is exactly the geometry. **`velu_isElliptic`,
+`velu_equation` and `velu_map_add` themselves are PROVEN** (2026-07-26)
+and are transitively sorried CONSUMERS, not leaves — harvesting leaf
+names from this paragraph as it read before that date produced phantom
+dispatches. As of 2026-07-26 the direct leaves are
+`isElliptic_of_three_twoTorsion` (three affine `2`-torsion points with
+distinct `x` force `Δ ≠ 0`), `velu_exists_three_twoTorsion` (the quotient
+curve has three such points over `F̄`), `velu_pole_identity` (the `y`-free
+rational-function identity in `x` alone that remains of Vélu's
+verification once `velu_equation_pole` has completed the square) and
+`velu_map_add_of_notMem` (additivity when `P`, `Q`, `P + Q` all lie
+outside the kernel); see their docstrings for routes. Vélu 1971 p. 238;
+Kohel's thesis §2.4; Washington, *Elliptic Curves*, ch. 12. -/
 theorem WeierstrassCurve.exists_quotient_isogeny_of_odd_prime_card
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
