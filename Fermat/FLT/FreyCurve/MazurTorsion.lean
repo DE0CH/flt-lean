@@ -2781,50 +2781,268 @@ lemma selfDual_ne (s : ℚ) :
 
 end X0Nine
 
-/-- **`X_0(3)`: the Tate invariants of a rational `3`-isogeny** (sorry leaf,
-cut 2026-07-26 out of `exists_x0Three_chainParameters`). For an elliptic curve
-`E/ℚ` and a `Gal(ℚ̄/ℚ)`-stable subgroup `⟨P⟩` of order `3` in `E(ℚ̄)`, there
-are `a₁, a₃ ∈ ℚ` and a quotient isogeny `φ : E(ℚ̄) → E'(ℚ̄)` over `ℚ` with
-kernel exactly `⟨P⟩` such that
+/-! ### The `X_0(3)` invariants attached to a `3`-torsion `x`-coordinate
+
+Let `x` be the `x`-coordinate of a point `P` of order `3` on `E/ℚ` and set
+
+* `M = b₂ + 12x`,
+* `N = 6x² + b₂x + b₄`   (Vélu's `t` at the kernel `{0, P, −P}`),
+* `D = 4x³ + b₂x² + 2b₄x + b₆`   (`= (2y + a₁x + a₃)²`; Vélu's `w` is `D + xN`).
+
+Two identities hold with NO hypothesis at all, and they are why the whole
+`X_0(3)` computation stays polynomial:
+
+  `c₄ = M² − 24N`,   `c₆ = −M³ + 36MN − 216D`,
+
+and for the Vélu quotient (`t = N`, `w = D + xN`) likewise
+
+  `c₄' = M² + 216N`,   `c₆' = −M³ + 540MN + 5832D`.
+
+The order-`3` condition on `P` is exactly
+
+  `N² = M·D`,
+
+which is `−4·ψ₃(x) = 0` (indeed `N² − M·D = −4·ψ₃(x)` identically). Modulo it,
+`c₄D² = N(N³ − 24D²)`, `Δ = N³ − 27D²`, `c₄'D² = N(N³ + 216D²)` and
+`Δ'D⁴ = Δ³`.
+
+In the Tate coordinates `y² + a₁xy + a₃y = x³` of the section note above one has
+`a₁ = N/δ`, `a₃ = δ` with `δ² = D`, so `a₁³/a₃ = N³/D²` — and rather than take a
+square root, `exists_tateInvariants_of_stableThreeSubgroup` below simply
+instantiates the scaling freedom `(a₁, a₃) ↦ (ua₁, u³a₃)` at `u = δ`, i.e.
+returns the DENOMINATOR-FREE pair
+
+  `a₁ = N`,  `a₃ = D²`,
+
+for which `a₃ ≠ 0` and `a₁³ − 27a₃ = Δ ≠ 0` hold unconditionally, and the two
+`j`-identities are the cubes of the two `c₄`-identities above.
+-/
+
+namespace X0Three
+
+/-- `M(x) = b₂ + 12x`. -/
+def tateM (E : WeierstrassCurve ℚ) (x : ℚ) : ℚ := E.b₂ + 12 * x
+
+/-- `N(x) = 6x² + b₂x + b₄`. -/
+def tateN (E : WeierstrassCurve ℚ) (x : ℚ) : ℚ := 6 * x ^ 2 + E.b₂ * x + E.b₄
+
+/-- `D(x) = 4x³ + b₂x² + 2b₄x + b₆`. -/
+def tateD (E : WeierstrassCurve ℚ) (x : ℚ) : ℚ :=
+  4 * x ^ 3 + E.b₂ * x ^ 2 + 2 * E.b₄ * x + E.b₆
+
+lemma veluModel_a₁ (E : WeierstrassCurve ℚ) (t w : ℚ) : (E.veluModel t w).a₁ = E.a₁ := rfl
+lemma veluModel_a₂ (E : WeierstrassCurve ℚ) (t w : ℚ) : (E.veluModel t w).a₂ = E.a₂ := rfl
+lemma veluModel_a₃ (E : WeierstrassCurve ℚ) (t w : ℚ) : (E.veluModel t w).a₃ = E.a₃ := rfl
+lemma veluModel_a₄ (E : WeierstrassCurve ℚ) (t w : ℚ) :
+    (E.veluModel t w).a₄ = E.a₄ - 5 * t := rfl
+lemma veluModel_a₆ (E : WeierstrassCurve ℚ) (t w : ℚ) :
+    (E.veluModel t w).a₆ = E.a₆ - E.b₂ * t - 7 * w := rfl
+
+lemma bc_b₂ (E : WeierstrassCurve ℚ) :
+    (E⁄(AlgebraicClosure ℚ)).b₂ = algebraMap ℚ (AlgebraicClosure ℚ) E.b₂ :=
+  WeierstrassCurve.map_b₂ (W := E) (f := algebraMap ℚ (AlgebraicClosure ℚ))
+
+lemma bc_b₄ (E : WeierstrassCurve ℚ) :
+    (E⁄(AlgebraicClosure ℚ)).b₄ = algebraMap ℚ (AlgebraicClosure ℚ) E.b₄ :=
+  WeierstrassCurve.map_b₄ (W := E) (f := algebraMap ℚ (AlgebraicClosure ℚ))
+
+lemma bc_b₆ (E : WeierstrassCurve ℚ) :
+    (E⁄(AlgebraicClosure ℚ)).b₆ = algebraMap ℚ (AlgebraicClosure ℚ) E.b₆ :=
+  WeierstrassCurve.map_b₆ (W := E) (f := algebraMap ℚ (AlgebraicClosure ℚ))
+
+lemma tateM_map (E : WeierstrassCurve ℚ) (x : ℚ) :
+    algebraMap ℚ (AlgebraicClosure ℚ) (tateM E x)
+      = (E⁄(AlgebraicClosure ℚ)).b₂ + 12 * algebraMap ℚ (AlgebraicClosure ℚ) x := by
+  simp only [tateM, map_add, map_mul, map_ofNat, bc_b₂]
+
+lemma tateN_map (E : WeierstrassCurve ℚ) (x : ℚ) :
+    algebraMap ℚ (AlgebraicClosure ℚ) (tateN E x)
+      = 6 * algebraMap ℚ (AlgebraicClosure ℚ) x ^ 2
+        + (E⁄(AlgebraicClosure ℚ)).b₂ * algebraMap ℚ (AlgebraicClosure ℚ) x
+        + (E⁄(AlgebraicClosure ℚ)).b₄ := by
+  simp only [tateN, map_add, map_mul, map_pow, map_ofNat, bc_b₂, bc_b₄]
+
+lemma tateD_map (E : WeierstrassCurve ℚ) (x : ℚ) :
+    algebraMap ℚ (AlgebraicClosure ℚ) (tateD E x)
+      = 4 * algebraMap ℚ (AlgebraicClosure ℚ) x ^ 3
+        + (E⁄(AlgebraicClosure ℚ)).b₂ * algebraMap ℚ (AlgebraicClosure ℚ) x ^ 2
+        + 2 * (E⁄(AlgebraicClosure ℚ)).b₄ * algebraMap ℚ (AlgebraicClosure ℚ) x
+        + (E⁄(AlgebraicClosure ℚ)).b₆ := by
+  simp only [tateD, map_add, map_mul, map_pow, map_ofNat, bc_b₂, bc_b₄, bc_b₆]
+
+lemma c₄_eq (E : WeierstrassCurve ℚ) (x : ℚ) : E.c₄ = tateM E x ^ 2 - 24 * tateN E x := by
+  simp only [tateM, tateN, WeierstrassCurve.c₄]; ring
+
+lemma c₆_eq (E : WeierstrassCurve ℚ) (x : ℚ) :
+    E.c₆ = -tateM E x ^ 3 + 36 * tateM E x * tateN E x - 216 * tateD E x := by
+  simp only [tateM, tateN, tateD, WeierstrassCurve.c₆]; ring
+
+lemma quot_c₄_eq (E : WeierstrassCurve ℚ) (x t w : ℚ) (ht : t = tateN E x)
+    (hw : w = tateD E x + x * tateN E x) :
+    (E.veluModel t w).c₄ = tateM E x ^ 2 + 216 * tateN E x := by
+  subst ht; subst hw
+  simp only [WeierstrassCurve.c₄, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    veluModel_a₁, veluModel_a₂, veluModel_a₃, veluModel_a₄, tateM, tateN]
+  ring
+
+lemma quot_c₆_eq (E : WeierstrassCurve ℚ) (x t w : ℚ) (ht : t = tateN E x)
+    (hw : w = tateD E x + x * tateN E x) :
+    (E.veluModel t w).c₆ =
+      -tateM E x ^ 3 + 540 * tateM E x * tateN E x + 5832 * tateD E x := by
+  subst ht; subst hw
+  simp only [WeierstrassCurve.c₆, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, veluModel_a₁, veluModel_a₂, veluModel_a₃, veluModel_a₄,
+    veluModel_a₆, tateM, tateN, tateD]
+  ring
+
+variable {E : WeierstrassCurve ℚ} {x t w : ℚ}
+
+lemma c₄_mul (hψ : tateN E x ^ 2 = tateM E x * tateD E x) :
+    E.c₄ * tateD E x ^ 2 = tateN E x * (tateN E x ^ 3 - 24 * tateD E x ^ 2) := by
+  rw [c₄_eq E x]
+  linear_combination (-(tateN E x ^ 2 + tateM E x * tateD E x)) * hψ
+
+lemma c₆_mul (hψ : tateN E x ^ 2 = tateM E x * tateD E x) :
+    E.c₆ * tateD E x ^ 3 =
+      -(tateN E x ^ 6 - 36 * tateN E x ^ 3 * tateD E x ^ 2 + 216 * tateD E x ^ 4) := by
+  rw [c₆_eq E x]
+  linear_combination (tateN E x ^ 4 + tateN E x ^ 2 * (tateM E x * tateD E x)
+    + tateM E x ^ 2 * tateD E x ^ 2 - 36 * tateN E x * tateD E x ^ 2) * hψ
+
+lemma quot_c₄_mul (ht : t = tateN E x) (hw : w = tateD E x + x * tateN E x)
+    (hψ : tateN E x ^ 2 = tateM E x * tateD E x) :
+    (E.veluModel t w).c₄ * tateD E x ^ 2 =
+      tateN E x * (tateN E x ^ 3 + 216 * tateD E x ^ 2) := by
+  rw [quot_c₄_eq E x t w ht hw]
+  linear_combination (-(tateN E x ^ 2 + tateM E x * tateD E x)) * hψ
+
+lemma quot_c₆_mul (ht : t = tateN E x) (hw : w = tateD E x + x * tateN E x)
+    (hψ : tateN E x ^ 2 = tateM E x * tateD E x) :
+    (E.veluModel t w).c₆ * tateD E x ^ 3 =
+      -(tateN E x ^ 6 - 540 * tateN E x ^ 3 * tateD E x ^ 2
+        - 5832 * tateD E x ^ 4) := by
+  rw [quot_c₆_eq E x t w ht hw]
+  linear_combination (tateN E x ^ 4 + tateN E x ^ 2 * (tateM E x * tateD E x)
+    + tateM E x ^ 2 * tateD E x ^ 2 - 540 * tateN E x * tateD E x ^ 2) * hψ
+
+lemma Δ_eq (hψ : tateN E x ^ 2 = tateM E x * tateD E x) (hD : tateD E x ≠ 0) :
+    E.Δ = tateN E x ^ 3 - 27 * tateD E x ^ 2 := by
+  have h4 := c₄_mul hψ
+  have h6 := c₆_mul hψ
+  have hc := E.c_relation
+  have key : E.Δ * tateD E x ^ 6 = (tateN E x ^ 3 - 27 * tateD E x ^ 2) * tateD E x ^ 6 := by
+    linear_combination (tateD E x ^ 6 / 1728) * hc
+      + (((E.c₄ * tateD E x ^ 2) ^ 2
+          + (E.c₄ * tateD E x ^ 2) * (tateN E x * (tateN E x ^ 3 - 24 * tateD E x ^ 2))
+          + (tateN E x * (tateN E x ^ 3 - 24 * tateD E x ^ 2)) ^ 2) / 1728) * h4
+      - ((E.c₆ * tateD E x ^ 3
+          - (tateN E x ^ 6 - 36 * tateN E x ^ 3 * tateD E x ^ 2
+             + 216 * tateD E x ^ 4)) / 1728) * h6
+  exact mul_right_cancel₀ (pow_ne_zero 6 hD) key
+
+lemma quot_Δ_mul (ht : t = tateN E x) (hw : w = tateD E x + x * tateN E x)
+    (hψ : tateN E x ^ 2 = tateM E x * tateD E x) (hD : tateD E x ≠ 0) :
+    (E.veluModel t w).Δ * tateD E x ^ 4 = (tateN E x ^ 3 - 27 * tateD E x ^ 2) ^ 3 := by
+  have h4 := quot_c₄_mul ht hw hψ
+  have h6 := quot_c₆_mul ht hw hψ
+  have hc := (E.veluModel t w).c_relation
+  have key : ((E.veluModel t w).Δ * tateD E x ^ 4) * tateD E x ^ 2 =
+      (tateN E x ^ 3 - 27 * tateD E x ^ 2) ^ 3 * tateD E x ^ 2 := by
+    linear_combination (tateD E x ^ 6 / 1728) * hc
+      + ((((E.veluModel t w).c₄ * tateD E x ^ 2) ^ 2
+          + ((E.veluModel t w).c₄ * tateD E x ^ 2)
+              * (tateN E x * (tateN E x ^ 3 + 216 * tateD E x ^ 2))
+          + (tateN E x * (tateN E x ^ 3 + 216 * tateD E x ^ 2)) ^ 2) / 1728) * h4
+      - (((E.veluModel t w).c₆ * tateD E x ^ 3
+          - (tateN E x ^ 6 - 540 * tateN E x ^ 3 * tateD E x ^ 2
+             - 5832 * tateD E x ^ 4)) / 1728) * h6
+  exact mul_right_cancel₀ (pow_ne_zero 2 hD) key
+
+/-- **The order-`3` relation in `b`-invariants** (PROVEN): let `(X, Y)` lie on `W`,
+let `ℓ` be the tangent slope there (`ℓ·(2Y+a₁X+a₃) = 3X²+2a₂X+a₄−a₁Y`), and
+suppose doubling returns the same `x`-coordinate, `addX X X ℓ = X`, i.e.
+`ℓ² + a₁ℓ − a₂ − X − X = X`. Then `D = (2Y+a₁X+a₃)²` and `N² = M·D`, where
+`M = b₂+12X`, `N = 6X²+b₂X+b₄`, `D = 4X³+b₂X²+2b₄X+b₆`.
+
+`N² − M·D` is `−4·ψ₃(X)`, so the second identity is exactly the vanishing of the
+`3`-division polynomial at `X`. -/
+lemma tate_relation {K : Type*} [Field K] (W : WeierstrassCurve K) (X Y ℓ : K)
+    (heq : Y ^ 2 + W.a₁ * X * Y + W.a₃ * Y
+      = X ^ 3 + W.a₂ * X ^ 2 + W.a₄ * X + W.a₆)
+    (hn : ℓ * (2 * Y + W.a₁ * X + W.a₃) = 3 * X ^ 2 + 2 * W.a₂ * X + W.a₄ - W.a₁ * Y)
+    (hrel : ℓ ^ 2 + W.a₁ * ℓ - W.a₂ - X - X = X) :
+    (2 * Y + W.a₁ * X + W.a₃) ^ 2 = 4 * X ^ 3 + W.b₂ * X ^ 2 + 2 * W.b₄ * X + W.b₆ ∧
+    (6 * X ^ 2 + W.b₂ * X + W.b₄) ^ 2 =
+      (W.b₂ + 12 * X) * (4 * X ^ 3 + W.b₂ * X ^ 2 + 2 * W.b₄ * X + W.b₆) := by
+  have hD : (2 * Y + W.a₁ * X + W.a₃) ^ 2
+      = 4 * X ^ 3 + W.b₂ * X ^ 2 + 2 * W.b₄ * X + W.b₆ := by
+    simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆]
+    linear_combination 4 * heq
+  refine ⟨hD, ?_⟩
+  have hquad : (3 * X ^ 2 + 2 * W.a₂ * X + W.a₄ - W.a₁ * Y) ^ 2
+      + W.a₁ * (3 * X ^ 2 + 2 * W.a₂ * X + W.a₄ - W.a₁ * Y) * (2 * Y + W.a₁ * X + W.a₃)
+      - (W.a₂ + 3 * X) * (2 * Y + W.a₁ * X + W.a₃) ^ 2 = 0 := by
+    linear_combination (2 * Y + W.a₁ * X + W.a₃) ^ 2 * hrel
+      - ((3 * X ^ 2 + 2 * W.a₂ * X + W.a₄ - W.a₁ * Y) + ℓ * (2 * Y + W.a₁ * X + W.a₃)
+         + W.a₁ * (2 * Y + W.a₁ * X + W.a₃)) * hn
+  simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆] at hD ⊢
+  linear_combination 4 * hquad + (W.a₁ ^ 2 + 4 * W.a₂ + 12 * X) * hD
+
+/-- **Reduction of a `ℤ`-multiple modulo `3`** (PROVEN). -/
+lemma zsmul_reduce {A : Type*} [AddCommGroup A] (Q : A) (h3 : (3 : ℤ) • Q = 0) (k : ℤ) :
+    k • Q = (k % 3) • Q := by
+  have hkk : k = k / 3 * 3 + k % 3 := by omega
+  conv_lhs => rw [hkk]
+  rw [add_zsmul, ← smul_smul, h3, smul_zero, zero_add]
+
+end X0Three
+
+open X0Three in
+/-- **`X_0(3)`: the Tate invariants of a rational `3`-isogeny** (PROVEN
+2026-07-26; cut 2026-07-26 out of `exists_x0Three_chainParameters`). For an
+elliptic curve `E/ℚ` and a `Gal(ℚ̄/ℚ)`-stable subgroup `⟨P⟩` of order `3` in
+`E(ℚ̄)`, there are `a₁, a₃ ∈ ℚ` and a quotient isogeny `φ : E(ℚ̄) → E'(ℚ̄)` over
+`ℚ` with kernel exactly `⟨P⟩` such that
 
 * `a₃ ≠ 0` and `a₁³ − 27a₃ ≠ 0` (i.e. `Δ = a₃³(a₁³ − 27a₃) ≠ 0`);
 * `j(E) · a₃³(a₁³ − 27a₃) = a₁³(a₁³ − 24a₃)³`;
 * `j(E/⟨P⟩) · a₃(a₁³ − 27a₃)³ = a₁³(a₁³ + 216a₃)³`.
 
-This is the `X_0(3)` universal family, stated denominator-free. See the
-section note above for the derivation of both formulas; they are elementary
-algebra ONCE the normal form is available, and the normal form is the content.
+This is the `X_0(3)` universal family, stated denominator-free.
 
-**Route.** Three steps, in this order.
+**Proof, and why the normal form is NOT needed.** The route recorded here
+before (descend `x(P)`, translate it to `0`, `y`-shift and tangent-normalise
+over the quadratic field `ℚ(y(P))` to reach `y² + a₁xy + a₃y = x³`, then argue
+that the quadratic TWIST class descends) is mathematically correct but pays for
+a square root that the statement does not require. What is actually done is:
 
 1. *The `x`-coordinate is rational.* `⟨P⟩ = {0, P, −P}` is stable and
-   `x(−P) = x(P)`, so `x(P)` is fixed by `Gal(ℚ̄/ℚ)`, hence lies in `ℚ`
-   (`WeierstrassCurve.exists_point_eq_baseChange_of_fixed` is the analogous
-   descent already used for the `2`-isogeny leaf; here only the coordinate
-   descends, not the point).
-2. *The normal form.* Translate `x(P)` to `0`; then `x(2P) = x(−P) = 0`
-   forces `b₈ = 0`, and after the `y`-shift and tangent normalisation
-   available over `ℚ(y(P))` the model is `y² + a₁xy + a₃y = x³` with
-   `P = (0, 0)`. `y(P)` generates a quadratic extension in general, so what
-   descends is the QUADRATIC TWIST class: twisting does not move `j`, and
-   `(E/C)^d = E^d/C^d`, so BOTH displayed identities are twist-invariant and
-   may be verified on the untwisted model.
-   `WeierstrassCurve.exists_tateNormalForm` (PROVEN above) is the order-`≥ 4`
-   analogue and is the pattern to copy;
-   `WeierstrassCurve.three_nsmul_origin_eq_zero` (PROVEN above) is the
-   converse direction already available.
-3. *The quotient.* `WeierstrassCurve.exists_velu_quotient_isogeny`
-   (`Fermat/FLT/EllipticCurve/Velu.lean`, and NOT the `MazurTorsion`
-   re-packaging `exists_quotient_isogeny_of_prime_card`, which is declared
-   far BELOW this point and so is unavailable here) already produces `φ`, and
-   its quotient curve is literally `E.veluModel t w`. At the kernel
-   `{0, (0,0), (0,−a₃)}` both Vélu terms are `±`-invariant and equal at the
-   two nonzero points, so `t = b₄ = a₁a₃` and `w = a₃²`, giving
-   `E/C : y² + a₁xy + a₃y = x³ − 5a₁a₃x − (a₁³a₃ + 7a₃²)`,
-   `c₄' = a₁(a₁³ + 216a₃)`, `Δ' = a₃(a₁³ − 27a₃)³` — three `ring` identities.
-   What `exists_velu_quotient_isogeny` does NOT currently expose is the
-   identity of `E'` with `E.veluModel t w`; strengthening its conclusion to
-   name the model is the cheapest way to get this leaf.
+   `x(−P) = x(P)`, so `x(P)` is fixed by `Gal(ℚ̄/ℚ)` and lies in `ℚ` by
+   `InfiniteGalois.mem_range_algebraMap_iff_fixed`. Call it `x`. (Only the
+   coordinate descends, not the point: `y(P)` generates a quadratic extension
+   in general.)
+2. *Order `3` is one polynomial relation.* `2P = −P` says the doubling formula
+   returns `x` again, `addX x x ℓ = x`; clearing the tangent denominator
+   `δ = 2y + a₁x + a₃` — nonzero because `2P ≠ 0` — turns that into
+   `N² = M·D` for `M = b₂+12x`, `N = 6x²+b₂x+b₄`, `D = 4x³+b₂x²+2b₄x+b₆`
+   (`X0Three.tate_relation`). This is exactly `ψ₃(x) = 0`, since
+   `N² − M·D = −4·ψ₃(x)` identically. The same computation gives `δ² = D`.
+3. *The quotient.* `WeierstrassCurve.exists_velu_quotient_isogeny_model`
+   (`Fermat/FLT/EllipticCurve/Velu.lean`; strengthened 2026-07-26 to NAME its
+   quotient — and note the `MazurTorsion` re-packaging
+   `exists_quotient_isogeny_of_prime_card` is declared far BELOW this point and
+   so is unavailable here) produces `φ` together with `E' = E.veluModel t w`
+   and the two Vélu sums. Over the kernel `{0, P, −P}` both Vélu terms are
+   `±`-invariant, so the sums halve to `t = N` and `w = D + xN`.
+4. *The invariants.* `a₁ := N` and `a₃ := D²` — the scaling freedom
+   `(a₁, a₃) ↦ (ua₁, u³a₃)` of the family instantiated at `u = δ`, which is
+   what removes the square root. Then `a₃ = D² ≠ 0` and `a₁³ − 27a₃ = Δ ≠ 0`
+   hold unconditionally, and the two displayed identities are the CUBES of
+   `c₄D² = N(N³ − 24D²)` and `c₄'D² = N(N³ + 216D²)` once
+   `Δ = N³ − 27D²` and `Δ'D⁴ = Δ³` are known. All four come from `N² = M·D`
+   by `linear_combination` off `c₄ = M² − 24N`, `c₆ = −M³ + 36MN − 216D`,
+   `c₄' = M² + 216N`, `c₆' = −M³ + 540MN + 5832D`, which are `ring` identities
+   with no hypothesis at all. See the section note above.
 
 **Faithfulness.** The statement is an existential over `(a₁, a₃, E', φ)`
 JOINTLY, so it does not assert anything about an arbitrary group homomorphism
@@ -2852,8 +3070,192 @@ theorem WeierstrassCurve.exists_tateInvariants_of_stableThreeSubgroup
         φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples P) ∧
       a₃ ≠ 0 ∧ a₁ ^ 3 - 27 * a₃ ≠ 0 ∧
       E.j * (a₃ ^ 3 * (a₁ ^ 3 - 27 * a₃)) = a₁ ^ 3 * (a₁ ^ 3 - 24 * a₃) ^ 3 ∧
-      E'.j * (a₃ * (a₁ ^ 3 - 27 * a₃) ^ 3) = a₁ ^ 3 * (a₁ ^ 3 + 216 * a₃) ^ 3 :=
-  sorry
+      E'.j * (a₃ * (a₁ ^ 3 - 27 * a₃) ^ 3) = a₁ ^ 3 * (a₁ ^ 3 + 216 * a₃) ^ 3 := by
+  classical
+  haveI hEK : ((E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ))).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  -- the geometric input, packaged: the `x`-coordinate of `P` is rational, its
+  -- `2`-division value is nonzero, `3P = 0` is `N² = MD`, and Vélu's sums over
+  -- the kernel `{0, P, −P}` are `N` and `D + xN`.
+  obtain ⟨x₀, hD0, hψ, hSum⟩ :
+      ∃ x₀ : ℚ, tateD E x₀ ≠ 0 ∧
+        tateN E x₀ ^ 2 = tateM E x₀ * tateD E x₀ ∧
+        ∀ (hfin : ((AddSubgroup.zmultiples P :
+            AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point)) :
+            Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite) (t w : ℚ),
+          algebraMap ℚ (AlgebraicClosure ℚ) t =
+              veluT (E⁄(AlgebraicClosure ℚ)) hfin.toFinset →
+            algebraMap ℚ (AlgebraicClosure ℚ) w =
+              veluW (E⁄(AlgebraicClosure ℚ)) hfin.toFinset →
+            t = tateN E x₀ ∧ w = tateD E x₀ + x₀ * tateN E x₀ := by
+    have hP0 : P ≠ 0 := by
+      intro h; rw [h, addOrderOf_zero] at hP; exact absurd hP (by norm_num)
+    have h3 : (3 : ℕ) • P = 0 := by rw [← hP]; exact addOrderOf_nsmul_eq_zero P
+    have hPP0 : P + P ≠ 0 := by
+      intro h
+      have hd : addOrderOf P ∣ 2 :=
+        addOrderOf_dvd_of_nsmul_eq_zero (by rw [two_nsmul]; exact h)
+      rw [hP] at hd; norm_num at hd
+    have hPPP : P + P = -P := by
+      rw [eq_neg_iff_add_eq_zero]
+      rw [show (3 : ℕ) = 2 + 1 from rfl, add_nsmul, two_nsmul, one_nsmul] at h3
+      exact h3
+    obtain _ | ⟨X, Y, hns⟩ := P
+    · exact absurd rfl hP0
+    have hYne : Y ≠ (E⁄(AlgebraicClosure ℚ)).negY X Y := fun h =>
+      hPP0 (Affine.Point.add_of_Y_eq rfl h)
+    have hδeq : Y - (E⁄(AlgebraicClosure ℚ)).negY X Y
+        = 2 * Y + (E⁄(AlgebraicClosure ℚ)).a₁ * X + (E⁄(AlgebraicClosure ℚ)).a₃ := by
+      simp only [Affine.negY]; ring
+    have hδ0 : 2 * Y + (E⁄(AlgebraicClosure ℚ)).a₁ * X
+        + (E⁄(AlgebraicClosure ℚ)).a₃ ≠ 0 := hδeq ▸ sub_ne_zero.mpr hYne
+    set ℓ := (E⁄(AlgebraicClosure ℚ)).slope X X Y Y with hℓdef
+    have hn : ℓ * (2 * Y + (E⁄(AlgebraicClosure ℚ)).a₁ * X + (E⁄(AlgebraicClosure ℚ)).a₃)
+        = 3 * X ^ 2 + 2 * (E⁄(AlgebraicClosure ℚ)).a₂ * X + (E⁄(AlgebraicClosure ℚ)).a₄
+          - (E⁄(AlgebraicClosure ℚ)).a₁ * Y := by
+      rw [hℓdef, Affine.slope_of_Y_ne rfl hYne, hδeq]
+      exact div_mul_cancel₀ _ hδ0
+    have hrel : ℓ ^ 2 + (E⁄(AlgebraicClosure ℚ)).a₁ * ℓ
+        - (E⁄(AlgebraicClosure ℚ)).a₂ - X - X = X := by
+      have key := Affine.Point.add_self_of_Y_ne' (h₁ := hns) hYne
+      rw [hPPP] at key
+      have h2 := congrArg veluPointX key
+      simp only [Affine.Point.neg_some, veluPointX_some] at h2
+      simpa only [Affine.addX] using h2.symm
+    obtain ⟨hDval, hNval⟩ := tate_relation (E⁄(AlgebraicClosure ℚ)) X Y ℓ
+      ((WeierstrassCurve.Affine.equation_iff X Y).mp hns.1) hn hrel
+    -- the `x`-coordinate is Galois-fixed, hence rational
+    have hXfix : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, σ X = X := by
+      intro σ
+      obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
+        (hstable σ _ (AddSubgroup.mem_zmultiples (Affine.Point.some X Y hns)))
+      have hz3 : (3 : ℤ) • (Affine.Point.some X Y hns) = 0 := by
+        rw [show (3 : ℤ) = ((3 : ℕ) : ℤ) by norm_num, natCast_zsmul]; exact h3
+      rw [zsmul_reduce _ hz3 k] at hk
+      have hcases : k % 3 = 0 ∨ k % 3 = 1 ∨ k % 3 = 2 := by omega
+      rcases hcases with h | h | h
+      · rw [h, zero_zsmul, Affine.Point.map_some] at hk
+        simp at hk
+      · rw [h, one_zsmul] at hk
+        have h2 := congrArg veluPointX hk
+        rw [Affine.Point.map_some] at h2
+        simp only [veluPointX_some] at h2
+        exact h2.symm
+      · rw [h, two_zsmul, hPPP] at hk
+        have h2 := congrArg veluPointX hk
+        rw [Affine.Point.map_some] at h2
+        simp only [Affine.Point.neg_some, veluPointX_some] at h2
+        exact h2.symm
+    haveI halgQ : Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ) :=
+      AlgebraicClosure.isAlgebraic ℚ
+    haveI hacQ : IsAlgClosure ℚ (AlgebraicClosure ℚ) := ⟨inferInstance, halgQ⟩
+    haveI hnormQ : Normal ℚ (AlgebraicClosure ℚ) :=
+      IsAlgClosure.normal ℚ (AlgebraicClosure ℚ)
+    haveI hsepQ : Algebra.IsSeparable ℚ (AlgebraicClosure ℚ) :=
+      Algebra.IsAlgebraic.isSeparable_of_perfectField
+    haveI hgalQ : IsGalois ℚ (AlgebraicClosure ℚ) := ⟨⟩
+    obtain ⟨x₀, hx₀⟩ :=
+      (InfiniteGalois.mem_range_algebraMap_iff_fixed (k := ℚ) X).mpr hXfix
+    refine ⟨x₀, ?_, ?_, ?_⟩
+    · intro h0
+      refine hδ0 (pow_eq_zero_iff two_ne_zero |>.mp ?_)
+      rw [hDval, ← hx₀, ← tateD_map E x₀, h0, map_zero]
+    · refine (algebraMap ℚ (AlgebraicClosure ℚ)).injective ?_
+      rw [map_mul, map_pow, tateN_map, tateM_map, tateD_map, hx₀]
+      exact hNval
+    · intro hfin t w htv hwv
+      -- the kernel as an explicit `Finset`
+      have hne1 : (Affine.Point.some X Y hns) ≠ -(Affine.Point.some X Y hns) := by
+        intro h
+        have := congrArg veluPointY h
+        simp only [Affine.Point.neg_some, veluPointY_some] at this
+        exact hYne this
+      have hmem : ∀ Q : (E⁄(AlgebraicClosure ℚ)).Point,
+          Q ∈ AddSubgroup.zmultiples (Affine.Point.some X Y hns) ↔
+            Q = 0 ∨ Q = Affine.Point.some X Y hns ∨ Q = -(Affine.Point.some X Y hns) := by
+        intro Q
+        constructor
+        · intro hQ
+          obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hQ
+          have hz3 : (3 : ℤ) • (Affine.Point.some X Y hns) = 0 := by
+            rw [show (3 : ℤ) = ((3 : ℕ) : ℤ) by norm_num, natCast_zsmul]; exact h3
+          rw [zsmul_reduce _ hz3 k] at hk
+          have hcases : k % 3 = 0 ∨ k % 3 = 1 ∨ k % 3 = 2 := by omega
+          rcases hcases with h | h | h
+          · rw [h, zero_zsmul] at hk; exact Or.inl hk.symm
+          · rw [h, one_zsmul] at hk; exact Or.inr (Or.inl hk.symm)
+          · rw [h, two_zsmul, hPPP] at hk; exact Or.inr (Or.inr hk.symm)
+        · rintro (rfl | rfl | rfl)
+          · exact zero_mem _
+          · exact AddSubgroup.mem_zmultiples _
+          · exact neg_mem (AddSubgroup.mem_zmultiples _)
+      have hset : hfin.toFinset = ({0, Affine.Point.some X Y hns,
+          -(Affine.Point.some X Y hns)} : Finset ((E⁄(AlgebraicClosure ℚ)).Point)) := by
+        ext Q
+        simp only [Set.Finite.mem_toFinset, SetLike.mem_coe, Finset.mem_insert,
+          Finset.mem_singleton]
+        exact hmem Q
+      have hnot0 : (0 : (E⁄(AlgebraicClosure ℚ)).Point) ∉
+          ({Affine.Point.some X Y hns, -(Affine.Point.some X Y hns)} : Finset _) := by
+        simp only [Finset.mem_insert, Finset.mem_singleton, not_or]
+        refine ⟨fun h => hP0 h.symm, fun h => hP0 ?_⟩
+        rw [eq_comm, neg_eq_zero] at h
+        exact h
+      have hnot1 : (Affine.Point.some X Y hns) ∉
+          ({-(Affine.Point.some X Y hns)} : Finset _) := by
+        simp only [Finset.mem_singleton]; exact hne1
+      rw [hset, veluT, Finset.sum_insert hnot0, Finset.sum_insert hnot1,
+        Finset.sum_singleton, veluTTerm_zero, veluTTerm_some, Affine.Point.neg_some,
+        veluTTerm_some] at htv
+      rw [hset, veluW, Finset.sum_insert hnot0, Finset.sum_insert hnot1,
+        Finset.sum_singleton, veluWTerm_zero, veluWTerm_some, Affine.Point.neg_some,
+        veluWTerm_some] at hwv
+      constructor
+      · refine (algebraMap ℚ (AlgebraicClosure ℚ)).injective ?_
+        rw [htv, tateN_map, hx₀]
+        field_simp
+        ring
+      · refine (algebraMap ℚ (AlgebraicClosure ℚ)).injective ?_
+        rw [hwv, map_add, map_mul, tateN_map, tateD_map, hx₀]
+        simp only [Affine.negY]
+        field_simp
+        linear_combination (2 : AlgebraicClosure ℚ) * hDval
+  -- the kernel as a subgroup
+  have hCcard : Nat.card (AddSubgroup.zmultiples P) = 3 := by
+    rw [Nat.card_zmultiples, hP]
+  haveI : Finite (AddSubgroup.zmultiples P) :=
+    Nat.finite_of_card_ne_zero (by rw [hCcard]; norm_num)
+  have hCfin : ((AddSubgroup.zmultiples P :
+      AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point)) :
+      Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite :=
+    Set.finite_coe_iff.mp inferInstance
+  have hCodd : Odd (Nat.card (AddSubgroup.zmultiples P)) := by rw [hCcard]; decide
+  obtain ⟨t, w, hell', φ, ht', hw', hgal, hker⟩ :=
+    WeierstrassCurve.exists_velu_quotient_isogeny_model E
+      (AddSubgroup.zmultiples P) hCfin hCodd hstable
+  obtain ⟨ht, hw⟩ := hSum hCfin t w ht' hw'
+  haveI := hell'
+  -- the algebra
+  have hΔ : E.Δ = tateN E x₀ ^ 3 - 27 * tateD E x₀ ^ 2 := Δ_eq hψ hD0
+  have hΔne : E.Δ ≠ 0 := E.isUnit_Δ.ne_zero
+  have hc₄ := c₄_mul (E := E) (x := x₀) hψ
+  have hc₄' := quot_c₄_mul ht hw hψ
+  have hΔ' := quot_Δ_mul ht hw hψ hD0
+  have hjΔ : E.j * E.Δ = E.c₄ ^ 3 := MazurLevel9.cFour_cube_eq E
+  have hjΔ' : (E.veluModel t w).j * (E.veluModel t w).Δ = (E.veluModel t w).c₄ ^ 3 :=
+    MazurLevel9.cFour_cube_eq _
+  refine ⟨tateN E x₀, tateD E x₀ ^ 2, E.veluModel t w, hell', φ, hgal, hker,
+    pow_ne_zero 2 hD0, by rw [← hΔ]; exact hΔne, ?_, ?_⟩
+  · linear_combination (-(E.j * tateD E x₀ ^ 6)) * hΔ + (tateD E x₀ ^ 6) * hjΔ
+      + ((E.c₄ * tateD E x₀ ^ 2) ^ 2
+         + (E.c₄ * tateD E x₀ ^ 2) * (tateN E x₀ * (tateN E x₀ ^ 3 - 24 * tateD E x₀ ^ 2))
+         + (tateN E x₀ * (tateN E x₀ ^ 3 - 24 * tateD E x₀ ^ 2)) ^ 2) * hc₄
+  · linear_combination (-((E.veluModel t w).j * tateD E x₀ ^ 2)) * hΔ'
+      + (tateD E x₀ ^ 6) * hjΔ'
+      + (((E.veluModel t w).c₄ * tateD E x₀ ^ 2) ^ 2
+         + ((E.veluModel t w).c₄ * tateD E x₀ ^ 2)
+             * (tateN E x₀ * (tateN E x₀ ^ 3 + 216 * tateD E x₀ ^ 2))
+         + (tateN E x₀ * (tateN E x₀ ^ 3 + 216 * tateD E x₀ ^ 2)) ^ 2) * hc₄'
 
 /-- **`X_0(3)`: the hauptmodul parameter of a rational `3`-isogeny** (PROVEN
 2026-07-26 over the single leaf
