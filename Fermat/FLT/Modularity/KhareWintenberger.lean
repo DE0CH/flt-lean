@@ -7673,9 +7673,16 @@ in the sibling leaf's docstring — items 7–9 are now the two leaves of
    INDEPENDENT of `λ` — this is what makes the `λ`-adic and `𝔭`-adic
    Tate modules members of ONE compatible system, i.e. the fields
    `matchℓ` and `matchp`, and it is the deepest item in the list.
-   **Leaf**: `Fermat.exists_weilFrobeniusSystem_of_mult`, which
+   `Fermat.exists_weilFrobeniusSystem_of_mult`, which
    quantifies the `D`-rational system `P` BEFORE the ideal, so that one
    family of polynomials serves every residue characteristic.
+   **No longer a leaf** (2026-07-26): once the frame was pinned to the
+   real multiplication by `j`/`hj` it became an ASSEMBLY, and the two
+   leaves are now `Fermat.exists_algebraicClosureEmbedding_of_tateFrame_mult`
+   (the frame's coefficient ring is `𝒪_{D,I}`, which is what supplies the
+   injectivity of `ι`) and `Fermat.exists_intWeilPolynomial_of_mult` (the
+   Frobenius characteristic polynomial is `X² - a_w X + b_w` with
+   `a_w, b_w ∈ 𝒪_D` independent of `I`).  Dispatch at those, not here.
 
 WHY THE CUT NEEDED A DEFINITION. "There is a rank-two representation
 whose reduction is `A[λ]`" and "there is a `D`-rational compatible

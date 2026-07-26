@@ -4725,8 +4725,200 @@ theorem exists_tateFrame_of_levelStructure
   exact ⟨π, hπ, hπ2, O, iCR, iTS, iTR, iAlg, iLoc, iFin, iFree, iMT, τ, φ, ι₀, j, bad,
     hφadd, hφbij, hφequiv, hι₀, hφj, hdet⟩
 
+/-! ### The compatible system, cut into its two inputs
+
+`exists_weilFrobeniusSystem_of_mult` below — item 9, the Weil/Faltings
+citation — is no longer a single opaque leaf.  Once the frame is pinned
+to the real multiplication by `j`/`hj` (the repair recorded in its
+FAITHFULNESS AUDIT), the statement splits along an entirely mechanical
+seam into two mathematically distinct inputs:
+
+* `exists_algebraicClosureEmbedding_of_tateFrame_mult` — *the frame's
+  coefficient ring is `𝒪_{D,I}`*.  This is what supplies the embeddings
+  `ψ` and `ι` and, in particular, the INJECTIVITY of `ι`, which the
+  audit shows is not available for an unpinned frame at all.  Pure
+  commutative algebra: no Frobenius, no compatible system.
+* `exists_intWeilPolynomial_of_mult` — *the Frobenius characteristic
+  polynomial is `X² - a_w X + b_w` with `a_w, b_w ∈ 𝒪_D` independent of
+  `I`*.  This is the arithmetic: Weil's Riemann hypothesis for abelian
+  varieties over finite fields (the coefficients are algebraic integers
+  of the right size) together with Faltings' independence of `λ` (they
+  do not depend on the residue characteristic).
+
+Why this is the right seam, and not an arbitrary one.  The old statement
+buried BOTH inputs inside one existential over `AlgebraicClosure ℚ_[q]`,
+where they are hard to tell apart — which is precisely how the false
+`Function.Injective ι` clause got in unnoticed, since an assertion about
+the SHAPE of `O` was hiding inside an assertion about Frobenius.  Cutting
+here separates them: the injectivity now lives in a statement that
+mentions no Frobenius, and the compatible system now lives in a statement
+whose coefficients are `𝒪_D`-integral BY CONSTRUCTION, so no embedding
+into `ℚ̄_q` is needed to say what `D`-rationality means.  The polynomial
+`P` of the conclusion is then not existential magic but the explicit
+`X² - a_w X + b_w` read in `D`, and the two leaves meet only through the
+compatibility `ι ∘ j = ψ ∘ (𝒪_D ↪ D)`.
+
+Both leaves inherit the pinning hypotheses `j`/`hj` verbatim; neither is
+provable without them, by the two counterexamples in the audit below. -/
+
+/-- **The coefficient ring of an `𝒪_D`-frame of the Tate module is
+`𝒪_{D,I}`, hence embeds in `ℚ̄_q` compatibly with `D`** (sorry leaf —
+the commutative-algebra half of `exists_weilFrobeniusSystem_of_mult`).
+
+Given a frame `(O, τ, φ)` of `TatePt m x I π` which REMEMBERS THE REAL
+MULTIPLICATION — i.e. carries `j : 𝒪_D →+* O` with the intertwining
+`hj` — there are a ring map `ψ : D →+* ℚ̄_q`, an INJECTIVE ring map
+`ι : O →+* ℚ̄_q`, and the compatibility `ι ∘ j = ψ ∘ (𝒪_D ↪ D)`.
+
+THE ARGUMENT (this is the guidance the repairer of the sibling left for
+its prover, and it is recorded here because this is now where it is
+owed).  Do NOT look for a hypothesis that hands you `Function.Injective
+ι`, and do NOT reintroduce `IsDomain O`: derive `O = 𝒪_{D,I}` instead.
+
+1. `O` is a `ℤ_q`-algebra, finite and free.  Nothing says so, but `φ`
+   forces `O ⊕ O ≅ T ≅ ℤ_q^{2d}` as abelian groups, and every additive
+   endomorphism of `ℤ_q^n` is `ℤ_q`-linear (divisibility by `q^n` is
+   preserved).  In particular `rank_{ℤ_q} O = d = [𝒪_{D,I} : ℤ_q]`,
+   using `hdim` to know `T` has `ℤ_q`-rank `2d`.
+2. `j` is injective and `O` contains `𝒪_{D,I}`.  By `hj`, `j a` acts on
+   `T` as `m.act a`, so `j` is injective (a nonzero `a ∈ 𝒪_D` acts
+   injectively on the `I`-adic Tate module, `T` being `I`-adically
+   separated), and the closure of `j(𝒪_D)` inside the `q`-adically
+   complete `O` is a copy of the `I`-adic completion `𝒪_{D,I}`.
+3. `O = 𝒪_{D,I}`.  `O` is a ring extension of `𝒪_{D,I}` of the same
+   `ℤ_q`-rank, hence integral over it and contained in its fraction
+   field; `𝒪_{D,I}` is integrally closed, so the inclusion is an
+   equality.
+4. `𝒪_{D,I}` is a complete discrete valuation ring of characteristic
+   zero with residue characteristic `q`, so its fraction field is a
+   finite extension of `ℚ_q` and embeds in `ℚ̄_q`; `ψ` is the induced
+   place of `D` over `q` and injectivity of `ι` is automatic, a field
+   map being injective.
+
+Step 3 is where the two counterexamples of the audit below die:
+`ℤ₁₃[ε]` is not integrally closed in the relevant sense (it has a
+nonzero nilpotent, so it is not contained in any field) and admits no
+`j` at all, and `ℤ₁₃ × ℤ₁₃` admits no `j` because `𝒪_D` acts through the
+multiplicity space and is scalar on neither factor.  Neither survives
+the pinning, which is the whole content of the repair.
+
+Note `hφequiv` and `τ` are carried but not needed for the argument: the
+conclusion is about the RING `O`, and Galois-equivariance of the frame
+plays no part in identifying it.  They are kept so that the hypothesis
+block is literally the frame produced by
+`exists_tateFrame_of_levelStructure`, which is what the consumer has. -/
+theorem exists_algebraicClosureEmbedding_of_tateFrame_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) (hq : Fact q.Prime)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) (iCR : CommRing O) (iTS : TopologicalSpace O) (iTR : IsTopologicalRing O)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hφadd : ∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n))
+    (hφbij : Function.Bijective φ)
+    (hφequiv : ∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n))
+    (hj : ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j a • u)).1 n = m.act a ((φ u).1 n)) :
+    ∃ (ψ : D →+* AlgebraicClosure ℚ_[q]) (ι : O →+* AlgebraicClosure ℚ_[q]),
+      Function.Injective ι ∧
+      ∀ a : NumberField.RingOfIntegers D,
+        ι (j a) = ψ (algebraMap (NumberField.RingOfIntegers D) D a) :=
+  sorry
+
+/-- **The Frobenius characteristic polynomials of the `𝒪_D`-Tate modules
+are `X² - a_w X + b_w` with `a_w, b_w ∈ 𝒪_D` independent of `I`**
+(sorry leaf — the arithmetic half of
+`exists_weilFrobeniusSystem_of_mult`, and the deepest statement in the
+chain: Weil's Riemann hypothesis for abelian varieties over finite
+fields together with Faltings' theorem that the system is independent of
+the residue characteristic; Faltings, *Endlichkeitssätze für abelsche
+Varietäten über Zahlkörpern*, Invent. Math. 73 (1983); Taylor 2002 §1–2
+and Shimura for the Hilbert–Blumenthal normalization).
+
+For an abelian scheme with real multiplication by `𝒪_D` and an
+`F`-point `x` there are two families `a, b : w ↦ 𝒪_D` such that for
+EVERY maximal ideal `I` of `𝒪_D`, every `π`, and every frame `φ` of
+`TatePt m x I π` by a rank-two representation `τ` over a coefficient
+ring `O` WHICH REMEMBERS THE REAL MULTIPLICATION (`j`, `hj`), one has
+
+    τ.charFrob w = X² - j(a_w)·X + j(b_w)
+
+for all but finitely many `w`.  Classically `a_w` is the trace and `b_w`
+the determinant of `Frob_w` on the `𝒪_D`-Tate module of the reduction;
+both are algebraic integers of `D`, and they do not depend on `I` —
+that independence IS Faltings' theorem, and it is what makes the
+`λ`-adic and `𝔭`-adic Tate modules of one abelian variety two members of
+ONE compatible system.
+
+What is load-bearing in the way this is stated.
+
+* `a` and `b` are quantified BEFORE `q` and `I`; the frame data and
+  `bad` after.  That ordering is the independence-of-`λ` statement, and
+  reversing it would make the leaf either false or vacuous.
+* The coefficients live in `𝒪_D` ITSELF and are transported into `O`
+  along `j`, not along some embedding chosen per `I`.  This is what
+  makes the statement `D`-rational without any mention of `ℚ̄_q`, and it
+  is why the compatible-system content is now visible on the face of the
+  statement rather than hidden inside an existential over embeddings.
+* `bad` is quantified AFTER `q` and this is not slack — it must contain
+  the places of `F` above `q`, where the `I`-adic representation is
+  ramified and its Frobenius characteristic polynomial is not the Weil
+  polynomial at all; since `q` ranges over every rational prime, no
+  single finite set can contain the places above all of them.  Only the
+  places of bad reduction of `A_x` are independent of `q`.
+* `j` and `hj` may NOT be dropped.  Without them `O`, `τ` and `φ` range
+  over frames that do not remember the real multiplication, and the
+  conclusion is FALSE by Counterexample 2 of the audit below — the
+  exotic frame `O = ℤ₁₃ × ℤ₁₃` has `τ.charFrob w = (X - c_w)²`, a
+  square, while the honest frame has `X² - a_w X + N(w)`, and these
+  disagree at infinitely many `w` by Chebotarev.  The monicity of the
+  displayed polynomial is not an extra assumption: `τ.charFrob` is a
+  characteristic polynomial of an endomorphism of a free rank-two
+  module, so it is monic of degree two whatever the frame. -/
+theorem exists_intWeilPolynomial_of_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f) :
+    ∃ a b : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+        NumberField.RingOfIntegers D,
+      ∀ (q : ℕ) (_ : Fact q.Prime)
+        (I : Ideal (NumberField.RingOfIntegers D)) (_ : I.IsMaximal)
+        (_ : (q : NumberField.RingOfIntegers D) ∈ I)
+        (π : NumberField.RingOfIntegers D) (_ : π ∈ I) (_ : π ∉ I ^ 2)
+        (O : Type u) (_ : CommRing O) (_ : TopologicalSpace O) (_ : IsTopologicalRing O)
+        (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+        (j : NumberField.RingOfIntegers D →+* O),
+        (∀ (u u' : Fin 2 → O) (n : ℕ),
+          (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n)) →
+        Function.Bijective φ →
+        (∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+          (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n)) →
+        (∀ (c : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+          (φ (j c • u)).1 n = m.act c ((φ u).1 n)) →
+        ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+          ∀ w ∉ bad,
+            τ.charFrob w =
+              Polynomial.X ^ 2 - Polynomial.C (j (a w)) * Polynomial.X +
+                Polynomial.C (j (b w)) :=
+  sorry
+
 /-- **The Frobenius characteristic polynomials of the Tate modules form
-one `D`-rational compatible system** (sorry node — item 9 of the
+one `D`-rational compatible system** (PROVEN 2026-07-26 by assembly over
+the two leaves just above, `exists_algebraicClosureEmbedding_of_tateFrame_mult`
+and `exists_intWeilPolynomial_of_mult`; see the section note there for
+why that is the seam — item 9 of the
 Tate-module construction, and the deepest statement in the chain: Weil's
 Riemann hypothesis for abelian varieties over finite fields together
 with Faltings' theorem that the system is independent of the residue
@@ -4994,7 +5186,28 @@ counterexample 2 standing).
 
 The sibling `exists_tateFrame_of_levelStructure` was NOT itself false —
 the honest `I`-adic Tate module does frame it — it was merely too weak,
-and that weakness is what this leaf inherited. -/
+and that weakness is what this leaf inherited.
+
+### THE PROOF (2026-07-26): the repaired leaf is an ASSEMBLY
+
+With `j`/`hj` in place the statement is no longer atomic, and it is
+discharged here over the two leaves above.  `P` is the explicit
+polynomial `X² - a_w X + b_w` read in `D`, with `a`, `b` the
+`𝒪_D`-integral families of `exists_intWeilPolynomial_of_mult`; the
+embeddings `ψ` and `ι` and the injectivity of `ι` come from
+`exists_algebraicClosureEmbedding_of_tateFrame_mult`; and the matching
+of the two sides is the compatibility `ι ∘ j = ψ ∘ (𝒪_D ↪ D)` applied
+coefficient by coefficient through `Polynomial.map`.
+
+Note what this does to the refuted clause.  `Function.Injective ι` is no
+longer asserted here at all — it is IMPORTED from a statement that
+mentions no Frobenius and whose proof obligation is exactly "the frame's
+coefficient ring is `𝒪_{D,I}`".  That is the repair carried through to
+its conclusion: the clause is now owed where it can be discharged,
+rather than smuggled into a conclusion about characteristic polynomials.
+The counterexamples above are retained because they are what pins the
+repair down, and because any future weakening of `j`/`hj` — in this
+declaration or in either leaf — reinstates them verbatim. -/
 theorem exists_weilFrobeniusSystem_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -5020,7 +5233,25 @@ theorem exists_weilFrobeniusSystem_of_mult
         ∃ (bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
           (ψ : D →+* AlgebraicClosure ℚ_[q]) (ι : O →+* AlgebraicClosure ℚ_[q]),
           Function.Injective ι ∧
-          ∀ w ∉ bad, (τ.charFrob w).map ι = (P w).map ψ :=
-  sorry
+          ∀ w ∉ bad, (τ.charFrob w).map ι = (P w).map ψ := by
+  -- The `𝒪_D`-integral compatible system: one pair of families for every `q` and `I`.
+  obtain ⟨a, b, hab⟩ := exists_intWeilPolynomial_of_mult m x hdim
+  -- `P` is that system read in `D`.
+  refine ⟨fun w => Polynomial.X ^ 2 -
+      Polynomial.C (algebraMap (NumberField.RingOfIntegers D) D (a w)) * Polynomial.X +
+      Polynomial.C (algebraMap (NumberField.RingOfIntegers D) D (b w)), ?_⟩
+  intro q hq I hI hqI π hπ hπ2 O iCR iTS iTR τ φ j hφadd hφbij hφequiv hj
+  obtain ⟨bad, hbad⟩ :=
+    hab q hq I hI hqI π hπ hπ2 O iCR iTS iTR τ φ j hφadd hφbij hφequiv hj
+  -- The frame remembers `m.act`, so its coefficient ring is `𝒪_{D,I}`: that is what
+  -- supplies `ψ`, `ι`, the injectivity, and the compatibility `ι ∘ j = ψ ∘ (𝒪_D ↪ D)`.
+  obtain ⟨ψ, ι, hιinj, hcompat⟩ :=
+    exists_algebraicClosureEmbedding_of_tateFrame_mult m x hdim q hq I hI hqI π hπ hπ2 O
+      iCR iTS iTR τ φ j hφadd hφbij hφequiv hj
+  refine ⟨bad, ψ, ι, hιinj, fun w hw => ?_⟩
+  -- Both sides are `X² - (…)·X + (…)`, and the two constant terms agree by `hcompat`.
+  rw [hbad w hw]
+  simp only [Polynomial.map_add, Polynomial.map_sub, Polynomial.map_mul, Polynomial.map_pow,
+    Polynomial.map_X, Polynomial.map_C, hcompat]
 
 end Fermat
