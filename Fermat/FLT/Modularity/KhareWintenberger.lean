@@ -180,6 +180,11 @@ public import Mathlib.RingTheory.Flat.Basic
 public import Mathlib.RingTheory.TensorProduct.Basic
 public import Mathlib.RingTheory.TensorProduct.Maps
 public import Mathlib.RingTheory.TensorProduct.Quotient
+public import Mathlib.RingTheory.TensorProduct.MvPolynomial
+public import Mathlib.RingTheory.RingHom.Smooth
+public import Mathlib.RingTheory.Smooth.Basic
+public import Mathlib.RingTheory.Smooth.Locus
+public import Mathlib.RingTheory.Localization.Away.Basic
 public import Mathlib.RingTheory.Etale.Field
 public import Mathlib.RingTheory.Unramified.Field
 public import Mathlib.RingTheory.Jacobson.Ring
@@ -1185,8 +1190,10 @@ names),
 2026-07-26** — no longer a leaf: the presentation, the clearing of
 denominators, the Hensel lift and the descent back to a `ℚ`-algebra map are
 all discharged; what is left is exactly the two arithmetic leaves
-`exists_bound_forall_formallySmooth_integralSystemModel` (SORRY — spreading
-out) and `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible`
+`exists_bound_forall_formallySmooth_integralSystemModel` (**PROVEN 2026-07-26**
+over the residue `exists_inverted_formallySmooth_integralSystemModel` — SORRY,
+spreading out over `ℤ[1/N]`) and
+`exists_bound_forall_zmodSolvable_of_geometricallyIrreducible`
 (SORRY — Lang–Weil, nonemptiness form only)),
 `exists_primes_forall_sup_eq_top_of_isOpen` (**PROVEN 2026-07-26** — no
 longer a leaf: Chebotarev plus the decomposition-group dictionary, over the
@@ -3601,10 +3608,270 @@ theorem exists_integralGenerators {n : ℕ} {I : Ideal (MvPolynomial (Fin n) ℚ
     rw [hgi, Algebra.smul_def]
     exact Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨i, rfl⟩)
 
+section IntegralSystemBaseChange
+
+universe w
+
+open _root_.TensorProduct
+
+variable {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+variable (R : Type v) [CommRing R] (R' : Type w) [CommRing R'] [Algebra R R']
+
+/-- **The generators of an integral system are insensitive to the base**
+(PROVEN): mapping the `R`-generator along `R → R'` gives the `R'`-generator,
+because a ring map out of `ℤ` is unique. -/
+theorem integralSystem_map_map_intCast (i : Fin m) :
+    MvPolynomial.map (algebraMap R R') (MvPolynomial.map (Int.castRingHom R) (f i)) =
+      MvPolynomial.map (Int.castRingHom R') (f i) := by
+  rw [MvPolynomial.map_map, RingHom.ext_int ((algebraMap R R').comp (Int.castRingHom R))
+    (Int.castRingHom R')]
+
+/-- Each base-changed generator lies in the integral system ideal (PROVEN). -/
+theorem gen_mem_integralSystemIdeal (i : Fin m) :
+    MvPolynomial.map (Int.castRingHom R') (f i) ∈ integralSystemIdeal f R' :=
+  Ideal.subset_span ⟨i, rfl⟩
+
+/-- The underlying map of the forward base-change comparison, before descending
+the quotient. -/
+noncomputable def integralSystemBaseChangeFwdAux :
+    MvPolynomial (Fin n) R →ₐ[R] IntegralSystemModel f R' :=
+  ((Ideal.Quotient.mkₐ R' (integralSystemIdeal f R')).restrictScalars R).comp
+    (MvPolynomial.mapAlgHom (Algebra.ofId R R'))
+
+@[simp] theorem integralSystemBaseChangeFwdAux_apply (x : MvPolynomial (Fin n) R) :
+    integralSystemBaseChangeFwdAux f R R' x =
+      Ideal.Quotient.mk _ (MvPolynomial.map (algebraMap R R') x) := rfl
+
+theorem integralSystemIdeal_le_ker_fwdAux :
+    integralSystemIdeal f R ≤ RingHom.ker (integralSystemBaseChangeFwdAux f R R').toRingHom := by
+  rw [integralSystemIdeal, Ideal.span_le]
+  rintro _ ⟨i, rfl⟩
+  simp only [SetLike.mem_coe, RingHom.mem_ker, AlgHom.toRingHom_eq_coe, RingHom.coe_coe,
+    integralSystemBaseChangeFwdAux_apply, integralSystem_map_map_intCast]
+  exact Ideal.Quotient.eq_zero_iff_mem.mpr (gen_mem_integralSystemIdeal f R' i)
+
+/-- The forward comparison `R' ⊗[R] (P_R ⧸ I_R) → P_{R'} ⧸ I_{R'}`. -/
+noncomputable def integralSystemModelBaseChangeFwd :
+    R' ⊗[R] IntegralSystemModel f R →ₐ[R'] IntegralSystemModel f R' :=
+  Algebra.TensorProduct.lift (Algebra.ofId R' _)
+    (Ideal.Quotient.liftₐ (integralSystemIdeal f R) (integralSystemBaseChangeFwdAux f R R')
+      (fun _ ha => integralSystemIdeal_le_ker_fwdAux f R R' ha))
+    (fun _ _ => Commute.all _ _)
+
+/-- The underlying map of the backward base-change comparison. -/
+noncomputable def integralSystemBaseChangeBwdAux :
+    MvPolynomial (Fin n) R' →ₐ[R'] R' ⊗[R] IntegralSystemModel f R :=
+  (Algebra.TensorProduct.map (AlgHom.id R' R') (Ideal.Quotient.mkₐ R _)).comp
+    (MvPolynomial.algebraTensorAlgEquiv R R').symm.toAlgHom
+
+theorem integralSystemIdeal_le_ker_bwdAux :
+    integralSystemIdeal f R' ≤ RingHom.ker (integralSystemBaseChangeBwdAux f R R').toRingHom := by
+  rw [integralSystemIdeal, Ideal.span_le]
+  rintro _ ⟨i, rfl⟩
+  simp only [SetLike.mem_coe, RingHom.mem_ker, AlgHom.toRingHom_eq_coe, RingHom.coe_coe]
+  show (Algebra.TensorProduct.map (AlgHom.id R' R') (Ideal.Quotient.mkₐ R _))
+      ((MvPolynomial.algebraTensorAlgEquiv R R').symm
+        (MvPolynomial.map (Int.castRingHom R') (f i))) = 0
+  rw [← integralSystem_map_map_intCast f R R' i, MvPolynomial.algebraTensorAlgEquiv_symm_map,
+    Algebra.TensorProduct.map_tmul]
+  simp [Ideal.Quotient.eq_zero_iff_mem.mpr (gen_mem_integralSystemIdeal f R i)]
+
+/-- The backward comparison `P_{R'} ⧸ I_{R'} → R' ⊗[R] (P_R ⧸ I_R)`. -/
+noncomputable def integralSystemModelBaseChangeBwd :
+    IntegralSystemModel f R' →ₐ[R'] R' ⊗[R] IntegralSystemModel f R :=
+  Ideal.Quotient.liftₐ (integralSystemIdeal f R') (integralSystemBaseChangeBwdAux f R R')
+    (fun _ ha => integralSystemIdeal_le_ker_bwdAux f R R' ha)
+
+theorem integralSystemModelBaseChangeBwd_mk_map (y : MvPolynomial (Fin n) R) :
+    integralSystemModelBaseChangeBwd f R R'
+        (Ideal.Quotient.mk _ (MvPolynomial.map (algebraMap R R') y)) =
+      1 ⊗ₜ[R] (Ideal.Quotient.mk (integralSystemIdeal f R) y) := by
+  show (Algebra.TensorProduct.map (AlgHom.id R' R') (Ideal.Quotient.mkₐ R _))
+      ((MvPolynomial.algebraTensorAlgEquiv R R').symm
+        (MvPolynomial.map (algebraMap R R') y)) = _
+  rw [MvPolynomial.algebraTensorAlgEquiv_symm_map, Algebra.TensorProduct.map_tmul]
+  simp
+
+/-- **Base change of the integral model** (PROVEN): forming the model of a FIXED
+integral system commutes with extension of the base ring,
+`R' ⊗[R] (P_R ⧸ I_R) ≅ P_{R'} ⧸ I_{R'}`.
+
+This is what makes one integral system `f` serve every base at once, and it is
+the reason the two arithmetic leaves below may be stated over a single fixed
+`f` rather than over a family of models. -/
+noncomputable def integralSystemModelBaseChange :
+    R' ⊗[R] IntegralSystemModel f R ≃ₐ[R'] IntegralSystemModel f R' :=
+  AlgEquiv.ofAlgHom (integralSystemModelBaseChangeFwd f R R')
+    (integralSystemModelBaseChangeBwd f R R')
+    (by
+      refine Ideal.Quotient.algHom_ext (R₁ := R') ?_
+      refine MvPolynomial.algHom_ext fun i => ?_
+      simp [integralSystemModelBaseChangeFwd, integralSystemModelBaseChangeBwd,
+        integralSystemBaseChangeBwdAux, integralSystemBaseChangeFwdAux,
+        MvPolynomial.algebraTensorAlgEquiv_symm_X])
+    (by
+      ext x
+      obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective x
+      show integralSystemModelBaseChangeBwd f R R'
+          (integralSystemModelBaseChangeFwd f R R' (1 ⊗ₜ[R] (Ideal.Quotient.mk _ y))) =
+        1 ⊗ₜ[R] (Ideal.Quotient.mk _ y)
+      simp only [integralSystemModelBaseChangeFwd, Algebra.TensorProduct.lift_tmul, map_one,
+        one_mul, Ideal.Quotient.liftₐ_apply, Ideal.Quotient.lift_mk]
+      exact integralSystemModelBaseChangeBwd_mk_map f R R' y)
+
+/-- **Formal smoothness of the integral model ascends along ANY base change**
+(PROVEN): if the model over `R` is formally smooth over `R`, then the model over
+any `R`-algebra `R'` is formally smooth over `R'`.
+
+Note the statement is deliberately kept at a VARIABLE base: at the concrete pair
+`Localization.Away N` / `ℤ_[p]` the `Semiring` instance that `AlgEquiv` picks for
+the tensor product (`Algebra.TensorProduct.instSemiring`) and the one
+`Algebra.FormallySmooth.of_equiv` demands (`CommRing.toCommSemiring.toSemiring`)
+are defeq but not syntactically equal, and `of_equiv` cannot invert the
+projection to solve for its implicit `A`. Pinning `A` explicitly here, once, at
+a variable base, removes the problem for every instantiation. -/
+theorem formallySmooth_integralSystemModel_baseChange
+    [Algebra.FormallySmooth R (IntegralSystemModel f R)] :
+    Algebra.FormallySmooth R' (IntegralSystemModel f R') := by
+  refine Algebra.FormallySmooth.of_equiv (A := R' ⊗[R] IntegralSystemModel f R) ?_
+  exact integralSystemModelBaseChange f R R'
+
+end IntegralSystemBaseChange
+
 open CategoryTheory AlgebraicGeometry in
-/-- **Spreading out of smoothness** (SORRY LEAF — the first of the two
-genuinely missing theorems behind
-`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible`).
+/-- **The `ℚ`-model of the system is formally smooth** (PROVEN — the
+scheme-to-ring, `Type u`-to-`Type 0` transport that the spreading-out leaf below
+no longer has to carry).
+
+`hsmooth` is a property of a morphism of `Scheme.{u}`; what a commutative
+algebraist needs is `Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ)`, a
+statement about a ring in `Type 0`. The two are connected here, once:
+
+* `HasRingHomProperty @Smooth RingHom.Smooth` turns `Smooth (Spec.map φ)` into
+  `RingHom.Smooth φ` for `φ : ULift ℚ →+* A`;
+* `RingHom.FormallySmooth.of_bijective` makes the ring equivalence
+  `ℚ ≃+* ULift ℚ` formally smooth, and composing cancels the `ULift`, giving
+  `Algebra.FormallySmooth ℚ A` — this is where the `ℚ` versus `ULift ℚ`
+  instance path is confined;
+* `Ideal.quotientKerAlgEquivOfSurjective` and `hker` transport that across the
+  universe gap to the `Type 0` model, `RingEquiv` being universe-polymorphic
+  even though `Scheme.{u}` is not.
+
+This is exactly the conversion the parent's docstring says a prover "may" do;
+doing it here means it is done ONCE rather than inside every arithmetic leaf. -/
+theorem formallySmooth_integralSystemModel_rat
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (A : Type u) [CommRing A] [Algebra ℚ A]
+    (π : MvPolynomial (Fin n) ℚ →ₐ[ℚ] A) (hπ : Function.Surjective π)
+    (hker : RingHom.ker π.toRingHom = integralSystemIdeal f ℚ)
+    (hsmooth : AlgebraicGeometry.Smooth (specRatMap A)) :
+    Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ) := by
+  have h1 : RingHom.Smooth ((algebraMap ℚ A).comp
+      (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom) := by
+    have h := (AlgebraicGeometry.HasRingHomProperty.Spec_iff
+      (P := @AlgebraicGeometry.Smooth) (Q := @RingHom.Smooth)
+      (φ := CommRingCat.ofHom ((algebraMap ℚ A).comp
+        (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom))).mp hsmooth
+    simpa using h
+  have h3 : RingHom.FormallySmooth
+      (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.toRingHom :=
+    RingHom.FormallySmooth.of_bijective
+      (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.bijective
+  have h4 := h3.comp h1.formallySmooth
+  have h5 : ((algebraMap ℚ A).comp
+      (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom).comp
+      (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.toRingHom = algebraMap ℚ A := by
+    ext x; simp
+  rw [h5] at h4
+  haveI : Algebra.FormallySmooth ℚ A := RingHom.formallySmooth_algebraMap.mp h4
+  exact Algebra.FormallySmooth.of_equiv
+    ((Ideal.quotientKerAlgEquivOfSurjective hπ).symm.trans
+      (Ideal.quotientEquivAlgOfEq ℚ hker))
+
+/-- **Spreading out of smoothness, ONE INVERTED INTEGER** (SORRY LEAF —
+2026-07-26, the residue of `exists_bound_forall_formallySmooth_integralSystemModel`
+below after the scheme layer, the universe gap, the `p`-adic specialisation and
+the quantifier over `p` were all discharged).
+
+If the `ℚ`-model of the integral system `f` is formally smooth over `ℚ`, then
+there is a single nonzero integer `N` such that the model over `ℤ[1/N]` is
+formally smooth over `ℤ[1/N]`.
+
+This is EGA IV 8.8.2/17.7.8 ("smoothness spreads out") in its bare
+commutative-algebra form: no schemes, no universes, no `ℤ_[p]`, no quantifier
+over primes. Everything else the parent leaf used to demand is now PROVEN
+above — `formallySmooth_integralSystemModel_rat` supplies the hypothesis from
+the morphism-level `hsmooth`, and `formallySmooth_integralSystemModel_baseChange`
+carries the conclusion from `ℤ[1/N]` to `ℤ_[p]` for every prime `p > N` (such a
+`p` cannot divide `N`, so `N` is already a unit in `ℤ_[p]`).
+
+MATHLIB INVENTORY, RE-AUDITED 2026-07-26 — the parent's claim that "spreading
+out does not exist" at this pin is WRONG, and the correction matters because it
+turns a chapter-sized job into an ordinary one. Every ingredient of the EGA
+argument is present:
+
+* `Algebra.smoothLocus R A` and `Algebra.isOpen_smoothLocus`
+  (`Mathlib/RingTheory/Smooth/Locus.lean:51,124`, needs
+  `[Algebra.FinitePresentation R A]`) — the smooth locus is OPEN. This is the
+  step the parent believed was missing.
+* `Algebra.smoothLocus_eq_univ_iff` (`:100`) — the smooth locus is everything
+  iff the algebra is formally smooth; this is how the `ℚ`-hypothesis is read,
+  and how the `ℤ[1/N]`-conclusion is discharged.
+* `Algebra.basicOpen_subset_smoothLocus_iff_smooth` (`:93`) — a basic open sits
+  inside the smooth locus iff the corresponding localisation is smooth. This is
+  the exact shape "invert one element and become smooth" needs.
+* `PrimeSpectrum.isConstructible_comap_image`
+  (`Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean:38`) — Chevalley: the image
+  of a constructible set under a finitely presented map is constructible.
+
+THE ARGUMENT, in the shape those four lemmas want. Write `S₀` for the
+`ℤ`-model. `S₀` is a finitely presented `ℤ`-algebra (`ℤ` is Noetherian and the
+ideal is generated by the `m` polynomials `f i`), so `smoothLocus ℤ S₀` is open
+and its complement `Z` is closed, hence constructible (`Spec S₀` is a Noetherian
+space). The hypothesis says no point of `Z` lies over the generic point of
+`Spec ℤ`: a prime over `(0)` is a prime of `S₀ ⊗ ℚ`, which is the `ℚ`-model, and
+that model is formally smooth by hypothesis. So, writing `J` for the vanishing
+ideal of `Z`, the ring `S₀ ⧸ J` has NO prime over `(0)`, i.e.
+`(S₀ ⧸ J) ⊗_ℤ ℚ = 0`; since that tensor is the localisation of `S₀ ⧸ J` at
+`ℤ ∖ {0}`, its vanishing means some NONZERO integer `N` lies in `J`. Then
+`Z ⊆ V(N)`, i.e. the basic open `D(N)` is inside the smooth locus, and
+`basicOpen_subset_smoothLocus_iff_smooth` turns that into smoothness of
+`S₀[1/N]` over `ℤ`, whence `Algebra.FormallySmooth.localization_base`
+(`Mathlib/RingTheory/Smooth/Basic.lean:503`) gives it over `ℤ[1/N]`.
+(Chevalley is the alternative route to `N`, taking the image of `Z` in `Spec ℤ`
+directly; the ideal-theoretic extraction above avoids needing constructibility
+at all, and is probably the cheaper of the two.)
+
+The one genuinely fiddly step is the middle one — identifying the primes of
+`S₀` over `(0)` with the primes of the `ℚ`-model COMPATIBLY with the two smooth
+loci, which is a statement about `Algebra.FormallySmooth` under localisation of
+the BASE and has no single lemma covering it at this pin.
+
+CIRCULARITY GUARD: inherited from the parent — no route through `Family.lean`,
+`Lift.lean` or `Modularity/Interface.lean`; this is pure commutative algebra. -/
+theorem exists_inverted_formallySmooth_integralSystemModel
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hQ : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ)) :
+    ∃ N : ℕ, 0 < N ∧
+      Algebra.FormallySmooth (Localization.Away (N : ℤ))
+        (IntegralSystemModel f (Localization.Away (N : ℤ))) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Spreading out of smoothness** (**PROVEN 2026-07-26** over the single
+commutative-algebra leaf `exists_inverted_formallySmooth_integralSystemModel`
+immediately above — it was itself a sorry leaf until then, and was believed to
+need machinery absent from this pin; that belief is corrected in the new leaf's
+MATHLIB INVENTORY, which names the four lemmas that do exist).
+
+WHAT WAS DISCHARGED HERE, and why the residue is strictly shallower: the scheme
+layer and the universe gap (`formallySmooth_integralSystemModel_rat`), the
+`p`-adic specialisation, and the quantifier over `p`. The bound `B` turns out to
+be nothing but the inverted integer `N`: a prime `p > N > 0` cannot divide `N`,
+so `N` is already a unit in `ℤ_[p]`, `ℤ_[p]` becomes a `ℤ[1/N]`-algebra by the
+universal property of the localisation, and
+`formallySmooth_integralSystemModel_baseChange` carries the conclusion across.
+What is left over is one statement about one ring.
 
 Let `f` be a system of polynomials with integer coefficients whose `ℚ`-model
 `MvPolynomial (Fin n) ℚ ⧸ (f)` is (isomorphic to) a SMOOTH `ℚ`-algebra `A`.
@@ -3643,8 +3910,27 @@ theorem exists_bound_forall_formallySmooth_integralSystemModel
     (hker : RingHom.ker π.toRingHom = integralSystemIdeal f ℚ)
     (hsmooth : AlgebraicGeometry.Smooth (specRatMap A)) :
     ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
-      Algebra.FormallySmooth ℤ_[p] (IntegralSystemModel f ℤ_[p]) :=
-  sorry
+      Algebra.FormallySmooth ℤ_[p] (IntegralSystemModel f ℤ_[p]) := by
+  -- The scheme layer and the universe gap come off first.
+  obtain ⟨N, hN, hsm⟩ := exists_inverted_formallySmooth_integralSystemModel f
+    (formallySmooth_integralSystemModel_rat f A π hπ hker hsmooth)
+  -- The bound IS the inverted integer: a prime exceeding `N > 0` cannot divide it.
+  refine ⟨N, fun p _ hp => ?_⟩
+  have hpN : ¬ ((p : ℤ) ∣ ((N : ℕ) : ℤ)) := by
+    intro h
+    rw [Int.natCast_dvd_natCast] at h
+    exact absurd (Nat.le_of_dvd hN h) (not_le.mpr hp)
+  -- So `N` is already a unit in `ℤ_[p]`, making `ℤ_[p]` a `ℤ[1/N]`-algebra.
+  have hunit : IsUnit ((Int.castRingHom ℤ_[p]) ((N : ℕ) : ℤ)) := by
+    by_contra hc
+    rw [PadicInt.not_isUnit_iff] at hc
+    exact hpN ((PadicInt.norm_int_lt_one_iff_dvd ((N : ℕ) : ℤ)).mp (by simpa using hc))
+  letI : Algebra (Localization.Away ((N : ℕ) : ℤ)) ℤ_[p] :=
+    (IsLocalization.Away.lift ((N : ℕ) : ℤ) hunit).toAlgebra
+  haveI := hsm
+  -- and base change carries formal smoothness of the model along `ℤ[1/N] → ℤ_[p]`.
+  exact formallySmooth_integralSystemModel_baseChange f
+    (Localization.Away ((N : ℕ) : ℤ)) ℤ_[p]
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Lang–Weil, NONEMPTINESS FORM** (SORRY LEAF — the second and by far the
@@ -3762,7 +4048,10 @@ open leaves; step 3 and ALL the glue are done in the proof below. Concretely:
   because `ℚ` is Noetherian) and its generators are cleared of denominators
   (`exists_integralGenerators`), producing an INTEGRAL system `f` — this is what
   makes one bound serve every `p` at once, and it is proven, not assumed;
-* `exists_bound_forall_formallySmooth_integralSystemModel` is step 1 (SORRY);
+* `exists_bound_forall_formallySmooth_integralSystemModel` is step 1 (**PROVEN
+  2026-07-26**, over the one commutative-algebra residue
+  `exists_inverted_formallySmooth_integralSystemModel`: smoothness of the model
+  over `ℤ[1/N]` for a single nonzero `N`);
 * `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` is step 2
   (SORRY) — Lang–Weil, in nonemptiness form only;
 * step 3 is discharged in full below with mathlib's
@@ -3789,9 +4078,20 @@ before starting, it decides how the work splits):
   consequence is needed here — NONEMPTINESS of `X(𝔽_p)` for large `p`, not
   the error term — so a proof route that gets `#X(𝔽_q) > 0` for
   `q` past an explicit threshold is enough.
-* Step 1, **spreading out**, also does not exist. `Mathlib/AlgebraicGeometry/
-  AffineTransitionLimit.lean` has the limit formalism that such an argument is
-  usually built on.
+* Step 1, **spreading out**, is now largely DISCHARGED, and the earlier claim
+  here that it "does not exist" was WRONG (corrected 2026-07-26 by re-audit).
+  `exists_bound_forall_formallySmooth_integralSystemModel` is PROVEN, over the
+  single commutative-algebra residue
+  `exists_inverted_formallySmooth_integralSystemModel`; and the ingredients that
+  residue needs are all at this pin —
+  `Algebra.isOpen_smoothLocus`, `Algebra.smoothLocus_eq_univ_iff` and
+  `Algebra.basicOpen_subset_smoothLocus_iff_smooth`
+  (`Mathlib/RingTheory/Smooth/Locus.lean:124,100,93`), plus Chevalley's
+  constructible image (`PrimeSpectrum.isConstructible_comap_image`,
+  `Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean:38`) if one wants it. The
+  limit formalism in `Mathlib/AlgebraicGeometry/AffineTransitionLimit.lean` is
+  NOT needed on that route. See the residue leaf's docstring for the argument
+  written out in the shape those lemmas want.
 
 FAITHFULNESS NOTE. The bound `B` is chosen AFTER `A`, so the exceptional set
 is allowed to depend on the variety — which is what "all but finitely many"
@@ -5316,7 +5616,26 @@ no finer cut is offered):
 
 So the honest ordering of effort is: §3.1 and §3.4-affine first (both
 have mathlib footholds), §3.5–3.6 next (Riemann–Roch is a known large
-target), §3.10.2 last. -/
+target), §3.10.2 last.
+
+RECON CORRECTION (2026-07-26). "Proper + affine implies finite" is NOT
+absent at this pin — it is absent from `Morphisms/Finite.lean`, which is
+where it was looked for, but present in `Morphisms/Proper.lean`:
+`AlgebraicGeometry.IsFinite.iff_isProper_and_isAffineHom` (`:92`) and
+`IsFinite.eq_isProper_inf_isAffineHom` (`:84`). Over a FIELD there is
+also `finite_appTop_of_universallyClosed` (`Proper.lean:154`) and
+`isField_of_universallyClosed` (`:143`), and Zariski's main theorem
+supplies `IsFinite.of_isProper_of_locallyQuasiFinite`
+(`ZariskisMainTheorem.lean:370`). So the `Z ≠ ∅` half of §3.1 — the part
+the leaf's own docstring derives from "proper + affine ⇒ finite ⇒
+dim ≤ 0" — is CHEAP, and only the construction of the model is not; a
+successor should cut §3.1 along that line rather than treating it as one
+block. Also confirmed absent, so those costings stand: no `IsCurve` class,
+no genus, no Riemann–Roch, no divisors-on-curves, no scheme-level Picard
+group or relative Picard functor (only ring-level `CommRing.Pic` with
+`ClassGroup.equivPic`, which is exactly the affine foothold §3.4 wants),
+no symmetric powers of a scheme, no Hilbert scheme, no effective Cartier
+divisors, no Lang–Weil, no strong approximation. -/
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly §3.1: the compactification datum** (SORRY — the smooth
@@ -7057,6 +7376,114 @@ theorem charP_of_padicIntAlgebra (ℓ : ℕ) [Fact ℓ.Prime] (k : Type*) [Field
   rw [← map_natCast (algebraMap ℤ_[ℓ] k) ℓ]
   exact hℓ0
 
+/-- **Enlarging a coefficient datum so that the residue field at `3` has
+MORE THAN THREE elements** (sorry leaf, cut 2026-07-26 — the whole residual
+of `exists_totallyRealCoefficientDatum_of_residueField` below, and PURE
+algebraic number theory: no representation and no geometry occurs in it).
+
+Given a coefficient datum as produced by
+`exists_totallyRealCoefficientDatum_core` — a totally real `D` with a prime
+`λ ∋ ℓ` of residue field `k` and a prime `𝔭 ∋ 3` — this produces a datum of
+the same shape whose residue field at `3` has more than three elements. It
+is stated to take the WHOLE `_core` conclusion as its hypothesis so that
+the gluing at the consumer is a one-liner; only the `λ`-half of `hdatum` is
+actually needed, since the `𝔭`-half is rebuilt from scratch by the
+construction below.
+
+**WHY THIS CUT AND NOT "STRENGTHEN `_core`" — the previously recorded
+residual was FALSE, and this is the correction (2026-07-26).** The docstring
+of the consumer used to say that the residual was exactly "the residue degree
+of `3` in the maximal real subfield `K⁺` of `ℚ(ζ_{ℓ^f−1})` is at least `2`",
+and that whoever closed it should strengthen `_core` rather than rebuild it.
+That statement is not merely hard, it is **false**, so no strengthening of
+`_core` at its own cyclotomic level can ever establish it:
+
+| `ℓ` | `f` | `m = ℓ^f − 1` | `K⁺` | `f₃(K⁺)` |
+|---|---|---|---|---|
+| `5` | `1` | `4` | `ℚ` | `1` |
+| `7` | `1` | `6` | `ℚ` | `1` |
+| `13` | `1` | `12` | `ℚ(√3)` (`3` RAMIFIES) | `1` |
+| `19` | `1` | `18` | `ℚ(ζ₉)⁺` (`3` totally ramified) | `1` |
+
+At `(ℓ, f) = (7, 1)`, for instance, `ℚ(ζ₆) = ℚ(ζ₃)` has maximal real
+subfield `ℚ`, so `_core` returns `D = ℚ`, its only prime above `3` is `(3)`,
+and `kp = 𝔽₃` with `Nat.card kp = 3`. Every hypothesis of the consumer is
+satisfied there (`k = 𝔽₇` is a finite field with a `ℤ_[7]`-algebra
+structure), so this is a genuine counterexample to the recorded residual and
+not a degenerate edge case. Machine-checked with PARI/GP: the residue degree
+was computed both from the decomposition/inertia description of
+`Gal(ℚ(ζ_n)/ℚ) = (ℤ/n)ˣ` and, independently, by `idealprimedec` on an
+explicit `nfinit` of the minimal polynomial of `ζ_n + ζ_n⁻¹`; the two agree
+on all seven cross-checked levels.
+
+The obstruction is structural: `ord_n(ℓ) = f` forces `n ∣ ℓ^f − 1`, so `m`
+is the LARGEST level prime to `ℓ` at which the residue field at `λ` is still
+`k`. The level therefore cannot be enlarged inside the prime-to-`ℓ`
+cyclotomic world at all, and the enlargement must happen elsewhere — either
+by ramifying at `ℓ` (level `ℓ²m`, where `f₃(K⁺) ≥ 20` in every case sampled,
+because the prime-to-`3` part of the level then exceeds `4`), or by the
+quadratic route below. The quadratic route is chosen here because it keeps
+`_core` intact and consumed.
+
+INTENDED DISCHARGE — a real quadratic twist, and it is elementary. Choose a
+positive integer `d` with
+
+* `d ≡ 2 (mod 3)`, so `d` is a non-residue mod `3` and `3` is INERT in
+  `ℚ(√d)`; and
+* `d ≡ 1 (mod ℓ)`, so `d` is a square mod `ℓ` and `ℓ` SPLITS in `ℚ(√d)`
+
+(such a `d` exists by CRT because `ℓ ≠ 3`, which is where `hℓ5` is consumed;
+and `d` is not a perfect square, since squares are `0` or `1` mod `3`). Put
+`D' := D · ℚ(√d)`, which is totally real because `d > 0` and `D` is. Then:
+
+* `ℓ` splits in `ℚ(√d)`, so `ℚ(√d)` embeds in `ℚ_ℓ` and the completion of
+  `D'` at a prime `λ'` above `λ` is again `D_λ`; hence `f(λ'∣λ) = 1` and the
+  residue field at `λ'` is still `k`.
+* Every prime `𝔭'` of `D'` above `3` restricts to the unique prime above `3`
+  in `ℚ(√d)`, which has residue degree `2`; residue degrees multiply along
+  the tower `ℚ ⊆ ℚ(√d) ⊆ D'`, so `2 ∣ f(𝔭'∣3)` and `Nat.card kp ≥ 9 > 3`.
+* `λ' ≠ 𝔭'` because a common prime would contain `1 = aℓ + 3b` (`ℓ ≥ 5`, so
+  `ℓ` and `3` are coprime), and `(3 : kp) = 0` because `3 ∈ 𝔭'`.
+
+MISSING MACHINERY, so that the next owner knows the shape of the work: the
+compositum of two number fields inside a common algebraic closure; the
+splitting of a rational prime in `ℚ(√d)` in terms of the Legendre symbol;
+and multiplicativity of the residue degree in a tower. None of these is
+represented in this file today, and the residue-degree multiplicativity is
+the only one for which mathlib's `Ideal.inertiaDeg` API should suffice
+directly (`Ideal.inertiaDeg_algebra_tower` and neighbours).
+
+FAITHFULNESS: this leaf asks only for the EXISTENCE of a number field with
+prescribed local behaviour at two rational primes, so it is not an instance
+of the `𝒪ᵥ`-descent trap; and it is not vacuous, since the conclusion pins
+`Nat.card kp > 3` against a hypothesis package that (as the table above
+shows) can be satisfied with `Nat.card kp = 3`. -/
+theorem exists_totallyRealCoefficientDatum_enlarge (ℓ : ℕ) [Fact ℓ.Prime]
+    (hℓ5 : 5 ≤ ℓ) (k : Type u) [Field k] [Finite k]
+    (hdatum : ∃ (D : Type u) (_ : Field D) (_ : NumberField D)
+      (_ : NumberField.IsTotallyReal D)
+      (lam frp : Ideal (NumberField.RingOfIntegers D))
+      (kp : Type u) (_ : Field kp) (_ : Finite kp) (_ : TopologicalSpace kp)
+      (_ : DiscreteTopology kp),
+      lam.IsMaximal ∧ frp.IsMaximal ∧ lam ≠ frp ∧
+      ((ℓ : ℕ) : NumberField.RingOfIntegers D) ∈ lam ∧
+      ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
+      (3 : kp) = 0) :
+    ∃ (D : Type u) (_ : Field D) (_ : NumberField D)
+      (_ : NumberField.IsTotallyReal D)
+      (lam frp : Ideal (NumberField.RingOfIntegers D))
+      (kp : Type u) (_ : Field kp) (_ : Finite kp) (_ : TopologicalSpace kp)
+      (_ : DiscreteTopology kp),
+      lam.IsMaximal ∧ frp.IsMaximal ∧ lam ≠ frp ∧
+      ((ℓ : ℕ) : NumberField.RingOfIntegers D) ∈ lam ∧
+      ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
+      (3 : kp) = 0 ∧ 3 < Nat.card kp :=
+  sorry
+
 /-- **The auxiliary totally real coefficient field and its two primes**
 (PROVEN 2026-07-26 — the ARITHMETIC half of the representability leaf; no
 algebraic geometry appears in it): for a finite field `k` of
@@ -7126,18 +7553,30 @@ except the new clause is `exists_totallyRealCoefficientDatum_core` above
 `subfield_eq_top_of_mem_add_inv`, `isIntegral_subfield_mk`,
 `inv_mem_subring_of_finite`, `isPrimitiveRoot_map_of_natCast_ne_zero`,
 `orderOf_natCast_zmod_pow_sub_one`, `charP_of_padicIntAlgebra` — all
-proven, and free-floating only until this node consumes them again). The
-discharge that was in place instantiated `_core` at
+proven). The discharge that was in place instantiated `_core` at
 `K = ULift (CyclotomicField (ℓ^f − 1) ℚ)` with `f` the degree of `k` over
-`𝔽_ℓ`; recover it verbatim from the merge parent of this file's
-`flt-lean-145` merge.
+`𝔽_ℓ`; that instantiation is RESTORED below verbatim, so `_core` and its
+helper stack are consumed again and nothing in it is free-floating.
 
-So the residual mathematics is only: **the residue degree of `3` in the
-maximal real subfield `K⁺` of `ℚ(ζ_{ℓ^f−1})` is at least `2`**, i.e.
-`𝒪_{K⁺}/𝔭 ≠ 𝔽_3`. That is a statement about the order of `3` mod
-`ℓ^f − 1` modulo the `±1` identification defining `K⁺`, and it is NOT
-supplied by `_core`, whose conclusion stops at `(3 : kp) = 0`. Whoever
-closes this should strengthen `_core` rather than rebuild it. -/
+**THE RESIDUAL RECORDED HERE UNTIL 2026-07-26 WAS FALSE, AND HAS BEEN
+REPLACED.** This paragraph used to say that the residual was exactly "the
+residue degree of `3` in the maximal real subfield `K⁺` of `ℚ(ζ_{ℓ^f−1})`
+is at least `2`", and that whoever closed the node should strengthen
+`_core` rather than rebuild it. **`f₃(K⁺) = 1` for `(ℓ, f)` equal to
+`(5,1)`, `(7,1)`, `(13,1)` and `(19,1)`** — at `(7,1)` the field
+`ℚ(ζ₆) = ℚ(ζ₃)` has maximal real subfield `ℚ`, so `_core` hands back
+`D = ℚ`, `𝔭 = (3)` and `kp = 𝔽₃`. The obstruction is structural rather
+than accidental: `ord_n(ℓ) = f` forces `n ∣ ℓ^f − 1`, so `ℓ^f − 1` is
+already the LARGEST level prime to `ℓ` at which the residue field at `λ`
+is still `k`, and no strengthening of `_core` at its own level can
+deliver the clause. The full table, the machine cross-check and the
+corrected construction are in the docstring of
+`exists_totallyRealCoefficientDatum_enlarge` above, which is now the
+single residual leaf of this node.
+
+So this node is now PROVEN over one sub-leaf: `_core` supplies the datum,
+and `exists_totallyRealCoefficientDatum_enlarge` upgrades it by a real
+quadratic twist `ℚ(√d)` with `3` inert and `ℓ` split. -/
 theorem exists_totallyRealCoefficientDatum_of_residueField
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (k : Type u) [Field k] [Finite k] [Algebra ℤ_[ℓ] k] :
@@ -7151,8 +7590,32 @@ theorem exists_totallyRealCoefficientDatum_of_residueField
       ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp ∧
       Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
       Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
-      (3 : kp) = 0 ∧ 3 < Nat.card kp :=
-  sorry
+      (3 : kp) = 0 ∧ 3 < Nat.card kp := by
+  classical
+  haveI : CharP k ℓ := charP_of_padicIntAlgebra ℓ k
+  haveI : Fintype k := Fintype.ofFinite k
+  obtain ⟨fp, -, hcardk⟩ := FiniteField.card k ℓ
+  have hfpos : 0 < (fp : ℕ) := fp.2
+  have hcardk' : Nat.card k = ℓ ^ (fp : ℕ) := by rw [Nat.card_eq_fintype_card, hcardk]
+  haveI : CharZero (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) :=
+    (ULift.ringEquiv (R := CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)).toRingHom.charZero
+  let e : ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)
+      ≃ₐ[ℚ] CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ :=
+    { ULift.ringEquiv (R := CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ) with
+      commutes' := fun r => by simp }
+  haveI : FiniteDimensional ℚ (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) :=
+    LinearEquiv.finiteDimensional e.toLinearEquiv.symm
+  haveI : NumberField (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) := ⟨⟩
+  haveI : IsCyclotomicExtension {ℓ ^ (fp : ℕ) - 1} ℚ
+      (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ) :=
+    CyclotomicField.instIsCyclotomicExtensionSingletonNatSetOfCharZero _ ℚ
+  haveI : IsCyclotomicExtension {ℓ ^ (fp : ℕ) - 1} ℚ
+      (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) :=
+    IsCyclotomicExtension.equiv {ℓ ^ (fp : ℕ) - 1} ℚ
+      (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ) e.symm
+  exact exists_totallyRealCoefficientDatum_enlarge ℓ hℓ5 k
+    (exists_totallyRealCoefficientDatum_core ℓ (fp : ℕ) hℓ5 hfpos
+      (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) k hcardk')
 
 /-- **An odd dihedral auxiliary level representation** (sorry node, cut
 2026-07-26 — the second ARITHMETIC leaf of the representability half; no
@@ -7281,6 +7744,42 @@ characteristic over, and the oddness conjunct is a genuine condition only
 because `char kp` is odd. But it is NO LONGER the only thing this leaf
 needs to know about `kp` — `hcard` is now the substantive hypothesis, and
 `h3` alone is provably insufficient.
+
+MISSING MACHINERY (surveyed 2026-07-26 — read this BEFORE dispatching at
+this leaf; it is not a one-cycle job and the survey is what says so).
+Four things the intended discharge needs, none of which exists here:
+
+1. *An induced representation as a `GaloisRep`.* Mathlib's
+   `Mathlib/RepresentationTheory/Induced.lean` induces along a group hom of
+   ABSTRACT groups; nothing produces a CONTINUOUS `GaloisRep ℚ kp (Fin 2 → kp)`
+   from an open index-`2` subgroup `Γ_M ≤ Γ_ℚ` and a character `Γ_M → kpˣ`.
+   The continuity, the rank-`2` framing and the identification of the induced
+   module with `Fin 2 → kp` all have to be built. `Ind` occurs in this tree
+   only inside docstrings.
+2. *Class field theory.* There is no Artin map in the tree, so a class (or
+   ray class) character of `M` cannot be turned into a character of `Γ_M` at
+   all. This is the single largest missing block.
+3. *The transfer.* `det (Ind χ) = ε_{M/ℚ} · (χ ∘ Ver)` needs the
+   Verlagerung `Ver : Γ_ℚ^{ab} → Γ_M^{ab}` and its value `Ver(c) = c² = 1`.
+   Mathlib has `MonoidHom.transfer`; the determinant identity for an induced
+   representation is not there.
+4. *The existence of `M`.* As written, the "concrete `χ`" paragraph above
+   demands an imaginary quadratic `M` whose CLASS GROUP has an element of
+   order `m = q − 1`, citing Nakagawa–Horie / Yamamoto. That is a
+   research-level theorem on the infinitude of imaginary quadratic fields
+   with class number divisible by `m`, and formalizing it is out of
+   proportion to what the leaf needs.
+
+A CHEAPER SUBSTITUTE FOR ITEM 4, which the next owner should take. Nothing
+in the argument requires the character to be UNRAMIFIED — only that
+`ψ = χ/χ^c` have order `≥ 3`. So fix ONE imaginary quadratic `M` and use RAY
+class characters: the ray class group of `M` of conductor `𝔣` has order
+growing with `N(𝔣)`, so it admits cyclic quotients of any prescribed order,
+and no theorem about class NUMBERS is needed. That removes the deepest
+input from the plan and leaves items 1–3, which are ordinary (if large)
+formalization work rather than research mathematics. Item 2 remains the
+gate: until class field theory reaches this tree, this leaf cannot be
+closed by the induced-representation route at all.
 
 FAITHFULNESS: the conclusion is a statement about `Γ_ℚ`-representations
 alone and mentions no space, so it cannot be discharged vacuously by a
