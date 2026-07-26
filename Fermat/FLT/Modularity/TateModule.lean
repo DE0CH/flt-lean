@@ -118,6 +118,17 @@ public import Fermat.FLT.Modularity.AbelianScheme
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
 public import Mathlib.Topology.Algebra.Module.ModuleTopology
 public import Mathlib.NumberTheory.Padics.RingHoms
+-- `IsLocalRing.isOpen_maximalIdeal_pow` and the instance
+-- `IsNoetherianRing.isClosed_ideal`: the openness half of the comparison
+-- between the `ℤ_q`-module topology and the `P`-adic topology in
+-- `exists_galoisRep_of_isOpen_congruence`
+public import Mathlib.Topology.Algebra.Ring.Compact
+-- `Ideal.iInf_pow_eq_bot_of_isLocalRing` (Krull intersection): the
+-- cofinality half of that comparison
+public import Mathlib.RingTheory.Filtration
+-- `PadicInt.compactSpace`: `ℤ_q` is compact, whence so is every finite
+-- `ℤ_q`-module with the module topology
+public import Mathlib.NumberTheory.Padics.ProperSpace
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.LinearAlgebra.Dimension.Constructions
 -- `IsAdicComplete`: the completeness half of the pin that identifies the
@@ -828,7 +839,10 @@ varieties that no amount of algebra will supply:
 * `exists_galoisRep_of_isOpen_congruence` — TOPOLOGY. A homomorphism
   into `End_O(O²)` all of whose congruence subgroups mod `Pⁿ` are open
   is continuous for the module topology. This is where the `ℤ_q`-module
-  topology of `O` is compared with the `π`-adic one.
+  topology of `O` is compared with the `π`-adic one. **PROVEN
+  2026-07-26** over the five commutative-algebra lemmas of the
+  `CongruenceTopology` section below, whose joint content is that
+  `{Pⁿ}ₙ` is a neighbourhood basis of `0` in `O`.
 
 Everything else — the identification `𝒪_D/Iⁿ ≅ O/(π)ⁿ`, the inverse
 limit, bijectivity of the frame, `O`-linearity of the Galois action and
@@ -915,23 +929,214 @@ theorem isOpen_stabilizer_torsion
       ∀ y ∈ (m.torsion x J).1, ab.galSMul x σ y = y} :=
   sorry
 
+/-! ### Comparing the `ℤ_q`-module topology with the `P`-adic topology
+
+The five lemmas below are the commutative-algebra half of
+`exists_galoisRep_of_isOpen_congruence`: for a coefficient ring `O` that
+is finite (and free) over `ℤ_q` and carries the `ℤ_q`-module topology,
+the powers of any proper ideal `P ∋ q` form a NEIGHBOURHOOD BASIS of `0`.
+
+The two halves of that statement are proved by different arguments.
+
+*Openness of `Pⁿ`* comes from below: `q ∈ P` gives `(qⁿ) ≤ Pⁿ`, and the
+principal ideal `(qⁿ)` is open because, read through a `ℤ_q`-basis of
+`O`, it is exactly the set of vectors all of whose coordinates lie in the
+open ideal `(qⁿ) ⊆ ℤ_q` — the content of `isOpen_span_natCast_pow`.
+
+*Cofinality* comes from above, by COMPACTNESS rather than by the
+nilpotence argument sketched in the leaf's original docstring: `O` is
+compact (a continuous image of `ℤ_qⁿ`) and Hausdorff, the `Pⁿ` are
+closed and decreasing, and `⋂ₙ Pⁿ = 0` by Krull's intersection theorem
+in the Noetherian local ring `O`; so a decreasing sequence of nonempty
+compact sets `Pⁿ \ U` would have nonempty intersection, which is absurd.
+This avoids having to produce the Artinian structure of `O/qO`. -/
+
+section CongruenceTopology
+
+/-- A finite `ℤ_q`-module with the module topology is COMPACT: it is a
+continuous image of `ℤ_qⁿ`, which is compact because `ℤ_q` is. -/
+theorem compactSpace_of_isModuleTopology_padicInt (q : ℕ) [Fact q.Prime] (O : Type*)
+    [AddCommGroup O] [Module ℤ_[q] O] [TopologicalSpace O] [Module.Finite ℤ_[q] O]
+    [IsModuleTopology ℤ_[q] O] : CompactSpace O := by
+  haveI : ContinuousAdd O := IsModuleTopology.toContinuousAdd ℤ_[q] O
+  obtain ⟨n, f, hf⟩ := Module.Finite.exists_fin' ℤ_[q] O
+  exact ⟨hf.range_eq ▸ isCompact_range (IsModuleTopology.continuous_of_linearMap f)⟩
+
+/-- A finite FREE `ℤ_q`-module with the module topology is HAUSDORFF: the
+coordinate map to `ℤ_qⁱ` is continuous and injective. -/
+theorem t2Space_of_isModuleTopology_padicInt (q : ℕ) [Fact q.Prime] (O : Type*)
+    [AddCommGroup O] [Module ℤ_[q] O] [TopologicalSpace O] [Module.Finite ℤ_[q] O]
+    [Module.Free ℤ_[q] O] [IsModuleTopology ℤ_[q] O] : T2Space O := by
+  classical
+  haveI : Fintype (Module.Free.ChooseBasisIndex ℤ_[q] O) :=
+    Module.Free.ChooseBasisIndex.fintype ℤ_[q] O
+  exact T2Space.of_injective_continuous
+    (Module.Free.chooseBasis ℤ_[q] O).equivFun.injective
+    (IsModuleTopology.continuous_of_linearMap
+      (Module.Free.chooseBasis ℤ_[q] O).equivFun.toLinearMap)
+
+/-- A ring finite over `ℤ_q` is Noetherian. -/
+theorem isNoetherianRing_of_finite_padicInt (q : ℕ) [Fact q.Prime] (O : Type*) [CommRing O]
+    [Algebra ℤ_[q] O] [Module.Finite ℤ_[q] O] : IsNoetherianRing O :=
+  IsNoetherianRing.of_finite ℤ_[q] O
+
+/-- **The principal ideal `(qⁿ)` is open in `O`.** Read through a
+`ℤ_q`-basis, it is the set of vectors all of whose coordinates lie in
+`(qⁿ) ⊆ ℤ_q`, and that ideal is open in `ℤ_q` (it is a power of the
+maximal ideal of the compact Noetherian local ring `ℤ_q`). -/
+theorem isOpen_span_natCast_pow (q : ℕ) [Fact q.Prime] (O : Type*) [CommRing O]
+    [TopologicalSpace O] [IsTopologicalRing O] [Algebra ℤ_[q] O] [Module.Finite ℤ_[q] O]
+    [Module.Free ℤ_[q] O] [IsModuleTopology ℤ_[q] O] (n : ℕ) :
+    IsOpen ((Ideal.span {(q : O) ^ n} : Ideal O) : Set O) := by
+  classical
+  haveI : Fintype (Module.Free.ChooseBasisIndex ℤ_[q] O) :=
+    Module.Free.ChooseBasisIndex.fintype ℤ_[q] O
+  set b := Module.Free.chooseBasis ℤ_[q] O with hb
+  have hmap : (algebraMap ℤ_[q] O) ((q : ℤ_[q]) ^ n) = (q : O) ^ n := by
+    rw [map_pow, map_natCast]
+  -- the coordinatewise description of `(qⁿ)`
+  have hspan : ((Ideal.span {(q : O) ^ n} : Ideal O) : Set O) =
+      b.equivFun ⁻¹' (Set.univ.pi fun _ =>
+        ((Ideal.span {(q : ℤ_[q]) ^ n} : Ideal ℤ_[q]) : Set ℤ_[q])) := by
+    ext x
+    simp only [SetLike.mem_coe, Ideal.mem_span_singleton, Set.mem_preimage, Set.mem_pi,
+      Set.mem_univ, forall_const, b.equivFun_apply]
+    constructor
+    · rintro ⟨y, rfl⟩ i
+      refine ⟨b.repr y i, ?_⟩
+      have hy : (q : O) ^ n * y = ((q : ℤ_[q]) ^ n) • y := by
+        rw [Algebra.smul_def, hmap]
+      rw [hy, map_smul, Finsupp.smul_apply, smul_eq_mul]
+    · intro h
+      choose c hc using h
+      refine ⟨∑ i, c i • b i, ?_⟩
+      have hy : (q : O) ^ n * ∑ i, c i • b i = ((q : ℤ_[q]) ^ n) • ∑ i, c i • b i := by
+        rw [Algebra.smul_def, hmap]
+      rw [hy, Finset.smul_sum]
+      conv_lhs => rw [← b.sum_repr x]
+      exact Finset.sum_congr rfl fun i _ => by rw [hc i, mul_smul]
+  rw [hspan]
+  refine IsOpen.preimage (IsModuleTopology.continuous_of_linearMap b.equivFun.toLinearMap)
+    (isOpen_set_pi Set.finite_univ fun _ _ => ?_)
+  have hpow : (Ideal.span {(q : ℤ_[q]) ^ n} : Ideal ℤ_[q])
+      = IsLocalRing.maximalIdeal ℤ_[q] ^ n := by
+    rw [PadicInt.maximalIdeal_eq_span_p, Ideal.span_singleton_pow]
+  rw [hpow]
+  exact IsLocalRing.isOpen_maximalIdeal_pow ℤ_[q] n
+
+/-- **Every power of a proper ideal containing `q` is open.** -/
+theorem isOpen_pow_of_natCast_mem (q : ℕ) [Fact q.Prime] {O : Type*} [CommRing O]
+    [TopologicalSpace O] [IsTopologicalRing O] [Algebra ℤ_[q] O] [Module.Finite ℤ_[q] O]
+    [Module.Free ℤ_[q] O] [IsModuleTopology ℤ_[q] O] {P : Ideal O} (hPq : (q : O) ∈ P)
+    (n : ℕ) : IsOpen ((P ^ n : Ideal O) : Set O) := by
+  refine Submodule.isOpen_mono (U := Ideal.span {(q : O) ^ n}) (P := P ^ n) ?_
+    (isOpen_span_natCast_pow q O n)
+  rw [Ideal.span_le, Set.singleton_subset_iff]
+  exact Ideal.pow_mem_pow hPq n
+
+/-- **Every neighbourhood of `0` contains a power of `P`** — the
+COFINALITY half of the comparison between the `ℤ_q`-module topology and
+the `P`-adic one, and the only place where compactness of `O` is used.
+
+Note that this half needs only `P ≠ ⊤`, not `q ∈ P`: it holds for the
+zero ideal as well, whose powers are `{0}`. The hypothesis `q ∈ P` is
+what makes the powers OPEN, and it enters through
+`isOpen_pow_of_natCast_mem` in `hasBasis_pow_nhds_zero` below. -/
+theorem exists_pow_subset_of_mem_nhds (q : ℕ) [Fact q.Prime] {O : Type*} [CommRing O]
+    [TopologicalSpace O] [IsTopologicalRing O] [Algebra ℤ_[q] O] [IsLocalRing O]
+    [Module.Finite ℤ_[q] O] [Module.Free ℤ_[q] O] [IsModuleTopology ℤ_[q] O] {P : Ideal O}
+    (hPtop : P ≠ ⊤) {V : Set O} (hV : V ∈ nhds (0 : O)) :
+    ∃ n : ℕ, ((P ^ n : Ideal O) : Set O) ⊆ V := by
+  haveI : CompactSpace O := compactSpace_of_isModuleTopology_padicInt q O
+  haveI : T2Space O := t2Space_of_isModuleTopology_padicInt q O
+  haveI : IsNoetherianRing O := isNoetherianRing_of_finite_padicInt q O
+  obtain ⟨U, hUV, hUopen, hU0⟩ := mem_nhds_iff.mp hV
+  by_contra hcon
+  have hcon' : ∀ n : ℕ, ¬ (((P ^ n : Ideal O) : Set O) ⊆ U) := fun n hn => hcon ⟨n, hn.trans hUV⟩
+  -- the sets `Pⁿ \ U` are nonempty, decreasing, closed, and compact
+  set C : ℕ → Set O := fun n => ((P ^ n : Ideal O) : Set O) \ U with hC
+  have hCne : ∀ n, (C n).Nonempty := by
+    intro n
+    obtain ⟨x, hx1, hx2⟩ := Set.not_subset.mp (hcon' n)
+    exact ⟨x, hx1, hx2⟩
+  have hCcl : ∀ n, IsClosed (C n) := fun n =>
+    (IsNoetherianRing.isClosed_ideal (P ^ n)).inter hUopen.isClosed_compl
+  have hCd : ∀ n, C (n + 1) ⊆ C n := fun n x hx =>
+    ⟨Ideal.pow_le_pow_right (Nat.le_succ n) hx.1, hx.2⟩
+  obtain ⟨x, hx⟩ := IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed C hCd hCne
+    ((hCcl 0).isCompact) hCcl
+  -- but `⋂ₙ Pⁿ = 0` and `0 ∈ U`
+  have hx0 : x = 0 := by
+    have hmem : x ∈ (⨅ n : ℕ, P ^ n) := Ideal.mem_iInf.mpr fun n => (Set.mem_iInter.mp hx n).1
+    rwa [Ideal.iInf_pow_eq_bot_of_isLocalRing P hPtop, Ideal.mem_bot] at hmem
+  exact (Set.mem_iInter.mp hx 0).2 (hx0 ▸ hU0)
+
+/-- **`{Pⁿ}ₙ` is a neighbourhood basis of `0` in `O`.** This is the full
+comparison of the `ℤ_q`-module topology on `O` with the `P`-adic
+topology, and BOTH hypotheses on `P` are used: `q ∈ P` makes each `Pⁿ`
+open, and `P ≠ ⊤` makes them shrink to `0`. -/
+theorem hasBasis_pow_nhds_zero (q : ℕ) [Fact q.Prime] {O : Type*} [CommRing O]
+    [TopologicalSpace O] [IsTopologicalRing O] [Algebra ℤ_[q] O] [IsLocalRing O]
+    [Module.Finite ℤ_[q] O] [Module.Free ℤ_[q] O] [IsModuleTopology ℤ_[q] O] {P : Ideal O}
+    (hPq : (q : O) ∈ P) (hPtop : P ≠ ⊤) :
+    (nhds (0 : O)).HasBasis (fun _ : ℕ => True) fun n => ((P ^ n : Ideal O) : Set O) := by
+  refine Filter.hasBasis_iff.mpr fun V => ⟨fun hV => ?_, ?_⟩
+  · obtain ⟨n, hn⟩ := exists_pow_subset_of_mem_nhds q hPtop hV
+    exact ⟨n, trivial, hn⟩
+  · rintro ⟨n, -, hn⟩
+    exact Filter.mem_of_superset
+      ((isOpen_pow_of_natCast_mem q hPq n).mem_nhds (Submodule.zero_mem (P ^ n))) hn
+
+end CongruenceTopology
+
 /-- **A homomorphism with open congruence subgroups is a continuous
-representation** (sorry node — topology and commutative algebra).
+representation** (PROVEN 2026-07-26; topology and commutative algebra).
 
 `O` is finite over `ℤ_q` and carries the `ℤ_q`-module topology, so its
 topology is the `q`-adic one; and `P` is a proper ideal containing `q`,
 so the `P`-adic and `q`-adic filtrations of `O` are cofinal in each
-other — one inclusion is `q ∈ P`, the other is nilpotence of the maximal
-ideal of the artinian local ring `O/qO`, which contains the image of
-`P`. Hence `{Pⁿ}` is a neighbourhood basis of `0` in `O`, `{Pⁿ·End}` one
-of `0` in `End_O(O²)` for the module topology, and openness of every
-congruence subgroup is exactly continuity of `t` at `1`.
+other. Hence `{Pⁿ}` is a neighbourhood basis of `0` in `O`
+(`hasBasis_pow_nhds_zero` above), and openness of every congruence
+subgroup is exactly continuity of `t` at `1`.
 
-**Both hypotheses on `P` are load-bearing.** Without `hPq` the `P`-adic
-topology can be coarser than the `q`-adic one (take `P = 0`, all of
-whose congruence subgroups are trivially open while `t` is arbitrary);
-without `hPtop` it can be finer (`P = ⊤` makes every congruence subgroup
-the whole group). -/
+HOW IT IS PROVEN. Three steps.
+
+1. *`{Pⁿ}` is a neighbourhood basis of `0` in `O`* —
+   `hasBasis_pow_nhds_zero`. Its two halves are proved by different
+   arguments; see the section docstring above. The cofinality half goes
+   by COMPACTNESS of `O` plus Krull's intersection theorem, NOT by the
+   nilpotence of the maximal ideal of `O/qO` sketched in the original
+   version of this docstring — that route would have needed the
+   Artinian structure of `O/qO`, which the compactness argument makes
+   unnecessary.
+2. *Continuity of `t` at `1`* — `End_O(O²)` is read through the standard
+   basis as `(Fin 2 → Fin 2 → O)` with the product topology (the two
+   module topologies agree because `Basis.constr` is an `O`-linear
+   equivalence between two modules carrying module topologies), so
+   convergence is entrywise, and step 1 turns each entry's neighbourhood
+   filter into the filtration `{Pⁿ}`, which `hloc` matches exactly.
+3. *Continuity everywhere* — `continuous_of_continuousAt_one`, available
+   because `End_O(O²)` with the module topology is a topological ring
+   (`IsModuleTopology.isTopologicalRing`, applicable since `End_O(O²)`
+   is a finite `O`-algebra).
+
+**`hPtop` is load-bearing; `hPq` turns out NOT to be.** Without `hPtop`
+the `P`-adic topology can be finer than the module topology (`P = ⊤`
+makes every congruence subgroup the whole group, so `hloc` says nothing
+and `t` may be any homomorphism whatever): `hPtop` is exactly what
+Krull's theorem needs in order to force `⋂ₙ Pⁿ = 0`.
+
+The claim made here until 2026-07-26 that `hPq` is equally load-bearing
+is WRONG, and its counterexample does not work: at `P = 0` the `n = 1`
+congruence subgroup is `{σ | t σ = 1} = ker t`, whose openness is a
+strong hypothesis and not a triviality — an open kernel already makes
+`t` locally constant, hence continuous. In fact the theorem is provable
+with `hPq` deleted outright, since the cofinality half of step 1 uses
+only `P ≠ ⊤` (see `exists_pow_subset_of_mem_nhds`). The hypothesis is
+kept in the statement because the call site in
+`exists_tateFrame_of_adicCoefficientRing` supplies it positionally and
+because it is what makes the powers of `P` OPEN, which is the natural
+two-sided statement `hasBasis_pow_nhds_zero` that this proof consumes. -/
 theorem exists_galoisRep_of_isOpen_congruence
     {F : Type u} [Field F] [NumberField F] (q : ℕ) [Fact q.Prime]
     {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
@@ -941,8 +1146,59 @@ theorem exists_galoisRep_of_isOpen_congruence
     (t : Field.absoluteGaloisGroup F →* Module.End O (Fin 2 → O))
     (hloc : ∀ n : ℕ, IsOpen {σ : Field.absoluteGaloisGroup F |
       ∀ (u : Fin 2 → O) (i : Fin 2), (t σ u - u) i ∈ P ^ n}) :
-    ∃ τ : GaloisRep F O (Fin 2 → O), ∀ σ, τ σ = t σ :=
-  sorry
+    ∃ τ : GaloisRep F O (Fin 2 → O), ∀ σ, τ σ = t σ := by
+  classical
+  -- `End_O(O²)` carries the `O`-module topology, which makes it a topological ring
+  letI : TopologicalSpace (Module.End O (Fin 2 → O)) :=
+    moduleTopology O (Module.End O (Fin 2 → O))
+  haveI : IsModuleTopology O (Module.End O (Fin 2 → O)) := ⟨rfl⟩
+  haveI : IsTopologicalRing (Module.End O (Fin 2 → O)) :=
+    IsModuleTopology.isTopologicalRing O (Module.End O (Fin 2 → O))
+  -- read an endomorphism through the standard basis: `End_O(O²) ≃ₗ (Fin 2 → Fin 2 → O)`
+  set bb : Module.Basis (Fin 2) O (Fin 2 → O) := Pi.basisFun O (Fin 2) with hbb
+  set ψ : (Fin 2 → (Fin 2 → O)) ≃ₗ[O] Module.End O (Fin 2 → O) := bb.constr O with hψdef
+  have hψ : Continuous ψ := IsModuleTopology.continuous_of_linearMap ψ.toLinearMap
+  have hval : ∀ (σ : Field.absoluteGaloisGroup F) (j i : Fin 2),
+      ψ.symm (t σ) j i = (t σ (bb j)) i := by
+    intro σ j i
+    rw [hψdef]
+    simp [Module.Basis.constr_symm_apply]
+  -- continuity at `1`, entry by entry
+  have hcont1 : ContinuousAt (fun σ : Field.absoluteGaloisGroup F => ψ.symm (t σ)) 1 := by
+    rw [ContinuousAt, tendsto_pi_nhds]
+    intro j
+    rw [tendsto_pi_nhds]
+    intro i
+    rw [Filter.tendsto_def]
+    intro V hV
+    -- the target value is the `(j,i)` entry of the identity
+    have hone : ψ.symm (t (1 : Field.absoluteGaloisGroup F)) j i = (bb j) i := by
+      rw [hval]; simp
+    rw [hone] at hV
+    -- translate `V` back to a neighbourhood of `0` and extract a power of `P`
+    have hV0 : (fun y : O => y + (bb j) i) ⁻¹' V ∈ nhds (0 : O) := by
+      have hca := (continuous_add_const ((bb j) i)).continuousAt (x := (0 : O))
+      rw [ContinuousAt, zero_add] at hca
+      exact hca hV
+    obtain ⟨n, -, hn⟩ := (hasBasis_pow_nhds_zero q hPq hPtop).mem_iff.mp hV0
+    -- the `n`-th congruence subgroup is an open neighbourhood of `1` inside the preimage
+    refine Filter.mem_of_superset ((hloc n).mem_nhds ?_) ?_
+    · intro u k
+      simp
+    · intro σ hσ
+      have hmem : (t σ (bb j)) i - (bb j) i ∈ P ^ n := by
+        have := hσ (bb j) i
+        simpa using this
+      have := hn hmem
+      simp only [Set.mem_preimage, sub_add_cancel] at this
+      simpa [hval] using this
+  -- transport back along `ψ` and propagate from `1` by the group structure
+  have hcontAt : ContinuousAt (fun σ : Field.absoluteGaloisGroup F => t σ) 1 := by
+    have h := hψ.continuousAt.comp hcont1
+    simpa [Function.comp_def] using h
+  have hcont : Continuous (fun σ : Field.absoluteGaloisGroup F => t σ) :=
+    continuous_of_continuousAt_one t hcontAt
+  exact ⟨⟨t, hcont⟩, fun σ => rfl⟩
 
 /-- **The Tate module is free of rank two over the completion**, with a
 continuous Galois action extending the real multiplication (PROVEN
