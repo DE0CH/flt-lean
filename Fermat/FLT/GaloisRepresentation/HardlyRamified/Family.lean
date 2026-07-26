@@ -2660,6 +2660,50 @@ status:
      henselian base is available; blocked on the same missing object as
      (R1).
 
+SUPPLY SURVEY (2026-07-26, a later owner). It produced NO new cut; it is
+recorded only so that the next owner does not repeat the search. Every
+pointer below was checked against OUR pin.
+
+* mathlib has NO henselization and NO strict-henselisation construction,
+  and no `IsStrictlyHenselian` predicate: `Mathlib/RingTheory/Henselian.lean`
+  supplies only `HenselianRing` and `HenselianLocalRing`. So (R1)'s
+  missing OBJECT really is missing — but it is CONSTRUCTIBLE here rather
+  than absent in principle. `𝒪ᵖᵥ` is complete, hence henselian, so its
+  strict henselisation is `integralClosure 𝒪ᵖᵥ Kᵘⁿʳ` for
+  `Kᵘⁿʳ = IntermediateField.fixedField (localInertiaGroup …)` — the very
+  field `unramifiedTensorSubmodule` above is already stated over. What
+  must be PROVEN of it is that it is local with separably closed residue
+  field; nothing must be invented.
+* (R4)'s pointer is live: `Algebra.FormallyEtale.equivPiOfIsSepClosed`
+  is at `Mathlib/RingTheory/Etale/Field.lean:217`.
+* `~/cs/FLT` does NOT supply the group-scheme side: its
+  `FLT/GroupScheme/FiniteFlat.lean` is a 17-line comment stub with no
+  declarations. It DOES supply the henselian side —
+  `FLT/HenselianLocalRing/{Finite,EtaleDecomposition,Stuff}.lean`, 712
+  sorry-free lines (A. Yang): a finite algebra over a henselian local
+  ring splits into local factors
+  (`HenselianLocalRing.exists_completeOrthogonalIdempotents_forall_isLocalRing`),
+  those factors are henselian (`HenselianLocalRing.of_finite`), and an
+  étale algebra over such a ring is pinned by its residue-field data
+  (`HenselianLocalRing.exist_algEquiv_residueFieldMap_eq_of_etale`).
+  That is the dévissage PLUMBING that (R1)/(R4) need once a strictly
+  henselian base exists; it is not Raynaud, and its pin has drifted
+  (v4.32.0 against our v4.32.0-rc1), so it needs an audit to vendor.
+* If anyone builds the corner Hopf order as an object, mathlib's corner
+  API is `IsIdempotentElem.Corner`, `Mathlib/RingTheory/Idempotents.lean:552`.
+
+NO THIRD CUT was found; the three routes examined collapse into what is
+already refuted below. (a) Citing the INVARIANCE form and descending to
+membership is the pre-sharpening statement plus the Galois-descent
+converse of `localInertia_fixes_of_mem_unramifiedTensorSubmodule`; the
+two forms are equivalent, so it is a relocation, and it would leave that
+PROVEN lemma with no consumer. (b) Reading the `hchar` filtration as the
+dévissage — which it genuinely is, the residual space being
+2-dimensional — leaves precisely the extension step of (S2), where it is
+FLATNESS and not level-one that excludes the ramified unipotent class.
+(c) Building `e₀ · G` as a Hopf order in its own right is real work but
+pure plumbing: it moves no part of (R1)–(R4).
+
 TWO SHORTCUTS, BOTH EXAMINED AND BOTH REJECTED (recorded so the next
 owner does not pay for them again):
 
