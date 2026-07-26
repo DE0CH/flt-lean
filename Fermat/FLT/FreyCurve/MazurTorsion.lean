@@ -1009,6 +1009,163 @@ theorem WeierstrassCurve.not_cyclicIsogeny_thirtyTwo (E : WeierstrassCurve ℚ)
   obtain ⟨x, y, hxy, hsx⟩ := E.exists_x0ThirtyTwo_point g hg hstable s hs
   exact QuarticDescent.no_x0ThirtyTwo_point E.j s x y hxy hsx hs
 
+/-!
+##### The two remaining prime-power citations, `81` and `125` — verified, costed, and terminal (2026-07-26)
+
+The two nodes below are TERMINAL CITATIONS of Kenku's prime-power
+determination. This note records the independent verification of their
+STATEMENTS, the machinery a genuine proof would need, and the reason no
+decomposition of either was made. Every number below was recomputed from
+scratch on 2026-07-26; PARI/GP and Magma are untrusted searchers here,
+never provers.
+
+**FAITHFULNESS AUDIT — both leaves are TRUE AS STATED.** `addOrderOf g = N`
+together with `Gal(ℚ̄/ℚ)`-stability of `AddSubgroup.zmultiples g` says
+exactly that `⟨g⟩ ≅ ℤ/N` is a Galois-stable cyclic subgroup of `E(ℚ̄)`,
+i.e. the kernel of a rational cyclic `N`-isogeny. The quantifier over the
+FULL absolute Galois group — and not over `localInertiaGroup`, the usual
+trap in this development — is the correct one here, because rationality of
+an isogeny is a global condition; an inertia-only version would be strictly
+weaker and FALSE as a rendering (unramified twists are invisible to
+inertia, and every curve acquires plenty of inertia-stable subgroups). So
+each node is precisely the assertion `X_0(N)(ℚ) = {cusps}`, and by the cusp
+count below that reads `#X_0(N)(ℚ) = 2` for `N = 81` and for `N = 125`.
+Both hypotheses are of course UNSATISFIABLE — that is the theorem — so both
+leaves are vacuously true in the sense of the `exists_x0ThirtyTwo_point`
+audit above; unlike that leaf, these two ARE the mathematics rather than a
+dictionary step, so the vacuity relocates no burden onto a sibling.
+
+**GENUS AND CUSPS, recomputed.**
+* PARI/GP with `g = 1 + μ/12 − ν₂/4 − ν₃/3 − ε_∞/2`:
+  `X_0(81)`: `μ = 108`, `ν₂ = ν₃ = 0`, `ε_∞ = 12` ⟹ `g = 4`;
+  `X_0(125)`: `μ = 150`, `ν₂ = 2`, `ν₃ = 0`, `ε_∞ = 10` ⟹ `g = 8`.
+  (Same run: `X_0(16)` and `X_0(25)` have genus `0`, `X_0(27)` and
+  `X_0(32)` genus `1` — the four values the sibling route notes rely on.)
+* Magma, independently and by a different method:
+  `Dimension(CuspidalSubspace(ModularSymbols(N, 2))) = 8` at `N = 81` and
+  `= 16` at `N = 125`, i.e. `2g` with `g = 4` and `g = 8`. Both confirmed.
+* Rational cusps: a cusp of denominator `d ∣ N` is defined over
+  `ℚ(ζ_{gcd(d, N/d)})`, so it is `ℚ`-rational iff `gcd(d, N/d) ≤ 2`. At
+  `N = 81` that holds only for `d = 1, 81` and at `N = 125` only for
+  `d = 1, 125`. Hence each node below is exactly `#X_0(N)(ℚ) = 2`.
+
+**MINIMALITY OF `81` AND `125` IN THE MAZUR–KENKU LIST.** PARI/GP
+`ellisomat` on the class `27a` (`[0,0,1,0,-7]`, conductor `27`) returns the
+degree matrix `[1,3,9,3; 3,1,3,9; 9,3,1,27; 3,9,27,1]` — a cyclic
+`27`-isogeny IS realized over `ℚ` — and on `11a1` returns
+`[1,5,5; 5,1,25; 5,25,1]` — a cyclic `25`-isogeny IS realized. So `3, 9, 27`
+and `5, 25` are all present, exactly as the two docstrings claim, and `81`,
+`125` are the smallest absent prime powers of `3` and `5`. An independent
+sweep (a different box from the `11532`-model one recorded further up):
+`ellisomat` over the `74370` nonsingular models `[a₁,a₂,a₃,a₄,a₆]` with
+`a₁, a₃ ∈ {0,1}`, `a₂ ∈ [−2,2]`, `a₄, a₆ ∈ [−30,30]` returns cyclic isogeny
+degrees `{1,…,16, 18, 21, 25, 37}` — a subset of the Mazur–Kenku list, with
+`3`-power degrees exactly `{3, 9}` and `5`-power degrees exactly `{5, 25}`.
+No `32`, no `81`, no `125`.
+
+**JACOBIAN DATA (Magma) — THIS CORRECTS BOTH ROUTE NOTES.** Decomposing
+`S_2(Γ_0(N))` into Hecke pieces and computing `LRatio(A, 1) = L(A,1)/Ω`
+together with the `w_N` eigenvalue:
+
+* level `81`: two pieces, each of modular-symbols dimension `4`. One is the
+  `27`-old part (two copies of `X_0(27) = 27a1`, whose rank is `0` and
+  torsion `ℤ/3` — PARI `ellrank`/`elltors`), `LRatio = 1/9`; the other is a
+  `2`-dimensional new `A_f` with `LRatio = 1/3` and `w_81 = −1`. BOTH
+  NONZERO, so `J_0(81)` has ANALYTIC RANK `0`, hence by Kolyvagin–Logachev
+  `J_0(81)(ℚ)` is FINITE. **The level-`81` node therefore needs no Chabauty
+  at all — it is a rank-`0` argument** (`X_0(81)(ℚ) ↪ J_0(81)(ℚ)` finite,
+  then a reduction bound at a prime of good reduction). The route note that
+  used to stand in that docstring said "a Chabauty/Jacobian-rank argument on
+  a genus-`4` curve" and overstated the difficulty. For the record,
+  `X_0(81)/w_81` has genus `1` (`dim S_2(Γ_0(81))^{w = +1} = 2` in modular
+  symbols).
+* level `125`: `X_0(25)` has genus `0`, so there is no old part; three new
+  pieces of modular-symbols dimension `4, 4, 8`, with `LRatio = 4/5, 0, 1/5`
+  and `w_125`-eigenvalues `−1, +1, −1`. The middle piece is a `2`-dimensional
+  `A_f` with `L(A_f, 1) = 0`; its sign of functional equation is `−w_125 = −1`,
+  so every conjugate has ODD analytic rank and `rank J_0(125)(ℚ) = 2`.
+  Since `2 < 8 = genus`, **Chabauty–Coleman IS applicable to `X_0(125)`
+  itself.** But the positive-rank factor is exactly the `w_125 = +1` part,
+  i.e. the Jacobian of the genus-`2` quotient `X_0(125)/w_125`
+  (`dim S_2(Γ_0(125))^{w = +1} = 4`, so that quotient has genus `2`) — on the
+  QUOTIENT the rank equals the genus and Chabauty FAILS. That is the precise
+  reason Kenku's 1981 paper is hard, and it is a warning to any future owner
+  tempted by the Atkin–Lehner quotient as a shortcut.
+
+**COSTED DEPENDENCY LIST**, in dependency order, checked by `grep` against
+our mathlib pin `a3364fa` and against `~/cs/FLT` on 2026-07-26 — measured,
+not assumed. `∅` means nothing usable exists in either.
+
+1. smooth projective curves over `ℚ` with divisors, genus and Riemann–Roch.
+   mathlib has schemes and a general divisor API but **no curve genus and no
+   Riemann–Roch** (`RiemannRoch`, `canonicalDivisor`: `0` files). `∅`.
+2. modular curves `X_0(N)` as `ℚ`-schemes with their moduli interpretation.
+   `ModularCurve`: `0` files. `Mathlib/NumberTheory/ModularForms/` is purely
+   analytic (upper half plane, congruence subgroups, `q`-expansions,
+   level-one dimension formulas) with no algebraic model and no moduli
+   functor. `∅`.
+3. isogenies of elliptic curves. `Isogeny`: `0` files. Modular polynomials
+   `Φ_n`: `0` files. `∅`. (This development's own isogeny content is the
+   hand-rolled Vélu material in the level-`9`/`27`/`32` clusters.)
+4. Jacobians / `Pic⁰` as abelian varieties. `∅`. Note
+   `Mathlib/AlgebraicGeometry/EllipticCurve/Jacobian` is *Jacobian
+   coordinates* on a Weierstrass model, not the Jacobian variety.
+5. abelian varieties over `ℚ` and Mordell–Weil. `∅` — mathlib does not have
+   Mordell–Weil even for elliptic curves.
+6. Eichler–Shimura and the decomposition `J_0(N) ~ ∏ A_f`. `∅`.
+7. Kolyvagin–Logachev (`L(A_f, 1) ≠ 0 ⟹ A_f(ℚ)` finite), the input the
+   level-`81` route needs. `∅`, and a major theorem in its own right
+   (Heegner points, Euler systems).
+8. Coleman integration and Chabauty–Coleman, the input the level-`125`
+   route needs. `Coleman`: `0` files. `∅`.
+9. the Mordell–Weil sieve. `∅`.
+
+`~/cs/FLT`, the reference project, has none of `1`–`9`. Its only file
+touching this territory is `FLT/Assumptions/Mazur.lean`, which
+**axiomatizes** Mazur's torsion bound rather than proving it — at exactly
+this depth the reference project's own policy is citation.
+
+**WHY NO CUT WAS MADE.**
+* *Level `125`*: the only available split is along `X_0(25)`, which has genus
+  `0` — a non-vacuous Hauptmodul leaf plus a level-`125` leaf carrying the
+  entire genus-`8` computation. That relocates work without reducing it.
+* *Level `81`*: a REAL reduction exists (see the node's own docstring: the
+  degree-`3` map `X_0(81) → X_0(27)` and the already-determined
+  `X_0(27)(ℚ)`), and it is blocked ONLY by declaration order. Unblocking it
+  means moving the ~`1700`-line level-`9`/level-`27` cluster (lines
+  ~`5900`–`7600`, other owners' regions) above this point, or moving the
+  ~`1400`-line isogeny-degree assembly below it. Either is a whole-file
+  refactor of a `17.5`k-line module with many concurrent owners, so it is
+  recorded here as a separately dispatchable task rather than performed
+  inside a leaf-proving task. **And it would not close the node**: the
+  residual single-`j` statement needs item `3` above (isogenies / `Φ_3`) or
+  complex multiplication, neither of which exists.
+* *Merging the two nodes into one citation*: rejected. They have different
+  literature (Kenku 1979–80 versus Kenku 1981), different genus, and — per
+  the Jacobian data above — different difficulty classes (analytic rank `0`
+  versus a genuine Chabauty computation). A single leaf quantified over
+  `N ∈ {81, 125}` would hide all of that and be strictly harder to dispatch.
+
+**LITERATURE, pinned.**
+* M. A. Kenku, *The modular curve `X_0(39)` and rational isogeny*,
+  Math. Proc. Cambridge Philos. Soc. **85** (1979), 21–23.
+* M. A. Kenku, *The modular curves `X_0(65)` and `X_0(91)` and rational
+  isogeny*, Math. Proc. Cambridge Philos. Soc. **87** (1980), 15–20.
+* M. A. Kenku, *The modular curve `X_0(169)` and rational isogeny*,
+  J. London Math. Soc. (2) **22** (1980), 239–244.
+* M. A. Kenku, *On the modular curves `X_0(125)`, `X_1(25)` and `X_1(49)`*,
+  J. London Math. Soc. (2) **23** (1981), 415–427 — the level-`125` node.
+* M. A. Kenku, *On the number of `ℚ`-isomorphism classes of elliptic curves
+  in each `ℚ`-isogeny class*, J. Number Theory **15** (1982), 199–202 — the
+  paper that closes the determination.
+* B. Mazur, *Rational isogenies of prime degree*, Invent. Math. **44**
+  (1978), 129–162 — already in `SOURCES.md` as `mazur1978isogenies.pdf`.
+* A. Ogg, *Rational points on certain elliptic modular curves*, PSPM **24**
+  (1973), 221–231 — the level-`32` sibling.
+Kenku's five papers are NOT in `SOURCES.md`: searched on Anna's Archive
+(`article`) on 2026-07-26 and not found, so nothing was added there.
+-/
+
 /-- **No rational cyclic `81`-isogeny** (sorry node — the level `X_0(81)`
 of Kenku's prime-power determination): no elliptic curve over `ℚ`
 carries a Galois-stable cyclic subgroup of order `81`.
@@ -1018,9 +1175,25 @@ carries a Galois-stable cyclic subgroup of order `81`.
 divisor descent this single statement disposes of every `3^k` with
 `k ≥ 4`.
 
-`X_0(81)` has genus `4` (recomputed 2026-07-25: `μ = 108`,
-`ν₂ = ν₃ = 0`, `12` cusps, so `g = 1 + 9 − 6 = 4`), so the direct route is
-a Chabauty/Jacobian-rank argument on a genus-`4` curve.
+`X_0(81)` has genus `4` (`μ = 108`, `ν₂ = ν₃ = 0`, `12` cusps, so
+`g = 1 + 9 − 6 = 4`; recomputed 2026-07-25 and independently reconfirmed
+2026-07-26 in PARI/GP and in Magma). Only `2` of the `12` cusps are
+`ℚ`-rational (`d = 1` and `d = 81`), so this node is exactly the assertion
+`#X_0(81)(ℚ) = 2`.
+
+**THE DIRECT ROUTE IS RANK `0`, NOT CHABAUTY** (corrected 2026-07-26; the
+previous note here claimed "a Chabauty/Jacobian-rank argument on a genus-`4`
+curve" and overstated it). Magma's Hecke decomposition of `S_2(Γ_0(81))`
+gives two pieces — the `27`-old part (two copies of `27a1`, rank `0`) with
+`L`-ratio `1/9`, and a `2`-dimensional new `A_f` with `L`-ratio `1/3` — BOTH
+nonzero. So `J_0(81)` has analytic rank `0` and, by Kolyvagin–Logachev,
+`J_0(81)(ℚ)` is finite; the determination of `X_0(81)(ℚ)` is then an
+embedding into a finite group plus a reduction bound, with no `p`-adic
+integration anywhere. See the section note above for the full data and the
+costed dependency list; the obstruction is that items `1`–`7` of that list
+(curves as schemes, modular curves, Jacobians, Mordell–Weil,
+Eichler–Shimura, Kolyvagin–Logachev) are all absent from mathlib and from
+`~/cs/FLT`.
 
 **THE ROUTE THAT AVOIDS THE GENUS-`4` CURVE, AND WHY IT IS NOT TAKEN HERE**
 (recorded 2026-07-26 so the next owner starts warm). `X_0(81) → X_0(27)` is
@@ -1036,8 +1209,26 @@ i.e. to the fibre of `X_0(81) → X_0(27)` over one point — three geometric
 points instead of a genus-`4` Mordell–Weil computation. That statement is
 true and checkable: PARI/GP (2026-07-26, untrusted searcher) reports
 `ellisomat(ellfromj(-12288000))` with cyclic isogeny degrees exactly
-`{1, 3, 9, 27}`. The curve is CM by the order of discriminant `−27`, and
-the `3`-power isogeny ladder of that order stops at `27`.
+`{1, 3, 9, 27}` (reconfirmed 2026-07-26: the class has `4` curves and degree
+matrix `[1,3,9,27; 3,1,3,9; 9,3,1,3; 27,9,3,1]`). The check is
+twist-independent, so one representative suffices: a quadratic twist changes
+`ρ_E` by a character, which does not change which subgroups are stable, so
+the set of Galois-stable cyclic subgroups depends only on `j`.
+
+The argument that closes the single-`j` statement, for whoever unblocks it
+(recorded 2026-07-26). Suppose `E` has `j(E) = −12288000` and a stable cyclic
+`C₈₁`. Then `C₈₁/C₃ ⊆ E/C₃` is stable cyclic of order `27`, so
+`j(E/C₃) = −12288000` as well by the same level-`27` theorem; hence `E` and
+`E/C₃` are `3`-isogenous with equal `j`, therefore `ℚ̄`-isomorphic, and the
+composite is an endomorphism of `E` of degree `3`. But `j = −12288000` is CM
+by the order of discriminant `−27` (conductor `3` in `ℚ(√−3)`), whose norm
+form is `N(a + 3bω) = a² + 3ab + 9b²` with `ω = (1 + √−3)/2`; `a² + 3ab + 9b² = 3`
+has no integer solution (`b = 0` needs `a² = 3`; `b = ±1` needs
+`a² ± 3a + 6 = 0`, discriminant `−15`). So there is no endomorphism of degree
+`3` and the fibre is empty. **This does NOT make the residual leaf cheap**:
+it needs either the modular polynomial `Φ_3` or complex multiplication, and
+mathlib has neither (`Isogeny`, `ModularPolynomial`: `0` files — item `3` of
+the costed list above).
 
 **The reduction is NOT performed here purely because of DECLARATION ORDER**:
 `j_of_stable_cyclic_subgroup_order_27` and the `X_0(9)`/`X_0(27)` leaves it
@@ -1066,11 +1257,28 @@ theorem WeierstrassCurve.not_cyclicIsogeny_eightyOne (E : WeierstrassCurve ℚ)
 divisor descent this single statement disposes of every `5^k` with
 `k ≥ 3`.
 
-IRREDUCIBLE at this mathlib pin: `X_0(125)` has genus `8` (recomputed
-2026-07-25: `μ = 150`, `ν₂ = 2`, `ν₃ = 0`, `10` cusps, so
-`g = 1 + 25/2 − 1/2 − 5 = 8`). This is precisely the level treated in
+IRREDUCIBLE at this mathlib pin: `X_0(125)` has genus `8` (`μ = 150`,
+`ν₂ = 2`, `ν₃ = 0`, `10` cusps, so `g = 1 + 25/2 − 1/2 − 5 = 8`; recomputed
+2026-07-25 and independently reconfirmed 2026-07-26 in PARI/GP and in
+Magma, the latter as `dim S_2(Γ_0(125)) = 8`). Only `2` of the `10` cusps
+are `ℚ`-rational (`d = 1` and `d = 125`), so this node is exactly the
+assertion `#X_0(125)(ℚ) = 2`. This is precisely the level treated in
 Kenku, "On the modular curves `X_0(125)`, `X_1(25)` and `X_1(49)`",
 J. London Math. Soc. (2) 23 (1981), 415–427.
+
+**RANK DATA, AND WHY THE ATKIN–LEHNER QUOTIENT IS A TRAP** (Magma,
+2026-07-26; see the section note above for the full table). `S_2(Γ_0(125))`
+is all new (`X_0(25)` has genus `0`) and decomposes into `A_f`'s of
+dimension `2, 2, 4` with `L`-ratios `4/5, 0, 1/5` and `w_125`-eigenvalues
+`−1, +1, −1`. So exactly one factor has `L(A_f, 1) = 0`; its sign of
+functional equation is `−w_125 = −1`, every conjugate has odd analytic rank,
+and `rank J_0(125)(ℚ) = 2`. Since `2 < 8 = genus`, **Chabauty–Coleman is
+applicable to `X_0(125)` itself** — the node is not beyond the reach of
+standard technique, only beyond the reach of this development. The trap:
+that positive-rank factor is precisely the `w_125 = +1` part, i.e. the
+Jacobian of `X_0(125)/w_125`, which has genus `2`. On the quotient the rank
+EQUALS the genus, so Chabauty fails there; Kenku works through the quotient
+with a different argument, and that is why his paper is hard.
 
 **Why this level is the hardest of the four prime powers, checked
 2026-07-26.** The other three all admit a reduction that shrinks the
