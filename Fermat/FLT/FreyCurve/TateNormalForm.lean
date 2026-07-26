@@ -496,10 +496,44 @@ solution with `d ∉ {0, 1}`, and correctly recovered the two degenerate
 solutions `(d, u) = (0, −1)` and `(1, −1)` when the exclusion was lifted — so
 the scan is not vacuously silent.
 
-A proof needs a descent on this genus-`1` curve: its Jacobian is the rank-`0`
-conductor-`14` curve, and a `2`-isogeny descent (the curve has rational
-`2`-torsion) reduces the claim to the local insolubility of finitely many
-homogeneous spaces. -/
+WHAT A PROOF NEEDS, IN DEPENDENCY ORDER (surveyed 2026-07-25; every claim
+below was checked, not assumed). This curve has rational `2`-torsion, so the
+classical route is descent by `2`-isogeny. NO local obstruction can exist —
+the curve HAS rational points, the cusps — so nothing purely congruential can
+work and the argument must be global.
+
+*Already PROVEN in this development*, and directly reusable:
+* `exists_normalForm_pointEquiv_of_rational_two_torsion` — the normal form
+  `y² = x³ + a x² + b x` with the `2`-torsion point at `(0,0)`;
+* `twoIsogenyFun`, `twoIsogenyFun_add`,
+  `exists_quotient_isogeny_of_normalForm_two_torsion` — the isogeny
+  `φ(x,y) = (y²/x², y(b−x²)/x²)` onto `y² = x³ − 2a x² + (a²−4b) x`, and its
+  additivity. So `φ` and its target curve are in hand.
+
+*Missing, in the order they are needed*:
+1. The DESCENT MAP `α : E(ℚ) → ℚ*/(ℚ*)²`, `α(O) = 1`, `α(0,0) = b`,
+   `α(x,y) = x` otherwise, and the proof that it is a HOMOMORPHISM. This is
+   the first brick and it is elementary and self-contained: it amounts to the
+   identity that `x₁x₂x₃` is a square whenever `P₁ + P₂ + P₃ = 0` with all
+   `xᵢ ≠ 0`, which is pure group-law algebra of the same kind as
+   `MazurFourTorsion.cubic_vieta` and `halving_square` already in
+   `MazurTorsion.lean`.
+2. `ker α = ψ(E'(ℚ))` for the dual isogeny `ψ`, giving
+   `E(ℚ)/ψ(E'(ℚ)) ↪ ℚ*/(ℚ*)²`.
+3. The image lands in the `S`-Selmer group for `S` the bad primes, which
+   bounds it: mathlib HAS this codomain as
+   `IsDedekindDomain.selmerGroup` (`K⟮S,n⟯`), with the exact-sequence API
+   `valuation_ker_eq` / `fromUnit_ker` / `fromUnitLift_injective`.
+4. MORDELL–WEIL finite generation (canonical heights), to pass from "rank `0`"
+   to "`E(ℚ)` is finite". **This is the genuinely large missing theory: it is
+   absent from mathlib entirely** — there is no Mordell–Weil, no rank, no
+   height machinery — so it must be built or the last step routed around it.
+5. The concrete computation for this curve: both descent images trivial, then
+   the torsion determination.
+
+For calibration: `~/cs/FLT`, the reference project, does not prove Mazur at
+all — it takes `axiom Mazur_statement`. So nothing here can be vendored, and
+this node sits past the frontier of what is formalized in either project. -/
 theorem x1_fourteen_no_rational_point (d x : ℚ) (hd0 : d ≠ 0) (hd1 : d ≠ 1) :
     4 * x ^ 3 + ((1 + d - d ^ 2) ^ 2 - 4 * (d ^ 3 - d ^ 2)) * x ^ 2
         - 2 * (1 + d - d ^ 2) * (d ^ 3 - d ^ 2) * x + (d ^ 3 - d ^ 2) ^ 2 ≠ 0 :=
