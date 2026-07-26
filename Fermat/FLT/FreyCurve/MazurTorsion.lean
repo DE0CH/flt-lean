@@ -20613,9 +20613,322 @@ theorem natCast_notMem_maximalIdeal_integralClosure {p : ℕ} (hp : p.Prime)
   intro hmem
   exact ((IsLocalRing.mem_maximalIdeal _).mp hmem) hunitIC
 
+section TameCharacterOrbit
+
+variable {Knum : Type*} [Field Knum] [NumberField Knum]
+  (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers Knum))
+
+local notation "Kᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletion Knum v
+local notation "𝒪ᵥ" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers Knum v
+local notation "Lᵥ" =>
+  AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion Knum v)
+local notation "Rᵥ" =>
+  IntegralClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers Knum v)
+    (AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion Knum v))
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Local inertia acts trivially on the `n`-th roots of unity when `n`
+is prime to the residue characteristic** (PROVEN 2026-07-25). If `ζ ^ n = 1`
+and the image of `n` avoids the maximal ideal of the big integral closure,
+then every `σ ∈ localInertiaGroup v` fixes `ζ`: the ratio `σ ζ / ζ` is an
+`n`-th root of unity congruent to `1` modulo the maximal ideal (because `σ`
+is INERTIAL and `ζ` is a unit of the integral closure), hence is `1` by
+`eq_one_of_pow_eq_one_of_sub_one_mem`.
+
+The inertia hypothesis cannot be relaxed to the decomposition group: a
+Frobenius lift moves `μ_n`. This is what makes the tame character
+`σ ↦ σ ϖ / ϖ` below a group HOMOMORPHISM on inertia. -/
+theorem localInertia_fixes_rootOfUnity {n : ℕ} (hn0 : n ≠ 0)
+    (hn : ((n : ℕ) : Rᵥ) ∉ IsLocalRing.maximalIdeal Rᵥ)
+    {ζ : Lᵥ} (hζ : ζ ^ n = 1)
+    {σ : Lᵥ ≃ₐ[Kᵥ] Lᵥ} (hσ : σ ∈ localInertiaGroup v) :
+    σ ζ = ζ := by
+  classical
+  have hζ0 : ζ ≠ 0 := by
+    intro h
+    rw [h, zero_pow hn0] at hζ
+    exact zero_ne_one hζ
+  have hroot : ∀ z : Lᵥ, z ^ n = 1 → IsIntegral 𝒪ᵥ z := by
+    intro z hz
+    refine ⟨Polynomial.X ^ n - 1, ?_, ?_⟩
+    · have := Polynomial.monic_X_pow_sub_C (R := 𝒪ᵥ) (1 : 𝒪ᵥ) hn0
+      simpa [Polynomial.C_1] using this
+    · simp [Polynomial.eval₂_sub, hz]
+  have hζinv : (ζ⁻¹) ^ n = 1 := by rw [inv_pow, hζ, inv_one]
+  have hσζ : (σ ζ) ^ n = 1 := by rw [← map_pow, hζ, map_one]
+  have hYpow : (σ ζ / ζ) ^ n = 1 := by rw [div_pow, hσζ, hζ, div_one]
+  set Z : Rᵥ := ⟨ζ, hroot ζ hζ⟩ with hZdef
+  set Zi : Rᵥ := ⟨ζ⁻¹, hroot _ hζinv⟩ with hZidef
+  set Y : Rᵥ := ⟨σ ζ / ζ, hroot _ hYpow⟩ with hYdef
+  have hinj : Function.Injective (algebraMap Rᵥ Lᵥ) := fun _ _ h => Subtype.ext h
+  have hvZ : algebraMap _ _ Z = ζ := by rw [hZdef]; rfl
+  have hvZi : algebraMap _ _ Zi = ζ⁻¹ := by rw [hZidef]; rfl
+  have hvY : algebraMap _ _ Y = σ ζ / ζ := by rw [hYdef]; rfl
+  have hvsZ : algebraMap _ _ (σ • Z) = σ ζ := by rw [hZdef]; rfl
+  have hY1 : Y - 1 ∈ IsLocalRing.maximalIdeal Rᵥ := by
+    have hmem : σ • Z - Z ∈ IsLocalRing.maximalIdeal Rᵥ := hσ Z
+    have hEq : Y - 1 = (σ • Z - Z) * Zi := by
+      apply hinj
+      rw [map_sub, map_mul, map_sub, map_one, hvY, hvZ, hvZi, hvsZ]
+      field_simp
+    rw [hEq]
+    exact Ideal.mul_mem_right _ _ hmem
+  have hYn : Y ^ n = 1 := by
+    apply hinj
+    rw [map_pow, map_one, hvY]
+    exact hYpow
+  have hY0 : Y = 1 := eq_one_of_pow_eq_one_of_sub_one_mem hYn hY1 hn
+  have hquot : σ ζ / ζ = 1 := by
+    have h := congrArg (algebraMap Rᵥ Lᵥ) hY0
+    rw [hvY, map_one] at h
+    exact h
+  have h3 : σ ζ / ζ * ζ = 1 * ζ := by rw [hquot]
+  rwa [div_mul_cancel₀ _ hζ0, one_mul] at h3
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 400000 in
+set_option maxHeartbeats 1000000 in
+/-- **Surjectivity of the tame character of local inertia, in ORBIT form,
+over an arbitrary number field** (PROVEN 2026-07-25; this is the general
+form of `exists_localInertia_tameCharacter_orbit` below). Let `π` generate
+the maximal ideal of `𝒪ᵥ`, let `n` be prime to the residue characteristic
+(in the form: the image of `n` avoids the maximal ideal of the big
+integral closure), and let `ϖ ∈ Kᵥᵃˡᵍ` be ANY `n`-th root of `π`. Then some
+`σ ∈ localInertiaGroup v` has `σ ^ k ϖ = ϖ → n ∣ k`.
+
+PROOF (this replaces the Kummer-theory route recorded in the docstring
+below; it needs neither `ℚ_p^nr`, nor Eisenstein irreducibility, nor the
+Galois-group identification `Gal(K(a^{1/n})/K) ≃ μ_n` — the whole surjectivity
+is extracted from the already-PROVEN
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup`):
+
+1. For any `σ` in the absolute Galois group, `ζ_σ := σ ϖ / ϖ` is an `n`-th
+   root of unity, because `σ` fixes `π ∈ Kᵥ` and `ϖ ^ n = π`.
+2. On INERTIA, `σ ↦ ζ_σ` is a group HOMOMORPHISM `F` into `(Kᵥᵃˡᵍ)ˣ`: this
+   is exactly `localInertia_fixes_rootOfUnity` above, which says inertia
+   acts trivially on `μ_n`.
+3. `F.range` is contained in `μ_n`, hence finite, hence CYCLIC (a finite
+   subgroup of the units of a domain). Let `d = #F.range`; then `d ∣ n`
+   (a generator is an `n`-th root of unity) and `ζ_σ ^ d = 1` for every
+   inertial `σ`, i.e. `ϖ ^ d` is fixed POINTWISE by `localInertiaGroup v`.
+4. Hence `Kᵥ(ϖ ^ d)` lies in the fixed field of the local inertia, so
+   `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` makes `π` a
+   GENERATOR of the maximal ideal of its integral closure `R`. But
+   `α = ϖ ^ d` satisfies `α ^ m = π` with `m = n / d`, so `α ∈ 𝔪_R = (π)`,
+   say `α = π β`, whence `π = π ^ m β ^ m` and `π` is a UNIT of `R` as soon
+   as `m ≥ 2` — impossible in a local ring. Therefore `d = n`.
+5. A generator of `F.range` is `F σ` for some inertial `σ`, and it has order
+   exactly `n`; `σ ^ k ϖ = ζ_σ ^ k ϖ` then gives `ζ_σ ^ k = 1`, i.e. `n ∣ k`.
+
+Step 3 is where the inertia quantifier is LOAD-BEARING twice over: once for
+`F` to be a homomorphism at all, and once for step 4 to be about the fixed
+field of INERTIA rather than of the decomposition group. -/
+theorem exists_mem_localInertiaGroup_tameOrbit {n : ℕ} (hn0 : n ≠ 0)
+    (hn : ((n : ℕ) : Rᵥ) ∉ IsLocalRing.maximalIdeal Rᵥ)
+    (π : 𝒪ᵥ) (hπ : IsLocalRing.maximalIdeal 𝒪ᵥ = Ideal.span {π})
+    (ϖ : Lᵥ) (hϖ : ϖ ^ n = algebraMap 𝒪ᵥ Lᵥ π) :
+    ∃ σ : Lᵥ ≃ₐ[Kᵥ] Lᵥ, σ ∈ localInertiaGroup v ∧
+      ∀ k : ℕ, (σ ^ k) ϖ = ϖ → n ∣ k := by
+  classical
+  -- `π ≠ 0`, hence `ϖ ≠ 0`
+  have hπ0 : π ≠ 0 := by
+    rintro rfl
+    refine IsDiscreteValuationRing.not_a_field 𝒪ᵥ ?_
+    rw [hπ, Ideal.span_singleton_eq_bot.mpr rfl]
+  have hinjO : Function.Injective (algebraMap 𝒪ᵥ Lᵥ) := by
+    rw [IsScalarTower.algebraMap_eq 𝒪ᵥ Kᵥ Lᵥ]
+    exact (algebraMap Kᵥ Lᵥ).injective.comp fun _ _ h => Subtype.ext h
+  have hπL : algebraMap 𝒪ᵥ Lᵥ π ≠ 0 := fun h => hπ0 (hinjO (by rw [h, map_zero]))
+  have hϖ0 : ϖ ≠ 0 := by
+    intro h
+    rw [h, zero_pow hn0] at hϖ
+    exact hπL hϖ.symm
+  -- every automorphism multiplies `ϖ` by an `n`-th root of unity
+  have hζpow : ∀ σ : Lᵥ ≃ₐ[Kᵥ] Lᵥ, (σ ϖ / ϖ) ^ n = 1 := by
+    intro σ
+    have hs : σ (algebraMap 𝒪ᵥ Lᵥ π) = algebraMap 𝒪ᵥ Lᵥ π := by
+      rw [IsScalarTower.algebraMap_apply 𝒪ᵥ Kᵥ Lᵥ]
+      exact σ.commutes _
+    rw [div_pow, ← map_pow, hϖ, hs, ← hϖ, div_self (pow_ne_zero _ hϖ0)]
+  have hζ0 : ∀ σ : Lᵥ ≃ₐ[Kᵥ] Lᵥ, σ ϖ / ϖ ≠ 0 := by
+    intro σ h
+    have hp := hζpow σ
+    rw [h, zero_pow hn0] at hp
+    exact zero_ne_one hp
+  -- the inertia subgroup, read in the automorphism-group spelling
+  let G : Subgroup (Lᵥ ≃ₐ[Kᵥ] Lᵥ) := localInertiaGroup v
+  have hGmem : ∀ s : Lᵥ ≃ₐ[Kᵥ] Lᵥ, s ∈ G ↔ s ∈ localInertiaGroup v := fun _ => Iff.rfl
+  have hfixζ : ∀ s ∈ G, ∀ t : Lᵥ ≃ₐ[Kᵥ] Lᵥ, s (t ϖ / ϖ) = t ϖ / ϖ := by
+    intro s hs t
+    exact localInertia_fixes_rootOfUnity v hn0 hn (hζpow t) ((hGmem s).mp hs)
+  -- the tame character as a monoid homomorphism to the units
+  let F : ↥G →* Lᵥˣ :=
+    { toFun := fun s => Units.mk0 ((s : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ) (hζ0 _)
+      map_one' := by
+        apply Units.ext
+        show ((1 : ↥G) : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ = 1
+        rw [Subgroup.coe_one, AlgEquiv.one_apply, div_self hϖ0]
+      map_mul' := by
+        intro s t
+        apply Units.ext
+        show ((s * t : ↥G) : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ =
+          ((s : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ) * ((t : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ)
+        rw [Subgroup.coe_mul, AlgEquiv.mul_apply]
+        have ht : (t : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ = ((t : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ) * ϖ :=
+          (div_mul_cancel₀ _ hϖ0).symm
+        rw [ht, map_mul, hfixζ _ s.2]
+        field_simp }
+  have hFval : ∀ s : ↥G, ((F s : Lᵥˣ) : Lᵥ) = (s : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ / ϖ := fun _ => rfl
+  -- the image lands in the `n`-th roots of unity, hence is finite and cyclic
+  have hFrange : F.range ≤ rootsOfUnity n Lᵥ := by
+    intro u hu
+    obtain ⟨s, rfl⟩ := MonoidHom.mem_range.mp hu
+    rw [mem_rootsOfUnity', hFval]
+    exact hζpow _
+  haveI hnz : NeZero n := ⟨hn0⟩
+  haveI hfin : Finite ↥(F.range) := by
+    refine Finite.of_injective (β := ↥(rootsOfUnity n Lᵥ))
+      (fun x => ⟨(x : Lᵥˣ), hFrange x.2⟩) ?_
+    intro a b hab
+    have hv : (a : Lᵥˣ) = (b : Lᵥˣ) :=
+      congrArg (fun z : ↥(rootsOfUnity n Lᵥ) => (z : Lᵥˣ)) hab
+    exact Subtype.ext hv
+  obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := ↥(F.range))
+  have hgcard : orderOf g = Nat.card ↥(F.range) :=
+    orderOf_eq_card_of_forall_mem_zpowers hg
+  set d : ℕ := Nat.card ↥(F.range) with hddef
+  have hd0 : d ≠ 0 := Nat.card_pos.ne'
+  have hgn' : (g : Lᵥˣ) ^ n = 1 := (mem_rootsOfUnity n _).mp (hFrange g.2)
+  have hdn : d ∣ n := by
+    rw [← hgcard, ← Subgroup.orderOf_coe]
+    exact orderOf_dvd_of_pow_eq_one hgn'
+  -- every tame character value is killed by `d`
+  have hpowd : ∀ s : ↥G, ((F s : Lᵥˣ) : Lᵥ) ^ d = 1 := by
+    intro s
+    have h1 : (⟨F s, MonoidHom.mem_range.mpr ⟨s, rfl⟩⟩ : ↥(F.range)) ^ d = 1 :=
+      pow_card_eq_one'
+    have h2 := congrArg (fun x : ↥(F.range) => ((x : Lᵥˣ) : Lᵥ)) h1
+    simpa using h2
+  -- the iterated action of an inertia element on `ϖ`
+  have hiter : ∀ (s : ↥G) (k : ℕ),
+      (((s : Lᵥ ≃ₐ[Kᵥ] Lᵥ)) ^ k) ϖ = ((F s : Lᵥˣ) : Lᵥ) ^ k * ϖ := by
+    intro s k
+    have hsϖ : (s : Lᵥ ≃ₐ[Kᵥ] Lᵥ) ϖ = ((F s : Lᵥˣ) : Lᵥ) * ϖ := by
+      rw [hFval]
+      exact (div_mul_cancel₀ _ hϖ0).symm
+    induction k with
+    | zero => simp
+    | succ k ih =>
+      rw [pow_succ', AlgEquiv.mul_apply, ih, map_mul, map_pow, hFval,
+        hfixζ _ s.2, ← hFval, hsϖ]
+      ring
+  -- `d = n`: otherwise `ϖ ^ d` generates a ramified extension inside the
+  -- fixed field of the inertia group
+  have hdeq : d = n := by
+    by_contra hne
+    obtain ⟨m, hm⟩ := hdn
+    have hm0 : m ≠ 0 := by rintro rfl; exact hn0 (by simpa using hm)
+    have hm1 : m ≠ 1 := by rintro rfl; exact hne (by simpa using hm.symm)
+    obtain ⟨t, ht⟩ : ∃ t, m = t + 2 := ⟨m - 2, by omega⟩
+    set α : Lᵥ := ϖ ^ d with hαdef
+    have hα : α ^ m = algebraMap 𝒪ᵥ Lᵥ π := by rw [hαdef, ← pow_mul, ← hm, hϖ]
+    have hα0 : α ≠ 0 := pow_ne_zero _ hϖ0
+    have hαfix : ∀ s : Lᵥ ≃ₐ[Kᵥ] Lᵥ, s ∈ localInertiaGroup v → s α = α := by
+      intro s hs
+      have hsG : s ∈ G := (hGmem s).mpr hs
+      have hsϖ : s ϖ = ((F ⟨s, hsG⟩ : Lᵥˣ) : Lᵥ) * ϖ := by
+        rw [hFval]
+        exact (div_mul_cancel₀ _ hϖ0).symm
+      rw [hαdef, map_pow, hsϖ, mul_pow, hpowd ⟨s, hsG⟩, one_mul]
+    have hαint : IsIntegral Kᵥ α := Algebra.IsIntegral.isIntegral α
+    haveI hfd : FiniteDimensional Kᵥ ↥(IntermediateField.adjoin Kᵥ {α}) :=
+      IntermediateField.adjoin.finiteDimensional hαint
+    have hMfix : IntermediateField.adjoin Kᵥ {α} ≤
+        IntermediateField.fixedField (localInertiaGroup v) := by
+      rw [IntermediateField.adjoin_le_iff, Set.singleton_subset_iff, SetLike.mem_coe,
+        IntermediateField.mem_fixedField_iff]
+      exact fun s hs => hαfix s hs
+    have hmax := maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup v
+      (IntermediateField.adjoin Kᵥ {α}) hMfix
+    have hspan : IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α})) =
+        Ideal.span {algebraMap 𝒪ᵥ
+          (IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α})) π} := by
+      rw [← hmax, hπ, Ideal.map_span, Set.image_singleton]
+    have hαmemM : α ∈ IntermediateField.adjoin Kᵥ {α} :=
+      IntermediateField.mem_adjoin_simple_self Kᵥ α
+    have hαMpow : (⟨α, hαmemM⟩ : ↥(IntermediateField.adjoin Kᵥ {α})) ^ m =
+        algebraMap 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α}) π := by
+      apply Subtype.ext
+      rw [IntermediateField.coe_pow]
+      exact hα
+    have hαMint : IsIntegral 𝒪ᵥ (⟨α, hαmemM⟩ : ↥(IntermediateField.adjoin Kᵥ {α})) := by
+      refine ⟨Polynomial.X ^ m - Polynomial.C π, Polynomial.monic_X_pow_sub_C π (by omega), ?_⟩
+      simp [Polynomial.eval₂_sub, hαMpow]
+    set a : IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α}) :=
+      ⟨⟨α, hαmemM⟩, hαMint⟩ with hadef
+    set P : IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α}) :=
+      algebraMap 𝒪ᵥ _ π with hPdef
+    have ha : a ^ m = P := by
+      apply Subtype.ext
+      rw [hadef, hPdef]
+      exact hαMpow
+    have hPmem : P ∈ IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α})) := by
+      rw [hspan, hPdef]
+      exact Ideal.mem_span_singleton_self _
+    have hPne : P ≠ 0 := by
+      intro h
+      apply hα0
+      have hz : a ^ m = 0 := by rw [ha, h]
+      have ha0 : a = 0 := pow_eq_zero_iff hm0 |>.mp hz
+      have hc := congrArg (fun x : IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α}) =>
+        ((x.1 : ↥(IntermediateField.adjoin Kᵥ {α})) : Lᵥ)) ha0
+      rw [hadef] at hc
+      simpa using hc
+    haveI hprime : (IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α}))).IsPrime :=
+      (IsLocalRing.maximalIdeal.isMaximal _).isPrime
+    have hamem : a ∈ IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪ᵥ ↥(IntermediateField.adjoin Kᵥ {α})) :=
+      hprime.mem_of_pow_mem m (by rw [ha]; exact hPmem)
+    rw [hspan, Ideal.mem_span_singleton] at hamem
+    obtain ⟨b, hb⟩ := hamem
+    have hunit : IsUnit P := by
+      have h1 : P * (P ^ (t + 1) * b ^ m) = P * 1 := by
+        rw [mul_one]
+        calc P * (P ^ (t + 1) * b ^ m) = (P * b) ^ m := by rw [mul_pow, ht]; ring
+          _ = a ^ m := by rw [← hb]
+          _ = P := ha
+      have h2 : P ^ (t + 1) * b ^ m = 1 := mul_left_cancel₀ hPne h1
+      exact IsUnit.of_mul_eq_one (P ^ t * b ^ m) (by rw [← h2]; ring)
+    exact ((IsLocalRing.mem_maximalIdeal _).mp hPmem) hunit
+  -- the generator of the image is the value of some inertia element
+  obtain ⟨s, hs⟩ := MonoidHom.mem_range.mp g.2
+  have hord : orderOf (F s) = n := by
+    rw [hs, Subgroup.orderOf_coe, hgcard, hdeq]
+  refine ⟨(s : Lᵥ ≃ₐ[Kᵥ] Lᵥ), (hGmem _).mp s.2, ?_⟩
+  intro k hk
+  rw [hiter s k] at hk
+  have hζk : ((F s : Lᵥˣ) : Lᵥ) ^ k = 1 := by
+    have h1 : ((F s : Lᵥˣ) : Lᵥ) ^ k * ϖ = 1 * ϖ := by rw [hk, one_mul]
+    exact mul_right_cancel₀ hϖ0 h1
+  have hFk : (F s) ^ k = 1 := by
+    apply Units.ext
+    rw [Units.val_pow_eq_pow_val, Units.val_one]
+    exact hζk
+  rw [← hord]
+  exact orderOf_dvd_of_pow_eq_one hFk
+
+end TameCharacterOrbit
+
 open IsDedekindDomain in
 /-- **Surjectivity of the tame character of local inertia, in ORBIT form**
-(sorry node, cut 2026-07-25 out of
+(PROVEN 2026-07-25 by instantiating the general
+`exists_mem_localInertiaGroup_tameOrbit` above at `K = ℚ`, `v = v_p` and
+`π = p` — the uniformizer identification is
+`maximalIdeal_adicCompletionIntegers_eq_span`, and the "prime to `p`" input
+is `natCast_notMem_maximalIdeal_integralClosure`. Cut 2026-07-25 out of
 `exists_local_inertia_torsion_orbit_of_good_of_supersingular` below — the
 LOCAL-FIELD half of that leaf, carrying no elliptic curve at all): let `p`
 be a prime, `n` a natural number prime to `p`, and `ϖ ∈ ℚ̄_p` ANY `n`-th
@@ -20639,30 +20952,20 @@ Note the quantifier is over `localInertiaGroup` and must NOT be widened:
 for an element of the full decomposition group the tame character is only
 equivariant, not invariant, and the statement becomes false.
 
-ROUTE for the next owner, staying at FINITE level — which avoids
-formalising `ℚ_p^nr` itself:
-1. `ℚ_p(μ_n)/ℚ_p` is unramified (`n` prime to `p`), and `X ^ n − p` is
-   still Eisenstein over its valuation ring, so `M = ℚ_p(μ_n, ϖ)` is
-   totally ramified of degree `n` over `ℚ_p(μ_n)`. Mathlib has Eisenstein
-   irreducibility (`Polynomial.IsEisensteinAt.irreducible`).
-2. `Gal(M/ℚ_p(μ_n))` is cyclic of order `n`, generated by `τ : ϖ ↦ ζ ϖ`
-   for a primitive `ζ ∈ μ_n` (Kummer; the `IsPrimitiveRoot` API).
-3. `τ` lies in the inertia subgroup of `Gal(M/ℚ_p)`: total ramification
-   makes the residue field of `M` equal to that of `ℚ_p(μ_n)`, which `τ`
-   fixes pointwise.
-4. Lift to the full `localInertiaGroup` by the PROVEN compactness lifting
-   `exists_mem_localInertiaGroup_restrictNormalHom_eq`
-   (`Fermat/FLT/Deformations/RepresentationTheory/LocalInertiaFixedField.lean`,
-   the profinite half of Neukirch II.9.11), and read the orbit condition
-   back off `σ ^ k ϖ = ϖ ↔ ζ ^ k = 1`.
-
-MISSING FROM MATHLIB, in dependency order, as statements: (a) *a totally
-ramified extension of local fields has the same residue field* — in the
-`ValuationSubring` decomposition/inertia vocabulary already used by
-`mem_inertiaSubgroup_localValuationSubring`; (b) *Kummer theory over a
-field containing `μ_n`*: `Gal(K(a^{1/n})/K) ≃ μ_n` by `τ ↦ τ(a^{1/n})/a^{1/n}`,
-of which mathlib has the `IsPrimitiveRoot`/`X ^ n - C a` splitting pieces
-but not the Galois-group identification. -/
+HOW IT WAS ACTUALLY PROVED (2026-07-25). The Kummer/Eisenstein route above
+was NOT needed, and neither of the two pieces recorded here as "missing
+from mathlib" had to be built. See `exists_mem_localInertiaGroup_tameOrbit`
+for the argument: the tame character is a homomorphism on inertia, its
+image is a finite cyclic group `μ_d` with `d ∣ n`, and if `d < n` then
+`ϖ ^ d` lies in the fixed field of the local inertia, which the PROVEN
+`maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` says is
+unramified — contradicting `(ϖ ^ d) ^ (n / d) = p`. So `d = n` and the
+character is surjective. The pieces once listed here as prerequisites —
+(a) *a totally ramified extension of local fields has the same residue
+field*, and (b) *Kummer theory's identification `Gal(K(a^{1/n})/K) ≃ μ_n`*
+— remain absent from mathlib, but this node no longer needs either: the
+whole ramification input is supplied by the already-proven fixed-field
+theorem. -/
 theorem exists_localInertia_tameCharacter_orbit {p : ℕ} (hp : p.Prime) {n : ℕ}
     (hpn : ¬ p ∣ n)
     (ϖ : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
@@ -20677,8 +20980,16 @@ theorem exists_localInertia_tameCharacter_orbit {p : ℕ} (hp : p.Prime) {n : �
               hp.toHeightOneSpectrumRingOfIntegersRat]
             (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
               hp.toHeightOneSpectrumRingOfIntegersRat))) ^ k) ϖ = ϖ →
-        n ∣ k :=
-  sorry
+        n ∣ k := by
+  have hn0 : n ≠ 0 := by rintro rfl; exact hpn (dvd_zero p)
+  obtain ⟨σ, hσ, hk⟩ := exists_mem_localInertiaGroup_tameOrbit
+    hp.toHeightOneSpectrumRingOfIntegersRat hn0
+    (natCast_notMem_maximalIdeal_integralClosure hp hpn)
+    ((p : ℕ) : HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)
+    (maximalIdeal_adicCompletionIntegers_eq_span hp) ϖ
+    (by rw [map_natCast]; exact hϖ)
+  exact ⟨σ, hσ, hk⟩
 
 open IsDedekindDomain in
 set_option backward.isDefEq.respectTransparency false in
@@ -20817,13 +21128,317 @@ theorem localInertia_fixes_tame_root_of_fixes {p : ℕ} (hp : p.Prime) {n : ℕ}
     exact h
   rw [hsϖ, hζ1, one_mul]
 
+open Finset in
+/-- **Newton polygon, single-segment case** (PROVEN 2026-07-26): let `f` be a
+multiplicative nonarchimedean absolute value on a field `L`, and let
+`a₀ + a₁ X + ⋯ + a_N X ^ N` be a polynomial with `f a₀ = 1`, `f a_N = c` and
+`(f aᵢ) ^ N ≤ c ^ i` for every `i` — i.e. every point `(i, v aᵢ)` of its Newton
+polygon lies on or above the segment from `(0, 0)` to `(N, v c)`, so that
+segment is the whole lower hull. Then EVERY root `x` satisfies
+`c · (f x) ^ N = 1`, i.e. `v x = − v c / N`.
+
+Proof, purely by the ultrametric "the maximum is attained twice" principle
+(`IsNonarchimedean.apply_sum_eq_of_lt`): put `t = c · (f x) ^ N`, so that
+`f (aᵢ xⁱ) ^ N ≤ t ^ i`. If `t < 1` then every `i ≥ 1` term is STRICTLY smaller
+than the constant term, so the sum has absolute value `f a₀ = 1 ≠ 0`; if `t > 1`
+then every `i < N` term is strictly smaller than the top one, so the sum has
+absolute value `t > 0`. Both contradict `f 0 = 0`, leaving `t = 1`.
+
+No hypothesis `N ≠ 0` is needed: for `N = 0` the sum is `a₀`, so `f a₀ = 0 ≠ 1`
+and the statement is vacuously reachable. -/
+theorem newtonPolygon_single_segment_root {L : Type*} [Field L] {f : L → ℝ}
+    (hna : IsNonarchimedean f) (hneg : ∀ b : L, f b = f (-b))
+    (hmul : ∀ b b' : L, f (b * b') = f b * f b')
+    (hnonneg : ∀ b : L, 0 ≤ f b) (hf0 : f 0 = 0) (hf1 : f 1 = 1)
+    {N : ℕ} {a : ℕ → L} {c : ℝ}
+    (ha0 : f (a 0) = 1) (haN : f (a N) = c)
+    (hbnd : ∀ i, f (a i) ^ N ≤ c ^ i)
+    {x : L} (hx : ∑ i ∈ Finset.range (N + 1), a i * x ^ i = 0) :
+    c * f x ^ N = 1 := by
+  have hpow : ∀ (b : L) (k : ℕ), f (b ^ k) = f b ^ k := by
+    intro b k
+    induction k with
+    | zero => simpa using hf1
+    | succ k ih => rw [pow_succ, hmul, ih, pow_succ]
+  have hc0 : 0 ≤ c := haN ▸ hnonneg _
+  have hxN : 0 ≤ f x ^ N := pow_nonneg (hnonneg x) N
+  set t : ℝ := c * f x ^ N with htdef
+  have ht0 : 0 ≤ t := mul_nonneg hc0 hxN
+  have hterm : ∀ i : ℕ, f (a i * x ^ i) = f (a i) * f x ^ i := by
+    intro i
+    rw [hmul, hpow]
+  have hbndt : ∀ i : ℕ, f (a i * x ^ i) ^ N ≤ t ^ i := by
+    intro i
+    rw [hterm, mul_pow, ← pow_mul, mul_comm i N, pow_mul, htdef, mul_pow]
+    exact mul_le_mul_of_nonneg_right (hbnd i) (pow_nonneg hxN i)
+  have hterm0 : f (a 0 * x ^ 0) = 1 := by rw [hterm, pow_zero, mul_one, ha0]
+  have htermN : f (a N * x ^ N) = t := by rw [hterm, haN, htdef]
+  have hsum0 : f (∑ i ∈ Finset.range (N + 1), a i * x ^ i) = 0 := by rw [hx, hf0]
+  rcases lt_trichotomy t 1 with hlt | heq | hgt
+  · exfalso
+    have hmax : ∀ j ∈ Finset.range (N + 1), j ≠ 0 →
+        f (a j * x ^ j) < f (a 0 * x ^ 0) := by
+      intro j _ hj0
+      rw [hterm0]
+      have h1 : f (a j * x ^ j) ^ N ≤ t ^ j := hbndt j
+      have h2 : t ^ j < 1 := pow_lt_one₀ ht0 hlt hj0
+      have h3 : f (a j * x ^ j) ^ N < 1 := lt_of_le_of_lt h1 h2
+      by_contra hcon
+      push Not at hcon
+      exact absurd h3 (not_lt.mpr (one_le_pow₀ hcon))
+    have hkey := IsNonarchimedean.apply_sum_eq_of_lt hna hneg
+      (s := Finset.range (N + 1)) (l := fun i => a i * x ^ i)
+      (k := 0) (by simp) hmax
+    rw [hsum0, hterm0] at hkey
+    exact zero_ne_one hkey
+  · rw [htdef] at heq
+    exact heq
+  · exfalso
+    have hmax : ∀ j ∈ Finset.range (N + 1), j ≠ N →
+        f (a j * x ^ j) < f (a N * x ^ N) := by
+      intro j hj hjN
+      have hjlt : j < N := by
+        have := Finset.mem_range.mp hj
+        omega
+      rw [htermN]
+      have h1 : f (a j * x ^ j) ^ N ≤ t ^ j := hbndt j
+      have h2 : t ^ j < t ^ N := pow_lt_pow_right₀ hgt hjlt
+      have h3 : f (a j * x ^ j) ^ N < t ^ N := lt_of_le_of_lt h1 h2
+      exact lt_of_pow_lt_pow_left₀ N (le_of_lt (lt_trans zero_lt_one hgt)) h3
+    have hkey := IsNonarchimedean.apply_sum_eq_of_lt hna hneg
+      (s := Finset.range (N + 1)) (l := fun i => a i * x ^ i)
+      (k := N) (by simp) hmax
+    rw [hsum0, htermN] at hkey
+    exact absurd hkey.symm (ne_of_gt (lt_trans zero_lt_one hgt))
+
+section SupersingularDivisionPolynomial
+
+variable {p : ℕ} (hp : p.Prime)
+
+local notation "Rp" =>
+  Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal
+local notation "Kp" =>
+  IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+    hp.toHeightOneSpectrumRingOfIntegersRat
+local notation "Lp" =>
+  AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+    hp.toHeightOneSpectrumRingOfIntegersRat)
+local notation "kbar" =>
+  AlgebraicClosure (IsLocalRing.ResidueField
+    (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))
+
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+/-- **At a good SUPERSINGULAR prime the reduced `p`-division polynomial is a
+CONSTANT** (PROVEN 2026-07-26). This is the whole geometric content of
+supersingularity as it enters the Newton-polygon leaf below: if the reduced
+curve `Ẽ/𝔽̄_p` has no nonzero geometric `p`-torsion then `Ψ²_p(Ẽ)` has
+degree `0`.
+
+Proof: `Ψ²_p(Ẽ) ≠ 0` by the characteristic-free `ΨSq_ne_zero_of_isElliptic`
+(proven above in this file — mathlib's `ΨSq_ne_zero` needs `(n : R) ≠ 0`,
+which is exactly what fails here since the residue characteristic IS `p`).
+If it had positive degree it would have a root `x₀` over the algebraically
+closed `𝔽̄_p`; the `y`-quadratic `TorsionCard.yQuad` at `x₀` has degree `2`,
+so it too has a root `y₀`, and `equation_iff_nonsingular` (the reduced curve
+is elliptic, `hasGoodReduction_iff_isElliptic_reduction`) makes `(x₀, y₀)` a
+point. `TorsionCard.smul_some_eq_zero_iff` then makes it a `p`-torsion point,
+nonzero because it is a `Point.some` — contradicting `hss`. -/
+theorem natDegree_reduction_ΨSq_eq_zero_of_supersingular
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] [E.HasGoodReduction Rp]
+    (hss : ∀ P : ((E.reduction Rp)⁄kbar).Point, ((p : ℕ) : ℤ) • P = 0 → P = 0) :
+    ((E.reduction Rp).ΨSq ((p : ℕ) : ℤ)).natDegree = 0 := by
+  classical
+  haveI hell : (E.reduction Rp).IsElliptic :=
+    (WeierstrassCurve.hasGoodReduction_iff_isElliptic_reduction Rp).mp inferInstance
+  have hpZ : ((p : ℕ) : ℤ) ≠ 0 := by exact_mod_cast hp.ne_zero
+  by_contra hdeg
+  have hΨne : (E.reduction Rp).ΨSq ((p : ℕ) : ℤ) ≠ 0 :=
+    WeierstrassCurve.ΨSq_ne_zero_of_isElliptic _ hpZ
+  have hmapΨ : ((E.reduction Rp)⁄kbar).ΨSq ((p : ℕ) : ℤ) =
+      ((E.reduction Rp).ΨSq ((p : ℕ) : ℤ)).map (algebraMap _ kbar) :=
+    WeierstrassCurve.map_ΨSq _ _ _
+  have hne' : ((E.reduction Rp)⁄kbar).ΨSq ((p : ℕ) : ℤ) ≠ 0 := by
+    rw [hmapΨ]
+    exact fun h0 => hΨne ((Polynomial.map_eq_zero_iff
+      (algebraMap (IsLocalRing.ResidueField Rp) kbar).injective).mp h0)
+  have hdeg' : (((E.reduction Rp)⁄kbar).ΨSq ((p : ℕ) : ℤ)).degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree hne', hmapΨ, Polynomial.natDegree_map]
+    exact_mod_cast hdeg
+  obtain ⟨x₀, hx₀⟩ := IsAlgClosed.exists_root _ hdeg'
+  -- the `y`-quadratic has a root, giving a point of the curve
+  have hyd : (TorsionCard.yQuad ((E.reduction Rp)⁄kbar) x₀).degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree (TorsionCard.yQuad_ne_zero _ x₀),
+      TorsionCard.yQuad_natDegree]
+    norm_num
+  obtain ⟨y₀, hy₀⟩ := IsAlgClosed.exists_root _ hyd
+  have hns : ((((E.reduction Rp)⁄kbar))⁄kbar).toAffine.Nonsingular x₀ y₀ :=
+    WeierstrassCurve.Affine.equation_iff_nonsingular.mp
+      ((TorsionCard.eval_yQuad_eq_zero_iff_equation _ x₀ y₀).mp hy₀)
+  have hzero : ((p : ℕ) : ℤ) • (WeierstrassCurve.Affine.Point.some x₀ y₀ hns :
+      ((((E.reduction Rp)⁄kbar))⁄kbar).Point) = 0 :=
+    (TorsionCard.smul_some_eq_zero_iff _ hpZ hns).mpr hx₀
+  exact WeierstrassCurve.Affine.Point.some_ne_zero hns (hss _ hzero)
+
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+/-- **From a CONSTANT reduced division polynomial to the single-segment
+Newton polygon over `ℚ̄_p`** (sorry node, cut 2026-07-26 — this is what
+remains of `spectralNorm_coeff_ΨSq_of_good_of_supersingular` once
+`natDegree_reduction_ΨSq_eq_zero_of_supersingular` above has consumed the
+geometry): the constant coefficient of `Ψ²_p` is a UNIT and every
+coefficient satisfies `|aᵢ| ^ (p² − 1) ≤ (|p| ²) ^ i`.
+
+TWO SEPARABLE PIECES, and the second is the only real mathematics left:
+
+* *Transport.* `hconst` says the reduction of `Ψ²_p` of the INTEGRAL MODEL
+  is a nonzero constant (nonzero by `ΨSq_ne_zero_of_isElliptic`), i.e. its
+  coefficient `c₀` is a unit of `R = ℤ_(p)` and `cᵢ ∈ 𝔪_R = (p)` for
+  `i ≥ 1`. The coefficients over `ℚ̄_p` are the images of the `cᵢ` — the
+  dictionary is the `hmap`/`map_ΨSq`/`coeff_map` chain already used in
+  `coeff_Φ_mem_and_isUnit_coeff_ΨSq_of_hasGoodReduction` above — so
+  `|a₀| = 1` and `|aᵢ| ≤ |p|`. The one mathlib gap here is *`x` integral
+  over `𝒪ᵥ` implies `spectralNorm x ≤ 1`*: the repo has only the converse
+  (`isIntegral_of_spectralNorm_le_one`, `AbsoluteGaloisGroup.lean`). It is
+  the usual ultrametric argument on a monic equation (if `|x| > 1` then
+  `|xⁿ|` strictly dominates every lower term), or `spectralValue_le_one_iff`
+  plus "the minimal polynomial of an integral element over an integrally
+  closed ring has integral coefficients".
+
+* *The second-order vanishing.* `|aᵢ| ≤ |p|` gives the required bound only
+  for `i ≤ (p² − 1)/2`; for larger `i` one needs `|aᵢ| ≤ |p| ²`, i.e.
+  `cᵢ ∈ 𝔪_R ²`. For ODD `p` this is formal: `Ψ²_p = (preΨ'_p) ²` by
+  `ΨSq_ofNat`, the polygon of `preΨ'_p` is the segment
+  `(0,0)–((p²−1)/2, 1)` (which IS what `hconst` gives, since a coefficient
+  of `preΨ'_p` of index `≥ 1` reduces to `0`), and a coefficient of the
+  SQUARE of index `i > (p²−1)/2 = deg preΨ'_p` is a sum of products
+  `b_j b_{i−j}` with BOTH indices `≥ 1`, hence lies in `𝔪_R ²`. For `p = 2`,
+  `Ψ²_2 = Ψ₂Sq = 4x³ + b₂x² + 2b₄x + b₆` and the statement is `v(b₂) ≥ 2`,
+  which holds because supersingularity at `2` forces `a₁ ∈ 𝔪_R` and
+  `b₂ = a₁² + 4a₂`.
+
+So the honest shape of the remainder is one general polynomial lemma (the
+Newton polygon of a square is twice the Newton polygon of the root) plus a
+two-line characteristic-`2` computation. -/
+theorem spectralNorm_coeff_ΨSq_of_natDegree_reduction_eq_zero
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] [E.HasGoodReduction Rp]
+    (hconst : ((E.reduction Rp).ΨSq ((p : ℕ) : ℤ)).natDegree = 0) :
+    spectralNorm Kp Lp ((((E.map (algebraMap ℚ Kp))⁄Lp).ΨSq ((p : ℕ) : ℤ)).coeff 0) = 1 ∧
+    ∀ i : ℕ, spectralNorm Kp Lp
+        ((((E.map (algebraMap ℚ Kp))⁄Lp).ΨSq ((p : ℕ) : ℤ)).coeff i) ^ (p ^ 2 - 1) ≤
+      (spectralNorm Kp Lp ((p : ℕ) : Lp) ^ 2) ^ i :=
+  sorry
+
+end SupersingularDivisionPolynomial
+
 open IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
+/-- **The Newton polygon of the `p`-division polynomial at a good
+SUPERSINGULAR prime is the single segment from `(0, 0)` to `(p² − 1, 2)`**
+(DERIVED 2026-07-26 from the PROVEN
+`natDegree_reduction_ΨSq_eq_zero_of_supersingular` — which is where
+supersingularity is consumed — and the remaining sorry node
+`spectralNorm_coeff_ΨSq_of_natDegree_reduction_eq_zero`, both just above;
+originally cut 2026-07-26 out of
+`spectralNorm_torsion_abscissa_of_good_of_supersingular` below, which is now
+DERIVED from it and from the purely ultrametric
+`newtonPolygon_single_segment_root` above): the `p`-division polynomial
+`Ψ²_p` of the base change of `E` to `ℚ̄_p` has a UNIT constant coefficient,
+and every coefficient satisfies `|aᵢ| ^ (p² − 1) ≤ (|p| ²) ^ i`.
+
+This is the ENTIRE arithmetic content of the parent leaf. The remaining data
+of that leaf are already theorems: `natDegree_ΨSq` gives
+`deg Ψ²_p = p² − 1` and `leadingCoeff_ΨSq` gives leading coefficient `p²`
+(both over the characteristic-zero field `ℚ̄_p`, where `(p : ℚ̄_p) ≠ 0`), and
+`TorsionCard.smul_some_eq_zero_iff` turns `p · (x, y) = 0` into
+`Ψ²_p(x) = 0`.
+
+WHY IT IS TRUE. Supersingularity says the reduced curve `Ẽ/𝔽̄_p` has no
+nonzero geometric `p`-torsion, so `Ψ²_p` of `Ẽ` has no root in `𝔽̄_p`; being
+nonzero (`ΨSq_ne_zero_of_isElliptic`, the characteristic-free form proven in
+this file) it must therefore be a nonzero CONSTANT. Reducing the integral
+model, that says `|a₀| = 1` and `|aᵢ| ≤ |p|` for `i ≥ 1`. The sharper bound
+`|aᵢ| ^ (p² − 1) ≤ |p| ^ (2i)`, i.e. `v(aᵢ) ≥ 2i/(p² − 1)`, is the
+single-segment shape of the Newton polygon and needs the second order of
+vanishing for `i > (p² − 1)/2`; for ODD `p` it follows formally because
+`Ψ²_p = (preΨ'_p) ²` and the polygon of `preΨ'_p` is the segment
+`(0,0)–((p²−1)/2, 1)`, so a coefficient of index `i > (p²−1)/2` is a sum of
+products `b_j b_{i−j}` with BOTH indices `≥ 1`, hence divisible by `p²`. For
+`p = 2` it is the statement `v(b₂) ≥ 2`, which holds because supersingularity
+at `2` forces `a₁ ≡ 0 mod 2` and `b₂ = a₁² + 4a₂`.
+
+MISSING FROM MATHLIB, named as statements: (a) *the reduction of the
+`n`-division polynomial is the `n`-division polynomial of the reduction* in
+the integral-model vocabulary of
+`coeff_Φ_mem_and_isUnit_coeff_ΨSq_of_hasGoodReduction` (same file — that
+lemma already extracts ONE unit coefficient of `Ψ²ₙ` this way, and the
+present leaf needs the constant one specifically); (b) *a polynomial over an
+algebraically closed field with no root is constant* (mathlib has
+`IsAlgClosed.exists_root`, so this is a short step); (c) *the `x`-coordinate
+of a nonzero `p`-torsion point of `Ẽ` is a root of `Ψ²_p(Ẽ)`* — this is
+`TorsionCard.smul_some_eq_zero_iff` again, over the residue field. `~/cs/FLT`
+has no division-polynomial material at all, so nothing is vendorable there.
+
+NOT NEEDED for this route: formal groups. Mathlib's
+`RingTheory/FormalGroup/Basic.lean` is embryonic (group axioms only — no
+height, no `[p]`-series, no Newton polygon); the division-polynomial route
+above avoids it entirely.
+
+NUMERICAL CERTIFICATE (PARI/GP, 2026-07-25 — a check of the STATEMENT, not a
+proof): for `p = 5` and `E : y² = x³ + 1` (good supersingular reduction at
+`5`) the `5`-division polynomial has degree `12` with coefficient valuations
+`v₅ = 0, 2, 1, 1, 1` at `x⁰, x³, x⁶, x⁹, x¹²`, so its Newton polygon is the
+SINGLE segment `(0,0)–(12,1)`; squaring gives the segment `(0,0)–(24,2)`
+asserted here. The same check at `p = 7` with `E : y² = x³ + x` gives degree
+`24 = (p² − 1)/2` with polygon `(0,0)–(24,1)`. -/
+theorem WeierstrassCurve.spectralNorm_coeff_ΨSq_of_good_of_supersingular
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ} (hp : p.Prime)
+    [E.HasGoodReduction
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)]
+    (hss : ∀ P : ((E.reduction
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))⁄
+        (AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).Point,
+      (p : ℤ) • P = 0 → P = 0) :
+    spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))
+      ((((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).ΨSq
+          ((p : ℕ) : ℤ)).coeff 0) = 1 ∧
+    ∀ i : ℕ, spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))
+      ((((E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))).ΨSq
+          ((p : ℕ) : ℤ)).coeff i) ^ (p ^ 2 - 1) ≤
+      (spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))
+      ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2) ^ i :=
+  spectralNorm_coeff_ΨSq_of_natDegree_reduction_eq_zero hp E
+    (natDegree_reduction_ΨSq_eq_zero_of_supersingular hp E hss)
+
+open IsDedekindDomain in
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 1000000 in
 /-- **The Newton-polygon valuation of the abscissa of a local `p`-torsion
-point at a good SUPERSINGULAR prime** (sorry node, cut 2026-07-25 out of
-`exists_local_inertia_torsion_orbit_of_good_of_supersingular` below — the
-ELLIPTIC-CURVE half of that leaf): if `E/ℚ` has good supersingular
+point at a good SUPERSINGULAR prime** (DERIVED 2026-07-26 from the single
+leaf `spectralNorm_coeff_ΨSq_of_good_of_supersingular` above and the proven
+ultrametric `newtonPolygon_single_segment_root`; originally cut 2026-07-25
+out of `exists_local_inertia_torsion_orbit_of_good_of_supersingular` below —
+the ELLIPTIC-CURVE half of that leaf): if `E/ℚ` has good supersingular
 reduction at `p` and `(x, y)` is an affine `p`-torsion point of the base
 change to `ℚ̄_p`, then `|x| ^ (p² − 1) · |p| ^ 2 = 1` for the spectral
 norm, i.e. `v(x) = −2/(p² − 1)`.
@@ -20837,13 +21452,24 @@ parameter of valuation `1/(p² − 1)`, and since `t = −x/y` with
 `v(x) = −2 v(t)`, `v(x) = −2/(p² − 1)`. Silverman *AEC* IV.2–IV.3, VII.6;
 ATAEC IV.6.
 
-ROUTE: the DIVISION-POLYNOMIAL route avoids formal groups altogether —
-mathlib has `WeierstrassCurve.Ψ`/`preΨ`, and the content is that the
-`p`-division polynomial has Newton polygon the single segment from
-`(0, 0)` to `((p² − 1)/2, 1)`, so each root `x(Q)` has
-`v(x) = −2/(p² − 1)`. Mathlib's `RingTheory/FormalGroup/Basic.lean` is
-embryonic (group axioms only — no height, no `[p]`-series, no Newton
-polygon), so the formal-group route would need that theory built first.
+HOW IT IS PROVED (2026-07-26), by the DIVISION-POLYNOMIAL route, which
+avoids formal groups altogether — mathlib's
+`RingTheory/FormalGroup/Basic.lean` is embryonic (group axioms only: no
+height, no `[p]`-series, no Newton polygon), so the formal-group route
+would have needed that theory built first. Four steps, of which only the
+second is still open:
+1. `TorsionCard.smul_some_eq_zero_iff` (PROVEN, same development) turns
+   `p · (x, y) = 0` into `Ψ²_p(x) = 0`.
+2. `spectralNorm_coeff_ΨSq_of_good_of_supersingular` (the ONE remaining
+   sorry node, above) says the Newton polygon of `Ψ²_p` is the single
+   segment from `(0, 0)` to `(p² − 1, 2)`: unit constant coefficient and
+   `|aᵢ| ^ (p² − 1) ≤ (|p| ²) ^ i` throughout. This is where
+   supersingularity is consumed.
+3. `natDegree_ΨSq` and `leadingCoeff_ΨSq` (mathlib) give degree `p² − 1`
+   and leading coefficient `p²`, since `(p : ℚ̄_p) ≠ 0`.
+4. `newtonPolygon_single_segment_root` (PROVEN above, pure ultrametric
+   analysis) converts that data at a root into `|x| ^ (p²−1) · |p| ² = 1`.
+
 The sibling leaf `exists_localKernelDivision_of_good_reduction` (same
 file) needs the same Newton polygon and should be read alongside this one.
 
@@ -20887,8 +21513,99 @@ theorem WeierstrassCurve.spectralNorm_torsion_abscissa_of_good_of_supersingular
       (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
         hp.toHeightOneSpectrumRingOfIntegersRat))
       ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
-        hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2 = 1 :=
-  sorry
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2 = 1 := by
+  classical
+  set W : WeierstrassCurve (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)) :=
+    (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)))⁄(AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) with hW
+  have hpZ : ((p : ℕ) : ℤ) ≠ 0 := by exact_mod_cast hp.ne_zero
+  have hpLv : (((p : ℕ) : ℤ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)) ≠ 0 := by
+    have h1 : ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ≠ 0 := Nat.cast_ne_zero.mpr hp.ne_zero
+    simpa using h1
+  -- the abscissa is a root of the `p`-division polynomial
+  have hΨ0 : ((W.ΨSq ((p : ℕ) : ℤ)).eval x) = 0 :=
+    (TorsionCard.smul_some_eq_zero_iff W hpZ h).mp htor
+  -- degree and leading coefficient
+  have hdeg : (W.ΨSq ((p : ℕ) : ℤ)).natDegree = p ^ 2 - 1 := by
+    rw [W.natDegree_ΨSq hpLv]
+    simp
+  have hlead : (W.ΨSq ((p : ℕ) : ℤ)).coeff (p ^ 2 - 1) =
+      ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2 := by
+    have h1 : (W.ΨSq ((p : ℕ) : ℤ)).leadingCoeff =
+        (((p : ℕ) : ℤ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2 :=
+      W.leadingCoeff_ΨSq hpLv
+    rw [Polynomial.leadingCoeff, hdeg] at h1
+    rw [h1]
+    push_cast
+    ring
+  -- the spectral norm is a multiplicative nonarchimedean absolute value
+  have hmul : ∀ b b' : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat),
+      spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat) _ (b * b') =
+        spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat) _ b *
+        spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat) _ b' := by
+    intro b b'
+    simpa only [spectralAlgNorm_def] using spectralAlgNorm_mul
+      (K := HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)
+      (L := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) b b'
+  have hneg : ∀ b : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat),
+      spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat) _ b =
+        spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat) _ (-b) :=
+    fun b => (spectralNorm_neg
+      (K := HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)
+      (L := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))
+      (Algebra.IsAlgebraic.isAlgebraic b)).symm
+  obtain ⟨hc0, hcbnd⟩ := E.spectralNorm_coeff_ΨSq_of_good_of_supersingular hp hss
+  have hcN : spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat) _
+      ((W.ΨSq ((p : ℕ) : ℤ)).coeff (p ^ 2 - 1)) =
+      spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat) _
+      ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2 := by
+    rw [hlead, pow_two, hmul, ← pow_two]
+  have hxsum : ∑ i ∈ Finset.range ((p ^ 2 - 1) + 1),
+      (W.ΨSq ((p : ℕ) : ℤ)).coeff i * x ^ i = 0 := by
+    rw [← hdeg, ← Polynomial.eval_eq_sum_range]
+    exact hΨ0
+  have hkey := newtonPolygon_single_segment_root
+    (f := spectralNorm (HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat) (AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)))
+    (isNonarchimedean_spectralNorm
+      (K := HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)
+      (L := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))) hneg hmul
+    (fun b => spectralNorm_nonneg
+      (K := HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)
+      (L := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) b)
+    (spectralNorm_zero
+      (K := HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)
+      (L := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))
+    (spectralNorm_one
+      (K := HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)
+      (L := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))
+    (N := p ^ 2 - 1) (a := fun i => (W.ΨSq ((p : ℕ) : ℤ)).coeff i) hc0 hcN hcbnd hxsum
+  rw [mul_comm] at hkey
+  exact hkey
 
 open ValuativeRel IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
