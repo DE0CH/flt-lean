@@ -15989,6 +15989,91 @@ theorem WeierstrassCurve.tateNormalForm_origin_preΨ'_residual (N : ℕ)
     rw [MazurX1Plane.eval_five, WeierstrassCurve.x1TwentyFive_plane_eq_line b c h00 h]
     ring
 
+/-- **Forward half of the Tate-coordinate torsion dictionary at the
+origin** (PROVEN 2026-07-26 — HOISTED verbatim out of the body of
+`tateNormalForm_origin_order_ne_of_cuspidalRankZero` below, where it was
+the inline `have key`; the tactic text is unchanged).
+
+If the origin of `tateNormalForm b c` has ODD order `n`, then the level
+polynomial `preΨ'ₙ` vanishes at `x = 0`. Oddness is what lets the
+`ΨSq`-form of `MazurX1Plane.zsmul_eq_zero_iff` be read as a square, so
+that `preΨ'ₙ(0)² = 0` yields `preΨ'ₙ(0) = 0`.
+
+WHY IT IS HOISTED — a structural point, not a mathematical one. Inline,
+this step sat above a seven-way `rcases`, so it was shared by all seven
+level branches and the whole node became ONE proof term. Every consumer
+of ANY level therefore dragged in the open leaves of all six others. As
+a standalone lemma each level's node consumes it alone, and its `#print
+axioms` reports only its OWN leaf. See the DECOUPLING AUDIT on
+`tateNormalForm_origin_order_ne_25` below for the measured effect. -/
+theorem WeierstrassCurve.tateNormalForm_origin_preΨ'_eval_eq_zero
+    (b c : ℚ) [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0)
+    (n : ℕ) (hodd : ¬ Even n)
+    (hn : addOrderOf (Affine.Point.some 0 0 h00) = n) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' n).eval 0 = 0 := by
+  have hn0 : (n : ℤ) ≠ 0 := by
+    rintro h0
+    rw [show n = 0 from by exact_mod_cast h0] at hodd
+    exact hodd (by decide)
+  have hz : (n : ℤ) • (Affine.Point.some 0 0 h00) = 0 := by
+    rw [natCast_zsmul, ← hn]; exact addOrderOf_nsmul_eq_zero _
+  have hΨ :=
+    (MazurX1Plane.zsmul_eq_zero_iff (WeierstrassCurve.tateNormalForm b c) h00 hn0).mp hz
+  rw [MazurX1Plane.eval_ΨSq_odd _ _ n hodd] at hΨ
+  exact pow_eq_zero_iff two_ne_zero |>.mp hΨ
+
+/-- **Backward half of the Tate-coordinate torsion dictionary at the
+origin** (PROVEN 2026-07-26 — HOISTED verbatim out of the body of
+`tateNormalForm_origin_order_ne_of_cuspidalRankZero` below, where it was
+the inline `have back`; the tactic text is unchanged).
+
+A level value vanishing at a POSITIVE index `d` bounds the order of the
+origin by `d`: `preΨ'_d(0) = 0` forces `d • (0, 0) = 0` through
+`MazurX1Plane.eval_ΨSq_of_preΨ'`, and `addOrderOf` divides any such `d`.
+No oddness is needed here — that is only required in the forward
+direction, where the square has to be discarded.
+
+Hoisted for the same structural reason as its forward partner above. -/
+theorem WeierstrassCurve.tateNormalForm_origin_addOrderOf_le
+    (b c : ℚ) [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0)
+    (d : ℕ) (hd : 0 < d)
+    (hdz : ((WeierstrassCurve.tateNormalForm b c).preΨ' d).eval 0 = 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≤ d := by
+  have hd0 : (d : ℤ) ≠ 0 := by exact_mod_cast hd.ne'
+  have hz : (d : ℤ) • (Affine.Point.some 0 0 h00) = 0 :=
+    (MazurX1Plane.zsmul_eq_zero_iff (WeierstrassCurve.tateNormalForm b c) h00 hd0).mpr
+      (MazurX1Plane.eval_ΨSq_of_preΨ' _ _ d hdz)
+  rw [natCast_zsmul] at hz
+  exact Nat.le_of_dvd hd (addOrderOf_dvd_of_nsmul_eq_zero hz)
+
+/-- **The level-`25` residual, decoupled from levels `17` and `19`**
+(PROVEN 2026-07-26 — the `N = 25` branch of
+`tateNormalForm_origin_preΨ'_residual` above, extracted verbatim as a
+standalone declaration).
+
+STATEMENT and PROOF are exactly that branch: `w₂₅ = 0` forces the origin
+down to level `5`, i.e. onto the genus-`0` line `b = c`, so the witness
+is `d = 5`. Nothing here is new mathematics.
+
+WHY IT EXISTS. The three-level node above is a single proof term over
+`rcases hN`, so instantiating it at `N = 25` also drags in
+`x1Seventeen_preΨ'_ne_zero` and `x1Nineteen_preΨ'_ne_zero`, the open
+leaves of the OTHER two levels. Level `25` needs neither. This
+declaration is the level-`25` half with that coupling removed; the
+three-level node above is left exactly as it was, and keeps its own
+consumers. -/
+theorem WeierstrassCurve.tateNormalForm_origin_preΨ'_residual_25 (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0)
+    (h : ((WeierstrassCurve.tateNormalForm b c).preΨ' 25).eval 0 = 0) :
+    ∃ d : ℕ, 0 < d ∧ d < 25 ∧
+      ((WeierstrassCurve.tateNormalForm b c).preΨ' d).eval 0 = 0 := by
+  refine ⟨5, by norm_num, by norm_num, ?_⟩
+  rw [MazurX1Plane.eval_five, WeierstrassCurve.x1TwentyFive_plane_eq_line b c h00 h]
+  ring
+
 /-- **`X_1(N)(ℚ)` is cuspidal at the seven rank-zero levels: in Tate
 coordinates the origin never has order `N`, for
 `N ∈ {11, 13, 17, 19, 21, 25, 27}`** (sorry node — ONE literature
@@ -16199,13 +16284,43 @@ immediately below, which states it uniformly for the SEVEN levels whose
 proof is the same theorem. That node, not this one, is where the work
 is; this one is PROVEN from it by instantiating `N := 25`.
 
-DECOMPOSED AND PARTLY PROVEN 2026-07-26. The node itself is no longer a
-`sorry`: it is now derived, level by level, from the plane model of
-`X_1(N)` in the `(b, c)`-coordinates (section `MazurX1Plane` above,
-PROVEN) together with shallower nodes. Levels `11`, `13`, `21` and `27`
-are PROVEN outright; only `17`, `19`, `25` are still open, and as of
-2026-07-26 they are one leaf each below the now-PROVEN residual node.
-The cut is:
+DECOMPOSED 2026-07-26. The node itself is no longer a `sorry`: it is
+now derived, level by level, from the plane model of `X_1(N)` in the
+`(b, c)`-coordinates (section `MazurX1Plane` above, PROVEN) together
+with shallower nodes. The cut is:
+
+STALE-LABEL CORRECTION (2026-07-26, measured with `#print axioms` and a
+`getUsedConstantsAsSet` walk to the sorry leaves — the earlier version
+of this paragraph claimed levels `11`, `13`, `21`, `27` were "PROVEN
+outright" and that only `17`, `19`, `25` were open; ALL SEVEN are open).
+"Derived from a shallower node" was being read as "proven", but every
+one of those shallower nodes is itself still sorried. The true leaf sets
+today are:
+
+* `11` — `mordellWeil`, `curve11a3_points`, `curve11a3_isTorsion`
+  (through `x1Eleven_plane_ne_zero`, which is NOT proven); the
+  Tate-coordinate node `tateNormalForm_origin_order_ne_11` above reaches
+  its own separate leaf `MazurLevel11.cremona_11a3_abscissa`.
+* `13` — `x1Thirteen_kubert_ne_zero` (through
+  `x1Thirteen_plane_ne_zero`); `tateNormalForm_origin_order_ne_13`
+  above reaches `MazurLevel13.no_rational_point`.
+* `17`, `19`, `25` — `x1Seventeen_preΨ'_ne_zero`,
+  `x1Nineteen_preΨ'_ne_zero`, `x1TwentyFive_plane_eq_line`, one each, as
+  the bullets below say. These three ARE accurate.
+* `21` — `velu_map_add_of_notMem`,
+  `MazurLevel21.rational_point_x0TwentyOne`,
+  `exists_x0Seven_hauptmodul`, through `no_torsion_order_21`.
+* `27` — `velu_map_add_of_notMem`, `MazurLevel9.exists_tateParam`,
+  `exists_x0Nine_param_of_cyclicNineChain`, through
+  `no_torsion_order_27`.
+
+So the bullets below that say `21` and `27` are "PROVEN OUTRIGHT" mean
+only that their ROUTE avoids the rank-`0` citation — which is true and
+is a real correction to the citation audit — NOT that they are closed.
+Read "PROVEN OUTRIGHT" there as "proved by a route free of the rank-`0`
+Jacobian input". Likewise the count of genuinely irreducible nodes in
+this file is not four (`37, 43, 67, 163`): those four are irreducible,
+but they are not the only OPEN ones.
 
 * `N = 21` is **PROVEN OUTRIGHT** here, from the file's own
   `no_torsion_order_21` — the `X_0(21)` + genus-`0` `X_1(7)` route,
@@ -16263,40 +16378,19 @@ theorem WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero
     addOrderOf (Affine.Point.some 0 0 h00) ≠ N := by
   intro hord
   have hb : b ≠ 0 := MazurX1Plane.b_ne_zero h00
-  -- forward: the order condition makes the level polynomial vanish
-  have key : ∀ n : ℕ, ¬ Even n → addOrderOf (Affine.Point.some 0 0 h00) = n →
-      ((WeierstrassCurve.tateNormalForm b c).preΨ' n).eval 0 = 0 := by
-    intro n hodd hn
-    have hn0 : (n : ℤ) ≠ 0 := by
-      rintro h0
-      rw [show n = 0 from by exact_mod_cast h0] at hodd
-      exact hodd (by decide)
-    have hz : (n : ℤ) • (Affine.Point.some 0 0 h00) = 0 := by
-      rw [natCast_zsmul, ← hn]; exact addOrderOf_nsmul_eq_zero _
-    have hΨ :=
-      (MazurX1Plane.zsmul_eq_zero_iff (WeierstrassCurve.tateNormalForm b c) h00 hn0).mp hz
-    rw [MazurX1Plane.eval_ΨSq_odd _ _ n hodd] at hΨ
-    exact pow_eq_zero_iff two_ne_zero |>.mp hΨ
-  -- backward: a level value vanishing at a smaller index bounds the order
-  have back : ∀ d : ℕ, 0 < d →
-      ((WeierstrassCurve.tateNormalForm b c).preΨ' d).eval 0 = 0 →
-      addOrderOf (Affine.Point.some 0 0 h00) ≤ d := by
-    intro d hd hdz
-    have hd0 : (d : ℤ) ≠ 0 := by exact_mod_cast hd.ne'
-    have hz : (d : ℤ) • (Affine.Point.some 0 0 h00) = 0 :=
-      (MazurX1Plane.zsmul_eq_zero_iff (WeierstrassCurve.tateNormalForm b c) h00 hd0).mpr
-        (MazurX1Plane.eval_ΨSq_of_preΨ' _ _ d hdz)
-    rw [natCast_zsmul] at hz
-    exact Nat.le_of_dvd hd (addOrderOf_dvd_of_nsmul_eq_zero hz)
+  -- forward half: `tateNormalForm_origin_preΨ'_eval_eq_zero` (hoisted above)
+  -- backward half: `tateNormalForm_origin_addOrderOf_le` (hoisted above)
   rcases hN with rfl | rfl | rfl | rfl | rfl | rfl | rfl
   · -- `N = 11`: the plane quintic `F₁₁`
-    have h := key 11 (by decide) hord
+    have h :=
+      WeierstrassCurve.tateNormalForm_origin_preΨ'_eval_eq_zero b c h00 11 (by decide) hord
     rw [MazurX1Plane.eval_eleven] at h
     rcases mul_eq_zero.mp h with h0 | h0
     · exact hb (pow_eq_zero_iff (by norm_num) |>.mp h0)
     · exact WeierstrassCurve.x1Eleven_plane_ne_zero b c hb h0
   · -- `N = 13`: the plane curve `F₁₃`
-    have h := key 13 (by decide) hord
+    have h :=
+      WeierstrassCurve.tateNormalForm_origin_preΨ'_eval_eq_zero b c h00 13 (by decide) hord
     rw [MazurX1Plane.eval_thirteen] at h
     rcases mul_eq_zero.mp h with h0 | h0
     · exact hb (pow_eq_zero_iff (by norm_num) |>.mp h0)
@@ -16304,41 +16398,83 @@ theorem WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero
   · -- `N = 17`
     obtain ⟨d, hd0, hdN, hdz⟩ :=
       WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 17 (by tauto) b c h00
-        (key 17 (by decide) hord)
-    have hle := back d hd0 hdz
+        (WeierstrassCurve.tateNormalForm_origin_preΨ'_eval_eq_zero b c h00 17 (by decide) hord)
+    have hle := WeierstrassCurve.tateNormalForm_origin_addOrderOf_le b c h00 d hd0 hdz
     rw [hord] at hle
     omega
   · -- `N = 19`
     obtain ⟨d, hd0, hdN, hdz⟩ :=
       WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 19 (by tauto) b c h00
-        (key 19 (by decide) hord)
-    have hle := back d hd0 hdz
+        (WeierstrassCurve.tateNormalForm_origin_preΨ'_eval_eq_zero b c h00 19 (by decide) hord)
+    have hle := WeierstrassCurve.tateNormalForm_origin_addOrderOf_le b c h00 d hd0 hdz
     rw [hord] at hle
     omega
   · -- `N = 21`: PROVEN, from the `X_0(21)` + `X_1(7)` route above
     exact WeierstrassCurve.no_torsion_order_21 (WeierstrassCurve.tateNormalForm b c)
       (Affine.Point.some 0 0 h00) hord
-  · -- `N = 25`
+  · -- `N = 25`: through the decoupled `..._residual_25`
     obtain ⟨d, hd0, hdN, hdz⟩ :=
-      WeierstrassCurve.tateNormalForm_origin_preΨ'_residual 25 (by tauto) b c h00
-        (key 25 (by decide) hord)
-    have hle := back d hd0 hdz
+      WeierstrassCurve.tateNormalForm_origin_preΨ'_residual_25 b c h00
+        (WeierstrassCurve.tateNormalForm_origin_preΨ'_eval_eq_zero b c h00 25 (by decide) hord)
+    have hle := WeierstrassCurve.tateNormalForm_origin_addOrderOf_le b c h00 d hd0 hdz
     rw [hord] at hle
     omega
   · -- `N = 27`: PROVEN, from the `X_0(27)` route hoisted above
     exact WeierstrassCurve.no_torsion_order_27 (WeierstrassCurve.tateNormalForm b c)
       (Affine.Point.some 0 0 h00) hord
 
-/-- **No rational point of order `25`** (PROVEN 2026-07-26 by
-instantiating the seven-level node above at `N = 25`). All the
-mathematical content, the citation and the audit are in that node's
-docstring and in this one; nothing is specific to `25` any more. -/
+/-- **No rational point of order `25`, in Tate coordinates** (PROVEN
+2026-07-26; RE-PROVEN 2026-07-26 along the DECOUPLED route, statement
+unchanged). All the mathematical content and the citation are in the
+seven-level node above and in `x1TwentyFive_plane_eq_line`.
+
+DECOUPLING AUDIT (2026-07-26), and it is the reason this proof no longer
+instantiates the seven-level node above.
+
+The seven-level node is ONE proof term under a single seven-way
+`rcases`, and `tateNormalForm_origin_preΨ'_residual` is likewise one
+term under a three-way `rcases`. Instantiating either at a single level
+therefore pulls in the open leaves of ALL its levels. Measured with
+`#print axioms` before the change, this node reported TWELVE distinct
+sorry leaves:
+
+  `mordellWeil`, `curve11a3_points`, `curve11a3_isTorsion` (level `11`),
+  `x1Thirteen_kubert_ne_zero` (level `13`),
+  `x1Seventeen_preΨ'_ne_zero`, `x1Nineteen_preΨ'_ne_zero` (levels
+  `17`/`19`, through the residual node),
+  `velu_map_add_of_notMem`, `MazurLevel21.rational_point_x0TwentyOne`,
+  `exists_x0Seven_hauptmodul` (level `21`),
+  `MazurLevel9.exists_tateParam`,
+  `exists_x0Nine_param_of_cyclicNineChain` (level `27`),
+  and `x1TwentyFive_plane_eq_line` — the only one level `25` actually
+  needs.
+
+Eleven of the twelve were artefacts of proof STRUCTURE, not of
+mathematics. Routing instead through the hoisted
+`tateNormalForm_origin_preΨ'_eval_eq_zero` /
+`tateNormalForm_origin_addOrderOf_le` and the extracted
+`tateNormalForm_origin_preΨ'_residual_25` leaves exactly
+`x1TwentyFive_plane_eq_line`. So this node — and `no_torsion_order_25`
+below it, and hence `no_composite_torsion_order` — will close the moment
+that ONE leaf closes, instead of waiting on eleven unrelated ones.
+
+CONSEQUENCE FOR THE SEVEN-LEVEL NODE, flagged rather than acted on: this
+node was its ONLY consumer in the tree, so the seven-level node is now
+unconsumed. It is left intact and correct (its statement and conclusion
+are untouched). Retiring it, or routing an aggregator through it, is a
+cut-level decision for this file's owner and deliberately not taken
+here. -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_25 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
-    addOrderOf (Affine.Point.some 0 0 h00) ≠ 25 :=
-  WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero 25
-    (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))) b c h00
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 25 := by
+  intro hord
+  obtain ⟨d, hd0, hdN, hdz⟩ :=
+    WeierstrassCurve.tateNormalForm_origin_preΨ'_residual_25 b c h00
+      (WeierstrassCurve.tateNormalForm_origin_preΨ'_eval_eq_zero b c h00 25 (by decide) hord)
+  have hle := WeierstrassCurve.tateNormalForm_origin_addOrderOf_le b c h00 d hd0 hdz
+  rw [hord] at hle
+  omega
 
 /-- **No rational point of order `25`** (PROVEN 2026-07-26 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
