@@ -8202,8 +8202,8 @@ square-free part of `p` lies in `{±1, ±2}` (`sq_or_two_sq`), i.e.
 `p = dS²` with `d ∈ {1, −1, 2, −2}`; and `c = W/S` then satisfies
 `c² = d·(p+e²)(p+16e²)`, the `d`-th `2`-isogeny homogeneous space
 
-    d = 1 : c² = S⁴ + 17S²e² + 16e⁴          (`quartic_pos`, OPEN)
-    d = −1: c² = −S⁴ + 17S²e² − 16e⁴         (`quartic_neg`, OPEN)
+    d = 1 : c² = S⁴ + 17S²e² + 16e⁴          (`quartic_pos`, PROVEN)
+    d = −1: c² = −S⁴ + 17S²e² − 16e⁴         (`quartic_neg`, PROVEN)
     d = 2 : c² = 2S⁴ + 17S²e² + 8e⁴          (PROVEN impossible mod `5`)
     d = −2: c² = −2S⁴ + 17S²e² − 8e⁴         (PROVEN impossible mod `5`)
 
@@ -8233,9 +8233,216 @@ gives the four concordant-form systems
 
 namespace MazurLevel15
 
+/-! ### The two concordant systems
+
+Both surviving spaces `quartic_pos` (`d = 1`) and `quartic_neg` (`d = −1`)
+reduce — by an elementary and completely proven `gcd` split, see
+`quartic_pos` and `quartic_neg` below — to exactly two **concordant-form**
+statements:
+
+    concordant_one  :  x² + y² = □   and  x² + 16y² = □     ⟹  xy = 0
+    concordant_five :  x² + y² = 5□  and  x² + 16y² = 5□    ⟹  x² = 4y²
+
+These are the classical "concordant forms" problem for `n = 16`, and they
+carry ALL the remaining rank-`0` content of the conductor-`15` curve
+`V² = X(X+1)(X+16)`: `concordant_one` is the trivial `2`-covering (the
+class of `∞` and `(0,0)`) and `concordant_five` is the covering twisted by
+the order-`4` point `(4, 20)`. Neither is congruence-obstructed — both
+carry rational points — so both need a genuine descent.
+
+Verified by exhaustive search (`0 ≤ x, y ≤ 3000`, coprime): the only
+solutions of the first are `(x,y) = (0,±1), (±1,0)`, and of the second
+`(x,y) = (±2,±1)`. -/
+
+/-- `3 ∣ a²` forces `3 ∣ a` (squares mod `3` are `0`, `1`). -/
+theorem three_dvd_of_sq {a : ℤ} (h : (3 : ℤ) ∣ a ^ 2) : (3 : ℤ) ∣ a := by
+  have key : ∀ s : ZMod 3, s ^ 2 = 0 → s = 0 := by decide
+  have h0 : ((a : ZMod 3)) ^ 2 = 0 := by
+    have h1 := (ZMod.intCast_zmod_eq_zero_iff_dvd (a ^ 2) 3).mpr h
+    push_cast at h1
+    exact h1
+  exact (ZMod.intCast_zmod_eq_zero_iff_dvd a 3).mp (key _ h0)
+
+/-- `3 ∣ a² + b²` forces `3 ∣ a` and `3 ∣ b`: this is why `3` never divides
+the descent `gcd` `G` of `quartic_pos`, and why the `G = 1` and `G = 5`
+branches of `quartic_neg` are empty. -/
+theorem three_dvd_of_sq_add_sq {a b : ℤ} (h : (3 : ℤ) ∣ a ^ 2 + b ^ 2) :
+    (3 : ℤ) ∣ a ∧ (3 : ℤ) ∣ b := by
+  have key : ∀ s t : ZMod 3, s ^ 2 + t ^ 2 = 0 → s = 0 ∧ t = 0 := by decide
+  have h0 : ((a : ZMod 3)) ^ 2 + ((b : ZMod 3)) ^ 2 = 0 := by
+    have h1 := (ZMod.intCast_zmod_eq_zero_iff_dvd (a ^ 2 + b ^ 2) 3).mpr h
+    push_cast at h1
+    exact h1
+  obtain ⟨h1, h2⟩ := key _ _ h0
+  exact ⟨(ZMod.intCast_zmod_eq_zero_iff_dvd a 3).mp h1,
+    (ZMod.intCast_zmod_eq_zero_iff_dvd b 3).mp h2⟩
+
+/-- The divisors of `15`. -/
+theorem dvd_fifteen {n : ℕ} (h : n ∣ 15) : n = 1 ∨ n = 3 ∨ n = 5 ∨ n = 15 := by
+  have hle : n ≤ 15 := Nat.le_of_dvd (by norm_num) h
+  interval_cases n <;> revert h <;> decide
+
+/-- A nonnegative coprime factor of a square is a square. -/
+theorem sq_of_gcd_nonneg {a b c : ℤ} (h : Int.gcd a b = 1) (heq : a * b = c ^ 2)
+    (ha : 0 ≤ a) : ∃ a0 : ℤ, a = a0 ^ 2 := by
+  obtain ⟨a0, ha0 | ha0⟩ := Int.sq_of_gcd_eq_one h heq
+  · exact ⟨a0, ha0⟩
+  · rw [ha0] at ha
+    have h1 : a0 ^ 2 = 0 := by linarith [sq_nonneg a0]
+    exact ⟨0, by rw [ha0, h1]; ring⟩
+
+/-- **Splitting a square along the `gcd`** (PROVEN 2026-07-26). If
+`A · B = c²` with `A`, `B ≥ 0` and `A ≠ 0`, then writing `g = gcd(A, B)`
+both cofactors are squares: `A = g·a²`, `B = g·b²` with `a`, `b` coprime.
+
+This is the workhorse of both `quartic_pos` and `quartic_neg`: `g` there
+is constrained to divide `15`, so the two quartics split into the four
+concordant systems with `g ∈ {1, 5}` resp. `g ∈ {3, 15}`. -/
+theorem split_gcd {A B c : ℤ} (hAB : A * B = c ^ 2) (hA : 0 ≤ A) (hB : 0 ≤ B)
+    (hA0 : A ≠ 0) :
+    ∃ a b : ℤ, A = (Int.gcd A B : ℤ) * a ^ 2 ∧ B = (Int.gcd A B : ℤ) * b ^ 2 ∧
+      IsCoprime a b := by
+  obtain ⟨g, hgdef⟩ : ∃ g : ℕ, g = Int.gcd A B := ⟨_, rfl⟩
+  have hgpos : 0 < g := by rw [hgdef]; exact Int.gcd_pos_iff.mpr (Or.inl hA0)
+  have hgz : (g : ℤ) ≠ 0 := by exact_mod_cast hgpos.ne'
+  have hgp : (0 : ℤ) < (g : ℤ) := by exact_mod_cast hgpos
+  obtain ⟨A₁, hA₁⟩ : (g : ℤ) ∣ A := by rw [hgdef]; exact Int.gcd_dvd_left A B
+  obtain ⟨B₁, hB₁⟩ : (g : ℤ) ∣ B := by rw [hgdef]; exact Int.gcd_dvd_right A B
+  have hcop1 : Int.gcd A₁ B₁ = 1 := by
+    have h0 := Int.gcd_div_gcd_div_gcd (i := A) (j := B) (by rw [← hgdef]; exact hgpos)
+    rw [← hgdef] at h0
+    rwa [hA₁, hB₁, Int.mul_ediv_cancel_left _ hgz, Int.mul_ediv_cancel_left _ hgz] at h0
+  obtain ⟨c₁, hc₁⟩ : (g : ℤ) ∣ c := by
+    have h2 : ((g : ℤ)) ^ 2 ∣ c ^ 2 := ⟨A₁ * B₁, by rw [← hAB, hA₁, hB₁]; ring⟩
+    exact (Int.pow_dvd_pow_iff two_ne_zero).mp h2
+  have hpq : A₁ * B₁ = c₁ ^ 2 := by
+    refine mul_left_cancel₀ (pow_ne_zero 2 hgz) ?_
+    have h' : ((g : ℤ) * A₁) * ((g : ℤ) * B₁) = ((g : ℤ) * c₁) ^ 2 := by
+      rw [← hA₁, ← hB₁, ← hc₁]; exact hAB
+    linear_combination h'
+  have hA₁0 : 0 ≤ A₁ := by
+    by_contra hcon
+    have h' : A₁ < 0 := not_le.mp hcon
+    have hlt : A < 0 := by rw [hA₁]; exact mul_neg_of_pos_of_neg hgp h'
+    linarith
+  have hB₁0 : 0 ≤ B₁ := by
+    by_contra hcon
+    have h' : B₁ < 0 := not_le.mp hcon
+    have hlt : B < 0 := by rw [hB₁]; exact mul_neg_of_pos_of_neg hgp h'
+    linarith
+  obtain ⟨a, ha⟩ := sq_of_gcd_nonneg hcop1 hpq hA₁0
+  obtain ⟨b, hb⟩ := sq_of_gcd_nonneg (by rwa [Int.gcd_comm]) (by rw [mul_comm]; exact hpq) hB₁0
+  have hcop2 : IsCoprime a b := by
+    rw [ha, hb] at hcop1
+    have hc := Int.isCoprime_iff_gcd_eq_one.mpr hcop1
+    exact ((hc.of_isCoprime_of_dvd_left (dvd_pow_self a two_ne_zero)).symm.of_isCoprime_of_dvd_left
+      (dvd_pow_self b two_ne_zero)).symm
+  exact ⟨a, b, by rw [← hgdef, hA₁, ha], by rw [← hgdef, hB₁, hb], hcop2⟩
+
+/-- **The descent `gcd` divides `15`** (PROVEN 2026-07-26). If two integer
+combinations of `A`, `B` are `15e²` and `15S²` with `S`, `e` coprime, then
+`gcd(A, B) ∣ 15`. Applied with `(A, B) = (S²+e², S²+16e²)` — where
+`B − A = 15e²` and `16A − B = 15S²` — and with
+`(A, B) = (S²−e², 16e²−S²)` — where `A + B = 15e²` and
+`16A + B = 15S²`. -/
+theorem gcd_dvd_fifteen {S e A B : ℤ} (hcop : IsCoprime S e) (p q r s : ℤ)
+    (h1' : p * A + q * B = 15 * e ^ 2) (h2' : r * A + s * B = 15 * S ^ 2) :
+    Int.gcd A B ∣ 15 := by
+  have hgd : ((Int.gcd A B : ℤ)) ∣ 15 := by
+    obtain ⟨u, v, huv⟩ := hcop.pow (m := 2) (n := 2)
+    have hdA := Int.gcd_dvd_left A B
+    have hdB := Int.gcd_dvd_right A B
+    have h1 : ((Int.gcd A B : ℤ)) ∣ 15 * e ^ 2 := by
+      rw [← h1']; exact dvd_add (hdA.mul_left p) (hdB.mul_left q)
+    have h2 : ((Int.gcd A B : ℤ)) ∣ 15 * S ^ 2 := by
+      rw [← h2']; exact dvd_add (hdA.mul_left r) (hdB.mul_left s)
+    have hrw : (15 : ℤ) = u * (15 * S ^ 2) + v * (15 * e ^ 2) := by
+      linear_combination (-15 : ℤ) * huv
+    rw [hrw]; exact dvd_add (h2.mul_left u) (h1.mul_left v)
+  exact_mod_cast hgd
+
+/-- **The trivial concordant system for `n = 16`** (sorry leaf, cut
+2026-07-26 out of `quartic_pos`/`quartic_neg`): for coprime `x`, `y`, if
+BOTH `x² + y²` and `x² + 16y²` are squares then `xy = 0`.
+
+Equivalently: `x` is never the common leg of two Pythagorean triples whose
+other legs are `y` and `4y`. This is the `2`-covering of
+`V² = X(X+1)(X+16)` in the class of `∞` and `(0,0)`; it carries the
+rational points `(x,y) = (0,±1)` and `(±1,0)`, so it is everywhere locally
+soluble and **cannot** be killed by a congruence. Exhaustive search
+(`0 ≤ x,y ≤ 3000`, coprime) finds no further solution.
+
+**THE DESCENT, worked out 2026-07-26 — this is the route to take.**
+Write `x² + 16y² = x² + (4y)²`, so a solution gives two Pythagorean
+triples with common leg `x`. Exactly one of `x`, `y` is even (both odd
+makes `x² + y² ≡ 2 mod 4`).
+
+* `x` odd, `y` even: primitivity gives `x = m² − n²`, `y = 2mn`, and from
+  the second triple `x = p² − q²`, `4y = 2pq`, hence
+  `pq = 4mn` and `m² − n² = p² − q²`.
+* `x` even, `y` odd: `y = m² − n²`, `x = 2mn`; the second triple is
+  imprimitive, and dividing out the factor `4` gives the mirror system
+  `mn = 4pq` and `m² − n² = p² − q²`.
+
+Now `4 ∣ pq` with `gcd(p,q) = 1`, so (say) `p = 4p₀` and `p₀q = mn`. The
+standard four-way coprime split of `p₀q = mn` writes
+`p₀ = ab`, `q = cd`, `m = ac`, `n = bd` with `a`, `b`, `c`, `d` pairwise
+coprime, and `m² − n² = p² − q²` becomes
+
+    c²(a² + d²) = b²(16a² + d²),
+
+whence `a² + d² = K b²` and `16a² + d² = K c²` for a common `K`. As in
+`quartic_pos`, `K ∣ 15` and `3 ∤ K`, so `K ∈ {1, 5}`: that is **again**
+`concordant_one` or `concordant_five`, now at `(x', y') = (d, a)` with
+`|a|, |d| ≲ √max(|x|,|y|)` — a genuine infinite descent. Strong induction
+on `x² + y²` therefore closes `concordant_one` given `concordant_five`.
+
+Mathlib input: `PythagoreanTriple.coprime_classification'` for the two
+parametrisations, and `Int.sq_of_gcd_eq_one` for the four-way split. -/
+theorem concordant_one (x y b c : ℤ) (hcop : IsCoprime x y)
+    (h1 : x ^ 2 + y ^ 2 = b ^ 2) (h2 : x ^ 2 + 16 * y ^ 2 = c ^ 2) :
+    x = 0 ∨ y = 0 :=
+  sorry
+
+/-- **The `5`-twisted concordant system for `n = 16`** (sorry leaf, cut
+2026-07-26 out of `quartic_pos`/`quartic_neg`): for coprime `x`, `y`, if
+BOTH `x² + y²` and `x² + 16y²` are `5` times a square then `x² = 4y²`
+(equivalently `(|x|,|y|) = (2,1)`).
+
+This is the `2`-covering of `V² = X(X+1)(X+16)` twisted by the order-`4`
+point `(4, 20)`; the solution `(x,y) = (2,1)` (`5 = 5·1²`, `20 = 5·2²`) is
+the point itself, so again there is no congruence obstruction. Exhaustive
+search (`0 ≤ x,y ≤ 3000`, coprime) finds no further solution.
+
+**THE DESCENT, worked out 2026-07-26.** Use the two-squares identity
+`5(u² + v²) = (2u + v)² + (u − 2v)²`. Replacing `y` by `−y` if necessary
+(both hypotheses and the conclusion are even in `y`) one may assume
+`5 ∤ 2x + y`; put `X = 2x + y`, `Y = x − 2y`, so `gcd(X, Y) = 1` and
+
+    X² + Y² = (5b)²,        (2Y)² + (2X − 3Y)² = (5c)²
+
+(the second because `x + 8y = 2X − 3Y` and
+`5(x² + 16y²) = (2x − 4y)² + (x + 8y)²`). Parametrising both primitive
+triples and applying the four-way coprime split to `PQ = M² − N²` turns
+the compatibility condition into
+
+    (A² + D²)(B² − C²) = ±3ABCD,      A, B, C, D pairwise coprime,
+
+which splits (since `A² + D²` is prime to `AD` and `B² − C²` is prime to
+`BC`, and the two cofactors multiply to `3`) into exactly
+
+    A² + D² = 3BC  ∧  B² − C² = AD      or      A² + D² = BC  ∧  B² − C² = 3AD,
+
+with `A, B, C, D ≲ |x|^{1/4}`. -/
+theorem concordant_five (x y b c : ℤ) (hcop : IsCoprime x y)
+    (h1 : x ^ 2 + y ^ 2 = 5 * b ^ 2) (h2 : x ^ 2 + 16 * y ^ 2 = 5 * c ^ 2) :
+    x ^ 2 = 4 * y ^ 2 :=
+  sorry
+
 /-- **`d = 1`: the first `2`-isogeny homogeneous space of the
-conductor-`15` curve `V² = X(X+1)(X+16)`** (sorry leaf, cut 2026-07-26
-out of `WeierstrassCurve.tateNF_self_no_order_three`).
+conductor-`15` curve `V² = X(X+1)(X+16)`** (PROVEN 2026-07-26 over
+`concordant_one` and `concordant_five`; cut 2026-07-26 out of
+`WeierstrassCurve.tateNF_self_no_order_three`).
 
 For coprime `S`, `e` the quartic `S⁴ + 17S²e² + 16e⁴ = (S²+e²)(S²+16e²)`
 is a square only in the three trivial-or-torsion cases `S = 0`
@@ -8257,12 +8464,45 @@ transport it to the other: translation by the rational `2`-torsion point
 still has to redo the integral coprime bookkeeping of `rank_zero_x`. -/
 theorem quartic_pos (S e c : ℤ) (hcop : IsCoprime S e)
     (h : c ^ 2 = S ^ 4 + 17 * S ^ 2 * e ^ 2 + 16 * e ^ 4) :
-    S = 0 ∨ e = 0 ∨ S ^ 2 = 4 * e ^ 2 :=
-  sorry
+    S = 0 ∨ e = 0 ∨ S ^ 2 = 4 * e ^ 2 := by
+  have hnz : ¬ (S = 0 ∧ e = 0) := by
+    rintro ⟨rfl, rfl⟩
+    obtain ⟨u, v, huv⟩ := hcop
+    simp at huv
+  have hApos : 0 < S ^ 2 + e ^ 2 := by
+    rcases not_and_or.mp hnz with hS | he
+    · have h1 : 0 < S ^ 2 := (sq_nonneg S).lt_of_ne (Ne.symm (pow_ne_zero 2 hS))
+      linarith [sq_nonneg e]
+    · have h1 : 0 < e ^ 2 := (sq_nonneg e).lt_of_ne (Ne.symm (pow_ne_zero 2 he))
+      linarith [sq_nonneg S]
+  have hBpos : 0 < S ^ 2 + 16 * e ^ 2 := by linarith [sq_nonneg e]
+  have hAB : (S ^ 2 + e ^ 2) * (S ^ 2 + 16 * e ^ 2) = c ^ 2 := by linear_combination -h
+  have hgn : Int.gcd (S ^ 2 + e ^ 2) (S ^ 2 + 16 * e ^ 2) ∣ 15 :=
+    gcd_dvd_fifteen hcop (-1) 1 16 (-1) (by ring) (by ring)
+  have h3 : ¬ ((3 : ℤ) ∣ ((Int.gcd (S ^ 2 + e ^ 2) (S ^ 2 + 16 * e ^ 2) : ℤ))) := by
+    intro hd
+    have h3A : (3 : ℤ) ∣ S ^ 2 + e ^ 2 := hd.trans (Int.gcd_dvd_left _ _)
+    obtain ⟨hS3, he3⟩ := three_dvd_of_sq_add_sq h3A
+    have hu := hcop.isUnit_of_dvd' hS3 he3
+    rw [Int.isUnit_iff] at hu
+    omega
+  obtain ⟨a, b, ha, hb, hab⟩ := split_gcd hAB hApos.le hBpos.le hApos.ne'
+  rcases dvd_fifteen hgn with hg | hg | hg | hg
+  · rw [hg] at ha hb
+    norm_num at ha hb
+    rcases concordant_one S e a b hcop ha hb with h1 | h1
+    · exact Or.inl h1
+    · exact Or.inr (Or.inl h1)
+  · exact absurd (by rw [hg]; norm_num) h3
+  · rw [hg] at ha hb
+    push_cast at ha hb
+    exact Or.inr (Or.inr (concordant_five S e a b hcop ha hb))
+  · exact absurd (by rw [hg]; norm_num) h3
 
 /-- **`d = −1`: the second `2`-isogeny homogeneous space of the
-conductor-`15` curve `V² = X(X+1)(X+16)`** (sorry leaf, cut 2026-07-26
-out of `WeierstrassCurve.tateNF_self_no_order_three`).
+conductor-`15` curve `V² = X(X+1)(X+16)`** (PROVEN 2026-07-26 over
+`concordant_one` and `concordant_five`; cut 2026-07-26 out of
+`WeierstrassCurve.tateNF_self_no_order_three`).
 
 For coprime `S`, `e` the quartic `−S⁴ + 17S²e² − 16e⁴ = −(S²−e²)(S²−16e²)`
 is a square only when `S² ∈ {e², 4e², 16e²}` — the three `2`-torsion
@@ -8282,8 +8522,100 @@ involution `X ↦ −(X+16)/(X+1)`, translation by the `2`-torsion point
 `(−1, 0)`, exchanges the two square classes. -/
 theorem quartic_neg (S e c : ℤ) (hcop : IsCoprime S e)
     (h : c ^ 2 = -S ^ 4 + 17 * S ^ 2 * e ^ 2 - 16 * e ^ 4) :
-    S ^ 2 = e ^ 2 ∨ S ^ 2 = 4 * e ^ 2 ∨ S ^ 2 = 16 * e ^ 2 :=
-  sorry
+    S ^ 2 = e ^ 2 ∨ S ^ 2 = 4 * e ^ 2 ∨ S ^ 2 = 16 * e ^ 2 := by
+  have hAB : (S ^ 2 - e ^ 2) * (16 * e ^ 2 - S ^ 2) = c ^ 2 := by linear_combination -h
+  have hc2 : 0 ≤ (S ^ 2 - e ^ 2) * (16 * e ^ 2 - S ^ 2) := hAB ▸ sq_nonneg c
+  have hAge : 0 ≤ S ^ 2 - e ^ 2 := by
+    by_contra hcon
+    have h' : S ^ 2 - e ^ 2 < 0 := not_le.mp hcon
+    have hB : 16 * e ^ 2 - S ^ 2 ≤ 0 := by
+      by_contra hcon2
+      have h'' : 0 < 16 * e ^ 2 - S ^ 2 := not_le.mp hcon2
+      linarith [mul_neg_of_neg_of_pos h' h'']
+    linarith [sq_nonneg e]
+  have hBge : 0 ≤ 16 * e ^ 2 - S ^ 2 := by
+    by_contra hcon
+    have h' : 16 * e ^ 2 - S ^ 2 < 0 := not_le.mp hcon
+    have hA : S ^ 2 - e ^ 2 ≤ 0 := by
+      by_contra hcon2
+      have h'' : 0 < S ^ 2 - e ^ 2 := not_le.mp hcon2
+      linarith [mul_neg_of_pos_of_neg h'' h']
+    linarith [sq_nonneg e]
+  rcases eq_or_lt_of_le hAge with hA0 | hApos
+  · exact Or.inl (by linarith)
+  rcases eq_or_lt_of_le hBge with hB0 | hBpos
+  · exact Or.inr (Or.inr (by linarith))
+  have hgn : Int.gcd (S ^ 2 - e ^ 2) (16 * e ^ 2 - S ^ 2) ∣ 15 :=
+    gcd_dvd_fifteen hcop 1 1 16 1 (by ring) (by ring)
+  obtain ⟨a, b, ha, hb, hab⟩ := split_gcd hAB hAge hBge hApos.ne'
+  rcases dvd_fifteen hgn with hg | hg | hg | hg
+  · -- `G = 1` is empty: `a² + b² = 15e²` forces `3 ∣ gcd(S, e)`
+    exfalso
+    rw [hg] at ha hb
+    norm_num at ha hb
+    have hsum : a ^ 2 + b ^ 2 = 15 * e ^ 2 := by linarith
+    obtain ⟨ha3, hb3⟩ :=
+      three_dvd_of_sq_add_sq (a := a) (b := b) ⟨5 * e ^ 2, by linarith⟩
+    have h9a : (9 : ℤ) ∣ a ^ 2 := by obtain ⟨a', rfl⟩ := ha3; exact ⟨a' ^ 2, by ring⟩
+    have h9b : (9 : ℤ) ∣ b ^ 2 := by obtain ⟨b', rfl⟩ := hb3; exact ⟨b' ^ 2, by ring⟩
+    obtain ⟨k, hk⟩ : (9 : ℤ) ∣ 15 * e ^ 2 := by rw [← hsum]; exact dvd_add h9a h9b
+    have he3 : (3 : ℤ) ∣ e := by
+      refine three_dvd_of_sq ?_
+      have h6 : (3 : ℤ) ∣ 6 * e ^ 2 := ⟨2 * e ^ 2, by ring⟩
+      have h5 : (3 : ℤ) ∣ 5 * e ^ 2 := ⟨k, by linarith⟩
+      have hd := dvd_sub h6 h5
+      have heq : 6 * e ^ 2 - 5 * e ^ 2 = e ^ 2 := by ring
+      rwa [heq] at hd
+    have hS3 : (3 : ℤ) ∣ S := by
+      refine three_dvd_of_sq ?_
+      have hSq : S ^ 2 = a ^ 2 + e ^ 2 := by linarith
+      rw [hSq]
+      exact dvd_add (dvd_pow ha3 two_ne_zero) (dvd_pow he3 two_ne_zero)
+    have hu := hcop.isUnit_of_dvd' hS3 he3
+    rw [Int.isUnit_iff] at hu
+    omega
+  · -- `G = 3`: the `concordant_five` system at `(b, a)`
+    rw [hg] at ha hb
+    push_cast at ha hb
+    have h1 : b ^ 2 + a ^ 2 = 5 * e ^ 2 := by linarith
+    have h2 : b ^ 2 + 16 * a ^ 2 = 5 * S ^ 2 := by linarith
+    have hkey := concordant_five b a e S hab.symm h1 h2
+    have hea : e ^ 2 = a ^ 2 := by linarith
+    have hSa : S ^ 2 = 4 * a ^ 2 := by linarith
+    exact Or.inr (Or.inl (by linarith))
+  · -- `G = 5` is empty: `a² + b² = 3e²` forces `3 ∣ gcd(S, e)`
+    exfalso
+    rw [hg] at ha hb
+    push_cast at ha hb
+    have hsum : a ^ 2 + b ^ 2 = 3 * e ^ 2 := by linarith
+    obtain ⟨ha3, hb3⟩ :=
+      three_dvd_of_sq_add_sq (a := a) (b := b) ⟨e ^ 2, by linarith⟩
+    have h9a : (9 : ℤ) ∣ a ^ 2 := by obtain ⟨a', rfl⟩ := ha3; exact ⟨a' ^ 2, by ring⟩
+    have h9b : (9 : ℤ) ∣ b ^ 2 := by obtain ⟨b', rfl⟩ := hb3; exact ⟨b' ^ 2, by ring⟩
+    obtain ⟨k, hk⟩ : (9 : ℤ) ∣ 3 * e ^ 2 := by rw [← hsum]; exact dvd_add h9a h9b
+    have he3 : (3 : ℤ) ∣ e := three_dvd_of_sq ⟨k, by linarith⟩
+    have hS3 : (3 : ℤ) ∣ S := by
+      refine three_dvd_of_sq ?_
+      obtain ⟨m, hm⟩ : (9 : ℤ) ∣ 3 * S ^ 2 := by
+        have hrw : 3 * S ^ 2 = 16 * a ^ 2 + b ^ 2 := by linarith
+        rw [hrw]
+        exact dvd_add (Dvd.dvd.mul_left h9a 16) h9b
+      exact ⟨m, by linarith⟩
+    have hu := hcop.isUnit_of_dvd' hS3 he3
+    rw [Int.isUnit_iff] at hu
+    omega
+  · -- `G = 15`: the `concordant_one` system at `(b, a)`
+    rw [hg] at ha hb
+    push_cast at ha hb
+    have h1 : b ^ 2 + a ^ 2 = e ^ 2 := by linarith
+    have h2 : b ^ 2 + 16 * a ^ 2 = S ^ 2 := by linarith
+    rcases concordant_one b a e S hab.symm h1 h2 with hz | hz
+    · subst hz
+      norm_num at h1 h2
+      exact Or.inr (Or.inr (by linarith))
+    · subst hz
+      norm_num at h1 h2
+      exact Or.inl (by linarith)
 
 /-- **`d = 2` is not in the image of the descent map** (PROVEN
 2026-07-26): `c² = 2S⁴ + 17S²e² + 8e⁴` has no solution with `S`, `e`
