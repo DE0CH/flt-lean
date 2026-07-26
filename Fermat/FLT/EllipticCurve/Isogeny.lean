@@ -92,13 +92,22 @@ unconditional and remain proven.
 
 ## Open leaves left by this file
 
-`IsRationalMap.comp`, `IsRationalMap.add`, `IsRationalMap.isIsogeny`,
+`IsRationalMap.comp_of_constX`, `IsRationalMap.add`, `IsRationalMap.isIsogeny`,
 `nsmul_surjective`, `finite_nsmulKer`, `Isogeny.isRationalMap_dualHom`,
 `Isogeny.degree_comp`.
 
-`IsRationalMap.neg` was on this list and is now PROVEN. `IsIsogeny.add` was on
-this list; it is now PROVEN from `IsRationalMap.add` and `IsRationalMap.isIsogeny`
-after being refuted and restated.
+`IsRationalMap.neg` was on this list and is now PROVEN.
+
+`IsIsogeny.add` was on this list; it is now PROVEN from `IsRationalMap.add` and
+`IsRationalMap.isIsogeny`, after being refuted and restated (above).
+
+`IsRationalMap.comp` was on this list; it is now PROVEN from
+`IsRationalMap.comp_of_constX` and the substitution machinery `homogSubst` /
+`eval_homogSubst` / `exists_const_of_homogSubst_eq_zero`, all three of which are
+proven here and axiom-clean. The only residue is the degenerate case where `x ∘ φ`
+is constant, which is what `comp_of_constX` isolates: the substitution argument is
+complete, and `exists_const_of_homogSubst_eq_zero` is exactly the proof that
+nothing else can obstruct it.
 -/
 
 
@@ -166,14 +175,266 @@ theorem IsRationalMap.neg {φ : W.Point →+ W'.Point} (h : IsRationalMap φ) :
     linear_combination (-(B.eval (veluPointX P))) * hy
       - (W'.a₁ * E.eval (veluPointX P)) * hx
 
-/-- **LEAF.** The composite of two rational maps is rational.
+/-! #### Clearing denominators after substitution
 
-Elementary but not free: one substitutes `A/B` into `A'/B'` and clears
-denominators, i.e. homogenises `A'` and `B'` to degree `max (deg A') (deg B')`
-against the pair `(A, B)`, and likewise for the `y`-component. -/
-theorem IsRationalMap.comp {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.Point}
-    (hφ : IsRationalMap φ) (hψ : IsRationalMap ψ) : IsRationalMap (ψ.comp φ) :=
+`IsRationalMap.comp` needs to substitute `A/B` into the certificate of the second
+map and clear denominators. `homogSubst A B d Q` is exactly that: `Q(A/B)`
+multiplied through by `B ^ d`. The two facts about it that matter are
+`eval_homogSubst` (what it computes) and `exists_const_of_homogSubst_eq_zero` (when
+it degenerates to the zero polynomial, which is the only thing that can obstruct
+the `B ≠ 0` side condition of `IsRationalMap`). -/
+
+/-- `homogSubst A B d Q` is `Q(A/B)` with denominators cleared to degree `d`, i.e.
+`B ^ d * Q (A / B)` written without division. -/
+noncomputable def homogSubst (A B : F[X]) (d : ℕ) (Q : F[X]) : F[X] :=
+  ∑ i ∈ Finset.range (d + 1), Polynomial.C (Q.coeff i) * A ^ i * B ^ (d - i)
+
+omit [DecidableEq F] in
+/-- What `homogSubst` computes. Note there is **no** nonvanishing hypothesis on
+`B.eval t`: the identity `u * B.eval t = A.eval t` is enough, and both sides
+degenerate to `0` together when `B.eval t = 0`. That is what lets the composite
+certificate hold at *every* point rather than away from a bad set. -/
+theorem eval_homogSubst {A B Q : F[X]} {d : ℕ} (hd : Q.natDegree ≤ d) {t u : F}
+    (hu : u * B.eval t = A.eval t) :
+    (homogSubst A B d Q).eval t = (B.eval t) ^ d * Q.eval u := by
+  rw [Polynomial.eval_eq_sum_range' (Nat.lt_succ_of_le hd) (x := u), Finset.mul_sum]
+  simp only [homogSubst, Polynomial.eval_finsetSum, Polynomial.eval_mul,
+    Polynomial.eval_pow, Polynomial.eval_C]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  have hi' : i ≤ d := Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
+  have hsplit : (B.eval t) ^ d = (B.eval t) ^ i * (B.eval t) ^ (d - i) := by
+    rw [← pow_add]; congr 1; omega
+  rw [← hu, mul_pow, hsplit]
+  ring
+
+omit [DecidableEq F] in
+theorem homogSubst_eq_pow_mul {A B Q : F[X]} {d : ℕ} (hd : Q.natDegree ≤ d) :
+    homogSubst A B d Q = B ^ (d - Q.natDegree) * homogSubst A B Q.natDegree Q := by
+  have hsub : Finset.range (Q.natDegree + 1) ⊆ Finset.range (d + 1) := fun i hi =>
+    Finset.mem_range.2 (lt_of_lt_of_le (Finset.mem_range.1 hi) (Nat.succ_le_succ hd))
+  have hzero : ∀ i ∈ Finset.range (d + 1), i ∉ Finset.range (Q.natDegree + 1) →
+      Polynomial.C (Q.coeff i) * A ^ i * B ^ (d - i) = 0 := by
+    intro i _ hi
+    have hlt : Q.natDegree < i := by
+      simp only [Finset.mem_range, not_lt] at hi; omega
+    rw [Q.coeff_eq_zero_of_natDegree_lt hlt, map_zero, zero_mul, zero_mul]
+  unfold homogSubst
+  rw [Finset.mul_sum, ← Finset.sum_subset hsub hzero]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  have hi' : i ≤ Q.natDegree := Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
+  have hb : B ^ (d - i) = B ^ (d - Q.natDegree) * B ^ (Q.natDegree - i) := by
+    rw [← pow_add]; congr 1; omega
+  rw [hb]; ring
+
+omit [DecidableEq F] in
+theorem homogSubst_mul_left (g A B Q : F[X]) (m : ℕ) :
+    homogSubst (g * A) (g * B) m Q = g ^ m * homogSubst A B m Q := by
+  unfold homogSubst
+  rw [Finset.mul_sum]
+  refine Finset.sum_congr rfl fun i hi => ?_
+  have hi' : i ≤ m := Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
+  have hg : g ^ m = g ^ i * g ^ (m - i) := by rw [← pow_add]; congr 1; omega
+  rw [mul_pow, mul_pow, hg]; ring
+
+omit [DecidableEq F] in
+/-- The coprime core of the degeneracy criterion: substituting a **coprime** pair
+into a nonzero `Q` can only give `0` when both members of the pair are constants.
+
+`B` divides the top term `C (Q.coeff m) * A ^ m` of the sum, so by coprimality it
+divides the nonzero constant `Q.coeff m` and is a unit; the remaining identity is
+then `Q.comp (C b⁻¹ * A) = 0`, which forces `A` constant by
+`Polynomial.comp_eq_zero_iff`. -/
+theorem natDegree_eq_zero_of_coprime_homogSubst {A B Q : F[X]} (hcop : IsCoprime A B)
+    (hQ : Q ≠ 0) (h : homogSubst A B Q.natDegree Q = 0) :
+    A.natDegree = 0 ∧ B.natDegree = 0 := by
+  set m := Q.natDegree with hm
+  have hqm : Q.coeff m ≠ 0 := Polynomial.leadingCoeff_ne_zero.2 hQ
+  have hsplit : homogSubst A B m Q
+      = (∑ i ∈ Finset.range m, Polynomial.C (Q.coeff i) * A ^ i * B ^ (m - i))
+        + Polynomial.C (Q.coeff m) * A ^ m := by
+    unfold homogSubst
+    rw [Finset.sum_range_succ]
+    simp
+  have hdvdsum : B ∣ ∑ i ∈ Finset.range m, Polynomial.C (Q.coeff i) * A ^ i * B ^ (m - i) := by
+    refine Finset.dvd_sum fun i hi => ?_
+    have : 1 ≤ m - i := by have := Finset.mem_range.1 hi; omega
+    exact Dvd.dvd.mul_left (dvd_pow_self B (by omega)) _
+  have hdvd : B ∣ Polynomial.C (Q.coeff m) * A ^ m := by
+    have hrw : Polynomial.C (Q.coeff m) * A ^ m
+        = homogSubst A B m Q
+          - ∑ i ∈ Finset.range m, Polynomial.C (Q.coeff i) * A ^ i * B ^ (m - i) := by
+      rw [hsplit]; ring
+    rw [hrw, h, zero_sub]
+    exact dvd_neg.2 hdvdsum
+  have hBdvd : B ∣ Polynomial.C (Q.coeff m) :=
+    (hcop.symm.pow_right (n := m)).dvd_of_dvd_mul_right hdvd
+  have hBunit : IsUnit B :=
+    isUnit_of_dvd_unit hBdvd (Polynomial.isUnit_C.2 (isUnit_iff_ne_zero.2 hqm))
+  have hBdeg : B.natDegree = 0 := Polynomial.natDegree_eq_zero_of_isUnit hBunit
+  refine ⟨?_, hBdeg⟩
+  obtain ⟨b, hb⟩ := Polynomial.natDegree_eq_zero.1 hBdeg
+  have hbne : b ≠ 0 := by
+    rintro rfl
+    exact hBunit.ne_zero (by rw [← hb, map_zero])
+  have hscalar : ∀ i ≤ m, b ^ m * Q.coeff i * b⁻¹ ^ i = Q.coeff i * b ^ (m - i) := by
+    intro i hi
+    have hsplitb : b ^ m = b ^ (m - i) * b ^ i := by rw [← pow_add]; congr 1; omega
+    have hinv : b ^ i * b⁻¹ ^ i = 1 := by
+      rw [← mul_pow, mul_inv_cancel₀ hbne, one_pow]
+    calc b ^ m * Q.coeff i * b⁻¹ ^ i
+        = Q.coeff i * b ^ (m - i) * (b ^ i * b⁻¹ ^ i) := by rw [hsplitb]; ring
+      _ = Q.coeff i * b ^ (m - i) := by rw [hinv, mul_one]
+  have hce : Q.comp (Polynomial.C b⁻¹ * A)
+      = ∑ i ∈ Finset.range (m + 1), Polynomial.C (Q.coeff i) * (Polynomial.C b⁻¹ * A) ^ i :=
+    Polynomial.eval₂_eq_sum_range' Polynomial.C (Nat.lt_succ_self m) (Polynomial.C b⁻¹ * A)
+  have hcomp : Polynomial.C (b ^ m) * Q.comp (Polynomial.C b⁻¹ * A) = 0 := by
+    rw [hce, Finset.mul_sum, ← h]
+    unfold homogSubst
+    refine Finset.sum_congr rfl fun i hi => ?_
+    have hi' : i ≤ m := Nat.lt_succ_iff.1 (Finset.mem_range.1 hi)
+    rw [← hb, mul_pow, ← Polynomial.C_pow]
+    calc Polynomial.C (b ^ m)
+          * (Polynomial.C (Q.coeff i) * (Polynomial.C (b⁻¹ ^ i) * A ^ i))
+        = Polynomial.C (b ^ m * Q.coeff i * b⁻¹ ^ i) * A ^ i := by
+          simp only [Polynomial.C_mul]; ring
+      _ = Polynomial.C (Q.coeff i * b ^ (m - i)) * A ^ i := by rw [hscalar i hi']
+      _ = Polynomial.C (Q.coeff i) * A ^ i * Polynomial.C b ^ (m - i) := by
+          simp only [Polynomial.C_mul, Polynomial.C_pow]; ring
+  have hQcomp : Q.comp (Polynomial.C b⁻¹ * A) = 0 := by
+    have hCb : (Polynomial.C (b ^ m) : F[X]) ≠ 0 := by simpa using pow_ne_zero m hbne
+    exact (mul_eq_zero.1 hcomp).resolve_left hCb
+  rcases Polynomial.comp_eq_zero_iff.1 hQcomp with h0 | ⟨_, hconst⟩
+  · exact absurd h0 hQ
+  · have hdeg : (Polynomial.C b⁻¹ * A).natDegree = 0 := by
+      rw [hconst]; exact Polynomial.natDegree_C _
+    rwa [Polynomial.natDegree_C_mul (inv_ne_zero hbne)] at hdeg
+
+/-- **The degeneracy criterion.** `homogSubst A B d Q` can vanish for a nonzero `Q`
+only when `A / B` is a *constant* rational function.
+
+This is the whole reason `IsRationalMap.comp` needs a case split: the composite
+witness is `homogSubst A B d B'`, and its `≠ 0` side condition can fail exactly when
+the first map has a constant `x`-coordinate. -/
+theorem exists_const_of_homogSubst_eq_zero {A B Q : F[X]} (hB : B ≠ 0) (hQ : Q ≠ 0)
+    {d : ℕ} (hd : Q.natDegree ≤ d) (h : homogSubst A B d Q = 0) :
+    ∃ c : F, A = Polynomial.C c * B := by
+  classical
+  have hm : homogSubst A B Q.natDegree Q = 0 := by
+    rw [homogSubst_eq_pow_mul hd] at h
+    exact (mul_eq_zero.1 h).resolve_left (pow_ne_zero _ hB)
+  letI : GCDMonoid F[X] := EuclideanDomain.gcdMonoid F[X]
+  set g := GCDMonoid.gcd A B with hg
+  have hgne : g ≠ 0 := gcd_ne_zero_of_right hB
+  have hA : A = g * (A / g) :=
+    (EuclideanDomain.mul_div_cancel' hgne (gcd_dvd_left A B)).symm
+  have hBeq : B = g * (B / g) :=
+    (EuclideanDomain.mul_div_cancel' hgne (gcd_dvd_right A B)).symm
+  have hcop : IsCoprime (A / g) (B / g) := isCoprime_div_gcd_div_gcd hB
+  have hsub : homogSubst (A / g) (B / g) Q.natDegree Q = 0 := by
+    have hml := homogSubst_mul_left g (A / g) (B / g) Q Q.natDegree
+    rw [← hA, ← hBeq, hm] at hml
+    exact (mul_eq_zero.1 hml.symm).resolve_left (pow_ne_zero _ hgne)
+  obtain ⟨hAd, hBd⟩ := natDegree_eq_zero_of_coprime_homogSubst hcop hQ hsub
+  obtain ⟨a, ha⟩ := Polynomial.natDegree_eq_zero.1 hAd
+  obtain ⟨b, hbb⟩ := Polynomial.natDegree_eq_zero.1 hBd
+  have hbne : b ≠ 0 := by
+    rintro rfl
+    rw [map_zero] at hbb
+    exact hB (by rw [hBeq, ← hbb, mul_zero])
+  refine ⟨a / b, ?_⟩
+  rw [hA, hBeq, ← ha, ← hbb, ← mul_assoc, mul_comm (Polynomial.C (a / b)) g, mul_assoc,
+    ← Polynomial.C_mul, div_mul_cancel₀ a hbne]
+
+/-- **LEAF.** The composite is rational in the degenerate case, where the first map
+has a *constant* `x`-coordinate away from the zeros of `B`.
+
+This is the residue of `IsRationalMap.comp` that the substitution argument cannot
+reach, and it is genuinely different in kind: there is no denominator to clear,
+because `x(φ P) = c` is already constant, and the content is instead a small case
+analysis on the geometry of the image of `φ`.
+
+The mathematics, for whoever closes it. Only two points of `W'` have `x`-coordinate
+`c`, namely some `R` and `-R`, so `φ` maps `{P : B(x P) ≠ 0}` into `{R, -R}` and
+`ψ ∘ φ` maps it into `{ψ R, -ψ R}`. Hence:
+
+* the `x`-coordinate of `ψ (φ P)` is the single constant `e := x (ψ R)`, and
+  `(A, B) := (C e * B, B)` is an `x`-witness — at the zeros of `B` both sides are
+  `0`, which is why the factor `B` must be kept;
+* the `y`-coordinate takes the two values `y(ψ R)` and `y(-ψ R)`, and which one
+  occurs is determined by `y(φ P)`, which is itself rational in `(x P, y P)` through
+  `φ`'s own `y`-certificate. When `R ≠ -R` the unique affine `α, β` with
+  `α · y(R) + β = y(ψ R)` and `α · y(-R) + β = y(-ψ R)` gives the `y`-witness
+  `(α C, α D + β E, E)`; when `R = -R` then `ψ R = -ψ R` too, so `y(ψ (φ P))` is
+  constant and `(0, C f, 1)` works.
+
+Sub-cases to be careful about: no `P` at all with `B (x P) ≠ 0` and `ψ (φ P) ≠ 0`
+(then `(0, B, 0, 0, B)` discharges everything), and `ψ`'s own `y`-certificate
+degenerating at `c` (`E'(c) = C'(c) = D'(c) = 0`), where the witness must come from
+the geometry above rather than from `ψ`'s polynomials. -/
+theorem IsRationalMap.comp_of_constX {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.Point}
+    (hψ : IsRationalMap ψ) {B : F[X]} (hB : B ≠ 0) (c : F)
+    (hc : ∀ P : W.Point, φ P ≠ 0 → B.eval (veluPointX P) ≠ 0 → veluPointX (φ P) = c) :
+    IsRationalMap (ψ.comp φ) :=
   sorry
+
+/-- The composite of two rational maps is rational.
+
+Away from the degenerate case this is exactly substitution: `x (ψ (φ P))` satisfies
+`ψ`'s certificate at `u = x (φ P)`, and `u` satisfies `φ`'s certificate at
+`t = x P`, so multiplying `ψ`'s certificate through by `B(t) ^ d` replaces every
+`A'(u)`, `B'(u)` by `homogSubst A B d A'`, `homogSubst A B d B'` evaluated at `t`.
+The same computation on the `y`-side uses `φ`'s `y`-certificate to rewrite
+`y(φ P) · E(t)` as `C(t) y(P) + D(t)`.
+
+The side conditions `B'' ≠ 0`, `E'' ≠ 0` are where the work is, and
+`exists_const_of_homogSubst_eq_zero` shows they can only fail when `x ∘ φ` is
+constant — which is `IsRationalMap.comp_of_constX`. -/
+theorem IsRationalMap.comp {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.Point}
+    (hφ : IsRationalMap φ) (hψ : IsRationalMap ψ) : IsRationalMap (ψ.comp φ) := by
+  obtain ⟨A, B, Cx, D, E, hB, hE, hcert⟩ := hφ
+  by_cases hconst : ∃ c : F, A = Polynomial.C c * B
+  · obtain ⟨c, hcc⟩ := hconst
+    refine IsRationalMap.comp_of_constX hψ hB c fun P hP hBP => ?_
+    have hx := (hcert P hP).1
+    rw [hcc] at hx
+    simp only [Polynomial.eval_mul, Polynomial.eval_C] at hx
+    exact mul_right_cancel₀ hBP hx
+  obtain ⟨A', B', C', D', E', hB', hE', hcert'⟩ := hψ
+  set d := max A'.natDegree B'.natDegree with hd
+  set d' := max (max C'.natDegree D'.natDegree) E'.natDegree with hd'
+  have hne : ∀ Q : F[X], Q ≠ 0 → ∀ n : ℕ, Q.natDegree ≤ n → homogSubst A B n Q ≠ 0 :=
+    fun Q hQ n hn hz => hconst (exists_const_of_homogSubst_eq_zero hB hQ hn hz)
+  refine ⟨homogSubst A B d A', homogSubst A B d B',
+    homogSubst A B d' C' * Cx,
+    homogSubst A B d' C' * D + homogSubst A B d' D' * E,
+    homogSubst A B d' E' * E,
+    hne B' hB' d (le_max_right _ _),
+    mul_ne_zero (hne E' hE' d' (le_max_right _ _)) hE, fun P hP => ?_⟩
+  have hφP : φ P ≠ 0 := fun hcz => hP (by show ψ (φ P) = 0; rw [hcz, map_zero])
+  obtain ⟨hx, hy⟩ := hcert P hφP
+  obtain ⟨hx', hy'⟩ := hcert' (φ P) hP
+  have hxA : (homogSubst A B d A').eval (veluPointX P)
+      = (B.eval (veluPointX P)) ^ d * A'.eval (veluPointX (φ P)) :=
+    eval_homogSubst (le_max_left _ _) hx
+  have hxB : (homogSubst A B d B').eval (veluPointX P)
+      = (B.eval (veluPointX P)) ^ d * B'.eval (veluPointX (φ P)) :=
+    eval_homogSubst (le_max_right _ _) hx
+  have hyC : (homogSubst A B d' C').eval (veluPointX P)
+      = (B.eval (veluPointX P)) ^ d' * C'.eval (veluPointX (φ P)) :=
+    eval_homogSubst (le_trans (le_max_left _ _) (le_max_left _ _)) hx
+  have hyD : (homogSubst A B d' D').eval (veluPointX P)
+      = (B.eval (veluPointX P)) ^ d' * D'.eval (veluPointX (φ P)) :=
+    eval_homogSubst (le_trans (le_max_right _ _) (le_max_left _ _)) hx
+  have hyE : (homogSubst A B d' E').eval (veluPointX P)
+      = (B.eval (veluPointX P)) ^ d' * E'.eval (veluPointX (φ P)) :=
+    eval_homogSubst (le_max_right _ _) hx
+  refine ⟨?_, ?_⟩
+  · rw [hxA, hxB]
+    linear_combination (B.eval (veluPointX P)) ^ d * hx'
+  · simp only [Polynomial.eval_mul, Polynomial.eval_add, hyC, hyD, hyE]
+    linear_combination
+      ((B.eval (veluPointX P)) ^ d' * E.eval (veluPointX P)) * hy'
+        + ((B.eval (veluPointX P)) ^ d' * C'.eval (veluPointX (φ P))) * hy
 
 /-- **LEAF.** The pointwise sum of two rational maps is rational.
 
