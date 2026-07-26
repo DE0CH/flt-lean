@@ -5672,12 +5672,27 @@ into the two leaves consumed below:
   rational point of `y² = x³ + 4x` under the degeneracy map
   `π : (x, y) ↦ y/(x² + 4)`. **VACUITY AUDIT: this leaf's hypothesis is
   unsatisfiable** (no curve has a cyclic `32`-isogeny — that is the theorem),
-  so the leaf is vacuously true and cannot be proven independently of the
-  node it serves. That is unavoidable for any level whose conclusion is
-  `False`, and it is the shape every sibling level in this file already has;
-  it is recorded here so nobody mistakes it for reducible content. The
-  mathematics of the level lives entirely in the two NON-vacuous pieces:
-  the `X_0(16)` leaf above and the PROVEN `X_0(32)` Mordell–Weil half.
+  so the leaf is vacuously true. That is unavoidable for any level whose
+  conclusion is `False`, and it is the shape every sibling level in this file
+  already has; it is recorded here so nobody mistakes it for reducible
+  content.
+
+  **STATUS CORRECTED 2026-07-26 (flt-lean-88): the leaf is now PROVEN, and
+  the sentence "cannot be proven independently of the node it serves" that
+  stood here is WITHDRAWN.** Vacuity blocks proving a leaf *in isolation*; it
+  does not block DECOMPOSING it, and the decomposition simply has to leave
+  the elliptic-curve side. The route is `false_of_stable_of_y0HasNoRationalPoint`
+  at `N = 32` over `MazurLevel32.y0HasNoRationalPoint_thirtyTwo`, itself
+  proven by a cusp count on `X_0(32)` against the four rational points that
+  `QuarticDescent.rational_point_x0ThirtyTwo` allows. What is left open is
+  ONE leaf, `MazurLevel32.exists_planeModel_x0ThirtyTwo`, which is neither
+  vacuous nor refutable. **The same cut should be tried at levels `49`, `81`,
+  `125` and `169`, whose docstrings all cite this node's old shape as their
+  own.** Details in the RESOLUTION section of `exists_x0ThirtyTwo_point`.
+
+  The mathematics of the level lives in the two NON-vacuous pieces:
+  the `X_0(16)` leaf above and the PROVEN `X_0(32)` Mordell–Weil half, and
+  the latter is load-bearing in the new route rather than decorative.
 
 The `j`-map of `X_0(16)` used below is
 `j = M(s)³ / (s (1 − 2s)¹⁶ (1 + 2s)⁴ (1 + 4s²))` with `M` of degree `8`;
@@ -6623,9 +6638,124 @@ theorem WeierstrassCurve.exists_x0Sixteen_hauptmodul
   obtain ⟨s, hs⟩ := MazurLevel16.exists_univCurve_param_of_stable E g hg hstable
   exact ⟨s, MazurLevel16.j16_of_param s E.j hs⟩
 
+namespace MazurLevel32
+
+open _root_.CategoryTheory _root_.AlgebraicGeometry _root_.Fermat
+
+/-- **`X_0(32)` has exactly `4` rational cusps** (PROVEN 2026-07-26).
+
+A cusp of `X_0(N)` above a divisor `d ∣ N` is defined over
+`ℚ(ζ_{gcd(d, N/d)})`, so the cusps above `d` are rational exactly when
+`φ(gcd(d, N/d)) = 1`. For `N = 32` the six divisors `1, 2, 4, 8, 16, 32`
+give `gcd(d, 32/d) = 1, 2, 4, 4, 2, 1`, whose totients are `1, 1, 2, 2, 1, 1`
+— so `4` of the `8` cusps are rational and the four above `d = 4, 8` are
+conjugate in pairs over `ℚ(i)`.
+
+Independently, and this is the coincidence the whole level turns on:
+`X_0(32)` IS the elliptic curve `32a1 : y² = x³ + 4x`, of rank `0` with
+torsion `ℤ/4`, so `#X_0(32)(ℚ) = 4` exactly (PARI/GP, untrusted searcher:
+`ellap(E, 3) = 0`, `elltors = ℤ/4`, `ellrank = 0`, conductor `32`). Four
+rational points and four rational cusps means every rational point of
+`X_0(32)` is a cusp, i.e. `Y_0(32)(ℚ) = ∅`. -/
+theorem numRationalCusps_thirtyTwo : numRationalCusps 32 = 4 := by decide
+
+/-- **The plane model of `X_0(32)` is `y² = x³ + 4x`** (sorry node,
+introduced 2026-07-26 as the replacement cut for
+`WeierstrassCurve.exists_x0ThirtyTwo_point`): the rational points of
+`X_0(32)` embed into `{∞} ⊔ {(x, y) ∈ ℚ² : y² = x³ + 4x}`, the point at
+infinity being encoded by `none`.
+
+**Why the statement is shaped as an injection rather than as an
+isomorphism of curves.** All that the level needs is the CARDINALITY bound
+`#X_0(32)(ℚ) ≤ 4`, and an injection into the rational points of the plane
+model delivers it through the already-PROVEN
+`QuarticDescent.rational_point_x0ThirtyTwo`. An isomorphism of schemes
+`X_0(32) ≅ Proj(y² = x³ + 4x)` would of course give this too, but it asks
+for a Weierstrass model as a SCHEME and for the identification of its
+rational points with the affine solutions — neither of which exists in this
+development — and none of that extra strength is consumed. Weakness belongs
+in the statement, where a consumer must confront it.
+
+**This leaf is NOT vacuous and NOT refutable**, which is the entire point
+of introducing it; see the resolution note on `exists_x0ThirtyTwo_point`
+below. Its hypothesis `hX` — "`strX` is the compactified coarse moduli
+space of the `Γ₀(32)`-problem" — is satisfiable (`exists_x0Compactification`
+supplies one), and its conclusion is TRUE, being the classical model of
+`X_0(32)`. Contrast the leaf it replaces, whose hypothesis was
+unsatisfiable AND whose conclusion was outright refutable.
+
+**Source of the model** (Magma `SmallModularCurve(32)`, untrusted searcher,
+statement check only; recorded already in
+`QuarticDescent.no_x0ThirtyTwo_point`): `X_0(32) : y² = x³ + 4x`, with the
+degeneracy map to `X_0(16)` given by `t = (x − 2)²/(2x + y) = (y − 2x)/x`.
+The four rational points are `∞`, `(0, 0)`, `(2, 4)`, `(2, −4)`.
+
+**What a successor must build**: an integral/Weierstrass model of `X_0(32)`
+over `ℚ` and the identification of `X_0(32)(ℚ)` with its rational solutions.
+That is the "comparison between the abstract coarse space and the explicit
+plane model" identified as missing in the audit below — now isolated as this
+single leaf, and nothing else in the level depends on it. -/
+theorem exists_planeModel_x0ThirtyTwo {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jm : Y ⟶ X} (hX : IsX0Compactification 32 strX strY jm) :
+    ∃ f : RelPoint strX (𝟙 SpecQ) → Option (ℚ × ℚ),
+      Function.Injective f ∧
+        ∀ (P : RelPoint strX (𝟙 SpecQ)) (p : ℚ × ℚ), f P = some p →
+          p.2 ^ 2 = p.1 ^ 3 + 4 * p.1 :=
+  sorry
+
+/-- **`Y_0(32)(ℚ) = ∅`** (PROVEN 2026-07-26 over the single leaf
+`exists_planeModel_x0ThirtyTwo`, consuming the already-proven arithmetic
+`QuarticDescent.rational_point_x0ThirtyTwo` — i.e. Fermat's quartic theorem
+through the `2`-isogeny to `y² = x³ − x`).
+
+The argument is the counting argument of
+`Fermat.y0HasNoRationalPoint_of_witnessPrime`, with the reduction mod `ℓ`
+replaced by the explicit model, which at this level is STRICTLY better: the
+witness-prime route would need `rank J_0(32)(ℚ) = 0` and an Eichler–Shimura
+point count, both of which are open leaves of `X0.lean`, whereas
+`rational_point_x0ThirtyTwo` is fully proven here.
+
+Take the compactification `Y ⊆ X` over `ℚ`. The `4` rational cusps
+(`numRationalCusps_thirtyTwo`) are `4` distinct rational points of `X`, none
+of them the image of a rational point of `Y`. A rational point of `Y` would
+therefore push forward to a `5`-th one; but `X(ℚ)` injects into
+`{∞} ⊔ {y² = x³ + 4x}`, which has exactly the four elements `∞`, `(0, 0)`,
+`(2, ±4)`. So `Y(ℚ)` is empty, and `y0HasNoRationalPoint_of_isEmpty`
+propagates that from this one model to every coarse moduli space at once. -/
+theorem y0HasNoRationalPoint_thirtyTwo : Y0HasNoRationalPoint 32 := by
+  classical
+  obtain ⟨X, Y, strX, strY, jm, ⟨hX⟩⟩ := exists_x0Compactification 32 (by norm_num)
+  obtain ⟨f, hinj, hcurve⟩ := exists_planeModel_x0ThirtyTwo hX
+  obtain ⟨s, hscard, hsnot⟩ := exists_rationalCusps 32 hX
+  refine y0HasNoRationalPoint_of_isEmpty hX.coarse ⟨fun y => ?_⟩
+  have hp : sectionAlong jm hX.comm y ∉ s := fun hmem => hsnot _ hmem y rfl
+  have hle : (insert (sectionAlong jm hX.comm y) s).card ≤ 4 := by
+    have hmaps : ∀ a ∈ insert (sectionAlong jm hX.comm y) s,
+        f a ∈ ({none, some (0, 0), some (2, 4), some (2, -4)} :
+          Finset (Option (ℚ × ℚ))) := by
+      intro a _
+      rcases hfa : f a with _ | p
+      · simp
+      · obtain ⟨u, v⟩ := p
+        have hpv := hcurve a (u, v) hfa
+        simp only at hpv
+        rcases QuarticDescent.rational_point_x0ThirtyTwo u v hpv with
+          ⟨h1, h2⟩ | ⟨h1, h2 | h2⟩ <;> subst h1 <;> subst h2 <;> simp
+    refine le_trans (Finset.card_le_card_of_injOn f hmaps hinj.injOn) ?_
+    refine le_trans (Finset.card_insert_le _ _) ?_
+    refine Nat.add_le_add_right (le_trans (Finset.card_insert_le _ _) ?_) 1
+    refine Nat.add_le_add_right (le_trans (Finset.card_insert_le _ _) ?_) 1
+    simp
+  rw [Finset.card_insert_of_notMem hp, hscard, numRationalCusps_thirtyTwo] at hle
+  omega
+
+end MazurLevel32
+
 /-- **`X_0(32) → X_0(16)`: an `X_0(16)`-parameter of a curve with a rational
-cyclic `32`-subgroup lifts to `y² = x³ + 4x`** (sorry node — the level-`32`
-moduli content, introduced 2026-07-26): if `E` carries a `Gal(ℚ̄/ℚ)`-stable
+cyclic `32`-subgroup lifts to `y² = x³ + 4x`** (PROVEN 2026-07-26 over the
+single leaf `MazurLevel32.exists_planeModel_x0ThirtyTwo`; see the RESOLUTION
+section at the end of this docstring, which supersedes the "do not dispatch"
+verdicts of the audits below): if `E` carries a `Gal(ℚ̄/ℚ)`-stable
 cyclic subgroup of order `32`, and `s` is a rational number lying over `j(E)`
 under the `X_0(16)` `j`-map, then `s` is the image of a rational point of
 `X_0(32) : y² = x³ + 4x` under the explicit degeneracy map
@@ -6822,7 +6952,71 @@ simplification. So the level-`2` chain cannot be assembled until
 `32` — a statement about Vélu, in `Velu.lean`, with a completely satisfiable
 hypothesis — and not this node. Until then this node stays as it is; it is
 not irreducible, it is merely blocked behind one identified piece of
-machinery. -/
+machinery.
+
+**RESOLUTION, 2026-07-26 (flt-lean-88): THIS LEAF IS NOW PROVEN, ALONG
+EXACTLY THE ROUTE THE PARAGRAPH ABOVE PRESCRIBES.** Everything above is
+retained because every one of its findings is correct and was load-bearing
+in choosing the cut; what follows is what was done with them, and it is the
+"right version of the move", not the relabelling the paragraph warns
+against.
+
+The proof is `Fermat.false_of_stable_of_y0HasNoRationalPoint` at `N = 32`
+over `MazurLevel32.y0HasNoRationalPoint_thirtyTwo`, so `hg` and `hstable`
+now derive `False` and the conclusion follows by `False.elim`. **`hs` is
+therefore unused, and is underscored to make that mechanically visible** —
+which is the honest signal, since the audits above establish that `hs`
+together with this conclusion is CONTRADICTORY and so `hs` could never have
+been a usable input.
+
+`y0HasNoRationalPoint_thirtyTwo` is in turn PROVEN, over the single new leaf
+`MazurLevel32.exists_planeModel_x0ThirtyTwo`. Three things are gained, and
+they are precisely the three defects the audits above identify:
+
+1. *The vacuity is gone.* The new leaf's hypothesis is "`strX` is the
+   compactified coarse space of the `Γ₀(32)`-problem", which
+   `Fermat.exists_x0Compactification` satisfies. It is not a `P → R` with
+   `P` unsatisfiable, so the general fact quoted above — that every
+   two-step decomposition of a `False`-conclusion level has a vacuous first
+   step — is escaped by moving the cut off the elliptic-curve side
+   altogether and onto the modular curve.
+2. *The refutability is gone.* The new leaf's conclusion is the classical
+   plane model of `X_0(32)`, which is TRUE; no sibling refutes it. So a
+   successor attacking it can fail informatively, which the audits above
+   correctly observe was impossible here.
+3. *The arithmetic is NOT stranded.* This was the stated catch of the
+   `Y0HasNoRationalPoint 32` route and it is what the counting argument
+   avoids: `QuarticDescent.rational_point_x0ThirtyTwo` — Fermat's quartic
+   theorem, via the `2`-isogeny to `y² = x³ − x` — is what bounds
+   `#X_0(32)(ℚ) ≤ 4`, and without it the four rational cusps could not
+   exhaust the rational points. It is load-bearing inside
+   `y0HasNoRationalPoint_thirtyTwo`, not decoration on a proof from
+   `False`. (Its packaged form `QuarticDescent.no_x0ThirtyTwo_point`
+   remains consumed by `not_cyclicIsogeny_thirtyTwo` below.)
+
+**Two claims above are hereby CORRECTED as stale.** (i) "Nothing in
+`X0.lean` provides an explicit model for any level; it deliberately stops at
+the abstract coarse space" — still true of `X0.lean`, but the model no
+longer has to live there: the comparison is stated HERE, at the level that
+needs it, against `X0.lean`'s `IsX0Compactification` interface. (ii) The
+level-`125` docstring's blanket "DO NOT ROUTE THIS NODE THROUGH `X0.lean`"
+gives as its second reason that `X0.lean` "has no compactification, no
+cusps, no divisors, no Jacobian". That was true when written and is FALSE
+now — `IsX0Compactification`, `numRationalCusps`, `exists_rationalCusps`,
+`IsJacobianOf` and `HasRankZeroJacobian` all exist — so that reason does not
+transfer to level `32`. Its FIRST reason (do not let a proof from `False`
+swallow already-proven arithmetic) does transfer, is respected here, and is
+exactly why the counting route was taken over the witness-prime route.
+
+**Why NOT the witness-prime route**, since it is the obvious one and would
+have been a two-line instantiation of `Fermat.y0HasNoRationalPoint_of_witnessPrime`:
+it needs `32 ∈ kenkuLevels` (`32` is a prime power, so extending that list
+would be a category error) and it routes through `hasRankZeroJacobian_of_kenkuLevel`
+and `exists_x0Compactification_mod_prime`, BOTH open leaves of `X0.lean`,
+thereby discarding this level's proven arithmetic in favour of two unproven
+generic ones. The data does check — `#X_0(32)(𝔽_3) = 4 = numRationalCusps 32`
+(PARI/GP, `ellap(32a1, 3) = 0`) — so that route is available to a successor
+who ever wants it; it is simply worse here. -/
 theorem WeierstrassCurve.exists_x0ThirtyTwo_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 32)
@@ -6832,11 +7026,12 @@ theorem WeierstrassCurve.exists_x0ThirtyTwo_point
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g)
     (s : ℚ)
-    (hs : E.j * (s * (1 - 2 * s) ^ 16 * (1 + 2 * s) ^ 4 * (1 + 4 * s ^ 2))
+    (_hs : E.j * (s * (1 - 2 * s) ^ 16 * (1 + 2 * s) ^ 4 * (1 + 4 * s ^ 2))
       = (256 * s ^ 8 + 15360 * s ^ 7 + 34560 * s ^ 6 + 26880 * s ^ 5 + 17504 * s ^ 4
           + 6720 * s ^ 3 + 2160 * s ^ 2 + 240 * s + 1) ^ 3) :
     ∃ x y : ℚ, y ^ 2 = x ^ 3 + 4 * x ∧ s * (x ^ 2 + 4) = y :=
-  sorry
+  (Fermat.false_of_stable_of_y0HasNoRationalPoint
+    MazurLevel32.y0HasNoRationalPoint_thirtyTwo E g hg hstable (by norm_num)).elim
 
 /-- **No rational cyclic `32`-isogeny** (PROVEN 2026-07-26 over the two
 moduli leaves `exists_x0Sixteen_hauptmodul` and `exists_x0ThirtyTwo_point`,
