@@ -72,13 +72,19 @@ The chain, in the order the assembly uses it:
 2. `IsHilbertHardlyRamified` — the `F`-level local deformation condition,
    and `isHilbertHardlyRamified_map_of_isHardlyRamified`: the restriction
    of a hardly ramified representation satisfies it. PROVEN (2026-07-26)
-   over two sharper local leaves; its determinant and unramifiedness
-   clauses are PROVEN glue. `exists_padicTwoEmbedding_of_mem`, the
-   tame-at-`2` half, was itself PROVEN (2026-07-26) over the single
-   remaining leaf `map_mem_inertia_Z2bar_of_mem_localInertiaGroup` — the
-   agreement of the `IntegralClosure 𝒪_v` and `Z2bar` spellings of local
-   inertia at `2`; the flatness half `isFlatAt_map_of_isFlatAt_under` is
-   still open.
+   over ONE remaining local leaf,
+   `map_mem_inertia_Z2bar_of_mem_localInertiaGroup` — the agreement of the
+   `IntegralClosure 𝒪_v` and `Z2bar` spellings of local inertia at `2`.
+   Its determinant and unramifiedness clauses are PROVEN glue; BOTH of the
+   two sharper local halves it was cut over are now closed (2026-07-26):
+
+   * the tame-at-`2` half `exists_padicTwoEmbedding_of_mem` is PROVEN over
+     that single remaining leaf; and
+   * the flatness half `isFlatAt_map_of_isFlatAt_under` is PROVEN through
+     the base-change core
+     `hasFlatProlongationAt_map_of_hasFlatProlongationAt_under`, over the
+     general-field-extension points comparison `extPointsEquiv` of the
+     `FlatBaseChange` section.
 3. `HilbertDeformationDatum` / `IsWeaklyUniversal` — Mazur's category and
    its universal object over `F`, i.e. `R_F`;
    `exists_isWeaklyUniversal_hilbertDeformationDatum` is item 2. It was
@@ -239,6 +245,11 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.ProfiniteLocalNoeth
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepTransport
 public import Mathlib.Topology.Algebra.Ring.Ideal
 public import Mathlib.Topology.Compactness.Compact
+-- the convolution-monoid bookkeeping of the flat-prolongation package
+-- (`liftEquiv_convOne`/`liftEquiv_convMul`/`liftEquiv_comp`,
+-- `vendored_one_eq_convOne`, `vendored_mul_eq_convMul`), reused by the
+-- base-change points comparison `extPointsEquiv` below
+public import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
 public import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.GroupTheory.Index
@@ -945,39 +956,511 @@ theorem exists_padicTwoEmbedding_of_mem
     (map_mem_inertia_Z2bar_of_mem_localInertiaGroup v e heint hecont hecont'
       (Field.absoluteGaloisGroup.map_mem_localInertiaGroup v w _ hint ι hι))
 
-/-- **Flatness descends to every place over a flat place** (LEAF — the
-flatness half of item 1/2 of the audit's list).
+universe u₁ u₂
 
-`GaloisRep.IsFlatAt v` asks that for every open ideal `I` of the coefficient
-ring the representation on `M/IM` be the geometric points of a finite flat
-group scheme over `𝒪_v` (`GaloisRep.HasFlatProlongationAt`). Finite flat
-group schemes base-change: if `G` is a finite flat `𝒪_v`-Hopf algebra with
-`G ⊗ K_v` étale and geometric points `M/IM`, then `𝒪_w ⊗_{𝒪_v} G` is a
-finite flat `𝒪_w`-Hopf algebra with the same geometric points read over
-`L_w`, because `𝒪_v → 𝒪_w` is a local map of complete DVRs and the geometric
-points are computed in a common algebraic closure.
+/-! #### The points comparison over a general field extension
 
-WHAT IS MISSING: base change of `HopfAlgebra`/`Module.Flat`/`Module.Finite`
-along `𝒪_v → 𝒪_w`, together with the identification of
-`(K_w ⊗_{𝒪_w} (𝒪_w ⊗_{𝒪_v} G)) →ₐ[K_w] K_wᵃˡᵍ` with
-`(K_v ⊗_{𝒪_v} G) →ₐ[K_v] K_vᵃˡᵍ` as `Γ K_w`-sets, along the
-`Field.absoluteGaloisGroup.map` of the completion map — the same map
-`isUnramifiedAt_map_of_isUnramifiedAt_under` uses, with the same
-conjugation ambiguity, which `HasFlatProlongationAt.of_equiv` is already
-shaped to absorb.
+`FlatProlongation.lean` proves the four-layer points comparison
+`dvrPointsEquiv` for the pair `(K, K_v)` of a number field and one of its
+completions, and that is the wrong pair for base change: what is needed
+below is the pair `(K_v, L_w)` of two COMPLETIONS. The five declarations of
+this section are that development at a general field extension `F ⊆ E`;
+they are the only pieces of the `dvrPointsEquiv` package whose statements
+mention a number field, and everything else (`liftEquiv_convOne`,
+`liftEquiv_convMul`, `liftEquiv_comp`, `vendored_one_eq_convOne`,
+`vendored_mul_eq_convMul`) is imported from there unchanged.
+
+The section uses a `variable` block, which the file otherwise avoids: the
+reason for avoiding it (a structure's FIELDS do not trigger automatic
+variable inclusion) does not apply here, since nothing in this section is a
+structure. -/
+
+section FlatBaseChange
+
+open _root_.TensorProduct _root_.WithConv
+
+variable {F E : Type*} [Field F] [Field E] [Algebra F E]
+
+/-- **Every element of `Eᵃˡᵍ` integral over `F` lies in the image of the
+chosen embedding `Fᵃˡᵍ → Eᵃˡᵍ`** (PROVEN): the minimal polynomial of `z`
+over `F` already splits over `Fᵃˡᵍ`, and the roots of the pushed-forward
+polynomial are exactly the images of the roots upstairs.
+
+(The `(K, K_v)` instance of this is `FlatProlongation.lean`'s
+`mem_range_algebraicClosureMap_of_isIntegral`; the argument is pure field
+theory and is repeated here at the generality the base change needs.) -/
+theorem mem_range_algebraicClosureMapExt_of_isIntegral (z : AlgebraicClosure E)
+    (hz : IsIntegral F z) :
+    z ∈ Set.range (AlgebraicClosure.map (algebraMap F E)) := by
+  classical
+  have hμ0 : minpoly F z ≠ 0 := minpoly.ne_zero hz
+  have hsplit : ((minpoly F z).map (algebraMap F (AlgebraicClosure F))).Splits :=
+    IsAlgClosed.splits ((minpoly F z).map (algebraMap F (AlgebraicClosure F)))
+  have hfactor : (minpoly F z).map (algebraMap F (AlgebraicClosure E)) =
+      ((minpoly F z).map (algebraMap F (AlgebraicClosure F))).map
+        (AlgebraicClosure.map (algebraMap F E)) := by
+    rw [Polynomial.map_map]
+    congr 1
+    refine RingHom.ext fun x => ?_
+    show algebraMap F (AlgebraicClosure E) x =
+      AlgebraicClosure.map (algebraMap F E) (algebraMap F (AlgebraicClosure F) x)
+    rw [AlgebraicClosure.map_algebraMap, ← IsScalarTower.algebraMap_apply]
+  have hroot : z ∈ ((minpoly F z).map (algebraMap F (AlgebraicClosure E))).roots := by
+    rw [Polynomial.mem_roots
+      (Polynomial.map_ne_zero_iff (algebraMap F _).injective |>.mpr hμ0)]
+    rw [Polynomial.IsRoot, Polynomial.eval_map, ← Polynomial.aeval_def]
+    exact minpoly.aeval F z
+  rw [hfactor, Polynomial.Splits.roots_map hsplit, Multiset.mem_map] at hroot
+  obtain ⟨r, _, hr⟩ := hroot
+  exact ⟨r, hr⟩
+
+variable (F E) in
+/-- The chosen embedding `Fᵃˡᵍ → Eᵃˡᵍ`, packaged as an `F`-algebra hom. -/
+noncomputable def algebraicClosureMapExtAlgHom :
+    AlgebraicClosure F →ₐ[F] AlgebraicClosure E where
+  toRingHom := AlgebraicClosure.map (algebraMap F E)
+  commutes' := fun x => by
+    show AlgebraicClosure.map (algebraMap F E) (algebraMap F (AlgebraicClosure F) x) = _
+    rw [AlgebraicClosure.map_algebraMap (algebraMap F E) x]
+    exact (IsScalarTower.algebraMap_apply F E (AlgebraicClosure E) x).symm
+
+/-- **The points of a FINITE `F`-algebra do not see the extension** (PROVEN):
+for `B` finite over `F`, postcomposition with `Fᵃˡᵍ → Eᵃˡᵍ` is a bijection
+from the `Fᵃˡᵍ`-points of `B` to its `Eᵃˡᵍ`-points, because every
+`Eᵃˡᵍ`-point has algebraic image and hence factors through the copy of
+`Fᵃˡᵍ` inside `Eᵃˡᵍ`. -/
+noncomputable def algHomEquivExtOfFinite (B : Type*) [CommRing B] [Algebra F B]
+    [Module.Finite F B] :
+    (B →ₐ[F] AlgebraicClosure E) ≃ (B →ₐ[F] AlgebraicClosure F) where
+  toFun φ := (AlgEquiv.ofInjective (algebraicClosureMapExtAlgHom F E)
+      (algebraicClosureMapExtAlgHom F E).toRingHom.injective).symm.toAlgHom.comp
+    (φ.codRestrict (algebraicClosureMapExtAlgHom F E).range (fun b => by
+      obtain ⟨r, hr⟩ := mem_range_algebraicClosureMapExt_of_isIntegral (φ b)
+        ((Algebra.IsIntegral.isIntegral (R := F) b).map φ)
+      exact ⟨r, hr⟩))
+  invFun ψ := (algebraicClosureMapExtAlgHom F E).comp ψ
+  left_inv φ := by
+    refine AlgHom.ext fun b => ?_
+    exact congrArg Subtype.val
+      ((AlgEquiv.ofInjective (algebraicClosureMapExtAlgHom F E)
+        (algebraicClosureMapExtAlgHom F E).toRingHom.injective).apply_symm_apply
+        (φ.codRestrict (algebraicClosureMapExtAlgHom F E).range (fun b => by
+          obtain ⟨r, hr⟩ := mem_range_algebraicClosureMapExt_of_isIntegral (φ b)
+            ((Algebra.IsIntegral.isIntegral (R := F) b).map φ)
+          exact ⟨r, hr⟩) b))
+  right_inv ψ := by
+    refine AlgHom.ext fun b => ?_
+    apply (AlgEquiv.ofInjective (algebraicClosureMapExtAlgHom F E)
+      (algebraicClosureMapExtAlgHom F E).toRingHom.injective).injective
+    refine ((AlgEquiv.ofInjective (algebraicClosureMapExtAlgHom F E)
+      (algebraicClosureMapExtAlgHom F E).toRingHom.injective).apply_symm_apply _).trans ?_
+    apply Subtype.ext
+    rfl
+
+/-- The inverse of `algHomEquivExtOfFinite` is postcomposition with the
+embedding of algebraic closures. -/
+theorem algHomEquivExtOfFinite_symm_apply {B : Type*} [CommRing B] [Algebra F B]
+    [Module.Finite F B] (ψ : B →ₐ[F] AlgebraicClosure F) :
+    (algHomEquivExtOfFinite (E := E) B).symm ψ =
+      (algebraicClosureMapExtAlgHom F E).comp ψ :=
+  rfl
+
+section ExtConv
+
+variable {B : Type*} [CommRing B] [Bialgebra F B] [Module.Finite F B]
+
+/-- `algHomEquivExtOfFinite` preserves the convolution unit. -/
+theorem algHomEquivExtOfFinite_convOne :
+    algHomEquivExtOfFinite (E := E) B
+      ((1 : WithConv (B →ₐ[F] AlgebraicClosure E)).ofConv) =
+      (1 : WithConv (B →ₐ[F] AlgebraicClosure F)).ofConv := by
+  apply (algHomEquivExtOfFinite (E := E) B).symm.injective
+  rw [Equiv.symm_apply_apply, algHomEquivExtOfFinite_symm_apply]
+  refine AlgHom.ext fun b => ?_
+  rw [AlgHom.comp_apply, AlgHom.convOne_apply, AlgHom.convOne_apply, AlgHom.commutes]
+
+/-- `algHomEquivExtOfFinite` preserves the convolution product. -/
+theorem algHomEquivExtOfFinite_convMul
+    (ψ₁ ψ₂ : WithConv (B →ₐ[F] AlgebraicClosure E)) :
+    algHomEquivExtOfFinite (E := E) B ((ψ₁ * ψ₂).ofConv) =
+      (toConv (algHomEquivExtOfFinite (E := E) B ψ₁.ofConv) *
+        toConv (algHomEquivExtOfFinite (E := E) B ψ₂.ofConv)).ofConv := by
+  apply (algHomEquivExtOfFinite (E := E) B).symm.injective
+  rw [Equiv.symm_apply_apply, algHomEquivExtOfFinite_symm_apply,
+    AlgHom.comp_convMul_distrib,
+    ← algHomEquivExtOfFinite_symm_apply (E := E)
+      (algHomEquivExtOfFinite (E := E) B ψ₁.ofConv),
+    ← algHomEquivExtOfFinite_symm_apply (E := E)
+      (algHomEquivExtOfFinite (E := E) B ψ₂.ofConv),
+    Equiv.symm_apply_apply, Equiv.symm_apply_apply]
+
+/-- `algHomEquivExtOfFinite` intertwines postcomposition by `σ ∈ Γ E` with
+postcomposition by its restriction in `Γ F`. -/
+theorem algHomEquivExtOfFinite_comp (σ : Γ E) (ψ : B →ₐ[F] AlgebraicClosure E) :
+    algHomEquivExtOfFinite (E := E) B ((σ.toAlgHom.restrictScalars F).comp ψ) =
+      (Field.absoluteGaloisGroup.map (algebraMap F E) σ).toAlgHom.comp
+        (algHomEquivExtOfFinite (E := E) B ψ) := by
+  apply (algHomEquivExtOfFinite (E := E) B).symm.injective
+  rw [Equiv.symm_apply_apply, algHomEquivExtOfFinite_symm_apply]
+  have h2 : (algebraicClosureMapExtAlgHom F E).comp
+      (algHomEquivExtOfFinite (E := E) B ψ) = ψ := by
+    rw [← algHomEquivExtOfFinite_symm_apply, Equiv.symm_apply_apply]
+  refine AlgHom.ext fun b => ?_
+  refine Eq.symm ?_
+  calc ((algebraicClosureMapExtAlgHom F E).comp
+        ((Field.absoluteGaloisGroup.map (algebraMap F E) σ).toAlgHom.comp
+          (algHomEquivExtOfFinite (E := E) B ψ))) b
+      = σ (AlgebraicClosure.map (algebraMap F E)
+          ((algHomEquivExtOfFinite (E := E) B ψ) b)) :=
+        Field.absoluteGaloisGroup.lift_map _ σ _
+    _ = σ (ψ b) := congrArg σ congr($(h2) b)
+    _ = ((σ.toAlgHom.restrictScalars F).comp ψ) b := rfl
+
+end ExtConv
+
+section ExtCore
+
+variable (R : Type*) [CommRing R] [Algebra R F] [Algebra R E] [IsScalarTower R F E]
+variable (O : Type*) [CommRing O] [Algebra R O] [Algebra O E] [IsScalarTower R O E]
+variable (H : Type*) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+
+/-- **The four-layer points comparison**, over a general integral package
+`R → O → E` with generic fibre `R → F`: the `Eᵃˡᵍ`-points of the generic
+fibre of the base-changed Hopf algebra `O ⊗[R] H` are the `Fᵃˡᵍ`-points of
+`F ⊗[R] H`. (`AlgHom.liftEquiv` three times, then
+`algHomEquivExtOfFinite`; the exact analogue of `dvrPointsEquiv`.) -/
+noncomputable def extPointsEquiv :
+    ((E ⊗[O] (O ⊗[R] H)) →ₐ[E] AlgebraicClosure E) ≃
+      ((F ⊗[R] H) →ₐ[F] AlgebraicClosure F) :=
+  (AlgHom.liftEquiv O E (O ⊗[R] H) (AlgebraicClosure E)).symm.trans
+    ((AlgHom.liftEquiv R O H (AlgebraicClosure E)).symm.trans
+      ((AlgHom.liftEquiv R F H (AlgebraicClosure E)).trans
+        (algHomEquivExtOfFinite (E := E) (F ⊗[R] H))))
+
+/-- The points comparison sends the convolution unit to the convolution
+unit. -/
+theorem extPointsEquiv_one :
+    extPointsEquiv (F := F) R O H
+        (1 : (E ⊗[O] (O ⊗[R] H)) →ₐ[E] AlgebraicClosure E) =
+      (1 : WithConv ((F ⊗[R] H) →ₐ[F] AlgebraicClosure F)).ofConv := by
+  show algHomEquivExtOfFinite (E := E) (F ⊗[R] H)
+    ((AlgHom.liftEquiv R F H (AlgebraicClosure E))
+      ((AlgHom.liftEquiv R O H (AlgebraicClosure E)).symm
+        ((AlgHom.liftEquiv O E (O ⊗[R] H) (AlgebraicClosure E)).symm 1))) = _
+  rw [vendored_one_eq_convOne, liftEquiv_symm_convOne, liftEquiv_symm_convOne,
+    liftEquiv_convOne, algHomEquivExtOfFinite_convOne]
+
+/-- The points comparison sends the convolution product to the convolution
+product. -/
+theorem extPointsEquiv_mul (φ ψ : (E ⊗[O] (O ⊗[R] H)) →ₐ[E] AlgebraicClosure E) :
+    extPointsEquiv (F := F) R O H (φ * ψ) =
+      (toConv (extPointsEquiv (F := F) R O H φ) *
+        toConv (extPointsEquiv (F := F) R O H ψ)).ofConv := by
+  show algHomEquivExtOfFinite (E := E) (F ⊗[R] H)
+    ((AlgHom.liftEquiv R F H (AlgebraicClosure E))
+      ((AlgHom.liftEquiv R O H (AlgebraicClosure E)).symm
+        ((AlgHom.liftEquiv O E (O ⊗[R] H) (AlgebraicClosure E)).symm (φ * ψ)))) = _
+  rw [vendored_mul_eq_convMul, liftEquiv_symm_convMul, liftEquiv_symm_convMul,
+    liftEquiv_convMul, algHomEquivExtOfFinite_convMul]
+  rfl
+
+/-- The points comparison intertwines the postcomposition action of `Γ E`
+with the postcomposition action of its restriction in `Γ F`. -/
+theorem extPointsEquiv_smul (σ : Γ E)
+    (φ : (E ⊗[O] (O ⊗[R] H)) →ₐ[E] AlgebraicClosure E) :
+    extPointsEquiv (F := F) R O H (σ • φ) =
+      (Field.absoluteGaloisGroup.map (algebraMap F E) σ).toAlgHom.comp
+        (extPointsEquiv (F := F) R O H φ) := by
+  have h₀ : σ • φ = (σ.toAlgHom : AlgebraicClosure E →ₐ[E] AlgebraicClosure E).comp φ :=
+    AlgHom.ext fun _ => rfl
+  show algHomEquivExtOfFinite (E := E) (F ⊗[R] H)
+    ((AlgHom.liftEquiv R F H (AlgebraicClosure E))
+      ((AlgHom.liftEquiv R O H (AlgebraicClosure E)).symm
+        ((AlgHom.liftEquiv O E (O ⊗[R] H) (AlgebraicClosure E)).symm (σ • φ)))) = _
+  rw [h₀, liftEquiv_symm_comp, liftEquiv_symm_comp]
+  have hrs : ((σ.toAlgHom.restrictScalars O).restrictScalars R :
+      AlgebraicClosure E →ₐ[R] AlgebraicClosure E) =
+      ((σ.toAlgHom.restrictScalars F).restrictScalars R) := rfl
+  rw [hrs, liftEquiv_comp, algHomEquivExtOfFinite_comp]
+  rfl
+
+end ExtCore
+
+/-- **Base change of a SINGLE finite flat prolongation along `𝒪_v → 𝒪_w`**
+(PROVEN, 2026-07-26 — the geometric core of the flatness half of item 1/2
+of the audit's list; split off from `isFlatAt_map_of_isFlatAt_under`, which
+is PROVEN over it).
+
+`ρ.HasFlatProlongationAt v` says that the `Γ K_v`-set underlying `M` is the
+set of `K_vᵃˡᵍ`-points of the generic fibre of a finite flat `𝒪_v`-Hopf
+algebra `G`. This leaf is the base-change of that ONE package along the
+local map `𝒪_v → 𝒪_w`; the quantifier over open ideals which distinguishes
+`IsFlatAt` from `HasFlatProlongationAt` has already been discharged by the
+consumer below, so nothing here is about the coefficient ring.
+
+THE PROOF, in the vocabulary of `CompletionTransport.lean` and
+`FlatProlongation.lean` (it is a second copy of the `dvrPointsEquiv`
+development, at a different pair of rings — that copy is the
+`extPointsEquiv` section above):
+
+* `HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ : K_v →+* L_w`
+  exists (the very map `isUnramifiedAt_map_of_isUnramifiedAt_under` builds,
+  from `valuation_map_le_of_le_one` + `WithVal.uniformContinuous_map_of_le`),
+  it is LOCAL (`adicCompletionMap_mem_integers`), and
+  `Field.absoluteGaloisGroup.intMap` restricts it to `𝒪_v →+* 𝒪_w`. That is
+  the `Algebra 𝒪_v 𝒪_w` used below, together with the induced
+  `Algebra 𝒪_v L_w`, `Algebra K_v L_w` and the two scalar towers;
+* the witness upstairs is `G' := 𝒪_w ⊗[𝒪_v] G`. `CommRing`, `HopfAlgebra 𝒪_w`
+  (mathlib's `TensorProduct` Hopf instance, `B := 𝒪_w`, `A := G`),
+  `Module.Flat 𝒪_w` and `Module.Finite 𝒪_w` are all instances;
+* étaleness of the generic fibre is `Algebra.Etale.baseChange` transported
+  across
+  `L_w ⊗[𝒪_w] (𝒪_w ⊗[𝒪_v] G) ≃ₐ L_w ⊗[𝒪_v] G ≃ₐ L_w ⊗[K_v] (K_v ⊗[𝒪_v] G)`
+  (`Algebra.TensorProduct.cancelBaseChange`, twice);
+* the points comparison is `extPointsEquiv 𝒪_v 𝒪_w G` above:
+  `((L_w ⊗[𝒪_w] G') →ₐ[L_w] L_wᵃˡᵍ) ≃ ((K_v ⊗[𝒪_v] G) →ₐ[K_v] K_vᵃˡᵍ)`,
+  by `AlgHom.liftEquiv` three times and then the finite-algebra points
+  bijection `algHomEquivExtOfFinite` (every `L_wᵃˡᵍ`-point of a FINITE
+  `K_v`-algebra has algebraic image, hence lands in the copy of `K_vᵃˡᵍ`
+  inside `L_wᵃˡᵍ`); `liftEquiv_convOne`/`liftEquiv_convMul`/`liftEquiv_comp`
+  carry the convolution-monoid bookkeeping through the `liftEquiv` layers;
+* the equivariance is where the CONJUGATOR enters, exactly as in the
+  tame-at-`2` clause of `isHilbertHardlyRamified_map_of_isHardlyRamified`:
+  the two routes `Γ L_w → Γ K`, one through `Γ L` and one through `Γ K_v`,
+  differ by one argument-independent `μ ∈ Γ K`
+  (`Field.absoluteGaloisGroup.exists_conj_map_comp'`, twice), and the fix is
+  to conjugate the COMPARISON MAP rather than the character: replacing the
+  bijection `f` of the package downstairs by `ρ μ ∘ f` turns
+  `f (ψ σ • φ) = ρ (ψ σ) (f φ)` into
+  `(ρ μ ∘ f) (σ • φ) = ρ (μ * ψ σ * μ⁻¹) ((ρ μ ∘ f) φ)`, which is the
+  `Γ L_w`-equivariance the package upstairs asks for, on the nose.
+
+FORMALIZATION NOTE ON THE UNIVERSES (why `L : Type (max u₁ u₂)` rather than
+`Type*`). `GaloisRep.HasFlatProlongationAt` quantifies its Hopf-algebra
+witness over `Type uK`, the universe of the BASE FIELD. So the conclusion
+demands `G' : Type uL` while the hypothesis supplies `G : Type uK`, and the
+base change `𝒪_w ⊗[𝒪_v] G` lives in `Type (max uK uL)`. Writing
+`L : Type (max u₁ u₂)` for `K : Type u₁` is exactly the constraint
+`uK ≤ uL`, under which that is `Type uL`. This is a formalization artifact,
+not a mathematical hypothesis: `G` is finite flat over the DVR `𝒪_v`, hence
+free of finite rank, so `𝒪_w ⊗[𝒪_v] G` is always `Small.{uL}` and the
+unrestricted statement would follow by transporting the Hopf structure
+along a `Shrink` equivalence — machinery mathlib does not have. Every
+consumer in this development instantiates at `K = ℚ : Type 0`, where the
+constraint is vacuous.
 
 FAITHFULNESS: a statement about the EXISTENCE of a prolongation upstairs
 given one downstairs, produced by base change — not a descent of existence
 from `𝒪^nr`, so the `𝒪ᵥ` rule does not bite. -/
+theorem hasFlatProlongationAt_map_of_hasFlatProlongationAt_under
+    {K : Type u₁} [Field K] [NumberField K]
+    {L : Type (max u₁ u₂)} [Field L] [NumberField L] [Algebra K L]
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (ρ : GaloisRep K A M) (w : HeightOneSpectrum (𝓞 L))
+    (h : ρ.HasFlatProlongationAt (w.under (𝓞 K))) :
+    (ρ.map (algebraMap K L)).HasFlatProlongationAt w := by
+  classical
+  set v : HeightOneSpectrum (𝓞 K) := w.under (𝓞 K)
+  have hcomm : ∀ a : 𝓞 K,
+      (algebraMap K L) (algebraMap (𝓞 K) K a)
+        = algebraMap (𝓞 L) L (algebraMap (𝓞 K) (𝓞 L) a) := fun a => by
+    rw [← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply]
+  have hmem : v.asIdeal ≤ Ideal.comap (algebraMap (𝓞 K) (𝓞 L)) w.asIdeal := le_rfl
+  have hcompl : ∀ s : 𝓞 K, s ∉ v.asIdeal →
+      algebraMap (𝓞 K) (𝓞 L) s ∉ w.asIdeal := fun _ hs => hs
+  have hψ : UniformContinuous
+      (WithVal.map (v.valuation K) (w.valuation L) (algebraMap K L)) :=
+    WithVal.uniformContinuous_map_of_le _ _
+      (HeightOneSpectrum.valuation_surjective K v) _
+      (fun x hx => HeightOneSpectrum.valuation_map_le_of_le_one v w _ _
+        hcomm hmem hcompl x hx)
+  have hint : ∀ x ∈ v.adicCompletionIntegers K,
+      HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ x
+        ∈ w.adicCompletionIntegers L :=
+    fun x hx => HeightOneSpectrum.adicCompletionMap_mem_integers v w _ hψ _ hcomm hx
+  -- `𝒪_v → 𝒪_w`, `K_v → L_w` and the two scalar towers between them
+  letI : Algebra ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) :=
+    (Field.absoluteGaloisGroup.intMap v w
+      (HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ) hint).toAlgebra
+  letI : Algebra (v.adicCompletion K) (w.adicCompletion L) :=
+    (HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ).toAlgebra
+  letI : Algebra ↥(v.adicCompletionIntegers K) (w.adicCompletion L) :=
+    ((algebraMap ↥(w.adicCompletionIntegers L) (w.adicCompletion L)).comp
+      (Field.absoluteGaloisGroup.intMap v w
+        (HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ) hint)).toAlgebra
+  haveI : IsScalarTower ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L)
+      (w.adicCompletion L) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower ↥(v.adicCompletionIntegers K) (v.adicCompletion K)
+      (w.adicCompletion L) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  -- the two routes `Γ L_w → Γ K` differ by the single conjugator `μ`
+  obtain ⟨τ, hτ⟩ := Field.absoluteGaloisGroup.exists_conj_map_comp'
+    (algebraMap K (v.adicCompletion K))
+    (algebraMap (v.adicCompletion K) (w.adicCompletion L))
+    ((algebraMap L (w.adicCompletion L)).comp (algebraMap K L))
+    (RingHom.ext fun x =>
+      HeightOneSpectrum.adicCompletionMap_coe v w (algebraMap K L) hψ x)
+  obtain ⟨τ₀, hτ₀⟩ := Field.absoluteGaloisGroup.exists_conj_map_comp' (algebraMap K L)
+    (algebraMap L (w.adicCompletion L))
+    ((algebraMap L (w.adicCompletion L)).comp (algebraMap K L)) rfl
+  obtain ⟨μ, hμ⟩ : ∃ μ : Γ K, τ₀⁻¹ * τ = μ := ⟨_, rfl⟩
+  have hX : ∀ σ : Γ (w.adicCompletion L),
+      Field.absoluteGaloisGroup.map (algebraMap K L)
+          (Field.absoluteGaloisGroup.map (algebraMap L (w.adicCompletion L)) σ)
+        = μ * Field.absoluteGaloisGroup.map (algebraMap K (v.adicCompletion K))
+            (Field.absoluteGaloisGroup.map
+              (algebraMap (v.adicCompletion K) (w.adicCompletion L)) σ) * μ⁻¹ := by
+    intro σ
+    have h1 := hτ₀ σ
+    rw [hτ σ] at h1
+    rw [← hμ, show τ₀⁻¹ * τ * Field.absoluteGaloisGroup.map
+          (algebraMap K (v.adicCompletion K))
+          (Field.absoluteGaloisGroup.map
+            (algebraMap (v.adicCompletion K) (w.adicCompletion L)) σ) * (τ₀⁻¹ * τ)⁻¹
+        = τ₀⁻¹ * (τ * Field.absoluteGaloisGroup.map (algebraMap K (v.adicCompletion K))
+            (Field.absoluteGaloisGroup.map
+              (algebraMap (v.adicCompletion K) (w.adicCompletion L)) σ) * τ⁻¹) * τ₀
+        from by group, h1]
+    group
+  have hinv : ∀ x : M, (ρ μ⁻¹) ((ρ μ) x) = x := by
+    intro x
+    show (ρ μ⁻¹ * ρ μ) x = x
+    rw [← map_mul, inv_mul_cancel, map_one]
+    rfl
+  have hinv' : ∀ x : M, (ρ μ) ((ρ μ⁻¹) x) = x := by
+    intro x
+    show (ρ μ * ρ μ⁻¹) x = x
+    rw [← map_mul, mul_inv_cancel, map_one]
+    rfl
+  have hρμ : Function.Bijective ⇑(ρ μ) :=
+    ⟨fun a b hab => by rw [← hinv a, ← hinv b, hab], fun y => ⟨ρ μ⁻¹ y, hinv' y⟩⟩
+  obtain ⟨G, hCR, hHopf, hFlat, hFin, hEt, f, hbij⟩ := h
+  letI := hCR
+  letI := hHopf
+  letI := hFlat
+  letI := hFin
+  letI := hEt
+  refine ⟨↥(w.adicCompletionIntegers L) ⊗[↥(v.adicCompletionIntegers K)] G,
+    (inferInstance : CommRing
+      (↥(w.adicCompletionIntegers L) ⊗[↥(v.adicCompletionIntegers K)] G)),
+    (inferInstance : HopfAlgebra ↥(w.adicCompletionIntegers L)
+      (↥(w.adicCompletionIntegers L) ⊗[↥(v.adicCompletionIntegers K)] G)),
+    (inferInstance : Module.Flat ↥(w.adicCompletionIntegers L)
+      (↥(w.adicCompletionIntegers L) ⊗[↥(v.adicCompletionIntegers K)] G)),
+    (inferInstance : Module.Finite ↥(w.adicCompletionIntegers L)
+      (↥(w.adicCompletionIntegers L) ⊗[↥(v.adicCompletionIntegers K)] G)),
+    Algebra.Etale.of_equiv
+      ((Algebra.TensorProduct.cancelBaseChange ↥(v.adicCompletionIntegers K)
+          (v.adicCompletion K) (w.adicCompletion L) (w.adicCompletion L) G).trans
+        (Algebra.TensorProduct.cancelBaseChange ↥(v.adicCompletionIntegers K)
+          ↥(w.adicCompletionIntegers L) (w.adicCompletion L) (w.adicCompletion L) G).symm),
+    { toFun := fun Φ => ρ μ (f (Additive.ofMul
+        (extPointsEquiv (F := v.adicCompletion K) ↥(v.adicCompletionIntegers K)
+          ↥(w.adicCompletionIntegers L) G Φ.toMul)))
+      map_smul' := fun σ Φ => by
+        show ρ μ (f (Additive.ofMul (extPointsEquiv (F := v.adicCompletion K)
+            ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G
+            (Additive.toMul (σ • Φ)))))
+          = ((ρ.map (algebraMap K L)).toLocal w) σ
+              (ρ μ (f (Additive.ofMul (extPointsEquiv (F := v.adicCompletion K)
+                ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G Φ.toMul))))
+        have hΦ : Additive.toMul (σ • Φ) = σ • Φ.toMul := rfl
+        rw [hΦ, extPointsEquiv_smul]
+        have hact : ∀ (g : Γ (v.adicCompletion K))
+            (χ : (v.adicCompletion K ⊗[↥(v.adicCompletionIntegers K)] G)
+              →ₐ[v.adicCompletion K] AlgebraicClosure (v.adicCompletion K)),
+            f (Additive.ofMul (g.toAlgHom.comp χ))
+              = ρ (Field.absoluteGaloisGroup.map
+                  (algebraMap K (v.adicCompletion K)) g) (f (Additive.ofMul χ)) := by
+          intro g χ
+          exact map_smul f g (Additive.ofMul χ)
+        have key : ∀ (g : Γ K) (y : M), ρ μ (ρ g y) = ρ (μ * g * μ⁻¹) (ρ μ y) := by
+          intro g y
+          show (ρ μ * ρ g) y = (ρ (μ * g * μ⁻¹) * ρ μ) y
+          rw [← map_mul, ← map_mul]
+          congr 2
+          group
+        have hgoal : ((ρ.map (algebraMap K L)).toLocal w) σ
+            = ρ (μ * Field.absoluteGaloisGroup.map (algebraMap K (v.adicCompletion K))
+                (Field.absoluteGaloisGroup.map
+                  (algebraMap (v.adicCompletion K) (w.adicCompletion L)) σ) * μ⁻¹) := by
+          rw [← hX σ]
+          rfl
+        rw [hact, hgoal]
+        exact key _ _
+      map_zero' := by
+        show ρ μ (f (Additive.ofMul (extPointsEquiv (F := v.adicCompletion K)
+          (E := w.adicCompletion L)
+          ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G
+          (Additive.toMul 0)))) = 0
+        rw [toMul_zero, extPointsEquiv_one, ← vendored_one_eq_convOne, ofMul_one,
+          map_zero]
+        exact LinearMap.map_zero _
+      map_add' := fun Φ Ψ => by
+        have hmul : extPointsEquiv (F := v.adicCompletion K)
+              (E := w.adicCompletion L) ↥(v.adicCompletionIntegers K)
+              ↥(w.adicCompletionIntegers L) G (Additive.toMul (Φ + Ψ))
+            = extPointsEquiv (F := v.adicCompletion K) (E := w.adicCompletion L)
+                ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G Φ.toMul
+              * extPointsEquiv (F := v.adicCompletion K) (E := w.adicCompletion L)
+                ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G Ψ.toMul :=
+          (extPointsEquiv_mul (F := v.adicCompletion K) (E := w.adicCompletion L)
+            ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G
+            (Additive.toMul Φ) (Additive.toMul Ψ)).trans
+            (vendored_mul_eq_convMul _ _).symm
+        have h1 : f (Additive.ofMul
+              (extPointsEquiv (F := v.adicCompletion K) (E := w.adicCompletion L)
+                  ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G Φ.toMul
+                * extPointsEquiv (F := v.adicCompletion K) (E := w.adicCompletion L)
+                  ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G Ψ.toMul))
+            = f (Additive.ofMul (extPointsEquiv (F := v.adicCompletion K)
+                (E := w.adicCompletion L) ↥(v.adicCompletionIntegers K)
+                ↥(w.adicCompletionIntegers L) G Φ.toMul))
+              + f (Additive.ofMul (extPointsEquiv (F := v.adicCompletion K)
+                (E := w.adicCompletion L) ↥(v.adicCompletionIntegers K)
+                ↥(w.adicCompletionIntegers L) G Ψ.toMul)) :=
+          map_add f (Additive.ofMul _) (Additive.ofMul _)
+        show ρ μ (f (Additive.ofMul (extPointsEquiv (F := v.adicCompletion K)
+            (E := w.adicCompletion L) ↥(v.adicCompletionIntegers K)
+            ↥(w.adicCompletionIntegers L) G (Additive.toMul (Φ + Ψ))))) = _
+        exact (congrArg (fun x => (ρ μ) (f (Additive.ofMul x))) hmul).trans
+          ((congrArg (⇑(ρ μ)) h1).trans (LinearMap.map_add (ρ μ) _ _)) }, ?_⟩
+  exact hρμ.comp (hbij.comp (Additive.ofMul.bijective.comp
+    ((extPointsEquiv (F := v.adicCompletion K) ↥(v.adicCompletionIntegers K)
+      ↥(w.adicCompletionIntegers L) G).bijective.comp Additive.toMul.bijective)))
+
+end FlatBaseChange
+
+/-- **Flatness descends to every place over a flat place** (PROVEN,
+2026-07-26, over `hasFlatProlongationAt_map_of_hasFlatProlongationAt_under`).
+
+`GaloisRep.IsFlatAt v` asks that for every open ideal `I` of the coefficient
+ring the representation on `M/IM` be the geometric points of a finite flat
+group scheme over `𝒪_v` (`GaloisRep.HasFlatProlongationAt`). Two things
+separate that from the leaf above, and both are discharged here:
+
+* the quantifier over open ideals — the same `I` works upstairs and
+  downstairs, so it is transported unchanged;
+* the commutation `(ρ.map f).baseChange B = (ρ.baseChange B).map f`, which
+  holds definitionally: `map` precomposes with `Field.absoluteGaloisGroup.map
+  f` and `baseChange` postcomposes with `Module.End.baseChangeHom`, and the
+  two act on opposite sides of `ρ`.
+
+For the universe restriction on `L`, see the leaf's FORMALIZATION NOTE. -/
 theorem isFlatAt_map_of_isFlatAt_under
-    {K : Type*} [Field K] [NumberField K] {L : Type*} [Field L] [NumberField L]
-    [Algebra K L]
+    {K : Type u₁} [Field K] [NumberField K]
+    {L : Type (max u₁ u₂)} [Field L] [NumberField L] [Algebra K L]
     {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A] [IsLocalRing A]
     {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M] [Module.Free A M]
     (ρ : GaloisRep K A M) (w : HeightOneSpectrum (𝓞 L))
     (h : ρ.IsFlatAt (w.under (𝓞 K))) :
-    (ρ.map (algebraMap K L)).IsFlatAt w :=
-  sorry
+    (ρ.map (algebraMap K L)).IsFlatAt w := by
+  refine ⟨fun I hI => ?_⟩
+  have heq : (ρ.map (algebraMap K L)).baseChange (A ⧸ I)
+      = (ρ.baseChange (A ⧸ I)).map (algebraMap K L) := GaloisRep.ext fun _ => rfl
+  rw [heq]
+  exact hasFlatProlongationAt_map_of_hasFlatProlongationAt_under
+    (ρ.baseChange (A ⧸ I)) w (h.cond I hI)
 
 /-- **Restriction of a hardly ramified representation is hardly ramified
 over `F`** (PROVEN, 2026-07-26, over the two local leaves above).
@@ -995,9 +1478,9 @@ sharply stated local leaves:
   lies over a rational prime `p ∉ {2, ℓ}` (`exists_prime_eq_ratPlace`,
   `natCast_mem_asIdeal_of_under_eq`), and inertia at `w` maps into inertia
   at `p` (`isUnramifiedAt_map_of_isUnramifiedAt_under`);
-* *flatness* (over `isFlatAt_map_of_isFlatAt_under`): a place `w | ℓ` lies
-  over `ℓ` (`under_eq_of_natCast_mem`), and flat prolongations base-change
-  along `𝒪_ℓ → 𝒪_w`;
+* *flatness* (PROVEN, through `isFlatAt_map_of_isFlatAt_under`): a place
+  `w | ℓ` lies over `ℓ` (`under_eq_of_natCast_mem`), and flat prolongations
+  base-change along `𝒪_ℓ → 𝒪_w`;
 * *tameness at `2`* (over `exists_padicTwoEmbedding_of_mem`): PROVEN glue
   from the local embedding `φ : ℚ_[2] →+* F_w`, see below.
 
