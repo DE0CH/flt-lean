@@ -534,7 +534,278 @@ theorem WeierstrassCurve.exists_isogenyCharacter (E : WeierstrassCurve ℚ)
   refine (hiff _ _).mpr ?_
   simp [ZMod.natCast_val]
 
-/-- **Mazur's rational isogenies of prime degree** (sorry node — the
+/-!
+##### Mazur's isogeny theorem, cut along its own proof (2026-07-26)
+
+`not_isogenyCharacter_of_prime_ge_twentyThree` used to be a single bare
+`sorry` carrying an audit that read "IRREDUCIBLE at this mathlib pin:
+the proof is the Eisenstein-ideal descent on `J_0(N)`". That audit was
+right that the Eisenstein ideal is needed and WRONG about how much of
+the theorem needs it. Following Mazur's own argument — as laid out in
+P. Michaud-Jacobs, *Mazur's isogeny theorem* (arXiv:2209.03153v2, an
+expository account of Mazur, Invent. Math. 44 (1978), Thm 1) — the proof
+factors into FOUR steps that rest on three completely different bodies
+of mathematics, and only ONE of them is modular:
+
+0. `potentiallyGoodReduction_of_isogenyCharacter` (Mazur 1978, Cor 4.4;
+   [MJ, Thm 3.1]). For `N > 19`, a curve with a rational `N`-isogeny has
+   potentially good reduction at every prime `q ∉ {2, N}`. **This is the
+   only modular step.** Its proof is: a point of potentially
+   multiplicative reduction reduces to a cusp of `X_0(N)` mod `q`; the
+   Abel–Jacobi map into the Eisenstein quotient `J_e(N)` — which has
+   Mordell–Weil rank `0` over `ℚ` by Mazur, *Modular curves and the
+   Eisenstein ideal*, IHÉS 47 (1977), Thm 4 — is a formal immersion at
+   the cusp in characteristic `q ≠ 2`, so the point IS the cusp.
+   Note what the STATEMENT costs: nothing. It is an inequality on the
+   `q`-adic valuation of the `j`-invariant, so it can be stated, and
+   consumed, with no modular curve, no Jacobian and no Hecke algebra in
+   sight. All of that machinery is needed only to PROVE it.
+
+1. `exists_isogenySignature` (Serre 1972 + Raynaud; [MJ, Thm 4.1]).
+   `λ¹² = χ^s` globally, with the *isogeny signature* `s ∈ {0,4,6,8,12}`,
+   and `s = 6` forces `N ≡ 3 (mod 4)`. Local theory at `N` only: over
+   `ℚ_N` the curve is a (twisted) Tate curve or acquires good reduction
+   over an extension of ramification degree `e ∈ {1,2,3,4,6}`, and
+   Raynaud's classification gives `λ^e|_{I'} = χ^r|_{I'}` with `0 ≤ r ≤ e`;
+   `s = 12r/e`. Away from `N`, `λ¹²` is unramified in BOTH reduction
+   types, so `λ¹²χ^{-s}` is everywhere unramified, hence trivial. This
+   step does NOT use step 0.
+
+2. `not_isogenyCharacter_of_isogenySignature_ne_six` ([MJ, Prop 4.3]).
+   For a Frobenius `σ_q` at a prime `q ≠ N` of potentially good
+   reduction, `λ(σ_q)` is a common root mod `N` of `X¹² − q^s` and of
+   `X² − Tr ρ(σ_q) X + q`, where `Tr ρ(σ_q) ∈ ℤ` with `|Tr| ≤ 2√q`
+   (Serre–Tate, Thm 3; Hasse–Weil in the good-reduction case). So `N`
+   divides `R_{q,s} := lcm_{|a| ≤ 2√q} Res(X² − aX + q, X¹² − q^s)`, a
+   FINITE integer depending only on `q` and `s`. Step 0 is what licenses
+   `q = 3` and `q = 5`. Verified here in PARI/GP (untrusted searcher; the
+   Lean proof must recompute these resultants in-kernel), reproducing
+   [MJ, §4.2]:
+
+   * `R(3,0)  = 8131531262400 = 2⁶·3²·5²·7²·13²·19·37·97`
+   * `R(5,0)  = 17072929032886039622400 = 2⁸·3⁵·5²·7²·13²·17·31²·37·61·157·229`
+   * `R(3,4)  = 9815256000 = 2⁶·3⁸·5³·11·17`
+   * `R(3,8)  = 795035736000 = 2⁶·3¹²·5³·11·17`
+   * `R(3,12) = 4321429105621118400 = 2⁶·3¹⁴·5²·7²·13²·19·37·97`
+   * `R(5,12) = 4168195564669443267187500000000`
+     `= 2⁸·3⁵·5¹⁴·7²·13²·17·31²·37·61·157·229`
+   * `R(q,6)  = 0` for every `q` — `X² − q` and `X¹² − q⁶` share a root,
+     so signature `6` yields no information at all. That is exactly why
+     it is a separate leaf.
+
+   Reading these off: for `s ∈ {4,8}` already `R(3,s)` has NO prime
+   factor `> 19`, so `N ≤ 19`, contradicting `N ≥ 23`. For `s ∈ {0,12}`
+   the primes `> 19` dividing `R(3,s)` are `{37, 97}` and those dividing
+   `R(5,s)` are `{31,37,61,157,229}`; `N` divides both, and the
+   intersection is `{37}`, which the hypothesis `N ≠ 37` excludes.
+   (Note [MJ] prints `R(3,4) = R(3,8)`; the `3`-exponents actually differ,
+   `3⁸` against `3¹²`. The conclusion — no prime factor `> 19` — is
+   unaffected, and the value of `R(3,4)` printed there is correct.)
+
+3. `mem_classNumberOnePrimes_of_isogenySignature_six` ([MJ, Prop 4.4]).
+   Signature `6`: `λ = ψ·χ^{(N+1)/4}` with `ψ⁶ = 1`, and for `2 < q < N/4`
+   the Hasse–Weil bound forces `q` INERT in `ℚ(√−N)`. Hence every ideal
+   of norm below the Minkowski bound `2√N/π < N/4` is principal, so
+   `ℚ(√−N)` has class number `1`; by Baker–Heegner–Stark and `N ≡ 3
+   (mod 4)`, `N ∈ {3,7,11,19,43,67,163}`, so `N ≥ 23` leaves
+   `{43,67,163}`. **The class-number-one theorem is a SECOND deep input,
+   entirely disjoint from the Eisenstein ideal, and the old audit did not
+   mention it.** Everything else here is Minkowski-bound algebraic number
+   theory, which mathlib has.
+
+FAITHFULNESS AUDIT of the exclusion list (2026-07-26, PARI/GP). The list
+`{37,43,67,163}` is not folklore, it has a structure, and the structure
+is exactly steps 2 and 3. `ellisomat` on curves with each of the thirteen
+class-number-one CM `j`-invariants gives the rational prime isogeny
+degrees of CM curves as `{2,3,7,11,19,43,67,163}` — the primes dividing a
+class-number-one discriminant — whose members `≥ 23` are PRECISELY
+`{43,67,163}`, i.e. the output of step 3. And `37` is non-CM: the two
+non-cuspidal rational points of `X_0(37)` have `j = -9317` and
+`j = -162677523113838677`, both confirmed to carry a rational 37-isogeny,
+and `37` is the output of step 2. So `hN23` and `hNexc` are exactly right:
+`19` is the largest prime below the excluded four, and nothing else `≥ 23`
+can be added or removed.
+
+CONSUMER-SHAPE FINDING, for whoever owns the cut rather than the leaves
+(2026-07-26). Every path into this whole `X_0` cluster — `prime_…`,
+`composite_…`, `mem_cyclicIsogenyDegrees` and Kenku's five nodes — runs
+through `mem_cyclicIsogenyDegrees_of_addOrderOf`, which builds `g` as
+`Affine.Point.baseChange` of a RATIONAL point. For such a `g` the
+isogeny character is TRIVIAL: `σ g = g`, i.e. `lam = 1`. So the cluster
+is stated on `X_0` but is only ever consumed on `X_1`, and an `X_1`-shaped
+leaf (no rational point of prime order `≥ 23`) would be strictly weaker
+than what is assumed here. That is a cut-level repair spanning
+declarations this owner does not own, so it is reported, not made.
+-/
+
+/-- **Mazur's formal-immersion theorem** (sorry leaf — the ONLY modular
+input to Mazur's isogeny theorem; Mazur, *Rational isogenies of prime
+degree*, Invent. Math. 44 (1978), Cor. 4.4): if `E/ℚ` carries a
+Galois-stable cyclic subgroup `⟨g⟩` of prime order `N > 19`, then `E` has
+potentially good reduction at every prime `q ∉ {2, N}` — equivalently
+`v_q(j(E)) ≥ 0`.
+
+Proof (not formalised): the pair `(E, ⟨g⟩)` is a non-cuspidal point
+`x ∈ X_0(N)(ℚ)`. Potentially multiplicative reduction at `q` means
+`v_q(j(x)) < 0`, so `x` reduces mod `q` to a cusp, and after the
+Atkin–Lehner involution to `∞`. Compose the Abel–Jacobi map based at `∞`
+with the quotient onto the Eisenstein quotient `J_e(N)`, which is a
+non-trivial optimal quotient of `J_0(N)` of Mordell–Weil rank `0` over
+`ℚ` (Mazur, IHÉS 47 (1977), Thm 4). Rank `0` plus injectivity of
+reduction on torsion gives `f(x) = f(∞)`; `f` is a formal immersion at
+`∞` in characteristic `q ≠ 2` because a normalised Hecke eigenform has
+`a₁ ≠ 0`; so `x = ∞`, contradicting non-cuspidality.
+
+This is the leaf that genuinely needs `X_0(N)`, `J_0(N)`, the Hecke
+algebra and the Eisenstein ideal — none of which exist in this
+development. Note that NONE of them appear in the statement. -/
+theorem WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g) :
+    ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j :=
+  sorry
+
+/-- **The isogeny signature** (sorry leaf — Serre's local theory at `N`
+together with Raynaud's classification; Serre, Invent. Math. 15 (1972),
+Prop. 5 and §5.4, and Raynaud, Bull. SMF 102 (1974), Cor. 3.4.4): for a
+rational cyclic subgroup of prime order `N > 19` with isogeny character
+`λ`, there is an integer `s ∈ {0, 4, 6, 8, 12}` — the *isogeny
+signature* — with `λ¹² = χ_N^s` as characters of `Gal(ℚ̄/ℚ)`, and if
+`s = 6` then `N ≡ 3 (mod 4)`.
+
+Proof (not formalised), in two halves.
+
+*At `N`.* If `E` has potentially multiplicative reduction at `N` it is a
+Tate curve or a quadratic twist of one, so `λ²|_{I_N}` is `1` or
+`χ²|_{I_N}`, and the claim follows on taking sixth powers. Otherwise `E`
+acquires good reduction over `K/ℚ_N` with `e = e(K/ℚ_N) ∈ {1,2,3,4,6}`;
+tame-inertia theory gives `λ|_{I_N} = χ^a|_{I_N}`, Raynaud gives
+`λ^e|_{I'_N} = χ^r|_{I'_N}` with `0 ≤ r ≤ e`, whence `ae ≡ r (mod N−1)`
+and `s = 12r/e`. Enumerating the admissible `(e, r)` — with `r` even
+when `e` is even — leaves `s ∈ {0,4,6,8,12}`, and `s = 6` only at
+`(e, r) = (4, 2)`, which forces `N ≡ 3 (mod 4)`.
+
+*Away from `N`.* `λ¹²` is unramified at every `q ≠ N`, in BOTH reduction
+types, so `λ¹²χ_N^{-s}` is unramified everywhere (including at `∞`,
+since `s` is even) and therefore trivial by class field theory —
+`ℚ` has no nontrivial everywhere-unramified abelian extension.
+
+This leaf is INDEPENDENT of the formal-immersion leaf: nothing here uses
+potentially good reduction away from `N`. -/
+theorem WeierstrassCurve.exists_isogenySignature
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g) :
+    ∃ s : ℕ, s ∈ ({0, 4, 6, 8, 12} : Finset ℕ) ∧
+      (∀ σ : Field.absoluteGaloisGroup ℚ,
+        lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ s) ∧
+      (s = 6 → N % 4 = 3) :=
+  sorry
+
+/-- **Signature `≠ 6` is impossible for `N ≥ 23`, `N ≠ 37`** (sorry leaf —
+the Frobenius/resultant elimination; Mazur 1978 §5, in the form of
+[Michaud-Jacobs, Prop. 4.3]). This is the ARITHMETIC leaf: no modular
+curve, no class field theory, just Frobenius traces and a finite integer
+computation.
+
+Proof (not formalised). Fix a prime `q ∈ {3, 5}`; both differ from `2`
+and from `N ≥ 23`, so `hpg` says `E` has potentially good reduction at
+`q`. Let `σ_q` be a Frobenius at `q`. Then `λ(σ_q)` is a root mod `N` of
+BOTH `X¹² − q^s` (by the signature hypothesis, since `χ_N(σ_q) = q`) and
+`X² − Tr ρ_{E,N}(σ_q) X + q` (it is an eigenvalue of `ρ_{E,N}(σ_q)`,
+whose determinant is `χ_N(σ_q) = q`). Potential good reduction at `q`
+makes `Tr ρ_{E,N}(σ_q)` the reduction of a RATIONAL integer `a` with
+`|a| ≤ 2√q` (Serre–Tate, Thm 3; Hasse–Weil after passing to the totally
+ramified extension over which `E` has good reduction). Two polynomials
+with a common root mod `N` have `N`-divisible resultant, so
+`N ∣ R_{q,s} := lcm_{|a| ≤ 2√q} Res(X² − aX + q, X¹² − q^s)`.
+
+The finite computation (values and factorisations in the section note
+above; they must be recomputed IN-KERNEL, PARI/GP was only the searcher):
+for `s ∈ {4, 8}`, `R(3,s)` has no prime factor `> 19`, contradicting
+`N ≥ 23` outright. For `s ∈ {0, 12}`, the primes `> 19` dividing `R(3,s)`
+are `{37, 97}` and those dividing `R(5,s)` are `{31,37,61,157,229}`;
+their intersection is `{37}`, excluded by `hN37`.
+
+`s = 6` is genuinely absent from the hypothesis rather than merely
+untreated: `X² − aX + q` and `X¹² − q⁶` always share a root over `ℂ` for
+some admissible `a` (already `a = 0` gives the common root `√−q`), so
+`R(q,6) = 0` for every `q` and the divisibility is vacuous. That case is
+the next leaf. -/
+theorem WeierstrassCurve.not_isogenyCharacter_of_isogenySignature_ne_six
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN23 : 23 ≤ N) (hN37 : N ≠ 37)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    (hpg : ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j)
+    {s : ℕ} (hs : s ∈ ({0, 4, 8, 12} : Finset ℕ))
+    (hsig : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ s) :
+    False :=
+  sorry
+
+/-- **Signature `6` forces class number one** (sorry leaf — the
+imaginary-quadratic branch; [Michaud-Jacobs, Prop. 4.4], and then
+Baker–Heegner–Stark): if the signature is `6` and `N ≥ 23`, then
+`N ∈ {43, 67, 163}`. These three are exactly the CM primes: a
+class-number-one curve with CM by the order of discriminant `−N` has a
+rational `N`-isogeny, since `N` ramifies.
+
+Proof (not formalised). Since `N ≡ 3 (mod 4)`, `ψ := λ·χ^{-(N+1)/4}`
+satisfies `ψ¹² = λ¹²/χ^6 = 1` and `ψ^{N-1} = 1`, so `ψ⁶ = 1` and
+`λ = ψ·χ^{(N+1)/4}`. Suppose `2 < q < N/4` is not inert in `ℚ(√−N)`;
+then `q^{(N+1)/2} ≡ q (mod N)`, and adding the resulting expressions for
+`λ²(σ_q)` and `(χλ^{-1})²(σ_q)` gives
+`Tr ρ(σ_q)² − 2q = q(ψ²(σ_q) + ψ^{-2}(σ_q))`, whose right side is `2q` or
+`−q` because `ψ²(σ_q)` is a cube root of unity. So
+`N ∣ Tr ρ(σ_q)² − rq` with `r ∈ {1, 4}`, contradicting `|Tr| ≤ 2√q` and
+`4q < N`. Hence every odd-norm prime ideal of norm in `(2, N/4)` is
+principal, and an explicit element of norm `2(1+2t)` handles the primes
+above `2`. The Minkowski bound `2√N/π` is `< N/4` for `N > 19`, so
+`ℚ(√−N)` has class number `1`; the Baker–Heegner–Stark classification and
+`N ≡ 3 (mod 4)` then give `N ∈ {3,7,11,19,43,67,163}`, and `N ≥ 23`
+leaves `{43,67,163}`.
+
+The class-number-one theorem is a deep input, but it is a DIFFERENT deep
+input from the Eisenstein ideal, and it is the one that produces three of
+the four exceptional primes. -/
+theorem WeierstrassCurve.mem_classNumberOnePrimes_of_isogenySignature_six
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN23 : 23 ≤ N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    (hpg : ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j)
+    (hsig : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ 6)
+    (hmod : N % 4 = 3) :
+    N ∈ ({43, 67, 163} : Finset ℕ) :=
+  sorry
+
+/-- **Mazur's rational isogenies of prime degree** (PROVEN 2026-07-26 as
+an assembly over the four leaves above — the
 prime half of the `X_0` input, restated 2026-07-25 in isogeny-character
 form and narrowed to the range that is actually open): there is NO
 elliptic curve `E/ℚ` carrying a geometric point `g` of exact prime order
@@ -565,21 +836,20 @@ and (b) is a bounded-away non-existence statement over the range where
 the argument has content, instead of a membership assertion quantified
 over all primes.
 
-IRREDUCIBLE at this mathlib pin: the proof is the Eisenstein-ideal
-descent on `J_0(N)` — it studies the Eisenstein quotient of the
-Jacobian, shows it has Mordell–Weil rank `0` over `ℚ`, and reads the
-rational points of `X_0(N)` off that. No modular curve, no Jacobian and
-no Hecke algebra exists in this development. The missing machinery, in
-dependency order for whoever continues here: (1) the mod-`N` cyclotomic
-character together with the Weil-pairing identity `λ · λ' = χ` on
-`E[N]`, where `λ'` is the character on `E[N]/⟨g⟩`; (2) inertia at `N`
-and Serre's theorem that `λ¹²` is unramified outside `N`, whence
-`λ¹² = χ¹²ᵃ`; (3) `X_0(N)`, `J_0(N)`, the Hecke algebra and the
-Eisenstein ideal. Steps (1)–(2) are Serre's reduction: they sharpen this
-node but do not close it — historically they bounded `N` for curves
-without CM and never yielded the exact list, which is precisely the gap
-Mazur's Eisenstein-ideal argument filled — so (3) is the real
-dependency.
+AUDIT SUPERSEDED (2026-07-26). The previous docstring said this node was
+"IRREDUCIBLE at this mathlib pin" because "the proof IS the
+Eisenstein-ideal descent on `J_0(N)`", and dismissed Serre's reduction as
+something that "sharpens this node but does not close it". That is not
+how Mazur's proof is organised. Serre's reduction is step 1 of four, and
+once step 0 (the formal-immersion theorem) is available the remaining two
+steps close the theorem outright — one by a finite resultant computation,
+one by Minkowski-bound algebraic number theory plus Baker–Heegner–Stark.
+The Eisenstein ideal is needed for exactly ONE of the four leaves, and
+that leaf's STATEMENT mentions only the `q`-adic valuation of the
+`j`-invariant. The old audit also omitted the class-number-one theorem
+entirely, although it is what produces `43, 67, 163`. See the section
+note above for the anatomy, the literature, and the PARI/GP verification
+of both the resultants and the exclusion list.
 
 This is the same theorem of Mazur that `no_prime_torsion_ge_eleven`
 cites; the two nodes are stated separately because neither implies the
@@ -597,8 +867,34 @@ theorem WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree
       Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
         ((lam σ : ZMod N).val) • g) :
-    False :=
-  sorry
+    False := by
+  have hN19 : 19 < N := by omega
+  simp only [Finset.mem_insert, Finset.mem_singleton, not_or] at hNexc
+  obtain ⟨h37, h43, h67, h163⟩ := hNexc
+  -- Step 0: Mazur's formal-immersion theorem — potentially good reduction
+  -- away from `2` and `N`, which is what licenses the Frobenius traces at
+  -- `q = 3, 5` below.
+  have hpg := E.potentiallyGoodReduction_of_isogenyCharacter g hN hN19 hg lam hlam
+  -- Step 1: Serre–Raynaud — the isogeny signature `s`.
+  obtain ⟨s, hsmem, hsig, hs6⟩ := E.exists_isogenySignature g hN hN19 hg lam hlam
+  simp only [Finset.mem_insert, Finset.mem_singleton] at hsmem
+  rcases hsmem with rfl | rfl | rfl | rfl | rfl
+  -- `s = 0`, `4`, `8`, `12`: the resultant elimination, which leaves only `N = 37`.
+  · exact E.not_isogenyCharacter_of_isogenySignature_ne_six g hN hN23 h37 hg lam hlam hpg
+      (by decide) hsig
+  · exact E.not_isogenyCharacter_of_isogenySignature_ne_six g hN hN23 h37 hg lam hlam hpg
+      (by decide) hsig
+  -- `s = 6`: the resultants vanish identically, and the class-number-one
+  -- branch leaves only `43, 67, 163`.
+  · have h := E.mem_classNumberOnePrimes_of_isogenySignature_six g hN hN23 hg lam hlam hpg
+      hsig (hs6 rfl)
+    simp only [Finset.mem_insert, Finset.mem_singleton] at h
+    rcases h with rfl | rfl | rfl
+    exacts [h43 rfl, h67 rfl, h163 rfl]
+  · exact E.not_isogenyCharacter_of_isogenySignature_ne_six g hN hN23 h37 hg lam hlam hpg
+      (by decide) hsig
+  · exact E.not_isogenyCharacter_of_isogenySignature_ne_six g hN hN23 h37 hg lam hlam hpg
+      (by decide) hsig
 
 /-- **Mazur's rational isogenies of prime degree** (PROVEN 2026-07-25
 from the isogeny-character node above; the prime half of the `X_0`
