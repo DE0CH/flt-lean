@@ -85,19 +85,29 @@ Three consequences shape everything below.
 ## FAITHFULNESS AUDIT
 
 There are exactly three claim-shapes here, and each is true.  Shapes 1
-and 3 are single sorry nodes; shape 2 is now a proven bridge over two
-sorried inputs:
+and 2 are now proven, each over strictly fewer sorried inputs than the
+node it replaced; shape 3 is the twelve remaining sorry nodes:
 
 1. `exists_coarseModuliY0 N` — the `Γ₀(N)`-moduli problem over `ℚ` admits
    a coarse moduli space.  TRUE: this is the classical existence
    statement for `Y_0(N)` (Deligne–Rapoport, Katz–Mazur; or classically
    via the `j`-line and the modular polynomial).  It is now PROVEN from a
    split of the level: `exists_coarseModuliY0_of_pos` (`N ≥ 1`) carries
-   the citation — Katz–Mazur Theorem 6.6.1 and (8.1.1), together with a
-   faithfulness audit of the one place where this module's level
-   structure is weaker than theirs — and `exists_coarseModuliY0_zero`
-   disposes of `N = 0`, which lies outside their theorem, from the
-   elementary leaf `isEmpty_of_gamma0Datum_zero`.
+   the citation — Katz–Mazur Theorem 6.6.1 and (8.1.1) — and
+   `exists_coarseModuliY0_zero` disposes of `N = 0`, which lies outside
+   their theorem, from `isEmpty_of_gamma0Datum_zero` — itself PROVEN
+   2026-07-26, so the `N = 0` half of this shape is now sorry-free
+   outright and the citation at `_of_pos` is the only remaining input.
+
+   The audit at `exists_coarseModuliY0_of_pos` used to record one place
+   where this module's level structure was *weaker* than Katz–Mazur's,
+   and hence one place where the moduli problem here was strictly larger
+   than `[Γ₀(N)]` and the citation did not literally apply.  **That is
+   repaired as of 2026-07-26**: `CyclicSubgroupOfOrder` now carries a
+   `flat` field, so the level structure is finite *locally free* in
+   Katz–Mazur's sense (6.7.1) and the two moduli problems agree over
+   `(Ell/ℚ)`.  See the docstring of `CyclicSubgroupOfOrder` for the
+   `Spec ℚ[ε]` counterexample that the field excludes.
 
 2. The bridge from the Weierstrass phrasing to the moduli problem.  This
    was one node, `nonempty_gamma0Datum_of_stable`; it is now PROVEN
@@ -169,6 +179,23 @@ module
 public import Fermat.FLT.Modularity.AbelianScheme
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
 public import Mathlib.AlgebraicGeometry.Morphisms.Finite
+-- `AlgebraicGeometry.Flat`: the flatness half of "finite locally free", which
+-- is what makes `CyclicSubgroupOfOrder` the Katz–Mazur moduli problem
+-- `[Γ₀(N)]` rather than a strictly larger one.  See the `flat` field of
+-- `CyclicSubgroupOfOrder` and the faithfulness audit of
+-- `exists_coarseModuliY0_of_pos`.
+public import Mathlib.AlgebraicGeometry.Morphisms.Flat
+-- The finiteness of the `K`-points of a finite scheme over a geometric
+-- point, which is what makes `isEmpty_of_gamma0Datum_zero` reachable:
+-- `LocallyQuasiFinite` and `IsLocallyArtinian.of_locallyQuasiFinite`,
+-- `IsArtinianScheme.finite`, and `pointEquivClosedPoint`.
+public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
+public import Mathlib.AlgebraicGeometry.Artinian
+public import Mathlib.AlgebraicGeometry.AlgClosed.Basic
+-- `Scheme.residueField` / `Scheme.fromSpecResidueField`, used to produce a
+-- geometric point above an arbitrary point of the base.
+public import Mathlib.AlgebraicGeometry.ResidueField
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 -- The group law on `(E⁄K).Point` needs `DecidableEq K`, and the classical
 -- instance for `AlgebraicClosure ℚ` — the one every torsion statement in
@@ -222,15 +249,43 @@ def RelPoint.along {E' T' E T : Scheme.{u}} {f' : E' ⟶ T'} {f : E ⟶ T}
 
 /-- **A cyclic subgroup scheme of order `N` of an abelian scheme.**
 
-The data is a closed subscheme `ι : C ⟶ E`, finite over the base, whose
-relative points form a subgroup of the relative points of `E` at every
-base point, and whose geometric fibres are cyclic of order exactly `N`.
+The data is a closed subscheme `ι : C ⟶ E`, **finite and flat** over the
+base, whose relative points form a subgroup of the relative points of `E`
+at every base point, and whose geometric fibres are cyclic of order
+exactly `N`.
 
-Three remarks on the axioms.
+Four remarks on the axioms.
 
 * Closedness and finiteness are what make this a subgroup *scheme*
   rather than a subfunctor; see the module docstring for why that
   distinction is load-bearing for faithfulness.
+* **`flat` is not decoration; it is what makes this the Katz–Mazur
+  moduli problem.**  Katz–Mazur **(6.7.1)** (p. 167) define a *cyclic
+  group of order `N`* to be a "finite locally free commutative
+  `S`-group-scheme, of rank `N`, and cyclic", and `IsFinite` together
+  with `Flat` is exactly finite locally free (a finitely presented flat
+  module is projective, and finite projective over a commutative ring is
+  locally free).  Dropping flatness — as this structure did until
+  2026-07-26 — makes the moduli problem STRICTLY LARGER than `[Γ₀(N)]`,
+  so that the coarse-space existence theorem cited at
+  `exists_coarseModuliY0_of_pos` does not apply to it.  The gap is real
+  rather than notional, and here is the witness that was recorded when
+  it was found:
+
+  > Over `T = Spec ℚ[ε]` take `E = E₀ ×_ℚ ℚ[ε]` and a rational point `P`
+  > of exact order `2` on `E₀`.  Then `C = Spec(ℚ[ε] × ℚ)` — the zero
+  > section together with the *non-flat* thickening `ℚ[ε] ↠ ℚ` of the
+  > `P`-component of `E[2]` — is closed in `E`, finite over `T`,
+  > contains the zero section, and is closed under the group law
+  > (`P + P = 0`), and its unique geometric fibre is `ℤ/2`.  Without
+  > `flat` that is a `CyclicSubgroupOfOrder` of order `2` which is not a
+  > Katz–Mazur `[Γ₀(2)]`-structure.  With `flat` it is excluded, because
+  > `ℚ[ε] × ℚ` is not a flat `ℚ[ε]`-module.
+
+  Note that the witness is *non-reduced over the base*, which is why the
+  omission was invisible at every base this development actually
+  evaluates the moduli problem at — and why it had to be repaired in the
+  interface rather than worked around at a leaf.
 * The subgroup conditions are stated at *every* base point `g : T' ⟶ T`,
   which is the functor-of-points way of saying that the group law of `E`
   restricts to `C`; no naturality is required because `LiesIn` is a
@@ -241,7 +296,20 @@ Three remarks on the axioms.
   `C` in a cyclic group of order `N`.  In residue characteristic `0` —
   the only case used here — this is equivalent to `C` being finite étale
   with cyclic geometric fibres, so nothing is lost by phrasing it
-  pointwise. -/
+  pointwise.
+
+**Why `geom_cyclic` and not a `rank = N` field.**  Katz–Mazur pin the
+*rank* of the finite locally free group scheme; this structure pins the
+*cardinality of the geometric fibres*.  Over a base in which `N` is
+invertible — in particular over any `ℚ`-scheme, which is the only case
+the modular-curve layer evaluates — a finite flat group scheme is étale
+(Cartier's theorem; Waterhouse, *Introduction to Affine Group Schemes*,
+Thm. 11.4, or Tate, *Finite flat group schemes*, §3.7 in
+Cornell–Silverman–Stevens), so its rank equals the number of points of
+any geometric fibre and the two conditions agree.  Carrying the fibre
+condition rather than the rank keeps the level structure statable
+without `Scheme.Hom.finrank`, and is the form the descent leaf
+`exists_cyclicSubgroupOfOrder_of_galoisStable` naturally produces. -/
 structure CyclicSubgroupOfOrder {E T : Scheme.{u}} {f : E ⟶ T}
     (ab : AbelianSchemeStruct f) (N : ℕ) where
   /-- the underlying scheme of the subgroup -/
@@ -252,6 +320,9 @@ structure CyclicSubgroupOfOrder {E T : Scheme.{u}} {f : E ⟶ T}
   isClosedImmersion : IsClosedImmersion ι
   /-- the subgroup scheme is finite over the base -/
   isFinite : IsFinite (ι ≫ f)
+  /-- the subgroup scheme is flat over the base; together with `isFinite`
+  this is Katz–Mazur's "finite locally free" -/
+  flat : AlgebraicGeometry.Flat (ι ≫ f)
   /-- the zero section lies in `C` -/
   zero_liesIn : ∀ {T' : Scheme.{u}} (g : T' ⟶ T),
     RelPoint.LiesIn ι (ab.zero g)
@@ -382,8 +453,11 @@ def Y0HasNoRationalPoint (N : ℕ) : Prop :=
 
 /-! ### The existence of `Y_0(N)`, and the bridge from Weierstrass curves -/
 
-/-- **The `Γ₀(0)`-moduli problem is supported on the empty scheme** (sorry
-leaf).
+/-! ### The degenerate level `N = 0`
+
+**The `Γ₀(0)`-moduli problem is supported on the empty scheme** — PROVEN
+2026-07-26; this subsection was a single sorry leaf until then, and the
+argument recorded here by its finder is the one that was carried out.
 
 TRUE, and *elementary* — no modular-curve theory enters.  Suppose
 `d : Gamma0Datum 0 T` and `T` had a point `x`.  Embedding the residue field
@@ -407,10 +481,113 @@ REACHABLE.  Formalising the argument needs exactly three things, all
 present: stability of `IsFinite` under base change
 (`AlgebraicGeometry.IsFinite` is an `IsStableUnderBaseChange` morphism
 property), affineness of a scheme finite over a field, and the finiteness of
-the set of `K`-algebra maps out of an Artinian `K`-algebra. -/
+the set of `K`-algebra maps out of an Artinian `K`-algebra.
+
+PROVEN 2026-07-26, along exactly those lines, from the two helper lemmas
+`finite_sections_of_isFinite` and `infinite_zmultiples_of_addOrderOf_eq_zero`
+below. -/
+
+/-- **The sections of a finite morphism over a fixed geometric point are
+finite in number.**
+
+For `g : C ⟶ T` finite and `t : Spec K ⟶ T` a geometric point (`K`
+algebraically closed), the `K`-points of `C` lying over `t` form a finite
+set.
+
+The proof is the classical one, and every step is mathlib API: `IsFinite`
+is stable under base change, so `C ×_T Spec K` is finite over `Spec K`; a
+quasi-finite quasi-compact scheme over an artinian one is artinian
+(`IsLocallyArtinian.of_locallyQuasiFinite`), and an artinian scheme has a
+finite underlying space (`IsArtinianScheme.finite`); and
+`AlgebraicGeometry.pointEquivClosedPoint` identifies the sections of a
+morphism of locally finite type to `Spec K` with the closed points of its
+source.  A `K`-point of `C` over `t` induces such a section by the
+universal property of the pullback, injectively. -/
+theorem finite_sections_of_isFinite {C T : Scheme.{u}} (g : C ⟶ T) [IsFinite g]
+    {K : Type u} [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T) :
+    Finite {w : Spec (CommRingCat.of K) ⟶ C // w ≫ g = t} := by
+  classical
+  let P : Scheme.{u} := Limits.pullback g t
+  let π : P ⟶ Spec (CommRingCat.of K) := Limits.pullback.snd g t
+  -- `IsFinite` is stable under base change, so the fibre is finite over `Spec K`.
+  haveI : IsFinite π := inferInstanceAs (IsFinite (Limits.pullback.snd g t))
+  -- A quasi-finite, quasi-compact scheme over an artinian one is artinian,
+  -- hence has a finite underlying space.
+  haveI : IsLocallyArtinian P := IsLocallyArtinian.of_locallyQuasiFinite π
+  haveI : CompactSpace P := QuasiCompact.compactSpace_of_compactSpace π
+  haveI : IsArtinianScheme P := ⟨⟩
+  haveI : Finite P := IsArtinianScheme.finite
+  -- A section of `π` is determined by the closed point of `P` it hits, and a
+  -- `K`-point of `C` over `t` induces such a section.
+  refine Finite.of_injective
+    (fun w => (pointEquivClosedPoint π)
+      ⟨Limits.pullback.lift w.1 (𝟙 _) (by rw [Category.id_comp]; exact w.2),
+        Limits.pullback.lift_snd _ _ _⟩) ?_
+  intro w₁ w₂ h
+  have h2 := congrArg Subtype.val ((pointEquivClosedPoint π).injective h)
+  refine Subtype.ext ?_
+  have h3 := congrArg (· ≫ Limits.pullback.fst g t) h2
+  simp only [Limits.pullback.lift_fst] at h3
+  exact h3
+
+/-- **An element of infinite additive order generates an infinite
+subgroup.** `Nat.card` of `zmultiples y` is `addOrderOf y`, and a `Nat.card`
+of `0` on a nonempty type means infinite. -/
+theorem infinite_zmultiples_of_addOrderOf_eq_zero {G : Type u} [AddCommGroup G]
+    (y : G) (h : addOrderOf y = 0) : Infinite (AddSubgroup.zmultiples y) := by
+  have hc := Nat.card_zmultiples y
+  rw [h] at hc
+  exact (Nat.card_eq_zero.mp hc).resolve_left (not_isEmpty_iff.mpr ⟨0⟩)
+
+/-- **The `Γ₀(0)`-moduli problem is supported on the empty scheme**
+(PROVEN 2026-07-26; formerly a sorry leaf).
+
+`[Γ₀(N)]` is a moduli problem only for `N ≥ 1`, so this degenerate level
+lies outside the Katz–Mazur theorem cited at
+`exists_coarseModuliY0_of_pos`; separating it off is what makes that
+citation honest.  See the section comment above for the full argument and
+for why the split exists. -/
 theorem isEmpty_of_gamma0Datum_zero {T : Scheme.{0}} (d : Gamma0Datum 0 T) :
-    IsEmpty T :=
-  sorry
+    IsEmpty T := by
+  classical
+  by_contra hne
+  rw [not_isEmpty_iff] at hne
+  obtain ⟨x⟩ := hne
+  -- A geometric point of `T` above `x`: the algebraic closure of the residue
+  -- field at `x`.
+  let K := AlgebraicClosure (T.residueField x)
+  let t : Spec (CommRingCat.of K) ⟶ T :=
+    Spec.map (CommRingCat.ofHom (algebraMap (T.residueField x) K)) ≫
+      T.fromSpecResidueField x
+  -- `geom_cyclic` states its conclusion under `ab.addCommGroup t`; bring that
+  -- instance into the context so `addOrderOf` and `zmultiples` elaborate here.
+  letI := d.ab.addCommGroup t
+  obtain ⟨y, -, hyord, hyall⟩ := d.cyc.geom_cyclic K t
+  -- The level structure has infinite order at this geometric point …
+  haveI : Infinite (AddSubgroup.zmultiples y) :=
+    infinite_zmultiples_of_addOrderOf_eq_zero y hyord
+  -- … yet every element of `⟨y⟩` gives a distinct `K`-point of `d.cyc.C`
+  -- over `t`, and those are finite in number because `d.cyc.ι ≫ d.f` is
+  -- a finite morphism.
+  haveI := d.cyc.isFinite
+  haveI : Finite {w : Spec (CommRingCat.of K) ⟶ d.cyc.C //
+      w ≫ (d.cyc.ι ≫ d.f) = t} := finite_sections_of_isFinite _ t
+  have hex : ∀ z : AddSubgroup.zmultiples y,
+      ∃ w : Spec (CommRingCat.of K) ⟶ d.cyc.C, w ≫ d.cyc.ι = (z.1 : _ ⟶ d.E) :=
+    fun z => (hyall z.1).mpr z.2
+  choose w hw using hex
+  have hspec : ∀ z : AddSubgroup.zmultiples y, w z ≫ (d.cyc.ι ≫ d.f) = t := by
+    intro z
+    rw [← Category.assoc, hw z]
+    exact z.1.2
+  haveI : Finite (AddSubgroup.zmultiples y) := by
+    refine Finite.of_injective (fun z => (⟨w z, hspec z⟩ :
+      {w : Spec (CommRingCat.of K) ⟶ d.cyc.C // w ≫ (d.cyc.ι ≫ d.f) = t})) ?_
+    intro z₁ z₂ hz
+    have h1 : w z₁ = w z₂ := congrArg Subtype.val hz
+    refine Subtype.ext (Subtype.ext ?_)
+    rw [← hw z₁, ← hw z₂, h1]
+  exact not_finite (AddSubgroup.zmultiples y)
 
 /-- **Existence of the coarse moduli space, degenerate level `N = 0`**
 (PROVEN, from `isEmpty_of_gamma0Datum_zero`).
@@ -500,39 +677,47 @@ against the text).
 * *`N ≥ 1`.*  `[Γ₀(N)]` is defined only for `N ≥ 1`; the level `N = 0` is
   handled separately and degenerately by `exists_coarseModuliY0_zero`.
 
-## FAITHFULNESS AUDIT: one genuine mismatch, and why it is harmless
+## FAITHFULNESS AUDIT: the one mismatch, and its REPAIR (2026-07-26)
 
 Katz–Mazur **(6.7.1)** (p. 167) define a *cyclic group of order `N`* to be
 a "finite locally free commutative `S`-group-scheme, of rank `N`, and
-cyclic".  `CyclicSubgroupOfOrder` above asks instead for a closed subgroup
-scheme that is **finite** over the base with **geometric fibres** cyclic of
-order `N`; it does **not** ask for flatness.  Over a non-reduced base these
-differ, and the gap is real rather than notional:
+cyclic".
 
-> Over `T = Spec ℚ[ε]` take `E = E₀ ×_ℚ ℚ[ε]` and a rational point `P` of
-> exact order `2` on `E₀`.  Then `C = Spec(ℚ[ε] × ℚ)` — the zero section
-> together with the *non-flat* thickening `ℚ[ε] ↠ ℚ` of the `P`-component
-> of `E[2]` — is closed in `E`, finite over `T`, contains the zero section,
-> and is closed under the group law (`P + P = 0`), and its unique geometric
-> fibre is `ℤ/2`.  So it is a `CyclicSubgroupOfOrder` of order `2` that is
-> not a Katz–Mazur `[Γ₀(2)]`-structure.
+Until 2026-07-26 `CyclicSubgroupOfOrder` asked only for a closed subgroup
+scheme **finite** over the base with **geometric fibres** cyclic of order
+`N` — it did **not** ask for flatness.  That made the moduli problem here
+strictly *larger* than `[Γ₀(N)]`, so the theorem cited above did not
+literally apply to it, and the gap was real rather than notional: over
+`T = Spec ℚ[ε]` the non-flat thickening `C = Spec(ℚ[ε] × ℚ)` of a
+`2`-torsion component satisfied every axiom and is not a KM
+`[Γ₀(2)]`-structure.  The counterexample is written out in full in the
+docstring of `CyclicSubgroupOfOrder`, where it now serves as the
+justification for the axiom rather than as an open defect.
 
-So the moduli problem here is a priori *larger* than `[Γ₀(N)]`, and the
-cited theorem does not literally apply to it.  It does apply after one
-extra step, which a successor closing this node must supply: over a
-`ℚ`-scheme `E[N]` is finite étale, the support of such a `C` is open and
-closed in `E[N]` (its geometric fibres all have exactly `N` points), and
-the corresponding open-and-closed subgroup scheme is a canonical finite
-locally free "flatification" `C ⊆ C^♭ ⊆ E[N]` with the same geometric
-fibres, formed compatibly with base change.  Flatification is therefore a
-natural retraction of this moduli problem onto `[Γ₀(N)]`, and a natural
-transformation out of one is the same thing as a natural transformation out
-of the other — so the two problems have the same coarse space and the
-citation transfers.
+**The repair was made in the interface**, which is where it belonged: the
+field `CyclicSubgroupOfOrder.flat` requires `AlgebraicGeometry.Flat
+(ι ≫ f)`, so the level structure is finite *and* flat over the base,
+i.e. finite locally free.  A flatification retraction — the route a
+successor would otherwise have had to supply — is no longer needed, and
+the earlier plan to build one (`C ⊆ C^♭ ⊆ E[N]`, open and closed in the
+`N`-torsion, formed compatibly with base change) is retired rather than
+merely deferred.
 
-This mismatch is recorded rather than repaired because repairing it means
-adding a flat variant of `CyclicSubgroupOfOrder` to the interface, which is
-a change to the moduli problem itself and not to this node.
+**What remains, and why it is not a mismatch.**  KM pin the *rank*;
+`geom_cyclic` pins the *number of points of each geometric fibre*.  Over
+a `ℚ`-scheme — and every base at which `IsCoarseModuliY0 N (str : Y ⟶
+SpecQ)` evaluates the problem is a `ℚ`-scheme, since a datum comes with
+a structure map `g : T ⟶ SpecQ` — a finite flat group scheme is étale by
+Cartier's theorem, so rank and geometric-fibre cardinality coincide, and
+"cyclic" in KM's fppf-local sense coincides with cyclicity of the
+geometric fibres.  So over `(Ell/ℚ)` the two moduli problems are the
+same, and the citation applies to this one on the nose.
+
+The step in that paragraph — Cartier's theorem — is a *statement about
+the citation's hypotheses*, not a hidden lemma of the formalisation:
+nothing below consumes it, and it is recorded so that a successor
+closing this node knows precisely which classical fact reconciles the
+two phrasings.
 
 ## Why it is IRREDUCIBLE at this pin
 
@@ -672,7 +857,18 @@ What is ABSENT, and is the actual content of this leaf:
 So the honest cut for a successor is: build the reduced induced
 structure, or go through `CommAlgCat.FiniteEtale` on affines and glue.
 The algebra-side scaffolding is fresher than the module docstring's
-"no modular curves anywhere" survey would suggest. -/
+"no modular curves anywhere" survey would suggest.
+
+**NOTE ON THE `flat` FIELD** (added to `CyclicSubgroupOfOrder`
+2026-07-26, when the level structure was corrected to Katz–Mazur's
+"finite locally free").  This leaf now owes a proof of
+`AlgebraicGeometry.Flat (ι ≫ f)` as well, and that costs it **nothing**:
+the base here is `SpecQ = Spec ℚ`, a field, over which every module is
+flat.  So the extra field is discharged by flatness of `C` as a
+`ℚ`-scheme, whichever construction of `C` a successor chooses, and no
+part of the descent argument above has to change.  The strengthening of
+the interface is paid for entirely by the *general-base* consumers, not
+here. -/
 theorem exists_cyclicSubgroupOfOrder_of_galoisStable {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
