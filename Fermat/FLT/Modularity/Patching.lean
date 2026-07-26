@@ -5512,7 +5512,75 @@ Hecke-module input; abstractly the hypothesis set contains the
 classically unsatisfiable irreducible hardly ramified `ρbar` (section
 audit of `Interface.lean`), so the statement is also classically true
 outright.  CIRCULARITY GUARD (inherited from pillar 3b): must not be
-proven through `Family.lean` or anything downstream of it. -/
+proven through `Family.lean` or anything downstream of it.
+
+**INTERFACE OBSTRUCTION — READ BEFORE ATTEMPTING THIS LEAF**
+(2026-07-25, mechanically verified in Lean against the real
+`TaylorWilesLevelRaw`; the obstruction is NOT specific to this leaf,
+it is a property of the raw/native level interface and it hits
+`exists_taylorWilesLevelRaw` identically).
+
+The conclusion of this leaf, together with this leaf's OWN hypothesis
+`hπuniv : Function.Surjective πuniv`, implies
+
+    Nonempty (k ≃+* ZMod p)
+
+i.e. it forces the residual field to have exactly `p` elements.
+Derivation (each step is a one-liner over mathlib):
+
+* `L.pres : ℤ_p[[S_1,…,S_q]] →+* L.R` and `L.toRuniv : L.R →+* Runiv`
+  are both SURJECTIVE fields of the structure, so
+  `πuniv ∘ L.toRuniv ∘ L.pres : ℤ_p[[S_1,…,S_q]] ↠ k` is a surjective
+  ring hom onto a field;
+* its kernel is maximal (`RingHom.ker_isMaximal_of_surjective`), and
+  `MvPowerSeries (Fin q) ℤ_[p]` is LOCAL (mathlib's
+  `MvPowerSeries.instIsLocalRing` over the local `ℤ_[p]`), so that
+  kernel IS the maximal ideal (`IsLocalRing.eq_maximalIdeal`);
+* `g - C (constantCoeff g)` has zero constant coefficient, hence is a
+  non-unit (`MvPowerSeries.isUnit_constantCoeff`), hence lies in that
+  maximal ideal — so already `ℤ_[p] →+* k`, `x ↦ φ (C x)`, is
+  surjective;
+* therefore `k ≃+* ℤ_[p] ⧸ maximalIdeal ℤ_[p] ≃+* ZMod p`
+  (`RingHom.quotientKerEquivOfSurjective`, `PadicInt.residueField`).
+
+But `k` is assumed only `[Field k] [Finite k] [Algebra ℤ_[p] k]`, and
+NOTHING in the hypothesis set pins `Nat.card k = p`: the Hecke-side
+package `T = W(𝔽_{p²})` satisfies every typeclass hypothesis on `T`
+(finite free local `ℤ_p`-algebra) with residue field `𝔽_{p²}`.  So
+this leaf is dischargeable only (i) through the classically EMPTY
+arithmetic hypotheses — i.e. by proving that no irreducible hardly
+ramified `ρbar` exists, which is the whole theorem — or (ii) after the
+interface is repaired.  It is NOT dischargeable by the classical
+Taylor–Wiles construction, which produces its presentation over
+`𝒪 = W(k)`, not over `ℤ_p`.
+
+ROOT CAUSE: the structures `TaylorWilesLevelRaw`, `TaylorWilesLevel`,
+`TaylorWilesTower` and `TaylorWilesSystem` hardcode
+`MvPowerSeries (Fin q) ℤ_[p]` in BOTH of its roles — the
+diamond-operator coordinate ring `Λ = 𝒪[Δ_{Q_n}]`-approximation and
+the deformation-ring presentation ring `R_∞`.  Classically both are
+`𝒪[[·]]` for the coefficient ring `𝒪 = W(k)`; the `ℤ_p` form is
+correct exactly when `k = 𝔽_p`.
+
+REPAIR, cut-level, not made here (two options, in increasing cost):
+(a) pin the residual field: add `(hk : Nat.card k = p)` — equivalently
+    `Nonempty (k ≃+* ZMod p)` — to this leaf and to
+    `exists_taylorWilesLevelRaw`, and thread it through
+    `exists_taylorWilesTower`, `exists_taylorWilesSystem`,
+    `exists_patchedModule`, `injective_ringHom_of_isWeaklyUniversal`
+    and the two `Interface.lean` call sites.  This is honest for FLT:
+    the Frey-curve residual representation lives on `E[p]` over
+    `ZMod p`, so the hypothesis is dischargeable at the root.
+(b) generalize the coefficient ring of the whole patching interface
+    from `ℤ_[p]` to a coefficient ring `𝒪` (complete DVR, finite free
+    over `ℤ_[p]`, residue field `k` — classically `WittVector p k`),
+    which also means regeneralizing
+    `exists_isRegular_ofList_eq_maximalIdeal_padicInt`,
+    `exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`,
+    `free_of_isRegular_mvPowerSeries` and the `PatchingVendored`
+    ultraproduct/extraction chain.  This keeps the interface faithful
+    for arbitrary residual fields and does not touch `Interface.lean`.
+-/
 theorem exists_taylorWilesBottomLevel.{s, t, uK, uW, uR}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
