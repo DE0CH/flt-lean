@@ -56,7 +56,11 @@ together with the assemblies of `velu_isElliptic` and `velu_map_add` over
 the leaves below; and the `±`-paired addition law identifying the group-law
 sums with Vélu's classical rational functions (`velu_pair_X`, `velu_pair_Y`,
 `velu_coordX_eq`, `velu_coordY_eq`), which proves `velu_equation` over the
-single leaf `velu_equation_pole`.
+single leaf `velu_pole_identity` — since 2026-07-26 `velu_equation_pole`
+itself is PROVEN, by completing the square and factoring
+`2Y + a₁X + a₃ = (2y + a₁x + a₃)(1 − Σ veluPoleV)` (`velu_pole_V`,
+`velu_two_poleY_add_poleX`), which eliminates `y` from the quotient equation
+outright and leaves a one-variable identity.
 
 Also PROVEN, 2026-07-26:
 
@@ -75,8 +79,9 @@ Also PROVEN, 2026-07-26:
 SORRY LEAVES (three, each stated over an arbitrary field of characteristic
 zero for a finite subgroup of odd order):
 
-* `WeierstrassCurve.velu_equation_pole` — the pole-form coordinates satisfy
-  the quotient equation (the rational-function verification of Vélu 1971).
+* `WeierstrassCurve.velu_pole_identity` — the `y`-free rational-function
+  identity in `x` alone that remains of the verification of Vélu 1971 after
+  `velu_equation_pole` has completed the square.
 * `WeierstrassCurve.velu_coordX_twoTorsion_ne` — the Vélu `x`-coordinates
   of two distinct `2`-torsion points outside the kernel differ.
 * `WeierstrassCurve.velu_map_add_of_notMem` — additivity in the generic
@@ -611,6 +616,131 @@ lemma velu_coordY_eq {S : Finset W.Point} (hS : IsPointSubgroup S) {P : W.Point}
   rw [veluCoordY, ← Finset.sum_sub_distrib]
   simpa only [add_zero, veluPointY_zero, sub_zero] using h
 
+/-! ### Eliminating `y` from the quotient equation -/
+
+omit [CharZero F] in
+/-- The `V`-part of Vélu's pole expansion at a kernel point `Q`:
+
+  `u_Q/(x − x_Q)³ + t_Q/(2(x − x_Q)²)`,
+
+with the junk value `0` at the point at infinity (where `t_0 = u_0 = 0`).
+
+Its role is `velu_pole_V`: the completed square `V := 2Y + a₁X + a₃` of the Vélu
+coordinates factors as `V = (2y + a₁x + a₃)·(1 − Σ_{Q ∈ S} veluPoleV)`. Analytically this
+is `−½ d/dx` of Vélu's `x`-expansion, but no derivative is needed — the factorisation is
+the termwise field identity `velu_two_poleY_add_poleX`, in which `t_Q` and `u_Q` are free
+atoms. -/
+def veluPoleV (W : Affine F) (x : F) (Q : W.Point) : F :=
+  veluUTerm W Q / (x - veluPointX Q) ^ 3 + veluTTerm W Q / (2 * (x - veluPointX Q) ^ 2)
+
+omit [DecidableEq F] [CharZero F] in
+@[simp] lemma veluPoleV_zero (x : F) : veluPoleV W x (0 : W.Point) = 0 := by
+  simp [veluPoleV]
+
+omit [DecidableEq F] in
+/-- **Termwise elimination of `y`** (PROVEN):
+
+  `2·veluPoleY + a₁·veluPoleX = −2(2y + a₁x + a₃)·veluPoleV`.
+
+The `y_Q`-dependence and every `a₁`-contribution cancel. Writing `v = 2y + a₁x + a₃` and
+`d = x − x_Q`, the middle numerator of `veluPoleY` is `t_Q(v − a₁d) + a₁u_Q`, so
+
+  `2·veluPoleY = −2u_Q v/d³ − t_Q v/d² + a₁t_Q/d − a₁u_Q/d² − 2a₁t_Q/d`,
+
+and adding `a₁·veluPoleX = a₁t_Q/d + a₁u_Q/d²` leaves exactly `−v(2u_Q/d³ + t_Q/d²)`. The
+identity is true with `t_Q`, `u_Q` free — no Weierstrass equation at `Q` is used. -/
+lemma velu_two_poleY_add_poleX {x y : F} {Q : W.Point} (hd : Q ≠ 0 → x ≠ veluPointX Q) :
+    2 * veluPoleY W x y Q + W.a₁ * veluPoleX W x Q =
+      -(2 * (2 * y + W.a₁ * x + W.a₃)) * veluPoleV W x Q := by
+  rcases eq_or_ne Q 0 with rfl | hQ
+  · simp
+  · have h : x - veluPointX Q ≠ 0 := sub_ne_zero.mpr (hd hQ)
+    have h2 : (2 : F) ≠ 0 := two_ne_zero
+    simp only [veluPoleX, veluPoleY, veluPoleV]
+    field_simp
+    ring
+
+/-- **The completed square of the Vélu coordinates factors** (PROVEN). For `P ∉ S` with
+pole-form Vélu coordinates `X`, `Y`,
+
+  `2Y + a₁X + a₃ = (2y + a₁x + a₃)·(1 − Σ_{Q ∈ S} veluPoleV)`.
+
+This is what removes `y` from the quotient equation: the quotient equation in the
+completed-square form `V² = 4X³ + b₂X² + (2b₄ − 20t)X + (b₆ − 4b₂t − 28w)` then only
+involves `y` through `v² = 4x³ + b₂x² + 2b₄x + b₆`. -/
+lemma velu_pole_V {S : Finset W.Point} (hS : IsPointSubgroup S) {P : W.Point} (hP : P ∉ S) :
+    2 * (veluPointY P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleY W (veluPointX P) (veluPointY P) Q) +
+        W.a₁ * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) + W.a₃ =
+      (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) *
+        (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) := by
+  have h2 : (2 : F) ≠ 0 := two_ne_zero
+  have key : 2 * (∑ Q ∈ S, veluPoleY W (veluPointX P) (veluPointY P) Q) +
+      W.a₁ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q =
+      -(2 * (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃)) *
+        ∑ Q ∈ S, veluPoleV W (veluPointX P) Q := by
+    rw [Finset.mul_sum, Finset.mul_sum, ← Finset.sum_add_distrib, Finset.mul_sum]
+    refine Finset.sum_congr rfl fun Q hQS => ?_
+    exact velu_two_poleY_add_poleX fun hQ0 => velu_X_ne hS hP hQS hQ0
+  field_simp
+  linear_combination key
+
+/-- **SORRY LEAF: Vélu's rational-function identity, with `y` eliminated**, cut 2026-07-26
+out of `velu_equation_pole`.
+
+Writing `x = x(P)`, `X = x + ½ Σ_{Q ∈ S} veluPoleX`, `D = Σ_{Q ∈ S} veluPoleV`,
+`t = veluT S` and `w = veluW S`, the claim is the ONE-VARIABLE identity
+
+  `(4x³ + b₂x² + 2b₄x + b₆)·(1 − D)² = 4X³ + b₂X² + (2b₄ − 20t)X + (b₆ − 4b₂t − 28w)`.
+
+Nothing here mentions `y`: `velu_pole_V` has already replaced the completed square
+`V = 2Y + a₁X + a₃` by `(2y + a₁x + a₃)(1 − D)`, and `(2y + a₁x + a₃)² = 4x³ + b₂x² +
+2b₄x + b₆` is the Weierstrass equation at `P`. So this is the whole remaining content of
+Vélu's theorem, part 2.
+
+**Route** (Vélu 1971; Kohel's thesis §2.4). Both sides are rational functions of `x` with
+poles only at the `x`-coordinates of `S ∖ {0}`; note each such `x_Q` occurs TWICE in a sum
+over all of `S`, from `Q` and `−Q`, so the principal part of `Σ veluPoleX` at `x_Q` is
+`2t_Q/(x − x_Q) + 2u_Q/(x − x_Q)²`. Clearing the denominator `h⁶`, where
+`h = ∏_{Q ∈ R}(x − x_Q)` over a set `R` of representatives of `S ∖ {0}` modulo `±`, turns
+the claim into a polynomial identity of degree `6·deg h + 3`, and it splits in two:
+
+1. *No poles*: `h⁶` divides the difference. A Laurent expansion at `x_Q` (verified in
+   PARI/GP) shows the `d^{-6}` and `d^{-5}` coefficients vanish identically — this is
+   exactly `u_Q = 4x_Q³ + b₂x_Q² + 2b₄x_Q + b₆`, the Weierstrass equation at `Q` — while
+   the `d^{-4}, …, d^{-1}` coefficients impose four relations on the value and the first
+   three derivatives at `x_Q` of the sum over `S ∖ {Q, −Q}`. THIS is where closure of `S`
+   under addition is consumed: the value itself is `2(x_Q − x_{2Q})`, by the `±`-paired
+   addition law `velu_pair_X` plus the reindexing `Q' ↦ Q + Q'` of `S`.
+2. *Vanishing at infinity*: the difference has degree `< 6·deg h`, which pins the top four
+   coefficients and is where `t` and `w` are consumed.
+
+**The subgroup hypothesis is essential and the pole form does not carry it.** Verified in
+PARI/GP over `𝔽_p` for `101 ≤ p ≤ 500` and kernel orders up to `523`: with a genuine
+subgroup, 75789 instances pass and none fail; with the `±`-stable NON-subgroup
+`{0, G, −G}` for `G` of order `≥ 5`, for which every formula above is equally well
+defined, 31006 of 31143 instances FAIL.
+
+**`hodd` may well be unnecessary here.** It is carried over from the consumer
+`velu_equation_pole`, but the same PARI/GP sweep finds the identity holding verbatim for
+kernels of order `2`, `4` and `6` (16077 instances, none failing). The reason is that the
+halving convention reproduces Vélu's SEPARATE `2`-torsion coefficients automatically: at a
+`2`-torsion `Q` one has `2y_Q + a₁x_Q + a₃ = 0`, so `u_Q = 0` and
+`veluTTerm W Q = 6x_Q² + b₂x_Q + b₄ = 2 g^x_Q`, whence `½·veluTTerm W Q = g^x_Q` and
+`½·veluWTerm W Q = x_Q g^x_Q` — exactly Vélu's `t_Q` and `w_Q` in the order-`2` case,
+which the classical presentation has to write down separately. Oddness is used elsewhere
+in this file (it is what makes `x_Q` occur exactly TWICE in a sum over `S`, which is how
+the principal parts are read off above), so a proof may still want it. -/
+theorem velu_pole_identity {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P : W.Point} (hP : P ∉ S) :
+    (4 * veluPointX P ^ 3 + W.b₂ * veluPointX P ^ 2 + 2 * W.b₄ * veluPointX P + W.b₆) *
+        (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) ^ 2 =
+      4 * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 3 +
+        W.b₂ * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 2 +
+        (2 * W.b₄ - 20 * W.veluT S) *
+          (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) +
+        (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S) :=
+  sorry
+
 end PoleSum
 
 /-! ### Two-torsion and the discriminant
@@ -930,45 +1060,56 @@ section Velu
 
 variable {F : Type*} [Field F] [DecidableEq F] [CharZero F] (W : Affine F) [W.IsElliptic]
 
-/-- **Vélu's theorem, part 2a: the quotient equation in pole form** (SORRY LEAF,
-cut 2026-07-26 out of `velu_equation`, whose first half — the passage from the
-group-law sums to Vélu's rational functions — is now PROVEN in `velu_coordX_eq`
-and `velu_coordY_eq`).
+omit [W.IsElliptic] in
+/-- **Vélu's theorem, part 2a: the quotient equation in pole form** (PROVEN 2026-07-26
+over the single leaf `velu_pole_identity`; it was itself the leaf cut on 2026-07-26 out
+of `velu_equation`, whose first half — the passage from the group-law sums to Vélu's
+rational functions — is `velu_coordX_eq` and `velu_coordY_eq`).
 
-What remains is the SECOND half of the classical route: verify the quotient
-equation as an identity of rational functions in `x, y` modulo the equation of
-`W`, for
+What this proof does is eliminate `y`. Complete the square on the quotient curve: since
+`veluCurve` does not change `a₁`, `a₂`, `a₃`, the quotient equation at `(X, Y)` is
+equivalent, after multiplying by `4`, to
 
-  `X = x + ½ Σ_{Q ∈ S} [t_Q/(x − x_Q) + u_Q/(x − x_Q)²]`,
-  `Y = y − ½ Σ_{Q ∈ S} [u_Q(2y + a₁x + a₃)/(x − x_Q)³ + … ]`
+  `V² = 4X³ + b₂X² + (2b₄ − 20t)X + (b₆ − 4b₂t − 28w)`,  `V := 2Y + a₁X + a₃`.
 
-(see `veluPoleX`, `veluPoleY`; the sums may run over all of `S` because both
-summands vanish at the point at infinity). Kohel's thesis §2.4 carries out the
-verification in this normalisation; Washington, *Elliptic Curves*, ch. 12 does
-`char ≠ 2, 3`.
-
-**The subgroup hypothesis is essential, and the pole form does not by itself
-carry it.** Checked numerically (PARI/GP, curve `11a3` over `𝔽₁₀₀₉`, kernel of
-order `5`): with the true kernel all `1015` points outside it satisfy the
-quotient equation, whereas for the `±`-stable but non-subgroup set `{0, ±Q}`
-built from the same generator — for which the formulas above are equally well
-defined — EVERY one of the `1017` points fails it. So a proof must consume
-closure of `S` under addition somewhere. The two places the classical argument
-does are (i) `S`-invariance of `X` and `Y`, now available in this file as
-`veluCoordX_add_mem` and `veluCoordY_add_mem`, and (ii) cancellation of the
-principal part at each `x_Q`, which ties the pole at `Q` to the values of the
-OTHER summands at `x_Q`.
+Now `velu_pole_V` factors `V = (2y + a₁x + a₃)·(1 − Σ_{Q ∈ S} veluPoleV)` — a termwise
+field identity (`velu_two_poleY_add_poleX`) in which the `y_Q`-dependence and every
+`a₁`-contribution cancel — and the Weierstrass equation at `P` turns `(2y + a₁x + a₃)²`
+into `4x³ + b₂x² + 2b₄x + b₆`. What is left is `velu_pole_identity`, a rational-function
+identity in `x` ALONE.
 
 The Vélu coefficients are `t = ½ Σ_{Q ∈ S} t_Q` and `w = ½ Σ_{Q ∈ S} w_Q` with
 `w_Q = u_Q + x_Q t_Q`, so `veluUTerm` and `veluTTerm` are exactly the data of
 `veluCurve W S` — see `veluT`, `veluW`, `veluModel`. -/
-theorem velu_equation_pole (S : Finset W.Point) (_hS : IsPointSubgroup S)
-    (_hodd : Odd S.card) {P : W.Point} (_hP : P ∉ S) :
+theorem velu_equation_pole (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) {P : W.Point} (hP : P ∉ S) :
     (W.veluCurve S).Equation
       (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q)
-      (veluPointY P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleY W (veluPointX P) (veluPointY P) Q) :=
-  sorry
+      (veluPointY P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleY W (veluPointX P) (veluPointY P) Q) := by
+  have hP0 : P ≠ 0 := fun h => hP (by rw [h]; exact hS.zero_mem)
+  have hEq : W.Equation (veluPointX P) (veluPointY P) := by
+    obtain _ | ⟨x, y, hns⟩ := P
+    · exact absurd rfl hP0
+    · exact hns.1
+  have hV := velu_pole_V hS hP
+  have hI := velu_pole_identity hS hodd hP
+  have hv : (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) ^ 2 =
+      4 * veluPointX P ^ 3 + W.b₂ * veluPointX P ^ 2 + 2 * W.b₄ * veluPointX P + W.b₆ := by
+    rw [Affine.equation_iff] at hEq
+    simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆]
+    linear_combination (4 : F) * hEq
+  rw [Affine.equation_iff']
+  simp only [veluCurve, veluModel, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆] at hv hI ⊢
+  set x := veluPointX P with hxdef
+  set y := veluPointY P with hydef
+  set X := x + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W x Q with hXdef
+  set Y := y + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleY W x y Q with hYdef
+  set D := ∑ Q ∈ S, veluPoleV W x Q with hDdef
+  linear_combination (2 * Y + W.a₁ * X + W.a₃ + (2 * y + W.a₁ * x + W.a₃) * (1 - D)) / 4 * hV +
+    (1 - D) ^ 2 / 4 * hv + hI / 4
 
+omit [W.IsElliptic] in
 /-- **Vélu's theorem, part 2: the image lies on the quotient curve** (PROVEN
 2026-07-26 over the single arithmetic leaf `velu_equation_pole`).
 

@@ -32,6 +32,31 @@ import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 -- the STATEMENT of the shared brick `convPow_apply_of_comul_absorbs`
 -- below, hence public.
 public import Mathlib.RingTheory.HopfAlgebra.Convolution
+-- the CONSTANT group scheme `Spec (G → R)` — the Hopf algebra of functions
+-- on a finite group, dual to its group law. Absent from mathlib on this pin
+-- (`Pi.instCoalgebraStruct` is the componentwise structure, not this one), so
+-- built there; it is the witness for `hasFlatProlongationAt_trivialQuotChar`
+-- below, whose STATEMENT does not mention it — but the general-`K` helper
+-- `hasFlatProlongationAt_trivialQuotChar_of_base` is proved in this module and
+-- consumes it, so the import is public.
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
+-- the `μ`-typed factor of the Eisenstein member: the group-algebra Hopf
+-- structure `MonoidAlgebra.instHopfAlgebra` (the diagonalizable group scheme
+-- `Spec 𝒪ᵥ[D]`), its base change `MonoidAlgebra.scalarTensorEquiv`, and
+-- character biduality `CommGroup.monoidHomMonoidHomEquiv`. All three appear in
+-- STATEMENTS of the block below (`etale_monoidAlgebra_of_charZero`,
+-- `etale_adicGenericFibre_monoidAlgebra`, `muTypePointsEquiv`), hence public.
+public import Mathlib.RingTheory.HopfAlgebra.MonoidAlgebra
+public import Mathlib.RingTheory.TensorProduct.MonoidAlgebra
+public import Mathlib.GroupTheory.FiniteAbelian.Duality
+-- étaleness of the generic fibre `Kᵥ[D]` of that group scheme, via the Fourier
+-- isomorphism `Ω[D] ≃ₐ (D̂ → Ω)` (linear independence of characters + a
+-- dimension count) and faithfully flat descent along `Kᵥ → Kᵥᵃˡᵍ`
+public import Mathlib.RingTheory.Etale.Field
+public import Mathlib.RingTheory.Etale.Descent
+public import Mathlib.LinearAlgebra.LinearIndependent.Basic
+public import Mathlib.LinearAlgebra.Dimension.Constructions
+public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 -- `isIntegral_padicInt_of_spectralNorm_le_one`, consumed by the
 -- `ValuationRing` instance of the concrete coefficient ring below. It used to
 -- be declared in this file; it moved upstream (2026-07-25) so that the
@@ -3570,11 +3595,11 @@ Diamond–Shurman 5.8.5 coefficient characterization on the pin's
 `CuspForm`):
 
 1. `Modularity.exists_weightTwoEigenform_trace_eq_of_isIrreducible`
-   (sorry node) — the modularity input: the Frobenius traces are, away
+   (PROVEN) — the modularity input: the Frobenius traces are, away
    from finitely many places, the `ι`-images of the coefficients of a
    normalized weight-2 eigenform `f` of some level `N ≥ 1`, for a
    single embedding `ι : K_f →+* ℚ̄_p` of its Hecke field.
-2. `Modularity.heckeField_finiteDimensional` (sorry node) — the Hecke
+2. `Modularity.heckeField_finiteDimensional` (PROVEN) — the Hecke
    field `K_f = ℚ({aₙ(f)})` is a number field (Diamond–Shurman §6.5).
 3. The assembly (below, PROVEN): `E` is `ℚ` with the `ι`-images of a
    finite `ℚ`-spanning set of `K_f` adjoined — finite-dimensional
@@ -3773,11 +3798,11 @@ literature proof (and of the B5/B6 architecture recorded in
 `Reducible.lean`), splitting the class-field-theory content from the
 automorphy content:
 
-1. `exists_rat_trace_coeff_of_not_isIrreducible` (sorry node, SHARED
+1. `exists_rat_trace_coeff_of_not_isIrreducible` (PROVEN, SHARED
    with the span shadow) — if `ρ ⊗ ℚ̄_p` is reducible the traces are
    outright RATIONAL away from finitely many places (Eisenstein
    branch: character analysis + Minkowski, no automorphy).
-2. `exists_isAlgebraic_trace_coeff_of_isIrreducible` (sorry node) —
+2. `exists_isAlgebraic_trace_coeff_of_isIrreducible` (PROVEN) —
    the irreducible branch, where modularity lifting applies; the
    irreducibility hypothesis is what Taylor–Wiles patching consumes.
 3. The assembly (below): case on irreducibility of `ρ ⊗ ℚ̄_p`; on the
@@ -3832,7 +3857,7 @@ reducible/irreducible dichotomy as `exists_isAlgebraic_trace_coeff`
 (see the DECOMPOSED note there), with the common-spanning-set
 packaging additionally moved into proven glue:
 
-1. `exists_rat_trace_coeff_of_not_isIrreducible` (sorry node, SHARED
+1. `exists_rat_trace_coeff_of_not_isIrreducible` (PROVEN, SHARED
    with the algebraicity shadow) — on the reducible branch the traces
    are rational, hence lie in the `ℚ`-span of `{1}`.
 2. `exists_linearIndependent_trace_card_le_of_isIrreducible` (sorry
@@ -4119,7 +4144,7 @@ DECOMPOSED (2026-07-22) into a PROVEN assembly over two strata:
 
 1. `charFrob_coeff_isIntegralElem` (PROVEN) — the coefficients are
    integral over `ℤ_[p]` (formal, from module-finiteness of `R`).
-2. `exists_finiteDimensional_coeff_field` (sorry node) — the
+2. `exists_finiteDimensional_coeff_field` (PROVEN) — the
    coefficients lie, away from finitely many places, in a subfield of
    `ℚ̄_p` finite over `ℚ`. The sole surviving automorphy content at
    this level.
@@ -5186,10 +5211,12 @@ raising roots of unity to the power `χ_cyc(σ)` — the second diagonal
 entry.
 
 The layer below cuts the leaf along exactly that decomposition, into
-three group-scheme leaves — a PRODUCT transport
-(`hasFlatProlongationAt_of_prod`), the CONSTANT factor
-(`hasFlatProlongationAt_trivialQuotChar`) and the `μ`-FACTOR
-(`hasFlatProlongationAt_cycScalarRep`). Everything else is PROVEN
+three group-scheme nodes — a PRODUCT transport
+(`hasFlatProlongationAt_of_prod`, sorry leaf), the CONSTANT factor
+(`hasFlatProlongationAt_trivialQuotChar`, sorry leaf) and the `μ`-FACTOR
+(`hasFlatProlongationAt_cycScalarRep`, PROVEN 2026-07-26, sorry-free —
+the missing étaleness of group algebras is proven here too, as
+`etale_monoidAlgebra_of_charZero`). Everything else is PROVEN
 here: finiteness of the open quotients
 (`finite_quotient_of_isOpen_integralClosure`, over compactness of the
 concrete ring of integers), the identification of the base change with
@@ -5214,7 +5241,16 @@ the one dual to the group law, so a type synonym carrying
 `Bialgebra`/`HopfAlgebra` with `comul (e_g) = Σ_{ab = g} e_a ⊗ e_b`
 has to be built (the needed algebra equivalence
 `(G → R) ⊗[R] (G → R) ≃ₐ[R] (G × G → R)` for `G` finite is
-`Algebra.TensorProduct.piScalarRight` plus currying). -/
+`Algebra.TensorProduct.piScalarRight` plus currying).
+
+BUILT 2026-07-26 as `GroupFunctions`, in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/GroupFunctions.lean`, together with
+its points package (`GroupFunctions.pointsMulEquiv`,
+`GroupFunctions.exists_eq_pointAlgHom`, `GroupFunctions.comp_pointAlgHom`) and
+its generic fibre (`GroupFunctions.baseChangeAlgEquiv`); the CONSTANT factor
+`hasFlatProlongationAt_trivialQuotChar` is PROVEN from it. The object is stated
+for an arbitrary finite group `G` over an arbitrary commutative ring `R`, so it
+is reusable — in particular by the `μ`-factor's Cartier-dual bookkeeping. -/
 
 /-- **The rank-one cyclotomic member `χ_cyc,ℓ`** (PROVEN construction):
 the second diagonal entry of `1 ⊕ χ_cyc,ℓ`, isolated as a
@@ -5269,18 +5305,321 @@ lemma cycDiagEnd_apply_basis_one {A : Type*} [CommRing A] {W : Type*} [AddCommGr
   rw [cycDiagEnd, Matrix.toLin_self, Fin.sum_univ_two]
   simp [Matrix.diagonal]
 
-/-- **Flat prolongations of a PRODUCT** (sorry leaf; the group-scheme
-product): if `ρ₁` and `ρ₂` have flat prolongations at `v` and the space
-of `ρ` is, equivariantly, the product of their spaces, then `ρ` has one
-too. Intended proof: the witnessing Hopf orders `G₁, G₂` over `𝒪ᵥ` are
-combined into `G₁ ⊗[𝒪ᵥ] G₂` (mathlib's `HopfAlgebra S (B ⊗[R] A)`
-instance; finite and flat because each factor is), whose generic fibre
+/-! #### The group-scheme PRODUCT (PROVEN)
+
+The machinery below proves that a product of finite flat Hopf orders is
+one: the witnessing Hopf orders `G₁, G₂` over `𝒪ᵥ` combine into
+`G₁ ⊗[𝒪ᵥ] G₂` (mathlib's `HopfAlgebra S (B ⊗[R] A)` instance; finite
+and flat because each factor is), whose generic fibre
 `Kᵥ ⊗ (G₁ ⊗ G₂) ≃ₐ[Kᵥ] (Kᵥ ⊗ G₁) ⊗[Kᵥ] (Kᵥ ⊗ G₂)` is étale by
 `Algebra.Etale.baseChange` + `Algebra.Etale.comp`, and whose
-`Kᵥᵃˡᵍ`-points are the PRODUCT of the two point groups
-(`Algebra.TensorProduct.lift`, with the convolution product of the
-tensor Hopf algebra computing componentwise because
-`comul_{G₁ ⊗ G₂} = tensorTensorTensorComm ∘ (comul ⊗ comul)`). The
+`Kᵥᵃˡᵍ`-points are the PRODUCT of the two point groups.
+
+The one genuine proof obligation — as opposed to a mathlib lookup — is
+that CONVOLUTION on the tensor Hopf algebra is COMPONENTWISE. That is
+`tensorAlgHomEquiv_convMul` below, and it is reduced to mathlib's
+`AlgHom.convMul_comp_bialgHom_distrib` (precomposition with a BIALGEBRA
+hom distributes over convolution) applied to the two inclusions
+`a ↦ a ⊗ₜ 1` and `b ↦ 1 ⊗ₜ b`, which mathlib does NOT provide as
+bialgebra homs — `bialgIncludeLeft` / `bialgIncludeRight` supply them,
+their comultiplication compatibility coming from
+`comul_{G₁ ⊗ G₂} = tensorTensorTensorComm ∘ (comul ⊗ comul)`. -/
+
+section HopfProduct
+
+universe uHP
+
+section BialgTensor
+
+variable (R₀ : Type*) [CommRing R₀]
+variable (G₁ G₂ : Type*) [CommRing G₁] [CommRing G₂] [Bialgebra R₀ G₁] [Bialgebra R₀ G₂]
+
+/-- **`a ↦ a ⊗ₜ 1` is a bialgebra hom** (PROVEN; absent from mathlib,
+which has the algebra hom `Algebra.TensorProduct.includeLeft` only).
+The counit compatibility is `counit (a ⊗ₜ 1) = counit a`; the
+comultiplication compatibility unwinds
+`comul_{G₁ ⊗ G₂} = tensorTensorTensorComm ∘ (comul ⊗ comul)` at
+`a ⊗ₜ 1` and inducts over a representation of `comul a`. -/
+noncomputable def bialgIncludeLeft : G₁ →ₐc[R₀] G₁ ⊗[R₀] G₂ :=
+  BialgHom.ofAlgHom (Algebra.TensorProduct.includeLeft)
+    (by
+      refine AlgHom.ext fun a => ?_
+      simp [Bialgebra.TensorProduct.counitAlgHom_def R₀ R₀ G₁ G₂])
+    (by
+      refine AlgHom.ext fun a => ?_
+      show (Algebra.TensorProduct.map (Algebra.TensorProduct.includeLeft)
+            (Algebra.TensorProduct.includeLeft)) (Coalgebra.comul (R := R₀) a) =
+          (Coalgebra.comul (R := R₀) (A := G₁ ⊗[R₀] G₂)) (a ⊗ₜ[R₀] (1 : G₂))
+      rw [congr($(Bialgebra.TensorProduct.comul_eq_algHom_toLinearMap R₀ R₀ G₁ G₂)
+        (a ⊗ₜ[R₀] (1 : G₂)))]
+      simp only [AlgHom.toLinearMap_apply, AlgHom.coe_comp, Function.comp_apply,
+        Algebra.TensorProduct.map_tmul, Bialgebra.comulAlgHom_apply, map_one,
+        Algebra.TensorProduct.one_def]
+      induction Coalgebra.comul (R := R₀) a with
+      | zero => simp
+      | add x y hx hy => simp only [TensorProduct.add_tmul, map_add, hx, hy]
+      | tmul x y => simp)
+
+/-- **`b ↦ 1 ⊗ₜ b` is a bialgebra hom** (PROVEN), the mirror image of
+`bialgIncludeLeft`. -/
+noncomputable def bialgIncludeRight : G₂ →ₐc[R₀] G₁ ⊗[R₀] G₂ :=
+  BialgHom.ofAlgHom (Algebra.TensorProduct.includeRight)
+    (by
+      refine AlgHom.ext fun b => ?_
+      simp [Bialgebra.TensorProduct.counitAlgHom_def R₀ R₀ G₁ G₂])
+    (by
+      refine AlgHom.ext fun b => ?_
+      show (Algebra.TensorProduct.map (Algebra.TensorProduct.includeRight)
+            (Algebra.TensorProduct.includeRight)) (Coalgebra.comul (R := R₀) b) =
+          (Coalgebra.comul (R := R₀) (A := G₁ ⊗[R₀] G₂)) ((1 : G₁) ⊗ₜ[R₀] b)
+      rw [congr($(Bialgebra.TensorProduct.comul_eq_algHom_toLinearMap R₀ R₀ G₁ G₂)
+        ((1 : G₁) ⊗ₜ[R₀] b))]
+      simp only [AlgHom.toLinearMap_apply, AlgHom.coe_comp, Function.comp_apply,
+        Algebra.TensorProduct.map_tmul, Bialgebra.comulAlgHom_apply, map_one,
+        Algebra.TensorProduct.one_def]
+      induction Coalgebra.comul (R := R₀) b with
+      | zero => simp
+      | add x y hx hy => simp only [TensorProduct.tmul_add, map_add, hx, hy]
+      | tmul x y => simp)
+
+@[simp] lemma bialgIncludeLeft_toAlgHom :
+    ((bialgIncludeLeft R₀ G₁ G₂ : G₁ →ₐc[R₀] G₁ ⊗[R₀] G₂) : G₁ →ₐ[R₀] G₁ ⊗[R₀] G₂) =
+      Algebra.TensorProduct.includeLeft := rfl
+
+@[simp] lemma bialgIncludeRight_toAlgHom :
+    ((bialgIncludeRight R₀ G₁ G₂ : G₂ →ₐc[R₀] G₁ ⊗[R₀] G₂) : G₂ →ₐ[R₀] G₁ ⊗[R₀] G₂) =
+      Algebra.TensorProduct.includeRight := rfl
+
+section TensorPoints
+
+variable {R₀ G₁ G₂}
+variable {L₀ : Type*} [CommRing L₀] [Algebra R₀ L₀]
+
+/-- **The points of a tensor product of Hopf algebras are the PRODUCT
+of the points** (PROVEN, as a bare bijection): algebra maps out of
+`G₁ ⊗[R₀] G₂` into a COMMUTATIVE algebra are pairs of algebra maps,
+by `Algebra.TensorProduct.lift`. -/
+noncomputable def tensorAlgHomEquiv :
+    ((G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀) ≃ ((G₁ →ₐ[R₀] L₀) × (G₂ →ₐ[R₀] L₀)) where
+  toFun Φ :=
+    (Φ.comp Algebra.TensorProduct.includeLeft, Φ.comp Algebra.TensorProduct.includeRight)
+  invFun p := Algebra.TensorProduct.lift p.1 p.2 (fun _ _ => Commute.all _ _)
+  left_inv Φ := by
+    refine Algebra.TensorProduct.ext' fun a b => ?_
+    show Φ (a ⊗ₜ 1) * Φ (1 ⊗ₜ b) = Φ (a ⊗ₜ b)
+    rw [← map_mul, Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
+  right_inv p := by
+    refine Prod.ext ?_ ?_ <;> refine AlgHom.ext fun x => ?_ <;> simp
+
+@[simp] lemma tensorAlgHomEquiv_fst (Φ : (G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀) (a : G₁) :
+    (tensorAlgHomEquiv Φ).1 a = Φ (a ⊗ₜ 1) := rfl
+
+@[simp] lemma tensorAlgHomEquiv_snd (Φ : (G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀) (b : G₂) :
+    (tensorAlgHomEquiv Φ).2 b = Φ (1 ⊗ₜ b) := rfl
+
+/-- The pair decomposition takes the convolution UNIT to the pair of
+convolution units (PROVEN): the counit of `G₁ ⊗ G₂` restricts to the
+counits of the factors. -/
+lemma tensorAlgHomEquiv_convOne :
+    tensorAlgHomEquiv ((1 : WithConv ((G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀)).ofConv) =
+      ((1 : WithConv (G₁ →ₐ[R₀] L₀)).ofConv, (1 : WithConv (G₂ →ₐ[R₀] L₀)).ofConv) := by
+  have h1 : ((1 : WithConv ((G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀)).ofConv).comp
+      ((bialgIncludeLeft R₀ G₁ G₂ : G₁ →ₐc[R₀] _) : G₁ →ₐ[R₀] _) =
+      (1 : WithConv (G₁ →ₐ[R₀] L₀)).ofConv := by
+    show ((Algebra.ofId R₀ L₀).comp (Bialgebra.counitAlgHom R₀ (G₁ ⊗[R₀] G₂))).comp
+        ((bialgIncludeLeft R₀ G₁ G₂ : G₁ →ₐc[R₀] _) : G₁ →ₐ[R₀] _) =
+        (Algebra.ofId R₀ L₀).comp (Bialgebra.counitAlgHom R₀ G₁)
+    rw [AlgHom.comp_assoc, BialgHom.counitAlgHom_comp]
+  have h2 : ((1 : WithConv ((G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀)).ofConv).comp
+      ((bialgIncludeRight R₀ G₁ G₂ : G₂ →ₐc[R₀] _) : G₂ →ₐ[R₀] _) =
+      (1 : WithConv (G₂ →ₐ[R₀] L₀)).ofConv := by
+    show ((Algebra.ofId R₀ L₀).comp (Bialgebra.counitAlgHom R₀ (G₁ ⊗[R₀] G₂))).comp
+        ((bialgIncludeRight R₀ G₁ G₂ : G₂ →ₐc[R₀] _) : G₂ →ₐ[R₀] _) =
+        (Algebra.ofId R₀ L₀).comp (Bialgebra.counitAlgHom R₀ G₂)
+    rw [AlgHom.comp_assoc, BialgHom.counitAlgHom_comp]
+  simp only [bialgIncludeLeft_toAlgHom, bialgIncludeRight_toAlgHom] at h1 h2
+  exact Prod.ext h1 h2
+
+/-- **CONVOLUTION ON A TENSOR PRODUCT OF BIALGEBRAS IS COMPONENTWISE**
+(PROVEN) — the one genuine proof obligation of the product step. It is
+mathlib's `AlgHom.convMul_comp_bialgHom_distrib` (precomposition with a
+bialgebra hom distributes over convolution) applied to the two
+inclusions, which is exactly why they had to be upgraded to bialgebra
+homs above. -/
+lemma tensorAlgHomEquiv_convMul (Φ Ψ : WithConv ((G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀)) :
+    tensorAlgHomEquiv ((Φ * Ψ).ofConv) =
+      ((WithConv.toConv (tensorAlgHomEquiv Φ.ofConv).1 *
+          WithConv.toConv (tensorAlgHomEquiv Ψ.ofConv).1).ofConv,
+       (WithConv.toConv (tensorAlgHomEquiv Φ.ofConv).2 *
+          WithConv.toConv (tensorAlgHomEquiv Ψ.ofConv).2).ofConv) := by
+  have h1 := AlgHom.convMul_comp_bialgHom_distrib Φ Ψ (bialgIncludeLeft R₀ G₁ G₂)
+  have h2 := AlgHom.convMul_comp_bialgHom_distrib Φ Ψ (bialgIncludeRight R₀ G₁ G₂)
+  simp only [bialgIncludeLeft_toAlgHom, bialgIncludeRight_toAlgHom] at h1 h2
+  exact Prod.ext h1 h2
+
+/-- The pair decomposition commutes with postcomposition (PROVEN,
+definitional) — this is what makes the splitting `Γ Kᵥ`-equivariant. -/
+lemma tensorAlgHomEquiv_comp (h : L₀ →ₐ[R₀] L₀) (Φ : (G₁ ⊗[R₀] G₂) →ₐ[R₀] L₀) :
+    tensorAlgHomEquiv (h.comp Φ) =
+      (h.comp (tensorAlgHomEquiv Φ).1, h.comp (tensorAlgHomEquiv Φ).2) := rfl
+
+end TensorPoints
+
+end BialgTensor
+
+section ProdPackage
+
+variable {Kf : Type uHP} [Field Kf] [NumberField Kf]
+variable (w : HeightOneSpectrum (NumberField.RingOfIntegers Kf))
+
+local notation "Kw" => IsDedekindDomain.HeightOneSpectrum.adicCompletion Kf w
+local notation "Ow" => IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers Kf w
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Flat prolongations of a PRODUCT** (PROVEN, over a general number
+field): if `ρ₁` and `ρ₂` have flat prolongations at `w` and the space of
+`ρ` is, equivariantly, the product of their spaces, then `ρ` has one
+too. The witness is `G₁ ⊗[𝒪ʷ] G₂`; the geometric points split as a pair
+by `tensorAlgHomEquiv` sandwiched between two instances of the
+tensor-hom adjunction `AlgHom.liftEquiv`, and that splitting carries the
+convolution product (`tensorAlgHomEquiv_convMul`), the convolution unit
+and the postcomposition action of `Γ Kʷ`. -/
+theorem hasFlatProlongationAt_of_prod_general
+    {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
+    {M₁ : Type*} [AddCommGroup M₁] [Module A₁ M₁]
+    {A₂ : Type*} [CommRing A₂] [TopologicalSpace A₂]
+    {M₂ : Type*} [AddCommGroup M₂] [Module A₂ M₂]
+    {ρ₁ : GaloisRep Kf A₁ M₁} {ρ₂ : GaloisRep Kf A₂ M₂}
+    (h₁ : ρ₁.HasFlatProlongationAt w) (h₂ : ρ₂.HasFlatProlongationAt w)
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (ρ : GaloisRep Kf A M) (e : (M₁ × M₂) ≃+ M)
+    (he : ∀ (σ : Field.absoluteGaloisGroup Kf) (x : M₁ × M₂),
+      e (ρ₁ σ x.1, ρ₂ σ x.2) = ρ σ (e x)) :
+    ρ.HasFlatProlongationAt w := by
+  classical
+  obtain ⟨G₁, i₁, hopf₁, flat₁, fin₁, et₁, f₁, hbij₁⟩ := h₁
+  obtain ⟨G₂, i₂, hopf₂, flat₂, fin₂, et₂, f₂, hbij₂⟩ := h₂
+  letI := i₁; letI := hopf₁; letI := flat₁; letI := fin₁; letI := et₁
+  letI := i₂; letI := hopf₂; letI := flat₂; letI := fin₂; letI := et₂
+  -- `letI` these two: the tensor Hopf order must be presented to the
+  -- convolution-monoid instance through ONE `CommRing`, otherwise the
+  -- `Monoid (Kw ⊗ (G₁ ⊗ G₂) →ₐ[Kw] Kwᵃˡᵍ)` search fails on the
+  -- `CommRing`/`Semiring` diamond
+  letI iG : CommRing (G₁ ⊗[Ow] G₂) := inferInstance
+  letI hopfG : HopfAlgebra Ow (G₁ ⊗[Ow] G₂) := inferInstance
+  -- the geometric points of the tensor Hopf order split as a PAIR
+  let T : ((Kw ⊗[Ow] (G₁ ⊗[Ow] G₂)) →ₐ[Kw] AlgebraicClosure Kw) ≃
+      (((Kw ⊗[Ow] G₁) →ₐ[Kw] AlgebraicClosure Kw) ×
+        ((Kw ⊗[Ow] G₂) →ₐ[Kw] AlgebraicClosure Kw)) :=
+    (AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂) (AlgebraicClosure Kw)).symm.trans
+      (tensorAlgHomEquiv.trans
+        ((AlgHom.liftEquiv Ow Kw G₁ (AlgebraicClosure Kw)).prodCongr
+          (AlgHom.liftEquiv Ow Kw G₂ (AlgebraicClosure Kw))))
+  have hTone : T 1 = (1, 1) := by
+    show ((AlgHom.liftEquiv Ow Kw G₁ (AlgebraicClosure Kw))
+        (tensorAlgHomEquiv ((AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂)
+          (AlgebraicClosure Kw)).symm 1)).1,
+      (AlgHom.liftEquiv Ow Kw G₂ (AlgebraicClosure Kw))
+        (tensorAlgHomEquiv ((AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂)
+          (AlgebraicClosure Kw)).symm 1)).2) = (1, 1)
+    rw [vendored_one_eq_convOne, liftEquiv_symm_convOne, tensorAlgHomEquiv_convOne]
+    rw [liftEquiv_convOne, liftEquiv_convOne]
+    exact Prod.ext vendored_one_eq_convOne.symm vendored_one_eq_convOne.symm
+  have hTmul : ∀ Φ Ψ : (Kw ⊗[Ow] (G₁ ⊗[Ow] G₂)) →ₐ[Kw] AlgebraicClosure Kw,
+      T (Φ * Ψ) = ((T Φ).1 * (T Ψ).1, (T Φ).2 * (T Ψ).2) := by
+    intro Φ Ψ
+    show ((AlgHom.liftEquiv Ow Kw G₁ (AlgebraicClosure Kw))
+        (tensorAlgHomEquiv ((AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂)
+          (AlgebraicClosure Kw)).symm (Φ * Ψ))).1,
+      (AlgHom.liftEquiv Ow Kw G₂ (AlgebraicClosure Kw))
+        (tensorAlgHomEquiv ((AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂)
+          (AlgebraicClosure Kw)).symm (Φ * Ψ))).2) = _
+    rw [vendored_mul_eq_convMul, liftEquiv_symm_convMul, tensorAlgHomEquiv_convMul]
+    rw [liftEquiv_convMul, liftEquiv_convMul]
+    rw [vendored_mul_eq_convMul, vendored_mul_eq_convMul]
+    rfl
+  have hTsmul : ∀ (σ : Field.absoluteGaloisGroup Kw)
+      (Φ : (Kw ⊗[Ow] (G₁ ⊗[Ow] G₂)) →ₐ[Kw] AlgebraicClosure Kw),
+      T (σ • Φ) = (σ • (T Φ).1, σ • (T Φ).2) := by
+    intro σ Φ
+    have hs0 : σ • Φ =
+        (σ.toAlgHom : AlgebraicClosure Kw →ₐ[Kw] AlgebraicClosure Kw).comp Φ :=
+      AlgHom.ext fun _ => rfl
+    have hs1 : ∀ ψ : (Kw ⊗[Ow] G₁) →ₐ[Kw] AlgebraicClosure Kw,
+        σ • ψ = (σ.toAlgHom : AlgebraicClosure Kw →ₐ[Kw] AlgebraicClosure Kw).comp ψ :=
+      fun _ => AlgHom.ext fun _ => rfl
+    have hs2 : ∀ ψ : (Kw ⊗[Ow] G₂) →ₐ[Kw] AlgebraicClosure Kw,
+        σ • ψ = (σ.toAlgHom : AlgebraicClosure Kw →ₐ[Kw] AlgebraicClosure Kw).comp ψ :=
+      fun _ => AlgHom.ext fun _ => rfl
+    show ((AlgHom.liftEquiv Ow Kw G₁ (AlgebraicClosure Kw))
+        (tensorAlgHomEquiv ((AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂)
+          (AlgebraicClosure Kw)).symm (σ • Φ))).1,
+      (AlgHom.liftEquiv Ow Kw G₂ (AlgebraicClosure Kw))
+        (tensorAlgHomEquiv ((AlgHom.liftEquiv Ow Kw (G₁ ⊗[Ow] G₂)
+          (AlgebraicClosure Kw)).symm (σ • Φ))).2) = _
+    rw [hs0, liftEquiv_symm_comp, tensorAlgHomEquiv_comp, liftEquiv_comp, liftEquiv_comp,
+      hs1, hs2]
+    rfl
+  have hTbij : Function.Bijective T := T.bijective
+  -- the generic fibre is étale: base change then composite
+  haveI : Algebra.Etale (Kw ⊗[Ow] G₁) ((Kw ⊗[Ow] G₁) ⊗[Kw] (Kw ⊗[Ow] G₂)) :=
+    Algebra.Etale.baseChange Kw (Kw ⊗[Ow] G₂) (Kw ⊗[Ow] G₁)
+  haveI : Algebra.Etale Kw ((Kw ⊗[Ow] G₁) ⊗[Kw] (Kw ⊗[Ow] G₂)) :=
+    Algebra.Etale.comp Kw (Kw ⊗[Ow] G₁) _
+  refine ⟨G₁ ⊗[Ow] G₂, iG, hopfG, inferInstance, inferInstance,
+    Algebra.Etale.of_equiv
+      ((Algebra.TensorProduct.cancelBaseChange Ow Kw Kw (Kw ⊗[Ow] G₁) G₂).trans
+        (Algebra.TensorProduct.assoc Ow Ow Kw Kw G₁ G₂)),
+    { toFun := fun Φ =>
+        e (f₁ (Additive.ofMul (T Φ.toMul).1), f₂ (Additive.ofMul (T Φ.toMul).2))
+      map_zero' := by
+        show e (f₁ (Additive.ofMul (T 1).1), f₂ (Additive.ofMul (T 1).2)) = 0
+        rw [hTone]
+        show e (f₁ 0, f₂ 0) = 0
+        rw [map_zero f₁, map_zero f₂]
+        exact map_zero e
+      map_add' := fun Φ Ψ => by
+        show e (f₁ (Additive.ofMul (T (Φ.toMul * Ψ.toMul)).1),
+            f₂ (Additive.ofMul (T (Φ.toMul * Ψ.toMul)).2)) = _
+        rw [hTmul]
+        show e (f₁ (Additive.ofMul (T Φ.toMul).1 + Additive.ofMul (T Ψ.toMul).1),
+            f₂ (Additive.ofMul (T Φ.toMul).2 + Additive.ofMul (T Ψ.toMul).2)) = _
+        rw [map_add f₁, map_add f₂]
+        exact map_add e
+          (f₁ (Additive.ofMul (T Φ.toMul).1), f₂ (Additive.ofMul (T Φ.toMul).2))
+          (f₁ (Additive.ofMul (T Ψ.toMul).1), f₂ (Additive.ofMul (T Ψ.toMul).2))
+      map_smul' := fun σ Φ => by
+        show e (f₁ (Additive.ofMul (T (σ • Φ.toMul)).1),
+            f₂ (Additive.ofMul (T (σ • Φ.toMul)).2)) =
+          (ρ.toLocal w) σ (e (f₁ (Additive.ofMul (T Φ.toMul).1),
+            f₂ (Additive.ofMul (T Φ.toMul).2)))
+        rw [hTsmul]
+        show e (f₁ (σ • Additive.ofMul (T Φ.toMul).1),
+            f₂ (σ • Additive.ofMul (T Φ.toMul).2)) = _
+        rw [map_smul f₁, map_smul f₂]
+        exact he _ (f₁ (Additive.ofMul (T Φ.toMul).1), f₂ (Additive.ofMul (T Φ.toMul).2)) },
+    ?_⟩
+  refine e.bijective.comp (Function.Bijective.prodMap hbij₁ hbij₂ |>.comp ?_)
+  exact (Function.Bijective.prodMap Additive.ofMul.bijective Additive.ofMul.bijective).comp
+    (hTbij.comp Additive.toMul.bijective)
+
+end ProdPackage
+
+end HopfProduct
+
+/-- **Flat prolongations of a PRODUCT** (PROVEN; the group-scheme
+product): if `ρ₁` and `ρ₂` have flat prolongations at `v` and the space
+of `ρ` is, equivariantly, the product of their spaces, then `ρ` has one
+too. This is `hasFlatProlongationAt_of_prod_general` at `K = ℚ`: the
+witnessing Hopf orders `G₁, G₂` over `𝒪ᵥ` are combined into
+`G₁ ⊗[𝒪ᵥ] G₂`, whose generic fibre is étale
+(`Algebra.Etale.baseChange` + `Algebra.Etale.comp` across
+`Kᵥ ⊗ (G₁ ⊗ G₂) ≃ₐ[Kᵥ] (Kᵥ ⊗ G₁) ⊗[Kᵥ] (Kᵥ ⊗ G₂)`) and whose
+`Kᵥᵃˡᵍ`-points are the PRODUCT of the two point groups, the convolution
+product computing componentwise (`tensorAlgHomEquiv_convMul`). The
 `Γ Kᵥ`-action is postcomposition on both factors, so the splitting is
 equivariant and `Additive` of it is the required additive
 isomorphism. -/
@@ -5298,55 +5637,630 @@ theorem hasFlatProlongationAt_of_prod
     (he : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : M₁ × M₂),
       e (ρ₁ σ x.1, ρ₂ σ x.2) = ρ σ (e x)) :
     ρ.HasFlatProlongationAt v :=
-  sorry
+  hasFlatProlongationAt_of_prod_general v h₁ h₂ ρ e he
 
-/-- **The CONSTANT group scheme** (sorry leaf): a Galois representation
-on a FINITE module with TRIVIAL action has a flat prolongation at every
-place. The witness is the constant group scheme on the finite abelian
-group `B`, i.e. the Hopf algebra `B → 𝒪ᵥ` of `𝒪ᵥ`-valued functions on
-`B` with `comul (e_g) = Σ_{a + b = g} e_a ⊗ e_b`, `counit f = f 0`,
-antipode `f ↦ f ∘ (-·)`; it is finite free over `𝒪ᵥ` of rank `#B`,
-hence flat, its generic fibre `B → Kᵥ` is a finite product of copies of
-`Kᵥ` hence étale (`Algebra.Etale R (Π i, A i)`), and its `Kᵥᵃˡᵍ`-points
-are the evaluations `f ↦ f g`, one for each `g : B`, on which `Γ Kᵥ`
-acts trivially because the algebra is already `Kᵥ`-split.
+/-- **The CONSTANT group scheme, over a general base** (PROVEN): a Galois
+representation of a number field `K` on a FINITE coefficient ring `B` with
+TRIVIAL action has a flat prolongation at every place. The witness is the
+constant group scheme on the finite abelian group `B`, produced by base change
+from the auxiliary base `R`: the Hopf algebra
 
-THIS IS THE ONE OBJECT ABSENT FROM MATHLIB (see the section note
-above): `Pi.instCoalgebra` is the componentwise coalgebra, not this
-one, so the `Bialgebra`/`HopfAlgebra` structure has to be built on a
-type synonym for `B → 𝒪ᵥ`, transporting through
-`Algebra.TensorProduct.piScalarRight` and currying to compute
-`(B → R) ⊗[R] (B → R) ≃ₐ[R] (B × B → R)`. -/
+  `H := GroupFunctions R (Multiplicative B)`
+
+of `R`-valued functions on `B` with `comul (e_g) = Σ_{a + b = g} e_a ⊗ e_b`,
+`counit f = f 0`, antipode `f ↦ f ∘ (-·)`
+(`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/GroupFunctions.lean`; the object was
+ABSENT FROM MATHLIB on this pin — `Pi.instCoalgebraStruct` is the componentwise
+coalgebra, not the one dual to the group law — and was built there). The three
+inputs of `GaloisRep.hasFlatProlongationAt_of_hopf_package` are then:
+
+* `H` is finite free over `R` on the indicator basis `e_g`, hence flat;
+* its generic fibre is `K ⊗[R] H ≃ₐ[K] (B → K)`
+  (`GroupFunctions.baseChangeAlgEquiv`), a finite product of copies of `K`,
+  hence étale by `Algebra.FormallyEtale`'s finite-product instance;
+* its `Kᵃˡᵍ`-points are the evaluations `f ↦ f g`, one for each `g : B`
+  (`GroupFunctions.exists_eq_pointAlgHom`, over `R`, transported to `K ⊗[R] H`
+  through the convolution-compatible tensor–hom adjunction `AlgHom.liftEquiv`
+  and `liftEquiv_convMul`), their convolution product is the group law of `B`
+  (`GroupFunctions.pointAlgHom_convMul`), and `Γ K` acts TRIVIALLY on them
+  because each takes its values in the image of `R`
+  (`GroupFunctions.comp_pointAlgHom`) — which is exactly the trivial action of
+  `trivialQuotChar`.
+
+Stated over a general `K` deliberately: at `K = ℚ` the literal `ℚ` makes
+instance search return `DivisionRing.toRatAlgebra` for `Algebra ℚ ℚ̄` where the
+flat-prolongation package uses `AlgebraicClosure.instAlgebra ℚ`, and the
+resulting `Algebra`/`CommSemiring` mismatches break `AlgHom.liftEquiv`
+elaboration. With `K` abstract there is nothing to mismatch, and the
+instantiation below fixes the instances by unification. -/
+theorem hasFlatProlongationAt_trivialQuotChar_of_base
+    {K : Type u} [Field K] [NumberField K]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (R : Type u) [CommRing R] [Algebra R K]
+    [Algebra R (HeightOneSpectrum.adicCompletionIntegers K v)]
+    [Algebra R (HeightOneSpectrum.adicCompletion K v)]
+    [IsScalarTower R (HeightOneSpectrum.adicCompletionIntegers K v)
+      (HeightOneSpectrum.adicCompletion K v)]
+    [IsScalarTower R K (HeightOneSpectrum.adicCompletion K v)]
+    (B : Type u) [CommRing B] [TopologicalSpace B] [Finite B] :
+    (trivialQuotChar K B).HasFlatProlongationAt v := by
+  classical
+  haveI : Fintype B := Fintype.ofFinite B
+  -- the generic fibre is a finite product of copies of `K`, hence étale
+  haveI : Algebra.Etale K (K ⊗[R] GroupFunctions R (Multiplicative B)) :=
+    Algebra.Etale.of_equiv
+      (GroupFunctions.baseChangeAlgEquiv R (Multiplicative B) K).symm
+  -- the `Kᵃˡᵍ`-points of the constant group scheme over `R` are `B` itself
+  let e₁ : Multiplicative B ≃*
+      WithConv (GroupFunctions R (Multiplicative B) →ₐ[R] AlgebraicClosure K) :=
+    GroupFunctions.pointsMulEquiv R (Multiplicative B) (AlgebraicClosure K)
+  -- the tensor–hom adjunction, compatible with the convolution products
+  let e₂ : WithConv (GroupFunctions R (Multiplicative B) →ₐ[R] AlgebraicClosure K) ≃*
+      WithConv ((K ⊗[R] GroupFunctions R (Multiplicative B)) →ₐ[K] AlgebraicClosure K) :=
+    { toFun := fun χ => WithConv.toConv (AlgHom.liftEquiv R K
+        (GroupFunctions R (Multiplicative B)) (AlgebraicClosure K) χ.ofConv)
+      invFun := fun φ => WithConv.toConv ((AlgHom.liftEquiv R K
+        (GroupFunctions R (Multiplicative B)) (AlgebraicClosure K)).symm φ.ofConv)
+      left_inv := fun χ => WithConv.ext ((AlgHom.liftEquiv R K
+        (GroupFunctions R (Multiplicative B)) (AlgebraicClosure K)).symm_apply_apply χ.ofConv)
+      right_inv := fun φ => WithConv.ext ((AlgHom.liftEquiv R K
+        (GroupFunctions R (Multiplicative B)) (AlgebraicClosure K)).apply_symm_apply φ.ofConv)
+      map_mul' := fun χ₁ χ₂ => WithConv.ext (liftEquiv_convMul χ₁ χ₂) }
+  let E := e₁.trans e₂
+  refine (trivialQuotChar K B).hasFlatProlongationAt_of_hopf_package (v := v) R
+    (GroupFunctions R (Multiplicative B))
+    { toFun := fun x => Multiplicative.toAdd (E.symm (Additive.toMul x))
+      invFun := fun b => Additive.ofMul (E (Multiplicative.ofAdd b))
+      left_inv := fun x => by
+        show Additive.ofMul (E (E.symm (Additive.toMul x))) = x
+        rw [MulEquiv.apply_symm_apply]
+        rfl
+      right_inv := fun b => by
+        show Multiplicative.toAdd (E.symm (E (Multiplicative.ofAdd b))) = b
+        rw [MulEquiv.symm_apply_apply]
+        rfl
+      map_add' := fun x y => by
+        show Multiplicative.toAdd (E.symm (Additive.toMul x * Additive.toMul y)) = _
+        rw [map_mul]
+        rfl } ?_
+  -- equivariance: the Galois action on the points is trivial, and so is `ρ`
+  intro σ φ
+  have hcomp : σ.toAlgHom.comp φ = φ := by
+    apply (AlgHom.liftEquiv R K (GroupFunctions R (Multiplicative B))
+      (AlgebraicClosure K)).symm.injective
+    rw [liftEquiv_symm_comp]
+    obtain ⟨g, hg⟩ := GroupFunctions.exists_eq_pointAlgHom
+      ((AlgHom.liftEquiv R K (GroupFunctions R (Multiplicative B))
+        (AlgebraicClosure K)).symm φ)
+    rw [hg, GroupFunctions.comp_pointAlgHom]
+  have hrho : ∀ y : B, (trivialQuotChar K B) σ y = y := fun _ => rfl
+  rw [hcomp, hrho]
+
+/-- **The CONSTANT group scheme** (PROVEN, 2026-07-26): a Galois representation
+on a FINITE module with TRIVIAL action has a flat prolongation at every place.
+
+This is `hasFlatProlongationAt_trivialQuotChar_of_base` at `K = ℚ` with the
+auxiliary base `R = ℤ` — the smallest base carrying the constant group scheme
+and mapping compatibly into both `ℚ` and `𝒪ᵥ`, so that
+`GaloisRep.hasFlatProlongationAt_of_hopf_package` applies at EVERY place `v` of
+`ℚ` at once (rather than only at places of the form `q.toHeightOneSpectrum…`,
+which is what `hasFlatProlongationAt_of_dvr_package`'s `ℤ_(q)` base would give).
+The five scalar-tower hypotheses hold for `ℤ` by
+`Mathlib/Algebra/Module/NatInt.lean`'s `IsScalarTower ℤ R M` instance. -/
 theorem hasFlatProlongationAt_trivialQuotChar
     {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
     (B : Type) [CommRing B] [TopologicalSpace B] [Finite B] :
     (trivialQuotChar ℚ B).HasFlatProlongationAt v :=
-  sorry
+  hasFlatProlongationAt_trivialQuotChar_of_base v ℤ B
 
-/-- **The DIAGONALIZABLE (`μ`-typed) group scheme** (sorry leaf): the
-rank-one cyclotomic member over a FINITE coefficient ring has a flat
-prolongation at every place. The witness is `Spec 𝒪ᵥ[D]`, the group
-algebra (mathlib's `MonoidAlgebra.instHopfAlgebra`) of the character
-group `D = (Multiplicative B →* (ℚ̄)ˣ)`: it is finite free over `𝒪ᵥ`,
+section MuTypeFactor
+
+/-! #### The `μ`-typed factor: the diagonalizable group scheme `Spec 𝒪ᵥ[D]`
+
+The witness for `hasFlatProlongationAt_cycScalarRep` below is built
+here, sorry-free.
+The construction is: `D := Hom(Multiplicative B, (Kᵥᵃˡᵍ)ˣ)`, the
+character group, and `G := 𝒪ᵥ[D]`, mathlib's `MonoidAlgebra` with its
+group-algebra Hopf structure `MonoidAlgebra.instHopfAlgebra` (finite
+free over `𝒪ᵥ` because `D` is finite, hence flat). Its
+`Kᵥᵃˡᵍ`-points are `D →* Kᵥᵃˡᵍ` by the base-change adjunction
+`AlgHom.liftEquiv` followed by `MonoidAlgebra.lift`, and character
+BIDUALITY (`CommGroup.monoidHomMonoidHomEquiv`) identifies those with
+`Multiplicative B`. The convolution product on points goes over to the
+POINTWISE product of characters because `single χ 1` is group-like
+(`MonoidAlgebra.comul_single`), and the `Γ Kᵥ`-action goes over to
+`ζ ↦ ζ ^ χ_cyc(σ̃)` because every value `χ b` is an `ℓ^k`-th root of
+unity — this is where the cyclotomic character enters, through the
+generalized bridge `galoisApply_eq_pow_of_cyclotomicCharacter_sub_mem`.
+
+FAITHFULNESS NOTE (the `𝒪ᵥ`-rational trap of this cluster). This leaf
+asks us to EXHIBIT a finite flat Hopf order, which we construct
+ourselves; it does NOT ask us to extract a `μ_p`-coordinate from an
+abstract group scheme, which is the false shape that killed
+`exists_muType_closure`. Nothing here is a normal-form or
+coordinate-existence claim over `𝒪ᵥ`, so the leaf is on the true side
+of that line. -/
+
+set_option maxHeartbeats 1000000 in
+/-- **The cyclotomic root-of-unity bridge over an arbitrary base**
+(PROVEN): the general-base port of
+`absoluteGalois_apply_eq_pow_of_cyclotomicCharacter_sub_mem` above,
+whose statement is pinned to the place of `p`. Every element `τ` of the
+absolute Galois group of a `ℚ`-algebra field `F` moves an `ℓ^k`-th root
+of unity `z` of `Fᵃˡᵍ` to `z ^ n`, for any natural `n` congruent to
+`χ_cyc(τ̃)` modulo `ℓ^k` (`τ̃` the image of `τ` in `Γ ℚ`). No inertia
+hypothesis: this is the defining property of the cyclotomic character,
+transported along the chosen embedding of algebraic closures. The proof
+is verbatim that of the pinned version — nothing in it uses that `F` is
+the completion at `p`. -/
+theorem galoisApply_eq_pow_of_cyclotomicCharacter_sub_mem {ℓ : ℕ} [hl : Fact ℓ.Prime]
+    {F : Type*} [Field F] [Algebra ℚ F]
+    (τ : Field.absoluteGaloisGroup F) (k n : ℕ) (c : ℤ_[ℓ])
+    (hc : c = ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) τ).toRingEquiv) : ℤ_[ℓ]ˣ) : ℤ_[ℓ]))
+    (hn : c - (n : ℤ_[ℓ]) ∈ Ideal.span {(ℓ : ℤ_[ℓ]) ^ k})
+    (z : AlgebraicClosure F) (hz : z ^ (ℓ ^ k) = 1) :
+    τ z = z ^ n := by
+  classical
+  haveI : NeZero (ℓ ^ k) := ⟨pow_ne_zero k hl.out.ne_zero⟩
+  -- the `ℓ ^ k`-th roots of unity of `Fᵃˡᵍ` come from `AlgebraicClosure ℚ`
+  obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+    (AlgebraicClosure ℚ) (ℓ ^ k)
+  have hζ' : IsPrimitiveRoot
+      (AlgebraicClosure.map (algebraMap ℚ F) ζ) (ℓ ^ k) :=
+    hζ.map_of_injective (AlgebraicClosure.map (algebraMap ℚ F)).injective
+  obtain ⟨j, -, hjz⟩ := hζ'.eq_pow_of_pow_eq_one hz
+  have hwz : AlgebraicClosure.map (algebraMap ℚ F) (ζ ^ j) = z := by
+    rw [map_pow, hjz]
+  have hwpow : (ζ ^ j) ^ (ℓ ^ k) = 1 := by
+    rw [← pow_mul, mul_comm j (ℓ ^ k), pow_mul, hζ.pow_eq_one, one_pow]
+  -- the cyclotomic character reads the action downstairs
+  have hspec : (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+      τ).toRingEquiv (ζ ^ j) = (ζ ^ j) ^ (PadicInt.toZModPow k c).val := by
+    rw [hc]
+    exact cyclotomicCharacter.spec ℓ _ _ hwpow
+  -- the truncation of `χ_cyc(τ̃)` agrees with `n` modulo `ℓ ^ k`
+  have hcv : (((PadicInt.toZModPow k c).val : ℕ) : ZMod (ℓ ^ k)) =
+      (n : ZMod (ℓ ^ k)) := by
+    rw [ZMod.natCast_val, ZMod.cast_id]
+    have h1 := hn
+    rw [← PadicInt.ker_toZModPow k, RingHom.mem_ker, map_sub, map_natCast,
+      sub_eq_zero] at h1
+    exact h1
+  -- an `ℓ ^ k`-th root of unity only sees its exponent modulo `ℓ ^ k`
+  have hexp : (ζ ^ j) ^ (PadicInt.toZModPow k c).val = (ζ ^ j) ^ n := by
+    have hmn : (PadicInt.toZModPow k c).val ≡ n [MOD ℓ ^ k] :=
+      (ZMod.natCast_eq_natCast_iff _ _ _).mp hcv
+    rcases Nat.le_total (PadicInt.toZModPow k c).val n with hle | hle
+    · obtain ⟨d, hd⟩ := (Nat.modEq_iff_dvd' hle).mp hmn
+      have hn' : n = (PadicInt.toZModPow k c).val + ℓ ^ k * d := by
+        rw [← hd]
+        exact (Nat.add_sub_cancel' hle).symm
+      rw [hn', pow_add, pow_mul, hwpow, one_pow, mul_one]
+    · obtain ⟨d, hd⟩ := (Nat.modEq_iff_dvd' hle).mp hmn.symm
+      have hq' : (PadicInt.toZModPow k c).val = n + ℓ ^ k * d := by
+        rw [← hd]
+        exact (Nat.add_sub_cancel' hle).symm
+      rw [hq', pow_add, pow_mul, hwpow, one_pow, mul_one]
+  -- transport the downstairs identity along the embedding
+  have hup := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ F) τ (ζ ^ j)
+  rw [hwz, show (Field.absoluteGaloisGroup.map (algebraMap ℚ F) τ) (ζ ^ j) =
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F) τ).toRingEquiv (ζ ^ j)
+      from rfl, hspec, hexp, map_pow, hwz] at hup
+  exact hup.symm
+
+/-- **A FINITE `ℤ_ℓ`-algebra is killed by a power of `ℓ`** (PROVEN):
+the kernel of `algebraMap ℤ_[ℓ] B` contains the (nonzero) cardinality of
+the additive group of `B`, hence is a nonzero ideal of the DVR `ℤ_[ℓ]`,
+hence is `(ℓ ^ k)` for some `k` (`PadicInt.ideal_eq_span_pow_p`). This
+is what makes `HasEnoughRootsOfUnity Kᵥᵃˡᵍ (exponent B)` available for
+character biduality below. -/
+theorem exists_natCast_pow_eq_zero_of_finite_padicAlgebra {ℓ : ℕ} [Fact ℓ.Prime]
+    (B : Type*) [CommRing B] [Finite B] [Algebra ℤ_[ℓ] B] :
+    ∃ k : ℕ, ((ℓ ^ k : ℕ) : B) = 0 := by
+  classical
+  have hm0 : Nat.card B ≠ 0 := Nat.card_ne_zero.mpr ⟨⟨0⟩, inferInstance⟩
+  have hmB : ((Nat.card B : ℕ) : B) = 0 := by
+    simpa using card_nsmul_eq_zero' (G := B) (x := (1 : B))
+  have hker : RingHom.ker (algebraMap ℤ_[ℓ] B) ≠ ⊥ := by
+    intro hbot
+    have hmem : ((Nat.card B : ℕ) : ℤ_[ℓ]) ∈ RingHom.ker (algebraMap ℤ_[ℓ] B) := by
+      rw [RingHom.mem_ker, map_natCast]
+      exact hmB
+    rw [hbot, Ideal.mem_bot] at hmem
+    exact hm0 (by exact_mod_cast hmem)
+  obtain ⟨k, hk⟩ := PadicInt.ideal_eq_span_pow_p hker
+  refine ⟨k, ?_⟩
+  have hmem : ((ℓ : ℤ_[ℓ]) ^ k) ∈ RingHom.ker (algebraMap ℤ_[ℓ] B) := by
+    rw [hk]
+    exact Ideal.mem_span_singleton_self _
+  rw [RingHom.mem_ker] at hmem
+  rw [Nat.cast_pow,
+    show ((ℓ : B)) = algebraMap ℤ_[ℓ] B (ℓ : ℤ_[ℓ]) by rw [map_natCast], ← map_pow]
+  exact hmem
+
+section MuFourier
+
+variable {Ω : Type} [Field Ω] {D : Type} [CommGroup D] [Finite D]
+variable [HasEnoughRootsOfUnity Ω (Monoid.exponent D)]
+
+variable (Ω D) in
+/-- **The Fourier character evaluation** (PROVEN construction): the
+multiplicative map `D → (D̂ → Ω)`, `d ↦ (χ ↦ χ d)`, sending a group
+element to its evaluation function on the character group. -/
+def muCharEval : D →* ((D →* Ωˣ) → Ω) where
+  toFun d := fun χ => ((χ d : Ωˣ) : Ω)
+  map_one' := by funext χ; simp
+  map_mul' d d' := by funext χ; simp
+
+/-- **Linear independence of characters** (PROVEN): the evaluation
+functions `{d ↦ (χ ↦ χ d)}` are `Ω`-linearly independent in `D̂ → Ω`.
+This is Dedekind's independence of characters
+(`linearIndependent_monoidHom` for the group `D̂`) precomposed with the
+BIDUALITY embedding `D ↪ Hom(D̂, Ωˣ)`, which is injective exactly
+because characters separate the points of `D`
+(`CommGroup.forall_apply_eq_apply_iff`). -/
+lemma muCharEval_linearIndependent :
+    LinearIndependent Ω (fun d : D => (muCharEval Ω D d : (D →* Ωˣ) → Ω)) := by
+  classical
+  have hbase := linearIndependent_monoidHom (D →* Ωˣ) Ω
+  have hinj : Function.Injective (fun d : D =>
+      (Units.coeHom Ω).comp ((CommGroup.monoidHomMonoidHomEquiv D Ω).symm d)) := by
+    intro d d' h
+    rw [← CommGroup.forall_apply_eq_apply_iff (G := D) (M := Ω)]
+    intro χ
+    have h2 := congrArg (fun (f : (D →* Ωˣ) →* Ω) => f χ) h
+    simp only [MonoidHom.coe_comp, Function.comp_apply, Units.coeHom_apply,
+      CommGroup.monoidHomMonoidHomEquiv_symm_apply_apply] at h2
+    exact Units.ext h2
+  have heq : (fun d : D => (muCharEval Ω D d : (D →* Ωˣ) → Ω)) =
+      ((fun f : (D →* Ωˣ) →* Ω => (f : (D →* Ωˣ) → Ω)) ∘
+        fun d : D => (Units.coeHom Ω).comp
+          ((CommGroup.monoidHomMonoidHomEquiv D Ω).symm d)) := by
+    funext d χ
+    simp [muCharEval, CommGroup.monoidHomMonoidHomEquiv_symm_apply_apply]
+  rw [heq]
+  exact hbase.comp _ hinj
+
+variable (Ω D) in
+/-- **The Fourier transform of the group algebra** (PROVEN
+construction): the `Ω`-algebra map `Ω[D] → (D̂ → Ω)` extending
+`muCharEval` through the universal property `MonoidAlgebra.lift`. -/
+noncomputable def muFourierAlg : MonoidAlgebra Ω D →ₐ[Ω] ((D →* Ωˣ) → Ω) :=
+  MonoidAlgebra.lift Ω _ D (muCharEval Ω D)
+
+/-- The Fourier transform is INJECTIVE (PROVEN): a kernel element is a
+vanishing `Ω`-linear combination of the evaluation functions, which are
+linearly independent. -/
+lemma muFourierAlg_injective : Function.Injective (muFourierAlg Ω D) := by
+  classical
+  rw [injective_iff_map_eq_zero]
+  intro f hf
+  have hlin : Finsupp.linearCombination Ω
+      (fun d : D => (muCharEval Ω D d : (D →* Ωˣ) → Ω)) (MonoidAlgebra.coeff f) = 0 := by
+    rw [Finsupp.linearCombination_apply]
+    have h := hf
+    rw [muFourierAlg, MonoidAlgebra.lift_apply] at h
+    exact h
+  have hli := (muCharEval_linearIndependent (Ω := Ω) (D := D))
+  rw [linearIndependent_iff] at hli
+  have h2 := hli _ hlin
+  exact MonoidAlgebra.coeff_injective (by simpa using h2)
+
+/-- The Fourier transform is BIJECTIVE (PROVEN): injective, and both
+sides have `Ω`-dimension `#D`, the right-hand side because
+`#D̂ = #D` (`CommGroup.card_monoidHom_of_hasEnoughRootsOfUnity`). -/
+lemma muFourierAlg_bijective : Function.Bijective (muFourierAlg Ω D) := by
+  classical
+  haveI : Fintype D := Fintype.ofFinite D
+  haveI : Fintype (D →* Ωˣ) := Fintype.ofFinite _
+  have hcard : Fintype.card (D →* Ωˣ) = Fintype.card D := by
+    have h := CommGroup.card_monoidHom_of_hasEnoughRootsOfUnity D Ω
+    simpa [Nat.card_eq_fintype_card] using h
+  have hdim : Module.finrank Ω (MonoidAlgebra Ω D) =
+      Module.finrank Ω ((D →* Ωˣ) → Ω) := by
+    rw [Module.finrank_pi, hcard,
+      (MonoidAlgebra.coeffLinearEquiv (R := Ω)).finrank_eq, Module.finrank_finsupp_self]
+  haveI : FiniteDimensional Ω (MonoidAlgebra Ω D) :=
+    Module.Finite.equiv (MonoidAlgebra.coeffLinearEquiv (R := Ω)).symm
+  refine ⟨muFourierAlg_injective, ?_⟩
+  exact (LinearMap.injective_iff_surjective_of_finrank_eq_finrank
+    (f := (muFourierAlg Ω D).toLinearMap) hdim).mp muFourierAlg_injective
+
+/-- **The group algebra of a finite abelian group over a field with
+enough roots of unity is ÉTALE** (PROVEN): the Fourier transform is an
+algebra ISOMORPHISM onto the finite product `D̂ → Ω` of copies of `Ω`,
+which is étale over `Ω` by the `Π`-instance of
+`Mathlib/RingTheory/Etale/Pi.lean`; étaleness transports along the
+isomorphism (`Algebra.Etale.of_equiv`). -/
+theorem etale_monoidAlgebra_of_hasEnoughRootsOfUnity :
+    Algebra.Etale Ω (MonoidAlgebra Ω D) :=
+  Algebra.Etale.of_equiv
+    (AlgEquiv.ofBijective (muFourierAlg Ω D) muFourierAlg_bijective).symm
+
+end MuFourier
+
+/-- **The group algebra of a finite abelian group over a
+characteristic-zero field is ÉTALE** (PROVEN): base change to an
+algebraic closure `Ω = AlgebraicClosure F`, where the previous theorem
+applies (characteristic zero gives `Ω` enough `exponent D`-th roots of
+unity), identify `Ω ⊗[F] F[D] ≃ₐ[Ω] Ω[D]`
+(`MonoidAlgebra.scalarTensorEquiv`), and descend along the faithfully
+flat `F → Ω` (`Algebra.Etale.of_etale_tensorProduct_of_faithfullyFlat`).
+Characteristic zero is used only for the roots of unity; the statement
+is true whenever `#D` is invertible in `F`. -/
+theorem etale_monoidAlgebra_of_charZero {F : Type} [Field F] [CharZero F]
+    {D : Type} [CommGroup D] [Finite D] :
+    Algebra.Etale F (MonoidAlgebra F D) := by
+  haveI hne : NeZero ((Monoid.exponent D : ℕ) : F) := by
+    refine ⟨?_⟩
+    have h0 : Monoid.exponent D ≠ 0 := Monoid.exponent_ne_zero_of_finite
+    exact_mod_cast fun h => h0 (by exact_mod_cast h)
+  haveI : Algebra.Etale (AlgebraicClosure F) (MonoidAlgebra (AlgebraicClosure F) D) :=
+    etale_monoidAlgebra_of_hasEnoughRootsOfUnity
+  haveI : Algebra.Etale (AlgebraicClosure F)
+      ((AlgebraicClosure F) ⊗[F] MonoidAlgebra F D) :=
+    Algebra.Etale.of_equiv (MonoidAlgebra.scalarTensorEquiv F (AlgebraicClosure F)).symm
+  exact Algebra.Etale.of_etale_tensorProduct_of_faithfullyFlat (AlgebraicClosure F)
+
+/-- **The generic fibre of `Spec 𝒪ᵥ[D]` is étale over `Kᵥ`** (PROVEN
+from the leaf above): the base change `Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ[D]` is `Kᵥ[D]`
+(`MonoidAlgebra.scalarTensorEquiv`), and `Kᵥ` has characteristic
+zero. -/
+theorem etale_adicGenericFibre_monoidAlgebra
+    {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {D : Type} [CommGroup D] [Finite D] :
+    Algebra.Etale (HeightOneSpectrum.adicCompletion ℚ v)
+      ((HeightOneSpectrum.adicCompletion ℚ v) ⊗[HeightOneSpectrum.adicCompletionIntegers ℚ v]
+        (MonoidAlgebra (HeightOneSpectrum.adicCompletionIntegers ℚ v) D)) := by
+  haveI : Algebra.Etale (HeightOneSpectrum.adicCompletion ℚ v)
+      (MonoidAlgebra (HeightOneSpectrum.adicCompletion ℚ v) D) := etale_monoidAlgebra_of_charZero
+  exact Algebra.Etale.of_equiv
+    (MonoidAlgebra.scalarTensorEquiv (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (HeightOneSpectrum.adicCompletion ℚ v)).symm
+
+section MuPoints
+
+variable (R₀ : Type) [CommRing R₀] (S₀ : Type) [Field S₀] [Algebra R₀ S₀]
+variable (L₀ : Type) [Field L₀] [Algebra S₀ L₀] [Algebra R₀ L₀] [IsScalarTower R₀ S₀ L₀]
+variable (Gm : Type) [CommGroup Gm] [Finite Gm]
+variable [HasEnoughRootsOfUnity L₀ (Monoid.exponent Gm)]
+
+set_option maxSynthPendingDepth 4 in
+/-- **The geometric points of the diagonalizable group scheme**
+(PROVEN): the `L₀`-points of the generic fibre `S₀ ⊗[R₀] R₀[D]` of
+`Spec R₀[D]`, `D = Hom(Gm, L₀ˣ)`, are `Gm` itself. Three composed
+equivalences: the base-change adjunction `AlgHom.liftEquiv`, the
+universal property `MonoidAlgebra.lift` of the group algebra, and
+character BIDUALITY `CommGroup.monoidHomMonoidHomEquiv` (through
+`MonoidHom.toHomUnitsMulEquiv`, since homomorphisms out of a group land
+in the units). -/
+noncomputable def muTypePointsEquiv :
+    (S₀ ⊗[R₀] MonoidAlgebra R₀ (Gm →* L₀ˣ) →ₐ[S₀] L₀) ≃ Gm :=
+  (AlgHom.liftEquiv R₀ S₀ (MonoidAlgebra R₀ (Gm →* L₀ˣ)) L₀).symm.trans
+    ((MonoidAlgebra.lift R₀ L₀ (Gm →* L₀ˣ)).symm.trans
+      ((MonoidHom.toHomUnitsMulEquiv (G := Gm →* L₀ˣ) (M := L₀)).toEquiv.trans
+        (CommGroup.monoidHomMonoidHomEquiv Gm L₀).toEquiv))
+
+variable {R₀ S₀ L₀ Gm}
+
+set_option maxSynthPendingDepth 4 in
+/-- The defining formula of `muTypePointsEquiv` (PROVEN): the character
+`χ` evaluated at the point of `Gm` attached to `φ` is the value of `φ`
+on the group-like `1 ⊗ₜ single χ 1`. Everything below is derived from
+this one identity together with
+`CommGroup.forall_apply_eq_apply_iff` (characters separate points). -/
+lemma muTypePointsEquiv_apply
+    (φ : S₀ ⊗[R₀] MonoidAlgebra R₀ (Gm →* L₀ˣ) →ₐ[S₀] L₀) (χ : Gm →* L₀ˣ) :
+    ((χ (muTypePointsEquiv R₀ S₀ L₀ Gm φ) : L₀ˣ) : L₀) =
+      φ (1 ⊗ₜ[R₀] MonoidAlgebra.single χ (1 : R₀)) := by
+  have h : muTypePointsEquiv R₀ S₀ L₀ Gm φ =
+      (CommGroup.monoidHomMonoidHomEquiv Gm L₀)
+        (MonoidHom.toHomUnits ((MonoidAlgebra.lift R₀ L₀ (Gm →* L₀ˣ)).symm
+          ((AlgHom.liftEquiv R₀ S₀ (MonoidAlgebra R₀ (Gm →* L₀ˣ)) L₀).symm φ))) := rfl
+  rw [h, CommGroup.apply_monoidHomMonoidHomEquiv]
+  rfl
+
+end MuPoints
+
+section MuMain
+
+variable {ℓ : ℕ} [Fact ℓ.Prime]
+variable {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+variable {B : Type} [CommRing B] [TopologicalSpace B] [Algebra ℤ_[ℓ] B] [Finite B]
+
+local notation "Kv" => HeightOneSpectrum.adicCompletion ℚ v
+local notation "Ov" => HeightOneSpectrum.adicCompletionIntegers ℚ v
+local notation "Om" => AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)
+local notation "Dl" => Multiplicative B →*
+  (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))ˣ
+local notation "Hh" => MonoidAlgebra (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+  (Multiplicative B →* (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))ˣ)
+
+set_option maxSynthPendingDepth 4 in
+set_option maxHeartbeats 1000000 in
+/-- **Any rank-one representation acting by the cyclotomic character on
+a FINITE coefficient ring has a flat prolongation at every place**
+(PROVEN 2026-07-26, sorry-free):
+the witness is `Spec 𝒪ᵥ[D]`, `D = Hom(Multiplicative B, (Kᵥᵃˡᵍ)ˣ)`.
+
+The three clauses of `HasFlatProlongationAt` are discharged as follows.
+*Finite flat Hopf order*: `MonoidAlgebra.instHopfAlgebra` over the
+finite group `D` (finite because `Kᵥᵃˡᵍ` has enough roots of unity for
+the exponent of `B`, which is an `ℓ`-power by
+`exists_natCast_pow_eq_zero_of_finite_padicAlgebra`), free of rank `#D`
+over `𝒪ᵥ`. *Étale generic fibre*: `etale_adicGenericFibre_monoidAlgebra`.
+*Points*: `muTypePointsEquiv`, whose defining formula turns each of the
+three required compatibilities into a statement about the VALUES
+`φ (1 ⊗ₜ single χ 1)`, since characters separate points of a finite
+abelian group. Multiplicativity is the convolution product evaluated on
+the group-like `single χ 1` (`MonoidAlgebra.comul_single` plus the
+proven base-change bridges `liftEquiv_symm_convMul` /
+`liftEquiv_symm_convOne`), and equivariance is
+`galoisApply_eq_pow_of_cyclotomicCharacter_sub_mem`: each value is an
+`ℓ^k`-th root of unity, so `σ` raises it to the power `n ≡ χ_cyc(σ̃)`,
+which under biduality is multiplication by `n = χ_cyc(σ̃)` on `B`. -/
+theorem hasFlatProlongationAt_of_cycUnitChar
+    (ρ₀ : GaloisRep ℚ B B)
+    (hρ₀ : ∀ (g : Field.absoluteGaloisGroup ℚ) (x : B), ρ₀ g x =
+      algebraMap ℤ_[ℓ] B
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv : ℤ_[ℓ]ˣ) : ℤ_[ℓ]) * x) :
+    ρ₀.HasFlatProlongationAt v := by
+  classical
+  obtain ⟨k, hk⟩ := exists_natCast_pow_eq_zero_of_finite_padicAlgebra (ℓ := ℓ) B
+  -- `ℓ ^ k` kills the additive group of `B`
+  have hpow : ∀ b : Multiplicative B, b ^ (ℓ ^ k) = 1 := by
+    intro b
+    have hz : (ℓ ^ k) • (Multiplicative.toAdd b) = (0 : B) := by
+      rw [← Nat.cast_smul_eq_nsmul B, hk, zero_smul]
+    have h2 := congrArg (Multiplicative.ofAdd (α := B)) hz
+    rwa [ofAdd_nsmul, ofAdd_zero, ofAdd_toAdd] at h2
+  haveI hne : NeZero ((Monoid.exponent (Multiplicative B) : ℕ) : Kv) := by
+    refine ⟨?_⟩
+    have h0 : Monoid.exponent (Multiplicative B) ≠ 0 := Monoid.exponent_ne_zero_of_finite
+    exact_mod_cast fun h => h0 (by exact_mod_cast h)
+  -- the geometric points of the generic fibre are `Multiplicative B`
+  have hEval := muTypePointsEquiv_apply (R₀ := Ov) (S₀ := Kv) (L₀ := Om) (Gm := Multiplicative B)
+  set E := muTypePointsEquiv Ov Kv Om (Multiplicative B)
+  -- the convolution product evaluates by the ordinary product on the
+  -- group-like `single χ 1`
+  have hconv : ∀ (φ ψ : Kv ⊗[Ov] Hh →ₐ[Kv] Om) (χ : Dl),
+      (φ * ψ) ((1 : Kv) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov)) =
+        φ (1 ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov)) *
+          ψ (1 ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov)) := by
+    intro φ ψ χ
+    have hcs : Coalgebra.comul (R := Ov) (MonoidAlgebra.single χ (1 : Ov)) =
+        MonoidAlgebra.single χ (1 : Ov) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov) := by
+      simp [MonoidAlgebra.comul_single]
+    have h2 := liftEquiv_symm_convMul (R := Ov) (S := Kv) (H₀ := Hh) (B₀ := Om)
+      (toConv φ) (toConv ψ)
+    rw [WithConv.ofConv_toConv, WithConv.ofConv_toConv, ← vendored_mul_eq_convMul] at h2
+    have h3 := congrArg (fun f : Hh →ₐ[Ov] Om => f (MonoidAlgebra.single χ (1 : Ov))) h2
+    simp only at h3
+    have hgoal : (φ * ψ) ((1 : Kv) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov)) =
+        ((AlgHom.liftEquiv Ov Kv Hh Om).symm (φ * ψ)) (MonoidAlgebra.single χ (1 : Ov)) := rfl
+    rw [hgoal, h3]
+    have h4 : (toConv ((AlgHom.liftEquiv Ov Kv Hh Om).symm φ) *
+        toConv ((AlgHom.liftEquiv Ov Kv Hh Om).symm ψ)).ofConv
+          (MonoidAlgebra.single χ (1 : Ov)) =
+        Algebra.TensorProduct.lift ((AlgHom.liftEquiv Ov Kv Hh Om).symm φ)
+          ((AlgHom.liftEquiv Ov Kv Hh Om).symm ψ) (fun _ _ => Commute.all _ _)
+          (Coalgebra.comul (R := Ov) (MonoidAlgebra.single χ (1 : Ov))) :=
+      AlgHom.convMul_apply _ _ _
+    rw [h4, hcs, Algebra.TensorProduct.lift_tmul]
+    rfl
+  -- the convolution unit takes the value `1` on the group-like
+  have hcone : ∀ (χ : Dl),
+      (1 : Kv ⊗[Ov] Hh →ₐ[Kv] Om) ((1 : Kv) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov)) = 1 := by
+    intro χ
+    have h2 := liftEquiv_symm_convOne (R := Ov) (S := Kv) (H₀ := Hh) (B₀ := Om)
+    rw [← vendored_one_eq_convOne] at h2
+    have h3 := congrArg (fun f : Hh →ₐ[Ov] Om => f (MonoidAlgebra.single χ (1 : Ov))) h2
+    have hgoal : (1 : Kv ⊗[Ov] Hh →ₐ[Kv] Om)
+          ((1 : Kv) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov)) =
+        ((AlgHom.liftEquiv Ov Kv Hh Om).symm (1 : Kv ⊗[Ov] Hh →ₐ[Kv] Om))
+          (MonoidAlgebra.single χ (1 : Ov)) := rfl
+    rw [hgoal, h3]
+    show algebraMap Ov Om (Coalgebra.counit (R := Ov)
+      (MonoidAlgebra.single χ (1 : Ov))) = 1
+    rw [MonoidAlgebra.counit_single, CommSemiring.counit_apply, map_one]
+  -- the three transport facts for the points identification
+  have hmulE : ∀ (φ ψ : Kv ⊗[Ov] Hh →ₐ[Kv] Om), E (φ * ψ) = E φ * E ψ := by
+    intro φ ψ
+    rw [← CommGroup.forall_apply_eq_apply_iff (G := Multiplicative B) (M := Om)]
+    intro χ
+    apply Units.ext
+    rw [map_mul χ, Units.val_mul, hEval, hEval, hEval]
+    exact hconv φ ψ χ
+  have honeE : E (1 : Kv ⊗[Ov] Hh →ₐ[Kv] Om) = 1 := by
+    rw [← CommGroup.forall_apply_eq_apply_iff (G := Multiplicative B) (M := Om)]
+    intro χ
+    apply Units.ext
+    rw [map_one χ, Units.val_one, hEval]
+    exact hcone χ
+  have hrootE : ∀ (φ : Kv ⊗[Ov] Hh →ₐ[Kv] Om) (χ : Dl),
+      (φ ((1 : Kv) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov))) ^ (ℓ ^ k) = 1 := by
+    intro φ χ
+    rw [← hEval, ← Units.val_pow_eq_pow_val, ← map_pow, hpow, map_one, Units.val_one]
+  refine ⟨Hh, inferInstance,
+    MonoidAlgebra.instHopfAlgebra (R := Ov) (A := Ov) (G := Dl),
+    inferInstance, inferInstance, etale_adicGenericFibre_monoidAlgebra,
+    { toFun := fun x => Multiplicative.toAdd (E x.toMul)
+      map_smul' := ?_
+      map_zero' := ?_
+      map_add' := ?_ }, ?_⟩
+  · intro σ x
+    show Multiplicative.toAdd (E ((σ • x).toMul)) =
+      σ • (Multiplicative.toAdd (E x.toMul) : (ρ₀.toLocal v).Space)
+    set c : ℤ_[ℓ] := ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ Kv) σ).toRingEquiv) : ℤ_[ℓ]ˣ) : ℤ_[ℓ])
+      with hcdef
+    obtain ⟨n, hn⟩ : ∃ n : ℕ, c - (n : ℤ_[ℓ]) ∈ Ideal.span {(ℓ : ℤ_[ℓ]) ^ k} := by
+      refine ⟨(PadicInt.toZModPow k c).val, ?_⟩
+      rw [← PadicInt.ker_toZModPow k, RingHom.mem_ker, map_sub, map_natCast,
+        ZMod.natCast_val, ZMod.cast_id, sub_self]
+    have hEn : E ((σ • x).toMul) = (E x.toMul) ^ n := by
+      rw [← CommGroup.forall_apply_eq_apply_iff (G := Multiplicative B) (M := Om)]
+      intro χ
+      apply Units.ext
+      rw [hEval, map_pow χ, Units.val_pow_eq_pow_val, hEval]
+      show σ (x.toMul ((1 : Kv) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov))) = _
+      exact galoisApply_eq_pow_of_cyclotomicCharacter_sub_mem σ k n c hcdef hn _
+        (hrootE x.toMul χ)
+    have hcn : ((n : ℕ) : B) = algebraMap ℤ_[ℓ] B c := by
+      obtain ⟨d, hd⟩ := Ideal.mem_span_singleton.mp hn
+      have h1 : algebraMap ℤ_[ℓ] B (c - (n : ℤ_[ℓ])) = 0 := by
+        rw [hd, map_mul, map_pow,
+          show algebraMap ℤ_[ℓ] B (ℓ : ℤ_[ℓ]) = ((ℓ : ℕ) : B) by rw [map_natCast],
+          ← Nat.cast_pow, hk, zero_mul]
+      rw [map_sub, map_natCast, sub_eq_zero] at h1
+      exact h1.symm
+    rw [hEn, toAdd_pow]
+    show ((n : ℕ) • (Multiplicative.toAdd (E x.toMul)) : B) =
+      (ρ₀.toLocal v) σ (Multiplicative.toAdd (E x.toMul))
+    rw [GaloisRep.toLocal_apply, hρ₀, ← Nat.cast_smul_eq_nsmul B, smul_eq_mul, hcn, hcdef]
+    exact congrArg (fun (h : ℚ →+* HeightOneSpectrum.adicCompletion ℚ v) =>
+      algebraMap ℤ_[ℓ] B ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+        ((Field.absoluteGaloisGroup.map h σ).toRingEquiv) : ℤ_[ℓ]ˣ) : ℤ_[ℓ]) *
+        Multiplicative.toAdd (E x.toMul)) (Subsingleton.elim _ _)
+  · show Multiplicative.toAdd (E (1 : Kv ⊗[Ov] Hh →ₐ[Kv] Om)) = 0
+    rw [honeE]
+    rfl
+  · intro x y
+    show Multiplicative.toAdd (E (x.toMul * y.toMul)) = _
+    rw [hmulE]
+    rfl
+  · show Function.Bijective (fun x : Additive (Kv ⊗[Ov] Hh →ₐ[Kv] Om) =>
+      Multiplicative.toAdd (E x.toMul))
+    exact Multiplicative.toAdd.bijective.comp (E.bijective.comp Additive.toMul.bijective)
+
+end MuMain
+
+end MuTypeFactor
+
+/-- **The DIAGONALIZABLE (`μ`-typed) group scheme** (PROVEN 2026-07-26
+by `hasFlatProlongationAt_of_cycUnitChar` in the block above, sorry-free): the rank-one
+cyclotomic member over a FINITE coefficient ring has a flat prolongation
+at every place. The witness is `Spec 𝒪ᵥ[D]`, the group algebra
+(mathlib's `MonoidAlgebra.instHopfAlgebra`) of the character group
+`D = (Multiplicative B →* (Kᵥᵃˡᵍ)ˣ)`: it is finite free over `𝒪ᵥ`,
 its generic fibre `Kᵥ[D]` is étale over `Kᵥ` in characteristic zero,
 and its `Kᵥᵃˡᵍ`-points are `D →* (Kᵥᵃˡᵍ)ˣ` (`MonoidAlgebra.lift`),
 which character BIDUALITY identifies with `B` itself
 (`CommGroup.monoidHomMonoidHomEquiv`, applicable because a finite ring
 `B` admitting a ring map from `ℤ_ℓ` is killed by a power of `ℓ` — the
 kernel of `ℤ_ℓ → B` is a nonzero ideal `ℓ^k ℤ_ℓ` — so its exponent is
-an `ℓ`-power and `ℚ̄` has enough roots of unity for it). Under that
+an `ℓ`-power and `Kᵥᵃˡᵍ` has enough roots of unity for it). Under that
 identification `σ` acts by `ζ ↦ ζ ^ χ_cyc(σ)` on the values, which is
-exactly multiplication by `cycUnitChar ℓ B σ` on `B`: that is the
-defining property of the cyclotomic character
-(`cyclotomicCharacter.toZModPow` + `modularCyclotomicCharacter.unique`,
-the same route as `adicArithFrob_rootsOfUnity_pow_of_ne` above). -/
+exactly multiplication by `cycUnitChar ℓ B σ` on `B`. -/
 theorem hasFlatProlongationAt_cycScalarRep {ℓ : ℕ} [Fact ℓ.Prime]
     {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
     {B : Type} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
     [Algebra ℤ_[ℓ] B] [Finite B]
     (hcont : Continuous (algebraMap ℤ_[ℓ] B)) :
     (cycScalarRep hcont).HasFlatProlongationAt v :=
-  sorry
+  hasFlatProlongationAt_of_cycUnitChar (cycScalarRep hcont) (fun g x => by
+    rw [cycScalarRep_apply, smul_eq_mul, cycUnitChar])
 
 /-- **The Eisenstein member over a FINITE coefficient ring has a flat
 prolongation at every place** (PROVEN from the three group-scheme

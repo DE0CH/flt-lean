@@ -1,19 +1,34 @@
 #!/usr/bin/env python3
-"""Free-floating-code detection (Deyao, 2026-07-23: "get rid of the
-caching and use the language server, the language server should
-handle the caching for us").
+"""Free-floating-code detection: project declarations that no proof term
+reachable from the root theorem `fermat_last_theorem` actually uses.
 
-The floating sweep runs INSIDE ProgressCensus.lean's runCensus (the
-"floating" field of its JSON output) -- the same always-open,
-warm-elaborated environment progress-tree.py's census already queries,
-via the resident flt-report-server. No scratch file, no `lake env
-lean` subprocess, no custom mtime-keyed cache: Lean's own incremental
-elaboration IS the cache (progress-tree.py's STALENESS section --
-unchanged source -> identity didChange -> diagnostics republished from
-cached snapshots in seconds; verified empirically: ~30-40s after a
-real source edit, 0.4s warm).
+The sweep itself runs INSIDE ProgressCensus.lean's `runCensus` -- the
+"floating" field of its JSON output, computed with ImportGraph's
+`Name.transitivelyUsedConstants` (a vendored transitive dependency through
+mathlib's own lakefile, not a hand-rolled BFS). This script is a thin
+standalone entry point over that one query, and all it adds is the
+keep-list post-filter below.
 
-This script now only does the keep-list post-filter.
+TRANSPORT. It reuses progress-tree.py's `run_census()`, which since
+2026-07-25 is ONE `lake env lean ProgressCensus.lean` run over ssh on the
+worktree's assigned host. There is no resident server, no `.report-server/`,
+no LSP and no cache -- see progress-tree.py's module docstring for why that
+design was deleted. Two consequences carry over unchanged:
+
+  * each run pays the IMPORT LOAD of the whole project cone (minutes), so
+    run this once per bookkeeping cycle, never in a loop; and
+  * the tree must be BUILT, because the census reads oleans. This matters
+    especially here: a module that fails to build contributes NO
+    declarations at all, so everything it defines would be reported as
+    floating. A partial census gives a WRONG floating answer, which is why
+    neither this script nor run_census() has a degraded mode -- they answer
+    fully or die with lake's real error.
+
+A sorried body contributes no dependency edges, so material built bottom-up
+for a still-sorried consumer reads as floating until the consumer's proof
+skeleton is written to consume it. Reduce floaters by writing the consuming
+proofs, top-down -- not by blind deletion sweeps, and never by `private`,
+which hides from this check rather than satisfying it.
 """
 import importlib.util
 import json
