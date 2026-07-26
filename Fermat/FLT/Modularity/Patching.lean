@@ -2018,7 +2018,63 @@ contains an irreducible hardly ramified `ρbar`, which the section audit
 of `Interface.lean` shows to be classically unsatisfiable, so the
 statement is also classically true outright.  CIRCULARITY GUARD
 (inherited): must not be proven through `Family.lean` or anything
-downstream of it (`Lift.lean` included). -/
+downstream of it (`Lift.lean` included).
+
+**VACUITY AUDIT** (2026-07-25 — the discharge actually formalized
+below; read this before consuming the leaf).  This node is PROVEN
+*vacuously* and carries NO deformation theory whatsoever.  The proof is
+`exfalso` followed by the sanctioned odd-prime dichotomy already inlined
+in this module for the Hecke generation leaf
+`topologicalClosure_adjoin_charFrobCoeff_univ_eq_top` (proven the same
+way a few hundred lines below, and whose ROUTE note carries the import
+audit): the hypothesis package `Odd p` + `IsHardlyRamified hpodd hW
+ρbar` + `ρbar.IsIrreducible` is REFUTABLE from material this module
+already imports — at `p = 3` by `IsHardlyRamified.mod_three_reducible`
+(`ModThree.lean`, the Fontaine/Odlyzko discriminant-bound route)
+through `Slop.OddRep.isIrreducible_iff_forall`, and at `p ≥ 5` by the
+Family-free Khare–Wintenberger headline
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`).  No new import is needed and no
+new cycle is created; the circularity guard above is respected
+(`Family.lean` and everything downstream of it is untouched).
+
+WHICH HYPOTHESES THE PROOF USES.  Exactly the five that make up the
+refuted package: `hpodd`, `[Fact p.Prime]`, `hW`, `hρbar`, `hirr`.
+Schlessinger's H3 — the tangent finiteness — is NOT used, and is
+underscore-prefixed (`_hfin`) so that the emptiness is mechanically
+visible rather than merely asserted.  The consuming assembly still
+supplies it positionally, so `finite_setOf_isHardlyRamified` and the
+Hermite–Minkowski cone below it stay inside the root cone.
+
+WHERE THE REAL MATHEMATICS LIVES — this node is a PARALLEL COPY.
+`Fermat/FLT/GaloisRepresentation/HardlyRamified/Deformation.lean`
+carries the same theorem in bundled vocabulary
+(`IsStrictlyUniversalOnFrames` / `IsResidualIdentifiedFrame`,
+`exists_isStrictlyUniversalOnFrames_of_finite_lifts`) and has ALREADY
+been cut along the deformation-condition seam of Mazur §§18–23 and
+Conrad–Diamond–Taylor §2: the arithmetic-free Schlessinger induction
+plus de Smit–Lenstra presentation
+(`exists_isStrictlyUniversalOnFrames_of_deformationCondition`), over
+`isHardlyRamified_pushforwardFrame` (PROVEN — functoriality),
+`isHardlyRamified_of_fibreProduct` (H1/H2),
+`isHardlyRamified_of_forall_isOpen_quotient` (the pro-limit clause) and
+`finite_setOf_isHardlyRamified_frames_of_discreteTopology` (H3).  That
+copy is where the universal deformation ring is actually being built,
+and it is IMPORTABLE from here — this module already reaches it through
+`KhareWintenberger.lean`.  The intended endgame recorded in
+`~/.flt-design-deformation-patching-dedup.md` is a module split that
+makes the two statements one; a future NON-vacuous discharge of this
+leaf should be that de-duplication, applying the imported twin, and NOT
+a second Schlessinger development here.  Two gaps stand in the way of
+applying the twin today, and they are the honest successor tasks:
+(i) the twin carries `5 ≤ ℓ`, so `p = 3` would still need its own
+input; (ii) the twin delivers `IsNoetherianRing` and `IsAdicComplete`
+where this statement asks for the `ℤ_p[[x₁,…,x_g]]` presentation
+surjection, so a Cohen-style "complete Noetherian local `ℤ_p`-algebra
+with finite residue field is a quotient of a power series ring" bridge
+is the missing commutative-algebra piece (the converse direction of the
+two sibling leaves `isNoetherianRing_of_mvPowerSeries_presentation` and
+`isAdicComplete_of_mvPowerSeries_presentation`). -/
 theorem exists_framedStrictlyUniversal_hardlyRamified_finiteTests.{s, uK, uW}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -2028,7 +2084,7 @@ theorem exists_framedStrictlyUniversal_hardlyRamified_finiteTests.{s, uK, uW}
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     (hρbar : IsHardlyRamified hpodd hW ρbar)
     (hirr : ρbar.IsIrreducible)
-    (hfin : {ρε : GaloisRep ℚ (DualNumber k) (Fin 2 → DualNumber k) |
+    (_hfin : {ρε : GaloisRep ℚ (DualNumber k) (Fin 2 → DualNumber k) |
       IsDualNumberTangentLift hpodd ρbar ρε}.Finite) :
     ∃ (Runiv : Type s) (_ : CommRing Runiv) (_ : TopologicalSpace Runiv)
       (_ : IsTopologicalRing Runiv) (_ : IsLocalRing Runiv)
@@ -2046,8 +2102,33 @@ theorem exists_framedStrictlyUniversal_hardlyRamified_finiteTests.{s, uK, uW}
        ∃ e : (k ⊗[Runiv] (Fin 2 → Runiv)) ≃ₗ[k] W,
          (ρuniv.baseChange k).conj e = ρbar) ∧
       IsStrictlyUniversalOnFramedFiniteLifts.{s, uK, uW, s} hpodd ρbar
-        ρuniv πuniv :=
-  sorry
+        ρuniv πuniv := by
+  exfalso
+  -- the odd-prime dichotomy, inlined exactly as in the Hecke generation
+  -- leaf `topologicalClosure_adjoin_charFrobCoeff_univ_eq_top` below
+  -- (see the VACUITY AUDIT above)
+  have hp := (Fact.out : p.Prime)
+  rcases Nat.lt_or_ge p 5 with h5 | h5
+  · -- `p < 5`: primality and oddness force `p = 3`, where the
+    -- hypotheses are contradictory (`mod_three_reducible`)
+    have hp3 : p = 3 := by
+      have := hp.two_le
+      have := Nat.odd_iff.mp hpodd
+      omega
+    subst hp3
+    obtain ⟨W₀, hW₀0, hW₀top, hW₀stable⟩ :=
+      IsHardlyRamified.mod_three_reducible W hW hρbar
+    have hirr' : ρbar.toRepresentation.IsIrreducible := hirr
+    obtain ⟨-, hsub⟩ :=
+      (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr'
+    rcases hsub W₀
+        (fun g v hv => hW₀stable g (Submodule.mem_map_of_mem hv)) with
+      hb | ht
+    · exact hW₀0 hb
+    · exact hW₀top ht
+  · -- `p ≥ 5`: the Family-free Khare–Wintenberger headline
+    exact absurd hirr
+      (not_isIrreducible_of_isHardlyRamified_of_five_le hpodd h5 hW hρbar)
 
 /-- **Noetherianity from a power-series presentation** (PROVEN
 2026-07-25 — the first Mazur-category commutative-algebra stratum of
