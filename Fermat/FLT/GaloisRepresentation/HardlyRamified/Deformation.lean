@@ -17703,6 +17703,47 @@ situation where it has content. The cardinal-valued `Module.rank` has
 no such degenerate case, and the consumer recovers finite-dimensionality
 from the bound itself.
 
+EXPOSURE AUDIT AND CIRCULARITY GUARD (2026-07-26 — added because this
+was the only leaf of its audit batch carrying neither). The hypothesis
+package here contains an irreducible hardly ramified `ρbar` over `ℚ`,
+which is exactly the package this development refutes for every odd
+prime. So the question "is this leaf dischargeable from `False`?" has to
+be asked, and the answer is NO, for two INDEPENDENT reasons:
+
+* **Applicability.** `IsHardlyRamified.mod_three_reducible`
+  (`ModThree.lean`) is hard-wired to the prime `3`: it demands
+  `[Algebra ℤ_[3] k]` and `IsHardlyRamified (show Odd 3 by decide)`.
+  This leaf carries `hℓ5 : 5 ≤ ℓ`, so there is no `ℓ = 3` instance to
+  feed it. That route is closed MATHEMATICALLY, not merely by scope,
+  and it stays closed however the imports are rearranged.
+* **Scope.** Both `ℓ ≥ 5` refutations are DOWNSTREAM of this module —
+  `not_isIrreducible_of_isHardlyRamified_of_five_le`
+  (`Modularity/KhareWintenberger.lean`) and
+  `not_isIrreducible_of_isHardlyRamified_of_odd`
+  (`Modularity/Interface.lean`) — and this file imports neither, nor
+  `ModThree.lean`.
+
+BANNED INPUTS, should either ever come into scope: neither refutation
+may be used here, nor anything proven over them. Both are themselves
+OPEN leaves whose intended proofs run THROUGH modularity lifting, which
+is in turn proven over the deformation-theoretic bound this leaf
+supplies — so a discharge from them would prove this leaf from its own
+consequence. The build would stay green and `#print axioms` would stay
+honest; only a human-level reading catches it.
+
+*Why the hypothesis package is nevertheless left UNCHANGED.* `h :
+IsHardlyRamified hℓOdd hdim ρbar` is very nearly redundant here: the
+argument above uses only its `det` field (to pin `dim_k ad⁰ ρbar = 3`),
+and the flat-at-`ℓ` and tame-at-`2` local conditions with respect to
+which the `Ш²_S` count is taken arrive through `D.isHardlyRamified` —
+a condition on the DEFORMATION, not on `ρbar`. Narrowing `h` to its
+`det` clause would therefore cost the leaf nothing mathematically. It is
+not done, because it would close no discharge route (none is open, per
+the two reasons above) while costing every consumer a signature change.
+Contrast `Patching.lean`'s `IsTaylorWilesResidual`, where the same
+narrowing WAS made — there the refutations are genuinely in scope, so
+the narrowing removes a real free proof.
+
 References: Böckle, *Presentations of universal deformation rings*
 (and his appendix to Khare's Serre-conjecture notes);
 Khare–Wintenberger, *Serre's modularity conjecture (I)*, §4;
