@@ -12176,6 +12176,146 @@ theorem isOpen_span_pow_p {A : Type*} [CommRing A] [Algebra ℤ_[p] A]
   rw [← himg]
   exact hopenmap _ hSopen
 
+/-- **Equivariant `O`-span cover of the `O`-lattice by finitely many
+`Γ ℚ`-maps out of `V`** (Eisenstein pillar E2b′-flat, arithmetic half;
+CARVED 2026-07-26 out of `exists_equivariantCover_of_generic_iso`, whose
+whole content it now carries): there are finitely many `Γ ℚ`-equivariant,
+`ℤ_p`-semilinear additive maps `φ i : V → (Fin 2 → O)` whose images span,
+over `O`, a submodule of `Fin 2 → O` containing `p^c (Fin 2 → O)`.
+
+Write `Λ := Fin 2 → O`, `Ω := AlgebraicClosure ℚ_p`, and let
+`j : ℤ_p → Ω` be the common composite
+`algebraMap O Ω ∘ algebraMap ℤ_p O = algebraMap R Ω ∘ algebraMap ℤ_p R`
+— that equality IS `hZOcompat`. NOTE nothing in the hypotheses forces `j`
+to be the standard inclusion `ℤ_p ⊆ ℚ_p ⊆ Ω`; the argument below is
+written for an arbitrary `j` and needs only that `Ω` is an algebraically
+closed field of characteristic zero. Put `k := j(ℚ_p) ⊆ Ω`.
+
+ROUTE — ELEMENTARY, and much cheaper than the conjugate-fibre route
+recorded on the parent (see WHY, below). No `p`-adic Hodge theory, no
+`p`-divisible groups, no crystalline representations, no splitting of
+`O ⊗ Ω`, no `ℚ_p`-rational Hom-descent.
+
+1. `(p : O) ≠ 0`, since `hOinj` embeds `O` into the characteristic-zero
+   field `Ω`. `O` is a domain module-finite over `ℤ_p`, so
+   `algebraMap ℤ_p O` is injective (its kernel is a prime of `ℤ_p` not
+   containing `p`, hence `0`), `Λ` is `ℤ_p`-torsion-free, hence a finite
+   FREE `ℤ_p`-module. The same argument makes `R` `ℤ_p`-torsion-free and
+   `V` — free over `R` — a finite free `ℤ_p`-module.
+2. `T := {φ : V →ₗ[ℤ_p] Λ | ∀ σ, φ ∘ ρ σ = ρO σ ∘ φ}` is an
+   **`O`-submodule** of `P := (V →ₗ[ℤ_p] Λ)`: `ρO σ` is `O`-linear, so
+   `a • φ` is equivariant whenever `φ` is. *This is the observation the
+   whole simplification rests on.* `P ≅ Λ ^ (rank_{ℤ_p} V)` is finite
+   free over `O`, and `T = ⋂_σ ker (φ ↦ φ ∘ ρ σ − ρO σ ∘ φ)` is an
+   intersection of `O`-submodules; `O` is noetherian, so that
+   intersection is already a FINITE subintersection.
+3. **Descent along the single embedding `ι : O → Ω`.** `Ω` is flat over
+   `O`: `O → K_O := O[1/p]` is a localization and, `K_O` being a finite
+   field extension of `k` (a finite `k`-algebra that is a domain),
+   `K_O → Ω` is a field extension. Flat base change turns each kernel in
+   2 into its base change, and the intersection is finite, so
+   `T ⊗_O Ω = {Γ ℚ-equivariant Ω-linear maps Ω ⊗_{ℤ_p} V → Ω ⊗_O Λ}`
+   inside `P ⊗_O Ω = Hom_Ω (Ω ⊗_{ℤ_p} V, Ω ⊗_O Λ)` (an equality of
+   `Hom`s because `V` is `ℤ_p`-free of finite rank and `Λ` is `O`-free).
+4. **The `ι`-fibre is a quotient of `Ω ⊗_{ℤ_p} V`; this is the only use
+   of `e`, and only ONE fibre is ever needed.** The natural map
+   `Ω ⊗_{ℤ_p} V ↠ Ω ⊗_R V` (base change along the surjective
+   `Ω`-algebra map `Ω ⊗_{ℤ_p} R ↠ Ω`, `a ⊗ r ↦ a · ι_R r`) is surjective,
+   and `Γ ℚ`-equivariant because `ρ` is `R`-linear. Composing with `e⁻¹`
+   (equivariant by `he`) gives a `Γ ℚ`-equivariant `Ω`-linear SURJECTION
+   `g : Ω ⊗_{ℤ_p} V ↠ Ω ⊗_O Λ`.
+5. By 3, `g = Σ_t φ_t ⊗ λ_t` with `φ_t ∈ T` and `λ_t ∈ Ω`. Every element
+   of `Ω ⊗_{ℤ_p} V` is an `Ω`-combination of pure tensors `1 ⊗ v`, so
+   `im g` lies in the `Ω`-span of `{1 ⊗ φ_t v}`; `g` is onto, so with
+   `S := Σ_t O · im φ_t ⊆ Λ` one gets `(Λ ⧸ S) ⊗_O Ω = 0`, hence
+   `(Λ ⧸ S) ⊗_O K_O = 0` (a nonzero `K_O`-vector space stays nonzero
+   after `⊗_{K_O} Ω`).
+6. So every element of `Λ ⧸ S` is killed by a power of `p`; `Λ ⧸ S` is a
+   finite `ℤ_p`-module, so a single `p^c` kills it, i.e. `p^c Λ ⊆ S`.
+   Take `φ` to be the family `(φ_t)` of step 5, read as additive maps:
+   each is `ℤ_p`-semilinear in the stated sense because it is
+   `ℤ_p`-linear and the `ℤ_p`-action on `V` factors through
+   `algebraMap ℤ_p R`.
+
+WHY THE CONJUGATE-FIBRE ROUTE IS NOT NEEDED (recorded so that it is not
+reinstated). The route written on the parent decomposed
+`Ω ⊗_{ℤ_p} O ≅ ∏_τ Ω` over the `k`-embeddings `τ` of `K_O`, produced
+EVERY `Ω`-fibre of `ρO` as an `Aut(Ω/k)`-conjugate of a fibre of `ρ`,
+and then descended `Hom` from `Ω` all the way to `ℚ_p`. That is correct,
+but it needs the splitting of a finite separable algebra over an
+algebraically closed field, the extension of an embedding of `K_O` to an
+automorphism of `Ω`, and a `ℚ_p`-rational Hom-descent — none of which is
+in the pin. All three disappear once one notices (step 2) that the `Hom`
+module is an `O`-module: descending along the single embedding `ι` that
+`e` already refers to gives the answer, and the `ι`-fibre is exactly what
+`e` hands over. What remains is flat base change of a `Hom` module plus
+`ℤ_p`-torsion bookkeeping.
+
+FAITHFULNESS AUDIT. The leaf demands a `Γ ℚ`-WIDE equivariance, which is
+the dangerous side of this development's `𝒪ᵥ` descent rule ("values
+descend from `𝒪^nr`, the existence of a coordinate does not"). It is
+nevertheless faithful, and the reason is structural: that rule governs
+`𝒪ᵥ`-RATIONAL POINTS of group schemes, where the obstruction is an
+unramified twist invisible to inertia (`exists_muType_closure` died on
+exactly that). Here nothing is extracted from a `Γ`-set — `Γ ℚ` acts
+`Ω`-LINEARLY on both base changes, and the descent performed is ordinary
+flat descent of a `Hom` module along `O → Ω`. A twist of `ρO` by an
+unramified character changes `e`'s existence, not the descent, so the
+counterexample shape cannot arise.
+
+MATHLIB POINTERS for the two technical steps (checked against our pin
+2026-07-26, so start here rather than building the machinery):
+* step 3, flat base change of a kernel/equaliser:
+  `Mathlib/RingTheory/Flat/Equalizer.lean` — `LinearMap.tensorKerEquiv`
+  (`M ⊗[R] ker f ≃ ker (1 ⊗ f)` for `M` flat) and
+  `LinearMap.tensorEqLocusEquiv` (the same for `LinearMap.eqLocus`, which
+  is the shape `φ ∘ ρ σ = ρO σ ∘ φ` takes directly), together with
+  `Module.Flat.ker_lTensor_eq` / `Module.Flat.eqLocus_lTensor_eq`.
+* step 3, base change of a `Hom` module: `LinearMap.tensorProduct` in
+  `Mathlib/RingTheory/TensorProduct/Maps.lean` is the natural map
+  `A ⊗[R] (M →ₗ[R] N) →ₗ[A] (A ⊗[R] M →ₗ[A] A ⊗[R] N)`. WARNING: the pin
+  carries NO bijectivity lemma for it, so that has to be proved here —
+  for `M` finite FREE (which is what step 1 establishes for `V` over
+  `ℤ_p`) by choosing a basis and reducing to
+  `Ω ⊗_O Λ^m ≅ (Ω ⊗_O Λ)^m`.
+* step 6, "finite `ℤ_p`-module, pointwise `p`-power torsion ⟹ uniformly
+  killed by one `p^c`": `Module.Finite.exists_fin'` for the generators,
+  then `IsDiscreteValuationRing.eq_unit_mul_pow_irreducible` together
+  with `PadicInt.irreducible_p` to turn each annihilator into a `p`-power
+  (this is exactly the manoeuvre already used in
+  `exists_flatIsogenousLattice_of_equivariantCover` above, to prove
+  `algebraMap ℤ_[p] O` injective).
+
+SOUNDNESS: the hypothesis set is classically INHABITED (`O = R`, `ρO` a
+frame of `ρ`, `e` the identity — then `N = 1`, `c = 0`, `φ 0` the frame
+identification). Circularity guard (inherited from E2b′): must not route
+through `Family.lean` or `Reducible.lean`'s B5. -/
+theorem exists_equivariantHomFamily_spanFullRank_of_generic_iso
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    (hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :
+    ∃ (N c : ℕ) (φ : Fin N → (V →+ (Fin 2 → O))),
+      (∀ (i : Fin N) (a : ℤ_[p]) (x : V),
+        φ i ((algebraMap ℤ_[p] R a) • x) = a • φ i x) ∧
+      (∀ (i : Fin N) (σ : Field.absoluteGaloisGroup ℚ) (x : V),
+        φ i (ρ σ x) = ρO σ (φ i x)) ∧
+      (∀ y : Fin 2 → O, (p : ℤ_[p]) ^ c • y ∈
+        Submodule.span O (⋃ i, Set.range (φ i))) :=
+  sorry
+
 /-- **Generic cover of the `O`-lattice by a power of the `R`-lattice**
 (Eisenstein pillar E2b′-flat, arithmetic half; CARVED 2026-07-26 — this
 leaf REPLACES the Barsotti–Tate/Fontaine citation that used to sit at
@@ -12183,7 +12323,29 @@ leaf REPLACES the Barsotti–Tate/Fontaine citation that used to sit at
 `Γ ℚ`-equivariant, `ℤ_p`-semilinear additive map
 `ψ : V^N → (Fin 2 → O)` whose image contains `p^c (Fin 2 → O)`.
 
-ROUTE — ELEMENTARY; no `p`-adic Hodge theory, no `p`-divisible groups,
+PROVEN 2026-07-26 as an ASSEMBLY over the single arithmetic leaf
+`exists_equivariantHomFamily_spanFullRank_of_generic_iso`, which carries
+all of the mathematical content. This proof is the packaging step only:
+that leaf delivers finitely many equivariant `φ i` whose images span, over
+`O`, a submodule containing `p^c (Fin 2 → O)`; choosing a finite
+`ℤ_p`-generating family `b j` of `O` (`Module.Finite ℤ_[p] O`) and
+replacing the family `φ i` by the family `b j • φ i` — still equivariant,
+because `ρO σ` is `O`-linear, and still `ℤ_p`-semilinear, because the two
+scalar actions on `Fin 2 → O` commute — turns that `O`-span into the plain
+sum of the images, which is exactly the range of the single assembled map
+`ψ x = Σ_{i,j} b j • φ i (x _)` over the index `Fin (N * n)`.
+
+ROUTE SUPERSEDED — read the leaf's docstring first. The route recorded
+below (every `ℚ̄_p`-fibre of `ρO` as a conjugate of a fibre of `ρ`, the
+splitting `O ⊗ ℚ̄_p ≅ ∏_τ ℚ̄_p`, and Hom-descent from `ℚ̄_p` down to `ℚ_p`)
+is correct but far more expensive than necessary: the `Hom` module
+`Hom_{ℤ_p[Γ]}(V, Fin 2 → O)` is already an `O`-MODULE, so descending along
+the single embedding `ι : O → ℚ̄_p` that `e` already refers to suffices,
+and neither the splitting nor the conjugation is needed. It is kept only
+as a record of the 2026-07-26 carve.
+
+ROUTE (SUPERSEDED, kept for the record) — ELEMENTARY; no `p`-adic Hodge
+theory, no `p`-divisible groups,
 no crystalline representations. Write `U := (Fin 2 → O) ⊗ ℚ_p` and
 `W := V ⊗_{ℤ_p} ℚ_p` for the two generic fibres over `ℚ_p`, and `ι`,
 `ι_R` for the given embeddings of `O`, `R` into `ℚ̄_p`.
@@ -12265,8 +12427,91 @@ theorem exists_equivariantCover_of_generic_iso
         ψ ((algebraMap ℤ_[p] R a) • x) = a • ψ x) ∧
       (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin N → V),
         ψ (fun i => ρ σ (x i)) = ρO σ (ψ x)) ∧
-      (∀ y : Fin 2 → O, ∃ z, ψ z = (p : ℤ_[p]) ^ c • y) :=
-  sorry
+      (∀ y : Fin 2 → O, ∃ z, ψ z = (p : ℤ_[p]) ^ c • y) := by
+  classical
+  obtain ⟨N, c, φ, hsm, heq, hspan⟩ :=
+    exists_equivariantHomFamily_spanFullRank_of_generic_iso (ρ := ρ)
+      hOinj hZOcompat e he
+  obtain ⟨n, F, hF⟩ := Module.Finite.exists_fin' ℤ_[p] O
+  set b : Fin n → O := fun j => F (Pi.single j 1) with hb
+  have hFb : ∀ w : Fin n → ℤ_[p], F w = ∑ j, w j • b j := by
+    intro w
+    have hw : F w = F (∑ j, w j • (Pi.single j 1 : Fin n → ℤ_[p])) := by
+      congr 1
+      ext k
+      simp [Pi.single_apply]
+    rw [hw, map_sum]
+    simp [hb]
+  have hadd : ∀ x y : Fin (N * n) → V,
+      (∑ q : Fin N × Fin n, b q.2 • φ q.1 ((x + y) (finProdFinEquiv q)))
+        = (∑ q : Fin N × Fin n, b q.2 • φ q.1 (x (finProdFinEquiv q)))
+          + ∑ q : Fin N × Fin n, b q.2 • φ q.1 (y (finProdFinEquiv q)) := by
+    intro x y
+    simp only [Pi.add_apply, map_add, smul_add]
+    exact Finset.sum_add_distrib
+  refine ⟨N * n, c, AddMonoidHom.mk' (fun x : Fin (N * n) → V =>
+    ∑ q : Fin N × Fin n, b q.2 • φ q.1 (x (finProdFinEquiv q))) hadd, ?_, ?_, ?_⟩
+  · intro a x
+    show ∑ q : Fin N × Fin n,
+        b q.2 • φ q.1 (((algebraMap ℤ_[p] R a) • x) (finProdFinEquiv q))
+      = a • ∑ q : Fin N × Fin n, b q.2 • φ q.1 (x (finProdFinEquiv q))
+    rw [Finset.smul_sum]
+    refine Finset.sum_congr rfl fun q _ => ?_
+    rw [Pi.smul_apply, hsm, smul_comm]
+  · intro σ x
+    show ∑ q : Fin N × Fin n, b q.2 • φ q.1 ((fun i => ρ σ (x i)) (finProdFinEquiv q))
+      = ρO σ (∑ q : Fin N × Fin n, b q.2 • φ q.1 (x (finProdFinEquiv q)))
+    rw [map_sum]
+    refine Finset.sum_congr rfl fun q _ => ?_
+    rw [heq, map_smul]
+  · intro y
+    obtain ⟨m, f, g, hg⟩ := Submodule.mem_span_set'.mp (hspan y)
+    have hgmem : ∀ k, ∃ (i : Fin N) (v : V), φ i v = (g k : Fin 2 → O) := by
+      intro k
+      obtain ⟨i, hi⟩ := Set.mem_iUnion.mp (g k).2
+      obtain ⟨v, hv⟩ := hi
+      exact ⟨i, v, hv⟩
+    choose ii vv hvv using hgmem
+    have hfw : ∀ k, ∃ w : Fin n → ℤ_[p], F w = f k := fun k => hF (f k)
+    choose w hw using hfw
+    set Z : Fin N × Fin n → V := fun q =>
+      ∑ l, if ii l = q.1 then (algebraMap ℤ_[p] R (w l q.2)) • vv l else 0 with hZ
+    refine ⟨fun k => Z (finProdFinEquiv.symm k), ?_⟩
+    show ∑ q : Fin N × Fin n,
+        b q.2 • φ q.1 (Z (finProdFinEquiv.symm (finProdFinEquiv q)))
+      = (p : ℤ_[p]) ^ c • y
+    simp only [Equiv.symm_apply_apply]
+    calc
+      ∑ q : Fin N × Fin n, b q.2 • φ q.1 (Z q)
+          = ∑ q : Fin N × Fin n, ∑ l,
+              (if ii l = q.1 then w l q.2 • (b q.2 • φ q.1 (vv l)) else 0) := by
+            refine Finset.sum_congr rfl fun q _ => ?_
+            rw [hZ]
+            simp only
+            rw [map_sum, Finset.smul_sum]
+            refine Finset.sum_congr rfl fun l _ => ?_
+            by_cases hl : ii l = q.1
+            · simp only [hl, if_true, hsm]
+              rw [smul_comm]
+            · simp [hl]
+      _ = ∑ l, ∑ q : Fin N × Fin n,
+              (if ii l = q.1 then w l q.2 • (b q.2 • φ q.1 (vv l)) else 0) :=
+            Finset.sum_comm
+      _ = ∑ l, ∑ j : Fin n, w l j • (b j • φ (ii l) (vv l)) := by
+            refine Finset.sum_congr rfl fun l _ => ?_
+            rw [Fintype.sum_prod_type]
+            rw [Finset.sum_eq_single (ii l)]
+            · simp
+            · intro i _ hi
+              simp [Ne.symm hi]
+            · intro hcon
+              exact absurd (Finset.mem_univ (ii l)) hcon
+      _ = ∑ l, f l • (g l : Fin 2 → O) := by
+            refine Finset.sum_congr rfl fun l _ => ?_
+            rw [← hw l, hFb (w l), ← hvv l, Finset.sum_smul]
+            refine Finset.sum_congr rfl fun j _ => ?_
+            rw [smul_assoc]
+      _ = (p : ℤ_[p]) ^ c • y := hg
 
 /-- **Isogeny packaging of an equivariant lattice cover** (PROVEN
 2026-07-26 — the module-theoretic half of E2b′-flat, stated in the
