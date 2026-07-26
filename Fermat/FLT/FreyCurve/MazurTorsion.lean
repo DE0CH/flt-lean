@@ -8134,6 +8134,7 @@ theorem WeierstrassCurve.not_cyclicIsogeny_prod_two_primes (E : WeierstrassCurve
   by_contra hmem
   exact Fermat.false_of_stable_of_y0HasNoRationalPoint
     (Fermat.y0HasNoRationalPoint_prod_two_primes hp hq hpq hmem) E g hg hstable
+    (Nat.mul_ne_zero hp.pos.ne' hq.pos.ne')
 
 /-- **No rational cyclic `20`-isogeny** (PROVEN 2026-07-26 over the
 modular-curve layer of `ModularCurve/X0.lean` — the level `X_0(20)`, genus
@@ -8151,7 +8152,7 @@ theorem WeierstrassCurve.not_cyclicIsogeny_twenty (E : WeierstrassCurve ℚ)
           AddSubgroup.zmultiples g) :
     False :=
   Fermat.false_of_stable_of_y0HasNoRationalPoint
-    Fermat.y0HasNoRationalPoint_twenty E g hg hstable
+    Fermat.y0HasNoRationalPoint_twenty E g hg hstable (by norm_num)
 
 /-- **No rational cyclic `24`-isogeny** (PROVEN 2026-07-26 over the
 modular-curve layer — the level `X_0(24)`, genus `1`). Minimal absent
@@ -8168,7 +8169,7 @@ theorem WeierstrassCurve.not_cyclicIsogeny_twentyFour (E : WeierstrassCurve ℚ)
           AddSubgroup.zmultiples g) :
     False :=
   Fermat.false_of_stable_of_y0HasNoRationalPoint
-    Fermat.y0HasNoRationalPoint_twentyFour E g hg hstable
+    Fermat.y0HasNoRationalPoint_twentyFour E g hg hstable (by norm_num)
 
 /-- **No rational cyclic `28`-isogeny** (PROVEN 2026-07-26 over the
 modular-curve layer — the level `X_0(28)`, genus `2`). Minimal absent
@@ -8185,7 +8186,7 @@ theorem WeierstrassCurve.not_cyclicIsogeny_twentyEight (E : WeierstrassCurve ℚ
           AddSubgroup.zmultiples g) :
     False :=
   Fermat.false_of_stable_of_y0HasNoRationalPoint
-    Fermat.y0HasNoRationalPoint_twentyEight E g hg hstable
+    Fermat.y0HasNoRationalPoint_twentyEight E g hg hstable (by norm_num)
 
 /-- **No rational cyclic `30`-isogeny** (the level `X_0(30)`,
 genus `3`). This is the minimal level with THREE distinct prime factors:
@@ -8205,7 +8206,7 @@ theorem WeierstrassCurve.not_cyclicIsogeny_thirty (E : WeierstrassCurve ℚ)
           AddSubgroup.zmultiples g) :
     False :=
   Fermat.false_of_stable_of_y0HasNoRationalPoint
-    Fermat.y0HasNoRationalPoint_thirty E g hg hstable
+    Fermat.y0HasNoRationalPoint_thirty E g hg hstable (by norm_num)
 
 /-- **No rational cyclic `36`-isogeny** (PROVEN 2026-07-26 over the
 modular-curve layer — the level `X_0(36)`, genus `1`). Minimal absent
@@ -8222,7 +8223,7 @@ theorem WeierstrassCurve.not_cyclicIsogeny_thirtySix (E : WeierstrassCurve ℚ)
           AddSubgroup.zmultiples g) :
     False :=
   Fermat.false_of_stable_of_y0HasNoRationalPoint
-    Fermat.y0HasNoRationalPoint_thirtySix E g hg hstable
+    Fermat.y0HasNoRationalPoint_thirtySix E g hg hstable (by norm_num)
 
 /-- **No rational cyclic `42`-isogeny** (the level `X_0(42)`,
 genus `5`). The second minimal level with three distinct prime factors:
@@ -8239,7 +8240,7 @@ theorem WeierstrassCurve.not_cyclicIsogeny_fortyTwo (E : WeierstrassCurve ℚ)
           AddSubgroup.zmultiples g) :
     False :=
   Fermat.false_of_stable_of_y0HasNoRationalPoint
-    Fermat.y0HasNoRationalPoint_fortyTwo E g hg hstable
+    Fermat.y0HasNoRationalPoint_fortyTwo E g hg hstable (by norm_num)
 
 /-- **No rational cyclic `45`-isogeny** (PROVEN 2026-07-26 over the
 modular-curve layer — the level `X_0(45)`, genus `3`). Minimal absent
@@ -8256,7 +8257,7 @@ theorem WeierstrassCurve.not_cyclicIsogeny_fortyFive (E : WeierstrassCurve ℚ)
           AddSubgroup.zmultiples g) :
     False :=
   Fermat.false_of_stable_of_y0HasNoRationalPoint
-    Fermat.y0HasNoRationalPoint_fortyFive E g hg hstable
+    Fermat.y0HasNoRationalPoint_fortyFive E g hg hstable (by norm_num)
 
 /-- **No rational cyclic `50`-isogeny** (PROVEN 2026-07-26 over the
 modular-curve layer — the level `X_0(50)`, genus `2`). Minimal absent
@@ -8273,7 +8274,7 @@ theorem WeierstrassCurve.not_cyclicIsogeny_fifty (E : WeierstrassCurve ℚ)
           AddSubgroup.zmultiples g) :
     False :=
   Fermat.false_of_stable_of_y0HasNoRationalPoint
-    Fermat.y0HasNoRationalPoint_fifty E g hg hstable
+    Fermat.y0HasNoRationalPoint_fifty E g hg hstable (by norm_num)
 
 /-- **No rational cyclic `54`-isogeny** (PROVEN 2026-07-26 over the
 modular-curve layer — the level `X_0(54)`, genus `4`). Minimal absent
@@ -8290,7 +8291,7 @@ theorem WeierstrassCurve.not_cyclicIsogeny_fiftyFour (E : WeierstrassCurve ℚ)
           AddSubgroup.zmultiples g) :
     False :=
   Fermat.false_of_stable_of_y0HasNoRationalPoint
-    Fermat.y0HasNoRationalPoint_fiftyFour E g hg hstable
+    Fermat.y0HasNoRationalPoint_fiftyFour E g hg hstable (by norm_num)
 
 /-- **No rational cyclic `63`-isogeny** (PROVEN 2026-07-26 over the
 modular-curve layer — the level `X_0(63)`, genus `5`). Minimal absent
@@ -8307,7 +8308,7 @@ theorem WeierstrassCurve.not_cyclicIsogeny_sixtyThree (E : WeierstrassCurve ℚ)
           AddSubgroup.zmultiples g) :
     False :=
   Fermat.false_of_stable_of_y0HasNoRationalPoint
-    Fermat.y0HasNoRationalPoint_sixtyThree E g hg hstable
+    Fermat.y0HasNoRationalPoint_sixtyThree E g hg hstable (by norm_num)
 
 /-- **No rational cyclic `75`-isogeny** (PROVEN 2026-07-26 over the
 modular-curve layer — the level `X_0(75)`, genus `5`). Minimal absent
@@ -8324,7 +8325,7 @@ theorem WeierstrassCurve.not_cyclicIsogeny_seventyFive (E : WeierstrassCurve ℚ
           AddSubgroup.zmultiples g) :
     False :=
   Fermat.false_of_stable_of_y0HasNoRationalPoint
-    Fermat.y0HasNoRationalPoint_seventyFive E g hg hstable
+    Fermat.y0HasNoRationalPoint_seventyFive E g hg hstable (by norm_num)
 
 /-- **The arithmetic reassembly of Kenku's non-prime-power half** (PROVEN
 2026-07-25). This is a statement about natural numbers only: no elliptic

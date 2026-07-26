@@ -612,8 +612,40 @@ theorem exists_ellipticScheme_of_weierstrass (E : WeierstrassCurve ℚ) [E.IsEll
 points of an abelian scheme over `ℚ` is cut out by a closed cyclic
 subgroup scheme** (sorry node — theory (b) of the bridge).
 
-TRUE, and this is the whole content of Galois descent for finite étale
-schemes in characteristic `0`.  The argument: `⟨y⟩ ⊆ A(ℚ̄)` is a finite
+**FALSITY AUDIT, 2026-07-26 — the hypothesis `hN : N ≠ 0` is NOT
+decoration, and was ADDED on this date because the statement without it is
+FALSE.**
+
+At `N = 0` the conclusion is *unsatisfiable*, and the refutation is already
+written down in this file: it is verbatim the argument of
+`isEmpty_of_gamma0Datum_zero` above.  `geom_cyclic` at `N = 0` demands a
+relative point `y` with `addOrderOf y = 0` — of INFINITE order — such that
+the points lying in `C` are exactly `AddSubgroup.zmultiples y ≃ ℤ`.  But
+`isFinite` makes `ι ≫ f` finite, so `C` is `Spec` of a finite-dimensional
+`ℚ`-algebra and `{x | RelPoint.LiesIn ι x}` injects into
+`Hom(Spec K, C)` — a finite set, since `ι` is a closed immersion and hence
+a monomorphism.  A finite set cannot be `zmultiples` of an infinite-order
+element.  The base `Spec ℚ` is nonempty, so the geometric point needed to
+run this is available (it is `specAlgClos ℚ ≫ 𝟙 SpecQ`, the very one the
+hypotheses are stated at) and the argument is not vacuous.
+
+Meanwhile the HYPOTHESES at `N = 0` are satisfiable: any elliptic curve
+over `ℚ` of positive Mordell–Weil rank has a rational point `y` of infinite
+order, `⟨y⟩` is fixed pointwise by `Γ_ℚ`, and `addOrderOf y = 0`.  So the
+`N = 0` instance is a genuine false statement, not a vacuous one, and no
+prover could ever have discharged it.
+
+The defect propagated: `nonempty_gamma0Datum_of_stable` and
+`false_of_stable_of_y0HasNoRationalPoint` below are PROVEN from this leaf
+and were therefore false as stated too — the first would have produced a
+`Gamma0Datum 0 SpecQ`, which `isEmpty_of_gamma0Datum_zero` forbids over the
+nonempty base `Spec ℚ`.  Both now carry `hN` as well.  Nothing downstream
+is weakened: all twelve level nodes of `FreyCurve/MazurTorsion.lean` call
+in at a concrete `N ≥ 20`, and the one infinite family at `N = p q` with
+`p`, `q` prime.
+
+TRUE for `N ≥ 1`, and this is the whole content of Galois descent for
+finite étale schemes in characteristic `0`.  The argument: `⟨y⟩ ⊆ A(ℚ̄)` is a finite
 `Γ_ℚ`-stable set, so its image in the topological space of `A` is a
 finite set of closed points, stable under `Γ_ℚ`; give it the *reduced*
 induced closed subscheme structure `C`.  Reduced and finite type over a
@@ -674,7 +706,7 @@ structure, or go through `CommAlgCat.FiniteEtale` on affines and glue.
 The algebra-side scaffolding is fresher than the module docstring's
 "no modular curves anywhere" survey would suggest. -/
 theorem exists_cyclicSubgroupOfOrder_of_galoisStable {A : Scheme.{0}} {f : A ⟶ SpecQ}
-    (ab : AbelianSchemeStruct f) (N : ℕ) (y : GeomFibrePt f (𝟙 SpecQ))
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
           addOrderOf y = N)
     (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -710,9 +742,16 @@ transport of the order and of the stability hypothesis along the
 equivariant identification of `E(ℚ̄)` with the geometric fibre.
 
 `hstable` is verbatim the stability hypothesis carried by the twelve
-level nodes, so no reformulation happens at the boundary. -/
+level nodes, so no reformulation happens at the boundary.
+
+`hN : N ≠ 0` was ADDED 2026-07-26: without it this statement is FALSE, for
+the reason set out in the FALSITY AUDIT of
+`exists_cyclicSubgroupOfOrder_of_galoisStable` above — at `N = 0` it would
+produce a `Gamma0Datum 0 SpecQ`, which `isEmpty_of_gamma0Datum_zero`
+forbids over the nonempty base `Spec ℚ`, while its own hypotheses are met
+by any rational point of infinite order on a positive-rank curve. -/
 theorem nonempty_gamma0Datum_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    {N : ℕ} (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
+    {N : ℕ} (hN : N ≠ 0) (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
       ∀ x ∈ AddSubgroup.zmultiples g,
         WeierstrassCurve.Affine.Point.map
@@ -742,7 +781,7 @@ theorem nonempty_gamma0Datum_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
       (hstable σ g (AddSubgroup.mem_zmultiples g))
     refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
     rw [← he σ g, ← hk, map_zsmul]
-  obtain ⟨cyc⟩ := exists_cyclicSubgroupOfOrder_of_galoisStable ab N (e g) hord hst
+  obtain ⟨cyc⟩ := exists_cyclicSubgroupOfOrder_of_galoisStable ab N hN (e g) hord hst
   exact ⟨{ E := A, f := f, ab := ab, relativeDimensionOne := hdim, cyc := cyc }⟩
 
 /-- **The consumption rule of this module.**
@@ -751,7 +790,16 @@ If `Y_0(N)` has no rational point but some elliptic curve over `ℚ` has a
 Galois-stable cyclic subgroup of order `N`, then the classifying map
 produces a rational point of `Y_0(N)` — a contradiction.  This is the one
 place where the three sorried inputs above meet, and it is what the
-twelve level nodes of `FreyCurve/MazurTorsion.lean` call. -/
+twelve level nodes of `FreyCurve/MazurTorsion.lean` call.
+
+`hN : N ≠ 0` was ADDED 2026-07-26, as the last link of the propagation
+described in the FALSITY AUDIT of
+`exists_cyclicSubgroupOfOrder_of_galoisStable`: at `N = 0` this statement
+too is FALSE, since a rational point of infinite order on a positive-rank
+curve satisfies `hg` and `hstable` while `Y0HasNoRationalPoint 0` holds
+vacuously (the coarse space of the degenerate level is the empty scheme).
+It is supplied at every call site by `norm_num`, all twelve level nodes
+having a concrete `N ≥ 20`. -/
 theorem false_of_stable_of_y0HasNoRationalPoint {N : ℕ}
     (hY : Y0HasNoRationalPoint N) (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = N)
@@ -759,10 +807,11 @@ theorem false_of_stable_of_y0HasNoRationalPoint {N : ℕ}
       ∀ x ∈ AddSubgroup.zmultiples g,
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g) :
+          AddSubgroup.zmultiples g)
+    (hN : N ≠ 0) :
     False := by
   obtain ⟨Y, str, ⟨M⟩⟩ := exists_coarseModuliY0 N
-  obtain ⟨d⟩ := nonempty_gamma0Datum_of_stable E g hg hstable
+  obtain ⟨d⟩ := nonempty_gamma0Datum_of_stable E hN g hg hstable
   exact (hY Y str M).elim (M.classify (𝟙 SpecQ) d)
 
 /-! ### Functoriality in the level, and the descent along divisors
