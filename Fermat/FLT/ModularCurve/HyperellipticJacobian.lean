@@ -64,9 +64,35 @@ the kernel:
 
 ## The single remaining leaf
 
-`X18.exists_jacobianPackage : Nonempty (JacobianPackage 1 (-2) 5 (-10) 10 (-4) 5)`
+`X18.redPt_injective_five : Function.Injective (redPt 1 (-2) 5 (-10) 10 (-4) (p := 5))`
 
-Its fields are exactly items 1–4:
+**This replaced the former leaf `X18.exists_jacobianPackage`, which is now
+PROVEN** (2026-07-26).  The two are equivalent — `redPt_injective` is one
+direction and `nonempty_jacobianPackage_of_redPt_injective` the other, both
+proven here — so no statement was weakened; what was removed is the obligation
+to exhibit a *structure*.
+
+**FORMAL-CONTENT AUDIT: `JacobianPackage`'s abelian-variety structure is not
+load-bearing, and the previous audit in this docstring was WRONG.**  It
+asserted that the package is "not discharged by junk" because `aj_injective`
+plus `fin` force `X(ℚ)` to be finite.  That argument shows only that the
+package implies finiteness; it does not show that the package needs a Jacobian.
+It does not: once `redPt` is known injective, the whole package is met by the
+free `𝔽₂`-vector spaces on `X(ℚ)` and `X(𝔽ₚ)` with `red = Finsupp.mapDomain
+redPt` — no divisor classes, no group law, no formal group, no Mordell–Weil.
+`red_ker_torsionFree` is then satisfied for the *strong* reason that `red` is
+outright injective, so its torsion hypotheses are never used.
+
+So the arithmetic content of items 1–4 lives entirely in the injectivity
+statement, which is where the sorry now is.  Closing `exists_jacobianPackage`
+was the removal of an interface obligation, **not** progress on abelian
+varieties, and it should not be counted as such.
+
+The package is kept, and `no_noncuspidal_point` still routes through it,
+because it is the intended plug-in point: when the honest `Pic⁰(X/ℚ)` is
+built it satisfies every field, and `redPt_injective` then discharges the
+leaf with no consumer changing.  What the honest Jacobian gives, and the junk
+witness does not, is a *proof* of the injectivity.
 
 | field | item |
 |---|---|
@@ -75,16 +101,6 @@ Its fields are exactly items 1–4:
 | `red`, `red_aj` | 3 — reduction is a group homomorphism compatible with `redPt` |
 | `red_ker_torsionFree` | 3 — the kernel of reduction is the formal group over `ℤ₅`, torsion-free because `5 > e + 1 = 2` |
 | `fin` | 4 — Mordell–Weil plus `rank J(ℚ) = 0` |
-
-**FAITHFULNESS AUDIT.**  The package is *not* vacuous and *not*
-discharged by junk.  `aj_injective` forces `J` to contain a copy of
-`X(ℚ)`, and `fin` then forces `X(ℚ)` to be finite; so nobody can supply
-`J = 0`.  Nor is it stronger than the truth: the honest Jacobian
-`Pic⁰(X/ℚ)` satisfies every field, with `J(ℚ) ≅ ℤ/21` (see below).  It is
-correspondingly a *hard* leaf — its content is precisely the four missing
-theories — and no part of the argument is hidden inside it that could
-have been discharged here instead: the two finite computations, the
-integral model, and the reduction map all live outside it.
 
 **`card_coprime` is deliberately ABSENT.**  One might expect the package
 to record `gcd(#J(ℚ), p) = 1` (here `21` and `5`).  It is not needed:
@@ -142,6 +158,7 @@ public import Mathlib.Tactic.NormNum
 public import Mathlib.Tactic.NormNum.Prime
 public import Mathlib.Tactic.FinCases
 public import Mathlib.Data.Fin.VecNotation
+public import Mathlib.Data.Finsupp.Basic
 
 @[expose] public section
 
@@ -332,6 +349,59 @@ theorem redPt_injective {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {p : ℕ} [Fact p.
     · exact card_nsmul_eq_zero'
   exact D.aj_injective (sub_eq_zero.mp h3)
 
+/-- **CONVERSE: injectivity of `redPt` already BUILDS a package** (PROVEN).
+
+Together with `redPt_injective` this says that, over a finite residue field,
+
+    `Nonempty (JacobianPackage c p)`  ↔  `Function.Injective (redPt c (p := p))`
+
+so the two are *equivalent*, not merely one-way related.  The witness built
+here is deliberate junk: `J` is the free `𝔽₂`-vector space on `X(ℚ)`, `J'` the
+free `𝔽₂`-vector space on `X(𝔽ₚ)`, `aj` and `aj'` the basis inclusions, and
+`red` the pushforward `Finsupp.mapDomain redPt`.  Then
+
+* `fin` holds because `redPt` injective into a finite type makes `X(ℚ)` finite;
+* `aj_injective` is `Finsupp.single_left_injective`;
+* `red_aj` is `Finsupp.mapDomain_single`, definitionally;
+* `red_ker_torsionFree` holds for the *strong* reason that `red` is outright
+  injective (`Finsupp.mapDomain_injective`) — the torsion hypotheses `n ≠ 0`
+  and `n • z = 0` are never used, which is why they appear as `_` in the proof.
+
+**FORMAL-CONTENT AUDIT — the abelian-variety structure of `JacobianPackage` is
+NOT load-bearing.**  Everything in the package beyond the concrete conclusion
+`redPt` is injective can be met by this junk group; no divisor classes, no
+group law, no formal group and no Mordell–Weil theorem are needed to satisfy
+the fields once that injectivity is known.  The package is therefore best read
+as a *convenient plug-in point* for the eventual honest `Pic⁰(X/ℚ)` — which
+does satisfy every field — and **not** as an independent statement of the
+four-part Jacobian project.  The project is the content of the injectivity, and
+that is where the sorry now lives (`X18.redPt_injective_five`).
+
+This matters for anyone auditing the leaf count: closing `exists_jacobianPackage`
+below is *not* progress on abelian varieties.  It is the removal of an interface
+obligation that was never carrying arithmetic. -/
+theorem nonempty_jacobianPackage_of_redPt_injective
+    {c₀ c₁ c₂ c₃ c₄ c₅ : ℤ} {p : ℕ} [Fact p.Prime] [Finite (ZMod p)]
+    (h : Function.Injective (redPt c₀ c₁ c₂ c₃ c₄ c₅ (p := p))) :
+    Nonempty (JacobianPackage c₀ c₁ c₂ c₃ c₄ c₅ p) := by
+  haveI hfinQ : Finite (Pt c₀ c₁ c₂ c₃ c₄ c₅ ℚ) := Finite.of_injective _ h
+  haveI hfinJ : Finite (Pt c₀ c₁ c₂ c₃ c₄ c₅ ℚ →₀ ZMod 2) :=
+    Finite.of_equiv (Pt c₀ c₁ c₂ c₃ c₄ c₅ ℚ → ZMod 2) Finsupp.equivFunOnFinite.symm
+  refine ⟨{ J := Pt c₀ c₁ c₂ c₃ c₄ c₅ ℚ →₀ ZMod 2
+            J' := Pt c₀ c₁ c₂ c₃ c₄ c₅ (ZMod p) →₀ ZMod 2
+            aj := fun P => Finsupp.single P 1
+            aj_injective := Finsupp.single_left_injective (by decide)
+            aj' := fun Q => Finsupp.single Q 1
+            red := Finsupp.mapDomain.addMonoidHom (redPt c₀ c₁ c₂ c₃ c₄ c₅)
+            red_ker_torsionFree := ?_
+            red_aj := ?_ }⟩
+  · intro z hz _ _ _
+    refine Finsupp.mapDomain_injective h ?_
+    rw [Finsupp.mapDomain_zero]
+    exact hz
+  · intro P
+    exact Finsupp.mapDomain_single
+
 end Package
 
 namespace X18
@@ -355,29 +425,56 @@ points at infinity bring the total to `6`.  This count is the arithmetic input
 that the whole rank-`0` argument turns on, and the kernel verifies it. -/
 theorem card_X18_F5 : Fintype.card (Pt 1 (-2) 5 (-10) 10 (-4) (ZMod 5)) = 6 := by decide
 
-/-- **THE REMAINING LEAF: the Jacobian of `X_1(18)` exists with rank `0`.**
+/-- **THE REMAINING LEAF, in its honest minimal form: reduction at `5` is
+injective on `X_1(18)(ℚ)`.**
 
-Discharging this is the four-part project recorded in the module docstring and
+This *replaces* the former leaf `exists_jacobianPackage`, which is now PROVEN
+from it by `nonempty_jacobianPackage_of_redPt_injective`.  The two are
+equivalent (that lemma and `redPt_injective` are the two directions), so
+nothing has been weakened; what has gone is the obligation to exhibit a
+*structure*.  Whoever discharges this needs no Lean interface for `Pic⁰`, no
+group law and no scheme theory in the STATEMENT — only in the proof.  See the
+FORMAL-CONTENT AUDIT on `nonempty_jacobianPackage_of_redPt_injective` for why
+the bundled form carried no extra arithmetic.
+
+Discharging it is the four-part project recorded in the module docstring and
 in `MazurLevel18.no_noncuspidal_point_on_smooth_model`:
 
 1. `Pic⁰` of a genus-`2` hyperelliptic curve, with the Mumford representation
-   and Cantor's group law — this supplies `J`, `addCommGroup`, `J'`;
-2. Abel–Jacobi from a rational base point, injective for genus `≥ 1` — this
-   supplies `aj`, `aj_injective`, `aj'`;
+   and Cantor's group law — the group `J = J(ℚ)` and its reduction `J(𝔽₅)`;
+2. Abel–Jacobi from a rational base point, injective for genus `≥ 1`;
 3. good reduction at `5` (the discriminant is `−2¹⁵·3⁴` and the conductor is
    `324 = 18²`, so `5` is good), the reduction homomorphism, its compatibility
    with `redPt`, and torsion-freeness of its kernel — the kernel is the formal
    group over `ℤ₅`, torsion-free since `5 > e + 1 = 2`;
-4. `rank J(ℚ) = 0`, giving `fin`.  Externally: `L(f, 1) ≈ 0.4103 − 0.0724i ≠ 0`
-   for the unique newform orbit of `S₂(Γ₁(18))`, so Kolyvagin–Logachev applies;
-   Magma's `RankBound(J) = 0` agrees.  With `J(ℚ)_tors ≅ ℤ/21` this makes
-   `J(ℚ) ≅ ℤ/21`, though only its FINITENESS is used here.
+4. `rank J(ℚ) = 0`.  Externally: `L(f, 1) ≈ 0.4103 − 0.0724i ≠ 0` for the
+   unique newform orbit of `S₂(Γ₁(18))`, so Kolyvagin–Logachev applies; Magma's
+   `RankBound(J) = 0` agrees.  With `J(ℚ)_tors ≅ ℤ/21` this makes
+   `J(ℚ) ≅ ℤ/21`, though only its FINITENESS is used.
 
-**This leaf is not vacuous**: `aj_injective` and `fin` together force `X(ℚ)` to
-be finite, so it cannot be met by a trivial group.  **Nor is it overstated**:
-the honest `Pic⁰(X/ℚ)` satisfies every field. -/
+Given 1–4 the derivation is `redPt_injective` applied to the resulting package,
+and that derivation is already written and proven here.
+
+**Not vacuous.**  `#X(𝔽₅) = 6` is proven by `decide` just above, so this leaf
+asserts `#X(ℚ) ≤ 6` — a genuine finiteness statement about the rational points
+of a curve, and exactly the statement `no_noncuspidal_point` consumes.  **Not
+overstated**: it is TRUE, since `X(ℚ)` consists of the six cusps and reduction
+is injective on them. -/
+theorem redPt_injective_five :
+    Function.Injective (redPt 1 (-2) 5 (-10) 10 (-4) (p := 5)) := sorry
+
+/-- **The Jacobian package of `X_1(18)` exists** (PROVEN from
+`redPt_injective_five`).
+
+Formerly the leaf of this module.  It is retained — rather than bypassed in
+`no_noncuspidal_point` — because it is the intended plug-in point for the
+honest `Pic⁰(X/ℚ)`: when the abelian-variety machinery lands, a real package
+discharges `redPt_injective_five` through `redPt_injective`, and no consumer
+changes.  Read the audit on `nonempty_jacobianPackage_of_redPt_injective`
+before recording this as progress on abelian varieties: it is not. -/
 theorem exists_jacobianPackage :
-    Nonempty (JacobianPackage 1 (-2) 5 (-10) 10 (-4) 5) := sorry
+    Nonempty (JacobianPackage 1 (-2) 5 (-10) 10 (-4) 5) :=
+  nonempty_jacobianPackage_of_redPt_injective redPt_injective_five
 
 /-- The six cusps of `X_1(18)` — `(0, ±1)`, `(1, ±1)` and the two points at
 infinity — together with a putative seventh point of abscissa `u`. -/
