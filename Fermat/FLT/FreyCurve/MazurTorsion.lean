@@ -331,7 +331,67 @@ A formal proof of any one node needs `X_1(n)` as an arithmetic curve
 over `ℚ` together with a determination of its rational points: a
 rank-`0` Mordell–Weil computation for the genus-one levels `14, 15`,
 and Chabauty/Kenku-style arguments (or the Eisenstein-ideal descent)
-for the higher-genus levels. Genera, computed from the standard formula
+for the higher-genus levels.
+
+**REFINED 2026-07-26 — CHABAUTY IS NOT NEEDED, AND IT IS ONE THEORY
+FOR SEVEN LEVELS.** Magma (untrusted searcher, statement check only):
+every `ℚ`-simple factor of `J_1(N)` has `L(1) ≠ 0`, hence rank `0` by
+Kolyvagin–Logachev, for `N ∈ {11, 13, 16, 17, 18, 19, 21, 24, 25, 27}`;
+and `min_p #X_1(N)(𝔽_p) = φ(N)/2 = #(rational cusps)` for
+`N ∈ {11, 13, 17, 19, 21, 25, 27}`. So for those seven levels the whole
+argument is: embed `X_1(N)(ℚ) ↪ J_1(N)(ℚ)` at a rational cusp, note
+`J_1(N)(ℚ)` is finite, reduce at an odd prime of good reduction
+(injective on torsion), and count. No Chabauty, no Mordell–Weil sieve,
+no Eisenstein ideal. The single missing theory is therefore `X_1(N)/ℚ`
+with its cusps + `rank J_1(N)(ℚ) = 0` from `L(1) ≠ 0` + torsion
+injectivity under good reduction, and it discharges seven of this
+file's sorried nodes at once rather than one. The deep input is
+Kolyvagin–Logachev/Kato; nothing of it exists at this pin (`grep
+ModularCurve` over mathlib returns nothing, and `~/cs/FLT` takes the
+Mazur bound as a bare `axiom`). The route breaks at `37` in a
+precisely identifiable place — `J_1(37)` has a rank-`1` factor, the
+elliptic curve `37a` — so `37, 43, 67, 163` are the levels that
+genuinely need the winding/Eisenstein quotient of `J_1(N)` instead of
+`J_1(N)` itself. Full statement, evidence and cross-checks (including
+that the same pipeline reproduces Billing–Mahler at `11` and
+Mazur–Tate at `13`) are in the docstring of
+`tateNormalForm_origin_order_ne_25`.
+
+**THE SAME APPLIES ON THE `X_0` SIDE — the isogeny nodes below do not
+need Chabauty either** (2026-07-26, same Magma reconnaissance). For the
+levels of the prime-power and composite determination, `J_0(N)` has
+Mordell–Weil rank `0` — every `ℚ`-simple factor has `L(1) ≠ 0` — for
+`N ∈ {20, 24, 28, 30, 32, 36, 42, 45, 50, 54, 63, 75, 81}`. So every
+one of `not_cyclicIsogeny_twenty`, `…_twentyFour`, `…_twentyEight`,
+`…_thirty`, `…_thirtyTwo`, `…_thirtySix`, `…_fortyTwo`, `…_fortyFive`,
+`…_fifty`, `…_fiftyFour`, `…_sixtyThree`, `…_seventyFive` and
+`…_eightyOne` is a rank-`0` statement, not a Chabauty one, and the
+docstrings below that call for "a genus-`g` Chabauty computation"
+overstate what is required.
+
+For seven of them the bare point count already finishes the job —
+`min_p #X_0(N)(𝔽_p)` over odd primes `p` of good reduction equals the
+number of rational cusps for `N ∈ {20, 24, 28, 32, 36, 42, 50}`
+(`6, 8, 6, 4, 6, 8, 4` respectively). Recall a cusp of `X_0(N)` of
+denominator `d` is defined over `ℚ(ζ_{gcd(d, N/d)})`, so the rational
+cusps are exactly the `d ∣ N` with `gcd(d, N/d) ≤ 2`. For the remaining
+six (`30, 45, 54, 63, 75, 81`) the count overshoots the cusp number, so
+those need the finer step of identifying `J_0(N)(ℚ)` itself — still far
+short of Chabauty.
+
+`125` is the single genuine exception on this side: `J_0(125)` has a
+factor with `L(1) = 0`, so `not_cyclicIsogeny_oneHundredTwentyFive`
+really does need more than a rank-`0` count — as one would expect,
+since it is the level of Kenku's dedicated 1981 paper.
+
+Net effect: ONE theory — modular curves `X_0(N)` and `X_1(N)` over `ℚ`
+with their cusps, `rank J(ℚ) = 0` from `L(1) ≠ 0`, and injectivity of
+torsion under reduction at an odd good prime — settles fourteen of this
+file's sorried nodes (seven `X_1` levels and seven `X_0` levels)
+outright, and reduces six more to a Mordell–Weil determination. That is
+the single highest-leverage missing theory in this file.
+
+Genera, computed from the standard formula
 `g(X_1(N)) = 1 + (N²/24)∏_{p ∣ N}(1 − p⁻²) − ¼ Σ_{d ∣ N} φ(d)φ(N/d)`:
 `14 ↦ 1`, `15 ↦ 1`, `16 ↦ 2`, `18 ↦ 2`, `20 ↦ 3`, `21 ↦ 5`, `24 ↦ 5`,
 `25 ↦ 12`, `27 ↦ 13`, `35 ↦ 25`, `49 ↦ 69`.
@@ -4916,7 +4976,26 @@ Hauptmodul value `s`; the level-`32` leaf lifts `s` to a rational point of
 `y² = x³ + 4x`; and `QuarticDescent.no_x0ThirtyTwo_point` — Fermat's quartic
 theorem, through the `2`-isogeny to `y² = x³ − x`, plus the three explicit
 cusp evaluations `M(0)³`, `M(1/2)³`, `M(−1/2)³` — closes it. See the section
-note above for the modular data and its PARI/GP and Magma cross-checks. -/
+note above for the modular data and its PARI/GP and Magma cross-checks.
+
+**CORRECTION 2026-07-26 (flt-lean-37) — "only the eight cusps as rational points" was
+FALSE, and the level is cheaper than advertised.** Only `4` of the `8`
+cusps are rational: a cusp of `X_0(N)` of denominator `d` is defined
+over `ℚ(ζ_{gcd(d, N/d)})`, and for `N = 32` the values of
+`gcd(d, 32/d)` over `d ∣ 32` are `1, 2, 4, 4, 2, 1`, so only the four
+with `gcd ≤ 2` are rational. Independently: `X_0(32)` IS the elliptic
+curve `32a1`, of rank `0` with torsion `ℤ/4`, so `#X_0(32)(ℚ) = 4`
+exactly — it cannot have eight rational points. Both counts agree, and
+the correct statement of this node is that all four rational points of
+`X_0(32)` are cusps.
+
+That also makes the route explicit, and it is NOT a Chabauty argument:
+`J_0(32)` has rank `0` (`LRatio(1) = 1/4 ≠ 0`), and
+`#X_0(32)(𝔽_p) = 4 = #(rational cusps)` at an odd prime of good
+reduction, so reduction alone forces every rational point to be a cusp.
+See the section note above for the seven `X_0` levels and seven `X_1`
+levels that this one theory settles. (Magma, untrusted searcher,
+statement checks only.) -/
 theorem WeierstrassCurve.not_cyclicIsogeny_thirtyTwo (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 32)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -7981,8 +8060,14 @@ The `X_0` shortcut is NOT available: `13` is in Kenku's list, and
 `X_0(13)` has genus `0`, so rational cyclic `13`-isogenies exist in
 abundance — `y² = x³ + 6x − 8`, of conductor `20736`, is one (PARI/GP
 `ellisomat`, untrusted searcher). A formal proof needs the rational
-points of a genus-`2` curve, i.e. Mordell–Weil on its Jacobian plus a
-Chabauty-style argument. 
+points of a genus-`2` curve — but NOT, correcting this line on
+2026-07-26, a Chabauty argument: `J_1(13)` has Mordell–Weil rank `0`
+(it is `ℚ`-simple of dimension `2` with `LRatio(1) = 1/361 ≠ 0`), and
+`#X_1(13)(𝔽_3) = 6 = φ(13)/2 = #(rational cusps)`, so reduction at `3`
+alone forces every rational point to be a cusp — which is Mazur–Tate's
+own argument. This level shares one missing theory with `11, 17, 19,
+21, 25, 27`; see `tateNormalForm_origin_order_ne_25` for the full
+statement of the route and its cross-checks.
 STATED IN TATE COORDINATES (2026-07-25). The general form of this
 level — no rational point of order `13` on ANY elliptic curve over
 `ℚ` — is `no_torsion_order_13` just below, and is PROVEN from this
@@ -8094,7 +8179,18 @@ The `X_0` shortcut is NOT available: `37` is in Kenku's list, and
 to have cyclic isogeny degrees exactly `{1, 37}` with PARI/GP
 `ellisomat`, untrusted searcher) and `j = −7 · 137³ · 2083³`. At this
 genus no explicit descent is available even in the literature: the
-level is settled by the Eisenstein-ideal argument itself. 
+level is settled by the Eisenstein-ideal argument itself. The precise
+reason the cheaper route fails here was identified 2026-07-26 (Magma,
+untrusted searcher): the rank-`0` point count that closes `11, 13, 17,
+19, 21, 25, 27` (see `tateNormalForm_origin_order_ne_25`) needs the
+WHOLE of `J_1(N)` to have rank `0`, and `J_1(37)` does not — its
+`ℚ`-simple factors have dimensions `1, 1, 2, 2, 4, 6, 6, 18` and the
+first has `LRatio(1) = 0`, being the rank-`1` elliptic curve `37a`.
+Hence `37, 43, 67, 163` genuinely need the winding/Eisenstein quotient,
+i.e. the rank-`0` quotient of `J_1(N)` rather than `J_1(N)` itself.
+Note the point count itself is still sharp: `#X_1(37)(𝔽_p) = 18 =
+φ(37)/2` for `p = 2, 3, 5, 7`, so only the Mordell–Weil input is
+missing.
 STATED IN TATE COORDINATES (2026-07-25). The general form of this
 level — no rational point of order `37` on ANY elliptic curve over
 `ℚ` — is `no_torsion_order_37` just below, and is PROVEN from this
