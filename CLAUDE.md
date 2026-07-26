@@ -475,6 +475,23 @@ mtimes in dependency order:
 A downstream olean older than an upstream one it really imports means the set is
 inconsistent and every diagnostic from it is untrustworthy.
 
+**A FULL-CONE BUILD IS NOT ENOUGH — MERGE `main` FIRST** (2026-07-26, and this
+corrects the rule immediately above). An agent applied exactly the test
+prescribed here — a complete `lake build` of the cone — the error survived it,
+and **the error was still not real**: its tree was ~250 commits stale and
+current `main` already carried the repair. A full build proves the tree it is
+given is broken; it says nothing about whether that tree is current. The two
+failure modes are different and the build only separates one of them:
+
+* *inconsistent oleans* → a full `lake build` clears it;
+* *stale sources* → only `git fetch && git merge main` clears it.
+
+So the triage order is **merge `main`, then full build, then believe it**. The
+same defect (`MazurTorsion.lean`'s `map_baseChange` rewrite) was diagnosed
+independently by at least seven agents and repaired on branches by six of them,
+every one of which was working from a base that predated the fix landing. That
+is not seven confirmations; it is one bug and seven stale checkouts.
+
 **There is NO Lean MCP of any kind (Deyao, 2026-07-25).** Both the
 `lean-lsp` MCP and the per-worktree `report-flt-lean-N` servers are gone;
 `.mcp.json` holds exactly one entry, `annas-mcp`, which is for downloading
@@ -607,6 +624,38 @@ the entire project including its `.lake` cache; recovery worked only
 because the tree was committed-clean. Rules: never `rm -rf` a path
 that differs from a real path only by case; prefer `git clean -n`
 (dry run); keep the tree committed before destructive operations.
+
+## What the merge batch is for: Lean edits that could turn a green build red
+
+(Deyao, 2026-07-26.) **The batch exists to protect a green build, and nothing
+else.** So the dividing line is not "who wrote it" but "can it break the
+build":
+
+- **Lean code edits** — anything under `Fermat/` — go to a branch and into
+  `~/.flt-merge-batch`, always. They can turn green into red, which is exactly
+  what the merger exists to catch.
+- **Tooling unrelated to the math content** — `.claude/*`, `flt-*.py`,
+  `CLAUDE.md`, memory files — the orchestrator **commits directly to `main`**.
+  It cannot make the Lean build red, so routing it through a merge worker buys
+  nothing and costs a release cycle of latency: the fix is inert on an
+  unmerged branch precisely while the bug it fixes is live.
+
+Deyao amended this the same day he first objected to a tooling commit on
+`main`, so both halves are his: the objection was to the orchestrator doing it
+*silently and by accident*, not to the act itself.
+
+**One asymmetry to remember either way.** The merger's release step is
+`git branch -f main <the sha it built>`, so a commit on `main` that the merger
+has not merged is not in its history and that force-move would discard it. In
+practice the merger merges `main` before moving it (it has done so at every
+release), which is what makes direct tooling commits safe. If you ever see a
+release drop one, that is the mechanism.
+
+And note it is effectively irreversible: worktrees fast-forward to `main` at
+every dispatch, so within minutes a dozen sit ON the commit, and rewinding
+`main` makes their branches non-ancestors of it — which the dispatch hook
+hard-crashes on, by design. So the bar for a direct commit is "certainly not
+Lean", not "probably fine".
 
 ## git is allowed — except force-push
 

@@ -178,11 +178,130 @@ def deleted_floating_names():
     names = set()
     for line in read_lines(MALFUNCTION_LOG):
         names.update(re.findall(r"`([A-Za-z_][A-Za-z0-9_.']*)`", line))
-        # tolerate unbackticked logs: take dotted/underscored identifiers
+        # Tolerate unbackticked logs -- but only for tokens that actually LOOK
+        # like Lean names. The old rule was "any identifier of 7+ chars", which
+        # on a freeform prose log harvested `because`, `consumer`, `already`,
+        # `deliberately` and sixty more English words as declaration names.
+        # Requiring a `_` or a `.` costs nothing (essentially every declaration
+        # in this tree has one) and removes the entire class.
         for tok in line.replace(",", " ").split():
-            if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.']{6,}", tok) and "/" not in tok:
+            if (re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.']{6,}", tok)
+                    and "/" not in tok and ("_" in tok or "." in tok)):
                 names.add(tok)
-    return names
+
+    # SURVIVOR FILTER (Deyao, 2026-07-26 -- caught by a --dry-run before it
+    # destroyed anything). The harvest above is deliberately greedy, and the log
+    # is freeform PROSE: it explains deletions, and explaining one names the
+    # declarations AROUND it. One entry reads "...because their sole consumer
+    # exists_tateParam was correctly re-sorried", and `exists_tateParam` is a
+    # LIVE sorried leaf on main -- so the greedy harvest marked it deleted and
+    # `prune_queue_for_floating` would have silently dropped its queued task,
+    # leaving the leaf unowned and failing a later preflight for no visible
+    # reason. Deleting queued work on a prose match is the worst kind of wrong:
+    # invisible, and it removes the record of what was lost.
+    #
+    # The check that cannot be fooled: a DELETED declaration is not in the
+    # source. Anything still declared in Fermat/ was not deleted, whatever the
+    # log says about it. One scan of the tree, matched against declaration
+    # headers only (not docstring prose, which is what caused the problem).
+    if not names:
+        return names
+    alive, decl = set(), re.compile(
+        r"^\s*(?:@\[[^\]]*\]\s*)?(?:private\s+|protected\s+|noncomputable\s+|"
+        r"public\s+|scoped\s+)*"
+        r"(?:theorem|lemma|def|abbrev|instance|structure|class|inductive|"
+        r"opaque|axiom)\s+([^\s({\[:]+)", re.M)
+    try:
+        for p in pathlib.Path(REPO, "Fermat").rglob("*.lean"):
+            for m in decl.finditer(p.read_text(encoding="utf-8")):
+                n = m.group(1)
+                alive.add(n)
+                alive.add(n.rsplit(".", 1)[-1])
+    except OSError:
+        return names          # cannot read the tree: keep the greedy answer
+    return {n for n in names
+            if n not in alive and n.rsplit(".", 1)[-1] not in alive}
+
+
+def report_superseded_tasks():
+    """Warn about queued tasks whose targets are all closed on the new release.
+
+    (Deyao's model calls this "correcting the queue against the release"; it was
+    done by eye and got it wrong twice on 2026-07-26, each time costing a worker
+    a dispatch into nothing.)
+
+    Three states per target name, and the middle one is what the eyeball check
+    kept confusing:
+
+      OPEN    -- a direct sorry on main. Real work.
+      PROVEN  -- declared on main, not sorried. The task is superseded.
+      ABSENT  -- not declared anywhere on main. Almost always a leaf created on
+                 a branch still sitting in the merge batch, i.e. FUTURE work
+                 that must be kept. Occasionally a leaf a release deleted.
+
+    The rule that failed was "drop only if every target is PROVEN": a task whose
+    targets are one PROVEN and one ABSENT survived it, and the ABSENT one turned
+    out to be a cut main had *abandoned* rather than one it had not yet seen.
+    So the honest signal is "no target is OPEN" -- that is a task with nothing to
+    work on right now, whatever the reason.
+
+    Deliberately REPORTS rather than deletes. ABSENT is genuinely ambiguous
+    (unlanded vs. deleted) and only the orchestrator can tell the two apart by
+    reading the branch; silently deleting queued work is the failure this file
+    already carries one scar from.
+    """
+    tasks = read_queue_tasks()
+    if not tasks:
+        return
+    decl = re.compile(
+        r"^\s*(?:@\[[^\]]*\]\s*)?(?:private\s+|protected\s+|noncomputable\s+|"
+        r"public\s+|scoped\s+)*"
+        r"(?:theorem|lemma|def|abbrev|instance|structure|class|inductive|"
+        r"opaque|axiom)\s+([^\s({\[:]+)", re.M)
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "flt_frontier", os.path.join(REPO, "flt-frontier.py"))
+        fr = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(fr)
+        declared, sorried = set(), set()
+        for p in pathlib.Path(REPO, "Fermat").rglob("*.lean"):
+            txt = p.read_text(encoding="utf-8")
+            for m in decl.finditer(txt):
+                n = m.group(1)
+                declared.add(n)
+                declared.add(n.rsplit(".", 1)[-1])
+            for n, _ in fr.scan(p):
+                sorried.add(n)
+                sorried.add(n.rsplit(".", 1)[-1])
+    except Exception as exc:                       # never block a release
+        print(f"  (queue/frontier cross-check skipped: {exc!r})")
+        return
+
+    def state(n):
+        b = n.rsplit(".", 1)[-1]
+        if n in sorried or b in sorried:
+            return "OPEN"
+        if n in declared or b in declared:
+            return "PROVEN"
+        return "ABSENT"
+
+    flagged = []
+    for i, t in enumerate(tasks):
+        tg = sorted(task_targets(t))
+        if not tg:
+            continue
+        st = {n: state(n) for n in tg}
+        if "OPEN" not in st.values():
+            flagged.append((i, st))
+    if not flagged:
+        return
+    print(f"  QUEUE CHECK: {len(flagged)} task(s) have NO open target on this "
+          "release -- read the branch before dispatching them:")
+    for i, st in flagged:
+        for n, s in sorted(st.items()):
+            print(f"    [task {i}] {s:<7} {n}")
+    print("    PROVEN -> superseded, delete the task. "
+          "ABSENT -> leaf not landed yet (keep) or deleted by a release (drop).")
 
 
 def prune_queue_for_floating(dry_run=False):
@@ -329,10 +448,22 @@ def cmd_preflight(args):
                 "ownership scans will keep crediting it with leaves nobody is "
                 "working on.  -> remove its line from ~/.flt-inflight.jsonl")
         if state == "batched" and name not in batch:
-            blocking.append(
-                f"{name} is `batched` but is NOT in the merge batch -- its work "
-                "will never reach the merger.  "
-                f"-> python3 flt-cycle.py done {name}")
+            # Same severity split as the `claimed`/`reclaiming` case above. A
+            # slot whose branch is entirely in main was merged by the LAST
+            # release and simply has not been advanced yet -- `batch-done`
+            # clears the inflight file, so every slot of the shipped batch
+            # lands here between the release and the next `release` run. That
+            # is the normal steady state, not an incident, and blocking on it
+            # made the gate fire on 23 slots at once right after Release 3.
+            ahead = run(["git", "-C", REPO, "rev-list", "--count",
+                         f"main..{name}"]).stdout.strip() or "0"
+            if ahead == "0":
+                fixups.append((name, state))
+            else:
+                blocking.append(
+                    f"{name} is `batched` with {ahead} commit(s) NOT in main "
+                    "and is NOT in the merge batch -- its work will never "
+                    f"reach the merger.  -> python3 flt-cycle.py done {name}")
         if state == "suspended" and not extra:
             warnings.append(
                 f"{name} is `suspended` with no transcript id -- its work "
@@ -723,6 +854,45 @@ def cmd_batch_done(args):
 # --------------------------------------------------------------------------
 # orchestrator: a release landed
 # --------------------------------------------------------------------------
+def tag_release(head):
+    """Tag the released sha `v<N>`, N incrementing from the highest existing tag.
+
+    (Deyao, 2026-07-26.) A release was previously identified only by a sha in
+    `~/.flt-last-release` -- a file, not a git object, so nothing in the repo
+    itself recorded which commits had ever been green. `git branch -f main`
+    moves under you, `main@{n}` reflog is local to one checkout, and a sha in a
+    report is unsearchable weeks later. An annotated tag is the one identifier
+    that is immutable, in the object store, replicated by `git push --tags`, and
+    greppable (`git tag --contains <sha>` answers "which release shipped this?").
+
+    Annotated, not lightweight: the tag object carries the date and message, so
+    `git tag -n` alone is a release log.
+
+    Never fails the release. Tagging is bookkeeping laid over work already done;
+    a tag collision or a read-only object store must not strand a green build
+    that every idle worker is waiting on.
+    """
+    try:
+        existing = run(["git", "-C", REPO, "tag", "--list", "v[0-9]*"])
+        nums = []
+        for t in existing.stdout.split():
+            if re.fullmatch(r"v\d+", t):
+                nums.append(int(t[1:]))
+        nxt = max(nums, default=0) + 1
+        tag = f"v{nxt}"
+        made = run(["git", "-C", REPO, "tag", "-a", tag, head,
+                    "-m", f"green release {tag}"])
+        if made.returncode != 0:
+            print(f"  (tag {tag} not created: "
+                  f"{made.stderr.strip()[:120]} -- release continues)")
+            return None
+        print(f"  tagged {tag} -> {head[:12]}")
+        return tag
+    except Exception as exc:                       # never block the release
+        print(f"  (tagging skipped: {exc!r} -- release continues)")
+        return None
+
+
 def cmd_release(args):
     """Advance everything (cheap), then seed only what the queue justifies.
 
@@ -763,6 +933,13 @@ def cmd_release(args):
         print("(--force to re-run anyway)")
         return 0
 
+    # NOT under --dry-run: a tag is a real, pushed, immutable ref, so creating
+    # one is exactly the kind of side effect a dry run exists to avoid. Found
+    # the honest way -- the first `release --dry-run` after the tagging change
+    # minted a real `v4` and it had to be deleted by hand.
+    if not args.dry_run:
+        tag_release(head)
+
     hook = load_hook()
 
     fd = os.open(POOL, os.O_RDWR)
@@ -799,7 +976,22 @@ def cmd_release(args):
             advanced.append(name)
             # Source moved, so artifacts are now stale: demote to `free` until
             # seeded. Never leave a worktree `ready` across a release.
-            entries[i] = (name, "free", extra)
+            #
+            # EXCEPT a slot that is draining (Deyao, 2026-07-26 — this was
+            # silently resurrecting retired workers). `reclaiming` means "retire
+            # this slot when its agent finishes"; `done` records that as the
+            # `retire` marker on a `batched` entry, and it is THIS line that has
+            # to honour it. Writing `free` unconditionally threw the decision
+            # away twice over: a finished drainee came back as `free retire`
+            # (state wrong, marker stranded), and an already-`retired` slot --
+            # `retired` being in ADVANCEABLE so its source keeps up with main --
+            # was reset to `free` at every release, so retirement never stuck at
+            # all and the fleet quietly refilled to full size.
+            if state == "retired" or "retire" in extra:
+                entries[i] = (name, "retired", [x for x in extra
+                                                if x != "retire"])
+            else:
+                entries[i] = (name, "free", extra)
         print(f"phase 1: advanced {len(advanced)}, left alone {len(skipped)}")
         for n, why in skipped[:12]:
             print(f"  skipped {n}: {why}")
@@ -820,6 +1012,8 @@ def cmd_release(args):
                   f"block(s): {', '.join(names)}")
         if dropped:
             print(f"  queue: {len(dropped)} task(s) discarded, {remaining} left")
+
+        report_superseded_tasks()
 
         depth = queue_depth()
         want = args.seed if args.seed is not None else depth
