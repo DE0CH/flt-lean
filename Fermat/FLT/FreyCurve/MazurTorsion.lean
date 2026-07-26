@@ -7946,9 +7946,23 @@ isogeny-vocabulary cut until those two leaves are proven.
 That is exactly why the mathematical content is factored out into
 `ne_zmultiples_of_torsion_le` above, which mentions no isogeny vocabulary and
 DOES certify clean. Everything this wrapper adds on top is the one-line
-observation that `[p] ∘ φ` kills the `p`-torsion. -/
+observation that `[p] ∘ φ` kills the `p`-torsion.
+
+**`[IsAlgClosed k]`, NOT `[IsSepClosed k]`** (strengthened at integration
+2026-07-27, merging `flt-lean-5`). This binder said `IsSepClosed` and that is
+no longer enough: `WeierstrassCurve.End` is `↥(endSubring …)`, and `endSubring`
+now carries `[IsAlgClosed F]` because its `add_mem'` field is `IsIsogeny.add`,
+which was REFUTED over a general field — `[2] = id + id` on `W₅(𝔽₅)` is an
+explicit failure of closure under addition, so over a merely separably closed
+field the subring does not exist. The hypothesis is therefore a falsity repair
+inherited from the carrier and must not be weakened back. It costs nothing
+here: both call sites (`not_exists_five_mul_of_ker_order_125` and
+`not_exists_thirteen_mul_of_ker_order_169`) instantiate at
+`AlgebraicClosure ℚ`. The factored-out `ne_zmultiples_of_torsion_le` keeps
+`[IsSepClosed k]`, which is all IT needs, and is reached through mathlib's
+`IsAlgClosed → IsSepClosed` instance. -/
 theorem WeierstrassCurve.not_exists_natCast_mul_of_ker_zmultiples
-    {k : Type*} [Field k] [DecidableEq k] [IsSepClosed k]
+    {k : Type*} [Field k] [DecidableEq k] [IsAlgClosed k]
     (E : WeierstrassCurve k) [E.IsElliptic]
     {p n : ℕ} (hp : 1 < p) (hpk : (p : k) ≠ 0) (hpn : p ∣ n) (hn0 : n ≠ 0)
     (ψ : WeierstrassCurve.End E.toAffine)
