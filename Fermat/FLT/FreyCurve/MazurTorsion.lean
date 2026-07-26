@@ -817,7 +817,98 @@ theorem WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter
     ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j :=
   sorry
 
-/-- **The isogeny signature** (sorry leaf — Serre's local theory at `N`
+/-- **The admissible signatures, enumerated** (PROVEN 2026-07-26): if
+`e ∈ {1, 2, 3, 4, 6}` is the ramification index over which `E` acquires
+good reduction at `N`, `r` is Raynaud's exponent with `0 ≤ r ≤ e` and `r`
+even whenever `e` is, and `s` is defined by `s·e = 12·r`, then
+`s ∈ {0, 4, 6, 8, 12}`, and `s = 6` occurs for the single pair
+`(e, r) = (4, 2)`.
+
+This is the combinatorial half of `exists_isogenySignature`, separated
+out so that the Serre–Raynaud local theory — the actual mathematical
+input — is the only thing left sorried. The enumeration in full:
+
+| `e` | admissible `r`  | `s = 12r/e`     |
+|-----|-----------------|-----------------|
+| `1` | `0, 1`          | `0, 12`         |
+| `2` | `0, 2`          | `0, 12`         |
+| `3` | `0, 1, 2, 3`    | `0, 4, 8, 12`   |
+| `4` | `0, 2, 4`       | `0, 6, 12`      |
+| `6` | `0, 2, 4, 6`    | `0, 4, 8, 12`   |
+
+so `6` really does arise only at `(4, 2)` — which is what makes the
+implication `s = 6 → N ≡ 3 (mod 4)` a statement about ONE local
+situation rather than a case analysis. The parity constraint is what
+does the work: without it `e = 4, r = 1` would give `s = 3` and `e = 2,
+r = 1` would give `s = 6` from a second pair. -/
+theorem mazurIsogeny_signatureEnumeration {e r s : ℕ}
+    (he : e = 1 ∨ e = 2 ∨ e = 3 ∨ e = 4 ∨ e = 6) (hre : r ≤ e)
+    (hpar : e % 2 = 0 → r % 2 = 0) (hs : s * e = 12 * r) :
+    (s = 0 ∨ s = 4 ∨ s = 6 ∨ s = 8 ∨ s = 12) ∧ (s = 6 → e = 4 ∧ r = 2) := by
+  rcases he with rfl | rfl | rfl | rfl | rfl <;> interval_cases r <;> omega
+
+/-- **Serre–Raynaud local data at `N`** (sorry leaf — the local theory at
+`N` alone; Serre, Invent. Math. 15 (1972), Prop. 5 and §5.4, and Raynaud,
+Bull. SMF 102 (1974), Cor. 3.4.4): the isogeny character satisfies
+`λ¹² = χ_N^s` globally, where `s` comes from a ramification index
+`e ∈ {1,2,3,4,6}` and a Raynaud exponent `r ≤ e` — even when `e` is —
+through `s·e = 12r`; and the single pair `(e, r) = (4, 2)` forces
+`N ≡ 3 (mod 4)`.
+
+This is `exists_isogenySignature` with its combinatorial half removed:
+`mazurIsogeny_signatureEnumeration` above turns the `(e, r)` data into
+`s ∈ {0, 4, 6, 8, 12}` and `s = 6 → N ≡ 3 (mod 4)` with no further input.
+What is left here is exactly the mathematics.
+
+Proof (not formalised), in two halves.
+
+*At `N`.* If `E` has potentially multiplicative reduction at `N` it is a
+Tate curve or a quadratic twist of one, so `λ²|_{I_N}` is `1` or
+`χ²|_{I_N}`; take sixth powers and read off `(e, r) = (1, 0)` or
+`(1, 1)`. Otherwise `E` acquires good reduction over `K/ℚ_N` with
+`e = e(K/ℚ_N) ∈ {1,2,3,4,6}` (the possible ramification indices of the
+field of definition of the `ℓ`-torsion at a potentially good prime);
+tame-inertia theory gives `λ|_{I_N} = χ^a|_{I_N}`, Raynaud's
+classification of finite flat group schemes over a base of absolute
+ramification `e < p − 1` gives `λ^e|_{I'_N} = χ^r|_{I'_N}` with
+`0 ≤ r ≤ e` and `r` even when `e` is even, whence `ae ≡ r (mod N−1)` and
+`s = 12r/e`. At `(e, r) = (4, 2)` the quartic ramified extension is
+`ℚ_N(⁴√N)`-like and its existence forces `N ≡ 3 (mod 4)`.
+
+*Away from `N`.* `λ¹²` is unramified at every `q ≠ N`, in BOTH reduction
+types, so `λ¹²χ_N^{-s}` is unramified everywhere (including at `∞`, since
+`s` is even) and therefore trivial by class field theory — `ℚ` has no
+nontrivial everywhere-unramified abelian extension.
+
+MACHINERY AUDIT (2026-07-26). Missing here: tame-inertia theory at `N`,
+Raynaud's classification, the Tate-curve description of the character at
+potentially multiplicative reduction, and the class-field-theoretic
+triviality of an everywhere-unramified abelian character of `ℚ`. None of
+these is modular and none touches the Eisenstein ideal; the last is the
+only one for which mathlib is likely to have usable pieces.
+
+This leaf is INDEPENDENT of the formal-immersion leaf: nothing here uses
+potentially good reduction away from `N`. -/
+theorem WeierstrassCurve.exists_isogenyRamificationData
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g) :
+    ∃ e r s : ℕ, (e = 1 ∨ e = 2 ∨ e = 3 ∨ e = 4 ∨ e = 6) ∧ r ≤ e ∧
+      (e % 2 = 0 → r % 2 = 0) ∧ s * e = 12 * r ∧
+      (∀ σ : Field.absoluteGaloisGroup ℚ,
+        lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ s) ∧
+      (e = 4 → r = 2 → N % 4 = 3) :=
+  sorry
+
+/-- **The isogeny signature** (PROVEN 2026-07-26 from
+`exists_isogenyRamificationData` and `mazurIsogeny_signatureEnumeration`
+— Serre's local theory at `N`
 together with Raynaud's classification; Serre, Invent. Math. 15 (1972),
 Prop. 5 and §5.4, and Raynaud, Bull. SMF 102 (1974), Cor. 3.4.4): for a
 rational cyclic subgroup of prime order `N > 19` with isogeny character
@@ -857,11 +948,302 @@ theorem WeierstrassCurve.exists_isogenySignature
     ∃ s : ℕ, s ∈ ({0, 4, 6, 8, 12} : Finset ℕ) ∧
       (∀ σ : Field.absoluteGaloisGroup ℚ,
         lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ s) ∧
-      (s = 6 → N % 4 = 3) :=
+      (s = 6 → N % 4 = 3) := by
+  obtain ⟨e, r, s, he, hre, hpar, hs, hsig, hmod⟩ :=
+    E.exists_isogenyRamificationData g hN hN19 hg lam hlam
+  obtain ⟨hsmem, h6⟩ := mazurIsogeny_signatureEnumeration he hre hpar hs
+  refine ⟨s, ?_, hsig, fun h => ?_⟩
+  · simp only [Finset.mem_insert, Finset.mem_singleton]
+    exact hsmem
+  · obtain ⟨he4, hr2⟩ := h6 h
+    exact hmod he4 hr2
+
+/-!
+##### The resultant elimination, in kernel-checked arithmetic form
+(PROVEN 2026-07-26)
+
+The four lemmas below are the FINITE COMPUTATION of [MJ, §4.2], stated
+and proved over `ℤ` and `ZMod N` with no elliptic curve in sight. They
+are what turns `not_isogenyCharacter_of_isogenySignature_ne_six` from a
+deep leaf into a thin wrapper around ONE Galois-theoretic input
+(`exists_frobeniusTrace_of_potentiallyGoodReduction`, below).
+
+Mazur's classical step is `N ∣ Res(X² − aX + q, X¹² − q^s)`. Forming the
+resultant is unnecessary. If `x ∈ ZMod N` is a common root of the two
+polynomials, put `y := a − x`. Then `y` is the second root of the
+quadratic, so `x + y = a` and `x · y = q`; since `N ≥ 23` makes `q`
+invertible, `x¹² = q^s` forces `y¹² = q^{12−s}`. Newton's identities
+express the power sum `x¹² + y¹²` as an explicit integer polynomial in
+`x + y` and `x · y`, namely
+
+  `P₁₂(A, B) = A¹² − 12A¹⁰B + 54A⁸B² − 112A⁶B³ + 105A⁴B⁴ − 36A²B⁵ + 2B⁶`,
+
+so `N ∣ q^s + q^{12−s} − P₁₂(a, q)`. That integer is `Res / q^s` up to
+sign, and it is the form actually used below.
+
+Two economies follow from this form, and together they cut the
+computation from the six resultants printed in [MJ, §4.2] to three
+integers per prime:
+
+* the value depends on `s` only through `q^s + q^{12−s}`, which is
+  INVARIANT under `s ↦ 12 − s`. So `s = 0` and `s = 12` give literally
+  the same integers, as do `s = 4` and `s = 8`;
+* `P₁₂(−a, q) = P₁₂(a, q)`, so only `|a|` matters.
+
+Concretely, with `|a| ≤ 3` at `q = 3` and `|b| ≤ 4` at `q = 5`:
+
+* `s ∈ {4, 8}`, `q = 3`: the values are `5184 = 2⁶·3⁴`,
+  `5984 = 2⁵·11·17`, `8000 = 2⁶·5³` — all `19`-smooth, so a prime
+  `N ≥ 23` divides none of them and `q = 5` is not even needed;
+* `s ∈ {0, 12}`, `q = 3`: the values are `529984 = 2⁶·7²·13²`,
+  `530784 = 2⁵·3²·19·97`, `532800 = 2⁶·3²·5²·37`. A prime `N ≥ 23`
+  dividing one of them is `37` or `97`; `hN37` kills `37`, so `N = 97`;
+* `s ∈ {0, 12}`, `q = 5`: the values are `244109376`, `244117120`,
+  `244166400`, `244168960`, and `97` divides none of them.
+
+So the second prime `q = 5` is used for exactly one thing: refuting
+`N = 97`. (Cross-check against the section note above: `R(q, s)` there is
+`q^s` times the lcm of the values here — e.g. `81 · lcm(5184, 5984,
+8000) = 81 · 121176000 = 9815256000 = R(3, 4)`.)
+-/
+
+/-- **The power-sum divisibility** (PROVEN): if `x ∈ ZMod N` is a root of
+`X² − aX + q` with `a ∈ ℤ`, and `x¹² = q^s` with `s ≤ 12` and `q`
+invertible, then `N` divides the integer `q^s + q^{12−s} − P₁₂(a, q)`.
+
+This is Mazur's resultant divisibility with the resultant replaced by a
+power sum; see the section note above for why the two are equivalent. -/
+theorem mazurIsogeny_powerSum_dvd {N : ℕ} [Fact N.Prime] {q : ℕ}
+    (hq : ((q : ℕ) : ZMod N) ≠ 0)
+    {s : ℕ} (hs12 : s ≤ 12) {x : ZMod N} {a : ℤ}
+    (hx : x ^ 2 - (a : ZMod N) * x + ((q : ℕ) : ZMod N) = 0)
+    (hp : x ^ 12 = ((q : ℕ) : ZMod N) ^ s) :
+    (N : ℤ) ∣ (q : ℤ) ^ s + (q : ℤ) ^ (12 - s) -
+      (a ^ 12 - 12 * a ^ 10 * (q : ℤ) + 54 * a ^ 8 * (q : ℤ) ^ 2
+        - 112 * a ^ 6 * (q : ℤ) ^ 3 + 105 * a ^ 4 * (q : ℤ) ^ 4
+        - 36 * a ^ 2 * (q : ℤ) ^ 5 + 2 * (q : ℤ) ^ 6) := by
+  -- The conjugate root of the quadratic.
+  set y : ZMod N := (a : ZMod N) - x with hy
+  have hsum : x + y = (a : ZMod N) := by rw [hy]; ring
+  have hprod : x * y = ((q : ℕ) : ZMod N) := by rw [hy]; linear_combination -hx
+  -- `x¹² · y¹² = q¹²` and `x¹² = q^s`, so `y¹² = q^{12−s}`.
+  have hy12 : y ^ 12 = ((q : ℕ) : ZMod N) ^ (12 - s) := by
+    refine mul_left_cancel₀ (pow_ne_zero s hq) ?_
+    rw [← pow_add]
+    have hsplit : s + (12 - s) = 12 := by omega
+    rw [hsplit, ← hp, ← mul_pow, hprod]
+  -- Newton's identity for the twelfth power sum.
+  have key : x ^ 12 + y ^ 12 =
+      (x + y) ^ 12 - 12 * (x + y) ^ 10 * (x * y) + 54 * (x + y) ^ 8 * (x * y) ^ 2
+        - 112 * (x + y) ^ 6 * (x * y) ^ 3 + 105 * (x + y) ^ 4 * (x * y) ^ 4
+        - 36 * (x + y) ^ 2 * (x * y) ^ 5 + 2 * (x * y) ^ 6 := by ring
+  rw [hsum, hprod, hp, hy12] at key
+  rw [← ZMod.intCast_zmod_eq_zero_iff_dvd]
+  push_cast
+  linear_combination key
+
+/-- **Endgame at `s ∈ {4, 8}`** (PROVEN): the three `q = 3` values are
+`19`-smooth, so no prime `N ≥ 23` divides any of them. -/
+theorem mazurIsogeny_not_dvd_smooth {N : ℕ} (hN : N.Prime) (hN23 : 23 ≤ N)
+    (h : N ∣ 5184 ∨ N ∣ 5984 ∨ N ∣ 8000) : False := by
+  have cop : ∀ p k : ℕ, p.Prime → p < 23 → Nat.Coprime N (p ^ k) := fun p k hp hp23 =>
+    Nat.Coprime.pow_right k ((Nat.coprime_primes hN hp).mpr (by omega))
+  have hone : N = 1 := by
+    rcases h with h | h | h
+    · have e : (5184 : ℕ) = 2 ^ 6 * 3 ^ 4 := by norm_num
+      rw [e] at h
+      exact Nat.eq_one_of_dvd_coprimes
+        ((cop 2 6 Nat.prime_two (by norm_num)).mul_right
+          (cop 3 4 Nat.prime_three (by norm_num))) dvd_rfl h
+    · have e : (5984 : ℕ) = 2 ^ 5 * (11 ^ 1 * 17 ^ 1) := by norm_num
+      rw [e] at h
+      exact Nat.eq_one_of_dvd_coprimes
+        ((cop 2 5 Nat.prime_two (by norm_num)).mul_right
+          ((cop 11 1 (by norm_num) (by norm_num)).mul_right
+            (cop 17 1 (by norm_num) (by norm_num)))) dvd_rfl h
+    · have e : (8000 : ℕ) = 2 ^ 6 * 5 ^ 3 := by norm_num
+      rw [e] at h
+      exact Nat.eq_one_of_dvd_coprimes
+        ((cop 2 6 Nat.prime_two (by norm_num)).mul_right
+          (cop 5 3 (by norm_num) (by norm_num))) dvd_rfl h
+  omega
+
+/-- **Endgame at `s ∈ {0, 12}`, first half** (PROVEN): a prime `N ≥ 23`
+with `N ≠ 37` dividing one of the three `q = 3` values must be `97`.
+The three large prime factors available are `37` (from `532800`) and
+`97` (from `530784`); `529984` is `19`-smooth. -/
+theorem mazurIsogeny_eq_ninetySeven {N : ℕ} (hN : N.Prime) (hN23 : 23 ≤ N) (hN37 : N ≠ 37)
+    (h : N ∣ 529984 ∨ N ∣ 530784 ∨ N ∣ 532800) : N = 97 := by
+  have cop : ∀ p k : ℕ, p.Prime → p < 23 → Nat.Coprime N (p ^ k) := fun p k hp hp23 =>
+    Nat.Coprime.pow_right k ((Nat.coprime_primes hN hp).mpr (by omega))
+  rcases h with h | h | h
+  · exfalso
+    have e : (529984 : ℕ) = 2 ^ 6 * (7 ^ 2 * 13 ^ 2) := by norm_num
+    rw [e] at h
+    have hone := Nat.eq_one_of_dvd_coprimes
+      ((cop 2 6 Nat.prime_two (by norm_num)).mul_right
+        ((cop 7 2 (by norm_num) (by norm_num)).mul_right
+          (cop 13 2 (by norm_num) (by norm_num)))) dvd_rfl h
+    omega
+  · have e : (530784 : ℕ) = (2 ^ 5 * (3 ^ 2 * 19 ^ 1)) * 97 := by norm_num
+    rw [e] at h
+    have hd : N ∣ 97 := Nat.Coprime.dvd_of_dvd_mul_left
+      ((cop 2 5 Nat.prime_two (by norm_num)).mul_right
+        ((cop 3 2 Nat.prime_three (by norm_num)).mul_right
+          (cop 19 1 (by norm_num) (by norm_num)))) h
+    exact (Nat.prime_dvd_prime_iff_eq hN (by norm_num)).mp hd
+  · exfalso
+    have e : (532800 : ℕ) = (2 ^ 6 * (3 ^ 2 * 5 ^ 2)) * 37 := by norm_num
+    rw [e] at h
+    have hd : N ∣ 37 := Nat.Coprime.dvd_of_dvd_mul_left
+      ((cop 2 6 Nat.prime_two (by norm_num)).mul_right
+        ((cop 3 2 Nat.prime_three (by norm_num)).mul_right
+          (cop 5 2 (by norm_num) (by norm_num)))) h
+    exact hN37 ((Nat.prime_dvd_prime_iff_eq hN (by norm_num)).mp hd)
+
+/-- **The resultant elimination** (PROVEN): a prime `N ≥ 23` with
+`N ≠ 37` admits no simultaneous solution, at `q = 3` and `q = 5`, of the
+two conditions that Mazur's argument produces from a Frobenius element —
+being a root of `X² − aX + q` for an integer `a` with `a² ≤ 4q`, and
+having twelfth power `q^s` — for any signature `s ∈ {0, 4, 8, 12}`.
+
+This is the whole of [MJ, Prop. 4.3] except its input. Every case is
+discharged by the compiler: `interval_cases` over the seven admissible
+`a` at `q = 3` and the nine at `q = 5`, then `norm_num` on the resulting
+integer divisibilities. -/
+theorem mazurIsogeny_resultantElimination {N : ℕ} [Fact N.Prime]
+    (hN23 : 23 ≤ N) (hN37 : N ≠ 37)
+    {s : ℕ} (hs : s = 0 ∨ s = 4 ∨ s = 8 ∨ s = 12)
+    {x3 x5 : ZMod N} {a3 a5 : ℤ}
+    (ha3 : a3 ^ 2 ≤ 12) (ha5 : a5 ^ 2 ≤ 20)
+    (hx3 : x3 ^ 2 - (a3 : ZMod N) * x3 + ((3 : ℕ) : ZMod N) = 0)
+    (hx5 : x5 ^ 2 - (a5 : ZMod N) * x5 + ((5 : ℕ) : ZMod N) = 0)
+    (hp3 : x3 ^ 12 = ((3 : ℕ) : ZMod N) ^ s)
+    (hp5 : x5 ^ 12 = ((5 : ℕ) : ZMod N) ^ s) :
+    False := by
+  have hN : N.Prime := Fact.out
+  have hqne : ∀ q : ℕ, 0 < q → q < 23 → ((q : ℕ) : ZMod N) ≠ 0 := by
+    intro q hq0 hq23
+    rw [Ne, ZMod.natCast_eq_zero_iff]
+    intro hdvd
+    have := Nat.le_of_dvd hq0 hdvd
+    omega
+  have hs12 : s ≤ 12 := by rcases hs with rfl | rfl | rfl | rfl <;> norm_num
+  have d3 := mazurIsogeny_powerSum_dvd (hqne 3 (by norm_num) (by norm_num)) hs12 hx3 hp3
+  have d5 := mazurIsogeny_powerSum_dvd (hqne 5 (by norm_num) (by norm_num)) hs12 hx5 hp5
+  have hb3l : -3 ≤ a3 := by nlinarith
+  have hb3r : a3 ≤ 3 := by nlinarith
+  have hb5l : -4 ≤ a5 := by nlinarith
+  have hb5r : a5 ≤ 4 := by nlinarith
+  clear hx3 hx5 hp3 hp5 ha3 ha5 hs12 hqne
+  rcases hs with rfl | rfl | rfl | rfl
+  · -- `s = 0`: `q = 3` gives `N = 97`, and `q = 5` refutes it.
+    have h3 : N ∣ 529984 ∨ N ∣ 530784 ∨ N ∣ 532800 := by
+      clear d5 hb5l hb5r
+      interval_cases a3 <;> norm_num at d3
+      exacts [Or.inl (by exact_mod_cast d3), Or.inr (Or.inl (by exact_mod_cast d3)),
+        Or.inr (Or.inr (by exact_mod_cast d3)), Or.inl (by exact_mod_cast d3),
+        Or.inr (Or.inr (by exact_mod_cast d3)), Or.inr (Or.inl (by exact_mod_cast d3)),
+        Or.inl (by exact_mod_cast d3)]
+    have h97 : N = 97 := mazurIsogeny_eq_ninetySeven hN hN23 hN37 h3
+    subst h97
+    interval_cases a5 <;> norm_num at d5
+  · -- `s = 4`: the `q = 3` values are already `19`-smooth.
+    refine mazurIsogeny_not_dvd_smooth hN hN23 ?_
+    clear d5 hb5l hb5r
+    interval_cases a3 <;> norm_num at d3
+    exacts [Or.inl (by exact_mod_cast d3), Or.inr (Or.inl (by exact_mod_cast d3)),
+      Or.inr (Or.inr (by exact_mod_cast d3)), Or.inl (by exact_mod_cast d3),
+      Or.inr (Or.inr (by exact_mod_cast d3)), Or.inr (Or.inl (by exact_mod_cast d3)),
+      Or.inl (by exact_mod_cast d3)]
+  · -- `s = 8`: the same three integers as `s = 4`.
+    refine mazurIsogeny_not_dvd_smooth hN hN23 ?_
+    clear d5 hb5l hb5r
+    interval_cases a3 <;> norm_num at d3
+    exacts [Or.inl (by exact_mod_cast d3), Or.inr (Or.inl (by exact_mod_cast d3)),
+      Or.inr (Or.inr (by exact_mod_cast d3)), Or.inl (by exact_mod_cast d3),
+      Or.inr (Or.inr (by exact_mod_cast d3)), Or.inr (Or.inl (by exact_mod_cast d3)),
+      Or.inl (by exact_mod_cast d3)]
+  · -- `s = 12`: the same three integers as `s = 0`.
+    have h3 : N ∣ 529984 ∨ N ∣ 530784 ∨ N ∣ 532800 := by
+      clear d5 hb5l hb5r
+      interval_cases a3 <;> norm_num at d3
+      exacts [Or.inl (by exact_mod_cast d3), Or.inr (Or.inl (by exact_mod_cast d3)),
+        Or.inr (Or.inr (by exact_mod_cast d3)), Or.inl (by exact_mod_cast d3),
+        Or.inr (Or.inr (by exact_mod_cast d3)), Or.inr (Or.inl (by exact_mod_cast d3)),
+        Or.inl (by exact_mod_cast d3)]
+    have h97 : N = 97 := mazurIsogeny_eq_ninetySeven hN hN23 hN37 h3
+    subst h97
+    interval_cases a5 <;> norm_num at d5
+
+/-- **The Frobenius characteristic-polynomial relation** (sorry leaf —
+Serre–Tate plus Hasse–Weil; Mazur 1978 §5, [Michaud-Jacobs, proof of
+Prop. 4.3]): at a prime `q ∉ {2, N}` of potentially good reduction, the
+value `λ(σ_q)` of the isogeny character at the global arithmetic
+Frobenius is a root, in `ZMod N`, of `X² − aX + q` for some RATIONAL
+INTEGER `a` with `a² ≤ 4q`.
+
+This is the ONE input the resultant elimination needs, and it is now the
+only unproven ingredient of
+`not_isogenyCharacter_of_isogenySignature_ne_six`. The companion input,
+`χ_N(σ_q) = q`, is already available and PROVEN as
+`GaloisRepresentation.cyclotomicCharacterModL_globalFrob`.
+
+Proof (not formalised), in three steps.
+
+1. *`λ(σ_q)` is an eigenvalue of `ρ_{E,N}(σ_q)`.* The subgroup `⟨g⟩` is
+   Galois-stable of order `N`, so `g` spans a line in `E[N] ≅ (ZMod N)²`
+   on which `Γ_ℚ` acts by `λ`; `hlam` says exactly that. Hence `λ(σ_q)`
+   is a root of the characteristic polynomial of `ρ_{E,N}(σ_q)`, which
+   is `X² − Tr ρ_{E,N}(σ_q) X + det ρ_{E,N}(σ_q)`.
+2. *The determinant is `q`.* `det ρ_{E,N} = χ_N` by the Weil pairing, and
+   `χ_N(σ_q) = q` by `cyclotomicCharacterModL_globalFrob` (PROVEN).
+3. *The trace is an integer of absolute value `≤ 2√q`.* Since `E` has
+   potentially good reduction at `q` — which is what `hpg` supplies, via
+   `v_q(j(E)) ≥ 0` — it acquires good reduction over a finite extension
+   `K/ℚ_q`, and `ρ_{E,N}` is unramified at `q` on inertia acting through
+   a finite quotient; Serre–Tate (Invent. Math. 15 (1972), Thm 3) makes
+   `Tr ρ_{E,N}(σ_q)` the reduction mod `N` of the trace of Frobenius
+   `a_q(Ẽ) ∈ ℤ` of the good-reduction model `Ẽ/𝔽_{q^f}`, and Hasse–Weil
+   bounds it by `2√q`.
+
+MACHINERY AUDIT (2026-07-26). Step 2's cyclotomic half exists here and is
+proven. What does NOT exist in this development is the mod-`N` Galois
+representation `ρ_{E,N} : Γ_ℚ → GL₂(ZMod N)` attached to an elliptic
+curve over `ℚ` together with its `det = χ_N` and its Néron–Ogg–Shafarevich
+/ Serre–Tate comparison with the reduced curve, nor the Hasse–Weil bound
+over a finite field. Those are the three theories a prover of this leaf
+must supply; none of them is modular, and none of them touches the
+Eisenstein ideal.
+
+FAITHFULNESS. `q ≠ 2` and `q ≠ N` are both genuinely needed: `q = 2` is
+excluded because the formal-immersion input `hpg` is silent there, and
+`q = N` because `χ_N(σ_N)` is not `N` (the cyclotomic character is
+ramified at `N`). The bound is stated as `a² ≤ 4q` over `ℤ` rather than
+`|a| ≤ 2√q` to keep it rational; the two are equivalent. -/
+theorem WeierstrassCurve.exists_frobeniusTrace_of_potentiallyGoodReduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN23 : 23 ≤ N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    (hpg : ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j)
+    {q : ℕ} (hq : q.Prime) (hq2 : q ≠ 2) (hqN : q ≠ N) :
+    ∃ a : ℤ, a ^ 2 ≤ 4 * (q : ℤ) ∧
+      ((lam (GaloisRepresentation.globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat) : ZMod N)) ^ 2
+        - (a : ZMod N) * ((lam (GaloisRepresentation.globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat) : ZMod N))
+        + ((q : ℕ) : ZMod N) = 0 :=
   sorry
 
-/-- **Signature `≠ 6` is impossible for `N ≥ 23`, `N ≠ 37`** (sorry leaf —
-the Frobenius/resultant elimination; Mazur 1978 §5, in the form of
+/-- **Signature `≠ 6` is impossible for `N ≥ 23`, `N ≠ 37`** (PROVEN
+2026-07-26 from `exists_frobeniusTrace_of_potentiallyGoodReduction` and
+the resultant elimination above; Mazur 1978 §5, in the form of
 [Michaud-Jacobs, Prop. 4.3]). This is the ARITHMETIC leaf: no modular
 curve, no class field theory, just Frobenius traces and a finite integer
 computation.
@@ -904,8 +1286,36 @@ theorem WeierstrassCurve.not_isogenyCharacter_of_isogenySignature_ne_six
     {s : ℕ} (hs : s ∈ ({0, 4, 8, 12} : Finset ℕ))
     (hsig : ∀ σ : Field.absoluteGaloisGroup ℚ,
       lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ s) :
-    False :=
-  sorry
+    False := by
+  haveI : Fact N.Prime := ⟨hN⟩
+  have hq3 : Nat.Prime 3 := by norm_num
+  have hq5 : Nat.Prime 5 := by norm_num
+  -- The twelfth-power relation at a Frobenius, using `χ_N(σ_q) = q`
+  -- (`cyclotomicCharacterModL_globalFrob`, PROVEN in `Chebotarev.lean`).
+  have hpow : ∀ (q : ℕ) (hq : q.Prime), q ≠ N →
+      ((lam (GaloisRepresentation.globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat) : ZMod N)) ^ 12
+        = ((q : ℕ) : ZMod N) ^ s := by
+    intro q hq hqN
+    have h1 := hsig (GaloisRepresentation.globalFrob
+      hq.toHeightOneSpectrumRingOfIntegersRat)
+    have h2 : ((@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩
+        (GaloisRepresentation.globalFrob
+          hq.toHeightOneSpectrumRingOfIntegersRat) : (ZMod N)ˣ) : ZMod N)
+        = ((q : ℕ) : ZMod N) :=
+      @GaloisRepresentation.cyclotomicCharacterModL_globalFrob N q ⟨hN⟩ hq hqN
+    have h3 := congrArg (fun u : (ZMod N)ˣ => (u : ZMod N)) h1
+    simpa [Units.val_pow_eq_pow_val, h2] using h3
+  -- The characteristic-polynomial relation at `q = 3` and `q = 5`
+  -- (the single deep input).
+  obtain ⟨a3, ha3, hx3⟩ := E.exists_frobeniusTrace_of_potentiallyGoodReduction g hN hN23 hg
+    lam hlam hpg hq3 (by norm_num) (by omega)
+  obtain ⟨a5, ha5, hx5⟩ := E.exists_frobeniusTrace_of_potentiallyGoodReduction g hN hN23 hg
+    lam hlam hpg hq5 (by norm_num) (by omega)
+  -- The finite computation.
+  refine mazurIsogeny_resultantElimination hN23 hN37 ?_ (by norm_num at ha3; linarith)
+    (by norm_num at ha5; linarith) hx3 hx5 (hpow 3 hq3 (by omega)) (hpow 5 hq5 (by omega))
+  simpa only [Finset.mem_insert, Finset.mem_singleton] using hs
 
 /-- **Signature `6` forces class number one** (sorry leaf — the
 imaginary-quadratic branch; [Michaud-Jacobs, Prop. 4.4], and then
