@@ -139,6 +139,13 @@ public import Mathlib.NumberTheory.ModularForms.Basic
 public import Mathlib.NumberTheory.ModularForms.CongruenceSubgroups
 public import Mathlib.NumberTheory.ModularForms.QExpansion
 public import Mathlib.NumberTheory.ModularForms.NormTrace
+public import Mathlib.NumberTheory.ModularForms.Petersson
+public import Mathlib.NumberTheory.ModularForms.Bounds
+public import Mathlib.Analysis.Complex.UpperHalfPlane.Measure
+public import Mathlib.Analysis.Complex.UpperHalfPlane.Manifold
+public import Mathlib.MeasureTheory.Integral.Bochner.Set
+public import Mathlib.MeasureTheory.Integral.Bochner.ContinuousLinearMap
+public import Mathlib.MeasureTheory.Measure.OpenPos
 public import Mathlib.Data.Matrix.Mul
 import Mathlib.NumberTheory.ModularForms.LevelOne.DimensionFormula
 import Mathlib.Topology.Algebra.IntermediateField
@@ -20706,10 +20713,13 @@ So: (a) is mathlib, (c)/(d)/(d′)/(e) are PROVEN, and (b) — the only
 genuinely missing mathematics — is now stated and isolated. As of
 2026-07-26 the frontier of this whole chain is exactly ONE leaf:
 
-* `span_gaussPowOfJacobiSums_le_twistedProd_one` — Stickelberger's
-  theorem in its sharp Gauss-sum form AT `a = 1`, and only in its
-  DIVISIBILITY half, `∏_w σ_{(−v)w⁻¹}(q)^{w.val} ∣ (g(ψ)^p)`, which is
-  exactly (b). Its
+* `span_gaussPowOfJacobiSums_le_twistedProd_base` — Stickelberger's
+  theorem in its sharp Gauss-sum form AT `a = 1` AND `v = 1`, and only
+  in its DIVISIBILITY half, `∏_w σ_{(−1)w⁻¹}(q)^{w.val} ∣ (g(χ)^p)` for
+  the canonical `p`-th power residue character `χ(x) ≡ x^{(Q−1)/p}`,
+  which is exactly (b). (The `v`-quantified
+  `span_gaussPowOfJacobiSums_le_twistedProd_one` is PROVEN from it,
+  2026-07-26, by transport along `σ_v`.) Its
   statement mentions only `jacobiSum` (mathlib) and objects of `𝓞 CF` —
   no compositum, no valuation, nothing to define first — because
   `g(ψ)^p` is written without Gauss sums as `gaussPowOfJacobiSums`
@@ -21794,13 +21804,174 @@ theorem ringHomComp_cycGalRingOfIntegersEquiv {F : Type*} [CommRing F] (CF : Typ
   rw [MulChar.ringHomComp_apply, MulChar.pow_apply_coe, MulChar.pow_apply_coe,
     cycGalRingOfIntegersEquiv_apply_of_pow_eq CF u hya, ← pow_mul]
 
+/-- **A power of a `p`-th power residue character is the one for the
+scaled parameter** (PROVEN 2026-07-26; the general `k` of which
+`mk_pow_sub_one_apply_eq` below is the case `k = P−1, u = −v`).
+
+If `π(ψ x) = x^{v.val·d}` for all `x`, with `P·d = #F − 1`, `d ≠ 0`,
+`k ≠ 0`, and `u` is the unit of `ZMod P` with `u = k·v`, then
+
+`π((ψ^k) x) = x^{u.val·d}`.
+
+Proof: `(ψ^k) x = (ψ x)^k`, so the exponent is `v.val·d·k`, and
+`k·v.val = P·m + u.val` in `ℕ` because the two sides are congruent mod
+`P` and `u.val < P`. The `P·m` part contributes `(x^{P·d})^m
+= (x^{#F−1})^m = 1` for `x ≠ 0` (`FiniteField.pow_card_sub_one_eq_one`),
+and for `x = 0` both exponents are positive, so both sides are `0`.
+
+This is what discharges the `v` quantifier of the Stickelberger leaf:
+taking `k := (v⁻¹).val` gives `u = 1`, i.e. it renormalises an
+arbitrary `p`-th power residue character to the `v = 1` one. -/
+theorem mk_pow_apply_eq {F : Type*} [Field F] [Fintype F] {R : Type*} [CommRing R]
+    (π : R →+* F) (P : ℕ) (hP : P.Prime) (ψ : MulChar F R)
+    (v u : (ZMod P)ˣ) (d k : ℕ) (hd : P * d = Fintype.card F - 1) (hd0 : d ≠ 0) (hk0 : k ≠ 0)
+    (hu : ((u : ZMod P)) = (k : ZMod P) * ((v : ZMod P)))
+    (hcong : ∀ x : F, π (ψ x) = x ^ (((v : ZMod P)).val * d)) :
+    ∀ x : F, π ((ψ ^ k) x) = x ^ (((u : ZMod P)).val * d) := by
+  haveI : NeZero P := ⟨hP.ne_zero⟩
+  haveI : Fact (1 < P) := ⟨hP.one_lt⟩
+  have hvne : ((v : ZMod P)) ≠ 0 := v.ne_zero
+  have hune : ((u : ZMod P)) ≠ 0 := u.ne_zero
+  have huval : ((u : ZMod P)).val ≠ 0 := fun h => hune ((ZMod.val_eq_zero _).mp h)
+  have hcast : ((k * ((v : ZMod P)).val : ℕ) : ZMod P) = ((((u : ZMod P)).val : ℕ) : ZMod P) := by
+    push_cast
+    rw [ZMod.natCast_val, ZMod.natCast_val, ZMod.cast_id, ZMod.cast_id, hu]
+  have hmod : (k * ((v : ZMod P)).val) % P = ((u : ZMod P)).val % P :=
+    (ZMod.natCast_eq_natCast_iff _ _ _).mp hcast
+  have hulp : ((u : ZMod P)).val < P := ZMod.val_lt _
+  have hmod' : (k * ((v : ZMod P)).val) % P = ((u : ZMod P)).val := by
+    rw [hmod, Nat.mod_eq_of_lt hulp]
+  set m : ℕ := (k * ((v : ZMod P)).val) / P with hm
+  have hsplit : k * ((v : ZMod P)).val = P * m + ((u : ZMod P)).val := by
+    conv_lhs => rw [← Nat.div_add_mod (k * ((v : ZMod P)).val) P]
+    rw [hmod', hm]
+  intro x
+  rw [MulChar.pow_apply' _ hk0 x, map_pow, hcong x, ← pow_mul]
+  have hexp : ((v : ZMod P)).val * d * k = (P * d) * m + ((u : ZMod P)).val * d := by
+    have h1 : ((v : ZMod P)).val * d * k = (k * ((v : ZMod P)).val) * d := by ring
+    rw [h1, hsplit]; ring
+  rw [hexp]
+  have hb0 : ((u : ZMod P)).val * d ≠ 0 := Nat.mul_ne_zero huval hd0
+  have hs0 : (P * d) * m + ((u : ZMod P)).val * d ≠ 0 := by
+    intro h; exact hb0 (by omega)
+  rcases eq_or_ne x 0 with rfl | hx
+  · rw [zero_pow hs0, zero_pow hb0]
+  · rw [pow_add, pow_mul x (P * d) m, hd, FiniteField.pow_card_sub_one_eq_one x hx, one_pow,
+      one_mul]
+
+/-- **STICKELBERGER'S THEOREM, DIVISIBILITY HALF, AT `a = 1` AND
+`v = 1`** (SORRY LEAF, cut 2026-07-26 out of
+`span_gaussPowOfJacobiSums_le_twistedProd_one`). **This is now the ONLY
+open node of the whole Stickelberger chain**, and it carries all of its
+remaining mathematical content. Everything above it — the `a`
+quantifier (a Galois orbit), the `v` quantifier (a renormalisation),
+and the UPPER bound on the valuation (Dedekind cancellation against the
+reciprocal character) — is proven.
+
+Let `q` be a nonzero prime of `𝓞 CF` prime to `p`, `Q := #(𝓞 CF ⧸ q)`,
+`d := (Q−1)/p`, and let `χ` be **the** `p`-th power residue character
+at `q`, i.e. the one in the normalisation `χ(x) ≡ x^d (mod q)` — which
+is exactly what `exists_powerResidueChar_of_prime_notMem` produces.
+Then
+
+`∏_w σ_{(−1)·w⁻¹}(q)^{w.val}`  divides  `(g(χ)^p)`,
+
+the right side written WITHOUT Gauss sums as `gaussPowOfJacobiSums p χ`
+(see that definition: `g(χ)^p = χ(−1)·Q·∏_{i=1}^{p−2} J(χ,χⁱ)`,
+mathlib's `gaussSum_pow_eq_prod_jacobiSum`), so the statement is an
+identity of ideals of `𝓞 CF` even though `g(χ)` itself lives only in
+the compositum `CF(ζ_ℓ)`.
+
+**What a prover must still build**, in dependency order — this is now
+exactly Washington §6.1–§6.2 and NOTHING else, since the Gauss/Jacobi
+descent and the return to `𝓞 CF` are discharged by
+`gaussPowOfJacobiSums_mul_jacobiSum_pow` and by the shape of this
+statement:
+
+1. the compositum `L := CF(ζ_ℓ)` for `ℓ` the rational prime under `q`,
+   its ring of integers, and a prime `𝒬 ∣ q` of `𝓞 L` (with
+   `e(𝒬/q) = ℓ−1`, `ℓ` being totally ramified in `ℚ(ζ_ℓ)` and `q`
+   unramified over `ℓ`);
+2. the Gauss sum `g(χ) = ∑_x χ(x) η(x) ∈ 𝓞 L` for a nontrivial
+   additive character `η : 𝓞 CF ⧸ q → μ_ℓ` — mathlib's `gaussSum`
+   takes exactly a `MulChar` and an `AddChar`, and
+   `AddChar.FiniteField.primitiveChar` produces `η`;
+3. **Stickelberger's congruence** (Washington Prop. 6.13 / Lemma 6.14):
+   `v_𝒬(g(χ^{−h}))` is the `ℓ`-adic digit sum of `h`, equivalently
+   `(ℓ−1) ∑_{i<f} {ℓⁱ h/(Q−1)}` — the mathematical core, and what
+   produces the fractional parts defining `θ`. This is the ONLY deep
+   input left;
+4. reading the resulting valuations back as the ideal identity above,
+   which needs `v_{σ(q)}` on `𝓞 CF` versus `v_{σ(𝒬)}` on `𝓞 L` — a
+   ramification-index bookkeeping, `e(𝒬/q)` being independent of `σ`.
+
+**Nothing in items 1–3 exists on this pin** (surveyed 2026-07-26):
+mathlib's `Mathlib/NumberTheory/GaussSum.lean` has no norm, absolute
+value or valuation statement about `gaussSum` at all — only
+`gaussSum_mul_gaussSum_eq_card` and `gaussSum_sq` — and neither
+`Stickelberger` nor any `gaussSum` material appears anywhere in the
+reference project `~/cs/FLT`. Do not re-survey. What DOES exist and
+should be used: `IsCyclotomicExtension.Rat.ramificationIdx_span_zeta_sub_one'`
+(`= ℓ−1`) and `associated_zeta_sub_one_pow_prime` for item 1,
+`AddChar.FiniteField.primitiveChar` for item 2, and for item 4
+`Ideal.finprod_heightOneSpectrum_factorization`,
+`Associates.eq_of_eq_counts`,
+`IsDedekindDomain.HeightOneSpectrum.intValuation_le_pow_iff_dvd` and
+`multiplicity_map_eq` (valuations are invariant under `Ideal.map` along
+a ring equiv).
+
+**The shape a per-prime attack must take** (recorded 2026-07-26 by the
+agent that cut this leaf, because it is the thing that makes item 4
+non-trivial). Reindexing `u := (−1)·w⁻¹` writes the target as
+`∏_u σ_u(q)^{(−u⁻¹).val}`, but the ideals `σ_u(q)` are NOT distinct:
+`u ↦ σ_u(q)` has fibres the cosets of the decomposition subgroup
+`H = ⟨ℓ⟩ ⊆ (ℤ/p)ˣ`, of order the residue degree `f`. So divisibility
+by the product is NOT a conjunction of one inequality per `u`; at each
+prime `P` above `ℓ` the required bound is the SUM
+`∑_{u : σ_u(q) = P} (−u⁻¹).val` over a whole coset. That is exactly
+why Washington computes a single `𝒬`-adic valuation in `𝓞 L` and why
+`v_q` comes out as a sum over the Frobenius orbit — item 3 cannot be
+routed around.
+
+An ELEMENTARY partial route (mapped 2026-07-26) disposes of the split
+case with no Gauss sums at all: reducing mod `q` and using
+`∑_{x ∈ 𝔽_Q} xⁿ = −1` iff `(Q−1) ∣ n` (`n > 0`) turns the Jacobi sum
+into a binomial coefficient,
+`J(χ^{−α}, χ^{−β}) ≡ (−1)^{αd+1} · C((p−β)d, αd) (mod q)` for
+`α + β < p`, and `≡ 0 (mod q)` for `α + β > p`. Since
+`α + (αs mod p) > p` is exactly the condition `E = 1`, this settles
+`f = 1` outright (there `d < ℓ`, so Kummer's theorem shows the binomial
+is prime to `ℓ`). For `f > 1` it only decides `v_q ≥ 1` versus `= 0`,
+because `v_q` is then the SUM of the `E`'s over the Frobenius orbit
+`⟨ℓ⟩·α` — which is precisely why item 3 is unavoidable.
+
+**Faithfulness**: see the numerical record in the docstring of
+`span_gaussPowOfJacobiSums_le_twistedProd_one` below — 318 PARI/GP
+cases over `(p,ℓ) = (5,11), (5,19), (5,3), (7,29), (7,2), (11,23),
+(11,3), (13,53)`, residue degrees `f = 1…5`, no failures, and holding
+as an EQUALITY. The case `v = 1` stated here is among them. -/
+theorem span_gaussPowOfJacobiSums_le_twistedProd_base
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) :
+    Ideal.span {gaussPowOfJacobiSums p χ}
+      ≤ ∏ w : (ZMod p)ˣ,
+          Ideal.map ((cycGalRingOfIntegersEquiv CF ((-1 : (ZMod p)ˣ) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q
+            ^ (((w : (ZMod p)ˣ) : ZMod p)).val :=
+  sorry
+
 /-- **STICKELBERGER'S THEOREM, in the sharp Gauss-sum form, AT `a = 1`,
-IN ITS DIVISIBILITY HALF** (SORRY LEAF, re-cut 2026-07-26;
+IN ITS DIVISIBILITY HALF** (PROVEN 2026-07-26 over the `v = 1` leaf
+`span_gaussPowOfJacobiSums_le_twistedProd_base` above;
 Stickelberger 1890; Washington,
 *Introduction to Cyclotomic Fields*, 2nd ed., §6.1–§6.2 — Lemmas 6.2,
 6.11–6.12, Prop. 6.13 (Stickelberger's congruence), Lemma 6.14,
-Thm. 6.10). **This is now the ONLY open node of the whole Stickelberger
-chain**, and it carries all of its remaining mathematical content.
+Thm. 6.10). The remaining mathematical content lives entirely in that
+leaf; what is done HERE is the discharge of the `v` quantifier.
 
 Let `q` be a nonzero prime of `𝓞 CF` prime to `p`, `Q := #(𝓞 CF ⧸ q)`,
 `d := (Q−1)/p`, and let `ψ` be the `p`-th power residue character at
@@ -21841,25 +22012,37 @@ sum, i.e. the congruence `g(ψ) ≡ 0 mod π^{s(·)}` — and gets the exact
 valuation for free. `span_gaussPowOfJacobiSums_eq_twistedProd_one`
 below is that deduction, and it is PROVEN.
 
-**A FURTHER REDUCTION THAT IS AVAILABLE BUT NOT TAKEN (mapped
-2026-07-26, and worth taking before attacking the compositum): the `v`
-quantifier can be discharged too, leaving only `v = 1`.** Let `χ` be
-the `p`-th power residue character with `χ(x) ≡ x^d`
-(`exists_powerResidueChar_of_prime_notMem` produces exactly this
-`v = 1` case). Then `ψ` and `χ^{v.val}` have the SAME reduction mod
-`q`, and reduction is INJECTIVE on `μ_p ⊂ 𝓞 CF` because `p ∉ q` — so
-`ψ = χ^{v.val}` on the nose. Feeding that into
-`span_gaussPowOfJacobiSums_eq_twistedProd` at `v = 1, a = v.val` gives
-`(g(ψ)^p) = ∏_w σ_{−w⁻¹}(q)^{(v·w).val}`, and the substitution
-`w ↦ v⁻¹w` turns that product into `∏_w σ_{(−v)w⁻¹}(q)^{w.val}` —
-exactly this statement. The only genuinely new ingredient is the
-injectivity of `μ_p → (𝓞 CF ⧸ q)ˣ`. **It was NOT done here because it
-is circular as the file is currently ORDERED**: `..._eq_twistedProd`
-is proven from `..._one`, so consuming it inside a proof of `..._one`
-requires first splitting off a `v = 1, a = 1` leaf ABOVE
-`..._eq_twistedProd` and re-deriving `..._one` below it. That is a
-file-surgery task, not a mathematical one, and it should be done by
-whoever next opens this node.
+**THE `v` QUANTIFIER IS DISCHARGED HERE (2026-07-26), and the earlier
+note claiming it was blocked by declaration order is WITHDRAWN.** That
+note routed the reduction through `span_gaussPowOfJacobiSums_eq_twistedProd`
+— which is proven FROM this statement, hence circular — and concluded
+that a `v = 1` leaf could not feed the `±v` cancellation. It also
+needed the injectivity of `μ_p → (𝓞 CF ⧸ q)ˣ`, to identify `ψ` with
+`χ^{v.val}` for the canonical `χ` of
+`exists_powerResidueChar_of_prime_notMem`.
+
+Neither is necessary. The DIVISIBILITY transports along `σ_v` all by
+itself, with **no reindexing whatsoever**, and the renormalising
+character is built from `ψ` rather than found:
+
+* put `k := (v⁻¹ : ZMod p).val` and `χ := ψ^k`. Then `χ` is a `p`-th
+  power residue character with parameter `k·v = 1`, by
+  `mk_pow_apply_eq` above; it is nontrivial because `orderOf ψ = p`
+  and `p ∤ k`. No injectivity statement about `μ_p` is used — the
+  identification `ψ = χ^{v.val}` is replaced by the arithmetic identity
+  `ψ^{k·v.val} = ψ`, which follows from `ψ^p = 1` alone;
+* apply the `v = 1` leaf to `χ` and push `Ideal.map σ_v` through the
+  conclusion. On the left, `map_gaussPowOfJacobiSums` and
+  `ringHomComp_cycGalRingOfIntegersEquiv` turn `σ_v(G(χ))` into
+  `G(ψ^{k·v.val}) = G(ψ)`. On the right, `Ideal.mapHom` passes through
+  the finite product and `cycGalRingOfIntegersEquiv_comp` composes the
+  indices: `v · ((−1)·w⁻¹) = (−v)·w⁻¹` **at the same `w`**, so the
+  product is already the one this statement asks for.
+
+That is the whole proof below. It is why the residual leaf is
+`span_gaussPowOfJacobiSums_le_twistedProd_base`, stated for the single
+canonical character, with neither `v` nor an arbitrary `ψ` in it.
+
 The family of statements `S(a) : (g(ψᵃ)^p) = ∏_w σ_{(−v)w⁻¹}(q)^{(aw).val}`
 is a single GALOIS ORBIT: applying `σ_c` to `S(1)` yields exactly
 `S(c)`, because `σ_c` carries `gaussPowOfJacobiSums p ψ` to
@@ -21885,55 +22068,13 @@ residue degrees `f = 1, 2, 3, 4, 5`, split, partially split and inert
 `(−v·a)⁻¹` and `(−v)·a⁻¹` differ unless `v = ±1`, and `f > 1` masks the
 difference; the index above is `(−v) · w⁻¹`.
 
-**What a prover must still build**, in dependency order — this is now
-exactly Washington §6.1–§6.2 and NOTHING else, since items 4 and 5 of
-the old list (the Gauss/Jacobi descent and the return to `𝓞 CF`) are
-discharged by `gaussPowOfJacobiSums_mul_jacobiSum_pow` and by the shape
-of this statement:
-
-1. the compositum `L := CF(ζ_ℓ)` for `ℓ` the rational prime under `q`,
-   its ring of integers, and a prime `𝒬 ∣ q` of `𝓞 L` (with
-   `e(𝒬/q) = ℓ−1`, `ℓ` being totally ramified in `ℚ(ζ_ℓ)` and `q`
-   unramified over `ℓ`);
-2. the Gauss sum `g(ψ) = ∑_x ψ(x) η(x) ∈ 𝓞 L` for a nontrivial
-   additive character `η : 𝓞 CF ⧸ q → μ_ℓ` — mathlib's `gaussSum`
-   takes exactly a `MulChar` and an `AddChar`, and
-   `AddChar.FiniteField.primitiveChar` produces `η`;
-3. **Stickelberger's congruence** (Washington Prop. 6.13 / Lemma 6.14):
-   `v_𝒬(g(ψ^{−h}))` is the `ℓ`-adic digit sum of `h`, equivalently
-   `(ℓ−1) ∑_{i<f} {ℓⁱ h/(Q−1)}` — the mathematical core, and what
-   produces the fractional parts defining `θ`. This is the ONLY deep
-   input left;
-4. reading the resulting valuations back as the ideal identity above,
-   which needs `v_{σ(q)}` on `𝓞 CF` versus `v_{σ(𝒬)}` on `𝓞 L` — a
-   ramification-index bookkeeping, `e(𝒬/q)` being independent of `σ`.
-
-**Nothing in items 1–3 exists on this pin** (surveyed 2026-07-26):
-mathlib's `Mathlib/NumberTheory/GaussSum.lean` has no norm, absolute
-value or valuation statement about `gaussSum` at all — only
-`gaussSum_mul_gaussSum_eq_card` and `gaussSum_sq` — and neither
-`Stickelberger` nor any `gaussSum` material appears anywhere in the
-reference project `~/cs/FLT`. What DOES exist and should be used:
-`IsCyclotomicExtension.Rat.ramificationIdx_span_zeta_sub_one'`
-(`= ℓ−1`) and `associated_zeta_sub_one_pow_prime` for item 1,
-`AddChar.FiniteField.primitiveChar` for item 2, and for item 4
-`Ideal.finprod_heightOneSpectrum_factorization`,
-`Associates.eq_of_eq_counts`,
-`IsDedekindDomain.HeightOneSpectrum.intValuation_le_pow_iff_dvd` and
-`multiplicity_map_eq` (valuations are invariant under `Ideal.map` along
-a ring equiv).
-
-An ELEMENTARY partial route (mapped 2026-07-26) disposes of the split
-case with no Gauss sums at all: reducing mod `q` and using
-`∑_{x ∈ 𝔽_Q} xⁿ = −1` iff `(Q−1) ∣ n` (`n > 0`) turns the Jacobi sum
-into a binomial coefficient,
-`J(χ^{−α}, χ^{−β}) ≡ (−1)^{αd+1} · C((p−β)d, αd) (mod q)` for
-`α + β < p`, and `≡ 0 (mod q)` for `α + β > p`. Since
-`α + (αs mod p) > p` is exactly the condition `E = 1`, this settles
-`f = 1` outright (there `d < ℓ`, so Kummer's theorem shows the binomial
-is prime to `ℓ`). For `f > 1` it only decides `v_q ≥ 1` versus `= 0`,
-because `v_q` is then the SUM of the `E`'s over the Frobenius orbit
-`⟨ℓ⟩·α` — which is precisely why item 3 is unavoidable. -/
+**What a prover must still build** is no longer recorded here: it is
+the dependency list in the docstring of
+`span_gaussPowOfJacobiSums_le_twistedProd_base` above (the compositum
+`CF(ζ_ℓ)`, the Gauss sum there, Stickelberger's congruence itself, and
+the ramification bookkeeping that reads the valuations back), together
+with the survey of what this pin does and does not supply and the
+elementary `f = 1` route. Dispatch at that leaf, not at this one. -/
 theorem span_gaussPowOfJacobiSums_le_twistedProd_one
     (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
     {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
@@ -21946,8 +22087,112 @@ theorem span_gaussPowOfJacobiSums_le_twistedProd_one
     Ideal.span {gaussPowOfJacobiSums p ψ}
       ≤ ∏ w : (ZMod p)ˣ,
           Ideal.map ((cycGalRingOfIntegersEquiv CF ((-v) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q
-            ^ (((w : (ZMod p)ˣ) : ZMod p)).val :=
-  sorry
+            ^ (((w : (ZMod p)ˣ) : ZMod p)).val := by
+  classical
+  have hpp : p.Prime := hp.out
+  haveI : NeZero p := ⟨hpp.ne_zero⟩
+  haveI : Fact (1 < p) := ⟨hpp.one_lt⟩
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  -- `ψ ^ p = 1` as an identity of characters, and `ψ` has exact order `p`
+  have hψpow : ψ ^ p = 1 := by
+    refine MulChar.ext fun a => ?_
+    rw [MulChar.pow_apply_coe, MulChar.one_apply_coe]
+    exact hψp a (Units.ne_zero a)
+  have hord : orderOf ψ = p := by
+    have h1 : orderOf ψ ∣ p := orderOf_dvd_of_pow_eq_one hψpow
+    rcases (Nat.Prime.eq_one_or_self_of_dvd hpp _ h1) with h | h
+    · exact absurd (orderOf_eq_one_iff.mp h) hψ1
+    · exact h
+  -- `p ∣ Q − 1`, so `d := (Q−1)/p` satisfies `p·d = Q−1`
+  have hcardeq : Nat.card (𝓞 CF ⧸ q) = Fintype.card (𝓞 CF ⧸ q) := Nat.card_eq_fintype_card
+  have hψQ : ψ ^ (Fintype.card (𝓞 CF ⧸ q) - 1) = 1 := by
+    refine MulChar.ext fun a => ?_
+    rw [MulChar.pow_apply_coe, MulChar.one_apply_coe, ← map_pow,
+      FiniteField.pow_card_sub_one_eq_one (a : 𝓞 CF ⧸ q) (Units.ne_zero a), MulChar.map_one]
+  have hpdvd : p ∣ Fintype.card (𝓞 CF ⧸ q) - 1 := hord ▸ orderOf_dvd_of_pow_eq_one hψQ
+  have hQ1 : 1 < Fintype.card (𝓞 CF ⧸ q) := Fintype.one_lt_card
+  set d : ℕ := (Nat.card (𝓞 CF ⧸ q) - 1) / p with hddef
+  have hd : p * d = Fintype.card (𝓞 CF ⧸ q) - 1 := by
+    rw [hddef, hcardeq]
+    exact Nat.mul_div_cancel' hpdvd
+  have hd0 : d ≠ 0 := by
+    intro h
+    rw [h, Nat.mul_zero] at hd
+    omega
+  -- the exponent `k` that renormalises `ψ` to the `v = 1` character
+  set k : ℕ := (((v⁻¹ : (ZMod p)ˣ) : ZMod p)).val with hkdef
+  have hvinv_ne : (((v⁻¹ : (ZMod p)ˣ) : ZMod p)) ≠ 0 := (v⁻¹).ne_zero
+  have hk0 : k ≠ 0 := fun h => hvinv_ne ((ZMod.val_eq_zero _).mp h)
+  have hkv : ((k : ZMod p)) * ((v : ZMod p)) = 1 := by
+    rw [hkdef, ZMod.natCast_val, ZMod.cast_id, ← Units.val_mul, inv_mul_cancel, Units.val_one]
+  -- `χ := ψ^k` is the `p`-th power residue character in the `v = 1` normalisation
+  set χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF) := ψ ^ k with hχdef
+  have hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1 := by
+    intro x hx
+    rw [hχdef, MulChar.pow_apply' _ hk0 x, ← pow_mul, mul_comm, pow_mul, hψp x hx, one_pow]
+  have hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p) := by
+    have hu : (((1 : (ZMod p)ˣ) : ZMod p)) = (k : ZMod p) * ((v : ZMod p)) := by
+      rw [hkv, Units.val_one]
+    have hstep := mk_pow_apply_eq (Ideal.Quotient.mk q) p hpp ψ v 1 d k hd hd0 hk0 hu
+      (fun x => by rw [hddef]; exact hψcong x)
+    have h1 : (((1 : (ZMod p)ˣ) : ZMod p)).val = 1 := by
+      rw [Units.val_one, ZMod.val_one]
+    intro x
+    rw [← hddef, hχdef, hstep x, h1, one_mul]
+  have hχ1 : χ ≠ 1 := by
+    intro h
+    have hkd : orderOf ψ ∣ k := orderOf_dvd_of_pow_eq_one (by rw [← hχdef, h])
+    rw [hord] at hkd
+    have hklt : k < p := ZMod.val_lt _
+    exact absurd (Nat.le_of_dvd (Nat.pos_of_ne_zero hk0) hkd) (by omega)
+  -- the `v = 1` leaf, transported along `σ_v`
+  have hbase := span_gaussPowOfJacobiSums_le_twistedProd_base CF hq hq0 hpq χ hχ1 hχp hχcong
+  have hmap := Ideal.map_mono
+    (f := (cycGalRingOfIntegersEquiv CF v : 𝓞 CF →+* 𝓞 CF)) hbase
+  -- the generator: `σ_v(G(χ)) = G(ψ^{k·v.val}) = G(ψ)`
+  have hkexp : ψ ^ (k * ((v : ZMod p)).val) = ψ := by
+    have hcast : ((k * ((v : ZMod p)).val : ℕ) : ZMod p) = ((1 : ℕ) : ZMod p) := by
+      push_cast
+      simp only [ZMod.natCast_val, ZMod.cast_id]
+      exact hkv
+    have hmod : (k * ((v : ZMod p)).val) % p = 1 % p :=
+      (ZMod.natCast_eq_natCast_iff _ _ _).mp hcast
+    have hmod' : (k * ((v : ZMod p)).val) % p = 1 := by
+      rw [hmod, Nat.mod_eq_of_lt hpp.one_lt]
+    have hsplit : k * ((v : ZMod p)).val = p * ((k * ((v : ZMod p)).val) / p) + 1 := by
+      conv_lhs => rw [← Nat.div_add_mod (k * ((v : ZMod p)).val) p]
+      rw [hmod']
+    rw [hsplit, pow_add, pow_mul, hψpow, one_pow, one_mul, pow_one]
+  have hL : Ideal.map ((cycGalRingOfIntegersEquiv CF v : 𝓞 CF →+* 𝓞 CF))
+        (Ideal.span {gaussPowOfJacobiSums p χ})
+      = Ideal.span {gaussPowOfJacobiSums p ψ} := by
+    rw [Ideal.map_span, Set.image_singleton, map_gaussPowOfJacobiSums, hχdef,
+      ringHomComp_cycGalRingOfIntegersEquiv CF ψ hψpow v k, hkexp]
+  -- the divisor: `σ_v ∘ σ_{(−1)w⁻¹} = σ_{(−v)w⁻¹}`, at the SAME `w`
+  have hR : Ideal.map ((cycGalRingOfIntegersEquiv CF v : 𝓞 CF →+* 𝓞 CF))
+        (∏ w : (ZMod p)ˣ,
+          Ideal.map ((cycGalRingOfIntegersEquiv CF ((-1 : (ZMod p)ˣ) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q
+            ^ (((w : (ZMod p)ˣ) : ZMod p)).val)
+      = ∏ w : (ZMod p)ˣ,
+          Ideal.map ((cycGalRingOfIntegersEquiv CF ((-v) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q
+            ^ (((w : (ZMod p)ˣ) : ZMod p)).val := by
+    rw [show (Ideal.map ((cycGalRingOfIntegersEquiv CF v : 𝓞 CF →+* 𝓞 CF))
+          (∏ w : (ZMod p)ˣ,
+            Ideal.map ((cycGalRingOfIntegersEquiv CF ((-1 : (ZMod p)ˣ) * w⁻¹) :
+              𝓞 CF →+* 𝓞 CF)) q ^ (((w : (ZMod p)ˣ) : ZMod p)).val))
+        = ∏ w : (ZMod p)ˣ,
+            Ideal.map ((cycGalRingOfIntegersEquiv CF v : 𝓞 CF →+* 𝓞 CF))
+              (Ideal.map ((cycGalRingOfIntegersEquiv CF ((-1 : (ZMod p)ˣ) * w⁻¹) :
+                𝓞 CF →+* 𝓞 CF)) q ^ (((w : (ZMod p)ˣ) : ZMod p)).val)
+      from map_prod (Ideal.mapHom _) _ _]
+    refine Finset.prod_congr rfl fun w _ => ?_
+    rw [Ideal.map_pow, Ideal.map_map, cycGalRingOfIntegersEquiv_comp]
+    congr 2
+    rw [← mul_assoc, mul_neg_one]
+  rw [hL, hR] at hmap
+  exact hmap
 
 /-- **Cancellation in the Dedekind ideal monoid: two divisibilities
 whose products agree are both equalities** (PROVEN 2026-07-26; the
@@ -22829,20 +23074,26 @@ theorem as a hypothesis. Items 3–6, the Gauss-sum core, were a single
 opaque `sorry` here until 2026-07-26; they are now cut into TWO
 narrower leaves plus proven bookkeeping:
 
-* `span_gaussPowOfJacobiSums_le_twistedProd_one` (SORRY LEAF, re-cut
+* `span_gaussPowOfJacobiSums_le_twistedProd_base` (SORRY LEAF, cut
   2026-07-26) — Stickelberger's theorem in its sharp Gauss-sum form at
-  `a = 1` and in its DIVISIBILITY half only,
-  `∏_w σ_{(−v)w⁻¹}(q)^{w.val} ∣ (g(ψ)^p)`, with `g(ψ)^p`
+  `a = 1` AND `v = 1`, and in its DIVISIBILITY half only,
+  `∏_w σ_{(−1)w⁻¹}(q)^{w.val} ∣ (g(χ)^p)` for the canonical `p`-th
+  power residue character `χ(x) ≡ x^{(Q−1)/p}`, with `g(χ)^p`
   written WITHOUT Gauss sums as `gaussPowOfJacobiSums`. What is left in
   it is the compositum `CF(ζ_ℓ)` and the EASY half of Stickelberger's
   congruence (Washington Prop. 6.13 / Lemma 6.14) — and nothing else:
   the descent and the return to `𝓞 CF` are discharged by
   `gaussPowOfJacobiSums_mul_jacobiSum_pow`, the `a`-quantifier by the
-  Galois-orbit argument below, and the UPPER bound on the valuation by
-  the cancellation against `ψ^{p−1}` recorded in its docstring. Its
-  docstring itemises the remainder, records the PARI/GP faithfulness
-  check, maps a further reduction to `v = 1`, and surveys what this pin
-  does and does not already supply.
+  Galois-orbit argument below, the `v`-quantifier by transport along
+  `σ_v` (`span_gaussPowOfJacobiSums_le_twistedProd_one`, PROVEN
+  2026-07-26), and the UPPER bound on the valuation by
+  the cancellation against `ψ^{p−1}`. Its
+  docstring itemises the remainder, points at the PARI/GP faithfulness
+  check, and surveys what this pin does and does not already supply.
+* `span_gaussPowOfJacobiSums_le_twistedProd_one` (PROVEN 2026-07-26 from
+  the leaf above) — the same divisibility for an arbitrary `p`-th power
+  residue character with parameter `v ∈ (ℤ/p)ˣ`, by applying the leaf to
+  `ψ^{(v⁻¹).val}` and pushing `Ideal.map σ_v` through the conclusion.
 * `span_gaussPowOfJacobiSums_eq_twistedProd_one` (PROVEN 2026-07-26 from
   the leaf above) — the same identity as an EQUALITY, by cancellation in
   the Dedekind ideal monoid against the reciprocal character.
@@ -26738,8 +26989,203 @@ theorem eq_smul_of_pow_sub_smul_apply_eq_zero_of_selfAdjointForm
   rw [hNapp] at hfin
   exact sub_eq_zero.mp hfin
 
+section PeterssonProduct
+
+-- `_root_.`-qualified deliberately: this file lives inside
+-- `namespace GaloisRepresentation.Modularity`, where a bare `open X` can bind to a
+-- nested, nearly-empty `X` instead of the root one.
+open _root_.MeasureTheory _root_.UpperHalfPlane
+
+/-- **THE INVARIANT MEASURE ON `ℍ` IS OPEN-POSITIVE** (PROVEN 2026-07-26 —
+NOT in the pin, and needed by every "a form vanishing a.e. vanishes"
+argument): a nonempty open subset of the upper half plane has nonzero
+`dx dy / y²`-measure.
+
+Proof: `UpperHalfPlane.coe` is an open embedding (`isOpenEmbedding_coe`), so
+the comap of Lebesgue measure on `ℂ` is open-positive
+(`Measure.IsOpenPosMeasure.comap`); and `(volume : Measure ℍ)` is that comap
+`withDensity (1/y)²` (`UpperHalfPlane.volume_def`), a density that is
+everywhere nonzero because `y > 0` on `ℍ`, so the comap is absolutely
+continuous with respect to it (`withDensity_absolutelyContinuous'`) and
+open-positivity transfers along `≪`.
+
+Deliberately a `theorem` and not an `instance`: it is wanted at exactly one
+place (`cuspForm_eq_zero_of_setIntegral_petersson_self_eq_zero` below, via
+`haveI`), and registering it globally would put a measure-theoretic instance
+into the search path of this 37k-line module for no other consumer. -/
+theorem upperHalfPlane_volume_isOpenPosMeasure :
+    (volume : Measure ℍ).IsOpenPosMeasure := by
+  haveI h1 : ((volume : Measure ℂ).comap UpperHalfPlane.coe).IsOpenPosMeasure :=
+    Measure.IsOpenPosMeasure.comap _ UpperHalfPlane.isOpenEmbedding_coe
+  rw [UpperHalfPlane.volume_def]
+  refine Measure.AbsolutelyContinuous.isOpenPosMeasure
+    (μ := (volume : Measure ℂ).comap UpperHalfPlane.coe) ?_
+  have hmk : Measurable (fun z : ℍ ↦ (NNReal.mk z.im z.im_pos.le : NNReal)) := by
+    rw [← measurable_coe_nnreal_real_iff]
+    exact Complex.measurable_im.comp UpperHalfPlane.measurable_coe
+  refine withDensity_absolutelyContinuous' ?_ ?_
+  · exact (((measurable_const.div hmk).pow_const 2).coe_nnreal_ennreal).aemeasurable
+  · filter_upwards with z
+    simp only [ne_eq, ENNReal.coe_eq_zero, one_div]
+    intro hcon
+    exact absurd (congrArg NNReal.toReal hcon) (by simpa using z.im_pos.ne')
+
+/-- **THE PETERSSON DOMAIN** (sorry leaf — cut 2026-07-26 out of
+`exists_peterssonProduct_selfAdjoint_heckeOp` below, which is PROVEN over
+it; Diamond–Shurman *A First Course in Modular Forms* §5.4–§5.5, Theorem
+5.5.3): there is a set `D ⊆ ℍ` of FINITE invariant volume, containing a
+nonempty open set, over which the Petersson integrand pairs the good Hecke
+operators `T_q`, `q ∤ M`, self-adjointly.
+
+The intended witness is a fundamental domain for `Γ₀(M)` acting on `ℍ`; the
+three conjuncts are, in order, its finite volume, the fact that it has
+interior, and the unfolding computation.  Everything ELSE that the Petersson
+product needs — integrability, additivity, homogeneity, conjugate symmetry
+and DEFINITENESS — is proven below from these three, so this is all that is
+left of the analysis.
+
+WHY THIS IS NOT PHRASED WITH `MeasureTheory.IsFundamentalDomain`, which is
+the first thing anyone will try.  `Gamma0GL M` contains `-1` (the image of
+`-I ∈ Γ₀(M) ⊆ SL(2,ℤ)`), which acts TRIVIALLY on `ℍ`.  So
+`IsFundamentalDomain (Gamma0GL M) D volume` is FALSE for every `D` of
+positive measure: its `aedisjoint` field would demand
+`AEDisjoint volume ((-1) • D) D`, i.e. `volume D = 0`.  A fundamental domain
+here exists only for the quotient by `±1`, and the pin has no action of that
+quotient on `ℍ` — hence the hand-rolled conjuncts.  (Checked against this
+pin: `IsFundamentalDomain` occurs nowhere in `Mathlib/NumberTheory`, and no
+subset of `ℍ` is registered as one anywhere.)
+
+WHAT THE PIN SUPPLIES for whoever attacks this (checked 2026-07-26):
+
+* `Mathlib/Analysis/Complex/UpperHalfPlane/Measure.lean` — the INVARIANT
+  measure `dx dy / y²` as `(volume : Measure ℍ)`, with the instance
+  `SMulInvariantMeasure (GL (Fin 2) ℝ) ℍ volume`.  The change of variables
+  is therefore DONE;
+* `Mathlib/NumberTheory/ModularForms/Petersson.lean` — `petersson_slash`,
+  the full `GL₂⁺` transformation law, which is the identity the unfolding
+  argument runs on;
+* `Mathlib/NumberTheory/Modular.lean` — the standard set `𝒟` for `SL(2,ℤ)`
+  with `exists_smul_mem_fd`, `eq_one_or_neg_one_of_mem_fdo_mem_fd`,
+  `isClosed_fd`, `fdo_eq_interior_fd` (so the SECOND conjunct is immediate
+  for `𝒟`, since `𝒟ᵒ` is open, nonempty and contained in `𝒟`);
+* MISSING and the real work: `volume 𝒟 ≠ ⊤` (no measure computation on `ℍ`
+  exists in the pin at all), the coset union `⋃ᵢ γᵢ 𝒟` over
+  representatives of `Γ₀(M) \ SL(2,ℤ)` — `(Gamma0 M).FiniteIndex` is an
+  instance but no explicit representatives exist — and the double-coset
+  unfolding for the third conjunct.
+
+`~/cs/FLT` does NOT help: its only inner-product material,
+`AutomorphicForm/QuaternionAlgebra/InnerProduct.lean`, is the definite
+quaternionic setting where the "integral" is a finite sum over a class set.
+
+FAITHFULNESS.  A degenerate witness cannot cheapen the consumer: the
+conclusion of `exists_peterssonProduct_selfAdjoint_heckeOp` is UNCHANGED by
+this cut, and definiteness of the resulting form is DERIVED below rather
+than assumed, so any `D` satisfying these three conjuncts really does prove
+the consumer.  In particular `D = ∅` is ruled out by the second conjunct. -/
+theorem exists_peterssonDomain {M : ℕ} (hM : 0 < M) :
+    ∃ D : Set ℍ,
+      volume D ≠ ⊤ ∧
+      (∃ U : Set ℍ, IsOpen U ∧ U.Nonempty ∧ U ⊆ D) ∧
+      (∀ q : ℕ, q.Prime → ¬ q ∣ M → ∀ f g : CuspForm (Gamma0GL M) 2,
+        (∫ τ in D, petersson (2 : ℤ) ⇑g ⇑(heckeOp M q f) τ)
+          = ∫ τ in D, petersson (2 : ℤ) ⇑(heckeOp M q g) ⇑f τ) :=
+  sorry
+
+/-- **THE PETERSSON INTEGRAND IS INTEGRABLE OVER ANY FINITE-VOLUME SET**
+(PROVEN 2026-07-26): no fundamental-domain property is needed, only that
+`volume D < ∞`.  The integrand is continuous
+(`UpperHalfPlane.petersson_continuous` on the continuity of a modular form,
+`ModularFormClass.continuous`) and GLOBALLY BOUNDED for a cusp form
+(`CuspFormClass.petersson_bounded_left`, which needs the arithmeticity
+instance on `Gamma0GL M` and hence `0 < M`), and a bounded measurable
+function on a finite-measure set is integrable
+(`Measure.integrableOn_of_bounded`). -/
+theorem peterssonIntegrableOn {M : ℕ} (hM : 0 < M) {D : Set ℍ}
+    (hD : volume D ≠ ⊤) (f g : CuspForm (Gamma0GL M) 2) :
+    IntegrableOn (petersson (2 : ℤ) ⇑g ⇑f) D volume := by
+  haveI : NeZero M := ⟨hM.ne'⟩
+  obtain ⟨C, hC⟩ := CuspFormClass.petersson_bounded_left (2 : ℤ) (Gamma0GL M) g f
+  refine Measure.integrableOn_of_bounded hD ?_ (M := C) ?_
+  · exact (UpperHalfPlane.petersson_continuous (2 : ℤ) (ModularFormClass.continuous g)
+      (ModularFormClass.continuous f)).aestronglyMeasurable
+  · exact Filter.Eventually.of_forall fun τ => hC τ
+
+/-- The diagonal Petersson integrand is a NONNEGATIVE REAL:
+`petersson 2 f f τ = |f τ|² · y²`.  This is what turns definiteness into a
+statement about a real integral of a nonnegative function. -/
+theorem petersson_self_eq_ofReal {M : ℕ} (f : CuspForm (Gamma0GL M) 2) (τ : ℍ) :
+    petersson (2 : ℤ) ⇑f ⇑f τ = ((Complex.normSq (f τ) * τ.im ^ (2 : ℤ) : ℝ) : ℂ) := by
+  simp only [petersson, Complex.ofReal_mul, Complex.normSq_eq_conj_mul_self,
+    Complex.ofReal_zpow]
+
+/-- **DEFINITENESS OF THE PETERSSON PRODUCT, PROVEN — and it needs only that
+the domain has INTERIOR** (2026-07-26).  If `∫_D petersson 2 f f = 0` and
+`D` contains a nonempty open `U`, then `f = 0`.
+
+This is the observation that removes definiteness from the analytic leaf
+entirely, and it is worth stating why it is cheap.  The integrand is
+`|f τ|²y² ≥ 0`, so a vanishing integral forces it to vanish ALMOST
+EVERYWHERE on `D` (`setIntegral_eq_zero_iff_of_nonneg_ae`, using
+`peterssonIntegrableOn`).  Restricting to `U` and using that `volume` is
+open-positive on `ℍ` (`upperHalfPlane_volume_isOpenPosMeasure` above) plus
+continuity of `f`, the a.e. statement upgrades to `f = 0` ON `U`
+(`Measure.eqOn_open_of_ae_eq`).  A holomorphic function on `ℍ` vanishing on
+a nonempty open set vanishes identically — `ℍ` is connected, which is
+packaged as `UpperHalfPlane.eq_zero_of_frequently`.
+
+So NO positivity of the Petersson product, NO fundamental-domain property
+and NO finite-dimensionality is used: an open subset of the domain suffices.
+(`hM` is consumed only through `peterssonIntegrableOn`.) -/
+theorem cuspForm_eq_zero_of_setIntegral_petersson_self_eq_zero {M : ℕ} (hM : 0 < M)
+    {D : Set ℍ} (hDvol : volume D ≠ ⊤) {U : Set ℍ} (hUo : IsOpen U) (hUne : U.Nonempty)
+    (hUD : U ⊆ D) {f : CuspForm (Gamma0GL M) 2}
+    (h : (∫ τ in D, petersson (2 : ℤ) ⇑f ⇑f τ) = 0) : f = 0 := by
+  haveI := upperHalfPlane_volume_isOpenPosMeasure
+  set F : ℍ → ℝ := fun τ => Complex.normSq (f τ) * τ.im ^ (2 : ℤ) with hFdef
+  have hpt : ∀ τ : ℍ, petersson (2 : ℤ) ⇑f ⇑f τ = ((F τ : ℝ) : ℂ) :=
+    petersson_self_eq_ofReal f
+  have hfun : petersson (2 : ℤ) ⇑f ⇑f = fun τ : ℍ => ((F τ : ℝ) : ℂ) := funext hpt
+  have hintC : IntegrableOn (fun τ : ℍ => ((F τ : ℝ) : ℂ)) D volume := by
+    have h1 := peterssonIntegrableOn hM hDvol f f
+    rwa [hfun] at h1
+  have hintF : IntegrableOn F D volume := by
+    show Integrable F (volume.restrict D)
+    simpa using hintC.re
+  have h0 : (∫ τ in D, F τ) = 0 := by
+    rw [hfun, integral_complex_ofReal] at h
+    exact_mod_cast h
+  have hnn : (0 : ℍ → ℝ) ≤ᵐ[volume.restrict D] F := by
+    filter_upwards with τ
+    have h1 : (0 : ℝ) < τ.im ^ (2 : ℤ) := by positivity
+    exact mul_nonneg (Complex.normSq_nonneg _) h1.le
+  have hae : F =ᵐ[volume.restrict D] 0 :=
+    (setIntegral_eq_zero_iff_of_nonneg_ae hnn hintF).mp h0
+  have haef : (⇑f : ℍ → ℂ) =ᵐ[volume.restrict D] 0 := by
+    filter_upwards [hae] with τ hτ
+    have him : (τ.im : ℝ) ^ (2 : ℤ) ≠ 0 := by positivity
+    have hns : Complex.normSq (f τ) = 0 := by
+      have h1 := hτ
+      simp only [hFdef, Pi.zero_apply] at h1
+      exact (mul_eq_zero.mp h1).resolve_right him
+    simpa [Complex.normSq_eq_zero] using hns
+  have haeU : (⇑f : ℍ → ℂ) =ᵐ[volume.restrict U] 0 :=
+    ae_mono (Measure.restrict_mono hUD le_rfl) haef
+  have heq : Set.EqOn (⇑f : ℍ → ℂ) 0 U :=
+    Measure.eqOn_open_of_ae_eq haeU hUo
+      (ModularFormClass.continuous f).continuousOn continuousOn_const
+  obtain ⟨τ₀, hτ₀⟩ := hUne
+  have hfreq : ∃ᶠ z in nhdsWithin τ₀ {τ₀}ᶜ, (⇑f : ℍ → ℂ) z = 0 := by
+    refine Filter.Eventually.frequently ?_
+    filter_upwards [nhdsWithin_le_nhds (hUo.mem_nhds hτ₀)] with z hz
+    exact heq hz
+  have hzero : (⇑f : ℍ → ℂ) = 0 :=
+    UpperHalfPlane.eq_zero_of_frequently (ModularFormClass.holo f) hfreq
+  exact DFunLike.coe_injective (by simpa using hzero)
+
 /-- **THE PETERSSON PRODUCT ON `S₂(Γ₀(M))`, WITH THE GOOD HECKE
-OPERATORS SELF-ADJOINT FOR IT** (sorry leaf — cut 2026-07-26 out of
+OPERATORS SELF-ADJOINT FOR IT** (PROVEN 2026-07-26 over the single leaf
+`exists_peterssonDomain` above; cut 2026-07-26 out of
 `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`, which is PROVEN
 over it; Diamond–Shurman *A First Course in Modular Forms* §5.5,
 Theorem 5.5.3): there is a form `B` on `S₂(Γ₀(M))` that is additive and
@@ -26776,41 +27222,28 @@ character). At `q ∣ M` the same computation gives no such identity, and
 indeed `U_q` is genuinely non-semisimple — see the FAITHFULNESS AUDIT on
 the consumer below, whose counterexample lives at `M = M'q³`.
 
-DEPENDENCY MAP for whoever attacks this (checked against this pin,
-2026-07-26). Mathlib supplies more than the earlier note claimed, but
-still not the integral:
+PROOF (2026-07-26).  The form is the honest integral,
+`B f g = ∫_D petersson 2 g f`, over the domain supplied by
+`exists_peterssonDomain` above — so the "intended witness" is now written
+in Lean rather than described in prose.  Of the five conjuncts, FOUR are
+discharged here and only self-adjointness comes from the leaf:
 
-* `Mathlib/Analysis/Complex/UpperHalfPlane/Measure.lean` — the INVARIANT
-  measure `dx dy / y²` on `ℍ` as `(volume : Measure ℍ)`, with
-  `SMulInvariantMeasure (GL (Fin 2) ℝ) ℍ volume`. This is the measure
-  the product integrates against, and the invariance needed for the
-  change of variables is already there;
-* `Mathlib/NumberTheory/ModularForms/Petersson.lean` — the integrand
-  `petersson k f g τ = conj (f τ) * g τ * τ.im ^ k`, and crucially
-  `petersson_slash`, the transformation law
-  `petersson k (f ∣[k] g) (f' ∣[k] g) τ = |det g|^(k−2) · σ g (petersson k f f' (g • τ))`,
-  which is the identity the unfolding argument runs on;
-* `Mathlib/NumberTheory/ModularForms/Bounds.lean` —
-  `CuspFormClass.petersson_bounded_left/right`, boundedness of the
-  integrand for a cusp form, hence integrability once the domain has
-  finite volume;
-* MISSING, and this is the real work: a measure-theoretic fundamental
-  domain. `Mathlib/NumberTheory/Modular.lean` has the standard set `𝒟`
-  for `SL(2,ℤ)` with `exists_smul_mem_fd` and the disjointness of `𝒟ᵒ`
-  from its translates, but NOWHERE in mathlib is any modular group's
-  domain registered as `MeasureTheory.IsFundamentalDomain` (grep: that
-  predicate occurs only in `MeasureTheory/Group/FundamentalDomain.lean`
-  and `MeasureTheory/Measure/Haar/Quotient.lean`). Three further steps
-  are then needed: the `±1` nuisance (the kernel of the action must be
-  quotiented out before any domain can be a fundamental domain for the
-  group itself), the union `⋃ᵢ γᵢ 𝒟` over coset representatives of
-  `Γ₀(M) \ SL(2,ℤ)`, and finally the unfolding computation for the
-  double coset.
+* ADDITIVITY is `integral_add` over `peterssonIntegrableOn` (which needs
+  only that `D` has finite volume);
+* HOMOGENEITY is `integral_const_mul`, which holds UNCONDITIONALLY — no
+  integrability hypothesis, since the Bochner integral of a
+  non-integrable function is `0`;
+* CONJUGATE SYMMETRY is `UpperHalfPlane.petersson_symm` followed by
+  `integral_conj`, also unconditional;
+* DEFINITENESS is `cuspForm_eq_zero_of_setIntegral_petersson_self_eq_zero`
+  above — and the point of that lemma is that definiteness needs NO
+  positivity of the product and NO fundamental-domain property, only that
+  `D` has nonempty interior, because a holomorphic function vanishing a.e.
+  on an open subset of the connected space `ℍ` vanishes identically.
 
-`~/cs/FLT` does NOT help here: its only inner-product material,
-`AutomorphicForm/QuaternionAlgebra/InnerProduct.lean`, is the definite
-quaternionic setting, where the "integral" is a finite sum over a class
-set — no analysis and nothing transferable.
+That last item is why the leaf below is weaker than the "there is a
+positive-definite inner product" statement one would expect: the analysis
+that survives is exactly finite volume, interior, and the unfolding.
 
 FORMAL-CONTENT NOTE. The consumer uses DEFINITENESS only (not
 positivity) and does NOT use finite-dimensionality; both are stated
@@ -26825,8 +27258,38 @@ theorem exists_peterssonProduct_selfAdjoint_heckeOp {M : ℕ} (hM : 0 < M) :
       (∀ f : CuspForm (Gamma0GL M) 2, B f f = 0 → f = 0) ∧
       (∀ q : ℕ, q.Prime → ¬ q ∣ M →
         ∀ f g : CuspForm (Gamma0GL M) 2,
-          B (heckeOp M q f) g = B f (heckeOp M q g)) :=
-  sorry
+          B (heckeOp M q f) g = B f (heckeOp M q g)) := by
+  obtain ⟨D, hDvol, ⟨U, hUo, hUne, hUD⟩, hDsa⟩ := exists_peterssonDomain hM
+  refine ⟨fun f g => ∫ τ in D, petersson (2 : ℤ) ⇑g ⇑f τ, ?_, ?_, ?_, ?_, ?_⟩
+  · intro f₁ f₂ g
+    have hpt : ∀ τ : ℍ, petersson (2 : ℤ) ⇑g ⇑(f₁ + f₂) τ
+        = petersson (2 : ℤ) ⇑g ⇑f₁ τ + petersson (2 : ℤ) ⇑g ⇑f₂ τ := by
+      intro τ
+      simp only [petersson, CuspForm.coe_add, Pi.add_apply]
+      ring
+    simp only [hpt]
+    exact integral_add (peterssonIntegrableOn hM hDvol f₁ g)
+      (peterssonIntegrableOn hM hDvol f₂ g)
+  · intro a f g
+    have hpt : ∀ τ : ℍ, petersson (2 : ℤ) ⇑g ⇑(a • f) τ
+        = a * petersson (2 : ℤ) ⇑g ⇑f τ := by
+      intro τ
+      simp only [petersson, CuspForm.IsGLPos.coe_smul, Pi.smul_apply, smul_eq_mul]
+      ring
+    simp only [hpt]
+    exact integral_const_mul a _
+  · intro f g
+    have hpt : ∀ τ : ℍ, petersson (2 : ℤ) ⇑f ⇑g τ
+        = starRingEnd ℂ (petersson (2 : ℤ) ⇑g ⇑f τ) := fun τ =>
+      UpperHalfPlane.petersson_symm (2 : ℤ) ⇑g ⇑f τ
+    simp only [hpt]
+    exact integral_conj
+  · intro f hf
+    exact cuspForm_eq_zero_of_setIntegral_petersson_self_eq_zero hM hDvol hUo hUne hUD hf
+  · intro q hq hqM f g
+    exact hDsa q hq hqM f g
+
+end PeterssonProduct
 
 /-- **SEMISIMPLICITY OF THE GOOD HECKE OPERATORS on `S₂(Γ₀(M))`** (PROVEN
 2026-07-26 over the single analytic leaf
@@ -26883,11 +27346,14 @@ level `M'·q²`, so `h(q·) ∈ S₂(Γ₀(M))`, and `U_q ∘ V_q = id` gives
 good-prime hypothesis is not decoration; the same phenomenon is exactly
 what makes the consumer node's own counterexample work.
 
-DEPENDENCY NOTE. Everything analytic now lives in the single leaf
-`exists_peterssonProduct_selfAdjoint_heckeOp` above, whose docstring
-carries the full map of what this mathlib pin does and does not
-provide (invariant measure and the `petersson` transformation law: yes;
-a measure-theoretic fundamental domain for any modular group: no). -/
+DEPENDENCY NOTE (updated 2026-07-26).
+`exists_peterssonProduct_selfAdjoint_heckeOp` is itself now PROVEN, over
+the single remaining leaf `exists_peterssonDomain`, whose docstring carries
+the full map of what this mathlib pin does and does not provide (invariant
+measure and the `petersson` transformation law: yes; any measure-theoretic
+fundamental domain for a modular group, or any computation of `volume 𝒟`:
+no).  So the analysis under this node is now exactly: a `Γ₀(M)`-fundamental
+domain of finite volume, plus the double-coset unfolding. -/
 theorem heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level {M : ℕ} (hM : 0 < M)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (c : ℂ)
     {v : CuspForm (Gamma0GL M) 2} {n : ℕ}
@@ -27582,7 +28048,34 @@ Atkin–Lehner material in mathlib or in `~/cs/FLT`.  This is shared with the
 sibling leaf `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`
 (good-prime semisimplicity), which needs the SAME inner product and
 self-adjointness of `T_q` — so whoever builds the Petersson product should
-expect to discharge both. -/
+expect to discharge both.  As of 2026-07-26 that shared prerequisite is
+CUT DOWN to the single leaf `exists_peterssonDomain` above: the Petersson
+product itself (`exists_peterssonProduct_selfAdjoint_heckeOp`) is PROVEN
+over it, definiteness included.
+
+AUDIT 2026-07-26 — THIS CUT IS A RESTATEMENT, NOT A REDUCTION.  Write
+`K := {v | ∀ n, n.Coprime M → qCoeff M v n = 0}`, a submodule (an
+intersection of kernels of the functionals `qCoeffL M n`).  The consumer
+`mem_oldSubspace_of_qCoeff_coprime_eq_zero` below is exactly `K ≤ old`, and
+the converse `old ≤ K` is already PROVEN
+(`qCoeff_eq_zero_of_mem_oldSubspace`).  Then THIS LEAF AND THAT CONSUMER
+ARE LOGICALLY EQUIVALENT:
+
+* (leaf ⇒ consumer) is the three-line splitting argument written out below;
+* (consumer ⇒ leaf) take `W` to be ANY complement of `old`, which exists in
+  any vector space (`Submodule.exists_isCompl`); then `old ⊔ W = ⊤` by
+  construction, and `v ∈ W` with vanishing good coefficients means `v ∈ K ≤
+  old`, so `v ∈ W ⊓ old = ⊥`.
+
+Two consequences worth knowing before anyone is dispatched here.  First,
+there is NO cheaper attack hiding in the shape of the statement: nothing is
+gained by choosing `W` cleverly, because if `K ⊋ old` then EVERY complement
+of `old` fails the second conjunct (a dimension count: `dim (W ⊓ K) ≥ dim W
++ dim K − dim S₂ = dim K − dim old > 0`).  Second, the leaf is therefore
+neither vacuous nor weakened — it carries the full strength of
+Diamond–Shurman 5.7.1, and that is the theorem a prover must actually
+produce, via the Petersson-orthogonal complement and the Atkin–Lehner
+involutions `W_Q`. -/
 theorem exists_oldSubspace_complement_vanishing (M : ℕ) (hM : 0 < M) :
     ∃ W : Submodule ℂ (CuspForm (Gamma0GL M) 2),
       (⨆ p ∈ M.primeFactors,
@@ -27615,14 +28108,17 @@ CONVERSE inclusion is elementary and is now PROVEN and consumed here:
 Split `w = a + b` with `a` old and `b` in the complement; `a` has vanishing
 good coefficients by the converse, hence so does `b = w − a`, hence `b = 0`.
 
-DEPENDENCY NOTE.  `V_p` itself is BUILT and sorry-free (`degeneracyOp` above,
-with `degeneracyOp_coe` and `qCoeff_degeneracyOp`), so nothing definitional
-remains anywhere in this cluster.  What the remaining leaf needs is the
-Petersson inner product on `S₂(Γ₀(M))` and the involutions `W_Q`; note that
-NO `exists_peterssonProduct_selfAdjoint_heckeOp` declaration exists in this
-tree as of 2026-07-26, contrary to an earlier note here, so the Petersson
-product is genuinely unbuilt and is shared with the sibling leaf
-`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`. -/
+DEPENDENCY NOTE (corrected 2026-07-26 — the previous version of this
+paragraph was STALE and said the opposite).  `V_p` itself is BUILT and
+sorry-free (`degeneracyOp` above, with `degeneracyOp_coe` and
+`qCoeff_degeneracyOp`), so nothing definitional remains anywhere in this
+cluster.  What the remaining leaf needs is the Petersson inner product on
+`S₂(Γ₀(M))` and the involutions `W_Q`.  Contrary to the note that stood
+here, `exists_peterssonProduct_selfAdjoint_heckeOp` DOES exist in this tree
+and is PROVEN, over the single leaf `exists_peterssonDomain`; so the
+Petersson product is available as a definite conjugate-symmetric form as
+soon as that domain leaf is discharged, and the domain leaf is SHARED with
+the sibling `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`. -/
 theorem mem_oldSubspace_of_qCoeff_coprime_eq_zero {M : ℕ} (hM : 0 < M)
     {w : CuspForm (Gamma0GL M) 2}
     (hwc : ∀ n : ℕ, Nat.Coprime n M → qCoeff M w n = 0) :
@@ -31071,8 +31567,46 @@ leaf. The duplicate declaration that stood here was removed at
 integration (2026-07-26): the fact is proven once and consumed twice,
 here and in `exists_newformFactor_modularHeckeAlgebraQ`. -/
 
-/-- **Reality of the good-prime Hecke eigenvalue** (sorry node, ELEVENTH
-decomposition 2026-07-26 — one of the two halves of
+/-- **An eigenvalue of a self-adjoint operator is REAL** (PROVEN
+2026-07-26, TWELFTH decomposition — pure linear algebra, the companion of
+`eq_smul_of_pow_sub_smul_apply_eq_zero_of_selfAdjointForm` far above and
+the consumer of the same hypotheses): if `B` is conjugate-symmetric and
+DEFINITE, `T` is self-adjoint for `B`, and `v ≠ 0` satisfies `T v = c•v`,
+then `c` is real.
+
+Proof, in three lines of form algebra and no spectral theory: `B v v ≠ 0`
+by definiteness, `B v v` is its own conjugate by symmetry at `x = y = v`,
+and self-adjointness at `x = y = v` reads
+`c · B v v = B (T v) v = B v (T v) = conj c · B v v`; cancel `B v v`.
+
+Stated over an arbitrary `ℂ`-module with a bare function `B` rather than
+over an `InnerProductSpace`, exactly as its companion is, because the
+Petersson leaf `exists_peterssonProduct_selfAdjoint_heckeOp` delivers the
+form in that unbundled shape. Additivity of `B` is NOT among the
+hypotheses — this argument never adds two vectors — so it is omitted
+rather than taken and discarded. -/
+theorem isReal_eigenvalue_of_selfAdjointForm
+    {V : Type*} [AddCommGroup V] [Module ℂ V]
+    {B : V → V → ℂ}
+    (hsmul : ∀ (a : ℂ) (x y : V), B (a • x) y = a * B x y)
+    (hsymm : ∀ x y : V, B y x = starRingEnd ℂ (B x y))
+    (hdef : ∀ x : V, B x x = 0 → x = 0)
+    {T : Module.End ℂ V} (hT : ∀ x y : V, B (T x) y = B x (T y))
+    {c : ℂ} {v : V} (hv : v ≠ 0) (heig : T v = c • v) :
+    ∃ r : ℝ, c = (r : ℂ) := by
+  have hBvv : B v v ≠ 0 := fun h => hv (hdef v h)
+  have hreal : starRingEnd ℂ (B v v) = B v v := (hsymm v v).symm
+  have hkey : B (T v) v = B v (T v) := hT v v
+  rw [heig, hsmul c v v] at hkey
+  have h2 : B v (c • v) = starRingEnd ℂ c * B v v := by
+    rw [hsymm (c • v) v, hsmul c v v, map_mul, hreal]
+  rw [h2] at hkey
+  have hc : c = starRingEnd ℂ c := mul_right_cancel₀ hBvv hkey
+  exact Complex.conj_eq_iff_real.mp hc.symm
+
+/-- **Reality of the good-prime Hecke eigenvalue** (PROVEN 2026-07-26 as
+the TWELFTH decomposition; it was a sorry node of the ELEVENTH
+decomposition — one of the two halves of
 `exists_frobRoots_qCoeff_of_not_dvd` below): the `q`-th coefficient of a
 normalized weight-two newform of TRIVIAL nebentypus is a REAL number.
 
@@ -31091,13 +31625,39 @@ also exactly the content that the TENTH cut's version of
 `exists_frobRoots_qCoeff_of_not_dvd` silently dropped — see the
 FORMAL-CONTENT AUDIT on that leaf below.
 
-Missing from the pin: the Petersson inner product and the
-self-adjointness of the good Hecke operators. -/
+NO LONGER MISSING FROM THE PIN (2026-07-26, TWELFTH cut — this leaf is
+now PROVEN). The Petersson product and the self-adjointness of the good
+Hecke operators were already isolated, as the single existential
+`exists_peterssonProduct_selfAdjoint_heckeOp` far above, cut out of
+`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` on the same day.
+That leaf asserts exactly what is needed here — a form `B` that is
+`ℂ`-homogeneous in its first slot, conjugate-symmetric, DEFINITE, and for
+which `T_q` is self-adjoint at every `q ∤ M` — so realness is a
+consequence of material already stated, not a new analytic citation, and
+this docstring's original claim that the Petersson theory was "missing
+from the pin" was true of the FLEET but not of the FILE.
+
+PROOF: `isReal_eigenvalue_of_selfAdjointForm` immediately above (pure
+linear algebra) applied to `B`, to the self-adjointness of `T_q` at
+`q ∤ M`, and to the two facts that `g` is a `T_q`-eigenvector with
+eigenvalue `a_q` (`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`) and
+is nonzero (`ne_zero_of_isWeightTwoEigenform`, from `a_1 = 1`).
+
+Note this consumes NOTHING beyond `IsWeightTwoEigenform`: the
+`eigensystem_minimal` field of `IsWeightTwoNewform` is not used, since
+realness of a Hecke eigenvalue holds for every normalized eigenform,
+newform or not. The stronger hypothesis is kept only to match the
+sibling leaves' shape and the consumer
+`exists_frobRoots_qCoeff_of_not_dvd`. -/
 theorem exists_real_qCoeff_of_not_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
-    ∃ r : ℝ, qCoeff M g q = (r : ℂ) :=
-  sorry
+    ∃ r : ℝ, qCoeff M g q = (r : ℂ) := by
+  obtain ⟨B, -, hsmul, hsymm, hdef, hadj⟩ :=
+    exists_peterssonProduct_selfAdjoint_heckeOp hM
+  exact isReal_eigenvalue_of_selfAdjointForm hsmul hsymm hdef (hadj q hq hqM)
+    (ne_zero_of_isWeightTwoEigenform hg.toIsWeightTwoEigenform)
+    (heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform hq)
 
 /-- **The Hasse–Weil bound at a good prime** (sorry node, ELEVENTH
 decomposition 2026-07-26 — the other half of
@@ -31121,7 +31681,46 @@ that the two roots are conjugate, and that their product is `q` — is
 elementary algebra over this bound plus realness, and is PROVEN below.
 
 Missing from the pin: Weil RH for curves, the good reduction of `X₀(M)`
-at `q ∤ M` (Igusa), and the Eichler–Shimura relation. -/
+at `q ∤ M` (Igusa), and the Eichler–Shimura relation.
+
+WHY A FURTHER CUT IS NOT AVAILABLE HERE (2026-07-26, TWELFTH cut, after
+the sibling `exists_real_qCoeff_of_not_dvd` was closed and this one was
+attacked in the same task). Two routes suggest themselves and BOTH are
+dead ends; recording them so the next owner does not spend a cycle
+rediscovering it.
+
+*Route 1 — cut through the attached `ℓ`-adic representation.* The
+textbook proof factors as (i) Eichler–Shimura: `a_q` is the trace of
+`Frob_q` on a two-dimensional `ℓ`-adic representation with determinant
+`q`, and (ii) Weil RH: its eigenvalues have absolute value `√q`. Stating
+(i) requires the Galois representation ATTACHED to `g` — which is
+precisely what this file exists to construct, downstream of this very
+bound (it enters through `irred_eigenspace` in `ModularTateGaloisData`
+below). So the cut is CIRCULAR, and a leaf phrased over an
+existentially produced representation would additionally be false about
+junk inhabitants of the carrier, exactly as the seventh-decomposition
+note above records.
+
+*Route 2 — the Hecke recursion plus the trivial coefficient bound.* With
+realness now in hand (`exists_real_qCoeff_of_not_dvd`), suppose
+`|a_q| > 2√q`. Then `X² − a_q X + q` has real roots `α, β` with
+`αβ = q` and `|α| > √q > |β|`, and the good-prime recursion gives
+`a_{q^r} = (α^{r+1} − β^{r+1})/(α − β)`, which grows like `|α|^r`. The
+trivial bound for a weight-two cusp form is `|a_n| ≤ C·n^{k/2} = C·n`,
+so `|α| ≤ q` and hence `|a_q| = |α + q/α| ≤ q + 1`. That is the
+**trivial bound**, and it is strictly WEAKER than what is asked here:
+`2√q < q + 1` for every `q > 1`, since `(√q − 1)² > 0`. The gap between
+`q + 1` and `2√q` is exactly the content of Weil RH, which is why no
+amount of recursion algebra closes it.
+
+So this leaf is irreducible at this pin in the same sense as its two
+Atkin–Lehner siblings below: a successor must supply the geometry (a
+model of `X₀(M)` over `ℤ`, its good reduction at `q ∤ M`, and point
+counting over `𝔽_q`), not another cut. Mathlib at this pin has neither
+the Weil conjectures nor any zeta function of a curve over a finite
+field (checked 2026-07-26: `Mathlib/NumberTheory/` contains no
+`RiemannHypothesis` for curves, only `LSeries/RiemannZeta.lean`), and
+`~/cs/FLT` has nothing in this direction either. -/
 theorem norm_qCoeff_le_two_mul_sqrt_of_not_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
@@ -31300,7 +31899,43 @@ in both cases the only carrier inhabitants are the genuine newforms. So
 the leaf is faithful, not vacuous and not false.
 
 Missing from the pin: the `U_q` and `W_q` operators and Atkin–Lehner
-theory for the `q`-old/`q`-new decomposition. -/
+theory for the `q`-old/`q`-new decomposition. Confirmed against this pin
+2026-07-26: `Mathlib/NumberTheory/ModularForms/` contains no
+`AtkinLehner`, no `newform` and no `U_q`; it does have
+`SlashActions.lean`, which is the right starting point for DEFINING
+`W_q` as a slash by `[[0, −1], [M, 0]]`, but nothing about its effect on
+eigenforms. `~/cs/FLT` has nothing here either.
+
+WHY THIS ONE ALSO STAYS A CITATION (2026-07-26, TWELFTH cut — the same
+anti-vacuity analysis that the Petersson leaf's "WHY ONE EXISTENTIAL AND
+NOT TWO" note records, applied here and reaching the OPPOSITE
+conclusion, namely that no honest cut exists yet).
+
+The tempting cut is an `W_q`-existential:
+`∃ W : Module.End ℂ S₂(Γ₀(M)), W * W = 1 ∧ W g = −a_q • g`, with the
+one-line consumer `a_q² • g = W (W g) = g`, hence `a_q² = 1` since
+`g ≠ 0`. **That cut is VACUOUS — it is a pure restatement.** The
+existential is not merely implied by the conclusion, it is EQUIVALENT to
+it: if `a_q² = 1` then `W := (−a_q) • 1` satisfies both conjuncts, since
+`W * W = a_q² • 1 = 1`. So the "leaf" would carry no Atkin–Lehner
+content whatever, and a successor handed it would be exactly as stuck.
+
+The same objection kills the `U_q` phrasing. At `q ∣ M` the operator
+`heckeOp M q` IS `U_q` (by `qCoeff_heckeOp`, whose extra term is gated on
+`¬ q ∣ M`), and `heckeOp_apply_eq_smul_of_isWeightTwoEigenform` already
+gives `U_q g = a_q • g` for EVERY prime — so `a_q² = 1` is literally
+equivalent to `U_q² g = g`, and stating that as a leaf renames the
+problem rather than reducing it. The genuine classical content is
+`U_q² = 1` on the whole `q`-NEW SUBSPACE, which cannot be stated until
+the old/new decomposition exists.
+
+Conclusion: a faithful cut requires `W_q` to be pinned INDEPENDENTLY of
+`a_q` — as the slash operator by a concrete matrix, together with the
+proof that it preserves `S₂(Γ₀(M))`. That is a genuine construction, not
+a restatement, and it is what a successor must supply. Note the contrast
+with the good-prime sibling `exists_real_qCoeff_of_not_dvd`, which WAS
+closable precisely because its analytic input (the Petersson product)
+had already been pinned independently as its own existential. -/
 theorem qCoeff_sq_eq_one_of_exactly_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
@@ -31396,7 +32031,15 @@ there, so the constraint has something to act on) and at `M = 20, 36,
 50`. The leaf is faithful.
 
 Missing from the pin: the same Atkin–Lehner theory as the previous
-leaf. -/
+leaf, whose docstring now carries the confirmed pin-absence map
+(no `AtkinLehner`, no `newform`, no `U_q` anywhere in
+`Mathlib/NumberTheory/ModularForms/`; `SlashActions.lean` is the one
+usable starting point) and, more importantly, the ANTI-VACUITY
+ANALYSIS showing why a `W_q`- or `U_q`-existential cut would be a pure
+restatement rather than a reduction. That analysis applies verbatim
+here and independently confirms this docstring's original verdict: the
+irreducibility recorded above is not an author's reluctance to cut, it
+is a proof that the available cuts are empty. -/
 theorem qCoeff_eq_zero_of_sq_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM2 : q ^ 2 ∣ M) :
@@ -31471,8 +32114,22 @@ without touching this assembly beyond one `obtain` pattern:
 * `qCoeff_eq_zero_of_sq_dvd` is unchanged and remains the irreducible
   Atkin–Lehner citation; the reasons are in its docstring.
 
-So the three genuinely open leaves under this bound are now the two
-good-prime halves and the one `q² ∣ M` citation. -/
+TWELFTH CUT (2026-07-26), which closed one of those three:
+
+* `exists_real_qCoeff_of_not_dvd` is now PROVEN, over the Petersson leaf
+  `exists_peterssonProduct_selfAdjoint_heckeOp` that was ALREADY in this
+  file (cut out of the semisimplicity node the same day) plus the new
+  pure-linear-algebra `isReal_eigenvalue_of_selfAdjointForm`. No new
+  analytic citation was needed: the eleventh cut's docstring listed the
+  Petersson theory as "missing from the pin", which was true of mathlib
+  but not of this file.
+
+So THREE declarations under this bound remain open —
+`norm_qCoeff_le_two_mul_sqrt_of_not_dvd`,
+`qCoeff_sq_eq_one_of_exactly_dvd` and `qCoeff_eq_zero_of_sq_dvd` — but
+they rest on only TWO distinct bodies of missing theory: Hasse–Weil /
+Eichler–Shimura for the first, and Atkin–Lehner (`W_q`, `U_q`) for the
+other two. The Petersson product is no longer one of them. -/
 theorem norm_qCoeff_le_two_mul_sqrt {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) :
@@ -34466,8 +35123,229 @@ theorem isNewAtPrime_of_isWeightTwoNewform {M : ℕ}
   · exact absurd hold
       (not_exists_eigenform_level_not_dvd_of_isWeightTwoNewform hg hqM)
 
+/-- **Carayol's conductor theorem at the NEWFORM level** (**sorry node —
+THE single away-from-`p` literature citation of this development**, and
+since 2026-07-26 the SOURCE of the two components below rather than
+their consequence; the "PROVEN 2026-07-26 from the two-component split
+below" this header used to carry is stale — see RE-SORRIED and DIRECTION
+OF THE CUT REVERSED at the end. It was the residual
+away-from-`p` literature leaf, re-pinned 2026-07-25 at the
+level where the cited theorem is actually stated: Carayol, *Sur les
+représentations `ℓ`-adiques associées aux formes modulaires de Hilbert*,
+Ann. Sci. ÉNS 19 (1986), Théorème (A) — local–global compatibility at a
+prime `q ≠ p`; for weight 2 over `ℚ` the underlying input is
+Deligne–Rapoport's model of `X₀(M₀)` at `q` together with the
+Langlands/Deligne local computations at the bad primes): if `τ` is
+IRREDUCIBLE and matches the Hecke polynomials of the weight-2 NEWFORM
+`g₀` of level `M₀` away from a finite set, then for every prime
+`q ∣ M₀` with `q ≠ p` the Artin conductor exponent of `τ` at `q` is
+`ord_q M₀`.
+
+WHY THE PIN IS AT THE NEWFORM AND NOT AT AN ARBITRARY EIGENFORM.
+Carayol's identity is `ord_q (cond ρ_{g₀,λ}) = ord_q M₀` with `M₀` the
+level of a NEWFORM; for an old eigenform `g` of level `M` the conductor
+is still that of the newform behind it, and `ord_q M₀` can be STRICTLY
+SMALLER than `ord_q M` even when `g` is `q`-new in the sense of
+`IsNewAtPrime` (take `M = q²` with underlying newform level `M₀ = q`:
+no `q`-FREE divisor level realizes the eigensystem, so `IsNewAtPrime`
+holds, yet `ord_q M₀ = 1 < 2 = ord_q M`). The eigenform-level statement
+`hasConductorExponentAt_factorization_of_isNewAtPrime` below is
+therefore NOT the cited identity but a strictly weaker consequence of
+it, sound only because `GaloisRep.HasConductorExponentAt` is upward
+closed at a ramified place
+(`GaloisRep.HasConductorExponentAt.mono_of_not_isUnramifiedAt`). Pinning
+the citation here puts the sorry exactly on the literature statement and
+turns the `IsNewAtPrime` descent — previously prose in the docstring
+below — into checked Lean.
+
+FORMAL-CONTENT AUDIT (2026-07-25). Read through
+`GaloisRep.hasConductorExponentAt_iff_tameExponent_le_of_not_isUnramifiedAt`,
+the conclusion of this leaf is EXACTLY the conjunction
+
+* `τ` is ramified at `q` (the Swan clause of
+  `GaloisRep.HasConductorExponentAt`, since `ord_q M₀ ≥ 1`), and
+* `2 − dim V^{I_q} ≤ ord_q M₀`,
+
+and nothing more: the wild summand is existentially quantified and, at a
+ramified place, unconstrained. This is a genuine consequence of
+Carayol's identity, never an assertion about an under-determined symbol
+— but a downstream consumer must not read it as pinning the conductor
+exponent. Recovering the identity needs the Swan conductor, i.e. the
+higher ramification filtration in the upper numbering, absent from the
+pin (see `ArtinConductor.lean`'s module docstring). In particular the
+second bullet is arithmetically empty once `ord_q M₀ ≥ 2`, so the ONLY
+tame content of this leaf is the classical `q ∥ M₀` case: there the
+local type is an unramified twist of Steinberg, inertia acts through
+`σ ↦ (1, t_p(σ); 0, 1)`, and `dim V^{I_q} = 1`.
+
+The hypothesis `hqM₀ : q ∣ M₀` is retained although Carayol's theorem
+covers `q ∤ M₀` as well (where it asserts unramifiedness at `q`): the
+weaker leaf is all its consumer needs, and it keeps the ramification
+half of the content visible in the statement.
+
+SOUNDNESS AUDIT (2026-07-25): non-vacuously satisfiable — take any
+classical newform `g₀` of level `M₀` divisible by a prime `q ∉ {p}`, and
+`τ := ρ_{g₀,λ}` (irreducible by Ribet 1977, matched to `g₀`'s Hecke
+polynomials away from `M₀p` by Eichler–Shimura); the conclusion is
+Carayol's theorem read through the conductor dictionary. Conversely
+every instance is an instance of the cited theorem: `IsWeightTwoNewform`
+has exactly the classical minimal-level normalized eigenforms as
+inhabitants, and irreducibility supplies the rigidity identification of
+`τ` with `ρ_{g₀,λ}` (PROVEN `exists_linearEquiv_of_charFrob_eq`), across
+which the conductor exponent is invariant.
+
+SPLIT (2026-07-26, fifth owner — this statement is now PROVEN, and the
+citation it carried is strictly SMALLER). The FORMAL-CONTENT AUDIT above
+identified the conclusion as the conjunction of ramifiedness at `q` with
+the tame bound `2 − dim V^{I_q} ≤ ord_q M₀`, and observed in prose that
+the second conjunct "is arithmetically empty once `ord_q M₀ ≥ 2`". That
+observation is now CHECKED LEAN, via the trivial-but-decisive
+`GaloisRep.tameExponent_le_finrank` (a tame exponent is a codimension,
+hence `≤ dim V = 2`), and the citation splits accordingly into
+
+* `not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` —
+  ramifiedness at `q`; and
+* `exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one` —
+  ramifiedness at `q` TOGETHER WITH a nonzero inertia-fixed vector.
+
+**THE SPLIT IS BY RANGE OF `q`, NOT BY CONTENT** (re-cut 2026-07-26,
+eighth owner; the bullets above read differently before). The first leaf
+is hypothesised at `2 ≤ ord_q M₀` and the second at `ord_q M₀ = 1`, and
+between them they cover every `q ∣ M₀` exactly once. The earlier cut
+gave the first leaf the whole range `q ∣ M₀` and let the second carry
+only the fixed line; that was redundant, because at `ord_q M₀ = 1` the
+Steinberg computation that produces the fixed line produces the
+nontriviality of the unipotent in the same breath. Moving the
+ramifiedness conjunct into the second leaf therefore costs nothing and
+puts the `ord_q M₀ = 1` assumption where the local type is named.
+
+What the development takes on faith about `q² ∣ M₀` is ramifiedness
+alone: the Steinberg/principal-series local-type computation is assumed
+only at `q ∥ M₀`, where the assumption is a fixed line plus
+nontriviality rather than a conductor identity. Both components remain
+independently reusable — the first is the away-from-`p` ramification
+input the level-lowering assemblies consume, and the second contains the
+TAME half that the FALSITY AUDIT of
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` requests in
+step 3 of its repair plan.
+
+NO FAITH IS ADDED BY THE SPLIT — the pair is EQUIVALENT to the old
+single citation, and the converse direction is elementary rather than
+asserted. From this statement one recovers
+`not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` by
+`GaloisRep.HasConductorExponentAt.not_isUnramifiedAt_of_ne_zero`
+(`ord_q M₀ ≥ 2 > 0`), and, in the case `ord_q M₀ = 1`, both conjuncts of
+`exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one` —
+ramifiedness by the same `not_isUnramifiedAt_of_ne_zero`, the fixed
+vector because `tameExponent ≤ 1` on a 2-dimensional space forces
+`dim V^{I_q} ≥ 1`. So the sorry count rises by one while the assumed
+mathematics is unchanged; what the split buys is that the `q² ∣ M₀`
+tame content of the old leaf is DISCHARGED outright, and that the two
+remaining assumptions are separately statable, separately attackable and
+separately reusable. (The converse lemmas were deliberately not added to
+the tree at the time: nothing would have consumed them, so they would
+have been free-floating code. **That is no longer the situation** — the
+converse direction is now the PROOF of both components; see DIRECTION OF
+THE CUT REVERSED at the end of this docstring.)
+
+The `q ≥ 2` arithmetic that makes the split exhaustive is elementary:
+`q ∣ M₀` with `0 < M₀` gives `1 ≤ ord_q M₀`, so `Nat.lt_or_ge` at `2`
+splits into `ord_q M₀ = 1` — handled by the second leaf feeding
+`GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt` — and
+`ord_q M₀ ≥ 2`, handled by the first feeding
+`GaloisRep.hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt`.
+**RE-SORRIED 2026-07-26 (merge worker, flt-lean-42's pin).** Everything
+above from "The `q ≥ 2` arithmetic" describes a PROOF THAT NO LONGER
+EXISTS, and must not be reinstated. That proof discharged the case
+`ord_q M₀ ≥ 2` from ramifiedness ALONE, which was possible only because
+`HasConductorExponentAt` was then the existential weakening — upward
+closed in `a` at a ramified place. Under the pinned definition
+(`a = ρ.conductorExponent v`) the two constructor lemmas it fed on,
+`GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt` and
+`..._of_finrank_le_of_not_isUnramifiedAt`, are FALSE and have been
+withdrawn from `ArtinConductor.lean`; see the WITHDRAWN section there.
+So this is now an honest citation leaf: Carayol's identity at the
+NEWFORM level, `a_q(τ) = ord_q M₀`.
+
+DIRECTION OF THE CUT REVERSED — **THIS IS NOW THE ONLY SORRY OF THE
+at-`q` CLUSTER** (2026-07-26, ninth owner). The RE-SORRIED note above
+deleted the arrow from the two components to this statement but did not
+put one back, so this declaration and both components below were left as
+three INDEPENDENT sorries with no consumer anywhere in the tree — this
+one assuming Carayol's identity and the other two assuming consequences
+of it. The two components are now PROVEN from this one, in the direction
+the NO FAITH IS ADDED BY THE SPLIT paragraph above already described:
+
+* `not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` (case
+  `2 ≤ ord_q M₀`) by `not_isUnramifiedAt_of_ne_zero`;
+* `exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one`
+  (case `ord_q M₀ = 1`) by the same, plus
+  `HasConductorExponentAt.tameExponent_le` — `Sw_q ≥ 0` forces
+  `tameExponent ≤ 1`, and on a 2-dimensional space that is
+  `dim V^{I_q} ≥ 1`.
+
+The direction cannot be run the other way under the pinned definition:
+ramifiedness and a fixed line bound the TAME summand only, while
+`conductorExponent = tameExponent + swanExponent` also carries the
+opaque `swanExponent`, about which nothing is provable by construction.
+So the previous arrangement — the components as citations, this as a
+theorem — is not merely unproven but unavailable, which is exactly what
+the RE-SORRIED note discovered.
+
+Net effect: three sorries become one, with the assumed mathematics
+UNCHANGED (the tree already assumed this statement, and the other two
+were its consequences). The DISPATCH ORDER / TERMINALITY audits carried
+by the component below apply to THIS declaration now, and they are the
+reason it is left sorried: no proof of Carayol's identity avoids the
+modular-curve geometry that `nonempty_modularTateModuleData` is still
+assuming.
+
+⚠ ADJACENT FALSITY, REPORTED NOT REPAIRED (2026-07-26, ninth owner —
+this is OUTSIDE the region of this task and has two live consumers, so
+it is flagged here rather than edited). The eigenform-level descendant
+`hasConductorExponentAt_factorization_of_isNewAtPrime` below is, under
+the pinned definition, **FALSE AS STATED** — not merely open. Its own
+RE-SORRIED note observes that the descent step "needs `ord_q M₀ =
+ord_q M`, which `IsNewAtPrime` does NOT supply", and stops at declaring
+the PROOF unsound; but the very witness that note names refutes the
+STATEMENT. Explicitly: take `M := 121`, `q := 11`, `p := 3`, and for `g`
+the `U₁₁`-eigenvector in the level-`121` oldspace spanned by
+`g₀(z), g₀(11z)` with `g₀` the newform of level `11` (`X₀(11)`); `g`
+satisfies `IsWeightTwoEigenform 121` including the bad-prime `U_q`
+recursion, and `IsNewAtPrime 121 11 g` holds vacuously because the only
+`11`-free divisor of `121` is `1` and `S₂(Γ₀(1)) = 0`. With
+`τ := ρ_{g₀,λ}` for `λ ∣ 3` — irreducible, and matching the Hecke
+polynomials of `g` away from `{11, 3}` since `a_r(g) = a_r(g₀)` for
+`r ∤ 121` — every hypothesis holds, while the conclusion asserts
+`ord₁₁ 121 = a₁₁(τ)`, i.e. `2 = 1`: `X₀(11)` has multiplicative
+reduction at `11` and conductor `11`, so `a₁₁ = 1`. The repair is a
+cut-level one — either add `ord_q M = ord_q M₀` as a hypothesis, or
+restate the conclusion at the underlying newform level `M₀` — and it
+must be made by whoever owns that declaration and its two consumers. -/
+theorem hasConductorExponentAt_factorization_of_isWeightTwoNewform
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
+    τ.HasConductorExponentAt hq.toHeightOneSpectrumRingOfIntegersRat
+      (M₀.factorization q) :=
+  sorry
+
 /-- **Ramifiedness half of Carayol's conductor theorem at the NEWFORM
-level** (sorry node — one of the two components into which the single
+level** (**PROVEN 2026-07-26, ninth owner**, from the newform-level
+citation `hasConductorExponentAt_factorization_of_isWeightTwoNewform`
+immediately ABOVE — see DIRECTION OF THE CUT REVERSED at the end of this
+docstring; it was one of the two components into which that
 newform-level Carayol citation was SPLIT on 2026-07-26; Carayol, *Sur
 les représentations `ℓ`-adiques associées aux formes modulaires de
 Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A)): for a weight-2
@@ -34619,32 +35497,48 @@ and the parent
 its ramifiedness from whichever of the two leaves owns the case it is
 in.
 
-STATUS 2026-07-26 (ninth owner) — **THIS LEAF IS UNWIRED AND HAS NO
-CONSUMER.** The sentence immediately above is now false: the parent
-`hasConductorExponentAt_factorization_of_isWeightTwoNewform` does NOT
-take its ramifiedness from this leaf, and cannot. Its conclusion is the
-EQUATION `a_q = ord_q M₀`, whose wild summand is the `opaque`
-`GaloisRep.swanExponentAux`; ramifiedness constrains that summand not at
-all, so the "two-component split" this leaf belongs to stopped being a
-decomposition the moment `HasConductorExponentAt` was pinned in
-`ArtinConductor.lean` (2026-07-26). A comment-stripped scan of the whole
-tree on 2026-07-26 finds exactly ONE code occurrence of this name — its
-own declaration. The split ran the other way round: ramifiedness is a
-CONSEQUENCE of the parent, via
-`GaloisRep.HasConductorExponentAt.not_isUnramifiedAt_of_ne_zero`.
+DIRECTION OF THE CUT REVERSED — **THIS LEAF IS NO LONGER A CITATION**
+(2026-07-26, ninth owner). Everything above describes the arrangement in
+which THIS leaf and its `q ∥ M₀` sibling were the two assumed citations
+and the conductor-exponent parent
+`hasConductorExponentAt_factorization_of_isWeightTwoNewform` was PROVEN
+from them. That arrangement did not survive the same day's re-pinning of
+`GaloisRep.HasConductorExponentAt` to the EQUATION
+`a = ρ.conductorExponent v`: the two constructor lemmas the parent's
+proof consumed were false under the pinned definition and were withdrawn
+from `ArtinConductor.lean`, so the parent was RE-SORRIED and the arrow
+between the three declarations was simply deleted. That left all three
+of them independent sorries with no consumer whatsoever — the parent
+assuming Carayol's identity, and these two assuming consequences of it.
 
-So this is a sorried leaf that assumes Carayol content nothing consumes,
-which makes it strictly a liability: it enlarges what the development
-assumes while contributing nothing to the root. It is left in place
-rather than deleted only because the audits above are the tree's best
-record of why the away-from-`p` place is terminal, and because deleting
-a leaf is a cut-level call. **Recommendation to the integrator: fold
-these audits into
-`hasConductorExponentAt_factorization_of_isWeightTwoNewform` and DELETE
-this declaration and its sibling
-`exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one`,
-closing two sorries that no longer buy anything.** Do NOT dispatch a
-prover here in the meantime. -/
+The repair is the one the parent's own docstring already spells out in
+its NO FAITH IS ADDED BY THE SPLIT paragraph, run in the direction that
+the pinned definition permits: the parent is the citation, and the two
+components are DERIVED from it. Under the pinned definition the reverse
+direction is not merely unproven but unavailable in principle — a fixed
+line and ramifiedness bound the TAME summand only, while
+`conductorExponent = tameExponent + swanExponent` also carries the
+opaque `swanExponent`, about which nothing is provable. So there is no
+arrangement in which these two are the citations and the parent is
+proven.
+
+**No faith is added and none is removed.** The tree already assumed the
+parent, and these two are consequences of it, so assuming the parent
+alone is exactly what was being assumed before. What changes is that two
+redundant sorries become two theorems, and the away-from-`p` literature
+assumption of this development is once again a SINGLE declaration.
+
+The proof here is two lines: `2 ≤ ord_q M₀` gives `q ∣ M₀` (so the
+parent applies) and `ord_q M₀ ≠ 0`, and
+`GaloisRep.HasConductorExponentAt.not_isUnramifiedAt_of_ne_zero` turns a
+nonzero conductor exponent into ramifiedness.
+
+CONSEQUENTLY THE DISPATCH ORDER PARAGRAPH ABOVE IS SUPERSEDED. It is
+correct about the mathematics — no proof of Carayol's identity avoids
+the modular-curve geometry of `nonempty_modularTateModuleData` — but it
+is no longer about THIS declaration, which is now checked Lean. It
+applies verbatim to the parent, which is where the citation now lives,
+and it is the reason the parent is left sorried rather than attacked. -/
 theorem not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -34660,11 +35554,19 @@ theorem not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible
           + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (_hqp : q ≠ p) (hord₂ : 2 ≤ M₀.factorization q) :
-    ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+    ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := by
+  -- `2 ≤ ord_q M₀` in particular makes `ord_q M₀ ≠ 0`, hence `q ∣ M₀`.
+  have hqM₀ : q ∣ M₀ := Nat.dvd_of_factorization_pos (by omega)
+  -- Carayol's identity `a_q(τ) = ord_q M₀` at the newform level, then
+  -- "a nonzero conductor exponent forces ramification".
+  exact (hasConductorExponentAt_factorization_of_isWeightTwoNewform hM₀ hg₀ κ₀
+    hτ hirr hq _hqp hqM₀).not_isUnramifiedAt_of_ne_zero (by omega)
 
 /-- **Carayol's conductor theorem at the NEWFORM level in the case
-`q ∥ M₀` — the whole of the local statement there** (sorry node — the
+`q ∥ M₀` — the whole of the local statement there** (**PROVEN
+2026-07-26, ninth owner**, from the newform-level citation
+`hasConductorExponentAt_factorization_of_isWeightTwoNewform` ABOVE — see
+DIRECTION OF THE CUT REVERSED at the end of this docstring; it was the
 second of the two components of the 2026-07-26 split; Carayol, Théorème
 (A), together with the Langlands/Deligne local computation at a prime
 exactly dividing the level): if `q ∥ M₀` — i.e. `ord_q M₀ = 1` — then
@@ -34804,16 +35706,45 @@ through `GaloisRep.tameExponent_add_one_le_finrank_of_fixed`. The stale
 "Neither half is provable on this pin" paragraph shortly above the
 FALSITY AUDIT, and has now been corrected in place there.
 
-STATUS 2026-07-26 (ninth owner) — **THIS LEAF IS UNWIRED AND HAS NO
-CONSUMER**, for the same reason as its sibling
-`not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` above: a
-ramifiedness-plus-fixed-line pair cannot pin the conductor exponent once
-`HasConductorExponentAt` is the EQUATION `a = tameExponent + swanExponent`
-with `swanExponent` built on the `opaque` `swanExponentAux`. A
-comment-stripped scan of the tree finds exactly ONE code occurrence of
-this name — its own declaration. See the sibling's STATUS note for the
-full argument and for the recommendation that both be deleted into the
-parent citation. Do NOT dispatch a prover here. -/
+DIRECTION OF THE CUT REVERSED — **THIS LEAF IS NO LONGER A CITATION**
+(2026-07-26, ninth owner; the same change is recorded in full on the
+sibling `not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible`
+above, and the reasoning is not repeated here). The parent
+`hasConductorExponentAt_factorization_of_isWeightTwoNewform` was
+RE-SORRIED when `GaloisRep.HasConductorExponentAt` was re-pinned to an
+EQUATION, which deleted the arrow that made this leaf load-bearing and
+left all three declarations independent, unconsumed sorries. The parent
+is now the single citation and this leaf is DERIVED from it, exactly as
+the parent's NO FAITH IS ADDED BY THE SPLIT paragraph describes. No
+faith is added: the tree already assumed the parent, and both conjuncts
+here are consequences of it.
+
+**This does NOT contradict the "do not dispatch a decomposer at it"
+instruction in the SHARPNESS OF `hord` paragraph above, and that
+instruction still stands.** What was ruled out there is a cut of this
+statement into a WEAKER LOCAL hypothesis plus checked Lean — and that
+remains impossible, for exactly the reason recorded: what distinguishes
+`q ∥ M₀` is that the Steinberg twist is UNRAMIFIED, which is automorphic
+input with no Galois-side shadow, and the level-`121` PARI witness above
+refutes every weakening of `hord` in the Grothendieck-monodromy family.
+This proof is not such a cut. It is a derivation from the STRICTLY
+STRONGER global citation that already sits above this leaf as a sorry,
+so it removes an assumption rather than replacing one with a weaker
+local surrogate. The PARI sharpness witness and the non-vacuity witness
+retain all their force as audits of the parent.
+
+How the two conjuncts come out, since the parent gives only the single
+number `a_q = ord_q M₀ = 1`: RAMIFIEDNESS is
+`GaloisRep.HasConductorExponentAt.not_isUnramifiedAt_of_ne_zero` at
+`1 ≠ 0`. The FIXED LINE is the FAITHFULNESS AUDIT of this docstring run
+as Lean rather than prose — `HasConductorExponentAt.tameExponent_le`
+(i.e. `Sw_q ≥ 0`) gives `tameExponent ≤ 1`, and `tameExponent` is by
+definition `2 − dim V^{I_q}` on this 2-dimensional space, so
+`dim V^{I_q} ≥ 1`, i.e. `inertiaInvariants ≠ ⊥`, i.e. a nonzero
+inertia-fixed vector. That is precisely the audit's claim that the fixed
+line follows from the conductor dictionary "using nothing about the
+local type beyond `Sw_q ≥ 0`", and the quantifier stays over
+`localInertiaGroup` throughout — nothing here is widened to `Γ`. -/
 theorem exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -34833,189 +35764,25 @@ theorem exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one
     ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat ∧
       ∃ w₀ : Fin 2 → AlgebraicClosure ℚ_[p], w₀ ≠ 0 ∧
         ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
-          τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ w₀ = w₀ :=
-  sorry
-
-/-- **Carayol's conductor theorem at the NEWFORM level** (**SORRY LEAF —
-TERMINAL AT THIS PIN.** The header of this docstring read "PROVEN
-2026-07-26 from the two-component split below" until 2026-07-26, when the
-NINTH owner found the body had been `sorry` since the leaf was introduced
-in `bbd88d15` and the claimed route to be mathematically dead. The
-"two-component split" — `not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible`
-and `exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one`,
-both ABOVE, not below — delivers RAMIFIEDNESS and a tame FIXED LINE. That
-was enough under the WITHDRAWN existential packaging, where
-`HasConductorExponentAt` was upward closed at a ramified place and any
-`a` above the tame part could be witnessed. Under the pinned definition
-`a = tameExponent + swanExponent` the wild summand is
-`GaloisRep.swanExponentAux`, an `opaque` constant about which NO equation
-is provable by construction, so no combination of ramifiedness and tame
-information can pin `a` to `ord_q M₀`. **The two split leaves are
-therefore now consequences of this one rather than inputs to it, and as
-of 2026-07-26 neither has any consumer anywhere in the tree** — see the
-status notes on each. This leaf is the away-from-`p` literature
-assumption of the development, at full strength, and its terminality
-audit is the one recorded on
-`not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` above:
-Casselman's newvector theory, Deligne's conductor compatibility, and the
-Deligne–Rapoport model of `X₀(M₀)` at `q`, none of which exist on this
-pin. It IS, however, live: it is consumed by
-`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime` and by
-`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`
-below — was the residual
-away-from-`p` literature leaf, re-pinned 2026-07-25 at the
-level where the cited theorem is actually stated: Carayol, *Sur les
-représentations `ℓ`-adiques associées aux formes modulaires de Hilbert*,
-Ann. Sci. ÉNS 19 (1986), Théorème (A) — local–global compatibility at a
-prime `q ≠ p`; for weight 2 over `ℚ` the underlying input is
-Deligne–Rapoport's model of `X₀(M₀)` at `q` together with the
-Langlands/Deligne local computations at the bad primes): if `τ` is
-IRREDUCIBLE and matches the Hecke polynomials of the weight-2 NEWFORM
-`g₀` of level `M₀` away from a finite set, then for every prime
-`q ∣ M₀` with `q ≠ p` the Artin conductor exponent of `τ` at `q` is
-`ord_q M₀`.
-
-WHY THE PIN IS AT THE NEWFORM AND NOT AT AN ARBITRARY EIGENFORM.
-Carayol's identity is `ord_q (cond ρ_{g₀,λ}) = ord_q M₀` with `M₀` the
-level of a NEWFORM; for an old eigenform `g` of level `M` the conductor
-is still that of the newform behind it, and `ord_q M₀` can be STRICTLY
-SMALLER than `ord_q M` even when `g` is `q`-new in the sense of
-`IsNewAtPrime` (take `M = q²` with underlying newform level `M₀ = q`:
-no `q`-FREE divisor level realizes the eigensystem, so `IsNewAtPrime`
-holds, yet `ord_q M₀ = 1 < 2 = ord_q M`). The eigenform-level statement
-`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime` below is
-therefore NOT the cited identity but a strictly weaker consequence of
-it, sound only because `GaloisRep.HasConductorExponentAt` is upward
-closed at a ramified place
-(`GaloisRep.HasConductorExponentAt.mono_of_not_isUnramifiedAt`). Pinning
-the citation here puts the sorry exactly on the literature statement and
-turns the `IsNewAtPrime` descent — previously prose in the docstring
-below — into checked Lean.
-
-FORMAL-CONTENT AUDIT (2026-07-25). Read through
-`GaloisRep.hasConductorExponentAt_iff_tameExponent_le_of_not_isUnramifiedAt`,
-the conclusion of this leaf is EXACTLY the conjunction
-
-* `τ` is ramified at `q` (the Swan clause of
-  `GaloisRep.HasConductorExponentAt`, since `ord_q M₀ ≥ 1`), and
-* `2 − dim V^{I_q} ≤ ord_q M₀`,
-
-and nothing more: the wild summand is existentially quantified and, at a
-ramified place, unconstrained. This is a genuine consequence of
-Carayol's identity, never an assertion about an under-determined symbol
-— but a downstream consumer must not read it as pinning the conductor
-exponent. Recovering the identity needs the Swan conductor, i.e. the
-higher ramification filtration in the upper numbering, absent from the
-pin (see `ArtinConductor.lean`'s module docstring). In particular the
-second bullet is arithmetically empty once `ord_q M₀ ≥ 2`, so the ONLY
-tame content of this leaf is the classical `q ∥ M₀` case: there the
-local type is an unramified twist of Steinberg, inertia acts through
-`σ ↦ (1, t_p(σ); 0, 1)`, and `dim V^{I_q} = 1`.
-
-The hypothesis `hqM₀ : q ∣ M₀` is retained although Carayol's theorem
-covers `q ∤ M₀` as well (where it asserts unramifiedness at `q`): the
-weaker leaf is all its consumer needs, and it keeps the ramification
-half of the content visible in the statement.
-
-SOUNDNESS AUDIT (2026-07-25): non-vacuously satisfiable — take any
-classical newform `g₀` of level `M₀` divisible by a prime `q ∉ {p}`, and
-`τ := ρ_{g₀,λ}` (irreducible by Ribet 1977, matched to `g₀`'s Hecke
-polynomials away from `M₀p` by Eichler–Shimura); the conclusion is
-Carayol's theorem read through the conductor dictionary. Conversely
-every instance is an instance of the cited theorem: `IsWeightTwoNewform`
-has exactly the classical minimal-level normalized eigenforms as
-inhabitants, and irreducibility supplies the rigidity identification of
-`τ` with `ρ_{g₀,λ}` (PROVEN `exists_linearEquiv_of_charFrob_eq`), across
-which the conductor exponent is invariant.
-
-SPLIT (2026-07-26, fifth owner — this statement is now PROVEN, and the
-citation it carried is strictly SMALLER). The FORMAL-CONTENT AUDIT above
-identified the conclusion as the conjunction of ramifiedness at `q` with
-the tame bound `2 − dim V^{I_q} ≤ ord_q M₀`, and observed in prose that
-the second conjunct "is arithmetically empty once `ord_q M₀ ≥ 2`". That
-observation is now CHECKED LEAN, via the trivial-but-decisive
-`GaloisRep.tameExponent_le_finrank` (a tame exponent is a codimension,
-hence `≤ dim V = 2`), and the citation splits accordingly into
-
-* `not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` —
-  ramifiedness at `q`; and
-* `exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one` —
-  ramifiedness at `q` TOGETHER WITH a nonzero inertia-fixed vector.
-
-**THE SPLIT IS BY RANGE OF `q`, NOT BY CONTENT** (re-cut 2026-07-26,
-eighth owner; the bullets above read differently before). The first leaf
-is hypothesised at `2 ≤ ord_q M₀` and the second at `ord_q M₀ = 1`, and
-between them they cover every `q ∣ M₀` exactly once. The earlier cut
-gave the first leaf the whole range `q ∣ M₀` and let the second carry
-only the fixed line; that was redundant, because at `ord_q M₀ = 1` the
-Steinberg computation that produces the fixed line produces the
-nontriviality of the unipotent in the same breath. Moving the
-ramifiedness conjunct into the second leaf therefore costs nothing and
-puts the `ord_q M₀ = 1` assumption where the local type is named.
-
-What the development takes on faith about `q² ∣ M₀` is ramifiedness
-alone: the Steinberg/principal-series local-type computation is assumed
-only at `q ∥ M₀`, where the assumption is a fixed line plus
-nontriviality rather than a conductor identity. Both components remain
-independently reusable — the first is the away-from-`p` ramification
-input the level-lowering assemblies consume, and the second contains the
-TAME half that the FALSITY AUDIT of
-`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` requests in
-step 3 of its repair plan.
-
-NO FAITH IS ADDED BY THE SPLIT — the pair is EQUIVALENT to the old
-single citation, and the converse direction is elementary rather than
-asserted. From this statement one recovers
-`not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` by
-`GaloisRep.HasConductorExponentAt.not_isUnramifiedAt_of_ne_zero`
-(`ord_q M₀ ≥ 2 > 0`), and, in the case `ord_q M₀ = 1`, both conjuncts of
-`exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one` —
-ramifiedness by the same `not_isUnramifiedAt_of_ne_zero`, the fixed
-vector because `tameExponent ≤ 1` on a 2-dimensional space forces
-`dim V^{I_q} ≥ 1`. So the sorry count rises by one while the assumed
-mathematics is unchanged; what the split buys is that the `q² ∣ M₀`
-tame content of the old leaf is DISCHARGED outright, and that the two
-remaining assumptions are separately statable, separately attackable and
-separately reusable. (The converse lemmas are deliberately not added to
-the tree: nothing would consume them, so they would be free-floating
-code.)
-
-The `q ≥ 2` arithmetic that makes the split exhaustive is elementary:
-`q ∣ M₀` with `0 < M₀` gives `1 ≤ ord_q M₀`, so `Nat.lt_or_ge` at `2`
-splits into `ord_q M₀ = 1` — handled by the second leaf feeding
-`GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt` — and
-`ord_q M₀ ≥ 2`, handled by the first feeding
-`GaloisRep.hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt`.
-**RE-SORRIED 2026-07-26 (merge worker, flt-lean-42's pin).** Everything
-above from "The `q ≥ 2` arithmetic" describes a PROOF THAT NO LONGER
-EXISTS, and must not be reinstated. That proof discharged the case
-`ord_q M₀ ≥ 2` from ramifiedness ALONE, which was possible only because
-`HasConductorExponentAt` was then the existential weakening — upward
-closed in `a` at a ramified place. Under the pinned definition
-(`a = ρ.conductorExponent v`) the two constructor lemmas it fed on,
-`GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt` and
-`..._of_finrank_le_of_not_isUnramifiedAt`, are FALSE and have been
-withdrawn from `ArtinConductor.lean`; see the WITHDRAWN section there.
-So this is now an honest citation leaf: Carayol's identity at the
-NEWFORM level, `a_q(τ) = ord_q M₀`. -/
-theorem hasConductorExponentAt_factorization_of_isWeightTwoNewform
-    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
-    (hg₀ : IsWeightTwoNewform M₀ g₀)
-    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
-    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
-      (Fin 2 → AlgebraicClosure ℚ_[p])}
-    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (hτ : ∀ (r : ℕ) (hr : r.Prime),
-      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
-      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
-        Polynomial.X ^ 2
-          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
-          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
-    (hirr : τ.IsIrreducible)
-    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
-    τ.HasConductorExponentAt hq.toHeightOneSpectrumRingOfIntegersRat
-      (M₀.factorization q) :=
-  sorry
+          τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ w₀ = w₀ := by
+  -- `ord_q M₀ = 1 ≠ 0`, hence `q ∣ M₀`, so Carayol's identity applies at `q`.
+  have hqM₀ : q ∣ M₀ := Nat.dvd_of_factorization_pos (by omega)
+  have hcond := hasConductorExponentAt_factorization_of_isWeightTwoNewform hM₀
+    hg₀ κ₀ hτ hirr hq hqp hqM₀
+  -- RAMIFIEDNESS: `a_q = ord_q M₀ = 1 ≠ 0`.
+  refine ⟨hcond.not_isUnramifiedAt_of_ne_zero (by omega), ?_⟩
+  -- FIXED LINE: the tame summand is bounded by the whole exponent
+  -- (`Sw_q ≥ 0`), so `2 − dim V^{I_q} = tameExponent ≤ 1`, i.e.
+  -- `dim V^{I_q} ≥ 1`, i.e. the inertia invariants are not the zero
+  -- submodule — which is exactly a nonzero inertia-fixed vector.
+  have htame : τ.tameExponent hq.toHeightOneSpectrumRingOfIntegersRat ≤ 1 := by
+    have hle := hcond.tameExponent_le
+    omega
+  rw [GaloisRep.tameExponent, Module.finrank_fin_fun] at htame
+  have hne : τ.inertiaInvariants hq.toHeightOneSpectrumRingOfIntegersRat ≠ ⊥ :=
+    Submodule.one_le_finrank_iff.mp (by omega)
+  obtain ⟨w₀, hw₀mem, hw₀ne⟩ := (Submodule.ne_bot_iff _).mp hne
+  exact ⟨w₀, hw₀ne, GaloisRep.mem_inertiaInvariants.mp hw₀mem⟩
 
 /-- **Carayol's conductor theorem, ONE shared leaf in conductor-exponent
 form — at the NEWFORM LEVEL `M₀` behind `g`, not at `M`** (**REFUTED IN
@@ -35647,6 +36414,28 @@ checked rather than assumed:
 * Nothing else in the tree currently constructs the upper-numbering
   filtration. Closing this leaf means BUILDING that theory as a genuine
   subtree; it is not a matter of locating an existing lemma.
+
+TERMINALITY RE-CONFIRMED **DEFINITIONALLY**, not by literature search
+(2026-07-26, ninth owner — this is a stronger statement than the two
+dead ends above, and it should end the mis-dispatching for good).
+`GaloisRep.swanExponent ρ v` is by definition
+`if ρ.IsUnramifiedAt v then 0 else ρ.swanExponentAux v`, and
+`swanExponentAux` is `opaque`, so the kernel will not unfold it and NO
+equation about the else-branch is derivable. Hence every proof of this
+leaf's conclusion `swanExponent τ v₂ = 0` must go through the
+then-branch, i.e. must prove `τ.IsUnramifiedAt v₂`. But `hsq` does not
+imply that, and the SOUNDNESS AUDIT below exhibits the counterexample
+itself: for `E/ℚ` of conductor `14` and `p := 5`, inertia at `2` acts by
+a nontrivial transvection, `hsq` holds, and `τ` is RAMIFIED at `2`. So
+this leaf is not merely unproven at this pin — it is UNPROVABLE at this
+pin, and no amount of searching mathlib or `~/cs/FLT` can change that.
+It becomes provable only when `swanExponentAux` is replaced by a real
+definition, which is the upper-numbering filtration named above.
+
+This is the intended and correct state for a citation leaf built on an
+`opaque` constant, and it is what keeps `#print axioms` clean; it is
+recorded here only so that the next owner recognises it in seconds
+instead of spending a cycle rediscovering it.
 
 PROVENANCE OF THE HYPOTHESIS SHAPE: `hsq` is stated over `Γ ℚ_[2]` (via
 `Z2bar`) because that is the spelling the at-`2` consumers already use,
