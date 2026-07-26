@@ -31323,8 +31323,46 @@ leaf. The duplicate declaration that stood here was removed at
 integration (2026-07-26): the fact is proven once and consumed twice,
 here and in `exists_newformFactor_modularHeckeAlgebraQ`. -/
 
-/-- **Reality of the good-prime Hecke eigenvalue** (sorry node, ELEVENTH
-decomposition 2026-07-26 — one of the two halves of
+/-- **An eigenvalue of a self-adjoint operator is REAL** (PROVEN
+2026-07-26, TWELFTH decomposition — pure linear algebra, the companion of
+`eq_smul_of_pow_sub_smul_apply_eq_zero_of_selfAdjointForm` far above and
+the consumer of the same hypotheses): if `B` is conjugate-symmetric and
+DEFINITE, `T` is self-adjoint for `B`, and `v ≠ 0` satisfies `T v = c•v`,
+then `c` is real.
+
+Proof, in three lines of form algebra and no spectral theory: `B v v ≠ 0`
+by definiteness, `B v v` is its own conjugate by symmetry at `x = y = v`,
+and self-adjointness at `x = y = v` reads
+`c · B v v = B (T v) v = B v (T v) = conj c · B v v`; cancel `B v v`.
+
+Stated over an arbitrary `ℂ`-module with a bare function `B` rather than
+over an `InnerProductSpace`, exactly as its companion is, because the
+Petersson leaf `exists_peterssonProduct_selfAdjoint_heckeOp` delivers the
+form in that unbundled shape. Additivity of `B` is NOT among the
+hypotheses — this argument never adds two vectors — so it is omitted
+rather than taken and discarded. -/
+theorem isReal_eigenvalue_of_selfAdjointForm
+    {V : Type*} [AddCommGroup V] [Module ℂ V]
+    {B : V → V → ℂ}
+    (hsmul : ∀ (a : ℂ) (x y : V), B (a • x) y = a * B x y)
+    (hsymm : ∀ x y : V, B y x = starRingEnd ℂ (B x y))
+    (hdef : ∀ x : V, B x x = 0 → x = 0)
+    {T : Module.End ℂ V} (hT : ∀ x y : V, B (T x) y = B x (T y))
+    {c : ℂ} {v : V} (hv : v ≠ 0) (heig : T v = c • v) :
+    ∃ r : ℝ, c = (r : ℂ) := by
+  have hBvv : B v v ≠ 0 := fun h => hv (hdef v h)
+  have hreal : starRingEnd ℂ (B v v) = B v v := (hsymm v v).symm
+  have hkey : B (T v) v = B v (T v) := hT v v
+  rw [heig, hsmul c v v] at hkey
+  have h2 : B v (c • v) = starRingEnd ℂ c * B v v := by
+    rw [hsymm (c • v) v, hsmul c v v, map_mul, hreal]
+  rw [h2] at hkey
+  have hc : c = starRingEnd ℂ c := mul_right_cancel₀ hBvv hkey
+  exact Complex.conj_eq_iff_real.mp hc.symm
+
+/-- **Reality of the good-prime Hecke eigenvalue** (PROVEN 2026-07-26 as
+the TWELFTH decomposition; it was a sorry node of the ELEVENTH
+decomposition — one of the two halves of
 `exists_frobRoots_qCoeff_of_not_dvd` below): the `q`-th coefficient of a
 normalized weight-two newform of TRIVIAL nebentypus is a REAL number.
 
@@ -31343,13 +31381,39 @@ also exactly the content that the TENTH cut's version of
 `exists_frobRoots_qCoeff_of_not_dvd` silently dropped — see the
 FORMAL-CONTENT AUDIT on that leaf below.
 
-Missing from the pin: the Petersson inner product and the
-self-adjointness of the good Hecke operators. -/
+NO LONGER MISSING FROM THE PIN (2026-07-26, TWELFTH cut — this leaf is
+now PROVEN). The Petersson product and the self-adjointness of the good
+Hecke operators were already isolated, as the single existential
+`exists_peterssonProduct_selfAdjoint_heckeOp` far above, cut out of
+`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` on the same day.
+That leaf asserts exactly what is needed here — a form `B` that is
+`ℂ`-homogeneous in its first slot, conjugate-symmetric, DEFINITE, and for
+which `T_q` is self-adjoint at every `q ∤ M` — so realness is a
+consequence of material already stated, not a new analytic citation, and
+this docstring's original claim that the Petersson theory was "missing
+from the pin" was true of the FLEET but not of the FILE.
+
+PROOF: `isReal_eigenvalue_of_selfAdjointForm` immediately above (pure
+linear algebra) applied to `B`, to the self-adjointness of `T_q` at
+`q ∤ M`, and to the two facts that `g` is a `T_q`-eigenvector with
+eigenvalue `a_q` (`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`) and
+is nonzero (`ne_zero_of_isWeightTwoEigenform`, from `a_1 = 1`).
+
+Note this consumes NOTHING beyond `IsWeightTwoEigenform`: the
+`eigensystem_minimal` field of `IsWeightTwoNewform` is not used, since
+realness of a Hecke eigenvalue holds for every normalized eigenform,
+newform or not. The stronger hypothesis is kept only to match the
+sibling leaves' shape and the consumer
+`exists_frobRoots_qCoeff_of_not_dvd`. -/
 theorem exists_real_qCoeff_of_not_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
-    ∃ r : ℝ, qCoeff M g q = (r : ℂ) :=
-  sorry
+    ∃ r : ℝ, qCoeff M g q = (r : ℂ) := by
+  obtain ⟨B, -, hsmul, hsymm, hdef, hadj⟩ :=
+    exists_peterssonProduct_selfAdjoint_heckeOp hM
+  exact isReal_eigenvalue_of_selfAdjointForm hsmul hsymm hdef (hadj q hq hqM)
+    (ne_zero_of_isWeightTwoEigenform hg.toIsWeightTwoEigenform)
+    (heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform hq)
 
 /-- **The Hasse–Weil bound at a good prime** (sorry node, ELEVENTH
 decomposition 2026-07-26 — the other half of
@@ -31373,7 +31437,46 @@ that the two roots are conjugate, and that their product is `q` — is
 elementary algebra over this bound plus realness, and is PROVEN below.
 
 Missing from the pin: Weil RH for curves, the good reduction of `X₀(M)`
-at `q ∤ M` (Igusa), and the Eichler–Shimura relation. -/
+at `q ∤ M` (Igusa), and the Eichler–Shimura relation.
+
+WHY A FURTHER CUT IS NOT AVAILABLE HERE (2026-07-26, TWELFTH cut, after
+the sibling `exists_real_qCoeff_of_not_dvd` was closed and this one was
+attacked in the same task). Two routes suggest themselves and BOTH are
+dead ends; recording them so the next owner does not spend a cycle
+rediscovering it.
+
+*Route 1 — cut through the attached `ℓ`-adic representation.* The
+textbook proof factors as (i) Eichler–Shimura: `a_q` is the trace of
+`Frob_q` on a two-dimensional `ℓ`-adic representation with determinant
+`q`, and (ii) Weil RH: its eigenvalues have absolute value `√q`. Stating
+(i) requires the Galois representation ATTACHED to `g` — which is
+precisely what this file exists to construct, downstream of this very
+bound (it enters through `irred_eigenspace` in `ModularTateGaloisData`
+below). So the cut is CIRCULAR, and a leaf phrased over an
+existentially produced representation would additionally be false about
+junk inhabitants of the carrier, exactly as the seventh-decomposition
+note above records.
+
+*Route 2 — the Hecke recursion plus the trivial coefficient bound.* With
+realness now in hand (`exists_real_qCoeff_of_not_dvd`), suppose
+`|a_q| > 2√q`. Then `X² − a_q X + q` has real roots `α, β` with
+`αβ = q` and `|α| > √q > |β|`, and the good-prime recursion gives
+`a_{q^r} = (α^{r+1} − β^{r+1})/(α − β)`, which grows like `|α|^r`. The
+trivial bound for a weight-two cusp form is `|a_n| ≤ C·n^{k/2} = C·n`,
+so `|α| ≤ q` and hence `|a_q| = |α + q/α| ≤ q + 1`. That is the
+**trivial bound**, and it is strictly WEAKER than what is asked here:
+`2√q < q + 1` for every `q > 1`, since `(√q − 1)² > 0`. The gap between
+`q + 1` and `2√q` is exactly the content of Weil RH, which is why no
+amount of recursion algebra closes it.
+
+So this leaf is irreducible at this pin in the same sense as its two
+Atkin–Lehner siblings below: a successor must supply the geometry (a
+model of `X₀(M)` over `ℤ`, its good reduction at `q ∤ M`, and point
+counting over `𝔽_q`), not another cut. Mathlib at this pin has neither
+the Weil conjectures nor any zeta function of a curve over a finite
+field (checked 2026-07-26: `Mathlib/NumberTheory/` contains no
+`RiemannHypothesis` for curves, only `LSeries/RiemannZeta.lean`), and
+`~/cs/FLT` has nothing in this direction either. -/
 theorem norm_qCoeff_le_two_mul_sqrt_of_not_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
@@ -31552,7 +31655,43 @@ in both cases the only carrier inhabitants are the genuine newforms. So
 the leaf is faithful, not vacuous and not false.
 
 Missing from the pin: the `U_q` and `W_q` operators and Atkin–Lehner
-theory for the `q`-old/`q`-new decomposition. -/
+theory for the `q`-old/`q`-new decomposition. Confirmed against this pin
+2026-07-26: `Mathlib/NumberTheory/ModularForms/` contains no
+`AtkinLehner`, no `newform` and no `U_q`; it does have
+`SlashActions.lean`, which is the right starting point for DEFINING
+`W_q` as a slash by `[[0, −1], [M, 0]]`, but nothing about its effect on
+eigenforms. `~/cs/FLT` has nothing here either.
+
+WHY THIS ONE ALSO STAYS A CITATION (2026-07-26, TWELFTH cut — the same
+anti-vacuity analysis that the Petersson leaf's "WHY ONE EXISTENTIAL AND
+NOT TWO" note records, applied here and reaching the OPPOSITE
+conclusion, namely that no honest cut exists yet).
+
+The tempting cut is an `W_q`-existential:
+`∃ W : Module.End ℂ S₂(Γ₀(M)), W * W = 1 ∧ W g = −a_q • g`, with the
+one-line consumer `a_q² • g = W (W g) = g`, hence `a_q² = 1` since
+`g ≠ 0`. **That cut is VACUOUS — it is a pure restatement.** The
+existential is not merely implied by the conclusion, it is EQUIVALENT to
+it: if `a_q² = 1` then `W := (−a_q) • 1` satisfies both conjuncts, since
+`W * W = a_q² • 1 = 1`. So the "leaf" would carry no Atkin–Lehner
+content whatever, and a successor handed it would be exactly as stuck.
+
+The same objection kills the `U_q` phrasing. At `q ∣ M` the operator
+`heckeOp M q` IS `U_q` (by `qCoeff_heckeOp`, whose extra term is gated on
+`¬ q ∣ M`), and `heckeOp_apply_eq_smul_of_isWeightTwoEigenform` already
+gives `U_q g = a_q • g` for EVERY prime — so `a_q² = 1` is literally
+equivalent to `U_q² g = g`, and stating that as a leaf renames the
+problem rather than reducing it. The genuine classical content is
+`U_q² = 1` on the whole `q`-NEW SUBSPACE, which cannot be stated until
+the old/new decomposition exists.
+
+Conclusion: a faithful cut requires `W_q` to be pinned INDEPENDENTLY of
+`a_q` — as the slash operator by a concrete matrix, together with the
+proof that it preserves `S₂(Γ₀(M))`. That is a genuine construction, not
+a restatement, and it is what a successor must supply. Note the contrast
+with the good-prime sibling `exists_real_qCoeff_of_not_dvd`, which WAS
+closable precisely because its analytic input (the Petersson product)
+had already been pinned independently as its own existential. -/
 theorem qCoeff_sq_eq_one_of_exactly_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
@@ -31648,7 +31787,15 @@ there, so the constraint has something to act on) and at `M = 20, 36,
 50`. The leaf is faithful.
 
 Missing from the pin: the same Atkin–Lehner theory as the previous
-leaf. -/
+leaf, whose docstring now carries the confirmed pin-absence map
+(no `AtkinLehner`, no `newform`, no `U_q` anywhere in
+`Mathlib/NumberTheory/ModularForms/`; `SlashActions.lean` is the one
+usable starting point) and, more importantly, the ANTI-VACUITY
+ANALYSIS showing why a `W_q`- or `U_q`-existential cut would be a pure
+restatement rather than a reduction. That analysis applies verbatim
+here and independently confirms this docstring's original verdict: the
+irreducibility recorded above is not an author's reluctance to cut, it
+is a proof that the available cuts are empty. -/
 theorem qCoeff_eq_zero_of_sq_dvd {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) (hqM2 : q ^ 2 ∣ M) :
@@ -31723,8 +31870,22 @@ without touching this assembly beyond one `obtain` pattern:
 * `qCoeff_eq_zero_of_sq_dvd` is unchanged and remains the irreducible
   Atkin–Lehner citation; the reasons are in its docstring.
 
-So the three genuinely open leaves under this bound are now the two
-good-prime halves and the one `q² ∣ M` citation. -/
+TWELFTH CUT (2026-07-26), which closed one of those three:
+
+* `exists_real_qCoeff_of_not_dvd` is now PROVEN, over the Petersson leaf
+  `exists_peterssonProduct_selfAdjoint_heckeOp` that was ALREADY in this
+  file (cut out of the semisimplicity node the same day) plus the new
+  pure-linear-algebra `isReal_eigenvalue_of_selfAdjointForm`. No new
+  analytic citation was needed: the eleventh cut's docstring listed the
+  Petersson theory as "missing from the pin", which was true of mathlib
+  but not of this file.
+
+So THREE declarations under this bound remain open —
+`norm_qCoeff_le_two_mul_sqrt_of_not_dvd`,
+`qCoeff_sq_eq_one_of_exactly_dvd` and `qCoeff_eq_zero_of_sq_dvd` — but
+they rest on only TWO distinct bodies of missing theory: Hasse–Weil /
+Eichler–Shimura for the first, and Atkin–Lehner (`W_q`, `U_q`) for the
+other two. The Petersson product is no longer one of them. -/
 theorem norm_qCoeff_le_two_mul_sqrt {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) :
