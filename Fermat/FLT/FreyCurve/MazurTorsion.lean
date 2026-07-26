@@ -16339,8 +16339,9 @@ theorem WeierstrassCurve.x1Eleven_plane_ne_zero (b c : ℚ)
     linarith
 
 /-- **The KUBERT MODEL of `X_1(13)`: `G₁₃(r, s) ≠ 0` off the two
-degenerate lines `s = 0` and `r = 1`** (sorry node — this now carries
-the ENTIRE arithmetic content of level `13`; the bidegree-`(7, 10)`
+degenerate lines `s = 0` and `r = 1`** (PROVEN 2026-07-26 over the smooth
+model, modulo the single Jacobian leaf
+`Fermat.Hyperelliptic.X13.exists_jacobianPackage`; the bidegree-`(7, 10)`
 statement `x1Thirteen_plane_ne_zero` below is PROVEN from it).
 
 `G₁₃(r, s) = r³ + (−s⁴ + 5s³ − 9s² + 4s − 2)r² + (−s³ + 6s² − 3s + 1)r − s³`
@@ -16387,19 +16388,102 @@ re-derived inside Lean by `ring`, so no CAS output is trusted):
   which is precisely what the two hypotheses exclude. So the statement
   is sharp: dropping EITHER hypothesis makes it false.
 
-WHAT IS STILL MISSING, i.e. what closing this leaf costs: Jacobians of
-genus-`2` curves (Mumford representation and Cantor's algorithm), the
-Abel–Jacobi embedding `X(ℚ) ↪ J(ℚ)`, and a Mordell–Weil rank bound.
-mathlib has none of these, and the rank-`0` input is a `2`-descent over
-the degree-`6` field of the sextic — which is irreducible with Galois
-group `F₁₈(6) = 3 wr 2` of order `18`. In particular `J` being
-`ℚ`-simple rules out the cheap route: there is NO elliptic quotient, so
-elliptic Chabauty is not available and a genuine genus-`2` method is
-required. -/
+INDEPENDENT RE-VERIFICATION (2026-07-26, PARI, wider than the sweep
+above and in BOTH projections): over every `s = p/q` and every `r = p/q`
+with `|p| ≤ 300`, `q ≤ 40`, the only rational points found are `(0, 0)`,
+`(1, 0)`, `(1, 1)`. Magma independently returns `Genus = 2` and
+`IsHyperelliptic = true` for this plane model, with hyperelliptic model
+`y² + (x³ + x + 1)y = x⁵ + x⁴` — the `x ↦ 1/x` reverse of Sutherland's
+`y² + (x³ + x² + 1)y = x² + x`, confirming the sextic recorded above.
+
+THE PROOF, which is now complete except for the Jacobian. The `X_1(18)`
+machinery of `Fermat/FLT/ModularCurve/HyperellipticJacobian.lean` is
+reused verbatim at level `13` (`Fermat.Hyperelliptic.X13`), and this
+declaration is the birational bridge into it:
+
+* The smooth model is `y² = x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1`, whose
+  discriminant is `−2¹²·13²`, so `3` is a prime of good reduction and
+  `3 > e + 1 = 2` satisfies the formal-group hypothesis.
+  `#X(𝔽₃) = 6` is PROVEN BY `decide` (`X13.card_X13_F3`), and `X_1(13)`
+  has exactly `φ(13)/2 = 6` rational cusps — `(0, ±1)`, `(−1, ±1)` and
+  the two points at infinity — so a seventh rational point is absurd.
+* The birational map, found with Magma and then re-derived here by
+  `linear_combination`/`ring`, is
+
+    `x = (−r² + (s⁴−5s³+9s²−5s+2)r − (s⁴−4s³+7s²−4s+1)) / (s(s−1)³)`
+    `y = ( r² − (s⁴−4s³+9s²−4s+2)r + (s⁴−2s³+6s²−3s+1)) / (s³(s−1))`
+
+  and the identity `y² = x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1` holds
+  modulo `G₁₃` with an explicit cofactor (degree `9` in `r`, `20` in
+  `s`), verified in-kernel — no CAS output is trusted.
+* The two denominators vanish exactly on the two excluded lines:
+  `G₁₃(r, 1) = (r − 1)³`, so `s = 1` forces `r = 1`; and `s ≠ 0` is a
+  hypothesis. So the map is defined precisely where the statement lives.
+* The two CUSP-AVOIDANCE conditions are Gröbner cofactor certificates,
+  again re-verified by `linear_combination`:
+  `Res_r(G₁₃, num x) = s³(s−1)¹⁰` and `Res_r(G₁₃, num(x+1)) = s²(s−1)¹⁰`
+  — both pure powers of `s` and `s − 1`, so `x ≠ 0` and `x ≠ −1` follow
+  from `s ≠ 0` and `s ≠ 1` with no case analysis at all.
+
+WHAT REMAINS, i.e. what closing `X13.exists_jacobianPackage` costs:
+Jacobians of genus-`2` curves (Mumford representation and Cantor's
+algorithm), the Abel–Jacobi embedding `X(ℚ) ↪ J(ℚ)`, good reduction of
+`J`, and a Mordell–Weil rank bound. mathlib has none of these, and the
+rank-`0` input is a `2`-descent over the degree-`6` field of the sextic —
+which is irreducible with Galois group `F₁₈(6) = 3 wr 2` of order `18`.
+In particular `J` being `ℚ`-simple rules out the cheap route: there is NO
+elliptic quotient, so elliptic Chabauty is not available and a genuine
+genus-`2` method is required. **That leaf is now word-for-word the same
+shape as `X18.exists_jacobianPackage`, so ONE genus-`2` Jacobian
+development discharges both levels at once** — which is the whole point
+of routing level `13` through the shared layer rather than proving
+something bespoke here. -/
 theorem WeierstrassCurve.x1Thirteen_kubert_ne_zero (r s : ℚ) (hs : s ≠ 0) (hr : r ≠ 1) :
     r ^ 3 + (-s ^ 4 + 5 * s ^ 3 - 9 * s ^ 2 + 4 * s - 2) * r ^ 2
-      + (-s ^ 3 + 6 * s ^ 2 - 3 * s + 1) * r - s ^ 3 ≠ 0 :=
-  sorry
+      + (-s ^ 3 + 6 * s ^ 2 - 3 * s + 1) * r - s ^ 3 ≠ 0 := by
+  intro hG
+  -- `G₁₃(r, 1) = (r − 1)³`, so the line `s = 1` meets the curve only at `(1, 1)`.
+  have hs1 : s - 1 ≠ 0 := by
+    intro h
+    have hse : s = 1 := by linarith
+    subst hse
+    refine hr ?_
+    have h3 : (r - 1) ^ 3 = 0 := by linear_combination hG
+    have := (pow_eq_zero_iff (n := 3) (by norm_num)).mp h3
+    linarith
+  have hDX : (s * (s - 1) ^ 3) ≠ 0 := mul_ne_zero hs (pow_ne_zero 3 hs1)
+  have hDY : (s ^ 3 * (s - 1)) ≠ 0 := mul_ne_zero (pow_ne_zero 3 hs) hs1
+  -- `x ≠ 0`, from `Res_r(G₁₃, num x) = s³(s−1)¹⁰`.
+  have hNX : (-r ^ 2 + (s ^ 4 - 5 * s ^ 3 + 9 * s ^ 2 - 5 * s + 2) * r
+      - (s ^ 4 - 4 * s ^ 3 + 7 * s ^ 2 - 4 * s + 1)) ≠ 0 := by
+    intro h
+    have key : s ^ 2 * (s - 1) ^ 6 = 0 := by
+      linear_combination (r + (-s ^ 4 + 5 * s ^ 3 - 9 * s ^ 2 + 5 * s - 1)) * hG
+        + (r ^ 2 + (-s ^ 4 + 5 * s ^ 3 - 9 * s ^ 2 + 4 * s - 1) * r
+            + s ^ 2 * (-s ^ 2 + 3 * s - 1)) * h
+    exact (mul_ne_zero (pow_ne_zero 2 hs) (pow_ne_zero 6 hs1)) key
+  -- `x ≠ −1`, from `Res_r(G₁₃, num (x + 1)) = s²(s−1)¹⁰`.
+  have hNXP : (-r ^ 2 + (s ^ 4 - 5 * s ^ 3 + 9 * s ^ 2 - 5 * s + 2) * r
+      - (s ^ 4 - 4 * s ^ 3 + 7 * s ^ 2 - 4 * s + 1)) + (s * (s - 1) ^ 3) ≠ 0 := by
+    intro h
+    have key : s * (s - 1) ^ 7 = 0 := by
+      linear_combination
+        ((s - 2) * r + (-s ^ 5 + 7 * s ^ 4 - 19 * s ^ 3 + 23 * s ^ 2 - 12 * s + 3)) * hG
+        + ((s - 2) * r ^ 2 + (-s ^ 5 + 7 * s ^ 4 - 19 * s ^ 3 + 22 * s ^ 2 - 10 * s + 3) * r
+            + s * (2 * s ^ 2 - 4 * s + 1)) * h
+    exact (mul_ne_zero hs (pow_ne_zero 7 hs1)) key
+  refine _root_.Fermat.Hyperelliptic.X13.no_noncuspidal_point
+    ((-r ^ 2 + (s ^ 4 - 5 * s ^ 3 + 9 * s ^ 2 - 5 * s + 2) * r
+      - (s ^ 4 - 4 * s ^ 3 + 7 * s ^ 2 - 4 * s + 1)) / (s * (s - 1) ^ 3))
+    ((r ^ 2 - (s ^ 4 - 4 * s ^ 3 + 9 * s ^ 2 - 4 * s + 2) * r
+      + (s ^ 4 - 2 * s ^ 3 + 6 * s ^ 2 - 3 * s + 1)) / (s ^ 3 * (s - 1)))
+    (div_ne_zero hNX hDX) ?_ ?_
+  · intro hx
+    refine hNXP ?_
+    rw [div_eq_iff hDX] at hx
+    linarith [hx]
+  · field_simp
+    linear_combination (-r^9 + (5*s^4 - 25*s^3 + 45*s^2 - 26*s + 10)*r^8 + (-10*s^8 + 100*s^7 - 430*s^6 + 1004*s^5 - 1374*s^4 + 1153*s^3 - 661*s^2 + 227*s - 45)*r^7 + (10*s^12 - 150*s^11 + 1020*s^10 - 4106*s^9 + 10816*s^8 - 19606*s^7 + 25327*s^6 - 24097*s^5 + 17285*s^4 - 9177*s^3 + 3522*s^2 - 880*s + 120)*r^6 + (-5*s^16 + 100*s^15 - 930*s^14 + 5304*s^13 - 20679*s^12 + 58350*s^11 - 123535*s^10 + 201638*s^9 - 259668*s^8 + 268538*s^7 - 224547*s^6 + 150903*s^5 - 80419*s^4 + 32991*s^3 - 9945*s^2 + 1988*s - 210)*r^5 + (s^20 - 25*s^19 + 295*s^18 - 2176*s^17 + 11231*s^16 - 43119*s^15 + 128108*s^14 - 303293*s^13 + 585977*s^12 - 941942*s^11 + 1276479*s^10 - 1465711*s^9 + 1422464*s^8 - 1158605*s^7 + 784325*s^6 - 434977*s^5 + 193618*s^4 - 66946*s^3 + 17054*s^2 - 2884*s + 252)*r^4 + (-4*s^20 + 97*s^19 - 1114*s^18 + 8025*s^17 - 40555*s^16 + 152549*s^15 - 442866*s^14 + 1016904*s^13 - 1880635*s^12 + 2841729*s^11 - 3548855*s^10 + 3692375*s^9 - 3211719*s^8 + 2331470*s^7 - 1402849*s^6 + 690715*s^5 - 272636*s^4 + 83474*s^3 - 18765*s^2 + 2786*s - 210)*r^3 + (6*s^20 - 143*s^19 + 1616*s^18 - 11472*s^17 + 57212*s^16 - 212585*s^15 + 609734*s^14 - 1381451*s^13 + 2512319*s^12 - 3710619*s^11 + 4490323*s^10 - 4480127*s^9 + 3697347*s^8 - 2522162*s^7 + 1414372*s^6 - 644543*s^5 + 234025*s^4 - 65530*s^3 + 13386*s^2 - 1792*s + 120)*r^2 + (-2*s^20 + 60*s^19 - 786*s^18 + 6164*s^17 - 32924*s^16 + 128294*s^15 - 380126*s^14 + 879636*s^13 - 1618726*s^12 + 2398581*s^11 - 2886640*s^10 + 2837441*s^9 - 2284169*s^8 + 1504783*s^7 - 807168*s^6 + 348734*s^5 - 119069*s^4 + 31115*s^3 - 5887*s^2 + 724*s - 44)*r + (-8*s^19 + 152*s^18 - 1376*s^17 + 7874*s^16 - 31852*s^15 + 96514*s^14 - 226596*s^13 + 420986*s^12 - 627313*s^11 + 756132*s^10 - 740840*s^9 + 591028*s^8 - 383291*s^7 + 200900*s^6 - 84151*s^5 + 27630*s^4 - 6886*s^3 + 1232*s^2 - 142*s + 8)) * hG
 
 /-- **The Kubert substitution, with denominators cleared** (PROVEN, by
 `field_simp` and `ring`): at `r = b/c`, `s = c²/(b − c)` the Kubert
