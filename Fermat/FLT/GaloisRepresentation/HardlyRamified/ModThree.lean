@@ -36207,7 +36207,9 @@ theorem exists_artinIdealGroup_relIndex_ray_class
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin's DESCENT: reciprocity from the cyclotomic base case**
-(sorry node, created 2026-07-26 as sub-leaf (A3) of
+(**PROVEN 2026-07-26** as glue over the three declarations immediately
+above — see the DECOMPOSED note at the end of this docstring; it was
+created 2026-07-26 as sub-leaf (A3) of
 `exists_conductor_artinSymbol_span_eq_one_ray_class` below; it IS that
 leaf, with the cyclotomic base case
 `artinSymbol_span_eq_one_of_cyclotomic_ray_class` — at EVERY number
