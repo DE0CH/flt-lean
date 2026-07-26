@@ -1657,7 +1657,7 @@ theorem ringHom_uliftRat_ext {R : Type*} [Semiring R] (f g : ULift.{u} ℚ →+*
     (f.comp (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.toRingHom)
     (g.comp (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.toRingHom)
   ext q
-  simpa using RingHom.congr_fun h (ULift.ringEquiv q)
+  exact RingHom.congr_fun h (ULift.ringEquiv q)
 
 open CategoryTheory AlgebraicGeometry in
 /-- **The structure map of a `ℚ`-algebra, as a morphism out of `ULift ℚ`**
