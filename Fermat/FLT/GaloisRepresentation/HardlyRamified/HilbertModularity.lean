@@ -2182,8 +2182,154 @@ theorem exists_unit_smul_of_vecMul_eq_row {A : Type*} [CommRing A]
       r' 1 * s * r 0 * x' 0 + r' 1 * s * r 1 * x' 1 by ring, ← key0, ← key1]
     exact hx'
 
+/-- **The arithmetic Frobenius at `w`, read in `Γ ℚ`, raises every
+`ℓⁿ`-th root of unity to its `N(w)`-th power** (PROVEN 2026-07-26; the
+roots-of-unity input of
+`exists_cyclotomicCharacter_adicCompletion_eq_residueCard` below).
+
+Let `w ∤ ℓ` be a place of the number field `F`. Push the arithmetic
+Frobenius `Frob_w ∈ Γ F_w` down the tower `Γ F_w → Γ F → Γ ℚ` and let it
+act on `μ_{ℓⁿ} ⊆ ℚᵃˡᵍ`: the result is `t ↦ t^{N(w)}`, with the exponent
+read mod `ℓⁿ` because `t^{ℓⁿ} = 1`.
+
+The mathematics is mathlib's `AlgHom.IsArithFrobAt.apply_of_pow_eq_one`
+applied to `Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`: an
+`ℓⁿ`-th root of unity is integral over `𝒪_{F_w}` and `ℓⁿ` avoids the
+maximal ideal upstairs precisely because `w ∤ ℓ` (`hwℓ`), so the
+Frobenius specification applies and raises it to the power
+`#(𝒪_{F_w}/𝔪) = N(w)`
+(`IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal`). The
+descent down the two steps of the tower is `Field.absoluteGaloisGroup.lift_map`
+against injectivity of `AlgebraicClosure.map`, one step at a time — no
+`map_comp` for `Field.absoluteGaloisGroup.map` exists, since `map` depends
+on an arbitrarily chosen embedding of algebraic closures, and descending
+stepwise avoids needing one.
+
+PROVENANCE: this is a verbatim port of the PROVEN
+`GaloisRepresentation.Modularity.adicArithFrob_rootsOfUnity_pow_base` of
+`Modularity/KhareWintenberger.lean`. That module is DOWNSTREAM of this one
+(it imports `HardlyRamified/Deformation.lean`, which `public import`s this
+file), so the lemma cannot be imported here and the proof is duplicated
+deliberately; the name is deliberately DIFFERENT from the downstream one so
+that the two never shadow each other. If the two are ever unified, the
+right move is to hoist this one into `GaloisRepTransport.lean` — every
+ingredient it uses is already in that module's cone. -/
+theorem adicArithFrob_rootsOfUnity_pow_residueCard
+    {ℓ : ℕ} [hℓ : Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F))
+    (hwℓ : ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal) (n : ℕ) :
+    ∀ t ∈ rootsOfUnity (ℓ ^ n) (ℚ ᵃˡᵍ),
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+        (Field.absoluteGaloisGroup.map
+          (algebraMap F (HeightOneSpectrum.adicCompletion F w))
+          (Field.AbsoluteGaloisGroup.adicArithFrob w))).toRingEquiv) t =
+        t ^ ((Ideal.absNorm w.asIdeal : ZMod (ℓ ^ n)).val) := by
+  intro t ht
+  classical
+  set g : ℚ →+* F := algebraMap ℚ F with hgdef
+  set h : F →+* HeightOneSpectrum.adicCompletion F w :=
+    algebraMap F (HeightOneSpectrum.adicCompletion F w) with hhdef
+  -- the residue cardinality of the `IsArithFrobAt` specification at `w` is `Nw`
+  have hcard : Nat.card (↥(w.adicCompletionIntegers F) ⧸
+      (IsLocalRing.maximalIdeal (IntegralClosure ↥(w.adicCompletionIntegers F)
+        (AlgebraicClosure (w.adicCompletion F)))).under ↥(w.adicCompletionIntegers F)) =
+      Ideal.absNorm w.asIdeal := by
+    rw [IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal w,
+      Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  -- the root of unity and its images down the tower `ℚᵃˡᵍ → Fᵃˡᵍ → F_wᵃˡᵍ`
+  have htL : ((t : (ℚ ᵃˡᵍ)ˣ) : ℚ ᵃˡᵍ) ^ (ℓ ^ n) = 1 := by
+    have h1 := (mem_rootsOfUnity _ _).mp ht
+    calc ((t : (ℚ ᵃˡᵍ)ˣ) : ℚ ᵃˡᵍ) ^ (ℓ ^ n)
+        = ((t ^ (ℓ ^ n) : (ℚ ᵃˡᵍ)ˣ) : ℚ ᵃˡᵍ) := by push_cast; rfl
+      _ = 1 := by rw [h1]; rfl
+  set u : AlgebraicClosure F :=
+    AlgebraicClosure.map g ((t : (ℚ ᵃˡᵍ)ˣ) : ℚ ᵃˡᵍ) with hudef
+  have hupow : u ^ (ℓ ^ n) = 1 := by rw [hudef, ← map_pow, htL, map_one]
+  set ζ : AlgebraicClosure (HeightOneSpectrum.adicCompletion F w) :=
+    AlgebraicClosure.map h u with hζdef
+  have hζpow : ζ ^ (ℓ ^ n) = 1 := by rw [hζdef, ← map_pow, hupow, map_one]
+  -- `ζ` is integral over the completed integers (it kills `X^{ℓⁿ} - 1`)
+  have hint : IsIntegral (w.adicCompletionIntegers F) ζ := by
+    refine ⟨Polynomial.X ^ (ℓ ^ n) - 1, ?_, ?_⟩
+    · have := Polynomial.monic_X_pow_sub_C
+        (R := w.adicCompletionIntegers F) (1 : _) (n := ℓ ^ n)
+        (pow_ne_zero _ hℓ.out.pos.ne')
+      simpa [Polynomial.C_1] using this
+    · simp [Polynomial.eval₂_sub, hζpow]
+  set ζ' : IntegralClosure (w.adicCompletionIntegers F)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w)) := ⟨ζ, hint⟩ with hζ'def
+  have hζ'pow : ζ' ^ (ℓ ^ n) = 1 := by
+    apply Subtype.ext
+    push_cast [hζ'def]
+    exact hζpow
+  -- `ℓ` is a unit at `w` (`w ∤ ℓ`), so `ℓⁿ` avoids the maximal ideal upstairs
+  have hpnotin : ((ℓ : ℕ) ^ n : IntegralClosure (w.adicCompletionIntegers F)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))) ∉
+      IsLocalRing.maximalIdeal _ := by
+    have hunit : IsUnit ((ℓ : ℕ) : w.adicCompletionIntegers F) := by
+      by_contra hnu
+      refine hwℓ ?_
+      have hover : w.asIdeal =
+          (HeightOneSpectrum.completionIdeal F w).under (𝓞 F) := Ideal.LiesOver.over
+      rw [hover, Ideal.under_def, Ideal.mem_comap]
+      show algebraMap (𝓞 F) (w.adicCompletionIntegers F) ((ℓ : ℕ) : 𝓞 F) ∈ _
+      rw [map_natCast]
+      exact (IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hnu)
+    have hunitIC : IsUnit (((ℓ : ℕ) ^ n) : IntegralClosure (w.adicCompletionIntegers F)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))) := by
+      have h1 := hunit.map (algebraMap (w.adicCompletionIntegers F)
+        (IntegralClosure (w.adicCompletionIntegers F)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion F w))))
+      rw [map_natCast] at h1
+      exact h1.pow n
+    intro hmem
+    exact ((IsLocalRing.mem_maximalIdeal _).mp hmem) hunitIC
+  -- the Frobenius specification at `w`, read in `F_wᵃˡᵍ`
+  have hfrob := AlgHom.IsArithFrobAt.apply_of_pow_eq_one
+    (Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob (v := w))
+    hζ'pow (by exact_mod_cast hpnotin)
+  rw [hcard] at hfrob
+  have hfrobK : Field.AbsoluteGaloisGroup.adicArithFrob w ζ =
+      ζ ^ Ideal.absNorm w.asIdeal := by
+    have h1 := hfrob
+    rw [MulSemiringAction.toAlgHom_apply] at h1
+    have h2 := congrArg Subtype.val h1
+    rw [IntegralClosure.coe_smul] at h2
+    have h3 : ((⟨ζ, hint⟩ : IntegralClosure _ _) ^ Ideal.absNorm w.asIdeal).1 =
+        ζ ^ Ideal.absNorm w.asIdeal := SubmonoidClass.coe_pow _ _
+    simpa [hζ'def, AlgEquiv.smul_def] using h2.trans h3
+  -- descend one step: the value at `u ∈ Fᵃˡᵍ` of the image in `Γ F`
+  have hstepF : (Field.absoluteGaloisGroup.map h
+      (Field.AbsoluteGaloisGroup.adicArithFrob w)) u = u ^ Ideal.absNorm w.asIdeal := by
+    apply (AlgebraicClosure.map h).injective
+    rw [Field.absoluteGaloisGroup.lift_map h
+      (Field.AbsoluteGaloisGroup.adicArithFrob w) u, map_pow]
+    exact hfrobK
+  -- descend the second step: the value at `t ∈ ℚᵃˡᵍ` of the image in `Γ ℚ`
+  have hmain : (Field.absoluteGaloisGroup.map g
+      (Field.absoluteGaloisGroup.map h (Field.AbsoluteGaloisGroup.adicArithFrob w)))
+      ((t : (ℚ ᵃˡᵍ)ˣ) : ℚ ᵃˡᵍ) =
+      ((t : (ℚ ᵃˡᵍ)ˣ) : ℚ ᵃˡᵍ) ^ Ideal.absNorm w.asIdeal := by
+    apply (AlgebraicClosure.map g).injective
+    rw [Field.absoluteGaloisGroup.lift_map g
+      (Field.absoluteGaloisGroup.map h (Field.AbsoluteGaloisGroup.adicArithFrob w))
+      ((t : (ℚ ᵃˡᵍ)ˣ) : ℚ ᵃˡᵍ), map_pow]
+    exact hstepF
+  show (Field.absoluteGaloisGroup.map g
+      (Field.absoluteGaloisGroup.map h (Field.AbsoluteGaloisGroup.adicArithFrob w)))
+      ((t : (ℚ ᵃˡᵍ)ˣ) : ℚ ᵃˡᵍ) = _
+  rw [hmain]
+  -- the exponent-mod juggle: `t^Nw = t^(Nw mod ℓⁿ)` since `t^{ℓⁿ} = 1`
+  haveI : NeZero (ℓ ^ n) := ⟨pow_ne_zero _ hℓ.out.pos.ne'⟩
+  have hval : ((Ideal.absNorm w.asIdeal : ZMod (ℓ ^ n))).val =
+      Ideal.absNorm w.asIdeal % ℓ ^ n := ZMod.val_natCast _ _
+  conv_lhs => rw [show Ideal.absNorm w.asIdeal =
+    ℓ ^ n * (Ideal.absNorm w.asIdeal / ℓ ^ n) + Ideal.absNorm w.asIdeal % ℓ ^ n from
+    (Nat.div_add_mod _ (ℓ ^ n)).symm]
+  rw [pow_add, pow_mul, htL, one_pow, one_mul, hval]
+
 /-- **A Frobenius at `w` inside `Γ F_w`, with cyclotomic value `N(w)`**
-(LEAF; the `F`-level twin of `Deformation.lean`'s PROVEN
+(PROVEN 2026-07-26; the `F`-level twin of `Deformation.lean`'s PROVEN
 `exists_cyclotomicCharacter_padicTwo_eq_two`, and the ARITHMETIC input of
 the gluing argument below).
 
@@ -2205,6 +2351,18 @@ its Frobenius over `ℚ` only. What is needed here is the same statement for
 a general number field: the unramifiedness of `F_w(μ_{ℓⁿ})/F_w` and the
 value of the arithmetic Frobenius on roots of unity.
 
+DISCHARGE (2026-07-26). The witness is `Field.AbsoluteGaloisGroup.adicArithFrob w`
+itself, and the value computation is the immediately preceding
+`adicArithFrob_rootsOfUnity_pow_residueCard` — which does supply exactly the
+general-number-field statement asked for above — fed to
+`modularCyclotomicCharacter.unique` level by level and reassembled with
+`PadicInt.ext_of_toZModPow`. The residue cardinality is converted between
+its two shapes by `Ideal.absNorm_apply` / `Submodule.cardQuot_apply`:
+`Ideal.absNorm w.asIdeal = Nat.card (𝓞 F ⧸ w)`.
+
+`#print axioms` on the completed proof returns
+`[propext, Classical.choice, Quot.sound]`.
+
 References: Neukirch, *Algebraic Number Theory*, Ch. II §7 and Ch. V;
 Serre, *Abelian ℓ-adic representations*, Ch. I §1.2. -/
 theorem exists_cyclotomicCharacter_adicCompletion_eq_residueCard (ℓ : ℕ)
@@ -2215,8 +2373,16 @@ theorem exists_cyclotomicCharacter_adicCompletion_eq_residueCard (ℓ : ℕ)
           (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
             (Field.absoluteGaloisGroup.map
               (algebraMap F (w.adicCompletion F)) g)).toRingEquiv : ℤ_[ℓ]ˣ) :
-        ℤ_[ℓ]) = ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℕ) : ℤ_[ℓ]) :=
-  sorry
+        ℤ_[ℓ]) = ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℕ) : ℤ_[ℓ]) := by
+  refine ⟨Field.AbsoluteGaloisGroup.adicArithFrob w, ?_⟩
+  have hnorm : Ideal.absNorm w.asIdeal = Nat.card (𝓞 F ⧸ w.asIdeal) := by
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  rw [← hnorm, ← PadicInt.ext_of_toZModPow]
+  intro n
+  rw [map_natCast, cyclotomicCharacter.toZModPow]
+  exact (modularCyclotomicCharacter.unique
+    (hn := HasEnoughRootsOfUnity.natCard_rootsOfUnity (ℚ ᵃˡᵍ) (ℓ ^ n))
+    _ _ (adicArithFrob_rootsOfUnity_pow_residueCard F w hw n)).symm
 
 /-
 **REFUTED AS FIRST STATED, 2026-07-26: `isHilbertTameAtTwo_of_fibreProduct`
