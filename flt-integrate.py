@@ -30,12 +30,19 @@ Exits nonzero and leaves the pool untouched on conflict, so the caller sees it.
 
 import importlib.util
 import json
+import pathlib
 import re
 import os
 import subprocess
 import sys
 
 ROOT = "/home/chend/flt-lean"
+# Branches merge into STAGING, not main (Deyao, 2026-07-25). main is the last
+# commit known to BUILD; staging is the integration queue. The staging worker
+# builds staging, fixes what is red, and promotes to main only on a green build.
+# The orchestrator never builds -- a full cone build costs hours and would make
+# integration the fleet's bottleneck.
+TARGET_BRANCH = "staging"
 POOL = os.path.expanduser("~/.flt-worktree-pool")
 INFLIGHT = os.path.expanduser("~/.flt-inflight.jsonl")
 
@@ -45,8 +52,9 @@ def git(*args, check=True):
                           check=check)
 
 
-def is_ancestor(branch):
-    return subprocess.run(["git", "-C", ROOT, "merge-base", "--is-ancestor", branch, "main"],
+def is_ancestor(branch, onto=None):
+    onto = onto or TARGET_BRANCH
+    return subprocess.run(["git", "-C", ROOT, "merge-base", "--is-ancestor", branch, onto],
                           capture_output=True).returncode == 0
 
 
@@ -71,9 +79,18 @@ _frontier_spec.loader.exec_module(_frontier)
 strip_noncode = _frontier.strip_noncode
 
 
+def sorry_set():
+    """{name: path} for every DIRECT sorry in the working tree right now."""
+    out = {}
+    for path in sorted((pathlib.Path(ROOT) / "Fermat").rglob("*.lean")):
+        for name, _ in _frontier.scan(path):
+            out[name] = str(path.relative_to(ROOT))
+    return out
+
+
 def touched_lean_files(branch):
     """.lean files this branch changed relative to the merge base."""
-    base = subprocess.run(["git", "-C", ROOT, "merge-base", "main", branch],
+    base = subprocess.run(["git", "-C", ROOT, "merge-base", TARGET_BRANCH, branch],
                           capture_output=True, text=True).stdout.strip()
     if not base:
         return []
@@ -146,7 +163,15 @@ def main():
         return 2
     branch, message = sys.argv[1], sys.argv[2]
 
-    ahead = int(git("rev-list", "--count", f"main..{branch}").stdout.strip())
+    on = git("rev-parse", "--abbrev-ref", "HEAD").stdout.strip()
+    if on != TARGET_BRANCH:
+        print(f"refusing to integrate: {ROOT} is checked out on '{on}', not "
+              f"'{TARGET_BRANCH}'. Merging into the wrong branch is the one "
+              f"mistake this script cannot undo for you.", file=sys.stderr)
+        return 2
+
+    before = sorry_set()
+    ahead = int(git("rev-list", "--count", f"{TARGET_BRANCH}..{branch}").stdout.strip())
     if ahead == 0 and is_ancestor(branch):
         print(f"{branch}: nothing to merge, already an ancestor")
     else:
@@ -158,6 +183,25 @@ def main():
             print((r.stdout + r.stderr).strip()[:600], file=sys.stderr)
             return 1
         print(f"{branch}: merged ({ahead} commits)")
+
+    # SORRY-SET DELTA. Reported, not gated -- a leaf legitimately disappears every
+    # time a branch proves one, so this cannot be a pass/fail test. It is printed
+    # because a CLEAN `git merge` EXIT IS NOT EVIDENCE OF A CORRECT MERGE: on
+    # 2026-07-26 an auto-merge of MazurTorsion.lean reported no conflict and exit 0
+    # while producing a stale mixture -- 27 sorries against main's 28, having
+    # silently DROPPED three leaves main had and RESURRECTED two the branch had
+    # already retired. Nothing else we run would have caught it; the agent found it
+    # only by diffing the sorry set by hand. So: read this delta against what the
+    # branch actually claimed. Disappearances it did not claim to prove, and
+    # reappearances of names you remember closing, are the signature.
+    after = sorry_set()
+    gone = sorted(set(before) - set(after))
+    new = sorted(set(after) - set(before))
+    print(f"{branch}: direct sorries {len(before)} -> {len(after)}")
+    for n in gone:
+        print(f"    -{n}")
+    for n in new:
+        print(f"    +{n}  ({after[n]})")
 
     # GATE 1: no conflict markers anywhere. This catches the HAND-RESOLVE path,
     # where the merge conflicted, I resolved it by editing, and committed --
@@ -200,7 +244,7 @@ def main():
 
     # GATE 2. Nothing below runs unless the branch really is in main now.
     if not is_ancestor(branch):
-        print(f"{branch}: NOT an ancestor of main after merge -- refusing to free",
+        print(f"{branch}: NOT an ancestor of {TARGET_BRANCH} after merge -- refusing to free",
               file=sys.stderr)
         return 1
 
@@ -217,7 +261,7 @@ def main():
     # NON-FATAL: the merge already succeeded and the slot is already freed. A
     # failed push must be loud but must not make the caller think integration
     # failed and retry it.
-    push = git("push", check=False)
+    push = git("push", "origin", TARGET_BRANCH, check=False)
     if push.returncode != 0:
         print(f"{branch}: PUSH FAILED (merge stands, slot freed) -- push by hand:\n"
               + (push.stdout + push.stderr).strip()[:400], file=sys.stderr)

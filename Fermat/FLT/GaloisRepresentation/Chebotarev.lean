@@ -352,10 +352,13 @@ instance (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
 
 /-- The Galois action on `𝓞 L` commutes with the `𝓞 K`-scalar action:
 `e ∈ Gal(L/K)` fixes `K` pointwise, hence fixes the image of `𝓞 K`.
-(Stated here against the ambient project action instance on `𝓞 L` —
-the vendored `MulSemiringAction G (𝓞 K)` instance in
-`Fermat.FLT.Deformations.Lemmas` shadows mathlib's, so mathlib's
-`IsGaloisGroup`-derived instance does not apply.) -/
+(Mathlib supplies `SMulCommClass G R (integralClosure R K)` only for the
+BASE ring `R` of the integral closure, i.e. `R = ℤ` here; the mixed
+`𝓞 K` / `𝓞 L` form is not packaged, so it is proven here. The earlier
+version of this comment blamed a vendored `MulSemiringAction G (𝓞 K)`
+instance in `Fermat.FLT.Deformations.Lemmas` for shadowing mathlib's —
+that instance was deleted on 2026-07-26 and this one is now stated
+against mathlib's action.) -/
 instance (L : IntermediateField K (AlgebraicClosure K)) :
     SMulCommClass (L ≃ₐ[K] L) (𝓞 K) (𝓞 L) where
   smul_comm e r x := by
@@ -12830,6 +12833,172 @@ theorem cyclotomicCharacterModL_globalFrob {ℓ q : ℕ} [Fact ℓ.Prime]
     rw [map_natCast, ZMod.val_natCast, ZMod.val_natCast, pow_one]
   rw [hval] at hspec
   exact hspec
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 2000000 in
+/-- **The global Frobenius at `q` is conjugate to the image of an element
+of `Γ ℚ_[q]`** (PROVEN 2026-07-26): the decomposition-group comparison
+between the two spellings of the local field at `q` — the adic
+completion `ℚ_{v_q}` in which `globalFrob` is defined, and mathlib's
+`Padic` `ℚ_[q]` in which the deformation theory is written.
+
+This is the `ℚ_{v_q} → ℚ_[q]` DIRECTION of that comparison. Note that
+`Modularity/Interface.lean`'s `exists_conjugator_padicGalois_eq_adic_at_p`
+(and its `p = 2` instance `exists_uniform_conj_decomposition_two_padic`)
+proves the OPPOSITE direction — `∀ g : Γ ℚ_[p], ∃ h : Γ ℚ_{v_p}` — which
+transports a `p`-adic element to the completion but cannot produce a
+`p`-adic PREIMAGE of a given completion element such as `Frobᵥ`. Both
+directions come from the same bijection of algebraic closures; only this
+one lets a `Γ ℚ_[q]`-indexed statement consume `globalFrob`.
+
+Proof. The continuous `ℚ`-algebra isomorphism
+`E : ℚ_{v_q} ≃A[ℚ] ℚ_[q]` (`Rat.HeightOneSpectrum.adicCompletion.padicEquiv`,
+normalized through the `Padic`-instance cast along
+`natGenerator_toHeightOneSpectrum`) induces `ι := AlgebraicClosure.map E.symm`,
+which is bijective because `ι ∘ AlgebraicClosure.map E` is an algebraic
+endomorphism of an algebraic closure over its base. Conjugation by `ι`
+carries `σ := Frobᵥ ∈ Γ ℚ_{v_q}` back to `g := ι⁻¹ ∘ σ ∘ ι ∈ Γ ℚ_[q]`
+(a `ℚ_[q]`-automorphism precisely because `E.symm ∘ E = id`). The
+conjugator is chosen independently of everything else: the two
+`ℚ`-embeddings `ι ∘ ι₂` and `ι₁` of `ℚᵃˡᵍ` into `ℚ_{v_q}ᵃˡᵍ` differ by the
+single `c := Normal.algHomEquivAut (ι ∘ ι₂) ∈ Γ ℚ`, and the transport
+square `ι ∘ g = σ ∘ ι` then gives `map σ = c · map g · c⁻¹` pointwise
+through the injective `ι₁` (`Field.absoluteGaloisGroup.lift_map` twice),
+i.e. the stated identity with conjugator `c⁻¹`.
+
+INSTANCE NOTE (cost an hour, 2026-07-26): `algebraMap ℚ (adicCompletion ℚ v)`
+does NOT resolve by typeclass search to the instance `globalFrob`'s own
+definition uses — `ℚ` picks up a second `Algebra` structure through
+`DivisionRing.toRatAlgebra`, and the two are not defeq. The ring
+homomorphism `A₂` below therefore PINS
+`IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion`, which is
+what makes `hGF` hold by `rfl`. Any consumer restating this in terms of
+`algebraMap` must pin it the same way. -/
+theorem exists_padicGalois_map_eq_conj_globalFrob {q : ℕ} [Fact q.Prime] :
+    ∃ (g : Field.absoluteGaloisGroup ℚ_[q]) (c : Field.absoluteGaloisGroup ℚ),
+      Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q]) g =
+        c * globalFrob (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : q.Prime)) * c⁻¹ := by
+  classical
+  -- the place of `q`, its completion, and the PINNED `ℚ`-algebra structure on
+  -- that completion (the one `globalFrob` itself uses)
+  set v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : q.Prime)
+    with hv
+  set A₂ : ℚ →+* (HeightOneSpectrum.adicCompletion ℚ v) :=
+    @algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v) _ _
+      (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+        (NumberField.RingOfIntegers ℚ) ℚ v) with hA₂
+  set σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ v) :=
+    Field.AbsoluteGaloisGroup.adicArithFrob v with hσ
+  have hGF : globalFrob v = Field.absoluteGaloisGroup.map A₂ σ := rfl
+  rw [hGF]
+  -- (1) the completion of `ℚ` at `v` IS `ℚ_[q]`, as a ring isomorphism
+  haveI hfp : Fact ((Rat.HeightOneSpectrum.primesEquiv v) : ℕ).Prime :=
+    ⟨(Rat.HeightOneSpectrum.primesEquiv v).2⟩
+  have hprime : ((Rat.HeightOneSpectrum.primesEquiv v) : ℕ) = q := by
+    show Rat.HeightOneSpectrum.natGenerator _ = q
+    exact GaloisRepresentation.natGenerator_toHeightOneSpectrum
+      (Fact.out : q.Prime)
+  have hcast : ∀ (a b : ℕ) (ha : Fact a.Prime) (hb : Fact b.Prime),
+      a = b → ((@Padic a ha) ≃+* (@Padic b hb)) := by
+    intro a b ha hb hab
+    subst hab
+    have hinst : ha = hb := Subsingleton.elim _ _
+    subst hinst
+    exact RingEquiv.refl _
+  have hE : Nonempty ((HeightOneSpectrum.adicCompletion ℚ v) ≃+* ℚ_[q]) := by
+    letI : Algebra ℚ (HeightOneSpectrum.adicCompletion ℚ v) :=
+      IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion _ _ _
+    exact ⟨((Rat.HeightOneSpectrum.adicCompletion.padicEquiv
+      v).toAlgEquiv.toRingEquiv).trans (hcast _ q hfp inferInstance hprime)⟩
+  obtain ⟨E⟩ := hE
+  -- (2) the closure-level transport of `E`, and its bijectivity
+  set ι := AlgebraicClosure.map
+    (E.symm : ℚ_[q] →+* (HeightOneSpectrum.adicCompletion ℚ v)) with hι
+  have hιsurj : Function.Surjective ι := by
+    set j := AlgebraicClosure.map
+      (E : (HeightOneSpectrum.adicCompletion ℚ v) →+* ℚ_[q]) with hj
+    set jc : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)
+        →ₐ[HeightOneSpectrum.adicCompletion ℚ v]
+        AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v) :=
+      { toRingHom := ι.comp j
+        commutes' := fun x => by
+          show ι (j (algebraMap _ _ x)) = algebraMap _ _ x
+          rw [hj, AlgebraicClosure.map_algebraMap, hι,
+            AlgebraicClosure.map_algebraMap]
+          congr 1
+          exact E.symm_apply_apply x }
+    have hbij := Algebra.IsAlgebraic.algHom_bijective jc
+    intro y
+    obtain ⟨x, hx⟩ := hbij.2 y
+    exact ⟨j x, hx⟩
+  set ιe := RingEquiv.ofBijective ι ⟨ι.injective, hιsurj⟩
+  have hιe_apply : ∀ y, ιe y = ι y := fun _ => rfl
+  -- (3) the SINGLE conjugator, from `Normal.algHomEquivAut`
+  set ι₁ := AlgebraicClosure.map A₂ with hι₁
+  set ι₂ := AlgebraicClosure.map (algebraMap ℚ ℚ_[q])
+  letI : Algebra (AlgebraicClosure ℚ)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) := ι₁.toAlgebra
+  haveI : IsScalarTower ℚ (AlgebraicClosure ℚ)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)) :=
+    IsScalarTower.of_algebraMap_eq' (Subsingleton.elim _ _)
+  set f : AlgebraicClosure ℚ →ₐ[ℚ]
+      AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v) :=
+    (ι.comp ι₂).toRatAlgHom
+  set c : Field.absoluteGaloisGroup ℚ := (Normal.algHomEquivAut (F := ℚ)
+    (K₁ := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+    (E := AlgebraicClosure ℚ)) f with hc
+  have hfc : ∀ x : AlgebraicClosure ℚ, f x = ι₁ (c x) := by
+    intro x
+    have hsym : f = (Normal.algHomEquivAut (F := ℚ)
+        (K₁ := AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+        (E := AlgebraicClosure ℚ)).symm c := by
+      rw [hc, Equiv.symm_apply_apply]
+    rw [hsym, Normal.algHomEquivAut_symm_apply]
+    rfl
+  -- (4) the transported element `g = ι⁻¹ ∘ σ ∘ ι`
+  set g₀ := (ιe.trans σ.toRingEquiv).trans ιe.symm
+  have hg₀_apply : ∀ y, g₀ y = ιe.symm (σ (ιe y)) := fun _ => rfl
+  set g : Field.absoluteGaloisGroup ℚ_[q] :=
+    AlgEquiv.ofRingEquiv (f := g₀) (fun x => by
+      rw [hg₀_apply]
+      have hx : ιe ((algebraMap ℚ_[q] (AlgebraicClosure ℚ_[q])) x) =
+          algebraMap (HeightOneSpectrum.adicCompletion ℚ v)
+            (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))
+            (E.symm x) := by
+        rw [hιe_apply, hι, AlgebraicClosure.map_algebraMap]
+        rfl
+      rw [hx, σ.commutes (E.symm x), RingEquiv.symm_apply_eq, hx])
+  have hg_apply : ∀ y, g y = ιe.symm (σ (ιe y)) := fun _ => rfl
+  have hsquare : ∀ y, ι (g y) = σ (ι y) := by
+    intro y
+    rw [hg_apply, ← hιe_apply, RingEquiv.apply_symm_apply, hιe_apply]
+  refine ⟨g, c⁻¹, ?_⟩
+  -- (5) the conjugation square, pointwise through the injective `ι₁`
+  have key : Field.absoluteGaloisGroup.map A₂ σ =
+      c * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q]) g * c⁻¹ := by
+    apply AlgEquiv.ext
+    intro x
+    apply ι₁.injective
+    have hL := Field.absoluteGaloisGroup.lift_map A₂ σ x
+    have hR := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ ℚ_[q]) g (c⁻¹ x)
+    rw [show ι₁ ((Field.absoluteGaloisGroup.map A₂ σ) x) = σ (ι₁ x) from hL]
+    show σ (ι₁ x) =
+      ι₁ (c ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q]) g) (c⁻¹ x)))
+    rw [← hfc]
+    rw [show f ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q]) g) (c⁻¹ x)) =
+      ι (ι₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q]) g) (c⁻¹ x)))
+      from rfl]
+    rw [show ι₂ ((Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[q]) g) (c⁻¹ x)) =
+      g (ι₂ (c⁻¹ x)) from hR]
+    rw [hsquare]
+    rw [show ι (ι₂ (c⁻¹ x)) = f (c⁻¹ x) from rfl]
+    rw [hfc]
+    rw [show (c : Field.absoluteGaloisGroup ℚ)
+      ((c⁻¹ : Field.absoluteGaloisGroup ℚ) x) = x from by
+      rw [← AlgEquiv.mul_apply, mul_inv_cancel, AlgEquiv.one_apply]]
+  rw [key]
+  group
 
 set_option backward.isDefEq.respectTransparency false in
 /-- A nonzero proper invariant submodule refutes irreducibility. -/

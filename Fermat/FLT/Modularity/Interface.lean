@@ -155,6 +155,11 @@ import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 -- forces its coordinates into the fixed field `ℚ`.
 import Mathlib.LinearAlgebra.Dual.Basis
 import Mathlib.LinearAlgebra.Dual.Lemmas
+-- `basisOfTopLeSpanOfCardEqFinrank`: `dim V` spanning vectors form a
+-- basis. Used by `exists_rational_qExpansion_spanning` to turn the
+-- `dim`-many coefficient functionals of the rationality leaf into a
+-- dual basis.
+import Mathlib.LinearAlgebra.Dimension.OrzechProperty
 -- Field theory for the fixed-field computation
 -- (`exists_ratCast_eq_of_forall_ringEquiv_fixed`): transcendence
 -- bases, extension of subfield automorphisms through
@@ -167,6 +172,10 @@ import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.FieldTheory.AlgebraicClosure
 import Mathlib.FieldTheory.Extension
 import Mathlib.FieldTheory.Separable
+public import Mathlib.RingTheory.Etale.Field
+public import Mathlib.FieldTheory.PrimitiveElement
+public import Mathlib.RingTheory.PowerBasis
+public import Mathlib.RingTheory.Nilpotent.Basic
 import Mathlib.Analysis.Complex.Polynomial.Basic
 -- Finite commutative algebra for the pillar-3c point factorization
 -- (proof-body use only, consumed by the proven assembly of
@@ -196,11 +205,43 @@ public import Fermat.FLT.Mathlib.RingTheory.PadicIntegralClosure
 -- unit — the arithmetic core of the at-`2` cyclotomic-inertia lemma
 -- `cyclotomicCharacter_eq_one_of_mem_inertia_two_upstream` (pillar E1a)
 import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
+-- the `p`-th power residue character of the Stickelberger cut lives in
+-- `MulChar (𝓞 CF ⧸ q) (𝓞 CF)`, which occurs in SIGNATURE position in
+-- `exists_powerResidueChar_of_prime_notMem` and
+-- `stickelbergerProd_isPrincipal_of_powerResidueChar`, so the defining
+-- module must be imported publicly rather than reached transitively.
+public import Mathlib.NumberTheory.MulChar.Basic
+-- `jacobiSum`, the Jacobi sums of the Stickelberger cut: they occur in
+-- SIGNATURE position in `span_jacobiSum_mul_stickelbergerProd` and
+-- `stickelbergerProd_eq_span_prod_jacobiSum`, so the defining module must be
+-- imported publicly rather than reached transitively.
+public import Mathlib.NumberTheory.JacobiSum.Basic
+-- `Ideal.finiteQuotientOfFreeOfNeBot` (the residue field at a nonzero prime
+-- of a number ring is finite) and the finite-field API behind
+-- `prime_dvd_card_residueField_sub_one`.
+public import Mathlib.LinearAlgebra.FreeModule.IdealQuotient
+public import Mathlib.FieldTheory.Finite.Basic
+-- `Polynomial.isRoot_cyclotomic_iff`, the separability input behind
+-- `residueField_isPrimitiveRoot_of_notMem`.
+public import Mathlib.RingTheory.Polynomial.Cyclotomic.Roots
 -- the base-change convolution lemmas (`liftEquiv_convMul` and friends) and
 -- the bare-hom/`WithConv` bridge, used by the Raynaud product-closure glue;
 -- PUBLIC because the glue lemmas' statements mention the `WithConv`
 -- convolution monoid and this file is one `@[expose] public section`
 public import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+-- the Raynaud closure cut on the point-group carrier (`IsFlatPointsGroupAt`
+-- and its `prod` / `pi` / `of_addEquiv` / `of_subsingleton` / `of_surjective`
+-- / `of_injective` closure properties, plus the two Hopf-order and two
+-- étale–Galois nodes they run over), MOVED out of this file 2026-07-26 to a
+-- home BELOW `GaloisRepresentation/HardlyRamified/Deformation.lean`, which
+-- needs it and used to be import-unreachable from it.
+-- PUBLIC, and imported HERE rather than relied on transitively: this file
+-- states theorems whose types mention `IsFlatPointsGroupAt`, and
+-- `Deformation.lean` imports the module non-publicly (it needs it only in a
+-- proof), so under the module system the names do NOT arrive through that
+-- edge. Getting this wrong is exactly the "Unknown identifier" this import
+-- was added to fix.
+public import Fermat.FLT.Deformations.RepresentationTheory.FlatPointsGroup
 -- `integralClosureInclusion`, used in the STATEMENT (not merely the proof)
 -- of `mem_maximalIdeal_of_integralClosureInclusion` below, which serves the
 -- at-`2` tame-Frobenius leaf.  It reached this file only transitively and
@@ -307,6 +348,7 @@ public import Mathlib.RingTheory.ClassGroup.Basic
 -- `NumberField.RingOfIntegers.mapRingEquiv`. PUBLIC: both appear in
 -- the SIGNATURES of the E3c support leaves.
 public import Mathlib.NumberTheory.NumberField.Cyclotomic.Galois
+import Mathlib.NumberTheory.LSeries.PrimesInAP
 -- `Ideal.prime_iff_isPrime`: in a Dedekind domain the prime ELEMENTS
 -- of the monoid `Ideal A` are the prime IDEALS. Used to read the
 -- output of `UniqueFactorizationMonoid.induction_on_prime` in the
@@ -328,6 +370,45 @@ import Mathlib.NumberTheory.Basic
 -- conductor leaf `hasConductorExponentAt_factorization_of_isNewAtPrime`
 -- below.
 public import Fermat.FLT.Deformations.RepresentationTheory.ArtinConductor
+-- The Galois theory of ramification: `Ideal.ramificationIdxIn`,
+-- `Ideal.inertiaDegIn`, the transitivity of the Galois action on the primes
+-- over a fixed prime (`Algebra.IsInvariant.orbit_eq_primesOver`) and the
+-- fundamental identity `efg = n`
+-- (`Ideal.ncard_primesOver_mul_ramificationIdxIn_mul_inertiaDegIn`). These are
+-- the inputs to `prod_galois_map_prime_eq_span_absNorm` below.
+public import Mathlib.NumberTheory.RamificationInertia.Galois
+-- `Ideal.map_algebraMap_eq_finsetProd_pow`: `p · B = ∏_{P ∣ p} P^{e_P}` in a
+-- Dedekind extension. The other half of the same computation.
+public import Mathlib.RingTheory.DedekindDomain.Factorization
+-- `Ideal.absNorm_pow_inertiaDeg`: `(N p)^{f} = N P` for `P` over `p`.
+public import Mathlib.RingTheory.RamificationInertia.Inertia
+-- `Ideal.absNorm`, `Ideal.absNorm_apply`, `Submodule.cardQuot_apply` and
+-- `Int.ideal_span_absNorm_eq_self`. PUBLIC: `Ideal.absNorm` appears in the
+-- SIGNATURE of `prod_galois_map_prime_eq_span_absNorm`.
+public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
+-- `IsGaloisGroup`, and in particular the instance `IsGaloisGroup G ℤ (𝓞 L)`
+-- attached to a Galois group of a number field, which is what makes the
+-- ramification-theoretic lemmas above applicable to `Gal(L/ℚ)` acting on `𝓞 L`.
+public import Mathlib.FieldTheory.Galois.IsGaloisGroup
+-- The flat-base-change layer behind the Eisenstein E2b′-flat arithmetic leaf
+-- `exists_equivariantHomFamily_spanFullRank_of_generic_iso` below:
+-- `Module.Flat.ker_lTensor_eq` (flat base change commutes with kernels),
+-- `TensorProduct.piRight` (tensor commutes with finite products),
+-- `Algebra.TensorProduct.equivPiOfFiniteBasis` (base change of a finite free
+-- module, used both for artinianness of `Ω ⊗ M` and for injectivity of
+-- `x ↦ 1 ⊗ x`), `IsLocalization.flat` + `Module.Flat.trans` (a field
+-- extension of a domain is flat) and `TensorProduct.exists_finset`.
+-- PUBLIC because the statements of the four helper lemmas added with that
+-- leaf mention `AlgebraTensorModule.lTensor` and `Module.Flat`, and this
+-- file is one `@[expose] public section`.
+public import Mathlib.RingTheory.Flat.Equalizer
+public import Mathlib.RingTheory.Flat.Localization
+public import Mathlib.RingTheory.Flat.Stability
+public import Mathlib.RingTheory.Localization.FractionRing
+public import Mathlib.LinearAlgebra.TensorProduct.Pi
+public import Mathlib.LinearAlgebra.TensorProduct.Free
+public import Mathlib.LinearAlgebra.TensorProduct.Finiteness
+public import Mathlib.LinearAlgebra.Finsupp.VectorSpace
 
 @[expose] public section
 
@@ -2107,8 +2188,396 @@ theorem cuspForm_finiteDimensional (N : ℕ) (hN : 0 < N) :
   refine hB f fun m hm => ?_
   simpa [LinearMap.pi_apply] using congrFun hf ⟨m, hm⟩
 
-/-- **The rational structure of `S₂(Γ₀(N))`** (sorry node — SHIMURA'S
-RATIONALITY THEOREM, isolated 2026-07-25 as the first of the two
+/-! #### The integral structure `S₂(Γ₀(N); ℤ)`
+
+Introduced 2026-07-26 as the carrier of the arithmetic input behind
+`exists_heckeStable_lattice`. The submodule itself, its FINITE
+GENERATION (from the Sturm bound) and its HECKE STABILITY (from the
+coefficient formula `qCoeff_heckeEndo`, below) are all PROVEN here; the
+single unproven statement about it is that it `ℂ`-spans, which is the
+`q`-expansion principle on the integral model. -/
+
+/-- **`S₂(Γ₀(N); ℤ)`**: the weight-2 level-`N` cusp forms all of whose
+`q`-expansion coefficients are rational integers, as a `ℤ`-submodule of
+`S₂(Γ₀(N))`. The `ℤ`-module structure is the ambient additive one, so
+this is a subgroup of the underlying additive group; the submodule
+axioms are the `ℂ`-linearity of the coefficient functionals
+(`qCoeffL`) specialized to integer scalars. -/
+noncomputable def integralCuspForms (N : ℕ) :
+    Submodule ℤ (CuspForm (Gamma0GL N) 2) where
+  carrier := {f | ∀ m : ℕ, ∃ z : ℤ, qCoeff N f m = (z : ℂ)}
+  add_mem' := by
+    rintro f g hf hg m
+    obtain ⟨x, hx⟩ := hf m
+    obtain ⟨y, hy⟩ := hg m
+    refine ⟨x + y, ?_⟩
+    rw [← qCoeffL_apply, map_add, qCoeffL_apply, qCoeffL_apply, hx, hy]
+    push_cast
+    ring
+  zero_mem' := by
+    intro m
+    exact ⟨0, by rw [qCoeff_zero_cuspForm]; norm_num⟩
+  smul_mem' := by
+    rintro c f hf m
+    obtain ⟨x, hx⟩ := hf m
+    refine ⟨c * x, ?_⟩
+    rw [← qCoeffL_apply, map_zsmul, qCoeffL_apply, hx, zsmul_eq_mul]
+    push_cast
+    ring
+
+/-- The integer `m`-th coefficient of a member of `S₂(Γ₀(N); ℤ)`. -/
+noncomputable def integralQCoeff {N : ℕ} (f : integralCuspForms N) (m : ℕ) : ℤ :=
+  (f.2 m).choose
+
+theorem integralQCoeff_spec {N : ℕ} (f : integralCuspForms N) (m : ℕ) :
+    qCoeff N (f : CuspForm (Gamma0GL N) 2) m = ((integralQCoeff f m : ℤ) : ℂ) :=
+  (f.2 m).choose_spec
+
+/-- **`S₂(Γ₀(N); ℤ)` is finitely generated** (PROVEN, 2026-07-26): the
+Sturm bound `exists_cuspForm_sturm_bound` makes the first `B` integer
+coefficients a `ℤ`-linear INJECTION of `S₂(Γ₀(N); ℤ)` into `ℤ^B`, and
+`ℤ` is noetherian. No arithmetic input is used — only the vanishing
+criterion. -/
+theorem integralCuspForms_fg {N : ℕ} (hN : 0 < N) : (integralCuspForms N).FG := by
+  classical
+  obtain ⟨B, hB⟩ := exists_cuspForm_sturm_bound N hN
+  let ψ : (integralCuspForms N) →ₗ[ℤ] (Fin B → ℤ) :=
+    { toFun := fun f i => integralQCoeff f i
+      map_add' := by
+        intro f g
+        funext i
+        have hcoe : ((f + g : integralCuspForms N) : CuspForm (Gamma0GL N) 2)
+            = (f : CuspForm (Gamma0GL N) 2) + (g : CuspForm (Gamma0GL N) 2) := rfl
+        have h : ((integralQCoeff (f + g) i : ℤ) : ℂ)
+            = ((integralQCoeff f i + integralQCoeff g i : ℤ) : ℂ) := by
+          rw [← integralQCoeff_spec (f + g) i, hcoe, ← qCoeffL_apply, map_add,
+            qCoeffL_apply, qCoeffL_apply, integralQCoeff_spec f i,
+            integralQCoeff_spec g i]
+          push_cast
+          ring
+        exact_mod_cast h
+      map_smul' := by
+        intro c f
+        funext i
+        have hcoe : ((c • f : integralCuspForms N) : CuspForm (Gamma0GL N) 2)
+            = c • (f : CuspForm (Gamma0GL N) 2) := rfl
+        have h : ((integralQCoeff (c • f) i : ℤ) : ℂ)
+            = ((c * integralQCoeff f i : ℤ) : ℂ) := by
+          rw [← integralQCoeff_spec (c • f) i, hcoe, ← qCoeffL_apply, map_zsmul,
+            qCoeffL_apply, integralQCoeff_spec f i, zsmul_eq_mul]
+          push_cast
+          ring
+        exact_mod_cast h }
+  have hinj : Function.Injective ψ := by
+    intro f g h
+    refine Subtype.ext (sub_eq_zero.mp (hB _ fun m hm => ?_))
+    have hval : integralQCoeff f m = integralQCoeff g m := congrFun h ⟨m, hm⟩
+    rw [← qCoeffL_apply, map_sub, qCoeffL_apply, qCoeffL_apply,
+      integralQCoeff_spec f m, integralQCoeff_spec g m, hval, sub_self]
+  haveI := isNoetherian_of_injective ψ hinj
+  exact Module.Finite.iff_fg.mp inferInstance
+
+/-- **The `q`-expansion principle over `ℤ`** (sorry node — THE
+arithmetic citation behind the integral structure of `S₂(Γ₀(N))`,
+isolated 2026-07-26 as the residue of `exists_heckeStable_lattice`
+after finite generation and Hecke stability were proven): the cusp
+forms with integral `q`-expansion span the whole complex cusp space,
+i.e. `S₂(Γ₀(N); ℤ)` is a lattice of FULL RANK.
+
+This is the `ℤ`-form of the `q`-expansion principle of Katz and
+Deligne–Rapoport on the INTEGRAL model `X₀(N)/ℤ` (Diamond–Shurman
+§6.5 and Exercise 6.5.4; Diamond–Im §12.3; Darmon–Diamond–Taylor §1.6;
+Katz, *p-adic properties of modular schemes and modular forms* §1.6):
+weight-2 cusp forms are global sections of a line bundle on a scheme
+that is proper and flat over `ℤ`, the cusp `∞` and its uniformizer `q`
+are `ℤ`-rational, so expansion is defined over `ℤ`, and cohomological
+flatness gives `H⁰(X₀(N)_ℤ, Ω) ⊗_ℤ ℂ = H⁰(X₀(N)_ℂ, Ω)`. Equivalently
+the lattice may be taken to be `H¹(X₀(N), ℤ)` transported through
+Eichler–Shimura. Neither integral models nor Eichler–Shimura exist on
+this pin, hence the interface shape.
+
+WHY THIS IS THE MINIMAL RESIDUE. `exists_heckeStable_lattice` below
+asks for a finitely generated, Hecke-stable, `ℂ`-spanning
+`ℤ`-submodule. For the canonical candidate `L = S₂(Γ₀(N); ℤ)` the first
+two conjuncts are THEOREMS on this pin and are proven here —
+`integralCuspForms_fg` (Sturm bound) and
+`heckeEndo_mem_integralCuspForms` (the coefficient formula
+`qCoeff_heckeEndo`) — so the entire arithmetic content of that node is
+the single statement below.
+
+NOT CIRCULAR, and the direction of every implication in the cluster is
+recorded here because the cluster is a closed equivalence and exactly
+one member must remain a citation. This node is the citation. It sits
+ABOVE everything in the cluster, and Lean's declaration order therefore
+makes any attempt to close it from below a hard error rather than a
+silent cycle. Downstream (all PROVEN from it, in this order):
+`exists_heckeStable_lattice` → `heckeSubring_moduleFinite` →
+`exists_qExpansion_denominator` → `exists_integral_qExpansion_spanning`
+(the last also using `exists_rational_qExpansion_spanning`). So NONE of
+those four may be used here; in particular
+`exists_integral_qExpansion_spanning` is a repackaging of this very
+statement and is the trap to avoid.
+
+THIS NODE ALSO DISCHARGES THE `ℚ`-LEAF (done 2026-07-26). The former
+citation `exists_qCoeff_rational_relations` immediately below is now
+PROVEN from this one, entirely non-circularly since it is stated above
+it, by the following linear algebra: fix a `ℂ`-basis `e₁,…,e_D`
+of `S₂(Γ₀(N))` drawn from `S₂(Γ₀(N); ℤ)` (possible by this node), so
+that every `a_m` has INTEGER coordinates `(a_m(e_j))_j ∈ ℤ^D`; extract
+from `{(a_m(e_j))_j : m ∈ ℕ} ⊆ ℚ^D` a maximal `ℚ`-independent
+subfamily, indexed by `n₁,…,n_d`; it has `d ≤ D` by independence and
+`d ≥ D` because its `ℂ`-span contains every `(a_m(e_j))_j` and those
+`ℂ`-span `ℂ^D` (the coefficient functionals span the dual, by
+`cuspForm_eq_of_forall_qCoeff_eq`); so `d = D`, and the resulting
+`ℚ`-relations between coordinate vectors are relations between the
+functionals because they agree on a basis. That makes this node the
+SINGLE citation of the whole `q`-expansion cluster.
+
+TRADE-OFF THIS CREATES, recorded so it can be undone deliberately.
+Classically, rationality (Shimura Thm 3.52) needs only the `ℚ`-model of
+`X₀(N)`, while bounded denominators needs the INTEGRAL model — the
+literature keeps them apart, and the 2026-07-25 cut did too. Routing
+the `ℚ`-statement through this node cites the STRONGER of the two for
+both. That is a strict reduction in the number of open leaves and no
+loss in practice on a pin that has neither model; but an owner who
+later proves rationality from the `ℚ`-model alone should restore
+`exists_qCoeff_rational_relations` to a citation and delete the
+derivation, which is self-contained and touches nothing else.
+
+SOUNDNESS: `0 < N` is required only because the Sturm bound and the
+Hecke operators are junk at `N = 0`; at genus-zero levels
+`S₂(Γ₀(N)) = 0` and the statement reads `⊥ = ⊤` in the zero space,
+which holds. -/
+theorem integralCuspForms_span_eq_top {N : ℕ} (hN : 0 < N) :
+    Submodule.span ℂ ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤ :=
+  sorry
+
+/-- **The `ℚ`-structure of the `q`-expansion coefficient functionals**
+(PROVEN, 2026-07-26, over the single `q`-expansion-principle citation
+`integralCuspForms_span_eq_top` above — formerly itself a citation, the
+ARITHMETIC RESIDUE of Shimura's rationality theorem isolated 2026-07-25
+as the single input of the assembly `exists_rational_qExpansion_spanning`
+below):
+writing `D = dim_ℂ S₂(Γ₀(N))` (finite by `cuspForm_finiteDimensional`),
+there are `D` indices `n 0, …, n (D−1)` such that EVERY coefficient
+functional `a_m` is a `ℚ`-linear combination of
+`a_{n 0}, …, a_{n (D−1)}` on all of `S₂(Γ₀(N))`.
+
+Equivalently, and this is the invariant formulation: the `ℚ`-span `W`
+of the coefficient functionals `{a_m : m ∈ ℕ}` inside the dual space
+`S₂(Γ₀(N))^∨` is finite-dimensional over `ℚ` of `ℚ`-dimension exactly
+`D`, i.e. `W` is a `ℚ`-FORM of the dual space, `W ⊗_ℚ ℂ = S₂(Γ₀(N))^∨`.
+(One inequality is free: the `a_m` separate cusp forms — this is the
+`q`-expansion principle `cuspForm_eq_of_forall_qCoeff_eq` — so they
+`ℂ`-span the dual and `dim_ℚ W ≥ D` always. The content is `≤ D`.)
+
+WHY THIS IS THE RIGHT CUT (2026-07-25). It is the coordinate form of
+the SAME theorem — Shimura, *Introduction to the Arithmetic Theory of
+Automorphic Functions*, Theorem 3.52; Diamond–Shurman §6.5 — with all
+the linear algebra stripped out and moved into proven glue, so that
+what is left is only the arithmetic assertion the classical proof
+actually produces. Both directions are elementary and are recorded
+here so that no consumer can mistake this for a weaker statement:
+
+* THIS ⟹ rational spanning (the proven assembly below): the `D`
+  functionals `a_{n i}` `ℂ`-span the dual (every `a_m` is in their
+  span, and the `a_m` span), and there are exactly `D` of them, so
+  they are a BASIS of the dual; its predual basis `E 0, …, E (D−1)`
+  of `S₂(Γ₀(N))` satisfies `a_{n j}(E k) = δ_{jk}`, whence
+  `a_m(E k) = ∑ i c_i^{(m)} δ_{ik} = c_k^{(m)} ∈ ℚ` — the predual
+  basis has rational `q`-expansions and it spans.
+* rational spanning ⟹ THIS: a rational spanning family spans a
+  `ℚ`-structure `V_ℚ` with `V_ℚ ⊗ ℂ = S₂(Γ₀(N))`; every `a_m` takes
+  rational values on `V_ℚ`, so `W ⊆ Hom_ℚ(V_ℚ, ℚ)`, a `ℚ`-space of
+  dimension `D`; and `W` `ℂ`-spans the dual, so `W` is all of it and
+  `D` of the `a_m` already form a `ℚ`-basis.
+
+WHY THE CARDINALITY `D` IS LOAD-BEARING, not a convenience. Demanding
+only SOME finite family with the `ℚ`-combination property is strictly
+weaker and FALSE as a substitute: with `D = 1` and a hypothetical
+coefficient system `a_1 = 1`, `a_2 = √2 · a_1`, every `a_m` lies in
+the `ℚ`-span of `{a_1, a_2}` while no cusp form has rational
+`q`-expansion at all. Pinning the family size to `dim_ℂ S₂(Γ₀(N))` is
+exactly what rules this out, and it is also what the classical proof
+gives — `dim_ℚ W = D` is the `ℚ`-form statement.
+
+ASSEMBLY (2026-07-26). The arithmetic is now supplied entirely by
+`integralCuspForms_span_eq_top` — `S₂(Γ₀(N); ℤ)` has full rank — and
+the rest is linear algebra over `ℚ ⊆ ℂ`, with no modular-curve input:
+(i) extract from the integral lattice a `ℂ`-basis `e₁,…,e_D` of
+`S₂(Γ₀(N))`, so that the coordinate vector `v_m = (a_m(e_j))_j` of
+every coefficient functional lies in `ℤ^D ⊆ ℚ^D`; (ii) the `v_m` span
+`ℚ^D` over `ℚ` — otherwise a nonzero `u ∈ ℚ^D` kills all of them, and
+then `∑_j u_j e_j` is killed by every `a_m`, hence is `0` by the
+`q`-expansion principle `cuspForm_eq_of_forall_qCoeff_eq`,
+contradicting independence of the `e_j`; (iii) so `D` of the `v_m`,
+say at indices `n₁,…,n_D`, form a `ℚ`-basis of `ℚ^D`, and the
+`ℚ`-coordinates of `v_m` in it are the required `c`; (iv) the identity
+`a_m = ∑ᵢ cᵢ · a_{nᵢ}` then holds on the basis `e`, hence as
+functionals. Note where the cardinality `D` comes from: it is forced,
+being simultaneously `dim_ℚ ℚ^D` and `dim_ℂ S₂(Γ₀(N))`.
+
+WHAT A CITATION-FREE PROOF WOULD NEED (superseded above, kept because
+it explains why the `ℚ`-model alone is the classical route). The
+classical input is the integral/rational model
+of `X₀(N)`: cusp forms of weight 2 are global differentials, `X₀(N)`
+and its cusp `∞` are defined over `ℚ`, the uniformizer `q` is
+`ℚ`-rational, and flat base change gives
+`H⁰(X₀(N)_ℚ, Ω) ⊗_ℚ ℂ = H⁰(X₀(N)_ℂ, Ω)`; the `q`-expansion principle
+then says the expansion map is defined over `ℚ`, which is precisely
+`dim_ℚ W = D`. The Hecke-theoretic route is the same statement about
+the Hecke algebra: `W` is the image of `𝕋` under `T ↦ a_1(T·)`, and
+`dim_ℚ W = D` is `𝕋_ℚ ⊗_ℚ ℂ = 𝕋`, the `ℚ`-form of the Hecke algebra.
+Note that RATIONALITY OF THE CHARACTERISTIC POLYNOMIALS of the `T_q`
+alone does NOT suffice, by the same `√2` obstruction (each `T_q` can
+be algebraic over `ℚ` while the `ℚ`-algebra they generate is
+infinite-dimensional): the finiteness of `dim_ℚ W`, not the
+algebraicity of individual eigenvalues, is the arithmetic content.
+Neither modular curves nor the Eichler–Selberg trace formula exist on
+this pin, hence the interface shape.
+
+SOUNDNESS: the statement is sound for every `N ≥ 1`. At genus-zero
+levels `D = 0`, the family is empty and each clause reads
+`a_m(f) = 0`, true because `S₂(Γ₀(N)) = 0` there. -/
+theorem exists_qCoeff_rational_relations {N : ℕ} (hN : 0 < N) :
+    ∃ n : Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2)) → ℕ,
+      ∀ m : ℕ,
+        ∃ c : Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2)) → ℚ,
+          ∀ f : CuspForm (Gamma0GL N) 2,
+            qCoeff N f m = ∑ i, (c i : ℂ) * qCoeff N f (n i) := by
+  classical
+  haveI := cuspForm_finiteDimensional N hN
+  set D := Module.finrank ℂ (CuspForm (Gamma0GL N) 2)
+  have hsep : ∀ f : CuspForm (Gamma0GL N) 2, (∀ m, qCoeffL N m f = 0) → f = 0 := by
+    intro f hf
+    refine cuspForm_eq_of_forall_qCoeff_eq (g := 0) fun m => ?_
+    rw [qCoeff_zero_cuspForm]
+    exact hf m
+  -- (1) a `ℂ`-basis of `S₂(Γ₀(N))` drawn from the integral lattice
+  obtain ⟨b, hbsub, hbspan, hbli⟩ :=
+    exists_linearIndependent ℂ
+      ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2)))
+  rw [integralCuspForms_span_eq_top hN] at hbspan
+  let B0 : Module.Basis b ℂ (CuspForm (Gamma0GL N) 2) :=
+    Module.Basis.mk hbli (by rw [Subtype.range_coe, hbspan])
+  haveI : Fintype b := FiniteDimensional.fintypeBasisIndex B0
+  have hcard : Fintype.card b = D := (Module.finrank_eq_card_basis B0).symm
+  let e : Module.Basis (Fin D) ℂ (CuspForm (Gamma0GL N) 2) :=
+    B0.reindex (Fintype.equivFinOfCardEq hcard)
+  have hein : ∀ i : Fin D, e i ∈ integralCuspForms N := by
+    intro i
+    have hval : e i
+        = (((Fintype.equivFinOfCardEq hcard).symm i : b) : CuspForm (Gamma0GL N) 2) := by
+      simp [e, Module.Basis.reindex_apply, B0, Module.Basis.mk_apply]
+    rw [hval]
+    exact hbsub ((Fintype.equivFinOfCardEq hcard).symm i).2
+  -- (2) the coefficient functionals have INTEGER coordinates in that basis
+  have hval : ∀ (m : ℕ) (j : Fin D), ∃ z : ℤ, qCoeffL N m (e j) = (z : ℂ) :=
+    fun m j => hein j m
+  choose z hz using hval
+  set v : ℕ → (Fin D → ℚ) := fun m j => ((z m j : ℤ) : ℚ) with hv
+  have hvC : ∀ (m : ℕ) (j : Fin D), ((v m j : ℚ) : ℂ) = qCoeffL N m (e j) := by
+    intro m j
+    rw [hv, hz m j]
+    push_cast
+    ring
+  -- (3) those rational coordinate vectors span `ℚ^D`
+  have hvspan : Submodule.span ℚ (Set.range v) = ⊤ := by
+    by_contra hne
+    obtain ⟨φ, hφ0, hφ⟩ :=
+      Submodule.exists_dual_map_eq_bot_of_lt_top
+        (lt_top_iff_ne_top.mpr hne) inferInstance
+    set u : Fin D → ℚ := fun j => φ (Pi.single j 1) with hu
+    have hsingle : ∀ (x : Fin D → ℚ) (j : Fin D),
+        Pi.single j (x j) = (x j) • (Pi.single j (1 : ℚ)) := by
+      intro x j
+      funext k
+      by_cases h : k = j <;> simp [h]
+    have hφx : ∀ x : Fin D → ℚ, φ x = ∑ j, x j * u j := by
+      intro x
+      have hx : x = ∑ j, Pi.single j (x j) := by
+        funext k
+        simp [Finset.sum_apply, Pi.single_apply]
+      calc φ x = φ (∑ j, Pi.single j (x j)) := by rw [← hx]
+        _ = ∑ j, φ (Pi.single j (x j)) := by rw [map_sum]
+        _ = ∑ j, x j * u j := by
+            refine Finset.sum_congr rfl fun j _ => ?_
+            rw [hsingle x j, map_smul, hu, smul_eq_mul]
+    have hkill : ∀ m : ℕ, ∑ j, v m j * u j = 0 := by
+      intro m
+      have hmem : v m ∈ Submodule.span ℚ (Set.range v) :=
+        Submodule.subset_span ⟨m, rfl⟩
+      have hzz : φ (v m) ∈ (Submodule.span ℚ (Set.range v)).map φ :=
+        Submodule.mem_map_of_mem hmem
+      rw [hφ, Submodule.mem_bot] at hzz
+      rw [← hφx (v m)]
+      exact hzz
+    have hzero : (∑ j, (u j : ℂ) • e j) = 0 := by
+      refine hsep _ fun m => ?_
+      rw [map_sum]
+      have hterm : ∀ j : Fin D,
+          qCoeffL N m ((u j : ℂ) • e j) = ((v m j * u j : ℚ) : ℂ) := by
+        intro j
+        rw [map_smul, smul_eq_mul, ← hvC m j]
+        push_cast
+        ring
+      rw [Finset.sum_congr rfl fun j _ => hterm j, ← Rat.cast_sum, hkill m]
+      norm_num
+    have hu0 : ∀ j, u j = 0 := by
+      intro j
+      have hj := Fintype.linearIndependent_iff.mp e.linearIndependent
+        (fun j => (u j : ℂ)) hzero j
+      exact_mod_cast hj
+    exact hφ0 (LinearMap.ext fun x => by rw [hφx x]; simp [hu0])
+  -- (4) a `ℚ`-basis of `ℚ^D` drawn from the coordinate vectors themselves
+  obtain ⟨bq, hbqsub, hbqspan, hbqli⟩ := exists_linearIndependent ℚ (Set.range v)
+  rw [hvspan] at hbqspan
+  let Bq : Module.Basis bq ℚ (Fin D → ℚ) :=
+    Module.Basis.mk hbqli (by rw [Subtype.range_coe, hbqspan])
+  haveI : Fintype bq := FiniteDimensional.fintypeBasisIndex Bq
+  have hcardq : Fintype.card bq = D := by
+    have h := Module.finrank_eq_card_basis Bq
+    rw [Module.finrank_fin_fun] at h
+    exact h.symm
+  let w : Module.Basis (Fin D) ℚ (Fin D → ℚ) :=
+    Bq.reindex (Fintype.equivFinOfCardEq hcardq)
+  have hwmem : ∀ i : Fin D, w i ∈ Set.range v := by
+    intro i
+    have hval2 : w i = (((Fintype.equivFinOfCardEq hcardq).symm i : bq) : Fin D → ℚ) := by
+      simp [w, Module.Basis.reindex_apply, Bq, Module.Basis.mk_apply]
+    rw [hval2]
+    exact hbqsub ((Fintype.equivFinOfCardEq hcardq).symm i).2
+  choose n hn using hwmem
+  -- (5) read the `ℚ`-coordinates back as relations between the functionals
+  refine ⟨n, fun m => ⟨fun i => w.repr (v m) i, fun f => ?_⟩⟩
+  set c : Fin D → ℚ := fun i => w.repr (v m) i
+  have hrow : ∀ j : Fin D, v m j = ∑ i, c i * v (n i) j := by
+    intro j
+    have hsum : (∑ i, c i • w i) = v m := w.sum_repr (v m)
+    have hj := congrFun hsum j
+    rw [Finset.sum_apply] at hj
+    rw [← hj]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [← hn i]
+    simp [Pi.smul_apply, smul_eq_mul]
+  have hfun : qCoeffL N m = ∑ i, (c i : ℂ) • qCoeffL N (n i) := by
+    refine e.ext fun j => ?_
+    rw [LinearMap.sum_apply]
+    have hL : ∀ i : Fin D,
+        ((c i : ℂ) • qCoeffL N (n i)) (e j) = ((c i * v (n i) j : ℚ) : ℂ) := by
+      intro i
+      rw [LinearMap.smul_apply, smul_eq_mul, ← hvC (n i) j]
+      push_cast
+      ring
+    rw [Finset.sum_congr rfl fun i _ => hL i, ← Rat.cast_sum, ← hrow j, hvC m j]
+  have happ := congrArg (fun L : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] ℂ => L f) hfun
+  simpa only [LinearMap.sum_apply, LinearMap.smul_apply, smul_eq_mul,
+    qCoeffL_apply] using happ
+
+/-- **The rational structure of `S₂(Γ₀(N))`** (PROVEN assembly,
+2026-07-25, over the coordinate leaf `exists_qCoeff_rational_relations`
+— SHIMURA'S RATIONALITY THEOREM, isolated 2026-07-25 as the first of
+the two
 genuinely different classical inputs of the former single integral
 node `exists_integral_qExpansion_spanning`, which is now a PROVEN
 denominator-clearing assembly over this leaf and
@@ -2145,21 +2614,519 @@ mandate is the two leaves only; the shortening of
 `ℚ`-node is a one-line change for that declaration's owner —
 `map_intCast` becomes `map_ratCast`.)
 
+ASSEMBLY (2026-07-25, this node's owner): the geometric citation has
+been moved one step down to the coordinate leaf
+`exists_qCoeff_rational_relations` — "every coefficient functional
+`a_m` is a `ℚ`-combination of `D = dim_ℂ S₂(Γ₀(N))` of them" — and this
+node is now PROVEN from it, with the DUAL BASIS supplying the rational
+forms. (i) The `D` selected functionals `a_{n i}` have trivial joint
+kernel: a cusp form killed by all of them is killed by every `a_m`,
+hence is `0` by the `q`-expansion principle
+`cuspForm_eq_of_forall_qCoeff_eq`. So their span has trivial
+dual-coannihilator and therefore is the whole dual space
+(`Subspace.finrank_add_finrank_dualCoannihilator_eq`). (ii) Being `D`
+vectors spanning a `D`-dimensional space they form a BASIS `ψ`
+(`basisOfTopLeSpanOfCardEqFinrank`, using `Subspace.dual_finrank_eq`).
+(iii) Its predual basis `E = ψ* ∘ evalEquiv⁻¹` of `S₂(Γ₀(N))` obeys
+`a_{n j}(E k) = δ_{jk}`, so the `ℚ`-relations evaluate to
+`a_m(E k) = c_k^{(m)} ∈ ℚ`: `E` is a basis of rational-`q`-expansion
+forms, which is the assertion. Note where the arithmetic sits — step
+(iii) is where "`ℚ`-combination" becomes "rational coefficient", and it
+uses the cardinality `D` of the leaf's family in an essential way (see
+that leaf's docstring for the counterexample when the cardinality is
+left free).
+
 SOUNDNESS: the statement is sound for every `N ≥ 1` — spanning is
 claimed only over `ℂ` (no independence, no echelon normalization, no
 `ℚ`-rank claim), so at genus-zero levels `n = 0` witnesses it. -/
 theorem exists_rational_qExpansion_spanning {N : ℕ} (hN : 0 < N) :
     ∃ (n : ℕ) (g : Fin n → CuspForm (Gamma0GL N) 2),
       (∀ f : CuspForm (Gamma0GL N) 2, ∃ c : Fin n → ℂ, f = ∑ i, c i • g i) ∧
-      (∀ i m, ∃ r : ℚ, qCoeff N (g i) m = (r : ℂ)) :=
-  sorry
+      (∀ i m, ∃ r : ℚ, qCoeff N (g i) m = (r : ℂ)) := by
+  classical
+  haveI := cuspForm_finiteDimensional N hN
+  obtain ⟨n, hn⟩ := exists_qCoeff_rational_relations hN
+  choose c hc using hn
+  -- (i) the `D` selected coefficient functionals span the full dual space
+  have hco : (Submodule.span ℂ
+      (Set.range fun i => qCoeffL N (n i))).dualCoannihilator = ⊥ := by
+    rw [eq_bot_iff]
+    intro v hv
+    rw [Submodule.mem_dualCoannihilator] at hv
+    have hzero : ∀ i, qCoeff N v (n i) = 0 := fun i => by
+      simpa using hv (qCoeffL N (n i)) (Submodule.subset_span ⟨i, rfl⟩)
+    have hv0 : v = 0 := by
+      refine cuspForm_eq_of_forall_qCoeff_eq (g := 0) fun m => ?_
+      rw [hc m v, qCoeff_zero_cuspForm]
+      exact Finset.sum_eq_zero fun i _ => by rw [hzero i, mul_zero]
+    simp [hv0]
+  have hrank := Subspace.finrank_add_finrank_dualCoannihilator_eq
+    (Submodule.span ℂ (Set.range fun i => qCoeffL N (n i)))
+  rw [hco, finrank_bot, add_zero] at hrank
+  have hspan : Submodule.span ℂ (Set.range fun i => qCoeffL N (n i)) = ⊤ :=
+    Submodule.eq_top_of_finrank_eq (by rw [hrank, Subspace.dual_finrank_eq])
+  -- (ii) `D` spanning vectors in a `D`-dimensional dual space form a basis
+  have hcard : Fintype.card (Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2)))
+      = Module.finrank ℂ (Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) := by
+    rw [Fintype.card_fin, Subspace.dual_finrank_eq]
+  let ψ : Module.Basis (Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2))) ℂ
+      (Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) :=
+    basisOfTopLeSpanOfCardEqFinrank (fun i => qCoeffL N (n i)) hspan.ge hcard
+  have hψ : ∀ i, ψ i = qCoeffL N (n i) := fun i =>
+    congrFun (coe_basisOfTopLeSpanOfCardEqFinrank
+      (fun i => qCoeffL N (n i)) hspan.ge hcard) i
+  -- (iii) its predual basis has rational `q`-expansion coefficients
+  let E : Module.Basis (Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2))) ℂ
+      (CuspForm (Gamma0GL N) 2) :=
+    ψ.dualBasis.map (Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2)).symm
+  have hEval : ∀ j k, qCoeff N (E k) (n j) = if j = k then (1 : ℂ) else 0 := by
+    intro j k
+    have h1 : (ψ j) (E k) = ψ.dualBasis k (ψ j) := by
+      show (ψ j) ((ψ.dualBasis.map
+        (Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2)).symm) k) = _
+      rw [Module.Basis.map_apply]
+      exact Module.apply_evalEquiv_symm_apply ℂ _ (ψ j) (ψ.dualBasis k)
+    have h2 : qCoeff N (E k) (n j) = (ψ j) (E k) := by rw [hψ j, qCoeffL_apply]
+    rw [h2, h1, Module.Basis.dualBasis_apply_self]
+  refine ⟨Module.finrank ℂ (CuspForm (Gamma0GL N) 2), fun k => E k,
+    fun f => ⟨fun i => E.repr f i, (E.sum_repr f).symm⟩, fun k m => ⟨c m k, ?_⟩⟩
+  have hterm : ∀ i, ((c m i : ℂ)) * qCoeff N (E k) (n i)
+      = if i = k then ((c m k : ℂ)) else 0 := by
+    intro i
+    rw [hEval i k]
+    split_ifs with h
+    · subst h; ring
+    · ring
+  calc qCoeff N (E k) m
+      = ∑ i, ((c m i : ℂ)) * qCoeff N (E k) (n i) := hc m (E k)
+    _ = ∑ i, (if i = k then ((c m k : ℂ)) else 0) :=
+        Finset.sum_congr rfl fun i _ => hterm i
+    _ = ((c m k : ℂ)) := by simp
 
-/-- **Bounded denominators for rational `q`-expansions** (sorry node —
-the INTEGRAL refinement, isolated 2026-07-25 as the second of the two
-classical inputs of `exists_integral_qExpansion_spanning`): a weight-2
-level-`N` cusp form whose `q`-expansion coefficients are all rational
-has a single denominator clearing ALL of them at once — there is
-`d ≥ 1` with `d·a_m(g) ∈ ℤ` for every `m`.
+/-! #### The Hecke algebra `𝕋` and bounded denominators
+
+Decomposition of the bounded-denominator citation node (2026-07-25).
+The classical statement "a rational weight-2 form has a single
+denominator" is here PROVEN from ONE finiteness statement about the
+Hecke algebra — `heckeSubring_moduleFinite` — over the Hecke machinery
+this file already carries: `exists_cuspForm_heckeTransform` (the
+slash-sum preserves `S₂(Γ₀(N))`) and `qExpansion_heckeTransform_coeff`
+(the coefficient formula `a_m(T_q f) = a_{qm}(f) + 1_{q∤N}·q·a_{m/q}(f)`),
+both PROVEN 2026-07-24. The `q`-expansion side of the argument is
+therefore fully discharged here; only the arithmetic finiteness of
+`𝕋` remains a citation. -/
+
+/-- **The weight-2 Hecke operator as a linear endomorphism** (PROVEN,
+2026-07-25): `T_q` (`U_q` when `q ∣ N`) packaged as an element of
+`End_ℂ(S₂(Γ₀(N)))`, over the proven stability
+`exists_cuspForm_heckeTransform` together with the additivity and
+`ℂ`-homogeneity of the slash-sum (`heckeTransform_add`,
+`heckeTransform_smul`); the form is recovered from its coefficients by
+`DFunLike.coe_injective`. Junk value `0` unless `0 < N` and `q` is
+prime — exactly the hypotheses under which the slash-sum is known to
+preserve `S₂(Γ₀(N))`. The function-level slash-sum `heckeTransform`
+stays the primitive; this is the operator-level packaging that the
+Hecke-algebra material below needs.
+
+DUPLICATION NOTICE (2026-07-26): `heckeOp`/`heckeOp_coe`, in the
+`ComplexHeckeAlgebra` section far below, is the SAME construction,
+built concurrently by another owner for the Eichler–Shimura seam. The
+two cannot presently be merged in either direction by their authors
+alone: this one is needed at THIS point of the file (the bounded
+denominators assembly is consumed by
+`exists_integral_qExpansion_spanning` a few hundred lines below),
+while `heckeOp` is defined ~18k lines later. Consolidation is a
+one-declaration move for whichever owner touches the later section —
+delete `exists_heckeOpLinear_total`/`heckeOp` and let `heckeOp` be
+notation for `heckeEndo`, whose `coe_heckeEndo` is exactly
+`heckeOp_coe`. -/
+noncomputable def heckeEndo (N q : ℕ) :
+    Module.End ℂ (CuspForm (Gamma0GL N) 2) :=
+  if h : 0 < N ∧ q.Prime then
+    { toFun := fun f => (exists_cuspForm_heckeTransform h.1 h.2 f).choose
+      map_add' := fun f g => DFunLike.coe_injective <| by
+        rw [(exists_cuspForm_heckeTransform h.1 h.2 (f + g)).choose_spec,
+          CuspForm.coe_add, heckeTransform_add, CuspForm.coe_add,
+          (exists_cuspForm_heckeTransform h.1 h.2 f).choose_spec,
+          (exists_cuspForm_heckeTransform h.1 h.2 g).choose_spec]
+      map_smul' := fun c f => DFunLike.coe_injective <| by
+        rw [RingHom.id_apply,
+          (exists_cuspForm_heckeTransform h.1 h.2 (c • f)).choose_spec,
+          CuspForm.IsGLPos.coe_smul, heckeTransform_smul,
+          CuspForm.IsGLPos.coe_smul,
+          (exists_cuspForm_heckeTransform h.1 h.2 f).choose_spec] }
+  else 0
+
+/-- `heckeEndo` is the slash-sum, at a prime and a positive level. -/
+theorem coe_heckeEndo {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime)
+    (f : CuspForm (Gamma0GL N) 2) :
+    ⇑(heckeEndo N q f) = heckeTransform N q ⇑f := by
+  rw [heckeEndo, dif_pos (⟨hN, hq⟩ : 0 < N ∧ q.Prime)]
+  exact (exists_cuspForm_heckeTransform hN hq f).choose_spec
+
+/-- The classical coefficient formula for `T_q`, transported to the
+operator packaging: `a_m(T_q f) = a_{qm}(f) + 1_{q ∤ N}·1_{q ∣ m}·q·a_{m/q}(f)`
+(Diamond–Shurman Proposition 5.2.2 at weight 2). -/
+theorem qCoeff_heckeEndo {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime)
+    (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
+    qCoeff N (heckeEndo N q f) m =
+      qCoeff N f (q * m) +
+        (if q ∣ N then 0 else
+          if q ∣ m then (q : ℂ) * qCoeff N f (m / q) else 0) := by
+  have h := qExpansion_heckeTransform_coeff hN hq f m
+  rw [← coe_heckeEndo hN hq f] at h
+  exact h
+
+/-- **`S₂(Γ₀(N); ℤ)` is Hecke stable** (PROVEN, 2026-07-26): the
+coefficient formula `qCoeff_heckeEndo` writes each coefficient of
+`T_q f` as the `ℤ`-combination `a_{qm}(f) + 1_{q∤N}·1_{q∣m}·q·a_{m/q}(f)`
+of coefficients of `f`, so integrality of the expansion is preserved.
+No arithmetic input; this is the second of the two conjuncts of
+`exists_heckeStable_lattice` that are theorems rather than citations. -/
+theorem heckeEndo_mem_integralCuspForms {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime)
+    {f : CuspForm (Gamma0GL N) 2} (hf : f ∈ integralCuspForms N) :
+    heckeEndo N q f ∈ integralCuspForms N := by
+  intro m
+  obtain ⟨x, hx⟩ := hf (q * m)
+  obtain ⟨y, hy⟩ := hf (m / q)
+  refine ⟨x + (if q ∣ N then 0 else if q ∣ m then (q : ℤ) * y else 0), ?_⟩
+  rw [qCoeff_heckeEndo hN hq f m, hx, hy]
+  split_ifs <;> push_cast <;> ring
+
+/-- **The Hecke algebra `𝕋 ⊆ End_ℂ(S₂(Γ₀(N)))`**: the subring generated
+by the operators `T_q` at ALL primes (so the `U_q` at the bad primes
+too) — the image in `End_ℂ(S₂)` of the classical full Hecke algebra of
+level `N` and weight `2`. Subring and `ℤ`-subalgebra agree because the
+prime ring of `End_ℂ(S₂)` is the image of `ℤ`; the subring spelling is
+used so that the `ℤ`-module structure is the ambient additive one. -/
+noncomputable def heckeSubring (N : ℕ) :
+    Subring (Module.End ℂ (CuspForm (Gamma0GL N) 2)) :=
+  Subring.closure {T | ∃ q : ℕ, q.Prime ∧ T = heckeEndo N q}
+
+/-- Each `T_q` lies in the Hecke algebra. -/
+theorem heckeEndo_mem_heckeSubring (N : ℕ) {q : ℕ} (hq : q.Prime) :
+    heckeEndo N q ∈ heckeSubring N :=
+  Subring.subset_closure ⟨q, hq, rfl⟩
+
+/-- **A Hecke-stable `ℤ`-lattice of full rank** (PROVEN, 2026-07-26,
+over the single `q`-expansion-principle citation
+`integralCuspForms_span_eq_top` far above; formerly itself the
+citation, isolated 2026-07-26 as the residue of
+`heckeSubring_moduleFinite`): there is a finitely generated
+`ℤ`-submodule `L ⊆ S₂(Γ₀(N))` which is stable under every Hecke
+operator `T_q` and which spans `S₂(Γ₀(N))` over `ℂ`.
+
+This is the classical "`𝕋`-stable `ℤ`-lattice of full rank" — the
+object every textbook proof of the finiteness of the Hecke algebra
+actually constructs (Diamond–Shurman §6.5 and Exercise 6.5.4; Ribet,
+*Mod p Hecke operators and congruences* §2; Darmon–Diamond–Taylor §1.6).
+Of the two standard constructions,
+
+* `L = S₂(Γ₀(N); ℤ)`, the forms with `ℤ`-coefficient `q`-expansion,
+  through the `q`-expansion principle of Katz and Deligne–Rapoport on
+  the INTEGRAL model `X₀(N)/ℤ`;
+* `L` the preimage of `H¹(X₀(N), ℤ)` under Eichler–Shimura,
+
+the FIRST is what is taken here, in the form `integralCuspForms N`, and
+TWO of its three required properties are theorems on this pin rather
+than citations, so only the third is cited:
+
+* `L.FG` is `integralCuspForms_fg` — the Sturm bound
+  `exists_cuspForm_sturm_bound` injects `S₂(Γ₀(N); ℤ)` into `ℤ^B` and
+  `ℤ` is noetherian;
+* Hecke stability is `heckeEndo_mem_integralCuspForms` — the
+  coefficient formula `qCoeff_heckeEndo` writes each coefficient of
+  `T_q f` as a `ℤ`-combination of coefficients of `f`;
+* the `ℂ`-spanning is `integralCuspForms_span_eq_top`, the sole
+  remaining citation, and is exactly the `q`-expansion principle on the
+  integral model. See its docstring for the cluster's circularity map.
+
+WHAT IS PROVEN DOWNSTREAM, recorded here so nobody redoes it (see
+`heckeSubring_moduleFinite` below): given `L`, the whole passage to
+`Module.Finite ℤ 𝕋` is formal — `𝕋` preserves `L` because
+`{T | T '' L ⊆ L}` is a subring containing the generators, restriction
+to a finite generating set of `L` embeds `𝕋` into a finite product of
+copies of `L`, and that embedding is injective because a `ℂ`-linear
+endomorphism killing `L` kills `span_ℂ L = ⊤`. `ℤ` is noetherian, so
+`𝕋` is finite.
+
+WHICH CONJUNCTS ARE LOAD-BEARING, and how much slack there is.
+* `L.FG` and the `ℂ`-spanning are both essential: without finite
+  generation the target is false for `L = ⊤`-like choices, and without
+  full rank the restriction map has a kernel.
+* The consuming proof uses `Submodule.span ℂ ↑L = ⊤` ONLY to get
+  FAITHFULNESS of the `𝕋`-action on `L`, so the statement could be
+  weakened to `∀ T ∈ heckeSubring N, (∀ f ∈ L, T f = 0) → T = 0`.
+  Spanning is stated instead because it is what every classical
+  construction produces, it is the recognizable form of the citation,
+  and it is strictly easier to supply. The weakening was NOT taken
+  (2026-07-26): with `L = S₂(Γ₀(N); ℤ)` it buys nothing, since the only
+  way to see that `𝕋` acts faithfully on the integral forms is to know
+  that they span.
+* Hecke stability is stated only at the GENERATORS `T_q`; stability
+  under all of `𝕋` is derived below, not assumed.
+
+NOT CIRCULAR with the integral-structure theorems downstream. Both
+`exists_qExpansion_denominator` and `exists_integral_qExpansion_spanning`
+are CONSUMERS of `heckeSubring_moduleFinite`, hence of this theorem, so
+neither may be used in the proof of `integralCuspForms_span_eq_top`;
+the citation must come from the integral model directly.
+
+SOUNDNESS: the hypothesis `0 < N` is required and is not cosmetic — it
+is what makes `heckeEndo` the genuine slash-sum rather than its junk
+value, and the level-`0` case of the consumer is handled separately
+there. At genus-zero levels `S₂(Γ₀(N)) = 0` and `L = ⊥` witnesses the
+statement. -/
+theorem exists_heckeStable_lattice {N : ℕ} (hN : 0 < N) :
+    ∃ L : Submodule ℤ (CuspForm (Gamma0GL N) 2),
+      L.FG ∧
+      (∀ q : ℕ, q.Prime → ∀ f ∈ L, heckeEndo N q f ∈ L) ∧
+      Submodule.span ℂ (L : Set (CuspForm (Gamma0GL N) 2)) = ⊤ :=
+  ⟨integralCuspForms N, integralCuspForms_fg hN,
+    fun _ hq _ hf => heckeEndo_mem_integralCuspForms hN hq hf,
+    integralCuspForms_span_eq_top hN⟩
+
+/-- **The Hecke algebra is a finite `ℤ`-module** (PROVEN assembly,
+2026-07-26, over the now-PROVEN `exists_heckeStable_lattice`
+above, hence over the single citation `integralCuspForms_span_eq_top`;
+formerly itself THE citation, isolated 2026-07-25 as the carrier
+of bounded denominators): `𝕋 = ℤ[T_q : q prime] ⊆ End_ℂ(S₂(Γ₀(N)))` is
+finitely generated as a `ℤ`-module.
+
+This is the standard finiteness of the Hecke algebra (Diamond–Shurman
+§6.5 and Exercise 6.5.4; Ribet, *Mod p Hecke operators and congruences*
+§2; Darmon–Diamond–Taylor §1.6). Classically it is proven by exhibiting
+a `𝕋`-stable `ℤ`-lattice of full rank on which `𝕋` acts faithfully —
+either `H¹(X₀(N), ℤ)` through Eichler–Shimura, or `S₂(Γ₀(N); ℤ)`
+through the `q`-expansion principle on the integral model `X₀(N)/ℤ`
+(Katz, Deligne–Rapoport) — whence `𝕋 ↪ End_ℤ(L) ≅ M_r(ℤ)`, a finite
+`ℤ`-module, and `𝕋` is a `ℤ`-submodule of it with `ℤ` noetherian.
+Neither integral models nor Eichler–Shimura exist on this pin — but
+that is now needed ONLY for the lattice itself: the passage from the
+lattice to this statement is the formal argument written out below,
+the lattice is `exists_heckeStable_lattice` (PROVEN 2026-07-26, taking
+`L = integralCuspForms N`), and the residual citation is that `L` has
+FULL RANK, `integralCuspForms_span_eq_top`.
+
+ASSEMBLY (2026-07-26, this node's owner). Level `0` first: there
+`heckeEndo 0 q` is the junk value `0` for every `q`, so `𝕋 = ⊥` is the
+prime subring, the image of `ℤ →ₗ[ℤ] ⊥`, `n ↦ n·1`, hence finite. For
+`0 < N` take the lattice `L` of the leaf with a finite generating set
+`s`. (i) `{T | ∀ f ∈ L, T f ∈ L}` is a SUBRING of `End_ℂ(S₂)`, and it
+contains every `T_q` by the leaf's stability clause, so it contains all
+of `𝕋 = Subring.closure {T_q}` — stability at the generators upgrades
+to stability under the whole algebra with no computation. (ii) Hence
+restriction to `s` is a `ℤ`-linear map `ρ : 𝕋 →ₗ[ℤ] (s → L)`. (iii) `ρ`
+is INJECTIVE: if `T` kills every generator then it kills `span_ℤ s = L`
+by `Submodule.span_induction`, so `L ⊆ ker T`; `ker T` is a
+`ℂ`-submodule and `span_ℂ L = ⊤`, so `ker T = ⊤` and `T = 0`. (iv) `L`
+is finitely generated over the noetherian ring `ℤ`, so it is a
+noetherian `ℤ`-module, so is the finite product `s → L`, so — by (iii)
+and `isNoetherian_of_injective` — is `𝕋`. Note where the two clauses of
+the leaf enter: finite generation of `L` in (iv), full rank in (iii),
+and NOWHERE else.
+
+WHY THIS IS THE RIGHT CUT (2026-07-25). It replaces the former citation
+`exists_qExpansion_denominator` (bounded denominators), now PROVEN from
+it below. Three reasons the Hecke form is the better carrier: (i) it is
+a statement about operators this file already CONSTRUCTS and has proven
+theorems about, so everything analytic — the whole `q`-expansion side —
+is discharged in Lean rather than cited; (ii) it is the form the rest
+of the modularity subtree wants anyway (integrality of eigenvalues, the
+mod-`p` congruence pillars, the successors of
+`heckeField_finiteDimensional`), so proving it pays for more than this
+leaf; (iii) it is a finiteness statement about ONE canonical object,
+provable in one place, where bounded denominators quantifies over every
+rational form.
+
+WHY NOTHING WEAKER SUFFICES (audit, 2026-07-25).
+* Splitting into "each `T_q` is integral over `ℤ`" plus semisimplicity
+  is strictly worse: integrality ALONE does not give finiteness — in
+  `A = ℚ[x]/(x²)` the elements integral over `ℤ` are `ℤ + ℚ·x`, which
+  is not a finite `ℤ`-module — so a reducedness hypothesis would have
+  to be carried as a second leaf of the same depth.
+* The soft route through level 1 is impossible, and provably so. The
+  norm to level 1 (`ModularForm.norm`, the engine of
+  `exists_cuspForm_sturm_bound`) is MULTIPLICATIVE, and bounded
+  denominators is not detected by products: over `ℚ_p` the series
+  `A = (1 − q/p²)/(1 − q/p)` and `B = (1 − q/p)/(1 − q/p²)` both have
+  unbounded denominators while `A·B = 1`. So no argument that only sees
+  `∏_γ g∣γ` can bound the denominators of `g`, however much is known at
+  level 1 — and level-1 integral structure IS within reach on this pin
+  (mathlib carries `E₄`, `E₆`, `Δ`, the level-1 dimension formula and
+  `CuspForm.discriminantEquiv`), so this is a real dead end and not an
+  unexplored option.
+* Nothing in the argument may ignore the congruence condition: for
+  NON-congruence subgroups bounded denominators is the recent theorem
+  of Calegari–Dimitrov–Tang, which is the structural reason every route
+  imports an integral model or an integral homology lattice.
+
+SOUNDNESS: no hypothesis on `N` is needed. For `N = 0` the operators
+`heckeEndo 0 q` are all the junk value `0`, so `𝕋` is the prime subring
+`ℤ·1`, finite over `ℤ` (this case is discharged outright below, without
+the leaf); for `N ≥ 1` it is the classical statement, and at genus-zero
+levels `End_ℂ(S₂) = 0` makes it trivial. -/
+theorem heckeSubring_moduleFinite (N : ℕ) :
+    Module.Finite ℤ (heckeSubring N) := by
+  classical
+  rcases Nat.eq_zero_or_pos N with rfl | hN
+  · -- Level `0`: every `heckeEndo 0 q` is the junk value `0`, so `𝕋 = ℤ·1`.
+    have hz : ∀ q : ℕ, heckeEndo 0 q = 0 := by
+      intro q
+      rw [heckeEndo, dif_neg]
+      rintro ⟨h, -⟩
+      exact absurd h (lt_irrefl 0)
+    have hbot : heckeSubring 0 = ⊥ := by
+      refine le_antisymm (Subring.closure_le.mpr ?_) bot_le
+      rintro T ⟨q, -, rfl⟩
+      rw [hz q]
+      exact zero_mem _
+    rw [hbot]
+    refine Module.Finite.of_surjective
+      (LinearMap.toSpanSingleton ℤ
+        (⊥ : Subring (Module.End ℂ (CuspForm (Gamma0GL 0) 2))) 1) ?_
+    rintro ⟨x, hx⟩
+    obtain ⟨n, rfl⟩ := Subring.mem_bot.mp hx
+    refine ⟨n, ?_⟩
+    apply Subtype.ext
+    rw [LinearMap.toSpanSingleton_apply]
+    simp
+  · obtain ⟨L, hLfg, hLstab, hLspan⟩ := exists_heckeStable_lattice hN
+    obtain ⟨s, hs⟩ := hLfg
+    -- (i) the endomorphisms preserving `L` form a subring, so all of `𝕋` does
+    let S : Subring (Module.End ℂ (CuspForm (Gamma0GL N) 2)) :=
+      { carrier := {T | ∀ f ∈ L, T f ∈ L}
+        mul_mem' := fun {_ _} ha hb f hf => ha _ (hb f hf)
+        one_mem' := fun _ hf => hf
+        add_mem' := fun {_ _} ha hb f hf => L.add_mem (ha f hf) (hb f hf)
+        zero_mem' := fun _ _ => L.zero_mem
+        neg_mem' := fun {_} ha f hf => L.neg_mem (ha f hf) }
+    have hSub : heckeSubring N ≤ S := by
+      refine Subring.closure_le.mpr ?_
+      rintro T ⟨q, hq, rfl⟩
+      exact fun f hf => hLstab q hq f hf
+    have hmem : ∀ (T : heckeSubring N) (f : CuspForm (Gamma0GL N) 2), f ∈ L →
+        (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) f ∈ L :=
+      fun T f hf => hSub T.2 f hf
+    have hsL : ∀ x ∈ s, x ∈ L := by
+      intro x hx
+      rw [← hs]
+      exact Submodule.subset_span hx
+    -- (ii) restriction to a finite generating set of `L`
+    let ρ : heckeSubring N →ₗ[ℤ] ({x // x ∈ s} → L) :=
+      { toFun := fun T x =>
+          ⟨(T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) (x : CuspForm (Gamma0GL N) 2),
+            hmem T _ (hsL x x.2)⟩
+        map_add' := by
+          intro T U
+          funext x
+          apply Subtype.ext
+          simp
+        map_smul' := by
+          intro c T
+          funext x
+          apply Subtype.ext
+          simp }
+    -- (iii) it is injective, because `L` spans `S₂(Γ₀(N))` over `ℂ`
+    have hinj : Function.Injective ρ := by
+      refine (injective_iff_map_eq_zero ρ).mpr ?_
+      intro T hT
+      have h0 : ∀ x ∈ s, (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) x = 0 := by
+        intro x hx
+        have h := congrFun hT ⟨x, hx⟩
+        exact congrArg Subtype.val h
+      have hL0 : ∀ f ∈ L, (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) f = 0 := by
+        intro f hf
+        rw [← hs] at hf
+        refine Submodule.span_induction ?_ ?_ ?_ ?_ hf
+        · intro y hy
+          exact h0 y hy
+        · exact map_zero _
+        · intro y z _ _ hy hz
+          rw [map_add, hy, hz, add_zero]
+        · intro n y _ hy
+          rw [map_zsmul, hy, smul_zero]
+      have hker : (⊤ : Submodule ℂ (CuspForm (Gamma0GL N) 2))
+          ≤ LinearMap.ker (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) := by
+        rw [← hLspan]
+        exact Submodule.span_le.mpr fun f hf => hL0 f hf
+      have hT0 : (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) = 0 := by
+        rw [← LinearMap.ker_eq_top]
+        exact top_le_iff.mp hker
+      exact Subtype.ext hT0
+    -- (iv) `ℤ` is noetherian, so a submodule of a finite product of copies of `L`
+    haveI : IsNoetherian ℤ L := isNoetherian_of_fg_of_noetherian L ⟨s, hs⟩
+    haveI := isNoetherian_of_injective ρ hinj
+    infer_instance
+
+/-- **Every coefficient functional is `a₁ ∘ T` for a single `T ∈ 𝕋`**
+(PROVEN, 2026-07-25): for each `m` there is one Hecke operator `T` with
+`a_m(f) = a₁(T f)` for ALL `f ∈ S₂(Γ₀(N))`. This is the operator form
+of `a_m = a₁ ∘ T_m` and it is what makes the coefficients of a fixed
+form range over the image of a single finitely generated `ℤ`-module.
+
+Proof by strong induction on `m`, using only `qCoeff_heckeEndo`: `m = 0`
+takes `T = 0` (`qCoeff_zero`: cusp forms vanish at `∞`), `m = 1` takes
+`T = 1`, and for `m ≥ 2` we split off the least prime factor
+`q = m.minFac`, `m = q·k`, and read the coefficient formula backwards,
+`a_{qk}(f) = a_k(T_q f) − 1_{q∤N}·1_{q∣k}·q·a_{k/q}(f)`, so that
+`T = T_k·T_q − c·T_{k/q}` with `c ∈ ℤ` works by the inductive
+hypotheses at `k < m` and `k/q ≤ k < m`. Note the `T_n` for composite
+`n` are never DEFINED — only their existence inside `𝕋` is produced,
+which is all the denominator argument uses. -/
+theorem exists_mem_heckeSubring_qCoeff {N : ℕ} (hN : 0 < N) (m : ℕ) :
+    ∃ T ∈ heckeSubring N, ∀ f : CuspForm (Gamma0GL N) 2,
+      qCoeff N f m = qCoeff N (T f) 1 := by
+  induction m using Nat.strong_induction_on with
+  | _ m ih =>
+    rcases eq_or_ne m 0 with rfl | hm0
+    · exact ⟨0, zero_mem _, fun f => by
+        rw [qCoeff_zero, LinearMap.zero_apply, qCoeff_zero_cuspForm]⟩
+    rcases eq_or_ne m 1 with rfl | hm1
+    · exact ⟨1, one_mem _, fun f => by rw [Module.End.one_apply]⟩
+    have hq : (m.minFac).Prime := Nat.minFac_prime hm1
+    obtain ⟨k, hk⟩ := Nat.minFac_dvd m
+    have hk0 : k ≠ 0 := by rintro rfl; simp at hk; omega
+    have hkm : k < m := by
+      have h2 : 2 ≤ m.minFac := hq.two_le
+      have h1 : 1 ≤ k := Nat.one_le_iff_ne_zero.mpr hk0
+      calc k < 2 * k := by omega
+        _ ≤ m.minFac * k := Nat.mul_le_mul_right k h2
+        _ = m := hk.symm
+    obtain ⟨A, hA, hAe⟩ := ih k hkm
+    obtain ⟨B, hB, hBe⟩ := ih (k / m.minFac)
+      (lt_of_le_of_lt (Nat.div_le_self k m.minFac) hkm)
+    set c : ℤ := if m.minFac ∣ N then 0 else
+      if m.minFac ∣ k then (m.minFac : ℤ) else 0 with hcdef
+    refine ⟨A * heckeEndo N m.minFac - c • B, ?_, ?_⟩
+    · exact sub_mem (mul_mem hA (heckeEndo_mem_heckeSubring N hq))
+        (Subring.zsmul_mem _ hB c)
+    · intro f
+      have hstep : qCoeff N (heckeEndo N m.minFac f) k
+          = qCoeff N f m + (c : ℂ) * qCoeff N f (k / m.minFac) := by
+        rw [qCoeff_heckeEndo hN hq f k, ← hk, hcdef]
+        split_ifs <;> push_cast <;> ring
+      have hval : ((A * heckeEndo N m.minFac - c • B :
+            Module.End ℂ (CuspForm (Gamma0GL N) 2)) f)
+          = A (heckeEndo N m.minFac f) - c • (B f) := by
+        simp [Module.End.mul_apply]
+      have hlin : qCoeff N ((A * heckeEndo N m.minFac - c • B :
+            Module.End ℂ (CuspForm (Gamma0GL N) 2)) f) 1
+          = qCoeff N (A (heckeEndo N m.minFac f)) 1
+            - (c : ℂ) * qCoeff N (B f) 1 := by
+        rw [hval, ← qCoeffL_apply, map_sub, map_zsmul, qCoeffL_apply,
+          qCoeffL_apply, zsmul_eq_mul]
+      rw [hlin, ← hAe (heckeEndo N m.minFac f), ← hBe f, hstep]
+      ring
+
+/-- **Bounded denominators for rational `q`-expansions** (PROVEN
+assembly, 2026-07-25, over the Hecke-finiteness node
+`heckeSubring_moduleFinite`; formerly itself the INTEGRAL citation
+leaf, isolated 2026-07-24 as the second of the two classical inputs of
+`exists_integral_qExpansion_spanning`): a weight-2 level-`N` cusp form
+whose `q`-expansion coefficients are all rational has a single
+denominator clearing ALL of them at once — there is `d ≥ 1` with
+`d·a_m(g) ∈ ℤ` for every `m`.
 
 This is the arithmetic content beyond rationality: `S₂(Γ₀(N); ℚ)`
 carries a `ℤ`-lattice of full rank whose members have integral
@@ -2171,17 +3138,35 @@ global section of a line bundle whose formal expansion at the
 `ℤ`-rational cusp `∞` has `ℤ`-coefficients and cohomological flatness
 gives full rank; or (ii) the Eichler–Shimura isomorphism onto
 `H¹(X₀(N), ℂ)` carrying the Hecke-stable lattice `H¹(X₀(N), ℤ)`,
-transferred to `q`-expansions through the perfect duality
-`𝕋 × S₂ → ℤ`, `(T, f) ↦ a₁(Tf)`. Neither integral models nor
-Eichler–Shimura exist on this pin, and the elementary substitutes fail
-structurally: Victor Miller's constructive echelon basis needs the
-level-1 generation of the graded ring by `E₄, E₆` (no analogue for
-`Γ₀(N)`), and the integral Hecke-duality route needs the
-Eichler–Selberg trace formula — both audited 2026-07-24 and found
-beyond leaf scope. Note also that "bounded denominators" is genuinely a
-theorem and not a formality: for NON-congruence subgroups it is the
-recent theorem of Calegari–Dimitrov–Tang, so no argument that ignores
-the congruence condition can prove it.
+transferred to `q`-expansions through the duality `𝕋 × S₂ → ℤ`,
+`(T, f) ↦ a₁(Tf)`.
+
+ROUTE (2026-07-25): route (ii), with the duality replaced by the
+one-sided half of it that is actually needed, so that the ONLY
+unproven input is the finiteness of `𝕋` as a `ℤ`-module
+(`heckeSubring_moduleFinite`). Explicitly: `a_m(g) = a₁(T g)` for a
+single `T ∈ 𝕋` (`exists_mem_heckeSubring_qCoeff`, proven from the
+already-proven coefficient formula for the slash-sum), so ALL
+coefficients of `g` lie in the image of the `ℤ`-linear evaluation
+`𝕋 →ₗ[ℤ] ℂ`, `T ↦ a₁(T g)`. That image is a finitely generated
+`ℤ`-submodule of `ℂ` as soon as `𝕋` is a finite `ℤ`-module; `ℤ` is
+noetherian, so the submodule generated by the coefficients themselves
+is finitely generated too; each of its generators is rational by
+hypothesis, and the product of their denominators is the required `d`.
+Note the shape of the argument: it converts "no denominator blows up"
+into "everything lives in ONE finitely generated `ℤ`-module", which is
+exactly what makes the sharp form provable rather than the naive
+coefficient-by-coefficient bound.
+
+Elementary substitutes fail structurally, as audited: Victor Miller's
+constructive echelon basis needs the level-1 generation of the graded
+ring by `E₄, E₆` (no analogue for `Γ₀(N)`), and no argument routed
+through the multiplicative norm to level 1 can work at all — see the
+explicit `ℚ_p` counterexample in `heckeSubring_moduleFinite`'s
+docstring. Note also that "bounded denominators" is genuinely a theorem
+and not a formality: for NON-congruence subgroups it is the recent
+theorem of Calegari–Dimitrov–Tang, so no argument that ignores the
+congruence condition can prove it.
 
 SOUNDNESS: the hypothesis is exactly rationality of every coefficient
 and the conclusion a single positive natural denominator, so nothing is
@@ -2192,13 +3177,122 @@ works. -/
 theorem exists_qExpansion_denominator {N : ℕ} (hN : 0 < N)
     (g : CuspForm (Gamma0GL N) 2)
     (hg : ∀ m : ℕ, ∃ r : ℚ, qCoeff N g m = (r : ℂ)) :
-    ∃ d : ℕ, 0 < d ∧ ∀ m : ℕ, ∃ z : ℤ, (d : ℂ) * qCoeff N g m = (z : ℂ) :=
-  sorry
+    ∃ d : ℕ, 0 < d ∧ ∀ m : ℕ, ∃ z : ℤ, (d : ℂ) * qCoeff N g m = (z : ℂ) := by
+  classical
+  haveI hfin : Module.Finite ℤ (heckeSubring N) := heckeSubring_moduleFinite N
+  -- the `ℤ`-linear evaluation `T ↦ a₁(T g)`
+  let φ : (heckeSubring N) →ₗ[ℤ] ℂ :=
+    { toFun := fun T => qCoeff N ((T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) g) 1
+      map_add' := fun S T => by
+        have hco : ((S + T : heckeSubring N) :
+              Module.End ℂ (CuspForm (Gamma0GL N) 2))
+            = (S : Module.End ℂ (CuspForm (Gamma0GL N) 2))
+              + (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) :=
+          map_add (Subring.subtype (heckeSubring N)) S T
+        show qCoeff N (((S + T : heckeSubring N) :
+          Module.End ℂ (CuspForm (Gamma0GL N) 2)) g) 1 = _
+        rw [hco, LinearMap.add_apply, ← qCoeffL_apply, map_add,
+          qCoeffL_apply, qCoeffL_apply]
+      map_smul' := fun n T => by
+        have hco : ((n • T : heckeSubring N) :
+              Module.End ℂ (CuspForm (Gamma0GL N) 2))
+            = n • (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) :=
+          map_zsmul (Subring.subtype (heckeSubring N)) n T
+        show qCoeff N (((n • T : heckeSubring N) :
+          Module.End ℂ (CuspForm (Gamma0GL N) 2)) g) 1 = _
+        rw [hco, LinearMap.smul_apply, ← qCoeffL_apply,
+          map_zsmul, qCoeffL_apply, RingHom.id_apply] }
+  have hφ : ∀ T : heckeSubring N,
+      φ T = qCoeff N ((T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) g) 1 :=
+    fun _ => rfl
+  -- the `ℚ`-rational elements of `ℂ`, as a `ℤ`-submodule
+  let ψ : ℚ →ₗ[ℤ] ℂ := ((Rat.castHom ℂ : ℚ →+* ℂ) : ℚ →+ ℂ).toIntLinearMap
+  have hψ : ∀ r : ℚ, ψ r = (r : ℂ) := fun _ => rfl
+  -- the range of `φ` is a finitely generated `ℤ`-submodule of `ℂ`
+  have hrange : (LinearMap.range φ).FG := by
+    have htop : (⊤ : Submodule ℤ (heckeSubring N)).FG := Module.finite_def.mp hfin
+    have h2 := htop.map φ
+    rwa [Submodule.map_top] at h2
+  haveI hnoeth : IsNoetherian ℤ (LinearMap.range φ) :=
+    isNoetherian_of_fg_of_noetherian _ hrange
+  -- the `ℤ`-module generated by the coefficients of `g`
+  set W : Submodule ℤ ℂ :=
+    Submodule.span ℤ (Set.range fun m : ℕ => qCoeff N g m) with hWdef
+  have hmemW : ∀ m : ℕ, qCoeff N g m ∈ W := fun m =>
+    Submodule.subset_span ⟨m, rfl⟩
+  have hWφ : W ≤ LinearMap.range φ := by
+    rw [hWdef]
+    refine Submodule.span_le.mpr ?_
+    rintro x ⟨m, rfl⟩
+    obtain ⟨T, hT, hTe⟩ := exists_mem_heckeSubring_qCoeff hN m
+    exact ⟨⟨T, hT⟩, (hφ ⟨T, hT⟩).trans (hTe g).symm⟩
+  have hWψ : W ≤ LinearMap.range ψ := by
+    rw [hWdef]
+    refine Submodule.span_le.mpr ?_
+    rintro x ⟨m, rfl⟩
+    obtain ⟨r, hr⟩ := hg m
+    exact ⟨r, by rw [hψ]; exact hr.symm⟩
+  -- `W` is finitely generated: a submodule of a noetherian module
+  have hWfg : W.FG := by
+    have h1 : ((W.comap (LinearMap.range φ).subtype).map
+        (LinearMap.range φ).subtype).FG :=
+      (IsNoetherian.noetherian (W.comap (LinearMap.range φ).subtype)).map _
+    rwa [Submodule.map_comap_subtype, inf_eq_right.mpr hWφ] at h1
+  obtain ⟨s, hs⟩ := hWfg
+  -- each generator is rational; clear all their denominators at once
+  have hsrat : ∀ x ∈ s, ∃ r : ℚ, x = (r : ℂ) := by
+    intro x hx
+    have hxW : x ∈ W := by rw [← hs]; exact Submodule.subset_span hx
+    obtain ⟨r, hr⟩ := hWψ hxW
+    exact ⟨r, by rw [← hr, hψ]⟩
+  choose! ρ hρ using hsrat
+  have hden : ∀ r : ℚ, ((r.den : ℚ)) * r = (r.num : ℚ) := by
+    intro r
+    have hd : (r.den : ℚ) ≠ 0 := Nat.cast_ne_zero.mpr r.den_nz
+    calc ((r.den : ℚ)) * r
+        = (r.den : ℚ) * ((r.num : ℚ) / (r.den : ℚ)) := by rw [Rat.num_div_den]
+      _ = (r.num : ℚ) := by field_simp
+  have hclear : ∀ (r : ℚ) (n : ℕ), r.den ∣ n →
+      ∃ z : ℤ, (n : ℂ) * (r : ℂ) = (z : ℂ) := by
+    intro r n hdvd
+    obtain ⟨e, he⟩ := hdvd
+    refine ⟨e * r.num, ?_⟩
+    have hqq : ((n : ℚ)) * r = ((e * r.num : ℤ) : ℚ) := by
+      rw [he]
+      push_cast
+      rw [mul_comm (r.den : ℚ) (e : ℚ), mul_assoc, hden r]
+    calc (n : ℂ) * (r : ℂ) = (((n : ℚ) * r : ℚ) : ℂ) := by push_cast; ring
+      _ = (((e * r.num : ℤ) : ℚ) : ℂ) := by rw [hqq]
+      _ = ((e * r.num : ℤ) : ℂ) := by push_cast; ring
+  refine ⟨∏ x ∈ s, (ρ x).den, Finset.prod_pos fun x _ => (ρ x).den_pos, ?_⟩
+  set d : ℕ := ∏ x ∈ s, (ρ x).den with hddef
+  have key : ∀ x ∈ W, ∃ z : ℤ, (d : ℂ) * x = (z : ℂ) := by
+    intro x hx
+    rw [← hs] at hx
+    refine Submodule.span_induction ?_ ?_ ?_ ?_ hx
+    · intro y hy
+      have hy' : y = ((ρ y : ℚ) : ℂ) := hρ y hy
+      rw [hy']
+      exact hclear (ρ y) d (hddef ▸ Finset.dvd_prod_of_mem _ hy)
+    · exact ⟨0, by simp⟩
+    · rintro y z - - ⟨zy, hzy⟩ ⟨zz, hzz⟩
+      refine ⟨zy + zz, ?_⟩
+      rw [mul_add, hzy, hzz]
+      push_cast
+      ring
+    · rintro n y - ⟨zy, hzy⟩
+      refine ⟨n * zy, ?_⟩
+      rw [zsmul_eq_mul, ← mul_assoc, mul_comm (d : ℂ) (n : ℂ), mul_assoc, hzy]
+      push_cast
+      ring
+  exact fun m => key _ (hmemW m)
 
 /-- **The integral structure of `S₂(Γ₀(N))`** (PROVEN assembly,
-2026-07-25, over the two classical citation leaves
-`exists_rational_qExpansion_spanning` (Shimura's rationality theorem)
-and `exists_qExpansion_denominator` (bounded denominators); formerly
+2026-07-25, over the two classical inputs
+`exists_rational_qExpansion_spanning` (Shimura's rationality theorem,
+still a citation leaf) and `exists_qExpansion_denominator` (bounded
+denominators — since 2026-07-25 itself a PROVEN assembly, over the
+Hecke-finiteness node `heckeSubring_moduleFinite`); formerly
 itself the single sorried carrier, isolated 2026-07-24 as the sharpest
 satisfiable form of the leaf `exists_cuspForm_ringEquiv_conj`, which is
 PROVEN from it by the coordinate-transport glue below): the weight-2
@@ -5355,9 +6449,21 @@ geometric-point group of the generic fibre of a finite flat
 away (`hasFlatProlongationAt_iff_isFlatPointsGroupAt`, PROVEN
 repackaging). The closure properties then split into
 
-* **products** (`IsFlatPointsGroupAt.prod`, sorry node): closure
+* **products** (`IsFlatPointsGroupAt.prod`, PROVEN 2026-07-25 — the
+  stale `sorry node` label here was corrected 2026-07-26): closure
   under binary products, by the tensor product of the two witness
-  Hopf algebras — see its docstring for the mathlib route;
+  Hopf algebras — see its docstring for the mathlib route. MOVED
+  2026-07-26 to
+  `Deformations/RepresentationTheory/FlatPointsGroup.lean`;
+* **quotients** (`IsFlatPointsGroupAt.of_surjective`, PROVEN): closure
+  under equivariant surjections, over
+  `exists_etale_subBialgebra_of_points_surjective` and
+  `exists_hopfOrder_of_subBialgebra` — also MOVED 2026-07-26, together
+  with the carrier itself and the `pi` / `of_addEquiv` /
+  `of_subsingleton` glue, because
+  `hasFlatProlongationAt_of_pi_surjection` in
+  `GaloisRepresentation/HardlyRamified/Deformation.lean` — a module
+  BELOW this one — is exactly `pi` followed by `of_surjective`;
 * **subobjects** (`IsFlatPointsGroupAt.of_injective`, DECOMPOSED
   2026-07-25 into the two étale–Galois leaves
   `exists_etaleHopfAlgebra_of_points_embedding` and
@@ -5379,1880 +6485,60 @@ E2b′ lattice transfer). -/
 
 /-! ##### Convolution glue for points of a tensor product of Hopf orders
 
-The product half of the Raynaud cut needs one general fact: the
-`Ω`-points of a tensor product of two Hopf algebras are the PAIRS of
-points, compatibly with the convolution group law. The lemmas of this
-section establish that in two steps — first over the base ring
-(`tensorPoints_convOne` / `tensorPoints_convMul` / `tensorPoints_comp`,
-the multiplicativity of `Algebra.TensorProduct.lift` for the
-convolution products of the tensor bialgebra), then transported through
-the base-change adjunction `AlgHom.liftEquiv` to the generic fibres
-(`basePointsTensorEquiv` and its `_one` / `_mul` / `_smul` laws), reusing
-the base-change convolution lemmas of `FlatProlongation.lean`. -/
+MOVED 2026-07-26 to `Deformations/RepresentationTheory/FlatPointsGroup.lean`
+together with the product/quotient half of the Raynaud cut it serves
+(`tensorPoints_convOne` / `_convMul` / `_comp`, `algHomTensorProdEquiv`,
+`basePointsTensorEquiv` and its `_apply` / `_one` / `_mul` / `_smul` laws).
+They are unchanged and in the same namespace, so they are still in scope
+here through the import. -/
 
-section TensorPointsGlue
+/-! ##### The carrier and its product/quotient closure — MOVED 2026-07-26
 
-open WithConv
+`IsFlatPointsGroupAt`, `GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt`,
+`IsFlatPointsGroupAt.of_addEquiv` / `.of_subsingleton` / `.prod` / `.pi` /
+`.of_surjective`, and the two nodes the quotient half runs over
+(`exists_etale_subBialgebra_of_points_surjective`,
+`exists_hopfOrder_of_subBialgebra`) now live in
+`Deformations/RepresentationTheory/FlatPointsGroup.lean`, VERBATIM and in
+this same namespace, so everything below still sees them through the import.
 
-variable {R : Type*} [CommRing R] {C : Type*} [CommRing C] [Algebra R C]
-variable {A B : Type*} [CommRing A] [CommRing B] [Bialgebra R A] [Bialgebra R B]
+WHY: `hasFlatProlongationAt_of_pi_surjection` in
+`GaloisRepresentation/HardlyRamified/Deformation.lean` is exactly
+`pi` followed by `of_surjective`, and that module is BELOW this one
+(`Interface` imports `KhareWintenberger` imports `Deformation`), so the
+content had to be published at a lower home rather than re-sorried a
+third time. What stays here is only what no downstream module needs: the
+Hopf-order trio (`exists_hopfOrder_baseChange`,
+`exists_hopfOrder_map_of_surjective_bialgHom`,
+`isFlatPointsGroupAt_of_hopfOrder`), the two étale–Galois embedding
+nodes, and the SUBOBJECT half `IsFlatPointsGroupAt.of_injective`. -/
 
-/-- **Convolution unit of a tensor product of points** (PROVEN): the
-pair `(1, 1)` of counit-units lifts to the counit-unit of the tensor
-bialgebra `A ⊗[R] B`, because its counit is the product of the two
-counits. -/
-theorem tensorPoints_convOne :
-    Algebra.TensorProduct.lift ((1 : WithConv (A →ₐ[R] C)).ofConv)
-        ((1 : WithConv (B →ₐ[R] C)).ofConv) (fun _ _ => Commute.all _ _) =
-      (1 : WithConv (A ⊗[R] B →ₐ[R] C)).ofConv := by
-  refine AlgHom.ext fun x => ?_
-  induction x with
-  | zero => simp
-  | add x y hx hy => simp only [map_add, hx, hy]
-  | tmul a b => simp [AlgHom.convOne_apply, mul_comm]
+/-! ##### The subobject half — MOVED 2026-07-26
 
-/-- **Convolution product of a tensor product of points** (PROVEN):
-`Algebra.TensorProduct.lift` is multiplicative for the convolution
-products, because the comultiplication of the tensor bialgebra is the
-componentwise one composed with the middle-four exchange — so both
-sides evaluate on `a ⊗ₜ b` to the same sum over
-`comul a ⊗ comul b`. -/
-theorem tensorPoints_convMul (f₁ g₁ : WithConv (A →ₐ[R] C))
-    (f₂ g₂ : WithConv (B →ₐ[R] C)) :
-    Algebra.TensorProduct.lift ((f₁ * g₁).ofConv) ((f₂ * g₂).ofConv)
-        (fun _ _ => Commute.all _ _) =
-      (toConv (Algebra.TensorProduct.lift f₁.ofConv f₂.ofConv (fun _ _ => Commute.all _ _)) *
-        toConv (Algebra.TensorProduct.lift g₁.ofConv g₂.ofConv
-          (fun _ _ => Commute.all _ _))).ofConv := by
-  refine AlgHom.ext fun x => ?_
-  induction x with
-  | zero => simp
-  | add x y hx hy => simp only [map_add, hx, hy]
-  | tmul a b =>
-    rw [Algebra.TensorProduct.lift_tmul, AlgHom.convMul_apply, AlgHom.convMul_apply,
-      AlgHom.convMul_apply, TensorProduct.comul_tmul]
-    induction Coalgebra.comul (R := R) a with
-    | zero => simp
-    | add x y hx hy => simp only [TensorProduct.add_tmul, map_add, add_mul, hx, hy]
-    | tmul a₁ a₂ =>
-      induction Coalgebra.comul (R := R) b with
-      | zero => simp
-      | add x y hx hy => simp only [TensorProduct.tmul_add, map_add, mul_add, hx, hy]
-      | tmul b₁ b₂ =>
-        simp only [TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul,
-          Algebra.TensorProduct.lift_tmul]
-        ring
+The Hopf-order trio (`exists_hopfOrder_baseChange`,
+`exists_hopfOrder_map_of_surjective_bialgHom`,
+`isFlatPointsGroupAt_of_hopfOrder`), the two étale–Galois nodes
+(`exists_etaleHopfAlgebra_of_points_embedding`,
+`exists_surjective_bialgHom_of_points_injection`), the two convolution
+bridges (`algHom_convOne_comp_bialgHom`, `algHom_convMul_comp_bialgHom`)
+and the subobject closure `IsFlatPointsGroupAt.of_injective` itself now
+live in `Deformations/RepresentationTheory/FlatPointsGroup.lean`,
+VERBATIM and in this same namespace, so everything below still sees them
+through the import.
 
-/-- **Postcomposition through the tensor pairing** (PROVEN): the pairing
-`Algebra.TensorProduct.lift` commutes with postcomposition by an algebra
-map, which is what makes the points identification Galois-equivariant. -/
-theorem tensorPoints_comp {D : Type*} [CommRing D] [Algebra R D] (h : C →ₐ[R] D)
-    (ψ₁ : A →ₐ[R] C) (ψ₂ : B →ₐ[R] C) :
-    Algebra.TensorProduct.lift (h.comp ψ₁) (h.comp ψ₂) (fun _ _ => Commute.all _ _) =
-      h.comp (Algebra.TensorProduct.lift ψ₁ ψ₂ (fun _ _ => Commute.all _ _)) := by
-  refine AlgHom.ext fun x => ?_
-  induction x with
-  | zero => simp
-  | add x y hx hy => simp only [map_add, hx, hy]
-  | tmul a b => simp
+WHY (this correction supersedes the note above, which said the subobject
+half was not needed downstream — it is):
+`hasFlatProlongationAt_of_prod_injection` in
+`GaloisRepresentation/HardlyRamified/Deformation.lean` is `iff` + `prod`
++ `of_injective`, and that module is BELOW this one. The subobject half
+does NOT follow from the quotient half: for a uniserial mod-`p` Galois
+module with trivial socle and nontrivial head `χ`, every simple quotient
+of `W^n` is `χ`, so the trivial submodule is a subobject of a power but
+is NOT an equivariant quotient of any power. So both halves had to go
+down. What remains here of this cut is only the assembly
+`GaloisRep.hasFlatProlongationAt_of_pi_embedding` just below, kept in
+place because its consumers are here. -/
 
-/-- **Points of a tensor product are pairs of points** (PROVEN): for a
-COMMUTATIVE target there is no commutation side condition, so
-`Algebra.TensorProduct.lift` and restriction along the two inclusions
-are mutually inverse. -/
-noncomputable def algHomTensorProdEquiv :
-    ((A ⊗[R] B) →ₐ[R] C) ≃ ((A →ₐ[R] C) × (B →ₐ[R] C)) where
-  toFun Φ := (Φ.comp Algebra.TensorProduct.includeLeft,
-    Φ.comp (Algebra.TensorProduct.includeRight (R := R) (A := A) (B := B)))
-  invFun p := Algebra.TensorProduct.lift p.1 p.2 (fun _ _ => Commute.all _ _)
-  left_inv Φ := by ext x <;> simp
-  right_inv p := by
-    refine Prod.ext ?_ ?_ <;> refine AlgHom.ext fun x => ?_ <;> simp
-
-end TensorPointsGlue
-
-section BasePointsGlue
-
-open WithConv
-
-variable {R : Type*} [CommRing R]
-variable {S L : Type u} [Field S] [Field L] [Algebra S L] [Algebra R S] [Algebra R L]
-  [IsScalarTower R S L]
-variable {A B : Type u} [CommRing A] [CommRing B] [Bialgebra R A] [Bialgebra R B]
-
-/-- **The generic-fibre points of a tensor product of Hopf orders**
-(PROVEN): pairs of `L`-points of the base changes `S ⊗[R] A`,
-`S ⊗[R] B` are the `L`-points of the base change of `A ⊗[R] B`. Built
-from the base-change adjunction `AlgHom.liftEquiv` on each side and
-`algHomTensorProdEquiv` over the base ring. -/
-noncomputable def basePointsTensorEquiv :
-    ((S ⊗[R] A →ₐ[S] L) × (S ⊗[R] B →ₐ[S] L)) ≃ (S ⊗[R] (A ⊗[R] B) →ₐ[S] L) :=
-  ((AlgHom.liftEquiv R S A L).symm.prodCongr (AlgHom.liftEquiv R S B L).symm).trans
-    (algHomTensorProdEquiv.symm.trans (AlgHom.liftEquiv R S (A ⊗[R] B) L))
-
-/-- The defining formula of `basePointsTensorEquiv`. -/
-theorem basePointsTensorEquiv_apply (p : (S ⊗[R] A →ₐ[S] L) × (S ⊗[R] B →ₐ[S] L)) :
-    basePointsTensorEquiv p = AlgHom.liftEquiv R S (A ⊗[R] B) L
-      (Algebra.TensorProduct.lift ((AlgHom.liftEquiv R S A L).symm p.1)
-        ((AlgHom.liftEquiv R S B L).symm p.2) (fun _ _ => Commute.all _ _)) := rfl
-
-set_option maxSynthPendingDepth 4 in
-/-- `basePointsTensorEquiv` sends the pair of convolution units to the
-convolution unit (of the bare-hom monoid used by the flat-prolongation
-package). -/
-theorem basePointsTensorEquiv_one :
-    basePointsTensorEquiv ((1 : S ⊗[R] A →ₐ[S] L), (1 : S ⊗[R] B →ₐ[S] L)) = 1 := by
-  rw [basePointsTensorEquiv_apply, vendored_one_eq_convOne (A₀ := S ⊗[R] A),
-    vendored_one_eq_convOne (A₀ := S ⊗[R] B),
-    liftEquiv_symm_convOne, liftEquiv_symm_convOne, tensorPoints_convOne, liftEquiv_convOne,
-    vendored_one_eq_convOne]
-
-set_option maxSynthPendingDepth 4 in
-/-- `basePointsTensorEquiv` is multiplicative for the componentwise
-convolution product. -/
-theorem basePointsTensorEquiv_mul (p q : (S ⊗[R] A →ₐ[S] L) × (S ⊗[R] B →ₐ[S] L)) :
-    basePointsTensorEquiv (p.1 * q.1, p.2 * q.2) =
-      basePointsTensorEquiv p * basePointsTensorEquiv q := by
-  rw [basePointsTensorEquiv_apply, basePointsTensorEquiv_apply, basePointsTensorEquiv_apply,
-    vendored_mul_eq_convMul p.1 q.1, vendored_mul_eq_convMul p.2 q.2,
-    liftEquiv_symm_convMul, liftEquiv_symm_convMul, tensorPoints_convMul, liftEquiv_convMul,
-    vendored_mul_eq_convMul]
-
-set_option maxSynthPendingDepth 4 in
-/-- `basePointsTensorEquiv` is equivariant for the postcomposition
-action of `Gal(L/S)` on points. -/
-theorem basePointsTensorEquiv_smul (σ : L ≃ₐ[S] L)
-    (p : (S ⊗[R] A →ₐ[S] L) × (S ⊗[R] B →ₐ[S] L)) :
-    basePointsTensorEquiv (σ • p.1, σ • p.2) = σ • basePointsTensorEquiv p := by
-  have h1 : ∀ (φ : S ⊗[R] A →ₐ[S] L), σ • φ = (σ.toAlgHom).comp φ :=
-    fun _ => AlgHom.ext fun _ => rfl
-  have h2 : ∀ (φ : S ⊗[R] B →ₐ[S] L), σ • φ = (σ.toAlgHom).comp φ :=
-    fun _ => AlgHom.ext fun _ => rfl
-  have h3 : ∀ (φ : S ⊗[R] (A ⊗[R] B) →ₐ[S] L), σ • φ = (σ.toAlgHom).comp φ :=
-    fun _ => AlgHom.ext fun _ => rfl
-  rw [basePointsTensorEquiv_apply, basePointsTensorEquiv_apply, h1, h2, h3,
-    liftEquiv_symm_comp, liftEquiv_symm_comp, tensorPoints_comp, liftEquiv_comp]
-
-end BasePointsGlue
-
-section RaynaudClosure
-
-variable (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
-
-local notation "Kᵥ" => HeightOneSpectrum.adicCompletion ℚ v
-local notation "𝒪ᵥ" => HeightOneSpectrum.adicCompletionIntegers ℚ v
-local notation "Γᵥ" =>
-  Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ v)
-local notation "Ωᵥ" =>
-  AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **The flat point-group carrier at `v`**: the additive group `X`
-with its `Γ Kᵥ`-action is, equivariantly, the geometric-point group
-of the generic fibre of some finite flat `𝒪ᵥ`-Hopf algebra with
-étale generic fibre. This is exactly the existential package of
-`GaloisRep.HasFlatProlongationAt` with the representation space
-replaced by an abstract `Γ Kᵥ`-module (the equivariant bijection is
-carried as an `AddMonoidHom` plus an explicit equivariance clause so
-the carrier needs no `DistribMulActionHom` instances on abstract
-`X`); `hasFlatProlongationAt_iff_isFlatPointsGroupAt` is the exact
-repackaging. Raynaud's closure properties of finite flat group
-schemes over the DVR `𝒪ᵥ` become closure properties of this
-predicate (`prod`, `of_injective` below). -/
-def IsFlatPointsGroupAt (X : Type*) [AddCommGroup X]
-    [DistribMulAction Γᵥ X] : Prop :=
-  ∃ (G : Type) (_ : CommRing G) (_ : HopfAlgebra 𝒪ᵥ G)
-    (_ : Module.Flat 𝒪ᵥ G) (_ : Module.Finite 𝒪ᵥ G)
-    (_ : Algebra.Etale Kᵥ (Kᵥ ⊗[𝒪ᵥ] G))
-    (f : Additive (Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Ωᵥ) →+ X),
-    Function.Bijective f ∧
-      ∀ (g : Γᵥ) (y : Additive (Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Ωᵥ)),
-        f (g • y) = g • f y
-
-variable {v}
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **The exact repackaging** (PROVEN): a Galois representation has a
-flat prolongation at `v` iff its local space is a flat point-group at
-`v`. The two sides differ only in how the equivariant bijection is
-carried (`DistribMulActionHom` versus `AddMonoidHom` + equivariance
-clause). -/
-theorem GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt
-    {A : Type*} [CommRing A] [TopologicalSpace A]
-    {M : Type*} [AddCommGroup M] [Module A M] (ρ : GaloisRep ℚ A M) :
-    ρ.HasFlatProlongationAt v ↔ IsFlatPointsGroupAt v (ρ.toLocal v).Space := by
-  constructor
-  · rintro ⟨G, i1, i2, i3, i4, i5, f, hbij⟩
-    exact ⟨G, i1, i2, i3, i4, i5,
-      { toFun := f
-        map_zero' := f.map_zero
-        map_add' := f.map_add }, hbij, fun g y => f.map_smul g y⟩
-  · rintro ⟨G, i1, i2, i3, i4, i5, f, hbij, hequiv⟩
-    exact ⟨G, i1, i2, i3, i4, i5,
-      { toFun := f
-        map_smul' := hequiv
-        map_zero' := f.map_zero
-        map_add' := f.map_add }, hbij⟩
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **Transport** (PROVEN): the flat point-group property moves along
-a `Γ Kᵥ`-equivariant additive isomorphism — the Hopf witness is
-reused verbatim and the point identification is composed with the
-isomorphism. -/
-theorem IsFlatPointsGroupAt.of_addEquiv {X Y : Type*}
-    [AddCommGroup X] [AddCommGroup Y]
-    [DistribMulAction Γᵥ X] [DistribMulAction Γᵥ Y]
-    (h : IsFlatPointsGroupAt v X) (e : X ≃+ Y)
-    (he : ∀ (g : Γᵥ) (x : X), e (g • x) = g • e x) :
-    IsFlatPointsGroupAt v Y := by
-  obtain ⟨G, i1, i2, i3, i4, i5, f, hbij, hequiv⟩ := h
-  exact ⟨G, i1, i2, i3, i4, i5, e.toAddMonoidHom.comp f,
-    e.bijective.comp hbij, fun g y => by
-      show e (f (g • y)) = g • e (f y)
-      rw [hequiv, he]⟩
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-/-- **The trivial package** (PROVEN — the abstract form of
-`GaloisRep.hasFlatProlongationAt_of_subsingleton`, by the same
-argument): a subsingleton is a flat point-group at every `v`,
-witnessed by the trivial Hopf algebra `𝒪ᵥ` itself, whose generic
-fibre `Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ ≅ Kᵥ` is étale with a unique `Kᵥᵃˡᵍ`-point. -/
-theorem IsFlatPointsGroupAt.of_subsingleton {X : Type*}
-    [AddCommGroup X] [DistribMulAction Γᵥ X] [Subsingleton X] :
-    IsFlatPointsGroupAt v X := by
-  classical
-  haveI hsub : Subsingleton ((Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ) →ₐ[Kᵥ] Ωᵥ) := by
-    constructor
-    intro φ ψ
-    have h1 : ∀ (χ : (Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ) →ₐ[Kᵥ] Ωᵥ),
-        χ = (χ.comp (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).symm.toAlgHom).comp
-          (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).toAlgHom := by
-      intro χ
-      refine AlgHom.ext fun x => ?_
-      simp
-    rw [h1 φ, h1 ψ, Subsingleton.elim
-      (φ.comp (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).symm.toAlgHom)
-      (ψ.comp (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).symm.toAlgHom)]
-  have hne : Nonempty ((Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ) →ₐ[Kᵥ] Ωᵥ) :=
-    ⟨(IsScalarTower.toAlgHom Kᵥ Kᵥ Ωᵥ).comp
-      (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).toAlgHom⟩
-  exact ⟨𝒪ᵥ, inferInstance, inferInstance, inferInstance, inferInstance,
-    Algebra.Etale.of_equiv (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).symm,
-    { toFun := fun _ => (0 : X)
-      map_zero' := rfl
-      map_add' := fun _ _ => (add_zero (0 : X)).symm },
-    ⟨fun a b _ => Subsingleton.elim a b,
-      fun _ => ⟨Additive.ofMul hne.some, Subsingleton.elim _ _⟩⟩,
-    fun g _ => (smul_zero g).symm⟩
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-set_option maxSynthPendingDepth 4 in
-/-- **Product closure** (PROVEN 2026-07-25 — the products half of
-Raynaud closure: finite flat group schemes over the DVR `𝒪ᵥ` are
-closed under finite products): the binary product of two flat
-point-groups at `v` is a flat point-group at `v`. The witness is the
-tensor product `G₁ ⊗[𝒪ᵥ] G₂` of the two witness Hopf algebras —
-* Hopf structure: the `HopfAlgebra 𝒪ᵥ (G₁ ⊗[𝒪ᵥ] G₂)` instance of
-  `Mathlib.RingTheory.HopfAlgebra.TensorProduct`; flatness and
-  module-finiteness of the tensor product are mathlib instances.
-* Generic fibre: `(Kᵥ ⊗[𝒪ᵥ] G₁) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G₂) ≃ₐ[Kᵥ]
-  Kᵥ ⊗[𝒪ᵥ] (G₁ ⊗[𝒪ᵥ] G₂)` (`Algebra.TensorProduct.cancelBaseChange`
-  then `Algebra.TensorProduct.assoc`); étaleness of the left side is
-  base change (`Algebra.Etale.baseChange`, `Kᵥ → Kᵥ ⊗[𝒪ᵥ] G₁`) plus
-  composition (`Algebra.Etale.comp`), and it is transported through
-  the isomorphism by `Algebra.Etale.of_equiv`.
-* Points: `basePointsTensorEquiv` identifies the `Kᵥᵃˡᵍ`-points of
-  the generic fibre with PAIRS of points (no commutation side
-  condition in the commutative target), and
-  `basePointsTensorEquiv_one` / `_mul` / `_smul` make that
-  identification an equivariant isomorphism of convolution groups.
-  Composing with `f₁ × f₂` lands in `X × Y`.
-Unconditionally TRUE; no hypothesis package. -/
-theorem IsFlatPointsGroupAt.prod {X Y : Type*}
-    [AddCommGroup X] [AddCommGroup Y]
-    [DistribMulAction Γᵥ X] [DistribMulAction Γᵥ Y]
-    (hX : IsFlatPointsGroupAt v X) (hY : IsFlatPointsGroupAt v Y) :
-    IsFlatPointsGroupAt v (X × Y) := by
-  classical
-  obtain ⟨G₁, cr₁, hopf₁, flat₁, fin₁, et₁, f₁, hbij₁, heq₁⟩ := hX
-  obtain ⟨G₂, cr₂, hopf₂, flat₂, fin₂, et₂, f₂, hbij₂, heq₂⟩ := hY
-  letI := cr₁; letI := hopf₁; letI := flat₁; letI := fin₁; letI := et₁
-  letI := cr₂; letI := hopf₂; letI := flat₂; letI := fin₂; letI := et₂
-  -- the generic fibre of the tensor witness is étale: base change then composition
-  haveI hEt : Algebra.Etale Kᵥ ((Kᵥ ⊗[𝒪ᵥ] G₁) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G₂)) :=
-    Algebra.Etale.comp Kᵥ (Kᵥ ⊗[𝒪ᵥ] G₁) ((Kᵥ ⊗[𝒪ᵥ] G₁) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G₂))
-  -- the points of the tensor witness are pairs of points, equivariantly and
-  -- compatibly with the convolution group law
-  obtain ⟨e, hesmul⟩ :
-      ∃ e : (Additive (Kᵥ ⊗[𝒪ᵥ] G₁ →ₐ[Kᵥ] Ωᵥ) × Additive (Kᵥ ⊗[𝒪ᵥ] G₂ →ₐ[Kᵥ] Ωᵥ)) ≃+
-          Additive (Kᵥ ⊗[𝒪ᵥ] (G₁ ⊗[𝒪ᵥ] G₂) →ₐ[Kᵥ] Ωᵥ),
-        ∀ (g : Γᵥ) (p : Additive (Kᵥ ⊗[𝒪ᵥ] G₁ →ₐ[Kᵥ] Ωᵥ) ×
-            Additive (Kᵥ ⊗[𝒪ᵥ] G₂ →ₐ[Kᵥ] Ωᵥ)),
-          e (g • p) = g • e p := by
-    refine ⟨{ toFun := fun p =>
-                Additive.ofMul (basePointsTensorEquiv (p.1.toMul, p.2.toMul))
-              invFun := fun Φ =>
-                (Additive.ofMul (basePointsTensorEquiv.symm Φ.toMul).1,
-                  Additive.ofMul (basePointsTensorEquiv.symm Φ.toMul).2)
-              left_inv := fun p => by
-                show (Additive.ofMul (basePointsTensorEquiv.symm
-                      (basePointsTensorEquiv (p.1.toMul, p.2.toMul))).1,
-                    Additive.ofMul (basePointsTensorEquiv.symm
-                      (basePointsTensorEquiv (p.1.toMul, p.2.toMul))).2) = p
-                rw [Equiv.symm_apply_apply]
-                exact rfl
-              right_inv := fun Φ => by
-                show Additive.ofMul (basePointsTensorEquiv
-                    ((basePointsTensorEquiv.symm Φ.toMul).1,
-                      (basePointsTensorEquiv.symm Φ.toMul).2)) = Φ
-                rw [Prod.mk.eta, Equiv.apply_symm_apply]
-                exact rfl
-              map_add' := fun p q => ?_ }, fun g p => ?_⟩
-    · show Additive.ofMul (basePointsTensorEquiv
-        (Additive.toMul (p.1 + q.1), Additive.toMul (p.2 + q.2))) = _
-      show Additive.ofMul (basePointsTensorEquiv
-        (p.1.toMul * q.1.toMul, p.2.toMul * q.2.toMul)) = _
-      rw [basePointsTensorEquiv_mul (p := (p.1.toMul, p.2.toMul))
-        (q := (q.1.toMul, q.2.toMul))]
-      rfl
-    · show Additive.ofMul (basePointsTensorEquiv
-        (Additive.toMul (g • p.1), Additive.toMul (g • p.2))) = _
-      show Additive.ofMul (basePointsTensorEquiv
-        (g • p.1.toMul, g • p.2.toMul)) = _
-      rw [basePointsTensorEquiv_smul (p := (p.1.toMul, p.2.toMul))]
-      rfl
-  refine ⟨G₁ ⊗[𝒪ᵥ] G₂, inferInstance, inferInstance, inferInstance, inferInstance,
-    Algebra.Etale.of_equiv
-      ((Algebra.TensorProduct.cancelBaseChange 𝒪ᵥ Kᵥ Kᵥ (Kᵥ ⊗[𝒪ᵥ] G₁) G₂).trans
-        (Algebra.TensorProduct.assoc 𝒪ᵥ 𝒪ᵥ Kᵥ Kᵥ G₁ G₂)),
-    { toFun := fun Φ => (f₁ (e.symm Φ).1, f₂ (e.symm Φ).2)
-      map_zero' := by simp
-      map_add' := fun Φ Ψ => by simp [map_add e.symm] }, ?_, ?_⟩
-  · -- bijectivity: the pair identification and both point identifications are bijective
-    exact (hbij₁.prodMap hbij₂).comp e.symm.bijective
-  · -- equivariance: `e.symm` is equivariant by `hesmul`, and so is `f₁ × f₂`
-    intro g Φ
-    have hsymm : e.symm (g • Φ) = g • e.symm Φ := by
-      apply e.injective
-      rw [e.apply_symm_apply, hesmul, e.apply_symm_apply]
-    show ((f₁ (e.symm (g • Φ)).1, f₂ (e.symm (g • Φ)).2) : X × Y) =
-      g • ((f₁ (e.symm Φ).1, f₂ (e.symm Φ).2) : X × Y)
-    rw [hsymm]
-    exact Prod.ext (heq₁ g (e.symm Φ).1) (heq₂ g (e.symm Φ).2)
-
-/-! ##### Schematic closure over the DVR (PROVEN 2026-07-25)
-
-The commutative-algebra half of Raynaud's subobject closure: Hopf
-ORDERS (finitely generated `𝒪ᵥ`-subalgebras spanning the generic
-fibre and stable under counit, antipode and comultiplication, in the
-exact vocabulary of the PROVEN
-`exists_flat_hopf_form_of_hopf_order` of
-`KnownIn1980s/EllipticCurves/Flat.lean`) exist canonically in the
-generic fibre of a finite flat Hopf algebra
-(`exists_hopfOrder_baseChange`), push forward along a SURJECTIVE
-bialgebra homomorphism (`exists_hopfOrder_map_of_surjective_bialgHom`
-— the surjective analogue of the vendored
-`exists_hopf_order_map_of_bialgEquiv`), and turn back into a flat
-point-group package (`isFlatPointsGroupAt_of_hopfOrder`). No
-`e < p − 1` bound is needed anywhere: Raynaud's bound enters only for
-uniqueness/full-faithfulness, never for existence. -/
-
-set_option maxHeartbeats 1000000 in
-/-- **The convolution unit is preserved by precomposition with a
-bialgebra homomorphism** (PROVEN): the unit of the vendored bare-hom
-convolution monoid on `C →ₐ[K₁] L₁` (`Deformations/RepresentationTheory/
-Etale.lean`, the monoid used by `GaloisRep.HasFlatProlongationAt` and
-hence by `IsFlatPointsGroupAt`) is `Algebra.ofId ∘ counit`, and a
-bialgebra homomorphism intertwines the counits. -/
-theorem algHom_convOne_comp_bialgHom {K₁ L₁ : Type u} [Field K₁] [Field L₁]
-    [Algebra K₁ L₁] {B C : Type*} [CommRing B] [Bialgebra K₁ B] [CommRing C]
-    [Bialgebra K₁ C] (Φ : B →ₐc[K₁] C) :
-    (1 : C →ₐ[K₁] L₁).comp (Φ : B →ₐ[K₁] C) = 1 := by
-  have hAA : AlgHomClass.toAlgHom Φ = (Φ : B →ₐ[K₁] C) := rfl
-  have hc : (Bialgebra.counitAlgHom K₁ C).comp (Φ : B →ₐ[K₁] C) =
-      Bialgebra.counitAlgHom K₁ B := by
-    rw [← hAA]; exact BialgHomClass.counitAlgHom_comp Φ
-  have h1 : (1 : C →ₐ[K₁] L₁) =
-      (Algebra.ofId K₁ L₁).comp (Bialgebra.counitAlgHom K₁ C) := rfl
-  have h2 : (1 : B →ₐ[K₁] L₁) =
-      (Algebra.ofId K₁ L₁).comp (Bialgebra.counitAlgHom K₁ B) := rfl
-  rw [h1, h2, AlgHom.comp_assoc, hc]
-
-set_option maxHeartbeats 1000000 in
-/-- **The convolution product is preserved by precomposition with a
-bialgebra homomorphism** (PROVEN): the vendored bare-hom convolution
-agrees with mathlib's `WithConv` convolution
-(`vendored_mul_eq_convMul`), for which this is
-`AlgHom.convMul_comp_bialgHom_distrib`. Together with
-`algHom_convOne_comp_bialgHom` this makes precomposition with a
-bialgebra homomorphism an additive map of the point groups. -/
-theorem algHom_convMul_comp_bialgHom {K₁ L₁ : Type u} [Field K₁] [Field L₁]
-    [Algebra K₁ L₁] {B C : Type*} [CommRing B] [Bialgebra K₁ B] [CommRing C]
-    [Bialgebra K₁ C] (Φ : B →ₐc[K₁] C) (φ ψ : C →ₐ[K₁] L₁) :
-    (φ * ψ).comp (Φ : B →ₐ[K₁] C) =
-      (φ.comp (Φ : B →ₐ[K₁] C)) * (ψ.comp (Φ : B →ₐ[K₁] C)) := by
-  rw [vendored_mul_eq_convMul φ ψ, vendored_mul_eq_convMul]
-  exact AlgHom.convMul_comp_bialgHom_distrib
-    (WithConv.toConv φ) (WithConv.toConv ψ) Φ
-
-set_option maxHeartbeats 1000000 in
-/-- **The canonical Hopf order in a base-changed Hopf algebra**
-(PROVEN, curve-free and place-free): for a module-finite Hopf
-`R`-algebra `G` and any `R`-algebra `S`, the image `1 ⊗ G` of `G` in
-`S ⊗[R] G` is a Hopf ORDER — finitely generated over `R`, spanning
-`S ⊗[R] G` over `S`, with counit landing in the image of `R`, stable
-under the antipode, and with comultiplication in the `R`-span of its
-pure tensors — in the exact vocabulary consumed by
-`exists_flat_hopf_form_of_hopf_order`. All five clauses are the
-base-change structure formulas `TensorProduct.counit_tmul`,
-`TensorProduct.comul_tmul` and the definitional antipode of the base
-change, evaluated at `1 ⊗ₜ g`. -/
-theorem exists_hopfOrder_baseChange
-    (R : Type*) [CommRing R] (S : Type*) [CommRing S] [Algebra R S]
-    (G : Type*) [CommRing G] [HopfAlgebra R G] [Module.Finite R G] :
-    ∃ G₀ : Subalgebra R (S ⊗[R] G),
-      (Subalgebra.toSubmodule G₀).FG ∧
-      Submodule.span S (G₀ : Set (S ⊗[R] G)) = ⊤ ∧
-      (∀ x ∈ G₀, Bialgebra.counitAlgHom S (S ⊗[R] G) x ∈ (algebraMap R S).range) ∧
-      (∀ x ∈ G₀, HopfAlgebra.antipode S x ∈ G₀) ∧
-      (∀ x ∈ G₀, Bialgebra.comulAlgHom S (S ⊗[R] G) x ∈
-        Submodule.span R {z : (S ⊗[R] G) ⊗[S] (S ⊗[R] G) |
-          ∃ a ∈ G₀, ∃ b ∈ G₀, a ⊗ₜ[S] b = z}) := by
-  classical
-  set G₀ : Subalgebra R (S ⊗[R] G) :=
-    (⊤ : Subalgebra R G).map (Algebra.TensorProduct.includeRight : G →ₐ[R] S ⊗[R] G)
-    with hG₀
-  have hmem : ∀ g : G, ((1 : S) ⊗ₜ[R] g) ∈ G₀ :=
-    fun g => Subalgebra.mem_map.mpr ⟨g, Algebra.mem_top, rfl⟩
-  have htop : (Subalgebra.toSubmodule (⊤ : Subalgebra R G)) = ⊤ := by ext x; simp
-  refine ⟨G₀, ?_, ?_, ?_, ?_, ?_⟩
-  · rw [hG₀, Subalgebra.map_toSubmodule, htop]
-    exact (Module.finite_def.mp inferInstance).map _
-  · rw [eq_top_iff]
-    rintro x -
-    induction x with
-    | zero => exact Submodule.zero_mem _
-    | tmul s g =>
-        have hs : s ⊗ₜ[R] g = s • ((1 : S) ⊗ₜ[R] g) := by
-          rw [TensorProduct.smul_tmul']; simp
-        rw [hs]
-        exact Submodule.smul_mem _ _ (Submodule.subset_span (hmem g))
-    | add x y hx hy => exact Submodule.add_mem _ hx hy
-  · rintro x hx
-    obtain ⟨g, -, rfl⟩ := Subalgebra.mem_map.mp hx
-    refine ⟨Coalgebra.counit (R := R) g, ?_⟩
-    show algebraMap R S (Coalgebra.counit (R := R) g) =
-      Coalgebra.counit (R := S) ((1 : S) ⊗ₜ[R] g)
-    rw [TensorProduct.counit_tmul]
-    simp [Algebra.smul_def]
-  · rintro x hx
-    obtain ⟨g, -, rfl⟩ := Subalgebra.mem_map.mp hx
-    show HopfAlgebra.antipode (R := S) ((1 : S) ⊗ₜ[R] g) ∈ G₀
-    show (1 : S) ⊗ₜ[R] (HopfAlgebra.antipode (R := R) g) ∈ G₀
-    exact hmem _
-  · rintro x hx
-    obtain ⟨g, -, rfl⟩ := Subalgebra.mem_map.mp hx
-    show Coalgebra.comul (R := S) ((1 : S) ⊗ₜ[R] g) ∈ _
-    rw [TensorProduct.comul_tmul, CommSemiring.comul_apply]
-    generalize Coalgebra.comul (R := R) g = t
-    induction t with
-    | zero => simp
-    | tmul a b =>
-        rw [TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul]
-        exact Submodule.subset_span ⟨_, hmem a, _, hmem b, rfl⟩
-    | add p q hp hq =>
-        rw [TensorProduct.tmul_add, map_add]
-        exact Submodule.add_mem _ hp hq
-
-set_option maxHeartbeats 1000000 in
-/-- **Hopf orders push forward along surjective bialgebra
-homomorphisms** (PROVEN, curve-free and place-free — the SURJECTIVE
-analogue of the vendored `exists_hopf_order_map_of_bialgEquiv`, by
-the same pointwise structure-map compatibilities; surjectivity is
-used only for the spanning clause, where the equivalence proof used
-`Φ.toAlgEquiv.surjective`): the image of a Hopf-closed `R₀`-order
-under a surjective `K₀`-bialgebra homomorphism of commutative Hopf
-`K₀`-algebras (both towers over `R₀`) is again a Hopf-closed order.
-This is the schematic-closure step of Raynaud's subobject theorem:
-the generic-fibre quotient is `H`, and the order is the image of the
-integral model — module-finiteness, counit integrality, antipode
-stability and comultiplication closure transport pointwise, the
-antipode one by `antipodeAlgHom_comp_bialgHom`. -/
-theorem exists_hopfOrder_map_of_surjective_bialgHom
-    {R₀ : Type*} [CommRing R₀] {K₀ : Type*} [Field K₀] [Algebra R₀ K₀]
-    (HK₁ : Type*) [CommRing HK₁] [HopfAlgebra K₀ HK₁]
-    [Algebra R₀ HK₁] [IsScalarTower R₀ K₀ HK₁]
-    (HK₂ : Type*) [CommRing HK₂] [HopfAlgebra K₀ HK₂]
-    [Algebra R₀ HK₂] [IsScalarTower R₀ K₀ HK₂]
-    (Φ : HK₁ →ₐc[K₀] HK₂) (hΦ : Function.Surjective (Φ : HK₁ →ₐ[K₀] HK₂))
-    (H₀ : Subalgebra R₀ HK₁)
-    (hfg : (Subalgebra.toSubmodule H₀).FG)
-    (hspan : Submodule.span K₀ (H₀ : Set HK₁) = ⊤)
-    (hcounit : ∀ x ∈ H₀, Bialgebra.counitAlgHom K₀ HK₁ x ∈ (algebraMap R₀ K₀).range)
-    (hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode K₀ x ∈ H₀)
-    (hcomul : ∀ x ∈ H₀, Bialgebra.comulAlgHom K₀ HK₁ x ∈
-      Submodule.span R₀ {z : HK₁ ⊗[K₀] HK₁ | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K₀] b = z}) :
-    ∃ H₀' : Subalgebra R₀ HK₂,
-      (Subalgebra.toSubmodule H₀').FG ∧
-      Submodule.span K₀ (H₀' : Set HK₂) = ⊤ ∧
-      (∀ x ∈ H₀', Bialgebra.counitAlgHom K₀ HK₂ x ∈ (algebraMap R₀ K₀).range) ∧
-      (∀ x ∈ H₀', HopfAlgebra.antipode K₀ x ∈ H₀') ∧
-      (∀ x ∈ H₀', Bialgebra.comulAlgHom K₀ HK₂ x ∈
-        Submodule.span R₀ {z : HK₂ ⊗[K₀] HK₂ |
-          ∃ a ∈ H₀', ∃ b ∈ H₀', a ⊗ₜ[K₀] b = z}) := by
-  classical
-  set ΦA : HK₁ →ₐ[K₀] HK₂ := (Φ : HK₁ →ₐ[K₀] HK₂) with hΦA
-  set ψ : HK₁ →ₐ[R₀] HK₂ := ΦA.restrictScalars R₀ with hψ
-  have hcounit_pt : ∀ x : HK₁, Bialgebra.counitAlgHom K₀ HK₂ (ΦA x) =
-      Bialgebra.counitAlgHom K₀ HK₁ x := fun x =>
-    AlgHom.congr_fun (BialgHomClass.counitAlgHom_comp Φ) x
-  have hantipode_pt : ∀ x : HK₁, HopfAlgebra.antipode K₀ (ΦA x) =
-      ΦA (HopfAlgebra.antipode K₀ x) := fun x =>
-    AlgHom.congr_fun (antipodeAlgHom_comp_bialgHom Φ) x
-  have hcomul_pt : ∀ x : HK₁, Bialgebra.comulAlgHom K₀ HK₂ (ΦA x) =
-      Algebra.TensorProduct.map ΦA ΦA (Bialgebra.comulAlgHom K₀ HK₁ x) := fun x =>
-    (AlgHom.congr_fun (BialgHomClass.map_comp_comulAlgHom Φ) x).symm
-  refine ⟨H₀.map ψ, ?_, ?_, ?_, ?_, ?_⟩
-  · rw [Subalgebra.map_toSubmodule]
-    exact hfg.map ψ.toLinearMap
-  · have hcoe : (↑(H₀.map ψ) : Set HK₂) = ⇑ΦA.toLinearMap '' (H₀ : Set HK₁) := by
-      rw [Subalgebra.coe_map]; rfl
-    rw [hcoe, Submodule.span_image, hspan, Submodule.map_top, LinearMap.range_eq_top]
-    exact hΦ
-  · rintro y hy
-    obtain ⟨x, hx, rfl⟩ := Subalgebra.mem_map.mp hy
-    show Bialgebra.counitAlgHom K₀ HK₂ (ΦA x) ∈ _
-    rw [hcounit_pt]
-    exact hcounit x hx
-  · rintro y hy
-    obtain ⟨x, hx, rfl⟩ := Subalgebra.mem_map.mp hy
-    show HopfAlgebra.antipode K₀ (ΦA x) ∈ _
-    rw [hantipode_pt]
-    exact Subalgebra.mem_map.mpr ⟨HopfAlgebra.antipode K₀ x, hantipode x hx, rfl⟩
-  · rintro y hy
-    obtain ⟨x, hx, rfl⟩ := Subalgebra.mem_map.mp hy
-    show Bialgebra.comulAlgHom K₀ HK₂ (ΦA x) ∈ _
-    rw [hcomul_pt]
-    set T : HK₁ ⊗[K₀] HK₁ →ₗ[R₀] HK₂ ⊗[K₀] HK₂ :=
-      ((Algebra.TensorProduct.map ΦA ΦA).toLinearMap).restrictScalars R₀ with hT
-    have hmem : T (Bialgebra.comulAlgHom K₀ HK₁ x) ∈
-        Submodule.map T (Submodule.span R₀
-          {z : HK₁ ⊗[K₀] HK₁ | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K₀] b = z}) :=
-      Submodule.mem_map_of_mem (hcomul x hx)
-    rw [Submodule.map_span] at hmem
-    refine Submodule.span_mono ?_ hmem
-    rintro _ ⟨z, ⟨a, ha, b, hb, rfl⟩, rfl⟩
-    exact ⟨ΦA a, Subalgebra.mem_map.mpr ⟨a, ha, rfl⟩,
-      ΦA b, Subalgebra.mem_map.mpr ⟨b, hb, rfl⟩, rfl⟩
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-/-- **A Hopf order with the right points is a flat point-group
-package** (PROVEN): if a finite étale `Kᵥ`-Hopf algebra `H` carries a
-Hopf `𝒪ᵥ`-order `H₀` and its `Kᵥᵃˡᵍ`-points are, `Γ Kᵥ`-equivariantly,
-the group `X`, then `X` is a flat point-group at `v`. Proof: the
-vendored `exists_flat_hopf_form_of_hopf_order` turns the order into a
-finite flat Hopf `𝒪ᵥ`-algebra `H'` with a bialgebra equivalence
-`Kᵥ ⊗[𝒪ᵥ] H' ≃ₐc H`, whose generic fibre is therefore étale
-(`Algebra.Etale.of_equiv`); precomposition with the inverse
-equivalence identifies the points of `Kᵥ ⊗[𝒪ᵥ] H'` with those of `H`
-— bijectively (an inverse is precomposition with the equivalence
-itself) and ADDITIVELY, since a bialgebra homomorphism preserves the
-convolution unit and product (`algHom_convOne_comp_bialgHom`,
-`algHom_convMul_comp_bialgHom`) — and `Γ Kᵥ`-equivariantly, because
-the Galois action is postcomposition, which commutes with
-precomposition. -/
-theorem isFlatPointsGroupAt_of_hopfOrder {X : Type*} [AddCommGroup X]
-    [DistribMulAction Γᵥ X]
-    (H : Type) [CommRing H] [HopfAlgebra Kᵥ H] [Module.Finite Kᵥ H]
-    [Algebra.Etale Kᵥ H] [Algebra 𝒪ᵥ H] [IsScalarTower 𝒪ᵥ Kᵥ H]
-    (H₀ : Subalgebra 𝒪ᵥ H)
-    (hfg : (Subalgebra.toSubmodule H₀).FG)
-    (hspan : Submodule.span Kᵥ (H₀ : Set H) = ⊤)
-    (hcounit : ∀ x ∈ H₀, Bialgebra.counitAlgHom Kᵥ H x ∈ (algebraMap 𝒪ᵥ Kᵥ).range)
-    (hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode Kᵥ x ∈ H₀)
-    (hcomul : ∀ x ∈ H₀, Bialgebra.comulAlgHom Kᵥ H x ∈
-      Submodule.span 𝒪ᵥ {z : H ⊗[Kᵥ] H | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[Kᵥ] b = z})
-    (e : Additive (H →ₐ[Kᵥ] Ωᵥ) →+ X) (hbij : Function.Bijective e)
-    (hee : ∀ (g : Γᵥ) (y : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • y) = g • e y) :
-    IsFlatPointsGroupAt v X := by
-  classical
-  obtain ⟨H', iCR, iHopf, iFin, iFlat, ⟨Φ⟩⟩ :=
-    exists_flat_hopf_form_of_hopf_order 𝒪ᵥ Kᵥ H H₀ hfg hspan hcounit hantipode hcomul
-  letI := iCR
-  letI := iHopf
-  set Ψ : H →ₐc[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] H') := Φ.symm.toBialgHom with hΨ
-  set ΨA : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] H') := (Ψ : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] H')) with hΨA
-  have hmn : ∀ ψ : (Kᵥ ⊗[𝒪ᵥ] H') →ₐ[Kᵥ] Ωᵥ,
-      (ψ.comp ΨA).comp (Φ.toAlgEquiv.toAlgHom) = ψ := fun ψ =>
-    AlgHom.ext fun x => by
-      show ψ (ΨA (Φ.toAlgEquiv.toAlgHom x)) = ψ x
-      have hx : ΨA (Φ.toAlgEquiv.toAlgHom x) = x := by
-        show Φ.symm (Φ x) = x
-        simp
-      rw [hx]
-  have hnm : ∀ φ : H →ₐ[Kᵥ] Ωᵥ,
-      (φ.comp (Φ.toAlgEquiv.toAlgHom)).comp ΨA = φ := fun φ =>
-    AlgHom.ext fun x => by
-      show φ (Φ.toAlgEquiv.toAlgHom (ΨA x)) = φ x
-      have hx : Φ.toAlgEquiv.toAlgHom (ΨA x) = x := by
-        show Φ (Φ.symm x) = x
-        simp
-      rw [hx]
-  refine ⟨H', iCR, iHopf, iFlat, iFin, Algebra.Etale.of_equiv Φ.toAlgEquiv.symm,
-    { toFun := fun ψ => e (Additive.ofMul ((Additive.toMul ψ).comp ΨA))
-      map_zero' := by
-        show e (Additive.ofMul ((1 : (Kᵥ ⊗[𝒪ᵥ] H') →ₐ[Kᵥ] Ωᵥ).comp ΨA)) = 0
-        rw [hΨA, algHom_convOne_comp_bialgHom Ψ]
-        exact map_zero e
-      map_add' := fun ψ χ => by
-        show e (Additive.ofMul (((Additive.toMul ψ) * (Additive.toMul χ)).comp ΨA)) = _
-        rw [hΨA, algHom_convMul_comp_bialgHom Ψ]
-        exact map_add e _ _ }, ?_, ?_⟩
-  · refine hbij.comp (Additive.ofMul.bijective.comp ?_)
-    exact Function.bijective_iff_has_inverse.mpr
-      ⟨fun φ => φ.comp (Φ.toAlgEquiv.toAlgHom), hmn, hnm⟩
-  · intro g y
-    show e (Additive.ofMul ((Additive.toMul (g • y)).comp ΨA)) = _
-    have h1 : (Additive.toMul (g • y)).comp ΨA =
-        Additive.toMul (g • (Additive.ofMul ((Additive.toMul y).comp ΨA))) :=
-      AlgHom.ext fun _ => rfl
-    rw [h1]
-    exact hee g _
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-/-- **Étale–Galois, existence half** (PROVEN 2026-07-25 — step (β1) of
-the subobject closure, opened the same day by the decomposition of
-`IsFlatPointsGroupAt.of_injective`): a `Γ Kᵥ`-module `Y` that embeds
-`Γ Kᵥ`-equivariantly into the `Kᵥᵃˡᵍ`-points of a finite étale
-`Kᵥ`-Hopf algebra `Q` is ITSELF the point group of a finite étale
-`Kᵥ`-Hopf algebra. This is Grothendieck's anti-equivalence between
-finite étale `Kᵥ`-algebras and finite discrete `Γ Kᵥ`-sets, with the
-group structure carried along. The proof runs entirely inside the
-PROVEN Gelfand-duality machinery of
-`KnownIn1980s/EllipticCurves/Flat.lean`:
-* `Y` is FINITE: `Q` is module-finite over `Kᵥ`, so it has finitely
-  many `Kᵥᵃˡᵍ`-points (`Finite.algHom` is an instance on the pin) and
-  `j` is injective.
-* the action of `Γ Kᵥ` on `Y` factors through a FINITE Galois
-  quotient `Gal(L/Kᵥ)`. Concretely: a `Kᵥ`-basis `b` of `Q` is finite,
-  so the values `φ (b i)` over the finitely many points `φ` form a
-  FINITE subset `T` of `Kᵥᵃˡᵍ`; `L₀ := Kᵥ(T)` is finite over `Kᵥ`
-  (`IntermediateField.finiteDimensional_adjoin`, every element being
-  integral) and contains the whole image of every point, since points
-  are `Kᵥ`-linear in `b`; its normal closure `L` in `Kᵥᵃˡᵍ` is finite
-  (`normalClosure.is_finiteDimensional`) and Galois (normal, and
-  separable in characteristic zero). Two absolute automorphisms with
-  the same restriction to `L` therefore act identically on the points
-  of `Q` (`AlgEquiv.restrictNormalHom_apply`), hence — `j` being
-  equivariant and injective — identically on `Y`. The descended
-  `ρ : Gal(L/Kᵥ) →* AddMonoid.End Y` is built from the canonical lift
-  `AlgEquiv.liftNormal`, whose `restrictNormalHom` is the identity
-  (`AlgEquiv.restrict_liftNormal`), so `map_one`/`map_mul` are
-  instances of that same "agree on `L` ⇒ agree on `Y`" lemma.
-* `exists_finiteQuotient_galoisModule_etale_package` (`Small.{0} Kᵥ`
-  holds, `Ωᵥ` is a separable closure in characteristic zero) then
-  produces exactly `H`, `Module.Finite`, `Algebra.Etale` and an
-  equivariant additive bijection of its points with `Y`; the
-  `WithConv` wrapper of that statement is the same monoid as the
-  vendored bare-hom one by `vendored_mul_eq_convMul` /
-  `vendored_one_eq_convOne`, which is how the `≃+` it returns becomes
-  the bare-hom `AddMonoidHom` demanded here.
-Unconditionally TRUE; no hypothesis package. -/
-theorem exists_etaleHopfAlgebra_of_points_embedding
-    (Q : Type) [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
-    [Algebra.Etale Kᵥ Q]
-    {Y : Type*} [AddCommGroup Y] [DistribMulAction Γᵥ Y]
-    (j : Y →+ Additive (Q →ₐ[Kᵥ] Ωᵥ)) (hj : Function.Injective j)
-    (hje : ∀ (g : Γᵥ) (y : Y), j (g • y) = g • j y) :
-    ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra Kᵥ H) (_ : Module.Finite Kᵥ H)
-      (_ : Algebra.Etale Kᵥ H) (e : Additive (H →ₐ[Kᵥ] Ωᵥ) →+ Y),
-      Function.Bijective e ∧
-        ∀ (g : Γᵥ) (y : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • y) = g • e y := by
-  classical
-  haveI : Finite Y := Finite.of_injective j hj
-  -- a finite `Kᵥ`-basis of `Q`, and the finite set of all the values taken by
-  -- all the (finitely many) points of `Q` on that basis
-  set n := Module.finrank Kᵥ Q
-  set b := Module.finBasis Kᵥ Q
-  set T : Set Ωᵥ := Set.range (fun p : (Q →ₐ[Kᵥ] Ωᵥ) × Fin n => p.1 (b p.2))
-  haveI : Finite T := Set.Finite.to_subtype (Set.finite_range _)
-  -- the finite subextension over which every point of `Q` is defined, and its
-  -- normal (hence Galois, characteristic zero) closure
-  set L₀ : IntermediateField Kᵥ Ωᵥ := IntermediateField.adjoin Kᵥ T
-  haveI : FiniteDimensional Kᵥ L₀ :=
-    IntermediateField.finiteDimensional_adjoin
-      (fun x _ => (Algebra.IsIntegral.isIntegral (R := Kᵥ) x))
-  set L : IntermediateField Kᵥ Ωᵥ := IntermediateField.normalClosure Kᵥ L₀ Ωᵥ
-  -- every point of `Q` takes values in `L`
-  have hbT : ∀ (φ : Q →ₐ[Kᵥ] Ωᵥ) (i : Fin n), φ (b i) ∈ L₀ :=
-    fun φ i => IntermediateField.subset_adjoin Kᵥ T ⟨(φ, i), rfl⟩
-  have hL₀L : L₀ ≤ L := IntermediateField.le_normalClosure L₀
-  have hval : ∀ (φ : Q →ₐ[Kᵥ] Ωᵥ) (x : Q), φ x ∈ L := by
-    intro φ x
-    rw [← b.sum_repr x, map_sum]
-    refine sum_mem (fun i _ => ?_)
-    rw [Algebra.smul_def, map_mul, AlgHom.commutes]
-    exact mul_mem (L.algebraMap_mem _) (hL₀L (hbT φ i))
-  -- two absolute automorphisms agreeing on `L` act the same on the points of `Q`
-  have hagreepts : ∀ (σ τ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ),
-      AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L σ =
-        AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L τ →
-      ∀ φ : Q →ₐ[Kᵥ] Ωᵥ, σ.toAlgHom.comp φ = τ.toAlgHom.comp φ := by
-    intro σ τ h φ
-    refine AlgHom.ext fun x => ?_
-    have h1 := AlgEquiv.restrictNormalHom_apply (F := Kᵥ) (K₁ := Ωᵥ) L σ ⟨φ x, hval φ x⟩
-    have h2 := AlgEquiv.restrictNormalHom_apply (F := Kᵥ) (K₁ := Ωᵥ) L τ ⟨φ x, hval φ x⟩
-    show σ (φ x) = τ (φ x)
-    rw [← h1, ← h2, h]
-  -- hence the same on `Y`, by injectivity of the embedding
-  have hagree : ∀ (σ τ : Γᵥ),
-      AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L σ =
-        AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L τ →
-      ∀ z : Y, σ • z = τ • z := by
-    intro σ τ h z
-    apply hj
-    rw [hje, hje]
-    exact congrArg Additive.ofMul (hagreepts σ τ h (Additive.toMul (j z)))
-  -- the canonical lift of an automorphism of `L` to `Kᵥᵃˡᵍ`
-  set lft : (L ≃ₐ[Kᵥ] L) → Γᵥ := fun s => (AlgEquiv.liftNormal s Ωᵥ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)
-  have hlftr : ∀ s : L ≃ₐ[Kᵥ] L,
-      AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (lft s) = s :=
-    fun s => AlgEquiv.restrict_liftNormal (E := Ωᵥ) s
-  -- the descended action of the finite Galois quotient `Gal(L/Kᵥ)` on `Y`
-  obtain ⟨ρ, hρ⟩ : ∃ ρ : (L ≃ₐ[Kᵥ] L) →* AddMonoid.End Y, ∀ s z, ρ s z = lft s • z := by
-    refine ⟨{ toFun := fun s => DistribMulAction.toAddMonoidEnd Γᵥ Y (lft s)
-              map_one' := ?_, map_mul' := ?_ }, fun _ _ => rfl⟩
-    · refine DFunLike.ext _ _ fun z => ?_
-      have h1 : AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (lft 1) =
-          AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (1 : Γᵥ) := by
-        rw [hlftr, map_one]
-      show lft 1 • z = z
-      rw [hagree _ _ h1, one_smul]
-    · intro s t
-      rw [← map_mul]
-      refine DFunLike.ext _ _ fun z => ?_
-      have h1 : AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (lft (s * t)) =
-          AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (lft s * lft t) := by
-        rw [hlftr, map_mul, hlftr, hlftr]
-      exact hagree _ _ h1 z
-  -- Grothendieck's construction: `Y` is the point group of a finite étale Hopf algebra
-  obtain ⟨HK, iCR, iHopf, iFin, iEt, f, hf⟩ :
-      ∃ (HK : Type) (_ : CommRing HK) (_ : HopfAlgebra Kᵥ HK)
-        (_ : Module.Finite Kᵥ HK) (_ : Algebra.Etale Kᵥ HK)
-        (f : Additive (WithConv (HK →ₐ[Kᵥ] Ωᵥ)) ≃+ Y),
-        ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : HK →ₐ[Kᵥ] Ωᵥ),
-          f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
-            ρ (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L σ)
-              (f (Additive.ofMul (WithConv.toConv φ))) :=
-    exists_finiteQuotient_galoisModule_etale_package Kᵥ Ωᵥ Y L ρ
-  letI := iCR
-  letI := iHopf
-  letI := iFin
-  letI := iEt
-  -- transport across the vendored/`WithConv` convolution bridge
-  obtain ⟨e, he⟩ : ∃ e : Additive (HK →ₐ[Kᵥ] Ωᵥ) →+ Y,
-      ∀ y, e y = f (Additive.ofMul (WithConv.toConv (Additive.toMul y))) := by
-    refine ⟨{ toFun := fun y => f (Additive.ofMul (WithConv.toConv (Additive.toMul y)))
-              map_zero' := ?_, map_add' := ?_ }, fun _ => rfl⟩
-    · show f (Additive.ofMul (1 : WithConv (HK →ₐ[Kᵥ] Ωᵥ))) = 0
-      rw [ofMul_one, map_zero]
-    · intro y₁ y₂
-      show f (Additive.ofMul (WithConv.toConv
-        (Additive.toMul y₁ * Additive.toMul y₂))) = _
-      rw [vendored_mul_eq_convMul, WithConv.toConv_ofConv, ofMul_mul, map_add]
-  refine ⟨HK, iCR, iHopf, iFin, iEt, e, ?_, ?_⟩
-  · have hfe : ⇑e = fun y : Additive (HK →ₐ[Kᵥ] Ωᵥ) =>
-        f (Additive.ofMul (WithConv.toConv (Additive.toMul y))) := funext he
-    rw [hfe]
-    exact f.bijective.comp (Additive.ofMul.bijective.comp
-      (WithConv.toConv_bijective.comp Additive.toMul.bijective))
-  · intro g y
-    have h1 := hf (g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (Additive.toMul y)
-    have h2 : AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L
-        (lft (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L g)) =
-        AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L g := hlftr _
-    rw [he, he]
-    show f (Additive.ofMul (WithConv.toConv
-      ((g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ).toAlgHom.comp (Additive.toMul y)))) = _
-    rw [h1, hρ]
-    exact hagree _ _ h2 _
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-/-- **Étale–Galois, full-faithfulness half** (PROVEN 2026-07-25 — step
-(β2) of the subobject closure, added 2026-07-25 by the decomposition of
-`IsFlatPointsGroupAt.of_injective`): an INJECTIVE, `Γ Kᵥ`-equivariant
-homomorphism `t` of convolution point groups from a finite étale
-`Kᵥ`-Hopf algebra `H` into the points of a finite étale `Kᵥ`-Hopf
-algebra `Q` is induced by a SURJECTIVE `Kᵥ`-bialgebra homomorphism
-`π : Q → H` (restriction of functions along an inclusion of point
-groups). Intended proof, entirely inside the PROVEN machinery of
-`KnownIn1980s/EllipticCurves/Flat.lean`:
-* the ALGEBRA map: `exists_algHom_of_algHom_map` applied with the
-  étale algebra `H` and the plain `Kᵥ`-algebra `Q` and the
-  equivariant `t` gives `π : Q →ₐ[Kᵥ] H` with `φ (π q) = t φ q` for
-  every point `φ` of `H`, i.e. `φ.comp π = t φ`.
-* SURJECTIVITY: the range of `π` is a `Kᵥ`-subalgebra of `H`
-  separating the points of `H` — two points agreeing on the range
-  have `t φ = t ψ`, hence `φ = ψ` by injectivity of `t` — so it is
-  `⊤` by `subalgebra_eq_top_of_algHom_separating`.
-* the BIALGEBRA upgrade: points separate the finite étale `H ⊗[Kᵥ] H`
-  (`eq_zero_of_forall_algHom_eq_zero`, base change plus
-  `Algebra.Etale.comp`), and every point of `H ⊗[Kᵥ] H` is the
-  `Algebra.TensorProduct.lift` of its two restrictions (the target
-  `Kᵥᵃˡᵍ` is commutative); testing `comul ∘ π` against
-  `(π ⊗ π) ∘ comul` at such a point is, after unfolding
-  `AlgHom.convMul_apply`, exactly `htmul`, and testing the counits is
-  `htone` — the same argument as the PROVEN
-  `exists_bialgEquiv_of_algEquiv_conv`, whose `AlgEquiv` hypothesis is
-  never used for these two checks. (CONFIRMED 2026-07-25 while proving
-  this: that lemma's comultiplication and counit tests go through
-  verbatim for a bare `AlgHom`; the equivalence is used there only to
-  transport `hmul` into the `hmul'` shape, which here is supplied
-  directly by `htmul` through `φ.comp π = t φ`.) The antipode needs no
-  check (`→ₐc` preserves it automatically,
-  `antipodeAlgHom_comp_bialgHom`).
-The bridge between the bare-hom convolution monoid on
-`H →ₐ[Kᵥ] Ωᵥ` (in which `htone`/`htmul` are stated) and mathlib's
-`WithConv` monoid (in which `AlgHom.convMul_apply` computes) is
-`vendored_one_eq_convOne` / `vendored_mul_eq_convMul`, both `rfl`.
-`Ωᵥ` is a separable closure of the characteristic-zero field `Kᵥ`
-(`IsSepClosure Kᵥ Ωᵥ` from `IsAlgClosed` plus `Algebra.IsSeparable`),
-which is what lets the three `Flat.lean` ingredients apply.
-Unconditionally TRUE; no hypothesis package. -/
-theorem exists_surjective_bialgHom_of_points_injection
-    (Q : Type) [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
-    [Algebra.Etale Kᵥ Q]
-    (H : Type) [CommRing H] [HopfAlgebra Kᵥ H] [Module.Finite Kᵥ H]
-    [Algebra.Etale Kᵥ H]
-    (t : (H →ₐ[Kᵥ] Ωᵥ) → (Q →ₐ[Kᵥ] Ωᵥ))
-    (htinj : Function.Injective t)
-    (htone : t 1 = 1)
-    (htmul : ∀ φ ψ : H →ₐ[Kᵥ] Ωᵥ, t (φ * ψ) = t φ * t ψ)
-    (hteq : ∀ (g : Γᵥ) (φ : H →ₐ[Kᵥ] Ωᵥ), t (g • φ) = g • t φ) :
-    ∃ π : Q →ₐc[Kᵥ] H, Function.Surjective (π : Q →ₐ[Kᵥ] H) ∧
-      ∀ φ : H →ₐ[Kᵥ] Ωᵥ, φ.comp (π : Q →ₐ[Kᵥ] H) = t φ := by
-  classical
-  -- in characteristic zero the algebraic closure is a separable closure
-  haveI hsepcl : IsSepClosure Kᵥ Ωᵥ := ⟨inferInstance, inferInstance⟩
-  -- (1) the underlying ALGEBRA map, from Grothendieck full faithfulness:
-  -- the equivariance clause in composition form
-  have hteq' : ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : H →ₐ[Kᵥ] Ωᵥ),
-      t (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (t φ) := by
-    intro σ φ
-    have h1 : σ.toAlgHom.comp φ = σ • φ := AlgHom.ext fun _ => rfl
-    have h2 : σ.toAlgHom.comp (t φ) = σ • t φ := AlgHom.ext fun _ => rfl
-    rw [h1, h2]
-    exact hteq σ φ
-  obtain ⟨π₀, hπ₀⟩ := exists_algHom_of_algHom_map Kᵥ Ωᵥ H Q t hteq'
-  have hcomp : ∀ φ : H →ₐ[Kᵥ] Ωᵥ, φ.comp π₀ = t φ :=
-    fun φ => AlgHom.ext fun q => hπ₀ φ q
-  -- (2) SURJECTIVITY: the range of `π₀` separates the points of `H`,
-  -- because two points agreeing on it have the same image under `t`
-  have hrange : π₀.range = ⊤ := by
-    refine subalgebra_eq_top_of_algHom_separating Kᵥ Ωᵥ H π₀.range ?_
-    intro φ ψ hsepφψ
-    refine htinj ?_
-    rw [← hcomp φ, ← hcomp ψ]
-    exact AlgHom.ext fun q => hsepφψ (π₀ q) ⟨q, rfl⟩
-  have hsurj : Function.Surjective π₀ := by
-    intro x
-    have hx : x ∈ π₀.range := by rw [hrange]; trivial
-    exact hx
-  -- (3) the BIALGEBRA upgrade, counit half: `t 1 = 1` says
-  -- `algebraMap ∘ counit_H ∘ π₀ = algebraMap ∘ counit_Q`
-  have hcounit : (Bialgebra.counitAlgHom Kᵥ H).comp π₀ =
-      Bialgebra.counitAlgHom Kᵥ Q := by
-    refine AlgHom.ext fun q => ?_
-    have h1 : (1 : H →ₐ[Kᵥ] Ωᵥ).comp π₀ = (1 : Q →ₐ[Kᵥ] Ωᵥ) := by
-      rw [hcomp 1, htone]
-    have h2 := AlgHom.congr_fun h1 q
-    have h3 : (1 : H →ₐ[Kᵥ] Ωᵥ) (π₀ q) =
-        algebraMap Kᵥ Ωᵥ (Coalgebra.counit (π₀ q)) := rfl
-    have h4 : (1 : Q →ₐ[Kᵥ] Ωᵥ) q = algebraMap Kᵥ Ωᵥ (Coalgebra.counit q) := rfl
-    rw [AlgHom.comp_apply] at h2
-    rw [h3, h4] at h2
-    exact (algebraMap Kᵥ Ωᵥ).injective h2
-  -- (4) the BIALGEBRA upgrade, comultiplication half: test against every
-  -- point of the finite étale `H ⊗[Kᵥ] H`
-  haveI hEt2 : Algebra.Etale Kᵥ (H ⊗[Kᵥ] H) :=
-    Algebra.Etale.comp Kᵥ H (H ⊗[Kᵥ] H)
-  have hmul' : ∀ φ ψ : H →ₐ[Kᵥ] Ωᵥ,
-      (WithConv.toConv (φ.comp π₀) * WithConv.toConv (ψ.comp π₀)).ofConv =
-        ((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp π₀ := by
-    intro φ ψ
-    rw [← vendored_mul_eq_convMul, ← vendored_mul_eq_convMul, hcomp φ, hcomp ψ,
-      hcomp (φ * ψ)]
-    exact (htmul φ ψ).symm
-  have hcomul : (Algebra.TensorProduct.map π₀ π₀).comp
-      (Bialgebra.comulAlgHom Kᵥ Q) =
-      (Bialgebra.comulAlgHom Kᵥ H).comp π₀ := by
-    refine AlgHom.ext fun a => ?_
-    have hsep2 := eq_zero_of_forall_algHom_eq_zero Kᵥ Ωᵥ (H ⊗[Kᵥ] H)
-      ((Algebra.TensorProduct.map π₀ π₀).comp (Bialgebra.comulAlgHom Kᵥ Q) a -
-        (Bialgebra.comulAlgHom Kᵥ H).comp π₀ a)
-    rw [sub_eq_zero] at hsep2
-    apply hsep2
-    intro χ
-    rw [map_sub, sub_eq_zero]
-    -- decompose the point `χ` of `H ⊗[Kᵥ] H` into its two restrictions
-    set φ := χ.comp Algebra.TensorProduct.includeLeft with hφ
-    set ψ := χ.comp (Algebra.TensorProduct.includeRight :
-      H →ₐ[Kᵥ] H ⊗[Kᵥ] H) with hψ
-    have hχ : χ = Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _ := by
-      apply Algebra.TensorProduct.ext
-      · apply AlgHom.ext
-        intro b
-        simp [hφ]
-      · apply AlgHom.ext
-        intro b
-        simp [hψ]
-    -- the left side is the convolution of the transported points
-    have hleft : χ ((Algebra.TensorProduct.map π₀ π₀).comp
-        (Bialgebra.comulAlgHom Kᵥ Q) a) =
-        ((WithConv.toConv (φ.comp π₀) * WithConv.toConv (ψ.comp π₀)).ofConv) a := by
-      rw [hχ]
-      have hlift : (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _).comp
-          (Algebra.TensorProduct.map π₀ π₀) =
-          Algebra.TensorProduct.lift (φ.comp π₀) (ψ.comp π₀)
-            (fun _ _ => Commute.all _ _) := by
-        apply Algebra.TensorProduct.ext
-        · apply AlgHom.ext
-          intro b
-          simp
-        · apply AlgHom.ext
-          intro b
-          simp
-      rw [AlgHom.comp_apply, ← AlgHom.comp_apply (Algebra.TensorProduct.lift φ ψ _),
-        hlift]
-      rw [AlgHom.convMul_apply]
-      rfl
-    -- the right side is the convolution of the original points, at `π₀ a`
-    have hright : χ ((Bialgebra.comulAlgHom Kᵥ H).comp π₀ a) =
-        (((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp π₀) a := by
-      rw [hχ, AlgHom.comp_apply]
-      rw [show (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _)
-          ((Bialgebra.comulAlgHom Kᵥ H) (π₀ a)) =
-          ((WithConv.toConv φ * WithConv.toConv ψ).ofConv) (π₀ a) from
-        (AlgHom.convMul_apply _ _ _).symm]
-      rfl
-    rw [hleft, hright, hmul' φ ψ]
-  exact ⟨BialgHom.ofAlgHom π₀ hcounit hcomul, hsurj, hcomp⟩
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 4000000 in
-/-- **Subobject closure** (DECOMPOSED 2026-07-25 — the subobjects half
-of Raynaud closure: a Galois-stable subgroup of the generic-fibre
-points of a finite flat group scheme over the DVR `𝒪ᵥ` is the
-generic-fibre point group of a finite flat group scheme, by schematic
-closure): a `Γ Kᵥ`-equivariantly embedded subgroup of a flat
-point-group at `v` is a flat point-group at `v`. The assembly below is
-PROVEN over the four steps of the classical argument; of the two
-étale–Galois leaves the existence half is now PROVEN too, so only the
-full-faithfulness half remains sorried:
-* (α) *transport*: the witness `f` of `hX` identifies `X`
-  equivariantly with the `Kᵥᵃˡᵍ`-points of the generic fibre
-  `Q := Kᵥ ⊗[𝒪ᵥ] G`, so `j` becomes an equivariant injection
-  `j' : Y ↪ points(Q)` (PROVEN here);
-* (β) *étale–Galois*: `Y` is the point group of a finite étale
-  `Kᵥ`-Hopf algebra `H` (`exists_etaleHopfAlgebra_of_points_embedding`,
-  PROVEN), and the induced inclusion of point groups comes from a
-  SURJECTIVE bialgebra homomorphism `π : Q → H`
-  (`exists_surjective_bialgHom_of_points_injection`, PROVEN 2026-07-25)
-  — the two halves of Grothendieck's anti-equivalence. The convolution
-  homomorphism property of the induced `t` is PROVEN here from
-  additivity of `j'` and `e`;
-* (γ) *schematic closure over the DVR*: the canonical Hopf order
-  `1 ⊗ G ⊆ Q` (`exists_hopfOrder_baseChange`) pushes forward along the
-  surjection `π` to a Hopf order in `H`
-  (`exists_hopfOrder_map_of_surjective_bialgHom`) — PROVEN. EXISTENCE
-  of this closure needs no `e < p − 1` bound; Raynaud's bound enters
-  only for uniqueness/full-faithfulness statements;
-* (δ) *conclusion*: a Hopf order in a finite étale `Kᵥ`-Hopf algebra
-  whose points are `Y` is a flat point-group package
-  (`isFlatPointsGroupAt_of_hopfOrder`, PROVEN, over the vendored
-  `exists_flat_hopf_form_of_hopf_order`).
-Unconditionally TRUE; no hypothesis package (for `Y` a subsingleton
-this is already `IsFlatPointsGroupAt.of_subsingleton`). -/
-theorem IsFlatPointsGroupAt.of_injective {X Y : Type*}
-    [AddCommGroup X] [AddCommGroup Y]
-    [DistribMulAction Γᵥ X] [DistribMulAction Γᵥ Y]
-    (hX : IsFlatPointsGroupAt v X) (j : Y →+ X)
-    (hj : Function.Injective j)
-    (hje : ∀ (g : Γᵥ) (y : Y), j (g • y) = g • j y) :
-    IsFlatPointsGroupAt v Y := by
-  classical
-  obtain ⟨G, iCR, iHopf, iFlat, iFin, iEt, f, hfbij, hfeq⟩ := hX
-  letI := iCR; letI := iHopf; letI := iFlat; letI := iFin; letI := iEt
-  -- (α) the equivariant identification of `X` with the points of the generic fibre
-  set fe : Additive ((Kᵥ ⊗[𝒪ᵥ] G) →ₐ[Kᵥ] Ωᵥ) ≃+ X :=
-    AddEquiv.ofBijective f hfbij with hfedef
-  have hfesymm : ∀ (g : Γᵥ) (x : X), fe.symm (g • x) = g • fe.symm x := by
-    intro g x
-    apply fe.injective
-    rw [fe.apply_symm_apply]
-    show g • x = f (g • fe.symm x)
-    rw [hfeq]
-    show g • x = g • fe (fe.symm x)
-    rw [fe.apply_symm_apply]
-  set j' : Y →+ Additive ((Kᵥ ⊗[𝒪ᵥ] G) →ₐ[Kᵥ] Ωᵥ) :=
-    fe.symm.toAddMonoidHom.comp j with hj'def
-  have hj'inj : Function.Injective j' := fe.symm.injective.comp hj
-  have hj'eq : ∀ (g : Γᵥ) (y : Y), j' (g • y) = g • j' y := by
-    intro g y
-    show fe.symm (j (g • y)) = g • fe.symm (j y)
-    rw [hje, hfesymm]
-  -- (β) the étale–Galois package of the subgroup, and the induced surjection
-  obtain ⟨H, hCR, hHopf, hFin, hEt, e, hebij, heeq⟩ :=
-    exists_etaleHopfAlgebra_of_points_embedding (Kᵥ ⊗[𝒪ᵥ] G) j' hj'inj hj'eq
-  letI := hCR; letI := hHopf; letI := hFin; letI := hEt
-  set t : (H →ₐ[Kᵥ] Ωᵥ) → ((Kᵥ ⊗[𝒪ᵥ] G) →ₐ[Kᵥ] Ωᵥ) :=
-    fun φ => Additive.toMul (j' (e (Additive.ofMul φ))) with htdef
-  have htinj : Function.Injective t := fun φ ψ hφψ => by
-    have h1 : j' (e (Additive.ofMul φ)) = j' (e (Additive.ofMul ψ)) :=
-      Additive.toMul.injective hφψ
-    exact Additive.ofMul.injective (hebij.1 (hj'inj h1))
-  have htone : t 1 = 1 := by
-    show Additive.toMul (j' (e (Additive.ofMul (1 : H →ₐ[Kᵥ] Ωᵥ)))) = 1
-    have h0 : Additive.ofMul (1 : H →ₐ[Kᵥ] Ωᵥ) = 0 := rfl
-    rw [h0, map_zero, map_zero]
-    rfl
-  have htmul : ∀ φ ψ : H →ₐ[Kᵥ] Ωᵥ, t (φ * ψ) = t φ * t ψ := by
-    intro φ ψ
-    show Additive.toMul (j' (e (Additive.ofMul (φ * ψ)))) = _
-    have h1 : Additive.ofMul (φ * ψ) =
-        Additive.ofMul φ + Additive.ofMul ψ := rfl
-    rw [h1, map_add, map_add]
-    rfl
-  have hteq : ∀ (g : Γᵥ) (φ : H →ₐ[Kᵥ] Ωᵥ), t (g • φ) = g • t φ := by
-    intro g φ
-    show Additive.toMul (j' (e (Additive.ofMul (g • φ)))) = _
-    have h1 : Additive.ofMul (g • φ) =
-        g • (Additive.ofMul φ : Additive (H →ₐ[Kᵥ] Ωᵥ)) := rfl
-    rw [h1, heeq, hj'eq]
-    rfl
-  obtain ⟨π, hπsurj, -⟩ :=
-    exists_surjective_bialgHom_of_points_injection (Kᵥ ⊗[𝒪ᵥ] G) H t htinj htone
-      htmul hteq
-  -- (γ) schematic closure: push the canonical Hopf order forward along `π`
-  obtain ⟨G₀, hfg, hspan, hcounit, hantipode, hcomul⟩ :=
-    exists_hopfOrder_baseChange 𝒪ᵥ Kᵥ G
-  obtain ⟨H₀, hfg', hspan', hcounit', hantipode', hcomul'⟩ :=
-    exists_hopfOrder_map_of_surjective_bialgHom (Kᵥ ⊗[𝒪ᵥ] G) H π hπsurj G₀
-      hfg hspan hcounit hantipode hcomul
-  -- (δ) conclude
-  exact isFlatPointsGroupAt_of_hopfOrder H H₀ hfg' hspan' hcounit' hantipode'
-    hcomul' e hebij heeq
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **Finite products** (PROVEN glue): a finite product of flat
-point-groups at `v` is a flat point-group at `v`, by `Fin`-recursion
-from the trivial package (`of_subsingleton`, base case) and binary
-products (`prod`), transported along the equivariant additive
-identification `(∀ i : Fin (m+1), X i) ≃+ X 0 × ∀ i : Fin m, X i.succ`
-(`Fin.cons`). -/
-theorem IsFlatPointsGroupAt.pi {n : ℕ} {X : Fin n → Type*}
-    [instG : ∀ i, AddCommGroup (X i)]
-    [instD : ∀ i, DistribMulAction Γᵥ (X i)]
-    (h : ∀ i, IsFlatPointsGroupAt v (X i)) :
-    IsFlatPointsGroupAt v (∀ i, X i) := by
-  induction n generalizing instG instD with
-  | zero =>
-    haveI : Subsingleton (∀ i : Fin 0, X i) :=
-      ⟨fun a b => funext fun i => i.elim0⟩
-    exact IsFlatPointsGroupAt.of_subsingleton
-  | succ m ih =>
-    have htail : IsFlatPointsGroupAt v (∀ i : Fin m, X i.succ) :=
-      ih fun i => h i.succ
-    have hprod : IsFlatPointsGroupAt v (X 0 × ∀ i : Fin m, X i.succ) :=
-      (h 0).prod htail
-    refine hprod.of_addEquiv
-      { toFun := fun p => Fin.cons p.1 p.2
-        invFun := fun q => (q 0, fun i => q i.succ)
-        left_inv := fun p => by
-          refine Prod.ext ?_ ?_
-          · simp
-          · funext i
-            simp
-        right_inv := fun q => by
-          funext i
-          refine Fin.cases ?_ (fun j => ?_) i <;> simp
-        map_add' := fun p q => by
-          funext i
-          refine Fin.cases ?_ (fun j => ?_) i <;> simp }
-      fun g p => ?_
-    funext i
-    refine Fin.cases ?_ (fun j => ?_) i <;> simp
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 4000000 in
-/-- **The étale sub-bialgebra of a point-group quotient** (PROVEN
-2026-07-25 — step (β) of the Raynaud quotient-closure cut, split off
-the same day from `IsFlatPointsGroupAt.of_surjective`): a
-`Γ Kᵥ`-equivariant quotient `Y` of the `Kᵥᵃˡᵍ`-point group of a finite
-étale `Kᵥ`-Hopf algebra `Q` is the point group of a
-`Kᵥ`-sub-bialgebra `H ↪ Q`, again finite étale — the pullback of
-functions along the point surjection. This is Grothendieck's Galois
-correspondence for étale algebras carrying a group structure, i.e. the
-CONVERSE direction of the Gelfand-duality machinery of
-`KnownIn1980s/EllipticCurves/Flat.lean` (which builds the algebra from
-the group); the proof runs entirely inside that PROVEN machinery, in
-five steps:
-* *finiteness*: `Q` is module-finite over `Kᵥ`, so its `Kᵥᵃˡᵍ`-points
-  are finite (`Finite.algHom`) and `Y` is finite through the surjection
-  `p`;
-* *the finite Galois quotient*: a `Kᵥ`-basis `b` of `Q` is enough to
-  pin a point, so two automorphisms of `Kᵥᵃˡᵍ` agreeing on the FINITE
-  set `{φ (b i)}` act equally on every point of `Q` — by `Kᵥ`-linearity
-  of `σ ∘ φ` — hence, `p` being an equivariant surjection, equally on
-  `Y`. The normal closure `L` of `Kᵥ({φ (b i)})` is therefore a finite
-  Galois subextension through which the `Γ Kᵥ`-action on `Y` factors,
-  the factored action `ρ` being built from `AlgEquiv.liftNormal` (which
-  is multiplicative because lifts of equal restrictions act equally);
-* *the algebra*: `exists_finiteQuotient_galoisModule_etale_package`
-  applied to `(Y, L, ρ)` — `Small.{0} Kᵥ` is `small_self` and `Ωᵥ` is a
-  separable closure in characteristic zero — yields a finite étale
-  `Kᵥ`-Hopf algebra `H` with `points(H) ≃+ Y` equivariantly, its
-  `WithConv` convolution monoid identified with the vendored bare-hom
-  one by `vendored_mul_eq_convMul`;
-* *the embedding*: `exists_algHom_of_algHom_map` (the Gelfand transform
-  onto equivariant functions — injective by separation, surjective by
-  Speiser independence) applied to the ÉTALE algebra `Q` and the
-  equivariant point map `t := e⁻¹ ∘ p` produces `ι : H →ₐ[Kᵥ] Q` with
-  `φ ∘ ι = t φ`. It is injective because `p` is surjective, so every
-  point of `H` is some `t φ` and the points of the finite étale `H`
-  separate it (`eq_zero_of_forall_algHom_eq_zero`);
-* *the bialgebra upgrade*: points separate the finite étale
-  `Q ⊗[Kᵥ] Q` and every point of it is the `TensorProduct.lift` of its
-  two restrictions, so testing `comul ∘ ι` against `(ι ⊗ ι) ∘ comul`
-  at such a point is exactly the multiplicativity of `t` (which holds
-  because `p` and `e` are additive), and testing the counits is
-  `t 1 = 1`; `BialgHom.ofAlgHom` assembles `ι : H →ₐc[Kᵥ] Q`, and its
-  induced map on points is `p` — the last clause below.
-Unconditionally TRUE; no hypothesis package (for `p` bijective one may
-take `H = Q` and `ι = id`). -/
-theorem exists_etale_subBialgebra_of_points_surjective
-    {Q : Type} [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
-    [Algebra.Etale Kᵥ Q]
-    {Y : Type*} [AddCommGroup Y] [DistribMulAction Γᵥ Y]
-    (p : Additive (Q →ₐ[Kᵥ] Ωᵥ) →+ Y)
-    (hp : Function.Surjective p)
-    (hpe : ∀ (g : Γᵥ) (x : Additive (Q →ₐ[Kᵥ] Ωᵥ)), p (g • x) = g • p x) :
-    ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra Kᵥ H) (_ : Module.Finite Kᵥ H)
-      (_ : Algebra.Etale Kᵥ H) (ι : H →ₐc[Kᵥ] Q)
-      (_ : Function.Injective (ι : H →ₐ[Kᵥ] Q))
-      (e : Additive (H →ₐ[Kᵥ] Ωᵥ) ≃+ Y),
-      ∀ φ : Q →ₐ[Kᵥ] Ωᵥ,
-        e (Additive.ofMul (φ.comp (ι : H →ₐ[Kᵥ] Q))) = p (Additive.ofMul φ) := by
-  classical
-  -- ### instances: `Ωᵥ` is a separable closure of `Kᵥ`, and the points are finite
-  haveI : CharZero (HeightOneSpectrum.adicCompletion ℚ v) :=
-    charZero_of_injective_algebraMap
-      ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)).injective)
-  haveI hsepcl : IsSepClosure Kᵥ Ωᵥ := ⟨inferInstance, inferInstance⟩
-  haveI hQpts : Finite (Q →ₐ[Kᵥ] Ωᵥ) := Finite.algHom Kᵥ Q Ωᵥ
-  haveI hYfin : Finite Y := Finite.of_surjective p hp
-  -- the Galois action on points is postcomposition
-  have hsm : ∀ (g : Γᵥ) (φ : Q →ₐ[Kᵥ] Ωᵥ),
-      g • φ = ((g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ).toAlgHom).comp φ := fun _ _ => AlgHom.ext fun _ => rfl
-  -- ### (1) a finite Galois subextension through which the action on `Y` factors
-  set b := Module.finBasis Kᵥ Q
-  set Sset : Set Ωᵥ :=
-    Set.range (fun x : (Q →ₐ[Kᵥ] Ωᵥ) × Fin (Module.finrank Kᵥ Q) => x.1 (b x.2))
-  haveI hSfin : Finite ↥Sset := (Set.finite_range _).to_subtype
-  set L₀ : IntermediateField Kᵥ Ωᵥ := IntermediateField.adjoin Kᵥ Sset
-  haveI : FiniteDimensional Kᵥ ↥L₀ :=
-    IntermediateField.finiteDimensional_adjoin fun x _ =>
-      (Algebra.IsSeparable.isSeparable Kᵥ x).isIntegral
-  set L : IntermediateField Kᵥ Ωᵥ := IntermediateField.normalClosure Kᵥ ↥L₀ Ωᵥ
-  haveI : Algebra.IsSeparable Kᵥ ↥L :=
-    Algebra.isSeparable_tower_bot_of_isSeparable Kᵥ ↥L Ωᵥ
-  haveI hGalL : IsGalois Kᵥ ↥L := ⟨⟩
-  have hsub : Sset ⊆ (L : Set Ωᵥ) := fun z hz =>
-    IntermediateField.le_normalClosure L₀ (IntermediateField.subset_adjoin Kᵥ Sset hz)
-  -- automorphisms agreeing on `L` act equally on every point of `Q`
-  have keyL : ∀ (σ τ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ), (∀ l ∈ L, σ l = τ l) →
-      ∀ φ : Q →ₐ[Kᵥ] Ωᵥ, σ.toAlgHom.comp φ = τ.toAlgHom.comp φ := by
-    intro σ τ hστ φ
-    refine AlgHom.ext fun x => ?_
-    have h2 : (σ.toAlgHom.comp φ).toLinearMap = (τ.toAlgHom.comp φ).toLinearMap :=
-      b.ext fun i => hστ _ (hsub ⟨(φ, i), rfl⟩)
-    exact LinearMap.congr_fun h2 x
-  -- hence equally on `Y`, which is a quotient of the points of `Q`
-  have hYact : ∀ σ τ : Γᵥ,
-      (∀ l ∈ L, (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l = (τ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l) →
-      ∀ y : Y, σ • y = τ • y := by
-    intro σ τ hστ y
-    obtain ⟨x, hx⟩ := hp y
-    rw [← hx, ← hpe σ x, ← hpe τ x]
-    refine congrArg p ?_
-    have h1 : (σ • x : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
-        Additive.ofMul (σ • Additive.toMul x) := rfl
-    have h2 : (τ • x : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
-        Additive.ofMul (τ • Additive.toMul x) := rfl
-    rw [h1, h2, hsm σ, hsm τ]
-    exact congrArg Additive.ofMul (keyL _ _ hστ _)
-  -- the `Γ Kᵥ`-action as additive endomorphisms
-  set act : Γᵥ → AddMonoid.End Y := fun g =>
-    { toFun := fun y => g • y
-      map_zero' := smul_zero g
-      map_add' := fun y₁ y₂ => smul_add g y₁ y₂ }
-  -- the action of `Gal(L/Kᵥ)` on `Y` through `AlgEquiv.liftNormal`
-  set ρ : (↥L ≃ₐ[Kᵥ] ↥L) →* AddMonoid.End Y :=
-    { toFun := fun σ' => act (AlgEquiv.liftNormal σ' Ωᵥ)
-      map_one' := by
-        refine AddMonoidHom.ext fun y => ?_
-        have hfix : ∀ l ∈ L, (AlgEquiv.liftNormal (1 : ↥L ≃ₐ[Kᵥ] ↥L) Ωᵥ) l
-            = (1 : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l := by
-          intro l hl
-          have hc := AlgEquiv.liftNormal_commutes (1 : ↥L ≃ₐ[Kᵥ] ↥L) Ωᵥ ⟨l, hl⟩
-          simpa using hc
-        show (AlgEquiv.liftNormal (1 : ↥L ≃ₐ[Kᵥ] ↥L) Ωᵥ) • y = y
-        rw [hYact _ (1 : Γᵥ) hfix y, one_smul]
-      map_mul' := by
-        intro σ' τ'
-        refine AddMonoidHom.ext fun y => ?_
-        have hfix : ∀ l ∈ L, (AlgEquiv.liftNormal (σ' * τ') Ωᵥ) l
-            = ((AlgEquiv.liftNormal σ' Ωᵥ) * (AlgEquiv.liftNormal τ' Ωᵥ) :
-              Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l := by
-          intro l hl
-          have hc := AlgEquiv.liftNormal_commutes (σ' * τ') Ωᵥ ⟨l, hl⟩
-          have hcτ := AlgEquiv.liftNormal_commutes τ' Ωᵥ ⟨l, hl⟩
-          have hcσ := AlgEquiv.liftNormal_commutes σ' Ωᵥ (τ' ⟨l, hl⟩)
-          simp only [IntermediateField.algebraMap_apply] at hc hcτ hcσ
-          show (AlgEquiv.liftNormal (σ' * τ') Ωᵥ) l
-            = (AlgEquiv.liftNormal σ' Ωᵥ) ((AlgEquiv.liftNormal τ' Ωᵥ) l)
-          rw [hc, hcτ, hcσ]
-          rfl
-        show (AlgEquiv.liftNormal (σ' * τ') Ωᵥ) • y =
-          (AlgEquiv.liftNormal σ' Ωᵥ) • ((AlgEquiv.liftNormal τ' Ωᵥ) • y)
-        rw [hYact _ _ hfix y, mul_smul] }
-  -- the restriction of a global automorphism acts on `Y` as the automorphism itself
-  have hρσ : ∀ (σ : Γᵥ) (y : Y),
-      ρ (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L
-        (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)) y = σ • y := by
-    intro σ y
-    show (AlgEquiv.liftNormal (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L
-      (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)) Ωᵥ) • y = σ • y
-    refine hYact _ _ (fun l hl => ?_) y
-    have hc := AlgEquiv.liftNormal_commutes
-      (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)) Ωᵥ ⟨l, hl⟩
-    have hr := AlgEquiv.restrictNormalHom_apply (F := Kᵥ) (K₁ := Ωᵥ) L
-      (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) ⟨l, hl⟩
-    simp only [IntermediateField.algebraMap_apply] at hc
-    rw [hc, hr]
-  -- ### (2) the finite étale Hopf algebra with point group `Y`
-  obtain ⟨H, hCR, hHopf, hFin, hEt, f, hf⟩ :
-      ∃ (HK : Type) (_ : CommRing HK) (_ : HopfAlgebra Kᵥ HK)
-        (_ : Module.Finite Kᵥ HK) (_ : Algebra.Etale Kᵥ HK)
-        (f : Additive (WithConv (HK →ₐ[Kᵥ] Ωᵥ)) ≃+ Y),
-        ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : HK →ₐ[Kᵥ] Ωᵥ),
-          f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
-            ρ (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L σ)
-              (f (Additive.ofMul (WithConv.toConv φ))) :=
-    exists_finiteQuotient_galoisModule_etale_package Kᵥ Ωᵥ Y L ρ
-  letI := hCR
-  letI := hHopf
-  letI := hFin
-  letI := hEt
-  -- the bare-hom convolution monoid on the points of `H` is mathlib's `WithConv` one
-  set w : Additive (H →ₐ[Kᵥ] Ωᵥ) ≃+ Additive (WithConv (H →ₐ[Kᵥ] Ωᵥ)) :=
-    { toFun := fun u => Additive.ofMul (WithConv.toConv (Additive.toMul u))
-      invFun := fun u => Additive.ofMul (WithConv.ofConv (Additive.toMul u))
-      left_inv := fun _ => rfl
-      right_inv := fun _ => rfl
-      map_add' := fun u₁ u₂ => congrArg Additive.ofMul (by
-        show WithConv.toConv (Additive.toMul u₁ * Additive.toMul u₂) =
-          WithConv.toConv (Additive.toMul u₁) * WithConv.toConv (Additive.toMul u₂)
-        rw [vendored_mul_eq_convMul, WithConv.toConv_ofConv]) }
-  set e : Additive (H →ₐ[Kᵥ] Ωᵥ) ≃+ Y := w.trans f
-  have heapply : ∀ φ : H →ₐ[Kᵥ] Ωᵥ,
-      e (Additive.ofMul φ) = f (Additive.ofMul (WithConv.toConv φ)) := fun _ => rfl
-  have hee : ∀ (g : Γᵥ) (u : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • u) = g • e u := by
-    intro g u
-    have h1 : (g • u : Additive (H →ₐ[Kᵥ] Ωᵥ)) =
-        Additive.ofMul (((g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ).toAlgHom).comp (Additive.toMul u)) := by
-      show Additive.ofMul (g • Additive.toMul u) = _
-      exact congrArg Additive.ofMul (AlgHom.ext fun _ => rfl)
-    have h3 : e u = f (Additive.ofMul (WithConv.toConv (Additive.toMul u))) := rfl
-    rw [h1, heapply, hf (g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (Additive.toMul u), hρσ g, h3]
-  have heesymm : ∀ (g : Γᵥ) (y : Y), e.symm (g • y) = g • e.symm y := by
-    intro g y
-    apply e.injective
-    rw [e.apply_symm_apply, hee, e.apply_symm_apply]
-  -- ### (3) the induced map of point sets and the algebra homomorphism `H → Q`
-  set t : (Q →ₐ[Kᵥ] Ωᵥ) → (H →ₐ[Kᵥ] Ωᵥ) :=
-    fun φ => Additive.toMul (e.symm (p (Additive.ofMul φ)))
-  have hte : ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : Q →ₐ[Kᵥ] Ωᵥ),
-      t (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (t φ) := by
-    intro σ φ
-    have h1 : (Additive.ofMul (σ.toAlgHom.comp φ) : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
-        (σ : Γᵥ) • Additive.ofMul φ := by
-      refine congrArg Additive.ofMul ?_
-      exact (AlgHom.ext fun _ => rfl : ((σ : Γᵥ) • φ) = σ.toAlgHom.comp φ).symm
-    show Additive.toMul (e.symm (p (Additive.ofMul (σ.toAlgHom.comp φ)))) = _
-    rw [h1, hpe, heesymm]
-    exact AlgHom.ext fun _ => rfl
-  obtain ⟨ι₀, hι₀⟩ := exists_algHom_of_algHom_map Kᵥ Ωᵥ Q H t hte
-  have hcompι : ∀ φ : Q →ₐ[Kᵥ] Ωᵥ, φ.comp ι₀ = t φ := fun φ =>
-    AlgHom.ext fun x => hι₀ φ x
-  -- every point of `H` is a restriction, because `p` is surjective
-  have htsurj : ∀ ψ : H →ₐ[Kᵥ] Ωᵥ, ∃ φ : Q →ₐ[Kᵥ] Ωᵥ, t φ = ψ := by
-    intro ψ
-    obtain ⟨x, hx⟩ := hp (e (Additive.ofMul ψ))
-    refine ⟨Additive.toMul x, ?_⟩
-    show Additive.toMul (e.symm (p (Additive.ofMul (Additive.toMul x)))) = ψ
-    rw [show (Additive.ofMul (Additive.toMul x) : Additive (Q →ₐ[Kᵥ] Ωᵥ)) = x from rfl,
-      hx, e.symm_apply_apply]
-    rfl
-  have hι₀inj : Function.Injective ι₀ := by
-    intro x₁ x₂ hx
-    have hzero : x₁ - x₂ = 0 := by
-      refine eq_zero_of_forall_algHom_eq_zero Kᵥ Ωᵥ H _ fun ψ => ?_
-      obtain ⟨φ, hφ⟩ := htsurj ψ
-      rw [map_sub, sub_eq_zero, ← hφ]
-      show t φ x₁ = t φ x₂
-      rw [← hι₀ φ x₁, ← hι₀ φ x₂, hx]
-    exact sub_eq_zero.mp hzero
-  -- ### (4) the bialgebra upgrade: `ι₀` respects counit and comultiplication
-  have ht1 : t 1 = 1 := by
-    show Additive.toMul (e.symm (p (Additive.ofMul (1 : Q →ₐ[Kᵥ] Ωᵥ)))) = 1
-    rw [show (Additive.ofMul (1 : Q →ₐ[Kᵥ] Ωᵥ)) = (0 : Additive (Q →ₐ[Kᵥ] Ωᵥ)) from rfl,
-      map_zero, map_zero]
-    rfl
-  have htmul : ∀ φ ψ : Q →ₐ[Kᵥ] Ωᵥ, t (φ * ψ) = t φ * t ψ := by
-    intro φ ψ
-    show Additive.toMul (e.symm (p (Additive.ofMul (φ * ψ)))) = _
-    rw [show (Additive.ofMul (φ * ψ) : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
-      Additive.ofMul φ + Additive.ofMul ψ from rfl, map_add, map_add]
-    rfl
-  have hcounit : (Bialgebra.counitAlgHom Kᵥ Q).comp ι₀ = Bialgebra.counitAlgHom Kᵥ H := by
-    refine AlgHom.ext fun x => ?_
-    refine (algebraMap Kᵥ Ωᵥ).injective ?_
-    have h1 : (1 : Q →ₐ[Kᵥ] Ωᵥ) (ι₀ x) =
-        algebraMap Kᵥ Ωᵥ (Bialgebra.counitAlgHom Kᵥ Q (ι₀ x)) := rfl
-    have h2 : (1 : H →ₐ[Kᵥ] Ωᵥ) x =
-        algebraMap Kᵥ Ωᵥ (Bialgebra.counitAlgHom Kᵥ H x) := rfl
-    rw [AlgHom.comp_apply, ← h1, ← h2, hι₀ 1 x, ht1]
-  haveI hEt2 : Algebra.Etale Kᵥ (Q ⊗[Kᵥ] Q) := Algebra.Etale.comp Kᵥ Q (Q ⊗[Kᵥ] Q)
-  have hcomul : (Algebra.TensorProduct.map ι₀ ι₀).comp (Bialgebra.comulAlgHom Kᵥ H) =
-      (Bialgebra.comulAlgHom Kᵥ Q).comp ι₀ := by
-    refine AlgHom.ext fun a => ?_
-    have hsep := eq_zero_of_forall_algHom_eq_zero Kᵥ Ωᵥ (Q ⊗[Kᵥ] Q)
-      ((Algebra.TensorProduct.map ι₀ ι₀).comp (Bialgebra.comulAlgHom Kᵥ H) a -
-        (Bialgebra.comulAlgHom Kᵥ Q).comp ι₀ a)
-    rw [sub_eq_zero] at hsep
-    apply hsep
-    intro χ
-    rw [map_sub, sub_eq_zero]
-    set φ := χ.comp Algebra.TensorProduct.includeLeft with hφ
-    set ψ := χ.comp (Algebra.TensorProduct.includeRight : Q →ₐ[Kᵥ] Q ⊗[Kᵥ] Q) with hψ
-    have hχ : χ = Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _ := by
-      refine Algebra.TensorProduct.ext ?_ ?_
-      · exact AlgHom.ext fun c => by simp [hφ]
-      · exact AlgHom.ext fun c => by simp [hψ]
-    have hleft : χ ((Algebra.TensorProduct.map ι₀ ι₀)
-        (Bialgebra.comulAlgHom Kᵥ H a)) = ((t φ) * (t ψ)) a := by
-      rw [hχ]
-      have hlift : (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _).comp
-          (Algebra.TensorProduct.map ι₀ ι₀) =
-          Algebra.TensorProduct.lift (φ.comp ι₀) (ψ.comp ι₀)
-            (fun _ _ => Commute.all _ _) := by
-        refine Algebra.TensorProduct.ext ?_ ?_
-        · exact AlgHom.ext fun c => by simp
-        · exact AlgHom.ext fun c => by simp
-      rw [← AlgHom.comp_apply, hlift, hcompι, hcompι]
-      rfl
-    have hright : χ ((Bialgebra.comulAlgHom Kᵥ Q) (ι₀ a)) = (φ * ψ) (ι₀ a) := by
-      rw [hχ]; rfl
-    rw [AlgHom.comp_apply, AlgHom.comp_apply, hleft, hright,
-      show (φ * ψ) (ι₀ a) = ((φ * ψ).comp ι₀) a from rfl, hcompι, htmul]
-  -- ### (5) assembly
-  refine ⟨H, hCR, hHopf, hFin, hEt, BialgHom.ofAlgHom ι₀ hcounit hcomul, ?_, e, ?_⟩
-  · exact hι₀inj
-  · intro φ
-    show e (Additive.ofMul (φ.comp ι₀)) = p (Additive.ofMul φ)
-    rw [hcompι φ]
-    show e (Additive.ofMul (Additive.toMul (e.symm (p (Additive.ofMul φ))))) = _
-    rw [show ∀ z : Additive (H →ₐ[Kᵥ] Ωᵥ),
-      (Additive.ofMul (Additive.toMul z) : Additive (H →ₐ[Kᵥ] Ωᵥ)) = z from fun _ => rfl]
-    exact e.apply_symm_apply _
-
-set_option backward.isDefEq.respectTransparency false in
-set_option maxHeartbeats 1000000 in
-set_option synthInstance.maxHeartbeats 400000 in
-/-- **Hopf orders in sub-bialgebras of a generic fibre** (PROVEN
-2026-07-25 — step (γ), the schematic-closure/saturation half of the
-Raynaud quotient-closure cut, split off from
-`IsFlatPointsGroupAt.of_surjective`; Raynaud, *Schémas en groupes de
-type `(p, …, p)`*, Bull. SMF 102 (1974); Tate, *Finite flat group
-schemes*, in Cornell–Silverman–Stevens): a `Kᵥ`-sub-bialgebra `H` of
-the generic fibre `Q := Kᵥ ⊗[𝒪ᵥ] G` of a finite flat `𝒪ᵥ`-Hopf algebra
-`G` carries a finite flat `𝒪ᵥ`-Hopf order — the intersection
-`H ∩ G` formed inside `Q` — whose generic fibre is `H` as a
-`Kᵥ`-bialgebra. This is the DUAL, and the easier half, of the schematic
-closure `IsFlatPointsGroupAt.of_injective` needs: it takes a
-SUB-algebra of the witness where that node must quotient it.
-
-The proof needs NO sub-bialgebra API (the pin has none) and builds NO
-`HopfAlgebra` structure by hand: the whole point is that the vendored
-`exists_flat_hopf_form_of_hopf_order` of
-`KnownIn1980s/EllipticCurves/Flat.lean` already turns a *Hopf ORDER* —
-a finitely generated `𝒪ᵥ`-subalgebra spanning the generic fibre and
-closed under counit, antipode and comultiplication — into a finite flat
-Hopf `𝒪ᵥ`-algebra together with the bialgebra equivalence of generic
-fibres. So all that is proven here is that the intersection
-`H₀ := ι ⁻¹' (1 ⊗ G)`, a `Subalgebra 𝒪ᵥ H` by `Subalgebra.comap`, IS
-such an order. Its five clauses:
-* *denominators* (used twice): every `q ∈ Q` has `c • q ∈ 1 ⊗ G` for
-  some `c ∈ 𝒪ᵥ⁰` — a tensor induction, the pure-tensor case being
-  `IsLocalization.exists_integer_multiple` for `Kᵥ = Frac 𝒪ᵥ`.
-* *spanning*: for `x ∈ H`, `ι (c • x) = c • ι x ∈ 1 ⊗ G` gives
-  `c • x ∈ H₀`, and `c` is invertible in `Kᵥ`
-  (`IsLocalization.map_units`), so `x ∈ span Kᵥ H₀`.
-* *the saturation retraction* — the technical core. Put
-  `A := {g : G | 1 ⊗ g ∈ ι(H)}`, a `Submodule 𝒪ᵥ G`. Then `G ⧸ A` is
-  torsion-free (`c • g ∈ A` forces `1 ⊗ g ∈ ι(H)`, dividing by the unit
-  `c` inside the `Kᵥ`-subspace `ι(H)`) and module-finite, hence FREE
-  over the DVR `𝒪ᵥ` (`Module.free_of_finite_type_torsion_free'`), hence
-  projective: the quotient map `G → G ⧸ A` splits
-  (`LinearMap.exists_rightInverse_of_surjective`), so `A` is a direct
-  summand and `ret := id − sec ∘ mkQ : G →ₗ[𝒪ᵥ] G` retracts `G` onto
-  `A`. Composing with the (Kᵥ-linear, hence 𝒪ᵥ-linear) left inverse
-  `π` of the injection `ι` gives `s := π ∘ (1 ⊗ ·) ∘ ret : G →ₗ[𝒪ᵥ] H`
-  with `ι (s g) = 1 ⊗ ret g`; its base change
-  `ρ := s.liftBaseChange Kᵥ : Q →ₗ[Kᵥ] H` satisfies `ρ (1 ⊗ G) ⊆ H₀`
-  and `ρ ∘ ι = id` (checked on `H₀`, extended by the spanning clause).
-* *finite generation*: `H₀` is exactly `range s` (`⊆` because
-  `ι (s g) = 1 ⊗ ret g`, `⊇` because for `x ∈ H₀` the `g` with
-  `1 ⊗ g = ι x` lies in `A`, so `s g = x`), the image of the
-  module-finite `G`.
-* *counit* and *antipode*: transport along the bialgebra homomorphism
-  `ι` (`BialgHomClass.counitAlgHom_comp`,
-  `antipodeAlgHom_comp_bialgHom`) and then read off the base-change
-  structure formulas at `1 ⊗ g` (`TensorProduct.counit_tmul`; the
-  antipode of the base change is definitionally `1 ⊗ antipode`).
-* *comultiplication* — the saturation step proper. `comul` of `ι x` is
-  in the `𝒪ᵥ`-span of the pure tensors of `1 ⊗ G`
-  (`TensorProduct.comul_tmul`, as in `exists_hopfOrder_baseChange`),
-  and `ρ ⊗ ρ` maps that span into the `𝒪ᵥ`-span of the pure tensors of
-  `H₀` while fixing `comul x` — because `(ρ ⊗ ρ) ∘ (ι ⊗ ι) = id`. This
-  is the Lean incarnation of "`H₀ ⊗ H₀` is the intersection of
-  `H ⊗[Kᵥ] H` with the image of `G ⊗[𝒪ᵥ] G`": saturation is what makes
-  the retraction `ρ` exist integrally.
-EXISTENCE of the order needs no `e < p − 1` bound — Raynaud's bound
-enters only for uniqueness/full-faithfulness statements.
-Unconditionally TRUE; no hypothesis package. -/
-theorem exists_hopfOrder_of_subBialgebra
-    {G : Type} [CommRing G] [HopfAlgebra 𝒪ᵥ G] [Module.Flat 𝒪ᵥ G]
-    [Module.Finite 𝒪ᵥ G]
-    {H : Type} [CommRing H] [HopfAlgebra Kᵥ H] [Module.Finite Kᵥ H]
-    (ι : H →ₐc[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))
-    (hι : Function.Injective (ι : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))) :
-    ∃ (G' : Type) (_ : CommRing G') (_ : HopfAlgebra 𝒪ᵥ G') (_ : Module.Flat 𝒪ᵥ G')
-      (_ : Module.Finite 𝒪ᵥ G'), Nonempty ((Kᵥ ⊗[𝒪ᵥ] G') ≃ₐc[Kᵥ] H) := by
-  classical
-  -- `H` becomes an `𝒪ᵥ`-algebra through `Kᵥ`
-  letI : Algebra 𝒪ᵥ H := ((algebraMap Kᵥ H).comp (algebraMap 𝒪ᵥ Kᵥ)).toAlgebra
-  haveI : IsScalarTower 𝒪ᵥ Kᵥ H := IsScalarTower.of_algebraMap_eq (fun _ => rfl)
-  set ιA : H →ₐ[Kᵥ] Kᵥ ⊗[𝒪ᵥ] G := (ι : H →ₐ[Kᵥ] Kᵥ ⊗[𝒪ᵥ] G)
-  -- the canonical integral model `1 ⊗ G` inside the generic fibre
-  obtain ⟨G₀, hmemG₀, hG₀mem⟩ : ∃ G₀ : Subalgebra 𝒪ᵥ (Kᵥ ⊗[𝒪ᵥ] G),
-      (∀ g : G, ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈ G₀) ∧
-      (∀ q ∈ G₀, ∃ g : G, ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) = q) :=
-    ⟨(Algebra.TensorProduct.includeRight : G →ₐ[𝒪ᵥ] Kᵥ ⊗[𝒪ᵥ] G).range,
-      fun g => ⟨g, rfl⟩, fun _ hq => hq⟩
-  -- the Hopf order candidate: the intersection `H ∩ G` formed inside the generic fibre
-  obtain ⟨H₀, hmemH₀⟩ : ∃ H₀ : Subalgebra 𝒪ᵥ H, ∀ x : H, x ∈ H₀ ↔ ιA x ∈ G₀ :=
-    ⟨G₀.comap (ιA.restrictScalars 𝒪ᵥ), fun _ => Iff.rfl⟩
-  have hιsmul : ∀ (c : 𝒪ᵥ) (x : H), ιA (c • x) = c • ιA x := by
-    intro c x
-    rw [← IsScalarTower.algebraMap_smul Kᵥ c x, ← IsScalarTower.algebraMap_smul Kᵥ c (ιA x),
-      map_smul]
-  -- ### the three base-change structure formulas at `1 ⊗ g`
-  have hcounitG : ∀ g : G,
-      Bialgebra.counitAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈
-        (algebraMap 𝒪ᵥ Kᵥ).range := by
-    intro g
-    refine ⟨Coalgebra.counit (R := 𝒪ᵥ) g, ?_⟩
-    show algebraMap 𝒪ᵥ Kᵥ (Coalgebra.counit (R := 𝒪ᵥ) g) =
-      Coalgebra.counit (R := Kᵥ) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g)
-    rw [TensorProduct.counit_tmul]
-    simp [Algebra.smul_def]
-  have hantipodeG : ∀ g : G, HopfAlgebra.antipode Kᵥ ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) =
-      (1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (HopfAlgebra.antipode 𝒪ᵥ g) := fun _ => rfl
-  have hcomulG : ∀ g : G, Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈
-      Submodule.span 𝒪ᵥ {z : (Kᵥ ⊗[𝒪ᵥ] G) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G) |
-        ∃ a ∈ G₀, ∃ b ∈ G₀, a ⊗ₜ[Kᵥ] b = z} := by
-    intro g
-    show Coalgebra.comul (R := Kᵥ) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈ _
-    rw [TensorProduct.comul_tmul, CommSemiring.comul_apply]
-    generalize Coalgebra.comul (R := 𝒪ᵥ) g = t
-    induction t with
-    | zero => simp
-    | tmul a b =>
-        rw [TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul]
-        exact Submodule.subset_span ⟨_, hmemG₀ a, _, hmemG₀ b, rfl⟩
-    | add p q hp hq =>
-        rw [TensorProduct.tmul_add, map_add]
-        exact Submodule.add_mem _ hp hq
-  -- ### denominators: every element of the generic fibre has an integral multiple
-  have hden : ∀ q : Kᵥ ⊗[𝒪ᵥ] G, ∃ c ∈ nonZeroDivisors 𝒪ᵥ, c • q ∈ G₀ := by
-    intro q
-    induction q with
-    | zero => exact ⟨1, one_mem _, by rw [one_smul]; exact zero_mem G₀⟩
-    | tmul k g =>
-        obtain ⟨⟨c, hc⟩, c', hc'⟩ :=
-          IsLocalization.exists_integer_multiple (nonZeroDivisors 𝒪ᵥ) k
-        refine ⟨c, hc, ?_⟩
-        have hc'' : algebraMap 𝒪ᵥ Kᵥ c' = c • k := hc'
-        have h1 : c • (k ⊗ₜ[𝒪ᵥ] g) = c' • ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) := by
-          rw [TensorProduct.smul_tmul' c k g, TensorProduct.smul_tmul' c' (1 : Kᵥ) g,
-            ← hc'', Algebra.smul_def, mul_one]
-        rw [h1]
-        exact G₀.smul_mem (hmemG₀ g) c'
-    | add p q hp hq =>
-        obtain ⟨c₁, hc₁, h₁⟩ := hp
-        obtain ⟨c₂, hc₂, h₂⟩ := hq
-        refine ⟨c₁ * c₂, mul_mem hc₁ hc₂, ?_⟩
-        have h1 : (c₁ * c₂) • (p + q) = c₂ • (c₁ • p) + c₁ • (c₂ • q) := by
-          simp only [smul_add, smul_smul]
-          rw [mul_comm c₂ c₁]
-        rw [h1]
-        exact add_mem (G₀.smul_mem h₁ c₂) (G₀.smul_mem h₂ c₁)
-  -- ### the saturated preimage lattice inside `G`
-  obtain ⟨A, hmemA⟩ : ∃ A : Submodule 𝒪ᵥ G,
-      ∀ g : G, g ∈ A ↔ ∃ x : H, ιA x = (1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g :=
-    ⟨Submodule.comap
-      ((Algebra.TensorProduct.includeRight : G →ₐ[𝒪ᵥ] Kᵥ ⊗[𝒪ᵥ] G).toLinearMap)
-      (Submodule.restrictScalars 𝒪ᵥ (LinearMap.range ιA.toLinearMap)), fun _ => Iff.rfl⟩
-  haveI : Module.Finite 𝒪ᵥ (G ⧸ A) :=
-    Module.Finite.of_surjective A.mkQ (Submodule.mkQ_surjective A)
-  haveI : Module.IsTorsionFree 𝒪ᵥ (G ⧸ A) := by
-    refine ⟨fun r hr x y hxy => ?_⟩
-    obtain ⟨a, rfl⟩ := Submodule.mkQ_surjective A x
-    obtain ⟨b, rfl⟩ := Submodule.mkQ_surjective A y
-    have hr0 : r ≠ 0 := isRegular_iff_ne_zero.mp hr
-    have hrK : algebraMap 𝒪ᵥ Kᵥ r ≠ 0 := fun h0 =>
-      hr0 ((injective_iff_map_eq_zero _).mp (IsFractionRing.injective 𝒪ᵥ Kᵥ) r h0)
-    have hsub : r • (a - b) ∈ A := by
-      rw [← Submodule.Quotient.mk_eq_zero, ← Submodule.mkQ_apply, map_smul, map_sub, smul_sub,
-        sub_eq_zero]
-      exact hxy
-    have hab : a - b ∈ A := by
-      obtain ⟨w, hw⟩ := (hmemA _).mp hsub
-      refine (hmemA _).mpr ⟨(algebraMap 𝒪ᵥ Kᵥ r)⁻¹ • w, ?_⟩
-      rw [map_smul, hw, TensorProduct.tmul_smul,
-        ← IsScalarTower.algebraMap_smul Kᵥ r ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (a - b)), inv_smul_smul₀ hrK]
-    rw [Submodule.mkQ_apply, Submodule.mkQ_apply, Submodule.Quotient.eq]
-    exact hab
-  -- the retraction of `G` onto the saturated lattice `A` (its cokernel is free)
-  obtain ⟨ret, hretmem, hretid⟩ : ∃ ret : G →ₗ[𝒪ᵥ] G,
-      (∀ g : G, ret g ∈ A) ∧ (∀ g ∈ A, ret g = g) := by
-    obtain ⟨sec, hsec⟩ :=
-      A.mkQ.exists_rightInverse_of_surjective (by rw [Submodule.range_mkQ])
-    refine ⟨LinearMap.id - sec ∘ₗ A.mkQ, fun g => ?_, fun g hg => ?_⟩
-    · have h0 : A.mkQ (g - sec (A.mkQ g)) = 0 := by
-        rw [map_sub, sub_eq_zero]
-        exact (LinearMap.congr_fun hsec (A.mkQ g)).symm
-      rw [← Submodule.Quotient.mk_eq_zero, ← Submodule.mkQ_apply]
-      exact h0
-    · have h0 : A.mkQ g = 0 := by
-        rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
-        exact hg
-      show g - sec (A.mkQ g) = g
-      rw [h0, map_zero, sub_zero]
-  -- ### the integral retraction `G → H₀` and its base change `ρ`
-  obtain ⟨π, hπ⟩ := ιA.toLinearMap.exists_leftInverse_of_injective
-    (LinearMap.ker_eq_bot.mpr hι)
-  have hπι : ∀ x : H, π (ιA x) = x := fun x => LinearMap.congr_fun hπ x
-  obtain ⟨s, hsapp⟩ : ∃ s : G →ₗ[𝒪ᵥ] H, ∀ g : G, s g = π ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (ret g)) :=
-    ⟨(π.restrictScalars 𝒪ᵥ) ∘ₗ
-      ((Algebra.TensorProduct.includeRight : G →ₐ[𝒪ᵥ] Kᵥ ⊗[𝒪ᵥ] G).toLinearMap ∘ₗ ret),
-      fun _ => rfl⟩
-  have hsιA : ∀ g : G, ιA (s g) = (1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (ret g) := by
-    intro g
-    obtain ⟨x, hx⟩ := (hmemA _).mp (hretmem g)
-    rw [hsapp, ← hx, hπι]
-  have hsmem : ∀ g : G, s g ∈ H₀ := by
-    intro g
-    rw [hmemH₀, hsιA]
-    exact hmemG₀ _
-  have hsH₀ : ∀ x ∈ H₀, ∃ g : G, s g = x := by
-    intro x hx
-    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
-    refine ⟨g, hι ?_⟩
-    rw [hsιA, hretid g ((hmemA g).mpr ⟨x, hg.symm⟩)]
-    exact hg
-  obtain ⟨ρ, hρtmul⟩ : ∃ ρ : (Kᵥ ⊗[𝒪ᵥ] G) →ₗ[Kᵥ] H,
-      ∀ (k : Kᵥ) (g : G), ρ (k ⊗ₜ[𝒪ᵥ] g) = k • s g :=
-    ⟨s.liftBaseChange Kᵥ, fun _ _ => rfl⟩
-  have hρG₀ : ∀ q ∈ G₀, ρ q ∈ H₀ := by
-    intro q hq
-    obtain ⟨g, hg⟩ := hG₀mem q hq
-    rw [← hg, hρtmul, one_smul]
-    exact hsmem g
-  -- ### clause 2: the order spans the sub-bialgebra over `Kᵥ`
-  have hspan : Submodule.span Kᵥ (H₀ : Set H) = ⊤ := by
-    rw [eq_top_iff]
-    rintro x -
-    obtain ⟨c, hc, hcq⟩ := hden (ιA x)
-    have hcx : c • x ∈ H₀ := by
-      rw [hmemH₀, hιsmul]
-      exact hcq
-    obtain ⟨u, hu⟩ := IsLocalization.map_units Kᵥ (⟨c, hc⟩ : nonZeroDivisors 𝒪ᵥ)
-    have hx : x = (↑u⁻¹ : Kᵥ) • (c • x) := by
-      rw [← IsScalarTower.algebraMap_smul Kᵥ c x]
-      show x = (↑u⁻¹ : Kᵥ) • ((algebraMap 𝒪ᵥ Kᵥ c) • x)
-      rw [← hu, smul_smul, Units.inv_mul, one_smul]
-    rw [hx]
-    exact Submodule.smul_mem _ _ (Submodule.subset_span hcx)
-  -- ### clause 1: finite generation
-  have hH₀range : (Subalgebra.toSubmodule H₀ : Submodule 𝒪ᵥ H) = LinearMap.range s := by
-    refine le_antisymm ?_ ?_
-    · intro x hx
-      obtain ⟨g, hg⟩ := hsH₀ x hx
-      exact ⟨g, hg⟩
-    · rintro x ⟨g, rfl⟩
-      exact hsmem g
-  have hfg : (Subalgebra.toSubmodule H₀).FG := by
-    rw [hH₀range, LinearMap.range_eq_map]
-    exact (Module.finite_def.mp inferInstance).map s
-  -- ### clause 3: counit integrality
-  have hcounit : ∀ x ∈ H₀, Bialgebra.counitAlgHom Kᵥ H x ∈ (algebraMap 𝒪ᵥ Kᵥ).range := by
-    intro x hx
-    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
-    have hcc : Bialgebra.counitAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x) =
-        Bialgebra.counitAlgHom Kᵥ H x :=
-      AlgHom.congr_fun (BialgHomClass.counitAlgHom_comp ι) x
-    rw [← hcc, ← hg]
-    exact hcounitG g
-  -- ### clause 4: antipode stability
-  have hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode Kᵥ x ∈ H₀ := by
-    intro x hx
-    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
-    have hap : HopfAlgebra.antipode Kᵥ (ιA x) = ιA (HopfAlgebra.antipode Kᵥ x) :=
-      AlgHom.congr_fun (antipodeAlgHom_comp_bialgHom ι) x
-    rw [hmemH₀, ← hap, ← hg, hantipodeG g]
-    exact hmemG₀ _
-  -- ### clause 5: comultiplication closure — the saturation step
-  have hsret : ∀ g : G, s (ret g) = s g := by
-    intro g
-    refine hι ?_
-    rw [hsιA, hsιA, hretid _ (hretmem g)]
-  have hρι : ∀ x : H, ρ (ιA x) = x := by
-    have hext : (ρ ∘ₗ ιA.toLinearMap) = LinearMap.id (R := Kᵥ) (M := H) := by
-      refine LinearMap.ext_on hspan ?_
-      intro x hx
-      obtain ⟨g, hg⟩ := hsH₀ x hx
-      show ρ (ιA x) = x
-      rw [← hg, hsιA, hρtmul, one_smul, hsret]
-    intro x
-    exact LinearMap.congr_fun hext x
-  have hmapid : ∀ t : H ⊗[Kᵥ] H,
-      TensorProduct.map ρ ρ (Algebra.TensorProduct.map ιA ιA t) = t := by
-    intro t
-    induction t with
-    | zero => simp
-    | tmul a b =>
-        rw [Algebra.TensorProduct.map_tmul, TensorProduct.map_tmul, hρι, hρι]
-    | add p q hp hq => rw [map_add, map_add, hp, hq]
-  have hcomul : ∀ x ∈ H₀, Bialgebra.comulAlgHom Kᵥ H x ∈
-      Submodule.span 𝒪ᵥ {z : H ⊗[Kᵥ] H | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[Kᵥ] b = z} := by
-    intro x hx
-    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
-    have hcm : Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x) =
-        Algebra.TensorProduct.map ιA ιA (Bialgebra.comulAlgHom Kᵥ H x) :=
-      (AlgHom.congr_fun (BialgHomClass.map_comp_comulAlgHom ι) x).symm
-    have hmem0 : Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x) ∈
-        Submodule.span 𝒪ᵥ {z : (Kᵥ ⊗[𝒪ᵥ] G) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G) |
-          ∃ a ∈ G₀, ∃ b ∈ G₀, a ⊗ₜ[Kᵥ] b = z} := by
-      rw [← hg]
-      exact hcomulG g
-    obtain ⟨F, hFapp⟩ : ∃ F : ((Kᵥ ⊗[𝒪ᵥ] G) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G)) →ₗ[𝒪ᵥ] (H ⊗[Kᵥ] H),
-        ∀ z, F z = TensorProduct.map ρ ρ z :=
-      ⟨(TensorProduct.map ρ ρ).restrictScalars 𝒪ᵥ, fun _ => rfl⟩
-    have h2 := Submodule.mem_map_of_mem (f := F) hmem0
-    rw [Submodule.map_span] at h2
-    have h3 : F (Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x)) =
-        Bialgebra.comulAlgHom Kᵥ H x := by
-      rw [hFapp, hcm]
-      exact hmapid _
-    rw [h3] at h2
-    refine Submodule.span_mono ?_ h2
-    rintro _ ⟨z, ⟨a, ha, b, hb, rfl⟩, rfl⟩
-    exact ⟨ρ a, hρG₀ a ha, ρ b, hρG₀ b hb, by rw [hFapp, TensorProduct.map_tmul]⟩
-  -- ### assemble: the Hopf order is a finite flat Hopf form
-  obtain ⟨G', iCR, iHopf, iFin, iFlat, hequiv⟩ :=
-    exists_flat_hopf_form_of_hopf_order 𝒪ᵥ Kᵥ H H₀ hfg hspan hcounit hantipode hcomul
-  exact ⟨G', iCR, iHopf, iFlat, iFin, hequiv⟩
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 4000000 in
-/-- **Quotient closure** (DECOMPOSED 2026-07-25 into the two leaves
-`exists_etale_subBialgebra_of_points_surjective` (β, since PROVEN) and
-`exists_hopfOrder_of_subBialgebra` (γ, still open) above, with the
-assembly below PROVEN — the quotients half of Raynaud closure, added
-2026-07-24 for
-the E2b′ lattice-flatness transfer: the quotient of a finite flat group
-scheme over the DVR `𝒪ᵥ` by a flat closed subgroup scheme is finite
-flat — Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
-(1974); Tate, *Finite flat group schemes*, in
-Cornell–Silverman–Stevens): a `Γ Kᵥ`-equivariant quotient of a flat
-point-group at `v` is a flat point-group at `v`. The classical argument
-is dual to `of_injective`, taking SUB-algebras of the witness where
-that node quotients it, so the schematic-closure step is the easier
-one; it runs in four steps, of which (α) is vacuous here and (δ) is the
-proven glue below:
-* (α) *finiteness* — folded into leaf (β), which needs it internally:
-  the ambient point group of `Q := Kᵥ ⊗[𝒪ᵥ] G` is finite, hence so is
-  `Y` through the surjection `π`.
-* (β) *étale–Galois* — `exists_etale_subBialgebra_of_points_surjective`
-  (PROVEN 2026-07-25): `Y` is the point group of a finite étale
-  `Kᵥ`-Hopf algebra `H` embedded in `Q` by an injective `Kᵥ`-bialgebra
-  map `ι`, the pullback of functions along the point surjection.
-* (γ) *schematic closure over the DVR* — the leaf
-  `exists_hopfOrder_of_subBialgebra`: `G' := H ∩ G` is a finite flat
-  `𝒪ᵥ`-Hopf order with `Kᵥ ⊗[𝒪ᵥ] G' ≃ₐc[Kᵥ] H`.
-* (δ) *conclusion* — PROVEN below: étaleness of the generic fibre
-  transports along the underlying algebra equivalence
-  (`Algebra.Etale.of_equiv`); precomposition with the bialgebra
-  equivalence is an isomorphism of convolution point groups
-  (`AlgHom.convMul_comp_bialgHom_distrib`, through the local
-  `hbridge` identifying the bare-hom convolution monoid baked into
-  `IsFlatPointsGroupAt` with mathlib's `WithConv` one — both are
-  `lift φ ψ ∘ comul`) and is `Γ Kᵥ`-equivariant by
-  associativity of composition; and the identification `e` supplied by
-  (β) is equivariant because it is compatible with the equivariant
-  surjection `π ∘ f`, which forces restriction of points along `ι` to be
-  surjective.
-Unconditionally TRUE; no hypothesis package (for `π` bijective this
-is already `of_addEquiv`). CONSUMERS: the E2b′ lattice-flatness glue
-`isFlatAt_lattice_of_generic_iso` (reduction of arbitrary open-ideal
-levels to the cofinal `p`-power subtower); available to any future
-finite-flat quotient need (e.g. E1b's closure half). -/
-theorem IsFlatPointsGroupAt.of_surjective {X Y : Type*}
-    [AddCommGroup X] [AddCommGroup Y]
-    [DistribMulAction Γᵥ X] [DistribMulAction Γᵥ Y]
-    (hX : IsFlatPointsGroupAt v X) (π : X →+ Y)
-    (hπ : Function.Surjective π)
-    (hπe : ∀ (g : Γᵥ) (x : X), π (g • x) = g • π x) :
-    IsFlatPointsGroupAt v Y := by
-  classical
-  obtain ⟨G, iCR, iHopf, iFlat, iFin, iEt, f, hfbij, hfe⟩ := hX
-  letI := iCR
-  letI := iHopf
-  letI := iFlat
-  letI := iFin
-  letI := iEt
-  -- the composed equivariant surjection onto `Y` from the points of the
-  -- generic fibre `Q := Kᵥ ⊗[𝒪ᵥ] G`
-  have hpsurj : Function.Surjective (π.comp f) := hπ.comp hfbij.2
-  have hpe : ∀ (g : Γᵥ) (x : Additive (Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Ωᵥ)),
-      (π.comp f) (g • x) = g • (π.comp f) x := by
-    intro g x
-    show π (f (g • x)) = g • π (f x)
-    rw [hfe, hπe]
-  -- (β): the étale sub-bialgebra `H ↪ Q` with point group `Y`
-  obtain ⟨H, jCR, jHopf, jFin, jEt, ι, hιinj, e, he⟩ :=
-    exists_etale_subBialgebra_of_points_surjective (Q := Kᵥ ⊗[𝒪ᵥ] G) (π.comp f)
-      hpsurj hpe
-  letI := jCR
-  letI := jHopf
-  letI := jFin
-  letI := jEt
-  -- postcomposition by a Galois element commutes with precomposition
-  have hsmulcomp : ∀ {B C : Type} [CommRing B] [Algebra Kᵥ B] [CommRing C]
-      [Algebra Kᵥ C] (g : Γᵥ) (χ : B →ₐ[Kᵥ] C) (ψ : C →ₐ[Kᵥ] Ωᵥ),
-      (g • ψ).comp χ = g • (ψ.comp χ) := fun g χ ψ => AlgHom.ext fun _ => rfl
-  -- the identification of the points of `H` with `Y` is equivariant:
-  -- restriction of points along `ι` is surjective because `π ∘ f` is
-  have hee : ∀ (g : Γᵥ) (u : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • u) = g • e u := by
-    intro g u
-    obtain ⟨w, hw⟩ := hpsurj (e u)
-    have hφ : Additive.ofMul
-        ((Additive.toMul w).comp (ι : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))) = u :=
-      e.injective (by rw [he]; exact hw)
-    rw [← hφ]
-    have h1 : g • Additive.ofMul
-        ((Additive.toMul w).comp (ι : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))) =
-        Additive.ofMul ((g • Additive.toMul w).comp
-          (ι : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))) :=
-      congrArg Additive.ofMul (hsmulcomp g _ _).symm
-    rw [h1, he, he]
-    exact hpe g w
-  -- (γ): the finite flat Hopf order `G'` with generic fibre `H`
-  obtain ⟨G', kCR, kHopf, kFlat, kFin, ⟨ε⟩⟩ :=
-    exists_hopfOrder_of_subBialgebra (G := G) (H := H) ι hιinj
-  letI := kCR
-  letI := kHopf
-  letI := kFlat
-  letI := kFin
-  -- (δ): precomposition with the form equivalence identifies the points
-  let ι' : H →ₐc[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G') := ε.symm.toBialgHom
-  let ι'' : (Kᵥ ⊗[𝒪ᵥ] G') →ₐc[Kᵥ] H := ε.toBialgHom
-  let Φ : ((Kᵥ ⊗[𝒪ᵥ] G') →ₐ[Kᵥ] Ωᵥ) ≃ (H →ₐ[Kᵥ] Ωᵥ) :=
-    { toFun := fun ψ => ψ.comp (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G'))
-      invFun := fun φ => φ.comp (ι'' : (Kᵥ ⊗[𝒪ᵥ] G') →ₐ[Kᵥ] H)
-      left_inv := fun ψ => AlgHom.ext fun x => by
-        show ψ ((ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G'))
-          ((ι'' : (Kᵥ ⊗[𝒪ᵥ] G') →ₐ[Kᵥ] H) x)) = ψ x
-        congr 1
-        exact ε.symm_apply_apply x
-      right_inv := fun φ => AlgHom.ext fun x => by
-        show φ ((ι'' : (Kᵥ ⊗[𝒪ᵥ] G') →ₐ[Kᵥ] H)
-          ((ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G')) x)) = φ x
-        congr 1
-        exact ε.apply_symm_apply x }
-  -- the bare-hom convolution monoid on `B →ₐ[Kᵥ] Ωᵥ` (the one baked into
-  -- `IsFlatPointsGroupAt`) has the same product as mathlib's `WithConv`:
-  -- both are `lift φ ψ ∘ comul`
-  have hbridge : ∀ {B : Type} [CommRing B] [Bialgebra Kᵥ B] (φ ψ : B →ₐ[Kᵥ] Ωᵥ),
-      φ * ψ = (WithConv.toConv φ * WithConv.toConv ψ).ofConv :=
-    fun {_} _ _ φ ψ => AlgHom.ext fun x => by
-      rw [AlgHom.convMul_apply]
-      rfl
-  have hΦmul : ∀ ψ₁ ψ₂ : (Kᵥ ⊗[𝒪ᵥ] G') →ₐ[Kᵥ] Ωᵥ, Φ (ψ₁ * ψ₂) = Φ ψ₁ * Φ ψ₂ := by
-    intro ψ₁ ψ₂
-    show (ψ₁ * ψ₂).comp (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G')) =
-      (ψ₁.comp (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G'))) *
-        (ψ₂.comp (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G')))
-    have d := AlgHom.convMul_comp_bialgHom_distrib
-      (WithConv.toConv ψ₁) (WithConv.toConv ψ₂) ι'
-    rw [hbridge ψ₁ ψ₂,
-      hbridge (ψ₁.comp (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G')))
-        (ψ₂.comp (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G')))]
-    exact d
-  let g₀ : Additive ((Kᵥ ⊗[𝒪ᵥ] G') →ₐ[Kᵥ] Ωᵥ) ≃+ Additive (H →ₐ[Kᵥ] Ωᵥ) :=
-    { toFun := fun x => Additive.ofMul (Φ (Additive.toMul x))
-      invFun := fun y => Additive.ofMul (Φ.symm (Additive.toMul y))
-      left_inv := fun x => congrArg Additive.ofMul (Φ.symm_apply_apply _)
-      right_inv := fun y => congrArg Additive.ofMul (Φ.apply_symm_apply _)
-      map_add' := fun x y => congrArg Additive.ofMul (hΦmul _ _) }
-  refine ⟨G', kCR, kHopf, kFlat, kFin,
-    Algebra.Etale.of_equiv ε.toAlgEquiv.symm,
-    (g₀.trans e).toAddMonoidHom, (g₀.trans e).bijective, ?_⟩
-  intro g y
-  show e (g₀ (g • y)) = g • e (g₀ y)
-  have hg : g₀ (g • y) = g • g₀ y :=
-    congrArg Additive.ofMul
-      (hsmulcomp g (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G')) (Additive.toMul y))
-  rw [hg]
-  exact hee g (g₀ y)
-
-end RaynaudClosure
 
 /-- **Raynaud closure for flat prolongations** (DECOMPOSED 2026-07-24
 into a PROVEN assembly over the Raynaud-closure cut above — Raynaud,
@@ -7266,14 +6552,19 @@ has a flat prolongation at `v`, then it has a flat prolongation at
 `v`. Proof: through the repackaging
 `hasFlatProlongationAt_iff_isFlatPointsGroupAt`, each factor space is
 a flat point-group at `v`; their product is one by
-`IsFlatPointsGroupAt.pi` (`Fin`-recursion over the sorried binary
-tensor-product leaf `IsFlatPointsGroupAt.prod`); and the embedded
+`IsFlatPointsGroupAt.pi` (`Fin`-recursion over the binary
+tensor-product node `IsFlatPointsGroupAt.prod`); and the embedded
 `(ρ.toLocal v).Space` is one by the schematic-closure node
-`IsFlatPointsGroupAt.of_injective` (PROVEN assembly over the two
-sorried étale–Galois leaves). Sound as stated: unconditionally
-TRUE — this node and both remaining leaves carry no hypothesis
-package (at `n = 0` injectivity forces `M` subsingleton, matching
-`IsFlatPointsGroupAt.of_subsingleton`). -/
+`IsFlatPointsGroupAt.of_injective`. Sound as stated: unconditionally
+TRUE — no hypothesis package (at `n = 0` injectivity forces `M`
+subsingleton, matching `IsFlatPointsGroupAt.of_subsingleton`).
+
+STATUS CORRECTION 2026-07-26: the whole cut this stands on is now
+PROVEN and lives in
+`Deformations/RepresentationTheory/FlatPointsGroup.lean`; the "sorried
+binary tensor-product leaf" and "two sorried étale–Galois leaves" this
+docstring used to name were all closed on 2026-07-25/26, so this
+theorem is sorry-free. -/
 theorem GaloisRep.hasFlatProlongationAt_of_pi_embedding
     (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
     {A : Type*} [CommRing A] [TopologicalSpace A]
@@ -12327,13 +11618,453 @@ theorem exists_residual_trivialSub_or_psiSub
       rw [hd1 g, one_smul] at he
       exact ⟨e, by rw [← hτapp g, ← hb0]; exact he⟩
 
+open scoped Matrix in
+/-- **Ribet's walked lattice, in frame form** (Ribet cut E2a-ii-walk,
+item (b), support lemma; PROVEN 2026-07-25): if the residual
+representation `kk' ⊗_O Λ` of the standard lattice `Λ = Fin 2 → O` has a
+nonzero `ψ`-eigenvector `u₀` whose line carries the QUOTIENT character
+`1`, then there is a second continuous representation `ρO'` on
+`Fin 2 → O` together with an `O`-linear `f : Λ → Λ` of nonzero
+determinant intertwining `ρO'` with `ρO` — so the two lattices have the
+same generic fibre — whose reduction carries the two characters in the
+OPPOSITE order: a Galois-FIXED nonzero residual vector `v₀`, with `ψ`
+acting on the quotient by its line.
+
+This is one step of Ribet's tree of lattices (Ribet, *A modular
+construction of unramified `p`-extensions of `ℚ(μ_p)`*, Invent. Math. 34
+(1976), Prop. 2.1; Bellaïche–Chenevier, Astérisque 324 (2009), ch. 1).
+Abstractly the walked lattice is `Λ' = red⁻¹(kk'·u₀) ⊆ Λ`, the preimage
+of the residual `ψ`-line; the point of the statement is that `Λ'` is
+again free of rank `2`, so it can be PRESENTED on `Fin 2 → O`, the
+inclusion `Λ' ⊆ Λ` becoming the frame map `f`.
+
+EXECUTED ROUTE (all of it compiled; the whole argument is carried out in
+`2 × 2` matrices over `O`, which is what makes the freeness and the
+residual order swap computations rather than module theory):
+
+1. *The residual coordinate isomorphism.*
+   `E := (Algebra.TensorProduct.basis kk' (Pi.basisFun O (Fin 2))).equivFun`
+   identifies `kk' ⊗_O Λ` with `Fin 2 → kk'`, sending `1 ⊗ₜ x` to the
+   reduced coordinate vector `i ↦ algebraMap O kk' (x i)`. Since
+   `algebraMap O kk'` is SURJECTIVE, every tensor is of the form
+   `1 ⊗ₜ x`, so `E` turns every residual statement into a statement about
+   `kk'`-vectors, and base change acts through the reduced matrix:
+   `E ((σ.baseChange kk') g v) = (toMatrix' (σ g)).map (algebraMap O kk') *ᵥ E v`.
+2. *`O` is compact Hausdorff.* `algebraMap ℤ_p O` is injective because
+   `algebraMap O ℚ̄_p` is and the two structure maps commute
+   (`isScalarTower_padicInt_of_continuousSMul`), so `O` is a TORSION-FREE
+   module-finite `ℤ_p`-module, hence free (`ℤ_p` is a PID), hence
+   HOMEOMORPHIC to `ι → ℤ_p` for the module topology (both directions are
+   linear, so both are continuous); `ℤ_p` is compact Hausdorff.
+3. *Continuous division by a uniformiser.* For `π` irreducible,
+   `t ↦ π * t` is a continuous injection of the compact `O` into the
+   Hausdorff `O`, hence a HOMEOMORPHISM onto its image `𝔪`
+   (`Continuous.homeoOfEquivCompactToT2`). This is the one genuinely
+   topological ingredient, and it is what makes the walked cocycle
+   CONTINUOUS: the lower-left entry of the walked matrix is an entry of
+   `ρO` divided by `π`.
+4. *An adapted frame.* Pick `w` with `(E u₀) 0 * w 1 - w 0 * (E u₀) 1 ≠ 0`
+   (explicitly `![-1,0]` or `![0,1]` according to which coordinate of
+   `E u₀` is nonzero), lift `E u₀` and `w` to columns `y, z` of a matrix
+   `A` over `O`. Its determinant reduces to a nonzero element of `kk'`,
+   hence lies outside `𝔪`, hence is a UNIT — so `A` is invertible over
+   `O` and `B g := A⁻¹ * toMatrix' (ρO g) * A` is again integral.
+5. *The residual columns of `B`.* `Ā` is invertible over `kk'`, so
+   `Ā * B̄ g = ρ̄ g * Ā` determines `B̄ g` column by column: the first
+   column is `ψ g • ![1,0]` (because `Ā ![1,0] = E u₀` is the
+   `ψ`-eigenvector) and the second has lower entry `1` (because the
+   quotient character is `1`). So `B g 1 0 ∈ 𝔪` and `B g 0 0 ↦ ψ g`,
+   `B g 1 1 ↦ 1`.
+6. *The walked cocycle.* With `γ g := (B g 1 0) / π` (step 3) and
+   `D := !![1,0;0,π]`, put `M' g := !![B g 0 0, π * B g 0 1; γ g, B g 1 1]`;
+   then `D * M' g = B g * D`, and left multiplication by `D` is injective
+   on matrices (`π ≠ 0` in the domain `O`), which transports the cocycle
+   identities `B 1 = 1`, `B (g h) = B g * B h` to `M'`. Continuity of the
+   four entries comes from step 3 and from `ρO`'s own continuity through
+   the `O`-linear entry functionals on `Module.End O (Fin 2 → O)`, so
+   `ρO' := Matrix.toLin' ∘ M'` is an honest `GaloisRep`.
+7. *The conclusions.* `f := Matrix.toLin' (A * D)` has determinant
+   `det A * π ≠ 0`, and `(A * D) * M' g = toMatrix' (ρO g) * (A * D)` is
+   the intertwining. Residually `M̄' g = !![ψ g, 0; γ̄ g, 1]`, since
+   `π ↦ 0`; so `v₀ := 1 ⊗ₜ Pi.single 1 1` — the second frame vector of the
+   walked lattice, i.e. the image of `𝔪Λ / 𝔪Λ'` — is FIXED, and for every
+   `x` the vector `ρ̄' g x - ψ g • x` lies on its line. That is exactly
+   the swapped order. -/
+theorem exists_ribet_walked_frame
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    {kk' : Type u} [Field kk'] [TopologicalSpace kk'] [IsTopologicalRing kk']
+    [Algebra O kk'] [ContinuousSMul O kk']
+    (hsurj' : Function.Surjective (algebraMap O kk'))
+    (hker' : RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O)
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk')
+    {u₀ : kk' ⊗[O] (Fin 2 → O)} (hu₀ : u₀ ≠ 0)
+    (hfixψ : ∀ g, (ρO.baseChange kk') g u₀ = ψ g • u₀)
+    (hquo1 : ∀ g x, ∃ c : kk', (ρO.baseChange kk') g x - x = c • u₀) :
+    ∃ (ρO' : GaloisRep ℚ O (Fin 2 → O))
+      (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O)),
+      LinearMap.det f ≠ 0 ∧
+      (∀ g x, f (ρO' g x) = ρO g (f x)) ∧
+      ∃ v₀ : kk' ⊗[O] (Fin 2 → O), v₀ ≠ 0 ∧
+        (∀ g, (ρO'.baseChange kk') g v₀ = v₀) ∧
+        (∀ g x, ∃ c : kk',
+          (ρO'.baseChange kk') g x - ψ g • x = c • v₀) := by
+  classical
+  -- ## 0. The residual coordinate isomorphism `E : kk' ⊗ O² ≃ kk'²`.
+  set E := (Algebra.TensorProduct.basis kk' (Pi.basisFun O (Fin 2))).equivFun with hEdef
+  have hE : ∀ x : Fin 2 → O,
+      E ((1 : kk') ⊗ₜ[O] x) = fun i => algebraMap O kk' (x i) := by
+    intro x
+    funext i
+    simp [hEdef, Module.Basis.equivFun_apply, Algebra.TensorProduct.basis_repr_tmul]
+  have hEsurj : ∀ v : kk' ⊗[O] (Fin 2 → O), ∃ x : Fin 2 → O,
+      (1 : kk') ⊗ₜ[O] x = v := by
+    intro v
+    induction v using TensorProduct.induction_on with
+    | zero => exact ⟨0, by simp⟩
+    | tmul r x =>
+        obtain ⟨a, ha⟩ := hsurj' r
+        refine ⟨a • x, ?_⟩
+        have h2 : (1 : kk') ⊗ₜ[O] (a • x) = (algebraMap O kk' a) ⊗ₜ[O] x := by
+          rw [← TensorProduct.smul_tmul, Algebra.smul_def, mul_one]
+        rw [h2, ha]
+    | add v₁ v₂ h₁ h₂ =>
+        obtain ⟨x₁, rfl⟩ := h₁
+        obtain ⟨x₂, rfl⟩ := h₂
+        exact ⟨x₁ + x₂, by rw [TensorProduct.tmul_add]⟩
+  -- the dictionary: base change acts through the reduced matrix
+  have hdict : ∀ (σ : GaloisRep ℚ O (Fin 2 → O))
+      (g : Field.absoluteGaloisGroup ℚ) (v : kk' ⊗[O] (Fin 2 → O)),
+      E ((σ.baseChange kk') g v) =
+        ((LinearMap.toMatrix' (σ g)).map (algebraMap O kk')) *ᵥ (E v) := by
+    intro σ g v
+    obtain ⟨x, rfl⟩ := hEsurj v
+    rw [GaloisRep.baseChange_tmul, hE, hE]
+    funext i
+    have hmv : ((LinearMap.toMatrix' (σ g)) *ᵥ x) i = (σ g x) i := by
+      rw [← Matrix.toLin'_apply, Matrix.toLin'_toMatrix']
+    rw [← hmv]
+    simp [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.map_apply]
+  -- ## 1. `O` is compact Hausdorff.
+  haveI : IsScalarTower ℤ_[p] O (AlgebraicClosure ℚ_[p]) :=
+    isScalarTower_padicInt_of_continuousSMul
+  have hZinj : Function.Injective (algebraMap ℤ_[p] O) := by
+    intro a b hab
+    refine algebraMap_padicInt_algebraicClosure_injective (ℓ := p) ?_
+    rw [IsScalarTower.algebraMap_apply ℤ_[p] O (AlgebraicClosure ℚ_[p]),
+      IsScalarTower.algebraMap_apply ℤ_[p] O (AlgebraicClosure ℚ_[p]), hab]
+  haveI : Module.IsTorsionFree ℤ_[p] O :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
+  obtain ⟨hO⟩ : Nonempty (O ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[p] O → ℤ_[p])) := by
+    let bO := Module.Free.chooseBasis ℤ_[p] O
+    have hc1 : Continuous bO.equivFun :=
+      IsModuleTopology.continuous_of_linearMap bO.equivFun.toLinearMap
+    have hc2 : Continuous bO.equivFun.symm :=
+      IsModuleTopology.continuous_of_linearMap bO.equivFun.symm.toLinearMap
+    exact ⟨Homeomorph.mk bO.equivFun.toEquiv hc1 hc2⟩
+  haveI : CompactSpace O := hO.symm.compactSpace
+  haveI : T2Space O := hO.symm.t2Space
+  -- ## 2. A uniformiser, and continuous division by it.
+  obtain ⟨π, hπirr⟩ := IsDiscreteValuationRing.exists_irreducible O
+  have hπ0 : π ≠ 0 := hπirr.ne_zero
+  have hmaxπ : IsLocalRing.maximalIdeal O = Ideal.span {π} := hπirr.maximalIdeal_eq
+  have hπbar : algebraMap O kk' π = 0 := by
+    have h : π ∈ RingHom.ker (algebraMap O kk') := by
+      rw [hker', hmaxπ]
+      exact Ideal.mem_span_singleton_self π
+    exact RingHom.mem_ker.mp h
+  have hμinj : Function.Injective (fun t : O => π * t) := fun _ _ h =>
+    mul_left_cancel₀ hπ0 h
+  have hμcont : Continuous (fun t : O => π * t) := continuous_const.mul continuous_id
+  have heμcont : Continuous (Equiv.ofInjective (fun t : O => π * t) hμinj) :=
+    Continuous.subtype_mk hμcont _
+  let hμ : O ≃ₜ Set.range (fun t : O => π * t) :=
+    Continuous.homeoOfEquivCompactToT2 heμcont
+  have hμspec : ∀ y : Set.range (fun t : O => π * t), π * (hμ.symm y) = (y : O) :=
+    fun y => congrArg Subtype.val (hμ.apply_symm_apply y)
+  -- ## 3. The adapted frame `A` of the lattice.
+  have huu0 : E u₀ ≠ 0 := fun h => hu₀ (E.injective (by rw [h, map_zero]))
+  obtain ⟨w, hw⟩ : ∃ w : Fin 2 → kk',
+      (E u₀) 0 * w 1 - w 0 * (E u₀) 1 ≠ 0 := by
+    by_cases h0 : (E u₀) 0 = 0
+    · have h1 : (E u₀) 1 ≠ 0 := by
+        intro h1
+        refine huu0 ?_
+        funext i
+        fin_cases i
+        · simpa using h0
+        · simpa using h1
+      refine ⟨![-1, 0], ?_⟩
+      simpa [h0] using h1
+    · exact ⟨![0, 1], by simpa using h0⟩
+  obtain ⟨y, hy⟩ : ∃ y : Fin 2 → O, ∀ i, algebraMap O kk' (y i) = (E u₀) i :=
+    ⟨fun i => (hsurj' ((E u₀) i)).choose, fun i => (hsurj' ((E u₀) i)).choose_spec⟩
+  obtain ⟨z, hz⟩ : ∃ z : Fin 2 → O, ∀ i, algebraMap O kk' (z i) = w i :=
+    ⟨fun i => (hsurj' (w i)).choose, fun i => (hsurj' (w i)).choose_spec⟩
+  set A : Matrix (Fin 2) (Fin 2) O := !![y 0, z 0; y 1, z 1] with hAdef
+  have hAdetbar : algebraMap O kk' A.det = (E u₀) 0 * w 1 - w 0 * (E u₀) 1 := by
+    rw [hAdef, Matrix.det_fin_two_of]
+    simp only [map_sub, map_mul, hy, hz]
+  have hAdet : IsUnit A.det := by
+    by_contra hcon
+    have hm : A.det ∈ IsLocalRing.maximalIdeal O :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hcon
+    rw [← hker', RingHom.mem_ker, hAdetbar] at hm
+    exact hw hm
+  set Ab : Matrix (Fin 2) (Fin 2) kk' := A.map (algebraMap O kk') with hAbdef
+  have hAbdet : Ab.det ≠ 0 := by
+    rw [hAbdef, ← RingHom.mapMatrix_apply, ← RingHom.map_det, hAdetbar]
+    exact hw
+  have hAbinj : ∀ a b : Fin 2 → kk', Ab *ᵥ a = Ab *ᵥ b → a = b := by
+    intro a b hab
+    by_contra hne
+    have h0 : Ab *ᵥ (a - b) = 0 := by
+      rw [Matrix.mulVec_sub, hab, sub_self]
+    exact hAbdet (Matrix.exists_mulVec_eq_zero_iff.mp ⟨a - b, sub_ne_zero.mpr hne, h0⟩)
+  have hAbe0 : Ab *ᵥ ![1, 0] = E u₀ := by
+    funext i
+    fin_cases i <;>
+      simp [hAbdef, hAdef, Matrix.mulVec, dotProduct, Fin.sum_univ_two,
+        Matrix.map_apply, hy]
+  have hAbe1 : Ab *ᵥ ![0, 1] = w := by
+    funext i
+    fin_cases i <;>
+      simp [hAbdef, hAdef, Matrix.mulVec, dotProduct, Fin.sum_univ_two,
+        Matrix.map_apply, hz]
+  -- ## 4. The conjugated matrix cocycle `B`, and its residual columns.
+  set Mt : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) O :=
+    fun g => LinearMap.toMatrix' (ρO g) with hMtdef
+  have hMtapp : ∀ g, Mt g = LinearMap.toMatrix' (ρO g) := fun _ => rfl
+  set B : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) O :=
+    fun g => A⁻¹ * Mt g * A with hBdef
+  have hBapp : ∀ g, B g = A⁻¹ * Mt g * A := fun _ => rfl
+  have hAB : ∀ g, A * B g = Mt g * A := by
+    intro g
+    rw [hBapp, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+      Matrix.mul_nonsing_inv A hAdet, Matrix.one_mul]
+  have hB1 : B 1 = 1 := by
+    rw [hBapp, hMtapp, map_one, Module.End.one_eq_id, LinearMap.toMatrix'_id,
+      Matrix.mul_one]
+    exact Matrix.nonsing_inv_mul A hAdet
+  have hBmul : ∀ g h, B (g * h) = B g * B h := by
+    intro g h
+    have hMtmul : Mt (g * h) = Mt g * Mt h := by
+      rw [hMtapp, hMtapp, hMtapp, map_mul]
+      exact LinearMap.toMatrix'_mul _ _
+    rw [hBapp, hBapp, hBapp, hMtmul]
+    simp only [Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc A A⁻¹, Matrix.mul_nonsing_inv A hAdet, Matrix.one_mul]
+  have hABbar : ∀ g, Ab * ((B g).map (algebraMap O kk')) =
+      ((Mt g).map (algebraMap O kk')) * Ab := by
+    intro g
+    have h := congrArg (fun M : Matrix (Fin 2) (Fin 2) O =>
+      M.map (algebraMap O kk')) (hAB g)
+    simpa [hAbdef, Matrix.map_mul] using h
+  have hMtbar : ∀ g (v : kk' ⊗[O] (Fin 2 → O)),
+      ((Mt g).map (algebraMap O kk')) *ᵥ (E v) = E ((ρO.baseChange kk') g v) := by
+    intro g v
+    rw [hMtapp]
+    exact (hdict ρO g v).symm
+  have hcol0 : ∀ g, ((B g).map (algebraMap O kk')) *ᵥ ![1, 0]
+      = ψ g • ![(1 : kk'), 0] := by
+    intro g
+    refine hAbinj _ _ ?_
+    calc Ab *ᵥ (((B g).map (algebraMap O kk')) *ᵥ ![1, 0])
+        = (Ab * ((B g).map (algebraMap O kk'))) *ᵥ ![1, 0] :=
+          Matrix.mulVec_mulVec _ _ _
+      _ = (((Mt g).map (algebraMap O kk')) * Ab) *ᵥ ![1, 0] := by rw [hABbar]
+      _ = ((Mt g).map (algebraMap O kk')) *ᵥ (Ab *ᵥ ![1, 0]) :=
+          (Matrix.mulVec_mulVec _ _ _).symm
+      _ = ((Mt g).map (algebraMap O kk')) *ᵥ (E u₀) := by rw [hAbe0]
+      _ = E ((ρO.baseChange kk') g u₀) := hMtbar g u₀
+      _ = ψ g • (E u₀) := by rw [hfixψ, map_smul]
+      _ = ψ g • (Ab *ᵥ ![1, 0]) := by rw [hAbe0]
+      _ = Ab *ᵥ (ψ g • ![(1 : kk'), 0]) := (Matrix.mulVec_smul _ _ _).symm
+  have hcol1 : ∀ g, ∃ c : kk',
+      ((B g).map (algebraMap O kk')) *ᵥ ![0, 1] = ![(0 : kk'), 1] + c • ![1, 0] := by
+    intro g
+    obtain ⟨c, hc⟩ := hquo1 g (E.symm w)
+    have hc' : (ρO.baseChange kk') g (E.symm w) = c • u₀ + E.symm w :=
+      sub_eq_iff_eq_add.mp hc
+    refine ⟨c, hAbinj _ _ ?_⟩
+    calc Ab *ᵥ (((B g).map (algebraMap O kk')) *ᵥ ![0, 1])
+        = (Ab * ((B g).map (algebraMap O kk'))) *ᵥ ![0, 1] :=
+          Matrix.mulVec_mulVec _ _ _
+      _ = (((Mt g).map (algebraMap O kk')) * Ab) *ᵥ ![0, 1] := by rw [hABbar]
+      _ = ((Mt g).map (algebraMap O kk')) *ᵥ (Ab *ᵥ ![0, 1]) :=
+          (Matrix.mulVec_mulVec _ _ _).symm
+      _ = ((Mt g).map (algebraMap O kk')) *ᵥ (E (E.symm w)) := by
+          rw [hAbe1, E.apply_symm_apply]
+      _ = E ((ρO.baseChange kk') g (E.symm w)) := hMtbar g _
+      _ = c • (E u₀) + w := by rw [hc', map_add, map_smul, E.apply_symm_apply]
+      _ = c • (Ab *ᵥ ![1, 0]) + (Ab *ᵥ ![0, 1]) := by rw [hAbe0, hAbe1]
+      _ = Ab *ᵥ (![(0 : kk'), 1] + c • ![1, 0]) := by
+          rw [Matrix.mulVec_add, Matrix.mulVec_smul]
+          exact add_comm _ _
+  have hB00 : ∀ g, algebraMap O kk' (B g 0 0) = ψ g := by
+    intro g
+    have h := congrFun (hcol0 g) 0
+    simpa [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.map_apply] using h
+  have hB10 : ∀ g, algebraMap O kk' (B g 1 0) = 0 := by
+    intro g
+    have h := congrFun (hcol0 g) 1
+    simpa [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.map_apply] using h
+  have hB11 : ∀ g, algebraMap O kk' (B g 1 1) = 1 := by
+    intro g
+    obtain ⟨c, hc⟩ := hcol1 g
+    have h := congrFun hc 1
+    simpa [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.map_apply] using h
+  -- ## 5. Dividing the lower-left entry by the uniformiser.
+  have hmemrange : ∀ g, B g 1 0 ∈ Set.range (fun t : O => π * t) := by
+    intro g
+    have hm : B g 1 0 ∈ IsLocalRing.maximalIdeal O := by
+      rw [← hker', RingHom.mem_ker]
+      exact hB10 g
+    rw [hmaxπ, Ideal.mem_span_singleton] at hm
+    obtain ⟨t, ht⟩ := hm
+    exact ⟨t, ht.symm⟩
+  set γ : Field.absoluteGaloisGroup ℚ → O :=
+    fun g => hμ.symm ⟨B g 1 0, hmemrange g⟩ with hγdef
+  have hγspec : ∀ g, π * γ g = B g 1 0 := fun g => hμspec ⟨_, hmemrange g⟩
+  -- ## 6. Continuity of all the entries.
+  letI : TopologicalSpace (Module.End O (Fin 2 → O)) :=
+    moduleTopology O (Module.End O (Fin 2 → O))
+  haveI : ContinuousAdd (Module.End O (Fin 2 → O)) :=
+    ModuleTopology.continuousAdd O _
+  haveI : ContinuousSMul O (Module.End O (Fin 2 → O)) :=
+    ModuleTopology.continuousSMul O _
+  have hMtcont : ∀ i j, Continuous fun g => Mt g i j := by
+    intro i j
+    have hc : Continuous fun g => (ρO g) (Pi.single j (1 : O)) i :=
+      (IsModuleTopology.continuous_of_linearMap
+        ({ toFun := fun T : Module.End O (Fin 2 → O) => T (Pi.single j (1 : O)) i
+           map_add' := fun _ _ => rfl
+           map_smul' := fun _ _ => rfl } : Module.End O (Fin 2 → O) →ₗ[O] O)).comp
+        (ContinuousMonoidHom.continuous_toFun ρO)
+    simpa only [hMtapp, LinearMap.toMatrix'_apply] using hc
+  have hBcont : ∀ i j, Continuous fun g => B g i j := by
+    intro i j
+    have hexp : (fun g => B g i j) = fun g =>
+        (A⁻¹ i 0 * Mt g 0 0 + A⁻¹ i 1 * Mt g 1 0) * A 0 j +
+        (A⁻¹ i 0 * Mt g 0 1 + A⁻¹ i 1 * Mt g 1 1) * A 1 j := by
+      funext g
+      rw [hBapp]
+      simp [Matrix.mul_apply, Fin.sum_univ_two]
+    rw [hexp]
+    exact (((continuous_const.mul (hMtcont 0 0)).add
+      (continuous_const.mul (hMtcont 1 0))).mul continuous_const).add
+      (((continuous_const.mul (hMtcont 0 1)).add
+      (continuous_const.mul (hMtcont 1 1))).mul continuous_const)
+  have hγcont : Continuous γ :=
+    hμ.symm.continuous.comp (Continuous.subtype_mk (hBcont 1 0) _)
+  -- ## 7. The walked matrix cocycle.
+  set D : Matrix (Fin 2) (Fin 2) O := !![1, 0; 0, π] with hDdef
+  set M' : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) O :=
+    fun g => !![B g 0 0, π * B g 0 1; γ g, B g 1 1] with hM'def
+  have hM'app : ∀ g, M' g = !![B g 0 0, π * B g 0 1; γ g, B g 1 1] := fun _ => rfl
+  have hDrow : ∀ (X : Matrix (Fin 2) (Fin 2) O) (j : Fin 2),
+      (D * X) 0 j = X 0 j ∧ (D * X) 1 j = π * X 1 j := by
+    intro X j
+    constructor <;> simp [hDdef, Matrix.mul_apply, Fin.sum_univ_two]
+  have hDcancel : ∀ X Y : Matrix (Fin 2) (Fin 2) O, D * X = D * Y → X = Y := by
+    intro X Y hXY
+    have hent : ∀ (i j : Fin 2), (D * X) i j = (D * Y) i j := fun i j => by rw [hXY]
+    ext i j
+    fin_cases i
+    · have h := hent 0 j
+      rw [(hDrow X j).1, (hDrow Y j).1] at h
+      exact h
+    · have h := hent 1 j
+      rw [(hDrow X j).2, (hDrow Y j).2] at h
+      exact mul_left_cancel₀ hπ0 h
+  have hDM : ∀ g, D * M' g = B g * D := by
+    intro g
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [hDdef, hM'app, Matrix.mul_apply, Fin.sum_univ_two, hγspec g, mul_comm]
+  have hM'one : M' 1 = 1 := by
+    refine hDcancel _ _ ?_
+    rw [hDM, hB1, Matrix.one_mul, Matrix.mul_one]
+  have hM'mul : ∀ g h, M' (g * h) = M' g * M' h := by
+    intro g h
+    refine hDcancel _ _ ?_
+    rw [hDM, hBmul, Matrix.mul_assoc, ← hDM h, ← Matrix.mul_assoc, ← hDM g,
+      Matrix.mul_assoc]
+  have hM'decomp : ∀ g, M' g =
+      (B g 0 0) • !![1, 0; 0, 0] + (π * B g 0 1) • !![0, 1; 0, 0] +
+        (γ g) • !![0, 0; 1, 0] + (B g 1 1) • !![0, 0; 0, 1] := by
+    intro g
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp [hM'app]
+  -- ## 8. The walked representation.
+  let ρO' : GaloisRep ℚ O (Fin 2 → O) :=
+    { toFun := fun g => Matrix.toLin' (M' g)
+      map_one' := by rw [hM'one, Matrix.toLin'_one]; rfl
+      map_mul' := fun g h => by rw [hM'mul g h, Matrix.toLin'_mul]; rfl
+      continuous_toFun := by
+        simp only [hM'decomp, map_add, map_smul]
+        exact ((((hBcont 0 0).smul continuous_const).add
+          ((continuous_const.mul (hBcont 0 1)).smul continuous_const)).add
+          (hγcont.smul continuous_const)).add
+          ((hBcont 1 1).smul continuous_const) }
+  have hρO'app : ∀ g, ρO' g = Matrix.toLin' (M' g) := fun _ => rfl
+  have hρO'mat : ∀ g, LinearMap.toMatrix' (ρO' g) = M' g := by
+    intro g
+    rw [hρO'app, LinearMap.toMatrix'_toLin']
+  -- ## 9. Assembly.
+  refine ⟨ρO', Matrix.toLin' (A * D), ?_, ?_,
+    (1 : kk') ⊗ₜ[O] (fun i => if i = 1 then (1 : O) else 0), ?_, ?_, ?_⟩
+  · rw [LinearMap.det_toLin', Matrix.det_mul]
+    have hDdetv : D.det = π := by rw [hDdef, Matrix.det_fin_two_of]; ring
+    rw [hDdetv]
+    exact mul_ne_zero hAdet.ne_zero hπ0
+  · intro g x
+    have hmat : (A * D) * M' g = Mt g * (A * D) := by
+      rw [Matrix.mul_assoc, hDM, ← Matrix.mul_assoc, hAB, Matrix.mul_assoc]
+    have hρ : ∀ v : Fin 2 → O, ρO g v = Mt g *ᵥ v := by
+      intro v
+      rw [hMtapp]
+      exact (LinearMap.toMatrix'_mulVec _ _).symm
+    rw [hρO'app, Matrix.toLin'_apply, Matrix.toLin'_apply, Matrix.toLin'_apply,
+      hρ, Matrix.mulVec_mulVec, Matrix.mulVec_mulVec, hmat]
+  · -- `v₀ ≠ 0`
+    intro hcon
+    have h := congrArg E hcon
+    rw [hE, map_zero] at h
+    have h1 := congrFun h 1
+    simp at h1
+  · -- `v₀` is fixed
+    intro g
+    refine E.injective ?_
+    rw [hdict, hρO'mat, hE]
+    funext i
+    fin_cases i <;>
+      simp [hM'app, Matrix.mulVec, dotProduct,
+        Matrix.map_apply, hπbar, hB11 g]
+  · -- the quotient character is `ψ`
+    intro g x
+    obtain ⟨t, rfl⟩ := hEsurj x
+    refine ⟨algebraMap O kk' (γ g) * algebraMap O kk' (t 0) +
+      (1 - ψ g) * algebraMap O kk' (t 1), ?_⟩
+    refine E.injective ?_
+    simp only [map_sub, map_smul, hdict, hρO'mat, hE]
+    funext i
+    fin_cases i <;>
+      simp [hM'app, Matrix.mulVec, dotProduct, Fin.sum_univ_two,
+        Matrix.map_apply, hπbar, hB00 g, hB11 g]
+    ring
+
 set_option linter.unusedVariables false in
 set_option backward.isDefEq.respectTransparency false in
 /-- **One step of Ribet's walk: swapping the order of the residual
-characters** (Ribet cut E2a-ii-walk, item (b); PARTIALLY PROVEN — the
-lattice construction and the generic identification are proven, one
-sorried `have hwalk` remains; carved out
-2026-07-25 from `exists_ribet_walk_stable_line`): if the reduction of
+characters** (Ribet cut E2a-ii-walk, item (b); PROVEN 2026-07-25 —
+carved out from `exists_ribet_walk_stable_line`, decomposed the same
+day, and its last leaf `hwalk` discharged by the frame-form walk lemma
+`exists_ribet_walked_frame` above): if the reduction of
 the given lattice has `ψ` as its SUB-character — a residual
 `ψ`-eigenvector `v₀` whose line carries the quotient character `1` —
 then some commensurable stable lattice, again presented on
@@ -12365,8 +12096,18 @@ continuously, and `hOinj` is what makes the generic fibres of `Λ` and
 hypothesis, which is exactly what makes `Λ'` a PROPER intermediate
 lattice.
 
-DECOMPOSITION (2026-07-25): the assembly below is PROVEN and the leaf
-is now the single sorried `have hwalk`. What is proven here:
+DECOMPOSITION (2026-07-25): the assembly below was first cut down to a
+single sorried `have hwalk`, which is now PROVEN by
+`exists_ribet_walked_frame` (see its docstring for the executed route —
+the walked lattice is framed by an explicit `2 × 2` change of basis
+rather than as a submodule, so its freeness and the residual order swap
+become matrix computations, and its continuity comes from division by a
+uniformiser being a homeomorphism onto the maximal ideal). Note that
+`hwalk` consumes only the quotient-character hypothesis: the submodule
+`N`, its stability, properness and `𝔪Λ ⊆ N` — all constructed and proven
+below — are what MOTIVATE the walked lattice, but the frame-form lemma
+rebuilds the same lattice from `u₀` directly, so they are passed and
+discarded. What is proven here:
 * the walked lattice itself is CONSTRUCTED as real code —
   `Λ' = red⁻¹(kk'·u₀)` for the reduction `red : Λ →ₗ[O] kk' ⊗_O Λ`,
   `x ↦ 1 ⊗ₜ x`, i.e. `Submodule.comap red ((kk' ∙ u₀).restrictScalars O)`
@@ -12377,17 +12118,19 @@ is now the single sorried `have hwalk`. What is proven here:
   `kk' ⊗_O Λ`, since `r ⊗ₜ x = r • (1 ⊗ₜ x)` — would lie in the LINE
   `kk'·u₀`, contradicting `finrank = 2`), and `𝔪Λ ⊆ Λ'` (for
   `m ∈ 𝔪 = ker(O → kk')`, `1 ⊗ₜ (m • x) = (algebraMap m) ⊗ₜ x = 0`).
-* the GENERIC IDENTIFICATION: the sorried step returns the inclusion
+* the GENERIC IDENTIFICATION: the walk step returns the inclusion
   `Λ' ⊆ Λ` in frame form, an `O`-linear `f` with `det f ≠ 0`
   intertwining `ρO'` and `ρO`; base-changing `f` to `ℚ̄_p` gives
   `det (f ⊗ ℚ̄_p) = algebraMap (det f) ≠ 0` by `hOinj`, hence an
   isomorphism (`LinearMap.isUnit_iff_isUnit_det` + `Module.End.isUnit_iff`),
   and its equivariance is `TensorProduct.induction_on` over `f`'s.
-The residual order swap and the freeness/framing of `Λ'` (finitely
-generated torsion-free over the DVR `O`, hence free, of rank `2`
-because it contains `𝔪Λ`) are what remains inside `hwalk`, which is
-handed exactly the three lattice properties plus the quotient-character
-hypothesis it consumes. -/
+The residual order swap and the freeness/framing of `Λ'` are what
+`hwalk` supplies. The abstract route to the latter — `Λ'` is finitely
+generated and torsion-free over the DVR `O`, hence free, of rank `2`
+because it contains `𝔪Λ` — is NOT the route taken:
+`exists_ribet_walked_frame` instead exhibits an explicit frame
+`(y, π z)` of `Λ'` inside a frame `(y, z)` of `Λ` adapted to `u₀`, which
+is what turns the whole step into `2 × 2` matrix algebra. -/
 theorem exists_ribet_walk_swap_order
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
@@ -12483,7 +12226,8 @@ theorem exists_ribet_walk_swap_order
           (∀ g, (ρO'.baseChange kk') g v₀ = v₀) ∧
           (∀ g x, ∃ c : kk',
             (ρO'.baseChange kk') g x - ψ g • x = c • v₀) := by
-    sorry
+    intro _ _ _ hq
+    exact exists_ribet_walked_frame (p := p) hsurj' hker' ψ hu₀ hfixψ hq
   obtain ⟨ρO', f, hfdet, hfequiv, v₀, hv₀, hfix, hquo⟩ :=
     hwalk hNstable hNtop hNmax hquo1
   -- the generic identification: base change `f` and invert it over `ℚ̄_p`
@@ -12509,11 +12253,347 @@ theorem exists_ribet_walk_swap_order
   | add x₁ x₂ h₁ h₂ => simp only [map_add, h₁, h₂]
 
 set_option linter.unusedVariables false in
+/-- **One step of Ribet's lattice descent** (Ribet cut E2a-ii-walk,
+item (c1); SORRY LEAF, carved out of
+`exists_stable_line_of_ribet_walk_split` 2026-07-25): a GOOD stable
+lattice — one whose reduction carries a Galois-FIXED nonzero vector
+`v'` — that SPLITS, i.e. whose reduction also carries a `ψ`-eigenvector
+`w` outside `kk' ∙ v'`, has a distinguished stable sublattice of
+colength ONE which is again good, namely the preimage `N` of `kk' ∙ w`
+under the reduction `Λ ↠ Λ/𝔪Λ = kk' ⊗ Λ`. It is returned in FRAME
+form: a representation `ρ''` on the standard frame `Fin 2 → O`
+together with the inclusion `f` of `N` into the ambient frame
+(`LinearMap.range f = N`), intertwining `ρ''` into `ρ'`.
+
+Classical source: Ribet, *A modular construction of unramified
+`p`-extensions of `ℚ(μ_p)`*, Invent. Math. 34 (1976), Prop. 2.1;
+Bellaïche–Chenevier, Astérisque 324 (2009), ch. 1.
+
+WHY EACH CONJUNCT OF THE CONCLUSION IS THERE — all of them are
+load-bearing for the inverse limit `exists_stable_line_of_ribet_descent`,
+and the first three were MISSING from this cut as it was originally
+recorded (see the faithfulness note on that leaf):
+* `Ideal.span {det f} = 𝔪` says the step crosses exactly ONE edge of
+  the Bruhat–Tits tree of `O`-lattices: `length (Λ/N) = v (det f) = 1`.
+  The weaker `det f ∈ 𝔪` is satisfied by the HOMOTHETY `f = π • id`,
+  whose "descent" is `Λ ↦ 𝔪Λ`; an infinite walk of those has
+  intersection `0` and produces no line at all.
+* `v' ∉ range (f ⊗ kk')` is NON-BACKTRACKING. The residual image of
+  `N` is the line `kk' ∙ w`, while the direction back towards the
+  PREVIOUS lattice is, seen inside `Λ'`, exactly the fixed line
+  `kk' ∙ v'` (the sub-character of a good lattice is trivial, and
+  `𝔪Λ_prev/𝔪Λ' ≅ Λ_prev/Λ'` is the trivial character). Without this
+  clause the walk may oscillate, `Λ ⊃ Λ₁ ⊃ 𝔪Λ ⊃ 𝔪Λ₁ ⊃ ⋯`, again with
+  intersection `0`.
+* the biconditional `(1 ⊗ f x = 0) ↔ (1 ⊗ x ∈ kk' ∙ v'')` identifies,
+  INSIDE THE CHILD'S FRAME, the sublattice `f⁻¹(𝔪Λ')` — which is where
+  the parent's homothety `𝔪Λ'` sits — with the preimage of the child's
+  own fixed line. It is what lets the NEXT step's non-backtracking
+  clause be read as "the grandchild is not `𝔪 ·` the parent".
+* `v'' ≠ 0`, fixed, with `ψ` on the quotient: the child is again GOOD,
+  so the walk continues. Concretely `v''` is the reduction of the `z`
+  with `f z = π • λ`, where `λ` reduces to `v'`: the sub-character of
+  `N` is `𝔪Λ'/𝔪N ≅ Λ'/N`, trivial, and the quotient is
+  `N/𝔪Λ' = kk' ∙ w`, on which `ρ'` acts by `ψ`.
+
+ROUTE (worked out 2026-07-25 for whoever owns this leaf).
+1. `N := red⁻¹(kk' ∙ w)` is `ρ'`-stable because `w` is a
+   `ψ`-eigenvector, contains `𝔪Λ` because `algebraMap` kills `𝔪`
+   (`hker'`), and is `≠ ⊤` because `red` is onto (`hsurj'`) while
+   `kk' ∙ w ≠ ⊤` by `finrank kk' (kk' ⊗ O²) = 2`.
+2. FRAME BRICK — the only genuinely infrastructural step. `N` is free
+   of rank `2` over the DVR `O` (`Submodule.smithNormalForm`), so a
+   basis of `N` gives `f : O² ↪ O²` with `range f = N`, and `ρ''` is
+   `ρ'` conjugated through `f`. CONTINUITY of `g ↦ ρ'' g` is the only
+   nontrivial point, `f` not being invertible; it follows from the
+   identity `det f • ρ'' g = adj f ∘ ρ' g ∘ f`, whose right-hand side
+   is a continuous `O`-LINEAR image of `ρ' g`, once one knows that
+   `(det f) • ·` is a topological embedding of `End_O (O²)`. That is
+   `Continuous.isClosedEmbedding` for a continuous injection from a
+   COMPACT to a HAUSDORFF space, and `CompactSpace O` / `T2Space O`
+   hold because `O` is free of finite rank over `ℤ_p` carrying the
+   module topology — the `Module.Free.chooseBasis` homeomorphism
+   already used elsewhere in this file. Freeness is
+   `Module.free_of_finite_type_torsion_free'`, its torsion-freeness
+   coming from `IsDomain O` plus injectivity of `ℤ_p → O`: a
+   `ℤ_p`-module-finite domain killed by `p` would be a finite domain,
+   hence a field, and `O` is not a field (`IsDiscreteValuationRing`).
+3. `Ideal.span {det f} = 𝔪` is `length (Λ/N) = 1`. This pin has no
+   `det`-versus-colength lemma; the practical route is to take `f`
+   FROM `Submodule.smithNormalForm`, where `det f` is a unit times the
+   product `a₁a₂` of the elementary divisors and `Λ/N ≅ O/a₁ ⊕ O/a₂`
+   is `1`-dimensional over `kk'` by step 1.
+4. The residual data. Pick `λ` with `red λ = v'` and `z` with
+   `f z = π • λ` (possible since `π • λ ∈ 𝔪Λ ⊆ N`); put `v'' := red z`.
+   Then `ker (f ⊗ kk') = kk' ∙ v''` and `range (f ⊗ kk') = kk' ∙ w`,
+   from which the fixed-vector and `ψ`-quotient clauses are formal:
+   `(f ⊗ kk') ∘ (ρ'' ⊗ kk') g = (ρ' ⊗ kk') g ∘ (f ⊗ kk')` and `ρ'`
+   acts by `ψ` on `kk' ∙ w`. -/
+theorem exists_ribet_walk_descent_step
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    [Algebra O kk'] [ContinuousSMul O kk']
+    (hsurj' : Function.Surjective (algebraMap O kk'))
+    (hopen' : IsOpen ((IsLocalRing.maximalIdeal O : Ideal O) : Set O))
+    (hker' : RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O)
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk')
+    (ρ' : GaloisRep ℚ O (Fin 2 → O))
+    (v' w : kk' ⊗[O] (Fin 2 → O))
+    (hv' : v' ≠ 0)
+    (hfix' : ∀ g, (ρ'.baseChange kk') g v' = v')
+    (hw : w ∉ Submodule.span kk' {v'})
+    (hweig : ∀ g, (ρ'.baseChange kk') g w = ψ g • w) :
+    ∃ (ρ'' : GaloisRep ℚ O (Fin 2 → O))
+      (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O))
+      (v'' : kk' ⊗[O] (Fin 2 → O)),
+      LinearMap.det f ≠ 0 ∧
+      Ideal.span {LinearMap.det f} = IsLocalRing.maximalIdeal O ∧
+      (∀ g x, f (ρ'' g x) = ρ' g (f x)) ∧
+      v' ∉ LinearMap.range (LinearMap.baseChange kk' f) ∧
+      (∀ x : Fin 2 → O, (1 : kk') ⊗ₜ[O] (f x) = 0 ↔
+        (1 : kk') ⊗ₜ[O] x ∈ Submodule.span kk' {v''}) ∧
+      v'' ≠ 0 ∧
+      (∀ g, (ρ''.baseChange kk') g v'' = v'') ∧
+      (∀ g x, ∃ c : kk', (ρ''.baseChange kk') g x - ψ g • x = c • v'') := by
+  classical
+  -- the reduction map `Λ ↠ Λ/𝔪Λ = kk' ⊗ Λ`
+  obtain ⟨red, hred⟩ : ∃ red : (Fin 2 → O) →ₗ[O] (kk' ⊗[O] (Fin 2 → O)),
+      ∀ x, red x = (1 : kk') ⊗ₜ[O] x :=
+    ⟨TensorProduct.mk O kk' (Fin 2 → O) 1, fun _ => rfl⟩
+  have hredequiv : ∀ (g : Field.absoluteGaloisGroup ℚ) (x : Fin 2 → O),
+      red (ρ' g x) = (ρ'.baseChange kk') g (red x) := by
+    intro g x
+    rw [hred, hred]
+    exact (GaloisRep.baseChange_tmul ρ' g 1 x).symm
+  have hredsurj : Function.Surjective red := by
+    intro y
+    induction y using TensorProduct.induction_on with
+    | zero => exact ⟨0, by rw [hred]; simp⟩
+    | tmul c x =>
+        obtain ⟨a, ha⟩ := hsurj' c
+        refine ⟨a • x, ?_⟩
+        rw [hred, ← TensorProduct.smul_tmul, Algebra.smul_def, mul_one, ha]
+    | add y₁ y₂ h₁ h₂ =>
+        obtain ⟨x₁, hx₁⟩ := h₁
+        obtain ⟨x₂, hx₂⟩ := h₂
+        exact ⟨x₁ + x₂, by rw [map_add, hx₁, hx₂]⟩
+  -- `v'` and `w` are independent, so `v' ∉ kk' ∙ w` as well
+  have hvw : v' ∉ Submodule.span kk' {w} := by
+    intro hmem
+    obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp hmem
+    have hc0 : c ≠ 0 := by
+      intro h
+      rw [h, zero_smul] at hc
+      exact hv' hc.symm
+    exact hw (Submodule.mem_span_singleton.mpr
+      ⟨c⁻¹, by rw [← hc, smul_smul, inv_mul_cancel₀ hc0, one_smul]⟩)
+  -- the walked lattice `N = red⁻¹(kk' ∙ w)`
+  obtain ⟨N, hN⟩ : ∃ N : Submodule O (Fin 2 → O),
+      ∀ x, x ∈ N ↔ red x ∈ Submodule.span kk' {w} :=
+    ⟨Submodule.comap red ((Submodule.span kk' {w}).restrictScalars O),
+      fun _ => Iff.rfl⟩
+  have hNstable : ∀ g x, x ∈ N → ρ' g x ∈ N := by
+    intro g x hx
+    rw [hN] at hx ⊢
+    obtain ⟨s, hs⟩ := Submodule.mem_span_singleton.mp hx
+    rw [hredequiv, ← hs, map_smul, hweig g, smul_smul]
+    exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self w)
+  have hNtop : N ≠ ⊤ := by
+    intro htop
+    have hspanall : Submodule.span kk' {w} = ⊤ := by
+      refine eq_top_iff.mpr fun y _ => ?_
+      obtain ⟨x, rfl⟩ := hredsurj y
+      exact (hN x).mp (by rw [htop]; exact Submodule.mem_top)
+    exact hvw (by rw [hspanall]; exact Submodule.mem_top)
+  have hNmax : ∀ m ∈ IsLocalRing.maximalIdeal O, ∀ x : Fin 2 → O, m • x ∈ N := by
+    intro m hm x
+    rw [hN, hred]
+    have hm0 : algebraMap O kk' m = 0 := by
+      rw [← RingHom.mem_ker, hker']; exact hm
+    have h2 : (1 : kk') ⊗ₜ[O] (m • x) = (algebraMap O kk' m) ⊗ₜ[O] x := by
+      rw [← TensorProduct.smul_tmul, Algebra.smul_def, mul_one]
+    rw [h2, hm0, TensorProduct.zero_tmul]
+    exact Submodule.zero_mem _
+  -- FRAME BRICK (steps 2 and 3 of the ROUTE above): present the stable
+  -- sublattice `N` on the standard frame `Fin 2 → O`
+  have hframe : (∀ g x, x ∈ N → ρ' g x ∈ N) → N ≠ ⊤ →
+      (∀ m ∈ IsLocalRing.maximalIdeal O, ∀ x : Fin 2 → O, m • x ∈ N) →
+      ∃ (ρ'' : GaloisRep ℚ O (Fin 2 → O))
+        (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O)),
+        LinearMap.range f = N ∧
+        Ideal.span {LinearMap.det f} = IsLocalRing.maximalIdeal O ∧
+        (∀ g x, f (ρ'' g x) = ρ' g (f x)) := by
+    sorry
+  obtain ⟨ρ'', f, hfrange, hfdet, hfequiv⟩ := hframe hNstable hNtop hNmax
+  have hdet0 : LinearMap.det f ≠ 0 := by
+    intro h
+    refine IsDiscreteValuationRing.not_a_field O ?_
+    rw [← hfdet, h]
+    exact Ideal.span_singleton_eq_bot.mpr rfl
+  -- the residual image of `N` is the line `kk' ∙ w`, which misses `v'`
+  have hrangesub : ∀ y : kk' ⊗[O] (Fin 2 → O),
+      LinearMap.baseChange kk' f y ∈ Submodule.span kk' {w} := by
+    intro y
+    induction y using TensorProduct.induction_on with
+    | zero => simp
+    | tmul c x =>
+        have hx : red (f x) ∈ Submodule.span kk' {w} :=
+          (hN (f x)).mp (hfrange ▸ LinearMap.mem_range_self f x)
+        have hcx : c ⊗ₜ[O] f x = c • ((1 : kk') ⊗ₜ[O] (f x)) := by
+          rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+        rw [LinearMap.baseChange_tmul, hcx, ← hred]
+        exact Submodule.smul_mem _ _ hx
+    | add y₁ y₂ h₁ h₂ => simpa using Submodule.add_mem _ h₁ h₂
+  have hv'notrange : v' ∉ LinearMap.range (LinearMap.baseChange kk' f) := by
+    intro hmem
+    obtain ⟨y, hy⟩ := hmem
+    exact hvw (hy ▸ hrangesub y)
+  -- the child's fixed vector: `f z = ϖ • lam` with `lam` reducing to `v'`
+  obtain ⟨ϖ, hϖirr⟩ := IsDiscreteValuationRing.exists_irreducible O
+  have hϖmem : ϖ ∈ IsLocalRing.maximalIdeal O := by
+    rw [hϖirr.maximalIdeal_eq]
+    exact Ideal.mem_span_singleton_self ϖ
+  obtain ⟨lam, hlam⟩ := hredsurj v'
+  obtain ⟨z, hz⟩ : ∃ z, f z = ϖ • lam := by
+    rw [← LinearMap.mem_range, hfrange]
+    exact hNmax ϖ hϖmem lam
+  -- the residual package of the child (step 4 of the ROUTE above)
+  have hres : f z = ϖ • lam → red lam = v' →
+      (∀ x : Fin 2 → O, (1 : kk') ⊗ₜ[O] (f x) = 0 ↔
+        (1 : kk') ⊗ₜ[O] x ∈ Submodule.span kk' {red z}) ∧
+      red z ≠ 0 ∧
+      (∀ g, (ρ''.baseChange kk') g (red z) = red z) ∧
+      (∀ g (x : kk' ⊗[O] (Fin 2 → O)), ∃ c : kk',
+        (ρ''.baseChange kk') g x - ψ g • x = c • red z) := by
+    sorry
+  obtain ⟨hkerf, hz0, hfixz, hquoz⟩ := hres hz hlam
+  exact ⟨ρ'', f, red z, hdet0, hfdet, hfequiv, hv'notrange,
+    hkerf, hz0, hfixz, hquoz⟩
+
+set_option linter.unusedVariables false in
+/-- **The inverse limit of Ribet's descent** (Ribet cut E2a-ii-walk,
+item (c2); SORRY LEAF, carved out of
+`exists_stable_line_of_ribet_walk_split` 2026-07-25): an infinite
+non-backtracking chain of single-edge stable sublattices, each again
+good, converges to a `ρO`-stable LINE of the generic fibre
+`ℚ̄_p ⊗_O O²`. The step is exposed as a ∀-oracle rather than applied
+once because the RECURSION lives here.
+
+FAITHFULNESS — WHY THE ORACLE CARRIES THE THREE PROPERNESS CLAUSES
+(found and repaired 2026-07-25). This leaf was first recorded, as a
+sorried `have` inside `exists_stable_line_of_ribet_walk_split`, with an
+oracle whose only properness clauses were `det f ≠ 0` and
+`det f ∈ 𝔪`. That oracle is satisfied, for EVERY good lattice
+whatsoever, by the homothety
+`ρ'' := ρ'`, `f := π • LinearMap.id`, `v'' := v'`
+(`det (π • id) = π² ≠ 0` and `π² ∈ 𝔪`, the intertwining is
+`π • ρ' g x = ρ' g (π • x)`, and the residual data is unchanged). So as
+a TOP-LEVEL statement that cut is FALSE: take any irreducible `ρO`
+admitting a good lattice — Ribet's own `X₀(11)` at `p = 5`, residually
+`1 ⊕ ω` — and the conclusion asserts a stable line, i.e. reducibility.
+As a `have` it was not false, because `hsplit` was still in scope and
+could be used to prove the parent outright; but it was a VOID cut,
+since nothing weaker than the parent theorem could be derived from that
+oracle. The clauses now demanded — uniformiser determinant,
+non-backtracking, and the identification of `f⁻¹(𝔪Λ')` — are exactly
+the geodesic conditions in the Bruhat–Tits tree, and each is produced
+by the honest construction in `exists_ribet_walk_descent_step`.
+
+ROUTE (worked out 2026-07-25 for whoever owns this leaf).
+* RECURSION. Feed `hstep` the datum `(ρ₁, e₁, v₁)` and, at each stage,
+  the child together with the generic identification
+  `eₙ₊₁ := eₙ ∘ (fₙ ⊗ ℚ̄_p)`, which is a `LinearEquiv` because
+  `det (fₙ ⊗ ℚ̄_p) = algebraMap (det fₙ) ≠ 0` by `hOinj`. This produces
+  `ρₙ, fₙ, vₙ` for all `n` (`Nat.rec` plus choice).
+* THE CHAIN. `Fₙ := f₀ ∘ ⋯ ∘ fₙ₋₁`, `Λₙ := range Fₙ ⊆ O²`. Each `Λₙ`
+  is `ρ₁`-stable (`Fₙ` intertwines `ρₙ` into `ρ₁`), `Λₙ₊₁ ⊆ Λₙ`, and
+  `length (Λₙ/Λₙ₊₁) = 1`, hence `𝔪Λₙ ⊆ Λₙ₊₁`.
+* NO BACKTRACKING. `Fₙ₊₁⁻¹(𝔪Λₙ) = fₙ⁻¹(𝔪Λ)`, which by the step's
+  biconditional is the preimage of `kk' ∙ vₙ₊₁`; the step's
+  non-backtracking clause at stage `n+1` then says
+  `range fₙ₊₁ ⊄ fₙ⁻¹(𝔪Λ)`, i.e. `Λₙ₊₂ ≠ 𝔪Λₙ`.
+* THE LIMIT. A single-edge non-backtracking ray is a GEODESIC ray, so
+  `d(Λ₀, Λₙ) = n` and the elementary divisors of `Λₙ ⊆ Λ₀` are
+  `(1, πⁿ)`: every `Λₙ` contains a vector PRIMITIVE in `Λ₀`. `Λ₀ ≅ O²`
+  is COMPACT (`O` is free of finite rank over `ℤ_p` with the module
+  topology) and each `Λₙ` is closed, so a cluster point `z` of a
+  sequence of primitive `zₙ ∈ Λₙ` lies in every `Λₘ` and is primitive,
+  in particular `z ≠ 0`. `T := ⋂ Λₙ` is `ρ₁`-stable of rank `≤ 1` (a
+  rank-`2` submodule would contain some `𝔪ᵐΛ₀`, whose colength `2m`
+  bounds every `length (Λ₀/Λₙ) = n`), so `ρ₁ g z ∈ Frac O ∙ z`; then
+  `e₁ (1 ⊗ z)` is the required line of `ℚ̄_p ⊗ O²`, `hOinj` turning
+  `b • ρ₁ g z = a • z` into a scalar relation over `ℚ̄_p`.
+
+MISSING FROM MATHLIB, in dependency order, for whoever takes this:
+1. `CompactSpace` and `T2Space` for a module-finite `ℤ_p`-algebra
+   carrying the module topology (a few lines from
+   `Module.Free.chooseBasis`; the pattern is already in this file).
+2. `length (Λ / f Λ) = v (det f)` for an injective endomorphism of a
+   free rank-`n` module over a DVR. This pin has
+   `Submodule.smithNormalForm` but no link from it to `LinearMap.det`.
+3. The tree lemma "locally geodesic ⇒ globally geodesic", in the
+   concrete form `aₙ = 0` for the elementary divisors `(π^aₙ, π^bₙ)`
+   of `Λₙ ⊆ Λ₀`. -/
+theorem exists_stable_line_of_ribet_descent
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    [Algebra O kk'] [ContinuousSMul O kk']
+    (hsurj' : Function.Surjective (algebraMap O kk'))
+    (hker' : RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O)
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk')
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (ρ₁ : GaloisRep ℚ O (Fin 2 → O))
+    (e₁ : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]]
+        ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+    (v₁ : kk' ⊗[O] (Fin 2 → O))
+    (he₁ : ∀ g x, e₁ ((ρ₁.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e₁ x))
+    (hv₁ : v₁ ≠ 0)
+    (hfix₁ : ∀ g, (ρ₁.baseChange kk') g v₁ = v₁)
+    (hquo₁ : ∀ g x, ∃ c : kk', (ρ₁.baseChange kk') g x - ψ g • x = c • v₁)
+    (hstep : ∀ (ρ' : GaloisRep ℚ O (Fin 2 → O))
+      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]]
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+      (v' : kk' ⊗[O] (Fin 2 → O)),
+      (∀ g x, e' ((ρ'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) →
+      v' ≠ 0 →
+      (∀ g, (ρ'.baseChange kk') g v' = v') →
+      (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - ψ g • x = c • v') →
+      ∃ (ρ'' : GaloisRep ℚ O (Fin 2 → O))
+        (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O))
+        (v'' : kk' ⊗[O] (Fin 2 → O)),
+        LinearMap.det f ≠ 0 ∧
+        Ideal.span {LinearMap.det f} = IsLocalRing.maximalIdeal O ∧
+        (∀ g x, f (ρ'' g x) = ρ' g (f x)) ∧
+        v' ∉ LinearMap.range (LinearMap.baseChange kk' f) ∧
+        (∀ x : Fin 2 → O, (1 : kk') ⊗ₜ[O] (f x) = 0 ↔
+          (1 : kk') ⊗ₜ[O] x ∈ Submodule.span kk' {v''}) ∧
+        v'' ≠ 0 ∧
+        (∀ g, (ρ''.baseChange kk') g v'' = v'') ∧
+        (∀ g x, ∃ c : kk', (ρ''.baseChange kk') g x - ψ g • x = c • v'')) :
+    ∃ z : (AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O), z ≠ 0 ∧
+      ∀ g, (ρO.baseChange (AlgebraicClosure ℚ_[p])) g z ∈
+        Submodule.span (AlgebraicClosure ℚ_[p]) {z} := by
+  sorry
+
+set_option linter.unusedVariables false in
 set_option backward.isDefEq.respectTransparency false in
 /-- **Split everywhere forces a stable line in the generic fibre**
-(Ribet cut E2a-ii-walk, item (c); PARTIALLY PROVEN — the passage from
-a stable generic LINE to the conclusion is proven, two sorried `have`s
-(`hstep`, `hlimit`) remain; carved out 2026-07-25
+(Ribet cut E2a-ii-walk, item (c); PROVEN 2026-07-25 as the assembly of
+the two carved-out leaves `exists_ribet_walk_descent_step` and
+`exists_stable_line_of_ribet_descent`; itself carved out 2026-07-25
 from `exists_ribet_walk_stable_line`): if EVERY stable lattice whose
 reduction has the trivial sub-character splits — carries a
 `ψ`-eigenvector outside the fixed line — then the generic fibre
@@ -12546,29 +12626,42 @@ a `2`-dimensional space is neither `⊥` nor `⊤`. Hypothesis-honest:
 `htr`/`hdet` are what make every lattice of the walk a GOOD lattice,
 i.e. re-feedable to `hsplit`.
 
-DECOMPOSITION (2026-07-25): the assembly below is PROVEN and the leaf
-is now the two sorried `have`s `hstep` and `hlimit`, cut exactly along
-the seam of Ribet's Prop. 2.1:
-* `hstep` — ONE step of the descent. From a good lattice it produces
-  the next one together with the inclusion in frame form: an `O`-linear
-  `f` with `det f ≠ 0` (so the generic fibres agree) and
-  `det f ∈ 𝔪` (so the step is PROPER — this is the discreteness of the
-  valuation entering, and it is what forbids stabilisation). It is the
-  same construction as `exists_ribet_walk_swap_order`'s `hwalk`, run
-  at the `ψ`-eigenvector supplied by `hsplit` instead of at the
-  residual `ψ`-line, and it is the only consumer of `hsplit`/`htr`/`hdet`.
-* `hlimit` — the INVERSE LIMIT. Given the step as an oracle and the
-  starting good lattice `(ρ₁, e₁, v₁)`, it iterates and assembles the
-  successive `ψ`-eigenlines into a single `ρO`-stable `ℚ̄_p`-LINE of
-  the generic fibre (`O` is complete, being module-finite over `ℤ_p`
-  in the module topology, and `Λ₁` is compact). The recursion lives
-  here, which is why the step is exposed as a ∀-statement rather than
-  applied once.
-What is PROVEN in the assembly is the passage from that stable line to
-the conclusion: `U := ℚ̄_p ∙ z` is `≠ ⊥` because `z ≠ 0`, `≠ ⊤` because
+DECOMPOSITION (2026-07-25, RE-CUT the same day; the sorried `have`s
+`hstep`/`hlimit` recorded here earlier are now the top-level leaves
+`exists_ribet_walk_descent_step` and
+`exists_stable_line_of_ribet_descent`, and the cut between them has
+been REPAIRED — see the faithfulness note on the second):
+* the STEP takes a good lattice and the `ψ`-eigenvector that `hsplit`
+  supplies for it, and returns the next good lattice together with the
+  inclusion in frame form: an `O`-linear `f` whose determinant
+  GENERATES `𝔪` (one edge of the Bruhat–Tits tree), which does not
+  point back at the previous lattice, and which locates the parent's
+  homothety `𝔪Λ'` inside the child's frame. The earlier version of
+  this cut asked only for `det f ∈ 𝔪`, which the homothety
+  `f = π • id` satisfies; that made the limit half of the cut void
+  (as a top-level statement, outright false).
+* the LIMIT takes the step as a ∀-oracle together with the starting
+  good lattice `(ρ₁, e₁, v₁)` and assembles the geodesic ray of
+  lattices into a single `ρO`-stable `ℚ̄_p`-LINE of the generic fibre
+  (`O` is compact, being module-finite over `ℤ_p` in the module
+  topology). The recursion lives there, which is why the step is
+  exposed as a ∀-statement rather than applied once.
+What is PROVEN in the assembly below is (i) the application of
+`hsplit` that turns the ∀-oracle of the limit leaf into the step leaf,
+and (ii) the passage from a stable line to the conclusion:
+`U := ℚ̄_p ∙ z` is `≠ ⊥` because `z ≠ 0`, `≠ ⊤` because
 `finrank (ℚ̄_p ∙ z) = 1 < 2 = finrank (ℚ̄_p ⊗_O O²)`
 (`Algebra.TensorProduct.basis` on `Pi.basisFun`), and stable because a
-span of a single stable vector is. -/
+span of a single stable vector is.
+
+HYPOTHESES NOT USED BY THIS ASSEMBLY (2026-07-25): `hψ`, `htr` and
+`hdet`. They are what pin the residual characters to `{1, ψ}`, and
+after the re-cut that content is carried entirely by `hfix₁`/`hquo₁`
+(goodness of the starting lattice) and propagated by the step, so
+neither leaf needs them. They are kept in the signature because the
+consumer `exists_ribet_walk_stable_line` supplies them positionally and
+because they are what makes the hypothesis set inhabited; nothing about
+the statement is weakened by their being unused here. -/
 theorem exists_stable_line_of_ribet_walk_split
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
@@ -12622,61 +12715,15 @@ theorem exists_stable_line_of_ribet_walk_split
     rw [Module.finrank_eq_card_basis (Algebra.TensorProduct.basis
       (AlgebraicClosure ℚ_[p]) (Pi.basisFun O (Fin 2)))]
     simp
-  -- ONE step of Ribet's descent: a good lattice yields a strictly smaller
-  -- good lattice, the inclusion being an `O`-linear map of nonzero,
-  -- NON-UNIT determinant
-  have hstep : ∀ (ρ' : GaloisRep ℚ O (Fin 2 → O))
-      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
-        ≃ₗ[AlgebraicClosure ℚ_[p]]
-          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
-      (v' : kk' ⊗[O] (Fin 2 → O)),
-      (∀ g x, e' ((ρ'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
-        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) →
-      v' ≠ 0 →
-      (∀ g, (ρ'.baseChange kk') g v' = v') →
-      (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - ψ g • x = c • v') →
-      ∃ (ρ'' : GaloisRep ℚ O (Fin 2 → O))
-        (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O))
-        (v'' : kk' ⊗[O] (Fin 2 → O)),
-        LinearMap.det f ≠ 0 ∧
-        LinearMap.det f ∈ IsLocalRing.maximalIdeal O ∧
-        (∀ g x, f (ρ'' g x) = ρ' g (f x)) ∧
-        v'' ≠ 0 ∧
-        (∀ g, (ρ''.baseChange kk') g v'' = v'') ∧
-        (∀ g x, ∃ c : kk',
-          (ρ''.baseChange kk') g x - ψ g • x = c • v'') := by
-    sorry
-  -- the inverse limit of the descent is a `ρO`-stable line of the generic fibre
-  have hlimit : (∀ (ρ' : GaloisRep ℚ O (Fin 2 → O))
-      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
-        ≃ₗ[AlgebraicClosure ℚ_[p]]
-          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
-      (v' : kk' ⊗[O] (Fin 2 → O)),
-      (∀ g x, e' ((ρ'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
-        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) →
-      v' ≠ 0 →
-      (∀ g, (ρ'.baseChange kk') g v' = v') →
-      (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - ψ g • x = c • v') →
-      ∃ (ρ'' : GaloisRep ℚ O (Fin 2 → O))
-        (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O))
-        (v'' : kk' ⊗[O] (Fin 2 → O)),
-        LinearMap.det f ≠ 0 ∧
-        LinearMap.det f ∈ IsLocalRing.maximalIdeal O ∧
-        (∀ g x, f (ρ'' g x) = ρ' g (f x)) ∧
-        v'' ≠ 0 ∧
-        (∀ g, (ρ''.baseChange kk') g v'' = v'') ∧
-        (∀ g x, ∃ c : kk',
-          (ρ''.baseChange kk') g x - ψ g • x = c • v'')) →
-      (∀ g x, e₁ ((ρ₁.baseChange (AlgebraicClosure ℚ_[p])) g x) =
-        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e₁ x)) →
-      v₁ ≠ 0 →
-      (∀ g, (ρ₁.baseChange kk') g v₁ = v₁) →
-      (∀ g x, ∃ c : kk', (ρ₁.baseChange kk') g x - ψ g • x = c • v₁) →
-      ∃ z : (AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O), z ≠ 0 ∧
-        ∀ g, (ρO.baseChange (AlgebraicClosure ℚ_[p])) g z ∈
-          Submodule.span (AlgebraicClosure ℚ_[p]) {z} := by
-    sorry
-  obtain ⟨z, hz, hline⟩ := hlimit hstep he₁ hv₁ hfix₁ hquo₁
+  -- the descent, iterated: `hsplit` turns the limit leaf's ∀-oracle into
+  -- the step leaf, and the limit assembles the ray into a stable line
+  obtain ⟨z, hz, hline⟩ :=
+    exists_stable_line_of_ribet_descent hOinj hsurj' hker' ψ ρ₁ e₁ v₁
+      he₁ hv₁ hfix₁ hquo₁
+      (fun ρ' e' v' he' hv'0 hfix hquo => by
+        obtain ⟨w, hwmem, hweig⟩ := hsplit ρ' e' v' he' hv'0 hfix hquo
+        exact exists_ribet_walk_descent_step (p := p) hsurj' hopen' hker' ψ ρ' v' w
+          hv'0 hfix hwmem hweig)
   refine ⟨Submodule.span (AlgebraicClosure ℚ_[p]) {z}, ?_, ?_, ?_⟩
   · simpa [Submodule.span_singleton_eq_bot] using hz
   · intro htop
@@ -13572,94 +13619,1275 @@ theorem isFlatPointsGroupAt_of_subquotient
     induction z using QuotientAddGroup.induction_on with
     | H x => exact hπe g x
 
-/-- **Barsotti–Tate comparison lattice for the `O`-structure**
-(Eisenstein pillar E2b′-flat, CITATION LEAF carved out 2026-07-25 —
-the sole classical `p`-adic-Hodge-theoretic input of the lattice
-flatness transfer): the `ℤ_p`-lattice `Fin 2 → O` underlying `ρO` is
-`Γ ℚ`-equivariantly commensurable with the Tate module of a
-`p`-divisible group over `ℤ_p`. Concretely the leaf produces a
-`ℤ_p`-lattice `T` with a `Γ ℚ`-action `ρT` all of whose `p`-power
-levels `T ⧸ p^k` have finite flat prolongations at `p`, together with
-an equivariant `ℤ_p`-linear `f : (Fin 2 → O) → T` and a `ℤ_p`-linear
-`g : T → (Fin 2 → O)` with `g ∘ f = p^c` — i.e. `f` realises
-`Fin 2 → O` as a sublattice of `T` up to the bounded `p`-power `p^c`,
-which is exactly commensurability of the two lattices inside the
-common `ℚ_p`-space they span.
+/-- **Open `p`-power ideals of a module-finite topological `ℤ_p`-algebra**
+(PROVEN 2026-07-26 — the converse of `exists_pow_p_mem_of_isOpen`, and
+the bookkeeping that reads `GaloisRep.IsFlatAt` off at the cofinal
+`p`-power subtower): `p^k A` is open in `A`. Choose a `ℤ_p`-linear
+surjection `F : ℤ_p^n ↠ A` (module-finiteness); it is an open map for the
+module topology (`IsModuleTopology.isOpenMap_of_surjective`); the box
+`(p^k ℤ_p)^n` is open (`p^k ℤ_p` is the closed ball of radius `p^{-k}`,
+which in `ℤ_p` is also the OPEN ball of radius `p^{-k+1}`), and its image
+under `F` is exactly `p^k A`. -/
+theorem isOpen_span_pow_p {A : Type*} [CommRing A] [Algebra ℤ_[p] A]
+    [TopologicalSpace A] [IsTopologicalRing A] [IsModuleTopology ℤ_[p] A]
+    [Module.Finite ℤ_[p] A] (k : ℕ) :
+    IsOpen ((Ideal.span {(p : A) ^ k} : Ideal A) : Set A) := by
+  classical
+  obtain ⟨n, F, hF⟩ := Module.Finite.exists_fin' ℤ_[p] A
+  have hopenmap : IsOpenMap F := IsModuleTopology.isOpenMap_of_surjective hF
+  set S : Set (Fin n → ℤ_[p]) :=
+    {x | ∀ i, x i ∈ (Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p])} with hS
+  have hspan : IsOpen ((Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p]) : Set ℤ_[p]) := by
+    have hset : ((Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p]) : Set ℤ_[p]) =
+        {x : ℤ_[p] | ‖x‖ < (p : ℝ) ^ (-(k : ℤ) + 1)} := by
+      ext x
+      rw [SetLike.mem_coe, ← PadicInt.norm_le_pow_iff_mem_span_pow]
+      exact PadicInt.norm_le_pow_iff_norm_lt_pow_add_one x (-(k : ℤ))
+    rw [hset]
+    exact isOpen_lt continuous_norm continuous_const
+  have hSopen : IsOpen S := by
+    rw [hS]
+    have : {x : Fin n → ℤ_[p] | ∀ i, x i ∈ (Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p])} =
+        Set.pi Set.univ (fun _ : Fin n =>
+          ((Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p]) : Set ℤ_[p])) := by
+      ext x; simp [Set.mem_pi]
+    rw [this]
+    exact isOpen_set_pi Set.finite_univ (fun i _ => hspan)
+  have himg : F '' S = ((Ideal.span {(p : A) ^ k} : Ideal A) : Set A) := by
+    have hpA : algebraMap ℤ_[p] A ((p : ℤ_[p]) ^ k) = (p : A) ^ k := by
+      rw [map_pow, map_natCast]
+    ext y
+    constructor
+    · rintro ⟨x, hx, rfl⟩
+      choose cc hcc using fun i => Ideal.mem_span_singleton'.mp (hx i)
+      have hxc : x = (p : ℤ_[p]) ^ k • cc := funext fun i => by
+        rw [Pi.smul_apply, smul_eq_mul, ← hcc i, mul_comm]
+      rw [hxc, map_smul, SetLike.mem_coe, Ideal.mem_span_singleton']
+      exact ⟨F cc, by rw [Algebra.smul_def, hpA, mul_comm]⟩
+    · intro hy
+      rw [SetLike.mem_coe, Ideal.mem_span_singleton'] at hy
+      obtain ⟨b, hb⟩ := hy
+      obtain ⟨z, rfl⟩ := hF b
+      refine ⟨(p : ℤ_[p]) ^ k • z, fun i => ?_, ?_⟩
+      · refine Ideal.mem_span_singleton'.mpr ⟨z i, ?_⟩
+        rw [Pi.smul_apply, smul_eq_mul, mul_comm]
+      · rw [map_smul, Algebra.smul_def, hpA, mul_comm]
+        exact hb
+  rw [← himg]
+  exact hopenmap _ hSopen
 
-CLASSICAL ROUTE (Fontaine; Raynaud; Tate, *`p`-divisible groups*, and
-Tate's article in Cornell–Silverman–Stevens ch. V):
-1. `hρ.isFlat` says every `p`-power level of the `R`-tower is finite
-   flat at `p`, i.e. `V` is the Tate module of a `p`-divisible group
-   over `ℤ_p`, so `V ⊗ ℚ_p` is Barsotti–Tate (crystalline with
-   Hodge–Tate weights in `{0, 1}`);
-2. every `ℚ̄_p`-fibre of the `O`-structure is an
-   `Aut(ℚ̄_p / ℚ_p)`-conjugate of a fibre of the `R`-structure: through
-   `e` the matrices of `ρO` over `ι(O) ⊆ ℚ̄_p` are a
-   `GL₂(ℚ̄_p)`-conjugate of those of `ρ` over `ι_R(R)`
-   (`hOinj`/`hZOcompat` make the two coefficient embeddings compatible
-   over `ℤ_p`), so applying `τ ∈ Aut(ℚ̄_p / ℚ_p)` carries the
-   `τ ∘ ι`-fibre of the `O`-structure to a `τ ∘ ι_R`-fibre of the
-   `R`-structure; being crystalline with weights in `{0, 1}` is
-   insensitive to such conjugation, so
-   `U := (Fin 2 → O) ⊗_{ℤ_p} ℚ_p` — whose `ℚ̄_p`-base change is the
-   direct sum of the embedding fibres — is again Barsotti–Tate;
-3. a Barsotti–Tate `ℚ_p`-representation contains a `Γ`-stable lattice
-   `T` which is the Tate module of a `p`-divisible group over `ℤ_p`
-   (Fontaine/Raynaud), and any two full-rank `Γ`-stable `ℤ_p`-lattices
-   in the same finite-dimensional `ℚ_p`-space are commensurable: after
-   scaling `T` by a `p`-power one may assume `f : (Fin 2 → O) ↪ T` is
-   the inclusion and `p^c T ⊆ (Fin 2 → O)`, whence `g` is
-   multiplication by `p^c` followed by that inclusion and
-   `g ∘ f = p^c`. Flatness of the levels `T ⧸ p^k` is the defining
-   property of the Tate module of a `p`-divisible group.
+/-- **A field extension of a domain is flat** (PROVEN 2026-07-26): if `A` is
+a domain and `Ω` is a FIELD `A`-algebra into which `A` embeds, then `Ω` is a
+flat `A`-module.
 
-WHY NOT THE PI-EMBEDDING ROUTE (recorded 2026-07-24, re-audited
-2026-07-25): `e(Fin 2 → O)` and the image of `V` have different
-`ℤ_p`-ranks whenever `rank_ℤp O ≠ rank_ℤp R`, so no `p`-power scaling
-relates them inside `ℚ̄_p ⊗ V`; and a non-split level `(Fin 2 → O) ⧸ I`
-cannot embed `Γ ℚ_p`-equivariantly into a finite product of `R`-levels
-whose `p`-torsion socle is semisimple. Commensurability is legitimate
-only in `U`, which is what step 2 supplies — that is precisely the
-content isolated here.
+`A` here is NOT assumed integrally closed — in this development it is a
+module-finite `ℤ_p`-order, which need not be a DVR — so "torsion-free implies
+flat" is unavailable. The argument instead factors `A → Ω` through the
+fraction field: `A → Frac A` is a localization, hence flat
+(`IsLocalization.flat`); `Frac A → Ω` exists because `hinj` makes
+`IsFractionRing.lift` applicable, and `Ω` is free (indeed a vector space) over
+the field `Frac A`; `Module.Flat.trans` composes the two. -/
+theorem flat_of_injective_algebraMap_to_field
+    {A : Type*} [CommRing A] [IsDomain A] {Ω : Type*} [Field Ω] [Algebra A Ω]
+    (hinj : Function.Injective (algebraMap A Ω)) : Module.Flat A Ω := by
+  letI : Algebra (FractionRing A) Ω :=
+    (IsFractionRing.lift (g := algebraMap A Ω) hinj).toAlgebra
+  haveI : IsScalarTower A (FractionRing A) Ω := by
+    refine IsScalarTower.of_algebraMap_eq fun x => ?_
+    exact (IsFractionRing.lift_algebraMap hinj x).symm
+  haveI : Module.Flat A (FractionRing A) :=
+    IsLocalization.flat (FractionRing A) (nonZeroDivisors A)
+  exact Module.Flat.trans A (FractionRing A) Ω
 
-Soundness: the hypothesis set is classically INHABITED (take `O = R`,
-`ρO` a frame of `ρ`, `e` the identity; then `T = Fin 2 → R` viewed
-over `ℤ_p`, `c = 0`, `f = g = id` works) and the conclusion holds for
-every inhabitant by the route above. Circularity guard (inherited from
-E2b′): must not route through `Family.lean` or `Reducible.lean`'s
-B5.
+/-- **Flat descent for an ARBITRARY family of kernels over a field**
+(PROVEN 2026-07-26; the mathematical core of the Eisenstein E2b′-flat
+arithmetic leaf below, stated as pure commutative algebra): let `A` be a
+domain, `Ω` a field `A`-algebra into which `A` embeds, `M` a finite FREE
+`A`-module and `D : G → End_A M` an arbitrary — in the application, PROFINITE
+— family of endomorphisms. Then, inside `Ω ⊗_A M`,
 
-TERMINAL CITATION — audited 2026-07-25, do NOT dispatch a proof effort
-here. Three findings, recorded so the leaf is not re-attacked:
+  `⋂_σ ker (1 ⊗ D σ)  =  Ω · (⋂_σ ker (D σ))`.
 
-1. *No substrate on this pin.* Steps 1–3 are Fontaine/Raynaud/Tate
-   `p`-adic Hodge theory, and the pin has none of it: a search of the
-   whole of mathlib for `pDivisible`, `BarsottiTate`, `IsCrystalline`
-   or `crystalline` returns only the unrelated `RingTheory.DividedPowers`
-   files — no `p`-divisible groups, no crystalline or Barsotti–Tate
-   representations, no Hodge–Tate weights. The reference project
-   `~/cs/FLT` has none either, so there is nothing to vendor.
-2. *Do not cut at commensurability instead.* With `p^κ·L ⊆ T ⊆ p^(−κ)·L`,
-   multiplication by `p^κ` embeds `L ⧸ p^m L` into `T ⧸ p^m T` with the
-   NONZERO kernel `p^(m−κ)L ⧸ p^m L`, and the transition map
-   `T ⧸ p^(m+κ)T → L ⧸ p^m L` has image only `p^κ L ⧸ p^m L`; so
-   `L ⧸ p^m L` is an EXTENSION assembled from levels of `T`, which is
-   exactly what `IsFlatPointsGroupAt.of_injective` and `.of_surjective`
-   do not provide. Cutting there would plant an unfaithful leaf.
-3. *This leaf is EQUIVALENT to its consumer, not weaker.* Granting
-   `hasFlatProlongationAt_lattice_pPow_of_generic_iso` for every `m`,
-   this statement is inhabited by `T := (Fin 2 → O)` regarded as a
-   `ℤ_p`-module (free, being finitely generated and torsion-free over
-   the PID `ℤ_p`), `ρT := ρO` with scalars restricted, `c = 0` and
-   `f = g = id`: the `ℤ_p`-level `p^k · (Fin 2 → O)` and the `O`-level
-   `(p : O)^k · (Fin 2 → O)` are the SAME subgroup, so the two level
-   representations coincide. Hence the E2b′-flat cut buys the classical
-   STATEMENT SHAPE — Tate module of a `p`-divisible group plus
-   commensurability, which is what a citation can actually supply —
-   and not a reduction in strength. Two consequences: further
-   decomposition can only relabel the content, never shrink it; and the
-   leaf is soundness-safe, being exactly as strong as the theorem it
-   serves, so it cannot be false while that theorem is true. -/
+`≥` is formal. `≤` is the content, and the point is that neither flatness nor
+noetherianness gives it directly: flat base change commutes with the kernel of
+ONE map (`Module.Flat.ker_lTensor_eq`) and hence with FINITE intersections, but
+an infinite intersection of submodules is in general strictly smaller than
+every finite subintersection — over `A` there need be no finite `F` with
+`⋂_{σ ∈ F} ker (D σ) = ⋂_{σ ∈ G} ker (D σ)` (already false for `A = ℤ_p`,
+`M = ℤ_p`, `D_n =` multiplication by `p^n`). An EARLIER draft of the leaf below
+asserted exactly that, justified by noetherianness; it is FALSE, since
+noetherian gives maximal elements of a family of submodules, not minimal ones.
+
+What is true is the same statement one level up, over `Ω`: `Ω ⊗_A M` is a
+finite-dimensional `Ω`-vector space, hence `IsArtinian`, so the family of
+FINITE subintersections `K_F := ⋂_{σ ∈ F} ker (1 ⊗ D σ)` has a MINIMAL member
+`K_{F₀}`, and minimality against `F₀ ∪ {σ}` forces `K_{F₀} ⊆ ker (1 ⊗ D σ)` for
+every `σ ∈ G`. So the infinite intersection is already a finite one after base
+change.
+
+Transporting that back to `A` is what makes the argument close: bundle the
+finitely many `D σ`, `σ ∈ F₀`, into a single `d : M →ₗ[A] (F₀ → M)`, so that
+`ker d = ⋂_{σ ∈ F₀} ker (D σ)` and — by `TensorProduct.piRight`, tensor
+commuting with FINITE products — `ker (1 ⊗ d) = K_{F₀}`. Flat base change of
+that single kernel gives `K_{F₀} = Ω · ker d`. Finally `ker d` is already the
+FULL intersection over `G`: for `x ∈ ker d` one has `1 ⊗ x ∈ K_{F₀}`, hence
+`1 ⊗ D σ x = 0` for every `σ ∈ G`, and `x ↦ 1 ⊗ x` is injective because `M` is
+`A`-free and `A ↪ Ω` (`Algebra.TensorProduct.equivPiOfFiniteBasis` reads the
+coordinates off as `algebraMap ∘ b.repr x`). -/
+theorem iInf_ker_lTensor_eq_range_lTensor_iInf_ker
+    {A : Type*} [CommRing A] [IsDomain A]
+    {Ω : Type*} [Field Ω] [Algebra A Ω]
+    (hinj : Function.Injective (algebraMap A Ω))
+    {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M] [Module.Free A M]
+    {G : Type*} (D : G → (M →ₗ[A] M)) :
+    (⨅ σ : G, LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω (D σ))) =
+      LinearMap.range (TensorProduct.AlgebraTensorModule.lTensor Ω Ω
+        (⨅ σ : G, LinearMap.ker (D σ)).subtype) := by
+  classical
+  haveI : Module.Flat A Ω := flat_of_injective_algebraMap_to_field hinj
+  set κ := Module.Free.ChooseBasisIndex A M with hκ
+  haveI : Fintype κ := inferInstanceAs (Fintype (Module.Free.ChooseBasisIndex A M))
+  set b : Module.Basis κ A M := Module.Free.chooseBasis A M with hb
+  set eq1 : (Ω ⊗[A] M) ≃ₗ[Ω] (κ → Ω) :=
+    Algebra.TensorProduct.equivPiOfFiniteBasis Ω b with heq1
+  haveI : IsArtinian Ω (Ω ⊗[A] M) := isArtinian_of_linearEquiv eq1.symm
+  have hmu : ∀ x : M, (1 : Ω) ⊗ₜ[A] x = 0 → x = 0 := by
+    intro x hx
+    have h := congrArg eq1 hx
+    rw [map_zero] at h
+    have hcoord : ∀ j, algebraMap A Ω (b.repr x j) = 0 := by
+      intro j
+      have hj := congrFun h j
+      simpa [heq1, Algebra.smul_def] using hj
+    have hrepr : b.repr x = 0 := by
+      ext j
+      exact hinj (by simpa using hcoord j)
+    simpa using congrArg b.repr.symm hrepr
+  -- the family of finite subintersections, and a minimal one
+  set KF : Finset G → Submodule Ω (Ω ⊗[A] M) := fun F =>
+    ⨅ σ ∈ F, LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω (D σ)) with hKF
+  obtain ⟨K0, hK0mem, hmin⟩ :=
+    IsArtinian.set_has_minimal (Set.range KF) ⟨KF ∅, ⟨∅, rfl⟩⟩
+  obtain ⟨F0, hF0⟩ := hK0mem
+  have hKF0 : ∀ σ : G, KF F0 ≤ LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω (D σ)) := by
+    intro σ
+    have hsub : KF (insert σ F0) ≤ KF F0 := by
+      rw [hKF]
+      exact biInf_mono (Finset.subset_insert σ F0)
+    have hnlt : ¬ KF (insert σ F0) < K0 := hmin _ ⟨insert σ F0, rfl⟩
+    rw [← hF0] at hnlt
+    have heq : KF (insert σ F0) = KF F0 := eq_of_le_of_not_lt hsub hnlt
+    rw [← heq, hKF]
+    exact biInf_le _ (Finset.mem_insert_self σ F0)
+  -- the `F0`-indexed bundle of the `D σ`
+  set dF : M →ₗ[A] (↥(F0 : Finset G) → M) :=
+    LinearMap.pi (fun σ : ↥(F0 : Finset G) => D (σ : G)) with hdF
+  have hkerdF : LinearMap.ker dF = ⨅ σ : ↥(F0 : Finset G), LinearMap.ker (D (σ : G)) := by
+    ext x
+    simp only [LinearMap.mem_ker, hdF, LinearMap.pi_apply, Submodule.mem_iInf,
+      funext_iff, Pi.zero_apply]
+  have hpi : ∀ (z : Ω ⊗[A] M) (σ : ↥(F0 : Finset G)),
+      (TensorProduct.piRight A Ω Ω (fun _ : ↥(F0 : Finset G) => M))
+        (TensorProduct.AlgebraTensorModule.lTensor Ω Ω dF z) σ
+        = TensorProduct.AlgebraTensorModule.lTensor Ω Ω (D (σ : G)) z := by
+    intro z σ
+    induction z using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a x => simp [hdF]
+    | add x y hx hy => simp only [map_add, Pi.add_apply, hx, hy]
+  have hkerlt : LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω dF)
+      = ⨅ σ : ↥(F0 : Finset G),
+          LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω (D (σ : G))) := by
+    ext z
+    rw [LinearMap.mem_ker, Submodule.mem_iInf]
+    constructor
+    · intro h σ
+      rw [LinearMap.mem_ker, ← hpi z σ, h, map_zero]
+      rfl
+    · intro h
+      refine (TensorProduct.piRight A Ω Ω (fun _ : ↥(F0 : Finset G) => M)).injective ?_
+      rw [map_zero]
+      funext σ
+      rw [hpi z σ]
+      exact LinearMap.mem_ker.mp (h σ)
+  have hKFsub : KF F0 = ⨅ σ : ↥(F0 : Finset G),
+      LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω (D (σ : G))) := by
+    rw [hKF]
+    exact iInf_subtype'
+  -- the full intersection over `G` already equals the `F0`-intersection
+  have hTeq : (⨅ σ : G, LinearMap.ker (D σ)) = LinearMap.ker dF := by
+    refine le_antisymm ?_ ?_
+    · rw [hkerdF]
+      exact le_iInf fun σ => iInf_le _ (σ : G)
+    · intro x hx
+      rw [Submodule.mem_iInf]
+      intro σ
+      rw [LinearMap.mem_ker]
+      refine hmu _ ?_
+      have h1 : (1 : Ω) ⊗ₜ[A] x ∈ LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor Ω Ω dF) := by
+        rw [LinearMap.mem_ker, TensorProduct.AlgebraTensorModule.lTensor_tmul,
+          LinearMap.mem_ker.mp hx, TensorProduct.tmul_zero]
+      rw [hkerlt, ← hKFsub] at h1
+      have h2 := hKF0 σ h1
+      rw [LinearMap.mem_ker, TensorProduct.AlgebraTensorModule.lTensor_tmul] at h2
+      exact h2
+  rw [hTeq, ← Module.Flat.ker_lTensor_eq (S := Ω) (M := Ω) dF, hkerlt, ← hKFsub]
+  refine le_antisymm ?_ (le_iInf fun σ => ?_)
+  · rw [hKFsub]
+    exact le_iInf fun σ => iInf_le _ (σ : G)
+  · exact hKF0 σ
+
+/-- **A nonzero element of a domain module-finite over `ℤ_p` divides a power
+of `p`** (PROVEN 2026-07-26): if `O` is a domain and a module-finite
+`ℤ_p`-algebra and `a ≠ 0` in `O`, then `p^c ∈ a·O` for some `c`.
+
+Note that `algebraMap ℤ_[p] O` is NOT assumed injective — if it is not, `O` is
+an `𝔽_p`-algebra, `(p : O) = 0` and the statement is trivially true; the proof
+below covers both cases uniformly and never needs the distinction.
+
+Proof: `a` is integral (`Module.Finite`), so it kills a monic `P`. Split off
+the `X`-part, `P = X^m · Q` with `Q.coeff 0 ≠ 0`
+(`Polynomial.exists_eq_pow_rootMultiplicity_mul_and_not_dvd` at `0`, plus
+`Polynomial.X_dvd_iff`); since `O` is a domain and `a ≠ 0`, `Q` still kills `a`.
+Then `Q = Q.divX · X + C (Q.coeff 0)` evaluates to
+`algebraMap (Q.coeff 0) = a · (−aeval a Q.divX)`, so a NONZERO element of `ℤ_p`
+lands in `a·O`; and `ℤ_p` is a DVR, so that element is a unit times `p^c`
+(`IsDiscreteValuationRing.eq_unit_mul_pow_irreducible` with
+`PadicInt.irreducible_p`). -/
+theorem exists_pow_natCast_eq_mul_of_ne_zero
+    {O : Type*} [CommRing O] [IsDomain O] [Algebra ℤ_[p] O] [Module.Finite ℤ_[p] O]
+    {a : O} (ha : a ≠ 0) : ∃ (c : ℕ) (b : O), (p : O) ^ c = a * b := by
+  classical
+  haveI : Algebra.IsIntegral ℤ_[p] O := Algebra.IsIntegral.of_finite ℤ_[p] O
+  obtain ⟨P, hPmonic, hPa⟩ := Algebra.IsIntegral.isIntegral (R := ℤ_[p]) a
+  have hPaeval : Polynomial.aeval a P = 0 := hPa
+  obtain ⟨Q, hPQ, hQnd⟩ :=
+    Polynomial.exists_eq_pow_rootMultiplicity_mul_and_not_dvd P hPmonic.ne_zero 0
+  simp only [map_zero, sub_zero] at hPQ hQnd
+  have hQ0 : Q.coeff 0 ≠ 0 := fun h => hQnd (Polynomial.X_dvd_iff.mpr h)
+  have hQaeval : Polynomial.aeval a Q = 0 := by
+    have h := hPaeval
+    rw [hPQ, map_mul, map_pow, Polynomial.aeval_X] at h
+    rcases mul_eq_zero.mp h with h1 | h1
+    · exact absurd h1 (pow_ne_zero _ ha)
+    · exact h1
+  have hkey : algebraMap ℤ_[p] O (Q.coeff 0) = a * (-(Polynomial.aeval a Q.divX)) := by
+    have hd := congrArg (Polynomial.aeval a) (Polynomial.divX_mul_X_add Q)
+    rw [map_add, map_mul, Polynomial.aeval_X, Polynomial.aeval_C, hQaeval] at hd
+    linear_combination hd
+  obtain ⟨n, u, hu⟩ :=
+    IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hQ0 PadicInt.irreducible_p
+  refine ⟨n, algebraMap ℤ_[p] O ((u⁻¹ : ℤ_[p]ˣ) : ℤ_[p]) * (-(Polynomial.aeval a Q.divX)), ?_⟩
+  have h1 : ((p : O)) ^ n
+      = algebraMap ℤ_[p] O ((u⁻¹ : ℤ_[p]ˣ) : ℤ_[p]) * algebraMap ℤ_[p] O (Q.coeff 0) := by
+    rw [hu, map_mul, map_pow, map_natCast, ← mul_assoc, ← map_mul]
+    simp
+  rw [h1, hkey]
+  ring
+
+/-- **A vector killed by `Ω ⊗ −` is `p`-power torsion** (PROVEN 2026-07-26):
+if `O` is a domain, module-finite over `ℤ_p`, embedded in a field `Ω`, and
+`q` is an element of an `O`-module `Q` with `1 ⊗ q = 0` in `Ω ⊗_O Q`, then
+`p^c · q = 0` for some `c`. NO finiteness is needed on `Q`.
+
+Proof: `Ω` is flat over `O` (`flat_of_injective_algebraMap_to_field`), so
+`Module.Flat.ker_lTensor_eq` applied to `g : O →ₗ[O] Q`, `x ↦ x • q`, turns
+`1 ⊗ 1 ∈ ker (1 ⊗ g)` into `1 ⊗ 1 ∈ Ω · ker g`. Were `ker g = Ann q` zero,
+that range would be `⊥` and `1 ⊗ 1 = 0` in `Ω ⊗_O O ≅ Ω`, i.e. `1 = 0`. So
+`Ann q ≠ 0`; a nonzero annihilator divides a power of `p`
+(`exists_pow_natCast_eq_mul_of_ne_zero`), which therefore annihilates `q`. -/
+theorem exists_pow_natCast_smul_eq_zero_of_one_tmul_eq_zero
+    {O : Type*} [CommRing O] [IsDomain O] [Algebra ℤ_[p] O] [Module.Finite ℤ_[p] O]
+    {Ω : Type*} [Field Ω] [Algebra O Ω] (hOinj : Function.Injective (algebraMap O Ω))
+    {Q : Type*} [AddCommGroup Q] [Module O Q] (q : Q)
+    (hq : (1 : Ω) ⊗ₜ[O] q = 0) :
+    ∃ c : ℕ, ((p : O) ^ c) • q = 0 := by
+  classical
+  haveI : Module.Flat O Ω := flat_of_injective_algebraMap_to_field hOinj
+  have h1 : (1 : Ω) ⊗ₜ[O] (1 : O) ∈ LinearMap.ker
+      (TensorProduct.AlgebraTensorModule.lTensor Ω Ω (LinearMap.toSpanSingleton O Q q)) := by
+    rw [LinearMap.mem_ker, TensorProduct.AlgebraTensorModule.lTensor_tmul,
+      LinearMap.toSpanSingleton_apply, one_smul]
+    exact hq
+  rw [Module.Flat.ker_lTensor_eq] at h1
+  have hne : LinearMap.ker (LinearMap.toSpanSingleton O Q q) ≠ ⊥ := by
+    intro hbot
+    rw [hbot] at h1
+    have hz : (TensorProduct.AlgebraTensorModule.lTensor Ω Ω ((⊥ : Submodule O O).subtype)) = 0 := by
+      have hb : ((⊥ : Submodule O O).subtype) = 0 := by
+        refine LinearMap.ext fun x => ?_
+        exact (Submodule.mem_bot O).mp x.2
+      rw [hb, map_zero]
+    rw [hz, LinearMap.range_zero, Submodule.mem_bot] at h1
+    have h2 := congrArg (TensorProduct.rid O Ω) h1
+    rw [map_zero, TensorProduct.rid_tmul, one_smul] at h2
+    exact one_ne_zero h2
+  obtain ⟨a, hamem, ha0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hne
+  obtain ⟨c, b, hcb⟩ := exists_pow_natCast_eq_mul_of_ne_zero (p := p) ha0
+  refine ⟨c, ?_⟩
+  have haq : a • q = 0 := by
+    have h := LinearMap.mem_ker.mp hamem
+    rwa [LinearMap.toSpanSingleton_apply] at h
+  rw [hcb, mul_comm, mul_smul, haq, smul_zero]
+
+/-- **Equivariant `O`-span cover of the `O`-lattice by finitely many
+`Γ ℚ`-maps out of `V`** (Eisenstein pillar E2b′-flat, arithmetic half;
+CARVED 2026-07-26 out of `exists_equivariantCover_of_generic_iso`, whose
+whole content it now carries): there are finitely many `Γ ℚ`-equivariant,
+`ℤ_p`-semilinear additive maps `φ i : V → (Fin 2 → O)` whose images span,
+over `O`, a submodule of `Fin 2 → O` containing `p^c (Fin 2 → O)`.
+
+Write `Λ := Fin 2 → O`, `Ω := AlgebraicClosure ℚ_p`, and let
+`j : ℤ_p → Ω` be the common composite
+`algebraMap O Ω ∘ algebraMap ℤ_p O = algebraMap R Ω ∘ algebraMap ℤ_p R`
+— that equality IS `hZOcompat`. NOTE nothing in the hypotheses forces `j`
+to be the standard inclusion `ℤ_p ⊆ ℚ_p ⊆ Ω`; the argument below is
+written for an arbitrary `j` and needs only that `Ω` is an algebraically
+closed field of characteristic zero. Put `k := j(ℚ_p) ⊆ Ω`.
+
+PROVEN 2026-07-26, over the three general-algebra lemmas immediately above
+(`flat_of_injective_algebraMap_to_field`,
+`iInf_ker_lTensor_eq_range_lTensor_iInf_ker`,
+`exists_pow_natCast_smul_eq_zero_of_one_tmul_eq_zero`), none of which
+mentions Galois theory. The route below is the one that was carried out,
+with ONE correction, recorded in full because the erroneous version is a
+plausible thing to re-derive: see the CORRECTION note inside step 2.
+
+Implementation note: the `Hom`-module `P` of the route is handled in
+COORDINATES, as `ι → Λ` for a `ℤ_p`-basis `ι` of `V` (`Basis.constr O` is
+already an `O`-linear equivalence `(ι → Λ) ≃ₗ[O] (V →ₗ[ℤ_p] Λ)` — the
+`O`-linearity of step 2 is exactly its `SMulCommClass ℤ_p O Λ` hypothesis).
+That removes the need for any base-change-of-`Hom` isomorphism, and with it
+the pin's missing bijectivity lemma for `LinearMap.tensorProduct`: the only
+tensor identity used is `TensorProduct.piRight`, which is an equivalence for
+a FINITE index. The `ℤ_p`-module structure on `V` is
+`Module.restrictScalars ℤ_[p] R V` (there is no ambient instance, and the
+statement's `(algebraMap ℤ_[p] R a) • x` is definitionally its `a • x`).
+
+ROUTE — ELEMENTARY, and much cheaper than the conjugate-fibre route
+recorded on the parent (see WHY, below). No `p`-adic Hodge theory, no
+`p`-divisible groups, no crystalline representations, no splitting of
+`O ⊗ Ω`, no `ℚ_p`-rational Hom-descent.
+
+1. `(p : O) ≠ 0`, since `hOinj` embeds `O` into the characteristic-zero
+   field `Ω`. `O` is a domain module-finite over `ℤ_p`, so
+   `algebraMap ℤ_p O` is injective (its kernel is a prime of `ℤ_p` not
+   containing `p`, hence `0`), `Λ` is `ℤ_p`-torsion-free, hence a finite
+   FREE `ℤ_p`-module. The same argument makes `R` `ℤ_p`-torsion-free and
+   `V` — free over `R` — a finite free `ℤ_p`-module.
+2. `T := {φ : V →ₗ[ℤ_p] Λ | ∀ σ, φ ∘ ρ σ = ρO σ ∘ φ}` is an
+   **`O`-submodule** of `P := (V →ₗ[ℤ_p] Λ)`: `ρO σ` is `O`-linear, so
+   `a • φ` is equivariant whenever `φ` is. *This is the observation the
+   whole simplification rests on.* `P ≅ Λ ^ (rank_{ℤ_p} V)` is finite
+   free over `O`, and `T = ⋂_σ ker (φ ↦ φ ∘ ρ σ − ρO σ ∘ φ)` is an
+   intersection of `O`-submodules.
+
+   **CORRECTION (2026-07-26).** The original text continued "`O` is
+   noetherian, so that intersection is already a FINITE subintersection".
+   That is FALSE: noetherianness produces MAXIMAL elements of a family of
+   submodules, not minimal ones, and an infinite intersection can be
+   strictly smaller than every finite subintersection — `⋂_n p^n ℤ_p = 0`
+   while each finite subintersection is `p^N ℤ_p ≠ 0`. The repair does not
+   change any other step: the finite subintersection is achieved AFTER base
+   change, over the field `Ω`, where `Ω ⊗_O P` is a finite-dimensional
+   vector space and hence artinian, so the family of finite subintersections
+   has a MINIMAL member. `iInf_ker_lTensor_eq_range_lTensor_iInf_ker` above
+   packages exactly this, and also shows that the finite subintersection
+   over `O` selected this way is already the full one (because
+   `x ↦ 1 ⊗ x` is injective on a free `A`-module when `A ↪ Ω`).
+3. **Descent along the single embedding `ι : O → Ω`.** `Ω` is flat over
+   `O`: `O → K_O := O[1/p]` is a localization and, `K_O` being a finite
+   field extension of `k` (a finite `k`-algebra that is a domain),
+   `K_O → Ω` is a field extension. Flat base change turns each kernel in
+   2 into its base change, and the intersection is finite, so
+   `T ⊗_O Ω = {Γ ℚ-equivariant Ω-linear maps Ω ⊗_{ℤ_p} V → Ω ⊗_O Λ}`
+   inside `P ⊗_O Ω = Hom_Ω (Ω ⊗_{ℤ_p} V, Ω ⊗_O Λ)` (an equality of
+   `Hom`s because `V` is `ℤ_p`-free of finite rank and `Λ` is `O`-free).
+4. **The `ι`-fibre is a quotient of `Ω ⊗_{ℤ_p} V`; this is the only use
+   of `e`, and only ONE fibre is ever needed.** The natural map
+   `Ω ⊗_{ℤ_p} V ↠ Ω ⊗_R V` (base change along the surjective
+   `Ω`-algebra map `Ω ⊗_{ℤ_p} R ↠ Ω`, `a ⊗ r ↦ a · ι_R r`) is surjective,
+   and `Γ ℚ`-equivariant because `ρ` is `R`-linear. Composing with `e⁻¹`
+   (equivariant by `he`) gives a `Γ ℚ`-equivariant `Ω`-linear SURJECTION
+   `g : Ω ⊗_{ℤ_p} V ↠ Ω ⊗_O Λ`.
+5. By 3, `g = Σ_t φ_t ⊗ λ_t` with `φ_t ∈ T` and `λ_t ∈ Ω`. Every element
+   of `Ω ⊗_{ℤ_p} V` is an `Ω`-combination of pure tensors `1 ⊗ v`, so
+   `im g` lies in the `Ω`-span of `{1 ⊗ φ_t v}`; `g` is onto, so with
+   `S := Σ_t O · im φ_t ⊆ Λ` one gets `(Λ ⧸ S) ⊗_O Ω = 0`, hence
+   `(Λ ⧸ S) ⊗_O K_O = 0` (a nonzero `K_O`-vector space stays nonzero
+   after `⊗_{K_O} Ω`).
+6. So every element of `Λ ⧸ S` is killed by a power of `p`; `Λ ⧸ S` is a
+   finite `ℤ_p`-module, so a single `p^c` kills it, i.e. `p^c Λ ⊆ S`.
+   Take `φ` to be the family `(φ_t)` of step 5, read as additive maps:
+   each is `ℤ_p`-semilinear in the stated sense because it is
+   `ℤ_p`-linear and the `ℤ_p`-action on `V` factors through
+   `algebraMap ℤ_p R`.
+
+WHY THE CONJUGATE-FIBRE ROUTE IS NOT NEEDED (recorded so that it is not
+reinstated). The route written on the parent decomposed
+`Ω ⊗_{ℤ_p} O ≅ ∏_τ Ω` over the `k`-embeddings `τ` of `K_O`, produced
+EVERY `Ω`-fibre of `ρO` as an `Aut(Ω/k)`-conjugate of a fibre of `ρ`,
+and then descended `Hom` from `Ω` all the way to `ℚ_p`. That is correct,
+but it needs the splitting of a finite separable algebra over an
+algebraically closed field, the extension of an embedding of `K_O` to an
+automorphism of `Ω`, and a `ℚ_p`-rational Hom-descent — none of which is
+in the pin. All three disappear once one notices (step 2) that the `Hom`
+module is an `O`-module: descending along the single embedding `ι` that
+`e` already refers to gives the answer, and the `ι`-fibre is exactly what
+`e` hands over. What remains is flat base change of a `Hom` module plus
+`ℤ_p`-torsion bookkeeping.
+
+FAITHFULNESS AUDIT. The leaf demands a `Γ ℚ`-WIDE equivariance, which is
+the dangerous side of this development's `𝒪ᵥ` descent rule ("values
+descend from `𝒪^nr`, the existence of a coordinate does not"). It is
+nevertheless faithful, and the reason is structural: that rule governs
+`𝒪ᵥ`-RATIONAL POINTS of group schemes, where the obstruction is an
+unramified twist invisible to inertia (`exists_muType_closure` died on
+exactly that). Here nothing is extracted from a `Γ`-set — `Γ ℚ` acts
+`Ω`-LINEARLY on both base changes, and the descent performed is ordinary
+flat descent of a `Hom` module along `O → Ω`. A twist of `ρO` by an
+unramified character changes `e`'s existence, not the descent, so the
+counterexample shape cannot arise.
+
+MATHLIB INPUTS ACTUALLY USED (recorded so the next reader does not repeat
+the search):
+* step 3, flat base change of a kernel: `Module.Flat.ker_lTensor_eq` in
+  `Mathlib/RingTheory/Flat/Equalizer.lean`. `LinearMap.tensorEqLocusEquiv`
+  in the same file is the `eqLocus` version and was NOT needed — one map
+  per `σ`, bundled over the chosen finite `F₀` into a single kernel, is
+  enough. `LinearMap.tensorProduct` and its missing bijectivity lemma were
+  likewise not needed, see the implementation note above.
+* step 3, tensor vs finite products: `TensorProduct.piRight`.
+* the finite-dimensional input: `Algebra.TensorProduct.equivPiOfFiniteBasis`
+  (`Mathlib/LinearAlgebra/TensorProduct/Free.lean`) gives both
+  `IsArtinian Ω (Ω ⊗_O P)` and the injectivity of `x ↦ 1 ⊗ x`;
+  `IsArtinian.set_has_minimal` supplies the minimal finite subintersection.
+* flatness of `O → Ω`: `IsLocalization.flat` + `Module.Flat.trans` through
+  `FractionRing O`. `O` is a module-finite `ℤ_p`-order and need NOT be
+  integrally closed, so no "torsion-free ⟹ flat" shortcut exists.
+* step 6, `p`-power torsion: `Polynomial.exists_eq_pow_rootMultiplicity_mul_and_not_dvd`
+  + `Polynomial.divX_mul_X_add` to produce a nonzero element of `ℤ_p` inside
+  `a·O`, then `IsDiscreteValuationRing.eq_unit_mul_pow_irreducible` with
+  `PadicInt.irreducible_p`. Uniformity of `c` is read off the two-element
+  `O`-basis of `Λ = Fin 2 → O`, so `Module.Finite.exists_fin'` was not
+  needed either.
+
+SOUNDNESS: the hypothesis set is classically INHABITED (`O = R`, `ρO` a
+frame of `ρ`, `e` the identity — then `N = 1`, `c = 0`, `φ 0` the frame
+identification). Circularity guard (inherited from E2b′): must not route
+through `Family.lean` or `Reducible.lean`'s B5. -/
+theorem exists_equivariantHomFamily_spanFullRank_of_generic_iso
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    (hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :
+    ∃ (N c : ℕ) (φ : Fin N → (V →+ (Fin 2 → O))),
+      (∀ (i : Fin N) (a : ℤ_[p]) (x : V),
+        φ i ((algebraMap ℤ_[p] R a) • x) = a • φ i x) ∧
+      (∀ (i : Fin N) (σ : Field.absoluteGaloisGroup ℚ) (x : V),
+        φ i (ρ σ x) = ρO σ (φ i x)) ∧
+      (∀ y : Fin 2 → O, (p : ℤ_[p]) ^ c • y ∈
+        Submodule.span O (⋃ i, Set.range (φ i))) := by
+  classical
+  -- ## Step 1: `ℤ_p` embeds into `O` and into `R`.
+  have hpne : ((p : ℕ) : AlgebraicClosure ℚ_[p]) ≠ 0 :=
+    Nat.cast_ne_zero.mpr hp.out.ne_zero
+  obtain ⟨f, hf⟩ : ∃ f : ℤ_[p] →+* AlgebraicClosure ℚ_[p],
+      ∀ x, f x = algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) :=
+    ⟨(algebraMap O (AlgebraicClosure ℚ_[p])).comp (algebraMap ℤ_[p] O), fun _ => rfl⟩
+  have hfp : f ((p : ℕ) : ℤ_[p]) = ((p : ℕ) : AlgebraicClosure ℚ_[p]) := by
+    rw [map_natCast]
+  have hjinj : Function.Injective f := by
+    rw [RingHom.injective_iff_ker_eq_bot]
+    by_contra hne
+    obtain ⟨n, hn⟩ := PadicInt.ideal_eq_span_pow_p hne
+    have hmem : (((p : ℕ) : ℤ_[p]) ^ n) ∈ RingHom.ker f := by
+      rw [hn]; exact Ideal.mem_span_singleton_self _
+    rw [RingHom.mem_ker, map_pow, hfp] at hmem
+    exact hpne (pow_eq_zero_iff'.mp hmem).1
+  have hZpO : Function.Injective (algebraMap ℤ_[p] O) := by
+    intro x y hxy
+    exact hjinj (by rw [hf, hf, hxy])
+  have hZpR : Function.Injective (algebraMap ℤ_[p] R) := by
+    intro x y hxy
+    refine hjinj ?_
+    rw [hf, hf, hZOcompat, hZOcompat, hxy]
+  -- ## Step 2: `V` is a finite free `ℤ_p`-module.
+  letI : Module ℤ_[p] V := Module.restrictScalars ℤ_[p] R V
+  haveI : IsScalarTower ℤ_[p] R V := IsScalarTower.restrictScalars ℤ_[p] R V
+  haveI : Module.Finite ℤ_[p] V := Module.Finite.trans R V
+  haveI : Module.IsTorsionFree ℤ_[p] R :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZpR
+  haveI : Module.Free ℤ_[p] V := Module.Free.trans (R := ℤ_[p]) (S := R) (M := V)
+  set ι := Module.Free.ChooseBasisIndex ℤ_[p] V with hιdef
+  haveI : Fintype ι := inferInstanceAs (Fintype (Module.Free.ChooseBasisIndex ℤ_[p] V))
+  set bV : Module.Basis ι ℤ_[p] V := Module.Free.chooseBasis ℤ_[p] V with hbV
+  -- ## Step 3: the `O`-module `ι → Λ` of coordinatised `ℤ_p`-linear maps `V → Λ`.
+  obtain ⟨C, hCb⟩ : ∃ C : (ι → (Fin 2 → O)) ≃ₗ[O] (V →ₗ[ℤ_[p]] (Fin 2 → O)),
+      ∀ w i, C w (bV i) = w i :=
+    ⟨bV.constr O, fun w i => by simp⟩
+  obtain ⟨cc, hccsum⟩ : ∃ cc : Field.absoluteGaloisGroup ℚ → ι → ι → ℤ_[p],
+      ∀ σ i, ∑ k, cc σ i k • bV k = ρ σ (bV i) :=
+    ⟨fun σ i k => bV.repr (ρ σ (bV i)) k, fun σ i => bV.sum_repr _⟩
+  have hCsum : ∀ (w : ι → (Fin 2 → O)) σ i, C w (ρ σ (bV i)) = ∑ k, cc σ i k • w k := by
+    intro w σ i
+    rw [← hccsum σ i, map_sum]
+    exact Finset.sum_congr rfl fun k _ => by rw [map_smul, hCb]
+  obtain ⟨D, hDapp⟩ : ∃ D : Field.absoluteGaloisGroup ℚ →
+      ((ι → (Fin 2 → O)) →ₗ[O] (ι → (Fin 2 → O))),
+      ∀ σ w i, D σ w i = C w (ρ σ (bV i)) - ρO σ (w i) :=
+    ⟨fun σ =>
+      { toFun := fun w i => C w (ρ σ (bV i)) - ρO σ (w i)
+        map_add' := by
+          intro w w'
+          funext i
+          simp only [map_add, LinearMap.add_apply, Pi.add_apply]
+          abel
+        map_smul' := by
+          intro a w
+          funext i
+          simp only [map_smul, LinearMap.smul_apply, Pi.smul_apply, RingHom.id_apply,
+            smul_sub] },
+      fun _ _ _ => rfl⟩
+  set T : Submodule O (ι → (Fin 2 → O)) := ⨅ σ, LinearMap.ker (D σ) with hTdef
+  -- membership in `T` is exactly `Γ ℚ`-equivariance of the associated map
+  have hTequiv : ∀ w ∈ T, ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : V),
+      C w (ρ σ x) = ρO σ (C w x) := by
+    intro w hw σ
+    have hker : D σ w = 0 := by
+      have h : w ∈ LinearMap.ker (D σ) := (Submodule.mem_iInf _).mp hw σ
+      exact LinearMap.mem_ker.mp h
+    have hpt : ∀ i, C w (ρ σ (bV i)) = ρO σ (C w (bV i)) := by
+      intro i
+      have h2 : C w (ρ σ (bV i)) - ρO σ (w i) = 0 := by
+        rw [← hDapp σ w i, hker]; rfl
+      rw [hCb, ← sub_eq_zero]
+      exact h2
+    have hmaps : (C w).comp ((ρ σ).restrictScalars ℤ_[p])
+        = ((ρO σ).restrictScalars ℤ_[p]).comp (C w) :=
+      bV.ext fun i => by simpa using hpt i
+    intro x
+    exact congrArg (fun F : V →ₗ[ℤ_[p]] (Fin 2 → O) => F x) hmaps
+  -- ## Step 4: the `Ω`-side.
+  set piR := TensorProduct.piRight O (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p])
+      (fun _ : ι => (Fin 2 → O)) with hpiR
+  set U : ι → ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)) :=
+    fun i => e.symm ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV i) with hU
+  have hsmul : ∀ (c : ℤ_[p]) (a : AlgebraicClosure ℚ_[p]) (x : Fin 2 → O),
+      a ⊗ₜ[O] (c • x) = f c • (a ⊗ₜ[O] x) := by
+    intro c a x
+    rw [← algebraMap_smul O c x, TensorProduct.tmul_smul, hf,
+      algebraMap_smul (AlgebraicClosure ℚ_[p])]
+  have key : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (z : (AlgebraicClosure ℚ_[p]) ⊗[O] (ι → (Fin 2 → O))) (i : ι),
+      piR (TensorProduct.AlgebraTensorModule.lTensor (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p])
+          (D σ) z) i
+        = (∑ k, f (cc σ i k) • piR z k)
+            - (ρO.baseChange (AlgebraicClosure ℚ_[p])) σ (piR z i) := by
+    intro σ z i
+    induction z using TensorProduct.induction_on with
+    | zero => simp
+    | tmul a w =>
+        simp only [TensorProduct.AlgebraTensorModule.lTensor_tmul, hpiR, TensorProduct.piRight_apply,
+          TensorProduct.piRightHom_tmul, hDapp, GaloisRep.baseChange_tmul]
+        rw [hCsum, TensorProduct.tmul_sub, TensorProduct.tmul_sum]
+        exact congrArg (· - a ⊗ₜ[O] (ρO σ) (w i))
+          (Finset.sum_congr rfl fun k _ => hsmul _ _ _)
+    | add x y hx hy =>
+        simp only [map_add, Pi.add_apply, hx, hy, Finset.sum_add_distrib, smul_add]
+        abel
+  have hUeq : ∀ (σ : Field.absoluteGaloisGroup ℚ) (i : ι),
+      (∑ k, f (cc σ i k) • U k)
+        - (ρO.baseChange (AlgebraicClosure ℚ_[p])) σ (U i) = 0 := by
+    intro σ i
+    have h1 : (ρO.baseChange (AlgebraicClosure ℚ_[p])) σ (U i)
+        = e.symm ((ρ.baseChange (AlgebraicClosure ℚ_[p])) σ
+            ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV i)) := by
+      rw [hU]
+      refine e.injective ?_
+      rw [he, LinearEquiv.apply_symm_apply, LinearEquiv.apply_symm_apply]
+    have h2 : (ρ.baseChange (AlgebraicClosure ℚ_[p])) σ
+        ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV i)
+          = ∑ k, f (cc σ i k) • ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV k) := by
+      rw [GaloisRep.baseChange_tmul, ← hccsum σ i, TensorProduct.tmul_sum]
+      refine Finset.sum_congr rfl fun k _ => ?_
+      show (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] ((algebraMap ℤ_[p] R (cc σ i k)) • bV k) = _
+      rw [TensorProduct.tmul_smul, hf, hZOcompat,
+        algebraMap_smul (AlgebraicClosure ℚ_[p])]
+    rw [h1, h2, map_sum]
+    simp only [map_smul, hU]
+    exact sub_self _
+  have hUspan : Submodule.span (AlgebraicClosure ℚ_[p]) (Set.range U) = ⊤ := by
+    have hbase : Submodule.span (AlgebraicClosure ℚ_[p])
+        (Set.range (fun i => (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV i)) = ⊤ := by
+      rw [eq_top_iff]
+      rintro z -
+      induction z using TensorProduct.induction_on with
+      | zero => exact Submodule.zero_mem _
+      | tmul a x =>
+          have hx : x = ∑ k, (bV.repr x k) • bV k := (bV.sum_repr x).symm
+          rw [hx, TensorProduct.tmul_sum]
+          refine Submodule.sum_mem _ fun k _ => ?_
+          have h1 : a ⊗ₜ[R] ((bV.repr x k) • bV k)
+              = (algebraMap R (AlgebraicClosure ℚ_[p])
+                  (algebraMap ℤ_[p] R (bV.repr x k)))
+                • (a • ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV k)) := by
+            show a ⊗ₜ[R] ((algebraMap ℤ_[p] R (bV.repr x k)) • bV k) = _
+            rw [TensorProduct.tmul_smul, ← algebraMap_smul (AlgebraicClosure ℚ_[p])
+              (algebraMap ℤ_[p] R (bV.repr x k))]
+            congr 1
+            rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+          rw [h1]
+          exact Submodule.smul_mem _ _
+            (Submodule.smul_mem _ _ (Submodule.subset_span ⟨k, rfl⟩))
+      | add x y hx hy => exact Submodule.add_mem _ hx hy
+    have hrange : Set.range U
+        = (e.symm : (AlgebraicClosure ℚ_[p]) ⊗[R] V →ₗ[AlgebraicClosure ℚ_[p]]
+            (AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)) ''
+          (Set.range fun i => (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[R] bV i) := by
+      rw [← Set.range_comp]; rfl
+    rw [hrange, ← Submodule.map_span, hbase, Submodule.map_top]
+    exact LinearMap.range_eq_top.mpr e.symm.surjective
+  -- ## Step 5: flat descent — `W` comes from the integral equivariant module `T`.
+  set W := piR.symm U with hW
+  have hpiRW : piR W = U := piR.apply_symm_apply U
+  have hWker : ∀ σ, W ∈ LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor
+      (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p]) (D σ)) := by
+    intro σ
+    rw [LinearMap.mem_ker]
+    refine piR.injective ?_
+    rw [map_zero]
+    funext i
+    rw [key σ W i, hpiRW]
+    simpa using hUeq σ i
+  have hWmem : W ∈ LinearMap.range (TensorProduct.AlgebraTensorModule.lTensor
+      (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p]) T.subtype) := by
+    rw [hTdef, ← iInf_ker_lTensor_eq_range_lTensor_iInf_ker hOinj D]
+    exact (Submodule.mem_iInf _).mpr hWker
+  obtain ⟨zz, hzz⟩ := hWmem
+  obtain ⟨s, hs⟩ := TensorProduct.exists_finset zz
+  have hUi : ∀ i, U i = ∑ x ∈ s, x.1 ⊗ₜ[O] ((x.2 : ι → (Fin 2 → O)) i) := by
+    intro i
+    rw [← hpiRW, ← hzz, hs, map_sum, map_sum, Finset.sum_apply]
+    exact Finset.sum_congr rfl fun x _ => rfl
+  -- ## Step 6: read the finite family of equivariant maps off `s`.
+  set N := s.card with hN
+  set ev : Fin N ≃ {x // x ∈ s} := s.equivFin.symm with hev
+  set φ : Fin N → (V →+ (Fin 2 → O)) :=
+    fun n => (C ((ev n : (AlgebraicClosure ℚ_[p]) × ↥T).2 : ι → (Fin 2 → O))).toAddMonoidHom
+    with hφ
+  set S : Submodule O (Fin 2 → O) := Submodule.span O (⋃ n, Set.range (φ n)) with hS
+  have hτmem : ∀ x ∈ s, ∀ i, ((x.2 : ι → (Fin 2 → O)) i) ∈ S := by
+    intro x hx i
+    refine Submodule.subset_span (Set.mem_iUnion.mpr ⟨ev.symm ⟨x, hx⟩, ⟨bV i, ?_⟩⟩)
+    rw [hφ]
+    simp only [Equiv.apply_symm_apply]
+    exact hCb _ i
+  have hφsemi : ∀ (n : Fin N) (a : ℤ_[p]) (y : V),
+      φ n ((algebraMap ℤ_[p] R a) • y) = a • φ n y := by
+    intro n a y
+    exact (C ((ev n : (AlgebraicClosure ℚ_[p]) × ↥T).2 : ι → (Fin 2 → O))).map_smul a y
+  have hφequiv : ∀ (n : Fin N) (σ : Field.absoluteGaloisGroup ℚ) (y : V),
+      φ n (ρ σ y) = ρO σ (φ n y) := by
+    intro n σ y
+    exact hTequiv _ ((ev n : (AlgebraicClosure ℚ_[p]) × ↥T).2).2 σ y
+  -- ## Step 7: the quotient `Λ ⧸ S` dies after `⊗ Ω`, hence is `p`-power torsion.
+  have hFzero : ∀ y : Fin 2 → O, (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] (S.mkQ y) = 0 := by
+    intro y
+    have hker : LinearMap.ker (TensorProduct.AlgebraTensorModule.lTensor
+        (AlgebraicClosure ℚ_[p]) (AlgebraicClosure ℚ_[p]) S.mkQ) = ⊤ := by
+      rw [← top_le_iff, ← hUspan, Submodule.span_le]
+      rintro _ ⟨i, rfl⟩
+      rw [SetLike.mem_coe, LinearMap.mem_ker, hUi i, map_sum]
+      refine Finset.sum_eq_zero fun x hx => ?_
+      rw [TensorProduct.AlgebraTensorModule.lTensor_tmul, Submodule.mkQ_apply,
+        (Submodule.Quotient.mk_eq_zero S).mpr (hτmem x hx i), TensorProduct.tmul_zero]
+    have hzero := LinearMap.ker_eq_top.mp hker
+    have h2 := congrArg (fun F => F ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] y)) hzero
+    simpa using h2
+  have hquot : ∀ y : Fin 2 → O, ∃ c : ℕ, ((p : O) ^ c) • y ∈ S := by
+    intro y
+    obtain ⟨c, hc⟩ := exists_pow_natCast_smul_eq_zero_of_one_tmul_eq_zero
+      (p := p) hOinj (S.mkQ y) (hFzero y)
+    exact ⟨c, by rwa [← map_smul, Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at hc⟩
+  choose cf hcf using fun j : Fin 2 => hquot (Pi.single j (1 : O))
+  set c := max (cf 0) (cf 1) with hcdef
+  have hgen : ∀ j : Fin 2, ((p : O) ^ c) • (Pi.single j (1 : O) : Fin 2 → O) ∈ S := by
+    intro j
+    have hle : cf j ≤ c := by fin_cases j <;> simp [hcdef]
+    have hsplit : ((p : O) ^ c) = (p : O) ^ (c - cf j) * (p : O) ^ (cf j) := by
+      rw [← pow_add]; congr 1; omega
+    rw [hsplit, mul_smul]
+    exact Submodule.smul_mem _ _ (hcf j)
+  have hall : ∀ y : Fin 2 → O, ((p : O) ^ c) • y ∈ S := by
+    intro y
+    have hy : y = ∑ j, (y j) • (Pi.single j (1 : O) : Fin 2 → O) := by
+      funext k
+      simp [Pi.single_apply]
+    rw [hy, Finset.smul_sum]
+    refine Submodule.sum_mem _ fun j _ => ?_
+    rw [smul_comm]
+    exact Submodule.smul_mem _ _ (hgen j)
+  refine ⟨N, c, φ, hφsemi, hφequiv, fun y => ?_⟩
+  have hconv : ((p : ℤ_[p]) ^ c) • y = ((p : O) ^ c) • y := by
+    rw [← algebraMap_smul O ((p : ℤ_[p]) ^ c) y, map_pow, map_natCast]
+  rw [hconv]
+  exact hall y
+
+/-- **Generic cover of the `O`-lattice by a power of the `R`-lattice**
+(Eisenstein pillar E2b′-flat, arithmetic half; CARVED 2026-07-26 — this
+leaf REPLACES the Barsotti–Tate/Fontaine citation that used to sit at
+`exists_flatIsogenousLattice_of_generic_iso`): there are `N`, `c` and a
+`Γ ℚ`-equivariant, `ℤ_p`-semilinear additive map
+`ψ : V^N → (Fin 2 → O)` whose image contains `p^c (Fin 2 → O)`.
+
+PROVEN 2026-07-26 as an ASSEMBLY over the single arithmetic leaf
+`exists_equivariantHomFamily_spanFullRank_of_generic_iso`, which carries
+all of the mathematical content. This proof is the packaging step only:
+that leaf delivers finitely many equivariant `φ i` whose images span, over
+`O`, a submodule containing `p^c (Fin 2 → O)`; choosing a finite
+`ℤ_p`-generating family `b j` of `O` (`Module.Finite ℤ_[p] O`) and
+replacing the family `φ i` by the family `b j • φ i` — still equivariant,
+because `ρO σ` is `O`-linear, and still `ℤ_p`-semilinear, because the two
+scalar actions on `Fin 2 → O` commute — turns that `O`-span into the plain
+sum of the images, which is exactly the range of the single assembled map
+`ψ x = Σ_{i,j} b j • φ i (x _)` over the index `Fin (N * n)`.
+
+ROUTE SUPERSEDED — read the leaf's docstring first. The route recorded
+below (every `ℚ̄_p`-fibre of `ρO` as a conjugate of a fibre of `ρ`, the
+splitting `O ⊗ ℚ̄_p ≅ ∏_τ ℚ̄_p`, and Hom-descent from `ℚ̄_p` down to `ℚ_p`)
+is correct but far more expensive than necessary: the `Hom` module
+`Hom_{ℤ_p[Γ]}(V, Fin 2 → O)` is already an `O`-MODULE, so descending along
+the single embedding `ι : O → ℚ̄_p` that `e` already refers to suffices,
+and neither the splitting nor the conjugation is needed. It is kept only
+as a record of the 2026-07-26 carve.
+
+ROUTE (SUPERSEDED, kept for the record) — ELEMENTARY; no `p`-adic Hodge
+theory, no `p`-divisible groups,
+no crystalline representations. Write `U := (Fin 2 → O) ⊗ ℚ_p` and
+`W := V ⊗_{ℤ_p} ℚ_p` for the two generic fibres over `ℚ_p`, and `ι`,
+`ι_R` for the given embeddings of `O`, `R` into `ℚ̄_p`.
+1. `O` is a domain, module-finite over `ℤ_p`, and `hOinj` embeds it into
+   the characteristic-zero field `ℚ̄_p`; so `F_O := O ⊗_{ℤ_p} ℚ_p` is a
+   FIELD, finite over `ℚ_p`, hence separable, hence
+   `O ⊗_{ℤ_p} ℚ̄_p ≅ ∏_{τ ∈ Hom_{ℚ_p}(F_O, ℚ̄_p)} ℚ̄_p`. Since
+   `Fin 2 → O` is `O`-free, `U ⊗_{ℚ_p} ℚ̄_p ≅ ⊕_τ fibre_τ(ρO)`.
+2. Every `τ` is `τ′ ∘ ι` for some `ℚ_p`-automorphism `τ′` of `ℚ̄_p`
+   (two embeddings of a finite extension of `ℚ_p` into an algebraic
+   closure differ by an automorphism). Conjugating `e` by `τ′` — legitimate
+   because `Γ ℚ` acts `ℚ̄_p`-LINEARLY on both base changes, so coefficient
+   conjugation commutes with it — gives
+   `fibre_{τ′∘ι}(ρO) ≅ fibre_{τ′∘ι_R}(ρ)` as `ℚ̄_p[Γ ℚ]`-modules.
+3. `fibre_{τ′∘ι_R}(ρ) = V ⊗_{R, τ′∘ι_R} ℚ̄_p` is a `Γ ℚ`-equivariant
+   QUOTIENT of `V ⊗_{ℤ_p} ℚ̄_p = W ⊗_{ℚ_p} ℚ̄_p`, namely the base change
+   of `V` along the surjective `ℚ̄_p`-algebra map `R ⊗_{ℤ_p} ℚ̄_p ↠ ℚ̄_p`
+   induced by `τ′∘ι_R` (right-exactness of `⊗`; equivariant because `ρ`
+   is `R`-linear). *This is the step the retired Barsotti–Tate citation
+   did not use, and it is why no crystalline theory is needed: every
+   `ℚ̄_p`-fibre of the `R`-family is visible inside the `R`-lattice
+   itself, as a quotient — one does not have to reconstruct a lattice
+   from a Hodge-theoretic classification.*
+4. Steps 1–3 give a `Γ ℚ`-equivariant `ℚ̄_p`-surjection
+   `(W ⊗ ℚ̄_p)^d ↠ U ⊗ ℚ̄_p`, `d = [F_O : ℚ_p]`. Hom-descent:
+   `Hom_{ℚ_p[Γ]}(W^d, U) ⊗_{ℚ_p} ℚ̄_p = Hom_{ℚ̄_p[Γ]}((W ⊗ ℚ̄_p)^d, U ⊗ ℚ̄_p)`
+   (Hom between finite-dimensional spaces is the kernel of a linear map,
+   and base change is flat), so writing that surjection as `Σ_j φ_j ⊗ λ_j`
+   with `φ_j` defined over `ℚ_p` forces `Σ_j im φ_j = U`. Hence there is
+   already a `Γ ℚ`-equivariant `ℚ_p`-linear SURJECTION `ψ_ℚ : W^N ↠ U`
+   with `N = d·(number of `φ_j`)`.
+5. Clear denominators: for some `a`, `p^a ψ_ℚ` carries the lattice `V^N`
+   into `Fin 2 → O`; its image is a full-rank `ℤ_p`-lattice in `U`,
+   hence contains `p^c (Fin 2 → O)` for some `c`. Take `ψ := p^a ψ_ℚ`
+   restricted to `V^N`, which is `ℤ_p`-semilinear over `algebraMap ℤ_p R`
+   and `Γ ℚ`-equivariant by construction.
+
+WHAT THIS LEAF DOES NOT NEED: `hρ` (hardly-ramifiedness, in particular
+flatness) is NOT among its hypotheses — flatness enters only in the
+consumer, which pushes the flat `R`-levels along `ψ`. Nor does it need
+`hv` (rank two).
+
+RETIRED CITATION (recorded so it is not reinstated): this position used
+to carry a Fontaine/Raynaud/Tate statement — `V ⊗ ℚ_p` is Barsotti–Tate,
+so every conjugate fibre is, so `U` is, so `U` contains a lattice that is
+the Tate module of a `p`-divisible group — audited on 2026-07-25 as a
+TERMINAL citation on the grounds that the pin has no `p`-divisible
+groups, no crystalline or Barsotti–Tate representations and nothing to
+vendor. That audit was correct about the substrate and wrong about the
+necessity: the classical route reconstructs a flat lattice from a
+Hodge-theoretic classification, whereas step 3 above PRODUCES one as the
+image of a power of the flat `R`-lattice already in hand. The audit’s
+other two findings still stand (do not cut at bare commensurability;
+this leaf is equivalent to its consumer, not weaker).
+
+Soundness: the hypothesis set is classically INHABITED (`O = R`, `ρO` a
+frame of `ρ`, `e` the identity — then `N = 1`, `c = 0`, `ψ` the frame
+identification). Circularity guard (inherited from E2b′): must not route
+through `Family.lean` or `Reducible.lean`’s B5. -/
+theorem exists_equivariantCover_of_generic_iso
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    (hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :
+    ∃ (N c : ℕ) (ψ : (Fin N → V) →+ (Fin 2 → O)),
+      (∀ (a : ℤ_[p]) (x : Fin N → V),
+        ψ ((algebraMap ℤ_[p] R a) • x) = a • ψ x) ∧
+      (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin N → V),
+        ψ (fun i => ρ σ (x i)) = ρO σ (ψ x)) ∧
+      (∀ y : Fin 2 → O, ∃ z, ψ z = (p : ℤ_[p]) ^ c • y) := by
+  classical
+  obtain ⟨N, c, φ, hsm, heq, hspan⟩ :=
+    exists_equivariantHomFamily_spanFullRank_of_generic_iso (ρ := ρ)
+      hOinj hZOcompat e he
+  obtain ⟨n, F, hF⟩ := Module.Finite.exists_fin' ℤ_[p] O
+  set b : Fin n → O := fun j => F (Pi.single j 1) with hb
+  have hFb : ∀ w : Fin n → ℤ_[p], F w = ∑ j, w j • b j := by
+    intro w
+    have hw : F w = F (∑ j, w j • (Pi.single j 1 : Fin n → ℤ_[p])) := by
+      congr 1
+      ext k
+      simp [Pi.single_apply]
+    rw [hw, map_sum]
+    simp [hb]
+  have hadd : ∀ x y : Fin (N * n) → V,
+      (∑ q : Fin N × Fin n, b q.2 • φ q.1 ((x + y) (finProdFinEquiv q)))
+        = (∑ q : Fin N × Fin n, b q.2 • φ q.1 (x (finProdFinEquiv q)))
+          + ∑ q : Fin N × Fin n, b q.2 • φ q.1 (y (finProdFinEquiv q)) := by
+    intro x y
+    simp only [Pi.add_apply, map_add, smul_add]
+    exact Finset.sum_add_distrib
+  refine ⟨N * n, c, AddMonoidHom.mk' (fun x : Fin (N * n) → V =>
+    ∑ q : Fin N × Fin n, b q.2 • φ q.1 (x (finProdFinEquiv q))) hadd, ?_, ?_, ?_⟩
+  · intro a x
+    show ∑ q : Fin N × Fin n,
+        b q.2 • φ q.1 (((algebraMap ℤ_[p] R a) • x) (finProdFinEquiv q))
+      = a • ∑ q : Fin N × Fin n, b q.2 • φ q.1 (x (finProdFinEquiv q))
+    rw [Finset.smul_sum]
+    refine Finset.sum_congr rfl fun q _ => ?_
+    rw [Pi.smul_apply, hsm, smul_comm]
+  · intro σ x
+    show ∑ q : Fin N × Fin n, b q.2 • φ q.1 ((fun i => ρ σ (x i)) (finProdFinEquiv q))
+      = ρO σ (∑ q : Fin N × Fin n, b q.2 • φ q.1 (x (finProdFinEquiv q)))
+    rw [map_sum]
+    refine Finset.sum_congr rfl fun q _ => ?_
+    rw [heq, map_smul]
+  · intro y
+    obtain ⟨m, f, g, hg⟩ := Submodule.mem_span_set'.mp (hspan y)
+    have hgmem : ∀ k, ∃ (i : Fin N) (v : V), φ i v = (g k : Fin 2 → O) := by
+      intro k
+      obtain ⟨i, hi⟩ := Set.mem_iUnion.mp (g k).2
+      obtain ⟨v, hv⟩ := hi
+      exact ⟨i, v, hv⟩
+    choose ii vv hvv using hgmem
+    have hfw : ∀ k, ∃ w : Fin n → ℤ_[p], F w = f k := fun k => hF (f k)
+    choose w hw using hfw
+    set Z : Fin N × Fin n → V := fun q =>
+      ∑ l, if ii l = q.1 then (algebraMap ℤ_[p] R (w l q.2)) • vv l else 0 with hZ
+    refine ⟨fun k => Z (finProdFinEquiv.symm k), ?_⟩
+    show ∑ q : Fin N × Fin n,
+        b q.2 • φ q.1 (Z (finProdFinEquiv.symm (finProdFinEquiv q)))
+      = (p : ℤ_[p]) ^ c • y
+    simp only [Equiv.symm_apply_apply]
+    calc
+      ∑ q : Fin N × Fin n, b q.2 • φ q.1 (Z q)
+          = ∑ q : Fin N × Fin n, ∑ l,
+              (if ii l = q.1 then w l q.2 • (b q.2 • φ q.1 (vv l)) else 0) := by
+            refine Finset.sum_congr rfl fun q _ => ?_
+            rw [hZ]
+            simp only
+            rw [map_sum, Finset.smul_sum]
+            refine Finset.sum_congr rfl fun l _ => ?_
+            by_cases hl : ii l = q.1
+            · simp only [hl, if_true, hsm]
+              rw [smul_comm]
+            · simp [hl]
+      _ = ∑ l, ∑ q : Fin N × Fin n,
+              (if ii l = q.1 then w l q.2 • (b q.2 • φ q.1 (vv l)) else 0) :=
+            Finset.sum_comm
+      _ = ∑ l, ∑ j : Fin n, w l j • (b j • φ (ii l) (vv l)) := by
+            refine Finset.sum_congr rfl fun l _ => ?_
+            rw [Fintype.sum_prod_type]
+            rw [Finset.sum_eq_single (ii l)]
+            · simp
+            · intro i _ hi
+              simp [Ne.symm hi]
+            · intro hcon
+              exact absurd (Finset.mem_univ (ii l)) hcon
+      _ = ∑ l, f l • (g l : Fin 2 → O) := by
+            refine Finset.sum_congr rfl fun l _ => ?_
+            rw [← hw l, hFb (w l), ← hvv l, Finset.sum_smul]
+            refine Finset.sum_congr rfl fun j _ => ?_
+            rw [smul_assoc]
+      _ = (p : ℤ_[p]) ^ c • y := hg
+
+/-- **Isogeny packaging of an equivariant lattice cover** (PROVEN
+2026-07-26 — the module-theoretic half of E2b′-flat, stated in the
+generality it is proved in): if the `p`-power levels of a Galois lattice
+`W` over a module-finite topological `ℤ_p`-algebra `A` all have finite
+flat prolongations at `p`, and `ψ : W^N →+ (Fin 2 → O)` is
+`ℤ_p`-semilinear, `Γ ℚ`-equivariant and covers `p^c (Fin 2 → O)`, then
+the `O`-lattice is isogenous to a `ℤ_p`-lattice `T` all of whose
+`p`-power levels have finite flat prolongations at `p`.
+
+PROOF. Take `T := range ψ`, a `ℤ_p`-submodule of `Fin 2 → O`; it is
+module-finite (`ℤ_p` is noetherian) and FREE, because `algebraMap ℤ_p O`
+is injective (a nonzero kernel would make `p` nilpotent in the domain
+`O`, contradicting `hpO`) so `Fin 2 → O` is `ℤ_p`-torsion-free, and a
+finite torsion-free module over the PID `ℤ_p` is free.
+* GALOIS ACTION. `T` is `ρO`-stable by equivariance of `ψ`, and the
+  restricted action is CONTINUOUS: `T` is free, hence projective, so the
+  surjection `ψ : W^N ↠ T` has a `ℤ_p`-linear section `s`, and
+  `χ : φ ↦ ψ ∘ φ^N ∘ s` is a `ℤ_p`-LINEAR map `End_A W → End_{ℤ_p} T`
+  with `χ (ρ′ σ) = ρT σ` for every `σ` (this is where equivariance and
+  `ψ ∘ s = id` are used); a `ℤ_p`-linear map out of a module topology is
+  continuous, and `End_A W` does carry the `ℤ_p`-module topology because
+  a basis identifies it with `Matrix ι ι A` and `A` carries the
+  `ℤ_p`-module topology.
+* FLAT LEVELS. The level `(ℤ_p ⧸ p^k) ⊗ T` is an equivariant SUBQUOTIENT
+  of the flat level `(A ⧸ p^k) ⊗ W` in `N` copies: with `L := W^N`,
+  `F : x ↦ (1 ⊗ x i)_i` and `π : x ↦ 1 ⊗ ψ x`, one has
+  `ker F ⊆ ker π` — `F x = 0` forces each `x i ∈ p^k W`
+  (`exists_smul_of_tmul_one_eq_zero`), hence `ψ x ∈ p^k T`, hence
+  `π x = 0` — and `π` is surjective because `A ⧸ p^k` is generated by
+  `1`. So `IsFlatPointsGroupAt.pi` followed by
+  `isFlatPointsGroupAt_of_subquotient` gives the claim, through the
+  repackaging `hasFlatProlongationAt_iff_isFlatPointsGroupAt`.
+* ISOGENY. `f := p^c ·` lands in `T` by the covering hypothesis and is
+  equivariant since `ρO` is `ℤ_p`-linear; `g := ` the inclusion; so
+  `g ∘ f = p^c`. -/
+theorem exists_flatIsogenousLattice_of_equivariantCover
+    {A : Type u} [CommRing A] [Algebra ℤ_[p] A]
+    [Module.Finite ℤ_[p] A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsModuleTopology ℤ_[p] A]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W] [Module.Free A W]
+    {ρ' : GaloisRep ℚ A W}
+    (hflatW : ∀ k : ℕ,
+      (ρ'.baseChange (A ⧸ Ideal.span {(p : A) ^ k})).HasFlatProlongationAt 𝔭ᵥ)
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O]
+    (hpO : (p : O) ≠ 0)
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    {N c : ℕ} (ψ : (Fin N → W) →+ (Fin 2 → O))
+    (hψsmul : ∀ (a : ℤ_[p]) (x : Fin N → W),
+      ψ ((algebraMap ℤ_[p] A a) • x) = a • ψ x)
+    (hψeq : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin N → W),
+      ψ (fun i => ρ' σ (x i)) = ρO σ (ψ x))
+    (hψcov : ∀ y : Fin 2 → O, ∃ z, ψ z = (p : ℤ_[p]) ^ c • y) :
+    ∃ (T : Type u) (_ : AddCommGroup T) (_ : Module ℤ_[p] T)
+      (_ : Module.Finite ℤ_[p] T) (_ : Module.Free ℤ_[p] T)
+      (ρT : GaloisRep ℚ ℤ_[p] T) (c' : ℕ)
+      (f : (Fin 2 → O) →ₗ[ℤ_[p]] T) (g : T →ₗ[ℤ_[p]] (Fin 2 → O)),
+      (∀ k : ℕ,
+        (ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).HasFlatProlongationAt 𝔭ᵥ) ∧
+      (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin 2 → O),
+        f (ρO σ x) = ρT σ (f x)) ∧
+      (∀ x : Fin 2 → O, g (f x) = (p : ℤ_[p]) ^ c' • x) := by
+  classical
+  -- `ℤ_p` embeds in the domain `O` (a nonzero kernel would make `p` nilpotent)
+  have hZOinj : Function.Injective (algebraMap ℤ_[p] O) := by
+    rw [injective_iff_map_eq_zero]
+    intro a ha
+    by_contra hne
+    obtain ⟨k, u, hu⟩ :=
+      IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hne PadicInt.irreducible_p
+    have hunit : IsUnit ((algebraMap ℤ_[p] O) (u : ℤ_[p])) := u.isUnit.map _
+    have h1 : (algebraMap ℤ_[p] O) (u : ℤ_[p]) * ((p : O)) ^ k = 0 := by
+      have h2 := congrArg (algebraMap ℤ_[p] O) hu
+      rw [ha, map_mul, map_pow, map_natCast] at h2
+      exact h2.symm
+    have hzero : ((p : O)) ^ k = 0 := (hunit.mul_right_eq_zero).mp h1
+    rcases Nat.eq_zero_or_pos k with hk0 | hk0
+    · subst hk0
+      simp only [pow_zero] at hzero
+      exact one_ne_zero hzero
+    · exact hpO (pow_eq_zero_iff hk0.ne' |>.mp hzero)
+  haveI : Module.IsTorsionFree ℤ_[p] O :=
+    Module.IsTorsionFree.comap (M := O) (algebraMap ℤ_[p] O)
+      (fun r hr => by
+        rw [isRegular_iff_ne_zero] at hr ⊢
+        exact fun h => hr (hZOinj (by rw [h, map_zero])))
+      (fun r m => algebraMap_smul O r m)
+  -- the lattice: the image of the cover map
+  let Tsub : Submodule ℤ_[p] (Fin 2 → O) :=
+    { carrier := Set.range ψ
+      add_mem' := by rintro _ _ ⟨x, rfl⟩ ⟨y, rfl⟩; exact ⟨x + y, map_add ψ x y⟩
+      zero_mem' := ⟨0, map_zero ψ⟩
+      smul_mem' := by
+        rintro a _ ⟨x, rfl⟩
+        exact ⟨(algebraMap ℤ_[p] A a) • x, hψsmul a x⟩ }
+  haveI hfinT : Module.Finite ℤ_[p] Tsub := inferInstance
+  haveI hfreeT : Module.Free ℤ_[p] Tsub := inferInstance
+  -- the `ℤ_p`-structure on the source, through `A`
+  letI : Module ℤ_[p] W := Module.compHom W (algebraMap ℤ_[p] A)
+  -- `ψ`, corestricted to its image, as a `ℤ_p`-linear surjection
+  let ψlin : (Fin N → W) →ₗ[ℤ_[p]] Tsub :=
+    { toFun := fun x => ⟨ψ x, ⟨x, rfl⟩⟩
+      map_add' := fun x y => Subtype.ext (map_add ψ x y)
+      map_smul' := fun a x => Subtype.ext (hψsmul a x) }
+  have hψlinsurj : Function.Surjective ψlin := by
+    rintro ⟨_, x, rfl⟩
+    exact ⟨x, rfl⟩
+  have hψlincoe : ∀ x, ((ψlin x : Tsub) : Fin 2 → O) = ψ x := fun _ => rfl
+  -- a `ℤ_p`-linear section (the image is free, hence projective)
+  obtain ⟨sec, hsec⟩ :=
+    Module.projective_lifting_property ψlin (LinearMap.id : Tsub →ₗ[ℤ_[p]] Tsub) hψlinsurj
+  have hsecapp : ∀ t : Tsub, ψ (sec t) = (t : Fin 2 → O) := by
+    intro t
+    have := congrArg (fun F => (F t : Tsub)) hsec
+    exact congrArg (Subtype.val) this
+  -- the transported Galois action on the image
+  letI : Module ℤ_[p] (Module.End A W) := Module.compHom _ (algebraMap ℤ_[p] A)
+  letI : TopologicalSpace (Module.End A W) := moduleTopology A (Module.End A W)
+  letI : TopologicalSpace (Module.End ℤ_[p] Tsub) :=
+    moduleTopology ℤ_[p] (Module.End ℤ_[p] Tsub)
+  haveI : IsModuleTopology ℤ_[p] (Module.End ℤ_[p] Tsub) := ⟨rfl⟩
+  haveI : IsModuleTopology A (Module.End A W) := ⟨rfl⟩
+  haveI : ContinuousAdd (Module.End A W) :=
+    ModuleTopology.continuousAdd A (Module.End A W)
+  haveI : ContinuousSMul A (Module.End A W) :=
+    ModuleTopology.continuousSMul A (Module.End A W)
+  haveI hTOP : IsModuleTopology ℤ_[p] (Module.End A W) := by
+    classical
+    set ι := Module.Free.ChooseBasisIndex A W with hι
+    set b : Module.Basis ι A W := Module.Free.chooseBasis A W with hb
+    -- `End A W ≅ Matrix ι ι A`, both carrying their `A`-module topologies
+    set ee : Module.End A W ≃ₗ[A] (ι → ι → A) := LinearMap.toMatrix b b with hee
+    have hcont1 : Continuous (ee : Module.End A W → (ι → ι → A)) :=
+      IsModuleTopology.continuous_of_linearMap (ee : Module.End A W →ₗ[A] (ι → ι → A))
+    have hcont2 : Continuous (ee.symm : (ι → ι → A) → Module.End A W) :=
+      IsModuleTopology.continuous_of_linearMap (ee.symm : (ι → ι → A) →ₗ[A] Module.End A W)
+    -- the same equivalence, read `ℤ_p`-linearly
+    let ee2 : (ι → ι → A) ≃ₗ[ℤ_[p]] Module.End A W :=
+      { toFun := ee.symm
+        invFun := ee
+        map_add' := fun x y => ee.symm.map_add x y
+        map_smul' := fun a x => by
+          show ee.symm (a • x) = (algebraMap ℤ_[p] A a) • ee.symm x
+          rw [← algebraMap_smul A a x]
+          exact ee.symm.map_smul _ x
+        left_inv := ee.apply_symm_apply
+        right_inv := ee.symm_apply_apply }
+    exact IsModuleTopology.iso
+      ({ toLinearEquiv := ee2
+         continuous_toFun := hcont2
+         continuous_invFun := hcont1 } : (ι → ι → A) ≃L[ℤ_[p]] Module.End A W)
+  haveI : ContinuousAdd (Module.End ℤ_[p] Tsub) :=
+    ModuleTopology.continuousAdd ℤ_[p] (Module.End ℤ_[p] Tsub)
+  haveI : ContinuousSMul ℤ_[p] (Module.End ℤ_[p] Tsub) :=
+    ModuleTopology.continuousSMul ℤ_[p] (Module.End ℤ_[p] Tsub)
+  have hsecadd : ∀ (t t' : Tsub) (i : Fin N), sec (t + t') i = sec t i + sec t' i := by
+    intro t t' i; rw [map_add]; rfl
+  have hsecsmul : ∀ (a : ℤ_[p]) (t : Tsub) (i : Fin N),
+      sec (a • t) i = (algebraMap ℤ_[p] A a) • (sec t i) := by
+    intro a t i; rw [map_smul]; rfl
+  let χ : (Module.End A W) →ₗ[ℤ_[p]] (Module.End ℤ_[p] Tsub) :=
+    { toFun := fun φ =>
+        { toFun := fun t => ψlin (fun i => φ (sec t i))
+          map_add' := fun t t' => by
+            rw [← map_add ψlin]
+            congr 1
+            funext i
+            rw [Pi.add_apply, hsecadd t t' i, map_add]
+          map_smul' := fun a t => by
+            show ψlin (fun i => φ (sec (a • t) i)) = a • ψlin (fun i => φ (sec t i))
+            rw [← map_smul ψlin]
+            congr 1
+            funext i
+            rw [hsecsmul a t i, map_smul]
+            rfl }
+      map_add' := fun φ φ' => by
+        refine LinearMap.ext fun t => ?_
+        show ψlin (fun i => (φ + φ') (sec t i)) =
+          ψlin (fun i => φ (sec t i)) + ψlin (fun i => φ' (sec t i))
+        rw [← map_add ψlin]
+        congr 1
+      map_smul' := fun a φ => by
+        refine LinearMap.ext fun t => ?_
+        show ψlin (fun i => (a • φ) (sec t i)) = a • ψlin (fun i => φ (sec t i))
+        rw [← map_smul ψlin]
+        congr 1 }
+  have hχapp : ∀ (φ : Module.End A W) (t : Tsub),
+      ((χ φ t : Tsub) : Fin 2 → O) = ψ (fun i => φ (sec t i)) := fun _ _ => rfl
+  -- the transported action is the restriction of `ρO`
+  have hkey : ∀ (σ : Field.absoluteGaloisGroup ℚ) (t : Tsub),
+      ((χ (ρ' σ) t : Tsub) : Fin 2 → O) = ρO σ (t : Fin 2 → O) := by
+    intro σ t
+    rw [hχapp, hψeq, hsecapp]
+  let ρT : GaloisRep ℚ ℤ_[p] Tsub :=
+    { toFun := fun σ => χ (ρ' σ)
+      map_one' := by
+        refine LinearMap.ext fun t => Subtype.ext ?_
+        rw [hkey, map_one]
+        rfl
+      map_mul' := fun σ τ => by
+        refine LinearMap.ext fun t => Subtype.ext ?_
+        rw [hkey, map_mul]
+        show ρO σ (ρO τ (t : Fin 2 → O)) = _
+        rw [show ((χ (ρ' σ) * χ (ρ' τ)) t : Tsub) = χ (ρ' σ) (χ (ρ' τ) t) from rfl,
+          hkey, hkey]
+      continuous_toFun := by
+        have hcρ : Continuous (fun σ : Field.absoluteGaloisGroup ℚ =>
+            (ρ' σ : Module.End A W)) := ContinuousMonoidHom.continuous_toFun ρ'
+        exact (IsModuleTopology.continuous_of_linearMap χ).comp hcρ }
+  have hρTcoe : ∀ (σ : Field.absoluteGaloisGroup ℚ) (t : Tsub),
+      ((ρT σ t : Tsub) : Fin 2 → O) = ρO σ (t : Fin 2 → O) := hkey
+  -- the comparison maps
+  let g0 : Tsub →ₗ[ℤ_[p]] (Fin 2 → O) := Tsub.subtype
+  let f0 : (Fin 2 → O) →ₗ[ℤ_[p]] Tsub :=
+    { toFun := fun y => ⟨(p : ℤ_[p]) ^ c • y, hψcov y⟩
+      map_add' := fun x y => Subtype.ext (smul_add ((p : ℤ_[p]) ^ c) x y)
+      map_smul' := fun a x => Subtype.ext (smul_comm ((p : ℤ_[p]) ^ c) a x) }
+  have hflatT : ∀ k : ℕ,
+      (ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).HasFlatProlongationAt 𝔭ᵥ := by
+    intro k
+    refine (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt _).mpr ?_
+    -- the flat source: `N` copies of the level-`k` `A`-tower
+    have hpi : IsFlatPointsGroupAt 𝔭ᵥ (Fin N →
+        (((ρ'.baseChange (A ⧸ Ideal.span {(p : A) ^ k})).toLocal 𝔭ᵥ).Space)) :=
+      IsFlatPointsGroupAt.pi (fun _ =>
+        (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt _).mp (hflatW k))
+    -- the ambient lattice power, with its action as a first-order family
+    have hact1 : ∀ x : Fin N → W,
+        (fun i => ((ρ'.toLocal 𝔭ᵥ) 1) (x i)) = x := by
+      intro x; funext i; simp only [map_one, Module.End.one_apply]
+    have hactmul : ∀ (a b : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ 𝔭ᵥ)) (x : Fin N → W),
+        (fun i => ((ρ'.toLocal 𝔭ᵥ) (a * b)) (x i)) =
+          (fun i => ((ρ'.toLocal 𝔭ᵥ) a) (((ρ'.toLocal 𝔭ᵥ) b) (x i))) := by
+      intro a b x; funext i; simp only [map_mul, Module.End.mul_apply]
+    let act : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ 𝔭ᵥ) →
+          ((Fin N → W) →+ (Fin N → W)) := fun σ =>
+      { toFun := fun x i => ((ρ'.toLocal 𝔭ᵥ) σ) (x i)
+        map_zero' := by funext i; exact map_zero _
+        map_add' := fun x y => by funext i; exact map_add _ _ _ }
+    let F : (Fin N → W) →+
+        (Fin N → (((ρ'.baseChange (A ⧸ Ideal.span {(p : A) ^ k})).toLocal 𝔭ᵥ).Space)) :=
+      { toFun := fun x i => (1 : A ⧸ Ideal.span {(p : A) ^ k}) ⊗ₜ[A] (x i)
+        map_zero' := by funext i; exact TensorProduct.tmul_zero _ _
+        map_add' := fun x y => by funext i; exact TensorProduct.tmul_add _ _ _ }
+    let π : (Fin N → W) →+
+        (((ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).toLocal 𝔭ᵥ).Space) :=
+      { toFun := fun x =>
+          (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]] (ψlin x)
+        map_zero' := by rw [map_zero, TensorProduct.tmul_zero]; rfl
+        map_add' := fun x y => by rw [map_add, TensorProduct.tmul_add]; rfl }
+    refine isFlatPointsGroupAt_of_subquotient act hact1 hactmul hpi F ?_ π ?_ ?_ ?_
+    · intro σ x
+      funext i
+      show (1 : A ⧸ Ideal.span {(p : A) ^ k}) ⊗ₜ[A] (((ρ'.toLocal 𝔭ᵥ) σ) (x i)) =
+        ((ρ'.baseChange (A ⧸ Ideal.span {(p : A) ^ k})).toLocal 𝔭ᵥ) σ
+          ((1 : A ⧸ Ideal.span {(p : A) ^ k}) ⊗ₜ[A] (x i))
+      rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul]
+    · intro σ x
+      show (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]]
+          (ψlin (fun i => ((ρ'.toLocal 𝔭ᵥ) σ) (x i))) =
+        ((ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).toLocal 𝔭ᵥ) σ
+          ((1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]] (ψlin x))
+      rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul]
+      congr 1
+      refine Subtype.ext ?_
+      rw [hρTcoe]
+      exact hψeq _ x
+    · rintro z
+      induction z using TensorProduct.induction_on with
+      | zero => exact ⟨0, map_zero _⟩
+      | add a b ha hb =>
+        obtain ⟨x, hx⟩ := ha
+        obtain ⟨y, hy⟩ := hb
+        exact ⟨x + y, by rw [map_add, hx, hy]; rfl⟩
+      | tmul cc t =>
+        obtain ⟨cc', rfl⟩ := Ideal.Quotient.mk_surjective cc
+        obtain ⟨z0, hz0⟩ := hψlinsurj t
+        refine ⟨(algebraMap ℤ_[p] A cc') • z0, ?_⟩
+        show (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]]
+            (ψlin ((algebraMap ℤ_[p] A cc') • z0)) = _
+        rw [show ψlin ((algebraMap ℤ_[p] A cc') • z0) = cc' • ψlin z0 from
+          Subtype.ext (hψsmul cc' z0), TensorProduct.tmul_smul, TensorProduct.smul_tmul',
+          hz0]
+        congr 1
+        rw [Algebra.smul_def, mul_one]
+        rfl
+    · intro x hx
+      have hxi : ∀ i, ∃ y : W, x i = (p : A) ^ k • y := by
+        intro i
+        refine exists_smul_of_tmul_one_eq_zero ((p : A) ^ k) (x i) ?_
+        exact congrFun hx i
+      choose y hy using hxi
+      have hxy : x = (algebraMap ℤ_[p] A ((p : ℤ_[p]) ^ k)) • y := by
+        funext i
+        rw [hy i, Pi.smul_apply, map_pow, map_natCast]
+      show (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]] (ψlin x) = 0
+      rw [hxy, show ψlin ((algebraMap ℤ_[p] A ((p : ℤ_[p]) ^ k)) • y)
+          = (p : ℤ_[p]) ^ k • ψlin y from Subtype.ext (hψsmul _ y),
+        TensorProduct.tmul_smul, TensorProduct.smul_tmul']
+      have hz : ((p : ℤ_[p]) ^ k • (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})) = 0 := by
+        rw [Algebra.smul_def]; simp
+      rw [hz, TensorProduct.zero_tmul]
+  refine ⟨Tsub, inferInstance, inferInstance, hfinT, hfreeT, ρT, c, f0, g0, hflatT, ?_, ?_⟩
+  · intro σ x
+    refine Subtype.ext ?_
+    rw [hρTcoe]
+    show (p : ℤ_[p]) ^ c • (ρO σ x) = ρO σ ((p : ℤ_[p]) ^ c • x)
+    rw [← algebraMap_smul O ((p : ℤ_[p]) ^ c) x, LinearMap.map_smul,
+      algebraMap_smul]
+  · intro x
+    rfl
+
+/-- **Flat isogenous lattice for the `O`-structure** (Eisenstein pillar
+E2b′-flat; PROVEN 2026-07-26 over the single arithmetic leaf
+`exists_equivariantCover_of_generic_iso`, which REPLACED the
+Barsotti–Tate/Fontaine citation that used to sit here): the `ℤ_p`-lattice
+`Fin 2 → O` underlying `ρO` is `Γ ℚ`-equivariantly isogenous to a
+`ℤ_p`-lattice `T` all of whose `p`-power levels `T ⧸ p^k` have finite
+flat prolongations at `p`.
+
+PROOF: `exists_equivariantCover_of_generic_iso` produces an equivariant
+`ℤ_p`-semilinear `ψ : V^N →+ (Fin 2 → O)` covering `p^c (Fin 2 → O)`
+(elementary: conjugate fibres, Hom-descent from `ℚ̄_p` to `ℚ_p`, and
+clearing denominators — see its docstring), `hρ.isFlat` supplies the
+flatness of the `p`-power levels of the `R`-tower at the open ideals
+`p^k R` (`isOpen_span_pow_p`), and
+`exists_flatIsogenousLattice_of_equivariantCover` packages the image of
+`ψ` as the required lattice. `hpO` — `p ≠ 0` in `O` — is read off from
+the embedding of `O` into the characteristic-zero field `ℚ̄_p`.
+
+HISTORY (2026-07-25 → 2026-07-26): this node was a TERMINAL CITATION
+carrying Fontaine/Raynaud/Tate `p`-adic Hodge theory, audited as
+undischargeable on this pin (no `p`-divisible groups, no crystalline or
+Barsotti–Tate representations in mathlib, nothing to vendor from
+`~/cs/FLT`). The citation is now retired: the flat lattice is PRODUCED as
+the image of a power of the flat `R`-lattice rather than reconstructed
+from a Hodge-theoretic classification, so the whole subtree now rests on
+linear algebra and field theory that mathlib does have. The retired
+route, and why its audit did not imply necessity, are recorded on
+`exists_equivariantCover_of_generic_iso`. Circularity guard (inherited
+from E2b′): must not route through `Family.lean` or `Reducible.lean`’s
+B5. -/
 theorem exists_flatIsogenousLattice_of_generic_iso
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -13687,8 +14915,17 @@ theorem exists_flatIsogenousLattice_of_generic_iso
           (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))) ∧
       (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin 2 → O),
         f (ρO σ x) = ρT σ (f x)) ∧
-      (∀ x : Fin 2 → O, g (f x) = (p : ℤ_[p]) ^ c • x) :=
-  sorry
+      (∀ x : Fin 2 → O, g (f x) = (p : ℤ_[p]) ^ c • x) := by
+  obtain ⟨N, c, ψ, hψsmul, hψeq, hψcov⟩ :=
+    exists_equivariantCover_of_generic_iso (ρ := ρ) hOinj hZOcompat e he
+  have hpO : (p : O) ≠ 0 := by
+    intro h0
+    have h2 : ((p : ℕ) : AlgebraicClosure ℚ_[p]) = 0 := by
+      rw [← map_natCast (algebraMap O (AlgebraicClosure ℚ_[p])), h0, map_zero]
+    exact (Nat.cast_ne_zero.mpr (Fact.out : p.Prime).ne_zero) h2
+  exact exists_flatIsogenousLattice_of_equivariantCover
+    (ρ' := ρ) (fun k => hρ.isFlat.cond _ (isOpen_span_pow_p k))
+    hpO ψ hψsmul hψeq hψcov
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Lattice flatness at the `p`-power levels** (Eisenstein pillar
@@ -16647,7 +17884,7 @@ theorem cc_eq_zero_of_tame_frobenius_generator {kk' : Type*} [Field kk']
   ring
 
 set_option maxHeartbeats 800000 in
-/-- **Tame killing of the cocycle on inertia at `2`** (sorry node — the
+/-- **Tame killing of the cocycle on inertia at `2`** (PROVEN — the
 genuine tame-Frobenius stroke of pillar E3b, the FIRST consumption
 point of `hp5`): for a hardly ramified mod-`p` extension with TRIVIAL
 sub-character and `p ≥ 5`, the upper-right entry `cc` vanishes on the
@@ -17935,11 +19172,12 @@ The classical chain, and what each link costs on this pin:
   2026-07-25). Two of the three resulting cases are discharged here:
   `A` principal, and `A` the ramified prime above `p`, which for the
   PRIME conductor `p` is `(ζ − 1)` and hence principal
-  (`cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`). THE ONE
-  REMAINING `sorry` of this chain is the third case —
-  `stickelberger_prod_map_prime_ideal_isPrincipal`, the theorem for a
-  single prime `q` with `p ∉ q`, whose own docstring carries the
-  dependency-ordered list of what is still missing from the pin.
+  (`cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`). The third case
+  — a single prime `q` with `p ∉ q` — is
+  `stickelberger_prod_map_prime_ideal_isPrincipal`, itself PROVEN
+  (2026-07-25) over the character-fed leaf
+  `stickelbergerProd_isPrincipal_of_powerResidueChar`, itself PROVEN
+  (2026-07-26) over the two leaves named below.
 * **(d′) … annihilates the ideal class group** (Thm. 6.10, second
   sentence): PROVEN here as `stickelberger_annihilates_classGroup`,
   from (d) through the generic class-group brick
@@ -17950,16 +19188,36 @@ The classical chain, and what each link costs on this pin:
   (d′), the index conversion `sum_units_zmod_val_eq_sum_Ico` and the
   floor arithmetic `sum_Ico_mul_two_mul_div_eq`.
 
-So: (a) is mathlib, (b) is folded into (d), (c)/(d′)/(e) are PROVEN,
-and (d) is now PROVEN too, over a single narrower citation. The next
-owner's frontier is exactly that citation,
-`stickelberger_prod_map_prime_ideal_isPrincipal`: one prime ideal `q`
-prime to `p`, for which the route is (b) plus §6.2's descent, or the
-shorter §15.1 route (Gauss sums attached to a degree-one prime
-`ℓ ≡ 1 (mod p)` lying in the given ideal class — so a
-Chebotarev/Dirichlet input as well — plus the same Kummer descent).
-Neither route is cheap on this pin; both are itemised, as statements,
-in that leaf's docstring. -/
+So: (a) is mathlib, (c)/(d)/(d′)/(e) are PROVEN, and (b) — the only
+genuinely missing mathematics — is now stated and isolated. As of
+2026-07-26 the frontier of this whole chain is exactly ONE leaf:
+
+* `span_jacobiSum_le_twistedProd` — that the Stickelberger divisor
+  DIVIDES ONE Jacobi sum `J(ψ, ψˢ)` of the `p`-th power residue
+  character, which is (b) plus §6.2's Gauss-sum descent, packaged so
+  that its statement mentions only `jacobiSum` (mathlib) and objects
+  of `𝓞 CF` — no compositum, no valuation, nothing to define first.
+  The matching EQUALITY `span_jacobiSum_mul_stickelbergerProd` is
+  PROVEN from it (2026-07-26): apply it to the character AND to its
+  reciprocal, multiply, and cancel against
+  `prod_cycGalRingOfIntegers_map_eq_span_card`, so only the "easy
+  half" of Stickelberger — a lower bound on the valuation — is left.
+
+The second leaf of the 2026-07-26 cut,
+`prod_cycGalRingOfIntegers_map_eq_span_card` — the standard
+`∏_{σ ∈ Gal} σ(q) = (N q)`, absent from this pin — is PROVEN (same day),
+for an ARBITRARY Galois number field, as
+`prod_galois_map_prime_eq_span_absNorm`.
+
+Everything between those two leaves and (e) is proven bookkeeping:
+`stickelbergerProd_one`, `stickelbergerProd_add_mul` (periodicity in
+`t`), `stickelbergerProd_prime_eq_mul_galoisProd` (the `t = p` case)
+and the induction `stickelbergerProd_eq_span_prod_jacobiSum`, which
+records Stickelberger's theorem in the sharp form naming the generator
+`∏_{j=1}^{t−1} J(χ⁻¹, χ⁻¹ʲ)`. That closed form was CHECKED
+NUMERICALLY in PARI/GP before being written (see the first leaf's
+docstring): it is `χ⁻¹`, not `χ`, that appears, and getting that wrong
+produces the complex-conjugate ideal. -/
 
 /-- **Principality of the twisted ideal product kills the ideal class**
 (PROVEN 2026-07-25; the generic class-group brick of the Stickelberger
@@ -18162,6 +19420,1073 @@ noncomputable def stickelbergerProd (CF : Type) [Field CF] [NumberField CF]
   twistedIdealProd (fun u : (ZMod p)ˣ => cycGalRingOfIntegersEquiv CF u⁻¹)
     (fun u => t * ((u : ZMod p).val) / p) J
 
+/-- **The residue field of an unramified prime carries `μ_p`** (PROVEN
+2026-07-25; step 1 of the Stickelberger cut, item 1 of the list in
+`stickelberger_prod_map_prime_ideal_isPrincipal` below): if `q` is a
+prime ideal of `𝓞 CF` with `p ∉ q` — equivalently `q` lies over a
+rational prime `ℓ ≠ p` — then the reduction mod `q` of a primitive
+`p`-th root of unity `ζ ∈ 𝓞 CF` is again a primitive `p`-th root of
+unity in the residue ring `𝓞 CF ⧸ q`.
+
+This is the statement Washington uses silently at the top of the proof
+of Thm. 6.10 ("since the `(q−1)`st roots of unity are distinct mod
+`𝔭`"), and the pin has no packaged form of it. The proof is the
+separability of `Φ_p` away from `p`: `ζ` is a root of
+`cyclotomic p (𝓞 CF)` (`IsPrimitiveRoot.isRoot_cyclotomic`), the
+quotient map carries that to a root of `cyclotomic p (𝓞 CF ⧸ q)`
+(`Polynomial.map_cyclotomic`), and over a domain in which `p` is
+invertible — which is exactly `p ∉ q` — being a root of the `p`-th
+cyclotomic polynomial IS being a primitive `p`-th root of unity
+(`Polynomial.isRoot_cyclotomic_iff`, whose `NeZero (p : 𝓞 CF ⧸ q)`
+hypothesis is `Ideal.Quotient.eq_zero_iff_mem` applied to `hpq`).
+
+Note that `q ≠ ⊥` is NOT needed here: for `q = ⊥` the quotient is
+`𝓞 CF` itself and the statement is the hypothesis. -/
+theorem residueField_isPrimitiveRoot_of_notMem
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hpq : (p : 𝓞 CF) ∉ q)
+    {ζ : 𝓞 CF} (hζ : IsPrimitiveRoot ζ p) :
+    IsPrimitiveRoot (Ideal.Quotient.mk q ζ) p := by
+  haveI : q.IsPrime := hq
+  haveI : NeZero ((p : ℕ) : 𝓞 CF ⧸ q) := by
+    refine ⟨fun h => hpq ?_⟩
+    rw [← map_natCast (Ideal.Quotient.mk q) p, Ideal.Quotient.eq_zero_iff_mem] at h
+    exact h
+  rw [← Polynomial.isRoot_cyclotomic_iff]
+  have h1 : Polynomial.IsRoot (Polynomial.cyclotomic p (𝓞 CF)) ζ :=
+    hζ.isRoot_cyclotomic hp.out.pos
+  have h2 := h1.map (f := (Ideal.Quotient.mk q))
+  rwa [Polynomial.map_cyclotomic] at h2
+
+/-- **`p ∣ Q − 1` at a prime not above `p`** (PROVEN 2026-07-25; the
+numerical half of item 1 of the list in
+`stickelberger_prod_map_prime_ideal_isPrincipal`): writing
+`Q := #(𝓞 CF ⧸ q)` for the norm of a nonzero prime `q` of `𝓞 CF` with
+`p ∉ q`, the prime `p` divides `Q − 1`.
+
+This is what makes the exponent `(Q−1)/p` of the `p`-th power residue
+character an integer, and it is the reason `μ_p ⊆ F^×`. Proof: the
+residue ring is a finite field (`Ideal.IsPrime.isMaximal` in the
+Dedekind domain `𝓞 CF`, plus `Ideal.finiteQuotientOfFreeOfNeBot`), the
+reduction of `ζ` is a primitive `p`-th root of unity there
+(`residueField_isPrimitiveRoot_of_notMem`), so `p` is its order
+(`IsPrimitiveRoot.eq_orderOf`), and the order of a nonzero element of
+a finite field divides `Q − 1`
+(`FiniteField.pow_card_sub_one_eq_one`). -/
+theorem prime_dvd_card_residueField_sub_one
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) (hpq : (p : 𝓞 CF) ∉ q) :
+    p ∣ Nat.card (𝓞 CF ⧸ q) - 1 := by
+  haveI : q.IsPrime := hq
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  haveI : Finite (𝓞 CF ⧸ q) := Ideal.finiteQuotientOfFreeOfNeBot q hq0
+  haveI : Fintype (𝓞 CF ⧸ q) := Fintype.ofFinite _
+  have hζ : IsPrimitiveRoot (IsCyclotomicExtension.zeta p ℚ CF) p :=
+    IsCyclotomicExtension.zeta_spec p ℚ CF
+  have hprim : IsPrimitiveRoot (Ideal.Quotient.mk q hζ.toInteger) p :=
+    residueField_isPrimitiveRoot_of_notMem CF hq hpq hζ.toInteger_isPrimitiveRoot
+  have hz0 : (Ideal.Quotient.mk q hζ.toInteger) ≠ 0 := by
+    intro h
+    have h1 := hprim.pow_eq_one
+    rw [h, zero_pow hp.out.ne_zero] at h1
+    exact zero_ne_one h1
+  have hord : orderOf (Ideal.Quotient.mk q hζ.toInteger) = p := hprim.eq_orderOf.symm
+  have hcard : (Ideal.Quotient.mk q hζ.toInteger) ^ (Fintype.card (𝓞 CF ⧸ q) - 1) = 1 := by
+    refine FiniteField.pow_card_sub_one_eq_one (K := 𝓞 CF ⧸ q) _ ?_
+    intro h
+    exact hz0 h
+  rw [Nat.card_eq_fintype_card, ← hord]
+  exact orderOf_dvd_of_pow_eq_one hcard
+
+/-- **The `p`-th power residue character at a prime `q ∤ p`** (PROVEN
+2026-07-25; item 2 of the list in
+`stickelberger_prod_map_prime_ideal_isPrincipal` below, which recorded
+it as MISSING from this pin): for a nonzero prime `q` of `𝓞 CF` with
+`p ∉ q`, there is a multiplicative character
+
+`χ_q : (𝓞 CF ⧸ q) → 𝓞 CF`
+
+taking values in `μ_p(𝓞 CF)` and characterised by the congruence
+
+`χ_q(x) ≡ x^{(Q−1)/p}  (mod q)`,  `Q := #(𝓞 CF ⧸ q)`,
+
+together with nontriviality. This is Washington's `ω^{−d}` (§6.2,
+`d = (Q−1)/m`) written multiplicatively as a `MulChar`, i.e. the
+arithmetic Teichmüller character at `q`; it is the character whose
+Gauss sum factors as the Stickelberger divisor. (**Not** the
+Witt-vector Teichmüller lift of `Mathlib.RingTheory.Teichmuller`,
+which is unrelated.) The convention here is the reciprocal of
+Washington's `ω^{−d}`; the two differ by inversion, which changes
+`θ` into its complex conjugate and nothing else.
+
+Construction. The residue ring is a finite field with `p ∣ Q − 1`
+(`prime_dvd_card_residueField_sub_one`), so for `x ≠ 0` the element
+`x^{(Q−1)/p}` satisfies `(x^{(Q−1)/p})^p = x^{Q−1} = 1` and hence is a
+power of the reduction of `ζ`
+(`residueField_isPrimitiveRoot_of_notMem` and
+`IsPrimitiveRoot.eq_pow_of_pow_eq_one`); choosing such an exponent `k`
+and setting `χ_q(x) := ζ^k` (and `χ_q(0) := 0`) gives a well-defined
+map because reduction is INJECTIVE on `μ_p(𝓞 CF)`: `ζ` and its
+reduction both have exact order `p`, so `ζ^i ≡ ζ^j (mod q)` forces
+`i ≡ j (mod p)`. Multiplicativity is that same injectivity applied to
+`χ_q(xy)` and `χ_q(x)χ_q(y)`, both powers of `ζ` with the same
+reduction `(xy)^{(Q−1)/p}`. Nontriviality is `g^{(Q−1)/p} ≠ 1` for a
+generator `g` of the cyclic group `(𝓞 CF ⧸ q)ˣ`, which holds because
+`0 < (Q−1)/p < Q − 1`. -/
+theorem exists_powerResidueChar_of_prime_notMem
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) (hpq : (p : 𝓞 CF) ∉ q)
+    (hQ : p ∣ Nat.card (𝓞 CF ⧸ q) - 1) :
+    ∃ χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF),
+      χ ≠ 1 ∧ (∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1) ∧
+      (∀ x : 𝓞 CF ⧸ q,
+        Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) := by
+  classical
+  haveI : q.IsPrime := hq
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  haveI : Finite (𝓞 CF ⧸ q) := Ideal.finiteQuotientOfFreeOfNeBot q hq0
+  haveI : Fintype (𝓞 CF ⧸ q) := Fintype.ofFinite _
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  have hcard : Nat.card (𝓞 CF ⧸ q) = Fintype.card (𝓞 CF ⧸ q) := Nat.card_eq_fintype_card
+  have hQ2 : 2 ≤ Fintype.card (𝓞 CF ⧸ q) := Fintype.one_lt_card
+  have hQ' : p ∣ Fintype.card (𝓞 CF ⧸ q) - 1 := by rwa [hcard] at hQ
+  set d : ℕ := (Fintype.card (𝓞 CF ⧸ q) - 1) / p
+  have hdp : d * p = Fintype.card (𝓞 CF ⧸ q) - 1 := Nat.div_mul_cancel hQ'
+  have hd0 : 0 < d := by
+    rcases Nat.eq_zero_or_pos d with h | h
+    · rw [h, zero_mul] at hdp; omega
+    · exact h
+  have hdlt : d < Fintype.card (𝓞 CF ⧸ q) - 1 := by
+    have h2 : 2 ≤ p := hp.out.two_le
+    have hkey : d * 2 ≤ d * p := Nat.mul_le_mul (le_refl d) h2
+    rw [hdp] at hkey
+    omega
+  have hζ := IsCyclotomicExtension.zeta_spec p ℚ CF
+  set ζ : 𝓞 CF := hζ.toInteger
+  have hζp : IsPrimitiveRoot ζ p := hζ.toInteger_isPrimitiveRoot
+  have hzp : IsPrimitiveRoot (Ideal.Quotient.mk q ζ) p :=
+    residueField_isPrimitiveRoot_of_notMem CF hq hpq hζp
+  have hpowmodR : ∀ i : ℕ, ζ ^ i = ζ ^ (i % p) := by
+    intro i
+    conv_lhs => rw [← Nat.div_add_mod i p]
+    rw [pow_add, pow_mul, hζp.pow_eq_one, one_pow, one_mul]
+  have hpowmodF : ∀ i : ℕ, (Ideal.Quotient.mk q ζ) ^ i = (Ideal.Quotient.mk q ζ) ^ (i % p) := by
+    intro i
+    conv_lhs => rw [← Nat.div_add_mod i p]
+    rw [pow_add, pow_mul, hzp.pow_eq_one, one_pow, one_mul]
+  have hinj : ∀ i j : ℕ,
+      Ideal.Quotient.mk q (ζ ^ i) = Ideal.Quotient.mk q (ζ ^ j) → ζ ^ i = ζ ^ j := by
+    intro i j hij
+    rw [map_pow, map_pow, hpowmodF i, hpowmodF j] at hij
+    have h1 : i % p = j % p :=
+      hzp.pow_inj (Nat.mod_lt _ hp.out.pos) (Nat.mod_lt _ hp.out.pos) hij
+    rw [hpowmodR i, hpowmodR j, h1]
+  have hex : ∀ x : 𝓞 CF ⧸ q, ∃ k : ℕ, x ≠ 0 → (Ideal.Quotient.mk q ζ) ^ k = x ^ d := by
+    intro x
+    by_cases hx : x = 0
+    · exact ⟨0, fun h => absurd hx h⟩
+    · have hroot : (x ^ d) ^ p = 1 := by
+        rw [← pow_mul, hdp]
+        exact FiniteField.pow_card_sub_one_eq_one (K := 𝓞 CF ⧸ q) x hx
+      obtain ⟨i, -, hi⟩ := hzp.eq_pow_of_pow_eq_one hroot
+      exact ⟨i, fun _ => hi⟩
+  choose kf hkf using hex
+  set L : (𝓞 CF ⧸ q) → 𝓞 CF := fun x => if x = 0 then 0 else ζ ^ kf x with hLdef
+  have hLne : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → L x = ζ ^ kf x := by
+    intro x hx; simp [hLdef, hx]
+  have hLred : ∀ x : 𝓞 CF ⧸ q, Ideal.Quotient.mk q (L x) = x ^ d := by
+    intro x
+    by_cases hx : x = 0
+    · subst hx; simp [hLdef, zero_pow hd0.ne']
+    · rw [hLne x hx, map_pow, hkf x hx]
+  have hmul : ∀ x y : 𝓞 CF ⧸ q, L (x * y) = L x * L y := by
+    intro x y
+    by_cases hx : x = 0
+    · subst hx; simp [hLdef]
+    by_cases hy : y = 0
+    · subst hy; simp [hLdef]
+    have hxy : x * y ≠ 0 := mul_ne_zero hx hy
+    rw [hLne _ hxy, hLne x hx, hLne y hy, ← pow_add]
+    refine hinj _ _ ?_
+    rw [map_pow, map_pow, hkf _ hxy, pow_add, hkf x hx, hkf y hy, mul_pow]
+  have hone : L 1 = 1 := by
+    have h1 : (1 : 𝓞 CF ⧸ q) ≠ 0 := one_ne_zero
+    rw [hLne 1 h1]
+    have hz : ζ ^ kf 1 = ζ ^ 0 := by
+      refine hinj _ _ ?_
+      rw [map_pow, map_pow, hkf 1 h1, one_pow, pow_zero]
+    rw [hz, pow_zero]
+  refine ⟨{ toFun := L, map_one' := hone, map_mul' := hmul, map_nonunit' := ?_ }, ?_, ?_, ?_⟩
+  · intro a ha
+    have ha0 : a = 0 := by
+      by_contra h
+      exact ha (isUnit_iff_ne_zero.mpr h)
+    simp [hLdef, ha0]
+  · intro hone'
+    obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := (𝓞 CF ⧸ q)ˣ)
+    have hord : orderOf g = Fintype.card (𝓞 CF ⧸ q)ˣ := by
+      rw [orderOf_eq_card_of_forall_mem_zpowers hg, Nat.card_eq_fintype_card]
+    have hcu : Fintype.card (𝓞 CF ⧸ q)ˣ = Fintype.card (𝓞 CF ⧸ q) - 1 :=
+      Fintype.card_units (𝓞 CF ⧸ q)
+    have hgd : g ^ d ≠ 1 := by
+      intro h
+      have hdvd := orderOf_dvd_of_pow_eq_one h
+      rw [hord, hcu] at hdvd
+      exact absurd (Nat.le_of_dvd hd0 hdvd) (by omega)
+    have hval : ((g : 𝓞 CF ⧸ q)) ^ d ≠ 1 := by
+      intro h
+      apply hgd
+      ext
+      rw [Units.val_pow_eq_pow_val, h, Units.val_one]
+    apply hval
+    have hL1 : L (g : 𝓞 CF ⧸ q) = 1 := by
+      have hc := congrArg (fun (c : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) => c (g : 𝓞 CF ⧸ q)) hone'
+      simpa [MulChar.one_apply_coe] using hc
+    have hr := hLred (g : 𝓞 CF ⧸ q)
+    rw [hL1, map_one] at hr
+    exact hr.symm
+  · intro x hx
+    show L x ^ p = 1
+    rw [hLne x hx, ← pow_mul, mul_comm, pow_mul, hζp.pow_eq_one, one_pow]
+  · intro x
+    show Ideal.Quotient.mk q (L x) = _
+    rw [hLred x, hcard]
+
+/-- **The Stickelberger operator at `t = 1` is trivial** (PROVEN
+2026-07-26; base case of the Jacobi induction below): every exponent
+`⌊1 · u/p⌋` vanishes because `u ∈ (ℤ/p)ˣ` is represented by
+`0 ≤ (u : ZMod p).val < p`, so `stickelbergerProd CF 1 J = ⊤`. This is
+the ideal-level counterpart of the empty Jacobi product. -/
+theorem stickelbergerProd_one (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (J : Ideal (𝓞 CF)) :
+    stickelbergerProd (p := p) CF 1 J = ⊤ := by
+  classical
+  simp only [stickelbergerProd, twistedIdealProd, one_mul]
+  rw [← Ideal.one_eq_top, ← Finset.prod_const_one (s := (Finset.univ : Finset (ZMod p)ˣ))]
+  refine Finset.prod_congr rfl fun u _ => ?_
+  rw [Nat.div_eq_of_lt (ZMod.val_lt _), pow_zero]
+
+/-- **Periodicity of the Stickelberger operator in `t`** (PROVEN
+2026-07-26; the reduction of an arbitrary `t` to `1 ≤ t < p`):
+
+`J^{(t+kp − σ_{t+kp})θ} = J^{(t − σ_t)θ} · (J^{pθ})^k`.
+
+Pure exponent arithmetic in `ℕ`: writing `v = (u : ZMod p).val`, the
+Stickelberger exponent at `u` is `⌊(t + kp)v/p⌋ = ⌊tv/p⌋ + k·v` and
+`⌊p·v/p⌋ = v`, so the exponent family for `t + kp` is the one for `t`
+plus `k` copies of the one for `p`; `Finset.prod_pow` and
+`Finset.prod_mul_distrib` then split the product. Group-theoretically
+this is the identity `(t + kp) − σ_{t+kp} = (t − σ_t) + k·p` in `ℤ[G]`
+together with `pθ ∈ ℤ[G]` (Washington Lemma 6.9), which is why
+Stickelberger's theorem for all `t` follows from the range
+`1 ≤ t ≤ p`. -/
+theorem stickelbergerProd_add_mul (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (t k : ℕ) (J : Ideal (𝓞 CF)) :
+    stickelbergerProd (p := p) CF (t + k * p) J
+      = stickelbergerProd (p := p) CF t J * (stickelbergerProd (p := p) CF p J) ^ k := by
+  classical
+  have hp0 : 0 < p := hp.out.pos
+  simp only [stickelbergerProd, twistedIdealProd]
+  rw [← Finset.prod_pow, ← Finset.prod_mul_distrib]
+  refine Finset.prod_congr rfl fun u _ => ?_
+  rw [← pow_mul, ← pow_add]
+  congr 1
+  set v := ((u : ZMod p).val) with hv
+  have h1 : (t + k * p) * v = t * v + (k * v) * p := by ring
+  have h2 : p * v / p = v := Nat.mul_div_cancel_left _ hp0
+  rw [h1, Nat.add_mul_div_right _ _ hp0, h2]
+  ring
+
+/-- **The `t = p` operator is the `t = p−1` operator times the full
+Galois product** (PROVEN 2026-07-26): at each `u ∈ (ℤ/p)ˣ` the
+exponent of `stickelbergerProd CF p J` is `⌊p·v/p⌋ = v` while that of
+`stickelbergerProd CF (p−1) J` is `⌊(p−1)v/p⌋ = v − 1`, because
+`(p−1)v = (p − v) + p(v − 1)` with `0 < p − v < p` for
+`1 ≤ v = (u : ZMod p).val ≤ p − 1` (the unit `u` has nonzero
+representative, `ZMod.val_eq_zero`). So the two exponent families
+differ by exactly `1` at every `u`, and `pow_succ` splits off
+`∏_u σ_{u⁻¹}(J)`. Combined with
+`prod_cycGalRingOfIntegers_map_eq_span_card` below — which identifies
+that full Galois product with the principal ideal generated by the
+absolute norm — this is what makes the `t = p` factor of
+`stickelbergerProd_add_mul` principal. -/
+theorem stickelbergerProd_prime_eq_mul_galoisProd (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (J : Ideal (𝓞 CF)) :
+    stickelbergerProd (p := p) CF p J
+      = stickelbergerProd (p := p) CF (p - 1) J *
+        ∏ u : (ZMod p)ˣ,
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u⁻¹ : 𝓞 CF →+* 𝓞 CF)) J := by
+  classical
+  simp only [stickelbergerProd, twistedIdealProd]
+  rw [← Finset.prod_mul_distrib]
+  refine Finset.prod_congr rfl fun u _ => ?_
+  rw [← pow_succ]
+  congr 1
+  have key : ∀ P V : ℕ, 1 ≤ V → V < P → P * V / P = (P - 1) * V / P + 1 := by
+    intro P V h1 h2
+    have hP : 0 < P := by omega
+    have e1 : P * V / P = V := Nat.mul_div_cancel_left _ hP
+    have e2 : (P - 1) * V = (P - V) + P * (V - 1) := by
+      obtain ⟨z, rfl⟩ : ∃ z, V = 1 + z := ⟨V - 1, by omega⟩
+      obtain ⟨w, rfl⟩ : ∃ w, P = (1 + z) + w := ⟨P - (1 + z), by omega⟩
+      have a1 : (1 + z) + w - 1 = z + w := by omega
+      have a2 : (1 + z) + w - (1 + z) = w := by omega
+      have a3 : (1 + z) - 1 = z := by omega
+      rw [a1, a2, a3]; ring
+    rw [e1, e2, Nat.add_mul_div_left _ _ hP, Nat.div_eq_of_lt (by omega)]
+    omega
+  refine key p ((u : ZMod p).val) ?_ (ZMod.val_lt _)
+  rcases Nat.eq_zero_or_pos ((u : ZMod p).val) with h | h
+  · exact absurd ((ZMod.val_eq_zero _).mp h) (Units.ne_zero u)
+  · exact h
+
+/-- **`x/P + y/P = n − 1` when `x + y = nP` and `P ∤ x`** (PROVEN
+2026-07-26; the ℕ-division bookkeeping behind the Stickelberger
+complementation `E(w) + E(−w) = 1` below). Both remainders are
+nonzero and sum to a multiple of `P` below `2P`, hence to exactly `P`,
+so `Nat.add_div` contributes the carry `1`. -/
+theorem div_add_div_of_add_eq_mul {P x y n : ℕ} (hP : 0 < P) (hxy : x + y = n * P)
+    (hx : ¬ P ∣ x) : x / P + y / P = n - 1 := by
+  have hx0 : x % P ≠ 0 := fun h => hx (Nat.dvd_of_mod_eq_zero h)
+  have hxlt : x % P < P := Nat.mod_lt _ hP
+  have hylt : y % P < P := Nat.mod_lt _ hP
+  have hmod0 : (x + y) % P = 0 := by rw [hxy]; exact Nat.mul_mod_left n P
+  have hadd := Nat.add_mod x y P
+  have hsum : x % P + y % P = P := by
+    rcases Nat.lt_or_ge (x % P + y % P) P with hlt | hge
+    · rw [Nat.mod_eq_of_lt hlt] at hadd; omega
+    · have hlt2 : x % P + y % P - P < P := by omega
+      have h2 : (x % P + y % P) % P = x % P + y % P - P := by
+        conv_lhs => rw [show x % P + y % P = (x % P + y % P - P) + P by omega]
+        rw [Nat.add_mod_right, Nat.mod_eq_of_lt hlt2]
+      omega
+  have hdiv : (x + y) / P = x / P + y / P + 1 := by
+    rw [Nat.add_div hP, if_pos (by omega)]
+  have hn : (x + y) / P = n := by rw [hxy, Nat.mul_div_cancel _ hP]
+  have hfin : x / P + y / P + 1 = n := by rw [← hdiv, hn]
+  exact Nat.eq_sub_of_add_eq hfin
+
+/-- **Orbit–stabilizer, FIBREWISE** (PROVEN 2026-07-26; generic
+group-action bookkeeping, absent from this pin in this form): if
+`τ • x = y`, then `s ↦ τ * s` is a bijection from the stabilizer of `x`
+onto the fibre `{σ | σ • x = y}`, so every fibre of `σ ↦ σ • x` over a
+point of the orbit has the size of the stabilizer.
+
+Mathlib packages orbit–stabilizer only as the cardinality identity
+`|orbit| · |stab| = |G|` (`MulAction.orbitProdStabilizerEquivGroup`); what
+the Galois-norm computation below needs is the finer statement that each
+INDIVIDUAL fibre has size `|stab|`, which is what lets a product over `G`
+be refolded as a product over the orbit with a constant exponent. -/
+theorem card_fiber_smul_eq_card_stabilizer {G X : Type*} [Group G] [MulAction G X]
+    {x y : X} {τ : G} (hτ : τ • x = y) :
+    Nat.card {σ : G // σ • x = y} = Nat.card (MulAction.stabilizer G x) := by
+  refine Nat.card_congr ⟨fun σ => ⟨τ⁻¹ * σ.1, ?_⟩, fun s => ⟨τ * s.1, ?_⟩,
+    fun σ => Subtype.ext (by simp), fun s => Subtype.ext (by simp)⟩
+  · show (τ⁻¹ * σ.1) • x = x
+    rw [mul_smul, σ.2, ← hτ, inv_smul_smul]
+  · show (τ * s.1) • x = y
+    rw [mul_smul, MulAction.mem_stabilizer_iff.mp s.2, hτ]
+
+/-- **A product over a finite group of translates, refolded over the
+orbit** (PROVEN 2026-07-26; the combinatorial half of the Galois-norm
+computation, isolated from all ring theory): for a finite group `G`
+acting on `X` and any `f : X → M` into a commutative monoid,
+
+`∏_{σ ∈ G} f(σ • x) = ∏_{y ∈ orbit(x)} f(y)^{|Stab(x)|}`.
+
+Proof: partition `G` into the fibres of `σ ↦ σ • x`
+(`Finset.prod_fiberwise_of_maps_to`); on each fibre the factor is
+constant, and each fibre has `|Stab(x)|` elements by
+`card_fiber_smul_eq_card_stabilizer`. -/
+theorem prod_smul_eq_prod_orbit_pow {G X M : Type*} [Group G] [Fintype G] [MulAction G X]
+    [CommMonoid M] (f : X → M) (x : X) [Fintype (MulAction.orbit G x)] :
+    (∏ σ : G, f (σ • x))
+      = ∏ y ∈ (MulAction.orbit G x).toFinset,
+          f y ^ Nat.card (MulAction.stabilizer G x) := by
+  classical
+  have hmaps : ∀ σ ∈ (Finset.univ : Finset G), (σ • x) ∈ (MulAction.orbit G x).toFinset := by
+    intro σ _
+    simp only [Set.mem_toFinset]
+    exact MulAction.mem_orbit x σ
+  rw [← Finset.prod_fiberwise_of_maps_to hmaps (fun σ : G => f (σ • x))]
+  refine Finset.prod_congr rfl fun y hy => ?_
+  obtain ⟨τ, hτ⟩ : y ∈ MulAction.orbit G x := by simpa using hy
+  rw [Finset.prod_congr rfl (fun σ hσ => by rw [(Finset.mem_filter.mp hσ).2]),
+    Finset.prod_const]
+  congr 1
+  rw [← card_fiber_smul_eq_card_stabilizer hτ, Nat.card_eq_fintype_card, Fintype.card_subtype]
+
+open scoped Pointwise in
+/-- **The full Galois product of a prime is its absolute norm**, for an
+ARBITRARY Galois number field (PROVEN 2026-07-26; standard algebraic
+number theory — Neukirch I.§8–§9, Washington §1 — verified absent from
+this pin in any packaged form): for `L/ℚ` Galois and `q` a nonzero prime
+of `𝓞 L`,
+
+`∏_{σ ∈ Gal(L/ℚ)} σ(q) = (N q) = (#(𝓞 L ⧸ q))`.
+
+Stated in the general shape rather than the cyclotomic one because it is
+no harder there and is reusable; the cyclotomic consumer is
+`prod_cycGalRingOfIntegers_map_eq_span_card` below. Ramification is NOT
+excluded — the identity holds for every nonzero prime, ramified or not.
+
+**Proof.** Write `p₀ = q ∩ ℤ`, `e = e(q/p₀)`, `f = f(q/p₀)`,
+`g = #{P ∣ p₀}`.
+
+1. `Gal(L/ℚ)` acts on the primes over `p₀`, so the product over the group
+   refolds as `∏_{P ∣ p₀} P^{|D|}` where `D = Stab(q)` is the
+   decomposition group (`prod_smul_eq_prod_orbit_pow`, together with
+   `Algebra.IsInvariant.orbit_eq_primesOver`: the action is TRANSITIVE on
+   the primes over `p₀`, so the orbit is all of them).
+2. `|D| = e·f`, from orbit–stabilizer `g · |D| = #G` together with the
+   fundamental identity `g · e · f = #G`
+   (`Ideal.ncard_primesOver_mul_ramificationIdxIn_mul_inertiaDegIn`) and
+   `g ≠ 0`. This route avoids mathlib's `Ideal.card_stabilizer_eq`, which
+   would additionally demand `PerfectField p₀.ResidueField`.
+3. `∏_{P ∣ p₀} P^{ef} = (∏_{P ∣ p₀} P^e)^f = (p₀ · 𝓞 L)^f` by
+   `Ideal.map_algebraMap_eq_finsetProd_pow` (the exponents are all equal
+   by `Ideal.ramificationIdxIn_eq_ramificationIdx`).
+4. `(p₀ · 𝓞 L)^f = (p₀^f) · 𝓞 L` and `p₀^f = (N q)` inside `ℤ`, because
+   `absNorm` is multiplicative and `(N p₀)^f = N q`
+   (`Ideal.absNorm_pow_inertiaDeg`), while every ideal of `ℤ` is
+   generated by its absolute norm (`Int.ideal_span_absNorm_eq_self`). -/
+theorem prod_galois_map_prime_eq_span_absNorm (L : Type*) [Field L] [NumberField L]
+    [IsGalois ℚ L] {q : Ideal (𝓞 L)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) :
+    (∏ σ : L ≃ₐ[ℚ] L,
+        Ideal.map ((RingOfIntegers.mapRingEquiv (σ.toRingEquiv) : 𝓞 L ≃+* 𝓞 L) :
+          𝓞 L →+* 𝓞 L) q)
+      = Ideal.span {(Ideal.absNorm q : 𝓞 L)} := by
+  haveI := hq
+  set G := L ≃ₐ[ℚ] L with hG
+  -- the `Ideal.map` formulation of the product IS the pointwise Galois action
+  have hconv : ∀ σ : G,
+      Ideal.map ((RingOfIntegers.mapRingEquiv (σ.toRingEquiv) : 𝓞 L ≃+* 𝓞 L) :
+        𝓞 L →+* 𝓞 L) q = σ • q := by
+    intro σ
+    rw [Ideal.pointwise_smul_def]
+    congr 1
+  rw [Finset.prod_congr rfl (fun σ _ => hconv σ)]
+  set p₀ : Ideal ℤ := q.under ℤ with hp₀
+  -- `p₀` is a nonzero prime of `ℤ`, hence maximal
+  have hp0 : p₀ ≠ ⊥ := by
+    intro h
+    haveI : q.LiesOver (⊥ : Ideal ℤ) := ⟨h.symm⟩
+    exact hq0 (Ideal.eq_bot_of_liesOver_bot ℤ q)
+  haveI : p₀.IsMaximal := Ideal.isMaximal_of_isPrime_of_ne_bot p₀ hp0
+  haveI : Fintype (MulAction.orbit G q) := by
+    rw [Algebra.IsInvariant.orbit_eq_primesOver ℤ (𝓞 L) G p₀ q]
+    exact (Algebra.QuasiFinite.finite_primesOver p₀).fintype
+  -- Step 1: the product over the group is a product over the primes above `p₀`
+  have h1 : (∏ σ : G, σ • q)
+      = ∏ P ∈ (Ideal.primesOver p₀ (𝓞 L)).toFinset,
+          P ^ Nat.card (MulAction.stabilizer G q) := by
+    rw [prod_smul_eq_prod_orbit_pow (G := G) (fun I : Ideal (𝓞 L) => I) q]
+    congr 1
+    exact Set.toFinset_congr (Algebra.IsInvariant.orbit_eq_primesOver ℤ (𝓞 L) G p₀ q)
+  -- Step 2: the decomposition group has order `e · f`
+  have h2 : Nat.card (MulAction.stabilizer G q)
+      = p₀.ramificationIdxIn (𝓞 L) * p₀.inertiaDegIn (𝓞 L) := by
+    have horb : Nat.card (MulAction.orbit G q) * Nat.card (MulAction.stabilizer G q)
+        = Nat.card G := by
+      rw [← Nat.card_prod]
+      exact Nat.card_congr (MulAction.orbitProdStabilizerEquivGroup G q)
+    have hfund : (Ideal.primesOver p₀ (𝓞 L)).ncard *
+        (p₀.ramificationIdxIn (𝓞 L) * p₀.inertiaDegIn (𝓞 L)) = Nat.card G :=
+      Ideal.ncard_primesOver_mul_ramificationIdxIn_mul_inertiaDegIn p₀ (𝓞 L) G
+    have hcard : Nat.card (MulAction.orbit G q) = (Ideal.primesOver p₀ (𝓞 L)).ncard := by
+      rw [Nat.card_coe_set_eq]
+      exact congrArg Set.ncard (Algebra.IsInvariant.orbit_eq_primesOver ℤ (𝓞 L) G p₀ q)
+    rw [hcard] at horb
+    have hne : (Ideal.primesOver p₀ (𝓞 L)).ncard ≠ 0 := by
+      intro h
+      rw [h, zero_mul] at hfund
+      exact (Nat.card_pos (α := G)).ne hfund
+    exact Nat.eq_of_mul_eq_mul_left (Nat.pos_of_ne_zero hne) (horb.trans hfund.symm)
+  -- Step 3: `∏_{P ∣ p₀} P^{ef} = (p₀ · 𝓞 L)^f`
+  have h3 : (∏ P ∈ (Ideal.primesOver p₀ (𝓞 L)).toFinset,
+        P ^ (p₀.ramificationIdxIn (𝓞 L) * p₀.inertiaDegIn (𝓞 L)))
+      = (Ideal.map (algebraMap ℤ (𝓞 L)) p₀) ^ (p₀.inertiaDegIn (𝓞 L)) := by
+    rw [Ideal.map_algebraMap_eq_finsetProd_pow hp0, ← Finset.prod_pow]
+    refine Finset.prod_congr rfl fun P hP => ?_
+    have hP' : P ∈ Ideal.primesOver p₀ (𝓞 L) := by simpa using hP
+    haveI : P.IsPrime := hP'.1
+    haveI : P.LiesOver p₀ := hP'.2
+    rw [← pow_mul, Ideal.ramificationIdxIn_eq_ramificationIdx p₀ P G]
+  -- Step 4: `(p₀ · 𝓞 L)^f = (N q)`
+  have h4 : (Ideal.map (algebraMap ℤ (𝓞 L)) p₀) ^ (p₀.inertiaDegIn (𝓞 L))
+      = Ideal.span {(Ideal.absNorm q : 𝓞 L)} := by
+    rw [Ideal.inertiaDegIn_eq_inertiaDeg p₀ q G, ← Ideal.map_pow]
+    have key : p₀ ^ (q.inertiaDeg ℤ) = Ideal.span {(Ideal.absNorm q : ℤ)} := by
+      rw [← Int.ideal_span_absNorm_eq_self (p₀ ^ (q.inertiaDeg ℤ)), map_pow,
+        Ideal.absNorm_pow_inertiaDeg p₀ q]
+    rw [key, Ideal.map_span, Set.image_singleton]
+    norm_num
+  rw [h1, h2, h3, h4]
+
+/-- **The full Galois product of a prime is its absolute norm** (PROVEN
+2026-07-26 over `prod_galois_map_prime_eq_span_absNorm`; standard
+algebraic number theory, e.g. Neukirch I.§6 or Washington §1): for `q` a
+nonzero prime of the ABELIAN number field `CF = ℚ(ζ_p)`,
+
+`∏_{σ ∈ Gal(CF/ℚ)} σ(q) = (N(q)) = (#(𝓞 CF ⧸ q))`.
+
+Indexing `σ` by `u ↦ σ_{u⁻¹}` is a bijection of the Galois group, so
+the product below is the product over the whole group. The classical
+proof: `N_{CF/ℚ}(q) · 𝓞 CF = ∏_σ σ(q)` for a Galois extension, and the
+absolute norm of a prime is the cardinality of its residue field
+(`Ideal.absNorm_apply`). Concretely, if `q` lies over `ℓ` with residue
+degree `f` and the `g = (p−1)/f` primes over `ℓ` are `𝔭_1, …, 𝔭_g`
+(unramified when `ℓ ≠ p`), then each `𝔭_i` occurs `|D| = f` times in
+the product, giving `(∏_i 𝔭_i)^f = (ℓ)^f = (ℓ^f) = (N q)`.
+
+This pin has NO packaged form of it: a grep of
+`Mathlib.RingTheory.Ideal.Norm.AbsNorm`,
+`Mathlib.RingTheory.Ideal.Norm.RelNorm` and
+`Mathlib.NumberTheory.NumberField.*` turns up `Ideal.absNorm`,
+`Ideal.spanNorm` and `Algebra.norm_eq_prod_automorphisms` (for
+ELEMENTS) but no "product of the Galois conjugates of an ideal is its
+norm". `IsCyclotomicExtension.Rat.galEquivZMod_stabilizer` — which
+identifies the decomposition group of a prime over `ℓ ∤ n` with
+`⟨[ℓ]⟩ ⊆ (ℤ/n)ˣ` — is the pin's closest relative, and it turned out NOT
+to be needed: the decomposition group is counted abstractly, by
+orbit–stabilizer against the fundamental identity, so nothing cyclotomic
+enters. That is why the work is done once and for all in
+`prod_galois_map_prime_eq_span_absNorm` above, for an arbitrary Galois
+number field.
+
+**PROVEN 2026-07-26.** All that remains here is bookkeeping: `u ↦ σ_{u⁻¹}`
+is a bijection `(ℤ/p)ˣ ≃ Gal(CF/ℚ)` (the composite of `Equiv.inv` with
+`IsCyclotomicExtension.Rat.galEquivZMod`), so `Equiv.prod_comp` turns the
+indexed product into the product over the whole Galois group; and
+`Ideal.absNorm q` is by definition `#(𝓞 CF ⧸ q)`
+(`Ideal.absNorm_apply`, `Submodule.cardQuot_apply`).
+
+It is stated for a general nonzero prime because that is what the
+classical fact says; only the case `p ∉ q` is consumed here. -/
+theorem prod_cycGalRingOfIntegers_map_eq_span_card
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) :
+    (∏ u : (ZMod p)ˣ,
+        Ideal.map ((cycGalRingOfIntegersEquiv CF u⁻¹ : 𝓞 CF →+* 𝓞 CF)) q)
+      = Ideal.span {(Nat.card (𝓞 CF ⧸ q) : 𝓞 CF)} := by
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  haveI : IsGalois ℚ CF := IsCyclotomicExtension.isGalois {p} ℚ CF
+  have hprod : (∏ u : (ZMod p)ˣ,
+      Ideal.map ((cycGalRingOfIntegersEquiv (p := p) CF u⁻¹ : 𝓞 CF →+* 𝓞 CF)) q)
+      = ∏ σ : CF ≃ₐ[ℚ] CF,
+          Ideal.map ((RingOfIntegers.mapRingEquiv (σ.toRingEquiv) : 𝓞 CF ≃+* 𝓞 CF) :
+            𝓞 CF →+* 𝓞 CF) q :=
+    Equiv.prod_comp
+      ((Equiv.inv (ZMod p)ˣ).trans (IsCyclotomicExtension.Rat.galEquivZMod p CF).symm.toEquiv)
+      (fun σ : CF ≃ₐ[ℚ] CF =>
+        Ideal.map ((RingOfIntegers.mapRingEquiv (σ.toRingEquiv) : 𝓞 CF ≃+* 𝓞 CF) :
+          𝓞 CF →+* 𝓞 CF) q)
+  rw [hprod, prod_galois_map_prime_eq_span_absNorm CF hq hq0]
+  congr 2
+
+/-- **THE GAUSS-SUM LEAF of the Stickelberger cut, in its DIVISIBILITY
+form: the ideal that DIVIDES one Jacobi sum** (SORRY LEAF, re-cut
+2026-07-26; Stickelberger 1890; Washington, *Introduction to
+Cyclotomic Fields*, §6.1–§6.2, Lemmas 6.2, 6.11–6.12, Prop. 6.13,
+Lemma 6.14).
+
+Let `q` be a nonzero prime of `𝓞 CF` prime to `p`, `Q := #(𝓞 CF ⧸ q)`,
+`d := (Q−1)/p`, and let `ψ` be the `p`-th power residue character at
+`q` in the normalisation `ψ(x) ≡ x^{v·d} (mod q)` for a unit
+`v ∈ (ℤ/p)ˣ` (`exists_powerResidueChar_of_prime_notMem` produces the
+case `v = 1`; the case `v = −1` is its reciprocal). Then for
+`1 ≤ s` and `s + 1 < p`
+
+`∏_w σ_{(−v)·w⁻¹}(q)^{⌊(s+1)w/p⌋ − ⌊sw/p⌋}`  divides  `(J(ψ, ψˢ))`.
+
+The exponents are the `0/1` indicator of `{sw/p} + {w/p} ≥ 1` — the
+classical prime factorisation of a Jacobi sum, read off Stickelberger's
+congruence.
+
+**Why the leaf is a DIVISIBILITY and not an equality** (this is the
+whole point of the 2026-07-26 re-cut). The reverse divisibility is now
+PROVEN, not assumed: applying this leaf to `ψ = χ⁻¹` (`v = −1`) and to
+`ψ = χ` (`v = 1`) gives divisibility for a Jacobi sum AND for its
+complex conjugate; their product is `Q` by mathlib's
+`jacobiSum_mul_jacobiSum_inv`, while the product of the two divisor
+ideals is `∏_w σ_{w⁻¹}(q)^{E w + E (−w)} = ∏_w σ_{w⁻¹}(q) = (Q)` by
+`prod_cycGalRingOfIntegers_map_eq_span_card` and the complementation
+`E w + E(−w) = 1`. Cancellation in the Dedekind monoid `Ideal (𝓞 CF)`
+then upgrades both divisibilities to equalities. So a prover of this
+leaf needs only the "easy half" of Stickelberger — the lower bound on
+the valuation — and gets the exact valuation for free.
+
+**Why `χ⁻¹` and not `χ`, and why the parameter `v` is there**
+(established numerically 2026-07-26 with PARI/GP; independently
+re-confirmed 2026-07-26 by a second computation, and it is the one
+place this cut can silently go wrong). The character handed over by
+`exists_powerResidueChar_of_prime_notMem` satisfies
+`χ(x) ≡ x^{(Q−1)/p} (mod q)`, i.e. it is the RECIPROCAL of Washington's
+`ω^{−d}`; its Jacobi sums generate the CONJUGATE ideal. Concretely for
+`p = 5`, `ℓ = 11`, `q` the prime with `ζ ↦ 4 ∈ 𝔽₁₁`, one computes
+`(J(χ,χ)) = σ_1(q)·σ_3(q)` whereas `stickelbergerProd CF 2 q =
+σ_2(q)·σ_4(q)`; the two are exchanged by complex conjugation, and
+`(J(χ⁻¹,χ⁻¹))` is the latter. The corrected statement was verified to
+hold for EVERY `1 ≤ s < p − 1` in the cases `(p,ℓ) = (5,11)` (split,
+`f = 1`), `(5,19)` (`f = 2`), `(5,3)` (inert, `f = 4`), `(7,29)`
+(`f = 1`), `(7,2)` (`f = 3`), `(11,23)` (`f = 1`), `(11,3)` (`f = 5`)
+and `(13,53)` (`f = 1`) — i.e. across split, partially split and inert
+`q`, and for four different `p` — and to FAIL for `χ` in place of
+`χ⁻¹`. The general `v` is what lets ONE leaf serve both the character
+and its reciprocal.
+
+**What a prover must still build**, in dependency order (this is the
+whole of Washington §6.2 minus the Kummer descent, which for
+`ρ = t − σ_t` is unnecessary — see the section docstring):
+
+1. the compositum `L := CF(ζ_ℓ)` for `ℓ` the rational prime under `q`,
+   its ring of integers, and a prime `𝒬 ∣ q` of `𝓞 L`;
+2. the Gauss sum `g(ψ) = ∑_x ψ(x) η(x) ∈ 𝓞 L` for a nontrivial
+   additive character `η : 𝓞 CF ⧸ q → μ_ℓ` — mathlib's `gaussSum`
+   already takes exactly a `MulChar` and an `AddChar`;
+3. **Stickelberger's congruence** (Washington Prop. 6.13 / Lemma 6.14):
+   `v_𝒬(g(χ^{−h}))` is the `ℓ`-adic digit sum of `h`, equivalently
+   `(p−1) ∑_{i<f} {ℓⁱ h/(Q−1)}` — the mathematical core, and what
+   produces the fractional parts defining `θ`;
+4. the descent `g(ψ)^{s+1} = g(ψ^{s+1}) · ∏_{j<s+1} J(ψ, ψʲ)`, which
+   is ALREADY IN MATHLIB as `gaussSum_pow_eq_prod_jacobiSum_aux`
+   (valid for `0 < n < orderOf ψ`, and `orderOf ψ = p` here — that
+   order computation is PROVEN in the consumer below and can be
+   lifted), so only the transport of the identity along
+   `𝓞 CF ↪ 𝓞 L` is needed;
+5. reading off the ideal generated in `𝓞 CF`: the Jacobi sums lie in
+   `𝓞 CF` from the start (`jacobiSum ψ (ψ ^ s) : 𝓞 CF` is literally
+   the statement here), which is exactly why no Kummer /
+   unramifiedness argument is required.
+
+An ELEMENTARY partial route was also mapped out on 2026-07-26 and is
+worth recording, because it disposes of the split case with no Gauss
+sums at all. Reducing mod `q` and using `∑_{x ∈ 𝔽_Q} x^n = −1` iff
+`(Q−1) ∣ n` (`n > 0`) turns the Jacobi sum into a single binomial
+coefficient: for `α, β ∈ [1, p−1]` with `α + β < p`,
+
+`J(χ^{−α}, χ^{−β}) ≡ (−1)^{αd+1} · C((p−β)d, αd)  (mod q)`,
+
+and `J(χ^{−α}, χ^{−β}) ≡ 0 (mod q)` when `α + β > p`. Since
+`α + (αs mod p) > p` is exactly the condition `E = 1`, this gives the
+`f = 1` case outright (there `d < ℓ`, so Kummer's theorem shows the
+binomial is prime to `ℓ`). For `f > 1` it only decides `v_q ≥ 1`
+versus `v_q = 0`, because `v_q(J)` is then the SUM of the `E`'s over
+the Frobenius orbit `⟨ℓ⟩·α`; the exact valuation still needs
+Stickelberger's congruence. -/
+theorem span_jacobiSum_le_twistedProd
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (s : ℕ) (hs1 : 1 ≤ s) (hsp : s + 1 < p)
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q) (v : (ZMod p)ˣ)
+    (ψ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hψ1 : ψ ≠ 1)
+    (hψp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → ψ x ^ p = 1)
+    (hψcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (ψ x)
+        = x ^ ((v : ZMod p).val * ((Nat.card (𝓞 CF ⧸ q) - 1) / p))) :
+    Ideal.span {jacobiSum ψ (ψ ^ s)}
+      ≤ ∏ w : (ZMod p)ˣ,
+          Ideal.map ((cycGalRingOfIntegersEquiv CF ((-v) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q
+            ^ ((s + 1) * ((w : ZMod p).val) / p - s * ((w : ZMod p).val) / p) :=
+  sorry
+
+/-- **The ideal factored off by ONE Jacobi sum** — PROVEN 2026-07-26
+over the single divisibility leaf `span_jacobiSum_le_twistedProd` and
+the sibling `prod_cycGalRingOfIntegers_map_eq_span_card`
+(Stickelberger 1890; Washington, *Introduction to Cyclotomic Fields*,
+§6.1–§6.2): with `q` a nonzero prime of `𝓞 CF` prime to `p` and `χ`
+the `p`-th power residue character at `q`
+(`exists_powerResidueChar_of_prime_notMem`), for `1 ≤ s` and
+`s + 1 < p`
+
+`(J(χ⁻¹, χ⁻¹ˢ)) · q^{(s − σ_s)θ} = q^{(s+1 − σ_{s+1})θ}`.
+
+Equivalently: the single Jacobi sum `J(χ⁻¹, χ⁻¹ˢ) ∈ 𝓞 CF` generates
+exactly the ideal `∏_u σ_{u⁻¹}(q)^{⌊(s+1)u/p⌋ − ⌊su/p⌋}`.
+
+**The proof, and what it buys.** The only remaining input is the
+`≤` half — that the Stickelberger divisor DIVIDES the Jacobi sum,
+which is `span_jacobiSum_le_twistedProd` above. Everything else is
+now bookkeeping:
+
+* `χ` has exact order `p` in `MulChar (𝓞 CF ⧸ q) (𝓞 CF)` (it is
+  nontrivial and `p`-torsion, and `p` is prime), so `χ⁻¹`, `χ⁻¹ˢ` and
+  `χ⁻¹ˢ⁺¹` are all nontrivial for `1 ≤ s`, `s + 1 < p`;
+* hence mathlib's `jacobiSum_mul_jacobiSum_inv`, transported along the
+  injection `𝓞 CF ↪ CF` (`jacobiSum_ringHomComp`,
+  `MulChar.ringHomComp_inv`), gives
+  `J(χ⁻¹, χ⁻¹ˢ) · J(χ, χˢ) = Q`;
+* the divisibility leaf applies to `χ⁻¹` (with `v = −1`) and to `χ`
+  (with `v = 1`) — the second congruence being
+  `χ⁻¹(x) = χ(x⁻¹) ≡ x^{−d} = x^{(p−1)d}`, from
+  `x^{Q−1} = 1` — and produces the two divisor ideals `I` and `I'`;
+* `I · I' = ∏_w σ_{w⁻¹}(q)^{E w + E(−w)} = ∏_w σ_{w⁻¹}(q) = (Q)`,
+  by reindexing `w ↦ −w`, the complementation `E w + E(−w) = 1`
+  (`div_add_div_of_add_eq_mul` applied to `(s+1)w + (s+1)(p−w)` and to
+  `sw + s(p−w)`, both prime to `p`), and
+  `prod_cycGalRingOfIntegers_map_eq_span_card`;
+* so `I·X · I'·Y = (J)·(J') = (Q) = I·I'` with `I·I' ≠ 0`, and
+  cancellation in the Dedekind monoid of ideals forces `X · Y = 1`,
+  hence `X = ⊤` and `(J) = I`;
+* finally `E w + ⌊sw/p⌋ = ⌊(s+1)w/p⌋` merges `I` into
+  `stickelbergerProd`.
+
+This is the step that made the `χ` versus `χ⁻¹` normalisation
+load-bearing: with `χ` in place of `χ⁻¹` the statement is FALSE (the
+generated ideal is the complex-conjugate one). -/
+theorem span_jacobiSum_mul_stickelbergerProd
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (s : ℕ) (hs1 : 1 ≤ s) (hsp : s + 1 < p)
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) :
+    Ideal.span {jacobiSum χ⁻¹ (χ⁻¹ ^ s)} * stickelbergerProd (p := p) CF s q
+      = stickelbergerProd (p := p) CF (s + 1) q := by
+  classical
+  haveI : q.IsPrime := hq
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  have hp0 : 0 < p := hp.out.pos
+  have hp2 : 2 ≤ p := hp.out.two_le
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  set Q : ℕ := Nat.card (𝓞 CF ⧸ q) with hQdef
+  set d : ℕ := (Q - 1) / p
+  have hQfin : Q = Fintype.card (𝓞 CF ⧸ q) := Nat.card_eq_fintype_card
+  have hQ2 : 2 ≤ Q := by rw [hQfin]; exact Fintype.one_lt_card
+  have hQdvd : p ∣ Q - 1 := prime_dvd_card_residueField_sub_one CF hq hq0 hpq
+  have hdp : d * p = Q - 1 := Nat.div_mul_cancel hQdvd
+  have hd0 : 0 < d := by
+    rcases Nat.eq_zero_or_pos d with h | h
+    · rw [h, zero_mul] at hdp; omega
+    · exact h
+  -- `A u` is the conjugate ideal `σ_u(q)`, `E` the Stickelberger `0/1` exponent
+  set A : (ZMod p)ˣ → Ideal (𝓞 CF) :=
+    fun u => Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q with hAdef
+  set E : (ZMod p)ˣ → ℕ :=
+    fun w => (s + 1) * ((w : ZMod p).val) / p - s * ((w : ZMod p).val) / p with hEdef
+  -- (1) `χ` has exact order `p`
+  have hχpow : χ ^ p = 1 := by
+    refine MulChar.ext ?_
+    intro a
+    rw [MulChar.pow_apply_coe, MulChar.one_apply_coe]
+    exact hχp a (Units.ne_zero a)
+  have hord : orderOf χ = p := by
+    have h1 : orderOf χ ∣ p := orderOf_dvd_of_pow_eq_one hχpow
+    rcases (Nat.Prime.eq_one_or_self_of_dvd hp.out _ h1) with h | h
+    · exact absurd (orderOf_eq_one_iff.mp h) hχ1
+    · exact h
+  have hordinv : orderOf χ⁻¹ = p := by rw [orderOf_inv]; exact hord
+  have hχinv1 : χ⁻¹ ≠ 1 := by
+    intro h
+    exact hχ1 (by simpa using congrArg (fun ψ : MulChar (𝓞 CF ⧸ q) (𝓞 CF) => ψ⁻¹) h)
+  -- (2) the congruence satisfied by `χ⁻¹`: exponent `(p−1)·d`
+  have hvalone : ((1 : (ZMod p)ˣ) : ZMod p).val = 1 := by
+    simp [ZMod.val_one]
+  haveI : NeZero (1 : ZMod p) := ⟨one_ne_zero⟩
+  have hvalneg : ((-1 : (ZMod p)ˣ) : ZMod p).val = p - 1 := by
+    have h1 : ((-1 : (ZMod p)ˣ) : ZMod p) = -(1 : ZMod p) := by simp
+    rw [h1, ZMod.val_neg_of_ne_zero (1 : ZMod p), ZMod.val_one]
+  have hcongInv : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ⁻¹ x) = x ^ (((-1 : (ZMod p)ˣ) : ZMod p).val * d) := by
+    intro x
+    rw [hvalneg]
+    rcases eq_or_ne x 0 with rfl | hx
+    · rw [MulChar.map_zero, map_zero, zero_pow (Nat.mul_ne_zero (by omega) (by omega))]
+    · rw [MulChar.inv_apply', hχcong]
+      have hx1 : x ^ (Q - 1) = 1 := by
+        rw [hQfin]
+        exact FiniteField.pow_card_sub_one_eq_one x hx
+      have hmul : x ^ ((p - 1) * d) * x ^ d = 1 := by
+        rw [← pow_add]
+        have hsum : (p - 1) * d + d = Q - 1 := by
+          have hpp : p - 1 + 1 = p := by omega
+          calc (p - 1) * d + d = (p - 1 + 1) * d := by ring
+            _ = p * d := by rw [hpp]
+            _ = Q - 1 := by rw [mul_comm]; exact hdp
+        rw [hsum, hx1]
+      rw [inv_pow]
+      exact inv_eq_of_mul_eq_one_left hmul
+  -- (3) the divisibility leaf applied to `χ⁻¹` and to `χ`
+  have hIA : Ideal.span {jacobiSum χ⁻¹ (χ⁻¹ ^ s)} ≤ ∏ w : (ZMod p)ˣ, A w⁻¹ ^ E w := by
+    have := span_jacobiSum_le_twistedProd CF s hs1 hsp hq hq0 hpq (-1) χ⁻¹ hχinv1
+      (fun x hx => by rw [MulChar.inv_apply']; exact hχp _ (inv_ne_zero hx)) hcongInv
+    simpa [hAdef, hEdef] using this
+  have hIA' : Ideal.span {jacobiSum χ (χ ^ s)} ≤ ∏ w : (ZMod p)ˣ, A ((-1) * w⁻¹) ^ E w := by
+    have := span_jacobiSum_le_twistedProd CF s hs1 hsp hq hq0 hpq 1 χ hχ1 hχp
+      (fun x => by rw [hvalone, one_mul]; exact hχcong x)
+    simpa [hAdef, hEdef] using this
+  -- (4) the two Jacobi sums multiply to `Q`
+  have hJJ' : jacobiSum χ⁻¹ (χ⁻¹ ^ s) * jacobiSum χ (χ ^ s) = (Q : 𝓞 CF) := by
+    have hinj : Function.Injective (algebraMap (𝓞 CF) CF) :=
+      IsFractionRing.injective (𝓞 CF) CF
+    have hchar : ringChar CF ≠ ringChar (𝓞 CF ⧸ q) := by
+      rw [ringChar.eq_zero]
+      exact (CharP.char_ne_zero_of_finite (𝓞 CF ⧸ q) (ringChar (𝓞 CF ⧸ q))).symm
+    set f := algebraMap (𝓞 CF) CF
+    have h1 : (χ⁻¹.ringHomComp f) ≠ 1 := (MulChar.ringHomComp_ne_one_iff hinj).mpr hχinv1
+    have hs0 : (χ⁻¹ ^ s) ≠ 1 := pow_ne_one_of_lt_orderOf (by omega) (by omega)
+    have h2 : ((χ⁻¹ ^ s).ringHomComp f) ≠ 1 := (MulChar.ringHomComp_ne_one_iff hinj).mpr hs0
+    have hs1' : (χ⁻¹ ^ (s + 1)) ≠ 1 := pow_ne_one_of_lt_orderOf (by omega) (by omega)
+    have h3 : (χ⁻¹.ringHomComp f) * ((χ⁻¹ ^ s).ringHomComp f) ≠ 1 := by
+      rw [← MulChar.ringHomComp_mul]
+      refine (MulChar.ringHomComp_ne_one_iff hinj).mpr ?_
+      rw [← pow_succ']
+      exact hs1'
+    have key := jacobiSum_mul_jacobiSum_inv hchar h1 h2 h3
+    simp only [MulChar.ringHomComp_inv, inv_inv, inv_pow, jacobiSum_ringHomComp] at key
+    apply hinj
+    rw [map_mul]
+    simp only [inv_pow] at key ⊢
+    rw [key, hQfin]
+    simp
+  -- (5) the Stickelberger exponents complement: `E w + E (−w) = 1`
+  have hEsum : ∀ w : (ZMod p)ˣ, E w + E (-w) = 1 := by
+    intro w
+    have hvw : ((w : ZMod p)).val < p := ZMod.val_lt _
+    have hvw0 : ((w : ZMod p)).val ≠ 0 := by
+      intro h
+      exact Units.ne_zero w ((ZMod.val_eq_zero _).mp h)
+    have hwne : ((w : ZMod p)) ≠ 0 := Units.ne_zero w
+    haveI : NeZero ((w : ZMod p)) := ⟨hwne⟩
+    have hvneg : (((-w : (ZMod p)ˣ) : ZMod p)).val = p - (w : ZMod p).val := by
+      have h1 : (((-w : (ZMod p)ˣ) : ZMod p)) = -((w : ZMod p)) := by simp
+      rw [h1, ZMod.val_neg_of_ne_zero ((w : ZMod p))]
+    set a := ((w : ZMod p)).val with ha
+    have hnd1 : ¬ p ∣ (s + 1) * a := by
+      intro h
+      rcases (Nat.Prime.dvd_mul hp.out).mp h with h' | h'
+      · exact absurd (Nat.le_of_dvd (by omega) h') (by omega)
+      · exact absurd (Nat.le_of_dvd (by omega) h') (by omega)
+    have hnd2 : ¬ p ∣ s * a := by
+      intro h
+      rcases (Nat.Prime.dvd_mul hp.out).mp h with h' | h'
+      · exact absurd (Nat.le_of_dvd (by omega) h') (by omega)
+      · exact absurd (Nat.le_of_dvd (by omega) h') (by omega)
+    have hA12 : (s + 1) * a / p + (s + 1) * (p - a) / p = (s + 1) - 1 :=
+      div_add_div_of_add_eq_mul hp0 (by rw [← Nat.mul_add]; congr 1; omega) hnd1
+    have hB12 : s * a / p + s * (p - a) / p = s - 1 :=
+      div_add_div_of_add_eq_mul hp0 (by rw [← Nat.mul_add]; congr 1; omega) hnd2
+    have hle1 : s * a / p ≤ (s + 1) * a / p :=
+      Nat.div_le_div_right (Nat.mul_le_mul_right a (by omega))
+    have hle2 : s * (p - a) / p ≤ (s + 1) * (p - a) / p :=
+      Nat.div_le_div_right (Nat.mul_le_mul_right (p - a) (by omega))
+    simp only [hEdef, hvneg, ← ha]
+    omega
+  -- (6) the two divisor ideals multiply to `(Q)`
+  have hprodII' :
+      (∏ w : (ZMod p)ˣ, A w⁻¹ ^ E w) * (∏ w : (ZMod p)ˣ, A ((-1) * w⁻¹) ^ E w)
+        = Ideal.span {(Q : 𝓞 CF)} := by
+    have hre : (∏ w : (ZMod p)ˣ, A ((-1) * w⁻¹) ^ E w)
+        = ∏ w : (ZMod p)ˣ, A w⁻¹ ^ E (-w) := by
+      refine Fintype.prod_equiv (Equiv.mulLeft (-1 : (ZMod p)ˣ)) _ _ ?_
+      intro w
+      congr 2
+      · simp
+      · simp
+    rw [hre, ← Finset.prod_mul_distrib]
+    have hone : ∀ w : (ZMod p)ˣ, A w⁻¹ ^ E w * A w⁻¹ ^ E (-w) = A w⁻¹ := by
+      intro w
+      rw [← pow_add, hEsum w, pow_one]
+    rw [Finset.prod_congr rfl (fun w _ => hone w)]
+    simp only [hAdef]
+    rw [hQdef]
+    exact prod_cycGalRingOfIntegers_map_eq_span_card (p := p) CF hq hq0
+  -- (7) cancellation in the Dedekind monoid of ideals
+  have hQne : (Q : 𝓞 CF) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+  have hIIne : (∏ w : (ZMod p)ˣ, A w⁻¹ ^ E w) *
+      (∏ w : (ZMod p)ˣ, A ((-1) * w⁻¹) ^ E w) ≠ 0 := by
+    rw [hprodII']
+    simpa [Ideal.zero_eq_bot, Ideal.span_singleton_eq_bot] using hQne
+  obtain ⟨X, hX⟩ : (∏ w : (ZMod p)ˣ, A w⁻¹ ^ E w) ∣ Ideal.span {jacobiSum χ⁻¹ (χ⁻¹ ^ s)} :=
+    Ideal.dvd_iff_le.mpr hIA
+  obtain ⟨Y, hY⟩ : (∏ w : (ZMod p)ˣ, A ((-1) * w⁻¹) ^ E w) ∣
+      Ideal.span {jacobiSum χ (χ ^ s)} := Ideal.dvd_iff_le.mpr hIA'
+  have hXY : X * Y = 1 := by
+    refine mul_left_cancel₀ hIIne ?_
+    calc (∏ w : (ZMod p)ˣ, A w⁻¹ ^ E w) * (∏ w : (ZMod p)ˣ, A ((-1) * w⁻¹) ^ E w) * (X * Y)
+        = ((∏ w : (ZMod p)ˣ, A w⁻¹ ^ E w) * X) *
+            ((∏ w : (ZMod p)ˣ, A ((-1) * w⁻¹) ^ E w) * Y) := by ring
+      _ = Ideal.span {jacobiSum χ⁻¹ (χ⁻¹ ^ s)} * Ideal.span {jacobiSum χ (χ ^ s)} := by
+            rw [← hX, ← hY]
+      _ = Ideal.span {jacobiSum χ⁻¹ (χ⁻¹ ^ s) * jacobiSum χ (χ ^ s)} :=
+            Ideal.span_singleton_mul_span_singleton _ _
+      _ = Ideal.span {(Q : 𝓞 CF)} := by rw [hJJ']
+      _ = (∏ w : (ZMod p)ˣ, A w⁻¹ ^ E w) * (∏ w : (ZMod p)ˣ, A ((-1) * w⁻¹) ^ E w) :=
+            hprodII'.symm
+      _ = (∏ w : (ZMod p)ˣ, A w⁻¹ ^ E w) *
+            (∏ w : (ZMod p)ˣ, A ((-1) * w⁻¹) ^ E w) * 1 := (mul_one _).symm
+  have hXtop : X = 1 := by
+    have hu : IsUnit X := isUnit_iff_exists_inv.mpr ⟨Y, hXY⟩
+    rw [Ideal.isUnit_iff] at hu
+    rw [hu, Ideal.one_eq_top]
+  have hspan : Ideal.span {jacobiSum χ⁻¹ (χ⁻¹ ^ s)} = ∏ w : (ZMod p)ˣ, A w⁻¹ ^ E w := by
+    rw [hX, hXtop, mul_one]
+  -- (8) merge the `0/1` exponents into `stickelbergerProd`
+  rw [hspan]
+  simp only [stickelbergerProd, twistedIdealProd, hAdef]
+  rw [← Finset.prod_mul_distrib]
+  refine Finset.prod_congr rfl ?_
+  intro w _
+  rw [← pow_add]
+  congr 1
+  have hle1 : s * ((w : ZMod p).val) / p ≤ (s + 1) * ((w : ZMod p).val) / p :=
+    Nat.div_le_div_right (Nat.mul_le_mul_right _ (by omega))
+  simp only [hEdef]
+  omega
+
+/-- **The Stickelberger ideal of a prime, in closed form, for
+`1 ≤ t < p`** (PROVEN 2026-07-26 from
+`span_jacobiSum_mul_stickelbergerProd` and `stickelbergerProd_one`):
+
+`q^{(t − σ_t)θ} = (∏_{j=1}^{t−1} J(χ⁻¹, χ⁻¹ʲ))`.
+
+This is Stickelberger's theorem in the sharp form that names the
+generator, and the generator is a product of Jacobi sums of the `p`-th
+power residue character — manifestly an element of `𝓞 CF`. The proof
+is the induction `Nat.le_induction` on `t` starting at `t = 1`, whose
+base is `stickelbergerProd_one` against the empty product and whose
+step is the leaf above together with
+`Ideal.span_singleton_mul_span_singleton` and
+`Finset.prod_Ico_succ_top`. -/
+theorem stickelbergerProd_eq_span_prod_jacobiSum
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (t : ℕ) (ht1 : 1 ≤ t) (htp : t < p)
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) :
+    stickelbergerProd (p := p) CF t q
+      = Ideal.span {∏ j ∈ Finset.Ico 1 t, jacobiSum χ⁻¹ (χ⁻¹ ^ j)} := by
+  classical
+  induction t, ht1 using Nat.le_induction with
+  | base =>
+      rw [stickelbergerProd_one]
+      simp
+  | succ s hs ih =>
+      rw [← span_jacobiSum_mul_stickelbergerProd CF s hs htp hq hq0 hpq χ hχ1 hχp hχcong,
+        ih (by omega), Ideal.span_singleton_mul_span_singleton,
+        Finset.prod_Ico_succ_top hs]
+      rw [mul_comm]
+
+/-- **Stickelberger's theorem for one prime, GIVEN the `p`-th power
+residue character** — PROVEN 2026-07-26 over the two leaves
+`span_jacobiSum_mul_stickelbergerProd` and
+`prod_cycGalRingOfIntegers_map_eq_span_card` (Stickelberger 1890;
+Kummer 1847; Washington,
+*Introduction to Cyclotomic Fields*, Thm. 6.10, §6.1–§6.2): for a
+nonzero prime `q` of `𝓞 CF` with `p ∉ q` and a `p`-th power residue
+character `χ` at `q` — supplied by
+`exists_powerResidueChar_of_prime_notMem` — the ideal
+
+`q^{(t − σ_t)θ} = ∏_{a=1}^{p−1} σ_a⁻¹(q)^{⌊ta/p⌋}`
+
+is PRINCIPAL.
+
+**What this theorem now carries, and what it no longer carries.**
+Items 1 and 2 of the classical proof — the reduction of `μ_p` at `q`
+and the existence of the character `χ_q` with
+`χ_q(x) ≡ x^{(Q−1)/p} (mod q)` — are PROVEN above
+(`residueField_isPrimitiveRoot_of_notMem`,
+`prime_dvd_card_residueField_sub_one`,
+`exists_powerResidueChar_of_prime_notMem`), and `χ` reaches this
+theorem as a hypothesis. Items 3–6, the Gauss-sum core, were a single
+opaque `sorry` here until 2026-07-26; they are now cut into TWO
+narrower leaves plus proven bookkeeping:
+
+* `span_jacobiSum_le_twistedProd` (SORRY LEAF) — that the
+  Stickelberger divisor DIVIDES ONE Jacobi sum `J(ψ, ψˢ)`, for
+  `1 ≤ s`, `s + 1 < p`. This carries the whole Gauss-sum theory: the
+  compositum `CF(ζ_ℓ)`, Stickelberger's congruence (Washington
+  Prop. 6.13 / Lemma 6.14), and the descent — whose mathlib half,
+  `gaussSum_pow_eq_prod_jacobiSum_aux`, is already available. Its
+  docstring itemises what a prover must build.
+* `span_jacobiSum_mul_stickelbergerProd` (PROVEN 2026-07-26 from the
+  leaf above) — the ideal factored off by ONE Jacobi sum
+  `J(χ⁻¹, χ⁻¹ˢ)`, as an EQUALITY: the divisor for `χ⁻¹` times the
+  divisor for `χ` is `(Q)` by
+  `prod_cycGalRingOfIntegers_map_eq_span_card`, the two Jacobi sums
+  multiply to `Q` by mathlib's `jacobiSum_mul_jacobiSum_inv`, and
+  cancellation in the Dedekind ideal monoid turns both divisibilities
+  into equalities.
+* `prod_cycGalRingOfIntegers_map_eq_span_card` (PROVEN 2026-07-26) — the
+  standard fact that `∏_{σ ∈ Gal(CF/ℚ)} σ(q)` is the principal ideal
+  generated by the absolute norm `#(𝓞 CF ⧸ q)`. Not on this pin, so it
+  was built here, in the general Galois shape, as
+  `prod_galois_map_prime_eq_span_absNorm`.
+* `stickelbergerProd_eq_span_prod_jacobiSum` (PROVEN) — the closed form
+  `q^{(t − σ_t)θ} = (∏_{j=1}^{t−1} J(χ⁻¹, χ⁻¹ʲ))` for `1 ≤ t < p`, by
+  induction from the first leaf and `stickelbergerProd_one`.
+* `stickelbergerProd_add_mul` and
+  `stickelbergerProd_prime_eq_mul_galoisProd` (PROVEN) — the exponent
+  arithmetic reducing an ARBITRARY `t` to the range `1 ≤ t ≤ p`, and
+  the `t = p` case to the Galois product.
+
+The assembly below is then: write `t = (t mod p) + (t / p)·p` with
+`1 ≤ t mod p < p` (this uses `¬ p ∣ t`); `stickelbergerProd_add_mul`
+splits the operator; the `t mod p` factor is principal by the closed
+form; the `t = p` factor is `stickelbergerProd (p−1)` times the Galois
+product, both principal; and products and powers of principal ideals
+are principal.
+
+Washington's §15.1 route replaces Stickelberger's congruence by a
+Chebotarev/Dirichlet input; this pin has no Chebotarev density
+theorem, so it is not cheaper here. The Kummer/unramifiedness descent
+of Washington Lemma 6.15 is NOT needed for `ρ = t − σ_t`, because the
+generator is a product of Jacobi sums and those lie in `𝓞 CF` from the
+start.
+
+Soundness of the exact form stated: for `t` prime to `p` the element
+`∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which lies in the Stickelberger
+ideal `I(ℚ(ζ_p)) = ℤ[G] ∩ θℤ[G]` by Washington Lemma 6.9, so Thm. 6.10
+applies verbatim. `hq0` is kept because `q = ⊥` has no residue field;
+`hpq` is what makes `q` unramified and gives `μ_p ⊆ F^×`. -/
+theorem stickelbergerProd_isPrincipal_of_powerResidueChar
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (t : ℕ) (ht : ¬ (p ∣ t)) {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) :
+    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) := by
+  classical
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  haveI : Finite (𝓞 CF ⧸ q) := Ideal.finiteQuotientOfFreeOfNeBot q hq0
+  haveI : Fintype (𝓞 CF ⧸ q) := Fintype.ofFinite _
+  have hp0 : 0 < p := hp.out.pos
+  have hp2 : 2 ≤ p := hp.out.two_le
+  -- the operator is principal for every `1 ≤ s < p`, by the closed form
+  have hlt : ∀ s : ℕ, 1 ≤ s → s < p →
+      Submodule.IsPrincipal (stickelbergerProd (p := p) CF s q) := by
+    intro s hs1 hsp
+    rw [stickelbergerProd_eq_span_prod_jacobiSum CF s hs1 hsp hq hq0 hpq χ hχ1 hχp hχcong]
+    exact ⟨_, rfl⟩
+  -- the `t = p` factor: `stickelbergerProd (p−1)` times the full Galois product
+  have hpp : Submodule.IsPrincipal (stickelbergerProd (p := p) CF p q) := by
+    rw [stickelbergerProd_prime_eq_mul_galoisProd CF q,
+      prod_cycGalRingOfIntegers_map_eq_span_card CF hq hq0]
+    exact ideal_isPrincipal_mul (hlt (p - 1) (by omega) (by omega)) ⟨_, rfl⟩
+  have hpow : ∀ k : ℕ, Submodule.IsPrincipal ((stickelbergerProd (p := p) CF p q) ^ k) := by
+    intro k
+    obtain ⟨a, ha⟩ := hpp.principal
+    rw [ha, Ideal.span_singleton_pow]
+    exact ⟨_, rfl⟩
+  have hr1 : 1 ≤ t % p := by
+    rcases Nat.eq_zero_or_pos (t % p) with h | h
+    · exact absurd (Nat.dvd_of_mod_eq_zero h) ht
+    · exact h
+  have hrp : t % p < p := Nat.mod_lt _ hp0
+  have hsplit : t = t % p + (t / p) * p := by rw [Nat.mod_add_div' t p]
+  rw [hsplit, stickelbergerProd_add_mul CF (t % p) (t / p) q]
+  exact ideal_isPrincipal_mul (hlt (t % p) hr1 hrp) (hpow (t / p))
+
 /-- **Stickelberger's theorem for ONE prime ideal prime to `p`** — THE
 SORRY LEAF of the Stickelberger cut (re-cut 2026-07-25; it replaces
 the former all-ideals citation, which is now PROVEN from this;
@@ -18190,52 +20515,22 @@ over `p` is `(ζ − 1)`
 principal and its Stickelberger product is principal for free. Hence
 the hypothesis `p ∉ q` here.
 
-**What remains — the classical proof, in dependency order, with each
-piece missing from this mathlib pin named as a statement.** Write `ℓ`
-for the rational prime under `q`, `F := 𝓞 CF ⧸ q` for the residue
-field, and `Q := #F = ℓ^f`.
+**PROVEN 2026-07-25 over a finer cut; this is no longer a leaf.** The
+classical proof was listed here in six steps; steps 1 and 2 — the
+reduction of `μ_p` at an unramified prime and the `p`-th power residue
+character `χ_q` with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)`, both of which
+that list recorded as MISSING from this pin — are now theorems above:
 
-1. **`p ∣ Q − 1`, and `F` carries `μ_p`.** The reduction of `ζ` has
-   exact order `p` in `Fˣ`, because `Φ_p` stays separable mod `q` when
-   `ℓ ≠ p`. MISSING as a statement: the pin has `IsPrimitiveRoot`,
-   `Ideal.absNorm` and the finite-field API, but nothing packaging
-   "the reduction of a primitive `p`-th root of unity at a prime not
-   above `p` is a primitive `p`-th root of unity in the residue
-   field".
-2. **The `p`-th power residue character `χ_q : Fˣ → μ_p(𝓞 CF)`**, the
-   unique character with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)`; this is the
-   Teichmüller character of the cut. MISSING: the pin has `MulChar`
-   and `MulChar.Duality` but no character attached to a prime ideal,
-   and `Mathlib.RingTheory.Teichmuller` is the Witt-vector
-   Teichmüller lift, unrelated.
-3. **The Gauss sum `g(χ_q) = −∑_{x ∈ Fˣ} χ_q(x)⁻¹ ψ(x)`** for a
-   nontrivial additive character `ψ : F → μ_ℓ`, as an element of the
-   ring of integers of the compositum `CF(ζ_ℓ)`. PARTLY PRESENT — this
-   is link (a): `gaussSum`, `gaussSum_mul_gaussSum_eq_card`,
-   `gaussSum_frob` and `Mathlib.NumberTheory.JacobiSum.Basic` are all
-   on the pin, so what is missing is only the compositum `CF(ζ_ℓ)` as
-   a concrete cyclotomic extension together with its ring of integers
-   and the primes of it above `q`.
-4. **Stickelberger's congruence** (Washington Prop. 6.13, from Lemmas
-   6.11 and 6.12; equivalently Lemma 6.14): the `𝒬`-adic valuation of
-   `g(χ_q^{−h})` at a prime `𝒬` of `CF(ζ_ℓ)` above `q` is the sum of
-   the `ℓ`-adic digits of `h`, i.e.
-   `v_𝒬(g(χ_q^{−h})) = (p−1) ∑_{i<f} {ℓ^i h/(Q−1)}`. MISSING
-   entirely, and this is the mathematical core of the leaf: it is what
-   produces the fractional parts `{a/p}` that DEFINE `θ`.
-5. **Galois descent of the Gauss sum.** `σ_t(g(χ)) = g(χ^t)`, because
-   `σ_t` moves `ζ_p` and fixes `ζ_ℓ`; and `g(χ)^t/g(χ^t)` is a product
-   of Jacobi sums, hence already lies in `CF` (Washington Lemmas 6.2
-   and 6.4). This is precisely WHY the annihilator is `(t − σ_t)θ` and
-   not `θ`: `g(χ)^{t−σ_t}` is the element of `CF` that generates
-   `q^{(t−σ_t)θ}`. The Jacobi-sum identities are on the pin; the
-   descent statement is not.
-6. **Assembly.** Steps 4 and 5 give
-   `(g(χ)^{t−σ_t}) = q^{(t−σ_t)θ}` as ideals of `𝓞 CF`, which is this
-   leaf. Washington's alternative §15.1 route replaces step 4 by a
-   Chebotarev/Dirichlet input — choose a degree-one prime `ℓ ≡ 1 mod
-   p` in the given class — plus the same Kummer descent; the pin has
-   no Chebotarev density theorem either, so it is not cheaper here.
+* `residueField_isPrimitiveRoot_of_notMem`,
+* `prime_dvd_card_residueField_sub_one`,
+* `exists_powerResidueChar_of_prime_notMem`.
+
+What is left, steps 3–6 (the Gauss sum `g(χ_q)` in the compositum
+`CF(ζ_ℓ)`, Stickelberger's congruence, the Jacobi descent, and the
+assembly), is the single leaf
+`stickelbergerProd_isPrincipal_of_powerResidueChar` above, which takes
+the character as a HYPOTHESIS. Its docstring itemises what remains;
+this theorem is now just the two of them composed.
 
 Soundness of the exact form stated: for `t` prime to `p` the element
 `∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which lies in the Stickelberger
@@ -18249,12 +20544,15 @@ theorem stickelberger_prod_map_prime_ideal_isPrincipal
     (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
     (t : ℕ) (ht : ¬ (p ∣ t)) {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
     (hpq : (p : 𝓞 CF) ∉ q) :
-    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) :=
-  sorry
+    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) := by
+  obtain ⟨χ, hχ1, hχp, hχcong⟩ :=
+    exists_powerResidueChar_of_prime_notMem CF hq hq0 hpq
+      (prime_dvd_card_residueField_sub_one CF hq hq0 hpq)
+  exact stickelbergerProd_isPrincipal_of_powerResidueChar CF t ht hq hq0 hpq χ hχ1 hχp hχcong
 
 /-- **Stickelberger's theorem, reduced to primes** (PROVEN 2026-07-25
-over the single leaf
-`stickelberger_prod_map_prime_ideal_isPrincipal`): the Stickelberger
+over `stickelberger_prod_map_prime_ideal_isPrincipal`, itself proven
+over `stickelbergerProd_isPrincipal_of_powerResidueChar`): the Stickelberger
 operator sends EVERY ideal of `𝓞 CF` to a principal ideal. This is
 `twistedIdealProd_isPrincipal_of_forall_prime` fed with the two prime
 cases — `cyclotomic_isPrincipal_of_isPrime_of_natCast_mem` together
@@ -18311,11 +20609,13 @@ everywhere, hence trivial by Lemma 6.15. §15.1 gives a shorter route
 at the cost of a Chebotarev input. Neither is available on this pin:
 mathlib has Gauss sums and Jacobi sums
 (`Mathlib.NumberTheory.GaussSum`, `.JacobiSum` — link (a)) but no
-Teichmüller character attached to a prime, no valuation of Gauss sums,
-and no Stickelberger/Herbrand material at all (grepped 2026-07-24 and
-re-verified 2026-07-25). The itemised remainder now lives on the leaf
-`stickelberger_prod_map_prime_ideal_isPrincipal`, which is the honest
-citation boundary.
+valuation of Gauss sums and no Stickelberger/Herbrand material at all
+(grepped 2026-07-24, re-verified 2026-07-25). The Teichmüller
+character at a prime, which the pin also lacked, is now PROVEN here
+(`exists_powerResidueChar_of_prime_notMem`), and the itemised
+remainder lives on the leaf
+`stickelbergerProd_isPrincipal_of_powerResidueChar`, which is the
+honest citation boundary.
 
 Soundness of the exact form stated: for `t` prime to `p` the element
 `∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which is in the Stickelberger
@@ -18780,12 +21080,313 @@ theorem twisted_hom_eq_zero_of_forall_omega_inv_eigenvector_trivial
     exact hcpow _ _ (hEmodp u⁻¹)
   exact hc1 (heig c hcp hceig)
 
+/-- **The local generators of the everywhere-unramified,
+split-at-`{2, p}` condition** (E3c support, 2026-07-25): the subset of
+`Γℚ` consisting of
+
+* every `Γℚ`-conjugate of the image of the local inertia group at a
+  rational prime `ℓ ∉ {2, p}`, and
+* every `Γℚ`-conjugate of the image of the whole local Galois group
+  `Γ_{ℚ_p}`, resp. `Γ_{ℚ_2}` — the decomposition groups at `p` and at
+  `2`, i.e. "the local extension SPLITS", strictly stronger than
+  unramifiedness.
+
+This is exactly the set on which the hypotheses `hunrOut`, `hsplitp`,
+`hsplit2` of the Eisenstein-pillar localization below assert that the
+cocycle `cc` vanishes, so it is the honest carrier of "everywhere
+unramified, and split at `p` and `2`" in the shape the ambient hardly
+ramified data delivers it. The closed subgroup it generates inside
+`ker χ` is `localSplitSubgroup`. -/
+def localSplitGenerators (p : ℕ) [Fact p.Prime] :
+    Set (Field.absoluteGaloisGroup ℚ) :=
+  {x | (∃ (ℓ : ℕ) (hℓ : ℓ.Prime), ℓ ≠ 2 ∧ ℓ ≠ p ∧
+          ∃ n : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+              hℓ.toHeightOneSpectrumRingOfIntegersRat),
+            n ∈ localInertiaGroup hℓ.toHeightOneSpectrumRingOfIntegersRat ∧
+            ∃ σ : Field.absoluteGaloisGroup ℚ,
+              x = σ * Field.absoluteGaloisGroup.map (algebraMap ℚ
+                (HeightOneSpectrum.adicCompletion ℚ
+                  hℓ.toHeightOneSpectrumRingOfIntegersRat)) n * σ⁻¹) ∨
+       (∃ (g : Field.absoluteGaloisGroup ℚ_[p]) (σ : Field.absoluteGaloisGroup ℚ),
+          x = σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[p]) g * σ⁻¹) ∨
+       (∃ (g : Field.absoluteGaloisGroup ℚ_[2]) (σ : Field.absoluteGaloisGroup ℚ),
+          x = σ * Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) g * σ⁻¹)}
+
+/-- **The closed subgroup of `ker χ` cut out by the local conditions**
+(E3c support, 2026-07-25): the TOPOLOGICAL closure of the subgroup of
+`ker χ` generated by the local elements (`localSplitGenerators`, cut
+down to `ker χ` by taking the preimage along the inclusion) together
+with every commutator of `ker χ`.
+
+When `χ` is the mod-`p` cyclotomic character, so that
+`ker χ = Γ_{ℚ(μ_p)}`, this is `Γ_M` for `M/ℚ(μ_p)` the maximal ABELIAN
+extension that is unramified at every finite place and in which `p` and
+`2` split completely: a continuous homomorphism of `Γ_{ℚ(μ_p)}` into a
+discrete abelian group kills every commutator automatically, and kills
+the inertia/decomposition generators exactly when the extension it cuts
+out has those local properties. The topological closure — rather than
+the bare generated subgroup — is what makes this a closed (hence
+Galois-theoretically meaningful) subgroup: a dense subgroup of an open
+subgroup of a profinite group need not be the whole of it.
+
+Artin reciprocity for the Hilbert class field places this subgroup
+inside the kernel of the Artin map onto `Cl(𝓞 CF)`; that is clause (iv)
+of `exists_artinMap_classGroup` below. -/
+noncomputable def localSplitSubgroup {kk' : Type u} [Field kk']
+    (χ : Field.absoluteGaloisGroup ℚ →* kk') (p : ℕ) [Fact p.Prime] :
+    Subgroup (MonoidHom.ker χ) :=
+  (Subgroup.closure ((Subtype.val ⁻¹' localSplitGenerators p) ∪
+    {x : MonoidHom.ker χ | ∃ a b : MonoidHom.ker χ,
+      a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure
+
+/-- **Global class field theory: the Artin map of the Hilbert class
+field of `ℚ(μ_p)`, with equivariance checked only on FROBENIUS
+elements** (E3c support leaf (ii-a-1); SORRY NODE — the class-field
+theoretic core, re-cut 2026-07-26 out of `exists_artinMap_classGroup`
+below, which is now PROVEN over it): for `χ` the mod-`p` cyclotomic
+character `ω` of `Γℚ` (`hχcyc`, so `ker χ = Γ_{ℚ(μ_p)}`) and any model
+`CF` of `ℚ(μ_p)`, there is a map `art : Γℚ → Cl(𝓞 CF)` with
+
+* (i) `art` is a homomorphism on `ker χ`;
+* (ii) `art` is SURJECTIVE from `ker χ` onto the class group;
+* (iii) `art` is trivial on an OPEN NORMAL subgroup `H ≤ ker χ` of `Γℚ`
+  — the continuity of the Artin map, in the elementary first-order form
+  that avoids putting a topology on `Cl(𝓞 CF)`;
+* (iv) `art` is conjugation-equivariant **on the Frobenius conjugates
+  only**: for every rational place `v`, every `g : Γℚ` and every `σ`
+  with `ω(σ) = u`, if the conjugate `g · Frob_v · g⁻¹` lies in `ker χ`
+  then `art (σ (g Frob_v g⁻¹) σ⁻¹) = classGroupGalAut CF (σ_u)
+  (art (g Frob_v g⁻¹))`;
+* (v) every element of `ker χ` killed by `art` lies in
+  `localSplitSubgroup χ p`.
+
+WHAT THIS CUT ACHIEVES (2026-07-26). The previous leaf asked for
+equivariance at EVERY `n ∈ ker χ`; that quantifier is now discharged
+here at Frobenius conjugates only, and the passage to all of `ker χ` is
+PROVEN in `exists_artinMap_classGroup` below from Chebotarev density
+(`GaloisRepresentation.dense_conjClasses_globalFrob`, proven in
+`Fermat/FLT/GaloisRepresentation/Chebotarev.lean`) together with (i) and
+(iii). This matters because clause (iv) is exactly the CLASSICAL
+statement of the equivariance of the Artin symbol — Neukirch I
+(9.1)–(9.2), `(σ𝔞, H/K) = σ (𝔞, H/K) σ⁻¹`, whose two ingredients are
+`Frob_{σ𝔞} = σ Frob_𝔞 σ⁻¹` (mathlib HAS this: `IsArithFrobAt.conj` in
+`Mathlib/RingTheory/Frobenius.lean`, and the uniqueness upgrade
+`AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt` beside it) and
+`[σ𝔞] = classGroupGalAut(σ)[𝔞]` (essentially
+`classGroup_mulEquiv_mk0` above) — whereas the old quantifier over all
+of `ker χ` was not a statement about Frobenius elements at all and had
+no classical proof one could follow. The reduction is the standard
+"check a Galois-equivariance on Frobenius elements and extend by
+density"; it is what the missing pieces (1)–(2) of the audit below are
+FOR, and it is now the only place they are needed.
+
+The two clauses added relative to the old leaf, (iii) and the
+`ker χ`-membership side condition in (iv), are free for the true Artin
+map: `art` factors through `Gal(H/ℚ(μ_p))` for `H` the Hilbert class
+field, so it is trivial on `Gal(ℚ̄/H)`, which is open (`H/ℚ` is finite)
+and normal in `Γℚ` (`H/ℚ` is Galois, `H` being canonical and
+`ℚ(μ_p)/ℚ` Galois).
+
+THE PIN (audit RE-VERIFIED 2026-07-25 directly against the mathlib pin
+in `.lake`): mathlib has `ClassGroup`, its functoriality
+(`ClassGroup.mulEquiv`), finiteness of the class group of a number
+field, ideal norms, the whole LOCAL ramification/inertia theory
+(`Mathlib/NumberTheory/RamificationInertia/`), and — new to this audit —
+the arithmetic Frobenius `arithFrobAt` with its existence, uniqueness at
+an unramified prime and CONJUGATION-EQUIVARIANCE
+(`Mathlib/RingTheory/Frobenius.lean`), which this project extends to the
+profinite setting in
+`Fermat/FLT/Deformations/RepresentationTheory/Frobenius.lean`
+(`arithFrobAt'`). But there is still NO global class field theory of any
+kind: no Artin map and no Artin symbol of an IDEAL (no
+`ArtinMap`/`artinSymbol` anywhere), no Hilbert class field, no ray class
+groups, no idele class group, no "maximal unramified abelian extension".
+Building this leaf therefore still means building unramified global CFT;
+the pieces, in dependency order, are: (1) the Artin symbol of an
+unramified prime in an abelian extension, with its
+conjugation-equivariance — REACHABLE NOW, it is `arithFrobAt` plus
+`IsArithFrobAt.conj` plus `AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`;
+(2) its multiplicative extension to the ideal group, and the dictionary
+between a Frobenius element of `Γℚ` and the class of the underlying
+prime of `𝓞 CF`; (3) Artin reciprocity — principal ideals are in the
+kernel; (4) the existence theorem for the Hilbert class field, i.e.
+surjectivity and the kernel computation; (5) the translation between
+"an inertia subgroup of `Γ_K` at a finite place" and "a `Γℚ`-conjugate
+of the image of `localInertiaGroup`", which is what clause (v) is stated
+in terms of. Clause (iv) is where (1) and (2) enter; (iii) and clause
+(ii)/(v) are where (3) and (4) enter.
+
+Soundness: the hypothesis set is inhabited (`χ = ω`, `CF` the
+cyclotomic field) and the conclusion holds for every inhabitant, `art`
+being the Artin map of the Hilbert class field of `ℚ(μ_p)` composed
+with `Γ_{ℚ(μ_p)} ↠ Gal(H/ℚ(μ_p)) ≅ Cl(ℚ(μ_p))` (Neukirch VI (6.8),
+(6.9)). For `p = 2` the model is `CF = ℚ`, `Cl(ℤ) = 1`, and `art ≡ 1`
+with `H = ⊤` inhabits every clause. -/
+theorem exists_artinMap_classGroup_frobenius
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF] :
+    ∃ art : Field.absoluteGaloisGroup ℚ → ClassGroup (𝓞 CF),
+      (∀ g h : Field.absoluteGaloisGroup ℚ, χ g = 1 → χ h = 1 →
+        art (g * h) = art g * art h) ∧
+      (∀ c : ClassGroup (𝓞 CF), ∃ n : Field.absoluteGaloisGroup ℚ,
+        χ n = 1 ∧ art n = c) ∧
+      (∃ H : Subgroup (Field.absoluteGaloisGroup ℚ), H.Normal ∧
+        IsOpen (H : Set (Field.absoluteGaloisGroup ℚ)) ∧
+        ∀ x ∈ H, χ x = 1 ∧ art x = 1) ∧
+      (∀ (u : (ZMod p)ˣ) (σ g : Field.absoluteGaloisGroup ℚ)
+          (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+        χ σ = ZMod.castHom (dvd_refl p) kk' (u : ZMod p) →
+        χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+        art (σ * (g * GaloisRepresentation.globalFrob v * g⁻¹) * σ⁻¹) =
+          classGroupGalAut CF
+            ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u)
+            (art (g * GaloisRepresentation.globalFrob v * g⁻¹))) ∧
+      (∀ (n : Field.absoluteGaloisGroup ℚ) (hn : n ∈ MonoidHom.ker χ),
+        art n = 1 → (⟨n, hn⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) :=
+  sorry
+
+/-- **Global class field theory: the Artin map of the Hilbert class
+field of `ℚ(μ_p)`, equivariantly** (E3c support leaf (ii-a); PROVEN
+2026-07-26 over `exists_artinMap_classGroup_frobenius` above, which
+carries the same conclusion with the conjugation-equivariance clause
+weakened to Frobenius conjugates only — the passage to all of `ker χ`
+is the Chebotarev-density argument proven here. Originally cut
+2026-07-25 out of
+`hilbertClassField_ker_vanishing_of_classGroup_twisted_hom_vanishing`
+below, which is now PROVEN over it): for `χ` the mod-`p` cyclotomic
+character `ω` of `Γℚ` (`hχcyc`, so `ker χ = Γ_{ℚ(μ_p)}`) and any model
+`CF` of `ℚ(μ_p)`, there is a map `art : Γℚ → Cl(𝓞 CF)` with
+
+* (i) `art` is a homomorphism on `ker χ`;
+* (ii) `art` is SURJECTIVE from `ker χ` onto the class group;
+* (iii) `art` is equivariant: conjugation by a `σ` with `ω(σ) = u` on
+  the Galois side matches `classGroupGalAut CF (σ_u)` on the class side,
+  where `σ_u` is the cyclotomic dictionary
+  `IsCyclotomicExtension.Rat.galEquivZMod`;
+* (iv) every element of `ker χ` killed by `art` lies in
+  `localSplitSubgroup χ p`, the closed subgroup generated by the local
+  inertia/decomposition elements and the commutators.
+
+Classical content (Neukirch, *Algebraic Number Theory*, VI (6.8),
+(6.9), (7.1)–(7.2); Washington, *Introduction to Cyclotomic Fields*,
+ch. 10): `art` is the Artin map of the Hilbert class field `H` of
+`K = ℚ(μ_p)` — the maximal everywhere-unramified abelian extension,
+Neukirch VI (6.8) — composed with `Γ_K ↠ Gal(H/K)` and the Artin
+isomorphism `Gal(H/K) ≅ Cl(K)` of VI (6.9). Clause (ii) is the
+surjectivity of that isomorphism; clause (iii) is the conjugation
+formula `(σ𝔞, H/K) = σ (𝔞, H/K) σ⁻¹` for the Artin symbol, itself a
+restatement of the conjugacy of decomposition groups (Neukirch I
+(9.1)–(9.2)); clause (iv) is the inclusion
+`ker(art) = closure⟨inertia, commutators⟩ ⊆ localSplitSubgroup χ p`,
+which holds because every inertia subgroup of `Γ_K` is `I_w ∩ Γ_K` for
+a place `w`, the inertia groups over a rational prime `ℓ` are precisely
+the `Γℚ`-conjugates of the inertia inside one chosen decomposition
+group at `ℓ`, and at `p` and `2` the generators taken here are the full
+decomposition groups, which are larger still. (`K` is totally complex
+for odd `p`, so there are no real places and the narrow and wide class
+groups agree; for `p = 2`, `K = ℚ` and `Cl(ℤ) = 1`, so the statement is
+trivially inhabited.)
+
+THE CUT EXECUTED HERE (2026-07-26). Everything is inherited verbatim
+from `exists_artinMap_classGroup_frobenius` above EXCEPT clause (iii),
+whose quantifier over all of `ker χ` is PROVEN here from the leaf's
+Frobenius-only version by Chebotarev density. The pin audit — mathlib
+has the arithmetic Frobenius and its conjugation-equivariance, but no
+Artin map, no Artin symbol of an ideal and no Hilbert class field —
+now lives on that leaf, since this declaration is proven.
+
+The density argument, in full, because it is short and it is what makes
+the reduction legitimate. Fix `u`, `σ` with `ω(σ) = u`, and write
+`θ := classGroupGalAut CF (σ_u)`. Let `H ≤ ker χ` be the open normal
+subgroup of clause (iii) of the leaf, on which `art = 1`. Given
+`n ∈ ker χ`, the translate `n·H` is an OPEN neighbourhood of `n`, so by
+`GaloisRepresentation.dense_conjClasses_globalFrob` (Chebotarev density
+for `K = ℚ`, PROVEN in
+`Fermat/FLT/GaloisRepresentation/Chebotarev.lean`) it contains a
+Frobenius conjugate `x = g · Frob_v · g⁻¹`. Write `x = n · h` with
+`h ∈ H`; then `n = x · h⁻¹` with `χ h⁻¹ = 1` and `art h⁻¹ = 1`, so
+`art n = art x` by (i). Conjugating, `σ n σ⁻¹ = (σ x σ⁻¹)(σ h⁻¹ σ⁻¹)`,
+and `σ h⁻¹ σ⁻¹ ∈ H` by NORMALITY of `H`, so `art (σ n σ⁻¹) =
+art (σ x σ⁻¹)` by (i) again — `χ` of a conjugate of a `ker χ` element
+is `1` because `kk'` is commutative. Clause (iv) of the leaf applies to
+`x`, giving `art (σ x σ⁻¹) = θ (art x) = θ (art n)`. No topology on
+`Cl(𝓞 CF)` and no closure argument is needed: the openness of `H` does
+all the work, and `H ≤ ker χ` is what keeps the witness `x` inside
+`ker χ` where clause (iv) is stated.
+
+Soundness: the hypothesis set is inhabited (`χ = ω`, `CF` the
+cyclotomic field) and the conclusion holds for every inhabitant by the
+argument above. -/
+theorem exists_artinMap_classGroup
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF] :
+    ∃ art : Field.absoluteGaloisGroup ℚ → ClassGroup (𝓞 CF),
+      (∀ g h : Field.absoluteGaloisGroup ℚ, χ g = 1 → χ h = 1 →
+        art (g * h) = art g * art h) ∧
+      (∀ c : ClassGroup (𝓞 CF), ∃ n : Field.absoluteGaloisGroup ℚ,
+        χ n = 1 ∧ art n = c) ∧
+      (∀ (u : (ZMod p)ˣ) (σ n : Field.absoluteGaloisGroup ℚ), χ n = 1 →
+        χ σ = ZMod.castHom (dvd_refl p) kk' (u : ZMod p) →
+        art (σ * n * σ⁻¹) =
+          classGroupGalAut CF
+            ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) (art n)) ∧
+      (∀ (n : Field.absoluteGaloisGroup ℚ) (hn : n ∈ MonoidHom.ker χ),
+        art n = 1 → (⟨n, hn⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) := by
+  obtain ⟨art, hhom, hsurj, ⟨H, hHnormal, hHopen, hHtriv⟩, hfrob, hker⟩ :=
+    exists_artinMap_classGroup_frobenius χ hχcyc CF
+  refine ⟨art, hhom, hsurj, ?_, hker⟩
+  intro u σ n hn hσ
+  set θ := classGroupGalAut CF ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u)
+  -- conjugation preserves the kernel of `χ` (`kk'` is commutative)
+  have hconjker : ∀ x : Field.absoluteGaloisGroup ℚ, χ x = 1 → χ (σ * x * σ⁻¹) = 1 := by
+    intro x hx
+    rw [map_mul, map_mul, hx, mul_one, ← map_mul, mul_inv_cancel, map_one]
+  -- Chebotarev: the Frobenius conjugates are dense in `Γℚ`
+  have hdense := GaloisRepresentation.dense_conjClasses_globalFrob (K := ℚ) ∅
+  -- the open neighbourhood `n · H` of `n`
+  have hUopen : IsOpen ((fun y => n * y) '' (H : Set (Field.absoluteGaloisGroup ℚ))) :=
+    (Homeomorph.mulLeft n).isOpenMap _ hHopen
+  have hUne : ((fun y => n * y) '' (H : Set (Field.absoluteGaloisGroup ℚ))).Nonempty :=
+    ⟨n, ⟨1, H.one_mem, by simp⟩⟩
+  obtain ⟨x, ⟨h, hhH, hxh⟩, v, -, g, hxg⟩ :=
+    dense_iff_inter_open.mp hdense _ hUopen hUne
+  -- `x = n * h` is a Frobenius conjugate lying in `ker χ`
+  have hxeq : x = n * h := hxh.symm
+  have hχh : χ h = 1 := (hHtriv h hhH).1
+  have hχx : χ x = 1 := by rw [hxeq, map_mul, hn, hχh, one_mul]
+  have hnx : n = x * h⁻¹ := by rw [hxeq]; group
+  have harth : art h⁻¹ = 1 := (hHtriv _ (H.inv_mem hhH)).2
+  have hχhinv : χ h⁻¹ = 1 := (hHtriv _ (H.inv_mem hhH)).1
+  have hconjh : σ * h⁻¹ * σ⁻¹ ∈ H := hHnormal.conj_mem _ (H.inv_mem hhH) σ
+  have harthc : art (σ * h⁻¹ * σ⁻¹) = 1 := (hHtriv _ hconjh).2
+  have hχhc : χ (σ * h⁻¹ * σ⁻¹) = 1 := (hHtriv _ hconjh).1
+  -- `art` does not see the `H`-part, before or after conjugation
+  have hartn : art n = art x := by
+    rw [hnx, hhom _ _ hχx hχhinv, harth, mul_one]
+  have hsplit : σ * n * σ⁻¹ = (σ * x * σ⁻¹) * (σ * h⁻¹ * σ⁻¹) := by
+    rw [hnx]; group
+  have hartcn : art (σ * n * σ⁻¹) = art (σ * x * σ⁻¹) := by
+    rw [hsplit, hhom _ _ (hconjker x hχx) hχhc, harthc, mul_one]
+  -- the leaf's Frobenius-only equivariance, at `x`
+  have hfx : art (σ * x * σ⁻¹) = θ (art x) := by
+    subst hxg
+    exact hfrob u σ g v hσ hχx
+  rw [hartcn, hfx, hartn]
+
 /-- **Class field theory: an everywhere-unramified equivariant
 homomorphism on `Γ_{ℚ(μ_p)}` is seen by the twisted homomorphisms out of
-the class group** (E3c support leaf (ii-a); sorry node — the
-IRREDUCIBLE global class-field-theory citation of the Eisenstein pillar,
-cut 2026-07-25 out of the Artin-reciprocity node below so that
-everything except global CFT itself is PROVEN): the hypotheses are those
+the class group** (E3c support leaf (ii-a); PROVEN 2026-07-25 over the
+single global class-field-theory citation `exists_artinMap_classGroup`
+above — the Artin map of the Hilbert class field with its four
+properties — everything else here being proven): the hypotheses are those
 of `artin_reciprocity_ker_vanishing_of_unramified_equivariant_hom`
 below — `χ` is the mod-`p` cyclotomic character `ω` (`hχcyc`, so
 `ker χ = Γ_{ℚ(μ_p)}`), `cc` is continuous (`hcont`), additive on
@@ -18828,22 +21429,36 @@ a restatement of the conjugacy of decomposition groups (Neukirch I
 `ψ : Cl(ℚ(μ_p)) → (kk', +)` with `ψ(σ_u · c) = ω(σ_u)⁻¹ ψ(c)`, nonzero
 as soon as `φ ≠ 0`; `hvan` forbids that, so `φ = 0`.
 
-THE PIN (audit RE-VERIFIED 2026-07-25 directly against the mathlib pin
-in `.lake`): mathlib has `ClassGroup`, its functoriality
-(`ClassGroup.mulEquiv`), finiteness of the class group of a number field
-(`NumberField.instFintypeClassGroup`), ideal norms, and the whole LOCAL
-ramification/inertia theory (`Mathlib/NumberTheory/RamificationInertia/`,
-including Hilbert theory, inertia and Frobenius) — but NO global class
-field theory of any kind: no Artin map and no Artin symbol (no
-`ArtinMap`/`artinSymbol`/`ArtinSymbol` anywhere), no Hilbert class
-field, no ray class groups (no `rayClass`), no idele class group, no
-Chebotarev, no "maximal unramified abelian extension". The reduction of
-an everywhere-unramified equivariant hom to the class group is therefore
-irreducibly citation-shaped here, and this leaf is cut so that it is the
-ONLY thing cited: the eigenspace half — the passage from Herbrand's
-`p`-torsion eigenspace statement to the `p`-cotorsion quotient CFT
-produces — is PROVEN in
-`twisted_hom_eq_zero_of_forall_omega_inv_eigenvector_trivial` above.
+THE CUT EXECUTED HERE (2026-07-25). The mathlib pin has NO global class
+field theory (audit in `exists_artinMap_classGroup` above), so one
+citation is unavoidable; this proof reduces the leaf to exactly that
+citation and proves everything around it:
+
+* **the local-to-closed-subgroup step is PROVEN**: `cc` restricted to
+  `ker χ` is a homomorphism into the discrete group `(kk', +)`, so its
+  zero set is a subgroup of `ker χ` and is CLOSED (`hcont`); it contains
+  every commutator (the target is abelian) and every local generator
+  (`hunrOut` at `ℓ ∉ {2, p}`, and `hsplitp`, `hsplit2` at `p` and `2`,
+  whose `χ = 1` side conditions hold because the generators are taken
+  inside `ker χ`); hence it contains the whole closed subgroup
+  `localSplitSubgroup χ p` generated by them. This is where all three
+  local hypotheses are consumed.
+* **the surjectivity of the mod-`p` cyclotomic character is PROVEN**,
+  not assumed: for `u ∈ (ℤ/p)ˣ`, Dirichlet's theorem on primes in
+  arithmetic progression (`Nat.forall_exists_prime_gt_and_eq_mod`,
+  on the pin) supplies a prime `q > p` with `q ≡ u (mod p)`, and the
+  arithmetic Frobenius at `q` has cyclotomic value `q` by the PROVEN
+  `cyclotomicCharacter_map_adicArithFrob_eq_natCast` above. This is what
+  consumes `hχcyc`.
+* **the descent through the Artin map is PROVEN**: clause (iv) of the
+  citation plus the previous item make `cc` constant on the fibres of
+  `art` over `ker χ`, so clause (ii) lets one CHOOSE a preimage and
+  define `ψ c := cc (art⁻¹ c)`; `hhom` makes `ψ` additive and `hequiv`
+  together with clause (iii) makes it `ω^{−1}`-twisted, which is
+  precisely the shape `hvan` refutes. The model is instantiated at
+  `CyclotomicField p ℚ`, whose `IsCyclotomicExtension` instance is
+  transported across `Subsingleton (Algebra ℚ _)`.
+
 Soundness: the hypothesis set is inhabited (`cc = 0`, `χ = ω`, and
 `hvan` is inhabited too — it is what the Herbrand leaf supplies through
 the eigenspace brick), and the conclusion holds for every inhabitant by
@@ -18886,8 +21501,175 @@ theorem hilbertClassField_ker_vanishing_of_classGroup_twisted_hom_vanishing
             ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) c) =
           ((((u⁻¹ : (ZMod p)ˣ) : ZMod p).val : ℕ) : kk') * ψ c) →
       ∀ c : ClassGroup (𝓞 CF), ψ c = 0) :
-    ∀ g, χ g = 1 → cc g = 0 :=
-  sorry
+    ∀ g, χ g = 1 → cc g = 0 := by
+  haveI : CharP kk' p := charP_of_finite_padicInt_algebra
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  have hmemH : ∀ {g : Field.absoluteGaloisGroup ℚ},
+      g ∈ MonoidHom.ker χ ↔ χ g = 1 := by
+    intro g
+    exact MonoidHom.mem_ker
+  have hmul1 : ∀ x y : Field.absoluteGaloisGroup ℚ,
+      χ x = 1 → χ y = 1 → χ (x * y) = 1 := by
+    intro x y hx hy
+    rw [map_mul, hx, hy, one_mul]
+  have hkerinv : ∀ n : Field.absoluteGaloisGroup ℚ, χ n = 1 → χ n⁻¹ = 1 := by
+    intro n hn
+    have h : χ n * χ n⁻¹ = 1 := by rw [← map_mul, mul_inv_cancel, map_one]
+    rwa [hn, one_mul] at h
+  have hcc1 : cc 1 = 0 := by
+    have h := hhom 1 1 (map_one χ) (map_one χ)
+    rw [mul_one] at h
+    linear_combination -h
+  have hccinv : ∀ n : Field.absoluteGaloisGroup ℚ, χ n = 1 → cc n⁻¹ = - cc n := by
+    intro n hn
+    have h := hhom n n⁻¹ hn (hkerinv n hn)
+    rw [mul_inv_cancel, hcc1] at h
+    linear_combination -h
+  -- `cc` vanishes on the closed subgroup of `ker χ` generated by the local
+  -- elements and the commutators: it is a continuous homomorphism there, so its
+  -- zero set is a closed subgroup, and it kills every generator by
+  -- `hunrOut`, `hsplitp`, `hsplit2`
+  have hTvan : ∀ n : MonoidHom.ker χ, n ∈ localSplitSubgroup χ p →
+      cc (n : Field.absoluteGaloisGroup ℚ) = 0 := by
+    have hK0mul : ∀ a b : MonoidHom.ker χ,
+        cc (a : Field.absoluteGaloisGroup ℚ) = 0 →
+        cc (b : Field.absoluteGaloisGroup ℚ) = 0 →
+        cc ((a * b : MonoidHom.ker χ) : Field.absoluteGaloisGroup ℚ) = 0 := by
+      intro a b ha hb
+      rw [Subgroup.coe_mul, hhom _ _ (hmemH.mp a.2) (hmemH.mp b.2), ha, hb, add_zero]
+    let K0 : Subgroup (MonoidHom.ker χ) :=
+      { carrier := {n : MonoidHom.ker χ | cc (n : Field.absoluteGaloisGroup ℚ) = 0}
+        one_mem' := by simpa using hcc1
+        mul_mem' := fun {a b} ha hb => hK0mul a b ha hb
+        inv_mem' := by
+          intro a ha
+          show cc ((a⁻¹ : MonoidHom.ker χ) : Field.absoluteGaloisGroup ℚ) = 0
+          rw [Subgroup.coe_inv, hccinv _ (hmemH.mp a.2)]
+          rw [show cc (a : Field.absoluteGaloisGroup ℚ) = 0 from ha, neg_zero] }
+    have hK0closed : IsClosed (K0 : Set (MonoidHom.ker χ)) := by
+      have h1 : IsClosed (cc ⁻¹' ({0} : Set kk')) := (isClosed_discrete _).preimage hcont
+      exact h1.preimage continuous_subtype_val
+    have hle : Subgroup.closure ((Subtype.val ⁻¹' localSplitGenerators p) ∪
+        {x : MonoidHom.ker χ | ∃ a b : MonoidHom.ker χ,
+          a * b * a⁻¹ * b⁻¹ = x}) ≤ K0 := by
+      rw [Subgroup.closure_le]
+      rintro x (hxS | ⟨a, b, rfl⟩)
+      · obtain ⟨x, hx⟩ := x
+        simp only [localSplitGenerators, Set.mem_preimage, Set.mem_setOf_eq] at hxS
+        obtain (⟨ℓ, hℓ, hℓ2, hℓp, n, hn, σ, rfl⟩ | ⟨g, σ, rfl⟩ | ⟨g, σ, rfl⟩) := hxS
+        · exact hunrOut ℓ hℓ hℓ2 hℓp n hn σ
+        · exact hsplitp g σ (hmemH.mp hx)
+        · exact hsplit2 g σ (hmemH.mp hx)
+      · have ha := hmemH.mp a.2
+        have hb := hmemH.mp b.2
+        have hai := hkerinv _ ha
+        have hbi := hkerinv _ hb
+        show cc ((a * b * a⁻¹ * b⁻¹ : MonoidHom.ker χ) :
+          Field.absoluteGaloisGroup ℚ) = 0
+        push_cast
+        rw [hhom _ _ (hmul1 _ _ (hmul1 _ _ ha hb) hai) hbi,
+          hhom _ _ (hmul1 _ _ ha hb) hai, hhom _ _ ha hb,
+          hccinv _ ha, hccinv _ hb]
+        ring
+    intro n hn
+    exact Subgroup.topologicalClosure_minimal _ hle hK0closed hn
+  -- the cast of a unit of `ZMod p` into `kk'`
+  have hcast : ∀ u : (ZMod p)ˣ,
+      ((((u : (ZMod p)ˣ) : ZMod p).val : ℕ) : kk') =
+        ZMod.castHom (dvd_refl p) kk' (u : ZMod p) := by
+    intro u
+    rw [ZMod.castHom_apply, ZMod.natCast_val]
+  -- the mod-`p` cyclotomic character is surjective onto `(ZMod p)ˣ`: Dirichlet
+  -- supplies a prime `q ≡ u (mod p)`, whose arithmetic Frobenius has cyclotomic
+  -- value `q`
+  have hchisurj : ∀ u : (ZMod p)ˣ, ∃ σ : Field.absoluteGaloisGroup ℚ,
+      χ σ = ZMod.castHom (dvd_refl p) kk' (u : ZMod p) := by
+    intro u
+    obtain ⟨q, hqgt, hq, hqu⟩ :=
+      Nat.forall_exists_prime_gt_and_eq_mod (q := p) (a := (u : ZMod p)) u.isUnit p
+    have hne : p ≠ q := by omega
+    refine ⟨Field.absoluteGaloisGroup.map (algebraMap ℚ
+      (HeightOneSpectrum.adicCompletion ℚ hq.toHeightOneSpectrumRingOfIntegersRat))
+      (Field.AbsoluteGaloisGroup.adicArithFrob
+        hq.toHeightOneSpectrumRingOfIntegersRat), ?_⟩
+    rw [hχcyc, cyclotomicCharacter_map_adicArithFrob_eq_natCast hq hne, ← hqu,
+      map_natCast]
+  have hχinv : ∀ (u : (ZMod p)ˣ) (σ : Field.absoluteGaloisGroup ℚ),
+      χ σ = ZMod.castHom (dvd_refl p) kk' (u : ZMod p) →
+      χ σ⁻¹ = ((((u⁻¹ : (ZMod p)ˣ) : ZMod p).val : ℕ) : kk') := by
+    intro u σ hσ
+    have hmul : χ σ * χ σ⁻¹ = 1 := by rw [← map_mul, mul_inv_cancel, map_one]
+    have hu : ZMod.castHom (dvd_refl p) kk' (u : ZMod p) *
+        ZMod.castHom (dvd_refl p) kk' ((u⁻¹ : (ZMod p)ˣ) : ZMod p) = 1 := by
+      rw [← map_mul, ← Units.val_mul, mul_inv_cancel, Units.val_one, map_one]
+    have hne : χ σ ≠ 0 := by
+      intro h0
+      rw [h0, zero_mul] at hmul
+      exact zero_ne_one hmul
+    refine mul_left_cancel₀ hne ?_
+    rw [hmul, hcast u⁻¹, hσ, hu]
+  -- the assembly, for an arbitrary model `CF` of `ℚ(μ_p)`
+  have main : ∀ (CF : Type) [Field CF] [NumberField CF]
+      [IsCyclotomicExtension {p} ℚ CF], ∀ g, χ g = 1 → cc g = 0 := by
+    intro CF _ _ _
+    obtain ⟨art, h1, h2, h3, h4⟩ := exists_artinMap_classGroup χ hχcyc CF
+    have hart1 : art 1 = 1 := by
+      have h := h1 1 1 (map_one χ) (map_one χ)
+      rw [mul_one] at h
+      have h2' : art 1 * art 1 = art 1 * 1 := by rw [mul_one]; exact h.symm
+      exact mul_left_cancel h2'
+    have hartinv : ∀ n, χ n = 1 → art n⁻¹ = (art n)⁻¹ := by
+      intro n hn
+      have h := h1 n n⁻¹ hn (hkerinv n hn)
+      rw [mul_inv_cancel, hart1] at h
+      exact eq_inv_of_mul_eq_one_right h.symm
+    have hwd : ∀ n m, χ n = 1 → χ m = 1 → art n = art m → cc n = cc m := by
+      intro n m hn hm hnm
+      have hmi := hkerinv m hm
+      have hz : art (n * m⁻¹) = 1 := by
+        rw [h1 n m⁻¹ hn hmi, hartinv m hm, hnm, mul_inv_cancel]
+      have h0 : cc (n * m⁻¹) = 0 :=
+        hTvan ⟨n * m⁻¹, hmemH.mpr (hmul1 _ _ hn hmi)⟩ (h4 _ _ hz)
+      rw [hhom n m⁻¹ hn hmi, hccinv m hm] at h0
+      linear_combination h0
+    choose np hnp hnpart using h2
+    have hψ : ∀ n, χ n = 1 → cc (np (art n)) = cc n := fun n hn =>
+      hwd (np (art n)) n (hnp _) hn (hnpart _)
+    have hψadd : ∀ c d : ClassGroup (𝓞 CF),
+        cc (np (c * d)) = cc (np c) + cc (np d) := by
+      intro c d
+      have h : art (np c * np d) = c * d := by
+        rw [h1 _ _ (hnp c) (hnp d), hnpart, hnpart]
+      calc cc (np (c * d)) = cc (np c * np d) := by
+            rw [← h, hψ _ (hmul1 _ _ (hnp c) (hnp d))]
+        _ = cc (np c) + cc (np d) := hhom _ _ (hnp c) (hnp d)
+    have hψtw : ∀ (u : (ZMod p)ˣ) (c : ClassGroup (𝓞 CF)),
+        cc (np (classGroupGalAut CF
+            ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) c)) =
+          ((((u⁻¹ : (ZMod p)ˣ) : ZMod p).val : ℕ) : kk') * cc (np c) := by
+      intro u c
+      obtain ⟨σ, hσ⟩ := hchisurj u
+      have hconj : χ (σ * np c * σ⁻¹) = 1 := by
+        rw [map_mul, map_mul, hnp c, mul_one, ← map_mul, mul_inv_cancel, map_one]
+      have hartc : art (σ * np c * σ⁻¹) =
+          classGroupGalAut CF
+            ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) c := by
+        rw [h3 u σ (np c) (hnp c) hσ, hnpart]
+      calc cc (np (classGroupGalAut CF
+              ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) c))
+          = cc (σ * np c * σ⁻¹) := by rw [← hartc, hψ _ hconj]
+        _ = χ σ⁻¹ * cc (np c) := hequiv σ (np c) (hnp c)
+        _ = ((((u⁻¹ : (ZMod p)ˣ) : ZMod p).val : ℕ) : kk') * cc (np c) := by
+            rw [hχinv u σ hσ]
+    intro g hg
+    rw [← hψ g hg]
+    exact hvan CF (fun c => cc (np c)) hψadd hψtw (art g)
+  -- instantiate at the concrete model `CyclotomicField p ℚ`
+  haveI : NeZero ((p : ℕ) : ℚ) := ⟨Nat.cast_ne_zero.mpr hp.out.ne_zero⟩
+  haveI instCyc : IsCyclotomicExtension {p} ℚ (CyclotomicField p ℚ) :=
+    CyclotomicField.isCyclotomicExtension p ℚ
+  exact main (CyclotomicField p ℚ)
+
 
 /-- **Artin reciprocity for the everywhere-unramified abelian
 `p`-elementary extension of `ℚ(μ_p)`, with the eigenspace cut**
@@ -19843,10 +22625,14 @@ everything from those facts to the attachment statement is PROVEN:
   `S₂(Γ₀(M))`, and the fact that a normalized weight-2 eigenform is
   literally an eigenvector of it. The complex side of the `ℂ → ℚ̄_p`
   Eichler–Shimura seam.
-* `exists_heckeOp_newform_etaleIdempotent` — SORRY: strong
+* `exists_heckeOp_newform_etaleIdempotent` — PROVEN (2026-07-25): strong
   multiplicity one in `S₂(Γ₀(M))` in idempotent form (the newform's
-  local factor of the complex Hecke algebra is a LINE) — the
-  classical-analytic leaf of the seam.
+  local factor of the complex Hecke algebra is a LINE), now an assembly
+  over `heckeOp_mul_comm` (PROVEN: the complex Hecke operators commute)
+  and the one remaining analytic leaf of the seam,
+  `exists_smul_of_heckeOp_generalizedEigen_of_newform` — SORRY: the
+  joint GENERALIZED eigenspace at a newform's eigensystem is the line
+  `ℂ·g`.
 * `nonempty_modularHeckeComparisonPackage` — SORRY: the residual
   GEOMETRIC leaf, inhabitation of the fifth-level carrier, whose one
   non-geometric field is the `ℂ → ℚ̄_p` comparison itself (see its
@@ -20930,11 +23716,20 @@ named:
   `cuspForm_eq_of_forall_qCoeff_eq`. So the Hecke algebra
   `heckeSubalgebra (heckeOp M) ⊆ End ℂ S₂(Γ₀(M))` and the eigenform's
   character on it are now honest Lean objects, not citations;
-* the CLASSICAL-ANALYTIC residue on the complex side is the single
-  sorried leaf `exists_heckeOp_newform_etaleIdempotent`: strong
+* the CLASSICAL-ANALYTIC residue on the complex side is strong
   multiplicity one in `S₂(Γ₀(M))` (Diamond–Shurman Theorem 5.8.2 with
-  §5.8 and Proposition 5.8.5), in its idempotent form — the newform's
-  local factor of `heckeSubalgebra (heckeOp M)` is the LINE `ℂ·e`;
+  §5.8 and Proposition 5.8.5). Its idempotent form — the newform's local
+  factor of `heckeSubalgebra (heckeOp M)` is the LINE `ℂ·e` —
+  is `exists_heckeOp_newform_etaleIdempotent`, PROVEN 2026-07-25 once
+  `heckeOp_mul_comm` made that algebra commutative. The analytic core it
+  reduces to, `exists_smul_of_heckeOp_generalizedEigen_of_newform` (the
+  joint GENERALIZED eigenspace at the eigensystem `{a_q(g)}` is `ℂ·g`),
+  is itself PROVEN as of 2026-07-26, and after two rounds of cutting the
+  sorried leaves left on the complex side are exactly the TWO classical
+  theorems this pin lacks: `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`
+  (Petersson self-adjointness of `T_q` at `q ∤ M`, hence semisimplicity;
+  D–S Thm 5.5.3) and `exists_smul_of_heckeOp_eq_smul_of_not_dvd_level`
+  (Atkin–Lehner strong multiplicity one; D–S Thm 5.8.3);
 * the TRANSPORT is the `comparison` field of
   `ModularHeckeComparisonPackage`: given that complex idempotent, the
   Eichler–Shimura isomorphism plus the Tate-module comparison produce
@@ -21005,7 +23800,14 @@ theorem heckeOp_coe {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime)
 functional `qCoeffL`). -/
 theorem qCoeff_smul {N : ℕ} (c : ℂ) (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
     qCoeff N (c • f) m = c * qCoeff N f m := by
-  simpa using (qCoeffL N m).map_smul c f
+  -- NOT `simpa using …`: `map_smul` is itself a `simp` lemma, so simp normalises
+  -- the LHS of `(qCoeffL N m).map_smul c f` to its own RHS and collapses the whole
+  -- term to `True`, while the goal — phrased in `qCoeff` rather than `qCoeffL` —
+  -- is untouched, so nothing is left to close it with.  Rewrite with the
+  -- definitional bridge `qCoeffL_apply` explicitly instead.
+  have h := (qCoeffL N m).map_smul c f
+  simp only [qCoeffL_apply, RingHom.id_apply, smul_eq_mul] at h
+  exact h
 
 /-- **A normalized weight-2 eigenform is an eigenvector of the Hecke
 operator** (PROVEN — the eigenform carrier `IsWeightTwoEigenform`,
@@ -21040,9 +23842,466 @@ theorem ne_zero_of_isWeightTwoEigenform {M : ℕ}
   rw [h, qCoeff_zero_cuspForm] at h1
   exact zero_ne_one h1
 
+/-- **The `q`-expansion of `T_q f`** for the BUNDLED Hecke operator
+(PROVEN — `qExpansion_heckeTransform_coeff` read through `heckeOp_coe`):
+`a_m(T_q f) = a_{qm}(f)` at `q ∣ M`, with the extra `q·a_{m/q}(f)` at
+`q ∤ M`, `q ∣ m`. This is the form in which the operator's coefficients
+are consumed below. -/
+theorem qCoeff_heckeOp {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime)
+    (f : CuspForm (Gamma0GL M) 2) (m : ℕ) :
+    qCoeff M (heckeOp M q f) m =
+      qCoeff M f (q * m) +
+        (if q ∣ M then 0
+          else if q ∣ m then (q : ℂ) * qCoeff M f (m / q) else 0) := by
+  have h2 := qExpansion_heckeTransform_coeff hM hq f m
+  rw [← heckeOp_coe hM hq f] at h2
+  exact h2
+
+/-- **The complex Hecke operators COMMUTE** (PROVEN, 2026-07-25 — this
+discharges the DECOMPOSITION POINTER that
+`exists_heckeOp_newform_etaleIdempotent` recorded): `T_q T_r = T_r T_q`
+on `S₂(Γ₀(M))` for all primes `q, r`.
+
+Proof: a `q`-expansion computation — the forms agree coefficientwise
+(`cuspForm_eq_of_forall_qCoeff_eq`), each side expanded twice by
+`qCoeff_heckeOp`. At `q = r` there is nothing to prove. For `q ≠ r` the
+two distinct primes are coprime, which normalizes every divisibility
+side condition — `r ∣ qm ↔ r ∣ m`, and `r ∣ m/q ↔ r ∣ m` given `q ∣ m`
+— and identifies the indices `qm/r = q(m/r)`, `rm/q = r(m/q)`,
+`m/q/r = m/(qr) = m/r/q`. Both iterated formulas then collapse to the
+manifestly symmetric
+
+  `a_{qrm} + 1_{r∤M}1_{r∣m}·r·a_{qm/r} + 1_{q∤M}1_{q∣m}·q·a_{rm/q}
+     + 1_{q∤M}1_{r∤M}1_{qr∣m}·qr·a_{m/qr}`.
+
+This is what makes `heckeSubalgebra (heckeOp M)` a COMMUTATIVE
+subalgebra of `End ℂ S₂(Γ₀(M))`, unlocking the entire pure-algebra half
+of the étale-idempotent node below. -/
+theorem heckeOp_mul_comm {M : ℕ} (hM : 0 < M) {q r : ℕ} (hq : q.Prime)
+    (hr : r.Prime) :
+    heckeOp M q * heckeOp M r = heckeOp M r * heckeOp M q := by
+  rcases eq_or_ne q r with rfl | hne
+  · rfl
+  have hcop : Nat.Coprime q r := (Nat.coprime_primes hq hr).mpr hne
+  have hcop' : Nat.Coprime r q := hcop.symm
+  have hrqx : ∀ x : ℕ, r ∣ q * x ↔ r ∣ x := fun x =>
+    ⟨fun h => hcop'.dvd_of_dvd_mul_left h, fun h => h.mul_left q⟩
+  have hqrx : ∀ x : ℕ, q ∣ r * x ↔ q ∣ x := fun x =>
+    ⟨fun h => hcop.dvd_of_dvd_mul_left h, fun h => h.mul_left r⟩
+  have hdivr : ∀ x : ℕ, q ∣ x → (r ∣ x / q ↔ r ∣ x) := by
+    intro x hx
+    constructor
+    · intro h
+      have h2 := h.mul_left q
+      rwa [Nat.mul_div_cancel' hx] at h2
+    · intro h
+      refine hcop'.dvd_of_dvd_mul_left ?_
+      rwa [Nat.mul_div_cancel' hx]
+  have hdivq : ∀ x : ℕ, r ∣ x → (q ∣ x / r ↔ q ∣ x) := by
+    intro x hx
+    constructor
+    · intro h
+      have h2 := h.mul_left r
+      rwa [Nat.mul_div_cancel' hx] at h2
+    · intro h
+      refine hcop.dvd_of_dvd_mul_left ?_
+      rwa [Nat.mul_div_cancel' hx]
+  refine LinearMap.ext fun f => ?_
+  simp only [Module.End.mul_apply]
+  refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+  simp only [qCoeff_heckeOp hM hq, qCoeff_heckeOp hM hr, hrqx, hqrx]
+  have hrq : r * q = q * r := Nat.mul_comm r q
+  by_cases hqM : q ∣ M
+  · by_cases hrM : r ∣ M
+    · simp only [hqM, hrM, if_true]
+      all_goals ring_nf
+    · by_cases hrm : r ∣ m
+      · simp only [hqM, hrM, hrm, if_true, if_false,
+          Nat.mul_div_assoc q hrm]
+        all_goals ring_nf
+      · simp only [hqM, hrM, hrm, if_true, if_false]
+        all_goals ring_nf
+  · by_cases hrM : r ∣ M
+    · by_cases hqm : q ∣ m
+      · simp only [hqM, hrM, hqm, if_true, if_false,
+          Nat.mul_div_assoc r hqm]
+        all_goals ring_nf
+      · simp only [hqM, hrM, hqm, if_true, if_false]
+        all_goals ring_nf
+    · by_cases hqm : q ∣ m
+      · by_cases hrm : r ∣ m
+        · have h1 : r ∣ m / q := (hdivr m hqm).mpr hrm
+          have h2 : q ∣ m / r := (hdivq m hrm).mpr hqm
+          simp only [hqM, hrM, hqm, hrm, h1, h2, if_true, if_false,
+            Nat.mul_div_assoc q hrm, Nat.mul_div_assoc r hqm,
+            Nat.div_div_eq_div_mul, hrq]
+          all_goals ring_nf
+        · have h1 : ¬ r ∣ m / q := fun h => hrm ((hdivr m hqm).mp h)
+          simp only [hqM, hrM, hqm, hrm, h1, if_true, if_false,
+            Nat.mul_div_assoc r hqm]
+          all_goals ring_nf
+      · by_cases hrm : r ∣ m
+        · have h2 : ¬ q ∣ m / r := fun h => hqm ((hdivq m hrm).mp h)
+          simp only [hqM, hrM, hqm, hrm, h2, if_true, if_false,
+            Nat.mul_div_assoc q hrm]
+          all_goals ring_nf
+        · simp only [hqM, hrM, hqm, hrm, if_false]
+          all_goals ring_nf
+
+/-- **Multiplicity one for HONEST joint Hecke eigenvectors, at the
+coefficient level** (PROVEN 2026-07-26): if `v ∈ S₂(Γ₀(M))` satisfies
+`T_q v = a_q(g)·v` at EVERY prime `q` — the bad primes `q ∣ M` included,
+where `T_q` is `U_q` — for a normalized weight-2 eigenform `g`, then
+`a_m(v) = a_1(v)·a_m(g)` for every `m`.
+
+This is the first of the two classical statements that
+`exists_smul_of_heckeOp_generalizedEigen_of_newform` was cut over
+(Diamond–Shurman Thm 5.8.2), and the point worth recording is that on
+this pin it needs **no Atkin–Lehner theory at all** — no Petersson
+product, no oldform/newform decomposition, not even
+`eigensystem_minimal`. The reason is that the hypothesis ranges over
+ALL primes, `U_q` at `q ∣ M` included, so the coefficients of `v` are
+pinned by a bare recursion rather than by a spectral separation
+argument.
+
+PROOF: strong induction on `m`, the whole content being that
+`qCoeff_heckeOp` and `hecke_eigen_coeff_identity` are the SAME
+recursion, one for `v` and one for `g`. At `m = 0` both sides vanish
+(`qCoeff_zero`); at `m = 1` the claim is `a_1(v) = a_1(v)·1`
+(`hg.qCoeff_one`). For `m ≥ 2` pick any prime `q ∣ m`, write `m = q·m'`,
+and read the eigen-equation `T_q v = a_q(g)·v` in the `m'`-th
+coefficient:
+
+  `a_{q m'}(v) + 1_{q∤M} 1_{q∣m'}·q·a_{m'/q}(v) = a_q(g)·a_{m'}(v)`,
+
+which is `hecke_eigen_coeff_identity`'s identity with `v` in place of
+`g` on the left and `a_q(g)` — NOT `a_q(v)` — on the right. Solving
+both for the top index gives `a_m` as the same `ℂ`-linear expression in
+`a_{m'}` and `a_{m'/q}` for `v` and for `g`, and `m' < m`,
+`m'/q < m`, so the induction hypothesis closes it by `ring`. -/
+theorem qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g)
+    {v : CuspForm (Gamma0GL M) 2}
+    (hv : ∀ q : ℕ, q.Prime → heckeOp M q v = qCoeff M g q • v) :
+    ∀ m : ℕ, qCoeff M v m = qCoeff M v 1 * qCoeff M g m := by
+  intro m
+  induction m using Nat.strong_induction_on with
+  | _ m ih =>
+    rcases eq_or_ne m 0 with rfl | hm0
+    · rw [qCoeff_zero, qCoeff_zero]; ring
+    rcases eq_or_ne m 1 with rfl | hm1
+    · rw [hg.qCoeff_one]; ring
+    obtain ⟨q, hq, hqm⟩ := Nat.exists_prime_and_dvd hm1
+    obtain ⟨m', rfl⟩ := hqm
+    have hq2 : 2 ≤ q := hq.two_le
+    have hm'pos : 0 < m' := by
+      rcases Nat.eq_zero_or_pos m' with rfl | h
+      · exact absurd (by ring) hm0
+      · exact h
+    have hm'lt : m' < q * m' := by
+      have h2 : 2 * m' ≤ q * m' := Nat.mul_le_mul_right m' hq2
+      omega
+    have hdivlt : m' / q < q * m' := lt_of_le_of_lt (Nat.div_le_self _ _) hm'lt
+    have hvq : qCoeff M (heckeOp M q v) m' = qCoeff M (qCoeff M g q • v) m' := by
+      rw [hv q hq]
+    rw [qCoeff_heckeOp hM hq v m', qCoeff_smul] at hvq
+    have hgq := hecke_eigen_coeff_identity hg hq m'
+    have e1 := ih m' hm'lt
+    by_cases hqM : q ∣ M
+    · rw [if_pos hqM] at hvq hgq
+      linear_combination hvq - qCoeff M v 1 * hgq + qCoeff M g q * e1
+    · rw [if_neg hqM] at hvq hgq
+      by_cases hqmm : q ∣ m'
+      · rw [if_pos hqmm] at hvq hgq
+        have e2 := ih (m' / q) hdivlt
+        linear_combination hvq - qCoeff M v 1 * hgq + qCoeff M g q * e1
+          - (q : ℂ) * e2
+      · rw [if_neg hqmm] at hvq hgq
+        linear_combination hvq - qCoeff M v 1 * hgq + qCoeff M g q * e1
+
+/-- **Multiplicity one for HONEST joint Hecke eigenvectors** (PROVEN
+2026-07-26): the joint EIGENSPACE of the complex Hecke operators at a
+normalized eigenform `g`'s full prime eigensystem `{a_q(g)}` is exactly
+the line `ℂ·g`, and the scalar is read off the first coefficient.
+Immediate from `qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen` and
+`cuspForm_eq_of_forall_qCoeff_eq`, since a weight-2 cusp form is
+determined by its `q`-expansion. -/
+theorem eq_qCoeff_one_smul_of_heckeOp_eigen {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g)
+    {v : CuspForm (Gamma0GL M) 2}
+    (hv : ∀ q : ℕ, q.Prime → heckeOp M q v = qCoeff M g q • v) :
+    v = qCoeff M v 1 • g := by
+  refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+  rw [qCoeff_smul]
+  exact qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen hM hg hv m
+
+/-- **SEMISIMPLICITY OF THE GOOD HECKE OPERATORS on `S₂(Γ₀(M))`** (sorry
+leaf — cut 2026-07-26 out of
+`heckeOp_apply_eq_smul_of_generalizedEigen_of_newform`; Diamond–Shurman
+Theorem 5.5.3 — self-adjointness of `T_q` for the Petersson product —
+together with the spectral theorem on the finite-dimensional space
+`S₂(Γ₀(M))`): at a GOOD prime `q ∤ M`, the operator `T_q` is semisimple,
+i.e. its GENERALIZED eigenspaces are already honest eigenspaces. Stated
+elementwise, at an arbitrary scalar `c` and with the exponent existential
+already instantiated by the consumer: a cusp form killed by a POWER of
+`T_q − c` is killed by `T_q − c` itself.
+
+This is the ANALYTIC half of the two-leaf cut of the reducedness node.
+It knows nothing about newforms, and the eigenvalue `c` is arbitrary —
+no `IsWeightTwoEigenform`, no `eigensystem_minimal`, no `g`.
+
+CLASSICAL PROOF. The Petersson product
+`⟨f, h⟩ = ∫_{Γ₀(M)\ℍ} f(τ) conj(h(τ)) dxdy` is a positive-definite
+Hermitian form on `S₂(Γ₀(M))` (mathlib has the integrand and its
+invariance and decay properties in
+`Mathlib/NumberTheory/ModularForms/Petersson.lean`, but NOT the integral,
+NOT positive-definiteness and NOT the inner-product-space structure), the
+space is finite-dimensional (`cuspForm_finiteDimensional`, PROVEN above),
+and for `q ∤ M` the double coset defining `T_q` is stable under the
+Petersson adjoint, so `T_q` is self-adjoint (D–S Thm 5.5.3, weight `2`
+and trivial character, where the usual `⟨q⟩`-twist is trivial). A
+self-adjoint operator on a finite-dimensional complex inner-product space
+is diagonalizable, hence semisimple, which is exactly this statement.
+
+FAITHFULNESS AUDIT (2026-07-26). `hqM : ¬ q ∣ M` is LOAD-BEARING and the
+statement is FALSE without it: at `q ∣ M` the operator is `U_q`, which is
+genuinely NON-semisimple, and a size-`2` Jordan block at the eigenvalue
+`0` is available at every level divisible by a cube.
+
+Explicit counterexample. Let `f` be a newform of level `M'`, let `q ∤ M'`
+be prime, and put `M = M'·q³`. On the old block
+`span{f(qⁱz) : 0 ≤ i ≤ 3} ⊆ S₂(Γ₀(M))` the operator `U_q` acts by
+`f ↦ a_q(f)·f − q·f(q·)` (this is `T_q = U_q + q·V_q` at level `M'`) and
+`f(qⁱ·) ↦ f(q^{i−1}·)` for `i ≥ 1`, so in the basis
+`(f, f(q·), f(q²·), f(q³·))` its matrix has characteristic polynomial
+`X²·(X² − a_q X + q)` while its KERNEL is only the line spanned by the
+`q`-depleted form `h = f − a_q(f)·f(q·) + q·f(q²·)`. Since `q ≠ 0`, `X²
+− a_q X + q` does not vanish at `0`, so `0` has algebraic multiplicity
+exactly `2` against geometric multiplicity `1`.
+
+The generalized `0`-eigenvector is visible without any matrix: `h` has
+level `M'·q²`, so `h(q·) ∈ S₂(Γ₀(M))`, and `U_q ∘ V_q = id` gives
+`U_q (h(q·)) = h ≠ 0` while `U_q² (h(q·)) = U_q h = 0`. So the
+good-prime hypothesis is not decoration; the same phenomenon is exactly
+what makes the consumer node's own counterexample work.
+
+DEPENDENCY NOTE for whoever attacks this: nothing in the Petersson theory
+of `Mathlib.NumberTheory.ModularForms.Petersson` beyond the integrand
+`petersson` and its `SL(2,ℤ)`-invariance and exponential decay exists on
+this pin; the integral over a fundamental domain, the inner-product
+structure, and the adjointness computation all have to be built. -/
+theorem heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level {M : ℕ} (hM : 0 < M)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (c : ℂ)
+    {v : CuspForm (Gamma0GL M) 2} {n : ℕ}
+    (hv : ((heckeOp M q -
+      c • (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n) v = 0) :
+    heckeOp M q v = c • v :=
+  sorry
+
+/-- **STRONG MULTIPLICITY ONE for the AWAY-FROM-`M` eigensystem of a
+newform** (sorry leaf — cut 2026-07-26 out of
+`heckeOp_apply_eq_smul_of_generalizedEigen_of_newform`; Atkin–Lehner
+1970, Diamond–Shurman Theorem 5.8.3 with §5.8): if `g` is a weight-2
+level-`M` NEWFORM and `v ∈ S₂(Γ₀(M))` is an honest eigenvector of every
+GOOD Hecke operator `T_q`, `q ∤ M`, with `g`'s eigenvalue `a_q(g)`, then
+`v ∈ ℂ·g`. Note the hypothesis says NOTHING at the bad primes `q ∣ M`:
+that is the whole point, and it is why this is *strong* multiplicity one
+rather than the elementary `eq_qCoeff_one_smul_of_heckeOp_eigen` above
+(which needs the full prime eigensystem and is PROVEN).
+
+This is the ATKIN–LEHNER half of the two-leaf cut of the reducedness
+node. It knows nothing about generalized eigenvectors or nilpotents.
+
+CLASSICAL PROOF. The Atkin–Lehner decomposition
+`S₂(Γ₀(M)) = ⨁_{M'∣M} ⨁_{f new of level M'} ⨁_{d ∣ M/M'} ℂ·f(dz)`
+is stable under every `T_q` with `q ∤ M`, which acts on the block of `f`
+by the SCALAR `a_q(f)`. So a joint eigenvector for the good operators at
+`{a_q(g)}` lies in the sum of the blocks with `a_q(f) = a_q(g)` for all
+`q ∤ M`. At a proper divisor level `M' ≠ M` such an `f` is a normalized
+weight-2 eigenform of level `M' ∣ M` realizing `g`'s away-from-`M`
+eigensystem, which `hg.eigensystem_minimal` forbids outright; at
+`M' = M`, `d ∣ M/M' = 1` and the block is the LINE `ℂ·f`, and two
+newforms of level `M` agreeing at all `q ∤ M` are equal, so `f = g`.
+
+FAITHFULNESS AUDIT (2026-07-26). `hg`'s minimality is LOAD-BEARING:
+weakening `IsWeightTwoNewform` to `IsWeightTwoEigenform` makes this
+FALSE. Explicit counterexample: `f` a newform of level `M'`, `q ∤ M'`
+prime, `M = M'·q³`, and `g = f(z) − a_q(f)·f(qz) + q·f(q²z)` the
+`q`-depleted form — a normalized weight-2 eigenform of level `M` with
+`a_q(g) = 0`. Every `T_r` with `r ∤ M` acts on the whole 4-dimensional
+old block `span{f(qⁱz) : i ≤ 3}` by the scalar `a_r(f) = a_r(g)`, so the
+joint good-prime eigenspace at `g`'s eigensystem is 4-dimensional while
+`ℂ·g` is a line. `g` is of course not a newform of level `M`: its
+away-from-`M` eigensystem is `f`'s, realized at the proper divisor level
+`M'`, which is exactly what `eigensystem_minimal` excludes. -/
+theorem exists_smul_of_heckeOp_eq_smul_of_not_dvd_level {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
+    {v : CuspForm (Gamma0GL M) 2}
+    (hv : ∀ q : ℕ, q.Prime → ¬ q ∣ M → heckeOp M q v = qCoeff M g q • v) :
+    ∃ c : ℂ, v = c • g :=
+  sorry
+
+/-- **REDUCEDNESS of the newform's local factor of the complex Hecke
+algebra** (PROVEN 2026-07-26 over the two classical leaves
+`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` — Petersson
+semisimplicity at the good primes — and
+`exists_smul_of_heckeOp_eq_smul_of_not_dvd_level` — Atkin–Lehner strong
+multiplicity one; it was itself cut 2026-07-26 out of
+`exists_smul_of_heckeOp_generalizedEigen_of_newform`, which is PROVEN
+over it and over the honest-eigenvector multiplicity one
+`eq_qCoeff_one_smul_of_heckeOp_eigen`): for a weight-2 level-`M`
+NEWFORM `g`, every joint GENERALIZED eigenvector of the complex Hecke
+operators at the eigensystem `{a_q(g)}` is already an HONEST joint
+eigenvector — the exponents `n` in the hypothesis may be taken to be
+`1`.
+
+WHY THIS IS THE RESIDUE, AND WHERE IT NOW LIVES. The classical proof of
+strong multiplicity one in generalized-eigenvector form has two halves
+(Diamond–Shurman §5.8): (i) the honest joint eigenspace at the FULL
+prime eigensystem `{a_q(g)}` is the line `ℂ·g`, and (ii) the joint
+generalized eigenspace collapses onto it. Half (i) is PROVEN
+unconditionally on this pin (`qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen`)
+— it needs no newform theory whatever, because the hypothesis ranges over
+ALL primes and so pins the coefficients by the Hecke recursion alone.
+Half (ii) is this node, and it says the local factor of
+`𝕋_ℂ = heckeSubalgebra (heckeOp M)` at the character `T_q ↦ a_q(g)` is
+`ℂ` itself, i.e. carries no nilpotents.
+
+THE CUT (2026-07-26). Half (ii) does NOT reduce to half (i): the honest
+eigenvector produced below is honest at the GOOD primes only, and the
+bad-prime eigen-equations arrive at the very end, for free, from
+`v ∈ ℂ·g`. So the cut is along the classical fault line instead, and the
+two pieces are independent named theorems rather than one analytic lump:
+
+* at `q ∤ M`, `T_q` is SELF-ADJOINT for the Petersson product, hence
+  diagonalizable on the finite-dimensional space `S₂(Γ₀(M))`
+  (`cuspForm_finiteDimensional`), hence semisimple: a generalized
+  eigenvector at `q` is an honest one. That is
+  `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`, and it uses
+  nothing about `g`.
+* an honest joint eigenvector for the GOOD operators alone, at a
+  NEWFORM's eigensystem, lies on the line `ℂ·g` — the Atkin–Lehner
+  decomposition, where `hg.eigensystem_minimal` kills every proper
+  divisor level. That is
+  `exists_smul_of_heckeOp_eq_smul_of_not_dvd_level`.
+
+Once `v = c·g`, the conclusion at EVERY prime — the bad ones included,
+where the hypothesis was never used — is
+`heckeOp_apply_eq_smul_of_isWeightTwoEigenform` and the commutation of
+the two scalars.
+
+EQUIVALENT FORMULATION, kept for orientation. Through the perfect
+pairing `𝕋_ℂ × S₂(Γ₀(M)) → ℂ`, `(T, f) ↦ a_1(T f)`, the joint
+generalized eigenspace at `{a_q(g)}` is dual to the local ring
+`(𝕋_ℂ)_{m_g}`, so this node is exactly `(𝕋_ℂ)_{m_g} = ℂ`. Concretely,
+subtracting `a_1(v)·g` from a generalized eigenvector `v` and reading
+coefficients turns the hypothesis into the DERIVATION relation
+
+  `a_{qm}(v) + 1_{q∤M}1_{q∣m}·q·a_{m/q}(v) = a_q(g)·a_m(v) + a_q(v)·a_m(g)`,
+
+i.e. `(a_m(g) + ε·a_m(v))` is an eigenform over `ℂ[ε]/ε²`; the node says
+every such first-order deformation of a level-`M` newform's eigensystem
+inside `S₂(Γ₀(M))` is trivial. That reformulation is a genuine dead end
+on a coefficient-only pin, which is why the cut above goes through the
+two classical theorems instead: the relation has plenty of nonzero
+solutions as a bare recursion, and only modularity of the deformation —
+i.e. that it is realized by an actual element of `S₂(Γ₀(M))` — rules it
+out.
+
+FAITHFULNESS AUDIT (2026-07-26). The statement is TRUE as stated, and
+`hg`'s minimality is genuinely used — weakening `IsWeightTwoNewform` to
+`IsWeightTwoEigenform` makes it FALSE. Explicit counterexample: let `f`
+be a newform of level `M'`, let `q ∤ M'` be prime and `M = M'·q³`. On
+the old block `span{f(z), f(qz), f(q²z), f(q³z)} ⊆ S₂(Γ₀(M))` the
+operator `U_q` acts by `U f = a_q(f)·f − q·f(q·)` and `f(qⁱ·) ↦
+f(q^{i−1}·)`, whose characteristic polynomial is `X²·(X² − a_q X + q)`
+while its kernel is the ONE-dimensional line spanned by the `q`-depleted
+form `g = f(z) − a_q(f)·f(qz) + q·f(q²z)`. That `g` is a normalized
+weight-2 eigenform of level `M` with `a_q(g) = 0`, every other `T_r`
+acts on the whole block by the scalar `a_r(f) = a_r(g)`, and so the
+joint GENERALIZED eigenspace at `g`'s eigensystem is 2-dimensional
+whereas `ℂ·g` is a line. `g` is of course not a newform of level `M`:
+its away-from-`M` eigensystem is `f`'s, realized at the proper divisor
+level `M'`, which is exactly what `eigensystem_minimal` excludes. So
+this node is not a widened restatement and cannot be discharged by the
+`eigensystem_minimal`-free argument that settles half (i). -/
+theorem heckeOp_apply_eq_smul_of_generalizedEigen_of_newform {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
+    {v : CuspForm (Gamma0GL M) 2}
+    (hv : ∀ q : ℕ, q.Prime → ∃ n : ℕ,
+      ((heckeOp M q - qCoeff M g q •
+        (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n) v = 0) :
+    ∀ q : ℕ, q.Prime → heckeOp M q v = qCoeff M g q • v := by
+  -- Step 1 (Petersson semisimplicity): at every GOOD prime the generalized
+  -- eigen-equation is already an honest one.
+  have hgood : ∀ q : ℕ, q.Prime → ¬ q ∣ M →
+      heckeOp M q v = qCoeff M g q • v := by
+    intro q hq hqM
+    obtain ⟨n, hn⟩ := hv q hq
+    exact heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level hM hq hqM
+      (qCoeff M g q) hn
+  -- Step 2 (Atkin–Lehner strong multiplicity one): the good primes alone
+  -- already force `v` onto the line `ℂ·g`.
+  obtain ⟨c, rfl⟩ := exists_smul_of_heckeOp_eq_smul_of_not_dvd_level hM hg hgood
+  -- Step 3: a scalar multiple of the eigenform is an honest eigenvector at
+  -- EVERY prime, bad ones included — no hypothesis needed there.
+  intro q hq
+  rw [map_smul,
+    heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg.toIsWeightTwoEigenform hq,
+    smul_comm]
+
+/-- **Strong multiplicity one in `S₂(Γ₀(M))`, in GENERALIZED-EIGENVECTOR
+form** (PROVEN 2026-07-26 — the CLASSICAL-ANALYTIC residue of the
+`ℂ → ℚ̄_p` Eichler–Shimura seam, isolated 2026-07-25 out of
+`exists_heckeOp_newform_etaleIdempotent`, and DECOMPOSED 2026-07-26 into
+its two classical halves; Diamond–Shurman Theorem 5.8.2 together with
+§5.8 and Proposition 5.8.5): for a weight-2 level-`M` NEWFORM `g`, the
+joint GENERALIZED eigenspace of the complex Hecke operators at the
+eigensystem `{a_q(g)}` is the LINE `ℂ·g` — every cusp form killed by a
+POWER of each `T_q − a_q(g)` is a scalar multiple of `g`.
+
+ASSEMBLY (2026-07-26). The docstring this replaces named two analytic
+statements; exactly one of them survives as a leaf.
+
+* (multiplicity one, D–S Thm 5.8.2) the full prime eigensystem
+  `{a_q(g)}` occurs in `S₂(Γ₀(M))` on the line `ℂ·g` ALONE. This is now
+  PROVEN, and — the surprise of this cut — it needs no newform theory
+  at all, not even `eigensystem_minimal`: since the hypothesis ranges
+  over ALL primes, `U_q` at `q ∣ M` included, the eigen-equation read in
+  the `m`-th `q`-expansion coefficient is literally the recursion
+  `hecke_eigen_coeff_identity` satisfied by `g`, so `a_m(v)` and
+  `a_m(g)` obey the same recursion and differ by the constant factor
+  `a_1(v)`. See `qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen` and
+  `eq_qCoeff_one_smul_of_heckeOp_eigen`.
+* (reducedness) the newform's local factor of `𝕋_ℂ` carries no
+  nilpotents, so the GENERALIZED eigenspace coincides with the honest
+  eigenspace. This is `heckeOp_apply_eq_smul_of_generalizedEigen_of_newform`,
+  itself PROVEN 2026-07-26 over the two surviving classical leaves
+  `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` (Petersson
+  self-adjointness of `T_q` at `q ∤ M`, hence semisimplicity) and
+  `exists_smul_of_heckeOp_eq_smul_of_not_dvd_level` (Atkin–Lehner strong
+  multiplicity one for the away-from-`M` eigensystem). Counterexamples
+  showing that each of `q ∤ M` and `hg`'s minimality is indispensable are
+  recorded at those three declarations.
+
+Only the inclusion `⊆ ℂ·g` is asserted here; the reverse inclusion is
+`heckeOp_apply_eq_smul_of_isWeightTwoEigenform` and needs nothing new.
+The scalar produced is `a_1(v)`, as it must be. -/
+theorem exists_smul_of_heckeOp_generalizedEigen_of_newform {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
+    {v : CuspForm (Gamma0GL M) 2}
+    (hv : ∀ q : ℕ, q.Prime → ∃ n : ℕ,
+      ((heckeOp M q - qCoeff M g q •
+        (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n) v = 0) :
+    ∃ c : ℂ, v = c • g :=
+  ⟨qCoeff M v 1,
+    eq_qCoeff_one_smul_of_heckeOp_eigen hM hg.toIsWeightTwoEigenform
+      (heckeOp_apply_eq_smul_of_generalizedEigen_of_newform hM hg hv)⟩
+
 /-- **Strong multiplicity one in `S₂(Γ₀(M))`, in idempotent form**
-(sorry node — the CLASSICAL-ANALYTIC leaf of the `ℂ → ℚ̄_p`
-Eichler–Shimura seam; Diamond–Shurman Theorem 5.8.2 together with §5.8
+(PROVEN 2026-07-25 over the single analytic leaf
+`exists_smul_of_heckeOp_generalizedEigen_of_newform`; the classical
+citation is Diamond–Shurman Theorem 5.8.2 together with §5.8
 and Proposition 5.8.5): for a weight-2 level-`M` NEWFORM `g`, the
 newform's local factor of the complex Hecke algebra
 `A_ℂ = heckeSubalgebra (heckeOp M) ⊆ End ℂ S₂(Γ₀(M))` is the LINE
@@ -21086,16 +24345,35 @@ The two hypotheses are PROVEN facts of this file, passed in so that the
 leaf's soundness is auditable against them: `hgeig` says `g` is a joint
 eigenvector with the eigenvalues `a_q(g)`.
 
-DECOMPOSITION POINTER: the `e² = e`, `e g = g` clauses (and the
-nilpotence of `Ann_{A_ℂ}(g)·e`) are PURE ALGEBRA over
-`exists_idempotent_heckeSubalgebra_fixing`, available as soon as the
-complex Hecke operators are known to COMMUTE
-(`T_q T_r = T_r T_q` on `S₂(Γ₀(M))`, a coefficient computation over
-`qExpansion_heckeTransform_coeff`: both iterated coefficient formulas
-expand to `a_{qrm} + r·1_{r∣m}a_{qm/r} + q·1_{q∣m}a_{rm/q} +
-qr·1_{qr∣m}a_{m/qr}`, symmetric in `q, r`). Proving that commutation
-would let this leaf shrink to the multiplicity-one clause alone, with
-the idempotent supplied as a hypothesis. -/
+ASSEMBLY (2026-07-25 — the DECOMPOSITION POINTER this docstring used to
+record has been carried out, and this node is now PROVEN over the single
+analytic leaf `exists_smul_of_heckeOp_generalizedEigen_of_newform`).
+
+*The pure-algebra half, discharged here.* `heckeOp_mul_comm` supplies
+`T_q T_r = T_r T_q`. The engines
+`exists_idempotent_heckeSubalgebra_fixing` and
+`heckeSubalgebra_mul_comm` demand commutation at ALL indices, whereas
+`heckeOp M` is junk off the primes; so the proof runs them on the
+prime-restricted family `t q = if q.Prime then heckeOp M q else 0`,
+which has literally the SAME generating set — hence the same
+`heckeSubalgebra` — while satisfying the all-index hypothesis. Applied
+to `v := g` in the finite-dimensional space `S₂(Γ₀(M))`
+(`cuspForm_finiteDimensional`) this yields `e` with `e² = e`, `e g = g`,
+and `IsNilpotent (a·e)` for every `a ∈ A_ℂ` annihilating `g`.
+
+*The analytic leaf, converting nilpotence into ÉTALENESS.* For
+`a := T_q − a_q(g)` — which kills `g`, by `hgeig` — nilpotence gives
+`(a·e)^{n+1} = a^{n+1}·e = 0` (the factors commute and `e` is
+idempotent), so every `e v` is a joint generalized eigenvector at the
+eigensystem `{a_q(g)}` and therefore lies on `ℂ·g` by the leaf: `e` is
+the projection onto the LINE `ℂ·g`. Both remaining clauses then drop
+out with no further analysis:
+
+* `T_q·e = a_q(g)·e`, since `T_q(e v) = T_q(c·g) = c·a_q(g)·g`;
+* for `a ∈ A_ℂ` generalized at the eigensystem, `a v ∈ ℂ·g` for every
+  `v`, whence `e·a = a` (as `e` fixes `ℂ·g`) and `a·e = c₀·e` where
+  `a g = c₀·g`; commutativity of `A_ℂ` closes it,
+  `a = e·a = a·e = c₀·e`. -/
 theorem exists_heckeOp_newform_etaleIdempotent {M : ℕ} (hM : 0 < M)
     {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
     (hgeig : ∀ q : ℕ, q.Prime → heckeOp M q g = qCoeff M g q • g) :
@@ -21105,8 +24383,104 @@ theorem exists_heckeOp_newform_etaleIdempotent {M : ℕ} (hM : 0 < M)
         (∀ q : ℕ, q.Prime → ∃ n : ℕ,
           (heckeOp M q - qCoeff M g q •
             (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n * a = 0) →
-        ∃ c : ℂ, a = c • e) :=
-  sorry
+        ∃ c : ℂ, a = c • e) := by
+  classical
+  haveI := cuspForm_finiteDimensional M hM
+  set t : ℕ → Module.End ℂ (CuspForm (Gamma0GL M) 2) :=
+    fun q => if q.Prime then heckeOp M q else 0 with ht
+  have htq : ∀ q : ℕ, q.Prime → t q = heckeOp M q := by
+    intro q hq
+    simp only [ht, if_pos hq]
+  have ht0 : ∀ q : ℕ, ¬ q.Prime → t q = 0 := by
+    intro q hq
+    simp only [ht, if_neg hq]
+  have hAeq : heckeSubalgebra t = heckeSubalgebra (heckeOp M) := by
+    have hset : {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+          ∃ q : ℕ, q.Prime ∧ φ = t q}
+        = {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+          ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q} := by
+      ext φ
+      constructor
+      · rintro ⟨q, hq, rfl⟩
+        exact ⟨q, hq, htq q hq⟩
+      · rintro ⟨q, hq, rfl⟩
+        exact ⟨q, hq, (htq q hq).symm⟩
+    unfold heckeSubalgebra
+    rw [hset]
+  have hcomm : ∀ i j : ℕ, t i * t j = t j * t i := by
+    intro i j
+    by_cases hi : i.Prime
+    · by_cases hj : j.Prime
+      · rw [htq i hi, htq j hj]
+        exact heckeOp_mul_comm hM hi hj
+      · rw [ht0 j hj, mul_zero, zero_mul]
+    · rw [ht0 i hi, mul_zero, zero_mul]
+  obtain ⟨e, heA, hee, heg, hnil⟩ :=
+    exists_idempotent_heckeSubalgebra_fixing (F := ℂ) hcomm g
+  rw [hAeq] at heA
+  have hAcomm : ∀ a ∈ heckeSubalgebra (heckeOp M),
+      ∀ b ∈ heckeSubalgebra (heckeOp M), a * b = b * a := by
+    rw [← hAeq]
+    exact heckeSubalgebra_mul_comm hcomm
+  have hnil' : ∀ a ∈ heckeSubalgebra (heckeOp M), a g = 0 →
+      IsNilpotent (a * e) := by
+    rw [← hAeq]
+    exact hnil
+  -- the idempotent maps the whole cusp space into the line `ℂ·g`
+  have heline : ∀ v : CuspForm (Gamma0GL M) 2, ∃ c : ℂ, e v = c • g := by
+    intro v
+    refine exists_smul_of_heckeOp_generalizedEigen_of_newform hM hg ?_
+    intro q hq
+    have hmem : (heckeOp M q - qCoeff M g q •
+        (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ∈
+        heckeSubalgebra (heckeOp M) :=
+      sub_mem (hecke_mem_heckeSubalgebra hq)
+        (Subalgebra.smul_mem _ (one_mem _) _)
+    have hann : (heckeOp M q - qCoeff M g q •
+        (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) g = 0 := by
+      simp [hgeig q hq]
+    obtain ⟨n, hn⟩ := hnil' _ hmem hann
+    refine ⟨n + 1, ?_⟩
+    have hc : Commute (heckeOp M q - qCoeff M g q •
+        (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) e :=
+      hAcomm _ hmem e heA
+    have h1 : ((heckeOp M q - qCoeff M g q •
+        (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) * e) ^ (n + 1) = 0 := by
+      rw [pow_succ, hn, zero_mul]
+    rw [hc.mul_pow, IsIdempotentElem.pow_succ_eq n hee] at h1
+    have h2 := congrArg
+      (fun φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) => φ v) h1
+    simpa using h2
+  refine ⟨e, heA, hee, heg, ?_, ?_⟩
+  · intro q hq
+    refine LinearMap.ext fun v => ?_
+    obtain ⟨c, hc⟩ := heline v
+    rw [Module.End.mul_apply, hc, map_smul, hgeig q hq, smul_smul,
+      LinearMap.smul_apply, hc, smul_smul, mul_comm]
+  · intro a haA hgen
+    have haline : ∀ v : CuspForm (Gamma0GL M) 2, ∃ c : ℂ, a v = c • g := by
+      intro v
+      refine exists_smul_of_heckeOp_generalizedEigen_of_newform hM hg ?_
+      intro q hq
+      obtain ⟨n, hn⟩ := hgen q hq
+      refine ⟨n, ?_⟩
+      have h2 := congrArg
+        (fun φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) => φ v) hn
+      simpa using h2
+    obtain ⟨c₀, hc₀⟩ := haline g
+    refine ⟨c₀, ?_⟩
+    have hea : e * a = a := by
+      refine LinearMap.ext fun v => ?_
+      obtain ⟨c, hc⟩ := haline v
+      rw [Module.End.mul_apply, hc, map_smul, heg]
+    have hae : a * e = c₀ • e := by
+      refine LinearMap.ext fun v => ?_
+      obtain ⟨c, hc⟩ := heline v
+      rw [Module.End.mul_apply, hc, map_smul, hc₀, smul_smul,
+        LinearMap.smul_apply, hc, smul_smul, mul_comm]
+    calc a = e * a := hea.symm
+      _ = a * e := hAcomm e heA a haA
+      _ = c₀ • e := hae
 
 end ComplexHeckeAlgebra
 
@@ -21246,26 +24620,2613 @@ attribute [instance] ModularHeckeComparisonPackage.addCommGroup
   ModularHeckeComparisonPackage.module
   ModularHeckeComparisonPackage.moduleFinite
 
-/-- **Inhabitation of the modular Hecke-comparison package** (sorry
-node — THE residual GEOMETRIC leaf after the 2026-07-25 fifth
-decomposition, and the only place where the modular curve and its
-Jacobian are consumed): for every level `M ≥ 1` the carrier
-`ModularHeckeComparisonPackage M` is inhabited.
+/-! ##### Base change of the newform component to `ℚ̄_p`
+
+Support for the SIXTH decomposition (2026-07-25): the pure-algebra
+machinery that turns the asserted `comparison` field of
+`ModularHeckeComparisonPackage` into a theorem over a rational model
+of the Hecke algebra. -/
+
+section RationalHeckeModel
+
+variable {F : Type*} [Field F] {V₀ : Type*} [AddCommGroup V₀]
+    [Module F V₀]
+
+/-- **Two-generator nilpotence transfer**: if `x ^ m` and `y ^ n` both
+annihilate `a` in a commutative ring, then so does the `(m+n)`-th power
+of every element of the ideal `(x, y)`. -/
+theorem pow_mul_eq_zero_of_mem_span_pair {R : Type*} [CommRing R]
+    {x y a z : R} {m n : ℕ} (hx : x ^ m * a = 0) (hy : y ^ n * a = 0)
+    (hz : z ∈ Ideal.span ({x, y} : Set R)) :
+    z ^ (m + n) * a = 0 := by
+  obtain ⟨u, v, rfl⟩ := Ideal.mem_span_pair.mp hz
+  rw [add_pow, Finset.sum_mul]
+  refine Finset.sum_eq_zero fun k _ => ?_
+  rcases le_or_gt m k with hkm | hkm
+  · obtain ⟨j, rfl⟩ := Nat.exists_eq_add_of_le hkm
+    have key : (u * x) ^ (m + j) * (v * y) ^ (m + n - (m + j)) *
+          (((m + n).choose (m + j) : ℕ) : R) * a =
+        (u ^ (m + j) * x ^ j * (v * y) ^ (m + n - (m + j)) *
+          (((m + n).choose (m + j) : ℕ) : R)) * (x ^ m * a) := by
+      rw [mul_pow, pow_add]; ring
+    rw [key, hx, mul_zero]
+  · have hj : m + n - k = n + (m - k) := by omega
+    have key : (u * x) ^ k * (v * y) ^ (m + n - k) *
+          (((m + n).choose k : ℕ) : R) * a =
+        ((u * x) ^ k * v ^ (m + n - k) * y ^ (m - k) *
+          (((m + n).choose k : ℕ) : R)) * (y ^ n * a) := by
+      rw [hj, mul_pow, pow_add]; ring
+    rw [key, hy, mul_zero]
+
+/-- The Hecke subalgebra of a pairwise-commuting family, as a
+commutative ring. -/
+@[reducible] def heckeSubalgebraCommRing {t : ℕ → Module.End F V₀}
+    (hcomm : ∀ m n : ℕ, t m * t n = t n * t m) :
+    CommRing ↥(heckeSubalgebra t) :=
+  { (inferInstance : Ring ↥(heckeSubalgebra t)) with
+    mul_comm := fun a b =>
+      Subtype.ext (heckeSubalgebra_mul_comm hcomm a.1 a.2 b.1 b.2) }
+
+/-- `pow_mul_eq_zero_of_mem_span_pair`, transported into the (commutative)
+Hecke subalgebra of a pairwise-commuting operator family. -/
+theorem pow_mul_eq_zero_of_mem_heckeSubalgebra_pair
+    {t : ℕ → Module.End F V₀}
+    (hcomm : ∀ m n : ℕ, t m * t n = t n * t m)
+    {x y a u v : Module.End F V₀} {m n : ℕ}
+    (hxA : x ∈ heckeSubalgebra t) (hyA : y ∈ heckeSubalgebra t)
+    (haA : a ∈ heckeSubalgebra t) (huA : u ∈ heckeSubalgebra t)
+    (hvA : v ∈ heckeSubalgebra t)
+    (hx : x ^ m * a = 0) (hy : y ^ n * a = 0) :
+    (u * x + v * y) ^ (m + n) * a = 0 := by
+  letI : CommRing ↥(heckeSubalgebra t) := heckeSubalgebraCommRing hcomm
+  set X : ↥(heckeSubalgebra t) := ⟨x, hxA⟩ with hX
+  set Y : ↥(heckeSubalgebra t) := ⟨y, hyA⟩ with hY
+  set A : ↥(heckeSubalgebra t) := ⟨a, haA⟩ with hA
+  set U : ↥(heckeSubalgebra t) := ⟨u, huA⟩ with hU
+  set V : ↥(heckeSubalgebra t) := ⟨v, hvA⟩ with hV
+  have hX' : X ^ m * A = 0 := by
+    apply Subtype.ext
+    push_cast [hX, hA]
+    exact hx
+  have hY' : Y ^ n * A = 0 := by
+    apply Subtype.ext
+    push_cast [hY, hA]
+    exact hy
+  have hmem : U * X + V * Y ∈ Ideal.span ({X, Y} : Set ↥(heckeSubalgebra t)) :=
+    Ideal.mem_span_pair.mpr ⟨U, V, rfl⟩
+  have hres := pow_mul_eq_zero_of_mem_span_pair hX' hY' hmem
+  have := congrArg (Subtype.val (p := fun z => z ∈ heckeSubalgebra t)) hres
+  push_cast [hX, hY, hA, hU, hV] at this
+  exact this
+
+/-- **Propagation of the generalized-eigen condition from the generators
+to the whole Hecke subalgebra.** If every prime-indexed operator acts on
+`e` by the scalar system `lam`, and `a` is killed by a power of each
+`t q - lam q`, then EVERY member `b` of the Hecke subalgebra acts on `e`
+by a scalar `c` and is killed, after subtracting that same scalar, by a
+power of itself on `a`.
+
+This is the step that turns the finitely many generator-level
+nilpotencies of the generalized eigenspace condition into a statement
+about an arbitrary element of the algebra; the two closure cases are
+both instances of `pow_mul_eq_zero_of_mem_heckeSubalgebra_pair`, since
+`(x + y) - (c₁ + c₂)` and `xy - c₁c₂` both lie in the ideal generated by
+`x - c₁` and `y - c₂`. -/
+theorem exists_scalar_pow_mul_eq_zero_of_mem_heckeSubalgebra
+    {t : ℕ → Module.End F V₀}
+    (hcomm : ∀ m n : ℕ, t m * t n = t n * t m)
+    {lam : ℕ → F} {e a : Module.End F V₀}
+    (haA : a ∈ heckeSubalgebra t)
+    (he : ∀ q : ℕ, q.Prime → t q * e = lam q • e)
+    (ha : ∀ q : ℕ, q.Prime → ∃ n : ℕ, (t q - lam q • 1) ^ n * a = 0) :
+    ∀ b ∈ heckeSubalgebra t, ∃ (c : F) (n : ℕ),
+      b * e = c • e ∧ (b - c • 1) ^ n * a = 0 := by
+  intro b hb
+  have hb' : b ∈ Algebra.adjoin F
+      {φ : Module.End F V₀ | ∃ q : ℕ, q.Prime ∧ φ = t q} := hb
+  clear hb
+  induction hb' using Algebra.adjoin_induction with
+  | mem x hx =>
+      obtain ⟨q, hq, rfl⟩ := hx
+      obtain ⟨n, hn⟩ := ha q hq
+      exact ⟨lam q, n, he q hq, hn⟩
+  | algebraMap r =>
+      refine ⟨r, 1, ?_, ?_⟩
+      · rw [Algebra.algebraMap_eq_smul_one, smul_mul_assoc, one_mul]
+      · rw [Algebra.algebraMap_eq_smul_one, sub_self, pow_one, zero_mul]
+  | add x y hx hy ihx ihy =>
+      obtain ⟨c₁, n₁, hxe, hxa⟩ := ihx
+      obtain ⟨c₂, n₂, hye, hya⟩ := ihy
+      refine ⟨c₁ + c₂, n₁ + n₂, ?_, ?_⟩
+      · rw [add_mul, hxe, hye, add_smul]
+      · have hxA : x - c₁ • 1 ∈ heckeSubalgebra t :=
+          Subalgebra.sub_mem _ hx (Subalgebra.smul_mem _ (Subalgebra.one_mem _) _)
+        have hyA : y - c₂ • 1 ∈ heckeSubalgebra t :=
+          Subalgebra.sub_mem _ hy (Subalgebra.smul_mem _ (Subalgebra.one_mem _) _)
+        have hkey := pow_mul_eq_zero_of_mem_heckeSubalgebra_pair hcomm
+          hxA hyA haA (Subalgebra.one_mem _) (Subalgebra.one_mem _) hxa hya
+        have hrw : (1 : Module.End F V₀) * (x - c₁ • 1) +
+            1 * (y - c₂ • 1) = x + y - (c₁ + c₂) • 1 := by
+          rw [one_mul, one_mul, add_smul]; abel
+        rwa [hrw] at hkey
+  | mul x y hx hy ihx ihy =>
+      obtain ⟨c₁, n₁, hxe, hxa⟩ := ihx
+      obtain ⟨c₂, n₂, hye, hya⟩ := ihy
+      refine ⟨c₁ * c₂, n₁ + n₂, ?_, ?_⟩
+      · rw [mul_assoc, hye, mul_smul_comm, hxe, smul_smul, mul_comm c₂ c₁]
+      · have hxA : x - c₁ • 1 ∈ heckeSubalgebra t :=
+          Subalgebra.sub_mem _ hx (Subalgebra.smul_mem _ (Subalgebra.one_mem _) _)
+        have hyA : y - c₂ • 1 ∈ heckeSubalgebra t :=
+          Subalgebra.sub_mem _ hy (Subalgebra.smul_mem _ (Subalgebra.one_mem _) _)
+        have huA : y - c₂ • 1 + c₂ • (1 : Module.End F V₀) ∈ heckeSubalgebra t :=
+          Subalgebra.add_mem _ hyA (Subalgebra.smul_mem _ (Subalgebra.one_mem _) _)
+        have hvA : c₁ • (1 : Module.End F V₀) ∈ heckeSubalgebra t :=
+          Subalgebra.smul_mem _ (Subalgebra.one_mem _) _
+        have hkey := pow_mul_eq_zero_of_mem_heckeSubalgebra_pair hcomm
+          hxA hyA haA huA hvA hxa hya
+        have hyx : y * x = x * y :=
+          heckeSubalgebra_mul_comm hcomm y hy x hx
+        have hrw : (y - c₂ • 1 + c₂ • (1 : Module.End F V₀)) * (x - c₁ • 1) +
+            c₁ • (1 : Module.End F V₀) * (y - c₂ • 1) =
+            x * y - (c₁ * c₂) • 1 := by
+          have e1 : y - c₂ • (1 : Module.End F V₀) + c₂ • 1 = y := by abel
+          rw [e1]
+          have e2 : y * (x - c₁ • (1 : Module.End F V₀)) +
+              c₁ • (1 : Module.End F V₀) * (y - c₂ • 1) =
+              y * x - (c₁ * c₂) • (1 : Module.End F V₀) := by
+            simp only [mul_sub, smul_mul_assoc, mul_smul_comm,
+              one_mul, mul_one, smul_smul, mul_comm c₂ c₁]
+            abel
+          rw [e2, hyx]
+        rwa [hrw] at hkey
+
+/-- **The corner idempotent cut out by a SIMPLE root.** Let `π` be an
+idempotent of a commutative `F`-algebra `R` and `w` an element; write
+`Φ P = π · P(w)` for the evaluation in the corner ring `πR` (whose unit
+is `π`). If a polynomial `fF` corner-vanishes at `w` and factors as
+`(X − lam) · hpoly` with `hpoly(lam) ≠ 0` — i.e. `lam` is a SIMPLE root
+— then the Lagrange element `E = hpoly(lam)⁻¹ · Φ hpoly` is an
+idempotent of the corner on which every `Φ P` acts by the scalar
+`P(lam)`.
+
+This is the only place where separability is consumed, and it is what
+makes the `κ`-component of `K_g ⊗_ℚ ℚ̄_p` visible: the `d` embeddings of
+the Hecke field into `ℚ̄_p` are the `d` distinct roots of the minimal
+polynomial, and `E` is the idempotent of the one named by `κ`. -/
+theorem corner_idempotent_spec
+    {F : Type*} [Field F] {R : Type*} [CommRing R] [Algebra F R]
+    {π w E : R} {fF hpoly : Polynomial F} {lam : F}
+    (hπ : π * π = π)
+    (hfF : π * Polynomial.aeval w fF = 0)
+    (hfac : fF = (Polynomial.X - Polynomial.C lam) * hpoly)
+    (hval : hpoly.eval lam ≠ 0)
+    (hE : E = (hpoly.eval lam)⁻¹ • (π * Polynomial.aeval w hpoly)) :
+    E * E = E ∧ π * E = E ∧
+      ∀ P : Polynomial F,
+        (π * Polynomial.aeval w P) * E = (P.eval lam) • E := by
+  classical
+  have hΦmul : ∀ P Q : Polynomial F,
+      π * Polynomial.aeval w (P * Q) =
+        (π * Polynomial.aeval w P) * (π * Polynomial.aeval w Q) := by
+    intro P Q
+    rw [map_mul]
+    calc π * (Polynomial.aeval w P * Polynomial.aeval w Q)
+        = (π * π) * (Polynomial.aeval w P * Polynomial.aeval w Q) := by
+          rw [hπ]
+      _ = (π * Polynomial.aeval w P) * (π * Polynomial.aeval w Q) := by
+          ring
+  have hΦπ : ∀ P : Polynomial F,
+      π * (π * Polynomial.aeval w P) = π * Polynomial.aeval w P := by
+    intro P; rw [← mul_assoc, hπ]
+  have hlin : (π * Polynomial.aeval w (Polynomial.X - Polynomial.C lam)) *
+      (π * Polynomial.aeval w hpoly) = 0 := by
+    rw [← hΦmul, ← hfac, hfF]
+  have hkey : ∀ P : Polynomial F,
+      (π * Polynomial.aeval w P) * (π * Polynomial.aeval w hpoly) =
+        (P.eval lam) • (π * Polynomial.aeval w hpoly) := by
+    intro P
+    obtain ⟨k, hk⟩ : (Polynomial.X - Polynomial.C lam) ∣
+        (P - Polynomial.C (P.eval lam)) := Polynomial.X_sub_C_dvd_sub_C_eval
+    have h1 : (π * Polynomial.aeval w P) - (P.eval lam) • π =
+        (π * Polynomial.aeval w (Polynomial.X - Polynomial.C lam)) *
+          (π * Polynomial.aeval w k) := by
+      rw [← hΦmul, ← hk, map_sub, mul_sub, Polynomial.aeval_C,
+        Algebra.smul_def]
+      ring
+    have h2 : (π * Polynomial.aeval w P) = (P.eval lam) • π +
+        (π * Polynomial.aeval w (Polynomial.X - Polynomial.C lam)) *
+          (π * Polynomial.aeval w k) := by
+      rw [← h1]; ring
+    rw [h2, add_mul, smul_mul_assoc, hΦπ]
+    have h3 : (π * Polynomial.aeval w (Polynomial.X - Polynomial.C lam)) *
+          (π * Polynomial.aeval w k) * (π * Polynomial.aeval w hpoly) =
+        (π * Polynomial.aeval w k) *
+          ((π * Polynomial.aeval w (Polynomial.X - Polynomial.C lam)) *
+            (π * Polynomial.aeval w hpoly)) := by ring
+    rw [h3, hlin, mul_zero, add_zero]
+  refine ⟨?_, ?_, ?_⟩
+  · rw [hE, smul_mul_assoc, mul_smul_comm, hkey hpoly, smul_smul, smul_smul]
+    congr 1
+    field_simp
+  · rw [hE, mul_smul_comm, hΦπ]
+  · intro P
+    rw [hE, mul_smul_comm, hkey P, smul_comm]
+
+end RationalHeckeModel
+
+/-- **The modular RATIONAL Hecke package** (SIXTH decomposition,
+2026-07-25) — the geometric carrier of the modular-homology input,
+refined by an explicit RATIONAL MODEL of the Hecke algebra.
+
+The fifth decomposition left `comparison` — the `ℂ → ℚ̄_p`
+Eichler–Shimura transport of the newform's étale idempotent — as an
+ASSERTED field of `ModularHeckeComparisonPackage`. Its own docstring
+named the next cut: "an explicit finite-dimensional `ℚ`-algebra `𝕋_ℚ`
+with the two base-change identifications, which would turn
+`comparison` into base-change algebra plus the two identifications".
+That is exactly this carrier, and `comparison` is now PROVEN from it
+(`exists_etaleIdempotent_of_modularRationalHeckePackage`).
+
+What is new relative to `ModularHeckeComparisonPackage`:
+
+* `T`, `Tgen`, `Tgen_adjoin` — the rational Hecke algebra `𝕋_ℚ` and
+  its PRIME-indexed generators (the composite `T_n` are polynomials in
+  the `T_q`/`U_q` by the Hecke recursions, Diamond–Shurman §5.2-5.3);
+* `padic` — the `p`-adic realization `𝕋_ℚ → End(V_p)`, so the Hecke
+  operators of the transported carrier are literally
+  `fun m => padic (Tgen m)`. Commutativity of the Hecke operators
+  (`hecke_mul_comm`) is then FREE, inherited from commutativity of
+  `𝕋_ℚ`, rather than asserted;
+* `padic_indep` — the realization stays independent after base change,
+  i.e. `𝕋_ℚ ⊗_ℚ ℚ̄_p ↪ End_{ℚ̄_p}(V_p)`. Classically this is
+  faithfulness of the Hecke action, available because `V_p(J₀(M))` is
+  free of rank 2 over `𝕋 ⊗ ℚ_p`;
+* `newformFactor` — the NEWFORM COMPONENT of the rational Hecke
+  algebra: the Hecke field `K_g` sits inside `𝕋_ℚ` as a multiplicative
+  `ℚ`-linear corner, with `T_q` acting on it as `a_q(g)`. Classically
+  `𝕋_ℚ ≅ K_g × 𝕋'`, and the corner is that factor: for a newform of
+  level EXACTLY `M` the `g`-isotypic part of `S₂(Γ₀(M))` is the line
+  `ℂ·g` (strong multiplicity one), so the local factor is étale and
+  the rational factor is the field `K_g` (Diamond–Shurman §5.8, Thm.
+  5.8.2 and Prop. 5.8.5; Atkin–Lehner theory).
+
+Note that `newformFactor` is kept as an IMPLICATION off the COMPLEX
+étale idempotent, exactly as `comparison` was: it is a fact about the
+one intended inhabitant, FALSE for arbitrary abstract carriers, and
+stating it conditionally keeps this carrier no stronger than the one
+it replaces. Only three of the corner's properties are consumed
+downstream — injectivity, multiplicativity, and the `T_q` action — so
+neither surjectivity onto the corner nor the vanishing `ι 1 · m = 0`
+is demanded.
+
+All remaining fields are verbatim those of
+`ModularHeckeComparisonPackage`; their classical citations (Tate
+module and Galois action, Igusa reduction and the Eichler–Shimura
+congruence, rank-2 freeness over the Hecke algebra after Mazur and
+Ribet, the Atkin–Lehner-twisted Weil pairing, Ribet irreducibility)
+are in the docstring of the inhabitation leaf
+`nonempty_modularRationalHeckePackage` below. -/
+structure ModularRationalHeckePackage (M : ℕ) where
+  /-- The rational Hecke algebra `𝕋_ℚ`. -/
+  T : Type
+  [commRingT : CommRing T]
+  [algebraT : Algebra ℚ T]
+  /-- The abstract Hecke operators inside `𝕋_ℚ`. -/
+  Tgen : ℕ → T
+  /-- `𝕋_ℚ` is generated over `ℚ` by the prime-indexed Hecke operators. -/
+  Tgen_adjoin :
+    Algebra.adjoin ℚ {x : T | ∃ q : ℕ, q.Prime ∧ x = Tgen q} = ⊤
+  /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
+  Vp : Type
+  [addCommGroup : AddCommGroup Vp]
+  [module : Module (AlgebraicClosure ℚ_[p]) Vp]
+  [moduleFinite : Module.Finite (AlgebraicClosure ℚ_[p]) Vp]
+  /-- The continuous Galois action on the Tate module. -/
+  τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) Vp
+  /-- The `p`-adic realization of the rational Hecke algebra. -/
+  padic : T →+* Module.End (AlgebraicClosure ℚ_[p]) Vp
+  /-- The realization stays independent after base change to `ℚ̄_p`. -/
+  padic_indep : ∀ (n : ℕ) (x : Fin n → T), LinearIndependent ℚ x →
+    LinearIndependent (AlgebraicClosure ℚ_[p]) fun i => padic (x i)
+  /-- The exceptional set (intended: the places over `Mp`). -/
+  S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+  /-- Hecke correspondences are defined over `ℚ`. -/
+  hecke_comm : ∀ (m : ℕ) (γ : Field.absoluteGaloisGroup ℚ),
+    padic (Tgen m) * τJ γ = τJ γ * padic (Tgen m)
+  /-- The Eichler–Shimura congruence relation at good primes. -/
+  congruence : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2
+      - padic (Tgen q) *
+        τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+      + (q : AlgebraicClosure ℚ_[p]) • 1 = 0
+  /-- First member of a Hecke-algebra basis of the Tate module. -/
+  basis₁ : Vp
+  /-- Second member of a Hecke-algebra basis of the Tate module. -/
+  basis₂ : Vp
+  /-- Freeness, existence half. -/
+  span_free : ∀ x : Vp,
+    ∃ a ∈ heckeSubalgebra (fun m => padic (Tgen m)),
+    ∃ b ∈ heckeSubalgebra (fun m => padic (Tgen m)),
+      x = a basis₁ + b basis₂
+  /-- Freeness, uniqueness half. -/
+  indep_free : ∀ a ∈ heckeSubalgebra (fun m => padic (Tgen m)),
+    ∀ b ∈ heckeSubalgebra (fun m => padic (Tgen m)),
+      a basis₁ + b basis₂ = 0 → a = 0 ∧ b = 0
+  /-- The Atkin–Lehner-twisted Weil pairing. -/
+  pair : Vp →ₗ[AlgebraicClosure ℚ_[p]]
+    Vp →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p]
+  /-- The pairing is alternating. -/
+  pair_self : ∀ x : Vp, pair x x = 0
+  /-- The pairing is nondegenerate. -/
+  pair_nondeg : ∀ x : Vp, (∀ y : Vp, pair x y = 0) → x = 0
+  /-- The Hecke operators are self-adjoint for the twisted pairing. -/
+  pair_hecke : ∀ (q : ℕ), q.Prime → ∀ x y : Vp,
+    pair (padic (Tgen q) x) y = pair x (padic (Tgen q) y)
+  /-- Galois Frobenii off `S` scale the pairing by `q`. -/
+  pair_frob : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    ∀ x y : Vp,
+      pair (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+          (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
+        (q : AlgebraicClosure ℚ_[p]) * pair x y
+  /-- **The newform factor of the RATIONAL Hecke algebra**: given the
+  newform's étale idempotent on the COMPLEX side, the Hecke field `K_g`
+  embeds into `𝕋_ℚ` as a (non-unital) multiplicative `ℚ`-linear corner
+  whose unit `ι 1` is the newform idempotent and on which `T_q` acts as
+  `a_q(g)`. -/
+  newformFactor : ∀ (g : CuspForm (Gamma0GL M) 2), IsWeightTwoNewform M g →
+    ∀ eC ∈ heckeSubalgebra (heckeOp M), eC ≠ 0 → eC * eC = eC →
+      (∀ q : ℕ, q.Prime → heckeOp M q * eC = qCoeff M g q • eC) →
+      (∀ a ∈ heckeSubalgebra (heckeOp M),
+        (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+          (heckeOp M q - qCoeff M g q •
+            (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n * a = 0) →
+        ∃ c : ℂ, a = c • eC) →
+      ∃ ι : heckeField M g →ₗ[ℚ] T,
+        Function.Injective ι ∧
+        (∀ x y : heckeField M g, ι (x * y) = ι x * ι y) ∧
+        (∀ q : ℕ, q.Prime → Tgen q * ι 1 = ι (heckeCoeff M g q))
+  /-- Ribet irreducibility. -/
+  irred_eigenspace : ∀ (g : CuspForm (Gamma0GL M) 2),
+    IsWeightTwoNewform M g →
+    ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+    ∀ U : Submodule (AlgebraicClosure ℚ_[p]) Vp,
+      U ≤ heckeEigenspace (fun m => padic (Tgen m))
+            (fun m => κ (heckeCoeff M g m)) →
+      (∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ U, τJ γ x ∈ U) →
+      U = ⊥ ∨ U = heckeEigenspace (fun m => padic (Tgen m))
+            (fun m => κ (heckeCoeff M g m))
+
+attribute [instance] ModularRationalHeckePackage.commRingT
+  ModularRationalHeckePackage.algebraT
+  ModularRationalHeckePackage.addCommGroup
+  ModularRationalHeckePackage.module
+  ModularRationalHeckePackage.moduleFinite
+
+/-! #### The SEVENTH decomposition: naming `𝕋_ℚ`, and cutting the
+newform factor off the geometry (2026-07-26)
+
+`ModularRationalHeckePackage` quantifies EXISTENTIALLY over its
+rational Hecke algebra `T`. That single feature is what made its
+inhabitation one indivisible leaf, and it is worth recording why, since
+the obvious decomposition — a tower of `Nonempty` sub-packages, each
+extending the last — is UNSOUND here.
+
+*The counterexample* (found while auditing this cut). Suppose the
+carrier were cut so that some leaf produced `(T, Tgen, Vp, τJ, padic)`
+with the congruence, freeness and pairing fields, and a later leaf were
+asked for `newformFactor` about whatever that leaf produced. Take
+
+  `T := ℚ`,  `Tgen q := 1 + q`,  `Vp := ℚ̄_p²`,  `τJ := 1`,
+
+`padic` the structure map and `pair` the standard symplectic form.
+Then `Tgen_adjoin` is trivial; `padic_indep` holds because a
+`ℚ`-independent family in `ℚ` has length `≤ 1`; the Eichler–Shimura
+congruence reads `1 − (1 + q) + q = 0`; `Vp` is free of rank two over
+`heckeSubalgebra = ℚ̄_p·1`; `pair_frob` holds because `τJ` is trivial
+and `χ_cyc(Frob_q) = q` is exactly the `q` in the statement — every
+field holds EXCEPT `newformFactor`, which demands a `ℚ`-linear
+INJECTION of the Hecke field `K_g` into `T = ℚ`. At `M = 23`,
+`K_g = ℚ(√5)`, so the later leaf would be FALSE about a legitimate
+inhabitant of the earlier one. A tower is therefore not available: the
+package is rigid only because `newformFactor` rules the junk carriers
+out, and a cut can separate `newformFactor` from the geometry only by
+NAMING `T` instead of quantifying over it.
+
+*The name.* `modularHeckeAlgebraQ M` is the honest analytic rational
+Hecke algebra: the `ℚ`-subalgebra of `End_ℂ S₂(Γ₀(M))` generated by the
+Hecke operators `heckeOp M q` at the primes. It is a genuine
+definition on this pin — `heckeOp` is the bundled Hecke slash-sum
+(`heckeOp_coe`), not an opaque carrier — and it is commutative by
+`heckeOp_mul_comm`. Classically it is the same algebra as the
+`𝕋_ℚ ⊆ End H₁(X₀(M); ℚ)` of the package's docstring: the
+Eichler–Shimura isomorphism identifies them, generator by generator.
+With `T` named, the package's inhabitation splits into two leaves that
+share no vocabulary:
+
+* `exists_newformFactor_modularHeckeAlgebraQ` — PURE MODULAR FORMS,
+  no geometry: the newform factor `K_g ↪ 𝕋_ℚ` of the analytic Hecke
+  algebra;
+* `nonempty_modularTateModuleData` — PURE GEOMETRY, no reference to
+  the newform structure of `𝕋_ℚ`: the Tate module of `J₀(M)` with its
+  Galois action, the `p`-adic realization of `𝕋_ℚ` (this is where the
+  Eichler–Shimura comparison now lives, and it is the ONLY surviving
+  contact between the two sides), the congruence relation, freeness,
+  the twisted Weil pairing and Ribet irreducibility.
+
+FAITHFULNESS of the cut. The geometric leaf is STRONGER than the old
+existential leaf, because it pins `T`; that strengthening is what makes
+the cut sound, and it is satisfied by the intended inhabitant — the
+classical construction takes `T` to be exactly this algebra. The
+analytic leaf is verbatim the old `newformFactor` field at that `T`,
+including its status as an IMPLICATION off the COMPLEX étale
+idempotent, so it remains a statement about the one intended
+inhabitant and the analytic sibling
+`exists_heckeOp_newform_etaleIdempotent` stays genuinely consumed.
+Nothing is asserted that the sixth cut did not already assert, except
+the identification of `T`. -/
+
+/-- `End_ℂ(S₂(Γ₀(M)))` as a `ℚ`-algebra, through `ℚ → ℂ → End`
+(`RingHom.toAlgebra'`; the image of `ℂ` is central, `Algebra.commutes`).
+The pin has no such instance — `Module ℚ (CuspForm (Gamma0GL M) 2)`
+does not exist either, so no diamond is created — and it is what lets
+the rational Hecke algebra below be a `Subalgebra ℚ` of the complex
+endomorphism algebra rather than an abstract carrier. -/
+noncomputable instance modularEndRatAlgebra (M : ℕ) :
+    Algebra ℚ (Module.End ℂ (CuspForm (Gamma0GL M) 2)) :=
+  RingHom.toAlgebra'
+    ((algebraMap ℂ (Module.End ℂ (CuspForm (Gamma0GL M) 2))).comp
+      (algebraMap ℚ ℂ))
+    (fun c x => Algebra.commutes (algebraMap ℚ ℂ c) x)
+
+/-- **The rational Hecke algebra `𝕋_ℚ` of level `M`, CONCRETELY**: the
+`ℚ`-subalgebra of `End_ℂ S₂(Γ₀(M))` generated by the prime-indexed
+Hecke operators. Generation by the PRIME-indexed ones is not a
+restriction — the composite `T_n` are polynomials in the `T_q`/`U_q` by
+the Hecke recursions (Diamond–Shurman §5.2-5.3) — and it is what makes
+`ModularRationalHeckePackage.Tgen_adjoin` true by construction
+(`Algebra.adjoin_adjoin_coe_preimage`). -/
+noncomputable def modularHeckeAlgebraQ (M : ℕ) :
+    Subalgebra ℚ (Module.End ℂ (CuspForm (Gamma0GL M) 2)) :=
+  Algebra.adjoin ℚ
+    {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+      ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q}
+
+/-- The analytic Hecke operator at a prime lies in the rational Hecke
+algebra. -/
+theorem heckeOp_mem_modularHeckeAlgebraQ {M q : ℕ} (hq : q.Prime) :
+    heckeOp M q ∈ modularHeckeAlgebraQ M :=
+  Algebra.subset_adjoin ⟨q, hq, rfl⟩
+
+/-- **The rational Hecke algebra is commutative** — the same two nested
+`Algebra.adjoin` inductions as `heckeSubalgebra_mul_comm`, run over `ℚ`
+inside the COMPLEX endomorphism algebra (so the generic lemma, which is
+stated for `End F V₀` over the acting field `F`, does not apply
+directly) and based on `heckeOp_mul_comm`. -/
+theorem modularHeckeAlgebraQ_mul_comm {M : ℕ} (hM : 0 < M) :
+    ∀ a ∈ modularHeckeAlgebraQ M, ∀ b ∈ modularHeckeAlgebraQ M,
+      a * b = b * a := by
+  have hgen : ∀ (q : ℕ), q.Prime →
+      ∀ a ∈ modularHeckeAlgebraQ M,
+        heckeOp M q * a = a * heckeOp M q := by
+    intro q hq a ha
+    have ha' : a ∈ Algebra.adjoin ℚ
+        {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+          ∃ n : ℕ, n.Prime ∧ φ = heckeOp M n} := ha
+    clear ha
+    induction ha' using Algebra.adjoin_induction with
+    | mem x hx =>
+        obtain ⟨n, hn, rfl⟩ := hx
+        exact heckeOp_mul_comm hM hq hn
+    | algebraMap r => exact (Algebra.commutes r (heckeOp M q)).symm
+    | add x y hx hy ihx ihy => rw [mul_add, add_mul, ihx, ihy]
+    | mul x y hx hy ihx ihy =>
+        rw [← mul_assoc, ihx, mul_assoc, ihy, ← mul_assoc]
+  intro a ha b hb
+  have hb' : b ∈ Algebra.adjoin ℚ
+      {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+        ∃ n : ℕ, n.Prime ∧ φ = heckeOp M n} := hb
+  clear hb
+  induction hb' using Algebra.adjoin_induction with
+  | mem x hx =>
+      obtain ⟨n, hn, rfl⟩ := hx
+      exact (hgen n hn a ha).symm
+  | algebraMap r => exact (Algebra.commutes r a).symm
+  | add x y hx hy ihx ihy => rw [mul_add, add_mul, ihx, ihy]
+  | mul x y hx hy ihx ihy =>
+      rw [← mul_assoc, ihx, mul_assoc, ihy, ← mul_assoc]
+
+/-- The rational Hecke algebra as a commutative ring — the
+`commRingT` field of `ModularRationalHeckePackage` at the concrete
+`T`. -/
+@[reducible] noncomputable def modularHeckeAlgebraQCommRing {M : ℕ}
+    (hM : 0 < M) : CommRing ↥(modularHeckeAlgebraQ M) :=
+  { (inferInstance : Ring ↥(modularHeckeAlgebraQ M)) with
+    mul_comm := fun a b =>
+      Subtype.ext (modularHeckeAlgebraQ_mul_comm hM a.1 a.2 b.1 b.2) }
+
+/-- **The GEOMETRIC carrier of the modular rational Hecke package**
+(SEVENTH decomposition, 2026-07-26): everything in
+`ModularRationalHeckePackage` except `newformFactor`, over the
+CONCRETE rational Hecke algebra `modularHeckeAlgebraQ M`.
+
+Relative to `ModularRationalHeckePackage` there are exactly three
+differences, and all three are consequences of naming `T`:
+
+* `T`, `commRingT`, `algebraT` are gone — `T` is
+  `modularHeckeAlgebraQ M`;
+* `Tgen_adjoin` is gone: at this `T` it is a theorem
+  (`Algebra.adjoin_adjoin_coe_preimage`), discharged in the assembly;
+* `Tgen_prime` is NEW, and it is the pin: the abstract operator at a
+  prime IS the analytic Hecke operator `heckeOp M q`. Without it
+  `padic` would be a realization of an unrelated algebra and the
+  newform factor of `𝕋_ℚ` could not be cut off — see the junk
+  counterexample in the section note above.
+
+`padic` is where the Eichler–Shimura comparison now sits: it says the
+Hecke correspondences on the Tate module of `J₀(M)` realize the
+ANALYTIC Hecke algebra of `S₂(Γ₀(M))`, generator by generator
+(`Tgen_prime`). Everything else is verbatim the corresponding field of
+`ModularRationalHeckePackage`, with its classical citations in that
+structure's docstring and in
+`nonempty_modularRationalHeckePackage` below. -/
+structure ModularTateModuleData (M : ℕ) where
+  /-- The abstract Hecke operators inside `𝕋_ℚ`. -/
+  Tgen : ℕ → ↥(modularHeckeAlgebraQ M)
+  /-- **The pin**: at a prime index the abstract operator IS the
+  analytic Hecke operator on `S₂(Γ₀(M))`. -/
+  Tgen_prime : ∀ q : ℕ, q.Prime →
+    ((Tgen q : Module.End ℂ (CuspForm (Gamma0GL M) 2))) = heckeOp M q
+  /-- The Galois module: intended `V_p(J₀(M)) ⊗ ℚ̄_p`. -/
+  Vp : Type
+  [addCommGroup : AddCommGroup Vp]
+  [module : Module (AlgebraicClosure ℚ_[p]) Vp]
+  [moduleFinite : Module.Finite (AlgebraicClosure ℚ_[p]) Vp]
+  /-- The continuous Galois action on the Tate module. -/
+  τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) Vp
+  /-- The `p`-adic realization of the rational Hecke algebra — the
+  Eichler–Shimura comparison. -/
+  padic : ↥(modularHeckeAlgebraQ M) →+*
+    Module.End (AlgebraicClosure ℚ_[p]) Vp
+  /-- The realization stays independent after base change to `ℚ̄_p`. -/
+  padic_indep : ∀ (n : ℕ) (x : Fin n → ↥(modularHeckeAlgebraQ M)),
+    LinearIndependent ℚ x →
+    LinearIndependent (AlgebraicClosure ℚ_[p]) fun i => padic (x i)
+  /-- The exceptional set (intended: the places over `Mp`). -/
+  S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+  /-- Hecke correspondences are defined over `ℚ`. -/
+  hecke_comm : ∀ (m : ℕ) (γ : Field.absoluteGaloisGroup ℚ),
+    padic (Tgen m) * τJ γ = τJ γ * padic (Tgen m)
+  /-- The Eichler–Shimura congruence relation at good primes. -/
+  congruence : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2
+      - padic (Tgen q) *
+        τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+      + (q : AlgebraicClosure ℚ_[p]) • 1 = 0
+  /-- First member of a Hecke-algebra basis of the Tate module. -/
+  basis₁ : Vp
+  /-- Second member of a Hecke-algebra basis of the Tate module. -/
+  basis₂ : Vp
+  /-- Freeness, existence half. -/
+  span_free : ∀ x : Vp,
+    ∃ a ∈ heckeSubalgebra (fun m => padic (Tgen m)),
+    ∃ b ∈ heckeSubalgebra (fun m => padic (Tgen m)),
+      x = a basis₁ + b basis₂
+  /-- Freeness, uniqueness half. -/
+  indep_free : ∀ a ∈ heckeSubalgebra (fun m => padic (Tgen m)),
+    ∀ b ∈ heckeSubalgebra (fun m => padic (Tgen m)),
+      a basis₁ + b basis₂ = 0 → a = 0 ∧ b = 0
+  /-- The Atkin–Lehner-twisted Weil pairing. -/
+  pair : Vp →ₗ[AlgebraicClosure ℚ_[p]]
+    Vp →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p]
+  /-- The pairing is alternating. -/
+  pair_self : ∀ x : Vp, pair x x = 0
+  /-- The pairing is nondegenerate. -/
+  pair_nondeg : ∀ x : Vp, (∀ y : Vp, pair x y = 0) → x = 0
+  /-- The Hecke operators are self-adjoint for the twisted pairing. -/
+  pair_hecke : ∀ (q : ℕ), q.Prime → ∀ x y : Vp,
+    pair (padic (Tgen q) x) y = pair x (padic (Tgen q) y)
+  /-- Galois Frobenii off `S` scale the pairing by `q`. -/
+  pair_frob : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    ∀ x y : Vp,
+      pair (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+          (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
+        (q : AlgebraicClosure ℚ_[p]) * pair x y
+  /-- Ribet irreducibility. -/
+  irred_eigenspace : ∀ (g : CuspForm (Gamma0GL M) 2),
+    IsWeightTwoNewform M g →
+    ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+    ∀ U : Submodule (AlgebraicClosure ℚ_[p]) Vp,
+      U ≤ heckeEigenspace (fun m => padic (Tgen m))
+            (fun m => κ (heckeCoeff M g m)) →
+      (∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ U, τJ γ x ∈ U) →
+      U = ⊥ ∨ U = heckeEigenspace (fun m => padic (Tgen m))
+            (fun m => κ (heckeCoeff M g m))
+
+attribute [instance] ModularTateModuleData.addCommGroup
+  ModularTateModuleData.module ModularTateModuleData.moduleFinite
+
+/-! #### Proving the newform factor: the sub-cut, executed (2026-07-26)
+
+`exists_newformFactor_modularHeckeAlgebraQ` asks for a `ℚ`-linear
+multiplicative injection `K_g ↪ 𝕋_ℚ` carrying `a_q(g)` to `T_q·ι(1)`.
+Write `A := modularHeckeAlgebraQ M`, `λ : A ↠ K_g` for the eigenvalue
+character and `m := ker λ`. Its three conditions FORCE the local factor
+`ε·A` (`ε := ι 1`, an idempotent because `ι` is multiplicative) to be
+the FIELD `K_g`: `ι(K_g)` is a `ℚ`-subalgebra of `A` with unit `ε`
+containing every `T_q·ε = ι(a_q)`, hence containing
+`ε·Algebra.adjoin ℚ {T_q} = ε·A`, and it is contained in `ε·A`; so
+`ε·A ≅ K_g`, which in an Artinian ring says that `ε` is the primitive
+idempotent at `m` and `m·ε = 0`. So the leaf is EXACTLY the assertion
+that `𝕋_ℚ` is étale at the maximal ideal of a newform of exact level
+`M`; no weaker reading of it is available.
+
+Four of the five steps are discharged here.
+
+* `finiteDimensional_modularHeckeAlgebraQ` — `dim_ℚ 𝕋_ℚ < ∞`, the
+  Sturm-bound input. It needs NO new arithmetic: the file's
+  `heckeSubring_moduleFinite` (`𝕋_ℤ` is a finite `ℤ`-module) already
+  carries it, because `𝕋_ℚ` sits inside the `ℚ`-span of `𝕋_ℤ`.
+* `exists_eigenvalueChar_heckeSubalgebra` and
+  `exists_eigenvalueChar_modularHeckeAlgebraQ` — the eigenvalue
+  characters `χ : 𝕋_ℂ → ℂ` and `λ : 𝕋_ℚ ↠ K_g`, each by one
+  `Algebra.adjoin` induction into the subalgebra of operators acting on
+  `g` by a scalar, the scalar being unique because `a₁(g) = 1`.
+  Surjectivity of `λ` is the eigenform recursion
+  `qCoeff_mem_of_forall_prime_mem` together with
+  `heckeField_finiteDimensional`.
+* `exists_isIdempotentElem_of_isMaximal` — the Artinian idempotent at a
+  maximal ideal: pure commutative algebra, from mathlib's
+  `IsArtinianRing.quotNilradicalPowEquivPi`.
+* `newformEtaleIdempotent_spec` — the COMPLEX half: from the line
+  hypothesis, `eC·g = g`, and `eC` annihilates every `b ∈ 𝕋_ℂ` with
+  `b·g = 0`. That is precisely "the local factor of `𝕋_ℂ` at `χ` is the
+  line `ℂ·eC`", and it is where the analytic sibling
+  `exists_heckeOp_newform_etaleIdempotent` is consumed.
+
+WHAT IS LEFT, AND WHY THE SUGGESTED SUB-CUT WAS ONE STEP SHORT. The
+sub-cut recorded on the leaf proposed to obtain `m·ε = 0` from (a)
+`𝕋_ℂ` is the `ℂ`-span of `𝕋_ℚ`, (b) finite dimensionality and (c) the
+line hypothesis, "by the structure theory of Artinian commutative
+rings". That does not close. (a) gives a SURJECTION
+`𝕋_ℚ ⊗_ℚ ℂ ↠ 𝕋_ℂ` and nothing more; and the local factor
+`A_m ⊗_ℚ ℂ` splits into `[K_g:ℚ]` blocks indexed by the embeddings
+`σ : K_g ↪ ℂ`, all of the same dimension `dim_{K_g} A_m`, of which the
+line hypothesis controls exactly ONE — the block at the identity
+embedding, i.e. the eigensystem of `g` itself and not those of its
+conjugates `g^σ`. Two further inputs are needed, both genuinely
+arithmetic:
+
+* INJECTIVITY of `𝕋_ℚ ⊗_ℚ ℂ → End_ℂ S₂(Γ₀(M))`: a `ℚ`-independent
+  family in `𝕋_ℚ` stays `ℂ`-independent. This is the rational structure
+  of `S₂(Γ₀(M))` — the archimedean guise of exactly the hypothesis
+  `ModularTateModuleData.padic_indep` — and it is FALSE for a general
+  `ℚ`-subalgebra of a `ℂ`-algebra: `ℚ(√2)·1 ⊆ ℂ` is `2`-dimensional
+  over `ℚ` and `1`-dimensional over `ℂ`.
+* CONTROL OF THE BLOCKS AT `σ ≠ id`. It was thought (2026-07-26,
+  morning) that this needed a SECOND arithmetic input, namely that
+  `Aut(ℂ)` acts on `S₂(Γ₀(M))` compatibly with the RATIONAL
+  `q`-expansion formula for `T_q` (`exists_cuspForm_ringEquiv_conj`
+  above, this file's form of Shimura's rationality theorem), making the
+  block at `σ` a ring-twist of the block at the identity. **It does
+  not.** The equidimensionality of the blocks is FORMAL, because the
+  local factor `A_m` carries a COEFFICIENT FIELD `K_g → A_m`
+  (`exists_cornerLift`: `A_m` is a finite local `ℚ`-algebra with
+  nilpotent maximal ideal and residue field `K_g`, and `K_g/ℚ` is
+  separable, hence formally smooth, so the residue map splits). Then
+  `A_m` is a `K_g`-algebra, `A_m ⊗_ℚ ℂ = ∏_σ (A_m ⊗_{K_g,σ} ℂ)` with
+  all factors of dimension `dim_{K_g} A_m`, and the identity block
+  being a LINE forces that dimension to be `1`.
+
+So the residual leaf is the descent
+`modularHeckeAlgebraQ_etale_at_newform` — the `ℂ`-side étaleness
+supplied by `eC` descends to the `ℚ`-side, which keeps
+`exists_heckeOp_newform_etaleIdempotent` genuinely consumed — and it is
+now PROVEN (2026-07-26) over the FIRST bullet alone, isolated as
+`modularHeckeAlgebraQ_linearIndependent_complex` — which is in turn
+PROVEN (2026-07-26) from the `ℚ`-form of the `q`-expansion functionals,
+`exists_qCoeff_rational_relations`, so the residue of this whole
+cluster is the single `q`-expansion citation
+`integralCuspForms_span_eq_top`. Exact level enters
+only upstream of it: the line hypothesis on `eC` is what fails at an
+OLD maximal ideal (`g` of level `M' ∣ M`, `M' ≠ M`, seen at level `M`),
+where the oldform multiplicity makes the local factor of `𝕋_ℂ` a plane
+and `A_m` non-reduced. -/
+
+/-- The two packagings of the weight-2 Hecke operator agree at a prime
+and a positive level. `heckeEndo` is the packaging used by the
+Sturm-bound/integrality section near the top of this file (hence by
+`heckeSubring`); `heckeOp` is the one used by the Eichler–Shimura seam.
+Both are characterized by the slash-sum `heckeTransform`, and a cusp
+form is determined by its underlying function. -/
+theorem heckeOp_eq_heckeEndo {M q : ℕ} (hM : 0 < M) (hq : q.Prime) :
+    heckeOp M q = heckeEndo M q := by
+  refine LinearMap.ext fun f => DFunLike.coe_injective ?_
+  rw [heckeOp_coe hM hq, coe_heckeEndo hM hq]
+
+/-- The `ℚ`-algebra structure `modularEndRatAlgebra` acts on cusp forms
+through the complex scalars. -/
+theorem modularEnd_algebraMap_rat_apply {M : ℕ} (r : ℚ)
+    (f : CuspForm (Gamma0GL M) 2) :
+    (algebraMap ℚ (Module.End ℂ (CuspForm (Gamma0GL M) 2)) r) f = (r : ℂ) • f :=
+  rfl
+
+/-- **`𝕋_ℚ` is a finite-dimensional `ℚ`-algebra** (PROVEN, 2026-07-26 —
+step (b) of the newform-factor sub-cut, and it costs NO new arithmetic
+input). `𝕋_ℚ = Algebra.adjoin ℚ {T_q}` is contained in the `ℚ`-span of
+the Hecke SUBRING `𝕋_ℤ = ℤ[T_q]`, because that span is closed under
+multiplication (`Algebra.adjoin_eq_span` reduces the containment to the
+generating submonoid); and `𝕋_ℤ` is a finite `ℤ`-module by the file's
+arithmetic leaf `heckeSubring_moduleFinite`, so a finite `ℤ`-generating
+set of `𝕋_ℤ` spans `𝕋_ℚ` over `ℚ`. The Sturm bound enters only through
+that leaf. -/
+theorem finiteDimensional_modularHeckeAlgebraQ {M : ℕ} (hM : 0 < M) :
+    FiniteDimensional ℚ ↥(modularHeckeAlgebraQ M) := by
+  classical
+  obtain ⟨t, ht⟩ := (heckeSubring_moduleFinite M).fg_top
+  set s : Finset (Module.End ℂ (CuspForm (Gamma0GL M) 2)) :=
+    t.image (fun x : ↥(heckeSubring M) =>
+      (x : Module.End ℂ (CuspForm (Gamma0GL M) 2))) with hs
+  have key : ∀ y : ↥(heckeSubring M),
+      (y : Module.End ℂ (CuspForm (Gamma0GL M) 2)) ∈
+        Submodule.span ℚ (s : Set (Module.End ℂ (CuspForm (Gamma0GL M) 2))) := by
+    intro y
+    have hy : y ∈ Submodule.span ℤ (t : Set ↥(heckeSubring M)) := ht ▸ Submodule.mem_top
+    induction hy using Submodule.span_induction with
+    | mem x hx =>
+        refine Submodule.subset_span ?_
+        simp only [hs, Finset.coe_image, Set.mem_image, Finset.mem_coe]
+        exact ⟨x, hx, rfl⟩
+    | zero => simp
+    | add a b _ _ ha hb => simpa using Submodule.add_mem _ ha hb
+    | smul c a _ ha =>
+        have h1 : ((c • a : ↥(heckeSubring M)) :
+              Module.End ℂ (CuspForm (Gamma0GL M) 2))
+            = (c : ℚ) • (a : Module.End ℂ (CuspForm (Gamma0GL M) 2)) := by
+          rw [Int.cast_smul_eq_zsmul]
+          exact map_zsmul (Subring.subtype (heckeSubring M)) c a
+        rw [h1]
+        exact Submodule.smul_mem _ _ ha
+  have hle : Subalgebra.toSubmodule (modularHeckeAlgebraQ M)
+      ≤ Submodule.span ℚ (s : Set (Module.End ℂ (CuspForm (Gamma0GL M) 2))) := by
+    rw [modularHeckeAlgebraQ, Algebra.adjoin_eq_span]
+    refine Submodule.span_le.mpr ?_
+    have hsub : Submonoid.closure {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+        ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q} ≤ (heckeSubring M).toSubmonoid := by
+      refine Submonoid.closure_le.mpr ?_
+      rintro φ ⟨q, hq, rfl⟩
+      rw [heckeOp_eq_heckeEndo hM hq]
+      exact heckeEndo_mem_heckeSubring M hq
+    intro x hx
+    exact key ⟨x, hsub hx⟩
+  haveI : Module.Finite ℚ
+      ↥(Submodule.span ℚ (s : Set (Module.End ℂ (CuspForm (Gamma0GL M) 2)))) :=
+    Module.Finite.span_of_finite ℚ s.finite_toSet
+  exact FiniteDimensional.of_subalgebra_toSubmodule
+    (Submodule.finiteDimensional_of_le hle)
+
+/-- **The complex Hecke algebra `𝕋_ℂ` is commutative**: the same two
+nested `Algebra.adjoin` inductions as `modularHeckeAlgebraQ_mul_comm`,
+run over `ℂ`. The generic `heckeSubalgebra_mul_comm` does NOT apply — it
+asks for commutation of `heckeOp M m` and `heckeOp M n` at ALL indices,
+and `heckeOp` is junk off the primes. -/
+theorem heckeSubalgebra_heckeOp_mul_comm {M : ℕ} (hM : 0 < M) :
+    ∀ a ∈ heckeSubalgebra (heckeOp M), ∀ b ∈ heckeSubalgebra (heckeOp M),
+      a * b = b * a := by
+  have hgen : ∀ (q : ℕ), q.Prime →
+      ∀ a ∈ heckeSubalgebra (heckeOp M),
+        heckeOp M q * a = a * heckeOp M q := by
+    intro q hq a ha
+    have ha' : a ∈ Algebra.adjoin ℂ
+        {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+          ∃ n : ℕ, n.Prime ∧ φ = heckeOp M n} := ha
+    clear ha
+    induction ha' using Algebra.adjoin_induction with
+    | mem x hx =>
+        obtain ⟨n, hn, rfl⟩ := hx
+        exact heckeOp_mul_comm hM hq hn
+    | algebraMap r => exact (Algebra.commutes r (heckeOp M q)).symm
+    | add x y hx hy ihx ihy => rw [mul_add, add_mul, ihx, ihy]
+    | mul x y hx hy ihx ihy =>
+        rw [← mul_assoc, ihx, mul_assoc, ihy, ← mul_assoc]
+  intro a ha b hb
+  have hb' : b ∈ Algebra.adjoin ℂ
+      {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+        ∃ n : ℕ, n.Prime ∧ φ = heckeOp M n} := hb
+  clear hb
+  induction hb' using Algebra.adjoin_induction with
+  | mem x hx =>
+      obtain ⟨n, hn, rfl⟩ := hx
+      exact (hgen n hn a ha).symm
+  | algebraMap r => exact (Algebra.commutes r a).symm
+  | add x y hx hy ihx ihy => rw [mul_add, add_mul, ihx, ihy]
+  | mul x y hx hy ihx ihy =>
+      rw [← mul_assoc, ihx, mul_assoc, ihy, ← mul_assoc]
+
+/-- **The complex eigenvalue character** `χ : 𝕋_ℂ → ℂ` of a normalized
+weight-2 eigenform `g`: every element of the complex Hecke algebra acts
+on `g` by a scalar — one `Algebra.adjoin` induction into the
+`ℂ`-subalgebra of such operators, based on
+`heckeOp_apply_eq_smul_of_isWeightTwoEigenform` — and the scalar is
+unique because `a₁(g) = 1` makes `c • g` determine `c`. -/
+theorem exists_eigenvalueChar_heckeSubalgebra {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g) :
+    ∃ chi : ↥(heckeSubalgebra (heckeOp M)) →ₐ[ℂ] ℂ,
+      ∀ b : ↥(heckeSubalgebra (heckeOp M)),
+        (b : Module.End ℂ (CuspForm (Gamma0GL M) 2)) g = chi b • g := by
+  classical
+  have huniq : ∀ a b : ℂ, a • g = b • g → a = b := by
+    intro a b h
+    have h1 := congrArg (fun f => qCoeff M f 1) h
+    simpa only [qCoeff_smul, hg.qCoeff_one, mul_one] using h1
+  set C : Subalgebra ℂ (Module.End ℂ (CuspForm (Gamma0GL M) 2)) :=
+    { carrier := {φ | ∃ c : ℂ, φ g = c • g}
+      mul_mem' := by
+        rintro x y ⟨cx, hx⟩ ⟨cy, hy⟩
+        refine ⟨cx * cy, ?_⟩
+        show (x * y) g = _
+        rw [Module.End.mul_apply, hy, map_smul, hx, smul_smul, mul_comm]
+      one_mem' := ⟨1, by simp⟩
+      add_mem' := by
+        rintro x y ⟨cx, hx⟩ ⟨cy, hy⟩
+        refine ⟨cx + cy, ?_⟩
+        show (x + y) g = _
+        rw [LinearMap.add_apply, hx, hy, add_smul]
+      zero_mem' := ⟨0, by simp⟩
+      algebraMap_mem' := fun c => ⟨c, by simp⟩ } with hC
+  have hle : ∀ b ∈ heckeSubalgebra (heckeOp M), ∃ c : ℂ, b g = c • g := by
+    intro b hb
+    have hb' : b ∈ Algebra.adjoin ℂ
+        {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+          ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q} := hb
+    refine Algebra.adjoin_le (S := C) ?_ hb'
+    rintro φ ⟨q, hq, rfl⟩
+    exact ⟨qCoeff M g q, heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg hq⟩
+  choose c hc using fun b : ↥(heckeSubalgebra (heckeOp M)) => hle (b : _) b.2
+  refine ⟨{ toFun := c, map_one' := ?_, map_mul' := ?_, map_zero' := ?_,
+            map_add' := ?_, commutes' := ?_ }, hc⟩
+  · refine huniq _ _ ?_
+    rw [← hc 1]
+    simp
+  · intro x y
+    refine huniq _ _ ?_
+    rw [← hc (x * y)]
+    show ((x : Module.End ℂ (CuspForm (Gamma0GL M) 2)) * y) g = _
+    rw [Module.End.mul_apply, hc y, map_smul, hc x, smul_smul, mul_comm]
+  · refine huniq _ _ ?_
+    rw [← hc 0]
+    simp
+  · intro x y
+    refine huniq _ _ ?_
+    rw [← hc (x + y)]
+    show ((x : Module.End ℂ (CuspForm (Gamma0GL M) 2)) + y) g = _
+    rw [LinearMap.add_apply, hc x, hc y, add_smul]
+  · intro r
+    refine huniq _ _ ?_
+    rw [← hc (algebraMap ℂ _ r)]
+    simp
+
+/-- **The rational eigenvalue character** `λ : 𝕋_ℚ ↠ K_g` of a
+normalized weight-2 eigenform `g`: every element of the RATIONAL Hecke
+algebra acts on `g` by a scalar lying in the Hecke field, and `λ` is
+SURJECTIVE — its image is a `ℚ`-subalgebra of `K_g` containing every
+`a_q(g)` at a prime, hence (by the eigenform recursions,
+`qCoeff_mem_of_forall_prime_mem`) every `a_n(g)`, hence all of
+`K_g = ℚ({a_n})`; the last step because `K_g/ℚ` is algebraic
+(`heckeField_finiteDimensional`), so the intermediate-field adjoin and
+the algebra adjoin agree. -/
+theorem exists_eigenvalueChar_modularHeckeAlgebraQ {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g) :
+    ∃ lam : ↥(modularHeckeAlgebraQ M) →ₐ[ℚ] heckeField M g,
+      (∀ t : ↥(modularHeckeAlgebraQ M),
+        (t : Module.End ℂ (CuspForm (Gamma0GL M) 2)) g = ((lam t : ℂ)) • g) ∧
+      (∀ q : ℕ, ∀ hq : q.Prime,
+        lam ⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩
+          = heckeCoeff M g q) ∧
+      Function.Surjective lam := by
+  classical
+  haveI hKfin : FiniteDimensional ℚ (heckeField M g) :=
+    heckeField_finiteDimensional hM hg
+  have huniq : ∀ a b : heckeField M g, ((a : ℂ)) • g = ((b : ℂ)) • g → a = b := by
+    intro a b h
+    have h1 := congrArg (fun f => qCoeff M f 1) h
+    simp only [qCoeff_smul, hg.qCoeff_one, mul_one] at h1
+    exact Subtype.ext h1
+  set D : Subalgebra ℚ (Module.End ℂ (CuspForm (Gamma0GL M) 2)) :=
+    { carrier := {φ | ∃ c : heckeField M g, φ g = ((c : ℂ)) • g}
+      mul_mem' := by
+        rintro x y ⟨cx, hx⟩ ⟨cy, hy⟩
+        refine ⟨cx * cy, ?_⟩
+        show (x * y) g = _
+        rw [Module.End.mul_apply, hy, map_smul, hx, smul_smul]
+        norm_num [mul_comm]
+      one_mem' := ⟨1, by simp⟩
+      add_mem' := by
+        rintro x y ⟨cx, hx⟩ ⟨cy, hy⟩
+        refine ⟨cx + cy, ?_⟩
+        show (x + y) g = _
+        rw [LinearMap.add_apply, hx, hy, ← add_smul]
+        norm_num
+      zero_mem' := ⟨0, by simp⟩
+      algebraMap_mem' := fun r =>
+        ⟨algebraMap ℚ (heckeField M g) r, by
+          rw [modularEnd_algebraMap_rat_apply]
+          norm_num⟩ } with hD
+  have hle : ∀ t ∈ modularHeckeAlgebraQ M,
+      ∃ c : heckeField M g, t g = ((c : ℂ)) • g := by
+    intro t ht
+    have ht' : t ∈ Algebra.adjoin ℚ
+        {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+          ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q} := ht
+    refine Algebra.adjoin_le (S := D) ?_ ht'
+    rintro φ ⟨q, hq, rfl⟩
+    exact ⟨heckeCoeff M g q,
+      heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg hq⟩
+  choose c hc using fun t : ↥(modularHeckeAlgebraQ M) => hle (t : _) t.2
+  have hlam : ∀ q : ℕ, ∀ hq : q.Prime,
+      c ⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩ = heckeCoeff M g q := by
+    intro q hq
+    refine huniq _ _ ?_
+    rw [← hc ⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩]
+    exact heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg hq
+  let lam : ↥(modularHeckeAlgebraQ M) →ₐ[ℚ] heckeField M g :=
+    { toFun := c
+      map_one' := by
+        refine huniq _ _ ?_
+        rw [← hc 1]
+        simp
+      map_mul' := by
+        intro x y
+        refine huniq _ _ ?_
+        rw [← hc (x * y)]
+        show ((x : Module.End ℂ (CuspForm (Gamma0GL M) 2)) * y) g = _
+        rw [Module.End.mul_apply, hc y, LinearMap.map_smul, hc x, smul_smul]
+        norm_num [mul_comm]
+      map_zero' := by
+        refine huniq _ _ ?_
+        rw [← hc 0]
+        simp
+      map_add' := by
+        intro x y
+        refine huniq _ _ ?_
+        rw [← hc (x + y)]
+        show ((x : Module.End ℂ (CuspForm (Gamma0GL M) 2)) + y) g = _
+        rw [LinearMap.add_apply, hc x, hc y, ← add_smul]
+        norm_num
+      commutes' := by
+        intro r
+        refine huniq _ _ ?_
+        rw [← hc (algebraMap ℚ _ r)]
+        show (algebraMap ℚ (Module.End ℂ (CuspForm (Gamma0GL M) 2)) r) g = _
+        rw [modularEnd_algebraMap_rat_apply]
+        norm_num }
+  have hlamc : ∀ t : ↥(modularHeckeAlgebraQ M), lam t = c t := fun _ => rfl
+  refine ⟨lam, fun t => by rw [hlamc]; exact hc t,
+    fun q hq => by rw [hlamc]; exact hlam q hq, ?_⟩
+  have halg : ∀ x ∈ Set.range (qCoeff M g), IsAlgebraic ℚ x := by
+    rintro x ⟨m, rfl⟩
+    exact ((IsIntegral.of_finite ℚ (heckeCoeff M g m)).map
+      (heckeField M g).val).isAlgebraic
+  have hto : (heckeField M g).toSubalgebra
+      = Algebra.adjoin ℚ (Set.range (qCoeff M g)) :=
+    IntermediateField.adjoin_toSubalgebra_of_isAlgebraic halg
+  have hRprime : ∀ q : ℕ, q.Prime →
+      qCoeff M g q ∈ Subalgebra.map (heckeField M g).val lam.range := by
+    intro q hq
+    exact ⟨heckeCoeff M g q,
+      ⟨⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩, hlam q hq⟩, rfl⟩
+  have hRall : ∀ m : ℕ,
+      qCoeff M g m ∈ Subalgebra.map (heckeField M g).val lam.range :=
+    qCoeff_mem_of_forall_prime_mem hg hRprime
+  have hsubR : (heckeField M g).toSubalgebra
+      ≤ Subalgebra.map (heckeField M g).val lam.range := by
+    rw [hto]
+    exact Algebra.adjoin_le (by rintro x ⟨m, rfl⟩; exact hRall m)
+  intro x
+  obtain ⟨y, hy, hyx⟩ := hsubR x.2
+  obtain ⟨z, hz⟩ := hy
+  refine ⟨z, ?_⟩
+  have hcz : c z = y := hz
+  rw [hlamc, hcz]
+  exact Subtype.ext hyx
+
+/-- **The Artinian idempotent at a maximal ideal** (PROVEN, 2026-07-26 —
+pure commutative algebra, used below at both `𝕋_ℚ` and `𝕋_ℂ`): in a
+commutative Artinian ring `A` with maximal ideal `m` there are an
+idempotent `e` and an exponent `n` with `1 − e ∈ m` and `yⁿ·e = 0` for
+every `y ∈ m`. Equivalently `e` cuts out the `m`-primary factor of the
+Chinese-remainder decomposition `A ≅ ∏_{m'} A/m'ⁿ`, which is exactly
+what mathlib's `IsArtinianRing.quotNilradicalPowEquivPi` provides once
+the nilradical is killed by a power (`isNilpotent_nilradical`). The
+`1 − e ∈ m` clause comes last: `e ≠ 0` because its image in `A/mⁿ` is
+`1`, hence `e ∉ m` (an `e ∈ m` would give `e = eⁿ⁺¹ = 0`), and an
+idempotent of the FIELD `A/m` that is nonzero is `1`. -/
+theorem exists_isIdempotentElem_of_isMaximal {A : Type*} [CommRing A]
+    [IsArtinianRing A] {m : Ideal A} (hm : m.IsMaximal) :
+    ∃ (e : A) (n : ℕ), e * e = e ∧ (1 - e) ∈ m ∧ ∀ y ∈ m, y ^ n * e = 0 := by
+  classical
+  haveI : m.IsMaximal := hm
+  obtain ⟨n₀, hn₀⟩ := IsArtinianRing.isNilpotent_nilradical (R := A)
+  have hnil : nilradical A ^ (n₀ + 1) = ⊥ := by
+    simp [pow_succ, hn₀]
+  set n := n₀ + 1 with hndef
+  let e0 : (A ⧸ nilradical A ^ n) ≃ₐ[A] A := hnil ▸ (AlgEquiv.quotientBot A A)
+  let F : A ≃ₐ[A] ∀ I : MaximalSpectrum A, A ⧸ I.asIdeal ^ n :=
+    e0.symm.trans (IsArtinianRing.quotNilradicalPowEquivPi A n)
+  have hFapp : ∀ (x : A) (I : MaximalSpectrum A),
+      F x I = Ideal.Quotient.mk (I.asIdeal ^ n) x := by
+    intro x I
+    have hx : F x = algebraMap A (∀ I : MaximalSpectrum A, A ⧸ I.asIdeal ^ n) x := by
+      conv_lhs => rw [show x = algebraMap A A x from rfl]
+      rw [AlgEquiv.commutes]
+    rw [hx]
+    rfl
+  set i0 : MaximalSpectrum A := ⟨m, hm⟩ with hi0
+  set e : A := F.symm (Pi.single i0 1) with hedef
+  have hFe : F e = Pi.single i0 1 := by rw [hedef, AlgEquiv.apply_symm_apply]
+  have hsingle : (Pi.single i0 1 : ∀ I : MaximalSpectrum A, A ⧸ I.asIdeal ^ n) *
+      Pi.single i0 1 = Pi.single i0 1 := by
+    funext I
+    simp only [Pi.mul_apply]
+    by_cases h : I = i0
+    · subst h; rw [Pi.single_eq_same, mul_one]
+    · rw [Pi.single_eq_of_ne h, mul_zero]
+  have hidem : e * e = e := by
+    have h := congrArg F.symm hsingle
+    rw [map_mul, ← hedef] at h
+    exact h
+  have hkill : ∀ y ∈ m, y ^ n * e = 0 := by
+    intro y hy
+    have hFy : F (y ^ n * e) = 0 := by
+      rw [map_mul, hFe]
+      funext I
+      simp only [Pi.mul_apply, Pi.zero_apply]
+      by_cases h : I = i0
+      · subst h
+        rw [Pi.single_eq_same, mul_one, hFapp, Ideal.Quotient.eq_zero_iff_mem]
+        exact Ideal.pow_mem_pow hy n
+      · rw [Pi.single_eq_of_ne h, mul_zero]
+    have h := congrArg F.symm hFy
+    simpa using h
+  have hne : e ≠ 0 := by
+    intro h
+    have h1 : (Pi.single i0 1 : ∀ I : MaximalSpectrum A, A ⧸ I.asIdeal ^ n) = 0 := by
+      rw [← hFe, h, map_zero]
+    have h2 : (1 : A ⧸ m ^ n) = 0 := by
+      have hh := congrFun h1 i0
+      simpa using hh
+    have h3 : (m ^ n : Ideal A) = ⊤ := by
+      rw [Ideal.eq_top_iff_one, ← Ideal.Quotient.eq_zero_iff_mem]
+      simpa using h2
+    exact hm.ne_top (top_le_iff.mp (h3 ▸ Ideal.pow_le_self (n := n) (by omega)))
+  have hnotmem : e ∉ m := by
+    intro hem
+    have h := hkill e hem
+    rw [show e ^ n * e = e ^ (n + 1) by ring,
+      (show IsIdempotentElem e from hidem).pow_succ_eq n] at h
+    exact hne h
+  refine ⟨e, n, hidem, ?_, hkill⟩
+  haveI : Field (A ⧸ m) := Ideal.Quotient.field m
+  have hq : (Ideal.Quotient.mk m e) * (Ideal.Quotient.mk m e - 1) = 0 := by
+    rw [mul_sub, mul_one, ← map_mul, hidem, sub_self]
+  rcases mul_eq_zero.mp hq with h | h
+  · exact absurd (Ideal.Quotient.eq_zero_iff_mem.mp h) hnotmem
+  · rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_one, sub_eq_zero]
+    exact (sub_eq_zero.mp h).symm
+
+/-- **The complex newform factor is the line `ℂ·eC`** (PROVEN,
+2026-07-26 — the COMPLEX half of the newform-factor sub-cut, and the
+place where the analytic sibling `exists_heckeOp_newform_etaleIdempotent`
+is consumed). From the hypotheses of
+`exists_newformFactor_modularHeckeAlgebraQ` on the étale idempotent
+`eC`:
+
+* `eC·g = g` — the Artinian idempotent of `𝕋_ℂ` at the eigenvalue
+  character `χ` satisfies the generalized-eigen condition, so the line
+  hypothesis identifies it with a multiple `c·eC`; `χ` of that is `1`,
+  which forces `χ(eC) ≠ 0`, and an idempotent scalar that is nonzero is
+  `1`;
+* `b·eC = 0` whenever `b ∈ 𝕋_ℂ` kills `g` — because `(T_q − a_q)·b·eC =
+  b·((T_q − a_q)·eC) = 0` by the eigen-relation on `eC`, so the line
+  hypothesis gives `b·eC = c'·eC`, and `χ(b·eC) = χ(b)·1 = 0` forces
+  `c' = 0`.
+
+Together these say that the local factor of `𝕋_ℂ` at `χ` is exactly
+`ℂ·eC`, i.e. `𝕋_ℂ` is étale there.
+
+REDUNDANT HYPOTHESIS AUDIT: `_heC0` (`eC ≠ 0`) is NOT used and is
+underscored to make that mechanically visible — the line hypothesis
+together with the Artinian idempotent already forces `eC ≠ 0`, since
+`c·eC` has `χ`-value `1`. It is kept in the signature so that the
+`heC0` of the consumer `exists_newformFactor_modularHeckeAlgebraQ`,
+whose statement is fixed, is still passed somewhere rather than being
+silently dropped. -/
+theorem newformEtaleIdempotent_spec {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g)
+    (eC : Module.End ℂ (CuspForm (Gamma0GL M) 2))
+    (heCmem : eC ∈ heckeSubalgebra (heckeOp M)) (_heC0 : eC ≠ 0)
+    (heCidem : eC * eC = eC)
+    (heCeig : ∀ q : ℕ, q.Prime → heckeOp M q * eC = qCoeff M g q • eC)
+    (heCline : ∀ a ∈ heckeSubalgebra (heckeOp M),
+      (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+        (heckeOp M q - qCoeff M g q •
+          (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n * a = 0) →
+      ∃ c : ℂ, a = c • eC) :
+    eC g = g ∧
+      ∀ b ∈ heckeSubalgebra (heckeOp M),
+        b g = 0 → b * eC = 0 := by
+  classical
+  obtain ⟨chi, hchi⟩ := exists_eigenvalueChar_heckeSubalgebra hM hg
+  have hu : ∀ a b : ℂ, a • g = b • g → a = b := by
+    intro a b hab
+    have h := congrArg (fun f => qCoeff M f 1) hab
+    simpa only [qCoeff_smul, hg.qCoeff_one, mul_one] using h
+  haveI hSfin : FiniteDimensional ℂ (CuspForm (Gamma0GL M) 2) :=
+    cuspForm_finiteDimensional M hM
+  haveI hBfin : FiniteDimensional ℂ ↥(heckeSubalgebra (heckeOp M)) :=
+    FiniteDimensional.of_injective
+      ((heckeSubalgebra (heckeOp M)).val.toLinearMap) Subtype.coe_injective
+  letI hBcomm : CommRing ↥(heckeSubalgebra (heckeOp M)) :=
+    { (inferInstance : Ring ↥(heckeSubalgebra (heckeOp M))) with
+      mul_comm := fun a b =>
+        Subtype.ext (heckeSubalgebra_heckeOp_mul_comm hM a.1 a.2 b.1 b.2) }
+  haveI hBart : IsArtinianRing ↥(heckeSubalgebra (heckeOp M)) :=
+    isArtinian_of_tower ℂ inferInstance
+  have hchisurj : Function.Surjective chi := fun z =>
+    ⟨algebraMap ℂ _ z, chi.commutes z⟩
+  have hmax : (RingHom.ker chi).IsMaximal :=
+    RingHom.ker_isMaximal_of_surjective chi hchisurj
+  obtain ⟨eX, k, hidemX, hunitX, hkillX⟩ := exists_isIdempotentElem_of_isMaximal hmax
+  have hTq : ∀ q : ℕ, q.Prime →
+      (heckeOp M q - qCoeff M g q • (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2)))
+        ∈ heckeSubalgebra (heckeOp M) := fun q hq =>
+    sub_mem (hecke_mem_heckeSubalgebra hq) (Subalgebra.smul_mem _ (one_mem _) _)
+  have hkerTq : ∀ (q : ℕ) (hq : q.Prime),
+      (⟨_, hTq q hq⟩ : ↥(heckeSubalgebra (heckeOp M))) ∈ RingHom.ker chi := by
+    intro q hq
+    rw [RingHom.mem_ker]
+    refine hu _ _ ?_
+    rw [← hchi ⟨_, hTq q hq⟩]
+    show (heckeOp M q -
+      qCoeff M g q • (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) g = (0 : ℂ) • g
+    rw [LinearMap.sub_apply, LinearMap.smul_apply, Module.End.one_apply,
+      heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg hq, sub_self, zero_smul]
+  set eCb : ↥(heckeSubalgebra (heckeOp M)) := ⟨eC, heCmem⟩ with heCbdef
+  obtain ⟨cX, hcX⟩ := heCline (eX : Module.End ℂ (CuspForm (Gamma0GL M) 2)) eX.2 (by
+    intro q hq
+    refine ⟨k, ?_⟩
+    have h := hkillX _ (hkerTq q hq)
+    have h2 := congrArg
+      (fun z : ↥(heckeSubalgebra (heckeOp M)) =>
+        (z : Module.End ℂ (CuspForm (Gamma0GL M) 2))) h
+    simpa using h2)
+  have hchieX : chi eX = 1 := by
+    have h := hunitX
+    rw [RingHom.mem_ker, map_sub, map_one, sub_eq_zero] at h
+    exact h.symm
+  have hcXb : eX = cX • eCb := Subtype.ext hcX
+  have h1 : cX * chi eCb = 1 := by
+    rw [← hchieX, hcXb, map_smul, smul_eq_mul]
+  have hne0 : chi eCb ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at h1
+    exact zero_ne_one h1
+  have hidemC : chi eCb * chi eCb = chi eCb := by
+    rw [← map_mul]
+    congr 1
+    exact Subtype.ext heCidem
+  have hchieC : chi eCb = 1 :=
+    mul_right_cancel₀ hne0 (by rw [one_mul]; exact hidemC)
+  have hpart1 : eC g = g := by
+    have h := hchi eCb
+    rw [hchieC, one_smul] at h
+    exact h
+  refine ⟨hpart1, ?_⟩
+  intro b hb hbg
+  set bb : ↥(heckeSubalgebra (heckeOp M)) := ⟨b, hb⟩ with hbbdef
+  have hchib : chi bb = 0 := by
+    refine hu _ _ ?_
+    rw [← hchi bb]
+    show b g = (0 : ℂ) • g
+    rw [hbg, zero_smul]
+  obtain ⟨c', hc'⟩ := heCline (b * eC) (mul_mem hb heCmem) (by
+    intro q hq
+    refine ⟨1, ?_⟩
+    rw [pow_one, ← mul_assoc,
+      heckeSubalgebra_heckeOp_mul_comm hM _ (hTq q hq) _ hb, mul_assoc,
+      sub_mul, heCeig q hq, smul_mul_assoc, one_mul, sub_self, mul_zero])
+  have hz : chi (bb * eCb) = 0 := by rw [map_mul, hchib, zero_mul]
+  have hz2 : chi (bb * eCb) = c' := by
+    rw [show bb * eCb = c' • eCb from Subtype.ext hc', map_smul, smul_eq_mul,
+      hchieC, mul_one]
+  rw [hc', hz2.symm.trans hz, zero_smul]
+
+section EtaleDescentHelper
+
+open _root_.Polynomial
+
+/-- **Polynomials act by the scalar they evaluate to** (PROVEN,
+2026-07-26): if `x * ε = a • ε` in a commutative `ℂ`-algebra then
+`p(x) * ε = p(a) • ε` for every `p ∈ ℂ[X]` — the elementary induction
+that turns the eigen-relation `T_q·eC = a_q·eC` into the eigen-relation
+of the Lagrange idempotent below. -/
+theorem aeval_mul_of_smul {B : Type*} [CommRing B] [Algebra ℂ B] {x ε : B} {a : ℂ}
+    (hx : x * ε = a • ε) (p : ℂ[X]) : aeval x p * ε = (p.eval a) • ε := by
+  have hpow : ∀ k : ℕ, x ^ k * ε = a ^ k • ε := by
+    intro k
+    induction k with
+    | zero => simp
+    | succ k ih =>
+        rw [pow_succ, mul_assoc, hx, mul_smul_comm, ih, smul_smul, pow_succ,
+          mul_comm a (a ^ k)]
+  induction p using Polynomial.induction_on' with
+  | add p q hp hq => rw [map_add, add_mul, hp, hq, eval_add, add_smul]
+  | monomial n c =>
+      rw [aeval_monomial, eval_monomial, mul_assoc, hpow n, Algebra.smul_def,
+        Algebra.smul_def, map_mul, mul_assoc]
+
+end EtaleDescentHelper
+
+section EtaleDescentCorner
+
+open _root_.Polynomial
+
+variable {A : Type*} [CommRing A] [Algebra ℚ A] [FiniteDimensional ℚ A]
+variable {K : Type*} [Field K] [Algebra ℚ K] [FiniteDimensional ℚ K]
+
+/-- **The coefficient field of the corner `eA`, in Hensel-lift form**
+(PROVEN, 2026-07-26 — the formal half of the newform-factor descent; it
+costs NO arithmetic input, only separability of `K/ℚ`).
+
+Let `A` be a finite-dimensional commutative `ℚ`-algebra, `λ : A ↠ K` a
+surjection onto a number field, and `e` the Artinian idempotent at
+`ker λ` (so `λ e = 1` and every `y ∈ ker λ` satisfies `yⁿ·e = 0`). Then
+every `α ∈ K` lifts to a `θ` of the CORNER `eA` with `λ θ = α` and with
+`f(θ) = 0` EXACTLY — not merely up to a nilpotent — where
+`f = minpoly ℚ α` and the evaluation is taken in the corner (whose unit
+is `e`, whence the shape `e * aeval θ f = 0`).
+
+This is the Cohen structure theorem in the only case needed: `eA` is
+the quotient `A ⧸ (1−e)`, a finite local `ℚ`-algebra with nilpotent
+maximal ideal and residue field `K`; `K/ℚ` is separable (characteristic
+zero), hence formally étale, hence formally smooth, so
+`Algebra.FormallySmooth.exists_lift` splits `eA ↠ K` along its
+nilpotent kernel. It is what makes the `Aut(ℂ)`-conjugation input
+UNNECESSARY: a coefficient field makes the blocks of `eA ⊗ ℂ` visible
+without transporting newforms by field automorphisms. -/
+theorem exists_cornerLift (lam : A →ₐ[ℚ] K) (hsurj : Function.Surjective lam)
+    (e : A) (hidem : e * e = e) (hlame : lam e = 1)
+    (hnil : ∀ y : A, lam y = 0 → ∃ n : ℕ, y ^ n * e = 0) (α : K) :
+    ∃ θ : A, e * θ = θ ∧ lam θ = α ∧ e * (aeval θ (minpoly ℚ α)) = 0 := by
+  classical
+  set I : Ideal A := Ideal.span {1 - e} with hIdef
+  let π : A →ₐ[ℚ] A ⧸ I := Ideal.Quotient.mkₐ ℚ I
+  have hπ : ∀ a : A, π a = Ideal.Quotient.mk I a := fun _ => rfl
+  have hπe : π e = 1 := by
+    have h : e - 1 ∈ I := by
+      rw [hIdef, Ideal.mem_span_singleton']
+      exact ⟨-1, by ring⟩
+    have h2 : π (e - 1) = 0 := by
+      rw [hπ]
+      exact (Ideal.Quotient.eq_zero_iff_mem (I := I) (a := e - 1)).2 h
+    rw [map_sub, map_one, sub_eq_zero] at h2
+    exact h2
+  have hkeyE : ∀ a b : A, π a = π b → e * a = e * b := by
+    intro a b h
+    have hmem : a - b ∈ I := by
+      rw [← Ideal.Quotient.eq_zero_iff_mem, ← hπ, map_sub, sub_eq_zero]
+      exact h
+    obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.mp (hIdef ▸ hmem)
+    have h3 : e * (a - b) = 0 := by
+      rw [← hc]
+      have h4 : e * (c * (1 - e)) = c * (e * 1 - e * e) := by ring
+      rw [h4, hidem, mul_one, sub_self, mul_zero]
+    rw [mul_sub, sub_eq_zero] at h3
+    exact h3
+  have hIle : ∀ a ∈ I, lam a = 0 := by
+    intro a ha
+    obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.mp (hIdef ▸ ha)
+    rw [← hc, map_mul, map_sub, map_one, hlame, sub_self, mul_zero]
+  let lamR : (A ⧸ I) →ₐ[ℚ] K := Ideal.Quotient.liftₐ I lam hIle
+  have hlamR : ∀ a : A, lamR (π a) = lam a := fun a => rfl
+  have hlamRsurj : Function.Surjective lamR := by
+    intro x
+    obtain ⟨a, ha⟩ := hsurj x
+    exact ⟨π a, by rw [hlamR]; exact ha⟩
+  haveI : FiniteDimensional ℚ (A ⧸ I) :=
+    Module.Finite.of_surjective (Ideal.Quotient.mkₐ ℚ I).toLinearMap
+      Ideal.Quotient.mk_surjective
+  haveI : IsArtinianRing (A ⧸ I) := isArtinian_of_tower ℚ inferInstance
+  have hnilR : IsNilpotent (RingHom.ker lamR) := by
+    obtain ⟨N, hN⟩ := IsArtinianRing.isNilpotent_nilradical (R := A ⧸ I)
+    refine ⟨N, le_antisymm ?_ bot_le⟩
+    calc (RingHom.ker lamR) ^ N ≤ (nilradical (A ⧸ I)) ^ N := by
+          refine Ideal.pow_right_mono ?_ N
+          intro x hx
+          obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective x
+          have ha : lam a = 0 := by rw [← hlamR]; exact hx
+          obtain ⟨n, hn⟩ := hnil a ha
+          refine ⟨n, ?_⟩
+          have h5 : (Ideal.Quotient.mk I) (a ^ n) = 0 := by
+            have h1 : (Ideal.Quotient.mk I) (a ^ n * e) = 0 := by rw [hn, map_zero]
+            rw [map_mul] at h1
+            rw [← mul_one ((Ideal.Quotient.mk I) (a ^ n)), ← hπe, hπ]
+            exact h1
+          rw [← map_pow]
+          exact h5
+      _ = ⊥ := hN
+  haveI : Algebra.IsSeparable ℚ K := inferInstance
+  haveI : Algebra.FormallyEtale ℚ K := Algebra.FormallyEtale.of_isSeparable ℚ K
+  obtain ⟨s, hs⟩ := Algebra.FormallySmooth.exists_lift (R := ℚ) (A := K) (B := A ⧸ I)
+    (RingHom.ker lamR) hnilR
+    (Ideal.quotientKerAlgEquivOfSurjective hlamRsurj).symm.toAlgHom
+  have hslam : ∀ x : K, lamR (s x) = x := by
+    intro x
+    have h : (Ideal.Quotient.mkₐ ℚ (RingHom.ker lamR)) (s x)
+        = (Ideal.quotientKerAlgEquivOfSurjective hlamRsurj).symm x := AlgHom.congr_fun hs x
+    have h2 : (Ideal.quotientKerAlgEquivOfSurjective hlamRsurj)
+        (Ideal.Quotient.mk (RingHom.ker lamR) (s x)) = x := by
+      rw [show Ideal.Quotient.mk (RingHom.ker lamR) (s x)
+            = (Ideal.Quotient.mkₐ ℚ (RingHom.ker lamR)) (s x) from rfl, h]
+      exact AlgEquiv.apply_symm_apply _ _
+    rw [Ideal.quotientKerAlgEquivOfSurjective_mk] at h2
+    exact h2
+  obtain ⟨a₀, ha₀⟩ := Ideal.Quotient.mk_surjective (I := I) (s α)
+  refine ⟨e * a₀, by rw [← mul_assoc, hidem], ?_, ?_⟩
+  · rw [map_mul, hlame, one_mul, ← hlamR, hπ, ha₀, hslam]
+  · have hπθ : π (e * a₀) = s α := by rw [map_mul, hπe, one_mul, hπ, ha₀]
+    have h1 : π (aeval (e * a₀) (minpoly ℚ α)) = 0 := by
+      rw [← Polynomial.aeval_algHom_apply, hπθ, Polynomial.aeval_algHom_apply,
+        minpoly.aeval, map_zero]
+    have h2 := hkeyE _ 0 (by rw [h1, map_zero])
+    rw [mul_zero] at h2
+    exact h2
+
+omit [FiniteDimensional ℚ A] [FiniteDimensional ℚ K] in
+/-- **The corner `eA` is local: nonzero `λ`-value means invertible**
+(PROVEN, 2026-07-26). If `e·w = w` and `λ w ≠ 0` then `w` has an
+inverse `v` in the corner, `w·v = e`. Only the elementwise nilpotence
+`hnil` is used: a lift `v₀` of `(λ w)⁻¹` gives `w·v₀ = e − c` with
+`λ c = 0`, hence `c` nilpotent, hence `1 − c = w·v₀ + (1−e)` a unit of
+`A`. -/
+theorem exists_corner_inv (lam : A →ₐ[ℚ] K) (hsurj : Function.Surjective lam)
+    (e : A) (hidem : e * e = e) (hlame : lam e = 1)
+    (hnil : ∀ y : A, lam y = 0 → ∃ n : ℕ, y ^ n * e = 0)
+    (w : A) (hw : e * w = w) (hlw : lam w ≠ 0) : ∃ v : A, w * v = e := by
+  classical
+  obtain ⟨u, hu⟩ := hsurj (lam w)⁻¹
+  set v₀ : A := e * u with hv₀
+  set c : A := e - w * v₀ with hc
+  have hlc : lam c = 0 := by
+    rw [hc, map_sub, hlame, map_mul, hv₀, map_mul, hlame, one_mul, hu,
+      mul_inv_cancel₀ hlw, sub_self]
+  obtain ⟨n, hn⟩ := hnil c hlc
+  have hec : e * c = c := by
+    rw [hc, mul_sub, hidem, hv₀]
+    congr 1
+    calc e * (w * (e * u)) = (e * w) * (e * u) := by ring
+      _ = w * (e * u) := by rw [hw]
+  have hcn : c ^ n = 0 := by
+    rcases Nat.eq_zero_or_pos n with h | h
+    · subst h
+      simp only [pow_zero, one_mul] at hn
+      exact absurd (by rw [← hlame, hn, map_zero] : (1 : K) = 0) one_ne_zero
+    · obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+      have hce : c ^ (m + 1) * e = c ^ (m + 1) := by
+        rw [pow_succ, mul_assoc, mul_comm c e, hec]
+      rw [← hce]
+      exact hn
+  have hunit : IsUnit (1 - c) := IsNilpotent.isUnit_one_sub ⟨n, hcn⟩
+  obtain ⟨V, hV⟩ : ∃ V : A, (1 - c) * V = 1 := ⟨↑hunit.unit⁻¹, hunit.mul_val_inv⟩
+  refine ⟨v₀ * V * e, ?_⟩
+  have hexp : w * v₀ = (1 - c) - (1 - e) := by rw [hc]; ring
+  calc w * (v₀ * V * e) = ((1 - c) * V) * e - ((1 - e) * V) * e := by
+        rw [← sub_mul, ← sub_mul, ← hexp]; ring
+    _ = e := by
+        rw [hV, one_mul]
+        have h6 : (1 - e) * V * e = V * ((1 - e) * e) := by ring
+        rw [h6, sub_mul, one_mul, hidem, sub_self, mul_zero, sub_zero]
+
+end EtaleDescentCorner
+
+section EtaleDescentAbstract
+
+open _root_.Polynomial
+
+variable {A B K : Type*} [Ring A] [Algebra ℚ A] [FiniteDimensional ℚ A]
+variable [Ring B] [Algebra ℂ B] [Algebra ℚ B] [IsScalarTower ℚ ℂ B]
+  [FiniteDimensional ℂ B]
+variable [Field K] [Algebra ℚ K] [FiniteDimensional ℚ K]
+
+/-- **Rational descent of an étale idempotent** (PROVEN, 2026-07-26 —
+the mathematical core of `modularHeckeAlgebraQ_etale_at_newform`,
+isolated from all modular-forms input).
+
+Setting: `A` a finite-dimensional commutative `ℚ`-algebra sitting
+(through `ι`) in a finite-dimensional commutative `ℂ`-algebra `B` whose
+`ℂ`-span it is (`hspan`); `λ : A ↠ K` onto a number field embedded in
+`ℂ` by `κ`; `e` the Artinian idempotent at `ker λ`; and `eC ∈ B` a
+nonzero idempotent on which every `t ∈ A` acts by the scalar `κ(λ t)`
+(`hchi`) — i.e. the local factor of `B` at the character `κ ∘ λ` is the
+LINE `ℂ·eC`. Conclusion: `ker λ` annihilates `e`, i.e. `eA` is the
+FIELD `K` and `A` is étale at `ker λ`.
+
+The single arithmetic input is `hindep`: a `ℚ`-independent family in
+`A` stays `ℂ`-independent in `B`, i.e. `A ⊗_ℚ ℂ → B` is injective. It
+cannot be dispensed with — `ℚ(√2)·1 ⊆ ℂ` satisfies everything else and
+fails the conclusion.
+
+PROOF. Write `K = ℚ(α)`, `f = minpoly ℚ α`, and lift `α` to `θ` in the
+corner with `f(θ) = 0` exactly (`exists_cornerLift`). Over `ℂ` factor
+`f = (X − α)·q`; `α` is a simple root, so `q(α) ≠ 0`, and the Lagrange
+element `ε = q(α)⁻¹·(ι e)·q(ι θ)` is an idempotent of `B` with
+`ι θ·ε = α·ε` and `ε·eC = eC`. The difference `u = ε − eC` is again
+idempotent and kills `eC`; were it nonzero, a maximal ideal containing
+`(1−u)` would give a character `ψ : B → ℂ` (residue field `ℂ` because
+`B` is finite-dimensional over the algebraically closed `ℂ`) with
+`ψ u = 1`, hence `ψ eC = 0`. But `hnil` forces `ψ` to kill `ker λ`, and
+`ψ ε = 1` forces `ψ (ι θ) = α`, so `ψ ∘ ι = κ ∘ λ` on all of `A`
+(`K = ℚ(α)`); spanning then gives `ψ eC · eC = eC · eC = eC`, i.e.
+`eC = 0`, a contradiction. So `ε = eC`.
+
+Now let `λ y = 0` and put `z = y·e`. Then `ι z · eC = 0`, so
+`ι z · ε = 0`, which is a NONTRIVIAL `ℂ`-linear relation among the
+`ι (z·θᵏ)`, `k < deg f` (its top coefficient is `q(α)⁻¹·lead q ≠ 0`).
+By `hindep` those elements are `ℚ`-DEPENDENT, so `z·P(θ) = 0` for some
+nonzero `P ∈ ℚ[X]` of degree `< deg f`; then `λ (P(θ)) = P(α) ≠ 0` by
+`linearIndependent_pow`, so `e·P(θ)` is a unit of the corner
+(`exists_corner_inv`) and `z = 0`. -/
+theorem etale_descent_of_line
+    (ι : A →ₐ[ℚ] B) (κ : K →ₐ[ℚ] ℂ)
+    (hAcomm : ∀ a b : A, a * b = b * a) (hBcomm : ∀ a b : B, a * b = b * a)
+    (hspan : Submodule.span ℂ (Set.range ι) = ⊤)
+    (lam : A →ₐ[ℚ] K) (hsurj : Function.Surjective lam)
+    (e : A) (hidem : e * e = e) (hlame : lam e = 1)
+    (hnil : ∀ y : A, lam y = 0 → ∃ n : ℕ, y ^ n * e = 0)
+    (eC : B) (heC0 : eC ≠ 0) (heCidem : eC * eC = eC)
+    (hchi : ∀ t : A, ι t * eC = κ (lam t) • eC)
+    (hindep : ∀ (n : ℕ) (v : Fin n → A), LinearIndependent ℚ v →
+      LinearIndependent ℂ (fun i => ι (v i))) :
+    ∀ y : A, lam y = 0 → y * e = 0 := by
+  classical
+  letI : CommRing A := { (inferInstance : Ring A) with mul_comm := hAcomm }
+  letI : CommRing B := { (inferInstance : Ring B) with mul_comm := hBcomm }
+  haveI : Algebra.IsSeparable ℚ K := inferInstance
+  obtain ⟨α, hα⟩ := Field.exists_primitive_element ℚ K
+  have hαint : IsIntegral ℚ α := Algebra.IsIntegral.isIntegral α
+  set f : ℚ[X] := minpoly ℚ α with hfdef
+  have hfmonic : f.Monic := minpoly.monic hαint
+  set r : ℕ := f.natDegree with hrdef
+  obtain ⟨θ, hθe, hθlam, hθf⟩ := exists_cornerLift lam hsurj e hidem hlame hnil α
+  set α' : ℂ := κ α with hα'
+  set fC : ℂ[X] := f.map (algebraMap ℚ ℂ) with hfC
+  have hfC0 : fC ≠ 0 := (hfmonic.map (algebraMap ℚ ℂ)).ne_zero
+  have hfCdeg : fC.natDegree = r := by
+    rw [hfC, hrdef]
+    exact hfmonic.natDegree_map _
+  have hroot : fC.IsRoot α' := by
+    have h : (aeval α' f : ℂ) = κ (aeval α f) := Polynomial.aeval_algHom_apply κ α f
+    rw [hfC, Polynomial.IsRoot, Polynomial.eval_map, ← Polynomial.aeval_def, h,
+      hfdef, minpoly.aeval, map_zero]
+  obtain ⟨q, hq⟩ := Polynomial.dvd_iff_isRoot.2 hroot
+  have hq0 : q ≠ 0 := by
+    intro h; rw [h, mul_zero] at hq; exact hfC0 hq
+  have hqdeg : q.natDegree + 1 = r := by
+    have h : fC.natDegree = (X - C α').natDegree + q.natDegree := by
+      rw [hq, Polynomial.natDegree_mul (Polynomial.X_sub_C_ne_zero α') hq0]
+    rw [Polynomial.natDegree_X_sub_C] at h
+    omega
+  -- `α'` is a SIMPLE root of `fC`
+  have hderiv : q.eval α' ≠ 0 := by
+    have h4 : aeval α (derivative f) ≠ 0 := by
+      intro h
+      have hdvd : f ∣ derivative f := minpoly.dvd ℚ α h
+      have hpos : 0 < f.natDegree := minpoly.natDegree_pos hαint
+      have hne : derivative f ≠ 0 := by
+        intro h0
+        have := Polynomial.derivative_eq_zero.mp h0
+        omega
+      have h7 := Polynomial.natDegree_le_of_dvd hdvd hne
+      have hlt : (derivative f).natDegree < f.natDegree :=
+        Polynomial.natDegree_derivative_lt (by omega)
+      omega
+    have h1 : derivative fC = q + (X - C α') * derivative q := by
+      rw [hq, derivative_mul, derivative_sub, derivative_X, derivative_C, sub_zero,
+        one_mul]
+    have h2 : (derivative fC).eval α' = q.eval α' := by
+      rw [h1]; simp
+    have h3 : derivative fC = (derivative f).map (algebraMap ℚ ℂ) := by
+      rw [hfC, derivative_map]
+    rw [← h2, h3, Polynomial.eval_map, ← Polynomial.aeval_def, hα',
+      Polynomial.aeval_algHom_apply]
+    intro h
+    exact h4 ((map_eq_zero_iff κ κ.toRingHom.injective).1 h)
+  set c : ℂ := (q.eval α')⁻¹ with hcdef
+  have hcq : c * q.eval α' = 1 := inv_mul_cancel₀ hderiv
+  have hc0 : c ≠ 0 := by
+    intro h; rw [h, zero_mul] at hcq; exact zero_ne_one hcq
+  set ε : B := c • (ι e * aeval (ι θ) q) with hεdef
+  have hιeθ : ι e * ι θ = ι θ := by rw [← map_mul, hθe]
+  have hιe2 : ι e * ι e = ι e := by rw [← map_mul, hidem]
+  have hεe : ι e * ε = ε := by rw [hεdef, mul_smul_comm, ← mul_assoc, hιe2]
+  have hfCcorner : ι e * aeval (ι θ) fC = 0 := by
+    have h1 : aeval (ι θ) fC = ι (aeval θ f) := by
+      rw [hfC, Polynomial.aeval_map_algebraMap, Polynomial.aeval_algHom_apply]
+    rw [h1, ← map_mul, hθf, map_zero]
+  have hθε : ι θ * ε = α' • ε := by
+    have h1 : aeval (ι θ) fC = (ι θ - algebraMap ℂ B α') * aeval (ι θ) q := by
+      rw [hq, map_mul, map_sub, aeval_X, aeval_C]
+    have hexpand : (ι θ - α' • ι e) * (ι e * aeval (ι θ) q)
+        = ι e * ((ι θ - algebraMap ℂ B α') * aeval (ι θ) q) := by
+      rw [Algebra.smul_def]
+      linear_combination (-(algebraMap ℂ B α') * aeval (ι θ) q) * hιe2 +
+        (aeval (ι θ) q) * hιeθ - (aeval (ι θ) q) * hιeθ
+    have h3 : (ι θ - α' • ι e) * (ι e * aeval (ι θ) q) = 0 := by
+      rw [hexpand, ← h1, hfCcorner]
+    have h4 : (ι θ - α' • ι e) * ε = 0 := by
+      rw [hεdef, mul_smul_comm, h3, smul_zero]
+    rw [sub_mul, smul_mul_assoc, hεe, sub_eq_zero] at h4
+    exact h4
+  have hqε : aeval (ι θ) q * ε = (q.eval α') • ε := aeval_mul_of_smul hθε q
+  have hεidem : ε * ε = ε := by
+    calc ε * ε = c • ((ι e * aeval (ι θ) q) * ε) := by rw [hεdef, smul_mul_assoc]
+      _ = c • (ι e * ((q.eval α') • ε)) := by rw [mul_assoc, hqε]
+      _ = (c * q.eval α') • (ι e * ε) := by rw [mul_smul_comm, smul_smul]
+      _ = ε := by rw [hcq, one_smul, hεe]
+  have hιeeC : ι e * eC = eC := by rw [hchi e, hlame, map_one, one_smul]
+  have hιθeC : ι θ * eC = α' • eC := by rw [hchi θ, hθlam, hα']
+  have hqeC : aeval (ι θ) q * eC = (q.eval α') • eC := aeval_mul_of_smul hιθeC q
+  have hεeC : ε * eC = eC := by
+    calc ε * eC = c • (ι e * (aeval (ι θ) q * eC)) := by rw [hεdef, smul_mul_assoc, mul_assoc]
+      _ = (c * q.eval α') • (ι e * eC) := by rw [hqeC, mul_smul_comm, smul_smul]
+      _ = eC := by rw [hcq, one_smul, hιeeC]
+  -- the difference `ε - eC` is an idempotent that must vanish
+  set u : B := ε - eC with hudef
+  have hueC : u * eC = 0 := by rw [hudef, sub_mul, hεeC, heCidem, sub_self]
+  have hιeu : ι e * u = u := by rw [hudef, mul_sub, hεe, hιeeC]
+  have hu0 : u = 0 := by
+    by_contra hune
+    have hnotunit : ¬ IsUnit (1 - u) := by
+      intro h
+      obtain ⟨v, hv⟩ : ∃ v : B, (1 - u) * v = 1 := ⟨↑h.unit⁻¹, h.mul_val_inv⟩
+      have huu : u * (1 - u) = 0 := by
+        rw [mul_sub, mul_one, hudef]
+        rw [show (ε - eC) * (ε - eC) = ε * ε - ε * eC - (eC * ε - eC * eC) by ring,
+          hεidem, hεeC, heCidem, mul_comm eC ε, hεeC]
+        ring
+      apply hune
+      calc u = u * ((1 - u) * v) := by rw [hv, mul_one]
+        _ = (u * (1 - u)) * v := by ring
+        _ = 0 := by rw [huu, zero_mul]
+    have hproper : Ideal.span {(1 : B) - u} ≠ ⊤ := fun h =>
+      hnotunit ((Ideal.span_singleton_eq_top).1 h)
+    obtain ⟨m, hm, hle⟩ := Ideal.exists_le_maximal _ hproper
+    haveI : m.IsMaximal := hm
+    haveI : FiniteDimensional ℂ (B ⧸ m) :=
+      Module.Finite.of_surjective (Ideal.Quotient.mkₐ ℂ m).toLinearMap
+        Ideal.Quotient.mk_surjective
+    haveI : Algebra.IsIntegral ℂ (B ⧸ m) := Algebra.IsIntegral.of_finite ℂ (B ⧸ m)
+    have hbij : Function.Bijective (algebraMap ℂ (B ⧸ m)) :=
+      IsAlgClosed.algebraMap_bijective_of_isIntegral
+    set ψ : B →ₐ[ℂ] ℂ :=
+      (AlgEquiv.ofBijective (Algebra.ofId ℂ (B ⧸ m)) hbij).symm.toAlgHom.comp
+        (Ideal.Quotient.mkₐ ℂ m) with hψdef
+    have hψker : ∀ x ∈ m, ψ x = 0 := by
+      intro x hx
+      have h1 : (Ideal.Quotient.mkₐ ℂ m) x = 0 := by
+        show Ideal.Quotient.mk m x = 0
+        exact (Ideal.Quotient.eq_zero_iff_mem).2 hx
+      rw [hψdef]
+      show (AlgEquiv.ofBijective (Algebra.ofId ℂ (B ⧸ m)) hbij).symm
+        ((Ideal.Quotient.mkₐ ℂ m) x) = 0
+      rw [h1, map_zero]
+    have hψu : ψ u = 1 := by
+      have h1 : (1 : B) - u ∈ m := hle (Ideal.mem_span_singleton_self _)
+      have h2 := hψker _ h1
+      rw [map_sub, map_one, sub_eq_zero] at h2
+      exact h2.symm
+    have hψeC : ψ eC = 0 := by
+      have h := congrArg ψ hueC
+      rw [map_mul, hψu, one_mul, map_zero] at h
+      exact h
+    have hψιe : ψ (ι e) = 1 := by
+      have h := congrArg ψ hιeu
+      rw [map_mul, hψu, mul_one] at h
+      exact h
+    have hψε : ψ ε = 1 := by
+      have : ε = u + eC := by rw [hudef]; ring
+      rw [this, map_add, hψu, hψeC, add_zero]
+    -- `ψ` kills the kernel of `λ`
+    have hψkerlam : ∀ y : A, lam y = 0 → ψ (ι y) = 0 := by
+      intro y hy
+      obtain ⟨n, hn⟩ := hnil y hy
+      have h1 : ψ (ι y) ^ n * ψ (ι e) = 0 := by
+        rw [← map_pow, ← map_mul, ← map_pow, ← map_mul, hn, map_zero, map_zero]
+      rw [hψιe, mul_one] at h1
+      rcases Nat.eq_zero_or_pos n with rfl | hpos
+      · rw [pow_zero] at h1; exact absurd h1 one_ne_zero
+      · exact pow_eq_zero_iff (by omega) |>.1 h1
+    -- `ψ (ι θ) = α'`
+    have hψeval : ∀ p : ℂ[X], ψ (aeval (ι θ) p) = p.eval (ψ (ι θ)) := by
+      intro p
+      rw [← Polynomial.aeval_algHom_apply ψ (ι θ) p]
+      simp
+    have hψιθ : ψ (ι θ) = α' := by
+      have hqval : q.eval (ψ (ι θ)) = q.eval α' := by
+        have h2 : ψ ε = c * q.eval (ψ (ι θ)) := by
+          rw [hεdef, map_smul, map_mul, hψιe, one_mul, hψeval q, smul_eq_mul]
+        rw [hψε] at h2
+        exact mul_left_cancel₀ hc0 (h2.symm.trans hcq.symm)
+      have hfval : fC.eval (ψ (ι θ)) = 0 := by
+        have h2 := congrArg ψ hfCcorner
+        rw [map_mul, hψιe, one_mul, hψeval fC, map_zero] at h2
+        exact h2
+      rw [hq, Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X,
+        Polynomial.eval_C, hqval] at hfval
+      rcases mul_eq_zero.1 hfval with h | h
+      · exact sub_eq_zero.1 h
+      · exact absurd h hderiv
+    -- `ψ ∘ ι = κ ∘ λ`
+    have hψι : ∀ t : A, ψ (ι t) = κ (lam t) := by
+      intro t
+      have hmem : lam t ∈ Algebra.adjoin ℚ ({α} : Set K) := by
+        have h1 : (⊤ : IntermediateField ℚ K).toSubalgebra = ⊤ := rfl
+        have h2 : (IntermediateField.adjoin ℚ ({α} : Set K)).toSubalgebra
+            = Algebra.adjoin ℚ ({α} : Set K) :=
+          IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic hαint.isAlgebraic
+        rw [← h2, hα, h1]
+        trivial
+      rw [Algebra.adjoin_singleton_eq_range_aeval] at hmem
+      obtain ⟨P, hP⟩ := hmem
+      have hP' : aeval α P = lam t := hP
+      have hlamP : lam (e * aeval θ P) = lam t := by
+        rw [map_mul, hlame, one_mul, ← Polynomial.aeval_algHom_apply, hθlam, hP']
+      have h0 : lam (t - e * aeval θ P) = 0 := by rw [map_sub, hlamP, sub_self]
+      have h1 := hψkerlam _ h0
+      rw [map_sub, map_sub, sub_eq_zero] at h1
+      have h2 : ψ (ι (e * aeval θ P)) = aeval (ψ (ι θ)) P := by
+        rw [map_mul, map_mul, hψιe, one_mul, ← Polynomial.aeval_algHom_apply ι θ P]
+        exact (Polynomial.aeval_algHom_apply (ψ.restrictScalars ℚ) (ι θ) P).symm
+      rw [h1, h2, hψιθ, hα', ← hP']
+      exact Polynomial.aeval_algHom_apply κ α P
+    -- ψ eC computed through the span: contradiction with `ψ eC = 0`
+    have hspanC : ∀ b ∈ Submodule.span ℂ (Set.range ι), ψ b • eC = b * eC := by
+      intro b hb
+      induction hb using Submodule.span_induction with
+      | mem x hx =>
+          obtain ⟨t, rfl⟩ := hx
+          rw [hψι t, hchi t]
+      | zero => simp
+      | add x y _ _ hx hy => rw [map_add, add_smul, hx, hy, add_mul]
+      | smul a x _ hx => rw [map_smul, smul_eq_mul, mul_smul, hx, smul_mul_assoc]
+    have hfin := hspanC eC (by rw [hspan]; trivial)
+    rw [hψeC, zero_smul, heCidem] at hfin
+    exact heC0 hfin.symm
+  have hεeq : ε = eC := by
+    have h : ε - eC = 0 := by rw [← hudef]; exact hu0
+    exact sub_eq_zero.mp h
+  -- FINAL DESCENT
+  intro y hy
+  set z : A := y * e with hzdef
+  have hze : z * e = z := by rw [hzdef, mul_assoc, hidem]
+  have hlz : lam z = 0 := by rw [hzdef, map_mul, hy, zero_mul]
+  have hzeC : ι z * eC = 0 := by rw [hchi z, hlz, map_zero, zero_smul]
+  have hzε : ι z * ε = 0 := by rw [hεeq]; exact hzeC
+  -- expand ε and read off a `ℂ`-relation among `z * θ ^ k`
+  have hze' : ι z * ι e = ι z := by rw [← map_mul, hze]
+  have hrel : ∑ k : Fin r, (c * q.coeff (k : ℕ)) • ι (z * θ ^ (k : ℕ)) = 0 := by
+    have hexp : aeval (ι θ) q = ∑ k ∈ Finset.range r, q.coeff k • (ι θ) ^ k := by
+      rw [← hqdeg]
+      exact Polynomial.aeval_eq_sum_range (ι θ)
+    have hιmul : ∀ k : ℕ, ι z * (ι θ) ^ k = ι (z * θ ^ k) := by
+      intro k
+      rw [map_mul ι z (θ ^ k), map_pow]
+    have h1 : ι z * ε = ∑ k ∈ Finset.range r, (c * q.coeff k) • ι (z * θ ^ k) := by
+      rw [hεdef, mul_smul_comm, ← mul_assoc, hze', hexp, Finset.mul_sum, Finset.smul_sum]
+      refine Finset.sum_congr rfl fun k _ => ?_
+      rw [mul_smul_comm, smul_smul, hιmul k]
+    rw [hzε] at h1
+    rw [← Finset.sum_range fun k => (c * q.coeff k) • ι (z * θ ^ k)]
+    exact h1.symm
+  have hcoeff : (c * q.coeff q.natDegree) ≠ 0 :=
+    mul_ne_zero hc0 (Polynomial.leadingCoeff_ne_zero.2 hq0)
+  have hnotli : ¬ LinearIndependent ℂ (fun k : Fin r => ι (z * θ ^ (k : ℕ))) := by
+    intro hli
+    have h := Fintype.linearIndependent_iff.mp hli (fun k => c * q.coeff (k : ℕ)) hrel
+    exact hcoeff (h ⟨q.natDegree, by omega⟩)
+  have hnotliQ : ¬ LinearIndependent ℚ (fun k : Fin r => z * θ ^ (k : ℕ)) :=
+    fun h => hnotli (hindep r _ h)
+  rw [Fintype.not_linearIndependent_iff] at hnotliQ
+  obtain ⟨g, hg, k₀, hk₀⟩ := hnotliQ
+  set W : A := ∑ k : Fin r, g k • θ ^ (k : ℕ) with hWdef
+  have hzW : z * W = 0 := by
+    rw [hWdef, Finset.mul_sum, ← hg]
+    exact Finset.sum_congr rfl fun k _ => by rw [mul_smul_comm]
+  have hlamW : lam W ≠ 0 := by
+    intro h
+    have h1 : ∑ k : Fin r, g k • α ^ (k : ℕ) = 0 := by
+      rw [← h, hWdef, map_sum]
+      refine Finset.sum_congr rfl ?_
+      intro k _
+      rw [map_smul, map_pow, hθlam]
+    have hli : LinearIndependent ℚ (fun k : Fin r => α ^ (k : ℕ)) := by
+      rw [hrdef, hfdef]
+      exact linearIndependent_pow α
+    exact hk₀ (Fintype.linearIndependent_iff.mp hli g h1 k₀)
+  obtain ⟨V, hV⟩ := exists_corner_inv lam hsurj e hidem hlame hnil (e * W)
+    (by rw [← mul_assoc, hidem]) (by rw [map_mul, hlame, one_mul]; exact hlamW)
+  calc y * e = z := rfl
+    _ = z * e := hze.symm
+    _ = z * ((e * W) * V) := by rw [hV]
+    _ = (z * (e * W)) * V := by ring
+    _ = 0 := by rw [← mul_assoc, hze, hzW, zero_mul]
+
+end EtaleDescentAbstract
+
+section EtaleDescentSubalgebra
+
+variable {S : Type*} [AddCommGroup S] [Module ℂ S] [FiniteDimensional ℂ S]
+variable [Algebra ℚ (Module.End ℂ S)] [IsScalarTower ℚ ℂ (Module.End ℂ S)]
+
+/-- **The descent lemma for the concrete pair of Hecke subalgebras**
+(PROVEN, 2026-07-26): `etale_descent_of_line` transported to the shape
+in which it is used — `AQ` the `ℚ`-subalgebra and `BC` the
+`ℂ`-subalgebra of `End_ℂ S` generated by the SAME prime-indexed
+operator family `T`, `eC` an idempotent of `BC` fixing `g` and
+annihilating everything of `BC` that kills `g`.
+
+The two `hcomm` hypotheses replace `CommRing` instances on the
+subtypes: supplying them as PROPOSITIONS and building the `CommRing`
+inside the proof is what keeps the application cheap (a missing
+`CommRing ↥AQ` instance sent elaboration into a 150-second search).
+`hspan` is discharged internally: the `ℂ`-span of a `ℚ`-subalgebra is a
+`ℂ`-subalgebra, so it contains the `ℂ`-adjoin of the generators. -/
+theorem subalgebra_etale_descent (T : ℕ → Module.End ℂ S) (g : S)
+    (KF : IntermediateField ℚ ℂ) [FiniteDimensional ℚ KF]
+    (AQ : Subalgebra ℚ (Module.End ℂ S)) (BC : Subalgebra ℂ (Module.End ℂ S))
+    (hAQ : AQ = Algebra.adjoin ℚ {φ : Module.End ℂ S | ∃ q : ℕ, q.Prime ∧ φ = T q})
+    (hBC : BC = Algebra.adjoin ℂ {φ : Module.End ℂ S | ∃ q : ℕ, q.Prime ∧ φ = T q})
+    (hcommA : ∀ a ∈ AQ, ∀ b ∈ AQ, a * b = b * a)
+    (hcomm : ∀ a ∈ BC, ∀ b ∈ BC, a * b = b * a)
+    (hAfin : FiniteDimensional ℚ ↥AQ)
+    (lam : ↥AQ →ₐ[ℚ] KF)
+    (hlam : ∀ t : ↥AQ, (t : Module.End ℂ S) g = ((lam t : ℂ)) • g)
+    (hsurj : Function.Surjective lam) (hg0 : g ≠ 0)
+    (e : ↥AQ) (hidem : e * e = e) (hlame : lam e = 1)
+    (hnil : ∀ y : ↥AQ, lam y = 0 → ∃ n : ℕ, y ^ n * e = 0)
+    (eC : Module.End ℂ S) (heCmem : eC ∈ BC) (heCidem : eC * eC = eC)
+    (heCg : eC g = g)
+    (heCann : ∀ b ∈ BC, b g = 0 → b * eC = 0)
+    (hindep : ∀ (n : ℕ) (v : Fin n → ↥AQ), LinearIndependent ℚ v →
+      LinearIndependent ℂ (fun i => ((v i : Module.End ℂ S)))) :
+    ∀ y : ↥AQ, lam y = 0 → y * e = 0 := by
+  classical
+  haveI := hAfin
+  have hAcomm : ∀ a b : ↥AQ, a * b = b * a :=
+    fun a b => Subtype.ext (hcommA a.1 a.2 b.1 b.2)
+  have hBcomm : ∀ a b : ↥BC, a * b = b * a :=
+    fun a b => Subtype.ext (hcomm a.1 a.2 b.1 b.2)
+  haveI hBfin : FiniteDimensional ℂ ↥BC :=
+    FiniteDimensional.of_injective (BC.val.toLinearMap) Subtype.coe_injective
+  haveI htower2 : IsScalarTower ℚ ℂ ↥BC :=
+    ⟨fun x y z => Subtype.ext (smul_assoc x y (z : Module.End ℂ S))⟩
+  have hgenmem : ∀ q : ℕ, q.Prime → T q ∈ BC := by
+    intro q hq
+    rw [hBC]
+    exact Algebra.subset_adjoin ⟨q, hq, rfl⟩
+  have hsub : ∀ x ∈ AQ, x ∈ BC := by
+    intro x hx
+    rw [hAQ] at hx
+    induction hx using Algebra.adjoin_induction with
+    | mem y hy =>
+        obtain ⟨q, hq, rfl⟩ := hy
+        exact hgenmem q hq
+    | algebraMap r =>
+        rw [IsScalarTower.algebraMap_apply ℚ ℂ (Module.End ℂ S) r]
+        exact BC.algebraMap_mem _
+    | add a b _ _ ha hb => exact add_mem ha hb
+    | mul a b _ _ ha hb => exact mul_mem ha hb
+  obtain ⟨ι, hι⟩ : ∃ ι : ↥AQ →ₐ[ℚ] ↥BC,
+      ∀ t : ↥AQ, ((ι t : ↥BC) : Module.End ℂ S) = (t : Module.End ℂ S) :=
+    ⟨{ toFun := fun t => ⟨(t : Module.End ℂ S), hsub t t.2⟩
+       map_one' := rfl
+       map_mul' := fun _ _ => rfl
+       map_zero' := rfl
+       map_add' := fun _ _ => rfl
+       commutes' := fun r => Subtype.ext rfl }, fun _ => rfl⟩
+  have hAQadjoin : Subalgebra.toSubmodule (Algebra.adjoin ℂ (AQ : Set (Module.End ℂ S)))
+      = Submodule.span ℂ (AQ : Set (Module.End ℂ S)) := by
+    rw [Algebra.adjoin_eq_span,
+      show Submonoid.closure (AQ : Set (Module.End ℂ S)) = AQ.toSubsemiring.toSubmonoid from
+        Submonoid.closure_eq _]
+    rfl
+  have hgenmemA : ∀ q : ℕ, q.Prime → T q ∈ AQ := by
+    intro q hq
+    rw [hAQ]
+    exact Algebra.subset_adjoin ⟨q, hq, rfl⟩
+  have hspanEnd : ∀ b ∈ BC, b ∈ Submodule.span ℂ (AQ : Set (Module.End ℂ S)) := by
+    intro b hb
+    rw [hBC] at hb
+    have hmem : b ∈ Algebra.adjoin ℂ (AQ : Set (Module.End ℂ S)) := by
+      refine Algebra.adjoin_mono ?_ hb
+      rintro φ ⟨q, hq, rfl⟩
+      exact hgenmemA q hq
+    rw [← hAQadjoin]
+    exact hmem
+  have hspan : Submodule.span ℂ (Set.range ι) = ⊤ := by
+    refine eq_top_iff.2 fun b _ => ?_
+    have hmapeq : Submodule.map BC.val.toLinearMap (Submodule.span ℂ (Set.range ι))
+        = Submodule.span ℂ (AQ : Set (Module.End ℂ S)) := by
+      rw [Submodule.map_span]
+      congr 1
+      ext x
+      constructor
+      · rintro ⟨_, ⟨t, rfl⟩, rfl⟩
+        show ((ι t : ↥BC) : Module.End ℂ S) ∈ AQ
+        rw [hι t]
+        exact t.2
+      · intro hx
+        exact ⟨ι ⟨x, hx⟩, ⟨⟨x, hx⟩, rfl⟩, hι ⟨x, hx⟩⟩
+    have hb : (b : Module.End ℂ S) ∈
+        Submodule.map BC.val.toLinearMap (Submodule.span ℂ (Set.range ι)) := by
+      rw [hmapeq]
+      exact hspanEnd b b.2
+    obtain ⟨x, hx, hxe⟩ := hb
+    have hxb : x = b := Subtype.ext hxe
+    rwa [hxb] at hx
+  have heC0 : (⟨eC, heCmem⟩ : ↥BC) ≠ 0 := by
+    intro h
+    have h1 : eC = 0 := congrArg Subtype.val h
+    apply hg0
+    rw [← heCg, h1]
+    simp
+  have hchi : ∀ t : ↥AQ,
+      ι t * (⟨eC, heCmem⟩ : ↥BC) = (KF.val (lam t)) • (⟨eC, heCmem⟩ : ↥BC) := by
+    intro t
+    refine Subtype.ext ?_
+    show ((ι t : ↥BC) : Module.End ℂ S) * eC = ((lam t : ℂ)) • eC
+    rw [hι t]
+    have hmem : (t : Module.End ℂ S) - ((lam t : ℂ)) • 1 ∈ BC :=
+      sub_mem (hsub t t.2) (Subalgebra.smul_mem _ (one_mem _) _)
+    have hzero : ((t : Module.End ℂ S) - ((lam t : ℂ)) • 1) g = 0 := by
+      rw [LinearMap.sub_apply, LinearMap.smul_apply, Module.End.one_apply, hlam t, sub_self]
+    have h := heCann _ hmem hzero
+    rw [sub_mul, smul_mul_assoc, one_mul, sub_eq_zero] at h
+    exact h
+  have hindep' : ∀ (n : ℕ) (v : Fin n → ↥AQ), LinearIndependent ℚ v →
+      LinearIndependent ℂ (fun i => ι (v i)) := by
+    intro n v hv
+    refine LinearIndependent.of_comp BC.val.toLinearMap ?_
+    have hfun : (BC.val.toLinearMap ∘ fun i => ι (v i))
+        = fun i => ((v i : Module.End ℂ S)) := funext fun i => hι (v i)
+    rw [hfun]
+    exact hindep n v hv
+  exact etale_descent_of_line ι KF.val hAcomm hBcomm hspan lam hsurj e hidem hlame hnil
+    (⟨eC, heCmem⟩ : ↥BC) heC0 (Subtype.ext heCidem) hchi hindep'
+
+end EtaleDescentSubalgebra
+
+
+
+/-- **`ℚ`-linear independence base-changes to `ℂ` for rational
+coordinate vectors** (pure linear algebra, no arithmetic): a finite
+family in `ℚ^ι` that is independent over `ℚ` stays independent over `ℂ`
+after the entrywise inclusion `ℚ ↪ ℂ`.
+
+Proof without matrices: `ℚ` is a field, so the injective `ℚ`-linear map
+`c ↦ ∑ᵢ cᵢ·rᵢ` has a `ℚ`-linear LEFT INVERSE `g`
+(`LinearMap.exists_leftInverse_of_injective`), which satisfies
+`g (rᵢ) = eᵢ`. The SAME coefficient array `g(e_j)` defines a `ℂ`-linear
+`G : ℂ^ι → ℂ^n` with `G ∘ (cast) = cast ∘ g`, so `G` still sends the
+image of `rᵢ` to `eᵢ` and no nontrivial `ℂ`-relation can survive. This
+is the concrete finite shape of flatness of `ℚ → ℂ`; it is stated
+separately because it is the ONLY place where the base change happens,
+and it is where the general counterexample (`ℚ(√2)·1 ⊆ ℂ`) is ruled out
+by the RATIONALITY of the coordinates rather than by any property of
+the ambient space. -/
+theorem linearIndependent_complex_of_rat {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {n : ℕ} (r : Fin n → ι → ℚ) (hr : LinearIndependent ℚ r) :
+    LinearIndependent ℂ (fun i => (fun j => ((r i j : ℚ) : ℂ))) := by
+  classical
+  set A : (Fin n → ℚ) →ₗ[ℚ] (ι → ℚ) :=
+    { toFun := fun c => ∑ i, c i • r i
+      map_add' := by
+        intro x y
+        simp only [Pi.add_apply, add_smul]
+        exact Finset.sum_add_distrib
+      map_smul' := by
+        intro a x
+        simp only [Pi.smul_apply, smul_eq_mul, mul_smul, RingHom.id_apply]
+        exact (Finset.smul_sum).symm } with hAdef
+  have hAapply : ∀ c : Fin n → ℚ, A c = ∑ i, c i • r i := fun _ => rfl
+  have hAker : LinearMap.ker A = ⊥ := by
+    rw [LinearMap.ker_eq_bot']
+    intro c hc
+    rw [hAapply] at hc
+    exact funext (Fintype.linearIndependent_iff.mp hr c hc)
+  obtain ⟨g, hg⟩ := A.exists_leftInverse_of_injective hAker
+  have hgA : ∀ x : Fin n → ℚ, g (A x) = x := fun x => LinearMap.congr_fun hg x
+  have hAsingle : ∀ i : Fin n, A (Pi.single i 1) = r i := by
+    intro i
+    rw [hAapply]
+    rw [Finset.sum_eq_single i]
+    · simp
+    · intro b _ hb
+      simp [hb]
+    · intro h
+      exact absurd (Finset.mem_univ i) h
+  have hgr : ∀ i : Fin n, g (r i) = Pi.single i 1 := by
+    intro i
+    rw [← hAsingle i, hgA]
+  set G : (ι → ℂ) →ₗ[ℂ] (Fin n → ℂ) :=
+    { toFun := fun x k => ∑ j, ((g (Pi.single j 1) k : ℚ) : ℂ) * x j
+      map_add' := by
+        intro x y
+        funext k
+        simp only [Pi.add_apply, mul_add]
+        exact Finset.sum_add_distrib
+      map_smul' := by
+        intro a x
+        funext k
+        simp only [Pi.smul_apply, smul_eq_mul, RingHom.id_apply, Finset.mul_sum]
+        exact Finset.sum_congr rfl fun j _ => by ring } with hGdef
+  have hGapply : ∀ (x : ι → ℂ) (k : Fin n),
+      G x k = ∑ j, ((g (Pi.single j 1) k : ℚ) : ℂ) * x j := fun _ _ => rfl
+  have hGcast : ∀ (y : ι → ℚ) (k : Fin n),
+      G (fun j => ((y j : ℚ) : ℂ)) k = ((g y k : ℚ) : ℂ) := by
+    intro y k
+    have hy : y = ∑ j, y j • (Pi.single j (1 : ℚ)) := by
+      funext j
+      simp [Finset.sum_apply, Pi.single_apply]
+    have hgy : g y k = ∑ j, y j * g (Pi.single j 1) k := by
+      conv_lhs => rw [hy]
+      rw [map_sum]
+      simp [Finset.sum_apply]
+    rw [hGapply, hgy]
+    push_cast
+    exact Finset.sum_congr rfl fun j _ => mul_comm _ _
+  rw [Fintype.linearIndependent_iff]
+  intro c hc i
+  have h0 : G (∑ i, c i • fun j => ((r i j : ℚ) : ℂ)) = 0 := by rw [hc, map_zero]
+  rw [map_sum] at h0
+  have h1 : ∀ i' : Fin n, G (c i' • fun j => ((r i' j : ℚ) : ℂ))
+      = c i' • fun k => (((Pi.single i' (1 : ℚ) : Fin n → ℚ) k : ℚ) : ℂ) := by
+    intro i'
+    rw [map_smul]
+    congr 1
+    funext k
+    rw [hGcast (r i') k, hgr i']
+  simp only [h1] at h0
+  have h2 := congrFun h0 i
+  simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply] at h2
+  rw [Finset.sum_eq_single i] at h2
+  · simpa using h2
+  · intro b _ hb
+    simp [hb]
+  · intro h
+    exact absurd (Finset.mem_univ i) h
+
+/-- **A `ℚ`-form of a `ℂ`-vector space cut out by a rational coefficient
+system makes `ℚ`-independence survive base change to `ℂ`** (PROVEN,
+2026-07-26; the abstract engine of
+`modularHeckeAlgebraQ_linearIndependent_complex` below).
+
+Data: a finite-dimensional `ℂ`-space `S`; a system of `ℂ`-linear
+functionals `a : ℕ → S^∨` that SEPARATES points (`hsep`); a finite
+subfamily `a_{nn 0}, …, a_{nn (D−1)}` with `D = dim_ℂ S` through which
+every `a m` is a `ℚ`-combination (`hrel`); and a set `gens` of
+endomorphisms each of which pulls the whole system back into that
+`ℚ`-span (`hgens`). Conclusion: on the `ℚ`-subalgebra
+`Algebra.adjoin ℚ gens ⊆ End_ℂ S`, `ℚ`-linear independence implies
+`ℂ`-linear independence — i.e. `(adjoin ℚ gens) ⊗_ℚ ℂ ↪ End_ℂ S`.
+
+`halg` pins the `Algebra ℚ (End_ℂ S)` instance to the one factoring
+through `ℚ → ℂ` (for the modular application this is
+`modularEnd_algebraMap_rat_apply`); it is a hypothesis rather than an
+instance so that no new global `Algebra ℚ (End_ℂ ·)` instance and no
+diamond is created.
+
+HOW IT WORKS. `Λ : S → ℂ^D`, `f ↦ (a_{nn i} f)ᵢ`, is injective by
+`hsep`+`hrel` and hence bijective by dimension count, so the chosen
+functionals are a coordinate system. `hgens` propagates along
+`Algebra.adjoin_induction` — the scalars are `ℚ` by `halg`, sums are
+componentwise, and a product `x·y` composes two rational matrices — so
+EVERY `T` in the adjoin has a RATIONAL matrix `ρ T` in those
+coordinates. `T ↦ ρ T` is injective (a vanishing matrix kills `Λ`,
+hence `T`), so a `ℚ`-independent family of `T`'s has `ℚ`-independent
+matrices; `linearIndependent_complex_of_rat` makes those matrices
+`ℂ`-independent; and evaluation at the `Λ`-preimages of the standard
+basis is a `ℂ`-LINEAR map `End_ℂ S → ℂ^{D×D}` realizing `ρ`, so
+`LinearIndependent.of_comp` transports the conclusion back. -/
+theorem linearIndependent_complex_of_ratCoeffSystem
+    {S : Type*} [AddCommGroup S] [Module ℂ S] [FiniteDimensional ℂ S]
+    [Algebra ℚ (Module.End ℂ S)]
+    (halg : ∀ (r : ℚ) (f : S), (algebraMap ℚ (Module.End ℂ S) r) f = (r : ℂ) • f)
+    (a : ℕ → (S →ₗ[ℂ] ℂ))
+    (hsep : ∀ f : S, (∀ m : ℕ, a m f = 0) → f = 0)
+    {D : ℕ} (hD : Module.finrank ℂ S = D) (nn : Fin D → ℕ)
+    (hrel : ∀ m : ℕ, ∃ c : Fin D → ℚ,
+      ∀ f : S, a m f = ∑ i, (c i : ℂ) * a (nn i) f)
+    {gens : Set (Module.End ℂ S)}
+    (hgens : ∀ T ∈ gens, ∀ m : ℕ, ∃ c : Fin D → ℚ,
+      ∀ f : S, a m (T f) = ∑ i, (c i : ℂ) * a (nn i) f)
+    {n : ℕ} (v : Fin n → ↥(Algebra.adjoin ℚ gens))
+    (hv : LinearIndependent ℚ v) :
+    LinearIndependent ℂ (fun i => ((v i : Module.End ℂ S))) := by
+  classical
+  set Λ : S →ₗ[ℂ] (Fin D → ℂ) := LinearMap.pi (fun i => a (nn i)) with hΛdef
+  have hΛapply : ∀ (f : S) (i : Fin D), Λ f i = a (nn i) f := fun _ _ => rfl
+  have hΛinj : Function.Injective Λ := by
+    rw [injective_iff_map_eq_zero]
+    intro f hf
+    refine hsep f fun m => ?_
+    obtain ⟨c, hc⟩ := hrel m
+    rw [hc f]
+    refine Finset.sum_eq_zero fun i _ => ?_
+    rw [← hΛapply f i, hf, Pi.zero_apply, mul_zero]
+  have hΛsurj : Function.Surjective Λ := by
+    have hfr : Module.finrank ℂ S = Module.finrank ℂ (Fin D → ℂ) := by
+      rw [hD]
+      simp
+    exact (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hfr).mp hΛinj
+  -- the rational-coefficient property, closed under the ℚ-algebra generated by `gens`
+  have hP : ∀ T ∈ Algebra.adjoin ℚ gens, ∀ m : ℕ, ∃ c : Fin D → ℚ,
+      ∀ f : S, a m (T f) = ∑ i, (c i : ℂ) * a (nn i) f := by
+    intro T hT
+    induction hT using Algebra.adjoin_induction with
+    | mem x hx => exact hgens x hx
+    | algebraMap r =>
+        intro m
+        obtain ⟨c, hc⟩ := hrel m
+        refine ⟨r • c, fun f => ?_⟩
+        rw [halg r f, map_smul, hc f, smul_eq_mul, Finset.mul_sum]
+        refine Finset.sum_congr rfl fun i _ => ?_
+        simp only [Pi.smul_apply, smul_eq_mul]
+        push_cast
+        ring
+    | add x y _ _ ihx ihy =>
+        intro m
+        obtain ⟨cx, hcx⟩ := ihx m
+        obtain ⟨cy, hcy⟩ := ihy m
+        refine ⟨cx + cy, fun f => ?_⟩
+        rw [LinearMap.add_apply, map_add, hcx f, hcy f, ← Finset.sum_add_distrib]
+        refine Finset.sum_congr rfl fun i _ => ?_
+        simp only [Pi.add_apply]
+        push_cast
+        ring
+    | mul x y _ _ ihx ihy =>
+        intro m
+        obtain ⟨c, hc⟩ := ihx m
+        choose d hd using fun i : Fin D => ihy (nn i)
+        refine ⟨fun k => ∑ i, c i * d i k, fun f => ?_⟩
+        rw [Module.End.mul_apply, hc (y f)]
+        have hstep : ∀ i : Fin D, (c i : ℂ) * a (nn i) (y f)
+            = ∑ k, ((c i * d i k : ℚ) : ℂ) * a (nn k) f := by
+          intro i
+          rw [hd i f, Finset.mul_sum]
+          refine Finset.sum_congr rfl fun k _ => ?_
+          push_cast
+          ring
+        rw [Finset.sum_congr rfl fun i _ => hstep i, Finset.sum_comm]
+        refine Finset.sum_congr rfl fun k _ => ?_
+        push_cast
+        rw [Finset.sum_mul]
+  -- rational matrices for the family `v`
+  have hrho : ∀ T ∈ Algebra.adjoin ℚ gens, ∃ ρ : Fin D × Fin D → ℚ,
+      ∀ (j : Fin D) (f : S), a (nn j) (T f) = ∑ i, (ρ (j, i) : ℂ) * a (nn i) f := by
+    intro T hT
+    choose ρ0 hρ0 using fun j : Fin D => hP T hT (nn j)
+    exact ⟨fun p => ρ0 p.1 p.2, hρ0⟩
+  choose ρ hρ using fun i : Fin n => hrho (v i) (v i).2
+  -- the ℚ-scalar action on `Module.End ℂ S` is the complex one
+  have hsmul : ∀ (r : ℚ) (T : Module.End ℂ S), r • T = (r : ℂ) • T := by
+    intro r T
+    rw [Algebra.smul_def]
+    refine LinearMap.ext fun f => ?_
+    rw [Module.End.mul_apply, halg r (T f), LinearMap.smul_apply]
+  have hcoe : ∀ (r : ℚ) (x : ↥(Algebra.adjoin ℚ gens)),
+      ((r • x : ↥(Algebra.adjoin ℚ gens)) : Module.End ℂ S)
+        = (r : ℂ) • (x : Module.End ℂ S) := by
+    intro r x
+    rw [← hsmul]
+    rfl
+  -- the rational matrices are ℚ-independent
+  have hρindep : LinearIndependent ℚ ρ := by
+    rw [Fintype.linearIndependent_iff]
+    intro g hg
+    refine Fintype.linearIndependent_iff.mp hv g ?_
+    refine Subtype.ext ?_
+    have hcoesum : ((∑ i, g i • v i : ↥(Algebra.adjoin ℚ gens)) : Module.End ℂ S)
+        = ∑ i, (g i : ℂ) • ((v i : Module.End ℂ S)) := by
+      rw [AddSubmonoidClass.coe_finsetSum]
+      exact Finset.sum_congr rfl fun i _ => hcoe (g i) (v i)
+    rw [hcoesum, ZeroMemClass.coe_zero]
+    refine LinearMap.ext fun f => ?_
+    rw [LinearMap.zero_apply]
+    refine hΛinj ?_
+    rw [map_zero]
+    funext j
+    rw [hΛapply, Pi.zero_apply]
+    have happ : (∑ i, (g i : ℂ) • ((v i : Module.End ℂ S))) f
+        = ∑ i, (g i : ℂ) • ((v i : Module.End ℂ S) f) := by
+      simp [LinearMap.sum_apply]
+    rw [happ, map_sum]
+    have hterm : ∀ i : Fin n, a (nn j) ((g i : ℂ) • ((v i : Module.End ℂ S) f))
+        = ∑ k, ((g i * ρ i (j, k) : ℚ) : ℂ) * a (nn k) f := by
+      intro i
+      rw [map_smul, hρ i j f, smul_eq_mul, Finset.mul_sum]
+      refine Finset.sum_congr rfl fun k _ => ?_
+      push_cast
+      ring
+    rw [Finset.sum_congr rfl fun i _ => hterm i, Finset.sum_comm]
+    refine Finset.sum_eq_zero fun k _ => ?_
+    have hzero : ∑ i, g i * ρ i (j, k) = 0 := by
+      have := congrFun hg (j, k)
+      simpa [Finset.sum_apply, smul_eq_mul] using this
+    rw [← Finset.sum_mul]
+    have : ∑ i, ((g i * ρ i (j, k) : ℚ) : ℂ) = ((∑ i, g i * ρ i (j, k) : ℚ) : ℂ) := by
+      push_cast
+      rfl
+    rw [this, hzero]
+    simp
+  -- base change of the rational independence
+  have hCindep : LinearIndependent ℂ
+      (fun i => (fun p : Fin D × Fin D => ((ρ i p : ℚ) : ℂ))) :=
+    linearIndependent_complex_of_rat ρ hρindep
+  -- transfer back through evaluation at a dual family
+  obtain ⟨e, he⟩ : ∃ e : Fin D → S, ∀ k, Λ (e k) = Pi.single k 1 :=
+    ⟨fun k => (hΛsurj (Pi.single k 1)).choose, fun k => (hΛsurj _).choose_spec⟩
+  set F : Module.End ℂ S →ₗ[ℂ] (Fin D × Fin D → ℂ) :=
+    { toFun := fun T p => a (nn p.1) (T (e p.2))
+      map_add' := by
+        intro T T'
+        funext p
+        simp
+      map_smul' := by
+        intro c T
+        funext p
+        simp } with hFdef
+  have hFapply : ∀ (T : Module.End ℂ S) (p : Fin D × Fin D),
+      F T p = a (nn p.1) (T (e p.2)) := fun _ _ => rfl
+  have hFv : ∀ i : Fin n,
+      F ((v i : Module.End ℂ S)) = fun p => ((ρ i p : ℚ) : ℂ) := by
+    intro i
+    funext p
+    rw [hFapply, hρ i p.1 (e p.2)]
+    have hcoord : ∀ k : Fin D,
+        a (nn k) (e p.2) = ((Pi.single p.2 (1 : ℂ) : Fin D → ℂ) k) := by
+      intro k
+      rw [← hΛapply (e p.2) k, he p.2]
+    rw [Finset.sum_congr rfl fun k _ => by rw [hcoord k]]
+    rw [Finset.sum_eq_single p.2]
+    · simp
+    · intro b _ hb
+      simp [hb]
+    · intro h
+      exact absurd (Finset.mem_univ p.2) h
+  refine LinearIndependent.of_comp F ?_
+  have hcomp : (F ∘ fun i => ((v i : Module.End ℂ S)))
+      = fun i => (fun p : Fin D × Fin D => ((ρ i p : ℚ) : ℂ)) := by
+    funext i
+    exact hFv i
+  rw [hcomp]
+  exact hCindep
+
+/-- **The rational structure of `S₂(Γ₀(M))`: `𝕋_ℚ ⊗_ℚ ℂ ↪ End_ℂ S₂(Γ₀(M))`**
+(PROVEN, 2026-07-26, over the single `q`-expansion citation
+`integralCuspForms_span_eq_top` — it was the SINGLE arithmetic input of
+the newform factor, and it is now discharged from the SAME citation
+that already carries `exists_qCoeff_rational_relations`, so this leaf
+adds NO new arithmetic to the tree).
+
+A family of elements of the RATIONAL Hecke algebra that is linearly
+independent over `ℚ` stays linearly independent over `ℂ` inside
+`End_ℂ S₂(Γ₀(M))`; equivalently `dim_ℚ 𝕋_ℚ = dim_ℂ 𝕋_ℂ`, i.e. the
+surjection `𝕋_ℚ ⊗_ℚ ℂ ↠ 𝕋_ℂ` is an isomorphism.
+
+WHY IT IS NOT FORMAL. It is FALSE for a general `ℚ`-subalgebra of a
+`ℂ`-algebra — `ℚ(√2)·1 ⊆ ℂ` is `2`-dimensional over `ℚ` and
+`1`-dimensional over `ℂ` — so it uses the rational structure of the
+cusp-form space and nothing less. In the proof below that rational
+structure enters exactly once, through
+`exists_qCoeff_rational_relations`: `D = dim_ℂ S₂(Γ₀(M))` of the
+`q`-expansion functionals span all the others over `ℚ`, i.e. the
+`ℚ`-span of `{a_m}` is a `ℚ`-FORM of the dual space. Everything else is
+linear algebra, packaged as
+`linearIndependent_complex_of_ratCoeffSystem`.
+
+THE ARGUMENT (Diamond–Shurman §6.5, Theorem 6.5.10; Ribet). The
+`q`-expansion pairing `𝕋 × S₂(Γ₀(M)) → ℂ`, `(T, f) ↦ a₁(T f)`, is
+perfect, and the two sides of the perfection are supplied separately
+here:
+
+* NONDEGENERACY ON THE FORMS is `cuspForm_eq_of_forall_qCoeff_eq` — the
+  functionals `a_m` separate cusp forms, so
+  `Λ : f ↦ (a_{n i} f)_{i<D}` is injective, hence (dimension count) a
+  `ℂ`-coordinate system on `S₂(Γ₀(M))`;
+* RATIONALITY OF THE MATRIX ENTRIES is the coefficient formula
+  `qCoeff_heckeEndo`, `a_m(T_q f) = a_{qm}(f) + 1_{q∤M}·1_{q∣m}·q·a_{m/q}(f)`,
+  whose right-hand side is an INTEGER combination of coefficients of
+  `f` and therefore, after `exists_qCoeff_rational_relations`, a
+  `ℚ`-combination of the `D` chosen ones. This propagates from the
+  generators `T_q` to all of `𝕋_ℚ` by `Algebra.adjoin_induction`.
+
+So every `T ∈ 𝕋_ℚ` has a RATIONAL `D × D` matrix in the coordinate
+system `Λ`, the assignment is injective and `ℚ`-linear, and
+`linearIndependent_complex_of_rat` (flatness of `ℚ → ℂ` in its concrete
+finite form) turns a `ℚ`-independent family of such matrices into a
+`ℂ`-independent one; `LinearIndependent.of_comp` along the `ℂ`-linear
+realization of the matrix map carries that back to `End_ℂ S₂(Γ₀(M))`.
+
+NOT CIRCULAR. `exists_qCoeff_rational_relations` is stated far ABOVE
+this declaration and is proven from `integralCuspForms_span_eq_top`
+alone; nothing in the `q`-expansion cluster consumes this theorem. The
+earlier docstring's expectation — that the Katz `q`-expansion principle
+"should supply this one" — is exactly what happened, through the
+already-derived `ℚ`-form of the coefficient functionals rather than
+through the integral lattice directly. -/
+theorem modularHeckeAlgebraQ_linearIndependent_complex {M : ℕ} (hM : 0 < M)
+    (n : ℕ) (v : Fin n → ↥(modularHeckeAlgebraQ M))
+    (hv : LinearIndependent ℚ v) :
+    LinearIndependent ℂ
+      (fun i => ((v i : Module.End ℂ (CuspForm (Gamma0GL M) 2)))) := by
+  classical
+  haveI := cuspForm_finiteDimensional M hM
+  obtain ⟨nn, hnn⟩ := exists_qCoeff_rational_relations hM
+  have hsep : ∀ f : CuspForm (Gamma0GL M) 2,
+      (∀ m : ℕ, qCoeffL M m f = 0) → f = 0 := by
+    intro f hf
+    refine cuspForm_eq_of_forall_qCoeff_eq (g := 0) fun m => ?_
+    rw [qCoeff_zero_cuspForm]
+    exact hf m
+  have hrel : ∀ m : ℕ,
+      ∃ c : Fin (Module.finrank ℂ (CuspForm (Gamma0GL M) 2)) → ℚ,
+        ∀ f : CuspForm (Gamma0GL M) 2,
+          qCoeffL M m f = ∑ i, (c i : ℂ) * qCoeffL M (nn i) f := by
+    intro m
+    obtain ⟨c, hc⟩ := hnn m
+    exact ⟨c, fun f => hc f⟩
+  have hgens : ∀ T ∈ {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+        ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q},
+      ∀ m : ℕ, ∃ c : Fin (Module.finrank ℂ (CuspForm (Gamma0GL M) 2)) → ℚ,
+        ∀ f : CuspForm (Gamma0GL M) 2,
+          qCoeffL M m (T f) = ∑ i, (c i : ℂ) * qCoeffL M (nn i) f := by
+    rintro T ⟨q, hq, rfl⟩ m
+    obtain ⟨c1, hc1⟩ := hrel (q * m)
+    obtain ⟨c2, hc2⟩ := hrel (m / q)
+    refine ⟨c1 + (if q ∣ M then 0 else if q ∣ m then (q : ℚ) else 0) • c2,
+      fun f => ?_⟩
+    have hcoeff : qCoeffL M m (heckeOp M q f)
+        = qCoeffL M (q * m) f
+          + ((if q ∣ M then 0 else if q ∣ m then (q : ℚ) else 0 : ℚ) : ℂ)
+            * qCoeffL M (m / q) f := by
+      rw [qCoeffL_apply, heckeOp_eq_heckeEndo hM hq, qCoeff_heckeEndo hM hq f m,
+        qCoeffL_apply, qCoeffL_apply]
+      split_ifs <;> push_cast <;> ring
+    rw [hcoeff, hc1 f, hc2 f, Finset.mul_sum, ← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+    push_cast
+    ring
+  exact linearIndependent_complex_of_ratCoeffSystem
+    (fun r f => modularEnd_algebraMap_rat_apply (M := M) r f) (qCoeffL M) hsep rfl
+    nn hrel hgens v hv
+
+/-- **Rational descent of the newform idempotent** (PROVEN, 2026-07-26,
+over `modularHeckeAlgebraQ_linearIndependent_complex`, which is itself
+now PROVEN from `exists_qCoeff_rational_relations` — so this node has
+no open leaf of its own).
+
+Hypotheses: `lam` is the eigenvalue character of the RATIONAL Hecke
+algebra (`exists_eigenvalueChar_modularHeckeAlgebraQ`); `e` is the
+Artinian idempotent at its kernel
+(`exists_isIdempotentElem_of_isMaximal`, whence `hidem`, `hlame` and the
+nilpotence `hnil`); and `eC` is the newform's COMPLEX étale idempotent
+with the two properties that `newformEtaleIdempotent_spec` extracts from
+the line hypothesis — it fixes `g`, and it annihilates everything in
+`𝕋_ℂ` killing `g`, i.e. the local factor of `𝕋_ℂ` at the character of
+`g` is the line `ℂ·eC`.
+
+Conclusion: the same holds rationally — `ker λ` annihilates `e`, so the
+local factor `e·𝕋_ℚ` is the FIELD `K_g` and `λ` restricted to it is an
+isomorphism. That is the only thing the assembly of
+`exists_newformFactor_modularHeckeAlgebraQ` still needs.
+
+WHAT THE PROOF IS. Everything is delegated to `etale_descent_of_line`
+(through its subalgebra form `subalgebra_etale_descent`), where the
+mathematics is written out: a coefficient field for the corner `e·𝕋_ℚ`
+(`exists_cornerLift`, i.e. Cohen's theorem via formal smoothness of the
+separable `K_g/ℚ`), the Lagrange idempotent `ε` of that coefficient
+field, the identification `ε = eC` by a character argument, and finally
+the `ℂ`-relation `ι z · ε = 0` traded for a `ℚ`-relation through the
+one arithmetic input.
+
+CORRECTION TO THE EARLIER SUB-CUT (which listed TWO missing inputs).
+Only the rational structure of `S₂(Γ₀(M))` is needed; the
+`Aut(ℂ)`-conjugation of newforms (Shimura rationality,
+`exists_cuspForm_ringEquiv_conj`) is NOT. Its job was to make the
+`[K_g : ℚ]` blocks of `(e·𝕋_ℚ) ⊗ ℂ` equidimensional, and a coefficient
+field `K_g → e·𝕋_ℚ` does that formally: `e·𝕋_ℚ` is then a `K_g`-algebra,
+so its base changes along the embeddings are all of dimension
+`dim_{K_g} e·𝕋_ℚ`, and the identity block being the LINE `ℂ·eC` forces
+that dimension to be `1`. Formal smoothness of `ℚ → K_g` is available
+because we are in characteristic zero; no transport of cusp forms by
+field automorphisms occurs anywhere in the proof.
+
+FAITHFULNESS AUDIT: `hg` is consumed only through
+`hg.toIsWeightTwoEigenform` — the exact-level content of
+`IsWeightTwoNewform` does NOT enter this implication, because it has
+already been spent upstream in producing `heCann`: at an OLD maximal
+ideal (`g` of level `M' ∣ M`, `M' ≠ M`, seen at level `M`) the oldform
+multiplicity makes the local factor of `𝕋_ℂ` a plane rather than a
+line, so `exists_heckeOp_newform_etaleIdempotent` — and with it
+`heCann` — is unavailable there. The hypothesis is kept in the
+signature so that the consumer, whose statement is fixed, still passes
+it. (Diamond–Shurman §5.8, Theorem 5.8.2 and Proposition 5.8.5;
+Atkin–Lehner.) -/
+theorem modularHeckeAlgebraQ_etale_at_newform {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
+    (lam : ↥(modularHeckeAlgebraQ M) →ₐ[ℚ] heckeField M g)
+    (hlam : ∀ t : ↥(modularHeckeAlgebraQ M),
+      (t : Module.End ℂ (CuspForm (Gamma0GL M) 2)) g = ((lam t : ℂ)) • g)
+    (e : ↥(modularHeckeAlgebraQ M)) (hidem : e * e = e) (hlame : lam e = 1)
+    (hnil : ∀ y : ↥(modularHeckeAlgebraQ M), lam y = 0 → ∃ n : ℕ, y ^ n * e = 0)
+    (eC : Module.End ℂ (CuspForm (Gamma0GL M) 2))
+    (heCmem : eC ∈ heckeSubalgebra (heckeOp M)) (heCidem : eC * eC = eC)
+    (heCg : eC g = g)
+    (heCann : ∀ b ∈ heckeSubalgebra (heckeOp M), b g = 0 → b * eC = 0) :
+    ∀ y : ↥(modularHeckeAlgebraQ M), lam y = 0 → y * e = 0 := by
+  classical
+  haveI hSfin : FiniteDimensional ℂ (CuspForm (Gamma0GL M) 2) :=
+    cuspForm_finiteDimensional M hM
+  haveI hKfin : FiniteDimensional ℚ (heckeField M g) :=
+    heckeField_finiteDimensional hM hg.toIsWeightTwoEigenform
+  haveI htower : IsScalarTower ℚ ℂ (Module.End ℂ (CuspForm (Gamma0GL M) 2)) :=
+    IsScalarTower.of_algebraMap_eq (fun _ => rfl)
+  -- `lam` IS the eigenvalue character (the scalar is unique because
+  -- `a₁(g) = 1`), hence surjective onto `K_g`.
+  obtain ⟨lam0, hact0, _, hsurj0⟩ :=
+    exists_eigenvalueChar_modularHeckeAlgebraQ hM hg.toIsWeightTwoEigenform
+  have hlameq : lam = lam0 := by
+    refine AlgHom.ext fun t => ?_
+    have h3 : ((lam t : ℂ)) • g = ((lam0 t : ℂ)) • g := by
+      rw [← hlam t, ← hact0 t]
+    have h4 := congrArg (fun f => qCoeff M f 1) h3
+    simp only [qCoeff_smul, hg.toIsWeightTwoEigenform.qCoeff_one, mul_one] at h4
+    exact Subtype.ext h4
+  have hsurj : Function.Surjective lam := by rw [hlameq]; exact hsurj0
+  have hg0 : g ≠ 0 := by
+    intro h
+    have h1 : qCoeff M g 1 = 1 := hg.toIsWeightTwoEigenform.qCoeff_one
+    rw [h, qCoeff_zero_cuspForm] at h1
+    exact zero_ne_one h1
+  exact subalgebra_etale_descent (heckeOp M) g (heckeField M g)
+    (modularHeckeAlgebraQ M) (heckeSubalgebra (heckeOp M)) rfl rfl
+    (modularHeckeAlgebraQ_mul_comm hM) (heckeSubalgebra_heckeOp_mul_comm hM)
+    (finiteDimensional_modularHeckeAlgebraQ hM) lam hlam hsurj hg0 e hidem hlame
+    hnil eC heCmem heCidem heCg heCann
+    (modularHeckeAlgebraQ_linearIndependent_complex hM)
+
+/-- **The newform factor of the ANALYTIC rational Hecke algebra**
+(PROVEN 2026-07-26 over the single leaf
+`modularHeckeAlgebraQ_etale_at_newform` — the ANALYTIC half of the
+2026-07-26 seventh decomposition; NO geometry occurs in it).
+
+Let `g` be a weight-2 newform of level EXACTLY `M`, and suppose given
+the newform's étale idempotent `eC` on the COMPLEX side — nonzero,
+idempotent, with `T_q·eC = a_q(g)·eC`, and cutting out a LINE in the
+sense that every `{a_q(g)}`-generalized element of
+`heckeSubalgebra (heckeOp M)` is a scalar multiple of `eC` (this is
+what `exists_heckeOp_newform_etaleIdempotent` supplies, from strong
+multiplicity one in `S₂(Γ₀(M))`). Then the Hecke field `K_g` sits
+inside the RATIONAL Hecke algebra `𝕋_ℚ = modularHeckeAlgebraQ M` as a
+multiplicative `ℚ`-linear corner on which `T_q` acts as `a_q(g)`.
+
+Classically `𝕋_ℚ` is a finite-dimensional commutative `ℚ`-algebra
+(finite generation of the Hecke algebra as a `ℤ`-module, via the
+Sturm bound and integrality of the `q`-expansion coefficients), and
+`𝕋_ℚ ≅ K_g × 𝕋'` for a newform of exact level `M`: the hypothesis on
+`eC` says the local factor of `𝕋_ℚ ⊗ ℂ` at the character
+`T_q ↦ a_q(g)` is `ℂ`, i.e. the factor of `𝕋_ℚ` itself at the
+corresponding maximal ideal `m = ker(𝕋_ℚ → K_g)` is the FIELD `K_g`
+(`heckeField_finiteDimensional`; Diamond–Shurman §5.8, Theorem 5.8.2
+and Proposition 5.8.5; Atkin–Lehner theory). `ι` is the inclusion of
+that factor, `ι 1` its unit idempotent — classically the sum of the
+étale idempotents of the `Gal(ℚ̄/ℚ)`-conjugates of `g` — and
+`ι (a_q(g)) = T_q · ι 1` the eigenvalue relation.
+
+STATUS (2026-07-26, third pass): PROVEN OUTRIGHT, with NO residual leaf
+of its own. The last one,
+`modularHeckeAlgebraQ_linearIndependent_complex` — the rational
+structure of `S₂(Γ₀(M))` — is itself now proven, from the `ℚ`-form of
+the `q`-expansion functionals (`exists_qCoeff_rational_relations`), so
+the whole newform-factor cluster rests on the SINGLE citation
+`integralCuspForms_span_eq_top` that already carried that node. The
+sub-cut suggested when this node was cut
+had four steps, (a) `𝕋_ℂ` is the `ℂ`-span of `𝕋_ℚ`, (b)
+`dim_ℚ 𝕋_ℚ < ∞`, (c) the surjective eigenvalue character
+`λ : 𝕋_ℚ ↠ K_g`, (d) `ker λ` generated by an idempotent "from
+(a)+(b)+the line hypothesis by the structure theory of Artinian
+commutative rings". Steps (b) and (c) are PROVEN
+(`finiteDimensional_modularHeckeAlgebraQ`,
+`exists_eigenvalueChar_modularHeckeAlgebraQ`), (a) is proven inside
+`subalgebra_etale_descent` (the `ℂ`-span of a `ℚ`-subalgebra is a
+`ℂ`-subalgebra) and IS used, and (d) does NOT follow from (a)+(b)+(c):
+it needs exactly one arithmetic input, the injectivity of
+`𝕋_ℚ ⊗_ℚ ℂ → End_ℂ S₂(Γ₀(M))`. The remaining descent —
+`modularHeckeAlgebraQ_etale_at_newform`, the descent of the complex
+étaleness (`newformEtaleIdempotent_spec`) to the rational side — is now
+proven from it via `etale_descent_of_line`, whose only non-formal
+ingredient is that leaf. The `Aut(ℂ)`-conjugation of newforms, once
+believed to be a second missing input, is NOT needed: see the section
+note above.
+
+FAITHFULNESS: the conclusion is VERBATIM the `newformFactor` field of
+`ModularRationalHeckePackage` with `T` instantiated at the concrete
+`𝕋_ℚ`, phrased through the coercion to `End_ℂ S₂(Γ₀(M))` so that no
+subtype membership proof has to be carried in the binder. It is an
+IMPLICATION off the complex idempotent, exactly as that field was, so
+this leaf is no stronger than what it replaces, and the analytic
+sibling `exists_heckeOp_newform_etaleIdempotent` stays genuinely
+consumed rather than orphaned. -/
+theorem exists_newformFactor_modularHeckeAlgebraQ {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    (eC : Module.End ℂ (CuspForm (Gamma0GL M) 2))
+    (heCmem : eC ∈ heckeSubalgebra (heckeOp M)) (heC0 : eC ≠ 0)
+    (heCidem : eC * eC = eC)
+    (heCeig : ∀ q : ℕ, q.Prime → heckeOp M q * eC = qCoeff M g q • eC)
+    (heCline : ∀ a ∈ heckeSubalgebra (heckeOp M),
+      (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+        (heckeOp M q - qCoeff M g q •
+          (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n * a = 0) →
+      ∃ c : ℂ, a = c • eC) :
+    ∃ ι : heckeField M g →ₗ[ℚ] ↥(modularHeckeAlgebraQ M),
+      Function.Injective ι ∧
+      (∀ x y : heckeField M g, ι (x * y) = ι x * ι y) ∧
+      (∀ q : ℕ, q.Prime →
+        (ι (heckeCoeff M g q) : Module.End ℂ (CuspForm (Gamma0GL M) 2)) =
+          heckeOp M q * (ι 1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) := by
+  classical
+  haveI hAfin : FiniteDimensional ℚ ↥(modularHeckeAlgebraQ M) :=
+    finiteDimensional_modularHeckeAlgebraQ hM
+  letI hAcomm : CommRing ↥(modularHeckeAlgebraQ M) := modularHeckeAlgebraQCommRing hM
+  haveI hAart : IsArtinianRing ↥(modularHeckeAlgebraQ M) :=
+    isArtinian_of_tower ℚ inferInstance
+  obtain ⟨lam, hact, hprime, hsurj⟩ :=
+    exists_eigenvalueChar_modularHeckeAlgebraQ hM hg.toIsWeightTwoEigenform
+  have hmax : (RingHom.ker lam).IsMaximal :=
+    RingHom.ker_isMaximal_of_surjective lam hsurj
+  obtain ⟨e, N, hidem, hunit, hkill⟩ := exists_isIdempotentElem_of_isMaximal hmax
+  have hlame : lam e = 1 := by
+    have h := hunit
+    rw [RingHom.mem_ker, map_sub, map_one, sub_eq_zero] at h
+    exact h.symm
+  obtain ⟨heCg, heCann⟩ :=
+    newformEtaleIdempotent_spec hM hg.toIsWeightTwoEigenform eC heCmem heC0
+      heCidem heCeig heCline
+  have hleaf := modularHeckeAlgebraQ_etale_at_newform hM hg lam hact e hidem hlame
+    (fun y hy => ⟨N, hkill y (RingHom.mem_ker.mpr hy)⟩) eC heCmem heCidem heCg heCann
+  have hcancel : ∀ u v : ↥(modularHeckeAlgebraQ M), lam u = lam v → e * u = e * v := by
+    intro u v huv
+    have h0 : lam (u - v) = 0 := by rw [map_sub, huv, sub_self]
+    have h1 := hleaf (u - v) h0
+    rw [mul_comm] at h1
+    rw [← sub_eq_zero, ← mul_sub]
+    exact h1
+  choose sec hsec using hsurj
+  have hlamiota : ∀ x : heckeField M g, lam (e * sec x) = x := by
+    intro x
+    rw [map_mul, hlame, hsec, one_mul]
+  refine ⟨{ toFun := fun x => e * sec x
+            map_add' := ?_
+            map_smul' := ?_ }, ?_, ?_, ?_⟩
+  · intro x y
+    have h : lam (sec (x + y)) = lam (sec x + sec y) := by
+      rw [hsec, map_add, hsec, hsec]
+    rw [hcancel _ _ h, mul_add]
+  · intro r x
+    have h : lam (sec (r • x)) = lam (r • sec x) := by
+      rw [hsec, map_smul, hsec]
+    rw [RingHom.id_apply, hcancel _ _ h, mul_smul_comm]
+  · intro a b hab
+    simp only [LinearMap.coe_mk, AddHom.coe_mk] at hab
+    rw [← hlamiota a, ← hlamiota b, hab]
+  · intro x y
+    simp only [LinearMap.coe_mk, AddHom.coe_mk]
+    have h : lam (sec (x * y)) = lam (sec x * sec y) := by
+      rw [hsec, map_mul, hsec, hsec]
+    rw [hcancel _ _ h,
+      show (e * sec x) * (e * sec y) = e * (sec x * sec y) by
+        rw [show (e * sec x) * (e * sec y) = (e * e) * (sec x * sec y) by ring, hidem]]
+  · intro q hq
+    simp only [LinearMap.coe_mk, AddHom.coe_mk]
+    have h1 : e * sec 1 = e := by
+      have h : lam (sec 1) = lam 1 := by rw [hsec, map_one]
+      rw [hcancel _ _ h, mul_one]
+    have h2 : lam (sec (heckeCoeff M g q))
+        = lam ⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩ := by
+      rw [hsec, hprime q hq]
+    rw [hcancel _ _ h2, h1,
+      mul_comm e ⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩]
+    rfl
+
+/-- **Inhabitation of the geometric carrier** (sorry node — the
+GEOMETRIC half of the 2026-07-26 seventh decomposition, and now THE
+residual modular-curve leaf of the whole modularity subtree).
+
+Everything analytic has left this leaf: the newform structure of
+`𝕋_ℚ` is `exists_newformFactor_modularHeckeAlgebraQ`, and what remains
+is the construction of `J₀(M)`, its Tate module, and the realization
+of the Hecke algebra on it. The classical construction, field by field,
+is in the docstring of `nonempty_modularRationalHeckePackage` below;
+the missing theories, in dependency order and NONE of them present in
+mathlib on this pin, are
+
+1. `X₀(M)` as a smooth projective curve over `ℚ` (Deligne–Rapoport;
+   moduli of elliptic curves with `Γ₀(M)`-structure);
+2. its Jacobian as an abelian variety over `ℚ` (Milne, Mumford);
+3. `p`-adic Tate modules of abelian varieties with Galois action and
+   the Weil pairing — for which this repository ALREADY has usable
+   vocabulary, in `Modularity/AbelianScheme.lean`
+   (`AbelianSchemeStruct`, `GeomFibrePt`, `galSMul`, `Mult.torsion`,
+   all PROVEN) and `Modularity/TateModule.lean` (`TatePt`); that is
+   where a successor should start rather than from scratch;
+4. Hecke correspondences with `ℚ`-models (Diamond–Shurman §7.9, §8.5);
+5. good reduction at `q ∤ Mp` and the Eichler–Shimura congruence
+   (Igusa; D–S Theorems 8.6.1 and 8.7.2);
+6. the Eichler–Shimura isomorphism to `S₂(Γ₀(M))`, which is what makes
+   `padic` a realization of the ANALYTIC Hecke algebra
+   (`Tgen_prime`) — the one place where the two sides of the seam
+   still meet.
+
+WHY THIS IS NOT FURTHER CUT. A tower of `Nonempty` sub-leaves is
+unsound here (see the junk counterexample in the section note above),
+and the fields cannot be separated from one another without a rigid
+name for `Vp` in the way `Tgen_prime` gives one for `T` — which needs
+a modular-curve moduli theory, i.e. item 1. The one cut that does look
+sound without it is `irred_eigenspace`: the classical Ribet argument
+derives it from `congruence`, freeness and `pair_frob` together with
+the Weil bound `|a_q| ≤ 2√q` and class field theory over `ℚ`, so it
+could be restated as a theorem taking ALL the other fields as
+hypotheses. It is not done here because the hypothesis block would be
+the whole structure and the Weil bound is itself absent from the pin;
+a successor with `S₂`-analytic machinery in hand should reconsider
+it. -/
+theorem nonempty_modularTateModuleData {M : ℕ} (hM : 0 < M) :
+    Nonempty (ModularTateModuleData (p := p) M) :=
+  sorry
+
+/-- **Inhabitation of the modular rational Hecke package** (PROVEN
+2026-07-26 — an ASSEMBLY over the two leaves of the SEVENTH
+decomposition; until then it was itself the residual geometric leaf of
+the 2026-07-25 sixth decomposition): for every level `M ≥ 1` the
+carrier `ModularRationalHeckePackage M` is inhabited.
 
 Classical construction, field by field (Diamond–Shurman ch. 6, 8, 9):
-take `Vp := V_p(J₀(M)) ⊗_{ℚ_p} ℚ̄_p`, the rational `p`-adic Tate
-module of the modular Jacobian `J₀(M) = Jac X₀(M)`, with
+take `T := 𝕋_ℚ`, the `ℚ`-subalgebra of `End(H₁(X₀(M); ℚ))` generated
+by the Hecke correspondences, and `Vp := V_p(J₀(M)) ⊗_{ℚ_p} ℚ̄_p`, the
+rational `p`-adic Tate module of the modular Jacobian
+`J₀(M) = Jac X₀(M)`, with
 
+* `Tgen`, `Tgen_adjoin` — the Hecke operators `T_m` (`U_q` at `q ∣ M`)
+  inside `𝕋_ℚ`; generation by the prime-indexed ones alone is the
+  classical fact that the composite `T_n` are polynomials in the
+  `T_q`/`U_q` (the Hecke recursions, D–S §5.2-5.3);
 * `τJ` the Galois action on the Tate module — continuous because the
   action on each `pⁿ`-torsion level factors through a finite
   quotient;
-* `hecke m` the Hecke correspondence `T_m` (`U_q` at `q ∣ M`) acting
-  through `End(J₀(M)) ⊗ ℚ̄_p`; the modular curve, its Hecke
+* `padic` — the `p`-adic realization: the modular curve, its Hecke
   correspondences and the Jacobian all have `ℚ`-models (D–S §7.9,
-  §8.5), so the operators commute with the Galois action —
-  `hecke_comm`;
-* `hecke_mul_comm` — commutativity of the Hecke algebra (D–S §5.2,
-  Prop. 5.2.4 and the `T_m T_n = T_n T_m` relations);
+  §8.5), so `𝕋_ℚ` acts on `V_p(J₀(M))` commuting with Galois
+  (`hecke_comm`);
+* `padic_indep` — FAITHFULNESS AFTER BASE CHANGE:
+  `𝕋_ℚ ⊗_ℚ ℚ̄_p ↪ End_{ℚ̄_p}(V_p)`. This is the Tate-module comparison
+  `V_p(J₀(M)) ≅ H₁(X₀(M); ℚ) ⊗ ℚ_p` together with freeness of rank 2
+  over `𝕋 ⊗ ℚ_p`, which makes the action faithful and stays faithful
+  after the flat base change `ℚ_p → ℚ̄_p`;
 * `S := {v : v ∣ Mp}`;
 * `congruence` — the EICHLER–SHIMURA RELATION (D–S Theorem 8.7.2): at
   a prime `q ∤ Mp` the curve `X₀(M)` has good reduction (Igusa, D–S
@@ -21280,11 +27241,8 @@ module of the modular Jacobian `J₀(M) = Jac X₀(M)`, with
   isomorphism `H₁(X₀(M); ℝ) ≅ S₂(Γ₀(M))` and the self-duality
   `S₂ ≅ Hom(𝕋, ℂ)` given by `(T, f) ↦ a₁(T f)`, plus cyclicity of
   each `U_q`-old block, which makes `𝕋_ℂ` Gorenstein and `S₂` free
-  of rank 1 over it); base change along `ℚ ⊂ ℚ̄_p` and the comparison
-  `V_p(J₀(M)) ≅ H₁(X₀(M); ℚ) ⊗ ℚ_p` give `Vp` free of rank 2 over
-  `𝕋 ⊗ ℚ̄_p`, which is exactly `heckeSubalgebra hecke` (prime
-  generation: the Hecke recursions, D–S §5.2-5.3, faithfulness of the
-  action on `Vp`);
+  of rank 1 over it); base change along `ℚ ⊂ ℚ̄_p` gives `Vp` free of
+  rank 2 over `𝕋 ⊗ ℚ̄_p`;
 * `pair` fields — the WEIL PAIRING of the canonical principal
   polarization of `J₀(M)`, composed with the (ℚ-rational, involutive)
   Atkin–Lehner operator `w_M`: alternating and nondegenerate; the
@@ -21294,78 +27252,521 @@ module of the modular Jacobian `J₀(M) = Jac X₀(M)`, with
   equivariance of the Weil pairing with cyclotomic multiplier plus
   ℚ-rationality of `w_M` give `pair_frob`, with
   `χ_cyc(Frob_q) = q`;
-* `comparison` — THE `ℂ → ℚ̄_p` EICHLER–SHIMURA COMPARISON, the seam
-  of the fifth decomposition and the only field of this carrier that
-  mentions the complex side. Both Hecke algebras are base changes of
-  ONE rational Hecke algebra: the EICHLER–SHIMURA ISOMORPHISM (D–S
-  §6.2, `H₁(X₀(M); ℤ) ⊗ ℂ ≅ S₂(Γ₀(M)) ⊕ S₂(Γ₀(M))⁻`,
-  Hecke-equivariantly) identifies `𝕋 ⊗ ℂ` with the complex Hecke
-  algebra `heckeSubalgebra (heckeOp M)` acting on `S₂(Γ₀(M))`, while
-  the Tate-module comparison `V_p(J₀(M)) ≅ H₁(X₀(M); ℚ) ⊗ ℚ_p`
-  identifies `A = heckeSubalgebra hecke` with `𝕋 ⊗ ℚ̄_p` (prime
-  generation and faithfulness of both actions). The newform's local
-  factor is defined over the Hecke field `K_g = ℚ({a_q(g)})`, a number
-  field (`heckeField_finiteDimensional`), so the ÉTALE idempotent `eC`
-  of the hypothesis — the unit of the local factor of `𝕋 ⊗ ℂ` at the
-  character `T_q ↦ a_q(g)`, whose factor is `ℂ` by strong
-  multiplicity one — is the image of an idempotent of `𝕋 ⊗ K_g`, and
-  `e := ` its image under `𝕋 ⊗ K_g → 𝕋 ⊗ ℚ̄_p = A` along `κ` is the
-  asserted idempotent: nonzero (idempotents survive base change along
-  a field embedding), with `T_q·e = κ(a_q(g))·e` (apply `κ` to the
-  eigenvalue relation), and absorbing (`e·a = a`) every
-  `κ`-generalized `a ∈ A`, because étaleness of the local factor is
-  preserved by base change along `K_g → ℚ̄_p` and the maximal ideal
-  generated by `{T_q − κ(a_q(g))}` is therefore the kernel of a single
-  factor projection. This is the ONLY field where the two coefficient
-  worlds meet, which is the point of the cut;
+* `newformFactor` — THE NEWFORM COMPONENT OF `𝕋_ℚ`, the seam of the
+  sixth decomposition. Both Hecke algebras of the fifth cut are base
+  changes of this ONE rational algebra: the EICHLER–SHIMURA
+  ISOMORPHISM (D–S §6.2,
+  `H₁(X₀(M); ℤ) ⊗ ℂ ≅ S₂(Γ₀(M)) ⊕ S₂(Γ₀(M))⁻`, Hecke-equivariantly)
+  identifies `𝕋_ℚ ⊗ ℂ` with `heckeSubalgebra (heckeOp M)` acting on
+  `S₂(Γ₀(M))`. The hypothesis is the classically-true COMPLEX étale
+  idempotent `eC`, whose existence says the local factor of `𝕋_ℚ ⊗ ℂ`
+  at the character `T_q ↦ a_q(g)` is `ℂ` — i.e. `dim_{K_g} (𝕋_ℚ)_m = 1`,
+  i.e. the factor of `𝕋_ℚ` itself at that maximal ideal is the FIELD
+  `K_g = ℚ({a_q(g)})` (`heckeField_finiteDimensional`). The corner
+  `ι : K_g → 𝕋_ℚ` is the inclusion of that factor, `ι 1` its unit
+  idempotent, and `T_q · ι 1 = ι (a_q(g))` the eigenvalue relation.
+  This is the ONLY field where the complex side is mentioned, which
+  is the point of the cut: everything about `ℚ̄_p` is now PROVEN
+  downstream by `exists_etaleIdempotent_of_modularRationalHeckePackage`;
 * `irred_eigenspace` — RIBET IRREDUCIBILITY (Ribet, *Galois
   representations attached to eigenforms with Nebentypus*, Springer
-  LNM 601 (1977), Thm. (2.3), weight-2 trivial-nebentypus case; also
-  D–S §9.6 exercises and Cornell–Silverman–Stevens ch. by Rohrlich):
+  LNM 601 (1977), Thm. (2.3), weight-2 trivial-nebentypus case):
   the `κ`-eigencomponent `ρ_{g,λ}` of `V_p(J₀(M))` is irreducible.
   Were a line inside the 2-dimensional eigenspace Galois-stable, the
-  semisimplification of `ρ_{g,λ}` would be `δ₁ ⊕ δ₂` with the `δᵢ`
-  continuous characters of `Γ ℚ` unramified outside `Mp`
-  (Néron–Ogg–Shafarevich: `J₀(M)` has good reduction outside `M`, so
-  the Tate module — hence any subquotient — is unramified away from
-  `Mp`) and `δ₁δ₂ = χ_cyc` (the Weil-pairing determinant); by class
-  field theory over `ℚ` each `δᵢ` is a finite-order character times
-  an integer power `χ_cyc^{nᵢ}` with `n₁ + n₂ = 1`, so
+  semisimplification would be `δ₁ ⊕ δ₂` with the `δᵢ` continuous
+  characters of `Γ ℚ` unramified outside `Mp`
+  (Néron–Ogg–Shafarevich) and `δ₁δ₂ = χ_cyc` (the Weil-pairing
+  determinant); by class field theory over `ℚ` each `δᵢ` is a
+  finite-order character times `χ_cyc^{nᵢ}` with `n₁ + n₂ = 1`, so
   `a_q = δ₁(Frob_q) + δ₂(Frob_q)` has archimedean absolute value
-  `≍ 1 + q` (under any embedding of the coefficients into `ℂ`) at all
-  primes in a positive-density set, violating the Eichler–Shimura /
-  Weil bound `|a_q| ≤ 2√q` of the cuspidal eigensystem (D–S Theorem
-  5.9.1 via Ramanujan–Petersson, or directly the Riemann hypothesis
-  for the reduced `X₀(M)` at good `q`).
+  `≍ 1 + q` at a positive-density set of primes, violating the
+  Eichler–Shimura / Weil bound `|a_q| ≤ 2√q` (D–S Theorem 5.9.1).
 
-DECOMPOSITION POINTERS (2026-07-25, fifth cut): the SPECTRAL content
-has now left this leaf entirely — what used to be `spectrum_occurs`
-and `spectrum_reduced` is the single `comparison` field, whose complex
-side is the separate analytic leaf
-`exists_heckeOp_newform_etaleIdempotent` and whose algebra-level
-consequences are proven glue. The remaining fields
-(`τJ`/`congruence`/`pair_*`/`irred_eigenspace` and the freeness pair)
-require genuine modular-curve geometry — the Jacobian, its Tate
-module, Igusa reduction, the Weil pairing — absent from the pin, and
-are the irreducibly geometric residue. The next cut inside them, if
-one is wanted, is the rational-model layer the `comparison` field's
-citation sketches: an explicit finite-dimensional ℚ-algebra `𝕋_ℚ`
-with the two base-change identifications, which would turn
-`comparison` into base-change algebra plus the two identifications.
+ASSEMBLY (2026-07-26, seventh cut). Take `T := modularHeckeAlgebraQ M`,
+the honest analytic rational Hecke algebra, with the commutative-ring
+structure `modularHeckeAlgebraQCommRing`. Three of the twenty fields
+are then discharged here and the rest are passed through:
 
-SOUNDNESS (2026-07-25): the statement quantifies over nothing but the
-level, and the intended inhabitant witnesses every field, including
-the internally `(g, κ)`-quantified `comparison` and
-`irred_eigenspace`, for exactly the inhabitants of
-`IsWeightTwoNewform` — the classical newforms. `comparison` is an
+* `Tgen_adjoin` is a THEOREM at this `T`: the generating set, read
+  inside `T`, is the `Subtype.val`-preimage of the generating set of
+  the ambient adjoin (`Tgen_prime` is what makes those two sets equal),
+  so `Algebra.adjoin_adjoin_coe_preimage` applies;
+* `newformFactor` is `exists_newformFactor_modularHeckeAlgebraQ`, the
+  ANALYTIC leaf — the eigenvalue relation `Tgen q · ι 1 = ι (a_q(g))`
+  in `T` is that leaf's identity in `End_ℂ S₂(Γ₀(M))` read back
+  through `Subtype.ext` and `Tgen_prime`;
+* every remaining field is the corresponding field of
+  `nonempty_modularTateModuleData`, the GEOMETRIC leaf.
+
+The point of the cut is that those two leaves share no vocabulary: the
+analytic one never mentions the Jacobian, and the geometric one never
+mentions newforms except through `irred_eigenspace`. See the section
+note above `modularEndRatAlgebra` for why the cut has to name `T`, and
+for the junk carrier that makes any tower of `Nonempty` sub-packages
+unsound.
+
+SOUNDNESS (2026-07-25, still current): the statement quantifies over
+nothing but the level, and the intended inhabitant witnesses every
+field, including the internally `(g, κ)`-quantified `newformFactor`
+and `irred_eigenspace`, for exactly the inhabitants of
+`IsWeightTwoNewform` — the classical newforms. `newformFactor` is an
 IMPLICATION whose hypothesis is the classically-true complex étale
-idempotent, so it is weaker than an outright assertion about `A` and
-strictly weaker than the two fields it replaces (which it implies);
-the `pair_frob` multiplier is stated only at the good Frobenii, which
-is all the determinant derivation consumes. -/
+idempotent, so this carrier is no stronger than the
+`ModularHeckeComparisonPackage` it replaces; the `pair_frob`
+multiplier is stated only at the good Frobenii, which is all the
+determinant derivation consumes. -/
+theorem nonempty_modularRationalHeckePackage {M : ℕ} (hM : 0 < M) :
+    Nonempty (ModularRationalHeckePackage (p := p) M) := by
+  classical
+  obtain ⟨D⟩ := nonempty_modularTateModuleData (p := p) hM
+  letI : CommRing ↥(modularHeckeAlgebraQ M) := modularHeckeAlgebraQCommRing hM
+  refine ⟨{ T := ↥(modularHeckeAlgebraQ M)
+            Tgen := D.Tgen
+            Tgen_adjoin := ?_
+            Vp := D.Vp
+            addCommGroup := D.addCommGroup
+            module := D.module
+            moduleFinite := D.moduleFinite
+            τJ := D.τJ
+            padic := D.padic
+            padic_indep := D.padic_indep
+            S := D.S
+            hecke_comm := D.hecke_comm
+            congruence := D.congruence
+            basis₁ := D.basis₁
+            basis₂ := D.basis₂
+            span_free := D.span_free
+            indep_free := D.indep_free
+            pair := D.pair
+            pair_self := D.pair_self
+            pair_nondeg := D.pair_nondeg
+            pair_hecke := D.pair_hecke
+            pair_frob := D.pair_frob
+            newformFactor := ?_
+            irred_eigenspace := D.irred_eigenspace }⟩
+  · -- `Tgen_adjoin`: the generators of `T`, read inside `T`.
+    have hset :
+        {x : ↥(modularHeckeAlgebraQ M) | ∃ q : ℕ, q.Prime ∧ x = D.Tgen q} =
+          ((↑) : ↥(modularHeckeAlgebraQ M) →
+              Module.End ℂ (CuspForm (Gamma0GL M) 2)) ⁻¹'
+            {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+              ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q} := by
+      ext x
+      constructor
+      · rintro ⟨q, hq, rfl⟩
+        exact ⟨q, hq, D.Tgen_prime q hq⟩
+      · rintro ⟨q, hq, hx⟩
+        exact ⟨q, hq, Subtype.ext (hx.trans (D.Tgen_prime q hq).symm)⟩
+    rw [hset]
+    exact Algebra.adjoin_adjoin_coe_preimage
+  · -- `newformFactor`: the analytic leaf, read back through the pin.
+    intro g hg eC heCmem heC0 heCidem heCeig heCline
+    obtain ⟨ι, hιinj, hιmul, hιgen⟩ :=
+      exists_newformFactor_modularHeckeAlgebraQ hM g hg eC heCmem heC0
+        heCidem heCeig heCline
+    refine ⟨ι, hιinj, hιmul, fun q hq => ?_⟩
+    refine Subtype.ext ?_
+    show ((D.Tgen q : Module.End ℂ (CuspForm (Gamma0GL M) 2)) *
+        (ι 1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) = _
+    rw [D.Tgen_prime q hq]
+    exact (hιgen q hq).symm
+
+/-- **The `ℂ → ℚ̄_p` transport of a newform idempotent, abstractly**
+(PROVEN — the algebraic core of the 2026-07-25 sixth decomposition,
+and the content that was the asserted `comparison` field of
+`ModularHeckeComparisonPackage` until now).
+
+Stated for an arbitrary characteristic-zero coefficient field `L` and
+an arbitrary RATIONAL MODEL: a commutative `ℚ`-algebra `T` generated by
+prime-indexed elements `Tgen`, realized in `End_L(Vp)` by a ring map
+`padic` that stays independent after base change, together with a
+multiplicative injective `ℚ`-linear corner `ι : K → T` out of a finite
+extension `K/ℚ` on which `Tgen q` acts as `aq q`. The conclusion is the
+idempotent cutting out the `κ`-component.
+
+The point is that `κ` is one of the `d = [K : ℚ]` embeddings of `K`
+into `L`, and `K ⊗_ℚ L` splits into the corresponding `d` factors; the
+idempotent wanted is the one named by `κ`, and separability of `K/ℚ`
+is exactly what makes those factors distinct.
+
+Route:
+
+1. `α` a primitive element of `K/ℚ` (`Field.exists_primitive_element`,
+   using char-0 separability), `f = minpoly ℚ α`, and `lam := κ α`, a
+   root of `f` over `L`.
+2. `f` is separable (`PerfectField.separable_of_irreducible`), so
+   `lam` is a SIMPLE root: writing `f = (X − lam)·h` over `L`,
+   `h(lam) = f'(lam) ≠ 0` (`Separable.aeval_derivative_ne_zero`).
+3. Transport the corner: `π := padic (ι 1)` is idempotent and
+   `w := padic (ι α)` satisfies `π·f(w) = 0`, because `ι` is
+   multiplicative and `ι 1 · aeval (ι α) f = ι (aeval α f) = 0`.
+   Corner evaluation `Φ P = π · P(w)` is thus a ring map of the corner
+   `πA`, killing `f`.
+4. `corner_idempotent_spec` produces `e = h(lam)⁻¹ · Φ h`, idempotent,
+   with `Φ P · e = P(lam) · e` for every `P` — the Lagrange idempotent
+   at the simple root.
+5. The eigenvalue relation: `aq q = P_q(α)` for some `P_q ∈ ℚ[X]`
+   since `ℚ⟮α⟯ = ⊤`, and `Tgen q · π = padic (ι (aq q)) = Φ P_q`, so
+   `Tgen q · e = P_q(lam) · e = κ (aq q) · e` because `κ` is a ring hom
+   fixing `ℚ`.
+6. `e ≠ 0`: `Φ h` is an `L`-combination of `padic (ι (α^i))` for
+   `i < d` with `h ≠ 0` of degree `d − 1`; the `α^i` are
+   `ℚ`-independent (`linearIndependent_pow`), `ι` is injective, and
+   `hindep` carries independence through the base change — so a
+   vanishing combination would force `h = 0`.
+7. Absorption `e·a = a` for `κ`-generalized `a`: apply
+   `exists_scalar_pow_mul_eq_zero_of_mem_heckeSubalgebra` at the single
+   element `1 − e`. It acts on `e` by the scalar `0`, so some power of
+   it kills `a`; but `1 − e` is idempotent, so `1 − e` itself kills
+   `a`.
+
+Step 7 is the one simplification worth recording: the obvious route
+goes through `π`, the polynomial cofactor of `h`, and a nilpotence
+estimate, and none of that is needed once one notices that the
+propagation lemma may be applied at `1 − e` directly. -/
+theorem exists_etaleIdempotent_of_rationalModel
+    {L : Type*} [Field L] [CharZero L]
+    {K : Type*} [Field K] [Algebra ℚ K] [FiniteDimensional ℚ K]
+    (κ : K →+* L)
+    {T : Type*} [CommRing T] [Algebra ℚ T]
+    {Vp : Type*} [AddCommGroup Vp] [Module L Vp]
+    (Tgen : ℕ → T)
+    (hadj : Algebra.adjoin ℚ {x : T | ∃ q : ℕ, q.Prime ∧ x = Tgen q} = ⊤)
+    (padic : T →+* Module.End L Vp)
+    (hindep : ∀ (n : ℕ) (x : Fin n → T), LinearIndependent ℚ x →
+      LinearIndependent L fun i => padic (x i))
+    (aq : ℕ → K)
+    (ι : K →ₗ[ℚ] T) (hιinj : Function.Injective ι)
+    (hιmul : ∀ x y : K, ι (x * y) = ι x * ι y)
+    (hιgen : ∀ q : ℕ, q.Prime → Tgen q * ι 1 = ι (aq q)) :
+    ∃ e ∈ heckeSubalgebra (fun m => padic (Tgen m)), e ≠ 0 ∧ e * e = e ∧
+      (∀ q : ℕ, q.Prime → padic (Tgen q) * e = κ (aq q) • e) ∧
+      (∀ a ∈ heckeSubalgebra (fun m => padic (Tgen m)),
+        (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+          (padic (Tgen q) - κ (aq q) • 1) ^ n * a = 0) →
+        e * a = a) := by
+  classical
+  set t : ℕ → Module.End L Vp := fun m => padic (Tgen m) with ht
+  have hcomm : ∀ m n : ℕ, t m * t n = t n * t m := by
+    intro m n
+    simp only [ht]
+    rw [← map_mul, ← map_mul, mul_comm]
+  have hpadicA : ∀ x : T, padic x ∈ heckeSubalgebra t := by
+    intro x
+    have hx : x ∈ Algebra.adjoin ℚ
+        {y : T | ∃ q : ℕ, q.Prime ∧ y = Tgen q} := by
+      rw [hadj]; trivial
+    induction hx using Algebra.adjoin_induction with
+    | mem y hy =>
+        obtain ⟨q, hq, rfl⟩ := hy
+        exact hecke_mem_heckeSubalgebra hq
+    | algebraMap r =>
+        have hr : padic (algebraMap ℚ T r) =
+            algebraMap L (Module.End L Vp) (algebraMap ℚ L r) :=
+          DFunLike.congr_fun (RingHom.ext_rat
+            (padic.comp (algebraMap ℚ T))
+            ((algebraMap L (Module.End L Vp)).comp (algebraMap ℚ L))) r
+        rw [hr]
+        exact Subalgebra.algebraMap_mem _ _
+    | add y z _ _ ihy ihz => rw [map_add]; exact Subalgebra.add_mem _ ihy ihz
+    | mul y z _ _ ihy ihz => rw [map_mul]; exact Subalgebra.mul_mem _ ihy ihz
+  obtain ⟨α, hαtop⟩ := Field.exists_primitive_element ℚ K
+  have hint : IsIntegral ℚ α := IsIntegral.of_finite ℚ α
+  have hfmonic : (minpoly ℚ α).Monic := minpoly.monic hint
+  have hfirr : Irreducible (minpoly ℚ α) := minpoly.irreducible hint
+  have hfsep : (minpoly ℚ α).Separable :=
+    PerfectField.separable_of_irreducible hfirr
+  have hκrat : ∀ r : ℚ, κ (algebraMap ℚ K r) = algebraMap ℚ L r :=
+    fun r => DFunLike.congr_fun (RingHom.ext_rat
+      (κ.comp (algebraMap ℚ K)) (algebraMap ℚ L)) r
+  let κA : K →ₐ[ℚ] L := { κ with commutes' := hκrat }
+  have haevallam : Polynomial.aeval (κ α) (minpoly ℚ α) = 0 := by
+    have h1 : Polynomial.aeval (κA α) (minpoly ℚ α) =
+        κA (Polynomial.aeval α (minpoly ℚ α)) :=
+      Polynomial.aeval_algHom_apply κA α (minpoly ℚ α)
+    rw [minpoly.aeval, map_zero] at h1
+    exact h1
+  have hfFroot : ((minpoly ℚ α).map (algebraMap ℚ L)).IsRoot (κ α) := by
+    rw [Polynomial.IsRoot, Polynomial.eval_map, ← Polynomial.aeval_def]
+    exact haevallam
+  obtain ⟨hpoly, hfac⟩ := Polynomial.dvd_iff_isRoot.mpr hfFroot
+  have hval : hpoly.eval (κ α) ≠ 0 := by
+    have hderiv : Polynomial.aeval (κ α)
+        (Polynomial.derivative (minpoly ℚ α)) ≠ 0 :=
+      hfsep.aeval_derivative_ne_zero haevallam
+    intro hzero
+    apply hderiv
+    have hdfac : Polynomial.derivative ((minpoly ℚ α).map (algebraMap ℚ L)) =
+        hpoly + (Polynomial.X - Polynomial.C (κ α)) *
+          Polynomial.derivative hpoly := by
+      rw [hfac, Polynomial.derivative_mul, Polynomial.derivative_sub,
+        Polynomial.derivative_X, Polynomial.derivative_C, sub_zero, one_mul]
+    have h2 : (Polynomial.derivative
+        ((minpoly ℚ α).map (algebraMap ℚ L))).eval (κ α) = 0 := by
+      rw [hdfac]; simp [hzero]
+    rwa [Polynomial.derivative_map, Polynomial.eval_map,
+      ← Polynomial.aeval_def] at h2
+  have hεidem : ι 1 * ι 1 = ι (1 : K) := by rw [← hιmul, one_mul]
+  have hεpow : ∀ i : ℕ, ι 1 * ι α ^ i = ι (α ^ i) := by
+    intro i
+    induction i with
+    | zero => simp
+    | succ i ih => rw [pow_succ, ← mul_assoc, ih, ← hιmul, ← pow_succ]
+  have hcornerT : ∀ P : Polynomial ℚ,
+      ι 1 * Polynomial.aeval (ι α) P = ι (Polynomial.aeval α P) := by
+    intro P
+    refine Polynomial.induction_on' P ?_ ?_
+    · intro P Q ihP ihQ
+      rw [map_add, map_add, mul_add, ihP, ihQ, map_add]
+    · intro n c
+      rw [Polynomial.aeval_monomial, Polynomial.aeval_monomial,
+        ← mul_assoc, mul_comm (ι 1) (algebraMap ℚ T c), mul_assoc,
+        hεpow n, ← Algebra.smul_def, ← Algebra.smul_def, map_smul]
+  letI : CommRing ↥(heckeSubalgebra t) := heckeSubalgebraCommRing hcomm
+  set PA : T →+* ↥(heckeSubalgebra t) :=
+    RingHom.codRestrict padic (heckeSubalgebra t) hpadicA with hPAdef
+  have hPAval : ∀ x : T,
+      ((PA x : ↥(heckeSubalgebra t)) : Module.End L Vp) = padic x :=
+    fun _ => rfl
+  set π : ↥(heckeSubalgebra t) := PA (ι 1) with hπdef
+  set w : ↥(heckeSubalgebra t) := PA (ι α) with hwdef
+  have hπidem : π * π = π := by rw [hπdef, ← map_mul, hεidem]
+  have hPArat : ∀ c : ℚ, PA (algebraMap ℚ T c) =
+      algebraMap L ↥(heckeSubalgebra t) (algebraMap ℚ L c) :=
+    fun c => DFunLike.congr_fun (RingHom.ext_rat
+      (PA.comp (algebraMap ℚ T))
+      ((algebraMap L ↥(heckeSubalgebra t)).comp (algebraMap ℚ L))) c
+  have hmapaeval : ∀ P : Polynomial ℚ,
+      Polynomial.aeval w (P.map (algebraMap ℚ L)) =
+        PA (Polynomial.aeval (ι α) P) := by
+    intro P
+    refine Polynomial.induction_on' P ?_ ?_
+    · intro P Q ihP ihQ
+      rw [Polynomial.map_add, map_add, map_add, ihP, ihQ, ← map_add]
+    · intro n c
+      rw [Polynomial.map_monomial, Polynomial.aeval_monomial,
+        Polynomial.aeval_monomial, map_mul, map_pow, ← hwdef, hPArat]
+  have hΦcorner : ∀ P : Polynomial ℚ,
+      π * Polynomial.aeval w (P.map (algebraMap ℚ L)) =
+        PA (ι (Polynomial.aeval α P)) := by
+    intro P
+    rw [hmapaeval, hπdef, ← map_mul, hcornerT]
+  have hΦf : π * Polynomial.aeval w
+      ((minpoly ℚ α).map (algebraMap ℚ L)) = 0 := by
+    rw [hΦcorner, minpoly.aeval, map_zero, map_zero]
+  set E : ↥(heckeSubalgebra t) :=
+    (hpoly.eval (κ α))⁻¹ • (π * Polynomial.aeval w hpoly) with hEdef
+  obtain ⟨hEidem, hπE, hEeval⟩ :=
+    corner_idempotent_spec hπidem hΦf hfac hval hEdef
+  set e0 : Module.End L Vp := E.1 with he0def
+  have he0mem : e0 ∈ heckeSubalgebra t := E.2
+  have he0idem : e0 * e0 = e0 := by
+    have h := congrArg (Subtype.val (p := fun z => z ∈ heckeSubalgebra t))
+      hEidem
+    simpa [he0def] using h
+  have hfFne : (minpoly ℚ α).map (algebraMap ℚ L) ≠ 0 :=
+    (hfmonic.map (algebraMap ℚ L)).ne_zero
+  have hpolyne : hpoly ≠ 0 := fun h => hfFne (by rw [hfac, h, mul_zero])
+  have hd : hpoly.natDegree + 1 = (minpoly ℚ α).natDegree := by
+    have h1 : ((minpoly ℚ α).map (algebraMap ℚ L)).natDegree =
+        (minpoly ℚ α).natDegree := hfmonic.natDegree_map _
+    rw [hfac, Polynomial.natDegree_mul (Polynomial.X_sub_C_ne_zero (κ α))
+      hpolyne, Polynomial.natDegree_X_sub_C] at h1
+    omega
+  have he0ne : e0 ≠ 0 := by
+    intro hEzero
+    have hEz : E = 0 := Subtype.ext (by simpa [he0def] using hEzero)
+    have hΦ0 : π * Polynomial.aeval w hpoly = 0 := by
+      have h1 : (hpoly.eval (κ α)) • E = π * Polynomial.aeval w hpoly := by
+        rw [hEdef, smul_smul, mul_inv_cancel₀ hval, one_smul]
+      rw [← h1, hEz, smul_zero]
+    have hdlt : hpoly.natDegree < (minpoly ℚ α).natDegree := by omega
+    have hexpand : π * Polynomial.aeval w hpoly =
+        ∑ i ∈ Finset.range (minpoly ℚ α).natDegree,
+          hpoly.coeff i • PA (ι (α ^ i)) := by
+      rw [Polynomial.aeval_eq_sum_range' hdlt, Finset.mul_sum]
+      refine Finset.sum_congr rfl fun i _ => ?_
+      rw [mul_smul_comm, hπdef, hwdef, ← map_pow, ← map_mul, hεpow i]
+    have h2 : ∑ i ∈ Finset.range (minpoly ℚ α).natDegree,
+        hpoly.coeff i • PA (ι (α ^ i)) = 0 := by rw [← hexpand]; exact hΦ0
+    have h3 := congrArg (Subtype.val (p := fun z => z ∈ heckeSubalgebra t)) h2
+    simp only [AddSubmonoidClass.coe_finsetSum, SetLike.val_smul,
+      ZeroMemClass.coe_zero] at h3
+    have hli : LinearIndependent ℚ
+        (fun i : Fin (minpoly ℚ α).natDegree => ι (α ^ (i : ℕ))) :=
+      (linearIndependent_pow α).map' ι (LinearMap.ker_eq_bot.mpr hιinj)
+    have hliF := hindep (minpoly ℚ α).natDegree
+      (fun i : Fin (minpoly ℚ α).natDegree => ι (α ^ (i : ℕ))) hli
+    have hsum : ∑ i : Fin (minpoly ℚ α).natDegree,
+        hpoly.coeff (i : ℕ) • padic (ι (α ^ (i : ℕ))) = 0 := by
+      rw [Fin.sum_univ_eq_sum_range
+        (fun i => hpoly.coeff i • padic (ι (α ^ i)))]
+      simpa [hPAval] using h3
+    have hcoeff := fun j => Fintype.linearIndependent_iff.mp hliF
+      (fun i => hpoly.coeff (i : ℕ)) hsum j
+    have hpoly0 : hpoly = 0 := by
+      ext n
+      rcases lt_or_ge n (minpoly ℚ α).natDegree with hn | hn
+      · simpa using hcoeff ⟨n, hn⟩
+      · rw [Polynomial.coeff_eq_zero_of_natDegree_lt (by omega),
+          Polynomial.coeff_zero]
+    exact hpolyne hpoly0
+  have heigen : ∀ q : ℕ, q.Prime → t q * e0 = κ (aq q) • e0 := by
+    intro q hq
+    have h1 : Algebra.adjoin ℚ ({α} : Set K) = ⊤ := by
+      rw [← IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic hint.isAlgebraic,
+        hαtop]
+      exact IntermediateField.top_toSubalgebra
+    have hmem : aq q ∈ Algebra.adjoin ℚ ({α} : Set K) := by
+      rw [h1]; trivial
+    rw [Algebra.adjoin_singleton_eq_range_aeval] at hmem
+    obtain ⟨P, hP⟩ := hmem
+    have hP' : Polynomial.aeval α P = aq q := hP
+    have hPeig : PA (Tgen q) * π =
+        π * Polynomial.aeval w (P.map (algebraMap ℚ L)) := by
+      rw [hΦcorner, hP', hπdef, ← map_mul, hιgen q hq]
+    have hevalP : (P.map (algebraMap ℚ L)).eval (κ α) = κ (aq q) := by
+      rw [Polynomial.eval_map, ← Polynomial.aeval_def]
+      have h2 : Polynomial.aeval (κA α) P = κA (Polynomial.aeval α P) :=
+        Polynomial.aeval_algHom_apply κA α P
+      rw [hP'] at h2
+      exact h2
+    have hstep : PA (Tgen q) * E = κ (aq q) • E := by
+      calc PA (Tgen q) * E = PA (Tgen q) * (π * E) := by rw [hπE]
+        _ = (PA (Tgen q) * π) * E := by ring
+        _ = (π * Polynomial.aeval w (P.map (algebraMap ℚ L))) * E := by
+              rw [hPeig]
+        _ = ((P.map (algebraMap ℚ L)).eval (κ α)) • E := hEeval _
+        _ = κ (aq q) • E := by rw [hevalP]
+    have h4 := congrArg (Subtype.val (p := fun z => z ∈ heckeSubalgebra t))
+      hstep
+    simpa [he0def, ht, hPAval] using h4
+  refine ⟨e0, he0mem, he0ne, he0idem, heigen, ?_⟩
+  intro a haA hgen
+  obtain ⟨c, n, hce, hca⟩ :=
+    exists_scalar_pow_mul_eq_zero_of_mem_heckeSubalgebra hcomm haA heigen
+      hgen (1 - e0) (Subalgebra.sub_mem _ (Subalgebra.one_mem _) he0mem)
+  have hcz : c = 0 := by
+    have h1 : (1 - e0) * e0 = 0 := by
+      rw [sub_mul, one_mul, he0idem, sub_self]
+    rw [h1] at hce
+    rcases smul_eq_zero.mp hce.symm with h | h
+    · exact h
+    · exact absurd h he0ne
+  rcases n with _ | n'
+  · simp only [pow_zero, one_mul] at hca
+    rw [hca, mul_zero]
+  · have hidem : IsIdempotentElem (1 - e0) := by
+      show (1 - e0) * (1 - e0) = 1 - e0
+      have hexp : (1 - e0) * (1 - e0) = 1 - e0 - e0 + e0 * e0 := by
+        noncomm_ring
+      rw [hexp, he0idem]
+      abel
+    rw [hcz, zero_smul, sub_zero, hidem.pow_succ_eq n'] at hca
+    have h5 : a - e0 * a = 0 := by rw [← hca, sub_mul, one_mul]
+    exact (sub_eq_zero.mp h5).symm
+
+/-- **The `ℂ → ℚ̄_p` transport for the modular rational Hecke package**
+(PROVEN): the `comparison` field of `ModularHeckeComparisonPackage`,
+obtained by instantiating `exists_etaleIdempotent_of_rationalModel` at
+`L := ℚ̄_p`, `K := K_g` and the corner supplied by `newformFactor`.
+The complex-side hypotheses are consumed exactly once, to invoke that
+field; all the `ℚ̄_p`-side content is proven. -/
+theorem exists_etaleIdempotent_of_modularRationalHeckePackage
+    {M : ℕ} (hM : 0 < M) (H : ModularRationalHeckePackage (p := p) M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    (eC : Module.End ℂ (CuspForm (Gamma0GL M) 2))
+    (heCmem : eC ∈ heckeSubalgebra (heckeOp M)) (heC0 : eC ≠ 0)
+    (heCidem : eC * eC = eC)
+    (heCeig : ∀ q : ℕ, q.Prime → heckeOp M q * eC = qCoeff M g q • eC)
+    (heCline : ∀ a ∈ heckeSubalgebra (heckeOp M),
+      (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+        (heckeOp M q - qCoeff M g q •
+          (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n * a = 0) →
+      ∃ c : ℂ, a = c • eC) :
+    ∃ e ∈ heckeSubalgebra (fun m => H.padic (H.Tgen m)), e ≠ 0 ∧ e * e = e ∧
+      (∀ q : ℕ, q.Prime →
+        H.padic (H.Tgen q) * e = κ (heckeCoeff M g q) • e) ∧
+      (∀ a ∈ heckeSubalgebra (fun m => H.padic (H.Tgen m)),
+        (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+          (H.padic (H.Tgen q) - κ (heckeCoeff M g q) • 1) ^ n * a = 0) →
+        e * a = a) := by
+  haveI : FiniteDimensional ℚ (heckeField M g) :=
+    heckeField_finiteDimensional hM hg.toIsWeightTwoEigenform
+  obtain ⟨ι, hιinj, hιmul, hιgen⟩ :=
+    H.newformFactor g hg eC heCmem heC0 heCidem heCeig heCline
+  exact exists_etaleIdempotent_of_rationalModel κ H.Tgen H.Tgen_adjoin
+    H.padic H.padic_indep (fun q => heckeCoeff M g q) ι hιinj hιmul hιgen
+
+/-- **Inhabitation of the modular Hecke-comparison package** (PROVEN
+2026-07-25 — the SIXTH decomposition: an assembly over the single
+geometric leaf `nonempty_modularRationalHeckePackage`).
+
+Until now this was the residual GEOMETRIC leaf, and its `comparison`
+field — the `ℂ → ℚ̄_p` Eichler–Shimura transport of the newform's étale
+idempotent — was ASSERTED. The fifth cut's docstring named the repair:
+"an explicit finite-dimensional `ℚ`-algebra `𝕋_ℚ` with the two
+base-change identifications, which would turn `comparison` into
+base-change algebra plus the two identifications". That is now done.
+
+ASSEMBLY. Take the rational package `H`. Every geometric field passes
+through verbatim, with `hecke := fun m => H.padic (H.Tgen m)`. Two
+fields improve:
+
+* `hecke_mul_comm` is no longer assumed — it is inherited from
+  commutativity of `𝕋_ℚ` through the ring map `H.padic`;
+* `comparison` is PROVEN, by
+  `exists_etaleIdempotent_of_modularRationalHeckePackage`, which
+  instantiates the coefficient-free
+  `exists_etaleIdempotent_of_rationalModel` at `L := ℚ̄_p` and
+  `K := K_g`. The `κ`-component idempotent is the Lagrange idempotent
+  at the SIMPLE root `κ α` of the minimal polynomial of a primitive
+  element of the Hecke field — which is exactly the statement that
+  `K_g ⊗_ℚ ℚ̄_p` splits into its `[K_g : ℚ]` embedding-components, and
+  is where separability is consumed.
+
+UPDATE (2026-07-26, seventh cut): `nonempty_modularRationalHeckePackage`
+is itself PROVEN now, as an assembly over two leaves that share no
+vocabulary — the analytic `exists_newformFactor_modularHeckeAlgebraQ`
+(the newform factor `K_g ↪ 𝕋_ℚ` of the concrete analytic Hecke algebra
+`modularHeckeAlgebraQ`, no geometry) and the geometric
+`nonempty_modularTateModuleData` (`X₀(M)`, its Jacobian, the Tate
+module, Igusa reduction, the Weil pairing and the Eichler–Shimura
+comparison, none of which exists in mathlib on this pin). Those two
+are the open leaves under this node; their docstrings list the missing
+theories in dependency order.
+
+SOUNDNESS: nothing is asserted here any more — this is a theorem, and
+the audited assertion is the rational package's statement. -/
 theorem nonempty_modularHeckeComparisonPackage {M : ℕ} (hM : 0 < M) :
-    Nonempty (ModularHeckeComparisonPackage (p := p) M) :=
-  sorry
+    Nonempty (ModularHeckeComparisonPackage (p := p) M) := by
+  obtain ⟨H⟩ := nonempty_modularRationalHeckePackage (p := p) hM
+  exact ⟨{ Vp := H.Vp
+           addCommGroup := H.addCommGroup
+           module := H.module
+           moduleFinite := H.moduleFinite
+           τJ := H.τJ
+           hecke := fun m => H.padic (H.Tgen m)
+           S := H.S
+           hecke_comm := H.hecke_comm
+           hecke_mul_comm := fun m n => by
+             rw [← map_mul, ← map_mul, mul_comm]
+           congruence := H.congruence
+           basis₁ := H.basis₁
+           basis₂ := H.basis₂
+           span_free := H.span_free
+           indep_free := H.indep_free
+           pair := H.pair
+           pair_self := H.pair_self
+           pair_nondeg := H.pair_nondeg
+           pair_hecke := H.pair_hecke
+           pair_frob := H.pair_frob
+           comparison := fun g hg κ eC heCmem heC0 heCidem heCeig heCline =>
+             exists_etaleIdempotent_of_modularRationalHeckePackage hM H g hg κ
+               eC heCmem heC0 heCidem heCeig heCline
+           irred_eigenspace := H.irred_eigenspace }⟩
+
 
 /-- **Inhabitation of the modular Hecke-spectrum package** (DECOMPOSED
 2026-07-25 into the `ℂ → ℚ̄_p` Eichler–Shimura seam and now a PROVEN
@@ -23439,8 +29840,439 @@ theorem isNewAtPrime_of_isWeightTwoNewform {M : ℕ}
   · exact absurd hold
       (not_exists_eigenform_level_not_dvd_of_isWeightTwoNewform hg hqM)
 
+/-- **Ramifiedness half of Carayol's conductor theorem at the NEWFORM
+level** (sorry node — one of the two components into which the single
+newform-level Carayol citation was SPLIT on 2026-07-26; Carayol, *Sur
+les représentations `ℓ`-adiques associées aux formes modulaires de
+Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A)): for a weight-2
+NEWFORM `g₀` of level `M₀`, an IRREDUCIBLE `τ` matching its Hecke
+polynomials away from a finite set is RAMIFIED at every prime
+`q ∣ M₀` with `q ≠ p`.
+
+This is the `a_q ≠ 0` half of `ord_q (cond ρ_{g₀,λ}) = ord_q M₀`, and
+it is the half that BOTH classical local types deliver: `q ∥ M₀` gives
+an unramified twist of Steinberg (inertia acting through a nontrivial
+transvection) and `q² ∣ M₀` ramified principal series or supercuspidal.
+It carries no information about the SIZE of the conductor exponent —
+that is the business of the companion leaf
+`exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one`
+below, which is needed only in the `q ∥ M₀` case.
+
+WHY THE SPLIT (2026-07-26, fifth owner). Through
+`GaloisRep.HasConductorExponentAt` — whose wild summand is
+existentially quantified — the cited identity `a_q = ord_q M₀` says
+exactly "ramified at `q`" AND "`2 − dim V^{I_q} ≤ ord_q M₀`"
+(`GaloisRep.hasConductorExponentAt_iff_tameExponent_le_of_not_isUnramifiedAt`).
+The second conjunct is arithmetically EMPTY as soon as
+`ord_q M₀ ≥ 2`, because the tame exponent of a 2-dimensional
+representation never exceeds `2`
+(`GaloisRep.tameExponent_le_finrank`). That observation used to be
+prose in the FORMAL-CONTENT AUDIT of the composite leaf; it is now
+checked Lean, and the consequence is that the composite citation is
+needed only in the shape of THIS leaf plus a fixed line in the single
+case `ord_q M₀ = 1`.
+
+This leaf is NOT a duplicate of
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` below, which is
+the corresponding statement over the weaker `IsWeightTwoEigenform`
+carrier with `IsNewAtPrime` in place of newform-ness, and which is
+PROVEN — by descent through
+`hasConductorExponentAt_factorization_of_isNewAtPrime`, hence
+ultimately through this leaf. The dependency runs newform → eigenform,
+never back.
+
+FAITHFULNESS AUDIT (2026-07-26, sixth owner). **TRUE AS STATED**, and
+the reduction to the cited theorem is exact rather than approximate:
+
+* `hτ` pins the Frobenius characteristic polynomials of `τ` at all but
+  finitely many primes to those of `ρ_{g₀,λ}`, so Chebotarev plus
+  Brauer–Nesbitt — the PROVEN `exists_linearEquiv_of_charFrob_eq` —
+  identifies `τ` with `ρ_{g₀,λ}` up to `Γ ℚ`-equivariant isomorphism,
+  and `GaloisRep.IsUnramifiedAt` is invariant under such an
+  isomorphism (`isUnramifiedAt_of_linearEquiv` above). So the
+  conclusion is exactly `q ∣ cond(ρ_{g₀,λ})`.
+* `IsWeightTwoNewform` is the classical carrier: `IsWeightTwoEigenform`
+  forces `a₁ = 1`, hence `g₀ ≠ 0`, and `eigensystem_minimal` is
+  minimality of the level among divisor levels, which by
+  Atkin–Lehner/strong multiplicity one is exactly newform-ness. Its
+  inhabitants are therefore the classical weight-2 trivial-nebentypus
+  newforms of level exactly `M₀`, and for those Carayol's identity
+  `ord_q (cond ρ_{g₀,λ}) = ord_q M₀` gives `ord_q ≥ 1` from `q ∣ M₀`,
+  i.e. ramifiedness.
+* NOT VACUOUS relative to this tree: the hypothesis bundle is
+  inhabited by the PROVEN pair
+  `exists_galoisRep_charFrob_of_weightTwoNewform` (a matching `τ` with
+  its exceptional set) and the PROVEN Ribet irreducibility below.
+* `hirr` is in fact REDUNDANT here, not merely convenient: any `τ`
+  satisfying `hτ` has `τ^ss ≅ ρ_{g₀,λ}`, which is irreducible by the
+  Ribet leaf, and a reducible `τ` has decomposable semisimplification.
+  It is retained because the consumer already holds it and because a
+  redundant hypothesis cannot enlarge what the leaf assumes.
+
+CORRECTION TO AN INHERITED CLAIM: `hqp` is **not** load-bearing for
+THIS leaf. Comparing constant terms in `hτ` gives
+`det τ (Frob_r) = r` for almost all `r`, so `det τ` is the `p`-adic
+cyclotomic character (Chebotarev again, both sides continuous), and
+that character is ramified at `p` — `ℚ(μ_{p^n})/ℚ` is totally ramified
+there — so `τ` is ramified at `p` unconditionally and the `q = p`
+instance of this conclusion is TRUE, indeed elementary. `q ≠ p` is
+load-bearing for the SIBLING
+`exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one`,
+where at `q = p` the Steinberg parameter is cyclotomically twisted and
+`V^{I_p}` can vanish; the claim was inherited from there when the
+composite leaf was split. `hqp` is nevertheless KEPT, because the only
+consumer calls at `q ≠ p` and a narrower hypothesis is a strictly
+smaller assumption; it is UNDERSCORED (`_hqp`, 2026-07-26) so that its
+non-load-bearingness is mechanically visible and is not "restored" as
+though it carried content. Do not delete it: deleting it would ENLARGE
+the assumption, which is the opposite of what the underscore records.
+
+DISPATCH ORDER — THIS LEAF IS BLOCKED BY AN OPEN LEAF BELOW IT, NOT
+MERELY BY THE PIN (2026-07-26, seventh owner; checked against the tree
+rather than recalled). The TERMINALITY AUDIT above names the classical
+prerequisites; every one of them is inside the missing-theory list of
+`nonempty_modularTateModuleData` (the residual GEOMETRIC leaf of the
+modularity subtree, items 1 `X₀(M)` à la Deligne–Rapoport, 2 `J₀(M)`,
+5 good reduction and Eichler–Shimura). So this leaf cannot be proven
+before that one is: no proof of Carayol's identity exists that does not
+factor through the modular-curve geometry which this development is
+still ASSUMING. Dispatching a prover here is therefore premature by
+construction, and stays premature until the geometric carrier is built;
+work spent here is better spent at `nonempty_modularTateModuleData`.
+Two further routes were checked and closed off the same day: the leaf
+is NOT duplicated anywhere (the file's only other ramifiedness
+statement at a bad prime,
+`weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible`, is
+PROVEN — through this leaf, so it is a consumer and offers no
+deduplication), and the conductor-exponent leaf above is likewise a
+CONSUMER of this one, so neither can be run backwards to discharge it.
+
+TERMINALITY AUDIT (2026-07-26, searched rather than recalled). What a
+proof needs is the equality of the newform level with the conductor of
+the local component — Casselman's newvector theory computing
+`cond(π_q) = ord_q M₀`, together with Deligne's compatibility of the
+local Langlands correspondence with conductors; geometrically, the
+Deligne–Rapoport model of `X₀(M₀)` at `q` plus
+Néron–Ogg–Shafarevich. The pin carries none of the prerequisites:
+mathlib has no higher ramification filtration, no Artin or Swan
+conductor, no automorphic representations and no local Langlands, and
+the reference project `~/cs/FLT` mentions Carayol only in one prose
+docstring and has nothing vendorable. Note also that the leaf cannot
+be attacked through `hτ` at `q` itself: `S_τ` is arbitrary, so the
+hypothesis supplies no information at the bad prime, and all of the
+content is genuinely global-to-local. This leaf is TERMINAL at this
+pin — it is the residual away-from-`p` literature assumption of the
+development, and the split recorded above already reduced it to the
+smallest shape the conductor dictionary can measure.
+
+COORDINATION NOTE (not executed here — the sibling has its own owner).
+At `ord_q M₀ = 1` the classical Steinberg computation delivers that
+inertia acts through a NONTRIVIAL unipotent; the sibling currently
+asserts only the resulting fixed line. Were it strengthened to record
+the nontriviality as well — no additional classical content, it is one
+and the same local computation — THIS leaf would be needed only for
+`q² ∣ M₀`. Total assumed content would be unchanged; what would change
+is that the `ord_q M₀ = 1` assumption sits where the local type is
+named. -/
+theorem not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (_hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
+    ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+/-- **Tame half of Carayol's conductor theorem at the NEWFORM level, in
+the only case where it carries content** (sorry node — the second of
+the two components of the 2026-07-26 split; Carayol, Théorème (A),
+together with the Langlands/Deligne local computation at a prime
+exactly dividing the level): if `q ∥ M₀` — i.e. `ord_q M₀ = 1` — then
+inertia at `q` fixes a NONZERO vector of `τ`.
+
+The local automorphic representation of `g₀` at such a `q` is an
+unramified twist of Steinberg, whose Weil–Deligne parameter is the
+special one with nonzero monodromy `N`; inertia acts through the
+unipotent `σ ↦ (1, t_p(σ); 0, 1)`, so `dim V^{I_q} = 1` and in
+particular a fixed line exists. Only the EXISTENCE of the fixed vector
+is asserted here — the dimension is not pinned, and need not be: a
+fixed line is exactly what the tame dictionary consumes
+(`GaloisRep.tameExponent_add_one_le_finrank_of_fixed`).
+
+WHY THIS SHAPE RATHER THAN UNIPOTENCE. The classical statement is
+stronger — `(τσ − 1)² = 0` for every `σ ∈ I_q` — and assuming it would
+make the development's faith LARGER, not smaller, so the pin is placed
+at the weakest form that the consumer actually needs. (An earlier
+version of this paragraph justified the choice by Kolchin's theorem in
+dimension `2` being absent from the pin. That premise is FALSE — see
+the KOLCHIN IS NOT ABSENT paragraph at the end of this docstring — but
+the conclusion is unaffected: pointwise unipotence on `I_q` is formally
+stronger than a common fixed line, they agree only modulo
+`det τ|_{I_q} = 1`, and that determinant fact is not available here as a
+proven lemma. Kolchin's absence was never the load-bearing reason.)
+
+`q ≠ p` is load-bearing: at `q = p` with `p ∥ M₀` the local
+representation is still special, but `ρ|_{I_p}` is not unipotent (the
+Steinberg parameter is twisted by the cyclotomic character there), and
+`V^{I_p}` may well vanish. That is the same reason the at-`p` place of
+this development keeps its own geometric Saito/flatness leaf.
+
+REUSE NOTE (2026-07-26). This is precisely the TAME half that step 3 of
+the repair plan in the FALSITY AUDIT of
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` below asks
+for. That leaf is FALSE AS STATED because `HasConductorExponentAt`
+cannot carry an upper bound in HYPOTHESIS position; a fixed line, by
+contrast, is upper-bound information in a form that survives, so the
+statement here is available to whoever performs that repair.
+
+FAITHFULNESS AUDIT (2026-07-26, sixth owner — **TRUE AS STATED**, and by
+a route STRICTLY SHORTER than the one the paragraphs above take). Those
+paragraphs justify the fixed line by identifying the local type at
+`q ∥ M₀` as an unramified twist of Steinberg. That identification is
+SUFFICIENT but NOT NECESSARY, and the necessary part is worth recording
+because it is what bounds the faith. Through the Artin conductor
+dictionary
+
+  `a_q(V) = (2 − dim V^{I_q}) + Sw_q(V)`
+
+Carayol's identity `a_q = ord_q M₀ = 1` gives `2 − dim V^{I_q} ≤ 1`,
+i.e. `dim V^{I_q} ≥ 1`, using nothing about the local type beyond
+`Sw_q ≥ 0`. So what is assumed here is strictly less than the Steinberg
+computation: nothing about the nebentypus, nothing about the
+Atkin–Lehner sign `a_q = ±1`, nothing about the shape of the monodromy
+`N`. (The Steinberg route additionally pins `dim V^{I_q} = 1`; the
+statement deliberately does not, which is the same weakest-usable-form
+principle as the WHY THIS SHAPE paragraph above.)
+
+SHARPNESS OF `hord`, machine-checked in PARI/GP (2026-07-26). Weakening
+`M₀.factorization q = 1` to `q ∣ M₀` makes the statement FALSE, with an
+explicit witness: let `E` be the quadratic twist by `−11` of `X₀(11)`
+(`[0, −1, 1, −10, −20]`). PARI reports conductor `121` and, at `q = 11`,
+reduction type `I₅*` with `f₁₁ = 2` and `v₁₁(j) = −5` — ADDITIVE but
+POTENTIALLY MULTIPLICATIVE. Take `p := 3` (so `q ≠ p`, and `3 ∤ 5`, so
+the inertia image is infinite). On `V₃(E) ⊗ ℚ̄₃` inertia at `11` acts by
+`σ ↦ χ(σ) · (1, t(σ); 0, 1)` with `χ` the RAMIFIED quadratic character
+of `ℚ₁₁(√−11)`, so `V^{I₁₁} = 0`, while the associated weight-2 newform
+has level `M₀ = 121` with `ord₁₁ M₀ = 2`.
+
+The same witness rules out every weakening of `hord` in the
+Grothendieck-monodromy family. It has NONZERO monodromy `N`, INFINITE
+inertia image, quasi-unipotent `τ|_{I₁₁}`, and `det τ|_{I₁₁} = χ² = 1` —
+i.e. every Galois-side symptom of the Steinberg case — and still no
+fixed vector. What distinguishes `q ∥ M₀` is exactly that the Steinberg
+twist is UNRAMIFIED, and that is automorphic input with no Galois-side
+shadow. There is therefore NO cut of this leaf into a weaker local
+hypothesis plus checked Lean: it is a citation, and it is a minimal one.
+Do not dispatch a decomposer at it.
+
+Non-vacuity, from the same PARI run: `X₀(11)` itself at `q = 11` has
+`f₁₁ = 1`, type `I₅`, `v₁₁(j) = −5`, so with `p := 3` the weight-2
+newform of level `11` and `τ := V₃(E) ⊗ ℚ̄₃` inhabit every hypothesis
+(irreducibility by Serre/Ribet), and there `dim V^{I₁₁} = 1`.
+
+KOLCHIN IS NOT ABSENT FROM THIS PIN (2026-07-26 — correcting the WHY
+THIS SHAPE RATHER THAN UNIPOTENCE paragraph above, which asserts it is).
+Kolchin's theorem in dimension `2` is PROVEN here as
+`BrauerNesbitt.exists_fixed_of_unipotent` (a group of unipotent
+endomorphisms of a rank-2 space has a common nonzero fixed vector), and
+is already consumed three times — in `BrauerNesbittConjugacy.lean`,
+`Chebotarev.lean` and `Modularity/KhareWintenberger.lean`. The shape
+chosen here nevertheless STANDS, but for the other half of that
+paragraph's reasoning only: pointwise unipotence on `I_q` and a common
+fixed line agree only modulo `det τ|_{I_q} = 1` (true, since the
+determinant is cyclotomic and `q ≠ p`, but not available here as a
+proven lemma), so pinning at unipotence would still assume formally
+more. What changes is the COST, not the choice — the unipotence form
+would now be a one-line derivation rather than a missing theorem. The
+same correction applies to step 3 of the repair plan in the FALSITY
+AUDIT below, which records the tame half as blocked on an absent
+Kolchin: it is not blocked. -/
+theorem exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (hord : M₀.factorization q = 1) :
+    ∃ w₀ : Fin 2 → AlgebraicClosure ℚ_[p], w₀ ≠ 0 ∧
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ w₀ = w₀ :=
+  sorry
+
+/-- **Carayol's conductor theorem at the NEWFORM level** (PROVEN
+2026-07-26 from the two-component split below — was the residual
+away-from-`p` literature leaf, re-pinned 2026-07-25 at the
+level where the cited theorem is actually stated: Carayol, *Sur les
+représentations `ℓ`-adiques associées aux formes modulaires de Hilbert*,
+Ann. Sci. ÉNS 19 (1986), Théorème (A) — local–global compatibility at a
+prime `q ≠ p`; for weight 2 over `ℚ` the underlying input is
+Deligne–Rapoport's model of `X₀(M₀)` at `q` together with the
+Langlands/Deligne local computations at the bad primes): if `τ` is
+IRREDUCIBLE and matches the Hecke polynomials of the weight-2 NEWFORM
+`g₀` of level `M₀` away from a finite set, then for every prime
+`q ∣ M₀` with `q ≠ p` the Artin conductor exponent of `τ` at `q` is
+`ord_q M₀`.
+
+WHY THE PIN IS AT THE NEWFORM AND NOT AT AN ARBITRARY EIGENFORM.
+Carayol's identity is `ord_q (cond ρ_{g₀,λ}) = ord_q M₀` with `M₀` the
+level of a NEWFORM; for an old eigenform `g` of level `M` the conductor
+is still that of the newform behind it, and `ord_q M₀` can be STRICTLY
+SMALLER than `ord_q M` even when `g` is `q`-new in the sense of
+`IsNewAtPrime` (take `M = q²` with underlying newform level `M₀ = q`:
+no `q`-FREE divisor level realizes the eigensystem, so `IsNewAtPrime`
+holds, yet `ord_q M₀ = 1 < 2 = ord_q M`). The eigenform-level statement
+`hasConductorExponentAt_factorization_of_isNewAtPrime` below is
+therefore NOT the cited identity but a strictly weaker consequence of
+it, sound only because `GaloisRep.HasConductorExponentAt` is upward
+closed at a ramified place
+(`GaloisRep.HasConductorExponentAt.mono_of_not_isUnramifiedAt`). Pinning
+the citation here puts the sorry exactly on the literature statement and
+turns the `IsNewAtPrime` descent — previously prose in the docstring
+below — into checked Lean.
+
+FORMAL-CONTENT AUDIT (2026-07-25). Read through
+`GaloisRep.hasConductorExponentAt_iff_tameExponent_le_of_not_isUnramifiedAt`,
+the conclusion of this leaf is EXACTLY the conjunction
+
+* `τ` is ramified at `q` (the Swan clause of
+  `GaloisRep.HasConductorExponentAt`, since `ord_q M₀ ≥ 1`), and
+* `2 − dim V^{I_q} ≤ ord_q M₀`,
+
+and nothing more: the wild summand is existentially quantified and, at a
+ramified place, unconstrained. This is a genuine consequence of
+Carayol's identity, never an assertion about an under-determined symbol
+— but a downstream consumer must not read it as pinning the conductor
+exponent. Recovering the identity needs the Swan conductor, i.e. the
+higher ramification filtration in the upper numbering, absent from the
+pin (see `ArtinConductor.lean`'s module docstring). In particular the
+second bullet is arithmetically empty once `ord_q M₀ ≥ 2`, so the ONLY
+tame content of this leaf is the classical `q ∥ M₀` case: there the
+local type is an unramified twist of Steinberg, inertia acts through
+`σ ↦ (1, t_p(σ); 0, 1)`, and `dim V^{I_q} = 1`.
+
+The hypothesis `hqM₀ : q ∣ M₀` is retained although Carayol's theorem
+covers `q ∤ M₀` as well (where it asserts unramifiedness at `q`): the
+weaker leaf is all its consumer needs, and it keeps the ramification
+half of the content visible in the statement.
+
+SOUNDNESS AUDIT (2026-07-25): non-vacuously satisfiable — take any
+classical newform `g₀` of level `M₀` divisible by a prime `q ∉ {p}`, and
+`τ := ρ_{g₀,λ}` (irreducible by Ribet 1977, matched to `g₀`'s Hecke
+polynomials away from `M₀p` by Eichler–Shimura); the conclusion is
+Carayol's theorem read through the conductor dictionary. Conversely
+every instance is an instance of the cited theorem: `IsWeightTwoNewform`
+has exactly the classical minimal-level normalized eigenforms as
+inhabitants, and irreducibility supplies the rigidity identification of
+`τ` with `ρ_{g₀,λ}` (PROVEN `exists_linearEquiv_of_charFrob_eq`), across
+which the conductor exponent is invariant.
+
+SPLIT (2026-07-26, fifth owner — this statement is now PROVEN, and the
+citation it carried is strictly SMALLER). The FORMAL-CONTENT AUDIT above
+identified the conclusion as the conjunction of ramifiedness at `q` with
+the tame bound `2 − dim V^{I_q} ≤ ord_q M₀`, and observed in prose that
+the second conjunct "is arithmetically empty once `ord_q M₀ ≥ 2`". That
+observation is now CHECKED LEAN, via the trivial-but-decisive
+`GaloisRep.tameExponent_le_finrank` (a tame exponent is a codimension,
+hence `≤ dim V = 2`), and the citation splits accordingly into
+
+* `not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` —
+  ramifiedness at `q`, needed for every `ord_q M₀ ≥ 1`; and
+* `exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one` —
+  a nonzero inertia-fixed vector, needed ONLY when `ord_q M₀ = 1`.
+
+What the development now takes on faith about the case `q² ∣ M₀` is
+therefore ramifiedness alone: the Steinberg/principal-series local-type
+computation is assumed only at `q ∥ M₀`, where the assumption is a
+single fixed line rather than a conductor identity. The two components
+are also independently reusable — the first is the away-from-`p`
+ramification input the level-lowering assemblies consume, and the second
+is the TAME half that the FALSITY AUDIT of
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` requests in
+step 3 of its repair plan.
+
+NO FAITH IS ADDED BY THE SPLIT — the pair is EQUIVALENT to the old
+single citation, and the converse direction is elementary rather than
+asserted. From this statement one recovers
+`not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` by
+`GaloisRep.HasConductorExponentAt.not_isUnramifiedAt_of_ne_zero`
+(`ord_q M₀ ≥ 1` since `q ∣ M₀`), and, in the case `ord_q M₀ = 1`,
+`exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one`
+because `tameExponent ≤ 1` on a 2-dimensional space forces
+`dim V^{I_q} ≥ 1`, hence a nonzero inertia-fixed vector. So the sorry
+count rises by one while the assumed mathematics is unchanged; what the
+split buys is that the `q² ∣ M₀` half of the old leaf is now DISCHARGED
+outright, and that the two remaining assumptions are separately
+statable, separately attackable and separately reusable. (The converse
+lemmas are deliberately not added to the tree: nothing would consume
+them, so they would be free-floating code.)
+
+The `q ≥ 2` arithmetic that makes the split exhaustive is elementary:
+`q ∣ M₀` with `0 < M₀` gives `1 ≤ ord_q M₀`, and `ord_q M₀ ≥ 2` is
+handled by `GaloisRep.hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt`,
+`ord_q M₀ = 1` by `GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt`. -/
+theorem hasConductorExponentAt_factorization_of_isWeightTwoNewform
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
+    τ.HasConductorExponentAt hq.toHeightOneSpectrumRingOfIntegersRat
+      (M₀.factorization q) := by
+  classical
+  -- the dimension of the representation space, the only number the tame
+  -- dictionary is measured against
+  have hfr : Module.finrank (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
+  -- ramifiedness at `q`: the half of the citation that both local types give
+  have hram : ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+    not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible hM₀ hg₀ κ₀ hτ
+      hirr hq hqp hqM₀
+  -- `q ∣ M₀` with `0 < M₀` makes the exponent positive
+  have hpos : 0 < M₀.factorization q :=
+    hq.factorization_pos_of_dvd hM₀.ne' hqM₀
+  rcases Nat.lt_or_ge (M₀.factorization q) 2 with hlt | hge
+  · -- `q ∥ M₀`: the tame bound is real content, supplied by the fixed line
+    have hord : M₀.factorization q = 1 := by omega
+    obtain ⟨w₀, hw₀, hfix⟩ :=
+      exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one hM₀ hg₀
+        κ₀ hτ hirr hq hqp hord
+    exact GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt hw₀
+      hfix (by rw [hfr]; omega) hram
+  · -- `q² ∣ M₀`: the tame bound is vacuous, ramifiedness is the whole content
+    exact GaloisRep.hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt
+      (by rw [hfr]; omega) hram
+
 /-- **Carayol's conductor theorem, ONE shared leaf in conductor-exponent
-form** (sorry node — the DEDUPLICATED away-from-`p` literature leaf,
+form** (PROVEN 2026-07-25 from the newform-level citation
+`hasConductorExponentAt_factorization_of_isWeightTwoNewform` plus the
+newform descent — was the DEDUPLICATED away-from-`p` literature leaf,
 2026-07-25: Carayol, *Sur les représentations `ℓ`-adiques associées aux
 formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A) —
 local–global compatibility at a prime `q ≠ p`; for weight 2 over `ℚ` the
@@ -23530,7 +30362,51 @@ Carayol's theorem read through the conductor dictionary. Conversely
 every instance is an instance of the cited theorem: the carrier
 `IsWeightTwoEigenform` has exactly the classical normalized eigenforms
 as inhabitants, `IsNewAtPrime` pins the underlying newform to a level
-divisible by `q`, and irreducibility supplies the rigidity. -/
+divisible by `q`, and irreducibility supplies the rigidity.
+
+DECOMPOSITION (2026-07-25, fourth owner — this statement is now PROVEN).
+The paragraph above beginning "behind `g` lies a newform `g₀`" was the
+only formalizable content of this docstring, and it is now Lean rather
+than prose: the citation has been re-pinned at the newform level as
+`hasConductorExponentAt_factorization_of_isWeightTwoNewform` (which IS
+Carayol's theorem verbatim), and this statement is assembled from it in
+five checked steps — newform descent
+(`exists_weightTwoNewform_of_weightTwoEigenform`), `q ∣ M₀` out of
+`IsNewAtPrime`, transport of the `p`-adic Hecke embedding
+(`exists_ringHom_heckeField_of_qCoeff_eq`), ramification at `q` from the
+positivity of `ord_q M₀`
+(`GaloisRep.HasConductorExponentAt.not_isUnramifiedAt_of_ne_zero`), and
+the transport `ord_q M₀ ≤ ord_q M`
+(`GaloisRep.HasConductorExponentAt.mono_of_not_isUnramifiedAt`).
+
+This is NOT the re-pin that the ROUTE AUDIT of
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` below examined and
+rejected. That one would have re-pinned RAMIFIEDNESS at the newform
+level, where it is the exact contrapositive of the already-proven
+`weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible` — a
+duplicated sorry. The newform-level CONDUCTOR EXPONENT duplicates
+nothing: no proven declaration in this development produces a conductor
+exponent, and the descent glue really is discharged here rather than
+restated.
+
+WHY THE LAST STEP NEEDS `mono`, and what it reveals. `ord_q M₀` may be
+STRICTLY SMALLER than `ord_q M`: `IsNewAtPrime M q g` forbids
+realization at `q`-FREE divisor levels only, so `M = q²` with underlying
+newform level `M₀ = q` satisfies it while `ord_q M₀ = 1 < 2 = ord_q M`.
+The conductor exponent of `τ` at `q` is then `1`, not `ord_q M` — so
+this statement would be FALSE if `GaloisRep.HasConductorExponentAt` were
+read as pinning the exponent. It is true, and provable, only because the
+relation is upward closed at a ramified place (see the FORMAL-CONTENT
+AUDIT on the newform leaf above): what it actually asserts is that `τ`
+is ramified at `q` and that `2 − dim V^{I_q} ≤ ord_q M`. Consumers
+should read it that way, and both current consumers do — one uses only
+`eq_zero_of_isUnramifiedAt`, the other only the upper bound at `q = 2`.
+
+The hypothesis `hqM : q ∣ M` is REDUNDANT given `hnew` (the descent
+yields `q ∣ M₀ ∣ M`) and is unused by the proof; it is underscored for
+that reason and kept in the signature only because both consumers pass
+it positionally. Its redundancy is a fact about `IsNewAtPrime`, not a
+sign that the conclusion is vacuous. -/
 theorem hasConductorExponentAt_factorization_of_isNewAtPrime
     {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
@@ -23545,11 +30421,50 @@ theorem hasConductorExponentAt_factorization_of_isNewAtPrime
           - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
           + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
     (hirr : τ.IsIrreducible)
-    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM : q ∣ M)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (_hqM : q ∣ M)
     (hnew : IsNewAtPrime M q g) :
     τ.HasConductorExponentAt hq.toHeightOneSpectrumRingOfIntegersRat
-      (M.factorization q) :=
-  sorry
+      (M.factorization q) := by
+  classical
+  -- step 1: the newform behind `g` (Diamond–Shurman Prop. 5.8.4)
+  obtain ⟨M₀, hM₀dvd, hM₀pos, g₀, hg₀, hagree⟩ :=
+    exists_weightTwoNewform_of_weightTwoEigenform hM hg
+  -- step 2: `q`-newness forbids the `q`-free realization level `M₀`
+  have hqM₀ : q ∣ M₀ := by
+    by_contra hq0
+    exact hnew M₀ hM₀dvd hq0 g₀ hg₀.toIsWeightTwoEigenform hagree
+  -- step 3: transport the `p`-adic embedding to the newform's Hecke field
+  obtain ⟨κ₀, hκ₀⟩ := exists_ringHom_heckeField_of_qCoeff_eq hM₀pos
+    hg₀.toIsWeightTwoEigenform κ hagree
+  -- step 4: `τ` matches `g₀`'s Hecke polynomials away from `S_τ ∪ (primes ∣ M)`
+  set badM : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+    M.primeFactors.attach.image fun r =>
+      (Nat.prime_of_mem_primeFactors r.2).toHeightOneSpectrumRingOfIntegersRat
+  have hτ₀ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ ∪ badM →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])) := by
+    intro r hr hrS
+    have hrM : ¬ r ∣ M := by
+      intro hdvd
+      exact hrS (Finset.mem_union_right _ (Finset.mem_image.mpr
+        ⟨⟨r, Nat.mem_primeFactors.mpr ⟨hr, hdvd, hM.ne'⟩⟩,
+          Finset.mem_attach _ _, rfl⟩))
+    rw [hτ r hr fun h => hrS (Finset.mem_union_left _ h), hκ₀ r hr hrM]
+  -- step 5: Carayol's theorem at the newform level
+  have hcond₀ := hasConductorExponentAt_factorization_of_isWeightTwoNewform
+    hM₀pos hg₀ κ₀ hτ₀ hirr hq hqp hqM₀
+  -- step 6: `ord_q M₀ ≥ 1` makes `τ` ramified at `q`
+  have hram : ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+    hcond₀.not_isUnramifiedAt_of_ne_zero
+      (hq.factorization_pos_of_dvd hM₀pos.ne' hqM₀).ne'
+  -- step 7: `M₀ ∣ M`, so the exponent transports upward at a ramified place
+  have hle : M₀.factorization q ≤ M.factorization q :=
+    (hq.pow_dvd_iff_le_factorization hM.ne').mp
+      ((Nat.ordProj_dvd M₀ q).trans hM₀dvd)
+  exact hcond₀.mono_of_not_isUnramifiedAt hle hram
 
 include hpodd in
 /-- **The conductor exponent at `2` of a square-zero-unipotent inertia
@@ -23721,7 +30636,7 @@ theorem hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero
   sorry
 
 /-- **Ramification at `q` of the representation attached to a `q`-NEW
-eigenform** (sorry node — the single residual literature leaf of the
+eigenform** (PROVEN — the single residual literature leaf of the
 at-`q` conductor cut, isolated 2026-07-25: Carayol, *Sur les
 représentations `ℓ`-adiques associées aux formes modulaires de
 Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A) — local–global
@@ -24218,12 +31133,976 @@ theorem exists_irreducible_galoisRep_charFrob_of_weightTwoNewform
       exact P.det_frob q hq hqS (hstab _)
     exact charpoly_eq_quadratic_of_sq_rel hinv hQ hdet
 
+/-- **The maximal-ideal powers of the coefficient ring are OPEN** (PROVEN
+2026-07-25 — the tower bookkeeping of the at-`p` flatness cut below, and
+the step that makes the hypothesis `hpne` of that cut mechanically
+load-bearing instead of merely documentary): for a coefficient ring `R`
+of the standard package — a local DOMAIN, module-finite over `ℤ_p`,
+carrying the `ℤ_p`-module topology — in which `p` is NOT zero, every
+power `𝔪 ^ k` of the maximal ideal is an OPEN ideal, hence a legitimate
+level of the flat tower quantified over by `GaloisRep.IsFlatAt.cond`.
+
+Proof: `R` is a domain, so `(p : R) ≠ 0` forces `ℤ_p → R` to be
+INJECTIVE — a nonzero kernel element is a unit times `p ^ n` in the DVR
+`ℤ_p` (`IsDiscreteValuationRing.eq_unit_mul_pow_irreducible`), which
+would make `(p : R) ^ n = 0` and hence `(p : R) = 0`. So `R` is
+torsion-free and module-finite over the PID `ℤ_p`, therefore FREE
+(`Module.free_of_finite_type_torsion_free'`), therefore — reading the
+module topology through a basis — homeomorphic to `ℤ_p ^ d`, hence
+compact and Hausdorff; module-finiteness makes it Noetherian, and
+mathlib's `IsLocalRing.isOpen_maximalIdeal_pow` applies.
+
+Where `hpne` really enters: without it `R` may be a finite field, and
+then the powers `𝔪 ^ k` are all `⊥` and open for a DEGENERATE reason —
+the flat tower collapses to a single level, which is exactly the
+situation in which the leaf below is FALSE (see its TOWER AUDIT). So
+this lemma is not merely a technical convenience: it is the formal
+content of "the tower is infinite". -/
+theorem isOpen_maximalIdeal_pow_of_natCast_ne_zero
+    (hpne : (p : R) ≠ 0) (k : ℕ) :
+    IsOpen ((IsLocalRing.maximalIdeal R ^ k : Ideal R) : Set R) := by
+  -- `ℤ_p → R` is injective: a nonzero kernel element is a unit times
+  -- `p ^ n` in the DVR `ℤ_p`, so it would force `(p : R) ^ n = 0`
+  have hZinj : Function.Injective (algebraMap ℤ_[p] R) := by
+    rw [injective_iff_map_eq_zero]
+    intro z hz
+    by_contra hzne
+    obtain ⟨n, u, rfl⟩ :=
+      IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hzne
+        (PadicInt.irreducible_p (p := p))
+    rw [map_mul, map_pow, map_natCast] at hz
+    have hunit : IsUnit (algebraMap ℤ_[p] R (u : ℤ_[p])) := u.isUnit.map _
+    have hp0 : ((p : R)) ^ n = 0 := by
+      rcases mul_eq_zero.mp hz with h | h
+      · exact absurd h hunit.ne_zero
+      · exact h
+    refine hpne ?_
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · simp at hp0
+    · exact (pow_eq_zero_iff hn.ne').mp hp0
+  -- torsion-free and module-finite over the PID `ℤ_p`, hence free, hence
+  -- compact Hausdorff for the module topology; Noetherian by finiteness
+  haveI : Module.IsTorsionFree ℤ_[p] R :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
+  haveI : Module.Free ℤ_[p] R := Module.free_of_finite_type_torsion_free'
+  haveI : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[p] R
+  let eR : R ≃ₗ[ℤ_[p]] (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    (Module.Free.chooseBasis ℤ_[p] R).equivFun
+  have hcontR₁ : Continuous eR :=
+    IsModuleTopology.continuous_of_linearMap eR.toLinearMap
+  have hcontR₂ : Continuous eR.symm :=
+    IsModuleTopology.continuous_of_linearMap eR.symm.toLinearMap
+  let homR : R ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    { toEquiv := eR.toEquiv
+      continuous_toFun := hcontR₁
+      continuous_invFun := hcontR₂ }
+  haveI : CompactSpace R := homR.symm.compactSpace
+  haveI : T2Space R := homR.isEmbedding.t2Space
+  exact IsLocalRing.isOpen_maximalIdeal_pow R k
+
+omit [IsDomain R] [TopologicalSpace R] [IsTopologicalRing R]
+  [IsModuleTopology ℤ_[p] R] in
+/-- **The coefficient ring has residue characteristic `p`** (PROVEN
+2026-07-26 — the first of the three coefficient-ring facts handed to the
+at-`p` flatness leaf below by the SIXTH-OWNER narrowing; see that leaf's
+`COEFFICIENT-RING NARROWING` paragraph): in the standard package — `R`
+local and module-finite over `ℤ_p` — the residue characteristic is
+FORCED to be `p`, i.e. `(p : R)` lies in the maximal ideal.
+
+Proof: Nakayama. If `p` were a unit of `R` then every `x : R` would be
+`p • (u⁻¹ * x)`, so the `ℤ_p`-module `R` would satisfy
+`⊤ ≤ 𝔪 ℤ_[p] • ⊤` with `⊤` finitely generated
+(`Module.Finite.fg_top`), and `Submodule.eq_bot_of_le_smul_of_le_jacobson_bot`
+would give `R = 0` — but `R` is local, hence nontrivial.
+
+Why it is stated: Raynaud's and Serre's criteria are stated for a
+coefficient ring which is an ORDER IN A `p`-ADIC FIELD, and "residue
+characteristic `p`" is the first half of that standing hypothesis. It is
+derivable here, so the leaf below receives it instead of assuming it. -/
+theorem natCast_prime_mem_maximalIdeal_of_moduleFinite :
+    (p : R) ∈ IsLocalRing.maximalIdeal R := by
+  by_contra hmem
+  obtain ⟨u, hu⟩ : IsUnit (p : R) := IsLocalRing.notMem_maximalIdeal.mp hmem
+  have hle : (⊤ : Submodule ℤ_[p] R) ≤
+      (IsLocalRing.maximalIdeal ℤ_[p]) • (⊤ : Submodule ℤ_[p] R) := by
+    intro x _
+    have hx : x = (p : ℤ_[p]) • ((↑u⁻¹ : R) * x) := by
+      rw [Algebra.smul_def, map_natCast, ← hu, ← mul_assoc, u.mul_inv, one_mul]
+    rw [hx]
+    refine Submodule.smul_mem_smul ?_ Submodule.mem_top
+    rw [PadicInt.maximalIdeal_eq_span_p]
+    exact Ideal.mem_span_singleton_self _
+  have htop : (⊤ : Submodule ℤ_[p] R) = ⊥ :=
+    Submodule.eq_bot_of_le_smul_of_le_jacobson_bot _ _ Module.Finite.fg_top hle
+      (by simpa using IsLocalRing.maximalIdeal_le_jacobson (⊥ : Ideal ℤ_[p]))
+  exact absurd htop top_ne_bot
+
+/-- **Every level of the flat tower is a FINITE ring** (PROVEN
+2026-07-26 — the NON-VACUITY certificate of the at-`p` flatness leaf
+below, and the second of the three coefficient-ring facts that leaf now
+receives): for a coefficient ring of the standard package in which `p`
+is not zero, each quotient `R ⧸ 𝔪 ^ k` is FINITE.
+
+This is not a technicality. `GaloisRep.HasFlatProlongationAt` asks for a
+bijection between the representation space and the `Kᵥᵃˡᵍ`-points of a
+finite étale `Kᵥ`-algebra, a set which is always FINITE; so if some
+`R ⧸ 𝔪 ^ k` were infinite the predicate would fail at that level for a
+purely cardinal reason and the leaf below would be TRIVIALLY TRUE,
+carrying none of the arithmetic it is cited for. The lemma rules that
+out: every level is a genuine finite coefficient ring, so each
+`HasFlatProlongationAt` in the tower is a real, satisfiable condition
+(it holds, for instance, for the good-reduction packages built in
+`Semistable.lean`).
+
+Proof: the compactness argument of
+`isOpen_maximalIdeal_pow_of_natCast_ne_zero` above — `(p : R) ≠ 0` makes
+`ℤ_p → R` injective, so `R` is torsion-free, hence free, hence
+`ℤ_p`-linearly homeomorphic to `ℤ_p ^ d` and therefore compact Hausdorff
+— feeds mathlib's `IsLocalRing.isOpen_iff_finite_quotient` at the open
+ideal `𝔪 ^ k`. -/
+theorem finite_quotient_maximalIdeal_pow_of_natCast_ne_zero
+    (hpne : (p : R) ≠ 0) (k : ℕ) :
+    Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) := by
+  have hZinj : Function.Injective (algebraMap ℤ_[p] R) := by
+    rw [injective_iff_map_eq_zero]
+    intro z hz
+    by_contra hzne
+    obtain ⟨n, u, rfl⟩ :=
+      IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hzne
+        (PadicInt.irreducible_p (p := p))
+    rw [map_mul, map_pow, map_natCast] at hz
+    have hunit : IsUnit (algebraMap ℤ_[p] R (u : ℤ_[p])) := u.isUnit.map _
+    have hp0 : ((p : R)) ^ n = 0 := by
+      rcases mul_eq_zero.mp hz with h | h
+      · exact absurd h hunit.ne_zero
+      · exact h
+    refine hpne ?_
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · simp at hp0
+    · exact (pow_eq_zero_iff hn.ne').mp hp0
+  haveI : Module.IsTorsionFree ℤ_[p] R :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
+  haveI : Module.Free ℤ_[p] R := Module.free_of_finite_type_torsion_free'
+  haveI : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[p] R
+  let eR : R ≃ₗ[ℤ_[p]] (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    (Module.Free.chooseBasis ℤ_[p] R).equivFun
+  have hcontR₁ : Continuous eR :=
+    IsModuleTopology.continuous_of_linearMap eR.toLinearMap
+  have hcontR₂ : Continuous eR.symm :=
+    IsModuleTopology.continuous_of_linearMap eR.symm.toLinearMap
+  let homR : R ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    { toEquiv := eR.toEquiv
+      continuous_toFun := hcontR₁
+      continuous_invFun := hcontR₂ }
+  haveI : CompactSpace R := homR.symm.compactSpace
+  haveI : T2Space R := homR.isEmbedding.t2Space
+  exact IsLocalRing.isOpen_iff_finite_quotient.mp
+    (IsLocalRing.isOpen_maximalIdeal_pow R k)
+
+omit [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
+  [IsModuleTopology ℤ_[p] R] in
+/-- **The coefficient ring EMBEDS in `ℚ̄_p`: `ρ` really is a lattice
+model of `τ`** (PROVEN 2026-07-26 — the third of the three
+coefficient-ring facts handed to the at-`p` flatness leaf below): for `R`
+a DOMAIN module-finite over `ℤ_p` carrying an algebra map to
+`AlgebraicClosure ℚ_[p]`, that algebra map is INJECTIVE.
+
+Together with `natCast_prime_mem_maximalIdeal_of_moduleFinite` this says
+that the coefficient ring is an ORDER IN A `p`-ADIC FIELD with residue
+characteristic `p` — the standing hypothesis of the Raynaud/Serre
+criteria the leaf below cites — and it is what makes the phrase "`ρ` is
+an `R`-LATTICE model of `τ`" true rather than merely suggestive: without
+it the intertwining `e`, `he` would relate `τ` to a base change that
+forgets part of `ρ`. Note it is strictly stronger than the leaf's
+`hpne`, which it implies (`(p : R) = 0` would force
+`(p : ℚ̄_p) = 0` in a characteristic-zero field); `hpne` is nevertheless
+kept as a separate hypothesis because the tower bookkeeping above
+consumes exactly that form.
+
+Proof: `ℚ̄_p` has characteristic zero, so `ψ := (algebraMap R ℚ̄_p) ∘
+(algebraMap ℤ_[p] R)` does not kill `p` and is therefore injective (a
+nonzero element of the DVR `ℤ_p` is a unit times `p ^ n`). A nonzero `x`
+in the kernel of `algebraMap R ℚ̄_p` is integral over `ℤ_p`
+(module-finiteness) with `minpoly ℤ_[p] x` monic; its constant
+coefficient is nonzero, since `X ∣ minpoly` would give a monic factor of
+strictly smaller degree still annihilating `x` (using that `R` is a
+domain and `x ≠ 0`), contradicting `minpoly.min`. Evaluating the integral
+equation through `algebraMap R ℚ̄_p` at `x ↦ 0` leaves exactly
+`ψ (coeff 0) = 0`, hence `coeff 0 = 0` — a contradiction. -/
+theorem injective_algebraMap_algebraicClosure_of_moduleFinite
+    [Algebra R (AlgebraicClosure ℚ_[p])] :
+    Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])) := by
+  haveI : CharZero (AlgebraicClosure ℚ_[p]) :=
+    charZero_of_injective_algebraMap
+      ((algebraMap ℚ_[p] (AlgebraicClosure ℚ_[p])).injective)
+  set φ := algebraMap R (AlgebraicClosure ℚ_[p]) with hφ
+  set ψ : ℤ_[p] →+* AlgebraicClosure ℚ_[p] := φ.comp (algebraMap ℤ_[p] R) with hψ
+  have hψp : ψ (p : ℤ_[p]) ≠ 0 := by
+    have hcast : ψ (p : ℤ_[p]) = ((p : ℕ) : AlgebraicClosure ℚ_[p]) := by
+      simp [hψ, map_natCast]
+    rw [hcast]
+    exact_mod_cast Nat.cast_ne_zero.mpr hp.out.ne_zero
+  have hψinj : Function.Injective ψ := by
+    rw [injective_iff_map_eq_zero]
+    intro z hz
+    by_contra hzne
+    obtain ⟨n, u, rfl⟩ :=
+      IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hzne
+        (PadicInt.irreducible_p (p := p))
+    rw [map_mul, map_pow] at hz
+    have hu : IsUnit (ψ (u : ℤ_[p])) := u.isUnit.map _
+    rcases mul_eq_zero.mp hz with h | h
+    · exact hu.ne_zero h
+    · exact hψp (pow_eq_zero_iff'.mp h).1
+  rw [injective_iff_map_eq_zero]
+  intro x hx
+  by_contra hx0
+  have hint : IsIntegral ℤ_[p] x := Algebra.IsIntegral.isIntegral x
+  have hmonic : (minpoly ℤ_[p] x).Monic := minpoly.monic hint
+  have haev : Polynomial.aeval x (minpoly ℤ_[p] x) = 0 := minpoly.aeval ℤ_[p] x
+  have hc0 : (minpoly ℤ_[p] x).coeff 0 ≠ 0 := by
+    intro h0
+    obtain ⟨g, hg⟩ := Polynomial.X_dvd_iff.mpr h0
+    have hgm : g.Monic :=
+      Polynomial.Monic.of_mul_monic_left Polynomial.monic_X (hg ▸ hmonic)
+    have hgne : g ≠ 0 := hgm.ne_zero
+    have hgaev : Polynomial.aeval x g = 0 := by
+      rw [hg, map_mul, Polynomial.aeval_X] at haev
+      rcases mul_eq_zero.mp haev with h | h
+      · exact absurd h hx0
+      · exact h
+    have hlt : g.degree < (minpoly ℤ_[p] x).degree := by
+      rw [hg, mul_comm]
+      exact Polynomial.degree_lt_degree_mul_X hgne
+    exact absurd (minpoly.min ℤ_[p] x hgm hgaev) (not_le.mpr hlt)
+  have hcoeff : ψ ((minpoly ℤ_[p] x).coeff 0) = 0 := by
+    have h1 : φ (Polynomial.aeval x (minpoly ℤ_[p] x)) = 0 := by rw [haev, map_zero]
+    rw [Polynomial.aeval_def, Polynomial.hom_eval₂, hx, ← hψ] at h1
+    simpa [Polynomial.eval₂_at_zero] using h1
+  exact hc0 (hψinj (by simpa using hcoeff))
+
+/-- **The cyclotomic determinant, by Chebotarev density** (PROVEN
+2026-07-26 — the determinant analogue of the trace-density half
+`trace_eq_of_charFrob_eq` above, and the CITATION-NARROWING step of the
+`p`-new flat leaf below): a 2-dimensional continuous `ℚ̄_p`-representation
+of `Γ ℚ` whose Frobenius characteristic polynomials have CONSTANT
+COEFFICIENT `q` away from a finite set of places has determinant equal
+to the `p`-adic cyclotomic character at EVERY group element — the
+weight-2 normalization, in the exact spelling of `IsHardlyRamified.det`.
+
+This is what the Hecke-polynomial hypothesis of the leaf below buys
+about `τ` globally, and it is proven here rather than left inside the
+citation. Assembly, following the trace-density template verbatim: both
+sides are continuous (`GaloisRep.det` is a `ContinuousMonoidHom` by
+`IsModuleTopology.continuous_det`; the cyclotomic side is mathlib's
+`cyclotomicCharacter.continuous` pushed along the continuous structure
+map `continuous_algebraMap_padicInt_algebraicClosure`), so the agreement
+locus is CLOSED; both sides are class functions (a determinant is
+multiplicative, and the cyclotomic character lands in the abelian group
+`ℤ_[p]ˣ`), so the locus is conjugation-invariant; and it contains the
+global Frobenius elements away from `S ∪ {p}`, where the constant
+coefficient of a rank-2 characteristic polynomial is the determinant
+(`charpoly_eq_quadratic_of_finrank_two`, `coeff_zero_quadratic`) and
+`cyclotomicCharacter_globalFrob` evaluates the character to `q`. Those
+conjugates are DENSE (`dense_conjClasses_globalFrob`), so the locus is
+everything. The place of `p` must be removed because
+`cyclotomicCharacter_globalFrob` is false there — the cyclotomic
+character is ramified at `p`. -/
+theorem det_eq_cyclotomicCharacter_of_charFrob_coeff_zero
+    {V₁ : Type*} [AddCommGroup V₁] [Module (AlgebraicClosure ℚ_[p]) V₁]
+    [Module.Finite (AlgebraicClosure ℚ_[p]) V₁]
+    [Module.Free (AlgebraicClosure ℚ_[p]) V₁]
+    (hfr : Module.finrank (AlgebraicClosure ℚ_[p]) V₁ = 2)
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) V₁}
+    {S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (h : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 0 =
+        (q : AlgebraicClosure ℚ_[p]))
+    (γ : Field.absoluteGaloisGroup ℚ) :
+    LinearMap.det (τ γ) =
+      algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
+          ℤ_[p]) := by
+  classical
+  set Sp : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+    insert hp.out.toHeightOneSpectrumRingOfIntegersRat S with hSp
+  -- the two sides agree at the global Frobenius elements away from `Sp`
+  have hFrob : ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ Sp →
+      LinearMap.det (τ (globalFrob v)) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+            (globalFrob v).toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) := by
+    intro v hv
+    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
+    have hqp : q ≠ p := by
+      rintro rfl
+      exact hv (by rw [hSp]; exact Finset.mem_insert_self _ _)
+    have hqS : hq.toHeightOneSpectrumRingOfIntegersRat ∉ S := fun hmem =>
+      hv (by rw [hSp]; exact Finset.mem_insert_of_mem hmem)
+    have hc0 := h q hq hqS
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+      charpoly_eq_quadratic_of_finrank_two hfr, coeff_zero_quadratic] at hc0
+    rw [hc0, cyclotomicCharacter_globalFrob hq hqp, map_natCast]
+  -- both sides are continuous, so the agreement locus is closed …
+  have hcL : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
+      LinearMap.det (τ γ) :=
+    (ContinuousMonoidHom.continuous_toFun τ.det).congr fun _ => rfl
+  have hcR : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
+      algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
+          ℤ_[p]) :=
+    ((continuous_algebraMap_padicInt_algebraicClosure (ℓ := p)).comp
+      (Units.continuous_val.comp
+        (cyclotomicCharacter.continuous p ℚ (AlgebraicClosure ℚ)))).congr
+      fun _ => rfl
+  have hclosed : IsClosed {γ : Field.absoluteGaloisGroup ℚ |
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p])} :=
+    isClosed_eq hcL hcR
+  -- … and it is conjugation-invariant, hence contains the dense set of
+  -- Frobenius conjugates
+  have hsub : {x : Field.absoluteGaloisGroup ℚ |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ Sp ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} ⊆
+      {γ : Field.absoluteGaloisGroup ℚ |
+        LinearMap.det (τ γ) =
+          algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+            ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+              ℤ_[p]ˣ) : ℤ_[p])} := by
+    rintro x ⟨v, hv, g, rfl⟩
+    simp only [Set.mem_setOf_eq]
+    -- the determinant is a class function …
+    have hdetconj : LinearMap.det (τ (g * globalFrob v * g⁻¹)) =
+        LinearMap.det (τ (globalFrob v)) := by
+      have h1 : τ.det g * τ.det g⁻¹ = 1 := by
+        rw [← map_mul, mul_inv_cancel, map_one]
+      show τ.det (g * globalFrob v * g⁻¹) = τ.det (globalFrob v)
+      rw [map_mul, map_mul]
+      calc τ.det g * τ.det (globalFrob v) * τ.det g⁻¹
+          = τ.det (globalFrob v) * (τ.det g * τ.det g⁻¹) := by ring
+        _ = τ.det (globalFrob v) := by rw [h1, mul_one]
+    -- … and so is the cyclotomic character, which lands in an abelian group
+    have hcycconj : ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          (g * globalFrob v * g⁻¹).toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) =
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          (globalFrob v).toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) := by
+      have hmul : ∀ a b : Field.absoluteGaloisGroup ℚ,
+          (a * b).toRingEquiv = a.toRingEquiv * b.toRingEquiv := fun _ _ => rfl
+      have hinv : ∀ a : Field.absoluteGaloisGroup ℚ,
+          (a⁻¹).toRingEquiv = (a.toRingEquiv)⁻¹ := fun _ => rfl
+      rw [hmul, hmul, hinv, map_mul, map_mul, map_inv]
+      rw [mul_comm, ← mul_assoc, inv_mul_cancel, one_mul]
+    rw [hdetconj, hcycconj]
+    exact hFrob v hv
+  have hγ : γ ∈ closure {x : Field.absoluteGaloisGroup ℚ |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ Sp ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} := by
+    rw [(dense_conjClasses_globalFrob (K := ℚ) Sp).closure_eq]
+    trivial
+  exact closure_minimal hsub hclosed hγ
+
+/-! #### Serre's peu-ramifiée / très-ramifiée dichotomy at `p`
+
+(Built 2026-07-26, seventh owner of
+`exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`, as
+the INFRASTRUCTURE target that leaf's SPLIT AUDIT names.)
+
+The SPLIT AUDIT of `not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero`
+records that the separating invariant of the at-`p` flatness question is
+neither the local SHAPE nor any Frobenius datum but the EXTENSION CLASS:
+Serre's unit class `u` (peu ramifiée, flat) against a Tate parameter `q`
+with `v_p(q) ≢ 0` (très ramifiée, not flat) — intrinsically Fontaine's
+crystalline subgroup `H¹_f ⊆ H¹(G_p, −)` — and that formalizing it needs
+"either a Barsotti–Tate/crystalline predicate or the Tate parameter with
+local class field theory and the Kummer sequence". This block builds the
+SECOND of those two alternatives, in the shape Serre actually uses it
+(Duke 1987, §2.8 Prop. 4 and §2.9 Prop. 5(ii)):
+
+* the predicate `IsPeuRamifiee n q` on `Fˣ` for a discretely valued
+  field `F`, namely `q ∈ 𝒪ᶠˣ · (Fˣ)ⁿ`;
+* its valuation criterion `dvd_log_valuation_of_isPeuRamifiee`
+  (`n ∣ v(q)`), PROVEN; and
+* the tower consequence `exists_forall_not_isPeuRamifiee_of_valuation_ne_one`,
+  PROVEN: a parameter of NONZERO valuation is très ramifiée at every
+  sufficiently large level `bⁿ`. This is the exact arithmetic that the
+  TOWER AUDIT of the consumer describes in prose ("a toric reduction has
+  `v_p(q) ≠ 0`, so only FINITELY many levels of the tower can be flat")
+  and it is now a proof term rather than part of the citation.
+
+The two remaining sorried leaves below are then, respectively, the pure
+LOCAL assertion (Serre/Raynaud) and the pure AUTOMORPHIC-TO-GALOIS
+assertion (Saito/Tilouine). Neither mentions the other's vocabulary,
+which is the point of the split.
+-/
+
+section PeuRamifiee
+
+variable {F : Type*} [Field F] [Valued F (WithZero (Multiplicative ℤ))]
+
+/-- **Peu ramifiée at exponent `n`** (Serre, *Sur les représentations
+modulaires de degré 2 de `Gal(ℚ̄/ℚ)`*, Duke Math. J. 54 (1987), §2.8):
+an element `q` of a discretely valued field `F` is *peu ramifiée* at
+exponent `n` when it is a unit times an `n`-th power,
+`q ∈ 𝒪_F^× · (F^×)^n`; the extension `F(q^{1/n})/F` is then the one
+Serre calls peu ramifiée, and its negation is *très ramifiée*.
+
+This is a DEFINITION and not a leaf; the arithmetic content is the
+proven `dvd_log_valuation_of_isPeuRamifiee` just below. Only the
+direction "peu ramifiée ⟹ `n ∣ v(q)`" is needed here, so the converse
+(true, by `q = (q π^{-v(q)}) · (π^{v(q)/n})^n`) is deliberately not
+stated. -/
+def IsPeuRamifiee (n : ℕ) (q : Fˣ) : Prop :=
+  ∃ u w : Fˣ, Valued.v (u : F) = 1 ∧ q = u * w ^ n
+
+/-- **The valuation criterion for peu ramifiée** (PROVEN): if `q` is a
+unit times an `n`-th power then `n` divides the valuation of `q`. The
+valuation of a unit is trivial and `v` is multiplicative, so
+`v q = (v w)^n`; passing to `WithZero.log` turns that into
+`v(q) = n · v(w)` in `ℤ`. -/
+theorem dvd_log_valuation_of_isPeuRamifiee {n : ℕ} {q : Fˣ}
+    (h : IsPeuRamifiee n q) :
+    (n : ℤ) ∣ WithZero.log (Valued.v (q : F)) := by
+  obtain ⟨u, w, hu, rfl⟩ := h
+  refine ⟨WithZero.log (Valued.v (w : F)), ?_⟩
+  rw [Units.val_mul, map_mul, hu, one_mul, Units.val_pow_eq_pow_val, map_pow,
+    WithZero.log_pow, nsmul_eq_mul]
+
+/-- **A nontrivial valuation has nonzero logarithm** (PROVEN): the
+valuation of a unit of `F` is nonzero in `ℤᵐ⁰`, so `exp ∘ log` is the
+identity on it and `log` can only vanish when the valuation is `1`. -/
+theorem log_valuation_ne_zero_of_valuation_ne_one {q : Fˣ}
+    (hq : Valued.v (q : F) ≠ 1) : WithZero.log (Valued.v (q : F)) ≠ 0 := by
+  intro h
+  have hq0 : Valued.v (q : F) ≠ 0 := by
+    simp [(Valuation.ne_zero_iff (Valued.v (R := F))).mpr q.ne_zero]
+  exact hq (((WithZero.exp_log hq0).symm.trans (by rw [h])).trans WithZero.exp_zero)
+
+/-- **The tower consequence: a parameter of nonzero valuation is très
+ramifiée at every sufficiently large level** (PROVEN — the arithmetic
+core of the at-`p` flatness obstruction, and the step the consumer's
+TOWER AUDIT previously carried only in prose).
+
+If `1 < b` and `v(q) ≠ 0`, then there is a threshold `n₀` beyond which
+`q` is très ramifiée at exponent `bⁿ`: `bⁿ ∣ v(q)` would force
+`bⁿ ≤ |v(q)|`, while `n₀ := |v(q)|` already gives `|v(q)| ≤ n < bⁿ`.
+So only FINITELY many levels of the `b`-adic tower can be peu ramifiée,
+which is exactly why the at-`p` obstruction lives in the infinite tower
+and not at any single level. -/
+theorem exists_forall_not_isPeuRamifiee_of_valuation_ne_one {b : ℕ} (hb : 1 < b)
+    {q : Fˣ} (hq : Valued.v (q : F) ≠ 1) :
+    ∃ n₀ : ℕ, ∀ n : ℕ, n₀ ≤ n → ¬ IsPeuRamifiee (b ^ n) q := by
+  set m : ℤ := WithZero.log (Valued.v (q : F)) with hm
+  have hm0 : m ≠ 0 := log_valuation_ne_zero_of_valuation_ne_one hq
+  refine ⟨m.natAbs, fun n hn hpeu => ?_⟩
+  have hdvd : ((b ^ n : ℕ) : ℤ) ∣ m := dvd_log_valuation_of_isPeuRamifiee hpeu
+  have hle : ((b ^ n : ℕ) : ℤ) ≤ |m| :=
+    Int.le_of_dvd (abs_pos.mpr hm0) ((dvd_abs _ _).mpr hdvd)
+  have hlt : n < b ^ n := Nat.lt_pow_self hb
+  rw [Int.abs_eq_natAbs] at hle
+  have hle' : ((b ^ n : ℕ) : ℤ) ≤ (m.natAbs : ℤ) := hle
+  omega
+
+end PeuRamifiee
+
+include hpodd in
+/-- **Serre's local criterion: the points of a finite flat group scheme
+over `ℤ_p` generate only PEU RAMIFIÉE Kummer extensions** (sorry leaf —
+the LOCAL half of the 2026-07-26 KUMMER CUT of
+`exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`
+below; Serre, *Sur les représentations modulaires de degré 2 de
+`Gal(ℚ̄/ℚ)`*, Duke Math. J. 54 (1987), §2.8 Prop. 4 and §2.9
+Prop. 5(ii), resting on Raynaud, *Schémas en groupes de type
+`(p, …, p)`*, Bull. SMF 102 (1974), th. 3.3.3 / cor. 3.4.4, and on
+Fontaine's ramification bound).
+
+Let `σ₀` be ANY Galois representation of `G_ℚ` on a finite free module
+over a coefficient ring `A` killed by `pⁿ`, and suppose `σ₀` has a
+finite flat prolongation at `p` — i.e. its underlying `G_{ℚ_p}`-module
+is the group of `ℚ̄_p`-points of a finite flat group scheme over
+`ℤ_p`. If some `pⁿ`-th root `r` of `q ∈ ℚ_pˣ` is fixed by every element
+of the kernel of `σ₀|_{G_p}` — that is, `ℚ_p(q^{1/pⁿ}) ⊆ ℚ_p(σ₀)`,
+the field cut out by the representation — then `q` is PEU RAMIFIÉE at
+exponent `pⁿ`.
+
+WHY THIS IS THE RIGHT SHAPE. Fontaine's bound says the upper-numbering
+ramification of `ℚ_p(G)` vanishes above `e(n + 1/(p−1))`, which for
+`e = 1` and `p` odd (`hpodd`; at `p = 2` the range `e = 1 < p − 1`
+closes and one needs Breuil/Fontaine–Laffaille instead) is exactly the
+bound that a très ramifiée `ℚ_p(q^{1/pⁿ})` violates. The EXPONENT and
+the ROOT LEVEL must MATCH: for `E_q` a Tate curve one has
+`ℚ_p(E[pⁿ]) = ℚ_p(μ_{pⁿ}, q^{1/pⁿ})`, killed by `pⁿ`, and the
+criterion `pⁿ ∣ v_p(q)` is stated at that same `n` — which is why
+`hkill` is a hypothesis here rather than an afterthought, and why the
+consumer below decouples the coefficient LEVEL `𝔪 ^ k` from the
+EXPONENT `n`.
+
+NON-VACUITY: the hypotheses are inhabited — at `n = 0` by any trivial
+coefficient ring, and genuinely by `σ₀ = ` the mod-`pⁿ` Tate module of
+a Tate curve with `pⁿ ∣ v_p(q)`, whose flat prolongation is the in-tree
+PROVEN `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction`.
+Nothing in the statement is a restatement of its consumer: it mentions
+no modular form, no Hecke datum and no coefficient ring of the
+deformation problem, only a Galois module, a flat prolongation and a
+Kummer radical. -/
+theorem isPeuRamifiee_of_hasFlatProlongationAt_of_natCast_pow_eq_zero
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
+    [Module.Free A W]
+    (σ₀ : GaloisRep ℚ A W) {n : ℕ} (hkill : ((p ^ n : ℕ) : A) = 0)
+    (hflat : σ₀.HasFlatProlongationAt 𝔭ᵥ)
+    (q : (ℚᵖᵥ)ˣ) (r : AlgebraicClosure ℚᵖᵥ)
+    (hr : r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ))
+    (hfix : ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+      σ₀.toLocal 𝔭ᵥ σ = 1 → σ r = r) :
+    IsPeuRamifiee (p ^ n) q :=
+  sorry
+
+include hpodd in
+/-- **The Tate parameter of a `p`-new weight-2 eigensystem**
+(sorry leaf — the AUTOMORPHIC half of the 2026-07-26 KUMMER CUT of
+`exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`
+below; Tilouine, *Hecke algebras and the Gorenstein property*, in
+Cornell–Silverman–Stevens §5 Step 1(a), for `p ∥ M`; Saito, *Modular
+forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997), for
+local–global compatibility at `p` in general).
+
+Under exactly the hypotheses of the consumer below, the restriction of
+`τ ≅ ρ ⊗ ℚ̄_p` to `G_p` is the Tate module of a curve with purely
+TORIC reduction, so there is a Tate parameter `q ∈ ℚ_pˣ` with
+
+* `v_p(q) ≠ 0` (spelled `Valued.v q ≠ 1`: toric, not potentially good);
+* at every EXPONENT `n` at least a given threshold, a LEVEL `k` of the
+  `𝔪`-adic tower at which the coefficient ring `R ⧸ 𝔪 ^ k` is killed by
+  `pⁿ` and the field cut out by `ρ ⊗ R ⧸ 𝔪 ^ k` contains a `pⁿ`-th
+  root of `q`.
+
+WHY THE TWO INDICES ARE DECOUPLED (the point that makes this leaf
+FAITHFUL rather than convenient). The consumer's tower is indexed by
+the IDEALS `𝔪 ^ k`, but Serre's criterion is indexed by the EXPONENT
+`pⁿ` of the module, and the two indices are NOT interchangeable when
+`R ≠ ℤ_p`: demanding both `pⁿ ∈ 𝔪 ^ k` (so that the level-`k` module is
+killed by `pⁿ`) and `𝔪 ^ k ⊆ pⁿ R` (so that the level-`k` field is at
+least as large as the mod-`pⁿ` field) would force `𝔪 ^ k = pⁿ R`, which
+holds only for `R = ℤ_p`. What is true, and what this leaf asserts, is
+that `n` may be taken to be the EXPONENT of `R ⧸ 𝔪 ^ k` — the least `n`
+with `pⁿ ∈ 𝔪 ^ k`: writing the lattice as `T ⊗_{ℤ_p} R` with `T` the
+`ℤ_p`-Tate module, `T ⊗ R ⧸ 𝔪 ^ k` has the SAME kernel as `T ⧸ pⁿ T`,
+so its field is `ℚ_p(E[pⁿ]) = ℚ_p(μ_{pⁿ}, q^{1/pⁿ})` on the nose. And
+that exponent tends to infinity with `k`, because `(p : R) ≠ 0`
+(`hpne`) and `R` is a Noetherian local domain, which is why the
+threshold `n₀` can be met. Stating the leaf with the two indices
+separated is what keeps it a THEOREM of the classical theory instead of
+a coincidence of `R = ℤ_p`.
+
+SOUNDNESS: inherited from the consumer's audit (`p = 11`, `M = 11`, the
+weight-2 newform of level `11`, `E = X₀(11)`), whose Tate parameter has
+`v_p(q) = 1 ≠ 0`.
+
+WHAT IS STILL CITED, AND WHAT IS NO LONGER. This leaf carries the
+automorphic-to-Galois bridge — the étale cohomology of modular curves
+at `p` (Deligne–Rapoport models, Tilouine's toric-reduction
+computation, Saito's local–global compatibility) — which the fourth and
+fifth owners' terminality audits identify as the genuinely missing
+geometry, absent from this pin and from `~/cs/FLT`. It NO LONGER
+carries Serre's local criterion (now the separate local leaf above) nor
+the tower arithmetic (now proven).
+
+INHERITED COEFFICIENT-RING FACTS. `hpne`, `hpmem`, `hkfin` and `hlat`
+are passed down unchanged from the consumer, where the sixth owner's
+COEFFICIENT-RING NARROWING turned each into a proof term
+(`natCast_prime_mem_maximalIdeal_of_moduleFinite`,
+`finite_quotient_maximalIdeal_pow_of_natCast_ne_zero`,
+`injective_algebraMap_algebraicClosure_of_moduleFinite`). They belong
+HERE rather than at the consumer, because they are exactly what the
+cited automorphic theory assumes about its coefficient ring: `hpmem`
+and `hpne` are what make the exponent of `R ⧸ 𝔪 ^ k` finite and
+unbounded in `k` — the "and that exponent tends to infinity with `k`"
+step above — `hkfin` is what keeps every level finite (so that
+`HasFlatProlongationAt`'s finiteness is not satisfied for a merely
+cardinal reason), and `hlat` is what makes "`ρ` is an `R`-lattice model
+of `τ`" a statement about a genuine lattice. -/
+theorem exists_tateParameter_of_weightTwoEigenform_pNew
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
+    (hpne : (p : R) ≠ 0)
+    (hpmem : (p : R) ∈ IsLocalRing.maximalIdeal R)
+    (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
+    ∃ q : (ℚᵖᵥ)ˣ, Valued.v (q : ℚᵖᵥ) ≠ 1 ∧
+      ∀ n₀ : ℕ, ∃ k n : ℕ, n₀ ≤ n ∧
+        ((p ^ n : ℕ) : R ⧸ (IsLocalRing.maximalIdeal R ^ k)) = 0 ∧
+        ∃ r : AlgebraicClosure ℚᵖᵥ,
+          r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ∧
+          ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+            (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).toLocal 𝔭ᵥ σ = 1 →
+              σ r = r :=
+  sorry
+
+include hpodd in
+/-- **Serre's flat-level criterion for a `p`-new eigensystem: SOME FINITE
+LEVEL of the `p`-adic tower admits no flat prolongation** (PROVEN
+2026-07-26 by the KUMMER CUT over the two leaves just above; the record
+below, from "WHY THE PIN MOVED HERE" on, is what the six previous owners
+left and is preserved verbatim, because it is still the authority on
+this node's literature content — see the KUMMER CUT note at the END of
+this docstring for what changed. Formerly a sorry node —
+the residual literature leaf of the at-`p` conductor cut after the
+2026-07-25 TOWER CUT. The sharpened citations, the TOWER audit, the
+SPLIT audit and the two INFRASTRUCTURE audits all live in the docstring
+of the consumer
+`not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero`
+below, which is now PROVEN from this leaf; they are not repeated here).
+
+Under exactly the consumer's hypotheses — `g` a weight-2 eigenform of
+level `M ≥ 1` with `p ∣ M`, `p`-NEW in the degeneracy-level spelling
+`hpnew`; `τ` IRREDUCIBLE and matching `g`'s Hecke polynomials away from
+a finite set; `ρ` an `R`-lattice model of `τ` through `e`, `he`; and
+`(p : R) ≠ 0` — there is a LEVEL `k` at which the reduction
+`ρ ⊗ R ⧸ 𝔪 ^ k` has NO finite flat prolongation at `p`.
+
+WHY THE PIN MOVED HERE (the TOWER CUT, 2026-07-25, fourth owner). The
+consumer's TOWER AUDIT records that flatness at a SINGLE level is
+compatible with the Steinberg configuration — Serre, Duke 1987 §2.9
+Prop. 5(ii) makes the `p`-division points of a Tate curve flat exactly
+when `p ∣ v_p(q_E)`, and the in-tree PROVEN
+`WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction` exhibits an
+instance — so the content lives in the INFINITE tower and in nothing
+less. But Serre's criterion is itself LEVEL-BY-LEVEL: at level `p ^ k` it
+reads `p ^ k ∣ v_p(q_E)`, and a toric reduction has `v_p(q_E) ≠ 0`, so
+only FINITELY many levels can be flat. This leaf is that statement in
+existence form. It is also the shape the tree's own flat-obstruction
+idiom consumes: every in-tree consequence of flatness is extracted ONE
+LEVEL AT A TIME out of the Hopf-algebra package delivered by
+`GaloisRep.IsFlatAt.cond (𝔪 ^ k)` — see `Family.lean`'s per-level
+Raynaud trace congruence `trace_sub_one_add_cyclotomicCharacter_mem_of_hopf_package`
+— and never from the tower as a whole.
+
+WHAT THE CUT BUYS, AND WHAT IT DOES NOT (stated plainly so that no
+reader over-reads it). It BUYS the tower bookkeeping: the openness of
+the level ideals, proven just above out of `hpne` — a hypothesis that
+was otherwise UNUSED by the consumer and justified only in prose — so
+the passage from "some finite level fails" to "the representation is not
+flat" is now a proof term. It does NOT reduce the literature burden by
+one line: this leaf and its consumer are in fact EQUIVALENT, since every
+open ideal of `R` contains some `𝔪 ^ k` (mathlib's
+`IsLocalRing.isOpen_iff_finite_quotient`), so the citation — Saito 1997
+local–global compatibility at `p`, plus Raynaud/Fontaine through Serre's
+Kummer-class criterion — is carried over undiminished. The cut relocates
+that citation to the finite level at which the criterion is actually
+stated in the source, which is where any future proof must start.
+
+NARROWED 2026-07-26 (fifth owner) BY THE CYCLOTOMIC DETERMINANT `hdet`.
+The leaf now RECEIVES the weight-2 normalization `det τ = χ_cyc` at
+every element of `G_ℚ`, instead of being expected to extract it from
+the Frobenius data itself. That hypothesis is DERIVABLE — it is proven
+in the consumer by the new
+`det_eq_cyclotomicCharacter_of_charFrob_coeff_zero` above, the
+determinant analogue of the trace-density half `trace_eq_of_charFrob_eq`
+— so the statement is strictly WEAKER than before and nothing
+downstream changes; what moves is the Chebotarev-density step of the
+classical argument, out of the citation and into a proof term. It is
+the exact hypothesis the classical local theory consumes: Raynaud's
+classification and Serre's Kummer-class criterion are applied to
+representations of determinant `χ_cyc` (this is what "weight 2" means
+locally, and it is the shape in which the tree's own flat machinery
+takes it — `IsHardlyRamified.det`, consumed by `Family.lean`'s per-level
+Raynaud trace congruence). Note the density argument must delete the
+place of `p` from the agreement set, since `χ_cyc` is ramified there;
+that is harmless, a finite set stays finite.
+
+TERMINALITY, RE-AUDITED (2026-07-25, fourth owner, independently of the
+two INFRASTRUCTURE audits below). Those audits are confirmed: there is
+no crystalline/Barsotti–Tate predicate, no Fontaine functor and no
+higher ramification filtration on this pin. Two further findings, both
+new. FIRST: the tree contains NO flatness obstruction of any kind —
+every in-tree lemma about `GaloisRep.IsFlatAt` is a CONSTRUCTOR
+(`isFlatAt_of_dvr_package`, `hasFlatProlongationAt_of_hopf_package`,
+`hasFlatProlongationAt_of_subsingleton`, the base-change and `ULift`
+transports), and the one lemma that extracts arithmetic from a flat
+prolongation, `Family.lean`'s per-level Raynaud trace congruence, yields
+`tr ρ(σ) = 1 + χ_cyc(σ)` on inertia — which the STEINBERG configuration
+`(χ_cyc c, ∗ ; 0, c)` SATISFIES. So the sharpest obstruction the tree
+owns cannot refute flatness here, confirming the SPLIT AUDIT's claim by
+computation rather than by search. SECOND, and decisive: this leaf's
+hypothesis is AUTOMORPHIC (`hpnew`, a statement about `q`-expansions of
+modular forms) while its conclusion is GALOIS-THEORETIC, so the bridge
+is local–global compatibility at `p` — a theorem about the étale
+cohomology of modular curves (Deligne–Rapoport models of `X₀(Mp)`,
+Tilouine's toric-reduction computation, Saito 1997), NOT a piece of
+missing infrastructure that a deformation-theory owner could supply.
+Building crystalline theory would therefore NOT close this leaf; the
+missing dependency is the geometry of modular curves at `p`. It is
+recorded here so that no fifth owner spends the cycle rediscovering it.
+
+TERMINALITY, FIFTH AUDIT (2026-07-26). The fourth owner's two findings
+are confirmed, and each is SHARPENED by one degree.
+
+* The in-tree Raynaud machinery is not merely insufficient here — it is
+  INAPPLICABLE. Both `Family.lean`'s per-level congruence
+  `trace_sub_one_add_cyclotomicCharacter_mem_of_hopf_package` and its
+  Krull-assembled consequence
+  `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+  carry the hypothesis `hchar : ∀ g, (ρ g).charpoly.map = (X − χ₁ g)(X
+  − χ₂ g)` with `χ₁, χ₂` CONTINUOUS and MULTIPLICATIVE. That is global
+  reducibility: it forces `tr ρ = χ₁ + χ₂`, hence `ρ^ss ≅ χ₁ ⊕ χ₂`, which
+  `hirr` forbids outright. They also take `IsHardlyRamified`, whose
+  `isFlat` field is precisely the thing this leaf must refute. So the
+  fourth owner's computation (that the Steinberg configuration satisfies
+  the trace congruence) is not even reached — no instantiation of that
+  machinery exists at these hypotheses. Its Krull-intersection assembly
+  is nevertheless the right TEMPLATE for a future obstruction, and it is
+  where the "infinite tower ⇒ exact identity on inertia" step is already
+  proven.
+* Chebotarev density IS available on this pin, contrary to the note at
+  the head of the `Interface.lean` conductor section: `Chebotarev.lean`
+  proves `dense_conjClasses_globalFrob`, and this file already derives
+  `trace_eq_of_charFrob_eq` and `exists_linearEquiv_of_charFrob_eq` from
+  it. That is what made the `hdet` narrowing above possible, and it
+  marks the NEXT available narrowing: the classical argument's
+  identification step — "Chebotarev plus char-0 Brauer–Nesbitt identify
+  `τ` with `ρ_{g₀,λ}`, and `hirr` upgrades it to an isomorphism" — is
+  formalizable here through `exists_linearEquiv_of_charFrob_eq`, once
+  the attached representation is in hand from the existing sorried
+  attachment leaf `exists_galoisRep_charFrob_of_weightTwoNewform`. Doing
+  that would replace `τ, hτ, hirr` in this statement by the attached
+  representation itself, leaving the citation as the pure local
+  assertion about `ρ_{g₀,λ}|_{G_p}` — which is how Saito states it. It
+  needs no new faith, only the transport work.
+
+What no amount of such narrowing removes is the automorphic-to-Galois
+bridge itself (fourth owner's finding 2): every remaining step is a
+theorem about the étale cohomology of modular curves at `p`, absent
+from this pin and from `~/cs/FLT`.
+
+COEFFICIENT-RING NARROWING (2026-07-26, SIXTH owner — the same shape of
+step as the fourth owner's `hpne` and the fifth's `hdet`: a hypothesis
+the cited theorems assume, moved out of the citation and into a proof
+term). Raynaud's and Serre's criteria are stated over a coefficient ring
+which is an ORDER IN A `p`-ADIC FIELD: local, of residue characteristic
+`p`, with finite quotients by the powers of its maximal ideal, and
+sitting inside the `p`-adic representation whose lattice it carries. All
+four of those are DERIVABLE from the standard package `[Algebra ℤ_[p] R]
+[IsDomain R] [Module.Finite ℤ_[p] R] [IsLocalRing R]`, and the leaf now
+RECEIVES them:
+
+* `hpmem : (p : R) ∈ 𝔪` — PROVEN by Nakayama in
+  `natCast_prime_mem_maximalIdeal_of_moduleFinite` above. If `p` were a
+  unit the finitely generated `ℤ_p`-module `R` would satisfy
+  `⊤ ≤ 𝔪 ℤ_[p] • ⊤`, hence vanish.
+* `hkfin : ∀ k, Finite (R ⧸ 𝔪 ^ k)` — PROVEN in
+  `finite_quotient_maximalIdeal_pow_of_natCast_ne_zero` above, from the
+  compactness of `R` (free over `ℤ_p` by torsion-freeness, hence
+  `ℤ_p`-linearly homeomorphic to `ℤ_p ^ d`) through mathlib's
+  `IsLocalRing.isOpen_iff_finite_quotient`.
+* `hlat : Function.Injective (algebraMap R ℚ̄_p)` — PROVEN in
+  `injective_algebraMap_algebraicClosure_of_moduleFinite` above, by the
+  minimal polynomial of a kernel element over `ℤ_p`. This is what makes
+  "`ρ` is an `R`-LATTICE model of `τ`" a theorem rather than a phrase.
+
+As with `hdet`, the statement is thereby strictly WEAKER than before and
+nothing downstream changes; what moves is the setup of the citation.
+
+NON-VACUITY AUDIT (2026-07-26, sixth owner — and `hkfin` is what
+discharges it). `GaloisRep.HasFlatProlongationAt` demands a bijection
+between the representation space and the `Kᵥᵃˡᵍ`-points of a FINITE
+étale `Kᵥ`-algebra, so it entails that the space is finite. Had some
+level `R ⧸ 𝔪 ^ k` been infinite, the leaf's conclusion would hold at
+that level for a purely CARDINAL reason and this leaf — and with it the
+whole at-`p` conductor cut — would be true while carrying none of the
+arithmetic it is cited for. `hkfin` shows that cannot happen: every
+level is a genuine finite coefficient ring, so every
+`HasFlatProlongationAt` in the tower is a real and satisfiable
+condition, satisfied for instance by the good-reduction packages of
+`Semistable.lean`. The leaf's content is arithmetic, not cardinal.
+
+TERMINALITY, SIXTH AUDIT (2026-07-26). The fifth owner's "NEXT available
+narrowing" — replacing `τ, hτ, hirr` by the attached representation
+`ρ_{g₀,λ}` through `exists_linearEquiv_of_charFrob_eq` — was examined
+and is CIRCULAR; it is recorded here so that a seventh owner does not
+spend the cycle on it. The attached representation is produced by
+`exists_irreducible_galoisRep_charFrob_of_weightTwoNewform`, whose
+CONCLUSION is precisely "an irreducible `GaloisRep` whose Frobenius
+characteristic polynomials are `g₀`'s Hecke polynomials away from a
+finite set" — that is, `hτ` and `hirr` verbatim. Restating the leaf for
+it would therefore prove `X` from `X`. The only content in the move is
+the change of carrier `g ↝ g₀` from eigenform to NEWFORM, and the ROUTE
+AUDIT of the consumer already rejects that as a verbatim restatement of
+the downstream PROVEN
+`weightTwoNewform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`.
+Confirmed independently: the carriers `EichlerShimuraPackage` and
+`ModularJacobianPackage` behind the attachment leaf carry NO local-`G_v`
+data (COORDINATION note of
+`exists_weightTwoEigenform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`
+below), so the move would not hand a future prover the Deligne–Rapoport
+geometry either. The SPLIT AUDIT's recorded target — a
+crystalline/Barsotti–Tate predicate, or the Tate parameter with local
+class field theory and the Kummer sequence — remains the only route, and
+it is an infrastructure build, not a re-cut of this leaf.
+
+FAITHFULNESS RE-AUDIT (2026-07-26, sixth owner; the leaf stands as
+stated). The obvious degeneracy — a coefficient module `V` on which the
+level reductions vanish, e.g. `V` a `ℚ_p`-vector space over `R = ℤ_p`,
+which would make every `ρ.baseChange (R ⧸ 𝔪 ^ k)` subsingleton and hence
+flat by `hasFlatProlongationAt_of_subsingleton` — is IMPOSSIBLE here:
+`GaloisRep.baseChange` carries `[Module.Finite R V] [Module.Free R V]`
+in its own binders, so `V` is finite free and `e` pins its rank at `2`.
+The companion degeneracy on the ring side — `𝔪 ^ k` stationary, so that
+the tower has only finitely many distinct levels — is excluded by
+`hpne` together with `hpmem`: `p ∈ 𝔪` and `p ≠ 0` in the Noetherian
+local domain `R` make `⋂ 𝔪 ^ k = 0` by Krull, so the levels genuinely
+separate points.
+
+SOUNDNESS: inherited verbatim from the consumer's SOUNDNESS AUDIT
+(`p = 11`, `M = 11`, the weight-2 newform of level `11`), whose witness
+has `v_p(q_E) = 1`, not divisible by `11`, and therefore already fails
+at the FIRST level `k = 1`.
+
+KUMMER CUT (2026-07-26, seventh owner — what this node now IS). The
+node is PROVEN, over the SPLIT AUDIT's own named infrastructure target
+rather than around it. Three pieces, in the order the proof uses them:
+
+1. `exists_tateParameter_of_weightTwoEigenform_pNew` (sorry leaf, the
+   AUTOMORPHIC half): the `p`-new eigensystem has a Tate parameter `q`
+   of nonzero valuation, together with, at every exponent threshold, a
+   level `k` of the `𝔪`-adic tower whose coefficient ring is killed by
+   `pⁿ` and whose cut-out field contains `q^{1/pⁿ}`. This carries the
+   automorphic-to-Galois bridge — Tilouine's toric reduction, Saito's
+   local–global compatibility — which the fourth and fifth owners'
+   audits identify as the genuinely missing geometry.
+2. `exists_forall_not_isPeuRamifiee_of_valuation_ne_one` (PROVEN): a
+   parameter of nonzero valuation is TRÈS RAMIFIÉE at every
+   sufficiently large exponent `pⁿ`. This is the TOWER AUDIT's prose
+   ("only FINITELY many levels can be flat") turned into a proof term.
+3. `isPeuRamifiee_of_hasFlatProlongationAt_of_natCast_pow_eq_zero`
+   (sorry leaf, the LOCAL half): a finite flat prolongation at `p` of a
+   module killed by `pⁿ` forces every Kummer radical inside its field
+   to be PEU RAMIFIÉE. This is Serre Duke 1987 §2.8 Prop. 4 / §2.9
+   Prop. 5(ii) over Raynaud and Fontaine's ramification bound.
+
+WHAT THE CUT DOES AND DOES NOT DO. It does NOT weaken the fifth
+owner's terminality finding: the automorphic-to-Galois bridge survives
+intact, in leaf 1, and no piece of it has been proven here. What it
+DOES is make the SPLIT AUDIT's separating invariant — the extension
+class, Serre's `u` against `q` with `v_p(q) ≢ 0` — an object in this
+development rather than a phrase in a docstring: `IsPeuRamifiee` is now
+a definition, its valuation criterion is a theorem, and the two
+citations that were previously fused into one leaf are now separately
+addressable, one purely local and one purely automorphic. The SPLIT
+AUDIT declared the split unavailable *at the level of the local SHAPE*
+— correctly, since the Steinberg and ordinary-crystalline shapes
+coincide — and named the Tate parameter with Kummer theory as the route
+that would work. That is the route taken here.
+
+WHY THE TWO INDICES `k` (level ideal) and `n` (exponent) ARE SEPARATE:
+see leaf 1's docstring. Fusing them would force `𝔪 ^ k = pⁿ R` and so
+silently restrict the statement to `R = ℤ_p`. -/
+theorem exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
+    (hpne : (p : R) ≠ 0)
+    (hpmem : (p : R) ∈ IsLocalRing.maximalIdeal R)
+    (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
+    ∃ k : ℕ,
+      ¬ (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).HasFlatProlongationAt
+        (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat := by
+  -- the Tate parameter of the toric reduction at `p`
+  obtain ⟨q, hq, hlev⟩ :=
+    exists_tateParameter_of_weightTwoEigenform_pNew hpodd hM hpM hg hpnew κ hτ
+      hirr e he hdet hpne hpmem hkfin hlat
+  -- `v_p(q) ≠ 0`, so `q` is très ramifiée at every large enough exponent
+  obtain ⟨n₀, hn₀⟩ :=
+    exists_forall_not_isPeuRamifiee_of_valuation_ne_one hp.out.one_lt hq
+  -- a level of the `𝔪`-adic tower realizing one such exponent
+  obtain ⟨k, n, hle, hkill, r, hr, hfix⟩ := hlev n₀
+  -- flatness there would make `q` peu ramifiée at exponent `p ^ n`
+  exact ⟨k, fun hflat => hn₀ n hle
+    (isPeuRamifiee_of_hasFlatProlongationAt_of_natCast_pow_eq_zero hpodd _ hkill
+      hflat q r hr hfix)⟩
+
 include hpodd in
 /-- **The `p`-new exclusion over an INFINITE `p`-adic flat tower**
-(sorry node — the single residual literature leaf of the at-`p`
-conductor cut, NARROWED 2026-07-25 by the derivable hypothesis
-`hpne : (p : R) ≠ 0`; the assembly below discharges `hpne` and is what
-the level-lowering consumers call): let `g` be a weight-2 eigenform of
+(PROVEN 2026-07-25 by the TOWER CUT — a two-step assembly over the
+finite-level literature leaf
+`exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`
+above, whose docstring carries the cut's rationale and two further
+terminality audits; the second step, added 2026-07-26, DISCHARGES the
+leaf's cyclotomic-determinant hypothesis `hdet` by Chebotarev density
+through `det_eq_cyclotomicCharacter_of_charFrob_coeff_zero`, so the
+weight-2 normalization is now a proof term rather than part of the
+citation; a THIRD step, added 2026-07-26, discharges the leaf's three
+coefficient-ring hypotheses `hpmem`, `hkfin`, `hlat` — residue
+characteristic `p`, finite level quotients and the lattice embedding
+`R ↪ ℚ̄_p` — through
+`natCast_prime_mem_maximalIdeal_of_moduleFinite`,
+`finite_quotient_maximalIdeal_pow_of_natCast_ne_zero` and
+`injective_algebraMap_algebraicClosure_of_moduleFinite` above, so that
+"the coefficient ring is an order in a `p`-adic field", the standing
+setup of the cited Raynaud/Serre criteria, is a proof term too, and the
+leaf's NON-VACUITY is certified rather than assumed; the citations and
+audits below are UNCHANGED and
+remain the authority on this node's literature content. This node WAS
+itself the single residual literature leaf of the at-`p` conductor cut,
+NARROWED 2026-07-25 by the derivable hypothesis `hpne : (p : R) ≠ 0` —
+which the TOWER CUT then turned from a documented caveat into a
+consumed hypothesis, since `hpne` is exactly what makes the level
+ideals `𝔪 ^ k` open; the assembly further below discharges `hpne` and
+is what the level-lowering consumers call): let `g` be a weight-2 eigenform of
 level `M ≥ 1` with `p ∣ M` that is `p`-NEW (`hpnew`, spelled through
 the `p`-old degeneracy levels `M₁ ∣ M / p`); if the IRREDUCIBLE
 representation `τ` matches the Hecke polynomials of `g` away from a
@@ -24368,8 +32247,29 @@ theorem not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero
       e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
     (hpne : (p : R) ≠ 0) :
     ¬ ρ.IsFlatAt
-      (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+      (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat := by
+  -- the weight-2 determinant normalization, PROVEN from `hτ` by Chebotarev
+  -- density: away from `S_τ` the constant coefficient of the Frobenius
+  -- characteristic polynomial is `r`, which is the cyclotomic character
+  have hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]) := by
+    refine det_eq_cyclotomicCharacter_of_charFrob_coeff_zero
+      (Module.finrank_fin_fun (AlgebraicClosure ℚ_[p])) (S := S_τ)
+      fun r hr hrS => ?_
+    rw [hτ r hr hrS, coeff_zero_quadratic]
+  -- the finite level supplied by Serre's level-by-level criterion …
+  intro hflat
+  obtain ⟨k, hk⟩ :=
+    exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew hpodd
+      hM hpM hg hpnew κ hτ hirr e he hdet hpne
+      natCast_prime_mem_maximalIdeal_of_moduleFinite
+      (finite_quotient_maximalIdeal_pow_of_natCast_ne_zero hpne)
+      injective_algebraMap_algebraicClosure_of_moduleFinite
+  -- … is a genuine level of the flat tower, because `hpne` makes `𝔪 ^ k` open
+  exact hk (hflat.cond _ (isOpen_maximalIdeal_pow_of_natCast_ne_zero hpne k))
 
 include hpodd in
 /-- **The `p`-new exclusion: a `p`-new weight-2 eigensystem carries no

@@ -53,7 +53,11 @@ open IsLocalRing
 /-- Monotonicity of ideal powers (mathlib has this only for the
 generic ordered-monoid `pow_le_pow_left'`; spelled out here to keep the
 instance search off the ideal lattice). -/
-theorem Ideal.pow_le_pow_of_le {R : Type*} [CommRing R] {I J : Ideal R}
+-- `_root_.` IS LOAD-BEARING: this sits inside `namespace PowerSeriesAdicComplete`,
+-- and a bare `theorem Ideal.pow_le_pow_of_le` would create a nested
+-- `PowerSeriesAdicComplete.Ideal` namespace that shadows the root `Ideal` for
+-- every `open PowerSeriesAdicComplete` in the tree.
+theorem _root_.Ideal.pow_le_pow_of_le {R : Type*} [CommRing R] {I J : Ideal R}
     (h : I ≤ J) (n : ℕ) : I ^ n ≤ J ^ n := by
   induction n with
   | zero => simp
