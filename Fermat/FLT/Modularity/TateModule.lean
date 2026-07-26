@@ -1722,6 +1722,16 @@ Equivalently, and this is the form in which the literature states it:
 multiplication by `I` is an isogeny of degree `N(I)²`, since it is
 `[N(I)]` up to the `D`-action on a two-dimensional `D`-space.
 
+PIN INVENTORY (verified 2026-07-26 — do not re-survey). There is no
+`AbelianVariety`, no isogeny theory, no theorem of the cube and no
+`degree` of a finite morphism anywhere in mathlib at this pin; the only
+group-scheme material is `Mathlib/AlgebraicGeometry/Group/{Abelian,
+Smooth}.lean`. `~/cs/FLT` carries no abelian-variety material either —
+its nearest files are `KnownIn1980s/EllipticCurves/WeilPairing.lean` and
+`.../TateCurve.lean`, both about elliptic curves over a FIELD, hence
+relative dimension one, whereas `A_x` here has dimension `[D : ℚ]`. So
+neither tree can be mined for this: the rank count has to be built.
+
 WHY THE STATEMENT IS A CARDINALITY AND NOT A FRAME.  Stating the leaf as
 "`A[I]` is free of rank two over `𝒪_D/I`" would be the `n = 1` case of
 its own consumer, and a consumer of a frame has to carry the frame's
@@ -2381,7 +2391,34 @@ degree, no `AbelianVariety`. Supplying that package is what this leaf
 asks for. (The blanket claim in the header of
 `Modularity/AbelianScheme.lean` that the pin has no group-scheme notion
 at all is therefore out of date; the search there predates
-`Mathlib/AlgebraicGeometry/Group/`.) -/
+`Mathlib/AlgebraicGeometry/Group/`.)
+
+THE REDUCTION TO FIBRES IS ALREADY IN THE PIN — start from it rather
+than rediscover it (verified 2026-07-26 by reading
+`Mathlib/AlgebraicGeometry/Morphisms/QuasiFinite.lean`):
+
+  `AlgebraicGeometry.LocallyQuasiFinite.of_fiberToSpecResidueField`
+    `(∀ x, LocallyQuasiFinite (f.fiberToSpecResidueField x)) →`
+    `LocallyQuasiFinite f`
+
+So the informal sentence above — "quasi-finiteness over `S` is exactly
+the fibrewise statement" — is a NAMED LEMMA, and it carries no
+quasi-compactness hypothesis. Once over a field, three further criteria
+apply: `locallyQuasiFinite_iff_isFinite_fiber` (needs `QuasiCompact`,
+which `isProper_mulByNat` supplies),
+`locallyQuasiFinite_iff_isDiscrete_preimage_singleton` and
+`locallyQuasiFinite_iff_finite_preimage_singleton`. That list is
+COMPLETE: the only ways to obtain `LocallyQuasiFinite` at this pin are
+`IsFinite`, `IsImmersion`, composition, base change, the
+`HasRingHomProperty … RingHom.QuasiFinite` affine-local criterion, and
+those fibrewise lemmas.
+
+CONSEQUENCE FOR DISPATCH: what this leaf really asks is the classical
+statement and nothing more — `[n]` on an abelian variety OVER A FIELD
+has finite fibres. Do NOT cut a separate "fibrewise" node out of it:
+the reduction is a single mathlib lemma, so such a node would be a
+repackaging that adds a leaf without moving any mathematics, and the
+theorem of the cube would remain the whole of the residual content. -/
 theorem locallyQuasiFinite_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0) :
     LocallyQuasiFinite (ab.mulByNat n) :=
   sorry
