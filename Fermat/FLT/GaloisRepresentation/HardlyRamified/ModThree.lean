@@ -10147,22 +10147,76 @@ theorem archConv_antitoneOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : �
   exact div_le_div_of_nonneg_right
     (mul_le_mul_of_nonneg_right key (h₂.2.1 u (Set.mem_Ioi.mpr hu))) hu.le
 
-/-- **Continuity of the convolution** (sorry node, stated 2026-07-25 —
-stage (α₂) of the decomposition of `archimedeanGammaProfile_exists`):
+open MeasureTheory Set in
+/-- **Continuity of the convolution** (PROVEN 2026-07-25 — stage (α₂)
+of the decomposition of `archimedeanGammaProfile_exists`):
 `archConv H₁ H₂` is continuous on `(0, ∞)`.
 
-Intended proof: continuity of a parametrized integral by dominated
-convergence (`MeasureTheory.continuousOn_of_dominated` /
-`intervalIntegral.continuous_parametric_integral_of_dominated`-style).
-Fix `0 < τ₀` and work on `[τ₀/2, 2τ₀]`: the integrand is continuous in
-`τ` for each `u` (`h₁.1` at `τ/u > 0`), and is dominated uniformly on
-that interval by `u ↦ H₁(τ₀/(2u))·H₂(u)/u` — antitonicity of `H₁`
-turns the `τ`-interval into a single dominating profile — which is
-integrable by `archConv_integrableOn` at `τ₀/2`. -/
+Proof (continuity of a parametrized integral by dominated
+convergence, `MeasureTheory.continuousAt_of_dominated` applied pointwise
+and upgraded by `ContinuousAt.continuousWithinAt`).  Fix `τ₀ > 0`.  Only
+the LOWER half of the intended neighbourhood is needed — `(τ₀/2, ∞)`,
+an open neighbourhood of `τ₀` — because antitonicity of `H₁` makes the
+dominating function the integrand at the LEFT endpoint:
+
+* *Measurability*: for every `τ > τ₀/2` the integrand is integrable on
+  `(0, ∞)` by `archConv_integrableOn`, whose `.1` is exactly the
+  required `AEStronglyMeasurable` for `volume.restrict (Ioi 0)`.
+* *Domination*: for `τ > τ₀/2` and `u > 0` we have `τ₀/(2u) ≤ τ/u`, so
+  `AntitoneOn H₁` gives `H₁(τ/u) ≤ H₁(τ₀/(2u))`; multiplying by the
+  nonnegative `H₂ u` and dividing by `u > 0` dominates the integrand by
+  `u ↦ H₁(τ₀/(2u))·H₂(u)/u`, and the norm bars come off because the
+  integrand is itself nonnegative there (`h₁.2.1`, `h₂.2.1`).  The
+  dominating function is the integrand at `τ = τ₀/2`, hence integrable
+  by `archConv_integrableOn` again.  Note this single bound serves the
+  whole ray `(τ₀/2, ∞)`, so no upper cutoff `2τ₀` is needed.
+* *Pointwise continuity in `τ`*: for a.e. `u` (namely every `u ∈ (0,∞)`,
+  via `ae_restrict_mem measurableSet_Ioi`), `τ ↦ τ/u` is continuous,
+  `τ₀/u > 0`, and `Ioi 0` is open, so `h₁.1` upgrades to
+  `ContinuousAt H₁ (τ₀/u)` by `ContinuousWithinAt.continuousAt`;
+  compose, multiply by the constant `H₂ u` and divide by the constant
+  `u`. -/
 theorem archConv_continuousOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
     (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂) :
     ContinuousOn (archConv H₁ H₂) (Set.Ioi 0) := by
-  sorry
+  intro τ₀ hτ₀
+  rw [Set.mem_Ioi] at hτ₀
+  refine ContinuousAt.continuousWithinAt ?_
+  have hhalf : (0 : ℝ) < τ₀ / 2 := by linarith
+  -- `(τ₀/2, ∞)` is an open neighbourhood of `τ₀` on which one single
+  -- dominating function works, by antitonicity of `H₁`.
+  have hev : ∀ᶠ τ in nhds τ₀, τ ∈ Ioi (τ₀ / 2) := Ioi_mem_nhds (by linarith)
+  have hmeas : ∀ᶠ τ in nhds τ₀,
+      AEStronglyMeasurable (fun u : ℝ => H₁ (τ / u) * H₂ u / u) (volume.restrict (Ioi (0:ℝ))) := by
+    filter_upwards [hev] with τ hτ
+    exact (archConv_integrableOn hp hq h₁ h₂ (lt_trans hhalf (mem_Ioi.mp hτ))).1
+  have hbound : ∀ᶠ τ in nhds τ₀, ∀ᵐ u ∂(volume.restrict (Ioi (0:ℝ))),
+      ‖H₁ (τ / u) * H₂ u / u‖ ≤ H₁ (τ₀ / 2 / u) * H₂ u / u := by
+    filter_upwards [hev] with τ hτ
+    rw [mem_Ioi] at hτ
+    filter_upwards [ae_restrict_mem measurableSet_Ioi] with u hu
+    rw [mem_Ioi] at hu
+    have hτ0 : (0 : ℝ) < τ := lt_trans hhalf hτ
+    have hH₂u : 0 ≤ H₂ u := h₂.2.1 u (mem_Ioi.mpr hu)
+    have hnn : 0 ≤ H₁ (τ / u) * H₂ u / u :=
+      div_nonneg (mul_nonneg (h₁.2.1 _ (mem_Ioi.mpr (div_pos hτ0 hu))) hH₂u) hu.le
+    rw [Real.norm_of_nonneg hnn]
+    have hτle : τ₀ / 2 ≤ τ := hτ.le
+    have key : H₁ (τ / u) ≤ H₁ (τ₀ / 2 / u) :=
+      h₁.2.2.1 (mem_Ioi.mpr (div_pos hhalf hu)) (mem_Ioi.mpr (div_pos hτ0 hu)) (by gcongr)
+    exact div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_right key hH₂u) hu.le
+  have hcont : ∀ᵐ u ∂(volume.restrict (Ioi (0:ℝ))),
+      ContinuousAt (fun τ : ℝ => H₁ (τ / u) * H₂ u / u) τ₀ := by
+    filter_upwards [ae_restrict_mem measurableSet_Ioi] with u hu
+    rw [mem_Ioi] at hu
+    have hdiv : ContinuousAt (fun τ : ℝ => τ / u) τ₀ := (continuous_id.div_const u).continuousAt
+    have hH₁ : ContinuousAt H₁ (τ₀ / u) :=
+      (h₁.1 _ (mem_Ioi.mpr (div_pos hτ₀ hu))).continuousAt (Ioi_mem_nhds (div_pos hτ₀ hu))
+    have hcomp : ContinuousAt (fun τ : ℝ => H₁ (τ / u)) τ₀ :=
+      ContinuousAt.comp (g := H₁) (f := fun τ : ℝ => τ / u) (x := τ₀) hH₁ hdiv
+    exact (hcomp.mul continuousAt_const).div_const u
+  exact continuousAt_of_dominated hmeas hbound
+    (archConv_integrableOn hp hq h₁ h₂ hhalf) hcont
 
 /-- **Stretched-exponential decay of the convolution** (PROVEN
 2026-07-25 — stage (α₃) of the decomposition of
