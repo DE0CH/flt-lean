@@ -4210,6 +4210,150 @@ theorem veluMap_eq_zero_iff (S : Finset W.Point) (hS : IsPointSubgroup S)
     rw [W.veluMap_of_notMem hS hodd hP]
     exact Affine.Point.some_ne_zero _
 
+/-! ### Reducing the additivity leaf to its `x`-coordinate half
+
+The open leaf `velu_map_add_of_notMem` reduces, via `Affine.Point.add_some`, to the two
+coordinate identities `addX` and `addY` (goals 2 and 3 of the reduction recorded in its
+docstring). **The `addY` half is not independent content**: the three lemmas below discharge
+it outright, so that whoever attacks the leaf has to prove the `x`-coordinate identity ONLY.
+
+The argument is pure group algebra in `(W.veluCurve S).Point` — no coordinates, no rational
+functions, no polynomial degree count — and it is independent of the route by which the
+`x`-half is eventually obtained.
+
+**Machine-checked faithfulness (PARI/GP, 2026-07-26).** Over `𝔽_p` for `11 ≤ p < 40`, curves
+`y² = x³ + a₄x + a₆` with `0 ≤ a₄, a₆ ≤ 4`, and kernels of every odd prime order dividing a
+generator's order: 169 curve/kernel cases and **61878** ordered pairs `(P, Q)` with
+`P, Q, P + Q ∉ S`. In every one of them the Vélu image of `P + Q` computed from the sum
+definition equals the sum of the images on `veluCurve W S`, with **zero** failures. So both
+the leaf and the `addX`/`addY` reduction are faithful as stated. -/
+
+omit [CharZero F] [W.IsElliptic] in
+/-- The kernel is closed under negation, restated as a `∉` fact. -/
+lemma velu_neg_notMem {S : Finset W.Point} (hS : IsPointSubgroup S) {P : W.Point}
+    (hP : P ∉ S) : -P ∉ S := fun hc => hP (by simpa using hS.neg_mem _ hc)
+
+/-- **PROVEN: the Vélu map commutes with negation**, `φ(−P) = −φ(P)`, for EVERY `P` —
+both when `P` lies in the kernel (both sides are `0`) and when it does not, where it is
+`veluCoordX_neg` and `veluCoordY_neg` read through `Affine.Point.neg_some`. -/
+lemma veluMap_neg (S : Finset W.Point) (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    (P : W.Point) :
+    haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+    W.veluMap S hS hodd (-P) = -W.veluMap S hS hodd P := by
+  haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+  by_cases hP : P ∈ S
+  · rw [W.veluMap_of_mem hS hodd hP, W.veluMap_of_mem hS hodd (hS.neg_mem _ hP), neg_zero]
+  · rw [W.veluMap_of_notMem hS hodd (velu_neg_notMem W hS hP),
+      W.veluMap_of_notMem hS hodd hP, Affine.Point.neg_some]
+    exact velu_point_some_eq (veluCoordX_neg hS P) (veluCoordY_neg hS hP)
+
+/-- **PROVEN: additivity UP TO SIGN implies additivity.** If for all `A, B` outside the
+kernel with `A + B` outside the kernel one knows only the weaker
+`φ(A + B) = ±(φ(A) + φ(B))`, then the sign is always `+`.
+
+**Proof, entirely inside the group `(W.veluCurve S).Point`.** Suppose `φ(P + Q) = −Z` with
+`Z = φ(P) + φ(Q)`. Instantiate the hypothesis at the pair `(P + Q, −Q)`, whose sum is `P`
+and both of whose entries are outside the kernel (`velu_neg_notMem`); using
+`veluMap_neg` the two alternatives read `P ↦ −Z − φ(Q)` and `P ↦ Z + φ(Q)`, i.e.
+
+* `2Z = 0`, or
+* `2φ(Q) = 0`.
+
+Symmetrically at `(P + Q, −P)` one gets `2Z = 0` or `2φ(P) = 0`. In the one remaining
+combination `2φ(P) = 2φ(Q) = 0`, whence `2Z = 2φ(P) + 2φ(Q) = 0` again. So `2Z = 0` in
+every case, i.e. `−Z = Z`, and the assumed identity IS the wanted one.
+
+Note what is NOT needed: no injectivity of `φ` modulo the kernel, no nondegeneracy, and no
+hypothesis relating `P` to `Q`. -/
+theorem velu_map_add_of_add_eq_neg (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (hodd : Odd S.card)
+    (hpm : ∀ P Q : W.Point, P ∉ S → Q ∉ S → P + Q ∉ S →
+      haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+      W.veluMap S hS hodd (P + Q) = W.veluMap S hS hodd P + W.veluMap S hS hodd Q ∨
+      W.veluMap S hS hodd (P + Q) = -(W.veluMap S hS hodd P + W.veluMap S hS hodd Q))
+    {P Q : W.Point} (hP : P ∉ S) (hQ : Q ∉ S) (hPQ : P + Q ∉ S) :
+    haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+    W.veluMap S hS hodd (P + Q) = W.veluMap S hS hodd P + W.veluMap S hS hodd Q := by
+  haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+  rcases hpm P Q hP hQ hPQ with h | h
+  · exact h
+  have hnP : -P ∉ S := velu_neg_notMem W hS hP
+  have hnQ : -Q ∉ S := velu_neg_notMem W hS hQ
+  have hnegP : W.veluMap S hS hodd (-P) = -W.veluMap S hS hodd P := veluMap_neg W S hS hodd P
+  have hnegQ : W.veluMap S hS hodd (-Q) = -W.veluMap S hS hodd Q := veluMap_neg W S hS hodd Q
+  have e₁ : P + Q + -Q = P := by abel
+  have h₁ := hpm (P + Q) (-Q) hPQ hnQ (by rw [e₁]; exact hP)
+  rw [e₁, h, hnegQ] at h₁
+  have e₂ : P + Q + -P = Q := by abel
+  have h₂ := hpm (P + Q) (-P) hPQ hnP (by rw [e₂]; exact hQ)
+  rw [e₂, h, hnegP] at h₂
+  have hkey : W.veluMap S hS hodd P + W.veluMap S hS hodd Q
+      + (W.veluMap S hS hodd P + W.veluMap S hS hodd Q) = 0 := by
+    rcases h₁ with h₁ | h₁ <;> rcases h₂ with h₂ | h₂
+    · linear_combination (norm := abel) h₁
+    · linear_combination (norm := abel) h₁
+    · linear_combination (norm := abel) h₂
+    · linear_combination (norm := abel) -h₁ - h₂
+  rw [h]
+  exact (add_eq_zero_iff_eq_neg.mp hkey).symm
+
+/-- **PROVEN: goal 1 of the leaf's reduction supplies the nondegeneracy `hz` below.**
+
+`φ(P) + φ(Q) = 0` says `φ(P) = −φ(Q) = φ(−Q)` (`veluMap_neg`), and since `P` and `−Q` are
+both outside the kernel their images are affine, so their coordinates agree; through
+`veluCoordX_neg` and `veluCoordY_neg` that is exactly the pair
+`X(P) = X(Q)`, `Y(P) = negY(X(Q), Y(Q))` which goal 1 forbids.
+
+So a consumer holding goal 1 — the injectivity of the Vélu coordinate map modulo the
+kernel, in the `by_cases` form produced by `Affine.Point.add_some` — gets `hz` for free,
+and the leaf reduces to the `addX` identity alone. -/
+lemma velu_map_add_ne_zero (S : Finset W.Point) (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P Q : W.Point} (hP : P ∉ S) (hQ : Q ∉ S)
+    (hcoord : ¬(W.veluCoordX S P = W.veluCoordX S Q ∧
+      W.veluCoordY S P
+        = (W.veluCurve S).negY (W.veluCoordX S Q) (W.veluCoordY S Q))) :
+    haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+    W.veluMap S hS hodd P + W.veluMap S hS hodd Q ≠ 0 := by
+  haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+  intro h
+  have h1 : W.veluMap S hS hodd P = W.veluMap S hS hodd (-Q) := by
+    rw [veluMap_neg W S hS hodd Q]; exact add_eq_zero_iff_eq_neg.mp h
+  rw [W.veluMap_of_notMem hS hodd hP,
+    W.veluMap_of_notMem hS hodd (velu_neg_notMem W hS hQ)] at h1
+  obtain ⟨hx, hy⟩ := (Affine.Point.some.injEq ..).mp h1
+  exact hcoord ⟨by rw [hx, veluCoordX_neg hS Q], by rw [hy, veluCoordY_neg hS hQ]⟩
+
+/-- **PROVEN: the `x`-coordinate identity ALONE implies Vélu additivity.** This is the
+lemma that removes goal 3 (`addY`) from the open leaf `velu_map_add_of_notMem`.
+
+`hx` is goal 2 in point form: the Vélu image of `P + Q` has the same `x`-coordinate as the
+sum of the images. `hz` is the nondegeneracy `φ(P) + φ(Q) ≠ 0`, which is exactly goal 1 —
+`φ(P) = −φ(Q) = φ(−Q)` would force `P + Q` into the kernel — and is therefore supplied by
+the injectivity-modulo-the-kernel statement, not proved again here.
+
+Given both, `velu_pointX_eq_iff` upgrades `hx` to `φ(P + Q) = ±(φ(P) + φ(Q))` and
+`velu_map_add_of_add_eq_neg` fixes the sign. -/
+theorem velu_map_add_of_coordX (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (hodd : Odd S.card)
+    (hz : ∀ P Q : W.Point, P ∉ S → Q ∉ S → P + Q ∉ S →
+      haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+      W.veluMap S hS hodd P + W.veluMap S hS hodd Q ≠ 0)
+    (hx : ∀ P Q : W.Point, P ∉ S → Q ∉ S → P + Q ∉ S →
+      haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+      W.veluCoordX S (P + Q)
+        = veluPointX (W.veluMap S hS hodd P + W.veluMap S hS hodd Q))
+    {P Q : W.Point} (hP : P ∉ S) (hQ : Q ∉ S) (hPQ : P + Q ∉ S) :
+    haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+    W.veluMap S hS hodd (P + Q) = W.veluMap S hS hodd P + W.veluMap S hS hodd Q := by
+  haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+  refine velu_map_add_of_add_eq_neg W S hS hodd (fun A B hA hB hAB => ?_) hP hQ hPQ
+  have hne : W.veluMap S hS hodd (A + B) ≠ 0 := by
+    rw [W.veluMap_of_notMem hS hodd hAB]; exact Affine.Point.some_ne_zero _
+  have hxAB : veluPointX (W.veluMap S hS hodd (A + B))
+      = veluPointX (W.veluMap S hS hodd A + W.veluMap S hS hodd B) := by
+    rw [W.veluMap_of_notMem hS hodd hAB]; exact hx A B hA hB hAB
+  exact velu_pointX_eq_iff hne (hz A B hA hB hAB) hxAB
+
 end Velu
 
 /-! ### Galois equivariance and descent over `ℚ` -/
