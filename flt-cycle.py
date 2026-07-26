@@ -735,6 +735,45 @@ def cmd_batch_done(args):
 # --------------------------------------------------------------------------
 # orchestrator: a release landed
 # --------------------------------------------------------------------------
+def tag_release(head):
+    """Tag the released sha `v<N>`, N incrementing from the highest existing tag.
+
+    (Deyao, 2026-07-26.) A release was previously identified only by a sha in
+    `~/.flt-last-release` -- a file, not a git object, so nothing in the repo
+    itself recorded which commits had ever been green. `git branch -f main`
+    moves under you, `main@{n}` reflog is local to one checkout, and a sha in a
+    report is unsearchable weeks later. An annotated tag is the one identifier
+    that is immutable, in the object store, replicated by `git push --tags`, and
+    greppable (`git tag --contains <sha>` answers "which release shipped this?").
+
+    Annotated, not lightweight: the tag object carries the date and message, so
+    `git tag -n` alone is a release log.
+
+    Never fails the release. Tagging is bookkeeping laid over work already done;
+    a tag collision or a read-only object store must not strand a green build
+    that every idle worker is waiting on.
+    """
+    try:
+        existing = run(["git", "-C", REPO, "tag", "--list", "v[0-9]*"])
+        nums = []
+        for t in existing.stdout.split():
+            if re.fullmatch(r"v\d+", t):
+                nums.append(int(t[1:]))
+        nxt = max(nums, default=0) + 1
+        tag = f"v{nxt}"
+        made = run(["git", "-C", REPO, "tag", "-a", tag, head,
+                    "-m", f"green release {tag}"])
+        if made.returncode != 0:
+            print(f"  (tag {tag} not created: "
+                  f"{made.stderr.strip()[:120]} -- release continues)")
+            return None
+        print(f"  tagged {tag} -> {head[:12]}")
+        return tag
+    except Exception as exc:                       # never block the release
+        print(f"  (tagging skipped: {exc!r} -- release continues)")
+        return None
+
+
 def cmd_release(args):
     """Advance everything (cheap), then seed only what the queue justifies.
 
@@ -774,6 +813,8 @@ def cmd_release(args):
         print("main has not moved since the last release -- nothing to hand out.")
         print("(--force to re-run anyway)")
         return 0
+
+    tag_release(head)
 
     hook = load_hook()
 
