@@ -6615,7 +6615,34 @@ lemma nondegenerate_of_isTateParam {E : WeierstrassCurve ℚ} [E.IsElliptic]
   · rintro rfl; exact hΔ (by ring)
   · intro h; exact hΔ (by rw [h]; ring)
 
-/-- **Rigidity of the Tate normal form over `ℚ̄`** (sorry node, cut 2026-07-26
+/-- **The three factors of `b = d²(d − 1)(d² − d + 1)` are nonzero** (PROVEN
+2026-07-26): the companion of `nondegenerate_of_isTateParam`, reading off the
+OTHER factors of `tateCurve_Δ`.
+
+`Δ(tateCurve d) = d⁹(d − 1)⁹(d² − d + 1)³(d³ − 6d² + 3d + 1)`, and a change of
+variables multiplies `Δ` by a unit, so all four factors are nonzero. The two
+recorded here are exactly what the two moduli leaves below need: their whole
+argument runs on `b = d²(d − 1)(d² − d + 1) ≠ 0` (the coefficient `−b = a₂ = a₃`
+of the Tate normal form), on `c = d²(d − 1) ≠ 0`, and on
+`b − c = d³(d − 1)² ≠ 0`. -/
+lemma factors_ne_zero_of_isTateParam {E : WeierstrassCurve ℚ} [E.IsElliptic]
+    {P : (E⁄(AlgebraicClosure ℚ)).Point} {d : AlgebraicClosure ℚ}
+    (hd : IsTateParam E P d) :
+    d ≠ 0 ∧ d - 1 ≠ 0 ∧ d ^ 2 - d + 1 ≠ 0 := by
+  haveI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  obtain ⟨C, hC, -⟩ := hd
+  have hΔ : (tateCurve d).Δ ≠ 0 := by
+    rw [← hC, WeierstrassCurve.variableChange_Δ]
+    exact mul_ne_zero (pow_ne_zero _ (Units.ne_zero _))
+      (WeierstrassCurve.isUnit_Δ (W := (E⁄(AlgebraicClosure ℚ)))).ne_zero
+  rw [tateCurve_Δ] at hΔ
+  refine ⟨fun h => hΔ ?_, fun h => hΔ ?_, fun h => hΔ ?_⟩
+  · rw [h]; ring
+  · rw [h]; ring
+  · rw [h]; ring
+
+/-- **Rigidity of the Tate normal form over `ℚ̄`** (PROVEN 2026-07-26, cut 2026-07-26
 out of `exists_rat_hauptmodul_of_stable` — step 1 of its five-step argument):
 the Kubert parameter of a pair `(E, P)` is UNIQUE, so `d` really is a
 function `d(E, P)` of the pair.
@@ -6639,13 +6666,77 @@ and on `tateCurve d` one has `a₄ = a₆ = 0`, `a₂ = a₃ = −b` with
 
 The only Lean-side work is the `VariableChange` group arithmetic; there is no
 new mathematics. Nothing here uses `P` beyond `C.r = C'.r`, `C.t = C'.t`,
-which is `Affine.Point.some.inj` applied to the two descriptions of `P`. -/
+which is `Affine.Point.some.injEq` applied to the two descriptions of `P`.
+
+THE PROOF BELOW IS EXACTLY THAT SCRIPT. `D.r = 0` and `D.t = 0` are the two
+`VariableChange.mul_def`/`inv_def` computations
+`(C'.r − C.r)u⁻² = 0` and `(C'.t − C.t + C.s(C.r − C'.r))u⁻³ = 0`; the last
+step is `d(b − c) = c²` and `d'(b' − c') = c'²`, both `ring` identities, with
+`b = b'`, `c = c'` and `b − c = d³(d − 1)² ≠ 0`. -/
 theorem isTateParam_unique {E : WeierstrassCurve ℚ} [E.IsElliptic]
     {P : (E⁄(AlgebraicClosure ℚ)).Point} {d d' : AlgebraicClosure ℚ}
-    (hd : IsTateParam E P d) (hd' : IsTateParam E P d') : d = d' :=
-  sorry
+    (hd : IsTateParam E P d) (hd' : IsTateParam E P d') : d = d' := by
+  obtain ⟨hd0, hd1, hde⟩ := factors_ne_zero_of_isTateParam hd
+  have hbne : d ^ 2 * (d - 1) * (d ^ 2 - d + 1) ≠ 0 :=
+    mul_ne_zero (mul_ne_zero (pow_ne_zero 2 hd0) hd1) hde
+  obtain ⟨C, hC, hns, hP⟩ := hd
+  obtain ⟨C', hC', hns', hP'⟩ := hd'
+  rw [hP, Affine.Point.some.injEq] at hP'
+  obtain ⟨hr, ht⟩ := hP'
+  -- `D := C' * C⁻¹` carries `tateCurve d` to `tateCurve d'` and fixes the origin.
+  have hD : (C' * C⁻¹) • tateCurve d = tateCurve d' := by
+    rw [mul_smul, ← hC, inv_smul_smul, hC']
+  have hDr : (C' * C⁻¹).r = 0 := by
+    simp only [WeierstrassCurve.VariableChange.mul_def, WeierstrassCurve.VariableChange.inv_def]
+    rw [← hr]; ring
+  have hDt : (C' * C⁻¹).t = 0 := by
+    simp only [WeierstrassCurve.VariableChange.mul_def, WeierstrassCurve.VariableChange.inv_def]
+    rw [← hr, ← ht]; ring
+  have hvne : (((C' * C⁻¹).u⁻¹ : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ≠ 0 :=
+    Units.ne_zero _
+  -- `a₄' = 0` forces the shear `s` to vanish.
+  have hs : (C' * C⁻¹).s = 0 := by
+    have e4 : ((C' * C⁻¹) • tateCurve d).a₄ = (tateCurve d').a₄ := by rw [hD]
+    rw [WeierstrassCurve.variableChange_a₄] at e4
+    simp only [tateCurve, hDr, hDt] at e4
+    have e4' : (((C' * C⁻¹).u⁻¹ : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ 4 *
+        ((C' * C⁻¹).s * (d ^ 2 * (d - 1) * (d ^ 2 - d + 1))) = 0 := by
+      linear_combination e4
+    rcases mul_eq_zero.mp e4' with h | h
+    · exact absurd h (pow_ne_zero 4 hvne)
+    · rcases mul_eq_zero.mp h with h' | h'
+      · exact h'
+      · exact absurd h' hbne
+  have e1 : ((C' * C⁻¹) • tateCurve d).a₁ = (tateCurve d').a₁ := by rw [hD]
+  have e2 : ((C' * C⁻¹) • tateCurve d).a₂ = (tateCurve d').a₂ := by rw [hD]
+  have e3 : ((C' * C⁻¹) • tateCurve d).a₃ = (tateCurve d').a₃ := by rw [hD]
+  rw [WeierstrassCurve.variableChange_a₁] at e1
+  rw [WeierstrassCurve.variableChange_a₂] at e2
+  rw [WeierstrassCurve.variableChange_a₃] at e3
+  simp only [tateCurve, hDr, hDt, hs] at e1 e2 e3
+  -- `a₂' = a₃'` forces the scaling `u` to be `1`.
+  have hv1 : (((C' * C⁻¹).u⁻¹ : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) = 1 := by
+    have h23 : (((C' * C⁻¹).u⁻¹ : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) ^ 2 *
+        (d ^ 2 * (d - 1) * (d ^ 2 - d + 1)) *
+        ((((C' * C⁻¹).u⁻¹ : (AlgebraicClosure ℚ)ˣ) : AlgebraicClosure ℚ) - 1) = 0 := by
+      linear_combination e2 - e3
+    rcases mul_eq_zero.mp h23 with h | h
+    · rcases mul_eq_zero.mp h with h' | h'
+      · exact absurd h' (pow_ne_zero 2 hvne)
+      · exact absurd h' hbne
+    · linear_combination h
+  rw [hv1] at e1 e2
+  -- hence `c = c'` and `b = b'`, and `d = c²/(b − c)` reads off `d = d'`.
+  have hcc : d' ^ 2 * (d' - 1) = d ^ 2 * (d - 1) := by linear_combination e1
+  have hbb : d' ^ 2 * (d' - 1) * (d' ^ 2 - d' + 1) = d ^ 2 * (d - 1) * (d ^ 2 - d + 1) := by
+    linear_combination e2
+  have hsub : d' ^ 3 * (d' - 1) ^ 2 = d ^ 3 * (d - 1) ^ 2 := by linear_combination hbb - hcc
+  have hsq : (d' ^ 2 * (d' - 1)) ^ 2 = (d ^ 2 * (d - 1)) ^ 2 := by rw [hcc]
+  refine mul_right_cancel₀ (show d ^ 3 * (d - 1) ^ 2 ≠ 0 from
+    mul_ne_zero (pow_ne_zero 3 hd0) (pow_ne_zero 2 hd1)) ?_
+  linear_combination d' * hsub - hsq
 
-/-- **The diamond operator on the Kubert line** (sorry node, cut 2026-07-26
+/-- **The diamond operator on the Kubert line** (PROVEN 2026-07-26, cut 2026-07-26
 out of `exists_rat_hauptmodul_of_stable` — step 3 of its five-step argument,
 and the ONLY computation in it): if `d` is a Kubert parameter of `(E, P)`
 then `(d − 1)/d` is a Kubert parameter of `(E, 2P)`.
@@ -6672,12 +6763,91 @@ of `2 • P` along it. The nondegeneracy needed by the divisions is exactly
 `nondegenerate_of_isTateParam` together with `d ≠ 1` (also a factor of `Δ`).
 
 Consumers should note that iterating this three times must return `d`, which
-is a useful consistency check on any candidate proof. -/
+is a useful consistency check on any candidate proof.
+
+THE EXPLICIT CHANGE OF VARIABLES, as found below. The three steps compose to
+the single `VariableChange`
+
+    C₂ = ⟨u, r, s, t⟩ = ⟨d³, b, d³ − d, bc⟩,   c = d²(d − 1), b = c(d² − d + 1),
+
+because `⟨u,0,0,0⟩ * ⟨1,0,s,0⟩ * ⟨1,r,0,t⟩ = ⟨u,r,s,t⟩`. The shear is
+`s = (b − c + c²)/c = d(d − 1)(d + 1) = d³ − d`, a polynomial, and the scaling
+is `u = a₃''/a₂'' = d⁴(d − 1)²(d² − d + 1) / (d(d − 1)²(d² − d + 1)) = d³` —
+the cancellation using `d⁴ − 3d³ + 4d² − 3d + 1 = (d² − d + 1)(d − 1)²`. The
+five coefficient identities `C₂ • tateCurve d = tateCurve ((d − 1)/d)` were
+cross-checked symbolically in PARI/GP before being handed to `field_simp`/`ring`.
+Composing with the `C` of the hypothesis gives the `C₂ * C` below, whose
+`(r, t)` is precisely the image of `(b, bc)` under `Point.equivVariableChange`,
+i.e. the coordinates of `2P` on `E⁄ℚ̄`. -/
 theorem isTateParam_two_nsmul {E : WeierstrassCurve ℚ} [E.IsElliptic]
     {P : (E⁄(AlgebraicClosure ℚ)).Point} {d : AlgebraicClosure ℚ}
     (hd : IsTateParam E P d) :
-    ∃ d' : AlgebraicClosure ℚ, IsTateParam E ((2 : ℕ) • P) d' ∧ d' * d = d - 1 :=
-  sorry
+    ∃ d' : AlgebraicClosure ℚ, IsTateParam E ((2 : ℕ) • P) d' ∧ d' * d = d - 1 := by
+  haveI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  obtain ⟨hd0, hd1, hde⟩ := factors_ne_zero_of_isTateParam hd
+  have hbne : d ^ 2 * (d - 1) * (d ^ 2 - d + 1) ≠ 0 :=
+    mul_ne_zero (mul_ne_zero (pow_ne_zero 2 hd0) hd1) hde
+  obtain ⟨C, hC, hns, hP⟩ := hd
+  refine ⟨(d - 1) / d, ?_, by field_simp⟩
+  -- The Tate normalisation of `(tateCurve d, 2·(0,0))`, as one change of variables.
+  set C₂ : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ) :=
+    ⟨Units.mk0 (d ^ 3) (pow_ne_zero 3 hd0), d ^ 2 * (d - 1) * (d ^ 2 - d + 1), d ^ 3 - d,
+      d ^ 2 * (d - 1) * (d ^ 2 - d + 1) * (d ^ 2 * (d - 1))⟩ with hC₂
+  have hC₂smul : C₂ • tateCurve d = tateCurve ((d - 1) / d) := by
+    ext <;>
+      simp only [hC₂, tateCurve, WeierstrassCurve.variableChange_a₁,
+        WeierstrassCurve.variableChange_a₂, WeierstrassCurve.variableChange_a₃,
+        WeierstrassCurve.variableChange_a₄, WeierstrassCurve.variableChange_a₆,
+        Units.val_inv_eq_inv_val, Units.val_mk0] <;>
+      field_simp <;> ring
+  refine ⟨C₂ * C, by rw [mul_smul, hC, hC₂smul], ?_⟩
+  -- `2 · (0,0) = (b, bc)` on `tateCurve d`: the tangent at the origin is horizontal.
+  have h₀ : (tateCurve d).toAffine.Nonsingular 0 0 := by
+    refine Affine.nonsingular_zero.mpr ⟨rfl, Or.inl ?_⟩
+    simpa only [tateCurve] using neg_ne_zero.mpr hbne
+  have hn0 : (tateCurve d).toAffine.negY 0 0 = d ^ 2 * (d - 1) * (d ^ 2 - d + 1) := by
+    simp only [Affine.negY, tateCurve]; ring
+  have hy0 : (0 : AlgebraicClosure ℚ) ≠ (tateCurve d).toAffine.negY 0 0 := by
+    rw [hn0]; exact fun h => hbne h.symm
+  have hL : (tateCurve d).toAffine.slope 0 0 0 0 = 0 := by
+    rw [Affine.slope_of_Y_ne rfl hy0, show (tateCurve d).a₄ = 0 from rfl]
+    simp
+  obtain ⟨x₂, y₂, h₂, hdbl, hx₂, hy₂⟩ :
+      ∃ (x₂ y₂ : AlgebraicClosure ℚ) (h₂ : (tateCurve d).toAffine.Nonsingular x₂ y₂),
+        (Affine.Point.some 0 0 h₀ + Affine.Point.some 0 0 h₀ :
+            (tateCurve d).toAffine.Point) = Affine.Point.some x₂ y₂ h₂ ∧
+          x₂ = d ^ 2 * (d - 1) * (d ^ 2 - d + 1) ∧
+          y₂ = d ^ 2 * (d - 1) * (d ^ 2 - d + 1) * (d ^ 2 * (d - 1)) :=
+    ⟨_, _, _, Affine.Point.add_self_of_Y_ne hy0,
+      by simp only [Affine.addX, hL]; simp only [tateCurve]; ring,
+      by simp only [Affine.addY, Affine.negAddY, Affine.addX, Affine.negY, hL];
+         simp only [tateCurve]; ring⟩
+  -- transport `(0,0)` and `2·(0,0)` back to `E⁄ℚ̄` along `C`.
+  have hΦ0 : (Affine.Point.equivVariableChange (E⁄(AlgebraicClosure ℚ)) C)
+      ((Affine.Point.equivOfEq hC.symm) (Affine.Point.some 0 0 h₀)) = P := by
+    rw [Affine.Point.equivOfEq_some, Affine.Point.equivVariableChange_some, hP]
+    exact Affine.Point.some_eq_some _ (by ring) (by ring)
+  have hΦ2 : (Affine.Point.equivVariableChange (E⁄(AlgebraicClosure ℚ)) C)
+      ((Affine.Point.equivOfEq hC.symm) (Affine.Point.some x₂ y₂ h₂))
+      = (2 : ℕ) • P := by
+    rw [← hΦ0, two_nsmul, ← map_add, ← map_add, hdbl]
+  have hrr : ((C.u : AlgebraicClosure ℚ)) ^ 2 * x₂ + C.r = (C₂ * C).r := by
+    simp only [WeierstrassCurve.VariableChange.mul_def, hC₂, hx₂]; ring
+  have htt : ((C.u : AlgebraicClosure ℚ)) ^ 3 * y₂
+      + ((C.u : AlgebraicClosure ℚ)) ^ 2 * C.s * x₂ + C.t = (C₂ * C).t := by
+    simp only [WeierstrassCurve.VariableChange.mul_def, hC₂, hx₂, hy₂]; ring
+  have hEq2 : (E⁄(AlgebraicClosure ℚ)).toAffine.Equation
+      (((C.u : AlgebraicClosure ℚ)) ^ 2 * x₂ + C.r)
+      (((C.u : AlgebraicClosure ℚ)) ^ 3 * y₂
+        + ((C.u : AlgebraicClosure ℚ)) ^ 2 * C.s * x₂ + C.t) :=
+    (Affine.variableChange_equation _ C x₂ y₂).mpr
+      (Affine.equation_iff_nonsingular.mpr (hC.symm ▸ h₂))
+  have hRT : (E⁄(AlgebraicClosure ℚ)).toAffine.Nonsingular (C₂ * C).r (C₂ * C).t := by
+    rw [← hrr, ← htt]; exact Affine.equation_iff_nonsingular.mp hEq2
+  refine ⟨hRT, ?_⟩
+  rw [← hΦ2, Affine.Point.equivOfEq_some, Affine.Point.equivVariableChange_some]
+  exact Affine.Point.some_eq_some _ hrr htt
 
 /-- **Galois naturality of the Kubert parameter** (PROVEN 2026-07-26 — step 2
 of the five-step argument of `exists_rat_hauptmodul_of_stable`): if `d` is a
@@ -6779,9 +6949,11 @@ written out below and compiles; steps 2, 4 and 5 are proven outright
 generates `(ℤ/9)ˣ`; `InfiniteGalois.mem_range_algebraMap_iff_fixed`), and so
 is the `R ∘ γ = R` identity — carried here in its denominator-free form
 `27 e(e−1) q(d) = 27 d(d−1) q(e)` and discharged by `linear_combination`
-inside the induction on `k`. What remains open is exactly the two leaves
-above: `isTateParam_unique` (step 1, rigidity) and `isTateParam_two_nsmul`
-(step 3, the diamond). Both are pure field algebra with no modular input.
+inside the induction on `k`. Steps 1 and 3 — `isTateParam_unique` (rigidity)
+and `isTateParam_two_nsmul` (the diamond) — were the last two open leaves and
+are now PROVEN as well (2026-07-26); both are pure field algebra with no
+modular input. So this whole node depends on nothing open except the Tate
+normal form `exists_tateParam` that supplies its `IsTateParam` hypothesis.
 
 The conclusion is stated denominator-free, `t · (d³ − 6d² + 3d + 1) =
 27d(d − 1)`, so that it does not have to carry the nonvanishing of the
@@ -6894,9 +7066,9 @@ note carries the geometry. The cut runs through the Kubert line of
 `X_1(9)`, NOT through Vélu: `X_0(9) = X_1(9)/⟨diamond⟩` with the diamond
 operator acting as the order-`3` Möbius map `γ(d) = (d − 1)/d`, and the
 Hauptmodul is the invariant `R(d) = 27d(d − 1)/(d³ − 6d² + 3d + 1)`. What
-is left open is exactly three things (updated 2026-07-26, when
-`exists_rat_hauptmodul_of_stable` was PROVEN over two smaller leaves after
-its `IsTateParam` hypothesis had to be repaired — see that docstring):
+is left open is exactly ONE thing (updated 2026-07-26, when
+`isTateParam_unique` and `isTateParam_two_nsmul` were both PROVEN; the list
+below keeps all three entries for orientation, the last two now closed):
 
 * `MazurLevel9.exists_tateParam` — the Tate normal form over `ℚ̄`, a
   mechanical re-basing of the PROVEN
@@ -6907,9 +7079,13 @@ its `IsTateParam` hypothesis had to be repaired — see that docstring):
   `exists_tateNF_of_order_nine` to stop discarding the variable change it
   already builds. See its docstring;
 * `MazurLevel9.isTateParam_unique` — rigidity of the Tate normal form, i.e.
-  that the Kubert parameter is a function of the pair `(E, P)`;
+  that the Kubert parameter is a function of the pair `(E, P)`. **PROVEN
+  2026-07-26**: `D := C' * C⁻¹` fixes the origin, so `a₄' = 0` kills the shear
+  and `a₂' = a₃'` kills the scaling, whence `D = 1`;
 * `MazurLevel9.isTateParam_two_nsmul` — the diamond operator
   `d(E, 2P) = (d(E,P) − 1)/d(E,P)`, one explicit change of variables.
+  **PROVEN 2026-07-26** with that change of variables written out:
+  `⟨d³, b, d³ − d, bc⟩`.
 
 The `ℤ/3`-descent `X_1(9) → X_0(9)` itself —
 `MazurLevel9.exists_rat_hauptmodul_of_stable`, the modular content proper at
