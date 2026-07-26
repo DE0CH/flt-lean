@@ -9410,7 +9410,42 @@ UPSTREAM of this module. So this leaf is where the counterexample
 `k[[x, xy, xy², …]] ⊂ k[[x,y]]` bites, and the Carayol hypotheses
 (`hℓ5`, irreducibility of `ρbar|_{G_F}`, and the local conditions inside
 `𝒟.isHilbertHardlyRamified`) are load-bearing HERE and nowhere else in
-the package. -/
+the package.
+
+**ROUTE AUDIT 2026-07-26 (flt-lean-133): "port the `ℚ`-level proof" is NOT
+available under the hypotheses as stated. Read this before being dispatched
+here.** The route recorded above is right about the MATHEMATICS and wrong
+about the availability, on two independent counts, both checked by reading
+the declarations rather than inferred:
+
+1. *The first step of the `ℚ` proof has no usable `F`-level twin under these
+   hypotheses.* `Deformation.lean`'s proof opens with
+   `obtain ⟨Du, hDu⟩ := exists_isWeaklyUniversal …` and takes `Du.R` as the
+   witness `S`. The `F`-level twin is
+   `exists_isWeaklyUniversal_hilbertDeformationDatum` above — PROVEN, but it
+   carries **`hw2`** (`∀ w ∣ 2, ℓ ∤ (Nw ^ 2 − 1)`, through
+   `isHilbertFibreProductClause`) and the binders
+   `[DiscreteTopology k] [Algebra ℤ_[ℓ] k]`. This leaf has NONE of the three:
+   it has `hlk : (ℓ : k) = 0` and `[Finite k]` only. So the witness cannot be
+   produced without either adding `hw2` (and the two `k`-binders) to this
+   statement — a CUT-LEVEL change, since `fg_comap_maximalIdeal_hilbertTraceSubring`
+   and everything above it would have to carry them too — or finding a
+   witness that is not the weakly universal ring.
+2. *Three of the finite-level helpers the `ℚ` proof consumes have no `F`-level
+   twin at all* — there is no `quotientHilbertDeformationDatum` (the quotient
+   of a datum by `𝔪 ^ n`, with its finiteness/openness/discreteness
+   bookkeeping), no `exists_surjective_hilbertTraceSubring_of_finite`, and no
+   `hilbertTraceSubring_map_of_discreteTopology`. Each is a declaration to be
+   written here, not a name to be looked up. (`exists_framedGaloisRep_hilbertTraceSubring`
+   is PROVEN but is a DIFFERENT statement: it produces a framed representation
+   OVER `R'`, not a surjection ONTO a level quotient of `R'`.)
+
+Consequence for whoever takes this next: the first decision is the
+hypothesis question in (1), and it should be settled before any Lean is
+written, because it changes the statement. Nothing in this audit contradicts
+the mathematics recorded above; Carayol's Théorème 1 at finite level is still
+the content, and the counterexample paragraph still explains why no purely
+formal argument can work. -/
 theorem exists_noetherianLocal_surjective_quotient_hilbertTraceSubring
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
