@@ -2371,7 +2371,20 @@ therefore fully discharged here; only the arithmetic finiteness of
 prime — exactly the hypotheses under which the slash-sum is known to
 preserve `S₂(Γ₀(N))`. The function-level slash-sum `heckeTransform`
 stays the primitive; this is the operator-level packaging that the
-Hecke-algebra material below needs. -/
+Hecke-algebra material below needs.
+
+DUPLICATION NOTICE (2026-07-26): `heckeOp`/`heckeOp_coe`, in the
+`ComplexHeckeAlgebra` section far below, is the SAME construction,
+built concurrently by another owner for the Eichler–Shimura seam. The
+two cannot presently be merged in either direction by their authors
+alone: this one is needed at THIS point of the file (the bounded
+denominators assembly is consumed by
+`exists_integral_qExpansion_spanning` a few hundred lines below),
+while `heckeOp` is defined ~18k lines later. Consolidation is a
+one-declaration move for whichever owner touches the later section —
+delete `exists_heckeOpLinear_total`/`heckeOp` and let `heckeOp` be
+notation for `heckeEndo`, whose `coe_heckeEndo` is exactly
+`heckeOp_coe`. -/
 noncomputable def heckeEndo (N q : ℕ) :
     Module.End ℂ (CuspForm (Gamma0GL N) 2) :=
   if h : 0 < N ∧ q.Prime then
