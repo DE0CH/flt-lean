@@ -4748,8 +4748,8 @@ theorem exists_heckeDatum_isWeaklyUniversal_isTraceGenerated
   obtain ⟨𝒟₁, h𝒟₁⟩ :=
     exists_isWeaklyUniversal_hilbertDeformationDatum ℓ F hirrF 𝒟₀
   obtain ⟨𝒟, h𝒟w, h𝒟t⟩ :=
-    exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum ℓ F hirrF
-      𝒟₁ h𝒟₁
+    exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum ℓ hℓ5 F
+      (natCast_eq_zero_of_finite_algebra ℓ k) hirrF 𝒟₁ h𝒟₁
   -- (2) the Hecke algebra of the matching level, AS AN OBJECT of the `F`-level
   -- deformation category (automorphic leaf).
   obtain ⟨T, 𝒟T, ⟨e⟩⟩ :=
@@ -4827,7 +4827,8 @@ integrality) must not have to re-derive it. -/
 theorem exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [Algebra ℤ_[ℓ] k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V} (hlk : ((ℓ : ℕ) : k) = 0)
@@ -4866,7 +4867,8 @@ carries at the `ℚ` level as
 theorem moduleFinite_hilbertDeformation_of_isWeaklyUniversal
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [Algebra ℤ_[ℓ] k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V} (hlk : ((ℓ : ℕ) : k) = 0)
