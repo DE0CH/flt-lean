@@ -4606,16 +4606,79 @@ theorem hom_vanishes_on_localInertia_at_two
   exact (hφker _).mp
     (threeTorsion_monoidHom_vanishes_on_localInertia_at_two φ hopen h3 σ hσ)
 
+/-- **The mod-3 cyclotomic character is nontrivial on the decomposition
+group at `3`** (SORRY LEAF, cut 2026-07-26 while repairing the
+connected–étale cut below; see the FAITHFULNESS REPAIR note there).
+
+`ω = cyclotomicCharacterModL 3` cuts out `ℚ(ζ₃) = ℚ(√-3)`, in which the
+prime `3` RAMIFIES; equivalently `ζ₃ ∉ ℚ₃`, because `ℚ₃(ζ₃)/ℚ₃` is
+(totally, tamely) ramified of degree `φ(3) = 2`. So the restriction of
+`ω` to the decomposition group at `3` — indeed already to the inertia
+group at `3` — is nontrivial.
+
+This is the ONLY thing the invariant-functional consumer below needs
+that a purely local-at-`3` connected–étale statement cannot give it: it
+must evaluate the diagonal entry of the connected line at some `g₀`
+with `ω g₀ ≠ 1`, and after the repair `g₀` has to come from `Γ ℚ₃ᵥ`
+rather than from `Γ ℚ` (`exists_cyclotomicCharacterModL_three_ne_one`,
+which is proven above but produces a GLOBAL element).
+
+Intended proof, in the shape of `exists_cyclotomicCharacterModL_three_ne_one`
+but over `ℚ₃ᵥ`: if `ω` were trivial on the image of `Γ ℚ₃ᵥ` then a
+primitive cube root of unity would be fixed by the whole decomposition
+group, hence would lie in `ℚ₃ᵥ`; but a `q ∈ ℤ₃` with `q³ = 1` reduces
+to a cube root of `1` in `𝔽₃`, i.e. to `1` (Frobenius is the identity
+there), so `q = 1 + 3a` and `q³ - 1 = 9a(1 + 3a + 3a²) = 0` forces
+`a = 0` since `1 + 3a + 3a²` is a unit. -/
+theorem exists_local_cyclotomicCharacterModL_three_ne_one :
+    ∃ g : Γ ℚ₃ᵥ,
+      cyclotomicCharacterModL 3
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) g) ≠ 1 := by
+  sorry
+
 /-- **The connected–étale line of the flat package at `3`** (SORRY
 LEAF, cut 2026-07-25 out of the invariant-functional node
 `invariant_functional_defect_vanishes_of_hopf_package` below. It now
 carries the WHOLE finite-flat/Fontaine content of that node, and it
 mentions no functional at all: it is a statement about `ρ` and its
-model alone, so the ω-sibling `omega_defect_coboundary_of_hopf_package`
-can consume it too. Tate, *Finite flat group schemes*, §4, in
+model alone. Tate, *Finite flat group schemes*, §4, in
 Cornell–Silverman–Stevens; Raynaud, *Schémas en groupes de type
 `(p, …, p)`*, Bull. SMF 102 (1974), 3.3.2–3.3.5; Fontaine, *Il n'y a
 pas de variété abélienne sur `ℤ`*, §1.)
+
+**FAITHFULNESS REPAIR, 2026-07-26 — the Galois-stability clause was
+`Γ ℚ`-WIDE and is now local at `3`.** As first cut, the second bullet
+asserted `ρ g w₁ - E g • w₁ ∈ 𝔪ⁿ⁺²V` for every `g : Γ ℚ`. That is the
+development's signature error in its most expensive form: a
+`Γ ℚ₃ᵥ`-quantifier widened to all of `Γ`.
+
+* Every input of this leaf that carries finite-flat content is LOCAL at
+  `3`: the Hopf algebra `G` lives over `𝒪₃ᵥ`, the idempotent `e₀` is
+  `𝒪₃ᵥ`-rational, and the identification `fG` of geometric points is
+  `→+[Γ ℚ₃ᵥ]`-equivariant. The connected part `M⁰` it produces is
+  therefore `Γ ℚ₃ᵥ`-stable and nothing more; the docstring's own
+  "Intended proof" below never produces anything global either.
+* The `Γ ℚ`-wide form is not merely unproven here, it is *unprovable
+  here without circularity*: a `Γ ℚ`-stable line in `V/𝔪ⁿ⁺²V` for every
+  `n` IS the global reducibility of `ρ`, i.e. the conclusion
+  `exists_global_triangular_of_residual_trivial_quotient` at the very
+  bottom of this file, which is reached only through the Selmer/Odlyzko
+  material (`exists_omega_component_coboundary`,
+  `discr_factorization_le_of_forall_inertia_card_dvd`) and through this
+  leaf's own consumer. Local flat data at `3` cannot see that obstruction:
+  the same Hopf package exists over a base field where the corresponding
+  Selmer group does NOT vanish and the analogous `ρ` is irreducible.
+* It is not FALSE, since `ρ` is in the end globally triangular — which
+  is exactly why the error is dangerous: the leaf looked provable and
+  would have quietly re-derived the file's main theorem from nothing.
+
+The clause is now stated over `Γ ℚ₃ᵥ`, restricted along
+`Field.absoluteGaloisGroup.map`. The consumer below was repaired to
+match: it takes the residual (`mod 𝔪`) diagonal entry for all of `Γ ℚ`
+from `exists_residual_matrix_entries` — which needs only `hπequiv`, no
+flat theory — and takes its distinguished element `g₀` with `ω g₀ ≠ 1`
+from `exists_local_cyclotomicCharacterModL_three_ne_one` above instead
+of from the global `exists_cyclotomicCharacterModL_three_ne_one`.
 
 Given an EXPLICIT finite flat Hopf algebra `G` over `𝒪ᵥ ≅ ℤ₃` with
 étale generic fibre whose geometric points are `Γ ℚ₃ᵥ`-equivariantly
@@ -4624,8 +4687,9 @@ quotient `ρ.baseChange (R ⧸ 𝔪ⁿ⁺²)`, the connected–étale sequence o
 `Spec G` splits `M` at level `𝔪ⁿ⁺²`:
 
 * a vector `w₁ ≡ w₀ mod 𝔪V` generates the connected part `M⁰`, and
-  the line `R · w₁` is `Γ ℚ`-STABLE modulo `𝔪ⁿ⁺²V`, with diagonal
-  entry `E : Γ ℚ → R`;
+  the line `R · w₁` is `Γ ℚ₃ᵥ`-STABLE modulo `𝔪ⁿ⁺²V` — stable under
+  the DECOMPOSITION GROUP AT `3` only, see the faithfulness note above
+  — with diagonal entry `E : Γ ℚ₃ᵥ → R`;
 * the local inertia at `3` acts TRIVIALLY on the étale quotient
   `M/M⁰`: `ρ σ v₀ ≡ v₀` modulo `R · w₁ + 𝔪ⁿ⁺²V` for every `σ` in
   `localInertiaGroup 3`.
@@ -4726,8 +4790,8 @@ theorem exists_connectedEtale_line_of_hopf_package
           𝔭₃) σ m - m))) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] e₀) = 1) :
     ∃ w₁ : V,
       w₁ - w₀ ∈ (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) ∧
-      (∃ E : Γ ℚ → R, ∀ g : Γ ℚ,
-        ρ g w₁ - E g • w₁ ∈
+      (∃ E : Γ ℚ₃ᵥ → R, ∀ g : Γ ℚ₃ᵥ,
+        ρ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ₃ᵥ) g) w₁ - E g • w₁ ∈
           (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V)) ∧
       (∃ c : R, ρ (Field.absoluteGaloisGroup.map
           (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
@@ -4771,13 +4835,21 @@ connected–étale leaf has produced the generator `w₁ ≡ w₀ mod 𝔪V` of
 the connected line, its diagonal entry `E`, and the unramifiedness of
 the étale quotient.
 
-(1) `E` is a residual diagonal entry along `w₀` as well: `𝔪ⁿ⁺² ≤ 𝔪`,
-and `w₁ − w₀ ∈ 𝔪V` is carried into `𝔪V` both by `ρ g`
-(`apply_mem_smul_top`) and by the scalar `E g`, so
-`ρ g w₀ − E g • w₀ ∈ 𝔪V`. Hence
-`residual_twist_eq_cyclotomicCharacterModL` applies to `E`, and at an
-element `g₀` with `ω g₀ ≠ 1` — one exists by
-`exists_cyclotomicCharacterModL_three_ne_one` — it gives
+(1) REPAIRED 2026-07-26, following the faithfulness repair of the leaf
+(whose stability clause is local at `3`, not `Γ ℚ`-wide). The residual
+diagonal entry `a` along `w₀` for the whole of `Γ ℚ` comes from
+`exists_residual_matrix_entries`, which needs only `hπequiv` and no
+finite-flat input at all; `residual_twist_eq_cyclotomicCharacterModL`
+applies to `a`. The distinguished element `g₀` with `ω g₀ ≠ 1` is now
+taken from `exists_local_cyclotomicCharacterModL_three_ne_one`, so that
+it lies in the DECOMPOSITION GROUP AT `3`, where the leaf's diagonal
+entry `E` is defined; `ω` is ramified at `3`, so such an element exists.
+`E g₀` is a residual diagonal entry along `w₀` as well: `𝔪ⁿ⁺² ≤ 𝔪`, and
+`w₁ − w₀ ∈ 𝔪V` is carried into `𝔪V` both by `ρ g₀`
+(`apply_mem_smul_top`) and by the scalar `E g₀`, so
+`ρ g₀ w₀ − E g₀ • w₀ ∈ 𝔪V`; subtracting the same statement for `a g₀`
+and extracting the scalar along the residually nonzero `w₀`
+(`mem_maximalIdeal_of_smul_mem_smul_top`) gives `a g₀ − E g₀ ∈ 𝔪`, hence
 `E g₀ + 1 ∈ 𝔪`. Since `3 ∈ 𝔪` (`three_mem_maximalIdeal`) while
 `1 ∉ 𝔪`, the residue characteristic is `3` and `2` is a UNIT; so
 `E g₀ − 1 = (E g₀ + 1) − 2` is a unit too. This is the one place the
@@ -4882,32 +4954,64 @@ theorem invariant_functional_defect_vanishes_of_hopf_package
     exists_connectedEtale_line_of_hopf_package V hV hρ kk hsurj π hπsurj
       hπequiv v₀ hv₀ w₀ hw₀π hw₀ne n G fG hfG σ hσ e₀ he₀ hε₀ hmin₀ habs₀
       hconn
-  -- (1) `E` is a residual diagonal entry along `w₀` as well as along `w₁`
-  have hEa : ∀ g : Γ ℚ, ρ g w₀ - E g • w₀ ∈
+  -- (1a) the residual diagonal entry along `w₀`, for the WHOLE of `Γ ℚ`.
+  -- No finite-flat input is needed for this: `ker π` is the residual line
+  -- spanned by `w₀`, and `hπequiv` makes it Galois-stable modulo `𝔪`.
+  obtain ⟨a, _c, hac⟩ :=
+    exists_residual_matrix_entries hV kk hsurj π hπsurj hπequiv w₀ v₀
+      hw₀π hw₀ne
+  have hEa : ∀ g : Γ ℚ, ρ g w₀ - a g • w₀ ∈
+      (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := fun g => (hac g).1
+  -- (1b) an element of the DECOMPOSITION GROUP AT `3` where the mod-3
+  -- cyclotomic character is nontrivial, packaged with the diagonal entry of
+  -- the connected line there. The flat package only ever sees `Γ ℚ₃ᵥ`, so
+  -- the distinguished element has to be produced locally
+  -- (`exists_local_cyclotomicCharacterModL_three_ne_one`); the global
+  -- `exists_cyclotomicCharacterModL_three_ne_one` is of no use here.
+  obtain ⟨g₀, Eg₀, hg₀, hEg₀⟩ :
+      ∃ (g : Γ ℚ) (e : R), cyclotomicCharacterModL 3 g ≠ 1 ∧
+        ρ g w₁ - e • w₁ ∈
+          (IsLocalRing.maximalIdeal R ^ (n + 2)) • (⊤ : Submodule R V) := by
+    obtain ⟨g, hg⟩ := exists_local_cyclotomicCharacterModL_three_ne_one
+    exact ⟨_, E g, hg, hE g⟩
+  -- (1c) `Eg₀` is a residual diagonal entry along `w₀` as well as along `w₁`,
+  -- so it agrees with `a g₀` modulo `𝔪`
+  have hEw₀ : ρ g₀ w₀ - Eg₀ • w₀ ∈
       (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
-    intro g
     have hle : IsLocalRing.maximalIdeal R ^ (n + 2) ≤
         IsLocalRing.maximalIdeal R := Ideal.pow_le_self (by omega)
-    have h1 : ρ g w₁ - E g • w₁ ∈
+    have h1 : ρ g₀ w₁ - Eg₀ • w₁ ∈
         (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) :=
-      Submodule.smul_mono_left hle (hE g)
-    have h2 : ρ g (w₁ - w₀) ∈
+      Submodule.smul_mono_left hle hEg₀
+    have h2 : ρ g₀ (w₁ - w₀) ∈
         (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) :=
-      apply_mem_smul_top (ρ g) hw₁
-    have h3 : E g • (w₁ - w₀) ∈
+      apply_mem_smul_top (ρ g₀) hw₁
+    have h3 : Eg₀ • (w₁ - w₀) ∈
         (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) :=
       Submodule.smul_mem _ _ hw₁
-    have heq : ρ g w₀ - E g • w₀ =
-        (ρ g w₁ - E g • w₁) - (ρ g (w₁ - w₀) - E g • (w₁ - w₀)) := by
+    have heq : ρ g₀ w₀ - Eg₀ • w₀ =
+        (ρ g₀ w₁ - Eg₀ • w₁) - (ρ g₀ (w₁ - w₀) - Eg₀ • (w₁ - w₀)) := by
       simp only [map_sub, smul_sub]
       abel
     rw [heq]
     exact Submodule.sub_mem _ h1 (Submodule.sub_mem _ h2 h3)
-  -- an element where the mod-3 cyclotomic character is nontrivial
-  obtain ⟨g₀, hg₀⟩ := exists_cyclotomicCharacterModL_three_ne_one
-  have hE₀ : E g₀ + 1 ∈ IsLocalRing.maximalIdeal R :=
-    (residual_twist_eq_cyclotomicCharacterModL V hV hρ kk hsurj π hπsurj
-      hπequiv v₀ hv₀ w₀ hw₀π hw₀ne E hEa g₀).2 hg₀
+  have hdiff : a g₀ - Eg₀ ∈ IsLocalRing.maximalIdeal R := by
+    have hsm : (a g₀ - Eg₀) • w₀ ∈
+        (IsLocalRing.maximalIdeal R) • (⊤ : Submodule R V) := by
+      have heq : (a g₀ - Eg₀) • w₀ =
+          (ρ g₀ w₀ - Eg₀ • w₀) - (ρ g₀ w₀ - a g₀ • w₀) := by
+        rw [sub_smul]
+        abel
+      rw [heq]
+      exact Submodule.sub_mem _ hEw₀ (hEa g₀)
+    exact mem_maximalIdeal_of_smul_mem_smul_top kk hsurj hw₀ne hsm
+  have hE₀ : Eg₀ + 1 ∈ IsLocalRing.maximalIdeal R := by
+    have ha₀ : a g₀ + 1 ∈ IsLocalRing.maximalIdeal R :=
+      (residual_twist_eq_cyclotomicCharacterModL V hV hρ kk hsurj π hπsurj
+        hπequiv v₀ hv₀ w₀ hw₀π hw₀ne a hEa g₀).2 hg₀
+    have heq : Eg₀ + 1 = (a g₀ + 1) - (a g₀ - Eg₀) := by ring
+    rw [heq]
+    exact Submodule.sub_mem _ ha₀ hdiff
   -- the residue characteristic is `3`, so `2` is a unit
   have h2R : (2 : R) ∉ IsLocalRing.maximalIdeal R := by
     intro h2
@@ -4916,15 +5020,15 @@ theorem invariant_functional_defect_vanishes_of_hopf_package
       rw [hrw]
       exact Submodule.sub_mem _ three_mem_maximalIdeal h2
     exact (IsLocalRing.notMem_maximalIdeal.mpr isUnit_one) h1
-  obtain ⟨u, hu⟩ : IsUnit (E g₀ - 1) := by
+  obtain ⟨u, hu⟩ : IsUnit (Eg₀ - 1) := by
     refine IsLocalRing.notMem_maximalIdeal.mp fun hmem => h2R ?_
-    have hrw : (2 : R) = (E g₀ + 1) - (E g₀ - 1) := by ring
+    have hrw : (2 : R) = (Eg₀ + 1) - (Eg₀ - 1) := by ring
     rw [hrw]
     exact Submodule.sub_mem _ hE₀ hmem
   -- (2) the functional kills the connected generator at level `n + 2`
-  have hstab : Φ (ρ g₀ w₁) - E g₀ * Φ w₁ ∈
+  have hstab : Φ (ρ g₀ w₁) - Eg₀ * Φ w₁ ∈
       IsLocalRing.maximalIdeal R ^ (n + 2) := by
-    have h := linearMap_apply_mem_of_mem_smul_top Φ (hE g₀)
+    have h := linearMap_apply_mem_of_mem_smul_top Φ hEg₀
     simpa only [map_sub, map_smul, smul_eq_mul] using h
   have hinv : Φ (ρ g₀ w₁) - Φ w₁ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
     have hz : Φ (ρ g₀ (w₁ - w₀)) - Φ (w₁ - w₀) ∈
@@ -4936,12 +5040,12 @@ theorem invariant_functional_defect_vanishes_of_hopf_package
     rw [heq]
     exact Ideal.add_mem _ (hΦw g₀) hz
   have hΦw₁ : Φ w₁ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
-    have hmul : (E g₀ - 1) * Φ w₁ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
-      have heq : (E g₀ - 1) * Φ w₁ =
-          (Φ (ρ g₀ w₁) - Φ w₁) - (Φ (ρ g₀ w₁) - E g₀ * Φ w₁) := by ring
+    have hmul : (Eg₀ - 1) * Φ w₁ ∈ IsLocalRing.maximalIdeal R ^ (n + 2) := by
+      have heq : (Eg₀ - 1) * Φ w₁ =
+          (Φ (ρ g₀ w₁) - Φ w₁) - (Φ (ρ g₀ w₁) - Eg₀ * Φ w₁) := by ring
       rw [heq]
       exact Ideal.sub_mem _ hinv hstab
-    have hrw : Φ w₁ = ((u⁻¹ : Rˣ) : R) * ((E g₀ - 1) * Φ w₁) := by
+    have hrw : Φ w₁ = ((u⁻¹ : Rˣ) : R) * ((Eg₀ - 1) * Φ w₁) := by
       rw [← mul_assoc, ← hu, ← Units.val_mul, inv_mul_cancel, Units.val_one,
         one_mul]
     rw [hrw]
