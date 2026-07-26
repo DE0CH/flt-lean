@@ -10990,40 +10990,6 @@ theorem WeierstrassCurve.exists_tateNormalForm_of_order_nine
     exact Point.some_eq_some _ (by simp [hC₂]) (by simp [hC₂])
   simp only [AddEquiv.trans_apply, e1, ← e2, AddEquiv.symm_apply_apply, Point.equivOfEq_some]
 
-/-- **No rational point of order `2` together with a rational point of
-order `9`** (PROVEN 2026-07-25; previously a bare sorry node): no
-elliptic curve over `ℚ` carries both. The whole reduction is proven
-here; its direct input `MazurLevel18.no_rational_two_torsion_abscissa`
-is PROVEN too (2026-07-25), as is
-`MazurLevel18.no_rational_point_on_X18` (2026-07-26), so the single
-surviving sorry beneath this node is
-`MazurLevel18.no_noncuspidal_point_on_smooth_model`, the `X_1(18)`
-content on the smooth genus-`2` model `y² = x⁶ − 4x⁵ + 10x⁴ − 10x³ +
-5x² − 2x + 1` — do NOT dispatch at `no_rational_two_torsion_abscissa`
-or at `no_rational_point_on_X18`. The hypotheses say
-exactly that `E(ℚ) ⊇ ℤ/2 ⊕ ℤ/9 ≅ ℤ/18`, i.e. that `(E, P + Q)` is a
-non-cuspidal rational point of `X_1(18)` — a curve of genus `2`
-(recomputed 2026-07-25: `μ/12 = 9`, `16` cusps, so `g = 1 + 9 − 8 = 2`)
-with no non-cuspidal rational point (Kenku–Ligozat–Kubert; subsumed in
-Mazur 1977, Thm 8).
-
-IRREDUCIBLE at this mathlib pin (audit 2026-07-25). Equivalent to
-`no_torsion_order_18` below, but stated as the fibre product
-`X_1(2) ×_{X_1(1)} X_1(9)` of two genus-`0` modular curves. Routes
-checked and rejected:
-
-* *The `X_0` / isogeny shortcut is NOT available here.* `18` is a
-  rational cyclic isogeny degree: `[1,−1,1,−5,−7]` of conductor `126`
-  has isogeny-degree set `{1, 2, 3, 6, 9, 18}` (PARI/GP `ellisomat`,
-  witness recomputed 2026-07-25), so `X_0(18)` has non-cuspidal
-  rational points.
-* *Divisor reduction fails by design.* The proper divisors
-  `1, 2, 3, 6, 9` all lie in Mazur's allowed set.
-* *Reduction plus Hasse only bounds the conductor.* `18 ∣ #Ẽ(𝔽_p)` at
-  every odd prime `p` of good reduction and `9 ∣ #Ẽ(𝔽_2)` at `p = 2`;
-  since `p + 1 + 2√p < 18` for `p ≤ 7` and `#Ẽ(𝔽_2) ≤ 5 < 9`, bad
-  reduction is forced at `2, 3, 5, 7` (`210 ∣ N_E`) and no further.
-
 /-- **The `X_0(3)` `j`-line, as pure algebra** (PROVEN 2026-07-26): if a
 curve's `b`-invariants are normalised so that `b₈ = 0` — i.e. so that
 `x = 0` is the abscissa of a `3`-torsion point — then its `j`-invariant
@@ -11181,13 +11147,39 @@ theorem WeierstrassCurve.exists_x0Three_kernel_lift
         = t ^ 3 * ((E.b₂ + 12 * r) ^ 2 - 27 * (E.b₄ + r * E.b₂ + 6 * r ^ 2)) :=
   sorry
 
-/-- **`X_0(9)`, the genus-`0` level: a rational cyclic `9`-subgroup puts
-`j` on the explicit degree-`12` Hauptmodul curve** (PROVEN 2026-07-26
-from `exists_x0Three_kernel_lift` and the covering identity
-`MazurLevel27.j_of_x0Three_cover`): if the geometric
-points of an elliptic curve over `ℚ` contain a point `g` of order `9`
-whose cyclic subgroup is `Gal(ℚ̄/ℚ)`-stable, then there is a rational
-number `t` with
+/-- **No rational point of order `2` together with a rational point of
+order `9`** (PROVEN 2026-07-25; previously a bare sorry node): no
+elliptic curve over `ℚ` carries both. The whole reduction is proven
+here; its direct input `MazurLevel18.no_rational_two_torsion_abscissa`
+is PROVEN too (2026-07-25), as is
+`MazurLevel18.no_rational_point_on_X18` (2026-07-26), so the single
+surviving sorry beneath this node is
+`MazurLevel18.no_noncuspidal_point_on_smooth_model`, the `X_1(18)`
+content on the smooth genus-`2` model `y² = x⁶ − 4x⁵ + 10x⁴ − 10x³ +
+5x² − 2x + 1` — do NOT dispatch at `no_rational_two_torsion_abscissa`
+or at `no_rational_point_on_X18`. The hypotheses say
+exactly that `E(ℚ) ⊇ ℤ/2 ⊕ ℤ/9 ≅ ℤ/18`, i.e. that `(E, P + Q)` is a
+non-cuspidal rational point of `X_1(18)` — a curve of genus `2`
+(recomputed 2026-07-25: `μ/12 = 9`, `16` cusps, so `g = 1 + 9 − 8 = 2`)
+with no non-cuspidal rational point (Kenku–Ligozat–Kubert; subsumed in
+Mazur 1977, Thm 8).
+
+IRREDUCIBLE at this mathlib pin (audit 2026-07-25). Equivalent to
+`no_torsion_order_18` below, but stated as the fibre product
+`X_1(2) ×_{X_1(1)} X_1(9)` of two genus-`0` modular curves. Routes
+checked and rejected:
+
+* *The `X_0` / isogeny shortcut is NOT available here.* `18` is a
+  rational cyclic isogeny degree: `[1,−1,1,−5,−7]` of conductor `126`
+  has isogeny-degree set `{1, 2, 3, 6, 9, 18}` (PARI/GP `ellisomat`,
+  witness recomputed 2026-07-25), so `X_0(18)` has non-cuspidal
+  rational points.
+* *Divisor reduction fails by design.* The proper divisors
+  `1, 2, 3, 6, 9` all lie in Mazur's allowed set.
+* *Reduction plus Hasse only bounds the conductor.* `18 ∣ #Ẽ(𝔽_p)` at
+  every odd prime `p` of good reduction and `9 ∣ #Ẽ(𝔽_2)` at `p = 2`;
+  since `p + 1 + 2√p < 18` for `p ≤ 7` and `#Ẽ(𝔽_2) ≤ 5 < 9`, bad
+  reduction is forced at `2, 3, 5, 7` (`210 ∣ N_E`) and no further.
 
 SUPERSEDED (2026-07-25) — the "IRREDUCIBLE at this mathlib pin" verdict
 above was about the node as a whole, and it no longer applies to THIS
