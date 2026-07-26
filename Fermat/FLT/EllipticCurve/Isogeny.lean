@@ -92,22 +92,34 @@ unconditional and remain proven.
 
 ## Open leaves left by this file
 
-`IsRationalMap.comp_of_constX`, `IsRationalMap.add`, `IsRationalMap.isIsogeny`,
-`nsmul_surjective`, `finite_nsmulKer`, `Isogeny.isRationalMap_dualHom`,
-`Isogeny.degree_comp`.
+`IsRationalMap.add`, `IsRationalMap.isIsogeny`, `nsmul_surjective`,
+`finite_nsmulKer`, `Isogeny.isRationalMap_dualHom`, `Isogeny.degree_comp`.
 
 `IsRationalMap.neg` was on this list and is now PROVEN.
+
+`IsRationalMap.comp` was on this list and is now **PROVEN and axiom-clean**, hence
+so is `IsIsogeny.comp`. It rests on `homogSubst` (substitute `A/B`, clear
+denominators), `eval_homogSubst`, `exists_const_of_homogSubst_eq_zero` (the
+degeneracy criterion) and `IsRationalMap.comp_of_constX` (the constant-`x` case) —
+all proven here.
 
 `IsIsogeny.add` was on this list; it is now PROVEN from `IsRationalMap.add` and
 `IsRationalMap.isIsogeny`, after being refuted and restated (above).
 
-`IsRationalMap.comp` was on this list; it is now PROVEN from
-`IsRationalMap.comp_of_constX` and the substitution machinery `homogSubst` /
-`eval_homogSubst` / `exists_const_of_homogSubst_eq_zero`, all three of which are
-proven here and axiom-clean. The only residue is the degenerate case where `x ∘ φ`
-is constant, which is what `comp_of_constX` isolates: the substitution argument is
-complete, and `exists_const_of_homogSubst_eq_zero` is exactly the proof that
-nothing else can obstruct it.
+## Two techniques from `IsRationalMap.comp` that the remaining leaves will want
+
+1. **Kill a bad locus by multiplying the witness through by its defining
+   polynomial.** `IsRationalMap`'s certificate must hold at *every* point, but a
+   derivation typically only works where some denominator `B` is nonzero. Taking
+   the witness pair to be `(A'' * B, B'' * B)` instead of `(A'', B'')` repairs this
+   for free: where `B` vanishes both sides of the certificate become `0`. This is
+   used in `comp_of_constX` and is why `eval_homogSubst` deliberately carries no
+   nonvanishing hypothesis.
+
+2. **The only obstruction to a substituted witness is a constant `x`-coordinate.**
+   The `B ≠ 0` side condition of `IsRationalMap` is the whole difficulty in
+   `comp`, and `exists_const_of_homogSubst_eq_zero` reduces it to a single
+   degenerate case. Expect the same shape elsewhere.
 -/
 
 
@@ -345,37 +357,120 @@ theorem exists_const_of_homogSubst_eq_zero {A B Q : F[X]} (hB : B ≠ 0) (hQ : Q
   rw [hA, hBeq, ← ha, ← hbb, ← mul_assoc, mul_comm (Polynomial.C (a / b)) g, mul_assoc,
     ← Polynomial.C_mul, div_mul_cancel₀ a hbne]
 
-/-- **LEAF.** The composite is rational in the degenerate case, where the first map
-has a *constant* `x`-coordinate away from the zeros of `B`.
+omit [DecidableEq F] in
+/-- A nonzero point is determined by its two coordinates. -/
+theorem eq_of_veluPoint_eq {Q₁ Q₂ : W.Point} (h1 : Q₁ ≠ 0) (h2 : Q₂ ≠ 0)
+    (hx : veluPointX Q₁ = veluPointX Q₂) (hy : veluPointY Q₁ = veluPointY Q₂) : Q₁ = Q₂ := by
+  rcases Q₁ with _ | ⟨x₁, y₁, hh₁⟩
+  · exact absurd rfl h1
+  rcases Q₂ with _ | ⟨x₂, y₂, hh₂⟩
+  · exact absurd rfl h2
+  exact velu_point_some_eq hx hy
+
+omit [DecidableEq F] in
+/-- Two nonzero points with the same `x`-coordinate are equal or negatives — the
+fibres of `x` have at most two elements. This is `Affine.Point.X_eq_iff` phrased
+through `veluPointX`. -/
+theorem eq_or_eq_neg_of_veluPointX_eq {Q₁ Q₂ : W.Point} (h1 : Q₁ ≠ 0) (h2 : Q₂ ≠ 0)
+    (hx : veluPointX Q₁ = veluPointX Q₂) : Q₁ = Q₂ ∨ Q₁ = -Q₂ := by
+  rcases Q₁ with _ | ⟨x₁, y₁, hh₁⟩
+  · exact absurd rfl h1
+  rcases Q₂ with _ | ⟨x₂, y₂, hh₂⟩
+  · exact absurd rfl h2
+  exact Affine.Point.X_eq_iff.1 hx
+
+/-- The composite is rational in the degenerate case, where the first map has a
+*constant* `x`-coordinate away from the zeros of `B`.
 
 This is the residue of `IsRationalMap.comp` that the substitution argument cannot
 reach, and it is genuinely different in kind: there is no denominator to clear,
-because `x(φ P) = c` is already constant, and the content is instead a small case
-analysis on the geometry of the image of `φ`.
+because `x(φ P) = c` is already constant, and the content is instead the geometry of
+the (at most two-point) fibre of `x` over `c`.
 
-The mathematics, for whoever closes it. Only two points of `W'` have `x`-coordinate
-`c`, namely some `R` and `-R`, so `φ` maps `{P : B(x P) ≠ 0}` into `{R, -R}` and
-`ψ ∘ φ` maps it into `{ψ R, -ψ R}`. Hence:
+Note `ψ` needs **no** rationality hypothesis here: only two points of `W'` have
+`x`-coordinate `c`, namely some `R` and `-R`, so `φ` maps `{P : B(x P) ≠ 0}` into
+`{R, -R}` and `ψ ∘ φ` maps it into `{ψ R, -ψ R}` for a completely arbitrary
+homomorphism `ψ`. Hence:
 
-* the `x`-coordinate of `ψ (φ P)` is the single constant `e := x (ψ R)`, and
-  `(A, B) := (C e * B, B)` is an `x`-witness — at the zeros of `B` both sides are
-  `0`, which is why the factor `B` must be kept;
-* the `y`-coordinate takes the two values `y(ψ R)` and `y(-ψ R)`, and which one
-  occurs is determined by `y(φ P)`, which is itself rational in `(x P, y P)` through
-  `φ`'s own `y`-certificate. When `R ≠ -R` the unique affine `α, β` with
-  `α · y(R) + β = y(ψ R)` and `α · y(-R) + β = y(-ψ R)` gives the `y`-witness
-  `(α C, α D + β E, E)`; when `R = -R` then `ψ R = -ψ R` too, so `y(ψ (φ P))` is
-  constant and `(0, C f, 1)` works.
+* `x (ψ (φ P))` is the single constant `e := x (ψ R)`, and `(C e * B, B)` is an
+  `x`-witness — at the zeros of `B` both sides are `0`, which is why the factor `B`
+  must be kept;
+* `y (ψ (φ P))` takes the two values `y(ψ R)` and `y(-ψ R)`, and which one occurs is
+  determined by `y(φ P)`, which is rational in `(x P, y P)` through `φ`'s own
+  `y`-certificate. The affine interpolation `α · y(R) + β = y(ψ R)`,
+  `α · y(-R) + β = y(-ψ R)` gives the `y`-witness `(α Cx B, (α D + β E) B, E B)`.
 
-Sub-cases to be careful about: no `P` at all with `B (x P) ≠ 0` and `ψ (φ P) ≠ 0`
-(then `(0, B, 0, 0, B)` discharges everything), and `ψ`'s own `y`-certificate
-degenerating at `c` (`E'(c) = C'(c) = D'(c) = 0`), where the witness must come from
-the geometry above rather than from `ψ`'s polynomials. -/
+The interpolation needs no case split on `R = -R`: when `y(R) = y(-R)` the slope
+`α` is `0/0 = 0` in Lean, and that is the correct answer, because `y(R) = y(-R)`
+forces `R = -R`, hence `ψ R = ψ (-R) = -ψ R` and the two interpolation conditions
+coincide. -/
 theorem IsRationalMap.comp_of_constX {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.Point}
-    (hψ : IsRationalMap ψ) {B : F[X]} (hB : B ≠ 0) (c : F)
-    (hc : ∀ P : W.Point, φ P ≠ 0 → B.eval (veluPointX P) ≠ 0 → veluPointX (φ P) = c) :
-    IsRationalMap (ψ.comp φ) :=
-  sorry
+    {B Cx D E : F[X]} (hB : B ≠ 0) (hE : E ≠ 0) (c : F)
+    (hxc : ∀ P : W.Point, φ P ≠ 0 → B.eval (veluPointX P) ≠ 0 → veluPointX (φ P) = c)
+    (hyc : ∀ P : W.Point, φ P ≠ 0 →
+      veluPointY (φ P) * E.eval (veluPointX P)
+        = Cx.eval (veluPointX P) * veluPointY P + D.eval (veluPointX P)) :
+    IsRationalMap (ψ.comp φ) := by
+  classical
+  by_cases hex : ∃ P₀ : W.Point, ψ (φ P₀) ≠ 0 ∧ B.eval (veluPointX P₀) ≠ 0
+  swap
+  · -- No point contributes: `B` vanishes wherever the composite is nonzero.
+    refine ⟨0, B, 0, 0, B, hB, hB, fun P hP => ?_⟩
+    have hb : B.eval (veluPointX P) = 0 := by
+      by_contra hb
+      exact hex ⟨P, hP, hb⟩
+    simp [hb]
+  obtain ⟨P₀, hS₀, hB₀⟩ := hex
+  have hR₀ : φ P₀ ≠ 0 := fun h => hS₀ (by rw [h, map_zero])
+  -- Affine interpolation of `y ∘ ψ` across the two-element fibre `{φ P₀, -(φ P₀)}`.
+  obtain ⟨α, β, hlin, hlin'⟩ : ∃ α β : F,
+      α * veluPointY (φ P₀) + β = veluPointY (ψ (φ P₀)) ∧
+        α * veluPointY (-(φ P₀)) + β = veluPointY (-(ψ (φ P₀))) := by
+    set yR := veluPointY (φ P₀) with hyRdef
+    set yR' := veluPointY (-(φ P₀)) with hyRdef'
+    set yS := veluPointY (ψ (φ P₀)) with hySdef
+    set yS' := veluPointY (-(ψ (φ P₀))) with hySdef'
+    refine ⟨(yS - yS') / (yR - yR'), yS - (yS - yS') / (yR - yR') * yR, by ring, ?_⟩
+    by_cases hyy : yR - yR' = 0
+    · -- `y(R) = y(-R)` forces `R = -R`, hence `ψ R = -ψ R` and the two conditions agree.
+      have hRR : φ P₀ = -(φ P₀) :=
+        eq_of_veluPoint_eq hR₀ (neg_ne_zero.2 hR₀) (velu_pointX_neg _).symm (sub_eq_zero.1 hyy)
+      have hSS : ψ (φ P₀) = -(ψ (φ P₀)) := by
+        conv_lhs => rw [hRR]
+        rw [map_neg]
+      have hy : yS = yS' := congrArg veluPointY hSS
+      rw [hyy, div_zero, hy]
+      ring
+    · have hmul : (yS - yS') / (yR - yR') * (yR - yR') = yS - yS' := div_mul_cancel₀ _ hyy
+      linear_combination -hmul
+  -- The pointwise description of the composite on the good locus.
+  have key : ∀ P : W.Point, ψ (φ P) ≠ 0 → B.eval (veluPointX P) ≠ 0 →
+      veluPointX (ψ (φ P)) = veluPointX (ψ (φ P₀)) ∧
+        veluPointY (ψ (φ P)) = α * veluPointY (φ P) + β := by
+    intro P hP hBP
+    have hφP : φ P ≠ 0 := fun h => hP (by rw [h, map_zero])
+    have hxeq : veluPointX (φ P) = veluPointX (φ P₀) := by
+      rw [hxc P hφP hBP, hxc P₀ hR₀ hB₀]
+    rcases eq_or_eq_neg_of_veluPointX_eq hφP hR₀ hxeq with h | h
+    · rw [h]
+      exact ⟨rfl, hlin.symm⟩
+    · have hψeq : ψ (φ P) = -(ψ (φ P₀)) := by rw [h, map_neg]
+      rw [hψeq, h]
+      exact ⟨velu_pointX_neg _, hlin'.symm⟩
+  refine ⟨Polynomial.C (veluPointX (ψ (φ P₀))) * B, B,
+    Polynomial.C α * Cx * B, (Polynomial.C α * D + Polynomial.C β * E) * B, E * B,
+    hB, mul_ne_zero hE hB, fun P hP => ?_⟩
+  by_cases hBP : B.eval (veluPointX P) = 0
+  · simp [hBP]
+  have hPc : ψ (φ P) ≠ 0 := hP
+  have hφP : φ P ≠ 0 := fun h => hPc (by rw [h, map_zero])
+  obtain ⟨hkx, hky⟩ := key P hPc hBP
+  refine ⟨?_, ?_⟩
+  · simp only [Polynomial.eval_mul, Polynomial.eval_C]
+    rw [show veluPointX ((ψ.comp φ) P) = veluPointX (ψ (φ P)) from rfl, hkx]
+  · simp only [Polynomial.eval_mul, Polynomial.eval_add, Polynomial.eval_C]
+    rw [show veluPointY ((ψ.comp φ) P) = veluPointY (ψ (φ P)) from rfl, hky]
+    linear_combination (α * B.eval (veluPointX P)) * (hyc P hφP)
 
 /-- The composite of two rational maps is rational.
 
@@ -394,7 +489,8 @@ theorem IsRationalMap.comp {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.
   obtain ⟨A, B, Cx, D, E, hB, hE, hcert⟩ := hφ
   by_cases hconst : ∃ c : F, A = Polynomial.C c * B
   · obtain ⟨c, hcc⟩ := hconst
-    refine IsRationalMap.comp_of_constX hψ hB c fun P hP hBP => ?_
+    refine IsRationalMap.comp_of_constX (Cx := Cx) (D := D) hB hE c
+      (fun P hP hBP => ?_) (fun P hP => (hcert P hP).2)
     have hx := (hcert P hP).1
     rw [hcc] at hx
     simp only [Polynomial.eval_mul, Polynomial.eval_C] at hx
@@ -442,7 +538,30 @@ This is the affine addition formula on `W'` applied to the two images: `x` and
 `y` of `φ P + ψ P` are rational in `x(φ P), y(φ P), x(ψ P), y(ψ P)`, each of
 which is rational in `x P, y P`, and `y P` occurs to degree at most one after
 reduction by the Weierstrass equation. The case analysis is over the three
-branches of the group law. -/
+branches of the group law.
+
+Notes for whoever closes it, from having closed `IsRationalMap.comp`.
+
+*The real obstruction is not the algebra, it is that `x` must come out a function
+of `x P` alone.* The certificate demands `x((φ+ψ)P) = A(x P) / B(x P)` with no
+`y P` in sight. That is true — `(φ+ψ)(-P) = -((φ+ψ)P)` and `x` is `±`-invariant, so
+`x ∘ (φ+ψ)` really does factor through `x` — but it is not visible in the chord
+formula: the slope `λ = (y₂-y₁)/(x₂-x₁)` is affine in `y P`, and `λ²` produces a
+`(y P)²` that must be reduced by the Weierstrass equation before the residual
+`y P`-dependence cancels. Budget for that cancellation; it is the step that makes
+this leaf harder than `comp`, not the branch analysis.
+
+*The branch analysis is cheaper than it looks*, because of technique 1 in the module
+docstring. The branches are cut out by polynomial conditions in `x P`:
+`x(φ P) = x(ψ P)` is `A₁ B₂ - A₂ B₁ = 0` at `x P`. So a witness valid only on
+`{A₁B₂ - A₂B₁ ≠ 0}` becomes valid everywhere after multiplying through by
+`A₁B₂ - A₂B₁`; there is no need to make one formula cover the doubling branch.
+
+*Reductions that are free*: `φ = 0` gives `φ + ψ = ψ`, `ψ = 0` gives `φ`, and
+`ψ = -φ` gives `0` — all three already rational (`IsRationalMap.zero`).
+
+*The `≠ 0` side conditions* will degenerate in exactly the same way as in `comp`;
+`exists_const_of_homogSubst_eq_zero` above is available and is the tool for them. -/
 theorem IsRationalMap.add {φ ψ : W.Point →+ W'.Point}
     (hφ : IsRationalMap φ) (hψ : IsRationalMap ψ) : IsRationalMap (φ + ψ) :=
   sorry
@@ -905,7 +1024,27 @@ theorem dualHom_comp (φ : Isogeny W W') (h0 : φ.toHom ≠ 0) (P : W.Point) :
 /-- **LEAF.** The dual of an isogeny is again given by rational functions.
 
 This is the one genuinely geometric half of the dual construction: the map
-induced on the quotient is a morphism of curves. -/
+induced on the quotient is a morphism of curves.
+
+A warning about its generality, recorded 2026-07-26. This statement carries **no**
+`[IsAlgClosed F]`, and it is stated for a `φ` whose `IsIsogeny` witness asserts
+surjectivity *on `F`-points*. Over a general field that hypothesis is extremely
+strong — strong enough that the FALSITY AUDIT of `IsIsogeny.add` shows `[2]` on
+`W(𝔽₅)` fails it — so the leaf is not false, but its `F`-point surjectivity
+hypothesis is doing work that a reader will not expect. Whoever closes it should
+consider adding `[IsAlgClosed F]` to match `dual`, which already carries it: that
+costs nothing (every consumer is over `AlgebraicClosure ℚ`) and makes the
+hypothesis honest rather than accidental.
+
+The mathematics is not the substitution algebra of `IsRationalMap.comp` — the dual
+is not obtained by composing given rational maps — so `homogSubst` will not help
+directly. The classical route is via divisors: `φ̂` is `Pic⁰` functoriality, i.e.
+`φ̂ = ι ∘ φ^* ∘ ι'⁻¹` through the isomorphisms `E ≅ Pic⁰(E)`, and rationality
+comes from pullback of divisors being algebraic. Nothing in the current tree
+provides `Pic⁰` of a Weierstrass curve, though `Affine.Point.toClass` into
+`ClassGroup W.CoordinateRing` (mathlib, already used to prove associativity of the
+group law) is the closest existing handle and is worth examining before building
+divisor theory from scratch. -/
 theorem isRationalMap_dualHom (φ : Isogeny W W') (h0 : φ.toHom ≠ 0) :
     IsRationalMap (φ.dualHom h0) :=
   sorry
