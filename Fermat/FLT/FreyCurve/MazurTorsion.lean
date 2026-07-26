@@ -8618,15 +8618,24 @@ now DERIVED from four nodes there:
   computing `2Q`, `3Q` and imposing `4Q = −3Q`.
 * `WeierstrassCurve.exists_two_division_root` (PROVEN) — a rational point of
   order `2` is a rational root of `4x³ + b₂x² + 2b₄x + b₆`.
-* `WeierstrassCurve.x1_fourteen_no_rational_point` (sorry node) — the
-  irreducible arithmetic core, now stated with no elliptic curve and no
-  modular curve in it: the `2`-division cubic of `E(d³ − d², d² − d)` has no
-  rational root for rational `d ∉ {0, 1}`. That is the affine equation of
-  `X_1(14)`, and it is where the rank-`0` Mordell–Weil input still sits.
+* `WeierstrassCurve.x1_fourteen_no_rational_point` (PROVEN 2026-07-26) — the
+  arithmetic core, stated with no elliptic curve and no modular curve in it:
+  the `2`-division cubic of `E(d³ − d², d² − d)` has no rational root for
+  rational `d ∉ {0, 1}`. That is the affine equation of `X_1(14)`.
 
 The gain is that the surviving arithmetic obstruction is now one explicit
 polynomial equation in two rational variables, attackable by descent, instead
-of a statement about torsion of elliptic curves. -/
+of a statement about torsion of elliptic curves.
+
+RESOLVED 2026-07-26. That equation is now PROVEN: its projective closure is
+the Cremona curve `14a4`, `y² + xy + y = x³ − x` of conductor `14`, and the
+birational map is written out and verified in Lean (a `linear_combination`
+against the sextic with an explicit cofactor, plus three saturated ideal
+certificates pulling the three rational `x`-values back to `d ∈ {0, 1}`).
+The rank-`0` Mordell–Weil input now sits where level `11`'s already did, in
+`Fermat/FLT/EllipticCurve/MordellWeil.lean` as `curve14a4_isTorsion` and
+`curve14a4_points`, SHARING the `mordellWeil` leaf with `curve11a3` rather
+than duplicating a descent here. -/
 theorem WeierstrassCurve.not_order_two_and_order_seven_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (P Q : (E⁄ℚ).Point)
     (hP : addOrderOf P = 2) (hQ : addOrderOf Q = 7) : False := by
