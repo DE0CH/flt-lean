@@ -3099,20 +3099,25 @@ extension `κ/ℚ` would make `C ×_ℚ Spec κ` disconnected. So `C = Spec ℚ`
 `F = ℚ` is totally real and totally split at every prime, and the
 conclusion is discharged.
 
-Everything in that paragraph except the last collapse is proven below; the
-collapse is the leaf `nonempty_ringHom_uliftRat_of_isArtinianRing`. -/
+Everything in that paragraph is proven below except one geometric fact:
+the leaf `exists_residueField_tensorSelf_irreducible`, which produces the
+residue field `κ` of the unique point together with the irreducibility and
+reducedness of `κ ⊗_ℚ κ`. The collapse `κ = ℚ` itself is PROVEN, as
+`finrank_eq_one_of_irreducible_tensorSelf`. -/
 
 open CategoryTheory AlgebraicGeometry in
-/-- **A zero-dimensional geometrically irreducible affine `ℚ`-scheme has a
-`ℚ`-point** (SORRY — the arithmetic content of the degenerate branch).
+/-- **The residue field of a zero-dimensional geometrically irreducible
+affine `ℚ`-scheme, with its base change** (SORRY — the geometric content
+of the degenerate branch; the ARITHMETIC content is proven below).
 
 At this point `C` is a ONE-POINT affine scheme (`hirr` plus the discrete
 topology of an Artinian scheme), so `A := Γ(C, ⊤)` is a local Artinian
 `ℚ`-algebra of finite type; write `κ = A / 𝔪` for its residue field, a
-finite extension of `ℚ` by Zariski's lemma. The claim is that `κ = ℚ`,
-equivalently that there is a ring map `A →+* ULift.{u} ℚ` at all (any such
-map has prime kernel, and `A` has a unique prime, so it factors through
-`κ` and exhibits `κ ↪ ℚ`).
+finite extension of `ℚ` by Zariski's lemma, and note that `A ↠ κ` supplies
+the `Nonempty (Γ(C, ⊤) →+* κ)` clause. What this leaf must additionally
+produce is that `Spec (κ ⊗_ℚ κ)` is irreducible, which is `hgi` read at
+`K = κ`, and that `κ ⊗_ℚ κ` is reduced, which is separability. Given
+those, `finrank_eq_one_of_irreducible_tensorSelf` below finishes: `κ = ℚ`.
 
 WHY IT IS TRUE, and what a prover has to build. Base-change along
 `Spec κ ⟶ Spec ℚ`: `GeometricallyIrreducible fC` says
@@ -3127,17 +3132,100 @@ reducible when `[κ : ℚ] = n ≥ 2`. In characteristic zero `κ = ℚ(α)` wit
 separability, whence `κ[X]/(f) ≅ κ × κ[X]/(h)` is a nontrivial product and
 its spectrum is disconnected — contradiction.
 
-MISSING MACHINERY, honestly (2026-07-26): the two identifications
+MISSING MACHINERY, honestly (2026-07-26): the identification
 `C ×_{Spec ℚ} Spec κ ≅ Spec (A ⊗_ℚ κ)` (available as
 `AlgebraicGeometry.pullbackSpecIso`, but it must be transported across
-`C.isoSpec`) and `κ ⊗_ℚ κ ≅ κ[X]/(f)` (a `PowerBasis` computation), plus
-Zariski's lemma for `κ/ℚ`. All three exist at this pin; none is packaged,
-so this is a real if unglamorous formalization job rather than a gap in
-mathematics.
+`C.isoSpec`); Zariski's lemma for `κ/ℚ`; and reducedness of `κ ⊗_ℚ κ`,
+for which the route at this pin is
+`Algebra.FormallyEtale.of_isSeparable` (characteristic zero, so `κ/ℚ` is
+separable) followed by `Algebra.FormallyEtale.iff_exists_algEquiv_prod`,
+which presents an étale algebra over a field as a finite PRODUCT of finite
+separable field extensions — a product of fields is reduced. The
+alternative entry point is `Algebra.IsGeometricallyReduced`
+(`Mathlib/RingTheory/Nilpotent/GeometricallyReduced.lean`), whose instance
+`[Algebra.IsAlgebraic k K] [IsGeometricallyReduced k A] : IsReduced (K ⊗[k] A)`
+is exactly the shape needed; what is absent there is the instance
+"over a perfect field, reduced implies geometrically reduced"
+(stacks 030V).
 
-The hypotheses `hsmooth` is carried but unused by the argument sketched
-above — smoothness is what makes `A` REDUCED, hence `A = κ` outright,
-which shortens the argument but is not needed for the conclusion. -/
+Everything DOWNSTREAM of this leaf is proven: see
+`finrank_eq_one_of_irreducible_tensorSelf` just below, which is the actual
+mathematics (`n² = n`), and `nonempty_ringHom_uliftRat_of_finrank_eq_one`.
+
+`hsmooth` is carried but unused by the argument sketched above —
+smoothness is what makes `A` REDUCED, hence `A = κ` outright, which
+shortens the argument but is not needed for the conclusion. -/
+theorem exists_residueField_tensorSelf_irreducible
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hart : IsArtinianRing Γ(C, ⊤)) (hirr : IrreducibleSpace ↥C) :
+    ∃ (κ : Type u) (_ : Field κ) (_ : Algebra ℚ κ) (_ : FiniteDimensional ℚ κ)
+      (_ : IsReduced (TensorProduct ℚ κ κ)),
+      IrreducibleSpace (PrimeSpectrum (TensorProduct ℚ κ κ)) ∧
+        Nonempty (Γ(C, ⊤) →+* κ) :=
+  sorry
+
+open TensorProduct AlgebraicGeometry in
+/-- **A number field that is geometrically irreducible over `ℚ` IS `ℚ`**
+(PROVEN — the mathematical core of the degenerate branch).
+
+`κ ⊗_ℚ κ` is reduced by hypothesis and has irreducible spectrum, so it is
+a DOMAIN (`isIntegral_of_irreducibleSpace_of_isReduced` plus
+`affine_isIntegral_iff`); being finite-dimensional over `ℚ` it is Artinian,
+and an Artinian domain is a field (`IsArtinianRing.isField_of_isDomain`).
+The multiplication map `μ : κ ⊗_ℚ κ →ₐ[ℚ] κ` is surjective (it hits `x`
+at `x ⊗ₜ 1`) and, being a ring map out of a field into a nontrivial ring,
+injective. So `μ` is a `ℚ`-linear isomorphism and
+`n² = finrank ℚ (κ ⊗_ℚ κ) = finrank ℚ κ = n`, whence `n = 1`.
+
+This is the standard "geometrically connected + a rational point forces
+the ground field" argument, in the only form it takes for a
+zero-dimensional scheme: the diagonal of `Spec κ` over `Spec ℚ` is an
+isomorphism exactly when `κ = ℚ`. -/
+theorem finrank_eq_one_of_irreducible_tensorSelf (κ : Type u) [Field κ] [Algebra ℚ κ]
+    [FiniteDimensional ℚ κ] [IsReduced (κ ⊗[ℚ] κ)]
+    (h : IrreducibleSpace (PrimeSpectrum (κ ⊗[ℚ] κ))) :
+    Module.finrank ℚ κ = 1 := by
+  classical
+  haveI : IrreducibleSpace ↥(Spec (CommRingCat.of (κ ⊗[ℚ] κ))) := h
+  haveI : IsDomain (κ ⊗[ℚ] κ) := by
+    have hint := isIntegral_of_irreducibleSpace_of_isReduced
+      (Spec (CommRingCat.of (κ ⊗[ℚ] κ)))
+    exact (AlgebraicGeometry.affine_isIntegral_iff (CommRingCat.of (κ ⊗[ℚ] κ))).mp hint
+  haveI : IsArtinianRing (κ ⊗[ℚ] κ) := IsArtinianRing.of_finite ℚ (κ ⊗[ℚ] κ)
+  have hfield : IsField (κ ⊗[ℚ] κ) := IsArtinianRing.isField_of_isDomain _
+  let μ : κ ⊗[ℚ] κ →ₐ[ℚ] κ :=
+    Algebra.TensorProduct.lift (AlgHom.id ℚ κ) (AlgHom.id ℚ κ) fun a b ↦ mul_comm a b
+  have hsurj : Function.Surjective μ := fun x ↦ ⟨x ⊗ₜ 1, by simp [μ]⟩
+  have hinj : Function.Injective μ := by
+    letI : Field (κ ⊗[ℚ] κ) := hfield.toField
+    exact (μ : (κ ⊗[ℚ] κ) →+* κ).injective
+  have hbij : Function.Bijective μ := ⟨hinj, hsurj⟩
+  have hrank : Module.finrank ℚ (κ ⊗[ℚ] κ) = Module.finrank ℚ κ :=
+    (LinearEquiv.ofBijective μ.toLinearMap hbij).finrank_eq
+  rw [Module.finrank_tensorProduct] at hrank
+  have hpos : 0 < Module.finrank ℚ κ := Module.finrank_pos
+  nlinarith [hrank, hpos]
+
+/-- **A `ℚ`-algebra of rank one has a `ℚ`-valued point** (PROVEN glue):
+`finrank ℚ κ = 1` says `⊥ = ⊤` as subalgebras, i.e. `algebraMap ℚ κ` is
+bijective, and its inverse composed with `ℚ ≃+* ULift.{u} ℚ` is the map. -/
+theorem nonempty_ringHom_uliftRat_of_finrank_eq_one (κ : Type u) [Field κ] [Algebra ℚ κ]
+    (h : Module.finrank ℚ κ = 1) : Nonempty (κ →+* ULift.{u} ℚ) := by
+  have hbij : Function.Bijective (algebraMap ℚ κ) :=
+    Algebra.bijective_algebraMap_iff.2 (Subalgebra.bot_eq_top_iff_finrank_eq_one.2 h).symm
+  exact ⟨(uliftRatEquiv.{u}).symm.toRingHom.comp
+    (RingEquiv.ofBijective (algebraMap ℚ κ) hbij).symm.toRingHom⟩
+
+open TensorProduct AlgebraicGeometry in
+/-- **The degenerate branch's coordinate ring maps to `ℚ`** (PROVEN over
+`exists_residueField_tensorSelf_irreducible`): that leaf hands back the
+residue field `κ` with `Spec (κ ⊗_ℚ κ)` irreducible and reduced;
+`finrank_eq_one_of_irreducible_tensorSelf` then forces `κ = ℚ`, and the
+composite `Γ(C, ⊤) →+* κ →+* ULift.{u} ℚ` is the required map. -/
 theorem nonempty_ringHom_uliftRat_of_isArtinianRing
     {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -3145,8 +3233,12 @@ theorem nonempty_ringHom_uliftRat_of_isArtinianRing
     (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
     (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
     (hart : IsArtinianRing Γ(C, ⊤)) (hirr : IrreducibleSpace ↥C) :
-    Nonempty (Γ(C, ⊤) →+* ULift.{u} ℚ) :=
-  sorry
+    Nonempty (Γ(C, ⊤) →+* ULift.{u} ℚ) := by
+  obtain ⟨κ, _, _, _, _, hirrκ, ⟨φ⟩⟩ :=
+    exists_residueField_tensorSelf_irreducible fC hsmooth hft hgi hart hirr
+  obtain ⟨ψ⟩ := nonempty_ringHom_uliftRat_of_finrank_eq_one κ
+    (finrank_eq_one_of_irreducible_tensorSelf κ hirrκ)
+  exact ⟨ψ.comp φ⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **The degenerate branch gives a `ℚ`-point** (PROVEN over the leaf
@@ -3475,11 +3567,14 @@ exactly the split described in the FAITHFULNESS paragraph, and it is now
 performed rather than promised:
 
 * the degenerate branch is `exists_totallySplitPoint_of_krullDim_le_zero`,
-  proven above over the single algebraic leaf
-  `nonempty_ringHom_uliftRat_of_isArtinianRing` ("a zero-dimensional
-  geometrically irreducible affine `ℚ`-scheme is `Spec ℚ`"), with all the
-  `ULift.{u} ℚ` bookkeeping — number field, totally real, totally split at
-  every prime — discharged;
+  proven above over the single geometric leaf
+  `exists_residueField_tensorSelf_irreducible` (the residue field of the
+  unique point of `C`, with `Spec (κ ⊗_ℚ κ)` irreducible and reduced). Its
+  arithmetic consequence — `κ = ℚ`, i.e. "a zero-dimensional geometrically
+  irreducible affine `ℚ`-scheme is `Spec ℚ`" — is PROVEN, as
+  `finrank_eq_one_of_irreducible_tensorSelf`, and so is all the
+  `ULift.{u} ℚ` bookkeeping (number field, totally real, totally split at
+  every prime);
 * the curve branch is `exists_projectiveCompactification_of_affine_curve`
   (§3.1) followed by
   `exists_totallySplitPoint_of_projectiveCompactification` (§3.2–3.10).
