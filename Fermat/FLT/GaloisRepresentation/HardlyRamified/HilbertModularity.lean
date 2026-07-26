@@ -10622,8 +10622,328 @@ theorem exists_conj_baseChange_of_matrix_hilbert
       rw [Matrix.mulVec_mulVec, hconj g]
   rw [key (e.symm v), LinearEquiv.apply_symm_apply]
 
+open scoped Matrix in
+/-- **The dual-basis computation: coordinates against a trace-orthogonal
+Galois basis lie in the subring** (PROVEN 2026-07-26; TENTH local copy of a
+`Deformation.lean` helper — the original is `repr_mem_subring_of_trace_mem`,
+which lives DOWNSTREAM of this module and so cannot be imported. The name
+differs from the `ℚ`-level one deliberately: both files live in namespace
+`GaloisRepresentation`, and a silently colliding duplicate has broken
+`Deformation.lean` through the re-exported namespace once already. The proof
+is the `ℚ`-level one verbatim — it mentions no base field at all, only `B`,
+`C` and `S`, so it is a pure-linear-algebra statement that ought to be
+HOISTED rather than copied; see the note on the hoist in the siblings above.)
+
+Let `b` be a `B`-basis of `M₂(B)` indexed by `Fin 4`, all of whose members
+lie in a multiplicative set `S` whose traces lie in a subring `C ⊆ B`, and
+whose trace Gram matrix `(tr (bᵢ bⱼ))` has invertible determinant. Then
+EVERY element of `S` has all four of its `b`-coordinates in `C`.
+
+Writing `M = ∑ᵢ cᵢ bᵢ`, the identity `tr (M bⱼ) = ∑ᵢ cᵢ · tr (bᵢ bⱼ)` says
+`c ᵥ* Gram = t` with `t j = tr (M bⱼ)`; both `t` and `Gram` have entries in
+`C`, and `Gram` is invertible OVER `C` — its determinant lies in `C` and is
+a unit of `B`, hence a unit of `C` by the hypothesis `hunit` — so the vector
+`t ᵥ* Gram⁻¹`, computed inside `C`, maps into `B` to a solution of the same
+invertible linear system and therefore equals `c`.
+
+Stated with `hunit` ("an element of `C` that is a unit of `B` is a unit of
+`C`") rather than with locality of `C`, because that is exactly what the
+argument consumes; for the trace subring it is supplied by the PROVEN
+`isUnit_of_isClosed_subring_of_notMem_maximalIdeal` above. -/
+theorem repr_mem_subring_of_trace_mem_hilbert
+    {B : Type u} [CommRing B] (C : Subring B)
+    (hunit : ∀ x : C, IsUnit ((x : B)) → IsUnit x)
+    (S : Submonoid (Matrix (Fin 2) (Fin 2) B))
+    (htr : ∀ M ∈ S, Matrix.trace M ∈ C)
+    (b : Module.Basis (Fin 4) B (Matrix (Fin 2) (Fin 2) B))
+    (hbS : ∀ i : Fin 4, b i ∈ S)
+    (hgram :
+      IsUnit (Matrix.of (fun i j : Fin 4 => Matrix.trace (b i * b j))).det) :
+    ∀ M ∈ S, ∀ i : Fin 4, b.repr M i ∈ C := by
+  classical
+  set Gr : Matrix (Fin 4) (Fin 4) B :=
+    Matrix.of (fun i j : Fin 4 => Matrix.trace (b i * b j))
+  have hGrmem : ∀ i j, Gr i j ∈ C := fun i j =>
+    htr _ (S.mul_mem (hbS i) (hbS j))
+  set GrC : Matrix (Fin 4) (Fin 4) C :=
+    Matrix.of (fun i j => (⟨Gr i j, hGrmem i j⟩ : C))
+  have hGrCmap : GrC.map C.subtype = Gr := by ext i j; rfl
+  have hdet : ((GrC.det : C) : B) = Gr.det := by
+    have hd := RingHom.map_det C.subtype GrC
+    rw [show C.subtype.mapMatrix GrC = GrC.map ⇑C.subtype from rfl,
+      hGrCmap] at hd
+    exact hd
+  have hGrCunit : IsUnit GrC.det := hunit _ (by rw [hdet]; exact hgram)
+  -- the coordinates satisfy the linear system given by the Gram matrix
+  have hkey : ∀ M : Matrix (Fin 2) (Fin 2) B,
+      (fun i => b.repr M i) ᵥ* Gr = fun j => Matrix.trace (M * b j) := by
+    intro M
+    funext j
+    show ∑ i, b.repr M i * Gr i j = Matrix.trace (M * b j)
+    conv_rhs => rw [← b.sum_repr M]
+    rw [Finset.sum_mul, Matrix.trace_sum]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [smul_mul_assoc, Matrix.trace_smul, smul_eq_mul]
+    rfl
+  intro M hM
+  have htmem : ∀ j, Matrix.trace (M * b j) ∈ C := fun j =>
+    htr _ (S.mul_mem hM (hbS j))
+  set tC : Fin 4 → C := fun j => ⟨Matrix.trace (M * b j), htmem j⟩
+  set cC : Fin 4 → C := tC ᵥ* GrC⁻¹ with hcC
+  have hcCGr : cC ᵥ* GrC = tC := by
+    rw [hcC, Matrix.vecMul_vecMul, Matrix.nonsing_inv_mul GrC hGrCunit,
+      Matrix.vecMul_one]
+  have hcCmap : (fun i => ((cC i : C) : B)) ᵥ* Gr =
+      fun j => Matrix.trace (M * b j) := by
+    funext j
+    have h1 := congrFun hcCGr j
+    have h2 := congrArg (fun x : C => (x : B)) h1
+    rw [show ((cC ᵥ* GrC) j : B) =
+      (((fun i => ((cC i : C) : B))) ᵥ* GrC.map C.subtype) j from
+        RingHom.map_vecMul C.subtype GrC cC j, hGrCmap] at h2
+    exact h2
+  have hfinal : (fun i => b.repr M i) = fun i => ((cC i : C) : B) := by
+    have h3 : (fun i => b.repr M i) ᵥ* Gr =
+        (fun i => ((cC i : C) : B)) ᵥ* Gr := by
+      rw [hkey M, hcCmap]
+    have h4 : ∀ v : Fin 4 → B, (v ᵥ* Gr) ᵥ* Gr⁻¹ = v := by
+      intro v
+      rw [Matrix.vecMul_vecMul, Matrix.mul_nonsing_inv Gr hgram,
+        Matrix.vecMul_one]
+    rw [← h4 (fun i => b.repr M i), h3, h4]
+  intro i
+  rw [show b.repr M i = ((cC i : C) : B) from congrFun hfinal i]
+  exact (cC i).2
+
+open scoped Matrix in
+/-- **Carayol's Théorème 1, step 1 at the `F` level: a Galois basis of
+`M₂(𝒟.R)` whose trace form is nondegenerate** (LEAF — cut 2026-07-26 out of
+`exists_conj_entries_mem_hilbertTraceSubring`; the `F`-level twin of
+`Deformation.lean`'s `exists_basis_toMatrix'_isUnit_traceGram`, which is
+PROVEN there over the single residual leaf `exists_residual_basis_toMatrix'`).
+
+There are four elements `g₁, …, g₄` of `G_F` whose matrices `𝒟.ρ(gᵢ)` form
+a `𝒟.R`-basis of `M₂(𝒟.R)` and whose trace Gram matrix
+`(tr (𝒟.ρ(gᵢ) 𝒟.ρ(gⱼ)))` has UNIT determinant.
+
+This is the REPRESENTATION THEORY of Carayol's theorem and nothing else —
+the trace subring does not occur in the statement, because the passage from
+this basis to the `R'`-order is the separate, PROVEN, pure linear algebra of
+`repr_mem_subring_of_trace_mem_hilbert` above.
+
+THE ROUTE, which is the `ℚ`-level one verbatim modulo `ℚ ↝ F` and is worth
+porting rather than reinventing:
+
+1. *Residual step* (the only genuinely open input). `ρbar|_{G_F}` is
+   absolutely irreducible: it is irreducible over the finite field `k` by
+   `hirrF`, and its determinant is the mod-`ℓ` cyclotomic character, so it is
+   odd, and an odd irreducible two-dimensional representation over a finite
+   field of odd characteristic is absolutely irreducible. Burnside/Jacobson
+   density (`span_range_eq_top_of_irreducible_of_commutant`, used at the `ℚ`
+   level) then makes the `k`-span of the reductions `(𝒟.ρ g).map 𝒟.π` all of
+   `M₂(k)`, and `exists_basis_of_span_range_eq_top` extracts four elements
+   whose reductions are a `k`-basis. At the `ℚ` level this step is isolated
+   as its own leaf, `exists_residual_basis_toMatrix'`; a prover here should
+   isolate it the same way.
+2. *Nakayama.* Four elements of the finite free `𝒟.R`-module `M₂(𝒟.R)` whose
+   reductions form a `k`-basis are themselves a `𝒟.R`-basis: by
+   `Module.Basis.is_basis_iff_det` against `Matrix.stdBasis`, the
+   change-of-basis matrix `P` has `𝒟.π P.det = (P.map 𝒟.π).det ≠ 0`, and
+   `ker 𝒟.π = 𝔪` (`IsLocalRing.ker_eq_maximalIdeal`, `𝒟.π` being
+   surjective), so `P.det ∉ 𝔪` and `P.det` is a unit.
+3. *Nondegeneracy of the trace form, in EVERY characteristic.* `tr (E_{ba} X)
+   = X a b`, so the Gram determinant of any `k`-basis of `M₂(k)` is nonzero;
+   the Gram matrix upstairs reduces entrywise to the residual one, so its
+   determinant is again a unit of the local `𝒟.R`. No characteristic
+   hypothesis enters at steps 2 or 3 — `hℓ5` is consumed only inside step 1,
+   through absolute irreducibility.
+
+The index juggling is cosmetic: the natural index type is `Fin 2 × Fin 2`
+(that of `Matrix.stdBasis`) and the `Fin 4` of the statement is reached by
+`Module.Basis.reindex`, under which the Gram determinant is invariant
+(`Matrix.det_submatrix_equiv_self`).
+
+`hirrF` is load-bearing and the statement is FALSE without it: for a
+reducible `𝒟.ρ` the `𝒟.R`-algebra generated by the image is a proper
+subalgebra of `M₂(𝒟.R)` — for an upper-triangular image it is the Borel,
+of rank `3` — so no four values of `𝒟.ρ` span, let alone form a basis.
+
+References: Carayol, *Formes modulaires et représentations galoisiennes à
+valeurs dans un anneau local complet* (Contemp. Math. 165), Théorème 1;
+Nyssen, *Pseudo-représentations* (Math. Ann. 306); Rouquier,
+*Caractérisation des caractères et pseudo-caractères* (J. Algebra 180). -/
+theorem exists_basis_toMatrix'_isUnit_hilbertTraceGram
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
+    ∃ b : Module.Basis (Fin 4) 𝒟.R (Matrix (Fin 2) (Fin 2) 𝒟.R),
+      (∀ i : Fin 4, ∃ g : Γ F, b i = LinearMap.toMatrix' (𝒟.ρ g)) ∧
+      IsUnit (Matrix.of (fun i j : Fin 4 =>
+        Matrix.trace (b i * b j))).det :=
+  sorry
+
+open scoped Matrix in
+/-- **Carayol's Théorème 1, step 2: a `C`-order in `M₂(B)` with split
+residual algebra is conjugate into `M₂(C)`** (LEAF HERE — the statement is
+VERBATIM `Deformation.lean`'s `exists_conj_entries_mem_of_basis_repr_mem`,
+which is PROVEN there over the single sub-leaf
+`exists_conj_entries_mem_of_single_mem`; the copy is forced by the import
+direction, `Deformation.lean` `public import`ing THIS module, so nothing in
+it is visible here).
+
+PURE ALGEBRA — no Galois representation, no base field and no arithmetic
+occurs in it, which is why THE HONEST FIX IS A HOIST, NOT A PROOF. Nobody
+should prove this leaf here. The whole `ℚ`-level cluster it belongs to is
+base-field-free and should be moved into a module upstream of both files;
+its dependency closure inside `Deformation.lean` is
+`exists_conj_entries_mem_of_basis_repr_mem`, `exists_conj_entries_mem_of_single_mem`,
+`exists_conj_eq_single_of_mul_self`, `exists_isIdempotentElem_mem_of_sq_sub_mem`,
+`exists_peirceGenerators_of_single_mem`, `mem_iff_smul_single_mem`,
+`basis_repr_eq_sum_entries` and `matrix_sub_mem_mul`, about 700 lines, and
+the local-ring/closed-subring infrastructure it also needs is ALREADY
+present in this module under the `_of_finite_residueField` names above. Until
+that move happens this leaf stands in for the hoisted lemma, and it is the
+one place in this cluster where the sorry count overstates the open
+mathematics: at the `ℚ` level exactly one thing is left open beneath it,
+the Peirce/grading step of `exists_conj_entries_mem_of_single_mem`.
+
+The statement: let `B` be a local topological ring whose topology is
+`𝔪`-adic, which is `𝔪`-adically complete and separated, and whose residue
+field is FINITE; let `C ⊆ B` be a CLOSED subring meeting every residue class
+of `B`; and let `S` be a multiplicative set of matrices containing a
+`B`-basis `b` of `M₂(B)` and having all its `b`-coordinates in `C`. Then a
+single conjugation `M ↦ E⁻¹ M E` by an invertible `E ∈ M₂(B)` moves every
+member of `S` into `M₂(C)`.
+
+WHY THE HYPOTHESES CANNOT BE DROPPED, from the `ℚ`-level docstring:
+completeness and closedness are both needed to lift the rank-one idempotent
+INSIDE the order `A' = ∑ᵢ C·bᵢ`; and `hres` — which says the residue field
+`k'` of `C` is the residue field `k` of `B` on the nose — is what makes
+`A'/𝔪_C A'` a `k`-subspace of `M₂(k)` of `k`-dimension `4`, hence all of
+`M₂(k)`, with no Wedderburn or Brauer-group input. Without `hres` the leaf is
+strictly harder (`A'/𝔪_C A'` is only a `k'`-form of `M₂(k)`), and without
+`hres` AND finiteness of the residue field it is FALSE: over an infinite `k'`
+that form may be a DIVISION algebra, and then `A'` is a maximal order in a
+division algebra, not `M₂(C)`.
+
+`hres` is not an extra burden on the caller: for `C = hilbertTraceSubring ℓ 𝒟.ρ`
+it is exactly the Teichmüller-root clause of the generating set — every
+residue class of `𝒟.R` contains a Teichmüller root
+(`exists_mem_teichmullerRootSet_map_eq`, Hensel), and every Teichmüller root
+lies in the trace subring (`mem_hilbertTraceSubring_of_mem_teichmullerRootSet`).
+
+References: Carayol, Contemp. Math. 165, Théorème 1; Nyssen, Math. Ann. 306;
+Auslander–Goldman, *The Brauer group of a commutative ring* — the last needed
+only in the `hres`-free form of the statement. -/
+theorem exists_conj_entries_mem_of_basis_repr_mem_hilbert
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Finite (IsLocalRing.ResidueField B)]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal B))
+    (hcompl : IsAdicComplete (IsLocalRing.maximalIdeal B) B)
+    (C : Subring B) (hclosed : IsClosed ((C : Subring B) : Set B))
+    (hres : ∀ y : B, ∃ x : C, (x : B) - y ∈ IsLocalRing.maximalIdeal B)
+    (S : Submonoid (Matrix (Fin 2) (Fin 2) B))
+    (b : Module.Basis (Fin 4) B (Matrix (Fin 2) (Fin 2) B))
+    (hbS : ∀ i : Fin 4, b i ∈ S)
+    (hrepr : ∀ M ∈ S, ∀ i : Fin 4, b.repr M i ∈ C) :
+    ∃ E : Matrix (Fin 2) (Fin 2) B, IsUnit E.det ∧
+      ∀ M ∈ S, ∀ i j : Fin 2, (E⁻¹ * M * E) i j ∈ C :=
+  sorry
+
+open scoped Matrix in
+/-- **The `R'`-order of Carayol's Théorème 1 at the `F` level** (PROVEN
+2026-07-26 over `exists_basis_toMatrix'_isUnit_hilbertTraceGram` and the
+linear algebra of `repr_mem_subring_of_trace_mem_hilbert`; the `F`-level twin
+of `Deformation.lean`'s `exists_basis_repr_mem_traceSubring`): there is a
+`𝒟.R`-basis of `M₂(𝒟.R)` consisting of values of `𝒟.ρ` against which EVERY
+value of `𝒟.ρ` has all four coordinates in the trace subring
+`R' = hilbertTraceSubring ℓ 𝒟.ρ`. Equivalently: the `R'`-span of `𝒟.ρ(G_F)`
+is a free `R'`-order of rank `4` in `M₂(𝒟.R)`.
+
+The glue is exactly the three inputs of `repr_mem_subring_of_trace_mem_hilbert`:
+(i) an element of `R'` that is a unit of `𝒟.R` is a unit of `R'`, by the
+PROVEN `isUnit_of_isClosed_subring_of_notMem_maximalIdeal` applied to the
+closed subring `R'`; (ii) the trace of every value of `𝒟.ρ` lies in `R'`,
+since `tr = −(coeff 1 of the characteristic polynomial)` in rank two
+(`Matrix.trace_eq_neg_charpoly_coeff` plus `LinearMap.charpoly_toMatrix`) and
+`R'` is closed under negation; and (iii) the Gram determinant is a unit,
+which is the representation-theoretic leaf above.
+
+WHY NO TRACE HYPOTHESIS IS NEEDED, unlike at the `ℚ` level. The `ℚ`-level
+twin carries a hypothesis `htr` saying that all traces lie in
+`traceSubring ℓ D.ρ`, because THAT ring is generated by the Frobenius
+charpolys at the GOOD primes only, so "trace at every `g`" is a genuine extra
+input, supplied there by Chebotarev density plus Brauer–Nesbitt.
+`hilbertTraceSubring` is generated at EVERY `g : Γ F`, so clause (ii) is
+`charpoly_coeff_mem_hilbertTraceSubring`, already proven above. -/
+theorem exists_basis_repr_mem_hilbertTraceSubring
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
+    ∃ b : Module.Basis (Fin 4) 𝒟.R (Matrix (Fin 2) (Fin 2) 𝒟.R),
+      (∀ i : Fin 4, ∃ g : Γ F, b i = LinearMap.toMatrix' (𝒟.ρ g)) ∧
+      ∀ (g : Γ F) (i : Fin 4),
+        b.repr (LinearMap.toMatrix' (𝒟.ρ g)) i ∈ hilbertTraceSubring ℓ 𝒟.ρ := by
+  classical
+  -- the residue field of `𝒟.R` is `k`, hence finite
+  have hker : RingHom.ker 𝒟.π = IsLocalRing.maximalIdeal 𝒟.R :=
+    IsLocalRing.ker_eq_maximalIdeal 𝒟.π 𝒟.π_surjective
+  haveI : Finite (IsLocalRing.ResidueField 𝒟.R) := by
+    have hlift : IsLocalRing.ResidueField 𝒟.R →+* k :=
+      Ideal.Quotient.lift (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.π
+        (fun a ha => by rwa [← RingHom.mem_ker, hker])
+    exact Finite.of_injective hlift hlift.injective
+  have hclosed : IsClosed ((hilbertTraceSubring ℓ 𝒟.ρ : Subring 𝒟.R) :
+      Set 𝒟.R) := Subring.isClosed_topologicalClosure _
+  -- the matrix avatar of `𝒟.ρ`, as a monoid homomorphism
+  set Φ : Γ F →* Matrix (Fin 2) (Fin 2) 𝒟.R :=
+    { toFun := fun g => LinearMap.toMatrix' (𝒟.ρ g)
+      map_one' := by rw [map_one]; exact LinearMap.toMatrix'_one
+      map_mul' := fun g hg => by
+        rw [map_mul]; exact LinearMap.toMatrix'_mul _ _ } with hΦ
+  obtain ⟨b, hbrange, hgram⟩ :=
+    exists_basis_toMatrix'_isUnit_hilbertTraceGram ℓ hℓ5 F hirrF 𝒟
+  refine ⟨b, hbrange, ?_⟩
+  -- an element of `R'` that is a unit of `𝒟.R` is a unit of `R'`
+  have hunit : ∀ x : hilbertTraceSubring ℓ 𝒟.ρ,
+      IsUnit ((x : 𝒟.R)) → IsUnit x := by
+    intro x hx
+    refine isUnit_of_isClosed_subring_of_notMem_maximalIdeal 𝒟.isAdic hclosed x ?_
+    intro hm
+    exact ((IsLocalRing.mem_maximalIdeal _).mp hm) hx
+  -- every trace of a value of `𝒟.ρ` lies in `R'`
+  have htrS : ∀ M ∈ MonoidHom.mrange Φ,
+      Matrix.trace M ∈ hilbertTraceSubring ℓ 𝒟.ρ := by
+    rintro M ⟨g, rfl⟩
+    have hcp : (LinearMap.toMatrix' (𝒟.ρ g)).charpoly = (𝒟.ρ g).charpoly := by
+      rw [← LinearMap.toMatrix_eq_toMatrix']
+      exact LinearMap.charpoly_toMatrix (𝒟.ρ g) (Pi.basisFun 𝒟.R (Fin 2))
+    show Matrix.trace (LinearMap.toMatrix' (𝒟.ρ g)) ∈ hilbertTraceSubring ℓ 𝒟.ρ
+    rw [Matrix.trace_eq_neg_charpoly_coeff (LinearMap.toMatrix' (𝒟.ρ g)), hcp]
+    exact Subring.neg_mem _ (charpoly_coeff_mem_hilbertTraceSubring ℓ 𝒟.ρ g 1)
+  have hbS : ∀ i : Fin 4, b i ∈ MonoidHom.mrange Φ := by
+    intro i
+    obtain ⟨g, hg⟩ := hbrange i
+    exact ⟨g, hg.symm⟩
+  intro g i
+  exact repr_mem_subring_of_trace_mem_hilbert (hilbertTraceSubring ℓ 𝒟.ρ) hunit
+    (MonoidHom.mrange Φ) htrS b hbS hgram (LinearMap.toMatrix' (𝒟.ρ g))
+    ⟨g, rfl⟩ i
+
+open scoped Matrix in
 /-- **Carayol's `R'`-order at the `F` level: a conjugation putting every
-matrix entry into the trace subring** (LEAF — new 2026-07-26; this is the
+matrix entry into the trace subring** (PROVEN 2026-07-26 over the two-way cut
+`exists_basis_toMatrix'_isUnit_hilbertTraceGram` /
+`exists_conj_entries_mem_of_basis_repr_mem_hilbert`, with the `R'`-order
+lemma `exists_basis_repr_mem_hilbertTraceSubring` between them; this is the
 ARITHMETIC core of the Rouquier–Nyssen node below, and the only genuinely
 deep input it has).
 
@@ -10631,47 +10951,63 @@ There is an invertible `E ∈ M₂(𝒟.R)` such that every entry of every
 `E⁻¹ · ρ(g) · E`, `g : Γ F`, already lies in the closed trace subring
 `R' = hilbertTraceSubring ℓ 𝒟.ρ`.
 
-WHY THE CUT IS HERE. Everything on the representation-theoretic side of
-Carayol's Théorème 1 — rebuilding a `FramedGaloisRep` over `R'` out of the
+WHERE THE CONTENT NOW SITS. Everything on the representation-theoretic side
+of Carayol's Théorème 1 — rebuilding a `FramedGaloisRep` over `R'` out of the
 conjugated matrices, and turning the conjugation into a change of framing on
 the base change — is the two PROVEN siblings above; what is left is exactly
 the statement that a conjugate of the image lands in `M₂(R')`, which is where
-irreducibility enters and where all the arithmetic is.
+irreducibility enters and where all the arithmetic is. That statement is
+proven here over the same two-way cut `Deformation.lean` uses at the `ℚ`
+level, in two halves:
 
-THE CLASSICAL ROUTE, in two halves, matching the `ℚ`-level pair
-`exists_basis_repr_mem_traceSubring` / `exists_conj_entries_mem_of_basis_repr_mem`
-(both in `Deformation.lean`, hence not importable here — see the siblings'
-docstrings on the import direction):
-
-1. *Burnside plus trace duality.* `ρbar|_{G_F}` is absolutely irreducible (it
-   is irreducible over `k` and its determinant is the mod-`ℓ` cyclotomic
-   character, so it is odd, and an odd irreducible two-dimensional
-   representation over a finite field of odd characteristic is absolutely
-   irreducible); by Nakayama the `𝒟.R`-algebra generated by `𝒟.ρ(Γ F)` is
-   therefore all of `M₂(𝒟.R)`, so one may choose `x, y ∈ Γ F` with
-   `{1, ρ(x), ρ(y), ρ(x)ρ(y)}` a `𝒟.R`-basis whose trace Gram matrix is
-   invertible. In the dual basis of the trace form every coordinate of every
-   `ρ(g)` is a `ℤ`-linear combination of traces `tr(ρ(g)·b)`, and every such
-   trace is a charpoly coefficient, hence lies in `R'` BY CONSTRUCTION —
-   `hilbertTraceSubring` is generated by the charpoly coefficients at EVERY
-   `g : Γ F` (`charpoly_coeff_mem_hilbertTraceSubring`), which is exactly why
-   the `ℚ`-level trace hypothesis `htr` is absent here.
-2. *Idempotent lifting.* Having all BASIS COORDINATES in `R'` is weaker than
+1. *Burnside plus trace duality* — `exists_basis_toMatrix'_isUnit_hilbertTraceGram`
+   (LEAF) followed by the PROVEN `exists_basis_repr_mem_hilbertTraceSubring`.
+   `ρbar|_{G_F}` is absolutely irreducible (it is irreducible over `k` and its
+   determinant is the mod-`ℓ` cyclotomic character, so it is odd, and an odd
+   irreducible two-dimensional representation over a finite field of odd
+   characteristic is absolutely irreducible); by Nakayama the `𝒟.R`-algebra
+   generated by `𝒟.ρ(Γ F)` is all of `M₂(𝒟.R)`, so four values of `𝒟.ρ` form
+   a `𝒟.R`-basis whose trace Gram matrix is invertible. In the dual basis of
+   the trace form every coordinate of every `ρ(g)` is a `ℤ`-linear combination
+   of traces `tr(ρ(g)·b)`, and every such trace is a charpoly coefficient,
+   hence lies in `R'` BY CONSTRUCTION — `hilbertTraceSubring` is generated by
+   the charpoly coefficients at EVERY `g : Γ F`
+   (`charpoly_coeff_mem_hilbertTraceSubring`), which is exactly why the
+   `ℚ`-level trace hypothesis `htr` is absent here.
+2. *Idempotent lifting* — `exists_conj_entries_mem_of_basis_repr_mem_hilbert`
+   (LEAF, and a leaf ONLY because of the import direction: the statement is
+   verbatim `Deformation.lean`'s `exists_conj_entries_mem_of_basis_repr_mem`,
+   which is PROVEN there). Having all BASIS COORDINATES in `R'` is weaker than
    having all matrix ENTRIES in `R'`; passing between them is Carayol's step
    2c, which lifts a rank-one idempotent of `M₂(R'/𝔪')` through the complete
-   local ring and conjugates it to `e₁₁`. `hloc` is consumed here: it is what
-   makes `R'` a local ring against which the lifting can run, and it also
-   supplies "an element of `R'` that is a unit of `𝒟.R` is a unit of `R'`",
-   which is what half 1 needs to invert the Gram matrix inside `R'`.
+   local ring and conjugates it to `e₁₁`. Its residue-class hypothesis `hres`
+   is discharged in the assembly below from the Teichmüller-root clause of
+   `hilbertTraceSubring`, which is what makes the residual algebra `M₂(k)`
+   outright and removes any Wedderburn/Brauer input from that leaf.
 
-STATUS NOTE, so that nobody mistakes this for merely-clerical work: the
-`ℚ`-level twin of half 2, `exists_conj_entries_mem_of_single_mem`
-(`Deformation.lean`), is ITSELF still an open sorry there. So this leaf is
-open at the `ℚ` level too, and the `F`-level statement is no weaker.
+STATUS NOTE, so that nobody mistakes what is left for merely-clerical work:
+the `ℚ`-level twin of the genuinely open part of half 2,
+`exists_conj_entries_mem_of_single_mem` (`Deformation.lean`), is ITSELF still
+an open sorry there. So the arithmetic here is open at the `ℚ` level too, and
+the `F`-level statement is no weaker.
 
 `hℓ5` and `hirrF` are both load-bearing and the statement is FALSE without
 `hirrF`: a reducible `ρ` whose extension class is not defined over `R'` cannot
 be conjugated into `M₂(R')`.
+
+HYPOTHESIS AUDIT: `_hloc` IS NOT CONSUMED by this route, and it is in any case
+REDUNDANT — `exists_isLocalRing_hilbertTraceSubring` above PROVES
+`IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ)` from `hℓ5`, `hirrF` and `𝒟` alone.
+It was expected to supply "an element of `R'` that is a unit of `𝒟.R` is a
+unit of `R'`", but that comes instead from
+`isUnit_of_isClosed_subring_of_notMem_maximalIdeal`, which needs only
+closedness and the finite residue field; and the idempotent lifting of half 2
+is stated over an abstract subring with no locality hypothesis at all. The
+binder is retained (underscore-prefixed, so the non-use is mechanically
+visible) purely so the consumer
+`exists_framedGaloisRep_baseChange_hilbertTraceSubring` and its own caller are
+untouched; dropping it from this cluster is a separate, purely subtractive
+cleanup.
 
 References: Carayol, *Formes modulaires et représentations galoisiennes à
 valeurs dans un anneau local complet* (Contemp. Math. 165), Théorème 1;
@@ -10685,12 +11021,52 @@ theorem exists_conj_entries_mem_hilbertTraceSubring
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar)
-    (hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ)) :
+    (_hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ)) :
     ∃ E : Matrix (Fin 2) (Fin 2) 𝒟.R, IsUnit E.det ∧
       ∀ (g : Γ F) (i j : Fin 2),
         (E⁻¹ * LinearMap.toMatrix' (𝒟.ρ g) * E) i j ∈
-          hilbertTraceSubring ℓ 𝒟.ρ :=
-  sorry
+          hilbertTraceSubring ℓ 𝒟.ρ := by
+  classical
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.R := 𝒟.isAdicComplete
+  -- the residue field of `𝒟.R` is `k`, hence finite
+  have hker : RingHom.ker 𝒟.π = IsLocalRing.maximalIdeal 𝒟.R :=
+    IsLocalRing.ker_eq_maximalIdeal 𝒟.π 𝒟.π_surjective
+  haveI : Finite (IsLocalRing.ResidueField 𝒟.R) := by
+    have hlift : IsLocalRing.ResidueField 𝒟.R →+* k :=
+      Ideal.Quotient.lift (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.π
+        (fun a ha => by rwa [← RingHom.mem_ker, hker])
+    exact Finite.of_injective hlift hlift.injective
+  have hclosed : IsClosed ((hilbertTraceSubring ℓ 𝒟.ρ : Subring 𝒟.R) :
+      Set 𝒟.R) := Subring.isClosed_topologicalClosure _
+  -- the matrix avatar of `𝒟.ρ`, as a monoid homomorphism
+  set Φ : Γ F →* Matrix (Fin 2) (Fin 2) 𝒟.R :=
+    { toFun := fun g => LinearMap.toMatrix' (𝒟.ρ g)
+      map_one' := by rw [map_one]; exact LinearMap.toMatrix'_one
+      map_mul' := fun g hg => by
+        rw [map_mul]; exact LinearMap.toMatrix'_mul _ _ } with hΦ
+  -- half 1: the `R'`-order
+  obtain ⟨b, hbrange, hbrepr⟩ :=
+    exists_basis_repr_mem_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟
+  -- half 2: the conjugation splitting it, whose residue-class hypothesis is
+  -- the Teichmüller-root clause of `hilbertTraceSubring`
+  obtain ⟨E, hEdet, hEmem⟩ :=
+    exists_conj_entries_mem_of_basis_repr_mem_hilbert 𝒟.isAdic 𝒟.isAdicComplete
+      (hilbertTraceSubring ℓ 𝒟.ρ) hclosed
+      (fun y => by
+        obtain ⟨x, hx, hxπ⟩ := exists_mem_teichmullerRootSet_map_eq (ℓ := ℓ)
+          (natCast_eq_zero_of_hilbertDeformationDatum ℓ 𝒟) 𝒟.π 𝒟.π_surjective
+          (𝒟.π y)
+        refine ⟨⟨x, mem_hilbertTraceSubring_of_mem_teichmullerRootSet ℓ 𝒟.ρ hx⟩,
+          ?_⟩
+        rw [← hker, RingHom.mem_ker, map_sub, hxπ, sub_self])
+      (MonoidHom.mrange Φ) b
+      (fun i => by
+        obtain ⟨g, hg⟩ := hbrange i
+        exact ⟨g, hg.symm⟩)
+      (fun M hM i => by
+        obtain ⟨g, rfl⟩ := hM
+        exact hbrepr g i)
+  exact ⟨E, hEdet, fun g i j => hEmem _ ⟨g, rfl⟩ i j⟩
 
 open scoped TensorProduct in
 /-- **Rouquier–Nyssen at the `F` level: the descended representation
