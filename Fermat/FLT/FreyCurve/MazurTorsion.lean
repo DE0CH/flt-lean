@@ -4629,7 +4629,49 @@ the one produced for `E`. A successor needs the moduli statement itself —
 that the hauptmodul is a bijection `X_0(9)(ℚ) → P¹(ℚ)` — or the cheaper
 level-`27` cut above. Do not attempt to assemble the two conjuncts from two
 separate applications of the hauptmodul node; that route is a dead end and
-this paragraph exists to say so. -/
+this paragraph exists to say so.
+
+**A SECOND TEMPTING CUT, AND IT MUST NOT BE MADE** (recorded 2026-07-26 by
+an agent who tried it first): do NOT split this leaf into "conjunct 1,
+which is free from `exists_x0Nine_hauptmodul`" plus a residual leaf
+"conjunct 2, GIVEN any rational `s` satisfying conjunct 1".  That cut
+moves the difficulty in the WRONG direction and very likely produces a
+FALSE residual leaf.
+
+The reason is the degree-`12` fact above, read the other way round.
+Conjunct 1 constrains `s` only through `j(E)`, so a rational `s`
+satisfying it names SOME cyclic `9`-subgroup of a curve with that
+`j`-invariant — not necessarily `⟨h⟩`.  But `E''` is `E/⟨h⟩`
+specifically.  A successor handed an arbitrary such `s` therefore has
+strictly LESS information than one handed the chain, and conjunct 2 need
+not hold for it.  So handing over the "free" conjunct discharges
+NOTHING: the entire content of this leaf is the pinning of `s` to `⟨h⟩`,
+and none of it is conjunct 1.  Contrast the level-`16` cut
+`exists_univCurveV_param_of_ratTwoTorsion`, where the free half really
+was a proof (step 1) and really was discharged; here there is no such
+half.
+
+WHAT A PARI SWEEP SAYS ABOUT THE PINNING (2026-07-26; `gp` is an
+untrusted searcher, so this is reconnaissance, NOT proof).  For each of
+`376` rational `s₀` — integers `±1 … ±60` and fractions `±a/b` with
+`a ≤ 15`, `b ≤ 15` — the degree-`12` polynomial
+`numerator(j₉(x) − j₉(s₀))` was factored over `ℚ`, and in EVERY case `s₀`
+was the ONLY rational root.  Two things follow, and they point the same
+way:
+
+* the pinning is not obstructed by any easy rational ambiguity, so the
+  moduli route — the hauptmodul is injective on `X_0(9)(ℚ)`, and `w₉`
+  acts on it as `s ↦ 27/s` — is the right one and is not doomed;
+* but "a singleton in `376` sampled fibres" is evidence, not a theorem,
+  and that uniqueness statement IS precisely the missing moduli input.
+  It is what a successor has to build or vendor; it will not fall out of
+  the algebra already present in this block.
+
+The same run independently re-checked the PROVEN `X0Nine.fricke_clear`
+numerically, verifying `j₉(27/s) =` the conjunct-2 expression at
+`s = 7, 5/3, −4`; all three agree, which is a small extra guard on the
+cusp normalisation that the docstring of that lemma explains is
+load-bearing. -/
 theorem WeierstrassCurve.exists_x0Nine_frickePair_of_cyclicNineChain
     (E E' E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E'.IsElliptic] [E''.IsElliptic]
     (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
@@ -5303,6 +5345,53 @@ for `s = 1, …, 5, 1/3, 1/4, 1/5` the curve `ellfromj(j₁₆(s))` has cyclic
 isogeny degrees exactly `{1, 2, 4, 8, 16}`.
 -/
 
+set_option backward.isDefEq.respectTransparency false in
+/-- **Galois descent for points** (PROVEN 2026-07-17): a point of
+`E(ℚ̄)` fixed by every element of the absolute Galois group is the base
+change of a rational point. The coordinates are fixed by all
+automorphisms of the Galois extension `ℚ̄/ℚ`, hence lie in `ℚ`
+(`InfiniteGalois.mem_range_algebraMap_iff_fixed`), and nonsingularity
+descends along the injective base change
+(`baseChange_nonsingular`). -/
+theorem WeierstrassCurve.exists_point_eq_baseChange_of_fixed
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Pt : (E⁄(AlgebraicClosure ℚ)).Point)
+    (hfix : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt = Pt) :
+    ∃ Q : (E⁄ℚ).Point,
+      Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q = Pt := by
+  cases Pt with
+  | zero => exact ⟨0, rfl⟩
+  | some x y h =>
+    have hx : x ∈ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) := by
+      refine (InfiniteGalois.mem_range_algebraMap_iff_fixed x).mpr fun σ => ?_
+      have h1 := hfix σ
+      rw [Affine.Point.map_some] at h1
+      exact (Affine.Point.some.inj h1).left
+    have hy : y ∈ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) := by
+      refine (InfiniteGalois.mem_range_algebraMap_iff_fixed y).mpr fun σ => ?_
+      have h1 := hfix σ
+      rw [Affine.Point.map_some] at h1
+      exact (Affine.Point.some.inj h1).right
+    obtain ⟨x₀, hx₀⟩ := hx
+    obtain ⟨y₀, hy₀⟩ := hy
+    have h₀ : (E⁄ℚ).Nonsingular x₀ y₀ := by
+      have h2 := h
+      rw [← hx₀, ← hy₀] at h2
+      exact (Affine.baseChange_nonsingular (W := E)
+        (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))
+        (algebraMap ℚ (AlgebraicClosure ℚ)).injective x₀ y₀).mp h2
+    refine ⟨Affine.Point.some x₀ y₀ h₀, ?_⟩
+    have hmap := Affine.Point.map_some
+      (f := Algebra.ofId ℚ (AlgebraicClosure ℚ)) h₀
+    rw [show Affine.Point.baseChange ℚ (AlgebraicClosure ℚ)
+        (Affine.Point.some x₀ y₀ h₀) =
+      Affine.Point.map (Algebra.ofId ℚ (AlgebraicClosure ℚ))
+        (Affine.Point.some x₀ y₀ h₀) from rfl, hmap]
+    subst hx₀ hy₀
+    rfl
+
 namespace MazurLevel16
 
 /-! ### The universal curve over the `X_0(16)` `s`-line
@@ -5661,8 +5750,11 @@ This is the whole reason level `16` starts from a curve with a rational
 
 Descending the fixed point to a RATIONAL point of order `2` is the other
 half of step 1; it is `WeierstrassCurve.exists_point_eq_baseChange_of_fixed`,
-PROVEN but declared later in this file, so it is not in scope here.  See the
-attack note under the leaf below. -/
+which as of 2026-07-26 is RELOCATED to just above `namespace MazurLevel16`
+and so IS in scope here.  Step 1 is therefore fully discharged: see
+`exists_univCurveV_param_of_stable` below, whose proof composes the two
+halves, and `exists_univCurveV_param_of_ratTwoTorsion`, the leaf that
+remains once the rational `2`-torsion point has been produced. -/
 theorem eightNsmul_galois_fixed (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 16)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -5689,10 +5781,71 @@ theorem eightNsmul_galois_fixed (E : WeierstrassCurve ℚ) [E.IsElliptic]
   rw [ZMod.natCast_val, ZMod.cast_id]
   exact hunit (lam σ)
 
-/-- **`X_0(16)` moduli in the chain coordinate** (SORRY LEAF, cut
-2026-07-26 out of `exists_univCurve_param_of_stable`, which is now PROVEN
-over it): if the geometric points of an elliptic curve over `ℚ` contain a
-point `g` of order `16` whose cyclic subgroup is `Gal(ℚ̄/ℚ)`-stable, then
+/-- **`X_0(16)` moduli in the chain coordinate, GIVEN the rational
+`2`-torsion point** (SORRY LEAF, cut 2026-07-26 out of
+`exists_univCurveV_param_of_stable` just below, which is now PROVEN over
+it): same conclusion as that statement, but the caller has already
+supplied the rational point `Q` of order `2` together with the identity
+`Q ⊗ ℚ̄ = 8 • g` tying it to the `16`-chain.
+
+**WHAT THIS CUT BUYS, and it is exactly step 1 of the four-step route.**
+`Q` is not new information — it is manufactured from `hg` and `hstable`
+alone, by `eightNsmul_galois_fixed` followed by
+`WeierstrassCurve.exists_point_eq_baseChange_of_fixed`, and that
+composition IS the proof of the consumer below.  So this leaf is
+**equivalent** to its consumer, not weaker: nothing mathematical was
+discharged by the cut beyond step 1, which really was discharged.  Until
+2026-07-26 step 1 could not be closed at all here, because
+`exists_point_eq_baseChange_of_fixed` — PROVEN, but declared ~16000 lines
+further down — was not in scope; relocating it above `namespace
+MazurLevel16` is what unblocked this, and that relocation was a pure move
+(identical line multisets, no backward reference into the region jumped).
+
+**WHY `hQg` IS CARRIED AND MUST NOT BE DROPPED.**  A bare rational
+`2`-torsion point is far too weak: it only says `E` has a rational
+`2`-torsion point, which every curve with a rational `4`-isogeny has and
+which is nowhere near a point of `X_0(16)`.  The content is that `Q` is
+the `2`-torsion point *of the `16`-chain*, i.e. `8 • g`; that is what
+makes the model `y² = x(x² + ax + b)` obtained in step 2 the one in which
+`β = x(4 • g)` and `γ` of steps 3–4 are the `X_0(8)` and `X_0(16)`
+Hauptmoduls.  Dropping `hQg` would make this leaf FALSE, not merely
+weaker.
+
+**WHAT REMAINS IS STEPS 2–4** of the route in the consumer's docstring
+below: the coordinate normalisation (step 2, elementary), the rationality
+of `β = x(4 • g)` and of `γ` with `a + 2β = γ²` (step 3, the `X_0(8)`
+half), and the genuinely modular step 4, that `γ/(2δ)` is a square.
+Step 4 is where `X_0(16) → X_0(8)` being a degree-`2` cover with both
+sheets Galois-stable has to be used, and it is the only part that is not
+coordinate work.
+
+**Self-policing and FAITHFULNESS are inherited verbatim** from the
+consumer's docstring below: `Δ(univCurveV v) = 256v⁴(v⁴ − 1)` vanishes
+only at `v = 0, ±1` where `c₄ = 16 ≠ 0`, so no nondegeneracy hypothesis
+is needed or hidden; and the forward validation table in the section note
+exhibits ten curves of conductor `≤ 300` with an explicit rational `v`,
+against four negative controls, so the statement is satisfiable and
+non-vacuous. -/
+theorem exists_univCurveV_param_of_ratTwoTorsion (E : WeierstrassCurve ℚ)
+    [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 16)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g)
+    (Q : (E⁄ℚ).Point) (hQ2 : addOrderOf Q = 2)
+    (hQg : Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q = (8 : ℕ) • g) :
+    ∃ v : ℚ, E.j * (univCurveV v).Δ = (univCurveV v).c₄ ^ 3 :=
+  sorry
+
+/-- **`X_0(16)` moduli in the chain coordinate** (PROVEN 2026-07-26 over
+the single leaf `exists_univCurveV_param_of_ratTwoTorsion` just above, by
+discharging step 1 of the four-step route in full; was itself a sorry
+leaf, cut the same day out of `exists_univCurve_param_of_stable`, which is
+PROVEN over it): if the geometric points of an elliptic curve over `ℚ`
+contain a point `g` of order `16` whose cyclic subgroup is
+`Gal(ℚ̄/ℚ)`-stable, then
 `E` has the same `j`-invariant as `univCurveV v : y² = x(x² + (4v⁴ − 2)x + 1)`
 for some RATIONAL `v` — written denominator-free as
 `j(E) · Δ(univCurveV v) = c₄(univCurveV v)³`, i.e.
@@ -5719,19 +5872,19 @@ is automatically non-cuspidal.
 table in the section note above exhibits ten curves of conductor `≤ 300`
 with an explicit rational `v`, and four negative controls with none.
 
-WHAT AN ATTACK LOOKS LIKE, and what it needs that is not yet in scope
-here.  The route is the four bullet points of the section note, and only
-the first is elementary:
+WHAT AN ATTACK LOOKS LIKE.  The route is the four bullet points of the
+section note.  **Step 1 is now FULLY DISCHARGED and is no longer part of
+this statement** — see `exists_univCurveV_param_of_ratTwoTorsion` just
+above, which is what actually remains, and which is handed the rational
+`2`-torsion point outright.  The steps are:
 
-1. `8 • g` is Galois-FIXED.  **This half is PROVEN and is handed to you as
-   the hypothesis `hfix`** (`eightNsmul_galois_fixed`, just above).
-   Descending that fixed geometric point to a RATIONAL point of order `2`
-   is `WeierstrassCurve.exists_point_eq_baseChange_of_fixed`, which is also
-   PROVEN — but it currently lives at roughly line 12400 of this file, i.e.
-   AFTER this block, so a successor filling this leaf must first relocate
-   it (or this block) rather than assume it is in scope.  That ordering
-   constraint is the only reason the second half is not already discharged
-   here.
+1. `8 • g` is Galois-FIXED (`eightNsmul_galois_fixed`, just above), and
+   the fixed geometric point descends to a RATIONAL point of order `2` by
+   `WeierstrassCurve.exists_point_eq_baseChange_of_fixed`.  **Both halves
+   are PROVEN and composed below**; until 2026-07-26 the second was
+   blocked purely by declaration order (it was declared ~16000 lines
+   later in this file), and the relocation that fixed that is what let
+   step 1 be closed.
 2. Moving that rational `2`-torsion point to the origin is a
    `VariableChange`, giving `y² = x(x² + ax + b)`; compare
    `MazurLevel9.exists_tateParam`, whose proof does exactly this kind of
@@ -5752,9 +5905,8 @@ coordinates.
 ON THE EXTRA HYPOTHESIS `hfix`.  It is DERIVABLE from `hg` and `hstable`
 (that is exactly `eightNsmul_galois_fixed`, and that is how the consumer
 `exists_univCurve_param_of_stable` discharges it), so carrying it here
-neither strengthens nor weakens the leaf: it is free information handed to
-whoever fills it, so that step 1 does not have to be redone.  Do not
-mistake it for a genuine hypothesis that could fail. -/
+neither strengthens nor weakens the statement.  Do not mistake it for a
+genuine hypothesis that could fail. -/
 theorem exists_univCurveV_param_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 16)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -5765,8 +5917,17 @@ theorem exists_univCurveV_param_of_stable (E : WeierstrassCurve ℚ) [E.IsEllipt
     (hfix : ∀ σ : Field.absoluteGaloisGroup ℚ,
       Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
         ((8 : ℕ) • g) = (8 : ℕ) • g) :
-    ∃ v : ℚ, E.j * (univCurveV v).Δ = (univCurveV v).c₄ ^ 3 :=
-  sorry
+    ∃ v : ℚ, E.j * (univCurveV v).Δ = (univCurveV v).c₄ ^ 3 := by
+  obtain ⟨Q, hQ⟩ :=
+    _root_.WeierstrassCurve.exists_point_eq_baseChange_of_fixed E ((8 : ℕ) • g) hfix
+  have hord : addOrderOf ((8 : ℕ) • g) = 2 := by
+    rw [addOrderOf_nsmul' g (by norm_num), hg]
+    norm_num
+  have hQ2 : addOrderOf Q = 2 := by
+    rw [← hord, ← hQ]
+    exact (addOrderOf_injective _
+      (Affine.Point.map_injective (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))) Q).symm
+  exact exists_univCurveV_param_of_ratTwoTorsion E g hg hstable Q hQ2 hQ
 
 /-- **`X_0(16)` moduli, in universal-family form** (PROVEN 2026-07-26 over
 the single leaf `exists_univCurveV_param_of_stable`; was itself a sorry
@@ -22602,53 +22763,6 @@ theorem minkowski_character_trivial {T : Type*} [Group T]
   ext g
   have hg : g ∈ χ.ker := hker_top ▸ Subgroup.mem_top g
   simpa [MonoidHom.mem_ker] using hg
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **Galois descent for points** (PROVEN 2026-07-17): a point of
-`E(ℚ̄)` fixed by every element of the absolute Galois group is the base
-change of a rational point. The coordinates are fixed by all
-automorphisms of the Galois extension `ℚ̄/ℚ`, hence lie in `ℚ`
-(`InfiniteGalois.mem_range_algebraMap_iff_fixed`), and nonsingularity
-descends along the injective base change
-(`baseChange_nonsingular`). -/
-theorem WeierstrassCurve.exists_point_eq_baseChange_of_fixed
-    (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (Pt : (E⁄(AlgebraicClosure ℚ)).Point)
-    (hfix : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt = Pt) :
-    ∃ Q : (E⁄ℚ).Point,
-      Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q = Pt := by
-  cases Pt with
-  | zero => exact ⟨0, rfl⟩
-  | some x y h =>
-    have hx : x ∈ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) := by
-      refine (InfiniteGalois.mem_range_algebraMap_iff_fixed x).mpr fun σ => ?_
-      have h1 := hfix σ
-      rw [Affine.Point.map_some] at h1
-      exact (Affine.Point.some.inj h1).left
-    have hy : y ∈ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) := by
-      refine (InfiniteGalois.mem_range_algebraMap_iff_fixed y).mpr fun σ => ?_
-      have h1 := hfix σ
-      rw [Affine.Point.map_some] at h1
-      exact (Affine.Point.some.inj h1).right
-    obtain ⟨x₀, hx₀⟩ := hx
-    obtain ⟨y₀, hy₀⟩ := hy
-    have h₀ : (E⁄ℚ).Nonsingular x₀ y₀ := by
-      have h2 := h
-      rw [← hx₀, ← hy₀] at h2
-      exact (Affine.baseChange_nonsingular (W := E)
-        (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))
-        (algebraMap ℚ (AlgebraicClosure ℚ)).injective x₀ y₀).mp h2
-    refine ⟨Affine.Point.some x₀ y₀ h₀, ?_⟩
-    have hmap := Affine.Point.map_some
-      (f := Algebra.ofId ℚ (AlgebraicClosure ℚ)) h₀
-    rw [show Affine.Point.baseChange ℚ (AlgebraicClosure ℚ)
-        (Affine.Point.some x₀ y₀ h₀) =
-      Affine.Point.map (Algebra.ofId ℚ (AlgebraicClosure ℚ))
-        (Affine.Point.some x₀ y₀ h₀) from rfl, hmap]
-    subst hx₀ hy₀
-    rfl
 
 /-!
 ### Character bookkeeping on a stable line
