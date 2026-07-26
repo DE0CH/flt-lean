@@ -21817,10 +21817,164 @@ noncomputable def localSplitSubgroup {kk' : Type u} [Field kk']
       a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure
 
 /-- **Global class field theory: the Artin map of the Hilbert class
-field of `ℚ(μ_p)`, with equivariance checked only on FROBENIUS
-elements** (E3c support leaf (ii-a-1); SORRY NODE — the class-field
-theoretic core, re-cut 2026-07-26 out of `exists_artinMap_classGroup`
+field of `ℚ(μ_p)`, together with its FROBENIUS-TO-IDEAL dictionary**
+(E3c support leaf (ii-a-1-i); SORRY NODE — the class-field-theoretic
+core, re-cut 2026-07-26 out of `exists_artinMap_classGroup_frobenius`
 below, which is now PROVEN over it): for `χ` the mod-`p` cyclotomic
+character `ω` of `Γℚ` (`hχcyc`, so `ker χ = Γ_{ℚ(μ_p)}`) and any model
+`CF` of `ℚ(μ_p)`, there are a map `art : Γℚ → Cl(𝓞 CF)` AND a family
+`frobIdeal g v` of nonzero ideals of `𝓞 CF` — "the prime of `𝓞 CF`
+singled out by the rational place `v` and the Galois element `g`" —
+with
+
+* (i) `art` is a homomorphism on `ker χ`;
+* (ii) `art` is SURJECTIVE from `ker χ` onto the class group;
+* (iii) `art` is trivial on an OPEN NORMAL subgroup `H ≤ ker χ` of `Γℚ`
+  — the continuity of the Artin map, in the elementary first-order form
+  that avoids putting a topology on `Cl(𝓞 CF)`;
+* (iv-a) **the Artin symbol formula**: whenever the Frobenius conjugate
+  `g · Frob_v · g⁻¹` lies in `ker χ`, its Artin image is the class of
+  the corresponding prime, `art (g Frob_v g⁻¹) = [frobIdeal g v]`;
+* (iv-b) **that prime is Galois-natural in `g`**: for every `σ` with
+  `ω(σ) = u`, `frobIdeal (σ g) v = σ_u (frobIdeal g v)`, where
+  `σ_u = cycGalRingOfIntegersEquiv CF u` is the automorphism of `𝓞 CF`
+  induced by `ζ ↦ ζ^u`;
+* (v) every element of `ker χ` killed by `art` lies in
+  `localSplitSubgroup χ p`.
+
+WHAT THIS CUT ACHIEVES (2026-07-26). The previous leaf asked directly
+for the CONJUGATION-EQUIVARIANCE
+`art (σ x σ⁻¹) = classGroupGalAut CF (σ_u) (art x)` at Frobenius
+conjugates `x = g Frob_v g⁻¹`. That clause is PROVEN below from
+(iv-a) + (iv-b) and the already-proven ideal computation
+`classGroup_mulEquiv_mk0`: conjugation merely translates the base
+point, `σ (g Frob_v g⁻¹) σ⁻¹ = (σ g) Frob_v (σ g)⁻¹`, so the class on
+the left is `[frobIdeal (σ g) v] = [σ_u (frobIdeal g v)] =
+classGroupGalAut CF (σ_u) [frobIdeal g v]`. In other words the
+equivariance of the Artin symbol is not an independent demand at all —
+it is the naturality of `𝔮 ↦ [𝔮]` under `Ideal.map`, once the symbol is
+known to be COMPUTED by an ideal. That is precisely the shape in which
+the classical theory delivers it (Neukirch I (9.1)–(9.2), VI (6.9):
+`(σ𝔞, H/K) = σ (𝔞, H/K) σ⁻¹` is a corollary of
+`Frob_{σ𝔮} = σ Frob_𝔮 σ⁻¹` and of `art (Frob_𝔮) = [𝔮]`), so this cut
+takes bookkeeping OFF the remaining obligation rather than adding to
+it: what is left is exactly "the Artin map exists and is computed on
+Frobenius elements by the class of the underlying prime".
+
+THE INTENDED `frobIdeal`, and why (iv-b) carries no side condition.
+Fix an embedding `ι : CF ↪ ℚ̄` and let `𝔓` be the place of `ℚ̄` over `v`
+implicit in `globalFrob v` (`globalFrob` is the image of the local
+arithmetic Frobenius under the same fixed embedding of algebraic
+closures that `GaloisRep.toLocal` uses). Put
+`frobIdeal g v := ι⁻¹(g 𝔓)`, the prime of `𝓞 CF` below the place
+`g 𝔓`. Then `frobIdeal (σ g) v = ι⁻¹(σ g 𝔓) = (σ|_CF)(ι⁻¹(g 𝔓))`,
+because `CF/ℚ` is Galois so `σ` preserves `ι(CF)`, and `σ|_CF` is
+`σ_{ω(σ)}` by the cyclotomic dictionary. That computation is valid for
+ALL `g` and `v` — no unramifiedness and no `ker χ` membership is used —
+which is why (iv-b) is stated unconditionally; note also that it
+depends on `σ` only through `σ|_CF`, consistently with the fact that an
+element of `ker χ` fixes `ι(CF)` pointwise and so moves no prime of
+`𝓞 CF`. Clause (iv-a) is then the definition of the Artin symbol: if
+`g Frob_v g⁻¹` fixes `CF`, the residue degree of `frobIdeal g v` over
+`v` is `1`, so `g Frob_v g⁻¹` IS the arithmetic Frobenius of `Γ_CF` at
+`frobIdeal g v`, and the Artin map of the Hilbert class field sends it
+to the class of that prime.
+
+FAITHFULNESS (audited 2026-07-26). This statement IMPLIES the previous
+leaf (that is the proof below), and it holds for the same inhabitant:
+`art` the Artin map of the Hilbert class field `H` of `K = ℚ(μ_p)`
+composed with `Γ_K ↠ Gal(H/K) ≅ Cl(K)` (Neukirch VI (6.8), (6.9)),
+`frobIdeal` as displayed above, and `H`-clause (iii) witnessed by
+`Gal(ℚ̄/H)` — open because `H/ℚ` is finite, normal in `Γℚ` because `H`
+is canonical and `ℚ(μ_p)/ℚ` is Galois. Clause (v) points the provable
+way: `ker(art) = closure⟨inertia, commutators⟩` is CONTAINED IN
+`localSplitSubgroup χ p`, whose generators additionally include the
+full decomposition groups at `p` and at `2`; no equality is demanded.
+`K` is totally complex for odd `p`, so the narrow and wide class groups
+agree and there are no real places to worry about; for `p = 2`,
+`CF = ℚ`, `Cl(ℤ) = 1`, and `art ≡ 1`, `frobIdeal ≡ ⊤`, `H = ⊤` inhabit
+every clause.
+
+THE PIN (audit re-verified 2026-07-26 against the mathlib pin in
+`.lake` and against `~/cs/FLT`, which contains no class field theory of
+any kind): mathlib has `ClassGroup`, its functoriality
+(`ClassGroup.mulEquiv`), finiteness of the class group of a number
+field, ideal norms, the whole LOCAL ramification/inertia theory
+(`Mathlib/NumberTheory/RamificationInertia/`), the arithmetic Frobenius
+`arithFrobAt` with its existence, uniqueness at an unramified prime and
+CONJUGATION-EQUIVARIANCE (`Mathlib/RingTheory/Frobenius.lean`:
+`IsArithFrobAt.conj`, `AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`) —
+which this project extends to the profinite setting in
+`Fermat/FLT/Deformations/RepresentationTheory/Frobenius.lean`
+(`arithFrobAt'`) — and, for the cyclotomic case specifically, the
+decomposition-group computation
+`IsCyclotomicExtension.Rat.galEquivZMod_stabilizer`
+(`Mathlib/NumberTheory/NumberField/Cyclotomic/Galois.lean`). But there
+is still NO global class field theory: no Artin map and no Artin symbol
+of an IDEAL (no `ArtinMap`/`artinSymbol` anywhere), no Hilbert class
+field, no ray class groups, no idele class group, no "maximal
+unramified abelian extension". Building this leaf therefore still means
+building unramified global CFT; the pieces, in dependency order, are:
+(1) the Artin symbol of an unramified prime in an abelian extension,
+with its conjugation-equivariance — REACHABLE NOW, it is `arithFrobAt`
+plus `IsArithFrobAt.conj` plus
+`AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`; (2) the dictionary between
+a Frobenius element of `Γℚ` and the prime of `𝓞 CF` it determines —
+this is exactly the `frobIdeal` datum, now made EXPLICIT in the
+statement instead of being hidden inside an equivariance clause; (3)
+Artin reciprocity — principal ideals are in the kernel; (4) the
+existence theorem for the Hilbert class field, i.e. surjectivity and
+the kernel computation; (5) the translation between "an inertia
+subgroup of `Γ_K` at a finite place" and "a `Γℚ`-conjugate of the image
+of `localInertiaGroup`", which is what clause (v) is stated in terms
+of. Clauses (iv-a)/(iv-b) are where (1) and (2) enter; (ii), (iii) and
+(v) are where (3) and (4) enter. Piece (1) is deliberately NOT wrapped
+into a project-level lemma yet: nothing in the cone could consume such
+a wrapper until (2) exists, so it would be free-floating.
+
+Soundness: the hypothesis set is inhabited (`χ = ω`, `CF` the
+cyclotomic field) and the conclusion holds for every inhabitant, by the
+classical construction recalled above. -/
+theorem exists_artinMap_classGroup_frobeniusIdeal
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF] :
+    ∃ (art : Field.absoluteGaloisGroup ℚ → ClassGroup (𝓞 CF))
+      (frobIdeal : Field.absoluteGaloisGroup ℚ →
+        IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ) → (Ideal (𝓞 CF))⁰),
+      (∀ g h : Field.absoluteGaloisGroup ℚ, χ g = 1 → χ h = 1 →
+        art (g * h) = art g * art h) ∧
+      (∀ c : ClassGroup (𝓞 CF), ∃ n : Field.absoluteGaloisGroup ℚ,
+        χ n = 1 ∧ art n = c) ∧
+      (∃ H : Subgroup (Field.absoluteGaloisGroup ℚ), H.Normal ∧
+        IsOpen (H : Set (Field.absoluteGaloisGroup ℚ)) ∧
+        ∀ x ∈ H, χ x = 1 ∧ art x = 1) ∧
+      (∀ (g : Field.absoluteGaloisGroup ℚ)
+          (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+        χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+        art (g * GaloisRepresentation.globalFrob v * g⁻¹) =
+          ClassGroup.mk0 (frobIdeal g v)) ∧
+      (∀ (u : (ZMod p)ˣ) (σ g : Field.absoluteGaloisGroup ℚ)
+          (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+        χ σ = ZMod.castHom (dvd_refl p) kk' (u : ZMod p) →
+        (frobIdeal (σ * g) v : Ideal (𝓞 CF)) =
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF))
+            (frobIdeal g v : Ideal (𝓞 CF))) ∧
+      (∀ (n : Field.absoluteGaloisGroup ℚ) (hn : n ∈ MonoidHom.ker χ),
+        art n = 1 → (⟨n, hn⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) :=
+  sorry
+
+/-- **Global class field theory: the Artin map of the Hilbert class
+field of `ℚ(μ_p)`, with equivariance checked only on FROBENIUS
+elements** (E3c support leaf (ii-a-1); PROVEN 2026-07-26 over
+`exists_artinMap_classGroup_frobeniusIdeal` above, which carries the
+same conclusion with the conjugation-equivariance clause replaced by
+the Frobenius-to-ideal dictionary that classically produces it; itself
+cut 2026-07-26 out of `exists_artinMap_classGroup` below, which is
+PROVEN over it): for `χ` the mod-`p` cyclotomic
 character `ω` of `Γℚ` (`hχcyc`, so `ker χ = Γ_{ℚ(μ_p)}`) and any model
 `CF` of `ℚ(μ_p)`, there is a map `art : Γℚ → Cl(𝓞 CF)` with
 
@@ -21854,8 +22008,11 @@ statement of the equivariance of the Artin symbol — Neukirch I
 of `ker χ` was not a statement about Frobenius elements at all and had
 no classical proof one could follow. The reduction is the standard
 "check a Galois-equivariance on Frobenius elements and extend by
-density"; it is what the missing pieces (1)–(2) of the audit below are
-FOR, and it is now the only place they are needed.
+density"; it is what the missing pieces (1)–(2) of the audit on
+`exists_artinMap_classGroup_frobeniusIdeal` above are FOR, and it is
+now the only place they are needed. Both of them enter through that
+leaf's `frobIdeal` datum, which is why the equivariance clause here is
+now PROVEN rather than assumed.
 
 The two clauses added relative to the old leaf, (iii) and the
 `ker χ`-membership side condition in (iv), are free for the true Artin
@@ -21864,34 +22021,14 @@ field, so it is trivial on `Gal(ℚ̄/H)`, which is open (`H/ℚ` is finite)
 and normal in `Γℚ` (`H/ℚ` is Galois, `H` being canonical and
 `ℚ(μ_p)/ℚ` Galois).
 
-THE PIN (audit RE-VERIFIED 2026-07-25 directly against the mathlib pin
-in `.lake`): mathlib has `ClassGroup`, its functoriality
-(`ClassGroup.mulEquiv`), finiteness of the class group of a number
-field, ideal norms, the whole LOCAL ramification/inertia theory
-(`Mathlib/NumberTheory/RamificationInertia/`), and — new to this audit —
-the arithmetic Frobenius `arithFrobAt` with its existence, uniqueness at
-an unramified prime and CONJUGATION-EQUIVARIANCE
-(`Mathlib/RingTheory/Frobenius.lean`), which this project extends to the
-profinite setting in
-`Fermat/FLT/Deformations/RepresentationTheory/Frobenius.lean`
-(`arithFrobAt'`). But there is still NO global class field theory of any
-kind: no Artin map and no Artin symbol of an IDEAL (no
-`ArtinMap`/`artinSymbol` anywhere), no Hilbert class field, no ray class
-groups, no idele class group, no "maximal unramified abelian extension".
-Building this leaf therefore still means building unramified global CFT;
-the pieces, in dependency order, are: (1) the Artin symbol of an
-unramified prime in an abelian extension, with its
-conjugation-equivariance — REACHABLE NOW, it is `arithFrobAt` plus
-`IsArithFrobAt.conj` plus `AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`;
-(2) its multiplicative extension to the ideal group, and the dictionary
-between a Frobenius element of `Γℚ` and the class of the underlying
-prime of `𝓞 CF`; (3) Artin reciprocity — principal ideals are in the
-kernel; (4) the existence theorem for the Hilbert class field, i.e.
-surjectivity and the kernel computation; (5) the translation between
-"an inertia subgroup of `Γ_K` at a finite place" and "a `Γℚ`-conjugate
-of the image of `localInertiaGroup`", which is what clause (v) is stated
-in terms of. Clause (iv) is where (1) and (2) enter; (iii) and clause
-(ii)/(v) are where (3) and (4) enter.
+THE PIN. The audit of what the mathlib pin does and does not provide —
+it has `ClassGroup`, its functoriality, class-group finiteness, the
+local ramification/inertia theory and the arithmetic Frobenius with its
+conjugation-equivariance, and it has NO Artin map, no Artin symbol of
+an ideal, no Hilbert class field, no ray class groups and no idele
+class group — now lives on
+`exists_artinMap_classGroup_frobeniusIdeal` above, since this
+declaration is proven and that one is the remaining obligation.
 
 Soundness: the hypothesis set is inhabited (`χ = ω`, `CF` the
 cyclotomic field) and the conclusion holds for every inhabitant, `art`
@@ -21923,8 +22060,23 @@ theorem exists_artinMap_classGroup_frobenius
             ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u)
             (art (g * GaloisRepresentation.globalFrob v * g⁻¹))) ∧
       (∀ (n : Field.absoluteGaloisGroup ℚ) (hn : n ∈ MonoidHom.ker χ),
-        art n = 1 → (⟨n, hn⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) :=
-  sorry
+        art n = 1 → (⟨n, hn⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) := by
+  obtain ⟨art, frobIdeal, hhom, hsurj, hH, hfrob, hfeq, hker⟩ :=
+    exists_artinMap_classGroup_frobeniusIdeal χ hχcyc CF
+  refine ⟨art, hhom, hsurj, hH, ?_, hker⟩
+  intro u σ g v hσ hχx
+  -- conjugating a Frobenius merely translates the base point
+  have hconj : σ * (g * GaloisRepresentation.globalFrob v * g⁻¹) * σ⁻¹ =
+      σ * g * GaloisRepresentation.globalFrob v * (σ * g)⁻¹ := by group
+  have hχ2 : χ (σ * g * GaloisRepresentation.globalFrob v * (σ * g)⁻¹) = 1 := by
+    rw [← hconj, map_mul, map_mul, hχx, mul_one, ← map_mul, mul_inv_cancel, map_one]
+  rw [hconj, hfrob (σ * g) v hχ2, hfrob g v hχx]
+  -- `classGroupGalAut CF (σ_u)` is `ClassGroup.mulEquiv (σ_u)` definitionally
+  show ClassGroup.mk0 (frobIdeal (σ * g) v) =
+    ClassGroup.mulEquiv (cycGalRingOfIntegersEquiv CF u)
+      (ClassGroup.mk0 (frobIdeal g v))
+  rw [classGroup_mulEquiv_mk0]
+  exact congrArg ClassGroup.mk0 (Subtype.ext (hfeq u σ g v hσ))
 
 /-- **Global class field theory: the Artin map of the Hilbert class
 field of `ℚ(μ_p)`, equivariantly** (E3c support leaf (ii-a); PROVEN
