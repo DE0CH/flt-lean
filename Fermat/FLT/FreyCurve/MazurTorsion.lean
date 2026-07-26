@@ -1108,8 +1108,8 @@ become five separate literature nodes:
   `not_cyclicIsogeny_oneHundredTwentyFive`,
   `not_cyclicIsogeny_sq_of_prime_ge_seven`.
 
-  THREE of those four were themselves decomposed on 2026-07-26 and are now
-  PROVEN rather than cited:
+  ALL FOUR were themselves decomposed on 2026-07-26 and are now PROVEN
+  rather than cited:
 
   - `not_cyclicIsogeny_thirtyTwo` over `exists_x0Sixteen_hauptmodul`
     (genus-`0` moduli at level `16`) and `exists_x0ThirtyTwo_point`
@@ -1140,8 +1140,18 @@ become five separate literature nodes:
     `j`-invariants with a rational `p`-isogeny) together with
     `not_cyclicIsogeny_sq_of_jInvariant` (the finite check on them).
 
-  The one still-cited level is `125`, the one with no shallower
-  intermediate level (`X_0(25)` has genus `0`); see its docstring.
+  - `not_cyclicIsogeny_oneHundredTwentyFive`, the level with no shallower
+    intermediate level (`X_0(25)` has genus `0`, so nothing below pins
+    `j`), over the Atkin–Lehner descent leaf
+    `classPoly500_of_stable_cyclic_subgroup_order_125` plus the PROVEN
+    class-number half `MazurLevel125.classPoly500_no_rat_root`
+    (`h(−500) = 10`). This is the same two-leaf shape as level `169`, and
+    it is licensed by the same rank datum: `rank J_0(125)^−(ℚ) = 0`,
+    because both `w_125 = −1` newform factors have `L(A_f, 1) ≠ 0`. It
+    supersedes the previously recommended Chabauty–Coleman route, whose
+    bound `#X(ℚ) ≤ #X(𝔽_p) + 2g − 2` cannot go below `2g − 2 = 14` at
+    genus `8` and so can never reach the true count `2`; see its
+    docstring.
 * the remaining half, `notPrimePow_mem_cyclicIsogenyDegrees`: a level
   with at least two distinct prime factors lies in
   `{6, 10, 12, 14, 15, 18, 21}` — exactly the non-prime-powers of the
@@ -5376,16 +5386,301 @@ theorem WeierstrassCurve.not_cyclicIsogeny_eightyOne (E : WeierstrassCurve ℚ)
   exact E.not_cyclicIsogeny_eightyOne_of_j
     (E.j_of_stable_cyclic_subgroup_order_27 g₂₇ hg₂₇ hstable₂₇) g hg hstable
 
-/-- **No rational cyclic `125`-isogeny** (sorry node — the level
-`X_0(125)` of Kenku's prime-power determination): no elliptic curve over
-`ℚ` carries a Galois-stable cyclic subgroup of order `125`.
+/-!
+###### Level `125`: the Atkin–Lehner descent, cut 2026-07-26 along the
+class number of the discriminant `−500`
+
+`not_cyclicIsogeny_oneHundredTwentyFive` is cut here in exactly the shape
+that closed level `169` a few hundred lines below — an Atkin–Lehner
+descent leaf that PINS `j(E)`, plus a class-number leaf that KILLS the
+pinned value and is PROVEN here. What licenses the cut is a rank
+configuration that the previous audit of this node recorded but did not
+exploit.
+
+**THE RANK DATUM, AND WHY IT CHANGES THE ROUTE** (Magma 2026-07-26,
+`NewformDecomposition` of `CuspidalSubspace(ModularSymbols(125, 2, +1))`
+with `LRatio` and `AtkinLehnerOperator`; untrusted searcher, never a
+proof). `S_2(Γ_0(125))` is entirely new (`X_0(25)` has genus `0`) and
+splits into three Galois-conjugacy classes of newforms:
+
+    A_f     dim    L(A_f,1)    w_125
+    A_1      2        0          +1
+    A_2      2       ≠ 0         −1
+    A_3      4       ≠ 0         −1
+
+`2 + 2 + 4 = 8 = genus X_0(125)` ✓, and the `w_125 = +1` part has
+dimension `2 = genus (X_0(125)/w_125)` ✓. The decisive line is the last
+two rows: **every `w_125 = −1` factor has `L(A_f, 1) ≠ 0`, so
+`rank J_0(125)^−(ℚ) = 0`** — the same configuration as at level `169`,
+where it is precisely what makes the Atkin–Lehner descent go. The one
+vanishing `L` sits in the `w_125 = +1` part, i.e. in the Jacobian of the
+genus-`2` quotient `X_0(125)/w_125`, whose rank is therefore `2`, equal to
+its genus.
+
+**WHY NOT CHABAUTY–COLEMAN ON `X_0(125)` ITSELF.** `rank J_0(125)(ℚ) = 2
+< 8 = g`, so the method is formally applicable, and the earlier audit of
+this node proposed it on that ground. It cannot however reach the answer,
+and the obstruction is arithmetic rather than technological. Coleman's
+effective bound (Duke Math. J. 52 (1985), 765–770) reads
+`#X(ℚ) ≤ #X(𝔽_p) + 2g − 2` for a prime `p > 2g` of good reduction. Here
+`2g − 2 = 14`, so the bound exceeds `14` for EVERY admissible `p`, while
+the truth is `2`. Concretely the smallest admissible prime is `p = 17`,
+where `#X_0(125)(𝔽_17) = 17 + 1 − Tr(T_17) = 18` (Magma: `Tr(T_17) = 0`
+on `S_2(Γ_0(125))`), giving only `#X_0(125)(ℚ) ≤ 32`. **So the crude
+Chabauty–Coleman bound is structurally incapable of proving
+`#X_0(125)(ℚ) = 2` at genus `8`**, whatever prime is chosen; sharpening it
+to the truth requires a Mordell–Weil sieve layered on top of Coleman
+integration — strictly more machinery than the descent, and on top of the
+same missing `J_0(N)`. That is why the route taken below is the cheaper
+one, and it is the correction to the earlier note.
+
+**THE `w_125`-FIXED POINTS ARE CM OF DISCRIMINANT `−500`.** For `N > 4`
+the fixed points of `w_N` on `X_0(N)` are the CM points of discriminant
+`−4N`, together with those of discriminant `−N` when `N ≡ 3 mod 4`. Here
+`125 ≡ 1 mod 4`, so only `−4·125 = −500` occurs — the order of conductor
+`5` in `ℚ(√−5)`. Two independent counts, agreeing on the nose:
+
+* `h(−500) = 10` (PARI/GP `qfbclassno(-500)`; also by the conductor
+  formula `h(f²d_K) = h(d_K)·f/[O_K^* : O^*]·∏_{p ∣ f}(1 − (d_K/p)/p)`
+  `= 2 · 5 · (1 − 0) = 10`, using `d_K = −20`, `h(−20) = 2`, and
+  `(d_K/5) = 0` because `5 ∣ 20`);
+* Riemann–Hurwitz for the degree-`2` map `X_0(125) → X_0(125)/w_125`,
+  `g = 2g' − 1 + f/2`, i.e. `8 = 2·2 − 1 + f/2`, so `f = 10` — computed
+  from the Magma dimensions above and agreeing with the class number
+  exactly.
+
+`h(−500) = 10 > 1` is what makes the `j`-invariant of a `w_125`-fixed
+point irrational, and it is the statement the second leaf below
+discharges: the degree-`10` Hilbert class polynomial `H_{−500}` (PARI/GP
+`polclass(-500)`, irreducible over `ℚ`) has no rational root.
+-/
+
+namespace MazurLevel125
+
+/-- **The Hilbert class polynomial of discriminant `−500` has no rational
+root** (PROVEN 2026-07-26): the degree-`10` monic integer polynomial
+
+  `H_{−500}(X) = X¹⁰ − 3223908749006824266704683757440 X⁹ − …`
+
+(PARI/GP `polclass(-500)`, whose roots are the ten `j`-invariants of the
+elliptic curves with CM by the order of discriminant `−500`, i.e. the
+conductor-`5` order in `ℚ(√−5)`) has no root in `ℚ`.
+
+This is the class-number half of level `125`: `h(−500) = 10`, so
+`H_{−500}` is irreducible of degree `10` and in particular has no linear
+factor. See the section note above for why `−500` is the discriminant
+that occurs — it is the discriminant of the `w_125`-fixed points of
+`X_0(125)`.
+
+The proof does NOT go through irreducibility, which would be expensive.
+It is the rational root theorem plus one congruence, in the same shape as
+the sibling `MazurLevel169.classPoly676_no_rat_root`:
+
+1. clearing `x.den¹⁰` in the hypothesis shows `x.den ∣ x.num¹⁰`, and
+   `x.num` and `x.den` are coprime, so `x.den = 1` and `x` is an integer;
+2. `H_{−500} mod 3 = X¹⁰ + 2X⁹ + 2X⁶ + 2X⁴ + X³ + 2X² + X + 2` takes the
+   values `2, 1, 2` at `0, 1, 2`, so it has no root in `ZMod 3` — three
+   cases, by `decide`.
+
+The prime `3` is the smallest with no root; `7, 23, 29, 41, 43, 47` also
+work (PARI/GP `polrootsmod`). -/
+theorem classPoly500_no_rat_root (x : ℚ)
+    (h : x ^ 10
+        - 3223908749006824266704683757440 * x ^ 9
+        - 5788655235893465137488657517731653977535262720 * x ^ 8
+        - 85513345743278838162291325580790125628876982826827776000 * x ^ 7
+        - 1263255684065627337408638443352833529354350351162180211933446144000 * x ^ 6
+        + 200050352444241778217084607085539849216954485891061015890608338763776000 * x ^ 5
+        - 25167927250522335028015421713735943766651382344880916018374545607890042880000 * x ^ 4
+        + 778178490640825346779670618315835464511684096015509575297442424938919142359040000 * x ^ 3
+        - 13889504758243071457243957312605709795978620655662039570875090923855697559735500800000 * x ^ 2
+        + 60874009901409915234577944006025873946343138332896192966988043974221344967016788787200000 * x
+        - 97064073967839061742571922471570867312906354784609767212665048296086545175195813173788672000
+        = 0) :
+    False := by
+  have hd0 : ((x.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr x.den_nz
+  have hNq : ((x.num : ℚ)) = x * ((x.den : ℚ)) := (div_eq_iff hd0).mp (Rat.num_div_den x)
+  -- Clear the denominator: `x.num¹⁰` is `x.den` times an integer.
+  have key : ((x.num : ℚ)) ^ 10 =
+      3223908749006824266704683757440 * (x.num : ℚ) ^ 9 * (x.den : ℚ)
+      + 5788655235893465137488657517731653977535262720 *
+          (x.num : ℚ) ^ 8 * (x.den : ℚ) ^ 2
+      + 85513345743278838162291325580790125628876982826827776000 *
+          (x.num : ℚ) ^ 7 * (x.den : ℚ) ^ 3
+      + 1263255684065627337408638443352833529354350351162180211933446144000 *
+          (x.num : ℚ) ^ 6 * (x.den : ℚ) ^ 4
+      - 200050352444241778217084607085539849216954485891061015890608338763776000 *
+          (x.num : ℚ) ^ 5 * (x.den : ℚ) ^ 5
+      + 25167927250522335028015421713735943766651382344880916018374545607890042880000 *
+          (x.num : ℚ) ^ 4 * (x.den : ℚ) ^ 6
+      - 778178490640825346779670618315835464511684096015509575297442424938919142359040000 *
+          (x.num : ℚ) ^ 3 * (x.den : ℚ) ^ 7
+      + 13889504758243071457243957312605709795978620655662039570875090923855697559735500800000 *
+          (x.num : ℚ) ^ 2 * (x.den : ℚ) ^ 8
+      - 60874009901409915234577944006025873946343138332896192966988043974221344967016788787200000 *
+          (x.num : ℚ) * (x.den : ℚ) ^ 9
+      + 97064073967839061742571922471570867312906354784609767212665048296086545175195813173788672000 *
+          (x.den : ℚ) ^ 10 := by
+    rw [hNq]; linear_combination ((x.den : ℚ)) ^ 10 * h
+  have keyZ : (x.num) ^ 10 =
+      3223908749006824266704683757440 * x.num ^ 9 * (x.den : ℤ)
+      + 5788655235893465137488657517731653977535262720 * x.num ^ 8 * (x.den : ℤ) ^ 2
+      + 85513345743278838162291325580790125628876982826827776000 *
+          x.num ^ 7 * (x.den : ℤ) ^ 3
+      + 1263255684065627337408638443352833529354350351162180211933446144000 *
+          x.num ^ 6 * (x.den : ℤ) ^ 4
+      - 200050352444241778217084607085539849216954485891061015890608338763776000 *
+          x.num ^ 5 * (x.den : ℤ) ^ 5
+      + 25167927250522335028015421713735943766651382344880916018374545607890042880000 *
+          x.num ^ 4 * (x.den : ℤ) ^ 6
+      - 778178490640825346779670618315835464511684096015509575297442424938919142359040000 *
+          x.num ^ 3 * (x.den : ℤ) ^ 7
+      + 13889504758243071457243957312605709795978620655662039570875090923855697559735500800000 *
+          x.num ^ 2 * (x.den : ℤ) ^ 8
+      - 60874009901409915234577944006025873946343138332896192966988043974221344967016788787200000 *
+          x.num * (x.den : ℤ) ^ 9
+      + 97064073967839061742571922471570867312906354784609767212665048296086545175195813173788672000 *
+          (x.den : ℤ) ^ 10 := by
+    exact_mod_cast key
+  have hdvd : (x.den : ℤ) ∣ x.num ^ 10 :=
+    ⟨3223908749006824266704683757440 * x.num ^ 9
+      + 5788655235893465137488657517731653977535262720 * x.num ^ 8 * (x.den : ℤ)
+      + 85513345743278838162291325580790125628876982826827776000 *
+          x.num ^ 7 * (x.den : ℤ) ^ 2
+      + 1263255684065627337408638443352833529354350351162180211933446144000 *
+          x.num ^ 6 * (x.den : ℤ) ^ 3
+      - 200050352444241778217084607085539849216954485891061015890608338763776000 *
+          x.num ^ 5 * (x.den : ℤ) ^ 4
+      + 25167927250522335028015421713735943766651382344880916018374545607890042880000 *
+          x.num ^ 4 * (x.den : ℤ) ^ 5
+      - 778178490640825346779670618315835464511684096015509575297442424938919142359040000 *
+          x.num ^ 3 * (x.den : ℤ) ^ 6
+      + 13889504758243071457243957312605709795978620655662039570875090923855697559735500800000 *
+          x.num ^ 2 * (x.den : ℤ) ^ 7
+      - 60874009901409915234577944006025873946343138332896192966988043974221344967016788787200000 *
+          x.num * (x.den : ℤ) ^ 8
+      + 97064073967839061742571922471570867312906354784609767212665048296086545175195813173788672000 *
+          (x.den : ℤ) ^ 9, by linear_combination keyZ⟩
+  -- Coprimality of numerator and denominator: `x` is an integer.
+  have h2 : x.den ∣ x.num.natAbs ^ 10 := by
+    have := Int.natAbs_dvd_natAbs.mpr hdvd
+    simpa [Int.natAbs_pow] using this
+  have hden1 : x.den = 1 :=
+    Nat.Coprime.eq_one_of_dvd (Nat.Coprime.pow_right 10 x.reduced.symm) h2
+  rw [hden1] at keyZ
+  push_cast at keyZ
+  -- No root modulo `3`.
+  have key3 : ∀ z : ZMod 3, z ^ 10 ≠
+      3223908749006824266704683757440 * z ^ 9
+      + 5788655235893465137488657517731653977535262720 * z ^ 8
+      + 85513345743278838162291325580790125628876982826827776000 * z ^ 7
+      + 1263255684065627337408638443352833529354350351162180211933446144000 * z ^ 6
+      - 200050352444241778217084607085539849216954485891061015890608338763776000 * z ^ 5
+      + 25167927250522335028015421713735943766651382344880916018374545607890042880000 * z ^ 4
+      - 778178490640825346779670618315835464511684096015509575297442424938919142359040000 * z ^ 3
+      + 13889504758243071457243957312605709795978620655662039570875090923855697559735500800000 * z ^ 2
+      - 60874009901409915234577944006025873946343138332896192966988043974221344967016788787200000 * z
+      + 97064073967839061742571922471570867312906354784609767212665048296086545175195813173788672000 := by
+    decide
+  refine key3 (x.num : ZMod 3) ?_
+  have hcast := congrArg (fun t : ℤ => (t : ZMod 3)) keyZ
+  push_cast at hcast
+  linear_combination hcast
+
+end MazurLevel125
+
+/-- **Kenku's Atkin–Lehner descent at level `125`** (sorry node,
+introduced 2026-07-26 by the cut of
+`not_cyclicIsogeny_oneHundredTwentyFive` along the class number of
+`−500`): if `E/ℚ` carries a Galois-stable cyclic subgroup of order `125`,
+then `j(E)` is a root of the Hilbert class polynomial of discriminant
+`−500`.
+
+This is the whole content of Kenku, "On the modular curves `X_0(125)`,
+`X_1(25)` and `X_1(49)`", J. London Math. Soc. (2) 23 (1981), 415–427,
+short of the final class-number check, which is the sibling
+`MazurLevel125.classPoly500_no_rat_root` (PROVEN). In modular terms it
+says: every non-cuspidal rational point of `X_0(125)` is fixed by the
+Atkin–Lehner involution `w_125`, and the `w_125`-fixed points are the CM
+points of discriminant `−4·125 = −500`. See the section note above for the
+Magma rank data that makes the first half go — `rank J_0(125)^−(ℚ) = 0`,
+because both `w_125 = −1` newform factors have `L(A_f, 1) ≠ 0` — and for
+the two independent computations of the fixed-point count `10`.
+
+The descent itself, for whoever attacks this leaf: for `P ∈ X_0(125)(ℚ)`
+the class `[(P) − (w_125 P)]` lies in `ker(1 + w_125) ⊆ J_0(125)(ℚ)`,
+whose rank is `0` by the table above, hence is torsion; the rational
+torsion is cuspidal, and running the finitely many possibilities either
+forces `P = w_125 P` or places `P` at one of the two rational cusps
+`d = 1`, `d = 125`. This is the step that Chabauty–Coleman on `X_0(125)`
+cannot replace — see the section note for why its bound cannot go below
+`2g − 2 = 14`.
+
+**VACUITY AUDIT.** Like every level node in this file
+(`exists_x0ThirtyTwo_point`, `not_cyclicIsogeny_eightyOne_of_j`,
+`classPoly676_of_stable_cyclic_subgroup_order_169`, …) the hypotheses here
+are jointly unsatisfiable — no elliptic curve over `ℚ` has a rational
+cyclic `125`-isogeny — so this leaf is vacuously true and cannot be proven
+by exhibiting a witness. What makes the cut a REDUCTION rather than a
+renaming is that the class-number half is now closed: whoever attacks this
+leaf has to produce only the Atkin–Lehner descent, and no longer has to
+also settle the arithmetic of the fixed points.
+
+IRREDUCIBLE at this mathlib pin: `X_0(125)`, `J_0(125)`, the Atkin–Lehner
+involution, Kolyvagin–Logachev and the theory of complex multiplication are
+all absent. Missing machinery in dependency order, for whoever continues:
+(1) modular curves as schemes over `ℚ` with their cuspidal divisors —
+note `Fermat/FLT/ModularCurve/X0.lean` is building exactly this layer for
+the twelve composite levels, and its `Y0HasNoRationalPoint` /
+`false_of_stable_of_y0HasNoRationalPoint` pair is the natural home for
+this leaf once it lands on `main`; (2) `Pic⁰`/`J_0(N)` and Mordell–Weil;
+(3) the Atkin–Lehner involution and the eigenspace decomposition of
+`J_0(N)`; (4) the analytic-rank input — Eichler–Shimura plus
+Kolyvagin–Logachev — to turn `L(A_f, 1) ≠ 0` into `rank = 0`; (5) CM theory
+over `ℚ`, to identify the fixed points with the class group of the
+conductor-`5` order in `ℚ(√−5)`. Steps (1)–(4) are shared verbatim with
+`classPoly676_of_stable_cyclic_subgroup_order_169` and
+`not_isogenyCharacter_of_prime_ge_twentyThree`, which is the argument for
+building them once.
+
+The polynomial is written out rather than named because the development has
+no Hilbert class polynomial; the coefficients are PARI/GP `polclass(-500)`
+(2026-07-26, untrusted searcher — the values are classical), and the SAME
+literal appears in the sibling leaf, which is what makes the two
+compose. -/
+theorem WeierstrassCurve.classPoly500_of_stable_cyclic_subgroup_order_125
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    E.j ^ 10
+      - 3223908749006824266704683757440 * E.j ^ 9
+      - 5788655235893465137488657517731653977535262720 * E.j ^ 8
+      - 85513345743278838162291325580790125628876982826827776000 * E.j ^ 7
+      - 1263255684065627337408638443352833529354350351162180211933446144000 * E.j ^ 6
+      + 200050352444241778217084607085539849216954485891061015890608338763776000 * E.j ^ 5
+      - 25167927250522335028015421713735943766651382344880916018374545607890042880000 * E.j ^ 4
+      + 778178490640825346779670618315835464511684096015509575297442424938919142359040000 * E.j ^ 3
+      - 13889504758243071457243957312605709795978620655662039570875090923855697559735500800000 * E.j ^ 2
+      + 60874009901409915234577944006025873946343138332896192966988043974221344967016788787200000 * E.j
+      - 97064073967839061742571922471570867312906354784609767212665048296086545175195813173788672000
+      = 0 :=
+  sorry
+
+/-- **No rational cyclic `125`-isogeny** (PROVEN 2026-07-26 over the two
+leaves above — the level `X_0(125)` of Kenku's prime-power determination):
+no elliptic curve over `ℚ` carries a Galois-stable cyclic subgroup of
+order `125`.
 
 `125 = 5³` is the smallest power of `5` absent from the Mazur–Kenku list
 (`5` and `25` are present, `25` by the isogeny class `11a`), so by
 divisor descent this single statement disposes of every `5^k` with
 `k ≥ 3`.
 
-IRREDUCIBLE at this mathlib pin: `X_0(125)` has genus `8` (`μ = 150`,
+The geometry, unchanged by the cut: `X_0(125)` has genus `8` (`μ = 150`,
 `ν₂ = 2`, `ν₃ = 0`, `10` cusps, so `g = 1 + 25/2 − 1/2 − 5 = 8`; recomputed
 2026-07-25 and independently reconfirmed 2026-07-26 in PARI/GP and in
 Magma, the latter as `dim S_2(Γ_0(125)) = 8`). Only `2` of the `10` cusps
@@ -5394,19 +5689,24 @@ assertion `#X_0(125)(ℚ) = 2`. This is precisely the level treated in
 Kenku, "On the modular curves `X_0(125)`, `X_1(25)` and `X_1(49)`",
 J. London Math. Soc. (2) 23 (1981), 415–427.
 
-**RANK DATA, AND WHY THE ATKIN–LEHNER QUOTIENT IS A TRAP** (Magma,
-2026-07-26; see the section note above for the full table). `S_2(Γ_0(125))`
-is all new (`X_0(25)` has genus `0`) and decomposes into `A_f`'s of
-dimension `2, 2, 4` with `L`-ratios `4/5, 0, 1/5` and `w_125`-eigenvalues
-`−1, +1, −1`. So exactly one factor has `L(A_f, 1) = 0`; its sign of
-functional equation is `−w_125 = −1`, every conjugate has odd analytic rank,
-and `rank J_0(125)(ℚ) = 2`. Since `2 < 8 = genus`, **Chabauty–Coleman is
-applicable to `X_0(125)` itself** — the node is not beyond the reach of
-standard technique, only beyond the reach of this development. The trap:
-that positive-rank factor is precisely the `w_125 = +1` part, i.e. the
-Jacobian of `X_0(125)/w_125`, which has genus `2`. On the quotient the rank
-EQUALS the genus, so Chabauty fails there; Kenku works through the quotient
-with a different argument, and that is why his paper is hard.
+**RANK DATA, AND WHAT IT IS GOOD FOR** (Magma, 2026-07-26; see the section
+note above for the full table and its re-derivation). `S_2(Γ_0(125))` is
+all new (`X_0(25)` has genus `0`) and decomposes into `A_f`'s of dimension
+`2, 2, 4` with `w_125`-eigenvalues `+1, −1, −1`, of which exactly the
+first — the `w_125 = +1` one — has `L(A_f, 1) = 0`. Hence
+`rank J_0(125)(ℚ) = 2`, carried entirely by the `w_125 = +1` part, i.e. by
+the Jacobian of the genus-`2` quotient `X_0(125)/w_125`, where the rank
+EQUALS the genus and Chabauty fails.
+
+The earlier version of this docstring drew from `2 < 8 = genus` the
+conclusion that **Chabauty–Coleman applies to `X_0(125)` itself** and made
+that the recommended route. It is formally applicable and it does not
+work: Coleman's bound is `#X(ℚ) ≤ #X(𝔽_p) + 2g − 2`, and `2g − 2 = 14`
+already exceeds the true answer `2` for every admissible prime — see the
+section note for the arithmetic. The useful half of the same table is the
+COMPLEMENT: both `w_125 = −1` factors have `L ≠ 0`, so
+`rank J_0(125)^−(ℚ) = 0`, and that is what powers the Atkin–Lehner descent
+this node is now cut along.
 
 **Why this level is the hardest of the four prime powers, checked
 2026-07-26.** The other three all admit a reduction that shrinks the
@@ -5417,10 +5717,18 @@ genus-`1` curve `X_0(27)`; the `p²` level drops to nine explicit primes
 through Mazur. Here the intermediate level is `X_0(25)`, which has genus
 `0` — so it pins nothing, and there are infinitely many curves with a
 cyclic `25`-isogeny. The genus-`8` curve `X_0(125)` therefore has to be
-faced directly (Kenku works through its Atkin–Lehner quotient). Splitting
-this node along `X_0(25)` would produce a genus-`0` Hauptmodul leaf plus a
-level-`125` leaf carrying the entire content — a decomposition that
-relocates the work without reducing it, so it was deliberately NOT done. -/
+faced directly. Splitting this node along `X_0(25)` would produce a
+genus-`0` Hauptmodul leaf plus a level-`125` leaf carrying the entire
+content — a decomposition that relocates the work without reducing it, so
+it is deliberately NOT what was done. The cut that WAS done instead peels
+off the arithmetic of the `w_125`-fixed points, exactly as at level `169`:
+it is the one half of Kenku's argument that today's vocabulary can
+express, and it leaves the descent as the single remaining leaf.
+
+Assembly (this proof): the descent leaf pins `j(E)` as a root of
+`H_{−500}`, and `MazurLevel125.classPoly500_no_rat_root` says that
+polynomial has no rational root, while `j(E) ∈ ℚ` because `E` is defined
+over `ℚ`. -/
 theorem WeierstrassCurve.not_cyclicIsogeny_oneHundredTwentyFive
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
@@ -5430,7 +5738,8 @@ theorem WeierstrassCurve.not_cyclicIsogeny_oneHundredTwentyFive
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     False :=
-  sorry
+  MazurLevel125.classPoly500_no_rat_root E.j
+    (E.classPoly500_of_stable_cyclic_subgroup_order_125 g hg hstable)
 
 /-!
 ##### The nine levels `X_0(p²)`, split by the GENUS OF `X_0(p)` (2026-07-26)
