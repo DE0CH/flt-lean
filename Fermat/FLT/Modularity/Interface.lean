@@ -19352,25 +19352,7 @@ theorem prod_smul_eq_prod_orbit_pow {G X M : Type*} [Group G] [Fintype G] [MulAc
   congr 1
   rw [← card_fiber_smul_eq_card_stabilizer hτ, Nat.card_eq_fintype_card, Fintype.card_subtype]
 
--- INSTANCE-SHADOWING WORKAROUND (2026-07-26, diagnosed by bisecting this
--- file's import list). `Fermat/FLT/Deformations/Lemmas.lean:122` carries a
--- VENDORED `MulSemiringAction G (𝓞 K)` instance, written when this pin's
--- mathlib lacked one; mathlib now has its own
--- (`Mathlib/NumberTheory/NumberField/Basic.lean:124`), and the vendored copy
--- wins instance search. The two are propositionally the same action but not
--- the same TERM, so every mathlib lemma stated against mathlib's instance
--- fails to unify — concretely `RingOfIntegers.instSMulDistribClass` does not
--- apply, hence `SMulDistribClass Gal(L/ℚ) (𝓞 L) L` is unsynthesizable, hence
--- so is `IsGaloisGroup Gal(L/ℚ) ℤ (𝓞 L)`, which is what the whole
--- ramification-theory API below needs. `Chebotarev.lean` hit the same wall and
--- worked around it by restating a lemma against the project instance; here the
--- cheaper repair is to switch the vendored instance off for this ONE
--- declaration, which mentions no group action in its statement. The real fix
--- is to delete the vendored instance now that mathlib supplies it — a
--- cross-file change with a wide blast radius, so it is left to an owner of
--- `Deformations/Lemmas.lean`.
 open scoped Pointwise in
-attribute [-instance] instMulSemiringActionRingOfIntegers_fermat in
 /-- **The full Galois product of a prime is its absolute norm**, for an
 ARBITRARY Galois number field (PROVEN 2026-07-26; standard algebraic
 number theory — Neukirch I.§8–§9, Washington §1 — verified absent from
