@@ -244,6 +244,17 @@ public import Mathlib.RingTheory.Artinian.Module
 public import Mathlib.RingTheory.AdicCompletion.Noetherian
 import Mathlib.RingTheory.Henselian
 import Mathlib.RingTheory.Ideal.Quotient.Index
+-- proof-only (2026-07-25, `exists_degreeOnePlace_of_brauer`): the arithmetic
+-- Frobenius `arithFrobAt` of a prime of a Dedekind domain acted on by a finite
+-- group with fixed subring (`Mathlib.RingTheory.Frobenius`), the AKLB
+-- invariance `Algebra.isInvariant_of_isGalois'` that supplies its hypothesis
+-- for `𝓞 F / 𝓞 ℚ` (`Mathlib.RingTheory.Invariant.Galois`), and the finiteness
+-- of the residue rings `𝓞 K ⧸ I` at a maximal ideal
+-- (`Mathlib.NumberTheory.NumberField.Ideal.Basic`). None of these names occurs
+-- in a statement of this module.
+import Mathlib.RingTheory.Frobenius
+import Mathlib.RingTheory.Invariant.Galois
+import Mathlib.NumberTheory.NumberField.Ideal.Basic
 
 @[expose] public section
 
@@ -8253,10 +8264,97 @@ theorem charFrob_map_of_adicCompletionHom
     = (ρ.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly
   rw [hLHS, LinearEquiv.charpoly_conj]
 
+section DegreeOnePlaces
+
+open scoped NumberField Pointwise
+
+/-- **A local ring hom of adic completions along a place above** (PROVEN):
+for a finite extension `K/k` of number fields and a finite place `w` of `K`
+lying over the place `v` of `k`, the inclusion `k → K` completes to a ring
+hom `k_v →+* K_w` which is LOCAL (it carries `𝒪_v` into `𝒪_w`) and
+compatible with `k → K`.
+
+This is the "functoriality of `adicCompletion` along `Ideal.under`" that
+`exists_degreeOnePlace_of_brauer` below needs, and it is assembled entirely
+from `CompletionTransport.lean`: the valuation comparison
+`valuation_map_le_of_le_one` (whose ideal-theoretic hypotheses are `le_rfl`
+and `id` once `v` is literally `w.under (𝓞 k)`), the uniform continuity
+criterion `WithVal.uniformContinuous_map_of_le`, and then
+`adicCompletionMap` with its two properties `adicCompletionMap_mem_integers`
+and `adicCompletionMap_coe`.
+
+WHY THE BASE FIELD IS GENERIC. Over `ℚ` the notation
+`algebraMap ℚ (v.adicCompletion ℚ)` is ambiguous — `DivisionRing.toRatAlgebra`
+and `HeightOneSpectrum.instAlgebraAdicCompletion` are propositionally but not
+definitionally equal. Stating this over a generic base field `k` leaves only
+one instance, and instantiating at `k := ℚ` therefore produces the
+`instAlgebraAdicCompletion` form that
+`exists_degreeOnePlace_of_brauer`'s conclusion pins with `@algebraMap`. Do
+not specialise this lemma to `ℚ`. -/
+theorem exists_adicCompletionHom_of_under
+    {k K : Type*} [Field k] [NumberField k] [Field K] [NumberField K] [Algebra k K]
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers k))
+    (hvw : w.under (NumberField.RingOfIntegers k) = v) :
+    ∃ ε : v.adicCompletion k →+* w.adicCompletion K,
+      (∀ x ∈ v.adicCompletionIntegers k, ε x ∈ w.adicCompletionIntegers K) ∧
+      ε.comp (algebraMap k (v.adicCompletion k)) =
+        (algebraMap K (w.adicCompletion K)).comp (algebraMap k K) := by
+  subst hvw
+  set v := w.under (𝓞 k) with hv
+  have hcomm : ∀ a : 𝓞 k,
+      (algebraMap k K) (algebraMap (𝓞 k) k a)
+        = algebraMap (𝓞 K) K (algebraMap (𝓞 k) (𝓞 K) a) := by
+    intro a
+    rw [← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply]
+  have hmem : v.asIdeal ≤ Ideal.comap (algebraMap (𝓞 k) (𝓞 K)) w.asIdeal := le_rfl
+  have hcompl : ∀ s : 𝓞 k, s ∉ v.asIdeal →
+      algebraMap (𝓞 k) (𝓞 K) s ∉ w.asIdeal := fun _ hs => hs
+  have hψ : UniformContinuous (WithVal.map (v.valuation k) (w.valuation K) (algebraMap k K)) :=
+    WithVal.uniformContinuous_map_of_le _ _
+      (IsDedekindDomain.HeightOneSpectrum.valuation_surjective k v) _
+      (fun x hx => IsDedekindDomain.HeightOneSpectrum.valuation_map_le_of_le_one v w _ _
+        hcomm hmem hcompl x hx)
+  exact ⟨IsDedekindDomain.HeightOneSpectrum.adicCompletionMap v w (algebraMap k K) hψ,
+    fun x hx => IsDedekindDomain.HeightOneSpectrum.adicCompletionMap_mem_integers v w _ hψ
+      _ hcomm hx,
+    RingHom.ext fun x =>
+      IsDedekindDomain.HeightOneSpectrum.adicCompletionMap_coe v w (algebraMap k K) hψ x⟩
+
+/-- **A finite domain satisfying `z ^ N = z` identically has at most `N`
+elements** (PROVEN): every element is a root of `X ^ N - X`, a nonzero
+polynomial of degree `N` over a domain, and a polynomial has at most
+`natDegree` roots (`Polynomial.card_le_degree_of_subset_roots`).
+
+This is the counting half of "residue degree one" in
+`exists_degreeOnePlace_of_brauer`: the Frobenius identity forces
+`z ^ #(𝓞_ℚ/q) = z` on the whole residue ring `𝓞_{Kᵢ}/w`, which caps its
+cardinality at `#(𝓞_ℚ/q)`; the reverse inequality is the injection of
+residue rings. Stating it for a domain rather than a finite field avoids
+having to produce the field structure on `𝓞_{Kᵢ}/w`. -/
+theorem card_le_of_pow_eq_self {L : Type*} [CommRing L] [IsDomain L] [Finite L] {N : ℕ}
+    (hN : 2 ≤ N) (h : ∀ z : L, z ^ N = z) : Nat.card L ≤ N := by
+  classical
+  have := Fintype.ofFinite L
+  have hdeg : ((X : L[X]) ^ N - X).natDegree = N := by
+    rw [natDegree_sub_eq_left_of_natDegree_lt]
+    · simp
+    · simp; omega
+  have hne : ((X : L[X]) ^ N - X) ≠ 0 := by
+    intro h0
+    rw [h0, natDegree_zero] at hdeg
+    omega
+  have hsub : (Finset.univ : Finset L).val ⊆ ((X : L[X]) ^ N - X).roots := by
+    intro z _
+    rw [mem_roots hne, IsRoot, eval_sub, eval_pow, eval_X, h z, sub_self]
+  have := Polynomial.card_le_degree_of_subset_roots hsub
+  rw [hdeg] at this
+  simpa [Nat.card_eq_fintype_card] using this
+
 /-- **Some Brauer piece has a degree-one place above almost every
-rational prime** (sorry node; the arithmetic core of the induced-trace
-expansion below, and the ONLY place in the descent where the Brauer
-decomposition is used): given a Brauer decomposition of the trivial
+rational prime** (PROVEN 2026-07-25; the arithmetic core of the
+induced-trace expansion below, and the ONLY place in the descent where
+the Brauer decomposition is used): given a Brauer decomposition of the trivial
 character of `Gal(F/ℚ)` into one-dimensional pieces `φ i` supported on
 subgroups `H i` (`hbrauer`, `hφ0`, `hφ1`, `hφmul`) and, for each piece, a
 finite bad set `S i` of places of the fixed field `Kᵢ = F^{H i}`, there
@@ -8300,30 +8398,41 @@ primes ramified in `F` (a finite set) together with the rational primes
 lying under an element of some `S i` (finitely many, each `S i` being a
 `Finset`), which is what makes the produced `w` avoid `S i`.
 
-MISSING MACHINERY (named in dependency order for the fleet; none of it
-is in mathlib at the current pin, and none of it is in this project):
+FORMALISED PROOF (2026-07-25), which is the classical one with two
+simplifications that remove all four pieces of machinery the sorry node
+was originally cut against.
 
-1. the arithmetic Frobenius `Frob_q ∈ Gal(F/ℚ)` of a rational prime
-   unramified in a finite Galois extension `F/ℚ`, as an element of the
-   FINITE Galois group — this project has only the local
-   `Field.AbsoluteGaloisGroup.adicArithFrob : Γ ℚ_q`, and the bridge
-   between them (the decomposition group at a chosen prime of `F` over
-   `q`, and its surjection onto the residue Galois group) is absent;
-2. finiteness of the set of rational primes ramified in a number field;
-3. the double-coset parametrisation of `Ideal.primesOver q (𝓞 (F^H))`
-   for `H ≤ Gal(F/ℚ)`, with `Ideal.inertiaDeg` of the prime attached to
-   `H x ⟨σ⟩` computed as the least `d ≥ 1` with `x σᵈ x⁻¹ ∈ H`;
-4. functoriality of `IsDedekindDomain.HeightOneSpectrum.adicCompletion`
-   along `Ideal.under`: for `w | q` a LOCAL ring hom `ℚ_q →+* K_w`
-   compatible with `ℚ → K`, together with the identification of its
-   residue cardinality with `Nat.card (𝓞_K / w)`.
+* SIMPLIFICATION 1 — no unramifiedness, hence no ramified-prime set. The
+  argument never needs `Frob_Q` to GENERATE the decomposition group, only
+  to induce `x ↦ x ^ #(𝓞_ℚ/q)` on `𝓞_F/Q`; such an element exists at
+  EVERY prime `Q` (mathlib's `arithFrobAt` for a finite group acting on a
+  ring with fixed subring, `Algebra.IsInvariant` being supplied for
+  `𝓞_F/𝓞_ℚ` by `Algebra.isInvariant_of_isGalois'` and transported to
+  `Gal(F/ℚ)` along `galRestrict`). So `S₀` collects ONLY the rational
+  primes lying under an element of some `S i`, and item 2 of the old
+  missing-machinery list — finiteness of the ramified set — is not needed
+  at all. Note this makes `hbrauer` carry the entire arithmetic weight: it
+  is applied at the Frobenius of an arbitrary prime `Q | q`.
+* SIMPLIFICATION 2 — no double cosets and no `Ideal.inertiaDeg`. Write
+  `g := x⁻¹ σ x ∈ Hᵢ`, which is (`IsArithFrobAt.conj`) a Frobenius at the
+  conjugated prime `Q' := τ • Q`, still over `q`. Because `g` fixes
+  `Kᵢ = F^{Hᵢ}` pointwise, the Frobenius congruence at `Q'` reads
+  `a - a ^ #(𝓞_ℚ/q) ∈ Q'` for every `a ∈ 𝓞_{Kᵢ}`, i.e.
+  `z ^ #(𝓞_ℚ/q) = z` identically on the residue ring `𝓞_{Kᵢ}/w` with
+  `w := Q'.under 𝓞_{Kᵢ}`. That caps `#(𝓞_{Kᵢ}/w)` by `#(𝓞_ℚ/q)`
+  (`card_le_of_pow_eq_self` above), and the injection
+  `𝓞_ℚ/q ↪ 𝓞_{Kᵢ}/w` gives the reverse inequality — which is exactly the
+  residue-cardinality clause of the conclusion, with no residue degree
+  ever mentioned. So item 3 (the double-coset parametrisation) is not
+  needed either.
 
-Item 4 is the only one whose statement is already essentially present in
-this project — `IsDedekindDomain.HeightOneSpectrum.adicCompletionMap`
-(used by `Field.absoluteGaloisGroup.exists_conj_map_adicArithFrob_ringEquiv`)
-builds exactly such a map from a ring hom of the DEDEKIND domains that
-respects the valuations; what is missing is its instance for an
-extension of number fields at a prime above.
+Item 1 of the old list is mathlib's `arithFrobAt` (`Mathlib/RingTheory/
+Frobenius.lean`, Andrew Yang) — present at this pin, and the reason the
+local/global Frobenius bridge is unnecessary here: the leaf is proved with
+the GLOBAL Frobenius throughout and never meets
+`Field.AbsoluteGaloisGroup.adicArithFrob`. Item 4 is
+`exists_adicCompletionHom_of_under` above, assembled from this project's
+`IsDedekindDomain.HeightOneSpectrum.adicCompletionMap`.
 
 SOUNDNESS AUDIT: NOT vacuous. The conclusion asserts the EXISTENCE of a
 degree-one place, which fails for a fixed `i` (a rational prime inert in
@@ -8333,14 +8442,30 @@ it there is no `Frob_q` in `F ≃ₐ[ℚ] F` and the double-coset description
 fails). When `n = 0` the hypothesis `hbrauer` reads `0 = 1` in `ℂ` and
 the statement is vacuously true, as it must be. No representation
 theory, no `ℓ` and no modularity enter this leaf — it is pure algebraic
-number theory, which is why it is cut out here. -/
+number theory, which is why it is cut out here.
+
+HYPOTHESES NOT CONSUMED (2026-07-25, recorded for a cut-level owner; this
+is NOT a vacuity report — the conclusion is the full existence statement
+and `hφ0`, `hbrauer` and `[IsGalois ℚ F]` are all load-bearing). The proof
+uses only the SUPPORT condition `hφ0` and the Brauer identity `hbrauer`:
+the normalisation `_hφ1` and the multiplicativity `_hφmul` are never
+needed, because all that is extracted from `hbrauer σ` is that SOME
+summand `φ i (x⁻¹ σ x)` is nonzero, and `hφ0` then places `x⁻¹ σ x` in
+`H i`. In other words this leaf is true for an arbitrary family of
+functions `φ i` supported on `H i` satisfying the identity — being
+characters of the `H i` is not used. They are underscore-prefixed so the
+non-use is mechanically visible, and RETAINED rather than deleted because
+the sole consumer `exists_inducedTrace_expansion_of_brauer` applies this
+leaf positionally with its own hypothesis list, and because a
+strengthened restatement (the actual Mackey expansion, whose weights are
+the `φ i (Frob_w)`) would need them back. -/
 theorem exists_degreeOnePlace_of_brauer
     {F : Type*} [Field F] [NumberField F] [IsGalois ℚ F]
     (n : ℕ) (H : Fin n → Subgroup (F ≃ₐ[ℚ] F))
     (φ : Fin n → (F ≃ₐ[ℚ] F) → ℂ) (c : Fin n → ℚ)
     (hφ0 : ∀ i, ∀ g ∉ H i, φ i g = 0)
-    (hφ1 : ∀ i, φ i 1 = 1)
-    (hφmul : ∀ i, ∀ a ∈ H i, ∀ b ∈ H i, φ i (a * b) = φ i a * φ i b)
+    (_hφ1 : ∀ i, φ i 1 = 1)
+    (_hφmul : ∀ i, ∀ a ∈ H i, ∀ b ∈ H i, φ i (a * b) = φ i a * φ i b)
     (hbrauer : ∀ g : F ≃ₐ[ℚ] F,
       ∑ i, (c i : ℂ) * (Nat.card (H i) : ℂ)⁻¹ *
         ∑ x : F ≃ₐ[ℚ] F, φ i (x⁻¹ * g * x) = 1)
@@ -8367,8 +8492,121 @@ theorem exists_degreeOnePlace_of_brauer
                   hq.toHeightOneSpectrumRingOfIntegersRat)) =
               (algebraMap (IntermediateField.fixedField (H i))
                   (w.adicCompletion (IntermediateField.fixedField (H i)))).comp
-                (algebraMap ℚ (IntermediateField.fixedField (H i))) :=
-  sorry
+                (algebraMap ℚ (IntermediateField.fixedField (H i))) := by
+  classical
+  -- `Gal(F/ℚ)` acts on `𝓞 F` with fixed subring `𝓞 ℚ`, through `galRestrict`
+  haveI : Algebra.IsInvariant (𝓞 ℚ) (𝓞 F) (𝓞 F ≃ₐ[𝓞 ℚ] 𝓞 F) :=
+    Algebra.isInvariant_of_isGalois' (𝓞 ℚ) ℚ F (𝓞 F)
+  haveI : Finite (𝓞 F ≃ₐ[𝓞 ℚ] 𝓞 F) :=
+    Finite.of_equiv _ (galRestrict (𝓞 ℚ) ℚ F (𝓞 F)).toEquiv
+  -- `S₀` is exactly the set of rational primes below a bad place of some `Kᵢ`
+  refine ⟨Finset.univ.biUnion
+    (fun i => (S i).image (fun w => w.under (𝓞 ℚ))), ?_⟩
+  intro q hq hqS₀
+  set qv := hq.toHeightOneSpectrumRingOfIntegersRat with hqv
+  -- a maximal ideal `Q` of `𝓞 F` over `q`
+  haveI : qv.asIdeal.IsMaximal := qv.isPrime.isMaximal qv.ne_bot
+  obtain ⟨Q, hQmax, hQunder⟩ := Ideal.exists_ideal_over_maximal_of_isIntegral
+    (R := 𝓞 ℚ) (S := 𝓞 F) qv.asIdeal
+    (by simp [(RingHom.injective_iff_ker_eq_bot _).mp
+      (FaithfulSMul.algebraMap_injective (𝓞 ℚ) (𝓞 F))])
+  haveI : Q.IsMaximal := hQmax
+  haveI : Q.IsPrime := hQmax.isPrime
+  -- the arithmetic Frobenius at `Q`, as an element of `Gal(F/ℚ)`
+  set e := galRestrict (𝓞 ℚ) ℚ F (𝓞 F) with he
+  set σ₀ : 𝓞 F ≃ₐ[𝓞 ℚ] 𝓞 F := arithFrobAt (𝓞 ℚ) (𝓞 F ≃ₐ[𝓞 ℚ] 𝓞 F) Q with hσ₀def
+  have hσ₀ : IsArithFrobAt (𝓞 ℚ) σ₀ Q := IsArithFrobAt.arithFrobAt _ _ _
+  set σ : F ≃ₐ[ℚ] F := e.symm σ₀ with hσdef
+  -- the Brauer identity at `σ`: some piece is supported at some conjugate of `σ`
+  have hex : ∃ (i : Fin n) (x : F ≃ₐ[ℚ] F), x⁻¹ * σ * x ∈ H i := by
+    by_contra hcon
+    push Not at hcon
+    have h1 := hbrauer σ
+    rw [Finset.sum_eq_zero (fun i _ => by
+      rw [Finset.sum_eq_zero (fun x _ => hφ0 i _ (hcon i x)), mul_zero])] at h1
+    exact zero_ne_one h1
+  obtain ⟨i, x, hxH⟩ := hex
+  set g : F ≃ₐ[ℚ] F := x⁻¹ * σ * x with hgdef
+  set τ₀ : 𝓞 F ≃ₐ[𝓞 ℚ] 𝓞 F := e x⁻¹ with hτ₀def
+  have hgconj : e g = τ₀ * σ₀ * τ₀⁻¹ := by
+    rw [hgdef, hτ₀def, map_mul, map_mul, hσdef, MulEquiv.apply_symm_apply, map_inv, inv_inv]
+  -- `g ∈ Hᵢ` is a Frobenius at the conjugated prime `Q'`, still over `q`
+  set Q' : Ideal (𝓞 F) := τ₀ • Q with hQ'def
+  have hfrobQ' : IsArithFrobAt (𝓞 ℚ) (e g) Q' := by
+    rw [hgconj]; exact hσ₀.conj τ₀
+  haveI : Q'.IsPrime := Ideal.IsPrime.smul τ₀
+  have hQ'under : Q'.under (𝓞 ℚ) = qv.asIdeal := by
+    rw [← hQunder]
+    ext a
+    rw [Ideal.under, Ideal.mem_comap, Ideal.mem_comap, hQ'def,
+      Ideal.mem_pointwise_smul_iff_inv_smul_mem,
+      show τ₀⁻¹ • (algebraMap (𝓞 ℚ) (𝓞 F) a) = algebraMap (𝓞 ℚ) (𝓞 F) a from
+        (τ₀⁻¹ : 𝓞 F ≃ₐ[𝓞 ℚ] 𝓞 F).commutes a]
+  have hQ'ne : Q' ≠ ⊥ := by
+    intro h
+    rw [h] at hQ'under
+    rw [Ideal.under, Ideal.comap_bot_of_injective _
+      (FaithfulSMul.algebraMap_injective (𝓞 ℚ) (𝓞 F))] at hQ'under
+    exact qv.ne_bot hQ'under.symm
+  -- the place `w` of `Kᵢ` below `Q'`
+  set QH : HeightOneSpectrum (𝓞 F) := ⟨Q', inferInstance, hQ'ne⟩ with hQHdef
+  set w : HeightOneSpectrum (𝓞 (IntermediateField.fixedField (H i))) :=
+    QH.under (𝓞 (IntermediateField.fixedField (H i))) with hwdef
+  have hwq : w.under (𝓞 ℚ) = qv := by
+    apply HeightOneSpectrum.ext
+    show (Q'.under (𝓞 (IntermediateField.fixedField (H i)))).under (𝓞 ℚ) = qv.asIdeal
+    rw [Ideal.under_under]
+    exact hQ'under
+  -- `w` avoids the bad set, since `q` was taken outside `S₀`
+  have hwS : w ∉ S i := by
+    intro hmem
+    exact hqS₀ (Finset.mem_biUnion.mpr ⟨i, Finset.mem_univ i,
+      Finset.mem_image.mpr ⟨w, hmem, hwq⟩⟩)
+  -- `g ∈ Hᵢ` fixes `Kᵢ = F^{Hᵢ}`, hence fixes `𝓞_{Kᵢ}` inside `𝓞 F`
+  have hfix : ∀ a : 𝓞 (IntermediateField.fixedField (H i)),
+      (e g) (algebraMap (𝓞 (IntermediateField.fixedField (H i))) (𝓞 F) a)
+        = algebraMap (𝓞 (IntermediateField.fixedField (H i))) (𝓞 F) a := by
+    intro a
+    apply FaithfulSMul.algebraMap_injective (𝓞 F) F
+    rw [algebraMap_galRestrict_apply (𝓞 ℚ) g]
+    rw [← IsScalarTower.algebraMap_apply (𝓞 (IntermediateField.fixedField (H i))) (𝓞 F) F,
+      IsScalarTower.algebraMap_apply (𝓞 (IntermediateField.fixedField (H i)))
+        (IntermediateField.fixedField (H i)) F]
+    exact ((IntermediateField.mem_fixedField_iff (H i) _).mp
+      (algebraMap (𝓞 (IntermediateField.fixedField (H i)))
+        (IntermediateField.fixedField (H i)) a).2 g hxH)
+  -- so the Frobenius congruence at `Q'` becomes `z ^ #(𝓞_ℚ/q) = z` on `𝓞_{Kᵢ}/w`
+  have hpow : ∀ z : 𝓞 (IntermediateField.fixedField (H i)) ⧸ w.asIdeal,
+      z ^ (Nat.card (𝓞 ℚ ⧸ qv.asIdeal)) = z := by
+    intro z
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective z
+    rw [← map_pow, Ideal.Quotient.eq]
+    show a ^ _ - a ∈ Q'.under (𝓞 (IntermediateField.fixedField (H i)))
+    rw [Ideal.under, Ideal.mem_comap, map_sub, map_pow]
+    have h1 := hfrobQ' (algebraMap (𝓞 (IntermediateField.fixedField (H i))) (𝓞 F) a)
+    rw [hQ'under] at h1
+    have h2 : (MulSemiringAction.toAlgHom (𝓞 ℚ) (𝓞 F) (e g))
+        (algebraMap (𝓞 (IntermediateField.fixedField (H i))) (𝓞 F) a)
+        = algebraMap (𝓞 (IntermediateField.fixedField (H i))) (𝓞 F) a := hfix a
+    rw [h2] at h1
+    have h3 := (Ideal.neg_mem_iff Q').mpr h1
+    rwa [neg_sub] at h3
+  have hNge : 2 ≤ Nat.card (𝓞 ℚ ⧸ qv.asIdeal) := by
+    haveI : Field (𝓞 ℚ ⧸ qv.asIdeal) := Ideal.Quotient.field _
+    exact Finite.one_lt_card
+  -- the two inequalities give the residue-cardinality equality
+  have hcard : Nat.card (𝓞 ℚ ⧸ qv.asIdeal)
+      = Nat.card (𝓞 (IntermediateField.fixedField (H i)) ⧸ w.asIdeal) := by
+    refine le_antisymm ?_ (card_le_of_pow_eq_self hNge hpow)
+    refine Nat.card_le_card_of_injective
+      (Ideal.quotientMap w.asIdeal
+        (algebraMap (𝓞 ℚ) (𝓞 (IntermediateField.fixedField (H i))))
+        (le_of_eq (congrArg HeightOneSpectrum.asIdeal hwq).symm))
+      (Ideal.quotientMap_injective' (le_of_eq (congrArg HeightOneSpectrum.asIdeal hwq)))
+  obtain ⟨ε, hεint, hεcomm⟩ := exists_adicCompletionHom_of_under w qv hwq
+  exact ⟨i, w, hwS, hcard, ε, hεint, hεcomm⟩
+
+end DegreeOnePlaces
 
 /-- **The induced-trace expansion at a rational Frobenius** (PROVEN
 2026-07-25 from the arithmetic leaf `exists_degreeOnePlace_of_brauer`
