@@ -1806,12 +1806,221 @@ theorem exists_grouplike_coordinates_of_grouplike_family
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
+/-- **Half (α) of the μ-type node: over the algebraically closed
+`ℚᵖᵥᵃˡᵍ` the connected corner IS a group algebra** (SORRY NODE, split
+off `exists_grouplike_family_of_connected_hopf_package` on 2026-07-25).
+
+This is the part of the μ-type classification that lives entirely over
+the ALGEBRAICALLY CLOSED field `ℚᵖᵥᵃˡᵍ` and needs NO `p`-adic
+integrality input: no `ρ`, no `hchar`, no inertia. Given
+
+* a finite flat Hopf order `G` over `𝒪ᵖᵥ` whose GENERIC fibre is étale
+  (`Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)`, a hypothesis of the parent),
+* the COMMUTATIVITY `habel` of the convolution monoid of `ℚᵖᵥ`-points —
+  at the call site this is *proven* from the `Γ`-equivariant bijection
+  `fG` onto the (additive!) representation space, see the parent's
+  proof —
+* a connected counit idempotent `e₀` (counit `1`, minimal among
+  idempotents, comultiplication absorbing `e₀ ⊗ e₀`),
+
+the corner `(ℚᵖᵥᵃˡᵍ ⊗ G) · ē₀` of `ē₀ = 1 ⊗ e₀` is GENERATED as an
+algebra by elements that are counit-normalised and group-like relative
+to the corner — i.e. it is the group algebra `ℚᵖᵥᵃˡᵍ[X]` of the
+character group `X = Hom(G°, 𝔾ₘ)`.
+
+Intended proof (all of it formal, no Raynaud): `ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G` is
+the base change to `ℚᵖᵥᵃˡᵍ` of the étale `ℚᵖᵥ`-algebra
+`ℚᵖᵥ ⊗[𝒪ᵖᵥ] G` (`Algebra.TensorProduct.cancelBaseChange`), hence a
+finite étale algebra over a SEPARABLY CLOSED field, so mathlib's
+`Algebra.FormallyEtale.equivPiOfIsSepClosed` identifies it with the
+function algebra `PrimeSpectrum _ → ℚᵖᵥᵃˡᵍ` of its finite point set
+`Γ`. Under that identification `ē₀` is the indicator of the CONNECTED
+points `Γ° = {γ | γ ē₀ = 1}` (minimality of `e₀`, `hprim₀`, is what
+makes the indicator primitive), the corner is the function algebra of
+`Γ°`, `Γ°` is a finite abelian group under convolution (`habel`), and
+the group-likes of the corner are exactly the characters `Γ° → ℚᵖᵥᵃˡᵍˣ`.
+Characters of a finite abelian group SPAN its function algebra over a
+field with enough roots of unity — mathlib's
+`card_monoidHom_of_hasEnoughRootsOfUnity` gives `|X| = |Γ°|` and
+`Coalgebra.linearIndepOn_isGroupLikeElem` gives their linear
+independence, so a dimension count upgrades independence to spanning.
+`ℚᵖᵥᵃˡᵍ` has characteristic `0` and is algebraically closed, so it has
+enough roots of unity.
+
+FAITHFULNESS. The generation clause is the whole content: the witness
+`ι = Unit`, `x = fun _ => ē₀` satisfies the other two clauses trivially
+(they are `hε₀` and `hcomul₀` base-changed) but fails generation
+whenever `G° ≠ 1`. `habel` may NOT be dropped: for a nonabelian finite
+`Γ°` the characters do not span, and the conclusion is false. -/
+theorem exists_grouplike_family_generating_corner
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) :
+    ∃ (ι : Type) (x : ι → ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G),
+      (∀ i, Coalgebra.counit (R := ℚᵖᵥᵃˡᵍ) (x i) = (1 : ℚᵖᵥᵃˡᵍ)) ∧
+      (∀ i, Coalgebra.comul (R := ℚᵖᵥᵃˡᵍ) (x i) *
+          (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
+        x i ⊗ₜ[ℚᵖᵥᵃˡᵍ] x i) ∧
+      (∀ y : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G, y * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ∈
+        Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range x)) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+/-- **Half (β) of the μ-type node: local inertia at `p` fixes EVERY
+group-like of the connected corner** (SORRY NODE, split off
+`exists_grouplike_family_of_connected_hopf_package` on 2026-07-25 —
+this half is the genuine RAYNAUD/OORT–TATE citation, and the ONLY place
+where the `p`-adic hypotheses `hρ`/`hchar`/`fG` and the odd-`e = 1`
+input `hpodd` are spent).
+
+Content: the character group `X = Hom(G°, 𝔾ₘ)` of the connected
+component is ÉTALE over `𝒪ᵖᵥ`, hence UNRAMIFIED, hence fixed pointwise
+by local inertia. Stated element-wise — for every `x` in
+`ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G` that is counit-normalised and group-like relative to
+the corner of `ē₀ = 1 ⊗ e₀`, the inertia element `σ` fixes `x` — so
+that the parent can apply it to each member of the family produced by
+half (α) above. Every corner group-like is such a character, so the
+universally-quantified form is exactly as true as the classification
+and is the convenient shape for the consumer.
+
+Intended proof (Raynaud, *Schémas en groupes de type `(p, …, p)`*,
+Bull. SMF 102 (1974) 241–280; Oort–Tate, *Group schemes of prime
+order*, Ann. Sci. ÉNS 3 (1970) 1–21; Tate, *Finite flat group
+schemes*, in Cornell–Silverman–Stevens, §4; Serre, Duke 54 (1987)
+§4.1):
+
+1. `e = v(p) = 1 < p − 1` for `𝒪ᵖᵥ` at the odd prime `p` (`hpodd`), so
+   Raynaud's rigidity applies: the finite flat prolongation of the
+   étale generic fibre is UNIQUE (Raynaud Th. 3.3.3, Cor. 3.3.6) and,
+   after passage to the strict henselisation, `G` has a composition
+   series whose quotients are `F`-vector-space schemes for finite
+   fields `F` (Raynaud Cor. 3.3.7, dévissage of a group of type
+   `(p, …, p)`; Tate–CSS §4.3).
+2. Each such quotient is classified by the equations
+   `Xᵢ^p = δᵢ X_{i+1}` with `0 ≤ v(δᵢ) ≤ e` (Raynaud §1.4, Th. 1.4.1;
+   Tate–CSS Th. 4.4.1), and inertia acts on its geometric points
+   through the fundamental characters of level `r = [F : 𝔽ₚ]`
+   (Raynaud Th. 3.4.1, Cor. 3.4.4). The `hchar`/`fG` input forces every
+   local Jordan–Hölder factor to be ONE-dimensional, i.e. `r = 1`, so
+   only the level-one branch occurs: with `e = 1` each factor has
+   `v(δ) ∈ {0, 1}`, hence is étale (`v(δ) = 0`) or of `μ`-type
+   (`v(δ) = 1 = e`; Oort–Tate at order `p`).
+3. The connected factors are therefore all of `μ`-type, and `G°` — an
+   iterated extension of `μ`-type groups over the henselian `𝒪ᵖᵥ` — is
+   itself of multiplicative type (dually: its Cartier dual is an
+   extension of étale by étale, hence étale; Raynaud Prop. 3.3.2 2°
+   and its dual, Tate–CSS §2 on Cartier duality).
+4. A multiplicative-type `G° = D(X)` has for character group an ÉTALE
+   `𝒪ᵖᵥ`-group `X` — constant over the strict henselisation — so its
+   Galois action is UNRAMIFIED and `σ` fixes every element of `X`, i.e.
+   every group-like of the corner.
+
+SOUNDNESS (do NOT weaken; two deliberate features, inherited from the
+parent).
+
+(i) The one-dimensionality input `hchar`/`fG` is not redundant: for the
+`p`-torsion of a SUPERSINGULAR elliptic curve over `ℤ_p` (connected,
+killed by `p`, `e = 1`) the generic fibre is a simple `F`-vector-space
+scheme with `F = 𝔽_{p²}` and tame inertia acts through `𝔽_{p²}^×`
+(Raynaud Th. 3.4.1 at `r = 2`, and the worked example in Raynaud
+§3.4.7), which is not a power map — the corner is then NOT a group
+algebra of an inertia-fixed group and this conclusion FAILS. Step 2 is
+exactly where the input is spent.
+
+(ii) The conclusion is `σ`-INVARIANCE of the group-like inside
+`ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G`, and deliberately NOT `ℚᵖᵥ`-rationality of it: the
+character group `X` may be a nonconstant UNRAMIFIED TWIST, in which
+case no nontrivial group-like of the corner is `ℚᵖᵥ`-rational and the
+rational-generators formulation would be a FALSE leaf. This is the
+`𝒪ᵥ`-rationality trap that killed the first form of
+`OortTate.exists_muType_coordinate`; note also that `σ` ranges over
+`localInertiaGroup` only — widening it to all of
+`Field.absoluteGaloisGroup ℚᵖᵥ` makes the statement FALSE for every
+nontrivial twist. -/
+theorem grouplike_corner_invariant_of_localInertia
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (hρ : IsHardlyRamified hpodd hv ρ)
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hcont₁ : Continuous χ₁) (hcont₂ : Continuous χ₂)
+    (hone₁ : χ₁ 1 = 1) (hone₂ : χ₂ 1 = 1)
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R))
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (fG : Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ) →+[Field.absoluteGaloisGroup ℚᵖᵥ]
+      (((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀)
+    (σ : Field.absoluteGaloisGroup ℚᵖᵥ)
+    (hσ : σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat)
+    (x : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G)
+    (hεx : Coalgebra.counit (R := ℚᵖᵥᵃˡᵍ) x = (1 : ℚᵖᵥᵃˡᵍ))
+    (hglx : Coalgebra.comul (R := ℚᵖᵥᵃˡᵍ) x *
+        (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
+      x ⊗ₜ[ℚᵖᵥᵃˡᵍ] x) :
+    Algebra.TensorProduct.map (σ.toAlgHom.restrictScalars 𝒪ᵖᵥ)
+      (AlgHom.id 𝒪ᵖᵥ G) x = x :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
 /-- **The connected component of a hardly-ramified Hopf package is of
 multiplicative type: over `ℚᵖᵥᵃˡᵍ` its corner is the group algebra of
-an inertia-fixed character group** (SORRY NODE — the SHARPENED citation
-of the μ-type/Raynaud classification, isolated 2026-07-25 from the
-coordinate package `exists_grouplike_coordinates_of_connected_hopf_package`
-below, whose five clauses are now PROVEN over this one).
+an inertia-fixed character group** (PROVEN 2026-07-25 as an ASSEMBLY
+over the two halves `exists_grouplike_family_generating_corner` (α) and
+`grouplike_corner_invariant_of_localInertia` (β) above — it was the
+SHARPENED citation of the μ-type/Raynaud classification, isolated
+2026-07-25 from the coordinate package
+`exists_grouplike_coordinates_of_connected_hopf_package` below, whose
+five clauses are PROVEN over this one).
+
+PROOF (2026-07-25, the split): the statement mixes two mathematically
+unrelated inputs, and the whole content of this node is that they can
+be applied one after the other.
+
+* Half (α), `exists_grouplike_family_generating_corner`, produces the
+  family and the first THREE clauses. It lives entirely over the
+  algebraically closed `ℚᵖᵥᵃˡᵍ`: given the étale generic fibre it is
+  the statement that a finite étale Hopf algebra over a separably
+  closed field is the function algebra of its finite point group and
+  that the characters of a finite ABELIAN such group span it. No
+  `p`-adic integrality, no `ρ`, no inertia.
+* Half (β), `grouplike_corner_invariant_of_localInertia`, supplies the
+  FOURTH clause for each member, and is the genuine Raynaud/Oort–Tate
+  citation: the character group of `G°` is étale over `𝒪ᵖᵥ`, hence
+  unramified, hence fixed by `σ`. It is stated for an ARBITRARY corner
+  group-like — every one of them is a character, so the universal form
+  is exactly as true as the classification and is what lets it be
+  applied to each `x i` produced by (α).
+
+The one step PROVEN here rather than cited is the commutativity input
+`habel` of half (α): the `Γ`-equivariant bijection `fG` carries the
+convolution monoid of `ℚᵖᵥ`-points onto the underlying ADDITIVE group
+of the representation space, and an additive bijection onto a
+commutative group forces the source to be commutative — so the point
+group of `G` is abelian, which is what makes its characters span.
+This is where `hfG` is spent on this side of the split. -/
 
 Content. `G` is a finite flat Hopf order over `𝒪ᵖᵥ` with étale generic
 fibre, arising through the `Γ`-equivariant bijection `fG` from a
@@ -1922,8 +2131,27 @@ theorem exists_grouplike_family_of_connected_hopf_package
       (∀ y : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G, y * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ∈
         Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range x)) ∧
       (∀ i, Algebra.TensorProduct.map (σ.toAlgHom.restrictScalars 𝒪ᵖᵥ)
-        (AlgHom.id 𝒪ᵖᵥ G) (x i) = x i) :=
-  sorry
+        (AlgHom.id 𝒪ᵖᵥ G) (x i) = x i) := by
+  classical
+  -- the convolution monoid of `ℚᵖᵥ`-points is COMMUTATIVE: `fG` is an
+  -- additive bijection onto the (commutative) representation space
+  have habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ := by
+    intro φ ψ
+    have h : fG (Additive.ofMul φ + Additive.ofMul ψ) =
+        fG (Additive.ofMul ψ + Additive.ofMul φ) := by
+      rw [map_add, map_add, add_comm]
+    have h2 : (Additive.ofMul (φ * ψ) :
+        Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ)) = Additive.ofMul (ψ * φ) :=
+      hfG.1 h
+    exact Additive.ofMul.injective h2
+  -- half (α): the family, and the first three clauses
+  obtain ⟨ι, x, hcount, hgl, hgen⟩ :=
+    exists_grouplike_family_generating_corner G habel e₀ he₀ hε₀ hprim₀ hcomul₀
+  -- half (β): inertia fixes every corner group-like, in particular each `x i`
+  exact ⟨ι, x, hcount, hgl, hgen, fun i =>
+    grouplike_corner_invariant_of_localInertia hpodd hv hZinj hRinj hρ χ₁ χ₂
+      hcont₁ hcont₂ hone₁ hone₂ hmul₁ hmul₂ hchar I hI G fG hfG e₀ he₀ hε₀
+      hprim₀ hcomul₀ σ hσ (x i) (hcount i) (hgl i)⟩
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
