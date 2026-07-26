@@ -12600,9 +12600,70 @@ theorem exists_ribet_walk_swap_order
   | tmul r y => simp [hfequiv g y]
   | add x₁ x₂ h₁ h₂ => simp only [map_add, h₁, h₂]
 
+/-- **`ℤ_p` embeds into a module-finite `ℤ_p`-algebra that is a DVR**
+(PROVEN 2026-07-26, for the Ribet walk below).
+
+The kernel of `ℤ_p → O` is an ideal of the DVR `ℤ_p`, so if it is nonzero
+it contains a power of `p`; `O` being a domain, this forces `(p : O) = 0`.
+But then the `ℤ_p`-action on `O` factors through the residue field
+`ℤ_p / 𝔪 ≅ ZMod p`, which is FINITE, so a module-finite `O` is itself
+finite — and a finite domain is a field, contradicting
+`IsDiscreteValuationRing.not_a_field`.
+
+Why it is worth stating separately: it is exactly what upgrades `O` to a
+FREE `ℤ_p`-module (`Module.free_of_finite_type_torsion_free'`), hence — in
+the module topology — to something homeomorphic to `ι → ℤ_p`, hence COMPACT
+HAUSDORFF. That in turn is what makes multiplication by a uniformiser a
+topological embedding, i.e. what makes DIVISION by the uniformiser
+continuous; and dividing the lower-left entry of a conjugated cocycle by the
+uniformiser is the one genuinely hard step of every lattice-walk lemma in
+this cluster. The sibling `exists_ribet_walked_frame` obtains the same
+injectivity from its `Algebra O ℚ̄_p` hypotheses, which the descent step
+below does not carry. -/
+theorem algebraMap_padicInt_injective_of_isDiscreteValuationRing
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [IsDiscreteValuationRing O] :
+    Function.Injective (algebraMap ℤ_[p] O) := by
+  classical
+  have hpO : (p : O) ≠ 0 := by
+    intro hp0
+    have hkill : ∀ a ∈ IsLocalRing.maximalIdeal ℤ_[p], (algebraMap ℤ_[p] O) a = 0 := by
+      intro a ha
+      rw [PadicInt.maximalIdeal_eq_span_p, Ideal.mem_span_singleton] at ha
+      obtain ⟨c, rfl⟩ := ha
+      rw [map_mul, map_natCast, hp0, zero_mul]
+    letI : Algebra (ℤ_[p] ⧸ IsLocalRing.maximalIdeal ℤ_[p]) O :=
+      (Ideal.Quotient.lift _ (algebraMap ℤ_[p] O) hkill).toAlgebra
+    haveI : IsScalarTower ℤ_[p] (ℤ_[p] ⧸ IsLocalRing.maximalIdeal ℤ_[p]) O :=
+      IsScalarTower.of_algebraMap_eq (fun _ => (Ideal.Quotient.lift_mk _ _ hkill).symm)
+    haveI : Finite (ℤ_[p] ⧸ IsLocalRing.maximalIdeal ℤ_[p]) :=
+      Finite.of_equiv (ZMod p) (PadicInt.residueField (p := p)).symm.toEquiv
+    haveI : Module.Finite (ℤ_[p] ⧸ IsLocalRing.maximalIdeal ℤ_[p]) O :=
+      Module.Finite.of_restrictScalars_finite ℤ_[p] _ O
+    haveI : Finite O := Module.finite_of_finite (ℤ_[p] ⧸ IsLocalRing.maximalIdeal ℤ_[p])
+    exact IsDiscreteValuationRing.not_a_field O
+      (IsLocalRing.isField_iff_maximalIdeal_eq.mp (Finite.isField_of_domain O))
+  rw [injective_iff_map_eq_zero]
+  intro a ha
+  by_contra hne
+  obtain ⟨k, u, hu⟩ :=
+    IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hne PadicInt.irreducible_p
+  have hunit : IsUnit ((algebraMap ℤ_[p] O) (u : ℤ_[p])) := u.isUnit.map _
+  have h1 : (algebraMap ℤ_[p] O) (u : ℤ_[p]) * ((p : O)) ^ k = 0 := by
+    have h2 := congrArg (algebraMap ℤ_[p] O) hu
+    rw [ha, map_mul, map_pow, map_natCast] at h2
+    exact h2.symm
+  have hzero : ((p : O)) ^ k = 0 := (hunit.mul_right_eq_zero).mp h1
+  rcases Nat.eq_zero_or_pos k with hk0 | hk0
+  · subst hk0
+    simp only [pow_zero] at hzero
+    exact one_ne_zero hzero
+  · exact hpO (pow_eq_zero_iff hk0.ne' |>.mp hzero)
+
+open scoped Matrix in
 set_option linter.unusedVariables false in
 /-- **One step of Ribet's lattice descent** (Ribet cut E2a-ii-walk,
-item (c1); SORRY LEAF, carved out of
+item (c1); PROVEN 2026-07-26, carved out of
 `exists_stable_line_of_ribet_walk_split` 2026-07-25): a GOOD stable
 lattice — one whose reduction carries a Galois-FIXED nonzero vector
 `v'` — that SPLITS, i.e. whose reduction also carries a `ψ`-eigenvector
@@ -12644,39 +12705,52 @@ recorded (see the faithfulness note on that leaf):
   `N` is `𝔪Λ'/𝔪N ≅ Λ'/N`, trivial, and the quotient is
   `N/𝔪Λ' = kk' ∙ w`, on which `ρ'` acts by `ψ`.
 
-ROUTE (worked out 2026-07-25 for whoever owns this leaf).
-1. `N := red⁻¹(kk' ∙ w)` is `ρ'`-stable because `w` is a
-   `ψ`-eigenvector, contains `𝔪Λ` because `algebraMap` kills `𝔪`
-   (`hker'`), and is `≠ ⊤` because `red` is onto (`hsurj'`) while
-   `kk' ∙ w ≠ ⊤` by `finrank kk' (kk' ⊗ O²) = 2`.
-2. FRAME BRICK — the only genuinely infrastructural step. `N` is free
-   of rank `2` over the DVR `O` (`Submodule.smithNormalForm`), so a
-   basis of `N` gives `f : O² ↪ O²` with `range f = N`, and `ρ''` is
-   `ρ'` conjugated through `f`. CONTINUITY of `g ↦ ρ'' g` is the only
-   nontrivial point, `f` not being invertible; it follows from the
-   identity `det f • ρ'' g = adj f ∘ ρ' g ∘ f`, whose right-hand side
-   is a continuous `O`-LINEAR image of `ρ' g`, once one knows that
-   `(det f) • ·` is a topological embedding of `End_O (O²)`. That is
-   `Continuous.isClosedEmbedding` for a continuous injection from a
-   COMPACT to a HAUSDORFF space, and `CompactSpace O` / `T2Space O`
-   hold because `O` is free of finite rank over `ℤ_p` carrying the
-   module topology — the `Module.Free.chooseBasis` homeomorphism
-   already used elsewhere in this file. Freeness is
-   `Module.free_of_finite_type_torsion_free'`, its torsion-freeness
-   coming from `IsDomain O` plus injectivity of `ℤ_p → O`: a
-   `ℤ_p`-module-finite domain killed by `p` would be a finite domain,
-   hence a field, and `O` is not a field (`IsDiscreteValuationRing`).
-3. `Ideal.span {det f} = 𝔪` is `length (Λ/N) = 1`. This pin has no
-   `det`-versus-colength lemma; the practical route is to take `f`
-   FROM `Submodule.smithNormalForm`, where `det f` is a unit times the
-   product `a₁a₂` of the elementary divisors and `Λ/N ≅ O/a₁ ⊕ O/a₂`
-   is `1`-dimensional over `kk'` by step 1.
-4. The residual data. Pick `λ` with `red λ = v'` and `z` with
-   `f z = π • λ` (possible since `π • λ ∈ 𝔪Λ ⊆ N`); put `v'' := red z`.
-   Then `ker (f ⊗ kk') = kk' ∙ v''` and `range (f ⊗ kk') = kk' ∙ w`,
-   from which the fixed-vector and `ψ`-quotient clauses are formal:
-   `(f ⊗ kk') ∘ (ρ'' ⊗ kk') g = (ρ' ⊗ kk') g ∘ (f ⊗ kk')` and `ρ'`
-   acts by `ψ` on `kk' ∙ w`. -/
+EXECUTED ROUTE (2026-07-26). The abstract route recorded here on
+2026-07-25 — build `N := red⁻¹(kk' ∙ w)` as a submodule, then produce a
+frame for it from `Submodule.smithNormalForm` — was NOT taken, for two
+reasons, and both are worth knowing before anyone re-cuts this cluster.
+
+* Its FRAME-BRICK step was recorded as a sorried `have` whose only
+  hypotheses on `N` were `ρ'`-stability, `N ≠ ⊤`, and `𝔪Λ ⊆ N`. Those
+  three are **not enough** to force `Ideal.span {det f} = 𝔪`: they are all
+  satisfied by `N = 𝔪Λ` itself, whose frame is `f = π • id` with
+  `det f = π²` and `span {det f} = 𝔪² ≠ 𝔪` (`O` is a DVR, not a field).
+  So that `have`, as stated, was FALSE — the colength-one information
+  lives in "the residual image of `N` is a LINE", which the three
+  recorded hypotheses discard. Passing `N` abstractly is exactly what
+  loses it.
+* The pin still has no `det`-versus-colength lemma, so even a correct
+  abstract cut would have had to reconstruct one.
+
+What is done instead is the EXPLICIT FRAME already used by the sibling
+`exists_ribet_walked_frame`, which needs neither lemma. Because `w` and
+`v'` are honest eigenvectors of the residual representation, they are a
+BASIS of `kk' ⊗ O² ≅ kk'²`: lifting their coordinate vectors to columns
+gives `A ∈ M₂(O)` with `det A` a UNIT (its reduction is the `2 × 2`
+determinant of an invertible residual matrix), and then
+
+* `f := A * D` with `D = !![1, 0; 0, π]` — so `det f = det A · π`
+  generates `𝔪` by `Ideal.span_singleton_mul_left_unit`, no colength
+  theory required, and `range f` IS the walked lattice;
+* `ρ'' := D⁻¹ (A⁻¹ ρ' A) D`, whose entries are `B 0 0`, `π · B 0 1`,
+  `B 1 0 / π`, `B 1 1` for `B := A⁻¹ ρ' A`. The only division is by `π`,
+  legitimate because `B 1 0` reduces to `0` (the residual matrix is
+  LOWER-triangular in this frame: `w` spans a `ψ`-eigenline), and
+  CONTINUOUS because `t ↦ π * t` is a continuous injection from the
+  COMPACT Hausdorff `O` to itself, hence a topological embedding. `O` is
+  compact Hausdorff because it is free of finite rank over `ℤ_p` in the
+  module topology, which is what
+  `algebraMap_padicInt_injective_of_isDiscreteValuationRing` above
+  supplies (this leaf carries no `Algebra O ℚ̄_p`, so the sibling's route
+  to that injectivity is unavailable);
+* in this frame the residual conjugate is `!![ψ g, 0; γ̄ g, 1]`, so
+  `v'' := 1 ⊗ e₂` is fixed with `ψ` on the quotient, `range (f ⊗ kk')` is
+  the line `kk' ∙ w` (missing `v'`, giving NON-BACKTRACKING), and
+  `ker (f ⊗ kk')` is the line `kk' ∙ v''`, giving the biconditional.
+
+The residual representation being DIAGONAL here — both `v'` and `w` are
+exact eigenvectors, unlike the sibling where only one is — is why this
+step is if anything shorter than the sibling it copies. -/
 theorem exists_ribet_walk_descent_step
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
@@ -12707,28 +12781,84 @@ theorem exists_ribet_walk_descent_step
       (∀ g, (ρ''.baseChange kk') g v'' = v'') ∧
       (∀ g x, ∃ c : kk', (ρ''.baseChange kk') g x - ψ g • x = c • v'') := by
   classical
-  -- the reduction map `Λ ↠ Λ/𝔪Λ = kk' ⊗ Λ`
-  obtain ⟨red, hred⟩ : ∃ red : (Fin 2 → O) →ₗ[O] (kk' ⊗[O] (Fin 2 → O)),
-      ∀ x, red x = (1 : kk') ⊗ₜ[O] x :=
-    ⟨TensorProduct.mk O kk' (Fin 2 → O) 1, fun _ => rfl⟩
-  have hredequiv : ∀ (g : Field.absoluteGaloisGroup ℚ) (x : Fin 2 → O),
-      red (ρ' g x) = (ρ'.baseChange kk') g (red x) := by
-    intro g x
-    rw [hred, hred]
-    exact (GaloisRep.baseChange_tmul ρ' g 1 x).symm
-  have hredsurj : Function.Surjective red := by
-    intro y
-    induction y using TensorProduct.induction_on with
-    | zero => exact ⟨0, by rw [hred]; simp⟩
-    | tmul c x =>
-        obtain ⟨a, ha⟩ := hsurj' c
+  -- ## 0. The residual coordinate isomorphism `E : kk' ⊗ O² ≃ kk'²`.
+  set E := (Algebra.TensorProduct.basis kk' (Pi.basisFun O (Fin 2))).equivFun with hEdef
+  have hE : ∀ x : Fin 2 → O,
+      E ((1 : kk') ⊗ₜ[O] x) = fun i => algebraMap O kk' (x i) := by
+    intro x
+    funext i
+    simp [hEdef, Module.Basis.equivFun_apply, Algebra.TensorProduct.basis_repr_tmul]
+  have hEsurj : ∀ v : kk' ⊗[O] (Fin 2 → O), ∃ x : Fin 2 → O,
+      (1 : kk') ⊗ₜ[O] x = v := by
+    intro v
+    induction v using TensorProduct.induction_on with
+    | zero => exact ⟨0, by simp⟩
+    | tmul r x =>
+        obtain ⟨a, ha⟩ := hsurj' r
         refine ⟨a • x, ?_⟩
-        rw [hred, ← TensorProduct.smul_tmul, Algebra.smul_def, mul_one, ha]
-    | add y₁ y₂ h₁ h₂ =>
-        obtain ⟨x₁, hx₁⟩ := h₁
-        obtain ⟨x₂, hx₂⟩ := h₂
-        exact ⟨x₁ + x₂, by rw [map_add, hx₁, hx₂]⟩
-  -- `v'` and `w` are independent, so `v' ∉ kk' ∙ w` as well
+        have h2 : (1 : kk') ⊗ₜ[O] (a • x) = (algebraMap O kk' a) ⊗ₜ[O] x := by
+          rw [← TensorProduct.smul_tmul, Algebra.smul_def, mul_one]
+        rw [h2, ha]
+    | add v₁ v₂ h₁ h₂ =>
+        obtain ⟨x₁, rfl⟩ := h₁
+        obtain ⟨x₂, rfl⟩ := h₂
+        exact ⟨x₁ + x₂, by rw [TensorProduct.tmul_add]⟩
+  have hdict : ∀ (σ : GaloisRep ℚ O (Fin 2 → O))
+      (g : Field.absoluteGaloisGroup ℚ) (v : kk' ⊗[O] (Fin 2 → O)),
+      E ((σ.baseChange kk') g v) =
+        ((LinearMap.toMatrix' (σ g)).map (algebraMap O kk')) *ᵥ (E v) := by
+    intro σ g v
+    obtain ⟨x, rfl⟩ := hEsurj v
+    rw [GaloisRep.baseChange_tmul, hE, hE]
+    funext i
+    have hmv : ((LinearMap.toMatrix' (σ g)) *ᵥ x) i = (σ g x) i := by
+      rw [← Matrix.toLin'_apply, Matrix.toLin'_toMatrix']
+    rw [← hmv]
+    simp [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.map_apply]
+  have hdictL : ∀ (T : (Fin 2 → O) →ₗ[O] (Fin 2 → O)) (v : kk' ⊗[O] (Fin 2 → O)),
+      E (LinearMap.baseChange kk' T v) =
+        ((LinearMap.toMatrix' T).map (algebraMap O kk')) *ᵥ (E v) := by
+    intro T v
+    obtain ⟨x, rfl⟩ := hEsurj v
+    rw [LinearMap.baseChange_tmul, hE, hE]
+    funext i
+    have hmv : ((LinearMap.toMatrix' T) *ᵥ x) i = (T x) i := by
+      rw [← Matrix.toLin'_apply, Matrix.toLin'_toMatrix']
+    rw [← hmv]
+    simp [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.map_apply]
+  -- ## 1. `O` is compact Hausdorff (free of finite rank over `ℤ_p`).
+  haveI : Module.IsTorsionFree ℤ_[p] O :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr
+      algebraMap_padicInt_injective_of_isDiscreteValuationRing
+  haveI : Module.Free ℤ_[p] O := Module.free_of_finite_type_torsion_free'
+  obtain ⟨hO⟩ : Nonempty (O ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[p] O → ℤ_[p])) := by
+    let bO := Module.Free.chooseBasis ℤ_[p] O
+    have hc1 : Continuous bO.equivFun :=
+      IsModuleTopology.continuous_of_linearMap bO.equivFun.toLinearMap
+    have hc2 : Continuous bO.equivFun.symm :=
+      IsModuleTopology.continuous_of_linearMap bO.equivFun.symm.toLinearMap
+    exact ⟨Homeomorph.mk bO.equivFun.toEquiv hc1 hc2⟩
+  haveI : CompactSpace O := hO.symm.compactSpace
+  haveI : T2Space O := hO.symm.t2Space
+  -- ## 2. A uniformiser, and continuous division by it.
+  obtain ⟨ϖ, hϖirr⟩ := IsDiscreteValuationRing.exists_irreducible O
+  have hϖ0 : ϖ ≠ 0 := hϖirr.ne_zero
+  have hmaxϖ : IsLocalRing.maximalIdeal O = Ideal.span {ϖ} := hϖirr.maximalIdeal_eq
+  have hϖbar : algebraMap O kk' ϖ = 0 := by
+    have h : ϖ ∈ RingHom.ker (algebraMap O kk') := by
+      rw [hker', hmaxϖ]
+      exact Ideal.mem_span_singleton_self ϖ
+    exact RingHom.mem_ker.mp h
+  have hμinj : Function.Injective (fun t : O => ϖ * t) := fun _ _ h =>
+    mul_left_cancel₀ hϖ0 h
+  have hμcont : Continuous (fun t : O => ϖ * t) := continuous_const.mul continuous_id
+  have heμcont : Continuous (Equiv.ofInjective (fun t : O => ϖ * t) hμinj) :=
+    Continuous.subtype_mk hμcont _
+  let hμ : O ≃ₜ Set.range (fun t : O => ϖ * t) :=
+    Continuous.homeoOfEquivCompactToT2 heμcont
+  have hμspec : ∀ y : Set.range (fun t : O => ϖ * t), ϖ * (hμ.symm y) = (y : O) :=
+    fun y => congrArg Subtype.val (hμ.apply_symm_apply y)
+  -- ## 3. `w` and `v'` are independent; the adapted frame `A`.
   have hvw : v' ∉ Submodule.span kk' {w} := by
     intro hmem
     obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp hmem
@@ -12738,92 +12868,350 @@ theorem exists_ribet_walk_descent_step
       exact hv' hc.symm
     exact hw (Submodule.mem_span_singleton.mpr
       ⟨c⁻¹, by rw [← hc, smul_smul, inv_mul_cancel₀ hc0, one_smul]⟩)
-  -- the walked lattice `N = red⁻¹(kk' ∙ w)`
-  obtain ⟨N, hN⟩ : ∃ N : Submodule O (Fin 2 → O),
-      ∀ x, x ∈ N ↔ red x ∈ Submodule.span kk' {w} :=
-    ⟨Submodule.comap red ((Submodule.span kk' {w}).restrictScalars O),
-      fun _ => Iff.rfl⟩
-  have hNstable : ∀ g x, x ∈ N → ρ' g x ∈ N := by
-    intro g x hx
-    rw [hN] at hx ⊢
-    obtain ⟨s, hs⟩ := Submodule.mem_span_singleton.mp hx
-    rw [hredequiv, ← hs, map_smul, hweig g, smul_smul]
-    exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self w)
-  have hNtop : N ≠ ⊤ := by
-    intro htop
-    have hspanall : Submodule.span kk' {w} = ⊤ := by
-      refine eq_top_iff.mpr fun y _ => ?_
-      obtain ⟨x, rfl⟩ := hredsurj y
-      exact (hN x).mp (by rw [htop]; exact Submodule.mem_top)
-    exact hvw (by rw [hspanall]; exact Submodule.mem_top)
-  have hNmax : ∀ m ∈ IsLocalRing.maximalIdeal O, ∀ x : Fin 2 → O, m • x ∈ N := by
-    intro m hm x
-    rw [hN, hred]
-    have hm0 : algebraMap O kk' m = 0 := by
-      rw [← RingHom.mem_ker, hker']; exact hm
-    have h2 : (1 : kk') ⊗ₜ[O] (m • x) = (algebraMap O kk' m) ⊗ₜ[O] x := by
-      rw [← TensorProduct.smul_tmul, Algebra.smul_def, mul_one]
-    rw [h2, hm0, TensorProduct.zero_tmul]
-    exact Submodule.zero_mem _
-  -- FRAME BRICK (steps 2 and 3 of the ROUTE above): present the stable
-  -- sublattice `N` on the standard frame `Fin 2 → O`
-  have hframe : (∀ g x, x ∈ N → ρ' g x ∈ N) → N ≠ ⊤ →
-      (∀ m ∈ IsLocalRing.maximalIdeal O, ∀ x : Fin 2 → O, m • x ∈ N) →
-      ∃ (ρ'' : GaloisRep ℚ O (Fin 2 → O))
-        (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O)),
-        LinearMap.range f = N ∧
-        Ideal.span {LinearMap.det f} = IsLocalRing.maximalIdeal O ∧
-        (∀ g x, f (ρ'' g x) = ρ' g (f x)) := by
-    sorry
-  obtain ⟨ρ'', f, hfrange, hfdet, hfequiv⟩ := hframe hNstable hNtop hNmax
-  have hdet0 : LinearMap.det f ≠ 0 := by
+  have hw0 : w ≠ 0 := by
     intro h
-    refine IsDiscreteValuationRing.not_a_field O ?_
-    rw [← hfdet, h]
-    exact Ideal.span_singleton_eq_bot.mpr rfl
-  -- the residual image of `N` is the line `kk' ∙ w`, which misses `v'`
-  have hrangesub : ∀ y : kk' ⊗[O] (Fin 2 → O),
-      LinearMap.baseChange kk' f y ∈ Submodule.span kk' {w} := by
-    intro y
-    induction y using TensorProduct.induction_on with
-    | zero => simp
-    | tmul c x =>
-        have hx : red (f x) ∈ Submodule.span kk' {w} :=
-          (hN (f x)).mp (hfrange ▸ LinearMap.mem_range_self f x)
-        have hcx : c ⊗ₜ[O] f x = c • ((1 : kk') ⊗ₜ[O] (f x)) := by
-          rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
-        rw [LinearMap.baseChange_tmul, hcx, ← hred]
-        exact Submodule.smul_mem _ _ hx
-    | add y₁ y₂ h₁ h₂ => simpa using Submodule.add_mem _ h₁ h₂
-  have hv'notrange : v' ∉ LinearMap.range (LinearMap.baseChange kk' f) := by
-    intro hmem
-    obtain ⟨y, hy⟩ := hmem
-    exact hvw (hy ▸ hrangesub y)
-  -- the child's fixed vector: `f z = ϖ • lam` with `lam` reducing to `v'`
-  obtain ⟨ϖ, hϖirr⟩ := IsDiscreteValuationRing.exists_irreducible O
-  have hϖmem : ϖ ∈ IsLocalRing.maximalIdeal O := by
-    rw [hϖirr.maximalIdeal_eq]
-    exact Ideal.mem_span_singleton_self ϖ
-  obtain ⟨lam, hlam⟩ := hredsurj v'
-  obtain ⟨z, hz⟩ : ∃ z, f z = ϖ • lam := by
-    rw [← LinearMap.mem_range, hfrange]
-    exact hNmax ϖ hϖmem lam
-  -- the residual package of the child (step 4 of the ROUTE above)
-  have hres : f z = ϖ • lam → red lam = v' →
-      (∀ x : Fin 2 → O, (1 : kk') ⊗ₜ[O] (f x) = 0 ↔
-        (1 : kk') ⊗ₜ[O] x ∈ Submodule.span kk' {red z}) ∧
-      red z ≠ 0 ∧
-      (∀ g, (ρ''.baseChange kk') g (red z) = red z) ∧
-      (∀ g (x : kk' ⊗[O] (Fin 2 → O)), ∃ c : kk',
-        (ρ''.baseChange kk') g x - ψ g • x = c • red z) := by
-    sorry
-  obtain ⟨hkerf, hz0, hfixz, hquoz⟩ := hres hz hlam
-  exact ⟨ρ'', f, red z, hdet0, hfdet, hfequiv, hv'notrange,
-    hkerf, hz0, hfixz, hquoz⟩
+    exact hw (h ▸ Submodule.zero_mem _)
+  have hEv' : E v' ≠ 0 := fun h => hv' (E.injective (by rw [h, map_zero]))
+  have hEw : E w ≠ 0 := fun h => hw0 (E.injective (by rw [h, map_zero]))
+  have hdne : (E w) 0 * (E v') 1 - (E v') 0 * (E w) 1 ≠ 0 := by
+    intro hd
+    obtain ⟨c, hc0, hc1⟩ : ∃ c : kk', (E w) 0 = c * (E v') 0 ∧ (E w) 1 = c * (E v') 1 := by
+      by_cases h0 : (E v') 0 = 0
+      · have h1 : (E v') 1 ≠ 0 := by
+          intro h1
+          refine hEv' ?_
+          funext i
+          fin_cases i
+          · simpa using h0
+          · simpa using h1
+        have hzz : (E w) 0 = 0 := by
+          rw [h0, zero_mul, sub_zero] at hd
+          exact (mul_eq_zero.mp hd).resolve_right h1
+        exact ⟨(E w) 1 / (E v') 1, by rw [h0, hzz, mul_zero], by field_simp⟩
+      · refine ⟨(E w) 0 / (E v') 0, by field_simp, ?_⟩
+        field_simp
+        linear_combination -hd
+    refine hw (Submodule.mem_span_singleton.mpr ⟨c, ?_⟩)
+    refine E.injective ?_
+    rw [map_smul]
+    funext i
+    fin_cases i
+    · simpa using hc0.symm
+    · simpa using hc1.symm
+  obtain ⟨y, hy⟩ : ∃ y : Fin 2 → O, ∀ i, algebraMap O kk' (y i) = (E w) i :=
+    ⟨fun i => (hsurj' ((E w) i)).choose, fun i => (hsurj' ((E w) i)).choose_spec⟩
+  obtain ⟨z, hz⟩ : ∃ z : Fin 2 → O, ∀ i, algebraMap O kk' (z i) = (E v') i :=
+    ⟨fun i => (hsurj' ((E v') i)).choose, fun i => (hsurj' ((E v') i)).choose_spec⟩
+  set A : Matrix (Fin 2) (Fin 2) O := !![y 0, z 0; y 1, z 1] with hAdef
+  have hAdetbar : algebraMap O kk' A.det = (E w) 0 * (E v') 1 - (E v') 0 * (E w) 1 := by
+    rw [hAdef, Matrix.det_fin_two_of]
+    simp only [map_sub, map_mul, hy, hz]
+  have hAdet : IsUnit A.det := by
+    by_contra hcon
+    have hm : A.det ∈ IsLocalRing.maximalIdeal O :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hcon
+    rw [← hker', RingHom.mem_ker, hAdetbar] at hm
+    exact hdne hm
+  set Ab : Matrix (Fin 2) (Fin 2) kk' := A.map (algebraMap O kk') with hAbdef
+  have hAbdet : Ab.det ≠ 0 := by
+    rw [hAbdef, ← RingHom.mapMatrix_apply, ← RingHom.map_det, hAdetbar]
+    exact hdne
+  have hAbinj : ∀ a b : Fin 2 → kk', Ab *ᵥ a = Ab *ᵥ b → a = b := by
+    intro a b hab
+    by_contra hne
+    have h0 : Ab *ᵥ (a - b) = 0 := by
+      rw [Matrix.mulVec_sub, hab, sub_self]
+    exact hAbdet (Matrix.exists_mulVec_eq_zero_iff.mp ⟨a - b, sub_ne_zero.mpr hne, h0⟩)
+  have hAbe0 : Ab *ᵥ ![1, 0] = E w := by
+    funext i
+    fin_cases i <;>
+      simp [hAbdef, hAdef, Matrix.mulVec, dotProduct, Fin.sum_univ_two,
+        Matrix.map_apply, hy]
+  have hAbe1 : Ab *ᵥ ![0, 1] = E v' := by
+    funext i
+    fin_cases i <;>
+      simp [hAbdef, hAdef, Matrix.mulVec, dotProduct, Fin.sum_univ_two,
+        Matrix.map_apply, hz]
+  -- ## 4. The conjugated matrix cocycle `B`, and its residual columns.
+  set Mt : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) O :=
+    fun g => LinearMap.toMatrix' (ρ' g) with hMtdef
+  have hMtapp : ∀ g, Mt g = LinearMap.toMatrix' (ρ' g) := fun _ => rfl
+  set B : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) O :=
+    fun g => A⁻¹ * Mt g * A with hBdef
+  have hBapp : ∀ g, B g = A⁻¹ * Mt g * A := fun _ => rfl
+  have hAB : ∀ g, A * B g = Mt g * A := by
+    intro g
+    rw [hBapp, ← Matrix.mul_assoc, ← Matrix.mul_assoc,
+      Matrix.mul_nonsing_inv A hAdet, Matrix.one_mul]
+  have hB1 : B 1 = 1 := by
+    rw [hBapp, hMtapp, map_one, Module.End.one_eq_id, LinearMap.toMatrix'_id,
+      Matrix.mul_one]
+    exact Matrix.nonsing_inv_mul A hAdet
+  have hBmul : ∀ g h, B (g * h) = B g * B h := by
+    intro g h
+    have hMtmul : Mt (g * h) = Mt g * Mt h := by
+      rw [hMtapp, hMtapp, hMtapp, map_mul]
+      exact LinearMap.toMatrix'_mul _ _
+    rw [hBapp, hBapp, hBapp, hMtmul]
+    simp only [Matrix.mul_assoc]
+    rw [← Matrix.mul_assoc A A⁻¹, Matrix.mul_nonsing_inv A hAdet, Matrix.one_mul]
+  have hABbar : ∀ g, Ab * ((B g).map (algebraMap O kk')) =
+      ((Mt g).map (algebraMap O kk')) * Ab := by
+    intro g
+    have h := congrArg (fun M : Matrix (Fin 2) (Fin 2) O =>
+      M.map (algebraMap O kk')) (hAB g)
+    simpa [hAbdef, Matrix.map_mul] using h
+  have hMtbar : ∀ g (v : kk' ⊗[O] (Fin 2 → O)),
+      ((Mt g).map (algebraMap O kk')) *ᵥ (E v) = E ((ρ'.baseChange kk') g v) := by
+    intro g v
+    rw [hMtapp]
+    exact (hdict ρ' g v).symm
+  have hcol0 : ∀ g, ((B g).map (algebraMap O kk')) *ᵥ ![1, 0]
+      = ψ g • ![(1 : kk'), 0] := by
+    intro g
+    refine hAbinj _ _ ?_
+    calc Ab *ᵥ (((B g).map (algebraMap O kk')) *ᵥ ![1, 0])
+        = (Ab * ((B g).map (algebraMap O kk'))) *ᵥ ![1, 0] :=
+          Matrix.mulVec_mulVec _ _ _
+      _ = (((Mt g).map (algebraMap O kk')) * Ab) *ᵥ ![1, 0] := by rw [hABbar]
+      _ = ((Mt g).map (algebraMap O kk')) *ᵥ (Ab *ᵥ ![1, 0]) :=
+          (Matrix.mulVec_mulVec _ _ _).symm
+      _ = ((Mt g).map (algebraMap O kk')) *ᵥ (E w) := by rw [hAbe0]
+      _ = E ((ρ'.baseChange kk') g w) := hMtbar g w
+      _ = ψ g • (E w) := by rw [hweig, map_smul]
+      _ = ψ g • (Ab *ᵥ ![1, 0]) := by rw [hAbe0]
+      _ = Ab *ᵥ (ψ g • ![(1 : kk'), 0]) := (Matrix.mulVec_smul _ _ _).symm
+  have hcol1 : ∀ g, ((B g).map (algebraMap O kk')) *ᵥ ![0, 1] = ![(0 : kk'), 1] := by
+    intro g
+    refine hAbinj _ _ ?_
+    calc Ab *ᵥ (((B g).map (algebraMap O kk')) *ᵥ ![0, 1])
+        = (Ab * ((B g).map (algebraMap O kk'))) *ᵥ ![0, 1] :=
+          Matrix.mulVec_mulVec _ _ _
+      _ = (((Mt g).map (algebraMap O kk')) * Ab) *ᵥ ![0, 1] := by rw [hABbar]
+      _ = ((Mt g).map (algebraMap O kk')) *ᵥ (Ab *ᵥ ![0, 1]) :=
+          (Matrix.mulVec_mulVec _ _ _).symm
+      _ = ((Mt g).map (algebraMap O kk')) *ᵥ (E v') := by rw [hAbe1]
+      _ = E ((ρ'.baseChange kk') g v') := hMtbar g v'
+      _ = E v' := by rw [hfix']
+      _ = Ab *ᵥ ![(0 : kk'), 1] := hAbe1.symm
+  have hB00 : ∀ g, algebraMap O kk' (B g 0 0) = ψ g := by
+    intro g
+    have h := congrFun (hcol0 g) 0
+    simpa [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.map_apply] using h
+  have hB10 : ∀ g, algebraMap O kk' (B g 1 0) = 0 := by
+    intro g
+    have h := congrFun (hcol0 g) 1
+    simpa [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.map_apply] using h
+  have hB11 : ∀ g, algebraMap O kk' (B g 1 1) = 1 := by
+    intro g
+    have h := congrFun (hcol1 g) 1
+    simpa [Matrix.mulVec, dotProduct, Fin.sum_univ_two, Matrix.map_apply] using h
+  -- ## 5. Dividing the lower-left entry by the uniformiser.
+  have hmemrange : ∀ g, B g 1 0 ∈ Set.range (fun t : O => ϖ * t) := by
+    intro g
+    have hm : B g 1 0 ∈ IsLocalRing.maximalIdeal O := by
+      rw [← hker', RingHom.mem_ker]
+      exact hB10 g
+    rw [hmaxϖ, Ideal.mem_span_singleton] at hm
+    obtain ⟨t, ht⟩ := hm
+    exact ⟨t, ht.symm⟩
+  set γ : Field.absoluteGaloisGroup ℚ → O :=
+    fun g => hμ.symm ⟨B g 1 0, hmemrange g⟩ with hγdef
+  have hγspec : ∀ g, ϖ * γ g = B g 1 0 := fun g => hμspec ⟨_, hmemrange g⟩
+  -- ## 6. Continuity of all the entries.
+  letI : TopologicalSpace (Module.End O (Fin 2 → O)) :=
+    moduleTopology O (Module.End O (Fin 2 → O))
+  haveI : ContinuousAdd (Module.End O (Fin 2 → O)) :=
+    ModuleTopology.continuousAdd O _
+  haveI : ContinuousSMul O (Module.End O (Fin 2 → O)) :=
+    ModuleTopology.continuousSMul O _
+  have hMtcont : ∀ i j, Continuous fun g => Mt g i j := by
+    intro i j
+    have hc : Continuous fun g => (ρ' g) (Pi.single j (1 : O)) i :=
+      (IsModuleTopology.continuous_of_linearMap
+        ({ toFun := fun T : Module.End O (Fin 2 → O) => T (Pi.single j (1 : O)) i
+           map_add' := fun _ _ => rfl
+           map_smul' := fun _ _ => rfl } : Module.End O (Fin 2 → O) →ₗ[O] O)).comp
+        (ContinuousMonoidHom.continuous_toFun ρ')
+    simpa only [hMtapp, LinearMap.toMatrix'_apply] using hc
+  have hBcont : ∀ i j, Continuous fun g => B g i j := by
+    intro i j
+    have hexp : (fun g => B g i j) = fun g =>
+        (A⁻¹ i 0 * Mt g 0 0 + A⁻¹ i 1 * Mt g 1 0) * A 0 j +
+        (A⁻¹ i 0 * Mt g 0 1 + A⁻¹ i 1 * Mt g 1 1) * A 1 j := by
+      funext g
+      rw [hBapp]
+      simp [Matrix.mul_apply, Fin.sum_univ_two]
+    rw [hexp]
+    exact (((continuous_const.mul (hMtcont 0 0)).add
+      (continuous_const.mul (hMtcont 1 0))).mul continuous_const).add
+      (((continuous_const.mul (hMtcont 0 1)).add
+      (continuous_const.mul (hMtcont 1 1))).mul continuous_const)
+  have hγcont : Continuous γ :=
+    hμ.symm.continuous.comp (Continuous.subtype_mk (hBcont 1 0) _)
+  -- ## 7. The walked matrix cocycle.
+  set D : Matrix (Fin 2) (Fin 2) O := !![1, 0; 0, ϖ] with hDdef
+  set M' : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) O :=
+    fun g => !![B g 0 0, ϖ * B g 0 1; γ g, B g 1 1] with hM'def
+  have hM'app : ∀ g, M' g = !![B g 0 0, ϖ * B g 0 1; γ g, B g 1 1] := fun _ => rfl
+  have hDrow : ∀ (X : Matrix (Fin 2) (Fin 2) O) (j : Fin 2),
+      (D * X) 0 j = X 0 j ∧ (D * X) 1 j = ϖ * X 1 j := by
+    intro X j
+    constructor <;> simp [hDdef, Matrix.mul_apply, Fin.sum_univ_two]
+  have hDcancel : ∀ X Y : Matrix (Fin 2) (Fin 2) O, D * X = D * Y → X = Y := by
+    intro X Y hXY
+    have hent : ∀ (i j : Fin 2), (D * X) i j = (D * Y) i j := fun i j => by rw [hXY]
+    ext i j
+    fin_cases i
+    · have h := hent 0 j
+      rw [(hDrow X j).1, (hDrow Y j).1] at h
+      exact h
+    · have h := hent 1 j
+      rw [(hDrow X j).2, (hDrow Y j).2] at h
+      exact mul_left_cancel₀ hϖ0 h
+  have hDM : ∀ g, D * M' g = B g * D := by
+    intro g
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [hDdef, hM'app, Matrix.mul_apply, Fin.sum_univ_two, hγspec g, mul_comm]
+  have hM'one : M' 1 = 1 := by
+    refine hDcancel _ _ ?_
+    rw [hDM, hB1, Matrix.one_mul, Matrix.mul_one]
+  have hM'mul : ∀ g h, M' (g * h) = M' g * M' h := by
+    intro g h
+    refine hDcancel _ _ ?_
+    rw [hDM, hBmul, Matrix.mul_assoc, ← hDM h, ← Matrix.mul_assoc, ← hDM g,
+      Matrix.mul_assoc]
+  have hM'decomp : ∀ g, M' g =
+      (B g 0 0) • !![1, 0; 0, 0] + (ϖ * B g 0 1) • !![0, 1; 0, 0] +
+        (γ g) • !![0, 0; 1, 0] + (B g 1 1) • !![0, 0; 0, 1] := by
+    intro g
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp [hM'app]
+  -- ## 8. The child representation.
+  let ρ'' : GaloisRep ℚ O (Fin 2 → O) :=
+    { toFun := fun g => Matrix.toLin' (M' g)
+      map_one' := by rw [hM'one, Matrix.toLin'_one]; rfl
+      map_mul' := fun g h => by rw [hM'mul g h, Matrix.toLin'_mul]; rfl
+      continuous_toFun := by
+        simp only [hM'decomp, map_add, map_smul]
+        exact ((((hBcont 0 0).smul continuous_const).add
+          ((continuous_const.mul (hBcont 0 1)).smul continuous_const)).add
+          (hγcont.smul continuous_const)).add
+          ((hBcont 1 1).smul continuous_const) }
+  have hρ''app : ∀ g, ρ'' g = Matrix.toLin' (M' g) := fun _ => rfl
+  have hρ''mat : ∀ g, LinearMap.toMatrix' (ρ'' g) = M' g := by
+    intro g
+    rw [hρ''app, LinearMap.toMatrix'_toLin']
+  -- ## 9. The inclusion `f` and its residual behaviour.
+  set f : (Fin 2 → O) →ₗ[O] (Fin 2 → O) := Matrix.toLin' (A * D) with hfdef
+  have hfmat : LinearMap.toMatrix' f = A * D := by
+    rw [hfdef, LinearMap.toMatrix'_toLin']
+  have hDbar : D.map (algebraMap O kk') = !![1, 0; 0, 0] := by
+    ext i j
+    fin_cases i <;> fin_cases j <;> simp [hDdef, Matrix.map_apply, hϖbar]
+  have hfbar : ∀ v : kk' ⊗[O] (Fin 2 → O),
+      E (LinearMap.baseChange kk' f v) = (E v 0) • (E w) := by
+    intro v
+    rw [hdictL, hfmat, Matrix.map_mul, hDbar, ← hAbdef, ← Matrix.mulVec_mulVec]
+    have hstep : (!![(1 : kk'), 0; 0, 0]) *ᵥ (E v) = (E v 0) • ![(1 : kk'), 0] := by
+      funext i
+      fin_cases i <;> simp [Matrix.mulVec, dotProduct, Fin.sum_univ_two]
+    rw [hstep, Matrix.mulVec_smul, hAbe0]
+  set v'' : kk' ⊗[O] (Fin 2 → O) :=
+    (1 : kk') ⊗ₜ[O] (fun i => if i = 1 then (1 : O) else 0) with hv''def
+  have hEv'' : E v'' = ![(0 : kk'), 1] := by
+    rw [hv''def, hE]
+    funext i
+    fin_cases i <;> simp
+  have hspanchar : ∀ v : kk' ⊗[O] (Fin 2 → O),
+      v ∈ Submodule.span kk' {v''} ↔ E v 0 = 0 := by
+    intro v
+    constructor
+    · intro hmem
+      obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp hmem
+      rw [← hc, map_smul, hEv'']
+      simp
+    · intro h0
+      refine Submodule.mem_span_singleton.mpr ⟨E v 1, ?_⟩
+      refine E.injective ?_
+      rw [map_smul, hEv'']
+      funext i
+      fin_cases i
+      · simpa using h0.symm
+      · simp
+  -- ## 10. Assembly.
+  refine ⟨ρ'', f, v'', ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · -- `det f ≠ 0`
+    rw [hfdef, LinearMap.det_toLin', Matrix.det_mul]
+    have hDdetv : D.det = ϖ := by rw [hDdef, Matrix.det_fin_two_of]; ring
+    rw [hDdetv]
+    exact mul_ne_zero hAdet.ne_zero hϖ0
+  · -- `span {det f} = 𝔪`: exactly one edge of the Bruhat–Tits tree
+    have hDdetv : D.det = ϖ := by rw [hDdef, Matrix.det_fin_two_of]; ring
+    rw [hfdef, LinearMap.det_toLin', Matrix.det_mul, hDdetv, hmaxϖ]
+    exact Ideal.span_singleton_mul_left_unit hAdet ϖ
+  · -- the intertwining `f ∘ ρ'' = ρ' ∘ f`
+    intro g x
+    have hmat : (A * D) * M' g = Mt g * (A * D) := by
+      rw [Matrix.mul_assoc, hDM, ← Matrix.mul_assoc, hAB, Matrix.mul_assoc]
+    have hρ : ∀ v : Fin 2 → O, ρ' g v = Mt g *ᵥ v := by
+      intro v
+      rw [hMtapp]
+      exact (LinearMap.toMatrix'_mulVec _ _).symm
+    rw [hfdef, hρ''app, Matrix.toLin'_apply, Matrix.toLin'_apply, Matrix.toLin'_apply,
+      hρ, Matrix.mulVec_mulVec, Matrix.mulVec_mulVec, hmat]
+  · -- NON-BACKTRACKING: the residual image is `kk' ∙ w`, which misses `v'`
+    rintro ⟨t, ht⟩
+    refine hvw (Submodule.mem_span_singleton.mpr ⟨E t 0, ?_⟩)
+    refine E.injective ?_
+    rw [map_smul, ← hfbar t, ht]
+  · -- `f⁻¹(𝔪 Λ')` is the preimage of the child's own fixed line
+    intro x
+    rw [hspanchar]
+    have hbx : (1 : kk') ⊗ₜ[O] (f x) = LinearMap.baseChange kk' f ((1 : kk') ⊗ₜ[O] x) := by
+      rw [LinearMap.baseChange_tmul]
+    rw [hbx]
+    constructor
+    · intro h
+      have h2 : E (LinearMap.baseChange kk' f ((1 : kk') ⊗ₜ[O] x)) = 0 := by
+        rw [h, map_zero]
+      rw [hfbar] at h2
+      rcases smul_eq_zero.mp h2 with h3 | h3
+      · exact h3
+      · exact absurd h3 hEw
+    · intro h
+      refine E.injective ?_
+      rw [hfbar, h, zero_smul, map_zero]
+  · -- `v'' ≠ 0`
+    intro hcon
+    have h : E v'' = 0 := by rw [hcon, map_zero]
+    rw [hEv''] at h
+    have h1 := congrFun h 1
+    simp at h1
+  · -- `v''` is fixed: the child is again a GOOD lattice
+    intro g
+    refine E.injective ?_
+    rw [hdict, hρ''mat, hEv'']
+    funext i
+    fin_cases i <;>
+      simp [hM'app, Matrix.mulVec, dotProduct, Matrix.map_apply, hϖbar, hB11 g]
+  · -- the quotient character of the child is `ψ`
+    intro g x
+    obtain ⟨t, rfl⟩ := hEsurj x
+    refine ⟨algebraMap O kk' (γ g) * algebraMap O kk' (t 0) +
+      (1 - ψ g) * algebraMap O kk' (t 1), ?_⟩
+    refine E.injective ?_
+    simp only [map_sub, map_smul, hdict, hρ''mat, hE, hEv'']
+    funext i
+    fin_cases i <;>
+      simp [hM'app, Matrix.map_apply, hϖbar, hB00 g, hB11 g]
+    ring
 
+open scoped Matrix in
 set_option linter.unusedVariables false in
 /-- **The inverse limit of Ribet's descent** (Ribet cut E2a-ii-walk,
-item (c2); SORRY LEAF, carved out of
+item (c2); PROVEN 2026-07-26, carved out of
 `exists_stable_line_of_ribet_walk_split` 2026-07-25): an infinite
 non-backtracking chain of single-edge stable sublattices, each again
 good, converges to a `ρO`-stable LINE of the generic fibre
@@ -12850,41 +13238,49 @@ non-backtracking, and the identification of `f⁻¹(𝔪Λ')` — are exactly
 the geodesic conditions in the Bruhat–Tits tree, and each is produced
 by the honest construction in `exists_ribet_walk_descent_step`.
 
-ROUTE (worked out 2026-07-25 for whoever owns this leaf).
-* RECURSION. Feed `hstep` the datum `(ρ₁, e₁, v₁)` and, at each stage,
-  the child together with the generic identification
-  `eₙ₊₁ := eₙ ∘ (fₙ ⊗ ℚ̄_p)`, which is a `LinearEquiv` because
-  `det (fₙ ⊗ ℚ̄_p) = algebraMap (det fₙ) ≠ 0` by `hOinj`. This produces
-  `ρₙ, fₙ, vₙ` for all `n` (`Nat.rec` plus choice).
-* THE CHAIN. `Fₙ := f₀ ∘ ⋯ ∘ fₙ₋₁`, `Λₙ := range Fₙ ⊆ O²`. Each `Λₙ`
-  is `ρ₁`-stable (`Fₙ` intertwines `ρₙ` into `ρ₁`), `Λₙ₊₁ ⊆ Λₙ`, and
-  `length (Λₙ/Λₙ₊₁) = 1`, hence `𝔪Λₙ ⊆ Λₙ₊₁`.
-* NO BACKTRACKING. `Fₙ₊₁⁻¹(𝔪Λₙ) = fₙ⁻¹(𝔪Λ)`, which by the step's
-  biconditional is the preimage of `kk' ∙ vₙ₊₁`; the step's
-  non-backtracking clause at stage `n+1` then says
-  `range fₙ₊₁ ⊄ fₙ⁻¹(𝔪Λ)`, i.e. `Λₙ₊₂ ≠ 𝔪Λₙ`.
-* THE LIMIT. A single-edge non-backtracking ray is a GEODESIC ray, so
-  `d(Λ₀, Λₙ) = n` and the elementary divisors of `Λₙ ⊆ Λ₀` are
-  `(1, πⁿ)`: every `Λₙ` contains a vector PRIMITIVE in `Λ₀`. `Λ₀ ≅ O²`
-  is COMPACT (`O` is free of finite rank over `ℤ_p` with the module
-  topology) and each `Λₙ` is closed, so a cluster point `z` of a
-  sequence of primitive `zₙ ∈ Λₙ` lies in every `Λₘ` and is primitive,
-  in particular `z ≠ 0`. `T := ⋂ Λₙ` is `ρ₁`-stable of rank `≤ 1` (a
-  rank-`2` submodule would contain some `𝔪ᵐΛ₀`, whose colength `2m`
-  bounds every `length (Λ₀/Λₙ) = n`), so `ρ₁ g z ∈ Frac O ∙ z`; then
-  `e₁ (1 ⊗ z)` is the required line of `ℚ̄_p ⊗ O²`, `hOinj` turning
-  `b • ρ₁ g z = a • z` into a scalar relation over `ℚ̄_p`.
+EXECUTED ROUTE (2026-07-26). The recursion and the chain are as
+recorded on 2026-07-25, but the two hardest-looking items of the old
+"MISSING FROM MATHLIB" list — a `det`-versus-colength theorem, and the
+Bruhat–Tits lemma "locally geodesic ⇒ globally geodesic" in the form
+"the elementary divisors of `Λₙ ⊆ Λ₀` are `(1, πⁿ)`" — turned out to be
+UNNECESSARY. Both were artefacts of phrasing the argument through
+elementary divisors. Neither is used below; only item 1 (compactness)
+survived, and it is `algebraMap_padicInt_injective_of_isDiscreteValuationRing`
+plus `Module.free_of_finite_type_torsion_free'`.
 
-MISSING FROM MATHLIB, in dependency order, for whoever takes this:
-1. `CompactSpace` and `T2Space` for a module-finite `ℤ_p`-algebra
-   carrying the module topology (a few lines from
-   `Module.Free.chooseBasis`; the pattern is already in this file).
-2. `length (Λ / f Λ) = v (det f)` for an injective endomorphism of a
-   free rank-`n` module over a DVR. This pin has
-   `Submodule.smithNormalForm` but no link from it to `LinearMap.det`.
-3. The tree lemma "locally geodesic ⇒ globally geodesic", in the
-   concrete form `aₙ = 0` for the elementary divisors `(π^aₙ, π^bₙ)`
-   of `Λₙ ⊆ Λ₀`. -/
+* RECURSION. The state is the triple `(ρ, e, v)` bundled with the four
+  clauses `hstep` demands, as a SUBTYPE; `choose` turns `hstep` into
+  total functions `NX`/`FX` on it and `Nat.rec` iterates them. The
+  child's generic identification is `eₙ₊₁ := (fₙ ⊗ ℚ̄_p) ≫ eₙ`, a
+  `LinearEquiv` because `det (fₙ ⊗ ℚ̄_p) = algebraMap (det fₙ) ≠ 0` by
+  `hOinj`; its intertwining follows from `fₙ ∘ ρₙ₊₁ = ρₙ ∘ fₙ` by
+  `TensorProduct.induction_on`.
+* THE CHAIN. `Fₙ := f₀ ∘ ⋯ ∘ fₙ₋₁`, `Λₙ := range Fₙ`. Each `Λₙ` is
+  `ρ₁`-stable because `Fₙ` intertwines `ρₙ` into `ρ₁`, and
+  `πⁿ ∣ det Fₙ` because each `det fᵢ` GENERATES `𝔪`.
+* GEODESY, ALGEBRAICALLY. The whole non-backtracking argument is one
+  induction on a KERNEL: `ker (Fₙ₊₁ ⊗ kk') = kk' ∙ vₙ₊₁`. The step
+  from `n` to `n+1` is that `(fₙ₊₁ ⊗ kk')` maps `x` into
+  `kk' ∙ vₙ₊₁ ∩ range (fₙ₊₁ ⊗ kk')`, and that intersection is `0`:
+  a nonzero element of it would make `vₙ₊₁` itself lie in the range,
+  which is exactly what the step's non-backtracking clause forbids.
+  Since `kk' ⊗ O²` is `2`-dimensional and `vₙ₊₁ ≠ 0`, the kernel is
+  PROPER, so some `x` has `1 ⊗ Fₙ x ≠ 0`: every `Λₙ` still contains a
+  vector primitive in `O²`. That replaces the elementary-divisor
+  computation entirely.
+* THE LIMIT. `O` is compact Hausdorff, so `O²` is; each `Λₙ` is the
+  continuous image of a compact space, hence closed; the primitive
+  vectors are closed because `𝔪` is OPEN (`kk'` is discrete and
+  `algebraMap O kk'` continuous). So `Zₙ := Λₙ ∩ {primitive}` is a
+  decreasing sequence of nonempty compacts, and Cantor's intersection
+  theorem gives a primitive `z ∈ ⋂ Λₙ`.
+* THE LINE, BY A DETERMINANT. For `t ∈ ⋂ Λₙ` write `z = Fₙ a`,
+  `t = Fₙ b`; then `z₀t₁ − t₀z₁ = det Fₙ · (a₀b₁ − b₀a₁)`, so `πⁿ`
+  divides `z₀t₁ − t₀z₁` for EVERY `n`, and the intersection of the
+  `(πⁿ)` in a DVR is `0`. Hence `z₀t₁ = t₀z₁`; `z` being primitive one
+  of `z₀, z₁` is a UNIT, and dividing by it exhibits `t = c • z` with
+  `c ∈ O` — no rank theory, no `Frac O`. Applying this to `t = ρ₁ g z`
+  gives `ρ₁ g z = c_g • z`, and `e₁ (1 ⊗ z)` is the required line. -/
 theorem exists_stable_line_of_ribet_descent
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
@@ -12934,7 +13330,398 @@ theorem exists_stable_line_of_ribet_descent
     ∃ z : (AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O), z ≠ 0 ∧
       ∀ g, (ρO.baseChange (AlgebraicClosure ℚ_[p])) g z ∈
         Submodule.span (AlgebraicClosure ℚ_[p]) {z} := by
-  sorry
+  classical
+  -- ## 0. Residual and generic coordinates.
+  set E := (Algebra.TensorProduct.basis kk' (Pi.basisFun O (Fin 2))).equivFun with hEdef
+  have hE : ∀ x : Fin 2 → O,
+      E ((1 : kk') ⊗ₜ[O] x) = fun i => algebraMap O kk' (x i) := by
+    intro x
+    funext i
+    simp [hEdef, Module.Basis.equivFun_apply, Algebra.TensorProduct.basis_repr_tmul]
+  have hEsurj : ∀ v : kk' ⊗[O] (Fin 2 → O), ∃ x : Fin 2 → O,
+      (1 : kk') ⊗ₜ[O] x = v := by
+    intro v
+    induction v using TensorProduct.induction_on with
+    | zero => exact ⟨0, by simp⟩
+    | tmul r x =>
+        obtain ⟨a, ha⟩ := hsurj' r
+        refine ⟨a • x, ?_⟩
+        have h2 : (1 : kk') ⊗ₜ[O] (a • x) = (algebraMap O kk' a) ⊗ₜ[O] x := by
+          rw [← TensorProduct.smul_tmul, Algebra.smul_def, mul_one]
+        rw [h2, ha]
+    | add w₁ w₂ h₁ h₂ =>
+        obtain ⟨x₁, rfl⟩ := h₁
+        obtain ⟨x₂, rfl⟩ := h₂
+        exact ⟨x₁ + x₂, by rw [TensorProduct.tmul_add]⟩
+  set EK := (Algebra.TensorProduct.basis (AlgebraicClosure ℚ_[p])
+    (Pi.basisFun O (Fin 2))).equivFun with hEKdef
+  have hEK : ∀ x : Fin 2 → O,
+      EK ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] x)
+        = fun i => algebraMap O (AlgebraicClosure ℚ_[p]) (x i) := by
+    intro x
+    funext i
+    simp [hEKdef, Module.Basis.equivFun_apply, Algebra.TensorProduct.basis_repr_tmul]
+  have hdimk : Module.finrank kk' (kk' ⊗[O] (Fin 2 → O)) = 2 := by
+    rw [Module.finrank_eq_card_basis
+      (Algebra.TensorProduct.basis kk' (Pi.basisFun O (Fin 2)))]
+    simp
+  have hspanne : ∀ v : kk' ⊗[O] (Fin 2 → O), v ≠ 0 →
+      ∃ u : kk' ⊗[O] (Fin 2 → O), u ∉ Submodule.span kk' {v} := by
+    intro v hv
+    by_contra hcon
+    have hall : ∀ u : kk' ⊗[O] (Fin 2 → O), u ∈ Submodule.span kk' {v} := by
+      intro u
+      by_contra hu
+      exact hcon ⟨u, hu⟩
+    have htop : Submodule.span kk' {v} = ⊤ := eq_top_iff.mpr fun y _ => hall y
+    have h1 : Module.finrank kk' (Submodule.span kk' {v}) = 1 := finrank_span_singleton hv
+    rw [htop, finrank_top, hdimk] at h1
+    omega
+  -- ## 1. `O` is compact Hausdorff; a uniformiser.
+  haveI : Module.IsTorsionFree ℤ_[p] O :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr
+      algebraMap_padicInt_injective_of_isDiscreteValuationRing
+  haveI : Module.Free ℤ_[p] O := Module.free_of_finite_type_torsion_free'
+  obtain ⟨hO⟩ : Nonempty (O ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[p] O → ℤ_[p])) := by
+    let bO := Module.Free.chooseBasis ℤ_[p] O
+    have hc1 : Continuous bO.equivFun :=
+      IsModuleTopology.continuous_of_linearMap bO.equivFun.toLinearMap
+    have hc2 : Continuous bO.equivFun.symm :=
+      IsModuleTopology.continuous_of_linearMap bO.equivFun.symm.toLinearMap
+    exact ⟨Homeomorph.mk bO.equivFun.toEquiv hc1 hc2⟩
+  haveI : CompactSpace O := hO.symm.compactSpace
+  haveI : T2Space O := hO.symm.t2Space
+  obtain ⟨ϖ, hϖirr⟩ := IsDiscreteValuationRing.exists_irreducible O
+  have hϖ0 : ϖ ≠ 0 := hϖirr.ne_zero
+  have hmaxϖ : IsLocalRing.maximalIdeal O = Ideal.span {ϖ} := hϖirr.maximalIdeal_eq
+  -- only `0` is divisible by every power of the uniformiser
+  have hkrull : ∀ c : O, (∀ n : ℕ, ϖ ^ n ∣ c) → c = 0 := by
+    intro c hc
+    by_contra hne
+    obtain ⟨k, uu, huu⟩ := IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hne hϖirr
+    obtain ⟨d, hd⟩ := hc (k + 1)
+    have h1 : (uu : O) * ϖ ^ k = (d * ϖ) * ϖ ^ k := by
+      rw [← huu, hd, pow_succ]
+      ring
+    have h2 : (uu : O) = d * ϖ := mul_right_cancel₀ (pow_ne_zero k hϖ0) h1
+    have h3 : IsUnit (d * ϖ) := by rw [← h2]; exact uu.isUnit
+    exact hϖirr.not_isUnit (isUnit_of_mul_isUnit_right h3)
+  -- ## 2. The recursion producing the walk.
+  let St := {q : (GaloisRep ℚ O (Fin 2 → O)) ×
+      (((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)) ≃ₗ[AlgebraicClosure ℚ_[p]]
+        ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))) ×
+      (kk' ⊗[O] (Fin 2 → O)) //
+      (∀ g x, q.2.1 ((q.1.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (q.2.1 x)) ∧
+      q.2.2 ≠ 0 ∧
+      (∀ g, (q.1.baseChange kk') g q.2.2 = q.2.2) ∧
+      (∀ g x, ∃ c : kk', (q.1.baseChange kk') g x - ψ g • x = c • q.2.2)}
+  have hnext : ∀ s : St, ∃ (t : St) (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O)),
+      Ideal.span {LinearMap.det f} = IsLocalRing.maximalIdeal O ∧
+      (∀ g x, f (t.1.1 g x) = s.1.1 g (f x)) ∧
+      (s.1.2.2 ∉ LinearMap.range (LinearMap.baseChange kk' f)) ∧
+      (∀ x : Fin 2 → O, (1 : kk') ⊗ₜ[O] (f x) = 0 ↔
+        (1 : kk') ⊗ₜ[O] x ∈ Submodule.span kk' {t.1.2.2}) := by
+    rintro ⟨⟨ρ', e', v'⟩, hint, hv0, hfix, hquo⟩
+    obtain ⟨ρ'', f, v'', hdet0, hdetm, hfeq, hnb, hkerf, hv''0, hfix'', hquo''⟩ :=
+      hstep ρ' e' v' hint hv0 hfix hquo
+    -- the generic identification transported through `f`
+    have hdetQ : LinearMap.det
+        (LinearMap.baseChange (AlgebraicClosure ℚ_[p]) f) ≠ 0 := by
+      rw [LinearMap.det_baseChange]
+      intro h
+      exact hdet0 (hOinj (by rw [h, map_zero]))
+    have hbij : Function.Bijective
+        (LinearMap.baseChange (AlgebraicClosure ℚ_[p]) f) := by
+      rw [← Module.End.isUnit_iff, LinearMap.isUnit_iff_isUnit_det]
+      exact isUnit_iff_ne_zero.mpr hdetQ
+    have hphi : ∀ (g : Field.absoluteGaloisGroup ℚ)
+        (x : (AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)),
+        LinearMap.baseChange (AlgebraicClosure ℚ_[p]) f
+            ((ρ''.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+          (ρ'.baseChange (AlgebraicClosure ℚ_[p])) g
+            (LinearMap.baseChange (AlgebraicClosure ℚ_[p]) f x) := by
+      intro g x
+      induction x using TensorProduct.induction_on with
+      | zero => simp
+      | tmul r y => simp [hfeq g y]
+      | add x₁ x₂ h₁ h₂ => simp only [map_add, h₁, h₂]
+    refine ⟨⟨(ρ'', (LinearEquiv.ofBijective _ hbij).trans e', v''), ?_, hv''0,
+      hfix'', hquo''⟩, f, hdetm, hfeq, hnb, hkerf⟩
+    intro g x
+    show e' (LinearMap.baseChange (AlgebraicClosure ℚ_[p]) f
+        ((ρ''.baseChange (AlgebraicClosure ℚ_[p])) g x)) =
+      (ρO.baseChange (AlgebraicClosure ℚ_[p])) g
+        (e' (LinearMap.baseChange (AlgebraicClosure ℚ_[p]) f x))
+    rw [hphi, hint]
+  choose NX FX hdetm hfeq hnb hkerf using hnext
+  let s₀ : St := ⟨(ρ₁, e₁, v₁), he₁, hv₁, hfix₁, hquo₁⟩
+  let SS : ℕ → St := fun n => Nat.rec s₀ (fun _ s => NX s) n
+  have hSS0 : SS 0 = s₀ := rfl
+  have hSSs : ∀ n, SS (n + 1) = NX (SS n) := fun _ => rfl
+  let ff : ℕ → ((Fin 2 → O) →ₗ[O] (Fin 2 → O)) := fun n => FX (SS n)
+  let ρs : ℕ → GaloisRep ℚ O (Fin 2 → O) := fun n => (SS n).1.1
+  let vs : ℕ → kk' ⊗[O] (Fin 2 → O) := fun n => (SS n).1.2.2
+  have hρs0 : ρs 0 = ρ₁ := rfl
+  have hffeq : ∀ n g x, ff n (ρs (n + 1) g x) = ρs n g (ff n x) := fun n => hfeq (SS n)
+  have hffnb : ∀ n, vs n ∉ LinearMap.range (LinearMap.baseChange kk' (ff n)) :=
+    fun n => hnb (SS n)
+  have hffker : ∀ n (x : Fin 2 → O), (1 : kk') ⊗ₜ[O] (ff n x) = 0 ↔
+      (1 : kk') ⊗ₜ[O] x ∈ Submodule.span kk' {vs (n + 1)} := fun n => hkerf (SS n)
+  have hffdetm : ∀ n, Ideal.span {LinearMap.det (ff n)} = IsLocalRing.maximalIdeal O :=
+    fun n => hdetm (SS n)
+  have hvs0 : ∀ n, vs n ≠ 0 := fun n => (SS n).2.2.1
+  -- ## 3. The chain of lattices.
+  let FF : ℕ → ((Fin 2 → O) →ₗ[O] (Fin 2 → O)) :=
+    fun n => Nat.rec LinearMap.id (fun k G => G ∘ₗ ff k) n
+  have hFF0 : FF 0 = LinearMap.id := rfl
+  have hFFs : ∀ n, FF (n + 1) = (FF n) ∘ₗ (ff n) := fun _ => rfl
+  have hFFapp : ∀ n x, FF (n + 1) x = FF n (ff n x) := fun _ _ => rfl
+  have hFFint : ∀ n g x, FF n (ρs n g x) = ρ₁ g (FF n x) := by
+    intro n
+    induction n with
+    | zero => intro g x; rw [hFF0]; simp [hρs0]
+    | succ k ih =>
+        intro g x
+        rw [hFFapp, hFFapp, hffeq k g x, ih]
+  have hFFdet : ∀ n, ϖ ^ n ∣ LinearMap.det (FF n) := by
+    intro n
+    induction n with
+    | zero => simp [hFF0]
+    | succ k ih =>
+        have hdvd : ϖ ∣ LinearMap.det (ff k) := by
+          have hm : LinearMap.det (ff k) ∈ Ideal.span {ϖ} := by
+            rw [← hmaxϖ, ← hffdetm k]
+            exact Ideal.mem_span_singleton_self _
+          exact Ideal.mem_span_singleton.mp hm
+        rw [hFFs, LinearMap.det_comp, pow_succ]
+        exact mul_dvd_mul ih hdvd
+  -- GEODESY: the residual kernel of the chain is the current fixed line
+  have hFFker : ∀ n (x : Fin 2 → O), (1 : kk') ⊗ₜ[O] (FF (n + 1) x) = 0 ↔
+      (1 : kk') ⊗ₜ[O] x ∈ Submodule.span kk' {vs (n + 1)} := by
+    intro n
+    induction n with
+    | zero => intro x; exact hffker 0 x
+    | succ k ih =>
+        intro x
+        have hred : ((1 : kk') ⊗ₜ[O] (FF (k + 1 + 1) x) = 0) ↔
+            ((1 : kk') ⊗ₜ[O] (ff (k + 1) x) ∈ Submodule.span kk' {vs (k + 1)}) :=
+          ih (ff (k + 1) x)
+        rw [hred]
+        constructor
+        · intro hmem
+          refine (hffker (k + 1) x).mp ?_
+          obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp hmem
+          by_cases hc0 : c = 0
+          · rw [hc0, zero_smul] at hc
+            exact hc.symm
+          · exfalso
+            refine hffnb (k + 1) ?_
+            refine ⟨c⁻¹ • ((1 : kk') ⊗ₜ[O] x), ?_⟩
+            rw [map_smul]
+            have hbc : LinearMap.baseChange kk' (ff (k + 1)) ((1 : kk') ⊗ₜ[O] x)
+                = (1 : kk') ⊗ₜ[O] (ff (k + 1) x) := by
+              rw [LinearMap.baseChange_tmul]
+            rw [hbc, ← hc, smul_smul, inv_mul_cancel₀ hc0, one_smul]
+        · intro hmem
+          have h0 : (1 : kk') ⊗ₜ[O] (ff (k + 1) x) = 0 := (hffker (k + 1) x).mpr hmem
+          rw [h0]
+          exact Submodule.zero_mem _
+  -- every stage still contains a vector that is primitive in `O²`
+  have hFFprim : ∀ n, ∃ x : Fin 2 → O, (1 : kk') ⊗ₜ[O] (FF n x) ≠ 0 := by
+    intro n
+    cases n with
+    | zero =>
+        obtain ⟨x, hx⟩ := hEsurj v₁
+        exact ⟨x, by rw [hFF0]; simp only [LinearMap.id_coe, id_eq, hx]; exact hv₁⟩
+    | succ k =>
+        obtain ⟨u, hu⟩ := hspanne (vs (k + 1)) (hvs0 (k + 1))
+        obtain ⟨x, hx⟩ := hEsurj u
+        refine ⟨x, ?_⟩
+        intro hcon
+        exact hu (hx ▸ (hFFker k x).mp hcon)
+  -- ## 4. Topology: the chain is a decreasing family of nonempty compacts.
+  have hcont : ∀ T : (Fin 2 → O) →ₗ[O] (Fin 2 → O),
+      Continuous (T : (Fin 2 → O) → (Fin 2 → O)) := by
+    intro T
+    have hT : (fun x : Fin 2 → O => T x)
+        = fun x => (LinearMap.toMatrix' T) *ᵥ x := by
+      funext x
+      exact (LinearMap.toMatrix'_mulVec T x).symm
+    rw [show (T : (Fin 2 → O) → (Fin 2 → O))
+        = fun x => (LinearMap.toMatrix' T) *ᵥ x from hT]
+    refine continuous_pi fun i => ?_
+    have hexp : (fun x : Fin 2 → O => ((LinearMap.toMatrix' T) *ᵥ x) i)
+        = fun x => (LinearMap.toMatrix' T) i 0 * x 0
+            + (LinearMap.toMatrix' T) i 1 * x 1 := by
+      funext x
+      simp [Matrix.mulVec, dotProduct, Fin.sum_univ_two]
+    rw [hexp]
+    exact (continuous_const.mul (continuous_apply 0)).add
+      (continuous_const.mul (continuous_apply 1))
+  have htmulchar : ∀ x : Fin 2 → O,
+      ((1 : kk') ⊗ₜ[O] x = 0) ↔ ∀ i, algebraMap O kk' (x i) = 0 := by
+    intro x
+    constructor
+    · intro h i
+      have h2 : E ((1 : kk') ⊗ₜ[O] x) = 0 := by rw [h, map_zero]
+      rw [hE] at h2
+      exact congrFun h2 i
+    · intro h
+      refine E.injective ?_
+      rw [hE, map_zero]
+      funext i
+      exact h i
+  have hPclosed : IsClosed {x : Fin 2 → O | (1 : kk') ⊗ₜ[O] x ≠ 0} := by
+    refine isOpen_compl_iff.mp ?_
+    have hset : {x : Fin 2 → O | (1 : kk') ⊗ₜ[O] x ≠ 0}ᶜ
+        = ⋂ i : Fin 2, (fun x : Fin 2 → O => x i) ⁻¹'
+            ((algebraMap O kk') ⁻¹' ({0} : Set kk')) := by
+      ext x
+      simp only [Set.mem_compl_iff, Set.mem_setOf_eq, not_not, Set.mem_iInter,
+        Set.mem_preimage, Set.mem_singleton_iff]
+      exact htmulchar x
+    rw [hset]
+    refine isOpen_iInter_of_finite fun i => ?_
+    exact ((isOpen_discrete _).preimage (continuous_algebraMap O kk')).preimage
+      (continuous_apply i)
+  set Zc : ℕ → Set (Fin 2 → O) :=
+    fun n => (LinearMap.range (FF n) : Set (Fin 2 → O))
+      ∩ {x : Fin 2 → O | (1 : kk') ⊗ₜ[O] x ≠ 0} with hZcdef
+  have hZanti : ∀ n, Zc (n + 1) ⊆ Zc n := by
+    intro n x hx
+    refine ⟨?_, hx.2⟩
+    obtain ⟨y, hy⟩ := hx.1
+    exact ⟨ff n y, by rw [← hy, hFFapp]⟩
+  have hZne : ∀ n, (Zc n).Nonempty := by
+    intro n
+    obtain ⟨x, hx⟩ := hFFprim n
+    exact ⟨FF n x, ⟨x, rfl⟩, hx⟩
+  have hZclosed : ∀ n, IsClosed (Zc n) := by
+    intro n
+    refine IsClosed.inter ?_ hPclosed
+    have hr : (LinearMap.range (FF n) : Set (Fin 2 → O)) = Set.range (FF n) :=
+      LinearMap.coe_range _
+    rw [hr]
+    exact (isCompact_range (hcont (FF n))).isClosed
+  have hZcompact : IsCompact (Zc 0) := (hZclosed 0).isCompact
+  obtain ⟨z, hz⟩ : (⋂ n, Zc n).Nonempty :=
+    IsCompact.nonempty_iInter_of_sequence_nonempty_isCompact_isClosed
+      Zc hZanti hZne hZcompact hZclosed
+  have hzmem : ∀ n, z ∈ (LinearMap.range (FF n) : Set (Fin 2 → O)) :=
+    fun n => (Set.mem_iInter.mp hz n).1
+  have hzprim : (1 : kk') ⊗ₜ[O] z ≠ 0 := (Set.mem_iInter.mp hz 0).2
+  -- ## 5. Everything in the limit is `O`-proportional to `z`.
+  have hzstable : ∀ (g : Field.absoluteGaloisGroup ℚ) (n : ℕ),
+      ρ₁ g z ∈ (LinearMap.range (FF n) : Set (Fin 2 → O)) := by
+    intro g n
+    obtain ⟨y, hy⟩ := hzmem n
+    exact ⟨ρs n g y, by rw [hFFint, hy]⟩
+  have hdetzero : ∀ t : Fin 2 → O,
+      (∀ n, t ∈ (LinearMap.range (FF n) : Set (Fin 2 → O))) →
+      z 0 * t 1 - t 0 * z 1 = 0 := by
+    intro t ht
+    refine hkrull _ fun n => ?_
+    obtain ⟨a, ha⟩ := hzmem n
+    obtain ⟨b, hb⟩ := ht n
+    have hMa : ∀ (c : Fin 2 → O) (i : Fin 2),
+        FF n c i = (LinearMap.toMatrix' (FF n)) i 0 * c 0
+          + (LinearMap.toMatrix' (FF n)) i 1 * c 1 := by
+      intro c i
+      have h := LinearMap.toMatrix'_mulVec (FF n) c
+      have h2 := congrFun h i
+      simp only [Matrix.mulVec, dotProduct, Fin.sum_univ_two] at h2
+      exact h2.symm
+    have hdetM : LinearMap.det (FF n)
+        = (LinearMap.toMatrix' (FF n)) 0 0 * (LinearMap.toMatrix' (FF n)) 1 1
+          - (LinearMap.toMatrix' (FF n)) 0 1 * (LinearMap.toMatrix' (FF n)) 1 0 := by
+      rw [← LinearMap.det_toMatrix' (FF n), Matrix.det_fin_two]
+    have hdeteq : z 0 * t 1 - t 0 * z 1
+        = LinearMap.det (FF n) * (a 0 * b 1 - b 0 * a 1) := by
+      rw [← ha, ← hb, hMa a 0, hMa a 1, hMa b 0, hMa b 1, hdetM]
+      ring
+    rw [hdeteq]
+    exact Dvd.dvd.mul_right (hFFdet n) _
+  -- `z` has a unit coordinate, so the limit lies in the `O`-line it spans
+  have hzunit : IsUnit (z 0) ∨ IsUnit (z 1) := by
+    by_contra hcon
+    obtain ⟨hcon0, hcon1⟩ := not_or.mp hcon
+    have hmem : ∀ j : Fin 2, ¬ IsUnit (z j) → algebraMap O kk' (z j) = 0 := by
+      intro j hj
+      have hm : z j ∈ IsLocalRing.maximalIdeal O :=
+        (IsLocalRing.mem_maximalIdeal _).mpr hj
+      rw [← hker', RingHom.mem_ker] at hm
+      exact hm
+    refine hzprim ((htmulchar z).mpr fun i => ?_)
+    fin_cases i
+    · exact hmem 0 hcon0
+    · exact hmem 1 hcon1
+  have hline : ∀ t : Fin 2 → O,
+      (∀ n, t ∈ (LinearMap.range (FF n) : Set (Fin 2 → O))) →
+      ∃ c : O, t = c • z := by
+    intro t ht
+    have hd := hdetzero t ht
+    have hkey : z 0 * t 1 = t 0 * z 1 := by linear_combination hd
+    rcases hzunit with ⟨w, hw⟩ | ⟨w, hw⟩
+    · refine ⟨t 0 * (↑w⁻¹ : O), ?_⟩
+      have hinv : z 0 * (↑w⁻¹ : O) = 1 := by rw [← hw]; exact w.mul_inv
+      funext j
+      fin_cases j
+      · show t 0 = t 0 * (↑w⁻¹ : O) * z 0
+        calc t 0 = t 0 * (z 0 * (↑w⁻¹ : O)) := by rw [hinv, mul_one]
+          _ = t 0 * (↑w⁻¹ : O) * z 0 := by ring
+      · show t 1 = t 0 * (↑w⁻¹ : O) * z 1
+        calc t 1 = (z 0 * (↑w⁻¹ : O)) * t 1 := by rw [hinv, one_mul]
+          _ = (z 0 * t 1) * (↑w⁻¹ : O) := by ring
+          _ = (t 0 * z 1) * (↑w⁻¹ : O) := by rw [hkey]
+          _ = t 0 * (↑w⁻¹ : O) * z 1 := by ring
+    · refine ⟨t 1 * (↑w⁻¹ : O), ?_⟩
+      have hinv : z 1 * (↑w⁻¹ : O) = 1 := by rw [← hw]; exact w.mul_inv
+      funext j
+      fin_cases j
+      · show t 0 = t 1 * (↑w⁻¹ : O) * z 0
+        calc t 0 = (z 1 * (↑w⁻¹ : O)) * t 0 := by rw [hinv, one_mul]
+          _ = (t 0 * z 1) * (↑w⁻¹ : O) := by ring
+          _ = (z 0 * t 1) * (↑w⁻¹ : O) := by rw [hkey]
+          _ = t 1 * (↑w⁻¹ : O) * z 0 := by ring
+      · show t 1 = t 1 * (↑w⁻¹ : O) * z 1
+        calc t 1 = t 1 * (z 1 * (↑w⁻¹ : O)) := by rw [hinv, mul_one]
+          _ = t 1 * (↑w⁻¹ : O) * z 1 := by ring
+  -- ## 6. The stable line in the generic fibre.
+  obtain ⟨cg, hcg⟩ : ∃ cg : Field.absoluteGaloisGroup ℚ → O,
+      ∀ g, ρ₁ g z = cg g • z := by
+    choose cg hcg using fun g => hline (ρ₁ g z) (hzstable g)
+    exact ⟨cg, hcg⟩
+  refine ⟨e₁ ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] z), ?_, ?_⟩
+  · intro hcon
+    have h0 : (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] z = 0 := by
+      have hs := congrArg e₁.symm hcon
+      simpa using hs
+    have h1 : EK ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] z) = 0 := by rw [h0, map_zero]
+    rw [hEK] at h1
+    have hz0 : ∀ i, z i = 0 := by
+      intro i
+      refine hOinj ?_
+      have h2 := congrFun h1 i
+      simpa using h2
+    refine hzprim ((htmulchar z).mpr fun i => ?_)
+    rw [hz0 i, map_zero]
+  · intro g
+    refine Submodule.mem_span_singleton.mpr
+      ⟨algebraMap O (AlgebraicClosure ℚ_[p]) (cg g), ?_⟩
+    rw [← he₁, ← map_smul]
+    congr 1
+    have h1 : (ρ₁.baseChange (AlgebraicClosure ℚ_[p])) g
+        ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] z)
+        = (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] (ρ₁ g z) := rfl
+    have hL : (1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] (cg g • z)
+        = (algebraMap O (AlgebraicClosure ℚ_[p]) (cg g)) ⊗ₜ[O] z := by
+      rw [← TensorProduct.smul_tmul, Algebra.smul_def, mul_one]
+    have hR : (algebraMap O (AlgebraicClosure ℚ_[p]) (cg g))
+          • ((1 : AlgebraicClosure ℚ_[p]) ⊗ₜ[O] z)
+        = (algebraMap O (AlgebraicClosure ℚ_[p]) (cg g)) ⊗ₜ[O] z := by
+      rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+    rw [h1, hcg g, hL, hR]
 
 set_option linter.unusedVariables false in
 set_option backward.isDefEq.respectTransparency false in
