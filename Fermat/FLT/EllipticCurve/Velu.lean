@@ -55,8 +55,8 @@ kernel and under negation (`veluCoordX_add_mem`, `veluCoordY_add_mem`,
 together with the assemblies of `velu_isElliptic` and `velu_map_add` over
 the leaves below; and the `±`-paired addition law identifying the group-law
 sums with Vélu's classical rational functions (`velu_pair_X`, `velu_pair_Y`,
-`velu_coordX_eq`, `velu_coordY_eq`), which proves `velu_equation` over the
-single leaf `velu_pole_identity` — since 2026-07-26 `velu_equation_pole`
+`velu_coordX_eq`, `velu_coordY_eq`), which proves `velu_equation` — since
+2026-07-26 `velu_equation_pole`
 itself is PROVEN, by completing the square and factoring
 `2Y + a₁X + a₃ = (2y + a₁x + a₃)(1 − Σ veluPoleV)` (`velu_pole_V`,
 `velu_two_poleY_add_poleX`), which eliminates `y` from the quotient equation
@@ -76,12 +76,40 @@ Also PROVEN, 2026-07-26:
 * `velu_exists_three_twoTorsion`, assembled over the single leaf
   `velu_coordX_twoTorsion_ne` below.
 
-SORRY LEAVES (three, each stated over an arbitrary field of characteristic
+Also PROVEN, 2026-07-26: `velu_pole_identity` itself, the `y`-free
+rational-function identity in `x` alone that remains of the verification of
+Vélu 1971 after `velu_equation_pole` has completed the square — over the two
+POLYNOMIAL leaves below. The identity is a genuine rational-function identity
+in `x` (checked numerically at random `x` unrelated to any point), so clearing
+the denominator `veluH S = ∏_{Q ∈ S ∖ 0}(T − x_Q)` turns it into
+`veluTheta S = 0` for an explicit polynomial `veluTheta`, and Vélu's classical
+two-part argument becomes: `veluH S ^ 4` divides `veluTheta S`, and
+`deg (veluTheta S) < 4(|S| − 1)`. See the section header at `section PolePoly`.
+
+**BOTH POLYNOMIAL LEAVES ARE NOW PROVEN** (2026-07-26, by two owners
+working concurrently; the halves were merged at integration and compose
+without circularity):
+
+* `WeierstrassCurve.velu_theta_degree_lt` — `deg (veluTheta S) < 4(|S| − 1)`:
+  "vanishing at infinity", where `veluT` and `veluW` are consumed. Proven
+  outright by a reflection argument; see its docstring. Verified numerically
+  to hold on `±`-stable NON-subgroups too, so it does not need `hS`.
+* `WeierstrassCurve.velu_theta_local_dvd` — `(T − x_Q)⁸ ∣ veluTheta S` for
+  each nonzero `Q` of the kernel: "no poles", in local form. ALL of the
+  arithmetic content of Vélu's theorem is here, and it is the only one of the
+  two polynomial leaves that needs closure of `S` under addition. Proven by
+  the generic-point route: translation invariance of the Vélu coordinates
+  identifies the local behaviour at `x_Q` with the behaviour at infinity. See
+  the `GenericPoint` section for the coordinate-ring machinery it needs.
+
+  It takes the degree bound as an explicit HYPOTHESIS `hdeg` (deliberately
+  weaker than the sibling: `≤ 4n` rather than `< 4n`) rather than calling the
+  sibling itself, so the two are independent theorems; `velu_pole_identity`
+  discharges `hdeg` with `(velu_theta_degree_lt hS hodd).le` at the call site.
+
+SORRY LEAVES (two, each stated over an arbitrary field of characteristic
 zero for a finite subgroup of odd order):
 
-* `WeierstrassCurve.velu_pole_identity` — the `y`-free rational-function
-  identity in `x` alone that remains of the verification of Vélu 1971 after
-  `velu_equation_pole` has completed the square.
 * `WeierstrassCurve.velu_coordX_twoTorsion_ne` — the Vélu `x`-coordinates
   of two distinct `2`-torsion points outside the kernel differ.
 * `WeierstrassCurve.velu_map_add_of_notMem` — additivity in the generic
@@ -98,6 +126,10 @@ module
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.FieldTheory.AbsoluteGaloisGroup
 public import Mathlib.FieldTheory.Galois.Infinite
+public import Mathlib.Algebra.Polynomial.Reverse
+public import Mathlib.Algebra.Polynomial.BigOperators
+public import Mathlib.Algebra.Polynomial.Div
+public import Mathlib.Algebra.Polynomial.Derivative
 
 @[expose] public section
 
@@ -684,63 +716,6 @@ lemma velu_pole_V {S : Finset W.Point} (hS : IsPointSubgroup S) {P : W.Point} (h
   field_simp
   linear_combination key
 
-/-- **SORRY LEAF: Vélu's rational-function identity, with `y` eliminated**, cut 2026-07-26
-out of `velu_equation_pole`.
-
-Writing `x = x(P)`, `X = x + ½ Σ_{Q ∈ S} veluPoleX`, `D = Σ_{Q ∈ S} veluPoleV`,
-`t = veluT S` and `w = veluW S`, the claim is the ONE-VARIABLE identity
-
-  `(4x³ + b₂x² + 2b₄x + b₆)·(1 − D)² = 4X³ + b₂X² + (2b₄ − 20t)X + (b₆ − 4b₂t − 28w)`.
-
-Nothing here mentions `y`: `velu_pole_V` has already replaced the completed square
-`V = 2Y + a₁X + a₃` by `(2y + a₁x + a₃)(1 − D)`, and `(2y + a₁x + a₃)² = 4x³ + b₂x² +
-2b₄x + b₆` is the Weierstrass equation at `P`. So this is the whole remaining content of
-Vélu's theorem, part 2.
-
-**Route** (Vélu 1971; Kohel's thesis §2.4). Both sides are rational functions of `x` with
-poles only at the `x`-coordinates of `S ∖ {0}`; note each such `x_Q` occurs TWICE in a sum
-over all of `S`, from `Q` and `−Q`, so the principal part of `Σ veluPoleX` at `x_Q` is
-`2t_Q/(x − x_Q) + 2u_Q/(x − x_Q)²`. Clearing the denominator `h⁶`, where
-`h = ∏_{Q ∈ R}(x − x_Q)` over a set `R` of representatives of `S ∖ {0}` modulo `±`, turns
-the claim into a polynomial identity of degree `6·deg h + 3`, and it splits in two:
-
-1. *No poles*: `h⁶` divides the difference. A Laurent expansion at `x_Q` (verified in
-   PARI/GP) shows the `d^{-6}` and `d^{-5}` coefficients vanish identically — this is
-   exactly `u_Q = 4x_Q³ + b₂x_Q² + 2b₄x_Q + b₆`, the Weierstrass equation at `Q` — while
-   the `d^{-4}, …, d^{-1}` coefficients impose four relations on the value and the first
-   three derivatives at `x_Q` of the sum over `S ∖ {Q, −Q}`. THIS is where closure of `S`
-   under addition is consumed: the value itself is `2(x_Q − x_{2Q})`, by the `±`-paired
-   addition law `velu_pair_X` plus the reindexing `Q' ↦ Q + Q'` of `S`.
-2. *Vanishing at infinity*: the difference has degree `< 6·deg h`, which pins the top four
-   coefficients and is where `t` and `w` are consumed.
-
-**The subgroup hypothesis is essential and the pole form does not carry it.** Verified in
-PARI/GP over `𝔽_p` for `101 ≤ p ≤ 500` and kernel orders up to `523`: with a genuine
-subgroup, 75789 instances pass and none fail; with the `±`-stable NON-subgroup
-`{0, G, −G}` for `G` of order `≥ 5`, for which every formula above is equally well
-defined, 31006 of 31143 instances FAIL.
-
-**`hodd` may well be unnecessary here.** It is carried over from the consumer
-`velu_equation_pole`, but the same PARI/GP sweep finds the identity holding verbatim for
-kernels of order `2`, `4` and `6` (16077 instances, none failing). The reason is that the
-halving convention reproduces Vélu's SEPARATE `2`-torsion coefficients automatically: at a
-`2`-torsion `Q` one has `2y_Q + a₁x_Q + a₃ = 0`, so `u_Q = 0` and
-`veluTTerm W Q = 6x_Q² + b₂x_Q + b₄ = 2 g^x_Q`, whence `½·veluTTerm W Q = g^x_Q` and
-`½·veluWTerm W Q = x_Q g^x_Q` — exactly Vélu's `t_Q` and `w_Q` in the order-`2` case,
-which the classical presentation has to write down separately. Oddness is used elsewhere
-in this file (it is what makes `x_Q` occur exactly TWICE in a sum over `S`, which is how
-the principal parts are read off above), so a proof may still want it. -/
-theorem velu_pole_identity {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
-    {P : W.Point} (hP : P ∉ S) :
-    (4 * veluPointX P ^ 3 + W.b₂ * veluPointX P ^ 2 + 2 * W.b₄ * veluPointX P + W.b₆) *
-        (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) ^ 2 =
-      4 * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 3 +
-        W.b₂ * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 2 +
-        (2 * W.b₄ - 20 * W.veluT S) *
-          (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) +
-        (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S) :=
-  sorry
-
 end PoleSum
 
 /-! ### Two-torsion and the discriminant
@@ -1054,6 +1029,1635 @@ lemma velu_twoTorsion_notMem {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd
 
 end Parity
 
+/-! ### The generic point of a Weierstrass curve
+
+The affine coordinate ring `F[W] = F[X, Y]/(W(X, Y))` of `W` (mathlib's
+`WeierstrassCurve.Affine.CoordinateRing`) is a domain, so it embeds into its fraction field, over
+which `(X, Y)` is an honest point of `W` — the GENERIC point. Two features of it are what the
+"no poles" leaf below needs:
+
+* `X - x₀` is nonzero for every `x₀ ∈ F` (`velu_gen_ne`), so the generic point avoids the kernel
+  and every denominator of the addition law is invertible;
+* evaluation at an affine point of `W` is a ring homomorphism `F[W] → F` (`veluEvalAt`) killing
+  `X - x₀`, which is how a divisibility by `(X - x₀)^8` is read off.
+
+Nothing here is specific to Vélu's construction. -/
+
+section GenericPoint
+
+variable {F : Type*} [Field F] {W : Affine F}
+
+/-- The `x`-coordinate of the generic point: the image of `X` in the affine coordinate ring. -/
+noncomputable def veluGenX (W : Affine F) : W.CoordinateRing :=
+  AdjoinRoot.of W.polynomial Polynomial.X
+
+/-- The `y`-coordinate of the generic point: the image of `Y` in the affine coordinate ring. -/
+noncomputable def veluGenY (W : Affine F) : W.CoordinateRing :=
+  AdjoinRoot.root W.polynomial
+
+lemma velu_of_C (c : F) :
+    AdjoinRoot.of W.polynomial (Polynomial.C c) = algebraMap F W.CoordinateRing c := by
+  rw [AdjoinRoot.algebraMap_eq']
+  rfl
+
+lemma velu_of_injective : Function.Injective (AdjoinRoot.of W.polynomial) := by
+  intro p q hpq
+  have h : (p - q) • (1 : W.CoordinateRing)
+      + (0 : Polynomial F) • Affine.CoordinateRing.mk W Polynomial.X = 0 := by
+    rw [zero_smul, add_zero, Algebra.smul_def, mul_one, AdjoinRoot.algebraMap_eq, map_sub, hpq,
+      sub_self]
+  exact sub_eq_zero.mp (Affine.CoordinateRing.smul_basis_eq_zero h).1
+
+lemma velu_gen_eval (q : Polynomial F) :
+    Polynomial.eval (veluGenX W) (q.map (algebraMap F W.CoordinateRing))
+      = AdjoinRoot.of W.polynomial q := by
+  rw [Polynomial.eval_map]
+  conv_rhs => rw [← Polynomial.eval₂_C_X (p := q)]
+  rw [Polynomial.hom_eval₂]
+  rfl
+
+section MapCoeffs
+
+variable {R : Type*} [CommRing R] [Algebra F R]
+
+lemma velu_ma₁ : (W⁄R : Affine R).a₁ = algebraMap F R W.a₁ := rfl
+lemma velu_ma₂ : (W⁄R : Affine R).a₂ = algebraMap F R W.a₂ := rfl
+lemma velu_ma₃ : (W⁄R : Affine R).a₃ = algebraMap F R W.a₃ := rfl
+lemma velu_ma₄ : (W⁄R : Affine R).a₄ = algebraMap F R W.a₄ := rfl
+lemma velu_ma₆ : (W⁄R : Affine R).a₆ = algebraMap F R W.a₆ := rfl
+
+end MapCoeffs
+
+lemma velu_gen_equation :
+    (W⁄W.CoordinateRing : Affine W.CoordinateRing).Equation (veluGenX W) (veluGenY W) := by
+  have h : AdjoinRoot.mk W.polynomial (Polynomial.X ^ 2
+      + Polynomial.C (Polynomial.C W.a₁ * Polynomial.X + Polynomial.C W.a₃) * Polynomial.X
+      - Polynomial.C (Polynomial.X ^ 3 + Polynomial.C W.a₂ * Polynomial.X ^ 2
+          + Polynomial.C W.a₄ * Polynomial.X + Polynomial.C W.a₆)) = 0 := by
+    rw [← Affine.polynomial]
+    exact AdjoinRoot.mk_self
+  have hC : ∀ q : Polynomial F,
+      AdjoinRoot.mk W.polynomial (Polynomial.C q) = AdjoinRoot.of W.polynomial q := fun _ => rfl
+  have hY : AdjoinRoot.mk W.polynomial Polynomial.X = veluGenY W := rfl
+  have hX : AdjoinRoot.of W.polynomial Polynomial.X = veluGenX W := rfl
+  simp only [map_sub, map_add, map_mul, map_pow, hC, hY, hX, velu_of_C] at h
+  rw [Affine.equation_iff, velu_ma₁, velu_ma₂, velu_ma₃, velu_ma₄, velu_ma₆]
+  linear_combination h
+
+lemma velu_gen_ne (c : F) : veluGenX W - algebraMap F W.CoordinateRing c ≠ 0 := by
+  intro hc
+  have h : AdjoinRoot.of W.polynomial (Polynomial.X - Polynomial.C c) = 0 := by
+    rw [map_sub, velu_of_C]; exact hc
+  exact Polynomial.X_sub_C_ne_zero c
+    (velu_of_injective (h.trans (map_zero (AdjoinRoot.of W.polynomial)).symm))
+
+/-- `X - x₀` in the affine coordinate ring. -/
+noncomputable def veluGenD (W : Affine F) (x₀ : F) : W.CoordinateRing :=
+  veluGenX W - algebraMap F W.CoordinateRing x₀
+
+/-- `(X - x₀)²` times the `x`-coordinate of the translate of the generic point by `-Q`. -/
+noncomputable def veluGenN (W : Affine F) (x₀ y₀ : F) : W.CoordinateRing :=
+  (veluGenY W - algebraMap F W.CoordinateRing (W.negY x₀ y₀)) ^ 2
+    + algebraMap F W.CoordinateRing W.a₁
+        * (veluGenY W - algebraMap F W.CoordinateRing (W.negY x₀ y₀)) * veluGenD W x₀
+    - (algebraMap F W.CoordinateRing W.a₂ + veluGenX W + algebraMap F W.CoordinateRing x₀)
+        * veluGenD W x₀ ^ 2
+
+lemma velu_gen_evalL {L : Type*} [Field L] [Algebra F L] [Algebra W.CoordinateRing L]
+    (htower : (algebraMap F L)
+      = (algebraMap W.CoordinateRing L).comp (algebraMap F W.CoordinateRing))
+    (p : Polynomial F) :
+    (p.map (algebraMap F L)).eval (algebraMap W.CoordinateRing L (veluGenX W))
+      = algebraMap W.CoordinateRing L (AdjoinRoot.of W.polynomial p) := by
+  rw [htower, ← Polynomial.map_map, Polynomial.eval_map, Polynomial.eval₂_at_apply,
+    velu_gen_eval]
+
+/-- Evaluation of the affine coordinate ring at an affine point of the curve. -/
+noncomputable def veluEvalAt {x₀ y₀ : F} (h : W.Equation x₀ y₀) : W.CoordinateRing →+* F :=
+  AdjoinRoot.lift (Polynomial.evalRingHom x₀) y₀ (by
+    rw [Affine.polynomial]
+    rw [Affine.equation_iff] at h
+    simp only [Polynomial.eval₂_sub, Polynomial.eval₂_add, Polynomial.eval₂_mul,
+      Polynomial.eval₂_pow, Polynomial.eval₂_C, Polynomial.eval₂_X, Polynomial.coe_evalRingHom,
+      Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_C,
+      Polynomial.eval_X]
+    linear_combination h)
+
+lemma veluEvalAt_of {x₀ y₀ : F} (h : W.Equation x₀ y₀) (q : Polynomial F) :
+    veluEvalAt h (AdjoinRoot.of W.polynomial q) = q.eval x₀ := by
+  show AdjoinRoot.lift _ _ _ (AdjoinRoot.mk W.polynomial (Polynomial.C q)) = _
+  rw [AdjoinRoot.lift_mk, Polynomial.eval₂_C, Polynomial.coe_evalRingHom]
+
+lemma veluEvalAt_genX {x₀ y₀ : F} (h : W.Equation x₀ y₀) : veluEvalAt h (veluGenX W) = x₀ := by
+  rw [veluGenX, veluEvalAt_of, Polynomial.eval_X]
+
+lemma veluEvalAt_genY {x₀ y₀ : F} (h : W.Equation x₀ y₀) : veluEvalAt h (veluGenY W) = y₀ :=
+  AdjoinRoot.lift_root _
+
+lemma veluEvalAt_algebraMap {x₀ y₀ : F} (h : W.Equation x₀ y₀) (c : F) :
+    veluEvalAt h (algebraMap F W.CoordinateRing c) = c := by
+  rw [← velu_of_C, veluEvalAt_of, Polynomial.eval_C]
+
+lemma velu_eval_scaled {K : Type*} [Field K] (p : Polynomial K) (Nv e z : K)
+    (D : ℕ) (hD : p.natDegree ≤ D) (hz : z * e = Nv) :
+    p.eval z * e ^ D = ∑ j ∈ Finset.range (D + 1), p.coeff j * Nv ^ j * e ^ (D - j) := by
+  rw [Polynomial.eval_eq_sum_range' (Nat.lt_succ_of_le hD), Finset.sum_mul]
+  refine Finset.sum_congr rfl fun j hj => ?_
+  have hjD : j ≤ D := Nat.lt_succ_iff.mp (Finset.mem_range.mp hj)
+  calc p.coeff j * z ^ j * e ^ D
+      = p.coeff j * (z * e) ^ j * e ^ (D - j) := by
+        rw [mul_pow, ← pow_mul_pow_sub e hjD]; ring
+    _ = p.coeff j * Nv ^ j * e ^ (D - j) := by rw [hz]
+
+end GenericPoint
+
+
+/-! ### Vélu's rational-function identity, cleared of denominators
+
+The single remaining arithmetic input to Vélu's theorem is the ONE-VARIABLE identity
+
+  `Ψ(x)·(1 − D)² = 4X³ + b₂X² + (2b₄ − 20t)X + (b₆ − 4b₂t − 28w)`,
+
+`Ψ(x) = 4x³ + b₂x² + 2b₄x + b₆`, `X = x + ½ Σ_{Q ∈ S} veluPoleX`, `D = Σ_{Q ∈ S} veluPoleV`
+— `velu_pole_identity` at the end of this section. `velu_pole_V` has already eliminated `y`,
+so nothing here mentions it.
+
+**It is a RATIONAL-FUNCTION identity in `x`, not merely an identity at `x`-coordinates of
+points** (checked in PARI/GP over `𝔽_p`, `101 ≤ p ≤ 200`, odd kernels: 761 random values of
+`x` — unrelated to any point of the curve — all pass). That is what this section exploits:
+clearing denominators turns it into an identity of POLYNOMIALS, `veluTheta S = 0`, and the
+classical two-part argument becomes a divisibility statement plus a degree statement.
+
+The bookkeeping. Write `S' = S ∖ {0}`, `n = |S'| = |S| − 1`, and (this is where `hodd` is
+used) note that every `x_Q`, `Q ∈ S'`, is attained by EXACTLY TWO points of `S'`, namely
+`±Q`, since a subgroup of odd order has no `2`-torsion (`velu_twoTorsion_notMem`). With
+
+* `H  = veluH S  = ∏_{Q ∈ S'} (T − x_Q)`                    (monic, degree `n`),
+* `Hq_Q = veluHq S Q = H / (T − x_Q)²`                       (`veluH_factor`),
+* `PX = veluPX S = Σ_{Q ∈ S'} (t_Q(T − x_Q) + u_Q)·Hq_Q`     (degree `≤ n − 1`),
+* `PV = veluPV S = Σ_{Q ∈ S'} (u_Q(T − x_Q) + ½t_Q(T − x_Q)²)·Hq_Q²`  (degree `≤ 2n − 2`),
+
+one has `PX/H = Σ veluPoleX` and `PV/H² = Σ veluPoleV` (`veluPX_eval`, `veluPV_eval`) — the
+point of the pairing is that `(T − x_Q)²` divides `H` and `(T − x_Q)³` divides `H²`, so both
+numerators are honest polynomials with no choice of representatives modulo `±` anywhere.
+Hence `veluXi S = H² − PV` is `H²(1 − D)`, `veluXNum S = T·H + ½PX` is `H·X`, and
+
+  `veluTheta S = Ψ·(veluXi S)² − H·(veluPhiNum S)`
+
+is `H⁴` times the difference of the two sides of the identity. So `veluTheta S = 0` gives
+the identity back after dividing by `H(x)⁴ ≠ 0`.
+
+`veluTheta S` has degree `≤ 4n + 2` (the degree-`4n + 3` terms cancel because `H` is monic
+and both sides are `4x³ + …`), and `deg H⁴ = 4n`, so `veluTheta S = 0` follows from
+
+1. `velu_theta_local_dvd` — `(T − x_Q)⁸ ∣ veluTheta S` for each `Q ∈ S'` (the LOCAL form of
+   "no poles": `H⁴ = ∏_{r} (T − x_r)⁸` over the `n/2` distinct roots, and the eight orders
+   are `2` from the explicit factor `H` plus the six of the classical `h⁶`), and
+2. `velu_theta_degree_lt` — `deg (veluTheta S) < 4n` ("vanishing at infinity").
+
+**The two halves are cleanly separated by the subgroup hypothesis**, which is what makes
+this the right cut. Measured in PARI/GP on `±`-stable NON-subgroups `S = {0} ∪ {±G, …, ±kG}`
+(`k = 1, 2, 3`; `101 ≤ p ≤ 200`), for which every definition above is equally well posed:
+`deg (veluTheta S) < 4n` held in **248 of 248** instances, while `H⁴ ∣ veluTheta S` failed in
+**248 of 248**. So the degree half needs only `±`-stability, and ALL of the arithmetic
+content — closure of `S` under addition — sits in the local divisibility half. -/
+
+section PolePoly
+
+variable {F : Type*} [Field F] [DecidableEq F] [CharZero F] {W : Affine F}
+
+/-- `H = ∏_{Q ∈ S ∖ {0}} (T − x_Q)`, the polynomial whose vanishing locus carries every
+pole of Vélu's rational functions. Each root occurs twice (from `±Q`) when `S` has odd
+order. -/
+noncomputable def veluH (S : Finset W.Point) : Polynomial F :=
+  ∏ Q ∈ S.erase 0, (Polynomial.X - Polynomial.C (veluPointX Q))
+
+/-- `veluH` with the `±`-pair of `Q` removed, i.e. `veluH S / (T − x_Q)²`. -/
+noncomputable def veluHq (S : Finset W.Point) (Q : W.Point) : Polynomial F :=
+  ∏ Q' ∈ ((S.erase 0).erase Q).erase (-Q), (Polynomial.X - Polynomial.C (veluPointX Q'))
+
+omit [CharZero F] in
+/-- **PROVEN.** `veluH S = (T − x_Q)²·veluHq S Q`: the `x`-coordinate of a nonzero `Q` in an
+odd-order subgroup is attained by exactly the two points `±Q`, so the linear factor occurs
+squared. This is the ONE place `hodd` is consumed in this section. -/
+lemma veluH_factor {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {Q : W.Point} (hQ : Q ∈ S.erase 0) :
+    veluH S = (Polynomial.X - Polynomial.C (veluPointX Q)) ^ 2 * veluHq S Q := by
+  have hQ0 : Q ≠ 0 := Finset.ne_of_mem_erase hQ
+  have hQS : Q ∈ S := Finset.mem_of_mem_erase hQ
+  have hnQ0 : -Q ≠ 0 := fun h => hQ0 (neg_eq_zero.mp h)
+  have hne : -Q ≠ Q := fun h => velu_twoTorsion_notMem hS hodd hQ0 h hQS
+  have h1 : -Q ∈ (S.erase 0).erase Q :=
+    Finset.mem_erase.mpr ⟨hne, Finset.mem_erase.mpr ⟨hnQ0, hS.neg_mem _ hQS⟩⟩
+  rw [veluH, ← Finset.mul_prod_erase _ _ hQ, ← Finset.mul_prod_erase _ _ h1, veluHq,
+    velu_pointX_neg]
+  ring
+
+/-- Numerator of `Σ_{Q ∈ S} veluPoleX` over `veluH`. -/
+noncomputable def veluPX (S : Finset W.Point) : Polynomial F :=
+  ∑ Q ∈ S.erase 0,
+    (Polynomial.C (veluTTerm W Q) * (Polynomial.X - Polynomial.C (veluPointX Q))
+      + Polynomial.C (veluUTerm W Q)) * veluHq S Q
+
+/-- Numerator of `Σ_{Q ∈ S} veluPoleV` over `veluH²`. -/
+noncomputable def veluPV (S : Finset W.Point) : Polynomial F :=
+  ∑ Q ∈ S.erase 0,
+    (Polynomial.C (veluUTerm W Q) * (Polynomial.X - Polynomial.C (veluPointX Q))
+      + Polynomial.C ((2 : F)⁻¹ * veluTTerm W Q)
+          * (Polynomial.X - Polynomial.C (veluPointX Q)) ^ 2) * (veluHq S Q) ^ 2
+
+/-- `veluH² · (1 − D)`, monic of degree `2n`. -/
+noncomputable def veluXi (S : Finset W.Point) : Polynomial F := (veluH S) ^ 2 - veluPV S
+
+/-- `veluH · X`, where `X = x + ½ Σ veluPoleX` is Vélu's `x`-coordinate. -/
+noncomputable def veluXNum (S : Finset W.Point) : Polynomial F :=
+  Polynomial.X * veluH S + Polynomial.C ((2 : F)⁻¹) * veluPX S
+
+/-- The `2`-division cubic `Ψ = 4T³ + b₂T² + 2b₄T + b₆` of `W`, i.e. the completed square of
+the Weierstrass equation. -/
+noncomputable def veluPsi (W : Affine F) : Polynomial F :=
+  Polynomial.C (4 : F) * Polynomial.X ^ 3 + Polynomial.C W.b₂ * Polynomial.X ^ 2
+    + Polynomial.C (2 * W.b₄) * Polynomial.X + Polynomial.C W.b₆
+
+/-- `veluH³ · Φ(X)`, where `Φ(T) = 4T³ + b₂T² + (2b₄ − 20t)T + (b₆ − 4b₂t − 28w)` is the
+`2`-division cubic of the quotient curve `veluCurve W S`. -/
+noncomputable def veluPhiNum (S : Finset W.Point) : Polynomial F :=
+  Polynomial.C (4 : F) * (veluXNum S) ^ 3 + Polynomial.C W.b₂ * (veluXNum S) ^ 2 * veluH S
+    + Polynomial.C (2 * W.b₄ - 20 * W.veluT S) * veluXNum S * (veluH S) ^ 2
+    + Polynomial.C (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S) * (veluH S) ^ 3
+
+/-- `Θ = Ψ·Ξ² − H·Φ_num`, i.e. `veluH⁴` times the difference of the two sides of
+`velu_pole_identity`. The whole remaining content of Vélu's theorem is `veluTheta S = 0`. -/
+noncomputable def veluTheta (S : Finset W.Point) : Polynomial F :=
+  veluPsi W * (veluXi S) ^ 2 - veluH S * veluPhiNum S
+
+omit [CharZero F] in
+lemma veluH_monic (S : Finset W.Point) : (veluH S).Monic :=
+  Polynomial.monic_prod_of_monic _ _ fun _ _ => Polynomial.monic_X_sub_C _
+
+omit [CharZero F] in
+lemma veluH_natDegree {S : Finset W.Point} (hS : IsPointSubgroup S) :
+    (veluH S).natDegree = S.card - 1 := by
+  rw [veluH, Polynomial.natDegree_prod _ _ (fun i _ => Polynomial.X_sub_C_ne_zero _)]
+  simp [Finset.card_erase_of_mem hS.zero_mem]
+
+omit [CharZero F] in
+lemma veluH_pow_degree {S : Finset W.Point} (hS : IsPointSubgroup S) :
+    ((veluH S) ^ 4).degree = ((4 * (S.card - 1) : ℕ) : WithBot ℕ) := by
+  have hne : ((veluH S) ^ 4) ≠ 0 := ((veluH_monic S).pow 4).ne_zero
+  rw [Polynomial.degree_eq_natDegree hne, Polynomial.natDegree_pow, veluH_natDegree hS]
+
+omit [CharZero F] in
+/-- **PROVEN.** `veluH` does not vanish at the `x`-coordinate of a point outside `S`; this is
+`velu_X_ne`, and it is what lets the polynomial identity be divided back down. -/
+lemma veluH_eval_ne_zero {S : Finset W.Point} (hS : IsPointSubgroup S) {P : W.Point}
+    (hP : P ∉ S) : (veluH S).eval (veluPointX P) ≠ 0 := by
+  rw [veluH, Polynomial.eval_prod]
+  refine Finset.prod_ne_zero_iff.mpr fun Q hQ => ?_
+  simp only [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
+  exact sub_ne_zero.mpr
+    (velu_X_ne hS hP (Finset.mem_of_mem_erase hQ) (Finset.ne_of_mem_erase hQ))
+
+omit [CharZero F] in
+/-- **PROVEN.** `veluPX S / veluH S = Σ_{Q ∈ S} veluPoleX`, in cleared form. -/
+lemma veluPX_eval {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluPX S).eval (veluPointX P)
+      = (veluH S).eval (veluPointX P) * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q := by
+  rw [← Finset.sum_erase S (veluPoleX_zero (W := W) (veluPointX P)), veluPX,
+    Polynomial.eval_finsetSum, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun Q hQ => ?_
+  have hd : veluPointX P - veluPointX Q ≠ 0 := sub_ne_zero.mpr
+    (velu_X_ne hS hP (Finset.mem_of_mem_erase hQ) (Finset.ne_of_mem_erase hQ))
+  rw [veluH_factor hS hodd hQ]
+  simp only [Polynomial.eval_mul, Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_X,
+    Polynomial.eval_C, Polynomial.eval_pow, veluPoleX]
+  field_simp
+
+/-- **PROVEN.** `veluPV S / (veluH S)² = Σ_{Q ∈ S} veluPoleV`, in cleared form. -/
+lemma veluPV_eval {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluPV S).eval (veluPointX P)
+      = ((veluH S).eval (veluPointX P)) ^ 2 * ∑ Q ∈ S, veluPoleV W (veluPointX P) Q := by
+  rw [← Finset.sum_erase S (veluPoleV_zero (W := W) (veluPointX P)), veluPV,
+    Polynomial.eval_finsetSum, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun Q hQ => ?_
+  have hd : veluPointX P - veluPointX Q ≠ 0 := sub_ne_zero.mpr
+    (velu_X_ne hS hP (Finset.mem_of_mem_erase hQ) (Finset.ne_of_mem_erase hQ))
+  rw [veluH_factor hS hodd hQ]
+  simp only [Polynomial.eval_mul, Polynomial.eval_add, Polynomial.eval_sub, Polynomial.eval_X,
+    Polynomial.eval_C, Polynomial.eval_pow, veluPoleV]
+  field_simp
+
+omit [DecidableEq F] [CharZero F] in
+/-- **PROVEN.** Two nonzero points with the same `x`-coordinate are equal or opposite. -/
+lemma velu_pointX_eq_iff {P Q : W.Point} (hP : P ≠ 0) (hQ : Q ≠ 0)
+    (h : veluPointX P = veluPointX Q) : P = Q ∨ P = -Q := by
+  obtain _ | ⟨x₁, y₁, h₁⟩ := P
+  · exact absurd rfl hP
+  obtain _ | ⟨x₂, y₂, h₂⟩ := Q
+  · exact absurd rfl hQ
+  exact (Affine.Point.X_eq_iff (h₁ := h₁) (h₂ := h₂)).mp h
+
+omit [CharZero F] in
+/-- **PROVEN.** The fibre of `veluPointX` over `x_Q` inside `S ∖ {0}` is exactly `{Q, −Q}`. -/
+lemma velu_fiber {S : Finset W.Point} (hS : IsPointSubgroup S) {Q : W.Point}
+    (hQ : Q ∈ S.erase 0) :
+    {Q' ∈ S.erase 0 | veluPointX Q' = veluPointX Q} = {Q, -Q} := by
+  have hQ0 : Q ≠ 0 := Finset.ne_of_mem_erase hQ
+  have hQS : Q ∈ S := Finset.mem_of_mem_erase hQ
+  have hnQ0 : -Q ≠ 0 := fun h => hQ0 (neg_eq_zero.mp h)
+  ext Q'
+  simp only [Finset.mem_filter, Finset.mem_erase, Finset.mem_insert, Finset.mem_singleton]
+  constructor
+  · rintro ⟨⟨hQ'0, hQ'S⟩, hx⟩
+    exact velu_pointX_eq_iff hQ'0 hQ0 hx
+  · rintro (rfl | rfl)
+    · exact ⟨⟨hQ0, hQS⟩, rfl⟩
+    · exact ⟨⟨hnQ0, hS.neg_mem _ hQS⟩, velu_pointX_neg Q⟩
+
+omit [CharZero F] in
+lemma velu_fiber_card {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {Q : W.Point} (hQ : Q ∈ S.erase 0) :
+    ({Q' ∈ S.erase 0 | veluPointX Q' = veluPointX Q}).card = 2 := by
+  have hQ0 : Q ≠ 0 := Finset.ne_of_mem_erase hQ
+  have hQS : Q ∈ S := Finset.mem_of_mem_erase hQ
+  have hne : -Q ≠ Q := fun h => velu_twoTorsion_notMem hS hodd hQ0 h hQS
+  rw [velu_fiber hS hQ, Finset.card_insert_of_notMem (by simpa using fun h => hne h.symm),
+    Finset.card_singleton]
+
+omit [CharZero F] in
+/-- **PROVEN.** `veluH⁴ = ∏_{r} (T − x_r)⁸` over the `(|S| − 1)/2` DISTINCT roots: every root
+of `veluH` is double, so the fourth power is an eighth power fibrewise. -/
+lemma veluH_pow_eq {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card) :
+    (veluH S) ^ 4
+      = ∏ a ∈ (S.erase 0).image veluPointX, (Polynomial.X - Polynomial.C a) ^ 8 := by
+  rw [veluH, ← Finset.prod_pow, ← Finset.prod_fiberwise_of_maps_to
+    (g := veluPointX) (t := (S.erase 0).image veluPointX)
+    (fun i hi => Finset.mem_image_of_mem _ hi)
+    (fun Q => (Polynomial.X - Polynomial.C (veluPointX Q)) ^ 4)]
+  refine Finset.prod_congr rfl fun a ha => ?_
+  have hcard : ({Q' ∈ S.erase 0 | veluPointX Q' = a}).card = 2 := by
+    obtain ⟨Q, hQ, rfl⟩ := Finset.mem_image.mp ha
+    exact velu_fiber_card hS hodd hQ
+  calc ∏ Q' ∈ {Q' ∈ S.erase 0 | veluPointX Q' = a},
+        (Polynomial.X - Polynomial.C (veluPointX Q')) ^ 4
+      = ∏ _Q' ∈ {Q' ∈ S.erase 0 | veluPointX Q' = a}, (Polynomial.X - Polynomial.C a) ^ 4 :=
+        Finset.prod_congr rfl fun Q' hQ' => by rw [(Finset.mem_filter.mp hQ').2]
+    _ = ((Polynomial.X - Polynomial.C a) ^ 4) ^ 2 := by rw [Finset.prod_const, hcard]
+    _ = (Polynomial.X - Polynomial.C a) ^ 8 := by ring
+
+omit [DecidableEq F] [CharZero F] in
+lemma veluUTerm_of_ne_zero {P : W.Point} (hP : P ≠ 0) :
+    veluUTerm W P = (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) ^ 2 := by
+  cases P with
+  | zero => exact absurd rfl hP
+  | some x y h => rfl
+
+omit [DecidableEq F] [CharZero F] in
+/-- The `2`-division cubic at a solution of the Weierstrass equation. -/
+lemma velu_psi_eval_eq {x y : F} (h : W.Equation x y) :
+    (veluPsi W).eval x = (2 * y + W.a₁ * x + W.a₃) ^ 2 := by
+  rw [Affine.equation_iff] at h
+  simp only [veluPsi, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+    Polynomial.eval_C, Polynomial.eval_X, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆]
+  linear_combination -4 * h
+
+omit [DecidableEq F] [CharZero F] in
+/-- The `2`-division cubic evaluated at a point is the square of the completed square. -/
+lemma velu_psi_eval {P : W.Point} (hP : P ≠ 0) :
+    (veluPsi W).eval (veluPointX P)
+      = (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃) ^ 2 := by
+  cases P with
+  | zero => exact absurd rfl hP
+  | some x y h => exact velu_psi_eval_eq h.1
+
+lemma veluXNum_eval {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluXNum S).eval (veluPointX P)
+      = (veluH S).eval (veluPointX P) * W.veluCoordX S P := by
+  rw [veluXNum, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
+    Polynomial.eval_X, Polynomial.eval_C, veluPX_eval hS hodd hP, velu_coordX_eq hS hP]
+  ring
+
+lemma veluXi_eval {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluXi S).eval (veluPointX P)
+      = ((veluH S).eval (veluPointX P)) ^ 2
+        * (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) := by
+  rw [veluXi, Polynomial.eval_sub, Polynomial.eval_pow, veluPV_eval hS hodd hP]
+  ring
+
+lemma veluPhiNum_eval {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluPhiNum S).eval (veluPointX P)
+      = ((veluH S).eval (veluPointX P)) ^ 3
+        * (4 * (W.veluCoordX S P) ^ 3 + W.b₂ * (W.veluCoordX S P) ^ 2
+            + (2 * W.b₄ - 20 * W.veluT S) * W.veluCoordX S P
+            + (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S)) := by
+  simp only [veluPhiNum, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+    Polynomial.eval_C]
+  rw [veluXNum_eval hS hodd hP]
+  ring
+
+/-- **PROVEN.** The value of `veluTheta` at the `x`-coordinate of a point outside the kernel
+is `veluH⁴` times the quotient-curve defect of the Vélu image of that point. -/
+lemma velu_theta_eval {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluTheta S).eval (veluPointX P)
+      = ((veluH S).eval (veluPointX P)) ^ 4
+        * ((2 * W.veluCoordY S P + W.a₁ * W.veluCoordX S P + W.a₃) ^ 2
+            - (4 * (W.veluCoordX S P) ^ 3 + W.b₂ * (W.veluCoordX S P) ^ 2
+              + (2 * W.b₄ - 20 * W.veluT S) * W.veluCoordX S P
+              + (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S))) := by
+  have hP0 : P ≠ 0 := fun h => hP (by rw [h]; exact hS.zero_mem)
+  have hV : 2 * W.veluCoordY S P + W.a₁ * W.veluCoordX S P + W.a₃
+      = (2 * veluPointY P + W.a₁ * veluPointX P + W.a₃)
+        * (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) := by
+    rw [velu_coordX_eq hS hP, velu_coordY_eq hS hP]
+    exact velu_pole_V hS hP
+  rw [veluTheta, Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_mul,
+    Polynomial.eval_pow, velu_psi_eval hP0, veluXi_eval hS hodd hP,
+    veluPhiNum_eval hS hodd hP]
+  linear_combination (-(((veluH S).eval (veluPointX P)) ^ 4
+    * ((2 * veluPointY P + W.a₁ * veluPointX P + W.a₃)
+        * (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q)
+      + (2 * W.veluCoordY S P + W.a₁ * W.veluCoordX S P + W.a₃)))) * hV
+
+section PolePolyBaseChange
+
+variable {L : Type*} [Field L] [DecidableEq L] [CharZero L] [Algebra F L]
+
+omit [DecidableEq F] [DecidableEq L] [CharZero F] [CharZero L] in
+lemma velu_bc_b₆ : (W⁄L : Affine L).b₆ = algebraMap F L W.b₆ :=
+  WeierstrassCurve.map_b₆ (W := W) (f := algebraMap F L)
+
+omit [CharZero F] [CharZero L] in
+lemma velu_baseChange_UTerm (P : W.Point) :
+    veluUTerm (W⁄L : Affine L) (veluBaseChangePoint W L P)
+      = algebraMap F L (veluUTerm W P) := by
+  by_cases hP : P = 0
+  · subst hP; rw [map_zero, veluUTerm_zero, veluUTerm_zero, map_zero]
+  · rw [veluUTerm_of_ne_zero (veluBaseChangePoint_ne_zero hP), veluUTerm_of_ne_zero hP,
+      veluBaseChangePoint_pointX, veluBaseChangePoint_pointY, velu_bc_a₁, velu_bc_a₃]
+    simp only [map_add, map_mul, map_pow, map_ofNat]
+
+omit [CharZero F] [CharZero L] in
+lemma velu_bc_erase (S : Finset W.Point) :
+    (S.erase 0).image (veluBaseChangePoint W L)
+      = (S.image (veluBaseChangePoint W L)).erase 0 := by
+  rw [Finset.image_erase veluBaseChangePoint_injective, map_zero]
+
+omit [CharZero F] [CharZero L] in
+lemma velu_bc_H (S : Finset W.Point) :
+    veluH (S.image (veluBaseChangePoint W L)) = (veluH S).map (algebraMap F L) := by
+  rw [veluH, veluH, Polynomial.map_prod, ← velu_bc_erase,
+    Finset.prod_image (fun a _ b _ h => veluBaseChangePoint_injective h)]
+  refine Finset.prod_congr rfl fun Q _ => ?_
+  rw [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C, veluBaseChangePoint_pointX]
+
+omit [CharZero F] [CharZero L] in
+lemma velu_bc_Hq (S : Finset W.Point) (Q : W.Point) :
+    veluHq (S.image (veluBaseChangePoint W L)) (veluBaseChangePoint W L Q)
+      = (veluHq S Q).map (algebraMap F L) := by
+  have hinj := veluBaseChangePoint_injective (W := W) (L := L)
+  have hset : (((S.image (veluBaseChangePoint W L)).erase 0).erase
+        (veluBaseChangePoint W L Q)).erase (-(veluBaseChangePoint W L Q))
+      = (((S.erase 0).erase Q).erase (-Q)).image (veluBaseChangePoint W L) := by
+    rw [Finset.image_erase hinj, Finset.image_erase hinj, Finset.image_erase hinj, map_zero,
+      map_neg]
+  rw [veluHq, veluHq, Polynomial.map_prod, hset,
+    Finset.prod_image (fun a _ b _ h => hinj h)]
+  refine Finset.prod_congr rfl fun Q' _ => ?_
+  rw [Polynomial.map_sub, Polynomial.map_X, Polynomial.map_C, veluBaseChangePoint_pointX]
+
+omit [CharZero F] [CharZero L] in
+lemma velu_bc_PX (S : Finset W.Point) :
+    veluPX (S.image (veluBaseChangePoint W L)) = (veluPX S).map (algebraMap F L) := by
+  have hinj := veluBaseChangePoint_injective (W := W) (L := L)
+  rw [veluPX, veluPX, Polynomial.map_sum, ← velu_bc_erase,
+    Finset.sum_image (fun a _ b _ h => hinj h)]
+  refine Finset.sum_congr rfl fun Q _ => ?_
+  rw [Polynomial.map_mul, Polynomial.map_add, Polynomial.map_mul, Polynomial.map_sub,
+    Polynomial.map_C, Polynomial.map_C, Polynomial.map_C, Polynomial.map_X,
+    velu_bc_Hq, velu_baseChange_TTerm, velu_baseChange_UTerm, veluBaseChangePoint_pointX]
+
+omit [CharZero F] [CharZero L] in
+lemma velu_bc_PV (S : Finset W.Point) :
+    veluPV (S.image (veluBaseChangePoint W L)) = (veluPV S).map (algebraMap F L) := by
+  have hinj := veluBaseChangePoint_injective (W := W) (L := L)
+  rw [veluPV, veluPV, Polynomial.map_sum, ← velu_bc_erase,
+    Finset.sum_image (fun a _ b _ h => hinj h)]
+  refine Finset.sum_congr rfl fun Q _ => ?_
+  simp only [Polynomial.map_mul, Polynomial.map_add, Polynomial.map_sub, Polynomial.map_pow,
+    Polynomial.map_C, Polynomial.map_X]
+  rw [velu_bc_Hq, velu_baseChange_TTerm, velu_baseChange_UTerm, veluBaseChangePoint_pointX]
+  simp only [map_mul, map_inv₀, map_ofNat]
+
+omit [CharZero F] [CharZero L] in
+lemma velu_bc_Xi (S : Finset W.Point) :
+    veluXi (S.image (veluBaseChangePoint W L)) = (veluXi S).map (algebraMap F L) := by
+  rw [veluXi, veluXi, Polynomial.map_sub, Polynomial.map_pow, velu_bc_H, velu_bc_PV]
+
+omit [CharZero F] [CharZero L] in
+lemma velu_bc_XNum (S : Finset W.Point) :
+    veluXNum (S.image (veluBaseChangePoint W L)) = (veluXNum S).map (algebraMap F L) := by
+  rw [veluXNum, veluXNum, Polynomial.map_add, Polynomial.map_mul, Polynomial.map_mul,
+    Polynomial.map_X, Polynomial.map_C, velu_bc_H, velu_bc_PX]
+  simp only [map_inv₀, map_ofNat]
+
+omit [DecidableEq F] [DecidableEq L] [CharZero F] [CharZero L] in
+lemma velu_bc_Psi : veluPsi (W⁄L : Affine L) = (veluPsi W).map (algebraMap F L) := by
+  rw [veluPsi, veluPsi, Polynomial.map_add, Polynomial.map_add, Polynomial.map_add,
+    Polynomial.map_mul, Polynomial.map_mul, Polynomial.map_mul, Polynomial.map_pow,
+    Polynomial.map_pow, Polynomial.map_C, Polynomial.map_C, Polynomial.map_C,
+    Polynomial.map_C, Polynomial.map_X, velu_bc_b₂, velu_bc_b₄, velu_bc_b₆]
+  simp only [map_mul, map_ofNat]
+
+omit [CharZero F] [CharZero L] in
+lemma velu_bc_PhiNum (S : Finset W.Point) :
+    veluPhiNum (S.image (veluBaseChangePoint W L)) = (veluPhiNum S).map (algebraMap F L) := by
+  simp only [veluPhiNum, Polynomial.map_add, Polynomial.map_mul, Polynomial.map_pow,
+    Polynomial.map_C]
+  rw [velu_bc_H, velu_bc_XNum, velu_bc_b₂, velu_bc_b₄, velu_bc_b₆, velu_baseChange_T,
+    velu_baseChange_W]
+  simp only [map_mul, map_sub, map_ofNat]
+
+omit [CharZero F] [CharZero L] in
+lemma velu_bc_Theta (S : Finset W.Point) :
+    veluTheta (S.image (veluBaseChangePoint W L)) = (veluTheta S).map (algebraMap F L) := by
+  rw [veluTheta, veluTheta, Polynomial.map_sub, Polynomial.map_mul, Polynomial.map_mul,
+    Polynomial.map_pow, velu_bc_Psi, velu_bc_Xi, velu_bc_H, velu_bc_PhiNum]
+
+end PolePolyBaseChange
+
+/-- **PROVEN.** Translation invariance of the values of `veluTheta`. -/
+lemma velu_theta_translate {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P R : W.Point} (hR : R ∈ S) (hP : P ∉ S) :
+    (veluTheta S).eval (veluPointX (P + R)) * ((veluH S).eval (veluPointX P)) ^ 4
+      = (veluTheta S).eval (veluPointX P) * ((veluH S).eval (veluPointX (P + R))) ^ 4 := by
+  have hPR : P + R ∉ S := by
+    intro hc
+    exact hP (by simpa using hS.add_mem _ hc _ (hS.neg_mem R hR))
+  rw [velu_theta_eval hS hodd hP, velu_theta_eval hS hodd hPR,
+    veluCoordX_add_mem hS P hR, veluCoordY_add_mem hS P hR]
+  ring
+
+/-- **The translation identity, transported to the affine coordinate ring.**
+
+Over any field `L` receiving `W.CoordinateRing`, the generic point `(X, Y)` and its translate
+by `-Q` have the same Vélu image, so their `veluTheta` values agree up to the fourth power of
+`veluH`.  Clearing the denominator `(X - x_Q)^2` of the translate's `x`-coordinate turns that
+into an identity of elements of the coordinate ring. -/
+lemma velu_theta_key_over (L : Type*) [Field L] [DecidableEq L] [CharZero L] [Algebra F L]
+    [Algebra W.CoordinateRing L]
+    (htower : algebraMap F L
+      = (algebraMap W.CoordinateRing L).comp (algebraMap F W.CoordinateRing))
+    (hinj : Function.Injective (algebraMap W.CoordinateRing L))
+    {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    (hdeg : (veluTheta S).natDegree ≤ 4 * (S.card - 1))
+    {x₀ y₀ : F} (hQns : W.Nonsingular x₀ y₀)
+    (hQ : Affine.Point.some x₀ y₀ hQns ∈ S.erase 0) :
+    AdjoinRoot.of W.polynomial (veluTheta S)
+        * (∏ Q' ∈ S.erase 0, (veluGenN W x₀ y₀
+            - algebraMap F W.CoordinateRing (veluPointX Q') * veluGenD W x₀ ^ 2)) ^ 4
+      = (∑ j ∈ Finset.range (4 * (S.card - 1) + 1),
+            algebraMap F W.CoordinateRing ((veluTheta S).coeff j) * veluGenN W x₀ y₀ ^ j
+              * (veluGenD W x₀ ^ 2) ^ (4 * (S.card - 1) - j))
+          * veluGenD W x₀ ^ 8
+          * AdjoinRoot.of W.polynomial (veluHq S (Affine.Point.some x₀ y₀ hQns)) ^ 4 := by
+  have hφ : ∀ c : F,
+      algebraMap W.CoordinateRing L (algebraMap F W.CoordinateRing c) = algebraMap F L c :=
+    fun c => by rw [htower]; rfl
+  refine hinj ?_
+  have hxne : ∀ c : F,
+      algebraMap W.CoordinateRing L (veluGenX W) - algebraMap F L c ≠ 0 := by
+    intro c hc
+    refine velu_gen_ne (W := W) c (hinj ?_)
+    rw [map_sub, map_zero, hφ]
+    exact hc
+  have hxx : algebraMap W.CoordinateRing L (veluGenX W) ≠ algebraMap F L x₀ :=
+    fun hc => hxne x₀ (by rw [hc, sub_self])
+  have hdval : algebraMap W.CoordinateRing L (veluGenD W x₀)
+      = algebraMap W.CoordinateRing L (veluGenX W) - algebraMap F L x₀ := by
+    rw [veluGenD, map_sub, hφ]
+  have hdne : algebraMap W.CoordinateRing L (veluGenD W x₀) ≠ 0 := by
+    rw [hdval]; exact hxne x₀
+  -- The generic point of `W` over `L`.
+  have hEqL : (W⁄L : Affine L).Equation (algebraMap W.CoordinateRing L (veluGenX W))
+      (algebraMap W.CoordinateRing L (veluGenY W)) := by
+    have h := velu_gen_equation (W := W)
+    rw [Affine.equation_iff, velu_ma₁, velu_ma₂, velu_ma₃, velu_ma₄, velu_ma₆] at h
+    rw [Affine.equation_iff, velu_ma₁, velu_ma₂, velu_ma₃, velu_ma₄, velu_ma₆]
+    have h2 := congrArg (algebraMap W.CoordinateRing L) h
+    simpa only [map_add, map_mul, map_pow, hφ] using h2
+  have hpsi : veluPsi W ≠ 0 := by
+    intro hc
+    have h3 : (veluPsi W).coeff 3 = 4 := by
+      simp [veluPsi, Polynomial.coeff_C_mul, Polynomial.coeff_X_pow]
+    rw [hc, Polynomial.coeff_zero] at h3
+    norm_num at h3
+  have hns : (W⁄L : Affine L).Nonsingular (algebraMap W.CoordinateRing L (veluGenX W))
+      (algebraMap W.CoordinateRing L (veluGenY W)) := by
+    refine ⟨hEqL, Or.inr ?_⟩
+    rw [Affine.evalEval_polynomialY]
+    intro hc
+    have h := velu_psi_eval_eq hEqL
+    rw [hc, velu_bc_Psi, velu_gen_evalL htower] at h
+    refine hpsi (velu_of_injective (W := W) ?_)
+    refine (hinj ?_).trans (map_zero (AdjoinRoot.of W.polynomial)).symm
+    rw [map_zero, h]
+    ring
+  -- The kernel over `L`.
+  have hSL : IsPointSubgroup (S.image (veluBaseChangePoint W L)) :=
+    velu_baseChange_isPointSubgroup hS
+  have hcardL : (S.image (veluBaseChangePoint W L)).card = S.card :=
+    Finset.card_image_of_injective _ veluBaseChangePoint_injective
+  have hoddL : Odd (S.image (veluBaseChangePoint W L)).card := by rw [hcardL]; exact hodd
+  have hQ0 : Affine.Point.some x₀ y₀ hQns ≠ 0 := Finset.ne_of_mem_erase hQ
+  have hQL : veluBaseChangePoint W L (Affine.Point.some x₀ y₀ hQns)
+      ∈ (S.image (veluBaseChangePoint W L)).erase 0 := by
+    rw [← velu_bc_erase]
+    exact Finset.mem_image_of_mem _ hQ
+  have hPS : Affine.Point.some (algebraMap W.CoordinateRing L (veluGenX W))
+      (algebraMap W.CoordinateRing L (veluGenY W)) hns
+      ∉ S.image (veluBaseChangePoint W L) := by
+    intro hcm
+    obtain ⟨R, _, hRe⟩ := Finset.mem_image.mp hcm
+    have hxr : algebraMap W.CoordinateRing L (veluGenX W) = algebraMap F L (veluPointX R) := by
+      have h := veluBaseChangePoint_pointX (L := L) R
+      rw [hRe] at h
+      exact h
+    exact hxne _ (by rw [hxr, sub_self])
+  -- The translate of the generic point.
+  have hex : ∀ P : (W⁄L : Affine L).Point, P ≠ 0 →
+      ∃ (xL : L) (yL : L) (h : (W⁄L : Affine L).Nonsingular xL yL),
+        P = Affine.Point.some xL yL h := by
+    rintro (_ | ⟨a, b, hab⟩) hP
+    · exact absurd rfl hP
+    · exact ⟨a, b, hab, rfl⟩
+  obtain ⟨xL, yL, hnsL, hQLeq⟩ := hex _ (veluBaseChangePoint_ne_zero hQ0)
+  have hxLv : xL = algebraMap F L x₀ := by
+    have h := veluBaseChangePoint_pointX (L := L) (Affine.Point.some x₀ y₀ hQns)
+    rw [hQLeq] at h
+    exact h
+  have hyLv : yL = algebraMap F L y₀ := by
+    have h := veluBaseChangePoint_pointY (L := L) (Affine.Point.some x₀ y₀ hQns)
+    rw [hQLeq] at h
+    exact h
+  subst hxLv
+  subst hyLv
+  have hnegY : (W⁄L : Affine L).negY (algebraMap F L x₀) (algebraMap F L y₀)
+      = algebraMap F L (W.negY x₀ y₀) := by
+    rw [Affine.negY, Affine.negY, velu_ma₁, velu_ma₃]
+    simp only [map_sub, map_neg, map_mul]
+  have hx'val : veluPointX (Affine.Point.some (algebraMap W.CoordinateRing L (veluGenX W))
+        (algebraMap W.CoordinateRing L (veluGenY W)) hns
+      + -(Affine.Point.some (algebraMap F L x₀) (algebraMap F L y₀) hnsL))
+      * algebraMap W.CoordinateRing L (veluGenD W x₀) ^ 2
+      = algebraMap W.CoordinateRing L (veluGenN W x₀ y₀) := by
+    simp only [Affine.Point.neg_some, hnegY, Affine.Point.add_of_X_ne hxx, veluPointX_some,
+      Affine.addX, Affine.slope_of_X_ne hxx, veluGenN, map_sub, map_add, map_mul, map_pow,
+      hφ, velu_ma₁, velu_ma₂, hdval]
+    field_simp
+    ring
+  -- The two evaluations of `veluH`.
+  have hHgen : (veluH (S.image (veluBaseChangePoint W L))).eval
+        (algebraMap W.CoordinateRing L (veluGenX W))
+      = algebraMap W.CoordinateRing L (veluGenD W x₀ ^ 2
+          * AdjoinRoot.of W.polynomial (veluHq S (Affine.Point.some x₀ y₀ hQns))) := by
+    rw [veluH_factor hSL hoddL hQL, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C, velu_bc_Hq,
+      velu_gen_evalL htower, veluBaseChangePoint_pointX, veluPointX_some, map_mul, map_pow,
+      hdval]
+  have hHtr : (veluH (S.image (veluBaseChangePoint W L))).eval
+        (veluPointX (Affine.Point.some (algebraMap W.CoordinateRing L (veluGenX W))
+          (algebraMap W.CoordinateRing L (veluGenY W)) hns
+        + -(Affine.Point.some (algebraMap F L x₀) (algebraMap F L y₀) hnsL)))
+        * (algebraMap W.CoordinateRing L (veluGenD W x₀) ^ 2) ^ (S.erase 0).card
+      = algebraMap W.CoordinateRing L (∏ Q' ∈ S.erase 0, (veluGenN W x₀ y₀
+          - algebraMap F W.CoordinateRing (veluPointX Q') * veluGenD W x₀ ^ 2)) := by
+    rw [veluH, Polynomial.eval_prod, ← velu_bc_erase,
+      Finset.prod_image (fun a _ b _ h => veluBaseChangePoint_injective h), map_prod,
+      ← Finset.prod_const, ← Finset.prod_mul_distrib]
+    refine Finset.prod_congr rfl fun Q' _ => ?_
+    rw [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C, veluBaseChangePoint_pointX,
+      map_sub, map_mul, map_pow, hφ, sub_mul, hx'val]
+  -- The two evaluations of `veluTheta`.
+  have hΘgen : (veluTheta (S.image (veluBaseChangePoint W L))).eval
+        (algebraMap W.CoordinateRing L (veluGenX W))
+      = algebraMap W.CoordinateRing L (AdjoinRoot.of W.polynomial (veluTheta S)) := by
+    rw [velu_bc_Theta, velu_gen_evalL htower]
+  have hΘtr : (veluTheta (S.image (veluBaseChangePoint W L))).eval
+        (veluPointX (Affine.Point.some (algebraMap W.CoordinateRing L (veluGenX W))
+          (algebraMap W.CoordinateRing L (veluGenY W)) hns
+        + -(Affine.Point.some (algebraMap F L x₀) (algebraMap F L y₀) hnsL)))
+        * (algebraMap W.CoordinateRing L (veluGenD W x₀) ^ 2) ^ (4 * (S.card - 1))
+      = algebraMap W.CoordinateRing L (∑ j ∈ Finset.range (4 * (S.card - 1) + 1),
+          algebraMap F W.CoordinateRing ((veluTheta S).coeff j) * veluGenN W x₀ y₀ ^ j
+            * (veluGenD W x₀ ^ 2) ^ (4 * (S.card - 1) - j)) := by
+    rw [velu_bc_Theta,
+      velu_eval_scaled ((veluTheta S).map (algebraMap F L))
+        (algebraMap W.CoordinateRing L (veluGenN W x₀ y₀))
+        (algebraMap W.CoordinateRing L (veluGenD W x₀) ^ 2) _ (4 * (S.card - 1))
+        (le_trans (Polynomial.natDegree_map_le) hdeg) hx'val, map_sum]
+    refine Finset.sum_congr rfl fun j _ => ?_
+    simp only [Polynomial.coeff_map, map_mul, map_pow, hφ]
+  -- Combine.
+  have htrans := velu_theta_translate hSL hoddL
+    (hSL.neg_mem _ (Finset.mem_of_mem_erase hQL)) hPS
+  rw [hQLeq] at htrans
+  simp only [veluPointX_some] at htrans
+  have hcard : (S.erase 0).card = S.card - 1 := Finset.card_erase_of_mem hS.zero_mem
+  have hsplit : (algebraMap W.CoordinateRing L (veluGenD W x₀) ^ 2) ^ (4 * (S.card - 1))
+      = ((algebraMap W.CoordinateRing L (veluGenD W x₀) ^ 2) ^ (S.erase 0).card) ^ 4 := by
+    rw [hcard, ← pow_mul, ← pow_mul, ← pow_mul,
+      show 2 * (4 * (S.card - 1)) = 2 * ((S.card - 1) * 4) from by ring]
+  rw [map_mul, map_mul, map_mul, map_pow, map_pow, map_pow, ← hΘgen]
+  calc (veluTheta (S.image (veluBaseChangePoint W L))).eval
+          (algebraMap W.CoordinateRing L (veluGenX W))
+        * (algebraMap W.CoordinateRing L (∏ Q' ∈ S.erase 0, (veluGenN W x₀ y₀
+            - algebraMap F W.CoordinateRing (veluPointX Q') * veluGenD W x₀ ^ 2))) ^ 4
+      = ((veluTheta (S.image (veluBaseChangePoint W L))).eval
+            (algebraMap W.CoordinateRing L (veluGenX W))
+          * ((veluH (S.image (veluBaseChangePoint W L))).eval
+              (veluPointX (Affine.Point.some (algebraMap W.CoordinateRing L (veluGenX W))
+                (algebraMap W.CoordinateRing L (veluGenY W)) hns
+              + -(Affine.Point.some (algebraMap F L x₀) (algebraMap F L y₀) hnsL)))) ^ 4)
+          * (algebraMap W.CoordinateRing L (veluGenD W x₀) ^ 2) ^ (4 * (S.card - 1)) := by
+        rw [← hHtr, mul_pow, hsplit]; ring
+    _ = ((veluTheta (S.image (veluBaseChangePoint W L))).eval
+            (veluPointX (Affine.Point.some (algebraMap W.CoordinateRing L (veluGenX W))
+              (algebraMap W.CoordinateRing L (veluGenY W)) hns
+            + -(Affine.Point.some (algebraMap F L x₀) (algebraMap F L y₀) hnsL)))
+          * ((veluH (S.image (veluBaseChangePoint W L))).eval
+              (algebraMap W.CoordinateRing L (veluGenX W))) ^ 4)
+          * (algebraMap W.CoordinateRing L (veluGenD W x₀) ^ 2) ^ (4 * (S.card - 1)) := by
+        linear_combination (-((algebraMap W.CoordinateRing L (veluGenD W x₀) ^ 2)
+          ^ (4 * (S.card - 1)))) * htrans
+    _ = _ := by rw [← hΘtr, hHgen, map_mul, map_pow]; ring
+
+/-- **PROVEN 2026-07-26: no poles, in local form** — over the degree bound `hdeg`, which the
+sibling leaf `velu_theta_degree_lt` supplies.
+
+For each nonzero `Q` of the kernel, `(T − x_Q)⁸` divides `veluTheta S`: the difference of the two
+sides of Vélu's identity has NO POLE at `x_Q`.
+
+**Why this consumes the subgroup hypothesis, and where.** Measured in PARI/GP: on `±`-stable
+NON-subgroups `{0} ∪ {±G, …, ±kG}` (`k = 1, 2, 3`, `101 ≤ p ≤ 200`) this divisibility fails in 248
+of 248 instances, while `velu_theta_degree_lt` holds in all 248. `hS` enters here exactly once,
+through `veluCoordX_add_mem` / `veluCoordY_add_mem` inside `velu_theta_translate`.
+
+**The proof.** Translation invariance of the Vélu coordinates identifies the local behaviour at
+`x_Q` with the behaviour AT INFINITY, which is the sibling leaf — the route the previous owner
+recorded, and it needs none of the four-relations bookkeeping the older docstring described.
+Concretely, over the fraction field `L` of the affine coordinate ring `F[W]` take the generic point
+`𝐏 = (X, Y)` (`velu_gen_equation`). It lies outside the kernel because `X − x_{Q'} ≠ 0` in `F[W]`
+for every `Q'` (`velu_gen_ne`), so `velu_theta_eval` applies both to `𝐏` and to `𝐏 − Q`, and their
+Vélu images coincide; hence
+
+  `Θ(x_𝐏)·H(x_{𝐏−Q})⁴ = Θ(x_{𝐏−Q})·H(x_𝐏)⁴`   (`velu_theta_translate`).
+
+Now `x_{𝐏−Q} = N/d²` with `d = X − x_Q` and `N ∈ F[W]` the cleared addition law (`veluGenN`),
+while `H(x_𝐏) = d²·G` with `G` a unit at `Q` (`veluH_factor`). Multiplying by `(d²)^{4n}` —
+legitimate precisely because `deg Θ ≤ 4n`, i.e. `hdeg` — clears every denominator and gives an
+identity IN `F[W]` (`velu_theta_key_over`):
+
+  `Θ(X)·𝓗⁴ = 𝓣·d⁸·G⁴`,  `𝓗 = ∏_{Q'}(N − x_{Q'}d²)`.
+
+Evaluating at `Q` itself (`veluEvalAt`) sends `d ↦ 0` and `N ↦ (2y_Q + a₁x_Q + a₃)² ≠ 0` — nonzero
+because a subgroup of odd order has no `2`-torsion. So if `(T − x_Q)^k ‖ Θ` with `k < 8`, cancelling
+`d^k` in the domain `F[W]` and evaluating gives `Θ₁(x_Q)·(2y_Q + a₁x_Q + a₃)^{8n} = 0` with both
+factors nonzero — a contradiction. (The argument in fact yields `k ≥ 10`; only `k ≥ 8` is used.)
+
+`hdeg` is deliberately WEAKER than `velu_theta_degree_lt`: `≤ 4n` rather than `< 4n`. -/
+theorem velu_theta_local_dvd {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    (hdeg : (veluTheta S).degree ≤ ((4 * (S.card - 1) : ℕ) : WithBot ℕ))
+    {Q : W.Point} (hQ : Q ∈ S.erase 0) :
+    (Polynomial.X - Polynomial.C (veluPointX Q)) ^ 8 ∣ veluTheta S := by
+  classical
+  rcases eq_or_ne (veluTheta S) 0 with hΘ0 | hΘ0
+  · rw [hΘ0]; exact dvd_zero _
+  suffices h8 : 8 ≤ Polynomial.rootMultiplicity (veluPointX Q) (veluTheta S) from
+    dvd_trans (pow_dvd_pow _ h8) (Polynomial.pow_rootMultiplicity_dvd _ _)
+  by_contra hlt
+  rw [Nat.not_le] at hlt
+  have hQ0 : Q ≠ 0 := Finset.ne_of_mem_erase hQ
+  have hQS : Q ∈ S := Finset.mem_of_mem_erase hQ
+  obtain _ | ⟨x₀, y₀, hQns⟩ := Q
+  · exact absurd rfl hQ0
+  simp only [veluPointX_some] at hlt
+  -- `Q` is not `2`-torsion, so the `u`-term at `Q` is nonzero.
+  have hne2 : W.negY x₀ y₀ ≠ y₀ := by
+    intro hc
+    refine velu_twoTorsion_notMem hS hodd hQ0 ?_ hQS
+    rw [Affine.Point.neg_some]
+    exact velu_point_some_eq rfl hc
+  have hv₀ : y₀ - W.negY x₀ y₀ ≠ 0 := sub_ne_zero.mpr fun hc => hne2 hc.symm
+  -- The root multiplicity data.
+  set k := Polynomial.rootMultiplicity x₀ (veluTheta S) with hkdef
+  set Θ₁ := (veluTheta S) /ₘ ((Polynomial.X - Polynomial.C x₀) ^ k) with hΘ₁def
+  have hΘsplit : (Polynomial.X - Polynomial.C x₀) ^ k * Θ₁ = veluTheta S :=
+    Polynomial.pow_mul_divByMonic_rootMultiplicity_eq _ _
+  have hΘ₁ne : Θ₁.eval x₀ ≠ 0 :=
+    Polynomial.eval_divByMonic_pow_rootMultiplicity_ne_zero _ hΘ0
+  -- The affine coordinate ring and its fraction field.
+  haveI : IsDomain W.CoordinateRing := inferInstance
+  letI : Algebra F (FractionRing W.CoordinateRing) :=
+    ((algebraMap W.CoordinateRing (FractionRing W.CoordinateRing)).comp
+      (algebraMap F W.CoordinateRing)).toAlgebra
+  have htower : (algebraMap F (FractionRing W.CoordinateRing))
+      = (algebraMap W.CoordinateRing (FractionRing W.CoordinateRing)).comp
+          (algebraMap F W.CoordinateRing) := rfl
+  haveI : CharZero (FractionRing W.CoordinateRing) :=
+    charZero_of_injective_algebraMap
+      (RingHom.injective (algebraMap F (FractionRing W.CoordinateRing)))
+  have hALinj : Function.Injective
+      (algebraMap W.CoordinateRing (FractionRing W.CoordinateRing)) :=
+    IsFractionRing.injective _ _
+  -- Abbreviations in the coordinate ring.
+  set d : W.CoordinateRing := veluGenD W x₀ with hddef
+  set N : W.CoordinateRing := veluGenN W x₀ y₀ with hNdef
+  set n : ℕ := S.card - 1 with hndef
+  set 𝓗 : W.CoordinateRing :=
+    ∏ Q' ∈ S.erase 0, (N - algebraMap F W.CoordinateRing (veluPointX Q') * d ^ 2) with h𝓗def
+  set 𝓣 : W.CoordinateRing := ∑ j ∈ Finset.range (4 * n + 1),
+    algebraMap F W.CoordinateRing ((veluTheta S).coeff j) * N ^ j * (d ^ 2) ^ (4 * n - j)
+      with h𝓣def
+  set G : W.CoordinateRing :=
+    AdjoinRoot.of W.polynomial (veluHq S (Affine.Point.some x₀ y₀ hQns)) with hGdef
+  -- The key identity in the coordinate ring.
+  have key : AdjoinRoot.of W.polynomial (veluTheta S) * 𝓗 ^ 4 = 𝓣 * d ^ 8 * G ^ 4 :=
+    velu_theta_key_over (FractionRing W.CoordinateRing) htower hALinj hS hodd
+      (Polynomial.natDegree_le_iff_degree_le.mpr hdeg) hQns hQ
+  -- Conclude by evaluating at `Q`.
+  have hd : d ≠ 0 := velu_gen_ne x₀
+  have hdvd : (d : W.CoordinateRing) ^ k *
+      (AdjoinRoot.of W.polynomial Θ₁ * 𝓗 ^ 4) = d ^ k * (𝓣 * d ^ (8 - k) * G ^ 4) := by
+    have hofd : AdjoinRoot.of W.polynomial (Polynomial.X - Polynomial.C x₀) = d := by
+      rw [hddef, veluGenD, map_sub, velu_of_C]
+      rfl
+    have hdk : AdjoinRoot.of W.polynomial (veluTheta S)
+        = d ^ k * AdjoinRoot.of W.polynomial Θ₁ := by
+      rw [← hΘsplit, map_mul, map_pow, hofd]
+    calc d ^ k * (AdjoinRoot.of W.polynomial Θ₁ * 𝓗 ^ 4)
+        = AdjoinRoot.of W.polynomial (veluTheta S) * 𝓗 ^ 4 := by rw [hdk]; ring
+      _ = 𝓣 * d ^ 8 * G ^ 4 := key
+      _ = d ^ k * (𝓣 * d ^ (8 - k) * G ^ 4) := by
+          have h8 : (d : W.CoordinateRing) ^ (8 : ℕ) = d ^ k * d ^ (8 - k) := by
+            rw [← pow_add, Nat.add_sub_cancel' hlt.le]
+          rw [h8]; ring
+  have hcancel : AdjoinRoot.of W.polynomial Θ₁ * 𝓗 ^ 4 = 𝓣 * d ^ (8 - k) * G ^ 4 :=
+    mul_left_cancel₀ (pow_ne_zero k hd) hdvd
+  -- Evaluate.
+  have hEqQ : W.Equation x₀ y₀ := hQns.1
+  have hev := congrArg (veluEvalAt hEqQ) hcancel
+  simp only [map_mul, map_pow, veluEvalAt_of] at hev
+  have hevd : veluEvalAt hEqQ d = 0 := by
+    rw [hddef, veluGenD, map_sub, veluEvalAt_genX, veluEvalAt_algebraMap, sub_self]
+  have hevN : veluEvalAt hEqQ N = (y₀ - W.negY x₀ y₀) ^ 2 := by
+    rw [hNdef, veluGenN, ← hddef]
+    simp only [map_sub, map_add, map_mul, map_pow, veluEvalAt_genX, veluEvalAt_genY,
+      veluEvalAt_algebraMap, hevd]
+    ring
+  have hev𝓗 : veluEvalAt hEqQ 𝓗 = ((y₀ - W.negY x₀ y₀) ^ 2) ^ (S.erase 0).card := by
+    calc veluEvalAt hEqQ 𝓗
+        = ∏ Q' ∈ S.erase 0, veluEvalAt hEqQ
+            (N - algebraMap F W.CoordinateRing (veluPointX Q') * d ^ 2) := by
+          rw [h𝓗def, map_prod]
+      _ = ∏ _Q' ∈ S.erase 0, (y₀ - W.negY x₀ y₀) ^ 2 := by
+          refine Finset.prod_congr rfl fun Q' _ => ?_
+          rw [map_sub, map_mul, map_pow, hevd, hevN, veluEvalAt_algebraMap]
+          ring
+      _ = ((y₀ - W.negY x₀ y₀) ^ 2) ^ (S.erase 0).card := by rw [Finset.prod_const]
+  rw [hev𝓗, hevd, zero_pow (Nat.sub_ne_zero_of_lt hlt), mul_zero, zero_mul] at hev
+  exact (mul_ne_zero hΘ₁ne (pow_ne_zero 4 (pow_ne_zero _ (pow_ne_zero 2 hv₀)))) hev
+
+omit [CharZero F] in
+/-- **PROVEN.** The local divisibilities assemble: distinct linear factors are coprime, and
+`veluH⁴` is their product by `veluH_pow_eq`. -/
+theorem velu_theta_dvd {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    (hloc : ∀ Q ∈ S.erase 0,
+      (Polynomial.X - Polynomial.C (veluPointX Q)) ^ 8 ∣ veluTheta S) :
+    (veluH S) ^ 4 ∣ veluTheta S := by
+  rw [veluH_pow_eq hS hodd]
+  refine Finset.prod_dvd_of_coprime (fun a _ b _ hab => ?_) (fun a ha => ?_)
+  · exact (Polynomial.isCoprime_X_sub_C_of_isUnit_sub (sub_ne_zero_of_ne hab).isUnit).pow
+  · obtain ⟨Q, hQ, rfl⟩ := Finset.mem_image.mp ha
+    exact hloc Q hQ
+
+section PolePolyDegree
+
+open _root_.Polynomial
+
+/-! ### Two-jet calculus -/
+
+omit [DecidableEq F] in
+lemma velu_coeff_one_eq_eval (f : Polynomial F) : f.coeff 1 = (derivative f).eval 0 := by
+  rw [← coeff_zero_eq_eval_zero, coeff_derivative]
+  simp
+
+omit [DecidableEq F] in
+lemma velu_coeff_one_mul (f g : Polynomial F) :
+    (f * g).coeff 1 = f.coeff 0 * g.coeff 1 + f.coeff 1 * g.coeff 0 := by
+  simp only [velu_coeff_one_eq_eval, coeff_zero_eq_eval_zero, derivative_mul, eval_add, eval_mul]
+  ring
+
+omit [DecidableEq F] [CharZero F] in
+lemma velu_prod_coeff_zero {ι : Type*} (s : Finset ι) (c : ι → F) :
+    (∏ i ∈ s, (1 - C (c i) * X)).coeff 0 = 1 := by
+  classical
+  refine Finset.induction_on s (by simp) ?_
+  intro a s' ha ih
+  rw [Finset.prod_insert ha, mul_coeff_zero, ih]
+  simp [coeff_one]
+
+omit [DecidableEq F] in
+lemma velu_prod_coeff_one {ι : Type*} (s : Finset ι) (c : ι → F) :
+    (∏ i ∈ s, (1 - C (c i) * X)).coeff 1 = -∑ i ∈ s, c i := by
+  classical
+  refine Finset.induction_on s (by simp [coeff_one]) ?_
+  intro a s' ha ih
+  rw [Finset.prod_insert ha, velu_coeff_one_mul, ih, velu_prod_coeff_zero, Finset.sum_insert ha]
+  have h0 : ((1 : Polynomial F) - C (c a) * X).coeff 0 = 1 := by simp [coeff_one]
+  have h1 : ((1 : Polynomial F) - C (c a) * X).coeff 1 = -c a := by simp [coeff_one]
+  rw [h0, h1]; ring
+
+/-! ### `reflect` helpers -/
+
+omit [DecidableEq F] [CharZero F] in
+lemma velu_reflect_shift {f : Polynomial F} {M : ℕ} (hf : f.natDegree ≤ M) (k : ℕ) :
+    reflect (M + k) f = reflect M f * X ^ k := by
+  have h := reflect_mul f (1 : Polynomial F) hf
+    (show (1 : Polynomial F).natDegree ≤ k by simp)
+  rwa [mul_one, reflect_one] at h
+
+omit [DecidableEq F] [CharZero F] in
+lemma velu_reflect_sum {ι : Type*} (s : Finset ι) (f : ι → Polynomial F) (N : ℕ) :
+    reflect N (∑ i ∈ s, f i) = ∑ i ∈ s, reflect N (f i) := by
+  classical
+  refine Finset.induction_on s (by simp) ?_
+  intro a s' ha ih
+  rw [Finset.sum_insert ha, Finset.sum_insert ha, reflect_add, ih]
+
+omit [DecidableEq F] [CharZero F] in
+lemma velu_reflect_one_X_sub_C (c : F) : reflect 1 (X - C c) = 1 - C c * X := by
+  rw [reflect_sub, reflect_one_X, reflect_C]
+  ring
+
+omit [DecidableEq F] [CharZero F] in
+lemma velu_reflect_prod_X_sub_C {ι : Type*} (s : Finset ι) (c : ι → F) :
+    reflect s.card (∏ i ∈ s, (X - C (c i))) = ∏ i ∈ s, (1 - C (c i) * X) := by
+  classical
+  refine Finset.induction_on s (by simp) ?_
+  intro a s' ha ih
+  have hd : (∏ i ∈ s', (X - C (c i))).natDegree ≤ s'.card := by
+    refine le_trans (natDegree_prod_le _ _) ?_
+    simp
+  rw [Finset.card_insert_of_notMem ha, Finset.prod_insert ha, Finset.prod_insert ha,
+    show s'.card + 1 = 1 + s'.card from Nat.add_comm _ _,
+    reflect_mul _ _ (le_of_eq (natDegree_X_sub_C _)) hd, ih, velu_reflect_one_X_sub_C]
+
+omit [DecidableEq F] [CharZero F] in
+lemma velu_degree_lt_of_reflect {f : Polynomial F} {N k : ℕ}
+    (hf : f.natDegree ≤ N) (hdvd : (X : Polynomial F) ^ k ∣ reflect N f) :
+    f.degree < ((N + 1 - k : ℕ) : WithBot ℕ) := by
+  rw [degree_lt_iff_coeff_zero]
+  intro m hm
+  rcases le_or_gt m N with hmN | hmN
+  · have h1 : (reflect N f).coeff (N - m) = 0 := X_pow_dvd_iff.mp hdvd (N - m) (by omega)
+    rwa [coeff_reflect, revAt_le (Nat.sub_le _ _), Nat.sub_sub_self hmN] at h1
+  · exact coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt hf hmN)
+
+/-! ### The key algebraic step, at the level of reflected polynomials -/
+
+omit [DecidableEq F] in
+lemma velu_reflect_theta_dvd (h px pv : Polynomial F) (t w b2 b4 b6 a : F)
+    (h0 : h.coeff 0 = 1) (h1 : h.coeff 1 = a)
+    (px0 : px.coeff 0 = t) (px1 : px.coeff 1 = t * a + w)
+    (pv0 : pv.coeff 0 = t) (pv1 : pv.coeff 1 = 2 * (t * a) + 2 * w) :
+    (X : Polynomial F) ^ 4 ∣
+      (4 + C b2 * X + 2 * C b4 * X ^ 2 + C b6 * X ^ 3) * (h ^ 2 - pv * X ^ 2) ^ 2
+        - h * (4 * (h + px * X ^ 2) ^ 3
+              + C b2 * ((h + px * X ^ 2) ^ 2 * h * X)
+              + (2 * C b4 - 20 * C t) * ((h + px * X ^ 2) * h ^ 2 * X ^ 2)
+              + (C b6 - 4 * C b2 * C t - 28 * C w) * (h ^ 3 * X ^ 3)) := by
+  have h0' : h.eval 0 = 1 := by rw [← coeff_zero_eq_eval_zero]; exact h0
+  have h1' : (derivative h).eval 0 = a := by rw [← velu_coeff_one_eq_eval]; exact h1
+  have px0' : px.eval 0 = t := by rw [← coeff_zero_eq_eval_zero]; exact px0
+  have px1' : (derivative px).eval 0 = t * a + w := by rw [← velu_coeff_one_eq_eval]; exact px1
+  have pv0' : pv.eval 0 = t := by rw [← coeff_zero_eq_eval_zero]; exact pv0
+  have pv1' : (derivative pv).eval 0 = 2 * (t * a) + 2 * w := by
+    rw [← velu_coeff_one_eq_eval]; exact pv1
+  have hAB : (X : Polynomial F) ^ 2 ∣
+      (-8 * h ^ 2 * pv - 12 * h ^ 3 * px + 20 * C t * h ^ 4)
+        + X * (-2 * C b2 * h ^ 2 * pv - 2 * C b2 * h ^ 3 * px
+                + (4 * C b2 * C t + 28 * C w) * h ^ 4) := by
+    rw [X_pow_dvd_iff]
+    intro d hd
+    interval_cases d
+    · simp only [coeff_zero_eq_eval_zero, eval_add, eval_sub, eval_mul, eval_pow, eval_neg,
+        eval_ofNat, eval_C, eval_X, h0', px0', pv0']
+      ring
+    · rw [velu_coeff_one_eq_eval]
+      simp only [derivative_add, derivative_sub, derivative_mul, derivative_pow, derivative_X,
+        derivative_C, derivative_ofNat, derivative_neg, eval_add, eval_sub,
+        eval_mul, eval_pow, eval_neg, eval_ofNat, eval_C, eval_X, eval_zero, eval_one,
+        h0', h1', px0', px1', pv0', pv1']
+      push_cast
+      ring
+  obtain ⟨D, hD⟩ := hAB
+  refine ⟨D + (4 * pv ^ 2 - 12 * h ^ 2 * px ^ 2 - 4 * X ^ 2 * h * px ^ 3 + C b2 * X * pv ^ 2
+      - C b2 * X * h ^ 2 * px ^ 2 - 4 * C b4 * h ^ 2 * pv - 2 * C b4 * h ^ 3 * px
+      + 2 * C b4 * X ^ 2 * pv ^ 2 + 20 * C t * h ^ 3 * px - 2 * C b6 * X * h ^ 2 * pv
+      + C b6 * X ^ 3 * pv ^ 2), ?_⟩
+  have key : (4 + C b2 * X + 2 * C b4 * X ^ 2 + C b6 * X ^ 3) * (h ^ 2 - pv * X ^ 2) ^ 2
+        - h * (4 * (h + px * X ^ 2) ^ 3
+              + C b2 * ((h + px * X ^ 2) ^ 2 * h * X)
+              + (2 * C b4 - 20 * C t) * ((h + px * X ^ 2) * h ^ 2 * X ^ 2)
+              + (C b6 - 4 * C b2 * C t - 28 * C w) * (h ^ 3 * X ^ 3))
+      = X ^ 2 * ((-8 * h ^ 2 * pv - 12 * h ^ 3 * px + 20 * C t * h ^ 4)
+          + X * (-2 * C b2 * h ^ 2 * pv - 2 * C b2 * h ^ 3 * px
+                  + (4 * C b2 * C t + 28 * C w) * h ^ 4))
+        + X ^ 4 * (4 * pv ^ 2 - 12 * h ^ 2 * px ^ 2 - 4 * X ^ 2 * h * px ^ 3 + C b2 * X * pv ^ 2
+          - C b2 * X * h ^ 2 * px ^ 2 - 4 * C b4 * h ^ 2 * pv - 2 * C b4 * h ^ 3 * px
+          + 2 * C b4 * X ^ 2 * pv ^ 2 + 20 * C t * h ^ 3 * px - 2 * C b6 * X * h ^ 2 * pv
+          + C b6 * X ^ 3 * pv ^ 2) := by
+    ring
+  rw [key, hD]
+  ring
+
+/-! ### Small reflect computations -/
+
+omit [DecidableEq F] [CharZero F] in
+lemma velu_reflect_two_X_sub_C (c : F) :
+    reflect 2 (X - C c) = (1 - C c * X) * X := by
+  have h := velu_reflect_shift (f := (X - C c : Polynomial F)) (M := 1)
+    (le_of_eq (natDegree_X_sub_C c)) 1
+  rw [velu_reflect_one_X_sub_C, pow_one] at h
+  exact h
+
+omit [DecidableEq F] [CharZero F] in
+lemma velu_reflect_two_X_sub_C_sq (c : F) :
+    reflect 2 ((X - C c) ^ 2) = (1 - C c * X) ^ 2 := by
+  rw [pow_two, pow_two]
+  exact (reflect_mul _ _ (le_of_eq (natDegree_X_sub_C c))
+    (le_of_eq (natDegree_X_sub_C c))).trans (by rw [velu_reflect_one_X_sub_C])
+
+omit [DecidableEq F] [CharZero F] in
+lemma velu_reflect_pow {f : Polynomial F} {M : ℕ} (hf : f.natDegree ≤ M) (k : ℕ) :
+    reflect (k * M) (f ^ k) = (reflect M f) ^ k := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+    have hk : (f ^ k).natDegree ≤ k * M := le_trans natDegree_pow_le (Nat.mul_le_mul le_rfl hf)
+    rw [pow_succ, pow_succ, show (k + 1) * M = k * M + M from by ring,
+      reflect_mul _ _ hk hf, ih]
+
+omit [DecidableEq F] [CharZero F] in
+lemma velu_one_sub_sq_coeff_zero (c : F) :
+    ((1 - C c * X : Polynomial F) ^ 2).coeff 0 = 1 := by
+  rw [pow_two, mul_coeff_zero]
+  simp [coeff_one]
+
+omit [DecidableEq F] in
+lemma velu_one_sub_sq_coeff_one (c : F) :
+    ((1 - C c * X : Polynomial F) ^ 2).coeff 1 = -2 * c := by
+  rw [pow_two, velu_coeff_one_mul]
+  simp [coeff_one]
+  ring
+
+/-! ### The Vélu `w`-term splits -/
+
+omit [DecidableEq F] [CharZero F] in
+lemma velu_wTerm_eq (Q : W.Point) :
+    veluWTerm W Q = veluUTerm W Q + veluPointX Q * veluTTerm W Q := by
+  cases Q with
+  | zero =>
+    show veluWTerm W (0 : W.Point)
+      = veluUTerm W (0 : W.Point) + veluPointX (0 : W.Point) * veluTTerm W (0 : W.Point)
+    simp
+  | some x y hxy => simp
+
+/-- **PROVEN 2026-07-26: vanishing at infinity**, the second of the two polynomial leaves
+cut out of `velu_pole_identity` (the first, `velu_theta_local_dvd`, was PROVEN the same day
+by a different owner, over this bound supplied as its `hdeg` hypothesis).
+
+`deg (veluTheta S) < 4n`, `n = |S| − 1`. Both `veluPsi W * (veluXi S)²` and
+`veluH S * veluPhiNum S` have degree `4n + 3` with leading coefficient `4` (`veluH` is monic,
+`veluXi` is monic of degree `2n` because `deg (veluPV S) ≤ 2n − 2`), so the difference has
+degree `≤ 4n + 2` for free; what has to be shown is that the coefficients in degrees
+`4n + 2`, `4n + 1` and `4n` also vanish. THAT is where Vélu's `t = veluT S` and `w = veluW S`
+are consumed: they are exactly the constants for which those three coefficients cancel.
+
+**The proof, and why it is a reflection argument.** Reading the four top coefficients of a
+product of polynomials of symbolic degree is painful; reading the four BOTTOM coefficients is
+not. So the whole computation is transported through `Polynomial.reflect`, which is
+multiplicative (`reflect_mul`) and turns "degree `< 4n`" into "`X⁴` divides", by
+`velu_degree_lt_of_reflect`. Writing `ĥ = reflect n H`, `p̂x = reflect (n−1) (½·PX)`,
+`p̂v = reflect (2n−2) PV`, the reflected shapes are
+
+  `reflect (2n) Ξ = ĥ² − p̂v·X²`,  `reflect (n+1) XNum = ĥ + p̂x·X²`,
+  `reflect 3 Ψ = 4 + b₂X + 2b₄X² + b₆X³`,
+
+and `reflect (4n+3) Θ` is the expression appearing in `velu_reflect_theta_dvd`. That lemma is
+the entire arithmetic: an exact `ring` identity `Θ̂ = X²·A + X³·B + X⁴·C` reduces the claim to
+`X² ∣ A + X·B`, i.e. to two scalar identities in the two-jets
+
+  `ĥ = 1 + aX + …`,  `p̂x = t + (ta + w)X + …`,  `p̂v = t + 2(ta + w)X + …`,
+
+namely `−8t − 12t + 20t = 0` in degree `0` and `−28w + 28w = 0` in degree `1`. The jets
+themselves come from the fibrewise pairing: `veluHq` contributes `1` and `−(e₁ − 2x_Q)`, and
+summing over `S ∖ {0}` turns `Σ t_Q` into `2t` and `Σ (u_Q + x_Q t_Q) = Σ w_Q` into `2w`,
+with `a = −e₁ = ĥ.coeff 1`. Note `p̂x` and `p̂v` have the SAME first-order coefficient, which
+is what makes the degree-`1` identity collapse.
+
+**This half does NOT need `hS`, only `±`-stability** — verified in PARI/GP on `±`-stable
+non-subgroups `{0} ∪ {±G, …, ±kG}` (`k = 1, 2, 3`, `101 ≤ p ≤ 200`): 248 of 248 instances
+satisfy the degree bound even though `veluTheta S ≠ 0` there. `hS` and `hodd` are used here
+only through `velu_twoTorsion_notMem` (so that `Q` and `−Q` are two distinct points of
+`S ∖ {0}`, giving `veluHq` its degree `n − 2`) and through `veluH_natDegree`. -/
+theorem velu_theta_degree_lt {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card) :
+    (veluTheta S).degree < ((4 * (S.card - 1) : ℕ) : WithBot ℕ) := by
+  classical
+  have h2ne : (2 : F) ≠ 0 := by norm_num
+  have hcard : (S.erase 0).card = S.card - 1 := Finset.card_erase_of_mem hS.zero_mem
+  have hScard : 1 ≤ S.card := Finset.card_pos.mpr ⟨0, hS.zero_mem⟩
+  have hsumT : ∑ Q ∈ S.erase 0, veluTTerm W Q = ∑ Q ∈ S, veluTTerm W Q := by
+    rw [← Finset.sum_erase_add S (veluTTerm W) hS.zero_mem, veluTTerm_zero, add_zero]
+  have hsumW : ∑ Q ∈ S.erase 0, veluWTerm W Q = ∑ Q ∈ S, veluWTerm W Q := by
+    rw [← Finset.sum_erase_add S (veluWTerm W) hS.zero_mem, veluWTerm_zero, add_zero]
+  rcases Nat.eq_zero_or_pos (S.erase 0).card with h0 | hpos
+  · -- degenerate kernel `S = {0}`
+    have hE : S.erase 0 = ∅ := Finset.card_eq_zero.mp h0
+    have hH : veluH S = 1 := by rw [veluH, hE, Finset.prod_empty]
+    have hPX : veluPX S = 0 := by rw [veluPX, hE, Finset.sum_empty]
+    have hPV : veluPV S = 0 := by rw [veluPV, hE, Finset.sum_empty]
+    have hT : W.veluT S = 0 := by
+      rw [veluT, ← hsumT, hE, Finset.sum_empty, mul_zero]
+    have hW : W.veluW S = 0 := by
+      rw [veluW, ← hsumW, hE, Finset.sum_empty, mul_zero]
+    have hTheta : veluTheta S = 0 := by
+      rw [veluTheta, veluXi, veluPhiNum, veluXNum, hH, hPX, hPV, hT, hW, veluPsi]
+      ring_nf
+    have hz : 4 * (S.card - 1) = 0 := by omega
+    rw [hTheta, degree_zero, hz]
+    exact WithBot.bot_lt_coe _
+  · -- the substantial case
+    obtain ⟨m, hm⟩ : ∃ m, (S.erase 0).card = m + 2 := by
+      have hne1 : (S.erase 0).card ≠ 1 := by
+        intro hh
+        have h2 : S.card = 2 := by omega
+        rw [h2] at hodd
+        simp [Nat.odd_iff] at hodd
+      exact ⟨(S.erase 0).card - 2, by omega⟩
+    have hHdeg : (veluH S).natDegree = m + 2 := by
+      rw [veluH_natDegree hS]; omega
+    have hTcard : ∀ Q ∈ S.erase 0, (((S.erase 0).erase Q).erase (-Q)).card = m := by
+      intro Q hQ
+      have hQ0 : Q ≠ 0 := Finset.ne_of_mem_erase hQ
+      have hQS : Q ∈ S := Finset.mem_of_mem_erase hQ
+      have hnQ0 : -Q ≠ 0 := fun h => hQ0 (neg_eq_zero.mp h)
+      have hne : -Q ≠ Q := fun h => velu_twoTorsion_notMem hS hodd hQ0 h hQS
+      have h1 : -Q ∈ (S.erase 0).erase Q :=
+        Finset.mem_erase.mpr ⟨hne, Finset.mem_erase.mpr ⟨hnQ0, hS.neg_mem _ hQS⟩⟩
+      have e1 := Finset.card_erase_of_mem h1
+      have e2 := Finset.card_erase_of_mem hQ
+      omega
+    have hTsum : ∀ Q ∈ S.erase 0,
+        ∑ Q' ∈ (((S.erase 0).erase Q).erase (-Q)), veluPointX Q'
+          = (∑ Q' ∈ S.erase 0, veluPointX Q') - 2 * veluPointX Q := by
+      intro Q hQ
+      have hQ0 : Q ≠ 0 := Finset.ne_of_mem_erase hQ
+      have hQS : Q ∈ S := Finset.mem_of_mem_erase hQ
+      have hnQ0 : -Q ≠ 0 := fun h => hQ0 (neg_eq_zero.mp h)
+      have hne : -Q ≠ Q := fun h => velu_twoTorsion_notMem hS hodd hQ0 h hQS
+      have h1 : -Q ∈ (S.erase 0).erase Q :=
+        Finset.mem_erase.mpr ⟨hne, Finset.mem_erase.mpr ⟨hnQ0, hS.neg_mem _ hQS⟩⟩
+      have e1 := Finset.sum_erase_add (S.erase 0) veluPointX hQ
+      have e2 := Finset.sum_erase_add ((S.erase 0).erase Q) veluPointX h1
+      rw [velu_pointX_neg] at e2
+      linear_combination e1 + e2
+    have hHqdeg : ∀ Q ∈ S.erase 0, (veluHq S Q).natDegree ≤ m := by
+      intro Q hQ
+      rw [veluHq]
+      refine le_trans (natDegree_prod_le _ _) ?_
+      simp [hTcard Q hQ]
+    have hreflHq : ∀ Q ∈ S.erase 0, reflect m (veluHq S Q)
+        = ∏ Q' ∈ (((S.erase 0).erase Q).erase (-Q)), (1 - C (veluPointX Q') * X) := by
+      intro Q hQ
+      rw [veluHq, ← hTcard Q hQ, velu_reflect_prod_X_sub_C]
+    have hreflH : reflect (m + 2) (veluH S)
+        = ∏ Q ∈ S.erase 0, (1 - C (veluPointX Q) * X) := by
+      rw [veluH, ← hm, velu_reflect_prod_X_sub_C]
+    -- degree bounds
+    have hPXdeg : (veluPX S).natDegree ≤ m + 1 := by
+      rw [veluPX]
+      refine natDegree_sum_le_of_forall_le _ _ (fun Q hQ => ?_)
+      refine le_trans natDegree_mul_le ?_
+      have hlin : (C (veluTTerm W Q) * (X - C (veluPointX Q))
+          + C (veluUTerm W Q)).natDegree ≤ 1 := by
+        refine le_trans (natDegree_add_le _ _) (max_le ?_ ?_)
+        · exact le_trans (natDegree_C_mul_le _ _) (le_of_eq (natDegree_X_sub_C _))
+        · simp
+      have := add_le_add hlin (hHqdeg Q hQ)
+      omega
+    have hPVdeg : (veluPV S).natDegree ≤ 2 * m + 2 := by
+      rw [veluPV]
+      refine natDegree_sum_le_of_forall_le _ _ (fun Q hQ => ?_)
+      refine le_trans natDegree_mul_le ?_
+      have hq := hHqdeg Q hQ
+      have hsq : ((veluHq S Q) ^ 2).natDegree ≤ 2 * m :=
+        le_trans natDegree_pow_le (by omega)
+      have hquad : (C (veluUTerm W Q) * (X - C (veluPointX Q))
+          + C ((2 : F)⁻¹ * veluTTerm W Q) * (X - C (veluPointX Q)) ^ 2).natDegree ≤ 2 := by
+        refine le_trans (natDegree_add_le _ _) (max_le ?_ ?_)
+        · exact le_trans (natDegree_C_mul_le _ _)
+            (le_trans (le_of_eq (natDegree_X_sub_C _)) one_le_two)
+        · refine le_trans (natDegree_C_mul_le _ _) ?_
+          refine le_trans natDegree_pow_le ?_
+          simp
+      have := add_le_add hquad hsq
+      omega
+    have hCPXdeg : (C ((2 : F)⁻¹) * veluPX S).natDegree ≤ m + 1 :=
+      le_trans (natDegree_C_mul_le _ _) hPXdeg
+    have hXideg : (veluXi S).natDegree ≤ 2 * m + 4 := by
+      rw [veluXi]
+      refine le_trans (natDegree_sub_le _ _) (max_le ?_ ?_)
+      · exact le_trans natDegree_pow_le (by omega)
+      · omega
+    have hXNdeg : (veluXNum S).natDegree ≤ m + 3 := by
+      rw [veluXNum]
+      refine le_trans (natDegree_add_le _ _) (max_le ?_ ?_)
+      · refine le_trans natDegree_mul_le ?_
+        rw [natDegree_X]; omega
+      · exact le_trans (natDegree_C_mul_le _ _) (by omega)
+    have hxn2 : ((veluXNum S) ^ 2).natDegree ≤ 2 * (m + 3) :=
+      le_trans natDegree_pow_le (by omega)
+    have hxn3 : ((veluXNum S) ^ 3).natDegree ≤ 3 * m + 9 :=
+      le_trans natDegree_pow_le (by omega)
+    have hh2 : ((veluH S) ^ 2).natDegree ≤ 2 * (m + 2) :=
+      le_trans natDegree_pow_le (by omega)
+    have hh3 : ((veluH S) ^ 3).natDegree ≤ 3 * m + 6 :=
+      le_trans natDegree_pow_le (by omega)
+    have hPhideg : (veluPhiNum S).natDegree ≤ 3 * m + 9 := by
+      have t1 : (C (4 : F) * (veluXNum S) ^ 3).natDegree ≤ 3 * m + 9 :=
+        le_trans (natDegree_C_mul_le _ _) hxn3
+      have t2 : (C W.b₂ * (veluXNum S) ^ 2 * veluH S).natDegree ≤ 3 * m + 9 := by
+        refine le_trans natDegree_mul_le ?_
+        have := le_trans (natDegree_C_mul_le W.b₂ ((veluXNum S) ^ 2)) hxn2
+        omega
+      have t3 : (C (2 * W.b₄ - 20 * W.veluT S) * veluXNum S * (veluH S) ^ 2).natDegree
+          ≤ 3 * m + 9 := by
+        refine le_trans natDegree_mul_le ?_
+        have := le_trans (natDegree_C_mul_le (2 * W.b₄ - 20 * W.veluT S) (veluXNum S)) hXNdeg
+        omega
+      have t4 : (C (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S)
+          * (veluH S) ^ 3).natDegree ≤ 3 * m + 9 :=
+        le_trans (natDegree_C_mul_le _ _) (by omega)
+      rw [veluPhiNum]
+      exact le_trans (natDegree_add_le _ _) (max_le (le_trans (natDegree_add_le _ _)
+        (max_le (le_trans (natDegree_add_le _ _) (max_le t1 t2)) t3)) t4)
+    have hPsideg : (veluPsi W).natDegree ≤ 3 := by
+      rw [veluPsi]
+      refine le_trans (natDegree_add_le _ _) (max_le (le_trans (natDegree_add_le _ _)
+        (max_le (le_trans (natDegree_add_le _ _) (max_le ?_ ?_)) ?_)) ?_)
+      · exact le_trans (natDegree_C_mul_le _ _) (by simp)
+      · exact le_trans (natDegree_C_mul_le _ _) (by simp)
+      · exact le_trans (natDegree_C_mul_le _ _) (by simp)
+      · simp
+    have hThetadeg : (veluTheta S).natDegree ≤ 4 * m + 11 := by
+      rw [veluTheta]
+      refine le_trans (natDegree_sub_le _ _) (max_le ?_ ?_)
+      · refine le_trans natDegree_mul_le ?_
+        have hxi2 : ((veluXi S) ^ 2).natDegree ≤ 4 * m + 8 :=
+          le_trans natDegree_pow_le (by omega)
+        omega
+      · refine le_trans natDegree_mul_le ?_
+        omega
+    -- reflected forms
+    have hPXrefl : reflect (m + 1) (veluPX S)
+        = ∑ Q ∈ S.erase 0,
+            ((C (veluTTerm W Q)
+              + (C (veluUTerm W Q) - C (veluTTerm W Q) * C (veluPointX Q)) * X)
+              * ∏ Q' ∈ (((S.erase 0).erase Q).erase (-Q)), (1 - C (veluPointX Q') * X)) := by
+      rw [veluPX, velu_reflect_sum]
+      refine Finset.sum_congr rfl fun Q hQ => ?_
+      have hlin : (C (veluTTerm W Q) * (X - C (veluPointX Q))
+          + C (veluUTerm W Q)).natDegree ≤ 1 := by
+        refine le_trans (natDegree_add_le _ _) (max_le ?_ ?_)
+        · exact le_trans (natDegree_C_mul_le _ _) (le_of_eq (natDegree_X_sub_C _))
+        · simp
+      rw [show m + 1 = 1 + m from Nat.add_comm _ _,
+        reflect_mul _ _ hlin (hHqdeg Q hQ), hreflHq Q hQ, reflect_add, reflect_C_mul,
+        velu_reflect_one_X_sub_C, reflect_C]
+      ring
+    have hPVrefl : reflect (2 * m + 2) (veluPV S)
+        = ∑ Q ∈ S.erase 0,
+            ((C (veluUTerm W Q) * ((1 - C (veluPointX Q) * X) * X)
+              + C ((2 : F)⁻¹ * veluTTerm W Q) * (1 - C (veluPointX Q) * X) ^ 2)
+              * (∏ Q' ∈ (((S.erase 0).erase Q).erase (-Q)),
+                  (1 - C (veluPointX Q') * X)) ^ 2) := by
+      rw [veluPV, velu_reflect_sum]
+      refine Finset.sum_congr rfl fun Q hQ => ?_
+      have hq := hHqdeg Q hQ
+      have hsq : ((veluHq S Q) ^ 2).natDegree ≤ m + m :=
+        le_trans natDegree_pow_le (by omega)
+      have hquad : (C (veluUTerm W Q) * (X - C (veluPointX Q))
+          + C ((2 : F)⁻¹ * veluTTerm W Q) * (X - C (veluPointX Q)) ^ 2).natDegree ≤ 2 := by
+        refine le_trans (natDegree_add_le _ _) (max_le ?_ ?_)
+        · exact le_trans (natDegree_C_mul_le _ _)
+            (le_trans (le_of_eq (natDegree_X_sub_C _)) one_le_two)
+        · refine le_trans (natDegree_C_mul_le _ _) ?_
+          refine le_trans natDegree_pow_le ?_
+          simp
+      have hHq2 : reflect (m + m) ((veluHq S Q) ^ 2) = (reflect m (veluHq S Q)) ^ 2 := by
+        rw [pow_two, pow_two, reflect_mul _ _ hq hq]
+      rw [show 2 * m + 2 = 2 + (m + m) from by ring, reflect_mul _ _ hquad hsq, hHq2,
+        hreflHq Q hQ, reflect_add, reflect_C_mul, reflect_C_mul,
+        velu_reflect_two_X_sub_C, velu_reflect_two_X_sub_C_sq]
+    -- jets
+    have hjh0 : (reflect (m + 2) (veluH S)).coeff 0 = 1 := by
+      rw [hreflH, velu_prod_coeff_zero]
+    have hjh1 : (reflect (m + 2) (veluH S)).coeff 1 = -∑ Q ∈ S.erase 0, veluPointX Q := by
+      rw [hreflH, velu_prod_coeff_one]
+    have hjpx0 : (reflect (m + 1) (veluPX S)).coeff 0 = ∑ Q ∈ S.erase 0, veluTTerm W Q := by
+      rw [hPXrefl, finsetSum_coeff]
+      refine Finset.sum_congr rfl fun Q hQ => ?_
+      rw [mul_coeff_zero, velu_prod_coeff_zero]
+      simp
+    have hjpx1 : (reflect (m + 1) (veluPX S)).coeff 1
+        = ∑ Q ∈ S.erase 0, (veluUTerm W Q + veluTTerm W Q * veluPointX Q
+            - veluTTerm W Q * ∑ Q' ∈ S.erase 0, veluPointX Q') := by
+      rw [hPXrefl, finsetSum_coeff]
+      refine Finset.sum_congr rfl fun Q hQ => ?_
+      rw [velu_coeff_one_mul, velu_prod_coeff_zero, velu_prod_coeff_one, hTsum Q hQ]
+      have e0 : (C (veluTTerm W Q)
+          + (C (veluUTerm W Q) - C (veluTTerm W Q) * C (veluPointX Q)) * X).coeff 0
+            = veluTTerm W Q := by simp
+      have e1 : (C (veluTTerm W Q)
+          + (C (veluUTerm W Q) - C (veluTTerm W Q) * C (veluPointX Q)) * X).coeff 1
+            = veluUTerm W Q - veluTTerm W Q * veluPointX Q := by simp
+      rw [e0, e1]; ring
+    have hjpv0 : (reflect (2 * m + 2) (veluPV S)).coeff 0
+        = ∑ Q ∈ S.erase 0, (2 : F)⁻¹ * veluTTerm W Q := by
+      rw [hPVrefl, finsetSum_coeff]
+      refine Finset.sum_congr rfl fun Q hQ => ?_
+      have p0 : ((∏ Q' ∈ (((S.erase 0).erase Q).erase (-Q)),
+          (1 - C (veluPointX Q') * X)) ^ 2).coeff 0 = 1 := by
+        rw [pow_two, mul_coeff_zero, velu_prod_coeff_zero]; ring
+      have a0 : (C (veluUTerm W Q) * ((1 - C (veluPointX Q) * X) * X)
+          + C ((2 : F)⁻¹ * veluTTerm W Q) * (1 - C (veluPointX Q) * X) ^ 2).coeff 0
+            = (2 : F)⁻¹ * veluTTerm W Q := by
+        simp [velu_one_sub_sq_coeff_zero]
+      rw [mul_coeff_zero, p0, a0, mul_one]
+    have hjpv1 : (reflect (2 * m + 2) (veluPV S)).coeff 1
+        = ∑ Q ∈ S.erase 0, (veluUTerm W Q + veluTTerm W Q * veluPointX Q
+            - veluTTerm W Q * ∑ Q' ∈ S.erase 0, veluPointX Q') := by
+      rw [hPVrefl, finsetSum_coeff]
+      refine Finset.sum_congr rfl fun Q hQ => ?_
+      have p0 : ((∏ Q' ∈ (((S.erase 0).erase Q).erase (-Q)),
+          (1 - C (veluPointX Q') * X)) ^ 2).coeff 0 = 1 := by
+        rw [pow_two, mul_coeff_zero, velu_prod_coeff_zero]; ring
+      have p1 : ((∏ Q' ∈ (((S.erase 0).erase Q).erase (-Q)),
+          (1 - C (veluPointX Q') * X)) ^ 2).coeff 1
+            = 2 * -(∑ Q' ∈ S.erase 0, veluPointX Q' - 2 * veluPointX Q) := by
+        rw [pow_two, velu_coeff_one_mul, velu_prod_coeff_zero, velu_prod_coeff_one, hTsum Q hQ]
+        ring
+      have a0 : (C (veluUTerm W Q) * ((1 - C (veluPointX Q) * X) * X)
+          + C ((2 : F)⁻¹ * veluTTerm W Q) * (1 - C (veluPointX Q) * X) ^ 2).coeff 0
+            = (2 : F)⁻¹ * veluTTerm W Q := by
+        simp [velu_one_sub_sq_coeff_zero]
+      have a1 : (C (veluUTerm W Q) * ((1 - C (veluPointX Q) * X) * X)
+          + C ((2 : F)⁻¹ * veluTTerm W Q) * (1 - C (veluPointX Q) * X) ^ 2).coeff 1
+            = veluUTerm W Q + (2 : F)⁻¹ * veluTTerm W Q * (-2 * veluPointX Q) := by
+        rw [coeff_add, coeff_C_mul, coeff_C_mul, velu_one_sub_sq_coeff_one,
+          velu_coeff_one_mul]
+        simp [coeff_one]
+      rw [velu_coeff_one_mul, p0, p1, a0, a1]
+      field_simp
+      ring
+    -- assembled reflected identity
+    have hXirefl : reflect (2 * m + 4) (veluXi S)
+        = (reflect (m + 2) (veluH S)) ^ 2 - (reflect (2 * m + 2) (veluPV S)) * X ^ 2 := by
+      have e1 : reflect (2 * m + 4) ((veluH S) ^ 2) = (reflect (m + 2) (veluH S)) ^ 2 := by
+        rw [pow_two, pow_two, show 2 * m + 4 = (m + 2) + (m + 2) from by ring,
+          reflect_mul _ _ (le_of_eq hHdeg) (le_of_eq hHdeg)]
+
+      have e2 : reflect (2 * m + 4) (veluPV S) = (reflect (2 * m + 2) (veluPV S)) * X ^ 2 := by
+        rw [show 2 * m + 4 = (2 * m + 2) + 2 from by ring, velu_reflect_shift hPVdeg]
+      rw [veluXi, reflect_sub, e1, e2]
+    have hXNrefl : reflect (m + 3) (veluXNum S)
+        = reflect (m + 2) (veluH S)
+          + (reflect (m + 1) (C ((2 : F)⁻¹) * veluPX S)) * X ^ 2 := by
+      have e1 : reflect (m + 3) (X * veluH S) = reflect (m + 2) (veluH S) := by
+        rw [show m + 3 = 1 + (m + 2) from by ring,
+          reflect_mul _ _ (le_of_eq natDegree_X) (le_of_eq hHdeg), reflect_one_X, one_mul]
+      have e2 : reflect (m + 3) (C ((2 : F)⁻¹) * veluPX S)
+          = (reflect (m + 1) (C ((2 : F)⁻¹) * veluPX S)) * X ^ 2 := by
+        rw [show m + 3 = (m + 1) + 2 from by ring, velu_reflect_shift hCPXdeg]
+      rw [veluXNum, reflect_add, e1, e2]
+    have hPhirefl : reflect (3 * m + 9) (veluPhiNum S)
+        = 4 * (reflect (m + 3) (veluXNum S)) ^ 3
+          + C W.b₂ * ((reflect (m + 3) (veluXNum S)) ^ 2 * reflect (m + 2) (veluH S) * X)
+          + (2 * C W.b₄ - 20 * C (W.veluT S))
+              * ((reflect (m + 3) (veluXNum S)) * (reflect (m + 2) (veluH S)) ^ 2 * X ^ 2)
+          + (C W.b₆ - 4 * C W.b₂ * C (W.veluT S) - 28 * C (W.veluW S))
+              * ((reflect (m + 2) (veluH S)) ^ 3 * X ^ 3) := by
+      have e1 : reflect (3 * m + 9) ((veluXNum S) ^ 3)
+          = (reflect (m + 3) (veluXNum S)) ^ 3 := by
+        rw [show 3 * m + 9 = 3 * (m + 3) from by ring, velu_reflect_pow hXNdeg 3]
+      have e2 : reflect (3 * m + 9) ((veluXNum S) ^ 2 * veluH S)
+          = ((reflect (m + 3) (veluXNum S)) ^ 2 * reflect (m + 2) (veluH S)) * X := by
+        have hd : ((veluXNum S) ^ 2 * veluH S).natDegree ≤ 3 * m + 8 := by
+          refine le_trans natDegree_mul_le ?_; omega
+        rw [show 3 * m + 9 = (3 * m + 8) + 1 from by ring, velu_reflect_shift hd, pow_one,
+          show 3 * m + 8 = 2 * (m + 3) + (m + 2) from by ring,
+          reflect_mul _ _ hxn2 (le_of_eq hHdeg), velu_reflect_pow hXNdeg 2]
+      have e3 : reflect (3 * m + 9) (veluXNum S * (veluH S) ^ 2)
+          = ((reflect (m + 3) (veluXNum S)) * (reflect (m + 2) (veluH S)) ^ 2) * X ^ 2 := by
+        have hd : (veluXNum S * (veluH S) ^ 2).natDegree ≤ 3 * m + 7 := by
+          refine le_trans natDegree_mul_le ?_; omega
+        rw [show 3 * m + 9 = (3 * m + 7) + 2 from by ring, velu_reflect_shift hd,
+          show 3 * m + 7 = (m + 3) + 2 * (m + 2) from by ring,
+          reflect_mul _ _ hXNdeg hh2, velu_reflect_pow (le_of_eq hHdeg) 2]
+      have e4 : reflect (3 * m + 9) ((veluH S) ^ 3)
+          = (reflect (m + 2) (veluH S)) ^ 3 * X ^ 3 := by
+        rw [show 3 * m + 9 = (3 * m + 6) + 3 from by ring, velu_reflect_shift hh3,
+          show 3 * m + 6 = 3 * (m + 2) from by ring, velu_reflect_pow (le_of_eq hHdeg) 3]
+      rw [veluPhiNum, reflect_add, reflect_add, reflect_add, mul_assoc (C W.b₂),
+        mul_assoc (C (2 * W.b₄ - 20 * W.veluT S)), reflect_C_mul, reflect_C_mul,
+        reflect_C_mul, reflect_C_mul, e1, e2, e3, e4]
+      simp only [map_sub, map_mul, map_ofNat]
+    have hPsirefl : reflect 3 (veluPsi W)
+        = 4 + C W.b₂ * X + 2 * C W.b₄ * X ^ 2 + C W.b₆ * X ^ 3 := by
+      rw [veluPsi]
+      rw [show (C (2 * W.b₄) * X : Polynomial F) = C (2 * W.b₄) * X ^ 1 from by rw [pow_one]]
+      rw [reflect_add, reflect_add, reflect_add, reflect_C_mul_X_pow, reflect_C_mul_X_pow,
+        reflect_C_mul_X_pow, reflect_C]
+      simp only [revAt, Function.Embedding.coeFn_mk, map_mul, map_ofNat]
+      norm_num
+    have hThetarefl : reflect (4 * m + 11) (veluTheta S)
+        = (4 + C W.b₂ * X + 2 * C W.b₄ * X ^ 2 + C W.b₆ * X ^ 3)
+            * ((reflect (m + 2) (veluH S)) ^ 2
+                - (reflect (2 * m + 2) (veluPV S)) * X ^ 2) ^ 2
+          - reflect (m + 2) (veluH S)
+            * (4 * (reflect (m + 2) (veluH S)
+                    + (reflect (m + 1) (C ((2 : F)⁻¹) * veluPX S)) * X ^ 2) ^ 3
+              + C W.b₂ * ((reflect (m + 2) (veluH S)
+                    + (reflect (m + 1) (C ((2 : F)⁻¹) * veluPX S)) * X ^ 2) ^ 2
+                  * reflect (m + 2) (veluH S) * X)
+              + (2 * C W.b₄ - 20 * C (W.veluT S))
+                  * ((reflect (m + 2) (veluH S)
+                      + (reflect (m + 1) (C ((2 : F)⁻¹) * veluPX S)) * X ^ 2)
+                    * (reflect (m + 2) (veluH S)) ^ 2 * X ^ 2)
+              + (C W.b₆ - 4 * C W.b₂ * C (W.veluT S) - 28 * C (W.veluW S))
+                  * ((reflect (m + 2) (veluH S)) ^ 3 * X ^ 3)) := by
+      have e1 : reflect (4 * m + 11) (veluPsi W * (veluXi S) ^ 2)
+          = reflect 3 (veluPsi W) * (reflect (2 * m + 4) (veluXi S)) ^ 2 := by
+        have hxi2 : ((veluXi S) ^ 2).natDegree ≤ 4 * m + 8 :=
+          le_trans natDegree_pow_le (by omega)
+        rw [show 4 * m + 11 = 3 + (4 * m + 8) from by ring,
+          reflect_mul _ _ hPsideg hxi2,
+          show 4 * m + 8 = 2 * (2 * m + 4) from by ring, velu_reflect_pow hXideg 2]
+      have e2 : reflect (4 * m + 11) (veluH S * veluPhiNum S)
+          = reflect (m + 2) (veluH S) * reflect (3 * m + 9) (veluPhiNum S) := by
+        rw [show 4 * m + 11 = (m + 2) + (3 * m + 9) from by ring,
+          reflect_mul _ _ (le_of_eq hHdeg) hPhideg]
+      rw [veluTheta, reflect_sub, e1, e2, hPsirefl, hXirefl, hPhirefl, hXNrefl]
+    -- final jets in Vélu's constants
+    have hjpx0' : (reflect (m + 1) (C ((2 : F)⁻¹) * veluPX S)).coeff 0 = W.veluT S := by
+      rw [reflect_C_mul, coeff_C_mul, hjpx0, hsumT, veluT]
+    have hsplit : ∑ Q ∈ S.erase 0, (veluUTerm W Q + veluTTerm W Q * veluPointX Q
+        - veluTTerm W Q * ∑ Q' ∈ S.erase 0, veluPointX Q')
+        = (∑ Q ∈ S.erase 0, veluWTerm W Q)
+          - (∑ Q' ∈ S.erase 0, veluPointX Q') * ∑ Q ∈ S.erase 0, veluTTerm W Q := by
+      rw [Finset.sum_sub_distrib, Finset.mul_sum]
+      congr 1
+      · exact Finset.sum_congr rfl fun Q _ => by rw [velu_wTerm_eq]; ring
+      · exact Finset.sum_congr rfl fun Q _ => by ring
+    have hjpx1' : (reflect (m + 1) (C ((2 : F)⁻¹) * veluPX S)).coeff 1
+        = W.veluT S * (-∑ Q ∈ S.erase 0, veluPointX Q) + W.veluW S := by
+      rw [reflect_C_mul, coeff_C_mul, hjpx1, hsplit, veluT, veluW, ← hsumT, ← hsumW]
+      ring
+    have hjpv0' : (reflect (2 * m + 2) (veluPV S)).coeff 0 = W.veluT S := by
+      rw [hjpv0, ← Finset.mul_sum, veluT, ← hsumT]
+    have hjpv1' : (reflect (2 * m + 2) (veluPV S)).coeff 1
+        = 2 * (W.veluT S * (-∑ Q ∈ S.erase 0, veluPointX Q)) + 2 * W.veluW S := by
+      rw [hjpv1, hsplit, veluT, veluW, ← hsumT, ← hsumW]
+      field_simp
+      ring
+    have hdvd := velu_reflect_theta_dvd (reflect (m + 2) (veluH S))
+      (reflect (m + 1) (C ((2 : F)⁻¹) * veluPX S)) (reflect (2 * m + 2) (veluPV S))
+      (W.veluT S) (W.veluW S) W.b₂ W.b₄ W.b₆ (-∑ Q ∈ S.erase 0, veluPointX Q)
+      hjh0 hjh1 hjpx0' hjpx1' hjpv0' hjpv1'
+    rw [← hThetarefl] at hdvd
+    have hres := velu_degree_lt_of_reflect hThetadeg hdvd
+    have heq : 4 * (S.card - 1) = 4 * m + 11 + 1 - 4 := by omega
+    rw [heq]
+    exact hres
+
+end PolePolyDegree
+
+/-- **PROVEN over the two leaves.** `veluTheta S = 0`: a polynomial divisible by `veluH⁴` and
+of degree below `deg veluH⁴ = 4(|S| − 1)` is zero. -/
+theorem velu_theta_eq_zero {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card) :
+    veluTheta S = 0 :=
+  Polynomial.eq_zero_of_dvd_of_degree_lt
+    (velu_theta_dvd hS hodd fun _ hQ =>
+      velu_theta_local_dvd hS hodd (velu_theta_degree_lt hS hodd).le hQ)
+    (by rw [veluH_pow_degree hS]; exact velu_theta_degree_lt hS hodd)
+
+/-- **Vélu's rational-function identity, with `y` eliminated** (PROVEN 2026-07-26 over the two
+polynomial leaves `velu_theta_local_dvd` and `velu_theta_degree_lt`; itself cut 2026-07-26 out
+of `velu_equation_pole`).
+
+Writing `x = x(P)`, `X = x + ½ Σ_{Q ∈ S} veluPoleX`, `D = Σ_{Q ∈ S} veluPoleV`,
+`t = veluT S` and `w = veluW S`, this is the ONE-VARIABLE identity
+
+  `(4x³ + b₂x² + 2b₄x + b₆)·(1 − D)² = 4X³ + b₂X² + (2b₄ − 20t)X + (b₆ − 4b₂t − 28w)`.
+
+Nothing here mentions `y`: `velu_pole_V` has already replaced the completed square
+`V = 2Y + a₁X + a₃` by `(2y + a₁x + a₃)(1 − D)`, and `(2y + a₁x + a₃)² = 4x³ + b₂x² +
+2b₄x + b₆` is the Weierstrass equation at `P`. So this is the whole remaining content of
+Vélu's theorem, part 2.
+
+The proof is the clearing of denominators described at the head of this section: evaluate
+`veluTheta S = 0` at `x`, recognise the three factors as `Ψ(x)`, `H(x)²(1 − D)` and
+`H(x)³Φ(X)` (`veluPX_eval`, `veluPV_eval`), and divide by `H(x)⁴ ≠ 0`
+(`veluH_eval_ne_zero`, i.e. `velu_X_ne`).
+
+**Faithfulness.** Validated in PARI/GP over `𝔽_p` for `101 ≤ p ≤ 500` and kernel orders up to
+`523`: with a genuine subgroup, 75789 instances pass and none fail; with the `±`-stable
+NON-subgroup `{0, G, −G}` for `G` of order `≥ 5`, for which every formula above is equally
+well defined, 31006 of 31143 instances FAIL. So `hS` is essential and the pole form does not
+carry it.
+
+**`hodd` is not needed for the TRUTH of this statement**, only for this proof of it. The same
+sweep finds the identity holding verbatim for kernels of order `2`, `4` and `6` (16077
+instances, none failing; re-confirmed here at 901 + 890 further instances), because the
+halving convention reproduces Vélu's SEPARATE `2`-torsion coefficients automatically: at a
+`2`-torsion `Q` one has `2y_Q + a₁x_Q + a₃ = 0`, so `u_Q = 0` and
+`veluTTerm W Q = 6x_Q² + b₂x_Q + b₄ = 2 g^x_Q`, whence `½·veluTTerm W Q = g^x_Q` and
+`½·veluWTerm W Q = x_Q g^x_Q` — exactly Vélu's `t_Q` and `w_Q` in the order-`2` case. What
+`hodd` buys HERE is `veluH_factor`: without it a `2`-torsion `Q` contributes a SIMPLE root to
+`veluH`, and the numerators `veluPX`, `veluPV` would have to be defined differently. -/
+theorem velu_pole_identity {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P : W.Point} (hP : P ∉ S) :
+    (4 * veluPointX P ^ 3 + W.b₂ * veluPointX P ^ 2 + 2 * W.b₄ * veluPointX P + W.b₆) *
+        (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) ^ 2 =
+      4 * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 3 +
+        W.b₂ * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 2 +
+        (2 * W.b₄ - 20 * W.veluT S) *
+          (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) +
+        (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S) := by
+  have hH := veluH_eval_ne_zero hS hP
+  have hΘ : (veluPsi W).eval (veluPointX P) * ((veluXi S).eval (veluPointX P)) ^ 2
+      - (veluH S).eval (veluPointX P) * ((veluPhiNum S).eval (veluPointX P)) = 0 := by
+    have h0 := congrArg (Polynomial.eval (veluPointX P)) (velu_theta_eq_zero hS hodd)
+    simpa [veluTheta] using h0
+  have hPsi : (veluPsi W).eval (veluPointX P)
+      = 4 * veluPointX P ^ 3 + W.b₂ * veluPointX P ^ 2 + 2 * W.b₄ * veluPointX P + W.b₆ := by
+    simp only [veluPsi, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_X, Polynomial.eval_C]
+  have hXi : (veluXi S).eval (veluPointX P)
+      = ((veluH S).eval (veluPointX P)) ^ 2
+          * (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) := by
+    rw [veluXi, Polynomial.eval_sub, Polynomial.eval_pow, veluPV_eval hS hodd hP]; ring
+  have hXN : (veluXNum S).eval (veluPointX P)
+      = (veluH S).eval (veluPointX P)
+          * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) := by
+    rw [veluXNum, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
+      Polynomial.eval_X, Polynomial.eval_C, veluPX_eval hS hodd hP]
+    ring
+  have hPhi : (veluPhiNum S).eval (veluPointX P)
+      = ((veluH S).eval (veluPointX P)) ^ 3
+        * (4 * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 3 +
+            W.b₂ * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 2 +
+            (2 * W.b₄ - 20 * W.veluT S) *
+              (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) +
+            (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S)) := by
+    simp only [veluPhiNum, Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_pow,
+      Polynomial.eval_C]
+    rw [hXN]
+    ring
+  rw [hPsi, hXi, hPhi] at hΘ
+  have key : ((veluH S).eval (veluPointX P)) ^ 4 *
+      (((4 * veluPointX P ^ 3 + W.b₂ * veluPointX P ^ 2 + 2 * W.b₄ * veluPointX P + W.b₆) *
+          (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) ^ 2)
+        - (4 * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 3 +
+            W.b₂ * (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) ^ 2 +
+            (2 * W.b₄ - 20 * W.veluT S) *
+              (veluPointX P + (2 : F)⁻¹ * ∑ Q ∈ S, veluPoleX W (veluPointX P) Q) +
+            (W.b₆ - 4 * W.b₂ * W.veluT S - 28 * W.veluW S))) = 0 := by
+    linear_combination hΘ
+  rcases mul_eq_zero.mp key with h1 | h2
+  · exact absurd h1 (pow_ne_zero _ hH)
+  · exact sub_eq_zero.mp h2
+
+end PolePoly
+
 /-! ### Vélu's theorem -/
 
 section Velu
@@ -1062,7 +2666,8 @@ variable {F : Type*} [Field F] [DecidableEq F] [CharZero F] (W : Affine F) [W.Is
 
 omit [W.IsElliptic] in
 /-- **Vélu's theorem, part 2a: the quotient equation in pole form** (PROVEN 2026-07-26
-over the single leaf `velu_pole_identity`; it was itself the leaf cut on 2026-07-26 out
+over `velu_pole_identity`, itself PROVEN 2026-07-26 over the two polynomial leaves
+`velu_theta_local_dvd` and `velu_theta_degree_lt`; this was itself the leaf cut on 2026-07-26 out
 of `velu_equation`, whose first half — the passage from the group-law sums to Vélu's
 rational functions — is `velu_coordX_eq` and `velu_coordY_eq`).
 
@@ -1588,16 +3193,30 @@ exactly `C`.
 
 Primality of the order is NOT needed: Vélu's construction works for any finite
 subgroup, and oddness is used only to halve the `±`-invariant sums defining `t`
-and `w`. -/
-theorem exists_velu_quotient_isogeny (E : WeierstrassCurve ℚ) [E.IsElliptic]
+and `w`.
+
+**This is the MODEL-NAMING form** (strengthened 2026-07-26 for
+`WeierstrassCurve.exists_tateInvariants_of_stableThreeSubgroup`): the quotient
+curve is not merely *some* `E'`, it is literally `E.veluModel t w`, and the two
+rational coefficients `t`, `w` are pinned by `algebraMap ℚ ℚ̄ t = veluT …`,
+`algebraMap ℚ ℚ̄ w = veluW …` over `hCfin.toFinset`. A consumer that knows the
+kernel explicitly can therefore evaluate Vélu's sums and obtain the quotient's
+`c₄` and `Δ` by `ring`. The unnamed form is `exists_velu_quotient_isogeny`
+below. -/
+theorem exists_velu_quotient_isogeny_model (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
     (hCfin : (C : Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
     (hCodd : Odd (Nat.card C))
     (hCstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ C,
       Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈ C) :
-    ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
-      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point),
+    ∃ (t w : ℚ) (_ : (E.veluModel t w).IsElliptic)
+      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+
+        ((E.veluModel t w)⁄(AlgebraicClosure ℚ)).Point),
+      algebraMap ℚ (AlgebraicClosure ℚ) t =
+          veluT (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset ∧
+      algebraMap ℚ (AlgebraicClosure ℚ) w =
+          veluW (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset ∧
       (∀ (σ : Field.absoluteGaloisGroup ℚ)
         (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
         φ (Affine.Point.map
@@ -1651,10 +3270,10 @@ theorem exists_velu_quotient_isogeny (E : WeierstrassCurve ℚ) [E.IsElliptic]
   set ψ : ((E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)).veluCurve S).Point ≃+
       ((E.veluModel t w)⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)).Point :=
     pointAddEquivOfEq hEq.symm with hψdef
-  refine ⟨E.veluModel t w, isElliptic_of_baseChange _ hE'K,
+  refine ⟨t, w, isElliptic_of_baseChange _ hE'K,
     AddMonoidHom.mk' (fun P => ψ (veluMap (E⁄(AlgebraicClosure ℚ)) S hS hodd P))
       (fun P Q => by
-        rw [velu_map_add _ S hS hodd P Q, map_add]), ?_, ?_⟩
+        rw [velu_map_add _ S hS hodd P Q, map_add]), ht, hw, ?_, ?_⟩
   · -- Galois equivariance
     intro σ Pt
     show ψ (veluMap (E⁄(AlgebraicClosure ℚ)) S hS hodd
@@ -1685,6 +3304,35 @@ theorem exists_velu_quotient_isogeny (E : WeierstrassCurve ℚ) [E.IsElliptic]
       exact ψ.injective (by rw [h, map_zero])
     · intro h
       rw [h, map_zero]
+
+/-- **The quotient isogeny by a finite Galois-stable subgroup of ODD order**,
+in the form that forgets the model: for an elliptic curve `E/ℚ` and a finite
+Galois-stable subgroup `C` of odd order in `E(ℚ̄)` there are an elliptic curve
+`E'/ℚ` and a Galois-equivariant group homomorphism `E(ℚ̄) →+ E'(ℚ̄)` with kernel
+exactly `C`.
+
+This is `exists_velu_quotient_isogeny_model` with the identification
+`E' = E.veluModel t w` and the two Vélu-sum equations discarded; consumers that
+need to compute the quotient's invariants must use the model form. -/
+theorem exists_velu_quotient_isogeny (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
+    (hCfin : (C : Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
+    (hCodd : Odd (Nat.card C))
+    (hCstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ C,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈ C) :
+    ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
+      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point),
+      (∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) := by
+  obtain ⟨t, w, hell, φ, -, -, hgal, hker⟩ :=
+    exists_velu_quotient_isogeny_model E C hCfin hCodd hCstable
+  exact ⟨E.veluModel t w, hell, φ, hgal, hker⟩
 
 end Descent
 
