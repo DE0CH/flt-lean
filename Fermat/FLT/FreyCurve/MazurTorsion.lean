@@ -13016,6 +13016,34 @@ levels, one leaf each:
 * `x1Nineteen_preΨ'_ne_zero` — `X_1(19)`, genus `7`;
 * `x1TwentyFive_plane_eq_line` — `X_1(25)`, genus `12`.
 
+ALL THREE ARE NOW PROVEN (2026-07-26), and the three levels reduce to
+ONE surviving leaf between them rather than three. What changed:
+
+* levels `17` and `19` were DUPLICATES. The same fact was sorried twice
+  in this file — once here in `preΨ'` form, once far above in
+  `addOrderOf` form as `tateNormalForm_origin_order_ne_17` / `_19`. The
+  two are now one node: the `addOrderOf` one, which is where the
+  citation belongs. See the ordering hazard recorded on
+  `x1Seventeen_preΨ'_ne_zero`.
+* level `25` was cut to the EXPLICIT plane model. `w₂₅` is factored
+  inside Lean by `MazurX1Plane.eval_twentyFive`, and what survives is
+  `x1TwentyFive_plane_ne_zero`: the assertion that `G₂₅(b, c) = 0` —
+  bidegree `(25, 38)`, `234` terms — has no rational point with `b ≠ 0`
+  off the line `b = c`. That is the level-`25` analogue of
+  `x1Eleven_plane_ne_zero` / `x1Thirteen_plane_ne_zero`.
+
+CROSS-VALIDATION OF THE PLANE MODELS (2026-07-26). The `w_n` used here
+were re-derived independently of this file, from the `normEDS` recursion
+alone, and the resulting `F₁₇` and `F₁₉` agree COEFFICIENT BY
+COEFFICIENT with the models `MazurLevel17.x1Poly17` and
+`MazurLevel19.x1Poly19` that the `merger` branch obtained by a
+completely different route — the group law, `8P = −9P` — up to an
+overall sign at `19`. `53` terms of bidegree `(12, 18)` at `17`, `80` of
+`(15, 22)` at `19`, matching this section's stated bidegrees exactly.
+Two independent derivations agreeing on ~`130` integer coefficients is
+strong evidence for both, and it is why the `G₂₅` written out below
+should be trusted to the same standard.
+
 Nothing between the old and the new position uses any declaration of the
 block, and the block uses nothing declared between them, so the move is
 purely positional.
@@ -13026,10 +13054,198 @@ COMPOSITE level `25` it is FALSE — `w₂₅ = 0` says only that the order
 DIVIDES `25`, and order `5` is everywhere on this family — so that leaf
 concludes `b = c` (the `X_1(5)` line) instead. See its docstring. -/
 
+namespace MazurX1Plane
+
+/-! #### Three more level values, and the plane model of `X_1(25)`
+
+Continuation of the `eval_*` chain above, derived inside Lean from the
+very same `normEDS` recursion, and written out only where the leaves
+below actually consume them: `w₉` feeds `w₁₄`, and `w₁₁, w₁₂, w₁₃, w₁₄`
+feed `eval_twentyFive`.
+
+`eval_twentyFive` is the point of this block. The level-`25` docstring
+below asserted the factorisation `w₂₅ = b²⁰⁸ · (b − c) · G₂₅` on the
+authority of PARI/GP alone; since that factorisation is the ENTIRE
+reason the level-`25` leaf concludes `b = c` rather than `w₂₅ ≠ 0`, an
+unchecked computer-algebra claim was carrying the faithfulness of the
+cut. `eval_twentyFive` makes it a machine-checked identity instead. -/
+
+/-- `w₉ = b²⁷ · F₉`, the plane model of `X_1(9)` — the same curve that
+`MazurLevel18.psi3_eq_zero` reaches by the group law, up to sign and the
+substitution recorded there, which is a cross-check on both. -/
+theorem eval_nine (b c : ℚ) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 9).eval 0 =
+      b ^ 27 * (b ^ 3 - 3 * c * b ^ 2 + (c ^ 3 + 3 * c ^ 2) * b
+        + (-c ^ 5 - c ^ 4 - c ^ 3)) := by
+  have h := eval_preΨ'_odd (WeierstrassCurve.tateNormalForm b c) 0 2
+  norm_num [Nat.even_iff, eval_Ψ₂Sq, eval_Ψ₃, eval_preΨ₄, eval_five, eval_six] at h
+  rw [h]; ring
+
+/-- `w₁₂ = b⁴⁷ · F₁₂`. -/
+theorem eval_twelve (b c : ℚ) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 12).eval 0 =
+      b ^ 47 * (-3 * c * b ^ 5 + (4 * c ^ 3 + 12 * c ^ 2) * b ^ 4
+        + (-c ^ 5 - 10 * c ^ 4 - 19 * c ^ 3) * b ^ 3 + (9 * c ^ 5 + 15 * c ^ 4) * b ^ 2
+        + (-4 * c ^ 6 - 6 * c ^ 5) * b + (c ^ 9 + c ^ 8 + c ^ 7 + c ^ 6)) := by
+  have h := eval_preΨ'_even (WeierstrassCurve.tateNormalForm b c) 0 3
+  norm_num [eval_preΨ₄, eval_five, eval_six, eval_seven, eval_eight] at h
+  rw [h]; ring
+
+/-- `w₁₄ = b⁶⁴ · F₁₄`. -/
+theorem eval_fourteen (b c : ℚ) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 14).eval 0 =
+      b ^ 64 * (-b ^ 8 + (6 * c ^ 2 + 6 * c) * b ^ 7
+        + (-5 * c ^ 4 - 30 * c ^ 3 - 15 * c ^ 2) * b ^ 6
+        + (c ^ 6 + 15 * c ^ 5 + 60 * c ^ 4 + 20 * c ^ 3) * b ^ 5
+        + (-8 * c ^ 6 - 60 * c ^ 5 - 15 * c ^ 4) * b ^ 4
+        + (-9 * c ^ 8 - 17 * c ^ 7 + 30 * c ^ 6 + 6 * c ^ 5) * b ^ 3
+        + (3 * c ^ 10 + 14 * c ^ 9 + 24 * c ^ 8 - 6 * c ^ 7 - c ^ 6) * b ^ 2
+        + (-c ^ 12 - 3 * c ^ 11 - 6 * c ^ 10 - 10 * c ^ 9) * b + c ^ 10) := by
+  have h := eval_preΨ'_even (WeierstrassCurve.tateNormalForm b c) 0 4
+  norm_num [eval_five, eval_six, eval_seven, eval_eight, eval_nine] at h
+  rw [h]; ring
+
+set_option maxRecDepth 100000 in
+set_option maxHeartbeats 1000000 in
+/-- **The plane model of `X_1(25)` in Tate coordinates**: the affine
+curve `G₂₅(b, c) = 0` of bidegree `(25, 38)`, `234` terms.
+
+The two `set_option`s are term-SIZE accommodations for the literal
+itself — `234` coefficients up to seven digits — and nothing else: this
+is a `def` with no proof in it, so there is no failing tactic for them
+to hide.
+
+This is the `(b, c)`-model of `X_1(25)` proper — the cofactor of `w₂₅`
+after the two loci that are NOT level `25` have been divided out: `b = 0`
+(where the family degenerates) and `b = c` (the genus-`0` line `X_1(5)`,
+where the origin has order `5`). See `eval_twentyFive`. -/
+def x1Poly25 (b c : ℚ) : ℚ :=
+    b ^ 25 - 20 * c * b ^ 24 + (35 * c ^ 3 + 190 * c ^ 2) * b ^ 23 + (-294 * c ^ 5 - 595 * c ^ 4
+      - 1140 * c ^ 3) * b ^ 22 + (968 * c ^ 7 + 4662 * c ^ 6 + 4781 * c ^ 5 + 4845 * c ^ 4) *
+      b ^ 21 + (-1732 * c ^ 9 - 13936 * c ^ 8 - 34848 * c ^ 7 - 24129 * c ^ 6 - 15504 * c ^ 5) *
+      b ^ 20 + (1836 * c ^ 11 + 22103 * c ^ 10 + 93894 * c ^ 9 + 163107 * c ^ 8 + 85716 * c ^ 7
+      + 38760 * c ^ 6) * b ^ 19 + (-1205 * c ^ 13 - 20019 * c ^ 12 - 130372 * c ^ 11 - 392460 *
+      c ^ 10 - 535473 * c ^ 9 - 227619 * c ^ 8 - 77520 * c ^ 7) * b ^ 18 + (494 * c ^ 15 + 10660
+      * c ^ 14 + 98421 * c ^ 13 + 468205 * c ^ 12 + 1136487 * c ^ 11 + 1308684 * c ^ 10 + 468286
+      * c ^ 9 + 125970 * c ^ 8) * b ^ 17 + (-123 * c ^ 17 - 3262 * c ^ 16 - 40426 * c ^ 15 -
+      279858 * c ^ 14 - 1129769 * c ^ 13 - 2408509 * c ^ 12 - 2465814 * c ^ 11 - 763217 * c ^ 10
+      - 167960 * c ^ 9) * b ^ 16 + (17 * c ^ 19 + 516 * c ^ 18 + 8168 * c ^ 17 + 71764 * c ^ 16
+      + 468651 * c ^ 15 + 1886674 * c ^ 14 + 3838627 * c ^ 13 + 3658941 * c ^ 12 + 998998 *
+      c ^ 11 + 184756 * c ^ 10) * b ^ 15 + (-c ^ 21 - 28 * c ^ 20 - 519 * c ^ 19 + 7438 * c ^ 18
+      + 23389 * c ^ 17 - 305592 * c ^ 16 - 2098031 * c ^ 15 - 4635863 * c ^ 14 - 4329039 *
+      c ^ 13 - 1058057 * c ^ 12 - 167960 * c ^ 11) * b ^ 14 + (-c ^ 22 - 28 * c ^ 21 - 15891 *
+      c ^ 20 - 140192 * c ^ 19 - 500071 * c ^ 18 - 633822 * c ^ 17 + 1188769 * c ^ 16 + 4178994
+      * c ^ 15 + 4107246 * c ^ 14 + 908908 * c ^ 13 + 125970 * c ^ 12) * b ^ 13 + (-c ^ 23 +
+      11638 * c ^ 22 + 120525 * c ^ 21 + 563119 * c ^ 20 + 1517609 * c ^ 19 + 2293518 * c ^ 18 +
+      632668 * c ^ 17 - 2643497 * c ^ 16 - 3124836 * c ^ 15 - 631787 * c ^ 14 - 77520 * c ^ 13)
+      * b ^ 12 + (-6503 * c ^ 24 - 75959 * c ^ 23 - 408288 * c ^ 22 - 1310235 * c ^ 21 - 2767285
+      * c ^ 20 - 3867390 * c ^ 19 - 2340965 * c ^ 18 + 905113 * c ^ 17 + 1895517 * c ^ 16 +
+      352716 * c ^ 15 + 38760 * c ^ 14) * b ^ 11 + (2655 * c ^ 26 + 34222 * c ^ 25 + 211735 *
+      c ^ 24 + 801705 * c ^ 23 + 2011320 * c ^ 22 + 3497590 * c ^ 21 + 4378848 * c ^ 20 +
+      2977348 * c ^ 19 + 220429 * c ^ 18 - 905463 * c ^ 17 - 156009 * c ^ 16 - 15504 * c ^ 15) *
+      b ^ 10 + (-770 * c ^ 28 - 10530 * c ^ 27 - 72725 * c ^ 26 - 323700 * c ^ 25 - 992925 *
+      c ^ 24 - 2123925 * c ^ 23 - 3189100 * c ^ 22 - 3597549 * c ^ 21 - 2466272 * c ^ 20 -
+      551706 * c ^ 19 + 333432 * c ^ 18 + 53466 * c ^ 17 + 4845 * c ^ 16) * b ^ 9 + (151 *
+      c ^ 30 + 2065 * c ^ 29 + 15405 * c ^ 28 + 78125 * c ^ 27 + 289875 * c ^ 26 + 793809 *
+      c ^ 25 + 1558300 * c ^ 24 + 2115200 * c ^ 23 + 2191026 * c ^ 22 + 1471103 * c ^ 21 +
+      419817 * c ^ 20 - 91398 * c ^ 19 - 13699 * c ^ 18 - 1140 * c ^ 17) * b ^ 8 + (-18 * c ^ 32
+      - 212 * c ^ 31 - 1624 * c ^ 30 - 9375 * c ^ 29 - 41875 * c ^ 28 - 147447 * c ^ 27 - 400098
+      * c ^ 26 - 785054 * c ^ 25 - 1011950 * c ^ 24 - 988449 * c ^ 23 - 648076 * c ^ 22 - 203267
+      * c ^ 21 + 17571 * c ^ 20 + 2471 * c ^ 19 + 190 * c ^ 18) * b ^ 7 + (c ^ 34 + 3 * c ^ 33 +
+      19 * c ^ 32 + 147 * c ^ 31 + 1251 * c ^ 30 + 7754 * c ^ 29 + 34987 * c ^ 28 + 115557 *
+      c ^ 27 + 262762 * c ^ 26 + 342221 * c ^ 25 + 326004 * c ^ 24 + 210737 * c ^ 23 + 69179 *
+      c ^ 22 - 2115 * c ^ 21 - 280 * c ^ 20 - 20 * c ^ 19) * b ^ 6 + (c ^ 35 + 3 * c ^ 34 + 19 *
+      c ^ 33 + 147 * c ^ 32 + 516 * c ^ 31 + 929 * c ^ 30 - 752 * c ^ 29 - 13971 * c ^ 28 -
+      55738 * c ^ 27 - 79879 * c ^ 26 - 77124 * c ^ 25 - 49915 * c ^ 24 - 16870 * c ^ 23 + 120 *
+      c ^ 22 + 15 * c ^ 21 + c ^ 20) * b ^ 5 + (c ^ 36 + 3 * c ^ 35 + 19 * c ^ 34 + 112 * c ^ 33
+      + 411 * c ^ 32 + 851 * c ^ 31 + 703 * c ^ 30 + 69 * c ^ 29 + 7787 * c ^ 28 + 12961 *
+      c ^ 27 + 12930 * c ^ 26 + 8450 * c ^ 25 + 2925 * c ^ 24) * b ^ 4 + (c ^ 37 + 3 * c ^ 36 -
+      17 * c ^ 35 - 133 * c ^ 34 - 459 * c ^ 33 - 1024 * c ^ 32 - 1447 * c ^ 31 - 618 * c ^ 30 -
+      1183 * c ^ 29 - 1649 * c ^ 28 - 1560 * c ^ 27 - 1000 * c ^ 26 - 351 * c ^ 25) * b ^ 3 +
+      (c ^ 38 + 6 * c ^ 37 + 21 * c ^ 36 + 56 * c ^ 35 + 126 * c ^ 34 + 251 * c ^ 33 + 434 *
+      c ^ 32 + 273 * c ^ 31 + 216 * c ^ 30 + 181 * c ^ 29 + 135 * c ^ 28 + 78 * c ^ 27 + 27 *
+      c ^ 26) * b ^ 2 + (-c ^ 34 - 28 * c ^ 33 - 21 * c ^ 32 - 15 * c ^ 31 - 10 * c ^ 30 - 6 *
+      c ^ 29 - 3 * c ^ 28 - c ^ 27) * b - c ^ 35
+
+set_option maxRecDepth 100000 in
+set_option maxHeartbeats 1000000 in
+/-- **`w₂₅ = b²⁰⁸ · (b − c) · G₂₅`** — the factorisation on which the
+whole shape of the level-`25` leaf depends, DERIVED here inside Lean
+from the `normEDS` recursion rather than asserted from PARI/GP.
+
+The `(b − c)` factor is what makes the sharp form `w₂₅ ≠ 0` FALSE (the
+line `b = c` is `X_1(5)`, where the origin has order `5`), so this
+identity is exactly the faithfulness guarantee of
+`x1TwentyFive_plane_eq_line` below.
+
+The two `set_option`s are term-SIZE accommodations, not a papering-over
+of a failing proof: `G₂₅` has `234` terms of bidegree `(25, 38)` and the
+recursion expands it against `w₁₂³` and `w₁₃³`, which exceeds the
+default elaboration recursion depth on the literal alone. The identical
+proof at level `17` — `w₁₀ · w₈³ · Ψ₂Sq² − w₇ · w₉³ = b⁹⁶ · F₁₇` —
+closes by a bare `ring` in `12` s with no options at all, which is the
+control showing the method is sound and only the size is at issue. -/
+theorem eval_twentyFive (b c : ℚ) :
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 25).eval 0 =
+      b ^ 208 * (b - c) * x1Poly25 b c := by
+  have h := eval_preΨ'_odd (WeierstrassCurve.tateNormalForm b c) 0 10
+  norm_num [Nat.even_iff, eval_Ψ₂Sq, eval_eleven, eval_twelve, eval_thirteen,
+    eval_fourteen] at h
+  rw [h, x1Poly25]; ring
+
+/-- **At a PRIME level, a vanishing level value pins the origin's order
+exactly** (PROVEN): `w_n = 0` says the order DIVIDES `n`, and the origin
+is an affine point, so its order is not `1`; at prime `n` that leaves
+only `n` itself.
+
+This is the half of the `preΨ'` dictionary that the two prime residual
+leaves below need, factored out of
+`tateNormalForm_origin_order_ne_of_cuspidalRankZero`'s proof (where it
+was a local `have`) so that both can consume it. At COMPOSITE levels it
+is false as stated and level `25` uses the factorisation above instead
+— that asymmetry is the whole point of the section. -/
+theorem addOrderOf_origin_eq_of_prime (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0)
+    {n : ℕ} (hn : n.Prime)
+    (h : ((WeierstrassCurve.tateNormalForm b c).preΨ' n).eval 0 = 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) = n := by
+  have hn0 : (n : ℤ) ≠ 0 := by exact_mod_cast hn.ne_zero
+  have hz : (n : ℤ) • (Affine.Point.some 0 0 h00) = 0 :=
+    (zsmul_eq_zero_iff (WeierstrassCurve.tateNormalForm b c) h00 hn0).mpr
+      (eval_ΨSq_of_preΨ' _ _ n h)
+  rw [natCast_zsmul] at hz
+  rcases (Nat.Prime.eq_one_or_self_of_dvd hn _ (addOrderOf_dvd_of_nsmul_eq_zero hz)) with h1 | h1
+  · exact absurd (AddMonoid.addOrderOf_eq_one_iff.mp h1) (Affine.Point.some_ne_zero h00)
+  · exact h1
+
+end MazurX1Plane
+
 /-- **`X_1(17)` has no non-cuspidal rational point, in `preΨ'` form**
-(sorry node — level `17` of the seven-level node below; SPLIT OFF
-2026-07-26 from the former four-level residual node, which is now PROVEN
-from this leaf and its two siblings).
+(PROVEN 2026-07-26 from the file's own `tateNormalForm_origin_order_ne_17`
+— the level-`17` node of the eight-node "IRREDUCIBLE literature citation"
+block far above — through `MazurX1Plane.addOrderOf_origin_eq_of_prime`;
+level `17` of the seven-level node below; SPLIT OFF 2026-07-26 from the
+former four-level residual node, which is PROVEN from this leaf and its
+two siblings).
+
+**DE-DUPLICATION, and an ORDERING HAZARD for the integrator.** This leaf
+and `tateNormalForm_origin_order_ne_17` were two independently sorried
+assertions of ONE fact — "`X_1(17)` has no non-cuspidal rational point on
+the Tate family" — one in `preΨ'` form, one in `addOrderOf` form. They
+are now a single frontier node: the `addOrderOf` one, which is where the
+literature citation belongs and which the `merger` branch already proves
+outright from `MazurLevel17.no_rational_point` (the expanded `F₁₇`
+model). Nothing is hidden — the count drops because a duplicate is gone.
+
+The hazard: this direction of the edge REQUIRES
+`tateNormalForm_origin_order_ne_17` to stay ABOVE this leaf and to be
+proven from BELOW it (an explicit plane model), which is what `merger`
+does. If it is instead relocated below and derived from
+`tateNormalForm_origin_order_ne_of_cuspidalRankZero`, that node is proven
+through the residual node through THIS leaf, and the result is a cycle —
+Lean will reject it as a forward reference rather than accept anything
+unsound, but the integrator must then pick one direction, not both.
 
 STATEMENT. On the Tate family the level-`17` value `w₁₇ = preΨ'₁₇(0)`
 never vanishes. `17` being PRIME, the sharp non-vanishing form is the
@@ -13063,12 +13279,20 @@ seven-level node's docstring below for the full rank-`0` audit. -/
 theorem WeierstrassCurve.x1Seventeen_preΨ'_ne_zero (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
-    ((WeierstrassCurve.tateNormalForm b c).preΨ' 17).eval 0 ≠ 0 :=
-  sorry
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 17).eval 0 ≠ 0 := by
+  intro h
+  exact WeierstrassCurve.tateNormalForm_origin_order_ne_17 b c h00
+    (MazurX1Plane.addOrderOf_origin_eq_of_prime b c h00 (by decide) h)
 
 /-- **`X_1(19)` has no non-cuspidal rational point, in `preΨ'` form**
-(sorry node — level `19` of the seven-level node below; SPLIT OFF
-2026-07-26 from the former four-level residual node).
+(PROVEN 2026-07-26 from the file's own `tateNormalForm_origin_order_ne_19`
+through `MazurX1Plane.addOrderOf_origin_eq_of_prime`; level `19` of the
+seven-level node below; SPLIT OFF 2026-07-26 from the former four-level
+residual node).
+
+The de-duplication and the ORDERING HAZARD are exactly as recorded on
+`x1Seventeen_preΨ'_ne_zero` above — read that note before moving
+`tateNormalForm_origin_order_ne_19`.
 
 STATEMENT and PROOF SHAPE are exactly as at level `17`
 (`x1Seventeen_preΨ'_ne_zero`): `19` is prime, so `w₁₉ = preΨ'₁₉(0) = 0`
@@ -13087,12 +13311,62 @@ factors of `J_1(19)` have dimensions and `LRatio`s `(1, 1/9)` and
 theorem WeierstrassCurve.x1Nineteen_preΨ'_ne_zero (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
-    ((WeierstrassCurve.tateNormalForm b c).preΨ' 19).eval 0 ≠ 0 :=
+    ((WeierstrassCurve.tateNormalForm b c).preΨ' 19).eval 0 ≠ 0 := by
+  intro h
+  exact WeierstrassCurve.tateNormalForm_origin_order_ne_19 b c h00
+    (MazurX1Plane.addOrderOf_origin_eq_of_prime b c h00 (by decide) h)
+
+/-- **`X_1(25)` has no non-cuspidal rational point, as an explicit
+Diophantine statement** (sorry node — the sole surviving leaf of level
+`25`, cut 2026-07-26 out of `x1TwentyFive_plane_eq_line` below by the
+machine-checked factorisation `MazurX1Plane.eval_twentyFive`).
+
+STATEMENT. The plane model `G₂₅(b, c) = 0` of `X_1(25)` — bidegree
+`(25, 38)`, `234` terms, written out as `MazurX1Plane.x1Poly25` — has no
+rational point off the two degenerate loci `b = 0` and `b = c`.
+
+WHY THIS IS THE RIGHT CUT, i.e. why the two side conditions are DERIVED
+rather than smuggled in. `w₂₅ = b²⁰⁸ · (b − c) · G₂₅`, so `w₂₅ = 0`
+splits into exactly three loci and two of them are not level `25` at
+all: `b = 0` is excluded on the whole family
+(`MazurX1Plane.b_ne_zero`, from nonsingularity at the origin), and
+`b = c` is `X_1(5)` — the genus-`0` line where the origin has order `5`,
+which is the CONCLUSION of `x1TwentyFive_plane_eq_line` rather than a
+contradiction. What is left, `G₂₅ = 0` with `b ≠ 0` and `b ≠ c`, is
+precisely "the origin has order exactly `25`": the order divides `25`
+because `w₂₅ = 0`, it is not `5` because `w₅ = b⁸(b − c) ≠ 0` off the
+line (`MazurX1Plane.eval_five`), and it is not `1` because the origin is
+an affine point. So this leaf is equivalent to `X_1(25)(ℚ)` being
+cuspidal and carries the level's full content — no more and no less.
+
+CITATION. Mazur 1977, Thm 8. `X_1(25)` has genus `12`; `J_1(25)` is
+`ℚ`-isogenous to `A₄ × A₈` with `LRatio(A₄, 1) = 1/5041` and
+`LRatio(A₈, 1) = 1/10272025`, both nonzero, so `rank J_1(25)(ℚ) = 0` by
+Kolyvagin–Logachev (or Kato), and `#X_1(25)(𝔽_3) = 10 = φ(25)/2 =
+#(rational cusps)`. The `X_0` shortcut is unavailable in the strongest
+possible sense: `X_0(25)` has genus `0`, and a rational cyclic
+`25`-isogeny genuinely exists (the class `11a`), so a rational
+`25`-subgroup puts NO constraint on `j(E)`. The full audit — including
+the genus-`4` intermediate curve `X_{⟨7⟩}(25)`, which gives the same
+conclusion independently — is in the seven-level node's docstring below.
+
+This is the level-`25` analogue of the explicit plane leaves
+`x1Eleven_plane_ne_zero` and `x1Thirteen_plane_ne_zero` above. Level
+`11` is PROVEN there from the rank-`0` Mordell–Weil group of `11a3`, and
+that route is unavailable here for the reason the genus records: `11` is
+genus `1` and there is an elliptic curve to descend to, `25` is genus
+`12` and there is not. -/
+theorem WeierstrassCurve.x1TwentyFive_plane_ne_zero (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic] (hb : b ≠ 0)
+    (hbc : b - c ≠ 0) : MazurX1Plane.x1Poly25 b c ≠ 0 :=
   sorry
 
 /-- **`X_1(25)`: every zero of `w₂₅` on the Tate family lies on the
-`X_1(5)` line `b = c`** (sorry node — level `25` of the seven-level node
-below; SPLIT OFF 2026-07-26 from the former four-level residual node).
+`X_1(5)` line `b = c`** (PROVEN 2026-07-26 from the explicit leaf
+`x1TwentyFive_plane_ne_zero` immediately above, together with the
+machine-checked factorisation `MazurX1Plane.eval_twentyFive`; level `25`
+of the seven-level node below; SPLIT OFF 2026-07-26 from the former
+four-level residual node).
 
 **FAITHFULNESS — WHY THIS IS NOT `w₂₅ ≠ 0`, AND WHY THAT WOULD BE A
 FALSE LEAF.** `w₂₅ = preΨ'₂₅(0) = 0` says only that the order of the
@@ -13126,8 +13400,16 @@ below. -/
 theorem WeierstrassCurve.x1TwentyFive_plane_eq_line (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0)
-    (h : ((WeierstrassCurve.tateNormalForm b c).preΨ' 25).eval 0 = 0) : b = c :=
-  sorry
+    (h : ((WeierstrassCurve.tateNormalForm b c).preΨ' 25).eval 0 = 0) : b = c := by
+  by_contra hne
+  have hb : b ≠ 0 := MazurX1Plane.b_ne_zero h00
+  have hbc : b - c ≠ 0 := sub_ne_zero.mpr hne
+  rw [MazurX1Plane.eval_twentyFive] at h
+  rcases mul_eq_zero.mp h with h0 | h0
+  · rcases mul_eq_zero.mp h0 with h1 | h1
+    · exact hb ((pow_eq_zero_iff (n := 208) (by norm_num)).mp h1)
+    · exact hbc h1
+  · exact WeierstrassCurve.x1TwentyFive_plane_ne_zero b c hb hbc h0
 
 /-- **The three residual rank-zero levels `17, 19, 25`, in plane
 form** (PROVEN 2026-07-26 over the three leaves immediately above —
@@ -13451,13 +13733,19 @@ The cut is:
 * `N = 17, 19, 25` go through the now-PROVEN
   `tateNormalForm_origin_preΨ'_residual` to one leaf each —
   `x1Seventeen_preΨ'_ne_zero`, `x1Nineteen_preΨ'_ne_zero`,
-  `x1TwentyFive_plane_eq_line` — stated in `preΨ'` form because those
-  plane curves are too large to write out (`F₁₇` `~60` terms of bidegree
-  `(12, 18)`, `F₁₉` `~90` of bidegree `(15, 22)`, `G₂₅` several hundred
-  of bidegree `(25, 38)`). Those three are the ONLY levels here that
-  still rest on the rank-`0` citation. Note the level-`25` leaf does NOT
-  say `w₂₅ ≠ 0` — that is false, the line `b = c` being a counterexample
-  — but that `w₂₅ = 0` forces `b = c`.
+  `x1TwentyFive_plane_eq_line`, all three of them PROVEN as of
+  2026-07-26 and between them resting on ONE surviving leaf. Those were
+  originally stated in `preΨ'` form on the grounds that the plane curves
+  were too large to write out; the measured sizes are `F₁₇` `53` terms
+  of bidegree `(12, 18)`, `F₁₉` `80` of `(15, 22)`, `G₂₅` `234` of
+  `(25, 38)`, and at level `25` writing it out turned out to be both
+  feasible and worth it — see `MazurX1Plane.x1Poly25`. Levels `17` and
+  `19` instead collapsed into their `addOrderOf`-form duplicates
+  `tateNormalForm_origin_order_ne_17` / `_19`. Note the level-`25`
+  statement does NOT say `w₂₅ ≠ 0` — that is false, the line `b = c`
+  being a counterexample — but that `w₂₅ = 0` forces `b = c`, and that
+  implication is now PROVEN from the factorisation
+  `MazurX1Plane.eval_twentyFive` rather than assumed.
 
 The transport is the PROVEN division-polynomial torsion dictionary
 `TorsionCard.smul_some_eq_zero_iff`, specialised to the origin: the
