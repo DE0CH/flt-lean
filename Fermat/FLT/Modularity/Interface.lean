@@ -172,6 +172,10 @@ import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.FieldTheory.AlgebraicClosure
 import Mathlib.FieldTheory.Extension
 import Mathlib.FieldTheory.Separable
+public import Mathlib.RingTheory.Etale.Field
+public import Mathlib.FieldTheory.PrimitiveElement
+public import Mathlib.RingTheory.PowerBasis
+public import Mathlib.RingTheory.Nilpotent.Basic
 import Mathlib.Analysis.Complex.Polynomial.Basic
 -- Finite commutative algebra for the pillar-3c point factorization
 -- (proof-body use only, consumed by the proven assembly of
@@ -23095,22 +23099,31 @@ arithmetic:
   `ModularTateModuleData.padic_indep` — and it is FALSE for a general
   `ℚ`-subalgebra of a `ℂ`-algebra: `ℚ(√2)·1 ⊆ ℂ` is `2`-dimensional
   over `ℚ` and `1`-dimensional over `ℂ`.
-* CONJUGATE-INVARIANCE: the blocks at `σ ≠ id` must be controlled too.
-  Classically they are, because `Aut(ℂ)` acts on `S₂(Γ₀(M))` compatibly
-  with the RATIONAL `q`-expansion formula for `T_q`
-  (`exists_cuspForm_ringEquiv_conj` above is this file's form of
-  Shimura's rationality theorem), so the block at `σ` is a ring-twist of
-  the block at the identity.
+* CONTROL OF THE BLOCKS AT `σ ≠ id`. It was thought (2026-07-26,
+  morning) that this needed a SECOND arithmetic input, namely that
+  `Aut(ℂ)` acts on `S₂(Γ₀(M))` compatibly with the RATIONAL
+  `q`-expansion formula for `T_q` (`exists_cuspForm_ringEquiv_conj`
+  above, this file's form of Shimura's rationality theorem), making the
+  block at `σ` a ring-twist of the block at the identity. **It does
+  not.** The equidimensionality of the blocks is FORMAL, because the
+  local factor `A_m` carries a COEFFICIENT FIELD `K_g → A_m`
+  (`exists_cornerLift`: `A_m` is a finite local `ℚ`-algebra with
+  nilpotent maximal ideal and residue field `K_g`, and `K_g/ℚ` is
+  separable, hence formally smooth, so the residue map splits). Then
+  `A_m` is a `K_g`-algebra, `A_m ⊗_ℚ ℂ = ∏_σ (A_m ⊗_{K_g,σ} ℂ)` with
+  all factors of dimension `dim_{K_g} A_m`, and the identity block
+  being a LINE forces that dimension to be `1`.
 
-Both are packaged into the single residual leaf
-`modularHeckeAlgebraQ_etale_at_newform`, stated as the DESCENT it really
-is: the `ℂ`-side étaleness supplied by `eC` descends to the `ℚ`-side.
-That keeps `exists_heckeOp_newform_etaleIdempotent` genuinely consumed,
-and it is the one place where `IsWeightTwoNewform` (exact level, as
-opposed to merely `IsWeightTwoEigenform`) is used: at an OLD maximal
-ideal — `g` of level `M' ∣ M`, `M' ≠ M`, seen at level `M` — the
-oldform multiplicity makes `A_m` non-reduced and the conclusion FALSE,
-so no weaker hypothesis will do. -/
+So the residual leaf is the descent
+`modularHeckeAlgebraQ_etale_at_newform` — the `ℂ`-side étaleness
+supplied by `eC` descends to the `ℚ`-side, which keeps
+`exists_heckeOp_newform_etaleIdempotent` genuinely consumed — and it is
+now PROVEN (2026-07-26) over the FIRST bullet alone, isolated as
+`modularHeckeAlgebraQ_linearIndependent_complex`. Exact level enters
+only upstream of it: the line hypothesis on `eC` is what fails at an
+OLD maximal ideal (`g` of level `M' ∣ M`, `M' ≠ M`, seen at level `M`),
+where the oldform multiplicity makes the local factor of `𝕋_ℂ` a plane
+and `A_m` non-reduced. -/
 
 /-- The two packagings of the weight-2 Hecke operator agree at a prime
 and a positive level. `heckeEndo` is the packaging used by the
@@ -23620,10 +23633,709 @@ theorem newformEtaleIdempotent_spec {M : ℕ} (hM : 0 < M)
       hchieC, mul_one]
   rw [hc', hz2.symm.trans hz, zero_smul]
 
-/-- **Rational descent of the newform idempotent** (sorry node,
-2026-07-26 — the residual ARITHMETIC content of the newform factor; the
-section note above records why the sub-cut suggested on the leaf stops
-one step short of it).
+section EtaleDescentHelper
+
+open _root_.Polynomial
+
+/-- **Polynomials act by the scalar they evaluate to** (PROVEN,
+2026-07-26): if `x * ε = a • ε` in a commutative `ℂ`-algebra then
+`p(x) * ε = p(a) • ε` for every `p ∈ ℂ[X]` — the elementary induction
+that turns the eigen-relation `T_q·eC = a_q·eC` into the eigen-relation
+of the Lagrange idempotent below. -/
+theorem aeval_mul_of_smul {B : Type*} [CommRing B] [Algebra ℂ B] {x ε : B} {a : ℂ}
+    (hx : x * ε = a • ε) (p : ℂ[X]) : aeval x p * ε = (p.eval a) • ε := by
+  have hpow : ∀ k : ℕ, x ^ k * ε = a ^ k • ε := by
+    intro k
+    induction k with
+    | zero => simp
+    | succ k ih =>
+        rw [pow_succ, mul_assoc, hx, mul_smul_comm, ih, smul_smul, pow_succ,
+          mul_comm a (a ^ k)]
+  induction p using Polynomial.induction_on' with
+  | add p q hp hq => rw [map_add, add_mul, hp, hq, eval_add, add_smul]
+  | monomial n c =>
+      rw [aeval_monomial, eval_monomial, mul_assoc, hpow n, Algebra.smul_def,
+        Algebra.smul_def, map_mul, mul_assoc]
+
+end EtaleDescentHelper
+
+section EtaleDescentCorner
+
+open _root_.Polynomial
+
+variable {A : Type*} [CommRing A] [Algebra ℚ A] [FiniteDimensional ℚ A]
+variable {K : Type*} [Field K] [Algebra ℚ K] [FiniteDimensional ℚ K]
+
+/-- **The coefficient field of the corner `eA`, in Hensel-lift form**
+(PROVEN, 2026-07-26 — the formal half of the newform-factor descent; it
+costs NO arithmetic input, only separability of `K/ℚ`).
+
+Let `A` be a finite-dimensional commutative `ℚ`-algebra, `λ : A ↠ K` a
+surjection onto a number field, and `e` the Artinian idempotent at
+`ker λ` (so `λ e = 1` and every `y ∈ ker λ` satisfies `yⁿ·e = 0`). Then
+every `α ∈ K` lifts to a `θ` of the CORNER `eA` with `λ θ = α` and with
+`f(θ) = 0` EXACTLY — not merely up to a nilpotent — where
+`f = minpoly ℚ α` and the evaluation is taken in the corner (whose unit
+is `e`, whence the shape `e * aeval θ f = 0`).
+
+This is the Cohen structure theorem in the only case needed: `eA` is
+the quotient `A ⧸ (1−e)`, a finite local `ℚ`-algebra with nilpotent
+maximal ideal and residue field `K`; `K/ℚ` is separable (characteristic
+zero), hence formally étale, hence formally smooth, so
+`Algebra.FormallySmooth.exists_lift` splits `eA ↠ K` along its
+nilpotent kernel. It is what makes the `Aut(ℂ)`-conjugation input
+UNNECESSARY: a coefficient field makes the blocks of `eA ⊗ ℂ` visible
+without transporting newforms by field automorphisms. -/
+theorem exists_cornerLift (lam : A →ₐ[ℚ] K) (hsurj : Function.Surjective lam)
+    (e : A) (hidem : e * e = e) (hlame : lam e = 1)
+    (hnil : ∀ y : A, lam y = 0 → ∃ n : ℕ, y ^ n * e = 0) (α : K) :
+    ∃ θ : A, e * θ = θ ∧ lam θ = α ∧ e * (aeval θ (minpoly ℚ α)) = 0 := by
+  classical
+  set I : Ideal A := Ideal.span {1 - e} with hIdef
+  let π : A →ₐ[ℚ] A ⧸ I := Ideal.Quotient.mkₐ ℚ I
+  have hπ : ∀ a : A, π a = Ideal.Quotient.mk I a := fun _ => rfl
+  have hπe : π e = 1 := by
+    have h : e - 1 ∈ I := by
+      rw [hIdef, Ideal.mem_span_singleton']
+      exact ⟨-1, by ring⟩
+    have h2 : π (e - 1) = 0 := by
+      rw [hπ]
+      exact (Ideal.Quotient.eq_zero_iff_mem (I := I) (a := e - 1)).2 h
+    rw [map_sub, map_one, sub_eq_zero] at h2
+    exact h2
+  have hkeyE : ∀ a b : A, π a = π b → e * a = e * b := by
+    intro a b h
+    have hmem : a - b ∈ I := by
+      rw [← Ideal.Quotient.eq_zero_iff_mem, ← hπ, map_sub, sub_eq_zero]
+      exact h
+    obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.mp (hIdef ▸ hmem)
+    have h3 : e * (a - b) = 0 := by
+      rw [← hc]
+      have h4 : e * (c * (1 - e)) = c * (e * 1 - e * e) := by ring
+      rw [h4, hidem, mul_one, sub_self, mul_zero]
+    rw [mul_sub, sub_eq_zero] at h3
+    exact h3
+  have hIle : ∀ a ∈ I, lam a = 0 := by
+    intro a ha
+    obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.mp (hIdef ▸ ha)
+    rw [← hc, map_mul, map_sub, map_one, hlame, sub_self, mul_zero]
+  let lamR : (A ⧸ I) →ₐ[ℚ] K := Ideal.Quotient.liftₐ I lam hIle
+  have hlamR : ∀ a : A, lamR (π a) = lam a := fun a => rfl
+  have hlamRsurj : Function.Surjective lamR := by
+    intro x
+    obtain ⟨a, ha⟩ := hsurj x
+    exact ⟨π a, by rw [hlamR]; exact ha⟩
+  haveI : FiniteDimensional ℚ (A ⧸ I) :=
+    Module.Finite.of_surjective (Ideal.Quotient.mkₐ ℚ I).toLinearMap
+      Ideal.Quotient.mk_surjective
+  haveI : IsArtinianRing (A ⧸ I) := isArtinian_of_tower ℚ inferInstance
+  have hnilR : IsNilpotent (RingHom.ker lamR) := by
+    obtain ⟨N, hN⟩ := IsArtinianRing.isNilpotent_nilradical (R := A ⧸ I)
+    refine ⟨N, le_antisymm ?_ bot_le⟩
+    calc (RingHom.ker lamR) ^ N ≤ (nilradical (A ⧸ I)) ^ N := by
+          refine Ideal.pow_right_mono ?_ N
+          intro x hx
+          obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective x
+          have ha : lam a = 0 := by rw [← hlamR]; exact hx
+          obtain ⟨n, hn⟩ := hnil a ha
+          refine ⟨n, ?_⟩
+          have h5 : (Ideal.Quotient.mk I) (a ^ n) = 0 := by
+            have h1 : (Ideal.Quotient.mk I) (a ^ n * e) = 0 := by rw [hn, map_zero]
+            rw [map_mul] at h1
+            rw [← mul_one ((Ideal.Quotient.mk I) (a ^ n)), ← hπe, hπ]
+            exact h1
+          rw [← map_pow]
+          exact h5
+      _ = ⊥ := hN
+  haveI : Algebra.IsSeparable ℚ K := inferInstance
+  haveI : Algebra.FormallyEtale ℚ K := Algebra.FormallyEtale.of_isSeparable ℚ K
+  obtain ⟨s, hs⟩ := Algebra.FormallySmooth.exists_lift (R := ℚ) (A := K) (B := A ⧸ I)
+    (RingHom.ker lamR) hnilR
+    (Ideal.quotientKerAlgEquivOfSurjective hlamRsurj).symm.toAlgHom
+  have hslam : ∀ x : K, lamR (s x) = x := by
+    intro x
+    have h : (Ideal.Quotient.mkₐ ℚ (RingHom.ker lamR)) (s x)
+        = (Ideal.quotientKerAlgEquivOfSurjective hlamRsurj).symm x := AlgHom.congr_fun hs x
+    have h2 : (Ideal.quotientKerAlgEquivOfSurjective hlamRsurj)
+        (Ideal.Quotient.mk (RingHom.ker lamR) (s x)) = x := by
+      rw [show Ideal.Quotient.mk (RingHom.ker lamR) (s x)
+            = (Ideal.Quotient.mkₐ ℚ (RingHom.ker lamR)) (s x) from rfl, h]
+      exact AlgEquiv.apply_symm_apply _ _
+    rw [Ideal.quotientKerAlgEquivOfSurjective_mk] at h2
+    exact h2
+  obtain ⟨a₀, ha₀⟩ := Ideal.Quotient.mk_surjective (I := I) (s α)
+  refine ⟨e * a₀, by rw [← mul_assoc, hidem], ?_, ?_⟩
+  · rw [map_mul, hlame, one_mul, ← hlamR, hπ, ha₀, hslam]
+  · have hπθ : π (e * a₀) = s α := by rw [map_mul, hπe, one_mul, hπ, ha₀]
+    have h1 : π (aeval (e * a₀) (minpoly ℚ α)) = 0 := by
+      rw [← Polynomial.aeval_algHom_apply, hπθ, Polynomial.aeval_algHom_apply,
+        minpoly.aeval, map_zero]
+    have h2 := hkeyE _ 0 (by rw [h1, map_zero])
+    rw [mul_zero] at h2
+    exact h2
+
+omit [FiniteDimensional ℚ A] [FiniteDimensional ℚ K] in
+/-- **The corner `eA` is local: nonzero `λ`-value means invertible**
+(PROVEN, 2026-07-26). If `e·w = w` and `λ w ≠ 0` then `w` has an
+inverse `v` in the corner, `w·v = e`. Only the elementwise nilpotence
+`hnil` is used: a lift `v₀` of `(λ w)⁻¹` gives `w·v₀ = e − c` with
+`λ c = 0`, hence `c` nilpotent, hence `1 − c = w·v₀ + (1−e)` a unit of
+`A`. -/
+theorem exists_corner_inv (lam : A →ₐ[ℚ] K) (hsurj : Function.Surjective lam)
+    (e : A) (hidem : e * e = e) (hlame : lam e = 1)
+    (hnil : ∀ y : A, lam y = 0 → ∃ n : ℕ, y ^ n * e = 0)
+    (w : A) (hw : e * w = w) (hlw : lam w ≠ 0) : ∃ v : A, w * v = e := by
+  classical
+  obtain ⟨u, hu⟩ := hsurj (lam w)⁻¹
+  set v₀ : A := e * u with hv₀
+  set c : A := e - w * v₀ with hc
+  have hlc : lam c = 0 := by
+    rw [hc, map_sub, hlame, map_mul, hv₀, map_mul, hlame, one_mul, hu,
+      mul_inv_cancel₀ hlw, sub_self]
+  obtain ⟨n, hn⟩ := hnil c hlc
+  have hec : e * c = c := by
+    rw [hc, mul_sub, hidem, hv₀]
+    congr 1
+    calc e * (w * (e * u)) = (e * w) * (e * u) := by ring
+      _ = w * (e * u) := by rw [hw]
+  have hcn : c ^ n = 0 := by
+    rcases Nat.eq_zero_or_pos n with h | h
+    · subst h
+      simp only [pow_zero, one_mul] at hn
+      exact absurd (by rw [← hlame, hn, map_zero] : (1 : K) = 0) one_ne_zero
+    · obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+      have hce : c ^ (m + 1) * e = c ^ (m + 1) := by
+        rw [pow_succ, mul_assoc, mul_comm c e, hec]
+      rw [← hce]
+      exact hn
+  have hunit : IsUnit (1 - c) := IsNilpotent.isUnit_one_sub ⟨n, hcn⟩
+  obtain ⟨V, hV⟩ : ∃ V : A, (1 - c) * V = 1 := ⟨↑hunit.unit⁻¹, hunit.mul_val_inv⟩
+  refine ⟨v₀ * V * e, ?_⟩
+  have hexp : w * v₀ = (1 - c) - (1 - e) := by rw [hc]; ring
+  calc w * (v₀ * V * e) = ((1 - c) * V) * e - ((1 - e) * V) * e := by
+        rw [← sub_mul, ← sub_mul, ← hexp]; ring
+    _ = e := by
+        rw [hV, one_mul]
+        have h6 : (1 - e) * V * e = V * ((1 - e) * e) := by ring
+        rw [h6, sub_mul, one_mul, hidem, sub_self, mul_zero, sub_zero]
+
+end EtaleDescentCorner
+
+section EtaleDescentAbstract
+
+open _root_.Polynomial
+
+variable {A B K : Type*} [Ring A] [Algebra ℚ A] [FiniteDimensional ℚ A]
+variable [Ring B] [Algebra ℂ B] [Algebra ℚ B] [IsScalarTower ℚ ℂ B]
+  [FiniteDimensional ℂ B]
+variable [Field K] [Algebra ℚ K] [FiniteDimensional ℚ K]
+
+/-- **Rational descent of an étale idempotent** (PROVEN, 2026-07-26 —
+the mathematical core of `modularHeckeAlgebraQ_etale_at_newform`,
+isolated from all modular-forms input).
+
+Setting: `A` a finite-dimensional commutative `ℚ`-algebra sitting
+(through `ι`) in a finite-dimensional commutative `ℂ`-algebra `B` whose
+`ℂ`-span it is (`hspan`); `λ : A ↠ K` onto a number field embedded in
+`ℂ` by `κ`; `e` the Artinian idempotent at `ker λ`; and `eC ∈ B` a
+nonzero idempotent on which every `t ∈ A` acts by the scalar `κ(λ t)`
+(`hchi`) — i.e. the local factor of `B` at the character `κ ∘ λ` is the
+LINE `ℂ·eC`. Conclusion: `ker λ` annihilates `e`, i.e. `eA` is the
+FIELD `K` and `A` is étale at `ker λ`.
+
+The single arithmetic input is `hindep`: a `ℚ`-independent family in
+`A` stays `ℂ`-independent in `B`, i.e. `A ⊗_ℚ ℂ → B` is injective. It
+cannot be dispensed with — `ℚ(√2)·1 ⊆ ℂ` satisfies everything else and
+fails the conclusion.
+
+PROOF. Write `K = ℚ(α)`, `f = minpoly ℚ α`, and lift `α` to `θ` in the
+corner with `f(θ) = 0` exactly (`exists_cornerLift`). Over `ℂ` factor
+`f = (X − α)·q`; `α` is a simple root, so `q(α) ≠ 0`, and the Lagrange
+element `ε = q(α)⁻¹·(ι e)·q(ι θ)` is an idempotent of `B` with
+`ι θ·ε = α·ε` and `ε·eC = eC`. The difference `u = ε − eC` is again
+idempotent and kills `eC`; were it nonzero, a maximal ideal containing
+`(1−u)` would give a character `ψ : B → ℂ` (residue field `ℂ` because
+`B` is finite-dimensional over the algebraically closed `ℂ`) with
+`ψ u = 1`, hence `ψ eC = 0`. But `hnil` forces `ψ` to kill `ker λ`, and
+`ψ ε = 1` forces `ψ (ι θ) = α`, so `ψ ∘ ι = κ ∘ λ` on all of `A`
+(`K = ℚ(α)`); spanning then gives `ψ eC · eC = eC · eC = eC`, i.e.
+`eC = 0`, a contradiction. So `ε = eC`.
+
+Now let `λ y = 0` and put `z = y·e`. Then `ι z · eC = 0`, so
+`ι z · ε = 0`, which is a NONTRIVIAL `ℂ`-linear relation among the
+`ι (z·θᵏ)`, `k < deg f` (its top coefficient is `q(α)⁻¹·lead q ≠ 0`).
+By `hindep` those elements are `ℚ`-DEPENDENT, so `z·P(θ) = 0` for some
+nonzero `P ∈ ℚ[X]` of degree `< deg f`; then `λ (P(θ)) = P(α) ≠ 0` by
+`linearIndependent_pow`, so `e·P(θ)` is a unit of the corner
+(`exists_corner_inv`) and `z = 0`. -/
+theorem etale_descent_of_line
+    (ι : A →ₐ[ℚ] B) (κ : K →ₐ[ℚ] ℂ)
+    (hAcomm : ∀ a b : A, a * b = b * a) (hBcomm : ∀ a b : B, a * b = b * a)
+    (hspan : Submodule.span ℂ (Set.range ι) = ⊤)
+    (lam : A →ₐ[ℚ] K) (hsurj : Function.Surjective lam)
+    (e : A) (hidem : e * e = e) (hlame : lam e = 1)
+    (hnil : ∀ y : A, lam y = 0 → ∃ n : ℕ, y ^ n * e = 0)
+    (eC : B) (heC0 : eC ≠ 0) (heCidem : eC * eC = eC)
+    (hchi : ∀ t : A, ι t * eC = κ (lam t) • eC)
+    (hindep : ∀ (n : ℕ) (v : Fin n → A), LinearIndependent ℚ v →
+      LinearIndependent ℂ (fun i => ι (v i))) :
+    ∀ y : A, lam y = 0 → y * e = 0 := by
+  classical
+  letI : CommRing A := { (inferInstance : Ring A) with mul_comm := hAcomm }
+  letI : CommRing B := { (inferInstance : Ring B) with mul_comm := hBcomm }
+  haveI : Algebra.IsSeparable ℚ K := inferInstance
+  obtain ⟨α, hα⟩ := Field.exists_primitive_element ℚ K
+  have hαint : IsIntegral ℚ α := Algebra.IsIntegral.isIntegral α
+  set f : ℚ[X] := minpoly ℚ α with hfdef
+  have hfmonic : f.Monic := minpoly.monic hαint
+  set r : ℕ := f.natDegree with hrdef
+  obtain ⟨θ, hθe, hθlam, hθf⟩ := exists_cornerLift lam hsurj e hidem hlame hnil α
+  set α' : ℂ := κ α with hα'
+  set fC : ℂ[X] := f.map (algebraMap ℚ ℂ) with hfC
+  have hfC0 : fC ≠ 0 := (hfmonic.map (algebraMap ℚ ℂ)).ne_zero
+  have hfCdeg : fC.natDegree = r := by
+    rw [hfC, hrdef]
+    exact hfmonic.natDegree_map _
+  have hroot : fC.IsRoot α' := by
+    have h : (aeval α' f : ℂ) = κ (aeval α f) := Polynomial.aeval_algHom_apply κ α f
+    rw [hfC, Polynomial.IsRoot, Polynomial.eval_map, ← Polynomial.aeval_def, h,
+      hfdef, minpoly.aeval, map_zero]
+  obtain ⟨q, hq⟩ := Polynomial.dvd_iff_isRoot.2 hroot
+  have hq0 : q ≠ 0 := by
+    intro h; rw [h, mul_zero] at hq; exact hfC0 hq
+  have hqdeg : q.natDegree + 1 = r := by
+    have h : fC.natDegree = (X - C α').natDegree + q.natDegree := by
+      rw [hq, Polynomial.natDegree_mul (Polynomial.X_sub_C_ne_zero α') hq0]
+    rw [Polynomial.natDegree_X_sub_C] at h
+    omega
+  -- `α'` is a SIMPLE root of `fC`
+  have hderiv : q.eval α' ≠ 0 := by
+    have h4 : aeval α (derivative f) ≠ 0 := by
+      intro h
+      have hdvd : f ∣ derivative f := minpoly.dvd ℚ α h
+      have hpos : 0 < f.natDegree := minpoly.natDegree_pos hαint
+      have hne : derivative f ≠ 0 := by
+        intro h0
+        have := Polynomial.derivative_eq_zero.mp h0
+        omega
+      have h7 := Polynomial.natDegree_le_of_dvd hdvd hne
+      have hlt : (derivative f).natDegree < f.natDegree :=
+        Polynomial.natDegree_derivative_lt (by omega)
+      omega
+    have h1 : derivative fC = q + (X - C α') * derivative q := by
+      rw [hq, derivative_mul, derivative_sub, derivative_X, derivative_C, sub_zero,
+        one_mul]
+    have h2 : (derivative fC).eval α' = q.eval α' := by
+      rw [h1]; simp
+    have h3 : derivative fC = (derivative f).map (algebraMap ℚ ℂ) := by
+      rw [hfC, derivative_map]
+    rw [← h2, h3, Polynomial.eval_map, ← Polynomial.aeval_def, hα',
+      Polynomial.aeval_algHom_apply]
+    intro h
+    exact h4 ((map_eq_zero_iff κ κ.toRingHom.injective).1 h)
+  set c : ℂ := (q.eval α')⁻¹ with hcdef
+  have hcq : c * q.eval α' = 1 := inv_mul_cancel₀ hderiv
+  have hc0 : c ≠ 0 := by
+    intro h; rw [h, zero_mul] at hcq; exact zero_ne_one hcq
+  set ε : B := c • (ι e * aeval (ι θ) q) with hεdef
+  have hιeθ : ι e * ι θ = ι θ := by rw [← map_mul, hθe]
+  have hιe2 : ι e * ι e = ι e := by rw [← map_mul, hidem]
+  have hεe : ι e * ε = ε := by rw [hεdef, mul_smul_comm, ← mul_assoc, hιe2]
+  have hfCcorner : ι e * aeval (ι θ) fC = 0 := by
+    have h1 : aeval (ι θ) fC = ι (aeval θ f) := by
+      rw [hfC, Polynomial.aeval_map_algebraMap, Polynomial.aeval_algHom_apply]
+    rw [h1, ← map_mul, hθf, map_zero]
+  have hθε : ι θ * ε = α' • ε := by
+    have h1 : aeval (ι θ) fC = (ι θ - algebraMap ℂ B α') * aeval (ι θ) q := by
+      rw [hq, map_mul, map_sub, aeval_X, aeval_C]
+    have hexpand : (ι θ - α' • ι e) * (ι e * aeval (ι θ) q)
+        = ι e * ((ι θ - algebraMap ℂ B α') * aeval (ι θ) q) := by
+      rw [Algebra.smul_def]
+      linear_combination (-(algebraMap ℂ B α') * aeval (ι θ) q) * hιe2 +
+        (aeval (ι θ) q) * hιeθ - (aeval (ι θ) q) * hιeθ
+    have h3 : (ι θ - α' • ι e) * (ι e * aeval (ι θ) q) = 0 := by
+      rw [hexpand, ← h1, hfCcorner]
+    have h4 : (ι θ - α' • ι e) * ε = 0 := by
+      rw [hεdef, mul_smul_comm, h3, smul_zero]
+    rw [sub_mul, smul_mul_assoc, hεe, sub_eq_zero] at h4
+    exact h4
+  have hqε : aeval (ι θ) q * ε = (q.eval α') • ε := aeval_mul_of_smul hθε q
+  have hεidem : ε * ε = ε := by
+    calc ε * ε = c • ((ι e * aeval (ι θ) q) * ε) := by rw [hεdef, smul_mul_assoc]
+      _ = c • (ι e * ((q.eval α') • ε)) := by rw [mul_assoc, hqε]
+      _ = (c * q.eval α') • (ι e * ε) := by rw [mul_smul_comm, smul_smul]
+      _ = ε := by rw [hcq, one_smul, hεe]
+  have hιeeC : ι e * eC = eC := by rw [hchi e, hlame, map_one, one_smul]
+  have hιθeC : ι θ * eC = α' • eC := by rw [hchi θ, hθlam, hα']
+  have hqeC : aeval (ι θ) q * eC = (q.eval α') • eC := aeval_mul_of_smul hιθeC q
+  have hεeC : ε * eC = eC := by
+    calc ε * eC = c • (ι e * (aeval (ι θ) q * eC)) := by rw [hεdef, smul_mul_assoc, mul_assoc]
+      _ = (c * q.eval α') • (ι e * eC) := by rw [hqeC, mul_smul_comm, smul_smul]
+      _ = eC := by rw [hcq, one_smul, hιeeC]
+  -- the difference `ε - eC` is an idempotent that must vanish
+  set u : B := ε - eC with hudef
+  have hueC : u * eC = 0 := by rw [hudef, sub_mul, hεeC, heCidem, sub_self]
+  have hιeu : ι e * u = u := by rw [hudef, mul_sub, hεe, hιeeC]
+  have hu0 : u = 0 := by
+    by_contra hune
+    have hnotunit : ¬ IsUnit (1 - u) := by
+      intro h
+      obtain ⟨v, hv⟩ : ∃ v : B, (1 - u) * v = 1 := ⟨↑h.unit⁻¹, h.mul_val_inv⟩
+      have huu : u * (1 - u) = 0 := by
+        rw [mul_sub, mul_one, hudef]
+        rw [show (ε - eC) * (ε - eC) = ε * ε - ε * eC - (eC * ε - eC * eC) by ring,
+          hεidem, hεeC, heCidem, mul_comm eC ε, hεeC]
+        ring
+      apply hune
+      calc u = u * ((1 - u) * v) := by rw [hv, mul_one]
+        _ = (u * (1 - u)) * v := by ring
+        _ = 0 := by rw [huu, zero_mul]
+    have hproper : Ideal.span {(1 : B) - u} ≠ ⊤ := fun h =>
+      hnotunit ((Ideal.span_singleton_eq_top).1 h)
+    obtain ⟨m, hm, hle⟩ := Ideal.exists_le_maximal _ hproper
+    haveI : m.IsMaximal := hm
+    haveI : FiniteDimensional ℂ (B ⧸ m) :=
+      Module.Finite.of_surjective (Ideal.Quotient.mkₐ ℂ m).toLinearMap
+        Ideal.Quotient.mk_surjective
+    haveI : Algebra.IsIntegral ℂ (B ⧸ m) := Algebra.IsIntegral.of_finite ℂ (B ⧸ m)
+    have hbij : Function.Bijective (algebraMap ℂ (B ⧸ m)) :=
+      IsAlgClosed.algebraMap_bijective_of_isIntegral
+    set ψ : B →ₐ[ℂ] ℂ :=
+      (AlgEquiv.ofBijective (Algebra.ofId ℂ (B ⧸ m)) hbij).symm.toAlgHom.comp
+        (Ideal.Quotient.mkₐ ℂ m) with hψdef
+    have hψker : ∀ x ∈ m, ψ x = 0 := by
+      intro x hx
+      have h1 : (Ideal.Quotient.mkₐ ℂ m) x = 0 := by
+        show Ideal.Quotient.mk m x = 0
+        exact (Ideal.Quotient.eq_zero_iff_mem).2 hx
+      rw [hψdef]
+      show (AlgEquiv.ofBijective (Algebra.ofId ℂ (B ⧸ m)) hbij).symm
+        ((Ideal.Quotient.mkₐ ℂ m) x) = 0
+      rw [h1, map_zero]
+    have hψu : ψ u = 1 := by
+      have h1 : (1 : B) - u ∈ m := hle (Ideal.mem_span_singleton_self _)
+      have h2 := hψker _ h1
+      rw [map_sub, map_one, sub_eq_zero] at h2
+      exact h2.symm
+    have hψeC : ψ eC = 0 := by
+      have h := congrArg ψ hueC
+      rw [map_mul, hψu, one_mul, map_zero] at h
+      exact h
+    have hψιe : ψ (ι e) = 1 := by
+      have h := congrArg ψ hιeu
+      rw [map_mul, hψu, mul_one] at h
+      exact h
+    have hψε : ψ ε = 1 := by
+      have : ε = u + eC := by rw [hudef]; ring
+      rw [this, map_add, hψu, hψeC, add_zero]
+    -- `ψ` kills the kernel of `λ`
+    have hψkerlam : ∀ y : A, lam y = 0 → ψ (ι y) = 0 := by
+      intro y hy
+      obtain ⟨n, hn⟩ := hnil y hy
+      have h1 : ψ (ι y) ^ n * ψ (ι e) = 0 := by
+        rw [← map_pow, ← map_mul, ← map_pow, ← map_mul, hn, map_zero, map_zero]
+      rw [hψιe, mul_one] at h1
+      rcases Nat.eq_zero_or_pos n with rfl | hpos
+      · rw [pow_zero] at h1; exact absurd h1 one_ne_zero
+      · exact pow_eq_zero_iff (by omega) |>.1 h1
+    -- `ψ (ι θ) = α'`
+    have hψeval : ∀ p : ℂ[X], ψ (aeval (ι θ) p) = p.eval (ψ (ι θ)) := by
+      intro p
+      rw [← Polynomial.aeval_algHom_apply ψ (ι θ) p]
+      simp
+    have hψιθ : ψ (ι θ) = α' := by
+      have hqval : q.eval (ψ (ι θ)) = q.eval α' := by
+        have h2 : ψ ε = c * q.eval (ψ (ι θ)) := by
+          rw [hεdef, map_smul, map_mul, hψιe, one_mul, hψeval q, smul_eq_mul]
+        rw [hψε] at h2
+        exact mul_left_cancel₀ hc0 (h2.symm.trans hcq.symm)
+      have hfval : fC.eval (ψ (ι θ)) = 0 := by
+        have h2 := congrArg ψ hfCcorner
+        rw [map_mul, hψιe, one_mul, hψeval fC, map_zero] at h2
+        exact h2
+      rw [hq, Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X,
+        Polynomial.eval_C, hqval] at hfval
+      rcases mul_eq_zero.1 hfval with h | h
+      · exact sub_eq_zero.1 h
+      · exact absurd h hderiv
+    -- `ψ ∘ ι = κ ∘ λ`
+    have hψι : ∀ t : A, ψ (ι t) = κ (lam t) := by
+      intro t
+      have hmem : lam t ∈ Algebra.adjoin ℚ ({α} : Set K) := by
+        have h1 : (⊤ : IntermediateField ℚ K).toSubalgebra = ⊤ := rfl
+        have h2 : (IntermediateField.adjoin ℚ ({α} : Set K)).toSubalgebra
+            = Algebra.adjoin ℚ ({α} : Set K) :=
+          IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic hαint.isAlgebraic
+        rw [← h2, hα, h1]
+        trivial
+      rw [Algebra.adjoin_singleton_eq_range_aeval] at hmem
+      obtain ⟨P, hP⟩ := hmem
+      have hP' : aeval α P = lam t := hP
+      have hlamP : lam (e * aeval θ P) = lam t := by
+        rw [map_mul, hlame, one_mul, ← Polynomial.aeval_algHom_apply, hθlam, hP']
+      have h0 : lam (t - e * aeval θ P) = 0 := by rw [map_sub, hlamP, sub_self]
+      have h1 := hψkerlam _ h0
+      rw [map_sub, map_sub, sub_eq_zero] at h1
+      have h2 : ψ (ι (e * aeval θ P)) = aeval (ψ (ι θ)) P := by
+        rw [map_mul, map_mul, hψιe, one_mul, ← Polynomial.aeval_algHom_apply ι θ P]
+        exact (Polynomial.aeval_algHom_apply (ψ.restrictScalars ℚ) (ι θ) P).symm
+      rw [h1, h2, hψιθ, hα', ← hP']
+      exact Polynomial.aeval_algHom_apply κ α P
+    -- ψ eC computed through the span: contradiction with `ψ eC = 0`
+    have hspanC : ∀ b ∈ Submodule.span ℂ (Set.range ι), ψ b • eC = b * eC := by
+      intro b hb
+      induction hb using Submodule.span_induction with
+      | mem x hx =>
+          obtain ⟨t, rfl⟩ := hx
+          rw [hψι t, hchi t]
+      | zero => simp
+      | add x y _ _ hx hy => rw [map_add, add_smul, hx, hy, add_mul]
+      | smul a x _ hx => rw [map_smul, smul_eq_mul, mul_smul, hx, smul_mul_assoc]
+    have hfin := hspanC eC (by rw [hspan]; trivial)
+    rw [hψeC, zero_smul, heCidem] at hfin
+    exact heC0 hfin.symm
+  have hεeq : ε = eC := by
+    have h : ε - eC = 0 := by rw [← hudef]; exact hu0
+    exact sub_eq_zero.mp h
+  -- FINAL DESCENT
+  intro y hy
+  set z : A := y * e with hzdef
+  have hze : z * e = z := by rw [hzdef, mul_assoc, hidem]
+  have hlz : lam z = 0 := by rw [hzdef, map_mul, hy, zero_mul]
+  have hzeC : ι z * eC = 0 := by rw [hchi z, hlz, map_zero, zero_smul]
+  have hzε : ι z * ε = 0 := by rw [hεeq]; exact hzeC
+  -- expand ε and read off a `ℂ`-relation among `z * θ ^ k`
+  have hze' : ι z * ι e = ι z := by rw [← map_mul, hze]
+  have hrel : ∑ k : Fin r, (c * q.coeff (k : ℕ)) • ι (z * θ ^ (k : ℕ)) = 0 := by
+    have hexp : aeval (ι θ) q = ∑ k ∈ Finset.range r, q.coeff k • (ι θ) ^ k := by
+      rw [← hqdeg]
+      exact Polynomial.aeval_eq_sum_range (ι θ)
+    have hιmul : ∀ k : ℕ, ι z * (ι θ) ^ k = ι (z * θ ^ k) := by
+      intro k
+      rw [map_mul ι z (θ ^ k), map_pow]
+    have h1 : ι z * ε = ∑ k ∈ Finset.range r, (c * q.coeff k) • ι (z * θ ^ k) := by
+      rw [hεdef, mul_smul_comm, ← mul_assoc, hze', hexp, Finset.mul_sum, Finset.smul_sum]
+      refine Finset.sum_congr rfl fun k _ => ?_
+      rw [mul_smul_comm, smul_smul, hιmul k]
+    rw [hzε] at h1
+    rw [← Finset.sum_range fun k => (c * q.coeff k) • ι (z * θ ^ k)]
+    exact h1.symm
+  have hcoeff : (c * q.coeff q.natDegree) ≠ 0 :=
+    mul_ne_zero hc0 (Polynomial.leadingCoeff_ne_zero.2 hq0)
+  have hnotli : ¬ LinearIndependent ℂ (fun k : Fin r => ι (z * θ ^ (k : ℕ))) := by
+    intro hli
+    have h := Fintype.linearIndependent_iff.mp hli (fun k => c * q.coeff (k : ℕ)) hrel
+    exact hcoeff (h ⟨q.natDegree, by omega⟩)
+  have hnotliQ : ¬ LinearIndependent ℚ (fun k : Fin r => z * θ ^ (k : ℕ)) :=
+    fun h => hnotli (hindep r _ h)
+  rw [Fintype.not_linearIndependent_iff] at hnotliQ
+  obtain ⟨g, hg, k₀, hk₀⟩ := hnotliQ
+  set W : A := ∑ k : Fin r, g k • θ ^ (k : ℕ) with hWdef
+  have hzW : z * W = 0 := by
+    rw [hWdef, Finset.mul_sum, ← hg]
+    exact Finset.sum_congr rfl fun k _ => by rw [mul_smul_comm]
+  have hlamW : lam W ≠ 0 := by
+    intro h
+    have h1 : ∑ k : Fin r, g k • α ^ (k : ℕ) = 0 := by
+      rw [← h, hWdef, map_sum]
+      refine Finset.sum_congr rfl ?_
+      intro k _
+      rw [map_smul, map_pow, hθlam]
+    have hli : LinearIndependent ℚ (fun k : Fin r => α ^ (k : ℕ)) := by
+      rw [hrdef, hfdef]
+      exact linearIndependent_pow α
+    exact hk₀ (Fintype.linearIndependent_iff.mp hli g h1 k₀)
+  obtain ⟨V, hV⟩ := exists_corner_inv lam hsurj e hidem hlame hnil (e * W)
+    (by rw [← mul_assoc, hidem]) (by rw [map_mul, hlame, one_mul]; exact hlamW)
+  calc y * e = z := rfl
+    _ = z * e := hze.symm
+    _ = z * ((e * W) * V) := by rw [hV]
+    _ = (z * (e * W)) * V := by ring
+    _ = 0 := by rw [← mul_assoc, hze, hzW, zero_mul]
+
+end EtaleDescentAbstract
+
+section EtaleDescentSubalgebra
+
+variable {S : Type*} [AddCommGroup S] [Module ℂ S] [FiniteDimensional ℂ S]
+variable [Algebra ℚ (Module.End ℂ S)] [IsScalarTower ℚ ℂ (Module.End ℂ S)]
+
+/-- **The descent lemma for the concrete pair of Hecke subalgebras**
+(PROVEN, 2026-07-26): `etale_descent_of_line` transported to the shape
+in which it is used — `AQ` the `ℚ`-subalgebra and `BC` the
+`ℂ`-subalgebra of `End_ℂ S` generated by the SAME prime-indexed
+operator family `T`, `eC` an idempotent of `BC` fixing `g` and
+annihilating everything of `BC` that kills `g`.
+
+The two `hcomm` hypotheses replace `CommRing` instances on the
+subtypes: supplying them as PROPOSITIONS and building the `CommRing`
+inside the proof is what keeps the application cheap (a missing
+`CommRing ↥AQ` instance sent elaboration into a 150-second search).
+`hspan` is discharged internally: the `ℂ`-span of a `ℚ`-subalgebra is a
+`ℂ`-subalgebra, so it contains the `ℂ`-adjoin of the generators. -/
+theorem subalgebra_etale_descent (T : ℕ → Module.End ℂ S) (g : S)
+    (KF : IntermediateField ℚ ℂ) [FiniteDimensional ℚ KF]
+    (AQ : Subalgebra ℚ (Module.End ℂ S)) (BC : Subalgebra ℂ (Module.End ℂ S))
+    (hAQ : AQ = Algebra.adjoin ℚ {φ : Module.End ℂ S | ∃ q : ℕ, q.Prime ∧ φ = T q})
+    (hBC : BC = Algebra.adjoin ℂ {φ : Module.End ℂ S | ∃ q : ℕ, q.Prime ∧ φ = T q})
+    (hcommA : ∀ a ∈ AQ, ∀ b ∈ AQ, a * b = b * a)
+    (hcomm : ∀ a ∈ BC, ∀ b ∈ BC, a * b = b * a)
+    (hAfin : FiniteDimensional ℚ ↥AQ)
+    (lam : ↥AQ →ₐ[ℚ] KF)
+    (hlam : ∀ t : ↥AQ, (t : Module.End ℂ S) g = ((lam t : ℂ)) • g)
+    (hsurj : Function.Surjective lam) (hg0 : g ≠ 0)
+    (e : ↥AQ) (hidem : e * e = e) (hlame : lam e = 1)
+    (hnil : ∀ y : ↥AQ, lam y = 0 → ∃ n : ℕ, y ^ n * e = 0)
+    (eC : Module.End ℂ S) (heCmem : eC ∈ BC) (heCidem : eC * eC = eC)
+    (heCg : eC g = g)
+    (heCann : ∀ b ∈ BC, b g = 0 → b * eC = 0)
+    (hindep : ∀ (n : ℕ) (v : Fin n → ↥AQ), LinearIndependent ℚ v →
+      LinearIndependent ℂ (fun i => ((v i : Module.End ℂ S)))) :
+    ∀ y : ↥AQ, lam y = 0 → y * e = 0 := by
+  classical
+  haveI := hAfin
+  have hAcomm : ∀ a b : ↥AQ, a * b = b * a :=
+    fun a b => Subtype.ext (hcommA a.1 a.2 b.1 b.2)
+  have hBcomm : ∀ a b : ↥BC, a * b = b * a :=
+    fun a b => Subtype.ext (hcomm a.1 a.2 b.1 b.2)
+  haveI hBfin : FiniteDimensional ℂ ↥BC :=
+    FiniteDimensional.of_injective (BC.val.toLinearMap) Subtype.coe_injective
+  haveI htower2 : IsScalarTower ℚ ℂ ↥BC :=
+    ⟨fun x y z => Subtype.ext (smul_assoc x y (z : Module.End ℂ S))⟩
+  have hgenmem : ∀ q : ℕ, q.Prime → T q ∈ BC := by
+    intro q hq
+    rw [hBC]
+    exact Algebra.subset_adjoin ⟨q, hq, rfl⟩
+  have hsub : ∀ x ∈ AQ, x ∈ BC := by
+    intro x hx
+    rw [hAQ] at hx
+    induction hx using Algebra.adjoin_induction with
+    | mem y hy =>
+        obtain ⟨q, hq, rfl⟩ := hy
+        exact hgenmem q hq
+    | algebraMap r =>
+        rw [IsScalarTower.algebraMap_apply ℚ ℂ (Module.End ℂ S) r]
+        exact BC.algebraMap_mem _
+    | add a b _ _ ha hb => exact add_mem ha hb
+    | mul a b _ _ ha hb => exact mul_mem ha hb
+  obtain ⟨ι, hι⟩ : ∃ ι : ↥AQ →ₐ[ℚ] ↥BC,
+      ∀ t : ↥AQ, ((ι t : ↥BC) : Module.End ℂ S) = (t : Module.End ℂ S) :=
+    ⟨{ toFun := fun t => ⟨(t : Module.End ℂ S), hsub t t.2⟩
+       map_one' := rfl
+       map_mul' := fun _ _ => rfl
+       map_zero' := rfl
+       map_add' := fun _ _ => rfl
+       commutes' := fun r => Subtype.ext rfl }, fun _ => rfl⟩
+  have hAQadjoin : Subalgebra.toSubmodule (Algebra.adjoin ℂ (AQ : Set (Module.End ℂ S)))
+      = Submodule.span ℂ (AQ : Set (Module.End ℂ S)) := by
+    rw [Algebra.adjoin_eq_span,
+      show Submonoid.closure (AQ : Set (Module.End ℂ S)) = AQ.toSubsemiring.toSubmonoid from
+        Submonoid.closure_eq _]
+    rfl
+  have hgenmemA : ∀ q : ℕ, q.Prime → T q ∈ AQ := by
+    intro q hq
+    rw [hAQ]
+    exact Algebra.subset_adjoin ⟨q, hq, rfl⟩
+  have hspanEnd : ∀ b ∈ BC, b ∈ Submodule.span ℂ (AQ : Set (Module.End ℂ S)) := by
+    intro b hb
+    rw [hBC] at hb
+    have hmem : b ∈ Algebra.adjoin ℂ (AQ : Set (Module.End ℂ S)) := by
+      refine Algebra.adjoin_mono ?_ hb
+      rintro φ ⟨q, hq, rfl⟩
+      exact hgenmemA q hq
+    rw [← hAQadjoin]
+    exact hmem
+  have hspan : Submodule.span ℂ (Set.range ι) = ⊤ := by
+    refine eq_top_iff.2 fun b _ => ?_
+    have hmapeq : Submodule.map BC.val.toLinearMap (Submodule.span ℂ (Set.range ι))
+        = Submodule.span ℂ (AQ : Set (Module.End ℂ S)) := by
+      rw [Submodule.map_span]
+      congr 1
+      ext x
+      constructor
+      · rintro ⟨_, ⟨t, rfl⟩, rfl⟩
+        show ((ι t : ↥BC) : Module.End ℂ S) ∈ AQ
+        rw [hι t]
+        exact t.2
+      · intro hx
+        exact ⟨ι ⟨x, hx⟩, ⟨⟨x, hx⟩, rfl⟩, hι ⟨x, hx⟩⟩
+    have hb : (b : Module.End ℂ S) ∈
+        Submodule.map BC.val.toLinearMap (Submodule.span ℂ (Set.range ι)) := by
+      rw [hmapeq]
+      exact hspanEnd b b.2
+    obtain ⟨x, hx, hxe⟩ := hb
+    have hxb : x = b := Subtype.ext hxe
+    rwa [hxb] at hx
+  have heC0 : (⟨eC, heCmem⟩ : ↥BC) ≠ 0 := by
+    intro h
+    have h1 : eC = 0 := congrArg Subtype.val h
+    apply hg0
+    rw [← heCg, h1]
+    simp
+  have hchi : ∀ t : ↥AQ,
+      ι t * (⟨eC, heCmem⟩ : ↥BC) = (KF.val (lam t)) • (⟨eC, heCmem⟩ : ↥BC) := by
+    intro t
+    refine Subtype.ext ?_
+    show ((ι t : ↥BC) : Module.End ℂ S) * eC = ((lam t : ℂ)) • eC
+    rw [hι t]
+    have hmem : (t : Module.End ℂ S) - ((lam t : ℂ)) • 1 ∈ BC :=
+      sub_mem (hsub t t.2) (Subalgebra.smul_mem _ (one_mem _) _)
+    have hzero : ((t : Module.End ℂ S) - ((lam t : ℂ)) • 1) g = 0 := by
+      rw [LinearMap.sub_apply, LinearMap.smul_apply, Module.End.one_apply, hlam t, sub_self]
+    have h := heCann _ hmem hzero
+    rw [sub_mul, smul_mul_assoc, one_mul, sub_eq_zero] at h
+    exact h
+  have hindep' : ∀ (n : ℕ) (v : Fin n → ↥AQ), LinearIndependent ℚ v →
+      LinearIndependent ℂ (fun i => ι (v i)) := by
+    intro n v hv
+    refine LinearIndependent.of_comp BC.val.toLinearMap ?_
+    have hfun : (BC.val.toLinearMap ∘ fun i => ι (v i))
+        = fun i => ((v i : Module.End ℂ S)) := funext fun i => hι (v i)
+    rw [hfun]
+    exact hindep n v hv
+  exact etale_descent_of_line ι KF.val hAcomm hBcomm hspan lam hsurj e hidem hlame hnil
+    (⟨eC, heCmem⟩ : ↥BC) heC0 (Subtype.ext heCidem) hchi hindep'
+
+end EtaleDescentSubalgebra
+
+
+
+/-- **The rational structure of `S₂(Γ₀(M))`: `𝕋_ℚ ⊗_ℚ ℂ ↪ End_ℂ S₂(Γ₀(M))`**
+(sorry leaf, 2026-07-26 — the SINGLE arithmetic input of the newform
+factor, and the archimedean twin of `ModularTateModuleData.padic_indep`).
+
+A family of elements of the RATIONAL Hecke algebra that is linearly
+independent over `ℚ` stays linearly independent over `ℂ` inside
+`End_ℂ S₂(Γ₀(M))`; equivalently `dim_ℚ 𝕋_ℚ = dim_ℂ 𝕋_ℂ`, i.e. the
+surjection `𝕋_ℚ ⊗_ℚ ℂ ↠ 𝕋_ℂ` is an isomorphism.
+
+WHY IT IS NOT FORMAL. It is FALSE for a general `ℚ`-subalgebra of a
+`ℂ`-algebra — `ℚ(√2)·1 ⊆ ℂ` is `2`-dimensional over `ℚ` and
+`1`-dimensional over `ℂ` — so it uses the rational structure of the
+cusp-form space and nothing less.
+
+CLASSICAL PROOF (Diamond–Shurman §6.5, Theorem 6.5.10; Ribet). The
+`q`-expansion pairing `𝕋_ℤ × S₂(Γ₀(M), ℤ) → ℤ`, `(T, f) ↦ a₁(T f)`, is
+PERFECT: `a₁(T_n f) = a_n(f)` makes it nondegenerate on the right, and
+an operator killing every `a₁(T_n ·)` kills every coefficient of every
+form, hence is `0`. Therefore `dim_ℚ (ℚ ⊗ 𝕋_ℤ) = dim_ℚ S₂(Γ₀(M), ℚ)
+= dim_ℂ S₂(Γ₀(M))`, and `𝕋_ℚ`, being a quotient of `ℚ ⊗ 𝕋_ℤ` whose
+`ℂ`-span is all of `𝕋_ℂ` (dimension `dim_ℂ S₂(Γ₀(M))` by the same
+pairing over `ℂ`), is squeezed into equality. The `q`-expansion
+principle — that `S₂(Γ₀(M), ℚ) ⊗ ℂ = S₂(Γ₀(M))` — is the arithmetic
+content, exactly as in the integral sibling
+`integralCuspForms_span_eq_top` (Katz), whose resolution should supply
+this one. -/
+theorem modularHeckeAlgebraQ_linearIndependent_complex {M : ℕ} (_hM : 0 < M)
+    (n : ℕ) (v : Fin n → ↥(modularHeckeAlgebraQ M))
+    (_hv : LinearIndependent ℚ v) :
+    LinearIndependent ℂ
+      (fun i => ((v i : Module.End ℂ (CuspForm (Gamma0GL M) 2)))) :=
+  sorry
+
+/-- **Rational descent of the newform idempotent** (PROVEN, 2026-07-26,
+over the single arithmetic leaf
+`modularHeckeAlgebraQ_linearIndependent_complex`).
 
 Hypotheses: `lam` is the eigenvalue character of the RATIONAL Hecke
 algebra (`exists_eigenvalueChar_modularHeckeAlgebraQ`); `e` is the
@@ -23640,23 +24352,37 @@ local factor `e·𝕋_ℚ` is the FIELD `K_g` and `λ` restricted to it is an
 isomorphism. That is the only thing the assembly of
 `exists_newformFactor_modularHeckeAlgebraQ` still needs.
 
-WHY THIS IS NOT FORMAL. `𝕋_ℚ ⊗_ℚ ℂ` surjects onto `𝕋_ℂ` but need not
-inject; and even granting injectivity, the local factor
-`(e·𝕋_ℚ) ⊗_ℚ ℂ` splits into `[K_g : ℚ]` blocks indexed by the
-embeddings `σ : K_g ↪ ℂ`, of which `eC` controls only the one at the
-identity. The two missing arithmetic inputs are the rational structure
-of `S₂(Γ₀(M))` (a `ℚ`-independent family of Hecke operators stays
-`ℂ`-independent — the archimedean twin of
-`ModularTateModuleData.padic_indep`) and the compatibility of the
-`Aut(ℂ)`-action on cusp forms with the Hecke operators
-(`exists_cuspForm_ringEquiv_conj`, Shimura rationality), which makes the
-block at `σ` a ring-twist of the block at the identity.
+WHAT THE PROOF IS. Everything is delegated to `etale_descent_of_line`
+(through its subalgebra form `subalgebra_etale_descent`), where the
+mathematics is written out: a coefficient field for the corner `e·𝕋_ℚ`
+(`exists_cornerLift`, i.e. Cohen's theorem via formal smoothness of the
+separable `K_g/ℚ`), the Lagrange idempotent `ε` of that coefficient
+field, the identification `ε = eC` by a character argument, and finally
+the `ℂ`-relation `ι z · ε = 0` traded for a `ℚ`-relation through the
+one arithmetic input.
 
-EXACT LEVEL IS ESSENTIAL: for `g` of level `M' ∣ M` with `M' ≠ M`, seen
-at level `M`, the oldform multiplicity makes `e·𝕋_ℚ` non-reduced and the
-conclusion FALSE. That is what `IsWeightTwoNewform` is doing here, and
-it is why this cannot be weakened to `IsWeightTwoEigenform`.
-(Diamond–Shurman §5.8, Theorem 5.8.2 and Proposition 5.8.5;
+CORRECTION TO THE EARLIER SUB-CUT (which listed TWO missing inputs).
+Only the rational structure of `S₂(Γ₀(M))` is needed; the
+`Aut(ℂ)`-conjugation of newforms (Shimura rationality,
+`exists_cuspForm_ringEquiv_conj`) is NOT. Its job was to make the
+`[K_g : ℚ]` blocks of `(e·𝕋_ℚ) ⊗ ℂ` equidimensional, and a coefficient
+field `K_g → e·𝕋_ℚ` does that formally: `e·𝕋_ℚ` is then a `K_g`-algebra,
+so its base changes along the embeddings are all of dimension
+`dim_{K_g} e·𝕋_ℚ`, and the identity block being the LINE `ℂ·eC` forces
+that dimension to be `1`. Formal smoothness of `ℚ → K_g` is available
+because we are in characteristic zero; no transport of cusp forms by
+field automorphisms occurs anywhere in the proof.
+
+FAITHFULNESS AUDIT: `hg` is consumed only through
+`hg.toIsWeightTwoEigenform` — the exact-level content of
+`IsWeightTwoNewform` does NOT enter this implication, because it has
+already been spent upstream in producing `heCann`: at an OLD maximal
+ideal (`g` of level `M' ∣ M`, `M' ≠ M`, seen at level `M`) the oldform
+multiplicity makes the local factor of `𝕋_ℂ` a plane rather than a
+line, so `exists_heckeOp_newform_etaleIdempotent` — and with it
+`heCann` — is unavailable there. The hypothesis is kept in the
+signature so that the consumer, whose statement is fixed, still passes
+it. (Diamond–Shurman §5.8, Theorem 5.8.2 and Proposition 5.8.5;
 Atkin–Lehner.) -/
 theorem modularHeckeAlgebraQ_etale_at_newform {M : ℕ} (hM : 0 < M)
     {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
@@ -23669,8 +24395,37 @@ theorem modularHeckeAlgebraQ_etale_at_newform {M : ℕ} (hM : 0 < M)
     (heCmem : eC ∈ heckeSubalgebra (heckeOp M)) (heCidem : eC * eC = eC)
     (heCg : eC g = g)
     (heCann : ∀ b ∈ heckeSubalgebra (heckeOp M), b g = 0 → b * eC = 0) :
-    ∀ y : ↥(modularHeckeAlgebraQ M), lam y = 0 → y * e = 0 :=
-  sorry
+    ∀ y : ↥(modularHeckeAlgebraQ M), lam y = 0 → y * e = 0 := by
+  classical
+  haveI hSfin : FiniteDimensional ℂ (CuspForm (Gamma0GL M) 2) :=
+    cuspForm_finiteDimensional M hM
+  haveI hKfin : FiniteDimensional ℚ (heckeField M g) :=
+    heckeField_finiteDimensional hM hg.toIsWeightTwoEigenform
+  haveI htower : IsScalarTower ℚ ℂ (Module.End ℂ (CuspForm (Gamma0GL M) 2)) :=
+    IsScalarTower.of_algebraMap_eq (fun _ => rfl)
+  -- `lam` IS the eigenvalue character (the scalar is unique because
+  -- `a₁(g) = 1`), hence surjective onto `K_g`.
+  obtain ⟨lam0, hact0, _, hsurj0⟩ :=
+    exists_eigenvalueChar_modularHeckeAlgebraQ hM hg.toIsWeightTwoEigenform
+  have hlameq : lam = lam0 := by
+    refine AlgHom.ext fun t => ?_
+    have h3 : ((lam t : ℂ)) • g = ((lam0 t : ℂ)) • g := by
+      rw [← hlam t, ← hact0 t]
+    have h4 := congrArg (fun f => qCoeff M f 1) h3
+    simp only [qCoeff_smul, hg.toIsWeightTwoEigenform.qCoeff_one, mul_one] at h4
+    exact Subtype.ext h4
+  have hsurj : Function.Surjective lam := by rw [hlameq]; exact hsurj0
+  have hg0 : g ≠ 0 := by
+    intro h
+    have h1 : qCoeff M g 1 = 1 := hg.toIsWeightTwoEigenform.qCoeff_one
+    rw [h, qCoeff_zero_cuspForm] at h1
+    exact zero_ne_one h1
+  exact subalgebra_etale_descent (heckeOp M) g (heckeField M g)
+    (modularHeckeAlgebraQ M) (heckeSubalgebra (heckeOp M)) rfl rfl
+    (modularHeckeAlgebraQ_mul_comm hM) (heckeSubalgebra_heckeOp_mul_comm hM)
+    (finiteDimensional_modularHeckeAlgebraQ hM) lam hlam hsurj hg0 e hidem hlame
+    hnil eC heCmem heCidem heCg heCann
+    (modularHeckeAlgebraQ_linearIndependent_complex hM)
 
 /-- **The newform factor of the ANALYTIC rational Hecke algebra**
 (PROVEN 2026-07-26 over the single leaf
@@ -23700,22 +24455,26 @@ that factor, `ι 1` its unit idempotent — classically the sum of the
 étale idempotents of the `Gal(ℚ̄/ℚ)`-conjugates of `g` — and
 `ι (a_q(g)) = T_q · ι 1` the eigenvalue relation.
 
-STATUS (2026-07-26): PROVEN over ONE residual leaf,
-`modularHeckeAlgebraQ_etale_at_newform`. The sub-cut suggested when
-this node was cut had four steps, (a) `𝕋_ℂ` is the `ℂ`-span of `𝕋_ℚ`,
-(b) `dim_ℚ 𝕋_ℚ < ∞`, (c) the surjective eigenvalue character
+STATUS (2026-07-26, second pass): PROVEN over ONE residual ARITHMETIC
+leaf, `modularHeckeAlgebraQ_linearIndependent_complex` — the rational
+structure of `S₂(Γ₀(M))`. The sub-cut suggested when this node was cut
+had four steps, (a) `𝕋_ℂ` is the `ℂ`-span of `𝕋_ℚ`, (b)
+`dim_ℚ 𝕋_ℚ < ∞`, (c) the surjective eigenvalue character
 `λ : 𝕋_ℚ ↠ K_g`, (d) `ker λ` generated by an idempotent "from
 (a)+(b)+the line hypothesis by the structure theory of Artinian
-commutative rings". Steps (b) and (c) are now PROVEN
+commutative rings". Steps (b) and (c) are PROVEN
 (`finiteDimensional_modularHeckeAlgebraQ`,
-`exists_eigenvalueChar_modularHeckeAlgebraQ`), (a) turned out not to
-be needed at all (only `𝕋_ℚ ⊆ 𝕋_ℂ` is used), and (d) turned out NOT
-to follow from (a)+(b)+(c): see the section note above, where the two
-missing arithmetic inputs — the rational structure of `S₂(Γ₀(M))` and
-the `Aut(ℂ)`-conjugation of newforms — are identified, and the residual
-leaf is stated as the descent of the complex étaleness (which IS proven
-here, `newformEtaleIdempotent_spec`) to the rational side. The section
-above assembles all of it; the proof below is the glue.
+`exists_eigenvalueChar_modularHeckeAlgebraQ`), (a) is proven inside
+`subalgebra_etale_descent` (the `ℂ`-span of a `ℚ`-subalgebra is a
+`ℂ`-subalgebra) and IS used, and (d) does NOT follow from (a)+(b)+(c):
+it needs exactly one arithmetic input, the injectivity of
+`𝕋_ℚ ⊗_ℚ ℂ → End_ℂ S₂(Γ₀(M))`. The remaining descent —
+`modularHeckeAlgebraQ_etale_at_newform`, the descent of the complex
+étaleness (`newformEtaleIdempotent_spec`) to the rational side — is now
+proven from it via `etale_descent_of_line`, whose only non-formal
+ingredient is that leaf. The `Aut(ℂ)`-conjugation of newforms, once
+believed to be a second missing input, is NOT needed: see the section
+note above.
 
 FAITHFULNESS: the conclusion is VERBATIM the `newformFactor` field of
 `ModularRationalHeckePackage` with `T` instantiated at the concrete
