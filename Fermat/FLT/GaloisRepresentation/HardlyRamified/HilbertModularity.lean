@@ -263,6 +263,7 @@ public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
 -- arithmetic leaves it rests on, whose STATEMENTS mention `discr` — hence
 -- `public`)
 public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
+public import Mathlib.NumberTheory.NumberField.Discriminant.Different
 public import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.GroupTheory.Index
 public import Mathlib.LinearAlgebra.Charpoly.Basic
@@ -2829,8 +2830,43 @@ form the eventual module split needs. `Modularity/Patching.lean`'s
 `exists_discr_factorization_le_of_finrank_le` is the SAME statement with
 the ambient pinned to `IntermediateField ℚ ℚᵃˡᵍ` and the (identical)
 bound `(n + 1)·n` hidden behind an existential; nothing in its proof uses
-the ambient. Hoisting that proof to this signature is the mechanical half
-of the dedupe recorded below.
+the ambient.
+
+**ROUTE AUDIT 2026-07-26 — "this is a mechanical hoist" IS WRONG, and the
+previous version of this docstring said so. Read this before being
+dispatched here.** The MATHEMATICS is indeed ambient-free, but the route
+is not available from this module, for three independent reasons:
+
+* `Modularity/Patching.lean` is **circular** relative to this module — it
+  transitively imports `HilbertModularity.lean` (verified by import-cone
+  computation, not by reading the guard note). So nothing there can be
+  imported, only copied.
+* The proof does not stand alone. It runs over `differentIdeal_exponent_le`
+  (`Patching.lean`), the Serre bound `d_Q ≤ e − 1 + e·v_q(e)`, which is
+  itself proven over `differentIdeal_exponent_le_wild` and the local
+  Eisenstein leaf `exists_eisensteinDerivative_dvd_of_wild` — about 1100
+  lines of `Patching.lean`, not a lemma. **Mathlib has no upper bound on
+  the different exponent at all** (only `pow_sub_one_dvd_differentIdeal`,
+  which is the LOWER bound, and `not_dvd_differentIdeal_iff`), so there
+  is no cheap substitute.
+* The remaining input, `ModThree.lean`'s PROVEN
+  `discr_factorization_le_of_forall_differentIdeal_pow_dvd`, IS
+  importable without a cycle — but importing `ModThree.lean` grows this
+  module's import cone from 32 Fermat modules to 113, and this module is
+  re-exported by `Deformation.lean`, so the whole downstream tree would
+  rebuild on every `ModThree` merge. That is a fleet-wide throughput cost
+  paid to retire one leaf.
+
+The hoist that WOULD retire this leaf properly is: move
+`differentIdeal_exponent_le` and its wild chain out of `Patching.lean`
+into a module upstream of both `Patching.lean` and this one. That was
+checked against `~/.flt-inflight.jsonl` on 2026-07-26 and is **NOT safe
+to do now** — `Patching.lean` had five concurrent owners and
+`ModThree.lean` six, and one of them was working `differentIdeal_exponent_le`'s
+own wild chain (`exists_generator_minpolyDerivative_le_of_wild`). Do the
+hoist when those are quiet; do NOT duplicate the chain here in the
+meantime, and do NOT import `ModThree.lean` for it without deciding the
+cone-growth question deliberately.
 
 MATHEMATICAL CONTENT (Serre, *Corps Locaux* III §6 Prop. 13, and the norm
 bookkeeping). For a prime `Q` of `𝓞 L` over `q` with ramification index
@@ -2855,14 +2891,109 @@ theorem discr_factorization_le_of_finrank_le (n : ℕ) (L : Type*) [Field L]
     (NumberField.discr L).natAbs.factorization q ≤ (n + 1) * n :=
   sorry
 
-/-- **Inertia-trivial extensions of `F` have discriminant supported over
-`2ℓd_F`** (LEAF — the second and genuinely `F`-level arithmetic input of
-Hermite–Minkowski over `F`): if the local inertia of `F` at every place
-away from `2` and `ℓ` acts trivially on the finite Galois subextension
-`K ⊆ Fᵃˡᵍ`, then no rational prime `q ∉ {2, ℓ}` with `q ∤ d_F` divides
-the discriminant of `K` viewed as a number field over `ℚ`.
+/-- **Local-global inertia transport over `F`** (LEAF — new 2026-07-26,
+half (1) of the cut of `not_dvd_discr_of_hilbertInertiaTrivialAt` below;
+the genuinely `F`-level half): if the local inertia at a place `w` of `F`
+acts trivially on the finite Galois subextension `K ⊆ Fᵃˡᵍ`, then every
+prime `P` of `𝓞 K` lying over `w` is unramified over `𝓞 F`.
 
-MATHEMATICAL CONTENT, and the cut this leaf still hides. Two steps, of
+This is the `F`-level twin of `FreyCurve/MazurTorsion.lean`'s PROVEN
+`isUnramifiedAt_of_inertia_le_fixingSubgroup`, and it is genuinely new
+work rather than a reuse: every line of that development is written over
+`ℚ` and over `hq.toHeightOneSpectrumRingOfIntegersRat`, and
+`MazurTorsion.lean` is NOT in this module's import cone (it is not
+importable here without enlarging the cone from 32 to 91 modules, which
+would make this module — and `Deformation.lean`, which re-exports it —
+rebuild on every `MazurTorsion` merge). The argument to port is its
+chain `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` followed by
+`inertia_eq_bot_of_exists_prime_over`: the embedding-determined prime
+over `w` has trivial ideal-inertia because the local Galois group
+surjects onto the decomposition group, and conjugacy under `Gal(K/F)` —
+transitive on the primes over `w` — propagates it to all of them.
+
+FAITHFULNESS. The quantifier is over `localInertiaGroup w` — an
+inertia-only hypothesis, which is exactly what makes the conclusion
+`Algebra.IsUnramifiedAt (𝓞 F) P` correct; widening it to all of `Γ F`
+would be a different (and for this purpose wrong) statement. Not
+vacuous: `K = ⊥` and any everywhere-unramified extension of `F` inhabit
+the hypotheses, and the conclusion is a genuine restriction. -/
+theorem isUnramifiedAt_of_hilbertInertiaTrivialAt
+    (F : Type u) [Field F] [NumberField F]
+    (K : IntermediateField F (AlgebraicClosure F))
+    [FiniteDimensional F K] [IsGalois F K] [NumberField ↥K]
+    (w : HeightOneSpectrum (𝓞 F))
+    (hinert : HilbertInertiaTrivialAt w K.fixingSubgroup)
+    (P : Ideal (𝓞 ↥K)) [P.IsPrime] [P.LiesOver w.asIdeal] :
+    Algebra.IsUnramifiedAt (𝓞 F) P :=
+  sorry
+
+/-- **Ramification in the tower `ℚ ⊆ F ⊆ K`** (LEAF — new 2026-07-26,
+half (2) of the cut of `not_dvd_discr_of_hilbertInertiaTrivialAt` below;
+the routine half): a rational prime `q` with `q ∤ d_F` is unramified in
+`F`, so a prime `P` of `𝓞 K` over `q` that is unramified over `𝓞 F` is
+unramified over `ℤ`.
+
+Route: `q ∤ d_F` gives `Algebra.IsUnramifiedAt ℤ (P ∩ 𝓞 F)` through
+mathlib's `NumberField.not_dvd_discr_iff_forall_mem` applied to `F`;
+composing with the hypothesis `Algebra.IsUnramifiedAt (𝓞 F) P` is
+multiplicativity of the ramification index in a tower, which in the
+different language is mathlib's
+`differentIdeal_eq_differentIdeal_mul_differentIdeal` together with
+`not_dvd_differentIdeal_iff`.
+
+FAITHFULNESS. `hqF` (`q ∤ d_F`) is LOAD-BEARING and must not be dropped:
+`d_K` is divisible by `d_F ^ [K : F]` by the discriminant tower formula,
+so every prime dividing `d_F` divides `d_K` however unramified `K/F`
+is. -/
+theorem isUnramifiedAt_int_of_isUnramifiedAt_of_not_dvd_discr
+    (F : Type u) [Field F] [NumberField F]
+    (K : IntermediateField F (AlgebraicClosure F))
+    [FiniteDimensional F K] [NumberField ↥K]
+    {q : ℕ} (hq : q.Prime)
+    (hqF : ¬ ((q : ℤ) ∣ NumberField.discr F))
+    (P : Ideal (𝓞 ↥K)) [P.IsPrime]
+    (hmem : (q : 𝓞 ↥K) ∈ P)
+    (hur : Algebra.IsUnramifiedAt (𝓞 F) P) :
+    Algebra.IsUnramifiedAt ℤ P :=
+  sorry
+
+/-- **Inertia-trivial extensions of `F` have discriminant supported over
+`2ℓd_F`** (PROVEN 2026-07-26 over the two leaves immediately above — it
+was itself a leaf until then; the second and genuinely `F`-level
+arithmetic input of Hermite–Minkowski over `F`): if the local inertia of
+`F` at every place away from `2` and `ℓ` acts trivially on the finite
+Galois subextension `K ⊆ Fᵃˡᵍ`, then no rational prime `q ∉ {2, ℓ}` with
+`q ∤ d_F` divides the discriminant of `K` viewed as a number field over
+`ℚ`.
+
+WHAT IS PROVEN HERE — the whole non-arithmetic half, and it is the
+place-selection bookkeeping that the two halves are glued by. Mathlib's
+`NumberField.not_dvd_discr_iff_forall_mem` reduces the goal to
+`Algebra.IsUnramifiedAt ℤ P` for every prime `P` of `𝓞 K` over `q`; the
+place `w` of `F` below `P` is `P.under (𝓞 F)` (prime, and nonzero
+because it contains `q`); `P ∩ ℤ = (q)` because a prime of `ℤ`
+containing the prime `q` is `(q)`, whence a rational integer lying in
+`w` is divisible by `q`, so `q ≠ 2` and `q ≠ ℓ` put `w` outside
+`{w ∣ 2ℓ}` and the inertia hypothesis applies at `w`. The two leaves
+then compose: `isUnramifiedAt_of_hilbertInertiaTrivialAt` gives
+`IsUnramifiedAt (𝓞 F) P` and
+`isUnramifiedAt_int_of_isUnramifiedAt_of_not_dvd_discr` descends it to
+`ℤ`.
+
+ONE ELABORATION NOTE worth keeping. `↥(K.restrictScalars ℚ)` and `↥K`
+are DEFEQ (`restrictScalars` keeps the carrier), and so are `𝓞` of them;
+but `Algebra F ↥(K.restrictScalars ℚ)` is NOT an instance, so
+`Ideal.under (𝓞 F)` cannot be formed against the `restrictScalars`
+carrier. The proof therefore opens with
+`show ¬ ((q : ℤ) ∣ NumberField.discr ↥K)` and does everything over the
+canonical carrier, where `Algebra F ↥K` and `Algebra (𝓞 F) (𝓞 ↥K)` are
+the canonical instances. Supplying the missing instance by
+`inferInstanceAs` instead does NOT work: it generates auxiliary
+definitions, and the two sides then carry syntactically distinct
+`Algebra` terms that print identically and refuse to unify.
+
+MATHEMATICAL CONTENT, and the cut this declaration NOW MAKES (the two
+leaves above are exactly these two steps). Two steps, of
 which only the FIRST is genuinely new at the `F` level:
 
 1. *Local-global inertia transport over `F`* — pointwise triviality of
@@ -2912,8 +3043,59 @@ theorem not_dvd_discr_of_hilbertInertiaTrivialAt (ℓ : ℕ) [Fact ℓ.Prime]
     (hqF : ¬ ((q : ℤ) ∣ NumberField.discr F))
     (hfdQ : FiniteDimensional ℚ (K.restrictScalars ℚ)) :
     haveI : NumberField (K.restrictScalars ℚ) := @NumberField.mk _ _ inferInstance hfdQ
-    ¬ ((q : ℤ) ∣ NumberField.discr (K.restrictScalars ℚ)) :=
-  sorry
+    ¬ ((q : ℤ) ∣ NumberField.discr (K.restrictScalars ℚ)) := by
+  haveI := hfd
+  haveI := hgal
+  haveI : NumberField (K.restrictScalars ℚ) := @NumberField.mk _ _ inferInstance hfdQ
+  haveI hnfK : NumberField ↥K := inferInstanceAs (NumberField ↥(K.restrictScalars ℚ))
+  have hqZ : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+  -- move to the canonical carrier `↥K`: `↥(K.restrictScalars ℚ)` and `↥K` are
+  -- DEFEQ (`restrictScalars` keeps the carrier), and working over the canonical
+  -- one keeps the `Algebra F ↥K` / `Algebra (𝓞 F) (𝓞 ↥K)` instances canonical
+  show ¬ ((q : ℤ) ∣ NumberField.discr ↥K)
+  rw [NumberField.not_dvd_discr_iff_forall_mem (↥K) (𝓞 ↥K) hqZ]
+  intro P hP hmem
+  haveI := hP
+  have hmem' : (q : 𝓞 ↥K) ∈ P := by exact_mod_cast hmem
+  -- `P ∩ ℤ = (q)`, since a prime of `ℤ` containing the prime `q` is `(q)`
+  haveI hqZmax : (Ideal.span {(q : ℤ)}).IsMaximal :=
+    ((Ideal.span_singleton_prime (by exact_mod_cast hq.ne_zero)).mpr hqZ).isMaximal
+      (by simp only [Ne, Ideal.span_singleton_eq_bot]; exact_mod_cast hq.ne_zero)
+  have hqinP : ((q : ℤ)) ∈ Ideal.under ℤ P := by
+    rw [Ideal.mem_under]
+    exact_mod_cast hmem'
+  have hunderZ : Ideal.under ℤ P = Ideal.span {(q : ℤ)} :=
+    (hqZmax.eq_of_le (Ideal.IsPrime.ne_top inferInstance)
+      (by rwa [Ideal.span_le, Set.singleton_subset_iff])).symm
+  -- the place `w` of `F` below `P`
+  haveI hw0p : (P.under (𝓞 F)).IsPrime := Ideal.IsPrime.under (𝓞 F) P
+  have hqw0 : (q : 𝓞 F) ∈ P.under (𝓞 F) := by
+    rw [Ideal.mem_under]
+    exact_mod_cast hmem'
+  have hw0bot : P.under (𝓞 F) ≠ ⊥ := by
+    intro h
+    rw [h, Ideal.mem_bot] at hqw0
+    exact hq.ne_zero (by exact_mod_cast hqw0)
+  set w : HeightOneSpectrum (𝓞 F) := ⟨P.under (𝓞 F), hw0p, hw0bot⟩ with hwdef
+  -- `2` and `ℓ` avoid `w`: `w` lies over `q`, and `q ∉ {2, ℓ}`
+  have hnat : ∀ m : ℕ, ((m : ℕ) : 𝓞 F) ∈ w.asIdeal → q ∣ m := by
+    intro m hm
+    have hmP : ((m : ℕ) : 𝓞 ↥K) ∈ P := by
+      have hm' : ((m : ℕ) : 𝓞 F) ∈ P.under (𝓞 F) := by rw [hwdef] at hm; exact hm
+      rw [Ideal.mem_under] at hm'
+      exact_mod_cast hm'
+    have hmZ : ((m : ℕ) : ℤ) ∈ Ideal.under ℤ P := by
+      rw [Ideal.mem_under]
+      exact_mod_cast hmP
+    rw [hunderZ, Ideal.mem_span_singleton] at hmZ
+    exact_mod_cast hmZ
+  have h2 : ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal := fun hc =>
+    hq2 ((Nat.prime_dvd_prime_iff_eq hq Nat.prime_two).mp (hnat 2 hc))
+  have hl : ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal := fun hc =>
+    hqℓ ((Nat.prime_dvd_prime_iff_eq hq (Fact.out : ℓ.Prime)).mp (hnat ℓ hc))
+  haveI hlies : P.LiesOver w.asIdeal := ⟨rfl⟩
+  exact isUnramifiedAt_int_of_isUnramifiedAt_of_not_dvd_discr F K hq hqF P hmem'
+    (isUnramifiedAt_of_hilbertInertiaTrivialAt F K w (hinert w h2 hl) P)
 
 /-- **Hermite–Minkowski over `F`** (PROVEN 2026-07-26 over the two
 arithmetic leaves above — the ONLY arithmetic input of Schlessinger's H3
