@@ -235,7 +235,8 @@ public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
 public import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.GroupTheory.Index
 public import Mathlib.LinearAlgebra.Charpoly.Basic
--- `LinearMap.det_baseChange`, consumed by `det_framePushforward` below
+-- `LinearMap.det_baseChange`, consumed by `det_framePushforward` below and by
+-- the determinant clause of `isHilbertHardlyRamified_baseChange`
 public import Mathlib.LinearAlgebra.Charpoly.BaseChange
 public import Mathlib.RingTheory.IntegralClosure.Algebra.Basic
 public import Mathlib.RingTheory.Adjoin.Basic
@@ -244,9 +245,6 @@ public import Mathlib.RingTheory.AdicCompletion.Basic
 public import Mathlib.RingTheory.Finiteness.Basic
 public import Mathlib.LinearAlgebra.TensorProduct.Pi
 public import Mathlib.LinearAlgebra.Dimension.Constructions
--- `LinearMap.det_baseChange`, for the determinant clause of
--- `isHilbertHardlyRamified_baseChange`
-public import Mathlib.LinearAlgebra.Charpoly.BaseChange
 public import Mathlib.Topology.Algebra.Algebra
 public import Mathlib.NumberTheory.Padics.HeightOneSpectrum
 -- proof-only: the abstract dimension-`2` Brauer–Nesbitt core
