@@ -11,18 +11,22 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Yang, Kevin Buzzard
 -/
 
-import Mathlib.RingTheory.AdicCompletion.Basic
-import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
-import Mathlib.RingTheory.Artinian.Defs
-import Mathlib.RingTheory.LocalRing.ResidueField.Defs
-import Mathlib.RingTheory.Noetherian.Defs
-import Mathlib.Topology.Algebra.Module.ModuleTopology
-import Mathlib.Topology.Algebra.Ring.Ideal
-import Fermat.FLT.Modularity.PatchingVendored.InverseLimit
-import Fermat.FLT.Modularity.PatchingVendored.Lemmas
-import Mathlib.Topology.Algebra.Algebra
-import Mathlib.Topology.Algebra.Ring.Compact
-import Mathlib.Topology.Connected.Separation
+module
+
+public import Mathlib.RingTheory.AdicCompletion.Basic
+public import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
+public import Mathlib.RingTheory.Artinian.Defs
+public import Mathlib.RingTheory.LocalRing.ResidueField.Defs
+public import Mathlib.RingTheory.Noetherian.Defs
+public import Mathlib.Topology.Algebra.Module.ModuleTopology
+public import Mathlib.Topology.Algebra.Ring.Ideal
+public import Fermat.FLT.Modularity.PatchingVendored.InverseLimit
+public import Fermat.FLT.Modularity.PatchingVendored.Lemmas
+public import Mathlib.Topology.Algebra.Algebra
+public import Mathlib.Topology.Algebra.Ring.Compact
+public import Mathlib.Topology.Connected.Separation
+
+@[expose] public section
 
 set_option autoImplicit false
 set_option relaxedAutoImplicit false
@@ -85,7 +89,16 @@ instance (priority := 100) [IsArtinianRing R] : DiscreteTopology R := by
   rw [← jacobson_eq_maximalIdeal _ bot_ne_top, hn]
   rfl
 
-lemma Submodule.isCompact_of_fg {R M : Type*} [CommRing R] [TopologicalSpace R] [AddCommGroup M]
+-- NOTE (2026-07-26): these two DELIBERATELY keep their nested names
+-- `IsLocalRing.Submodule.isCompact_of_fg` / `IsLocalRing.Ideal.isCompact_of_fg`.
+-- `_root_.` was tried at integration and is WRONG: mathlib defines both names at
+-- the root (`Mathlib/Topology/Algebra/Module/Compact.lean`), so hoisting these
+-- out produces `has already been declared`. They are not duplicates of the
+-- mathlib lemmas — mathlib's take `[ContinuousAdd M] [ContinuousSMul R M]`,
+-- whereas these derive both from `[IsModuleTopology R M]`, which is what the
+-- call sites in this development actually have.
+lemma Submodule.isCompact_of_fg {R M : Type*} [CommRing R] [TopologicalSpace R]
+    [AddCommGroup M]
     [Module R M]
     [TopologicalSpace M] [IsModuleTopology R M] [CompactSpace R] {N : Submodule R M} (hN : N.FG) :
     IsCompact (X := M) N := by

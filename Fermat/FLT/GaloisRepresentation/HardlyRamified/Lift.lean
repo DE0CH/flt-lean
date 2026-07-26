@@ -200,7 +200,7 @@ theorem exists_hardlyRamifiedLift (hℓ5 : 5 ≤ ℓ)
            algebraMap_injective := hinj
            charFrob_compat := hcompat }⟩
 
-/-- **Compatibility bookkeeping** (sorry node): if the hardly ramified
+/-- **Compatibility bookkeeping** (PROVEN): if the hardly ramified
 `ℓ`-adic lift of `ρbar` lives in a compatible family of hardly ramified
 representations, then the residual characteristic polynomials of Frobenius
 of `ρbar` at `q ∉ {2, 3, ℓ}` are those of `1 ⊕ χ̄`, i.e.

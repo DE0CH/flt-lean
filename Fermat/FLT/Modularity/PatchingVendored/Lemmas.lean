@@ -11,19 +11,23 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Yang, Kevin Buzzard, Pietro Monticone, Ruben Van de Velde
 -/
 
-import Mathlib.Topology.Algebra.Module.ModuleTopology
-import Mathlib.Topology.Algebra.Ring.Ideal
-import Mathlib.RingTheory.Ideal.MinimalPrime.Basic
-import Mathlib.RingTheory.Jacobson.Ideal
-import Mathlib.RingTheory.LocalRing.MaximalIdeal.Defs
-import Mathlib.RingTheory.Noetherian.Defs
-import Mathlib.Data.Set.Card
-import Mathlib.Data.SetLike.Fintype
-import Mathlib.RingTheory.Filtration
-import Mathlib.RingTheory.Localization.AtPrime.Basic
-import Mathlib.Topology.Algebra.Module.Compact
-import Mathlib.Topology.Algebra.OpenSubgroup
-import Mathlib.Topology.Separation.Profinite
+module
+
+public import Mathlib.Topology.Algebra.Module.ModuleTopology
+public import Mathlib.Topology.Algebra.Ring.Ideal
+public import Mathlib.RingTheory.Ideal.MinimalPrime.Basic
+public import Mathlib.RingTheory.Jacobson.Ideal
+public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Defs
+public import Mathlib.RingTheory.Noetherian.Defs
+public import Mathlib.Data.Set.Card
+public import Mathlib.Data.SetLike.Fintype
+public import Mathlib.RingTheory.Filtration
+public import Mathlib.RingTheory.Localization.AtPrime.Basic
+public import Mathlib.Topology.Algebra.Module.Compact
+public import Mathlib.Topology.Algebra.OpenSubgroup
+public import Mathlib.Topology.Separation.Profinite
+
+@[expose] public section
 
 set_option autoImplicit false
 set_option relaxedAutoImplicit false
