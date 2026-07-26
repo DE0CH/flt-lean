@@ -7376,8 +7376,115 @@ theorem charP_of_padicIntAlgebra (ℓ : ℕ) [Fact ℓ.Prime] (k : Type*) [Field
   rw [← map_natCast (algebraMap ℤ_[ℓ] k) ℓ]
   exact hℓ0
 
+/-- **A finite field of characteristic `3` carrying a square root of `−1`
+has MORE THAN THREE elements** (PROVEN helper, 2026-07-26, and completely
+elementary): its cardinality is `3ⁿ`, and `n = 1` is impossible because `−1`
+is a non-square in `𝔽₃` (`0² = 0`, `(±1)² = 1`, and `−1 = 2`).
+
+This is the whole "`3` is inert" half of the quadratic-twist construction
+below, and it replaces the ramification-theoretic route the older plan
+proposed (splitting of `3` in `ℚ(√d)` via the Legendre symbol, plus
+multiplicativity of the residue degree in a tower). Nothing about `ℚ(√d)`,
+`𝒪_{ℚ(√d)}` or inertia degrees is needed: it is enough that SOME element of
+the residue field squares to `−1`, which a square root of a `d ≡ 2 (mod 3)`
+supplies for free at EVERY prime above `3` simultaneously. -/
+theorem three_lt_card_of_sq_eq_neg_one (F : Type*) [Field F] [Finite F]
+    (h3 : (3 : F) = 0) (y : F) (hy : y ^ 2 = -1) : 3 < Nat.card F := by
+  classical
+  haveI : Fintype F := Fintype.ofFinite _
+  haveI hchar : CharP F 3 :=
+    (CharP.charP_iff_prime_eq_zero (by norm_num)).mpr (by simpa using h3)
+  obtain ⟨n, -, hcardn⟩ := FiniteField.card F 3
+  rcases Nat.lt_or_ge (n : ℕ) 2 with hn | hn
+  · exfalso
+    have hnpos : 0 < (n : ℕ) := n.pos
+    have hn1 : (n : ℕ) = 1 := by omega
+    have hc3 : Fintype.card F = Fintype.card (ZMod 3) := by
+      rw [hcardn, hn1, pow_one]; simp
+    let e : F ≃+* ZMod 3 := FiniteField.ringEquivOfCardEq hc3
+    have hz : (e y) ^ 2 = -1 := by rw [← map_pow, hy, map_neg, map_one]
+    have hno : ∀ z : ZMod 3, z ^ 2 ≠ -1 := by decide
+    exact hno _ hz
+  · have h9 : 9 ≤ Fintype.card F := by
+      rw [hcardn]
+      calc (9 : ℕ) = 3 ^ 2 := by norm_num
+      _ ≤ 3 ^ (n : ℕ) := Nat.pow_le_pow_right (by norm_num) hn
+    rw [Nat.card_eq_fintype_card]
+    omega
+
+/-- **A real quadratic twist of a coefficient datum: the residue field at
+`λ` is UNCHANGED, and a prescribed positive integer acquires a square root**
+(sorry leaf, cut 2026-07-26 out of
+`exists_totallyRealCoefficientDatum_enlarge` below, which is PROVEN over it;
+PURE algebraic number theory, and now the only residual of that node).
+
+Given a coefficient datum as produced by
+`exists_totallyRealCoefficientDatum_core` and a positive `d` with
+`d ≡ 1 (mod ℓ)`, this produces a totally real number field `D` carrying a
+maximal ideal `λ ∋ ℓ` whose residue field is STILL `k`, together with an
+element `y ∈ 𝒪_D` with `y² = d`. Only the `λ`-half of `hdatum` is used; the
+`𝔭`-half is rebuilt from scratch by the consumer.
+
+INTENDED DISCHARGE — `D' := D · ℚ(√d)`:
+
+* `D'` is TOTALLY REAL because `d > 0`, so `√d ∈ ℝ`. Realise `D` inside `ℝ`
+  through any embedding (every embedding of a totally real field is real)
+  and take the join of the two subfields `D` and `ℚ(√d)`; mathlib's
+  `NumberField.isTotallyReal_sup` says a join of totally real subfields is
+  totally real.
+* `y := √d` lies in `𝒪_{D'}` because `y² = d ∈ ℤ`, so `y` is integral.
+* `λ` has a prime `λ'` of `D'` above it with `f(λ'∣λ) = 1`, i.e. with the
+  SAME residue field `k`. If `√d ∈ D` already then `D' = D` and `λ' = λ`.
+  Otherwise `[D' : D] = 2`, and `d ≡ 1 (mod ℓ)` with `ℓ` odd makes `d` a
+  square in `ℤ_ℓ` (Hensel lifting the root `1` of `x² − d ≡ x² − 1`, the
+  derivative `2` being a unit), hence a square in the unramified `D_λ`; so
+  `λ` SPLITS. Concretely and without completions:
+  `𝒪_D[√d]/λ ≅ k[x]/(x² − 1) ≅ k × k` has TWO maximal ideals over `λ` since
+  `ℓ` is odd; lying-over lifts both to `𝒪_{D'}` (which is integral over
+  `𝒪_D[√d]`), so there are at least two primes of `D'` over `λ`, and
+  `∑ eᵢfᵢ = [D' : D] = 2` (`Ideal.sum_ramification_inertia`) then forces
+  `e = f = 1` at each.
+
+WHY `d ≡ 2 (mod 3)` IS DELIBERATELY NOT HYPOTHESIZED. It is not needed for
+the truth of this statement, and the consumer is what turns it into the
+`3 < Nat.card kp` clause, through `three_lt_card_of_sq_eq_neg_one` above.
+Keeping it out makes this leaf strictly more general and keeps the two
+congruence conditions on `d` in the ONE place where each is used.
+
+FAITHFULNESS. This asks only for the existence of a number field with
+prescribed local behaviour at ONE rational prime, plus a square root of a
+rational integer, so it is not an instance of the `𝒪ᵥ`-descent trap. It is
+not vacuous either: taking `d` a perfect square would satisfy it with
+`D' = D`, but the consumer's `d = ℓ² + 1` is `≡ 2 (mod 3)` and hence never a
+perfect square, so the `y` it returns really does enlarge every residue
+field at `3`. -/
+theorem exists_totallyRealCoefficientDatum_sqrtAdjoin (ℓ : ℕ) [Fact ℓ.Prime]
+    (hℓ5 : 5 ≤ ℓ) (k : Type u) [Field k] [Finite k]
+    (d : ℕ) (hdpos : 0 < d) (hdℓ : d % ℓ = 1)
+    (hdatum : ∃ (D : Type u) (_ : Field D) (_ : NumberField D)
+      (_ : NumberField.IsTotallyReal D)
+      (lam frp : Ideal (NumberField.RingOfIntegers D))
+      (kp : Type u) (_ : Field kp) (_ : Finite kp) (_ : TopologicalSpace kp)
+      (_ : DiscreteTopology kp),
+      lam.IsMaximal ∧ frp.IsMaximal ∧ lam ≠ frp ∧
+      ((ℓ : ℕ) : NumberField.RingOfIntegers D) ∈ lam ∧
+      ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
+      (3 : kp) = 0) :
+    ∃ (D : Type u) (_ : Field D) (_ : NumberField D)
+      (_ : NumberField.IsTotallyReal D)
+      (lam : Ideal (NumberField.RingOfIntegers D)),
+      lam.IsMaximal ∧
+      ((ℓ : ℕ) : NumberField.RingOfIntegers D) ∈ lam ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
+      ∃ y : NumberField.RingOfIntegers D,
+        y ^ 2 = ((d : ℕ) : NumberField.RingOfIntegers D) :=
+  sorry
+
 /-- **Enlarging a coefficient datum so that the residue field at `3` has
-MORE THAN THREE elements** (sorry leaf, cut 2026-07-26 — the whole residual
+MORE THAN THREE elements** (**PROVEN 2026-07-26** over the single sub-leaf
+`exists_totallyRealCoefficientDatum_sqrtAdjoin` above — the whole residual
 of `exists_totallyRealCoefficientDatum_of_residueField` below, and PURE
 algebraic number theory: no representation and no geometry occurs in it).
 
@@ -7425,8 +7532,12 @@ because the prime-to-`3` part of the level then exceeds `4`), or by the
 quadratic route below. The quadratic route is chosen here because it keeps
 `_core` intact and consumed.
 
-INTENDED DISCHARGE — a real quadratic twist, and it is elementary. Choose a
-positive integer `d` with
+DISCHARGE AS CARRIED OUT (2026-07-26) — a real quadratic twist, and it is
+elementary. The construction of the twisted field is the single sub-leaf
+`exists_totallyRealCoefficientDatum_sqrtAdjoin` above; everything else is
+PROVEN below, and the `3`-half turned out to need NO ramification theory at
+all (see the correction at the end of this docstring). Take the EXPLICIT
+level `d = ℓ² + 1`. Generically one wants a positive integer `d` with
 
 * `d ≡ 2 (mod 3)`, so `d` is a non-residue mod `3` and `3` is INERT in
   `ℚ(√d)`; and
@@ -7445,13 +7556,19 @@ and `d` is not a perfect square, since squares are `0` or `1` mod `3`). Put
 * `λ' ≠ 𝔭'` because a common prime would contain `1 = aℓ + 3b` (`ℓ ≥ 5`, so
   `ℓ` and `3` are coprime), and `(3 : kp) = 0` because `3 ∈ 𝔭'`.
 
-MISSING MACHINERY, so that the next owner knows the shape of the work: the
-compositum of two number fields inside a common algebraic closure; the
-splitting of a rational prime in `ℚ(√d)` in terms of the Legendre symbol;
-and multiplicativity of the residue degree in a tower. None of these is
-represented in this file today, and the residue-degree multiplicativity is
-the only one for which mathlib's `Ideal.inertiaDeg` API should suffice
-directly (`Ideal.inertiaDeg_algebra_tower` and neighbours).
+**THE `3`-HALF NEEDS NO RAMIFICATION THEORY — corrected 2026-07-26.** This
+paragraph used to list as MISSING MACHINERY the compositum of number fields,
+the splitting of `3` in `ℚ(√d)` via the Legendre symbol, and multiplicativity
+of the residue degree in a tower. **Only the first is actually needed**, and
+it is inside the sub-leaf. The `3`-half is `three_lt_card_of_sq_eq_neg_one`
+above and is three lines of finite-field arithmetic: `y² = d ≡ 2 ≡ −1
+(mod 3)` holds in EVERY residue field `kp` at EVERY prime above `3`
+simultaneously, and `−1` is a non-square in `𝔽₃`, so `Nat.card kp ≠ 3`;
+being a power of `3` it is therefore at least `9`. No `Ideal.inertiaDeg`, no
+`Ideal.sum_ramification_inertia`, no `𝒪_{ℚ(√d)}`, and no case split on
+`d mod 4` occurs anywhere. The only surviving machinery gap is the one the
+sub-leaf carries: realising `D · ℚ(√d)` and showing `λ` does not grow its
+residue field there.
 
 FAITHFULNESS: this leaf asks only for the EXISTENCE of a number field with
 prescribed local behaviour at two rational primes, so it is not an instance
@@ -7481,8 +7598,83 @@ theorem exists_totallyRealCoefficientDatum_enlarge (ℓ : ℕ) [Fact ℓ.Prime]
       ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp ∧
       Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
       Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
-      (3 : kp) = 0 ∧ 3 < Nat.card kp :=
-  sorry
+      (3 : kp) = 0 ∧ 3 < Nat.card kp := by
+  classical
+  have hℓprime : Nat.Prime ℓ := Fact.out
+  have hℓ3 : ℓ ≠ 3 := by omega
+  -- the explicit twist level `d = ℓ² + 1`: it is `≡ 1 (mod ℓ)` and `≡ 2 (mod 3)`
+  have hdpos : 0 < ℓ ^ 2 + 1 := by positivity
+  have hdℓ : (ℓ ^ 2 + 1) % ℓ = 1 := by
+    have hrw : ℓ ^ 2 + 1 = 1 + ℓ * ℓ := by ring
+    rw [hrw, Nat.add_mul_mod_self_left, Nat.mod_eq_of_lt (by omega)]
+  have hd3 : (ℓ ^ 2) % 3 = 1 := by
+    have h3 : ¬ (3 ∣ ℓ) := fun hdvd =>
+      hℓ3 ((Nat.prime_dvd_prime_iff_eq (by norm_num) hℓprime).mp hdvd).symm
+    have hmod : ℓ % 3 = 1 ∨ ℓ % 3 = 2 := by omega
+    rcases hmod with h | h <;> rw [Nat.pow_mod, h]
+  obtain ⟨D, hDf, hDnf, hDtr, lam, hlammax, hℓlam, hkiso, y, hy⟩ :=
+    exists_totallyRealCoefficientDatum_sqrtAdjoin ℓ hℓ5 k (ℓ ^ 2 + 1) hdpos hdℓ hdatum
+  -- a maximal ideal above `3`, exactly as in `_core`
+  haveI hp3p : (Ideal.span {(3 : ℤ)}).IsPrime := by
+    rw [Ideal.span_singleton_prime (by norm_num)]
+    exact Int.prime_three
+  haveI hp3m : (Ideal.span {(3 : ℤ)}).IsMaximal := Ideal.IsPrime.isMaximal hp3p (by simp)
+  obtain ⟨⟨frp, hfrpmem⟩⟩ :=
+    (Ideal.span {(3 : ℤ)}).nonempty_primesOver (S := NumberField.RingOfIntegers D)
+  haveI : frp.IsPrime := hfrpmem.1
+  haveI : frp.LiesOver (Ideal.span {(3 : ℤ)}) := hfrpmem.2
+  haveI hfrpmax : frp.IsMaximal :=
+    Ideal.IsMaximal.of_liesOver_isMaximal frp (Ideal.span {(3 : ℤ)})
+  have h3frp : ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp := by
+    have h1 : (3 : ℤ) ∈ frp.under ℤ := by
+      rw [← Ideal.over_def frp (Ideal.span {(3 : ℤ)})]
+      exact Ideal.mem_span_singleton_self _
+    have h2 : (algebraMap ℤ (NumberField.RingOfIntegers D)) (3 : ℤ) ∈ frp := h1
+    simpa using h2
+  letI : Field (NumberField.RingOfIntegers D ⧸ frp) := Ideal.Quotient.field frp
+  haveI : Finite (NumberField.RingOfIntegers D ⧸ frp) := inferInstance
+  letI : TopologicalSpace (NumberField.RingOfIntegers D ⧸ frp) := ⊥
+  haveI : DiscreteTopology (NumberField.RingOfIntegers D ⧸ frp) := ⟨rfl⟩
+  have h3kp : (3 : NumberField.RingOfIntegers D ⧸ frp) = 0 := by
+    have h := (Ideal.Quotient.eq_zero_iff_mem (I := frp)).mpr h3frp
+    rw [map_natCast] at h
+    simpa using h
+  -- `λ ≠ 𝔭`, because a common maximal ideal would contain `1 = aℓ + 3b`
+  have hlamne : lam ≠ frp := by
+    intro hcon
+    have hℓfrp : ((ℓ : ℕ) : NumberField.RingOfIntegers D) ∈ frp := hcon ▸ hℓlam
+    have hcopn : Nat.Coprime ℓ 3 :=
+      (Nat.coprime_primes Fact.out (by norm_num)).mpr (by omega)
+    have hcop : IsCoprime (ℓ : ℤ) (3 : ℤ) := by
+      have h := Nat.isCoprime_iff_coprime.mpr hcopn
+      simpa using h
+    obtain ⟨a, b, hab⟩ := hcop
+    have hone : (1 : NumberField.RingOfIntegers D) ∈ frp := by
+      have hmem : ((a * (ℓ : ℤ) + b * 3 : ℤ) :
+          NumberField.RingOfIntegers D) ∈ frp := by
+        push_cast
+        exact frp.add_mem (frp.mul_mem_left _ hℓfrp) (frp.mul_mem_left _ h3frp)
+      rw [hab] at hmem
+      simpa using hmem
+    exact hfrpmax.ne_top (Ideal.eq_top_of_isUnit_mem _ hone isUnit_one)
+  -- THE NEW CLAUSE: `√(ℓ²+1)` is a square root of `−1` in every residue field at `3`
+  have hcard : 3 < Nat.card (NumberField.RingOfIntegers D ⧸ frp) := by
+    refine three_lt_card_of_sq_eq_neg_one _ h3kp (Ideal.Quotient.mk frp y) ?_
+    have hym : (Ideal.Quotient.mk frp y) ^ 2
+        = ((ℓ ^ 2 + 1 : ℕ) : NumberField.RingOfIntegers D ⧸ frp) := by
+      rw [← map_pow, hy, map_natCast]
+    rw [hym]
+    have hdiv : ℓ ^ 2 + 1 = 3 * (ℓ ^ 2 / 3) + 2 := by
+      have hdm := Nat.div_add_mod (ℓ ^ 2) 3
+      omega
+    rw [hdiv]
+    push_cast
+    linear_combination
+      (((ℓ ^ 2 / 3 : ℕ) : NumberField.RingOfIntegers D ⧸ frp) + 1) * h3kp
+  exact ⟨D, hDf, hDnf, hDtr, lam, frp,
+    (NumberField.RingOfIntegers D ⧸ frp), inferInstance, inferInstance,
+    inferInstance, inferInstance,
+    hlammax, hfrpmax, hlamne, hℓlam, h3frp, hkiso, ⟨RingEquiv.refl _⟩, h3kp, hcard⟩
 
 /-- **The auxiliary totally real coefficient field and its two primes**
 (PROVEN 2026-07-26 — the ARITHMETIC half of the representability leaf; no
@@ -7571,12 +7763,15 @@ already the LARGEST level prime to `ℓ` at which the residue field at `λ`
 is still `k`, and no strengthening of `_core` at its own level can
 deliver the clause. The full table, the machine cross-check and the
 corrected construction are in the docstring of
-`exists_totallyRealCoefficientDatum_enlarge` above, which is now the
-single residual leaf of this node.
+`exists_totallyRealCoefficientDatum_enlarge` above, which is itself PROVEN
+(2026-07-26) over the single residual leaf
+`exists_totallyRealCoefficientDatum_sqrtAdjoin` — the real quadratic twist
+at the explicit level `d = ℓ² + 1`.
 
 So this node is now PROVEN over one sub-leaf: `_core` supplies the datum,
-and `exists_totallyRealCoefficientDatum_enlarge` upgrades it by a real
-quadratic twist `ℚ(√d)` with `3` inert and `ℓ` split. -/
+`exists_totallyRealCoefficientDatum_enlarge` (PROVEN) upgrades it by the real
+quadratic twist `ℚ(√(ℓ²+1))`, and the ONE remaining sorry in the chain is
+`exists_totallyRealCoefficientDatum_sqrtAdjoin`, which constructs that twist. -/
 theorem exists_totallyRealCoefficientDatum_of_residueField
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (k : Type u) [Field k] [Finite k] [Algebra ℤ_[ℓ] k] :
