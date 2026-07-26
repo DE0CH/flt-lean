@@ -890,7 +890,15 @@ Making that separation is the whole point of the cut. "Free of rank two
 at every level" and "free of rank two compatibly in `n`" are genuinely
 different statements — the second is a statement about the inverse limit
 and is what the parent consumes — and only the first is a textbook fact
-about abelian varieties. -/
+about abelian varieties.
+
+Since 2026-07-26 the lifting step is itself PROVEN, over
+`exists_mem_torsion_act_uniformizer_eq` (also PROVEN) and hence over the
+single geometric fact `exists_nsmul_eq_geomFibrePt` — divisibility of an
+abelian variety. So the geometry that is still open beneath the levelwise
+frame is exactly two statements: the RANK COUNT (`exists_levelTateFrame`)
+and DIVISIBILITY (`exists_nsmul_eq_geomFibrePt`). Everything between them
+is commutative algebra proven here. -/
 
 /-- **A level-`J` frame on the `J`-torsion of a geometric fibre**: a
 parametrization
@@ -978,22 +986,73 @@ theorem mem_torsion_iff {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStru
   · intro h
     exact (Submodule.mem_torsionBySet_iff _ _).mpr fun a => h a a.2
 
-/-- **Multiplication by `π` carries `A[Iⁿ⁺¹]` ONTO `A[Iⁿ]`** (sorry node
-— abelian varieties: divisibility, Mumford *Abelian Varieties* §6,
-Silverman *AEC* III.4.2).
+/-- **An abelian variety is a divisible group: `[N]` is surjective on the
+geometric points of a fibre** (sorry node — abelian varieties; Mumford
+*Abelian Varieties* §6 (Application 2 of the theorem of the cube),
+Silverman *AEC* III.4.2 and III.6.4).
 
-An abelian variety over an algebraically closed field is a divisible
-group, and an isogeny is surjective on geometric points; `π ≠ 0` (it is
-not in `I²`, so in particular not `0`) acts on `A_x` as an isogeny
-because `End(A_x)` is torsion-free, so `𝒪_D → End(A_x)` is injective.
-Combined with `π` being a uniformizer at `I` — which is what `hπ`/`hπ2`
-say — the `I`-primary part of `A_x` is `(D_I/𝒪_{D,I})^r` for some `r`,
-on which `·π` visibly carries the `πⁿ⁺¹`-torsion onto the `πⁿ`-torsion.
+For `N ≠ 0` multiplication by `N` on an abelian scheme is an isogeny —
+finite, flat and surjective — so over the ALGEBRAICALLY CLOSED field `F̄`
+it is surjective on points. Properness, smoothness and geometric
+connectedness of `f`, which is exactly what makes each geometric fibre
+an abelian variety, are carried by `ab`; nothing else is used.
+
+The statement is deliberately written with the bare `ℕ`-action of the
+group structure `ab.addCommGroup`, so that it mentions only `ab`: no
+real multiplication, no rank count, no coefficient ring. It is the
+classical divisibility statement and nothing more. Its only consumer,
+`exists_mem_torsion_act_uniformizer_eq` below, converts it into
+divisibility by a nonzero element of `𝒪_D` through the absolute norm. -/
+theorem exists_nsmul_eq_geomFibrePt
+    {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f x) :
+    ∃ w : GeomFibrePt f x,
+      letI := ab.addCommGroup (specAlgClos F ≫ x)
+      N • w = y :=
+  sorry
+
+open _root_.NumberField in
+/-- **Multiplication by `π` carries `A[Iⁿ⁺¹]` ONTO `A[Iⁿ]`** (PROVEN
+2026-07-26 over the single geometric leaf `exists_nsmul_eq_geomFibrePt`;
+everything else below is commutative algebra in the Dedekind domain
+`𝒪_D`).
 
 **Only the surjectivity is asserted**, not any rank: this leaf is
 independent of `exists_levelTateFrame` and does not consume `hdim`. It
 is what makes the transported map `ψ` in `exists_levelTateFrame_succ`
-surjective, which is the only place it is used. -/
+surjective, which is the only place it is used.
+
+The argument, and why it needs no isogeny theory beyond divisibility.
+(The docstring this replaces proposed going through injectivity of
+`𝒪_D → End(A_x)` and the structure of the `I`-primary part; none of that
+is necessary, and both steps would have needed theory the pin lacks.)
+
+1. `π ≠ 0`, since `0 ∈ I²` and `π ∉ I²`. So the principal ideal `(π)` is
+   nonzero, and its absolute norm `N = |𝒪_D/(π)|` is a NONZERO natural
+   number lying in `(π)` (`Ideal.absNorm_mem`): write `N = π·a` with
+   `a ∈ 𝒪_D`.
+2. `[N]` is surjective on `A_x(F̄)` — this is
+   `exists_nsmul_eq_geomFibrePt`, the ONLY geometric input — hence so is
+   `·π`: given `y`, choose `w` with `N·w = y` and set `z₀ = a·w`, so
+   that `π·z₀ = (π a)·w = N·w = y`.
+3. `z₀` need not lie in `A[Iⁿ⁺¹]`: all one knows is that `Iⁿ·(π)` kills
+   it, and `(π)` may be divisible by primes other than `I`. Factor
+   `(π) = I·J` in the Dedekind domain `𝒪_D` (possible because `π ∈ I`,
+   i.e. `I ∣ (π)`); `π ∉ I²` says `I ∤ J`, i.e. `J ⊄ I`, so `I` and `J`
+   are coprime and therefore so are `Iⁿ⁺¹` and `J`. Choose `e ∈ Iⁿ⁺¹`
+   and `j ∈ J` with `e + j = 1`.
+4. `z := j·z₀` is the required point. It lies in `A[Iⁿ⁺¹]` because
+   `Iⁿ⁺¹·(j) ⊆ Iⁿ⁺¹·J = Iⁿ·(I·J) = Iⁿ·(π)`, which annihilates `z₀`; and
+   `π·z = j·(π·z₀) = j·y = (1 − e)·y = y`, because `e ∈ Iⁿ⁺¹ ⊆ Iⁿ` kills
+   `y`.
+
+Step 3 is where `hπ2` is used, and it is the only place: it is what
+makes `π` a UNIFORMIZER at `I` rather than merely an element of `I`.
+The hypothesis is not decorative — for `π ∈ I²` the statement is FALSE
+already at `n = 1`, since then `π·z = 0` for every `z ∈ A[I²]` while
+`A[I] ≠ 0` on any abelian variety. -/
 theorem exists_mem_torsion_act_uniformizer_eq
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D]
@@ -1003,8 +1062,77 @@ theorem exists_mem_torsion_act_uniformizer_eq
     (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
     (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
     (n : ℕ) (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x (I ^ n)).1) :
-    ∃ z, z ∈ (m.torsion x (I ^ (n + 1))).1 ∧ m.act π z = y :=
-  sorry
+    ∃ z, z ∈ (m.torsion x (I ^ (n + 1))).1 ∧ m.act π z = y := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+  letI : Module (𝓞 D) (GeomFibrePt f x) := m.module (specAlgClos F ≫ x)
+  haveI : I.IsMaximal := hI
+  -- `π ≠ 0`, since `0 ∈ I ^ 2`
+  have hπ0 : π ≠ 0 := by
+    rintro rfl
+    exact hπ2 (Submodule.zero_mem _)
+  -- ### 1. `π` divides a nonzero rational integer, its absolute norm
+  have hspan0 : Ideal.span {π} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hπ0
+  have hNne : Ideal.absNorm (Ideal.span {π}) ≠ 0 := fun h =>
+    hspan0 (Ideal.absNorm_eq_zero_iff.mp h)
+  obtain ⟨a, ha⟩ : π ∣ ((Ideal.absNorm (Ideal.span {π}) : ℕ) : 𝓞 D) :=
+    Ideal.mem_span_singleton.mp (Ideal.absNorm_mem (Ideal.span {π}))
+  -- ### 2. the prime-to-`I` part `J` of the principal ideal `(π)`
+  obtain ⟨J, hJ⟩ : I ∣ Ideal.span {π} :=
+    Ideal.dvd_iff_le.mpr (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hπ))
+  have hJnotle : ¬ J ≤ I := by
+    intro h
+    refine hπ2 ?_
+    have hle : Ideal.span {π} ≤ I ^ 2 := by
+      rw [hJ, sq]; exact Ideal.mul_mono_right h
+    exact hle (Ideal.mem_span_singleton_self π)
+  have hsup : I ⊔ J = ⊤ := by
+    rcases eq_or_lt_of_le (le_sup_left : I ≤ I ⊔ J) with h | h
+    · exact absurd (le_sup_right.trans h.ge) hJnotle
+    · exact hI.out.2 _ h
+  have hcop : I ^ (n + 1) ⊔ J = ⊤ :=
+    Ideal.isCoprime_iff_sup_eq.mp (Ideal.isCoprime_iff_sup_eq.mpr hsup).pow_left
+  obtain ⟨e, he, j, hj, hej⟩ :=
+    Submodule.mem_sup.mp (hcop ▸ (Submodule.mem_top : (1 : 𝓞 D) ∈ (⊤ : Ideal (𝓞 D))))
+  -- ### 3. `·π` is surjective on ALL geometric points, by divisibility
+  obtain ⟨w, hw⟩ := exists_nsmul_eq_geomFibrePt ab x _ hNne y
+  have hw' : ((Ideal.absNorm (Ideal.span {π}) : ℕ) : 𝓞 D) • w = y := by
+    rw [Nat.cast_smul_eq_nsmul]; exact hw
+  have hπz₀ : π • (a • w) = y := by
+    rw [smul_smul, ← ha]; exact hw'
+  -- ### 4. the annihilator of `a • w` contains `Iⁿ · (π)`
+  have hann : (I ^ n) * Ideal.span {π} ≤
+      (Submodule.span (𝓞 D) {a • w}).annihilator := by
+    rw [Ideal.mul_le]
+    intro r hr s hs
+    rw [Submodule.mem_annihilator_span_singleton]
+    obtain ⟨d, rfl⟩ := Ideal.mem_span_singleton.mp hs
+    have h1 : (r * (π * d)) • (a • w) = (r * d) • (π • (a • w)) := by
+      simp only [← mul_smul]
+      congr 1
+      ring
+    rw [h1, hπz₀]
+    exact (mem_torsion_iff m x (I ^ n) y).mp hy (r * d) (Ideal.mul_mem_right d _ hr)
+  -- ### 5. correcting `a • w` by `j` lands it in `A[Iⁿ⁺¹]` without moving `π · _`
+  have hjy : j • y = y := by
+    have hey : e • y = 0 :=
+      (mem_torsion_iff m x (I ^ n) y).mp hy e
+        (Ideal.pow_le_pow_right (Nat.le_succ n) he)
+    have h := add_smul e j y
+    rw [hej, one_smul, hey, zero_add] at h
+    exact h.symm
+  have hEq : (I ^ (n + 1)) * J = (I ^ n) * Ideal.span {π} := by
+    rw [hJ, pow_succ, mul_assoc]
+  refine ⟨j • (a • w), ?_, ?_⟩
+  · refine (mem_torsion_iff m x (I ^ (n + 1)) _).mpr fun b hb => ?_
+    show b • (j • (a • w)) = 0
+    rw [smul_smul]
+    refine (Submodule.mem_annihilator_span_singleton _ _).mp (hann ?_)
+    rw [← hEq]
+    exact Ideal.mul_mem_mul hb hj
+  · show π • (j • (a • w)) = y
+    rw [smul_smul, mul_comm, ← smul_smul, hπz₀, hjy]
 
 open _root_.NumberField in
 /-- **A level-`n` frame lifts through multiplication by `π` to a level
