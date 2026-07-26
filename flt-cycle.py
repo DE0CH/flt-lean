@@ -63,7 +63,8 @@ MALFUNCTION_LOG = os.path.expanduser("~/.flt-malfunction-log")
 
 # Worktrees with no live agent, safe to move under. `claimed`/`suspended` hold a
 # live or resumable agent; `reclaiming` is draining and must not come back.
-ADVANCEABLE = {"free", "retired", "ready"}
+# `batched` = finished, work with the merger, awaiting release.
+ADVANCEABLE = {"free", "retired", "ready", "batched"}
 
 
 # --------------------------------------------------------------------------
@@ -326,6 +327,11 @@ def cmd_preflight(args):
                 f"{name} is `{state}` but still HAS an inflight record -- "
                 "ownership scans will keep crediting it with leaves nobody is "
                 "working on.  -> remove its line from ~/.flt-inflight.jsonl")
+        if state == "batched" and name not in batch:
+            blocking.append(
+                f"{name} is `batched` but is NOT in the merge batch -- its work "
+                "will never reach the merger.  "
+                f"-> python3 flt-cycle.py done {name}")
         if state == "suspended" and not extra:
             warnings.append(
                 f"{name} is `suspended` with no transcript id -- its work "
@@ -388,6 +394,76 @@ def cmd_preflight(args):
 
 
 # --------------------------------------------------------------------------
+# merge-time lint: the namespace-shadowing trap
+# --------------------------------------------------------------------------
+def cmd_nscheck(args):
+    """Flag declarations that create a nested copy of a ROOT namespace.
+
+    One commit cost a full build cycle and produced 100 errors with no error
+    anywhere near the cause, so this exists to catch that shape in a diff.
+
+    `theorem IsLocalRing.of_henselianRing_of_isDomain` written INSIDE
+    `namespace GaloisRepresentation.Modularity` has the real name
+    `GaloisRepresentation.Modularity.IsLocalRing.of_henselianRing_of_isDomain`,
+    which CREATES a nested namespace `...Modularity.IsLocalRing`. Lean's name
+    resolution prefers the enclosing namespace over the root, so every
+    `open IsLocalRing` elsewhere in that namespace silently rebinds to the
+    nearly-empty nested one. In one file that made `maximalIdeal`,
+    `ResidueField`, `jacobson_eq_maximalIdeal` and friends unknown identifiers;
+    the declarations whose STATEMENTS used them then failed to elaborate, so
+    every later reference to those reported "unknown identifier" too.
+
+    What makes it worth a mechanical check rather than vigilance: it is GREEN in
+    the author's own file and RED only in a different file that merely shares a
+    namespace. The author has no reason to build that file, so nothing in their
+    workflow can catch it. The fix is a `_root_.` prefix, with no statement
+    change and no effect on existing references.
+
+    Heuristic and deliberately noisy-but-cheap: report any declaration header
+    whose name is dotted and whose first component is a known root namespace,
+    when it appears inside a project `namespace`. Verify each hit by eye.
+    """
+    ref = args.ref or "main"
+    diff = run(["git", "-C", REPO, "diff", "-U0", ref])
+    if diff.returncode != 0:
+        raise SystemExit(f"git diff {ref} failed: {diff.stderr.strip()}")
+    # Root namespaces this project opens and could shadow. Mathlib roots that
+    # are commonly `open`ed are the ones that actually bite.
+    roots = {"IsLocalRing", "Ideal", "Polynomial", "Matrix", "Module", "Finset",
+             "Submodule", "LinearMap", "RingHom", "AlgHom", "Set", "List",
+             "Nat", "Int", "Rat", "Real", "Complex", "Filter", "Topology",
+             "MeasureTheory", "Function", "Equiv", "Units", "Subgroup",
+             "MonoidAlgebra", "AlgebraicGeometry", "CategoryTheory"}
+    decl = re.compile(
+        r"^\+\s*(?:@\[[^\]]*\]\s*)?(?:public\s+|private\s+|protected\s+|"
+        r"noncomputable\s+)*(theorem|lemma|def|abbrev|instance|structure)\s+"
+        r"([A-Za-z_][A-Za-z0-9_.']*)")
+    hits = []
+    for line in diff.stdout.splitlines():
+        m = decl.match(line)
+        if not m:
+            continue
+        name = m.group(2)
+        if "." not in name:
+            continue
+        head = name.split(".", 1)[0]
+        if head in roots:
+            hits.append((m.group(1), name))
+    if not hits:
+        print(f"nscheck vs {ref}: clean -- no root-namespace shadowing")
+        return 0
+    print(f"nscheck vs {ref}: {len(hits)} suspicious declaration(s).\n")
+    for kind, name in hits:
+        print(f"  {kind} {name}")
+    print("\nEach of these creates a nested `<current-namespace>."
+          f"{hits[0][1].split('.', 1)[0]}`-style namespace if it sits inside a")
+    print("project `namespace`. Check whether it does; if so, prefix `_root_.`.")
+    print("It will NOT show up in the author's own file -- only in siblings that")
+    print("`open` the shadowed root.")
+    return 1
+
+
+# --------------------------------------------------------------------------
 # orchestrator: an agent finished
 # --------------------------------------------------------------------------
 def cmd_done(args):
@@ -413,6 +489,47 @@ def cmd_done(args):
             print(f"batched {n}")
         fh.flush()
         os.fsync(fh.fileno())
+
+    # The agent has FINISHED, so its dispatch record must go. Leaving it makes
+    # every ownership scan credit a finished agent with the leaves its prompt
+    # named -- which reads as "covered" and silently strands them for a whole
+    # release cycle. This was found the honest way: a scan reported a leaf owned
+    # by an agent that had just reported completion.
+    import json as _json
+    ipath = os.path.expanduser("~/.flt-inflight.jsonl")
+    keep, dropped = [], 0
+    for ln in read_lines(ipath):
+        try:
+            rec = _json.loads(ln)
+        except Exception:
+            continue
+        if os.path.basename((rec.get("worktree") or "").rstrip("/")) in args.worktrees:
+            dropped += 1
+            continue
+        keep.append(rec)
+    if dropped:
+        with open(ipath, "w") as fh:
+            fh.write("".join(_json.dumps(r) + "\n" for r in keep))
+        print(f"cleared {dropped} inflight record(s)")
+
+    # Move the slot to `batched`: finished, work handed to the merger, NOT yet
+    # released. Deliberately not `free` -- its branch is not an ancestor of main
+    # until the merger cuts a release, and the dispatch hook hard-crashes on a
+    # free-but-diverged slot. `release` promotes it once its work is in.
+    fd = os.open(POOL, os.O_RDWR)
+    with os.fdopen(fd, "r+") as pf:
+        fcntl.flock(pf, fcntl.LOCK_EX)
+        cur = read_entries(pf)
+        out = []
+        for n, s, e in cur:
+            if n in args.worktrees and s in ("claimed", "reclaiming"):
+                # `reclaiming` still retires rather than returning to the pool.
+                out.append((n, "batched" if s == "claimed" else "batched", e
+                            + (["retire"] if s == "reclaiming" else [])))
+                print(f"{n}: {s} -> batched")
+            else:
+                out.append((n, s, e))
+        write_entries(pf, out)
 
     depth = len(read_lines(BATCH))
     print(f"merge batch depth: {depth}")
@@ -690,6 +807,11 @@ def main():
     p = sub.add_parser("preflight",
                        help="is everything accounted for? (release runs this)")
     p.set_defaults(fn=cmd_preflight)
+
+    p = sub.add_parser("nscheck",
+                       help="MERGER: flag root-namespace shadowing in a diff")
+    p.add_argument("ref", nargs="?", help="base ref (default main)")
+    p.set_defaults(fn=cmd_nscheck)
 
     p = sub.add_parser("claim", help="MERGER: take the batch atomically")
     p.set_defaults(fn=cmd_claim)
