@@ -12188,16 +12188,15 @@ ring `𝒪 = coeff.carrier`. A level of DEPTH `d` consists of a finite `S`-modul
 `N` — the cohomology of the Hilbert modular Shimura variety at level raised by
 `Q_d`, viewed through the diamond action — together with:
 
-* `rs`, a list of `q + 1` elements of `𝔪_S` that is `N`-REGULAR. The first `q`
-  are the diamond parameters `(1 + yᵢ)^{ℓ^d} − 1` cutting out the augmentation
-  ideal of `𝒪[Δ_{Q_d}]`, and they are `N`-regular precisely because the
-  Taylor–Wiles freeness lemma makes `N` free over `𝒪[Δ_{Q_d}]`; the last is the
-  regular element of `𝔪_𝒪` supplied by
-  `TaylorWilesCoefficients.exists_isRegular_maximalIdeal`, which is `N`-regular
-  because a module free over `𝒪[Δ]` is `𝒪`-torsion-free. The length `q + 1` is
-  chosen to match `PatchedModule.exists_isRegular` exactly: it is what survives
-  to the limit.
-* `aug_le`, the statement that the augmentation ideal `(rs.take q)` is
+* `aug`, the level-`d` diamond kernel `a_d = ker (S ↠ 𝒪[Δ_{Q_d}])`, generated
+  classically by `(1 + yᵢ)^{ℓ^d} − 1`; `aug_smul`, saying that it ANNIHILATES
+  `N` — which is what "`N` is the cohomology at level `Q_d` viewed through the
+  diamond action" means, the action factoring through `S ⧸ a_d = 𝒪[Δ_{Q_d}]`.
+* `free`, the Taylor–Wiles freeness lemma: `N` is free over `𝒪[Δ_{Q_d}]` of
+  rank exactly `rank`, INDEPENDENT of `d`. This is the finite-level input the
+  patching limit consumes, and it subsumes `span_le` (which is kept because it
+  is the bound stated at the system level).
+* `aug_le`, the statement that the augmentation ideal `aug` is
   contained in `𝔪_S ^ d`. **This is the field whose ABSENCE is the known defect
   of the `ℚ`-level interface** — there the level-wise cut is missing the
   augmented bound, so the bottom-level bound is vacuous and no raw level exists
@@ -12214,7 +12213,39 @@ ring `𝒪 = coeff.carrier`. A level of DEPTH `d` consists of a finite `S`-modul
 Note the coefficient ring is a `TaylorWilesCoefficients`, NOT `ℤ_[ℓ]`: the
 `ℚ`-level structures hardcode `MvPowerSeries (Fin q) ℤ_[p]` in both the
 diamond-coordinate and the presentation role, which is correct only when
-`k = 𝔽_ℓ`. Keeping `𝒪` abstract is the second defect this interface avoids. -/
+`k = 𝔽_ℓ`. Keeping `𝒪` abstract is the second defect this interface avoids.
+
+SATISFIABILITY AUDIT (2026-07-26, and this REPLACED the original `rs`/
+`rs_length`/`rs_mem`/`rs_regular` fields). As first written this structure
+carried, at EVERY depth `d`, a list `rs` of `q + 1` elements of `𝔪_S` required
+to be `N`-REGULAR, with `rs.take q` the diamond parameters and `aug_le` stated
+for `Ideal.ofList (rs.take q)`. **No finite Taylor–Wiles level satisfies that**,
+for two independent reasons, and the intended witness fails both:
+
+1. ELEMENTARY. `rs.take q` was described as "cutting out the augmentation ideal
+   of `𝒪[Δ_{Q_d}]`" — i.e. generating `ker (S ↠ 𝒪[Δ_{Q_d}])` — while `N` is a
+   module over `𝒪[Δ_{Q_d}]`. Those elements therefore act as `0` on `N`. But
+   `RingTheory.Sequence.IsWeaklyRegular` demands `IsSMulRegular` of `rs[0]` on
+   `N`, and `IsSMulRegular N 0` holds only for `N = 0`, whereas `N ≠ 0` because
+   `proj` is onto the nontrivial `M₀`. Freeness over `𝒪[Δ]` does not rescue
+   this: in `𝒪[Δ]` with `Δ` finite, `(δ − 1) · (1 + δ + ⋯ + δ^{|Δ|−1}) = 0`, so
+   every augmentation generator is a zero divisor.
+2. STRUCTURAL, and independent of which `S`-action is meant. Every finite-level
+   Taylor–Wiles module is FINITE over `𝒪`, so `S ⧸ Ann_S N` is a quotient of
+   the one-dimensional `𝒪[Δ_{Q_d}]`, and `depth_S N ≤ dim (S ⧸ Ann_S N) ≤ 1`.
+   A length-`(q+1)` `N`-regular sequence in `𝔪_S` therefore cannot exist for
+   `q ≥ 1`. Depth `q + 1` is the CONCLUSION of patching, true of `M_∞` and of
+   nothing at finite level.
+
+The consequence of leaving it in place would not have been a false theorem —
+the structure is still inhabited, e.g. by `N = S` with
+`rs = (y₁^d, …, y_q^d, ϖ)` — but a DEAD CUT: since only the patched limit
+satisfies it, `exists_hilbertPatchingSystem` would have had to perform the
+entire patching argument silently, and `exists_patchedModule_of_hilbertPatchingSystem`
+would have been a repackaging. The repair moves the depth conclusion to where
+it is produced and leaves each level with exactly what Taylor–Wiles supplies:
+freeness over the finite group ring, and an augmentation ideal deepening with
+`d`. -/
 structure HilbertPatchingLevel (q : ℕ)
     (coeff : Modularity.TaylorWilesCoefficients)
     {Runiv : Type u} [CommRing Runiv] {T : Type u} [CommRing T]
@@ -12233,23 +12264,29 @@ structure HilbertPatchingLevel (q : ℕ)
   of generators to grow with `d` and would leave the limit unreachable. -/
   span_le : ∃ s : Finset N, s.card ≤ rank ∧
     Submodule.span (MvPowerSeries (Fin q) coeff.carrier) (s : Set N) = ⊤
-  /-- the `q` diamond parameters followed by the regular element of `𝔪_𝒪`. -/
-  rs : List (MvPowerSeries (Fin q) coeff.carrier)
-  rs_length : rs.length = q + 1
-  rs_mem : ∀ x ∈ rs,
-    x ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) coeff.carrier)
-  rs_regular : RingTheory.Sequence.IsRegular N rs
+  /-- the level-`d` diamond kernel `a_d = ker (S ↠ 𝒪[Δ_{Q_d}])`. -/
+  aug : Ideal (MvPowerSeries (Fin q) coeff.carrier)
   /-- the augmented bound: the level-`d` augmentation ideal is `𝔪_S`-adically
   deep. This is what the `ℚ`-level interface is missing. -/
-  aug_le : Ideal.ofList (rs.take q) ≤
-    IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) coeff.carrier) ^ d
+  aug_le : aug ≤ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) coeff.carrier) ^ d
+  /-- the diamond action: `S` acts on `N` through `S ⧸ a_d = 𝒪[Δ_{Q_d}]`, so
+  the diamond kernel annihilates `N`. -/
+  aug_smul : ∀ x ∈ aug, ∀ m : N, x • m = 0
+  /-- **the Taylor–Wiles freeness lemma** (Taylor–Wiles 1995, the key Lemma;
+  Diamond 1997, Thm. 2.1; Fujiwara §3): `N` is free over `𝒪[Δ_{Q_d}]` of rank
+  exactly `rank`, with `rank` INDEPENDENT of the depth `d`. This is the whole
+  finite-level input of the patching argument, and it is what the removed
+  `rs_regular` field was trying — impossibly — to say at finite level; see the
+  SATISFIABILITY AUDIT above. -/
+  free : Nonempty (N ≃ₗ[MvPowerSeries (Fin q) coeff.carrier]
+    (Fin rank → (MvPowerSeries (Fin q) coeff.carrier ⧸ aug)))
   /-- the bottom identification, level `d` down to `M₀`. -/
   proj : N →+ M0
   proj_surjective : Function.Surjective proj
   proj_smul : ∀ (x : MvPowerSeries (Fin q) coeff.carrier) (m : N),
     proj (x • m) = ψ (toRuniv x) • proj m
   mem_smul_top_of_proj_eq_zero : ∀ m : N, proj m = 0 →
-    m ∈ (Ideal.ofList (rs.take q) ⊔ RingHom.ker toRuniv) •
+    m ∈ (aug ⊔ RingHom.ker toRuniv) •
       (⊤ : Submodule (MvPowerSeries (Fin q) coeff.carrier) N)
 
 attribute [instance] HilbertPatchingLevel.addCommGroup HilbertPatchingLevel.module
@@ -12288,6 +12325,75 @@ structure HilbertPatchingSystem {Runiv : Type u} [CommRing Runiv]
 attribute [instance] HilbertPatchingSystem.addCommGroupM0
   HilbertPatchingSystem.moduleM0
 
+/-- **The Taylor–Wiles pigeonhole** (LEAF — new 2026-07-26; pure commutative
+algebra: no base field, no Galois theory, no `ψ`, no arithmetic).
+
+`S = 𝒪⟦y₁, …, y_q⟧` and `M` is presented, for EVERY `d`, as a quotient of the
+SAME finite free module `S^rank`, by a surjection whose kernel is contained in
+`(𝔞 ⊔ 𝔪_S^d)·S^rank`. Conclusion: one surjection whose kernel is contained in
+`𝔞·S^rank` outright. This single statement is the `d → ∞` step of Taylor–Wiles
+patching, and after the 2026-07-26 repair of `HilbertPatchingLevel` it is the
+ONLY unproven step of `exists_patchedModule_of_hilbertPatchingSystem`.
+
+ROUTE, and every input it needs is a field of `TaylorWilesCoefficients`:
+
+1. `M` is finite over `S`: it is a quotient of `S^rank` (any one `d` gives
+   that). Hence `M ⧸ 𝔪_S^c M` is a finite module over `S ⧸ 𝔪_S^c`.
+2. `S ⧸ 𝔪_S^c` is a FINITE RING for every `c`: `𝒪 ⧸ 𝔪_𝒪^i` is finite because
+   `coeff.finite_residueField` makes each `𝔪_𝒪^i ⧸ 𝔪_𝒪^{i+1}` a
+   finite-dimensional space over a finite field, and `S ⧸ 𝔪_S^c` is a
+   finite-length module over it. Therefore
+   `Hom_S(S^rank, M ⧸ 𝔪_S^c M) ≅ (M ⧸ 𝔪_S^c M)^rank` is a FINITE SET — this is
+   the pigeonhole's finiteness, and it is exactly why `rank` had to be uniform
+   in `d`.
+3. DIAGONAL. For each `c` infinitely many `d` give the same reduction of `φ_d`
+   modulo `𝔪_S^c`; nesting these choices over `c` gives a compatible system
+   `(ψ_c)` with `ψ_c ≡ φ_{d_c} mod 𝔪_S^c` for a strictly increasing `d_c`.
+4. The limit exists: `𝒪` is `𝔪_𝒪`-adically complete, hence so are `S` and the
+   finite `S`-module `M`, so the compatible system `(ψ_c)` is the reduction of a
+   genuine `φ : S^rank →ₗ[S] M`. Completeness is not a field of
+   `TaylorWilesCoefficients` but follows from its topological fields: `𝒪` is
+   compact Hausdorff totally disconnected, hence profinite, so its open ideals
+   are cofinal; and `𝒪` is a DVR by `exists_isRegular_maximalIdeal`, so its only
+   ideals are `𝔪^n` and `0`, and `0` is not open (a compact discrete ring is
+   finite, and a finite DVR would force `𝔪 = 𝒪`). Hence the topology IS the
+   `𝔪`-adic one and completeness is compactness. THIS SUB-STEP IS THE LIKELIEST
+   PLACE FOR A MISSING HYPOTHESIS: if the derivation above proves awkward in
+   Lean, adding `isAdicComplete` as a field of `TaylorWilesCoefficients` is
+   faithful — every intended witness (`ℤ_[p]`, `W(k)`) has it.
+5. `φ` is surjective by Nakayama (it is surjective modulo `𝔪_S`, and `M` is
+   finite over the local ring `S`), and `ker φ ⊆ 𝔞·S^rank` by Krull
+   intersection: for each `c`, choosing `d_c ≥ c`, `x ∈ ker φ` gives
+   `φ_{d_c} x ∈ 𝔪_S^c M`, so `x ∈ (𝔞 ⊔ 𝔪_S^c)·S^rank`, and
+   `⋂_c (𝔞·S^rank + 𝔪_S^c·S^rank) = 𝔞·S^rank`.
+
+NON-VACUITY. The hypothesis is a family indexed by `ℕ`, and it is not
+satisfiable by repeating one member: the conclusion drops the `𝔪_S^d` summand
+entirely, which no single `d` provides. It is also not vacuous downward: the
+hypothesis is satisfied by the finite Taylor–Wiles levels through
+`exists_patchedModule_of_hilbertPatchingSystem`'s step 1.
+
+References: Taylor–Wiles, Ann. of Math. 141 (1995), §2 (the original
+pigeonhole); Diamond, Invent. Math. 128 (1997); Kisin, Ann. of Math. 170 (2009),
+§3; Fujiwara, *Deformation rings and Hecke algebras in the totally real case*,
+§3. -/
+theorem exists_surjective_ker_le_of_forall_maximalIdeal_pow
+    (coeff : Modularity.TaylorWilesCoefficients) (q rank : ℕ)
+    {M : Type u} [AddCommGroup M] [Module (MvPowerSeries (Fin q) coeff.carrier) M]
+    (𝔞 : Ideal (MvPowerSeries (Fin q) coeff.carrier))
+    (h : ∀ d : ℕ, ∃ φ : (Fin rank → MvPowerSeries (Fin q) coeff.carrier)
+          →ₗ[MvPowerSeries (Fin q) coeff.carrier] M,
+        Function.Surjective φ ∧ ∀ x, φ x = 0 →
+          x ∈ (𝔞 ⊔ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) coeff.carrier) ^ d) •
+            (⊤ : Submodule (MvPowerSeries (Fin q) coeff.carrier)
+              (Fin rank → MvPowerSeries (Fin q) coeff.carrier))) :
+    ∃ φ : (Fin rank → MvPowerSeries (Fin q) coeff.carrier)
+          →ₗ[MvPowerSeries (Fin q) coeff.carrier] M,
+      Function.Surjective φ ∧ ∀ x, φ x = 0 →
+        x ∈ 𝔞 • (⊤ : Submodule (MvPowerSeries (Fin q) coeff.carrier)
+              (Fin rank → MvPowerSeries (Fin q) coeff.carrier)) :=
+  sorry
+
 /-- **The patching limit is taken here** (LEAF — new 2026-07-26; pure
 commutative algebra, no base field anywhere in the statement).
 
@@ -12298,21 +12404,43 @@ conclusion is `PatchedModule`, whose `Minf` is finite over
 `S = 𝒪⟦y₁, …, y_q⟧` and carries an `M_∞`-regular sequence of length `q + 1` in
 `𝔪_S`.
 
-ROUTE. For each `c` the quotients `N_d ⧸ 𝔪_S^c N_d` are finite `S ⧸ 𝔪_S^c`-modules
-of bounded length — bounded because `span_le` caps the number of `S`-generators
-of every level by the system's single `rank`, uniformly in `d` — so along a
-subsequence they stabilise; a diagonal
-argument over `c` produces a compatible system whose inverse limit `M_∞` is
-finite over `S`. The regular sequence survives because regularity of a fixed
-length-`(q+1)` sequence is a closed condition under the limit, and `aug_le`
-forces the level-`d` augmentation ideals into `𝔪_S^d`, so the bottom
-identification passes to `M_∞ ⧸ (ker toRuniv) M_∞ ≅ M₀`.
+ROUTE (rewritten 2026-07-26 together with the SATISFIABILITY AUDIT on
+`HilbertPatchingLevel`; the previous route claimed the length-`(q+1)` regular
+sequence "survives the limit" from the levels, which was impossible because no
+finite level carries one). The limit is now genuinely taken here, and the proof
+below is complete glue over three steps, the first and third PROVEN:
+
+1. `Fin rank → S` PRESENTS every level (PROVEN below). At depth `d`, `free`
+   gives `N_d ≃ (S ⧸ a_d)^rank`, so composing `S^rank ↠ (S ⧸ a_d)^rank ≃ N_d`
+   with `proj` gives a surjection `φ_d : S^rank ↠ M₀` whose kernel lies in
+   `(𝔞 ⊔ a_d)·S^rank ⊆ (𝔞 ⊔ 𝔪_S^d)·S^rank` by `aug_le`, where
+   `𝔞 = ker toRuniv`. The uniformity of `rank` across depths — a field of the
+   SYSTEM — is what puts every `φ_d` on the SAME free module, which is what
+   makes a limit of the `φ_d` meaningful at all.
+2. THE PATCHING PIGEONHOLE, and the only sorried step:
+   `exists_surjective_ker_le_of_forall_maximalIdeal_pow` above. It is stated as
+   pure commutative algebra over a `TaylorWilesCoefficients` — no base field, no
+   Galois theory, no `ψ` — and this is where `d → ∞` actually happens.
+3. `S^rank` carries a length-`(q+1)` regular sequence in `𝔪_S` (PROVEN below):
+   `S` is regular local of dimension `q + 1`
+   (`exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`, which needs exactly
+   `coeff.exists_isRegular_maximalIdeal`, i.e. that `𝒪` is a DVR), and a regular
+   sequence on `S` stays regular on the free module `S^rank` once `rank ≥ 1` —
+   which `nontrivialM0` forces, since a level of rank `0` would make `M₀`
+   subsingleton through `proj_surjective`. This is where the depth-`(q+1)`
+   conclusion of `PatchedModule` is PRODUCED, rather than assumed at every
+   finite level as before.
+
+The `ULift` in the assembly is only universe bookkeeping: `coeff.carrier` is a
+`Type 0`, so `S^rank` is too, while `PatchedModule.{u,u,u,u}` wants `Minf` in
+`Type u`.
 
 WHY THIS IS NOT VACUOUS. `nontrivialM0` is a field of the system and `proj` is
-surjective at every level, so no level is the zero module; the regular sequence
-has length exactly `q + 1` at every level; and a level is demanded at every
-depth `d`, with `aug_le` deepening with `d`. A witness cannot be manufactured
-from an empty index set — the index set is `ℕ`.
+surjective at every level, so no level is the zero module and `rank ≥ 1`; a
+level is demanded at every depth `d`, with `aug_le` deepening with `d`, so step
+2 is handed a genuinely infinite family and the index set is `ℕ`, not empty. And
+the conclusion is not reachable from any single level: at finite `d` the kernel
+bound carries the extra `𝔪_S^d`, which only the limit removes.
 
 References: Taylor–Wiles, Ann. of Math. 141 (1995), §2; Diamond, Invent. Math.
 128 (1997); Kisin, Ann. of Math. 170 (2009), §3; Fujiwara, *Deformation rings
@@ -12321,8 +12449,142 @@ theorem exists_patchedModule_of_hilbertPatchingSystem
     (ℓ : ℕ) [Fact ℓ.Prime] {Runiv : Type u} [CommRing Runiv]
     {T : Type u} [CommRing T] {ψ : Runiv →+* T}
     (P : HilbertPatchingSystem ψ) :
-    Nonempty (Modularity.PatchedModule.{u, u, u, u} ℓ ψ) :=
-  sorry
+    Nonempty (Modularity.PatchedModule.{u, u, u, u} ℓ ψ) := by
+  classical
+  letI : Module (MvPowerSeries (Fin P.q) P.coeff.carrier) P.M0 :=
+    Module.compHom P.M0 (ψ.comp P.toRuniv)
+  have hsmulM0 : ∀ (x : MvPowerSeries (Fin P.q) P.coeff.carrier) (z : P.M0),
+      x • z = ψ (P.toRuniv x) • z := fun _ _ => rfl
+  -- STEP 1: every level presents `M₀` on the SAME free module `S^rank`.
+  have hstep : ∀ d : ℕ, ∃ φ : (Fin P.rank → MvPowerSeries (Fin P.q) P.coeff.carrier)
+        →ₗ[MvPowerSeries (Fin P.q) P.coeff.carrier] P.M0,
+      Function.Surjective φ ∧ ∀ x, φ x = 0 →
+        x ∈ (RingHom.ker P.toRuniv ⊔
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin P.q) P.coeff.carrier) ^ d) •
+          (⊤ : Submodule (MvPowerSeries (Fin P.q) P.coeff.carrier)
+            (Fin P.rank → MvPowerSeries (Fin P.q) P.coeff.carrier)) := by
+    intro d
+    set S := MvPowerSeries (Fin P.q) P.coeff.carrier with hSdef
+    set L := P.levels d with hLdef
+    obtain ⟨eq⟩ := L.free
+    let projₗ : L.N →ₗ[S] P.M0 :=
+      { toFun := L.proj
+        map_add' := L.proj.map_add
+        map_smul' := fun x m => by
+          simpa only [RingHom.id_apply, hsmulM0] using L.proj_smul x m }
+    let π : (Fin P.rank → S) →ₗ[S] (Fin P.rank → S ⧸ L.aug) :=
+      LinearMap.pi (fun i => L.aug.mkQ.comp (LinearMap.proj i))
+    have hπapp : ∀ (z : Fin P.rank → S) (i : Fin P.rank),
+        π z i = Submodule.Quotient.mk (z i) := fun _ _ => rfl
+    have hπsurj : Function.Surjective π := by
+      intro f
+      choose g hg using fun i => Submodule.Quotient.mk_surjective L.aug (f i)
+      exact ⟨g, funext fun i => (hπapp g i).trans (hg i)⟩
+    let σ : (Fin P.rank → S) →ₗ[S] L.N := eq.symm.toLinearMap ∘ₗ π
+    have hσsurj : Function.Surjective σ := eq.symm.surjective.comp hπsurj
+    refine ⟨projₗ ∘ₗ σ, L.proj_surjective.comp hσsurj, ?_⟩
+    intro x hx
+    have h1 : σ x ∈ (L.aug ⊔ RingHom.ker P.toRuniv) • (⊤ : Submodule S L.N) :=
+      L.mem_smul_top_of_proj_eq_zero _ hx
+    have hmapσ : Submodule.map σ
+        ((L.aug ⊔ RingHom.ker P.toRuniv) • (⊤ : Submodule S (Fin P.rank → S)))
+        = (L.aug ⊔ RingHom.ker P.toRuniv) • (⊤ : Submodule S L.N) := by
+      rw [Submodule.map_smul'', Submodule.map_top, LinearMap.range_eq_top.mpr hσsurj]
+    rw [← hmapσ] at h1
+    obtain ⟨y, hy, hyx⟩ := h1
+    have hz : σ (x - y) = 0 := by rw [map_sub, hyx, sub_self]
+    have hπz : π (x - y) = 0 := eq.symm.injective (by rw [map_zero]; exact hz)
+    have hcoord : ∀ i, (x - y) i ∈ L.aug := by
+      intro i
+      have := congrFun (congrArg (fun f : Fin P.rank → S ⧸ L.aug => f) hπz) i
+      rw [hπapp] at this
+      exact (Submodule.Quotient.mk_eq_zero _).mp this
+    have hsub : x - y ∈ L.aug • (⊤ : Submodule S (Fin P.rank → S)) := by
+      have hsum : x - y = ∑ i, (x - y) i • Pi.single i (1 : S) := by
+        ext j
+        simp [Finset.sum_apply, Pi.single_apply]
+      rw [hsum]
+      exact Submodule.sum_mem _ fun i _ =>
+        Submodule.smul_mem_smul (hcoord i) Submodule.mem_top
+    have hx' : x ∈ (L.aug ⊔ RingHom.ker P.toRuniv) •
+        (⊤ : Submodule S (Fin P.rank → S)) := by
+      have := Submodule.add_mem _ (Submodule.smul_mono_left le_sup_left hsub) hy
+      rwa [sub_add_cancel] at this
+    refine Submodule.smul_mono_left ?_ hx'
+    exact sup_le (le_sup_of_le_right L.aug_le) le_sup_left
+  -- STEP 2: the patching pigeonhole — this is where `d → ∞`.
+  obtain ⟨φ, hφsurj, hφker⟩ :=
+    exists_surjective_ker_le_of_forall_maximalIdeal_pow P.coeff P.q P.rank
+      (RingHom.ker P.toRuniv) hstep
+  -- STEP 3: `S^rank` has depth `q + 1`.
+  have hrank : 0 < P.rank := by
+    rcases Nat.eq_zero_or_pos P.rank with h | h
+    · exfalso
+      haveI := P.nontrivialM0
+      obtain ⟨eq⟩ := (P.levels 0).free
+      haveI : IsEmpty (Fin P.rank) := by rw [h]; exact Fin.isEmpty'
+      haveI : Subsingleton (Fin P.rank →
+        (MvPowerSeries (Fin P.q) P.coeff.carrier ⧸ (P.levels 0).aug)) :=
+        ⟨fun a b => funext fun i => isEmptyElim i⟩
+      haveI : Subsingleton (P.levels 0).N := eq.toEquiv.subsingleton
+      exact (not_subsingleton P.M0) ((P.levels 0).proj_surjective.subsingleton)
+    · exact h
+  haveI : Nonempty (Fin P.rank) := ⟨⟨0, hrank⟩⟩
+  have hreg : ∃ rs : List (MvPowerSeries (Fin P.q) P.coeff.carrier),
+      rs.length = P.q + 1 ∧
+      (∀ x ∈ rs, x ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin P.q) P.coeff.carrier)) ∧
+      RingTheory.Sequence.IsRegular
+        (Fin P.rank → MvPowerSeries (Fin P.q) P.coeff.carrier) rs := by
+    obtain ⟨ts, htslen, htsreg, htsspan⟩ :=
+      Modularity.exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries
+        P.coeff.exists_isRegular_maximalIdeal P.q
+    have hmem : ∀ x ∈ ts,
+        x ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin P.q) P.coeff.carrier) :=
+      fun x hx => htsspan ▸ Ideal.subset_span hx
+    refine ⟨ts, htslen, hmem, ?_⟩
+    refine RingTheory.Sequence.IsRegular.of_isWeaklyRegular_of_mem_maximalIdeal _ hmem ?_
+    exact ((TensorProduct.rid (MvPowerSeries (Fin P.q) P.coeff.carrier)
+      (Fin P.rank → MvPowerSeries (Fin P.q) P.coeff.carrier)).isWeaklyRegular_congr ts).mp
+      (htsreg.toIsWeaklyRegular.isWeaklyRegular_lTensor
+        (M₂ := Fin P.rank → MvPowerSeries (Fin P.q) P.coeff.carrier))
+  obtain ⟨rs, hlen, hmem, hrs⟩ := hreg
+  -- assembly (the `ULift` is pure universe bookkeeping)
+  set e : ULift.{u} (Fin P.rank → MvPowerSeries (Fin P.q) P.coeff.carrier)
+      ≃ₗ[MvPowerSeries (Fin P.q) P.coeff.carrier]
+      (Fin P.rank → MvPowerSeries (Fin P.q) P.coeff.carrier) :=
+    ULift.moduleEquiv with he
+  have hmap : Submodule.map (e : ULift.{u} (Fin P.rank → MvPowerSeries (Fin P.q) P.coeff.carrier)
+      →ₗ[MvPowerSeries (Fin P.q) P.coeff.carrier]
+      (Fin P.rank → MvPowerSeries (Fin P.q) P.coeff.carrier))
+      (RingHom.ker P.toRuniv • ⊤) = RingHom.ker P.toRuniv • ⊤ := by
+    rw [Submodule.map_smul'', Submodule.map_top, LinearEquiv.range]
+  refine ⟨{ q := P.q
+            coeff := P.coeff
+            Minf := ULift.{u} (Fin P.rank → MvPowerSeries (Fin P.q) P.coeff.carrier)
+            finiteMinf := Module.Finite.equiv e.symm
+            exists_isRegular := ⟨rs, hlen, hmem, (e.isRegular_congr rs).mpr hrs⟩
+            toRuniv := P.toRuniv
+            toRuniv_surjective := P.toRuniv_surjective
+            M0 := P.M0
+            nontrivialM0 := P.nontrivialM0
+            proj := φ.toAddMonoidHom.comp e.toLinearMap.toAddMonoidHom
+            proj_surjective := hφsurj.comp e.surjective
+            proj_smul := ?_
+            mem_smul_top_of_proj_eq_zero := ?_ }⟩
+  · intro x m
+    show φ (e (x • m)) = ψ (P.toRuniv x) • φ (e m)
+    rw [map_smul, map_smul, hsmulM0]
+  · intro m hm
+    have h1 : φ (e m) = 0 := hm
+    have h2 := hφker (e m) h1
+    have h3 : e m ∈ Submodule.map
+        (e : ULift.{u} (Fin P.rank → MvPowerSeries (Fin P.q) P.coeff.carrier)
+          →ₗ[MvPowerSeries (Fin P.q) P.coeff.carrier]
+          (Fin P.rank → MvPowerSeries (Fin P.q) P.coeff.carrier))
+        (RingHom.ker P.toRuniv • ⊤) := by rw [hmap]; exact h2
+    obtain ⟨y, hy, hye⟩ := h3
+    have hym : y = m := e.injective hye
+    exact hym ▸ hy
 
 /-- **The Taylor–Wiles tower over `F` exists** (LEAF — new 2026-07-26; this is
 the whole `F`-specific arithmetic of the patching argument, and the ONLY place
@@ -12346,7 +12608,15 @@ supply `hTW`, build the level-wise tower:
   `Q_d`, finite free over `𝒪[Δ_{Q_d}]` by the Taylor–Wiles freeness lemma in
   Fujiwara's form. `Δ_{Q_d}` has order divisible by `ℓ ^ d` by the congruence
   clause of `IsHilbertTaylorWilesPrimeSet`, which is what supplies `aug_le` at
-  depth `d`, and freeness over `𝒪[Δ_{Q_d}]` is what supplies `rs_regular`.
+  depth `d`, and the freeness lemma is what supplies `free` — the level's `N`
+  free over `𝒪[Δ_{Q_d}] = S ⧸ a_d` of rank independent of `d`. Note this is a
+  FINITE-LEVEL statement only: after the 2026-07-26 repair recorded in the
+  SATISFIABILITY AUDIT on `HilbertPatchingLevel`, no level is asked for the
+  depth-`(q+1)` regular sequence, which is a property of the patched limit
+  alone and is now produced by
+  `exists_patchedModule_of_hilbertPatchingSystem` instead. Supplying `aug_smul`
+  is likewise automatic: it is just the statement that the diamond action is
+  the diamond action.
 * **Descent of the base change.** Identifying the bottom of the tower with the
   given Hecke data requires descending the base change from `F` to `ℚ`, which
   is Brauer induction over the Galois `F`. **This is where `hgal` is used**, and
