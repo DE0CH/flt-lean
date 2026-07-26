@@ -210,6 +210,15 @@ import Mathlib.Topology.Algebra.Algebra
 import Mathlib.LinearAlgebra.Dimension.Constructions
 public import Mathlib.Topology.KrullDimension
 public import Mathlib.FieldTheory.Normal.Closure
+-- for the junk coefficient ring of joint (a)
+-- (`exists_numberField_surjection_of_finite`): a monic integer polynomial
+-- irreducible mod `q`, its root, and the number field it generates.
+import Mathlib.Algebra.Polynomial.Eval.Irreducible
+import Mathlib.Algebra.Polynomial.Lifts
+import Mathlib.RingTheory.Polynomial.GaussLemma
+import Mathlib.RingTheory.AdjoinRoot
+import Mathlib.FieldTheory.Finite.Basic
+import Mathlib.Algebra.Field.ULift
 public import Fermat.FLT.Modularity.AbelianScheme
 -- `Fermat.TatePt` and the two leaves of the Tate-module construction
 -- (`exists_tateFrame_of_levelStructure`, `exists_weilFrobeniusSystem_of_mult`),
@@ -2471,134 +2480,346 @@ CIRCULARITY GUARD (inherited from pillar β, load-bearing): as
 everywhere in this module, neither joint may be proven through
 `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 
-/-- **Residual modularity in the dihedral case** (sorry node; joint
-(a) of the automorphic cut — Hecke theta series / automorphic
-induction from the quadratic `L`, the converse theorem, and
-Jacquet–Langlands): the residual mod-`p` representation `ρbarp` of a
-`HilbertBlumenthalPoint` — irreducible over `F` (`pt.irreduciblep`)
-but reducible over the quadratic extension `L/F` (`pt.dihedralp`),
-i.e. induced from a character of `G_L` — is MODULAR: away from a
-finite set its Frobenius characteristic polynomials are the reductions
-of the parallel-weight-`2` Hecke polynomials `X² − a_w·X + Nw` of a
-Hilbert modular form.
+/-! #### Joint (a), cut again — at the determinant (2026-07-25)
 
-The output is stated integrally, in the only pin-stateable form: a
-coefficient ring `Λ` sitting injectively inside a NUMBER FIELD `E₁`
-(the Hecke field of the theta series — this is the clause recording
-that the eigenvalues are ALGEBRAIC, i.e. come from an automorphic
-object rather than from an arbitrary family of residual polynomials),
-a reduction `redΛ : Λ →+* kp` onto the residual coefficient field of
-the point, and the eigenvalue function `a₁`.  The constant coefficient
-is not free data: it is the absolute norm `Nw`, the parallel-weight-`2`
-normalization forced classically by the Weil pairing on `A[p]`.
+The VACUITY AUDIT on `exists_residualModularity_of_hilbertBlumenthalPoint`
+below recorded, as an ASSERTION, that the node's entire formal content is
+the residual norm clause
+`(pt.ρbarp.charFrob w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.kp)`,
+everything else being dischargeable by a junk witness.  That assertion is
+now a THEOREM: the node is PROVEN below as an assembly over
 
-Classically: a `2`-dimensional representation irreducible over `F` and
-reducible over a quadratic extension `L/F` is induced from a character
-of `G_L`, so `ρbarp ≅ Ind_{G_L}^{G_F} χ̄`.  Lift `χ̄` to a Hecke
-character `χ` of `L` and form the theta series `θ(χ)` — automorphic
-induction from `GL(1)/L` to `GL(2)/F`, whose Hecke eigenvalue at a
-place `w` of `F` is `χ(w₁) + χ(w₂)` for `w` split in `L` and `0` for
-`w` inert, with constant coefficient the norm; Weil's converse theorem
-(in the Jacquet–Langlands form) makes `θ(χ)` automorphic, and the
-Jacquet–Langlands correspondence transports it between the
-quaternionic and Hilbert settings in which the lifting theorem of
-joint (b) is formulated.  This is Hecke's classical construction over
-`ℚ`; over a totally real base see Rogawski–Tunnell, *On Artin
-L-functions associated to Hilbert modular forms of weight one*,
-Invent. Math. 74 (1983), and Taylor, *Remarks on a conjecture of
-Fontaine and Mazur*, J. Inst. Math. Jussieu 1 (2002), §5, where this
-is the residual input of the lifting theorem.
+* `exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint` — the
+  determinant (Weil-pairing) clause for the compatible system of the
+  Hilbert–Blumenthal abelian variety, the ONLY sorried leaf this node
+  consumes.  CONVERGENT CUT (2026-07-25): that leaf was extracted
+  independently, on the same day and at the same seam, by the owner of
+  the sibling joint `exists_heckeSystem_of_residualModularity`, whose
+  VACUITY AUDIT identified the same single equation as everything joint
+  (b) formally asserts.  A duplicate of it was briefly introduced here
+  and has been deleted in favour of that one — the two joints really are
+  one determinant fact, and it now has exactly one statement in the tree.
+* PROVEN algebra: the coefficient ring
+  (`exists_numberField_surjection_of_finite`, built from three PROVEN
+  steps below), the descent of the norm clause from the system to the
+  residual representation
+  (`residual_charFrob_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint`),
+  and the monic-quadratic shape of `charFrob`
+  (`charFrob_monic_natDegree_two_of_rank_two`).
 
-NOT SERRE'S CONJECTURE (the reason the cut is worth making): the
-dihedral case of residual modularity is elementary automorphic
-induction, available since Hecke — which is exactly why Taylor's
-construction arranges the auxiliary `p`-level structure so that `A[p]`
-is induced.  Nothing here presupposes Serre's conjecture or any
-`R = 𝕋` theorem.
+So the audit's finding that the "the eigenvalues are ALGEBRAIC" reading of
+`E₁`/`jΛ` is FORMALLY EMPTY is no longer an opinion: the number field
+`E₁`, the coefficient ring `Λ`, the injection `jΛ` and the reduction
+`redΛ` are now literally constructed out of nothing but the FINITENESS of
+`pt.kp` — the construction never looks at `pt` at all — and `a₁` is chosen
+by surjectivity of `redΛ` from the trace of the residual charpoly.  Nothing
+of Hecke's theta series, of the converse theorem or of Jacquet–Langlands
+survives anywhere in this node; `pt.irreduciblep`, `pt.dihedralp` and
+`pt.L` are consumed by no step of the proof.
 
-PIN AUDIT (2026-07-25): the mathlib pin has no Hecke characters of a
-number field, no theta series, no converse theorem and no
-Jacquet–Langlands correspondence — and no Hilbert modular forms at all
-(`grep Hilbert` over `Mathlib/NumberTheory/` finds only Hilbert's
-theorem 90 and the Hilbert basis theorem), so no part of this
-statement reduces to library material.
+WHY THAT LEAF MUST KEEP THE WHOLE HYPOTHESIS PACKAGE (it does).  Stated
+for a bare abstract `pt`, "the constant coefficient of `P w` is `Nw`"
+would be FALSE as stated: the interface constrains `P` not at all, so a
+point whose `p`-adic determinant is not cyclotomic refutes it, and such a
+point is excluded by nothing in `HilbertBlumenthalPoint`.  It is only the
+parent's package — an irreducible hardly ramified mod-`ℓ` representation
+at `ℓ ≥ 5`, classically unsatisfiable (headline below) — that makes it
+classically true, exactly as for its two siblings.  Do NOT restate it
+without the package.
 
-SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the intended
-instantiation (a point produced by
-`exists_hilbertBlumenthalPoint_of_five_le`, whose `p`-torsion really is
-induced from a character and whose determinant really is cyclotomic,
-so that the constant coefficient really is `Nw`) this is the
-theta-series construction above; for an abstract point the
-abstract-quantification caveat applies IN FULL FORCE — the interface
-does not force `det ρbarp` to be cyclotomic, and the norm clause does
-force it; (ii) collapse — the hypothesis package (an irreducible
-hardly ramified mod-`ℓ` representation with `ℓ ≥ 5`) is classically
-unsatisfiable (headline below), so the statement is classically true
-for every package.
+WHERE THE CLAUSE REALLY BELONGS (recommendation restated, still NOT
+performed here): as a FIELD of `HilbertBlumenthalPoint`, discharged by
+`exists_twistedHilbertBlumenthalModuli_of_five_le`, whose conclusion is
+`Nonempty (HilbertBlumenthalPoint …)` and would therefore absorb the new
+field with no change to its own statement — that is where the Weil pairing
+on `A[p]` is actually available.  It is a cut-level change to a structure
+that other leaves are concurrently owned against, so it is recorded here
+rather than made.
 
-VACUITY AUDIT (2026-07-25, cluster sweep — audit only, the statement
-was NOT changed).  This node is CONTENT-LITE: its entire formal content
-is the residual norm clause
-`(pt.ρbarp.charFrob w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.kp)`.
-Junk witness for everything else: `pt.kp` is FINITE, so pick a number
-field `E₁` with a prime over `p` of the right residue degree, put
-`Λ := 𝓞_{E₁}`, `jΛ` the inclusion, `redΛ` the (surjective) reduction
-onto `pt.kp`, `S₁ := ∅`, and `a₁ w :=` any `redΛ`-preimage of
-`−(pt.ρbarp.charFrob w).coeff 1`; the charpoly is monic of degree `2`
-so the `X²` and `X` coefficients then match at every place, and
-`redΛ ((Nw : Λ)) = (Nw : pt.kp)` is forced, leaving exactly the constant
-coefficient.  In particular the "the eigenvalues are ALGEBRAIC" reading
-of `E₁`/`jΛ` is FORMALLY EMPTY here — algebraicity is a real constraint
-only against a characteristic-zero target such as `ℚ̄_ℓ`, not against a
-finite field.  Nothing of Hecke's theta-series construction, the
-converse theorem or Jacquet–Langlands is captured: `pt.irreduciblep`,
-`pt.dihedralp` and `pt.L` are consumed by no part of the conclusion.
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): none of the
+declarations below may be discharged through `Family.lean`, `Lift.lean`,
+or `Modularity/Interface.lean`. -/
 
-Moreover this node is IMPLIED by the sibling joint
-`exists_heckeSystem_of_residualModularity`'s own norm clause together
-with `pt.matchp`, `pt.residualp` and injectivity of `pt.ιC` (derivation
-in the section note above), so the two joints are one determinant fact
-stated twice.  Repair belongs at the parent's conclusion, not here —
-see the section note.
+/-- **A finite field is generated by a root of a monic integer polynomial
+that stays irreducible over `ℚ`** (PROVEN helper, pure algebra; first of
+the three steps building the junk coefficient ring below).
 
-ROUTE AUDIT: the odd-prime dichotomy is unavailable here — see the
-section docstring above (import cycle AND declaration cycle).
+Take `α` a generator of the cyclic group `kˣ`, let `f̄ := minpoly 𝔽_q α`
+over the prime field `𝔽_q = ZMod (ringChar k)` — monic and irreducible —
+and lift it coefficientwise to a MONIC `f : ℤ[X]`
+(`Polynomial.lifts_and_degree_eq_and_monic`, using surjectivity of
+`ℤ → ZMod q`).  Monicity is what makes the lift usable twice over: it
+gives `Irreducible f` from `Irreducible f̄`
+(`Polynomial.Monic.irreducible_of_irreducible_map`) and then
+`Irreducible (f.map (ℤ → ℚ))` by Gauss's lemma
+(`Polynomial.IsPrimitive.Int.irreducible_iff_irreducible_map_cast`).
+Every element of `k` is `0` or a power of `α`, whence the final clause:
+every element is an `ℤ[X]`-evaluation at `α`. -/
+theorem exists_monic_int_poly_of_finite_field (k : Type*) [Field k]
+    [Finite k] :
+    ∃ (f : Polynomial ℤ) (α : k), f.Monic ∧
+      Irreducible (f.map (Int.castRingHom ℚ)) ∧
+      eval₂ (Int.castRingHom k) α f = 0 ∧
+      ∀ x : k, ∃ g : Polynomial ℤ, eval₂ (Int.castRingHom k) α g = x := by
+  classical
+  haveI : CharP k (ringChar k) := ringChar.charP k
+  haveI hqp : Fact (ringChar k).Prime := ⟨CharP.char_is_prime k (ringChar k)⟩
+  letI : Algebra (ZMod (ringChar k)) k := ZMod.algebra k (ringChar k)
+  haveI : Module.Finite (ZMod (ringChar k)) k := Module.Finite.of_finite
+  haveI : Algebra.IsIntegral (ZMod (ringChar k)) k :=
+    Algebra.IsIntegral.of_finite _ _
+  obtain ⟨u, hu⟩ := IsCyclic.exists_generator (α := kˣ)
+  have hint : IsIntegral (ZMod (ringChar k)) (u : k) :=
+    Algebra.IsIntegral.isIntegral (u : k)
+  obtain ⟨f, hfmap, -, hfmon⟩ :=
+    Polynomial.lifts_and_degree_eq_and_monic
+      (f := Int.castRingHom (ZMod (ringChar k)))
+      ((Polynomial.lifts_iff_coeff_lifts _).2
+        (fun n => ZMod.intCast_surjective _)) (minpoly.monic hint)
+  have hfirr : Irreducible f :=
+    Polynomial.Monic.irreducible_of_irreducible_map _ f hfmon
+      (by rw [hfmap]; exact minpoly.irreducible hint)
+  have hcomp : (Int.castRingHom k) =
+      (algebraMap (ZMod (ringChar k)) k).comp
+        (Int.castRingHom (ZMod (ringChar k))) := RingHom.ext_int _ _
+  refine ⟨f, (u : k), hfmon,
+    (Polynomial.IsPrimitive.Int.irreducible_iff_irreducible_map_cast
+      hfmon.isPrimitive).mp hfirr, ?_, ?_⟩
+  · rw [hcomp, ← Polynomial.eval₂_map, hfmap]
+    exact minpoly.aeval (ZMod (ringChar k)) (u : k)
+  · intro x
+    rcases eq_or_ne x 0 with rfl | hx
+    · exact ⟨0, by simp⟩
+    · obtain ⟨n, hn⟩ := mem_powers_iff_mem_zpowers.2 (hu (Units.mk0 x hx))
+      have hn' : u ^ n = Units.mk0 x hx := hn
+      have h2 : ((u ^ n : kˣ) : k) = x := by rw [hn']; simp
+      exact ⟨X ^ n, by simpa using h2⟩
 
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
-discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. -/
-theorem exists_residualModularity_of_hilbertBlumenthalPoint
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
+/-- **`ℤ[X]/(f) → ℚ[X]/(f)` is injective for monic `f`** (PROVEN helper,
+pure algebra; second of the three steps).
+
+This is the statement that `ℤ[α]` really is a SUBRING of the number field
+`ℚ(α)`, which is what the target's `jΛ`-with-`Function.Injective jΛ`
+demands.  Formally: an element of `AdjoinRoot f` is `mk f g`, and it dies
+in `AdjoinRoot (f.map (ℤ → ℚ))` exactly when `fℚ ∣ gℚ`; monic division
+`g = f * (g /ₘ f) + g %ₘ f` then forces `fℚ ∣ (g %ₘ f)ℚ`, whose degree is
+below `deg fℚ = deg f`, so `(g %ₘ f)ℚ = 0`, so `g %ₘ f = 0` by injectivity
+of `ℤ → ℚ` on coefficients, i.e. `f ∣ g`.
+
+Monicity is essential, and is exactly what the previous step's lift
+supplies: for `f = 2X` the class of `X` in `ℤ[X]/(2X)` is nonzero but dies
+in `ℚ[X]/(2X) = ℚ`, so the map is not injective. -/
+theorem exists_injective_adjoinRoot_int_rat {f : Polynomial ℤ}
+    (hfmon : f.Monic) :
+    ∃ j : AdjoinRoot f →+* AdjoinRoot (f.map (Int.castRingHom ℚ)),
+      Function.Injective j := by
+  classical
+  have hev : ∀ t : Polynomial ℚ,
+      eval₂ (AdjoinRoot.of (f.map (Int.castRingHom ℚ)))
+        (AdjoinRoot.root (f.map (Int.castRingHom ℚ))) t =
+        AdjoinRoot.mk (f.map (Int.castRingHom ℚ)) t := by
+    intro t
+    rw [← AdjoinRoot.algebraMap_eq, ← Polynomial.aeval_def, AdjoinRoot.aeval_eq]
+  have hroot : eval₂ ((AdjoinRoot.of (f.map (Int.castRingHom ℚ))).comp
+      (Int.castRingHom ℚ)) (AdjoinRoot.root (f.map (Int.castRingHom ℚ)))
+      f = 0 := by
+    rw [← Polynomial.eval₂_map]
+    exact AdjoinRoot.eval₂_root _
+  refine ⟨AdjoinRoot.lift _ _ hroot, ?_⟩
+  rw [injective_iff_map_eq_zero]
+  intro x hx
+  obtain ⟨g, rfl⟩ := AdjoinRoot.mk_surjective x
+  rw [AdjoinRoot.lift_mk, ← Polynomial.eval₂_map, hev] at hx
+  have hdvd : (f.map (Int.castRingHom ℚ)) ∣ g.map (Int.castRingHom ℚ) :=
+    AdjoinRoot.mk_eq_zero.mp hx
+  rw [AdjoinRoot.mk_eq_zero]
+  have hsplit : g %ₘ f = g - f * (g /ₘ f) :=
+    eq_sub_of_add_eq (Polynomial.modByMonic_add_div g f)
+  have hzero : (g %ₘ f).map (Int.castRingHom ℚ) = 0 := by
+    refine Polynomial.eq_zero_of_dvd_of_degree_lt
+      (p := f.map (Int.castRingHom ℚ)) ?_ ?_
+    · rw [hsplit, Polynomial.map_sub, Polynomial.map_mul]
+      exact dvd_sub hdvd (Dvd.intro _ rfl)
+    · calc ((g %ₘ f).map (Int.castRingHom ℚ)).degree ≤ (g %ₘ f).degree :=
+            Polynomial.degree_map_le
+        _ < f.degree := Polynomial.degree_modByMonic_lt g hfmon
+        _ = (f.map (Int.castRingHom ℚ)).degree := (hfmon.degree_map _).symm
+  refine (Polynomial.modByMonic_eq_zero_iff_dvd hfmon).1 ?_
+  exact Polynomial.map_injective (Int.castRingHom ℚ) Int.cast_injective
+    (by rw [hzero, Polynomial.map_zero])
+
+/-- **Every finite field is a ring-homomorphic image of a subring of a
+number field** (PROVEN, in an arbitrary universe; third step, and the
+whole junk witness of joint (a)).
+
+`E := ℚ(α)`, `Λ := ℤ[α]` for `α` a root of the monic integer polynomial
+of the first step, `j` the inclusion of the second, and `red` the
+evaluation `ℤ[X]/(f) → k` at the generator of `kˣ`, surjective because
+that generator generates.  `ULift` places the pair in the universe of `k`;
+`NumberField` transfers along `ULift.ringEquiv` (`CharZero` by
+`RingHom.charZero`, finite-dimensionality by the induced `ℚ`-algebra
+equivalence).
+
+This is the FORMAL-CONTENT sink of the residual-modularity leaf: it shows
+that a coefficient ring "sitting injectively inside a number field and
+reducing onto `pt.kp`" — the clause whose intended reading was that the
+Hecke eigenvalues of the theta series are ALGEBRAIC — is available for
+EVERY finite field with no arithmetic input at all.  Algebraicity is a
+real constraint only against a characteristic-zero target such as `ℚ̄_ℓ`
+(as in `exists_heckeField_mem_range_of_eigensystem`), never against a
+finite one. -/
+theorem exists_numberField_surjection_of_finite (k : Type u) [Field k]
+    [Finite k] :
+    ∃ (E : Type u) (_ : Field E) (_ : NumberField E) (Λ : Type u)
+      (_ : CommRing Λ) (j : Λ →+* E) (_ : Function.Injective j)
+      (red : Λ →+* k), Function.Surjective red := by
+  classical
+  obtain ⟨f, α, hfmon, hirr, hroot, hsurj⟩ :=
+    exists_monic_int_poly_of_finite_field k
+  haveI : Fact (Irreducible (f.map (Int.castRingHom ℚ))) := ⟨hirr⟩
+  obtain ⟨j₀, hj₀⟩ := exists_injective_adjoinRoot_int_rat hfmon
+  haveI : CharZero (AdjoinRoot (f.map (Int.castRingHom ℚ))) :=
+    charZero_of_injective_algebraMap
+      (algebraMap ℚ (AdjoinRoot (f.map (Int.castRingHom ℚ)))).injective
+  haveI : CharZero (ULift.{u} (AdjoinRoot (f.map (Int.castRingHom ℚ)))) :=
+    (ULift.ringEquiv
+      (R := AdjoinRoot (f.map (Int.castRingHom ℚ)))).toRingHom.charZero
+  have e : ULift.{u} (AdjoinRoot (f.map (Int.castRingHom ℚ)))
+      ≃ₐ[ℚ] AdjoinRoot (f.map (Int.castRingHom ℚ)) :=
+    { ULift.ringEquiv (R := AdjoinRoot (f.map (Int.castRingHom ℚ))) with
+      commutes' := fun r => by simp }
+  haveI : FiniteDimensional ℚ
+      (ULift.{u} (AdjoinRoot (f.map (Int.castRingHom ℚ)))) :=
+    LinearEquiv.finiteDimensional e.toLinearEquiv.symm
+  haveI : NumberField (ULift.{u} (AdjoinRoot (f.map (Int.castRingHom ℚ)))) :=
+    {}
+  refine ⟨ULift.{u} (AdjoinRoot (f.map (Int.castRingHom ℚ))), inferInstance,
+    inferInstance, ULift.{u} (AdjoinRoot f), inferInstance,
+    (ULift.ringEquiv
+        (R := AdjoinRoot (f.map (Int.castRingHom ℚ)))).symm.toRingHom.comp
+      (j₀.comp (ULift.ringEquiv (R := AdjoinRoot f)).toRingHom), ?_,
+    (AdjoinRoot.lift (Int.castRingHom k) α hroot).comp
+      (ULift.ringEquiv (R := AdjoinRoot f)).toRingHom, ?_⟩
+  · exact (ULift.ringEquiv
+      (R := AdjoinRoot (f.map (Int.castRingHom ℚ)))).symm.injective.comp
+      (hj₀.comp (ULift.ringEquiv (R := AdjoinRoot f)).injective)
+  · intro x
+    obtain ⟨g, hg⟩ := hsurj x
+    refine ⟨ULift.up (AdjoinRoot.mk f g), ?_⟩
+    show AdjoinRoot.lift (Int.castRingHom k) α hroot (AdjoinRoot.mk f g) = x
+    rw [AdjoinRoot.lift_mk]
+    exact hg
+
+/-- **A monic quadratic is determined by its two lower coefficients**
+(PROVEN helper, pure polynomial algebra): if `φ a = −p₁` and `φ d = p₀`
+for a monic `p` of `natDegree = 2`, then `(X² − C a·X + C d).map φ = p`.
+
+The `map`-source companion of `map_eq_quadratic_of_monic_natDegree_two`
+further down this file, which reads the coefficients off the TARGET of the
+map; this one is stated in the direction the residual-modularity leaf
+needs (the Hecke polynomial lives upstairs, over `Λ`, and is pushed down
+to `pt.kp`).  It is restated here rather than reused because that lemma is
+declared after this point in the module. -/
+theorem quadratic_map_eq_of_monic_natDegree_two {A B : Type*} [CommRing A]
+    [CommRing B] {p : Polynomial B} (hmonic : p.Monic) (hdeg : p.natDegree = 2)
+    (φ : A →+* B) (a d : A) (ha : φ a = -(p.coeff 1)) (hd : φ d = p.coeff 0) :
+    (X ^ 2 - C a * X + C d).map φ = p := by
+  have hlead : p.coeff 2 = 1 := by
+    have h := hmonic.coeff_natDegree
+    rwa [hdeg] at h
+  have hp : p = X ^ 2 + C (p.coeff 1) * X + C (p.coeff 0) := by
+    ext n
+    match n with
+    | 0 => simp
+    | 1 => simp
+    | 2 => simp [hlead]
+    | (m + 3) =>
+      have hlt : p.natDegree < m + 3 := by rw [hdeg]; omega
+      simp [Polynomial.coeff_eq_zero_of_natDegree_lt hlt]
+  have hmap : (X ^ 2 - C a * X + C d).map φ
+      = X ^ 2 + C (p.coeff 1) * X + C (p.coeff 0) := by
+    simp only [Polynomial.map_add, Polynomial.map_sub, Polynomial.map_mul,
+      Polynomial.map_pow, Polynomial.map_X, Polynomial.map_C, ha, hd,
+      Polynomial.C_neg]
+    ring
+  rw [hmap]
+  exact hp.symm
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **`charFrob` of a rank-`2` representation is monic of degree `2`**
+(PROVEN helper): it is the characteristic polynomial of an endomorphism of
+a finite free module of rank `2`.
+
+The two conjuncts are separately available further down this file
+(`charFrob_monic_of_free`, `charFrob_natDegree_of_rank_two`), but those are
+pinned to the base `K = ℚ` and are declared after this point; the general
+base is what the Hilbert–Blumenthal point needs (`F`). -/
+theorem charFrob_monic_natDegree_two_of_rank_two {K : Type*} [Field K]
+    [NumberField K] {A : Type*} [CommRing A] [Nontrivial A]
+    [TopologicalSpace A] [IsTopologicalRing A] {M : Type*} [AddCommGroup M]
+    [Module A M] [Module.Finite A M] [Module.Free A M]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (ρ : GaloisRep K A M) (hdim : Module.rank A M = 2) :
+    (ρ.charFrob v).Monic ∧ (ρ.charFrob v).natDegree = 2 := by
+  refine ⟨?_, ?_⟩
+  · show ((ρ.toLocal v
+      (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly).Monic
+    exact LinearMap.charpoly_monic _
+  · show ((ρ.toLocal v
+      (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly).natDegree = 2
+    rw [LinearMap.charpoly_natDegree]
+    exact Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
+
+/-- **The determinant clause descends to the residual representation**
+(PROVEN glue, pure algebra over the `HilbertBlumenthalPoint` interface):
+if the constant coefficient of `P w` is `Nw` in `D`, then the constant
+coefficient of `ρbarp.charFrob w` is `Nw` in `kp`.
+
+The chain is the point's own compatibility data.  `matchp` reads the
+identity in `ℚ̄_p`: `ιC ((τp.charFrob w).coeff 0) = ψDp ((P w).coeff 0)`.
+Ring homomorphisms preserve `ℕ`-casts, so the right side is `(Nw : ℚ̄_p)`,
+which is also `ιC ((Nw : C))`; `ιC_injective` therefore DESCENDS the
+identity to `C`, and applying `πp` and `residualp` moves it to `kp`.
+
+Note that this is where the two joints of the automorphic cut turn out to
+be one fact: the same argument, run from
+`exists_heckeSystem_of_residualModularity`'s norm clause, is the
+derivation recorded in the section note before that leaf.  The hypothesis
+is stated over an ARBITRARY finite exceptional set `S`, which is the shape
+`exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint` delivers; the
+point's own compatibility data is only available off `pt.bad`, so the
+conclusion is stated off the union. -/
+theorem residual_charFrob_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint
+    {ℓ : ℕ} [Fact ℓ.Prime] {F : Type u} [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
-    (F : Type u) [Field F] [NumberField F]
-    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
-    (pt : HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :
-    ∃ (E₁ : Type u) (_ : Field E₁) (_ : NumberField E₁)
-      (Λ : Type u) (_ : CommRing Λ) (jΛ : Λ →+* E₁)
-      (_ : Function.Injective jΛ) (redΛ : Λ →+* pt.kp)
-      (a₁ : HeightOneSpectrum (NumberField.RingOfIntegers F) → Λ)
-      (S₁ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F))),
-      ∀ w ∉ S₁,
-        (X ^ 2 - C (a₁ w) * X + C (Ideal.absNorm w.asIdeal : Λ)).map redΛ =
-          pt.ρbarp.charFrob w :=
-  sorry
+    {ρbarF : GaloisRep F k W} (pt : HilbertBlumenthalPoint ℓ F ρbarF)
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (hP : ∀ w ∉ S, (pt.P w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.D)) :
+    ∀ w ∉ S ∪ pt.bad,
+      (pt.ρbarp.charFrob w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.kp) := by
+  -- `pfact` is a field of the structure but is not registered globally as an
+  -- instance, and `ℚ̄_p` cannot be named without it
+  haveI : Fact (pt.p).Prime := pt.pfact
+  intro w hw
+  have hwbad : w ∉ pt.bad := fun h => hw (Finset.mem_union_right _ h)
+  have h1 : pt.ιC ((pt.τp.charFrob w).coeff 0)
+      = pt.ψDp ((pt.P w).coeff 0) := by
+    have h := congrArg (fun p : Polynomial (AlgebraicClosure ℚ_[pt.p]) =>
+      p.coeff 0) (pt.matchp w hwbad)
+    simpa using h
+  rw [hP w fun h => hw (Finset.mem_union_left _ h)] at h1
+  have h2 : (pt.τp.charFrob w).coeff 0
+      = ((Ideal.absNorm w.asIdeal : ℕ) : pt.C) := by
+    refine pt.ιC_injective ?_
+    rw [h1]
+    simp
+  have h3 := congrArg (fun p : Polynomial pt.kp => p.coeff 0)
+    (pt.residualp w hwbad)
+  simp only [Polynomial.coeff_map, h2] at h3
+  rw [← h3]
+  simp
 
 /-- **The parallel-weight-`2` normalization of the point's compatible
 system** (sorry node, EXTRACTED 2026-07-25 as the exact residual
@@ -2800,6 +3021,180 @@ theorem exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint
   simp only [Polynomial.coeff_map] at hc
   rw [hcoeff w hw, map_natCast] at hc
   exact pt.ψDℓ.injective (by rw [map_natCast]; exact hc.symm)
+
+/-- **Residual modularity in the dihedral case** (PROVEN 2026-07-25 as an
+assembly over the determinant clause
+`exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint` — the sibling
+joint's own extracted leaf, immediately above — and the junk
+coefficient ring `exists_numberField_surjection_of_finite`; see the
+section note before those helpers; formerly a sorry node, joint (a) of the
+automorphic cut — Hecke theta series / automorphic
+induction from the quadratic `L`, the converse theorem, and
+Jacquet–Langlands): the residual mod-`p` representation `ρbarp` of a
+`HilbertBlumenthalPoint` — irreducible over `F` (`pt.irreduciblep`)
+but reducible over the quadratic extension `L/F` (`pt.dihedralp`),
+i.e. induced from a character of `G_L` — is MODULAR: away from a
+finite set its Frobenius characteristic polynomials are the reductions
+of the parallel-weight-`2` Hecke polynomials `X² − a_w·X + Nw` of a
+Hilbert modular form.
+
+The output is stated integrally, in the only pin-stateable form: a
+coefficient ring `Λ` sitting injectively inside a NUMBER FIELD `E₁`
+(the Hecke field of the theta series — this is the clause recording
+that the eigenvalues are ALGEBRAIC, i.e. come from an automorphic
+object rather than from an arbitrary family of residual polynomials),
+a reduction `redΛ : Λ →+* kp` onto the residual coefficient field of
+the point, and the eigenvalue function `a₁`.  The constant coefficient
+is not free data: it is the absolute norm `Nw`, the parallel-weight-`2`
+normalization forced classically by the Weil pairing on `A[p]`.
+
+Classically: a `2`-dimensional representation irreducible over `F` and
+reducible over a quadratic extension `L/F` is induced from a character
+of `G_L`, so `ρbarp ≅ Ind_{G_L}^{G_F} χ̄`.  Lift `χ̄` to a Hecke
+character `χ` of `L` and form the theta series `θ(χ)` — automorphic
+induction from `GL(1)/L` to `GL(2)/F`, whose Hecke eigenvalue at a
+place `w` of `F` is `χ(w₁) + χ(w₂)` for `w` split in `L` and `0` for
+`w` inert, with constant coefficient the norm; Weil's converse theorem
+(in the Jacquet–Langlands form) makes `θ(χ)` automorphic, and the
+Jacquet–Langlands correspondence transports it between the
+quaternionic and Hilbert settings in which the lifting theorem of
+joint (b) is formulated.  This is Hecke's classical construction over
+`ℚ`; over a totally real base see Rogawski–Tunnell, *On Artin
+L-functions associated to Hilbert modular forms of weight one*,
+Invent. Math. 74 (1983), and Taylor, *Remarks on a conjecture of
+Fontaine and Mazur*, J. Inst. Math. Jussieu 1 (2002), §5, where this
+is the residual input of the lifting theorem.
+
+NOT SERRE'S CONJECTURE (the reason the cut is worth making): the
+dihedral case of residual modularity is elementary automorphic
+induction, available since Hecke — which is exactly why Taylor's
+construction arranges the auxiliary `p`-level structure so that `A[p]`
+is induced.  Nothing here presupposes Serre's conjecture or any
+`R = 𝕋` theorem.
+
+PIN AUDIT (2026-07-25): the mathlib pin has no Hecke characters of a
+number field, no theta series, no converse theorem and no
+Jacquet–Langlands correspondence — and no Hilbert modular forms at all
+(`grep Hilbert` over `Mathlib/NumberTheory/` finds only Hilbert's
+theorem 90 and the Hilbert basis theorem), so no part of this
+statement reduces to library material.
+
+SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the intended
+instantiation (a point produced by
+`exists_hilbertBlumenthalPoint_of_five_le`, whose `p`-torsion really is
+induced from a character and whose determinant really is cyclotomic,
+so that the constant coefficient really is `Nw`) this is the
+theta-series construction above; for an abstract point the
+abstract-quantification caveat applies IN FULL FORCE — the interface
+does not force `det ρbarp` to be cyclotomic, and the norm clause does
+force it; (ii) collapse — the hypothesis package (an irreducible
+hardly ramified mod-`ℓ` representation with `ℓ ≥ 5`) is classically
+unsatisfiable (headline below), so the statement is classically true
+for every package.
+
+VACUITY AUDIT (2026-07-25, cluster sweep — audit only, the statement
+was NOT changed).  This node is CONTENT-LITE: its entire formal content
+is the residual norm clause
+`(pt.ρbarp.charFrob w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.kp)`.
+Junk witness for everything else: `pt.kp` is FINITE, so pick a number
+field `E₁` with a prime over `p` of the right residue degree, put
+`Λ := 𝓞_{E₁}`, `jΛ` the inclusion, `redΛ` the (surjective) reduction
+onto `pt.kp`, `S₁ := ∅`, and `a₁ w :=` any `redΛ`-preimage of
+`−(pt.ρbarp.charFrob w).coeff 1`; the charpoly is monic of degree `2`
+so the `X²` and `X` coefficients then match at every place, and
+`redΛ ((Nw : Λ)) = (Nw : pt.kp)` is forced, leaving exactly the constant
+coefficient.  In particular the "the eigenvalues are ALGEBRAIC" reading
+of `E₁`/`jΛ` is FORMALLY EMPTY here — algebraicity is a real constraint
+only against a characteristic-zero target such as `ℚ̄_ℓ`, not against a
+finite field.  Nothing of Hecke's theta-series construction, the
+converse theorem or Jacquet–Langlands is captured: `pt.irreduciblep`,
+`pt.dihedralp` and `pt.L` are consumed by no part of the conclusion.
+
+Moreover this node is IMPLIED by the sibling joint
+`exists_heckeSystem_of_residualModularity`'s own norm clause together
+with `pt.matchp`, `pt.residualp` and injectivity of `pt.ιC` (derivation
+in the section note above), so the two joints are one determinant fact
+stated twice.  Repair belongs at the parent's conclusion, not here —
+see the section note.
+
+VACUITY AUDIT, MECHANIZED (2026-07-25 — the paragraph above is now
+PROVEN rather than asserted).  The junk witness it describes is built by
+`exists_numberField_surjection_of_finite`, which produces `E₁`, `Λ`, `jΛ`
+and a SURJECTIVE `redΛ` from the FINITENESS of `pt.kp` alone — that
+construction inspects no other datum of the point, and no hypothesis of
+this theorem — after which `a₁ w` is any `redΛ`-preimage of the residual
+trace and `S₁ := S₂ ∪ pt.bad`.  What survives is literally the single
+equation
+`(pt.ρbarp.charFrob w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.kp)`,
+supplied by the leaf
+`exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint` through the
+PROVEN descent
+`residual_charFrob_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint`.
+`pt.irreduciblep`, `pt.dihedralp` and `pt.L` are consumed by no step of
+the proof below, and no hypothesis of this theorem is used except in its
+verbatim hand-off to that leaf — which is why none is underscored: the
+emptiness has been RELOCATED onto the leaf, not removed.
+
+ROUTE AUDIT: the odd-prime dichotomy is unavailable here — see the
+section docstring above (import cycle AND declaration cycle).
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
+discharge through `Family.lean`, `Lift.lean`, or
+`Modularity/Interface.lean`. -/
+theorem exists_residualModularity_of_hilbertBlumenthalPoint
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (pt : HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :
+    ∃ (E₁ : Type u) (_ : Field E₁) (_ : NumberField E₁)
+      (Λ : Type u) (_ : CommRing Λ) (jΛ : Λ →+* E₁)
+      (_ : Function.Injective jΛ) (redΛ : Λ →+* pt.kp)
+      (a₁ : HeightOneSpectrum (NumberField.RingOfIntegers F) → Λ)
+      (S₁ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F))),
+      ∀ w ∉ S₁,
+        (X ^ 2 - C (a₁ w) * X + C (Ideal.absNorm w.asIdeal : Λ)).map redΛ =
+          pt.ρbarp.charFrob w := by
+  classical
+  -- the node's ENTIRE formal content: the determinant clause of the
+  -- compatible system, descended to the residual representation
+  obtain ⟨S₂, hS₂⟩ :=
+    exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint hℓodd hℓ5 hZinj
+      hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal pt
+  have hnorm :=
+    residual_charFrob_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint pt S₂ hS₂
+  -- the coefficient ring, built from the FINITENESS of `pt.kp` alone
+  -- (`finitekp` is a structure field, not a global instance)
+  haveI : Finite pt.kp := pt.finitekp
+  obtain ⟨E₁, hE₁, hNE₁, Λ, hΛ, jΛ, hjΛ, redΛ, hred⟩ :=
+    exists_numberField_surjection_of_finite pt.kp
+  have hquad : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (pt.ρbarp.charFrob w).Monic ∧ (pt.ρbarp.charFrob w).natDegree = 2 :=
+    fun w => charFrob_monic_natDegree_two_of_rank_two w pt.ρbarp (by simp)
+  -- the eigenvalues: any `redΛ`-preimages of the residual traces
+  have hpre : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∃ a : Λ, redΛ a = -((pt.ρbarp.charFrob w).coeff 1) := fun w => hred _
+  choose a₁ ha₁ using hpre
+  refine ⟨E₁, hE₁, hNE₁, Λ, hΛ, jΛ, hjΛ, redΛ, a₁, S₂ ∪ pt.bad, fun w hw => ?_⟩
+  exact quadratic_map_eq_of_monic_natDegree_two (hquad w).1 (hquad w).2 redΛ
+    (a₁ w) _ (ha₁ w) (by rw [map_natCast]; exact (hnorm w hw).symm)
 
 -- `backward.isDefEq.respectTransparency false`: the two `show` steps in
 -- the proof below unfold `GaloisRep.charFrob` to the
