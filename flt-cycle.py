@@ -394,6 +394,82 @@ def cmd_preflight(args):
 
 
 # --------------------------------------------------------------------------
+# merge-time lint: a proof silently lost to a conflict resolution
+# --------------------------------------------------------------------------
+def _sorry_names_at(ref):
+    """Direct-sorry names in the tree at `ref`, via the committed scanner.
+
+    Extracts the source to a temp dir and runs flt-frontier.py there rather than
+    reimplementing the scan. That scanner already handles the two traps that
+    have each produced a wrong answer here: docstrings containing the word
+    "sorry" (which once inflated a count to 144 against a true 85), and forward
+    attribution (which twice mislabelled a proven declaration as open). At least
+    four agents have rebuilt it from scratch and re-derived both.
+    """
+    import tempfile, shutil
+    tmp = tempfile.mkdtemp(prefix="flt-regress-")
+    try:
+        tar = subprocess.run(["git", "-C", REPO, "archive", ref],
+                             capture_output=True)
+        if tar.returncode != 0:
+            raise SystemExit(f"git archive {ref} failed")
+        x = subprocess.run(["tar", "-x", "-C", tmp], input=tar.stdout,
+                           capture_output=True)
+        if x.returncode != 0:
+            raise SystemExit(f"extract failed: {x.stderr.decode()[:200]}")
+        shutil.copy(os.path.join(REPO, "flt-frontier.py"), tmp)
+        r = subprocess.run([sys.executable, "flt-frontier.py", "--names"],
+                           cwd=tmp, capture_output=True, text=True)
+        if r.returncode != 0:
+            raise SystemExit(f"scan at {ref} failed: {r.stderr[:200]}")
+        return set(r.stdout.split())
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def cmd_regress(args):
+    """Report declarations that went from PROVEN to SORRIED. MERGER: run this.
+
+    A conflict resolution can keep a statement and drop its proof. The two sides
+    have byte-identical signatures, so the merge looks clean, and it is
+    INVISIBLE to every ancestry check -- `--is-ancestor` answers true whether or
+    not the proof survived. It was found the only way it can be found: by
+    comparing bodies. One proof (`archConv_continuousOn`) was lost this way and
+    sat lost until an agent happened to notice.
+
+    This is worse than a red build. A red build stops the release; a lost proof
+    releases green, and the leaf silently rejoins the frontier -- so a worker is
+    eventually dispatched to re-prove something that was already done.
+
+    The invariant: nothing proven at `base` may be sorried now. New sorries are
+    fine (a decomposition adds leaves); resurrected ones never are.
+    """
+    base = args.base or "main"
+    before = _sorry_names_at(base)
+    r = run([sys.executable, os.path.join(REPO, "flt-frontier.py"), "--names"],
+            cwd=REPO)
+    if r.returncode != 0:
+        raise SystemExit(f"scan of working tree failed: {r.stderr[:200]}")
+    after = set(r.stdout.split())
+
+    lost = sorted(after - before)          # proven at base, sorried now
+    gained = sorted(before - after)        # closed since base -- the good news
+    print(f"vs {base}: {len(before)} -> {len(after)} direct sorries "
+          f"({len(gained)} closed, {len(lost)} newly sorried)")
+    if not lost:
+        print("no proofs lost.")
+        return 0
+    print(f"\n{len(lost)} declaration(s) are sorried now but were NOT at {base}:")
+    for n in lost:
+        print(f"    {n}")
+    print("\nEach is EITHER a genuinely new leaf from a decomposition (fine)")
+    print("OR a proof dropped by a conflict resolution (a regression). Check the")
+    print("branch that touched it: if its signature is unchanged and its body")
+    print("became `sorry`, restore the proof before releasing.")
+    return 1
+
+
+# --------------------------------------------------------------------------
 # merge-time lint: the namespace-shadowing trap
 # --------------------------------------------------------------------------
 def cmd_nscheck(args):
@@ -807,6 +883,11 @@ def main():
     p = sub.add_parser("preflight",
                        help="is everything accounted for? (release runs this)")
     p.set_defaults(fn=cmd_preflight)
+
+    p = sub.add_parser("regress",
+                       help="MERGER: did a merge drop a proof? (proven -> sorried)")
+    p.add_argument("base", nargs="?", help="base ref (default main)")
+    p.set_defaults(fn=cmd_regress)
 
     p = sub.add_parser("nscheck",
                        help="MERGER: flag root-namespace shadowing in a diff")
