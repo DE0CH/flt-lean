@@ -3304,9 +3304,10 @@ set_option maxHeartbeats 2000000 in
 points** (RESTATED 2026-07-25, see the CORRECTION NOTE below; PROVEN
 the same day over `inertia_character_trivial_or_cyclotomic` and
 `eq_one_of_inertia_invariant_of_reduction_counit`, both of which are
-now themselves PROVEN, so that the shared `μ`-type node's ONLY
-remaining input is the single valuation leaf
-`displacement_span_le_span_zeta_sub_one`): under the hypotheses of
+now themselves PROVEN; and since `displacement_span_le_span_zeta_sub_one`
+was PROVEN on 2026-07-26 by the norm-of-the-displacement argument, this
+node has NO remaining open input and THIS FILE IS SORRY-FREE): under the
+hypotheses of
 `connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter` and with
 `φ ≠ 1`, there is a NONTRIVIAL `p`-th root of unity `ζ ∈ ℚᵥᵃˡᵍ` which
 reads the local-inertia action on the convolution-cyclic group
@@ -3371,11 +3372,21 @@ split into its two classical halves:
 
 * `inertia_character_trivial_or_cyclotomic` — RAYNAUD's dichotomy at
   `e = 1 < p − 1`: `χ_φ` is either trivial or `χ_cyc`, as characters
-  (PROVEN 2026-07-25 over the single valuation leaf
+  (PROVEN 2026-07-25 over the valuation input
   `displacement_span_le_span_zeta_sub_one`, "the displacement's value
   ideal is CONTAINED in `(ζ_p − 1)`", which is the one-dimensionality
-  half of Oort–Tate's `v(a) = 1` and is the only sorry left in this
-  file — the reverse inclusion, Raynaud's `k ≤ e`, is proven);
+  half of Oort–Tate's `v(a) = 1` and was itself PROVEN 2026-07-26 by
+  the norm-of-the-displacement argument, so nothing here is open — the
+  reverse inclusion, Raynaud's `k ≤ e`, is proven);
+
+  STALE-LABEL CORRECTION (2026-07-26): an earlier version of this
+  bullet called `displacement_span_le_span_zeta_sub_one` "the only
+  sorry left in this file". That label outlived its subject by hours
+  and cost the fleet TWO dispatches (worktrees 4 and 83) at a
+  superseded Raynaud-tame-character recut of it,
+  `exists_generator_pow_inertia_invariant`, which the norm proof makes
+  unnecessary: the node needs no ramification filtration, no tame
+  quotient and no fundamental characters. Do not re-cut it.
 * `not_inertia_character_trivial_of_connected` — CONNECTEDNESS kills
   the trivial alternative (itself proven from
   `point_sub_counit_mem_maximalIdeal`, "a connected point reduces to
