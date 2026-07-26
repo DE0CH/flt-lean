@@ -224,6 +224,21 @@ The lemma they support, `y0HasNoRationalPoint_of_dvd`, is checked
 against the ground truth by observing that the Mazur–Kenku list is
 DIVISOR-CLOSED; see its docstring.
 
+*Amended a fourth time 2026-07-26: the sieve layer.*  Shape 4's
+compactification layer now carries a SIXTH leaf:
+
+10. `exists_x0Sieve` — the Mordell–Weil sieve that the four levels
+    `45, 54, 63, 75` need.  The ordinary counting bound
+    `card_le_of_rankZeroJacobian` is never sharp at those four levels
+    (no odd `ℓ ∤ N` attains `#X_0(N)(𝔽_ℓ) = 4`), so the bound must count
+    FEWER than all of `X_0(N)(𝔽_ℓ)`: only those `𝔽_ℓ`-points whose
+    Abel–Jacobi class lies in the image of `J_0(N)(ℚ)`.  TRUE, and a
+    named classical technique rather than a repackaging of its consumer.
+    The one hypothesis worth flagging is positivity of the genus, carried
+    inside `HasRankZeroJacobian`: without it the reduction bound is FALSE
+    at `N = 1`, where `X_0(1) = ℙ¹` has a trivial Jacobian and infinitely
+    many rational points.
+
 **Why the interface must pin `Y` down, and does.** A weaker interface —
 say, a smooth projective curve over `ℚ` with a bijection on `ℚ̄`-points
 — would be satisfied by `ℙ¹` for a cheap reason, and then
@@ -239,8 +254,9 @@ statement about the genuine `Y_0(N)`.
 
 The compactification layer (`IsX0Compactification`, `IsJacobianOf`,
 `HasRankZeroJacobian`, `card_le_of_rankZeroJacobian`) is now written as
-an INTERFACE, and the seven single-prime levels are proven over it.
-What the interface's five leaves still need, and none of it exists at
+an INTERFACE, and all eleven levels are proven over it — seven on a
+single counting prime, four on the sieve `exists_x0Sieve`.
+What the interface's six leaves still need, and none of it exists at
 this pin:
 
 * the smooth compactification of a coarse moduli space, and the cusps
@@ -254,11 +270,15 @@ this pin:
   (`hasRankZeroJacobian_of_kenkuLevel`), and Eichler–Shimura, which
   supplies the point counts (`exists_x0Compactification_mod_prime`).
 
+* the Abel–Jacobi image of `X_0(N)(𝔽_ℓ)` inside `J_0(N)(𝔽_ℓ)` as a
+  computable finite object, which is what the multi-prime sieve leaf
+  `exists_x0Sieve` asks for at the four levels `45, 54, 63, 75`.
+
 Chabauty–Coleman is **not** on this list: the 2026-07-26 reconnaissance
 found `rank J_0(N)(ℚ) = 0` at all eleven named levels, so none of them
-needs it.  The four levels `45, 54, 63, 75` need a multi-prime
-Mordell–Weil sieve instead, which is a strengthening of
-`card_le_of_rankZeroJacobian` rather than a new theory.
+needs it.  The four levels `45, 54, 63, 75` are proven over the
+multi-prime Mordell–Weil sieve instead, which was — as predicted — a
+strengthening of `card_le_of_rankZeroJacobian` rather than a new theory.
 -/
 module
 
@@ -295,6 +315,9 @@ public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Defs
 public import Mathlib.AlgebraicGeometry.Limits
 -- `ZMod ℓ` is the base ring of the reduction `X_0(N)_{𝔽_ℓ}`; see `SpecF`.
 public import Mathlib.Data.ZMod.Basic
+-- `Scheme.Hom.image` / `imageι` / `toImage`: the scheme-theoretic image of a
+-- morphism, which is how the descent leaf's closed subscheme `C` is built.
+public import Mathlib.AlgebraicGeometry.IdealSheaf.Subscheme
 
 @[expose] public section
 
@@ -881,9 +904,460 @@ theorem exists_ellipticScheme_of_weierstrass (E : WeierstrassCurve ℚ) [E.IsEll
                = ab.galSMul (𝟙 SpecQ) σ (e x)) :=
   sorry
 
+/-! ### The group law of an abelian scheme as a MORPHISM (Yoneda)
+
+`AbelianSchemeStruct` presents the group law only through the functor of
+points: `ab.add` is a family of operations on `RelPoint f g`, natural in
+the test object.  The subgroup-scheme conditions of
+`CyclicSubgroupOfOrder` are stated at EVERY base `T'`, including
+non-reduced ones, so they cannot be checked pointwise — the rigidity
+argument ("two morphisms out of a reduced scheme into a separated one
+agreeing on geometric points are equal") is simply false at a non-reduced
+`T'`.
+
+The fix is Yoneda, and it is carried out here rather than left to the
+leaves: apply `ab.add` to the two projections of `A ×_ℚ A` to get an
+honest morphism `addHom ab : A ×_ℚ A ⟶ A`, and `ab.neg` to the identity
+point to get `negHom ab : A ⟶ A`.  Naturality then makes `ab.add x z` and
+`ab.neg x` COMPOSITES with those fixed morphisms, at every base at once
+(`add_eq_addHom`, `neg_eq_negHom`).
+
+Consequence, and this is the point: the subgroup conditions at all bases
+follow from a SINGLE factorisation of each morphism through the closed
+immersion (`add_liesIn_of_factor`, `neg_liesIn_of_factor`).  The rigidity
+input is then used exactly once, at `C ×_ℚ C` and at `C` — schemes that
+really are reduced — which is the only place it is valid. -/
+
+namespace AbelianSchemeStruct
+
+/-- **Naturality of inversion.**  This is NOT an axiom of
+`AbelianSchemeStruct` — the structure carries `pre_add` and `pre_zero`
+only — but it follows from them by cancellation, `neg x` being the unique
+solution of `add · x = zero`. -/
+theorem pre_neg {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
+    {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (x : RelPoint f g) :
+    RelPoint.pre h hg (ab.neg x) = ab.neg (RelPoint.pre h hg x) := by
+  letI := ab.addCommGroup g'
+  have h1 : ab.add (RelPoint.pre h hg (ab.neg x)) (RelPoint.pre h hg x) = ab.zero g' := by
+    rw [← ab.pre_add h hg, ab.neg_add, ab.pre_zero]
+  have h2 : ab.add (ab.neg (RelPoint.pre h hg x)) (RelPoint.pre h hg x) = ab.zero g' :=
+    ab.neg_add _
+  exact add_right_cancel (a := RelPoint.pre h hg (ab.neg x))
+    (b := RelPoint.pre h hg x) (c := ab.neg (RelPoint.pre h hg x)) (h1.trans h2.symm)
+
+end AbelianSchemeStruct
+
+/-- The structure morphism of the fibre square `A ×_ℚ A`. -/
+noncomputable abbrev sqBase {A : Scheme.{0}} (f : A ⟶ SpecQ) :
+    Limits.pullback f f ⟶ SpecQ :=
+  Limits.pullback.fst f f ≫ f
+
+/-- The first projection, as a relative point of `A ×_ℚ A`. -/
+noncomputable def sqFst {A : Scheme.{0}} (f : A ⟶ SpecQ) : RelPoint f (sqBase f) :=
+  ⟨Limits.pullback.fst f f, rfl⟩
+
+/-- The second projection, as a relative point of `A ×_ℚ A`. -/
+noncomputable def sqSnd {A : Scheme.{0}} (f : A ⟶ SpecQ) : RelPoint f (sqBase f) :=
+  ⟨Limits.pullback.snd f f, Limits.pullback.condition.symm⟩
+
+/-- **The group law of an abelian scheme as a morphism `A ×_ℚ A ⟶ A`**,
+obtained by Yoneda: it is `ab.add` applied to the two projections. -/
+noncomputable def addHom {A : Scheme.{0}} {f : A ⟶ SpecQ} (ab : AbelianSchemeStruct f) :
+    Limits.pullback f f ⟶ A :=
+  (ab.add (sqFst f) (sqSnd f)).1
+
+/-- **Inversion as a morphism `A ⟶ A`**, obtained by Yoneda: it is
+`ab.neg` applied to the identity point. -/
+noncomputable def negHom {A : Scheme.{0}} {f : A ⟶ SpecQ} (ab : AbelianSchemeStruct f) :
+    A ⟶ A :=
+  (ab.neg (⟨𝟙 A, Category.id_comp f⟩ : RelPoint f f)).1
+
+/-- **`ab.add` IS composition with `addHom ab`, at every base** (PROVEN):
+naturality `pre_add` read at the map into `A ×_ℚ A` determined by the two
+points. -/
+theorem add_eq_addHom {A : Scheme.{0}} {f : A ⟶ SpecQ} (ab : AbelianSchemeStruct f)
+    {T' : Scheme.{0}} {g : T' ⟶ SpecQ} (x z : RelPoint f g) :
+    (ab.add x z).1 =
+      Limits.pullback.lift x.1 z.1 (by rw [x.2, z.2]) ≫ addHom ab := by
+  set u : T' ⟶ Limits.pullback f f :=
+    Limits.pullback.lift x.1 z.1 (by rw [x.2, z.2]) with hu
+  have hg : u ≫ sqBase f = g := by
+    show u ≫ Limits.pullback.fst f f ≫ f = g
+    rw [← Category.assoc, hu, Limits.pullback.lift_fst, x.2]
+  have h := ab.pre_add u hg (sqFst f) (sqSnd f)
+  have h1 : RelPoint.pre u hg (sqFst f) = x := by
+    apply Subtype.ext
+    show u ≫ Limits.pullback.fst f f = x.1
+    rw [hu, Limits.pullback.lift_fst]
+  have h2 : RelPoint.pre u hg (sqSnd f) = z := by
+    apply Subtype.ext
+    show u ≫ Limits.pullback.snd f f = z.1
+    rw [hu, Limits.pullback.lift_snd]
+  rw [h1, h2] at h
+  exact (congrArg Subtype.val h).symm
+
+/-- **`ab.neg` IS composition with `negHom ab`, at every base** (PROVEN):
+`pre_neg` read at the point itself. -/
+theorem neg_eq_negHom {A : Scheme.{0}} {f : A ⟶ SpecQ} (ab : AbelianSchemeStruct f)
+    {T' : Scheme.{0}} {g : T' ⟶ SpecQ} (x : RelPoint f g) :
+    (ab.neg x).1 = x.1 ≫ negHom ab := by
+  have h := ab.pre_neg x.1 (g := f) (g' := g) x.2
+    (⟨𝟙 A, Category.id_comp f⟩ : RelPoint f f)
+  have hx : RelPoint.pre x.1 (g := f) (g' := g) x.2
+      (⟨𝟙 A, Category.id_comp f⟩ : RelPoint f f) = x := by
+    apply Subtype.ext
+    show x.1 ≫ 𝟙 A = x.1
+    rw [Category.comp_id]
+  rw [hx] at h
+  exact (congrArg Subtype.val h).symm
+
+/-- **`C ×_ℚ C ⟶ A ×_ℚ A`** induced by a subscheme inclusion `ι : C ⟶ A`. -/
+noncomputable def sqMap {A C : Scheme.{0}} {f : A ⟶ SpecQ} (ι : C ⟶ A) :
+    Limits.pullback (ι ≫ f) (ι ≫ f) ⟶ Limits.pullback f f :=
+  Limits.pullback.map (ι ≫ f) (ι ≫ f) f f ι ι (𝟙 SpecQ) (by simp) (by simp)
+
+@[simp] theorem sqMap_fst {A C : Scheme.{0}} {f : A ⟶ SpecQ} (ι : C ⟶ A) :
+    sqMap ι ≫ Limits.pullback.fst f f = Limits.pullback.fst (ι ≫ f) (ι ≫ f) ≫ ι :=
+  Limits.pullback.lift_fst _ _ _
+
+@[simp] theorem sqMap_snd {A C : Scheme.{0}} {f : A ⟶ SpecQ} (ι : C ⟶ A) :
+    sqMap ι ≫ Limits.pullback.snd f f = Limits.pullback.snd (ι ≫ f) (ι ≫ f) ≫ ι :=
+  Limits.pullback.lift_snd _ _ _
+
+/-- **ONE factorisation at `C ×_ℚ C` gives closure under the group law at
+EVERY base** (PROVEN).
+
+This is what makes the `add_liesIn` field reachable: the field quantifies
+over all test schemes `T'`, but by `add_eq_addHom` every instance of it is
+a composite with the single morphism `addHom ab`, so a single factorisation
+`μ` of `sqMap ι ≫ addHom ab` through `ι` discharges all of them. -/
+theorem add_liesIn_of_factor {A C : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (ι : C ⟶ A)
+    (μ : Limits.pullback (ι ≫ f) (ι ≫ f) ⟶ C) (hμ : μ ≫ ι = sqMap ι ≫ addHom ab)
+    {T' : Scheme.{0}} {g : T' ⟶ SpecQ} {x z : RelPoint f g}
+    (hx : RelPoint.LiesIn ι x) (hz : RelPoint.LiesIn ι z) :
+    RelPoint.LiesIn ι (ab.add x z) := by
+  obtain ⟨a, ha⟩ := hx
+  obtain ⟨b, hb⟩ := hz
+  have hab : a ≫ (ι ≫ f) = b ≫ (ι ≫ f) := by
+    rw [← Category.assoc, ← Category.assoc, ha, hb, x.2, z.2]
+  refine ⟨Limits.pullback.lift a b hab ≫ μ, ?_⟩
+  rw [Category.assoc, hμ, add_eq_addHom ab x z, ← Category.assoc]
+  congr 1
+  refine Limits.pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, sqMap_fst, ← Category.assoc, Limits.pullback.lift_fst, ha,
+      Limits.pullback.lift_fst]
+  · rw [Category.assoc, sqMap_snd, ← Category.assoc, Limits.pullback.lift_snd, hb,
+      Limits.pullback.lift_snd]
+
+/-- **ONE factorisation at `C` gives closure under inversion at EVERY
+base** (PROVEN).  Same mechanism as `add_liesIn_of_factor`, via
+`neg_eq_negHom`. -/
+theorem neg_liesIn_of_factor {A C : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (ι : C ⟶ A)
+    (ν : C ⟶ C) (hν : ν ≫ ι = ι ≫ negHom ab)
+    {T' : Scheme.{0}} {g : T' ⟶ SpecQ} {x : RelPoint f g}
+    (hx : RelPoint.LiesIn ι x) :
+    RelPoint.LiesIn ι (ab.neg x) := by
+  obtain ⟨a, ha⟩ := hx
+  refine ⟨a ≫ ν, ?_⟩
+  rw [Category.assoc, hν, ← Category.assoc, ha, neg_eq_negHom ab x]
+
+/-! ### The span of a finite family of geometric points
+
+**Added 2026-07-26, and it is what turns the descent leaf below from an
+unstartable existential into a construction with five stated properties.**
+
+The obstruction recorded in the pin survey of
+`exists_cyclicSubgroupOfOrder_of_galoisStable` was that nothing in the pin
+builds a closed subscheme out of a finite set of geometric points.  That
+was a naming miss: `AlgebraicGeometry.Scheme.Hom.image` is the
+scheme-theoretic image of a morphism, and
+
+    C := the scheme-theoretic image of  ∐_{s ∈ ⟨y⟩} Spec ℚ̄ ⟶ A
+
+is exactly the reduced closed subscheme supported on the (finitely many,
+closed) images of the points of `⟨y⟩`.  Classically `C = Spec ∏_i κ_i`
+with the `κ_i` the fields of definition of the `Γ_ℚ`-orbits, which is the
+descended group scheme; here it is obtained without any Galois-category
+machinery, because the scheme-theoretic image already performs the
+descent.
+
+Two of the eight fields of `CyclicSubgroupOfOrder` are then FREE for this
+`C`, and are proven below rather than left to a successor:
+
+* `isClosedImmersion` — `IsClosedImmersion I.subschemeι` is a mathlib
+  instance;
+* `flat` — the base is `Spec ℚ`, a one-point integral scheme, and mathlib's
+  `[Subsingleton Y] [IsIntegral Y] → Flat f` instance applies verbatim.
+  (This confirms the "NOTE ON THE `flat` FIELD" prediction below: the field
+  really does cost nothing.) -/
+
+/-- **The coproduct of copies of `Spec ℚ̄` indexed by `J`**, the source of
+the morphism whose scheme-theoretic image cuts out the level structure. -/
+noncomputable abbrev geomPtSigma (J : Type) : Scheme.{0} :=
+  ∐ (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+
+/-- **The morphism `∐_J Spec ℚ̄ ⟶ A` assembled from a family of
+`ℚ̄`-points of `A`.** -/
+noncomputable def geomPtDesc {A : Scheme.{0}} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A)) :
+    geomPtSigma J ⟶ A :=
+  Limits.Sigma.desc p
+
+/-- **The closed subscheme of `A` spanned by a family of `ℚ̄`-points**: the
+scheme-theoretic image of `geomPtDesc p`.
+
+For a `Γ_ℚ`-stable family this is the Galois descent of the family — the
+smallest closed subscheme of `A` through which every member factors. -/
+noncomputable def spanScheme {A : Scheme.{0}} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A)) : Scheme.{0} :=
+  (geomPtDesc p).image
+
+/-- **The closed immersion of the span into `A`.** -/
+noncomputable def spanSchemeι {A : Scheme.{0}} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A)) :
+    spanScheme p ⟶ A :=
+  (geomPtDesc p).imageι
+
+/-- The span is a closed subscheme of `A` (PROVEN — a mathlib instance). -/
+instance {A : Scheme.{0}} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A)) :
+    IsClosedImmersion (spanSchemeι p) :=
+  inferInstanceAs (IsClosedImmersion (geomPtDesc p).ker.subschemeι)
+
+/-- **Every member of the family factors through the span** (PROVEN): it is
+`Sigma.ι` followed by the factorisation through the scheme-theoretic
+image. -/
+theorem geomPt_liesIn_spanScheme {A : Scheme.{0}} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A)) (j : J) :
+    ∃ w : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ spanScheme p,
+      w ≫ spanSchemeι p = p j := by
+  refine ⟨Limits.Sigma.ι (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ))) j ≫
+    (geomPtDesc p).toImage, ?_⟩
+  show Limits.Sigma.ι (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ))) j ≫
+      (geomPtDesc p).toImage ≫ (geomPtDesc p).imageι = p j
+  rw [Scheme.Hom.toImage_imageι]
+  exact Limits.colimit.ι_desc _ _
+
+/-- **The `N` multiples of a geometric point `y`**, as a family of
+`ℚ̄`-points of `A` indexed by `Fin N`.
+
+Indexing by `Fin N` rather than by `↥(AddSubgroup.zmultiples y)` is
+deliberate: the latter's *type* depends on the `AddCommGroup` instance
+`ab.addCommGroup`, which would force a `letI` into every signature below.
+When `addOrderOf y = N` the two index the same subset of `A(ℚ̄)`, since
+`⟨y⟩ = {0 • y, …, (N-1) • y}`. -/
+noncomputable def zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (y : GeomFibrePt f (𝟙 SpecQ)) :
+    Fin N → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A) :=
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  fun k => (((k : ℕ) • y : GeomFibrePt f (𝟙 SpecQ))).1
+
+/-- Every multiple of `y` is a geometric point of the fibre over
+`𝟙 SpecQ` (PROVEN — it is the second component of the relative point). -/
+theorem zmulPts_comp {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (y : GeomFibrePt f (𝟙 SpecQ)) (k : Fin N) :
+    zmulPts ab N y k ≫ f = specAlgClos ℚ ≫ 𝟙 SpecQ :=
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  (((k : ℕ) • y : GeomFibrePt f (𝟙 SpecQ))).2
+
+/-! ### The five properties of the span that the descent leaf needs -/
+
+/-- **The span of finitely many `ℚ̄`-points of a scheme locally of finite
+type over `ℚ` is FINITE over `ℚ`** (sorry leaf (i) of the descent
+decomposition).
+
+TRUE, and classical.  Each `ℚ̄`-point `p j` has image a point of `A` whose
+residue field embeds in `ℚ̄`, hence is a finitely generated `ℚ`-algebra
+which is a field, hence finite over `ℚ` by **Zariski's lemma** — so the
+image point is CLOSED and its residue field is a number field.  The
+scheme-theoretic image is therefore supported on a finite set of closed
+points; being a closed subscheme of a locally-noetherian scheme with
+discrete finite support it is an artinian scheme, hence affine, hence
+`Spec` of a finite-dimensional `ℚ`-algebra.
+
+WHAT IS MISSING AT THIS PIN, precisely — the survey is worth having
+because the pieces are unusually close:
+
+* `AlgebraicGeometry.IsArtinianScheme` exists (`AlgebraicGeometry/Artinian.lean`),
+  with `IsArtinianScheme.finite` giving finiteness of the underlying type,
+  and `IsLocallyArtinian.of_isImmersion` transporting along immersions.
+* `IsFinite.iff_isIntegralHom_and_locallyOfFiniteType` reduces the goal to
+  `IsIntegralHom (spanSchemeι p ≫ f)`, and `LocallyOfFiniteType` of that
+  composite is free (a closed immersion is of finite type, and `f` is
+  smooth hence of finite type).
+* **The genuine gap is `IsArtinianScheme X → IsAffine X`** — an artinian
+  scheme is a finite disjoint union of `Spec`s of artin local rings — which
+  `grep` does not find anywhere in the pin.  A successor who proves that one
+  statement gets this leaf almost immediately.
+
+Note this leaf does NOT need the family to be Galois-stable, and does not
+mention the group law: it is a statement about an arbitrary finite family
+of geometric points. -/
+theorem isFinite_spanSchemeι {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) {J : Type} [Finite J]
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
+    (hp : ∀ j, p j ≫ f = specAlgClos ℚ ≫ 𝟙 SpecQ) :
+    IsFinite (spanSchemeι p ≫ f) :=
+  sorry
+
+/-- **A `ℚ`-rational point of `A` whose associated `ℚ̄`-point is a member of
+the family factors through the span** (sorry leaf (ii) of the descent
+decomposition).
+
+TRUE.  `geomPt_liesIn_spanScheme` already gives the factorisation of the
+`ℚ̄`-point `specAlgClos ℚ ≫ r` through `C`; what is asked here is that the
+factorisation *descends* to `ℚ`, i.e. that the `ℚ`-point `r` itself lands in
+the closed subscheme `C`.  That is the fpqc descent of a closed immersion
+along the faithfully flat `Spec ℚ̄ ⟶ Spec ℚ`: `r` factors through the closed
+subscheme `C` iff `r^{-1}(I_C) = 0`, and vanishing of a section of a sheaf
+may be checked after a faithfully flat base change.
+
+Equivalently and more cheaply: `C` is a closed subscheme and `r` is a
+morphism from the REDUCED scheme `Spec ℚ` whose image lands in the support
+of `C`, so `r` factors through the reduced induced structure on that
+support — and `C` is reduced, being the scheme-theoretic image of a reduced
+scheme.
+
+This leaf is what discharges the `zero_liesIn` field, via
+`zero_liesIn_of_ratPoint` below: the whole field at every base `T'` reduces
+to this single `ℚ`-point, because the zero section at any base is the
+zero section at `𝟙 SpecQ` precomposed with the base point. -/
+theorem ratPoint_liesIn_spanScheme {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) {J : Type} [Finite J]
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
+    (r : SpecQ ⟶ A) (hr : r ≫ f = 𝟙 SpecQ)
+    (hgeom : ∃ j, p j = specAlgClos ℚ ≫ r) :
+    ∃ w : SpecQ ⟶ spanScheme p, w ≫ spanSchemeι p = r :=
+  sorry
+
+/-- **`zero_liesIn` at an ARBITRARY base reduces to the single `ℚ`-point
+`ab.zero (𝟙 SpecQ)`** (PROVEN 2026-07-26).
+
+This is the naturality axiom `pre_zero` read at `g = 𝟙 SpecQ`: the zero
+section over any base `T'` is the zero section over `Spec ℚ` precomposed
+with the structure morphism `g : T' ⟶ Spec ℚ`.  So one factorisation of
+one `ℚ`-point through `C` gives the factorisation at every base at once,
+and no separate descent argument is needed per base. -/
+theorem zero_liesIn_of_ratPoint {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
+    (w₀ : SpecQ ⟶ spanScheme p) (hw₀ : w₀ ≫ spanSchemeι p = (ab.zero (𝟙 SpecQ)).1)
+    {T' : Scheme.{0}} (g : T' ⟶ SpecQ) :
+    RelPoint.LiesIn (spanSchemeι p) (ab.zero g) := by
+  refine ⟨g ≫ w₀, ?_⟩
+  rw [Category.assoc, hw₀]
+  have h := ab.pre_zero g (g := 𝟙 SpecQ) (g' := g) (Category.comp_id g)
+  exact congrArg Subtype.val h
+
+/-- **The group law of `A` restricts to the span: the factorisation at
+`C ×_ℚ C`** (sorry leaf (iii) of the descent decomposition).
+
+TRUE, and this is the rigidity half of "`C` is a subgroup SCHEME rather
+than merely a subgroup of geometric points".
+
+NOTE THE SHAPE.  This leaf asks for ONE morphism, with no quantification
+over test schemes.  That is deliberate, and it is the whole reason the
+Yoneda subsection above exists: the `add_liesIn` field quantifies over
+every base `T'`, including non-reduced ones where rigidity is FALSE, so it
+cannot be attacked base by base.  `add_eq_addHom` turns every instance of
+the field into a composite with the single morphism `addHom ab`, and
+`add_liesIn_of_factor` then derives the whole field from the factorisation
+asked for here.  So the successor closing this leaf never has to think
+about a general `T'`.
+
+THE ARGUMENT.  `C ×_ℚ C` is reduced — over `ℚ`, `C` is finite étale, and a
+product of étale `ℚ`-schemes is étale hence reduced — and `A` is separated,
+being proper over `ℚ`.  The composite `C ×_ℚ C ⟶ A ×_ℚ A ⟶ A` agrees on
+geometric points with a morphism landing in `C`, because `⟨y⟩` is a
+subgroup of `A(ℚ̄)`.  So by
+`AlgebraicGeometry.ext_of_isDominant_of_isSeparated` it factors through the
+closed immersion `ι`.
+
+`hstable` enters exactly here: it is what makes `⟨y⟩` a `Γ_ℚ`-submodule,
+hence `C` defined over `ℚ` at all. -/
+theorem exists_addHom_factor_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N)
+    (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          ∀ σ : Field.absoluteGaloisGroup ℚ,
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y) :
+    ∃ μ : Limits.pullback (spanSchemeι (zmulPts ab N y) ≫ f)
+            (spanSchemeι (zmulPts ab N y) ≫ f) ⟶ spanScheme (zmulPts ab N y),
+      μ ≫ spanSchemeι (zmulPts ab N y)
+        = sqMap (spanSchemeι (zmulPts ab N y)) ≫ addHom ab :=
+  sorry
+
+/-- **Inversion restricts to the span: the factorisation at `C`** (sorry
+leaf (iv) of the descent decomposition).
+
+Same mechanism as `exists_addHom_factor_zmulPts`, one step shorter: the
+rigidity step happens at `C` itself rather than at `C ×_ℚ C`, because
+`negHom ab ∘ ι` agrees on geometric points with a morphism into `C`
+(`⟨y⟩` is closed under negation).  `neg_liesIn_of_factor` derives the
+`neg_liesIn` field at every base from this one factorisation. -/
+theorem exists_negHom_factor_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N)
+    (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          ∀ σ : Field.absoluteGaloisGroup ℚ,
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y) :
+    ∃ ν : spanScheme (zmulPts ab N y) ⟶ spanScheme (zmulPts ab N y),
+      ν ≫ spanSchemeι (zmulPts ab N y)
+        = spanSchemeι (zmulPts ab N y) ≫ negHom ab :=
+  sorry
+
+/-- **The geometric fibres of the span are cyclic of order exactly `N`**
+(sorry leaf (v) of the descent decomposition — THE CRUX).
+
+TRUE.  Over `ℚ̄` the span is split: `C_{ℚ̄} = ∐_{s ∈ ⟨y⟩} Spec ℚ̄`, because
+the scheme-theoretic image of `∐_{⟨y⟩} Spec ℚ̄ ⟶ A` is `Spec` of the
+product of the residue fields of the `Γ_ℚ`-orbits, and base change to `ℚ̄`
+splits each orbit into its individual points.  So `C(ℚ̄) = ⟨y⟩`, cyclic of
+order `addOrderOf y = N`.
+
+WHY THE STATEMENT QUANTIFIES OVER EVERY ALGEBRAICALLY CLOSED `K`, and why
+that is not a strengthening.  `ℚ` is initial among commutative rings, so
+the base point `t : Spec K ⟶ Spec ℚ` is unique and carries no data.  The
+algebraic closure of `ℚ` inside `K` is a copy of `ℚ̄`, over which `C` is
+already split, and a `K`-point of a scheme that is a finite product of
+number fields is determined by a `ℚ̄`-point; so `C(K) = C(ℚ̄) = ⟨y⟩` with
+the same order `N`.  The generator `z` produced at `K` is the image of `y`
+under any embedding `ℚ̄ ↪ K` — a choice, but the resulting SUBGROUP is
+independent of it because `⟨y⟩` is `Γ_ℚ`-stable, which is exactly what
+`hstable` supplies.
+
+WHAT IS MISSING AT THIS PIN: the identification of the base change of a
+scheme-theoretic image with the scheme-theoretic image of the base change
+(true here because `Spec ℚ̄ ⟶ Spec ℚ` is flat), plus the computation of
+`Hom_ℚ(Spec K, C)` for `C` finite over `ℚ`.  This is the one leaf of the
+five that genuinely needs the finite-étale/Galois-set correspondence, and
+it needs only the SPLIT direction of it, over an algebraically closed
+base — which `CommAlgCat.FiniteEtale.equivOfIsSepClosed` already provides
+in the pin. -/
+theorem geom_cyclic_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N)
+    (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          ∀ σ : Field.absoluteGaloisGroup ℚ,
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y)
+    (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ SpecQ) :
+    letI := ab.addCommGroup t
+    ∃ z : RelPoint f t, RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) z ∧
+      addOrderOf z = N ∧
+      ∀ x : RelPoint f t, RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) x ↔
+        x ∈ AddSubgroup.zmultiples z :=
+  sorry
+
 /-- **Galois descent: a Galois-stable cyclic subgroup of the geometric
 points of an abelian scheme over `ℚ` is cut out by a closed cyclic
-subgroup scheme** (sorry node — theory (b) of the bridge).
+subgroup scheme** (PROVEN 2026-07-26 from the five leaves of the
+subsection above; formerly a single sorry node).
 
 **FALSITY AUDIT, 2026-07-26 — the hypothesis `hN : N ≠ 0` is NOT
 decoration, and was ADDED on this date because the statement without it is
@@ -970,12 +1444,21 @@ What is ABSENT, and is the actual content of this leaf:
   so `FiniteEtale k` is NOT known to be a Galois category and the
   correspondence with finite continuous `Γ_k`-sets — the descent
   direction, over a NON-closed base — does not exist;
-* no construction of the reduced induced closed subscheme structure on a
+* ~~no construction of the reduced induced closed subscheme structure on a
   closed subset of a scheme (`grep` over `AlgebraicGeometry/` finds no
-  `reducedSubscheme` of any spelling).
+  `reducedSubscheme` of any spelling)~~ — **CORRECTED 2026-07-26.  The
+  survey searched for the wrong name.**  `AlgebraicGeometry.Scheme.Hom.image`
+  (`IdealSheaf/Subscheme.lean:650`) is the *scheme-theoretic image* of a
+  morphism, with `Hom.imageι` the closed immersion into the target,
+  `Hom.toImage` the factorisation, `Hom.toImage_imageι` their composite,
+  and `IsDominant (Hom.toImage f)` for quasi-compact `f`.  That is exactly
+  the construction this leaf needed, and taking it at the morphism
+  `∐_{s ∈ ⟨y⟩} Spec ℚ̄ ⟶ A` builds `C` directly.  It is now used below;
+  see `Fermat.spanScheme`.
 
-So the honest cut for a successor is: build the reduced induced
-structure, or go through `CommAlgCat.FiniteEtale` on affines and glue.
+So the honest cut for a successor is no longer "build the reduced induced
+structure": `C` and `ι` are CONSTRUCTED below, and what remains are the
+five properties of that specific `C` listed in the decomposition note.
 The algebra-side scaffolding is fresher than the module docstring's
 "no modular curves anywhere" survey would suggest.
 
@@ -988,7 +1471,45 @@ flat.  So the extra field is discharged by flatness of `C` as a
 `ℚ`-scheme, whichever construction of `C` a successor chooses, and no
 part of the descent argument above has to change.  The strengthening of
 the interface is paid for entirely by the *general-base* consumers, not
-here. -/
+here.  CONFIRMED 2026-07-26: `flat` is discharged below by
+`inferInstance`, from mathlib's `[Subsingleton Y] [IsIntegral Y] → Flat f`.
+
+## DECOMPOSITION, 2026-07-26 — this node is now PROVEN, over five leaves
+
+`C` and `ι` are no longer existential.  They are
+`spanScheme (zmulPts ab N y)` and `spanSchemeι (zmulPts ab N y)`: the
+scheme-theoretic image of `∐_{k < N} Spec ℚ̄ ⟶ A` assembled from the `N`
+multiples of `y`.  Of the eight fields of `CyclicSubgroupOfOrder`, three
+are discharged here and five became named leaves:
+
+| field | status |
+|---|---|
+| `C`, `ι` | CONSTRUCTED (`spanScheme`, `spanSchemeι`) |
+| `isClosedImmersion` | PROVEN — mathlib instance on `subschemeι` |
+| `flat` | PROVEN — base is a one-point integral scheme |
+| `zero_liesIn` | PROVEN from leaf (ii), via `zero_liesIn_of_ratPoint` |
+| `isFinite` | leaf (i) `isFinite_spanSchemeι` |
+| `add_liesIn` | PROVEN from leaf (iii), via `add_liesIn_of_factor` |
+| `neg_liesIn` | PROVEN from leaf (iv), via `neg_liesIn_of_factor` |
+| `geom_cyclic` | leaf (v) `geom_cyclic_zmulPts` — the crux |
+
+The five are genuinely independent classical facts, not a chain of
+`∃`-restatements: (i) is Zariski's lemma plus "an artinian scheme is
+affine"; (ii) is fpqc descent of a point along `ℚ̄/ℚ`; (iii) and (iv) are
+the rigidity of morphisms out of a reduced scheme into a separated one;
+(v) is the split finite-étale computation of `C(K)`.  Each carries its own
+route in its docstring.
+
+**NONE OF THE FIVE QUANTIFIES OVER A TEST SCHEME**, and that is the single
+most useful thing the decomposition does.  Three of the eight fields
+(`zero_liesIn`, `add_liesIn`, `neg_liesIn`) are stated at EVERY base `T'`,
+including non-reduced ones where the rigidity argument that proves them is
+outright false.  The Yoneda subsection above (`addHom`, `negHom`,
+`add_eq_addHom`, `neg_eq_negHom`) collapses each of those fields to a
+single morphism-level factorisation — leaves (ii), (iii), (iv) — so a
+successor works with reduced schemes only, where the argument is valid.
+Getting this wrong is the obvious way to attack the node and it does not
+work. -/
 theorem exists_cyclicSubgroupOfOrder_of_galoisStable {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -996,8 +1517,32 @@ theorem exists_cyclicSubgroupOfOrder_of_galoisStable {A : Scheme.{0}} {f : A ⟶
     (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
           ∀ σ : Field.absoluteGaloisGroup ℚ,
             ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y) :
-    Nonempty (CyclicSubgroupOfOrder ab N) :=
-  sorry
+    Nonempty (CyclicSubgroupOfOrder ab N) := by
+  classical
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  -- The zero of the geometric fibre is the `0`-th multiple of `y`, hence a
+  -- member of the family; `hN` is what makes `⟨0, _⟩ : Fin N` available, and
+  -- this is the one place the repaired hypothesis is consumed.
+  have hzero : zmulPts ab N y ⟨0, Nat.pos_of_ne_zero hN⟩
+      = specAlgClos ℚ ≫ (ab.zero (𝟙 SpecQ)).1 := by
+    have h := ab.pre_zero (specAlgClos ℚ) (g := 𝟙 SpecQ)
+      (g' := specAlgClos ℚ ≫ 𝟙 SpecQ) rfl
+    show ((0 : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)).1 = _
+    rw [zero_smul]
+    exact congrArg Subtype.val h.symm
+  obtain ⟨w₀, hw₀⟩ := ratPoint_liesIn_spanScheme ab (zmulPts ab N y)
+    (ab.zero (𝟙 SpecQ)).1 (ab.zero (𝟙 SpecQ)).2 ⟨_, hzero⟩
+  obtain ⟨μ, hμ⟩ := exists_addHom_factor_zmulPts ab N hN y hy hstable
+  obtain ⟨ν, hν⟩ := exists_negHom_factor_zmulPts ab N hN y hy hstable
+  exact ⟨{ C := spanScheme (zmulPts ab N y)
+           ι := spanSchemeι (zmulPts ab N y)
+           isClosedImmersion := inferInstance
+           isFinite := isFinite_spanSchemeι ab (zmulPts ab N y) (zmulPts_comp ab N y)
+           flat := inferInstance
+           zero_liesIn := fun g => zero_liesIn_of_ratPoint ab _ w₀ hw₀ g
+           add_liesIn := fun hx hz => add_liesIn_of_factor ab _ μ hμ hx hz
+           neg_liesIn := fun hx => neg_liesIn_of_factor ab _ ν hν hx
+           geom_cyclic := fun K _ _ t => geom_cyclic_zmulPts ab N hN y hy hstable K t }⟩
 
 /-- **Existence of the coarse moduli space `Y_0(N)`** (PROVEN, as the split
 of the level into the cited case `N ≥ 1` and the degenerate case `N = 0`).
@@ -2098,7 +2643,7 @@ Kolyvagin–Logachev, hence finite `J_0(N)(ℚ)`.  Positivity of the genus
 is classical and holds at all eleven — the genus values, in the order of
 `kenkuLevels`, are `1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`.
 
-IRREDUCIBLE at this pin, and the deepest of the five leaves here: it
+IRREDUCIBLE at this pin, and the deepest of the six leaves here: it
 needs `S_2(Γ_0(N))`, the Hecke algebra, `L`-functions of modular abelian
 varieties and Gross–Zagier/Kolyvagin. -/
 theorem hasRankZeroJacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
@@ -2198,6 +2743,351 @@ theorem y0HasNoRationalPoint_of_witnessPrime (N ℓ : ℕ) (hN : 0 < N)
   have hle : (insert (sectionAlong j hX.comm y) s).card ≤ numRationalCusps N :=
     card_le_of_rankZeroJacobian hX (hasRankZeroJacobian_of_kenkuLevel N hlevel hX)
       hℓ hℓ2 hℓN hX' _ hfin hcard _
+  rw [Finset.card_insert_of_notMem hp, hscard] at hle
+  omega
+
+/-! #### The multi-prime Mordell–Weil sieve
+
+The four levels `45, 54, 63, 75` are exactly those at which the counting
+bound of `card_le_of_rankZeroJacobian` is never sharp: at every odd
+`ℓ ∤ N` the reduction `X_0(N)(𝔽_ℓ)` has strictly more points than
+`X_0(N)` has rational cusps, so `y0HasNoRationalPoint_of_witnessPrime`
+cannot close them however the prime is chosen.  The minima over
+`3 ≤ ℓ < 60`, recomputed with Magma on 2026-07-26 from Eichler–Shimura,
+against `numRationalCusps N = 4` in all four cases:
+
+| `N` | genus | best `ℓ₁` | `#X_0(N)(𝔽_{ℓ₁})` | `#J_0(N)(𝔽_{ℓ₁})` | `ℓ₂` | `#J_0(N)(𝔽_{ℓ₂})` | `gcd` |
+|-----|-------|-----------|--------------------|--------------------|------|--------------------|-------|
+| 45 | 3 | 7 | 8 | `512 = 2⁹`        | 19 | `4096 = 2¹²`          | `512`  |
+| 54 | 4 | 5 | 6 | `972 = 2²·3⁵`     | 7  | `6561 = 3⁸`           | `243`  |
+| 63 | 5 | 5 | 8 | `6144 = 2¹¹·3`    | 11 | `135168 = 2¹²·3·11`   | `6144` |
+| 75 | 5 | 7 | 8 | `28160 = 2⁹·5·11` | 11 | `409600 = 2¹⁴·5²`     | `2560` |
+
+**What the extra primes buy, and why only one of them appears in the
+statement below.**  Reduction at a good odd `ℓ` is an injective group
+homomorphism `J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)`, so by Lagrange `#J_0(N)(ℚ)`
+divides `#J_0(N)(𝔽_ℓ)` for every such `ℓ`; ranging over several `ℓ` pins
+`#J_0(N)(ℚ)` down to a divisor of the `gcd` above.  That is the whole
+arithmetic content of "multi-prime", and it is a statement about the
+subgroup `red_ℓ(J_0(N)(ℚ)) ⊆ J_0(N)(𝔽_ℓ)`.
+
+So the sieve leaf is phrased over ONE prime, with the surviving points
+cut out by membership in `Set.range red.redJ` rather than by a divisibility
+condition on their order.  That is deliberate and it is the *stronger*
+formulation: `Set.range red.redJ` is an isomorphic copy of `J_0(N)(ℚ)`
+itself, so it already encodes everything that any number of auxiliary
+primes could contribute *to the group*, and no bound `D` has to be
+carried around and justified separately.  `N = 75` is the row that shows
+why this matters — its best counting prime `ℓ₁ = 7` gives
+`#J_0(75)(𝔽_7) = 11 · 2560`, so even the *order* of the rational Jacobian
+is not pinned there without a second prime.
+
+**Correction, 2026-07-26: that argument is sound but it does NOT by
+itself justify the single prime, and the reason the single prime is
+nevertheless right is a different one.**  Pinning the group is not what
+the multi-prime sieve does.  The classical sieve intersects, over several
+`ℓ`, the conditions `red_ℓ(x) ∈ (aj'_ℓ)⁻¹(red_ℓ J_0(N)(ℚ))`; a point of
+`X_0(N)(𝔽_{ℓ₁})` that survives at `ℓ₁` may be killed only by a *different*
+prime, and no amount of information about `Set.range red.redJ` at `ℓ₁`
+sees that.  So "the range encodes what the auxiliary primes say" answers
+a question about `#J_0(N)(ℚ)` and leaves the sieve question open.
+
+What actually makes the one-prime formulation true is that `ℓ` is
+**existentially quantified over all of `ℕ`**: the leaf has only to find
+ONE prime at which the single-prime cut is already sharp, and for a curve
+of genus `g ≥ 2` that is what happens at every sufficiently large `ℓ`.
+There `#X_0(N)(𝔽_ℓ)` grows like `ℓ + 1` while `#J_0(N)(𝔽_ℓ)` grows like
+`ℓ^g`, so the FIXED finite subgroup `red_ℓ J_0(N)(ℚ)` — of order at most
+`512, 243, 6144, 2560` — meets the `ℓ + 1` Abel–Jacobi classes only in
+the ones it is forced to contain, namely the reductions of `X_0(N)(ℚ)`.
+All four sieve levels have `g ≥ 3`.  The existential is therefore not a
+hedge against a numerical accident at a small prime; it is the load-
+bearing part of the statement, and the small primes of the table are the
+*hard* case rather than the easy one.
+
+The leaf is restricted to `x0SieveLevels` on purpose.  Stated for all of
+`kenkuLevels` it would subsume `exists_x0Compactification_mod_prime` and
+`card_le_of_rankZeroJacobian` — the seven single-prime levels would then
+rest on a strictly stronger unproven statement than they need, which is
+the "repackaging the consumer" failure this module's interfaces are
+shaped to avoid. -/
+
+/-- **The four Kenku levels that no single counting prime settles.**
+
+A sublist of `kenkuLevels`; the other seven are closed by
+`y0HasNoRationalPoint_of_witnessPrime` against `x0WitnessTable`.  See the
+table in the subsection docstring for the arithmetic that separates the
+two groups. -/
+def x0SieveLevels : List ℕ := [45, 54, 63, 75]
+
+/-- **Good reduction of the pair `(X_0(N), J_0(N))` at an odd prime
+`ℓ ∤ N`, on rational points.**
+
+The data is the commuting square
+
+```
+X_0(N)(ℚ)  --aj-->  J_0(N)(ℚ)
+   | redX               | redJ
+   v                    v
+X_0(N)(𝔽_ℓ) --aj'--> J_0(N)(𝔽_ℓ)
+```
+
+with `redJ` an INJECTIVE group homomorphism.  Injectivity is not an
+axiom about reduction in general — it is the rank-`0` input: `J_0(N)(ℚ)`
+is finite, hence torsion, and the kernel of reduction on torsion is the
+group of points of a formal group over `ℤ_ℓ`, torsion-free for `ℓ` odd.
+It is the same fact that `card_le_of_rankZeroJacobian` rests on, isolated
+here as data so that the sieve can speak about the SUBGROUP
+`Set.range redJ ≅ J_0(N)(ℚ)` of `J_0(N)(𝔽_ℓ)` rather than only about its
+cardinality.
+
+`redJ_add` is what makes that range a subgroup, and hence what makes
+"`#J_0(N)(ℚ)` divides `#J_0(N)(𝔽_ℓ)` for every good `ℓ`" — the mechanism
+by which the auxiliary primes cut the search space down — a consequence
+of this structure rather than a separate assumption.  The counting
+argument in `card_le_of_sieve` does not need it, but a `redJ` without it
+would not deserve the name reduction. -/
+structure IsX0ReductionAt {X J X' J' : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {ℓ : ℕ} {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+    (jac : IsJacobianOf strX ab o) (jac' : IsJacobianOf strX' ab' o') where
+  /-- reduction of rational points of the curve -/
+  redX : RelPoint strX (𝟙 SpecQ) → RelPoint strX' (𝟙 (SpecF ℓ))
+  /-- reduction of rational points of the Jacobian -/
+  redJ : RelPoint jstr (𝟙 SpecQ) → RelPoint jstr' (𝟙 (SpecF ℓ))
+  /-- reduction is a homomorphism on the Jacobian -/
+  redJ_add : ∀ x y : RelPoint jstr (𝟙 SpecQ),
+    redJ (ab.add x y) = ab'.add (redJ x) (redJ y)
+  /-- reduction is injective on the rational points of a rank-`0` Jacobian -/
+  redJ_inj : Function.Injective redJ
+  /-- reduction commutes with Abel–Jacobi -/
+  red_aj : ∀ x : RelPoint strX (𝟙 SpecQ),
+    redJ (jac.aj (𝟙 SpecQ) x) = jac'.aj (𝟙 (SpecF ℓ)) (redX x)
+
+/-- **The Mordell–Weil sieve closes at the four residual levels** (sorry
+node — this is the criterion the four levels below rest on).
+
+TRUE, and it is Kenku's determination read through the sieve: at each of
+`45, 54, 63, 75` there is a good odd prime `ℓ` at which only
+`numRationalCusps N = 4` of the points of `X_0(N)(𝔽_ℓ)` have Abel–Jacobi
+class in the image of `J_0(N)(ℚ)`, even though `X_0(N)(𝔽_ℓ)` itself has
+`8, 6, 8, 8` points.  The candidate witnesses from the reconnaissance
+table above are `ℓ = 7, 5, 5, 7` respectively, with the image constrained
+by the auxiliary primes `19, 7, 11, 11`.
+
+**Why the prime is existentially quantified.**  The four rows of the
+table are the *recommended* attempt, not part of the claim.  Committing
+the statement to a specific `ℓ` would make it false if that particular
+reduction happened to leave one extra surviving point — a numerical
+accident that says nothing about the mathematics and that no argument
+here depends on.  What the sieve method asserts, and what the four levels
+actually need, is that SOME good prime cuts the count to the rational
+cusps; that is what is stated.
+
+**Every hypothesis is load-bearing.**  `hfin` is rank `0`: without it
+`J_0(N)(ℚ)` is infinite, `Set.range redJ` is all of the finite group
+`J_0(N)(𝔽_ℓ)` in effect, and no prime cuts anything.  `hX` is what makes
+the statement about `X_0(N)` rather than an arbitrary curve, and `jac` is
+what makes `Set.range redJ` the rational Jacobian rather than an
+arbitrary subgroup.  `hlevel` restricts the leaf to the four levels where
+the sieve is the intended route; see the subsection docstring.
+
+IRREDUCIBLE at this pin, and strictly beyond the five leaves above: on
+top of the integral model, the reduction map and Eichler–Shimura it needs
+the Abel–Jacobi image of `X_0(N)(𝔽_ℓ)` inside `J_0(N)(𝔽_ℓ)` as an
+explicitly computable finite object.
+
+## FORMAL-CONTENT AUDIT (2026-07-26)
+
+Two things about this statement are easy to misread, and one of them
+looks at first like a way to discharge it cheaply.  Both were checked.
+
+**The reduced side is NOT pinned to be a reduction of `X_0(N)`.**  Unlike
+`card_le_of_rankZeroJacobian`, which takes `IsX0Compactification N strX'
+strY' j'` as a hypothesis, this leaf quantifies `X'`, `J'`, `ab'`, `o'`,
+`jac'` and `red` existentially and asks only for `IsJacobianOf` and
+`IsX0ReductionAt`.  So a prover may supply ANY curve-and-Jacobian pair
+over ANY `SpecF ℓ` — `ℓ` is not even required to be prime.  The leaf is
+therefore strictly WEAKER than the classical single-prime sieve, which is
+what makes it the right thing to ask for; but it also means the obvious
+first question is whether some junk witness discharges it.
+
+**NON-VACUITY: no junk witness can.**  The `red_aj` field forces
+`jac'.aj (redX x) = redJ (jac.aj x)` for EVERY rational point `x` of `X`.
+So every element of `jac.aj '' X_0(N)(ℚ)` produces, through `redX`, a
+point of `X'` that satisfies the survival condition and hence lies in
+`s`; and `redJ` is injective, so distinct Abel–Jacobi classes give
+distinct survivors.  Therefore any witness whatsoever already implies
+
+  `#(jac.aj '' X_0(N)(ℚ)) ≤ s.card = numRationalCusps N = 4`,
+
+which — once `aj` is injective, as `HasRankZeroJacobian` provides — is
+Kenku's determination at `N`.  That implication is not an informal remark:
+it is exactly the proof of `card_le_of_sieve` immediately below, so the
+compiler already certifies that this leaf is at least as hard as the
+theorem it is standing in for.  In particular the freedom in the previous
+paragraph buys a prover latitude in CONSTRUCTING a witness and no
+latitude at all in the arithmetic it has to know.
+
+**A cheap refutation test for any PROPOSED witness prime.**  Suppose the
+datum is the genuine one, `X' = X_0(N)_{𝔽_ℓ}` and `J' = J_0(N)_{𝔽_ℓ}`.
+Then `J'` has finitely many `𝔽_ℓ`-points, so an injective `redJ` out of a
+group of the SAME order is surjective, every point of `X_0(N)(𝔽_ℓ)`
+survives, and `s.card = numRationalCusps N` is impossible as soon as
+`#X_0(N)(𝔽_ℓ) > numRationalCusps N`.  Hence:
+
+  *if `#J_0(N)(ℚ) = #J_0(N)(𝔽_ℓ)` then `ℓ` is not a witness prime for the
+  genuine datum* — not merely unlucky, impossible.
+
+This is worth running before recording any witness, because the four
+recommended ones came within one arithmetic coincidence of failing it.
+The table above bounds `#J_0(45)(ℚ)` only by `512`, and `512` is exactly
+`#J_0(45)(𝔽_7)` at the recommended witness `ℓ = 7`; had the rational
+Jacobian attained its recorded bound, `ℓ = 7` would have been refuted.
+
+**The bounds are far from attained, and the recommended witnesses
+survive** (Magma, 2026-07-26, `RationalCuspidalSubgroup(JZero(N))`).  The
+rational cuspidal subgroup is a LOWER bound for `#J_0(N)(ℚ)`, and the
+`gcd` of the Eichler–Shimura counts is an UPPER bound:
+
+| `N` | `dim J_0(N)` | rational cuspidal subgroup | `#J_0(N)(ℚ)` divides | witness `ℓ` | `#J_0(N)(𝔽_ℓ)` | index |
+|-----|--------------|----------------------------|----------------------|-------------|-----------------|-------|
+| 45 | 3 | `32 = [4, 8]`      | `512`  | 7 | `512`   | ≥ 16  |
+| 54 | 4 | `81 = [3, 3, 9]`   | `243`  | 5 | `972`   | ≥ 12  |
+| 63 | 5 | `96 = [2, 48]`     | `6144` | 5 | `6144`  | ≥ 64  |
+| 75 | 5 | `80 = [2, 40]`     | `2560` | 7 | `28160` | ≥ 352 |
+
+Every one of the four lower bounds divides its upper bound, so the two
+computations are consistent; and at each recommended `ℓ` the reduction
+`J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)` has index at least `12`, so the refutation test
+is nowhere near triggered and the recorded witnesses stand.  Under the
+generalized Ogg conjecture — known for many `N` — the rational torsion
+IS the rational cuspidal subgroup, and the left column is the exact
+order; nothing here depends on that.
+
+**The upper bounds are SATURATED, and that settles the design question
+above.**  Recomputing the `gcd` of `#J_0(N)(𝔽_ℓ)` over *every* odd good
+`ℓ < 300` — five times the range of the table above — returns `512, 243,
+6144, 2560` unchanged, and the individual counts reproduce the recorded
+table exactly (a third independent confirmation of the banked
+arithmetic).  So no number of auxiliary primes will ever bring the upper
+bound for `#J_0(45)(ℚ)` below `512 = #J_0(45)(𝔽_7)`: the multi-prime
+"pin the group" argument, run to exhaustion, *cannot on its own rule out*
+the case in which `ℓ = 7` is refuted.  The gap between `32` and `512` is
+closed from the cuspidal side, not by more primes.
+
+This is the concrete form of the correction recorded in the subsection
+docstring.  Auxiliary primes bound the ORDER of the rational Jacobian and
+saturate quickly; what the sieve needs is a prime at which the surviving
+Abel–Jacobi classes are only the forced ones, and that is a different
+question, answered here by the existential quantifier over `ℓ` rather
+than by the table.
+
+## WHY THIS LEAF DOES NOT DECOMPOSE, and what would let it
+
+The natural cut is into (i) *good reduction exists* — the reduced pair
+and the injective reduction map at any good odd `ℓ ∤ N`, which is content
+shared with `exists_x0Compactification_mod_prime` and
+`card_le_of_rankZeroJacobian` and would be worth factoring out — and
+(ii) *the cut is sharp at some prime*.  *This does not compose*, and the
+reason is worth recording so it is not rediscovered.
+
+The two halves have to meet at the SAME `ℓ`, so (ii) must be existential
+in `ℓ` and universal in the datum: "there is a good `ℓ` such that FOR
+EVERY reduction datum at `ℓ` the survivors number `numRationalCusps N`".
+That statement is false, or at least unsupported, because
+`IsX0ReductionAt` does not pin `redJ` to be the genuine reduction.  Its
+only constraints are injectivity, additivity, and `red_aj`; so ANY
+injective homomorphism `J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)` carrying
+`jac.aj '' X_0(N)(ℚ)` into the Abel–Jacobi image is an admissible `redJ`,
+and a subgroup of the right order sitting differently inside
+`J_0(N)(𝔽_ℓ)` can meet that image in more than `numRationalCusps N`
+classes.  Universally quantifying over data therefore risks a FALSE
+sub-leaf, which is worse than the single honest one.
+
+What would make the cut safe is a field on `IsX0ReductionAt` pinning
+`redJ` — as the map induced by a morphism of Néron models over `ℤ_ℓ`, say.
+That needs the integral model of `J_0(N)`, which is exactly the object
+whose absence makes this leaf irreducible in the first place.  So the
+decomposition becomes available at the same moment the leaf does, and
+until then the leaf is correctly left atomic. -/
+theorem exists_x0Sieve (N : ℕ) (_hlevel : N ∈ x0SieveLevels)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (_hX : IsX0Compactification N strX strY j) (jac : IsJacobianOf strX ab o)
+    (_hfin : Finite (RelPoint jstr (𝟙 SpecQ))) :
+    ∃ (ℓ : ℕ) (X' J' : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (jstr' : J' ⟶ SpecF ℓ)
+      (ab' : AbelianSchemeStruct jstr') (o' : RelPoint strX' (𝟙 (SpecF ℓ)))
+      (jac' : IsJacobianOf strX' ab' o') (red : IsX0ReductionAt jac jac')
+      (s : Finset (RelPoint strX' (𝟙 (SpecF ℓ)))),
+      (∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
+          (∃ a : RelPoint jstr (𝟙 SpecQ), red.redJ a = jac'.aj (𝟙 (SpecF ℓ)) x') →
+            x' ∈ s) ∧
+        s.card = numRationalCusps N :=
+  sorry
+
+/-- **The sieve bound, `#X_0(N)(ℚ) ≤ numRationalCusps N`** (PROVEN).
+
+Pure transport along two injections and one commuting square.  Take the
+sieve prime `ℓ` and its reduction data.  A finite set `t` of rational
+points of `X_0(N)` maps into `X_0(N)(𝔽_ℓ)` by `redX`, and that map is
+injective ON `X_0(N)(ℚ)` — not because reduction is injective in any
+general sense, but because it is sandwiched between two injections:
+`aj` is injective (positive genus, carried by `HasRankZeroJacobian`) and
+`redJ` is injective (rank `0`), and `redJ ∘ aj = aj' ∘ redX`.  Every
+point in the image has Abel–Jacobi class `redJ (aj x)`, manifestly in
+`Set.range redJ`, so the image lands inside the sieve's surviving set
+`s`.  Hence `#t ≤ #s = numRationalCusps N`.
+
+Note what does NOT appear: no point count of `X_0(N)(𝔽_ℓ)`.  The bound
+is by the surviving set, which is what makes it strictly stronger than
+`card_le_of_rankZeroJacobian` and is the only reason the four levels
+close at all. -/
+theorem card_le_of_sieve {N : ℕ} (hlevel : N ∈ x0SieveLevels)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY j) (hJ : HasRankZeroJacobian strX)
+    (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps N := by
+  classical
+  obtain ⟨J, jstr, ab, o, jac, hfin, hajinj⟩ := hJ
+  obtain ⟨ℓ, X', J', strX', jstr', ab', o', jac', red, s, hs, hscard⟩ :=
+    exists_x0Sieve N hlevel hX jac hfin
+  have hinjOn : Set.InjOn red.redX ↑t := by
+    intro a _ b _ hab
+    refine hajinj (red.redJ_inj ?_)
+    rw [red.red_aj, red.red_aj, hab]
+  have hsub : t.image red.redX ⊆ s := by
+    intro x hx
+    obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hx
+    exact hs _ ⟨jac.aj (𝟙 SpecQ) y, red.red_aj y⟩
+  calc t.card = (t.image red.redX).card := (Finset.card_image_of_injOn hinjOn).symm
+    _ ≤ s.card := Finset.card_le_card hsub
+    _ = numRationalCusps N := hscard
+
+/-- **The sieve criterion** (PROVEN): at a residual level, `Y_0(N)(ℚ) = ∅`.
+
+Identical in shape to `y0HasNoRationalPoint_of_witnessPrime`, with the
+counting bound replaced by the sieve bound: the `c = numRationalCusps N`
+rational cusps are `c` distinct rational points of `X_0(N)`, none of them
+the image of a rational point of `Y_0(N)`, so a rational point of
+`Y_0(N)` would give a `Finset` of `X_0(N)(ℚ)` of size `c + 1` — which
+`card_le_of_sieve` forbids.  `y0HasNoRationalPoint_of_isEmpty` then
+propagates emptiness from this one coarse moduli space to every one.
+
+`hlevel` and `hsieve` overlap (`x0SieveLevels` is a sublist of
+`kenkuLevels`); both are asked for rather than deriving one from the
+other, exactly as `y0HasNoRationalPoint_of_witnessPrime` asks for both
+`hlevel` and `htable`.  At the four call sites each is one `decide`. -/
+theorem y0HasNoRationalPoint_of_sieveLevel (N : ℕ) (hN : 0 < N)
+    (hlevel : N ∈ kenkuLevels) (hsieve : N ∈ x0SieveLevels) :
+    Y0HasNoRationalPoint N := by
+  classical
+  obtain ⟨X, Y, strX, strY, j, ⟨hX⟩⟩ := exists_x0Compactification N hN
+  obtain ⟨s, hscard, hsnot⟩ := exists_rationalCusps N hX
+  refine y0HasNoRationalPoint_of_isEmpty hX.coarse ⟨fun y => ?_⟩
+  have hp : sectionAlong j hX.comm y ∉ s := fun hmem => hsnot _ hmem y rfl
+  have hle : (insert (sectionAlong j hX.comm y) s).card ≤ numRationalCusps N :=
+    card_le_of_sieve hsieve hX (hasRankZeroJacobian_of_kenkuLevel N hlevel hX) _
   rw [Finset.card_insert_of_notMem hp, hscard] at hle
   omega
 
@@ -2321,14 +3211,21 @@ subsection above: `IsX0Compactification` (`X_0(N)` with its cusp locus),
 input), and `card_le_of_rankZeroJacobian` (reduction mod `ℓ`).  The
 seven single-prime levels are PROVEN over it by
 `y0HasNoRationalPoint_of_witnessPrime`, and what remains open is that
-subsection's five leaves — none of them level-specific.
+subsection's six leaves — none of them level-specific.
 
-**The four sieve levels `45, 54, 63, 75` are still open**, and what they
-need is a multi-prime strengthening of `card_le_of_rankZeroJacobian`:
-the bound must intersect the images of `X_0(N)(𝔽_ℓ) → J_0(N)(𝔽_ℓ)` over
-several `ℓ` at once, rather than reduce at a single one.  That is a
-strengthening of one leaf, not a new theory, and it reuses every other
-piece unchanged. -/
+**The four sieve levels `45, 54, 63, 75` are PROVEN too** (2026-07-26),
+over `y0HasNoRationalPoint_of_sieveLevel` and the single new leaf
+`exists_x0Sieve`.  As predicted, that was a strengthening of the bound
+rather than a new theory: `IsX0ReductionAt` records the reduction square
+with `redJ` an injective homomorphism, and the bound counts the points of
+`X_0(N)(𝔽_ℓ)` whose Abel–Jacobi class lies in the subgroup
+`Set.range redJ ≅ J_0(N)(ℚ)` instead of all of them.  Every other piece —
+`IsX0Compactification`, `IsJacobianOf`, `HasRankZeroJacobian`,
+`exists_x0Compactification`, `exists_rationalCusps`,
+`hasRankZeroJacobian_of_kenkuLevel` — is reused unchanged.
+
+So all eleven level nodes of this module are now proven, and the module's
+whole remaining content is the six interface leaves. -/
 
 /-- **`Y_0(20)(ℚ) = ∅`** (PROVEN 2026-07-26 over
 `y0HasNoRationalPoint_of_witnessPrime`; `X_0(20)` has genus `1`).  Ogg,
@@ -2407,7 +3304,8 @@ theorem y0HasNoRationalPoint_fortyTwo : Y0HasNoRationalPoint 42 :=
   y0HasNoRationalPoint_of_witnessPrime 42 11 (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide)
 
-/-- **`Y_0(45)(ℚ) = ∅`** (sorry node; `X_0(45)` has genus `3`).
+/-- **`Y_0(45)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_sieveLevel`; `X_0(45)` has genus `3`).
 
 ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `rank J_0(45)(ℚ) = 0` (both newform factors have `L(A, 1) ≠ 0`), so
@@ -2416,8 +3314,10 @@ ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 and **no** prime `ℓ < 100` attains `#X_0(45)(𝔽_ℓ) = 4`: the minimum over
 `3 ≤ ℓ < 60` is `8`, at `ℓ = 7`.  So a single reduction leaves a factor
 of `2` unaccounted for, and the four rational points must be pinned by
-intersecting the images of `X_0(45)(𝔽_ℓ) → J_0(45)(𝔽_ℓ)` over several
-`ℓ` simultaneously.  `#J_0(45)(ℚ)` divides `512`.
+cutting `X_0(45)(𝔽_ℓ)` down to the classes lying in the image of
+`J_0(45)(ℚ)` — which is what `exists_x0Sieve` supplies and what
+`y0HasNoRationalPoint_of_sieveLevel` consumes.  `#J_0(45)(ℚ)` divides
+`512`.
 
 SIEVE DATA (recomputed from scratch with Magma on 2026-07-26 by a second
 owner, *independently* of the pass that produced the table above; every
@@ -2444,13 +3344,24 @@ reduction mod `ℓ` — none of which exists in `Mathlib` or in `~/cs/FLT`
 (re-surveyed 2026-07-26: `Mathlib/AlgebraicGeometry/` contains no abelian
 variety and no modular curve of any kind).  Once that layer exists, a
 sieve level costs one extra *finite* computation over a single-prime
-level, and the arithmetic for it is fully recorded above.  Until it
-exists, neither kind can be advanced by any amount of effort spent at
-the level nodes themselves.  The shared layer is owned by the sibling
-node `y0HasNoRationalPoint_prod_two_primes`; that is where work on these
-eleven has to go first. -/
+level, and the arithmetic for it is fully recorded above.
+
+*Amended 2026-07-26, and this supersedes the paragraph above.*  That
+shared layer is now WRITTEN, as the interface `IsX0Compactification` /
+`IsJacobianOf` / `HasRankZeroJacobian`, so all eleven levels are proven
+over it: the seven single-prime ones through
+`card_le_of_rankZeroJacobian`, and these four through
+`card_le_of_sieve`, whose one remaining input is `exists_x0Sieve`.  The
+level nodes themselves are therefore no longer blocked on anything, and
+the sibling `y0HasNoRationalPoint_prod_two_primes` no longer owns them.
+
+So do NOT dispatch anyone at `y0HasNoRationalPoint_fortyFive`, `_fiftyFour`,
+`_sixtyThree` or `_seventyFive`: there is nothing left to prove at any of the
+four.  The one open node behind them is `exists_x0Sieve`, and it is shared by
+all four — four dispatches at the levels would be four workers discovering the
+same single leaf. -/
 theorem y0HasNoRationalPoint_fortyFive : Y0HasNoRationalPoint 45 :=
-  sorry
+  y0HasNoRationalPoint_of_sieveLevel 45 (by decide) (by decide) (by decide)
 
 /-- **`Y_0(50)(ℚ) = ∅`** (PROVEN 2026-07-26 over
 `y0HasNoRationalPoint_of_witnessPrime`; `X_0(50)` has genus `2`; Ogg
@@ -2466,7 +3377,8 @@ theorem y0HasNoRationalPoint_fifty : Y0HasNoRationalPoint 50 :=
   y0HasNoRationalPoint_of_witnessPrime 50 3 (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide)
 
-/-- **`Y_0(54)(ℚ) = ∅`** (sorry node; `X_0(54)` has genus `4`).
+/-- **`Y_0(54)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_sieveLevel`; `X_0(54)` has genus `4`).
 
 ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `rank J_0(54)(ℚ) = 0` (all three newform factors have `L(A, 1) ≠ 0`).
@@ -2474,7 +3386,10 @@ ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `ℓ < 100` attains `#X_0(54)(𝔽_ℓ) = 4`: the minimum over `3 ≤ ℓ < 60` is
 `6`, at `ℓ = 5`.  This is the *closest* of the four sieve levels — the
 single-prime bound overshoots by only `2` — so it is the natural one to
-attempt first.  `#J_0(54)(ℚ)` divides `243`.
+attempt first.  `#J_0(54)(ℚ)` divides `243`, and since
+`#J_0(54)(𝔽_5) = 2²·3⁵` the image of `J_0(54)(ℚ)` in `J_0(54)(𝔽_5)`
+misses the whole `2`-part: the two surplus points are exactly what the
+sieve has to push outside that image.
 
 SIEVE DATA (independently recomputed with Magma 2026-07-26; see the
 `N = 45` docstring for the provenance note and for the shared warning
@@ -2492,15 +3407,17 @@ no cheap second prime to pair with.  Jacobian orders
 `J_0(54)(ℚ)` is a `3`-group — note `#J(𝔽_7) = 3⁸` is already a pure
 power of `3`, so the prime `7` alone forces the `3`-group conclusion. -/
 theorem y0HasNoRationalPoint_fiftyFour : Y0HasNoRationalPoint 54 :=
-  sorry
+  y0HasNoRationalPoint_of_sieveLevel 54 (by decide) (by decide) (by decide)
 
-/-- **`Y_0(63)(ℚ) = ∅`** (sorry node; `X_0(63)` has genus `5`).
+/-- **`Y_0(63)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_sieveLevel`; `X_0(63)` has genus `5`).
 
 ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `rank J_0(63)(ℚ) = 0` (all three newform factors have `L(A, 1) ≠ 0`).
 `X_0(63)` has `8` cusps of which `4` are rational, and no prime
 `ℓ < 100` attains `#X_0(63)(𝔽_ℓ) = 4`: the minimum over `3 ≤ ℓ < 60` is
-`8`, at `ℓ = 5`.  `#J_0(63)(ℚ)` divides `6144`.
+`8`, at `ℓ = 5`, and `ℓ = 11` is a second minimum-witness.
+`#J_0(63)(ℚ)` divides `6144 = 2¹¹·3`.
 
 SIEVE DATA (independently recomputed with Magma 2026-07-26; see the
 `N = 45` docstring for provenance and for the shared warning that these
@@ -2515,15 +3432,20 @@ then `135168, 589824, 2156544, 2359296, 7796736, 25804800, 42467328,
 42467328, 116582400, 254803968, 249495552, 396472320, 589234176`.  Their
 `gcd` is `6144 = 2¹¹·3`, attained already at `ℓ = 5`. -/
 theorem y0HasNoRationalPoint_sixtyThree : Y0HasNoRationalPoint 63 :=
-  sorry
+  y0HasNoRationalPoint_of_sieveLevel 63 (by decide) (by decide) (by decide)
 
-/-- **`Y_0(75)(ℚ) = ∅`** (sorry node; `X_0(75)` has genus `5`).
+/-- **`Y_0(75)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_sieveLevel`; `X_0(75)` has genus `5`).
 
 ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `rank J_0(75)(ℚ) = 0` (all four newform factors have `L(A, 1) ≠ 0`).
 `X_0(75)` has `12` cusps of which `4` are rational, and no prime
 `ℓ < 100` attains `#X_0(75)(𝔽_ℓ) = 4`: the minimum over `3 ≤ ℓ < 60` is
 `8`, at `ℓ = 7`.  `#J_0(75)(ℚ)` divides `2560`.
+
+`N = 75` is the level that most clearly needs more than one prime, and
+so the row that shows why the sieve must be stated over `Set.range redJ`
+rather than over any fixed number of counting primes.
 
 SIEVE DATA (independently recomputed with Magma 2026-07-26; see the
 `N = 45` docstring for provenance and for the shared warning that these
@@ -2538,8 +3460,10 @@ then `409600, 599040, 1638400, 2560000, 7464960, 13107200, 40140800,
 `gcd` is `2560 = 2⁹·5`.  Unlike the other three sieve levels the bound is
 NOT attained at the best counting prime — `#J(𝔽_7) = 11·2560` — so at
 least two primes are needed here even to pin the order of `J_0(75)(ℚ)`,
-before any question about which torsion points are cuspidal arises. -/
+before any question about which torsion points are cuspidal arises.
+(Only with `ℓ = 11`, where `#J_0(75)(𝔽_11) = 409600 = 2¹⁴·5²`, does the
+`gcd` drop to `2560 = 2⁹·5`.) -/
 theorem y0HasNoRationalPoint_seventyFive : Y0HasNoRationalPoint 75 :=
-  sorry
+  y0HasNoRationalPoint_of_sieveLevel 75 (by decide) (by decide) (by decide)
 
 end Fermat
