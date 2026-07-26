@@ -4718,11 +4718,21 @@ Neither repair weakens what the leaf claims arithmetically: `𝒟₀` is the
 Schlessinger-style "the residual object is given" input that every
 representability theorem has, and the Hecke-side repair only replaces the
 `ℤ_[ℓ]`-Hecke algebra by its unramified base change to `W(k)`, which is the
-ring the deformation-theoretic `R = T` theorem was always about. -/
+ring the deformation-theoretic `R = T` theorem was always about.
+
+3. **The residual field binders, added at merge on 2026-07-26.** `k` carries
+   `[Finite k]`, `[DiscreteTopology k]` and `[Algebra ℤ_[ℓ] k]`, inherited
+   from the two callees below — `[Finite k]` came with the proof of
+   `isHilbertResidualRigidityClause`, the other two with the machine node's
+   second faithfulness repair. This node is the only place in the module that
+   still lacked them; the downstream consumer
+   `exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified` already
+   assumed all three, so nothing outside changes. -/
 theorem exists_heckeDatum_isWeaklyUniversal_isTraceGenerated
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    [DiscreteTopology k] [Algebra ℤ_[ℓ] k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
