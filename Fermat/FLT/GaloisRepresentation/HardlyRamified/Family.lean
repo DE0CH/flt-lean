@@ -32,6 +32,14 @@ import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 -- the STATEMENT of the shared brick `convPow_apply_of_comul_absorbs`
 -- below, hence public.
 public import Mathlib.RingTheory.HopfAlgebra.Convolution
+-- the CONSTANT group scheme `Spec (G → R)` — the Hopf algebra of functions
+-- on a finite group, dual to its group law. Absent from mathlib on this pin
+-- (`Pi.instCoalgebraStruct` is the componentwise structure, not this one), so
+-- built there; it is the witness for `hasFlatProlongationAt_trivialQuotChar`
+-- below, whose STATEMENT does not mention it — but the general-`K` helper
+-- `hasFlatProlongationAt_trivialQuotChar_of_base` is proved in this module and
+-- consumes it, so the import is public.
+public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
 -- `isIntegral_padicInt_of_spectralNorm_le_one`, consumed by the
 -- `ValuationRing` instance of the concrete coefficient ring below. It used to
 -- be declared in this file; it moved upstream (2026-07-25) so that the
@@ -5214,7 +5222,16 @@ the one dual to the group law, so a type synonym carrying
 `Bialgebra`/`HopfAlgebra` with `comul (e_g) = Σ_{ab = g} e_a ⊗ e_b`
 has to be built (the needed algebra equivalence
 `(G → R) ⊗[R] (G → R) ≃ₐ[R] (G × G → R)` for `G` finite is
-`Algebra.TensorProduct.piScalarRight` plus currying). -/
+`Algebra.TensorProduct.piScalarRight` plus currying).
+
+BUILT 2026-07-26 as `GroupFunctions`, in
+`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/GroupFunctions.lean`, together with
+its points package (`GroupFunctions.pointsMulEquiv`,
+`GroupFunctions.exists_eq_pointAlgHom`, `GroupFunctions.comp_pointAlgHom`) and
+its generic fibre (`GroupFunctions.baseChangeAlgEquiv`); the CONSTANT factor
+`hasFlatProlongationAt_trivialQuotChar` is PROVEN from it. The object is stated
+for an arbitrary finite group `G` over an arbitrary commutative ring `R`, so it
+is reusable — in particular by the `μ`-factor's Cartier-dual bookkeeping. -/
 
 /-- **The rank-one cyclotomic member `χ_cyc,ℓ`** (PROVEN construction):
 the second diagonal entry of `1 ⊕ χ_cyc,ℓ`, isolated as a
@@ -5296,28 +5313,119 @@ theorem hasFlatProlongationAt_of_prod
     ρ.HasFlatProlongationAt v :=
   sorry
 
-/-- **The CONSTANT group scheme** (sorry leaf): a Galois representation
-on a FINITE module with TRIVIAL action has a flat prolongation at every
-place. The witness is the constant group scheme on the finite abelian
-group `B`, i.e. the Hopf algebra `B → 𝒪ᵥ` of `𝒪ᵥ`-valued functions on
-`B` with `comul (e_g) = Σ_{a + b = g} e_a ⊗ e_b`, `counit f = f 0`,
-antipode `f ↦ f ∘ (-·)`; it is finite free over `𝒪ᵥ` of rank `#B`,
-hence flat, its generic fibre `B → Kᵥ` is a finite product of copies of
-`Kᵥ` hence étale (`Algebra.Etale R (Π i, A i)`), and its `Kᵥᵃˡᵍ`-points
-are the evaluations `f ↦ f g`, one for each `g : B`, on which `Γ Kᵥ`
-acts trivially because the algebra is already `Kᵥ`-split.
+/-- **The CONSTANT group scheme, over a general base** (PROVEN): a Galois
+representation of a number field `K` on a FINITE coefficient ring `B` with
+TRIVIAL action has a flat prolongation at every place. The witness is the
+constant group scheme on the finite abelian group `B`, produced by base change
+from the auxiliary base `R`: the Hopf algebra
 
-THIS IS THE ONE OBJECT ABSENT FROM MATHLIB (see the section note
-above): `Pi.instCoalgebra` is the componentwise coalgebra, not this
-one, so the `Bialgebra`/`HopfAlgebra` structure has to be built on a
-type synonym for `B → 𝒪ᵥ`, transporting through
-`Algebra.TensorProduct.piScalarRight` and currying to compute
-`(B → R) ⊗[R] (B → R) ≃ₐ[R] (B × B → R)`. -/
+  `H := GroupFunctions R (Multiplicative B)`
+
+of `R`-valued functions on `B` with `comul (e_g) = Σ_{a + b = g} e_a ⊗ e_b`,
+`counit f = f 0`, antipode `f ↦ f ∘ (-·)`
+(`Fermat/FLT/Mathlib/RingTheory/HopfAlgebra/GroupFunctions.lean`; the object was
+ABSENT FROM MATHLIB on this pin — `Pi.instCoalgebraStruct` is the componentwise
+coalgebra, not the one dual to the group law — and was built there). The three
+inputs of `GaloisRep.hasFlatProlongationAt_of_hopf_package` are then:
+
+* `H` is finite free over `R` on the indicator basis `e_g`, hence flat;
+* its generic fibre is `K ⊗[R] H ≃ₐ[K] (B → K)`
+  (`GroupFunctions.baseChangeAlgEquiv`), a finite product of copies of `K`,
+  hence étale by `Algebra.FormallyEtale`'s finite-product instance;
+* its `Kᵃˡᵍ`-points are the evaluations `f ↦ f g`, one for each `g : B`
+  (`GroupFunctions.exists_eq_pointAlgHom`, over `R`, transported to `K ⊗[R] H`
+  through the convolution-compatible tensor–hom adjunction `AlgHom.liftEquiv`
+  and `liftEquiv_convMul`), their convolution product is the group law of `B`
+  (`GroupFunctions.pointAlgHom_convMul`), and `Γ K` acts TRIVIALLY on them
+  because each takes its values in the image of `R`
+  (`GroupFunctions.comp_pointAlgHom`) — which is exactly the trivial action of
+  `trivialQuotChar`.
+
+Stated over a general `K` deliberately: at `K = ℚ` the literal `ℚ` makes
+instance search return `DivisionRing.toRatAlgebra` for `Algebra ℚ ℚ̄` where the
+flat-prolongation package uses `AlgebraicClosure.instAlgebra ℚ`, and the
+resulting `Algebra`/`CommSemiring` mismatches break `AlgHom.liftEquiv`
+elaboration. With `K` abstract there is nothing to mismatch, and the
+instantiation below fixes the instances by unification. -/
+theorem hasFlatProlongationAt_trivialQuotChar_of_base
+    {K : Type u} [Field K] [NumberField K]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (R : Type u) [CommRing R] [Algebra R K]
+    [Algebra R (HeightOneSpectrum.adicCompletionIntegers K v)]
+    [Algebra R (HeightOneSpectrum.adicCompletion K v)]
+    [IsScalarTower R (HeightOneSpectrum.adicCompletionIntegers K v)
+      (HeightOneSpectrum.adicCompletion K v)]
+    [IsScalarTower R K (HeightOneSpectrum.adicCompletion K v)]
+    (B : Type u) [CommRing B] [TopologicalSpace B] [Finite B] :
+    (trivialQuotChar K B).HasFlatProlongationAt v := by
+  classical
+  haveI : Fintype B := Fintype.ofFinite B
+  -- the generic fibre is a finite product of copies of `K`, hence étale
+  haveI : Algebra.Etale K (K ⊗[R] GroupFunctions R (Multiplicative B)) :=
+    Algebra.Etale.of_equiv
+      (GroupFunctions.baseChangeAlgEquiv R (Multiplicative B) K).symm
+  -- the `Kᵃˡᵍ`-points of the constant group scheme over `R` are `B` itself
+  let e₁ : Multiplicative B ≃*
+      WithConv (GroupFunctions R (Multiplicative B) →ₐ[R] AlgebraicClosure K) :=
+    GroupFunctions.pointsMulEquiv R (Multiplicative B) (AlgebraicClosure K)
+  -- the tensor–hom adjunction, compatible with the convolution products
+  let e₂ : WithConv (GroupFunctions R (Multiplicative B) →ₐ[R] AlgebraicClosure K) ≃*
+      WithConv ((K ⊗[R] GroupFunctions R (Multiplicative B)) →ₐ[K] AlgebraicClosure K) :=
+    { toFun := fun χ => WithConv.toConv (AlgHom.liftEquiv R K
+        (GroupFunctions R (Multiplicative B)) (AlgebraicClosure K) χ.ofConv)
+      invFun := fun φ => WithConv.toConv ((AlgHom.liftEquiv R K
+        (GroupFunctions R (Multiplicative B)) (AlgebraicClosure K)).symm φ.ofConv)
+      left_inv := fun χ => WithConv.ext ((AlgHom.liftEquiv R K
+        (GroupFunctions R (Multiplicative B)) (AlgebraicClosure K)).symm_apply_apply χ.ofConv)
+      right_inv := fun φ => WithConv.ext ((AlgHom.liftEquiv R K
+        (GroupFunctions R (Multiplicative B)) (AlgebraicClosure K)).apply_symm_apply φ.ofConv)
+      map_mul' := fun χ₁ χ₂ => WithConv.ext (liftEquiv_convMul χ₁ χ₂) }
+  let E := e₁.trans e₂
+  refine (trivialQuotChar K B).hasFlatProlongationAt_of_hopf_package (v := v) R
+    (GroupFunctions R (Multiplicative B))
+    { toFun := fun x => Multiplicative.toAdd (E.symm (Additive.toMul x))
+      invFun := fun b => Additive.ofMul (E (Multiplicative.ofAdd b))
+      left_inv := fun x => by
+        show Additive.ofMul (E (E.symm (Additive.toMul x))) = x
+        rw [MulEquiv.apply_symm_apply]
+        rfl
+      right_inv := fun b => by
+        show Multiplicative.toAdd (E.symm (E (Multiplicative.ofAdd b))) = b
+        rw [MulEquiv.symm_apply_apply]
+        rfl
+      map_add' := fun x y => by
+        show Multiplicative.toAdd (E.symm (Additive.toMul x * Additive.toMul y)) = _
+        rw [map_mul]
+        rfl } ?_
+  -- equivariance: the Galois action on the points is trivial, and so is `ρ`
+  intro σ φ
+  have hcomp : σ.toAlgHom.comp φ = φ := by
+    apply (AlgHom.liftEquiv R K (GroupFunctions R (Multiplicative B))
+      (AlgebraicClosure K)).symm.injective
+    rw [liftEquiv_symm_comp]
+    obtain ⟨g, hg⟩ := GroupFunctions.exists_eq_pointAlgHom
+      ((AlgHom.liftEquiv R K (GroupFunctions R (Multiplicative B))
+        (AlgebraicClosure K)).symm φ)
+    rw [hg, GroupFunctions.comp_pointAlgHom]
+  have hrho : ∀ y : B, (trivialQuotChar K B) σ y = y := fun _ => rfl
+  rw [hcomp, hrho]
+
+/-- **The CONSTANT group scheme** (PROVEN, 2026-07-26): a Galois representation
+on a FINITE module with TRIVIAL action has a flat prolongation at every place.
+
+This is `hasFlatProlongationAt_trivialQuotChar_of_base` at `K = ℚ` with the
+auxiliary base `R = ℤ` — the smallest base carrying the constant group scheme
+and mapping compatibly into both `ℚ` and `𝒪ᵥ`, so that
+`GaloisRep.hasFlatProlongationAt_of_hopf_package` applies at EVERY place `v` of
+`ℚ` at once (rather than only at places of the form `q.toHeightOneSpectrum…`,
+which is what `hasFlatProlongationAt_of_dvr_package`'s `ℤ_(q)` base would give).
+The five scalar-tower hypotheses hold for `ℤ` by
+`Mathlib/Algebra/Module/NatInt.lean`'s `IsScalarTower ℤ R M` instance. -/
 theorem hasFlatProlongationAt_trivialQuotChar
     {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
     (B : Type) [CommRing B] [TopologicalSpace B] [Finite B] :
     (trivialQuotChar ℚ B).HasFlatProlongationAt v :=
-  sorry
+  hasFlatProlongationAt_trivialQuotChar_of_base v ℤ B
 
 /-- **The DIAGONALIZABLE (`μ`-typed) group scheme** (sorry leaf): the
 rank-one cyclotomic member over a FINITE coefficient ring has a flat
