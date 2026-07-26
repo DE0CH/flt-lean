@@ -1763,32 +1763,200 @@ theorem differentIdeal_exponent_le_wild_of_residueDegreeOne
   exact differentIdeal_exponent_le_of_intEisenstein_approx K q hq v hmem e he x hgen hx hc0 c
     (d + 2 * e + 2) hc d le_rfl hd
 
+/-- **A global generator whose minimal-polynomial derivative has small
+`Q`-order** (sorry leaf, 2026-07-26 — the SINGLE remaining leaf of the
+wild different bound at a prime of residue degree `> 1`; it replaces
+the Eisenstein-presentation cut recorded on
+`exists_eisensteinDerivative_dvd_of_wild`).
+
+Asks for one element: an `x ∈ 𝓞_K` with `ℚ(x) = K` such that, writing
+`F = minpoly ℤ x`,
+
+  `ord_Q (F'(x)) ≤ e − 1 + e·v_q(e)`.
+
+That is all.  Everything else in the wild bound is proven below:
+mathlib's `aeval_derivative_mem_differentIdeal` gives
+`𝔡_{𝓞_K/ℤ} ∣ (F'(x))` for any generator `x`, hence
+`d ≤ ord_Q (F'(x))`, so
+`differentIdeal_exponent_le_wild_of_residueDegreeGtOne` below gets the
+bound, and
+`exists_eisensteinDerivative_dvd_of_wild_of_residueDegreeGtOne` then
+discharges the Eisenstein leaf with the trivial witness
+`a = (0,…,0,1)`, exactly as the `f = 1` branch already does.
+
+**WHAT THIS CUT BUYS: (M1) IS GONE.**  The previous cut asked for an
+Eisenstein presentation of the different *at `Q`*, whose first
+requirement was (M1) — `differentIdeal` under localization/completion,
+described there as "the gate on everything else and the first thing to
+build", and absent from mathlib.  The present statement never mentions
+the different at all: the localization work is done once and for all
+by mathlib's GLOBAL lemma `𝔡 ∣ (F'(x))`.  What remains is (M2)+(M3) —
+producing one good generator — and that is a statement about a minimal
+polynomial, not about ideals.
+
+**Why it is TRUE.**  Classically one takes `x` whose image in the
+completion `K_Q` generates `𝓞_{K_Q}` over `ℤ_q` (a complete DVR
+extension with separable — here finite — residue extension is
+monogenic: Serre, *Corps Locaux* I §6), and which is `≡ 0` modulo every
+other prime `Q' ∣ q` while remaining a `Q`-unit; then
+`conductor_mul_differentIdeal` gives `ord_Q 𝔠(x) = 0` and
+`ord_Q (F'(x)) = d ≤ e − 1 + e·v_q(e)`.  Generation of `K/ℚ` is
+arranged by the same pigeonhole correction `x ↦ x + q^N·θ` used in
+`exists_generator_uniformizer_at`.
+
+Numerically corroborated in the wild `f > 1` case (PARI/GP,
+2026-07-26): `K = ℚ(√2,√5)` has a single prime `Q` over `q = 2` with
+`e = 2`, `f = 2`, and different `Q³·(prime over 5)`, so `d = 3` and the
+bound `e − 1 + e·v_2(e) = 3` is SHARP; a search over the box `[−3,3]⁴`
+of integral-basis coordinates finds generators attaining
+`ord_Q (F'(x)) = 3` and none below it.
+
+**A FULLY GLOBAL ATTACK — no completions, no local fields** (worked out
+2026-07-26; this is the recommended route, and the reason the cut was
+made here).  The `f = 1` route
+(`differentIdeal_exponent_le_wild_of_residueDegreeOne`) breaks at
+exactly one point: its digits are taken in `ℤ` because `𝓞_K/Q = 𝔽_q`.
+Replace `ℤ` by the subring `A := ℤ[u] ⊆ 𝓞_K` for a global
+**approximate Teichmüller lift** `u`:
+
+* Fix a precision `N`.  `𝓞_K/Q^N` is a FINITE ring and `X^{q^f} − X`
+  has derivative `−1`, a unit; so Newton iteration *inside that finite
+  quotient* lifts a generator `ū` of `𝓞_K/Q ≅ 𝔽_{q^f}` to an exact
+  root of `X^{q^f} − X` there, and surjectivity of `𝓞_K ↠ 𝓞_K/Q^N`
+  pulls it back to `u ∈ 𝓞_K` with `u^{q^f} ≡ u (mod Q^N)`.  This is
+  Hensel's lemma performed in a finite quotient — elementary, and
+  entirely global.
+* `A = ℤ[u]` then has the two properties that `ℤ` had when `f = 1`:
+  (i) **every `y ∈ 𝓞_K` is congruent mod `Q` to an element of `A`**,
+  because `𝔽_q[ū] = 𝔽_{q^f}`; and (ii) **`ord_Q` takes values in
+  `e·ℤ` on `A`, up to precision `N`**, because `u` agrees to precision
+  `N` with the true Teichmüller lift `ω ∈ 𝓞_{L₀}`, on which `ord_Q` is
+  `e·ord_{L₀}`.  Property (ii) is precisely what the refuted attack was
+  missing: "order in `e·ℤ`" imposed by fiat is not the same as
+  "coefficient in the unramified subring" — but a `Q^N`-approximate
+  Teichmüller lift really does carve an approximate copy of `𝓞_{L₀}`
+  out of `𝓞_K`.
+* With `A` in place, `exists_intCoeff_eisenstein_approx` above
+  generalizes verbatim (it is already stated for an abstract Dedekind
+  `R`, and uses only `hres` and `ord_Q P = e`; take `P = q ∈ A`), and
+  steps 3–6 of the `f = 1` route go through with `ℤ` replaced by `A`.
+  The extra work is the passage from the minimal polynomial of `π` over
+  `A` to `F = minpoly ℤ x` for `x = u + π`.
+
+**A second global alternative — base change to `ℚ(ζ_{q^f−1})`.**  Let
+`F₀ = ℚ(ζ_m)`, `m = q^f − 1`, in which `q` is unramified with residue
+degree `f`; let `E = K·F₀`, let `Q̃` be a prime of `E` over `Q` and
+`𝔓 = Q̃ ∩ 𝓞_{F₀}`.  Then `E/K` is unramified at `Q̃` (it is generated
+by a root of unity of order prime to `q`) and
+`k(Q̃) = k(Q)(ζ̄_m) = k(Q)` because `𝔽_{q^f}^×` already has order `m`;
+so `e(Q̃∣Q) = f(Q̃∣Q) = 1`, whence `e(Q̃∣𝔓) = e` and `f(Q̃∣𝔓) = 1`.
+Two applications of mathlib's tower formula
+`differentIdeal_eq_differentIdeal_mul_differentIdeal`, with
+`not_dvd_differentIdeal_iff` killing the two unramified factors, give
+`ord_{Q̃} 𝔡_{E/F₀} = ord_Q 𝔡_{K/ℚ} = d`, and the `f = 1` case applied
+to `E/F₀` yields the bound.  The price is generalizing the whole
+`f = 1` chain from base `ℤ` to base `𝓞_{F₀}` (where `𝔓` need not be
+principal) and constructing the compositum; the
+approximate-Teichmüller route above avoids both.
+
+**Do NOT retry the digit-expansion attack** refuted on
+`exists_eisensteinDerivative_dvd_of_wild` (`K = ℚ(√2)`, `q = 2`,
+`π = √2`, `a₁ = 2`, `a₀ = −2−2√2`): coefficients of `Q`-order in `e·ℤ`
+are strictly weaker than coefficients in the maximal unramified
+subring.  In the present statement that trap is closed by
+construction — there are no free coefficients to choose, only a single
+generator `x`, and the quantity bounded is the honest
+`ord_Q ((minpoly ℤ x)'(x))`.
+
+Both-ways audit: an existence statement about one algebraic integer,
+implied by the classical theorem (Serre III §6 Prop. 13) and checked
+numerically above; not vacuous — `Algebra.adjoin ℚ {x} = ⊤` forces `x`
+to be a genuine generator of `K/ℚ`, and the bound is attained (not
+merely satisfied) in the worked example, so no junk witness discharges
+it. -/
+theorem exists_generator_minpolyDerivative_le_of_wild
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (hres : ¬ ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal) :
+    ∃ x : NumberField.RingOfIntegers K,
+      Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤ ∧
+      WithZero.exp (-((e - 1 + e * e.factorization q : ℕ) : ℤ)) ≤
+        v.intValuation (Polynomial.aeval x
+          (Polynomial.derivative (minpoly ℤ x))) :=
+  sorry
+
+/-- **The wild different-exponent bound at a prime of residue degree
+`> 1`** (PROVEN 2026-07-26 over the single leaf
+`exists_generator_minpolyDerivative_le_of_wild` above).  This is the
+mirror of `differentIdeal_exponent_le_wild_of_residueDegreeOne`, which
+handles `f = 1` by a completely elementary global route.
+
+`Q^d ∣ 𝔡_{K/ℚ}` implies Serre's bound `d ≤ e − 1 + e·v_q(e)`.
+
+Proof: take the generator `x` supplied by the leaf; mathlib's
+`aeval_derivative_mem_differentIdeal` puts `F'(x)` into `𝔡_{K/ℚ}`, so
+`Q^d ∣ (F'(x))`, i.e. `ord_Q (F'(x)) ≥ d`; and the leaf says
+`ord_Q (F'(x)) ≤ e − 1 + e·v_q(e)`.
+
+The hypotheses `hq`, `hwild` and `hres` are passed straight to the
+leaf and are used nowhere in this glue; `hres` in particular is carried
+only so that this theorem is no stronger than the `f > 1` half it is
+meant to supply (the `f = 1` half being
+`differentIdeal_exponent_le_wild_of_residueDegreeOne` above). -/
+theorem differentIdeal_exponent_le_wild_of_residueDegreeGtOne
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (hres : ¬ ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (d : ℕ) (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    d ≤ e - 1 + e * e.factorization q := by
+  obtain ⟨x, hgen, hle⟩ :=
+    exists_generator_minpolyDerivative_le_of_wild K q hq v hmem hwild hres e he
+  have hmem' : Polynomial.aeval x (Polynomial.derivative (minpoly ℤ x)) ∈
+      differentIdeal ℤ (NumberField.RingOfIntegers K) :=
+    aeval_derivative_mem_differentIdeal ℤ ℚ K x hgen
+  have hdvd : v.asIdeal ^ d ∣
+      Ideal.span {Polynomial.aeval x (Polynomial.derivative (minpoly ℤ x))} :=
+    hd.trans (Ideal.dvd_iff_le.mpr ((Ideal.span_singleton_le_iff_mem _).mpr hmem'))
+  rw [← v.intValuation_le_pow_iff_dvd] at hdvd
+  have hchain := le_trans hle hdvd
+  rw [WithZero.exp_le_exp] at hchain
+  omega
+
 /-- **The local Eisenstein presentation of the different at a wild
-prime of residue degree `> 1`** (sorry leaf, 2026-07-26 — the *second*
-of the two leaves into which `exists_eisensteinDerivative_dvd_of_wild`
-is split below).  Statement identical to that leaf, with the extra
-hypothesis `hres` that `𝓞_K/Q ≠ 𝔽_q`, i.e. `f(Q∣q) > 1`.
+prime of residue degree `> 1`** (PROVEN 2026-07-26 over
+`differentIdeal_exponent_le_wild_of_residueDegreeGtOne` above, whose
+own single leaf is `exists_generator_minpolyDerivative_le_of_wild`).
+Statement identical to `exists_eisensteinDerivative_dvd_of_wild` below,
+with the extra hypothesis `hres` that `𝓞_K/Q ≠ 𝔽_q`, i.e.
+`f(Q∣q) > 1`.
 
-This is where the genuinely missing theory lives.  The elementary
-global route recorded on
-`differentIdeal_exponent_le_wild_of_residueDegreeOne` breaks here at
-exactly one point, and it is worth being precise about which:
+The proof is the observation — already used by the `f = 1` branch of
+`exists_eisensteinDerivative_dvd_of_wild` — that this statement is
+EQUIVALENT to the numerical bound `d ≤ e − 1 + e·v_q(e)`: given the
+bound, the trivial witness (`π` any uniformizer, `a = (0,…,0,1)`)
+collapses the sum to `e·π^{e−1}`, whose `Q`-order is exactly
+`e·v_q(e) + e − 1 ≥ d`.  So the Eisenstein packaging carries no content
+beyond the inequality, and the cut of 2026-07-26 moves the node onto
+the inequality, where the missing mathematics actually lives.  (This is
+also why the digit-expansion attack refuted on
+`exists_eisensteinDerivative_dvd_of_wild` could satisfy every clause of
+this statement and still fail: the clauses are not the content.)
 
-* Step 2 of that route (the integer-coefficient digit expansion) uses
-  `𝓞_K/Q = 𝔽_q` to pick each digit in `ℤ`.  For `f > 1` the digits must
-  instead be taken in the **maximal unramified subring** `𝓞_{L₀}` of
-  `𝓞_{K_Q}`, which has no global avatar — this is (M2), and it is not
-  optional (see the refutation recorded on
-  `exists_eisensteinDerivative_dvd_of_wild`).
-* Everything else in that route is insensitive to `f`.
-
-So the two classical routes remain: (M1)+(M2)+(M3) as recorded on
-`exists_eisensteinDerivative_dvd_of_wild`, or a global reduction to the
-`f = 1` case by base change to a number field `F` in which `q` is
-unramified with residue degree `f` (e.g. `F = ℚ(ζ_{q^f−1})`), using
-mathlib's tower formula
-`differentIdeal_eq_differentIdeal_mul_differentIdeal` — which needs
-`F_𝔓 ⊆ K_Q` locally and is therefore not obviously cheaper. -/
+Where the `f = 1` route breaks, for the record: step 2 of
+`differentIdeal_exponent_le_wild_of_residueDegreeOne` (the
+integer-coefficient digit expansion) uses `𝓞_K/Q = 𝔽_q` to pick each
+digit in `ℤ`; for `f > 1` the digits must come from the maximal
+unramified subring `𝓞_{L₀}`, which has no *exact* global avatar — but
+does have an approximate one, and that is the route now recorded on
+`exists_generator_minpolyDerivative_le_of_wild`. -/
 theorem exists_eisensteinDerivative_dvd_of_wild_of_residueDegreeGtOne
     (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
     (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
@@ -1804,8 +1972,58 @@ theorem exists_eisensteinDerivative_dvd_of_wild_of_residueDegreeGtOne
       (∀ i, 0 < i → i < e → v.intValuation (a i) = 0 ∨
         ∃ c : ℕ, v.intValuation (a i) = WithZero.exp (-((e * c : ℕ) : ℤ))) ∧
       v.asIdeal ^ d ∣ Ideal.span {∑ j ∈ Finset.range e,
-        ((j + 1 : ℕ) : NumberField.RingOfIntegers K) * a (j + 1) * π ^ j} :=
-  sorry
+        ((j + 1 : ℕ) : NumberField.RingOfIntegers K) * a (j + 1) * π ^ j} := by
+  classical
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : v.asIdeal.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff v.isPrime.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have he0 : 0 < e := by
+    rw [he]
+    exact Nat.pos_of_ne_zero
+      (Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver v.asIdeal hspan0)
+  have hbound :=
+    differentIdeal_exponent_le_wild_of_residueDegreeGtOne K q hq v hmem hwild hres e he d hd
+  -- The bound is all there is: the trivial witness `a = (0, …, 0, 1)`
+  -- collapses the sum to `e·π^{e−1}`, of `Q`-order `e·v_q(e) + e − 1`.
+  obtain ⟨π, hπ⟩ := v.intValuation_exists_uniformizer
+  refine ⟨π, Function.update (fun _ : ℕ => (0 : NumberField.RingOfIntegers K)) e 1, hπ,
+    Function.update_self _ _ _, ?_, ?_⟩
+  · intro i _ hie
+    left
+    rw [Function.update_of_ne (by omega)]
+    simp
+  · have hsum : ∑ j ∈ Finset.range e,
+        ((j + 1 : ℕ) : NumberField.RingOfIntegers K)
+          * Function.update (fun _ : ℕ => (0 : NumberField.RingOfIntegers K)) e 1 (j + 1)
+          * π ^ j
+        = ((e : ℕ) : NumberField.RingOfIntegers K) * π ^ (e - 1) := by
+      rw [Finset.sum_eq_single (e - 1)]
+      · rw [Nat.sub_add_cancel he0, Function.update_self, mul_one]
+      · intro b hb hbne
+        rw [Finset.mem_range] at hb
+        rw [Function.update_of_ne (by omega)]
+        simp
+      · intro hcon
+        exact absurd (Finset.mem_range.mpr (by omega)) hcon
+    rw [hsum, ← v.intValuation_le_pow_iff_dvd]
+    have hve : v.intValuation ((e : ℕ) : NumberField.RingOfIntegers K)
+        = WithZero.exp (-((e * e.factorization q : ℕ) : ℤ)) := by
+      rw [intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem e (by omega), ← he]
+    rw [map_mul, map_pow, hve, hπ, ← WithZero.exp_nsmul, ← WithZero.exp_add,
+      WithZero.exp_le_exp]
+    have hcast : ((e - 1 : ℕ) : ℤ) = (e : ℤ) - 1 := by
+      have h1 : 1 ≤ e := he0
+      push_cast [Nat.cast_sub h1]
+      ring
+    have hd' : (d : ℤ) ≤ ((e - 1 : ℕ) : ℤ) + (e : ℤ) * (e.factorization q : ℤ) := by
+      exact_mod_cast hbound
+    rw [hcast] at hd'
+    rw [nsmul_eq_mul, hcast]
+    push_cast
+    linarith
 
 /-- **(M1)+(M2)+(M3) The local Eisenstein presentation of the different
 at a wild prime** (PROVEN 2026-07-26 over the two residue-degree cases
