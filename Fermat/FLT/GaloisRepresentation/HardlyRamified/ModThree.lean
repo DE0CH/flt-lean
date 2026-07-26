@@ -10754,11 +10754,16 @@ Mellin factor `M`"):
   with factor `Γ_ℂ(s)`;
 * `archProfile_mul` (assembly PROVEN): profiles convolve —
   `archConv H₁ H₂ τ = ∫_0^∞ H₁(τ/u)H₂(u) du/u` is a degree-`(p+q)`
-  profile with factor `M₁·M₂`; its remaining open leaves are
-  `archConv_integrableOn`, `archConv_continuousOn` and
-  `archConv_hasMellin` (`archConv_nonneg`, `archConv_antitoneOn` and
-  `archConv_decay` — the AM–GM saddle split, over the auxiliary
-  `archProfile_stretchedExp` — are PROVEN);
+  profile with factor `M₁·M₂`.  ALL SIX of its conjuncts are now
+  PROVEN, so this bullet contributes NO open leaf: `archConv_nonneg`
+  and `archConv_antitoneOn`; `archConv_integrableOn` (two-sided
+  polynomial control at the exponents `m = 1, 2`, over
+  `archProfile_natPow_bound` — the stretched-exponential decay is not
+  needed); `archConv_decay` (the AM–GM saddle split, over the auxiliary
+  `archProfile_stretchedExp`); `archConv_hasMellin`; and
+  `archConv_continuousOn` (dominated convergence, dominating the
+  integrand for `τ > τ₀/2` by the one at `τ₀/2` via antitonicity of
+  `H₁`, integrable by `archConv_integrableOn`);
 * `archProfile_pow` (PROVEN): induction gives the `(r₁, r₂)` profile of
   degree `r₁ + 2r₂` with factor `Γ_ℝ^{r₁}·Γ_ℂ^{r₂}`;
 * this theorem: `NumberField.InfinitePlace.card_add_two_mul_card_eq_rank`
