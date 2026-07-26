@@ -8456,12 +8456,432 @@ theorem lt_two_mul_sum_card_of_le_sum_fiber
     _ = 2 * ∑ i ∈ Finset.range (n + 1), Nat.card ↥(𝒢 (i + 2)) := by rw [hdc]
 
 open scoped Classical in
+/-- **A DEPTH BOUNDS ITS TRUNCATED COUNT FROM BELOW** (PROVEN 2026-07-26):
+if `W` computes the filtration up to the cap `B` (`σ ∈ 𝒢 k ↔ k ≤ W σ` for
+`1 ≤ k ≤ B`) and never exceeds it, then `min t (W σ − 1)` of the levels
+`i < t` already satisfy `σ ∈ 𝒢 (i+2)`.  Only the `≥` half of
+`card_filter_range_min` is asserted, and it is the half that survives the
+CAPPING: at `σ = 1`, where the true depth is infinite and `W 1 = B`, the
+count is `t` and the bound `min t (B − 1) ≤ t` still holds. -/
+theorem min_le_card_filter_range_mem {G : Type*} [Group G]
+    (𝒢 : ℕ → Subgroup G) (W : G → ℕ) (B : ℕ)
+    (hWiff : ∀ (σ : G) (k : ℕ), 1 ≤ k → k ≤ B → (σ ∈ 𝒢 k ↔ k ≤ W σ))
+    (hWle : ∀ σ : G, W σ ≤ B) (σ : G) (t : ℕ) :
+    min t (W σ - 1) ≤ ((Finset.range t).filter (fun i => σ ∈ 𝒢 (i + 2))).card := by
+  classical
+  have hsub : Finset.range (min t (W σ - 1)) ⊆
+      (Finset.range t).filter (fun i => σ ∈ 𝒢 (i + 2)) := by
+    intro i hi
+    rw [Finset.mem_range, lt_min_iff] at hi
+    refine Finset.mem_filter.mpr ⟨Finset.mem_range.mpr hi.1, ?_⟩
+    have h1 : i + 2 ≤ W σ := by omega
+    exact (hWiff σ (i + 2) (by omega) (le_trans h1 (hWle σ))).mpr h1
+  simpa using Finset.card_le_card hsub
+
+open scoped Classical in
+/-- **A DEPTH BOUNDS ITS TRUNCATED COUNT FROM ABOVE** (PROVEN 2026-07-26):
+the companion of `min_le_card_filter_range_mem`, for an UNCAPPED depth
+function (`σ ∈ 𝒢 k ↔ k ≤ w σ` for every `k ≥ 1`, which is what
+`exists_inertia_depth` provides away from the identity). -/
+theorem card_filter_range_mem_le_min {G : Type*} [Group G]
+    (𝒢 : ℕ → Subgroup G) (w : G → ℕ) (σ : G)
+    (hσ : ∀ k : ℕ, 1 ≤ k → (σ ∈ 𝒢 k ↔ k ≤ w σ)) (t : ℕ) :
+    ((Finset.range t).filter (fun i => σ ∈ 𝒢 (i + 2))).card ≤ min t (w σ - 1) := by
+  classical
+  have hsub : (Finset.range t).filter (fun i => σ ∈ 𝒢 (i + 2)) ⊆
+      Finset.range (min t (w σ - 1)) := by
+    intro i hi
+    rw [Finset.mem_filter, Finset.mem_range] at hi
+    have h := (hσ (i + 2) (by omega)).mp hi.2
+    rw [Finset.mem_range, lt_min_iff]
+    omega
+  simpa using Finset.card_le_card hsub
+
+open scoped Classical in
+/-- **THE ABSTRACT CORE OF THE UPWARD HERBRAND TRANSPORT** (PROVEN
+2026-07-26): a purely group-theoretic statement about a homomorphism
+`res : G →* H` of finite groups and two antitone filtrations, dual to the
+already-proven `exists_index_of_herbrand` and consuming exactly ONE
+arithmetic hypothesis, `herb` — Serre *Corps Locaux* IV §1 Prop. 3 in its
+`≥` direction, `e·i_H(τ) ≤ Σ_{σ ↦ τ} i_G(σ)`.  (Note the asymmetry with
+the downward transport, which consumes only the `≤` direction: the two
+Herbrand transports need the two OPPOSITE divisibilities of Serre's
+proposition, which is why neither can be derived from the other's leaf.)
+
+WHAT IS ASSUMED beyond `herb`: the filtration `𝒢` dies at some level `B`
+(`hB`, i.e. `exists_local_pow_inertia_eq_bot`), inertia is SURJECTIVE in
+the tower at level `1` (`hsurj`, i.e.
+`exists_restrictToLEHom_eq_of_mem_inertia`), and the `H`-side filtration
+has a depth function away from the identity (`w'`, i.e.
+`exists_inertia_depth`).
+
+THE ARGUMENT, `φ`-free and with no valuation anywhere.  Write
+`W σ := #{j < B | σ ∈ 𝒢 (j+1)}` for the CAPPED depth, so that
+`σ ∈ 𝒢 k ↔ k ≤ W σ` for `1 ≤ k ≤ B`, with `W 1 = B` and the iff valid at
+EVERY `k ≥ 1` once `σ ≠ 1`.  Put
+`Φ s := Σ_{h ∈ ker res} min s (W h − 1)`, the integer avatar of
+`e·φ_{G/ker}(s)`; `Φ` is monotone and `Φ 0 = 0`.  Three facts drive
+everything:
+
+* `min (W σ) (W h) ≤ W (σ h) ≤ W h` whenever `W (σ h) ≤ W σ` — the
+  ultrametric identity `i(σh) = min(i σ, i h)`, here nothing but the fact
+  that each `𝒢 k` is a SUBGROUP together with the maximality of `W σ` on
+  the fibre;
+* hence for a maximiser `σ₁` of `W` on the fibre of `τ'`,
+  `Φ (min t (W σ₁ − 1)) ≤ Σ_{σ ↦ τ'} #{i < t | σ ∈ 𝒢 (i+2)}` (`hlower`)
+  and `Σ_{σ ↦ τ'} W σ ≤ Φ (W σ₁ − 1) + e` (`hupper`, where the `+ e`
+  is the exact count `#(𝒢 1 ⊓ ker res) = e` of the fibre part inside
+  `𝒢 1`);
+* combining `hupper` with `herb` gives the KEY IDENTITY in its `≥` form,
+  `e·(i_H(τ') − 1) ≤ Φ (W σ₁(τ') − 1)`, which is `i_H(τ') − 1 =
+  φ_{G/ker}(W σ₁(τ') − 1)` read as an inequality.
+
+The transported level is `n + 1 = W σ₁(τ) − 1`, i.e. `ψ_{G/ker}(m'+1)`
+without either `ψ` or a ceiling; conjunct (i) is then `σ₁(τ) ∈ 𝒢 (W σ₁)`,
+true by construction, and conjunct (ii) splits on
+`min (n+1) (W σ₁(τ') − 1)`: on the branch where the truncation bites,
+monotonicity of `Φ` plus the key identity AT `τ` gives
+`e·(m'+1) ≤ Φ (n+1)`; on the other branch the key identity AT `τ'` gives
+the untruncated bound.  The identity `τ = 1` is degenerate — every level
+works for conjunct (i) — and is handled by taking `n + 1 = B + e(m'+1)`,
+where the `σ = 1` summand alone already exceeds `e(m'+1)`. -/
+theorem exists_level_forall_le_sum_card_filter_of_le_sum_depth
+    {G H : Type*} [Group G] [Group H] [Fintype G] [Fintype H]
+    (res : G →* H) (𝒢 : ℕ → Subgroup G) (𝒢' : ℕ → Subgroup H)
+    (hanti : ∀ i j : ℕ, i ≤ j → 𝒢 j ≤ 𝒢 i)
+    (hanti' : ∀ i j : ℕ, i ≤ j → 𝒢' j ≤ 𝒢' i)
+    (B : ℕ) (hB1 : 1 ≤ B) (hB : 𝒢 B = ⊥)
+    (hsurj : ∀ τ₀ : H, τ₀ ∈ 𝒢' 1 → ∃ σ : G, σ ∈ 𝒢 1 ∧ res σ = τ₀)
+    (w' : H → ℕ)
+    (hw' : ∀ τ₀ : H, τ₀ ≠ 1 → ∀ k : ℕ, 1 ≤ k → (τ₀ ∈ 𝒢' k ↔ k ≤ w' τ₀))
+    (herb : ∀ (τ₀ : H) (m : ℕ) (w : G → ℕ),
+      (∀ k : ℕ, 1 ≤ k → (τ₀ ∈ 𝒢' k ↔ k ≤ m)) →
+      (∀ σ : G, res σ = τ₀ → ∀ k : ℕ, 1 ≤ k → (σ ∈ 𝒢 k ↔ k ≤ w σ)) →
+      Nat.card ↥(𝒢 1 ⊓ res.ker) * m ≤
+        ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ₀), w σ)
+    (m' : ℕ) (τ : H) (hτ : τ ∈ 𝒢' (m' + 2)) :
+    ∃ n : ℕ,
+      (∃ σ : G, σ ∈ 𝒢 (n + 2) ∧ res σ = τ) ∧
+      ∀ τ' : H, Nat.card ↥(𝒢 1 ⊓ res.ker) *
+          ((Finset.range (m' + 1)).filter (fun i => τ' ∈ 𝒢' (i + 2))).card ≤
+        ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ'),
+          ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card := by
+  classical
+  set e : ℕ := Nat.card ↥(𝒢 1 ⊓ res.ker) with he
+  have hepos : 0 < e := Nat.card_pos
+  have hdown : ∀ (σ : G) (i j : ℕ), i ≤ j → σ ∈ 𝒢 (j + 1) → σ ∈ 𝒢 (i + 1) :=
+    fun σ i j hij h => hanti (i + 1) (j + 1) (by omega) h
+  -- the CAPPED depth function on `G`
+  obtain ⟨W, hWle, hWiff, hW1⟩ : ∃ W : G → ℕ, (∀ σ : G, W σ ≤ B) ∧
+      (∀ (σ : G) (k : ℕ), 1 ≤ k → k ≤ B → (σ ∈ 𝒢 k ↔ k ≤ W σ)) ∧ W 1 = B := by
+    refine ⟨fun σ => ((Finset.range B).filter (fun j => σ ∈ 𝒢 (j + 1))).card, ?_, ?_, ?_⟩
+    · intro σ
+      exact le_trans (Finset.card_filter_le _ _) (le_of_eq (Finset.card_range B))
+    · intro σ k hk1 hkB
+      show σ ∈ 𝒢 k ↔ k ≤ ((Finset.range B).filter (fun j => σ ∈ 𝒢 (j + 1))).card
+      have h := mem_iff_lt_card_filter (P := fun j => σ ∈ 𝒢 (j + 1)) (hdown σ)
+        (show k - 1 < B by omega)
+      rw [show k - 1 + 1 = k from by omega] at h
+      rw [h]
+      omega
+    · have hall : (Finset.range B).filter (fun j => (1 : G) ∈ 𝒢 (j + 1)) = Finset.range B :=
+        Finset.filter_true_of_mem fun j _ => Subgroup.one_mem _
+      simp only
+      rw [hall, Finset.card_range]
+  have hWfull : ∀ σ : G, σ ≠ 1 → ∀ k : ℕ, 1 ≤ k → (σ ∈ 𝒢 k ↔ k ≤ W σ) := by
+    intro σ hσ k hk1
+    by_cases hkB : k ≤ B
+    · exact hWiff σ k hk1 hkB
+    · have h1 : σ ∉ 𝒢 k := by
+        intro hmem
+        have h2 : σ ∈ 𝒢 B := hanti B k (by omega) hmem
+        rw [hB, Subgroup.mem_bot] at h2
+        exact hσ h2
+      have h2 : ¬ (k ≤ W σ) := by have := hWle σ; omega
+      exact ⟨fun h => absurd h h1, fun h => absurd h h2⟩
+  -- the aggregated truncated depth of the kernel, `Φ s = e·φ_{G/ker}(s)`
+  obtain ⟨Φ, hΦdef⟩ : ∃ Φ : ℕ → ℕ, ∀ s : ℕ, Φ s =
+      ∑ h ∈ Finset.univ.filter (fun h : G => h ∈ res.ker), min s (W h - 1) :=
+    ⟨_, fun _ => rfl⟩
+  have hΦmono : ∀ s₁ s₂ : ℕ, s₁ ≤ s₂ → Φ s₁ ≤ Φ s₂ := by
+    intro s₁ s₂ hs
+    rw [hΦdef, hΦdef]
+    exact Finset.sum_le_sum fun h _ => by omega
+  have hΦ0 : Φ 0 = 0 := by rw [hΦdef]; simp
+  -- reindexing a fibre as a coset of `ker res`
+  have hfib : ∀ (τ' : H) (σ₁ : G), res σ₁ = τ' → ∀ f : G → ℕ,
+      ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ'), f σ
+        = ∑ h ∈ Finset.univ.filter (fun h : G => h ∈ res.ker), f (σ₁ * h) := by
+    intro τ' σ₁ h1 f
+    have hset : Finset.univ.filter (fun σ : G => res σ = τ') =
+        (Finset.univ.filter (fun h : G => h ∈ res.ker)).image (fun h => σ₁ * h) := by
+      ext σ
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_image]
+      constructor
+      · intro hσ
+        exact ⟨σ₁⁻¹ * σ, by simp [MonoidHom.mem_ker, map_mul, hσ, h1], by group⟩
+      · rintro ⟨h, hh, rfl⟩
+        have hh1 : res h = 1 := hh
+        simp [map_mul, hh1, h1]
+    rw [hset, Finset.sum_image (fun x _ y _ hxy => mul_left_cancel hxy)]
+  -- the ultrametric inequality, in both directions
+  have hultra2 : ∀ σ₁ h : G, min (W σ₁) (W h) ≤ W (σ₁ * h) := by
+    intro σ₁ h
+    by_cases hz : min (W σ₁) (W h) = 0
+    · omega
+    · have hk1 : 1 ≤ min (W σ₁) (W h) := by omega
+      have hkB : min (W σ₁) (W h) ≤ B := le_trans (min_le_left _ _) (hWle σ₁)
+      have h1 : σ₁ ∈ 𝒢 (min (W σ₁) (W h)) := (hWiff _ _ hk1 hkB).mpr (min_le_left _ _)
+      have h2 : h ∈ 𝒢 (min (W σ₁) (W h)) := (hWiff _ _ hk1 hkB).mpr (min_le_right _ _)
+      exact (hWiff _ _ hk1 hkB).mp (mul_mem h1 h2)
+  have hultra : ∀ σ₁ h : G, W (σ₁ * h) ≤ W σ₁ → W (σ₁ * h) ≤ W h := by
+    intro σ₁ h hle
+    by_cases hz : W (σ₁ * h) = 0
+    · omega
+    · have hk1 : 1 ≤ W (σ₁ * h) := by omega
+      have hkB : W (σ₁ * h) ≤ B := hWle _
+      have hm1 : σ₁ * h ∈ 𝒢 (W (σ₁ * h)) := (hWiff _ _ hk1 hkB).mpr le_rfl
+      have hm2 : σ₁ ∈ 𝒢 (W (σ₁ * h)) := (hWiff _ _ hk1 hkB).mpr hle
+      have hm3 : h ∈ 𝒢 (W (σ₁ * h)) := by
+        simpa using mul_mem (inv_mem hm2) hm1
+      exact (hWiff _ _ hk1 hkB).mp hm3
+  -- a maximiser of the depth on a nonempty fibre
+  have hmaxex : ∀ τ' : H, (Finset.univ.filter (fun σ : G => res σ = τ')).Nonempty →
+      ∃ σ₁ : G, res σ₁ = τ' ∧ ∀ σ : G, res σ = τ' → W σ ≤ W σ₁ := by
+    intro τ' hne
+    obtain ⟨σ₁, hσ₁, hmax⟩ := Finset.exists_max_image _ W hne
+    exact ⟨σ₁, (Finset.mem_filter.mp hσ₁).2, fun σ hσ =>
+      hmax σ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, hσ⟩)⟩
+  -- THE LOWER BOUND on a fibre sum of TRUNCATED depths
+  have hlower : ∀ (τ' : H) (σ₁ : G), res σ₁ = τ' →
+      (∀ σ : G, res σ = τ' → W σ ≤ W σ₁) → ∀ t : ℕ,
+      Φ (min t (W σ₁ - 1)) ≤
+        ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ'),
+          ((Finset.range t).filter (fun i => σ ∈ 𝒢 (i + 2))).card := by
+    intro τ' σ₁ h1 _hmax t
+    rw [hfib τ' σ₁ h1, hΦdef]
+    refine Finset.sum_le_sum fun h _ => ?_
+    have hge := min_le_card_filter_range_mem 𝒢 W B hWiff hWle (σ₁ * h) t
+    have hu := hultra2 σ₁ h
+    omega
+  -- THE UPPER BOUND on a fibre sum of UNTRUNCATED depths
+  have hupper : ∀ (τ' : H) (σ₁ : G), res σ₁ = τ' →
+      (∀ σ : G, res σ = τ' → W σ ≤ W σ₁) →
+      ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ'), W σ ≤ Φ (W σ₁ - 1) + e := by
+    intro τ' σ₁ h1 hmax
+    have hind : e = ∑ h ∈ Finset.univ.filter (fun h : G => h ∈ res.ker),
+        (if 1 ≤ W h then 1 else 0) := by
+      rw [← Finset.card_filter]
+      rw [he, Nat.card_eq_fintype_card, Fintype.card_subtype]
+      congr 1
+      ext σ
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Subgroup.mem_inf]
+      constructor
+      · rintro ⟨hg, hk⟩
+        exact ⟨hk, (hWiff σ 1 le_rfl hB1).mp hg⟩
+      · rintro ⟨hk, hw⟩
+        exact ⟨(hWiff σ 1 le_rfl hB1).mpr hw, hk⟩
+    rw [hfib τ' σ₁ h1, hind, hΦdef, ← Finset.sum_add_distrib]
+    refine Finset.sum_le_sum fun h hh => ?_
+    have hres : res (σ₁ * h) = τ' := by
+      have hh1 : res h = 1 := (Finset.mem_filter.mp hh).2
+      simp [map_mul, hh1, h1]
+    have hle1 : W (σ₁ * h) ≤ W σ₁ := hmax _ hres
+    have hle2 : W (σ₁ * h) ≤ W h := hultra σ₁ h hle1
+    by_cases hw : 1 ≤ W h
+    · rw [if_pos hw]; omega
+    · rw [if_neg hw]; omega
+  -- the KEY IDENTITY, in the `≥` form: `e·(i_H τ' − 1) ≤ Φ (W σ₁(τ') − 1)`
+  have hcore : ∀ τ' : H, τ' ≠ 1 → ∀ σ₁ : G, res σ₁ = τ' →
+      (∀ σ : G, res σ = τ' → W σ ≤ W σ₁) → e * (w' τ' - 1) ≤ Φ (W σ₁ - 1) := by
+    intro τ' hτ' σ₁ h1 hmax
+    have hleaf := herb τ' (w' τ') W (fun k hk => hw' τ' hτ' k hk)
+      (fun σ hσ k hk => hWfull σ (fun hσ1 => hτ' (by rw [← hσ, hσ1, map_one])) k hk)
+    have hup := hupper τ' σ₁ h1 hmax
+    have hchain : e * w' τ' ≤ Φ (W σ₁ - 1) + e := le_trans hleaf hup
+    rcases Nat.eq_zero_or_pos (w' τ') with h0 | h0
+    · simp [h0]
+    · have hsplit : e * (w' τ' - 1) + e = e * w' τ' := by
+        have hmm : w' τ' - 1 + 1 = w' τ' := by omega
+        calc e * (w' τ' - 1) + e = e * (w' τ' - 1 + 1) := by ring
+          _ = e * w' τ' := by rw [hmm]
+      omega
+  have hc'one : ((Finset.range (m' + 1)).filter (fun i => (1 : H) ∈ 𝒢' (i + 2))).card
+      = m' + 1 := by
+    rw [Finset.filter_true_of_mem fun i _ => Subgroup.one_mem _, Finset.card_range]
+  -- the generic `τ' ≠ 1` branch of conjunct (ii)
+  have hne1 : ∀ t : ℕ, (t + 1 ≤ B → e * (m' + 1) ≤ Φ t) → ∀ τ' : H, τ' ≠ 1 →
+      e * ((Finset.range (m' + 1)).filter (fun i => τ' ∈ 𝒢' (i + 2))).card ≤
+      ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ'),
+        ((Finset.range t).filter (fun i => σ ∈ 𝒢 (i + 2))).card := by
+    intro t hΦt τ' hτ'
+    by_cases hc0 : ((Finset.range (m' + 1)).filter (fun i => τ' ∈ 𝒢' (i + 2))).card = 0
+    · rw [hc0, Nat.mul_zero]
+      exact Nat.zero_le _
+    · obtain ⟨i, hi⟩ : ((Finset.range (m' + 1)).filter (fun i => τ' ∈ 𝒢' (i + 2))).Nonempty :=
+        Finset.card_ne_zero.mp hc0
+      have hmem2 : τ' ∈ 𝒢' 2 := hanti' 2 (i + 2) (by omega) (Finset.mem_filter.mp hi).2
+      have hmem1 : τ' ∈ 𝒢' 1 := hanti' 1 2 (by omega) hmem2
+      obtain ⟨σ₀, _hσ₀I, hσ₀⟩ := hsurj τ' hmem1
+      obtain ⟨σ₁, h1, hmax⟩ := hmaxex τ'
+        ⟨σ₀, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hσ₀⟩⟩
+      refine le_trans ?_ (hlower τ' σ₁ h1 hmax t)
+      have hc'le : ((Finset.range (m' + 1)).filter (fun i => τ' ∈ 𝒢' (i + 2))).card
+          ≤ min (m' + 1) (w' τ' - 1) :=
+        card_filter_range_mem_le_min 𝒢' w' τ' (hw' τ' hτ') (m' + 1)
+      have hcore' := hcore τ' hτ' σ₁ h1 hmax
+      rcases le_total t (W σ₁ - 1) with hle | hle
+      · rw [min_eq_left hle]
+        have htB : t + 1 ≤ B := by have := hWle σ₁; omega
+        calc e * ((Finset.range (m' + 1)).filter (fun i => τ' ∈ 𝒢' (i + 2))).card
+            ≤ e * (m' + 1) :=
+              Nat.mul_le_mul_left e (le_trans hc'le (min_le_left _ _))
+          _ ≤ Φ t := hΦt htB
+      · rw [min_eq_right hle]
+        calc e * ((Finset.range (m' + 1)).filter (fun i => τ' ∈ 𝒢' (i + 2))).card
+            ≤ e * (w' τ' - 1) :=
+              Nat.mul_le_mul_left e (le_trans hc'le (min_le_right _ _))
+          _ ≤ Φ (W σ₁ - 1) := hcore'
+  by_cases hτ1 : τ = 1
+  · -- `τ = 1`: conjunct (i) is free, so the level is taken LARGE
+    refine ⟨B + e * (m' + 1) - 1, ⟨1, Subgroup.one_mem _, by rw [map_one, hτ1]⟩, ?_⟩
+    have hepm : 1 ≤ e * (m' + 1) := Nat.one_le_iff_ne_zero.mpr
+      (Nat.mul_ne_zero (by omega) (by omega))
+    rw [show B + e * (m' + 1) - 1 + 1 = B + e * (m' + 1) from by omega]
+    intro τ'
+    by_cases hτ'1 : τ' = 1
+    · subst hτ'1
+      rw [hc'one]
+      have h1mem : (1 : G) ∈ Finset.univ.filter (fun σ : G => res σ = (1 : H)) := by
+        simp
+      have hsingle := Finset.single_le_sum
+        (f := fun σ : G => ((Finset.range (B + e * (m' + 1))).filter
+          (fun i => σ ∈ 𝒢 (i + 2))).card)
+        (fun _ _ => Nat.zero_le _) h1mem
+      rw [show ((Finset.range (B + e * (m' + 1))).filter
+          (fun i => (1 : G) ∈ 𝒢 (i + 2))).card = B + e * (m' + 1) from by
+        rw [Finset.filter_true_of_mem fun i _ => Subgroup.one_mem _,
+          Finset.card_range]] at hsingle
+      omega
+    · exact hne1 _ (fun hcon => absurd hcon (by omega)) τ' hτ'1
+  · -- `τ ≠ 1`: the level is the maximal depth on `τ`'s own fibre
+    have hwτ : m' + 2 ≤ w' τ := (hw' τ hτ1 (m' + 2) (by omega)).mp hτ
+    have hmem1 : τ ∈ 𝒢' 1 := hanti' 1 (m' + 2) (by omega) hτ
+    obtain ⟨σ₀, _hσ₀I, hσ₀⟩ := hsurj τ hmem1
+    obtain ⟨σ₁, h1, hmax⟩ := hmaxex τ ⟨σ₀, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hσ₀⟩⟩
+    have hσ₁ne : σ₁ ≠ 1 := by
+      intro hcon
+      exact hτ1 (by rw [← h1, hcon, map_one])
+    have hcoreτ : e * (w' τ - 1) ≤ Φ (W σ₁ - 1) := hcore τ hτ1 σ₁ h1 hmax
+    have hΦτ : e * (m' + 1) ≤ Φ (W σ₁ - 1) :=
+      le_trans (Nat.mul_le_mul_left e (by omega)) hcoreτ
+    have hW2 : 2 ≤ W σ₁ := by
+      by_contra hcon
+      rw [show W σ₁ - 1 = 0 from by omega, hΦ0] at hΦτ
+      have hpos : 0 < e * (m' + 1) := Nat.mul_pos hepos (by omega)
+      omega
+    refine ⟨W σ₁ - 2, ⟨σ₁, ?_, h1⟩, ?_⟩
+    · rw [show W σ₁ - 2 + 2 = W σ₁ from by omega]
+      exact (hWfull σ₁ hσ₁ne (W σ₁) (by omega)).mpr le_rfl
+    · rw [show W σ₁ - 2 + 1 = W σ₁ - 1 from by omega]
+      intro τ'
+      by_cases hτ'1 : τ' = 1
+      · subst hτ'1
+        rw [hc'one]
+        have hmax1 : ∀ σ : G, res σ = (1 : H) → W σ ≤ W (1 : G) := by
+          intro σ _
+          rw [hW1]
+          exact hWle σ
+        have hlow1 := hlower 1 1 (map_one res) hmax1 (W σ₁ - 1)
+        rw [hW1, show min (W σ₁ - 1) (B - 1) = W σ₁ - 1 from by
+          have := hWle σ₁; omega] at hlow1
+        exact le_trans hΦτ hlow1
+      · exact hne1 _ (fun _ => hΦτ) τ' hτ'1
+
+open scoped Classical in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **SERRE, *CORPS LOCAUX* IV §1 PROP. 3, THE `≥` HALF** (sorry node,
+created 2026-07-26 by decomposing
+`exists_level_forall_le_sum_card_filter_inertia_fiber`; the SOLE
+arithmetic input of the UPWARD Herbrand transport, exactly as
+`exists_relative_depth_witness` is the sole arithmetic input of the
+downward one).
+
+Write `G = Gal(N/ℚ₃ᵥ)`, `H = ker(res) = Gal(N/M)`, `Ḡ = Gal(M/ℚ₃ᵥ)`, and
+`e = #(inertia(𝔪_N) ⊓ ker res) = e_{N/M}`.  With `m = i_M(τ)` the exact
+`M`-side depth of `τ` (that is what `hm` says, and it forces `τ ≠ 1`) and
+`w σ = i_N(σ)` the exact `N`-side depths along the fibre of `τ` (`hw`),
+the claim is Serre's
+
+  `e_{N/M} · i_M(τ)  ≤  Σ_{σ ↦ τ} i_N(σ)`.
+
+WHY THE FILE'S EXISTING ARITHMETIC LEAF DOES NOT COVER THIS.  Serre
+IV §1 Prop. 3 is an EQUALITY, proven by showing that `a = τy − y` and
+`b = Π_{σ ↦ τ}(θ − σθ)` divide each other.  The downward transport
+(`sum_card_filter_inertia_fiber_le`, via `exists_relative_depth_witness`
+and `prod_sub_smul_dvd_sub_smul`) uses only `b ∣ a`, hence only `≤`; the
+upward transport uses only the OPPOSITE divisibility `a ∣ b`, hence only
+`≥`.  Neither half implies the other, and the two transports genuinely
+need one each.
+
+WHAT IS STILL MISSING, in dependency order, and what is already here:
+(1) `a ∣ b`, i.e. `(z − σ₀•z) ∣ Π_{h ∈ H}(θ − (σ₀h)•θ)`.  This is the
+    MIRROR of the PROVEN `prod_sub_smul_dvd_sub_smul` and is proven the
+    same way, by Neukirch II §10 Prop. 10.5: put
+    `f = Π_{h ∈ H}(X − C (h•θ))`, whose coefficients are `H`-invariant, so
+    `f.eval θ = 0` while `(f.map σ₀).eval θ = Π_h (θ − (σ₀h)•θ)`; every
+    coefficient `c` of `f` satisfies `(z − σ₀•z) ∣ (σ₀ c − c)` once
+    `𝒪_N^H = 𝒪₃ᵥ[z]`, and passing to `𝒪_N ⧸ (z − σ₀•z)` kills the
+    difference of the two evaluations.
+(2) The MONOGENICITY of the fixed ring, `𝒪_N^{Gal(N/M)} = 𝒪₃ᵥ[z]`, for the
+    `z` of `exists_relative_depth_witness` (which is the image in `𝒪_N` of
+    a monogenic generator `y` of `𝒪_M`, but whose statement records only
+    `H`-invariance and the exact depth `v_N(z − σ•z) = e·m`).  Needs
+    `exists_local_adjoin_eq_top M` (PROVEN above) plus Galois descent
+    `𝒪_N ∩ M = 𝒪_M` through the reification, exactly as in
+    `restrictToLEHom_mem_inertia`.
+(3) The passage from the divisibility to the count: in the DVR `𝒪_N`
+    (`isDiscreteValuationRing_integralClosure`) each `θ − σθ` lies in
+    `𝔪_N^{w σ}` and not in `𝔪_N^{w σ + 1}`, so the product lies in
+    `𝔪_N^{Σ w σ}` and not beyond; with `v_N(z − σ₀ z) = e·m` from
+    `exists_relative_depth_witness`, `a ∣ b` forces `e·m ≤ Σ w σ`.
+
+NOT VACUOUS: `hm` is satisfiable exactly for `τ ≠ 1` (at `τ = 1` every
+level of the filtration contains `τ`, so no finite `m` works), and then
+`hw` pins `w` on the fibre, which contains no identity.  At `M = N`
+(`e = 1`, `res = id`) the statement is the equality `m = w τ`.  A
+numerical check at the tame `M = ℚ₃(ζ₃) ≤ N = ℚ₃(ζ₉)` (Serre IV §4
+Prop. 18): `e = 3`, `i_M(τ) = 1` for `τ ≠ 1`, and the fibre of `τ`
+consists of three substitutions with `i_N = 1`, so both sides are `3`. -/
+theorem mul_le_sum_inertia_depth_fiber
+    (M N : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hMN : M ≤ N)
+    [FiniteDimensional ℚ₃ᵥ M] [FiniteDimensional ℚ₃ᵥ N]
+    [IsGalois ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ N]
+    (τ : M ≃ₐ[ℚ₃ᵥ] M) (m : ℕ) (w : (N ≃ₐ[ℚ₃ᵥ] N) → ℕ)
+    (hm : ∀ k : ℕ, 1 ≤ k →
+      (τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ k).inertia
+        (M ≃ₐ[ℚ₃ᵥ] M) ↔ k ≤ m))
+    (hw : ∀ σ : N ≃ₐ[ℚ₃ᵥ] N, restrictToLEHom M N hMN σ = τ → ∀ k : ℕ, 1 ≤ k →
+      (σ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^ k).inertia
+        (N ≃ₐ[ℚ₃ᵥ] N) ↔ k ≤ w σ)) :
+    Nat.card ↥((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ N)).inertia (N ≃ₐ[ℚ₃ᵥ] N) ⊓
+        (restrictToLEHom M N hMN).ker) * m ≤
+      ∑ σ ∈ Finset.univ.filter
+        (fun σ : N ≃ₐ[ℚ₃ᵥ] N => restrictToLEHom M N hMN σ = τ), w σ := by
+  sorry
+
+open scoped Classical in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **HERBRAND'S LEMMA, THE `≥` DIRECTION, AT THE TWO LINKED LEVELS**
-(sorry node, created 2026-07-26; the SOLE arithmetic input of the
-upward Herbrand transport `exists_restrictToLEHom_eq_of_lt_two_mul_sum_card_inertia`
+(created 2026-07-26; PROVEN the same day over the single new arithmetic
+leaf `mul_le_sum_inertia_depth_fiber` above.  It is the SOLE arithmetic
+input of the upward Herbrand transport
+`exists_restrictToLEHom_eq_of_lt_two_mul_sum_card_inertia`
 below, exactly as `sum_card_filter_inertia_fiber_le` is the sole
 arithmetic input of the downward one).
 Write `G = Gal(N/ℚ₃ᵥ)`, `H = ker(res) = Gal(N/M)`, `Ḡ = Gal(M/ℚ₃ᵥ)`,
@@ -8490,16 +8910,29 @@ gives `D' ≥ D` and truncating at `D` loses nothing beyond
 `e·(m'+1)`; while `i_M(τ') < m'+2` gives `D' < D`, so truncating at `D`
 loses nothing at all and (ii) is the untruncated equality.  Both cases
 are `≥`, which is all that is used.
-WHAT IS STILL MISSING, in dependency order (none of it in mathlib at
-this pin, and it is EXACTLY the list that
-`sum_card_filter_inertia_fiber_le` already carries, plus the `≥` half):
-(1) the function `i_N` and its identification with the filtration,
-    `σ ∈ inertia(𝔪^k) ↔ k ≤ i_N(σ)`;
-(2) monogenicity of `𝒪_N` over `𝒪_M` and `i_N(σ) = v_N(σx − x)`;
-(3) the norm computation of Serre IV §1 Prop. 3 itself, as an EQUALITY
-    (the `≤` half alone, which is what the downward transport uses, is
-    NOT enough here);
-(4) the `≥` half of the coset identity in (2) above.
+PROOF AS ACTUALLY CARRIED OUT (2026-07-26), which is CHEAPER than the
+"WHAT IS STILL MISSING" list this docstring used to carry.  That list
+asked for Serre IV §1 Prop. 3 as a full EQUALITY plus monogenicity of
+`𝒪_N` over `𝒪_M` plus a `≥` half of the coset identity.  In fact:
+
+* the coset identity is FREE — `i_N(σ₁h) = min(i_N σ₁, i_N h)` for a
+  maximiser `σ₁` on the fibre is nothing but the fact that each
+  `(𝔪_N^k).inertia` is a SUBGROUP, together with maximality;
+* monogenicity of `𝒪_N` over `𝒪_M` is not needed at all — only
+  monogenicity over `𝒪₃ᵥ` (`exists_inertia_generator`, already PROVEN)
+  and, on the `M` side, the depth function `exists_inertia_depth`;
+* and of Serre IV §1 Prop. 3 only the `≥` half is used, isolated as the
+  new leaf `mul_le_sum_inertia_depth_fiber` above.
+
+Everything else is the PROVEN, purely group-theoretic
+`exists_level_forall_le_sum_card_filter_of_le_sum_depth`, whose docstring
+carries the argument; the proof below is its instantiation, with `B` the
+level at which the filtration of `N` dies
+(`exists_local_pow_inertia_eq_bot`), `hsurj` the inertia surjectivity
+`exists_restrictToLEHom_eq_of_mem_inertia`, and `w'` the `M`-side depth
+`exists_inertia_depth`.  The `pow_one` rewrites only reconcile the `𝔪`
+of `card_inertia_inf_ker_mul`'s shape with the `𝔪 ^ 1` of the
+filtration.
 NOT VACUOUS.  At `M = N` (`e = 1`, `res = id`) the statement holds with
 `n = m'` and `σ = τ`, both sides of (ii) being `min(m'+1, i(τ') − 1)`.
 The content is entirely the level shift `m'+1 ↝ D`, a genuine increase
@@ -8529,7 +8962,25 @@ theorem exists_level_forall_le_sum_card_filter_inertia_fiber
           ((Finset.range (n + 1)).filter (fun i =>
             σ ∈ (IsLocalRing.maximalIdeal
               (IntegralClosure 𝒪₃ᵥ N) ^ (i + 2)).inertia (N ≃ₐ[ℚ₃ᵥ] N))).card := by
-  sorry
+  classical
+  obtain ⟨N₀, hN₀⟩ := exists_local_pow_inertia_eq_bot N
+  obtain ⟨w', hw'⟩ := exists_inertia_depth M
+  have key := exists_level_forall_le_sum_card_filter_of_le_sum_depth
+    (restrictToLEHom M N hMN)
+    (fun k => (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^ k).inertia (N ≃ₐ[ℚ₃ᵥ] N))
+    (fun k => (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ k).inertia (M ≃ₐ[ℚ₃ᵥ] M))
+    (fun i j hij => inertia_pow_antitone _ _ hij)
+    (fun i j hij => inertia_pow_antitone _ _ hij)
+    (N₀ + 2) (by omega) hN₀
+    (fun τ₀ hτ₀ => by
+      obtain ⟨σ, hσI, hσ⟩ := exists_restrictToLEHom_eq_of_mem_inertia M N hMN τ₀
+        (by simpa only [pow_one] using hτ₀)
+      exact ⟨σ, by simpa only [pow_one] using hσI, hσ⟩)
+    w' hw'
+    (fun τ₀ m w hm hw => by
+      simpa only [pow_one] using mul_le_sum_inertia_depth_fiber M N hMN τ₀ m w hm hw)
+    m' τ hτ
+  simpa only [pow_one] using key
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
