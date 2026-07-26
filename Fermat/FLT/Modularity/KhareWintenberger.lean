@@ -5636,11 +5636,203 @@ universe packaging from the citation.  The packaging — compositum of
 the two intermediate fields, `ULift` into `Type u`, and the
 `NumberField` instance — is discharged formally in
 `exists_heckeField_mem_range_of_eigensystem` below.
+
+THIRD PASS (2026-07-26): sub-leaf (b-i-a) —
+`exists_heckeSubfield_of_eigenvalues`, Shimura rationality proper — is
+itself now a PROVEN assembly over the two independent classical inputs
+it had been bundling:
+
+* `exists_heckeGenerators_of_eigenvalues` (b-i-a-1) — FINITE
+  GENERATION: finitely many good places already generate the field of
+  eigenvalues (finite generation of the Hecke algebra of a fixed weight
+  and level; effectively the Sturm bound).
+* `isIntegral_heckeEigenvalues` (b-i-a-2) — ALGEBRAICITY: each single
+  eigenvalue `aF w` is an algebraic number (the `ℤ`-integral
+  characteristic polynomials of the Hecke operators on the `ℚ`-rational
+  space of cusp forms).
+
+Neither implies the other, and neither alone gives the parent —
+`√2, √3, √5, …` are all algebraic of degree `2` and lie in no finite
+extension of `ℚ`, while a one-element generating set with a
+transcendental value satisfies finite generation.  Together they give
+the parent by `IntermediateField.finiteDimensional_adjoin`.  This is a
+cut along the literature's own joint (Hecke integrality vs. finite
+generation of the Hecke algebra) and NOT a weakening: the conjunction
+of the two sub-leaves is strictly stronger than the parent, since it
+also names the generators.
 -/
 
+/-- **Finite generation of the Hecke field of the Hilbert-newform
+eigensystem** (sorry node; sub-leaf (b-i-a-1) — the FINITENESS half of
+Shimura rationality): finitely many good places already generate the
+field of eigenvalues.  Concretely there is a finite set `s` of places
+of `F` disjoint from the bad set such that every `aF w` with `w ∉ badF`
+lies in the subfield of `ℚ̄_ℓ` generated over `ℚ` by the finitely many
+values `aF '' s`.
+
+Classically this is the finite generation of the Hecke algebra: the
+Hecke algebra `𝕋 = ℤ[T_w : w ∤ 𝔫]` of parallel weight `2` and fixed
+level `𝔫` over `F` acts faithfully on the FINITE-DIMENSIONAL space of
+Hilbert cusp forms of that weight and level, so it is a finitely
+generated `ℤ`-module and already finitely many `T_w` generate it — the
+effective form of this being that the Hecke operators below the Sturm
+bound suffice.  Applying the eigensystem character `λ` of the newform
+`f` attached to `ρ|_{G_F}` then gives
+`a_w = λ(T_w) ∈ ℚ(λ(T_{w₁}), …, λ(T_{wₙ}))` for every good `w`, which
+through Carayol's local-global compatibility (which identifies `aF w`
+with the image of `a_w` on the nose, place by place) is exactly the
+statement here.
+
+WHY THIS IS SPLIT OFF FROM THE PARENT (2026-07-26): see the section
+note above.  The parent bundled two independent classical inputs, and
+bundling them hid which half a would-be discharge actually needs.  This
+half is the one that says "ONE field", and it is the half that a
+finiteness theorem — not a rationality theorem — discharges.
+
+NOTE ON `s`: the generating set is demanded to consist of GOOD places
+(`∀ w ∈ s, w ∉ badF`).  Without that clause the leaf would be
+discharged by generators at which `hshape` says nothing, and the parent
+could not feed them to the algebraicity sub-leaf, which is stated only
+away from `badF`.  The clause costs the citation nothing — the
+classical generators are Hecke operators at good places by
+construction.
+
+PIN AUDIT (inherited from the parent, unchanged): the mathlib pin has
+no Hilbert modular forms and no Hecke algebras over a totally real
+base, so no part of this statement reduces to library material.
+
+SOUNDNESS AUDIT (inherited from the parent, unchanged): for the
+intended instantiation this is finite generation of the Hilbert Hecke
+algebra; for an abstract `(aF, dF)` merely satisfying `hshape` the
+abstract-quantification caveat applies IN FULL FORCE, and the statement
+survives only by the collapse route (the hypothesis package — an
+irreducible hardly ramified mod-`ℓ` representation with `ℓ ≥ 5` — is
+classically unsatisfiable, which is this module's headline).  The full
+hypothesis list is retained DELIBERATELY.
+
+INSTANTIATION DEFECT (inherited from the parent, unchanged): the only
+supplier, `exists_heckeEigensystem_of_congruentSeed`, is formally empty
+and hands `badF := ∅`.  The fix is upstream, not here.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_heckeGenerators_of_eigenvalues
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (aF dF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hshape : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        X ^ 2 - C (aF w) * X + C (dF w)) :
+    ∃ s : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      (∀ w ∈ s, w ∉ badF) ∧
+      ∀ w ∉ badF, aF w ∈ IntermediateField.adjoin ℚ
+        (aF '' (s : Set (HeightOneSpectrum (NumberField.RingOfIntegers F)))) :=
+  sorry
+
+/-- **Algebraicity of the Hilbert-newform Hecke eigenvalues** (sorry
+node; sub-leaf (b-i-a-2) — the ALGEBRAICITY half of Shimura
+rationality): each single eigenvalue `aF w` of the modular lift
+`ρ|_{G_F}`, at a place `w` outside the bad set, is an algebraic number.
+
+Classically: `aF w` is the `T_w`-eigenvalue of the Hilbert newform `f`
+of parallel weight `2` over `F` attached to `ρ|_{G_F}`, and `T_w` acts
+on the `ℚ`-rational space of Hilbert cusp forms of `f`'s weight and
+level — a finite-dimensional `ℚ`-vector space — preserving a `ℤ`-lattice.
+So the characteristic polynomial of `T_w` on that space has `ℤ`
+coefficients, and `a_w`, being one of its roots, is an algebraic
+integer.  (This is a strictly per-place statement: it says nothing
+about the eigenvalues at different places lying in a COMMON field,
+which is the separate sub-leaf `exists_heckeGenerators_of_eigenvalues`
+above.)
+
+The conclusion is stated as `IsIntegral ℚ (aF w)` — over the field `ℚ`
+integrality and algebraicity coincide, and `IsIntegral ℚ` is the form
+`IntermediateField.finiteDimensional_adjoin` consumes in the parent's
+assembly.  The sharper classical fact `IsIntegral ℤ (aF w)` is TRUE and
+deliberately not demanded: the parent needs only algebraicity, and
+demanding `ℤ`-integrality would put the Ramanujan-normalization
+bookkeeping into a citation that does not use it.
+
+WHY THIS IS SPLIT OFF FROM THE PARENT (2026-07-26): see the section
+note above.  Algebraicity alone does NOT give the parent — the family
+`√2, √3, √5, …` is algebraic and lies in no finite extension of `ℚ` —
+and the parent's own docstring had recorded the two halves as one
+citation, which hid that a proof of algebraicity would leave the
+finiteness half entirely open.
+
+PIN AUDIT (inherited from the parent, unchanged): the mathlib pin has
+no Hilbert modular forms and no Hecke algebras over a totally real
+base, so no part of this statement reduces to library material.
+
+SOUNDNESS AUDIT (inherited from the parent, unchanged): for an abstract
+`(aF, dF)` merely satisfying `hshape` the abstract-quantification
+caveat applies IN FULL FORCE — `hshape` determines `aF w` as
+`-ιO (charFrob w).coeff 1`, an element of `ιO O`, which is algebraic
+over `ℚ_[ℓ]` and NOT over `ℚ` — so the statement survives only by the
+collapse route.  The full hypothesis list is retained DELIBERATELY.
+
+INSTANTIATION DEFECT (inherited from the parent, unchanged): the only
+supplier, `exists_heckeEigensystem_of_congruentSeed`, is formally empty
+and hands `badF := ∅`, so at the instantiation that actually reaches
+this node the statement asserts algebraicity of the Frobenius traces at
+EVERY place of `F`, including the ramified ones.  The fix is upstream,
+not here.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem isIntegral_heckeEigenvalues
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (aF dF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+      AlgebraicClosure ℚ_[ℓ])
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
+    (hshape : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        X ^ 2 - C (aF w) * X + C (dF w)) :
+    ∀ w ∉ badF, IsIntegral ℚ (aF w) :=
+  sorry
+
 /-- **Shimura rationality for the Hilbert-newform eigensystem,
-intermediate-field form** (sorry node; sub-leaf (b-i-a) — the ONLY
-genuinely automorphic input of the whole modularity-lifting cut): the
+intermediate-field form** (PROVEN 2026-07-26 as an assembly over the
+two halves of sub-leaf (b-i-a) — the STATEMENT IS UNCHANGED, what moved
+is where the burden sits; sub-leaf (b-i-a) is the ONLY genuinely
+automorphic input of the whole modularity-lifting cut): the
 eigenvalue function `aF` of the modular lift `ρ|_{G_F}` takes all its
 values, away from the bad set, inside ONE finite extension of `ℚ`
 sitting in `ℚ̄_ℓ` — the Hecke field of the attached Hilbert newform.
@@ -5707,9 +5899,41 @@ Frobenius traces at EVERY place of `F` — including the ramified ones,
 where `charFrob` is not a Hecke polynomial.  The fix is upstream (give
 that node a genuine level/bad set), not here.
 
+ASSEMBLY (2026-07-26, PROVEN — the STATEMENT IS UNCHANGED).  This node
+is no longer a citation.  Its two classical inputs, which it had been
+bundling into one appeal to "Shimura rationality", are now separate
+sorried leaves above:
+
+* `exists_heckeGenerators_of_eigenvalues` (b-i-a-1) — FINITE
+  GENERATION: a finite set `s` of good places with every `aF w`
+  (`w ∉ badF`) inside `ℚ(aF '' s)`.  Classically: the Hecke algebra of
+  a fixed weight and level is a finitely generated `ℤ`-module, so
+  finitely many `T_w` generate it (Sturm bound).
+* `isIntegral_heckeEigenvalues` (b-i-a-2) — ALGEBRAICITY:
+  `IsIntegral ℚ (aF w)` for `w ∉ badF`.  Classically: the `T_w` have
+  `ℤ`-integral characteristic polynomials on the `ℚ`-rational space of
+  cusp forms, so their eigenvalues are algebraic integers.
+
+`IntermediateField.adjoin ℚ (aF '' s)` is then finite-dimensional over
+`ℚ` by `IntermediateField.finiteDimensional_adjoin` (a finite set of
+integral elements), and it contains every `aF w` by the first leaf.
+
+WHY THIS IS THE RIGHT JOINT, and why it is not a relabeling.  Neither
+half implies the other and neither alone gives this node: `√2, √3, √5,
+…` are algebraic of degree `2` and lie in no finite extension of `ℚ`,
+while a singleton generating set with a transcendental value satisfies
+finite generation.  So the conjunction is strictly stronger than this
+node (it also names the generators), and each half is a recognizable
+classical theorem with its own literature — Hecke integrality on one
+side, finite generation of the Hecke algebra on the other — rather
+than a repackaging of the conclusion.  What the split does NOT do is
+supply the missing modularity hypothesis: see the SOUNDNESS AUDIT
+above, which is inherited verbatim by both halves.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean` — respected: the proof below uses only the
+two sub-leaves above and mathlib. -/
 theorem exists_heckeSubfield_of_eigenvalues
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -5737,8 +5961,23 @@ theorem exists_heckeSubfield_of_eigenvalues
       ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
         X ^ 2 - C (aF w) * X + C (dF w)) :
     ∃ E : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ]),
-      FiniteDimensional ℚ E ∧ ∀ w ∉ badF, aF w ∈ E :=
-  sorry
+      FiniteDimensional ℚ E ∧ ∀ w ∉ badF, aF w ∈ E := by
+  classical
+  -- (b-i-a-1) finitely many good places generate the field of eigenvalues
+  obtain ⟨s, hsgood, hgen⟩ :=
+    exists_heckeGenerators_of_eigenvalues hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr F hFtr hFgal hirrF badF aF dF ιO hιO hshape
+  -- (b-i-a-2) each single eigenvalue is an algebraic number
+  have hint := isIntegral_heckeEigenvalues hℓodd hℓ5 hZinj hrank hρ hW hρbar
+    hirr F hFtr hFgal hirrF badF aF dF ιO hιO hshape
+  haveI : Finite (aF ''
+      (s : Set (HeightOneSpectrum (NumberField.RingOfIntegers F)))) :=
+    (s.finite_toSet.image aF).to_subtype
+  refine ⟨IntermediateField.adjoin ℚ (aF ''
+    (s : Set (HeightOneSpectrum (NumberField.RingOfIntegers F)))), ?_, hgen⟩
+  refine IntermediateField.finiteDimensional_adjoin ?_
+  rintro x ⟨w, hw, rfl⟩
+  exact hint w (hsgood w hw)
 
 /-- **Rationality of the determinant function at the places over `ℓ`**
 (sorry node; sub-leaf (b-i-d) — the half of Shimura rationality that is
