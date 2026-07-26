@@ -2028,67 +2028,13 @@ the same two residues are `isFlatAt_of_fibreProduct` and
 
 They are stated HERE rather than immediately above their consumer only to
 keep this file's concurrently-edited regions apart; nothing in them depends
-on the clause definitions below. -/
+on the clause definitions below.
 
-/-- **Flatness at a place over `ℓ` glues along a fibre product** (LEAF;
-Ramakrishna and Raynaud — the first arithmetic residue of Schlessinger's
-H1/H2 over `F`, and the `F`-level twin of `Deformation.lean`'s
-`isFlatAt_of_fibreProduct`).
-
-`B` is the fibre product `A₁ ×_{A₀} A₂` of finite local `ℤ_ℓ`-algebras
-along a SURJECTION `f₂`, presented by its universal property rather than as
-a construction: `hcart` says every compatible pair comes from `B`, and
-`hemb` says `B` carries the induced topology and injects, so `B` really is
-the fibre product AS A TOPOLOGICAL RING.
-
-WHY IT IS NOT FORMAL, and where each hypothesis is spent.
-`GaloisRep.IsFlatAt w` quantifies over the OPEN IDEALS `I` of the
-coefficient ring and asks that `ρ ⊗ (B ⧸ I)` be the geometric points of a
-finite flat group scheme over `𝒪_{F_w}`. The open ideals of `B` are NOT in
-general pullbacks of open ideals of `A₁` and `A₂`, so `h₁` and `h₂` cannot
-simply be evaluated at the ideal one is handed: one first has to shrink `I`
-to an open ideal that IS a pullback, which is where finiteness of the rings
-and `hemb` enter (over `ℚ` this is exactly what
-`exists_isOpen_ideal_subset_of_finite` was cut out of
-`isFlatAt_of_fibreProduct` to do). The gluing of the two prolongations is
-then Raynaud's: over the complete DVR `𝒪_{F_w}` a finite flat group scheme
-with the given generic fibre is determined by its geometric points, and a
-fibre product of two such along a common quotient — this is where the
-surjectivity `hf₂` is used, so that the quotient really is common — is
-again finite and flat.
-
-`hw : ℓ ∈ w` is what makes the clause meaningful: at a place not over `ℓ`
-the flatness clause of `IsHilbertHardlyRamified` is not asserted at all.
-
-FAITHFULNESS: the statement asks for the EXISTENCE of a prolongation over
-`𝒪_{F_w}` produced from two given ones, not for a descent of existence from
-`𝒪^nr`, so the `𝒪ᵥ` descent rule does not bite. Nothing here needs `F`
-totally real or `F/ℚ` Galois.
-
-References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
-(1974); Ramakrishna, Compositio 87 (1994), §1; Conrad–Diamond–Taylor, JAMS
-12 (1999), §2. -/
-theorem isHilbertFlatAt_of_fibreProduct (ℓ : ℕ) [Fact ℓ.Prime]
-    (F : Type u) [Field F] [NumberField F]
-    {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
-    [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
-    {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
-    [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
-    {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
-    [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
-    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
-    [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
-    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀) (hf₂ : Function.Surjective f₂)
-    (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁) (hp₂ : Continuous p₂)
-    (hcomm : f₁.comp p₁ = f₂.comp p₂)
-    (hemb : Topology.IsEmbedding fun b : B => (p₁ b, p₂ b))
-    (hcart : ∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂)
-    {ρ : FramedGaloisRep F B (Fin 2)}
-    (w : HeightOneSpectrum (𝓞 F)) (hw : ((ℓ : ℕ) : 𝓞 F) ∈ w.asIdeal)
-    (h₁ : (framePushforward p₁ hp₁ ρ).IsFlatAt w)
-    (h₂ : (framePushforward p₂ hp₂ ρ).IsFlatAt w) :
-    ρ.IsFlatAt w :=
-  sorry
+NOTE (2026-07-26): only the TAME residue is still stated here.
+`isHilbertFlatAt_of_fibreProduct` was PROVEN and moved down to just above
+`isHilbertFibreProductClause`, because its proof consumes
+`hasFlatProlongationAt_of_pi_surjection_of_numberField`, which is declared
+below this point; see the section note there. -/
 
 /-- **The tame quadratic quotient at a place over `2` glues along a fibre
 product** (LEAF; Conrad–Diamond–Taylor — the second arithmetic residue of
@@ -2751,6 +2697,447 @@ theorem isHilbertBaseChangeClause (ℓ : ℕ) [Fact ℓ.Prime]
   exact isHilbertHardlyRamified_conj ℓ F (rank_finTwoPi A)
     (isHilbertHardlyRamified_baseChange ℓ F A hrank hρ)
     (TensorProduct.piScalarRight B A A (Fin 2))
+
+/-! #### Raynaud closure, sub-of-a-product form, over an ARBITRARY number
+field
+
+WHY THIS SITS HERE, AT THE BOTTOM OF THE FILE, RATHER THAN BESIDE ITS
+SIBLING RESIDUE. `isHilbertFlatAt_of_fibreProduct` below needs BOTH Raynaud
+closure properties at a place of a general number field: sub-of-a-product
+AND quotient. The quotient one already exists in this module as
+`hasFlatProlongationAt_of_pi_surjection_of_numberField` (above; another
+owner's leaf, in flight as of 2026-07-26) — so the flatness residue and its
+new sub-of-a-product leaf were MOVED DOWN past it rather than a second
+quotient leaf being stated. That duplicate was written first and deleted:
+declaration order was the only thing forcing it, and a redundant sorried
+leaf is exactly what generates phantom dispatches here.
+
+WHAT DISCHARGES THE LEAF BELOW — the same thing that discharges its
+quotient sibling, so read that leaf's docstring too.
+`Deformations/RepresentationTheory/FlatPointsGroup.lean` already carries
+the closure properties of "the geometric-point group of a finite flat
+`𝒪ᵥ`-group scheme with étale generic fibre" — `IsFlatPointsGroupAt.prod`,
+`.pi`, `.of_injective`, `.of_surjective` — and all four are PROVEN there.
+They are, however, available only at a place of `ℚ`: that file's
+`RaynaudClosure` section opens with
+
+    variable (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+
+and `IsFlatPointsGroupAt` itself is defined inside it. So `Deformation.lean`
+can consume them, while THIS module — whose places `w` run over an
+arbitrary totally real `F` — cannot.
+
+**This is therefore not new mathematics and should not be attacked as
+such.** Hoisting that `variable` line to a general
+`(K : Type u) [Field K] [NumberField K]` closes this leaf AND
+`hasFlatProlongationAt_of_pi_surjection_of_numberField` together, each by a
+two-line consumption — nothing in those proofs uses `K = ℚ`, only the
+complete DVR `𝒪ᵥ`, its fraction field `Kᵥ`, an algebraic closure `Ωᵥ` and
+the action of `Γ Kᵥ`, all of which `FlatProlongation.lean` — imported here
+— already carries over a variable `{K : Type uKf} [Field K] [NumberField K]`.
+The same change also lets `Deformation.lean`'s still-open
+`hasFlatProlongationAt_of_prod_injection` (the `K = ℚ` instance of the leaf
+below) be redirected here, retiring one more copy.
+
+The name differs from `Deformation.lean`'s deliberately: that module
+`public import`s this one into the SAME namespace, so a matching name is a
+"has already been declared" outage. -/
+
+/-- **Raynaud closure, sub-of-a-product form, over an arbitrary number
+field** (LEAF): a `Γ Kᵥ`-equivariant additive SUBOBJECT of the product of
+two flat point-groups at `w` is again one.
+
+Mathematically: `ρ₁` and `ρ₂` have finite flat prolongations `G₁`, `G₂`
+over the complete DVR `𝒪_{K_w}`; the product group scheme `G₁ × G₂`
+prolongs the product of the two local spaces; and the SCHEMATIC CLOSURE of
+the subgroup cut out by `ι` inside `G₁ × G₂` is a finite flat closed
+subgroup scheme over the DVR with the prescribed generic fibre. Existence
+of the schematic closure is unconditional over a DVR — it needs no
+Raynaud uniqueness and hence no bound on the ramification index `e`
+against `ℓ − 1`, which is why this form of the statement has no hypothesis
+relating `ℓ` to `w`.
+
+DISCHARGED BY: `Modularity.IsFlatPointsGroupAt.prod` followed by
+`.of_injective`, once both are stated over a variable number field; see
+the section note above. At `K = ℚ` this is verbatim `Deformation.lean`'s
+`hasFlatProlongationAt_of_prod_injection`.
+
+References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
+(1974), §3; Conrad, *Finite group schemes over bases with low
+ramification*, Compositio 119 (1999), §1 (schematic closure). -/
+theorem hasFlatProlongationAt_of_prod_injection_over_numberField
+    {K : Type*} [Field K] [NumberField K] (w : HeightOneSpectrum (𝓞 K))
+    {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
+    {M₁ : Type*} [AddCommGroup M₁] [Module A₁ M₁]
+    {A₂ : Type*} [CommRing A₂] [TopologicalSpace A₂]
+    {M₂ : Type*} [AddCommGroup M₂] [Module A₂ M₂]
+    {A₃ : Type*} [CommRing A₃] [TopologicalSpace A₃]
+    {M₃ : Type*} [AddCommGroup M₃] [Module A₃ M₃]
+    {ρ₁ : GaloisRep K A₁ M₁} {ρ₂ : GaloisRep K A₂ M₂} {ρ₃ : GaloisRep K A₃ M₃}
+    (h₁ : ρ₁.HasFlatProlongationAt w) (h₂ : ρ₂.HasFlatProlongationAt w)
+    (ι : (ρ₃.toLocal w).Space →+
+      ((ρ₁.toLocal w).Space × (ρ₂.toLocal w).Space))
+    (hinj : Function.Injective ι)
+    (hequiv : ∀ (g : Γ (w.adicCompletion K)) (x : (ρ₃.toLocal w).Space),
+      ι (g • x) = g • ι x) :
+    ρ₃.HasFlatProlongationAt w :=
+  sorry
+
+open scoped TensorProduct in
+/-- **Flatness at a place over `ℓ` glues along a fibre product** (PROVEN
+2026-07-26 over exactly two Raynaud closure leaves — the sub-of-a-product
+one immediately above, and the already-present quotient one
+`hasFlatProlongationAt_of_pi_surjection_of_numberField`, consumed at
+`n = 1`. Ramakrishna's half of Schlessinger's H1/H2 over `F`, and the
+`F`-level twin of `Deformation.lean`'s `isFlatAt_of_fibreProduct`).
+
+THIS DECLARATION WAS MOVED here from beside its sibling residue
+`isHilbertTameAtTwo_of_fibreProduct` so that it could consume the existing
+quotient leaf instead of restating it; see the section note above.
+
+`B` is the fibre product `A₁ ×_{A₀} A₂` of finite local `ℤ_ℓ`-algebras
+along a SURJECTION `f₂`, presented by its universal property rather than as
+a construction: `hcart` says every compatible pair comes from `B`, and
+`hemb` says `B` carries the induced topology and injects, so `B` really is
+the fibre product AS A TOPOLOGICAL RING.
+
+THE OBSTRUCTION AND HOW IT IS AVOIDED. `GaloisRep.IsFlatAt w` quantifies
+over the OPEN IDEALS `I` of the coefficient ring and asks that
+`ρ ⊗ (B ⧸ I)` be the geometric points of a finite flat group scheme over
+`𝒪_{F_w}`. The open ideals of `B` are NOT in general pullbacks of open
+ideals of `A₁` and `A₂`: the induced
+`B ⧸ I → (A₁ ⧸ p₁(I)A₁) × (A₂ ⧸ p₂(I)A₂)` need not be injective, so `h₁`
+and `h₂` cannot simply be evaluated at the ideal one is handed and the
+prolongation of `ρ ⊗ B ⧸ I` cannot be cut out of the two given ones
+directly. The historical route from here is Ramakrishna's, via Raynaud
+UNIQUENESS of prolongations. It is NOT the route taken; the route is the
+one `Deformation.lean`'s `isFlatAt_of_fibreProduct` takes at `F = ℚ`,
+transcribed:
+
+* `I` need not be a pullback, but it CONTAINS one. `hemb` gives an open
+  `W ⊆ A₁ × A₂` with `(p₁, p₂)⁻¹ W = I`; shrink `W` to a box `U₁ × U₂`
+  around `(0,0)` and shrink each `Uᵢ` to an OPEN IDEAL `Jᵢ` using that a
+  FINITE topological ring has a minimum open ideal (the local `hshrink`
+  below; at `ℚ` this is `Deformation.lean`'s
+  `exists_isOpen_ideal_subset_of_finite`, which cannot be imported here
+  because that module is DOWNSTREAM of this one — see the comment on
+  `hshrink`). Then `K := p₁⁻¹ J₁ ⊓ p₂⁻¹ J₂` is an open ideal of `B` with
+  `K ≤ I`.
+* By CONSTRUCTION of `K` the pair map `B ⧸ K → (A₁ ⧸ J₁) × (A₂ ⧸ J₂)` IS
+  injective, and tensoring with the standard frame — via
+  `TensorProduct.piScalarRight` on both sides, which turns the comparison
+  into the two entrywise identities `pᵢ(b) • φᵢ(c) = φᵢ(b • c)` — makes
+  `(B ⧸ K) ⊗_B B²` an equivariant SUBOBJECT of
+  `((A₁ ⧸ J₁) ⊗_{A₁} A₁²) × ((A₂ ⧸ J₂) ⊗_{A₂} A₂²)`, whose two factors
+  are flat by `h₁` at `J₁` and `h₂` at `J₂`. Equivariance of the two
+  components is exactly `framePushforward_apply_map`, which says
+  `framePushforward pᵢ` acts entrywise on vectors in the image of `pᵢ`.
+  `hasFlatProlongationAt_of_prod_injection_over_numberField` then gives
+  flatness at `K`.
+* `K ≤ I` makes `ρ ⊗ B ⧸ I` an equivariant QUOTIENT of `ρ ⊗ B ⧸ K`
+  (`Submodule.mapQ` then `LinearMap.rTensor`), so
+  `hasFlatProlongationAt_of_pi_surjection_of_numberField` at `n = 1`
+  descends flatness from `K` to the given `I`.
+
+FAITHFULNESS, AND SIX UNUSED HYPOTHESES — A FINDING, NOT AN OVERSIGHT.
+The statement asks for the EXISTENCE of a prolongation over `𝒪_{F_w}`
+produced from two given ones, not for a descent of existence from `𝒪^nr`,
+so the `𝒪ᵥ` descent rule does not bite. Nothing here needs `F` totally
+real or `F/ℚ` Galois.
+
+The proof consumes only `hp₁`, `hp₂`, `hemb` (only its `IsInducing` half),
+the finiteness of `A₁` and `A₂`, and `h₁`, `h₂`. It uses NEITHER the
+cartesian property (`_hcart`, `_hcomm`, `_f₁`, `_f₂`, `_hf₂`) NOR
+`_hw : ℓ ∈ w`, so all six are underscore-prefixed. This reproduces exactly
+the audit recorded on the `ℚ`-level twin, and for the same reason: the
+sub-of-a-product route never MATCHES two prolongations over `A₀` — it
+prolongs ONE object, the subobject cut out inside a product, and existence
+by schematic closure is unconditional over a DVR. The previous docstring's
+claim that `hf₂` is spent "so that the quotient really is common" is
+therefore REFUTED for this route (it was correct only for the uniqueness
+route), as is the reading of `hw` as load-bearing: `hw` records WHERE the
+clause is asserted, and the gluing itself is uniform in the place. The six
+are kept in the signature because the sibling
+`isHilbertTameAtTwo_of_fibreProduct` and the consumer
+`isHilbertFibreProductClause` pass them POSITIONALLY, and because a
+reviewer should be able to see what the Schlessinger cut supplied.
+
+References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
+(1974); Ramakrishna, Compositio 87 (1994), §1; Conrad–Diamond–Taylor, JAMS
+12 (1999), §2. -/
+theorem isHilbertFlatAt_of_fibreProduct (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
+    {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+    [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
+    {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+    [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
+    (_f₁ : A₁ →+* A₀) (_f₂ : A₂ →+* A₀) (_hf₂ : Function.Surjective _f₂)
+    (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁) (hp₂ : Continuous p₂)
+    (_hcomm : _f₁.comp p₁ = _f₂.comp p₂)
+    (hemb : Topology.IsEmbedding fun b : B => (p₁ b, p₂ b))
+    (_hcart : ∀ (a₁ : A₁) (a₂ : A₂), _f₁ a₁ = _f₂ a₂ →
+      ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂)
+    {ρ : FramedGaloisRep F B (Fin 2)}
+    (w : HeightOneSpectrum (𝓞 F)) (_hw : ((ℓ : ℕ) : 𝓞 F) ∈ w.asIdeal)
+    (h₁ : (framePushforward p₁ hp₁ ρ).IsFlatAt w)
+    (h₂ : (framePushforward p₂ hp₂ ρ).IsFlatAt w) :
+    ρ.IsFlatAt w := by
+  classical
+  -- A FINITE topological ring has a MINIMUM open ideal, so every
+  -- neighbourhood of `0` contains an open ideal. `Deformation.lean` has this
+  -- as the standalone `exists_isOpen_ideal_subset_of_finite`, but that module
+  -- `public import`s THIS one into the SAME namespace, so restating it here at
+  -- top level is a "has already been declared" outage; it is therefore carried
+  -- as a local `have`. (Moving the lemma UP into this module and deleting the
+  -- downstream copy is the right long-term repair, and belongs to that
+  -- module's owner.)
+  have hshrink : ∀ (R : Type u) [CommRing R] [TopologicalSpace R]
+      [IsTopologicalRing R] [Finite R] (U : Set R), IsOpen U → (0 : R) ∈ U →
+      ∃ J : Ideal R, IsOpen (J : Set R) ∧ (J : Set R) ⊆ U := by
+    intro R _ _ _ _ U hU h0
+    have hshift : ∀ (a : R) (V : Set R), IsOpen V → a ∈ V →
+        ∀ x ∈ ⋂₀ {W : Set R | IsOpen W ∧ (0 : R) ∈ W}, a + x ∈ V := by
+      intro a V hV ha x hx
+      exact hx ((fun y : R => a + y) ⁻¹' V)
+        ⟨hV.preimage (continuous_const_add a), by simpa using ha⟩
+    have hmul : ∀ (c : R) (V : Set R), IsOpen V → (0 : R) ∈ V →
+        ∀ x ∈ ⋂₀ {W : Set R | IsOpen W ∧ (0 : R) ∈ W}, c * x ∈ V := by
+      intro c V hV h0V x hx
+      exact hx ((fun y : R => c * y) ⁻¹' V)
+        ⟨hV.preimage (continuous_const_mul c), by simpa using h0V⟩
+    refine ⟨{ carrier := ⋂₀ {W : Set R | IsOpen W ∧ (0 : R) ∈ W}
+              add_mem' := ?_
+              zero_mem' := ?_
+              smul_mem' := ?_ }, ?_, ?_⟩
+    · intro a b ha hb V hV
+      exact hshift a V hV.1 (ha V hV) b hb
+    · intro V hV
+      exact hV.2
+    · intro c x hx V hV
+      simpa [smul_eq_mul] using hmul c V hV.1 hV.2 x hx
+    · exact (Set.toFinite _).isOpen_sInter fun V hV => hV.1
+    · exact fun x hx => hx U ⟨hU, h0⟩
+  constructor
+  intro I hI
+  -- STEP 1: open ideals of the two factors whose joint preimage sits inside `I`
+  obtain ⟨W, hWopen, hWpre⟩ := hemb.toIsInducing.isOpen_iff.mp hI
+  have h0W : ((0 : A₁), (0 : A₂)) ∈ W := by
+    have h0I : (0 : B) ∈ (fun b : B => (p₁ b, p₂ b)) ⁻¹' W := by
+      rw [hWpre]; exact I.zero_mem
+    simpa using h0I
+  obtain ⟨U₁, U₂, hU₁, hU₂, h0₁, h0₂, hUW⟩ := isOpen_prod_iff.mp hWopen 0 0 h0W
+  obtain ⟨J₁, hJ₁open, hJ₁U⟩ := hshrink A₁ U₁ hU₁ h0₁
+  obtain ⟨J₂, hJ₂open, hJ₂U⟩ := hshrink A₂ U₂ hU₂ h0₂
+  set K : Ideal B := (J₁.comap p₁) ⊓ (J₂.comap p₂)
+  have hKmem : ∀ b : B, b ∈ K ↔ (p₁ b ∈ J₁ ∧ p₂ b ∈ J₂) := fun b => Submodule.mem_inf
+  have hKle : K ≤ I := by
+    intro b hb
+    have hb' := (hKmem b).mp hb
+    have hmem : b ∈ (fun b : B => (p₁ b, p₂ b)) ⁻¹' W :=
+      hUW ⟨hJ₁U hb'.1, hJ₂U hb'.2⟩
+    rw [hWpre] at hmem
+    exact hmem
+  -- STEP 2: the two coefficient maps out of `B ⧸ K`
+  have hφ₁mem : ∀ a ∈ K, ((Ideal.Quotient.mk J₁).comp p₁) a = 0 := fun a ha =>
+    Ideal.Quotient.eq_zero_iff_mem.mpr ((hKmem a).mp ha).1
+  have hφ₂mem : ∀ a ∈ K, ((Ideal.Quotient.mk J₂).comp p₂) a = 0 := fun a ha =>
+    Ideal.Quotient.eq_zero_iff_mem.mpr ((hKmem a).mp ha).2
+  let φ₁ : (B ⧸ K) →+* (A₁ ⧸ J₁) :=
+    Ideal.Quotient.lift K ((Ideal.Quotient.mk J₁).comp p₁) hφ₁mem
+  let φ₂ : (B ⧸ K) →+* (A₂ ⧸ J₂) :=
+    Ideal.Quotient.lift K ((Ideal.Quotient.mk J₂).comp p₂) hφ₂mem
+  have hφ₁mk : ∀ b : B, φ₁ (Ideal.Quotient.mk K b) = Ideal.Quotient.mk J₁ (p₁ b) :=
+    fun _ => rfl
+  have hφ₂mk : ∀ b : B, φ₂ (Ideal.Quotient.mk K b) = Ideal.Quotient.mk J₂ (p₂ b) :=
+    fun _ => rfl
+  have hpairinj : ∀ s t : B ⧸ K, φ₁ s = φ₁ t → φ₂ s = φ₂ t → s = t := by
+    intro s t hs ht
+    obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective s
+    obtain ⟨c, rfl⟩ := Ideal.Quotient.mk_surjective t
+    rw [hφ₁mk, hφ₁mk] at hs
+    rw [hφ₂mk, hφ₂mk] at ht
+    refine Ideal.Quotient.eq.mpr ((hKmem (b - c)).mpr ⟨?_, ?_⟩)
+    · rw [map_sub]; exact Ideal.Quotient.eq.mp hs
+    · rw [map_sub]; exact Ideal.Quotient.eq.mp ht
+  -- STEP 3: the equivariant injection into the product of the two factors
+  let F₁ : (B ⧸ K) →+ ((Fin 2 → B) →+ ((A₁ ⧸ J₁) ⊗[A₁] (Fin 2 → A₁))) :=
+    { toFun := fun c =>
+        { toFun := fun v => φ₁ c ⊗ₜ[A₁] (fun j => p₁ (v j))
+          map_zero' := by
+            have hz : (fun j => p₁ ((0 : Fin 2 → B) j)) = (0 : Fin 2 → A₁) := by
+              funext j; simp
+            rw [hz, TensorProduct.tmul_zero]
+          map_add' := fun v u => by
+            have hv : (fun j => p₁ ((v + u) j))
+                = (fun j => p₁ (v j)) + (fun j => p₁ (u j)) := by
+              funext j; simp
+            rw [hv, TensorProduct.tmul_add] }
+      map_zero' := by ext v; simp
+      map_add' := fun c d => by ext v; simp [TensorProduct.add_tmul] }
+  let F₂ : (B ⧸ K) →+ ((Fin 2 → B) →+ ((A₂ ⧸ J₂) ⊗[A₂] (Fin 2 → A₂))) :=
+    { toFun := fun c =>
+        { toFun := fun v => φ₂ c ⊗ₜ[A₂] (fun j => p₂ (v j))
+          map_zero' := by
+            have hz : (fun j => p₂ ((0 : Fin 2 → B) j)) = (0 : Fin 2 → A₂) := by
+              funext j; simp
+            rw [hz, TensorProduct.tmul_zero]
+          map_add' := fun v u => by
+            have hv : (fun j => p₂ ((v + u) j))
+                = (fun j => p₂ (v j)) + (fun j => p₂ (u j)) := by
+              funext j; simp
+            rw [hv, TensorProduct.tmul_add] }
+      map_zero' := by ext v; simp
+      map_add' := fun c d => by ext v; simp [TensorProduct.add_tmul] }
+  have hbal₁ : ∀ (b : B) (c : B ⧸ K) (v : Fin 2 → B),
+      F₁ (b • c) v = F₁ c (b • v) := by
+    intro b c v
+    show φ₁ (b • c) ⊗ₜ[A₁] (fun j => p₁ (v j))
+      = φ₁ c ⊗ₜ[A₁] (fun j => p₁ ((b • v) j))
+    have hrhs : (fun j => p₁ ((b • v) j)) = p₁ b • (fun j => p₁ (v j)) := by
+      funext j
+      show p₁ (b * v j) = p₁ b * p₁ (v j)
+      exact map_mul _ _ _
+    have hlhs : φ₁ (b • c) = p₁ b • φ₁ c := by
+      rw [Algebra.smul_def, Algebra.smul_def, map_mul]
+      rfl
+    rw [hrhs, hlhs, ← TensorProduct.smul_tmul]
+  have hbal₂ : ∀ (b : B) (c : B ⧸ K) (v : Fin 2 → B),
+      F₂ (b • c) v = F₂ c (b • v) := by
+    intro b c v
+    show φ₂ (b • c) ⊗ₜ[A₂] (fun j => p₂ (v j))
+      = φ₂ c ⊗ₜ[A₂] (fun j => p₂ ((b • v) j))
+    have hrhs : (fun j => p₂ ((b • v) j)) = p₂ b • (fun j => p₂ (v j)) := by
+      funext j
+      show p₂ (b * v j) = p₂ b * p₂ (v j)
+      exact map_mul _ _ _
+    have hlhs : φ₂ (b • c) = p₂ b • φ₂ c := by
+      rw [Algebra.smul_def, Algebra.smul_def, map_mul]
+      rfl
+    rw [hrhs, hlhs, ← TensorProduct.smul_tmul]
+  let ι₁ : ((B ⧸ K) ⊗[B] (Fin 2 → B)) →+ ((A₁ ⧸ J₁) ⊗[A₁] (Fin 2 → A₁)) :=
+    TensorProduct.liftAddHom F₁ hbal₁
+  let ι₂ : ((B ⧸ K) ⊗[B] (Fin 2 → B)) →+ ((A₂ ⧸ J₂) ⊗[A₂] (Fin 2 → A₂)) :=
+    TensorProduct.liftAddHom F₂ hbal₂
+  have hι₁tmul : ∀ (c : B ⧸ K) (v : Fin 2 → B),
+      ι₁ (c ⊗ₜ[B] v) = φ₁ c ⊗ₜ[A₁] (fun j => p₁ (v j)) := fun _ _ => rfl
+  have hι₂tmul : ∀ (c : B ⧸ K) (v : Fin 2 → B),
+      ι₂ (c ⊗ₜ[B] v) = φ₂ c ⊗ₜ[A₂] (fun j => p₂ (v j)) := fun _ _ => rfl
+  -- injectivity, through the free-module identification
+  have hcomp₁ : ∀ (x : (B ⧸ K) ⊗[B] (Fin 2 → B)) (j : Fin 2),
+      TensorProduct.piScalarRight A₁ (A₁ ⧸ J₁) (A₁ ⧸ J₁) (Fin 2) (ι₁ x) j
+        = φ₁ (TensorProduct.piScalarRight B (B ⧸ K) (B ⧸ K) (Fin 2) x j) := by
+    intro x
+    induction x using TensorProduct.induction_on with
+    | zero => intro j; simp
+    | add a b ha hb => intro j; simp only [map_add, Pi.add_apply, ha j, hb j, map_add]
+    | tmul c v =>
+      intro j
+      rw [hι₁tmul, TensorProduct.piScalarRight_apply,
+        TensorProduct.piScalarRightHom_tmul, TensorProduct.piScalarRight_apply,
+        TensorProduct.piScalarRightHom_tmul]
+      show p₁ (v j) • φ₁ c = φ₁ (v j • c)
+      rw [Algebra.smul_def, Algebra.smul_def, map_mul]
+      rfl
+  have hcomp₂ : ∀ (x : (B ⧸ K) ⊗[B] (Fin 2 → B)) (j : Fin 2),
+      TensorProduct.piScalarRight A₂ (A₂ ⧸ J₂) (A₂ ⧸ J₂) (Fin 2) (ι₂ x) j
+        = φ₂ (TensorProduct.piScalarRight B (B ⧸ K) (B ⧸ K) (Fin 2) x j) := by
+    intro x
+    induction x using TensorProduct.induction_on with
+    | zero => intro j; simp
+    | add a b ha hb => intro j; simp only [map_add, Pi.add_apply, ha j, hb j, map_add]
+    | tmul c v =>
+      intro j
+      rw [hι₂tmul, TensorProduct.piScalarRight_apply,
+        TensorProduct.piScalarRightHom_tmul, TensorProduct.piScalarRight_apply,
+        TensorProduct.piScalarRightHom_tmul]
+      show p₂ (v j) • φ₂ c = φ₂ (v j • c)
+      rw [Algebra.smul_def, Algebra.smul_def, map_mul]
+      rfl
+  have hinj : Function.Injective (ι₁.prod ι₂) := by
+    intro x y hxy
+    have hx1 : ι₁ x = ι₁ y := congrArg Prod.fst hxy
+    have hx2 : ι₂ x = ι₂ y := congrArg Prod.snd hxy
+    apply (TensorProduct.piScalarRight B (B ⧸ K) (B ⧸ K) (Fin 2)).injective
+    funext j
+    refine hpairinj _ _ ?_ ?_
+    · rw [← hcomp₁ x j, ← hcomp₁ y j, hx1]
+    · rw [← hcomp₂ x j, ← hcomp₂ y j, hx2]
+  -- equivariance of the two components
+  have hkey₁ : ∀ (g : Γ F) (x : (B ⧸ K) ⊗[B] (Fin 2 → B)),
+      ι₁ ((ρ.baseChange (B ⧸ K)) g x)
+        = ((framePushforward p₁ hp₁ ρ).baseChange (A₁ ⧸ J₁)) g (ι₁ x) := by
+    intro g x
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c v =>
+      rw [GaloisRep.baseChange_tmul, hι₁tmul, hι₁tmul, GaloisRep.baseChange_tmul]
+      congr 1
+      funext i
+      exact (framePushforward_apply_map p₁ hp₁ ρ g v i).symm
+  have hkey₂ : ∀ (g : Γ F) (x : (B ⧸ K) ⊗[B] (Fin 2 → B)),
+      ι₂ ((ρ.baseChange (B ⧸ K)) g x)
+        = ((framePushforward p₂ hp₂ ρ).baseChange (A₂ ⧸ J₂)) g (ι₂ x) := by
+    intro g x
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c v =>
+      rw [GaloisRep.baseChange_tmul, hι₂tmul, hι₂tmul, GaloisRep.baseChange_tmul]
+      congr 1
+      funext i
+      exact (framePushforward_apply_map p₂ hp₂ ρ g v i).symm
+  -- STEP 4: the Raynaud sub-of-a-product leaf, applied at `K`
+  let ι : (((ρ.baseChange (B ⧸ K)).toLocal w).Space) →+
+      ((((framePushforward p₁ hp₁ ρ).baseChange (A₁ ⧸ J₁)).toLocal w).Space ×
+        (((framePushforward p₂ hp₂ ρ).baseChange (A₂ ⧸ J₂)).toLocal w).Space) :=
+    ι₁.prod ι₂
+  have hflatK : (ρ.baseChange (B ⧸ K)).HasFlatProlongationAt w := by
+    refine hasFlatProlongationAt_of_prod_injection_over_numberField w
+      (h₁.cond J₁ hJ₁open) (h₂.cond J₂ hJ₂open) ι hinj ?_
+    intro g x
+    show (ι₁.prod ι₂) (((ρ.baseChange (B ⧸ K)).toLocal w) g x)
+      = ((((framePushforward p₁ hp₁ ρ).baseChange (A₁ ⧸ J₁)).toLocal w) g (ι₁ x),
+         (((framePushforward p₂ hp₂ ρ).baseChange (A₂ ⧸ J₂)).toLocal w) g (ι₂ x))
+    rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+    exact Prod.ext (hkey₁ _ x) (hkey₂ _ x)
+  -- STEP 5: descend from `B ⧸ K` to the given open ideal `I`
+  let fKI : (B ⧸ K) →ₗ[B] (B ⧸ I) := Submodule.mapQ K I LinearMap.id hKle
+  have hfKIsurj : Function.Surjective fKI := by
+    intro z
+    obtain ⟨b, rfl⟩ := Ideal.Quotient.mk_surjective z
+    exact ⟨Ideal.Quotient.mk K b, rfl⟩
+  let π₀ : ((B ⧸ K) ⊗[B] (Fin 2 → B)) →ₗ[B] ((B ⧸ I) ⊗[B] (Fin 2 → B)) :=
+    LinearMap.rTensor (Fin 2 → B) fKI
+  have hπ₀surj : Function.Surjective π₀ := LinearMap.rTensor_surjective _ hfKIsurj
+  have hπ₀equiv : ∀ (g : Γ F) (x : (B ⧸ K) ⊗[B] (Fin 2 → B)),
+      π₀ ((ρ.baseChange (B ⧸ K)) g x) = (ρ.baseChange (B ⧸ I)) g (π₀ x) := by
+    intro g x
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c v =>
+      rw [GaloisRep.baseChange_tmul]
+      show fKI c ⊗ₜ[B] (ρ g v) = (ρ.baseChange (B ⧸ I)) g (fKI c ⊗ₜ[B] v)
+      rw [GaloisRep.baseChange_tmul]
+  let π : (Fin 1 → ((ρ.baseChange (B ⧸ K)).toLocal w).Space) →+
+      (((ρ.baseChange (B ⧸ I)).toLocal w).Space) :=
+    { toFun := fun x => π₀ (x 0)
+      map_zero' := map_zero π₀
+      map_add' := fun x y => map_add π₀ (x 0) (y 0) }
+  refine hasFlatProlongationAt_of_pi_surjection_of_numberField w 1 hflatK π ?_ ?_
+  · intro z
+    obtain ⟨y, hy⟩ := hπ₀surj z
+    exact ⟨fun _ => y, hy⟩
+  · intro g x
+    show π₀ (((ρ.baseChange (B ⧸ K)).toLocal w) g (x 0))
+      = ((ρ.baseChange (B ⧸ I)).toLocal w) g (π₀ (x 0))
+    rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+    exact hπ₀equiv _ (x 0)
 
 /-- **Gluing along fibre products** (Schlessinger's H1 and H2; PROVEN
 2026-07-26 over the two arithmetic leaves `isHilbertFlatAt_of_fibreProduct`
