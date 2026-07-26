@@ -37055,9 +37055,224 @@ theorem exists_charP_quotient_maximalIdeal_pow_of_natCast_ne_zero
     rw [hprod]
     exact Ideal.mul_mem_right _ _ hmem
 
+/-- **A Kummer class over a valued field with a NON-UNIT parameter pins
+the radical on the nose** (PROVEN 2026-07-26, the arithmetic half of the
+KUMMER-CLASS CUT below).
+
+Let `F` carry a `ℤ`-valued valuation, let `q ∈ Fˣ` have `v q ≠ 1` — i.e.
+`q` is not a unit of the valuation ring, so in particular `q` is not a
+root of unity — and let `r` be an `N`-th root of `q` in an algebraic
+closure of `F`. If a `F`-automorphism `σ` fixes the class of `r` modulo
+the subgroup `q ^ ℤ`, i.e. `σ r = r * q ^ b` for some `b : ℤ`, then in
+fact `σ r = r`.
+
+This is the step that turns the Tate uniformisation's output — which is
+a statement about `Ωˣ ⧸ q ^ ℤ`, since that is the group the
+uniformisation identifies with the points of the curve — into the
+statement about the RADICAL ITSELF that Serre's Kummer-class criterion
+consumes. The proof is exactly the classical one: raise `σ r = r q ^ b`
+to the `N`-th power, use `σ q = q` (`q` lies in the base field) to get
+`q ^ (b N) = 1`, and then apply the valuation — `v q ^ (b N) = 1` with
+`v q ≠ 1` forces `b N = 0` by `zpow_right_injective₀` in the
+linearly ordered value group, so `b = 0` since `N ≠ 0`.
+
+WHERE `v q ≠ 1` IS LOAD-BEARING, and it is the whole point: over a field
+where `q` IS a valuation unit (say `q` a root of unity) the conclusion is
+FALSE — `σ` may permute the `N`-th roots of `q` within the coset `r q ^ ℤ`
+without fixing `r`. So this lemma is where the toric hypothesis
+`Valued.v q ≠ 1` of the Tate-parameter leaves does its work; before this
+cut that hypothesis was carried through the automorphic leaf unused. -/
+theorem eq_of_kummerClass_of_valuation_ne_one
+    {F : Type*} [Field F] [Valued F (WithZero (Multiplicative ℤ))]
+    (q : Fˣ) (hq : Valued.v (q : F) ≠ 1) {N : ℕ} (hN : 0 < N)
+    (r : AlgebraicClosure F)
+    (hr : r ^ N = algebraMap F (AlgebraicClosure F) (q : F))
+    (σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F) (b : ℤ)
+    (hb : σ r = r * (algebraMap F (AlgebraicClosure F) (q : F)) ^ b) :
+    σ r = r := by
+  set Q : AlgebraicClosure F := algebraMap F (AlgebraicClosure F) (q : F) with hQdef
+  have hQ0 : Q ≠ 0 := by
+    rw [hQdef]
+    simp
+  -- evaluate `σ` on `r ^ N = Q` in the two available ways
+  have h1 : σ (r ^ N) = Q := by
+    rw [hr, hQdef]
+    exact σ.commutes _
+  have h2 : σ (r ^ N) = Q * Q ^ (b * (N : ℤ)) := by
+    rw [map_pow, hb, mul_pow, hr, ← zpow_natCast (Q ^ b) N, ← zpow_mul]
+  have h3 : Q ^ (b * (N : ℤ)) = 1 := by
+    have h : Q * (1 : AlgebraicClosure F) = Q * Q ^ (b * (N : ℤ)) := by
+      rw [mul_one]
+      exact h1.symm.trans h2
+    exact (mul_left_cancel₀ hQ0 h).symm
+  -- descend the resulting relation to the base field
+  have h4 : ((q : F) ^ (b * (N : ℤ))) = 1 := by
+    have hinj : Function.Injective (algebraMap F (AlgebraicClosure F)) :=
+      (algebraMap F (AlgebraicClosure F)).injective
+    apply hinj
+    rw [map_zpow₀, map_one, ← hQdef]
+    exact h3
+  -- the valuation forces the exponent to vanish: `q` is not a root of unity
+  have h5 : b * (N : ℤ) = 0 := by
+    have hv : (Valued.v (q : F)) ^ (b * (N : ℤ)) = 1 := by
+      rw [← map_zpow₀, h4, map_one]
+    have hpos : (0 : WithZero (Multiplicative ℤ)) < Valued.v (q : F) :=
+      (Valuation.pos_iff _).mpr (Units.ne_zero q)
+    exact zpow_right_injective₀ hpos hq (by simpa using hv)
+  have hb0 : b = 0 := by
+    have hN' : (N : ℤ) ≠ 0 := Int.natCast_ne_zero.mpr hN.ne'
+    exact (mul_eq_zero.mp h5).resolve_right hN'
+  rw [hb, hb0, zpow_zero, mul_one]
+
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem, AT ONE LEVEL
-OF THE TOWER** (sorry leaf — the AUTOMORPHIC half of the 2026-07-26
+OF THE TOWER, IN KUMMER-CLASS FORM** (sorry leaf — the residual
+AUTOMORPHIC-TO-GALOIS BRIDGE after the 2026-07-26 KUMMER-CLASS CUT;
+Tilouine, *Hecke algebras and the Gorenstein property*, in
+Cornell–Silverman–Stevens §5 Step 1(a), for `p ∥ M`; Saito, *Modular
+forms and `p`-adic Hodge theory*, Invent. Math. 129 (1997), for
+local–global compatibility at `p` in general).
+
+THIS IS THE STATEMENT THE TATE UNIFORMISATION ACTUALLY PRODUCES, which
+is why the cut was worth taking. Under the consumer's hypotheses the
+restriction of `τ ≅ ρ ⊗ ℚ̄_p` to `G_p` is the Tate module of a curve
+`E_q` with purely TORIC reduction, and Tate's uniformisation is an
+isomorphism of `G_p`-modules
+
+    Ωˣ ⧸ q ^ ℤ  ≅  E_q(Ω),           `Ω = ℚ̄_p`
+
+(this repository's `TateSepClosure.lean` builds exactly that object:
+`WeierstrassCurve.exists_tateCurveEquivSepClosure` delivers the
+equivalence together with its Galois-equivariance hypothesis `he`, and
+`WeierstrassCurve.exists_tateTorsionQuotient` reads the torsion off it).
+So what the bridge delivers about an element `σ` acting trivially on the
+level-`k` torsion is a statement MODULO `q ^ ℤ` — the classes are what
+the curve's points are — namely: for every `p ^ n`-th root `r` of `q`,
+
+    σ r = r * q ^ b   for some `b : ℤ`,
+
+which is precisely "`σ` fixes the class of `r` in `Ωˣ ⧸ q ^ ℤ`". It does
+NOT deliver `σ r = r` directly; that last step is arithmetic about the
+valuation of `q` and is now the PROVEN
+`eq_of_kummerClass_of_valuation_ne_one` just above.
+
+WHAT THE KUMMER-CLASS CUT BUYS. Three things, all of them now proof
+terms in the consumer rather than prose inside the citation:
+
+1. the EXISTENCE of the `p ^ n`-th root `r` in `ℚ̄_p`, which is
+   `IsAlgClosed.exists_pow_nat_eq` and has no automorphic content at all
+   — the previous statement of this leaf asked the automorphic theory to
+   produce it;
+2. the passage from the class statement to `σ r = r`, i.e. the fact that
+   the Tate parameter is not a root of unity;
+3. and consequently the hypothesis `Valued.v q ≠ 1` becomes LOAD-BEARING
+   at this node. Before the cut it was asserted by this leaf and then
+   consumed only much further downstream; a reader could not tell from
+   the statement alone that the toric condition was doing any work here.
+   Now it is exactly what `eq_of_kummerClass_of_valuation_ne_one`
+   consumes.
+
+WHAT IT DOES NOT BUY. The automorphic-to-Galois bridge itself is
+untouched and no part of it is proven here. What remains is still the
+étale cohomology of modular curves at `p` — Deligne–Rapoport models of
+`X₀(Mp)`, Tilouine's toric-reduction computation at the `p`-new part of
+`J₀(Mp)`, and Saito's local–global compatibility — which the fourth and
+fifth owners' terminality audits identify as genuinely missing from this
+pin and from `~/cs/FLT`, and which the residual modular-curve leaf
+`nonempty_modularTateGaloisData` above does not supply either (that leaf
+is about `J₀(M)` at GOOD primes: its `congruence` field is the
+Eichler–Shimura relation off the level, whereas what is needed here is
+the fibre at `p` itself, where the reduction is toric).
+
+WHY THE HYPOTHESIS IS `CharP … (p ^ n)` AND NOT `(p ^ n) = 0` (the point
+that makes this leaf FAITHFUL rather than convenient, and the reason the
+two indices `k` and `n` are separate). The consumer's tower is indexed by
+the IDEALS `𝔪 ^ k`, but Serre's criterion is indexed by the EXPONENT
+`p ^ n` of the module, and the two indices are NOT interchangeable when
+`R ≠ ℤ_p`: demanding both `p ^ n ∈ 𝔪 ^ k` (so that the level module is
+killed by `p ^ n`) and `𝔪 ^ k ⊆ p ^ n R` (so that the level field is at
+least as large as the mod-`p ^ n` field) would force `𝔪 ^ k = p ^ n R`,
+which holds only for `R = ℤ_p`. What is true, and what this leaf
+asserts, is that `n` may be taken to be the EXACT exponent of
+`R ⧸ 𝔪 ^ k`, i.e. that the level ring is a FAITHFUL `ℤ ⧸ p ^ n`-module:
+writing the lattice as `T ⊗_{ℤ_p} R` with `T` the `ℤ_p`-Tate module,
+`T ⧸ p ^ n T` is free of rank `2` over `ℤ ⧸ p ^ n` and so
+`T ⊗ R ⧸ 𝔪 ^ k ≅ (R ⧸ 𝔪 ^ k) ²` as a `G_p`-set has the SAME kernel as
+`T ⧸ p ^ n T` — an entry of `σ − 1` annihilates a faithful module only
+if it is zero. Its field is therefore
+`ℚ_p(E[p ^ n]) = ℚ_p(μ_{p ^ n}, q^{1/p ^ n})` on the nose, which is what
+supplies the radical. Weakening `CharP` to "killed by `p ^ n`" would make
+the statement FALSE, since every `n` beyond the exact exponent also
+kills while its field is strictly larger than the level field.
+
+SOUNDNESS: inherited from the consumer's audit (`p = 11`, `M = 11`, the
+weight-2 newform of level `11`, `E = X₀(11)`), whose Tate parameter has
+`v_p(q) = 1 ≠ 0`; there `q ^ ℤ` is infinite and the class statement is
+strictly weaker than the radical statement, so the cut is not vacuous.
+
+INHERITED COEFFICIENT-RING FACTS. `hpne`, `hpmem`, `hkfin` and `hlat`
+are passed down unchanged from the consumer, where the sixth owner's
+COEFFICIENT-RING NARROWING turned each into a proof term
+(`natCast_prime_mem_maximalIdeal_of_moduleFinite`,
+`finite_quotient_maximalIdeal_pow_of_natCast_ne_zero`,
+`injective_algebraMap_algebraicClosure_of_moduleFinite`). They belong
+HERE rather than at the consumer, because they are exactly what the
+cited automorphic theory assumes about its coefficient ring: `hpmem`
+and `hpne` are what make the exponent of `R ⧸ 𝔪 ^ k` finite and
+unbounded in `k`, `hkfin` is what keeps every level finite (so that
+`HasFlatProlongationAt`'s finiteness is not satisfied for a merely
+cardinal reason), and `hlat` is what makes "`ρ` is an `R`-lattice model
+of `τ`" a statement about a genuine lattice. -/
+theorem exists_tateParameter_kummerClass_of_weightTwoEigenform_pNew
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {M : ℕ} (hM : 0 < M) (hpM : p ∣ M) {g : CuspForm (Gamma0GL M) 2}
+    (hg : IsWeightTwoEigenform M g)
+    (hpnew : ∀ M₁ : ℕ, M₁ ∣ M / p →
+      ∀ g₁ : CuspForm (Gamma0GL M₁) 2, IsWeightTwoEigenform M₁ g₁ →
+      ¬ ∀ (r : ℕ), r.Prime → ¬ r ∣ M → qCoeff M₁ g₁ r = qCoeff M g r)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    (e : (Fin 2 → AlgebraicClosure ℚ_[p]) ≃ₗ[AlgebraicClosure ℚ_[p]]
+      (AlgebraicClosure ℚ_[p] ⊗[R] V))
+    (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
+        (w : Fin 2 → AlgebraicClosure ℚ_[p]),
+      e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
+    (hpne : (p : R) ≠ 0)
+    (hpmem : (p : R) ∈ IsLocalRing.maximalIdeal R)
+    (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
+    ∃ q : (ℚᵖᵥ)ˣ, Valued.v (q : ℚᵖᵥ) ≠ 1 ∧
+      ∀ k n : ℕ, CharP (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) (p ^ n) →
+        ∀ r : AlgebraicClosure ℚᵖᵥ,
+          r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) →
+          ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+            (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).toLocal 𝔭ᵥ σ = 1 →
+              ∃ b : ℤ,
+                σ r = r * algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ^ b :=
+  sorry
+
+include hpodd in
+/-- **The Tate parameter of a `p`-new weight-2 eigensystem, AT ONE LEVEL
+OF THE TOWER** (PROVEN 2026-07-26 by the KUMMER-CLASS CUT of the ninth
+owner — an assembly over the restated automorphic leaf
+`exists_tateParameter_kummerClass_of_weightTwoEigenform_pNew` and the
+proven `eq_of_kummerClass_of_valuation_ne_one`, both just above.
+Formerly the AUTOMORPHIC half of the 2026-07-26
 KUMMER CUT, narrowed 2026-07-26 by the EXPONENT CUT of the eighth owner:
 the tower bookkeeping has been removed from it and is now the proven
 `exists_charP_quotient_maximalIdeal_pow_of_natCast_ne_zero` just above,
@@ -37135,7 +37350,32 @@ and `hpne` are what make the exponent of `R ⧸ 𝔪 ^ k` finite and
 unbounded in `k`, `hkfin` is what keeps every level finite (so that
 `HasFlatProlongationAt`'s finiteness is not satisfied for a merely
 cardinal reason), and `hlat` is what makes "`ρ` is an `R`-lattice model
-of `τ`" a statement about a genuine lattice. -/
+of `τ`" a statement about a genuine lattice.
+
+THE KUMMER-CLASS CUT (2026-07-26, NINTH owner — what this node now IS).
+The node is PROVEN, as a two-step assembly:
+
+1. `exists_tateParameter_kummerClass_of_weightTwoEigenform_pNew` (sorry
+   leaf, above): the automorphic-to-Galois bridge in the form Tate's
+   uniformisation actually produces — a statement about classes modulo
+   `q ^ ℤ`, since `Ωˣ ⧸ q ^ ℤ` is what the uniformisation identifies with
+   the points of the curve. For every `p ^ n`-th root `r` of `q` and every
+   `σ` in the level-`k` kernel, `σ r = r * q ^ b` for some `b : ℤ`.
+2. `eq_of_kummerClass_of_valuation_ne_one` (PROVEN, above): a Kummer class
+   over a valued field pins the radical exactly, PROVIDED the parameter is
+   not a valuation unit. Raise `σ r = r q ^ b` to the `p ^ n`, use
+   `σ q = q`, get `q ^ (b p ^ n) = 1`, and apply the valuation.
+
+Plus the existence of the root itself, which is `IsAlgClosed.exists_pow_nat_eq`
+and carries no automorphic content — the previous form of this leaf asked
+the automorphic theory to produce it.
+
+What the cut buys: the hypothesis `Valued.v q ≠ 1` is now LOAD-BEARING at
+this node rather than merely asserted and forwarded. It is exactly what
+step 2 consumes, and without it the conclusion is false — an automorphism
+may permute the `p ^ n`-th roots of a root of unity inside their coset.
+What it does NOT buy: the automorphic-to-Galois bridge is untouched, and
+no piece of it has been proven here. -/
 theorem exists_tateParameter_atLevel_of_weightTwoEigenform_pNew
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -37175,8 +37415,26 @@ theorem exists_tateParameter_atLevel_of_weightTwoEigenform_pNew
           r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) ∧
           ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
             (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).toLocal 𝔭ᵥ σ = 1 →
-              σ r = r :=
-  sorry
+              σ r = r := by
+  classical
+  -- the automorphic-to-Galois bridge, in the form Tate's uniformisation
+  -- produces it: a class statement modulo `q ^ ℤ`
+  obtain ⟨q, hq, hclass⟩ :=
+    exists_tateParameter_kummerClass_of_weightTwoEigenform_pNew hpodd hM hpM hg hpnew κ hτ
+      hirr e he hdet hpne hpmem hkfin hlat
+  refine ⟨q, hq, fun k n hchar => ?_⟩
+  -- the `p ^ n`-th root itself exists because `ℚ̄_p` is algebraically closed;
+  -- the automorphic theory is not needed for it
+  have hNpos : 0 < p ^ n := pow_pos hp.out.pos n
+  obtain ⟨r, hr⟩ : ∃ r : AlgebraicClosure ℚᵖᵥ,
+      r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ) :=
+    IsAlgClosed.exists_pow_nat_eq _ hNpos
+  refine ⟨r, hr, fun σ hσ => ?_⟩
+  -- the level-`k` kernel fixes the CLASS of `r`
+  obtain ⟨b, hb⟩ := hclass k n hchar r hr σ hσ
+  -- and the class determines `r` on the nose, because `v q ≠ 1`
+  exact eq_of_kummerClass_of_valuation_ne_one q hq hNpos r hr
+    (σ : AlgebraicClosure ℚᵖᵥ ≃ₐ[ℚᵖᵥ] AlgebraicClosure ℚᵖᵥ) b hb
 
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem**
