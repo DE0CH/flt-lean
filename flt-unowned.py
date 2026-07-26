@@ -46,7 +46,15 @@ QUEUE = pathlib.Path("/home/chend/.flt-task-queue")
 # prompt, and that prompt then carries two TARGET blocks. That happened on
 # 2026-07-25 and hid an entire task's worth of leaves.
 TARGET_BLOCK = re.compile(r"TARGET[^\n]*:.*?(?:\n\s*\n|\Z)", re.S)
-BACKTICKED = re.compile(r"`([A-Za-z_][A-Za-z0-9_.']*)`")
+# Lean identifiers in this tree routinely contain non-ASCII: `preΨ'_residual`,
+# `Rlz.τ`, `MazurLevel9.exists_tateParam`, subscripted names like `ρbar₂`. An
+# ASCII-only class silently fails to see them, so a TARGET block naming such a
+# leaf credits nobody and the leaf reads as unowned forever -- which is exactly
+# how `tateNormalForm_origin_preΨ'_residual` survived a queue append on
+# 2026-07-26 and blocked a release. `\w` is unicode-aware; the subscript range
+# is added because Nd excludes ₀-₉ (category No). The leading char stays
+# non-numeric so backticked numerals in prose are not read as declarations.
+BACKTICKED = re.compile(r"`((?![0-9])[\w][\w.'₀-₉ₐ-ₜ]*)`", re.UNICODE)
 
 
 def _mod(name, filename):
