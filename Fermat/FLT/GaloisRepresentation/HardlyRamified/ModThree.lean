@@ -6346,7 +6346,114 @@ bound it yields (`v_L(σx − x) > v_L(3) = #G_0`) is precisely the
 "shallow regime" that the consumer already discharges for free.
 SANITY CHECK THAT THE HYPOTHESIS IS NOT VACUOUS: at `E = ℚ₃ᵥ` one has
 `e = 1`, and `3e < 2k` first holds at `k = 2`, i.e. modulo `9`; and the
-peu-ramifié `E = ℚ₃(ζ₃, u^{1/3})` has `e = 6`, so `k ≥ 10`. -/
+peu-ramifié `E = ℚ₃(ζ₃, u^{1/3})` has `e = 6`, so `k ≥ 10`.
+
+FALSITY AUDIT (2026-07-26, second owner — **THIS LEAF IS FALSE AS
+STATED**; do not dispatch a prover at it.  The numerology of `hk` is
+exactly right and must be kept; what is wrong is the LEVEL at which the
+lift is required to agree with `η`, and the repair is cut-level because
+the sibling `nonempty_algHom_of_algHom_quotient_of_forall_lift` consumes
+the false shape as its `hlift`.  The repair is spelled out at the end.)
+
+THE COUNTEREXAMPLE, at the very parameters the sanity check above names.
+Take `A := 𝒪₃ᵥ[X]/((1 + X)³ − 1) = 𝒪₃ᵥ[X]/(X³ + 3X² + 3X)`, the affine
+algebra of `μ₃` over `𝒪₃ᵥ ≅ ℤ₃`; `E := ℚ₃ᵥ` itself (the bottom
+intermediate field), so `𝒪_E = ℤ₃`, `𝔪_E = (3)`, `e = 1`, and `k := 2`.
+* `A` is finite FREE of rank `3` over `𝒪₃ᵥ`, so `Module.Flat` and
+  `Module.Finite` hold.
+* `Ω[A⁄𝒪₃ᵥ] = A·dX / (3(1 + X)² dX) = A/3A`, because `(1 + X)³ = 1`
+  makes `1 + X` — hence `(1 + X)²` — a UNIT of `A`.  So `hΩ` holds, and
+  the module is not zero (`A/3A ≅ 𝔽₃[X]/(X³)`): this is honestly the
+  `n = 1` case, not a disguised étale one.
+* `he` holds with `e = 1` (`Ideal.span {3} = 𝔪_E¹` in `ℤ₃`) and
+  `hk : 3 * 1 = 3 < 4 = 2 * 2`.
+* `η : A →ₐ[𝒪₃ᵥ] ℤ₃/9`, `X ↦ 3`, is a well-defined algebra map:
+  `(1 + 3)³ − 1 = 63 = 7 · 9 ∈ 𝔪_E² = 9ℤ₃`.
+But every `χ : A →ₐ[𝒪₃ᵥ] ℤ₃` satisfies `(1 + χX)³ = 1` in `ℤ₃`, and
+`μ₃(ℤ₃) = 1` (the roots of unity of `ℤ₃` are `μ₂`), so `χX = 0`; and
+`0 ≢ 3 (mod 9)`.  Hence NO `χ` has `mkₐ ∘ χ = η`.  ∎
+
+THE FAILURE IS NOT A BOUNDARY ARTEFACT.  Over `E = ℚ₃(ζ₃)` — where
+`(3) = 𝔪_E²`, so `e = 2`, `𝔪_E⁴ = (9)`, and `hk` reads `6 < 8` — the
+restriction map is `3 ↠ 27`: `#Hom_{𝒪₃ᵥ}(A, 𝒪_E) = #μ₃(𝒪_E) = 3` while
+`#Hom_{𝒪₃ᵥ}(A, 𝒪_E/𝔪_E⁴) = #{y ∈ 𝒪_E/9 | y³ = 1} = 27` (enumerated in
+PARI/GP over `ℤ[ζ₃]/9`; the solutions are exactly `y ∈ 1 + 𝔪_E`).  So
+`24` of the `27` maps `η` fail to lift, for every admissible `(e, k)`,
+not merely at the first one.
+
+NOTE WHAT THE COUNTEREXAMPLE IS: `μ₃` is a finite flat GROUP SCHEME
+killed by `3`, it is a local complete intersection over `𝒪₃ᵥ`
+(hypersurface), and `Ω[A⁄𝒪₃ᵥ] = A/3A` is FREE of rank one over `A/3A`.
+So the two hypotheses Fontaine imposes and this leaf drops — `B` lci
+over `𝒪_K`, and `Ω¹_{B/𝒪_K}` flat as a `B/a`-module — are both satisfied
+here.  Adding them back does NOT rescue the statement; the conclusion is
+simply asked at the wrong level.
+
+WHY, AND WHAT FONTAINE ACTUALLY PROVES (Invent. Math. 81 (1985)
+515–538, §1.6–1.7, pp. 520–522; the paper is freely downloadable from
+GDZ at `gdz.sub.uni-goettingen.de/download/pdf/PPN356556735_0081/`
+`LOG_0033.pdf`).  Prop. 1.7 (i) (a) reads: let `B` be a finite flat
+`𝒪_K`-algebra, locally a complete intersection, with `a ∈ 𝒪_K`
+annihilating `Ω¹_{B/𝒪_K}` and `Ω¹_{B/𝒪_K}` flat over `B/a`; let `S` be a
+finite flat `𝒪_K`-algebra and `I ⊆ S` an ideal admitting TOPOLOGICALLY
+NILPOTENT DIVIDED POWERS.  Then for every `𝒪_K`-algebra map
+`u : B → S/aI` there is ONE AND ONLY ONE `𝒪_K`-algebra map `û : B → S`
+such that `u` and `û` induce the SAME map `B → S/I`.
+The input is given modulo `aI`; the agreement asserted is only modulo
+`I` — one full factor of `a` coarser.  This leaf demands agreement at
+the INPUT level `aI`, which no form of the argument delivers, and which
+the `μ₃` witness above refutes outright.
+
+THE DICTIONARY, which is what makes `hk` exactly right and worth
+keeping.  Put `a := 3` (so `v_K(a) = n = 1`), `S := 𝒪_E`, and
+`I := 𝔪_E^(k − e)`.  Then `he` gives `a · I = 𝔪_E^e · 𝔪_E^(k−e) = 𝔪_E^k`,
+i.e. the input level is exactly this leaf's `𝔪_E^k`; and by Fontaine 1.6
+the ideal `𝔞^m_{E/K} = {x | v_K(x) ≥ m}` has topologically nilpotent
+divided powers iff `m > e_K/(p − 1)`, which at `K = ℚ₃` (`e_K = 1`,
+`p = 3`) is `m > 1/2`.  For `I = 𝔪_E^(k−e)` one has `m = (k − e)/e`, so
+the condition is `2(k − e) > e`, i.e. **`3e < 2k` — precisely `hk`**.
+So `hk` is not an artefact of the false conclusion: it is exactly
+Fontaine's divided-power threshold, and it stays untouched by the repair.
+
+THE REPAIR (cut-level; two declarations must move together).
+(1) THIS leaf becomes Fontaine 1.7 (i) (a) verbatim — same hypotheses
+plus Fontaine's two (`A` lci over `𝒪₃ᵥ`, and `Module.Flat (A ⧸ span {3})`
+`Ω[A⁄𝒪₃ᵥ]`), and the conclusion
+  `∃! χ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ E,`
+  `  (Ideal.Quotient.mkₐ 𝒪₃ᵥ (𝔪_E ^ (k − e))).comp χ`
+  `    = (the projection 𝒪_E ⧸ 𝔪_E^k →ₐ 𝒪_E ⧸ 𝔪_E^(k−e)).comp η`
+— note `∃!`, since the uniqueness half is what the consumer really uses.
+(2) The sibling's `hlift` must be restated in that same shape, and its
+step (2) must ALSO change: it currently gets injectivity of
+`ψ ↦ η ∘ ψ` from `algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal`,
+which is sharp at `v_K > 1 = v_K(3)` and therefore needs `k > 2e`,
+STRICTLY STRONGER than `hk`.  Fontaine instead uses 1.7 (i) (b) —
+`Hom(B, S) → Hom(B, S/I)` is injective whenever `I` has topologically
+nilpotent divided powers, i.e. already at `v_K(I) > 1/2` — which is an
+immediate corollary of the uniqueness in (a) and is exactly what `hk`
+supplies.  So the development's rigidity lemma is NOT strong enough for
+this cut and the `∃!` above must carry that weight.
+(3) Fontaine's own assembly (his proof of Prop. 1.7 (ii), pp. 523–524)
+is the template for the repaired sibling, and it is the counting
+argument the sibling's docstring already describes, with one extra step
+that is currently missing: `η` induces an embedding of residue fields,
+so one may choose a `K`-embedding into `E` of the maximal unramified
+subextension `K'` of `N/ℚ₃ᵥ` making `η` an `𝒪_{K'}`-map; then for `α` a
+uniformiser of `𝒪_N` with Eisenstein minimal polynomial `P` over `K'`
+and `β ∈ 𝒪_E` a lift of `η(α)`, `v_K(P(β)) > 1` forces
+`v_K(β) = v_K(α)`, whence `ker(𝒪_N → 𝒪_E/I) = {x | v_K(x) ≥ (k − e)/e}`
+— itself a topologically nilpotent divided-power ideal.  That is the
+step which converts "agreement mod `I` downstairs" into "agreement mod
+a divided-power ideal upstairs", and it is the reason the weakened
+conclusion in (1) still suffices.
+
+ON KRASNER, correcting the dispatch note that sent this owner here:
+Krasner is indeed irrelevant to THIS leaf, but it is not irrelevant to
+the cluster — Fontaine's Prop. 1.5 (i) (`m > u_{L/K} ⟹ (P_m)`, p. 519)
+is proved with Krasner's lemma, and that is the implication feeding
+`eq_one_of_mem_inertia_of_le_of_forall_nonempty_algHom`'s converse
+direction.  Yoshida (arXiv:0905.1171) Prop. 2.1 uses Krasner only for
+the crude finiteness of `m_{L/K}`, as the dispatch note says. -/
 theorem exists_algHom_of_algHom_quotient_maximalIdeal_pow
     (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
     [Module.Finite 𝒪₃ᵥ A]
