@@ -788,21 +788,19 @@ The chain proved below is:
 
 /-! ### Fermat's other quartic theorem, `x⁴ − y⁴ ≠ z²`
 
-**DELIBERATE DUPLICATE.** The seven declarations in this subsection are a
-verbatim copy of the block of the same name in
-`Fermat/FLT/FreyCurve/MazurTorsion.lean` (there in the root namespace).
-The copy exists purely for *declaration order*: `MazurTorsion.lean`
-proves `x⁴ − y⁴ ≠ z²` around line 3500, while the level-`32` node
-`not_cyclicIsogeny_thirtyTwo` sits around line 830 and is consumed by
-`composite_mem_cyclicIsogenyDegrees` well before that, so the theorem is
-unusable there. This module is imported by `MazurTorsion.lean`, so the
-copy here IS usable at the level-`32` node.
+**THIS IS NOW THE ONLY COPY** (2026-07-26). The seven declarations in this
+subsection began life as a duplicate of a block of the same name in
+`MazurSixteen` (in `Fermat/FLT/FreyCurve/MazurTorsion.lean`); the copy was
+made because `MazurTorsion.lean` proved `x⁴ − y⁴ ≠ z²` some `2500` lines
+BELOW the level-`32` node `not_cyclicIsogeny_thirtyTwo`, which is consumed
+by `composite_mem_cyclicIsogenyDegrees` well before that, so the theorem
+was unusable there. Since `MazurTorsion.lean` imports this module
+publicly, the version here is usable at every point of that file.
 
-At integration the root-namespace block in `MazurTorsion.lean` should be
-deleted and its consumers pointed at `QuarticDescent.*`; that edit was
-deliberately NOT made here, because that block is in a region of a
-heavily contended `15k`-line file and a delete there costs a merge
-conflict for no mathematical gain. -/
+The `MazurSixteen` copy was deleted on 2026-07-26 and its single consumer,
+`MazurSixteen.not_sextic_square`, now calls
+`QuarticDescent.sq_ne_quartic_sub_quartic` directly. Do not reintroduce
+a second copy: put new consumers here, or import this module. -/
 
 /-- If a product of two coprime integers is a square and the first factor is
 positive, that factor is the square of a positive integer (PROVEN). -/
