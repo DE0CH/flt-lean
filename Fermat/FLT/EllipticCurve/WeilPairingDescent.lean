@@ -6423,9 +6423,11 @@ class `polyClass W g = g(X) ∈ F[W]` of a univariate `g`, its order at
 an affine place (`rootMultiplicity` times the ramification `1` or `2`
 of `x` at the place), and the dictionary between the point-side data
 (`S = ⊖S`, `p • S = P`) and the polynomial-side data (`Ψ₂Sq(a) = 0`,
-`Φ_p(a) = x·ΨSq_p(a)`).  What is left after all of this is a single
-statement about polynomials — the leaf
-`rootMultiplicity_Φ_sub_C_mul_ΨSq` below. -/
+`Φ_p(a) = x·ΨSq_p(a)`).  What is left after all of this is
+`rootMultiplicity_Φ_sub_C_mul_ΨSq` below — itself now derived from the
+universal polynomial identity `sq_wronskian_mul_Ψ₂Sq` (`[p]^*ω = p·ω`)
+plus the characteristic-`2` residue
+`rootMultiplicity_Φ_sub_C_mul_ΨSq_of_Ψ₂Sq_inseparable`. -/
 
 /-- The class of a univariate polynomial `g(X)` in the coordinate ring
 (so `polyClass W (X − x) = CoordinateRing.XClass W x`). -/
@@ -6788,10 +6790,95 @@ lemma Φ_sub_C_mul_ΨSq_ne_zero (c : F) :
   rw [h0, Polynomial.coeff_zero] at hcoeff
   exact zero_ne_one hcoeff
 
-/-- **L4-7 LEAF (sorry): multiplicity one for `[p]`, in `x`-coordinates
-only.**  This is the entire remaining geometric content of the L4-7
-stage, isolated as a statement about POLYNOMIALS: no function field, no
-ideals, no divisors.
+omit [DecidableEq F] [IsAlgClosed F] in
+/-- **L4-7 LEAF (sorry) `(★)`: the invariant differential, as a
+universal polynomial identity.**  For every `n : ℤ`, writing
+`Wr := Φ_n'·ΨSq_n − Φ_n·ΨSq_n'` for the Wronskian of the two
+division polynomials,
+
+`Wr² · Ψ₂Sq = n² · ΨSq_n · (4Φ_n³ + b₂Φ_n²ΨSq_n + 2b₄Φ_nΨSq_n² + b₆ΨSq_n³)`.
+
+Dividing by `ΨSq_n⁴` this reads `f'(X)²·Ψ₂Sq(X) = n²·Ψ₂Sq(f(X))` for
+the rational function `f = Φ_n/ΨSq_n = x ∘ [n]`, i.e. exactly
+`d(x∘[n])/(2y∘[n] + a₁x∘[n] + a₃) = n · dx/(2y + a₁x + a₃)` — the
+invariance of `ω = dx/(2y + a₁x + a₃)`, `[n]^*ω = n·ω`.  It is an
+identity in `ℤ[a₁, …, a₆][X]`, with no hypothesis on `W`, `n` or the
+characteristic; `n = 0` and `n = 1` are immediate, and `Singular` can
+certify it for any fixed small `n`.
+
+**A route that needs no absent mathlib API.**  The natural derivation
+is through the derivation `D` of `K = Frac F[W]` with `D x = ψ₂`,
+`D y = 3x² + 2a₂x + a₄ − a₁y`.  Mathlib has neither quotient-descent
+nor fraction-field extension for `Derivation`, but BOTH can be
+sidestepped: such a `D` is the same thing as an `F`-algebra map
+`F[W] → TrivSqZeroExt K K` sending `x ↦ (x, ψ₂)`,
+`y ↦ (y, 3x²+2a₂x+a₄−a₁y)`, which is an `AdjoinRoot.lift` — the
+defining polynomial maps to `0` because its `ε`-part is
+`f_X·f_Y − f_Y·f_X` — extended to `K` by `IsLocalization.lift`, since
+a nonzero element of `F[W]` goes to a unit of `K[ε]`.  Then
+`D z := (φ̃ z).snd` is a derivation because `φ̃` is a ring hom with
+`fst ∘ φ̃ = id`.  With `D` in hand, `μ(P) := D(x_P)/(2y_P + a₁x_P + a₃)`
+is ADDITIVE on `(curveK W).Point` — an identity in the group-law
+formulas, structurally like the proven `endoMap_add`, and a good target
+for a `Singular`-computed `linear_combination` — so
+`μ(n • taut) = n·μ(taut) = n` by `AddMonoidHom.map_zsmul`, and since
+`tautX` is transcendental over the constants that IS the displayed
+polynomial identity. -/
+theorem sq_wronskian_mul_Ψ₂Sq (W : WeierstrassCurve.Affine F) (n : ℤ) :
+    (Polynomial.derivative (W.Φ n) * W.ΨSq n -
+        W.Φ n * Polynomial.derivative (W.ΨSq n)) ^ 2 * W.Ψ₂Sq =
+      Polynomial.C ((n : F) ^ 2) * W.ΨSq n *
+        (Polynomial.C 4 * W.Φ n ^ 3 +
+          Polynomial.C W.b₂ * W.Φ n ^ 2 * W.ΨSq n +
+          Polynomial.C (2 * W.b₄) * W.Φ n * W.ΨSq n ^ 2 +
+          Polynomial.C W.b₆ * W.ΨSq n ^ 3) := by
+  sorry
+
+omit [IsAlgClosed F] in
+/-- **L4-7 LEAF (sorry): the inseparable residue of `Ψ₂Sq`.**  The
+multiplicity statement `rootMultiplicity_Φ_sub_C_mul_ΨSq` below is
+derived from `(★)` in every case EXCEPT the one where `x` is a
+MULTIPLE root of `Ψ₂Sq` — this leaf.
+
+The hypothesis `Ψ₂Sq(x) = Ψ₂Sq'(x) = 0` is VACUOUS when `2 ≠ 0` in `F`
+(`TorsionCard.separable_Ψ₂Sq`: `Ψ₂Sq` is separable for `Δ ≠ 0` and
+`2 ≠ 0`), so this leaf is exactly the characteristic-`2` case, stated
+without mentioning the characteristic.  In characteristic `2`,
+`Ψ₂Sq = 4X³ + b₂X² + 2b₄X + b₆ = (a₁X + a₃)²`, whose derivative
+vanishes identically; the hypothesis then says `a₁x + a₃ = 0`, i.e.
+`P = (x, y)` is the unique nonzero `2`-torsion point (and the case is
+itself empty when `a₁ = 0`, where there is no `2`-torsion at all).
+
+Why `(★)` does not decide it: with `Ψ₂Sq(x) = 0` and `2 = 0` the cubic
+`Ñ` collapses to `ΨSq_p·(a₁Φ_p + a₃ΨSq_p)² = a₁²·ΨSq_p·G²`, so `(★)`
+becomes `Wr·(a₁X + a₃) = p·a₁·ΨSq_p·G`, which at `a` only says
+`ord_a(Wr) = m` — i.e. `2 ∣ m`, not `m = 2`.
+
+What would settle it: the fibre count.  `G = Φ_p − x·ΨSq_p` is monic of
+degree `p²` and `F` is algebraically closed, so `Σ_α mult_α(G) = p²`;
+the roots `α` are the abscissae of the `p²` points of `[p]^{-1}(P)`,
+which is `2:1` onto them except at `P` itself; and `2 ∣ mult_α` at each
+of the `(p² − 1)/2` others by the previous paragraph.  So
+`Σ ≥ 1 + 2·(p²−1)/2 = p²` with equality, forcing `mult = 2` at each.
+This needs `#E[p] = p²` — `TorsionCard.card_torsionBy` together with
+the surjectivity of `[p]`. -/
+theorem rootMultiplicity_Φ_sub_C_mul_ΨSq_of_Ψ₂Sq_inseparable
+    (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0) {a x : F}
+    (hΨ : ((W.ΨSq (p : ℤ)).eval a) ≠ 0)
+    (hx0 : W.Ψ₂Sq.eval x = 0)
+    (hx1 : (Polynomial.derivative W.Ψ₂Sq).eval x = 0) :
+    ((W.Φ (p : ℤ) - Polynomial.C x * W.ΨSq (p : ℤ)).rootMultiplicity a : ℤ) *
+        (if W.Ψ₂Sq.eval a = 0 then 2 else 1) =
+      if (W.Φ (p : ℤ)).eval a = x * (W.ΨSq (p : ℤ)).eval a then
+        (if W.Ψ₂Sq.eval x = 0 then 2 else 1) else 0 := by
+  sorry
+
+omit [IsAlgClosed F] in
+/-- **L4-7 (PROVEN over `sq_wronskian_mul_Ψ₂Sq` and
+`rootMultiplicity_Φ_sub_C_mul_ΨSq_of_Ψ₂Sq_inseparable`): multiplicity
+one for `[p]`, in `x`-coordinates only.**  This is the geometric
+content of the L4-7 stage, as a statement about POLYNOMIALS: no
+function field, no ideals, no divisors.
 
 Fix `a` with `ΨSq_p(a) ≠ 0` (i.e. `p • S ≠ O` for the points `S` above
 `a`) and any `x`.  Then the multiplicity of `a` as a root of
@@ -6806,66 +6893,194 @@ Equivalently: `x ∘ [p] − x` has a zero of order exactly `d_P` at every
 point of the fiber — the SEPARABILITY of `[p]` for `(p : F) ≠ 0`, in
 the only form the descent needs.
 
-**A route (found 2026-07-25, and it is much shorter than the two routes
-recorded at `count_pointEval_of_smul_ne_zero`).**  Everything follows
-from ONE polynomial identity, the algebraic form of `[p]^*ω = p·ω`.
-Write `W := Φ_p'·ΨSq_p − Φ_p·ΨSq_p'` for the Wronskian and
-`Ñ := 4Φ_p³ + b₂Φ_p²ΨSq_p + 2b₄Φ_pΨSq_p² + b₆ΨSq_p³`.  The identity is
+**PROOF (an order count over `(★)`).**  Put `G = Φ_p − x·ΨSq_p`,
+`m = mult_a(G)`, `Wr = Φ_p'·ΨSq_p − Φ_p·ΨSq_p'` and
+`Ñ = 4Φ_p³ + b₂Φ_p²ΨSq_p + 2b₄Φ_pΨSq_p² + b₆ΨSq_p³`, so that `(★)` is
+`Wr²·Ψ₂Sq = p²·ΨSq_p·Ñ`.  If `a` is not a root of `G` both sides of the
+claim are `0`.  Otherwise `m ≥ 1`, and since `Φ_p = G + x·ΨSq_p`,
 
-`(★)  W² · Ψ₂Sq = p² · ΨSq_p · Ñ`,
+`Ñ = ΨSq_p³·Ψ₂Sq(x) + G·(ΨSq_p²·Ψ₂Sq'(x) + G·(…))`,
 
-i.e. `f'(X)²·Ψ₂Sq(X) = p²·Ψ₂Sq(f(X))` for `f = Φ_p/ΨSq_p`, which is
-exactly `d(x∘[p])/(2y∘[p] + …) = p·dx/(2y + …)`.
+while `Wr = G'·ΨSq_p − G·ΨSq_p'` gives `(X − a)^{m−1} ∣ Wr`.  Reading
+multiplicities at `a` in `(★)` — where `ΨSq_p(a) ≠ 0` and `p² ≠ 0` —
+gives `2·mult_a(Wr) + mult_a(Ψ₂Sq) = mult_a(Ñ)`, and then:
 
-Given `(★)`, the leaf is a two-line order count.  Put
-`G = Φ_p − x·ΨSq_p`, `m = mult_a(G)`, `j = mult_a(Ψ₂Sq)`,
-`k = mult_x(Ψ₂Sq)`.  Since `Φ_p = G + x·ΨSq_p`,
-
-`Ñ = ΨSq_p³·Ψ₂Sq(x) + G·ΨSq_p²·Ψ₂Sq'(x) + G²·(…)`,
-
-and `ΨSq_p(a) ≠ 0`, so `ord_a(Ñ) = 0` when `k = 0` and `ord_a(Ñ) = m`
-when `k = 1`.  Also `W = G'·ΨSq_p − G·ΨSq_p'`, whence
-`ord_a(W) ≥ m − 1`.  Reading `(★)` at `a` gives `2·ord_a(W) + j =
-ord_a(Ñ)`, and the four cases `j, k ∈ {0, 1}` give `m·(j+1) = k+1`
-exactly — including the impossible combination `j = 1, k = 0`
-(a `2`-torsion `S` over a non-`2`-torsion `p • S`), which the identity
-rules out.  `Ψ₂Sq` is squarefree — so `j, k ≤ 1` — whenever
-`2 ≠ 0` (`TorsionCard.separable_Ψ₂Sq`).
-
-**Two things are still open in that route**, and they are the honest
-statement of what this leaf costs:
-
-* `(★)` itself.  It is a universal identity in `ℤ[a₁, …, a₆][X]`, so it
-  is a candidate for a Gröbner/`Singular` certificate at small `p` but
-  needs an argument for general `p`.  The clean derivation is through a
-  derivation `D` of `K = Frac F[W]` with `D x = ψ₂`,
-  `D y = 3x² + 2a₂x + a₄ − a₁y`, for which mathlib's missing
-  quotient/fraction-field `Derivation` API can be SIDESTEPPED: such a
-  `D` is the same thing as an `F`-algebra map
-  `F[W] → TrivSqZeroExt K K` sending `x ↦ (x, ψ₂)`,
-  `y ↦ (y, 3x²+2a₂x+a₄−a₁y)`, which is an `AdjoinRoot.lift` (the
-  defining polynomial maps to `0` because `f_X·f_Y − f_Y·f_X = 0`),
-  extended to `K` by `IsLocalization.lift` (nonzero elements go to
-  units of `K[ε]`).  Then `μ(P) := D(x_P)/(2y_P + a₁x_P + a₃)` is
-  ADDITIVE on `(curveK W).Point` — an identity in the group-law
-  formulas, structurally like the proven `endoMap_add`, and a good
-  target for a `Singular`-computed `linear_combination` — so
-  `μ(p • taut) = p·μ(taut) = p` by `AddMonoidHom.map_zsmul`, which is
-  `(★)` evaluated at the (transcendental) tautological `x`.
-* Characteristic `2`.  There `Ψ₂Sq = (a₁X + a₃)²` is not squarefree, so
-  `k` can be `2`, and the case `j = 0, k = 2` (an `S` that is not
-  `2`-torsion over a `2`-torsion `p • S`) is NOT decided by `(★)`: the
-  identity degenerates to `W·(a₁X+a₃) = p·a₁·ΨSq_p·G`, which only says
-  `2 ∣ m`.  Settling it needs the fiber count `#E[p] = p²` (with
-  `deg G = p²` and `mult ≥ 2` at each of the `(p²−1)/2` non-`2`-torsion
-  abscissae, equality is forced), or another idea. -/
+* `Ψ₂Sq(x) ≠ 0`: `Ñ(a) = Ψ₂Sq(x)·ΨSq_p(a)³ ≠ 0`, so both summands
+  vanish; `mult_a(Wr) = 0` forces `m ≤ 1`, so `m = 1`, and
+  `mult_a(Ψ₂Sq) = 0` makes both `d`'s equal `1`.
+* `Ψ₂Sq(x) = 0 ≠ Ψ₂Sq'(x)`: `Ñ = G·R` with `R(a) ≠ 0`, so
+  `mult_a(Ñ) = m`.  If `Ψ₂Sq(a) = 0` then `2(m−1) + 1 ≤ m` forces
+  `m = 1` and the claim is `1·2 = 2`; otherwise `2(m−1) ≤ 2·mult_a(Wr)
+  = m` forces `m ≤ 2`, and `m` is even and positive, so `m = 2` and the
+  claim is `2·1 = 2`.  (Note that `mult_a(Ψ₂Sq) ≥ 2` is impossible
+  here — the inequality alone rules it out, so no separability of
+  `Ψ₂Sq` at `a` is needed.)
+* `Ψ₂Sq(x) = Ψ₂Sq'(x) = 0`: this is the leaf
+  `rootMultiplicity_Φ_sub_C_mul_ΨSq_of_Ψ₂Sq_inseparable`, vacuous
+  unless `2 = 0` in `F`. -/
 theorem rootMultiplicity_Φ_sub_C_mul_ΨSq (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 0)
     {a x : F} (hΨ : ((W.ΨSq (p : ℤ)).eval a) ≠ 0) :
     ((W.Φ (p : ℤ) - Polynomial.C x * W.ΨSq (p : ℤ)).rootMultiplicity a : ℤ) *
         (if W.Ψ₂Sq.eval a = 0 then 2 else 1) =
       if (W.Φ (p : ℤ)).eval a = x * (W.ΨSq (p : ℤ)).eval a then
         (if W.Ψ₂Sq.eval x = 0 then 2 else 1) else 0 := by
-  sorry
+  classical
+  have hpF : (((p : ℤ) : F)) ≠ 0 := by exact_mod_cast hp
+  set Ψ : Polynomial F := W.ΨSq (p : ℤ) with hΨdef
+  set Φ : Polynomial F := W.Φ (p : ℤ) with hΦdef
+  set G : Polynomial F := Φ - Polynomial.C x * Ψ with hGdef
+  have hGne : G ≠ 0 := Φ_sub_C_mul_ΨSq_ne_zero x
+  have hΨne : Ψ ≠ 0 := W.ΨSq_ne_zero hpF
+  have hΨ2ne : W.Ψ₂Sq ≠ 0 := Ψ₂Sq_ne_zero_of_Δ_ne_zero hΔ
+  have hC : Polynomial.C ((((p : ℤ)) : F) ^ 2) ≠ 0 := by
+    rw [Ne, Polynomial.C_eq_zero]
+    exact pow_ne_zero 2 hpF
+  have hGeval : G.eval a = Φ.eval a - x * Ψ.eval a := by
+    rw [hGdef, Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C]
+  by_cases hroot : G.eval a = 0
+  swap
+  · have h1 : G.rootMultiplicity a = 0 :=
+      Polynomial.rootMultiplicity_eq_zero (by simpa [Polynomial.IsRoot] using hroot)
+    have h2 : ¬ (Φ.eval a = x * Ψ.eval a) := by
+      intro hc
+      exact hroot (by rw [hGeval, hc, sub_self])
+    rw [h1, if_neg h2]
+    norm_num
+  have hcond : Φ.eval a = x * Ψ.eval a := by
+    have hz := hroot
+    rw [hGeval, sub_eq_zero] at hz
+    exact hz
+  rw [if_pos hcond]
+  set m : ℕ := G.rootMultiplicity a with hmdef
+  have hm1 : 1 ≤ m := (Polynomial.rootMultiplicity_pos hGne).mpr hroot
+  -- the Wronskian
+  set Wr : Polynomial F :=
+    Polynomial.derivative Φ * Ψ - Φ * Polynomial.derivative Ψ with hWrdef
+  have hWrG : Wr = Polynomial.derivative G * Ψ - G * Polynomial.derivative Ψ := by
+    rw [hWrdef, hGdef]
+    simp only [Polynomial.derivative_sub, Polynomial.derivative_C_mul]
+    ring
+  have hdvdWr : (Polynomial.X - Polynomial.C a) ^ (m - 1) ∣ Wr := by
+    rw [hWrG]
+    refine dvd_sub (Dvd.dvd.mul_right ?_ _) (Dvd.dvd.mul_right ?_ _)
+    · exact Polynomial.pow_sub_one_dvd_derivative_of_pow_dvd
+        (Polynomial.pow_rootMultiplicity_dvd G a)
+    · exact dvd_trans (pow_dvd_pow _ (Nat.sub_le m 1))
+        (Polynomial.pow_rootMultiplicity_dvd G a)
+  -- the homogenized cubic `ΨSq_p³ · Ψ₂Sq(Φ_p/ΨSq_p)`
+  set Nt : Polynomial F :=
+    Polynomial.C 4 * Φ ^ 3 + Polynomial.C W.b₂ * Φ ^ 2 * Ψ +
+      Polynomial.C (2 * W.b₄) * Φ * Ψ ^ 2 + Polynomial.C W.b₆ * Ψ ^ 3 with hNtdef
+  set Rq : Polynomial F :=
+    Polynomial.C ((Polynomial.derivative W.Ψ₂Sq).eval x) * Ψ ^ 2 +
+      G * (Polynomial.C (12 * x + W.b₂) * Ψ + Polynomial.C 4 * G) with hRqdef
+  have hev0 : W.Ψ₂Sq.eval x = 4 * x ^ 3 + W.b₂ * x ^ 2 + 2 * W.b₄ * x + W.b₆ := by
+    simp [WeierstrassCurve.Ψ₂Sq]
+  have hev1 : (Polynomial.derivative W.Ψ₂Sq).eval x =
+      12 * x ^ 2 + 2 * W.b₂ * x + 2 * W.b₄ := by
+    simp [WeierstrassCurve.Ψ₂Sq]
+    ring
+  have hdecomp : Nt = Polynomial.C (W.Ψ₂Sq.eval x) * Ψ ^ 3 + G * Rq := by
+    rw [hNtdef, hRqdef, hGdef, hev0, hev1]
+    simp only [Polynomial.C_add, Polynomial.C_mul, Polynomial.C_pow, map_ofNat]
+    ring
+  have hRqa : Rq.eval a = (Polynomial.derivative W.Ψ₂Sq).eval x * Ψ.eval a ^ 2 := by
+    rw [hRqdef]
+    simp [hroot]
+  have hNta : Nt.eval a = W.Ψ₂Sq.eval x * Ψ.eval a ^ 3 := by
+    rw [hdecomp]
+    simp [hroot]
+  -- the identity `(★)`
+  have hstar : Wr ^ 2 * W.Ψ₂Sq = Polynomial.C (((p : ℤ) : F) ^ 2) * Ψ * Nt := by
+    rw [hWrdef, hΨdef, hΦdef, hNtdef]
+    exact sq_wronskian_mul_Ψ₂Sq W (p : ℤ)
+  -- the multiplicity bookkeeping, once `Nt ≠ 0` is known
+  have hkey : ∀ hNtne : Nt ≠ 0,
+      2 * Wr.rootMultiplicity a + W.Ψ₂Sq.rootMultiplicity a =
+        Nt.rootMultiplicity a ∧ Wr ≠ 0 := by
+    intro hNtne
+    have hrhsne : Polynomial.C (((p : ℤ) : F) ^ 2) * Ψ * Nt ≠ 0 :=
+      mul_ne_zero (mul_ne_zero hC hΨne) hNtne
+    have hlhsne : Wr ^ 2 * W.Ψ₂Sq ≠ 0 := by rw [hstar]; exact hrhsne
+    have hWrne : Wr ≠ 0 := by
+      intro h0
+      rw [h0] at hlhsne
+      simp at hlhsne
+    refine ⟨?_, hWrne⟩
+    have h1 : (Wr ^ 2 * W.Ψ₂Sq).rootMultiplicity a =
+        2 * Wr.rootMultiplicity a + W.Ψ₂Sq.rootMultiplicity a := by
+      rw [pow_two] at hlhsne ⊢
+      rw [Polynomial.rootMultiplicity_mul hlhsne,
+        Polynomial.rootMultiplicity_mul (mul_ne_zero hWrne hWrne)]
+      ring
+    have h2 : (Polynomial.C (((p : ℤ) : F) ^ 2) * Ψ * Nt).rootMultiplicity a =
+        Nt.rootMultiplicity a := by
+      rw [Polynomial.rootMultiplicity_mul hrhsne,
+        Polynomial.rootMultiplicity_mul (mul_ne_zero hC hΨne),
+        Polynomial.rootMultiplicity_C,
+        Polynomial.rootMultiplicity_eq_zero
+          (by simpa [Polynomial.IsRoot] using hΨ)]
+      omega
+    rw [← h1, hstar, h2]
+  have hmWr : ∀ hWrne : Wr ≠ 0, m - 1 ≤ Wr.rootMultiplicity a := fun hWrne =>
+    (Polynomial.le_rootMultiplicity_iff hWrne).mpr hdvdWr
+  by_cases hx0 : W.Ψ₂Sq.eval x = 0
+  swap
+  · -- `P` is not `2`-torsion
+    have hNta0 : Nt.eval a ≠ 0 := by
+      rw [hNta]
+      exact mul_ne_zero hx0 (pow_ne_zero _ hΨ)
+    have hNtne : Nt ≠ 0 := fun h => hNta0 (by rw [h]; simp)
+    obtain ⟨hsum, hWrne⟩ := hkey hNtne
+    have hNtrm : Nt.rootMultiplicity a = 0 :=
+      Polynomial.rootMultiplicity_eq_zero (by simpa [Polynomial.IsRoot] using hNta0)
+    rw [hNtrm] at hsum
+    have hWrrm : Wr.rootMultiplicity a = 0 := by omega
+    have hΨ2rm : W.Ψ₂Sq.rootMultiplicity a = 0 := by omega
+    have hmle : m ≤ 1 := by
+      have hb := hmWr hWrne
+      omega
+    have hmeq : m = 1 := le_antisymm hmle hm1
+    have hΨ2a : W.Ψ₂Sq.eval a ≠ 0 := by
+      intro hc
+      have hpos : 0 < W.Ψ₂Sq.rootMultiplicity a :=
+        (Polynomial.rootMultiplicity_pos hΨ2ne).mpr hc
+      omega
+    rw [hmeq, if_neg hΨ2a, if_neg hx0]
+    norm_num
+  by_cases hx1 : (Polynomial.derivative W.Ψ₂Sq).eval x = 0
+  · have hres := rootMultiplicity_Φ_sub_C_mul_ΨSq_of_Ψ₂Sq_inseparable hΔ hp hΨ hx0 hx1
+    rw [← hΦdef, ← hΨdef, ← hGdef, ← hmdef, if_pos hcond] at hres
+    exact hres
+  -- `P` is `2`-torsion and `x` is a simple root of `Ψ₂Sq`
+  have hRqa0 : Rq.eval a ≠ 0 := by
+    rw [hRqa]
+    exact mul_ne_zero hx1 (pow_ne_zero _ hΨ)
+  have hRqne : Rq ≠ 0 := fun h => hRqa0 (by rw [h]; simp)
+  have hNtGR : Nt = G * Rq := by
+    rw [hdecomp, hx0]
+    simp
+  have hNtne : Nt ≠ 0 := by rw [hNtGR]; exact mul_ne_zero hGne hRqne
+  obtain ⟨hsum, hWrne⟩ := hkey hNtne
+  have hRqrm : Rq.rootMultiplicity a = 0 :=
+    Polynomial.rootMultiplicity_eq_zero (by simpa [Polynomial.IsRoot] using hRqa0)
+  have hNtrm : Nt.rootMultiplicity a = m := by
+    rw [hNtGR, Polynomial.rootMultiplicity_mul (by rw [← hNtGR]; exact hNtne), hRqrm,
+      ← hmdef, add_zero]
+  rw [hNtrm] at hsum
+  have hbnd := hmWr hWrne
+  by_cases hΨ2a : W.Ψ₂Sq.eval a = 0
+  · have hpos : 0 < W.Ψ₂Sq.rootMultiplicity a :=
+      (Polynomial.rootMultiplicity_pos hΨ2ne).mpr hΨ2a
+    have hmeq : m = 1 := by omega
+    rw [hmeq, if_pos hΨ2a, if_pos hx0]
+    norm_num
+  · have hzero : W.Ψ₂Sq.rootMultiplicity a = 0 :=
+      Polynomial.rootMultiplicity_eq_zero (by simpa [Polynomial.IsRoot] using hΨ2a)
+    rw [hzero, add_zero] at hsum
+    have hmeq : m = 2 := by omega
+    rw [hmeq, if_neg hΨ2a, if_pos hx0]
+    norm_num
 
 /-- **L4-7 (PROVEN over `rootMultiplicity_Φ_sub_C_mul_ΨSq`): the
 `[p]`-pullback of a VERTICAL, at an affine
@@ -7152,9 +7367,12 @@ the division-polynomial relation `xp · ΨSq_p(x) = Φ_p(x)` of
 `exists_smul_tautPoint_eq`, to the SEPARABILITY of `[p]` for
 `(p : F) ≠ 0` — concretely, that `x_S` is a simple root of
 `Φ_p − x_R·ΨSq_p`.  (A THIRD and much shorter route, found 2026-07-25,
-is recorded at the leaf `rootMultiplicity_Φ_sub_C_mul_ΨSq`, which is
-all that the vertical brick now costs.)  Two routes were known before,
-and neither is in mathlib:
+is now IMPLEMENTED: the vertical brick costs exactly the universal
+polynomial identity `sq_wronskian_mul_Ψ₂Sq` — the algebraic form of
+`[p]^*ω = p·ω`, needing none of the machinery below — plus the
+characteristic-`2` residue
+`rootMultiplicity_Φ_sub_C_mul_ΨSq_of_Ψ₂Sq_inseparable`.)  Two routes
+were known before, and neither is in mathlib:
 
 * *Invariant differential.*  `[p]^*ω = p·ω` with `ω = dx/(2y+a₁x+a₃)`
   nowhere zero forces every ramification index of `[p]` to be `1`.  In
