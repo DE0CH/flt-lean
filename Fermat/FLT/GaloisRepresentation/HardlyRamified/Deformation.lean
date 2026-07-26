@@ -12195,8 +12195,98 @@ theorem mem_iff_smul_single_mem {B : Type*} [CommRing B]
     exact hM i j
 
 open scoped Matrix in
+/-- **The PEIRCE CORNERS of a `C`-order containing `E₁₁` are principal, with
+unit off-diagonal generators** (sorry leaf, cut 2026-07-26 out of
+`exists_conj_entries_mem_of_single_mem` below — steps 1–4 of that leaf's
+grading argument; PURE MODULE THEORY, no matrices beyond the four corners
+and no topology beyond `hclosed`).
+
+The hypotheses are verbatim those of `exists_conj_entries_mem_of_single_mem`,
+so that the two halves can be redistributed freely. Write
+`A' = {M | ∀ n, b.repr M n ∈ C}` for the order (this is `∑ᵢ C·bᵢ`; the
+`Subring` structure is built in the consumer) and
+
+    Iᵢⱼ = {x : B | x • Eᵢⱼ ∈ A'},
+
+which is what the four `↔`s below say, spelled out through
+`hmemA : M ∈ A' ↔ ∀ n, b.repr M n ∈ C` so that `A'` itself need not appear in
+the statement. The conclusion is exactly:
+
+* `I₀₁ = C·a₀₁` and `I₁₀ = C·a₁₀` are PRINCIPAL (step 1),
+* `a₀₁` is a UNIT of `B` (step 2),
+* `I₀₀ = I₁₁ = C` (step 3),
+* `a₀₁·a₁₀ ∈ C` (step 4).
+
+Step 5 — the conjugation by `diag(1, a₀₁⁻¹)` that turns these four facts
+into the conclusion of `exists_conj_entries_mem_of_single_mem` — is PROVEN
+in that consumer, so this is now the whole residual of Carayol's step 2c.
+
+THE ARGUMENT, and one simplification worth recording. The PROVEN
+`mem_iff_smul_single_mem` gives `A' = {M | ∀ i j, Mᵢⱼ ∈ Iᵢⱼ}`, i.e. an
+isomorphism of `C`-modules `A' ≅ I₀₀ ⊕ I₀₁ ⊕ I₁₀ ⊕ I₁₁`, and `A'` is free
+of rank `4` over the local ring `C` (`isLocalRing_of_isClosed_subring`, `b`
+being `C`-linearly independent because it is `B`-linearly independent).
+
+The plan previously recorded here routed step 1 through PROJECTIVITY —
+each `Iᵢⱼ` is a direct summand of a free module, hence finitely generated
+projective, hence free over the local `C` by
+`Module.free_of_flat_of_isLocalRing`, with the four ranks summing to `4`.
+**That detour is unnecessary.** `Iᵢⱼ` is the image of the `C`-linear
+entry map `A' → B`, `M ↦ Mᵢⱼ`, so it is finitely generated; by
+`maximalIdeal_eq_comap_of_isClosed_subring` the residue field of `C` is
+`k`, so `A'/𝔪_C A'` has `k`-dimension `4` and splits as
+`⊕ᵢⱼ Iᵢⱼ/𝔪_C Iᵢⱼ`; each summand is nonzero because the `B`-span of `A'`
+is all of `M₂(B)`, forcing `B·Iᵢⱼ = B`; so each summand has dimension
+exactly `1`, and NAKAYAMA makes each `Iᵢⱼ` CYCLIC. Cyclic is all step 1
+needs — freeness is never used — which removes the projective-module
+theory from the critical path entirely.
+
+Steps 2–4 are then as before: `B·Iᵢⱼ = B` and `B` local give `a₀₁, a₁₀ ∉ 𝔪`;
+writing `1 = c·a₀₀` with `c ∈ C` makes `c` a unit of `B`, hence of `C` by the
+PROVEN `isUnit_of_isClosed_of_notMem_maximalIdeal` — the ONLY place
+closedness and the finite residue field are consumed — so `I₀₀ = C`, and
+likewise `I₁₁`; and `a₀₁·a₁₀ ∈ I₀₀ = C`.
+
+`hadic`, `hcompl` and `hres` are inherited from the consumer's signature.
+`hres` is what makes the residual algebra split (see the note on the
+consumer); `hcompl` is used only by the idempotent lifting that happens
+upstream of this leaf, and is kept here solely so the two halves share one
+hypothesis package.
+
+References: Carayol, Contemp. Math. 165, Théorème 1; Nyssen, Math. Ann.
+306; Auslander–Goldman, *The Brauer group of a commutative ring*. -/
+theorem exists_peirceGenerators_of_single_mem
+    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Finite (IsLocalRing.ResidueField B)]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal B))
+    (hcompl : IsAdicComplete (IsLocalRing.maximalIdeal B) B)
+    (C : Subring B) (hclosed : IsClosed ((C : Subring B) : Set B))
+    (hres : ∀ y : B, ∃ x : C, (x : B) - y ∈ IsLocalRing.maximalIdeal B)
+    (S : Submonoid (Matrix (Fin 2) (Fin 2) B))
+    (b : Module.Basis (Fin 4) B (Matrix (Fin 2) (Fin 2) B))
+    (hbS : ∀ i : Fin 4, b i ∈ S)
+    (hrepr : ∀ M ∈ S, ∀ i : Fin 4, b.repr M i ∈ C)
+    (hone : ∀ i : Fin 4,
+      b.repr (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) i ∈ C) :
+    ∃ a01 a10 : B, IsUnit a01 ∧ (a01 * a10) ∈ C ∧
+      (∀ x : B, (∀ n : Fin 4,
+          b.repr (x • (Matrix.single 0 1 1 : Matrix (Fin 2) (Fin 2) B)) n ∈ C) ↔
+        ∃ c : C, x = (c : B) * a01) ∧
+      (∀ x : B, (∀ n : Fin 4,
+          b.repr (x • (Matrix.single 1 0 1 : Matrix (Fin 2) (Fin 2) B)) n ∈ C) ↔
+        ∃ c : C, x = (c : B) * a10) ∧
+      (∀ x : B, (∀ n : Fin 4,
+          b.repr (x • (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B)) n ∈ C) ↔
+        x ∈ C) ∧
+      (∀ x : B, (∀ n : Fin 4,
+          b.repr (x • (Matrix.single 1 1 1 : Matrix (Fin 2) (Fin 2) B)) n ∈ C) ↔
+        x ∈ C) :=
+  sorry
+
+open scoped Matrix in
 /-- **Carayol's Théorème 1, step 2c: a `C`-order CONTAINING `E₁₁` is
-conjugate into `M₂(C)`** (sorry leaf, cut 2026-07-26 out of
+conjugate into `M₂(C)`** (PROVEN 2026-07-26 over the single sub-leaf
+`exists_peirceGenerators_of_single_mem` above; cut 2026-07-26 out of
 `exists_conj_entries_mem_of_basis_repr_mem`; PURE ALGEBRA — this is the
 Peirce/grading core of the theorem and all that remains of it): the
 hypotheses are verbatim those of
@@ -12214,7 +12304,10 @@ The PROVEN `mem_iff_smul_single_mem` above says exactly
 `A' = {M | ∀ i j, Mᵢⱼ ∈ Iᵢⱼ}` — that is the Peirce decomposition, with no
 direct sums to construct — and multiplicativity of `A'` gives
 `Iᵢⱼ · Iⱼₗ ⊆ Iᵢₗ`, while `E₁₁, E₂₂ ∈ A'` gives `1 ∈ I₁₁ ∩ I₂₂`. Five steps
-remain, and only the first is not routine:
+were listed here; **steps 1–4 are now the sub-leaf
+`exists_peirceGenerators_of_single_mem` above, and step 5 is PROVEN below**,
+so this node is closed over that one leaf. The list is kept because it is
+the map of the remaining work:
 
 1. *Each `Iᵢⱼ` is a PRINCIPAL `C`-submodule* `Iᵢⱼ = C·aᵢⱼ`. This is the
    one genuinely module-theoretic step: `A'` is free of rank `4` over the
@@ -12234,11 +12327,17 @@ remain, and only the first is not routine:
    `a₁₁ = c⁻¹ ∈ C` and `I₁₁ = C·a₁₁ = C`. Same for `I₂₂`.
 4. *`a₁₂·a₂₁ ∈ C^×`*: it lies in `I₁₁ = C` by step 1, and is a unit of `B`
    by step 2, so again `isUnit_of_isClosed_of_notMem_maximalIdeal`.
-5. *Conjugate.* For `E = diag(1, a₁₂)` one has `(E⁻¹ M E)ᵢⱼ = dᵢ⁻¹ Mᵢⱼ dⱼ`,
-   so the corners become `I'₁₂ = I₁₂·a₁₂⁻¹ = C`, `I'₂₁ = a₁₂·I₂₁ =
-   C·a₁₂a₂₁ = C`, and `I'₁₁ = I'₂₂ = C` unchanged. By
+5. *Conjugate.* PROVEN below. The conjugator is `E = diag(1, a₁₂⁻¹)` —
+   **not** `diag(1, a₁₂)`, which is what this line used to say and which
+   conjugates the wrong way: with `E = diag(d₁, d₂)` one has
+   `(E⁻¹ M E)ᵢⱼ = dᵢ⁻¹ Mᵢⱼ dⱼ`, so it is `d₂ = a₁₂⁻¹` that sends
+   `I₁₂ = C·a₁₂` into `C`. (The rest of the old line was already computing
+   with `a₁₂⁻¹`, so only the displayed matrix was wrong.) The corners then
+   become `I'₁₂ = I₁₂·a₁₂⁻¹ = C`, `I'₂₁ = a₁₂·I₂₁ = C·a₁₂a₂₁ = C`, and
+   `I'₁₁ = I'₂₂ = C` unchanged — the last because `B` is COMMUTATIVE, so
+   the diagonal conjugation `x ↦ d x d⁻¹` is the identity. By
    `mem_iff_smul_single_mem` again, the conjugate of `A'` is exactly
-   `M₂(C)`. Note `diag(1, a₁₂)` fixes `E₁₁`, so it composes with the
+   `M₂(C)`. Note `diag(1, a₁₂⁻¹)` fixes `E₁₁`, so it composes with the
    caller's conjugation without disturbing step 2c's hypothesis.
 
 WHAT `hres` BUYS, AND WHY IT IS NOT DROPPABLE. `hres` is not used by the
@@ -12269,8 +12368,78 @@ theorem exists_conj_entries_mem_of_single_mem
     (hone : ∀ i : Fin 4,
       b.repr (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) i ∈ C) :
     ∃ E : Matrix (Fin 2) (Fin 2) B, IsUnit E.det ∧
-      ∀ M ∈ S, ∀ i j : Fin 2, (E⁻¹ * M * E) i j ∈ C :=
-  sorry
+      ∀ M ∈ S, ∀ i j : Fin 2, (E⁻¹ * M * E) i j ∈ C := by
+  classical
+  -- the `C`-order `A' = ∑ᵢ C·bᵢ`, as a subring of `M₂(B)`
+  set A : Subring (Matrix (Fin 2) (Fin 2) B) :=
+    { carrier := {M | ∀ i, b.repr M i ∈ C}
+      zero_mem' := by intro i; simp
+      one_mem' := fun i => hrepr 1 S.one_mem i
+      add_mem' := fun {x y} hx hy i => by simpa using C.add_mem (hx i) (hy i)
+      neg_mem' := fun {x} hx i => by simpa using C.neg_mem (hx i)
+      mul_mem' := by
+        intro x y hx hy n
+        have hxy : x * y = ∑ i, ∑ j, (b.repr x i * b.repr y j) • (b i * b j) := by
+          conv_lhs => rw [← b.sum_repr x, ← b.sum_repr y]
+          rw [Finset.sum_mul]
+          refine Finset.sum_congr rfl fun i _ => ?_
+          rw [Finset.mul_sum]
+          refine Finset.sum_congr rfl fun j _ => ?_
+          rw [smul_mul_assoc, mul_smul_comm, smul_smul]
+        rw [hxy]
+        simp only [map_sum, map_smul, Finsupp.coe_finsetSum, Finsupp.coe_smul,
+          Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+        refine Subring.sum_mem _ fun i _ => Subring.sum_mem _ fun j _ => ?_
+        exact C.mul_mem (C.mul_mem (hx i) (hy j))
+          (hrepr _ (S.mul_mem (hbS i) (hbS j)) n) }
+  have hE11A : (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := hone
+  -- the Peirce corner generators, from the sub-leaf
+  obtain ⟨a01, a10, hu01, hprod, hI01, hI10, hI00, hI11⟩ :=
+    exists_peirceGenerators_of_single_mem hadic hcompl C hclosed hres S b hbS
+      hrepr hone
+  obtain ⟨v, hv⟩ := hu01
+  -- STEP 5: conjugate by `diag(1, a₀₁⁻¹)`
+  refine ⟨Matrix.diagonal ![1, ((v⁻¹ : Bˣ) : B)], ?_, ?_⟩
+  · rw [Matrix.det_diagonal]
+    simp only [Fin.prod_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one,
+      one_mul]
+    exact (v⁻¹ : Bˣ).isUnit
+  · have hEinv : (Matrix.diagonal ![1, ((v⁻¹ : Bˣ) : B)])⁻¹
+        = Matrix.diagonal ![1, ((v : Bˣ) : B)] := by
+      refine Matrix.inv_eq_right_inv ?_
+      have hfun : (fun i => ![1, ((v⁻¹ : Bˣ) : B)] i * ![1, ((v : Bˣ) : B)] i)
+          = (1 : Fin 2 → B) := by
+        funext i; fin_cases i <;> simp
+      rw [Matrix.diagonal_mul_diagonal, hfun]
+      exact Matrix.diagonal_one
+    intro M hM
+    have hMA : M ∈ A := fun n => hrepr M hM n
+    have hpeirce := (mem_iff_smul_single_mem A hE11A M).mp hMA
+    have hentry : ∀ i j : Fin 2,
+        ((Matrix.diagonal ![1, ((v⁻¹ : Bˣ) : B)])⁻¹ * M
+          * Matrix.diagonal ![1, ((v⁻¹ : Bˣ) : B)]) i j
+        = ![1, ((v : Bˣ) : B)] i * M i j * ![1, ((v⁻¹ : Bˣ) : B)] j := by
+      intro i j
+      rw [hEinv, Matrix.mul_diagonal, Matrix.diagonal_mul]
+    simp only [Fin.forall_fin_two, hentry, Matrix.cons_val_zero,
+      Matrix.cons_val_one, Matrix.head_cons, one_mul, mul_one]
+    refine ⟨⟨?_, ?_⟩, ?_, ?_⟩
+    · exact (hI00 (M 0 0)).mp (hpeirce 0 0)
+    · obtain ⟨c, hc⟩ := (hI01 (M 0 1)).mp (hpeirce 0 1)
+      have key : M 0 1 * ((v⁻¹ : Bˣ) : B) = (c : B) := by
+        rw [hc, ← hv, mul_assoc, Units.mul_inv, mul_one]
+      rw [key]
+      exact c.2
+    · obtain ⟨c, hc⟩ := (hI10 (M 1 0)).mp (hpeirce 1 0)
+      have key : ((v : Bˣ) : B) * M 1 0 = (c : B) * (a01 * a10) := by
+        rw [hc, hv]; ring
+      rw [key]
+      exact C.mul_mem c.2 hprod
+    · have h := (hI11 (M 1 1)).mp (hpeirce 1 1)
+      have key : ((v : Bˣ) : B) * M 1 1 * ((v⁻¹ : Bˣ) : B) = M 1 1 := by
+        rw [mul_comm ((v : Bˣ) : B) (M 1 1), mul_assoc, Units.mul_inv, mul_one]
+      rw [key]
+      exact h
 
 open scoped Matrix in
 /-- **Carayol's Théorème 1, step 2: a `C`-order in `M₂(B)` with split

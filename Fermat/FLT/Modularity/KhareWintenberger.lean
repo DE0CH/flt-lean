@@ -7376,6 +7376,114 @@ theorem charP_of_padicIntAlgebra (ℓ : ℕ) [Fact ℓ.Prime] (k : Type*) [Field
   rw [← map_natCast (algebraMap ℤ_[ℓ] k) ℓ]
   exact hℓ0
 
+/-- **Enlarging a coefficient datum so that the residue field at `3` has
+MORE THAN THREE elements** (sorry leaf, cut 2026-07-26 — the whole residual
+of `exists_totallyRealCoefficientDatum_of_residueField` below, and PURE
+algebraic number theory: no representation and no geometry occurs in it).
+
+Given a coefficient datum as produced by
+`exists_totallyRealCoefficientDatum_core` — a totally real `D` with a prime
+`λ ∋ ℓ` of residue field `k` and a prime `𝔭 ∋ 3` — this produces a datum of
+the same shape whose residue field at `3` has more than three elements. It
+is stated to take the WHOLE `_core` conclusion as its hypothesis so that
+the gluing at the consumer is a one-liner; only the `λ`-half of `hdatum` is
+actually needed, since the `𝔭`-half is rebuilt from scratch by the
+construction below.
+
+**WHY THIS CUT AND NOT "STRENGTHEN `_core`" — the previously recorded
+residual was FALSE, and this is the correction (2026-07-26).** The docstring
+of the consumer used to say that the residual was exactly "the residue degree
+of `3` in the maximal real subfield `K⁺` of `ℚ(ζ_{ℓ^f−1})` is at least `2`",
+and that whoever closed it should strengthen `_core` rather than rebuild it.
+That statement is not merely hard, it is **false**, so no strengthening of
+`_core` at its own cyclotomic level can ever establish it:
+
+| `ℓ` | `f` | `m = ℓ^f − 1` | `K⁺` | `f₃(K⁺)` |
+|---|---|---|---|---|
+| `5` | `1` | `4` | `ℚ` | `1` |
+| `7` | `1` | `6` | `ℚ` | `1` |
+| `13` | `1` | `12` | `ℚ(√3)` (`3` RAMIFIES) | `1` |
+| `19` | `1` | `18` | `ℚ(ζ₉)⁺` (`3` totally ramified) | `1` |
+
+At `(ℓ, f) = (7, 1)`, for instance, `ℚ(ζ₆) = ℚ(ζ₃)` has maximal real
+subfield `ℚ`, so `_core` returns `D = ℚ`, its only prime above `3` is `(3)`,
+and `kp = 𝔽₃` with `Nat.card kp = 3`. Every hypothesis of the consumer is
+satisfied there (`k = 𝔽₇` is a finite field with a `ℤ_[7]`-algebra
+structure), so this is a genuine counterexample to the recorded residual and
+not a degenerate edge case. Machine-checked with PARI/GP: the residue degree
+was computed both from the decomposition/inertia description of
+`Gal(ℚ(ζ_n)/ℚ) = (ℤ/n)ˣ` and, independently, by `idealprimedec` on an
+explicit `nfinit` of the minimal polynomial of `ζ_n + ζ_n⁻¹`; the two agree
+on all seven cross-checked levels.
+
+The obstruction is structural: `ord_n(ℓ) = f` forces `n ∣ ℓ^f − 1`, so `m`
+is the LARGEST level prime to `ℓ` at which the residue field at `λ` is still
+`k`. The level therefore cannot be enlarged inside the prime-to-`ℓ`
+cyclotomic world at all, and the enlargement must happen elsewhere — either
+by ramifying at `ℓ` (level `ℓ²m`, where `f₃(K⁺) ≥ 20` in every case sampled,
+because the prime-to-`3` part of the level then exceeds `4`), or by the
+quadratic route below. The quadratic route is chosen here because it keeps
+`_core` intact and consumed.
+
+INTENDED DISCHARGE — a real quadratic twist, and it is elementary. Choose a
+positive integer `d` with
+
+* `d ≡ 2 (mod 3)`, so `d` is a non-residue mod `3` and `3` is INERT in
+  `ℚ(√d)`; and
+* `d ≡ 1 (mod ℓ)`, so `d` is a square mod `ℓ` and `ℓ` SPLITS in `ℚ(√d)`
+
+(such a `d` exists by CRT because `ℓ ≠ 3`, which is where `hℓ5` is consumed;
+and `d` is not a perfect square, since squares are `0` or `1` mod `3`). Put
+`D' := D · ℚ(√d)`, which is totally real because `d > 0` and `D` is. Then:
+
+* `ℓ` splits in `ℚ(√d)`, so `ℚ(√d)` embeds in `ℚ_ℓ` and the completion of
+  `D'` at a prime `λ'` above `λ` is again `D_λ`; hence `f(λ'∣λ) = 1` and the
+  residue field at `λ'` is still `k`.
+* Every prime `𝔭'` of `D'` above `3` restricts to the unique prime above `3`
+  in `ℚ(√d)`, which has residue degree `2`; residue degrees multiply along
+  the tower `ℚ ⊆ ℚ(√d) ⊆ D'`, so `2 ∣ f(𝔭'∣3)` and `Nat.card kp ≥ 9 > 3`.
+* `λ' ≠ 𝔭'` because a common prime would contain `1 = aℓ + 3b` (`ℓ ≥ 5`, so
+  `ℓ` and `3` are coprime), and `(3 : kp) = 0` because `3 ∈ 𝔭'`.
+
+MISSING MACHINERY, so that the next owner knows the shape of the work: the
+compositum of two number fields inside a common algebraic closure; the
+splitting of a rational prime in `ℚ(√d)` in terms of the Legendre symbol;
+and multiplicativity of the residue degree in a tower. None of these is
+represented in this file today, and the residue-degree multiplicativity is
+the only one for which mathlib's `Ideal.inertiaDeg` API should suffice
+directly (`Ideal.inertiaDeg_algebra_tower` and neighbours).
+
+FAITHFULNESS: this leaf asks only for the EXISTENCE of a number field with
+prescribed local behaviour at two rational primes, so it is not an instance
+of the `𝒪ᵥ`-descent trap; and it is not vacuous, since the conclusion pins
+`Nat.card kp > 3` against a hypothesis package that (as the table above
+shows) can be satisfied with `Nat.card kp = 3`. -/
+theorem exists_totallyRealCoefficientDatum_enlarge (ℓ : ℕ) [Fact ℓ.Prime]
+    (hℓ5 : 5 ≤ ℓ) (k : Type u) [Field k] [Finite k]
+    (hdatum : ∃ (D : Type u) (_ : Field D) (_ : NumberField D)
+      (_ : NumberField.IsTotallyReal D)
+      (lam frp : Ideal (NumberField.RingOfIntegers D))
+      (kp : Type u) (_ : Field kp) (_ : Finite kp) (_ : TopologicalSpace kp)
+      (_ : DiscreteTopology kp),
+      lam.IsMaximal ∧ frp.IsMaximal ∧ lam ≠ frp ∧
+      ((ℓ : ℕ) : NumberField.RingOfIntegers D) ∈ lam ∧
+      ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
+      (3 : kp) = 0) :
+    ∃ (D : Type u) (_ : Field D) (_ : NumberField D)
+      (_ : NumberField.IsTotallyReal D)
+      (lam frp : Ideal (NumberField.RingOfIntegers D))
+      (kp : Type u) (_ : Field kp) (_ : Finite kp) (_ : TopologicalSpace kp)
+      (_ : DiscreteTopology kp),
+      lam.IsMaximal ∧ frp.IsMaximal ∧ lam ≠ frp ∧
+      ((ℓ : ℕ) : NumberField.RingOfIntegers D) ∈ lam ∧
+      ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
+      (3 : kp) = 0 ∧ 3 < Nat.card kp :=
+  sorry
+
 /-- **The auxiliary totally real coefficient field and its two primes**
 (PROVEN 2026-07-26 — the ARITHMETIC half of the representability leaf; no
 algebraic geometry appears in it): for a finite field `k` of
@@ -7445,18 +7553,30 @@ except the new clause is `exists_totallyRealCoefficientDatum_core` above
 `subfield_eq_top_of_mem_add_inv`, `isIntegral_subfield_mk`,
 `inv_mem_subring_of_finite`, `isPrimitiveRoot_map_of_natCast_ne_zero`,
 `orderOf_natCast_zmod_pow_sub_one`, `charP_of_padicIntAlgebra` — all
-proven, and free-floating only until this node consumes them again). The
-discharge that was in place instantiated `_core` at
+proven). The discharge that was in place instantiated `_core` at
 `K = ULift (CyclotomicField (ℓ^f − 1) ℚ)` with `f` the degree of `k` over
-`𝔽_ℓ`; recover it verbatim from the merge parent of this file's
-`flt-lean-145` merge.
+`𝔽_ℓ`; that instantiation is RESTORED below verbatim, so `_core` and its
+helper stack are consumed again and nothing in it is free-floating.
 
-So the residual mathematics is only: **the residue degree of `3` in the
-maximal real subfield `K⁺` of `ℚ(ζ_{ℓ^f−1})` is at least `2`**, i.e.
-`𝒪_{K⁺}/𝔭 ≠ 𝔽_3`. That is a statement about the order of `3` mod
-`ℓ^f − 1` modulo the `±1` identification defining `K⁺`, and it is NOT
-supplied by `_core`, whose conclusion stops at `(3 : kp) = 0`. Whoever
-closes this should strengthen `_core` rather than rebuild it. -/
+**THE RESIDUAL RECORDED HERE UNTIL 2026-07-26 WAS FALSE, AND HAS BEEN
+REPLACED.** This paragraph used to say that the residual was exactly "the
+residue degree of `3` in the maximal real subfield `K⁺` of `ℚ(ζ_{ℓ^f−1})`
+is at least `2`", and that whoever closed the node should strengthen
+`_core` rather than rebuild it. **`f₃(K⁺) = 1` for `(ℓ, f)` equal to
+`(5,1)`, `(7,1)`, `(13,1)` and `(19,1)`** — at `(7,1)` the field
+`ℚ(ζ₆) = ℚ(ζ₃)` has maximal real subfield `ℚ`, so `_core` hands back
+`D = ℚ`, `𝔭 = (3)` and `kp = 𝔽₃`. The obstruction is structural rather
+than accidental: `ord_n(ℓ) = f` forces `n ∣ ℓ^f − 1`, so `ℓ^f − 1` is
+already the LARGEST level prime to `ℓ` at which the residue field at `λ`
+is still `k`, and no strengthening of `_core` at its own level can
+deliver the clause. The full table, the machine cross-check and the
+corrected construction are in the docstring of
+`exists_totallyRealCoefficientDatum_enlarge` above, which is now the
+single residual leaf of this node.
+
+So this node is now PROVEN over one sub-leaf: `_core` supplies the datum,
+and `exists_totallyRealCoefficientDatum_enlarge` upgrades it by a real
+quadratic twist `ℚ(√d)` with `3` inert and `ℓ` split. -/
 theorem exists_totallyRealCoefficientDatum_of_residueField
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (k : Type u) [Field k] [Finite k] [Algebra ℤ_[ℓ] k] :
@@ -7470,8 +7590,32 @@ theorem exists_totallyRealCoefficientDatum_of_residueField
       ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp ∧
       Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
       Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
-      (3 : kp) = 0 ∧ 3 < Nat.card kp :=
-  sorry
+      (3 : kp) = 0 ∧ 3 < Nat.card kp := by
+  classical
+  haveI : CharP k ℓ := charP_of_padicIntAlgebra ℓ k
+  haveI : Fintype k := Fintype.ofFinite k
+  obtain ⟨fp, -, hcardk⟩ := FiniteField.card k ℓ
+  have hfpos : 0 < (fp : ℕ) := fp.2
+  have hcardk' : Nat.card k = ℓ ^ (fp : ℕ) := by rw [Nat.card_eq_fintype_card, hcardk]
+  haveI : CharZero (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) :=
+    (ULift.ringEquiv (R := CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)).toRingHom.charZero
+  let e : ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)
+      ≃ₐ[ℚ] CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ :=
+    { ULift.ringEquiv (R := CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ) with
+      commutes' := fun r => by simp }
+  haveI : FiniteDimensional ℚ (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) :=
+    LinearEquiv.finiteDimensional e.toLinearEquiv.symm
+  haveI : NumberField (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) := ⟨⟩
+  haveI : IsCyclotomicExtension {ℓ ^ (fp : ℕ) - 1} ℚ
+      (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ) :=
+    CyclotomicField.instIsCyclotomicExtensionSingletonNatSetOfCharZero _ ℚ
+  haveI : IsCyclotomicExtension {ℓ ^ (fp : ℕ) - 1} ℚ
+      (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) :=
+    IsCyclotomicExtension.equiv {ℓ ^ (fp : ℕ) - 1} ℚ
+      (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ) e.symm
+  exact exists_totallyRealCoefficientDatum_enlarge ℓ hℓ5 k
+    (exists_totallyRealCoefficientDatum_core ℓ (fp : ℕ) hℓ5 hfpos
+      (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) k hcardk')
 
 /-- **An odd dihedral auxiliary level representation** (sorry node, cut
 2026-07-26 — the second ARITHMETIC leaf of the representability half; no
@@ -7600,6 +7744,42 @@ characteristic over, and the oddness conjunct is a genuine condition only
 because `char kp` is odd. But it is NO LONGER the only thing this leaf
 needs to know about `kp` — `hcard` is now the substantive hypothesis, and
 `h3` alone is provably insufficient.
+
+MISSING MACHINERY (surveyed 2026-07-26 — read this BEFORE dispatching at
+this leaf; it is not a one-cycle job and the survey is what says so).
+Four things the intended discharge needs, none of which exists here:
+
+1. *An induced representation as a `GaloisRep`.* Mathlib's
+   `Mathlib/RepresentationTheory/Induced.lean` induces along a group hom of
+   ABSTRACT groups; nothing produces a CONTINUOUS `GaloisRep ℚ kp (Fin 2 → kp)`
+   from an open index-`2` subgroup `Γ_M ≤ Γ_ℚ` and a character `Γ_M → kpˣ`.
+   The continuity, the rank-`2` framing and the identification of the induced
+   module with `Fin 2 → kp` all have to be built. `Ind` occurs in this tree
+   only inside docstrings.
+2. *Class field theory.* There is no Artin map in the tree, so a class (or
+   ray class) character of `M` cannot be turned into a character of `Γ_M` at
+   all. This is the single largest missing block.
+3. *The transfer.* `det (Ind χ) = ε_{M/ℚ} · (χ ∘ Ver)` needs the
+   Verlagerung `Ver : Γ_ℚ^{ab} → Γ_M^{ab}` and its value `Ver(c) = c² = 1`.
+   Mathlib has `MonoidHom.transfer`; the determinant identity for an induced
+   representation is not there.
+4. *The existence of `M`.* As written, the "concrete `χ`" paragraph above
+   demands an imaginary quadratic `M` whose CLASS GROUP has an element of
+   order `m = q − 1`, citing Nakagawa–Horie / Yamamoto. That is a
+   research-level theorem on the infinitude of imaginary quadratic fields
+   with class number divisible by `m`, and formalizing it is out of
+   proportion to what the leaf needs.
+
+A CHEAPER SUBSTITUTE FOR ITEM 4, which the next owner should take. Nothing
+in the argument requires the character to be UNRAMIFIED — only that
+`ψ = χ/χ^c` have order `≥ 3`. So fix ONE imaginary quadratic `M` and use RAY
+class characters: the ray class group of `M` of conductor `𝔣` has order
+growing with `N(𝔣)`, so it admits cyclic quotients of any prescribed order,
+and no theorem about class NUMBERS is needed. That removes the deepest
+input from the plan and leaves items 1–3, which are ordinary (if large)
+formalization work rather than research mathematics. Item 2 remains the
+gate: until class field theory reaches this tree, this leaf cannot be
+closed by the induced-representation route at all.
 
 FAITHFULNESS: the conclusion is a statement about `Γ_ℚ`-representations
 alone and mentions no space, so it cannot be discharged vacuously by a
