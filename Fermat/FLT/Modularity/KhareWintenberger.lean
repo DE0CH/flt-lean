@@ -2785,6 +2785,7 @@ theorem charFrob_monic_natDegree_two_of_rank_two {K : Type*} [Field K]
     rw [LinearMap.charpoly_natDegree]
     exact Module.finrank_eq_of_rank_eq (by exact_mod_cast hdim)
 
+open scoped Classical in
 /-- **The determinant clause descends to the residual representation**
 (PROVEN glue, pure algebra over the `HilbertBlumenthalPoint` interface):
 if the constant coefficient of `P w` is `Nw` in `D`, then the constant
@@ -2812,7 +2813,6 @@ a structure over `Ideal (𝓞 F)`, which has no decidable equality. A `classical
 inside the proof cannot supply it, because the union occurs in the STATEMENT.
 The sole consumer below opens its proof with `classical`, which installs the
 same `Classical.propDecidable`, so the two union terms agree. -/
-open scoped Classical in
 theorem residual_charFrob_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint
     {ℓ : ℕ} [Fact ℓ.Prime] {F : Type u} [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
