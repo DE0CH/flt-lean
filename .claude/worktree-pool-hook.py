@@ -56,16 +56,29 @@ The drain exists because the user slice is CPU-quota-capped at 24 cores
 (cpu.max 2400000/100000), throttled in ~76% of periods, so workers past the
 quota lengthen every verification instead of adding throughput.
 
-Worktree allocation is unchanged: find a `free` entry in
-~/.flt-worktree-pool, check it is git-clean and its branch is an
-ancestor of staging, fast-forward it to staging (--ff-only), mark it
-`claimed`. A worktree marked free but dirty/diverged is NOT a normal
-condition and is NOT auto-corrected — hard crash (traceback, exit 2,
-tool call blocked): something beyond allocation went wrong.
+Worktree allocation: find a `free` entry in ~/.flt-worktree-pool, check
+it is git-clean and its branch is an ancestor of MAIN, fast-forward it
+to main (--ff-only), mark it `claimed`. A worktree marked free but
+dirty/diverged is NOT a normal condition and is NOT auto-corrected —
+hard crash (traceback, exit 2, tool call blocked): something beyond
+allocation went wrong.
 
-Freeing a worktree after its work is merged, and pushing to the task
-queue, are both the orchestrator hand-editing the respective text
-file. No scripts on that side.
+RELEASE MODEL (Deyao, 2026-07-26). `main` is the only branch anything
+is dispatched from, and ONLY THE MERGER MOVES IT, only to a sha it has
+built green. The orchestrator never merges. When an agent finishes, its
+worktree name goes into ~/.flt-merge-batch (`flt-cycle.py done`) and
+sits there; the merger claims the batch, merges it, resolves conflicts,
+drives the build green, and moves main. That is a RELEASE. The
+orchestrator then runs `flt-cycle.py release`, which fast-forwards idle
+worktrees to main and seeds their `.lake` from the merger's own build,
+and only then dispatches queued work.
+
+The merger is self-paced: the moment it finishes a batch it claims the
+next one. Nothing schedules it.
+
+Freeing a worktree, batching it, and pushing to the task queue are the
+orchestrator editing text files or running `flt-cycle.py`, the single
+entry point. No merging on that side.
 
 CONCURRENCY (fixed 2026-07-25). Everything below runs under ONE
 exclusive flock on the pool file, held for the whole dispatch decision:
@@ -116,8 +129,8 @@ SENTINEL = "{{FLT_QUEUE_POP}}"
 # it. Making it queue behind ordinary leaf tasks would deadlock the thing that
 # unblocks them.
 #
-# Its worktree tracks `staging-worker`, NOT `staging`, so that the source cannot
-# move under it while the orchestrator keeps merging into `staging`.
+# Its worktree tracks `merger`, its own branch, so the source cannot move under
+# it mid-batch. (`staging` and `staging-worker` were deleted on 2026-07-26.)
 STAGING_PLACEHOLDER = "{{FLT_STAGING}}"
 STAGING_WORKTREE = "/home/chend/flt-staging"
 DELIMITER = "=== TASK ==="
@@ -318,8 +331,18 @@ def _capacity(hosts):
     try:
         with open(CAPACITY_FILE, encoding="utf-8") as fh:
             blob = json.load(fh)
-        if now - blob.get("ts", 0) < CAPACITY_TTL and blob.get("hosts"):
-            return blob["hosts"]
+        cached = blob.get("hosts") or {}
+        # Fresh AND covering every host we were asked about. The coverage test
+        # is not pedantry (Deyao, 2026-07-26): a host absent from `cap` is
+        # treated by `rank` as unreachable and VETOED outright, so a cache
+        # populated from one call's host set silently excluded every machine not
+        # in it for the whole TTL -- and since a vetoed host is never allocated,
+        # it stays absent from later host sets too. `vanisher` and
+        # `nightcrawler` were missing from the live cache for exactly this
+        # reason. Missing measurements must force a re-measure, never a veto.
+        if (now - blob.get("ts", 0) < CAPACITY_TTL
+                and cached and all(h in cached for h in hosts)):
+            return cached
     except (OSError, ValueError):
         pass
     hosts_cap = _measure(hosts)
@@ -347,9 +370,19 @@ def _spend(host):
         pass
 
 
-def pick_free(entries):
-    """Choose which free worktree to hand out: the one on the machine with the
+def pick_free(entries, candidate_state="ready"):
+    """Choose which worktree to hand out: the one on the machine with the
     most FREE CPU right now, subject to a hard RAM veto (Deyao, 2026-07-25).
+
+    `candidate_state` is what makes LAZY SEEDING work (Deyao, 2026-07-26).
+    Dispatch draws from `ready` -- advanced to the release AND holding `.lake`
+    artifacts copied from the build that verified it. `flt-release.py` calls
+    this same function with `candidate_state="free"` to decide WHICH worktrees
+    are worth seeding, so the expensive copy lands only where work will
+    actually run, and the choice of where to seed is made by exactly the
+    capacity logic documented below rather than by a second, drifting copy of
+    it. A `free` worktree is at the release but its artifacts are stale, so
+    handing one out would hand out a from-source rebuild.
 
     Two rules, and the difference between them is the point:
 
@@ -382,7 +415,7 @@ def pick_free(entries):
 
     Falls back to pool order if no measurement can be obtained at all; allocation
     must never fail because a probe did."""
-    free = [n for n, status, _ in entries if status == "free"]
+    free = [n for n, status, _ in entries if status == candidate_state]
     if not free:
         return None
 
@@ -399,28 +432,60 @@ def pick_free(entries):
     if not cap:
         return free[0]
 
-    claimed = {}
+    # OUR footprint on each host. Counts every state that occupies a slot, not
+    # just `claimed`: `reclaiming` is a claimed slot that retires later and is
+    # running an agent right now, and `ready` is seeded and about to be
+    # dispatched into. Counting only `claimed` under-reports our usage and was
+    # part of why whole machines sat idle.
+    ours = {}
     for name, status, _ in entries:
-        if status == "claimed":
+        # `batched` is deliberately absent: the agent has finished, so the slot
+        # holds no running elaboration and costs no CPU. Counting it would make
+        # a host look full while it is idle.
+        if status in ("claimed", "reclaiming", "ready"):
             h = _host_of(name)
             if h:
-                claimed[h] = claimed.get(h, 0) + 1
+                ours[h] = ours.get(h, 0) + 1
 
     def rank(name):
+        """Our REMAINING QUOTA on this host: `(25% - our usage) x cores`.
+
+        (Deyao, 2026-07-26 — this replaces `min(free_cpu, quarter)`, which was
+        broken in a way that idled seven machines.)
+
+        The old weight ranked a host holding 23 of our workers exactly equal to
+        one holding none, because `quarter` is a constant per host and
+        `free_cpu` sat far above it almost everywhere. So every host with any
+        headroom tied at exactly `quarter`; `max()` is stable on ties, so the
+        first in pool order won EVERY dispatch. `_spend` was supposed to break
+        that up, but it charges `free_cpu`, and while `free_cpu > quarter` the
+        `min` clamps it away — charging a core changed the weight by nothing.
+        The result was a few machines saturated and seven at zero utilisation.
+
+        Ranking by REMAINING QUOTA fixes it structurally rather than by
+        tie-breaking: placing a worker on a host lowers that host's weight by
+        exactly one, so the next pick naturally goes elsewhere, and allocation
+        self-levels toward equal fractions of each machine's quarter.
+
+        `free_cpu` stays as a CAP, not the weight: we never want to pile onto a
+        machine other tenants are already hammering, even if our own quota there
+        is untouched. These are shared departmental boxes.
+        """
         h = _host_of(name)
         c = cap.get(h) if h else None
         if not c or c["free_ram_g"] < RAM_PER_WORKER_G:
             return None                       # unreachable, unrouted, or RAM veto
         quarter = OUR_SHARE * c.get("total_cpu", 0)
-        if claimed.get(h, 0) >= quarter:
+        headroom = quarter - ours.get(h, 0)
+        if headroom <= 0:
             return None                       # our share of this machine is spent
-        return min(c["free_cpu"], quarter)
+        return min(c["free_cpu"], headroom)
 
     viable = [(rank(n), n) for n in free]
     viable = [(r, n) for r, n in viable if r is not None]
     if not viable:
         return None                           # every host vetoed: queue instead
-    # max() is stable on ties, so equal free CPU keeps the original pool order.
+    # max() is stable on ties, so equal weight keeps the original pool order.
     best = max(viable, key=lambda rn: rn[0])[1]
     _spend(_host_of(best))
     return best
@@ -462,39 +527,44 @@ def allocate_worktree(pool_fh):
             f"worktree {free_name} is marked free in {POOL_FILE} but has "
             f"uncommitted changes:\n{status_out.stdout}")
 
-    # Ancestor of STAGING, not main (Deyao, 2026-07-25): integration merges into
-    # staging, so a finished branch becomes an ancestor of staging immediately and
-    # only reaches main once the staging worker has verified a green build. Testing
-    # against main here would hard-crash on every correctly-integrated worktree.
-    anc = git(["merge-base", "--is-ancestor", free_name, "staging"], worktree_path)
+    # Ancestor of MAIN (Deyao, 2026-07-26, RELEASE MODEL -- reverses the staging
+    # rule below it). `main` is now the only branch anything is dispatched from,
+    # and it moves only when the merger has built a batch green. So a finished
+    # branch becomes an ancestor of main exactly when its work has been released.
+    anc = git(["merge-base", "--is-ancestor", free_name, "main"], worktree_path)
     if anc.returncode != 0:
         raise RuntimeError(
             f"worktree {free_name}'s branch is marked free in {POOL_FILE} "
-            "but is NOT an ancestor of staging (diverged/unmerged commits) "
-            "-- integration was likely skipped for this branch")
+            "but is NOT an ancestor of main (diverged/unreleased commits) "
+            "-- its work has not been through the merger yet; either it was "
+            "never added to ~/.flt-merge-batch, or the merger has not cut a "
+            "release containing it")
 
-    # Advance to STAGING, not main (Deyao, 2026-07-25). This reverses the
-    # first cut of the staging design, which had workers branch off the green
-    # main. The reason is dispatch, not cleanliness: almost every completion
-    # proves its target over a finer cut and leaves NEW leaves behind, and those
-    # leaves exist only on staging until a green build promotes them. A worker
-    # dispatched at one of them while fast-forwarding to main would land on a
-    # tree where the declaration does not exist yet -- a phantom dispatch
-    # manufactured out of a correct report, which is a failure mode this fleet
-    # has already hit once from a different cause.
+    # Advance to MAIN, the release (Deyao, 2026-07-26). This reverses the
+    # staging rule, which had workers advance to a branch that accumulated
+    # unbuilt work continuously.
     #
-    # The cost is that a worker may start from a tree with a known red in it.
-    # That is strictly the lesser evil: a red is visible and owned, whereas a
-    # worker hunting a leaf that is not there wastes a whole cycle and reports
-    # the leaf as missing.
+    # The phantom-dispatch worry that motivated the staging rule -- a worker
+    # sent at a leaf that exists only on an unmerged branch, landing on a tree
+    # where the declaration is absent -- is now handled by ORDERING instead of
+    # by branch choice: work is queued when its leaf is not yet released, and
+    # dispatched only after a release contains it. The queue, not the branch
+    # pointer, is what absorbs the lag.
+    #
+    # What this buys is worth the wait: every worker starts from a tree that is
+    # KNOWN TO COMPILE, with `.lake` artifacts seeded from the very build that
+    # verified it (flt-release.py). Under the staging rule a worker could start
+    # from a red it did not cause and could not see, and its `.lake` never
+    # matched its source -- the inconsistent-olean trap that manufactures
+    # phantom kernel errors and cost several agents a full cycle each.
     #
     # Always advance, never backwards (see split_base: pinning was reverted
     # because a backwards move invalidates `.lake` and forces a from-source
     # rebuild of the import cone on the agent's first query).
-    ff = git(["merge", "--ff-only", "staging"], worktree_path)
+    ff = git(["merge", "--ff-only", "main"], worktree_path)
     if ff.returncode != 0:
         raise RuntimeError(
-            f"ff-only advance of {free_name} to staging failed: {ff.stderr}")
+            f"ff-only advance of {free_name} to main failed: {ff.stderr}")
 
     new_lines = [
         " ".join([n, "claimed" if n == free_name else status] + extra)
