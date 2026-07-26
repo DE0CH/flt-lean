@@ -4639,6 +4639,29 @@ invoke the Weil bound, i.e. the Riemann hypothesis for curves over finite
 fields) and the cohomological one (Grothendieck–Lefschetz) are large missing
 theories; this leaf is the natural place to build the first of them.
 
+ROUTE NOTE (2026-07-26). Of the three available proofs of the Weil bound that
+the classical route needs, the cheapest to formalize at this pin is
+**Stepanov–Bombieri**: it is elementary, needing neither ℓ-adic cohomology nor
+the Jacobian nor Riemann–Roch, only an auxiliary-polynomial construction and a
+multiplicity count. Weil's own proof needs the Jacobian and the index theorem
+on a surface; Grothendieck–Lefschetz needs étale cohomology. None of the three
+exists in mathlib or in `~/cs/FLT`.
+
+NO DENSITY WEAKENING IS AVAILABLE (audited 2026-07-26 against the consumer).
+It is tempting to hope this leaf could be weakened from "all `p > B`" to
+"infinitely many `p`" or "a positive-density set of `p`", which would be
+reachable from Chebotarev alone: pick a closed point of `Spec A`, i.e. a point
+over some number field `L`, and reduce it modulo the degree-one primes of `L`,
+of which Chebotarev supplies a positive density. **That weakening does not
+work here.** The sole consumer,
+`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible`, concludes
+`∃ B, ∀ p, B < p → Nonempty (A →ₐ[ℚ] ULift ℚ_[p])`, and it obtains that `B` as
+`max B₁ B₂` of the bounds from this leaf and its formal-smoothness sibling; a
+density statement produces no `B` at all. Geometric irreducibility is exactly
+the hypothesis that upgrades "positive density of `p`" to "all large `p`", and
+Lang–Weil is exactly the theorem that performs that upgrade — so the cost is
+irreducible, not an artefact of how the leaf is phrased.
+
 The `A`, `π`, `hker` packaging is as in the previous leaf and for the same
 universe reason.
 
@@ -6316,8 +6339,139 @@ no symmetric powers of a scheme, no Hilbert scheme, no effective Cartier
 divisors, no Lang–Weil, no strong approximation. -/
 
 open CategoryTheory AlgebraicGeometry in
-/-- **Moret–Bailly §3.1: the compactification datum** (SORRY — the smooth
-projective model of a smooth affine curve).
+/-- **A scheme that is both affine and proper over `ℚ` has dimension `≤ 0`**
+(PROVEN — EGA III 4.4.2 plus Artinian dimension theory, entirely out of
+mathlib).
+
+This is the arithmetic content of "the complement of an affine curve in its
+compactification is nonempty", isolated so that the compactification leaf
+below no longer has to carry it.
+
+THE CHAIN, each step a named mathlib result at this pin:
+
+* `C` and `Spec (ULift ℚ)` are both affine, so `fC` is an affine morphism
+  (`AlgebraicGeometry.isAffineHom_of_isAffine`);
+* proper + affine = finite is EGA III 4.4.2, in mathlib as
+  `AlgebraicGeometry.IsFinite.iff_isProper_and_isAffineHom`;
+* over an affine target a finite morphism is exactly `RingHom.Finite` on
+  global sections (`HasAffineProperty.iff_of_isAffine`), so `Γ(C, ⊤)` is a
+  finite module over `Γ(Spec (ULift ℚ), ⊤) ≅ ULift ℚ`;
+* a ring finite over an Artinian ring is Artinian
+  (`IsArtinianRing.of_finite`), and a field is Artinian;
+* an affine scheme with Artinian global sections is an Artinian scheme
+  (`Scheme.isLocallyArtinianScheme_Spec` transported along
+  `Scheme.isoSpec`, which is an immersion), hence DISCRETE
+  (`IsLocallyArtinian.discreteTopology`), hence of dimension `≤ 0`
+  (`topologicalKrullDim_zero_of_discreteTopology`). -/
+theorem topologicalKrullDim_le_zero_of_isProper_of_isAffine
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hproper : AlgebraicGeometry.IsProper fC) :
+    topologicalKrullDim ↥C ≤ 0 := by
+  haveI hfin : AlgebraicGeometry.IsFinite fC :=
+    AlgebraicGeometry.IsFinite.iff_isProper_and_isAffineHom.mpr ⟨hproper, inferInstance⟩
+  obtain ⟨-, hfinite⟩ :=
+    (AlgebraicGeometry.HasAffineProperty.iff_of_isAffine
+      (P := @AlgebraicGeometry.IsFinite)).mp hfin
+  letI := (fC.appTop).hom.toAlgebra
+  haveI : Module.Finite
+      ↑Γ(AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)), ⊤) ↑Γ(C, ⊤) := hfinite
+  haveI : IsArtinianRing ↑Γ(AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)), ⊤) :=
+    (AlgebraicGeometry.Scheme.ΓSpecIso
+      (CommRingCat.of (ULift.{u} ℚ))).commRingCatIsoToRingEquiv.symm.isArtinianRing
+  haveI : IsArtinianRing ↑Γ(C, ⊤) :=
+    IsArtinianRing.of_finite
+      ↑Γ(AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)), ⊤) ↑Γ(C, ⊤)
+  haveI : AlgebraicGeometry.IsLocallyArtinian (AlgebraicGeometry.Spec Γ(C, ⊤)) :=
+    AlgebraicGeometry.Scheme.isLocallyArtinianScheme_Spec.mpr ‹_›
+  haveI : AlgebraicGeometry.IsLocallyArtinian C :=
+    AlgebraicGeometry.IsLocallyArtinian.of_isImmersion C.isoSpec.hom
+  exact topologicalKrullDim_zero_of_discreteTopology ↥C
+
+open CategoryTheory AlgebraicGeometry in
+/-- **The complement of a positive-dimensional affine open in a proper model
+is nonempty** (PROVEN): if `j : C ↪ X̄` is an open immersion over `Spec ℚ`
+with `C` affine and `X̄` proper, and `dim C > 0`, then `j` is not surjective.
+
+This is exactly Moret–Bailly's `Z = X̄ - X ≠ ∅`, and it is the reason `hpos`
+appears in the §3.1 datum. Were `j` surjective it would be an isomorphism
+(`isIso_of_isOpenImmersion_of_opensRange_eq_top`), so `fC = j ≫ fX` would be
+proper; but `C` is affine, so `topologicalKrullDim_le_zero_of_isProper_of_isAffine`
+would force `dim C ≤ 0`, contradicting `hpos`.
+
+Note this needs NOTHING about curves — no smoothness, no irreducibility, no
+dimension bound above. It is pure "affine ∧ proper ⟹ dimension `0`". -/
+theorem nonempty_compl_range_of_isProper_of_isAffine
+    {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (j : C ⟶ Xbar) (hjimm : AlgebraicGeometry.IsOpenImmersion j)
+    (hjcomm : j ≫ fX = fC)
+    (hXproper : AlgebraicGeometry.IsProper fX)
+    (hpos : ¬ topologicalKrullDim ↥C ≤ 0) :
+    (Set.range j.base)ᶜ.Nonempty := by
+  haveI : AlgebraicGeometry.IsOpenImmersion j := hjimm
+  haveI : AlgebraicGeometry.IsProper fX := hXproper
+  rw [Set.nonempty_compl]
+  intro hr
+  haveI : IsIso j :=
+    AlgebraicGeometry.isIso_of_isOpenImmersion_of_opensRange_eq_top j
+      (TopologicalSpace.Opens.ext (by simpa using hr))
+  have hprC : AlgebraicGeometry.IsProper fC :=
+    hjcomm ▸ (inferInstance : AlgebraicGeometry.IsProper (j ≫ fX))
+  exact hpos (topologicalKrullDim_le_zero_of_isProper_of_isAffine fC hprC)
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly §3.1, the geometric half: the smooth proper model**
+(SORRY LEAF — this is the chapter-sized part, and after the cut below it is
+ALL that is left of §3.1).
+
+A smooth, geometrically irreducible affine curve over `ℚ` is a dense open
+subscheme of a smooth proper geometrically irreducible curve over `ℚ`.
+
+WHAT CHANGED (2026-07-26). This leaf used to also assert that the complement
+`Z = X̄ - X` is nonempty. That half is arithmetic rather than geometric — it
+is "affine ∧ proper ⟹ dimension `0`" — and it is now PROVEN, in
+`nonempty_compl_range_of_isProper_of_isAffine` above, out of mathlib alone.
+Consequently `hpos` is NOT a hypothesis here: the smooth proper model exists
+in dimension `0` too (there `C = Spec ℚ` is already proper and `j = 𝟙`), and
+positivity of the dimension is needed only to know the complement is
+nonempty. Keeping `hpos` out is what makes that separation honest.
+
+WHAT IS MISSING AT THIS PIN. Mathlib has `IsProper`, `Smooth`,
+`GeometricallyIrreducible` and `AlgebraicGeometry.Normalization`, so the
+statement type-checks, but nothing CONSTRUCTS the model: there is no
+projective-closure construction, no regular proper model of a function field
+of transcendence degree `1`, and no genus. The classical route is Hartshorne
+I.6 — the equivalence between smooth projective curves and function fields of
+transcendence degree `1` — with `Mathlib/AlgebraicGeometry/FunctionField.lean`
+and `Mathlib/AlgebraicGeometry/Normalization.lean` as the footholds that do
+exist.
+
+`hsep` and `hqc` are recorded because Moret–Bailly's datum carries them; both
+are in fact automatic here, `C` and the base being affine. -/
+theorem exists_smoothProperModel_of_affine_curve
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hsep : AlgebraicGeometry.IsSeparated fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hqc : AlgebraicGeometry.QuasiCompact fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hdim : topologicalKrullDim ↥C ≤ 1) :
+    ∃ (Xbar : AlgebraicGeometry.Scheme.{u})
+      (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (j : C ⟶ Xbar) (_ : AlgebraicGeometry.IsOpenImmersion j),
+      j ≫ fX = fC ∧ AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsProper fX ∧
+        AlgebraicGeometry.GeometricallyIrreducible fX :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly §3.1: the compactification datum** (**PROVEN 2026-07-26**
+as an ASSEMBLY: the geometric half is the leaf
+`exists_smoothProperModel_of_affine_curve` above, the arithmetic half —
+nonemptiness of the complement — is `nonempty_compl_range_of_isProper_of_isAffine`,
+which is proven outright).
 
 Moret–Bailly, *Groupes de Picard et problèmes de Skolem II*, §3.1: one
 chooses a dense open immersion `j : X ↪ X̄` with `X̄ → B` projective and
@@ -6331,13 +6485,17 @@ The complement is nonempty because `C` is AFFINE of positive dimension: a
 proper scheme over a field that is also affine is finite, hence
 `dim ≤ 0`, contradicting `hpos`. That is why `hpos` appears — it is not
 decoration, it is what makes `Z ≠ ∅`, and `z = deg Z_K > 0` is used
-throughout §3.5–3.9.
+throughout §3.5–3.9. **That argument is now formalized** — see
+`topologicalKrullDim_le_zero_of_isProper_of_isAffine` and
+`nonempty_compl_range_of_isProper_of_isAffine` above — so `hpos` is consumed
+HERE and does not appear in the residual geometric leaf at all.
 
-WHAT IS MISSING AT THIS PIN: see the section docstring's costing. Mathlib
-has `IsProper`, `Smooth`, `GeometricallyIrreducible` and
-`AlgebraicGeometry.Normalization`, so this statement type-checks, but the
-construction (projective closure, then normalization, then regularity in
-dimension one) is not available and is a chapter-sized job. -/
+WHAT IS MISSING AT THIS PIN: only the smooth proper model, i.e. exactly
+`exists_smoothProperModel_of_affine_curve`. Mathlib has `IsProper`, `Smooth`,
+`GeometricallyIrreducible` and `AlgebraicGeometry.Normalization`, so the
+statement type-checks, but the construction (projective closure, then
+normalization, then regularity in dimension one) is not available and is a
+chapter-sized job. -/
 theorem exists_projectiveCompactification_of_affine_curve
     {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -6353,8 +6511,11 @@ theorem exists_projectiveCompactification_of_affine_curve
       (j : C ⟶ Xbar) (_ : AlgebraicGeometry.IsOpenImmersion j),
       j ≫ fX = fC ∧ AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsProper fX ∧
         AlgebraicGeometry.GeometricallyIrreducible fX ∧
-        (Set.range j.base)ᶜ.Nonempty :=
-  sorry
+        (Set.range j.base)ᶜ.Nonempty := by
+  obtain ⟨Xbar, fX, j, hjimm, hjcomm, hXsm, hXpr, hXgi⟩ :=
+    exists_smoothProperModel_of_affine_curve fC hsmooth hsep hft hqc hgi hdim
+  exact ⟨Xbar, fX, j, hjimm, hjcomm, hXsm, hXpr, hXgi,
+    nonempty_compl_range_of_isProper_of_isAffine fC fX j hjimm hjcomm hXpr hpos⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly §3.2–3.10: the arithmetic core, on the
@@ -6401,7 +6562,34 @@ list with the machinery costs):
 for the generalised Jacobian to differ from the Jacobian). `hjcomm` is
 what makes `Ω_v ⊆ C(K_v)` a subset of `X̄(K_v)` compatibly with the base,
 so that the local conditions at `v` really are conditions on divisors of
-`X̄` avoiding `Z`. -/
+`X̄` avoiding `Z`.
+
+**SCOPE NOTE — THE STATEMENT IS STRICTLY MORE GENERAL THAN THE ROUTE
+DOCUMENTED ABOVE** (audited 2026-07-26; read this BEFORE attacking the leaf).
+Nothing here pins `dim X̄ = 1`: `hXproper`, `hXsmooth` and `hXgi` are satisfied
+by a smooth proper geometrically irreducible variety of ANY dimension, and the
+sole dimension hypothesis of the cluster (`hdim : topologicalKrullDim ↥C ≤ 1`)
+lives on the PARENT and is not passed in. So as stated this leaf is
+Moret–Bailly's Théorème 1.3 in full, whereas §3.2–3.10 — the argument listed
+above, with symmetric powers, the generalised Picard functor and
+Riemann–Roch — proves only the CURVE case. The general case is recovered from
+it by a Bertini reduction to curves, which is a further missing step, not part
+of the list above.
+
+The statement is still TRUE (Thm 1.3 is general), so this is not a falsity;
+but a prover who follows the §3.2–3.10 route will find the curve hypothesis
+missing at the end. Two honest repairs, and the choice is a CUT-LEVEL one, so
+it was deliberately NOT made unilaterally here:
+
+* add `(hdim : topologicalKrullDim ↥C ≤ 1)` as a hypothesis — it IS in scope at
+  the one call site (`exists_totallySplitPoint_of_affine_curve`),
+  so the consumer is unaffected, and the leaf then matches its route exactly;
+* or keep the general statement and add the Bertini reduction as an explicit
+  sibling leaf.
+
+Note that §3.1 is no longer part of this leaf's burden in any case:
+`exists_projectiveCompactification_of_affine_curve` is now an assembly, and its
+complement-nonemptiness half (`hZ`, which this leaf consumes) is PROVEN. -/
 theorem exists_totallySplitPoint_of_projectiveCompactification
     {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
