@@ -4542,7 +4542,13 @@ rational coefficients `t`, `w` are pinned by `algebraMap ℚ ℚ̄ t = veluT …
 `algebraMap ℚ ℚ̄ w = veluW …` over `hCfin.toFinset`. A consumer that knows the
 kernel explicitly can therefore evaluate Vélu's sums and obtain the quotient's
 `c₄` and `Δ` by `ring`. The unnamed form is `exists_velu_quotient_isogeny`
-below. -/
+below.
+
+**The parity-free version already exists and is assembled**: see
+`exists_velu_quotient_isogeny_model_of_subgroup` in the `VeluAllOrders` /
+`DescentAllOrders` sections at the end of this file, which is this statement with
+`hCodd` deleted, together with an audit of exactly which parts of this development
+already work at even order. Do not re-cut it. -/
 theorem exists_velu_quotient_isogeny_model (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
     (hCfin : (C : Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
@@ -4675,5 +4681,288 @@ theorem exists_velu_quotient_isogeny (E : WeierstrassCurve ℚ) [E.IsElliptic]
   exact ⟨E.veluModel t w, hell, φ, hgal, hker⟩
 
 end Descent
+
+/-! ## Vélu for a kernel of ARBITRARY order: dropping `Odd`
+
+Everything above carries the hypothesis `Odd S.card`. Vélu's construction does NOT
+need it — the classical formulas treat the `2`-torsion of the kernel as its own
+`±`-orbit — and the theorems below are the parity-free forms, cut 2026-07-26 out of
+the request to give `exists_velu_quotient_isogeny_model` an even-kernel case (the
+named blocker for the `2`-isogeny chain of `exists_x0ThirtyTwo_point`).
+
+### AUDIT: what is ALREADY parity-free, and what is not
+
+The task was dispatched on the belief that the even case is bookkeeping over the
+`±`-orbit decomposition — that the sums `t = Σ t_T`, `w = Σ w_T` need their
+`2`-torsion terms handled separately, `t_T = g^x_T` instead of `2 g^x_T`. **That
+half is already done**, by the design decision recorded at the top of this file:
+`veluT` and `veluW` are HALF the sum over ALL of the kernel, not a sum over
+representatives. The `2`-torsion terms come out right automatically. In detail,
+writing `g^x_Q = 3x_Q² + 2a₂x_Q + a₄ − a₁y_Q` and `g^y_Q = −(2y_Q + a₁x_Q + a₃)`:
+
+* `veluTTerm Q = 6x_Q² + b₂x_Q + b₄ = 2 g^x_Q − a₁ g^y_Q` for EVERY `Q`, and
+  `veluUTerm Q = (g^y_Q)²`, `veluWTerm Q = veluUTerm Q + x_Q · veluTTerm Q`;
+* a `2`-torsion `T` is exactly the condition `2y_T + a₁x_T + a₃ = 0`, i.e.
+  `g^y_T = 0`, hence `veluTTerm T = 2 g^x_T` and `veluUTerm T = 0`;
+* so half the `T`-term of `veluT` is `g^x_T`, which is Vélu's `t_T`, and half the
+  `T`-term of `veluW` is `x_T g^x_T = veluUTerm T + t_T x_T`, which is Vélu's `w_T`;
+* while a genuine `±`-pair contributes its term twice, and halving recovers it once.
+
+So `veluT`, `veluW`, `veluModel` and `veluCurve` are already the correct Vélu data
+at EVERY order. The same is true one layer up: `veluCoordX`, `veluCoordY`,
+`velu_coordX_eq`, `velu_coordY_eq`, `velu_sum_pair` and `velu_pair_X` / `velu_pair_Y`
+carry no parity hypothesis and are already stated without one. At a `2`-torsion `T`
+the paired identity degenerates to `2(x(P + T) − x_T) = t_T/(x_P − x_T)`, whose right
+side has lost its double pole precisely because `veluUTerm T = 0`. (Checked
+numerically on `y² = x³ − x` at `T = (0,0)` and on `[1,2,3,4,5]` at its real
+`2`-torsion point; PARI/GP as an untrusted searcher, statement check only.)
+
+### Where the parity hypothesis is GENUINELY load-bearing
+
+The obstruction is one layer lower, in the POLYNOMIAL machinery, and it is not
+bookkeeping over the coefficient sums:
+
+* `veluH S = ∏_{Q ∈ S ∖ 0} (T − x_Q)` is still the right common denominator at every
+  order — a `±`-pair contributes its linear factor twice and a `2`-torsion point
+  contributes it once, matching the double and simple poles respectively.
+* `veluH_factor` is the FALSE statement in the even case: it asserts
+  `(T − x_Q)² ∣ veluH S` for every nonzero `Q`, which fails at a `2`-torsion `T`,
+  where the factor is simple. This is the ONE place `hodd` is consumed in the
+  `PolePoly` section, and it is what every later degree count is built on. Its
+  parity-free form is uniform, with the exponent depending on the orbit:
+  `veluH S = (X − C x_Q) ^ (if -Q = Q then 1 else 2) * veluHq S Q`, which is correct
+  because `veluHq` erases `Q` and then `-Q`, and at a `2`-torsion point that second
+  erase is idempotent.
+* `veluPX` and `veluPV` are the definitions that must actually CHANGE. Both give the
+  summand at `Q` the numerator `t_Q(X − x_Q) + u_Q` over `veluHq S Q`, which encodes a
+  double pole; at a `2`-torsion `T` this yields `t_T` rather than `t_T/(X − x_T)`. The
+  uniform repair is to multiply the `t_Q` part by `(X − C x_Q) ^ (if -Q = Q then 0
+  else 1)`; the `u_Q` part needs no correction because `veluUTerm T = 0`.
+* Downstream of those, `velu_theta_degree_lt`, `velu_theta_eq_zero`,
+  `velu_pole_identity`, `velu_wronskian` and `velu_xNum_sub_eq_prod` all re-derive
+  with the changed degree count, and `velu_exists_three_twoTorsion` needs a different
+  argument outright: with a `2`-torsion `T` in the kernel, the two other `2`-torsion
+  points of `W` have the SAME image (their difference is `T`), so the quotient
+  receives only one nonzero `2`-torsion point from `W[2]` and the remaining two must
+  come from points of order `4`.
+
+That is a re-derivation of the `PolePoly` and `Velu` sections, not an edit to them,
+which is why the parity-free statements below are left as three named leaves rather
+than being generalized in place: generalizing in place would rewrite the signature of
+some sixty declarations in this file and collide with the open odd-kernel leaf
+`velu_map_add_of_notMem`. The odd-order path above is deliberately untouched.
+
+**Faithfulness.** All three leaves are TRUE as stated; the audit above is what
+establishes that the parity-free `veluCurve S` really is the quotient curve, so
+nothing here is a statement weakened to make it provable.
+-/
+
+section VeluAllOrders
+
+variable {F : Type*} [Field F] [DecidableEq F] [CharZero F] (W : Affine F) [W.IsElliptic]
+
+/-- **LEAF: the Vélu quotient curve is elliptic, at EVERY kernel order.**
+
+The parity-free form of `velu_isElliptic`. The odd-order proof goes through
+`velu_exists_three_twoTorsion`, which reads three distinct `2`-torsion points of the
+quotient off the three `2`-torsion points of `W` over the algebraic closure; that
+argument does not survive an even kernel, because a `2`-torsion point `T` inside the
+kernel identifies the other two. Expect either a route through points of order `4`,
+or a direct computation of `Δ (veluCurve W S)`. -/
+theorem velu_isElliptic_of_subgroup (S : Finset W.Point) (hS : IsPointSubgroup S) :
+    (W.veluCurve S).IsElliptic := sorry
+
+/-- **LEAF: Vélu's coordinates satisfy the quotient equation, at EVERY kernel order.**
+
+The parity-free form of `velu_equation`. By `velu_coordX_eq` and `velu_coordY_eq` —
+both already parity-free — this reduces exactly as in the odd case to the
+rational-function identity `velu_equation_pole`, hence to `veluTheta S = 0`; that is
+the statement needing the `veluPX` / `veluPV` repair described in the section note
+above. -/
+theorem velu_equation_of_subgroup (S : Finset W.Point) (hS : IsPointSubgroup S)
+    {P : W.Point} (hP : P ∉ S) :
+    (W.veluCurve S).Equation (W.veluCoordX S P) (W.veluCoordY S P) := sorry
+
+/-- The Vélu image of a point as a point of the quotient curve, for a kernel of
+ARBITRARY order: the parity-free counterpart of `veluMap`. -/
+noncomputable def veluMapAll (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (P : W.Point) : (W.veluCurve S).Point :=
+  haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic_of_subgroup S hS
+  if hP : P ∈ S then 0
+  else .some _ _ (Affine.equation_iff_nonsingular.mp (W.velu_equation_of_subgroup S hS hP))
+
+lemma veluMapAll_of_mem {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {P : W.Point} (hP : P ∈ S) : W.veluMapAll S hS P = 0 := by
+  rw [veluMapAll, dif_pos hP]
+
+lemma veluMapAll_of_notMem {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {P : W.Point} (hP : P ∉ S) :
+    haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic_of_subgroup S hS
+    W.veluMapAll S hS P = Affine.Point.some (W.veluCoordX S P) (W.veluCoordY S P)
+      (Affine.equation_iff_nonsingular.mp (W.velu_equation_of_subgroup S hS hP)) := by
+  rw [veluMapAll, dif_neg hP]
+
+/-- **LEAF: the Vélu map is additive, at EVERY kernel order.**
+
+The parity-free form of `velu_map_add`. The reduction above it is formal and
+parity-free once its inputs are — `veluMapAll_neg`, additivity up to sign, and the
+kernel cases — so the real content is the parity-free forms of `velu_coord_ne_neg`
+(which routes through `velu_xNum_sub_eq_prod`, hence through `veluH_factor`) and of
+the `addX` identity still open at `velu_map_add_of_notMem`. Whoever closes this
+should expect to close that odd-order leaf on the way, and should coordinate with
+its owner. -/
+theorem velu_map_add_of_subgroup (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (P Q : W.Point) :
+    haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic_of_subgroup S hS
+    W.veluMapAll S hS (P + Q) = W.veluMapAll S hS P + W.veluMapAll S hS Q := sorry
+
+/-- The kernel of the arbitrary-order Vélu map is exactly `S` (PROVEN): this holds BY
+CONSTRUCTION, since points outside `S` are sent to affine points. -/
+theorem veluMapAll_eq_zero_iff (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (P : W.Point) : W.veluMapAll S hS P = 0 ↔ P ∈ S := by
+  by_cases hP : P ∈ S
+  · exact iff_of_true (W.veluMapAll_of_mem hS hP) hP
+  · refine iff_of_false ?_ hP
+    haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic_of_subgroup S hS
+    rw [W.veluMapAll_of_notMem hS hP]
+    exact Affine.Point.some_ne_zero _
+
+end VeluAllOrders
+
+section DescentAllOrders
+
+variable [DecidableEq (AlgebraicClosure ℚ)]
+
+/-- **The quotient isogeny by a finite Galois-stable subgroup of ARBITRARY order**
+(PROVEN 2026-07-26 as an assembly over the three parity-free leaves
+`velu_isElliptic_of_subgroup`, `velu_equation_of_subgroup` and
+`velu_map_add_of_subgroup`, together with the Galois descent and equivariance already
+proven for the odd case, which are themselves parity-free).
+
+This is `exists_velu_quotient_isogeny_model` with the hypothesis `Odd (Nat.card C)`
+REMOVED. The Galois-descent half — `velu_t_mem_range`, `velu_w_mem_range`,
+`velu_coordX_map`, `velu_coordY_map`, `isElliptic_of_baseChange` — never used the
+parity hypothesis, so the assembly is the odd-order one with `hodd` deleted. -/
+theorem exists_velu_quotient_isogeny_model_of_subgroup
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
+    (hCfin : (C : Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
+    (hCstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ C,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈ C) :
+    ∃ (t w : ℚ) (_ : (E.veluModel t w).IsElliptic)
+      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+
+        ((E.veluModel t w)⁄(AlgebraicClosure ℚ)).Point),
+      algebraMap ℚ (AlgebraicClosure ℚ) t =
+          veluT (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset ∧
+      algebraMap ℚ (AlgebraicClosure ℚ) w =
+          veluW (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset ∧
+      (∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) := by
+  classical
+  haveI : ((E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ))).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  set S : Finset ((E⁄(AlgebraicClosure ℚ)).Point) := hCfin.toFinset with hSdef
+  have hmem : ∀ P : (E⁄(AlgebraicClosure ℚ)).Point, P ∈ S ↔ P ∈ C := fun P => by
+    rw [hSdef]; exact hCfin.mem_toFinset
+  have hstable : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, ∀ Q ∈ S,
+      Affine.Point.map σ.toAlgHom Q ∈ S := fun σ Q hQ =>
+    (hmem _).mpr (hCstable σ Q ((hmem Q).mp hQ))
+  have hS : IsPointSubgroup S :=
+    { zero_mem := (hmem _).mpr (zero_mem C)
+      add_mem := fun P hP Q hQ =>
+        (hmem _).mpr (add_mem ((hmem P).mp hP) ((hmem Q).mp hQ))
+      neg_mem := fun P hP => (hmem _).mpr (neg_mem ((hmem P).mp hP)) }
+  obtain ⟨t, ht⟩ := velu_t_mem_range S hstable
+  obtain ⟨w, hw⟩ := velu_w_mem_range S hstable
+  have hEq : ((E.veluModel t w)⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)) =
+      (E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)).veluCurve S := by
+    refine WeierstrassCurve.ext rfl rfl rfl ?_ ?_
+    · show algebraMap ℚ (AlgebraicClosure ℚ) (E.a₄ - 5 * t) =
+        (E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)).a₄ -
+          5 * veluT (E⁄(AlgebraicClosure ℚ)) S
+      rw [map_sub, map_mul, map_ofNat, ht]
+      rfl
+    · show algebraMap ℚ (AlgebraicClosure ℚ) (E.a₆ - E.b₂ * t - 7 * w) =
+        (E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)).a₆ -
+          (E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)).b₂ *
+            veluT (E⁄(AlgebraicClosure ℚ)) S -
+          7 * veluW (E⁄(AlgebraicClosure ℚ)) S
+      rw [map_sub, map_sub, map_mul, map_mul, map_ofNat, ht, hw, velu_baseChange_b₂]
+      rfl
+  haveI hVE : ((E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)).veluCurve S).IsElliptic :=
+    velu_isElliptic_of_subgroup _ S hS
+  haveI hE'K : ((E.veluModel t w)⁄(AlgebraicClosure ℚ) :
+      Affine (AlgebraicClosure ℚ)).IsElliptic := hEq ▸ hVE
+  set ψ : ((E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)).veluCurve S).Point ≃+
+      ((E.veluModel t w)⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)).Point :=
+    pointAddEquivOfEq hEq.symm with hψdef
+  refine ⟨t, w, isElliptic_of_baseChange _ hE'K,
+    AddMonoidHom.mk' (fun P => ψ (veluMapAll (E⁄(AlgebraicClosure ℚ)) S hS P))
+      (fun P Q => by
+        rw [velu_map_add_of_subgroup _ S hS P Q, map_add]), ht, hw, ?_, ?_⟩
+  · -- Galois equivariance
+    intro σ Pt
+    show ψ (veluMapAll (E⁄(AlgebraicClosure ℚ)) S hS
+        (Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt)) =
+      Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+        (ψ (veluMapAll (E⁄(AlgebraicClosure ℚ)) S hS Pt))
+    by_cases hPt : Pt ∈ S
+    · rw [veluMapAll_of_mem _ hS hPt,
+        veluMapAll_of_mem _ hS (hstable (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) Pt hPt),
+        map_zero, map_zero]
+    · have hPtσ : Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt ∉ S := by
+        intro hc
+        exact hPt (by
+          simpa [velu_point_map_symm_map] using
+            hstable (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).symm _ hc)
+      rw [veluMapAll_of_notMem _ hS hPt, veluMapAll_of_notMem _ hS hPtσ, hψdef,
+        pointAddEquivOfEq_some, pointAddEquivOfEq_some, Affine.Point.map_some]
+      exact velu_point_some_eq
+        (velu_coordX_map hstable (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) Pt)
+        (velu_coordY_map hstable (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) Pt)
+  · -- the kernel
+    intro Pt
+    show ψ (veluMapAll (E⁄(AlgebraicClosure ℚ)) S hS Pt) = 0 ↔ Pt ∈ C
+    rw [← hmem, ← veluMapAll_eq_zero_iff (E⁄(AlgebraicClosure ℚ)) S hS Pt]
+    constructor
+    · intro h
+      exact ψ.injective (by rw [h, map_zero])
+    · intro h
+      rw [h, map_zero]
+
+/-- **The quotient isogeny by a finite Galois-stable subgroup of ARBITRARY order**,
+in the form that forgets the model.
+
+This is `exists_velu_quotient_isogeny` with the hypothesis `Odd (Nat.card C)` removed;
+it is `exists_velu_quotient_isogeny_model_of_subgroup` with the identification
+`E' = E.veluModel t w` and the two Vélu-sum equations discarded. -/
+theorem exists_velu_quotient_isogeny_of_subgroup
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
+    (hCfin : (C : Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
+    (hCstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ C,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈ C) :
+    ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
+      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point),
+      (∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) := by
+  obtain ⟨t, w, hell, φ, -, -, hgal, hker⟩ :=
+    exists_velu_quotient_isogeny_model_of_subgroup E C hCfin hCstable
+  exact ⟨E.veluModel t w, hell, φ, hgal, hker⟩
+
+end DescentAllOrders
 
 end WeierstrassCurve
