@@ -8659,7 +8659,16 @@ which in a DOMAIN is `0` or `1`; an artinian ring with only trivial
 idempotents is local
 (`IsLocalRing.of_isArtinianRing_isIdempotentElem`); and locality
 transfers back through the quotient because units lift. -/
-theorem IsLocalRing.of_henselianRing_of_isDomain {A : Type*} [CommRing A]
+-- `_root_.` is LOAD-BEARING (2026-07-26): without it this declaration is
+-- `GaloisRepresentation.Modularity.IsLocalRing.of_henselianRing_of_isDomain`,
+-- which creates a namespace `GaloisRepresentation.Modularity.IsLocalRing`.
+-- `Modularity/Patching.lean` lives in that same namespace and says
+-- `open IsLocalRing` in four sections; those then resolve to the new,
+-- nearly-empty namespace instead of mathlib's, and 95 references to
+-- `maximalIdeal` and friends fail with `Unknown identifier`.  The lemma is
+-- general commutative algebra about `IsLocalRing`, so the root namespace is
+-- also its correct home.
+theorem _root_.IsLocalRing.of_henselianRing_of_isDomain {A : Type*} [CommRing A]
     [IsDomain A] (J : Ideal A) [hHen : HenselianRing A J]
     [IsArtinianRing (A ⧸ J)] :
     IsLocalRing A := by
