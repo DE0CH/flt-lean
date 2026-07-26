@@ -73,8 +73,13 @@ Also PROVEN, 2026-07-26:
   (`velu_baseChange_curve` and the lemmas around it), and the parity
   argument `velu_twoTorsion_notMem` placing `2`-torsion outside a subgroup
   of odd order.
-* `velu_exists_three_twoTorsion`, assembled over the single leaf
-  `velu_coordX_twoTorsion_ne` below.
+* `velu_exists_three_twoTorsion`, and (2026-07-26) the leaf it was assembled
+  over, `velu_coordX_twoTorsion_ne`: the Vélu `x`-coordinates of two distinct
+  `2`-torsion points outside the kernel differ. Its proof is a root count for
+  the monic degree-`|S|` polynomial `veluXNum S − X(T₁)·veluH S`, in which the
+  translates `x(T₁ + Q)` are DOUBLE roots because the logarithmic-derivative
+  identity `velu_dlog_XNum` turns `dX/dx = 0` there into
+  `velu_poleV_sum_eq_one`. It consumes no open leaf.
 
 Also PROVEN, 2026-07-26: `velu_pole_identity` itself, the `y`-free
 rational-function identity in `x` alone that remains of the verification of
@@ -86,7 +91,7 @@ the denominator `veluH S = ∏_{Q ∈ S ∖ 0}(T − x_Q)` turns it into
 two-part argument becomes: `veluH S ^ 4` divides `veluTheta S`, and
 `deg (veluTheta S) < 4(|S| − 1)`. See the section header at `section PolePoly`.
 
-SORRY LEAVES (four, each stated over an arbitrary field of characteristic
+SORRY LEAVES (three, each stated over an arbitrary field of characteristic
 zero for a finite subgroup of odd order):
 
 * `WeierstrassCurve.velu_theta_local_dvd` — `(T − x_Q)⁸ ∣ veluTheta S` for
@@ -97,13 +102,16 @@ zero for a finite subgroup of odd order):
   "vanishing at infinity", where `veluT` and `veluW` are consumed. Verified
   numerically to hold on `±`-stable NON-subgroups too, so it does not need
   `hS`.
-* `WeierstrassCurve.velu_coordX_twoTorsion_ne` — the Vélu `x`-coordinates
-  of two distinct `2`-torsion points outside the kernel differ.
 * `WeierstrassCurve.velu_map_add_of_notMem` — additivity in the generic
   case, `P`, `Q`, `P + Q` all outside the kernel.
 
-The last two are two faces of one fact — that the Vélu map is a
-homomorphism read on coordinates — and are worth attacking together.
+The last one is the surviving half of what used to be a pair with
+`velu_coordX_twoTorsion_ne` — "the Vélu map is a homomorphism read on
+coordinates". The polynomial machinery written for that leaf
+(`veluXNum_eval`, `veluXNum_monic`, `veluXNum_degree`, `velu_dlog_XNum`,
+`veluPX_degree_lt`, `veluH_degree_eq_card`) is available to it, and
+`veluPX_degree_lt` in particular is a step towards
+`velu_theta_degree_lt`.
 
 These are the mathematical content of Vélu's theorem; none of it is in
 mathlib.
@@ -1412,6 +1420,260 @@ theorem velu_pole_identity {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd :
   · exact absurd h1 (pow_ne_zero _ hH)
   · exact sub_eq_zero.mp h2
 
+/-! ### The Vélu `x`-map as a rational function, and its fibre over a `2`-torsion image
+
+Everything below is PROVEN and is what `velu_coordX_twoTorsion_ne` (in the next section)
+consumes. None of it depends on `velu_pole_identity` or on any other open leaf: the two
+inputs are `veluPX_eval`/`veluPV_eval` (the cleared-denominator forms of Vélu's pole
+expansion, proven above) and the translation/negation invariances of the Vélu coordinates
+(proven in the `Identities` section).
+
+The content is that `veluXNum S / veluH S` IS the Vélu `x`-coordinate as a rational
+function of `x` (`veluXNum_eval`), that it is monic of degree `|S|` over a denominator of
+degree `|S| − 1` (`veluXNum_monic`, `veluXNum_degree`), and — the one genuinely new
+identity — that its logarithmic derivative is Vélu's `Ξ`,
+
+  `veluXNum' · veluH − veluXNum · veluH' = veluXi`      (`velu_dlog_XNum`),
+
+which is the polynomial form of `dX/dx = 1 − Σ veluPoleV`. That is exactly what turns the
+translates `x(T + Q)` of a `2`-torsion point into DOUBLE roots of `veluXNum − X(T)·veluH`,
+and the double roots are what make the degree count work. -/
+
+omit [DecidableEq F] [CharZero F] in
+/-- **PROVEN.** Two nonzero points with the same coordinates are equal. -/
+lemma velu_point_eq_of_coords {P Q : W.Point} (hP : P ≠ 0) (hQ : Q ≠ 0)
+    (hx : veluPointX P = veluPointX Q) (hy : veluPointY P = veluPointY Q) : P = Q := by
+  obtain _ | ⟨x₁, y₁, h₁⟩ := P
+  · exact absurd rfl hP
+  obtain _ | ⟨x₂, y₂, h₂⟩ := Q
+  · exact absurd rfl hQ
+  exact velu_point_some_eq hx hy
+
+omit [CharZero F] in
+/-- **PROVEN.** The completed square `2y + a₁x + a₃` vanishes exactly at the `2`-torsion:
+it is `y − negY x y`, so it is nonzero at an affine point with `−P ≠ P`. -/
+lemma velu_two_y_ne_zero {P : W.Point} (hP0 : P ≠ 0) (hP2 : -P ≠ P) :
+    2 * veluPointY P + W.a₁ * veluPointX P + W.a₃ ≠ 0 := by
+  intro h
+  have hneg0 : (-P : W.Point) ≠ 0 := fun hc => hP0 (neg_eq_zero.mp hc)
+  refine hP2 (velu_point_eq_of_coords hneg0 hP0 (velu_pointX_neg P) ?_)
+  rw [velu_pointY_neg P hP0]
+  linear_combination -h
+
+omit [CharZero F] in
+/-- **PROVEN.** The Vélu image of a `2`-torsion point outside the kernel is again
+`2`-torsion: `Y(T) = Y(−T) = negY (X(T), Y(T))` by `veluCoordY_neg`. -/
+lemma velu_twoTorsion_coordY {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {T : W.Point} (hT : T ∉ S) (hT2 : -T = T) :
+    2 * W.veluCoordY S T + W.a₁ * W.veluCoordX S T + W.a₃ = 0 := by
+  have h := veluCoordY_neg hS hT
+  rw [hT2, veluCurve_negY] at h
+  simp only [WeierstrassCurve.Affine.negY] at h
+  linear_combination h
+
+omit [CharZero F] in
+/-- **PROVEN.** `T + Q ∉ S` for `T ∉ S` and `Q ∈ S`. -/
+lemma velu_add_notMem {S : Finset W.Point} (hS : IsPointSubgroup S)
+    {T : W.Point} (hT : T ∉ S) {Q : W.Point} (hQ : Q ∈ S) : T + Q ∉ S := by
+  intro hc
+  refine hT ?_
+  have := hS.add_mem _ hc _ (hS.neg_mem _ hQ)
+  simpa using this
+
+omit [CharZero F] in
+/-- **PROVEN.** A translate `T + Q` of a `2`-torsion point by a NONZERO element of an
+odd-order subgroup is never `2`-torsion — `−(T + Q) = T + (−Q)`, so `2`-torsion would force
+`−Q = Q`, impossible in an odd-order subgroup (`velu_twoTorsion_notMem`). -/
+lemma velu_add_not_twoTorsion {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {T : W.Point} (hT2 : -T = T) {Q : W.Point} (hQ : Q ∈ S.erase 0) :
+    -(T + Q) ≠ T + Q := by
+  intro hc
+  refine velu_twoTorsion_notMem hS hodd (Finset.ne_of_mem_erase hQ) ?_
+    (Finset.mem_of_mem_erase hQ)
+  have h1 : T + -Q = T + Q := by
+    calc T + -Q = -T + -Q := by rw [hT2]
+      _ = -(T + Q) := by abel
+      _ = T + Q := hc
+  exact add_left_cancel h1
+
+/-- **PROVEN: the Vélu `x`-map is RAMIFIED at every translate `T + Q` of a `2`-torsion point
+by a nonzero kernel element.** In pole form the ramification is the vanishing of
+`1 − Σ_{Q' ∈ S} veluPoleV` at `x(T + Q)`, i.e. `dX/dx = 0` there.
+
+Proof: `velu_pole_V` factors `2Y + a₁X + a₃ = (2y + a₁x + a₃)·(1 − Σ veluPoleV)` at the point
+`T + Q`. The left side vanishes because the Vélu image of `T + Q` equals that of `T`
+(`veluCoordX_add_mem`, `veluCoordY_add_mem`) and the image of a `2`-torsion point is
+`2`-torsion (`velu_twoTorsion_coordY`); the first factor on the right does not vanish
+because `T + Q` is itself not `2`-torsion (`velu_add_not_twoTorsion`, where `hodd` is
+used). -/
+lemma velu_poleV_sum_eq_one {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {T : W.Point} (hT : T ∉ S) (hT2 : -T = T) {Q : W.Point} (hQ : Q ∈ S.erase 0) :
+    ∑ Q' ∈ S, veluPoleV W (veluPointX (T + Q)) Q' = 1 := by
+  have hQS : Q ∈ S := Finset.mem_of_mem_erase hQ
+  have hTQ : T + Q ∉ S := velu_add_notMem hS hT hQS
+  have hTQ0 : T + Q ≠ 0 := fun hc => hTQ (hc ▸ hS.zero_mem)
+  have hTQ2 : -(T + Q) ≠ T + Q := velu_add_not_twoTorsion hS hodd hT2 hQ
+  have hV := velu_pole_V hS hTQ
+  rw [← velu_coordX_eq hS hTQ, ← velu_coordY_eq hS hTQ, veluCoordX_add_mem hS T hQS,
+    veluCoordY_add_mem hS T hQS, velu_twoTorsion_coordY hS hT hT2] at hV
+  rcases mul_eq_zero.mp hV.symm with h | h
+  · exact absurd h (velu_two_y_ne_zero hTQ0 hTQ2)
+  · linear_combination -h
+
+omit [CharZero F] in
+lemma veluHq_monic (S : Finset W.Point) (Q : W.Point) : (veluHq S Q).Monic :=
+  Polynomial.monic_prod_of_monic _ _ fun _ _ => Polynomial.monic_X_sub_C _
+
+omit [CharZero F] in
+/-- **PROVEN.** `deg veluH = 2 + deg veluHq` — the `±`-pair form of `veluH_factor`. -/
+lemma veluH_degree_eq {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {Q : W.Point} (hQ : Q ∈ S.erase 0) :
+    (veluH S).degree = 2 + (veluHq S Q).degree := by
+  rw [veluH_factor hS hodd hQ, Polynomial.degree_mul, Polynomial.degree_pow,
+    Polynomial.degree_X_sub_C]
+  norm_num
+
+omit [CharZero F] in
+/-- **PROVEN.** `deg veluPX < deg veluH`: each summand is a linear polynomial times
+`veluHq`, of degree `≤ deg veluH − 1`. -/
+lemma veluPX_degree_lt {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card) :
+    (veluPX S).degree < (veluH S).degree := by
+  have hHne : (veluH S) ≠ 0 := (veluH_monic S).ne_zero
+  have hbot : (⊥ : WithBot ℕ) < (veluH S).degree :=
+    bot_lt_iff_ne_bot.mpr fun h => hHne (Polynomial.degree_eq_bot.mp h)
+  rw [veluPX]
+  refine lt_of_le_of_lt (Polynomial.degree_sum_le _ _) ?_
+  rw [Finset.sup_lt_iff hbot]
+  intro Q hQ
+  have hHq : (veluHq S Q) ≠ 0 := (veluHq_monic S Q).ne_zero
+  have hHqbot : (veluHq S Q).degree ≠ ⊥ := fun h => hHq (Polynomial.degree_eq_bot.mp h)
+  have hg : (Polynomial.C (veluTTerm W Q) * (Polynomial.X - Polynomial.C (veluPointX Q))
+      + Polynomial.C (veluUTerm W Q)).degree < 2 := by
+    refine lt_of_le_of_lt (?_ : _ ≤ (1 : WithBot ℕ)) (by norm_num)
+    compute_degree
+  rw [Polynomial.degree_mul, veluH_degree_eq hS hodd hQ]
+  exact WithBot.add_lt_add_right hHqbot hg
+
+omit [CharZero F] in
+lemma veluH_degree_eq_card {S : Finset W.Point} (hS : IsPointSubgroup S) :
+    (veluH S).degree = ((S.card - 1 : ℕ) : WithBot ℕ) := by
+  rw [Polynomial.degree_eq_natDegree (veluH_monic S).ne_zero, veluH_natDegree hS]
+
+omit [CharZero F] in
+lemma velu_XH_degree {S : Finset W.Point} (hS : IsPointSubgroup S) :
+    (Polynomial.X * veluH S : Polynomial F).degree = ((S.card : ℕ) : WithBot ℕ) := by
+  have hcard : 1 ≤ S.card := Finset.card_pos.mpr ⟨0, hS.zero_mem⟩
+  rw [Polynomial.degree_mul, Polynomial.degree_X, veluH_degree_eq_card hS,
+    ← Nat.cast_one (R := WithBot ℕ), ← Nat.cast_add]
+  congr 1
+  omega
+
+lemma velu_CPX_degree_lt {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card) :
+    (Polynomial.C ((2 : F)⁻¹) * veluPX S).degree
+      < (Polynomial.X * veluH S : Polynomial F).degree := by
+  have hcard : 1 ≤ S.card := Finset.card_pos.mpr ⟨0, hS.zero_mem⟩
+  have h2ne : ((2 : F)⁻¹) ≠ 0 := inv_ne_zero two_ne_zero
+  have h1 : (Polynomial.C ((2 : F)⁻¹) * veluPX S).degree ≤ (veluPX S).degree := by
+    rw [Polynomial.degree_mul, Polynomial.degree_C h2ne, zero_add]
+  calc (Polynomial.C ((2 : F)⁻¹) * veluPX S).degree ≤ (veluPX S).degree := h1
+    _ < (veluH S).degree := veluPX_degree_lt hS hodd
+    _ = ((S.card - 1 : ℕ) : WithBot ℕ) := veluH_degree_eq_card hS
+    _ < ((S.card : ℕ) : WithBot ℕ) := by exact_mod_cast (by omega : S.card - 1 < S.card)
+    _ = (Polynomial.X * veluH S : Polynomial F).degree := (velu_XH_degree hS).symm
+
+/-- **PROVEN.** `veluXNum S = T·veluH S + ½·veluPX S` is MONIC: the second summand has
+strictly smaller degree. -/
+lemma veluXNum_monic {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card) :
+    (veluXNum S).Monic := by
+  rw [veluXNum]
+  exact ((Polynomial.monic_X).mul (veluH_monic S)).add_of_left (velu_CPX_degree_lt hS hodd)
+
+/-- **PROVEN.** `deg (veluXNum S) = |S|` — the Vélu `x`-map has degree `|S|`, as it must. -/
+lemma veluXNum_degree {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card) :
+    (veluXNum S).degree = ((S.card : ℕ) : WithBot ℕ) := by
+  rw [veluXNum, Polynomial.degree_add_eq_left_of_degree_lt (velu_CPX_degree_lt hS hodd),
+    velu_XH_degree hS]
+
+/-- **PROVEN.** `veluXNum S / veluH S` evaluated at `x_P` IS the Vélu `x`-coordinate of `P`,
+for `P ∉ S`. This is `veluPX_eval` plus `velu_coordX_eq`. -/
+lemma veluXNum_eval {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluXNum S).eval (veluPointX P)
+      = (veluH S).eval (veluPointX P) * W.veluCoordX S P := by
+  rw [veluXNum, velu_coordX_eq hS hP]
+  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_X, Polynomial.eval_C]
+  rw [veluPX_eval hS hodd hP]
+  ring
+
+/-- **PROVEN.** `veluXi S / (veluH S)²` evaluated at `x_P` is `1 − Σ veluPoleV`. -/
+lemma veluXi_eval {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P : W.Point} (hP : P ∉ S) :
+    (veluXi S).eval (veluPointX P)
+      = ((veluH S).eval (veluPointX P)) ^ 2 * (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) := by
+  rw [veluXi]
+  simp only [Polynomial.eval_sub, Polynomial.eval_pow]
+  rw [veluPV_eval hS hodd hP]
+  ring
+
+/-- **PROVEN: `veluPV` is `−½` the derivative of Vélu's `x`-expansion, in cleared form.**
+
+`veluPX' · veluH − veluPX · veluH' = −2·veluPV`. The proof is TERMWISE: substituting
+`veluH = (T − x_Q)²·veluHq S Q` (`veluH_factor`) makes the `Q`-summand of the left side
+equal to `veluHq² ·(T − x_Q)·(−t_Q(T − x_Q) − 2u_Q)`, in which every occurrence of
+`veluHq'` has cancelled, and that is exactly `−2` times the `Q`-summand of `veluPV`. No
+Weierstrass equation and no subgroup property beyond `veluH_factor` is used. -/
+lemma velu_dlog_PX {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card) :
+    Polynomial.derivative (veluPX S) * veluH S - veluPX S * Polynomial.derivative (veluH S)
+      = -2 * veluPV S := by
+  have hC2 : (Polynomial.C (2 : F) : Polynomial F) = 2 := map_ofNat _ 2
+  have h2 : (Polynomial.C ((2 : F)⁻¹) : Polynomial F) * 2 = 1 := by
+    rw [← hC2, ← Polynomial.C_mul]
+    norm_num
+  rw [veluPX, veluPV, Polynomial.derivative_sum, Finset.sum_mul, Finset.sum_mul,
+    ← Finset.sum_sub_distrib, Finset.mul_sum]
+  refine Finset.sum_congr rfl fun Q hQ => ?_
+  rw [veluH_factor hS hodd hQ]
+  simp only [Polynomial.derivative_mul, Polynomial.derivative_add, Polynomial.derivative_sub,
+    Polynomial.derivative_X, Polynomial.derivative_C, Polynomial.derivative_pow,
+    Polynomial.C_mul, Nat.cast_ofNat, hC2, sub_zero, mul_one, zero_mul, add_zero, zero_add]
+  linear_combination (Polynomial.C (veluTTerm W Q) *
+    (Polynomial.X - Polynomial.C (veluPointX Q)) ^ 2 * (veluHq S Q) ^ 2) * h2
+
+/-- **PROVEN: the logarithmic derivative of the Vélu `x`-map is `veluXi`.**
+
+`veluXNum' · veluH − veluXNum · veluH' = veluXi`, i.e. `dX/dx = Ξ/H² = 1 − Σ veluPoleV`.
+Immediate from `velu_dlog_PX` and `veluXi = veluH² − veluPV`. Together with
+`velu_poleV_sum_eq_one` this is what makes `x(T + Q)` a DOUBLE root of
+`veluXNum − X(T)·veluH` for `2`-torsion `T`. -/
+lemma velu_dlog_XNum {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card) :
+    Polynomial.derivative (veluXNum S) * veluH S
+        - veluXNum S * Polynomial.derivative (veluH S) = veluXi S := by
+  have hC2 : (Polynomial.C (2 : F) : Polynomial F) = 2 := map_ofNat _ 2
+  have h2 : (Polynomial.C ((2 : F)⁻¹) : Polynomial F) * 2 = 1 := by
+    rw [← hC2, ← Polynomial.C_mul]
+    norm_num
+  have hd := velu_dlog_PX hS hodd
+  rw [veluXNum, veluXi]
+  simp only [Polynomial.derivative_add, Polynomial.derivative_mul, Polynomial.derivative_X,
+    Polynomial.derivative_C, zero_mul, one_mul, zero_add]
+  linear_combination Polynomial.C ((2 : F)⁻¹) * hd - (veluPV S) * h2
+
+omit [DecidableEq F] [CharZero F] in
+/-- **PROVEN.** A common root of `p` and `p'` is a double root of `p`. -/
+lemma velu_sq_dvd_of_isRoot {p : Polynomial F} {a : F} (h1 : p.IsRoot a)
+    (h2 : (Polynomial.derivative p).IsRoot a) :
+    (Polynomial.X - Polynomial.C a) ^ 2 ∣ p := by
+  obtain ⟨q, hq⟩ := Polynomial.dvd_iff_isRoot.mpr h1
+  subst hq
+  have hq0 : q.IsRoot a := by
+    simp only [Polynomial.IsRoot, Polynomial.derivative_mul, Polynomial.derivative_sub,
+      Polynomial.derivative_X, Polynomial.derivative_C, sub_zero, one_mul, Polynomial.eval_add,
+      Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C,
+      sub_self, zero_mul, add_zero] at h2
+    exact h2
+  obtain ⟨r, hr⟩ := Polynomial.dvd_iff_isRoot.mpr hq0
+  exact ⟨r, by rw [hr]; ring⟩
+
 end PolePoly
 
 /-! ### Vélu's theorem -/
@@ -1496,35 +1758,244 @@ theorem velu_equation (S : Finset W.Point) (hS : IsPointSubgroup S)
   rw [velu_coordX_eq hS hP, velu_coordY_eq hS hP]
   exact W.velu_equation_pole S hS hodd hP
 
-/-- **SORRY LEAF: the Vélu `x`-coordinates of two distinct `2`-torsion points differ**, cut
-2026-07-26 out of `velu_exists_three_twoTorsion`. This is the WHOLE remaining content of that
-node — everything else in it (base change, the existence of the three `2`-torsion points over
-the algebraic closure, their lying outside the kernel, and the quotient equation) is proven.
+omit [W.IsElliptic] in
+/-- **PROVEN 2026-07-26: the Vélu `x`-coordinates of two distinct `2`-torsion points
+differ.** Cut 2026-07-26 out of `velu_exists_three_twoTorsion`, of which it was the whole
+remaining content.
 
-Why it is true: by Vélu's theorem the images of the three nonzero `2`-torsion points of `W`
-are the three nonzero `2`-torsion points of the quotient, which are distinct because the
-quotient is nonsingular. That reasoning may NOT be used here, since `velu_isElliptic` is
-exactly what is being proved.
+The obvious argument is CIRCULAR and is not used: "the images are the three nonzero
+`2`-torsion points of the quotient, which are distinct because the quotient is nonsingular"
+assumes `velu_isElliptic`, which is what this leaf is being used to prove. The docstring of
+the previous owner recorded a route through the quotient's addition law; the proof below
+takes a different one, purely at the level of the rational function, and consumes NO open
+leaf (in particular not `velu_pole_identity`).
 
-Route without circularity. If `X(T₁) = X(T₂)` then, both images being `2`-torsion — their
-`Y` is forced to `negY(X, Y)` by `veluCoordY_neg`, hence to `−(a₁X + a₃)/2` — the two images
-coincide as coordinate pairs. The third `2`-torsion point `T₃ = T₁ + T₂` also lies outside
-the kernel, and the addition law of the quotient applied to the two coinciding images returns
-`0`, whereas the coordinates of `T₃` are those of an affine point. Carried out at the level of
-the `addX`/`addY` formulas this needs no nonsingularity of the quotient, hence no
-circularity; it is the coordinate shadow of the additivity leaf `velu_map_add_of_notMem`, and
-the two are worth attacking together.
+**Proof.** Write `c = X(T₁)` and `D = veluXNum S − c·veluH S`, so that
+`D(x_P) = veluH(x_P)·(X(P) − c)` for every `P ∉ S` (`veluXNum_eval`). Then:
 
-Hypotheses `_hS`, `_hodd`, `_hT₁`, `_hT₂`, `_hn₁`, `_hn₂`, `_hne` are all genuinely needed:
-dropping the `2`-torsion clauses makes the statement FALSE (take `T₂ = −T₁`, or
-`T₂ = T₁ + Q` for `Q ∈ S`, both of which have the same Vélu `x`-coordinate by
-`veluCoordX_neg` and `veluCoordX_add_mem`); they are underscored only because no proof
-consumes them yet. -/
-theorem velu_coordX_twoTorsion_ne (S : Finset W.Point) (_hS : IsPointSubgroup S)
-    (_hodd : Odd S.card) {T₁ T₂ : W.Point} (_hT₁ : T₁ ∉ S) (_hT₂ : T₂ ∉ S)
-    (_hn₁ : -T₁ = T₁) (_hn₂ : -T₂ = T₂) (_hne : T₁ ≠ T₂) :
-    W.veluCoordX S T₁ ≠ W.veluCoordX S T₂ :=
-  sorry
+* `D` is MONIC of degree `|S|` (`veluXNum_monic`, `veluXNum_degree`, and
+  `deg (c·veluH) = |S| − 1`).
+* `x(T₁)` and `x(T₂)` are roots — the second one is exactly the assumption `X(T₁) = X(T₂)`.
+* For each `Q ∈ S ∖ {0}`, `x(T₁ + Q)` is a DOUBLE root. It is a root because the Vélu
+  coordinates are translation-invariant (`veluCoordX_add_mem`); it is double because the
+  derivative of `D` also vanishes there, which by the logarithmic-derivative identity
+  `velu_dlog_XNum` reduces to `veluXi(x(T₁ + Q)) = 0`, i.e. to `dX/dx = 0`, i.e. to
+  `velu_poleV_sum_eq_one` — the Vélu map is ramified at the translates of a `2`-torsion
+  point.
+* The `(|S| − 1)/2` distinct values `x(T₁ + Q)` (each attained by exactly `±Q`) together
+  with `x(T₁)` and `x(T₂)` are PAIRWISE DISTINCT, and the corresponding pairwise coprime
+  factors multiply to a divisor of `D` of degree `2 + (|S| − 1) = |S| + 1 > |S|`.
+
+That contradicts `deg D = |S|`, so `X(T₁) ≠ X(T₂)`.
+
+**Where each hypothesis is used, and `hodd` is genuinely load-bearing.** `hodd` enters
+twice — via `velu_twoTorsion_notMem`, to know `−Q ≠ Q` for `Q ∈ S ∖ {0}` (so the fibres of
+`Q ↦ x(T₁ + Q)` have exactly two elements, and `T₁ + Q` is not `2`-torsion), and to rule out
+`T₁ + T₂ ∈ S`. Without it the statement is FALSE: if `Q₀ ∈ S` is a nonzero `2`-torsion point
+then `T₂ = T₁ + Q₀` is `2`-torsion, outside `S`, distinct from `T₁`, and has the same Vélu
+`x`-coordinate by `veluCoordX_add_mem`. Checked in PARI/GP: over `𝔽_p`, `11 ≤ p < 60`, with
+kernels of every order `2 ≤ n ≤ 30`, **733 of 733** even-order instances are counterexamples.
+Dropping the `2`-torsion clauses is likewise fatal (`T₂ = −T₁`, `veluCoordX_neg`).
+
+**Numerics behind the route.** The proof is the polynomial form of the fibre identity
+`(X(P) − X(T))·∏_{Q ∈ S∖0}(x_P − x_Q) = ∏_{Q ∈ S}(x_P − x(T + Q))`, verified in PARI/GP in
+1618 instances over `𝔽_p` (`11 ≤ p < 60`, all kernel orders) and 202 instances over `ℚ`,
+with zero failures. -/
+theorem velu_coordX_twoTorsion_ne (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) {T₁ T₂ : W.Point} (hT₁ : T₁ ∉ S) (hT₂ : T₂ ∉ S)
+    (hn₁ : -T₁ = T₁) (hn₂ : -T₂ = T₂) (hne : T₁ ≠ T₂) :
+    W.veluCoordX S T₁ ≠ W.veluCoordX S T₂ := by
+  intro hEq
+  have hnegT₁ : ∀ Q : W.Point, -(T₁ + Q) = T₁ + -Q := fun Q => by
+    rw [show -(T₁ + Q) = -T₁ + -Q from by abel, hn₁]
+  have hT₁0 : T₁ ≠ 0 := fun h => hT₁ (h ▸ hS.zero_mem)
+  have hT₂0 : T₂ ≠ 0 := fun h => hT₂ (h ▸ hS.zero_mem)
+  have hsum0 : T₁ + T₁ = 0 := by rw [← hn₁]; exact add_neg_cancel T₁ ▸ (by rw [hn₁])
+  set c := W.veluCoordX S T₁ with hc
+  set D : Polynomial F := veluXNum S - Polynomial.C c * veluH S with hD
+  -- `D` is monic of degree `|S|`.
+  have hCcH : (Polynomial.C c * veluH S).degree < (veluXNum S).degree := by
+    rw [veluXNum_degree hS hodd]
+    have hle : (Polynomial.C c * veluH S).degree ≤ (veluH S).degree := by
+      rcases eq_or_ne c 0 with h | h
+      · simp [h]
+      · rw [Polynomial.degree_mul, Polynomial.degree_C h, zero_add]
+    have hcard : 1 ≤ S.card := Finset.card_pos.mpr ⟨0, hS.zero_mem⟩
+    calc (Polynomial.C c * veluH S).degree ≤ (veluH S).degree := hle
+      _ = ((S.card - 1 : ℕ) : WithBot ℕ) := veluH_degree_eq_card hS
+      _ < ((S.card : ℕ) : WithBot ℕ) := by exact_mod_cast (by omega : S.card - 1 < S.card)
+  have hDmonic : D.Monic := by
+    rw [hD, sub_eq_add_neg]
+    exact (veluXNum_monic hS hodd).add_of_left (by rwa [Polynomial.degree_neg])
+  have hDdeg : D.degree = ((S.card : ℕ) : WithBot ℕ) := by
+    rw [hD, sub_eq_add_neg,
+      Polynomial.degree_add_eq_left_of_degree_lt (by rwa [Polynomial.degree_neg]),
+      veluXNum_degree hS hodd]
+  have hDeval : ∀ P : W.Point, P ∉ S →
+      D.eval (veluPointX P) = (veluH S).eval (veluPointX P) * (W.veluCoordX S P - c) := by
+    intro P hP
+    rw [hD, Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C,
+      veluXNum_eval hS hodd hP]
+    ring
+  -- The two `2`-torsion `x`-coordinates are roots.
+  have hroot₁ : D.IsRoot (veluPointX T₁) := by
+    rw [Polynomial.IsRoot, hDeval T₁ hT₁, ← hc, sub_self, mul_zero]
+  have hroot₂ : D.IsRoot (veluPointX T₂) := by
+    rw [Polynomial.IsRoot, hDeval T₂ hT₂, ← hEq, sub_self, mul_zero]
+  -- The translates `x(T₁ + Q)`, `Q ≠ 0`, are DOUBLE roots.
+  have hdouble : ∀ Q ∈ S.erase 0,
+      (Polynomial.X - Polynomial.C (veluPointX (T₁ + Q))) ^ 2 ∣ D := by
+    intro Q hQ
+    have hQS : Q ∈ S := Finset.mem_of_mem_erase hQ
+    have hTQ : T₁ + Q ∉ S := velu_add_notMem hS hT₁ hQS
+    have hH := veluH_eval_ne_zero hS hTQ
+    have hA : (veluXNum S).eval (veluPointX (T₁ + Q))
+        = (veluH S).eval (veluPointX (T₁ + Q)) * c := by
+      rw [veluXNum_eval hS hodd hTQ, veluCoordX_add_mem hS T₁ hQS]
+    refine velu_sq_dvd_of_isRoot ?_ ?_
+    · rw [Polynomial.IsRoot, hDeval _ hTQ, veluCoordX_add_mem hS T₁ hQS, sub_self, mul_zero]
+    · have hXi : (veluXi S).eval (veluPointX (T₁ + Q)) = 0 := by
+        rw [veluXi_eval hS hodd hTQ, velu_poleV_sum_eq_one hS hodd hT₁ hn₁ hQ, sub_self,
+          mul_zero]
+      have hdl := congrArg (Polynomial.eval (veluPointX (T₁ + Q))) (velu_dlog_XNum hS hodd)
+      simp only [Polynomial.eval_sub, Polynomial.eval_mul] at hdl
+      rw [hXi, hA] at hdl
+      rw [Polynomial.IsRoot, hD, Polynomial.derivative_sub, Polynomial.derivative_mul,
+        Polynomial.derivative_C, zero_mul, zero_add, Polynomial.eval_sub, Polynomial.eval_mul,
+        Polynomial.eval_C]
+      have hfac : (veluH S).eval (veluPointX (T₁ + Q)) *
+          ((Polynomial.derivative (veluXNum S)).eval (veluPointX (T₁ + Q))
+            - c * (Polynomial.derivative (veluH S)).eval (veluPointX (T₁ + Q))) = 0 := by
+        linear_combination hdl
+      rcases mul_eq_zero.mp hfac with h | h
+      · exact absurd h hH
+      · linear_combination h
+  -- All the roots exhibited are pairwise distinct.
+  have hx12 : veluPointX T₁ ≠ veluPointX T₂ := by
+    intro h
+    rcases velu_pointX_eq_iff hT₁0 hT₂0 h with h' | h'
+    · exact hne h'
+    · exact hne (by rw [h', hn₂])
+  have hx1Q : ∀ Q ∈ S.erase 0, veluPointX T₁ ≠ veluPointX (T₁ + Q) := by
+    intro Q hQ h
+    have hQ0 : Q ≠ 0 := Finset.ne_of_mem_erase hQ
+    have hQS : Q ∈ S := Finset.mem_of_mem_erase hQ
+    have hTQ0 : T₁ + Q ≠ 0 := fun hz =>
+      (velu_add_notMem hS hT₁ hQS) (hz ▸ hS.zero_mem)
+    rcases velu_pointX_eq_iff hT₁0 hTQ0 h with h' | h'
+    · exact hQ0 (add_left_cancel (a := T₁) (by rw [add_zero]; exact h'.symm))
+    · rw [hnegT₁ Q] at h'
+      exact hQ0 (neg_eq_zero.mp
+        (add_left_cancel (a := T₁) (by rw [add_zero]; exact h'.symm)))
+  have hx2Q : ∀ Q ∈ S.erase 0, veluPointX T₂ ≠ veluPointX (T₁ + Q) := by
+    intro Q hQ h
+    have hQ0 : Q ≠ 0 := Finset.ne_of_mem_erase hQ
+    have hQS : Q ∈ S := Finset.mem_of_mem_erase hQ
+    have hTQ0 : T₁ + Q ≠ 0 := fun hz =>
+      (velu_add_notMem hS hT₁ hQS) (hz ▸ hS.zero_mem)
+    have hmem : T₁ + T₂ ∈ S := by
+      rcases velu_pointX_eq_iff hT₂0 hTQ0 h with h' | h'
+      · have : T₁ + T₂ = Q := by rw [h', ← add_assoc, hsum0, zero_add]
+        rw [this]; exact hQS
+      · rw [hnegT₁ Q] at h'
+        have : T₁ + T₂ = -Q := by rw [h', ← add_assoc, hsum0, zero_add]
+        rw [this]; exact hS.neg_mem _ hQS
+    have h2t : -(T₁ + T₂) = T₁ + T₂ := by
+      rw [show -(T₁ + T₂) = -T₁ + -T₂ from by abel, hn₁, hn₂]
+    have h0 : T₁ + T₂ ≠ 0 := by
+      intro hz
+      exact hne (by rw [← hn₂]; exact add_eq_zero_iff_eq_neg.mp hz)
+    exact velu_twoTorsion_notMem hS hodd h0 h2t hmem
+  -- The fibres of `Q ↦ x(T₁ + Q)` on `S ∖ {0}` are the `±`-pairs.
+  have hfib : ∀ Q ∈ S.erase 0,
+      {Q' ∈ S.erase 0 | veluPointX (T₁ + Q') = veluPointX (T₁ + Q)} = {Q, -Q} := by
+    intro Q hQ
+    have hQ0 : Q ≠ 0 := Finset.ne_of_mem_erase hQ
+    have hQS : Q ∈ S := Finset.mem_of_mem_erase hQ
+    have hnQ0 : -Q ≠ 0 := fun h => hQ0 (neg_eq_zero.mp h)
+    have hTQ0 : T₁ + Q ≠ 0 := fun hz => (velu_add_notMem hS hT₁ hQS) (hz ▸ hS.zero_mem)
+    ext Q'
+    simp only [Finset.mem_filter, Finset.mem_erase, Finset.mem_insert, Finset.mem_singleton]
+    constructor
+    · rintro ⟨⟨hQ'0, hQ'S⟩, hx⟩
+      have hTQ'0 : T₁ + Q' ≠ 0 := fun hz => (velu_add_notMem hS hT₁ hQ'S) (hz ▸ hS.zero_mem)
+      rcases velu_pointX_eq_iff hTQ'0 hTQ0 hx with h' | h'
+      · exact Or.inl (add_left_cancel h')
+      · rw [hnegT₁ Q] at h'
+        exact Or.inr (add_left_cancel h')
+    · rintro (rfl | rfl)
+      · exact ⟨⟨hQ0, hQS⟩, rfl⟩
+      · exact ⟨⟨hnQ0, hS.neg_mem _ hQS⟩, by rw [← hnegT₁ Q]; exact velu_pointX_neg _⟩
+  have hfibcard : ∀ Q ∈ S.erase 0,
+      ({Q' ∈ S.erase 0 | veluPointX (T₁ + Q') = veluPointX (T₁ + Q)}).card = 2 := by
+    intro Q hQ
+    have hQ0 : Q ≠ 0 := Finset.ne_of_mem_erase hQ
+    have hQS : Q ∈ S := Finset.mem_of_mem_erase hQ
+    have hne' : -Q ≠ Q := fun h => velu_twoTorsion_notMem hS hodd hQ0 h hQS
+    rw [hfib Q hQ, Finset.card_insert_of_notMem (by simpa using fun h => hne' h.symm),
+      Finset.card_singleton]
+  -- Assemble a divisor of `D` of degree `|S| + 1`.
+  have hcopl : ∀ a b : F, a ≠ b → IsCoprime (Polynomial.X - Polynomial.C a : Polynomial F)
+      (Polynomial.X - Polynomial.C b) := by
+    intro a b hab
+    have hba : b - a ≠ 0 := sub_ne_zero.mpr (Ne.symm hab)
+    have hkey : (Polynomial.C ((b - a)⁻¹) : Polynomial F) * Polynomial.C (b - a) = 1 := by
+      rw [← Polynomial.C_mul, inv_mul_cancel₀ hba, Polynomial.C_1]
+    refine ⟨Polynomial.C ((b - a)⁻¹), -Polynomial.C ((b - a)⁻¹), ?_⟩
+    rw [Polynomial.C_sub] at hkey
+    linear_combination hkey
+  set img := (S.erase 0).image (fun Q => veluPointX (T₁ + Q)) with himg
+  set M : Polynomial F := ∏ a ∈ img, (Polynomial.X - Polynomial.C a) ^ 2 with hM
+  have hMmonic : M.Monic :=
+    Polynomial.monic_prod_of_monic _ _ fun a _ => (Polynomial.monic_X_sub_C a).pow 2
+  have hMdvd : M ∣ D := by
+    refine Finset.prod_dvd_of_coprime ?_ ?_
+    · intro a ha b hb hab
+      exact ((hcopl a b hab).pow)
+    · intro a ha
+      obtain ⟨Q, hQ, rfl⟩ := Finset.mem_image.mp ha
+      exact hdouble Q hQ
+  have himgcard : (S.erase 0).card = 2 * img.card := by
+    rw [Finset.card_eq_sum_card_image (fun Q => veluPointX (T₁ + Q)) (S.erase 0)]
+    have hall : ∀ b ∈ img, ({Q' ∈ S.erase 0 | veluPointX (T₁ + Q') = b}).card = 2 := by
+      intro b hb
+      obtain ⟨Q, hQ, rfl⟩ := Finset.mem_image.mp hb
+      exact hfibcard Q hQ
+    rw [Finset.sum_congr rfl hall, Finset.sum_const, smul_eq_mul, mul_comm]
+  have hMnat : M.natDegree = 2 * img.card := by
+    rw [hM, Polynomial.natDegree_prod _ _
+      fun a _ => ((Polynomial.monic_X_sub_C a).pow 2).ne_zero]
+    simp [Polynomial.natDegree_pow, Finset.sum_const, smul_eq_mul, mul_comm]
+  have hcop2M : IsCoprime (Polynomial.X - Polynomial.C (veluPointX T₂) : Polynomial F) M := by
+    refine IsCoprime.prod_right fun a ha => ?_
+    obtain ⟨Q, hQ, rfl⟩ := Finset.mem_image.mp ha
+    exact (hcopl _ _ (hx2Q Q hQ)).pow_right
+  have hcop1 : IsCoprime (Polynomial.X - Polynomial.C (veluPointX T₁) : Polynomial F)
+      ((Polynomial.X - Polynomial.C (veluPointX T₂)) * M) := by
+    refine IsCoprime.mul_right (hcopl _ _ hx12) (IsCoprime.prod_right fun a ha => ?_)
+    obtain ⟨Q, hQ, rfl⟩ := Finset.mem_image.mp ha
+    exact (hcopl _ _ (hx1Q Q hQ)).pow_right
+  have hZdvd : (Polynomial.X - Polynomial.C (veluPointX T₁)) *
+      ((Polynomial.X - Polynomial.C (veluPointX T₂)) * M) ∣ D :=
+    hcop1.mul_dvd (Polynomial.dvd_iff_isRoot.mpr hroot₁)
+      (hcop2M.mul_dvd (Polynomial.dvd_iff_isRoot.mpr hroot₂) hMdvd)
+  have hZmonic : ((Polynomial.X - Polynomial.C (veluPointX T₁)) *
+      ((Polynomial.X - Polynomial.C (veluPointX T₂)) * M) : Polynomial F).Monic :=
+    (Polynomial.monic_X_sub_C _).mul ((Polynomial.monic_X_sub_C _).mul hMmonic)
+  have hZnat : ((Polynomial.X - Polynomial.C (veluPointX T₁)) *
+      ((Polynomial.X - Polynomial.C (veluPointX T₂)) * M) : Polynomial F).natDegree
+      = S.card + 1 := by
+    have hcard : 1 ≤ S.card := Finset.card_pos.mpr ⟨0, hS.zero_mem⟩
+    have herase : (S.erase 0).card = S.card - 1 := Finset.card_erase_of_mem hS.zero_mem
+    rw [Polynomial.natDegree_mul (Polynomial.monic_X_sub_C _).ne_zero
+        ((Polynomial.monic_X_sub_C _).mul hMmonic).ne_zero,
+      Polynomial.natDegree_mul (Polynomial.monic_X_sub_C _).ne_zero hMmonic.ne_zero,
+      Polynomial.natDegree_X_sub_C, Polynomial.natDegree_X_sub_C, hMnat, ← himgcard, herase]
+    omega
+  have hfinal := Polynomial.degree_le_of_dvd hZdvd hDmonic.ne_zero
+  rw [Polynomial.degree_eq_natDegree hZmonic.ne_zero, hZnat, hDdeg] at hfinal
+  have : S.card + 1 ≤ S.card := by exact_mod_cast hfinal
+  omega
 
 /-- **PROVEN 2026-07-26 over the single leaf `velu_coordX_twoTorsion_ne`: the Vélu quotient
 acquires three affine `2`-torsion points over the algebraic closure.**
