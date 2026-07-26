@@ -1303,6 +1303,79 @@ theorem isAffine_spanScheme : IsAffine (spanScheme p) := by
 
 end SpanFinite
 
+/-! ### Descent of a factorisation along `ℚ̄/ℚ`
+
+The three lemmas below are what turn leaf (ii) into a one-line
+kernel-comparison.  The point is that `Spec ℚ̄ ⟶ Spec ℚ` is
+schematically dominant — every `app` of it is INJECTIVE — so pulling a
+section back to `ℚ̄` does not enlarge its vanishing locus, and the
+kernel ideal sheaf of a morphism out of `Spec ℚ` is unchanged by
+precomposing with it. -/
+
+/-- An open subset of a ONE-POINT space is `⊥` or `⊤` (PROVEN). -/
+theorem opens_eq_bot_or_top {X : Scheme.{0}} [Subsingleton X] (W : X.Opens) :
+    W = ⊥ ∨ W = ⊤ := by
+  rcases Set.eq_empty_or_nonempty (W : Set X) with h | ⟨x, hx⟩
+  · exact Or.inl (TopologicalSpace.Opens.ext h)
+  · refine Or.inr (TopologicalSpace.Opens.ext (Set.eq_univ_of_forall fun y => ?_))
+    rwa [Subsingleton.elim y x]
+
+/-- **Every `app` of `Spec F̄ ⟶ Spec F` is injective** (PROVEN).
+
+`Spec F` is a one-point space, so there are only two opens to check.  On
+`⊥` the sections form the zero ring and injectivity is vacuous; on `⊤`
+it is the `ΓSpecIso` naturality square together with injectivity of
+`F → F̄`.
+
+Stated over a VARIABLE base field for the reason recorded at
+`isIntegralHom_specAlgClos`. -/
+theorem app_injective_specAlgClos {F : Type} [Field F]
+    (W : (Spec (CommRingCat.of F)).Opens) :
+    Function.Injective ((specAlgClos F).app W).hom := by
+  have : Subsingleton (Spec (CommRingCat.of F)) :=
+    inferInstanceAs (Subsingleton (PrimeSpectrum F))
+  rcases opens_eq_bot_or_top W with rfl | rfl
+  · intro a b _
+    exact Subsingleton.elim a b
+  · have hφ : Function.Injective
+        (CommRingCat.ofHom (algebraMap F (AlgebraicClosure F))).hom :=
+      (algebraMap F (AlgebraicClosure F)).injective
+    have hiso : Function.Injective
+        (Scheme.ΓSpecIso (CommRingCat.of F)).hom.hom :=
+      (Scheme.ΓSpecIso (CommRingCat.of F)).commRingCatIsoToRingEquiv.injective
+    have hnat := Scheme.ΓSpecIso_naturality
+      (CommRingCat.ofHom (algebraMap F (AlgebraicClosure F)))
+    -- NOTE: `rw [hnat]` directly under the `⇑(CommRingCat.Hom.hom ·)`
+    -- coercion produces a motive error; rewriting at the level of the
+    -- underlying FUNCTION is what works.
+    have hfun : ⇑(((specAlgClos F).app ⊤ ≫
+          (Scheme.ΓSpecIso (CommRingCat.of (AlgebraicClosure F))).hom).hom)
+        = ⇑(((Scheme.ΓSpecIso (CommRingCat.of F)).hom ≫
+          CommRingCat.ofHom (algebraMap F (AlgebraicClosure F))).hom) :=
+      congrArg (fun m => ⇑(CommRingCat.Hom.hom m)) hnat
+    have hcomp : Function.Injective
+        (((specAlgClos F).app ⊤ ≫
+          (Scheme.ΓSpecIso (CommRingCat.of (AlgebraicClosure F))).hom).hom) := by
+      rw [hfun]
+      simp only [CommRingCat.hom_comp, RingHom.coe_comp]
+      exact hφ.comp hiso
+    intro a b hab
+    refine hcomp ?_
+    simp only [CommRingCat.hom_comp, RingHom.coe_comp, Function.comp_apply, hab]
+
+/-- **Precomposing with a morphism all of whose `app`s are injective does
+not shrink the kernel ideal sheaf** (PROVEN).
+
+Together with `app_injective_specAlgClos` this is the fpqc-descent step
+of leaf (ii), in the only form that leaf needs. -/
+theorem ker_comp_le_of_app_injective {X Y Z : Scheme.{0}} (g : X ⟶ Y) (r : Y ⟶ Z)
+    (hg : ∀ W : Y.Opens, Function.Injective (g.app W).hom) :
+    (g ≫ r).ker ≤ r.ker := by
+  refine Scheme.IdealSheafData.ofIdeals_mono fun U x hx => ?_
+  rw [Scheme.Hom.comp_app g r U] at hx
+  simp only [RingHom.mem_ker] at hx ⊢
+  exact hg _ (hx.trans (map_zero _).symm)
+
 /-! ### The five properties of the span that the descent leaf needs -/
 
 /-- **The span of finitely many `ℚ̄`-points of a scheme locally of finite
@@ -1381,8 +1454,34 @@ theorem isFinite_spanSchemeι {A : Scheme.{0}} {f : A ⟶ SpecQ}
   exact ⟨hproper, inferInstance⟩
 
 /-- **A `ℚ`-rational point of `A` whose associated `ℚ̄`-point is a member of
-the family factors through the span** (sorry leaf (ii) of the descent
-decomposition).
+the family factors through the span** (PROVEN 2026-07-26; formerly leaf
+(ii) of the descent decomposition).
+
+HOW IT CLOSED, which is shorter than either route sketched below and uses
+neither the reduced-induced structure nor a general fpqc-descent theorem.
+`spanScheme p` is by construction `(geomPtDesc p).ker.subscheme`, so
+`IdealSheafData.inclusion` turns the leaf into a comparison of KERNEL
+IDEAL SHEAVES on `A`: it is enough that
+`(geomPtDesc p).ker ≤ r.ker`.  That splits in two, and both halves are
+cheap:
+
+* `(geomPtDesc p).ker ≤ (p j).ker`, because `p j = Sigma.ι j ≫ geomPtDesc p`
+  factors through the coproduct — this is mathlib's `Hom.le_ker_comp`;
+* `(specAlgClos ℚ ≫ r).ker ≤ r.ker`, the actual descent.  It holds
+  because EVERY `app` of `Spec ℚ̄ ⟶ Spec ℚ` is injective
+  (`app_injective_specAlgClos`): `Spec ℚ` has exactly two opens, and on
+  `⊤` injectivity is the `ΓSpecIso` naturality square applied to the
+  injection `ℚ ↪ ℚ̄`.
+
+NOTE ON HYPOTHESES: the proof uses NEITHER `ab` NOR `hr`, and does not
+need `[Finite J]`.  They are kept because the statement is called with
+them in place, but the fact is more general than advertised — the
+factorisation descends for any morphism `r` out of `Spec ℚ` whose
+`ℚ̄`-point is a member of the family, with no group structure and no
+section condition.  This is not vacuity: the conclusion is a genuine
+factorisation, and it is exactly what `zero_liesIn_of_ratPoint` consumes.
+
+The original route sketch is preserved below.
 
 TRUE.  `geomPt_liesIn_spanScheme` already gives the factorisation of the
 `ℚ̄`-point `specAlgClos ℚ ≫ r` through `C`; what is asked here is that the
@@ -1407,8 +1506,28 @@ theorem ratPoint_liesIn_spanScheme {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
     (r : SpecQ ⟶ A) (hr : r ≫ f = 𝟙 SpecQ)
     (hgeom : ∃ j, p j = specAlgClos ℚ ≫ r) :
-    ∃ w : SpecQ ⟶ spanScheme p, w ≫ spanSchemeι p = r :=
-  sorry
+    ∃ w : SpecQ ⟶ spanScheme p, w ≫ spanSchemeι p = r := by
+  obtain ⟨j, hj⟩ := hgeom
+  -- (a) The span's kernel ideal sheaf is contained in that of each member of
+  -- the family, because each member factors through `geomPtDesc p`.
+  have ha : (geomPtDesc p).ker ≤ (p j).ker := by
+    have h := Scheme.Hom.le_ker_comp
+      (Limits.Sigma.ι (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ))) j)
+      (geomPtDesc p)
+    rwa [show Limits.Sigma.ι (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ))) j
+        ≫ geomPtDesc p = p j from Limits.Sigma.ι_desc p j] at h
+  -- (b) THE DESCENT STEP.
+  have hb : (specAlgClos ℚ ≫ r).ker ≤ r.ker :=
+    ker_comp_le_of_app_injective _ _ (app_injective_specAlgClos (F := ℚ))
+  have hle : (geomPtDesc p).ker ≤ r.ker := ha.trans (hj ▸ hb)
+  -- (c) A smaller kernel means the subscheme is LARGER, so `r`'s
+  -- scheme-theoretic image sits inside the span, and `r` factors.
+  refine ⟨r.toImage ≫ Scheme.IdealSheafData.inclusion hle, ?_⟩
+  rw [Category.assoc]
+  show r.toImage ≫ Scheme.IdealSheafData.inclusion hle
+    ≫ (geomPtDesc p).ker.subschemeι = r
+  rw [Scheme.IdealSheafData.inclusion_subschemeι]
+  exact r.toImage_imageι
 
 /-- **`zero_liesIn` at an ARBITRARY base reduces to the single `ℚ`-point
 `ab.zero (𝟙 SpecQ)`** (PROVEN 2026-07-26).
@@ -1454,7 +1573,26 @@ subgroup of `A(ℚ̄)`.  So by
 closed immersion `ι`.
 
 `hstable` enters exactly here: it is what makes `⟨y⟩` a `Γ_ℚ`-submodule,
-hence `C` defined over `ℚ` at all. -/
+hence `C` defined over `ℚ` at all.
+
+**ROUTE NOTE, 2026-07-26, from the agent that closed leaves (i) and (ii)**
+— what is now available that was not when this docstring was written:
+
+* `isAffine_spanScheme` proves `C` is an AFFINE scheme whose space is
+  FINITE and DISCRETE, and `isFinite_spanSchemeι` proves `ι ≫ f` is
+  finite.  So `C = Spec R` with `R` a finite-dimensional `ℚ`-algebra, and
+  `C ×_ℚ C = Spec (R ⊗_ℚ R)` is finite and discrete too.  The whole
+  rigidity step therefore happens between AFFINE schemes, where
+  `ext_of_isDominant_of_isSeparated` is much easier to feed.
+* The reducedness that step needs is now the ONLY missing input, and it
+  is a statement about the RING `R`: `C` is the scheme-theoretic image of
+  a reduced scheme, so `R` is reduced; a reduced finite `ℚ`-algebra in
+  characteristic `0` is étale, hence `R ⊗_ℚ R` is reduced as well.  That
+  is a commutative-algebra fact, not a scheme-theoretic one, and it does
+  not need the finite-étale/Galois-set correspondence.
+* `isIntegralHom_geomPt` is the reusable form of "each `ℚ̄`-point of `A`
+  is a closed map": it needs only `p j ≫ f = specAlgClos ℚ` and
+  separatedness of `f`. -/
 theorem exists_addHom_factor_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -1515,7 +1653,30 @@ scheme-theoretic image with the scheme-theoretic image of the base change
 five that genuinely needs the finite-étale/Galois-set correspondence, and
 it needs only the SPLIT direction of it, over an algebraically closed
 base — which `CommAlgCat.FiniteEtale.equivOfIsSepClosed` already provides
-in the pin. -/
+in the pin.
+
+**ROUTE NOTE, 2026-07-26, from the agent that closed leaves (i) and (ii)**
+— the "computation of `Hom_ℚ(Spec K, C)`" half is no longer missing, and
+the tool is not the finite-étale correspondence:
+
+`AlgebraicGeometry.pointEquivClosedPoint`
+(`Mathlib/AlgebraicGeometry/AlgClosed/Basic.lean`) states, for `X`
+locally of finite type over an ALGEBRAICALLY CLOSED `K`,
+
+    {p : Spec K ⟶ X // p ≫ f = 𝟙} ≃ closedPoints X
+
+which is exactly `C(K)` on the left.  Leaf (i) is now PROVEN, so
+`ι ≫ f` is finite; base-changing it to `K` keeps it finite, so `C_K` is
+a finite discrete scheme and EVERY point of it is closed.  Hence
+`C(K) ≃ (C_K : Type)`, and the leaf reduces to counting the points of
+`C_K` and matching them with `⟨y⟩` — no Galois category, and only the
+split direction over an algebraically closed base, exactly as predicted.
+
+The remaining genuine input is still the identification of the base
+change of a scheme-theoretic image with the scheme-theoretic image of the
+base change, which is where `Spec ℚ̄ ⟶ Spec ℚ` being flat is used.  Note
+`app_injective_specAlgClos` above already packages the "schematically
+dominant" half of that for `ℚ̄/ℚ`. -/
 theorem geom_cyclic_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
