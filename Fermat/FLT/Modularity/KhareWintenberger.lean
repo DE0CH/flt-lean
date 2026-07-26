@@ -130,6 +130,9 @@ public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 -- the potential-modularity carrier's fields (totally real base field,
 -- Galois enabling hypothesis for Brauer induction) live in these:
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
+public import Mathlib.NumberTheory.NumberField.Cyclotomic.Ideal
+public import Mathlib.FieldTheory.Finite.GaloisField
+public import Mathlib.Analysis.Complex.Basic
 public import Mathlib.FieldTheory.Galois.Basic
 -- the Moret–Bailly cut (2026-07-25, PIN RE-AUDIT): the scheme-theoretic
 -- vocabulary in which Moret–Bailly's existence theorem and the twisted
@@ -1194,9 +1197,10 @@ Leaf list under the moduli cut, as of the DATUM recut (2026-07-26):
 archimedean place, where the ODDNESS of `ρbar` is consumed; its intended
 discharge is one real elliptic curve, `B = E ⊗_ℤ 𝒪_D`, and it needs no
 moduli theory at all), and the three leaves of the DATUM cut:
-`exists_totallyRealCoefficientDatum_of_residueField` (SORRY — a totally
-real field with a prescribed residue field at `ℓ` and a second prime over
-`3`; pure number theory),
+`exists_totallyRealCoefficientDatum_of_residueField` (PROVEN 2026-07-26 —
+a totally real field with a prescribed residue field at `ℓ` and a second
+prime over `3`; pure number theory, discharged by the maximal real
+subfield of `ℚ(ζ_{ℓ^f−1})`),
 `exists_dihedralOddGaloisRep_of_charThree` (SORRY — an odd dihedral
 `ρbarp` in residue characteristic three, intended discharge
 `Ind_{Γ_M}^{Γ_ℚ} χ` for an imaginary quadratic `M`; pure representation
@@ -4063,9 +4067,454 @@ twists refute that). It therefore stays with the construction that owns
 `X`. The datum cut is orthogonal to that objection — it removes
 hypotheses, not conclusions. -/
 
+/-- **A subfield of a finite field with the full cardinality is everything**
+(PROVEN helper for the DATUM leaf). -/
+theorem subfield_eq_top_of_natCard_eq {F : Type*} [Field F] [Finite F] (E : Subfield F)
+    (h : Nat.card E = Nat.card F) : E = ⊤ := by
+  have h1 : (E : Set F).ncard = Nat.card F := by rw [← h]; rfl
+  rw [eq_top_iff]
+  intro x _
+  by_contra hx
+  have hne : (E : Set F) ≠ Set.univ := fun hh => hx (by rw [← SetLike.mem_coe, hh]; trivial)
+  have hlt := Set.ncard_lt_ncard (Set.ssubset_univ_iff.mpr hne) Set.finite_univ
+  rw [h1, Set.ncard_univ] at hlt
+  exact lt_irrefl _ hlt
+
+/-- **`𝔽_ℓ(z + z⁻¹) = 𝔽_ℓ(z)` when `z` generates the multiplicative group**
+(PROVEN, the arithmetic heart of the DATUM leaf; `ℓ ≥ 5` is used only through
+the numeric gap `5 q ≤ q + 2 → q ≤ 0`).
+
+Let `F` be a finite field with `|F| = ℓ ^ f` and let `z` be a primitive
+`(ℓ ^ f − 1)`-st root of unity in `F`, i.e. a generator of `Fˣ`. Then no proper
+subfield of `F` contains `z + z⁻¹`. This is exactly what makes the MAXIMAL REAL
+SUBFIELD of `ℚ(ζ_{ℓ^f−1})` — rather than the cyclotomic field itself, which is
+never totally real — carry a prime whose residue field is the WHOLE of
+`𝔽_{ℓ^f}`, and hence isomorphic to the prescribed `k`.
+
+Proof: if `E ∋ z + z⁻¹` has `q = |E|` elements then `x ↦ x ^ q` fixes `E`
+pointwise, so `z^q + z^{-q} = z + z⁻¹`, i.e. `(z^q − z)(z^q z − 1) = 0`. In the
+first case `z ^ (q−1) = 1`, so `ℓ^f − 1 ∣ q − 1` forces `q = |F|`; in the second
+`z ^ (q+1) = 1`, so `ℓ^f − 1 ≤ q + 1`, and a proper subfield would satisfy
+`ℓ q ≤ ℓ^f ≤ q + 2`, impossible for `ℓ ≥ 5` since `q ≥ 2`. -/
+theorem subfield_eq_top_of_mem_add_inv {F : Type*} [Field F] [Finite F] {ℓ f : ℕ}
+    [hℓ : Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) [CharP F ℓ]
+    (hcard : Nat.card F = ℓ ^ f) {z : F}
+    (hz : IsPrimitiveRoot z (ℓ ^ f - 1)) (E : Subfield F) (hθ : z + z⁻¹ ∈ E) :
+    E = ⊤ := by
+  classical
+  haveI : Fintype F := Fintype.ofFinite F
+  haveI : Fintype E := Fintype.ofFinite E
+  haveI : CharP E ℓ := Subfield.charP E ℓ
+  set m : ℕ := ℓ ^ f - 1 with hmdef
+  have hℓ2 : 2 ≤ ℓ := le_trans (by norm_num) hℓ5
+  have hQ : Nat.card F = ℓ ^ f := hcard
+  have hQ5 : 5 ≤ Nat.card F := by
+    rw [hQ]
+    rcases Nat.eq_zero_or_pos f with hf | hf
+    · exfalso
+      have h1 : Nat.card F = 1 := by rw [hQ, hf, pow_zero]
+      have := Finite.one_lt_card (α := F)
+      omega
+    · calc (5 : ℕ) ≤ ℓ := hℓ5
+        _ = ℓ ^ 1 := (pow_one ℓ).symm
+        _ ≤ ℓ ^ f := Nat.pow_le_pow_right (by omega) hf
+  have hmQ : Nat.card F = m + 1 := by rw [hmdef, hQ]; omega
+  obtain ⟨n, -, hqn⟩ := FiniteField.card (E : Type _) ℓ
+  set q : ℕ := Fintype.card (E : Type _) with hqdef
+  have hqcard : q = ℓ ^ (n : ℕ) := hqn
+  have hq2 : 2 ≤ q := by
+    have := Fintype.one_lt_card (α := (E : Type _))
+    omega
+  have hqle : q ≤ Nat.card F := by
+    rw [hqdef, ← Nat.card_eq_fintype_card]
+    exact Nat.card_le_card_of_injective _ E.subtype_injective
+  have hm1 : 1 ≤ m := by omega
+  have hz0 : z ≠ 0 := by
+    intro h
+    have h2 := hz.pow_eq_one
+    rw [h, zero_pow (by omega)] at h2
+    exact zero_ne_one h2
+  have hfix : (z + z⁻¹) ^ q = z + z⁻¹ := by
+    have h1 := FiniteField.pow_card (⟨z + z⁻¹, hθ⟩ : (E : Type _))
+    have h2 := congrArg (fun x : (E : Type _) => (x : F)) h1
+    simpa [hqdef] using h2
+  have hsplit : (z + z⁻¹) ^ q = z ^ q + (z⁻¹) ^ q := by
+    rw [hqcard]; exact add_pow_expChar_pow z z⁻¹ ℓ n
+  set w : F := z ^ q with hwdef
+  have hw0 : w ≠ 0 := pow_ne_zero _ hz0
+  have heq : w + w⁻¹ = z + z⁻¹ := by
+    rw [hwdef, ← inv_pow]
+    rw [hsplit] at hfix
+    exact hfix
+  have hfac : (w - z) * (w * z - 1) = 0 := by
+    have h1 : (w + w⁻¹) * (w * z) = (z + z⁻¹) * (w * z) := by rw [heq]
+    field_simp at h1
+    linear_combination h1
+  have hgoal : q = Nat.card F := by
+    rcases mul_eq_zero.mp hfac with h | h
+    · have hwz : z ^ q = z := by rw [← hwdef]; exact sub_eq_zero.mp h
+      have hstep : z ^ (q - 1) * z = z := by
+        have hs : z ^ (q - 1) * z = z ^ q := by
+          rw [← pow_succ]; congr 1; omega
+        rw [hs, hwz]
+      have hone : z ^ (q - 1) = 1 :=
+        mul_right_cancel₀ hz0 (by rw [hstep, one_mul] : z ^ (q - 1) * z = 1 * z)
+      have hdvd : m ∣ (q - 1) := hz.dvd_of_pow_eq_one _ hone
+      have hle : m ≤ q - 1 := Nat.le_of_dvd (by omega) hdvd
+      omega
+    · have hwz : z ^ (q + 1) = 1 := by
+        rw [pow_succ, ← hwdef]
+        exact sub_eq_zero.mp h
+      have hdvd : m ∣ (q + 1) := hz.dvd_of_pow_eq_one _ hwz
+      have hle : m ≤ q + 1 := Nat.le_of_dvd (by omega) hdvd
+      have hnf : (n : ℕ) = f := by
+        by_contra hnef
+        have hlt : (n : ℕ) < f := by
+          rcases Nat.lt_or_ge (n : ℕ) f with h1 | h1
+          · exact h1
+          · exfalso
+            have h3 : f < (n : ℕ) := lt_of_le_of_ne h1 (Ne.symm hnef)
+            have h4 : ℓ ^ f < ℓ ^ (n : ℕ) := Nat.pow_lt_pow_right (by omega) h3
+            omega
+        have hstep : ℓ ^ ((n : ℕ) + 1) ≤ ℓ ^ f := Nat.pow_le_pow_right (by omega) (by omega)
+        rw [pow_succ] at hstep
+        have h5q : 5 * q ≤ ℓ ^ (n : ℕ) * ℓ := by
+          rw [← hqcard]; nlinarith
+        have h6 : 5 * q ≤ ℓ ^ f := le_trans h5q hstep
+        omega
+      rw [hQ, hqcard, hnf]
+  exact subfield_eq_top_of_natCard_eq E (by rw [← hgoal, hqdef, Nat.card_eq_fintype_card])
+
+/-- **Integrality descends to a subfield** (PROVEN helper): an element of a
+subfield `D ≤ K` whose image in `K` is integral over `ℤ` is integral over `ℤ`. -/
+theorem isIntegral_subfield_mk {K : Type*} [Field K] (D : Subfield K) (x : K) (hx : x ∈ D)
+    (h : IsIntegral ℤ x) : IsIntegral ℤ (⟨x, hx⟩ : D) := by
+  obtain ⟨p, hpm, hp⟩ := h
+  refine ⟨p, hpm, ?_⟩
+  apply D.subtype_injective
+  rw [map_zero]
+  have hcomp : (D.subtype).comp (algebraMap ℤ (D : Type _)) = algebraMap ℤ K :=
+    Subsingleton.elim _ _
+  have h2 := Polynomial.hom_eval₂ p (algebraMap ℤ (D : Type _)) D.subtype (⟨x, hx⟩ : D)
+  rw [hcomp] at h2
+  rw [h2]
+  exact hp
+
+/-- **A subring of a finite field is closed under inverses** (PROVEN helper):
+`x⁻¹ = x ^ (|F| − 2)`. -/
+theorem inv_mem_subring_of_finite {F : Type*} [Field F] [Finite F] (E : Subring F) (x : F)
+    (hx : x ∈ E) : x⁻¹ ∈ E := by
+  classical
+  haveI : Fintype F := Fintype.ofFinite F
+  rcases eq_or_ne x 0 with rfl | hx0
+  · simp
+  · have hcard : 2 ≤ Fintype.card F := Fintype.one_lt_card
+    have h1 : x ^ (Fintype.card F - 1) = 1 := FiniteField.pow_card_sub_one_eq_one x hx0
+    have h2 : x * x ^ (Fintype.card F - 2) = 1 := by
+      rw [← pow_succ', show Fintype.card F - 2 + 1 = Fintype.card F - 1 by omega]
+      exact h1
+    rw [inv_eq_of_mul_eq_one_right h2]
+    exact E.pow_mem hx _
+
+/-- **Reduction preserves the order of a root of unity away from the
+characteristic** (PROVEN helper, via `Polynomial.isRoot_cyclotomic_iff`). -/
+theorem isPrimitiveRoot_map_of_natCast_ne_zero {A : Type*} [CommRing A] [IsDomain A]
+    {F : Type*} [Field F] (φ : A →+* F) (m : ℕ) (hm : (m : F) ≠ 0) (z : A)
+    (hz : IsPrimitiveRoot z m) : IsPrimitiveRoot (φ z) m := by
+  haveI : NeZero ((m : F)) := ⟨hm⟩
+  rw [← Polynomial.isRoot_cyclotomic_iff]
+  have hmpos : 0 < m := by
+    rcases Nat.eq_zero_or_pos m with h | h
+    · simp [h] at hm
+    · exact h
+  have h1 : (Polynomial.cyclotomic m A).IsRoot z := hz.isRoot_cyclotomic hmpos
+  have h2 : (Polynomial.cyclotomic m F) = (Polynomial.cyclotomic m A).map φ := by
+    simp [Polynomial.map_cyclotomic]
+  rw [h2, Polynomial.IsRoot, Polynomial.eval_map, Polynomial.eval₂_hom]
+  rw [Polynomial.IsRoot] at h1
+  rw [h1, map_zero]
+
+/-- **`ℓ` has order exactly `f` modulo `ℓ ^ f − 1`** (PROVEN helper): the
+residue degree of `ℓ` in `ℚ(ζ_{ℓ^f−1})` is therefore exactly `f`. -/
+theorem orderOf_natCast_zmod_pow_sub_one {ℓ f : ℕ} (hℓ2 : 2 ≤ ℓ) (hf : 0 < f) :
+    orderOf ((ℓ : ZMod (ℓ ^ f - 1))) = f := by
+  have hpow : 1 < ℓ ^ f := Nat.one_lt_pow (by omega) (by omega)
+  set m : ℕ := ℓ ^ f - 1 with hmdef
+  have hm1 : 1 ≤ m := by omega
+  have hmsucc : ℓ ^ f = m + 1 := by omega
+  rw [orderOf_eq_iff hf]
+  refine ⟨?_, ?_⟩
+  · have h0 : ((ℓ : ZMod m)) ^ f = ((ℓ ^ f : ℕ) : ZMod m) := (Nat.cast_pow ℓ f).symm
+    rw [h0, hmsucc]
+    push_cast
+    simp
+  · intro j hjf hj0 hcon
+    have h1 : ((ℓ ^ j : ℕ) : ZMod m) = ((1 : ℕ) : ZMod m) := by
+      rw [Nat.cast_pow, hcon]; norm_num
+    have h2 : (1 : ℕ) ≡ ℓ ^ j [MOD m] := ((ZMod.natCast_eq_natCast_iff _ _ _).mp h1).symm
+    have h3 : 1 ≤ ℓ ^ j := Nat.one_le_pow _ _ (by omega)
+    have h4 : m ∣ ℓ ^ j - 1 := (Nat.modEq_iff_dvd' h3).mp h2
+    have h5 : 1 < ℓ ^ j := Nat.one_lt_pow (by omega) (by omega)
+    have h6 : ℓ ^ j < ℓ ^ f := Nat.pow_lt_pow_right (by omega) hjf
+    have h7 : m ≤ ℓ ^ j - 1 := Nat.le_of_dvd (by omega) h4
+    omega
+
+/-- **The DATUM, constructed inside a GIVEN cyclotomic field of level
+`ℓ ^ f − 1`** (PROVEN; the whole content of
+`exists_totallyRealCoefficientDatum_of_residueField` apart from the choice of
+that field, which is only a universe placement).
+
+`D` is the MAXIMAL REAL SUBFIELD `K⁺` of `K = ℚ(ζ_{ℓ^f−1})`; it is totally real
+by `NumberField.isTotallyReal_maximalRealSubfield`. Take any prime `P` of
+`𝒪_K` above `ℓ`: since `ℓ ∤ ℓ^f − 1`, the residue degree of `P` is
+`orderOf (ℓ : ZMod (ℓ^f−1)) = f`
+(`IsCyclotomicExtension.Rat.inertiaDeg_eq_of_not_dvd`), so `𝒪_K/P` is a field
+with `ℓ ^ f` elements — the same number as `k`, hence isomorphic to it.
+
+`λ` is the KERNEL of `𝒪_D → 𝒪_K → 𝒪_K/P`. That composite is SURJECTIVE:
+its image is a subring, hence (being finite) a subfield, and it contains
+`θ = ζ + ζ⁻¹`, which lies in `K⁺` because every complex embedding sends `ζ` to a
+root of unity, where complex conjugation is inversion; `subfield_eq_top_of_mem_add_inv`
+then says no proper subfield contains `θ`. So `𝒪_D/λ ≃ 𝒪_K/P ≃ k`.
+
+`𝔭` is any prime of `𝒪_D` above `3` (lying over, `Ideal.nonempty_primesOver`),
+and `λ ≠ 𝔭` because a common prime would contain `1 = a ℓ + b · 3`, `ℓ` and `3`
+being coprime for `ℓ ≥ 5`. -/
+theorem exists_totallyRealCoefficientDatum_core (ℓ f : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (hfpos : 0 < f) (K : Type u) [Field K] [NumberField K]
+    [hcyc : IsCyclotomicExtension {ℓ ^ f - 1} ℚ K]
+    (k : Type u) [Field k] [Finite k] [CharP k ℓ] (hcardk : Nat.card k = ℓ ^ f) :
+    ∃ (D : Type u) (_ : Field D) (_ : NumberField D)
+      (_ : NumberField.IsTotallyReal D)
+      (lam frp : Ideal (NumberField.RingOfIntegers D))
+      (kp : Type u) (_ : Field kp) (_ : Finite kp) (_ : TopologicalSpace kp)
+      (_ : DiscreteTopology kp),
+      lam.IsMaximal ∧ frp.IsMaximal ∧ lam ≠ frp ∧
+      ((ℓ : ℕ) : NumberField.RingOfIntegers D) ∈ lam ∧
+      ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
+      Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
+      (3 : kp) = 0 := by
+  classical
+  have hℓ2 : 2 ≤ ℓ := by omega
+  have hbig : 5 ≤ ℓ ^ f := by
+    calc (5 : ℕ) ≤ ℓ := hℓ5
+      _ = ℓ ^ 1 := (pow_one ℓ).symm
+      _ ≤ ℓ ^ f := Nat.pow_le_pow_right (by omega) hfpos
+  set m : ℕ := ℓ ^ f - 1 with hmdef
+  have hm4 : 4 ≤ m := by omega
+  haveI : NeZero m := ⟨by omega⟩
+  have hndvd : ¬ ℓ ∣ m := by
+    intro hdvd
+    have h1 : ℓ ∣ ℓ ^ f := dvd_pow_self ℓ (by omega)
+    have h2 : ℓ ∣ ℓ ^ f - m := Nat.dvd_sub h1 hdvd
+    rw [show ℓ ^ f - m = 1 by omega] at h2
+    exact absurd (Nat.le_of_dvd one_pos h2) (by omega)
+  have horder : orderOf ((ℓ : ZMod m)) = f := orderOf_natCast_zmod_pow_sub_one hℓ2 hfpos
+  obtain ⟨ζ, hζ⟩ : ∃ ζ : K, IsPrimitiveRoot ζ m :=
+    ⟨IsCyclotomicExtension.zeta m ℚ K, IsCyclotomicExtension.zeta_spec m ℚ K⟩
+  set D : Subfield K := NumberField.maximalRealSubfield K with hDdef
+  haveI : NumberField (D : Type u) := NumberField.of_subfield D
+  haveI : NumberField.IsTotallyReal (D : Type u) :=
+    NumberField.isTotallyReal_maximalRealSubfield
+  haveI hpp : (Ideal.span {(ℓ : ℤ)}).IsPrime := by
+    rw [Ideal.span_singleton_prime (by exact_mod_cast (Fact.out : ℓ.Prime).ne_zero)]
+    exact Nat.prime_iff_prime_int.mp Fact.out
+  haveI hpm : (Ideal.span {(ℓ : ℤ)}).IsMaximal :=
+    Ideal.IsPrime.isMaximal hpp
+      (by simpa using (by exact_mod_cast (Fact.out : ℓ.Prime).ne_zero : (ℓ : ℤ) ≠ 0))
+  obtain ⟨⟨P, hPmem⟩⟩ :=
+    (Ideal.span {(ℓ : ℤ)}).nonempty_primesOver (S := NumberField.RingOfIntegers K)
+  haveI : P.IsPrime := hPmem.1
+  haveI : P.LiesOver (Ideal.span {(ℓ : ℤ)}) := hPmem.2
+  haveI : P.IsMaximal := Ideal.IsMaximal.of_liesOver_isMaximal P (Ideal.span {(ℓ : ℤ)})
+  have hℓP : ((ℓ : ℕ) : NumberField.RingOfIntegers K) ∈ P := by
+    have h1 : (ℓ : ℤ) ∈ P.under ℤ := by
+      rw [← Ideal.over_def P (Ideal.span {(ℓ : ℤ)})]
+      exact Ideal.mem_span_singleton_self _
+    have h2 : (algebraMap ℤ (NumberField.RingOfIntegers K)) (ℓ : ℤ) ∈ P := h1
+    simpa using h2
+  letI hFf : Field (NumberField.RingOfIntegers K ⧸ P) := Ideal.Quotient.field P
+  haveI hFfin : Finite (NumberField.RingOfIntegers K ⧸ P) := inferInstance
+  haveI hcharF : CharP (NumberField.RingOfIntegers K ⧸ P) ℓ := by
+    refine (CharP.charP_iff_prime_eq_zero (Fact.out)).mpr ?_
+    have h : ((ℓ : NumberField.RingOfIntegers K) : NumberField.RingOfIntegers K ⧸ P) = 0 :=
+      (Ideal.Quotient.eq_zero_iff_mem).mpr hℓP
+    simpa using h
+  have hcardF : Nat.card (NumberField.RingOfIntegers K ⧸ P) = ℓ ^ f := by
+    have h1 : Nat.card (NumberField.RingOfIntegers K ⧸ P) = ℓ ^ (P.inertiaDeg ℤ) := by
+      rw [Ideal.pow_inertiaDeg, Ideal.absNorm_apply, Submodule.cardQuot_apply]
+    rw [h1, IsCyclotomicExtension.Rat.inertiaDeg_eq_of_not_dvd ℓ K P hndvd, horder]
+  have hmF : ((m : ℕ) : NumberField.RingOfIntegers K ⧸ P) ≠ 0 := by
+    rw [Ne, CharP.cast_eq_zero_iff (NumberField.RingOfIntegers K ⧸ P) ℓ]
+    exact hndvd
+  set z : NumberField.RingOfIntegers K ⧸ P := Ideal.Quotient.mk P hζ.toInteger with hzdef
+  have hzprim : IsPrimitiveRoot z m := by
+    rw [hzdef]
+    exact isPrimitiveRoot_map_of_natCast_ne_zero (Ideal.Quotient.mk P) m hmF _
+      hζ.toInteger_isPrimitiveRoot
+  have hz0 : z ≠ 0 := by
+    intro h
+    have h2 := hzprim.pow_eq_one
+    rw [h, zero_pow (by omega)] at h2
+    exact zero_ne_one h2
+  have hzinv : z ^ (m - 1) = z⁻¹ := by
+    have h1 : z ^ (m - 1) * z = 1 := by
+      rw [← pow_succ, show m - 1 + 1 = m by omega]
+      exact hzprim.pow_eq_one
+    exact inv_eq_of_mul_eq_one_left h1 ▸ rfl
+  have hζ0 : ζ ≠ 0 := by
+    intro h
+    have h2 := hζ.pow_eq_one
+    rw [h, zero_pow (by omega)] at h2
+    exact zero_ne_one h2
+  have hζinv : ζ ^ (m - 1) = ζ⁻¹ := by
+    have h1 : ζ ^ (m - 1) * ζ = 1 := by
+      rw [← pow_succ, show m - 1 + 1 = m by omega]
+      exact hζ.pow_eq_one
+    exact inv_eq_of_mul_eq_one_left h1 ▸ rfl
+  have hθmem : ζ + ζ⁻¹ ∈ D := by
+    rw [hDdef, NumberField.mem_maximalRealSubfield_iff]
+    intro φ
+    have h1 : (φ ζ) ^ m = 1 := by rw [← map_pow, hζ.pow_eq_one, map_one]
+    have h2 : ‖φ ζ‖ = 1 := Complex.norm_eq_one_of_pow_eq_one h1 (by omega)
+    have h3 : star (φ ζ) = (φ ζ)⁻¹ := by rw [Complex.star_def, ← Complex.inv_eq_conj h2]
+    have h4 : φ (ζ + ζ⁻¹) = φ ζ + (φ ζ)⁻¹ := by rw [map_add, map_inv₀]
+    rw [h4, star_add, h3, star_inv₀, h3, inv_inv]
+    ring
+  set θK : NumberField.RingOfIntegers K := hζ.toInteger + hζ.toInteger ^ (m - 1) with hθKdef
+  have hcoe : algebraMap (NumberField.RingOfIntegers K) K hζ.toInteger = ζ := hζ.coe_toInteger
+  have hθKval : (θK : K) = ζ + ζ⁻¹ := by
+    show algebraMap (NumberField.RingOfIntegers K) K θK = ζ + ζ⁻¹
+    rw [hθKdef, map_add, map_pow, hcoe, hζinv]
+  have hθint : IsIntegral ℤ (ζ + ζ⁻¹ : K) := by
+    have h : IsIntegral ℤ ((θK : NumberField.RingOfIntegers K) : K) :=
+      NumberField.RingOfIntegers.isIntegral_coe θK
+    rwa [hθKval] at h
+  set θD : NumberField.RingOfIntegers (D : Type u) :=
+    ⟨⟨ζ + ζ⁻¹, hθmem⟩, isIntegral_subfield_mk D _ hθmem hθint⟩ with hθDdef
+  set ψ : NumberField.RingOfIntegers (D : Type u) →+* (NumberField.RingOfIntegers K ⧸ P) :=
+    (Ideal.Quotient.mk P).comp (NumberField.RingOfIntegers.mapRingHom D.subtype) with hψdef
+  have hmapθ : NumberField.RingOfIntegers.mapRingHom D.subtype θD = θK := by
+    apply NumberField.RingOfIntegers.ext
+    rw [hθKval]
+    rfl
+  have hψθ : ψ θD = z + z⁻¹ := by
+    rw [hψdef, RingHom.comp_apply, hmapθ, hθKdef, map_add, map_pow, ← hzdef, hzinv]
+  have hEtop : (ψ.range.toSubfield (fun x hx => inv_mem_subring_of_finite _ x hx)) = ⊤ := by
+    refine subfield_eq_top_of_mem_add_inv hℓ5 hcardF hzprim _ ?_
+    show z + z⁻¹ ∈ ψ.range
+    rw [← hψθ]
+    exact ⟨θD, rfl⟩
+  have hsurj : Function.Surjective ψ := by
+    intro y
+    have hy : y ∈ (ψ.range.toSubfield (fun x hx => inv_mem_subring_of_finite _ x hx)) := by
+      rw [hEtop]; trivial
+    have hy2 : y ∈ ψ.range := hy
+    exact hy2
+  haveI : Fintype (NumberField.RingOfIntegers K ⧸ P) := Fintype.ofFinite _
+  haveI : Fintype k := Fintype.ofFinite k
+  have hcards : Fintype.card (NumberField.RingOfIntegers K ⧸ P) = Fintype.card k := by
+    rw [← Nat.card_eq_fintype_card, ← Nat.card_eq_fintype_card, hcardF, hcardk]
+  let eq1 : (NumberField.RingOfIntegers (D : Type u) ⧸ RingHom.ker ψ)
+      ≃+* (NumberField.RingOfIntegers K ⧸ P) :=
+    RingHom.quotientKerEquivOfSurjective hsurj
+  let eq2 : (NumberField.RingOfIntegers K ⧸ P) ≃+* k := FiniteField.ringEquivOfCardEq hcards
+  have hlammax : (RingHom.ker ψ).IsMaximal :=
+    Ideal.Quotient.maximal_of_isField _
+      ((eq1.trans eq2).toMulEquiv.isField (Field.toIsField k))
+  have hℓlam : ((ℓ : ℕ) : NumberField.RingOfIntegers (D : Type u)) ∈ RingHom.ker ψ := by
+    rw [RingHom.mem_ker]
+    have h1 : ψ ((ℓ : ℕ) : NumberField.RingOfIntegers (D : Type u))
+        = ((ℓ : ℕ) : NumberField.RingOfIntegers K ⧸ P) := map_natCast ψ ℓ
+    rw [h1, (CharP.cast_eq_zero_iff (NumberField.RingOfIntegers K ⧸ P) ℓ ℓ).mpr dvd_rfl]
+  haveI hp3p : (Ideal.span {(3 : ℤ)}).IsPrime := by
+    rw [Ideal.span_singleton_prime (by norm_num)]
+    exact Int.prime_three
+  haveI hp3m : (Ideal.span {(3 : ℤ)}).IsMaximal := Ideal.IsPrime.isMaximal hp3p (by simp)
+  obtain ⟨⟨frp, hfrpmem⟩⟩ :=
+    (Ideal.span {(3 : ℤ)}).nonempty_primesOver
+      (S := NumberField.RingOfIntegers (D : Type u))
+  haveI : frp.IsPrime := hfrpmem.1
+  haveI : frp.LiesOver (Ideal.span {(3 : ℤ)}) := hfrpmem.2
+  haveI hfrpmax : frp.IsMaximal :=
+    Ideal.IsMaximal.of_liesOver_isMaximal frp (Ideal.span {(3 : ℤ)})
+  have h3frp : ((3 : ℕ) : NumberField.RingOfIntegers (D : Type u)) ∈ frp := by
+    have h1 : (3 : ℤ) ∈ frp.under ℤ := by
+      rw [← Ideal.over_def frp (Ideal.span {(3 : ℤ)})]
+      exact Ideal.mem_span_singleton_self _
+    have h2 : (algebraMap ℤ (NumberField.RingOfIntegers (D : Type u))) (3 : ℤ) ∈ frp := h1
+    simpa using h2
+  letI : Field (NumberField.RingOfIntegers (D : Type u) ⧸ frp) := Ideal.Quotient.field frp
+  haveI : Finite (NumberField.RingOfIntegers (D : Type u) ⧸ frp) := inferInstance
+  letI : TopologicalSpace (NumberField.RingOfIntegers (D : Type u) ⧸ frp) := ⊥
+  haveI : DiscreteTopology (NumberField.RingOfIntegers (D : Type u) ⧸ frp) := ⟨rfl⟩
+  have h3kp : (3 : NumberField.RingOfIntegers (D : Type u) ⧸ frp) = 0 := by
+    have h := (Ideal.Quotient.eq_zero_iff_mem (I := frp)).mpr h3frp
+    rw [map_natCast] at h
+    simpa using h
+  have hlamne : RingHom.ker ψ ≠ frp := by
+    intro hcon
+    have hℓfrp : ((ℓ : ℕ) : NumberField.RingOfIntegers (D : Type u)) ∈ frp := hcon ▸ hℓlam
+    have hcopn : Nat.Coprime ℓ 3 :=
+      (Nat.coprime_primes Fact.out (by norm_num)).mpr (by omega)
+    have hcop : IsCoprime (ℓ : ℤ) (3 : ℤ) := by
+      have h := Nat.isCoprime_iff_coprime.mpr hcopn
+      simpa using h
+    obtain ⟨a, b, hab⟩ := hcop
+    have hone : (1 : NumberField.RingOfIntegers (D : Type u)) ∈ frp := by
+      have hmem : ((a * (ℓ : ℤ) + b * 3 : ℤ) :
+          NumberField.RingOfIntegers (D : Type u)) ∈ frp := by
+        push_cast
+        exact frp.add_mem (frp.mul_mem_left _ hℓfrp) (frp.mul_mem_left _ h3frp)
+      rw [hab] at hmem
+      simpa using hmem
+    exact hfrpmax.ne_top (Ideal.eq_top_of_isUnit_mem _ hone isUnit_one)
+  exact ⟨(D : Type u), inferInstance, inferInstance, inferInstance, RingHom.ker ψ, frp,
+    (NumberField.RingOfIntegers (D : Type u) ⧸ frp), inferInstance, inferInstance,
+    inferInstance, inferInstance,
+    hlammax, hfrpmax, hlamne, hℓlam, h3frp, ⟨eq1.trans eq2⟩, ⟨RingEquiv.refl _⟩, h3kp⟩
+
+/-- **The characteristic of a finite `ℤ_[ℓ]`-algebra field is `ℓ`**
+(PROVEN helper): the kernel of `ℤ_[ℓ] → k` is nonzero because `ℤ_[ℓ]` is
+infinite and `k` is finite, and every nonzero element of `ℤ_[ℓ]` is a unit
+times a power of `ℓ`, so `ℓ ↦ 0`. -/
+theorem charP_of_padicIntAlgebra (ℓ : ℕ) [Fact ℓ.Prime] (k : Type*) [Field k] [Finite k]
+    [Algebra ℤ_[ℓ] k] : CharP k ℓ := by
+  have hinj : ¬ Function.Injective (algebraMap ℤ_[ℓ] k) := by
+    intro h
+    haveI : Finite ℤ_[ℓ] := Finite.of_injective _ h
+    exact not_finite ℤ_[ℓ]
+  obtain ⟨a, b, hab, hne⟩ :
+      ∃ a b : ℤ_[ℓ], algebraMap ℤ_[ℓ] k a = algebraMap ℤ_[ℓ] k b ∧ a ≠ b := by
+    by_contra hc
+    push Not at hc
+    exact hinj fun a b h => hc a b h
+  have hx : a - b ≠ 0 := sub_ne_zero.mpr hne
+  have hx0 : algebraMap ℤ_[ℓ] k (a - b) = 0 := by rw [map_sub, hab, sub_self]
+  have hspec := PadicInt.unitCoeff_spec hx
+  rw [hspec, map_mul, map_pow] at hx0
+  have hu : algebraMap ℤ_[ℓ] k ((PadicInt.unitCoeff hx : ℤ_[ℓ])) ≠ 0 := by
+    intro h
+    have h2 := (PadicInt.unitCoeff hx).isUnit.map (algebraMap ℤ_[ℓ] k)
+    rw [h] at h2
+    exact not_isUnit_zero h2
+  have hzero : (algebraMap ℤ_[ℓ] k ((ℓ : ℕ) : ℤ_[ℓ])) ^ ((a - b).valuation) = 0 := by
+    rcases mul_eq_zero.mp hx0 with h | h
+    · exact absurd h hu
+    · exact h
+  have hℓ0 : algebraMap ℤ_[ℓ] k ((ℓ : ℕ) : ℤ_[ℓ]) = 0 := by
+    rcases Nat.eq_zero_or_pos ((a - b).valuation) with hv | hv
+    · rw [hv, pow_zero] at hzero
+      exact absurd hzero one_ne_zero
+    · exact (pow_eq_zero_iff (by omega)).mp hzero
+  refine (CharP.charP_iff_prime_eq_zero Fact.out).mpr ?_
+  rw [← map_natCast (algebraMap ℤ_[ℓ] k) ℓ]
+  exact hℓ0
+
 /-- **The auxiliary totally real coefficient field and its two primes**
-(sorry node, cut 2026-07-26 — the ARITHMETIC half of the representability
-leaf; no algebraic geometry appears in it): for a finite field `k` of
+(PROVEN 2026-07-26 — the ARITHMETIC half of the representability leaf; no
+algebraic geometry appears in it): for a finite field `k` of
 characteristic `ℓ ≥ 5` there is a totally real number field `D` carrying
 
 * a maximal ideal `λ ∋ ℓ` of `𝒪_D` whose residue field is `k`, and
@@ -4075,15 +4524,31 @@ characteristic `ℓ ≥ 5` there is a totally real number field `D` carrying
 Classically this is the choice of the coefficient field of the
 Hilbert–Blumenthal abelian varieties, and the only real content is the
 first item: a totally real field with a PRESCRIBED residue field at `ℓ`,
-i.e. with a prime of prescribed residue degree `f = [k : 𝔽_ℓ]`. Standard
-routes: the totally real subfield `ℚ(ζ_q)^+` for a prime `q` at which
-`ℓ` has the right order (Dirichlet), or a totally real `ℚ[x]/(g)` for a
-monic `g` that is irreducible of degree `f` modulo `ℓ` and has `f`
-distinct real roots (weak approximation on coefficients). `𝔭` is then
-free: `𝒪_D` is integral over `ℤ` and `(3)` is maximal in `ℤ`, so lying
-over produces a maximal ideal of `𝒪_D` above `3`
-(`Ideal.exists_ideal_over_maximal_of_isIntegral`); `λ ≠ 𝔭` because a
-common maximal ideal would contain both `ℓ` and `3`, hence `1`.
+i.e. with a prime of prescribed residue degree `f = [k : 𝔽_ℓ]`. `𝔭` is
+then free: `𝒪_D` is integral over `ℤ` and `(3)` is maximal in `ℤ`, so
+lying over produces a maximal ideal of `𝒪_D` above `3`
+(`Ideal.nonempty_primesOver`); `λ ≠ 𝔭` because a common maximal ideal
+would contain both `ℓ` and `3`, hence `1`.
+
+ROUTE ACTUALLY TAKEN (2026-07-26), and why it beats the two routes this
+docstring originally proposed. Both of those need an existence theorem
+that is expensive to formalize — a prime `q` at which `ℓ` has prescribed
+order (Dirichlet), or a monic `g` irreducible of degree `f` mod `ℓ` with
+`f` distinct real roots (weak approximation, plus Kummer–Dedekind and an
+index-prime-to-`ℓ` argument to pass from `ℤ[x]/(g)` to `𝒪_D`). Neither
+is needed: take
+`D = ℚ(ζ_m)⁺ = NumberField.maximalRealSubfield ℚ(ζ_m)` with the EXPLICIT
+level `m = ℓ ^ f − 1`. Then `ℓ ∤ m`, and the residue degree of `ℓ` in
+`ℚ(ζ_m)` is `orderOf (ℓ : ZMod m) = f`, which mathlib already computes
+(`IsCyclotomicExtension.Rat.inertiaDeg_eq_of_not_dvd`); so `𝒪_K/P` is a
+field with exactly `ℓ ^ f = |k|` elements. The one genuinely new step is
+that the residue field does not SHRINK when one passes from `K` to the
+totally real `K⁺`: the image of `𝒪_{K⁺}` in `𝒪_K/P` is a subfield
+containing `θ = ζ + ζ⁻¹`, and `subfield_eq_top_of_mem_add_inv` shows no
+PROPER subfield of `𝔽_{ℓ^f}` contains `z + z⁻¹` for `z` a generator of
+`𝔽_{ℓ^f}ˣ` (the two cases `z^q = z` and `z^q = z⁻¹` of the fixed-point
+equation give `m ∣ q ∓ 1`, and `ℓ ≥ 5` kills the second). Cutting down to
+`K⁺` is unavoidable — `ℚ(ζ_m)` itself is totally COMPLEX for `m ≥ 3`.
 
 `char k = ℓ` is not hypothesized because it is FORCED by
 `[Algebra ℤ_[ℓ] k]` together with `[Finite k]`: the kernel of
@@ -4091,7 +4556,9 @@ common maximal ideal would contain both `ℓ` and `3`, hence `1`.
 infinite and `k` is finite, so it is the maximal ideal `(ℓ)`.
 
 Downstream this leaf is consumed only through the conjunction it states;
-`hℓ5` is used for `λ ≠ 𝔭` (via `ℓ ≠ 3`) and for nothing else. The `3` in
+`hℓ5` is used TWICE in the proof — for `λ ≠ 𝔭` (via `ℓ ≠ 3`) and, more
+substantially, in `subfield_eq_top_of_mem_add_inv`, where `5 ≤ ℓ` is what
+rules out `𝔽_ℓ(z + z⁻¹)` being the index-two subfield. The `3` in
 the `𝔭` conjunct is written as the `ℕ`-CAST `((3 : ℕ) : 𝒪_D)` rather than
 as the numeral `(3 : 𝒪_D)` so that it matches the `(↑p : 𝒪_D) ∈ 𝔭` of
 `exists_twistedHilbertBlumenthalModuliTwist_of_datum` at `p = 3` on the
@@ -4110,8 +4577,31 @@ theorem exists_totallyRealCoefficientDatum_of_residueField
       ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp ∧
       Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
       Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
-      (3 : kp) = 0 :=
-  sorry
+      (3 : kp) = 0 := by
+  classical
+  haveI : CharP k ℓ := charP_of_padicIntAlgebra ℓ k
+  haveI : Fintype k := Fintype.ofFinite k
+  obtain ⟨fp, -, hcardk⟩ := FiniteField.card k ℓ
+  have hfpos : 0 < (fp : ℕ) := fp.2
+  have hcardk' : Nat.card k = ℓ ^ (fp : ℕ) := by rw [Nat.card_eq_fintype_card, hcardk]
+  haveI : CharZero (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) :=
+    (ULift.ringEquiv (R := CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)).toRingHom.charZero
+  let e : ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)
+      ≃ₐ[ℚ] CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ :=
+    { ULift.ringEquiv (R := CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ) with
+      commutes' := fun r => by simp }
+  haveI : FiniteDimensional ℚ (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) :=
+    LinearEquiv.finiteDimensional e.toLinearEquiv.symm
+  haveI : NumberField (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) := ⟨⟩
+  haveI : IsCyclotomicExtension {ℓ ^ (fp : ℕ) - 1} ℚ
+      (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ) :=
+    CyclotomicField.instIsCyclotomicExtensionSingletonNatSetOfCharZero _ ℚ
+  haveI : IsCyclotomicExtension {ℓ ^ (fp : ℕ) - 1} ℚ
+      (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) :=
+    IsCyclotomicExtension.equiv {ℓ ^ (fp : ℕ) - 1} ℚ
+      (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ) e.symm
+  exact exists_totallyRealCoefficientDatum_core ℓ (fp : ℕ) hℓ5 hfpos
+    (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) k hcardk'
 
 /-- **An odd dihedral auxiliary level representation** (sorry node, cut
 2026-07-26 — the second ARITHMETIC leaf of the representability half; no
