@@ -6802,9 +6802,15 @@ Dividing by `ΨSq_n⁴` this reads `f'(X)²·Ψ₂Sq(X) = n²·Ψ₂Sq(f(X))` fo
 the rational function `f = Φ_n/ΨSq_n = x ∘ [n]`, i.e. exactly
 `d(x∘[n])/(2y∘[n] + a₁x∘[n] + a₃) = n · dx/(2y + a₁x + a₃)` — the
 invariance of `ω = dx/(2y + a₁x + a₃)`, `[n]^*ω = n·ω`.  It is an
-identity in `ℤ[a₁, …, a₆][X]`, with no hypothesis on `W`, `n` or the
-characteristic; `n = 0` and `n = 1` are immediate, and `Singular` can
-certify it for any fixed small `n`.
+identity in `ℤ[a₁, …, a₆][X]`; `n = 0` and `n = 1` are immediate, and
+`Singular` can certify it for any fixed small `n`.
+
+**On the hypothesis `(n : F) ≠ 0`.**  The identity is in fact universal —
+when `(n : F) = 0` the map `x ∘ [n]` is a rational function of a power
+of `x`, so `Wr = 0` and both sides vanish — but that is a SEPARATE
+argument (inseparability), it is never used by the descent, and the
+route below does not give it.  The hypothesis is therefore part of the
+leaf, so that closing the leaf costs exactly the case that is needed.
 
 **A route that needs no absent mathlib API.**  The natural derivation
 is through the derivation `D` of `K = Frac F[W]` with `D x = ψ₂`,
@@ -6824,7 +6830,8 @@ for a `Singular`-computed `linear_combination` — so
 `μ(n • taut) = n·μ(taut) = n` by `AddMonoidHom.map_zsmul`, and since
 `tautX` is transcendental over the constants that IS the displayed
 polynomial identity. -/
-theorem sq_wronskian_mul_Ψ₂Sq (W : WeierstrassCurve.Affine F) (n : ℤ) :
+theorem sq_wronskian_mul_Ψ₂Sq (W : WeierstrassCurve.Affine F) {n : ℤ}
+    (hn : ((n : ℤ) : F) ≠ 0) :
     (Polynomial.derivative (W.Φ n) * W.ΨSq n -
         W.Φ n * Polynomial.derivative (W.ΨSq n)) ^ 2 * W.Ψ₂Sq =
       Polynomial.C ((n : F) ^ 2) * W.ΨSq n *
@@ -6993,7 +7000,7 @@ theorem rootMultiplicity_Φ_sub_C_mul_ΨSq (hΔ : W.Δ ≠ 0) (hp : (p : F) ≠ 
   -- the identity `(★)`
   have hstar : Wr ^ 2 * W.Ψ₂Sq = Polynomial.C (((p : ℤ) : F) ^ 2) * Ψ * Nt := by
     rw [hWrdef, hΨdef, hΦdef, hNtdef]
-    exact sq_wronskian_mul_Ψ₂Sq W (p : ℤ)
+    exact sq_wronskian_mul_Ψ₂Sq W hpF
   -- the multiplicity bookkeeping, once `Nt ≠ 0` is known
   have hkey : ∀ hNtne : Nt ≠ 0,
       2 * Wr.rootMultiplicity a + W.Ψ₂Sq.rootMultiplicity a =
