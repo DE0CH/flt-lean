@@ -2335,7 +2335,36 @@ docstring.  Auxiliary primes bound the ORDER of the rational Jacobian and
 saturate quickly; what the sieve needs is a prime at which the surviving
 Abel–Jacobi classes are only the forced ones, and that is a different
 question, answered here by the existential quantifier over `ℓ` rather
-than by the table. -/
+than by the table.
+
+## WHY THIS LEAF DOES NOT DECOMPOSE, and what would let it
+
+The natural cut is into (i) *good reduction exists* — the reduced pair
+and the injective reduction map at any good odd `ℓ ∤ N`, which is content
+shared with `exists_x0Compactification_mod_prime` and
+`card_le_of_rankZeroJacobian` and would be worth factoring out — and
+(ii) *the cut is sharp at some prime*.  *This does not compose*, and the
+reason is worth recording so it is not rediscovered.
+
+The two halves have to meet at the SAME `ℓ`, so (ii) must be existential
+in `ℓ` and universal in the datum: "there is a good `ℓ` such that FOR
+EVERY reduction datum at `ℓ` the survivors number `numRationalCusps N`".
+That statement is false, or at least unsupported, because
+`IsX0ReductionAt` does not pin `redJ` to be the genuine reduction.  Its
+only constraints are injectivity, additivity, and `red_aj`; so ANY
+injective homomorphism `J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)` carrying
+`jac.aj '' X_0(N)(ℚ)` into the Abel–Jacobi image is an admissible `redJ`,
+and a subgroup of the right order sitting differently inside
+`J_0(N)(𝔽_ℓ)` can meet that image in more than `numRationalCusps N`
+classes.  Universally quantifying over data therefore risks a FALSE
+sub-leaf, which is worse than the single honest one.
+
+What would make the cut safe is a field on `IsX0ReductionAt` pinning
+`redJ` — as the map induced by a morphism of Néron models over `ℤ_ℓ`, say.
+That needs the integral model of `J_0(N)`, which is exactly the object
+whose absence makes this leaf irreducible in the first place.  So the
+decomposition becomes available at the same moment the leaf does, and
+until then the leaf is correctly left atomic. -/
 theorem exists_x0Sieve (N : ℕ) (_hlevel : N ∈ x0SieveLevels)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
