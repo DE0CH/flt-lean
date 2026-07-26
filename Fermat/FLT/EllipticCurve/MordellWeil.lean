@@ -287,12 +287,36 @@ against, and this form is exactly what `curve14a4_finite` consumes. -/
 theorem curve14a4_isTorsion : AddMonoid.IsTorsion curve14a4.toAffine.Point :=
   sorry
 
+/-- **`14a4(ℚ)` is finitely generated** (sorry leaf, opened at integration
+2026-07-26): the Mordell–Weil theorem for this ONE curve.
+
+It exists because two branches merged cleanly into a tree that did not
+build. `flt-lean-154` deleted the general leaf `mordellWeil`
+(`AddGroup.FG E.toAffine.Point` for every `[E.IsElliptic]`), correctly, on
+the ground that `curve11a3_finite` no longer needed it — that curve's
+finiteness is now proven outright from the unconditional enumeration
+`curve11a3_rational_points`. Concurrently `flt-lean-139` added `14a4` as a
+NEW consumer of `mordellWeil`, having been written against a tree where it
+still existed.
+
+Stated for the single curve rather than reinstating the general theorem,
+because that is all `14a4` needs and the general statement is an enormous
+citation to carry for one use. The `11a3`-shaped repair — an UNCONDITIONAL
+enumeration of `14a4(ℚ)`, from which finiteness follows with no
+Mordell–Weil input at all — would remove this leaf entirely, and is the
+right thing for an owner of this file to do. It is deliberately not done
+here: `curve14a4_points` below states its enumeration WITH `Finite` as a
+hypothesis, so it cannot supply finiteness without being restated, and
+restating another owner's leaf is not a merge resolution. -/
+theorem curve14a4_fg : AddGroup.FG curve14a4.toAffine.Point :=
+  sorry
+
 /-- **`14a4(ℚ)` is finite** (PROVEN 2026-07-26 from the two leaves above).
 
 Same shape as `curve11a3_finite`: finitely generated (Mordell–Weil) plus
 torsion (rank `0`) gives finite, and neither leaf gives finiteness alone. -/
 theorem curve14a4_finite : Finite curve14a4.toAffine.Point :=
-  haveI : AddGroup.FG curve14a4.toAffine.Point := mordellWeil curve14a4
+  haveI : AddGroup.FG curve14a4.toAffine.Point := curve14a4_fg
   AddCommGroup.finite_of_fg_torsion _ curve14a4_isTorsion
 
 /-- **The five affine rational points of `14a4`** (sorry leaf, 2026-07-26):
