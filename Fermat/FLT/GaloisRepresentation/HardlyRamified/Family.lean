@@ -4918,8 +4918,9 @@ it is unramified at every `q ≠ ℓ` (PROVEN, via
 `μ_{ℓ^∞}/ℚ` is unramified away from `ℓ`), and over the concrete rings
 of integers it is hardly ramified (cyclotomic determinant and tameness
 at `2` with TRIVIAL quotient character both PROVEN; flatness at `ℓ` as
-the Tate module of `μ_{ℓ^∞} × ℚ_ℓ/ℤ_ℓ` is the sorry leaf
-`isFlatAt_cycDiagRep`).
+the Tate module of `μ_{ℓ^∞} × ℚ_ℓ/ℤ_ℓ` is `isFlatAt_cycDiagRep`, PROVEN
+2026-07-25 over three group-scheme leaves — see the section note
+before it).
 
 SOUNDNESS AUDIT (2026-07-24, the reducible-but-INDECOMPOSABLE
 subtlety): a reducible hardly ramified member may itself be a
@@ -5167,25 +5168,277 @@ noncomputable def trivialQuotChar (K : Type*) [Field K] (A : Type*) [CommRing A]
   { toMonoidHom := 1
     continuous_toFun := continuous_const }
 
-/-- **Flatness of the Eisenstein member at `ℓ`** (sorry node; the
-group-scheme leaf of the explicit member): over the ring of integers
+/-! #### The two group-scheme factors of the Eisenstein member
+
+`isFlatAt_cycDiagRep` below asks for a finite flat group scheme over
+`ℤ_ℓ` prolonging every open reduction `(𝒪/I)²` of the diagonal member
+`1 ⊕ χ_cyc,ℓ`. That group scheme is a PRODUCT of the two diagonal
+factors,
+
+  `(𝒪/I)_const  ×  μ_{𝒪/I}`,
+
+the CONSTANT group scheme on the finite abelian group `𝒪/I` (which
+carries the TRIVIAL Galois action — the first diagonal entry) and the
+DIAGONALIZABLE group scheme `Spec 𝒪ᵥ[D]`, `D = Hom(𝒪/I, ℚ̄ˣ)`, whose
+`ℚ̄`-points are `Hom(D, ℚ̄ˣ) ≅ 𝒪/I` by character BIDUALITY
+(`CommGroup.monoidHomMonoidHomEquiv`) with the Galois action given by
+raising roots of unity to the power `χ_cyc(σ)` — the second diagonal
+entry.
+
+The layer below cuts the leaf along exactly that decomposition, into
+three group-scheme leaves — a PRODUCT transport
+(`hasFlatProlongationAt_of_prod`), the CONSTANT factor
+(`hasFlatProlongationAt_trivialQuotChar`) and the `μ`-FACTOR
+(`hasFlatProlongationAt_cycScalarRep`). Everything else is PROVEN
+here: finiteness of the open quotients
+(`finite_quotient_of_isOpen_integralClosure`, over compactness of the
+concrete ring of integers), the identification of the base change with
+the diagonal member over `𝒪/I`, the splitting of the diagonal member
+into its two entries (`hasFlatProlongationAt_cycDiagRep`) and the
+assembly.
+
+MISSING MACHINERY, in dependency order (2026-07-25 survey of this
+mathlib pin). Mathlib HAS: the group-algebra Hopf structure
+`MonoidAlgebra.instHopfAlgebra` (the diagonalizable group scheme) with
+`MonoidAlgebra.lift` for its points; character biduality for finite
+abelian groups, `CommGroup.monoidHomMonoidHomEquiv : ((G →* Mˣ) →* Mˣ)
+≃* G` under `HasEnoughRootsOfUnity M (Monoid.exponent G)`, together
+with the evaluation description `monoidHomMonoidHomEquiv_symm_apply_apply`;
+étale-ness of finite products (the `Algebra.Etale R (Π i, A i)`
+instance of `Mathlib/RingTheory/Etale/Pi.lean`), of base changes and of
+composites; and the Hopf structure on a tensor product. Mathlib does
+NOT have the Hopf algebra of FUNCTIONS on a finite group — the
+constant group scheme. That is the one genuinely absent object: there
+is a `Pi.instCoalgebra`, but it is the COMPONENTWISE structure, not
+the one dual to the group law, so a type synonym carrying
+`Bialgebra`/`HopfAlgebra` with `comul (e_g) = Σ_{ab = g} e_a ⊗ e_b`
+has to be built (the needed algebra equivalence
+`(G → R) ⊗[R] (G → R) ≃ₐ[R] (G × G → R)` for `G` finite is
+`Algebra.TensorProduct.piScalarRight` plus currying). -/
+
+/-- **The rank-one cyclotomic member `χ_cyc,ℓ`** (PROVEN construction):
+the second diagonal entry of `1 ⊕ χ_cyc,ℓ`, isolated as a
+representation in its own right so that the flat-prolongation package
+of the diagonal member splits as a product of the constant and the
+`μ`-typed group scheme. Continuity is `continuous_cycUnitChar` against
+the module topology on `Module.End B B`. -/
+noncomputable def cycScalarRep {ℓ : ℕ} [Fact ℓ.Prime] {B : Type*} [CommRing B]
+    [TopologicalSpace B] [IsTopologicalRing B] [Algebra ℤ_[ℓ] B]
+    (hcont : Continuous (algebraMap ℤ_[ℓ] B)) : GaloisRep ℚ B B :=
+  letI := moduleTopology B (Module.End B B)
+  haveI : ContinuousAdd (Module.End B B) := ModuleTopology.continuousAdd B _
+  haveI : ContinuousSMul B (Module.End B B) := ModuleTopology.continuousSMul B _
+  { toFun := fun g => (cycUnitChar ℓ B g) • (LinearMap.id : Module.End B B)
+    map_one' := by rw [cycUnitChar_one, one_smul]
+    map_mul' := fun g h => by
+      rw [cycUnitChar_mul]
+      ext x
+      simp [mul_smul, mul_comm]
+    continuous_toFun := (continuous_cycUnitChar B hcont).smul continuous_const }
+
+/-- Evaluation of the rank-one cyclotomic member (PROVEN,
+definitional). -/
+lemma cycScalarRep_apply {ℓ : ℕ} [Fact ℓ.Prime] {B : Type*} [CommRing B]
+    [TopologicalSpace B] [IsTopologicalRing B] [Algebra ℤ_[ℓ] B]
+    (hcont : Continuous (algebraMap ℤ_[ℓ] B)) (g : Field.absoluteGaloisGroup ℚ) (x : B) :
+    cycScalarRep hcont g x = cycUnitChar ℓ B g • x := rfl
+
+/-- `cycUnitChar` is compatible with a tower of `ℤ_ℓ`-algebras (PROVEN):
+its value downstairs is the image of its value upstairs. -/
+lemma cycUnitChar_algebraMap {ℓ : ℕ} [Fact ℓ.Prime] {A B : Type*} [CommRing A] [CommRing B]
+    [Algebra ℤ_[ℓ] A] [Algebra A B] [Algebra ℤ_[ℓ] B] [IsScalarTower ℤ_[ℓ] A B]
+    (g : Field.absoluteGaloisGroup ℚ) :
+    cycUnitChar ℓ B g = algebraMap A B (cycUnitChar ℓ A g) := by
+  rw [cycUnitChar, cycUnitChar, ← IsScalarTower.algebraMap_apply]
+
+/-- `diag(1, a)` fixes the first basis vector (PROVEN). -/
+lemma cycDiagEnd_apply_basis_zero {A : Type*} [CommRing A] {W : Type*} [AddCommGroup W]
+    [Module A W] (b : Module.Basis (Fin 2) A W) (a : A) :
+    cycDiagEnd b a (b 0) = b 0 := by
+  rw [cycDiagEnd, Matrix.toLin_self, Fin.sum_univ_two]
+  simp [Matrix.diagonal]
+
+/-- `diag(1, a)` scales the second basis vector by `a` (PROVEN). -/
+lemma cycDiagEnd_apply_basis_one {A : Type*} [CommRing A] {W : Type*} [AddCommGroup W]
+    [Module A W] (b : Module.Basis (Fin 2) A W) (a : A) :
+    cycDiagEnd b a (b 1) = a • b 1 := by
+  rw [cycDiagEnd, Matrix.toLin_self, Fin.sum_univ_two]
+  simp [Matrix.diagonal]
+
+/-- **Flat prolongations of a PRODUCT** (sorry leaf; the group-scheme
+product): if `ρ₁` and `ρ₂` have flat prolongations at `v` and the space
+of `ρ` is, equivariantly, the product of their spaces, then `ρ` has one
+too. Intended proof: the witnessing Hopf orders `G₁, G₂` over `𝒪ᵥ` are
+combined into `G₁ ⊗[𝒪ᵥ] G₂` (mathlib's `HopfAlgebra S (B ⊗[R] A)`
+instance; finite and flat because each factor is), whose generic fibre
+`Kᵥ ⊗ (G₁ ⊗ G₂) ≃ₐ[Kᵥ] (Kᵥ ⊗ G₁) ⊗[Kᵥ] (Kᵥ ⊗ G₂)` is étale by
+`Algebra.Etale.baseChange` + `Algebra.Etale.comp`, and whose
+`Kᵥᵃˡᵍ`-points are the PRODUCT of the two point groups
+(`Algebra.TensorProduct.lift`, with the convolution product of the
+tensor Hopf algebra computing componentwise because
+`comul_{G₁ ⊗ G₂} = tensorTensorTensorComm ∘ (comul ⊗ comul)`). The
+`Γ Kᵥ`-action is postcomposition on both factors, so the splitting is
+equivariant and `Additive` of it is the required additive
+isomorphism. -/
+theorem hasFlatProlongationAt_of_prod
+    {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
+    {M₁ : Type*} [AddCommGroup M₁] [Module A₁ M₁]
+    {A₂ : Type*} [CommRing A₂] [TopologicalSpace A₂]
+    {M₂ : Type*} [AddCommGroup M₂] [Module A₂ M₂]
+    {ρ₁ : GaloisRep ℚ A₁ M₁} {ρ₂ : GaloisRep ℚ A₂ M₂}
+    (h₁ : ρ₁.HasFlatProlongationAt v) (h₂ : ρ₂.HasFlatProlongationAt v)
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (ρ : GaloisRep ℚ A M) (e : (M₁ × M₂) ≃+ M)
+    (he : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : M₁ × M₂),
+      e (ρ₁ σ x.1, ρ₂ σ x.2) = ρ σ (e x)) :
+    ρ.HasFlatProlongationAt v :=
+  sorry
+
+/-- **The CONSTANT group scheme** (sorry leaf): a Galois representation
+on a FINITE module with TRIVIAL action has a flat prolongation at every
+place. The witness is the constant group scheme on the finite abelian
+group `B`, i.e. the Hopf algebra `B → 𝒪ᵥ` of `𝒪ᵥ`-valued functions on
+`B` with `comul (e_g) = Σ_{a + b = g} e_a ⊗ e_b`, `counit f = f 0`,
+antipode `f ↦ f ∘ (-·)`; it is finite free over `𝒪ᵥ` of rank `#B`,
+hence flat, its generic fibre `B → Kᵥ` is a finite product of copies of
+`Kᵥ` hence étale (`Algebra.Etale R (Π i, A i)`), and its `Kᵥᵃˡᵍ`-points
+are the evaluations `f ↦ f g`, one for each `g : B`, on which `Γ Kᵥ`
+acts trivially because the algebra is already `Kᵥ`-split.
+
+THIS IS THE ONE OBJECT ABSENT FROM MATHLIB (see the section note
+above): `Pi.instCoalgebra` is the componentwise coalgebra, not this
+one, so the `Bialgebra`/`HopfAlgebra` structure has to be built on a
+type synonym for `B → 𝒪ᵥ`, transporting through
+`Algebra.TensorProduct.piScalarRight` and currying to compute
+`(B → R) ⊗[R] (B → R) ≃ₐ[R] (B × B → R)`. -/
+theorem hasFlatProlongationAt_trivialQuotChar
+    {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    (B : Type) [CommRing B] [TopologicalSpace B] [Finite B] :
+    (trivialQuotChar ℚ B).HasFlatProlongationAt v :=
+  sorry
+
+/-- **The DIAGONALIZABLE (`μ`-typed) group scheme** (sorry leaf): the
+rank-one cyclotomic member over a FINITE coefficient ring has a flat
+prolongation at every place. The witness is `Spec 𝒪ᵥ[D]`, the group
+algebra (mathlib's `MonoidAlgebra.instHopfAlgebra`) of the character
+group `D = (Multiplicative B →* (ℚ̄)ˣ)`: it is finite free over `𝒪ᵥ`,
+its generic fibre `Kᵥ[D]` is étale over `Kᵥ` in characteristic zero,
+and its `Kᵥᵃˡᵍ`-points are `D →* (Kᵥᵃˡᵍ)ˣ` (`MonoidAlgebra.lift`),
+which character BIDUALITY identifies with `B` itself
+(`CommGroup.monoidHomMonoidHomEquiv`, applicable because a finite ring
+`B` admitting a ring map from `ℤ_ℓ` is killed by a power of `ℓ` — the
+kernel of `ℤ_ℓ → B` is a nonzero ideal `ℓ^k ℤ_ℓ` — so its exponent is
+an `ℓ`-power and `ℚ̄` has enough roots of unity for it). Under that
+identification `σ` acts by `ζ ↦ ζ ^ χ_cyc(σ)` on the values, which is
+exactly multiplication by `cycUnitChar ℓ B σ` on `B`: that is the
+defining property of the cyclotomic character
+(`cyclotomicCharacter.toZModPow` + `modularCyclotomicCharacter.unique`,
+the same route as `adicArithFrob_rootsOfUnity_pow_of_ne` above). -/
+theorem hasFlatProlongationAt_cycScalarRep {ℓ : ℕ} [Fact ℓ.Prime]
+    {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {B : Type} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [Algebra ℤ_[ℓ] B] [Finite B]
+    (hcont : Continuous (algebraMap ℤ_[ℓ] B)) :
+    (cycScalarRep hcont).HasFlatProlongationAt v :=
+  sorry
+
+/-- **The Eisenstein member over a FINITE coefficient ring has a flat
+prolongation at every place** (PROVEN from the three group-scheme
+leaves above): the diagonal member `diag(1, χ_cyc)` on a rank-two
+carrier is, in the chosen basis, the product of the trivial character
+on the first coordinate and the rank-one cyclotomic member on the
+second, so the additive identification `B × B ≃+ N`,
+`(x, y) ↦ x • b 0 + y • b 1`, is `Γ_ℚ`-equivariant and
+`hasFlatProlongationAt_of_prod` applies. -/
+theorem hasFlatProlongationAt_cycDiagRep {ℓ : ℕ} [Fact ℓ.Prime]
+    {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {B : Type} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [Algebra ℤ_[ℓ] B] [Finite B]
+    {N : Type*} [AddCommGroup N] [Module B N]
+    (hcont : Continuous (algebraMap ℤ_[ℓ] B)) (b : Module.Basis (Fin 2) B N) :
+    (cycDiagRep hcont b).HasFlatProlongationAt v := by
+  classical
+  let e2 : (B × B) ≃+ (Fin 2 → B) :=
+    { toFun := fun p => ![p.1, p.2]
+      invFun := fun f => (f 0, f 1)
+      left_inv := fun _ => rfl
+      right_inv := fun f => by funext i; fin_cases i <;> rfl
+      map_add' := fun _ _ => by funext i; fin_cases i <;> rfl }
+  let e : (B × B) ≃+ N := e2.trans b.equivFun.symm.toAddEquiv
+  have hev : ∀ p : B × B, e p = p.1 • b 0 + p.2 • b 1 := by
+    intro p
+    show b.equivFun.symm ![p.1, p.2] = _
+    rw [Module.Basis.equivFun_symm_apply, Fin.sum_univ_two]
+    simp
+  refine hasFlatProlongationAt_of_prod
+    (hasFlatProlongationAt_trivialQuotChar (v := v) B)
+    (hasFlatProlongationAt_cycScalarRep (v := v) hcont) _ e ?_
+  intro σ x
+  obtain ⟨x₁, x₂⟩ := x
+  show e (x₁, cycUnitChar ℓ B σ • x₂) = (cycDiagRep hcont b) σ (e (x₁, x₂))
+  rw [hev, hev, cycDiagRep_apply, map_add, map_smul, map_smul,
+    cycDiagEnd_apply_basis_zero, cycDiagEnd_apply_basis_one, smul_eq_mul, smul_smul,
+    mul_comm x₂]
+
+/-- The concrete ring of integers is COMPACT (PROVEN): it carries the
+`ℤ_ℓ`-module topology (`isModuleTopology_integralClosure_padicInt`) and
+is module-finite over the compact `ℤ_ℓ`, so it is the continuous image
+of a compact `ℤ_ℓⁿ`. -/
+theorem compactSpace_integralClosure_padicInt {ℓ : ℕ} [Fact ℓ.Prime]
+    (L : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])) [FiniteDimensional ℚ_[ℓ] L] :
+    CompactSpace (IntegralClosure ℤ_[ℓ] L) := by
+  haveI := isModuleTopology_integralClosure_padicInt L
+  obtain ⟨n, φ, hφ⟩ := Module.Finite.exists_fin' ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L)
+  exact hφ.compactSpace (IsModuleTopology.continuous_of_linearMap φ)
+
+/-- **The open quotients of the concrete ring of integers are FINITE**
+(PROVEN): the quotient is compact (continuous image of the compact
+`𝒪`) and discrete (the singleton `{mk y}` is the image of the open
+coset `y + I` under the open quotient map), hence finite. This is the
+step that turns the open-ideal quantifier of `GaloisRep.IsFlatAt` into
+a FINITE group-scheme question. -/
+theorem finite_quotient_of_isOpen_integralClosure {ℓ : ℕ} [Fact ℓ.Prime]
+    (L : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])) [FiniteDimensional ℚ_[ℓ] L]
+    (I : Ideal (IntegralClosure ℤ_[ℓ] L))
+    (hI : IsOpen (I : Set (IntegralClosure ℤ_[ℓ] L))) :
+    Finite (IntegralClosure ℤ_[ℓ] L ⧸ I) := by
+  haveI := compactSpace_integralClosure_padicInt L
+  haveI : DiscreteTopology (IntegralClosure ℤ_[ℓ] L ⧸ I) := by
+    refine discreteTopology_iff_isOpen_singleton.mpr fun x => ?_
+    obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective x
+    have hset : ({Ideal.Quotient.mk I y} : Set (IntegralClosure ℤ_[ℓ] L ⧸ I)) =
+        Ideal.Quotient.mk I '' ((fun z => y + z) '' (I : Set (IntegralClosure ℤ_[ℓ] L))) := by
+      ext w
+      constructor
+      · intro hw
+        rw [Set.mem_singleton_iff] at hw
+        exact ⟨y + 0, ⟨0, I.zero_mem, rfl⟩, by rw [add_zero]; exact hw.symm⟩
+      · rintro ⟨u, ⟨z, hz, rfl⟩, rfl⟩
+        simp only [Set.mem_singleton_iff, map_add]
+        rw [Ideal.Quotient.eq_zero_iff_mem.mpr hz, add_zero]
+    rw [hset]
+    exact QuotientRing.isOpenMap_coe I _ (isOpenMap_add_left y _ hI)
+  exact finite_of_compact_of_discrete
+
+/-- **Flatness of the Eisenstein member at `ℓ`** (PROVEN assembly over
+the three group-scheme leaves above; see the section note): over the
+ring of integers
 `𝒪 = IntegralClosure ℤ_ℓ L` of a finite extension `L/ℚ_ℓ`, the
 diagonal representation `1 ⊕ χ_cyc,ℓ` is flat at `ℓ` — it is the
 Galois module of geometric points of the `ℓ`-divisible group
-`ℚ_ℓ/ℤ_ℓ × μ_{ℓ^∞}` tensored with `𝒪`. Intended proof: an open ideal
-`I ⊆ 𝒪` has finite quotient (`𝒪` is module-finite over the compact
-`ℤ_ℓ`, and `I ⊇ ℓ^N 𝒪` for some `N`), and `𝒪/I ≅ ⊕ᵢ ℤ/ℓ^{kᵢ}` as an
-abelian `ℓ`-group; multiplication by the integer scalars `χ_cyc(g)`
-preserves each cyclic factor, and `ℤ/ℓ^k` with `G_{ℚ_ℓ}` acting
-through `χ_cyc mod ℓ^k` is exactly `μ_{ℓ^k}(ℚ̄_ℓ)`. So the reduction
-`W/IW ≅ (𝒪/I)²` (trivial factor ⊕ cyclotomic factor) is the group of
-points of the finite flat `ℤ_ℓ`-group scheme
-`⊕ᵢ (ℤ/ℓ^{kᵢ})_{const} × ⊕ᵢ μ_{ℓ^{kᵢ}}`, i.e. of the Hopf algebra
-`⊗ᵢ ℤ_ℓ[ℤ/ℓ^{kᵢ}] ⊗ ⊗ᵢ ℤ_ℓ[x]/(x^{ℓ^{kᵢ}} - 1)` (constant group
-algebras and `μ`-torsion algebras, both finite free over `ℤ_ℓ` with
-étale generic fiber in characteristic zero), giving the
-`HasFlatProlongationAt` witness demanded by `IsFlatAt` at every open
-ideal. -/
+`ℚ_ℓ/ℤ_ℓ × μ_{ℓ^∞}` tensored with `𝒪`. Proof: an open ideal `I ⊆ 𝒪`
+has FINITE quotient (`finite_quotient_of_isOpen_integralClosure`: `𝒪`
+is compact and `𝒪/I` is discrete), the base change of the diagonal
+member along `𝒪 → 𝒪/I` IS the diagonal member over `𝒪/I` in the
+base-changed basis (compared through `LinearMap.toMatrix_baseChange`,
+both matrices being `diag(1, χ_cyc)`), and over a finite coefficient
+ring the diagonal member has a flat prolongation
+(`hasFlatProlongationAt_cycDiagRep`), namely the product of the
+constant group scheme on `𝒪/I` with the `μ`-typed group scheme
+`μ_{𝒪/I}` — which is where the three remaining group-scheme leaves
+sit. -/
 theorem isFlatAt_cycDiagRep {ℓ : ℕ} [Fact ℓ.Prime]
     (L : IntermediateField ℚ_[ℓ] (AlgebraicClosure ℚ_[ℓ])) [FiniteDimensional ℚ_[ℓ] L]
     {W : Type*} [AddCommGroup W] [Module (IntegralClosure ℤ_[ℓ] L) W]
@@ -5193,16 +5446,54 @@ theorem isFlatAt_cycDiagRep {ℓ : ℕ} [Fact ℓ.Prime]
     (hcont : Continuous (algebraMap ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L)))
     (b : Module.Basis (Fin 2) (IntegralClosure ℤ_[ℓ] L) W) :
     (cycDiagRep hcont b).IsFlatAt
-      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
-  sorry
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) := by
+  classical
+  constructor
+  intro I hI
+  haveI : Finite (IntegralClosure ℤ_[ℓ] L ⧸ I) :=
+    finite_quotient_of_isOpen_integralClosure L I hI
+  haveI : IsScalarTower ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L) (IntegralClosure ℤ_[ℓ] L ⧸ I) :=
+    IsScalarTower.of_algebraMap_eq fun _ => rfl
+  have hcontI : Continuous (algebraMap ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L ⧸ I)) := by
+    have hfun : (algebraMap ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L ⧸ I) :
+        ℤ_[ℓ] → (IntegralClosure ℤ_[ℓ] L ⧸ I)) =
+        (Ideal.Quotient.mk I) ∘ (algebraMap ℤ_[ℓ] (IntegralClosure ℤ_[ℓ] L)) := rfl
+    rw [hfun]
+    exact continuous_quot_mk.comp hcont
+  have hrep : (cycDiagRep hcont b).baseChange (IntegralClosure ℤ_[ℓ] L ⧸ I) =
+      cycDiagRep hcontI
+        (Algebra.TensorProduct.basis (IntegralClosure ℤ_[ℓ] L ⧸ I) b) := by
+    refine GaloisRep.ext fun σ => ?_
+    have hBC : ((cycDiagRep hcont b).baseChange (IntegralClosure ℤ_[ℓ] L ⧸ I)) σ =
+        LinearMap.baseChange (IntegralClosure ℤ_[ℓ] L ⧸ I) ((cycDiagRep hcont b) σ) :=
+      LinearMap.ext fun x => by
+        induction x using TensorProduct.induction_on with
+        | zero => simp
+        | add u w hu hw => simp only [map_add, hu, hw]
+        | tmul r w => simp
+    rw [hBC, cycDiagRep_apply, cycDiagRep_apply,
+      cycUnitChar_algebraMap (A := IntegralClosure ℤ_[ℓ] L)
+        (B := IntegralClosure ℤ_[ℓ] L ⧸ I) σ]
+    apply (LinearMap.toMatrix
+      (Algebra.TensorProduct.basis (IntegralClosure ℤ_[ℓ] L ⧸ I) b)
+      (Algebra.TensorProduct.basis (IntegralClosure ℤ_[ℓ] L ⧸ I) b)).injective
+    simp only [cycDiagEnd, LinearMap.toMatrix_baseChange, LinearMap.toMatrix_toLin]
+    ext i j
+    fin_cases i <;> fin_cases j <;>
+      simp [Matrix.diagonal, Matrix.map_apply]
+  rw [hrep]
+  exact hasFlatProlongationAt_cycDiagRep hcontI _
 
 /-- **The Eisenstein member is hardly ramified** (PROVEN assembly; the
-one remaining sorry leaf below it is `isFlatAt_cycDiagRep`): over the
+sorries below it are now the three GROUP-SCHEME leaves under
+`isFlatAt_cycDiagRep` — `hasFlatProlongationAt_of_prod`,
+`hasFlatProlongationAt_trivialQuotChar`,
+`hasFlatProlongationAt_cycScalarRep`): over the
 ring of integers of a finite extension
 `L/ℚ_ℓ`, the diagonal member `1 ⊕ χ_cyc,ℓ` has cyclotomic determinant
 (`det diag(1, χ_cyc) = χ_cyc`, PROVEN), is unramified outside `{2, ℓ}`
-(PROVEN over the arithmetic leaf), flat at `ℓ` (sorry leaf
-`isFlatAt_cycDiagRep`), and tame at `2` with the TRIVIAL quotient
+(PROVEN over the arithmetic leaf), flat at `ℓ`
+(`isFlatAt_cycDiagRep`, PROVEN), and tame at `2` with the TRIVIAL quotient
 character on the first coordinate (PROVEN: the first diagonal entry is
 `1`, and the trivial character is unramified with square one). -/
 theorem isHardlyRamified_cycDiagRep {ℓ : ℕ} [Fact ℓ.Prime] (hℓodd : Odd ℓ)
@@ -5222,7 +5513,7 @@ theorem isHardlyRamified_cycDiagRep {ℓ : ℕ} [Fact ℓ.Prime] (hℓodd : Odd 
   · -- unramified outside `{2, ℓ}`
     intro q hq hq2ℓ
     exact isUnramifiedAt_cycDiagRep_of_ne hcont b hq hq2ℓ.2
-  · -- flat at `ℓ`: the group-scheme sorry leaf
+  · -- flat at `ℓ`: PROVEN over the three group-scheme leaves
     exact isFlatAt_cycDiagRep L hcont b
   · -- tame at `2`: quotient by the first coordinate, TRIVIAL character
     refine ⟨b.coord 0, fun a => ⟨a • b 0, by simp⟩, trivialQuotChar ℚ_[2] _,
@@ -5366,10 +5657,12 @@ member is the explicit `cycDiagRep` over `IntegralClosure ℤ_ℓ ⊥` on
 the `Type v` carrier `ULift (Fin 2 → 𝒪)`, hardly ramified by the
 PROVEN assembly `isHardlyRamified_cycDiagRep` and matching Frobenius
 charpolys by the PROVEN `charFrob_cycDiagRep_of_ne`. The two remaining
-sorried sub-leaves, both `ρ`-free and automorphy-free:
-`cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne` (μ_{ℓ^∞}
-unramified away from `ℓ`) and `isFlatAt_cycDiagRep` (the
-`ℤ/ℓⁿ × μ_{ℓⁿ}` flat prolongations). -/
+sorried sub-leaves are now both PROVEN
+(`cyclotomicCharacter_eq_one_of_mem_localInertiaGroup_of_ne`, μ_{ℓ^∞}
+unramified away from `ℓ`, and `isFlatAt_cycDiagRep`, the
+`ℤ/ℓⁿ × μ_{ℓⁿ}` flat prolongations); what remains under the latter are
+the three `ρ`-free group-scheme leaves listed at
+`hasFlatProlongationAt_cycDiagRep`. -/
 theorem exists_hardlyRamified_ringOfIntegers_realizations_of_not_isIrreducible
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
