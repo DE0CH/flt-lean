@@ -24860,7 +24860,11 @@ So the residual leaf is the descent
 supplied by `eC` descends to the `ℚ`-side, which keeps
 `exists_heckeOp_newform_etaleIdempotent` genuinely consumed — and it is
 now PROVEN (2026-07-26) over the FIRST bullet alone, isolated as
-`modularHeckeAlgebraQ_linearIndependent_complex`. Exact level enters
+`modularHeckeAlgebraQ_linearIndependent_complex` — which is in turn
+PROVEN (2026-07-26) from the `ℚ`-form of the `q`-expansion functionals,
+`exists_qCoeff_rational_relations`, so the residue of this whole
+cluster is the single `q`-expansion citation
+`integralCuspForms_span_eq_top`. Exact level enters
 only upstream of it: the line hypothesis on `eC` is what fails at an
 OLD maximal ideal (`g` of level `M' ∣ M`, `M' ≠ M`, seen at level `M`),
 where the oldform multiplicity makes the local factor of `𝕋_ℂ` a plane
@@ -26041,9 +26045,316 @@ end EtaleDescentSubalgebra
 
 
 
+/-- **`ℚ`-linear independence base-changes to `ℂ` for rational
+coordinate vectors** (pure linear algebra, no arithmetic): a finite
+family in `ℚ^ι` that is independent over `ℚ` stays independent over `ℂ`
+after the entrywise inclusion `ℚ ↪ ℂ`.
+
+Proof without matrices: `ℚ` is a field, so the injective `ℚ`-linear map
+`c ↦ ∑ᵢ cᵢ·rᵢ` has a `ℚ`-linear LEFT INVERSE `g`
+(`LinearMap.exists_leftInverse_of_injective`), which satisfies
+`g (rᵢ) = eᵢ`. The SAME coefficient array `g(e_j)` defines a `ℂ`-linear
+`G : ℂ^ι → ℂ^n` with `G ∘ (cast) = cast ∘ g`, so `G` still sends the
+image of `rᵢ` to `eᵢ` and no nontrivial `ℂ`-relation can survive. This
+is the concrete finite shape of flatness of `ℚ → ℂ`; it is stated
+separately because it is the ONLY place where the base change happens,
+and it is where the general counterexample (`ℚ(√2)·1 ⊆ ℂ`) is ruled out
+by the RATIONALITY of the coordinates rather than by any property of
+the ambient space. -/
+theorem linearIndependent_complex_of_rat {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {n : ℕ} (r : Fin n → ι → ℚ) (hr : LinearIndependent ℚ r) :
+    LinearIndependent ℂ (fun i => (fun j => ((r i j : ℚ) : ℂ))) := by
+  classical
+  set A : (Fin n → ℚ) →ₗ[ℚ] (ι → ℚ) :=
+    { toFun := fun c => ∑ i, c i • r i
+      map_add' := by
+        intro x y
+        simp only [Pi.add_apply, add_smul]
+        exact Finset.sum_add_distrib
+      map_smul' := by
+        intro a x
+        simp only [Pi.smul_apply, smul_eq_mul, mul_smul, RingHom.id_apply]
+        exact (Finset.smul_sum).symm } with hAdef
+  have hAapply : ∀ c : Fin n → ℚ, A c = ∑ i, c i • r i := fun _ => rfl
+  have hAker : LinearMap.ker A = ⊥ := by
+    rw [LinearMap.ker_eq_bot']
+    intro c hc
+    rw [hAapply] at hc
+    exact funext (Fintype.linearIndependent_iff.mp hr c hc)
+  obtain ⟨g, hg⟩ := A.exists_leftInverse_of_injective hAker
+  have hgA : ∀ x : Fin n → ℚ, g (A x) = x := fun x => LinearMap.congr_fun hg x
+  have hAsingle : ∀ i : Fin n, A (Pi.single i 1) = r i := by
+    intro i
+    rw [hAapply]
+    rw [Finset.sum_eq_single i]
+    · simp
+    · intro b _ hb
+      simp [hb]
+    · intro h
+      exact absurd (Finset.mem_univ i) h
+  have hgr : ∀ i : Fin n, g (r i) = Pi.single i 1 := by
+    intro i
+    rw [← hAsingle i, hgA]
+  set G : (ι → ℂ) →ₗ[ℂ] (Fin n → ℂ) :=
+    { toFun := fun x k => ∑ j, ((g (Pi.single j 1) k : ℚ) : ℂ) * x j
+      map_add' := by
+        intro x y
+        funext k
+        simp only [Pi.add_apply, mul_add]
+        exact Finset.sum_add_distrib
+      map_smul' := by
+        intro a x
+        funext k
+        simp only [Pi.smul_apply, smul_eq_mul, RingHom.id_apply, Finset.mul_sum]
+        exact Finset.sum_congr rfl fun j _ => by ring } with hGdef
+  have hGapply : ∀ (x : ι → ℂ) (k : Fin n),
+      G x k = ∑ j, ((g (Pi.single j 1) k : ℚ) : ℂ) * x j := fun _ _ => rfl
+  have hGcast : ∀ (y : ι → ℚ) (k : Fin n),
+      G (fun j => ((y j : ℚ) : ℂ)) k = ((g y k : ℚ) : ℂ) := by
+    intro y k
+    have hy : y = ∑ j, y j • (Pi.single j (1 : ℚ)) := by
+      funext j
+      simp [Finset.sum_apply, Pi.single_apply]
+    have hgy : g y k = ∑ j, y j * g (Pi.single j 1) k := by
+      conv_lhs => rw [hy]
+      rw [map_sum]
+      simp [Finset.sum_apply]
+    rw [hGapply, hgy]
+    push_cast
+    exact Finset.sum_congr rfl fun j _ => mul_comm _ _
+  rw [Fintype.linearIndependent_iff]
+  intro c hc i
+  have h0 : G (∑ i, c i • fun j => ((r i j : ℚ) : ℂ)) = 0 := by rw [hc, map_zero]
+  rw [map_sum] at h0
+  have h1 : ∀ i' : Fin n, G (c i' • fun j => ((r i' j : ℚ) : ℂ))
+      = c i' • fun k => (((Pi.single i' (1 : ℚ) : Fin n → ℚ) k : ℚ) : ℂ) := by
+    intro i'
+    rw [map_smul]
+    congr 1
+    funext k
+    rw [hGcast (r i') k, hgr i']
+  simp only [h1] at h0
+  have h2 := congrFun h0 i
+  simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul, Pi.zero_apply] at h2
+  rw [Finset.sum_eq_single i] at h2
+  · simpa using h2
+  · intro b _ hb
+    simp [hb]
+  · intro h
+    exact absurd (Finset.mem_univ i) h
+
+/-- **A `ℚ`-form of a `ℂ`-vector space cut out by a rational coefficient
+system makes `ℚ`-independence survive base change to `ℂ`** (PROVEN,
+2026-07-26; the abstract engine of
+`modularHeckeAlgebraQ_linearIndependent_complex` below).
+
+Data: a finite-dimensional `ℂ`-space `S`; a system of `ℂ`-linear
+functionals `a : ℕ → S^∨` that SEPARATES points (`hsep`); a finite
+subfamily `a_{nn 0}, …, a_{nn (D−1)}` with `D = dim_ℂ S` through which
+every `a m` is a `ℚ`-combination (`hrel`); and a set `gens` of
+endomorphisms each of which pulls the whole system back into that
+`ℚ`-span (`hgens`). Conclusion: on the `ℚ`-subalgebra
+`Algebra.adjoin ℚ gens ⊆ End_ℂ S`, `ℚ`-linear independence implies
+`ℂ`-linear independence — i.e. `(adjoin ℚ gens) ⊗_ℚ ℂ ↪ End_ℂ S`.
+
+`halg` pins the `Algebra ℚ (End_ℂ S)` instance to the one factoring
+through `ℚ → ℂ` (for the modular application this is
+`modularEnd_algebraMap_rat_apply`); it is a hypothesis rather than an
+instance so that no new global `Algebra ℚ (End_ℂ ·)` instance and no
+diamond is created.
+
+HOW IT WORKS. `Λ : S → ℂ^D`, `f ↦ (a_{nn i} f)ᵢ`, is injective by
+`hsep`+`hrel` and hence bijective by dimension count, so the chosen
+functionals are a coordinate system. `hgens` propagates along
+`Algebra.adjoin_induction` — the scalars are `ℚ` by `halg`, sums are
+componentwise, and a product `x·y` composes two rational matrices — so
+EVERY `T` in the adjoin has a RATIONAL matrix `ρ T` in those
+coordinates. `T ↦ ρ T` is injective (a vanishing matrix kills `Λ`,
+hence `T`), so a `ℚ`-independent family of `T`'s has `ℚ`-independent
+matrices; `linearIndependent_complex_of_rat` makes those matrices
+`ℂ`-independent; and evaluation at the `Λ`-preimages of the standard
+basis is a `ℂ`-LINEAR map `End_ℂ S → ℂ^{D×D}` realizing `ρ`, so
+`LinearIndependent.of_comp` transports the conclusion back. -/
+theorem linearIndependent_complex_of_ratCoeffSystem
+    {S : Type*} [AddCommGroup S] [Module ℂ S] [FiniteDimensional ℂ S]
+    [Algebra ℚ (Module.End ℂ S)]
+    (halg : ∀ (r : ℚ) (f : S), (algebraMap ℚ (Module.End ℂ S) r) f = (r : ℂ) • f)
+    (a : ℕ → (S →ₗ[ℂ] ℂ))
+    (hsep : ∀ f : S, (∀ m : ℕ, a m f = 0) → f = 0)
+    {D : ℕ} (hD : Module.finrank ℂ S = D) (nn : Fin D → ℕ)
+    (hrel : ∀ m : ℕ, ∃ c : Fin D → ℚ,
+      ∀ f : S, a m f = ∑ i, (c i : ℂ) * a (nn i) f)
+    {gens : Set (Module.End ℂ S)}
+    (hgens : ∀ T ∈ gens, ∀ m : ℕ, ∃ c : Fin D → ℚ,
+      ∀ f : S, a m (T f) = ∑ i, (c i : ℂ) * a (nn i) f)
+    {n : ℕ} (v : Fin n → ↥(Algebra.adjoin ℚ gens))
+    (hv : LinearIndependent ℚ v) :
+    LinearIndependent ℂ (fun i => ((v i : Module.End ℂ S))) := by
+  classical
+  set Λ : S →ₗ[ℂ] (Fin D → ℂ) := LinearMap.pi (fun i => a (nn i)) with hΛdef
+  have hΛapply : ∀ (f : S) (i : Fin D), Λ f i = a (nn i) f := fun _ _ => rfl
+  have hΛinj : Function.Injective Λ := by
+    rw [injective_iff_map_eq_zero]
+    intro f hf
+    refine hsep f fun m => ?_
+    obtain ⟨c, hc⟩ := hrel m
+    rw [hc f]
+    refine Finset.sum_eq_zero fun i _ => ?_
+    rw [← hΛapply f i, hf, Pi.zero_apply, mul_zero]
+  have hΛsurj : Function.Surjective Λ := by
+    have hfr : Module.finrank ℂ S = Module.finrank ℂ (Fin D → ℂ) := by
+      rw [hD]
+      simp
+    exact (LinearMap.injective_iff_surjective_of_finrank_eq_finrank hfr).mp hΛinj
+  -- the rational-coefficient property, closed under the ℚ-algebra generated by `gens`
+  have hP : ∀ T ∈ Algebra.adjoin ℚ gens, ∀ m : ℕ, ∃ c : Fin D → ℚ,
+      ∀ f : S, a m (T f) = ∑ i, (c i : ℂ) * a (nn i) f := by
+    intro T hT
+    induction hT using Algebra.adjoin_induction with
+    | mem x hx => exact hgens x hx
+    | algebraMap r =>
+        intro m
+        obtain ⟨c, hc⟩ := hrel m
+        refine ⟨r • c, fun f => ?_⟩
+        rw [halg r f, map_smul, hc f, smul_eq_mul, Finset.mul_sum]
+        refine Finset.sum_congr rfl fun i _ => ?_
+        simp only [Pi.smul_apply, smul_eq_mul]
+        push_cast
+        ring
+    | add x y _ _ ihx ihy =>
+        intro m
+        obtain ⟨cx, hcx⟩ := ihx m
+        obtain ⟨cy, hcy⟩ := ihy m
+        refine ⟨cx + cy, fun f => ?_⟩
+        rw [LinearMap.add_apply, map_add, hcx f, hcy f, ← Finset.sum_add_distrib]
+        refine Finset.sum_congr rfl fun i _ => ?_
+        simp only [Pi.add_apply]
+        push_cast
+        ring
+    | mul x y _ _ ihx ihy =>
+        intro m
+        obtain ⟨c, hc⟩ := ihx m
+        choose d hd using fun i : Fin D => ihy (nn i)
+        refine ⟨fun k => ∑ i, c i * d i k, fun f => ?_⟩
+        rw [Module.End.mul_apply, hc (y f)]
+        have hstep : ∀ i : Fin D, (c i : ℂ) * a (nn i) (y f)
+            = ∑ k, ((c i * d i k : ℚ) : ℂ) * a (nn k) f := by
+          intro i
+          rw [hd i f, Finset.mul_sum]
+          refine Finset.sum_congr rfl fun k _ => ?_
+          push_cast
+          ring
+        rw [Finset.sum_congr rfl fun i _ => hstep i, Finset.sum_comm]
+        refine Finset.sum_congr rfl fun k _ => ?_
+        push_cast
+        rw [Finset.sum_mul]
+  -- rational matrices for the family `v`
+  have hrho : ∀ T ∈ Algebra.adjoin ℚ gens, ∃ ρ : Fin D × Fin D → ℚ,
+      ∀ (j : Fin D) (f : S), a (nn j) (T f) = ∑ i, (ρ (j, i) : ℂ) * a (nn i) f := by
+    intro T hT
+    choose ρ0 hρ0 using fun j : Fin D => hP T hT (nn j)
+    exact ⟨fun p => ρ0 p.1 p.2, hρ0⟩
+  choose ρ hρ using fun i : Fin n => hrho (v i) (v i).2
+  -- the ℚ-scalar action on `Module.End ℂ S` is the complex one
+  have hsmul : ∀ (r : ℚ) (T : Module.End ℂ S), r • T = (r : ℂ) • T := by
+    intro r T
+    rw [Algebra.smul_def]
+    refine LinearMap.ext fun f => ?_
+    rw [Module.End.mul_apply, halg r (T f), LinearMap.smul_apply]
+  have hcoe : ∀ (r : ℚ) (x : ↥(Algebra.adjoin ℚ gens)),
+      ((r • x : ↥(Algebra.adjoin ℚ gens)) : Module.End ℂ S)
+        = (r : ℂ) • (x : Module.End ℂ S) := by
+    intro r x
+    rw [← hsmul]
+    rfl
+  -- the rational matrices are ℚ-independent
+  have hρindep : LinearIndependent ℚ ρ := by
+    rw [Fintype.linearIndependent_iff]
+    intro g hg
+    refine Fintype.linearIndependent_iff.mp hv g ?_
+    refine Subtype.ext ?_
+    have hcoesum : ((∑ i, g i • v i : ↥(Algebra.adjoin ℚ gens)) : Module.End ℂ S)
+        = ∑ i, (g i : ℂ) • ((v i : Module.End ℂ S)) := by
+      rw [AddSubmonoidClass.coe_finsetSum]
+      exact Finset.sum_congr rfl fun i _ => hcoe (g i) (v i)
+    rw [hcoesum, ZeroMemClass.coe_zero]
+    refine LinearMap.ext fun f => ?_
+    rw [LinearMap.zero_apply]
+    refine hΛinj ?_
+    rw [map_zero]
+    funext j
+    rw [hΛapply, Pi.zero_apply]
+    have happ : (∑ i, (g i : ℂ) • ((v i : Module.End ℂ S))) f
+        = ∑ i, (g i : ℂ) • ((v i : Module.End ℂ S) f) := by
+      simp [LinearMap.sum_apply]
+    rw [happ, map_sum]
+    have hterm : ∀ i : Fin n, a (nn j) ((g i : ℂ) • ((v i : Module.End ℂ S) f))
+        = ∑ k, ((g i * ρ i (j, k) : ℚ) : ℂ) * a (nn k) f := by
+      intro i
+      rw [map_smul, hρ i j f, smul_eq_mul, Finset.mul_sum]
+      refine Finset.sum_congr rfl fun k _ => ?_
+      push_cast
+      ring
+    rw [Finset.sum_congr rfl fun i _ => hterm i, Finset.sum_comm]
+    refine Finset.sum_eq_zero fun k _ => ?_
+    have hzero : ∑ i, g i * ρ i (j, k) = 0 := by
+      have := congrFun hg (j, k)
+      simpa [Finset.sum_apply, smul_eq_mul] using this
+    rw [← Finset.sum_mul]
+    have : ∑ i, ((g i * ρ i (j, k) : ℚ) : ℂ) = ((∑ i, g i * ρ i (j, k) : ℚ) : ℂ) := by
+      push_cast
+      rfl
+    rw [this, hzero]
+    simp
+  -- base change of the rational independence
+  have hCindep : LinearIndependent ℂ
+      (fun i => (fun p : Fin D × Fin D => ((ρ i p : ℚ) : ℂ))) :=
+    linearIndependent_complex_of_rat ρ hρindep
+  -- transfer back through evaluation at a dual family
+  obtain ⟨e, he⟩ : ∃ e : Fin D → S, ∀ k, Λ (e k) = Pi.single k 1 :=
+    ⟨fun k => (hΛsurj (Pi.single k 1)).choose, fun k => (hΛsurj _).choose_spec⟩
+  set F : Module.End ℂ S →ₗ[ℂ] (Fin D × Fin D → ℂ) :=
+    { toFun := fun T p => a (nn p.1) (T (e p.2))
+      map_add' := by
+        intro T T'
+        funext p
+        simp
+      map_smul' := by
+        intro c T
+        funext p
+        simp } with hFdef
+  have hFapply : ∀ (T : Module.End ℂ S) (p : Fin D × Fin D),
+      F T p = a (nn p.1) (T (e p.2)) := fun _ _ => rfl
+  have hFv : ∀ i : Fin n,
+      F ((v i : Module.End ℂ S)) = fun p => ((ρ i p : ℚ) : ℂ) := by
+    intro i
+    funext p
+    rw [hFapply, hρ i p.1 (e p.2)]
+    have hcoord : ∀ k : Fin D,
+        a (nn k) (e p.2) = ((Pi.single p.2 (1 : ℂ) : Fin D → ℂ) k) := by
+      intro k
+      rw [← hΛapply (e p.2) k, he p.2]
+    rw [Finset.sum_congr rfl fun k _ => by rw [hcoord k]]
+    rw [Finset.sum_eq_single p.2]
+    · simp
+    · intro b _ hb
+      simp [hb]
+    · intro h
+      exact absurd (Finset.mem_univ p.2) h
+  refine LinearIndependent.of_comp F ?_
+  have hcomp : (F ∘ fun i => ((v i : Module.End ℂ S)))
+      = fun i => (fun p : Fin D × Fin D => ((ρ i p : ℚ) : ℂ)) := by
+    funext i
+    exact hFv i
+  rw [hcomp]
+  exact hCindep
+
 /-- **The rational structure of `S₂(Γ₀(M))`: `𝕋_ℚ ⊗_ℚ ℂ ↪ End_ℂ S₂(Γ₀(M))`**
-(sorry leaf, 2026-07-26 — the SINGLE arithmetic input of the newform
-factor, and the archimedean twin of `ModularTateModuleData.padic_indep`).
+(PROVEN, 2026-07-26, over the single `q`-expansion citation
+`integralCuspForms_span_eq_top` — it was the SINGLE arithmetic input of
+the newform factor, and it is now discharged from the SAME citation
+that already carries `exists_qCoeff_rational_relations`, so this leaf
+adds NO new arithmetic to the tree).
 
 A family of elements of the RATIONAL Hecke algebra that is linearly
 independent over `ℚ` stays linearly independent over `ℂ` inside
@@ -26053,30 +26364,95 @@ surjection `𝕋_ℚ ⊗_ℚ ℂ ↠ 𝕋_ℂ` is an isomorphism.
 WHY IT IS NOT FORMAL. It is FALSE for a general `ℚ`-subalgebra of a
 `ℂ`-algebra — `ℚ(√2)·1 ⊆ ℂ` is `2`-dimensional over `ℚ` and
 `1`-dimensional over `ℂ` — so it uses the rational structure of the
-cusp-form space and nothing less.
+cusp-form space and nothing less. In the proof below that rational
+structure enters exactly once, through
+`exists_qCoeff_rational_relations`: `D = dim_ℂ S₂(Γ₀(M))` of the
+`q`-expansion functionals span all the others over `ℚ`, i.e. the
+`ℚ`-span of `{a_m}` is a `ℚ`-FORM of the dual space. Everything else is
+linear algebra, packaged as
+`linearIndependent_complex_of_ratCoeffSystem`.
 
-CLASSICAL PROOF (Diamond–Shurman §6.5, Theorem 6.5.10; Ribet). The
-`q`-expansion pairing `𝕋_ℤ × S₂(Γ₀(M), ℤ) → ℤ`, `(T, f) ↦ a₁(T f)`, is
-PERFECT: `a₁(T_n f) = a_n(f)` makes it nondegenerate on the right, and
-an operator killing every `a₁(T_n ·)` kills every coefficient of every
-form, hence is `0`. Therefore `dim_ℚ (ℚ ⊗ 𝕋_ℤ) = dim_ℚ S₂(Γ₀(M), ℚ)
-= dim_ℂ S₂(Γ₀(M))`, and `𝕋_ℚ`, being a quotient of `ℚ ⊗ 𝕋_ℤ` whose
-`ℂ`-span is all of `𝕋_ℂ` (dimension `dim_ℂ S₂(Γ₀(M))` by the same
-pairing over `ℂ`), is squeezed into equality. The `q`-expansion
-principle — that `S₂(Γ₀(M), ℚ) ⊗ ℂ = S₂(Γ₀(M))` — is the arithmetic
-content, exactly as in the integral sibling
-`integralCuspForms_span_eq_top` (Katz), whose resolution should supply
-this one. -/
-theorem modularHeckeAlgebraQ_linearIndependent_complex {M : ℕ} (_hM : 0 < M)
+THE ARGUMENT (Diamond–Shurman §6.5, Theorem 6.5.10; Ribet). The
+`q`-expansion pairing `𝕋 × S₂(Γ₀(M)) → ℂ`, `(T, f) ↦ a₁(T f)`, is
+perfect, and the two sides of the perfection are supplied separately
+here:
+
+* NONDEGENERACY ON THE FORMS is `cuspForm_eq_of_forall_qCoeff_eq` — the
+  functionals `a_m` separate cusp forms, so
+  `Λ : f ↦ (a_{n i} f)_{i<D}` is injective, hence (dimension count) a
+  `ℂ`-coordinate system on `S₂(Γ₀(M))`;
+* RATIONALITY OF THE MATRIX ENTRIES is the coefficient formula
+  `qCoeff_heckeEndo`, `a_m(T_q f) = a_{qm}(f) + 1_{q∤M}·1_{q∣m}·q·a_{m/q}(f)`,
+  whose right-hand side is an INTEGER combination of coefficients of
+  `f` and therefore, after `exists_qCoeff_rational_relations`, a
+  `ℚ`-combination of the `D` chosen ones. This propagates from the
+  generators `T_q` to all of `𝕋_ℚ` by `Algebra.adjoin_induction`.
+
+So every `T ∈ 𝕋_ℚ` has a RATIONAL `D × D` matrix in the coordinate
+system `Λ`, the assignment is injective and `ℚ`-linear, and
+`linearIndependent_complex_of_rat` (flatness of `ℚ → ℂ` in its concrete
+finite form) turns a `ℚ`-independent family of such matrices into a
+`ℂ`-independent one; `LinearIndependent.of_comp` along the `ℂ`-linear
+realization of the matrix map carries that back to `End_ℂ S₂(Γ₀(M))`.
+
+NOT CIRCULAR. `exists_qCoeff_rational_relations` is stated far ABOVE
+this declaration and is proven from `integralCuspForms_span_eq_top`
+alone; nothing in the `q`-expansion cluster consumes this theorem. The
+earlier docstring's expectation — that the Katz `q`-expansion principle
+"should supply this one" — is exactly what happened, through the
+already-derived `ℚ`-form of the coefficient functionals rather than
+through the integral lattice directly. -/
+theorem modularHeckeAlgebraQ_linearIndependent_complex {M : ℕ} (hM : 0 < M)
     (n : ℕ) (v : Fin n → ↥(modularHeckeAlgebraQ M))
-    (_hv : LinearIndependent ℚ v) :
+    (hv : LinearIndependent ℚ v) :
     LinearIndependent ℂ
-      (fun i => ((v i : Module.End ℂ (CuspForm (Gamma0GL M) 2)))) :=
-  sorry
+      (fun i => ((v i : Module.End ℂ (CuspForm (Gamma0GL M) 2)))) := by
+  classical
+  haveI := cuspForm_finiteDimensional M hM
+  obtain ⟨nn, hnn⟩ := exists_qCoeff_rational_relations hM
+  have hsep : ∀ f : CuspForm (Gamma0GL M) 2,
+      (∀ m : ℕ, qCoeffL M m f = 0) → f = 0 := by
+    intro f hf
+    refine cuspForm_eq_of_forall_qCoeff_eq (g := 0) fun m => ?_
+    rw [qCoeff_zero_cuspForm]
+    exact hf m
+  have hrel : ∀ m : ℕ,
+      ∃ c : Fin (Module.finrank ℂ (CuspForm (Gamma0GL M) 2)) → ℚ,
+        ∀ f : CuspForm (Gamma0GL M) 2,
+          qCoeffL M m f = ∑ i, (c i : ℂ) * qCoeffL M (nn i) f := by
+    intro m
+    obtain ⟨c, hc⟩ := hnn m
+    exact ⟨c, fun f => hc f⟩
+  have hgens : ∀ T ∈ {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+        ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q},
+      ∀ m : ℕ, ∃ c : Fin (Module.finrank ℂ (CuspForm (Gamma0GL M) 2)) → ℚ,
+        ∀ f : CuspForm (Gamma0GL M) 2,
+          qCoeffL M m (T f) = ∑ i, (c i : ℂ) * qCoeffL M (nn i) f := by
+    rintro T ⟨q, hq, rfl⟩ m
+    obtain ⟨c1, hc1⟩ := hrel (q * m)
+    obtain ⟨c2, hc2⟩ := hrel (m / q)
+    refine ⟨c1 + (if q ∣ M then 0 else if q ∣ m then (q : ℚ) else 0) • c2,
+      fun f => ?_⟩
+    have hcoeff : qCoeffL M m (heckeOp M q f)
+        = qCoeffL M (q * m) f
+          + ((if q ∣ M then 0 else if q ∣ m then (q : ℚ) else 0 : ℚ) : ℂ)
+            * qCoeffL M (m / q) f := by
+      rw [qCoeffL_apply, heckeOp_eq_heckeEndo hM hq, qCoeff_heckeEndo hM hq f m,
+        qCoeffL_apply, qCoeffL_apply]
+      split_ifs <;> push_cast <;> ring
+    rw [hcoeff, hc1 f, hc2 f, Finset.mul_sum, ← Finset.sum_add_distrib]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+    push_cast
+    ring
+  exact linearIndependent_complex_of_ratCoeffSystem
+    (fun r f => modularEnd_algebraMap_rat_apply (M := M) r f) (qCoeffL M) hsep rfl
+    nn hrel hgens v hv
 
 /-- **Rational descent of the newform idempotent** (PROVEN, 2026-07-26,
-over the single arithmetic leaf
-`modularHeckeAlgebraQ_linearIndependent_complex`).
+over `modularHeckeAlgebraQ_linearIndependent_complex`, which is itself
+now PROVEN from `exists_qCoeff_rational_relations` — so this node has
+no open leaf of its own).
 
 Hypotheses: `lam` is the eigenvalue character of the RATIONAL Hecke
 algebra (`exists_eigenvalueChar_modularHeckeAlgebraQ`); `e` is the
@@ -26196,9 +26572,14 @@ that factor, `ι 1` its unit idempotent — classically the sum of the
 étale idempotents of the `Gal(ℚ̄/ℚ)`-conjugates of `g` — and
 `ι (a_q(g)) = T_q · ι 1` the eigenvalue relation.
 
-STATUS (2026-07-26, second pass): PROVEN over ONE residual ARITHMETIC
-leaf, `modularHeckeAlgebraQ_linearIndependent_complex` — the rational
-structure of `S₂(Γ₀(M))`. The sub-cut suggested when this node was cut
+STATUS (2026-07-26, third pass): PROVEN OUTRIGHT, with NO residual leaf
+of its own. The last one,
+`modularHeckeAlgebraQ_linearIndependent_complex` — the rational
+structure of `S₂(Γ₀(M))` — is itself now proven, from the `ℚ`-form of
+the `q`-expansion functionals (`exists_qCoeff_rational_relations`), so
+the whole newform-factor cluster rests on the SINGLE citation
+`integralCuspForms_span_eq_top` that already carried that node. The
+sub-cut suggested when this node was cut
 had four steps, (a) `𝕋_ℂ` is the `ℂ`-span of `𝕋_ℚ`, (b)
 `dim_ℚ 𝕋_ℚ < ∞`, (c) the surjective eigenvalue character
 `λ : 𝕋_ℚ ↠ K_g`, (d) `ker λ` generated by an idempotent "from
