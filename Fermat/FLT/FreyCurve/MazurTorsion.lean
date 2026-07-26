@@ -7158,20 +7158,29 @@ element being ruled out of the maximal order is `5√-5` resp. `13√-13`.
 (measured 2026-07-26). This declaration, and EVERY declaration in the tree whose
 statement so much as mentions `WeierstrassCurve.End`, reports `sorryAx`. That is
 NOT a defect in the proof and NOT a hidden `simp` import: the taint is
-CARRIER-LEVEL. `endSubring`'s `add_mem'` and `mul_mem'` fields are
-`IsIsogeny.add` and `IsIsogeny.comp`, which rest on the two open leaves
-`IsRationalMap.add` and `IsRationalMap.comp` in
+CARRIER-LEVEL. `endSubring`'s `add_mem'` field is `IsIsogeny.add`, which rests on
+the open leaves `IsRationalMap.add` and `IsRationalMap.isIsogeny` in
 `Fermat/FLT/EllipticCurve/Isogeny.lean`. So the RING STRUCTURE of `End W` is
 itself sorried, and even the pure `rfl` lemma `End.mul_apply` reports `sorryAx`
 (verified directly). Consequently `#print axioms` cannot certify anything in the
-isogeny-vocabulary cut until those two leaves are proven.
+isogeny-vocabulary cut until those leaves are proven.
+
+(Updated 2026-07-26 on merge. `IsRationalMap.comp` — named here as the second
+open leaf — is now PROVEN, so `mul_mem'` is clean; `add_mem'` is the sole
+remaining source of the taint. `IsRationalMap.add` was also REFUTED as stated and
+restated with `[IsAlgClosed F] [W.IsElliptic]`, which is why the hypothesis on
+this declaration was strengthened from `[IsSepClosed k]` to `[IsAlgClosed k]`:
+`WeierstrassCurve.End` now requires an algebraically closed base, because over a
+merely separably closed one `IsIsogeny.add` is false and `endSubring` is not a
+subring. Both consumers of this lemma work over `AlgebraicClosure ℚ`, so nothing
+is lost. See the FALSITY AUDITs in `Isogeny.lean`.)
 
 That is exactly why the mathematical content is factored out into
 `ne_zmultiples_of_torsion_le` above, which mentions no isogeny vocabulary and
 DOES certify clean. Everything this wrapper adds on top is the one-line
 observation that `[p] ∘ φ` kills the `p`-torsion. -/
 theorem WeierstrassCurve.not_exists_natCast_mul_of_ker_zmultiples
-    {k : Type*} [Field k] [DecidableEq k] [IsSepClosed k]
+    {k : Type*} [Field k] [DecidableEq k] [IsAlgClosed k]
     (E : WeierstrassCurve k) [E.IsElliptic]
     {p n : ℕ} (hp : 1 < p) (hpk : (p : k) ≠ 0) (hpn : p ∣ n) (hn0 : n ≠ 0)
     (ψ : WeierstrassCurve.End E.toAffine)
