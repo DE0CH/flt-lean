@@ -2612,6 +2612,64 @@ NON-subgroup `{0, G, −G}` for `G` of order `≥ 5`, for which every formula ab
 well defined, 31006 of 31143 instances FAIL. So `hS` is essential and the pole form does not
 carry it.
 
+**SUPERSEDED ROUTE, kept for the record** (integration note, 2026-07-26). The
+Laurent-expansion analysis below was the plan for `velu_pole_identity` when it was
+still open. That leaf is now PROVEN, by a different route — clear denominators to
+`veluTheta S = 0` and split it into `velu_theta_local_dvd` and
+`velu_theta_degree_lt`, both of which are also proven. The four local conditions
+below are therefore NOT needed, and in particular the missing ingredient flagged at
+the end (invariance of the invariant differential) is NOT a blocker for anything.
+The closed forms are recorded because they are independently verified and may serve
+`velu_map_add_of_notMem`, the one leaf still open in this file.
+
+1. *No poles*: `h⁶` divides the difference. A Laurent expansion at `x_Q` (computed in
+   PARI/GP) shows the `d^{-6}` and `d^{-5}` coefficients vanish identically — this is
+   exactly `u_Q = 4x_Q³ + b₂x_Q² + 2b₄x_Q + b₆`, the Weierstrass equation at `Q` — while
+   the `d^{-4}, …, d^{-1}` coefficients impose four relations, and only four, on the
+   Taylor coefficients `r₀, r₁, r₂, r₃` at `x_Q` of
+
+     `R(x) := Σ_{Q' ∈ S ∖ {Q, −Q}} veluPoleX W x Q'`.
+
+   THIS is where closure of `S` under addition is consumed. See below: all four `r_j`
+   have closed forms in the group law.
+2. *Vanishing at infinity*: the difference has degree `< 6·deg h`, which pins the top four
+   coefficients. `w = veluW S` occurs ONLY here — it is absent from every pole condition,
+   appearing first in the `d^0` coefficient — so this half is where `w` is consumed.
+
+**The four local conditions, in closed form** (each confirmed on 50744 instances in
+PARI/GP, `101 ≤ p ≤ 400`, general `a₁, a₂, a₃`; NONE of them is proven here). Write
+`v(Z) = 2y(Z) + a₁x(Z) + a₃`, `τ(z) = 6z² + b₂z + b₄` (`= ½ψ'(z) = veluTTerm` away from
+`0`), `τ_Q = τ(x_Q)`, and `T = 2·veluT S − τ(x_Q) − τ(x_{2Q})`. Then
+
+  `r₀ = 2(x_Q − x_{2Q})`
+  `r₁ = −2 − 2 v(2Q)/v(Q)`
+  `r₂ = T/v(Q)² + τ_Q(v(Q) + v(2Q))/v(Q)³`
+  `r₃ = ⅙[W₃/v(Q)³ − 3W₂τ_Q/v(Q)⁴ − W₁(12x_Q + b₂)/v(Q)³ + 3W₁τ_Q²/v(Q)⁵]`,
+  `W₁ = −2(v(Q) + v(2Q))`, `W₂ = 2T`,
+  `W₃ = −2[(12x_Q + b₂)v(Q) + (12x_{2Q} + b₂)v(2Q)]`.
+
+They come from ONE generating principle, and every ingredient except the last is already
+PROVEN in this file:
+
+* `velu_pair_X` rewrites `veluPoleX W x Q' = x(P+Q') + x(P−Q') − 2x_{Q'}` for a point `P`
+  with `x(P) = x`, so `R` is a sum of coordinates of translates.
+* Reindexing `Q' ↦ Q ± Q'` (`velu_sum_translate`) sends `S ∖ {0, Q, −Q}` onto
+  `S ∖ {0, Q, 2Q}` for BOTH signs — this is exactly the use of closure under addition, and
+  it is why `2Q` is the only new point appearing anywhere above.
+* The vanishing sums: `Σ_{Z ∈ S ∖ 0} v(Z) = 0` is `velu_sum_kernel`; `Σ_{Z ∈ S ∖ 0} x_Z v(Z) = 0`
+  is the same `±`-pairing (`velu_sum_neg`), whence `Σ_{Z ∈ S ∖ 0} τ'(x_Z)v(Z) = 0`; and
+  `Σ_{Z ∈ S ∖ 0} τ(x_Z) = 2·veluT S` is the definition of `veluT`.
+* NOT yet in this file: **invariance of the invariant differential** `dx/v`, i.e.
+  `d x(P+Q')/d x(P) = v(P+Q')/v(P)` and `d v(Z)/d x(P) = τ(x_Z)/v(P)`. Despite the
+  notation this needs no calculus — it is an algebraic identity in the explicit `addX`
+  formula and should fall to `field_simp; ring`, in the same style as
+  `velu_addX_pair_identity`. It is what produces `r₁, r₂, r₃` from `r₀`, by successive
+  differentiation, and it is the one genuinely new brick the "no poles" half needs.
+
+A warning against a natural false guess: `r₁, r₂, r₃` are NOT the Taylor coefficients of
+`2(x − φ(x)/ψ(x))`, the duplication map whose value gives `r₀`. That was tested and fails
+in 220 of 222 instances at every order `≥ 1`.
+
 **`hodd` is not needed for the TRUTH of this statement**, only for this proof of it. The same
 sweep finds the identity holding verbatim for kernels of order `2`, `4` and `6` (16077
 instances, none failing; re-confirmed here at 901 + 890 further instances), because the
