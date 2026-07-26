@@ -93,6 +93,14 @@ The chain, in the order the assembly uses it:
    `isHilbertTameAtTwo_baseChange`, `isFlatAt_baseChange_of_numberField`,
    `isHilbertHardlyRamified_conj` and
    `isHilbertHardlyRamified_baseChange`.
+
+   `isHilbertFiniteFramesClause` (Schlessinger's H3) is no longer a leaf
+   either: it was DECOMPOSED 2026-07-26 along the Hermite–Minkowski cut
+   and is now PROVEN over the two bookkeeping lemmas
+   `finite_setOf_framedGaloisRep_isUnramifiedAt` and
+   `finite_setOf_subgroup_hilbertInertiaAt_le`, above the single
+   ARITHMETIC leaf `finite_setOf_intermediateField_hilbertInertiaAt_le`
+   (Hermite's theorem for `F`).
 4. `HilbertHeckeAlgebra` — `T_F`, carrying finiteness AND FREENESS of
    `T_F` over `ℤ_[ℓ]`, generation by Hecke operators, and the
    **Hecke-valued Galois representation** `ρT : G_F → GL₂(T_F)` reducing
@@ -1598,8 +1606,304 @@ theorem isHilbertFibreProductClause (ℓ : ℕ) [Fact ℓ.Prime]
     IsHilbertFibreProductClause ℓ F :=
   sorry
 
-/-- **Finiteness of the hardly ramified frames over a finite level** (LEAF;
-Schlessinger's H3).
+/-! #### Hermite–Minkowski over `F` — the cut of Schlessinger's H3
+
+The four declarations below decompose `isHilbertFiniteFramesClause`
+(Schlessinger's H3 at the `F` level) along the same three-step cut that
+`Modularity/Patching.lean` runs over `ℚ`
+(`finite_setOf_intermediateField_inertiaAt_le` →
+`finite_setOf_subgroup_inertiaAt_le` →
+`finite_setOf_galoisRep_isUnramifiedAt` →
+`finite_setOf_isHardlyRamified`).
+
+That module may NOT be imported here — it is forbidden by this file's
+circularity guard, and its chain is in any case stated over `ℚ` only,
+place-indexed by rational primes. So the cut is redone over the variable
+base field `F`. The split it produces is the point of the exercise:
+
+* the two upper steps are pure Galois-theoretic and
+  representation-theoretic BOOKKEEPING and are PROVEN here — a continuous
+  representation into a finite discrete monoid has open kernel of bounded
+  index, unramifiedness puts the local inertia inside that kernel, and
+  the infinite Galois correspondence turns such kernels into finite
+  Galois subextensions of `Fᵃˡᵍ/F` of bounded degree;
+* ALL the arithmetic is isolated in the single leaf
+  `finite_setOf_intermediateField_hilbertInertiaAt_le`, Hermite's theorem
+  for `F`: finitely many finite Galois extensions of `F` of bounded degree
+  unramified outside the places over `2ℓ`.
+-/
+
+/-- **Triviality of the local inertia at a place `w` of `F` on a subgroup
+of `Γ F`**: every element of the local inertia group at `w`, pushed into
+`Γ F` along the (chosen-embedding) map of absolute Galois groups, lies
+in `N`.
+
+For `N = K.fixingSubgroup` this says exactly that the finite Galois
+subextension `K ⊆ Fᵃˡᵍ` is unramified at `w`; for `N` the kernel of a
+framed representation it is exactly `GaloisRep.IsUnramifiedAt w`
+(`finite_setOf_framedGaloisRep_isUnramifiedAt` below performs both
+translations). The `F`-level twin of `Modularity/Patching.lean`'s
+`InertiaTrivialAt`, indexed by a PLACE of `F` rather than by a rational
+prime — `F` has several places over `2` and over `ℓ`, so the rational
+indexing of the `ℚ`-level development is not available. -/
+def HilbertInertiaTrivialAt {F : Type u} [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (N : Subgroup (Γ F)) : Prop :=
+  ∀ σ ∈ localInertiaGroup w,
+    Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) σ ∈ N
+
+/-- **Hermite–Minkowski over `F`** (LEAF — the ONLY arithmetic input of
+Schlessinger's H3 at the `F` level): for a fixed degree bound `n` there
+are only finitely many finite Galois subextensions `K` of `Fᵃˡᵍ/F` with
+`[K : F] ≤ n` on which the local inertia at every place of `F` away from
+`2` and `ℓ` acts trivially.
+
+MATHEMATICAL CONTENT. Such a `K` is a number field of degree
+`[K : ℚ] = [K : F]·[F : ℚ] ≤ n·[F : ℚ]`, and it is unramified over `F`
+outside the finitely many places above `2ℓ`, hence unramified over `ℚ`
+outside the finite set of rational primes dividing `2·ℓ·d_F`. The
+exponent of a prime `q` in the different of `K/ℚ` is bounded by
+`e − 1 + e·v_q(e)` with `e ≤ [K : ℚ]` (Serre, *Corps Locaux* III §6
+Prop. 13), so `|d_K|` is bounded by a constant depending only on `n`,
+`F` and `ℓ`; Hermite's theorem (mathlib's
+`NumberField.finite_of_discr_bdd`) then leaves finitely many such
+fields.
+
+ROUTE TO A PROOF, and why it is not taken here. `Modularity/Patching.lean`
+carries the whole of this argument over `ℚ` and over the two-prime set
+`{2, p}`, as the PROVEN
+`finite_setOf_intermediateField_inertiaAt_le`, over the
+discriminant-exponent bound `exists_discr_factorization_le_of_finrank_le`
+and the inertia-to-discriminant transport
+`not_dvd_discr_of_inertiaTrivialAt`. None of it is reachable from this
+module: `Modularity/*` is forbidden by the circularity guard, and the
+`ℚ`-level statement is in any case indexed by rational primes and by
+`IntermediateField ℚ ℚᵃˡᵍ`, so consuming it would additionally need the
+base-change dictionary "a place of `K` over a place of `F` over a prime
+`q`". The honest discharge is the module split recorded in
+`~/.flt-design-deformation-patching-dedup.md` — hoist the
+Hermite–Minkowski block into a module upstream of BOTH this one and
+`Patching.lean`, and generalize it there from `ℚ` and `{2, p}` to a
+variable base number field and a finite set of places — not a third
+re-proof here.
+
+BOTH-WAYS AUDIT. A plain classical finiteness statement about
+extensions of a number field: true outright as cited, with no
+representation-theoretic hypothesis and no vacuity. It is NOT vacuous in
+the degenerate direction either — the set is nonempty (it contains
+`K = ⊥`), so the content is genuinely the finiteness and not an empty
+quantification.
+
+CIRCULARITY GUARD: as for every leaf of this file — no import from
+`Family.lean`, `Lift.lean`, `Modularity/*` or `Deformation.lean`, and no
+discharge through the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_five_le`. Neither is a
+temptation here: the statement carries no representation at all. -/
+theorem finite_setOf_intermediateField_hilbertInertiaAt_le (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F] (n : ℕ) :
+    {K : IntermediateField F (AlgebraicClosure F) |
+      ∃ _ : FiniteDimensional F K,
+        IsGalois F K ∧ Module.finrank F K ≤ n ∧
+        ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal →
+          ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal →
+            HilbertInertiaTrivialAt w K.fixingSubgroup}.Finite :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Finiteness of open normal subgroups of `Γ F` of bounded index
+unramified outside `2ℓ`** (PROVEN over the Hermite leaf — the
+Galois-correspondence step; "`G_{F,S}` is small").
+
+Every such `N` is closed (`Subgroup.isClosed_of_isOpen`), hence by the
+infinite Galois correspondence it is the fixing subgroup of its fixed
+field `K = (Fᵃˡᵍ)^N` (`InfiniteGalois.fixingSubgroup_fixedField`), which
+is finite-dimensional over `F` (`InfiniteGalois.isOpen_iff_finite`),
+Galois over `F` (`InfiniteGalois.normal_iff_isGalois`), of degree
+`[K : F] = #(Γ F ⧸ N) = N.index ≤ n`
+(`InfiniteGalois.normalAutEquivQuotient`, `IsGalois.card_aut_eq_finrank`)
+and inertia-trivial away from `2ℓ`. So the set injects into the finite
+field set of the leaf above via `fixingSubgroup`.
+
+The `F`-level twin of `Patching.lean`'s
+`finite_setOf_subgroup_inertiaAt_le`, and its proof is that one with `ℚ`
+replaced by `F` and the rational-prime indexing replaced by places;
+`IsGalois F Fᵃˡᵍ` holds for the same reason it holds at `ℚ`, a number
+field being perfect. -/
+theorem finite_setOf_subgroup_hilbertInertiaAt_le (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F] (n : ℕ) :
+    {N : Subgroup (Γ F) |
+      N.Normal ∧ IsOpen (N : Set (Γ F)) ∧ N.FiniteIndex ∧ N.index ≤ n ∧
+      ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal →
+        ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal → HilbertInertiaTrivialAt w N}.Finite := by
+  classical
+  haveI halgF : Algebra.IsAlgebraic F (AlgebraicClosure F) := AlgebraicClosure.isAlgebraic F
+  haveI hacF : IsAlgClosure F (AlgebraicClosure F) := ⟨inferInstance, halgF⟩
+  haveI hnormF : Normal F (AlgebraicClosure F) :=
+    IsAlgClosure.normal F (AlgebraicClosure F)
+  haveI hsepF : Algebra.IsSeparable F (AlgebraicClosure F) :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI hgalF : IsGalois F (AlgebraicClosure F) := ⟨⟩
+  refine Set.Finite.subset
+    ((finite_setOf_intermediateField_hilbertInertiaAt_le ℓ F n).image
+      fun K => K.fixingSubgroup) ?_
+  rintro N ⟨hnorm, hopen, hFI, hidx, hinert⟩
+  have hclosed : IsClosed (N : Set (Γ F)) := Subgroup.isClosed_of_isOpen N hopen
+  have hfix : (IntermediateField.fixedField (E := AlgebraicClosure F) N).fixingSubgroup = N :=
+    InfiniteGalois.fixingSubgroup_fixedField ⟨N, hclosed⟩
+  haveI hfd : FiniteDimensional F (IntermediateField.fixedField (E := AlgebraicClosure F) N) :=
+    (InfiniteGalois.isOpen_iff_finite _).mp (by rw [hfix]; exact hopen)
+  haveI hgalK : IsGalois F (IntermediateField.fixedField (E := AlgebraicClosure F) N) :=
+    (InfiniteGalois.normal_iff_isGalois _).mp (by rw [hfix]; exact hnorm)
+  haveI hnorm' := hnorm
+  have hcard : Module.finrank F (IntermediateField.fixedField (E := AlgebraicClosure F) N) =
+      Nat.card (Γ F ⧸ N) := by
+    rw [← IsGalois.card_aut_eq_finrank]
+    exact (Nat.card_congr (InfiniteGalois.normalAutEquivQuotient
+      (⟨N, hclosed⟩ : ClosedSubgroup (Γ F))).toEquiv).symm
+  have hrank : Module.finrank F (IntermediateField.fixedField (E := AlgebraicClosure F) N) ≤ n := by
+    rw [hcard, ← Subgroup.index_eq_card N]
+    exact hidx
+  refine ⟨_, ⟨hfd, hgalK, hrank, ?_⟩, hfix⟩
+  intro w h2 hl
+  rw [hfix]
+  exact hinert w h2 hl
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Finiteness of framed representations of `Γ F` unramified outside
+`2ℓ`** (PROVEN — the representations-to-subgroups bookkeeping step).
+
+Over a finite discrete coefficient ring `A` the endomorphism monoid
+`E = End_A(A²)` is finite and discrete, so the kernel of a continuous
+`ρ : Γ F → E` is an OPEN normal subgroup whose quotient injects into `E`
+(index at most `#E`), and it contains the image of the local inertia at
+every place away from `2ℓ` (`GaloisRep.IsUnramifiedAt` transported along
+`GaloisRep.toLocal_apply`). There are finitely many candidate kernels
+(`finite_setOf_subgroup_hilbertInertiaAt_le`) and each carries finitely
+many representations, a representation being determined by the function
+`Γ F ⧸ N → E` it induces on `Quotient.out` representatives.
+
+The `F`-level twin of `Patching.lean`'s
+`finite_setOf_galoisRep_isUnramifiedAt`; the proof is that one with `ℚ`
+replaced by `F` and the rational-prime indexing replaced by places. -/
+theorem finite_setOf_framedGaloisRep_isUnramifiedAt.{uA} (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {A : Type uA} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    [DiscreteTopology A] [Finite A] :
+    {ρ : FramedGaloisRep F A (Fin 2) |
+      ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal →
+        ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal → ρ.IsUnramifiedAt w}.Finite := by
+  classical
+  haveI hfinE : Finite (Module.End A (Fin 2 → A)) :=
+    Finite.of_injective
+      (fun f => (f : (Fin 2 → A) → (Fin 2 → A))) DFunLike.coe_injective
+  -- the kernel subgroup of a representation
+  let kerOf : FramedGaloisRep F A (Fin 2) → Subgroup (Γ F) := fun ρ =>
+    { carrier := {g | ρ g = 1}
+      one_mem' := map_one ρ
+      mul_mem' := by
+        intro a b ha hb
+        show ρ (a * b) = 1
+        rw [map_mul, ha, hb, mul_one]
+      inv_mem' := by
+        intro a ha
+        show ρ a⁻¹ = 1
+        have h1 : ρ a⁻¹ * ρ a = 1 := by
+          rw [← map_mul, inv_mul_cancel, map_one]
+        rwa [ha, mul_one] at h1 }
+  -- membership in `kerOf ρ` is triviality of `ρ`
+  have hmem : ∀ (ρ : FramedGaloisRep F A (Fin 2)) (g : Γ F),
+      g ∈ kerOf ρ ↔ ρ g = 1 := fun _ _ => Iff.rfl
+  -- a representation is recovered on `Quotient.out` representatives
+  have hout : ∀ (ρ : FramedGaloisRep F A (Fin 2)) (N : Subgroup (Γ F)),
+      kerOf ρ = N → ∀ g : Γ F, ρ (QuotientGroup.mk (s := N) g).out = ρ g := by
+    intro ρ N hN g
+    subst hN
+    have h1 : ((QuotientGroup.mk (s := kerOf ρ) g).out)⁻¹ * g ∈ kerOf ρ :=
+      QuotientGroup.eq.mp (QuotientGroup.out_eq' _)
+    have h2 : ρ (((QuotientGroup.mk (s := kerOf ρ) g).out)⁻¹ * g) = 1 :=
+      (hmem ρ _).mp h1
+    have h3 : ρ (QuotientGroup.mk (s := kerOf ρ) g).out *
+        ρ (((QuotientGroup.mk (s := kerOf ρ) g).out)⁻¹ * g) = ρ g := by
+      rw [← map_mul, mul_inv_cancel_left]
+    rw [h2, mul_one] at h3
+    exact h3
+  -- the induced map on the finite quotient is injective
+  have hinj : ∀ ρ : FramedGaloisRep F A (Fin 2),
+      Function.Injective (fun x : Γ F ⧸ kerOf ρ => ρ x.out) := by
+    intro ρ x y hxy
+    obtain ⟨a, rfl⟩ := QuotientGroup.mk_surjective x
+    obtain ⟨b, rfl⟩ := QuotientGroup.mk_surjective y
+    have hxy' : ρ (QuotientGroup.mk (s := kerOf ρ) a).out =
+        ρ (QuotientGroup.mk (s := kerOf ρ) b).out := hxy
+    rw [hout ρ (kerOf ρ) rfl, hout ρ (kerOf ρ) rfl] at hxy'
+    refine (QuotientGroup.eq).mpr ((hmem ρ _).mpr ?_)
+    have e1 : ρ (a⁻¹ * b) = ρ a⁻¹ * ρ b := map_mul ρ _ _
+    rw [e1, ← hxy', ← map_mul, inv_mul_cancel, map_one]
+  -- kernels are open, normal, of index at most `#E`
+  have hopenker : ∀ ρ : FramedGaloisRep F A (Fin 2),
+      IsOpen ((kerOf ρ : Subgroup (Γ F)) : Set (Γ F)) := by
+    intro ρ
+    letI := moduleTopology A (Module.End A (Fin 2 → A))
+    haveI : Module.Finite A (Module.End A (Fin 2 → A)) := Module.Finite.of_finite
+    haveI : DiscreteTopology (Module.End A (Fin 2 → A)) := by
+      obtain ⟨m, f, hf⟩ := Module.Finite.exists_fin' A (Module.End A (Fin 2 → A))
+      refine @DiscreteTopology.mk _ (moduleTopology A (Module.End A (Fin 2 → A))) ?_
+      rw [ModuleTopology.eq_coinduced_of_surjective hf,
+        DiscreteTopology.eq_bot (α := Fin m → A), coinduced_bot]
+    have hcont : Continuous fun g : Γ F => ρ g :=
+      ContinuousMonoidHom.continuous_toFun ρ
+    exact (isOpen_discrete ({1} : Set (Module.End A (Fin 2 → A)))).preimage hcont
+  have hnormal : ∀ ρ : FramedGaloisRep F A (Fin 2), (kerOf ρ).Normal := by
+    intro ρ
+    refine ⟨fun x hx g => ?_⟩
+    show ρ (g * x * g⁻¹) = 1
+    rw [map_mul, map_mul, (hx : ρ x = 1), mul_one, ← map_mul, mul_inv_cancel, map_one]
+  have hfinquot : ∀ ρ : FramedGaloisRep F A (Fin 2), Finite (Γ F ⧸ kerOf ρ) :=
+    fun ρ => Finite.of_injective _ (hinj ρ)
+  have hidx : ∀ ρ : FramedGaloisRep F A (Fin 2),
+      (kerOf ρ).index ≤ Nat.card (Module.End A (Fin 2 → A)) := by
+    intro ρ
+    rw [Subgroup.index_eq_card]
+    exact Nat.card_le_card_of_injective _ (hinj ρ)
+  -- unramifiedness puts the local inertia inside the kernel
+  have hinertker : ∀ ρ : FramedGaloisRep F A (Fin 2),
+      (∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal →
+        ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal → ρ.IsUnramifiedAt w) →
+      ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal →
+        ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal → HilbertInertiaTrivialAt w (kerOf ρ) := by
+    intro ρ hρ w h2 hl σ hσ
+    have h1 : (ρ.toLocal w) σ = 1 := (hρ w h2 hl).localInertiaGroup_le hσ
+    rw [GaloisRep.toLocal_apply] at h1
+    exact (hmem ρ _).mpr h1
+  -- assemble: finitely many kernels, finitely many maps per kernel
+  have h𝒩fin := finite_setOf_subgroup_hilbertInertiaAt_le ℓ F
+    (Nat.card (Module.End A (Fin 2 → A)))
+  refine Set.Finite.subset (h𝒩fin.biUnion
+    (t := fun N => {ρ : FramedGaloisRep F A (Fin 2) | kerOf ρ = N})
+    fun N hN => ?_) ?_
+  · -- the fiber over a fixed kernel injects into `Γ F ⧸ N → E`
+    haveI : N.FiniteIndex := hN.2.2.1
+    haveI : Finite (Γ F ⧸ N) := Subgroup.finite_quotient_of_finiteIndex
+    refine Set.Finite.of_finite_image (f := fun ρ => fun x : Γ F ⧸ N => ρ x.out)
+      (Set.toFinite _) ?_
+    intro ρ₁ hρ₁ ρ₂ hρ₂ hF
+    have key : ∀ g, ρ₁ g = ρ₂ g := by
+      intro g
+      have e1 := hout ρ₁ N hρ₁ g
+      have e2 := hout ρ₂ N hρ₂ g
+      have e3 : ρ₁ (QuotientGroup.mk (s := N) g).out =
+          ρ₂ (QuotientGroup.mk (s := N) g).out :=
+        congrFun hF (QuotientGroup.mk (s := N) g)
+      rw [← e1, e3, e2]
+    exact GaloisRep.ext key
+  · intro ρ hρ
+    haveI := hfinquot ρ
+    exact Set.mem_biUnion
+      ⟨hnormal ρ, hopenker ρ, Subgroup.finiteIndex_of_finite_quotient,
+        hidx ρ, hinertker ρ hρ⟩ rfl
+
+/-- **Finiteness of the hardly ramified frames over a finite level**
+(PROVEN 2026-07-26 over the Hermite–Minkowski cut above; Schlessinger's
+H3).
 
 Over `ℚ` this is `Deformation.lean`'s leaf
 `finite_setOf_isHardlyRamified_frames`. The argument is Hermite–Minkowski:
@@ -1607,11 +1911,18 @@ a hardly ramified frame over the finite ring `A` is a homomorphism
 `G_F → GL₂(A)` unramified outside the finitely many places of `F` above
 `2ℓ` and with bounded ramification at those, hence factors through the
 Galois group of an extension of `F` of bounded degree and bounded
-discriminant, of which there are finitely many; and `GL₂(A)` is finite. -/
+discriminant, of which there are finitely many; and `GL₂(A)` is finite.
+
+Only the FIRST clause of `IsHilbertHardlyRamified` that the argument
+touches is used — `isUnramified` — so the assembly is a `Set.Finite.subset`
+of `finite_setOf_framedGaloisRep_isUnramifiedAt`: the determinant,
+flatness and tameness clauses only shrink the set further. -/
 theorem isHilbertFiniteFramesClause (ℓ : ℕ) [Fact ℓ.Prime]
     (F : Type u) [Field F] [NumberField F] :
-    IsHilbertFiniteFramesClause ℓ F :=
-  sorry
+    IsHilbertFiniteFramesClause ℓ F := by
+  intro A _ _ _ _ _ _ _
+  exact (finite_setOf_framedGaloisRep_isUnramifiedAt ℓ F (A := A)).subset
+    fun _ hρ w h2 hl => hρ.isUnramified w h2 hl
 
 /-- **Detection of the `F`-level condition on the finite levels** (LEAF).
 
