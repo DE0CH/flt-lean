@@ -34,6 +34,7 @@ public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Basic
 import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
 import Mathlib.RingTheory.Finiteness.Nakayama
+public import Mathlib.Algebra.DualNumber
 public import Mathlib.RingTheory.DedekindDomain.Factorization
 import Fermat.FLT.EllipticCurve.TorsionCard
 
@@ -6790,8 +6791,981 @@ lemma Φ_sub_C_mul_ΨSq_ne_zero (c : F) :
   rw [h0, Polynomial.coeff_zero] at hcoeff
   exact zero_ne_one hcoeff
 
+/-! ### The invariant differential `[n]^*ω = n·ω`
+
+Self-contained development, over an ARBITRARY base field and with no
+reference to the rest of this file, of the derivation `D` on `Frac L[E]`
+with `Dx = ψ₂`, of the additivity of the resulting speed function on
+`(curveK E).Point`, and of the resulting universal polynomial identity
+`sq_wronskian_mul_Ψ₂Sq` below. -/
+
+namespace InvariantDifferential
+
+universe u
+
+open _root_.Polynomial _root_.TrivSqZeroExt
+
+/-! ### The two group-law branches, as pure field algebra -/
+
+/-- **Secant branch.** -/
+theorem tang_secant_aux {K : Type*} [Field K]
+    (a₁ a₂ a₃ a₄ a₆ x₁ y₁ x₂ y₂ c₁ c₂ l dl x₃ ny₃ y₃ : K)
+    (hx : x₁ - x₂ ≠ 0)
+    (he₁ : y₁ ^ 2 + a₁ * x₁ * y₁ + a₃ * y₁ = x₁ ^ 3 + a₂ * x₁ ^ 2 + a₄ * x₁ + a₆)
+    (he₂ : y₂ ^ 2 + a₁ * x₂ * y₂ + a₃ * y₂ = x₂ ^ 3 + a₂ * x₂ ^ 2 + a₄ * x₂ + a₆)
+    (hl : l * (x₁ - x₂) = y₁ - y₂)
+    (hdl : dl * (x₁ - x₂) =
+      (c₁ * (3 * x₁ ^ 2 + 2 * a₂ * x₁ + a₄ - a₁ * y₁) -
+        c₂ * (3 * x₂ ^ 2 + 2 * a₂ * x₂ + a₄ - a₁ * y₂)) -
+      l * (c₁ * (2 * y₁ + a₁ * x₁ + a₃) - c₂ * (2 * y₂ + a₁ * x₂ + a₃)))
+    (hx₃ : x₃ = l ^ 2 + a₁ * l - a₂ - x₁ - x₂)
+    (hny₃ : ny₃ = l * (x₃ - x₁) + y₁)
+    (hy₃ : y₃ = -ny₃ - a₁ * x₃ - a₃) :
+    ((2 * l + a₁) * dl - c₁ * (2 * y₁ + a₁ * x₁ + a₃) - c₂ * (2 * y₂ + a₁ * x₂ + a₃) =
+        (c₁ + c₂) * (2 * y₃ + a₁ * x₃ + a₃)) ∧
+      (-(dl * (x₃ - x₁) +
+            l * (((2 * l + a₁) * dl - c₁ * (2 * y₁ + a₁ * x₁ + a₃) -
+              c₂ * (2 * y₂ + a₁ * x₂ + a₃)) - c₁ * (2 * y₁ + a₁ * x₁ + a₃)) +
+            c₁ * (3 * x₁ ^ 2 + 2 * a₂ * x₁ + a₄ - a₁ * y₁)) -
+          a₁ * ((2 * l + a₁) * dl - c₁ * (2 * y₁ + a₁ * x₁ + a₃) -
+            c₂ * (2 * y₂ + a₁ * x₂ + a₃)) =
+        (c₁ + c₂) * (3 * x₃ ^ 2 + 2 * a₂ * x₃ + a₄ - a₁ * y₃)) := by
+  subst hx₃ hny₃ hy₃
+  have hl' : l = (y₁ - y₂) / (x₁ - x₂) := by
+    field_simp
+    linear_combination hl
+  subst hl'
+  have hdl' : dl =
+      ((c₁ * (3 * x₁ ^ 2 + 2 * a₂ * x₁ + a₄ - a₁ * y₁) -
+        c₂ * (3 * x₂ ^ 2 + 2 * a₂ * x₂ + a₄ - a₁ * y₂)) -
+      ((y₁ - y₂) / (x₁ - x₂)) *
+        (c₁ * (2 * y₁ + a₁ * x₁ + a₃) - c₂ * (2 * y₂ + a₁ * x₂ + a₃))) / (x₁ - x₂) := by
+    field_simp
+    field_simp at hdl
+    linear_combination hdl
+  subst hdl'
+  have ha₆ : a₆ = y₁ ^ 2 + a₁ * x₁ * y₁ + a₃ * y₁ - (x₁ ^ 3 + a₂ * x₁ ^ 2 + a₄ * x₁) := by
+    linear_combination -he₁
+  subst ha₆
+  have ha₄ : a₄ = ((y₁ ^ 2 + a₁ * x₁ * y₁ + a₃ * y₁ - x₁ ^ 3 - a₂ * x₁ ^ 2) -
+      (y₂ ^ 2 + a₁ * x₂ * y₂ + a₃ * y₂ - x₂ ^ 3 - a₂ * x₂ ^ 2)) / (x₁ - x₂) := by
+    field_simp
+    linear_combination he₂ - he₁
+  subst ha₄
+  constructor
+  · field_simp
+    ring
+  · field_simp
+    ring
+
+/-- **Tangent (doubling) branch.**  This one is an unconditional identity:
+the Weierstrass equation is not needed. -/
+theorem tang_double_aux {K : Type*} [Field K]
+    (a₁ a₂ a₃ a₄ x y c l dl x₃ ny₃ y₃ : K)
+    (hp : 2 * y + a₁ * x + a₃ ≠ 0)
+    (hl : l * (2 * y + a₁ * x + a₃) = 3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y)
+    (hdl : dl * (2 * y + a₁ * x + a₃) =
+      c * ((6 * x + 2 * a₂) * (2 * y + a₁ * x + a₃) -
+        a₁ * (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y)) -
+      l * (2 * (c * (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y)) +
+        a₁ * (c * (2 * y + a₁ * x + a₃))))
+    (hx₃ : x₃ = l ^ 2 + a₁ * l - a₂ - x - x)
+    (hny₃ : ny₃ = l * (x₃ - x) + y)
+    (hy₃ : y₃ = -ny₃ - a₁ * x₃ - a₃) :
+    ((2 * l + a₁) * dl - c * (2 * y + a₁ * x + a₃) - c * (2 * y + a₁ * x + a₃) =
+        (c + c) * (2 * y₃ + a₁ * x₃ + a₃)) ∧
+      (-(dl * (x₃ - x) +
+            l * (((2 * l + a₁) * dl - c * (2 * y + a₁ * x + a₃) -
+              c * (2 * y + a₁ * x + a₃)) - c * (2 * y + a₁ * x + a₃)) +
+            c * (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y)) -
+          a₁ * ((2 * l + a₁) * dl - c * (2 * y + a₁ * x + a₃) -
+            c * (2 * y + a₁ * x + a₃)) =
+        (c + c) * (3 * x₃ ^ 2 + 2 * a₂ * x₃ + a₄ - a₁ * y₃)) := by
+  subst hx₃ hny₃ hy₃
+  have hdl' : dl =
+      (c * ((6 * x + 2 * a₂) * (2 * y + a₁ * x + a₃) -
+        a₁ * (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y)) -
+      l * (2 * (c * (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y)) +
+        a₁ * (c * (2 * y + a₁ * x + a₃)))) / (2 * y + a₁ * x + a₃) := by
+    rw [eq_div_iff hp]
+    linear_combination hdl
+  subst hdl'
+  have hl' : l = (3 * x ^ 2 + 2 * a₂ * x + a₄ - a₁ * y) / (2 * y + a₁ * x + a₃) := by
+    rw [eq_div_iff hp]
+    linear_combination hl
+  subst hl'
+  clear hl hdl
+  set pp := 2 * y + a₁ * x + a₃ with hpp
+  constructor
+  · field_simp
+    rw [hpp]
+    ring
+  · field_simp
+    rw [hpp]
+    ring
+
+
+/-! ### Reduction to the generic curve -/
+
+section Generic
+
+open Polynomial
+
+variable {A B : Type*} [CommRing A] [CommRing B]
+
+/-- The statement of the invariant-differential identity, as a predicate. -/
+def IdentityHolds (V : WeierstrassCurve A) (n : ℤ) : Prop :=
+  (Polynomial.derivative (V.Φ n) * V.ΨSq n -
+      V.Φ n * Polynomial.derivative (V.ΨSq n)) ^ 2 * V.Ψ₂Sq =
+    Polynomial.C ((n : A) ^ 2) * V.ΨSq n *
+      (Polynomial.C 4 * V.Φ n ^ 3 + Polynomial.C V.b₂ * V.Φ n ^ 2 * V.ΨSq n +
+        Polynomial.C (2 * V.b₄) * V.Φ n * V.ΨSq n ^ 2 +
+        Polynomial.C V.b₆ * V.ΨSq n ^ 3)
+
+lemma identityLHS_map (V : WeierstrassCurve A) (f : A →+* B) (n : ℤ) :
+    (Polynomial.derivative ((V.map f).Φ n) * (V.map f).ΨSq n -
+        (V.map f).Φ n * Polynomial.derivative ((V.map f).ΨSq n)) ^ 2 * (V.map f).Ψ₂Sq =
+      Polynomial.map f ((Polynomial.derivative (V.Φ n) * V.ΨSq n -
+        V.Φ n * Polynomial.derivative (V.ΨSq n)) ^ 2 * V.Ψ₂Sq) := by
+  simp only [WeierstrassCurve.map_Φ, WeierstrassCurve.map_ΨSq,
+    WeierstrassCurve.map_Ψ₂Sq, ← Polynomial.derivative_map, Polynomial.map_mul,
+    Polynomial.map_sub, Polynomial.map_pow]
+
+lemma identityRHS_map (V : WeierstrassCurve A) (f : A →+* B) (n : ℤ) :
+    Polynomial.C ((n : B) ^ 2) * (V.map f).ΨSq n *
+        (Polynomial.C 4 * (V.map f).Φ n ^ 3 +
+          Polynomial.C (V.map f).b₂ * (V.map f).Φ n ^ 2 * (V.map f).ΨSq n +
+          Polynomial.C (2 * (V.map f).b₄) * (V.map f).Φ n * (V.map f).ΨSq n ^ 2 +
+          Polynomial.C (V.map f).b₆ * (V.map f).ΨSq n ^ 3) =
+      Polynomial.map f (Polynomial.C ((n : A) ^ 2) * V.ΨSq n *
+        (Polynomial.C 4 * V.Φ n ^ 3 + Polynomial.C V.b₂ * V.Φ n ^ 2 * V.ΨSq n +
+          Polynomial.C (2 * V.b₄) * V.Φ n * V.ΨSq n ^ 2 +
+          Polynomial.C V.b₆ * V.ΨSq n ^ 3)) := by
+  simp only [WeierstrassCurve.map_Φ, WeierstrassCurve.map_ΨSq,
+    WeierstrassCurve.map_b₂, WeierstrassCurve.map_b₄, WeierstrassCurve.map_b₆,
+    Polynomial.map_mul, Polynomial.map_add, Polynomial.map_pow, Polynomial.map_C,
+    map_mul, map_pow, map_intCast, map_ofNat, Polynomial.map_ofNat,
+    Polynomial.map_intCast]
+
+lemma identityHolds_map (V : WeierstrassCurve A) (f : A →+* B) (n : ℤ)
+    (h : IdentityHolds V n) : IdentityHolds (V.map f) n := by
+  rw [IdentityHolds, identityLHS_map, identityRHS_map, h]
+
+lemma identityHolds_of_map (V : WeierstrassCurve A) (f : A →+* B)
+    (hf : Function.Injective f) (n : ℤ) (h : IdentityHolds (V.map f) n) :
+    IdentityHolds V n := by
+  rw [IdentityHolds, identityLHS_map, identityRHS_map] at h
+  exact Polynomial.map_injective f hf h
+
+/-- The generic Weierstrass curve over `MvPolynomial (Fin 5) M`. -/
+noncomputable def genericCurve (M : Type*) [CommRing M] :
+    WeierstrassCurve (MvPolynomial (Fin 5) M) :=
+  ⟨MvPolynomial.X 0, MvPolynomial.X 1, MvPolynomial.X 2, MvPolynomial.X 3,
+    MvPolynomial.X 4⟩
+
+/-- The specialization of the generic curve at a given curve's coefficients. -/
+noncomputable def genericEval {M : Type*} [CommRing M] (V : WeierstrassCurve M) :
+    MvPolynomial (Fin 5) M →+* M :=
+  MvPolynomial.eval ![V.a₁, V.a₂, V.a₃, V.a₄, V.a₆]
+
+lemma genericCurve_map_eval {M : Type*} [CommRing M] (V : WeierstrassCurve M) :
+    (genericCurve M).map (genericEval V) = V := by
+  cases V
+  simp only [genericCurve, genericEval, WeierstrassCurve.map, MvPolynomial.eval_X,
+    WeierstrassCurve.mk.injEq]
+  refine ⟨rfl, rfl, rfl, rfl, rfl⟩
+
+/-- A specialization witnessing that the generic discriminant is nonzero:
+`a₁ = 1`, `a₂ = a₃ = a₄ = 0`, `a₆ = t`, for which `Δ = −t − 432t²`. -/
+noncomputable def genericSpec (M : Type*) [CommRing M] :
+    MvPolynomial (Fin 5) M →+* Polynomial M :=
+  MvPolynomial.eval₂Hom Polynomial.C ![1, 0, 0, 0, Polynomial.X]
+
+lemma genericCurve_Δ_ne_zero (M : Type*) [Field M] : (genericCurve M).Δ ≠ 0 := by
+  intro h0
+  have h2 : ((genericCurve M).map (genericSpec M)).Δ =
+      -Polynomial.X - 432 * Polynomial.X ^ 2 := by
+    simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+      WeierstrassCurve.b₆, WeierstrassCurve.b₈, genericCurve, genericSpec,
+      WeierstrassCurve.map, MvPolynomial.eval₂Hom_X', Matrix.cons_val_zero,
+      Matrix.cons_val_one, Matrix.cons_val_two, Matrix.cons_val_three,
+      Matrix.cons_val_four, Matrix.head_cons, Matrix.tail_cons]
+    ring
+  have h1 : ((genericCurve M).map (genericSpec M)).Δ = 0 := by
+    rw [WeierstrassCurve.map_Δ, h0, map_zero]
+  rw [h2] at h1
+  have h3 : (-Polynomial.X - 432 * Polynomial.X ^ 2 : Polynomial M).coeff 1 = -1 := by
+    simp
+  rw [h1, Polynomial.coeff_zero] at h3
+  exact one_ne_zero (neg_eq_zero.mp h3.symm)
+
+/-- **Reduction to the nonsingular case**: an identity of this shape holding for
+every curve of nonzero discriminant over every field holds for every curve. -/
+theorem identityHolds_of_generic {M : Type u} [Field M]
+    (H : ∀ (K : Type u) [Field K] (V : WeierstrassCurve K) (m : ℤ),
+      V.Δ ≠ 0 → ((m : ℤ) : K) ≠ 0 → IdentityHolds V m)
+    (V : WeierstrassCurve M) (n : ℤ) (hn : ((n : ℤ) : M) ≠ 0) : IdentityHolds V n := by
+  have hnR : ((n : ℤ) : MvPolynomial (Fin 5) M) ≠ 0 := by
+    rw [show ((n : ℤ) : MvPolynomial (Fin 5) M) =
+        (MvPolynomial.C : M →+* MvPolynomial (Fin 5) M) ((n : ℤ) : M) from
+      (map_intCast (MvPolynomial.C : M →+* MvPolynomial (Fin 5) M) n).symm]
+    intro hc
+    exact hn (MvPolynomial.C_injective (Fin 5) M (by rw [hc, map_zero]))
+  have hinj := IsFractionRing.injective (MvPolynomial (Fin 5) M)
+    (FractionRing (MvPolynomial (Fin 5) M))
+  have hgen : IdentityHolds (genericCurve M) n := by
+    refine identityHolds_of_map _ (algebraMap (MvPolynomial (Fin 5) M)
+      (FractionRing (MvPolynomial (Fin 5) M))) hinj n ?_
+    refine H _ _ n ?_ ?_
+    · rw [WeierstrassCurve.map_Δ]
+      exact fun hc => genericCurve_Δ_ne_zero M (hinj (by rw [hc, map_zero]))
+    · intro hc
+      exact hnR (hinj (by rw [map_intCast, hc, map_zero]))
+  rw [← genericCurve_map_eval V]
+  exact identityHolds_map _ _ n hgen
+
+
+end Generic
+
+/-- Transport of points along an equality of curves. -/
+def castPointAux {L : Type*} [Field L] [DecidableEq L]
+    {W₁ W₂ : WeierstrassCurve.Affine L} (h : W₁ = W₂) : W₁.Point → W₂.Point :=
+  fun P => h ▸ P
+
+lemma castPointAux_some {L : Type*} [Field L] [DecidableEq L]
+    {W₁ W₂ : WeierstrassCurve.Affine L} (h : W₁ = W₂) {x y : L}
+    (hn : W₁.Nonsingular x y) :
+    castPointAux h (.some x y hn) = .some x y (h ▸ hn) := by subst h; rfl
+
+lemma castPointAux_zsmul {L : Type*} [Field L] [DecidableEq L]
+    {W₁ W₂ : WeierstrassCurve.Affine L} (h : W₁ = W₂) (n : ℤ) (P : W₁.Point) :
+    castPointAux h (n • P) = n • castPointAux h P := by subst h; rfl
+
+/-! ### The function-field substrate, over an arbitrary base field -/
+
+section Main
+
+variable {L : Type*} [Field L] (E : WeierstrassCurve.Affine L)
+
+noncomputable scoped instance instDecEqFunctionField : DecidableEq E.FunctionField :=
+  Classical.decEq _
+
+/-- The constants embedding `L → K = Frac L[E]`. -/
+noncomputable def constHom : L →+* E.FunctionField :=
+  (algebraMap E.CoordinateRing E.FunctionField).comp
+    ((CoordinateRing.mk E).comp
+      ((Polynomial.C : Polynomial L →+* Polynomial (Polynomial L)).comp
+        (Polynomial.C : L →+* Polynomial L)))
+
+/-- The tautological `x`-coordinate. -/
+noncomputable def tautX : E.FunctionField :=
+  algebraMap E.CoordinateRing E.FunctionField
+    (CoordinateRing.mk E (Polynomial.C Polynomial.X))
+
+/-- The tautological `y`-coordinate. -/
+noncomputable def tautY : E.FunctionField :=
+  algebraMap E.CoordinateRing E.FunctionField (CoordinateRing.mk E Polynomial.X)
+
+/-- The curve base-changed to its own function field. -/
+noncomputable def curveK : WeierstrassCurve.Affine E.FunctionField :=
+  (E.map (constHom E)).toAffine
+
+theorem taut_equation : (curveK E).Equation (tautX E) (tautY E) := by
+  rw [WeierstrassCurve.Affine.equation_iff]
+  have h : (algebraMap E.CoordinateRing E.FunctionField) (CoordinateRing.mk E
+      (Polynomial.X ^ 2 + Polynomial.C (Polynomial.C E.a₁ * Polynomial.X +
+        Polynomial.C E.a₃) * Polynomial.X -
+      Polynomial.C (Polynomial.X ^ 3 + Polynomial.C E.a₂ * Polynomial.X ^ 2 +
+        Polynomial.C E.a₄ * Polynomial.X + Polynomial.C E.a₆))) = 0 := by
+    show (algebraMap E.CoordinateRing E.FunctionField)
+      (CoordinateRing.mk E E.polynomial) = 0
+    rw [AdjoinRoot.mk_self, map_zero]
+  simp only [map_add, map_sub, map_mul, map_pow] at h
+  show tautY E ^ 2 + (curveK E).a₁ * tautX E * tautY E + (curveK E).a₃ * tautY E =
+    tautX E ^ 3 + (curveK E).a₂ * tautX E ^ 2 + (curveK E).a₄ * tautX E +
+      (curveK E).a₆
+  simp only [curveK, WeierstrassCurve.map, constHom, RingHom.coe_comp,
+    Function.comp_apply, tautX, tautY] at h ⊢
+  linear_combination h
+
+theorem curveK_Δ_ne_zero (hΔ : E.Δ ≠ 0) : (curveK E).Δ ≠ 0 := by
+  intro hc
+  rw [curveK, WeierstrassCurve.map_Δ] at hc
+  exact hΔ ((constHom E).injective (hc.trans (map_zero (constHom E)).symm))
+
+theorem taut_nonsingular (hΔ : E.Δ ≠ 0) :
+    (curveK E).Nonsingular (tautX E) (tautY E) :=
+  (WeierstrassCurve.Affine.equation_iff_nonsingular_of_Δ_ne_zero
+    (curveK_Δ_ne_zero E hΔ)).mp (taut_equation E)
+
+/-! ### The tangent data at a point -/
+
+/-- `ψ₂` evaluated at a point of the base-changed curve: `2y + a₁x + a₃`. -/
+noncomputable def psiAt (x y : E.FunctionField) : E.FunctionField :=
+  2 * y + constHom E E.a₁ * x + constHom E E.a₃
+
+/-- `−W_X` evaluated at a point: `3x² + 2a₂x + a₄ − a₁y`. -/
+noncomputable def qAt (x y : E.FunctionField) : E.FunctionField :=
+  3 * x ^ 2 + 2 * constHom E E.a₂ * x + constHom E E.a₄ - constHom E E.a₁ * y
+
+/-! ### The dual-number lift -/
+
+/-- The coefficient map `L → K[ε]`. -/
+noncomputable def dnCoeff : L →+* DualNumber E.FunctionField :=
+  (TrivSqZeroExt.inlHom E.FunctionField E.FunctionField).comp (constHom E)
+
+/-- The dual number `x + ψ₂ ε`. -/
+noncomputable def dnGenX : DualNumber E.FunctionField :=
+  TrivSqZeroExt.inl (tautX E) + TrivSqZeroExt.inr (psiAt E (tautX E) (tautY E))
+
+/-- The dual number `y + (3x²+2a₂x+a₄−a₁y) ε`. -/
+noncomputable def dnGenY : DualNumber E.FunctionField :=
+  TrivSqZeroExt.inl (tautY E) + TrivSqZeroExt.inr (qAt E (tautX E) (tautY E))
+
+/-- Base map `L[X] → K[ε]` sending `X ↦ x + ψ₂ ε`. -/
+noncomputable def dnBase : Polynomial L →+* DualNumber E.FunctionField :=
+  Polynomial.eval₂RingHom (dnCoeff E) (dnGenX E)
+
+@[simp] lemma fst_dnGenX : (dnGenX E).fst = tautX E := by
+  simp [dnGenX]
+
+@[simp] lemma snd_dnGenX : (dnGenX E).snd = psiAt E (tautX E) (tautY E) := by
+  simp [dnGenX]
+
+@[simp] lemma fst_dnGenY : (dnGenY E).fst = tautY E := by
+  simp [dnGenY]
+
+@[simp] lemma snd_dnGenY : (dnGenY E).snd = qAt E (tautX E) (tautY E) := by
+  simp [dnGenY]
+
+@[simp] lemma fst_dnCoeff (c : L) : (dnCoeff E c).fst = constHom E c := by
+  simp [dnCoeff]
+
+@[simp] lemma snd_dnCoeff (c : L) : (dnCoeff E c).snd = 0 := by
+  simp [dnCoeff]
+
+/-- **The defining polynomial dies in the dual numbers**: its `ε`-part is
+`W_X·ψ₂ + W_Y·(−W_X) = 0`. -/
+theorem eval₂_polynomial_dn :
+    E.polynomial.eval₂ (dnBase E) (dnGenY E) = 0 := by
+  have heq := taut_equation E
+  rw [WeierstrassCurve.Affine.equation_iff] at heq
+  simp only [curveK, WeierstrassCurve.map] at heq
+  simp only [WeierstrassCurve.Affine.polynomial, dnBase, eval₂_add, eval₂_sub, eval₂_mul,
+    eval₂_pow, eval₂_C, eval₂_X, Polynomial.coe_eval₂RingHom]
+  refine TrivSqZeroExt.ext ?_ ?_
+  · simp only [TrivSqZeroExt.fst_mul, TrivSqZeroExt.fst_add, TrivSqZeroExt.fst_sub,
+      TrivSqZeroExt.fst_pow, TrivSqZeroExt.fst_zero, fst_dnGenX, fst_dnGenY, fst_dnCoeff]
+    linear_combination heq
+  · simp only [TrivSqZeroExt.snd_mul, TrivSqZeroExt.snd_add, TrivSqZeroExt.snd_sub,
+      TrivSqZeroExt.snd_pow, TrivSqZeroExt.snd_zero, TrivSqZeroExt.fst_mul,
+      TrivSqZeroExt.fst_add, TrivSqZeroExt.fst_pow, fst_dnGenX, fst_dnGenY, fst_dnCoeff,
+      snd_dnGenX, snd_dnGenY, snd_dnCoeff, smul_zero, op_smul_eq_smul, smul_eq_mul,
+      nsmul_eq_mul, show Nat.pred 2 = 1 from rfl, show Nat.pred 3 = 2 from rfl,
+      pow_one, psiAt, qAt]
+    push_cast
+    ring
+
+/-- Evaluation of a bivariate polynomial at the tautological point. -/
+noncomputable def evalTaut : Polynomial (Polynomial L) →+* E.FunctionField :=
+  Polynomial.eval₂RingHom (Polynomial.eval₂RingHom (constHom E) (tautX E)) (tautY E)
+
+theorem evalTaut_eq :
+    evalTaut E =
+      (algebraMap E.CoordinateRing E.FunctionField).comp (CoordinateRing.mk E) := by
+  refine Polynomial.ringHom_ext (fun a => ?_) ?_
+  · have h : ((evalTaut E).comp Polynomial.C) =
+        (((algebraMap E.CoordinateRing E.FunctionField).comp
+          (CoordinateRing.mk E)).comp Polynomial.C) := by
+      refine Polynomial.ringHom_ext (fun c => ?_) ?_
+      · simp only [RingHom.coe_comp, Function.comp_apply, evalTaut,
+          Polynomial.coe_eval₂RingHom, Polynomial.eval₂_C]
+        rfl
+      · simp only [RingHom.coe_comp, Function.comp_apply, evalTaut,
+          Polynomial.coe_eval₂RingHom, Polynomial.eval₂_C, Polynomial.eval₂_X]
+        rfl
+    exact RingHom.congr_fun h a
+  · simp only [evalTaut, Polynomial.coe_eval₂RingHom, Polynomial.eval₂_X,
+      RingHom.coe_comp, Function.comp_apply]
+    rfl
+
+/-- The `fst`-component of the base map is evaluation at `tautX`. -/
+theorem fstHom_comp_dnBase :
+    ((TrivSqZeroExt.fstHom E.FunctionField E.FunctionField
+        E.FunctionField).toRingHom).comp (dnBase E) =
+      Polynomial.eval₂RingHom (constHom E) (tautX E) := by
+  refine Polynomial.ringHom_ext (fun c => ?_) ?_ <;>
+    simp [dnBase, TrivSqZeroExt.fstHom]
+
+/-- The dual-number lift of the coordinate ring. -/
+noncomputable def cdiff : E.CoordinateRing →+* DualNumber E.FunctionField :=
+  AdjoinRoot.lift (dnBase E) (dnGenY E) (eval₂_polynomial_dn E)
+
+theorem fst_cdiff (z : E.CoordinateRing) :
+    (cdiff E z).fst = algebraMap E.CoordinateRing E.FunctionField z := by
+  induction z using AdjoinRoot.induction_on with
+  | ih q =>
+    have h := Polynomial.hom_eval₂ q (dnBase E)
+      (TrivSqZeroExt.fstHom E.FunctionField E.FunctionField
+        E.FunctionField).toRingHom (dnGenY E)
+    have h2 : (TrivSqZeroExt.fstHom E.FunctionField E.FunctionField
+        E.FunctionField).toRingHom (dnGenY E) = tautY E := fst_dnGenY E
+    have h3 := RingHom.congr_fun (evalTaut_eq E) q
+    show (cdiff E (CoordinateRing.mk E q)).fst = _
+    rw [cdiff, AdjoinRoot.lift_mk,
+      show (q.eval₂ (dnBase E) (dnGenY E)).fst =
+        (TrivSqZeroExt.fstHom E.FunctionField E.FunctionField
+          E.FunctionField).toRingHom (q.eval₂ (dnBase E) (dnGenY E)) from rfl,
+      h, fstHom_comp_dnBase, h2]
+    exact h3
+
+theorem isUnit_cdiff (y : E.CoordinateRing⁰) : IsUnit (cdiff E (y : E.CoordinateRing)) := by
+  rw [TrivSqZeroExt.isUnit_iff_isUnit_fst, fst_cdiff]
+  refine isUnit_iff_ne_zero.mpr ?_
+  simp only [ne_eq, map_eq_zero_iff _ (IsFractionRing.injective E.CoordinateRing E.FunctionField)]
+  exact ( nonZeroDivisors.coe_ne_zero y)
+
+/-- The dual-number lift of the function field. -/
+noncomputable def kdiff : E.FunctionField →+* DualNumber E.FunctionField :=
+  IsLocalization.lift (isUnit_cdiff E)
+
+theorem fst_kdiff (z : E.FunctionField) : (kdiff E z).fst = z := by
+  have hext : ((TrivSqZeroExt.fstHom E.FunctionField E.FunctionField
+      E.FunctionField).toRingHom).comp (kdiff E) = RingHom.id E.FunctionField := by
+    refine IsLocalization.ringHom_ext E.CoordinateRing⁰ ?_
+    refine RingHom.ext (fun a => ?_)
+    simp only [RingHom.coe_comp, Function.comp_apply, kdiff, IsLocalization.lift_eq,
+      RingHom.id_apply]
+    exact fst_cdiff E a
+  exact RingHom.congr_fun hext z
+
+/-- The derivation `D` on the function field with `Dx = ψ₂`. -/
+noncomputable def derivK (z : E.FunctionField) : E.FunctionField := (kdiff E z).snd
+
+/-! ### Derivation calculus -/
+
+@[simp] lemma curveK_a₁ : (curveK E).a₁ = constHom E E.a₁ := rfl
+@[simp] lemma curveK_a₂ : (curveK E).a₂ = constHom E E.a₂ := rfl
+@[simp] lemma curveK_a₃ : (curveK E).a₃ = constHom E E.a₃ := rfl
+@[simp] lemma curveK_a₄ : (curveK E).a₄ = constHom E E.a₄ := rfl
+@[simp] lemma curveK_a₆ : (curveK E).a₆ = constHom E E.a₆ := rfl
+
+lemma kdiff_algebraMap (z : E.CoordinateRing) :
+    kdiff E (algebraMap E.CoordinateRing E.FunctionField z) = cdiff E z :=
+  IsLocalization.lift_eq _ z
+
+lemma cdiff_mk (q : Polynomial (Polynomial L)) :
+    cdiff E (CoordinateRing.mk E q) = q.eval₂ (dnBase E) (dnGenY E) :=
+  AdjoinRoot.lift_mk (eval₂_polynomial_dn E) q
+
+@[simp] lemma derivK_zero : derivK E 0 = 0 := by
+  simp [derivK]
+
+@[simp] lemma derivK_add (a b : E.FunctionField) :
+    derivK E (a + b) = derivK E a + derivK E b := by
+  simp [derivK, TrivSqZeroExt.snd_add]
+
+@[simp] lemma derivK_neg (a : E.FunctionField) : derivK E (-a) = -derivK E a := by
+  simp [derivK]
+
+@[simp] lemma derivK_sub (a b : E.FunctionField) :
+    derivK E (a - b) = derivK E a - derivK E b := by
+  simp [derivK, TrivSqZeroExt.snd_sub]
+
+lemma derivK_mul (a b : E.FunctionField) :
+    derivK E (a * b) = a * derivK E b + b * derivK E a := by
+  simp only [derivK, map_mul, TrivSqZeroExt.snd_mul, fst_kdiff, op_smul_eq_smul,
+    smul_eq_mul]
+
+lemma derivK_constHom (c : L) : derivK E (constHom E c) = 0 := by
+  show (kdiff E (constHom E c)).snd = 0
+  rw [show constHom E c = algebraMap E.CoordinateRing E.FunctionField
+      (CoordinateRing.mk E (Polynomial.C (Polynomial.C c))) from rfl,
+    kdiff_algebraMap, cdiff_mk]
+  simp [dnBase]
+
+@[simp] lemma derivK_one : derivK E 1 = 0 := by
+  have h : (1 : E.FunctionField) = constHom E 1 := (map_one _).symm
+  rw [h, derivK_constHom]
+
+@[simp] lemma derivK_ofNat (n : ℕ) [n.AtLeastTwo] :
+    derivK E (OfNat.ofNat n : E.FunctionField) = 0 := by
+  have h : (OfNat.ofNat n : E.FunctionField) = constHom E (OfNat.ofNat n) :=
+    (map_ofNat _ n).symm
+  rw [h, derivK_constHom]
+
+@[simp] lemma derivK_two : derivK E 2 = 0 := by
+  have h : (2 : E.FunctionField) = constHom E 2 := (map_ofNat _ 2).symm
+  rw [h, derivK_constHom]
+
+@[simp] lemma derivK_three : derivK E 3 = 0 := by
+  have h : (3 : E.FunctionField) = constHom E 3 := (map_ofNat _ 3).symm
+  rw [h, derivK_constHom]
+
+@[simp] lemma derivK_six : derivK E 6 = 0 := by
+  have h : (6 : E.FunctionField) = constHom E 6 := (map_ofNat _ 6).symm
+  rw [h, derivK_constHom]
+
+lemma derivK_tautX : derivK E (tautX E) = psiAt E (tautX E) (tautY E) := by
+  show (kdiff E (tautX E)).snd = _
+  rw [show tautX E = algebraMap E.CoordinateRing E.FunctionField
+      (CoordinateRing.mk E (Polynomial.C Polynomial.X)) from rfl,
+    kdiff_algebraMap, cdiff_mk]
+  simp only [Polynomial.eval₂_C, dnBase, Polynomial.coe_eval₂RingHom,
+    Polynomial.eval₂_X, snd_dnGenX]
+  rfl
+
+lemma derivK_tautY : derivK E (tautY E) = qAt E (tautX E) (tautY E) := by
+  show (kdiff E (tautY E)).snd = _
+  rw [show tautY E = algebraMap E.CoordinateRing E.FunctionField
+      (CoordinateRing.mk E Polynomial.X) from rfl,
+    kdiff_algebraMap, cdiff_mk]
+  simp only [Polynomial.eval₂_X, snd_dnGenY]
+  rfl
+
+/-- The `derivK`-image of a `constHom`-scalar multiple. -/
+lemma derivK_constHom_mul (c : L) (a : E.FunctionField) :
+    derivK E (constHom E c * a) = constHom E c * derivK E a := by
+  rw [derivK_mul, derivK_constHom, mul_zero, add_zero]
+
+/-! ### Derivation of the group-law formulas -/
+
+lemma derivK_sq (a : E.FunctionField) : derivK E (a ^ 2) = 2 * a * derivK E a := by
+  rw [pow_two, derivK_mul]; ring
+
+lemma negY_eq (x y : E.FunctionField) :
+    (curveK E).negY x y = -y - constHom E E.a₁ * x - constHom E E.a₃ := rfl
+
+lemma derivK_negY (x y : E.FunctionField) :
+    derivK E ((curveK E).negY x y) = -derivK E y - constHom E E.a₁ * derivK E x := by
+  rw [negY_eq, derivK_sub, derivK_sub, derivK_neg, derivK_constHom_mul,
+    derivK_constHom, sub_zero]
+
+lemma derivK_addX (x₁ x₂ l : E.FunctionField) :
+    derivK E ((curveK E).addX x₁ x₂ l) =
+      (2 * l + constHom E E.a₁) * derivK E l - derivK E x₁ - derivK E x₂ := by
+  show derivK E (l ^ 2 + constHom E E.a₁ * l - constHom E E.a₂ - x₁ - x₂) = _
+  rw [derivK_sub, derivK_sub, derivK_sub, derivK_add, derivK_sq,
+    derivK_constHom_mul, derivK_constHom, sub_zero]
+  ring
+
+lemma derivK_negAddY (x₁ x₂ y₁ l : E.FunctionField) :
+    derivK E ((curveK E).negAddY x₁ x₂ y₁ l) =
+      derivK E l * ((curveK E).addX x₁ x₂ l - x₁) +
+        l * (derivK E ((curveK E).addX x₁ x₂ l) - derivK E x₁) + derivK E y₁ := by
+  show derivK E (l * ((curveK E).addX x₁ x₂ l - x₁) + y₁) = _
+  rw [derivK_add, derivK_mul, derivK_sub]
+  ring
+
+lemma derivK_addY (x₁ x₂ y₁ l : E.FunctionField) :
+    derivK E ((curveK E).addY x₁ x₂ y₁ l) =
+      -derivK E ((curveK E).negAddY x₁ x₂ y₁ l) -
+        constHom E E.a₁ * derivK E ((curveK E).addX x₁ x₂ l) := by
+  show derivK E ((curveK E).negY _ _) = _
+  rw [derivK_negY]
+
+/-! ### The tangent predicate -/
+
+noncomputable instance : DecidableEq E.FunctionField := Classical.decEq _
+
+/-- `Tang E c P` says that the derivation `D` moves the point `P` at speed `c`
+times the invariant vector field `(ψ₂, 3x²+2a₂x+a₄−a₁y)`. -/
+def Tang (c : E.FunctionField) : (curveK E).Point → Prop
+  | .zero => c = 0
+  | .some x y _ => derivK E x = c * psiAt E x y ∧ derivK E y = c * qAt E x y
+
+/-- The tautological point moves at unit speed. -/
+theorem Tang_tautPoint (hns : (curveK E).Nonsingular (tautX E) (tautY E)) :
+    Tang E 1 (.some (tautX E) (tautY E) hns) :=
+  ⟨by rw [derivK_tautX, one_mul], by rw [derivK_tautY, one_mul]⟩
+
+/-- **Additivity of the speed.**  This is the invariance of the differential
+`ω = dx/(2y+a₁x+a₃)` under translation, in tangent-vector form. -/
+theorem Tang_add {c₁ c₂ : E.FunctionField} :
+    ∀ {P₁ P₂ : (curveK E).Point}, Tang E c₁ P₁ → Tang E c₂ P₂ →
+      Tang E (c₁ + c₂) (P₁ + P₂) := by
+  rintro (_ | ⟨x₁, y₁, hns₁⟩) (_ | ⟨x₂, y₂, hns₂⟩) h₁ h₂
+  · exact show c₁ + c₂ = 0 by
+      rw [show c₁ = 0 from h₁, show c₂ = 0 from h₂, add_zero]
+  · rw [show (Point.zero : (curveK E).Point) = 0 from rfl, zero_add,
+      show c₁ = 0 from h₁, zero_add]
+    exact h₂
+  · rw [show (Point.zero : (curveK E).Point) = 0 from rfl, add_zero,
+      show c₂ = 0 from h₂, add_zero]
+    exact h₁
+  obtain ⟨hDx₁, hDy₁⟩ := h₁
+  obtain ⟨hDx₂, hDy₂⟩ := h₂
+  have hns₁' := hns₁.2
+  rw [WeierstrassCurve.Affine.evalEval_polynomialX,
+    WeierstrassCurve.Affine.evalEval_polynomialY] at hns₁'
+  simp only [curveK_a₁, curveK_a₂, curveK_a₃, curveK_a₄] at hns₁'
+  by_cases hxy : x₁ = x₂ ∧ y₁ = (curveK E).negY x₂ y₂
+  · obtain ⟨hx, hy⟩ := hxy
+    rw [WeierstrassCurve.Affine.Point.add_of_Y_eq hx hy]
+    show c₁ + c₂ = 0
+    subst hx
+    have hy₂ : y₂ = -y₁ - constHom E E.a₁ * x₁ - constHom E E.a₃ := by
+      rw [negY_eq] at hy; linear_combination hy
+    subst hy₂
+    have hDy₂' : derivK E (-y₁ - constHom E E.a₁ * x₁ - constHom E E.a₃) =
+        -derivK E y₁ - constHom E E.a₁ * derivK E x₁ := by
+      rw [derivK_sub, derivK_sub, derivK_neg, derivK_constHom,
+        derivK_constHom_mul, sub_zero]
+    rw [hDy₂'] at hDy₂
+    rw [hDx₁] at hDx₂
+    rw [hDy₁, hDx₁] at hDy₂
+    have e1 : (c₁ + c₂) * psiAt E x₁ y₁ = 0 := by
+      simp only [psiAt] at hDx₂ ⊢
+      linear_combination hDx₂
+    have e2 : (c₁ + c₂) * qAt E x₁ y₁ = 0 := by
+      simp only [psiAt, qAt] at hDy₂ e1 ⊢
+      linear_combination -hDy₂ - constHom E E.a₁ * e1
+    rcases hns₁' with hq | hp
+    · have hq' : qAt E x₁ y₁ ≠ 0 := by
+        simp only [qAt]
+        intro hc
+        exact hq (by linear_combination -hc)
+      exact (mul_eq_zero.mp e2).resolve_right hq'
+    · have hp' : psiAt E x₁ y₁ ≠ 0 := by
+        simp only [psiAt]
+        intro hc
+        exact hp (by linear_combination hc)
+      exact (mul_eq_zero.mp e1).resolve_right hp'
+  · rw [WeierstrassCurve.Affine.Point.add_some hxy]
+    show derivK E ((curveK E).addX x₁ x₂ _) = _ ∧ derivK E ((curveK E).addY x₁ x₂ y₁ _) = _
+    rw [derivK_addX, derivK_addY, derivK_negAddY, derivK_addX, hDx₁, hDx₂, hDy₁]
+    by_cases hx : x₁ = x₂
+    · -- doubling branch
+      have hyne : y₁ ≠ (curveK E).negY x₂ y₂ := fun hc => hxy ⟨hx, hc⟩
+      have hy12 : y₁ = y₂ :=
+        WeierstrassCurve.Affine.Y_eq_of_Y_ne hns₁.1 hns₂.1 hx hyne
+      subst hx
+      subst hy12
+      have hp : psiAt E x₁ y₁ ≠ 0 := by
+        simp only [psiAt]
+        intro hc
+        exact hyne (by rw [negY_eq]; linear_combination hc)
+      have hc12 : c₁ = c₂ := mul_right_cancel₀ hp (hDx₁.symm.trans hDx₂)
+      subst hc12
+      have hslope : (curveK E).slope x₁ x₁ y₁ y₁ * (2 * y₁ + constHom E E.a₁ * x₁ +
+          constHom E E.a₃) = 3 * x₁ ^ 2 + 2 * constHom E E.a₂ * x₁ +
+            constHom E E.a₄ - constHom E E.a₁ * y₁ := by
+        rw [WeierstrassCurve.Affine.slope_of_Y_ne rfl hyne, negY_eq,
+          div_mul_eq_mul_div, div_eq_iff (by
+            simp only [psiAt] at hp
+            intro hc; exact hp (by linear_combination hc))]
+        simp only [curveK_a₁, curveK_a₂, curveK_a₄]
+        ring
+      have hdl : derivK E ((curveK E).slope x₁ x₁ y₁ y₁) *
+          (2 * y₁ + constHom E E.a₁ * x₁ + constHom E E.a₃) =
+          c₁ * ((6 * x₁ + 2 * constHom E E.a₂) *
+              (2 * y₁ + constHom E E.a₁ * x₁ + constHom E E.a₃) -
+            constHom E E.a₁ * (3 * x₁ ^ 2 + 2 * constHom E E.a₂ * x₁ +
+              constHom E E.a₄ - constHom E E.a₁ * y₁)) -
+          (curveK E).slope x₁ x₁ y₁ y₁ *
+            (2 * (c₁ * (3 * x₁ ^ 2 + 2 * constHom E E.a₂ * x₁ + constHom E E.a₄ -
+                constHom E E.a₁ * y₁)) +
+              constHom E E.a₁ * (c₁ * (2 * y₁ + constHom E E.a₁ * x₁ +
+                constHom E E.a₃))) := by
+        have hd := congrArg (derivK E) hslope
+        rw [derivK_mul] at hd
+        simp only [derivK_add, derivK_sub, derivK_mul, derivK_constHom, derivK_two,
+          derivK_three, derivK_sq, mul_zero, add_zero] at hd
+        rw [hDx₁, hDy₁] at hd
+        simp only [psiAt, qAt] at hd
+        linear_combination hd
+      have key := tang_double_aux (constHom E E.a₁) (constHom E E.a₂) (constHom E E.a₃)
+        (constHom E E.a₄) x₁ y₁ c₁ ((curveK E).slope x₁ x₁ y₁ y₁)
+        (derivK E ((curveK E).slope x₁ x₁ y₁ y₁))
+        ((curveK E).addX x₁ x₁ ((curveK E).slope x₁ x₁ y₁ y₁))
+        ((curveK E).negAddY x₁ x₁ y₁ ((curveK E).slope x₁ x₁ y₁ y₁))
+        ((curveK E).addY x₁ x₁ y₁ ((curveK E).slope x₁ x₁ y₁ y₁))
+        (by simp only [psiAt] at hp; exact hp) hslope hdl rfl rfl rfl
+      simp only [psiAt, qAt]
+      exact ⟨by linear_combination key.1, by linear_combination key.2⟩
+    · -- secant branch
+      have hxs : x₁ - x₂ ≠ 0 := sub_ne_zero.mpr hx
+      have hslope : (curveK E).slope x₁ x₂ y₁ y₂ * (x₁ - x₂) = y₁ - y₂ := by
+        rw [WeierstrassCurve.Affine.slope_of_X_ne hx, div_mul_cancel₀ _ hxs]
+      have hdl : derivK E ((curveK E).slope x₁ x₂ y₁ y₂) * (x₁ - x₂) =
+          (c₁ * (3 * x₁ ^ 2 + 2 * constHom E E.a₂ * x₁ + constHom E E.a₄ -
+              constHom E E.a₁ * y₁) -
+            c₂ * (3 * x₂ ^ 2 + 2 * constHom E E.a₂ * x₂ + constHom E E.a₄ -
+              constHom E E.a₁ * y₂)) -
+          (curveK E).slope x₁ x₂ y₁ y₂ *
+            (c₁ * (2 * y₁ + constHom E E.a₁ * x₁ + constHom E E.a₃) -
+              c₂ * (2 * y₂ + constHom E E.a₁ * x₂ + constHom E E.a₃)) := by
+        have hd := congrArg (derivK E) hslope
+        rw [derivK_mul, derivK_sub, derivK_sub] at hd
+        rw [hDx₁, hDx₂, hDy₁, hDy₂] at hd
+        simp only [psiAt, qAt] at hd
+        linear_combination hd
+      have he₁ : y₁ ^ 2 + constHom E E.a₁ * x₁ * y₁ + constHom E E.a₃ * y₁ =
+          x₁ ^ 3 + constHom E E.a₂ * x₁ ^ 2 + constHom E E.a₄ * x₁ + constHom E E.a₆ :=
+        (WeierstrassCurve.Affine.equation_iff _ _).mp hns₁.1
+      have he₂ : y₂ ^ 2 + constHom E E.a₁ * x₂ * y₂ + constHom E E.a₃ * y₂ =
+          x₂ ^ 3 + constHom E E.a₂ * x₂ ^ 2 + constHom E E.a₄ * x₂ + constHom E E.a₆ :=
+        (WeierstrassCurve.Affine.equation_iff _ _).mp hns₂.1
+      have key := tang_secant_aux (constHom E E.a₁) (constHom E E.a₂) (constHom E E.a₃)
+        (constHom E E.a₄) (constHom E E.a₆) x₁ y₁ x₂ y₂ c₁ c₂
+        ((curveK E).slope x₁ x₂ y₁ y₂) (derivK E ((curveK E).slope x₁ x₂ y₁ y₂))
+        ((curveK E).addX x₁ x₂ ((curveK E).slope x₁ x₂ y₁ y₂))
+        ((curveK E).negAddY x₁ x₂ y₁ ((curveK E).slope x₁ x₂ y₁ y₂))
+        ((curveK E).addY x₁ x₂ y₁ ((curveK E).slope x₁ x₂ y₁ y₂))
+        hxs he₁ he₂ hslope hdl rfl rfl rfl
+      simp only [psiAt, qAt]
+      exact ⟨by linear_combination key.1, by linear_combination key.2⟩
+
+/-! ### Negation, integer multiples, and the chain rule -/
+
+lemma psiAt_negY (x y : E.FunctionField) :
+    psiAt E x ((curveK E).negY x y) = -psiAt E x y := by
+  simp only [psiAt, negY_eq]; ring
+
+lemma qAt_negY (x y : E.FunctionField) :
+    qAt E x ((curveK E).negY x y) = qAt E x y + constHom E E.a₁ * psiAt E x y := by
+  simp only [psiAt, qAt, negY_eq]; ring
+
+theorem Tang_neg {c : E.FunctionField} :
+    ∀ {P : (curveK E).Point}, Tang E c P → Tang E (-c) (-P) := by
+  rintro (_ | ⟨x, y, hns⟩) h
+  · exact show -c = 0 by rw [show c = 0 from h, neg_zero]
+  · obtain ⟨hDx, hDy⟩ := h
+    refine ⟨?_, ?_⟩
+    · rw [psiAt_negY, hDx]; ring
+    · rw [derivK_negY, qAt_negY, hDx, hDy]; ring
+
+theorem Tang_zsmul {c : E.FunctionField} {P : (curveK E).Point} (h : Tang E c P) :
+    ∀ n : ℤ, Tang E ((n : E.FunctionField) * c) (n • P) := by
+  intro n
+  induction n using Int.induction_on with
+  | zero => exact show ((0 : ℤ) : E.FunctionField) * c = 0 by simp
+  | succ k ih =>
+    have hadd := Tang_add E ih h
+    have h1 : ((k : ℤ) + 1) • P = (k : ℤ) • P + P := by rw [add_zsmul, one_zsmul]
+    have h2 : (((k : ℤ) + 1 : ℤ) : E.FunctionField) * c =
+        ((k : ℤ) : E.FunctionField) * c + c := by push_cast; ring
+    rw [h1, h2]
+    exact hadd
+  | pred k ih =>
+    have hadd := Tang_add E ih (Tang_neg E h)
+    have h1 : (-(k : ℤ) - 1) • P = (-(k : ℤ)) • P + -P := by
+      rw [sub_zsmul, one_zsmul]
+    have h2 : ((-(k : ℤ) - 1 : ℤ) : E.FunctionField) * c =
+        ((-(k : ℤ) : ℤ) : E.FunctionField) * c + -c := by push_cast; ring
+    rw [h1, h2]
+    exact hadd
+
+/-- One step of the chain rule. -/
+lemma derivK_eval_map_step (z : E.FunctionField) (g : Polynomial L)
+    (ih : derivK E ((g.map (constHom E)).eval z) =
+      ((Polynomial.derivative g).map (constHom E)).eval z * derivK E z) :
+    derivK E (((g * Polynomial.X).map (constHom E)).eval z) =
+      ((Polynomial.derivative (g * Polynomial.X)).map (constHom E)).eval z *
+        derivK E z := by
+  rw [Polynomial.derivative_mul, Polynomial.derivative_X, mul_one,
+    Polynomial.map_mul, Polynomial.map_X, Polynomial.eval_mul, Polynomial.eval_X,
+    derivK_mul, ih, Polynomial.map_add, Polynomial.map_mul, Polynomial.map_X,
+    Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_X]
+  ring
+
+/-- **Chain rule** for evaluation of a univariate polynomial over the constants. -/
+lemma derivK_eval_map (z : E.FunctionField) (g : Polynomial L) :
+    derivK E ((g.map (constHom E)).eval z) =
+      ((Polynomial.derivative g).map (constHom E)).eval z * derivK E z := by
+  induction g using Polynomial.induction_on with
+  | C a => simp [derivK_constHom]
+  | add p q hp hq =>
+    simp only [Polynomial.map_add, Polynomial.eval_add, derivK_add, hp, hq,
+      Polynomial.derivative_add]
+    ring
+  | monomial n a ih =>
+    have hrw : (Polynomial.C a * Polynomial.X ^ (n + 1) : Polynomial L) =
+        (Polynomial.C a * Polynomial.X ^ n) * Polynomial.X := by ring
+    rw [hrw]
+    exact derivK_eval_map_step E z _ ih
+
+/-- The square of `ψ₂` at a point of the curve is `Ψ₂Sq` of its abscissa. -/
+lemma psiAt_sq (x y : E.FunctionField) (h : (curveK E).Equation x y) :
+    psiAt E x y ^ 2 = ((E.Ψ₂Sq).map (constHom E)).eval x := by
+  rw [WeierstrassCurve.Affine.equation_iff] at h
+  simp only [curveK_a₁, curveK_a₂, curveK_a₃, curveK_a₄, curveK_a₆] at h
+  simp only [psiAt, WeierstrassCurve.Ψ₂Sq, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, Polynomial.map_add, Polynomial.map_mul, Polynomial.map_pow,
+    Polynomial.map_C, Polynomial.map_X, Polynomial.eval_add, Polynomial.eval_mul,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X, map_add, map_mul,
+    map_pow, map_ofNat, Polynomial.map_ofNat, Polynomial.eval_ofNat]
+  linear_combination 4 * h
+
+/-! ### The identity at the tautological point -/
+
+/-- Evaluation of a univariate polynomial over `L` at the tautological `x`. -/
+noncomputable def evTaut1 (E : WeierstrassCurve.Affine L) :
+    Polynomial L →+* E.FunctionField :=
+  Polynomial.eval₂RingHom (constHom E) (tautX E)
+
+lemma evTaut1_apply (g : Polynomial L) :
+    evTaut1 E g = (g.map (constHom E)).eval (tautX E) :=
+  (Polynomial.eval_map _ _).symm
+
+lemma evTaut1_C (c : L) : evTaut1 E (Polynomial.C c) = constHom E c :=
+  Polynomial.eval₂_C _ _
+
+lemma derivK_evTaut1 (g : Polynomial L) :
+    derivK E (evTaut1 E g) =
+      evTaut1 E (Polynomial.derivative g) * psiAt E (tautX E) (tautY E) := by
+  rw [evTaut1_apply, evTaut1_apply, derivK_eval_map, derivK_tautX]
+
+lemma Ψ₂Sq_eval (z : E.FunctionField) :
+    ((E.Ψ₂Sq).map (constHom E)).eval z =
+      4 * z ^ 3 + constHom E E.b₂ * z ^ 2 + 2 * constHom E E.b₄ * z +
+        constHom E E.b₆ := by
+  simp only [WeierstrassCurve.Ψ₂Sq, Polynomial.map_add, Polynomial.map_mul,
+    Polynomial.map_pow, Polynomial.map_C, Polynomial.map_X, Polynomial.eval_add,
+    Polynomial.eval_mul, Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X,
+    map_mul, map_ofNat, Polynomial.map_ofNat, Polynomial.eval_ofNat]
+
+/-- **The identity, evaluated at the tautological point.** -/
+theorem sq_wronskian_evTaut (hns : (curveK E).Nonsingular (tautX E) (tautY E))
+    {n : ℤ} {xp yp : E.FunctionField} (hpn : (curveK E).Nonsingular xp yp)
+    (hsmul : (n : ℤ) • (WeierstrassCurve.Affine.Point.some (tautX E) (tautY E) hns :
+        (curveK E).Point) = WeierstrassCurve.Affine.Point.some xp yp hpn)
+    (hxrel : xp * evTaut1 E (E.ΨSq n) = evTaut1 E (E.Φ n)) :
+    evTaut1 E ((Polynomial.derivative (E.Φ n) * E.ΨSq n -
+        E.Φ n * Polynomial.derivative (E.ΨSq n)) ^ 2 * E.Ψ₂Sq) =
+      evTaut1 E (Polynomial.C ((n : L) ^ 2) * E.ΨSq n *
+        (Polynomial.C 4 * E.Φ n ^ 3 + Polynomial.C E.b₂ * E.Φ n ^ 2 * E.ΨSq n +
+          Polynomial.C (2 * E.b₄) * E.Φ n * E.ΨSq n ^ 2 +
+          Polynomial.C E.b₆ * E.ΨSq n ^ 3)) := by
+  simp only [map_mul, map_add, map_sub, map_pow, evTaut1_C, map_ofNat]
+  have hcast : constHom E ((n : ℤ) : L) = (n : E.FunctionField) :=
+    map_intCast (constHom E) n
+  rw [hcast]
+  have hTang : Tang E ((n : E.FunctionField)) (WeierstrassCurve.Affine.Point.some
+      xp yp hpn) := by
+    have h := Tang_zsmul E (Tang_tautPoint E hns) n
+    rw [mul_one, hsmul] at h
+    exact h
+  obtain ⟨hDxp, -⟩ := hTang
+  set pt := psiAt E (tautX E) (tautY E) with hpt
+  set A := evTaut1 E (E.Φ n) with hA
+  set B := evTaut1 E (E.ΨSq n) with hBdef
+  set A' := evTaut1 E (Polynomial.derivative (E.Φ n)) with hA'
+  set B' := evTaut1 E (Polynomial.derivative (E.ΨSq n)) with hB'
+  have hd := congrArg (derivK E) hxrel
+  rw [derivK_mul, derivK_evTaut1, derivK_evTaut1, hDxp, ← hA', ← hB', ← hpt] at hd
+  have key : (n : E.FunctionField) * psiAt E xp yp * B ^ 2 = (A' * B - A * B') * pt := by
+    have h2 := congrArg (fun t => t * B) hd
+    linear_combination h2 - B' * pt * hxrel
+  have keysq : (n : E.FunctionField) ^ 2 * (psiAt E xp yp ^ 2) * B ^ 4 =
+      (A' * B - A * B') ^ 2 * pt ^ 2 := by
+    have h3 := congrArg (fun t => t ^ 2) key
+    linear_combination h3
+  have hptsq : pt ^ 2 = evTaut1 E E.Ψ₂Sq := by
+    rw [hpt, psiAt_sq E _ _ hns.1, evTaut1_apply]
+  have hppsq : psiAt E xp yp ^ 2 * B ^ 3 =
+      4 * A ^ 3 + constHom E E.b₂ * A ^ 2 * B + 2 * constHom E E.b₄ * A * B ^ 2 +
+        constHom E E.b₆ * B ^ 3 := by
+    rw [psiAt_sq E _ _ hpn.1, Ψ₂Sq_eval]
+    linear_combination (4 * (xp * B) ^ 2 + 4 * (xp * B) * A + 4 * A ^ 2 +
+      constHom E E.b₂ * B * (xp * B) + constHom E E.b₂ * B * A +
+      2 * constHom E E.b₄ * B ^ 2) * hxrel
+  have hfinal : (A' * B - A * B') ^ 2 * evTaut1 E E.Ψ₂Sq =
+      (n : E.FunctionField) ^ 2 * B *
+        (4 * A ^ 3 + constHom E E.b₂ * A ^ 2 * B +
+          2 * constHom E E.b₄ * A * B ^ 2 + constHom E E.b₆ * B ^ 3) := by
+    rw [← hptsq, ← keysq, ← hppsq]
+    ring
+  linear_combination hfinal
+
+lemma evTaut1_eq_algebraMap (g : Polynomial L) :
+    evTaut1 E g = algebraMap E.CoordinateRing E.FunctionField
+      (CoordinateRing.mk E (Polynomial.C g)) := by
+  have h : ((evalTaut E).comp Polynomial.C) =
+      (((algebraMap E.CoordinateRing E.FunctionField).comp
+        (CoordinateRing.mk E)).comp Polynomial.C) := by
+    rw [evalTaut_eq]
+  have hEq : evTaut1 E g = evalTaut E (Polynomial.C g) := by
+    simp only [evalTaut, evTaut1, Polynomial.coe_eval₂RingHom, Polynomial.eval₂_C]
+  rw [hEq]
+  exact RingHom.congr_fun h g
+
+/-- **Transcendence of the tautological `x`** over the constants: a nonzero
+univariate polynomial does not vanish at `tautX`.  `L[E]` is free of rank `2`
+over `L[X]`, so `L[X] → L[E]` is injective. -/
+theorem evTaut1_injective : Function.Injective (evTaut1 E) := by
+  rw [injective_iff_map_eq_zero]
+  intro g hg
+  rw [evTaut1_eq_algebraMap] at hg
+  have h0 : CoordinateRing.mk E (Polynomial.C g) = 0 :=
+    (IsFractionRing.injective E.CoordinateRing E.FunctionField)
+      (by rw [hg, map_zero])
+  have hdvd : E.polynomial ∣ Polynomial.C g := AdjoinRoot.mk_eq_zero.mp h0
+  by_contra hne
+  have hCne : (Polynomial.C g : Polynomial (Polynomial L)) ≠ 0 := by
+    simpa using hne
+  have hle := Polynomial.natDegree_le_of_dvd hdvd hCne
+  rw [WeierstrassCurve.Affine.natDegree_polynomial, Polynomial.natDegree_C] at hle
+  omega
+
+
+/-! ### The identity for a curve of nonzero discriminant -/
+
+/-- `n • taut` is affine and its abscissa satisfies `x·ΨSq_n = Φ_n`. -/
+theorem exists_smul_taut (hΔ : E.Δ ≠ 0) {n : ℤ} (hn : ((n : ℤ) : L) ≠ 0) :
+    ∃ (xp yp : E.FunctionField) (hpn : (curveK E).Nonsingular xp yp),
+      (n : ℤ) • (WeierstrassCurve.Affine.Point.some (tautX E) (tautY E)
+          (taut_nonsingular E hΔ) : (curveK E).Point) =
+        WeierstrassCurve.Affine.Point.some xp yp hpn ∧
+      xp * evTaut1 E (E.ΨSq n) = evTaut1 E (E.Φ n) := by
+  haveI : (E.map (constHom E)).IsElliptic :=
+    ⟨isUnit_iff_ne_zero.mpr (curveK_Δ_ne_zero E hΔ)⟩
+  have hnZ : n ≠ 0 := by
+    intro h0; exact hn (by rw [h0]; simp)
+  have hcast : ((E.map (constHom E)).baseChange E.FunctionField).toAffine =
+      curveK E := WeierstrassCurve.map_id _
+  have hΨbridge :
+      ((E.map (constHom E)).baseChange E.FunctionField).ΨSq n =
+        (E.ΨSq n).map (constHom E) := by
+    rw [show (E.map (constHom E)).baseChange E.FunctionField = E.map (constHom E) from
+      WeierstrassCurve.map_id _, WeierstrassCurve.map_ΨSq]
+  have hΦbridge :
+      ((E.map (constHom E)).baseChange E.FunctionField).Φ n =
+        (E.Φ n).map (constHom E) := by
+    rw [show (E.map (constHom E)).baseChange E.FunctionField = E.map (constHom E) from
+      WeierstrassCurve.map_id _, WeierstrassCurve.map_Φ]
+  have hnsE : ((E.map (constHom E)).baseChange
+      E.FunctionField).toAffine.Nonsingular (tautX E) (tautY E) := by
+    rw [hcast]; exact taut_nonsingular E hΔ
+  have hΨx : ((((E.map (constHom E)).baseChange E.FunctionField).ΨSq
+      n).eval (tautX E)) ≠ 0 := by
+    rw [hΨbridge, ← evTaut1_apply]
+    intro hc
+    exact E.ΨSq_ne_zero hn ((injective_iff_map_eq_zero _).mp (evTaut1_injective E) _ hc)
+  obtain ⟨xp, yp, hpn', heq, hx⟩ :=
+    TorsionCard.exists_smul_some_eq (E.map (constHom E)) hnZ hnsE hΨx
+  refine ⟨xp, yp, hcast ▸ hpn', ?_, ?_⟩
+  · have h1 := congrArg (castPointAux hcast) heq
+    rw [castPointAux_zsmul, castPointAux_some, castPointAux_some] at h1
+    exact h1
+  · rw [hΨbridge, hΦbridge, ← evTaut1_apply, ← evTaut1_apply] at hx
+    exact hx
+
+/-- **The invariant-differential identity for a curve of nonzero
+discriminant.** -/
+theorem identityHolds_of_Δ_ne_zero (hΔ : E.Δ ≠ 0) {n : ℤ}
+    (hn : ((n : ℤ) : L) ≠ 0) : IdentityHolds E n := by
+  obtain ⟨xp, yp, hpn, hsmul, hxrel⟩ := exists_smul_taut E hΔ hn
+  exact evTaut1_injective E
+    (sq_wronskian_evTaut E (taut_nonsingular E hΔ) hpn hsmul hxrel)
+
+end Main
+
+end InvariantDifferential
+
+
 omit [DecidableEq F] [IsAlgClosed F] in
-/-- **L4-7 LEAF (sorry) `(★)`: the invariant differential, as a
+/-- **L4-7 (PROVEN 2026-07-26) `(★)`: the invariant differential, as a
 universal polynomial identity.**  For every `n : ℤ`, writing
 `Wr := Φ_n'·ΨSq_n − Φ_n·ΨSq_n'` for the Wronskian of the two
 division polynomials,
@@ -6801,35 +7775,61 @@ division polynomials,
 Dividing by `ΨSq_n⁴` this reads `f'(X)²·Ψ₂Sq(X) = n²·Ψ₂Sq(f(X))` for
 the rational function `f = Φ_n/ΨSq_n = x ∘ [n]`, i.e. exactly
 `d(x∘[n])/(2y∘[n] + a₁x∘[n] + a₃) = n · dx/(2y + a₁x + a₃)` — the
-invariance of `ω = dx/(2y + a₁x + a₃)`, `[n]^*ω = n·ω`.  It is an
-identity in `ℤ[a₁, …, a₆][X]`; `n = 0` and `n = 1` are immediate, and
-`Singular` can certify it for any fixed small `n`.
+invariance of `ω = dx/(2y + a₁x + a₃)`, `[n]^*ω = n·ω`.
 
-**On the hypothesis `(n : F) ≠ 0`.**  The identity is in fact universal —
-when `(n : F) = 0` the map `x ∘ [n]` is a rational function of a power
-of `x`, so `Wr = 0` and both sides vanish — but that is a SEPARATE
-argument (inseparability), it is never used by the descent, and the
-route below does not give it.  The hypothesis is therefore part of the
-leaf, so that closing the leaf costs exactly the case that is needed.
+**On the hypothesis `(n : F) ≠ 0`.**  It is not needed for `n = 0`
+(both sides vanish, since `ΨSq_0 = 0`), and for `n ≠ 0` in `ℤ` with
+`(n : F) = 0` the identity is still true but by a SEPARATE
+inseparability argument that the route below does not give.  The
+hypothesis has been left exactly as stated, since it is what the
+descent consumes.
 
-**A route that needs no absent mathlib API.**  The natural derivation
-is through the derivation `D` of `K = Frac F[W]` with `D x = ψ₂`,
-`D y = 3x² + 2a₂x + a₄ − a₁y`.  Mathlib has neither quotient-descent
-nor fraction-field extension for `Derivation`, but BOTH can be
-sidestepped: such a `D` is the same thing as an `F`-algebra map
-`F[W] → TrivSqZeroExt K K` sending `x ↦ (x, ψ₂)`,
-`y ↦ (y, 3x²+2a₂x+a₄−a₁y)`, which is an `AdjoinRoot.lift` — the
-defining polynomial maps to `0` because its `ε`-part is
-`f_X·f_Y − f_Y·f_X` — extended to `K` by `IsLocalization.lift`, since
-a nonzero element of `F[W]` goes to a unit of `K[ε]`.  Then
-`D z := (φ̃ z).snd` is a derivation because `φ̃` is a ring hom with
-`fst ∘ φ̃ = id`.  With `D` in hand, `μ(P) := D(x_P)/(2y_P + a₁x_P + a₃)`
-is ADDITIVE on `(curveK W).Point` — an identity in the group-law
-formulas, structurally like the proven `endoMap_add`, and a good target
-for a `Singular`-computed `linear_combination` — so
-`μ(n • taut) = n·μ(taut) = n` by `AddMonoidHom.map_zsmul`, and since
-`tautX` is transcendental over the constants that IS the displayed
-polynomial identity. -/
+**THE PROOF** (`InvariantDifferential`, immediately above; note that
+NO hypothesis `Δ ≠ 0` appears here — see step 5).
+
+1. *The derivation.*  A derivation `D` of `K = Frac L[E]` with
+   `Dx = ψ₂`, `Dy = 3x²+2a₂x+a₄−a₁y` is the same thing as an
+   `L`-algebra map `L[E] → DualNumber K` sending `x ↦ (x, ψ₂)`,
+   `y ↦ (y, 3x²+2a₂x+a₄−a₁y)`, which is an `AdjoinRoot.lift`: the
+   defining polynomial dies because its `ε`-part is `W_X·ψ₂ + W_Y·(−W_X)`
+   (`eval₂_polynomial_dn`).  It extends to `K` by `IsLocalization.lift`,
+   because `TrivSqZeroExt.isUnit_iff_isUnit_fst` makes every nonzero
+   element of `L[E]` a unit of `K[ε]` (`isUnit_cdiff`).  `D z := (φ̃ z).snd`
+   is then a derivation because `fst ∘ φ̃ = id` (`fst_kdiff`).
+
+2. *The speed of a point.*  Rather than `μ(P) = D(x_P)/ψ₂(P)`, which
+   divides by zero at `2`-torsion, the DIVISION-FREE predicate
+   `Tang c P : D(x_P) = c·ψ₂(P) ∧ D(y_P) = c·q(P)` is used.  Its
+   additivity `Tang c₁ P₁ → Tang c₂ P₂ → Tang (c₁+c₂) (P₁+P₂)`
+   (`Tang_add`) is the invariance of `ω` under translation and needs no
+   case analysis on `2`-torsion; the `P₁ + P₂ = 0` branch is closed by
+   nonsingularity, and the two genuine branches are the pure field
+   identities `tang_secant_aux` and `tang_double_aux`.  (The doubling
+   branch is unconditional — the Weierstrass equation is not needed.)
+
+3. *Integer multiples.*  `Tang_neg` and `Tang_zsmul` give
+   `Tang (n·1) (n • taut)` from `Tang 1 taut`, which holds by the
+   construction of `D`.
+
+4. *Descent to polynomials.*  With `n • taut = (xp, yp)` and
+   `xp·ΨSq_n(taut) = Φ_n(taut)` (`exists_smul_taut`, over
+   `TorsionCard.exists_smul_some_eq`), applying `D` and using
+   `ψ₂(P)² = Ψ₂Sq(x_P)` gives the identity evaluated at `tautX`
+   (`sq_wronskian_evTaut`); `tautX` is transcendental over the constants
+   because `L[E]` is free of rank `2` over `L[X]`, so `L[X] → K` is
+   injective (`evTaut1_injective`), and the identity descends.
+
+5. *Removing `Δ ≠ 0`.*  Steps 1–4 need a nonsingular curve.  The
+   identity is transported along ring homomorphisms in both directions
+   (`identityHolds_map`, `identityHolds_of_map`, using
+   `Polynomial.map_injective`), so it suffices to prove it for the
+   GENERIC curve over `MvPolynomial (Fin 5) L`, which embeds in its
+   fraction field and has `Δ ≠ 0` — witnessed by the specialization
+   `a₁ = 1, a₂ = a₃ = a₄ = 0, a₆ = t`, where `Δ = −t − 432t²` has
+   `t`-coefficient `−1` in every characteristic
+   (`genericCurve_Δ_ne_zero`).  Specializing back along
+   `MvPolynomial (Fin 5) L → L` gives an arbitrary `W`
+   (`identityHolds_of_generic`). -/
 theorem sq_wronskian_mul_Ψ₂Sq (W : WeierstrassCurve.Affine F) {n : ℤ}
     (hn : ((n : ℤ) : F) ≠ 0) :
     (Polynomial.derivative (W.Φ n) * W.ΨSq n -
@@ -6838,8 +7838,10 @@ theorem sq_wronskian_mul_Ψ₂Sq (W : WeierstrassCurve.Affine F) {n : ℤ}
         (Polynomial.C 4 * W.Φ n ^ 3 +
           Polynomial.C W.b₂ * W.Φ n ^ 2 * W.ΨSq n +
           Polynomial.C (2 * W.b₄) * W.Φ n * W.ΨSq n ^ 2 +
-          Polynomial.C W.b₆ * W.ΨSq n ^ 3) := by
-  sorry
+          Polynomial.C W.b₆ * W.ΨSq n ^ 3) :=
+  InvariantDifferential.identityHolds_of_generic
+    (fun _ _ V _ hΔ hm => InvariantDifferential.identityHolds_of_Δ_ne_zero V hΔ hm)
+    W n hn
 
 omit [IsAlgClosed F] in
 /-- **L4-7 LEAF (sorry): the inseparable residue of `Ψ₂Sq`.**  The
