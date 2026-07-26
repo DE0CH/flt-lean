@@ -5,14 +5,27 @@ metadata:
   node_type: memory
   type: feedback
   originSessionId: bc388a7e-3d6c-4f64-9f93-3ae0c1bfe511
-  modified: 2026-07-25T11:50:41.989Z
+  modified: 2026-07-25T19:58:21.613Z
 ---
+
+**This is now a skill: `/fleet-restart`** (`.claude/skills/fleet-restart/`,
+added 2026-07-25). Invoke it rather than reconstructing the procedure from this
+memory. Its sibling is `/fleet-resume` ([[kill-recovery-just-resume]]).
 
 Deyao (2026-07-24): "remember how to restart yourself, and if you need to
 restart, drive it autonomously." Restart = fork this session into a fresh
 Claude process and kill the old one. Use it when a restart is warranted
 (context nearing exhaustion, session-limit degradation, harness/MCP state
 corruption) — no permission needed, it is pre-approved.
+
+**STEP ZERO — STOP THE AGENTS BEFORE FORKING** (Deyao, 2026-07-25, correcting
+me after a restart done the wrong way round). `TaskStop` every running subagent
+and let them settle, THEN fork. Otherwise they keep running across the fork, the
+old process does not exit cleanly, and two orchestrators briefly drive one fleet.
+Cost when I skipped it: 60 agents reported "no completion record … in-process
+state was lost", their remote builds died with the foreground `ssh` the
+terminated turns were holding, and 10 worktrees were left `claimed` with
+uncommitted work and no resolvable owner.
 
 **Procedure (executed successfully twice, 2026-07-24; session chain
 f8fcb103 → 1e467fbd → bc388a7e, windows fork → fork2):**
