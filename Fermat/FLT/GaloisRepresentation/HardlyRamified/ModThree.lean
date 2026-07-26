@@ -8381,6 +8381,357 @@ theorem nonempty_algHom_of_algHom_quotient_of_forall_lift
     exact hallE ((χ.restrictScalars 𝒪₃ᵥ).comp Algebra.TensorProduct.includeRight) a
   | add u v hu hv => rw [map_add]; exact add_mem hu hv
 
+open scoped Classical in
+/-- **THE COUNTING HALF OF THE UPWARD HERBRAND TRANSPORT** (PROVEN
+2026-07-26): a purely combinatorial statement about a homomorphism
+`res : G →* H` of finite groups and two filtrations, dual to the
+already-proven `exists_index_of_herbrand`.  Suppose every fibre of
+`res` carries, at truncation level `n+1` upstairs, at least
+`e := #(𝒢 1 ⊓ ker res)` times the truncated depth of its image at level
+`m'+1` downstairs (`hfib`), and suppose `e·#𝒢' 1 = #𝒢 1` (`htower`,
+i.e. `e_{N/ℚ₃ᵥ} = e_{N/M}·e_{M/ℚ₃ᵥ}`).  Then the Herbrand condition
+`#𝒢' 1 < 2·Σ_{i≤m'} #𝒢' (i+2)` downstairs implies the Herbrand
+condition `#𝒢 1 < 2·Σ_{i≤n} #𝒢 (i+2)` upstairs.
+THE ARGUMENT is three lines of double counting and nothing else:
+`Σ_{i≤k} #𝒢 (i+2) = Σ_{σ ∈ G} #{i ≤ k | σ ∈ 𝒢 (i+2)}` (`hdc`, and
+likewise `hdc'` on the `H` side), the sum over `G` splits over the
+fibres of `res` (`hpart`, `Finset.sum_fiberwise`), and `hfib` bounds
+each fibre from below.  Multiplying `hlt` by `e > 0` and chaining gives
+the conclusion; no ramification theory enters, which is exactly why
+this half can be discharged here and only `hfib` is left as an
+arithmetic leaf. -/
+theorem lt_two_mul_sum_card_of_le_sum_fiber
+    {G H : Type*} [Group G] [Group H] [Fintype G] [Fintype H]
+    (res : G →* H)
+    (𝒢 : ℕ → Subgroup G) (𝒢' : ℕ → Subgroup H)
+    (m' n : ℕ)
+    (htower : Nat.card ↥(𝒢 1 ⊓ res.ker) * Nat.card ↥(𝒢' 1) = Nat.card ↥(𝒢 1))
+    (hfib : ∀ τ : H,
+      Nat.card ↥(𝒢 1 ⊓ res.ker) *
+          ((Finset.range (m' + 1)).filter (fun i => τ ∈ 𝒢' (i + 2))).card ≤
+        ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ),
+          ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card)
+    (hlt : Nat.card ↥(𝒢' 1) <
+      2 * ∑ i ∈ Finset.range (m' + 1), Nat.card ↥(𝒢' (i + 2))) :
+    Nat.card ↥(𝒢 1) <
+      2 * ∑ i ∈ Finset.range (n + 1), Nat.card ↥(𝒢 (i + 2)) := by
+  classical
+  set e : ℕ := Nat.card ↥(𝒢 1 ⊓ res.ker)
+  have he : 0 < e := Nat.card_pos
+  have hcard : ∀ K : Subgroup G,
+      Nat.card ↥K = (Finset.univ.filter (fun σ : G => σ ∈ K)).card := by
+    intro K
+    rw [Nat.card_eq_fintype_card, Fintype.card_subtype]
+  have hcard' : ∀ K : Subgroup H,
+      Nat.card ↥K = (Finset.univ.filter (fun τ : H => τ ∈ K)).card := by
+    intro K
+    rw [Nat.card_eq_fintype_card, Fintype.card_subtype]
+  have hdc : ∑ i ∈ Finset.range (n + 1), Nat.card ↥(𝒢 (i + 2)) =
+      ∑ σ : G, ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card := by
+    simp only [hcard, Finset.card_filter]
+    exact Finset.sum_comm
+  have hdc' : ∑ i ∈ Finset.range (m' + 1), Nat.card ↥(𝒢' (i + 2)) =
+      ∑ τ : H, ((Finset.range (m' + 1)).filter (fun i => τ ∈ 𝒢' (i + 2))).card := by
+    simp only [hcard', Finset.card_filter]
+    exact Finset.sum_comm
+  have hpart : ∑ σ : G, ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card =
+      ∑ τ : H, ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ),
+        ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card :=
+    (Finset.sum_fiberwise Finset.univ (fun σ : G => res σ)
+      (fun σ => ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card)).symm
+  calc Nat.card ↥(𝒢 1) = e * Nat.card ↥(𝒢' 1) := htower.symm
+    _ < e * (2 * ∑ i ∈ Finset.range (m' + 1), Nat.card ↥(𝒢' (i + 2))) :=
+        mul_lt_mul_of_pos_left hlt he
+    _ = 2 * (e * ∑ τ : H,
+          ((Finset.range (m' + 1)).filter (fun i => τ ∈ 𝒢' (i + 2))).card) := by
+        rw [hdc']; ring
+    _ = 2 * ∑ τ : H,
+          e * ((Finset.range (m' + 1)).filter (fun i => τ ∈ 𝒢' (i + 2))).card := by
+        rw [Finset.mul_sum]
+    _ ≤ 2 * ∑ τ : H, ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ),
+          ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card :=
+        Nat.mul_le_mul_left 2 (Finset.sum_le_sum fun τ _ => hfib τ)
+    _ = 2 * ∑ σ : G, ((Finset.range (n + 1)).filter (fun i => σ ∈ 𝒢 (i + 2))).card := by
+        rw [hpart]
+    _ = 2 * ∑ i ∈ Finset.range (n + 1), Nat.card ↥(𝒢 (i + 2)) := by rw [hdc]
+
+open scoped Classical in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **HERBRAND'S LEMMA, THE `≥` DIRECTION, AT THE TWO LINKED LEVELS**
+(sorry node, created 2026-07-26; the SOLE arithmetic input of the
+upward Herbrand transport `exists_restrictToLEHom_eq_of_lt_two_mul_sum_card_inertia`
+below, exactly as `sum_card_filter_inertia_fiber_le` is the sole
+arithmetic input of the downward one).
+Write `G = Gal(N/ℚ₃ᵥ)`, `H = ker(res) = Gal(N/M)`, `Ḡ = Gal(M/ℚ₃ᵥ)`,
+`G_i = inertia(𝔪_N^(i+1))`, `Ḡ_i = inertia(𝔪_M^(i+1))`, and
+`e = #(G_0 ⊓ ker res) = e_{N/M}`.  In terms of Serre's
+`i_N(σ) = min_{x ∈ 𝒪_N} v_N(σx − x)` the counts below are the truncated
+depths `min(k, i_N(σ) − 1)`, so the assertion is: given `τ` with
+`i_M(τ) ≥ m'+2`, there is a LEVEL `n` such that
+(i) `τ` is the restriction of some `σ` with `i_N(σ) ≥ n+2`, and
+(ii) for EVERY `τ' ∈ Ḡ`,
+     `e·min(m'+1, i_M(τ') − 1) ≤ Σ_{σ ↦ τ'} min(n+1, i_N(σ) − 1)`.
+WHY IT IS TRUE, and why it is Serre IV §1 Prop. 3 read as an EQUALITY.
+Take `n + 1 = D :=` the maximal depth `i_N(σ) − 1` attained on the
+fibre of `τ`; (i) is then immediate.  For (ii): IV §1 Prop. 3 says
+`Σ_{σ ↦ τ'} i_N(σ) = e·i_M(τ')`, and the fibre of `τ'` meeting `G_0` is
+a single coset of `H_0` (surjectivity of inertia in the tower, the
+PROVEN `exists_restrictToLEHom_eq_of_mem_inertia`), on which
+`i_N(σ_max·h) − 1 = min(D', i_N(h) − 1)` for `D'` the fibre's own
+maximal depth — the ultrametric identity whose `≤` half is already
+isolated as the elementary `hcoset` step inside the PROVEN
+`exists_index_of_herbrand`.  Hence
+`Σ_{σ ↦ τ'} (i_N(σ) − 1) = Σ_{h ∈ H_0} min(D', i_N(h) − 1)`, i.e.
+`i_M(τ') − 1 = φ_{N/M}(D')`, the integer avatar of `D' = ψ_{N/M}(...)`
+with no `ψ` defined.  Since `φ_{N/M}` is increasing, `i_M(τ') ≥ m'+2`
+gives `D' ≥ D` and truncating at `D` loses nothing beyond
+`e·(m'+1)`; while `i_M(τ') < m'+2` gives `D' < D`, so truncating at `D`
+loses nothing at all and (ii) is the untruncated equality.  Both cases
+are `≥`, which is all that is used.
+WHAT IS STILL MISSING, in dependency order (none of it in mathlib at
+this pin, and it is EXACTLY the list that
+`sum_card_filter_inertia_fiber_le` already carries, plus the `≥` half):
+(1) the function `i_N` and its identification with the filtration,
+    `σ ∈ inertia(𝔪^k) ↔ k ≤ i_N(σ)`;
+(2) monogenicity of `𝒪_N` over `𝒪_M` and `i_N(σ) = v_N(σx − x)`;
+(3) the norm computation of Serre IV §1 Prop. 3 itself, as an EQUALITY
+    (the `≤` half alone, which is what the downward transport uses, is
+    NOT enough here);
+(4) the `≥` half of the coset identity in (2) above.
+NOT VACUOUS.  At `M = N` (`e = 1`, `res = id`) the statement holds with
+`n = m'` and `σ = τ`, both sides of (ii) being `min(m'+1, i(τ') − 1)`.
+The content is entirely the level shift `m'+1 ↝ D`, a genuine increase
+exactly when `N/M` is wildly ramified. -/
+theorem exists_level_forall_le_sum_card_filter_inertia_fiber
+    (M N : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ)
+    [FiniteDimensional ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ M]
+    [FiniteDimensional ℚ₃ᵥ N] [IsGalois ℚ₃ᵥ N]
+    (hMN : M ≤ N)
+    (m' : ℕ) (τ : M ≃ₐ[ℚ₃ᵥ] M)
+    (hτ : τ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ M) ^ (m' + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) :
+    ∃ n : ℕ,
+      (∃ σ : N ≃ₐ[ℚ₃ᵥ] N,
+        σ ∈ (IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ N) ^ (n + 2)).inertia (N ≃ₐ[ℚ₃ᵥ] N) ∧
+        restrictToLEHom M N hMN σ = τ) ∧
+      ∀ τ' : M ≃ₐ[ℚ₃ᵥ] M,
+        Nat.card ↥((IsLocalRing.maximalIdeal
+              (IntegralClosure 𝒪₃ᵥ N)).inertia (N ≃ₐ[ℚ₃ᵥ] N) ⊓
+            (restrictToLEHom M N hMN).ker) *
+          ((Finset.range (m' + 1)).filter (fun i =>
+            τ' ∈ (IsLocalRing.maximalIdeal
+              (IntegralClosure 𝒪₃ᵥ M) ^ (i + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M))).card ≤
+        ∑ σ ∈ Finset.univ.filter
+            (fun σ : N ≃ₐ[ℚ₃ᵥ] N => restrictToLEHom M N hMN σ = τ'),
+          ((Finset.range (n + 1)).filter (fun i =>
+            σ ∈ (IsLocalRing.maximalIdeal
+              (IntegralClosure 𝒪₃ᵥ N) ^ (i + 2)).inertia (N ≃ₐ[ℚ₃ᵥ] N))).card := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **SERRE, *CORPS LOCAUX* IV §3 PROP. 14, IN `φ`-FREE INTEGER FORM:
+the deep part of a QUOTIENT filtration is HIT from above** (created
+2026-07-26 by decomposing
+`eq_one_of_mem_inertia_of_le_of_forall_nonempty_algHom`, and PROVEN the
+same day over the single arithmetic leaf
+`exists_level_forall_le_sum_card_filter_inertia_fiber`; PURE local
+ramification theory — neither Fontaine's property `(P_m)` nor any
+algebra `A` nor `Ω` occurs in the statement).  Let `M ≤ N` be finite
+Galois subextensions of `ℚ₃ᵥᵃˡᵍ/ℚ₃ᵥ`, with lower-numbering filtrations
+`Ḡ_i = inertia(𝔪_M^(i+1))` and `G_i = inertia(𝔪_N^(i+1))`.  If
+`τ ∈ Ḡ_{m'+1}` sits at a level whose Herbrand value exceeds `1/2` —
+`#Ḡ_0 < 2·Σ_{i=1}^{m'+1} #Ḡ_i`, which is exactly
+`φ_{M/ℚ₃ᵥ}(m'+1) > 1/2` — then `τ` is the RESTRICTION of some
+`σ ∈ G_{n+1}` whose own level again has Herbrand value `> 1/2`.
+
+THIS IS NOT THE ALREADY-PROVEN
+`exists_restrictToLE_mem_inertia_of_lt_two_mul_sum_card_inertia`, AND IT
+DOES NOT FOLLOW FROM IT.  That lemma transports DOWNWARDS — a deep `σ`
+of the big field restricts to a deep element of the small one — and the
+present statement is the UPWARD one.  The asymmetry is the whole reason
+the upper numbering exists: the lower-numbering groups only map down,
+whereas it is the upper-numbering groups that SURJECT onto those of a
+quotient (`Gal(N/ℚ₃ᵥ)^v ↠ Gal(M/ℚ₃ᵥ)^v`, Serre IV §3 Prop. 14).  A
+consumer that must kill an element of `Gal(M/ℚ₃ᵥ)` using a theorem
+available only for `Gal(N/ℚ₃ᵥ)` needs THIS direction and nothing
+weaker; that consumer is
+`eq_one_of_mem_inertia_of_le_of_forall_nonempty_algHom` below, where
+`N = hopfPointsField A` is the field Fontaine's theorem applies to and
+`M` is merely a subfield of it.
+
+INTENDED PROOF (Serre IV §3 Lemma 5 = Herbrand's theorem, plus IV §3
+Prop. 15 = the transitivity `φ_{N/ℚ₃ᵥ} = φ_{M/ℚ₃ᵥ} ∘ φ_{N/M}`).
+Herbrand's theorem says `Ḡ_u = G_{ψ_{N/M}(u)}·H/H` for `H = Gal(N/M)`,
+so `τ ∈ Ḡ_{m'+1}` is the restriction of some `σ ∈ G_D` with
+`D = ψ_{N/M}(m'+1) ≥ m'+1`; take `n + 1 = D`.  The second conjunct is
+then `φ_{N/ℚ₃ᵥ}(D) = φ_{M/ℚ₃ᵥ}(φ_{N/M}(D)) = φ_{M/ℚ₃ᵥ}(m'+1) > 1/2`,
+cleared of the denominator `#G_0`.
+
+PROOF AS ACTUALLY CARRIED OUT (2026-07-26), which is the mirror of the
+`φ`-free cut used for the downward transport and is likewise strictly
+cheaper than the intended one.  No `φ`, no `ψ`, no `⌈·⌉` and no upper
+numbering are defined.  ALL the arithmetic sits in the single leaf
+`exists_level_forall_le_sum_card_filter_inertia_fiber` — Serre IV §1
+Prop. 3 read as an EQUALITY, at the two LINKED truncation levels `D`
+and `m'+1` — and everything else is the PROVEN double counting
+`lt_two_mul_sum_card_of_le_sum_fiber` together with the PROVEN tower
+multiplicativity `card_inertia_inf_ker_mul`.  Note that the existing
+arithmetic leaf `sum_card_filter_inertia_fiber_le` is NOT enough here:
+it is only the `≤` half, and it is stated at a COMMON truncation level
+on both sides, which is exactly what the downward transport needs and
+exactly what the upward one cannot use.  The `pow_one` rewrites below
+only reconcile the `𝔪` of the hypotheses with the `𝔪 ^ 1` of the
+filtration.
+
+NOT VACUOUS, and the degenerate case is the identity: at `M = N`
+(`hMN = le_rfl`, `restrictToLEHom = id`) the statement holds with
+`n = m'` and `σ = τ`, so all the content is in the level shift
+`m'+1 ↝ D = ψ_{N/M}(m'+1)`, which is a genuine INCREASE exactly when
+`N/M` is wildly ramified.  A numerical check of the shape of the
+statement, at the tame `M = ℚ₃(ζ₃) ≤ N = ℚ₃(ζ₉)`: `#Ḡ_0 = 2`,
+`Ḡ_1 = ⊥`, while `#G_0 = 6`, `#G_1 = #G_2 = 3`, `G_3 = ⊥` (Serre IV §4
+Prop. 18).  `hlt` fails at `m' = 0` (`2 < 2·1` is false) and holds at
+`m' = 1` (`2 < 2(1+1)`), where `τ ∈ Ḡ_2 = ⊥`; the required `σ` is `1`,
+at `n = 1` say, and `6 < 2(3+3)` ✓.  The genuinely non-degenerate
+instances are those with `M` itself WILDLY ramified, which is precisely
+the configuration the consumer meets. -/
+theorem exists_restrictToLEHom_eq_of_lt_two_mul_sum_card_inertia
+    (M N : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ)
+    [FiniteDimensional ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ M]
+    [FiniteDimensional ℚ₃ᵥ N] [IsGalois ℚ₃ᵥ N]
+    (hMN : M ≤ N)
+    (m' : ℕ)
+    (hlt : Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) <
+      2 * ∑ i ∈ Finset.range (m' + 1),
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ M) ^ (i + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M)))
+    (τ : M ≃ₐ[ℚ₃ᵥ] M)
+    (hτ : τ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ M) ^ (m' + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) :
+    ∃ (n : ℕ) (σ : N ≃ₐ[ℚ₃ᵥ] N),
+      σ ∈ (IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ N) ^ (n + 2)).inertia (N ≃ₐ[ℚ₃ᵥ] N) ∧
+      Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ N)).inertia (N ≃ₐ[ℚ₃ᵥ] N)) <
+        2 * ∑ i ∈ Finset.range (n + 1),
+          Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ N) ^ (i + 2)).inertia (N ≃ₐ[ℚ₃ᵥ] N)) ∧
+      restrictToLEHom M N hMN σ = τ := by
+  classical
+  -- STEP 1: the arithmetic leaf supplies the transported level `n`, a
+  -- preimage `σ` of `τ` sitting at that level, and the per-fibre lower
+  -- bound linking the two truncation levels.
+  obtain ⟨n, ⟨σ, hσ, hres⟩, hge⟩ :=
+    exists_level_forall_le_sum_card_filter_inertia_fiber M N hMN m' τ hτ
+  refine ⟨n, σ, hσ, ?_, hres⟩
+  -- STEP 2: pure double counting turns that bound, together with the
+  -- tower multiplicativity `#G_0 = e_{N/M}·#Ḡ_0`, into the Herbrand
+  -- condition at the transported level.
+  have key := lt_two_mul_sum_card_of_le_sum_fiber (restrictToLEHom M N hMN)
+    (fun j => (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ N) ^ j).inertia (N ≃ₐ[ℚ₃ᵥ] N))
+    (fun j => (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ M) ^ j).inertia (M ≃ₐ[ℚ₃ᵥ] M))
+    m' n
+    (by simpa only [pow_one] using card_inertia_inf_ker_mul M N hMN)
+    (fun τ' => by simpa only [pow_one] using hge τ')
+    (by simpa only [pow_one] using hlt)
+  simpa only [pow_one] using key
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **FONTAINE'S THÉORÈME A AT `3`, FOR A SINGLE FIELD: `(P_{3/2})`
+forces the ramification bound** (sorry node, created 2026-07-26 by
+decomposing `eq_one_of_mem_inertia_of_le_of_forall_nonempty_algHom`;
+this is the CITATION node of the pair — Fontaine, *Il n'y a pas de
+variété abélienne sur ℤ*, Invent. Math. 81 (1985), Prop. 1.5 (ii),
+SHARPENED by M. Yoshida, *Ramification of local fields and Fontaine's
+property* `(P_m)`, arXiv:0905.1171, Prop. 3.3).  Let `N/ℚ₃ᵥ` be finite
+Galois and assume `hP`: for every finite `E/ℚ₃ᵥ` with `v_E(3) = e` and
+every truncation level `k` with `3e < 2k`, the mere EXISTENCE of an
+`𝒪₃ᵥ`-algebra map `𝒪_N → 𝒪_E/𝔪_E^k` already forces a `ℚ₃ᵥ`-embedding
+`N ↪ E`.  That is Fontaine's property `(P_m)` for `N/ℚ₃ᵥ` at every
+rational level `m = k/e > 3/2`, i.e. `m_{N/ℚ₃ᵥ} ≤ 3/2`.  Then every
+`σ ∈ G_{n+1} = inertia(𝔪_N^(n+2))` whose level satisfies the Herbrand
+condition `#G_0 < 2·Σ_{i=1}^{n+1} #G_i` is the identity.
+
+THE NUMERICAL DICTIONARY, since the statement is deliberately `φ`-FREE.
+`(𝔪_N^(j+1)).inertia` is Serre's `G_j`, so `hlt` is exactly
+`φ_{N/ℚ₃ᵥ}(n+1) > 1/2` (`φ(j) = (1/#G_0)Σ_{i=1}^{j}#G_i` at integer
+arguments), and `σ ∈ G_{n+1}` therefore lies in the Serre-upper group
+`G^{φ(n+1)}` at a level `> 1/2`.  Fontaine's threshold
+`e_K(n₀ + 1/(p−1)) − 1` is `1 + 1/2 − 1 = 1/2` at `K = ℚ₃`, `e_K = 1`,
+`n₀ = 1`, `p = 3`, so `u_{N/ℚ₃ᵥ} ≤ 1/2` (Serre numbering) forces
+`σ = 1`.
+
+WHY FONTAINE'S OWN PROP. 1.5 (ii) IS NOT ENOUGH, arithmetically — do
+not attempt this leaf through it.  Prop. 1.5 (ii) gives only
+`m > u^{(F)} − 1/e_{N/ℚ₃ᵥ}` for every `m` with `(P_m)`; letting `m ↓ 3/2`
+over `hP` yields `u^{(F)} ≤ 3/2 + 1/#G_0`, i.e. Serre
+`u ≤ 1/2 + 1/#G_0`.  Now `hlt` says `φ(n+1) > 1/2`, and `φ(n+1)` lies in
+`(1/#G_0)·ℤ`, so the strongest consequence is `φ(n+1) ≥ 1/2 + 1/#G_0`
+(for `#G_0` even) or `≥ 1/2 + 1/(2#G_0)` (for `#G_0` odd) — in BOTH
+cases `φ(n+1) ≤ 1/2 + 1/#G_0` is possible, so the STRICT inequality
+`φ(n+1) > u` that `σ = 1` requires is never available.  The two sides
+can be exactly equal, and for the peu-ramifié `N = ℚ₃(ζ₃, u^{1/3})`
+(`#G_0 = 6`, `#G_1 = 3`, `G_2 = ⊥`) at `n = 1` they ARE:
+`φ(2) = (3+1)/6 = 2/3 = 1/2 + 1/6`.  What removes the `1/e` is
+YOSHIDA'S TAME BASE CHANGE (his Prop. 2.2: `(P_m)` for `L/K` implies
+`(P_{e'm})` for `LK'/K'` with `K'/K` totally tamely ramified of degree
+`e'`; then `e' → ∞`), which upgrades Fontaine's inequality to the
+EQUALITY `m_{L/K} = u^{(F)}_{L/K}` (his Prop. 3.3).  With it,
+`u ≤ 1/2` outright and `φ(n+1) > 1/2 ≥ u` closes with room to spare.
+PROVE THIS LEAF THROUGH YOSHIDA'S EQUALITY, NOT FONTAINE'S INEQUALITY.
+
+WHY THIS LEAF CANNOT BE CUT FURTHER INSIDE THE PRESENT ENCODING
+(recorded 2026-07-26 so the next owner does not rediscover it).
+Yoshida's argument CHANGES THE BASE FIELD, from `ℚ₃ᵥ` to a totally
+tamely ramified `K'`, and compares `u_{LK'/K'} = e'·u_{L/K}` across the
+two bases.  Every statement in this development's Fontaine cluster is
+hard-wired to the base `ℚ₃ᵥ` — `𝒪₃ᵥ`-algebra maps, `ℚ₃ᵥ`-embeddings,
+`inertia (M ≃ₐ[ℚ₃ᵥ] M)` — and the comparison across bases needs `φ` as
+a FUNCTION, which this encoding deliberately does not have.  So a
+finer cut would first have to generalise the whole cluster to a
+variable local base field; short of that, this declaration is the
+atom.
+
+SHARPNESS — the bound is attained, so no slack can be extracted.  For
+the peu-ramifié `N = ℚ₃(ζ₃, u^{1/3})` one has `#G_0 = 6`, `#G_1 = 3`,
+`G_2 = ⊥`, so `φ(1) = 1/2` EXACTLY while `G_1 ≠ ⊥`: the conclusion
+would be FALSE at `n = 0` if the inequality in `hlt` were `≤`.  For the
+très-ramifié `ℚ₃(ζ₃, q^{1/3})` (`#G_1 = #G_2 = #G_3 = 3`) the
+hypothesis holds at `n = 1` with `G_2 ≠ ⊥`, and the leaf then asserts
+genuine arithmetic: `(P_{3/2})` must FAIL for that field. -/
+theorem eq_one_of_mem_inertia_of_forall_nonempty_algHom
+    (N : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ)
+    [FiniteDimensional ℚ₃ᵥ N] [IsGalois ℚ₃ᵥ N]
+    (hP : ∀ (E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ E]
+      (e k : ℕ),
+      Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
+          IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ e →
+        3 * e < 2 * k →
+        (IntegralClosure 𝒪₃ᵥ N →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+          IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) →
+        Nonempty (N →ₐ[ℚ₃ᵥ] E))
+    (n : ℕ)
+    (hlt : Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ N)).inertia (N ≃ₐ[ℚ₃ᵥ] N)) <
+      2 * ∑ i ∈ Finset.range (n + 1),
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ N) ^ (i + 2)).inertia (N ≃ₐ[ℚ₃ᵥ] N)))
+    (σ : N ≃ₐ[ℚ₃ᵥ] N)
+    (hσ : σ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ N) ^ (n + 2)).inertia (N ≃ₐ[ℚ₃ᵥ] N)) :
+    σ = 1 := by
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
@@ -8422,7 +8773,39 @@ the peu-ramifié `M = ℚ₃(ζ₃, u^{1/3})` one has `#Ḡ_0 = 6`, `#Ḡ_1 = 3`
 be false at `m' = 0` if the inequality in `hlt` were `≤`.  For the
 très-ramifié `ℚ₃(ζ₃, q^{1/3})` (`#Ḡ_1 = #Ḡ_2 = #Ḡ_3 = 3`) the
 hypothesis holds at `m' = 1` with `Ḡ_2 ≠ ⊥`, and the leaf then asserts
-genuine arithmetic: `(P_{3/2})` must FAIL for that field. -/
+genuine arithmetic: `(P_{3/2})` must FAIL for that field.
+DECOMPOSED 2026-07-26 — this declaration is no longer a leaf; the
+assembly below is PROVEN and the residual content sits in exactly the
+two cited ingredients, now separate declarations, cut so that neither
+mentions the other's subject matter:
+* `exists_restrictToLEHom_eq_of_lt_two_mul_sum_card_inertia` —
+  ingredient (b), Serre IV §3 Prop. 14 in `φ`-free integer form: a `τ`
+  of `Gal(M/ℚ₃ᵥ)` deep enough for the Herbrand condition is the
+  RESTRICTION of a `σ` of `Gal(N/ℚ₃ᵥ)` that is again deep enough for
+  it.  Fontaine's property `(P_m)` does not occur in it at all, and it
+  is itself PROVEN here, over the PROVEN double counting
+  `lt_two_mul_sum_card_of_le_sum_fiber`, the PROVEN tower
+  multiplicativity `card_inertia_inf_ker_mul`, and the single
+  arithmetic leaf `exists_level_forall_le_sum_card_filter_inertia_fiber`
+  (Serre IV §1 Prop. 3 as an EQUALITY, at two linked truncation levels
+  — the existing `sum_card_filter_inertia_fiber_le` is only the `≤`
+  half at a common level and does NOT suffice for this direction);
+* `eq_one_of_mem_inertia_of_forall_nonempty_algHom` — ingredient (a),
+  Fontaine's Prop. 1.5 (ii) sharpened by Yoshida's `m_{L/K} = u_{L/K}`,
+  for a SINGLE field.  Its docstring records the arithmetic reason
+  Fontaine's inequality alone cannot close the gap, and the reason the
+  Yoshida step cannot be cut finer without generalising this whole
+  cluster to a variable local base field.
+WHY THE CUT IS THIS WAY ROUND, and not "`(P_m)` descends from `N` to
+`M`, then Fontaine at `M`".  That alternative is equally true — it is
+Yoshida's Lemma 3.1 — but its descent half is provable ONLY through the
+equality `m = u` for BOTH fields, so it is a second copy of the hard
+citation node dressed as a lemma.  The cut used here puts the descent
+where it is pure group theory over machinery this file already has
+(`exists_restrictToLEHom_eq_of_mem_inertia` for surjectivity onto
+inertia, `card_inertia_inf_ker_mul` for tower multiplicativity, and the
+counting engine `exists_index_of_herbrand`), leaving exactly ONE
+citation node in the pair. -/
 theorem eq_one_of_mem_inertia_of_le_of_forall_nonempty_algHom
     (M N : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ)
     [FiniteDimensional ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ M]
@@ -8446,7 +8829,18 @@ theorem eq_one_of_mem_inertia_of_le_of_forall_nonempty_algHom
     (hτ : τ ∈ (IsLocalRing.maximalIdeal
       (IntegralClosure 𝒪₃ᵥ M) ^ (m' + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) :
     τ = 1 := by
-  sorry
+  -- STEP 1 (Serre IV §3 Prop. 14): the deep `τ` of `Gal(M/ℚ₃ᵥ)` is the
+  -- restriction of a `σ` of `Gal(N/ℚ₃ᵥ)` that is again deep enough for
+  -- the Herbrand condition — the UPWARD transport, which is where the
+  -- upper numbering's compatibility with quotients is used.
+  obtain ⟨n, σ, hσ, hltN, hres⟩ :=
+    exists_restrictToLEHom_eq_of_lt_two_mul_sum_card_inertia M N hMN m' hlt τ hτ
+  -- STEP 2 (Fontaine Prop. 1.5 (ii) + Yoshida Prop. 3.3): `(P_{3/2})`
+  -- for `N`, which is exactly `hP`, kills that `σ`.
+  have hσ1 : σ = 1 :=
+    eq_one_of_mem_inertia_of_forall_nonempty_algHom N hP n hltN σ hσ
+  -- STEP 3: restriction is a group homomorphism, so `τ = res 1 = 1`.
+  rw [← hres, hσ1, map_one]
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
