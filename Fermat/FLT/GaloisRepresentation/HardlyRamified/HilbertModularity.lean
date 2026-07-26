@@ -87,6 +87,11 @@ The chain, in the order the assembly uses it:
    `isHilbertBaseChangeClause`, `isHilbertFibreProductClause`,
    `isHilbertFiniteFramesClause`, `isHilbertProLimitClause` and the
    Brauer–Nesbitt clause `isHilbertResidualRigidityClause`.
+   Of those, `isHilbertProLimitClause` is PROVEN (2026-07-26) over the
+   single residual leaf `isHilbertTameAtTwo_of_forall_isOpen_quotient`:
+   its determinant and unramifiedness clauses are `𝔪`-adic separation,
+   its flatness clause is a re-indexing of the level data, and only the
+   tame quotient at the places over `2` is a genuine limit statement.
 4. `HilbertHeckeAlgebra` — `T_F`, carrying finiteness AND FREENESS of
    `T_F` over `ℤ_[ℓ]`, generation by Hecke operators, and the
    **Hecke-valued Galois representation** `ρT : G_F → GL₂(T_F)` reducing
@@ -157,6 +162,8 @@ public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
 public import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.GroupTheory.Index
 public import Mathlib.LinearAlgebra.Charpoly.Basic
+-- `LinearMap.det_baseChange`, consumed by `det_framePushforward` below
+public import Mathlib.LinearAlgebra.Charpoly.BaseChange
 public import Mathlib.RingTheory.IntegralClosure.Algebra.Basic
 public import Mathlib.RingTheory.Adjoin.Basic
 public import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
@@ -1145,21 +1152,398 @@ theorem isHilbertFiniteFramesClause (ℓ : ℕ) [Fact ℓ.Prime]
     IsHilbertFiniteFramesClause ℓ F :=
   sorry
 
-/-- **Detection of the `F`-level condition on the finite levels** (LEAF).
+/-! #### Bricks for the pro-limit clause (added 2026-07-26)
 
-Over `ℚ` this is `Deformation.lean`'s leaf
-`isHardlyRamified_of_forall_isOpen_quotient`. The determinant,
-unramifiedness and tameness clauses are separation statements — a complete
-separated local ring injects into the inverse limit of its finite
-quotients, so an identity or a kernel inclusion holding at every level holds
-over `R`; the flatness clause is DEFINITIONALLY a statement about the open
-quotients (`GaloisRep.IsFlatAt.cond` quantifies over open ideals), which is
-why this clause is available at all rather than being a genuine limit
-theorem about group schemes. -/
+Six elementary transport lemmas consumed only by `isHilbertProLimitClause`
+below. Each is the `F`-level (respectively base-field-generic) twin of a
+declaration `Deformation.lean` states over `ℚ`; the proofs are verbatim the
+`ℚ`-level ones, because none of them uses anything about the base field.
+They are restated rather than reused for the usual reason: `Deformation.lean`
+is DOWNSTREAM of this module (it `public import`s it), so nothing there is
+in scope here. The names are deliberately different from the `ℚ`-level ones
+— `Deformation.lean` re-exports this namespace, so a name collision would
+break its elaboration outright, as it once did for a duplicated
+`det_pushforwardFrame`. -/
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Matrix entries of a pushed-forward frame** (PROVEN, elementary; the
+`F`-level twin of `Deformation.lean`'s `pushforwardFrame_apply`):
+`framePushforward ψ` is "apply `ψ` to the matrix entries", so on a vector
+already in the image of `ψ` it acts entrywise through `ψ`.
+
+`(1 : A) ⊗ₜ x` is a preimage of `ψ ∘ x` under `TensorProduct.piScalarRight`,
+so `LinearEquiv.conj_apply_apply` moves the conjugation out of the way and
+`GaloisRep.baseChange_tmul` finishes. This is the dictionary that lets a
+statement about `framePushforward` over `R ⧸ I` be read back as a
+congruence in `R`, which is what the unramifiedness clause of
+`isHilbertProLimitClause` runs on. -/
+lemma framePushforward_apply {F : Type u} [Field F] [NumberField F]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    (ψ : B →+* A) (hψ : Continuous ψ) (ρ : FramedGaloisRep F B (Fin 2))
+    (g : Γ F) (x : Fin 2 → B) :
+    (framePushforward ψ hψ ρ) g (fun i => ψ (x i)) = fun j => ψ (ρ g x j) := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  have hsm : ∀ b : B, b • (1 : A) = ψ b := by
+    intro b
+    rw [Algebra.smul_def, RingHom.algebraMap_toAlgebra, mul_one]
+  have hx : (fun i => ψ (x i)) =
+      (TensorProduct.piScalarRight B A A (Fin 2)) ((1 : A) ⊗ₜ[B] x) := by
+    funext i
+    rw [TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
+    exact (hsm (x i)).symm
+  show ((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g _ = _
+  rw [hx, GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+    LinearEquiv.symm_apply_apply, GaloisRep.baseChange_tmul]
+  funext j
+  rw [TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
+  exact hsm _
+
+open scoped TensorProduct in
+/-- **`det` commutes with `framePushforward`** (PROVEN; the `F`-level twin of
+`Deformation.lean`'s `det_pushforwardFrame`): `LinearMap.det_conj` absorbs
+the framing identification and `LinearMap.det_baseChange` turns the
+base-changed determinant into `algebraMap B A` of the original, which is `ψ`
+by `RingHom.algebraMap_toAlgebra`.
+
+This is what lets the determinant clause of `isHilbertProLimitClause` be
+REFLECTED BACK from the levels to `R`. -/
+lemma det_framePushforward {F : Type u} [Field F] [NumberField F]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    (ψ : B →+* A) (hψ : Continuous ψ) (ρ : FramedGaloisRep F B (Fin 2))
+    (g : Γ F) :
+    (framePushforward ψ hψ ρ).det g = ψ (ρ.det g) := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  show LinearMap.det
+    ((((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g)) = _
+  rw [GaloisRep.conj_apply, LinearEquiv.conj_apply, LinearMap.comp_assoc,
+    LinearMap.det_conj]
+  show LinearMap.det (LinearMap.baseChange A (ρ g)) = _
+  rw [LinearMap.det_baseChange, RingHom.algebraMap_toAlgebra]
+  rfl
+
+open scoped TensorProduct in
+/-- **A flat prolongation descends through the base change to `A ⧸ ⊥`**
+(PROVEN, over an arbitrary number field; the base-field-generic twin of
+`Deformation.lean`'s `hasFlatProlongationAt_of_baseChange_bot`):
+`A ⧸ ⊥ ≃ A` is `Submodule.quotEquivOfEqBot`, and tensoring it with the
+identity collapses `(A ⧸ ⊥) ⊗_A N` onto `N` equivariantly — the Galois
+action on the base change is `g ⊗ 1`, so the transport is `map_smul`.
+
+This is the step that turns the flatness clause of the level-`I` datum
+(which quantifies over the open ideals of `R ⧸ I`, evaluated at `⊥`) back
+into a statement about `ρ.baseChange (R ⧸ I)`. -/
+lemma hasFlatProlongationAt_of_quotBot {K : Type u} [Field K] [NumberField K]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {N : Type v} [AddCommGroup N] [Module A N] [Module.Finite A N]
+    [Module.Free A N] (τ : GaloisRep K A N)
+    (w : HeightOneSpectrum (𝓞 K))
+    (h : (τ.baseChange (A ⧸ (⊥ : Ideal A))).HasFlatProlongationAt w) :
+    τ.HasFlatProlongationAt w := by
+  let φ : (A ⧸ (⊥ : Ideal A)) ≃ₗ[A] A := Submodule.quotEquivOfEqBot _ rfl
+  let E : ((A ⧸ (⊥ : Ideal A)) ⊗[A] N) ≃ₗ[A] N :=
+    (TensorProduct.congr φ (LinearEquiv.refl A N)).trans (TensorProduct.lid A N)
+  refine h.of_equiv _ E.toAddEquiv ?_
+  intro g x
+  show E (((τ.baseChange (A ⧸ (⊥ : Ideal A))).toLocal w g) x) =
+    (τ.toLocal w g) (E x)
+  induction x using TensorProduct.induction_on with
+  | zero => simp
+  | add a b ha hb => simp only [map_add, ha, hb]
+  | tmul c y =>
+    show E (c ⊗ₜ[A] (τ.toLocal w g) y) = (τ.toLocal w g) (E (c ⊗ₜ[A] y))
+    show φ c • ((τ.toLocal w g) y) = (τ.toLocal w g) (φ c • y)
+    rw [map_smul]
+
+/-- **A flat prolongation descends through conjugation** (PROVEN, over an
+arbitrary number field; the base-field-generic twin of
+`Deformation.lean`'s `hasFlatProlongationAt_of_conj`): the inverse of the
+conjugating isomorphism is itself equivariant, so
+`GaloisRep.HasFlatProlongationAt.of_equiv` transports the Hopf-algebra
+witness back. This is what strips the framing identification
+`TensorProduct.piScalarRight` off `framePushforward`. -/
+lemma hasFlatProlongationAt_of_conjugate {K : Type u} [Field K] [NumberField K]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {M : Type v} [AddCommGroup M] [Module A M]
+    {N : Type v} [AddCommGroup N] [Module A N] (τ : GaloisRep K A M)
+    (e : M ≃ₗ[A] N) (w : HeightOneSpectrum (𝓞 K))
+    (h : (τ.conj e).HasFlatProlongationAt w) :
+    τ.HasFlatProlongationAt w := by
+  refine h.of_equiv _ e.symm.toAddEquiv ?_
+  intro g x
+  show e.symm (((τ.conj e).toLocal w g) x) = (τ.toLocal w g) (e.symm x)
+  rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+    LinearEquiv.symm_apply_apply, GaloisRep.toLocal_apply]
+
+/-- **A flat prolongation is inherited by any representation on a
+subsingleton space** (PROVEN, over an arbitrary number field; the
+base-field-generic twin of `Deformation.lean`'s
+`hasFlatProlongationAt_of_subsingleton`): the Hopf-algebra witness is reused
+and the geometric-points identification is composed with the unique additive
+isomorphism of one-element groups, every side condition being
+`Subsingleton.elim`.
+
+This is what discharges the `I = ⊤` case of `GaloisRep.IsFlatAt`, whose
+quantifier runs over ALL open ideals — including the unit ideal, at which
+the coefficient ring is trivial and no level datum is available, since
+`IsLocalRing (R ⧸ ⊤)` is false. -/
+lemma hasFlatProlongationAt_of_bothSubsingleton {K : Type u} [Field K]
+    [NumberField K] {A : Type u} [CommRing A] [TopologicalSpace A]
+    {M : Type v} [AddCommGroup M] [Module A M] [Subsingleton M]
+    {A' : Type u} [CommRing A'] [TopologicalSpace A']
+    {M' : Type v} [AddCommGroup M'] [Module A' M'] [Subsingleton M']
+    {τ₁ : GaloisRep K A M} (τ₂ : GaloisRep K A' M')
+    (w : HeightOneSpectrum (𝓞 K))
+    (h : τ₁.HasFlatProlongationAt w) :
+    τ₂.HasFlatProlongationAt w := by
+  haveI : Subsingleton (τ₁.toLocal w).Space := inferInstanceAs (Subsingleton M)
+  haveI : Subsingleton (τ₂.toLocal w).Space := inferInstanceAs (Subsingleton M')
+  exact h.of_equiv _ ⟨⟨fun _ => 0, fun _ => 0, fun _ => Subsingleton.elim _ _,
+    fun _ => Subsingleton.elim _ _⟩, fun _ _ => Subsingleton.elim _ _⟩
+    fun _ _ => Subsingleton.elim _ _
+
+open scoped TensorProduct in
+/-- A tensor product with a subsingleton left factor is a subsingleton
+(PROVEN, elementary: every pure tensor is `0 ⊗ₜ y = 0`; the twin of
+`Deformation.lean`'s `subsingleton_tensorProduct_of_left`). -/
+lemma subsingleton_tensorProduct_left {A : Type u} [CommRing A]
+    {X : Type v} [AddCommGroup X] [Module A X] [Subsingleton X]
+    {N : Type v} [AddCommGroup N] [Module A N] : Subsingleton (X ⊗[A] N) := by
+  have hall : ∀ z : X ⊗[A] N, z = 0 := by
+    intro z
+    induction z using TensorProduct.induction_on with
+    | zero => rfl
+    | add a b ha hb => rw [ha, hb, add_zero]
+    | tmul c y => rw [Subsingleton.elim c 0, TensorProduct.zero_tmul]
+  exact ⟨fun a b => by rw [hall a, hall b]⟩
+
+/-- **The tame quotient at a place over `2` is detected on the finite
+levels** (LEAF, new 2026-07-26 — the ONE clause of
+`isHilbertProLimitClause` that is a genuine pro-limit statement rather
+than a congruence).
+
+WHY THE OTHER THREE CLAUSES ARE NOT HERE. The determinant condition is an
+equality in `R`, unramifiedness is the vanishing of `ρ(σ) − 1`, and both
+are read off the levels by `𝔪`-adic separatedness
+(`IsAdicComplete → IsHausdorff`); flatness at `w ∣ ℓ` is *literally* a
+condition on the reductions (`GaloisRep.IsFlatAt.cond` quantifies over
+open ideals), so it transfers by re-indexing. Only the tame quotient asks
+for the EXISTENCE of an object over `R` — a rank-one free quotient — and
+existence is exactly what does not descend from a compatible system for
+free: the `π_I` supplied at different levels are UNRELATED, `hq` being a
+family of independent existence statements, so the whole content is
+manufacturing compatibility.
+
+THE ROUTE. `Deformation.lean` carries out precisely this argument over
+`ℚ`, as the PROVEN `isTameAtTwo_of_forall_isOpen_quotient`, and its four
+steps transpose verbatim with `Γ ℚ_2` replaced by `Γ F_w` and
+`AddSubgroup.inertia 𝔪_{Z₂ᵃˡᵍ} (Γ ℚ_2)` by `localInertiaGroup w`:
+
+1. *the character is `±1`-valued, hence rigid* — `δ_I(g)² = 1` and `2` is
+   a unit, so `(x−1)(x+1) = 0` forces `x = ±1` and the sign lifts
+   uniquely to a multiplicative `ε : Γ F_w → {±1} ⊆ R`;
+2. *only two characters can occur*, so some `ε` is realised at EVERY
+   level — three distinct quotient characters of a rank-two space over
+   the residue field would give three pairwise independent lines in a
+   plane;
+3. *with `ε` FIXED the fibres are `R`-MODULES*, being cut out by the
+   `R`-linear conditions `∑ᵢ ρ(g)_{ji} xᵢ − ε(g) x_j ∈ 𝔪ⁿ⁺¹` — this
+   linearity is the crux, and it is why no finiteness of the residue
+   field is needed;
+4. *Mittag-Leffler comes free from Artinian-ness* of `R ⧸ 𝔪ⁿ⁺¹`, and
+   `IsPrecomplete`/`IsHausdorff` assemble the limit; unimodularity of the
+   level witnesses survives it, which over the local ring `R` is exactly
+   surjectivity of `p`.
+
+That development is some 900 lines and lives DOWNSTREAM of this module, so
+it must be re-run here rather than imported.
+
+CAUTION — THE ODDNESS OF `ℓ` IS NOT AVAILABLE HERE, AND STEP 1 NEEDS IT.
+Over `ℚ` the ambient `hℓOdd : Odd ℓ` is what makes `2` a unit of
+`ℤ_[ℓ]`, hence of `R` (`isUnit_two_of_oddPrime`), and the `ℚ`-level
+docstring records that this is the ONE place oddness is used and that it
+is used essentially. `IsHilbertProLimitClause`, and therefore this leaf,
+carries only `[Fact ℓ.Prime]`: at `ℓ = 2` the equation `x² = 1` in a
+`ℤ_[2]`-algebra no longer pins `x` to `±1`, the rigidity of step 1
+collapses, and steps 2–4 have nothing to propagate. So whoever attacks
+this leaf should FIRST settle `ℓ = 2` — either by finding the substitute
+rigidity (note that at `ℓ = 2` the places over `ℓ` and the places over
+`2` COINCIDE, so `IsHilbertHardlyRamified.isFlat` is available at exactly
+the same `w` and may supply it), or by refuting the leaf there, which
+would be a faithfulness defect in `IsHilbertProLimitClause` itself and a
+cut-level repair rather than a proof obligation.
+
+FAITHFULNESS: the inertia quantifier is inside `δ.ker` and must stay
+there. `δ` is UNRAMIFIED, not trivial, and widening `localInertiaGroup w`
+to all of `Γ F_w` makes the statement false for every unramified
+quadratic twist — the standing rule of this development.
+
+References: Mazur, *Deforming Galois representations*, MSRI Publ. 16
+(1989), §1.2; Conrad–Diamond–Taylor, JAMS 12 (1999), §2; Grothendieck,
+EGA III 5.4.1. -/
+theorem isHilbertTameAtTwo_of_forall_isOpen_quotient (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {R : Type u} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R] [IsNoetherianRing R]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal R) R)
+    {ρ : FramedGaloisRep F R (Fin 2)}
+    (hq : ∀ (I : Ideal R), IsOpen (I : Set R) → ∀ [IsLocalRing (R ⧸ I)]
+      (hmk : Continuous (Ideal.Quotient.mk I)),
+      IsHilbertHardlyRamified ℓ F (rank_finTwoPi (R ⧸ I))
+        (framePushforward (Ideal.Quotient.mk I) hmk ρ))
+    (w : HeightOneSpectrum (𝓞 F)) (hw : ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal) :
+    ∃ (p : (Fin 2 → R) →ₗ[R] R) (_ : Function.Surjective p)
+      (δ : GaloisRep (w.adicCompletion F) R R),
+      (∀ g : Γ (w.adicCompletion F), ∀ v : Fin 2 → R,
+        p (ρ.toLocal w g v) = δ g (p v)) ∧
+      localInertiaGroup w ≤ δ.ker ∧
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Detection of the `F`-level condition on the finite levels** (PROVEN
+2026-07-26 over the single residual leaf
+`isHilbertTameAtTwo_of_forall_isOpen_quotient` above).
+
+Over `ℚ` this is `Deformation.lean`'s PROVEN
+`isHardlyRamified_of_forall_isOpen_quotient`, and the cut here is that
+one's cut: three clauses are congruences or re-indexings and are proven
+below, and the tame quotient at the places over `2` is the one genuine
+pro-limit statement, isolated as the leaf above.
+
+* *determinant* (PROVEN): `det_framePushforward` reads the level-`𝔪ⁿ⁺¹`
+  identity back as a congruence in `R`, and `R` is `𝔪`-adically SEPARATED
+  (`IsAdicComplete → IsHausdorff`), so holding modulo every `𝔪ⁿ` gives it
+  outright. Note the `F`-level determinant clause is stated through the
+  RESTRICTION of the `ℚ`-adic cyclotomic character, so the level datum and
+  the limit statement name literally the same scalar.
+* *unramifiedness* (PROVEN): `ρ(σ) − 1` is read entrywise through
+  `framePushforward_apply`, and the same separatedness kills it.
+* *flatness at `w ∣ ℓ`* (PROVEN, and this is the clause the leaf's author
+  called definitional): `GaloisRep.IsFlatAt.cond` quantifies over the open
+  ideals of the COEFFICIENT ring, so the level-`I` datum evaluated at `⊥`
+  already IS the statement wanted at `I`, up to the two formal transports
+  `hasFlatProlongationAt_of_quotBot` and `hasFlatProlongationAt_of_conjugate`.
+  The quantifier of `IsFlatAt` includes the UNIT ideal, at which no level
+  datum exists (`R ⧸ ⊤` is not local); that case is discharged separately
+  through `hasFlatProlongationAt_of_bothSubsingleton`, transporting the
+  witness at `𝔪¹`.
+* *tameness at `w ∣ 2`*: the leaf.
+
+The hypothesis is stated over ALL open ideals rather than over the powers
+`𝔪ⁿ` because that is the form `IsFlatAt` consumes; `hadic` makes the two
+interchangeable. -/
 theorem isHilbertProLimitClause (ℓ : ℕ) [Fact ℓ.Prime]
     (F : Type u) [Field F] [NumberField F] :
-    IsHilbertProLimitClause ℓ F :=
-  sorry
+    IsHilbertProLimitClause ℓ F := by
+  classical
+  intro R _ _ _ _ _ _ hadic hcomplete ρ hq
+  haveI := hcomplete
+  have hcont : ∀ J : Ideal R, Continuous (Ideal.Quotient.mk J) :=
+    fun _ => continuous_quot_mk
+  -- separation: the topology is `𝔪`-adic and `R` is `𝔪`-adically separated
+  have hsep : ∀ x y : R,
+      (∀ n : ℕ, x - y ∈ (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R)) → x = y := by
+    intro x y hxy
+    have h0 : x - y = 0 := by
+      refine IsHausdorff.haus
+        (inferInstance : IsHausdorff (IsLocalRing.maximalIdeal R) R) _ fun n => ?_
+      rw [SModEq.zero, smul_eq_mul, Ideal.mul_top]
+      cases n with
+      | zero => simp
+      | succ m => exact hxy m
+    exact sub_eq_zero.mp h0
+  have hpow : ∀ n : ℕ, IsOpen ((IsLocalRing.maximalIdeal R ^ n : Ideal R) : Set R) :=
+    (isAdic_iff.mp hadic).1
+  have hnetop : ∀ n : ℕ, (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) ≠ ⊤ := by
+    intro n htop
+    have hle : (IsLocalRing.maximalIdeal R ^ (n + 1) : Ideal R) ≤
+        IsLocalRing.maximalIdeal R := Ideal.pow_le_self (Nat.succ_ne_zero n)
+    rw [htop, top_le_iff] at hle
+    exact (IsLocalRing.maximalIdeal.isMaximal R).ne_top hle
+  -- a proper ideal of a local ring has local quotient
+  have hlocal : ∀ J : Ideal R, J ≠ ⊤ → IsLocalRing (R ⧸ J) := by
+    intro J hJt
+    haveI : Nontrivial (R ⧸ J) := Ideal.Quotient.nontrivial_iff.mpr hJt
+    exact IsLocalRing.of_surjective' (Ideal.Quotient.mk J) Ideal.Quotient.mk_surjective
+  refine ⟨?_, ?_, ?_, ?_⟩
+  · -- the cyclotomic determinant, level by level
+    intro g
+    refine hsep _ _ fun n => ?_
+    haveI := hlocal _ (hnetop n)
+    have hd := (hq _ (hpow (n + 1)) (hcont _)).det g
+    rw [det_framePushforward,
+      IsScalarTower.algebraMap_apply ℤ_[ℓ] R
+        (R ⧸ IsLocalRing.maximalIdeal R ^ (n + 1))] at hd
+    exact Ideal.Quotient.eq.mp hd
+  · -- unramifiedness outside the places over `2` and `ℓ`
+    intro w hw2 hwl
+    refine ⟨fun σ hσ => ?_⟩
+    show (ρ.toLocal w) σ = 1
+    refine LinearMap.ext fun x => funext fun j => ?_
+    show (ρ.toLocal w) σ x j = x j
+    rw [GaloisRep.toLocal_apply]
+    refine hsep _ _ fun n => ?_
+    set J : Ideal R := IsLocalRing.maximalIdeal R ^ (n + 1)
+    haveI := hlocal J (hnetop n)
+    have h1 : (framePushforward (Ideal.Quotient.mk J) (hcont J) ρ).toLocal w σ = 1 :=
+      ((hq J (hpow (n + 1)) (hcont J)).isUnramified w hw2 hwl).localInertiaGroup_le hσ
+    have h2 : (framePushforward (Ideal.Quotient.mk J) (hcont J) ρ).toLocal w σ
+        (fun i => Ideal.Quotient.mk J (x i)) = fun i => Ideal.Quotient.mk J (x i) := by
+      rw [h1]
+      rfl
+    rw [GaloisRep.toLocal_apply, framePushforward_apply] at h2
+    exact Ideal.Quotient.eq.mp (congrFun h2 j)
+  · -- flatness at the places over `ℓ`: literally a condition on the levels
+    intro w hw
+    constructor
+    intro I hI
+    by_cases hIt : I = ⊤
+    · -- the unit ideal carries no level datum; both spaces are trivial
+      subst hIt
+      have hmtop : IsOpen ((⊤ : Ideal (R ⧸ IsLocalRing.maximalIdeal R ^ 1)) :
+          Set (R ⧸ IsLocalRing.maximalIdeal R ^ 1)) := by
+        rw [Submodule.top_coe]
+        exact isOpen_univ
+      haveI := hlocal _ (hnetop 0)
+      have h1 := ((hq _ (hpow 1) (hcont _)).isFlat w hw).cond ⊤ hmtop
+      haveI : Subsingleton ((R ⧸ IsLocalRing.maximalIdeal R ^ 1) ⧸
+          (⊤ : Ideal (R ⧸ IsLocalRing.maximalIdeal R ^ 1))) :=
+        Ideal.Quotient.subsingleton_iff.mpr rfl
+      haveI : Subsingleton (R ⧸ (⊤ : Ideal R)) :=
+        Ideal.Quotient.subsingleton_iff.mpr rfl
+      haveI := subsingleton_tensorProduct_left
+        (A := R ⧸ IsLocalRing.maximalIdeal R ^ 1)
+        (X := (R ⧸ IsLocalRing.maximalIdeal R ^ 1) ⧸
+          (⊤ : Ideal (R ⧸ IsLocalRing.maximalIdeal R ^ 1)))
+        (N := Fin 2 → (R ⧸ IsLocalRing.maximalIdeal R ^ 1))
+      haveI := subsingleton_tensorProduct_left (A := R)
+        (X := R ⧸ (⊤ : Ideal R)) (N := Fin 2 → R)
+      exact hasFlatProlongationAt_of_bothSubsingleton _ _ h1
+    · haveI := hlocal I hIt
+      have hbot : IsOpen (((⊥ : Ideal (R ⧸ I))) : Set (R ⧸ I)) := by
+        have hqm : Topology.IsQuotientMap (Ideal.Quotient.mk I) :=
+          (QuotientRing.isOpenQuotientMap_mk I).isQuotientMap
+        have hpre : (Ideal.Quotient.mk I) ⁻¹' ((⊥ : Ideal (R ⧸ I)) : Set (R ⧸ I)) =
+            (I : Set R) := by
+          ext z
+          simp [Ideal.Quotient.eq_zero_iff_mem]
+        rw [← hqm.isOpen_preimage, hpre]
+        exact hI
+      have h1 := ((hq I hI (hcont I)).isFlat w hw).cond ⊥ hbot
+      have h2 := hasFlatProlongationAt_of_quotBot _ _ h1
+      exact hasFlatProlongationAt_of_conjugate _
+        (TensorProduct.piScalarRight R (R ⧸ I) (R ⧸ I) (Fin 2)) _ h2
+  · -- the tame quotient at the places over `2`: the one genuine pro-limit clause
+    intro w hw
+    exact isHilbertTameAtTwo_of_forall_isOpen_quotient ℓ F hadic hcomplete hq w hw
 
 /-- **Brauer–Nesbitt over `F`** (LEAF): equal characteristic polynomials at
 every element identify a framed representation with the irreducible
