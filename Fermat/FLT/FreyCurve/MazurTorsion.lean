@@ -2503,6 +2503,108 @@ end Groups
 
 end X0Three
 
+/-! ### `X_0(9)`: the self-duality locus is empty over `ℚ`
+
+The `X_0(9)` hauptmodul `s = (η(τ)/η(9τ))³` carries the two `j`-maps
+
+  `j(E) · s⁹(s² + 9s + 27) = (s + 9)³(s³ + 243s² + 2187s + 6561)³`,
+  `j(E/C) · s(s² + 9s + 27) = (s + 3)³(s³ + 9s² + 27s + 3)³`
+
+(the second is the first composed with the Fricke involution `w₉ : s ↦ 27/s`,
+after clearing denominators).  The locus where the two agree — a cyclic
+`9`-isogeny returning to the SAME `j` — is cut out by the degree-`20`
+polynomial
+
+  `P(s) = (s + 9)³(s³ + 243s² + 2187s + 6561)³
+            − s⁸(s + 3)³(s³ + 9s² + 27s + 3)³`,
+
+and `X0Nine.selfDual_ne` below says `P` has NO rational root.  Geometrically
+that is the statement that no `E/ℚ` carries a `Gal(ℚ̄/ℚ)`-stable cyclic
+subgroup `C` of order `9` with `E/C ≅ E` over `ℚ̄`: such a pair would give a
+degree-`9` endomorphism of `E_ℚ̄` with cyclic kernel, i.e. complex
+multiplication by an order in which `3` is split or non-maximal, and the
+finitely many such `j` (discriminants `−11, −20, −27, −32, −35, −36`) all fail
+either rationality of `j` or Galois-stability of the kernel — complex
+conjugation swaps `𝔭²` and `𝔭̄²`.  Here that whole classification is replaced
+by an explicit factorisation over `ℚ`:
+
+  `−P = (s² − 27)(s² + 27)(s² + 8s + 27)(s² + 10s + 27)(s⁴ − 26s² + 729)
+          · (s⁴ + 4s³ + 8s² + 108s + 729)(s⁴ + 14s³ + 98s² + 378s + 729)`,
+
+seven irreducible factors, none with a rational root: five are positive
+definite by an explicit sum-of-squares certificate, `s² + 27` by positivity,
+and `s² − 27` because `3` is not a square modulo `5`.  (Factorisation found
+with PARI/GP — an untrusted searcher — and verified here by `ring` inside
+`linear_combination`.) -/
+
+namespace X0Nine
+
+/-- **The `mod 5` obstruction to `s² = 27`** (PROVEN by `decide`): `27 ≡ 2`
+is not a square modulo `5`, so the binary form `N² − 27D²` has no zero
+mod `5` other than `(0,0)`. -/
+lemma sq_sub_27_zmodFive : ∀ n d : ZMod 5, ¬ (n = 0 ∧ d = 0) →
+    n ^ 2 - 27 * d ^ 2 ≠ 0 := by decide
+
+/-- **`27` is not a rational square** (PROVEN): homogenise `s = N/D` with
+`gcd(N, D) = 1` and reduce `N² = 27D²` modulo `5`, exactly as
+`x0Nine_fibre_over_CM` above does at `7`. -/
+lemma sq_sub_27_ne_zero (s : ℚ) : s ^ 2 - 27 ≠ 0 := by
+  intro h
+  have hd0 : ((s.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr s.den_nz
+  have hNq : ((s.num : ℚ)) = s * ((s.den : ℚ)) := (div_eq_iff hd0).mp (Rat.num_div_den s)
+  have h5 : ¬ ((5 : ℤ) ∣ s.num ∧ (5 : ℤ) ∣ (s.den : ℤ)) := by
+    rintro ⟨h1, h2⟩
+    have h1' : 5 ∣ s.num.natAbs := by simpa using Int.natAbs_dvd_natAbs.mpr h1
+    have h2' : 5 ∣ s.den := by exact_mod_cast h2
+    have := Nat.dvd_gcd h1' h2'
+    rw [s.reduced] at this
+    omega
+  have key : (s.num ^ 2 - 27 * (s.den : ℤ) ^ 2 : ℤ) = 0 := by
+    have hq : ((s.num ^ 2 - 27 * (s.den : ℤ) ^ 2 : ℤ) : ℚ) = 0 := by
+      push_cast
+      rw [hNq]
+      linear_combination ((s.den : ℚ) ^ 2) * h
+    exact_mod_cast hq
+  refine sq_sub_27_zmodFive (s.num : ZMod 5) ((s.den : ℤ) : ZMod 5) ?_ ?_
+  · rintro ⟨hn, hd⟩
+    exact h5 ⟨(ZMod.intCast_zmod_eq_zero_iff_dvd _ 5).mp hn,
+      (ZMod.intCast_zmod_eq_zero_iff_dvd _ 5).mp hd⟩
+  · have := congrArg (fun z : ℤ => (z : ZMod 5)) key
+    push_cast at this
+    exact this
+
+/-- **The `X_0(9)` self-duality polynomial has no rational root** (PROVEN
+2026-07-26): for every `s ∈ ℚ`,
+
+  `(s + 9)³(s³ + 243s² + 2187s + 6561)³ ≠ s⁸(s + 3)³(s³ + 9s² + 27s + 3)³`.
+
+Equivalently: no rational point of `X_0(9)` has `j ∘ w₉ = j`, i.e. no
+`Gal(ℚ̄/ℚ)`-stable cyclic `9`-isogeny over `ℚ` returns to the same
+`j`-invariant.  See the section note above for the factorisation and for what
+this replaces (the CM classification of the six discriminants with a
+primitive element of norm `9`). -/
+lemma selfDual_ne (s : ℚ) :
+    (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3 ≠
+      s ^ 8 * ((s + 3) ^ 3 * (s ^ 3 + 9 * s ^ 2 + 27 * s + 3) ^ 3) := by
+  intro h
+  have hfac : (s ^ 2 - 27) * (s ^ 2 + 27) * (s ^ 2 + 8 * s + 27) *
+      (s ^ 2 + 10 * s + 27) * (s ^ 4 - 26 * s ^ 2 + 729) *
+      (s ^ 4 + 4 * s ^ 3 + 8 * s ^ 2 + 108 * s + 729) *
+      (s ^ 4 + 14 * s ^ 3 + 98 * s ^ 2 + 378 * s + 729) = 0 := by
+    linear_combination (-1 : ℚ) * h
+  have h2 : (0 : ℚ) < s ^ 2 + 27 := by positivity
+  have h3 : (0 : ℚ) < s ^ 2 + 8 * s + 27 := by nlinarith [sq_nonneg (s + 4)]
+  have h4 : (0 : ℚ) < s ^ 2 + 10 * s + 27 := by nlinarith [sq_nonneg (s + 5)]
+  have h5 : (0 : ℚ) < s ^ 4 - 26 * s ^ 2 + 729 := by nlinarith [sq_nonneg (s ^ 2 - 13)]
+  have h6 : (0 : ℚ) < s ^ 4 + 4 * s ^ 3 + 8 * s ^ 2 + 108 * s + 729 := by
+    nlinarith [sq_nonneg (s ^ 2 + 2 * s - 1), sq_nonneg (6 * s + 56)]
+  have h7 : (0 : ℚ) < s ^ 4 + 14 * s ^ 3 + 98 * s ^ 2 + 378 * s + 729 := by
+    nlinarith [sq_nonneg (s ^ 2 + 7 * s + 9), sq_nonneg (31 * s + 126)]
+  exact (mul_ne_zero (mul_ne_zero (mul_ne_zero (mul_ne_zero (mul_ne_zero
+    (mul_ne_zero (sq_sub_27_ne_zero s) h2.ne') h3.ne') h4.ne') h5.ne') h6.ne') h7.ne') hfac
+
+end X0Nine
+
 /-- **`X_0(3)`: the Tate invariants of a rational `3`-isogeny** (sorry leaf,
 cut 2026-07-26 out of `exists_x0Three_chainParameters`). For an elliptic curve
 `E/ℚ` and a `Gal(ℚ̄/ℚ)`-stable subgroup `⟨P⟩` of order `3` in `E(ℚ̄)`, there
@@ -2618,7 +2720,105 @@ theorem WeierstrassCurve.exists_x0Three_param_of_stableThreeSubgroup
     X0Three.param_of_tateInvariants E.j E'.j a₁ a₃ ha3 hDne hJ hJ'
   exact ⟨u, E', hE', φ, hgal, hker, hu0, h1, h2⟩
 
-/-- **Non-backtracking along a cyclic `9`-isogeny** (sorry leaf, cut
+/-- **`X_0(9)`: the hauptmodul parameter of a rational cyclic `9`-isogeny**
+(sorry leaf, cut 2026-07-26 out of `x0Three_param_mul_ne_729`): for a chain
+`E --φ--> E' --ψ--> E''` of two rational `3`-isogenies whose composite has
+CYCLIC kernel `⟨h⟩` of order `9` (`9h = 0`, `3h ≠ 0`, `ker φ = ⟨3h⟩`,
+`ker ψ = ⟨φ h⟩`, everything `Gal(ℚ̄/ℚ)`-stable and equivariant), there is a
+rational `X_0(9)` hauptmodul value `s = (η(τ)/η(9τ))³` carrying both `j`-maps:
+
+* `j(E) · s⁹(s² + 9s + 27) = (s + 9)³(s³ + 243s² + 2187s + 6561)³`;
+* `j(E'') · s(s² + 9s + 27) = (s + 3)³(s³ + 9s² + 27s + 3)³`.
+
+The first of these is exactly the `X_0(9)`-relation that
+`exists_x0TwentySeven_moduliPoint` below already consumes, and
+`x0Nine_fibre_over_CM` above already analyses; the second is its composite
+with the Fricke involution `w₉ : s ↦ 27/s`, cleared of denominators.
+
+**Numerical anchor** (class `27a`, checked against PARI/GP `ellisomat`):
+for `E = 27a1` (`j = −12288000`) with its cyclic `9`-subgroup, `s = −3`,
+and the two relations read `−12288000 · (−19683)(9) = 216 · 2160³` and
+`0 · (−27) = 0`; for `E = 27a3` (`j = 0`), `s = −9`, and they read
+`0 = 0` and `−12288000 · (−243) = (−216)(−240)³`.  Note the level-`3`
+parameters of the two steps are recovered as `u = s³/(s² + 9s + 27)` and
+`v = s(s² + 9s + 27)`, which at `s = −3` gives `(u, v) = (−3, −27)` and at
+`s = −9` gives `(−27, −243)` — the chain parameters of
+`exists_x0Three_chainParameters`.
+
+**Route, and the ONE route that must NOT be taken.** Do **not** try to build
+`s` by feeding the two level-`3` parameters of `φ` and `ψ` into
+`exists_x0Nine_param_of_x0Three_pair`: that lemma needs the RESIDUAL form of
+the matching relation, which is available only after dividing out the
+backtracking factor `uv − 729` — i.e. only after `x0Three_param_mul_ne_729`,
+which is the consumer of this leaf.  That is a circle, and it is the reason
+this leaf exists at all.
+
+The non-circular route is the `X_0(9)` universal family, i.e. the level-`9`
+analogue of `exists_tateInvariants_of_stableThreeSubgroup`.  Two warnings
+about it, both real:
+
+1. *The generator's `x`-coordinate need not be rational.*  Galois acts on the
+   stable cyclic `C = ⟨h⟩` of order `9` through a character
+   `χ : Gal(ℚ̄/ℚ) → (ℤ/9)ˣ`, so `x(h)` is only fixed by `ker χ · {±1}` and
+   can generate a cubic field.  The level-`3` trick — translate `x(P)` to `0`
+   and read off a Tate normal form over `ℚ` — therefore does NOT transpose
+   verbatim.  What is rational is the pair `(E, C)` as a point of the coarse
+   moduli space.
+2. *`X_0(9)` is `P¹` over `ℚ` with the `η`-quotient hauptmodul, and `s` is
+   its coordinate.*  So the content is "a `Gal`-stable pair `(E, C)` is a
+   rational point of `X_0(9)`, and it is non-cuspidal".  The cusps are
+   `s = 0` and `s = ∞` (together with the two cusps at the roots of
+   `s² + 9s + 27`, which are irrational, hence invisible over `ℚ` — note
+   `s² + 9s + 27` has discriminant `−27 < 0`, so it never vanishes on `ℚ`
+   and the statement above needs no side condition).
+
+A cheaper intermediate cut, if the moduli-space route is too large: prove the
+level-`9` statement only for curves that additionally carry a stable cyclic
+subgroup of order `27` — which is the only case
+`exists_x0Three_chainParameters` ever applies it to.
+
+**FAITHFULNESS.**  Non-vacuous: the two displayed relations cannot both hold
+by degeneracy, since `(s + 9)³(s³ + 243s² + 2187s + 6561)³` and
+`(s + 3)³(s³ + 9s² + 27s + 3)³` have no common rational root (the two cubics
+are irreducible over `ℚ`, and `s = −9`, `s = −3` are roots of only one factor
+each), so the statement genuinely constrains `j(E)` and `j(E'')` together. -/
+theorem WeierstrassCurve.exists_x0Nine_param_of_cyclicNineChain
+    (E E' E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E'.IsElliptic] [E''.IsElliptic]
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
+    (ψ : (E'⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
+    (hφgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt))
+    (hψgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E'⁄(AlgebraicClosure ℚ)).Point),
+        ψ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (ψ Pt))
+    (h : (E⁄(AlgebraicClosure ℚ)).Point)
+    (h9 : (9 : ℕ) • h = 0) (h3 : (3 : ℕ) • h ≠ 0)
+    (hhstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h)
+    (hφker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples ((3 : ℕ) • h))
+    (hψker : ∀ Pt : (E'⁄(AlgebraicClosure ℚ)).Point,
+      ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples (φ h)) :
+    ∃ s : ℚ,
+      E.j * (s ^ 9 * (s ^ 2 + 9 * s + 27)) =
+        (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3 ∧
+      E''.j * (s * (s ^ 2 + 9 * s + 27)) =
+        (s + 3) ^ 3 * (s ^ 3 + 9 * s ^ 2 + 27 * s + 3) ^ 3 :=
+  sorry
+
+/-- **Non-backtracking along a cyclic `9`-isogeny** (PROVEN 2026-07-26 over
+the single level-`9` leaf `exists_x0Nine_param_of_cyclicNineChain`, together
+with the arithmetic lemma `X0Nine.selfDual_ne` proven above; cut
 2026-07-26 out of `exists_x0Three_chainParameters`): for a chain
 `E → E' → E''` of two rational `3`-isogenies whose composite has CYCLIC
 kernel `⟨h⟩` of order `9` (`9h = 0`, `3h ≠ 0`, `ker φ = ⟨3h⟩`,
@@ -2633,48 +2833,52 @@ rather than cyclic. So this IS the cyclicity hypothesis, and it must be paid
 for. Concretely, `uv = 729` forces `j(E'') = j(E)`: substituting `v = 729/u`
 into `j(E'')v = (v+27)(v+3)³` returns `(u+27)(u+243)³/u³`.
 
-**Route.** Two ingredients, and the second is where the real work is.
+**The proof, in two steps.**
 
-1. *The subgroups differ.* `ker ψ = ⟨φ h⟩` and `φ(E[3]) = ⟨φ(3h)⟩` are
-   distinct, because `φ h ∈ ⟨φ(3h)⟩` would give `(3k−1)h ∈ ker φ = ⟨3h⟩`,
-   i.e. `9 ∣ 3m − 3k + 1`, impossible modulo `3`. (This is
-   `X0Three.map_map_ne_zero` one level down and is already proven.)
-2. *Distinct stable `3`-subgroups have distinct parameters.* For
-   `Aut(E') = ±1` the `X_0(3)`-parameter separates subgroups outright. The
-   two exceptional `j` must BOTH be handled, because the real chain DOES pass
-   through `j = 0`:
-   * `j = 1728` cannot occur at all: for `y² = x³ + ax` the `3`-division
-     polynomial is `3x⁴ + 6ax² − a²`, with `x² = a(−3 ± 2√3)/3`, so no
-     `j = 1728` curve over `ℚ` has a rational `3`-isogeny.
-   * `j = 0` DOES occur (the middle two curves of the class `27a`). There
-     `Aut = μ₆` and `ζ₃` permutes the three non-canonical `3`-subgroups
-     cyclically, fixing only `ker(√−3)`. If two of the three were
-     Galois-stable then all four `3`-subgroups would be, so the mod-`3`
-     representation would be SCALAR, its determinant — the mod-`3` cyclotomic
-     character cutting out `ℚ(ζ₃) ≠ ℚ` — would be a square, hence trivial.
-     Contradiction. So at most one non-canonical subgroup is stable, and the
-     parameter does separate the stable ones.
+1. *`uv = 729` forces `j(E'') = j(E)`* — pure algebra over `ℚ`, from `hju`,
+   `hjv'` and `u ≠ 0` alone.  Writing `t = uv`, one has the polynomial
+   identity `(t + 27u)(t + 3u)³ = t⁴ + 36u·t³ + 270u²·t² + 756u³·t + 729u⁴`,
+   whose value at `t = 729` is `729(u + 27)(u + 243)³`; dividing the
+   difference by `t − 729` gives the explicit cofactor appearing in the
+   `linear_combination` below, and the whole certificate says
+   `729u³(j(E'') − j(E)) = u⁴·hjv' + (Q − j(E'')u³)·huv − 729·hju`.
+2. *A cyclic `9`-isogeny never returns to the same `j`* — this is
+   `exists_x0Nine_param_of_cyclicNineChain` (the level-`9` hauptmodul, the
+   remaining leaf) followed by `X0Nine.selfDual_ne` (PROVEN above): the
+   parameter `s` satisfies `j(E)s⁹D = A(s)` and `j(E'')sD = B(s)` with
+   `D = s² + 9s + 27`, so `j(E'') = j(E)` gives `A(s) = s⁸B(s)`, and that
+   degree-`20` equation has no rational solution.
 
-**FAITHFULNESS AUDIT.** The statement is TRUE but is very slightly STRONGER
-than the geometric non-backtracking, and the gap is worth recording because it
-is where a future prover will get stuck.
+**Why the cut is at level `9`, and what the previous route got wrong.** An
+earlier version of this docstring proposed to prove the leaf at level `3`, by
+"distinct stable `3`-subgroups have distinct `X_0(3)`-parameters".  That route
+cannot work AS THE LEAF IS STATED, and the gap is not a technicality: `u` and
+`v` are pinned here only by their `j`-relations, and NOTHING in the hypotheses
+ties `u` to the subgroup `⟨3h⟩` or `v` to `⟨φ h⟩`.  Indeed the four
+`j`-relations are *identically satisfied* on `uv = 729` — substituting
+`v = 729/u` turns `hjv` into `hju'` and `hjv'` into `hju` — so the pair
+`(u, 729/u)` built from ANY rational parameter `u` of the first isogeny (one
+always exists, by `exists_x0Three_param_of_stableThreeSubgroup`) satisfies
+every hypothesis as soon as `j(E'') = j(E)`.  Hence, as stated, this leaf is
+EQUIVALENT to `j(E'') ≠ j(E)` for rational cyclic `9`-isogeny chains, and no
+amount of level-`3` algebra can prove it.
 
-`u` and `v` are pinned here only by their `j`-relations, not by a normal form.
-The map `u ↦ (j_src(u), j_quot(u))` from `X_0(3)` to `X(1) × X(1)` fails to be
-injective exactly when `E'` admits two `3`-subgroups in different `Aut`-orbits
-with isomorphic quotients — which, composing one isogeny with the dual of the
-other, produces a PRIMITIVE endomorphism of degree `9`, hence complex
-multiplication by an order in which `3` splits or is non-maximal. Among the
-thirteen class-number-one discriminants only `−8` and `−11` split at `3`, and
-neither curve carries a rational cyclic `9`-isogeny (complex conjugation swaps
-`𝔭` and `𝔭̄`, hence swaps `E[𝔭²]` and `E[𝔭̄²]`); the two CM `j`-invariants
-that DO admit one, `0` (disc `−3`) and `−12288000` (disc `−27`), have no
-primitive norm-`9` element at all — every solution of `a² − ab + b² = 9`
-resp. `a² − 3ab + 9b² = 9` is divisible by `3`. So under the hypotheses of
-this leaf the extra strength is vacuous. A prover who finds the gap
-obstructive should thread the Tate invariants of
-`exists_tateInvariants_of_stableThreeSubgroup` through instead of the bare
-`j`-relations; that is a cut-level repair, not a refutation.
+Geometrically, `j(E'') = j(E)` gives a degree-`9` endomorphism of `E_ℚ̄` with
+cyclic kernel, hence CM by an order in which `3` is split or non-maximal; and
+the stability of the kernel forces `ᾱ = εα` with `ε ∈ 𝒪ˣ`, so `α² = 9ε⁻¹` and
+`α ∈ 3·μ`, whose kernel is `E[3]` — not cyclic.  (The one order where this
+argument needs care is the conductor-`3` order of disc `−27`, where
+`α = 3ζ₆ ∈ 𝒪` is genuinely primitive with cyclic kernel; there one uses
+instead that `α/ᾱ = ζ₃ ∉ 𝒪ˣ = {±1}`, so `ker α` is not Galois-stable.)  The
+Diophantine substitute proven above — `X0Nine.selfDual_ne` — replaces that
+whole classification, which is why the cut is at level `9` rather than level
+`3`.
+
+**Hypotheses not used.**  `_hju'`, `_hjv` and `_hv0` are underscore-prefixed:
+the route above needs only `hju`, `hjv'` and `hu0`.  That is not a sign of
+weakness in the statement — it is the observation of the previous paragraph,
+that on the Fricke locus the two middle relations are consequences of the two
+outer ones.
 
 Numerical anchor (Magma `IsogenousCurves`, PARI/GP `ellisomat` — untrusted
 searchers): for the class `27a`, `(u₁, u₂, u₃) = (−3, −27, −243)` with
@@ -2706,13 +2910,34 @@ theorem WeierstrassCurve.x0Three_param_mul_ne_729
       φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples ((3 : ℕ) • h))
     (hψker : ∀ Pt : (E'⁄(AlgebraicClosure ℚ)).Point,
       ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples (φ h))
-    (u v : ℚ) (hu0 : u ≠ 0) (hv0 : v ≠ 0)
+    (u v : ℚ) (hu0 : u ≠ 0) (_hv0 : v ≠ 0)
     (hju : E.j * u ^ 3 = (u + 27) * (u + 243) ^ 3)
-    (hju' : E'.j * u = (u + 27) * (u + 3) ^ 3)
-    (hjv : E'.j * v ^ 3 = (v + 27) * (v + 243) ^ 3)
+    (_hju' : E'.j * u = (u + 27) * (u + 3) ^ 3)
+    (_hjv : E'.j * v ^ 3 = (v + 27) * (v + 243) ^ 3)
     (hjv' : E''.j * v = (v + 27) * (v + 3) ^ 3) :
-    u * v ≠ 729 :=
-  sorry
+    u * v ≠ 729 := by
+  intro huv
+  -- STEP 1 : on the Fricke locus the two `j`-invariants at the ends coincide.
+  -- `729 u³ (j(E'') − j(E))` is the explicit combination below of the three
+  -- hypotheses `hjv'`, `huv`, `hju`; the cofactor of `huv` is the quotient of
+  -- `(t + 27u)(t + 3u)³ − 729(u + 27)(u + 243)³` by `t − 729` at `t = uv`.
+  have hkey : (E''.j - E.j) * (729 * u ^ 3) = 0 := by
+    linear_combination u ^ 4 * hjv' +
+      ((u * v) ^ 3 + (36 * u + 729) * (u * v) ^ 2 +
+        (270 * u ^ 2 + 26244 * u + 531441) * (u * v) +
+        (756 * u ^ 3 + 196830 * u ^ 2 + 19131876 * u + 387420489) - E''.j * u ^ 3) * huv
+      - 729 * hju
+  have h729 : (729 : ℚ) * u ^ 3 ≠ 0 := mul_ne_zero (by norm_num) (pow_ne_zero 3 hu0)
+  have hjj : E''.j = E.j := by
+    have hz := (mul_eq_zero.mp hkey).resolve_right h729
+    linarith
+  -- STEP 2 : the cyclic `9`-isogeny has an `X_0(9)` hauptmodul parameter, and
+  -- `j(E'') = j(E)` puts it on the self-duality locus, which is empty over `ℚ`.
+  obtain ⟨s, hs1, hs2⟩ :=
+    WeierstrassCurve.exists_x0Nine_param_of_cyclicNineChain E E' E'' φ ψ hφgal hψgal
+      h h9 h3 hhstable hφker hψker
+  refine X0Nine.selfDual_ne s ?_
+  linear_combination (-1 : ℚ) * hs1 + s ^ 8 * hs2 - s ^ 9 * (s ^ 2 + 9 * s + 27) * hjj
 
 /-- **`X_0(3)`: the three hauptmodul parameters of the `3`-isogeny chain of a
 rational cyclic `27`-subgroup** (PROVEN 2026-07-26 over the two level-`3`
