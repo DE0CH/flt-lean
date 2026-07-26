@@ -36288,6 +36288,225 @@ theorem exists_conductor_artinSymbol_span_eq_one_ray_class
       globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class E m hm v hv ζ hζ)
     c' hcmul' hcfrob' δ hδ0 hδpos hδcong
 
+/-- **`mm` is an ADMISSIBLE MODULUS for the Artin symbol `c`** (created
+2026-07-26 as step (1) of the ray-class API demanded by
+`exists_conductor_dvd_admissible_ray_class` below): `mm` is nonzero and
+`c` kills the narrow ray `P⁺_{F,mm}`, i.e. `c ((δ)) = 1` for every
+nonzero totally positive `δ ≡ 1 (mod mm)`.
+
+**The archimedean part is built in and is ALWAYS "all the real places".**
+A modulus in the sense of class field theory is a pair (finite part,
+set of real places); throughout this cluster the archimedean part is
+fixed at *all* real places — that is what the total-positivity clause
+`∀ φ : F →+* ℝ, 0 < φ δ` says — so a modulus is faithfully recorded by
+its finite part alone, an ideal of `𝓞_F`. This is why the conductor
+witness below is the FINITE PART of `𝔣(M/F)` rather than `𝔣(M/F)`
+itself, and why every conclusion in this cluster is restricted to
+totally positive generators. Dropping the archimedean part would be a
+FALSIFICATION: with `F = ℚ(√3)` one has `h = 1` but `Cl⁺ ≅ ℤ/2`
+(PARI/GP: `bnfinit(x^2-3,1).cyc = []`, `bnrinit(F,[1,[1,1]],1).cyc =
+[2]`), and `(√3)` — principal, not totally positive — has nontrivial
+narrow class.
+
+Note that `δ ≡ 1 (mod mm)` already forces `δ` COPRIME to `mm`: if a
+prime `w ∣ mm` had `δ ∈ w` then `1 = δ - (δ - 1) ∈ w`. So no value of
+`c` at a prime dividing `mm` is ever evaluated here, which is what keeps
+the junk values of `c` at ramified primes (where `χ (globalFrob w)` is
+only defined modulo inertia) harmless. -/
+def IsAdmissibleModulusRayClass (F : Type*) [Field F] [NumberField F]
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (mm : Ideal (NumberField.RingOfIntegers F)) : Prop :=
+  mm ≠ ⊥ ∧ ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+    (∀ φ : F →+* ℝ, 0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
+    δ - 1 ∈ mm → c (Ideal.span {δ}) = 1
+
+/-- **`χ` is RAMIFIED at the finite place `w`** (created 2026-07-26 as
+step (1) of the ray-class API): some conjugate of some element of the
+local inertia group at `w` is not killed by `χ`.
+
+Equivalently — and this is the content the class-field-theoretic leaves
+consume — the finite abelian extension `M/F` cut out by `ker χ` is
+ramified at `w`. The conjugation by `a` and the quantifier over all of
+`Γ F` are harmless: `χ` takes values in the commutative monoid
+`Dickson.K 3`, so `χ` is a class function and the condition does not
+depend on the choice of place of `M` above `w`. Contrast the standing
+warning in this development about widening a quantifier from
+`localInertiaGroup` to all of `Γ` — here it is the CONJUGATOR that
+ranges over `Γ`, while `σ` still ranges over inertia only, so the
+statement remains an inertia-only one. -/
+def IsRamifiedCharRayClass (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)) : Prop :=
+  ∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
+    χ (a * Field.absoluteGaloisGroup.map
+      (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹) ≠ 1
+
+set_option maxHeartbeats 1000000 in
+/-- **The admissible moduli are closed under GCD** (sorry node, created
+2026-07-26 as sub-leaf (B1a-i) of
+`exists_conductor_dvd_admissible_ray_class` just below, which is now
+PROVEN as glue over this leaf and (B1a-ii)
+`exists_isAdmissibleModulus_isRamifiedChar_ray_class`): if `mm` and `nn`
+are both admissible for the Artin symbol `c`, so is their gcd `mm ⊔ nn`
+(the sum of ideals — `I ∣ J ↔ J ≤ I`, so `⊔` is the gcd for the
+divisibility order).
+
+This is **Childress, *Class Field Theory* (Universitext, 2009),
+Exercise 5.1 together with the discussion on p. 106** that immediately
+uses it: `E⁺_{F,m} E⁺_{F,n} = E⁺_{F,(m,n)}`, which is exactly what makes
+"there is a MINIMAL ideal `𝔣` with `E⁺_{F,𝔣} ⊆ H`" — the definition of
+the conductor — well posed. The consumer below turns this into the
+existence of the conductor by minimizing `Ideal.absNorm` over the
+admissible divisors of a given admissible `mm`.
+
+**Why it is idelically trivial and ideal-theoretically deep.** On unit
+ideles the identity is a place-by-place computation: with
+
+    E⁺_{F,m} = ∏_{v imag} ℂ^× × ∏_{v real} ℝ_+^× ×
+                 ∏_{p_v ∣ m} (1 + p_v^{ord_v m}) × ∏_{p_v ∤ m} U_v,
+
+the product `E⁺_{F,m} E⁺_{F,n}` takes the MINIMUM of the two exponents
+at each place, and `ord_v (m,n) = min (ord_v m) (ord_v n)`. But the
+hypothesis available HERE is the ideal-side one — `c` kills the ray
+`P⁺_{F,m}` — and the passage from "`c` kills `P⁺_{F,m}`" to
+"`E⁺_{F,m} ⊆ F^× N_{M/F} J_M`" IS Artin reciprocity. That is the whole
+debt of this leaf; see the build order in (B1a)'s docstring.
+
+**NEGATIVE RESULT — the elementary shortcut is REFUTED, do not try it**
+(2026-07-26). One is tempted to prove the leaf from the purely
+ideal-theoretic identity `P⁺_{F,m} · P⁺_{F,n} = P⁺_{F,(m,n)}`, which
+would give the conclusion with no class field theory at all. The
+inclusion `⊆` does hold (if `α ≡ 1 mod m` and `β ≡ 1 mod n` then
+`αβ ≡ 1` modulo `(m,n)`, and total positivity is multiplicative), but
+`⊇` is **FALSE**, with a completely explicit counterexample over `ℚ`:
+take `m = (2)`, `n = (5)`, so `(m, n) = (1)` and `P⁺_{ℚ,(1)}` is the set
+of ALL nonzero ideals of `ℤ` (every one has a positive generator). Now
+`(2) ∈ P⁺_{ℚ,(1)}`, whereas an element of `P⁺_{ℚ,(2)} · P⁺_{ℚ,(5)}` is
+`(ab)` with `a > 0`, `a ≡ 1 (mod 2)`, `b > 0`, `b ≡ 1 (mod 5)`; `ab = 2`
+forces `a = 1, b = 2` (as `a` is odd), and `2 ≢ 1 (mod 5)`. So
+`(2) ∉ P⁺_{ℚ,(2)} · P⁺_{ℚ,(5)}`. The obstruction is structural, not an
+artifact of the example: a factorization `(γ) = (α)(β)` constrains `α`
+to divide `γ`, and when `γ` is supported on `m` this pins `α` to a unit,
+leaving a unit congruence mod `n` that nothing supplies.
+
+**FAITHFULNESS (audited 2026-07-26): TRUE as stated, and non-vacuous.**
+True because admissibility is equivalent to `𝔣_fin ∣ mm` (the conductor
+theorem), and `𝔣_fin ∣ mm`, `𝔣_fin ∣ nn` give `𝔣_fin ∣ (mm, nn)`.
+Non-vacuous because `mm ⊔ nn` is genuinely smaller than both in general
+— for coprime `mm`, `nn` it is `⊤`, and the conclusion then asserts that
+`c` kills the WHOLE narrow ray, which is exactly the statement
+`artinSymbol_span_eq_one_of_pos_of_conductor_ray_class` below spends a
+descending induction on. The junk values of `c` at ramified primes are
+not evaluated: `𝔣_fin ∣ mm ⊔ nn` and every ramified prime divides
+`𝔣_fin`, so a `δ ≡ 1 (mod mm ⊔ nn)` is coprime to every ramified prime.
+The hypotheses `hmul`, `hVopen`, `hVker`, `hcmul`, `hcfrob` are all
+load-bearing — they are what forces `c` to BE the Artin symbol of a
+genuine finite abelian extension; without them `c` is an arbitrary
+function and the statement is false.
+
+**Mathlib survey (2026-07-26): nothing to build on.** Ray class groups,
+the Artin map, reciprocity and conductors are all absent from the pin,
+and `~/cs/FLT` has no class field theory. -/
+theorem isAdmissibleModulus_sup_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (mm nn : Ideal (NumberField.RingOfIntegers F))
+    (hmmadm : IsAdmissibleModulusRayClass F c mm)
+    (hnnadm : IsAdmissibleModulusRayClass F c nn) :
+    IsAdmissibleModulusRayClass F c (mm ⊔ nn) :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **SOME admissible modulus is supported only on the RAMIFIED primes**
+(sorry node, created 2026-07-26 as sub-leaf (B1a-ii) of
+`exists_conductor_dvd_admissible_ray_class` just below, which is now
+PROVEN as glue over this leaf and (B1a-i)
+`isAdmissibleModulus_sup_ray_class` just above): there is a modulus `nn`
+admissible for the Artin symbol `c` every one of whose prime divisors is
+a prime at which `χ` is ramified.
+
+This is **Childress, *Class Field Theory* (Universitext, 2009), ch. 5
+§1, p. 107** — the paragraph "Which primes of `𝓞_F` can divide the
+conductor `𝔣(K/F)`?" — read as an EXISTENCE statement rather than as a
+statement about the conductor. Childress's own argument has exactly this
+shape: he first produces, from the discussion following Proposition
+4.5.6 of ch. 4, an ideal `m` divisible only by the primes that ramify in
+`K/F` and with `E⁺_{F,m} ⊆ F^× N_{K/F} J_K`, and only THEN invokes
+minimality of `𝔣` to conclude `p_v ∤ 𝔣` for unramified `p_v`. Splitting
+the two steps is what makes this leaf separately ownable: the minimality
+half is glue and is PROVEN in the consumer, so all that is left here is
+the existence half.
+
+**The mathematics, and where the local input enters.** Writing `M/F` for
+the finite abelian extension cut out by `ker χ` (finite because `χ` is
+trivial on the open subgroup `V`; abelian because the values of `χ`
+commute), the global norm group of unit ideles factors place by place,
+
+    N_{M/F} E_M = ∏_{v fin. unram} U_v × ∏_{v fin. ram} ∏_{w∣v} N_{M_w/F_v} U_w
+                    × ∏_{v infinite} ∏_{w∣v} N_{M_w/F_v} M_w^×,
+
+and at an UNRAMIFIED finite `v` the local norm `N_{M_w/F_v} : U_w → U_v`
+is SURJECTIVE (Serre, *Corps Locaux* V §2; Neukirch *ANT* V (1.2), via
+surjectivity of the norm on residue fields plus successive approximation
+in the unit filtration). So a positive `ord_v nn` is needed only where
+`N_{M_w/F_v} U_w ≠ U_v`, which cannot happen at an unramified `v`;
+choosing the exponents at the ramified places large enough — legitimate
+because `N_{M/F} E_M` is OPEN in `E_F` — gives `E⁺_{F,nn} ⊆ N_{M/F} E_M`
+with `nn` supported on the ramified primes. Converting that idelic
+inclusion into the ideal-side statement "`c` kills `P⁺_{F,nn}`" is again
+Artin reciprocity, which is why this leaf is not merely the local norm
+statement; see the build order in (B1a)'s docstring, and note that the
+local statement is NOT consumable on its own in this file's vocabulary.
+
+**Finiteness is an input too**, and is the reason `nn` is an ideal at
+all: only finitely many primes ramify in `M/F`. In mathlib the usable
+route is the different — `Mathlib/RingTheory/DedekindDomain/Different.lean`
+(`differentIdeal`) and `Mathlib/NumberTheory/NumberField/Discriminant/`
+`Different.lean` — a prime ramifies iff it divides the different, which
+is a nonzero ideal and so has finitely many prime divisors.
+
+**FAITHFULNESS (audited 2026-07-26): TRUE as stated, and non-vacuous.**
+True because the finite part of `𝔣(M/F)` is itself such an `nn` (its
+prime support is exactly the ramified primes). Non-vacuous in both
+directions: the existential is not satisfiable by a junk witness, since
+`nn = ⊤` requires `c` to kill the whole narrow ray (i.e. `M` inside the
+narrow Hilbert class field) and `nn = ⊥` is excluded by the `≠ ⊥` clause
+of `IsAdmissibleModulusRayClass`; and it is not vacuously weak, since
+the ramified-support clause is exactly what the consumer needs and is
+false for a generic admissible modulus. The hypotheses `hmul`,
+`hVopen`, `hVker`, `hcmul`, `hcfrob` are all load-bearing: `hVopen` and
+`hVker` are what make `M/F` FINITE (so that only finitely many primes
+ramify and `nn` exists), and `hcmul`/`hcfrob` are what make `c` the
+Artin symbol.
+
+**Mathlib survey (2026-07-26): nothing to build on.** Local class field
+theory, local norm groups, the Artin map and conductors are all absent
+from the pin, and `~/cs/FLT` has no class field theory. -/
+theorem exists_isAdmissibleModulus_isRamifiedChar_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v)) :
+    ∃ nn : Ideal (NumberField.RingOfIntegers F),
+      IsAdmissibleModulusRayClass F c nn ∧
+      ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        w.asIdeal ∣ nn → IsRamifiedCharRayClass F χ w :=
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **The conductor: an admissible modulus contains an admissible
 divisor supported on the RAMIFIED primes** (sorry node, created
@@ -36359,7 +36578,39 @@ consumed), (4) reciprocity and then the conductor theorem.
 **Mathlib survey (2026-07-26): nothing to build on.** Conductors of
 abelian extensions, ray class groups, the Artin map and local class field
 theory are all absent from the pin, and `~/cs/FLT` has no class field
-theory either. -/
+theory either.
+
+**DECOMPOSED 2026-07-26**, and PROVEN here as glue over two leaves stated
+immediately above, in the ray-class vocabulary
+(`IsAdmissibleModulusRayClass`, `IsRamifiedCharRayClass`) introduced
+there as step (1) of the build order:
+
+* (B1a-i) `isAdmissibleModulus_sup_ray_class` — the admissible moduli are
+  closed under gcd (Childress Exercise 5.1);
+* (B1a-ii) `exists_isAdmissibleModulus_isRamifiedChar_ray_class` — SOME
+  admissible modulus is supported only on the ramified primes (Childress
+  ch. 5 §1, p. 107, where the local norm surjectivity is consumed).
+
+**The glue is Childress's own two-step argument, and it is exactly the
+construction of the conductor.** From (B1a-i), minimizing
+`Ideal.absNorm` over the admissible divisors of `mm` produces an
+admissible `ff ∣ mm` that divides EVERY admissible modulus: for
+admissible `gg`, the gcd `ff ⊔ gg` is admissible by (B1a-i) and still
+divides `mm`, so minimality of `Ideal.absNorm ff` and
+`Ideal.absNorm ff = Ideal.absNorm (ff ⊔ gg) * Ideal.absNorm k` force
+`Ideal.absNorm k = 1`, i.e. `k = ⊤` and `ff ⊔ gg = ff`, i.e. `ff ∣ gg`.
+That `ff` IS the finite part of `𝔣(M/F)` — this is precisely the
+minimality by which Childress defines the conductor. Feeding (B1a-ii)'s
+ramified-supported `nn` into that minimality gives `ff ∣ nn`, so every
+prime dividing `ff` divides `nn` and is therefore ramified. The
+archimedean part is untouched throughout: total positivity is carried
+verbatim through `IsAdmissibleModulusRayClass`.
+
+Note the split is NOT a repackaging of this leaf's own consumer
+`artinSymbol_ray_class_descend_unramified_prime` (B1), which strikes one
+unramified prime off a GIVEN modulus: (B1a-ii) is an unconditional
+EXISTENCE statement about some modulus, and (B1a-i) is about gcds, so
+neither can be derived from (B1) and the tree stays well-founded. -/
 theorem exists_conductor_dvd_admissible_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -36385,8 +36636,57 @@ theorem exists_conductor_dvd_admissible_ray_class
         w.asIdeal ∣ ff → ∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
           χ (a * Field.absoluteGaloisGroup.map
             (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹)
-            ≠ 1) :=
-  sorry
+            ≠ 1) := by
+  classical
+  -- `mm` itself is admissible, so the absolute norms of the admissible
+  -- divisors of `mm` form a nonempty set of naturals; minimize over it.
+  have hmmadm : IsAdmissibleModulusRayClass F c mm := ⟨hmm, hadm⟩
+  have hex : ∃ N : ℕ, ∃ ff : Ideal (NumberField.RingOfIntegers F),
+      ff ∣ mm ∧ IsAdmissibleModulusRayClass F c ff ∧ Ideal.absNorm ff = N :=
+    ⟨Ideal.absNorm mm, mm, dvd_rfl, hmmadm, rfl⟩
+  obtain ⟨ff, hffdvd, hffadm, hffnorm⟩ := Nat.find_spec hex
+  have hmin : ∀ gg : Ideal (NumberField.RingOfIntegers F), gg ∣ mm →
+      IsAdmissibleModulusRayClass F c gg → Nat.find hex ≤ Ideal.absNorm gg :=
+    fun gg h1 h2 => Nat.find_min' hex ⟨gg, h1, h2, rfl⟩
+  -- `ff` is the CONDUCTOR: by gcd-closure (B1a-i) it divides every
+  -- admissible modulus, which is Childress's defining minimality property.
+  have hffleast : ∀ gg : Ideal (NumberField.RingOfIntegers F),
+      IsAdmissibleModulusRayClass F c gg → ff ∣ gg := by
+    intro gg hgg
+    have hsupadm : IsAdmissibleModulusRayClass F c (ff ⊔ gg) :=
+      isAdmissibleModulus_sup_ray_class F χ hmul V hVopen hVker c hcmul hcfrob ff gg hffadm hgg
+    have hdvdff : (ff ⊔ gg) ∣ ff := Ideal.dvd_iff_le.mpr le_sup_left
+    have hdvdmm : (ff ⊔ gg) ∣ mm := hdvdff.trans hffdvd
+    have hnormle : Nat.find hex ≤ Ideal.absNorm (ff ⊔ gg) := hmin _ hdvdmm hsupadm
+    obtain ⟨k, hk⟩ := hdvdff
+    have hknorm : Ideal.absNorm ff = Ideal.absNorm (ff ⊔ gg) * Ideal.absNorm k := by
+      conv_lhs => rw [hk]
+      rw [map_mul]
+    have hff0 : Ideal.absNorm ff ≠ 0 := fun h =>
+      hffadm.1 (Ideal.absNorm_eq_zero_iff.mp h)
+    rw [← hffnorm] at hnormle
+    have hBpos : 0 < Ideal.absNorm (ff ⊔ gg) :=
+      Nat.pos_of_ne_zero fun h => hff0 (by rw [hknorm, h, Nat.zero_mul])
+    have hCpos : 0 < Ideal.absNorm k :=
+      Nat.pos_of_ne_zero fun h => hff0 (by rw [hknorm, h, Nat.mul_zero])
+    -- `absNorm ff ≤ absNorm (ff ⊔ gg)` and `absNorm ff = absNorm (ff ⊔ gg) * absNorm k`
+    -- force the cofactor to be the unit ideal.
+    have hk1 : Ideal.absNorm k = 1 := by
+      have hstep : Ideal.absNorm (ff ⊔ gg) * Ideal.absNorm k
+          ≤ Ideal.absNorm (ff ⊔ gg) * 1 := by
+        rw [mul_one, ← hknorm]; exact hnormle
+      have := Nat.le_of_mul_le_mul_left hstep hBpos
+      omega
+    have hktop : k = ⊤ := Ideal.absNorm_eq_one_iff.mp hk1
+    rw [hktop, Ideal.mul_top] at hk
+    have hle : gg ≤ ff := by rw [hk]; exact le_sup_right
+    exact Ideal.dvd_iff_le.mpr hle
+  -- (B1a-ii) supplies an admissible modulus supported on the RAMIFIED primes;
+  -- the conductor divides it, so its own prime support is ramified too.
+  obtain ⟨nn, hnnadm, hnnram⟩ :=
+    exists_isAdmissibleModulus_isRamifiedChar_ray_class F χ hmul V hVopen hVker c hcmul hcfrob
+  have hffnn : ff ∣ nn := hffleast nn hnnadm
+  exact ⟨ff, hffdvd, hffadm.2, fun w hw => hnnram w (hw.trans hffnn)⟩
 
 set_option maxHeartbeats 1000000 in
 /-- **One unramified prime may be struck off the modulus** (PROVEN
