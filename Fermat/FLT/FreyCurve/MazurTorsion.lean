@@ -3794,8 +3794,11 @@ prime is in is decided by the genus of the level BELOW, `X_0(p)`.
 * `p ∈ {7, 13}` — `X_0(p)` has **genus `0`**, so infinitely many curves
   over `ℚ` carry a cyclic `p`-isogeny and nothing whatever pins `j(E)`.
   The level `p²` therefore has to be faced as a curve in its own right.
-  These are the two concrete leaves `not_cyclicIsogeny_fortyNine` and
-  `not_cyclicIsogeny_oneHundredSixtyNine`.
+  These are the two concrete nodes `not_cyclicIsogeny_fortyNine` (now
+  PROVEN, 2026-07-26, over the genus-`1` curve `X_0(49) = 49a1`: one moduli
+  leaf plus one `2`-descent leaf, four of whose congruence obstructions are
+  discharged here) and `not_cyclicIsogeny_oneHundredSixtyNine` (genus `8`,
+  still a leaf).
 * `p ∈ {11, 17, 19, 37, 43, 67, 163}` — `X_0(p)` has genus `≥ 1` with
   finitely many rational points, so a cyclic `p`-isogeny already pins
   `j(E)` to an explicit finite list, and the level `p²` becomes a finite
@@ -3870,10 +3873,270 @@ the nine primes (`49, 121, 169, 289, 361, 1369, 1849, 4489, 26569`), and
 the eleven explicit `ellisomat` matrices above confirm the seven-prime
 regime independently of that list. -/
 
-/-- **No rational cyclic `49`-isogeny** (sorry node — level `X_0(49)`,
-introduced 2026-07-26 by the split of `not_cyclicIsogeny_sq_of_isogenyPrime`
-along the genus of `X_0(p)`): no elliptic curve over `ℚ` carries a
-Galois-stable cyclic subgroup of order `49`.
+/-! #### Level `49`: the ARITHMETIC half, cut down to a `2`-descent
+
+`X_0(49)` is the elliptic curve `49a1`
+
+    `y² + x y = x³ − x² − 2x − 1`,   `j = −3375 = −15³`,  `Δ = −343`,
+
+with CM by `ℤ[(1 + √−7)/2]`, `rank 0` and `torsion ≅ ℤ/2` — so
+`X_0(49)(ℚ) = {O, (2, −1)}`, its two rational cusps (PARI/GP, 2026-07-26,
+untrusted searcher: `elltors = [2, [2], [[2, -1]]]`, `ellanalyticrank = 0`).
+`(2, −1)` really is on the curve: `1 − 2 = −1 = 8 − 4 − 4 − 1`.
+
+**THE DESCENT, worked out in full here so the remaining leaf is a framework
+task and not a research one.** Completing the square with `V = 8y + 4x` and
+`u = 4x − 8` gives the `ℚ`-isomorphic model
+
+    `E : V² = u (u² + 21u + 112)`,
+
+on which the rational `2`-torsion point `(2, −1)` becomes `(0, 0)`. Its
+`2`-isogenous partner (`u ↦ u² − 2·21·u + (21² − 4·112)`) is
+
+    `E' : W² = v (v² − 42v − 7)`     (`j = 16581375 = 255³`, CM disc `−28`).
+
+Write `u = m/e²`, `V = n/e³` in lowest terms; then
+
+    `n² = m (m² + 21 m e² + 112 e⁴)`.
+
+The quadratic factor is positive definite (`21² − 4·112 = −7`), so `m > 0`,
+and `gcd(m, m² + 21me² + 112e⁴) = gcd(m, 112e⁴) = gcd(m, 112)`. Hence the
+squarefree part `d` of `m` divides `14`, and with `m = d a²` one gets the
+homogeneous space
+
+    `b² = d a⁴ + 21 a² e² + (112/d) e⁴`,  `gcd(a, e) = 1`,  `d ∈ {1, 2, 7, 14}`.
+
+`Im α` always contains `1` (from `O`) and `7` (from `(0, 0)`, whose image is
+`b = 112 ≡ 7` mod squares), so `|Im α| = 2` **iff** `d = 2` and `d = 14` carry
+no point. Dually on `E'`, with `b' = −7`, the spaces are
+
+    `b² = d' a⁴ − 42 a² e² + (−7/d') e⁴`,  `d' ∈ {1, −1, 7, −7}`,
+
+`Im α' ⊇ {1, −7}`, so `|Im α'| = 2` **iff** `d' = 7` and `d' = −1` carry no
+point. The `2`-isogeny descent formula `2^rank = |Im α| · |Im α'| / 4` then
+gives `rank = 0`. Finally `E` has good reduction at `3` and `5` (conductor
+`49`) with `#E(𝔽₃) = 4` and `#E(𝔽₅) = 6` (PARI/GP `ellcard`), so the torsion
+divides `gcd(4, 6) = 2` and `E(ℚ) = {O, (2, −1)}` exactly.
+
+**ALL FOUR OBSTRUCTIONS DIE MODULO `16`, UNIFORMLY** — this is the part
+proved below, and it is the whole arithmetic input. Exhaustive check over
+`ZMod 16` under the only consequence of `gcd(a, e) = 1` that is used, namely
+that `a` and `e` are not both even:
+
+    `b² = 2a⁴ + 21a²e² + 56e⁴`     — no solution mod `16`
+    `b² = 14a⁴ + 21a²e² + 8e⁴`     — no solution mod `16`
+    `b² = 7a⁴ − 42a²e² − e⁴`       — no solution mod `16`
+    `b² = −a⁴ − 42a²e² + 7e⁴`      — no solution mod `16`
+
+(The last two also die mod `7`, by a one-step `7`-adic descent: `−e⁴` and
+`−a⁴` are non-residues mod `7`, forcing `7 ∣ e` resp. `7 ∣ a`, and then
+`7 ∣ b` and the reduced equation forces `7` into the other variable too. The
+uniform mod-`16` argument is preferred here because it is one `decide`.)
+
+So the level-`49` arithmetic is now exactly one leaf,
+`rational_point_of_selmer_empty`: the `2`-descent framework itself, i.e. the
+passage from "the four homogeneous spaces are empty" to
+"`E(ℚ) = {O, (2, −1)}`". Nothing about the specific curve is left in it. -/
+
+namespace MazurLevelFortyNine
+
+/-- **Evenness of an integer, read off in `ZMod 16`** (PROVEN 2026-07-26):
+`a` is even iff `8 · a = 0` in `ZMod 16`. This is the transfer lemma that
+lets the four Selmer obstructions below be single `decide` calls: the only
+consequence of `gcd(a, e) = 1` they use is that `a` and `e` are not both
+even, and that hypothesis has to be moved into `ZMod 16` before `decide`
+can see it. -/
+lemma even_iff_zmod16 (a : ℤ) : (2 : ℤ) ∣ a ↔ (8 : ZMod 16) * (a : ZMod 16) = 0 := by
+  have h : (8 : ZMod 16) * (a : ZMod 16) = ((8 * a : ℤ) : ZMod 16) := by push_cast; ring
+  rw [h, ZMod.intCast_zmod_eq_zero_iff_dvd]
+  constructor
+  · rintro ⟨k, rfl⟩; exact ⟨k, by ring⟩
+  · rintro ⟨k, hk⟩; omega
+
+/-- The `d = 2` obstruction, as a statement in `ZMod 16` (PROVEN by
+`decide`, 2026-07-26). -/
+lemma key_two : ∀ A E B : ZMod 16, ¬ (8 * A = 0 ∧ 8 * E = 0) →
+    B ^ 2 ≠ 2 * A ^ 4 + 21 * A ^ 2 * E ^ 2 + 56 * E ^ 4 := by decide
+
+/-- The `d = 14` obstruction, as a statement in `ZMod 16` (PROVEN by
+`decide`, 2026-07-26). -/
+lemma key_fourteen : ∀ A E B : ZMod 16, ¬ (8 * A = 0 ∧ 8 * E = 0) →
+    B ^ 2 ≠ 14 * A ^ 4 + 21 * A ^ 2 * E ^ 2 + 8 * E ^ 4 := by decide
+
+/-- The `d' = 7` obstruction on the `2`-isogenous curve, as a statement in
+`ZMod 16` (PROVEN by `decide`, 2026-07-26). -/
+lemma key_dual_seven : ∀ A E B : ZMod 16, ¬ (8 * A = 0 ∧ 8 * E = 0) →
+    B ^ 2 ≠ 7 * A ^ 4 - 42 * A ^ 2 * E ^ 2 - E ^ 4 := by decide
+
+/-- The `d' = −1` obstruction on the `2`-isogenous curve, as a statement in
+`ZMod 16` (PROVEN by `decide`, 2026-07-26). -/
+lemma key_dual_negOne : ∀ A E B : ZMod 16, ¬ (8 * A = 0 ∧ 8 * E = 0) →
+    B ^ 2 ≠ -A ^ 4 - 42 * A ^ 2 * E ^ 2 + 7 * E ^ 4 := by decide
+
+/-- **The homogeneous space `d = 2` of `X_0(49)` has no rational point**
+(PROVEN 2026-07-26): `b² = 2a⁴ + 21a²e² + 56e⁴` has no integer solution with
+`a`, `e` not both even. Together with `no_homogeneous_fourteen` this pins
+`Im α = {1, 7}` for `E : V² = u(u² + 21u + 112)`. -/
+theorem no_homogeneous_two (a e b : ℤ) (h : ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e)) :
+    b ^ 2 ≠ 2 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 56 * e ^ 4 := by
+  intro heq
+  refine key_two (a : ZMod 16) (e : ZMod 16) (b : ZMod 16) ?_ ?_
+  · rw [← even_iff_zmod16, ← even_iff_zmod16]; exact h
+  · exact_mod_cast congrArg (fun t : ℤ => (t : ZMod 16)) heq
+
+/-- **The homogeneous space `d = 14` of `X_0(49)` has no rational point**
+(PROVEN 2026-07-26): `b² = 14a⁴ + 21a²e² + 8e⁴` has no integer solution with
+`a`, `e` not both even. -/
+theorem no_homogeneous_fourteen (a e b : ℤ) (h : ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e)) :
+    b ^ 2 ≠ 14 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 8 * e ^ 4 := by
+  intro heq
+  refine key_fourteen (a : ZMod 16) (e : ZMod 16) (b : ZMod 16) ?_ ?_
+  · rw [← even_iff_zmod16, ← even_iff_zmod16]; exact h
+  · exact_mod_cast congrArg (fun t : ℤ => (t : ZMod 16)) heq
+
+/-- **The homogeneous space `d' = 7` of the `2`-isogenous curve has no
+rational point** (PROVEN 2026-07-26): `b² = 7a⁴ − 42a²e² − e⁴` has no integer
+solution with `a`, `e` not both even. Together with
+`no_homogeneous_dual_negOne` this pins `Im α' = {1, −7}` for
+`E' : W² = v(v² − 42v − 7)`. -/
+theorem no_homogeneous_dual_seven (a e b : ℤ) (h : ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e)) :
+    b ^ 2 ≠ 7 * a ^ 4 - 42 * a ^ 2 * e ^ 2 - e ^ 4 := by
+  intro heq
+  refine key_dual_seven (a : ZMod 16) (e : ZMod 16) (b : ZMod 16) ?_ ?_
+  · rw [← even_iff_zmod16, ← even_iff_zmod16]; exact h
+  · exact_mod_cast congrArg (fun t : ℤ => (t : ZMod 16)) heq
+
+/-- **The homogeneous space `d' = −1` of the `2`-isogenous curve has no
+rational point** (PROVEN 2026-07-26): `b² = −a⁴ − 42a²e² + 7e⁴` has no
+integer solution with `a`, `e` not both even. -/
+theorem no_homogeneous_dual_negOne (a e b : ℤ) (h : ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e)) :
+    b ^ 2 ≠ -a ^ 4 - 42 * a ^ 2 * e ^ 2 + 7 * e ^ 4 := by
+  intro heq
+  refine key_dual_negOne (a : ZMod 16) (e : ZMod 16) (b : ZMod 16) ?_ ?_
+  · rw [← even_iff_zmod16, ← even_iff_zmod16]; exact h
+  · exact_mod_cast congrArg (fun t : ℤ => (t : ZMod 16)) heq
+
+/-- **The `2`-descent on `X_0(49)`** (sorry node, introduced 2026-07-26 by
+the cut of `not_cyclicIsogeny_fortyNine`): if the four homogeneous spaces of
+the `2`-isogeny descent on `49a1` are empty, then the only affine rational
+point of `y² + x y = x³ − x² − 2x − 1` is `(2, −1)`.
+
+**This leaf is NOT vacuous.** Its four hypotheses are satisfiable — they are
+exactly `no_homogeneous_two`, `no_homogeneous_fourteen`,
+`no_homogeneous_dual_seven` and `no_homogeneous_dual_negOne`, all PROVEN
+immediately above — and its conclusion is the honest Mordell–Weil
+determination `X_0(49)(ℚ) = {O, (2, −1)}`. What is left in it is a FRAMEWORK,
+not a computation: nothing curve-specific remains, because every congruence
+this curve needs has already been discharged.
+
+What a prover has to supply (see the section note above for the full
+derivation, with all constants):
+
+1. The `ℚ`-isomorphism `y² + x y = x³ − x² − 2x − 1 ≅ V² = u(u² + 21u + 112)`
+   given by `V = 8y + 4x`, `u = 4x − 8`, under which `(2, −1) ↦ (0, 0)`.
+2. The descent map `α : E(ℚ) → ℚˣ/(ℚˣ)²`, `(u, V) ↦ u`, `O ↦ 1`,
+   `(0, 0) ↦ 112 ≡ 7`, and the standard fact that `u = m/e²` in lowest terms
+   has squarefree part dividing `112` — which turns a point outside
+   `Im α = {1, 7}` into an integer point of `b² = d a⁴ + 21a²e² + (112/d)e⁴`
+   with `d ∈ {2, 14}` and `gcd(a, e) = 1`, contradicting hypotheses `h2`,
+   `h14`.
+3. The same for the `2`-isogenous curve `E' : W² = v(v² − 42v − 7)` with
+   `d' ∈ {7, −1}`, contradicting `h7`, `hm1`.
+4. The `2`-isogeny rank formula `2^rank = |Im α| · |Im α'| / 4`, giving
+   `rank = 0`.
+5. The torsion bound: `E` has good reduction at `3` and `5`, reduction is
+   injective on prime-to-`p` torsion, `#E(𝔽₃) = 4` and `#E(𝔽₅) = 6`, so
+   `#E(ℚ)_tors ∣ gcd(4, 6) = 2`.
+
+MISSING MACHINERY at this pin: mathlib has no `2`-descent, no Selmer group
+and no Mordell–Weil theorem, and this development has none either; items 4
+and 5 are the ones that need building. Item 5 alone (reduction mod a good
+prime is injective on torsion) would already cut this leaf in half, since
+`rank = 0` plus a torsion bound is the whole conclusion. -/
+theorem rational_point_of_selmer_empty
+    (h2 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ 2 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 56 * e ^ 4)
+    (h14 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ 14 * a ^ 4 + 21 * a ^ 2 * e ^ 2 + 8 * e ^ 4)
+    (h7 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ 7 * a ^ 4 - 42 * a ^ 2 * e ^ 2 - e ^ 4)
+    (hm1 : ∀ a e b : ℤ, ¬ ((2 : ℤ) ∣ a ∧ (2 : ℤ) ∣ e) →
+      b ^ 2 ≠ -a ^ 4 - 42 * a ^ 2 * e ^ 2 + 7 * e ^ 4)
+    (x y : ℚ) (hxy : y ^ 2 + x * y = x ^ 3 - x ^ 2 - 2 * x - 1) :
+    x = 2 ∧ y = -1 :=
+  sorry
+
+/-- **The rational points of `X_0(49) : y² + x y = x³ − x² − 2x − 1`**
+(PROVEN 2026-07-26 over the single descent leaf
+`rational_point_of_selmer_empty`, whose four Selmer hypotheses are supplied
+by the four proven mod-`16` obstructions above): every affine rational point
+of `49a1` is `(2, −1)`.
+
+Together with the point at infinity these are the two points of
+`X_0(49)(ℚ) ≅ ℤ/2`, and they are exactly the two rational cusps of `Γ₀(49)`
+(the level has `8` cusps in all, the `6` of denominator `7` being conjugate
+over `ℚ(ζ₇)`). This is the Mordell–Weil input of the level-`49` case of
+Kenku's determination, and it is the exact analogue of
+`MazurLevel27.rational_point_x0TwentySeven` one prime up. -/
+theorem rational_point_x0FortyNine (x y : ℚ)
+    (h : y ^ 2 + x * y = x ^ 3 - x ^ 2 - 2 * x - 1) : x = 2 ∧ y = -1 :=
+  rational_point_of_selmer_empty no_homogeneous_two no_homogeneous_fourteen
+    no_homogeneous_dual_seven no_homogeneous_dual_negOne x y h
+
+end MazurLevelFortyNine
+
+/-- **`X_0(49)`: a rational cyclic `49`-subgroup gives a NON-CUSPIDAL
+rational point of `49a1`** (sorry node — the level-`49` moduli content,
+introduced 2026-07-26 by the cut of `not_cyclicIsogeny_fortyNine`): if `E/ℚ`
+carries a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup of order `49`, then the affine
+curve `y² + x y = x³ − x² − 2x − 1` has a rational point other than `(2, −1)`.
+
+This is the moduli dictionary at level `49`, and it is the only modular-curve
+content the level needs: the pair `(E, ⟨g⟩)` with `⟨g⟩` cyclic of order `49`
+and Galois-stable IS a non-cuspidal rational point of `X_0(49)`, and
+`y² + x y = x³ − x² − 2x − 1` is a `ℚ`-model of that curve (Magma
+`SmallModularCurve(49)`, 2026-07-26, untrusted searcher) in which the two
+rational cusps are the point at infinity and `(2, −1)`. Asking for an AFFINE
+point already excludes the cusp at infinity; `¬(x = 2 ∧ y = −1)` excludes the
+other.
+
+**Why the cusps are excluded by fiat here and not by a `j`-relation.** The
+sibling levels `27` and `32` express non-cuspidality through the `j`-map of
+the level below (`j_eq_of_x0TwentySeven_point` kills the cusp `t = 0` because
+the `j`-relation degenerates there). That route is not taken at level `49`
+because the level below is `X_0(7)`, of GENUS `0`, so the degeneracy map
+`X_0(49) → X_0(7)` has degree `7` and is a degree-`7` rational function on a
+genus-`1` curve rather than the Möbius-sized maps used at levels `9 → 27` and
+`16 → 32`. Writing it down buys nothing: the two rational points of
+`X_0(49)` are the two cusps either way, so the `j`-map would only re-derive
+by computation what the moduli dictionary states directly. A future owner who
+does want the `j`-relation should use the `X_0(7)` Hauptmodul
+`t = (η(τ)/η(7τ))⁴` with
+`j = (t² + 13t + 49)(t² + 245t + 2401)³ / t⁷` (degree `8 = [SL₂(ℤ) : Γ₀(7)]`).
+
+**VACUITY AUDIT.** By the very theorem it serves the hypothesis
+`addOrderOf g = 49` together with stability is never satisfied, so this leaf
+is vacuously true and is NOT independently provable: whoever proves it will
+be proving the moduli dictionary in general and instantiating it. That is
+unavoidable for any level whose conclusion is `False`, and it is the shape
+`exists_x0ThirtyTwo_point` already has. All the NON-vacuous content of level
+`49` lives in `MazurLevelFortyNine` above. -/
+theorem WeierstrassCurve.exists_x0FortyNine_point
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 49)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ x y : ℚ, y ^ 2 + x * y = x ^ 3 - x ^ 2 - 2 * x - 1 ∧ ¬ (x = 2 ∧ y = -1) :=
+  sorry
+
+/-- **No rational cyclic `49`-isogeny** (PROVEN 2026-07-26 over the moduli
+leaf `exists_x0FortyNine_point` and the arithmetic leaf
+`MazurLevelFortyNine.rational_point_x0FortyNine`, replacing the former Kenku
+citation): no elliptic curve over `ℚ` carries a Galois-stable cyclic subgroup
+of order `49`.
 
 This is one of the two primes where `X_0(p)` has genus `0`, so `j(E)` is not
 pinned and the level must be faced directly. It is by a wide margin the most
@@ -3889,20 +4152,26 @@ the `6` of denominator `7` conjugate over `ℚ(ζ₇)`). The `2`-torsion point i
 the rational root `x = 2` of `4x³ − 3x² − 8x − 4` and one checks
 `(−1)² + 2·(−1) = −1 = 2³ − 2² − 2·2 − 1` directly.
 
-**Route, on the pattern of level `32` and level `27`.** Both of those are
-now proven over a moduli leaf plus a self-contained Mordell–Weil half
-(`QuarticDescent.rational_point_x0ThirtyTwo` from Fermat's quartic theorem;
+**The cut, on the pattern of level `32` and level `27`** (both of those are
+proven over a moduli leaf plus a self-contained Mordell–Weil half —
+`QuarticDescent.rational_point_x0ThirtyTwo` from Fermat's quartic theorem,
 `MazurLevel27.rational_point_x0TwentySeven` from `fermatLastTheoremThree`).
-The same split applies here and is the recommended next cut:
+The same split is performed here, and this node is now two lines of assembly
+over:
 
-1. the MODULI dictionary — a stable cyclic `49`-subgroup gives a rational
-   point of `y² + x y = x³ − x² − 2 x − 1` lying over the `X_0(7)`
-   Hauptmodul value of `j(E)` (`X_0(7)` is genus `0`, the direct analogue of
-   `exists_x0Sixteen_hauptmodul` / `exists_x0Nine_hauptmodul`); and
-2. the ARITHMETIC half — `E_{49}(ℚ) = {O, (2, −1)}`, i.e. rank `0` plus
-   `torsion ≅ ℤ/2`, a self-contained descent on a CM curve of conductor
-   `49`, and the only one of the nine levels whose arithmetic half is a
-   genus-`1` Mordell–Weil determination rather than a Chabauty computation.
+1. the MODULI dictionary `exists_x0FortyNine_point` — a stable cyclic
+   `49`-subgroup gives a rational point of `y² + x y = x³ − x² − 2 x − 1`
+   other than the cusp `(2, −1)`; and
+2. the ARITHMETIC half `MazurLevelFortyNine.rational_point_x0FortyNine` —
+   `X_0(49)(ℚ) = {O, (2, −1)}`, i.e. rank `0` plus `torsion ≅ ℤ/2`, which is
+   in turn reduced to ONE framework leaf
+   (`MazurLevelFortyNine.rational_point_of_selmer_empty`, the `2`-descent)
+   over FOUR PROVEN mod-`16` Selmer obstructions. See the section note above
+   that block for the complete descent, with every constant.
+
+This is the only one of the nine levels whose arithmetic half is a genus-`1`
+Mordell–Weil determination rather than a Chabauty computation, which is why
+it could be cut this far.
 
 `X_0(49)/w_49` has genus `0` (Magma, via the `+1`-eigenspace of the
 Atkin–Lehner involution on `S₂(Γ₀(49))`), which is the classical reason the
@@ -3916,8 +4185,9 @@ theorem WeierstrassCurve.not_cyclicIsogeny_fortyNine
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
-    False :=
-  sorry
+    False := by
+  obtain ⟨x, y, hxy, hne⟩ := E.exists_x0FortyNine_point g hg hstable
+  exact hne (MazurLevelFortyNine.rational_point_x0FortyNine x y hxy)
 
 /-- **No rational cyclic `169`-isogeny** (sorry node — level `X_0(169)`,
 introduced 2026-07-26 by the split of `not_cyclicIsogeny_sq_of_isogenyPrime`
