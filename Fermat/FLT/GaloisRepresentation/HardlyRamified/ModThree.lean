@@ -6915,7 +6915,7 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **Fontaine's property `(P_{3/2})` for the points field: the
-points-counting bridge** (sorry node, created 2026-07-26 — leaf
+points-counting bridge** (PROVEN 2026-07-26 — leaf
 (ii-a′-3-b)).  Let `A` be finite flat over `𝒪₃ᵥ` with `Ω[A⁄𝒪₃ᵥ]` killed
 by `3`, let `E/ℚ₃ᵥ` be finite with `v_E(3) = e` and `3e < 2k`, and
 suppose the LIFTING ESTIMATE holds at that level for every such algebra
@@ -6955,7 +6955,40 @@ the subfield the points generate.  The reduction of a general faithful
 `M` to `N` is exactly what the PROVEN `le_hopfPointsField_of_faithful`
 below performs, and the ramification bound is then carried from `N`
 down to `M` inside
-`eq_one_of_mem_inertia_of_le_of_forall_nonempty_algHom`. -/
+`eq_one_of_mem_inertia_of_le_of_forall_nonempty_algHom`.
+PROOF AS FORMALISED (2026-07-26), and ONE CORRECTION to the sketch
+above worth recording, because it relocates the exponent `1/(p−1)`.
+Step (1) as written — the exact valuation identity
+`ker η = {x | v_{ℚ₃}(x) ≥ k/e}`, which needs `η` to be local and to
+scale valuations by `e/e_N` — is NOT needed, and is not what the
+formalisation does.  All that step (2) consumes is the *inclusion*
+`ker η ⊆ (3)·𝔪_N`, and that follows from `e < k` alone by a
+two-line divisibility argument with no valuation bookkeeping at all:
+if `x ∉ (3)·𝔪_N` then, the ideals of the DVR `𝒪_N` being totally
+ordered (`ValuationRing.dvd_total`), `x ∣ 3`; so `η x = 0` would give
+`3 = 0` in `𝒪_E ⧸ 𝔪_E^k`, i.e. `𝔪_E^e = span{3} ⊆ 𝔪_E^k`, which is
+false for `e < k` (`coheight_pow_maximalIdeal`).  And `e < k` is an
+`omega` consequence of `hk : 3e < 2k`.
+CONSEQUENCE: this leaf does NOT consume Fontaine's threshold `3/2`
+anywhere — it would be equally true with `hk` weakened to `e < k`,
+i.e. at every level `m > 1 = v_{ℚ₃}(3)`, which is exactly the sharpness
+threshold of the rigidity lemma
+`algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal`.  The whole of the
+`1/(p−1)` content sits in `hlift`, i.e. in the sibling leaf
+`exists_algHom_of_algHom_quotient_maximalIdeal_pow`; `hk` is kept in
+the statement here only so that the two leaves compose verbatim at the
+consumer.  The rest of the assembly is Fontaine's counting, formalised
+against the point sets `Hom_{𝒪₃ᵥ}(A, ·)`:
+`#Hom(A,𝒪_E) ≤ #Hom(A,ℚ₃ᵥᵃˡᵍ) = #Hom(A,𝒪_N) ≤ #Hom(A,𝒪_E/𝔪^k)
+≤ #Hom(A,𝒪_E)`, all four finite (`Finite.algHom` for the geometric
+points of the generic fibre `ℚ₃ᵥ ⊗ A`, transported along the
+base-change bijection), the middle equality because every
+`𝒪₃ᵥ`-point of `A` in `ℚ₃ᵥᵃˡᵍ` takes values in `N` BY THE DEFINITION
+of `hopfPointsField` — this is the step that fails for a field merely
+containing the points.  Equality throughout upgrades the injection
+`Hom(A,𝒪_E) ↪ Hom(A,ℚ₃ᵥᵃˡᵍ)` to a bijection
+(`Function.Injective.bijective_of_nat_card_le`), so every point is
+`E`-valued and `N = ℚ₃ᵥ(points) ≤ E`. -/
 theorem nonempty_algHom_of_algHom_quotient_of_forall_lift
     (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
     [Module.Finite 𝒪₃ᵥ A]
@@ -6977,7 +7010,203 @@ theorem nonempty_algHom_of_algHom_quotient_of_forall_lift
       (IntegralClosure 𝒪₃ᵥ E ⧸
         IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) :
     Nonempty (hopfPointsField A →ₐ[ℚ₃ᵥ] E) := by
-  sorry
+  classical
+  haveI : Algebra.IsIntegral 𝒪₃ᵥ A := Algebra.IsIntegral.of_finite 𝒪₃ᵥ A
+  haveI : CharZero ℚ₃ᵥ :=
+    charZero_of_injective_algebraMap (algebraMap ℚ ℚ₃ᵥ).injective
+  -- STEP 0: `3` is NOT zero in the truncation `𝒪_E ⧸ 𝔪_E^k`, because
+  -- `span {3} = 𝔪_E^e` and `e < k`.
+  have hek : e < k := by omega
+  have h3notin : (3 : IntegralClosure 𝒪₃ᵥ E) ∉
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k := by
+    intro hmem
+    have hle : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ e ≤
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k := by
+      rw [← he]
+      exact Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hmem)
+    have heq : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ e =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (e + 1) :=
+      le_antisymm (hle.trans (Ideal.pow_le_pow_right hek))
+        (Ideal.pow_le_pow_right (Nat.le_succ e))
+    have hco := congrArg Order.coheight heq
+    rw [IsDiscreteValuationRing.coheight_pow_maximalIdeal,
+      IsDiscreteValuationRing.coheight_pow_maximalIdeal] at hco
+    exact absurd (Nat.cast_injective hco) (by omega)
+  -- STEP 1: the KERNEL of `η` is contained in `(3)·𝔪_N`.  If
+  -- `x ∉ (3)·𝔪_N` then `x ∣ 3` in the DVR `𝒪_N` (its ideals are totally
+  -- ordered), so `η x = 0` forces `3 = 0` in the truncation — STEP 0.
+  have hker : ∀ x : IntegralClosure 𝒪₃ᵥ (hopfPointsField A), η x = 0 →
+      x ∈ Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ (hopfPointsField A))} *
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ (hopfPointsField A)) := by
+    intro x hx
+    by_contra hcon
+    have hdvd : x ∣ (3 : IntegralClosure 𝒪₃ᵥ (hopfPointsField A)) := by
+      rcases ValuationRing.dvd_total
+          (3 : IntegralClosure 𝒪₃ᵥ (hopfPointsField A)) x with ⟨c, hc⟩ | hd
+      · have hcu : IsUnit c := by
+          by_contra hcn
+          refine hcon ?_
+          rw [hc]
+          exact Ideal.mul_mem_mul (Ideal.mem_span_singleton_self _)
+            ((IsLocalRing.mem_maximalIdeal c).mpr hcn)
+        obtain ⟨u, rfl⟩ := hcu
+        exact ⟨(↑u⁻¹ : IntegralClosure 𝒪₃ᵥ (hopfPointsField A)), by
+          rw [hc, mul_assoc]; simp⟩
+      · exact hd
+    obtain ⟨y, hy⟩ := hdvd
+    have h30 : (3 : IntegralClosure 𝒪₃ᵥ E ⧸
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k) = 0 := by
+      have hcg := congrArg η hy
+      rw [map_ofNat, map_mul, hx, zero_mul] at hcg
+      exact hcg
+    rw [show (3 : IntegralClosure 𝒪₃ᵥ E ⧸
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k) =
+        Ideal.Quotient.mk _ (3 : IntegralClosure 𝒪₃ᵥ E) from
+        (map_ofNat (Ideal.Quotient.mk
+          (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) 3).symm,
+      Ideal.Quotient.eq_zero_iff_mem] at h30
+    exact h3notin h30
+  -- STEP 2: the ambient-value map of the integral closure of a
+  -- subextension — injective, with values in that subextension.
+  have hgen : ∀ F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ,
+      ∃ f : IntegralClosure 𝒪₃ᵥ F →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ,
+        Function.Injective f ∧
+        ∀ z, f z = algebraMap (F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) ℚ₃ᵥᵃˡᵍ
+          (algebraMap (IntegralClosure 𝒪₃ᵥ F) F z) := by
+    intro F
+    refine ⟨(F.val.restrictScalars 𝒪₃ᵥ).comp
+      (IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ F) F), ?_, fun z => rfl⟩
+    exact (algebraMap (F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) ℚ₃ᵥᵃˡᵍ).injective.comp
+      (IsIntegralClosure.algebraMap_injective (IntegralClosure 𝒪₃ᵥ F) 𝒪₃ᵥ F)
+  obtain ⟨ιN, hιNinj, hιNapp⟩ := hgen (hopfPointsField A)
+  obtain ⟨ιE, hιEinj, hιEapp⟩ := hgen E
+  have hpostN : Function.Injective
+      (fun ψ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ (hopfPointsField A) => ιN.comp ψ) :=
+    fun ψ₁ ψ₂ h => AlgHom.ext fun a => hιNinj (AlgHom.congr_fun h a)
+  have hpostE : Function.Injective
+      (fun χ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ E => ιE.comp χ) :=
+    fun χ₁ χ₂ h => AlgHom.ext fun a => hιEinj (AlgHom.congr_fun h a)
+  -- STEP 3: every `𝒪₃ᵥ`-point of `A` in `ℚ₃ᵥᵃˡᵍ` factors through `𝒪_N`,
+  -- because `N` is BY CONSTRUCTION generated by the geometric points.
+  have hmemN : ∀ (ψ : A →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ) (a : A), ψ a ∈ hopfPointsField A := by
+    intro ψ a
+    have hχ : ∀ x, Algebra.TensorProduct.lift
+        (Algebra.ofId ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) ψ (fun _ _ => Commute.all _ _) x ∈
+        hopfPointsField A := fun x =>
+      IntermediateField.subset_adjoin _ _
+        (Set.mem_iUnion.mpr ⟨_, Set.mem_range_self x⟩)
+    have h1 := hχ (1 ⊗ₜ[𝒪₃ᵥ] a)
+    rwa [Algebra.TensorProduct.lift_tmul, map_one, one_mul] at h1
+  have hfacN : Function.Surjective
+      (fun ψ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ (hopfPointsField A) => ιN.comp ψ) := by
+    intro ψ
+    have hint : ∀ a : A, (AlgHom.codRestrict ψ
+        ((hopfPointsField A).toSubalgebra.restrictScalars 𝒪₃ᵥ) (hmemN ψ)) a ∈
+        integralClosure 𝒪₃ᵥ (hopfPointsField A) := by
+      intro a
+      have h1 : IsIntegral 𝒪₃ᵥ (ψ a) :=
+        (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) a).map ψ
+      refine (isIntegral_algHom_iff
+        (IsScalarTower.toAlgHom 𝒪₃ᵥ (hopfPointsField A) ℚ₃ᵥᵃˡᵍ)
+        (algebraMap (hopfPointsField A) ℚ₃ᵥᵃˡᵍ).injective).mp ?_
+      exact h1
+    refine ⟨AlgHom.codRestrict (AlgHom.codRestrict ψ
+      ((hopfPointsField A).toSubalgebra.restrictScalars 𝒪₃ᵥ) (hmemN ψ))
+      (integralClosure 𝒪₃ᵥ (hopfPointsField A)) hint, AlgHom.ext fun a => ?_⟩
+    rw [AlgHom.comp_apply, hιNapp]
+    rfl
+  -- STEP 4: finiteness of all four point sets
+  haveI hfinT : Finite (A →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ) := by
+    haveI : Finite (ℚ₃ᵥ ⊗[𝒪₃ᵥ] A →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) := inferInstance
+    refine Finite.of_surjective
+      (fun χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] A →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ =>
+        (χ.restrictScalars 𝒪₃ᵥ).comp Algebra.TensorProduct.includeRight) ?_
+    intro ψ
+    refine ⟨Algebra.TensorProduct.lift (Algebra.ofId ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) ψ
+      (fun _ _ => Commute.all _ _), AlgHom.ext fun a => ?_⟩
+    exact (Algebra.TensorProduct.lift_tmul (Algebra.ofId ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) ψ
+      (fun _ _ => Commute.all _ _) 1 a).trans (by rw [map_one, one_mul])
+  haveI hfinN : Finite (A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ (hopfPointsField A)) :=
+    Finite.of_injective _ hpostN
+  haveI hfinE : Finite (A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ E) :=
+    Finite.of_injective _ hpostE
+  -- STEP 5: `Hom(A, 𝒪_N) ↪ Hom(A, 𝒪_E/𝔪^k)` — Fontaine's rigidity
+  have h3neN : ((3 : ℕ) : IntegralClosure 𝒪₃ᵥ (hopfPointsField A)) ≠ 0 := by
+    haveI : CharZero (hopfPointsField A) :=
+      charZero_of_injective_algebraMap
+        (algebraMap ℚ₃ᵥ (hopfPointsField A)).injective
+    intro h0
+    have h2 := congrArg
+      (algebraMap (IntegralClosure 𝒪₃ᵥ (hopfPointsField A))
+        (hopfPointsField A)) h0
+    rw [map_natCast, map_zero] at h2
+    exact (by norm_num : ((3 : ℕ) : (hopfPointsField A)) ≠ 0) h2
+  have hcast3 : ((3 : ℕ) : IntegralClosure 𝒪₃ᵥ (hopfPointsField A)) =
+      (3 : IntegralClosure 𝒪₃ᵥ (hopfPointsField A)) := by norm_num
+  have hinjQ : Function.Injective
+      (fun ψ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ (hopfPointsField A) => η.comp ψ) := by
+    intro ψ₁ ψ₂ h
+    refine algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal 3 h3neN hΩ ψ₁ ψ₂ ?_
+    intro a
+    rw [hcast3]
+    refine hker _ ?_
+    have hh : η (ψ₁ a) = η (ψ₂ a) := AlgHom.congr_fun h a
+    rw [map_sub, hh, sub_self]
+  -- STEP 6: `Hom(A, 𝒪_E) ↠ Hom(A, 𝒪_E/𝔪^k)` — the lifting estimate
+  have hsurjQ : Function.Surjective
+      (fun χ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ E =>
+        (Ideal.Quotient.mkₐ 𝒪₃ᵥ
+          (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)).comp χ) :=
+    fun θ => hlift A hΩ θ
+  haveI hfinQ : Finite (A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) :=
+    Finite.of_surjective _ hsurjQ
+  -- STEP 7: the COUNTING
+  -- `#Hom(A,𝒪_E) ≤ #Hom(A,ℚ₃ᵥᵃˡᵍ) = #Hom(A,𝒪_N) ≤ #Hom(A,Q) ≤ #Hom(A,𝒪_E)`
+  have hcardN : Nat.card (A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ (hopfPointsField A)) =
+      Nat.card (A →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ) :=
+    Nat.card_eq_of_bijective _ ⟨hpostN, hfacN⟩
+  have hcard1 : Nat.card (A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ (hopfPointsField A)) ≤
+      Nat.card (A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) :=
+    Nat.card_le_card_of_injective _ hinjQ
+  have hcard2 : Nat.card (A →ₐ[𝒪₃ᵥ] (IntegralClosure 𝒪₃ᵥ E ⧸
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) ≤
+      Nat.card (A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ E) :=
+    Nat.card_le_card_of_surjective _ hsurjQ
+  have hpostEbij : Function.Bijective
+      (fun χ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ E => ιE.comp χ) :=
+    hpostE.bijective_of_nat_card_le (by omega)
+  -- STEP 8: hence EVERY point of `A` in `ℚ₃ᵥᵃˡᵍ` is already `E`-valued
+  have hallE : ∀ (ψ : A →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ) (a : A), ψ a ∈ E := by
+    intro ψ a
+    obtain ⟨χ, hχ⟩ := hpostEbij.2 ψ
+    rw [← hχ]
+    show ιE (χ a) ∈ E
+    rw [hιEapp]
+    exact (algebraMap (IntegralClosure 𝒪₃ᵥ E) E (χ a)).2
+  -- STEP 9: therefore `N = ℚ₃ᵥ(points) ≤ E`, which IS the embedding
+  refine ⟨IntermediateField.inclusion ?_⟩
+  show IntermediateField.adjoin ℚ₃ᵥ
+    (⋃ χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] A →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, Set.range χ) ≤ E
+  rw [IntermediateField.adjoin_le_iff]
+  rintro y hy
+  obtain ⟨χ, t, rfl⟩ :
+      ∃ (χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] A →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ), ∃ t, χ t = y := by
+    obtain ⟨χ, hχ⟩ := Set.mem_iUnion.mp hy
+    obtain ⟨t, ht⟩ := hχ
+    exact ⟨χ, t, ht⟩
+  show χ t ∈ E
+  clear hy
+  induction t using TensorProduct.induction_on with
+  | zero => rw [map_zero]; exact zero_mem _
+  | tmul q a =>
+    have h1 : (q ⊗ₜ[𝒪₃ᵥ] a : ℚ₃ᵥ ⊗[𝒪₃ᵥ] A) = q • (1 ⊗ₜ[𝒪₃ᵥ] a) := by
+      rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+    rw [h1, map_smul, Algebra.smul_def]
+    refine mul_mem (E.algebraMap_mem q) ?_
+    exact hallE ((χ.restrictScalars 𝒪₃ᵥ).comp Algebra.TensorProduct.includeRight) a
+  | add u v hu hv => rw [map_add]; exact add_mem hu hv
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -7172,15 +7401,17 @@ nontrivial) and does carry such an `A`, so the STRICT inequality in
 `hlt` at `m' = 1` with `Ḡ_2 ≠ ⊥`, so the leaf is NOT vacuous — there it
 asserts genuine arithmetic.
 DECOMPOSED 2026-07-26 — this declaration is no longer a leaf; the
-assembly below is PROVEN and the residual content sits in three
-citation-class nodes plus one proven bridge, cut along Fontaine's own
-argument:
+assembly below is PROVEN and the residual content sits (since
+2026-07-26) in TWO citation-class nodes plus two proven bridges, cut
+along Fontaine's own argument:
 * `exists_algHom_of_algHom_quotient_maximalIdeal_pow` — Fontaine's
   LIFTING estimate, the sole entry point of the exponent `1/(p−1)`;
-* `nonempty_algHom_of_algHom_quotient_of_forall_lift` — the
-  points-COUNTING bridge, which turns the lifting estimate into
-  Fontaine's property `(P_m)` for the points field
-  `hopfPointsField A` at every level `m > 3/2`;
+* `nonempty_algHom_of_algHom_quotient_of_forall_lift` — PROVEN
+  2026-07-26: the points-COUNTING bridge, which turns the lifting
+  estimate into Fontaine's property `(P_m)` for the points field
+  `hopfPointsField A` at every level `m > 3/2`.  Its proof consumes
+  only `e < k`, so the `1/(p−1)` really does enter ONLY through the
+  first bullet;
 * `eq_one_of_mem_inertia_of_le_of_forall_nonempty_algHom` — the pure
   local-ramification implication `(P_m) ⟹ ramification bound` (Fontaine
   Prop. 1.5 (ii), sharpened by Yoshida's `m_{L/K} = u_{L/K}`), together
