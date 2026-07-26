@@ -84,6 +84,18 @@ import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
 -- of a compact Hausdorff Noetherian topological ring, the level filtration of
 -- the flat trace identity at `p` (same import as in Threeadic)
 import Mathlib.Topology.Algebra.Ring.Compact
+-- `Algebra.FormallyEtale.equivPiOfIsSepClosed`: a finite étale algebra over a
+-- separably closed field is the function algebra of its (finite) prime
+-- spectrum. This is the engine of the μ-type half (α) below
+-- (`exists_grouplike_family_generating_corner`): it is what turns the Hopf
+-- order's geometric fibre into the function algebra of its point GROUP.
+-- Public: it appears in the statements of the general point-set lemmas below.
+public import Mathlib.RingTheory.Etale.Field
+-- `IsSepClosed.hasEnoughRootsOfUnity`: a separably closed field of residue
+-- characteristic prime to `n` has enough `n`-th roots of unity — the input to
+-- "characters of a finite abelian group span its function algebra", the second
+-- engine of half (α).
+public import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
 
 /-!
 # Hardly ramified representations in compatible families
@@ -1830,10 +1842,476 @@ theorem exists_grouplike_coordinates_of_grouplike_family
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
+/-! ### The formal engine of the μ-type half (α)
+
+The seven declarations below are the mathlib-facing content of
+`exists_grouplike_family_generating_corner`. They are stated over an
+ARBITRARY separably closed base field and an arbitrary finite étale
+(Hopf) algebra over it; nothing `p`-adic enters. -/
+
+/-- **A `K`-algebra map out of a finite product of copies of a field is an
+evaluation** (PROVEN 2026-07-26). The orthogonal idempotents `Pi.single p 1`
+sum to `1`, so their images are idempotents of `K` summing to `1` and killing
+each other: exactly one is `1` and the rest are `0`. -/
+theorem exists_eval_of_algHom_pi {K : Type*} [Field K] {P : Type*} [Fintype P]
+    [DecidableEq P] (ψ : (P → K) →ₐ[K] K) : ∃ p : P, ∀ f : P → K, ψ f = f p := by
+  classical
+  have hsingle : ∀ f : P → K, ∑ p : P, (Pi.single p (f p) : P → K) = f :=
+    fun f => Finset.univ_sum_single f
+  have hsum : ∑ p : P, ψ (Pi.single p (1 : K)) = 1 := by
+    have hone := hsingle (1 : P → K)
+    simp only [Pi.one_apply] at hone
+    rw [← map_sum, hone, map_one]
+  have hex : ∃ p : P, ψ (Pi.single p (1 : K)) ≠ 0 := by
+    by_contra h
+    push_neg at h
+    rw [Finset.sum_congr rfl (fun p _ => h p), Finset.sum_const_zero] at hsum
+    exact zero_ne_one hsum
+  obtain ⟨p₀, hp₀⟩ := hex
+  refine ⟨p₀, fun f => ?_⟩
+  have hzero : ∀ p : P, p ≠ p₀ → ψ (Pi.single p (1 : K)) = 0 := by
+    intro p hp
+    have hmul : (Pi.single p (1 : K) : P → K) * Pi.single p₀ (1 : K) = 0 := by
+      funext q
+      by_cases hq : q = p
+      · subst hq; simp [hp]
+      · simp [Pi.single_apply, hq]
+    have hz := congrArg ψ hmul
+    rw [map_mul, map_zero] at hz
+    exact (mul_eq_zero.mp hz).resolve_right hp₀
+  have hone : ψ (Pi.single p₀ (1 : K)) = 1 := by
+    have hcollapse : ∑ p : P, ψ (Pi.single p (1 : K)) = ψ (Pi.single p₀ (1 : K)) :=
+      Finset.sum_eq_single p₀ (fun p _ hp => hzero p hp)
+        (fun h => absurd (Finset.mem_univ p₀) h)
+    rw [← hcollapse, hsum]
+  calc ψ f = ψ (∑ p : P, (Pi.single p (f p) : P → K)) := by rw [hsingle]
+    _ = ∑ p : P, ψ (Pi.single p (f p)) := map_sum _ _ _
+    _ = ∑ p : P, f p * ψ (Pi.single p (1 : K)) := by
+        refine Finset.sum_congr rfl fun p _ => ?_
+        have hsm : (Pi.single p (f p) : P → K) = f p • Pi.single p (1 : K) := by
+          funext q; by_cases hq : q = p <;> simp [Pi.single_apply, hq]
+        rw [hsm, map_smul, smul_eq_mul]
+    _ = f p₀ := by
+        rw [Finset.sum_eq_single p₀ (fun p _ hp => by rw [hzero p hp, mul_zero])
+          (fun h => absurd (Finset.mem_univ p₀) h), hone, mul_one]
+
+/-- **The characters of a finite abelian group span its function algebra**
+(PROVEN 2026-07-26) over a field with enough roots of unity. Dedekind's linear
+independence of characters (`linearIndependent_monoidHom`) gives independence;
+`CommGroup.card_monoidHom_of_hasEnoughRootsOfUnity` gives `|Ĥ| = |H|`, which is
+the dimension of `H → K`, so independence upgrades to spanning.
+
+The roots-of-unity hypothesis is NOT removable: over `𝔽_p` the group `ℤ/p` has
+only the trivial character, which spans a line inside a `p`-dimensional space. -/
+theorem span_range_monoidHomVal_eq_top {K : Type*} [Field K] {H : Type*}
+    [CommGroup H] [Finite H] [HasEnoughRootsOfUnity K (Monoid.exponent H)] :
+    Submodule.span K
+      (Set.range (fun χ : H →* Kˣ => (fun h : H => ((χ h : Kˣ) : K)))) = ⊤ := by
+  classical
+  have _ : Fintype H := Fintype.ofFinite H
+  have hequiv : Nonempty ((H →* Kˣ) ≃* H) :=
+    CommGroup.monoidHom_mulEquiv_of_hasEnoughRootsOfUnity H K
+  have _ : Finite (H →* Kˣ) := Finite.of_equiv _ hequiv.some.toEquiv.symm
+  have _ : Fintype (H →* Kˣ) := Fintype.ofFinite _
+  have hinj : Function.Injective (fun χ : H →* Kˣ => (Units.coeHom K).comp χ) := by
+    intro χ₁ χ₂ h
+    ext a
+    have hval := congrArg (fun f : H →* K => f a) h
+    simpa using hval
+  have hli : LinearIndependent K
+      (fun χ : H →* Kˣ => (fun h : H => ((χ h : Kˣ) : K))) :=
+    (linearIndependent_monoidHom H K).comp _ hinj
+  have hcard : Fintype.card (H →* Kˣ) = Module.finrank K (H → K) := by
+    rw [Module.finrank_fintype_fun_eq_card, ← Nat.card_eq_fintype_card,
+      ← Nat.card_eq_fintype_card, CommGroup.card_monoidHom_of_hasEnoughRootsOfUnity H K]
+  have _ : Nonempty (H →* Kˣ) := ⟨1⟩
+  exact hli.span_eq_top_of_card_eq_finrank hcard
+
+section EtalePoints
+
+variable (K A : Type u) [Field K] [IsSepClosed K] [CommRing A] [Algebra K A]
+  [Algebra.EssFiniteType K A] [Algebra.FormallyEtale K A]
+
+/-- The `K`-point of `A` reading off the coordinate at a prime of `A`, under
+mathlib's splitting `A ≃ₐ[K] PrimeSpectrum A → K` of a finite étale algebra
+over a separably closed field. -/
+noncomputable def coordPoint (q : PrimeSpectrum A) : A →ₐ[K] K :=
+  (Pi.evalAlgHom K (fun _ : PrimeSpectrum A => K) q).comp
+    (Algebra.FormallyEtale.equivPiOfIsSepClosed K A).toAlgHom
+
+variable {K A} in
+theorem coordPoint_apply (q : PrimeSpectrum A) (a : A) :
+    coordPoint K A q a = Algebra.FormallyEtale.equivPiOfIsSepClosed K A a q := rfl
+
+/-- **The primes of a finite étale algebra over a separably closed field are
+exactly its `K`-points** (PROVEN 2026-07-26). Injectivity separates two primes
+by the indicator of one of them; surjectivity is `exists_eval_of_algHom_pi`
+transported along the splitting. -/
+theorem bijective_coordPoint : Function.Bijective (coordPoint K A) := by
+  classical
+  haveI := Algebra.FormallyUnramified.finite_of_free K A
+  haveI : IsArtinianRing A := isArtinian_of_tower K inferInstance
+  haveI : Fintype (PrimeSpectrum A) := Fintype.ofFinite _
+  set Φ := Algebra.FormallyEtale.equivPiOfIsSepClosed K A with hΦ
+  constructor
+  · intro q₁ q₂ h
+    by_contra hne
+    have h1 : coordPoint K A q₁ (Φ.symm (Pi.single q₁ (1 : K))) = 1 := by
+      show Φ (Φ.symm (Pi.single q₁ (1 : K))) q₁ = 1
+      rw [AlgEquiv.apply_symm_apply, Pi.single_eq_same]
+    have h2 : coordPoint K A q₂ (Φ.symm (Pi.single q₁ (1 : K))) = 0 := by
+      show Φ (Φ.symm (Pi.single q₁ (1 : K))) q₂ = 0
+      rw [AlgEquiv.apply_symm_apply, Pi.single_eq_of_ne (Ne.symm hne)]
+    rw [h] at h1
+    rw [h1] at h2
+    exact one_ne_zero h2
+  · intro γ
+    obtain ⟨q, hq⟩ := exists_eval_of_algHom_pi (γ.comp (Φ.symm.toAlgHom))
+    refine ⟨q, AlgHom.ext fun a => ?_⟩
+    have hthis := hq (Φ a)
+    rw [AlgHom.comp_apply] at hthis
+    have h2 : (Φ.symm.toAlgHom : (PrimeSpectrum A → K) →ₐ[K] A) (Φ a) = a :=
+      Φ.symm_apply_apply a
+    rw [h2] at hthis
+    rw [coordPoint_apply]
+    exact hthis.symm
+
+theorem finite_algHom_of_isSepClosed : Finite (A →ₐ[K] K) := by
+  haveI := Algebra.FormallyUnramified.finite_of_free K A
+  haveI : IsArtinianRing A := isArtinian_of_tower K inferInstance
+  exact Finite.of_equiv _ (Equiv.ofBijective _ (bijective_coordPoint K A))
+
+/-- **A finite étale algebra over a separably closed field IS the function
+algebra of its point set** (PROVEN 2026-07-26): evaluation at all `K`-points is
+a bijection `A ≃ ((A →ₐ[K] K) → K)`. -/
+theorem bijective_eval_algHom_of_isSepClosed :
+    Function.Bijective (fun (a : A) => fun γ : A →ₐ[K] K => γ a) := by
+  classical
+  haveI := Algebra.FormallyUnramified.finite_of_free K A
+  haveI : IsArtinianRing A := isArtinian_of_tower K inferInstance
+  set Φ := Algebra.FormallyEtale.equivPiOfIsSepClosed K A with hΦ
+  have hg := bijective_coordPoint K A
+  have hcoord : ∀ (a : A) (q : PrimeSpectrum A), Φ a q = coordPoint K A q a :=
+    fun _ _ => rfl
+  constructor
+  · intro a b h
+    apply Φ.injective
+    funext q
+    rw [hcoord, hcoord]
+    exact congrFun h (coordPoint K A q)
+  · intro h
+    refine ⟨Φ.symm (fun q => h (coordPoint K A q)), ?_⟩
+    funext γ
+    obtain ⟨q, rfl⟩ := hg.2 γ
+    show Φ (Φ.symm (fun q => h (coordPoint K A q))) q = h (coordPoint K A q)
+    rw [AlgEquiv.apply_symm_apply]
+
+/-- **The `K`-points separate the tensor square** (PROVEN 2026-07-26): two
+elements of `A ⊗[K] A` agreeing under every paired evaluation `lift γ δ` are
+equal, because `A ⊗[K] A` is again finite étale over `K` and every one of its
+points IS such a paired evaluation. This is what lets a group-like identity in
+`A ⊗[K] A` be checked pointwise. -/
+theorem injective_lift_pair_of_isSepClosed {t t' : A ⊗[K] A}
+    (h : ∀ γ δ : A →ₐ[K] K,
+      Algebra.TensorProduct.lift γ δ (fun _ _ => Commute.all _ _) t =
+        Algebra.TensorProduct.lift γ δ (fun _ _ => Commute.all _ _) t') :
+    t = t' := by
+  classical
+  haveI := Algebra.FormallyUnramified.finite_of_free K A
+  haveI : Module.Finite K (A ⊗[K] A) := inferInstance
+  haveI : Algebra.EssFiniteType K (A ⊗[K] A) := inferInstance
+  haveI : Algebra.FormallyEtale K (A ⊗[K] A) := Algebra.FormallyEtale.comp K A (A ⊗[K] A)
+  have hbij := bijective_eval_algHom_of_isSepClosed K (A ⊗[K] A)
+  apply hbij.1
+  funext ξ
+  have hξ : Algebra.TensorProduct.lift (ξ.comp Algebra.TensorProduct.includeLeft)
+      (ξ.comp Algebra.TensorProduct.includeRight) (fun _ _ => Commute.all _ _) = ξ := by
+    refine Algebra.TensorProduct.ext' fun a b => ?_
+    rw [Algebra.TensorProduct.lift_tmul]
+    show ξ (a ⊗ₜ[K] 1) * ξ ((1 : A) ⊗ₜ[K] b) = ξ (a ⊗ₜ[K] b)
+    rw [← map_mul, Algebra.TensorProduct.tmul_mul_tmul, mul_one, one_mul]
+  show ξ t = ξ t'
+  rw [← hξ]
+  exact h _ _
+
+end EtalePoints
+
+section CornerGroupAlgebra
+
+variable (k A : Type u) [Field k] [IsSepClosed k] [CharZero k]
+  [CommRing A] [HopfAlgebra k A]
+  [Algebra.EssFiniteType k A] [Algebra.FormallyEtale k A]
+
+set_option maxHeartbeats 1000000 in
+/-- **The connected corner of a finite étale commutative Hopf algebra over an
+algebraically closed field of characteristic zero is generated by its
+group-likes** (PROVEN 2026-07-26 — this is the whole mathematical content of
+half (α) of the μ-type node, in coordinate-free form).
+
+Setting: `A` finite étale over the separably closed `k`, with a Hopf structure
+whose monoid of `k`-points is COMMUTATIVE (`habel`), and a counit idempotent `e`
+whose comultiplication absorbs `e ⊗ e`.
+
+Proof. Over a separably closed field `A` is the function algebra `k^Γ` of its
+finite point set `Γ = A →ₐ[k] k` (`bijective_eval_algHom_of_isSepClosed`), and
+`Γ` is a finite group under convolution (mathlib's `AlgHom.convGroup`, whose
+inverse is precomposition with the antipode), abelian by `habel`. Since `e` is
+idempotent, `γ e ∈ {0, 1}` for every point, so `e` is the indicator of
+`Γ° = {γ | γ e = 1}`; `hε` puts `1` in `Γ°` and `hcomul` (through the already
+proven `convMul_apply_of_comul_absorbs`) closes it under convolution, and
+finiteness supplies inverses — so `Γ°` is a finite abelian subgroup and the
+corner `A · e` is `k^{Γ°}`.
+
+Every character `χ : Γ° →* kˣ`, extended by `0` off `Γ°`, is a corner
+group-like: the identity `Δ a · (e ⊗ e) = a ⊗ a` may be checked after applying
+every paired evaluation `lift γ δ` (`injective_lift_pair_of_isSepClosed`), where
+it reads `χ(γδ) = χ(γ)χ(δ)` when `γ, δ ∈ Γ°` and `0 = 0` otherwise. Those
+characters span `k^{Γ°}` (`span_range_monoidHomVal_eq_top`), and `y · e` lies in
+`k^{Γ°}` because `γ (y · e) = γ y · γ e` vanishes off `Γ°`.
+
+SHARPNESS. `CharZero` is not decorative: over `𝔽_p` the algebra `𝔽_p^{ℤ/p}` is
+finite étale and commutative, but `ℤ/p` has only the trivial character, so the
+conclusion FAILS. `habel` is not decorative either: for nonabelian `Γ°` the
+characters span only the abelianisation's worth of functions. -/
+theorem adjoin_cornerGroupLike_of_isSepClosed
+    (habel : ∀ φ ψ : A →ₐ[k] k, φ * ψ = ψ * φ)
+    (e : A) (he : IsIdempotentElem e)
+    (hε : Coalgebra.counit (R := k) e = (1 : k))
+    (hcomul : Coalgebra.comul (R := k) e * (e ⊗ₜ[k] e) = e ⊗ₜ[k] e)
+    (y : A) :
+    y * e ∈ Algebra.adjoin k {a : A | Coalgebra.counit (R := k) a = (1 : k) ∧
+      Coalgebra.comul (R := k) a * (e ⊗ₜ[k] e) = a ⊗ₜ[k] a} := by
+  classical
+  haveI := Algebra.FormallyUnramified.finite_of_free k A
+  haveI : IsArtinianRing A := isArtinian_of_tower k inferInstance
+  haveI : Finite (A →ₐ[k] k) := finite_algHom_of_isSepClosed k A
+  haveI : Fintype (A →ₐ[k] k) := Fintype.ofFinite _
+  -- the group of points, under convolution
+  letI instGrp : Group (A →ₐ[k] k) :=
+    { (inferInstance : Monoid (A →ₐ[k] k)) with
+      inv := fun f => f.comp (HopfAlgebra.antipodeAlgHom k A)
+      inv_mul_cancel := fun f => by
+        have h : (toConv f)⁻¹ * toConv f = 1 := inv_mul_cancel (toConv f)
+        show (f.comp (HopfAlgebra.antipodeAlgHom k A)) * f = 1
+        rw [vendored_mul_eq_convMul,
+          show toConv (f.comp (HopfAlgebra.antipodeAlgHom k A)) = (toConv f)⁻¹ from rfl, h]
+        exact vendored_one_eq_convOne.symm }
+  letI instCG : CommGroup (A →ₐ[k] k) := { instGrp with mul_comm := habel }
+  haveI : Nonempty (A →ₐ[k] k) := ⟨1⟩
+  have hone_apply : ∀ a : A, (1 : A →ₐ[k] k) a = Coalgebra.counit (R := k) a :=
+    fun _ => rfl
+  have hmul_apply : ∀ (γ δ : A →ₐ[k] k) (a : A), (γ * δ) a =
+      Algebra.TensorProduct.lift γ δ (fun _ _ => Commute.all _ _)
+        (Coalgebra.comul (R := k) a) := fun _ _ _ => rfl
+  -- a point takes the value `0` or `1` on the idempotent `e`
+  have hidem : ∀ γ : A →ₐ[k] k, γ e = 0 ∨ γ e = 1 := by
+    intro γ
+    have h : γ e * γ e = γ e := by rw [← map_mul, he]
+    have hfac : γ e * (γ e - 1) = 0 := by linear_combination h
+    rcases mul_eq_zero.mp hfac with h0 | h1
+    · exact Or.inl h0
+    · exact Or.inr (sub_eq_zero.mp h1)
+  -- the CONNECTED points form a subgroup
+  have hHone : (1 : A →ₐ[k] k) e = 1 := by rw [hone_apply, hε]
+  have hHmul : ∀ γ δ : A →ₐ[k] k, γ e = 1 → δ e = 1 → (γ * δ) e = 1 := by
+    intro γ δ h1 h2
+    rw [vendored_mul_eq_convMul,
+      convMul_apply_of_comul_absorbs e γ δ h1 h2 e hcomul, h1, h2, one_mul]
+  have hHpow : ∀ (γ : A →ₐ[k] k), γ e = 1 → ∀ m : ℕ, (γ ^ m) e = 1 := by
+    intro γ hγ m
+    induction m with
+    | zero => rw [pow_zero]; exact hHone
+    | succ i ih => rw [pow_succ]; exact hHmul _ _ ih hγ
+  let Hsub : Subgroup (A →ₐ[k] k) :=
+    { carrier := {γ : A →ₐ[k] k | γ e = 1}
+      one_mem' := hHone
+      mul_mem' := fun {a b} ha hb => hHmul a b ha hb
+      inv_mem' := fun {γ} hγ => by
+        have hpos : 0 < Fintype.card (A →ₐ[k] k) := Fintype.card_pos
+        have hadd : 1 + (Fintype.card (A →ₐ[k] k) - 1) = Fintype.card (A →ₐ[k] k) :=
+          Nat.add_sub_cancel' hpos
+        have h1 : γ ^ (1 + (Fintype.card (A →ₐ[k] k) - 1)) = 1 := by
+          rw [hadd]; exact pow_card_eq_one
+        rw [pow_add, pow_one] at h1
+        have hinv : γ⁻¹ = γ ^ (Fintype.card (A →ₐ[k] k) - 1) :=
+          inv_eq_of_mul_eq_one_right h1
+        show γ⁻¹ e = 1
+        rw [hinv]
+        exact hHpow γ hγ _ }
+  haveI : Finite ↥Hsub := inferInstance
+  haveI : NeZero ((Monoid.exponent ↥Hsub : ℕ) : k) :=
+    ⟨Nat.cast_ne_zero.mpr Monoid.exponent_ne_zero_of_finite⟩
+  -- the evaluation isomorphism onto the function algebra of the point set
+  let evAlg : A →ₐ[k] ((A →ₐ[k] k) → k) :=
+    AlgHom.pi (fun γ : A →ₐ[k] k => γ)
+  have hevbij : Function.Bijective evAlg := bijective_eval_algHom_of_isSepClosed k A
+  let Ψ : A ≃ₐ[k] ((A →ₐ[k] k) → k) := AlgEquiv.ofBijective evAlg hevbij
+  have hΨ : ∀ (a : A) (γ : A →ₐ[k] k), Ψ a γ = γ a := fun _ _ => rfl
+  -- every character of the connected subgroup is realised by a corner group-like
+  let charElt : (↥Hsub →* kˣ) → A := fun χ =>
+    Ψ.symm (fun γ => if h : γ ∈ Hsub then ((χ ⟨γ, h⟩ : kˣ) : k) else 0)
+  have hcharVal : ∀ (χ : ↥Hsub →* kˣ) (γ : A →ₐ[k] k),
+      γ (charElt χ) = if h : γ ∈ Hsub then ((χ ⟨γ, h⟩ : kˣ) : k) else 0 := by
+    intro χ γ
+    rw [← hΨ (charElt χ) γ]
+    show Ψ (Ψ.symm (fun γ => if h : γ ∈ Hsub then ((χ ⟨γ, h⟩ : kˣ) : k) else 0)) γ = _
+    rw [AlgEquiv.apply_symm_apply]
+  have hcharS : ∀ χ : ↥Hsub →* kˣ,
+      Coalgebra.counit (R := k) (charElt χ) = (1 : k) ∧
+      Coalgebra.comul (R := k) (charElt χ) * (e ⊗ₜ[k] e) =
+        charElt χ ⊗ₜ[k] charElt χ := by
+    intro χ
+    refine ⟨?_, ?_⟩
+    · have h1 := hcharVal χ 1
+      rw [hone_apply, dif_pos Hsub.one_mem] at h1
+      rw [h1]
+      have hu : (⟨(1 : A →ₐ[k] k), Hsub.one_mem⟩ : ↥Hsub) = 1 := rfl
+      rw [hu, map_one]
+      simp
+    · refine injective_lift_pair_of_isSepClosed k A ?_
+      intro γ δ
+      rw [map_mul, Algebra.TensorProduct.lift_tmul, Algebra.TensorProduct.lift_tmul,
+        ← hmul_apply]
+      by_cases hγ : γ ∈ Hsub
+      · by_cases hδ : δ ∈ Hsub
+        · have hγe : γ e = 1 := hγ
+          have hδe : δ e = 1 := hδ
+          rw [hγe, hδe, one_mul, mul_one]
+          have hmem : γ * δ ∈ Hsub := Hsub.mul_mem hγ hδ
+          rw [hcharVal χ (γ * δ), hcharVal χ γ, hcharVal χ δ,
+            dif_pos hmem, dif_pos hγ, dif_pos hδ,
+            show (⟨γ * δ, hmem⟩ : ↥Hsub) = (⟨γ, hγ⟩ : ↥Hsub) * (⟨δ, hδ⟩ : ↥Hsub) from rfl,
+            map_mul]
+          push_cast
+          ring
+        · have hδe : δ e = 0 := (hidem δ).resolve_right hδ
+          rw [hδe, mul_zero, mul_zero, hcharVal χ δ, dif_neg hδ, mul_zero]
+      · have hγe : γ e = 0 := (hidem γ).resolve_right hγ
+        rw [hγe, zero_mul, mul_zero, hcharVal χ γ, dif_neg hγ, zero_mul]
+  -- extension by zero of a function on the connected subgroup
+  let E : (↥Hsub → k) →ₗ[k] ((A →ₐ[k] k) → k) :=
+    { toFun := fun f γ => if h : γ ∈ Hsub then f ⟨γ, h⟩ else 0
+      map_add' := by intro f g; funext γ; by_cases h : γ ∈ Hsub <;> simp [h]
+      map_smul' := by intro c f; funext γ; by_cases h : γ ∈ Hsub <;> simp [h] }
+  have hEchar : ∀ χ : ↥Hsub →* kˣ,
+      E (fun h : ↥Hsub => ((χ h : kˣ) : k)) = Ψ (charElt χ) := by
+    intro χ
+    funext γ
+    show (if h : γ ∈ Hsub then ((χ ⟨γ, h⟩ : kˣ) : k) else 0) = γ (charElt χ)
+    rw [hcharVal]
+  have hsupp : Ψ (y * e) = E (fun h : ↥Hsub => Ψ (y * e) h.1) := by
+    funext γ
+    show Ψ (y * e) γ = if h : γ ∈ Hsub then Ψ (y * e) (⟨γ, h⟩ : ↥Hsub).1 else 0
+    by_cases h : γ ∈ Hsub
+    · rw [dif_pos h]
+    · rw [dif_neg h, hΨ, map_mul, (hidem γ).resolve_right h, mul_zero]
+  have hmapE : Submodule.map E ⊤ =
+      Submodule.span k (Set.range (fun χ : ↥Hsub →* kˣ => Ψ (charElt χ))) := by
+    rw [← span_range_monoidHomVal_eq_top (K := k) (H := ↥Hsub), Submodule.map_span,
+      ← Set.range_comp]
+    exact congrArg (Submodule.span k) (congrArg Set.range (funext hEchar))
+  have hmem : Ψ (y * e) ∈
+      Submodule.span k (Set.range (fun χ : ↥Hsub →* kˣ => Ψ (charElt χ))) := by
+    rw [← hmapE, hsupp]
+    exact Submodule.mem_map_of_mem Submodule.mem_top
+  have hmem2 : y * e ∈ Submodule.span k (Set.range charElt) := by
+    have hrange : (Set.range (fun χ : ↥Hsub →* kˣ => Ψ (charElt χ))) =
+        (Ψ.toLinearEquiv : A →ₗ[k] _) '' (Set.range charElt) := by
+      rw [← Set.range_comp]; rfl
+    rw [hrange, ← Submodule.map_span] at hmem
+    obtain ⟨z, hz, hzeq⟩ := Submodule.mem_map.mp hmem
+    have hz2 : z = y * e := Ψ.injective hzeq
+    exact hz2 ▸ hz
+  have hle : Submodule.span k (Set.range charElt) ≤
+      Subalgebra.toSubmodule (Algebra.adjoin k {a : A |
+        Coalgebra.counit (R := k) a = (1 : k) ∧
+        Coalgebra.comul (R := k) a * (e ⊗ₜ[k] e) = a ⊗ₜ[k] a}) := by
+    rw [Submodule.span_le]
+    rintro _ ⟨χ, rfl⟩
+    exact Algebra.subset_adjoin (hcharS χ)
+  exact hle hmem2
+
+end CornerGroupAlgebra
+
+section CornerBaseChange
+
+variable {R S H : Type*} [CommRing R] [CommRing S] [Algebra R S] [CommRing H]
+  [Bialgebra R H]
+
+/-- The counit of a base-changed bialgebra, on `1 ⊗ a` (PROVEN 2026-07-26). -/
+theorem counit_one_tmul (a : H) :
+    Coalgebra.counit (R := S) ((1 : S) ⊗ₜ[R] a) =
+      algebraMap R S (Coalgebra.counit (R := R) a) := by
+  rw [congr($(Bialgebra.TensorProduct.counit_eq_algHom_toLinearMap R S S H)
+    ((1 : S) ⊗ₜ[R] a))]
+  simp [Algebra.algebraMap_eq_smul_one]
+
+/-- A counit idempotent whose comultiplication absorbs `e ⊗ e` keeps that
+property after base change (PROVEN 2026-07-26): both sides are the image of a
+pure tensor under `tensorTensorTensorComm`, so the identity is the original
+one tensored with `1 * 1 = 1`. -/
+theorem comul_one_tmul_absorbs (e : H)
+    (habs : Coalgebra.comul (R := R) e * (e ⊗ₜ[R] e) = e ⊗ₜ[R] e) :
+    Coalgebra.comul (R := S) ((1 : S) ⊗ₜ[R] e) *
+        (((1 : S) ⊗ₜ[R] e) ⊗ₜ[S] ((1 : S) ⊗ₜ[R] e)) =
+      ((1 : S) ⊗ₜ[R] e) ⊗ₜ[S] ((1 : S) ⊗ₜ[R] e) := by
+  have hcomul_e : Coalgebra.comul (R := S) ((1 : S) ⊗ₜ[R] e) =
+      (Algebra.TensorProduct.tensorTensorTensorComm R S R S S S H H).toAlgHom
+        ((1 : S ⊗[S] S) ⊗ₜ[R] (Coalgebra.comul (R := R) e)) := by
+    rw [congr($(Bialgebra.TensorProduct.comul_eq_algHom_toLinearMap R S S H)
+      ((1 : S) ⊗ₜ[R] e))]
+    simp [Algebra.TensorProduct.one_def]
+  have he2 : ((1 : S) ⊗ₜ[R] e) ⊗ₜ[S] ((1 : S) ⊗ₜ[R] e) =
+      (Algebra.TensorProduct.tensorTensorTensorComm R S R S S S H H).toAlgHom
+        ((1 : S ⊗[S] S) ⊗ₜ[R] (e ⊗ₜ[R] e)) := by
+    simp [Algebra.TensorProduct.one_def]
+  rw [hcomul_e, he2, ← map_mul, Algebra.TensorProduct.tmul_mul_tmul, one_mul, habs]
+
+end CornerBaseChange
+
+/-- Étaleness of a base-changed algebra passes up a tower of base rings
+(PROVEN 2026-07-26): `T ⊗[R] H ≃ₐ[T] T ⊗[S] (S ⊗[R] H)` by
+`Algebra.TensorProduct.cancelBaseChange`, and the right-hand side is a base
+change of the étale `S ⊗[R] H`. -/
+theorem formallyEtale_baseChange_tower {R S T H : Type*} [CommRing R] [CommRing S]
+    [CommRing T] [CommRing H] [Algebra R S] [Algebra R T] [Algebra S T]
+    [IsScalarTower R S T] [Algebra R H] [Algebra.FormallyEtale S (S ⊗[R] H)] :
+    Algebra.FormallyEtale T (T ⊗[R] H) :=
+  (Algebra.FormallyEtale.iff_of_equiv
+    (Algebra.TensorProduct.cancelBaseChange R S T T H)).mp inferInstance
+
+/-- Commutativity of the convolution monoid of points passes from one base field
+to a larger one (PROVEN 2026-07-26): both monoids are carried onto the
+convolution monoid of the `R`-points by the tensor-hom adjunction
+`AlgHom.liftEquiv`, which is multiplicative by `liftEquiv_symm_convMul`. -/
+theorem mul_comm_algHom_baseChange_of_baseChange
+    {R H : Type*} [CommRing R] [CommRing H] [Bialgebra R H]
+    {S L : Type u} [Field S] [Field L] [Algebra R S] [Algebra R L] [Algebra S L]
+    [IsScalarTower R S L]
+    (hcomm : ∀ φ ψ : S ⊗[R] H →ₐ[S] L, φ * ψ = ψ * φ) :
+    ∀ φ ψ : L ⊗[R] H →ₐ[L] L, φ * ψ = ψ * φ := by
+  have hW : ∀ χ₁ χ₂ : H →ₐ[R] L,
+      (toConv χ₁ * toConv χ₂ : WithConv (H →ₐ[R] L)) = toConv χ₂ * toConv χ₁ := by
+    intro χ₁ χ₂
+    have h := hcomm (AlgHom.liftEquiv R S H L χ₁) (AlgHom.liftEquiv R S H L χ₂)
+    have h2 := congrArg (AlgHom.liftEquiv R S H L).symm h
+    rw [vendored_mul_eq_convMul, vendored_mul_eq_convMul, liftEquiv_symm_convMul,
+      liftEquiv_symm_convMul, WithConv.ofConv_toConv, WithConv.ofConv_toConv,
+      WithConv.ofConv_toConv, WithConv.ofConv_toConv, Equiv.symm_apply_apply,
+      Equiv.symm_apply_apply] at h2
+    exact WithConv.ofConv_injective h2
+  intro φ ψ
+  apply (AlgHom.liftEquiv R L H L).symm.injective
+  rw [vendored_mul_eq_convMul, vendored_mul_eq_convMul, liftEquiv_symm_convMul,
+    liftEquiv_symm_convMul, WithConv.ofConv_toConv, WithConv.ofConv_toConv,
+    WithConv.ofConv_toConv, WithConv.ofConv_toConv]
+  exact congrArg WithConv.ofConv (hW _ _)
+
 set_option maxHeartbeats 2000000 in
 /-- **Half (α) of the μ-type node: over the algebraically closed
-`ℚᵖᵥᵃˡᵍ` the connected corner IS a group algebra** (SORRY NODE, split
-off `exists_grouplike_family_of_connected_hopf_package` on 2026-07-25).
+`ℚᵖᵥᵃˡᵍ` the connected corner IS a group algebra** (PROVEN 2026-07-26;
+split off `exists_grouplike_family_of_connected_hopf_package` on
+2026-07-25).
 
 This is the part of the μ-type classification that lives entirely over
 the ALGEBRAICALLY CLOSED field `ℚᵖᵥᵃˡᵍ` and needs NO `p`-adic
@@ -1884,7 +2362,7 @@ theorem exists_grouplike_family_generating_corner
     (habel : ∀ φ ψ : ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ)
     (e₀ : G) (he₀ : IsIdempotentElem e₀)
     (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
-    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (_hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
     (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
       e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) :
     ∃ (ι : Type) (x : ι → ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G),
@@ -1893,8 +2371,50 @@ theorem exists_grouplike_family_generating_corner
           (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
         x i ⊗ₜ[ℚᵖᵥᵃˡᵍ] x i) ∧
       (∀ y : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G, y * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ∈
-        Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range x)) :=
-  sorry
+        Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range x)) := by
+  classical
+  -- the geometric fibre is again étale, over the algebraic closure
+  haveI : Algebra.FormallyEtale ℚᵖᵥᵃˡᵍ (ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G) :=
+    formallyEtale_baseChange_tower (R := 𝒪ᵖᵥ) (S := ℚᵖᵥ) (T := ℚᵖᵥᵃˡᵍ) (H := G)
+  haveI : Module.Finite ℚᵖᵥᵃˡᵍ (ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G) := inferInstance
+  haveI : Algebra.EssFiniteType ℚᵖᵥᵃˡᵍ (ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G) := inferInstance
+  -- and its point monoid is still commutative
+  have habel' : ∀ φ ψ : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥᵃˡᵍ] ℚᵖᵥᵃˡᵍ, φ * ψ = ψ * φ :=
+    mul_comm_algHom_baseChange_of_baseChange (S := ℚᵖᵥ) habel
+  -- the base-changed connected counit idempotent
+  have hidem : IsIdempotentElem ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) := by
+    show ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) = _
+    rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul, he₀]
+  have hcount : Coalgebra.counit (R := ℚᵖᵥᵃˡᵍ) ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      (1 : ℚᵖᵥᵃˡᵍ) := by
+    rw [counit_one_tmul, hε₀, map_one]
+  have hcom : Coalgebra.comul (R := ℚᵖᵥᵃˡᵍ) ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) *
+      (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
+      ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) :=
+    comul_one_tmul_absorbs e₀ hcomul₀
+  -- the family is the set of ALL corner group-likes, so clauses (1) and (2)
+  -- hold by construction and (3) is `adjoin_cornerGroupLike_of_isSepClosed`
+  refine ⟨{a : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G //
+      Coalgebra.counit (R := ℚᵖᵥᵃˡᵍ) a = (1 : ℚᵖᵥᵃˡᵍ) ∧
+      Coalgebra.comul (R := ℚᵖᵥᵃˡᵍ) a *
+          (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
+        a ⊗ₜ[ℚᵖᵥᵃˡᵍ] a},
+    Subtype.val, fun i => i.2.1, fun i => i.2.2, fun y => ?_⟩
+  have hmem := adjoin_cornerGroupLike_of_isSepClosed ℚᵖᵥᵃˡᵍ (ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G) habel'
+    ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) hidem hcount hcom y
+  have hmono : Algebra.adjoin ℚᵖᵥᵃˡᵍ {a : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G |
+        Coalgebra.counit (R := ℚᵖᵥᵃˡᵍ) a = (1 : ℚᵖᵥᵃˡᵍ) ∧
+        Coalgebra.comul (R := ℚᵖᵥᵃˡᵍ) a *
+            (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
+          a ⊗ₜ[ℚᵖᵥᵃˡᵍ] a} ≤
+      Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range (Subtype.val :
+        {a : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G //
+          Coalgebra.counit (R := ℚᵖᵥᵃˡᵍ) a = (1 : ℚᵖᵥᵃˡᵍ) ∧
+          Coalgebra.comul (R := ℚᵖᵥᵃˡᵍ) a *
+              (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
+            a ⊗ₜ[ℚᵖᵥᵃˡᵍ] a} → ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G)) :=
+    Algebra.adjoin_mono (fun a ha => ⟨⟨a, ha⟩, rfl⟩)
+  exact hmono hmem
 
 /-- **The unramified part of `ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G`**: the `𝒪ᵖᵥ`-submodule
 spanned by the pure tensors whose SCALAR lies in the fixed field of the
