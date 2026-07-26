@@ -9979,6 +9979,94 @@ the test which separates it from `hbad2`/`hbad3`/`hbadℓ` — those
 delete instances the literature does not cover; this one only blurs
 instances that it does.
 
+NARROWED A FOURTH TIME 2026-07-26 (round 4) — CUSPIDALITY, via the new
+hypothesis `hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible`. Rounds
+2 and 3 closed the RAMIFICATION gap (`hbad2`/`hbad3`/`hbadℓ`); this one
+closes the other half of the same faithfulness question — *which
+eigensystems the cited theorem is a theorem about at all*.
+
+* Carayol's Théorème (A) is a statement about a CUSPIDAL automorphic
+  representation `π` of `GL₂/F`. It says nothing whatever about an
+  Eisenstein eigensystem: the "compatible system" attached to one is a
+  direct sum of one-dimensional characters, and its construction is
+  class field theory, not the `ℓ`-adic cohomology of a Shimura curve.
+* The only automorphy input this leaf has is `hmod`, and `hmod` does
+  not distinguish the two: it says the Hecke polynomials interpolate
+  the Frobenius characteristic polynomials of `ρ|_{G_F}` away from
+  `badF`, which is equally true of an Eisenstein system when
+  `ρbar|_{G_F}` is reducible. So the OLD statement claimed a Carayol
+  realization on instances Théorème (A) does not reach.
+* `hirrF` deletes exactly those instances. In the intended chain it is
+  precisely the non-Eisenstein condition: the maximal ideal of the
+  Hecke algebra cut out by `ρbar|_{G_F}` is non-Eisenstein iff
+  `ρbar|_{G_F}` is irreducible, and that is the hypothesis under which
+  `exists_heckeEigensystem_of_congruentSeed` produces `heckeF` in the
+  first place (it is also the hypothesis of the Carayol 1994 descent
+  quoted in `MoretBaillySeed`'s `O₀` field).
+* NOT implied by `hirr`. Irreducibility of `ρbar` over `ℚ` does NOT
+  give irreducibility over the large totally real Galois `F`;
+  restriction to `G_F` can break it. That is exactly why the
+  Moret–Bailly leaf has to assert image preservation separately, and
+  why `hirrF` is a genuine restriction rather than a derived fact.
+* Cost to consumers: ZERO, like the three `hbad` hypotheses.
+  `exists_potentialModularityWitness_of_five_le` already OBTAINS
+  `hirrF` from `exists_moretBailly_seed_of_five_le` (where it is proven
+  in-tree from image preservation by
+  `isIrreducible_map_of_range_surjective`) and already passes it to
+  `exists_heckePackage_of_seed`; it now passes it here too, through the
+  two assemblies.
+
+ROUND-4 AUDIT — three further candidates examined and REJECTED. All
+three are recorded so the next owner does not spend a round on them.
+
+(4) THREADING THE `MoretBaillySeed` IN AS A HYPOTHESIS — REJECTED as a
+FAKE narrowing, and this is the sharpest instance yet of the test. It
+looks like exactly the automorphy certificate this leaf is missing
+("`heckeF` comes from a Hilbert newform"), and it would be free at the
+call site. But `MoretBaillySeed`'s own VACUITY AUDIT (see that
+structure's docstring) records that the type is JUNK-SATISFIABLE: its
+`modular₀` field degenerates to the Hilbert–Blumenthal point's own
+`matchℓ` with `hecke₀` renamed, and repo-wide the structure is never
+consumed. A hypothesis that every instance can satisfy with junk
+deletes NO instance, so adding it would weaken the statement on paper
+and narrow nothing in fact. **The test a candidate hypothesis must
+pass: does it FAIL somewhere the literature also fails?** `hbad2`,
+`hbad3`, `hbadℓ` and `hirrF` pass it; the seed does not.
+
+(5) PINNING THE WEIGHT — adding `∀ w ∉ badF, (heckeF w).coeff 0 =
+(Ideal.absNorm w.asIdeal : E)` (parallel weight `2`, trivial
+nebentypus) — REJECTED as REDUNDANT, not merely as blurring.
+`IsHardlyRamified.det` already pins `det ρ` to the `ℓ`-adic cyclotomic
+character (see `HardlyRamified/Defs.lean`), so the constant coefficient
+of `(ρ.map (algebraMap ℚ F)).charFrob w` is the cyclotomic value at
+`Frob_w`, i.e. `Nw`; `hmod` then transports that to `heckeF w`. The
+clause is therefore a formal CONSEQUENCE of hypotheses already present
+and deletes no instance. Monicity and `natDegree = 2` are consequences
+of `hmod` for the same reason. (Independently it would also have been
+route-(3) blurring: Théorème (A) covers cuspidal `π` of every
+admissible weight, so restricting the determinant would delete
+instances the literature DOES cover.)
+
+(6) TOTAL ODDNESS of `ρ|_{G_F}` — REJECTED as REDUNDANT, same source:
+`IsHardlyRamified.det` fixes the determinant outright, so oddness is
+already a consequence of `hρ` and no instance is deleted.
+
+RESIDUAL FAITHFULNESS GAP, NAMED (2026-07-26, round 4; flagged, NOT
+repaired here — it is a cut-level change). Even with `hirrF`, the true
+hypothesis of Théorème (A) — that `heckeF` IS the Hecke eigensystem of
+a cuspidal Hilbert newform over `F` — is NOT stateable at this pin,
+because the pin has no Hilbert modular forms (PIN AUDIT above).
+`hirrF` is the sharpest in-tree PROXY for it, not the thing itself:
+for an abstract `heckeF` satisfying `hmod` and `hirrF`, what this leaf
+asserts is still "`ρ|_{G_F}` sits in a compatible system", of which
+automorphy is the smuggled ingredient. Closing that gap properly means
+DEFINING Hilbert modular forms and their eigensystems, and rewiring the
+three interfaces that currently record "modular" as bare Frobenius data
+(`MoretBaillySeed`, `exists_heckePackage_of_seed`,
+`PotentialModularityWitness`). That is a decomposition decision, not a
+repair available inside this declaration; it is recorded here so the
+next audit does not mistake `hirrF` for a complete fix.
+
 ROUTE AUDIT (dichotomy, 2026-07-24; unchanged — do not re-litigate
 without new evidence). Two routes to the `3`-adic member of the
 compatible system were weighed at this joint:
@@ -10043,6 +10131,10 @@ theorem carayol_threeadic_realization_of_heckePackage
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    -- CUSPIDALITY (round-4 narrowing, 2026-07-26): Carayol's Théorème (A)
+    -- is a theorem about CUSPIDAL `π`, and `hmod` alone does not exclude an
+    -- Eisenstein eigensystem. See the docstring's round-4 block.
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (E : Type u) [Field E] [NumberField E]
     (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
     (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
@@ -10109,6 +10201,15 @@ the clause only weakens as it grows. See the core's docstring for the
 argument and `exists_potentialModularityWitness_of_five_le` for the
 discharge.
 
+NARROWED A FOURTH TIME 2026-07-26 (round 4): the CUSPIDALITY hypothesis
+`hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible` is likewise threaded
+straight through to the core. Carayol's Théorème (A) is a theorem about
+cuspidal `π`, and `hmod` alone does not exclude an Eisenstein
+eigensystem; `hirrF` is the non-Eisenstein condition. It too costs
+nothing: `exists_potentialModularityWitness_of_five_le` already holds it
+(from `exists_moretBailly_seed_of_five_le`) and already passes it to
+`exists_heckePackage_of_seed`.
+
 See `carayol_threeadic_realization_of_heckePackage` for the full
 literature, pin, route and soundness audits (including the
 component-by-component TERMINALITY AUDIT of what is left, and what was
@@ -10140,6 +10241,7 @@ theorem exists_threeadic_realization_domain_of_heckePackage
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (E : Type u) [Field E] [NumberField E]
     (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
     (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
@@ -10171,7 +10273,7 @@ theorem exists_threeadic_realization_domain_of_heckePackage
   -- injectivity of the comparison embedding asserted
   obtain ⟨B₀, hCR₀, hAlg₀, hFin₀, τ₀, ψ₃, ι₀, hmatch₀⟩ :=
     carayol_threeadic_realization_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW
-      hρbar hirr π hπsurj hπ F hFtr hFgal E badF heckeF ψℓ ιO hιO hmod
+      hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ ιO hιO hmod
       hbad2 hbad3 hbadℓ
   -- (a') DOMAIN NORMALIZATION: `ker ι₀` is prime, so the whole package
   -- descends to `B₀ ⧸ ker ι₀` without moving any `ι₀`-image of a Frobenius
@@ -10252,6 +10354,15 @@ representations associated to Hilbert modular forms*, Invent. Math. 98
 (1989); Serre, *Abelian ℓ-adic representations*, I §1 for the stable
 lattice.
 
+HYPOTHESES ADDED 2026-07-26 AND THREADED THROUGH UNCHANGED: `hbad2`,
+`hbad3`, `hbadℓ` (rounds 2–3, the RAMIFICATION gap — the citation may
+not claim a Frobenius characteristic polynomial where the `3`-adic
+member ramifies) and `hirrF` (round 4, the CUSPIDALITY gap — Carayol's
+Théorème (A) is a theorem about cuspidal `π`, and `hmod` alone does not
+exclude an Eisenstein eigensystem). All four are free at the single
+call site `exists_potentialModularityWitness_of_five_le`; see the core's
+docstring for the arguments.
+
 SOUNDNESS AUDIT (both ways, 2026-07-24): unchanged from the citation
 leaf, since this theorem is a strict consequence of it — (i) direct,
 for the intended instantiation this is Carayol/Taylor verbatim plus
@@ -10286,6 +10397,7 @@ theorem exists_threeadic_realization_of_heckePackage
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (E : Type u) [Field E] [NumberField E]
     (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
     (heckeF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
@@ -10315,7 +10427,7 @@ theorem exists_threeadic_realization_of_heckePackage
   obtain ⟨B, hCR, hDom, hTS, hTR, hAlg, hLR, hFin, hMT, hBinj, τF, ψ₃,
     ιB, hιB, hmatch⟩ :=
     exists_threeadic_realization_domain_of_heckePackage hℓodd hℓ5 hZinj
-      hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal E badF heckeF ψℓ
+      hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF heckeF ψℓ
       ιO hιO hmod hbad2 hbad3 hbadℓ
   -- (c) the eigensystem-match transport: the normalization below does
   -- not move the coefficient ring, so `hmatch` is carried verbatim and
@@ -10474,12 +10586,16 @@ theorem exists_potentialModularityWitness_of_five_le
   have hmod' : ∀ w ∉ badF',
       ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ :=
     fun w hw => hmod w fun h => hw (hsub h)
-  -- (iii) the Hilbert-modular `3`-adic realization: the 3-adic block
+  -- (iii) the Hilbert-modular `3`-adic realization: the 3-adic block.
+  -- `hirrF` — already in hand from step (i) and already consumed by step
+  -- (ii) — is now also handed to the Carayol citation (round-4 narrowing,
+  -- 2026-07-26): it is the non-Eisenstein/cuspidality condition without
+  -- which Théorème (A) is not a theorem about the eigensystem at all.
   obtain ⟨B, hB₁, hB₂, hB₃, hB₄, hB₅, hB₆, hB₇, hB₈, τF, ψ₃, ιB, hιB,
     hmatch⟩ :=
     exists_threeadic_realization_of_heckePackage hℓodd hℓ5 hZinj hrank hρ
-      hW hρbar hirr π hπsurj hπ F hFtr hFgal E badF' heckeF ψℓ ιO hιO hmod'
-      hbad2 hbad3 hbadℓ
+      hW hρbar hirr π hπsurj hπ F hFtr hFgal hirrF E badF' heckeF ψℓ ιO hιO
+      hmod' hbad2 hbad3 hbadℓ
   -- glue: instantiate the carrier fieldwise
   exact ⟨{ F := F, totallyReal := hFtr, galoisF := hFgal, E := E,
            badF := badF', heckeF := heckeF, ψℓ := ψℓ, ιO := ιO,
