@@ -375,7 +375,7 @@ import Mathlib.NumberTheory.Basic
 -- Galois representation at a finite place, with the tame part computed
 -- from the inertia invariants and the Swan part an OPAQUE constant. PUBLIC:
 -- `HasConductorExponentAt` appears in the SIGNATURE of the shared Carayol
--- conductor leaf `hasConductorExponentAt_factorization_of_isNewAtPrime`
+-- conductor leaf `exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime`
 -- below.
 public import Fermat.FLT.Deformations.RepresentationTheory.ArtinConductor
 -- The Galois theory of ramification: `Ideal.ramificationIdxIn`,
@@ -31878,7 +31878,7 @@ This leaf is NOT a duplicate of
 the corresponding statement over the weaker `IsWeightTwoEigenform`
 carrier with `IsNewAtPrime` in place of newform-ness, and which is
 PROVEN — by descent through
-`hasConductorExponentAt_factorization_of_isNewAtPrime`, hence
+`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime`, hence
 ultimately through this leaf. The dependency runs newform → eigenform,
 never back.
 
@@ -31977,7 +31977,34 @@ statements about the deep-level half and survive the narrowing verbatim,
 and the parent
 `hasConductorExponentAt_factorization_of_isWeightTwoNewform` now takes
 its ramifiedness from whichever of the two leaves owns the case it is
-in. -/
+in.
+
+STATUS 2026-07-26 (ninth owner) — **THIS LEAF IS UNWIRED AND HAS NO
+CONSUMER.** The sentence immediately above is now false: the parent
+`hasConductorExponentAt_factorization_of_isWeightTwoNewform` does NOT
+take its ramifiedness from this leaf, and cannot. Its conclusion is the
+EQUATION `a_q = ord_q M₀`, whose wild summand is the `opaque`
+`GaloisRep.swanExponentAux`; ramifiedness constrains that summand not at
+all, so the "two-component split" this leaf belongs to stopped being a
+decomposition the moment `HasConductorExponentAt` was pinned in
+`ArtinConductor.lean` (2026-07-26). A comment-stripped scan of the whole
+tree on 2026-07-26 finds exactly ONE code occurrence of this name — its
+own declaration. The split ran the other way round: ramifiedness is a
+CONSEQUENCE of the parent, via
+`GaloisRep.HasConductorExponentAt.not_isUnramifiedAt_of_ne_zero`.
+
+So this is a sorried leaf that assumes Carayol content nothing consumes,
+which makes it strictly a liability: it enlarges what the development
+assumes while contributing nothing to the root. It is left in place
+rather than deleted only because the audits above are the tree's best
+record of why the away-from-`p` place is terminal, and because deleting
+a leaf is a cut-level call. **Recommendation to the integrator: fold
+these audits into
+`hasConductorExponentAt_factorization_of_isWeightTwoNewform` and DELETE
+this declaration and its sibling
+`exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one`,
+closing two sorries that no longer buy anything.** Do NOT dispatch a
+prover here in the meantime. -/
 theorem not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -32135,7 +32162,18 @@ is already correct as written: it names the tame half as available
 through `GaloisRep.tameExponent_add_one_le_finrank_of_fixed`. The stale
 "Kolchin is absent" claim in that docstring lives instead in the
 "Neither half is provable on this pin" paragraph shortly above the
-FALSITY AUDIT, and has now been corrected in place there. -/
+FALSITY AUDIT, and has now been corrected in place there.
+
+STATUS 2026-07-26 (ninth owner) — **THIS LEAF IS UNWIRED AND HAS NO
+CONSUMER**, for the same reason as its sibling
+`not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` above: a
+ramifiedness-plus-fixed-line pair cannot pin the conductor exponent once
+`HasConductorExponentAt` is the EQUATION `a = tameExponent + swanExponent`
+with `swanExponent` built on the `opaque` `swanExponentAux`. A
+comment-stripped scan of the tree finds exactly ONE code occurrence of
+this name — its own declaration. See the sibling's STATUS note for the
+full argument and for the recommendation that both be deleted into the
+parent citation. Do NOT dispatch a prover here. -/
 theorem exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -32158,8 +32196,33 @@ theorem exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one
           τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ w₀ = w₀ :=
   sorry
 
-/-- **Carayol's conductor theorem at the NEWFORM level** (PROVEN
-2026-07-26 from the two-component split below — was the residual
+/-- **Carayol's conductor theorem at the NEWFORM level** (**SORRY LEAF —
+TERMINAL AT THIS PIN.** The header of this docstring read "PROVEN
+2026-07-26 from the two-component split below" until 2026-07-26, when the
+NINTH owner found the body had been `sorry` since the leaf was introduced
+in `bbd88d15` and the claimed route to be mathematically dead. The
+"two-component split" — `not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible`
+and `exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one`,
+both ABOVE, not below — delivers RAMIFIEDNESS and a tame FIXED LINE. That
+was enough under the WITHDRAWN existential packaging, where
+`HasConductorExponentAt` was upward closed at a ramified place and any
+`a` above the tame part could be witnessed. Under the pinned definition
+`a = tameExponent + swanExponent` the wild summand is
+`GaloisRep.swanExponentAux`, an `opaque` constant about which NO equation
+is provable by construction, so no combination of ramifiedness and tame
+information can pin `a` to `ord_q M₀`. **The two split leaves are
+therefore now consequences of this one rather than inputs to it, and as
+of 2026-07-26 neither has any consumer anywhere in the tree** — see the
+status notes on each. This leaf is the away-from-`p` literature
+assumption of the development, at full strength, and its terminality
+audit is the one recorded on
+`not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` above:
+Casselman's newvector theory, Deligne's conductor compatibility, and the
+Deligne–Rapoport model of `X₀(M₀)` at `q`, none of which exist on this
+pin. It IS, however, live: it is consumed by
+`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime` and by
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`
+below — was the residual
 away-from-`p` literature leaf, re-pinned 2026-07-25 at the
 level where the cited theorem is actually stated: Carayol, *Sur les
 représentations `ℓ`-adiques associées aux formes modulaires de Hilbert*,
@@ -32180,7 +32243,7 @@ SMALLER than `ord_q M` even when `g` is `q`-new in the sense of
 `IsNewAtPrime` (take `M = q²` with underlying newform level `M₀ = q`:
 no `q`-FREE divisor level realizes the eigensystem, so `IsNewAtPrime`
 holds, yet `ord_q M₀ = 1 < 2 = ord_q M`). The eigenform-level statement
-`hasConductorExponentAt_factorization_of_isNewAtPrime` below is
+`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime` below is
 therefore NOT the cited identity but a strictly weaker consequence of
 it, sound only because `GaloisRep.HasConductorExponentAt` is upward
 closed at a ramified place
@@ -32315,9 +32378,16 @@ theorem hasConductorExponentAt_factorization_of_isWeightTwoNewform
   sorry
 
 /-- **Carayol's conductor theorem, ONE shared leaf in conductor-exponent
-form** (PROVEN 2026-07-25 from the newform-level citation
+form — at the NEWFORM LEVEL `M₀` behind `g`, not at `M`** (**REFUTED IN
+ITS OLD `ord_q M` FORM AND RESTATED 2026-07-26, ninth owner; the
+restated statement is PROVEN, sorry-free** — see the REFUTATION section
+at the end of this docstring. It was PROVEN 2026-07-25 from the
+newform-level citation
 `hasConductorExponentAt_factorization_of_isWeightTwoNewform` plus the
-newform descent — was the DEDUPLICATED away-from-`p` literature leaf,
+newform descent, RE-SORRIED 2026-07-26 when the pin of
+`HasConductorExponentAt` invalidated the last step of that descent, and
+is now proven again in the corrected shape — was the DEDUPLICATED
+away-from-`p` literature leaf,
 2026-07-25: Carayol, *Sur les représentations `ℓ`-adiques associées aux
 formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A) —
 local–global compatibility at a prime `q ≠ p`; for weight 2 over `ℚ` the
@@ -32478,8 +32548,87 @@ the exponent UPWARD along `M₀ ∣ M` via
 unsound once `a` is pinned: it needs `ord_q M₀ = ord_q M`, which
 `IsNewAtPrime` does NOT supply (it forbids `q`-FREE realization levels,
 not `M₀` with `ord_q M₀ = 1` inside `q² ∣ M`). Do not restore the
-descent without first settling that equality. -/
-theorem hasConductorExponentAt_factorization_of_isNewAtPrime
+descent without first settling that equality.
+
+REFUTATION AND RESTATEMENT (2026-07-26, NINTH owner — the note above
+diagnosed the PROOF as unsound; the truth is stronger, the STATEMENT
+was FALSE, and it has been replaced by the true one, which is now
+PROVEN).
+
+**The old conclusion `a_q(τ) = ord_q M` is FALSE**, with an explicit
+counterexample built from a curve this file already uses. Take
+`q := 11`, `M := 121`, `p := 3`, let `g₀` be the weight-2 newform of
+level `11` (the one attached to `E = X₀(11)`), and let `g` be `g₀`
+viewed at level `121`. Then:
+
+* `g` really is an inhabitant of `IsWeightTwoEigenform 121`: it is
+  normalized (`a₁ = 1`, its `q`-expansion is `g₀`'s) and it is a
+  `U₁₁`-eigenvector inside the `11`-oldspace `⟨g₀(z), g₀(11z)⟩`, since
+  `U₁₁ g₀ = a₁₁(g₀) g₀ = g₀` and `U₁₁ V₁₁ = 1`, so `U₁₁` has matrix
+  `[[1,1],[0,0]]` in that basis and `g₀` is its eigenvector for the
+  eigenvalue `1`.
+* `IsNewAtPrime 121 11 g` HOLDS, and this is the whole point: the
+  predicate quantifies over divisors `M' ∣ 121` with `11 ∤ M'`, i.e.
+  over `M' = 1` alone, and `S₂(Γ₀(1)) = 0` has no normalized eigenform,
+  so the condition is VACUOUSLY satisfied. The realization of `g`'s
+  eigensystem at level `11` is invisible to it, because `11 ∣ 11`.
+* `τ := V₃(E) ⊗ ℚ̄₃` is irreducible (Serre/Ribet) and matches the Hecke
+  polynomials of `g` away from `S_τ := {3, 11}` (Eichler–Shimura),
+  since `heckeCoeff 121 g r = a_r(g₀)` for `r ∤ 121`.
+* `E` has multiplicative reduction at `11` with `cond E = 11`, so
+  `a₁₁(τ) = 1`: inertia at `11` acts through the Tate parametrisation by
+  a nontrivial transvection, `dim V^{I₁₁} = 1` hence
+  `tameExponent = 1`, and `Sw₁₁ = 0` because the wild inertia at `11` is
+  pro-`11` while `p = 3`.
+
+So the old conclusion asserted `a₁₁(τ) = ord₁₁ 121 = 2` against the
+truth `a₁₁(τ) = 1`. Note that the "WHY THE LAST STEP NEEDS `mono`"
+paragraph above ALREADY contains this counterexample (`M = q²` with
+`M₀ = q`) — it was written when the predicate was upward closed, where
+it was harmless, and the pin turned it from an observation about the
+proof into a refutation of the statement. That is the lesson worth
+carrying: **a hypothesis-side weakening that is later removed does not
+merely break proofs, it can falsify the statements those proofs
+concluded**, and a docstring that records a "this would be false if…"
+caveat is a refutation waiting for its condition to be met.
+
+**The restated conclusion is what Carayol plus the newform descent
+actually delivers**, namely the conductor identity AT THE NEWFORM LEVEL
+`M₀` behind `g`, together with the two facts about `M₀` that the
+consumers need — `M₀ ∣ M` and `q ∣ M₀`:
+
+  `∃ M₀, M₀ ∣ M ∧ q ∣ M₀ ∧ a_q(τ) = ord_q M₀`.
+
+Nothing is assumed that was not assumed before (the newform-level
+citation `hasConductorExponentAt_factorization_of_isWeightTwoNewform` is
+unchanged); what is dropped is exactly the unsound upward transport, and
+`M₀` is exposed instead of being existentially discarded. The proof is
+steps 1–5 of the pre-`mono` descent verbatim — newform descent
+(`exists_weightTwoNewform_of_weightTwoEigenform`), `q ∣ M₀` out of
+`IsNewAtPrime`, transport of the `p`-adic Hecke embedding
+(`exists_ringHom_heckeField_of_qCoeff_eq`), enlargement of the
+exceptional set by the primes dividing `M`, and the newform-level
+citation — with steps 6–7 deleted.
+
+BOTH CONSUMERS SURVIVE, and neither loses content:
+
+* `not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` below used only
+  `eq_zero_of_isUnramifiedAt`. It now reads the vanishing off `ord_q M₀`
+  and contradicts it with `q ∣ M₀` instead of `q ∣ M`. Its own statement
+  is unchanged.
+* `weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`
+  below needed the OPPOSITE direction, `ord_q M ≤ a_q`, which is
+  precisely what the counterexample kills — but its `g` is a NEWFORM of
+  level `M`, so it never needed the descent at all. It now calls the
+  newform-level leaf
+  `hasConductorExponentAt_factorization_of_isWeightTwoNewform` DIRECTLY,
+  where `M₀ = M` holds on the nose. Its own statement is unchanged.
+
+RENAMED to `exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime`,
+because the shape changed from an equation to an existential and a
+silent meaning change under the old name would be far worse than a
+rename conflict. -/
+theorem exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime
     {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
     (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
@@ -32495,9 +32644,42 @@ theorem hasConductorExponentAt_factorization_of_isNewAtPrime
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (_hqM : q ∣ M)
     (hnew : IsNewAtPrime M q g) :
-    τ.HasConductorExponentAt hq.toHeightOneSpectrumRingOfIntegersRat
-      (M.factorization q) :=
-  sorry
+    ∃ M₀ : ℕ, M₀ ∣ M ∧ q ∣ M₀ ∧
+      τ.HasConductorExponentAt hq.toHeightOneSpectrumRingOfIntegersRat
+        (M₀.factorization q) := by
+  classical
+  -- step 1: the newform behind `g` (Diamond–Shurman Prop. 5.8.4)
+  obtain ⟨M₀, hM₀dvd, hM₀pos, g₀, hg₀, hagree⟩ :=
+    exists_weightTwoNewform_of_weightTwoEigenform hM hg
+  -- step 2: `q`-newness forbids the `q`-free realization level `M₀`
+  have hqM₀ : q ∣ M₀ := by
+    by_contra hq0
+    exact hnew M₀ hM₀dvd hq0 g₀ hg₀.toIsWeightTwoEigenform hagree
+  -- step 3: transport the `p`-adic embedding to the newform's Hecke field
+  obtain ⟨κ₀, hκ₀⟩ := exists_ringHom_heckeField_of_qCoeff_eq hM₀pos
+    hg₀.toIsWeightTwoEigenform κ hagree
+  -- step 4: `τ` matches `g₀`'s Hecke polynomials away from `S_τ ∪ (primes ∣ M)`
+  set badM : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+    M.primeFactors.attach.image fun r =>
+      (Nat.prime_of_mem_primeFactors r.2).toHeightOneSpectrumRingOfIntegersRat
+  have hτ₀ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ ∪ badM →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])) := by
+    intro r hr hrS
+    have hrM : ¬ r ∣ M := by
+      intro hdvd
+      exact hrS (Finset.mem_union_right _ (Finset.mem_image.mpr
+        ⟨⟨r, Nat.mem_primeFactors.mpr ⟨hr, hdvd, hM.ne'⟩⟩,
+          Finset.mem_attach _ _, rfl⟩))
+    rw [hτ r hr fun h => hrS (Finset.mem_union_left _ h), hκ₀ r hr hrM]
+  -- step 5: Carayol's theorem at the newform level. The unsound steps 6-7
+  -- (upward transport of the exponent along `M₀ ∣ M`) are DELETED; `M₀` is
+  -- returned instead.
+  exact ⟨M₀, hM₀dvd, hqM₀, hasConductorExponentAt_factorization_of_isWeightTwoNewform
+    hM₀pos hg₀ κ₀ hτ₀ hirr hq hqp hqM₀⟩
 
 /-- **THE TAME HALF of the at-`2` conductor bound: a square-zero-unipotent
 inertia action at `2` caps the TAME exponent at `1`** (**PROVEN
@@ -32519,7 +32701,7 @@ This leaf carries NO automorphic input — it is a purely local statement
 about a Galois representation, and it is (half of) the piece of the former
 at-`2` citation that survives once Carayol's theorem has been factored out
 into the single shared leaf
-`hasConductorExponentAt_factorization_of_isNewAtPrime` above. The two
+`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime` above. The two
 halves, as they were originally recorded:
 
 * TAME part `2 − dim V^{I₂} ≤ 1` — THIS LEAF: the image `τ(I₂)` consists of
@@ -32650,7 +32832,7 @@ this leaf asks of it.
 
 WHY NO IN-REGION REPAIR EXISTS. The existential packaging discards the
 wild summand irreversibly at the shared Carayol leaf
-`hasConductorExponentAt_factorization_of_isNewAtPrime`, so NO statement
+`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime`, so NO statement
 whose only numeric input is `HasConductorExponentAt τ v₂ a` can bound
 `a` without proving unramifiedness. The residual mathematical content of
 this leaf is exactly `Sw₂(τ) = 0`, which the current packaging cannot
@@ -33024,7 +33206,7 @@ therefore NOT terminal, and is proven below.
 DEDUP (2026-07-25 — this leaf is now PROVEN, no longer a citation): the
 Carayol content recorded above has been factored out into the ONE shared
 conductor-exponent leaf
-`hasConductorExponentAt_factorization_of_isNewAtPrime`, and this
+`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime`, and this
 statement is now a two-line COROLLARY of it: unramifiedness at `q` makes
 the conductor exponent vanish (`GaloisRep.tameExponent` vanishes because
 `V^{I_q} = V`, and `GaloisRep.swanExponent_eq_zero_of_isUnramifiedAt`
@@ -33052,11 +33234,16 @@ theorem not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible
     ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := by
   intro hun
   haveI : τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat := hun
-  have hzero : M.factorization q = 0 :=
-    (hasConductorExponentAt_factorization_of_isNewAtPrime hM hg κ hτ hirr
-      hq hqp hqM hnew).eq_zero_of_isUnramifiedAt
-  have hpos : 0 < M.factorization q :=
-    hq.factorization_pos_of_dvd hM.ne' hqM
+  -- The shared Carayol leaf now returns the NEWFORM level `M₀` behind `g`
+  -- (its `ord_q M` form was refuted 2026-07-26); the contradiction is read
+  -- off `M₀` instead of `M`, and `q ∣ M₀` is part of what it returns.
+  obtain ⟨M₀, hM₀dvd, hqM₀, hcond⟩ :=
+    exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime hM hg κ hτ hirr
+      hq hqp hqM hnew
+  have hM₀pos : 0 < M₀ := Nat.pos_of_dvd_of_pos hM₀dvd hM
+  have hzero : M₀.factorization q = 0 := hcond.eq_zero_of_isUnramifiedAt
+  have hpos : 0 < M₀.factorization q :=
+    hq.factorization_pos_of_dvd hM₀pos.ne' hqM₀
   omega
 
 /-- **Carayol's conductor theorem at an unramified prime `q ≠ p`,
@@ -35736,7 +35923,7 @@ include hpodd in
 /-- **Carayol's conductor exponent bound at `2`, irreducible
 exponent form** (DECOMPOSED and PROVEN 2026-07-25 over the two
 conductor-exponent leaves
-`hasConductorExponentAt_factorization_of_isNewAtPrime` (shared, all
+`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime` (shared, all
 places `q ≠ p`) and `conductorExponent_two_le_one_of_inertia_sq_eq_zero`
 (purely local at `2`; RESTATED 2026-07-26 — its predecessor
 `hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` was refuted,
@@ -35764,7 +35951,7 @@ zero is CONJUGATION-INVARIANT, which is exactly why the cut is made at
 that hypothesis. What remains genuinely CITED is split across the two
 leaves this proof consumes: (a) Carayol's `ord₂ cond = ord₂ M` lives in
 the shared, all-places leaf
-`hasConductorExponentAt_factorization_of_isNewAtPrime`, and (b) Serre's
+`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime`, and (b) Serre's
 Artin exponent formula `n(2, τ) = dim V/V^{I₂} + b(V)` (Duke 54 (1987)
 §1.2, (1.2.1)–(1.2.2)) together with (c) the single topological input
 this pin cannot supply — that the pro-`2` wild inertia has FINITE image
@@ -35876,7 +36063,7 @@ carried as an explicit existential input
 and its objection that "no purely local statement can reach this leaf's
 conclusion, which mentions `M`" is answered by not asking one to: the
 `M`-facing half is the shared Carayol leaf
-`hasConductorExponentAt_factorization_of_isNewAtPrime`, and what is left
+`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime`, and what is left
 for the local leaf is exactly `a₂ ≤ 1`, with no `M` in it. The audit's
 own formalizable observation — `c` is a homomorphism into a torsion-free
 abelian group — is what makes the split work, in the
@@ -35885,7 +36072,7 @@ conjugation-invariant form `(τσ − 1)² = 0`, and it is PROVEN here.
 DEDUP (2026-07-25 — this leaf is now PROVEN, no longer a citation): the
 Carayol content recorded above has been factored out into the ONE shared
 conductor-exponent leaf
-`hasConductorExponentAt_factorization_of_isNewAtPrime`, and the local
+`exists_newformLevel_hasConductorExponentAt_of_isNewAtPrime`, and the local
 exponent computation at `2` into the purely local, automorphic-input-free
 bound `conductorExponent_two_le_one_of_inertia_sq_eq_zero` (RESTATED
 2026-07-26: its predecessor
@@ -35936,10 +36123,14 @@ theorem weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrr
     have hp2 : (2 : ℕ) ≠ p := by
       rintro rfl
       simp [Nat.odd_iff] at hpodd
-    -- the ONE shared Carayol leaf at `q = 2`: `a₂ = ord₂ M`
-    have hcond := hasConductorExponentAt_factorization_of_isNewAtPrime hM
-      hg.toIsWeightTwoEigenform κ hτ hirr Nat.prime_two hp2 h2M
-      (isNewAtPrime_of_isWeightTwoNewform hg h2M)
+    -- Carayol at `q = 2`: `a₂ = ord₂ M`. Taken at the NEWFORM level, which is
+    -- where it is true — `g` is a newform of level `M` here, so `M₀ = M` on the
+    -- nose and no descent is needed. (Until 2026-07-26 this went through the
+    -- eigenform-level leaf, whose `ord_q M` form was REFUTED that day: the
+    -- direction needed here is `ord₂ M ≤ a₂`, which is exactly the direction
+    -- that fails when the newform level is a proper divisor.)
+    have hcond := hasConductorExponentAt_factorization_of_isWeightTwoNewform hM
+      hg κ hτ hirr Nat.prime_two hp2 h2M
     -- and the purely local at-`2` bound `a₂ ≤ 1`
     refine hcond.le_of_conductorExponent_le
       (conductorExponent_two_le_one_of_inertia_sq_eq_zero hpodd ?_)
