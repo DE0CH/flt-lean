@@ -295,6 +295,9 @@ public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Defs
 public import Mathlib.AlgebraicGeometry.Limits
 -- `ZMod ℓ` is the base ring of the reduction `X_0(N)_{𝔽_ℓ}`; see `SpecF`.
 public import Mathlib.Data.ZMod.Basic
+-- `Scheme.Hom.image` / `imageι` / `toImage`: the scheme-theoretic image of a
+-- morphism, which is how the descent leaf's closed subscheme `C` is built.
+public import Mathlib.AlgebraicGeometry.IdealSheaf.Subscheme
 
 @[expose] public section
 
@@ -881,9 +884,302 @@ theorem exists_ellipticScheme_of_weierstrass (E : WeierstrassCurve ℚ) [E.IsEll
                = ab.galSMul (𝟙 SpecQ) σ (e x)) :=
   sorry
 
+/-! ### The span of a finite family of geometric points
+
+**Added 2026-07-26, and it is what turns the descent leaf below from an
+unstartable existential into a construction with five stated properties.**
+
+The obstruction recorded in the pin survey of
+`exists_cyclicSubgroupOfOrder_of_galoisStable` was that nothing in the pin
+builds a closed subscheme out of a finite set of geometric points.  That
+was a naming miss: `AlgebraicGeometry.Scheme.Hom.image` is the
+scheme-theoretic image of a morphism, and
+
+    C := the scheme-theoretic image of  ∐_{s ∈ ⟨y⟩} Spec ℚ̄ ⟶ A
+
+is exactly the reduced closed subscheme supported on the (finitely many,
+closed) images of the points of `⟨y⟩`.  Classically `C = Spec ∏_i κ_i`
+with the `κ_i` the fields of definition of the `Γ_ℚ`-orbits, which is the
+descended group scheme; here it is obtained without any Galois-category
+machinery, because the scheme-theoretic image already performs the
+descent.
+
+Two of the eight fields of `CyclicSubgroupOfOrder` are then FREE for this
+`C`, and are proven below rather than left to a successor:
+
+* `isClosedImmersion` — `IsClosedImmersion I.subschemeι` is a mathlib
+  instance;
+* `flat` — the base is `Spec ℚ`, a one-point integral scheme, and mathlib's
+  `[Subsingleton Y] [IsIntegral Y] → Flat f` instance applies verbatim.
+  (This confirms the "NOTE ON THE `flat` FIELD" prediction below: the field
+  really does cost nothing.) -/
+
+/-- **The coproduct of copies of `Spec ℚ̄` indexed by `J`**, the source of
+the morphism whose scheme-theoretic image cuts out the level structure. -/
+noncomputable abbrev geomPtSigma (J : Type) : Scheme.{0} :=
+  ∐ (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ)))
+
+/-- **The morphism `∐_J Spec ℚ̄ ⟶ A` assembled from a family of
+`ℚ̄`-points of `A`.** -/
+noncomputable def geomPtDesc {A : Scheme.{0}} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A)) :
+    geomPtSigma J ⟶ A :=
+  Limits.Sigma.desc p
+
+/-- **The closed subscheme of `A` spanned by a family of `ℚ̄`-points**: the
+scheme-theoretic image of `geomPtDesc p`.
+
+For a `Γ_ℚ`-stable family this is the Galois descent of the family — the
+smallest closed subscheme of `A` through which every member factors. -/
+noncomputable def spanScheme {A : Scheme.{0}} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A)) : Scheme.{0} :=
+  (geomPtDesc p).image
+
+/-- **The closed immersion of the span into `A`.** -/
+noncomputable def spanSchemeι {A : Scheme.{0}} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A)) :
+    spanScheme p ⟶ A :=
+  (geomPtDesc p).imageι
+
+/-- The span is a closed subscheme of `A` (PROVEN — a mathlib instance). -/
+instance {A : Scheme.{0}} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A)) :
+    IsClosedImmersion (spanSchemeι p) :=
+  inferInstanceAs (IsClosedImmersion (geomPtDesc p).ker.subschemeι)
+
+/-- **Every member of the family factors through the span** (PROVEN): it is
+`Sigma.ι` followed by the factorisation through the scheme-theoretic
+image. -/
+theorem geomPt_liesIn_spanScheme {A : Scheme.{0}} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A)) (j : J) :
+    ∃ w : Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ spanScheme p,
+      w ≫ spanSchemeι p = p j := by
+  refine ⟨Limits.Sigma.ι (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ))) j ≫
+    (geomPtDesc p).toImage, ?_⟩
+  show Limits.Sigma.ι (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ))) j ≫
+      (geomPtDesc p).toImage ≫ (geomPtDesc p).imageι = p j
+  rw [Scheme.Hom.toImage_imageι]
+  exact Limits.colimit.ι_desc _ _
+
+/-- **The `N` multiples of a geometric point `y`**, as a family of
+`ℚ̄`-points of `A` indexed by `Fin N`.
+
+Indexing by `Fin N` rather than by `↥(AddSubgroup.zmultiples y)` is
+deliberate: the latter's *type* depends on the `AddCommGroup` instance
+`ab.addCommGroup`, which would force a `letI` into every signature below.
+When `addOrderOf y = N` the two index the same subset of `A(ℚ̄)`, since
+`⟨y⟩ = {0 • y, …, (N-1) • y}`. -/
+noncomputable def zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (y : GeomFibrePt f (𝟙 SpecQ)) :
+    Fin N → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A) :=
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  fun k => (((k : ℕ) • y : GeomFibrePt f (𝟙 SpecQ))).1
+
+/-- Every multiple of `y` is a geometric point of the fibre over
+`𝟙 SpecQ` (PROVEN — it is the second component of the relative point). -/
+theorem zmulPts_comp {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (y : GeomFibrePt f (𝟙 SpecQ)) (k : Fin N) :
+    zmulPts ab N y k ≫ f = specAlgClos ℚ ≫ 𝟙 SpecQ :=
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  (((k : ℕ) • y : GeomFibrePt f (𝟙 SpecQ))).2
+
+/-! ### The five properties of the span that the descent leaf needs -/
+
+/-- **The span of finitely many `ℚ̄`-points of a scheme locally of finite
+type over `ℚ` is FINITE over `ℚ`** (sorry leaf (i) of the descent
+decomposition).
+
+TRUE, and classical.  Each `ℚ̄`-point `p j` has image a point of `A` whose
+residue field embeds in `ℚ̄`, hence is a finitely generated `ℚ`-algebra
+which is a field, hence finite over `ℚ` by **Zariski's lemma** — so the
+image point is CLOSED and its residue field is a number field.  The
+scheme-theoretic image is therefore supported on a finite set of closed
+points; being a closed subscheme of a locally-noetherian scheme with
+discrete finite support it is an artinian scheme, hence affine, hence
+`Spec` of a finite-dimensional `ℚ`-algebra.
+
+WHAT IS MISSING AT THIS PIN, precisely — the survey is worth having
+because the pieces are unusually close:
+
+* `AlgebraicGeometry.IsArtinianScheme` exists (`AlgebraicGeometry/Artinian.lean`),
+  with `IsArtinianScheme.finite` giving finiteness of the underlying type,
+  and `IsLocallyArtinian.of_isImmersion` transporting along immersions.
+* `IsFinite.iff_isIntegralHom_and_locallyOfFiniteType` reduces the goal to
+  `IsIntegralHom (spanSchemeι p ≫ f)`, and `LocallyOfFiniteType` of that
+  composite is free (a closed immersion is of finite type, and `f` is
+  smooth hence of finite type).
+* **The genuine gap is `IsArtinianScheme X → IsAffine X`** — an artinian
+  scheme is a finite disjoint union of `Spec`s of artin local rings — which
+  `grep` does not find anywhere in the pin.  A successor who proves that one
+  statement gets this leaf almost immediately.
+
+Note this leaf does NOT need the family to be Galois-stable, and does not
+mention the group law: it is a statement about an arbitrary finite family
+of geometric points. -/
+theorem isFinite_spanSchemeι {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) {J : Type} [Finite J]
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
+    (hp : ∀ j, p j ≫ f = specAlgClos ℚ ≫ 𝟙 SpecQ) :
+    IsFinite (spanSchemeι p ≫ f) :=
+  sorry
+
+/-- **A `ℚ`-rational point of `A` whose associated `ℚ̄`-point is a member of
+the family factors through the span** (sorry leaf (ii) of the descent
+decomposition).
+
+TRUE.  `geomPt_liesIn_spanScheme` already gives the factorisation of the
+`ℚ̄`-point `specAlgClos ℚ ≫ r` through `C`; what is asked here is that the
+factorisation *descends* to `ℚ`, i.e. that the `ℚ`-point `r` itself lands in
+the closed subscheme `C`.  That is the fpqc descent of a closed immersion
+along the faithfully flat `Spec ℚ̄ ⟶ Spec ℚ`: `r` factors through the closed
+subscheme `C` iff `r^{-1}(I_C) = 0`, and vanishing of a section of a sheaf
+may be checked after a faithfully flat base change.
+
+Equivalently and more cheaply: `C` is a closed subscheme and `r` is a
+morphism from the REDUCED scheme `Spec ℚ` whose image lands in the support
+of `C`, so `r` factors through the reduced induced structure on that
+support — and `C` is reduced, being the scheme-theoretic image of a reduced
+scheme.
+
+This leaf is what discharges the `zero_liesIn` field, via
+`zero_liesIn_of_ratPoint` below: the whole field at every base `T'` reduces
+to this single `ℚ`-point, because the zero section at any base is the
+zero section at `𝟙 SpecQ` precomposed with the base point. -/
+theorem ratPoint_liesIn_spanScheme {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) {J : Type} [Finite J]
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
+    (r : SpecQ ⟶ A) (hr : r ≫ f = 𝟙 SpecQ)
+    (hgeom : ∃ j, p j = specAlgClos ℚ ≫ r) :
+    ∃ w : SpecQ ⟶ spanScheme p, w ≫ spanSchemeι p = r :=
+  sorry
+
+/-- **`zero_liesIn` at an ARBITRARY base reduces to the single `ℚ`-point
+`ab.zero (𝟙 SpecQ)`** (PROVEN 2026-07-26).
+
+This is the naturality axiom `pre_zero` read at `g = 𝟙 SpecQ`: the zero
+section over any base `T'` is the zero section over `Spec ℚ` precomposed
+with the structure morphism `g : T' ⟶ Spec ℚ`.  So one factorisation of
+one `ℚ`-point through `C` gives the factorisation at every base at once,
+and no separate descent argument is needed per base. -/
+theorem zero_liesIn_of_ratPoint {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
+    (w₀ : SpecQ ⟶ spanScheme p) (hw₀ : w₀ ≫ spanSchemeι p = (ab.zero (𝟙 SpecQ)).1)
+    {T' : Scheme.{0}} (g : T' ⟶ SpecQ) :
+    RelPoint.LiesIn (spanSchemeι p) (ab.zero g) := by
+  refine ⟨g ≫ w₀, ?_⟩
+  rw [Category.assoc, hw₀]
+  have h := ab.pre_zero g (g := 𝟙 SpecQ) (g' := g) (Category.comp_id g)
+  exact congrArg Subtype.val h
+
+/-- **The span of `⟨y⟩` is closed under the group law, at every base**
+(sorry leaf (iii) of the descent decomposition).
+
+TRUE, and this is the rigidity half of "`C` is a subgroup SCHEME rather
+than merely a subgroup of geometric points".
+
+THE ARGUMENT, and note it does NOT proceed base by base — `T'` ranges over
+non-reduced schemes too, where agreeing on geometric points proves
+nothing.  Instead one produces the multiplication morphism once:
+
+1. By Yoneda, `ab.add` at the base point `A ×_ℚ A ⟶ Spec ℚ` applied to the
+   two projections gives a morphism `m : A ×_ℚ A ⟶ A` representing the
+   group law, and naturality (`pre_add`) makes `ab.add x z` equal to
+   `⟨x, z⟩ ≫ m` for relative points at ANY base.
+2. `C ×_ℚ C` is reduced (over `ℚ`, `C` is finite étale, and a product of
+   étale `ℚ`-schemes is étale hence reduced), and `A` is separated (it is
+   proper over `ℚ`).  The composite `C ×_ℚ C ⟶ A ×_ℚ A ⟶ A` agrees on
+   geometric points with a morphism landing in `C`, because `⟨y⟩` is a
+   subgroup of `A(ℚ̄)`; so by
+   `AlgebraicGeometry.ext_of_isDominant_of_isSeparated` it factors through
+   the closed immersion `ι`, giving `μ : C ×_ℚ C ⟶ C` with
+   `μ ≫ ι = m ∘ (ι × ι)`.
+3. Then for arbitrary `T'` and `x = a ≫ ι`, `z = b ≫ ι`, the point
+   `ab.add x z = ⟨a, b⟩ ≫ μ ≫ ι` lies in `C`.
+
+So the rigidity input is used exactly ONCE, at `C ×_ℚ C`, which is the
+only place it is valid.  `hstable` enters through step 2: it is what makes
+`⟨y⟩` a `Γ_ℚ`-submodule and hence `C` defined over `ℚ` at all. -/
+theorem add_liesIn_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N)
+    (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          ∀ σ : Field.absoluteGaloisGroup ℚ,
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y)
+    {T' : Scheme.{0}} {g : T' ⟶ SpecQ} {x z : RelPoint f g}
+    (hx : RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) x)
+    (hz : RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) z) :
+    RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) (ab.add x z) :=
+  sorry
+
+/-- **The span of `⟨y⟩` is closed under inversion, at every base** (sorry
+leaf (iv) of the descent decomposition).
+
+Same argument as `add_liesIn_zmulPts`, one step shorter: the inversion
+morphism `n : A ⟶ A` is `ab.neg` applied by Yoneda to the identity point,
+`C` is reduced, `A` is separated, and `n ∘ ι` agrees with a morphism into
+`C` on geometric points because `⟨y⟩` is closed under negation.  The
+rigidity step happens at `C` itself rather than at `C ×_ℚ C`. -/
+theorem neg_liesIn_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N)
+    (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          ∀ σ : Field.absoluteGaloisGroup ℚ,
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y)
+    {T' : Scheme.{0}} {g : T' ⟶ SpecQ} {x : RelPoint f g}
+    (hx : RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) x) :
+    RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) (ab.neg x) :=
+  sorry
+
+/-- **The geometric fibres of the span are cyclic of order exactly `N`**
+(sorry leaf (v) of the descent decomposition — THE CRUX).
+
+TRUE.  Over `ℚ̄` the span is split: `C_{ℚ̄} = ∐_{s ∈ ⟨y⟩} Spec ℚ̄`, because
+the scheme-theoretic image of `∐_{⟨y⟩} Spec ℚ̄ ⟶ A` is `Spec` of the
+product of the residue fields of the `Γ_ℚ`-orbits, and base change to `ℚ̄`
+splits each orbit into its individual points.  So `C(ℚ̄) = ⟨y⟩`, cyclic of
+order `addOrderOf y = N`.
+
+WHY THE STATEMENT QUANTIFIES OVER EVERY ALGEBRAICALLY CLOSED `K`, and why
+that is not a strengthening.  `ℚ` is initial among commutative rings, so
+the base point `t : Spec K ⟶ Spec ℚ` is unique and carries no data.  The
+algebraic closure of `ℚ` inside `K` is a copy of `ℚ̄`, over which `C` is
+already split, and a `K`-point of a scheme that is a finite product of
+number fields is determined by a `ℚ̄`-point; so `C(K) = C(ℚ̄) = ⟨y⟩` with
+the same order `N`.  The generator `z` produced at `K` is the image of `y`
+under any embedding `ℚ̄ ↪ K` — a choice, but the resulting SUBGROUP is
+independent of it because `⟨y⟩` is `Γ_ℚ`-stable, which is exactly what
+`hstable` supplies.
+
+WHAT IS MISSING AT THIS PIN: the identification of the base change of a
+scheme-theoretic image with the scheme-theoretic image of the base change
+(true here because `Spec ℚ̄ ⟶ Spec ℚ` is flat), plus the computation of
+`Hom_ℚ(Spec K, C)` for `C` finite over `ℚ`.  This is the one leaf of the
+five that genuinely needs the finite-étale/Galois-set correspondence, and
+it needs only the SPLIT direction of it, over an algebraically closed
+base — which `CommAlgCat.FiniteEtale.equivOfIsSepClosed` already provides
+in the pin. -/
+theorem geom_cyclic_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N)
+    (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          ∀ σ : Field.absoluteGaloisGroup ℚ,
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y)
+    (K : Type) [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ SpecQ) :
+    letI := ab.addCommGroup t
+    ∃ z : RelPoint f t, RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) z ∧
+      addOrderOf z = N ∧
+      ∀ x : RelPoint f t, RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) x ↔
+        x ∈ AddSubgroup.zmultiples z :=
+  sorry
+
 /-- **Galois descent: a Galois-stable cyclic subgroup of the geometric
 points of an abelian scheme over `ℚ` is cut out by a closed cyclic
-subgroup scheme** (sorry node — theory (b) of the bridge).
+subgroup scheme** (PROVEN 2026-07-26 from the five leaves of the
+subsection above; formerly a single sorry node).
 
 **FALSITY AUDIT, 2026-07-26 — the hypothesis `hN : N ≠ 0` is NOT
 decoration, and was ADDED on this date because the statement without it is
@@ -970,12 +1266,21 @@ What is ABSENT, and is the actual content of this leaf:
   so `FiniteEtale k` is NOT known to be a Galois category and the
   correspondence with finite continuous `Γ_k`-sets — the descent
   direction, over a NON-closed base — does not exist;
-* no construction of the reduced induced closed subscheme structure on a
+* ~~no construction of the reduced induced closed subscheme structure on a
   closed subset of a scheme (`grep` over `AlgebraicGeometry/` finds no
-  `reducedSubscheme` of any spelling).
+  `reducedSubscheme` of any spelling)~~ — **CORRECTED 2026-07-26.  The
+  survey searched for the wrong name.**  `AlgebraicGeometry.Scheme.Hom.image`
+  (`IdealSheaf/Subscheme.lean:650`) is the *scheme-theoretic image* of a
+  morphism, with `Hom.imageι` the closed immersion into the target,
+  `Hom.toImage` the factorisation, `Hom.toImage_imageι` their composite,
+  and `IsDominant (Hom.toImage f)` for quasi-compact `f`.  That is exactly
+  the construction this leaf needed, and taking it at the morphism
+  `∐_{s ∈ ⟨y⟩} Spec ℚ̄ ⟶ A` builds `C` directly.  It is now used below;
+  see `Fermat.spanScheme`.
 
-So the honest cut for a successor is: build the reduced induced
-structure, or go through `CommAlgCat.FiniteEtale` on affines and glue.
+So the honest cut for a successor is no longer "build the reduced induced
+structure": `C` and `ι` are CONSTRUCTED below, and what remains are the
+five properties of that specific `C` listed in the decomposition note.
 The algebra-side scaffolding is fresher than the module docstring's
 "no modular curves anywhere" survey would suggest.
 
@@ -988,7 +1293,34 @@ flat.  So the extra field is discharged by flatness of `C` as a
 `ℚ`-scheme, whichever construction of `C` a successor chooses, and no
 part of the descent argument above has to change.  The strengthening of
 the interface is paid for entirely by the *general-base* consumers, not
-here. -/
+here.  CONFIRMED 2026-07-26: `flat` is discharged below by
+`inferInstance`, from mathlib's `[Subsingleton Y] [IsIntegral Y] → Flat f`.
+
+## DECOMPOSITION, 2026-07-26 — this node is now PROVEN, over five leaves
+
+`C` and `ι` are no longer existential.  They are
+`spanScheme (zmulPts ab N y)` and `spanSchemeι (zmulPts ab N y)`: the
+scheme-theoretic image of `∐_{k < N} Spec ℚ̄ ⟶ A` assembled from the `N`
+multiples of `y`.  Of the eight fields of `CyclicSubgroupOfOrder`, three
+are discharged here and five became named leaves:
+
+| field | status |
+|---|---|
+| `C`, `ι` | CONSTRUCTED (`spanScheme`, `spanSchemeι`) |
+| `isClosedImmersion` | PROVEN — mathlib instance on `subschemeι` |
+| `flat` | PROVEN — base is a one-point integral scheme |
+| `zero_liesIn` | PROVEN from leaf (ii), via `zero_liesIn_of_ratPoint` |
+| `isFinite` | leaf (i) `isFinite_spanSchemeι` |
+| `add_liesIn` | leaf (iii) `add_liesIn_zmulPts` |
+| `neg_liesIn` | leaf (iv) `neg_liesIn_zmulPts` |
+| `geom_cyclic` | leaf (v) `geom_cyclic_zmulPts` — the crux |
+
+The five are genuinely independent classical facts, not a chain of
+`∃`-restatements: (i) is Zariski's lemma plus "an artinian scheme is
+affine"; (ii) is fpqc descent of a point along `ℚ̄/ℚ`; (iii) and (iv) are
+the rigidity of morphisms out of a reduced scheme into a separated one;
+(v) is the split finite-étale computation of `C(K)`.  Each carries its own
+route in its docstring. -/
 theorem exists_cyclicSubgroupOfOrder_of_galoisStable {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -996,8 +1328,30 @@ theorem exists_cyclicSubgroupOfOrder_of_galoisStable {A : Scheme.{0}} {f : A ⟶
     (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
           ∀ σ : Field.absoluteGaloisGroup ℚ,
             ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y) :
-    Nonempty (CyclicSubgroupOfOrder ab N) :=
-  sorry
+    Nonempty (CyclicSubgroupOfOrder ab N) := by
+  classical
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  -- The zero of the geometric fibre is the `0`-th multiple of `y`, hence a
+  -- member of the family; `hN` is what makes `⟨0, _⟩ : Fin N` available, and
+  -- this is the one place the repaired hypothesis is consumed.
+  have hzero : zmulPts ab N y ⟨0, Nat.pos_of_ne_zero hN⟩
+      = specAlgClos ℚ ≫ (ab.zero (𝟙 SpecQ)).1 := by
+    have h := ab.pre_zero (specAlgClos ℚ) (g := 𝟙 SpecQ)
+      (g' := specAlgClos ℚ ≫ 𝟙 SpecQ) rfl
+    show ((0 : ℕ) • y : GeomFibrePt f (𝟙 SpecQ)).1 = _
+    rw [zero_smul]
+    exact congrArg Subtype.val h.symm
+  obtain ⟨w₀, hw₀⟩ := ratPoint_liesIn_spanScheme ab (zmulPts ab N y)
+    (ab.zero (𝟙 SpecQ)).1 (ab.zero (𝟙 SpecQ)).2 ⟨_, hzero⟩
+  exact ⟨{ C := spanScheme (zmulPts ab N y)
+           ι := spanSchemeι (zmulPts ab N y)
+           isClosedImmersion := inferInstance
+           isFinite := isFinite_spanSchemeι ab (zmulPts ab N y) (zmulPts_comp ab N y)
+           flat := inferInstance
+           zero_liesIn := fun g => zero_liesIn_of_ratPoint ab _ w₀ hw₀ g
+           add_liesIn := fun hx hz => add_liesIn_zmulPts ab N hN y hy hstable hx hz
+           neg_liesIn := fun hx => neg_liesIn_zmulPts ab N hN y hy hstable hx
+           geom_cyclic := fun K _ _ t => geom_cyclic_zmulPts ab N hN y hy hstable K t }⟩
 
 /-- **Existence of the coarse moduli space `Y_0(N)`** (PROVEN, as the split
 of the level into the cited case `N ≥ 1` and the degenerate case `N = 0`).
