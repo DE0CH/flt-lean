@@ -365,6 +365,29 @@ public import Mathlib.RingTheory.AdicCompletion.RingHom
 -- (nothing from `Family.lean`, `Lift.lean`, `Modularity/*` or `Deformation.lean`);
 -- `Deformation.lean`, the consumer of this module, already imports it too.
 import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
+-- `globalFrob` and **Chebotarev density** `dense_conjClasses_globalFrob`, which
+-- `exists_hilbertTaylorWilesPrime` below is assembled over. Both are stated for
+-- an ARBITRARY number field `K`, so the `F`-level Taylor–Wiles extraction needs
+-- no `ℚ`-specific analogue of them.
+--
+-- IMPORT-SURFACE AUDIT (2026-07-26, and it refutes this module's own header
+-- note that `Chebotarev.lean` "lies outside this module's deliberately minimal
+-- import surface"). `Chebotarev.lean` was ALREADY in this module's transitive
+-- cone: the line immediately above imports `BrauerNesbittConjugacy.lean`, whose
+-- own import list carries `import Fermat.FLT.GaloisRepresentation.Chebotarev`
+-- (this is even recorded in the comment above). So this line adds **zero**
+-- modules to the cone; what it adds is RE-EXPORT. The old import reached
+-- `Chebotarev.lean` only through a chain of PRIVATE `import`s, which Lean's
+-- module system does not re-export, so its names were unavailable here even in
+-- proof bodies — the `public import` is Lean's own remedy for exactly that.
+--
+-- CIRCULARITY GUARD: safe, and it costs the guard nothing. `Chebotarev.lean`'s
+-- entire `Fermat`-side import list is `GaloisRep.lean`,
+-- `Mathlib/RingTheory/DedekindDomain/Ideal/Lemmas.lean`, `BrauerNesbitt.lean`
+-- and `AbsoluteGaloisGroup.lean` — nothing from `Family.lean`, `Lift.lean`,
+-- `Deformation.lean` or `Modularity/*`, and nothing from `HardlyRamified/`, so
+-- no cycle is created.
+public import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- `HenselianLocalRing`, for the Teichmüller-root existence lemma
 -- `exists_mem_teichmullerRootSet_map_eq` in the Carayol trace-descent section.
 import Mathlib.RingTheory.Henselian
@@ -12043,10 +12066,20 @@ def IsHilbertTaylorWilesPrimeSet (ℓ : ℕ) (F : Type u) [Field F] [NumberField
       (ρbar.map (algebraMap ℚ F)).charFrob w =
         (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)
 
-/-- **A single Taylor–Wiles prime of `F`** (LEAF — new 2026-07-26; the
-`F`-level twin of `Modularity/Patching.lean`'s `exists_taylorWilesPrime`,
+/-! ### The single Taylor–Wiles prime of `F`, and how it is cut
+
+**STATUS 2026-07-26 (second pass): `exists_hilbertTaylorWilesPrime` is now
+PROVEN**, by Chebotarev density over `F` on top of the single new leaf
+`exists_hilbertFixing_rootsOfUnity_charpoly_split` — the `F`-level twin of
+`Modularity/Patching.lean`'s `exists_fixing_rootsOfUnity_charpoly_split`. The
+architecture below is therefore the same two-step one the `ℚ`-level file uses,
+and the SHAPE AUDIT recorded here is what fixes where the cut may fall. The
+text of this note is the original leaf docstring, kept because its audit is
+what justifies the cut; one claim in it is CORRECTED at the end.
+
+The `F`-level twin of `Modularity/Patching.lean`'s `exists_taylorWilesPrime`,
 which is PROVEN there but only over a leaf this file may NOT copy — see the
-SHAPE AUDIT below).
+SHAPE AUDIT below.
 
 Avoiding any prescribed finite set `S` of places there is a place `w` of `F`
 which is a Taylor–Wiles prime of level `n`: good away from `2ℓ`, with
@@ -12103,9 +12136,274 @@ with distinct roots exactly when `−d` is a nonzero square in `k`. Whether the
 determinant image always contains such a `d` is the precise question this leaf
 turns on, and it is NOT settled here.
 
+**CORRECTION TO THE PARAGRAPH ABOVE (2026-07-26).** That determinant escape
+does NOT apply, in the only case the patching argument is run in. The element
+the argument needs must fix `μ_{ℓⁿ}` pointwise, i.e. `χ_ℓ(σ) ≡ 1 mod ℓⁿ`; for
+`n ≥ 1` that forces `χ̄_ℓ(σ) = 1`, and when `k` has residue characteristic `ℓ`
+— which is the intended case, `k` being the residue field of a `ℤ_ℓ`-algebra
+with `ℓ` in its maximal ideal — the determinant clause of
+`IsHilbertHardlyRamified`, transported by `HilbertDeformationDatum.resid`,
+gives `det ρbar|_{G_F}(σ) = 1` exactly. So the relevant elements are pinned to
+determinant `1` after all, which is precisely the hypothesis under which the
+binary-dihedral / `Q₈` counterexample of the SHAPE AUDIT was built: the
+determinant image is not an escape. (In residue characteristic `0` the
+paragraph survives, since `1 + ℓⁿ u ≠ 1` there; that is not the case at hand.)
+The honest escape remains the quadratic ENLARGEMENT of `k`, which this shape
+does not perform — see the EQUIVALENCE AUDIT on
+`exists_hilbertFixing_rootsOfUnity_charpoly_split` for why cutting at the
+Galois element nevertheless plants no falsity.
+
 References: Wiles, Ann. of Math. 141 (1995), ch. 3; Diamond–Darmon–Taylor
 (1995), Lemma 4.10/5.31; Fujiwara, *Deformation rings and Hecke algebras in
 the totally real case*, §3; Skinner–Wiles, Duke 107 (2001), §2. -/
+/-- **Only finitely many places of `F` contain a given nonzero integer**
+(PROVEN 2026-07-26): `c ∈ w` says exactly that `w` divides the principal ideal
+`(c)`, and a nonzero ideal of a Dedekind domain has finitely many prime
+divisors (`Ideal.finite_factors`).
+
+Used by `exists_hilbertTaylorWilesPrime` below to build the finite set of
+places that the Chebotarev extraction must avoid: the places over `2`, the
+places over `ℓ`, and the caller's `S`. -/
+theorem finite_setOf_natCast_mem_asIdeal (F : Type u) [Field F] [NumberField F]
+    (c : 𝓞 F) (hc : c ≠ 0) :
+    {w : HeightOneSpectrum (𝓞 F) | c ∈ w.asIdeal}.Finite := by
+  have hspan : (Ideal.span {c} : Ideal (𝓞 F)) ≠ 0 := by
+    simpa [Ideal.span_singleton_eq_bot] using hc
+  refine (Ideal.finite_factors hspan).subset fun w hw => ?_
+  simpa [Ideal.dvd_span_singleton] using hw
+
+/-- **The residual characteristic polynomial is a LOCALLY CONSTANT function on
+`G_F`** (PROVEN 2026-07-26; the topological input that makes the Chebotarev
+extraction in `exists_hilbertTaylorWilesPrime` below work at this statement's
+shape).
+
+For every `P` the locus `{g | charpoly (ρbar|_{G_F} g) = P}` is OPEN in `G_F`.
+
+WHY THIS IS NOT AUTOMATIC, AND WHY THE DATUM IS WHAT SUPPLIES IT. The `ℚ`-level
+twin `exists_taylorWilesPrime` (`Modularity/Patching.lean`) gets the same
+openness from its hypotheses `[Finite k] [DiscreteTopology k]`: with `k`
+discrete the endomorphism module is discrete and every charpoly locus is a
+preimage of an open set. **This module's leaves carry no such hypothesis** —
+`k` is an arbitrary topological field, whose topology could even be
+indiscrete, in which case `ρbar` itself need not be locally constant and the
+`ℚ`-level argument collapses.
+
+The repair is that the openness never needed `ρbar` at all. The datum's
+`resid` clause writes every residual charpoly as the `π`-image of a charpoly
+of the LIFT `𝒟₀.ρ`, and the lift is continuous into a module over `𝒟₀.R`,
+whose topology is the maximal-adic one (`𝒟₀.isAdic`). So `𝔪` is an open
+additive subgroup of `𝒟₀.R`, the entry functionals of the lift are
+`𝒟₀.R`-linear hence continuous for the module topology, and two group
+elements whose lifts agree entrywise mod `𝔪` have equal residual charpolys —
+`Matrix.charpoly_map` being the statement that reduction commutes with
+`charpoly`. Hence the locus contains a neighbourhood of each of its points.
+
+Formalization note: the argument runs over ENTRY FUNCTIONALS rather than over
+the matrix algebra as a whole, purely so that the only topological space
+involved is `𝒟₀.R` itself; that avoids having to know that the module topology
+on `Module.End R (R²)` agrees with the product topology on `M₂(R)`. -/
+theorem isOpen_setOf_charpoly_eq_of_hilbertDeformationDatum
+    {ℓ : ℕ} [Fact ℓ.Prime] {F : Type u} [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V] {ρbar : GaloisRep ℚ k V}
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (P : Polynomial k) :
+    IsOpen {g : Γ F | ((ρbar.map (algebraMap ℚ F)) g).charpoly = P} := by
+  classical
+  -- `ker π` is the maximal ideal, and it is OPEN because `R` carries the adic
+  -- topology
+  have hker : RingHom.ker 𝒟₀.π = IsLocalRing.maximalIdeal 𝒟₀.R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective 𝒟₀.π 𝒟₀.π_surjective)
+  have hmopen : IsOpen ((IsLocalRing.maximalIdeal 𝒟₀.R : Ideal 𝒟₀.R) : Set 𝒟₀.R) := by
+    refine (IsLocalRing.maximalIdeal 𝒟₀.R).toAddSubgroup.isOpen_of_mem_nhds
+      (g := 0) ?_
+    simpa using 𝒟₀.isAdic.hasBasis_nhds_zero.mem_of_mem (i := 1) trivial
+  -- entry functionals of the lift are `R`-linear, hence continuous
+  letI := moduleTopology 𝒟₀.R (Module.End 𝒟₀.R (Fin 2 → 𝒟₀.R))
+  haveI hMT : IsModuleTopology 𝒟₀.R (Module.End 𝒟₀.R (Fin 2 → 𝒟₀.R)) := ⟨rfl⟩
+  set b := Pi.basisFun 𝒟₀.R (Fin 2)
+  set e : Fin 2 → Fin 2 → (Module.End 𝒟₀.R (Fin 2 → 𝒟₀.R) →ₗ[𝒟₀.R] 𝒟₀.R) :=
+    fun i j => (b.coord i).comp (LinearMap.applyₗ (b j))
+  have hentry : ∀ (i j : Fin 2) (f : Module.End 𝒟₀.R (Fin 2 → 𝒟₀.R)),
+      e i j f = LinearMap.toMatrix b b f i j := by
+    intro i j f
+    rw [LinearMap.toMatrix_apply]
+    rfl
+  have hcont : ∀ i j, Continuous fun g : Γ F => e i j (𝒟₀.ρ g) := fun i j =>
+    (IsModuleTopology.continuous_of_linearMap (e i j)).comp
+      (ContinuousMonoidHom.continuous_toFun 𝒟₀.ρ)
+  rw [isOpen_iff_forall_mem_open]
+  intro g₀ hg₀
+  refine ⟨{g : Γ F | ∀ i j,
+      e i j (𝒟₀.ρ g) - e i j (𝒟₀.ρ g₀) ∈ IsLocalRing.maximalIdeal 𝒟₀.R},
+    ?_, ?_, fun i j => by simp⟩
+  · -- entrywise congruence mod `𝔪` forces equality of residual charpolys
+    intro g hg
+    show ((ρbar.map (algebraMap ℚ F)) g).charpoly = P
+    rw [← 𝒟₀.resid g]
+    have hmat : (LinearMap.toMatrix b b (𝒟₀.ρ g)).map 𝒟₀.π =
+        (LinearMap.toMatrix b b (𝒟₀.ρ g₀)).map 𝒟₀.π := by
+      ext i j
+      have h1 : 𝒟₀.π (e i j (𝒟₀.ρ g) - e i j (𝒟₀.ρ g₀)) = 0 := by
+        rw [← RingHom.mem_ker, hker]
+        exact hg i j
+      rw [map_sub, sub_eq_zero] at h1
+      rw [Matrix.map_apply, Matrix.map_apply, ← hentry, ← hentry]
+      exact h1
+    have hcp : ((𝒟₀.ρ g).charpoly).map 𝒟₀.π = ((𝒟₀.ρ g₀).charpoly).map 𝒟₀.π := by
+      rw [← LinearMap.charpoly_toMatrix (𝒟₀.ρ g) b,
+        ← LinearMap.charpoly_toMatrix (𝒟₀.ρ g₀) b,
+        ← Matrix.charpoly_map, ← Matrix.charpoly_map, hmat]
+    rw [hcp, 𝒟₀.resid g₀]
+    exact hg₀
+  · have hEq : {g : Γ F | ∀ i j,
+        e i j (𝒟₀.ρ g) - e i j (𝒟₀.ρ g₀) ∈ IsLocalRing.maximalIdeal 𝒟₀.R} =
+        ⋂ i : Fin 2, ⋂ j : Fin 2,
+          (fun g : Γ F => e i j (𝒟₀.ρ g) - e i j (𝒟₀.ρ g₀)) ⁻¹'
+            ((IsLocalRing.maximalIdeal 𝒟₀.R : Ideal 𝒟₀.R) : Set 𝒟₀.R) := by
+      ext g
+      simp [Set.mem_iInter]
+    rw [hEq]
+    exact isOpen_iInter_of_finite fun i => isOpen_iInter_of_finite fun j =>
+      hmopen.preimage ((hcont i j).sub continuous_const)
+
+/-- **The Taylor–Wiles Galois element over `F`** (LEAF — new 2026-07-26; the
+`F`-level twin of `Modularity/Patching.lean`'s
+`exists_fixing_rootsOfUnity_charpoly_split`).
+
+In `G_F` there is an element `σ` which acts trivially on all `ℓⁿ`-th roots of
+unity and whose image `ρbar|_{G_F}(σ)` has characteristic polynomial split
+with two DISTINCT roots over the residual coefficient field `k`.
+
+THE CLASSICAL ROUTE. For `ℓ ≥ 5` the restriction of `ρbar|_{G_F}` to
+`Gal(F̄/F(ζ_{ℓⁿ}))` still acts irreducibly (Diamond–Darmon–Taylor §4.3 — the
+dihedral exceptions are excluded by `ℓ ≥ 5`, `F(ζ_ℓ)/F` being cyclic of degree
+dividing `ℓ − 1`), and a nonabelian irreducible subgroup of `GL₂` contains an
+element with two distinct eigenvalues. `hirrF` is the irreducibility input;
+`𝒟₀` is what pins `det ρbar|_{G_F}` to the mod-`ℓ` cyclotomic character,
+through `HilbertDeformationDatum.resid` and the determinant clause of
+`IsHilbertHardlyRamified`.
+
+**WHY THE CUT IS HERE AND NOT ONE STEP FURTHER DOWN.** The SHAPE AUDIT
+inherited by `exists_hilbertTaylorWilesPrime` establishes that the last
+sentence of that route — "a nonabelian irreducible subgroup of `GL₂(k)` has an
+element with two distinct eigenvalues IN `k`" — is genuinely FALSE at a FIXED
+`k`: for `#k ≡ 3 mod 4` the binary-dihedral normalizer of a nonsplit torus in
+`SL₂(k)` is nonabelian and irreducible with no split element, and at `ℓ = 3`
+that group is `Q₈ ⊆ SL₂(𝔽₃)`. The classical lemma is applied only after a
+quadratic ENLARGEMENT of `k`, which the shape `α β : k` does not perform. So
+this leaf may NOT be cut further into "restricted irreducibility" plus a pure
+group-theoretic half; the second half would be a false leaf.
+
+**EQUIVALENCE AUDIT (2026-07-26 — why cutting HERE plants no falsity).** This
+leaf is not merely *sufficient* for its consumer, it is EQUIVALENT to it, so
+it carries exactly the consumer's truth value and no more:
+
+* (⇒) `exists_hilbertTaylorWilesPrime` is derived from it below, by Chebotarev
+  density over `F`.
+* (⇐) Conversely, a place `w` as produced by that theorem yields such a `σ`:
+  take `σ = globalFrob w`. Its residual charpoly is `charFrob w`, split with
+  distinct roots by construction; and `N w ≡ 1 mod ℓⁿ` forces `σ` to fix
+  `μ_{ℓⁿ}` pointwise, because `adicArithFrob_rootsOfUnity_pow_residueCard`
+  above says `σ` acts on `μ_{ℓⁿ}` by `t ↦ t^{N w}`.
+
+So the decomposition is a genuine factorisation of the original leaf into an
+arithmetic-geometry half (Chebotarev over `F`, PROVEN below) and this
+group-theoretic half; it neither strengthens nor weakens what is assumed.
+
+**CORRECTION TO THE ROUTE HINT THIS LEAF INHERITED (2026-07-26).** The
+docstring of `exists_hilbertTaylorWilesPrime` suggested that the `F` level
+escapes the `Q₈` obstruction because "`det ρbar|_{G_F}` is the mod-`ℓ`
+cyclotomic character, whose image at `ℓ ≥ 5` is large, so the coset elements
+`w · t` have determinant ranging over that image rather than being pinned to
+`1`". **That hint is wrong in the only case that matters.** The `σ` demanded
+here must fix `μ_{ℓⁿ}` pointwise, i.e. `χ_ℓ(σ) ≡ 1 mod ℓⁿ`; for `n ≥ 1` that
+forces `χ̄_ℓ(σ) = 1`, and when `k` has residue characteristic `ℓ` — which is
+the intended case, `k` being the residue field of a `ℤ_ℓ`-algebra with `ℓ` in
+its maximal ideal — the determinant clause then gives `det ρbar|_{G_F}(σ) = 1`
+exactly. So the relevant elements lie in the `SL₂` part after all and the
+determinant is pinned to `1`, which is precisely the hypothesis under which
+the `Q₈`/binary-dihedral counterexample was constructed. The determinant image
+is *not* an escape; the honest escape remains the enlargement of `k`, which
+this shape does not perform. (In residue characteristic `0` the hint survives,
+since `1 + ℓⁿ u ≠ 1` there — but that is not the case the patching argument is
+run in.)
+
+References: Wiles, Ann. of Math. 141 (1995), ch. 3; Diamond–Darmon–Taylor
+(1995), Lemma 4.10/5.31; de Shalit and Diamond in Cornell–Silverman–Stevens;
+Fujiwara, *Deformation rings and Hecke algebras in the totally real case*, §3;
+Skinner–Wiles, Duke 107 (2001), §2.
+
+CIRCULARITY GUARD (inherited): nothing from `Family.lean`, `Lift.lean`,
+`Modularity/*` or `Deformation.lean`. In particular the `ℚ`-level escape —
+discharging the twin by `exfalso` through the odd-prime dichotomy
+`not_isIrreducible_of_isHardlyRamified_of_five_le` — is FORBIDDEN here, that
+dichotomy being proven over pillar α, which is proven over this cluster. -/
+theorem exists_hilbertFixing_rootsOfUnity_charpoly_split
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (n : ℕ) :
+    ∃ σ : Γ F,
+      (∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 →
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ) ζ = ζ) ∧
+      ∃ α β : k, α ≠ β ∧
+        ((ρbar.map (algebraMap ℚ F)) σ).charpoly =
+          (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) :=
+  sorry
+
+/-- **A single Taylor–Wiles prime of `F`** (PROVEN 2026-07-26 over the Galois
+element `exists_hilbertFixing_rootsOfUnity_charpoly_split`; the `F`-level twin
+of `Modularity/Patching.lean`'s `exists_taylorWilesPrime`, and derived exactly
+as that one is).
+
+Avoiding any prescribed finite set `S` of places there is a place `w` of `F`
+which is a Taylor–Wiles prime of level `n`: good away from `2ℓ`, with
+`N w ≡ 1 mod ℓ ^ n`, and with `ρbar|_{G_F}(Frob_w)` split with two DISTINCT
+eigenvalues in `k`.
+
+PROOF — Chebotarev density over `F`, not over `ℚ`. The locus
+`U = {x | charpoly (ρbar|_{G_F} x) = (X − α)(X − β)} ∩ {x | x fixes μ_{ℓⁿ}}`
+is open and contains the element `σ` supplied by the leaf, so it meets the
+dense union of Frobenius conjugacy classes at places outside the finite bad
+set. Both conditions are conjugation-invariant — `charpoly` manifestly, and
+the `ℓⁿ`-th roots of unity form a Galois-stable set so fixing them pointwise
+is too — and at Frobenius they read off as the arithmetic conditions.
+
+THREE THINGS THAT DIFFER FROM THE `ℚ`-LEVEL PROOF, each of them forced:
+
+1. **Openness of the eigenvalue locus does not come from `k`.** This
+   statement has no `[Finite k]`/`[DiscreteTopology k]`, so the `ℚ`-level
+   argument (the endomorphism module is discrete) is unavailable. It comes
+   instead from the DATUM, through
+   `isOpen_setOf_charpoly_eq_of_hilbertDeformationDatum` above: residual
+   charpolys are `π`-images of charpolys of the continuous lift over the
+   adic ring `𝒟₀.R`, hence locally constant.
+2. **Fixing `μ_{ℓⁿ}` is a condition in `Γ ℚ`, pulled back.** `Γ F` acts on
+   `Fᵃˡᵍ`, and the roots of unity live in `ℚᵃˡᵍ`, so the condition is stated
+   on the image under `Field.absoluteGaloisGroup.map (algebraMap ℚ F)` and is
+   open as the preimage of the `ℚ`-level fixing subgroup of `ℚ(μ_{ℓⁿ})`.
+3. **`N w ≡ 1 mod ℓⁿ` is read off over `F`.** The `ℚ`-level route through
+   `cyclotomicCharacter_globalFrob` is unavailable, that lemma being stated
+   for rational primes only; the general-number-field replacement is this
+   module's own `adicArithFrob_rootsOfUnity_pow_residueCard`, which says
+   `Frob_w` acts on `μ_{ℓⁿ}` by `t ↦ t^{N w}`. Fixing a PRIMITIVE `ℓⁿ`-th
+   root therefore forces `N w ≡ 1 mod ℓⁿ`. (The case `n = 0` is separate and
+   trivial, the congruence being modulo `1`.)
+
+The places over `2` and over `ℓ` are excluded by ENLARGING the Chebotarev
+exclusion set, using `finite_setOf_natCast_mem_asIdeal` above; over `ℚ` a
+single prime had to be removed and here it is two finite fibres.
+
+`hℓ5` is not used by this glue: it is consumed inside the Galois-element leaf,
+where `ℓ ≥ 5` is what makes the restriction to `Gal(F̄/F(ζ_{ℓⁿ}))` still act
+irreducibly. It is kept in the signature because the consumer supplies it and
+the leaf needs it. -/
 theorem exists_hilbertTaylorWilesPrime
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
@@ -12121,8 +12419,149 @@ theorem exists_hilbertTaylorWilesPrime
       Nat.card (𝓞 F ⧸ w.asIdeal) ≡ 1 [MOD ℓ ^ n] ∧
       ∃ α β : k, α ≠ β ∧
         (ρbar.map (algebraMap ℚ F)).charFrob w =
-          (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) :=
-  sorry
+          (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β) := by
+  classical
+  obtain ⟨σ, hσfix, α, β, hαβ, hσpoly⟩ :=
+    exists_hilbertFixing_rootsOfUnity_charpoly_split ℓ hℓ5 F hirrF 𝒟₀ n
+  set φ := Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+  -- FIRST OPEN CONDITION: the residual eigenvalue locus, open by the datum
+  have hU1open : IsOpen {x : Γ F | ((ρbar.map (algebraMap ℚ F)) x).charpoly =
+      (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)} :=
+    isOpen_setOf_charpoly_eq_of_hilbertDeformationDatum 𝒟₀ _
+  -- SECOND OPEN CONDITION: fixing `μ_{ℓⁿ}` pointwise, pulled back from `Γ ℚ`
+  have hSfin : {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1}.Finite := by
+    refine Set.Finite.subset
+      (Polynomial.nthRoots (ℓ ^ n) (1 : ℚ ᵃˡᵍ)).toFinset.finite_toSet fun ζ hζ => ?_
+    rw [Finset.mem_coe, Multiset.mem_toFinset,
+      Polynomial.mem_nthRoots (pow_pos (Fact.out : ℓ.Prime).pos n)]
+    exact hζ
+  haveI := hSfin.to_subtype
+  -- every `ℓⁿ`-th root of unity is integral: it kills the monic `X^{ℓⁿ} − 1`
+  haveI : FiniteDimensional ℚ
+      (IntermediateField.adjoin ℚ {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1}) := by
+    refine IntermediateField.finiteDimensional_adjoin fun x hx => ⟨Polynomial.X ^ ℓ ^ n - 1,
+      ?_, ?_⟩
+    · have := Polynomial.monic_X_pow_sub_C (R := ℚ) (1 : ℚ)
+        (n := ℓ ^ n) (pow_ne_zero _ (Fact.out : ℓ.Prime).pos.ne')
+      simpa [Polynomial.C_1] using this
+    · have hx' : x ^ ℓ ^ n = 1 := hx
+      simp [Polynomial.eval₂_sub, hx']
+  have hQopen : IsOpen {x : Γ ℚ | ∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 → x ζ = ζ} := by
+    have hopen := IntermediateField.fixingSubgroup_isOpen
+      (IntermediateField.adjoin ℚ {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1})
+    -- NOTE: the coercion `Subgroup Gal(ℚᵃˡᵍ/ℚ) → Set (Γ ℚ)` is NOT available —
+    -- coercion-instance search does not unfold `Field.absoluteGaloisGroup`,
+    -- though unification does. So both sides are written as honest
+    -- `Set (Γ ℚ)` set-builders and the coercion never appears.
+    have hmem : IsOpen {x : Γ ℚ |
+        x ∈ (IntermediateField.adjoin ℚ {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1}).fixingSubgroup} :=
+      hopen
+    have hEq : {x : Γ ℚ |
+        x ∈ (IntermediateField.adjoin ℚ {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1}).fixingSubgroup} =
+        {x : Γ ℚ | ∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 → x ζ = ζ} := by
+      ext x
+      simp only [Set.mem_setOf_eq]
+      constructor
+      · intro hx ζ hζ
+        exact (IntermediateField.mem_fixingSubgroup_iff _ _).mp hx ζ
+          (IntermediateField.subset_adjoin ℚ {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1} hζ)
+      · intro hx
+        have hle : IntermediateField.adjoin ℚ {ζ : ℚ ᵃˡᵍ | ζ ^ ℓ ^ n = 1} ≤
+            IntermediateField.fixedField (Subgroup.zpowers x) := by
+          rw [IntermediateField.adjoin_le_iff]
+          intro ζ hζ
+          refine SetLike.mem_coe.mpr ((IntermediateField.mem_fixedField_iff _ _).mpr ?_)
+          intro f hf
+          have hst : Subgroup.zpowers x ≤ MulAction.stabilizer (Γ ℚ) ζ :=
+            Subgroup.zpowers_le.mpr (MulAction.mem_stabilizer_iff.mpr (hx ζ hζ))
+          exact hst hf
+        refine (IntermediateField.mem_fixingSubgroup_iff _ _).mpr fun a ha => ?_
+        exact (IntermediateField.mem_fixedField_iff _ _).mp (hle ha) x
+          (Subgroup.mem_zpowers x)
+    rw [← hEq]
+    exact hmem
+  have hU2open : IsOpen {x : Γ F | ∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 → (φ x) ζ = ζ} :=
+    hQopen.preimage (ContinuousMonoidHom.continuous_toFun φ)
+  -- the finite set of places to avoid: `S`, the places over `2`, those over `ℓ`
+  have hℓne : ((ℓ : ℕ) : 𝓞 F) ≠ 0 :=
+    Nat.cast_ne_zero.mpr (Fact.out : ℓ.Prime).ne_zero
+  have h2ne : ((2 : ℕ) : 𝓞 F) ≠ 0 := Nat.cast_ne_zero.mpr (by norm_num)
+  set T : Finset (HeightOneSpectrum (𝓞 F)) :=
+    S ∪ (finite_setOf_natCast_mem_asIdeal F _ hℓne).toFinset ∪
+      (finite_setOf_natCast_mem_asIdeal F _ h2ne).toFinset with hT
+  -- CHEBOTAREV over `F`: a Frobenius conjugate lands in the nonempty open locus
+  obtain ⟨x, hxU, hxfrob⟩ :=
+    (dense_conjClasses_globalFrob (K := F) T).inter_open_nonempty _
+      (hU1open.inter hU2open) ⟨σ, hσpoly, hσfix⟩
+  obtain ⟨hxpoly, hxfix⟩ := hxU
+  obtain ⟨w, hwT, g, rfl⟩ := hxfrob
+  have hwS : w ∉ S := fun hmem => hwT (by
+    simp only [hT, Finset.mem_union]
+    exact Or.inl (Or.inl hmem))
+  have hwℓ : ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal := fun hmem => hwT (by
+    simp only [hT, Finset.mem_union, Set.Finite.mem_toFinset]
+    exact Or.inl (Or.inr hmem))
+  have hw2 : ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal := fun hmem => hwT (by
+    simp only [hT, Finset.mem_union, Set.Finite.mem_toFinset]
+    exact Or.inr hmem)
+  -- conjugation-invariance of the characteristic polynomial
+  have hgu : ((ρbar.map (algebraMap ℚ F)) g).comp
+      ((ρbar.map (algebraMap ℚ F)) g⁻¹) = LinearMap.id := by
+    have h1 : (ρbar.map (algebraMap ℚ F)) g * (ρbar.map (algebraMap ℚ F)) g⁻¹ = 1 := by
+      rw [← map_mul, mul_inv_cancel, map_one]
+    exact h1
+  have hgu' : ((ρbar.map (algebraMap ℚ F)) g⁻¹).comp
+      ((ρbar.map (algebraMap ℚ F)) g) = LinearMap.id := by
+    have h1 : (ρbar.map (algebraMap ℚ F)) g⁻¹ * (ρbar.map (algebraMap ℚ F)) g = 1 := by
+      rw [← map_mul, inv_mul_cancel, map_one]
+    exact h1
+  have hconj : ((ρbar.map (algebraMap ℚ F)) (g * globalFrob w * g⁻¹)).charpoly =
+      ((ρbar.map (algebraMap ℚ F)) (globalFrob w)).charpoly := by
+    have heq : (ρbar.map (algebraMap ℚ F)) (g * globalFrob w * g⁻¹) =
+        (LinearEquiv.ofLinear ((ρbar.map (algebraMap ℚ F)) g)
+          ((ρbar.map (algebraMap ℚ F)) g⁻¹) hgu hgu').conj
+          ((ρbar.map (algebraMap ℚ F)) (globalFrob w)) := by
+      ext y
+      simp [map_mul, LinearEquiv.conj_apply, Module.End.mul_apply]
+    rw [heq, LinearEquiv.charpoly_conj]
+  -- the `ℓⁿ`-th roots of unity are Galois-stable, so `Frob_w` fixes them
+  have hfrobfix : ∀ ζ : ℚ ᵃˡᵍ, ζ ^ ℓ ^ n = 1 → (φ (globalFrob w)) ζ = ζ := by
+    intro ζ hζ
+    have hη : ((φ g) ζ) ^ ℓ ^ n = 1 := by rw [← map_pow, hζ, map_one]
+    have h1 := hxfix ((φ g) ζ) hη
+    have h2 : (φ (g * globalFrob w * g⁻¹)) ((φ g) ζ) =
+        (φ g) ((φ (globalFrob w)) ζ) := by
+      rw [map_mul, map_mul, map_inv, AlgEquiv.mul_apply, AlgEquiv.mul_apply,
+        AlgEquiv.aut_inv, AlgEquiv.symm_apply_apply]
+    rw [h2] at h1
+    exact (φ g).injective h1
+  -- … whence `N w ≡ 1 mod ℓⁿ`, by the action of `Frob_w` on `μ_{ℓⁿ}`
+  have hnorm : Ideal.absNorm w.asIdeal = Nat.card (𝓞 F ⧸ w.asIdeal) := by
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply]
+  have hmod : Nat.card (𝓞 F ⧸ w.asIdeal) ≡ 1 [MOD ℓ ^ n] := by
+    rcases Nat.eq_zero_or_pos n with hn | hn
+    · subst hn
+      rw [pow_zero]
+      exact Nat.modEq_one
+    · haveI : NeZero (ℓ ^ n) := ⟨pow_ne_zero n (Fact.out : ℓ.Prime).ne_zero⟩
+      obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot (ℚ ᵃˡᵍ) (ℓ ^ n)
+      have hact := adicArithFrob_rootsOfUnity_pow_residueCard (ℓ := ℓ) F w hwℓ n
+        (hζ.toRootsOfUnity) (by exact (hζ.toRootsOfUnity).2)
+      have hfix := hfrobfix ζ hζ.pow_eq_one
+      have h1lt : 1 < ℓ ^ n := Nat.one_lt_pow hn.ne' (Fact.out : ℓ.Prime).one_lt
+      rw [hζ.val_toRootsOfUnity_coe] at hact
+      have hz : ζ ^ ((Ideal.absNorm w.asIdeal : ZMod (ℓ ^ n))).val = ζ ^ 1 := by
+        rw [pow_one, ← hact]
+        exact hfix
+      have hval : ((Ideal.absNorm w.asIdeal : ZMod (ℓ ^ n))).val = 1 :=
+        hζ.pow_inj (ZMod.val_lt _) h1lt hz
+      rw [← hnorm]
+      show Ideal.absNorm w.asIdeal % ℓ ^ n = 1 % ℓ ^ n
+      rw [Nat.mod_eq_of_lt h1lt, ← ZMod.val_natCast]
+      exact hval
+  refine ⟨w, hwS, hwℓ, hw2, hmod, α, β, hαβ, ?_⟩
+  rw [GaloisRep.charFrob_eq_charpoly_globalFrob, ← hconj]
+  exact hxpoly
 
 /-- **The Taylor–Wiles prime supply over `F`** (PROVEN 2026-07-26 by iterating
 the per-place leaf `exists_hilbertTaylorWilesPrime`; the `F`-level twin of
