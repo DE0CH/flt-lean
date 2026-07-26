@@ -146,6 +146,11 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Smooth
 public import Mathlib.AlgebraicGeometry.Morphisms.Separated
 public import Mathlib.AlgebraicGeometry.Morphisms.FiniteType
 public import Mathlib.AlgebraicGeometry.Morphisms.QuasiCompact
+-- Moret–Bailly §3.1's compactification datum is stated with `IsProper`, and
+-- the `dim ≤ 0` branch of `exists_totallySplitPoint_of_affine_curve` runs
+-- through `IsLocallyArtinian.of_topologicalKrullDim_le_zero`.
+public import Mathlib.AlgebraicGeometry.Morphisms.Proper
+public import Mathlib.AlgebraicGeometry.Artinian
 -- Base change of schemes: `IsFormOver` (the twisted-moduli form cut,
 -- 2026-07-25) is stated with `Limits.pullback`, so the `HasPullbacks`
 -- instance for `Scheme` must be re-exported, not merely available.
@@ -3463,9 +3468,507 @@ theorem HasRationalPoint.of_ringHom {X : AlgebraicGeometry.Scheme.{u}}
   -- pointwise: `f ((q : F)) = (q : E)` for the rational `q = ULift.ringEquiv z`
   simp
 
+/-! #### `ℚ` as an object of `Type u`, and `Spec ℚ`-morphisms
+
+(2026-07-26.) The conclusion of `exists_totallySplitPoint_of_affine_curve`
+quantifies over `F : Type u`, so the degenerate case — where the field
+produced is `ℚ` itself — has to hand back `ULift.{u} ℚ` together with all
+four structures the existential asks for. The six lemmas below are that
+bookkeeping, once and for all; none of them has mathematical content.
+
+The last of them, `eq_specRatMap`, is the one that is actually USEFUL
+elsewhere: `ULift.{u} ℚ` is `ℚ` up to a ring equivalence and `ℚ` is the
+initial commutative ring in characteristic zero, so `ULift.{u} ℚ →+* R` is
+a subsingleton for EVERY semiring `R`. Hence any two morphisms
+`Spec F ⟶ Spec (ULift.{u} ℚ)` coincide, and the compatibility clause in
+`HasRationalPoint` — `x ≫ fX = specRatMap F` — is automatic. That is
+recorded as `hasRationalPoint_iff_nonempty`: over the base `Spec ℚ`,
+*having an `F`-point is bare nonemptiness of `Spec F ⟶ X`*. It removes the
+commuting-square obligation from every construction of a rational point in
+this cluster, and in particular makes the `Algebra ℚ F` instance used to
+form `specRatMap F` irrelevant. -/
+
+/-- **`ULift.{u} ℚ ≃+* ℚ`**, named so that the universe can be pinned at
+use sites (`ULift.ringEquiv`'s implicit argument is not solvable from the
+expected type in the `Nat.card` goals below). -/
+def uliftRatEquiv : ULift.{u} ℚ ≃+* ℚ := ULift.ringEquiv
+
+/-- **`ULift.{u} ℚ ≃ₗ[ℚ] ℚ`** (PROVEN glue), for the finrank computation. -/
+noncomputable def uliftRatLinearEquiv : ULift.{u} ℚ ≃ₗ[ℚ] ℚ :=
+  ULift.moduleEquiv
+
+theorem charZero_uliftRat : CharZero (ULift.{u} ℚ) :=
+  (uliftRatEquiv.{u}).toRingHom.charZero
+
+theorem finiteDimensional_uliftRat : FiniteDimensional ℚ (ULift.{u} ℚ) :=
+  (uliftRatLinearEquiv.{u}).symm.finiteDimensional
+
+theorem finrank_uliftRat : Module.finrank ℚ (ULift.{u} ℚ) = 1 := by
+  have h := (uliftRatLinearEquiv.{u}).finrank_eq
+  simp only [Module.finrank_self] at h
+  exact h
+
+/-- **`ULift.{u} ℚ` is a number field** (PROVEN glue). -/
+theorem numberField_uliftRat : NumberField (ULift.{u} ℚ) :=
+  haveI := charZero_uliftRat.{u}
+  haveI := finiteDimensional_uliftRat.{u}
+  ⟨⟩
+
+/-- **`ULift.{u} ℚ` is totally real** (PROVEN glue): total reality is
+invariant under ring isomorphism, and `ℚ` is totally real. -/
+theorem isTotallyReal_uliftRat : NumberField.IsTotallyReal (ULift.{u} ℚ) :=
+  NumberField.IsTotallyReal.ofRingEquiv (uliftRatEquiv.{u}).symm
+
+/-- **Every prime splits completely in `ℚ`** (PROVEN glue): `ℚ →+* ℚ_[p]`
+is a singleton — nonempty because `ℚ_[p]` has characteristic zero, and a
+subsingleton because `ℚ` is initial — so
+`Nat.card (ULift.{u} ℚ →+* ℚ_[p]) = 1 = [ℚ : ℚ]`. -/
+theorem isTotallySplitAt_uliftRat (p : ℕ) [Fact p.Prime] :
+    @IsTotallySplitAt (ULift.{u} ℚ) _ numberField_uliftRat.{u} p _ := by
+  show Nat.card (ULift.{u} ℚ →+* ℚ_[p]) = Module.finrank ℚ (ULift.{u} ℚ)
+  rw [finrank_uliftRat]
+  have hne : Nonempty (ULift.{u} ℚ →+* ℚ_[p]) :=
+    ⟨(algebraMap ℚ ℚ_[p]).comp (uliftRatEquiv.{u}).toRingHom⟩
+  have hsub : Subsingleton (ULift.{u} ℚ →+* ℚ_[p]) := by
+    constructor
+    intro f g
+    ext x
+    have hfg : f.comp (algebraMap ℚ (ULift.{u} ℚ))
+        = g.comp (algebraMap ℚ (ULift.{u} ℚ)) := Subsingleton.elim _ _
+    have hx := RingHom.congr_fun hfg x.down
+    have hup : algebraMap ℚ (ULift.{u} ℚ) x.down = x := by
+      apply ULift.ext
+      simp
+    calc f x = f (algebraMap ℚ (ULift.{u} ℚ) x.down) := by rw [hup]
+      _ = g (algebraMap ℚ (ULift.{u} ℚ) x.down) := hx
+      _ = g x := by rw [hup]
+  haveI : Unique (ULift.{u} ℚ →+* ℚ_[p]) := uniqueOfSubsingleton hne.some
+  simp
+
+/-- **`ULift.{u} ℚ` is initial among semirings** (PROVEN glue): `ℚ` is, and
+`ULift.ringEquiv.symm` is surjective, so precomposition with it is
+injective on ring homomorphisms. -/
+theorem subsingleton_ringHom_uliftRat (R : Type*) [Semiring R] :
+    Subsingleton (ULift.{u} ℚ →+* R) := by
+  constructor
+  intro f g
+  have h : f.comp (uliftRatEquiv.{u}).symm.toRingHom
+      = g.comp (uliftRatEquiv.{u}).symm.toRingHom := Subsingleton.elim _ _
+  ext x
+  have hx := RingHom.congr_fun h (uliftRatEquiv.{u} x)
+  simp only [RingHom.coe_comp, Function.comp_apply, RingEquiv.toRingHom_eq_coe,
+    RingEquiv.coe_toRingHom, RingEquiv.symm_apply_apply] at hx
+  exact hx
+
 open CategoryTheory AlgebraicGeometry in
-/-- **Moret–Bailly's Théorème 1.3 on the curve, in its own form** (SORRY —
-the arithmetic heart of the whole cluster). Moret–Bailly, *Groupes de
+/-- **There is only one morphism `Spec F ⟶ Spec ℚ`** (PROVEN glue), because
+`Spec` is fully faithful on affines and `ULift.{u} ℚ →+* F` is a
+subsingleton. -/
+theorem eq_specRatMap (F : Type u) [CommRing F] [Algebra ℚ F]
+    (x : AlgebraicGeometry.Spec (CommRingCat.of F) ⟶
+      AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))) :
+    x = specRatMap F := by
+  obtain ⟨φ, rfl⟩ := Spec.map_surjective x
+  haveI := subsingleton_ringHom_uliftRat.{u} F
+  rw [specRatMap]
+  congr 1
+  exact CommRingCat.hom_ext (Subsingleton.elim _ _)
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Over `Spec ℚ`, an `F`-point is just a morphism `Spec F ⟶ X`** (PROVEN
+glue): the compatibility square of `HasRationalPoint` commutes
+automatically by `eq_specRatMap`. -/
+theorem hasRationalPoint_iff_nonempty {X : AlgebraicGeometry.Scheme.{u}}
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (F : Type u) [CommRing F] [Algebra ℚ F] :
+    HasRationalPoint fX F ↔
+      Nonempty (AlgebraicGeometry.Spec (CommRingCat.of F) ⟶ X) := by
+  constructor
+  · rintro ⟨x, -⟩; exact ⟨x⟩
+  · rintro ⟨x⟩; exact ⟨x, eq_specRatMap F _⟩
+
+/-! #### The degenerate branch of Moret–Bailly: `dim C ≤ 0`
+
+(2026-07-26.) `exists_totallySplitPoint_of_affine_curve` carries the
+hypothesis `topologicalKrullDim C ≤ 1` because its Bertini sibling
+`exists_affineCurve_of_affine_geometricallyIrreducible` has already cut the
+relative dimension down to `1` (Moret–Bailly §2). Moret–Bailly's §3 then
+reads that hypothesis as "`C` is a curve", i.e. as `dim = 1`; the
+degenerate direction `dim ≤ 0` is not assumed away but is genuinely
+covered, and it is COVERED HERE so that the §3 leaf may legitimately be
+stated with `¬ topologicalKrullDim C ≤ 0`.
+
+The mathematics of the degenerate case: `C` affine, smooth and of finite
+type over `ℚ` with `dim C ≤ 0` has Artinian coordinate ring, so `C` is a
+finite discrete set of points; `GeometricallyIrreducible fC` collapses it
+to ONE point (the base `Spec ℚ` is a single point, so
+`GeometricallyIrreducible.irreducibleSpace_of_subsingleton` applies), and
+then geometric irreducibility again forces the residue field of that point
+to be `ℚ` itself rather than a larger number field — a nontrivial finite
+extension `κ/ℚ` would make `C ×_ℚ Spec κ` disconnected. So `C = Spec ℚ`,
+`F = ℚ` is totally real and totally split at every prime, and the
+conclusion is discharged.
+
+Everything in that paragraph is proven below except one geometric fact:
+the leaf `exists_residueField_tensorSelf_irreducible`, which produces the
+residue field `κ` of the unique point together with the irreducibility and
+reducedness of `κ ⊗_ℚ κ`. The collapse `κ = ℚ` itself is PROVEN, as
+`finrank_eq_one_of_irreducible_tensorSelf`. -/
+
+open CategoryTheory AlgebraicGeometry in
+/-- **The residue field of a zero-dimensional geometrically irreducible
+affine `ℚ`-scheme, with its base change** (SORRY — the geometric content
+of the degenerate branch; the ARITHMETIC content is proven below).
+
+At this point `C` is a ONE-POINT affine scheme (`hirr` plus the discrete
+topology of an Artinian scheme), so `A := Γ(C, ⊤)` is a local Artinian
+`ℚ`-algebra of finite type; write `κ = A / 𝔪` for its residue field, a
+finite extension of `ℚ` by Zariski's lemma, and note that `A ↠ κ` supplies
+the `Nonempty (Γ(C, ⊤) →+* κ)` clause. What this leaf must additionally
+produce is that `Spec (κ ⊗_ℚ κ)` is irreducible, which is `hgi` read at
+`K = κ`, and that `κ ⊗_ℚ κ` is reduced, which is separability. Given
+those, `finrank_eq_one_of_irreducible_tensorSelf` below finishes: `κ = ℚ`.
+
+WHY IT IS TRUE, and what a prover has to build. Base-change along
+`Spec κ ⟶ Spec ℚ`: `GeometricallyIrreducible fC` says
+`C ×_{Spec ℚ} Spec κ` is irreducible, and that scheme is
+`Spec (A ⊗_ℚ κ)`. The kernel of `A ⊗_ℚ κ ↠ κ ⊗_ℚ κ` is `𝔪 ⊗ κ`, nilpotent
+because `𝔪` is nilpotent in the Artinian local ring `A`, so the two
+spectra are homeomorphic and it suffices to show `Spec (κ ⊗_ℚ κ)` is
+reducible when `[κ : ℚ] = n ≥ 2`. In characteristic zero `κ = ℚ(α)` with
+`f = minpoly ℚ α` separable of degree `n`, and
+`κ ⊗_ℚ κ ≅ κ[X] / (f)`; over `κ` the polynomial `f` has the root `α`, so
+`f = (X - α) · h` with `deg h = n - 1 ≥ 1` and `h` coprime to `X - α` by
+separability, whence `κ[X]/(f) ≅ κ × κ[X]/(h)` is a nontrivial product and
+its spectrum is disconnected — contradiction.
+
+MISSING MACHINERY, honestly (2026-07-26): the identification
+`C ×_{Spec ℚ} Spec κ ≅ Spec (A ⊗_ℚ κ)` (available as
+`AlgebraicGeometry.pullbackSpecIso`, but it must be transported across
+`C.isoSpec`); Zariski's lemma for `κ/ℚ`; and reducedness of `κ ⊗_ℚ κ`,
+for which the route at this pin is
+`Algebra.FormallyEtale.of_isSeparable` (characteristic zero, so `κ/ℚ` is
+separable) followed by `Algebra.FormallyEtale.iff_exists_algEquiv_prod`,
+which presents an étale algebra over a field as a finite PRODUCT of finite
+separable field extensions — a product of fields is reduced. The
+alternative entry point is `Algebra.IsGeometricallyReduced`
+(`Mathlib/RingTheory/Nilpotent/GeometricallyReduced.lean`), whose instance
+`[Algebra.IsAlgebraic k K] [IsGeometricallyReduced k A] : IsReduced (K ⊗[k] A)`
+is exactly the shape needed; what is absent there is the instance
+"over a perfect field, reduced implies geometrically reduced"
+(stacks 030V).
+
+Everything DOWNSTREAM of this leaf is proven: see
+`finrank_eq_one_of_irreducible_tensorSelf` just below, which is the actual
+mathematics (`n² = n`), and `nonempty_ringHom_uliftRat_of_finrank_eq_one`.
+
+`hsmooth` is carried but unused by the argument sketched above —
+smoothness is what makes `A` REDUCED, hence `A = κ` outright, which
+shortens the argument but is not needed for the conclusion. -/
+theorem exists_residueField_tensorSelf_irreducible
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hart : IsArtinianRing Γ(C, ⊤)) (hirr : IrreducibleSpace ↥C) :
+    ∃ (κ : Type u) (_ : Field κ) (_ : Algebra ℚ κ) (_ : FiniteDimensional ℚ κ)
+      (_ : IsReduced (TensorProduct ℚ κ κ)),
+      IrreducibleSpace (PrimeSpectrum (TensorProduct ℚ κ κ)) ∧
+        Nonempty (Γ(C, ⊤) →+* κ) :=
+  sorry
+
+open TensorProduct AlgebraicGeometry in
+/-- **A number field that is geometrically irreducible over `ℚ` IS `ℚ`**
+(PROVEN — the mathematical core of the degenerate branch).
+
+`κ ⊗_ℚ κ` is reduced by hypothesis and has irreducible spectrum, so it is
+a DOMAIN (`isIntegral_of_irreducibleSpace_of_isReduced` plus
+`affine_isIntegral_iff`); being finite-dimensional over `ℚ` it is Artinian,
+and an Artinian domain is a field (`IsArtinianRing.isField_of_isDomain`).
+The multiplication map `μ : κ ⊗_ℚ κ →ₐ[ℚ] κ` is surjective (it hits `x`
+at `x ⊗ₜ 1`) and, being a ring map out of a field into a nontrivial ring,
+injective. So `μ` is a `ℚ`-linear isomorphism and
+`n² = finrank ℚ (κ ⊗_ℚ κ) = finrank ℚ κ = n`, whence `n = 1`.
+
+This is the standard "geometrically connected + a rational point forces
+the ground field" argument, in the only form it takes for a
+zero-dimensional scheme: the diagonal of `Spec κ` over `Spec ℚ` is an
+isomorphism exactly when `κ = ℚ`. -/
+theorem finrank_eq_one_of_irreducible_tensorSelf (κ : Type u) [Field κ] [Algebra ℚ κ]
+    [FiniteDimensional ℚ κ] [IsReduced (κ ⊗[ℚ] κ)]
+    (h : IrreducibleSpace (PrimeSpectrum (κ ⊗[ℚ] κ))) :
+    Module.finrank ℚ κ = 1 := by
+  classical
+  haveI : IrreducibleSpace ↥(Spec (CommRingCat.of (κ ⊗[ℚ] κ))) := h
+  haveI : IsDomain (κ ⊗[ℚ] κ) := by
+    have hint := isIntegral_of_irreducibleSpace_of_isReduced
+      (Spec (CommRingCat.of (κ ⊗[ℚ] κ)))
+    exact (AlgebraicGeometry.affine_isIntegral_iff (CommRingCat.of (κ ⊗[ℚ] κ))).mp hint
+  haveI : IsArtinianRing (κ ⊗[ℚ] κ) := IsArtinianRing.of_finite ℚ (κ ⊗[ℚ] κ)
+  have hfield : IsField (κ ⊗[ℚ] κ) := IsArtinianRing.isField_of_isDomain _
+  let μ : κ ⊗[ℚ] κ →ₐ[ℚ] κ :=
+    Algebra.TensorProduct.lift (AlgHom.id ℚ κ) (AlgHom.id ℚ κ) fun a b ↦ mul_comm a b
+  have hsurj : Function.Surjective μ := fun x ↦ ⟨x ⊗ₜ 1, by simp [μ]⟩
+  have hinj : Function.Injective μ := by
+    letI : Field (κ ⊗[ℚ] κ) := hfield.toField
+    exact (μ : (κ ⊗[ℚ] κ) →+* κ).injective
+  have hbij : Function.Bijective μ := ⟨hinj, hsurj⟩
+  have hrank : Module.finrank ℚ (κ ⊗[ℚ] κ) = Module.finrank ℚ κ :=
+    (LinearEquiv.ofBijective μ.toLinearMap hbij).finrank_eq
+  rw [Module.finrank_tensorProduct] at hrank
+  have hpos : 0 < Module.finrank ℚ κ := Module.finrank_pos
+  nlinarith [hrank, hpos]
+
+/-- **A `ℚ`-algebra of rank one has a `ℚ`-valued point** (PROVEN glue):
+`finrank ℚ κ = 1` says `⊥ = ⊤` as subalgebras, i.e. `algebraMap ℚ κ` is
+bijective, and its inverse composed with `ℚ ≃+* ULift.{u} ℚ` is the map. -/
+theorem nonempty_ringHom_uliftRat_of_finrank_eq_one (κ : Type u) [Field κ] [Algebra ℚ κ]
+    (h : Module.finrank ℚ κ = 1) : Nonempty (κ →+* ULift.{u} ℚ) := by
+  have hbij : Function.Bijective (algebraMap ℚ κ) :=
+    Algebra.bijective_algebraMap_iff.2 (Subalgebra.bot_eq_top_iff_finrank_eq_one.2 h).symm
+  exact ⟨(uliftRatEquiv.{u}).symm.toRingHom.comp
+    (RingEquiv.ofBijective (algebraMap ℚ κ) hbij).symm.toRingHom⟩
+
+open TensorProduct AlgebraicGeometry in
+/-- **The degenerate branch's coordinate ring maps to `ℚ`** (PROVEN over
+`exists_residueField_tensorSelf_irreducible`): that leaf hands back the
+residue field `κ` with `Spec (κ ⊗_ℚ κ)` irreducible and reduced;
+`finrank_eq_one_of_irreducible_tensorSelf` then forces `κ = ℚ`, and the
+composite `Γ(C, ⊤) →+* κ →+* ULift.{u} ℚ` is the required map. -/
+theorem nonempty_ringHom_uliftRat_of_isArtinianRing
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hart : IsArtinianRing Γ(C, ⊤)) (hirr : IrreducibleSpace ↥C) :
+    Nonempty (Γ(C, ⊤) →+* ULift.{u} ℚ) := by
+  obtain ⟨κ, _, _, _, _, hirrκ, ⟨φ⟩⟩ :=
+    exists_residueField_tensorSelf_irreducible fC hsmooth hft hgi hart hirr
+  obtain ⟨ψ⟩ := nonempty_ringHom_uliftRat_of_finrank_eq_one κ
+    (finrank_eq_one_of_irreducible_tensorSelf κ hirrκ)
+  exact ⟨ψ.comp φ⟩
+
+open CategoryTheory AlgebraicGeometry in
+/-- **The degenerate branch gives a `ℚ`-point** (PROVEN over the leaf
+above): finite type over the Noetherian base `Spec ℚ` makes `C` locally
+Noetherian, `topologicalKrullDim C ≤ 0` then makes it locally Artinian
+(`IsLocallyArtinian.of_topologicalKrullDim_le_zero`) hence
+`Γ(C, ⊤)` Artinian, and `Spec ℚ` being a single point makes `C`
+irreducible (`GeometricallyIrreducible.irreducibleSpace_of_subsingleton`).
+The leaf then supplies `Γ(C, ⊤) →+* ULift.{u} ℚ`, whose `Spec`, composed
+with `C.isoSpec.inv`, is the point — no commuting square to check, by
+`hasRationalPoint_iff_nonempty`. -/
+theorem hasRationalPoint_uliftRat_of_krullDim_le_zero
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hzero : topologicalKrullDim ↥C ≤ 0) :
+    HasRationalPoint fC (ULift.{u} ℚ) := by
+  haveI : IsLocallyNoetherian C := LocallyOfFiniteType.isLocallyNoetherian fC
+  haveI : IsLocallyArtinian C := IsLocallyArtinian.of_topologicalKrullDim_le_zero hzero
+  haveI hart : IsArtinianRing Γ(C, ⊤) := inferInstance
+  haveI hirr : IrreducibleSpace ↥C :=
+    GeometricallyIrreducible.irreducibleSpace_of_subsingleton fC
+  obtain ⟨φ⟩ := nonempty_ringHom_uliftRat_of_isArtinianRing fC hsmooth hft hgi hart hirr
+  rw [hasRationalPoint_iff_nonempty]
+  exact ⟨Spec.map (CommRingCat.ofHom φ) ≫ C.isoSpec.inv⟩
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly's theorem in the degenerate case `dim C ≤ 0`** (PROVEN
+over `hasRationalPoint_uliftRat_of_krullDim_le_zero` and the `ULift ℚ`
+bookkeeping): the field produced is `ℚ`, which is totally real and splits
+every prime completely, and which carries the point because `C = Spec ℚ`.
+
+Note that `hreal` and `hSpt` are NOT needed here: in dimension `0` the
+local solvability hypotheses are consequences of the conclusion rather
+than inputs to it. -/
+theorem exists_totallySplitPoint_of_krullDim_le_zero
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hzero : topologicalKrullDim ↥C ≤ 0)
+    (S : Finset ℕ) :
+    ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
+      (_ : NumberField.IsTotallyReal F),
+      (∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt F p) ∧
+      HasRationalPoint fC F :=
+  ⟨ULift.{u} ℚ, inferInstance, numberField_uliftRat.{u}, isTotallyReal_uliftRat.{u},
+    fun p _ _ ↦ isTotallySplitAt_uliftRat.{u} p,
+    hasRationalPoint_uliftRat_of_krullDim_le_zero fC hsmooth hft hgi hzero⟩
+
+/-! #### The curve branch: Moret–Bailly §3, cut at the compactification
+
+(2026-07-26.) With `dim C ≤ 0` discharged above, the remaining case is
+`dim C = 1`, which is the case Moret–Bailly's §3 actually treats. His §3
+opens by replacing `X` with a compactification, and everything afterwards
+(§3.2–3.10) lives on that compactification. That is the one cut in §3 that
+is EXPRESSIBLE at this pin, so it is the one taken here:
+
+* `exists_projectiveCompactification_of_affine_curve` is §3.1;
+* `exists_totallySplitPoint_of_projectiveCompactification` is §3.2–3.10.
+
+COSTING — what each of the two leaves needs, honestly (this is the
+"missing machinery" audit for the `dim = 1` branch, and it is the reason
+no finer cut is offered):
+
+* **§3.1 (compactification).** Needs: a smooth projective model of a
+  smooth affine curve. Mathlib has `IsProper` and `Smooth` as morphism
+  properties, so the STATEMENT is available, but nothing constructs the
+  model — there is no normalization-of-a-projective-closure package, no
+  "regular proper model of a function field of transcendence degree 1",
+  and no genus. Cost: a development of the correspondence between smooth
+  projective curves and function fields of transcendence degree `1`, i.e.
+  a substantial chapter (Hartshorne I.6). `Mathlib/AlgebraicGeometry/
+  FunctionField.lean` and `Mathlib/AlgebraicGeometry/Normalization.lean`
+  are the starting points that do exist.
+* **§3.2 (symmetric powers).** `X̄^(d)` as a scheme. Mathlib has no
+  symmetric power of a scheme and no Hilbert scheme of points. Cost: a
+  new theory; but note that for a CURVE `X̄^(d)` is the space of effective
+  Cartier divisors of degree `d`, which can be presented concretely, so
+  this is the most avoidable of the missing items.
+* **§3.4 (generalised Picard functor).** `PG(X̄, Z)` — invertible sheaf
+  plus trivialisation along `Z` — and the exact sequence
+  `1 → 𝔾_m,B → (π_Z)_* 𝔾_m,Z → PG(X̄,Z) → Pic_{X̄/B} → 1`. Mathlib has NO
+  relative Picard functor and no representability results, and no
+  generalised Jacobian (Serre, *GACC* ch. V). For the AFFINE curve the
+  relevant group is `ClassGroup Γ(C, ⊤)`, which mathlib DOES have — that
+  is the one place where an affine-first reformulation would buy real
+  ground.
+* **§3.5–3.6 (Riemann–Roch).** `φ_d` is a Zariski-locally trivial
+  fibration in affine spaces of dimension `d + 1 - g - z` once
+  `d ≥ 2g + z - 1`. Mathlib has no Riemann–Roch for curves and no genus.
+* **§3.8 (strong approximation).** Strong approximation in an affine
+  space over a ring of `S`-integers. Mathlib has `NumberField.AdeleRing`
+  and weak approximation for valuations, but not strong approximation.
+* **§3.9.2–3.10 (the arithmetic core).** Quasi-compactness of
+  `G = P₀(K_Σ)/im Γ(Z, 𝒪_Z^×)`. Needs (a) compactness of `J(F)` for `J`
+  the Jacobian of a curve over a local field — Raynaud, via the proper
+  Altman–Kleiman compactified Picard scheme — and (b) quasi-compactness of
+  `K_Σ^×/R^×`, which is Dirichlet's unit theorem (mathlib HAS this, as
+  `NumberField.Units.dirichletUnitTheorem`) plus the incompleteness of the
+  datum. Item (b) is within reach; item (a) is not.
+
+So the honest ordering of effort is: §3.1 and §3.4-affine first (both
+have mathlib footholds), §3.5–3.6 next (Riemann–Roch is a known large
+target), §3.10.2 last. -/
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly §3.1: the compactification datum** (SORRY — the smooth
+projective model of a smooth affine curve).
+
+Moret–Bailly, *Groupes de Picard et problèmes de Skolem II*, §3.1: one
+chooses a dense open immersion `j : X ↪ X̄` with `X̄ → B` projective and
+`X̄` normal, and puts `Z = X̄ - X` with its reduced structure. Over the
+generic fibre — which is all that is used here, the base being `Spec ℚ`
+rather than `Spec R` — this is exactly the statement that a smooth affine
+geometrically irreducible curve over `ℚ` is a dense open subscheme of a
+smooth proper geometrically irreducible curve, with nonempty complement.
+
+The complement is nonempty because `C` is AFFINE of positive dimension: a
+proper scheme over a field that is also affine is finite, hence
+`dim ≤ 0`, contradicting `hpos`. That is why `hpos` appears — it is not
+decoration, it is what makes `Z ≠ ∅`, and `z = deg Z_K > 0` is used
+throughout §3.5–3.9.
+
+WHAT IS MISSING AT THIS PIN: see the section docstring's costing. Mathlib
+has `IsProper`, `Smooth`, `GeometricallyIrreducible` and
+`AlgebraicGeometry.Normalization`, so this statement type-checks, but the
+construction (projective closure, then normalization, then regularity in
+dimension one) is not available and is a chapter-sized job. -/
+theorem exists_projectiveCompactification_of_affine_curve
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hsep : AlgebraicGeometry.IsSeparated fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hqc : AlgebraicGeometry.QuasiCompact fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hdim : topologicalKrullDim ↥C ≤ 1)
+    (hpos : ¬ topologicalKrullDim ↥C ≤ 0) :
+    ∃ (Xbar : AlgebraicGeometry.Scheme.{u})
+      (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (j : C ⟶ Xbar) (_ : AlgebraicGeometry.IsOpenImmersion j),
+      j ≫ fX = fC ∧ AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsProper fX ∧
+        AlgebraicGeometry.GeometricallyIrreducible fX ∧
+        (Set.range j.base)ᶜ.Nonempty :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly §3.2–3.10: the arithmetic core, on the
+compactification** (SORRY — the whole Picard-theoretic argument).
+
+Given the §3.1 datum — `C` a dense affine open in a smooth proper
+geometrically irreducible curve `X̄/ℚ` with nonempty complement `Z` — and
+the local solvability of the Skolem datum (`hreal`, `hSpt`), Moret–Bailly
+produces a *point entier*: an irreducible closed `Y ⊆ C`, finite over the
+base, whose generic fibre `Spec F` is `L_v`-split and inside `Ω_v` at
+every `v ∈ Σ = {∞} ∪ S`. Reading off the conclusion (his Remarque 1.5):
+`F` is a number field, `F ⊗_ℚ ℝ ≅ ℝ^[F:ℚ]` (total reality) and
+`F ⊗_ℚ ℚ_p ≅ ℚ_p^[F:ℚ]` for `p ∈ S` (`IsTotallySplitAt`), and `Y ⊆ C`
+gives the `F`-point.
+
+THE ARGUMENT, in his numbering (the section docstring above gives the same
+list with the machinery costs):
+
+* **3.2–3.3** `X̄^(d)` the `d`-th symmetric power; `Ω_v^[d] ⊆ U_d(K_v)` the
+  étale, `L_v`-split divisors inside `Ω_v`; open, and nonempty when
+  `[L_v : K_v] ∣ d` — here `L_v = K_v`, so nonempty for every `d ≥ 1`,
+  which is exactly what `hreal` and `hSpt` supply.
+* **3.4** `PG(X̄, Z)`, the generalised Picard functor, a smooth separated
+  `B`-group scheme with neutral component Serre's generalised Jacobian.
+* **3.5–3.6** `φ_d : X̄^(d) → PG_d(X̄, Z)` is Zariski-locally trivial in
+  affine spaces of dimension `d + 1 - g - z` once `d ≥ 2g + z - 1`
+  (Riemann–Roch plus vanishing of `R¹`).
+* **3.7.2** `W_v^d := φ_d(Ω_v^[d])` is open and nonempty in `P_d(K_v)`,
+  and `W_v^d · W_v^{d'} ⊆ W_v^{d+d'}` for `d ≥ 2g + z`.
+* **3.8** A datum `(ℒ, α)` of degree `d ≥ 2g + z - 1` whose image lies in
+  every `W_v^d` yields, by STRONG APPROXIMATION in the affine space
+  `Γ(X̄, ℒ, α)` — available because the Skolem datum is INCOMPLETE — a
+  global section whose divisor is a point entier.
+* **3.9** Such an `(ℒ, α)` exists: `ℒ₀` ample, and quasi-compactness of
+  `G = P₀(K_Σ) / im Γ(Z, 𝒪_Z^×)` moves a power of `ℒ₀` into
+  `W^d · (W^d)⁻¹`.
+* **3.9.2–3.10** `G` is an extension of an open subgroup of
+  `∏_{v ∈ Σ} Pic⁰(K_v)` by `(R' ⊗_R K_Σ)^× / (R'^× · K_Σ^×)`; the first
+  factor is compact (Raynaud), the second by Dirichlet's unit theorem plus
+  incompleteness.
+
+`hZ` is `z > 0`, which enters at 3.5–3.6 (the fibre dimension
+`d + 1 - g - z`) and at 3.9 (the group `Γ(Z, 𝒪_Z^×)` must be nontrivial
+for the generalised Jacobian to differ from the Jacobian). `hjcomm` is
+what makes `Ω_v ⊆ C(K_v)` a subset of `X̄(K_v)` compatibly with the base,
+so that the local conditions at `v` really are conditions on divisors of
+`X̄` avoiding `Z`. -/
+theorem exists_totallySplitPoint_of_projectiveCompactification
+    {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (j : C ⟶ Xbar) (hjimm : AlgebraicGeometry.IsOpenImmersion j)
+    (hjcomm : j ≫ fX = fC)
+    (hXsmooth : AlgebraicGeometry.Smooth fX)
+    (hXproper : AlgebraicGeometry.IsProper fX)
+    (hXgi : AlgebraicGeometry.GeometricallyIrreducible fX)
+    (hZ : (Set.range j.base)ᶜ.Nonempty)
+    (hreal : HasRationalPoint fC (ULift.{u} ℝ))
+    (S : Finset ℕ) (hSprime : ∀ p ∈ S, p.Prime)
+    (hSpt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S →
+      HasRationalPoint fC (ULift.{u} ℚ_[p])) :
+    ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
+      (_ : NumberField.IsTotallyReal F),
+      (∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt F p) ∧
+      HasRationalPoint fC F :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly's Théorème 1.3 on the curve, in its own form**
+(**DECOMPOSED 2026-07-26**; the arithmetic heart of the whole cluster).
+Moret–Bailly, *Groupes de
 Picard et problèmes de Skolem II*, Ann. Sci. ÉNS **22** (1989), 181–194,
 **Théorème 1.3** together with his Remarque 1.5, specialised to the Skolem
 datum described below. The field produced is **not** normal — that is
@@ -3569,6 +4072,31 @@ is totally real, totally split at every prime, and carries the point —
 discharges the conclusion. So `hdim` may be used as "`dim = 1` after the
 `dim = 0` case is dispatched", which is how Moret–Bailly's §3 reads it.
 
+ASSEMBLY (2026-07-26). The `by_cases` on `topologicalKrullDim C ≤ 0` is
+exactly the split described in the FAITHFULNESS paragraph, and it is now
+performed rather than promised:
+
+* the degenerate branch is `exists_totallySplitPoint_of_krullDim_le_zero`,
+  proven above over the single geometric leaf
+  `exists_residueField_tensorSelf_irreducible` (the residue field of the
+  unique point of `C`, with `Spec (κ ⊗_ℚ κ)` irreducible and reduced). Its
+  arithmetic consequence — `κ = ℚ`, i.e. "a zero-dimensional geometrically
+  irreducible affine `ℚ`-scheme is `Spec ℚ`" — is PROVEN, as
+  `finrank_eq_one_of_irreducible_tensorSelf`, and so is all the
+  `ULift.{u} ℚ` bookkeeping (number field, totally real, totally split at
+  every prime);
+* the curve branch is `exists_projectiveCompactification_of_affine_curve`
+  (§3.1) followed by
+  `exists_totallySplitPoint_of_projectiveCompactification` (§3.2–3.10).
+  The §3.1 leaf receives `hpos : ¬ topologicalKrullDim C ≤ 0`, which is
+  what forces the complement `Z = X̄ - C` to be nonempty (an affine proper
+  scheme over a field has dimension `0`), and `z > 0` is used throughout
+  §3.5–3.9.
+
+The costing of what each curve-branch leaf still needs from mathlib is in
+the section docstring "The curve branch: Moret–Bailly §3, cut at the
+compactification" above.
+
 CIRCULARITY GUARD: inherited from the parent — no route through
 `Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
 theorem exists_totallySplitPoint_of_affine_curve
@@ -3587,8 +4115,14 @@ theorem exists_totallySplitPoint_of_affine_curve
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F),
       (∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt F p) ∧
-      HasRationalPoint fC F :=
-  sorry
+      HasRationalPoint fC F := by
+  classical
+  by_cases hzero : topologicalKrullDim ↥C ≤ 0
+  · exact exists_totallySplitPoint_of_krullDim_le_zero fC hsmooth hft hgi hzero S
+  · obtain ⟨Xbar, fX, j, hjimm, hjcomm, hXsmooth, hXproper, hXgi, hZ⟩ :=
+      exists_projectiveCompactification_of_affine_curve fC hsmooth hsep hft hqc hgi hdim hzero
+    exact exists_totallySplitPoint_of_projectiveCompactification fC fX j hjimm hjcomm
+      hXsmooth hXproper hXgi hZ hreal S hSprime hSpt
 
 /-- **The normal closure of a totally real, totally split number field is
 again totally real and totally split** (**PROVEN 2026-07-26** — pure algebraic
