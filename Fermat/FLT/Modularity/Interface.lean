@@ -155,6 +155,11 @@ import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 -- forces its coordinates into the fixed field `ℚ`.
 import Mathlib.LinearAlgebra.Dual.Basis
 import Mathlib.LinearAlgebra.Dual.Lemmas
+-- `basisOfTopLeSpanOfCardEqFinrank`: `dim V` spanning vectors form a
+-- basis. Used by `exists_rational_qExpansion_spanning` to turn the
+-- `dim`-many coefficient functionals of the rationality leaf into a
+-- dual basis.
+import Mathlib.LinearAlgebra.Dimension.OrzechProperty
 -- Field theory for the fixed-field computation
 -- (`exists_ratCast_eq_of_forall_ringEquiv_fixed`): transcendence
 -- bases, extension of subfield automorphisms through
@@ -2086,8 +2091,85 @@ theorem cuspForm_finiteDimensional (N : ℕ) (hN : 0 < N) :
   refine hB f fun m hm => ?_
   simpa [LinearMap.pi_apply] using congrFun hf ⟨m, hm⟩
 
-/-- **The rational structure of `S₂(Γ₀(N))`** (sorry node — SHIMURA'S
-RATIONALITY THEOREM, isolated 2026-07-25 as the first of the two
+/-- **The `ℚ`-structure of the `q`-expansion coefficient functionals**
+(sorry node — the ARITHMETIC RESIDUE of Shimura's rationality theorem,
+isolated 2026-07-25 by this node's owner as the single input of the
+now-PROVEN assembly `exists_rational_qExpansion_spanning` below):
+writing `D = dim_ℂ S₂(Γ₀(N))` (finite by `cuspForm_finiteDimensional`),
+there are `D` indices `n 0, …, n (D−1)` such that EVERY coefficient
+functional `a_m` is a `ℚ`-linear combination of
+`a_{n 0}, …, a_{n (D−1)}` on all of `S₂(Γ₀(N))`.
+
+Equivalently, and this is the invariant formulation: the `ℚ`-span `W`
+of the coefficient functionals `{a_m : m ∈ ℕ}` inside the dual space
+`S₂(Γ₀(N))^∨` is finite-dimensional over `ℚ` of `ℚ`-dimension exactly
+`D`, i.e. `W` is a `ℚ`-FORM of the dual space, `W ⊗_ℚ ℂ = S₂(Γ₀(N))^∨`.
+(One inequality is free: the `a_m` separate cusp forms — this is the
+`q`-expansion principle `cuspForm_eq_of_forall_qCoeff_eq` — so they
+`ℂ`-span the dual and `dim_ℚ W ≥ D` always. The content is `≤ D`.)
+
+WHY THIS IS THE RIGHT CUT (2026-07-25). It is the coordinate form of
+the SAME theorem — Shimura, *Introduction to the Arithmetic Theory of
+Automorphic Functions*, Theorem 3.52; Diamond–Shurman §6.5 — with all
+the linear algebra stripped out and moved into proven glue, so that
+what is left is only the arithmetic assertion the classical proof
+actually produces. Both directions are elementary and are recorded
+here so that no consumer can mistake this for a weaker statement:
+
+* THIS ⟹ rational spanning (the proven assembly below): the `D`
+  functionals `a_{n i}` `ℂ`-span the dual (every `a_m` is in their
+  span, and the `a_m` span), and there are exactly `D` of them, so
+  they are a BASIS of the dual; its predual basis `E 0, …, E (D−1)`
+  of `S₂(Γ₀(N))` satisfies `a_{n j}(E k) = δ_{jk}`, whence
+  `a_m(E k) = ∑ i c_i^{(m)} δ_{ik} = c_k^{(m)} ∈ ℚ` — the predual
+  basis has rational `q`-expansions and it spans.
+* rational spanning ⟹ THIS: a rational spanning family spans a
+  `ℚ`-structure `V_ℚ` with `V_ℚ ⊗ ℂ = S₂(Γ₀(N))`; every `a_m` takes
+  rational values on `V_ℚ`, so `W ⊆ Hom_ℚ(V_ℚ, ℚ)`, a `ℚ`-space of
+  dimension `D`; and `W` `ℂ`-spans the dual, so `W` is all of it and
+  `D` of the `a_m` already form a `ℚ`-basis.
+
+WHY THE CARDINALITY `D` IS LOAD-BEARING, not a convenience. Demanding
+only SOME finite family with the `ℚ`-combination property is strictly
+weaker and FALSE as a substitute: with `D = 1` and a hypothetical
+coefficient system `a_1 = 1`, `a_2 = √2 · a_1`, every `a_m` lies in
+the `ℚ`-span of `{a_1, a_2}` while no cusp form has rational
+`q`-expansion at all. Pinning the family size to `dim_ℂ S₂(Γ₀(N))` is
+exactly what rules this out, and it is also what the classical proof
+gives — `dim_ℚ W = D` is the `ℚ`-form statement.
+
+WHAT A PROOF NEEDS. The classical input is the integral/rational model
+of `X₀(N)`: cusp forms of weight 2 are global differentials, `X₀(N)`
+and its cusp `∞` are defined over `ℚ`, the uniformizer `q` is
+`ℚ`-rational, and flat base change gives
+`H⁰(X₀(N)_ℚ, Ω) ⊗_ℚ ℂ = H⁰(X₀(N)_ℂ, Ω)`; the `q`-expansion principle
+then says the expansion map is defined over `ℚ`, which is precisely
+`dim_ℚ W = D`. The Hecke-theoretic route is the same statement about
+the Hecke algebra: `W` is the image of `𝕋` under `T ↦ a_1(T·)`, and
+`dim_ℚ W = D` is `𝕋_ℚ ⊗_ℚ ℂ = 𝕋`, the `ℚ`-form of the Hecke algebra.
+Note that RATIONALITY OF THE CHARACTERISTIC POLYNOMIALS of the `T_q`
+alone does NOT suffice, by the same `√2` obstruction (each `T_q` can
+be algebraic over `ℚ` while the `ℚ`-algebra they generate is
+infinite-dimensional): the finiteness of `dim_ℚ W`, not the
+algebraicity of individual eigenvalues, is the arithmetic content.
+Neither modular curves nor the Eichler–Selberg trace formula exist on
+this pin, hence the interface shape.
+
+SOUNDNESS: the statement is sound for every `N ≥ 1`. At genus-zero
+levels `D = 0`, the family is empty and each clause reads
+`a_m(f) = 0`, true because `S₂(Γ₀(N)) = 0` there. -/
+theorem exists_qCoeff_rational_relations {N : ℕ} (hN : 0 < N) :
+    ∃ n : Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2)) → ℕ,
+      ∀ m : ℕ,
+        ∃ c : Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2)) → ℚ,
+          ∀ f : CuspForm (Gamma0GL N) 2,
+            qCoeff N f m = ∑ i, (c i : ℂ) * qCoeff N f (n i) :=
+  sorry
+
+/-- **The rational structure of `S₂(Γ₀(N))`** (PROVEN assembly,
+2026-07-25, over the coordinate leaf `exists_qCoeff_rational_relations`
+— SHIMURA'S RATIONALITY THEOREM, isolated 2026-07-25 as the first of
+the two
 genuinely different classical inputs of the former single integral
 node `exists_integral_qExpansion_spanning`, which is now a PROVEN
 denominator-clearing assembly over this leaf and
@@ -2124,14 +2206,94 @@ mandate is the two leaves only; the shortening of
 `ℚ`-node is a one-line change for that declaration's owner —
 `map_intCast` becomes `map_ratCast`.)
 
+ASSEMBLY (2026-07-25, this node's owner): the geometric citation has
+been moved one step down to the coordinate leaf
+`exists_qCoeff_rational_relations` — "every coefficient functional
+`a_m` is a `ℚ`-combination of `D = dim_ℂ S₂(Γ₀(N))` of them" — and this
+node is now PROVEN from it, with the DUAL BASIS supplying the rational
+forms. (i) The `D` selected functionals `a_{n i}` have trivial joint
+kernel: a cusp form killed by all of them is killed by every `a_m`,
+hence is `0` by the `q`-expansion principle
+`cuspForm_eq_of_forall_qCoeff_eq`. So their span has trivial
+dual-coannihilator and therefore is the whole dual space
+(`Subspace.finrank_add_finrank_dualCoannihilator_eq`). (ii) Being `D`
+vectors spanning a `D`-dimensional space they form a BASIS `ψ`
+(`basisOfTopLeSpanOfCardEqFinrank`, using `Subspace.dual_finrank_eq`).
+(iii) Its predual basis `E = ψ* ∘ evalEquiv⁻¹` of `S₂(Γ₀(N))` obeys
+`a_{n j}(E k) = δ_{jk}`, so the `ℚ`-relations evaluate to
+`a_m(E k) = c_k^{(m)} ∈ ℚ`: `E` is a basis of rational-`q`-expansion
+forms, which is the assertion. Note where the arithmetic sits — step
+(iii) is where "`ℚ`-combination" becomes "rational coefficient", and it
+uses the cardinality `D` of the leaf's family in an essential way (see
+that leaf's docstring for the counterexample when the cardinality is
+left free).
+
 SOUNDNESS: the statement is sound for every `N ≥ 1` — spanning is
 claimed only over `ℂ` (no independence, no echelon normalization, no
 `ℚ`-rank claim), so at genus-zero levels `n = 0` witnesses it. -/
 theorem exists_rational_qExpansion_spanning {N : ℕ} (hN : 0 < N) :
     ∃ (n : ℕ) (g : Fin n → CuspForm (Gamma0GL N) 2),
       (∀ f : CuspForm (Gamma0GL N) 2, ∃ c : Fin n → ℂ, f = ∑ i, c i • g i) ∧
-      (∀ i m, ∃ r : ℚ, qCoeff N (g i) m = (r : ℂ)) :=
-  sorry
+      (∀ i m, ∃ r : ℚ, qCoeff N (g i) m = (r : ℂ)) := by
+  classical
+  haveI := cuspForm_finiteDimensional N hN
+  obtain ⟨n, hn⟩ := exists_qCoeff_rational_relations hN
+  choose c hc using hn
+  -- (i) the `D` selected coefficient functionals span the full dual space
+  have hco : (Submodule.span ℂ
+      (Set.range fun i => qCoeffL N (n i))).dualCoannihilator = ⊥ := by
+    rw [eq_bot_iff]
+    intro v hv
+    rw [Submodule.mem_dualCoannihilator] at hv
+    have hzero : ∀ i, qCoeff N v (n i) = 0 := fun i => by
+      simpa using hv (qCoeffL N (n i)) (Submodule.subset_span ⟨i, rfl⟩)
+    have hv0 : v = 0 := by
+      refine cuspForm_eq_of_forall_qCoeff_eq (g := 0) fun m => ?_
+      rw [hc m v, qCoeff_zero_cuspForm]
+      exact Finset.sum_eq_zero fun i _ => by rw [hzero i, mul_zero]
+    simp [hv0]
+  have hrank := Subspace.finrank_add_finrank_dualCoannihilator_eq
+    (Submodule.span ℂ (Set.range fun i => qCoeffL N (n i)))
+  rw [hco, finrank_bot, add_zero] at hrank
+  have hspan : Submodule.span ℂ (Set.range fun i => qCoeffL N (n i)) = ⊤ :=
+    Submodule.eq_top_of_finrank_eq (by rw [hrank, Subspace.dual_finrank_eq])
+  -- (ii) `D` spanning vectors in a `D`-dimensional dual space form a basis
+  have hcard : Fintype.card (Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2)))
+      = Module.finrank ℂ (Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) := by
+    rw [Fintype.card_fin, Subspace.dual_finrank_eq]
+  let ψ : Module.Basis (Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2))) ℂ
+      (Module.Dual ℂ (CuspForm (Gamma0GL N) 2)) :=
+    basisOfTopLeSpanOfCardEqFinrank (fun i => qCoeffL N (n i)) hspan.ge hcard
+  have hψ : ∀ i, ψ i = qCoeffL N (n i) := fun i =>
+    congrFun (coe_basisOfTopLeSpanOfCardEqFinrank
+      (fun i => qCoeffL N (n i)) hspan.ge hcard) i
+  -- (iii) its predual basis has rational `q`-expansion coefficients
+  let E : Module.Basis (Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2))) ℂ
+      (CuspForm (Gamma0GL N) 2) :=
+    ψ.dualBasis.map (Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2)).symm
+  have hEval : ∀ j k, qCoeff N (E k) (n j) = if j = k then (1 : ℂ) else 0 := by
+    intro j k
+    have h1 : (ψ j) (E k) = ψ.dualBasis k (ψ j) := by
+      show (ψ j) ((ψ.dualBasis.map
+        (Module.evalEquiv ℂ (CuspForm (Gamma0GL N) 2)).symm) k) = _
+      rw [Module.Basis.map_apply]
+      exact Module.apply_evalEquiv_symm_apply ℂ _ (ψ j) (ψ.dualBasis k)
+    have h2 : qCoeff N (E k) (n j) = (ψ j) (E k) := by rw [hψ j, qCoeffL_apply]
+    rw [h2, h1, Module.Basis.dualBasis_apply_self]
+  refine ⟨Module.finrank ℂ (CuspForm (Gamma0GL N) 2), fun k => E k,
+    fun f => ⟨fun i => E.repr f i, (E.sum_repr f).symm⟩, fun k m => ⟨c m k, ?_⟩⟩
+  have hterm : ∀ i, ((c m i : ℂ)) * qCoeff N (E k) (n i)
+      = if i = k then ((c m k : ℂ)) else 0 := by
+    intro i
+    rw [hEval i k]
+    split_ifs with h
+    · subst h; ring
+    · ring
+  calc qCoeff N (E k) m
+      = ∑ i, ((c m i : ℂ)) * qCoeff N (E k) (n i) := hc m (E k)
+    _ = ∑ i, (if i = k then ((c m k : ℂ)) else 0) :=
+        Finset.sum_congr rfl fun i _ => hterm i
+    _ = ((c m k : ℂ)) := by simp
 
 /-- **Bounded denominators for rational `q`-expansions** (sorry node —
 the INTEGRAL refinement, isolated 2026-07-25 as the second of the two
