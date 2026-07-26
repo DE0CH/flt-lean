@@ -11,10 +11,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Yang, Kevin Buzzard
 -/
 
-import Fermat.FLT.Modularity.PatchingVendored.Lemmas
-import Fermat.FLT.Modularity.PatchingVendored.TopologicallyFG
-import Fermat.FLT.Modularity.PatchingVendored.StructureFiniteness
-import Mathlib.Tactic.ContinuousFunctionalCalculus
+module
+
+public import Fermat.FLT.Modularity.PatchingVendored.Lemmas
+public import Fermat.FLT.Modularity.PatchingVendored.TopologicallyFG
+public import Fermat.FLT.Modularity.PatchingVendored.StructureFiniteness
+public import Mathlib.Tactic.ContinuousFunctionalCalculus
+
+@[expose] public section
 
 set_option autoImplicit false
 set_option relaxedAutoImplicit false

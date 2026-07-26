@@ -16,6 +16,16 @@ public import Fermat.FLT.FreyCurve.MazurTorsion
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- `IsHardlyRamified`, `rank_finTwoFun`, `GaloisRep.IsUnramifiedAt`.
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
+-- `IsHardlyRamified.discr_factorization_le_of_forall_differentIdeal_pow_dvd`,
+-- the tame-plus-wild assembly turning a uniform per-prime different-exponent
+-- bound into a bound on the discriminant exponent. This is the ONE project
+-- dependency of the different-ideal development below.
+-- CIRCULARITY GUARD (verified by import-closure computation, not inspection,
+-- 2026-07-26): `ModThree.lean`'s 54-module project closure contains neither
+-- `HardlyRamified/Deformation.lean` — which imports THIS module — nor
+-- `Lift.lean`, `Family.lean`, nor anything under `Modularity/`. So this
+-- import cannot close the forbidden Khare–Wintenberger cycle.
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree
 -- Hermite's theorem `NumberField.finite_of_discr_bdd`.
 public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
 -- `NumberField.not_dvd_discr_iff_forall_mem`.
@@ -31,6 +41,22 @@ public import Mathlib.Topology.Algebra.OpenSubgroup
 public import Mathlib.GroupTheory.Index
 -- `Nat.prod_factorization_pow_eq_self`, `Nat.support_factorization`.
 public import Mathlib.Data.Nat.Factorization.Defs
+-- `IsDedekindDomain.HeightOneSpectrum.intValuation` and its `WithZero.exp`-valued
+-- API, the `Q`-adic order used in the wild different-exponent bound
+-- `differentIdeal_exponent_le_wild`.
+public import Mathlib.RingTheory.DedekindDomain.AdicValuation
+-- `Ideal.ramificationIdx_le_finrank`, consumed by
+-- `exists_discr_factorization_le_of_finrank_le`. Explicit and PUBLIC because as
+-- of 2026-07-26 it no longer arrives transitively as a public name: the module
+-- system re-exports only public imports.
+public import Mathlib.NumberTheory.RamificationInertia.Basic
+-- `IsLocalRing.maximalIdeal`, `IsLocalRing.ResidueField`,
+-- `IsLocalRing.map_maximalIdeal_of_surjective`, `IsLocalRing.local_hom_TFAE` —
+-- reaching this cone only through private imports otherwise, which reads as
+-- `Unknown identifier maximalIdeal`.
+public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic
+public import Mathlib.RingTheory.LocalRing.ResidueField.Defs
+public import Mathlib.RingTheory.LocalRing.RingHom.Basic
 
 /-!
 # Hermite–Minkowski finiteness for hardly ramified representations
@@ -88,15 +114,19 @@ discharged through the odd-prime dichotomy
 pillar α). Neither is a temptation: the statements below carry no
 irreducibility hypothesis.
 
-DEDUPE FOLLOW-UP. `Patching.lean` still carries its own verbatim copy of this
-chain, in namespace `GaloisRepresentation.Modularity`. Removing it is a purely
-mechanical deletion — drop the block running from the `InertiaTrivialAt`
-section docstring through `finite_setOf_isHardlyRamified`, and add
-`import Fermat.FLT.GaloisRepresentation.HardlyRamified.HermiteMinkowski`; every
-reference inside `namespace GaloisRepresentation.Modularity` then resolves
-outward to the copy here, unqualified and unchanged. It was NOT done in the
-same change because `Patching.lean` was red and under repair by another owner
-at the time, so the deletion could not be build-verified.
+DEDUPE FOLLOW-UP — DONE. `Patching.lean`'s verbatim copy of this chain, in
+namespace `GaloisRepresentation.Modularity`, has been deleted: the block from
+the `InertiaTrivialAt` section docstring through `finite_setOf_isHardlyRamified`
+is gone and that file now `import`s this module. Every reference inside
+`namespace GaloisRepresentation.Modularity` resolves outward to the copy here,
+unqualified and unchanged.
+
+One knock-on: `rank_finTwoFun` used to be duplicated in
+`HardlyRamified/Deformation.lean` and `Modularity/Patching.lean`, and BOTH are
+downstream of this module, so neither could serve `finite_setOf_isHardlyRamified`
+below. Both copies were deleted and the single declaration moved UPSTREAM into
+`HardlyRamified/Defs.lean`, keeping the full name
+`GaloisRepresentation.rank_finTwoFun`.
 -/
 
 @[expose] public section
@@ -126,8 +156,11 @@ discriminants are divisible only by `2` and `p`
 (`not_dvd_discr_of_inertiaTrivialAt`, through the PROVEN inertia
 dictionary `isUnramifiedAt_of_inertia_le_fixingSubgroup` of
 `MazurTorsion`), with exponents bounded in terms of the degree alone
-(the single sorried leaf of the cut,
-`exists_discr_factorization_le_of_finrank_le`), so the fields have
+(`exists_discr_factorization_le_of_finrank_le`, PROVEN 2026-07-25 over
+the WILD half of the different-exponent bound
+`differentIdeal_exponent_le_wild`, itself PROVEN 2026-07-26 over the
+single sorried leaf of the cut, the local Eisenstein presentation
+`exists_eisensteinDerivative_dvd_of_wild`), so the fields have
 bounded discriminant and mathlib's Hermite theorem
 `NumberField.finite_of_discr_bdd` applies.
 -/
@@ -151,32 +184,1850 @@ def InertiaTrivialAt {q : ℕ} (hq : q.Prime)
       (HeightOneSpectrum.adicCompletion ℚ
         hq.toHeightOneSpectrumRingOfIntegersRat))) σ ∈ N
 
-/-- **Discriminant-exponent bound by the degree** (sorry node — the
-single arithmetic leaf of the Hermite–Minkowski cut of
-`finite_setOf_isHardlyRamified`): for a fixed prime `q` and degree
-bound `n`, the exponent of `q` in the discriminant of a number field
-of degree at most `n` is bounded by a constant depending only on `q`
-and `n`.
+/-- **(M4) Ultrametric sums: pairwise distinct term valuations force
+the valuation of the sum to be the extremal one** (PROVEN 2026-07-26).
+For a valuation `v` on a commutative ring with values in a linearly
+ordered commutative group with zero, if the terms of a finite sum have
+*pairwise distinct* valuations then `v (∑ i ∈ t, f i)` is the supremum
+of the `v (f i)` — in the multiplicative normalisation of `Valuation`,
+"supremum" is the *smallest order*, i.e. Serre's `v(Σ) = min v(xᵢ)`.
 
-Mathematical content (Serre, *Corps Locaux*, III §6 Prop. 13; the
-route through this project's PROVEN Serre-IV§1 machinery in
-`ModThree.lean`): for a prime `Q` of `𝓞_K` over `q` with ramification
-index `e`, the exponent `d_Q` of `Q` in the different `𝔡_{K/ℚ}`
-satisfies `d_Q ≤ e − 1 + e·v_q(e)` — the tame part contributes `e − 1`
-(the PROVEN upper half `not_pow_ramificationIdx_dvd_differentIdeal`
-complements mathlib's lower half `pow_sub_one_dvd_differentIdeal`),
-and the wild part is bounded by the lower-numbering filtration sum
-`Σ_{i≥1} (#G_i − 1)` (the PROVEN
-`le_sum_card_inertia_pow_of_pow_dvd_differentIdeal`), whose terms
-vanish beyond the largest jump, itself bounded through `v_q(e)` since
-`G_1` is a `q`-group of order dividing `e` and consecutive quotients
-`G_i/G_{i+1}` embed into the residue field's additive group.  Since
-`e ≤ n`, `v_q(e) ≤ log_q n`, and `v_q(discr K) = Σ_{Q ∣ q} f_Q·d_Q`
-(`NumberField.absNorm_differentIdeal`, as in the PROVEN
-`discr_factorization_le_of_forall_differentIdeal_pow_dvd`), the
-constant `C = n·(n + n·v_q(n!))` (or any cruder closed form) works.
-The bound `C` is existentially quantified, so any correct route may
-discharge this leaf.
+This is the last of the four missing ingredients (M1)–(M4) recorded in
+the route of `differentIdeal_exponent_le_wild` below; mathlib has the
+two-term case `Valuation.map_add_of_distinct_val` but not the finite-sum
+one.  Proof: induction on the (nonempty) index set, using that the
+supremum over the tail is *attained* (`Finset.exists_mem_eq_sup'`), so
+the head's valuation differs from it and the two-term lemma applies. -/
+theorem valuation_sum_eq_sup'_of_pairwise_ne {R Γ₀ ι : Type*} [CommRing R]
+    [LinearOrderedCommGroupWithZero Γ₀] (v : Valuation R Γ₀)
+    {t : Finset ι} (ht : t.Nonempty) (f : ι → R)
+    (hne : ∀ i ∈ t, ∀ j ∈ t, i ≠ j → v (f i) ≠ v (f j)) :
+    v (∑ i ∈ t, f i) = t.sup' ht fun i => v (f i) := by
+  revert hne
+  induction ht using Finset.Nonempty.cons_induction with
+  | singleton a => intro _; simp
+  | cons a s h hs ih =>
+      intro hne
+      have hne' : ∀ i ∈ s, ∀ j ∈ s, i ≠ j → v (f i) ≠ v (f j) := fun i hi j hj hij =>
+        hne i (Finset.mem_cons_of_mem hi) j (Finset.mem_cons_of_mem hj) hij
+      obtain ⟨b, hb, hbeq⟩ := Finset.exists_mem_eq_sup' hs fun i => v (f i)
+      have hab : a ≠ b := fun hh => h (hh ▸ hb)
+      have hdist : v (f a) ≠ v (∑ i ∈ s, f i) := by
+        rw [ih hne', hbeq]
+        exact hne a (Finset.mem_cons_self a s) b (Finset.mem_cons_of_mem hb) hab
+      rw [Finset.sum_cons, Finset.sup'_cons, v.map_add_of_distinct_val hdist, ih hne']
+
+/-- **(M4) The form actually consumed: one term bounds the sum**
+(PROVEN 2026-07-26).  Same hypothesis as
+`valuation_sum_eq_sup'_of_pairwise_ne`, but distinctness is only
+required among the terms of *nonzero* valuation (equivalently, the
+nonzero terms — the hypothesis `hker` says the valuation has trivial
+kernel, which holds for the adic valuation of a Dedekind domain).  That
+weakening is essential: the derivative of an Eisenstein polynomial
+routinely has several *vanishing* coefficients, so several terms of the
+sum are literally `0` and their valuations coincide.  Conclusion, in
+additive language: `ord (∑ f i) ≤ ord (f i₀)` for every index `i₀`. -/
+theorem valuation_term_le_valuation_sum {R Γ₀ ι : Type*} [CommRing R]
+    [LinearOrderedCommGroupWithZero Γ₀] (v : Valuation R Γ₀)
+    (hker : ∀ x : R, v x = 0 → x = 0)
+    {t : Finset ι} (f : ι → R) {i₀ : ι} (hi₀ : i₀ ∈ t)
+    (hne : ∀ i ∈ t, ∀ j ∈ t, i ≠ j → v (f i) ≠ 0 → v (f j) ≠ 0 → v (f i) ≠ v (f j)) :
+    v (f i₀) ≤ v (∑ i ∈ t, f i) := by
+  classical
+  rcases eq_or_ne (v (f i₀)) 0 with h0 | h0
+  · rw [h0]; exact zero_le
+  have hsum : ∑ i ∈ t.filter (fun i => v (f i) ≠ 0), f i = ∑ i ∈ t, f i :=
+    Finset.sum_filter_of_ne fun x _ hx hv => hx (hker (f x) hv)
+  have hi₀' : i₀ ∈ t.filter (fun i => v (f i) ≠ 0) := Finset.mem_filter.mpr ⟨hi₀, h0⟩
+  have hne' : ∀ i ∈ t.filter (fun i => v (f i) ≠ 0), ∀ j ∈ t.filter (fun i => v (f i) ≠ 0),
+      i ≠ j → v (f i) ≠ v (f j) := by
+    intro i hi j hj hij
+    rw [Finset.mem_filter] at hi hj
+    exact hne i hi.1 j hj.1 hij hi.2 hj.2
+  rw [← hsum, valuation_sum_eq_sup'_of_pairwise_ne v ⟨i₀, hi₀'⟩ f hne']
+  exact Finset.le_sup' (fun i => v (f i)) hi₀'
+
+/-- **The `Q`-adic order of a rational integer is `e · v_q(m)`**
+(PROVEN 2026-07-26): for a prime `Q` of `𝓞_K` above the rational prime
+`q`, with ramification index `e = e(Q∣q)`, every nonzero natural number
+`m` satisfies `ord_Q(m) = e · v_q(m)`.
+
+This is the arithmetic input that makes the distinct-valuations
+argument of `differentIdeal_exponent_le_wild` work: it says the
+valuations of rational integers all lie in `e·ℤ`, so the term
+`i·a_i·π^{i−1}` of `g'(π)` has `Q`-order congruent to `i−1` mod `e`.
+It also supplies the *value* of the extremal term, `ord_Q(e·π^{e−1}) =
+e·v_q(e) + e − 1`, which is exactly the bound being proven.
+
+Proof: write `m = q^k·m'` with `q ∤ m'`
+(`Nat.ordProj_mul_ordCompl_eq_self`).  Bézout for the coprime pair
+`(q, m')` shows `m' ∉ Q` (otherwise `1 ∈ Q`), so `ord_Q(m') = 0`; and
+`ord_Q(q) = e` because the exact factorization
+`q·𝓞_K = Q^e·J` with `Q ⊔ J = ⊤` (`Ideal.eq_prime_pow_mul_coprime`
+together with the `normalizedFactors`-count characterization of `e`)
+gives `Q^e ∣ (q)` and, by cancellation in the ideal monoid,
+`Q^{e+1} ∤ (q)`. -/
+theorem intValuation_natCast_eq_exp_ramificationIdx
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (m : ℕ) (hm : m ≠ 0) :
+    v.intValuation (m : NumberField.RingOfIntegers K)
+      = WithZero.exp (-((Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal *
+          m.factorization q : ℕ) : ℤ)) := by
+  classical
+  set R := NumberField.RingOfIntegers K
+  set Q := v.asIdeal
+  have hQ : Q.IsPrime := v.isPrime
+  have hQ0 : Q ≠ ⊥ := v.ne_bot
+  set e := Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q with hedef
+  -- the exact factorization of `q·𝓞_K`
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : Q.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff hQ.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have hmap0 : (Ideal.span {((q : ℕ) : ℤ)}).map (algebraMap ℤ R) ≠ ⊥ :=
+    Ideal.map_ne_bot_of_ne_bot hspan0
+  haveI hQmax : Q.IsMaximal := hQ.isMaximal hQ0
+  obtain ⟨J, hsup, hfac⟩ := Ideal.eq_prime_pow_mul_coprime hmap0 Q
+  rw [← Ideal.IsDedekindDomain.ramificationIdx'_eq_normalizedFactors_count
+    hmap0 hQ hQ0, ← hedef] at hfac
+  have hspanq : Ideal.span {(q : R)} = (Ideal.span {((q : ℕ) : ℤ)}).map (algebraMap ℤ R) := by
+    rw [Ideal.map_span]
+    congr 1
+    simp
+  -- `Q ^ e ∣ (q)` and `¬ Q ^ (e+1) ∣ (q)`
+  have hdvd : Q ^ e ∣ Ideal.span {(q : R)} := by
+    rw [hspanq, hfac]; exact Dvd.intro _ rfl
+  have hnotdvd : ¬ Q ^ (e + 1) ∣ Ideal.span {(q : R)} := by
+    rw [hspanq, hfac, pow_succ]
+    intro hcon
+    have hQJ : Q ∣ J := (mul_dvd_mul_iff_left (pow_ne_zero e hQ0)).mp hcon
+    have : Q ⊔ J = Q := sup_eq_left.mpr (Ideal.le_of_dvd hQJ)
+    rw [hsup] at this
+    exact hQ.ne_top this.symm
+  -- hence `ord_Q (q) = e`
+  have hqne : (q : R) ≠ 0 := by
+    simpa using (Nat.cast_ne_zero (R := R)).mpr hq.ne_zero
+  have hvq : v.intValuation (q : R) = WithZero.exp (-(e : ℤ)) := by
+    obtain ⟨n, hn⟩ : ∃ n : ℕ, v.intValuation (q : R) = WithZero.exp (-(n : ℤ)) := by
+      rw [v.intValuation_if_neg hqne]
+      exact ⟨_, rfl⟩
+    have h1 : e ≤ n := by
+      have := (v.intValuation_le_pow_iff_dvd (q : R) e).mpr hdvd
+      rw [hn, WithZero.exp_le_exp] at this
+      omega
+    have h2 : n ≤ e := by
+      by_contra hcon
+      apply hnotdvd
+      rw [← v.intValuation_le_pow_iff_dvd, hn, WithZero.exp_le_exp]
+      push_cast
+      omega
+    rw [hn]
+    congr 2
+    omega
+  -- the `q`-free part has `Q`-order zero
+  set k := m.factorization q
+  set m' := m / q ^ k
+  have hmfac : q ^ k * m' = m := Nat.ordProj_mul_ordCompl_eq_self m q
+  have hnd : ¬ q ∣ m' := Nat.not_dvd_ordCompl hq hm
+  have hm'mem : (m' : R) ∉ Q := by
+    intro hcon
+    have hcop : Nat.Coprime q m' := (Nat.Prime.coprime_iff_not_dvd hq).mpr hnd
+    obtain ⟨u, w, huw⟩ : ∃ u w : ℤ, u * (q : ℤ) + w * (m' : ℤ) = 1 := by
+      refine ⟨Nat.gcdA q m', Nat.gcdB q m', ?_⟩
+      have := Nat.gcd_eq_gcd_ab q m'
+      rw [hcop] at this
+      push_cast at this ⊢
+      linarith [this]
+    have hone : (1 : R) ∈ Q := by
+      have hq' : ((u : R) * (q : R) + (w : R) * (m' : R)) ∈ Q :=
+        Ideal.add_mem _ (Ideal.mul_mem_left _ _ hmem) (Ideal.mul_mem_left _ _ hcon)
+      have hcast : ((u : R) * (q : R) + (w : R) * (m' : R)) = 1 := by
+        have h2 : ((u * (q : ℤ) + w * (m' : ℤ) : ℤ) : R) = ((1 : ℤ) : R) := by rw [huw]
+        rw [Int.cast_add, Int.cast_mul, Int.cast_mul, Int.cast_natCast, Int.cast_natCast,
+          Int.cast_one] at h2
+        exact h2
+      rwa [hcast] at hq'
+    exact hQ.ne_top (Ideal.eq_top_of_isUnit_mem _ hone isUnit_one)
+  have hvm' : v.intValuation (m' : R) = 1 :=
+    IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff.mpr hm'mem
+  -- put the two halves together
+  have hcast : ((m : ℕ) : R) = (q : R) ^ k * (m' : R) := by
+    rw [← hmfac, Nat.cast_mul, Nat.cast_pow]
+  rw [hcast, map_mul, map_pow, hvq, hvm', mul_one, ← WithZero.exp_nsmul]
+  congr 1
+  push_cast
+  ring
+
+/-- **The value group of an adic valuation is discrete** (PROVEN
+2026-07-26): a value strictly below `exp (-M)` is at most
+`exp (-(M+1))`.  Used to turn the strict approximation supplied by
+mathlib's `exists_intValuation_mul_sub_lt` into a gain of one full unit
+of `Q`-order at each step of the digit expansion below. -/
+theorem le_exp_neg_succ_of_lt_exp_neg {u : WithZero (Multiplicative ℤ)} {M : ℤ}
+    (h : u < WithZero.exp (-M)) : u ≤ WithZero.exp (-(M + 1)) := by
+  rcases eq_or_ne u 0 with rfl | hu
+  · simp
+  · lift u to ℤ using hu with a
+    rw [WithZero.exp_lt_exp] at h
+    rw [WithZero.exp_le_exp]
+    omega
+
+/-- **The integer Eisenstein digit expansion at a prime of residue
+degree one** (PROVEN 2026-07-26 — step 2 of the elementary global route
+recorded on `differentIdeal_exponent_le_wild_of_residueDegreeOne`).
+
+Let `Q = v` be a height-one prime of a Dedekind domain `R`, let `x` be a
+uniformizer at `Q` (`ord_Q x = 1`), let `P` be a *rational integer* with
+`ord_Q P = e`, and suppose every element of `R` is congruent mod `Q` to
+a rational integer (`hres`; for `R = 𝓞_K` and `P = q` this says exactly
+that the residue degree `f(Q∣q)` is `1`).  Then for every precision `M`
+there are integers `c 0, …, c (e−1)` with
+
+  `ord_Q (x ^ e − ∑_{i < e} c i · x ^ i) ≥ M`.
+
+Proof: the ordinary digit expansion in the discrete valuation `ord_Q`.
+At precision `M` write `M = e·k + r` with `r < e`; then `P^k · x^r` has
+`Q`-order exactly `M`, so mathlib's `exists_intValuation_mul_sub_lt`
+produces `y ∈ R` with `ord_Q (z − y·P^k·x^r) > M`, and `hres` replaces
+`y` by a rational integer `c` at the cost of a term of order `≥ M + 1`.
+The digit `c·P^k` is again a rational integer, so the accumulated
+coefficients stay in `ℤ` — which is the whole point, and is exactly
+what fails when the residue degree exceeds one. -/
+theorem exists_intCoeff_eisenstein_approx {R : Type*} [CommRing R] [IsDedekindDomain R]
+    (v : HeightOneSpectrum R) {e : ℕ} (he : 0 < e) {x : R} {P : ℤ}
+    (hx : v.intValuation x = WithZero.exp (-1 : ℤ))
+    (hp : v.intValuation ((P : ℤ) : R) = WithZero.exp (-(e : ℤ)))
+    (hres : ∀ y : R, ∃ c : ℤ, y - (c : R) ∈ v.asIdeal) (M : ℕ) :
+    ∃ c : ℕ → ℤ, v.intValuation (x ^ e - ∑ i ∈ Finset.range e, ((c i : ℤ) : R) * x ^ i)
+      ≤ WithZero.exp (-(M : ℤ)) := by
+  classical
+  induction M with
+  | zero =>
+      refine ⟨fun _ => 0, ?_⟩
+      simp only [Int.cast_zero, zero_mul, Finset.sum_const_zero, sub_zero, Nat.cast_zero,
+        neg_zero, WithZero.exp_zero]
+      exact v.intValuation_le_one _
+  | succ M ih =>
+      obtain ⟨c, hz⟩ := ih
+      have hr : M % e < e := Nat.mod_lt _ he
+      have hkr : e * (M / e) + M % e = M := Nat.div_add_mod M e
+      have hvw : v.intValuation (((P ^ (M / e) : ℤ) : R) * x ^ (M % e))
+          = WithZero.exp (-(M : ℤ)) := by
+        have hkrZ : (e : ℤ) * ((M / e : ℕ) : ℤ) + ((M % e : ℕ) : ℤ) = (M : ℤ) := by
+          exact_mod_cast hkr
+        rw [Int.cast_pow, map_mul, map_pow, map_pow, hx, hp, ← WithZero.exp_nsmul,
+          ← WithZero.exp_nsmul, ← WithZero.exp_add]
+        congr 1
+        simp only [nsmul_eq_mul]
+        linear_combination -hkrZ
+      have hle : v.intValuation (x ^ e - ∑ i ∈ Finset.range e, ((c i : ℤ) : R) * x ^ i)
+          ≤ v.intValuation (((P ^ (M / e) : ℤ) : R) * x ^ (M % e)) := by rw [hvw]; exact hz
+      obtain ⟨y, hy⟩ := v.exists_intValuation_mul_sub_lt hle (Multiplicative.ofAdd (-(M : ℤ)))
+      have hy' : v.intValuation ((x ^ e - ∑ i ∈ Finset.range e, ((c i : ℤ) : R) * x ^ i)
+          - y * (((P ^ (M / e) : ℤ) : R) * x ^ (M % e)))
+          ≤ WithZero.exp (-((M : ℤ) + 1)) := by
+        refine le_exp_neg_succ_of_lt_exp_neg ?_
+        simpa [WithZero.exp] using hy
+      obtain ⟨cy, hcy⟩ := hres y
+      have hcyv : v.intValuation (y - (cy : R)) ≤ WithZero.exp (-(1 : ℕ) : ℤ) := by
+        rw [v.intValuation_le_pow_iff_mem]
+        simpa using hcy
+      refine ⟨Function.update c (M % e) (c (M % e) + cy * P ^ (M / e)), ?_⟩
+      have hsum : ∑ i ∈ Finset.range e,
+          ((Function.update c (M % e) (c (M % e) + cy * P ^ (M / e)) i : ℤ) : R) * x ^ i
+          = (∑ i ∈ Finset.range e, ((c i : ℤ) : R) * x ^ i)
+              + (cy : R) * (((P ^ (M / e) : ℤ) : R) * x ^ (M % e)) := by
+        rw [Finset.sum_congr rfl (g := fun i => ((c i : ℤ) : R) * x ^ i
+          + (if i = M % e then ((cy * P ^ (M / e) : ℤ) : R) * x ^ i else 0)) ?_]
+        · rw [Finset.sum_add_distrib, Finset.sum_ite_eq' (Finset.range e) (M % e)]
+          simp only [Finset.mem_range, hr, if_true]
+          push_cast
+          ring
+        · intro i _
+          by_cases hir : i = M % e
+          · subst hir; rw [Function.update_self, if_pos rfl]; push_cast; ring
+          · rw [Function.update_of_ne hir, if_neg hir]; ring
+      rw [hsum]
+      have hsplit : x ^ e - ((∑ i ∈ Finset.range e, ((c i : ℤ) : R) * x ^ i)
+            + (cy : R) * (((P ^ (M / e) : ℤ) : R) * x ^ (M % e)))
+          = ((x ^ e - ∑ i ∈ Finset.range e, ((c i : ℤ) : R) * x ^ i)
+              - y * (((P ^ (M / e) : ℤ) : R) * x ^ (M % e)))
+            + (y - (cy : R)) * (((P ^ (M / e) : ℤ) : R) * x ^ (M % e)) := by ring
+      rw [hsplit]
+      refine le_trans (v.intValuation.map_add _ _) (max_le ?_ ?_)
+      · exact_mod_cast hy'
+      · rw [map_mul, hvw]
+        calc v.intValuation (y - (cy : R)) * WithZero.exp (-(M : ℤ))
+            ≤ WithZero.exp (-(1 : ℤ)) * WithZero.exp (-(M : ℤ)) := by
+              gcongr
+              simpa using hcyv
+          _ = WithZero.exp (-((M : ℤ) + 1)) := by rw [← WithZero.exp_add]; congr 1; ring
+
+/-- **A uniformizer at `Q` that is a unit at every other prime above
+`q`** (PROVEN 2026-07-26 — step 1a of the elementary global route
+recorded on `differentIdeal_exponent_le_wild_of_residueDegreeOne`).
+
+No approximation theorem is needed: mathlib's coprime splitting
+`Ideal.eq_prime_pow_mul_coprime` writes `q·𝓞_K = Q^n · J` with
+`Q ⊔ J = ⊤`, and `J` is contained in every prime `P ∣ q` other than `Q`
+(a prime containing `Q^n·J` contains `Q^n` — hence `Q`, hence equals `Q`
+by maximality — or contains `J`).  Picking `i ∈ Q²`, `j ∈ J` with
+`i + j = 1` and a uniformizer `π`, the element `x₀ = π·j + i` has
+`ord_Q x₀ = 1` (because `ord_Q(π j) = 1 < 2 ≤ ord_Q i`, by the ultrametric
+equality for distinct valuations) and is `≡ 1` modulo every other prime
+above `q`, since `j` lies in all of them.
+-/
+theorem exists_uniformizer_avoiding_other_primes
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K)) :
+    ∃ x₀ : NumberField.RingOfIntegers K, v.intValuation x₀ = WithZero.exp (-1 : ℤ) ∧
+      ∀ P : Ideal (NumberField.RingOfIntegers K), P.IsPrime → P ≠ v.asIdeal →
+        (q : NumberField.RingOfIntegers K) ∈ P → x₀ ∉ P := by
+  classical
+  obtain ⟨π, hπ⟩ := v.intValuation_exists_uniformizer
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  have hmap0 : (Ideal.span {((q : ℕ) : ℤ)}).map
+      (algebraMap ℤ (NumberField.RingOfIntegers K)) ≠ ⊥ := Ideal.map_ne_bot_of_ne_bot hspan0
+  obtain ⟨J, hsup, hfac⟩ := Ideal.eq_prime_pow_mul_coprime hmap0 v.asIdeal
+  obtain ⟨n, hfac⟩ : ∃ n : ℕ, (Ideal.span {((q : ℕ) : ℤ)}).map
+      (algebraMap ℤ (NumberField.RingOfIntegers K)) = v.asIdeal ^ n * J := ⟨_, hfac⟩
+  have hspanq : Ideal.span {(q : NumberField.RingOfIntegers K)}
+      = (Ideal.span {((q : ℕ) : ℤ)}).map (algebraMap ℤ (NumberField.RingOfIntegers K)) := by
+    rw [Ideal.map_span]
+    congr 1
+    simp
+  have hcop : IsCoprime (v.asIdeal ^ 2) J :=
+    (Ideal.isCoprime_iff_sup_eq.mpr hsup).pow_left
+  obtain ⟨i, hi, j, hj, hij⟩ := Ideal.isCoprime_iff_exists.mp hcop
+  have hjnot : j ∉ v.asIdeal := by
+    intro hjm
+    have h1 : (1 : NumberField.RingOfIntegers K) ∈ v.asIdeal := by
+      rw [← hij]
+      exact Ideal.add_mem _ (Ideal.pow_le_self (by norm_num) hi) hjm
+    exact v.isPrime.ne_top (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+  have hvπj : v.intValuation (π * j) = WithZero.exp (-1 : ℤ) := by
+    rw [map_mul, hπ, HeightOneSpectrum.intValuation_eq_one_iff.mpr hjnot, mul_one]
+  have hvi : v.intValuation i ≤ WithZero.exp (-((2 : ℕ) : ℤ)) :=
+    (v.intValuation_le_pow_iff_mem i 2).mpr hi
+  have hlt : v.intValuation i < v.intValuation (π * j) := by
+    rw [hvπj]
+    refine lt_of_le_of_lt hvi ?_
+    rw [WithZero.exp_lt_exp]
+    norm_num
+  refine ⟨π * j + i, by rw [v.intValuation.map_add_eq_of_lt_left hlt, hvπj], ?_⟩
+  intro P hP hPne hqP hmemP
+  haveI : P.IsPrime := hP
+  -- `J ≤ P`
+  have hJP : J ≤ P := by
+    have hle : v.asIdeal ^ n * J ≤ P := by
+      rw [← hfac, ← hspanq, Ideal.span_le, Set.singleton_subset_iff]
+      exact hqP
+    rcases hP.mul_le.mp hle with hpow | hJ
+    · exfalso
+      rcases Nat.eq_zero_or_pos n with h0 | hpos
+      · rw [h0, pow_zero, Ideal.one_eq_top] at hpow
+        exact hP.ne_top (top_le_iff.mp hpow)
+      · have hQP : v.asIdeal ≤ P :=
+          (Ideal.IsPrime.pow_le_iff (I := v.asIdeal) (P := P) hpos.ne').mp hpow
+        exact hPne (((v.isPrime.isMaximal v.ne_bot).eq_of_le hP.ne_top hQP)).symm
+    · exact hJ
+  have hjP : j ∈ P := hJP hj
+  have h1 : (1 : NumberField.RingOfIntegers K) ∈ P := by
+    have : (1 : NumberField.RingOfIntegers K) = (π * j + i) - π * j + (1 - i) := by ring
+    rw [this]
+    refine Ideal.add_mem _ (Ideal.sub_mem _ hmemP (Ideal.mul_mem_left _ _ hjP)) ?_
+    have : (1 : NumberField.RingOfIntegers K) - i = j := by rw [← hij]; ring
+    rw [this]; exact hjP
+  exact hP.ne_top (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+
+/-- **Adjusting an element by a multiple of `q²` to make it a
+generator of `K/ℚ`** (PROVEN 2026-07-26 — step 1b of the same route).
+
+Fix a primitive element `θ ∈ 𝓞_K` (obtained from
+`Field.exists_primitive_element` over `ℚ` and cleared of denominators by
+`IsAlgebraic.exists_integral_multiple`, which applies to `ℤ` through
+`IsFractionRing.isAlgebraic_iff`).  The elements
+`x_N = x₀ + m^{N+2}·θ`, `N : ℕ`, all differ from `x₀` by an element of
+`(m²)`; since `K/ℚ` is finite separable there are only finitely many
+intermediate fields (`Field.finite_intermediateField_of_exists_primitive_element`),
+so two of the fields `ℚ(x_{N₁})`, `ℚ(x_{N₂})` coincide.  Their common
+value `F` then contains `(m^{N₁+2} − m^{N₂+2})·θ` with a nonzero
+*rational* scalar, hence contains `θ`, hence is all of `K` — so
+`ℚ(x_{N₁}) = K` and `x_{N₁}` is the required generator.  (Note the
+scalar must be rational for this step, which is why the increment is a
+power of a natural number rather than of an arbitrary ring element.)
+-/
+theorem exists_generator_sub_mem_span_sq
+    (K : Type*) [Field K] [NumberField K]
+    (x₀ : NumberField.RingOfIntegers K) (m : ℕ) (hm : 1 < m) :
+    ∃ x : NumberField.RingOfIntegers K,
+      x - x₀ ∈ Ideal.span {((m : NumberField.RingOfIntegers K)) ^ 2} ∧
+      Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤ := by
+  classical
+  -- a primitive element of `K/ℚ` lying in `𝓞 K`
+  obtain ⟨α, hα⟩ := _root_.Field.exists_primitive_element ℚ K
+  have halgZ : IsAlgebraic ℤ α :=
+    (IsFractionRing.isAlgebraic_iff ℤ ℚ K).mpr (Algebra.IsAlgebraic.isAlgebraic α)
+  obtain ⟨d, hd0, hdint⟩ := halgZ.exists_integral_multiple
+  set θ' : K := (d : K) * α with hθ'def
+  have hθ'int : IsIntegral ℤ θ' := by simpa [hθ'def, zsmul_eq_mul] using hdint
+  have hcast : algebraMap ℚ K ((d : ℚ)) = (d : K) := map_intCast _ d
+  have h3 : (algebraMap ℚ K (((d : ℚ))⁻¹)) * θ' = α := by
+    rw [hθ'def, ← mul_assoc, ← hcast, ← map_mul,
+      inv_mul_cancel₀ (by exact_mod_cast hd0 : ((d : ℚ)) ≠ 0), map_one, one_mul]
+  have hθ'top : IntermediateField.adjoin ℚ {θ'} = ⊤ := by
+    refine top_le_iff.mp ?_
+    rw [← hα]
+    refine IntermediateField.adjoin_simple_le_iff.mpr ?_
+    rw [← h3]
+    exact mul_mem (IntermediateField.algebraMap_mem _ _)
+      (IntermediateField.mem_adjoin_simple_self ℚ θ')
+  obtain ⟨θ, hθ⟩ : ∃ θ : NumberField.RingOfIntegers K,
+      algebraMap (NumberField.RingOfIntegers K) K θ = θ' :=
+    ⟨⟨θ', hθ'int⟩, rfl⟩
+  -- pigeonhole over the finitely many intermediate fields
+  haveI : Finite (IntermediateField ℚ K) :=
+    _root_.Field.finite_intermediateField_of_exists_primitive_element ℚ K ⟨α, hα⟩
+  set f : ℕ → IntermediateField ℚ K := fun N =>
+    IntermediateField.adjoin ℚ
+      {algebraMap (NumberField.RingOfIntegers K) K (x₀ + (m : NumberField.RingOfIntegers K) ^ (N + 2) * θ)}
+    with hfdef
+  obtain ⟨N₁, N₂, hne, heq⟩ := Finite.exists_ne_map_eq_of_infinite f
+  refine ⟨x₀ + (m : NumberField.RingOfIntegers K) ^ (N₁ + 2) * θ, ?_, ?_⟩
+  · refine Ideal.mem_span_singleton'.mpr ⟨(m : NumberField.RingOfIntegers K) ^ N₁ * θ, ?_⟩
+    ring
+  · -- the adjoined field is everything
+    have hmem₁ : algebraMap (NumberField.RingOfIntegers K) K
+        (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₁ + 2) * θ) ∈ f N₁ :=
+      IntermediateField.mem_adjoin_simple_self _ _
+    have hmem₂ : algebraMap (NumberField.RingOfIntegers K) K
+        (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₂ + 2) * θ) ∈ f N₁ := by
+      rw [heq]; exact IntermediateField.mem_adjoin_simple_self _ _
+    set c : ℚ := (m : ℚ) ^ (N₁ + 2) - (m : ℚ) ^ (N₂ + 2) with hcdef
+    have hcne : c ≠ 0 := by
+      rw [hcdef, sub_ne_zero]
+      intro hcon
+      have hpow : (m : ℕ) ^ (N₁ + 2) = (m : ℕ) ^ (N₂ + 2) := by exact_mod_cast hcon
+      exact hne (Nat.add_right_cancel (Nat.pow_right_injective hm hpow))
+    have hdiff : algebraMap ℚ K c * θ' =
+        algebraMap (NumberField.RingOfIntegers K) K
+          (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₁ + 2) * θ) -
+        algebraMap (NumberField.RingOfIntegers K) K
+          (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₂ + 2) * θ) := by
+      rw [hcdef, ← hθ]
+      push_cast
+      ring
+    have hθmem : θ' ∈ f N₁ := by
+      have : θ' = algebraMap ℚ K c⁻¹ * (algebraMap ℚ K c * θ') := by
+        rw [← mul_assoc, ← map_mul, inv_mul_cancel₀ hcne, map_one, one_mul]
+      rw [this, hdiff]
+      exact mul_mem (IntermediateField.algebraMap_mem _ _) (sub_mem hmem₁ hmem₂)
+    have htop : f N₁ = ⊤ := by
+      refine top_le_iff.mp ?_
+      rw [← hθ'top]
+      exact IntermediateField.adjoin_simple_le_iff.mpr hθmem
+    have hint : IsAlgebraic ℚ (algebraMap (NumberField.RingOfIntegers K) K
+        (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₁ + 2) * θ)) :=
+      Algebra.IsAlgebraic.isAlgebraic _
+    have hsub := congrArg IntermediateField.toSubalgebra htop
+    rwa [hfdef, IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic hint] at hsub
+
+/-- **The constant coefficient of the minimal polynomial has `Q`-order
+exactly `e`** (PROVEN 2026-07-26 — step 1c of the same route).
+
+Let `x` generate `K/ℚ`, be a uniformizer at `Q`, and be a unit at every
+other prime above `q`.  Then `ord_Q((minpoly ℤ x).coeff 0) = e`.
+
+Proof.  The residue-degree-one hypothesis `hres` makes `𝓞_K ⧸ Q` a
+quotient of `Fin q`, so `absNorm Q ≤ q`; and `absNorm Q` is a power of a
+rational prime lying in `Q`, which must be `q` by Bézout — so
+`absNorm Q = q`.  Writing `(x) = Q·I`, multiplicativity of `absNorm`
+gives `absNorm (x) = q · absNorm I`, and `q ∤ absNorm I`: otherwise
+`Ideal.exists_isMaximal_dvd_of_dvd_absNorm'` produces a maximal `P ∣ I`
+above `q`, which is either `Q` (forcing `Q² ∣ (x)`, contradicting
+`ord_Q x = 1`) or another prime above `q` containing `x`, contradicting
+`hother`.  So `v_q(absNorm (x)) = 1`.  Finally the constant coefficient
+of `minpoly ℤ x` is `± N_{K/ℚ}(x)` — transport the power basis
+`ℚ⟮x⟯ ≃ₐ[ℚ] K` and apply `PowerBasis.norm_gen_eq_coeff_zero_minpoly`,
+together with `Algebra.coe_norm_int` and
+`minpoly.isIntegrallyClosed_eq_field_fractions` — so its absolute value
+is `absNorm (x)`, and `intValuation_natCast_eq_exp_ramificationIdx`
+converts `v_q = 1` into `ord_Q = e`.
+-/
+theorem intValuation_coeff_zero_minpoly
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hres : ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (x : NumberField.RingOfIntegers K)
+    (hgen : Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤)
+    (hx : v.intValuation x = WithZero.exp (-1 : ℤ))
+    (hother : ∀ P : Ideal (NumberField.RingOfIntegers K), P.IsPrime → P ≠ v.asIdeal →
+      (q : NumberField.RingOfIntegers K) ∈ P → x ∉ P) :
+    v.intValuation (((minpoly ℤ x).coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+      = WithZero.exp (-((Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal : ℕ) : ℤ)) := by
+  classical
+  haveI hQmax : v.asIdeal.IsMaximal := v.isPrime.isMaximal v.ne_bot
+  -- (C1) the residue degree is one, so `absNorm Q = q`
+  obtain ⟨p, n, hn, hpQ, hp, hPnorm⟩ := Ideal.exists_prime_and_absNorm_eq_pow v.asIdeal
+  have hpq : p = q := by
+    by_contra hcon
+    have hgcd : Nat.gcd p q = 1 := (Nat.coprime_primes hp hq).mpr hcon
+    have hcop : IsCoprime (p : ℤ) (q : ℤ) :=
+      Int.isCoprime_iff_gcd_eq_one.mpr (by simpa using hgcd)
+    obtain ⟨a, b, hab⟩ := hcop
+    have h1 : (1 : NumberField.RingOfIntegers K) ∈ v.asIdeal := by
+      have h2 : ((a : NumberField.RingOfIntegers K)) * ((p : ℕ) : NumberField.RingOfIntegers K)
+          + ((b : NumberField.RingOfIntegers K)) * ((q : ℕ) : NumberField.RingOfIntegers K)
+          = 1 := by
+        have h3 := congrArg (fun t : ℤ => ((t : NumberField.RingOfIntegers K))) hab
+        push_cast at h3
+        simpa using h3
+      rw [← h2]
+      exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hpQ) (Ideal.mul_mem_left _ _ hmem)
+    exact v.isPrime.ne_top (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+  have hsurj : Function.Surjective
+      (fun i : Fin q => Ideal.Quotient.mk v.asIdeal ((i : ℕ) : NumberField.RingOfIntegers K)) := by
+    intro z
+    obtain ⟨y0, rfl⟩ := Ideal.Quotient.mk_surjective z
+    obtain ⟨c, hc⟩ := hres y0
+    have hq0 : (0 : ℤ) < (q : ℤ) := by exact_mod_cast hq.pos
+    have hnn : (0 : ℤ) ≤ c % (q : ℤ) := Int.emod_nonneg c (by exact_mod_cast hq.ne_zero)
+    have hlt : (c % (q : ℤ)).toNat < q := by
+      have h1 : c % (q : ℤ) < (q : ℤ) := Int.emod_lt_of_pos c hq0
+      omega
+    refine ⟨⟨(c % (q : ℤ)).toNat, hlt⟩, ?_⟩
+    refine Ideal.Quotient.eq.mpr ?_
+    have hcast : ((((c % (q : ℤ)).toNat : ℕ)) : NumberField.RingOfIntegers K)
+        = ((c % (q : ℤ) : ℤ) : NumberField.RingOfIntegers K) := by
+      rw [← Int.cast_natCast, Int.toNat_of_nonneg hnn]
+    have hmoddef : c % (q : ℤ) = c - (q : ℤ) * (c / (q : ℤ)) := Int.emod_def c (q : ℤ)
+    have hdecomp : ((c % (q : ℤ) : ℤ) : NumberField.RingOfIntegers K)
+        = (c : NumberField.RingOfIntegers K)
+          - (q : NumberField.RingOfIntegers K) * ((c / (q : ℤ) : ℤ) : NumberField.RingOfIntegers K) := by
+      rw [hmoddef, Int.cast_sub, Int.cast_mul, Int.cast_natCast]
+    show ((((c % (q : ℤ)).toNat : ℕ)) : NumberField.RingOfIntegers K) - y0 ∈ v.asIdeal
+    rw [hcast, hdecomp]
+    have hrw : (c : NumberField.RingOfIntegers K)
+          - (q : NumberField.RingOfIntegers K) * ((c / (q : ℤ) : ℤ) : NumberField.RingOfIntegers K)
+          - y0
+        = -(y0 - (c : NumberField.RingOfIntegers K))
+          - (q : NumberField.RingOfIntegers K)
+            * ((c / (q : ℤ) : ℤ) : NumberField.RingOfIntegers K) := by ring
+    rw [hrw]
+    exact Ideal.sub_mem _ (neg_mem hc) (Ideal.mul_mem_right _ _ hmem)
+  have hfin : Ideal.absNorm v.asIdeal ≤ q := by
+    have hcard : Nat.card (NumberField.RingOfIntegers K ⧸ v.asIdeal) ≤ Nat.card (Fin q) :=
+      Nat.card_le_card_of_surjective _ hsurj
+    simpa [Ideal.absNorm_apply, Submodule.cardQuot_apply] using hcard
+  rw [hpq] at hPnorm
+  have hn1 : n = 1 := by
+    have hle : q ^ n ≤ q ^ 1 := by rw [pow_one, ← hPnorm]; exact hfin
+    have hnn := (Nat.pow_le_pow_iff_right hq.one_lt).mp hle
+    omega
+  have habsQ : Ideal.absNorm v.asIdeal = q := by rw [hPnorm, hn1, pow_one]
+  -- (C2) the `q`-part of the absolute norm of `x` is exactly one
+  have hx0 : x ≠ 0 := by
+    rintro rfl
+    simp [WithZero.exp_ne_zero.symm] at hx
+  have hQdvd : v.asIdeal ∣ Ideal.span {x} := by
+    have hd := (v.intValuation_le_pow_iff_dvd x 1).mp (by rw [hx]; norm_num)
+    rwa [pow_one] at hd
+  obtain ⟨I, hI⟩ := hQdvd
+  have hIbot : I ≠ ⊥ := by
+    intro h
+    rw [h, Ideal.mul_bot] at hI
+    exact hx0 (by simpa [Ideal.span_singleton_eq_bot] using hI)
+  have hIabs0 : Ideal.absNorm I ≠ 0 := fun h => hIbot (Ideal.absNorm_eq_zero_iff.mp h)
+  have habsx : (Ideal.span {x}).absNorm = q * Ideal.absNorm I := by
+    rw [hI, _root_.map_mul, habsQ]
+  have hnd : ¬ (q ∣ Ideal.absNorm I) := by
+    intro hdvd
+    obtain ⟨P, hPmax, hPunder, hPdvd⟩ := Ideal.exists_isMaximal_dvd_of_dvd_absNorm' hq I hdvd
+    have hqP : (q : NumberField.RingOfIntegers K) ∈ P := by
+      have h0 : ((q : ℤ)) ∈ P.under ℤ := by rw [hPunder]; exact Ideal.mem_span_singleton_self _
+      rw [Ideal.mem_under] at h0
+      simpa using h0
+    have hxP : x ∈ P := by
+      have hdvdx : P ∣ Ideal.span {x} := by rw [hI]; exact hPdvd.mul_left _
+      exact Ideal.le_of_dvd hdvdx (Ideal.mem_span_singleton_self x)
+    by_cases hPQ : P = v.asIdeal
+    · rw [hPQ] at hPdvd
+      have h2 : v.asIdeal ^ 2 ∣ Ideal.span {x} := by
+        rw [hI, sq]; exact mul_dvd_mul_left _ hPdvd
+      have hle2 := (v.intValuation_le_pow_iff_dvd x 2).mpr h2
+      rw [hx, WithZero.exp_le_exp] at hle2
+      norm_num at hle2
+    · exact hother P hPmax.isPrime hPQ hqP hxP
+  -- (C3) the constant coefficient of the minimal polynomial is, up to sign, the norm
+  set y : K := algebraMap (NumberField.RingOfIntegers K) K x with hydef
+  have hyint : IsIntegral ℚ y := Algebra.IsIntegral.isIntegral y
+  have htopIF : IntermediateField.adjoin ℚ {y} = ⊤ := by
+    refine IntermediateField.toSubalgebra_injective ?_
+    rw [IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic hyint.isAlgebraic, hgen]
+    rfl
+  have hpbgen : ((IntermediateField.adjoin.powerBasis hyint).map
+      ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv)).gen = y := rfl
+  have hnormQ : Algebra.norm ℚ y = (-1) ^ ((IntermediateField.adjoin.powerBasis hyint).map
+      ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv)).dim *
+      (minpoly ℚ y).coeff 0 := by
+    have hpb := Algebra.PowerBasis.norm_gen_eq_coeff_zero_minpoly
+      ((IntermediateField.adjoin.powerBasis hyint).map
+        ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv))
+    rwa [hpbgen] at hpb
+  have hminpoly : minpoly ℚ y = (minpoly ℤ x).map (algebraMap ℤ ℚ) :=
+    minpoly.isIntegrallyClosed_eq_field_fractions ℚ K (Algebra.IsIntegral.isIntegral x)
+  have hcoeffQ : (minpoly ℚ y).coeff 0 = (((minpoly ℤ x).coeff 0 : ℤ) : ℚ) := by
+    rw [hminpoly, Polynomial.coeff_map]
+    simp
+  have hnormcoe : ((Algebra.norm ℤ x : ℤ) : ℚ) = Algebra.norm ℚ y := Algebra.coe_norm_int x
+  have hnormZ : Algebra.norm ℤ x = (-1) ^ ((IntermediateField.adjoin.powerBasis hyint).map
+      ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv)).dim *
+      (minpoly ℤ x).coeff 0 := by
+    have hQeq : ((Algebra.norm ℤ x : ℤ) : ℚ)
+        = ((((-1) ^ ((IntermediateField.adjoin.powerBasis hyint).map
+            ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv)).dim *
+            (minpoly ℤ x).coeff 0 : ℤ)) : ℚ) := by
+      rw [hnormcoe, hnormQ, hcoeffQ]
+      push_cast
+      ring
+    exact_mod_cast hQeq
+  have hcoeffabs : ((minpoly ℤ x).coeff 0).natAbs = (Ideal.span {x}).absNorm := by
+    rw [Ideal.absNorm_span_singleton, hnormZ, Int.natAbs_mul]
+    simp
+  -- assembly
+  have hne0 : ((minpoly ℤ x).coeff 0).natAbs ≠ 0 := by
+    rw [hcoeffabs, habsx]
+    exact Nat.mul_ne_zero hq.ne_zero hIabs0
+  have hfact : (((minpoly ℤ x).coeff 0).natAbs).factorization q = 1 := by
+    rw [hcoeffabs, habsx, Nat.factorization_mul hq.ne_zero hIabs0]
+    simp [hq.factorization_self, Nat.factorization_eq_zero_of_not_dvd hnd]
+  have hhelp := intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem _ hne0
+  rw [hfact, mul_one] at hhelp
+  rcases Int.natAbs_eq ((minpoly ℤ x).coeff 0) with heq | heq
+  · rw [heq, Int.cast_natCast]
+    exact hhelp
+  · rw [heq, Int.cast_neg, Int.cast_natCast, Valuation.map_neg]
+    exact hhelp
+
+/-- **A global generator of `K/ℚ` that is a uniformizer at `Q`**
+(PROVEN 2026-07-26 — step 1 of the elementary global route recorded on
+`differentIdeal_exponent_le_wild_of_residueDegreeOne`; standard
+algebraic number theory, no local fields).
+
+Produces `x ∈ 𝓞_K` with `ℚ(x) = K`, `ord_Q x = 1`, and the constant
+coefficient of its minimal polynomial of `Q`-order exactly `e`.
+
+Assembled from the three steps above: `exists_uniformizer_avoiding_other_primes`
+supplies `x₀` with `ord_Q x₀ = 1` that is a unit at the other primes over
+`q`; `exists_generator_sub_mem_span_sq` moves it by an element of `(q²)`
+to make it a generator, which changes neither the `Q`-order (the
+increment has `Q`-order `≥ 2`) nor the behaviour at the other primes
+above `q` (the increment lies in each of them); and
+`intValuation_coeff_zero_minpoly` computes the constant coefficient.
+-/
+theorem exists_generator_uniformizer_at (K : Type*) [Field K] [NumberField K]
+    (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hres : ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal) :
+    ∃ x : NumberField.RingOfIntegers K,
+      Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤ ∧
+      v.intValuation x = WithZero.exp (-1 : ℤ) ∧
+      v.intValuation (((minpoly ℤ x).coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+        = WithZero.exp (-(e : ℤ)) := by
+  obtain ⟨x₀, hx₀, hother₀⟩ := exists_uniformizer_avoiding_other_primes K q hq v
+  obtain ⟨x, hsub, hgen⟩ := exists_generator_sub_mem_span_sq K x₀ q hq.one_lt
+  obtain ⟨w, hw⟩ := Ideal.mem_span_singleton'.mp hsub
+  have hz : x = x₀ + w * (q : NumberField.RingOfIntegers K) ^ 2 := by rw [hw]; ring
+  have hmem2 : w * (q : NumberField.RingOfIntegers K) ^ 2 ∈ v.asIdeal ^ 2 :=
+    Ideal.mul_mem_left _ _ (Ideal.pow_mem_pow hmem 2)
+  have hvz : v.intValuation (w * (q : NumberField.RingOfIntegers K) ^ 2)
+      ≤ WithZero.exp (-((2 : ℕ) : ℤ)) :=
+    (v.intValuation_le_pow_iff_mem _ 2).mpr hmem2
+  have hlt : v.intValuation (w * (q : NumberField.RingOfIntegers K) ^ 2)
+      < v.intValuation x₀ := by
+    rw [hx₀]
+    refine lt_of_le_of_lt hvz ?_
+    rw [WithZero.exp_lt_exp]
+    norm_num
+  have hx : v.intValuation x = WithZero.exp (-1 : ℤ) := by
+    rw [hz, v.intValuation.map_add_eq_of_lt_left hlt, hx₀]
+  have hother : ∀ P : Ideal (NumberField.RingOfIntegers K), P.IsPrime → P ≠ v.asIdeal →
+      (q : NumberField.RingOfIntegers K) ∈ P → x ∉ P := by
+    intro P hP hPne hqP hxP
+    have hzP : w * (q : NumberField.RingOfIntegers K) ^ 2 ∈ P :=
+      Ideal.mul_mem_left _ _ (Ideal.pow_mem_of_mem P hqP 2 (by norm_num))
+    have hx₀P : x₀ ∈ P := by
+      have hx₀eq : x₀ = x - w * (q : NumberField.RingOfIntegers K) ^ 2 := by rw [hz]; ring
+      rw [hx₀eq]
+      exact Ideal.sub_mem _ hxP hzP
+    exact hother₀ P hP hPne hqP hx₀P
+  refine ⟨x, hgen, hx, ?_⟩
+  rw [he]
+  exact intValuation_coeff_zero_minpoly K q hq v hmem hres x hgen hx hother
+
+open _root_.Polynomial in
+/-- **From an integer Eisenstein approximation to Serre's bound**
+(PROVEN 2026-07-26 — steps 3–6 of the elementary global route recorded on
+`differentIdeal_exponent_le_wild_of_residueDegreeOne`; polynomial
+division and valuation bookkeeping only, no local fields).
+
+Given the good generator `x` of `exists_generator_uniformizer_at` and an
+integer-coefficient approximate Eisenstein relation
+`ord_Q (x^e − ∑_{i<e} c_i x^i) ≥ M` from
+`exists_intCoeff_eisenstein_approx`, with `M` large compared with `d`
+and `e`, Serre's bound follows.
+
+Route as carried out, writing `F = minpoly ℤ x`,
+`g = X^e − ∑_{i<e} C (c i)·X^i` (monic of degree `e`), `H = F /ₘ g` and
+`Rm = F %ₘ g` (degree `< e`):
+
+* *The rigidity input.*  `ord_Q (a) ∈ e·ℤ` for every RATIONAL INTEGER
+  `a ≠ 0` (`intValuation_natCast_eq_exp_ramificationIdx`), so the terms
+  `a_i·x^i` of a sum with integer coefficients and `i < e` have
+  `Q`-orders `e·v_q(a_i) + i` that are PAIRWISE DISTINCT — they have
+  distinct residues mod `e`.  This is the whole content of the leaf: it
+  is what "the digits are rational integers" buys, and it is exactly
+  what fails for digits merely of order in `e·ℤ` (see the refutation
+  recorded on `exists_generator_uniformizer_at`'s sibling).
+  `valuation_term_le_valuation_sum` then bounds every single term by the
+  sum.
+* `aeval_derivative_mem_differentIdeal` (mathlib) gives
+  `𝔡_{𝓞_K/ℤ} ∣ (F'(x))`, hence `d ≤ ord_Q (F'(x))` from `hd`.
+* `F(x) = 0` and `ord_Q (g(x)) ≥ M` give `ord_Q (Rm(x)) ≥ M`; the
+  rigidity input forces `ord_Q (Rm_i·x^i) ≥ M` for every `i < e`,
+  whence `ord_Q (Rm_i·x^{i−1}) ≥ M − 1` and `ord_Q (Rm'(x)) ≥ M − 1`.
+* *The cofactor is a `Q`-unit.*  `x ∈ Q` and `ord_Q (x^e − ∑ c_i x^i) > 0`
+  give `∑ c_i x^i ∈ Q`, and all terms with `i ≥ 1` are in `Q`, so the
+  rational integer `c_0` lies in `Q`; being a rational integer its order
+  is then `≥ e`, i.e. `ord_Q (g(0)) ≥ e`.  Comparing with
+  `F(0) = g(0)·H(0) + Rm(0)`, where `ord_Q (F(0)) = e` (`hc0`) and
+  `ord_Q (Rm(0)) ≥ M > e`, gives `ord_Q (g(0)·H(0)) = e` and hence
+  `ord_Q (H(0)) = 0`; then `ord_Q (H(x)) = 0` because `H(x) − H(0) ∈ (x) ⊆ Q`.
+* *Conclusion.*  `F' = Rm' + g'H + gH'`, and the three terms other than
+  `g'(x)H(x)` have order `≥ min (d, M−1, M) = d`, so `ord_Q (g'(x)) ≥ d`.
+  Finally the same distinct-residues argument applied to
+  `g'(x) = ∑_{i<e} (i+1)·g_{i+1}·x^i`, whose `i = e−1` term is
+  `e·x^{e−1}`, gives `ord_Q (g'(x)) ≤ e·v_q(e) + e − 1`.  Hence
+  `d ≤ e − 1 + e·v_q(e)`. -/
+theorem differentIdeal_exponent_le_of_intEisenstein_approx
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (x : NumberField.RingOfIntegers K)
+    (hgen : Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤)
+    (hx : v.intValuation x = WithZero.exp (-1 : ℤ))
+    (hc0 : v.intValuation (((minpoly ℤ x).coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+      = WithZero.exp (-(e : ℤ)))
+    (c : ℕ → ℤ) (M : ℕ)
+    (happrox : v.intValuation (x ^ e - ∑ i ∈ Finset.range e,
+      ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i) ≤ WithZero.exp (-(M : ℤ)))
+    (d : ℕ) (hdM : d + 2 * e + 2 ≤ M)
+    (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    d ≤ e - 1 + e * e.factorization q := by
+  classical
+  -- ## 0. Preliminaries
+  have hker : ∀ y, v.intValuation y = 0 → y = 0 := by
+    intro y hy
+    by_contra hy0
+    exact v.intValuation_ne_zero y hy0 hy
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : v.asIdeal.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff v.isPrime.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have he0 : 0 < e := by
+    rw [he]
+    exact Nat.pos_of_ne_zero
+      (Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver v.asIdeal hspan0)
+  -- ## 1. valuations of rational integers lie in `e·ℤ`
+  have hnat : ∀ m : ℕ, m ≠ 0 →
+      v.intValuation (m : NumberField.RingOfIntegers K)
+        = WithZero.exp (-((e * m.factorization q : ℕ) : ℤ)) := by
+    intro m hm
+    rw [he]
+    exact intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem m hm
+  have hZval : ∀ a : ℤ, a ≠ 0 → ∃ k : ℕ,
+      v.intValuation (a : NumberField.RingOfIntegers K)
+        = WithZero.exp (-((e * k : ℕ) : ℤ)) := by
+    intro a ha
+    obtain ⟨n, hn⟩ : ∃ n : ℕ, a = (n : ℤ) ∨ a = -(n : ℤ) := ⟨a.natAbs, Int.natAbs_eq a⟩
+    rcases hn with rfl | rfl
+    · exact ⟨n.factorization q, by push_cast; exact hnat n (by exact_mod_cast ha)⟩
+    · refine ⟨n.factorization q, ?_⟩
+      have hcast : ((-(n : ℤ) : ℤ) : NumberField.RingOfIntegers K)
+          = -((n : ℕ) : NumberField.RingOfIntegers K) := by push_cast; ring
+      rw [hcast, Valuation.map_neg]
+      exact hnat n (by simpa using ha)
+  have hxpow : ∀ i : ℕ, v.intValuation (x ^ i) = WithZero.exp (-(i : ℤ)) := by
+    intro i
+    rw [map_pow, hx, ← WithZero.exp_nsmul]
+    congr 1
+    simp
+  have hterm : ∀ (a : ℤ) (i : ℕ), a ≠ 0 → ∃ k : ℕ,
+      v.intValuation ((a : NumberField.RingOfIntegers K) * x ^ i)
+        = WithZero.exp (-((e * k : ℕ) : ℤ) - (i : ℤ)) := by
+    intro a i ha
+    obtain ⟨k, hk⟩ := hZval a ha
+    refine ⟨k, ?_⟩
+    rw [map_mul, hk, hxpow, ← WithZero.exp_add]
+    exact congrArg WithZero.exp (by ring)
+  have hmodkey : ∀ (k₁ k₂ i j : ℕ), i < e → j < e →
+      -((e * k₁ : ℕ) : ℤ) - (i : ℤ) = -((e * k₂ : ℕ) : ℤ) - (j : ℤ) → i = j := by
+    intro k₁ k₂ i j hi hj h
+    have h' : e * k₁ + i = e * k₂ + j := by
+      have h2 : ((e * k₁ + i : ℕ) : ℤ) = ((e * k₂ + j : ℕ) : ℤ) := by push_cast at h ⊢; linarith
+      exact_mod_cast h2
+    rcases le_total k₁ k₂ with hk | hk
+    · obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hk
+      rw [Nat.mul_add] at h'
+      rcases Nat.eq_zero_or_pos m with rfl | hm
+      · simp only [Nat.mul_zero, Nat.add_zero] at h'; omega
+      · exfalso
+        have hle : e ≤ e * m := Nat.le_mul_of_pos_right e hm
+        omega
+    · obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hk
+      rw [Nat.mul_add] at h'
+      rcases Nat.eq_zero_or_pos m with rfl | hm
+      · simp only [Nat.mul_zero, Nat.add_zero] at h'; omega
+      · exfalso
+        have hle : e ≤ e * m := Nat.le_mul_of_pos_right e hm
+        omega
+  have hpairwise : ∀ (b : ℕ → ℤ),
+      ∀ i ∈ Finset.range e, ∀ j ∈ Finset.range e, i ≠ j →
+        v.intValuation ((b i : NumberField.RingOfIntegers K) * x ^ i) ≠ 0 →
+        v.intValuation ((b j : NumberField.RingOfIntegers K) * x ^ j) ≠ 0 →
+        v.intValuation ((b i : NumberField.RingOfIntegers K) * x ^ i)
+          ≠ v.intValuation ((b j : NumberField.RingOfIntegers K) * x ^ j) := by
+    intro b i hi j hj hij hn1 hn2 heq
+    have hbi : b i ≠ 0 := by intro h0; rw [h0] at hn1; simp at hn1
+    have hbj : b j ≠ 0 := by intro h0; rw [h0] at hn2; simp at hn2
+    obtain ⟨k₁, hk₁⟩ := hterm (b i) i hbi
+    obtain ⟨k₂, hk₂⟩ := hterm (b j) j hbj
+    rw [hk₁, hk₂, WithZero.exp_inj] at heq
+    exact hij (hmodkey k₁ k₂ i j (Finset.mem_range.mp hi) (Finset.mem_range.mp hj) heq)
+  -- ## 2. the approximating Eisenstein polynomial `g`
+  set p : Polynomial ℤ := ∑ i ∈ Finset.range e, C (c i) * X ^ i with hp
+  have hpdeg : p.degree < (e : ℕ) := by
+    refine lt_of_le_of_lt (degree_sum_le _ _) ?_
+    refine (Finset.sup_lt_iff (by exact_mod_cast WithBot.bot_lt_coe e)).mpr ?_
+    intro i hi
+    exact lt_of_le_of_lt (degree_C_mul_X_pow_le i (c i))
+      (by exact_mod_cast Finset.mem_range.mp hi)
+  have hpcoeff : ∀ n : ℕ, e ≤ n → p.coeff n = 0 := by
+    intro n hn
+    rw [hp, finsetSum_coeff]
+    refine Finset.sum_eq_zero ?_
+    intro i hi
+    rw [coeff_C_mul, coeff_X_pow, if_neg (by have := Finset.mem_range.mp hi; omega), mul_zero]
+  have hpcoeff0 : p.coeff 0 = c 0 := by
+    rw [hp, finsetSum_coeff, Finset.sum_eq_single 0]
+    · simp
+    · intro i _ hne
+      rw [coeff_C_mul, coeff_X_pow, if_neg (Ne.symm hne), mul_zero]
+    · intro h; exact absurd (Finset.mem_range.mpr he0) h
+  set g : Polynomial ℤ := X ^ e - p with hgdef
+  have hgdeg : g.degree = (e : ℕ) := by
+    rw [hgdef, degree_sub_eq_left_of_degree_lt (by rwa [degree_X_pow]), degree_X_pow]
+  have hgnd : g.natDegree = e := natDegree_eq_of_degree_eq_some hgdeg
+  have hgcoeff : g.coeff e = 1 := by
+    rw [hgdef, coeff_sub, coeff_X_pow, if_pos rfl, hpcoeff e le_rfl, sub_zero]
+  have hgmonic : g.Monic := by
+    have hlc : g.leadingCoeff = 1 := by rw [Polynomial.leadingCoeff, hgnd, hgcoeff]
+    exact hlc
+  have hgcoeff0 : g.coeff 0 = -c 0 := by
+    rw [hgdef, coeff_sub, coeff_X_pow, if_neg (by omega), hpcoeff0, zero_sub]
+  have hgaeval : aeval x g = x ^ e - ∑ i ∈ Finset.range e,
+      ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i := by
+    rw [hgdef, hp]
+    simp
+  have hgx : v.intValuation (aeval x g) ≤ WithZero.exp (-(M : ℤ)) := by
+    rw [hgaeval]; exact happrox
+  -- ## 3. division of the minimal polynomial by `g`
+  set F : Polynomial ℤ := minpoly ℤ x with hFdef
+  set H : Polynomial ℤ := F /ₘ g with hHdef
+  set Rm : Polynomial ℤ := F %ₘ g with hRmdef
+  have hdivide : Rm + g * H = F := modByMonic_add_div F g
+  have hRmdeg : Rm.natDegree < e := by
+    rcases eq_or_ne Rm 0 with h0 | h0
+    · simp [h0, he0]
+    · have h1 : Rm.degree < g.degree := degree_modByMonic_lt F hgmonic
+      rw [hgdeg] at h1
+      exact (natDegree_lt_iff_degree_lt h0).mpr h1
+  have hFx : aeval x F = 0 := minpoly.aeval ℤ x
+  have hRmx : v.intValuation (aeval x Rm) ≤ WithZero.exp (-(M : ℤ)) := by
+    have h2 := congrArg (Polynomial.aeval x) hdivide
+    rw [map_add, map_mul] at h2
+    have h1 : aeval x Rm + aeval x g * aeval x H = 0 := h2.trans hFx
+    have h3 : aeval x Rm = -(aeval x g * aeval x H) := by linear_combination h1
+    rw [h3, Valuation.map_neg, map_mul]
+    refine le_trans (mul_le_mul' hgx (v.intValuation_le_one _)) ?_
+    rw [mul_one]
+  have hRmsum : aeval x Rm = ∑ i ∈ Finset.range e,
+      ((Rm.coeff i : ℤ) : NumberField.RingOfIntegers K) * x ^ i := by
+    rw [aeval_eq_sum_range' hRmdeg]
+    exact Finset.sum_congr rfl fun i _ => by rw [zsmul_eq_mul]
+  have hRmcoeff : ∀ i, i < e →
+      v.intValuation ((Rm.coeff i : NumberField.RingOfIntegers K) * x ^ i)
+        ≤ WithZero.exp (-(M : ℤ)) := by
+    intro i hi
+    have h1 := valuation_term_le_valuation_sum v.intValuation hker
+      (fun j => ((Rm.coeff j : ℤ) : NumberField.RingOfIntegers K) * x ^ j)
+      (Finset.mem_range.mpr hi) (hpairwise (fun j => Rm.coeff j))
+    rw [← hRmsum] at h1
+    exact h1.trans hRmx
+  -- ## 4. the shifted bound on the remainder's derivative
+  have hshift : ∀ j : ℕ, j + 1 ≤ e →
+      v.intValuation ((Rm.coeff (j + 1) : NumberField.RingOfIntegers K) * x ^ j)
+        ≤ WithZero.exp (-(M : ℤ) + 1) := by
+    intro j hj
+    rcases eq_or_lt_of_le hj with hje | hje
+    · have hzero : Rm.coeff (j + 1) = 0 :=
+        coeff_eq_zero_of_natDegree_lt (by omega)
+      rw [hzero]
+      simp
+    · have hkey : v.intValuation ((Rm.coeff (j + 1) : NumberField.RingOfIntegers K) * x ^ j)
+          * WithZero.exp (-1 : ℤ) ≤ WithZero.exp (-(M : ℤ)) := by
+        have h4 := hRmcoeff (j + 1) hje
+        rw [pow_succ, ← mul_assoc, map_mul, hx] at h4
+        exact h4
+      have h5 := mul_le_mul_left hkey (WithZero.exp (1 : ℤ))
+      rwa [mul_assoc, ← WithZero.exp_add, neg_add_cancel, WithZero.exp_zero, mul_one,
+        ← WithZero.exp_add] at h5
+  have hRmderiv : v.intValuation (aeval x (derivative Rm)) ≤ WithZero.exp (-(M : ℤ) + 1) := by
+    have hdnd : (derivative Rm).natDegree < e :=
+      lt_of_le_of_lt (natDegree_derivative_le Rm) (by omega)
+    rw [aeval_eq_sum_range' hdnd]
+    refine Valuation.map_sum_le _ ?_
+    intro i hi
+    have hi' : i < e := Finset.mem_range.mp hi
+    rw [zsmul_eq_mul, coeff_derivative]
+    have hrw : (((Rm.coeff (i + 1) * ((i : ℤ) + 1) : ℤ)) : NumberField.RingOfIntegers K) * x ^ i
+        = (((i : ℤ) + 1 : ℤ) : NumberField.RingOfIntegers K)
+          * ((Rm.coeff (i + 1) : NumberField.RingOfIntegers K) * x ^ i) := by
+      push_cast; ring
+    rw [hrw, map_mul]
+    refine le_trans (mul_le_mul' (v.intValuation_le_one _) (hshift i (by omega))) ?_
+    rw [one_mul]
+  -- ## 5. the extremal term of `g'(x)`
+  have hgdnd : (derivative g).natDegree < e := by
+    have h1 := natDegree_derivative_le g
+    rw [hgnd] at h1
+    omega
+  have hgderivsum : aeval x (derivative g) = ∑ i ∈ Finset.range e,
+      (((derivative g).coeff i : ℤ) : NumberField.RingOfIntegers K) * x ^ i := by
+    rw [aeval_eq_sum_range' hgdnd]
+    exact Finset.sum_congr rfl fun i _ => by rw [zsmul_eq_mul]
+  have hlead : (derivative g).coeff (e - 1) = (e : ℤ) := by
+    rw [coeff_derivative, show e - 1 + 1 = e from by omega, hgcoeff, one_mul]
+    have hc : ((e - 1 : ℕ) : ℤ) = (e : ℤ) - 1 := by omega
+    rw [hc]; ring
+  have hextremal : WithZero.exp (-((e * e.factorization q : ℕ) : ℤ) - ((e : ℤ) - 1))
+      ≤ v.intValuation (aeval x (derivative g)) := by
+    have h1 := valuation_term_le_valuation_sum v.intValuation hker
+      (fun i => (((derivative g).coeff i : ℤ) : NumberField.RingOfIntegers K) * x ^ i)
+      (Finset.mem_range.mpr (show e - 1 < e by omega))
+      (hpairwise (fun i => (derivative g).coeff i))
+    rw [← hgderivsum] at h1
+    refine le_trans (le_of_eq ?_) h1
+    have hEcast : (((e : ℤ)) : NumberField.RingOfIntegers K)
+        = ((e : ℕ) : NumberField.RingOfIntegers K) := by push_cast; ring
+    rw [hlead, map_mul, hEcast, hnat e (by omega), hxpow, ← WithZero.exp_add]
+    congr 1
+    have hc : ((e - 1 : ℕ) : ℤ) = (e : ℤ) - 1 := by omega
+    rw [hc]; ring
+  -- ## 6. the cofactor `H` is a `Q`-unit
+  have hxQ : x ∈ v.asIdeal := by
+    have h1 := (v.intValuation_le_pow_iff_mem x 1).mp (by rw [hx]; simp)
+    simpa using h1
+  have hsumQ : (∑ i ∈ Finset.range e,
+      ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i) ∈ v.asIdeal := by
+    have h1 : x ^ e - ∑ i ∈ Finset.range e,
+        ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i ∈ v.asIdeal := by
+      have h2 := (v.intValuation_le_pow_iff_mem _ 1).mp
+        (le_trans happrox (by rw [WithZero.exp_le_exp]; push_cast; omega))
+      simpa using h2
+    have h3 : x ^ e ∈ v.asIdeal := v.asIdeal.pow_mem_of_mem hxQ e he0
+    have h4 := Ideal.sub_mem _ h3 h1
+    simpa using h4
+  have hc0Q : ((c 0 : ℤ) : NumberField.RingOfIntegers K) ∈ v.asIdeal := by
+    have hsplit : ∑ i ∈ Finset.range e, ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i
+        = (∑ i ∈ Finset.range (e - 1),
+            ((c (i + 1) : ℤ) : NumberField.RingOfIntegers K) * x ^ (i + 1))
+          + ((c 0 : ℤ) : NumberField.RingOfIntegers K) := by
+      conv_lhs => rw [show e = (e - 1) + 1 from by omega]
+      rw [Finset.sum_range_succ']
+      simp
+    have hQsum : (∑ i ∈ Finset.range (e - 1),
+        ((c (i + 1) : ℤ) : NumberField.RingOfIntegers K) * x ^ (i + 1)) ∈ v.asIdeal :=
+      Ideal.sum_mem _ fun i _ =>
+        Ideal.mul_mem_left _ _ (v.asIdeal.pow_mem_of_mem hxQ _ (by omega))
+    have h5 := Ideal.sub_mem _ hsumQ hQsum
+    rw [hsplit] at h5
+    simpa using h5
+  have hgc0val : v.intValuation ((c 0 : NumberField.RingOfIntegers K))
+      ≤ WithZero.exp (-(e : ℤ)) := by
+    rcases eq_or_ne (c 0) 0 with h0 | h0
+    · rw [h0]; simp
+    · obtain ⟨k, hk⟩ := hZval (c 0) h0
+      rw [hk, WithZero.exp_le_exp]
+      have hk1 : 1 ≤ k := by
+        by_contra hcon
+        have hk0 : k = 0 := by omega
+        subst hk0
+        rw [Nat.mul_zero] at hk
+        simp only [Nat.cast_zero, neg_zero, WithZero.exp_zero] at hk
+        exact (IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff.mp hk) hc0Q
+      have h2 : e ≤ e * k := by
+        calc e = e * 1 := (mul_one e).symm
+          _ ≤ e * k := Nat.mul_le_mul_left e hk1
+      exact neg_le_neg (by exact_mod_cast h2)
+  have hRm0 : v.intValuation ((Rm.coeff 0 : NumberField.RingOfIntegers K))
+      ≤ WithZero.exp (-(M : ℤ)) := by
+    have h1 := hRmcoeff 0 he0
+    simpa using h1
+  have hcoeff0 : F.coeff 0 = Rm.coeff 0 + g.coeff 0 * H.coeff 0 := by
+    conv_lhs => rw [← hdivide]
+    rw [coeff_add, mul_coeff_zero]
+  have hgH0 : v.intValuation (((g.coeff 0 * H.coeff 0 : ℤ) : NumberField.RingOfIntegers K))
+      = WithZero.exp (-(e : ℤ)) := by
+    have h1 : ((g.coeff 0 * H.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+        = ((F.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+          - ((Rm.coeff 0 : ℤ) : NumberField.RingOfIntegers K) := by
+      rw [hcoeff0]; push_cast; ring
+    have hlt : v.intValuation ((Rm.coeff 0 : NumberField.RingOfIntegers K))
+        < v.intValuation ((F.coeff 0 : NumberField.RingOfIntegers K)) := by
+      rw [hc0]
+      exact lt_of_le_of_lt hRm0 (by rw [WithZero.exp_lt_exp]; omega)
+    rw [h1, Valuation.map_sub_eq_of_lt_left _ hlt, hc0]
+  have hH0 : v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K)) = 1 := by
+    have hmul : ((g.coeff 0 * H.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+        = ((g.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+          * ((H.coeff 0 : ℤ) : NumberField.RingOfIntegers K) := by push_cast; ring
+    rw [hmul, map_mul] at hgH0
+    have hg0le : v.intValuation ((g.coeff 0 : NumberField.RingOfIntegers K))
+        ≤ WithZero.exp (-(e : ℤ)) := by
+      rw [hgcoeff0, show (((-c 0 : ℤ)) : NumberField.RingOfIntegers K)
+        = -((c 0 : ℤ) : NumberField.RingOfIntegers K) by push_cast; ring, Valuation.map_neg]
+      exact hgc0val
+    have h1 : WithZero.exp (-(e : ℤ))
+        ≤ WithZero.exp (-(e : ℤ)) * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K)) := by
+      calc WithZero.exp (-(e : ℤ))
+            = v.intValuation ((g.coeff 0 : NumberField.RingOfIntegers K))
+              * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K)) := hgH0.symm
+        _ ≤ WithZero.exp (-(e : ℤ))
+              * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K)) :=
+            mul_le_mul_left hg0le _
+    have h2 : WithZero.exp (-(e : ℤ))
+        * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K))
+        ≤ WithZero.exp (-(e : ℤ)) := by
+      calc WithZero.exp (-(e : ℤ))
+            * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K))
+          ≤ WithZero.exp (-(e : ℤ)) * 1 := mul_le_mul_right (v.intValuation_le_one _) _
+        _ = WithZero.exp (-(e : ℤ)) := mul_one _
+    have h3 : WithZero.exp (-(e : ℤ))
+        * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K))
+        = WithZero.exp (-(e : ℤ)) * 1 := by rw [mul_one]; exact le_antisymm h2 h1
+    exact mul_left_cancel₀ (by simp) h3
+  have hHx : v.intValuation (aeval x H) = 1 := by
+    rw [IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff]
+    intro hcon
+    have h4 : ((H.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+        = aeval x H - x * aeval x H.divX := by
+      have h2 := congrArg (Polynomial.aeval x) (X_mul_divX_add H)
+      rw [map_add, map_mul, aeval_X, aeval_C] at h2
+      rw [← h2]
+      simp [algebraMap_int_eq]
+    have h3 : ((H.coeff 0 : ℤ) : NumberField.RingOfIntegers K) ∈ v.asIdeal := by
+      rw [h4]
+      exact Ideal.sub_mem _ hcon (Ideal.mul_mem_right _ _ hxQ)
+    exact (IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff.mp hH0) h3
+  -- ## 7. mathlib's different bound, and the assembly
+  have hdiffbound : v.intValuation (aeval x (derivative F)) ≤ WithZero.exp (-(d : ℤ)) := by
+    rw [v.intValuation_le_pow_iff_mem]
+    refine Ideal.le_of_dvd hd ?_
+    rw [hFdef]
+    exact aeval_derivative_mem_differentIdeal ℤ ℚ K x hgen
+  have hFderiv : derivative F = derivative Rm + (derivative g * H + g * derivative H) := by
+    conv_lhs => rw [← hdivide]
+    rw [derivative_add, derivative_mul]
+  have hgderivH : v.intValuation (aeval x (derivative g) * aeval x H)
+      ≤ WithZero.exp (-(d : ℤ)) := by
+    have h2 := congrArg (Polynomial.aeval x) hFderiv
+    rw [map_add, map_add, map_mul, map_mul] at h2
+    have hsplit : aeval x (derivative g) * aeval x H
+        = aeval x (derivative F) - aeval x (derivative Rm)
+          - aeval x g * aeval x (derivative H) := by rw [h2]; ring
+    rw [hsplit]
+    have hb1 : v.intValuation (aeval x (derivative Rm)) ≤ WithZero.exp (-(d : ℤ)) :=
+      hRmderiv.trans (by rw [WithZero.exp_le_exp]; omega)
+    have hb2 : v.intValuation (aeval x g * aeval x (derivative H))
+        ≤ WithZero.exp (-(d : ℤ)) := by
+      rw [map_mul]
+      refine le_trans (mul_le_mul' hgx (v.intValuation_le_one _)) ?_
+      rw [mul_one, WithZero.exp_le_exp]
+      omega
+    exact Valuation.map_sub_le _ (Valuation.map_sub_le _ hdiffbound hb1) hb2
+  have hgderivbound : v.intValuation (aeval x (derivative g)) ≤ WithZero.exp (-(d : ℤ)) := by
+    rw [map_mul, hHx, mul_one] at hgderivH
+    exact hgderivH
+  have hfinal := le_trans hextremal hgderivbound
+  rw [WithZero.exp_le_exp] at hfinal
+  obtain ⟨A, hA⟩ : ∃ A, e * e.factorization q = A := ⟨_, rfl⟩
+  rw [hA] at hfinal ⊢
+  omega
+
+/-- **The wild different bound when the residue degree is one** (PROVEN
+2026-07-26 over `differentIdeal_exponent_le_of_intEisenstein_approx`,
+now the only remaining leaf of the elementary global route;
+`exists_generator_uniformizer_at` was PROVEN 2026-07-26 over the three
+steps `exists_uniformizer_avoiding_other_primes`,
+`exists_generator_sub_mem_span_sq` and `intValuation_coeff_zero_minpoly`,
+and the digit expansion `exists_intCoeff_eisenstein_approx` is proven
+above).
+
+Hypothesis `hres` says that every element of `𝓞_K` is congruent mod `Q`
+to a rational integer, i.e. `𝓞_K/Q = 𝔽_q`, i.e. the residue degree
+`f(Q∣q)` is `1`.  Conclusion: Serre's bound `d ≤ e − 1 + e·v_q(e)`.
+
+**This case admits a completely ELEMENTARY GLOBAL proof — no local
+fields, no completions, no `differentIdeal` localization theory.**  The
+route was worked out and checked mathematically on 2026-07-26; it
+eliminates (M1), (M2) and (M3) outright for `f = 1`, and it is the
+recommended attack:
+
+1. *Choose the generator.*  By approximation in `𝓞_K` pick `x` with
+   `ord_Q x = 1` and `x ∉ Q'` for every other prime `Q'` above `q`;
+   then correct it to a generator of `K/ℚ` by replacing `x` with
+   `x + q^N·θ` for a primitive `θ` — the valuation conditions survive
+   because `ord_Q (q^N θ) ≥ Ne ≥ 2 > 1` (note `e ≥ q ≥ 2` in the wild
+   case) and `ord_{Q'} (q^N θ) ≥ 1 > 0`.  Some `N` works by pigeonhole:
+   `K/ℚ` is finite separable, so `Finite (IntermediateField ℚ K)`
+   (mathlib, `IntermediateField.finite_of_exists_primitive_element`),
+   and if `x + q^{N₁}θ` and `x + q^{N₂}θ` lie in the SAME proper
+   subfield `F` then `(q^{N₁} − q^{N₂})θ ∈ F`, so `θ ∈ F` and `F = K`.
+2. *Eisenstein relation with INTEGER coefficients.*  Because `f = 1`,
+   the digit expansion of `x^e` in the discrete valuation `ord_Q` can
+   be taken with digits in `ℤ`: given `z` with `ord_Q z = k·e + r`
+   (`r < e`), the element `q^k x^r` has the same order, so
+   `z/(q^k x^r)` is a unit whose residue lies in `𝔽_q = ℤ/q`, and
+   subtracting `c·q^k·x^r` for an integer `c` raises the order.  This
+   yields, for every precision `M`, integers `c_0,…,c_{e−1}` with
+   `ord_Q (x^e − ∑_{i<e} c_i x^i) ≥ M`; and `g := X^e − ∑ c_i X^i` is
+   automatically *Eisenstein*, since `ord_Q (c_i x^i) = e·v_q(c_i) + i`
+   are pairwise distinct mod `e`, so their minimum `e` is attained
+   uniquely, forcing `v_q(c_0) = 1` and `v_q(c_i) ≥ 1`.
+3. *mathlib supplies the different.*  `aeval_derivative_mem_differentIdeal`
+   gives `𝔡_{𝓞_K/ℤ} ∣ (F'(x))` for `F = minpoly ℤ x` (no conductor
+   hypothesis needed in this direction), hence `d ≤ ord_Q (F'(x))`.
+4. *Divide.*  `F = g·H + R` in `ℤ[X]` (`g` monic).  From `F(x) = 0` and
+   `ord_Q (g(x)) ≥ M` one gets `ord_Q (R(x)) ≥ M`; `R` has degree `< e`
+   and integer coefficients, so the same distinct-residues argument
+   forces `q^{⌈(M−e+1)/e⌉} ∣ R`.
+5. *The other factor is a `Q`-unit.*  `F ≡ X^e·H̄ (mod q)` and
+   `x ≡ 0 (mod Q)`, so `ord_Q H(x) = 0` iff `q ∤ H(0)`; and
+   `v_q(F(0)) = v_q(N_{K/ℚ}(x)) = ∑_{Q'∣q} f_{Q'}·ord_{Q'}(x) = 1` by
+   step 1 and `f = 1` (`Ideal.absNorm_span_singleton` plus
+   multiplicativity of `absNorm`), while `v_q(g(0)) = 1`, so
+   `v_q(H(0)) = 0`.
+6. *Conclude.*  `F'(x) = g'(x)H(x) + g(x)H'(x) + R'(x)`; the last two
+   terms have order `≥ M − e`, and `ord_Q (g'(x)) ≤ e·v_q(e) + e − 1`
+   by `valuation_term_le_valuation_sum` exactly as in
+   `differentIdeal_exponent_le_wild`.  Taking `M` large gives
+   `d ≤ ord_Q (F'(x)) = ord_Q (g'(x)) ≤ e − 1 + e·v_q(e)`.
+
+Both-ways audit: an inequality between natural numbers, the `f = 1`
+instance of a classical theorem; no vacuity concerns (the hypothesis
+`hres` is satisfied by e.g. `K = ℚ(√2)`, `q = 2`, where the bound is
+sharp: `e = 2`, `v_2(2) = 1`, `d = 3 = 1 + 2`). -/
+theorem differentIdeal_exponent_le_wild_of_residueDegreeOne
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hres : ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (d : ℕ) (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    d ≤ e - 1 + e * e.factorization q := by
+  classical
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : v.asIdeal.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff v.isPrime.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have he0 : 0 < e := by
+    rw [he]
+    exact Nat.pos_of_ne_zero
+      (Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver v.asIdeal hspan0)
+  obtain ⟨x, hgen, hx, hc0⟩ := exists_generator_uniformizer_at K q hq v hmem hres e he
+  have hp : v.intValuation (((q : ℤ) : NumberField.RingOfIntegers K))
+      = WithZero.exp (-(e : ℤ)) := by
+    have h1 := intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem q hq.ne_zero
+    rw [hq.factorization_self, mul_one, ← he] at h1
+    rw [show (((q : ℤ) : NumberField.RingOfIntegers K))
+      = ((q : ℕ) : NumberField.RingOfIntegers K) by push_cast; ring]
+    exact h1
+  obtain ⟨c, hc⟩ := exists_intCoeff_eisenstein_approx v he0 hx hp hres (d + 2 * e + 2)
+  exact differentIdeal_exponent_le_of_intEisenstein_approx K q hq v hmem e he x hgen hx hc0 c
+    (d + 2 * e + 2) hc d le_rfl hd
+
+/-- **A global generator whose minimal-polynomial derivative has small
+`Q`-order** (sorry leaf, 2026-07-26 — the SINGLE remaining leaf of the
+wild different bound at a prime of residue degree `> 1`; it replaces
+the Eisenstein-presentation cut recorded on
+`exists_eisensteinDerivative_dvd_of_wild`).
+
+Asks for one element: an `x ∈ 𝓞_K` with `ℚ(x) = K` such that, writing
+`F = minpoly ℤ x`,
+
+  `ord_Q (F'(x)) ≤ e − 1 + e·v_q(e)`.
+
+That is all.  Everything else in the wild bound is proven below:
+mathlib's `aeval_derivative_mem_differentIdeal` gives
+`𝔡_{𝓞_K/ℤ} ∣ (F'(x))` for any generator `x`, hence
+`d ≤ ord_Q (F'(x))`, so
+`differentIdeal_exponent_le_wild_of_residueDegreeGtOne` below gets the
+bound, and
+`exists_eisensteinDerivative_dvd_of_wild_of_residueDegreeGtOne` then
+discharges the Eisenstein leaf with the trivial witness
+`a = (0,…,0,1)`, exactly as the `f = 1` branch already does.
+
+**WHAT THIS CUT BUYS: (M1) IS GONE.**  The previous cut asked for an
+Eisenstein presentation of the different *at `Q`*, whose first
+requirement was (M1) — `differentIdeal` under localization/completion,
+described there as "the gate on everything else and the first thing to
+build", and absent from mathlib.  The present statement never mentions
+the different at all: the localization work is done once and for all
+by mathlib's GLOBAL lemma `𝔡 ∣ (F'(x))`.  What remains is (M2)+(M3) —
+producing one good generator — and that is a statement about a minimal
+polynomial, not about ideals.
+
+**Why it is TRUE.**  Classically one takes `x` whose image in the
+completion `K_Q` generates `𝓞_{K_Q}` over `ℤ_q` (a complete DVR
+extension with separable — here finite — residue extension is
+monogenic: Serre, *Corps Locaux* I §6), and which is `≡ 0` modulo every
+other prime `Q' ∣ q` while remaining a `Q`-unit; then
+`conductor_mul_differentIdeal` gives `ord_Q 𝔠(x) = 0` and
+`ord_Q (F'(x)) = d ≤ e − 1 + e·v_q(e)`.  Generation of `K/ℚ` is
+arranged by the same pigeonhole correction `x ↦ x + q^N·θ` used in
+`exists_generator_uniformizer_at`.
+
+Numerically corroborated in the wild `f > 1` case (PARI/GP,
+2026-07-26): `K = ℚ(√2,√5)` has a single prime `Q` over `q = 2` with
+`e = 2`, `f = 2`, and different `Q³·(prime over 5)`, so `d = 3` and the
+bound `e − 1 + e·v_2(e) = 3` is SHARP; a search over the box `[−3,3]⁴`
+of integral-basis coordinates finds generators attaining
+`ord_Q (F'(x)) = 3` and none below it.
+
+**A FULLY GLOBAL ATTACK — no completions, no local fields** (worked out
+2026-07-26; this is the recommended route, and the reason the cut was
+made here).  The `f = 1` route
+(`differentIdeal_exponent_le_wild_of_residueDegreeOne`) breaks at
+exactly one point: its digits are taken in `ℤ` because `𝓞_K/Q = 𝔽_q`.
+Replace `ℤ` by the subring `A := ℤ[u] ⊆ 𝓞_K` for a global
+**approximate Teichmüller lift** `u`:
+
+* Fix a precision `N`.  `𝓞_K/Q^N` is a FINITE ring and `X^{q^f} − X`
+  has derivative `−1`, a unit; so Newton iteration *inside that finite
+  quotient* lifts a generator `ū` of `𝓞_K/Q ≅ 𝔽_{q^f}` to an exact
+  root of `X^{q^f} − X` there, and surjectivity of `𝓞_K ↠ 𝓞_K/Q^N`
+  pulls it back to `u ∈ 𝓞_K` with `u^{q^f} ≡ u (mod Q^N)`.  This is
+  Hensel's lemma performed in a finite quotient — elementary, and
+  entirely global.
+* `A = ℤ[u]` then has the two properties that `ℤ` had when `f = 1`:
+  (i) **every `y ∈ 𝓞_K` is congruent mod `Q` to an element of `A`**,
+  because `𝔽_q[ū] = 𝔽_{q^f}`; and (ii) **`ord_Q` takes values in
+  `e·ℤ` on `A`, up to precision `N`**, because `u` agrees to precision
+  `N` with the true Teichmüller lift `ω ∈ 𝓞_{L₀}`, on which `ord_Q` is
+  `e·ord_{L₀}`.  Property (ii) is precisely what the refuted attack was
+  missing: "order in `e·ℤ`" imposed by fiat is not the same as
+  "coefficient in the unramified subring" — but a `Q^N`-approximate
+  Teichmüller lift really does carve an approximate copy of `𝓞_{L₀}`
+  out of `𝓞_K`.
+* With `A` in place, `exists_intCoeff_eisenstein_approx` above
+  generalizes verbatim (it is already stated for an abstract Dedekind
+  `R`, and uses only `hres` and `ord_Q P = e`; take `P = q ∈ A`), and
+  steps 3–6 of the `f = 1` route go through with `ℤ` replaced by `A`.
+  The extra work is the passage from the minimal polynomial of `π` over
+  `A` to `F = minpoly ℤ x` for `x = u + π`.
+
+**A second global alternative — base change to `ℚ(ζ_{q^f−1})`.**  Let
+`F₀ = ℚ(ζ_m)`, `m = q^f − 1`, in which `q` is unramified with residue
+degree `f`; let `E = K·F₀`, let `Q̃` be a prime of `E` over `Q` and
+`𝔓 = Q̃ ∩ 𝓞_{F₀}`.  Then `E/K` is unramified at `Q̃` (it is generated
+by a root of unity of order prime to `q`) and
+`k(Q̃) = k(Q)(ζ̄_m) = k(Q)` because `𝔽_{q^f}^×` already has order `m`;
+so `e(Q̃∣Q) = f(Q̃∣Q) = 1`, whence `e(Q̃∣𝔓) = e` and `f(Q̃∣𝔓) = 1`.
+Two applications of mathlib's tower formula
+`differentIdeal_eq_differentIdeal_mul_differentIdeal`, with
+`not_dvd_differentIdeal_iff` killing the two unramified factors, give
+`ord_{Q̃} 𝔡_{E/F₀} = ord_Q 𝔡_{K/ℚ} = d`, and the `f = 1` case applied
+to `E/F₀` yields the bound.  The price is generalizing the whole
+`f = 1` chain from base `ℤ` to base `𝓞_{F₀}` (where `𝔓` need not be
+principal) and constructing the compositum; the
+approximate-Teichmüller route above avoids both.
+
+**Do NOT retry the digit-expansion attack** refuted on
+`exists_eisensteinDerivative_dvd_of_wild` (`K = ℚ(√2)`, `q = 2`,
+`π = √2`, `a₁ = 2`, `a₀ = −2−2√2`): coefficients of `Q`-order in `e·ℤ`
+are strictly weaker than coefficients in the maximal unramified
+subring.  In the present statement that trap is closed by
+construction — there are no free coefficients to choose, only a single
+generator `x`, and the quantity bounded is the honest
+`ord_Q ((minpoly ℤ x)'(x))`.
+
+Both-ways audit: an existence statement about one algebraic integer,
+implied by the classical theorem (Serre III §6 Prop. 13) and checked
+numerically above; not vacuous — `Algebra.adjoin ℚ {x} = ⊤` forces `x`
+to be a genuine generator of `K/ℚ`, and the bound is attained (not
+merely satisfied) in the worked example, so no junk witness discharges
+it. -/
+theorem exists_generator_minpolyDerivative_le_of_wild
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (hres : ¬ ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal) :
+    ∃ x : NumberField.RingOfIntegers K,
+      Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤ ∧
+      WithZero.exp (-((e - 1 + e * e.factorization q : ℕ) : ℤ)) ≤
+        v.intValuation (Polynomial.aeval x
+          (Polynomial.derivative (minpoly ℤ x))) :=
+  sorry
+
+/-- **The wild different-exponent bound at a prime of residue degree
+`> 1`** (PROVEN 2026-07-26 over the single leaf
+`exists_generator_minpolyDerivative_le_of_wild` above).  This is the
+mirror of `differentIdeal_exponent_le_wild_of_residueDegreeOne`, which
+handles `f = 1` by a completely elementary global route.
+
+`Q^d ∣ 𝔡_{K/ℚ}` implies Serre's bound `d ≤ e − 1 + e·v_q(e)`.
+
+Proof: take the generator `x` supplied by the leaf; mathlib's
+`aeval_derivative_mem_differentIdeal` puts `F'(x)` into `𝔡_{K/ℚ}`, so
+`Q^d ∣ (F'(x))`, i.e. `ord_Q (F'(x)) ≥ d`; and the leaf says
+`ord_Q (F'(x)) ≤ e − 1 + e·v_q(e)`.
+
+The hypotheses `hq`, `hwild` and `hres` are passed straight to the
+leaf and are used nowhere in this glue; `hres` in particular is carried
+only so that this theorem is no stronger than the `f > 1` half it is
+meant to supply (the `f = 1` half being
+`differentIdeal_exponent_le_wild_of_residueDegreeOne` above). -/
+theorem differentIdeal_exponent_le_wild_of_residueDegreeGtOne
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (hres : ¬ ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (d : ℕ) (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    d ≤ e - 1 + e * e.factorization q := by
+  obtain ⟨x, hgen, hle⟩ :=
+    exists_generator_minpolyDerivative_le_of_wild K q hq v hmem hwild hres e he
+  have hmem' : Polynomial.aeval x (Polynomial.derivative (minpoly ℤ x)) ∈
+      differentIdeal ℤ (NumberField.RingOfIntegers K) :=
+    aeval_derivative_mem_differentIdeal ℤ ℚ K x hgen
+  have hdvd : v.asIdeal ^ d ∣
+      Ideal.span {Polynomial.aeval x (Polynomial.derivative (minpoly ℤ x))} :=
+    hd.trans (Ideal.dvd_iff_le.mpr ((Ideal.span_singleton_le_iff_mem _).mpr hmem'))
+  rw [← v.intValuation_le_pow_iff_dvd] at hdvd
+  have hchain := le_trans hle hdvd
+  rw [WithZero.exp_le_exp] at hchain
+  omega
+
+/-- **The local Eisenstein presentation of the different at a wild
+prime of residue degree `> 1`** (PROVEN 2026-07-26 over
+`differentIdeal_exponent_le_wild_of_residueDegreeGtOne` above, whose
+own single leaf is `exists_generator_minpolyDerivative_le_of_wild`).
+Statement identical to `exists_eisensteinDerivative_dvd_of_wild` below,
+with the extra hypothesis `hres` that `𝓞_K/Q ≠ 𝔽_q`, i.e.
+`f(Q∣q) > 1`.
+
+The proof is the observation — already used by the `f = 1` branch of
+`exists_eisensteinDerivative_dvd_of_wild` — that this statement is
+EQUIVALENT to the numerical bound `d ≤ e − 1 + e·v_q(e)`: given the
+bound, the trivial witness (`π` any uniformizer, `a = (0,…,0,1)`)
+collapses the sum to `e·π^{e−1}`, whose `Q`-order is exactly
+`e·v_q(e) + e − 1 ≥ d`.  So the Eisenstein packaging carries no content
+beyond the inequality, and the cut of 2026-07-26 moves the node onto
+the inequality, where the missing mathematics actually lives.  (This is
+also why the digit-expansion attack refuted on
+`exists_eisensteinDerivative_dvd_of_wild` could satisfy every clause of
+this statement and still fail: the clauses are not the content.)
+
+Where the `f = 1` route breaks, for the record: step 2 of
+`differentIdeal_exponent_le_wild_of_residueDegreeOne` (the
+integer-coefficient digit expansion) uses `𝓞_K/Q = 𝔽_q` to pick each
+digit in `ℤ`; for `f > 1` the digits must come from the maximal
+unramified subring `𝓞_{L₀}`, which has no *exact* global avatar — but
+does have an approximate one, and that is the route now recorded on
+`exists_generator_minpolyDerivative_le_of_wild`. -/
+theorem exists_eisensteinDerivative_dvd_of_wild_of_residueDegreeGtOne
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (hres : ¬ ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (d : ℕ) (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    ∃ π : NumberField.RingOfIntegers K, ∃ a : ℕ → NumberField.RingOfIntegers K,
+      v.intValuation π = WithZero.exp (-1 : ℤ) ∧
+      a e = 1 ∧
+      (∀ i, 0 < i → i < e → v.intValuation (a i) = 0 ∨
+        ∃ c : ℕ, v.intValuation (a i) = WithZero.exp (-((e * c : ℕ) : ℤ))) ∧
+      v.asIdeal ^ d ∣ Ideal.span {∑ j ∈ Finset.range e,
+        ((j + 1 : ℕ) : NumberField.RingOfIntegers K) * a (j + 1) * π ^ j} := by
+  classical
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : v.asIdeal.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff v.isPrime.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have he0 : 0 < e := by
+    rw [he]
+    exact Nat.pos_of_ne_zero
+      (Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver v.asIdeal hspan0)
+  have hbound :=
+    differentIdeal_exponent_le_wild_of_residueDegreeGtOne K q hq v hmem hwild hres e he d hd
+  -- The bound is all there is: the trivial witness `a = (0, …, 0, 1)`
+  -- collapses the sum to `e·π^{e−1}`, of `Q`-order `e·v_q(e) + e − 1`.
+  obtain ⟨π, hπ⟩ := v.intValuation_exists_uniformizer
+  refine ⟨π, Function.update (fun _ : ℕ => (0 : NumberField.RingOfIntegers K)) e 1, hπ,
+    Function.update_self _ _ _, ?_, ?_⟩
+  · intro i _ hie
+    left
+    rw [Function.update_of_ne (by omega)]
+    simp
+  · have hsum : ∑ j ∈ Finset.range e,
+        ((j + 1 : ℕ) : NumberField.RingOfIntegers K)
+          * Function.update (fun _ : ℕ => (0 : NumberField.RingOfIntegers K)) e 1 (j + 1)
+          * π ^ j
+        = ((e : ℕ) : NumberField.RingOfIntegers K) * π ^ (e - 1) := by
+      rw [Finset.sum_eq_single (e - 1)]
+      · rw [Nat.sub_add_cancel he0, Function.update_self, mul_one]
+      · intro b hb hbne
+        rw [Finset.mem_range] at hb
+        rw [Function.update_of_ne (by omega)]
+        simp
+      · intro hcon
+        exact absurd (Finset.mem_range.mpr (by omega)) hcon
+    rw [hsum, ← v.intValuation_le_pow_iff_dvd]
+    have hve : v.intValuation ((e : ℕ) : NumberField.RingOfIntegers K)
+        = WithZero.exp (-((e * e.factorization q : ℕ) : ℤ)) := by
+      rw [intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem e (by omega), ← he]
+    rw [map_mul, map_pow, hve, hπ, ← WithZero.exp_nsmul, ← WithZero.exp_add,
+      WithZero.exp_le_exp]
+    have hcast : ((e - 1 : ℕ) : ℤ) = (e : ℤ) - 1 := by
+      have h1 : 1 ≤ e := he0
+      push_cast [Nat.cast_sub h1]
+      ring
+    have hd' : (d : ℤ) ≤ ((e - 1 : ℕ) : ℤ) + (e : ℤ) * (e.factorization q : ℤ) := by
+      exact_mod_cast hbound
+    rw [hcast] at hd'
+    rw [nsmul_eq_mul, hcast]
+    push_cast
+    linarith
+
+/-- **(M1)+(M2)+(M3) The local Eisenstein presentation of the different
+at a wild prime** (PROVEN 2026-07-26 over the two residue-degree cases
+`differentIdeal_exponent_le_wild_of_residueDegreeOne` and
+`exists_eisensteinDerivative_dvd_of_wild_of_residueDegreeGtOne` above;
+it inherits its position under `differentIdeal_exponent_le_wild`, hence
+under the whole Hermite–Minkowski cut of
+`finite_setOf_isHardlyRamified`).
+
+Statement: at a prime `Q` of `𝓞_K` over the rational prime `q`, with
+`e = e(Q∣q)`, if `Q^d ∣ 𝔡_{K/ℚ}` then there are a uniformizer `π ∈ 𝓞_K`
+at `Q` (`ord_Q π = 1`) and "coefficients" `a : ℕ → 𝓞_K` with `a e = 1`,
+each `a i` for `0 < i < e` having `Q`-order in `e·ℤ` (or being zero at
+`Q`), such that
+
+  `Q^d ∣ (g'(π))`,  where  `g'(π) = Σ_{j<e} (j+1)·a_{j+1}·π^j`.
+
+This is precisely Serre, *Corps Locaux* I §6 Prop. 18 + III §6 Prop. 12
+transported back to the global ring, i.e. the bundle (M1)–(M3) of the
+route recorded on `differentIdeal_exponent_le_wild`:
+
+* **(M1) `differentIdeal` under localization/completion** — that
+  `ord_Q 𝔡_{𝓞_K/ℤ}` is the different exponent of the local extension
+  `ℤ_q → 𝓞_{K_Q}`.  mathlib has the different only for a *global*
+  Dedekind pair and nothing relating it to one prime; this is the gate
+  on everything else and the first thing to build.
+* **(M2) the maximal unramified subextension** `ℚ_q ⊆ L₀ ⊆ K_Q`, with
+  `K_Q/L₀` totally ramified of degree `e`; the tower formula
+  `differentIdeal_eq_differentIdeal_mul_differentIdeal` together with
+  "unramified ⟺ does not divide the different"
+  (`not_dvd_differentIdeal_iff`) discards the `L₀/ℚ_q` factor.  This is
+  what makes the coefficients' orders lie in `e·ℤ`: they come from
+  `𝓞_{L₀}`, on which `ord_Q` takes values in `e·ℤ`.
+* **(M3) monogenicity of a totally ramified extension of DVRs**
+  (Serre I §6 Prop. 18): `𝓞_{K_Q} = 𝓞_{L₀}[π]` for any uniformizer `π`,
+  whose minimal polynomial `g` over `𝓞_{L₀}` is Eisenstein of degree
+  `e`, and `𝔡 = (g'(π))` by `conductor_mul_differentIdeal` with unit
+  conductor.  Nakayama suffices — completeness is not needed — since
+  `𝓞_{K_Q}/𝔪_{L₀}𝓞_{K_Q}` is generated by `π̄` over the (common)
+  residue field.
+
+Finally the data are pushed back to `𝓞_K` by approximation: `ord_Q`
+only sees a bounded number of `Q`-adic digits, so `π` and the `a_i` may
+be taken in `𝓞_K` without changing any of the orders involved.
+
+Faithfulness: the statement is *equivalent in strength* to the wild
+bound — a prover of it must do the local work — but it is the honest
+joint, because everything downstream of it (the three lines of
+valuation arithmetic) is proven in
+`differentIdeal_exponent_le_wild` below.  It is not vacuous: `a e = 1`
+pins the extremal term to `e·π^{e−1}`, whose `Q`-order is exactly
+`e·v_q(e) + e − 1`, so no junk witness can satisfy the last clause.
+
+**REFUTED ATTACK — READ THIS BEFORE TRYING THE OBVIOUS ONE
+(2026-07-26).**  The natural attempt is to build `π` and the `a_i` by a
+`Q`-adic *digit expansion*: pick a uniformizer `π`, and peel digits off
+`π^e` using mathlib's `exists_intValuation_mul_sub_lt`, recording each
+digit as `y·q^k` (so its order `e·k` automatically lies in `e·ℤ`, which
+is all the third clause above asks for).  That construction is easy —
+it was written and machine-checked — and it **does not prove this
+leaf**: the coefficients it produces satisfy every stated clause but
+can violate the last one.
+
+Explicit counterexample (verified in PARI/GP).  `K = ℚ(√2)`, `q = 2`,
+`Q = (√2)`, `e = 2`, `f = 1`; the different is `Q^3`, so `d = 3` is
+admissible.  Take `π = √2`, `a₂ = 1`, `a₁ = 2`, `a₀ = −2 − 2√2`.  Then
+`ord_Q a₁ = ord_Q a₀ = 2 ∈ 2ℤ`, `ord_Q π = 1`, and the associated
+`g = X² + 2X − 2 − 2√2` even satisfies `g(π) = 0` **exactly** — so this
+is a perfect Eisenstein-shaped relation by every criterion in the
+statement — yet `g'(π) = 2 + 2√2` has `ord_Q = 2 < 3 = d`, so
+`Q^d ∤ (g'(π))`.  The good witness is `a₀ = −2, a₁ = 0`, giving
+`g = X² − 2` and `ord_Q g'(π) = 3`.
+
+Moral: "coefficients of `Q`-order in `e·ℤ`" is strictly weaker than
+"coefficients in the maximal unramified subring", and only the latter
+makes `ord_Q g'(π)` equal to the different exponent.  (M2) is therefore
+not a convenience — it is the whole content, and any route that skips
+it is wrong rather than merely incomplete.  The `f = 1` case escapes
+because there the unramified subring is `ℤ_q`, whose global avatar `ℤ`
+does exist; see
+`differentIdeal_exponent_le_wild_of_residueDegreeOne`. -/
+theorem exists_eisensteinDerivative_dvd_of_wild
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (d : ℕ) (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    ∃ π : NumberField.RingOfIntegers K, ∃ a : ℕ → NumberField.RingOfIntegers K,
+      v.intValuation π = WithZero.exp (-1 : ℤ) ∧
+      a e = 1 ∧
+      (∀ i, 0 < i → i < e → v.intValuation (a i) = 0 ∨
+        ∃ c : ℕ, v.intValuation (a i) = WithZero.exp (-((e * c : ℕ) : ℤ))) ∧
+      v.asIdeal ^ d ∣ Ideal.span {∑ j ∈ Finset.range e,
+        ((j + 1 : ℕ) : NumberField.RingOfIntegers K) * a (j + 1) * π ^ j} := by
+  classical
+  by_cases hres : ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal
+  swap
+  · exact exists_eisensteinDerivative_dvd_of_wild_of_residueDegreeGtOne
+      K q hq v hmem hwild hres e he d hd
+  -- Residue degree one.  The bound holds, so the *trivial* witness
+  -- `a = (0, …, 0, 1)` works: the sum collapses to `e·π^{e−1}`, whose
+  -- `Q`-order is exactly `e·v_q(e) + e − 1 ≥ d`.
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : v.asIdeal.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff v.isPrime.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have he0 : 0 < e := by
+    rw [he]
+    exact Nat.pos_of_ne_zero
+      (Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver v.asIdeal hspan0)
+  have hbound :=
+    differentIdeal_exponent_le_wild_of_residueDegreeOne K q hq v hmem hres e he d hd
+  obtain ⟨π, hπ⟩ := v.intValuation_exists_uniformizer
+  refine ⟨π, Function.update (fun _ : ℕ => (0 : NumberField.RingOfIntegers K)) e 1, hπ,
+    Function.update_self _ _ _, ?_, ?_⟩
+  · intro i _ hie
+    left
+    rw [Function.update_of_ne (by omega)]
+    simp
+  · have hsum : ∑ j ∈ Finset.range e,
+        ((j + 1 : ℕ) : NumberField.RingOfIntegers K)
+          * Function.update (fun _ : ℕ => (0 : NumberField.RingOfIntegers K)) e 1 (j + 1)
+          * π ^ j
+        = ((e : ℕ) : NumberField.RingOfIntegers K) * π ^ (e - 1) := by
+      rw [Finset.sum_eq_single (e - 1)]
+      · rw [Nat.sub_add_cancel he0, Function.update_self, mul_one]
+      · intro b hb hbne
+        rw [Finset.mem_range] at hb
+        rw [Function.update_of_ne (by omega)]
+        simp
+      · intro hcon
+        exact absurd (Finset.mem_range.mpr (by omega)) hcon
+    rw [hsum, ← v.intValuation_le_pow_iff_dvd]
+    have hve : v.intValuation ((e : ℕ) : NumberField.RingOfIntegers K)
+        = WithZero.exp (-((e * e.factorization q : ℕ) : ℤ)) := by
+      rw [intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem e (by omega), ← he]
+    rw [map_mul, map_pow, hve, hπ, ← WithZero.exp_nsmul, ← WithZero.exp_add,
+      WithZero.exp_le_exp]
+    have hcast : ((e - 1 : ℕ) : ℤ) = (e : ℤ) - 1 := by
+      have h1 : 1 ≤ e := he0
+      push_cast [Nat.cast_sub h1]
+      ring
+    have hd' : (d : ℤ) ≤ ((e - 1 : ℕ) : ℤ) + (e : ℤ) * (e.factorization q : ℤ) := by
+      exact_mod_cast hbound
+    rw [hcast] at hd'
+    rw [nsmul_eq_mul, hcast]
+    push_cast
+    linarith
+
+/-- **The WILD different-exponent bound at a prime** (PROVEN 2026-07-26
+over the single leaf `exists_eisensteinDerivative_dvd_of_wild`, which
+inherits its position as the *single* arithmetic leaf of the
+Hermite–Minkowski cut of `finite_setOf_isHardlyRamified`; Serre,
+*Corps Locaux* III §6 Prop. 13, wild half): for a number field `K`, a
+rational prime `q` and a prime `Q` of `𝓞_K` over `q` whose
+ramification index `e = e(Q∣q)` is divisible by `q`, every `d` with
+`Q^d ∣ 𝔡_{K/ℚ}` satisfies `d ≤ e − 1 + e·v_q(e)`.
+
+Note `v_Q(q) = e`, so `e − 1 + e·v_q(e)` is Serre's `e − 1 + v_Q(e)`
+verbatim; the bound is SHARP (attained by `ℚ(2^{1/4})` at `q = 2`,
+where `e = 4`, `v_2(e) = 2` and `d = 11 = 3 + 8`; also by `ℚ(√2)` at
+`q = 2`, `d = 3 = 1 + 2`).  Checked numerically against PARI/GP over
+701 (field, prime-above-`q`) pairs of degrees 2–6 at `q ≤ 7`: no
+violation, 293 of them sharp.
+
+The TAME half — `q ∤ e`, where the bound reads `d ≤ e − 1` — is PROVEN
+in `ModThree.lean` as `not_pow_ramificationIdx_dvd_differentIdeal`
+(mathlib supplies the matching lower half
+`pow_sub_one_dvd_differentIdeal`) and is discharged here in
+`differentIdeal_exponent_le`; only the wild case is left open, which is
+why this leaf carries `hwild` as a hypothesis.
+
+The cut of 2026-07-26 splits the classical proof into the part that
+needs local-field theory mathlib does not have and the part that is
+pure valuation arithmetic, and PROVES the second part here:
+
+* the local half — reaching an Eisenstein presentation of the
+  different at `Q` — is the leaf
+  `exists_eisensteinDerivative_dvd_of_wild` above, which bundles
+  Serre's (M1) localization/completion of `differentIdeal`, (M2) the
+  maximal unramified subextension, and (M3) monogenicity of a totally
+  ramified extension of DVRs.  Its docstring records the route.
+* the arithmetic half is the proof below, over the PROVEN
+  `valuation_term_le_valuation_sum` (Serre's (M4), the ultrametric
+  distinct-valuations lemma) and the PROVEN
+  `intValuation_natCast_eq_exp_ramificationIdx` (`ord_Q(m) = e·v_q(m)`
+  for a rational integer `m`).
+
+Concretely, with `g = X^e + a_{e−1}X^{e−1} + ⋯ + a_0` Eisenstein over
+the maximal unramified subring, every nonzero value of `ord_Q` on that
+subring lies in `e·ℤ` (total ramification), and so does `ord_Q` of a
+rational integer, so
+`ord_Q(i·a_i·π^{i−1}) ≡ i − 1 (mod e)` for `1 ≤ i ≤ e`: the `e`
+summands of `g'(π) = e·π^{e−1} + Σ_{i<e} i·a_i·π^{i−1}` have PAIRWISE
+DISTINCT orders, whence `ord_Q(g'(π))` is their minimum, which is at
+most the `i = e` term `ord_Q(e·π^{e−1}) = e·v_q(e) + e − 1`.  (Terms
+whose coefficient vanishes are dropped first — that is exactly why
+`valuation_term_le_valuation_sum` only demands distinctness among the
+terms of nonzero valuation.)
+
+Alternative route, entirely inside the material already PROVEN in
+`ModThree.lean` but only for the Galois case, and needing its own
+missing piece: for `K/ℚ` Galois,
+`le_sum_card_inertia_pow_of_pow_dvd_differentIdeal` gives
+`d ≤ Σ_{i<N}(#G_i − 1)` as soon as `G_N = 1`, so all that is missing
+is **(M5) a bound on the last ramification jump** — `G_i = 1` for
+`i > e/(q−1)`, say `(Q^(m+1)).inertia = ⊥` for `m = [K:ℚ]`.  (M5) is
+essentially equivalent to this leaf, so it is not a cheaper target;
+and reducing a general `K` to its Galois closure would additionally
+need **(M6)** the tower discriminant formula
+`NumberField.natAbs_discr_eq_absNorm_differentIdeal_mul_natAbs_discr_pow`
+(mathlib has it) together with a degree bound
+`[normalClosure ℚ K : ℚ] ≤ n!` (mathlib does not).
+
+Both-ways audit: an inequality between natural numbers attached to a
+number field, classically true as cited and numerically corroborated
+above; no representation-theoretic hypotheses, no vacuity concerns —
+the conclusion genuinely constrains `𝔡_{K/ℚ}` (its failure would make
+`v_q(discr K)` unbounded on fields of bounded degree, contradicting
+the sharp cases listed). -/
+theorem differentIdeal_exponent_le_wild (K : Type*) [Field K]
+    [NumberField K] (q : ℕ) (hq : q.Prime)
+    (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ Q)
+    (hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q)
+    (d : ℕ)
+    (hd : Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    d ≤ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q - 1 +
+      Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q *
+        (Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q).factorization q := by
+  classical
+  set R := NumberField.RingOfIntegers K
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : Q.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff hQ.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have hmap0 : (Ideal.span {((q : ℕ) : ℤ)}).map (algebraMap ℤ R) ≠ ⊥ :=
+    Ideal.map_ne_bot_of_ne_bot hspan0
+  have hQ0 : Q ≠ ⊥ := ne_bot_of_le_ne_bot hmap0
+    (Ideal.map_le_of_le_comap (Q.over_def (Ideal.span {((q : ℕ) : ℤ)})).le)
+  set v : HeightOneSpectrum R := ⟨Q, hQ, hQ0⟩
+  have hvQ : v.asIdeal = Q := rfl
+  set e := Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q with hedef
+  have he0 : e ≠ 0 :=
+    Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver Q hspan0
+  obtain ⟨π, a, hπ, hae, hacoef, hgd⟩ :=
+    exists_eisensteinDerivative_dvd_of_wild K q hq v (hvQ ▸ hmem) (hvQ ▸ hwild) e
+      (hvQ ▸ hedef) d (hvQ ▸ hd)
+  set F : ℕ → R := fun j => ((j + 1 : ℕ) : R) * a (j + 1) * π ^ j with hFdef
+  have hgd' : Q ^ d ∣ Ideal.span {∑ j ∈ Finset.range e, F j} := hgd
+  have hFval : ∀ j : ℕ, v.intValuation (F j) =
+      v.intValuation (((j + 1 : ℕ)) : R) * v.intValuation (a (j + 1)) *
+        (v.intValuation π) ^ j := by
+    intro j; simp only [hFdef, map_mul, map_pow]
+  have hexpπ : ∀ j : ℕ, (v.intValuation π) ^ j = WithZero.exp (-(j : ℤ)) := by
+    intro j
+    rw [hπ, ← WithZero.exp_nsmul]
+    congr 1
+    simp
+  have hje : (e - 1) + 1 = e := Nat.succ_pred_eq_of_pos (Nat.pos_of_ne_zero he0)
+  -- the extremal term `e·π^{e−1}`, of `Q`-order `e·v_q(e) + e − 1`
+  have hlast : v.intValuation (F (e - 1)) =
+      WithZero.exp (-((e * e.factorization q + (e - 1) : ℕ) : ℤ)) := by
+    have h1 := intValuation_natCast_eq_exp_ramificationIdx K q hq v (hvQ ▸ hmem) ((e - 1) + 1)
+      (Nat.succ_ne_zero _)
+    rw [hvQ, ← hedef, hje] at h1
+    have h2 : v.intValuation (a e) = 1 := by rw [hae]; exact map_one _
+    rw [hFval, hje, h1, h2, mul_one, hexpπ, ← WithZero.exp_add]
+    congr 1
+    rw [Nat.cast_add]
+    ring
+  -- every term of `g'(π)` has `Q`-order `≡ j (mod e)`
+  have hterm : ∀ j, j < e → v.intValuation (F j) = 0 ∨
+      ∃ c : ℕ, v.intValuation (F j) = WithZero.exp (-((e * c + j : ℕ) : ℤ)) := by
+    intro j hj
+    have h1 := intValuation_natCast_eq_exp_ramificationIdx K q hq v (hvQ ▸ hmem) (j + 1)
+      (Nat.succ_ne_zero _)
+    rw [hvQ, ← hedef] at h1
+    by_cases hjq : j + 1 = e
+    · right
+      refine ⟨e.factorization q, ?_⟩
+      rw [hjq] at h1
+      have h2 : v.intValuation (a e) = 1 := by rw [hae]; exact map_one _
+      rw [hFval, hjq, h1, h2, mul_one, hexpπ, ← WithZero.exp_add]
+      congr 1
+      rw [Nat.cast_add]
+      ring
+    · have hjlt : j + 1 < e := lt_of_le_of_ne (Nat.succ_le_of_lt hj) hjq
+      rcases hacoef (j + 1) (Nat.succ_pos j) hjlt with h0 | ⟨c, hc⟩
+      · left
+        rw [hFval, h0, mul_zero, zero_mul]
+      · right
+        refine ⟨(j + 1).factorization q + c, ?_⟩
+        rw [hFval, h1, hc, hexpπ, ← WithZero.exp_add, ← WithZero.exp_add]
+        congr 1
+        push_cast
+        ring
+  -- distinct residues mod `e` ⟹ pairwise distinct orders
+  have hne : ∀ i ∈ Finset.range e, ∀ j ∈ Finset.range e, i ≠ j →
+      v.intValuation (F i) ≠ 0 → v.intValuation (F j) ≠ 0 →
+      v.intValuation (F i) ≠ v.intValuation (F j) := by
+    intro i hi j hj hij hi0 hj0
+    rw [Finset.mem_range] at hi hj
+    rcases hterm i hi with h | ⟨c, hc⟩
+    · exact absurd h hi0
+    rcases hterm j hj with h' | ⟨c', hc'⟩
+    · exact absurd h' hj0
+    rw [hc, hc']
+    intro hcon
+    rw [WithZero.exp_inj, neg_inj] at hcon
+    have hnat : (e * c + i : ℕ) = (e * c' + j : ℕ) := by exact_mod_cast hcon
+    have := congrArg (fun n : ℕ => n % e) hnat
+    simp only [Nat.mul_add_mod, Nat.mod_eq_of_lt hi, Nat.mod_eq_of_lt hj] at this
+    exact hij this
+  -- assemble
+  have hker : ∀ x : R, v.intValuation x = 0 → x = 0 := by
+    intro x hx
+    by_contra hx0
+    exact v.intValuation_ne_zero x hx0 hx
+  have hsum_le : v.intValuation (F (e - 1)) ≤ v.intValuation (∑ j ∈ Finset.range e, F j) :=
+    valuation_term_le_valuation_sum v.intValuation hker F
+      (Finset.mem_range.mpr (Nat.pred_lt he0)) hne
+  have hdvd_le : v.intValuation (∑ j ∈ Finset.range e, F j) ≤ WithZero.exp (-(d : ℤ)) :=
+    (v.intValuation_le_pow_iff_dvd _ d).mpr hgd'
+  rw [hlast] at hsum_le
+  have hfin := le_trans hsum_le hdvd_le
+  rw [WithZero.exp_le_exp] at hfin
+  have hM : d ≤ e * e.factorization q + (e - 1) := by
+    have h := neg_le_neg_iff.mp hfin
+    exact_mod_cast h
+  exact le_trans hM (le_of_eq (Nat.add_comm _ _))
+
+/-- **The different-exponent bound at a prime** (PROVEN over the wild
+leaf — Serre, *Corps Locaux* III §6 Prop. 13 in full): for a prime `Q`
+of `𝓞_K` over the rational prime `q` with ramification index `e`,
+every `d` with `Q^d ∣ 𝔡_{K/ℚ}` satisfies `d ≤ e − 1 + e·v_q(e)`.  The
+tame case `q ∤ e` is `ModThree.lean`'s PROVEN
+`not_pow_ramificationIdx_dvd_differentIdeal` (`¬ Q^e ∣ 𝔡`, so `d < e`,
+and `v_q(e) = 0` makes the bound exactly `e − 1`); the wild case is
+`differentIdeal_exponent_le_wild`. -/
+theorem differentIdeal_exponent_le (K : Type*) [Field K]
+    [NumberField K] (q : ℕ) (hq : q.Prime)
+    (Q : Ideal (NumberField.RingOfIntegers K)) (hQ : Q.IsPrime)
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ Q) (d : ℕ)
+    (hd : Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    d ≤ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q - 1 +
+      Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q *
+        (Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q).factorization q := by
+  by_cases hw : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q
+  · exact differentIdeal_exponent_le_wild K q hq Q hQ hmem hw d hd
+  · have hnot := IsHardlyRamified.not_pow_ramificationIdx_dvd_differentIdeal
+      K q hq Q hQ hmem hw
+    have hlt : d < Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q := by
+      by_contra hge
+      exact hnot (dvd_trans (pow_dvd_pow Q (not_lt.mp hge)) hd)
+    exact le_trans (Nat.le_pred_of_lt hlt) (Nat.le_add_right _ _)
+
+/-- **Discriminant-exponent bound by the degree** (PROVEN 2026-07-25
+over the wild different-exponent bound
+`differentIdeal_exponent_le_wild`, which since 2026-07-26 is itself
+PROVEN over the local Eisenstein leaf
+`exists_eisensteinDerivative_dvd_of_wild` — the arithmetic leaf of the
+Hermite–Minkowski cut of `finite_setOf_isHardlyRamified`): for a fixed
+prime `q` and degree bound `n`, the exponent of `q` in the
+discriminant of a number field of degree at most `n` is bounded by a
+constant depending only on `q` and `n`; here `C = (n + 1)·n` works.
+
+Proof (pure bookkeeping over the two per-prime inputs, no new
+arithmetic): `ModThree.lean`'s PROVEN
+`discr_factorization_le_of_forall_differentIdeal_pow_dvd` turns a
+uniform per-prime bound `d_Q ≤ b·e_Q` into
+`v_q(discr K) ≤ b·[K:ℚ]`; the per-prime bound is
+`differentIdeal_exponent_le`, `d_Q ≤ e − 1 + e·v_q(e)`, together with
+`e ≤ [K:ℚ] ≤ n` (mathlib's `Ideal.ramificationIdx_le_finrank`, through
+the fundamental identity) and `v_q(e) < e ≤ n`
+(`Nat.factorization_lt`), giving `b = n + 1`.  The constant `C` is
+existentially quantified, so any correct route may sharpen it.
 
 Both-ways audit: a plain universally quantified inequality about
 number fields with an existential bound — classically true outright as
@@ -188,8 +2039,47 @@ theorem exists_discr_factorization_le_of_finrank_le (q n : ℕ)
     ∃ C : ℕ, ∀ (K : IntermediateField ℚ (AlgebraicClosure ℚ))
       (hfd : FiniteDimensional ℚ K), Module.finrank ℚ K ≤ n →
       haveI : NumberField K := @NumberField.mk _ _ inferInstance hfd
-      (NumberField.discr K).natAbs.factorization q ≤ C :=
-  sorry
+      (NumberField.discr K).natAbs.factorization q ≤ C := by
+  refine ⟨(n + 1) * n, fun K hfd hrank => ?_⟩
+  haveI : NumberField K := @NumberField.mk _ _ inferInstance hfd
+  have hqZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hspanMax : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ).IsMaximal :=
+    (((Ideal.span_singleton_prime (by exact_mod_cast hq.ne_zero)).mpr
+      hqZ).isMaximal hspan0)
+  -- the uniform per-prime different-exponent bound `d_Q ≤ (n + 1)·e_Q`
+  have key : ∀ Q : Ideal (NumberField.RingOfIntegers K), Q.IsPrime →
+      ((q : NumberField.RingOfIntegers K) ∈ Q) → ∀ d : ℕ,
+      Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K) →
+      1 * d ≤ (n + 1) * Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q := by
+    intro Q hQ hmem d hd
+    haveI := hQ
+    haveI hlies : Q.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+      (Ideal.liesOver_span_iff hQ.ne_top hqZ).mpr (by exact_mod_cast hmem)
+    have he0 : Ideal.ramificationIdx' (Ideal.span {((q : ℕ) : ℤ)}) Q ≠ 0 :=
+      Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver Q hspan0
+    have hen : Ideal.ramificationIdx' (Ideal.span {((q : ℕ) : ℤ)}) Q ≤ n :=
+      le_trans (Ideal.ramificationIdx_le_finrank
+        (S := NumberField.RingOfIntegers K) (K := ℚ) (L := K) Q) hrank
+    have hv : (Ideal.ramificationIdx' (Ideal.span {((q : ℕ) : ℤ)}) Q).factorization q
+        ≤ n := le_of_lt (lt_of_lt_of_le (Nat.factorization_lt q he0) hen)
+    have hser := differentIdeal_exponent_le K q hq Q hQ hmem d hd
+    calc 1 * d = d := one_mul d
+      _ ≤ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q - 1 +
+          Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q *
+            (Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q).factorization q := hser
+      _ ≤ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q +
+          Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q * n :=
+        Nat.add_le_add (Nat.sub_le _ _) (Nat.mul_le_mul_left _ hv)
+      _ = (n + 1) * Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q := by ring
+  have hmain := IsHardlyRamified.discr_factorization_le_of_forall_differentIdeal_pow_dvd
+    K q hq 1 (n + 1) key
+  calc (NumberField.discr K).natAbs.factorization q
+      = 1 * (NumberField.discr K).natAbs.factorization q := (one_mul _).symm
+    _ ≤ (n + 1) * Module.finrank ℚ K := hmain
+    _ ≤ (n + 1) * n := Nat.mul_le_mul_left _ hrank
 
 /-- **Unramified fields have coprime discriminant** (PROVEN — the
 inertia-to-discriminant transport of the Hermite–Minkowski cut): if
@@ -502,8 +2392,12 @@ theorem finite_setOf_galoisRep_isUnramifiedAt.{uA} (p : ℕ)
         hidx ρ, hinertker ρ hρ⟩ rfl
 
 /-- **Restricted-ramification finiteness leaf** (DECOMPOSED 2026-07-24
-along the Hermite–Minkowski cut above — PROVEN over the single sorried
-discriminant-exponent leaf `exists_discr_factorization_le_of_finrank_le`;
+along the Hermite–Minkowski cut above — PROVEN over the
+discriminant-exponent statement `exists_discr_factorization_le_of_finrank_le`,
+itself PROVEN 2026-07-25 over the wild different-exponent bound
+`differentIdeal_exponent_le_wild`, itself PROVEN 2026-07-26 over the
+single sorried leaf of the cut, the local Eisenstein presentation
+`exists_eisensteinDerivative_dvd_of_wild`;
 the arithmetic finiteness input of the FOUNDER cut, and the only
 number-theoretic content of Schlessinger's H3 for the hardly ramified
 problem): over a FINITE discrete local coefficient `ℤ_p`-algebra `A`,

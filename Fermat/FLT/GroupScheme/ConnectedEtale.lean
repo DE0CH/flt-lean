@@ -77,6 +77,12 @@ import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 -- the ramification input of the Oort–Tate node, used only in the proof
 -- of `mem_span_natCast_of_inertia_invariant`
 import Fermat.FLT.Deformations.RepresentationTheory.LocalInertiaFixedField
+-- `Polynomial.eval_one_cyclotomic_prime` /
+-- `IsPrimitiveRoot.associated_sub_one_pow_sub_one_of_coprime`: the cyclotomic
+-- factorisation `p ~ (ζ_p − 1)^(p−1)`, proof-body use in the Raynaud
+-- dichotomy of the `μ`-type node below
+import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
+import Mathlib.RingTheory.RootsOfUnity.CyclotomicUnits
 
 @[expose] public section
 
@@ -1722,64 +1728,14 @@ theorem exists_natCast_sub_mem_span (u : ℤ_[p]) :
   rw [PadicInt.ker_toZModPow, pow_one] at hk
   exact hk
 
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-/-- **The prime of `𝓞 ℚ` attached to the prime number `p` is `(p)`**
-(PROVEN): unfolding `Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`,
-the ideal is the comap of `span {(p : ℤ)}` along
-`Rat.ringOfIntegersEquiv`, and a ring isomorphism carries spans of
-singletons to spans of singletons while preserving `Nat.cast`.
-
-(A local re-derivation: the identical `asIdeal_toHeightOneSpectrumRingOfIntegersRat`
-lives in `FreyCurve/MazurTorsion.lean`, which is FAR downstream of this
-neutral group-scheme file and cannot be imported here. The natural home
-for both this and `maximalIdeal_eq_span_natCast` below is the shim
-module `Fermat/FLT/Mathlib/RingTheory/DedekindDomain/Ideal/Lemmas.lean`,
-where `toHeightOneSpectrumRingOfIntegersRat` itself is defined; hoisting
-them there is a bookkeeping change that touches another owner's file and
-is deliberately NOT done here.) -/
-theorem asIdeal_toHeightOneSpectrum_eq_span :
-    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)).asIdeal =
-      Ideal.span {((p : ℕ) : NumberField.RingOfIntegers ℚ)} := by
-  have h1 : (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)).asIdeal =
-      Ideal.comap (Rat.ringOfIntegersEquiv.symm.symm) (Ideal.span {((p : ℕ) : ℤ)}) := rfl
-  rw [h1, RingEquiv.symm_symm, ← Ideal.map_symm, Ideal.map_span, Set.image_singleton,
-    map_natCast]
-
-open IsDedekindDomain.HeightOneSpectrum in
-set_option maxHeartbeats 1000000 in
-/-- **`p` is a uniformizer of `𝒪ᵥ = ℤ_p`** (PROVEN — the ABSOLUTE
-UNRAMIFIEDNESS of the base, `e = 1`): the maximal ideal of the
-`v`-adic integer ring at the place `v = v_p` of `ℚ` is the span of `p`.
-Through `adicCompletion.maximalIdeal_eq_span_uniformizer` it suffices
-that `v(p) = ofAdd (−1)` in `ℚᵥ`, which reduces along
-`valuedAdicCompletion_eq_valuation` and `valuation_of_algebraMap` to
-the `intValuation` of `p` in `𝓞 ℚ`, computed by
-`intValuation_singleton` from `v_p = span {p}`
-(`asIdeal_toHeightOneSpectrum_eq_span`).
-
-(Local re-derivation of `maximalIdeal_adicCompletionIntegers_eq_span`
-of `FreyCurve/MazurTorsion.lean`; see the note there.) -/
-theorem maximalIdeal_eq_span_natCast :
-    IsLocalRing.maximalIdeal 𝒪ᵖᵍᵥ = Ideal.span {((p : ℕ) : 𝒪ᵖᵍᵥ)} := by
-  have hq0 : ((p : ℕ) : NumberField.RingOfIntegers ℚ) ≠ 0 :=
-    Nat.cast_ne_zero.mpr hp.out.ne_zero
-  have hval : (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-      (Fact.out : p.Prime)).intValuation
-      ((p : ℕ) : NumberField.RingOfIntegers ℚ) = Multiplicative.ofAdd (-1 : ℤ) :=
-    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-      (Fact.out : p.Prime)).intValuation_singleton hq0
-      asIdeal_toHeightOneSpectrum_eq_span
-  apply adicCompletion.maximalIdeal_eq_span_uniformizer
-  have h := (valuedAdicCompletion_eq_valuation
-      (v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) (K := ℚ)
-      ((p : ℕ) : NumberField.RingOfIntegers ℚ)).trans
-    ((valuation_of_algebraMap
-      (v := Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) (K := ℚ)
-      ((p : ℕ) : NumberField.RingOfIntegers ℚ)).trans hval)
-  convert h using 2
-  norm_cast
+-- `asIdeal_toHeightOneSpectrum_eq_span` and `maximalIdeal_eq_span_natCast`
+-- were local re-derivations of two lemmas that also lived in
+-- `FreyCurve/MazurTorsion.lean`. Both were hoisted (2026-07-25) to the shim
+-- `Fermat/FLT/Mathlib/RingTheory/DedekindDomain/Ideal/Lemmas.lean`, where
+-- `toHeightOneSpectrumRingOfIntegersRat` itself is defined, under the more
+-- general MazurTorsion names `asIdeal_toHeightOneSpectrumRingOfIntegersRat`
+-- and `maximalIdeal_adicCompletionIntegers_eq_span`, which take the primality
+-- proof explicitly — pass `(Fact.out : p.Prime)` at the use sites below.
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -1806,7 +1762,8 @@ inertia, so `M ≤ IntermediateField.fixedField (localInertiaGroup v)` by
 `IntermediateField.adjoin_le_iff`; hence `e(M/ℚᵥ) = 1` by the PROVEN
 node `maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup` of
 `Deformations/RepresentationTheory/LocalInertiaFixedField.lean`, i.e.
-`𝔪 𝒪ᵥ` generates `𝔪 𝒪_M`, i.e. — by `maximalIdeal_eq_span_natCast` —
+`𝔪 𝒪ᵥ` generates `𝔪 𝒪_M`, i.e. — by
+`maximalIdeal_adicCompletionIntegers_eq_span` —
 `𝔪 𝒪_M = (p)`. The element `x` lifts to `y ∈ 𝒪_M` (integrality
 transfers along the injective `M ↪ ℚᵥᵃˡᵍ`), and `y` is a NONUNIT
 because its image `x` is one (`hx` and locality of `𝒪̄`), so `y ∈ 𝔪 𝒪_M`
@@ -1844,7 +1801,8 @@ theorem mem_span_natCast_of_inertia_invariant
   -- so `e(M/ℚᵥ) = 1`, i.e. `p` generates the maximal ideal of `𝒪_M`
   have hmap := maximalIdeal_map_eq_of_le_fixedField_localInertiaGroup
     (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)) M hMfix
-  rw [maximalIdeal_eq_span_natCast, Ideal.map_span, Set.image_singleton,
+  rw [maximalIdeal_adicCompletionIntegers_eq_span (Fact.out : p.Prime),
+    Ideal.map_span, Set.image_singleton,
     map_natCast] at hmap
   -- `x`, viewed at the finite level
   have hxint : IsIntegral 𝒪ᵖᵍᵥ (⟨xv, hxM⟩ : M) := by
@@ -1930,7 +1888,8 @@ theorem natCast_dvd_one_sub_pow_of_isPrimitiveRoot {A : Type*} [CommRing A] [IsD
 /-- **`p` is a NONUNIT of the integral closure `𝒪̄` of `𝒪ᵥ` in
 `ℚᵥᵃˡᵍ`** (PROVEN): `𝒪̄` is integral over `𝒪ᵥ`, so the contraction of
 its maximal ideal along `𝒪ᵥ → 𝒪̄` is a maximal ideal of the LOCAL ring
-`𝒪ᵥ`, hence `𝔪 𝒪ᵥ = (p)` (`maximalIdeal_eq_span_natCast`); so `p` is in
+`𝒪ᵥ`, hence `𝔪 𝒪ᵥ = (p)`
+(`maximalIdeal_adicCompletionIntegers_eq_span`); so `p` is in
 `𝔪 𝒪̄` and `span {p} ≠ ⊤` in `𝒪̄`. This is what makes the descent of a
 congruence from `𝒪̄` back to `ℤ` sound: a rational integer lying in
 `p·𝒪̄` really is divisible by `p`, because otherwise its coprimality
@@ -1945,22 +1904,251 @@ theorem natCast_mem_maximalIdeal_integralClosure :
       (algebraMap 𝒪ᵖᵍᵥ (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) = maximalIdeal 𝒪ᵖᵍᵥ :=
     IsLocalRing.eq_maximalIdeal hmax
   have hp' : ((p : ℕ) : 𝒪ᵖᵍᵥ) ∈ maximalIdeal 𝒪ᵖᵍᵥ := by
-    rw [maximalIdeal_eq_span_natCast]
+    rw [maximalIdeal_adicCompletionIntegers_eq_span (Fact.out : p.Prime)]
     exact Ideal.mem_span_singleton_self _
   have h := heq ▸ hp'
   rwa [Ideal.mem_comap, map_natCast] at h
 
+/-! ### Toolkit for the `≤` half of the displacement-ideal computation
+
+Generic lemmas consumed by `displacement_span_le_span_zeta_sub_one`
+below: principality of a value ideal over a valuation ring (with the
+generator taken to BE one of the values, which is what lets inertia act
+on it), the linear term of a convolution power, and the cyclotomic
+factorisation of `p`. -/
+
+/-- From `cc ^ n * u = 1` with `n ≠ 0`, the base `cc` is a unit. -/
+theorem isUnit_of_pow_mul_eq_one {A : Type*} [CommMonoid A] {cc u : A} {n : ℕ}
+    (hn : n ≠ 0) (h : cc ^ n * u = 1) : IsUnit cc := by
+  refine isUnit_iff_exists_inv.mpr ⟨cc ^ (n - 1) * u, ?_⟩
+  rw [← mul_assoc, ← pow_succ', show n - 1 + 1 = n from by omega]
+  exact h
+
+/-- In a valuation ring a finset spans the same ideal as one of its
+elements (or `0` when it is empty): divisibility is total, so one
+generator divides all the others. -/
+theorem exists_span_finset_eq_span_singleton {A : Type*} [CommRing A] [IsDomain A]
+    [ValuationRing A] (T : Finset A) :
+    ∃ t : A, (t = 0 ∨ t ∈ T) ∧ Ideal.span (T : Set A) = Ideal.span {t} := by
+  classical
+  induction T using Finset.induction_on with
+  | empty =>
+    refine ⟨0, Or.inl rfl, le_antisymm ?_ ?_⟩
+    · rw [Finset.coe_empty]
+      exact Ideal.span_le.mpr (Set.empty_subset _)
+    · refine Ideal.span_le.mpr ?_
+      rintro x hx
+      rw [Set.mem_singleton_iff] at hx
+      subst hx
+      exact Submodule.zero_mem _
+  | @insert a T _ ih =>
+    obtain ⟨t, htmem, ht⟩ := ih
+    have hspan : Ideal.span ((insert a T : Finset A) : Set A)
+        = Ideal.span {a} ⊔ Ideal.span ((T : Finset A) : Set A) := by
+      rw [Finset.coe_insert, Ideal.span_insert]
+    obtain ⟨cc, hcc | hcc⟩ := ValuationRing.cond a t
+    · refine ⟨a, Or.inr (Finset.mem_insert_self _ _), ?_⟩
+      rw [hspan, ht, sup_eq_left, Ideal.span_singleton_le_span_singleton]
+      exact ⟨cc, hcc.symm⟩
+    · refine ⟨t, ?_, ?_⟩
+      · rcases htmem with h | h
+        · exact Or.inl h
+        · exact Or.inr (Finset.mem_insert_of_mem h)
+      · rw [hspan, ht, sup_eq_right, Ideal.span_singleton_le_span_singleton]
+        exact ⟨cc, hcc.symm⟩
+
+/-- The value ideal of a linear map out of a module-finite module into a
+valuation ring is generated by a SINGLE value. -/
+theorem exists_span_range_eq_span_singleton {R G A : Type*} [CommRing R]
+    [AddCommMonoid G] [Module R G] [Module.Finite R G]
+    [CommRing A] [IsDomain A] [ValuationRing A] [Algebra R A] (f : G →ₗ[R] A) :
+    ∃ g₀ : G, Ideal.span (Set.range f) = Ideal.span {f g₀} := by
+  classical
+  obtain ⟨T, hT⟩ := (Module.Finite.fg_top : (⊤ : Submodule R G).FG)
+  have key : ∀ g : G, f g ∈ Ideal.span (f '' (T : Set G)) := by
+    intro g
+    have hg : g ∈ Submodule.span R (T : Set G) := hT ▸ Submodule.mem_top
+    induction hg using Submodule.span_induction with
+    | mem y hy => exact Ideal.subset_span ⟨y, hy, rfl⟩
+    | zero => rw [map_zero]; exact Submodule.zero_mem _
+    | add y z _ _ hy hz => rw [map_add]; exact Submodule.add_mem _ hy hz
+    | smul r y _ hy => rw [map_smul, Algebra.smul_def]; exact Ideal.mul_mem_left _ _ hy
+  have hrange : Ideal.span (Set.range f) = Ideal.span ((T.image f : Finset A) : Set A) := by
+    refine le_antisymm ?_ ?_
+    · rw [Ideal.span_le]
+      rintro _ ⟨g, rfl⟩
+      rw [Finset.coe_image]
+      exact key g
+    · rw [Finset.coe_image, Ideal.span_le]
+      rintro _ ⟨g, _, rfl⟩
+      exact Ideal.subset_span ⟨g, rfl⟩
+  obtain ⟨t, htmem, ht⟩ := exists_span_finset_eq_span_singleton (T.image f)
+  rcases htmem with h0 | hmem
+  · exact ⟨0, by rw [hrange, ht, h0, map_zero]⟩
+  · obtain ⟨g₀, -, rfl⟩ := Finset.mem_image.mp hmem
+    exact ⟨g₀, by rw [hrange, ht]⟩
+
+/-- **Cancelling an `n`-th power inside a divisibility, in a valuation
+ring**: `x^n ∣ z^n` forces `x ∣ z`, because divisibility is total. -/
+theorem dvd_of_pow_dvd_pow_valuationRing {A : Type*} [CommRing A] [IsDomain A]
+    [ValuationRing A] {x z : A} {n : ℕ} (hn : n ≠ 0) (h : x ^ n ∣ z ^ n) : x ∣ z := by
+  rcases eq_or_ne z 0 with hz | hz
+  · exact hz ▸ dvd_zero x
+  obtain ⟨cc, hcc | hcc⟩ := ValuationRing.cond x z
+  · exact ⟨cc, hcc.symm⟩
+  · obtain ⟨s, hs⟩ := h
+    have hx : x ^ n = z ^ n * cc ^ n := by rw [← hcc, mul_pow]
+    have h1 : z ^ n * (cc ^ n * s) = z ^ n * 1 := by
+      rw [← mul_assoc, ← hx, ← hs, mul_one]
+    have h2 : cc ^ n * s = 1 := mul_left_cancel₀ (pow_ne_zero n hz) h1
+    obtain ⟨u, hu⟩ := isUnit_of_pow_mul_eq_one hn h2
+    exact ⟨((u⁻¹ : Aˣ) : A), by rw [← hcc, ← hu, mul_assoc, Units.mul_inv, mul_one]⟩
+
+section RaynaudFiltration
+
+variable {R G A : Type*} [CommRing R] [AddCommMonoid G] [Module R G] [Coalgebra R G]
+  [CommRing A] [Algebra R A]
+
+/-- The ring identity behind the two displacement filtration lemmas. -/
+theorem convPow_succ_sub_one (f : WithConv (G →ₗ[R] A)) (m : ℕ) :
+    f ^ (m + 1) - 1 = (f ^ m - 1) + (f - 1) + (f ^ m - 1) * (f - 1) := by
+  have h : (f ^ m - 1) * (f - 1) = f ^ (m + 1) - f ^ m - f + 1 := by
+    rw [sub_mul, mul_sub, mul_sub, one_mul, one_mul, mul_one, ← pow_succ]
+    abel
+  rw [h]; abel
+
+/-- A convolution power of a point stays inside the displacement ideal. -/
+theorem convPow_sub_one_apply_mem (f : WithConv (G →ₗ[R] A)) {𝔞 : Ideal A}
+    (hf : ∀ x, (f - 1).ofConv x ∈ 𝔞) : ∀ (m : ℕ) (x : G), (f ^ m - 1).ofConv x ∈ 𝔞 := by
+  intro m
+  induction m with
+  | zero => intro x; simp
+  | succ m ih =>
+    intro x
+    rw [convPow_succ_sub_one, WithConv.ofConv_add, WithConv.ofConv_add,
+      LinearMap.add_apply, LinearMap.add_apply]
+    refine Submodule.add_mem _ (Submodule.add_mem _ (ih x) (hf x)) ?_
+    exact Ideal.mul_le_right (convMul_apply_mem_mul _ _ ih hf x)
+
+/-- **The linear term of a convolution power**: `c^m − 1 ≡ m·(c − 1)`
+modulo the SQUARE of the displacement ideal. -/
+theorem convPow_sub_one_sub_nsmul_mem (f : WithConv (G →ₗ[R] A)) {𝔞 : Ideal A}
+    (hf : ∀ x, (f - 1).ofConv x ∈ 𝔞) : ∀ (m : ℕ) (x : G),
+      ((f ^ m - 1) - m • (f - 1)).ofConv x ∈ 𝔞 ^ 2 := by
+  intro m
+  induction m with
+  | zero => intro x; simp
+  | succ m ih =>
+    intro x
+    have key : (f ^ (m + 1) - 1) - (m + 1) • (f - 1)
+        = ((f ^ m - 1) - m • (f - 1)) + (f ^ m - 1) * (f - 1) := by
+      rw [succ_nsmul, convPow_succ_sub_one]
+      abel
+    rw [key, WithConv.ofConv_add, LinearMap.add_apply]
+    refine Submodule.add_mem _ (ih x) ?_
+    rw [sq]
+    exact convMul_apply_mem_mul _ _ (convPow_sub_one_apply_mem f hf m) hf x
+
+end RaynaudFiltration
+
+/-- **`p` is associated to `(ζ − 1)^(p−1)`** for a primitive `p`-th root
+of unity `ζ` in a domain (the standard cyclotomic factorisation of `p`,
+transcribed from mathlib's `associated_zeta_sub_one_pow_prime` for rings
+of integers). -/
+theorem associated_sub_one_pow_natCast {A : Type*} [CommRing A] [IsDomain A]
+    {q : ℕ} [hq : Fact q.Prime] {ζ : A} (hζ : IsPrimitiveRoot ζ q) :
+    Associated ((ζ - 1) ^ (q - 1)) ((q : ℕ) : A) := by
+  classical
+  haveI : NeZero q := ⟨hq.out.ne_zero⟩
+  rw [← Polynomial.eval_one_cyclotomic_prime (R := A) (p := q),
+    Polynomial.cyclotomic_eq_prod_X_sub_primitiveRoots hζ, Polynomial.eval_prod]
+  simp only [Polynomial.eval_sub, Polynomial.eval_X, Polynomial.eval_C]
+  rw [← Nat.totient_prime hq.out, ← hζ.card_primitiveRoots, ← Finset.prod_const]
+  refine Associated.prod _ _ _ fun η hη => ?_
+  have hη' : IsPrimitiveRoot η q := isPrimitiveRoot_of_mem_primitiveRoots hη
+  obtain ⟨i, -, hi, hζη⟩ := (hζ.isPrimitiveRoot_iff).mp hη'
+  have hassoc : Associated (ζ - 1) (η - 1) := by
+    rw [← hζη]
+    exact hζ.associated_sub_one_pow_sub_one_of_coprime hi
+  simpa using hassoc.neg_right
+
+/-- A unit plus a maximal-ideal element is a unit. -/
+theorem isUnit_add_mem_maximalIdeal {A : Type*} [CommRing A] [IsLocalRing A] {a b : A}
+    (ha : IsUnit a) (hb : b ∈ IsLocalRing.maximalIdeal A) : IsUnit (a + b) := by
+  by_contra h
+  have h1 : a + b ∈ IsLocalRing.maximalIdeal A := (IsLocalRing.mem_maximalIdeal _).mpr h
+  have h2 : a ∈ IsLocalRing.maximalIdeal A := by
+    have h3 := Submodule.sub_mem _ h1 hb
+    simpa using h3
+  rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff] at h2
+  exact h2 ha
+
+/-- A natural number lying in the maximal ideal of `𝒪̄ᵥ` is divisible by
+`p` (Bézout against `p`). -/
+theorem dvd_of_natCast_mem_maximalIdeal (k : ℕ)
+    (hk : ((k : ℕ) : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) : p ∣ k := by
+  by_contra hnd
+  have hcop : Nat.Coprime p k := (Nat.Prime.coprime_iff_not_dvd hp.out).mpr hnd
+  obtain ⟨a, b, hab⟩ : IsCoprime ((p : ℕ) : ℤ) ((k : ℕ) : ℤ) :=
+    Nat.isCoprime_iff_coprime.mpr hcop
+  have hone : (1 : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := by
+    have h := congrArg (fun z : ℤ => (z : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ))) hab
+    push_cast at h
+    rw [← h]
+    exact Submodule.add_mem _
+      (Ideal.mul_mem_left _ _ natCast_mem_maximalIdeal_integralClosure)
+      (Ideal.mul_mem_left _ _ hk)
+  exact (IsLocalRing.maximalIdeal.isMaximal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)).ne_top
+    (Ideal.eq_top_of_isUnit_mem _ hone isUnit_one)
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **THE ONE-DIMENSIONALITY INPUT of the Oort–Tate node** (SORRY LEAF,
-cut 2026-07-25 and cut again the same day; it is the SOLE remaining
-input of `inertia_character_trivial_or_cyclotomic` below, which is
-PROVEN over it): for a CONNECTED geometric point `φ ≠ 1` of exact
-convolution order `p` whose cyclic group `⟨φ⟩` is inertia-stable, the
-ideal of `𝒪̄` generated by the values of the DISPLACEMENT
-`g ↦ φ(1 ⊗ g) − ε(g)` is CONTAINED in `(ζ_p − 1)`, for a primitive
-`p`-th root of unity `ζ_p`.
+/-- **THE ONE-DIMENSIONALITY INPUT of the Oort–Tate node** (PROVEN
+2026-07-26, sorry-free; cut 2026-07-25 and cut again the same day, and
+it was the SOLE remaining input of
+`inertia_character_trivial_or_cyclotomic` below): for a CONNECTED
+geometric point `φ ≠ 1` of exact convolution order `p` whose cyclic
+group `⟨φ⟩` is inertia-stable, the ideal of `𝒪̄` generated by the
+values of the DISPLACEMENT `g ↦ φ(1 ⊗ g) − ε(g)` is CONTAINED in
+`(ζ_p − 1)`, for a primitive `p`-th root of unity `ζ_p`.
+
+**PROOF (2026-07-26) — the NORM OF THE DISPLACEMENT OVER THE GROUP OF
+POINTS.** The obstacle described below is real but avoidable: no tame
+character, no ramification filtration and no Oort–Tate normal form are
+needed, because a single element can be made EXACTLY inertia-invariant
+and fed to the PROVEN absolute-unramifiedness leaf
+`mem_span_natCast_of_inertia_invariant`. In detail:
+
+* the value ideal is principal ON A VALUE, `𝔞 = (y)` with
+  `y = d(g₀)`, since `𝒪̄` is a valuation ring and `G` is module-finite
+  (`exists_span_range_eq_span_singleton` — taking the generator to BE a
+  displacement value is what lets inertia act on it);
+* `d_k(g₀) = k·y + O(y²)` for `d_k = c^k − 1`
+  (`convPow_sub_one_sub_nsmul_mem`), so each `d_k(g₀)` with `p ∤ k` is
+  `y·(unit)`;
+* inertia PERMUTES the family `{d_k(g₀)}`: `σ • d_k(g₀) = d_{km}(g₀)`
+  when `σ • φ = φ^m`, because the Galois action is by an `𝒪ᵥ`-algebra
+  map and therefore commutes with convolution powers (`comp_convPow`),
+  and `k ↦ km` is a bijection of `(ℤ/p)ˣ` since `p ∤ m` (else
+  `σ • φ = 1`, i.e. `φ = 1`);
+* hence the NORM `P = ∏_{u ∈ (ℤ/p)ˣ} d_u(g₀)` is EXACTLY
+  inertia-invariant, and it lies in `𝔪` by connectedness, so
+  `mem_span_natCast_of_inertia_invariant` gives `p ∣ P = y^{p−1}·unit`,
+  i.e. `p ∣ y^{p−1}`;
+* `(ζ_p − 1)^{p−1} ∼ p` (`associated_sub_one_pow_natCast`, the
+  cyclotomic factorisation), so `(ζ_p − 1)^{p−1} ∣ y^{p−1}`, and in a
+  valuation ring that cancels to `ζ_p − 1 ∣ y`
+  (`dvd_of_pow_dvd_pow_valuationRing`) — which is the assertion.
+
+Note what carries the ONE-DIMENSIONALITY: `hstab` is used exactly once,
+to know that inertia permutes the `d_k(g₀)` rather than moving `φ` out
+of its own cyclic group. `hpodd` and `hcomul₀` turn out NOT to be
+needed and are underscore-prefixed so this is mechanically visible.
+
+The rest of this docstring is the original analysis of the leaf, kept
+because its soundness discussion and counterexamples remain the reason
+the statement is the right one.
 
 Valuation-theoretically: `v(t) ≥ 1/(p − 1) = v(ζ_p − 1)` for a
 generator `t` of the value ideal. The REVERSE inclusion — Raynaud's
@@ -2025,13 +2213,13 @@ FALSE (see the CORRECTION NOTE at `exists_muType_coordinate`), because
 the Oort–Tate coordinate is only defined up to an unramified twist.
 The value ideal is twist-blind, so this form is faithful. -/
 theorem displacement_span_le_span_zeta_sub_one
-    (hpodd : Odd p)
+    (_hpodd : Odd p)
     (G : Type) [CommRing G]
     [HopfAlgebra 𝒪ᵖᵍᵥ G] [Module.Flat 𝒪ᵖᵍᵥ G] [Module.Finite 𝒪ᵖᵍᵥ G]
     (e₀ : G) (he₀ : IsIdempotentElem e₀)
     (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵍᵥ) e₀ = (1 : 𝒪ᵖᵍᵥ))
     (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
-    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵍᵥ) e₀ *
+    (_hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵍᵥ) e₀ *
       (e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = e₀ ⊗ₜ[𝒪ᵖᵍᵥ] e₀)
     (φ : ℚᵖᵍᵥ ⊗[𝒪ᵖᵍᵥ] G →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ)
     (hφe : φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] e₀) = 1)
@@ -2048,8 +2236,264 @@ theorem displacement_span_le_span_zeta_sub_one
         algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ x =
           φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] g) -
             algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) g)} ≤
-      Ideal.span {ζ - 1} :=
-  sorry
+      Ideal.span {ζ - 1} := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  haveI : Algebra.IsIntegral 𝒪ᵖᵍᵥ G := Algebra.IsIntegral.of_finite 𝒪ᵖᵍᵥ G
+  have hp1 : p - 1 ≠ 0 := by have := hp.out.two_le; omega
+  -- ### the integral point of the model and its convolution displacement
+  set χ : G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ :=
+    (AlgHom.liftEquiv 𝒪ᵖᵍᵥ ℚᵖᵍᵥ G ℚᵖᵍᵥᵃˡᵍ).symm φ 
+  have hint : ∀ a : G, χ a ∈ integralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ := fun a =>
+    (Algebra.IsIntegral.isIntegral (R := 𝒪ᵖᵍᵥ) a).map χ
+  set χI : G →ₐ[𝒪ᵖᵍᵥ] (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) :=
+    AlgHom.codRestrict χ (integralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) hint 
+  set ι : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ :=
+    { algebraMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ with commutes' := fun _ => rfl } 
+  have hιinj : Function.Injective ι := fun a b h => Subtype.ext h
+  have hιχ : ι.comp χI = χ := AlgHom.ext fun _ => rfl
+  set c : WithConv (G →ₗ[𝒪ᵖᵍᵥ] (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) := toConv χI.toLinearMap with hc
+  -- `φ^p = 1`, transported to the integral points
+  have hχp : (toConv χ) ^ p = (1 : WithConv (G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ)) := by
+    apply WithConv.ofConv_injective
+    have h := liftEquiv_symm_vendored_pow (R := 𝒪ᵖᵍᵥ) (S := ℚᵖᵍᵥ) (H := G)
+      (L := ℚᵖᵍᵥᵃˡᵍ) φ p
+    rw [hord, vendored_one_eq_convOne, liftEquiv_symm_convOne] at h
+    exact h.symm
+  have hχIp : (toConv χI) ^ p = (1 : WithConv (G →ₐ[𝒪ᵖᵍᵥ] (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ))) := by
+    apply WithConv.ofConv_injective
+    refine AlgHom.ext fun a => hιinj ?_
+    have h := comp_convPow ι (toConv χI) p
+    rw [WithConv.ofConv_toConv, hιχ, hχp] at h
+    have h2 := congrArg (fun f : G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ => f a) h
+    simpa [comp_convOne ι] using h2
+  have hcp : c ^ p = 1 := by
+    have h := AlgHom.toLinearMap_convPow (toConv χI) p
+    rw [hχIp, AlgHom.toLinearMap_convOne] at h
+    exact h.symm
+  -- the values of the convolution powers, read on the algebra points
+  have hcE : ∀ (k : ℕ) (g : G), (c ^ k).ofConv g = ((toConv χI) ^ k).ofConv g := by
+    intro k g
+    have h := AlgHom.toLinearMap_convPow (toConv χI) k
+    have h2 := congrArg (fun z : WithConv (G →ₗ[𝒪ᵖᵍᵥ] (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) => z.ofConv g) h
+    simpa using h2.symm
+  -- ### connectedness: the displacement lands in the maximal ideal
+  have hred : ∀ g : G, φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] g) -
+      algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) g) ∈
+      Submodule.map (Algebra.linearMap (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) ℚᵖᵍᵥᵃˡᵍ)
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) := fun g =>
+    point_sub_counit_mem_maximalIdeal
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))
+      G e₀ he₀ hε₀ hprim₀ φ hφe g
+  have hdval : ∀ g : G, ι ((c - 1).ofConv g) =
+      φ ((1 : ℚᵖᵍᵥ) ⊗ₜ[𝒪ᵖᵍᵥ] g) -
+        algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) g) := by
+    intro g
+    rw [WithConv.ofConv_sub, LinearMap.sub_apply, map_sub]
+    congr 1
+  have hmax : ∀ g : G, (c - 1).ofConv g ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := by
+    intro g
+    obtain ⟨mm, hmm, hmeq⟩ := hred g
+    have hgm : ι ((c - 1).ofConv g) = ι mm := by rw [hdval g, ← hmeq]; rfl
+    rwa [hιinj hgm]
+  -- ### the displacement ideal is principal, generated by one value
+  obtain ⟨g₀, h𝔞⟩ := exists_span_range_eq_span_singleton (c - 1).ofConv
+  set y : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := (c - 1).ofConv g₀ with hy
+  have hdmem : ∀ g : G, (c - 1).ofConv g ∈ Ideal.span {y} := by
+    intro g
+    rw [← h𝔞]
+    exact Ideal.subset_span ⟨g, rfl⟩
+  have hymax : y ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := hmax g₀
+  -- `y ≠ 0`, since `φ ≠ 1`
+  have hy0 : y ≠ 0 := by
+    intro h0
+    apply hφ1
+    have hd0 : ∀ g : G, (c - 1).ofConv g = 0 := by
+      intro g
+      obtain ⟨z, hz⟩ := Ideal.mem_span_singleton'.mp (hdmem g)
+      rw [← hz, h0, mul_zero]
+    have hc1 : c = 1 := by
+      apply WithConv.ofConv_injective
+      refine LinearMap.ext fun g => ?_
+      have h := hd0 g
+      rw [WithConv.ofConv_sub, LinearMap.sub_apply, sub_eq_zero] at h
+      exact h
+    apply (AlgHom.liftEquiv 𝒪ᵖᵍᵥ ℚᵖᵍᵥ G ℚᵖᵍᵥᵃˡᵍ).symm.injective
+    rw [vendored_one_eq_convOne, liftEquiv_symm_convOne]
+    refine AlgHom.ext fun a => ?_
+    have h : χI a = (1 : WithConv (G →ₗ[𝒪ᵖᵍᵥ] (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ))).ofConv a := by
+      have h0' := congrArg (fun f : WithConv (G →ₗ[𝒪ᵖᵍᵥ] (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) => f.ofConv a) hc1
+      rw [hc] at h0'
+      exact h0'
+    calc ((AlgHom.liftEquiv 𝒪ᵖᵍᵥ ℚᵖᵍᵥ G ℚᵖᵍᵥᵃˡᵍ).symm φ) a
+        = ι (χI a) := rfl
+      _ = ι (algebraMap 𝒪ᵖᵍᵥ (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) a)) := by
+          rw [h, LinearMap.convOne_apply]
+      _ = algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) a) := ι.commutes _
+      _ = (1 : WithConv (G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ)).ofConv a := (AlgHom.convOne_apply a).symm
+  -- ### the values of the convolution powers at the chosen generator
+  set D : ℕ → (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := fun k => (c ^ k - 1).ofConv g₀ with hD
+  have hD1 : D 1 = y := by simp only [hD, pow_one, hy]
+  have hDmod : ∀ j k : ℕ, j ≡ k [MOD p] → D j = D k := by
+    intro j k h
+    simp only [hD]
+    rw [pow_eq_pow_of_natModEq hcp h]
+  have hDy : ∀ k : ℕ, ∃ s : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ), D k = (k : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) * y + s * y ^ 2 := by
+    intro k
+    have h := convPow_sub_one_sub_nsmul_mem c hdmem k g₀
+    rw [Ideal.span_singleton_pow] at h
+    obtain ⟨s, hs⟩ := Ideal.mem_span_singleton'.mp h
+    refine ⟨s, ?_⟩
+    have hexp : ((c ^ k - 1) - (k : ℕ) • (c - 1)).ofConv g₀ = D k - (k : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) * y := by
+      simp only [hD, hy]
+      rw [WithConv.ofConv_sub, LinearMap.sub_apply, WithConv.ofConv_smul,
+        LinearMap.smul_apply, nsmul_eq_mul]
+    rw [hexp] at hs
+    linear_combination -hs
+  have hDunit : ∀ k : ℕ, ¬ p ∣ k → ∃ w : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)ˣ, D k = y * w := by
+    intro k hk
+    obtain ⟨s, hs⟩ := hDy k
+    have hku : IsUnit ((k : ℕ) : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) := by
+      by_contra hu
+      exact hk (dvd_of_natCast_mem_maximalIdeal k ((IsLocalRing.mem_maximalIdeal _).mpr hu))
+    have hsum : IsUnit ((k : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) + s * y) :=
+      isUnit_add_mem_maximalIdeal hku (Ideal.mul_mem_left _ _ hymax)
+    refine ⟨hsum.unit, ?_⟩
+    rw [IsUnit.unit_spec, hs]
+    ring
+  -- ### the Galois transport of the stability hypothesis
+  set ρ : Field.absoluteGaloisGroup ℚᵖᵍᵥ → ((IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) →ₐ[𝒪ᵖᵍᵥ] (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) :=
+    fun τ => MulSemiringAction.toAlgHom 𝒪ᵖᵍᵥ (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) τ 
+  have hρapp : ∀ (τ : Field.absoluteGaloisGroup ℚᵖᵍᵥ) (x : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)), ρ τ x = τ • x :=
+    fun _ _ => rfl
+  have hιρ : ∀ (τ : Field.absoluteGaloisGroup ℚᵖᵍᵥ) (x : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)), ι (ρ τ x) = τ (ι x) :=
+    fun _ _ => rfl
+  have hpow : ∀ (τ : Field.absoluteGaloisGroup ℚᵖᵍᵥ) (mτ : ℕ), τ • φ = φ ^ mτ →
+      (ρ τ).comp χI = ((toConv χI) ^ mτ).ofConv := by
+    intro τ mτ hmτ
+    have h3 := congrArg (AlgHom.liftEquiv 𝒪ᵖᵍᵥ ℚᵖᵍᵥ G ℚᵖᵍᵥᵃˡᵍ).symm hmτ
+    rw [show τ • φ =
+        (τ.toAlgHom : ℚᵖᵍᵥᵃˡᵍ →ₐ[ℚᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ).comp φ from AlgHom.ext fun _ => rfl,
+      liftEquiv_symm_comp, liftEquiv_symm_vendored_pow] at h3
+    have h4 := comp_convPow ι (toConv χI) mτ
+    rw [WithConv.ofConv_toConv, hιχ] at h4
+    refine AlgHom.ext fun a => hιinj ?_
+    have h5 := congrArg (fun f : G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ => f a) h3
+    have h6 := congrArg (fun f : G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ => f a) h4
+    simp only [AlgHom.comp_apply] at h5 h6
+    rw [AlgHom.comp_apply, hιρ, h6, ← h5]
+    rfl
+  have hpowk : ∀ (τ : Field.absoluteGaloisGroup ℚᵖᵍᵥ) (mτ : ℕ), τ • φ = φ ^ mτ →
+      ∀ k : ℕ, (ρ τ).comp (((toConv χI) ^ k).ofConv) = ((toConv χI) ^ (k * mτ)).ofConv := by
+    intro τ mτ hmτ k
+    have h := comp_convPow (ρ τ) (toConv χI) k
+    rw [WithConv.ofConv_toConv, hpow τ mτ hmτ, WithConv.toConv_ofConv, ← pow_mul] at h
+    rw [h, mul_comm]
+  have hDsmul : ∀ (τ : Field.absoluteGaloisGroup ℚᵖᵍᵥ) (mτ : ℕ), τ • φ = φ ^ mτ →
+      ∀ k : ℕ, τ • (D k) = D (k * mτ) := by
+    intro τ mτ hmτ k
+    have hval : ∀ j : ℕ, D j = ((toConv χI) ^ j).ofConv g₀ -
+        (1 : WithConv (G →ₗ[𝒪ᵖᵍᵥ] (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ))).ofConv g₀ := by
+      intro j
+      simp only [hD]
+      rw [WithConv.ofConv_sub, LinearMap.sub_apply, hcE j g₀]
+    rw [hval, hval, ← hρapp, map_sub]
+    congr 1
+    · have h := hpowk τ mτ hmτ k
+      have h2 := congrArg (fun f : G →ₐ[𝒪ᵖᵍᵥ] (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) => f g₀) h
+      simpa using h2
+    · rw [LinearMap.convOne_apply]
+      exact (ρ τ).commutes _
+  -- ### the norm of the displacement over the cyclic group of points
+  have hcastval : ∀ x : ZMod p, ((x.val : ℕ) : ZMod p) = x := by
+    intro x
+    rw [ZMod.natCast_val, ZMod.cast_id]
+  have hval_ne : ∀ u : (ZMod p)ˣ, ¬ p ∣ ((u : ZMod p).val) := by
+    intro u hdvd
+    apply u.ne_zero
+    have h1 : (((u : ZMod p).val : ℕ) : ZMod p) = 0 := by
+      obtain ⟨j, hj⟩ := hdvd
+      rw [hj]
+      push_cast
+      simp
+    rwa [hcastval] at h1
+  set P : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := ∏ u : (ZMod p)ˣ, D ((u : ZMod p).val) with hP
+  obtain ⟨w, hw⟩ : ∃ w : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)ˣ, P = y ^ (p - 1) * w := by
+    choose w hw using fun u : (ZMod p)ˣ => hDunit ((u : ZMod p).val) (hval_ne u)
+    refine ⟨∏ u : (ZMod p)ˣ, w u, ?_⟩
+    rw [hP, Finset.prod_congr rfl (fun u _ => hw u), Finset.prod_mul_distrib,
+      Finset.prod_const, Units.coe_prod]
+    congr 1
+    rw [Finset.card_univ, ZMod.card_units_eq_totient p, Nat.totient_prime hp.out]
+  have hPmem : P ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) := by
+    rw [hw]
+    refine Ideal.mul_mem_right _ _ ?_
+    have hsplit : y ^ (p - 1) = y ^ (p - 1 - 1) * y := by
+      rw [← pow_succ, Nat.sub_add_cancel (by have := hp.out.two_le; omega : 1 ≤ p - 1)]
+    rw [hsplit]
+    exact Ideal.mul_mem_left _ _ hymax
+  have hPinv : ∀ τ ∈ localInertiaGroup
+      (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime)),
+      τ • P = P := by
+    intro τ hτ
+    obtain ⟨mτ, hmτ⟩ := hstab τ hτ
+    have hmτ0 : ¬ p ∣ mτ := by
+      intro hdvd
+      apply hφ1
+      obtain ⟨j, rfl⟩ := hdvd
+      have h1 : φ ^ (p * j) = 1 := by rw [pow_mul, hord, one_pow]
+      rw [h1] at hmτ
+      have := congrArg (fun z => τ⁻¹ • z) hmτ
+      simpa [inv_smul_smul] using this
+    have hmu : IsUnit ((mτ : ℕ) : ZMod p) := by
+      rw [ZMod.isUnit_iff_coprime]
+      exact Nat.Coprime.symm ((Nat.Prime.coprime_iff_not_dvd hp.out).mpr hmτ0)
+    set mhat : (ZMod p)ˣ := hmu.unit with hmhat
+    have hstep : ∀ u : (ZMod p)ˣ,
+        τ • D ((u : ZMod p).val) = D (((u * mhat : (ZMod p)ˣ) : ZMod p).val) := by
+      intro u
+      rw [hDsmul τ mτ hmτ]
+      refine hDmod _ _ ?_
+      have hc1 : (((u : ZMod p).val * mτ : ℕ) : ZMod p)
+          = ((((u * mhat : (ZMod p)ˣ) : ZMod p).val : ℕ) : ZMod p) := by
+        rw [Nat.cast_mul, hcastval, hcastval, Units.val_mul, hmhat, IsUnit.unit_spec]
+      exact ((ZMod.natCast_eq_natCast_iff _ _ _).mp hc1)
+    calc τ • P = ∏ u : (ZMod p)ˣ, τ • D ((u : ZMod p).val) := by
+          rw [hP, ← hρapp, map_prod]
+          exact Finset.prod_congr rfl fun u _ => (hρapp τ _).symm
+      _ = ∏ u : (ZMod p)ˣ, D (((u * mhat : (ZMod p)ˣ) : ZMod p).val) :=
+          Finset.prod_congr rfl fun u _ => hstep u
+      _ = P := by
+          rw [hP]
+          exact Equiv.prod_comp (Equiv.mulRight mhat) (fun u : (ZMod p)ˣ => D ((u : ZMod p).val))
+  have hPdvd : ((p : ℕ) : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) ∣ P := by
+    have h := mem_span_natCast_of_inertia_invariant P hPmem ?_
+    · exact Ideal.mem_span_singleton.mp h
+    · intro σ hσ
+      have := hPinv σ hσ
+      have h2 : ι (ρ σ P) = ι P := by rw [hρapp, this]
+      rw [hιρ] at h2
+      exact h2
+  have hpy : ((p : ℕ) : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) ∣ y ^ (p - 1) := by
+    obtain ⟨z, hz⟩ := hPdvd
+    refine ⟨z * ((w⁻¹ : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)ˣ) : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)), ?_⟩
+    have h1 : y ^ (p - 1) = P * ((w⁻¹ : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)ˣ) : (IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ)) := by
+      rw [hw, mul_assoc, Units.mul_inv, mul_one]
+    rw [h1, hz]; ring
+
+  -- ### `ζ − 1` divides the generator, hence the whole value ideal
+  have hζI : IsPrimitiveRoot ζ p := hζ.of_map_of_injective (fun a b h => Subtype.ext h)
+  have hcyc : (ζ - 1) ^ (p - 1) ∣ ((p : ℕ) : IntegralClosure 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ) :=
+    (associated_sub_one_pow_natCast hζI).dvd
+  have hdvd : (ζ - 1) ∣ y := dvd_of_pow_dvd_pow_valuationRing hp1 (hcyc.trans hpy)
+  rw [Ideal.span_le]
+  rintro x ⟨g, hgx⟩
+  have hx : x = (c - 1).ofConv g := hιinj (by rw [hdval g]; exact hgx)
+  have hyx : y ∣ x := by
+    refine Ideal.mem_span_singleton.mp ?_
+    rw [← h𝔞, hx]
+    exact Ideal.subset_span ⟨g, rfl⟩
+  exact Ideal.mem_span_singleton.mpr (hdvd.trans hyx)
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -2792,6 +3236,7 @@ theorem eq_one_of_inertia_invariant_of_reduction_counit
         rw [h, LinearMap.convOne_apply]
     _ = algebraMap 𝒪ᵖᵍᵥ ℚᵖᵍᵥᵃˡᵍ (Coalgebra.counit (R := 𝒪ᵖᵍᵥ) a) := ι.commutes _
     _ = (1 : WithConv (G →ₐ[𝒪ᵖᵍᵥ] ℚᵖᵍᵥᵃˡᵍ)).ofConv a := (AlgHom.convOne_apply a).symm
+
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
