@@ -30649,7 +30649,10 @@ SECOND of those two alternatives, in the shape Serre actually uses it
 * the predicate `IsPeuRamifiee n q` on `Fˣ` for a discretely valued
   field `F`, namely `q ∈ 𝒪ᶠˣ · (Fˣ)ⁿ`;
 * its valuation criterion `dvd_log_valuation_of_isPeuRamifiee`
-  (`n ∣ v(q)`), PROVEN; and
+  (`n ∣ v(q)`), PROVEN — and, since 2026-07-26, its CONVERSE
+  `isPeuRamifiee_of_dvd_log_valuation` over a field with a uniformizer,
+  so that `isPeuRamifiee_iff_dvd_log_valuation` makes the predicate
+  literally the divisibility `n ∣ v(q)` in `ℤ`; and
 * the tower consequence `exists_forall_not_isPeuRamifiee_of_valuation_ne_one`,
   PROVEN: a parameter of NONZERO valuation is très ramifiée at every
   sufficiently large level `bⁿ`. This is the exact arithmetic that the
@@ -30730,11 +30733,183 @@ theorem exists_forall_not_isPeuRamifiee_of_valuation_ne_one {b : ℕ} (hb : 1 < 
   have hle' : ((b ^ n : ℕ) : ℤ) ≤ (m.natAbs : ℤ) := hle
   omega
 
+/-- **The converse valuation criterion** (PROVEN 2026-07-26): over a field
+whose valuation is SURJECTIVE onto `ℤᵐ⁰` — i.e. one with a uniformizer,
+which is the only case this development ever uses — `n ∣ v(q)` implies
+that `q` is peu ramifiée at exponent `n`.
+
+This is the converse that `IsPeuRamifiee`'s docstring records as true
+("by `q = (q π^{-v(q)}) · (π^{v(q)/n})^n`") but leaves unstated. It is
+stated and proven here because it is what turns the peu-ramifiée
+PREDICATE into a piece of ARITHMETIC: together with
+`dvd_log_valuation_of_isPeuRamifiee` it gives
+`isPeuRamifiee_iff_dvd_log_valuation`, so every consumer may work with
+the divisibility `n ∣ v(q)` in `ℤ` and never unfold the existential.
+The proof is the displayed identity: pick `w` of valuation `exp (v(q)/n)`
+by surjectivity and take `u := q · w⁻ⁿ`, whose logarithm is
+`v(q) − n·(v(q)/n) = 0`, hence whose valuation is `1`. -/
+theorem isPeuRamifiee_of_dvd_log_valuation
+    (hsurj : Function.Surjective (Valued.v : F → WithZero (Multiplicative ℤ)))
+    {n : ℕ} {q : Fˣ} (h : (n : ℤ) ∣ WithZero.log (Valued.v (q : F))) :
+    IsPeuRamifiee n q := by
+  obtain ⟨m, hm⟩ := h
+  obtain ⟨x, hx⟩ := hsurj (WithZero.exp m)
+  have hx0 : x ≠ 0 := by
+    rintro rfl
+    rw [map_zero] at hx
+    exact WithZero.exp_ne_zero hx.symm
+  refine ⟨q * (Units.mk0 x hx0 ^ n)⁻¹, Units.mk0 x hx0, ?_, by group⟩
+  have hq0 : Valued.v (q : F) ≠ 0 := (Valuation.ne_zero_iff _).mpr q.ne_zero
+  have hvq : Valued.v (q : F) = WithZero.exp ((n : ℤ) * m) := by
+    rw [← hm, WithZero.exp_log hq0]
+  have hval : ((q * (Units.mk0 x hx0 ^ n)⁻¹ : Fˣ) : F) = (q : F) * (x ^ n)⁻¹ := by
+    push_cast
+    simp
+  rw [hval, map_mul, Valuation.map_inv, map_pow, hx, hvq]
+  rw [← WithZero.exp_nsmul, ← WithZero.exp_neg, ← WithZero.exp_add]
+  simp
+
+/-- **Peu ramifiée at exponent `n` IS the divisibility `n ∣ v(q)`**
+(PROVEN 2026-07-26), for a valuation surjective onto `ℤᵐ⁰`. The two
+implications are `dvd_log_valuation_of_isPeuRamifiee` and
+`isPeuRamifiee_of_dvd_log_valuation`. -/
+theorem isPeuRamifiee_iff_dvd_log_valuation
+    (hsurj : Function.Surjective (Valued.v : F → WithZero (Multiplicative ℤ)))
+    {n : ℕ} {q : Fˣ} :
+    IsPeuRamifiee n q ↔ (n : ℤ) ∣ WithZero.log (Valued.v (q : F)) :=
+  ⟨dvd_log_valuation_of_isPeuRamifiee, isPeuRamifiee_of_dvd_log_valuation hsurj⟩
+
 end PeuRamifiee
 
 include hpodd in
+/-- **Serre's local criterion in VALUATION form: a `pⁿ`-th radical cut
+out by a finite flat `pⁿ`-torsion group scheme over `ℤ_p` has
+`pⁿ ∣ v_p(q)`** (sorry leaf — the LOCAL half of the 2026-07-26 KUMMER CUT
+of `exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`,
+restated in this divisibility form by its second owner the same day;
+Serre, *Sur les représentations modulaires de degré 2 de `Gal(ℚ̄/ℚ)`*,
+Duke Math. J. 54 (1987), §2.8 Prop. 4 and §2.9 Prop. 5(ii), over
+Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102 (1974),
+th. 3.3.3 / cor. 3.4.4, and Fontaine, *Il n'y a pas de variété abélienne
+sur `ℤ`*, Invent. Math. 81 (1985), th. 1).
+
+The narrative statement is in the docstring of the consumer
+`isPeuRamifiee_of_hasFlatProlongationAt_of_natCast_pow_eq_zero` just
+below, which is now PROVEN from this leaf. This is the same assertion
+with the conclusion transported along the PROVEN
+`isPeuRamifiee_iff_dvd_log_valuation`; nothing is weakened.
+
+EQUIVALENT KUMMER FORM, which is how to think about it. Let
+`L = ℚ_p(σ₀)` be the field cut out by `σ₀|_{G_p}` (the fixed field of
+`ker (σ₀.toLocal 𝔭ᵥ)`, a finite Galois extension of `ℚ_p` because the
+flat prolongation forces the point group to be finite). Then `hr`/`hfix`
+say exactly `q ∈ (Lˣ)^{pⁿ} ∩ ℚ_pˣ`, and the conclusion says exactly
+`v_p(x) ∈ ℤ` for every `x ∈ Lˣ` with `x^{pⁿ} ∈ ℚ_pˣ`. So the leaf is:
+
+  `L = ℚ_p(G)` with `G` finite flat over `ℤ_p` killed by `pⁿ`
+   ⟹  `(Lˣ)^{pⁿ} ∩ ℚ_pˣ ⊆ ℤ_pˣ · (ℚ_pˣ)^{pⁿ}`.
+
+RAMIFICATION AUDIT (2026-07-26, second owner; every number below was
+checked against `poldisc` in PARI/GP and each field is monogenic in the
+stated generator, so `v(𝔡) = v(f'(x))`). Write `𝔡` for the different and
+normalise `v_p(p) = 1`. Fontaine's th. 1 reads, for `K/ℚ_p` of absolute
+ramification `e` and `G` killed by `pⁿ`,
+
+  `v_p(𝔡_{K(G)/K}) < e · (n + 1/(p−1))`,   here `e = 1`.
+
+The three families that bracket the criterion:
+
+* `ℚ_p(μ_{p^k})`  (flat, killed by `p^k`):  `v_p(𝔡) = k − 1/(p−1)`.
+  Checked: `v₃(disc Φ₉) = 9`, degree `6`, `9/6 = 2 − 1/2`;
+  `v₃(disc Φ₂₇) = 45`, degree `18`, `45/18 = 3 − 1/2`.
+* `ℚ_p(p^{1/pⁿ})` (the TRÈS RAMIFIÉE radical at `s = 0`):
+  `v_p(𝔡) = n + 1 − p^{−n}`.  Checked: `v₃(disc(x³−3)) = 5`, degree `3`,
+  `5/3 = 2 − 1/3`; `v₃(disc(x⁹−3)) = 26`, degree `9`, `26/9 = 3 − 1/9`.
+* `ℚ_p(u^{1/p})` for a unit `u` (PEU RAMIFIÉE): `v₃(disc(x³−2)) = 3`,
+  degree `3`, so `v₃(𝔡) = 1`.
+
+WHAT FONTAINE'S BOUND DOES GIVE, AND WHERE `hpodd` ENTERS. At `n = 1`
+the bound is SHARP and closes the leaf: `1 + 1 − 1/p ≥ 1 + 1/(p−1)`
+iff `(p−1)² ≥ p` iff `p ≥ 3`, so the très ramifiée radical is excluded
+exactly when `p` is odd; the peu ramifiée `ℚ_3(2^{1/3})` sits at `1`,
+comfortably under the bound `3/2`. At `p = 2` the same computation gives
+`3/2 < 2` and the bound does NOT exclude — which is the numerical shadow
+of Raynaud's `e < p − 1` failing at `2`, and is precisely why `hpodd` is
+a hypothesis rather than a convenience.
+
+WHAT FONTAINE'S BOUND DOES **NOT** GIVE (the honest gap, and the reason
+this leaf is not merely "cite Fontaine"). Suppose `p^s ‖ v_p(q)` with
+`1 ≤ s < n`, so the conclusion fails but `p ∣ v_p(q)` holds. Then the
+radical is much milder than at `s = 0`: for `p = 3`, `n = 2`, `q = 27`
+one has `r = q^{1/9} = 3^{1/3}` and `v₃(𝔡_{ℚ₃(r)/ℚ₃}) = 5/3`, while the
+bound at `n = 2` only asks for `< 2 + 1/2 = 5/2`. So Fontaine's bound
+alone yields `p ∣ v_p(q)` and NOT `pⁿ ∣ v_p(q)`; the extra strength at
+`n ≥ 2` must come from the sharp Raynaud/flat-cohomology computation,
+not from ramification estimates. A future prover who reaches for
+Fontaine's bound at `n ≥ 2` will not close this leaf.
+
+EVIDENCE THAT THE LEAF IS TRUE AT `n ≥ 2` ANYWAY (no counterexample was
+found; two independent special cases were verified by hand). For
+`L = ℚ_p(μ_{pⁿ})` — flat, killed by `pⁿ` — every `x ∈ L` with
+`x^{pⁿ} ∈ ℚ_pˣ` has `v_p(x) ∈ ℤ`: the cocycle `τ ↦ τ(x)/x` lands in
+`μ_{pⁿ}` and `H¹(Gal(L/ℚ_p), μ_{pⁿ}) = H¹((ℤ/pⁿ)ˣ, ℤ/pⁿ(1)) = 0`,
+because for `p` odd that group is cyclic, generated by multiplication by
+a primitive root `g` mod `pⁿ`, and `g − 1` is a unit mod `p`, so
+`σ − 1` is already surjective. Hence the cocycle is a coboundary,
+`x ∈ μ_{pⁿ} · ℚ_pˣ`, and `v_p(x) ∈ ℤ`. (This is a third place where
+`hpodd` is doing real work.) The second case checked is
+`L = ℚ_3(μ_3, 2^{1/3})`, where `Gal = S₃`, `H¹(S₃, μ_3) ≅ ℤ/3` is
+NON-zero, and its nontrivial class is realised by `x = 2^{1/3}` with
+`v₃(2) = 0` — peu ramifiée, as the leaf predicts.
+
+THE PROOF ROUTE, AND THE MACHINERY IT NEEDS. Serre's own argument for
+§2.8 Prop. 4 is the fppf Kummer sequence over `Spec ℤ_p`:
+`0 → μ_{pⁿ} → 𝔾_m → 𝔾_m → 0` gives
+`H¹_fppf(ℤ_p, μ_{pⁿ}) = ℤ_pˣ/(ℤ_pˣ)^{pⁿ}` since `H⁰ = ℤ_pˣ` and
+`H¹_fppf(ℤ_p, 𝔾_m) = Pic ℤ_p = 0`, and the map to
+`H¹(ℚ_p, μ_{pⁿ}) = ℚ_pˣ/(ℚ_pˣ)^{pⁿ}` has image exactly the peu-ramifiée
+classes; Raynaud's full faithfulness at `e = 1 < p − 1` identifies flat
+extension classes with that image. That argument proves the leaf
+whenever the KUMMER module of `q` (the extension of `ℤ/pⁿ` by `μ_{pⁿ}`
+with class `q`) is a `Γ ℚ_p`-subquotient of `W` — which it IS in the
+consumer's application, where `W` is the `pⁿ`-torsion of a Tate curve
+and the Kummer module is `W` itself, but which the hypotheses as stated
+do not supply. IF a later owner cannot close the general "subfield"
+form, the correct repair is to STRENGTHEN this hypothesis (demand that
+the Kummer module of `q` be a subquotient of `W`) rather than to weaken
+the conclusion to `p ∣ v_p(q)` — the latter would break the consumer,
+whose tower argument needs the criterion at arbitrarily large `n`. That
+is a cut-level repair, owned by the cut, and it is flagged here rather
+than made.
+
+MISSING MACHINERY, checked on this pin. mathlib has NO higher
+ramification groups (`Mathlib/RingTheory/Valuation/RamificationGroup.lean`
+is 54 lines: `decompositionSubgroup` and `inertiaSubgroup` only, with an
+explicit `TODO: Define higher ramification groups in lower numbering`),
+no upper numbering and no Herbrand `φ`/`ψ`; it DOES have
+`Ideal.differentIdeal` (`Mathlib/RingTheory/DedekindDomain/Different.lean`),
+which together with the integral-closure/valuation-subring machinery of
+`Fermat/FLT/Deformations/RepresentationTheory/LocalInertiaFixedField.lean`
+is the realistic route to the different form of Fontaine's bound.
+`~/cs/FLT` has nothing here: its only hit for Fontaine/Raynaud/fppf is a
+bibliography line in `FLT/Assumptions/Odlyzko.lean`. -/
+theorem pow_dvd_log_valuation_of_hasFlatProlongationAt_of_natCast_pow_eq_zero
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
+    [Module.Free A W]
+    (σ₀ : GaloisRep ℚ A W) {n : ℕ} (hkill : ((p ^ n : ℕ) : A) = 0)
+    (hflat : σ₀.HasFlatProlongationAt 𝔭ᵥ)
+    (q : (ℚᵖᵥ)ˣ) (r : AlgebraicClosure ℚᵖᵥ)
+    (hr : r ^ p ^ n = algebraMap ℚᵖᵥ (AlgebraicClosure ℚᵖᵥ) (q : ℚᵖᵥ))
+    (hfix : ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
+      σ₀.toLocal 𝔭ᵥ σ = 1 → σ r = r) :
+    ((p ^ n : ℕ) : ℤ) ∣ WithZero.log (Valued.v (q : ℚᵖᵥ)) :=
+  sorry
+
+include hpodd in
 /-- **Serre's local criterion: the points of a finite flat group scheme
-over `ℤ_p` generate only PEU RAMIFIÉE Kummer extensions** (sorry leaf —
+over `ℤ_p` generate only PEU RAMIFIÉE Kummer extensions** (PROVEN
+2026-07-26 over the valuation-form leaf just above —
 the LOCAL half of the 2026-07-26 KUMMER CUT of
 `exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`
 below; Serre, *Sur les représentations modulaires de degré 2 de
@@ -30752,11 +30927,16 @@ of the kernel of `σ₀|_{G_p}` — that is, `ℚ_p(q^{1/pⁿ}) ⊆ ℚ_p(σ₀)
 the field cut out by the representation — then `q` is PEU RAMIFIÉE at
 exponent `pⁿ`.
 
-WHY THIS IS THE RIGHT SHAPE. Fontaine's bound says the upper-numbering
-ramification of `ℚ_p(G)` vanishes above `e(n + 1/(p−1))`, which for
-`e = 1` and `p` odd (`hpodd`; at `p = 2` the range `e = 1 < p − 1`
-closes and one needs Breuil/Fontaine–Laffaille instead) is exactly the
-bound that a très ramifiée `ℚ_p(q^{1/pⁿ})` violates. The EXPONENT and
+WHY THIS IS THE RIGHT SHAPE. Fontaine's bound says the ramification of
+`ℚ_p(G)` is bounded by `e(n + 1/(p−1))`, which for `e = 1` and `p` odd
+(`hpodd`; at `p = 2` the range `e = 1 < p − 1` closes and one needs
+Breuil/Fontaine–Laffaille instead) is exactly the bound that a très
+ramifiée `ℚ_p(q^{1/p})` violates AT `n = 1`. **That last qualification
+is not decoration** — the RAMIFICATION AUDIT of the leaf above computes
+the differents and finds that at `n ≥ 2` Fontaine's bound alone yields
+only `p ∣ v_p(q)`, so the sharp `pⁿ ∣ v_p(q)` needs the Raynaud /
+flat-cohomology input instead. Read that audit before attempting a
+proof from ramification estimates. The EXPONENT and
 the ROOT LEVEL must MATCH: for `E_q` a Tate curve one has
 `ℚ_p(E[pⁿ]) = ℚ_p(μ_{pⁿ}, q^{1/pⁿ})`, killed by `pⁿ`, and the
 criterion `pⁿ ∣ v_p(q)` is stated at that same `n` — which is why
@@ -30771,7 +30951,17 @@ PROVEN `WeierstrassCurve.isFlatAt_of_hasMultiplicativeReduction`.
 Nothing in the statement is a restatement of its consumer: it mentions
 no modular form, no Hecke datum and no coefficient ring of the
 deformation problem, only a Galois module, a flat prolongation and a
-Kummer radical. -/
+Kummer radical.
+
+RESTATED 2026-07-26 by the second owner: the sorry moved one line down,
+to `pow_dvd_log_valuation_of_hasFlatProlongationAt_of_natCast_pow_eq_zero`,
+whose conclusion is the DIVISIBILITY `pⁿ ∣ v_p(q)` in `ℤ` rather than the
+existential `IsPeuRamifiee`. The two are equivalent over `ℚᵖᵥ`
+(`isPeuRamifiee_iff_dvd_log_valuation`, PROVEN, applied through the
+surjectivity of `Valued.v` on an adic completion), and the divisibility
+is the form in which the cited literature actually delivers the result —
+so this declaration is now a THEOREM and the RAMIFICATION AUDIT of the
+leaf below is what a future prover has to discharge. -/
 theorem isPeuRamifiee_of_hasFlatProlongationAt_of_natCast_pow_eq_zero
     {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
     {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W]
@@ -30783,7 +30973,10 @@ theorem isPeuRamifiee_of_hasFlatProlongationAt_of_natCast_pow_eq_zero
     (hfix : ∀ σ : Field.absoluteGaloisGroup ℚᵖᵥ,
       σ₀.toLocal 𝔭ᵥ σ = 1 → σ r = r) :
     IsPeuRamifiee (p ^ n) q :=
-  sorry
+  isPeuRamifiee_of_dvd_log_valuation
+    (IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_surjective ℚ 𝔭ᵥ)
+    (pow_dvd_log_valuation_of_hasFlatProlongationAt_of_natCast_pow_eq_zero
+      hpodd σ₀ hkill hflat q r hr hfix)
 
 include hpodd in
 /-- **The Tate parameter of a `p`-new weight-2 eigensystem**
