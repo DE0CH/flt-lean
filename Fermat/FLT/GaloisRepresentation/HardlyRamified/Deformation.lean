@@ -6104,7 +6104,7 @@ theorem isHardlyRamified_of_subring_entries (hodd : Odd ℓ)
       rw [hent g i j, hg]
       rw [LinearMap.toMatrix'_apply, LinearMap.toMatrix'_apply]
       simp only [Module.End.one_apply]
-      by_cases hij : i = j <;> simp [hij, Pi.single_apply, eq_comm]
+      by_cases hij : i = j <;> simp [hij]
     exact LinearMap.toMatrix'.injective (Matrix.ext hm)
   -- the determinant clause
   have hdetC : ∀ g : Field.absoluteGaloisGroup ℚ,
