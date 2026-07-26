@@ -116,6 +116,24 @@ sorried inputs:
    42, 45, 50, 54, 63, 75` — nor any product of two distinct primes
    outside `{6, 10, 14, 15, 21}` — lies in that list.
 
+*Amended 2026-07-26.*  Shape 3 no longer covers the semiprime family
+directly: `y0HasNoRationalPoint_prod_two_primes` is now PROVEN, and its
+content sits in the two nodes `y0HasNoRationalPoint_prime` (Mazur 1978,
+the only UNIFORM input in the module) and
+`y0HasNoRationalPoint_semiprime_of_mazurPrimes` (Kenku, `61` explicit
+levels).  Two further sorried shapes were introduced by that
+decomposition, both about the degeneracy map `Y_0(N) ⟶ Y_0(M)` for
+`M ∣ N`, and both TRUE:
+
+4. `CyclicSubgroupOfOrder.ofDvd` — the sub-level structure `C[M] ⊆ C`,
+   i.e. the kernel of `[N / M]` on `C`.
+
+5. `liesIn_ofDvd_iff` — that kernel commutes with base change.
+
+The lemma they support, `y0HasNoRationalPoint_of_dvd`, is checked
+against the ground truth by observing that the Mazur–Kenku list is
+DIVISOR-CLOSED; see its docstring.
+
 **Why the interface must pin `Y` down, and does.** A weaker interface —
 say, a smooth projective curve over `ℚ` with a bijection on `ℚ̄`-points
 — would be satisfied by `ℙ¹` for a cheap reason, and then
@@ -577,6 +595,234 @@ theorem false_of_stable_of_y0HasNoRationalPoint {N : ℕ}
   obtain ⟨d⟩ := nonempty_gamma0Datum_of_stable E g hg hstable
   exact (hY Y str M).elim (M.classify (𝟙 SpecQ) d)
 
+/-! ### Functoriality in the level, and the descent along divisors
+
+The twelve level nodes below are twelve *separate* determinations of the
+rational points of a curve of genus `≥ 1`, and nothing about that is
+uniform.  What IS uniform, and is built here, is the degeneracy map
+
+`Y_0(N) ⟶ Y_0(M)` for `M ∣ N`, `(E, C) ↦ (E, C[M])`,
+
+together with its consequence `y0HasNoRationalPoint_of_dvd`.  That single
+lemma is what turns the one *infinite* family among the twelve —
+`y0HasNoRationalPoint_prod_two_primes`, quantified over all pairs of
+distinct primes — into a finite list of levels, by letting Mazur's prime
+theorem be applied to a prime divisor of the level rather than to the
+level itself.  It is stated here, once, rather than reproved inside each
+level node.
+
+**Why it is stated over the coarse space and not over data.**  A rational
+point of `Y_0(N)` need not come from a `Γ₀(N)`-datum over `ℚ` — that is
+exactly what "coarse" costs — so the map on points cannot be defined
+pointwise.  It is obtained instead from the *universal property* of
+`Y_0(N)`: `d ↦ classify_M (d.ofDvd)` is a natural transformation from the
+`Γ₀(N)`-moduli problem to `Y_0(M)`, and initiality produces the morphism
+`u : Y_0(N) ⟶ Y_0(M)` over `ℚ` through which every rational point is
+pushed.  This is the only place in the module where `universal` is used,
+and it is why that field was stated. -/
+
+/-- **The sub-level structure `C[M] ⊆ C` of a cyclic subgroup scheme of
+order `N`, for `M ∣ N`** (sorry node).
+
+TRUE, and it is the kernel of multiplication by `N / M` on `C`: over a
+base where `C` is finite étale with geometric fibres cyclic of order `N`,
+the fibres of that kernel are the unique order-`M` subgroups, so the
+kernel is again finite, closed in `C` — hence closed in `E` — and cyclic
+of order exactly `M` on geometric fibres.
+
+IRREDUCIBLE at this mathlib pin for the same reason as
+`nonempty_gamma0Datum_of_stable`: it needs the kernel of an endomorphism
+of a finite flat group scheme as a *scheme*, i.e. a fibre product, and
+the composite of closed immersions — none of which is packaged for the
+functor-of-points presentation used here.
+
+`hN` excludes `N = 0`.  It is not cosmetic: `N = 0` asks the geometric
+fibres of a scheme FINITE over the base to be infinite cyclic, so
+`CyclicSubgroupOfOrder ab 0` is in fact vacuous — but vacuous for a
+reason (finiteness of `ι ≫ f`) that this development does not have the
+machinery to exploit, and without `hN` the statement would read as the
+false claim that an infinite cyclic group has a subgroup of order `M`. -/
+noncomputable def CyclicSubgroupOfOrder.ofDvd {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {M N : ℕ} (_hN : N ≠ 0) (_hMN : M ∣ N)
+    (_c : CyclicSubgroupOfOrder ab N) : CyclicSubgroupOfOrder ab M :=
+  sorry
+
+/-- **The degeneracy map on `Γ₀`-data, `(E, C) ↦ (E, C[M])` for `M ∣ N`.**
+
+The elliptic scheme is untouched — same total space, same structure
+morphism, same abelian-scheme structure, same relative dimension — and
+only the level structure is cut down by `CyclicSubgroupOfOrder.ofDvd`.
+Writing it this way is what makes `IsBaseChangeOf.ofDvd` below carry the
+*same* `map` and the *same* cartesian square, so that the only thing left
+to check there is the level-structure axiom. -/
+noncomputable def Gamma0Datum.ofDvd {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
+    {T : Scheme.{u}} (d : Gamma0Datum N T) : Gamma0Datum M T where
+  E := d.E
+  f := d.f
+  ab := d.ab
+  relativeDimensionOne := d.relativeDimensionOne
+  cyc := d.cyc.ofDvd hN hMN
+
+/-- **The degeneracy map is compatible with base change, on the level
+structure** (sorry node).
+
+TRUE: `C'[M]` is the kernel of `N / M` on `C'`, `C' = C ×_T T'` as a
+subgroup scheme of `E'` by `hb.liesIn_iff`, and forming the kernel of an
+endomorphism commutes with base change.  So a relative point of `E'` lies
+in `C'[M]` exactly when its image lies in `C[M]`.
+
+This is the *only* axiom of `IsBaseChangeOf` that the degeneracy map does
+not inherit verbatim from `hb`, because the other four mention only data
+that `Gamma0Datum.ofDvd` copies unchanged. -/
+theorem liesIn_ofDvd_iff {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
+    {T' T : Scheme.{u}} {h : T' ⟶ T} {d' : Gamma0Datum N T'}
+    {d : Gamma0Datum N T} (hb : IsBaseChangeOf h d' d)
+    {T'' : Scheme.{u}} {g : T'' ⟶ T'} (x : RelPoint d'.f g) :
+    RelPoint.LiesIn (d'.ofDvd hN hMN).cyc.ι x ↔
+      RelPoint.LiesIn (d.ofDvd hN hMN).cyc.ι
+        (RelPoint.along hb.map hb.isPullback.w x) :=
+  sorry
+
+/-- **A base change of `Γ₀(N)`-data induces a base change of the
+degenerated `Γ₀(M)`-data.**
+
+Four of the five axioms are `hb`'s own, because `Gamma0Datum.ofDvd`
+changes nothing they mention; the fifth is `liesIn_ofDvd_iff`. -/
+noncomputable def IsBaseChangeOf.ofDvd {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
+    {T' T : Scheme.{u}} {h : T' ⟶ T} {d' : Gamma0Datum N T'}
+    {d : Gamma0Datum N T} (hb : IsBaseChangeOf h d' d) :
+    IsBaseChangeOf h (d'.ofDvd hN hMN) (d.ofDvd hN hMN) where
+  map := hb.map
+  isPullback := hb.isPullback
+  map_zero := hb.map_zero
+  map_add := hb.map_add
+  liesIn_iff x := liesIn_ofDvd_iff hN hMN hb x
+
+/-- **Descent along divisors of the level: if `Y_0(M)(ℚ) = ∅` and
+`M ∣ N` then `Y_0(N)(ℚ) = ∅`** (PROVEN).
+
+This is the uniform half of every composite level statement.  The proof
+is the universal property and nothing else: `d ↦ classify_M (d.ofDvd)` is
+a natural transformation from the `Γ₀(N)`-moduli problem to a coarse
+space of the `Γ₀(M)`-problem, so initiality of `Y_0(N)` yields a
+`ℚ`-morphism `u : Y_0(N) ⟶ Y_0(M)`, and composing a rational point of
+`Y_0(N)` with `u` gives one of `Y_0(M)`.
+
+**Sanity check against the ground truth.**  The contrapositive says the
+set of levels with a rational point is closed under divisors, and the
+Mazur–Kenku list `{1, …, 19, 21, 25, 27, 37, 43, 67, 163}` is indeed
+divisor-closed: `27 ↦ 9, 3`; `25 ↦ 5`; `21 ↦ 3, 7`; `18 ↦ 9, 6, 3, 2`;
+`16 ↦ 8, 4, 2`; `12 ↦ 6, 4, 3, 2`, and every proper divisor of a level
+`≤ 19` is `≤ 19`.  The four large primes `37, 43, 67, 163` have no proper
+divisor but `1`.  So this lemma is consistent with the classification,
+which is the check that matters — a level statement that contradicted it
+would be false rather than open. -/
+theorem y0HasNoRationalPoint_of_dvd {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
+    (hM : Y0HasNoRationalPoint M) : Y0HasNoRationalPoint N := by
+  intro Y str hcoarse
+  obtain ⟨Y', str', ⟨cM⟩⟩ := exists_coarseModuliY0 M
+  obtain ⟨u, ⟨hu, -⟩, -⟩ :=
+    hcoarse.universal str' (fun g d => cM.classify g (d.ofDvd hN hMN))
+      (by intro _ _ h _ _ hg _ _ hb; exact cM.classify_natural h hg (hb.ofDvd hN hMN))
+  refine ⟨fun x => (hM Y' str' cM).elim ⟨x.1 ≫ u, ?_⟩⟩
+  rw [Category.assoc, hu, x.2]
+
+/-! ### The prime levels, and the finite residue of the semiprime family -/
+
+/-- **The twelve primes admitting a rational cyclic isogeny of that
+degree**, `{2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`.
+
+These are exactly the primes in the Mazur–Kenku list
+`{1, …, 19, 21, 25, 27, 37, 43, 67, 163}`.  The elliptic-curve-side
+statement carrying the same list is
+`WeierstrassCurve.prime_mem_cyclicIsogenyDegrees` in
+`FreyCurve/MazurTorsion.lean`, which is downstream of this module and so
+cannot be used here. -/
+def mazurIsogenyPrimes : Finset ℕ := {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}
+
+/-- **Mazur's rational isogenies of prime degree, on the modular curve**
+(sorry node): `Y_0(p)(ℚ) = ∅` for every prime `p` outside
+`mazurIsogenyPrimes`.
+
+TRUE — this is Mazur, *Rational isogenies of prime degree*, Invent. Math.
+44 (1978), Theorem 1, in its modular-curve form: `X_0(p)(ℚ)` consists of
+the two cusps for every prime `p ∉ {2, 3, 5, 7, 11, 13, 17, 19, 37, 43,
+67, 163}`.
+
+**This is the statement that makes the semiprime family finite**, via
+`y0HasNoRationalPoint_of_dvd` applied to `p ∣ p * q`; it is the only
+uniform input available, since every other tool here is a per-level
+computation.
+
+Relation to what is already in the tree.  The elliptic-curve phrasing,
+`WeierstrassCurve.prime_mem_cyclicIsogenyDegrees`, is PROVEN in
+`FreyCurve/MazurTorsion.lean` from the single leaf
+`WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree`.  That
+module *imports* this one, so the implication cannot be used in this
+direction, and in any case the modular-curve statement is genuinely
+STRONGER: it rules out rational points of the coarse moduli space, which
+need not be represented by a pair `(E, C)` defined over `ℚ`.  The two
+should be reconciled once the layer below exists — the honest route is to
+prove this node and *derive* the elliptic-curve one from it through
+`false_of_stable_of_y0HasNoRationalPoint`, which is exactly the shape
+`MazurTorsion.lean` already uses for the twelve composite levels.
+
+IRREDUCIBLE at this pin: Mazur's argument is the Eisenstein ideal in the
+Hecke algebra acting on `J_0(p)`, none of which exists here.  See the
+module docstring for the three missing subtrees. -/
+theorem y0HasNoRationalPoint_prime {p : ℕ} (hp : p.Prime)
+    (hmem : p ∉ mazurIsogenyPrimes) : Y0HasNoRationalPoint p :=
+  sorry
+
+/-- **Kenku's semiprime determination, on the residual finite range**
+(sorry node): `Y_0(pq)(ℚ) = ∅` for distinct primes `p, q` BOTH in
+`mazurIsogenyPrimes` with `p * q ∉ {6, 10, 14, 15, 21}`.
+
+TRUE: the semiprimes in the Mazur–Kenku list are exactly `6, 10, 14, 15,
+21`, so every other product of two distinct primes is absent from it.
+
+**This node is finite, and that is the whole point of the decomposition
+above.**  `mazurIsogenyPrimes` has `12` elements, so there are `66`
+unordered pairs; five of them give the excluded products; `61` remain,
+the smallest being `2 · 11 = 22` and the largest `67 · 163 = 10921`.
+Sources: Kenku, Math. Proc. Cambridge Philos. Soc. **85** (1979) 21–23
+(`X_0(35)`, `X_0(39)`); ibid. **87** (1980) 15–20 (`X_0(65)`, `X_0(91)`);
+J. London Math. Soc. (2) **22** (1980) 249–256; ibid. **23** (1981)
+415–427; J. Number Theory **15** (1982) 199–202.
+
+**WHAT THIS NODE STILL NEEDS, and why it is a subtree rather than a
+leaf.**  Every one of the `61` pairs has `X_0(pq)` of genus `≥ 2` —
+already `X_0(22)` has genus `2`, and no semiprime level has genus `1`
+(the genus-`1` levels are `11, 14, 15, 17, 19, 20, 21, 24, 27, 32, 36,
+49`, of which only `14, 15, 21` are semiprimes and all three are
+excluded).  So none of them is an elliptic-curve rank computation, and
+each is settled by one of:
+
+* **rank `0` plus reduction** — `J_0(pq)(ℚ)` finite, Abel–Jacobi
+  `X_0(pq) ↪ J_0(pq)` at a rational cusp, injectivity of reduction at a
+  good prime `ℓ`, and then `#X_0(pq)(ℚ) ≤ #X_0(pq)(𝔽_ℓ) = #cusps`;
+* **Chabauty–Coleman** for the pairs where the rank is positive but
+  below the genus.
+
+Neither is stated as a leaf here, deliberately.  Both are statements
+about `X_0(pq)` — the SMOOTH COMPACTIFICATION, its cusps, its Jacobian,
+and an integral model to reduce along — and this module stops at the
+affine coarse space `Y_0(N)` precisely to keep that out of the critical
+path.  Writing either criterion against `Y_0(N)` alone would have to
+smuggle the point count into a hypothesis, since rank `0` by itself gives
+FINITENESS of `X_0(N)(ℚ)` and never emptiness of `Y_0(N)(ℚ)`; the step
+from finite to empty *is* the cusp count.  A criterion whose hypothesis
+is equivalent to its conclusion would be a false economy, so the honest
+next decomposition is the compactification interface first
+(`X_0(N) ⊇ Y_0(N)` proper smooth, with its rational cusps), then
+`J_0(N)` as an abelian scheme, and only then the two criteria. -/
+theorem y0HasNoRationalPoint_semiprime_of_mazurPrimes {p q : ℕ} (hp : p.Prime)
+    (hq : q.Prime) (hpq : p ≠ q) (hpm : p ∈ mazurIsogenyPrimes)
+    (hqm : q ∈ mazurIsogenyPrimes)
+    (hmem : p * q ∉ ({6, 10, 14, 15, 21} : Finset ℕ)) :
+    Y0HasNoRationalPoint (p * q) :=
+  sorry
+
 /-! ### The twelve levels of Kenku's non-prime-power determination
 
 Each statement below is the level `N` of the Mazur–Kenku classification,
@@ -606,12 +852,34 @@ The statement is uniform but its content is finite: by Mazur's prime
 node both `p` and `q` lie in `{2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67,
 163}`, so `61` of the `66` unordered pairs need excluding — among them
 `X_0(35)` and `X_0(39)` (Kenku 1979), `X_0(65)` and `X_0(91)` (Kenku
-1980).  Already `X_0(22)` has genus `2`. -/
+1980).  Already `X_0(22)` has genus `2`.
+
+PROVEN 2026-07-26, as exactly that reduction from an infinite family to a
+finite one.  The case split is on whether the two prime divisors of the
+level lie in `mazurIsogenyPrimes`:
+
+* if `p` does not, then `Y_0(p)(ℚ) = ∅` by `y0HasNoRationalPoint_prime`,
+  and `p ∣ p * q` carries it up to the level by
+  `y0HasNoRationalPoint_of_dvd` — this is where the infinitude goes;
+* symmetrically for `q`;
+* if both do, the level is one of the `61` residual products and the
+  content is `y0HasNoRationalPoint_semiprime_of_mazurPrimes`.
+
+So the mathematics is relocated onto two nodes — Mazur's prime theorem
+and Kenku's finite check — and the quantifier over all pairs of distinct
+primes is discharged here by the degeneracy map `Y_0(pq) ⟶ Y_0(p)`. -/
 theorem y0HasNoRationalPoint_prod_two_primes {p q : ℕ} (hp : p.Prime)
     (hq : q.Prime) (hpq : p ≠ q)
     (hmem : p * q ∉ ({6, 10, 14, 15, 21} : Finset ℕ)) :
-    Y0HasNoRationalPoint (p * q) :=
-  sorry
+    Y0HasNoRationalPoint (p * q) := by
+  have hN : p * q ≠ 0 := Nat.mul_ne_zero hp.pos.ne' hq.pos.ne'
+  by_cases hpm : p ∈ mazurIsogenyPrimes
+  · by_cases hqm : q ∈ mazurIsogenyPrimes
+    · exact y0HasNoRationalPoint_semiprime_of_mazurPrimes hp hq hpq hpm hqm hmem
+    · exact y0HasNoRationalPoint_of_dvd hN (dvd_mul_left q p)
+        (y0HasNoRationalPoint_prime hq hqm)
+  · exact y0HasNoRationalPoint_of_dvd hN (dvd_mul_right p q)
+      (y0HasNoRationalPoint_prime hp hpm)
 
 /-! #### Reconnaissance for the eleven named levels (2026-07-26)
 
