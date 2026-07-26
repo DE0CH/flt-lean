@@ -74,6 +74,26 @@ local notation3 "𝔪" => IsLocalRing.maximalIdeal
 
 universe u
 
+/-- The standard rank-2 free module `Fin 2 → O` has rank 2.
+
+LAYERING NOTE (2026-07-25). This lemma lives HERE, in the definitional
+base of the `HardlyRamified` cluster, rather than in a consumer, because
+it is the standard way to feed `IsHardlyRamified`'s `hdim` argument and
+is therefore needed by every module that even STATES a hardly-ramified
+condition on `Fin 2 → O`. It formerly had two independent copies —
+`GaloisRepresentation.rank_finTwoFun` in
+`HardlyRamified/Deformation.lean` and
+`GaloisRepresentation.Modularity.rank_finTwoFun` in
+`Modularity/Patching.lean` — and when the Hermite–Minkowski chain was
+lifted out of `Patching.lean` into
+`HardlyRamified/HermiteMinkowski.lean`, the lifted module ended up
+UPSTREAM of both copies and so could reach neither. Both copies were
+deleted in favour of this one; references in
+`namespace GaloisRepresentation.Modularity` resolve outward unchanged. -/
+lemma rank_finTwoFun (O : Type*) [CommRing O] [Nontrivial O] :
+    Module.rank O (Fin 2 → O) = 2 := by
+  simp
+
 /-- Z2bar is the ring of integers of `ℚ_[2]ᵃˡᵍ`. -/
 noncomputable abbrev Z2bar : ValuationSubring (ℚ_[2]ᵃˡᵍ) := Valued.v.valuationSubring
 
