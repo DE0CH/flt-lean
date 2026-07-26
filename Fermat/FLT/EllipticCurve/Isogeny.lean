@@ -6,6 +6,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Fermat.FLT.EllipticCurve.Velu
+-- Only for the `𝔽₅` counterexample in the FALSITY AUDIT of `IsIsogeny.add`.
+public import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Isogenies of elliptic curves as morphisms
@@ -73,12 +75,30 @@ are load-bearing:
 * `WeierstrassCurve.Isogeny.dualHom` / `dual` — the dual isogeny, with
   `Isogeny.dualHom_comp` giving `ψ̂ ∘ ψ = [deg ψ]`.
 
+## `IsIsogeny` is only usable over an algebraically closed base
+
+`IsIsogeny.add` was FALSE as originally cut, and `endSubring` therefore did not
+define a subring. The refutation is machine-checked in
+`WeierstrassCurve.NotIsIsogenyAdd` and written out in the FALSITY AUDIT next to
+`IsIsogeny.add`; in one line, `IsIsogeny.id` holds over every field, so the
+unconditional `IsIsogeny.add` asserts that `[2] = id + id` is surjective on
+`W(F)`, which fails already for `y² = x³ - x` over `𝔽₅`.
+
+`IsIsogeny.add`, `endSubring`, `End` and the `End.*` API therefore carry
+`[IsAlgClosed F]`, matching `nsmul_surjective`, `finite_nsmulKer` and
+`Isogeny.dual`, which always did. All consumers work over `AlgebraicClosure ℚ`,
+so nothing downstream changes. `IsIsogeny.zero`, `.id`, `.neg` and `.comp` remain
+unconditional and remain proven.
+
 ## Open leaves left by this file
 
-`IsRationalMap.comp`, `IsRationalMap.add`, `IsIsogeny.add`, `nsmul_surjective`,
-`finite_nsmulKer`, `Isogeny.isRationalMap_dualHom`, `Isogeny.degree_comp`.
+`IsRationalMap.comp`, `IsRationalMap.add`, `IsRationalMap.isIsogeny`,
+`nsmul_surjective`, `finite_nsmulKer`, `Isogeny.isRationalMap_dualHom`,
+`Isogeny.degree_comp`.
 
-`IsRationalMap.neg` was on this list and is now PROVEN.
+`IsRationalMap.neg` was on this list and is now PROVEN. `IsIsogeny.add` was on
+this list; it is now PROVEN from `IsRationalMap.add` and `IsRationalMap.isIsogeny`
+after being refuted and restated.
 -/
 
 
@@ -213,15 +233,149 @@ theorem IsIsogeny.neg {φ : W.Point →+ W'.Point} (h : IsIsogeny φ) : IsIsogen
       ext P; simp [AddMonoidHom.mem_ker]
     rw [hker]; exact h.finite_ker hφ
 
-/-- **LEAF.** The pointwise sum of two isogenies is an isogeny.
+/-! ### FALSITY AUDIT: `IsIsogeny.add` was FALSE, and is repaired here
 
-The rational half is `IsRationalMap.add`; the remaining two fields are the
-geometric content — a nonzero sum of isogenies is again surjective with finite
-kernel, which is not formal, and is exactly the statement that `Hom(W, W')` is a
-group under addition in the category of curves. -/
-theorem IsIsogeny.add {φ ψ : W.Point →+ W'.Point}
-    (hφ : IsIsogeny φ) (hψ : IsIsogeny ψ) : IsIsogeny (φ + ψ) :=
+**Refuted 2026-07-26 by the machine-checked counterexample below; the axiom audit
+of `NotIsIsogenyAdd.isIsogeny_add_is_false` is `[propext, Classical.choice,
+Quot.sound]`, so this is a genuine refutation and not a vacuous one.**
+
+The statement as originally cut carried no hypothesis on `F`:
+
+  `theorem IsIsogeny.add {φ ψ : W.Point →+ W'.Point}`
+  `    (hφ : IsIsogeny φ) (hψ : IsIsogeny ψ) : IsIsogeny (φ + ψ)`
+
+Instantiate it at `φ = ψ = AddMonoidHom.id`. That *is* an isogeny over **every**
+field — `IsIsogeny.id` is proven unconditionally, because the identity is rational,
+surjective, and has kernel `{0}` — so the conclusion asserts that
+`[2] : W(F) → W(F)` is surjective whenever it is nonzero, i.e. that `W(F)` is
+2-divisible. That is false for most curves over most fields: `E(ℚ)` of positive
+rank is the familiar instance, and a finite field gives the cheapest formalisable
+one.
+
+Take `W₅ : y² = x³ - x` over `𝔽₅`, whose group of points is `ℤ/2 × ℤ/4`:
+
+* `T = (0,0)` has `y = W₅.negY x y`, so `T + T = 0` while `T ≠ 0`;
+* `P = (2,1)` has `y ≠ W₅.negY x y`, so `P + P ≠ 0`, hence `[2] ≠ 0`.
+
+`W₅(𝔽₅)` is finite (via `Affine.nonsingularPointEquiv`), so `[2]` — not injective,
+because it kills both `0` and `T` — cannot be surjective either.
+
+**Why it is false, in one line.** Surjectivity *on `F`-points* is not a property of
+a morphism of curves at all; it is a property of the base field. The file already
+knows this: `nsmul_surjective` carries `[IsAlgClosed F]` for exactly this reason,
+and `[2]` is the very map that leaf is about. `IsIsogeny.add` simply failed to
+carry the same hypothesis.
+
+**The repair, below.** `IsIsogeny.add` is restated with `[IsAlgClosed F]` and is
+then a theorem, proven from `IsRationalMap.add` together with one new leaf,
+`IsRationalMap.isIsogeny`, which isolates the honest geometric content: over an
+algebraically closed field the `surjective` and `finite_ker` fields of `IsIsogeny`
+are automatic.
+
+**Consequence for consumers.** `endSubring` — and hence `End W`,
+`End.sq_eq_intCast_iff`, `End.toIsogeny` — inherit `[IsAlgClosed F]`. Every
+existing consumer (`MazurTorsion.lean`'s Atkin–Lehner leaves at levels 125 and
+169) already works over `AlgebraicClosure ℚ`, so nothing downstream is lost.
+`IsIsogeny.zero`, `IsIsogeny.id`, `IsIsogeny.neg` and `IsIsogeny.comp` are
+untouched: each is true over an arbitrary field, and each is proven.
+-/
+
+namespace NotIsIsogenyAdd
+
+local instance : Fact (Nat.Prime 5) := ⟨Nat.prime_five⟩
+
+/-- `y² = x³ - x` over `𝔽₅`. Its group of points is `ℤ/2 × ℤ/4`. -/
+def W₅ : Affine (ZMod 5) := ⟨0, 0, 0, -1, 0⟩
+
+theorem nonsingular_zero_zero : W₅.Nonsingular 0 0 := by
+  rw [Affine.nonsingular_iff, Affine.equation_iff]
+  exact ⟨by decide, Or.inl (by decide)⟩
+
+theorem nonsingular_two_one : W₅.Nonsingular 2 1 := by
+  rw [Affine.nonsingular_iff, Affine.equation_iff]
+  exact ⟨by decide, Or.inr (by decide)⟩
+
+/-- The 2-torsion point `(0,0)`. -/
+def T : W₅.Point := Affine.Point.some 0 0 nonsingular_zero_zero
+
+/-- A point of order 4, witnessing that `[2] ≠ 0`. -/
+def P : W₅.Point := Affine.Point.some 2 1 nonsingular_two_one
+
+theorem T_ne_zero : T ≠ 0 := Affine.Point.some_ne_zero _
+
+theorem T_add_T : T + T = 0 :=
+  Affine.Point.add_self_of_Y_eq (h₁ := nonsingular_zero_zero)
+    (show (0 : ZMod 5) = W₅.negY 0 0 by decide)
+
+theorem P_add_P_ne_zero : P + P ≠ 0 := by
+  rw [show P + P = _ from Affine.Point.add_self_of_Y_ne (h₁ := nonsingular_two_one)
+    (show (1 : ZMod 5) ≠ W₅.negY 2 1 by decide)]
+  exact Affine.Point.some_ne_zero _
+
+/-- Doubling on `W₅(𝔽₅)` is not an isogeny: it is nonzero, but on a finite group it
+is not injective, hence not surjective. -/
+theorem not_isIsogeny_add :
+    ¬ IsIsogeny (AddMonoidHom.id W₅.Point + AddMonoidHom.id W₅.Point) := by
+  intro h
+  haveI : Finite W₅.Point := by
+    haveI : Finite (WithZero {xy : ZMod 5 × ZMod 5 // W₅.Nonsingular xy.1 xy.2}) :=
+      inferInstanceAs (Finite (Option _))
+    exact Finite.of_equiv _ (Affine.nonsingularPointEquiv W₅).symm
+  have happ : ∀ Q : W₅.Point,
+      (AddMonoidHom.id W₅.Point + AddMonoidHom.id W₅.Point) Q = Q + Q := fun Q => rfl
+  have hne : AddMonoidHom.id W₅.Point + AddMonoidHom.id W₅.Point ≠ 0 := by
+    intro hc
+    have hc' := congrArg (fun f : W₅.Point →+ W₅.Point => f P) hc
+    simp only [AddMonoidHom.zero_apply, happ] at hc'
+    exact P_add_P_ne_zero hc'
+  have hinj : Function.Injective (AddMonoidHom.id W₅.Point + AddMonoidHom.id W₅.Point) :=
+    (Finite.injective_iff_surjective
+      (f := fun Q => (AddMonoidHom.id W₅.Point + AddMonoidHom.id W₅.Point) Q)).2
+      (h.surjective hne)
+  exact T_ne_zero (hinj (by simp only [happ, T_add_T, add_zero]))
+
+/-- **The refutation, assembled.** Both hypotheses of the original `IsIsogeny.add`
+are discharged by `IsIsogeny.id`, so the unconditional statement is false. -/
+theorem isIsogeny_add_is_false :
+    ¬ ∀ {F : Type} [Field F] [DecidableEq F] {W W' : Affine F}
+        {φ ψ : W.Point →+ W'.Point}, IsIsogeny φ → IsIsogeny ψ → IsIsogeny (φ + ψ) :=
+  fun h => not_isIsogeny_add (h IsIsogeny.id IsIsogeny.id)
+
+end NotIsIsogenyAdd
+
+/-- **LEAF.** Over an **algebraically closed** field, a homomorphism of point groups
+that is given by rational functions in the coordinates already **is** an isogeny:
+the `surjective` and `finite_ker` fields of `IsIsogeny` come for free there.
+
+This is the honest geometric content that the unconditional `IsIsogeny.add`
+silently assumed, and the FALSITY AUDIT above is the proof that it cannot be
+dropped.
+
+The mathematics. A nonzero homomorphism `φ` is a nonconstant morphism of curves, so
+each fibre is finite — in particular `ker φ` is. Its image is then a subgroup of
+`W'(F)` of finite index in no proper way: over an algebraically closed field
+`W'(F)` is divisible, and a divisible group has no proper subgroup of finite index,
+while a nonconstant morphism of complete curves has closed, cofinite image. Hence
+`φ` is surjective.
+
+Relation to the other geometric leaves of this file: this statement SUBSUMES
+`nsmul_surjective`, and the `n`-torsion half of `finite_nsmulKer`, as soon as
+`mulByHom W n` is known to be rational (division polynomials). Those two leaves
+have a separate owner and are deliberately left in place; consolidating them is a
+cut-level decision, not one to make here. -/
+theorem IsRationalMap.isIsogeny [IsAlgClosed F] {φ : W.Point →+ W'.Point}
+    (h : IsRationalMap φ) : IsIsogeny φ :=
   sorry
+
+/-- The pointwise sum of two isogenies over an **algebraically closed** field is an
+isogeny — this is the statement that `Hom(W, W')` is a group under addition in the
+category of curves.
+
+`[IsAlgClosed F]` is NOT removable: see the FALSITY AUDIT above, where dropping it
+makes the statement false already for `φ = ψ = id` over `𝔽₅`. -/
+theorem IsIsogeny.add [IsAlgClosed F] {φ ψ : W.Point →+ W'.Point}
+    (hφ : IsIsogeny φ) (hψ : IsIsogeny ψ) : IsIsogeny (φ + ψ) :=
+  (hφ.isRationalMap.add hψ.isRationalMap).isIsogeny
 
 /-- The composite of two isogenies is an isogeny. -/
 theorem IsIsogeny.comp {φ : W.Point →+ W'.Point} {ψ : W'.Point →+ W''.Point}
@@ -381,8 +535,13 @@ The `Ring` structure is inherited, and it is the *right* one: multiplication is
 composition and, crucially, `((n : ℤ) : End W)` is multiplication by `n` on points
 **definitionally** (`End.intCast_apply` below is `rfl`). So `ψ * ψ = -125` in
 `End W` says exactly `ψ (ψ P) = -125 • P` for all `P`, with `ψ` an honest
-morphism. -/
-def endSubring (W : Affine F) : Subring (AddMonoid.End W.Point) where
+morphism.
+
+`[IsAlgClosed F]` is inherited from `IsIsogeny.add`, which is FALSE without it —
+see the FALSITY AUDIT above. Over a general field the isogenies among the
+endomorphisms of `W.Point` are **not** closed under addition, so there is no such
+subring; `[2] = id + id` on `W₅(𝔽₅)` is an explicit failure of `add_mem'`. -/
+def endSubring [IsAlgClosed F] (W : Affine F) : Subring (AddMonoid.End W.Point) where
   carrier := {f | IsIsogeny (f : W.Point →+ W.Point)}
   zero_mem' := IsIsogeny.zero
   one_mem' := IsIsogeny.id
@@ -391,19 +550,19 @@ def endSubring (W : Affine F) : Subring (AddMonoid.End W.Point) where
   mul_mem' hf hg := IsIsogeny.comp hg hf
 
 /-- `End W`, the endomorphism ring of `W`. -/
-abbrev End (W : Affine F) : Type _ := ↥(endSubring W)
+abbrev End [IsAlgClosed F] (W : Affine F) : Type _ := ↥(endSubring W)
 
 /-- **The soundness lemma of this file.** In `End W` the integer `n` acts as
 multiplication by `n` on points — definitionally. Together with `IsRationalMap`
 inside `IsIsogeny`, this is what makes `ψ * ψ = (-125 : End W)` a statement about
 complex multiplication rather than about `M₂(Ẑ)`. -/
-@[simp] theorem End.intCast_apply (n : ℤ) (P : W.Point) :
+@[simp] theorem End.intCast_apply [IsAlgClosed F] (n : ℤ) (P : W.Point) :
     ((n : End W) : AddMonoid.End W.Point) P = n • P := rfl
 
-@[simp] theorem End.natCast_apply (n : ℕ) (P : W.Point) :
+@[simp] theorem End.natCast_apply [IsAlgClosed F] (n : ℕ) (P : W.Point) :
     ((n : End W) : AddMonoid.End W.Point) P = n • P := rfl
 
-@[simp] theorem End.mul_apply (f g : End W) (P : W.Point) :
+@[simp] theorem End.mul_apply [IsAlgClosed F] (f g : End W) (P : W.Point) :
     ((f * g : End W) : AddMonoid.End W.Point) P
       = (f : AddMonoid.End W.Point) ((g : AddMonoid.End W.Point) P) := rfl
 
@@ -414,7 +573,7 @@ in the endomorphism ring says exactly that `ψ` applied twice is multiplication 
 This is the lemma the `X_0(N)` descent leaves use: `ψ * ψ = (-125 : End W)` unfolds
 to `ψ (ψ P) = -125 • P` for every `P`, with `ψ` carrying its `IsIsogeny` witness —
 so the condition is about an actual morphism, not about `M₂(Ẑ)`. -/
-theorem End.sq_eq_intCast_iff (ψ : End W) (n : ℤ) :
+theorem End.sq_eq_intCast_iff [IsAlgClosed F] (ψ : End W) (n : ℤ) :
     ψ * ψ = (n : End W) ↔ ∀ P : W.Point,
       (ψ : AddMonoid.End W.Point) ((ψ : AddMonoid.End W.Point) P) = n • P := by
   constructor
@@ -427,9 +586,9 @@ theorem End.sq_eq_intCast_iff (ψ : End W) (n : ℤ) :
 
 /-- Every element of `End W` is an isogeny, so the endomorphism ring maps into the
 type of isogenies. -/
-def End.toIsogeny (f : End W) : Isogeny W W := ⟨(f : AddMonoid.End W.Point), f.2⟩
+def End.toIsogeny [IsAlgClosed F] (f : End W) : Isogeny W W := ⟨(f : AddMonoid.End W.Point), f.2⟩
 
-@[simp] theorem End.toIsogeny_toHom (f : End W) :
+@[simp] theorem End.toIsogeny_toHom [IsAlgClosed F] (f : End W) :
     (End.toIsogeny f).toHom = (f : AddMonoid.End W.Point) := rfl
 
 /-! ### The two geometric inputs -/
