@@ -25,6 +25,12 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.CompletionInvariance
 -- absorption, and adic completeness of `adicCompletionIntegers`),
 -- consumed by `exists_connected_counit_idempotent_at_three`.
 import Fermat.FLT.GroupScheme.ConnectedEtale
+-- Fontaine's translation isomorphism for a commutative Hopf algebra
+-- (the shear automorphism `θ (a ⊗ b) = (a ⊗ 1)·Δb` of `G ⊗ G`, its
+-- antipode-built inverse, and the resulting `G`-linear identification
+-- of `Ω[G⁄R]` with the conormal module of the augmentation), consumed
+-- by `exists_kaehler_linearEquiv_baseChange_of_hopf_package`.
+public import Fermat.FLT.GroupScheme.HopfKaehler
 -- The PROVEN Gelfand-duality separation lemma for finite étale algebras
 -- (`eq_zero_of_forall_algHom_eq_zero`: the geometric points of a finite
 -- étale algebra over a field separate its elements), consumed by the
@@ -12202,8 +12208,9 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **Fontaine's translation isomorphism for a finite flat Hopf order**
-(SORRY LEAF, cut 2026-07-26 out of `isFontaineAlgebra_of_hopf_package`,
-which is now PROVEN over this leaf and its sibling
+(**PROVEN 2026-07-26**, over the general Hopf-algebra development in
+`Fermat/FLT/GroupScheme/HopfKaehler.lean`; cut 2026-07-26 out of
+`isFontaineAlgebra_of_hopf_package`, which is PROVEN over this and its sibling
 `subsingleton_h1Cotangent_of_hopf_package`): the module of Kähler
 differentials of a finite flat Hopf order `G` over `𝒪₃ᵥ` is EXTENDED
 FROM THE BASE — there is an `𝒪₃ᵥ`-module `M` and a `G`-linear
@@ -12239,14 +12246,36 @@ hold anyway: the statement says `Ω¹` is INDUCED from the base, which is
 false for a general finite flat `𝒪₃ᵥ`-algebra — it is the group
 structure that makes differentials translation-invariant.  `hkill` is
 deliberately absent, since translation-invariance holds for every group
-scheme whether or not it is killed by `3`. -/
+scheme whether or not it is killed by `3`.
+
+HOW IT IS PROVEN, and what the general form needs.  The proof is
+`FontaineTranslation.exists_kaehler_equiv_baseChange_of_hopf`, stated for an
+ARBITRARY commutative Hopf algebra `G` over an arbitrary commutative ring `R`
+with `G` flat over `R`, and instantiated here at `R = 𝒪₃ᵥ`.  So **neither
+`Module.Finite 𝒪₃ᵥ G` nor the étaleness of the generic fibre is used**; both
+binders survive only because they are part of the leaf's signature as cut.
+The witness is `M = ω_G = (ker ε).Cotangent`, exactly the co-Lie module the
+route paragraph above names.
+
+The Hopf-theoretic content — the shear automorphism `θ (a ⊗ b) = (a ⊗ 1)·Δb`
+of `G ⊗ G`, its inverse `θ' (a ⊗ b) = (a ⊗ 1)·Σ S(b₁) ⊗ b₂` built from the
+antipode, the identity `p ∘ θ = μ` carrying the multiplication onto the
+augmentation, and the resulting `G`-linear
+`Ω[G⁄R] ≃ₗ[G] (ker p).Cotangent` — is all PROVEN there, by computations in
+the convolution GROUP `WithConv (G →ₐ[R] G ⊗[R] G)` rather than in Sweedler
+notation.  The remaining commutative-algebra step — the conormal module of a
+base-changed augmentation is the base change of the conormal module — turned
+out to be IN MATHLIB already, as `Ideal.tensorCotangentEquiv`
+(`Mathlib/RingTheory/Ideal/CotangentBaseChange.lean`), so
+`FontaineTranslation.cotangent_ker_augOf_equiv` is proven from it in three
+lines and the whole module is sorry-free. -/
 theorem exists_kaehler_linearEquiv_baseChange_of_hopf_package
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
     [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
     [Algebra.Etale ℚ₃ᵥ (ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)] :
     ∃ (M : Type) (_ : AddCommGroup M) (_ : Module 𝒪₃ᵥ M),
       Nonempty (Ω[G⁄𝒪₃ᵥ] ≃ₗ[G] G ⊗[𝒪₃ᵥ] M) :=
-  sorry
+  _root_.FontaineTranslation.exists_kaehler_equiv_baseChange_of_hopf 𝒪₃ᵥ G
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -12282,7 +12311,31 @@ the exact sequences around it ARE present
 `Algebra.FormallySmooth.subsingleton_h1Cotangent` — which does NOT apply
 here, since `G` is finite flat over `𝒪₃ᵥ` and NOT smooth (already
 `G = μ₃ = 𝒪₃ᵥ[x]/(x³-1)` is not).  `hkill` is absent because LCI is a
-property of the underlying scheme, independent of the exponent. -/
+property of the underlying scheme, independent of the exponent.
+
+RE-CHECKED 2026-07-26 (the audit above is accurate; two additions).
+
+*The concrete handle at this pin.*  `Algebra.Smooth.Basic` has
+`Algebra.Smooth.kerCotangentToTensor_injective_iff`:
+for a surjection `P ↠ A`, `Subsingleton (Algebra.H1Cotangent R A)` is
+EQUIVALENT to injectivity of `KaehlerDifferential.kerCotangentToTensor R P A`.
+So the goal is not to build a `CompleteIntersection` predicate (there is none —
+`grep -rl "CompleteIntersection" Mathlib/` returns nothing) but to CHOOSE a
+presentation `P = 𝒪₃ᵥ[x₁..xₙ] ↠ G` and prove that one map injective.  A
+successor should start there rather than from the Koszul-complex formulation.
+
+*What is genuinely missing is the structure theory, not the homological
+algebra.*  The classical proof reduces LCI to the SPECIAL fibre — a finite flat
+algebra over a DVR is LCI iff its closed fibre is, by the relative-complete-
+intersection criterion — and over the perfect field `𝔽₃` the connected part of a
+finite commutative group scheme is `k[x₁..xₙ]/(x₁^{p^{e₁}},…,xₙ^{p^{eₙ}})` AS AN
+ALGEBRA (Demazure–Gabriel), which is visibly a complete intersection.  Neither
+half is in mathlib.  The connected–étale splitting this needs is partly
+available already: `Fermat/FLT/GroupScheme/ConnectedEtale.lean` proves the
+connected counit-idempotent package over a complete Noetherian local base.
+The check that would refute this route: if the closed fibre of `G` were not
+of that shape, i.e. if `Bialgebra.exists_connected_counit_idempotent` did not
+apply at `𝒪₃ᵥ`, the reduction to the special fibre buys nothing. -/
 theorem subsingleton_h1Cotangent_of_hopf_package
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
     [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
@@ -12339,7 +12392,13 @@ and the connecting algebra of half (2) is done.  The cut is:
 * `subsingleton_h1Cotangent_of_hopf_package` — half (1), LCI, the
   substantial one, still fully open;
 * `exists_kaehler_linearEquiv_baseChange_of_hopf_package` — the
-  TRANSLATION ISOMORPHISM alone, i.e. `Ω¹` is extended from the base;
+  TRANSLATION ISOMORPHISM alone, i.e. `Ω¹` is extended from the base.
+  **PROVEN 2026-07-26** from the general Hopf-algebra development in
+  `Fermat/FLT/GroupScheme/HopfKaehler.lean`, which is itself sorry-free:
+  the shear automorphism of `G ⊗ G` and its antipode-built inverse are
+  proven there, and the residual commutative algebra was already in
+  mathlib as `Ideal.tensorCotangentEquiv`.  Do NOT dispatch any task at
+  this node any more;
 * `free_baseChange_kaehler_of_linearEquiv` — PROVEN here: half (2)
   follows from the translation isomorphism by pure algebra.
 
