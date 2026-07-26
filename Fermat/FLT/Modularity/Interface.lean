@@ -2419,11 +2419,75 @@ theorem heckeEndo_mem_heckeSubring (N : ℕ) {q : ℕ} (hq : q.Prime) :
     heckeEndo N q ∈ heckeSubring N :=
   Subring.subset_closure ⟨q, hq, rfl⟩
 
-/-- **The Hecke algebra is a finite `ℤ`-module** (sorry node — THE
+/-- **A Hecke-stable `ℤ`-lattice of full rank** (sorry node — THE
 arithmetic input behind the integral structure of `S₂(Γ₀(N))`, isolated
-2026-07-25 as the single classical citation carrying bounded
-denominators): `𝕋 = ℤ[T_q : q prime] ⊆ End_ℂ(S₂(Γ₀(N)))` is finitely
-generated as a `ℤ`-module.
+2026-07-26 as the residue of `heckeSubring_moduleFinite` after all of
+the module theory in that node was discharged): there is a finitely
+generated `ℤ`-submodule `L ⊆ S₂(Γ₀(N))` which is stable under every
+Hecke operator `T_q` and which spans `S₂(Γ₀(N))` over `ℂ`.
+
+This is the classical "`𝕋`-stable `ℤ`-lattice of full rank" — the
+object every textbook proof of the finiteness of the Hecke algebra
+actually constructs (Diamond–Shurman §6.5 and Exercise 6.5.4; Ribet,
+*Mod p Hecke operators and congruences* §2; Darmon–Diamond–Taylor §1.6).
+Two standard constructions, both unavailable on this pin:
+
+* `L = S₂(Γ₀(N); ℤ)`, the forms with `ℤ`-coefficient `q`-expansion,
+  through the `q`-expansion principle of Katz and Deligne–Rapoport on
+  the INTEGRAL model `X₀(N)/ℤ`;
+* `L` the preimage of `H¹(X₀(N), ℤ)` under Eichler–Shimura.
+
+WHAT IS ALREADY PROVEN HERE, so that a prover of this leaf need not
+redo it (see `heckeSubring_moduleFinite` below): given `L`, the whole
+passage to `Module.Finite ℤ 𝕋` is formal — `𝕋` preserves `L` because
+`{T | T '' L ⊆ L}` is a subring containing the generators, restriction
+to a finite generating set of `L` embeds `𝕋` into a finite product of
+copies of `L`, and that embedding is injective because a `ℂ`-linear
+endomorphism killing `L` kills `span_ℂ L = ⊤`. `ℤ` is noetherian, so
+`𝕋` is finite.
+
+WHICH CONJUNCTS ARE LOAD-BEARING, and how much slack there is.
+* `L.FG` and the `ℂ`-spanning are both essential: without finite
+  generation the target is false for `L = ⊤`-like choices, and without
+  full rank the restriction map has a kernel.
+* The consuming proof uses `Submodule.span ℂ ↑L = ⊤` ONLY to get
+  FAITHFULNESS of the `𝕋`-action on `L`, so the leaf could be weakened
+  to `∀ T ∈ heckeSubring N, (∀ f ∈ L, T f = 0) → T = 0`. Spanning is
+  stated instead because it is what every classical construction
+  produces, it is the recognizable form of the citation, and it is
+  strictly easier to supply.
+* Hecke stability is stated only at the GENERATORS `T_q`; stability
+  under all of `𝕋` is derived below, not assumed.
+
+NOT CIRCULAR with the integral-structure theorems downstream. Both
+`exists_qExpansion_denominator` and `exists_integral_qExpansion_spanning`
+are CONSUMERS of `heckeSubring_moduleFinite`, hence of this leaf, so
+neither may be used to discharge it; the citation must come from the
+integral model directly. The shortest concrete route on top of what
+this file already proves is `L = S₂(Γ₀(N); ℤ)`: that submodule is
+automatically `T_q`-stable by the coefficient formula `qCoeff_heckeEndo`
+(a `ℤ`-combination of coefficients of `f`), and automatically finitely
+generated because the Sturm bound `exists_cuspForm_sturm_bound` embeds
+it into `ℤ^B`. So for that choice of `L` the ONLY unproven conjunct is
+the `ℂ`-spanning, i.e. exactly the `q`-expansion principle.
+
+SOUNDNESS: the hypothesis `0 < N` is required and is not cosmetic — it
+is what makes `heckeEndo` the genuine slash-sum rather than its junk
+value, and the level-`0` case of the consumer is handled separately
+there. At genus-zero levels `S₂(Γ₀(N)) = 0` and `L = ⊥` witnesses the
+statement. -/
+theorem exists_heckeStable_lattice {N : ℕ} (hN : 0 < N) :
+    ∃ L : Submodule ℤ (CuspForm (Gamma0GL N) 2),
+      L.FG ∧
+      (∀ q : ℕ, q.Prime → ∀ f ∈ L, heckeEndo N q f ∈ L) ∧
+      Submodule.span ℂ (L : Set (CuspForm (Gamma0GL N) 2)) = ⊤ :=
+  sorry
+
+/-- **The Hecke algebra is a finite `ℤ`-module** (PROVEN assembly,
+2026-07-26, over the single arithmetic leaf `exists_heckeStable_lattice`
+above; formerly itself THE citation, isolated 2026-07-25 as the carrier
+of bounded denominators): `𝕋 = ℤ[T_q : q prime] ⊆ End_ℂ(S₂(Γ₀(N)))` is
+finitely generated as a `ℤ`-module.
 
 This is the standard finiteness of the Hecke algebra (Diamond–Shurman
 §6.5 and Exercise 6.5.4; Ribet, *Mod p Hecke operators and congruences*
@@ -2433,7 +2497,28 @@ either `H¹(X₀(N), ℤ)` through Eichler–Shimura, or `S₂(Γ₀(N); ℤ)`
 through the `q`-expansion principle on the integral model `X₀(N)/ℤ`
 (Katz, Deligne–Rapoport) — whence `𝕋 ↪ End_ℤ(L) ≅ M_r(ℤ)`, a finite
 `ℤ`-module, and `𝕋` is a `ℤ`-submodule of it with `ℤ` noetherian.
-Neither integral models nor Eichler–Shimura exist on this pin.
+Neither integral models nor Eichler–Shimura exist on this pin — but
+that is now needed ONLY for the lattice itself: the passage from the
+lattice to this statement is the formal argument written out below,
+and the lattice is the leaf `exists_heckeStable_lattice`.
+
+ASSEMBLY (2026-07-26, this node's owner). Level `0` first: there
+`heckeEndo 0 q` is the junk value `0` for every `q`, so `𝕋 = ⊥` is the
+prime subring, the image of `ℤ →ₗ[ℤ] ⊥`, `n ↦ n·1`, hence finite. For
+`0 < N` take the lattice `L` of the leaf with a finite generating set
+`s`. (i) `{T | ∀ f ∈ L, T f ∈ L}` is a SUBRING of `End_ℂ(S₂)`, and it
+contains every `T_q` by the leaf's stability clause, so it contains all
+of `𝕋 = Subring.closure {T_q}` — stability at the generators upgrades
+to stability under the whole algebra with no computation. (ii) Hence
+restriction to `s` is a `ℤ`-linear map `ρ : 𝕋 →ₗ[ℤ] (s → L)`. (iii) `ρ`
+is INJECTIVE: if `T` kills every generator then it kills `span_ℤ s = L`
+by `Submodule.span_induction`, so `L ⊆ ker T`; `ker T` is a
+`ℂ`-submodule and `span_ℂ L = ⊤`, so `ker T = ⊤` and `T = 0`. (iv) `L`
+is finitely generated over the noetherian ring `ℤ`, so it is a
+noetherian `ℤ`-module, so is the finite product `s → L`, so — by (iii)
+and `isNoetherian_of_injective` — is `𝕋`. Note where the two clauses of
+the leaf enter: finite generation of `L` in (iv), full rank in (iii),
+and NOWHERE else.
 
 WHY THIS IS THE RIGHT CUT (2026-07-25). It replaces the former citation
 `exists_qExpansion_denominator` (bounded denominators), now PROVEN from
@@ -2472,11 +2557,101 @@ WHY NOTHING WEAKER SUFFICES (audit, 2026-07-25).
 
 SOUNDNESS: no hypothesis on `N` is needed. For `N = 0` the operators
 `heckeEndo 0 q` are all the junk value `0`, so `𝕋` is the prime subring
-`ℤ·1`, finite over `ℤ`; for `N ≥ 1` it is the classical statement, and
-at genus-zero levels `End_ℂ(S₂) = 0` makes it trivial. -/
+`ℤ·1`, finite over `ℤ` (this case is discharged outright below, without
+the leaf); for `N ≥ 1` it is the classical statement, and at genus-zero
+levels `End_ℂ(S₂) = 0` makes it trivial. -/
 theorem heckeSubring_moduleFinite (N : ℕ) :
-    Module.Finite ℤ (heckeSubring N) :=
-  sorry
+    Module.Finite ℤ (heckeSubring N) := by
+  classical
+  rcases Nat.eq_zero_or_pos N with rfl | hN
+  · -- Level `0`: every `heckeEndo 0 q` is the junk value `0`, so `𝕋 = ℤ·1`.
+    have hz : ∀ q : ℕ, heckeEndo 0 q = 0 := by
+      intro q
+      rw [heckeEndo, dif_neg]
+      rintro ⟨h, -⟩
+      exact absurd h (lt_irrefl 0)
+    have hbot : heckeSubring 0 = ⊥ := by
+      refine le_antisymm (Subring.closure_le.mpr ?_) bot_le
+      rintro T ⟨q, -, rfl⟩
+      rw [hz q]
+      exact zero_mem _
+    rw [hbot]
+    refine Module.Finite.of_surjective
+      (LinearMap.toSpanSingleton ℤ
+        (⊥ : Subring (Module.End ℂ (CuspForm (Gamma0GL 0) 2))) 1) ?_
+    rintro ⟨x, hx⟩
+    obtain ⟨n, rfl⟩ := Subring.mem_bot.mp hx
+    refine ⟨n, ?_⟩
+    apply Subtype.ext
+    rw [LinearMap.toSpanSingleton_apply]
+    simp
+  · obtain ⟨L, hLfg, hLstab, hLspan⟩ := exists_heckeStable_lattice hN
+    obtain ⟨s, hs⟩ := hLfg
+    -- (i) the endomorphisms preserving `L` form a subring, so all of `𝕋` does
+    let S : Subring (Module.End ℂ (CuspForm (Gamma0GL N) 2)) :=
+      { carrier := {T | ∀ f ∈ L, T f ∈ L}
+        mul_mem' := fun {_ _} ha hb f hf => ha _ (hb f hf)
+        one_mem' := fun _ hf => hf
+        add_mem' := fun {_ _} ha hb f hf => L.add_mem (ha f hf) (hb f hf)
+        zero_mem' := fun _ _ => L.zero_mem
+        neg_mem' := fun {_} ha f hf => L.neg_mem (ha f hf) }
+    have hSub : heckeSubring N ≤ S := by
+      refine Subring.closure_le.mpr ?_
+      rintro T ⟨q, hq, rfl⟩
+      exact fun f hf => hLstab q hq f hf
+    have hmem : ∀ (T : heckeSubring N) (f : CuspForm (Gamma0GL N) 2), f ∈ L →
+        (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) f ∈ L :=
+      fun T f hf => hSub T.2 f hf
+    have hsL : ∀ x ∈ s, x ∈ L := by
+      intro x hx
+      rw [← hs]
+      exact Submodule.subset_span hx
+    -- (ii) restriction to a finite generating set of `L`
+    let ρ : heckeSubring N →ₗ[ℤ] ({x // x ∈ s} → L) :=
+      { toFun := fun T x =>
+          ⟨(T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) (x : CuspForm (Gamma0GL N) 2),
+            hmem T _ (hsL x x.2)⟩
+        map_add' := by
+          intro T U
+          funext x
+          apply Subtype.ext
+          simp
+        map_smul' := by
+          intro c T
+          funext x
+          apply Subtype.ext
+          simp }
+    -- (iii) it is injective, because `L` spans `S₂(Γ₀(N))` over `ℂ`
+    have hinj : Function.Injective ρ := by
+      refine (injective_iff_map_eq_zero ρ).mpr ?_
+      intro T hT
+      have h0 : ∀ x ∈ s, (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) x = 0 := by
+        intro x hx
+        have h := congrFun hT ⟨x, hx⟩
+        exact congrArg Subtype.val h
+      have hL0 : ∀ f ∈ L, (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) f = 0 := by
+        intro f hf
+        rw [← hs] at hf
+        refine Submodule.span_induction ?_ ?_ ?_ ?_ hf
+        · intro y hy
+          exact h0 y hy
+        · exact map_zero _
+        · intro y z _ _ hy hz
+          rw [map_add, hy, hz, add_zero]
+        · intro n y _ hy
+          rw [map_zsmul, hy, smul_zero]
+      have hker : (⊤ : Submodule ℂ (CuspForm (Gamma0GL N) 2))
+          ≤ LinearMap.ker (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) := by
+        rw [← hLspan]
+        exact Submodule.span_le.mpr fun f hf => hL0 f hf
+      have hT0 : (T : Module.End ℂ (CuspForm (Gamma0GL N) 2)) = 0 := by
+        rw [← LinearMap.ker_eq_top]
+        exact top_le_iff.mp hker
+      exact Subtype.ext hT0
+    -- (iv) `ℤ` is noetherian, so a submodule of a finite product of copies of `L`
+    haveI : IsNoetherian ℤ L := isNoetherian_of_fg_of_noetherian L ⟨s, hs⟩
+    haveI := isNoetherian_of_injective ρ hinj
+    infer_instance
 
 /-- **Every coefficient functional is `a₁ ∘ T` for a single `T ∈ 𝕋`**
 (PROVEN, 2026-07-25): for each `m` there is one Hecke operator `T` with
