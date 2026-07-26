@@ -8395,7 +8395,32 @@ which splits (since `A² + D²` is prime to `AD` and `B² − C²` is prime to
 
     A² + D² = 3BC  ∧  B² − C² = AD      or      A² + D² = BC  ∧  B² − C² = 3AD,
 
-with `A, B, C, D ≲ |x|^{1/4}`. -/
+with `A, B, C, D ≲ |x|^{1/4}`.
+
+**THE ONE TRAP — a route that looks like a proof and is EXACTLY CIRCULAR**
+(checked 2026-07-26; do not spend a cycle on it). Subtracting the two
+hypotheses gives `c² − b² = 3y²`, and `16·(h1) − (h2)` gives
+`16b² − c² = 3x²`; also `gcd(b, c) = 1`, since a common divisor divides
+both `3x²` and `3y²`, hence divides `3`, and `3 ∣ b` is impossible —
+it would give `x² + y² = 5b² ≡ 0 (mod 9)`, forcing `3 ∣ x` and `3 ∣ y`.
+So `(b, c)` satisfies
+
+    (3xy)² = (c² − b²)(16b² − c²) = −c⁴ + 17c²b² − 16b⁴,
+
+i.e. `quartic_neg` at `(S, e) = (c, b)` — which IS proven. Its three
+conclusions then give `c² = b²` (forces `x² = 5`, impossible),
+`c² = 16b²` (forces `y² = 5`, impossible) and `c² = 4b²`, which yields
+exactly `x² = 4y²`. That looks like a complete proof, and it is not one:
+`quartic_neg`'s descent `gcd` here is `gcd(3y², 3x²) = 3` exactly, so it
+enters its `G = 3` branch, which recovers `a' = ±y`, `b' = ±x` and calls
+`concordant_five` back **at the same `(x, y)`**. Zero descent — the loop
+is closed and the two statements are equivalent, not ordered. Any real
+proof must therefore descend inside `concordant_five` itself, e.g. along
+the route above.
+
+Note also that `concordant_one` (proven below) does NOT help: its own
+descent meets `K = 5` only in a branch it refutes outright, so it
+consumes `concordant_five` without ever supplying it. -/
 theorem concordant_five (x y b c : ℤ) (hcop : IsCoprime x y)
     (h1 : x ^ 2 + y ^ 2 = 5 * b ^ 2) (h2 : x ^ 2 + 16 * y ^ 2 = 5 * c ^ 2) :
     x ^ 2 = 4 * y ^ 2 :=
