@@ -10634,6 +10634,57 @@ order-`7` analogue of what `exists_tateInvariants_of_stableThreeSubgroup`
 does at order `3`; step (ii) is a classical but bulky explicit computation
 that has NOT been done here.
 
+**THE CONTENT, IN ONE EQUATION — a sharp reformulation of step (ii), found
+and verified 2026-07-26.** Let `C` be the stable subgroup and `E' = E/C`
+Vélu's quotient, which is defined over `ℚ` and is what `Velu.lean` already
+produces. Then the hauptmodul is pinned by the DISCRIMINANT RATIO alone:
+
+  `t⁶ · Δ(E') = 7¹² · Δ(E)`.
+
+This is the eta-quotient identity `Δ(τ)/Δ(7τ) = (η(τ)/η(7τ))²⁴ = t⁶`, the
+`7¹²` being the scaling between the lattice model for `7τ` and Vélu's
+normalisation (`Δ` has weight `−12`). Checked exactly with Magma on three
+curves (untrusted searcher, never a prover), and the agreement is on the
+nose in every case — the quotient `(Δ(E)/Δ(E'))/t⁶` came out equal to
+`7⁻¹² = 1/13841287201` for all three:
+
+* `[1,−1,0,3,−1]` (conductor `162`, `j = 3375/2`): `Δ = −1458`,
+  `E' = [1,−1,0,−1077,13877]`, `Δ' = −93312`, `t = −49/2`;
+* `[1,−1,0,−42,−100]` (`j = −140625/8`): `Δ = −472392`,
+  `E' = [1,−1,0,−852,19664]`, `Δ' = −123834728448`, `t = −49/8`;
+* `26b1 = [1,−1,1,−3,3]` (`j = −2146689/1664`): `Δ = −1664`,
+  `E' = [1,−1,1,−213,−1257]`, `Δ' = −125497034`, `t = −98/13`.
+
+In each case `t` is the UNIQUE rational root of
+`(t² + 13t + 49)(t² + 245t + 2401)³ − j t⁷`, so the value is unambiguous.
+The first two are exactly the `t₇`-coordinates the `X_0(21)` reconnaissance
+predicts, and the third agrees with the covering map above at `d = 2`
+(`q(2) = −13`, `t = 49·2·1/(−13) = −98/13`) — an independent confirmation of
+that map, computed without reference to it.
+
+**So the whole obstruction is a sixth power.** `t⁶` is rational for free, and
+the node asserts that it has a rational sixth ROOT of the right sign. The
+factorisation `6 = 2 · 3` is exactly the two descents in play: the `ℤ/3` is
+the Galois action on the three `±`-pairs of `C\{0}`, and the `ℤ/2` is the
+quadratic-twist ambiguity that `j` cannot see. Note `t⁶` alone determines `t`
+only up to sign, and the `j`-relation is not even in `t`, so one bit still
+has to be supplied — the two square roots are the curve and its quadratic
+twist.
+
+**Worked instance of the `ℤ/3` obstruction, for anyone who doubts it is
+real.** For `[1,−1,0,3,−1]` the `7`-division polynomial factors as
+`(degree 3)·(degree 21)`, and the kernel polynomial is the IRREDUCIBLE
+cubic `ψ_C = x³ + 6x² + 3x − 1`, of discriminant `729 = 27²` — a square, so
+the cubic is CYCLIC and its splitting field is the real cyclotomic field
+`ℚ(ζ₉)⁺` (conductor `9`, field discriminant `81`). Hence `x(P)` is a
+non-rational cubic irrationality for every `P ∈ C\{0}`, precisely as the
+paragraph above predicts, and no Tate normal form for `P` exists over `ℚ`.
+The sibling curve `[1,−1,0,−42,−100]` behaves identically, with
+`ψ_C = x³ + 6x² − 15x − 73` of discriminant `59049 = 243²`. By contrast
+`26b1`, which HAS a rational point of order `7`, has `ψ_C = x³ − 3x² − x + 3
+= (x−1)(x+1)(x−3)` split over `ℚ` — the sub-case, and the only one the
+`X_1(7)` route can reach.
+
 Checked with Magma (2026-07-26; untrusted searcher, never a proof): the
 four curves of the conductor-`162` class have hauptmodul values
 `t = −49/2`, `−49/8`, `−2`, `−8` respectively, each the UNIQUE rational
