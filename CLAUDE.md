@@ -608,6 +608,28 @@ because the tree was committed-clean. Rules: never `rm -rf` a path
 that differs from a real path only by case; prefer `git clean -n`
 (dry run); keep the tree committed before destructive operations.
 
+## The orchestrator never commits to `main` — it branches like everyone else
+
+(Deyao, 2026-07-26, catching the orchestrator doing exactly this.) `main` is the
+release branch and the MERGE WORKER is the only thing that moves it. That rule
+has no exception for "it's only tooling" or "it's not Lean". When the
+orchestrator needs to change a file — `.claude/*`, `flt-*.py`, anything — it
+commits to **its own branch** and puts that branch in `~/.flt-merge-batch` like
+any agent's work. The merger merges it and the next release hands it out.
+
+Why this is not pedantry: a commit authored directly on `main` is invisible to
+the merger, whose release step is `git branch -f main <the sha it built>`. That
+force-move silently DISCARDS the orchestrator's commit — so the orchestrator
+then has to send the merger a special "merge `main` first" instruction, and a
+one-off instruction that exists only to repair a self-inflicted divergence is
+the definition of a hack. The branch route needs no instruction at all.
+
+Nor can it be undone once published: worktrees fast-forward to `main` at every
+dispatch, so by the time the mistake is noticed a dozen worktrees sit ON that
+commit, and rewinding `main` makes their branches non-ancestors of `main` —
+which the dispatch hook hard-crashes on, by design. Committing to `main` is
+therefore effectively irreversible. Branch first.
+
 ## git is allowed — except force-push
 
 Claude may run `git` commands; exercise ordinary caution with

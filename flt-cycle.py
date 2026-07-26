@@ -329,10 +329,22 @@ def cmd_preflight(args):
                 "ownership scans will keep crediting it with leaves nobody is "
                 "working on.  -> remove its line from ~/.flt-inflight.jsonl")
         if state == "batched" and name not in batch:
-            blocking.append(
-                f"{name} is `batched` but is NOT in the merge batch -- its work "
-                "will never reach the merger.  "
-                f"-> python3 flt-cycle.py done {name}")
+            # Same severity split as the `claimed`/`reclaiming` case above. A
+            # slot whose branch is entirely in main was merged by the LAST
+            # release and simply has not been advanced yet -- `batch-done`
+            # clears the inflight file, so every slot of the shipped batch
+            # lands here between the release and the next `release` run. That
+            # is the normal steady state, not an incident, and blocking on it
+            # made the gate fire on 23 slots at once right after Release 3.
+            ahead = run(["git", "-C", REPO, "rev-list", "--count",
+                         f"main..{name}"]).stdout.strip() or "0"
+            if ahead == "0":
+                fixups.append((name, state))
+            else:
+                blocking.append(
+                    f"{name} is `batched` with {ahead} commit(s) NOT in main "
+                    "and is NOT in the merge batch -- its work will never "
+                    f"reach the merger.  -> python3 flt-cycle.py done {name}")
         if state == "suspended" and not extra:
             warnings.append(
                 f"{name} is `suspended` with no transcript id -- its work "

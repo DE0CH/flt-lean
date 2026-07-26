@@ -28,3 +28,4 @@
 - [Claude is a pure function](claude-is-a-pure-function.md) — Deyao 2026-07-25: (transcript + tool output) -> next token; agents/sessions have no lifecycle, only disk has state; why the model keeps relapsing
 - [Minimal orchestration](flt-minimal-orchestration.md) — Deyao 2026-07-25: orchestrator only advances the pointer + prompts (incl. ".lake may be stale, rebuild it"); agents own their own environment; central management caused every outage
 - [Scope is Deyaos call](flt-scope-is-deyaos-call.md) — Deyao 2026-07-25: scope is deliberately enormous; effort estimates are info, "not worth it" is not mine to conclude; build whole missing theories when a node needs them
+- [Orchestrator never commits to main](orchestrator-never-commits-to-main.md) — Deyao 2026-07-26: branch like any agent; a commit on main is discarded by the merger's force-move and cannot be rewound once worktrees ff to it
