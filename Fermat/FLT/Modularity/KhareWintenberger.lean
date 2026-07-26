@@ -14134,6 +14134,162 @@ leaf over `WD_p(−)` is not a shortcut but a multi-agent theory-building
 programme; it is NOT single-agent-sized, and this leaf should not be
 re-scoped as though it were.
 
+HYPOTHESIS LOAD-BEARING AUDIT (2026-07-26, WITH AN EXPLICIT
+COUNTEREXAMPLE — this is new, and it is the sharpest thing known about
+this leaf, so do not delete it). The hypothesis block is long and looks
+like boilerplate carried from the pillar-β template. It is not. Exactly
+ONE of its arithmetic hypotheses is load-bearing, and dropping it makes
+this leaf FALSE — not merely unprovable:
+
+* **`hirr` (residual irreducibility) IS LOAD-BEARING.** Delete it and
+  the following package satisfies every remaining hypothesis and
+  refutes the conclusion. Take `ℓ = 5`, `O = ℤ_5`,
+  `ρ = 1 ⊕ χ_{cyc,5}` (diagonal on `Fin 2 → ℤ_5`). Then
+  `IsHardlyRamified` holds in all four clauses: `det ρ = χ_{cyc,5}`;
+  `ρ` is unramified outside `{5} ⊆ {2, 5}`; `ρ` is flat at `5`, being
+  the generic fibre of `ℤ/5ⁿ ⊕ μ_{5ⁿ}`; and it is tame at `2` with the
+  projection onto the trivial factor as the `1`-dimensional quotient
+  and `δ = 1`. Take `k = 𝔽_5`, `ρbar = 1 ⊕ χ̄_{cyc,5}` — again hardly
+  ramified, and `hπ` holds because `charFrob ρ (q) = (X−1)(X−q)`
+  reduces to `charFrob ρbar (q)`. Take `F` any totally real Galois
+  field, `E = ℚ`, `heckeF w = X² − (1+Nw)X + Nw`,
+  `τF = (1 ⊕ χ_{cyc,3})|_{G_F}`: that is a `PotentialModularityWitness`
+  (`modularF` and `matchF₃` are the displayed factorisation). Finally
+  take `S₁ = ∅`, `A = ℤ_3`, and for `τ` the NON-SPLIT extension of `1`
+  by `χ_{cyc,3}` attached to the Kummer class of `p` in
+  `H¹(G_ℚ, ℤ_3(1)) = (ℚ^×)^∧_3`. Its Frobenius characteristic
+  polynomial at every `q` is `(X−1)(X−q)`, so `compat` holds; and it is
+  RAMIFIED at `p` because the Kummer class has nonzero valuation there.
+  At `p = 7`: `ρ` is unramified at `7`, `τ` is not, and `7 ∉ {3, 5}`.
+
+  So `hirr` is the ONLY thing standing between this statement and a
+  concrete refutation — a fact worth knowing well beyond this leaf,
+  since the same package refutes `hirr`-free forms of the sibling, of
+  `threeadicRealization_ramified_transfer_of_witness` and of
+  `threeadicRealization_isUnramified_of_witness`. **Nobody may weaken
+  `hirr` anywhere upstream of this cluster without re-deriving all
+  four.**
+
+* **`hρ` is NOT an input to this citation.** The counterexample above
+  satisfies `hρ` in full, so hard ramification does not exclude it; and
+  in the other direction the classical argument (Carayol at the places
+  of `F` over `p`, then the descent) never consumes `det ρ`,
+  `ρ`'s flatness at `ℓ` or its tameness at `2` — the local
+  unramifiedness input it needs is the explicit hypothesis
+  `ρ.IsUnramifiedAt p`. This is the formal counterpart of the sibling's
+  remark that flatness is consumed THERE and not here. `hρ` is retained
+  only because it is what makes the collapse half of the soundness
+  audit below available, and for uniformity of the cluster's hypothesis
+  block; it must not be read as a mathematical input.
+
+ROUTE AUDIT, THIRD CLOSURE (2026-07-26): THIS LEAF IS
+INTERFACE-LIMITED, NOT MACHINERY-LIMITED. The MACHINERY AUDIT above
+ends by costing a Weil–Deligne programme, and must NOT be read as
+"once that programme exists, this leaf follows". It does not, and the
+counterexample above is the proof: no amount of local theory —
+ramification filtration, tame character, local monodromy, Weil group,
+`WD_p(−)` — can distinguish the two packages there, because both have
+literally the same `compat` data. What separates them is `hirr`, and
+the route from `hirr` to the conclusion is RIGIDITY, not local theory:
+`ρbar` irreducible ⟹ `ρ` irreducible ⟹ the `E`-eigensystem is
+irreducible ⟹ (Brauer–Nesbitt + Chebotarev) `τ` is the unique
+representation with those Frobenius characteristic polynomials, hence
+`τ ≅ τ_Carayol`, which is unramified at `p` by strict compatibility.
+
+That chain needs `τ_Carayol` AS AN OBJECT, and the interface does not
+carry it: `ThreeadicRealization` quantifies over every `τ` satisfying
+`compat`, and the Carayol member is nowhere named. So the residue is
+not a missing theory but a missing datum, and the only two closures are
+(a) a seam change that names it (below), or (b) breaking the
+circularity of the collapse half — i.e. proving the hypothesis set
+unsatisfiable without routing through the headline, which consumes this
+node. Do not dispatch a theory-building programme AT THIS LEAF.
+
+CORRECTION TO THE SECOND CLOSURE (2026-07-26, same audit; the closure
+still holds but its first bullet is too strong, and the sharper form
+locates the obstruction somewhere else, so it is recorded rather than
+silently repaired). That bullet says the interface's only link between
+`Rlz.τ|_{G_F}` and `Wit.τF` is Frobenius data, "so the
+semisimplification obstruction applies verbatim". Under `hirr` it does
+NOT: rigidity is exactly the tool that converts Frobenius data into an
+isomorphism. `Rlz.compat` and `Wit.matchF₃` both compute through the
+same `heckeF`, so `Rlz.τ|_{G_F}` and `Wit.τF` have equal Frobenius
+characteristic polynomials at almost every place of `F`; if both are
+irreducible, Brauer–Nesbitt plus Chebotarev makes them isomorphic. The
+route then continues: at a `p` UNRAMIFIED in `F` one has `I_p ⊆ G_F`
+and `I_p = I_w`, so unramifiedness of `τF` at `w | p` transfers to
+`Rlz.τ` at `p` verbatim — which is also why the `p ∉ S₁` narrowing
+below really does remove an input.
+
+Two things block it, and neither is the one that was recorded:
+
+* irreducibility of the RESTRICTION `ρ|_{G_F}` (hence of `τF`) is not
+  carried by `PotentialModularityWitness`. It is available upstream —
+  `exists_moretBailly_seed_of_five_le` produces `hirrF` — but it is
+  dropped before the witness is formed, and irreducibility does not
+  descend from `ρbar` to `ρbar|_{G_F}` for free; and
+* the places `p` RAMIFIED in `F`, where `I_p ⊋ I_w` and the transfer
+  genuinely needs the virtual-sum cancellation of the second closure.
+  These are precisely the places the consumer cannot avoid.
+
+So the corrected statement of the obstruction is: not "Frobenius data
+cannot give an isomorphism", but "the witness drops the irreducibility
+that would make rigidity applicable, and the ramified-in-`F` places
+need the cancellation regardless". Anyone reviving the `τF` route
+should attack those two, in that order.
+
+MACHINERY NOTE for that route, since it names a concrete and plausibly
+provable missing lemma rather than a programme: the rigidity step is
+ALREADY IN THE TREE in one special case, as
+`GaloisRepresentation/BrauerNesbittConjugacy.lean`'s
+`exists_conj_of_charFrob_eq_away` (Chebotarev density via
+`dense_conjClasses_globalFrob` + the dimension-`2` Brauer–Nesbitt core
+`exists_linearEquiv_of_charpoly_eq`; Carayol, Contemp. Math. 165
+(1994), Théorème 1; Diamond–Darmon–Taylor, Lemma 3.27). What it does
+NOT cover is exactly what the `τF` route needs, in two independent
+directions: its coefficients are a FINITE DISCRETE field (the residual
+case), whereas `Rlz.A` is `3`-adic of characteristic `0`; and its base
+field is `ℚ`, whereas the comparison `Rlz.τ|_{G_F} ≅ Wit.τF` lives over
+`F`. A characteristic-zero, module-finite-over-`ℤ_p`, general-number-
+field analogue of that one theorem is a well-posed target — unlike the
+Weil–Deligne programme, which the THIRD CLOSURE above shows would not
+help here even if it existed.
+
+NARROWING AUDIT (2026-07-26; the fleet's test for a terminal citation
+is whether a narrowing REMOVES A LITERATURE INPUT, so all three
+candidates are costed against it and none is taken):
+
+* *Exclude `p = 2`.* Downstream never uses it — the STRENGTH AUDIT of
+  `threeadicRealization_ramified_transfer_of_witness` shows the only
+  extracted content is "`τ` is unramified outside `{2, 3}`". But
+  Carayol covers `p = 2` exactly as it covers `p = 5`, so this removes
+  no input and is cosmetic. NOT TAKEN.
+* *Add `p ∉ Rlz.S₁`.* This one DOES remove a genuine input: `S₁`
+  contains the primes ramified in `F`, and at `p ∉ S₁` the descent may
+  be run piece by piece (`Ind` of an unramified representation is
+  unramified at a prime unramified in the intermediate field), so the
+  virtual-sum CANCELLATION of the SECOND CLOSURE above is not needed.
+  It is nevertheless NOT TAKEN, because it breaks the consumer: the
+  conductor node needs the conclusion at every `p ≠ 3`, and `S₁` is
+  produced existentially upstream in a form that can be ENLARGED but
+  never shrunk — unlike `badF` in
+  `carayol_threeadic_realization_of_heckePackage`, where enlargement
+  was exactly what made the same manoeuvre free.
+* *The seam change* — give `ThreeadicRealization` a `level` field, as
+  the sibling's STRUCTURAL OPTION describes. New argument in its
+  favour, recorded for whoever owns the seam rather than acted on here:
+  it is DEDUPLICATION, not hiding. The construction citation
+  `blggt_threeadicBrauerSum_of_witness` already cites BLGGT §5.3 /
+  Theorem 5.5.1, and that theorem produces a member of a STRICTLY
+  compatible system, i.e. it already asserts the local parameters at
+  every `p ∤ 3`. So the construction leaf currently under-asserts
+  relative to its own source, and this leaf pays for the difference by
+  citing the same theorem a second time. Against that: the split of
+  2026-07-25 exists to keep Fontaine–Laffaille and Carayol visibly
+  apart, and the change touches a structure, two proven assemblies and
+  another agent's sorried leaf. ORCHESTRATOR-LEVEL DECISION, not a
+  leaf-level one.
+
 EQUIVALENCE NOTE (2026-07-26, so the re-cut is not re-litigated): this
 leaf and its sibling together are EQUIVALENT, given `hρ`, to the single
 statement of `exists_conductor_threeadicRealization_of_witness` below —
