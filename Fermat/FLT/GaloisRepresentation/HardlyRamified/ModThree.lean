@@ -9558,11 +9558,46 @@ theorem exists_level_forall_le_sum_card_filter_of_le_sum_depth
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **GALOIS DESCENT ON THE INTEGRAL CLOSURES** (PROVEN 2026-07-26): an
+element of `𝒪_L` fixed by `Gal(L/M') = M'.fixingSubgroup` comes from
+`𝒪_{M'}`, i.e. `𝒪_L^{Gal(L/M')} = 𝒪_{M'}`.
+
+This is descent for the FIELDS (`IsGalois.fixedField_fixingSubgroup`,
+which puts the underlying element of `L` inside `M'`) followed by
+descent for INTEGRALITY (`IsIntegral.tower_bot_of_field`, applicable
+because `M'` is a field and `M' → L` is injective, so a monic equation
+over `𝒪₃ᵥ` satisfied in `L` is already satisfied in `M'`).  The witness
+is then literally the same underlying element, so the conclusion is
+`rfl` once both memberships are in hand.
+
+It is the ONLY ingredient of `exists_relative_depth_witness_adjoin`
+below that is not already inside `exists_relative_depth_witness`. -/
+theorem exists_algebraMap_eq_of_fixed_fixingSubgroup
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L] (M' : IntermediateField ℚ₃ᵥ ↥L)
+    (s : IntegralClosure 𝒪₃ᵥ ↥L)
+    (hs : ∀ h ∈ M'.fixingSubgroup, h • s = s) :
+    ∃ u : IntegralClosure 𝒪₃ᵥ ↥M',
+      algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ ↥L) u = s := by
+  have hfix : ∀ f ∈ M'.fixingSubgroup, f (s.1 : ↥L) = (s.1 : ↥L) := by
+    intro f hf
+    have h2 := congrArg Subtype.val (hs f hf)
+    rwa [IntegralClosure.coe_smul] at h2
+  have hmem : (s.1 : ↥L) ∈ M' := by
+    rw [← IsGalois.fixedField_fixingSubgroup M']
+    exact (IntermediateField.mem_fixedField_iff _ _).mpr hfix
+  have hint : IsIntegral 𝒪₃ᵥ (⟨(s.1 : ↥L), hmem⟩ : ↥M') :=
+    IsIntegral.tower_bot_of_field (B := ↥L) (x := (⟨(s.1 : ↥L), hmem⟩ : ↥M')) s.2
+  exact ⟨⟨⟨(s.1 : ↥L), hmem⟩, hint⟩, rfl⟩
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **THE RELATIVE DEPTH WITNESS, WITH MONOGENICITY OF THE INVARIANTS**
-(sorry node, created 2026-07-26 by a fourth owner while PROVING
-`mul_le_sum_inertia_depth_fiber` below; it is the ONLY thing that leaf
-still needs).
+(PROVEN 2026-07-26 — created the same day by a fourth owner while
+PROVING `mul_le_sum_inertia_depth_fiber` below, of which it was the ONLY
+remaining input; that cone is now sorry-free).
 
 This is the PROVEN `exists_relative_depth_witness` above, VERBATIM, plus
 one extra conclusion: that the `z` it produces GENERATES the ring of
@@ -9579,12 +9614,26 @@ depth `v_N(z − σ•z) = e·m`, and neither implies monogenicity (adding
 `𝒪₃ᵥ[z]`).  So the clause cannot be derived downstream and has to be put
 back into the witness itself.
 
-WHAT ITS PROOF NEEDS, beyond re-running the existing one:
-`exists_local_adjoin_eq_top M` (PROVEN above, giving `𝒪_M = 𝒪₃ᵥ[y]`) and
-the Galois descent `𝒪_N ∩ M = 𝒪_M` through the reification, exactly as in
-`restrictToLEHom_mem_inertia`.  No new ramification theory is involved —
-this is the LAST of the three items the old "WHAT IS STILL MISSING" list
-on the leaf below asked for; the other two are now proven
+HOW IT WAS PROVED (2026-07-26), and it needed no new ramification
+theory, exactly as predicted.  The proof of `exists_relative_depth_witness`
+is re-run VERBATIM — same `w τ`, same reification `jO : 𝒪_M ≃ₐ 𝒪_{M'}`,
+same witness `z = algebraMap 𝒪_{M'} 𝒪_N (jO θ)` — with the generator
+package `exists_inertia_generator M` now taken WITH its `Algebra.adjoin
+𝒪₃ᵥ {θ} = ⊤` component (which the earlier proof discarded as `_hθtop`).
+The fourth conjunct is then two steps:
+
+* `exists_algebraMap_eq_of_fixed_fixingSubgroup` (PROVEN just above)
+  turns an `H`-invariant `s : 𝒪_N` into `s = algebraMap 𝒪_{M'} 𝒪_N u` —
+  this is the Galois descent `𝒪_N^{Gal(N/M')} = 𝒪_{M'}`, using
+  `hker : ker(restrictToLEHom) = M'.fixingSubgroup` from the copied proof;
+* `AlgHom.map_adjoin_singleton` and `Algebra.map_top` turn
+  `Algebra.adjoin 𝒪₃ᵥ {θ} = ⊤` into
+  `Algebra.adjoin 𝒪₃ᵥ {z} = φ.range` for
+  `φ = (algebraMap 𝒪_{M'} 𝒪_N) ∘ jO`, and `u` has the preimage
+  `jO.symm u`.
+
+This was the LAST of the three items the old "WHAT IS STILL MISSING"
+list on the leaf below asked for; the other two are also proven
 (`sub_smul_dvd_prod_sub_smul` and the counting step inside that leaf). -/
 theorem exists_relative_depth_witness_adjoin
     (M N : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hMN : M ≤ N)
@@ -9604,15 +9653,215 @@ theorem exists_relative_depth_witness_adjoin
       (∀ s : IntegralClosure 𝒪₃ᵥ N,
         (∀ h ∈ (restrictToLEHom M N hMN).ker, h • s = s) →
         s ∈ Algebra.adjoin 𝒪₃ᵥ ({z} : Set (IntegralClosure 𝒪₃ᵥ N))) := by
-  sorry
+  classical
+  haveI : Normal ℚ₃ᵥ ↥(reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M N) :=
+    normal_reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M N hMN
+  set M' := reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M N
+  -- `τ ≠ 1`, since `1` lies in every inertia subgroup.
+  have hτ1 : τ ≠ 1 := by
+    rintro rfl
+    exact hτ (one_mem _)
+  -- the `M`-side depth
+  obtain ⟨w, hw⟩ := exists_inertia_depth M
+  refine ⟨w τ, ?_⟩
+  have hdepth : ∀ k : ℕ, τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ k).inertia
+      (M ≃ₐ[ℚ₃ᵥ] M) ↔ k ≤ w τ := by
+    intro k
+    rcases Nat.eq_zero_or_pos k with rfl | hk
+    · simp only [Nat.zero_le, iff_true, pow_zero, Ideal.one_eq_top]
+      refine AddSubgroup.mem_inertia.mpr fun x => ?_
+      rw [Submodule.mem_toAddSubgroup]
+      exact Submodule.mem_top
+    · exact hw τ hτ1 k hk
+  -- a monogenic generator of `𝒪_M` and the exact depth of `τ•θ − θ`
+  obtain ⟨θ, hθtop, _hθinj, hθiff⟩ := exists_inertia_generator M
+  have hdθ : ∀ k : ℕ, τ • θ - θ ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ M) ^ k ↔
+      k ≤ w τ := fun k => (hθiff τ k).symm.trans (hdepth k)
+  -- the reification isomorphism on integer rings
+  set j := reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M N hMN
+  set f₁ : IntegralClosure 𝒪₃ᵥ ↥M →+* IntegralClosure 𝒪₃ᵥ ↥M' :=
+    RingHom.codRestrict
+      ((j.symm : ↥M →+* ↥M').comp (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M) ↥M))
+      (integralClosure 𝒪₃ᵥ ↥M')
+      (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) x).map
+        ((j.symm.toAlgHom.restrictScalars 𝒪₃ᵥ).comp
+          (IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥M) ↥M)))
+  set f₂ : IntegralClosure 𝒪₃ᵥ ↥M' →+* IntegralClosure 𝒪₃ᵥ ↥M :=
+    RingHom.codRestrict
+      ((j : ↥M' →+* ↥M).comp (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') ↥M'))
+      (integralClosure 𝒪₃ᵥ ↥M)
+      (fun x => (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) x).map
+        ((j.toAlgHom.restrictScalars 𝒪₃ᵥ).comp
+          (IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥M') ↥M')))
+  set jO : IntegralClosure 𝒪₃ᵥ ↥M ≃ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ ↥M' :=
+    { toFun := f₁
+      invFun := f₂
+      left_inv := fun y => Subtype.ext (j.apply_symm_apply _)
+      right_inv := fun y => Subtype.ext (j.symm_apply_apply _)
+      map_mul' := map_mul f₁
+      map_add' := map_add f₁
+      commutes' := fun r => Subtype.ext (by
+        show j.symm (algebraMap 𝒪₃ᵥ ↥M r) = algebraMap 𝒪₃ᵥ _ r
+        rw [IsScalarTower.algebraMap_apply 𝒪₃ᵥ ℚ₃ᵥ ↥M, AlgEquiv.commutes,
+          IsScalarTower.algebraMap_apply 𝒪₃ᵥ ℚ₃ᵥ ↥M']) }
+  have hcomap : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M')).comap jO =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) := by
+    ext y
+    rw [Ideal.mem_comap, IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+      IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+    constructor
+    · intro h1 h2
+      exact h1 (h2.map jO)
+    · intro h1 h2
+      have h3 := h2.map jO.symm
+      rw [AlgEquiv.symm_apply_apply] at h3
+      exact h1 h3
+  have hmapmax : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M)).map jO =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M') := by
+    refine le_antisymm (Ideal.map_le_iff_le_comap.mpr (le_of_eq hcomap.symm))
+      fun y hy => ?_
+    have hv : jO.symm y ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) := by
+      rw [← hcomap, Ideal.mem_comap, AlgEquiv.apply_symm_apply]
+      exact hy
+    have h5 := Ideal.mem_map_of_mem jO hv
+    rwa [AlgEquiv.apply_symm_apply] at h5
+  -- membership transports along the isomorphism `jO`
+  have hmemiff : ∀ (I : Ideal (IntegralClosure 𝒪₃ᵥ ↥M)) (a : IntegralClosure 𝒪₃ᵥ ↥M),
+      jO a ∈ I.map jO ↔ a ∈ I := by
+    intro I a
+    refine ⟨fun h => ?_, fun h => Ideal.mem_map_of_mem _ h⟩
+    have hsub : I.map jO ≤ I.comap (jO.symm : IntegralClosure 𝒪₃ᵥ ↥M' →+*
+        IntegralClosure 𝒪₃ᵥ ↥M) := by
+      rw [Ideal.map_le_iff_le_comap]
+      intro y hy
+      rw [Ideal.mem_comap, Ideal.mem_comap]
+      show jO.symm (jO y) ∈ I
+      rw [AlgEquiv.symm_apply_apply]
+      exact hy
+    have h2 := hsub h
+    rw [Ideal.mem_comap] at h2
+    show a ∈ I
+    have h3 : (jO.symm : IntegralClosure 𝒪₃ᵥ ↥M' →+* IntegralClosure 𝒪₃ᵥ ↥M) (jO a) = a := by
+      show jO.symm (jO a) = a
+      exact jO.symm_apply_apply a
+    rwa [h3] at h2
+  -- the exact depth of `jO (τ•θ − θ)` in `𝒪_{M'}`
+  have hdx : ∀ k : ℕ, jO (τ • θ - θ) ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M') ^ k
+      ↔ k ≤ w τ := by
+    intro k
+    rw [show (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M') ^ k) =
+        (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M) ^ k).map jO by
+      rw [Ideal.map_pow, hmapmax], hmemiff]
+    exact hdθ k
+  have hspanx : Ideal.span {jO (τ • θ - θ)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M') ^ (w τ) :=
+    span_singleton_eq_maximalIdeal_pow_of_mem_iff _ _ _ hdx
+  -- the kernel of `restrictToLEHom` is the fixing subgroup of `M'`
+  have hker : (restrictToLEHom M N hMN).ker = M'.fixingSubgroup := by
+    rw [← IntermediateField.restrictNormalHom_ker (K := ℚ₃ᵥ) (L := ↥N) M']
+    ext σ
+    simp only [MonoidHom.mem_ker]
+    show (AlgEquiv.autCongr j) (AlgEquiv.restrictNormalHom M' σ) = 1 ↔
+      AlgEquiv.restrictNormalHom M' σ = 1
+    constructor
+    · intro h
+      have := congrArg (AlgEquiv.autCongr j).symm h
+      rwa [MulEquiv.symm_apply_apply, map_one] at this
+    · intro h
+      rw [h, map_one]
+  -- the extension of `𝔪_{M'}` to `𝒪_N`
+  have hext : (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ ↥M')).map
+      (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N)) =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^
+        Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N)).inertia
+          (N ≃ₐ[ℚ₃ᵥ] N) ⊓ (restrictToLEHom M N hMN).ker) := by
+    rw [hker]
+    exact map_maximalIdeal_eq_maximalIdeal_pow_card_inertia_inf N M'
+  -- the algebra map `𝒪_{M'} → 𝒪_N` is computed on underlying elements
+  have hcoe : ∀ u : IntegralClosure 𝒪₃ᵥ ↥M',
+      (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) u).1 =
+        ((u.1 : ↥M') : ↥N) := fun _ => rfl
+  -- the witness
+  refine ⟨algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO θ),
+    ?_, hdepth, ?_, ?_⟩
+  · -- `H`-invariance
+    intro h hh
+    rw [hker] at hh
+    refine Subtype.ext ?_
+    rw [IntegralClosure.coe_smul, hcoe (jO θ)]
+    simp only [IntermediateField.mem_fixingSubgroup_iff] at hh
+    exact hh _ (jO θ).1.2
+  · -- the exact `N`-side depth
+    intro σ hσ ju
+    have hres : AlgEquiv.restrictNormalHom M' σ = j.trans (τ.trans j.symm) := by
+      have h1 : (AlgEquiv.autCongr j) (AlgEquiv.restrictNormalHom M' σ) = τ := hσ
+      have h2 := congrArg (AlgEquiv.autCongr j).symm h1
+      rw [MulEquiv.symm_apply_apply] at h2
+      rw [h2]
+      rfl
+    -- `σ` moves `z` by the image of `τ•θ − θ`
+    have hstep : (AlgEquiv.restrictNormalHom M' σ) ((jO θ).1) = (jO (τ • θ)).1 := by
+      rw [hres]
+      show j.symm (τ (j ((jO θ).1))) = (jO (τ • θ)).1
+      have h1 : j ((jO θ).1) = θ.1 := j.apply_symm_apply _
+      rw [h1]
+      show j.symm (τ θ.1) = j.symm ((τ • θ).1)
+      rw [IntegralClosure.coe_smul, AlgEquiv.smul_def]
+    have hkey : σ • algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO θ) =
+        algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO (τ • θ)) := by
+      refine Subtype.ext ?_
+      rw [IntegralClosure.coe_smul, hcoe (jO θ), hcoe (jO (τ • θ))]
+      have hrc := AlgEquiv.restrictNormal_commutes σ (↥M') ((jO θ).1)
+      rw [show σ.restrictNormal (↥M') = AlgEquiv.restrictNormalHom (F := ℚ₃ᵥ) (↥M') σ from rfl,
+        hstep] at hrc
+      exact hrc.symm
+    have hmove : algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO θ) -
+        σ • algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO θ) =
+        - algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO (τ • θ - θ)) := by
+      rw [hkey, map_sub, map_sub, neg_sub]
+    rw [hmove, Ideal.neg_mem_iff]
+    have hspanmap : Ideal.map
+        (algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N))
+        (Ideal.span {jO (τ • θ - θ)}) =
+        Ideal.span {algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N)
+          (jO (τ • θ - θ))} := by
+      rw [Ideal.map_span, Set.image_singleton]
+    have hspanN : Ideal.span {algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N)
+          (jO (τ • θ - θ))} =
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^
+          (Nat.card ↥((IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N)).inertia
+            (N ≃ₐ[ℚ₃ᵥ] N) ⊓ (restrictToLEHom M N hMN).ker) * w τ) := by
+      rw [← hspanmap, hspanx, Ideal.map_pow, hext, ← pow_mul]
+    rw [← Ideal.span_singleton_le_iff_mem, hspanN]
+    exact maximalIdeal_pow_le_pow_iff _ _ _
+  · -- MONOGENICITY OF THE `H`-INVARIANTS: `𝒪_N^H = 𝒪_{M'} = 𝒪₃ᵥ[z]`
+    intro s hs
+    rw [hker] at hs
+    obtain ⟨u, hu⟩ := exists_algebraMap_eq_of_fixed_fixingSubgroup N M' s hs
+    have hrange : Algebra.adjoin 𝒪₃ᵥ
+        ({algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO θ)} :
+          Set (IntegralClosure 𝒪₃ᵥ N)) =
+        ((IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥M')
+          (IntegralClosure 𝒪₃ᵥ N)).comp jO.toAlgHom).range := by
+      rw [show algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO θ) =
+          ((IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥M')
+            (IntegralClosure 𝒪₃ᵥ N)).comp jO.toAlgHom) θ from rfl,
+        ← AlgHom.map_adjoin_singleton, hθtop, Algebra.map_top]
+    rw [hrange]
+    refine ⟨jO.symm u, ?_⟩
+    show algebraMap (IntegralClosure 𝒪₃ᵥ ↥M') (IntegralClosure 𝒪₃ᵥ N) (jO (jO.symm u)) = s
+    rw [AlgEquiv.apply_symm_apply, hu]
 
 open scoped Classical in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **SERRE, *CORPS LOCAUX* IV §1 PROP. 3, THE `≥` HALF** (PROVEN
-2026-07-26 by a fourth owner, over the single new node
-`exists_relative_depth_witness_adjoin` above; created the same day by
+2026-07-26 by a fourth owner, over the node
+`exists_relative_depth_witness_adjoin` above, which is ITSELF PROVEN as
+of the same day, so this cone is sorry-free; created the same day by
 decomposing `exists_level_forall_le_sum_card_filter_inertia_fiber`.  It
 is the SOLE arithmetic input of the UPWARD Herbrand transport, exactly as
 `exists_relative_depth_witness` is the sole arithmetic input of the
