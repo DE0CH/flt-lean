@@ -25,6 +25,13 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.CompletionInvariance
 -- absorption, and adic completeness of `adicCompletionIntegers`),
 -- consumed by `exists_connected_counit_idempotent_at_three`.
 import Fermat.FLT.GroupScheme.ConnectedEtale
+-- The PROVEN Gelfand-duality separation lemma for finite étale algebras
+-- (`eq_zero_of_forall_algHom_eq_zero`: the geometric points of a finite
+-- étale algebra over a field separate its elements), consumed by the
+-- descent leaf `convCube_id_eq_one_of_hopf_package`.  The module is
+-- already in this file's build cone, but only through non-`public`
+-- imports, so its names need this direct import to be in scope.
+import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 -- Irreducible ↔ absolutely irreducible given a 1-dimensional fixed space
 -- (complex conjugation), used by the derivation of `mod_three_reducible`.
 public import Fermat.FLT.KnownIn1980s.RepresentationTheory.OddAbsIrred
@@ -6033,11 +6040,12 @@ theorem forall_point_apply_eq_of_lt_two_mul_sum_card_inertia
   rw [IntegralClosure.coe_smul, hcoe] at hb2
   exact hb2
 
+open Coalgebra in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
-/-- **The invariant-differentials theorem, in torsion form** (sorry
-node, created 2026-07-25 — leaf (ii-b-1) of the Théorème A
+/-- **The invariant-differentials theorem, in torsion form** (PROVEN
+2026-07-25 — leaf (ii-b-1) of the Théorème A
 decomposition, the PURE Hopf-algebra half of the `3`-torsion of
 `Ω[G⁄𝒪₃ᵥ]`, with no arithmetic content whatsoever: it holds for a
 commutative Hopf algebra over ANY commutative base): if the
@@ -6068,13 +6076,211 @@ for `x, y ∈ I`, `S((xy)⁽¹⁾) d((xy)⁽²⁾) = [S(x⁽¹⁾)x⁽²⁾]·S(
 `ρ ∘ θ = id`.
 (3) Therefore `n • ω = 0` for all `ω : Ω[A⁄R]`, because
 `n • (g ⊗ ξ) = g ⊗ (n • ξ) = 0` on `A ⊗_R ω_A` by the hypothesis
-`n·I ⊆ I²`, and `θ` is injective. -/
+`n·I ⊆ I²`, and `θ` is injective.
+REALIZED PROOF (2026-07-25): the quotient module `ω_A = I/I²` is never
+formed — only `ρ ∘ θ = id` is needed, and it is written directly in
+terms of the two auxiliary `R`-linear maps `Φ (x ⊗ y) = S x · d y` on
+`A ⊗_R A` and `ψ = Φ ∘ Δ` on `A` (so `ψ a = S a⁽¹⁾ d a⁽²⁾`, which is
+`ρ ∘ π̄` in the notation above).  Three facts do everything.
+(1) `Φ (α·β) = T α · Φ β + T β · Φ α` for `T = μ ∘ (S ⊗ id)`, by a
+double `TensorProduct.induction_on` over the Leibniz rule for `d`;
+since `T ∘ Δ = η ∘ ε` (an antipode axiom) this specialises to
+`ψ (x y) = ε x · ψ y + ε y · ψ x`, so `ψ` kills `I²`, and — `ψ` also
+killing the image of `algebraMap` — the hypothesis `n·I ⊆ I²` gives
+`n • ψ = 0` identically.
+(2) `Ψ (x ⊗ y) = x · ψ y` therefore satisfies `n • Ψ = 0`.
+(3) `Ψ (Δ a) = d a`: expanding `Ψ (Δ a) = a⁽¹⁾ S(a⁽²⁾) d a⁽³⁾` by
+coassociativity in Sweedler form (`Coalgebra.sum_tmul_tmul_eq`) and
+collapsing the other grouping by the second antipode axiom
+(`HopfAlgebra.sum_mul_antipode_eq_algebraMap_counit`) leaves
+`ε(a⁽¹⁾) d a⁽²⁾ = d a`.  Since `Ω[A⁄R]` is spanned over `A` by the
+image of `d` (`KaehlerDifferential.span_range_derivation`), (2) and
+(3) give `n • ω = 0` for every `ω`. -/
 theorem kaehlerDifferential_nsmul_eq_zero_of_nsmul_mem_sq_ker_counit
     {R A : Type*} [CommRing R] [CommRing A] [HopfAlgebra R A] (n : ℕ)
     (hn : ∀ x ∈ RingHom.ker (Bialgebra.counitAlgHom R A),
       n • x ∈ (RingHom.ker (Bialgebra.counitAlgHom R A)) ^ 2) :
     ∀ ω : Ω[A⁄R], n • ω = 0 := by
-  sorry
+  classical
+  -- `Φ (x ⊗ y) = S x • d y`
+  set Φ : A ⊗[R] A →ₗ[R] Ω[A⁄R] := TensorProduct.lift
+    { toFun := fun x =>
+        { toFun := fun y => HopfAlgebra.antipode R x • KaehlerDifferential.D R A y
+          map_add' := fun y z => by simp [smul_add]
+          map_smul' := fun r y => by
+            simp only [RingHom.id_apply, Derivation.map_smul]
+            exact smul_comm _ _ _ }
+      map_add' := fun x y => by ext z; simp [add_smul]
+      map_smul' := fun r x => by ext z; simp [smul_assoc] } with hΦdef
+  have hΦ_tmul : ∀ x y : A,
+      Φ (x ⊗ₜ[R] y) = HopfAlgebra.antipode R x • KaehlerDifferential.D R A y := by
+    intro x y; rw [hΦdef]; simp
+  -- `Θ (x ⊗ w) = x • Φ w`
+  set Θ : A ⊗[R] (A ⊗[R] A) →ₗ[R] Ω[A⁄R] := TensorProduct.lift
+    { toFun := fun x =>
+        { toFun := fun w => x • Φ w
+          map_add' := fun w v => by simp [smul_add]
+          map_smul' := fun r w => by
+            simp only [RingHom.id_apply, map_smul]
+            exact smul_comm _ _ _ }
+      map_add' := fun x y => by ext w; simp [add_smul]
+      map_smul' := fun r x => by ext w; simp [smul_assoc] } with hΘdef
+  have hΘ_tmul : ∀ (x : A) (w : A ⊗[R] A), Θ (x ⊗ₜ[R] w) = x • Φ w := by
+    intro x w; rw [hΘdef]; simp
+  -- `ψ a = S a⁽¹⁾ • d a⁽²⁾`
+  set ψ : A →ₗ[R] Ω[A⁄R] := Φ ∘ₗ Coalgebra.comul with hψdef
+  have hψ_apply : ∀ a : A, ψ a = Φ (Coalgebra.comul (R := R) a) := fun a => by rw [hψdef]; rfl
+  -- `Ψ (x ⊗ y) = x • ψ y`
+  set Ψ : A ⊗[R] A →ₗ[R] Ω[A⁄R] :=
+    Θ ∘ₗ (Coalgebra.comul (R := R) (A := A)).lTensor A with hΨdef
+  have hΨ_tmul : ∀ x y : A, Ψ (x ⊗ₜ[R] y) = x • ψ y := by
+    intro x y
+    rw [hΨdef]
+    simp [hΘ_tmul, hψ_apply]
+  -- `T (x ⊗ y) = S x * y`
+  set T : A ⊗[R] A →ₗ[R] A :=
+    LinearMap.mul' R A ∘ₗ (HopfAlgebra.antipode R (A := A)).rTensor A with hTdef
+  have hT_tmul : ∀ x y : A, T (x ⊗ₜ[R] y) = HopfAlgebra.antipode R x * y := by
+    intro x y; rw [hTdef]; simp
+  have hT_comul : ∀ a : A, T (Coalgebra.comul (R := R) a) = algebraMap R A (counit a) := by
+    intro a
+    rw [hTdef]
+    simp
+  -- KEY 1: `Φ` is a derivation for the tensor multiplication, twisted by `T`
+  have hΦmul : ∀ α β : A ⊗[R] A, Φ (α * β) = T α • Φ β + T β • Φ α := by
+    intro α
+    induction α with
+    | zero => intro β; simp
+    | tmul x y =>
+        intro β
+        induction β with
+        | zero => simp
+        | tmul u v =>
+            rw [Algebra.TensorProduct.tmul_mul_tmul, hΦ_tmul, hΦ_tmul, hΦ_tmul,
+              hT_tmul, hT_tmul, HopfAlgebra.antipode_mul_distrib,
+              Derivation.leibniz, smul_add, smul_smul, smul_smul, smul_smul, smul_smul]
+            ring_nf
+        | add β₁ β₂ h₁ h₂ =>
+            rw [mul_add, map_add, h₁, h₂, map_add, map_add, add_smul]
+            simp only [smul_add]
+            abel
+    | add α₁ α₂ h₁ h₂ =>
+        intro β
+        rw [add_mul, map_add, h₁, h₂, map_add, map_add, add_smul]
+        simp only [smul_add]
+        abel
+  -- KEY 2: `ψ (x * y) = ε x • ψ y + ε y • ψ x`
+  have hψmul : ∀ x y : A,
+      ψ (x * y) = algebraMap R A (counit (R := R) x) • ψ y
+        + algebraMap R A (counit (R := R) y) • ψ x := by
+    intro x y
+    rw [hψ_apply, hψ_apply, hψ_apply, Bialgebra.comul_mul, hΦmul, hT_comul, hT_comul]
+  have hψ_one : ψ (1 : A) = 0 := by
+    rw [hψ_apply, Bialgebra.comul_one, Algebra.TensorProduct.one_def, hΦ_tmul]
+    simp
+  have hψ_algebraMap : ∀ r : R, ψ (algebraMap R A r) = 0 := by
+    intro r
+    rw [Algebra.algebraMap_eq_smul_one, map_smul, hψ_one, smul_zero]
+  -- `ψ` kills the square of the augmentation ideal
+  have hψ_sq : ∀ z ∈ (RingHom.ker (Bialgebra.counitAlgHom R A)) ^ 2, ψ z = 0 := by
+    intro z hz
+    rw [pow_two] at hz
+    refine Submodule.mul_induction_on hz ?_ ?_
+    · intro x hx y hy
+      have hxk : (Bialgebra.counitAlgHom R A) x = 0 := RingHom.mem_ker.mp hx
+      have hyk : (Bialgebra.counitAlgHom R A) y = 0 := RingHom.mem_ker.mp hy
+      have hx' : counit (R := R) x = 0 := hxk
+      have hy' : counit (R := R) y = 0 := hyk
+      rw [hψmul, hx', hy']
+      simp
+    · intro x y hx hy
+      rw [map_add, hx, hy, add_zero]
+  -- `n` kills the image of `ψ`
+  have hnψ : ∀ a : A, n • ψ a = 0 := by
+    intro a
+    have hmem : a - algebraMap R A (counit (R := R) a) ∈
+        RingHom.ker (Bialgebra.counitAlgHom R A) := by
+      rw [RingHom.mem_ker]
+      show counit (R := R) (a - algebraMap R A (counit (R := R) a)) = 0
+      simp
+    have hnp := hn _ hmem
+    have hzero : ψ (n • (a - algebraMap R A (counit (R := R) a))) = 0 := hψ_sq _ hnp
+    rw [smul_sub, map_sub, map_nsmul, map_nsmul, hψ_algebraMap, smul_zero, sub_zero] at hzero
+    exact hzero
+  -- `n` kills the image of `Ψ`
+  have hnΨ : ∀ α : A ⊗[R] A, n • Ψ α = 0 := by
+    intro α
+    induction α with
+    | zero => simp
+    | tmul x y => rw [hΨ_tmul, smul_comm, hnψ, smul_zero]
+    | add α₁ α₂ h₁ h₂ => rw [map_add, smul_add, h₁, h₂, add_zero]
+  -- KEY 3: `Ψ (Δ a) = d a` (translation invariance)
+  have hkey : ∀ a : A, Ψ (Coalgebra.comul (R := R) a) = KaehlerDifferential.D R A a := by
+    intro a
+    have hco := Coalgebra.sum_tmul_tmul_eq (R := R) (ℛ R a)
+      (fun i => ℛ R ((ℛ R a).left i)) (fun i => ℛ R ((ℛ R a).right i))
+    have himg := congrArg Θ hco
+    rw [map_sum, map_sum] at himg
+    simp only [map_sum] at himg
+    -- the left-hand side collapses through the antipode axiom
+    have hlhs : ∀ i, ∑ j ∈ (ℛ R ((ℛ R a).left i)).index,
+        Θ ((ℛ R ((ℛ R a).left i)).left j ⊗ₜ[R]
+          ((ℛ R ((ℛ R a).left i)).right j ⊗ₜ[R] (ℛ R a).right i))
+        = counit (R := R) ((ℛ R a).left i) • KaehlerDifferential.D R A ((ℛ R a).right i) := by
+      intro i
+      have : ∀ j, Θ ((ℛ R ((ℛ R a).left i)).left j ⊗ₜ[R]
+          ((ℛ R ((ℛ R a).left i)).right j ⊗ₜ[R] (ℛ R a).right i))
+          = ((ℛ R ((ℛ R a).left i)).left j *
+              HopfAlgebra.antipode R ((ℛ R ((ℛ R a).left i)).right j)) •
+            KaehlerDifferential.D R A ((ℛ R a).right i) := by
+        intro j
+        rw [hΘ_tmul, hΦ_tmul, smul_smul]
+      rw [Finset.sum_congr rfl (fun j _ => this j), ← Finset.sum_smul,
+        HopfAlgebra.sum_mul_antipode_eq_algebraMap_counit (ℛ R ((ℛ R a).left i)),
+        algebraMap_smul]
+    -- the right-hand side is `Ψ (Δ a)`
+    have hrhs : ∀ i, ∑ j ∈ (ℛ R ((ℛ R a).right i)).index,
+        Θ ((ℛ R a).left i ⊗ₜ[R]
+          ((ℛ R ((ℛ R a).right i)).left j ⊗ₜ[R] (ℛ R ((ℛ R a).right i)).right j))
+        = (ℛ R a).left i • ψ ((ℛ R a).right i) := by
+      intro i
+      have : ∀ j, Θ ((ℛ R a).left i ⊗ₜ[R]
+          ((ℛ R ((ℛ R a).right i)).left j ⊗ₜ[R] (ℛ R ((ℛ R a).right i)).right j))
+          = (ℛ R a).left i • Φ ((ℛ R ((ℛ R a).right i)).left j ⊗ₜ[R]
+              (ℛ R ((ℛ R a).right i)).right j) := by
+        intro j; rw [hΘ_tmul]
+      rw [Finset.sum_congr rfl (fun j _ => this j), ← Finset.smul_sum, ← map_sum,
+        (ℛ R ((ℛ R a).right i)).eq, hψ_apply]
+    rw [Finset.sum_congr rfl (fun i _ => hlhs i),
+      Finset.sum_congr rfl (fun i _ => hrhs i)] at himg
+    -- assemble
+    have hΨa : Ψ (Coalgebra.comul (R := R) a)
+        = ∑ i ∈ (ℛ R a).index, (ℛ R a).left i • ψ ((ℛ R a).right i) := by
+      conv_lhs => rw [← (ℛ R a).eq]
+      rw [map_sum]
+      exact Finset.sum_congr rfl (fun i _ => hΨ_tmul _ _)
+    have hsum : ∑ i ∈ (ℛ R a).index,
+        counit (R := R) ((ℛ R a).left i) • (ℛ R a).right i = a :=
+      Coalgebra.sum_counit_smul (R := R) (ℛ R a)
+    have hDa : ∑ i ∈ (ℛ R a).index,
+        counit (R := R) ((ℛ R a).left i) • KaehlerDifferential.D R A ((ℛ R a).right i)
+        = KaehlerDifferential.D R A a := by
+      conv_rhs => rw [← hsum]
+      rw [map_sum]
+      exact Finset.sum_congr rfl fun i _ => by rw [Derivation.map_smul]
+    rw [hΨa, ← himg, hDa]
+  -- conclude
+  intro ω
+  have hspan : ω ∈ Submodule.span A (Set.range (KaehlerDifferential.D R A)) := by
+    rw [KaehlerDifferential.span_range_derivation]; trivial
+  induction hspan using Submodule.span_induction with
+  | mem x hx =>
+      obtain ⟨a, rfl⟩ := hx
+      rw [← hkey a]
+      exact hnΨ _
+  | zero => simp
+  | add x y _ _ hx hy => rw [smul_add, hx, hy, add_zero]
+  | smul c x _ hx => rw [smul_comm, hx, smul_zero]
 
 set_option maxHeartbeats 1000000 in
 /-- **A bialgebra whose identity has trivial convolution cube has
@@ -6266,11 +6472,12 @@ theorem three_nsmul_mem_sq_ker_counit_of_convCube_eq_one
   rw [show (3 : ℕ) = 2 + 1 from rfl, add_nsmul, two_nsmul, one_nsmul, hfinal]
   exact neg_mem (Submodule.add_mem _ hmem2 hmem1)
 
+open Coalgebra in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **`[3] = e` on a Hopf order whose geometric points are killed by
-`3`** (sorry node, created 2026-07-25 — leaf (ii-b-2) of the Théorème A
+`3`** (PROVEN 2026-07-25 — leaf (ii-b-2) of the Théorème A
 decomposition, the DESCENT half of the `3`-torsion of `Ω[G⁄𝒪₃ᵥ]`, pure
 affine-group-scheme theory with no differentials in sight): for a
 finite flat Hopf order `G` over `𝒪₃ᵥ ≅ ℤ₃` with étale generic fibre
@@ -6301,7 +6508,28 @@ structure of `ℚ₃ᵥ ⊗[𝒪₃ᵥ] G` is the base change of that of `G`
 (4) `G → ℚ₃ᵥ ⊗ G` is INJECTIVE: `G` is flat over the domain `𝒪₃ᵥ`,
 hence torsion-free, and `ℚ₃ᵥ` is its fraction field, so the
 localization map has trivial kernel.  Hence the identity of maps
-descends from the generic fibre to `G` itself. -/
+descends from the generic fibre to `G` itself.
+REALIZED PROOF (2026-07-25), following that route but assembled at the
+level of the RESTRICTED points, which avoids ever transporting a
+convolution identity across the base change of bialgebras.  Write
+`ι = includeRight : G →ₐ[𝒪₃ᵥ] ℚ₃ᵥ ⊗ G` and, for a geometric point `χ`,
+`p_χ = (χ.restrictScalars 𝒪₃ᵥ) ∘ ι : G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ`.  (a) `ι` is
+injective: `Module.Flat.rTensor_preserves_injective_linearMap` applied
+to the injection `𝒪₃ᵥ ↪ ℚ₃ᵥ` (`IsFractionRing.injective`), composed
+with `TensorProduct.lid`.  (b) `Δ_{ℚ₃ᵥ⊗G}(1 ⊗ a) = ∑ (1 ⊗ a⁽¹⁾) ⊗ (1 ⊗ a⁽²⁾)`
+— the base-changed comultiplication read on the coordinates, which is
+`TensorProduct.comul_def` plus `Δ_{ℚ₃ᵥ}(1) = 1 ⊗ 1` and
+`tensorTensorTensorComm`.  (c) Hence the VENDORED product of geometric
+points and the mathlib `WithConv` product of the restricted points
+agree on coordinates: `(F * H) (1 ⊗ a) = (p_F * p_H) a`; applied twice
+`hkill` becomes `p_χ^{*3} = 1` in `WithConv (G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ)`.
+(d) `AlgHom.comp_convMul_distrib` (postcomposition distributes over
+convolution) turns this into `p_χ ∘ [3]^*_G = p_χ ∘ e^*`, i.e.
+`χ (ι ([3]^* a)) = χ (ι (e^* a))` for every `χ`.  (e) The points
+separate `ℚ₃ᵥ ⊗ G` (`eq_zero_of_forall_algHom_eq_zero`, applicable as
+`ℚ₃ᵥ` has characteristic zero so `ℚ₃ᵥᵃˡᵍ` is a separable closure and
+the generic fibre is finite étale), so `ι ([3]^* a) = ι (e^* a)`, and
+(a) removes `ι`. -/
 theorem convCube_id_eq_one_of_hopf_package
     (G : Type) [CommRing G] [HopfAlgebra 𝒪₃ᵥ G]
     [Module.Flat 𝒪₃ᵥ G] [Module.Finite 𝒪₃ᵥ G]
@@ -6309,13 +6537,118 @@ theorem convCube_id_eq_one_of_hopf_package
     (hkill : ∀ χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, χ * χ * χ = 1) :
     (WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) * WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) *
       WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) : WithConv (G →ₐ[𝒪₃ᵥ] G)) = 1 := by
-  sorry
+  classical
+  haveI : CharZero ℚ₃ᵥ :=
+    charZero_of_injective_algebraMap (algebraMap ℚ ℚ₃ᵥ).injective
+  haveI : Algebra.IsSeparable ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI : IsSepClosure ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ := ⟨inferInstance, inferInstance⟩
+  -- STEP (4): `G` embeds into its generic fibre, since `G` is flat over the
+  -- domain `𝒪₃ᵥ` and `ℚ₃ᵥ` is its fraction field
+  have hfinj : Function.Injective (Algebra.linearMap 𝒪₃ᵥ ℚ₃ᵥ) :=
+    IsFractionRing.injective 𝒪₃ᵥ ℚ₃ᵥ
+  have hrinj : Function.Injective ((Algebra.linearMap 𝒪₃ᵥ ℚ₃ᵥ).rTensor G) :=
+    Module.Flat.rTensor_preserves_injective_linearMap _ hfinj
+  have hinj : Function.Injective
+      (Algebra.TensorProduct.includeRight : G →ₐ[𝒪₃ᵥ] ℚ₃ᵥ ⊗[𝒪₃ᵥ] G) := by
+    intro x y hxy
+    refine (TensorProduct.lid 𝒪₃ᵥ G).symm.injective (hrinj ?_)
+    simpa using hxy
+  -- STEP (3): the comultiplication of the generic fibre is the base change of
+  -- the comultiplication of `G`, read off on the coordinates `1 ⊗ a`
+  have hcomul : ∀ a : G, Coalgebra.comul (R := ℚ₃ᵥ) (A := ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)
+      ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] a) =
+      ∑ i ∈ (ℛ 𝒪₃ᵥ a).index,
+        ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] (ℛ 𝒪₃ᵥ a).left i) ⊗ₜ[ℚ₃ᵥ]
+          ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] (ℛ 𝒪₃ᵥ a).right i) := by
+    intro a
+    rw [TensorProduct.comul_def]
+    simp only [LinearMap.coe_comp, Function.comp_apply,
+      TensorProduct.AlgebraTensorModule.map_tmul, CommSemiring.comul_apply]
+    rw [← (ℛ 𝒪₃ᵥ a).eq, TensorProduct.tmul_sum, map_sum]
+    exact Finset.sum_congr rfl fun i _ => rfl
+  -- STEP (1): the vendored bare-hom convolution of geometric points, evaluated
+  -- at a coordinate, is the `WithConv` convolution of the restricted points
+  have hconv : ∀ (F H : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ) (a : G),
+      (F * H) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] a) =
+        (WithConv.toConv ((F.restrictScalars 𝒪₃ᵥ).comp
+            (Algebra.TensorProduct.includeRight : G →ₐ[𝒪₃ᵥ] ℚ₃ᵥ ⊗[𝒪₃ᵥ] G)) *
+          WithConv.toConv ((H.restrictScalars 𝒪₃ᵥ).comp
+            (Algebra.TensorProduct.includeRight :
+              G →ₐ[𝒪₃ᵥ] ℚ₃ᵥ ⊗[𝒪₃ᵥ] G))).ofConv a := by
+    intro F H a
+    have hlhs : (F * H) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] a) =
+        Algebra.TensorProduct.lift F H (fun _ _ => Commute.all _ _)
+          (Coalgebra.comul (R := ℚ₃ᵥ) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] a)) := rfl
+    rw [hlhs, hcomul a, map_sum, AlgHom.convMul_apply, ← (ℛ 𝒪₃ᵥ a).eq, map_sum]
+    exact Finset.sum_congr rfl fun i _ => by simp
+  -- STEP (2): the geometric points separate the elements of the generic fibre
+  have hsep : ∀ x : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G,
+      (∀ χ : ℚ₃ᵥ ⊗[𝒪₃ᵥ] G →ₐ[ℚ₃ᵥ] ℚ₃ᵥᵃˡᵍ, χ x = 0) → x = 0 :=
+    fun x hx => eq_zero_of_forall_algHom_eq_zero ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ _ x hx
+  -- ASSEMBLY
+  apply WithConv.ofConv_injective
+  refine AlgHom.ext fun a => ?_
+  refine hinj ?_
+  have hone : (1 : WithConv (G →ₐ[𝒪₃ᵥ] G)).ofConv a = algebraMap 𝒪₃ᵥ G (counit a) := rfl
+  rw [hone]
+  refine sub_eq_zero.mp (hsep _ fun χ => ?_)
+  rw [map_sub, sub_eq_zero]
+  -- the restricted point
+  set p : G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ := (χ.restrictScalars 𝒪₃ᵥ).comp
+    (Algebra.TensorProduct.includeRight : G →ₐ[𝒪₃ᵥ] ℚ₃ᵥ ⊗[𝒪₃ᵥ] G) with hpdef
+  -- the cube of the restricted point is the convolution unit
+  have hpcube : (WithConv.toConv p * WithConv.toConv p * WithConv.toConv p :
+      WithConv (G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ)) = 1 := by
+    apply WithConv.ofConv_injective
+    refine AlgHom.ext fun b => ?_
+    have h2 := hconv (χ * χ) χ b
+    have h3 : (χ * χ * χ) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] b) =
+        algebraMap ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ (counit (R := ℚ₃ᵥ) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] b)) := by
+      rw [hkill χ]; rfl
+    have hres : ((χ * χ).restrictScalars 𝒪₃ᵥ).comp
+        (Algebra.TensorProduct.includeRight : G →ₐ[𝒪₃ᵥ] ℚ₃ᵥ ⊗[𝒪₃ᵥ] G) =
+        (WithConv.toConv p * WithConv.toConv p).ofConv :=
+      AlgHom.ext fun c => hconv χ χ c
+    rw [h3] at h2
+    rw [hres] at h2
+    have hcounit : counit (R := ℚ₃ᵥ) ((1 : ℚ₃ᵥ) ⊗ₜ[𝒪₃ᵥ] b) =
+        algebraMap 𝒪₃ᵥ ℚ₃ᵥ (counit (R := 𝒪₃ᵥ) b) := by
+      simp only [TensorProduct.counit_def, LinearMap.coe_comp, Function.comp_apply,
+        TensorProduct.AlgebraTensorModule.map_tmul]
+      simp [Algebra.algebraMap_eq_smul_one]
+    rw [hcounit] at h2
+    have hunit : (1 : WithConv (G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ)).ofConv b =
+        algebraMap 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ (counit (R := 𝒪₃ᵥ) b) := rfl
+    rw [hunit, ← h2]
+    rw [← IsScalarTower.algebraMap_apply]
+  -- postcomposition distributes over the convolution
+  have hdist : p.comp ((WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) *
+      WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) *
+      WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) : WithConv (G →ₐ[𝒪₃ᵥ] G)).ofConv) =
+      (WithConv.toConv p * WithConv.toConv p * WithConv.toConv p :
+        WithConv (G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ)).ofConv := by
+    rw [AlgHom.comp_convMul_distrib, AlgHom.comp_convMul_distrib]
+    simp
+  have hfin := congrArg (fun f : G →ₐ[𝒪₃ᵥ] ℚ₃ᵥᵃˡᵍ => f a) hdist
+  simp only [AlgHom.comp_apply] at hfin
+  rw [hpcube] at hfin
+  have hgoal : p ((WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) * WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) *
+      WithConv.toConv (AlgHom.id 𝒪₃ᵥ G) : WithConv (G →ₐ[𝒪₃ᵥ] G)).ofConv a) =
+      p (algebraMap 𝒪₃ᵥ G (counit (R := 𝒪₃ᵥ) a)) := by
+    rw [hfin]
+    show algebraMap 𝒪₃ᵥ ℚ₃ᵥᵃˡᵍ (counit (R := 𝒪₃ᵥ) a) = _
+    rw [hpdef]
+    simp
+  rw [hpdef] at hgoal
+  exact hgoal
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **The differentials of a Hopf order killed by `3` are `3`-torsion**
-(DECOMPOSED 2026-07-25 into the two leaves above — the descent leaf
+(PROVEN 2026-07-25 — decomposed into the two leaves above, both of
+which are now themselves proven: the descent leaf
 (ii-b-2) `convCube_id_eq_one_of_hopf_package` (`[3] = e` on `Spec G`
 itself) and the invariance leaf (ii-b-1)
 `kaehlerDifferential_nsmul_eq_zero_of_nsmul_mem_sq_ker_counit`
