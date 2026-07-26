@@ -392,6 +392,10 @@ public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
 -- attached to a Galois group of a number field, which is what makes the
 -- ramification-theoretic lemmas above applicable to `Gal(L/ℚ)` acting on `𝓞 L`.
 public import Mathlib.FieldTheory.Galois.IsGaloisGroup
+-- Continuity of `AlgEquiv.restrictNormalHom` for the Krull topology
+-- (`InfiniteGalois.restrictNormalHom_continuous`), used by the profinite
+-- compactness gluing `exists_mem_localInertiaGroup_pow_pro_of_forall_finite_level`.
+import Mathlib.FieldTheory.Galois.Profinite
 -- The flat-base-change layer behind the Eisenstein E2b′-flat arithmetic leaf
 -- `exists_equivariantHomFamily_spanFullRank_of_generic_iso` below:
 -- `Module.Flat.ker_lTensor_eq` (flat base change commutes with kernels),
@@ -8993,6 +8997,350 @@ structural statements about `localInertiaGroup` at `p` (the Frobenius
 conjugation law and the description of the `ω`-kernel), with every
 character-side step PROVEN. -/
 
+/-- **Frobenius conjugation is `p`-th powering on the WHOLE finite-level
+inertia, modulo wild inertia** (PROVEN 2026-07-25 — the "for every
+inertia element" strengthening of clause (b) of the generic
+`IsHardlyRamified.exists_finite_level_tame_generator_of_frobenius`,
+which supplies the conjugation law only for the tame generator it
+constructs): over an abstract DVR `R` carrying a faithful action of a
+finite group `G`, with residue characteristic `p` and with `φ ∈ G`
+acting as the `p`-th power map on the residue field,
+`(σ^p)⁻¹ · φσφ⁻¹` has `p`-power order for EVERY inertia element `σ`.
+
+Same tame character `θ(σ) = σ(π)/π mod 𝔪` as the generator theorem:
+`θ` is multiplicative on the inertia (residue triviality kills the
+cocycle correction `hUmul`), it is `φ`-semilinear — `θ(φσφ⁻¹) = θ(σ)^p`,
+the computation `hsemi` below, which uses only that `σ` is in the
+inertia and never that it generates anything — so `θ` kills
+`(σ^p)⁻¹ · φσφ⁻¹`; and the kernel of `θ` is wild by the PROVEN
+`IsHardlyRamified.exists_pow_prime_pow_eq_one_of_wild`.  This is the
+form the profinite tame-inertia leaves at `p` below need, since they
+must move an ARBITRARY inertia element rather than a chosen generator.
+(Serre, *Corps Locaux* IV §1–2.) -/
+theorem exists_pow_prime_pow_frobenius_conj_eq_one
+    {R : Type*} [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    {G : Type*} [Group G] [Finite G] [MulSemiringAction G R]
+    (hfaith : ∀ g : G, (∀ a : R, g • a = a) → g = 1)
+    {q : ℕ} (hq : q.Prime) (hqm : (q : R) ∈ IsLocalRing.maximalIdeal R)
+    (φ : G) (hφ : ∀ x : R, φ • x - x ^ q ∈ IsLocalRing.maximalIdeal R)
+    (σ : G) (hσmem : σ ∈ (IsLocalRing.maximalIdeal R).inertia G) :
+    ∃ j : ℕ, ((σ ^ q)⁻¹ * (φ * σ * φ⁻¹)) ^ q ^ j = 1 := by
+  classical
+  -- a uniformizer and the unit cocycle `g • π = π * U g`
+  obtain ⟨π, hπ⟩ := IsDiscreteValuationRing.exists_irreducible R
+  have hπ0 : π ≠ 0 := hπ.ne_zero
+  have hspan : IsLocalRing.maximalIdeal R = Ideal.span {π} := hπ.maximalIdeal_eq
+  have hUex : ∀ g : G, ∃ u : Rˣ, π * u = g • π := by
+    intro g
+    have hgπ : Irreducible (g • π) :=
+      (MulEquiv.irreducible_iff (MulSemiringAction.toRingEquiv G R g)).mpr hπ
+    exact IsDiscreteValuationRing.associated_of_irreducible R hπ hgπ
+  choose U hU using hUex
+  have hUmul : ∀ g h : G, (U (g * h) : R) = U g * (g • (U h : R)) := by
+    intro g h
+    refine mul_left_cancel₀ hπ0 ?_
+    calc π * (U (g * h) : R) = (g * h) • π := hU (g * h)
+      _ = g • (h • π) := mul_smul g h π
+      _ = g • (π * (U h : R)) := by rw [hU h]
+      _ = (g • π) * (g • (U h : R)) := smul_mul' g π (U h : R)
+      _ = (π * (U g : R)) * (g • (U h : R)) := by rw [hU g]
+      _ = π * ((U g : R) * (g • (U h : R))) := by ring
+  have hU1 : (U 1 : R) = 1 := by
+    refine mul_left_cancel₀ hπ0 ?_
+    rw [hU 1, one_smul, mul_one]
+  -- the tame character on the inertia subgroup
+  have hmul : ∀ s t : ↥((IsLocalRing.maximalIdeal R).inertia G),
+      Units.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)).toMonoidHom
+          (U ((s * t : _) : G)) =
+        Units.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)).toMonoidHom
+            (U (s : G)) *
+          Units.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)).toMonoidHom
+            (U (t : G)) := by
+    intro s t
+    refine Units.ext ?_
+    show Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U ((s : G) * (t : G)) : R) =
+      Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U (s : G) : R) *
+        Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U (t : G) : R)
+    rw [hUmul (s : G) (t : G), map_mul]
+    congr 1
+    exact Ideal.Quotient.eq.mpr (AddSubgroup.mem_inertia.mp s.2 (U (t : G) : R))
+  set θ : ↥((IsLocalRing.maximalIdeal R).inertia G) →*
+      (R ⧸ IsLocalRing.maximalIdeal R)ˣ :=
+    MonoidHom.mk' (fun s =>
+      Units.map (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)).toMonoidHom
+        (U (s : G))) hmul
+  have hθval : ∀ s : ↥((IsLocalRing.maximalIdeal R).inertia G),
+      (θ s : R ⧸ IsLocalRing.maximalIdeal R) =
+        Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U (s : G) : R) := fun _ => rfl
+  -- the kernel of the tame character is wild
+  have hker_of_θ : ∀ x : ↥((IsLocalRing.maximalIdeal R).inertia G), θ x = 1 →
+      ∀ c ∈ IsLocalRing.maximalIdeal R,
+        (x : G) • c - c ∈ (IsLocalRing.maximalIdeal R) ^ 2 := by
+    intro x hx c hc
+    have hu1 : (U (x : G) : R) - 1 ∈ IsLocalRing.maximalIdeal R := by
+      refine Ideal.Quotient.eq.mp ?_
+      have hval := congrArg Units.val hx
+      rw [hθval] at hval
+      simpa using hval
+    obtain ⟨r, hr⟩ := Ideal.mem_span_singleton'.mp (hspan ▸ hc)
+    have hxc : (x : G) • c - c = (((x : G) • r) * (U (x : G) : R) - r) * π := by
+      calc (x : G) • c - c = (x : G) • (r * π) - r * π := by rw [hr]
+        _ = ((x : G) • r) * ((x : G) • π) - r * π := by rw [smul_mul']
+        _ = ((x : G) • r) * (π * (U (x : G) : R)) - r * π := by rw [hU (x : G)]
+        _ = (((x : G) • r) * (U (x : G) : R) - r) * π := by ring
+    rw [hxc, pow_two]
+    refine Ideal.mul_mem_mul ?_ (hspan ▸ Ideal.mem_span_singleton_self π)
+    have hsplit : ((x : G) • r) * (U (x : G) : R) - r =
+        ((x : G) • r) * ((U (x : G) : R) - 1) + ((x : G) • r - r) := by ring
+    rw [hsplit]
+    exact add_mem (Ideal.mul_mem_left _ _ hu1) (AddSubgroup.mem_inertia.mp x.2 r)
+  have hwild : ∀ x : ↥((IsLocalRing.maximalIdeal R).inertia G), θ x = 1 →
+      ∃ j : ℕ, (x : G) ^ q ^ j = 1 := fun x hx =>
+    IsHardlyRamified.exists_pow_prime_pow_eq_one_of_wild hfaith hq hqm (x : G)
+      (AddSubgroup.mem_inertia.mp x.2) (hker_of_θ x hx)
+  -- the conjugate stays in the inertia
+  have hconjmem : φ * σ * φ⁻¹ ∈ (IsLocalRing.maximalIdeal R).inertia G := by
+    refine AddSubgroup.mem_inertia.mpr fun x => ?_
+    have hrw : (φ * σ * φ⁻¹) • x - x = φ • (σ • (φ⁻¹ • x) - φ⁻¹ • x) := by
+      rw [smul_sub, mul_smul, mul_smul, smul_inv_smul]
+    rw [hrw]
+    exact IsHardlyRamified.smul_mem_maximalIdeal_of_mem φ
+      (AddSubgroup.mem_inertia.mp hσmem _)
+  -- `φ` raises residues to the `q`-th power
+  have hφres : ∀ x : R,
+      Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (φ • x) =
+        (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) x) ^ q := by
+    intro x
+    rw [← map_pow]
+    exact Ideal.Quotient.eq.mpr (hφ x)
+  -- semilinearity of the tame character
+  have hsemi : Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)
+      (U (φ * σ * φ⁻¹) : R) =
+      Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U σ : R) ^ q := by
+    have e3 : Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ : R) *
+        Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ⁻¹ : R) ^ q = 1 := by
+      have e0 : (1 : R) = (U φ : R) * (φ • (U φ⁻¹ : R)) := by
+        rw [← hU1, ← hUmul φ φ⁻¹, mul_inv_cancel]
+      have e1 := congrArg (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)) e0
+      rw [map_one, map_mul, hφres] at e1
+      exact e1.symm
+    have e1 : (U (φ * σ * φ⁻¹) : R) =
+        (U φ : R) * (φ • ((U σ : R) * (σ • (U φ⁻¹ : R)))) := by
+      rw [mul_assoc, hUmul φ (σ * φ⁻¹), hUmul σ φ⁻¹]
+    have e2 := congrArg (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R)) e1
+    rw [map_mul, smul_mul', map_mul, hφres, hφres] at e2
+    have et : Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (σ • (U φ⁻¹ : R)) =
+        Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ⁻¹ : R) :=
+      Ideal.Quotient.eq.mpr (AddSubgroup.mem_inertia.mp hσmem _)
+    rw [et] at e2
+    calc Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U (φ * σ * φ⁻¹) : R)
+        = Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ : R) *
+          (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U σ : R) ^ q *
+            Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ⁻¹ : R) ^ q) := e2
+      _ = Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U σ : R) ^ q *
+          (Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ : R) *
+            Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U φ⁻¹ : R) ^ q) := by
+              ring
+      _ = Ideal.Quotient.mk (IsLocalRing.maximalIdeal R) (U σ : R) ^ q := by
+          rw [e3, mul_one]
+  -- hence `(σ^q)⁻¹ · φσφ⁻¹` lies in the kernel of `θ`, so it is wild
+  have hθ1 : θ (((⟨σ, hσmem⟩ : ↥((IsLocalRing.maximalIdeal R).inertia G)) ^ q)⁻¹ *
+      ⟨φ * σ * φ⁻¹, hconjmem⟩) = 1 := by
+    have hc : θ (⟨φ * σ * φ⁻¹, hconjmem⟩ :
+        ↥((IsLocalRing.maximalIdeal R).inertia G)) =
+        θ (⟨σ, hσmem⟩ : ↥((IsLocalRing.maximalIdeal R).inertia G)) ^ q := by
+      refine Units.ext ?_
+      rw [hθval, Units.val_pow_eq_pow_val, hθval]
+      exact hsemi
+    rw [map_mul, map_inv, map_pow, hc, inv_mul_cancel]
+  obtain ⟨j, hj⟩ := hwild _ hθ1
+  exact ⟨j, by simpa using hj⟩
+
+/-- **Frobenius conjugates the local inertia by `q`-th powers, modulo
+wild inertia** (PROVEN 2026-07-26 — the general-place engine of leaf (i)
+below; Serre, *Local Fields* IV §2; Neukirch II §7, §9): at a place `v`
+of a number field whose residue field has `q` elements, the CHOSEN
+arithmetic Frobenius `adicArithFrob v` conjugates every local inertia
+element `σ` to `σ^q` times a PRO-`q` inertia element.
+
+Proof: the error `w = (σ^q)⁻¹ · Φ σ Φ⁻¹` is forced, and it lies in the
+inertia because the inertia is normal in the whole local group
+(`hconjmem`).  For the pro-`q` clause, an open subgroup `H` contains the
+fixing subgroup of a finite Galois level `N`
+(`krullTopology_mem_nhds_one_iff_of_normal`); at that level the action of
+`Gal(N/Kᵥ)` on the DVR `𝒪_N` is faithful (denominator clearing),
+`q ∈ 𝔪_N` by lying over, and `restrictNormalHom N Φ` acts as the `q`-th
+power map on residues — a displacement outside `𝔪(IC-N)` would be a UNIT
+of the local ring `IC-N` whose image is a unit sitting inside
+`𝔪(IC-big)`, where `IsArithFrobAt` puts it.  So the finite-level
+Frobenius-conjugation law `exists_pow_prime_pow_frobenius_conj_eq_one`
+above applies and makes `restrictNormalHom N w` of `q`-power order, i.e.
+`w^{q^n} ∈ ker(restrictNormalHom N) = N.fixingSubgroup ⊆ H`. -/
+theorem exists_frobenius_conj_localInertia_of_natCard_residue
+    {K : Type*} [Field K] [NumberField K]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    {q : ℕ} (hq : q.Prime)
+    (hqcard : Nat.card ((HeightOneSpectrum.adicCompletionIntegers K v) ⧸
+      ((IsLocalRing.maximalIdeal (IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers K v)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v)))).under
+        (HeightOneSpectrum.adicCompletionIntegers K v))) = q)
+    (hqm : ((q : ℕ) : HeightOneSpectrum.adicCompletionIntegers K v) ∈
+      IsLocalRing.maximalIdeal (HeightOneSpectrum.adicCompletionIntegers K v)) :
+    ∀ σ ∈ localInertiaGroup v,
+      ∃ w ∈ localInertiaGroup v,
+        Field.AbsoluteGaloisGroup.adicArithFrob v * σ *
+            (Field.AbsoluteGaloisGroup.adicArithFrob v)⁻¹ = σ ^ q * w ∧
+          ∀ H : Subgroup (Field.absoluteGaloisGroup
+              (HeightOneSpectrum.adicCompletion K v)),
+            IsOpen (H : Set (Field.absoluteGaloisGroup
+              (HeightOneSpectrum.adicCompletion K v))) →
+            ∃ n : ℕ, w ^ q ^ n ∈ H := by
+  classical
+  set FF := Field.AbsoluteGaloisGroup.adicArithFrob v
+  -- the arithmetic Frobenius raises residues to the `q`-th power, because
+  -- the residue field at `q` has exactly `q` elements
+  have hfrobbig : ∀ y : IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers K v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v)),
+      FF • y - y ^ q ∈ IsLocalRing.maximalIdeal (IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers K v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v))) := by
+    intro y
+    have h1 : FF • y - y ^ Nat.card
+        ((HeightOneSpectrum.adicCompletionIntegers K v) ⧸
+          ((IsLocalRing.maximalIdeal (IntegralClosure
+              (HeightOneSpectrum.adicCompletionIntegers K v)
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v)))).under
+            (HeightOneSpectrum.adicCompletionIntegers K v))) ∈
+        IsLocalRing.maximalIdeal (IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers K v)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v))) :=
+      Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob
+        (v := v) y
+    rwa [hqcard] at h1
+  intro σ hσ
+  -- the local inertia is stable under conjugation by the whole local group
+  have hconjmem : ∀ g x : Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion K v),
+      x ∈ localInertiaGroup v → g * x * g⁻¹ ∈ localInertiaGroup v := by
+    intro g x hx
+    refine AddSubgroup.mem_inertia.mpr fun a => ?_
+    have hrw : (g * x * g⁻¹) • a - a = g • (x • (g⁻¹ • a) - g⁻¹ • a) := by
+      rw [smul_sub, mul_smul, mul_smul, smul_inv_smul]
+    rw [hrw]
+    exact IsHardlyRamified.smul_mem_maximalIdeal_of_mem g
+      (AddSubgroup.mem_inertia.mp hx _)
+  refine ⟨(σ ^ q)⁻¹ * (FF * σ * FF⁻¹),
+    mul_mem (inv_mem (pow_mem hσ q)) (hconjmem FF σ hσ),
+    (mul_inv_cancel_left (σ ^ q) (FF * σ * FF⁻¹)).symm, ?_⟩
+  intro H hH
+  -- a finite Galois level `N` whose fixing subgroup sits inside `H`
+  have hnhds : (H : Set (Field.absoluteGaloisGroup
+      (HeightOneSpectrum.adicCompletion K v))) ∈
+      nhds (1 : Field.absoluteGaloisGroup
+        (HeightOneSpectrum.adicCompletion K v)) :=
+    hH.mem_nhds (one_mem _)
+  obtain ⟨N, hfdN, hnormN, hle⟩ :=
+    (krullTopology_mem_nhds_one_iff_of_normal
+      (HeightOneSpectrum.adicCompletion K v)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v)) _).mp hnhds
+  haveI := hfdN
+  haveI := hnormN
+  haveI : Algebra.IsSeparable (HeightOneSpectrum.adicCompletion K v) N :=
+    Algebra.IsAlgebraic.isSeparable_of_perfectField
+  haveI : IsGalois (HeightOneSpectrum.adicCompletion K v) N := ⟨⟩
+  have hpR : ((q : ℕ) : IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers K v) N) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers K v) N) := by
+    have h1 := (Ideal.mem_of_liesOver
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers K v) N))
+      (IsLocalRing.maximalIdeal (HeightOneSpectrum.adicCompletionIntegers K v))
+      ((q : ℕ) : HeightOneSpectrum.adicCompletionIntegers K v)).mp hqm
+    rwa [map_natCast] at h1
+  -- faithfulness of the Galois action on the integral closure at level `N`
+  haveI : IsFractionRing (IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers K v) N) N :=
+    IsIntegralClosure.isFractionRing_of_finite_extension
+      (HeightOneSpectrum.adicCompletionIntegers K v)
+      (HeightOneSpectrum.adicCompletion K v) N
+      (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers K v) N)
+  have halgmapinj : Function.Injective
+      (algebraMap (HeightOneSpectrum.adicCompletionIntegers K v) N) := by
+    rw [IsScalarTower.algebraMap_eq
+      (HeightOneSpectrum.adicCompletionIntegers K v)
+      (HeightOneSpectrum.adicCompletion K v) N]
+    exact (algebraMap (HeightOneSpectrum.adicCompletion K v) N).injective.comp
+      (IsFractionRing.injective (HeightOneSpectrum.adicCompletionIntegers K v)
+        (HeightOneSpectrum.adicCompletion K v))
+  haveI : Module.IsTorsionFree
+      (HeightOneSpectrum.adicCompletionIntegers K v) N :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr halgmapinj
+  have hfaith : ∀ g : N ≃ₐ[HeightOneSpectrum.adicCompletion K v] N,
+      (∀ a : IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers K v) N, g • a = a) →
+        g = 1 := by
+    intro g hg
+    refine AlgEquiv.ext fun x => ?_
+    have halg : IsAlgebraic (HeightOneSpectrum.adicCompletionIntegers K v) x :=
+      (IsFractionRing.isAlgebraic_iff
+        (HeightOneSpectrum.adicCompletionIntegers K v)
+        (HeightOneSpectrum.adicCompletion K v) N).mpr
+        (Algebra.IsAlgebraic.isAlgebraic x)
+    obtain ⟨c, hc0, hcx⟩ := halg.exists_integral_multiple
+    have hfix : g • (c • x) = c • x := by
+      have h1 := congrArg Subtype.val (hg ⟨c • x, hcx⟩)
+      rwa [IntegralClosure.coe_smul] at h1
+    rw [smul_comm] at hfix
+    have hgx : g • x = x := smul_right_injective N hc0 hfix
+    simpa [AlgEquiv.smul_def] using hgx
+  -- the same congruence at level `N`: a displacement outside `𝔪(IC-N)`
+  -- would be a unit of `IC-N` whose image is a unit inside `𝔪(IC-big)`
+  have hφfrob : ∀ x : IntegralClosure
+      (HeightOneSpectrum.adicCompletionIntegers K v) N,
+      (AlgEquiv.restrictNormalHom N FF) • x - x ^ q ∈
+        IsLocalRing.maximalIdeal (IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers K v) N) := by
+    intro x
+    by_contra hnot
+    have hunit : IsUnit ((AlgEquiv.restrictNormalHom N FF) • x - x ^ q) := by
+      by_contra hnu
+      exact hnot ((IsLocalRing.mem_maximalIdeal _).mpr (mem_nonunits_iff.mpr hnu))
+    have hkey : integralClosureInclusion v N
+        ((AlgEquiv.restrictNormalHom N FF) • x - x ^ q) =
+        FF • (integralClosureInclusion v N x) -
+          (integralClosureInclusion v N x) ^ q := by
+      rw [map_sub, map_pow]
+      congr 1
+      exact Subtype.ext (AlgEquiv.restrictNormal_commutes FF N x.1)
+    have hmap := hunit.map (integralClosureInclusion v N)
+    rw [hkey] at hmap
+    exact (IsLocalRing.maximalIdeal.isMaximal _).ne_top
+      (Ideal.eq_top_of_isUnit_mem _
+        (hfrobbig (integralClosureInclusion v N x)) hmap)
+  -- the restriction of `σ` is a finite-level inertia element
+  have hσN : AlgEquiv.restrictNormalHom N σ ∈
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers K v) N)).inertia
+        (N ≃ₐ[HeightOneSpectrum.adicCompletion K v] N) :=
+    IsHardlyRamified.restrictNormalHom_mem_inertia_of_mem_localInertiaGroup
+      v N σ hσ
+  -- the finite-level Frobenius-conjugation law: the error is wild
+  obtain ⟨j, hj⟩ := exists_pow_prime_pow_frobenius_conj_eq_one hfaith hq hpR
+    (AlgEquiv.restrictNormalHom N FF) hφfrob (AlgEquiv.restrictNormalHom N σ) hσN
+  refine ⟨j, ?_⟩
+  -- a `q`-power of the error dies at level `N`, hence lies in `H`
+  have hker : ((σ ^ q)⁻¹ * (FF * σ * FF⁻¹)) ^ q ^ j ∈
+      (AlgEquiv.restrictNormalHom
+        (F := HeightOneSpectrum.adicCompletion K v) N).ker := by
+    rw [MonoidHom.mem_ker]
+    simpa only [map_pow, map_mul, map_inv] using hj
+  rw [IntermediateField.restrictNormalHom_ker] at hker
+  exact hle hker
+
+
 /-- **Frobenius conjugates the inertia at `p` by `p`-th powers, modulo
 wild inertia** (sorry node — leaf (i) of the two-leaf cut of the Serre
 §1.3 tame development): there is an element `φ` of the local Galois
@@ -9037,11 +9385,345 @@ theorem exists_frobenius_conj_localInertia_eq_pow_p_mul_pro_p (hp' : p.Prime) :
               IsOpen (H : Set (Field.absoluteGaloisGroup
                 (HeightOneSpectrum.adicCompletion ℚ
                   hp'.toHeightOneSpectrumRingOfIntegersRat))) →
-              ∃ n : ℕ, w ^ p ^ n ∈ H :=
+              ∃ n : ℕ, w ^ p ^ n ∈ H := by
+  refine ⟨Field.AbsoluteGaloisGroup.adicArithFrob
+    hp'.toHeightOneSpectrumRingOfIntegersRat, ?_⟩
+  refine exists_frobenius_conj_localInertia_of_natCard_residue _ hp'
+    (GaloisRepresentation.natCard_residue_quotient_toHeightOneSpectrum hp') ?_
+  rw [maximalIdeal_adicCompletionIntegers_eq_span hp']
+  exact Ideal.mem_span_singleton_self _
+
+/-- **The `ω`-kernel at a FINITE level consists of `(p − 1)`-st powers,
+modulo wild inertia** (sorry node — leaf (ii.a), the genuine Serre §1.3
+arithmetic of the `ω`-kernel leaf below, isolated from its profinite
+packaging): at a finite Galois level `N` over `ℚ_p`, an inertia element
+`σ` with `ω(σ) = 1` restricts to `τ̄^{p−1}` times an element of
+`p`-power order, for some finite-level inertia element `τ̄`.
+
+Classical content (Serre, *Local Fields* IV §2; Serre, *Abelian ℓ-adic
+Representations* §1.3; Neukirch II §7): the tame quotient `I_N/P_N`
+embeds in `κ_N^×` through the tame character `θ(σ) = σ(π)/π mod 𝔪_N`
+of `IsHardlyRamified.exists_finite_level_tame_generator_of_frobenius`,
+and it is CYCLIC of order prime to `p`. What must be supplied here —
+and this is the one genuinely arithmetic input of the `ω`-kernel leaf —
+is that on that cyclic group the residual cyclotomic character `ω` IS
+the level-one fundamental character, i.e. `ker(ω|_{I_N})` is exactly
+the subgroup of `(p − 1)`-st powers modulo `P_N`. Concretely: `ω` is
+read off the totally tamely ramified subextension `ℚ_p(μ_p)/ℚ_p` of
+degree `p − 1`, whose uniformizer `ζ_p − 1` makes `θ` and `ω` agree up
+to the index `(#κ_N − 1)/(p − 1)`; a cyclic group of order prime to `p`
+surjecting onto `μ_{p−1}` has `(p − 1)`-st powers as the kernel, since
+`#μ_{p−1} = p − 1` and `x ↦ x^{p−1}` has image of index `p − 1`.
+
+Soundness: the hypothesis set is inhabited (`σ = 1` at every `N`, with
+`τ̄ = 1`, `j = 0`) and the conclusion holds for every inhabitant by the
+structure theory cited; the statement is true at `p = 2` as well
+(`p − 1 = 1`, take `τ̄ = restrictNormalHom N σ`). CIRCULARITY GUARD
+(inherited from pillar E1a): must not be proven through `Family.lean`
+or `Reducible.lean`'s B5. -/
+theorem exists_finite_level_pow_sub_one_wild_of_cyclotomicCharacter_toZModPow_eq_one
+    (hp' : p.Prime)
+    (N : IntermediateField (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp'.toHeightOneSpectrumRingOfIntegersRat)))
+    [FiniteDimensional (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) N]
+    [IsGalois (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat) N]
+    {σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)}
+    (hσ : σ ∈ localInertiaGroup hp'.toHeightOneSpectrumRingOfIntegersRat)
+    (hω : PadicInt.toZModPow 1
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))
+          σ).toRingEquiv) : ℤ_[p]ˣ) : ℤ_[p]) = 1) :
+    ∃ τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+        (HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+        (N ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat] N),
+      ∃ j : ℕ, ((τ ^ (p - 1))⁻¹ * AlgEquiv.restrictNormalHom N σ) ^ p ^ j = 1 :=
   sorry
 
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **Profinite gluing of level-wise `e`-th-power witnesses** (PROVEN
+2026-07-26 — the general-place engine of leaf (ii.b) below; the
+profinite half of Neukirch II.9.11, the same compactness argument as
+the PROVEN `exists_mem_localInertiaGroup_restrictNormalHom_eq`): if at
+EVERY finite Galois level `N` the restriction of `σ` is an `e`-th power
+of a finite-level inertia element up to `q`-power order, then ONE
+global inertia element `τ` works at every level at once, i.e.
+`(τ^e)⁻¹ · σ` is pro-`q`.
+
+Proof: index by the finite Galois levels and intersect the candidate
+sets `D N = {t | res_N t ∈ I_N ∧ ∃ j, ((res_N t ^ e)⁻¹ · res_N σ)^{q^j} = 1}`.
+Each is CLOSED — it is the preimage under the continuous `res_N` of a
+subset of the FINITE discrete group `Gal(N/Kᵥ)` — NONEMPTY by the
+hypothesis together with the compactness lifting of a finite-level
+inertia element to a global one, and the family is DOWNWARD DIRECTED
+over composita: `res_N` factors through `res_{N'}` for `N ≤ N'`
+(`restrictNormalHom_reify_compat`), and that factorisation is a MONOID
+HOM, so it carries both the inertia membership (`restrict_mem_inertia_of_le`)
+and the displayed equation down.  Compactness of `Γ Kᵥ` gives a point
+`τ` of the intersection; it lies in the FULL local inertia group
+because every element of the big integral closure already lives at some
+finite Galois level; and every open `H` contains the fixing subgroup of
+some finite Galois `N` (`krullTopology_mem_nhds_one_iff_of_normal`), at
+which level the second clause is exactly `((τ^e)⁻¹σ)^{q^n} ∈ H`. -/
+theorem exists_mem_localInertiaGroup_pow_pro_of_forall_finite_level
+    {K : Type*} [Field K] [NumberField K]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (e q : ℕ) {σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion K v)}
+    (hfin : ∀ (N : IntermediateField (HeightOneSpectrum.adicCompletion K v) (AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion K v)))
+        [FiniteDimensional (HeightOneSpectrum.adicCompletion K v) N] [IsGalois
+            (HeightOneSpectrum.adicCompletion K v) N],
+      ∃ τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers
+          K v) N)).inertia (N ≃ₐ[(HeightOneSpectrum.adicCompletion K v)] N),
+        ∃ j : ℕ, ((τ ^ e)⁻¹ * AlgEquiv.restrictNormalHom N σ) ^ q ^ j = 1) :
+    ∃ τ ∈ localInertiaGroup v,
+      ∀ H : Subgroup (Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion K v)), IsOpen
+          (H : Set (Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion K v))) →
+        ∃ n : ℕ, ((τ ^ e)⁻¹ * σ) ^ q ^ n ∈ H := by
+  classical
+  haveI hsepbig : Algebra.IsSeparable (HeightOneSpectrum.adicCompletion K v) (AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion K v)) :=
+    (inferInstance : IsGalois (HeightOneSpectrum.adicCompletion K v) (AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion K v))).to_isSeparable
+  -- every element of the algebraic closure lies in a finite Galois level
+  have hexists : ∀ z : (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v)),
+      ∃ Nx : IntermediateField (HeightOneSpectrum.adicCompletion K v) (AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion K v)), z ∈ Nx ∧
+        FiniteDimensional (HeightOneSpectrum.adicCompletion K v) Nx ∧ IsGalois
+            (HeightOneSpectrum.adicCompletion K v) Nx := by
+    intro z
+    haveI hadj : FiniteDimensional (HeightOneSpectrum.adicCompletion K v)
+        ↥(IntermediateField.adjoin (HeightOneSpectrum.adicCompletion K v) {z}) :=
+      IntermediateField.adjoin.finiteDimensional (Algebra.IsIntegral.isIntegral _)
+    haveI hfdx : FiniteDimensional (HeightOneSpectrum.adicCompletion K v)
+        ↥(IntermediateField.normalClosure (HeightOneSpectrum.adicCompletion K v)
+          ↥(IntermediateField.adjoin (HeightOneSpectrum.adicCompletion K v) {z})
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v))) :=
+      normalClosure.is_finiteDimensional _ _ _
+    haveI hsepx : Algebra.IsSeparable (HeightOneSpectrum.adicCompletion K v)
+        ↥(IntermediateField.normalClosure (HeightOneSpectrum.adicCompletion K v)
+          ↥(IntermediateField.adjoin (HeightOneSpectrum.adicCompletion K v) {z})
+              (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v))) :=
+      Algebra.isSeparable_tower_bot_of_isSeparable (HeightOneSpectrum.adicCompletion K v) _
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v))
+    exact ⟨IntermediateField.normalClosure (HeightOneSpectrum.adicCompletion K v)
+      ↥(IntermediateField.adjoin (HeightOneSpectrum.adicCompletion K v) {z}) (AlgebraicClosure
+          (HeightOneSpectrum.adicCompletion K v)),
+      (IntermediateField.le_normalClosure _)
+        (IntermediateField.mem_adjoin_simple_self _ _),
+      hfdx, { }⟩
+  -- the directed index of finite Galois levels
+  let ι := {N : IntermediateField (HeightOneSpectrum.adicCompletion K v) (AlgebraicClosure
+      (HeightOneSpectrum.adicCompletion K v)) //
+    FiniteDimensional (HeightOneSpectrum.adicCompletion K v) N ∧ IsGalois
+        (HeightOneSpectrum.adicCompletion K v) N}
+  haveI : Nonempty ι := by
+    obtain ⟨N₀, -, hfd₀, hgal₀⟩ := hexists 0
+    exact ⟨⟨N₀, hfd₀, hgal₀⟩⟩
+  -- the candidate sets: elements inertial at `N` whose `e`-th power matches `σ`
+  let D : ι → Set (Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion K v)) := fun i =>
+    letI := i.2.1
+    letI := i.2.2
+    {t | AlgEquiv.restrictNormalHom i.1 t ∈
+        (IsLocalRing.maximalIdeal (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers K
+            v) i.1)).inertia (i.1 ≃ₐ[(HeightOneSpectrum.adicCompletion K v)] i.1) ∧
+      ∃ j : ℕ, (((AlgEquiv.restrictNormalHom i.1 t) ^ e)⁻¹ *
+        AlgEquiv.restrictNormalHom i.1 σ) ^ q ^ j = 1}
+  -- each `D i` is closed: it is the preimage of a subset of a FINITE group
+  have hDclosed : ∀ i, IsClosed (D i) := by
+    rintro ⟨N, hfd, hgal⟩
+    haveI := hfd
+    haveI := hgal
+    have hpre : D ⟨N, hfd, hgal⟩ =
+        (AlgEquiv.restrictNormalHom N) ⁻¹'
+          {g : N ≃ₐ[(HeightOneSpectrum.adicCompletion K v)] N |
+            g ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+                (HeightOneSpectrum.adicCompletionIntegers K v) N)).inertia (N
+                    ≃ₐ[(HeightOneSpectrum.adicCompletion K v)] N) ∧
+            ∃ j : ℕ, ((g ^ e)⁻¹ *
+              AlgEquiv.restrictNormalHom N σ) ^ q ^ j = 1} := rfl
+    rw [hpre]
+    exact IsClosed.preimage (InfiniteGalois.restrictNormalHom_continuous N)
+      (Set.Finite.isClosed (Set.toFinite _))
+  -- each `D i` is nonempty: lift the finite-level witness
+  have hDnonempty : ∀ i, (D i).Nonempty := by
+    rintro ⟨N, hfd, hgal⟩
+    haveI := hfd
+    haveI := hgal
+    obtain ⟨τ, hτI, j, hj⟩ := hfin N
+    obtain ⟨t, -, htres⟩ :=
+      exists_mem_localInertiaGroup_restrictNormalHom_eq v N τ hτI
+    exact ⟨t, by rw [htres]; exact hτI, j, by rw [htres]; exact hj⟩
+  -- the family is directed by reverse inclusion, via composita
+  have hDdirected : Directed (· ⊇ ·) D := by
+    rintro ⟨N₁, hfd₁, hgal₁⟩ ⟨N₂, hfd₂, hgal₂⟩
+    haveI := hfd₁; haveI := hgal₁; haveI := hfd₂; haveI := hgal₂
+    haveI hfdsup : FiniteDimensional (HeightOneSpectrum.adicCompletion K v) ↥(N₁ ⊔ N₂) :=
+      IntermediateField.finiteDimensional_sup N₁ N₂
+    haveI hsepsup : Algebra.IsSeparable (HeightOneSpectrum.adicCompletion K v) ↥(N₁ ⊔ N₂) :=
+      Algebra.isSeparable_tower_bot_of_isSeparable (HeightOneSpectrum.adicCompletion K v) ↥(N₁ ⊔
+          N₂) (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v))
+    haveI hgalsup : IsGalois (HeightOneSpectrum.adicCompletion K v) ↥(N₁ ⊔ N₂) := { }
+    -- transporting a level-`N'` witness down to a level `N ≤ N'`
+    have hdown : ∀ (N N' : IntermediateField (HeightOneSpectrum.adicCompletion K v)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v)))
+        (_ : FiniteDimensional (HeightOneSpectrum.adicCompletion K v) N) (_ : IsGalois
+            (HeightOneSpectrum.adicCompletion K v) N)
+        (_ : FiniteDimensional (HeightOneSpectrum.adicCompletion K v) N') (_ : IsGalois
+            (HeightOneSpectrum.adicCompletion K v) N') (h : N ≤ N')
+        (t : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion K v)),
+        (AlgEquiv.restrictNormalHom N' t ∈
+            (IsLocalRing.maximalIdeal (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers
+                K v) N')).inertia (N' ≃ₐ[(HeightOneSpectrum.adicCompletion K v)] N') ∧
+          ∃ j : ℕ, (((AlgEquiv.restrictNormalHom N' t) ^ e)⁻¹ *
+            AlgEquiv.restrictNormalHom N' σ) ^ q ^ j = 1) →
+        (AlgEquiv.restrictNormalHom N t ∈
+            (IsLocalRing.maximalIdeal (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers
+                K v) N)).inertia (N ≃ₐ[(HeightOneSpectrum.adicCompletion K v)] N) ∧
+          ∃ j : ℕ, (((AlgEquiv.restrictNormalHom N t) ^ e)⁻¹ *
+            AlgEquiv.restrictNormalHom N σ) ^ q ^ j = 1) := by
+      intro N N' hfdN hgalN hfdN' hgalN' h t ht
+      haveI := hfdN; haveI := hgalN; haveI := hfdN'; haveI := hgalN'
+      haveI : Normal (HeightOneSpectrum.adicCompletion K v) ↥(reifySubextension v N N') :=
+          normal_reifySubextension v N N' h
+      refine ⟨restrict_mem_inertia_of_le v N N' h t ht.1, ?_⟩
+      obtain ⟨j, hj⟩ := ht.2
+      refine ⟨j, ?_⟩
+      -- `restrictNormalHom N` factors through `restrictNormalHom N'`
+      set Ψ : (N' ≃ₐ[(HeightOneSpectrum.adicCompletion K v)] N') →* (N
+          ≃ₐ[(HeightOneSpectrum.adicCompletion K v)] N) :=
+        (AlgEquiv.autCongr (reifyEquiv v N N' h)).toMonoidHom.comp
+          (AlgEquiv.restrictNormalHom (reifySubextension v N N'))
+      have hfac : ∀ g : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion K v),
+          AlgEquiv.restrictNormalHom N g = Ψ (AlgEquiv.restrictNormalHom N' g) :=
+        fun g => restrictNormalHom_reify_compat v N N' h g
+      rw [hfac t, hfac σ, ← map_pow, ← map_inv, ← map_mul, ← map_pow, hj, map_one]
+    refine ⟨⟨N₁ ⊔ N₂, hfdsup, hgalsup⟩, ?_, ?_⟩
+    · exact fun t htmem =>
+        hdown N₁ (N₁ ⊔ N₂) hfd₁ hgal₁ hfdsup hgalsup le_sup_left t htmem
+    · exact fun t htmem =>
+        hdown N₂ (N₁ ⊔ N₂) hfd₂ hgal₂ hfdsup hgalsup le_sup_right t htmem
+  -- compactness: the intersection is nonempty
+  obtain ⟨t, ht⟩ := IsCompact.nonempty_iInter_of_directed_nonempty_isCompact_isClosed
+    D hDdirected hDnonempty (fun i => (hDclosed i).isCompact) hDclosed
+  rw [Set.mem_iInter] at ht
+  refine ⟨t, ?_, ?_⟩
+  · -- `t` lies in the FULL local inertia group
+    refine AddSubgroup.mem_inertia.mpr fun x => ?_
+    obtain ⟨Nx, hxmem, hfdx, hgalx⟩ := hexists
+      (algebraMap (IntegralClosure (HeightOneSpectrum.adicCompletionIntegers K v)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v))) (AlgebraicClosure
+              (HeightOneSpectrum.adicCompletion K v)) x)
+    haveI := hfdx
+    haveI := hgalx
+    have hyint : IsIntegral (HeightOneSpectrum.adicCompletionIntegers K v) (⟨_, hxmem⟩ : ↥Nx) := by
+      rw [← isIntegral_algebraMap_iff
+        (algebraMap ↥Nx (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v))).injective]
+      exact (Algebra.IsIntegral.isIntegral (R := (HeightOneSpectrum.adicCompletionIntegers K v))
+          x).algebraMap
+    set y : IntegralClosure (HeightOneSpectrum.adicCompletionIntegers K v) ↥Nx := ⟨⟨_, hxmem⟩,
+        hyint⟩
+    have hyin := AddSubgroup.mem_inertia.mp (ht ⟨Nx, hfdx, hgalx⟩).1 y
+    have hpush := integralClosureInclusion_mem_maximalIdeal v Nx _ hyin
+    have h₁ : integralClosureInclusion v Nx
+        ((AlgEquiv.restrictNormalHom Nx t) • y) = t • x := by
+      apply Subtype.ext
+      exact AlgEquiv.restrictNormal_commutes t Nx ⟨_, hxmem⟩
+    have h₂ : integralClosureInclusion v Nx y = x := by
+      apply Subtype.ext
+      rfl
+    rw [map_sub, h₁, h₂] at hpush
+    rw [Submodule.mem_toAddSubgroup]
+    exact hpush
+  · -- the pro-`q` clause
+    intro H hH
+    have hnhds : (H : Set (Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion K v))) ∈
+        nhds (1 : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion K v)) :=
+            hH.mem_nhds (one_mem _)
+    obtain ⟨N, hfdN, hnormN, hle⟩ :=
+      (krullTopology_mem_nhds_one_iff_of_normal (HeightOneSpectrum.adicCompletion K v)
+          (AlgebraicClosure (HeightOneSpectrum.adicCompletion K v)) _).mp hnhds
+    haveI := hfdN
+    haveI := hnormN
+    haveI : Algebra.IsSeparable (HeightOneSpectrum.adicCompletion K v) N :=
+        Algebra.IsAlgebraic.isSeparable_of_perfectField
+    haveI hgalN : IsGalois (HeightOneSpectrum.adicCompletion K v) N := ⟨⟩
+    obtain ⟨j, hj⟩ := (ht ⟨N, hfdN, hgalN⟩).2
+    refine ⟨j, ?_⟩
+    have hker : ((t ^ e)⁻¹ * σ) ^ q ^ j ∈
+        (AlgEquiv.restrictNormalHom (F := (HeightOneSpectrum.adicCompletion K v)) N).ker := by
+      rw [MonoidHom.mem_ker]
+      simpa only [map_pow, map_mul, map_inv] using hj
+    rw [IntermediateField.restrictNormalHom_ker] at hker
+    exact hle hker
+
+/-- **Profinite gluing of the finite-level `(p − 1)`-st-power witnesses**
+(PROVEN 2026-07-26 by specializing the general-place engine just above
+at `e = p − 1`, `q = p` — the profinite packaging half of the
+`ω`-kernel leaf below): if at EVERY finite Galois level `N` the
+restriction of `σ` is a `(p − 1)`-st power of a finite-level inertia
+element up to `p`-power order, then ONE global inertia element `τ`
+works at every level simultaneously — `(τ^{p−1})⁻¹ · σ` is pro-`p`.
+
+Proof (the profinite half of Neukirch II.9.11, exactly the argument
+already executed in the PROVEN
+`exists_mem_localInertiaGroup_restrictNormalHom_eq`): the sets
+`D_N = localInertiaGroup ∩ π_N⁻¹{finite-level witnesses at N}` are
+CLOSED in the compact group `Γ Kᵥ` (each is the intersection of the
+closed inertia with the preimage of a subset of the FINITE discrete
+group `Gal(N/Kᵥ)`), NONEMPTY by the hypothesis together with the
+compactness lifting `exists_mem_localInertiaGroup_restrictNormalHom_eq`
+of a finite-level inertia element to a global one, and DOWNWARD
+DIRECTED because `π_N` factors through `π_{N'}` for `N ⊆ N'`, so a
+witness at `N'` is a witness at `N`. Compactness gives a point `τ` of
+`⋂_N D_N`; and every open subgroup `H` contains the fixing subgroup of
+some finite Galois `N` (`krullTopology_mem_nhds_one_iff_of_normal`), so
+the level-`N` clause at that `N` is exactly `((τ^{p−1})⁻¹σ)^{p^n} ∈ H`.
+
+Soundness: inhabited (`σ = 1`, all witnesses `τ̄ = 1`, giving `τ = 1`)
+and true for every inhabitant by the compactness argument cited. -/
+theorem exists_mem_localInertiaGroup_pow_sub_one_pro_p_of_forall_finite_level
+    (hp' : p.Prime)
+    {σ : Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ
+      hp'.toHeightOneSpectrumRingOfIntegersRat)}
+    (hfin : ∀ (N : IntermediateField (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat)))
+        [FiniteDimensional (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) N]
+        [IsGalois (HeightOneSpectrum.adicCompletion ℚ
+          hp'.toHeightOneSpectrumRingOfIntegersRat) N],
+      ∃ τ ∈ (IsLocalRing.maximalIdeal (IntegralClosure
+          (HeightOneSpectrum.adicCompletionIntegers ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat) N)).inertia
+          (N ≃ₐ[HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat] N),
+        ∃ j : ℕ, ((τ ^ (p - 1))⁻¹ * AlgEquiv.restrictNormalHom N σ) ^ p ^ j = 1) :
+    ∃ τ ∈ localInertiaGroup hp'.toHeightOneSpectrumRingOfIntegersRat,
+      ∀ H : Subgroup (Field.absoluteGaloisGroup
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat)),
+        IsOpen (H : Set (Field.absoluteGaloisGroup
+          (HeightOneSpectrum.adicCompletion ℚ
+            hp'.toHeightOneSpectrumRingOfIntegersRat))) →
+        ∃ n : ℕ, ((τ ^ (p - 1))⁻¹ * σ) ^ p ^ n ∈ H :=
+  exists_mem_localInertiaGroup_pow_pro_of_forall_finite_level
+    hp'.toHeightOneSpectrumRingOfIntegersRat (p - 1) p hfin
+
 /-- **The `ω`-kernel inside the inertia at `p` consists of `(p − 1)`-st
-powers, modulo wild inertia** (sorry node — leaf (ii) of the two-leaf
+powers, modulo wild inertia** (PROVEN 2026-07-25 over the two-leaf
+cut (ii.a)+(ii.b) just above — leaf (ii) of the two-leaf
 cut of the Serre §1.3 tame development): if an inertia element `σ` at
 `p` has level-`1` cyclotomic value `1` (i.e. `ω(σ) = 1`), then
 `σ = τ^{p−1} · w` with `τ` again in the inertia and `w` in the inertia
@@ -9087,8 +9769,17 @@ theorem exists_pow_sub_one_mul_pro_p_of_cyclotomicCharacter_toZModPow_eq_one
             IsOpen (H : Set (Field.absoluteGaloisGroup
               (HeightOneSpectrum.adicCompletion ℚ
                 hp'.toHeightOneSpectrumRingOfIntegersRat))) →
-            ∃ n : ℕ, w ^ p ^ n ∈ H :=
-  sorry
+            ∃ n : ℕ, w ^ p ^ n ∈ H := by
+  classical
+  obtain ⟨τ, hτI, hτpro⟩ :=
+    exists_mem_localInertiaGroup_pow_sub_one_pro_p_of_forall_finite_level hp'
+      (σ := σ)
+      (fun N _ _ =>
+        exists_finite_level_pow_sub_one_wild_of_cyclotomicCharacter_toZModPow_eq_one
+          hp' N hσ hω)
+  exact ⟨τ, hτI, (τ ^ (p - 1))⁻¹ * σ,
+    mul_mem (inv_mem (pow_mem hτI (p - 1))) hσ,
+    (mul_inv_cancel_left (τ ^ (p - 1)) σ).symm, hτpro⟩
 
 /-- **A mod-`p` character with open kernel kills pro-`p` elements**
 (PROVEN 2026-07-25 — the prime-to-`p`-order half of the tame-pinning
