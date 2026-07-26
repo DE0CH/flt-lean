@@ -177,6 +177,15 @@ public import Mathlib.RingTheory.KrullDimension.Field
 public import Mathlib.RingTheory.FiniteType
 public import Mathlib.RingTheory.Spectrum.Prime.Topology
 public import Mathlib.Algebra.Algebra.Rat
+-- The Bertini DECOMPOSITION (2026-07-26): the hyperplane parameter space is
+-- `Fin (n+1) → ℚ` and Zariski-genericity on it is stated as "off the zero
+-- locus of a nonzero `MvPolynomial (Fin (n+1)) ℚ`", so `MvPolynomial` occurs
+-- in the three new leaf STATEMENTS; `MvPolynomial.funext_set` (vanishing on a
+-- box with infinite sides forces the polynomial to be zero) is what proves
+-- the density lemma reconciling the Zariski and real topologies, and
+-- `Set.Ioo_infinite` supplies the infinite sides.
+public import Mathlib.Algebra.MvPolynomial.Funext
+public import Mathlib.Order.Interval.Set.Infinite
 -- (`Mathlib.RingTheory.Ideal.Norm.AbsNorm` is imported once, above:
 -- `Ideal.absNorm` is the residue cardinality `Nw` of a place of the
 -- Moret–Bailly base `F`, and appears in the STATEMENTS both of the two
@@ -988,12 +997,27 @@ affine/separated/quasi-compact/finite-type inheritance and the STRICT
 Krull-dimension drop, including the finite-dimensionality of a finitely
 generated `ℚ`-algebra that the drop needs, are all discharged over the next
 name),
-`exists_bertiniHyperplane_of_affine_geometricallyIrreducible` (SORRY — ONE
-good hyperplane FUNCTION in characteristic zero: on a smooth geometrically
-irreducible affine `ℚ`-variety of dimension `> 1` with a real point there is
-a nonzerodivisor `ℓ` whose vanishing locus is again smooth, geometrically
-irreducible and has a real point; step (i) of Moret–Bailly's route, reduced
-to its geometry),
+`exists_bertiniHyperplane_of_affine_geometricallyIrreducible` (**PROVEN
+2026-07-26** — no longer a leaf: once the hyperplane PARAMETER SPACE is
+named, the Bertini half and the real-approximation half separate, and the
+assembly is the density lemma `exists_rat_mem_box_eval_ne_zero` (PROVEN)
+saying a nonzero rational polynomial has a rational non-root in every real
+box; `affineLinearForm` and
+`exists_affineCoordinates_of_locallyOfFiniteType` (PROVEN) supply the
+parameterization),
+`exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` (SORRY —
+elementary: `A` is a domain and `v ↦ ℓ_v` is a `ℚ`-linear map with proper
+kernel, so a single LINEAR `F` works; the only missing mathlib ingredient is
+"smooth over a field ⟹ reduced"),
+`exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` (SORRY — the
+two BERTINI theorems in characteristic zero, smoothness and irreducibility of
+the generic hyperplane section, stated over the parameter space; this is the
+whole of item 3 of the missing-machinery list and by far the largest of the
+three),
+`exists_realApproximationBall_of_affine_geometricallyIrreducible` (SORRY —
+the `ℝ`-topology half: a whole BOX of parameters keeps a real point on the
+section, by the implicit function theorem on the real manifold `X(ℝ)`; needs
+a scheme-to-real-manifold bridge, which mathlib lacks entirely),
 `exists_normalRealPoint_of_affine_curve` (**PROVEN 2026-07-26** — no longer
 a leaf: it is now BLGGT Prop. 3.1.1's own assembly over the next three
 names),
@@ -1040,13 +1064,26 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    geometrically irreducible quasi-projective variety of dimension `> 1`
    has a smooth geometrically irreducible hyperplane section, plus a
    real-topology approximation step to keep a real point. This is step (i)
-   of the classical route and is now the whole content of
-   `exists_bertiniHyperplane_of_affine_geometricallyIrreducible` — a SINGLE
-   hyperplane function, the iteration having been discharged (2026-07-26) by
-   well-founded induction inside
-   `exists_affineCurve_of_affine_geometricallyIrreducible` and all the
+   of the classical route. Updated 2026-07-26 (second cut of the day): the
+   iteration was discharged by well-founded induction inside
+   `exists_affineCurve_of_affine_geometricallyIrreducible`, the
    scheme-theoretic and dimension-theoretic bookkeeping by
-   `exists_dimensionDrop_of_affine_geometricallyIrreducible`.
+   `exists_dimensionDrop_of_affine_geometricallyIrreducible`, and the single
+   hyperplane function by
+   `exists_bertiniHyperplane_of_affine_geometricallyIrreducible` over the
+   hyperplane PARAMETER SPACE — so what is left of item 3 is the two BERTINI
+   theorems alone, in
+   `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible`. The
+   real-topology approximation is now a SEPARATE item, 6 below, and the
+   elementary nonzerodivisor step a third,
+   `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible`.
+6. **Real points of a smooth `ℚ`-variety as a real manifold**: mathlib has no
+   functor from schemes to real manifolds, so `X(ℝ) ⊆ ℝⁿ` must be identified
+   as a submanifold with tangent space the kernel of the Jacobian before
+   `HasStrictFDerivAt.implicitFunction` can be applied. Added 2026-07-26;
+   owned by `exists_realApproximationBall_of_affine_geometricallyIrreducible`.
+   Independent of items 1–5 and startable on its own; it is real analysis,
+   not arithmetic and not Bertini.
 4. **Picard schemes / Jacobians as schemes**, with the torsor formalism
    and the "incompressible neighbourhood" existence statement — step (ii),
    and by far the largest of the four. Owned by
@@ -1057,14 +1094,16 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    `exists_bound_forall_padicPoint_of_geometricallyIrreducible`. Independent
    of items 1–4 and startable on its own.
 
-Each is an independently ownable subproject; 1, 3 and 5 are the ones that
-can be started without the others, and items 3 (Bertini) and 5 (Lang–Weil +
-Hensel) are now leaves of their own --
-`exists_bertiniHyperplane_of_affine_geometricallyIrreducible` (the Bertini
-geometry, all that is left of item 3 now that the dimension bookkeeping is
-discharged) and
-`exists_bound_forall_padicPoint_of_geometricallyIrreducible` -- so each can
-be attacked without any of the others.
+Each is an independently ownable subproject; 1, 3, 5 and 6 are the ones that
+can be started without the others, and items 3 (Bertini), 5 (Lang–Weil +
+Hensel) and 6 (real points as a manifold) are now leaves of their own --
+`exists_bertiniGenericLocus_of_affine_geometricallyIrreducible`,
+`exists_bound_forall_padicPoint_of_geometricallyIrreducible` and
+`exists_realApproximationBall_of_affine_geometricallyIrreducible` -- so each
+can be attacked without any of the others. The elementary
+`exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` is a fourth
+such starting point and needs no missing-machinery item at all beyond
+"smooth over a field implies reduced".
 
 Leaf list under the moduli cut, as of the FORM recut (2026-07-25):
 `nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`
@@ -1269,9 +1308,11 @@ and Pop's theorem that `ℚ^tr` is a large/ample field. The argument is:
 
 **Step (i) is `exists_affineCurve_of_affine_geometricallyIrreducible`
 (PROVEN 2026-07-26 over `exists_dimensionDrop_of_affine_geometricallyIrreducible`,
-itself PROVEN 2026-07-26 over the single hyperplane-function leaf
-`exists_bertiniHyperplane_of_affine_geometricallyIrreducible`, SORRY) and
-steps (ii)+(iii) are `exists_normalRealPoint_of_affine_curve`
+itself PROVEN over `exists_bertiniHyperplane_of_affine_geometricallyIrreducible`,
+itself PROVEN over the hyperplane PARAMETER SPACE and its three leaves
+`exists_nonZeroDivisorLocus_...`, `exists_bertiniGenericLocus_...` and
+`exists_realApproximationBall_of_affine_geometricallyIrreducible`, all SORRY)
+and steps (ii)+(iii) are `exists_normalRealPoint_of_affine_curve`
 (PROVEN 2026-07-26 over `exists_normalSplitPoint_of_affine_curve`, which is
 Moret–Bailly's theorem proper, plus the two arithmetic leaves that buy the
 avoidance datum — see "The avoidance cut" section docstring below).** The
@@ -1363,11 +1404,349 @@ noncomputable def specQuotSpanSingleton {A : CommRingCat.{u}} (ℓ : A) :
       AlgebraicGeometry.Spec A :=
   AlgebraicGeometry.Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (Ideal.span {ℓ})))
 
+/-! ### The Bertini cut: the hyperplane PARAMETER SPACE (2026-07-26)
+
+`exists_bertiniHyperplane_of_affine_geometricallyIrreducible` asks for ONE
+global function `ℓ ∈ A` that is simultaneously
+
+* Bertini-generic (its vanishing locus smooth and geometrically irreducible),
+* a nonzerodivisor, and
+* `ℝ`-close to a hyperplane through a prescribed real point.
+
+The three conditions live on DIFFERENT topologies of the same parameter
+space, and that is the whole reason they were kept in one leaf: the first two
+hold on a Zariski-dense open subset of the space of hyperplanes, the third on
+a nonempty subset open in the REAL topology, and only the (elementary) fact
+that a nonzero rational polynomial has a rational non-root in every real box
+lets one conclude that a single parameter satisfies all three.
+
+**So the honest cut is to NAME the parameter space and separate the three
+conditions on it.** That is what this block does. `A` is a finitely generated
+`ℚ`-algebra, so a choice of algebra generators `x : Fin n → A` presents
+`Spec A` as a closed subscheme of `𝔸ⁿ_ℚ`; the affine hyperplanes of `𝔸ⁿ_ℚ`
+are then parameterized by `v : Fin (n+1) → ℚ` through
+`affineLinearForm`, `ℓ_v = ∑ vᵢ xᵢ − v_last`. Zariski-genericity of a
+condition on `v` is expressed as "there is a NONZERO `F : MvPolynomial
+(Fin (n+1)) ℚ` such that `F(v) ≠ 0` implies the condition" — i.e. the good
+locus contains a nonempty basic open of the parameter space — and the real
+condition as "there is a nonempty box in which every rational `v` works".
+
+The parameter space is not free-floating: `affineLinearForm` and the box /
+genericity vocabulary are consumed by the proof of
+`exists_bertiniHyperplane_of_affine_geometricallyIrreducible` below, which is
+the assembly of the three leaves over the density lemma. -/
+
 open CategoryTheory AlgebraicGeometry in
-/-- **BERTINI + REAL APPROXIMATION: ONE good hyperplane function** (sorry
-node — the whole geometric content of step (i) of Moret–Bailly's route; cut
-out of `exists_dimensionDrop_of_affine_geometricallyIrreducible` on
-2026-07-26, which is now PROVEN over it).
+/-- **The affine-linear form `∑ vᵢ xᵢ − v_last` on `Spec A`** (2026-07-26).
+
+Given a ring map `φ : ULift ℚ ⟶ A` (in practice `Spec.preimage g`, the ring
+map underlying the structure morphism) and a finite family `x : Fin n → A` of
+algebra generators, this is the restriction to `Spec A ⊆ 𝔸ⁿ_ℚ` of the
+affine-linear form with coefficient vector `(v 0, …, v (n-1))` and constant
+term `v (Fin.last n)`. As `v` ranges over `Fin (n+1) → ℚ` this is exactly the
+family of `ℚ`-rational affine hyperplane sections of `Spec A` in the closed
+embedding determined by `x` — the parameter space over which the three
+Bertini leaves below are stated. -/
+noncomputable def affineLinearForm {A : CommRingCat.{u}}
+    (φ : CommRingCat.of (ULift.{u} ℚ) ⟶ A) {n : ℕ} (x : Fin n → A)
+    (v : Fin (n + 1) → ℚ) : A :=
+  (∑ i : Fin n, φ.hom (ULift.up (v i.castSucc)) * x i) - φ.hom (ULift.up (v (Fin.last n)))
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Affine coordinates exist** (PROVEN glue, 2026-07-26). A morphism of
+affine schemes `Spec A ⟶ Spec (ULift ℚ)` that is locally of finite type
+presents `A` as a finitely generated algebra over `ULift ℚ`, i.e. there is a
+finite family `x : Fin n → A` such that `A` is generated as a RING by the
+image of the structure map together with the `xᵢ`. That is precisely a closed
+embedding `Spec A ↪ 𝔸ⁿ_ℚ`, which is what the Bertini leaves need in order to
+speak of hyperplanes at all.
+
+Proof: `HasRingHomProperty.Spec_iff` turns `LocallyOfFiniteType g` into
+`RingHom.FiniteType (Spec.preimage g).hom` (using `Spec.map_preimage`, since
+`Spec` is fully faithful), which is `Algebra.FiniteType` for the induced
+algebra structure; `Algebra.FiniteType.out` gives a finite generating set as
+a `Finset`, `Finset.equivFin` turns it into a `Fin n`-family, and
+`Algebra.adjoin_eq_ring_closure` converts `Algebra.adjoin = ⊤` into the
+`Subring.closure` form used in the leaf statements (which avoids carrying an
+`Algebra (ULift ℚ) A` instance in a statement, where it would have to be
+supplied by hand). -/
+theorem exists_affineCoordinates_of_locallyOfFiniteType {A : CommRingCat.{u}}
+    (g : AlgebraicGeometry.Spec A ⟶
+      AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g) :
+    ∃ (n : ℕ) (x : Fin n → A),
+      Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+        Set.range x) = ⊤ := by
+  classical
+  have hFT : RingHom.FiniteType (AlgebraicGeometry.Spec.preimage g).hom := by
+    have h : AlgebraicGeometry.LocallyOfFiniteType
+        (Spec.map (AlgebraicGeometry.Spec.preimage g)) := by
+      rwa [Spec.map_preimage]
+    exact HasRingHomProperty.Spec_iff.mp h
+  letI : Algebra (ULift.{u} ℚ) A := (AlgebraicGeometry.Spec.preimage g).hom.toAlgebra
+  haveI : Algebra.FiniteType (ULift.{u} ℚ) A := hFT
+  obtain ⟨s, hs⟩ := (Algebra.FiniteType.out : (⊤ : Subalgebra (ULift.{u} ℚ) A).FG)
+  refine ⟨s.card, fun i => ((s.equivFin.symm i : A)), ?_⟩
+  have hrange : Set.range (fun i => ((s.equivFin.symm i : A))) = (s : Set A) := by
+    ext a
+    constructor
+    · rintro ⟨i, rfl⟩; exact (s.equivFin.symm i).2
+    · intro ha; exact ⟨s.equivFin ⟨a, ha⟩, by simp⟩
+  rw [hrange]
+  have h2 := Algebra.adjoin_eq_ring_closure (R := ULift.{u} ℚ) (A := A) (s : Set A)
+  rw [hs, RingHom.algebraMap_toAlgebra] at h2
+  rw [← h2]
+  rfl
+
+/-- **Zariski-generic meets real-open** (PROVEN, 2026-07-26): a nonzero
+polynomial `F ∈ ℚ[X₁,…,X_m]` has a RATIONAL non-root in every real box.
+Precisely: for every `v₀ : Fin m → ℝ` and every `ε > 0` there is
+`v : Fin m → ℚ` with `|vᵢ − v₀ᵢ| < ε` for all `i` and `F(v) ≠ 0`.
+
+This is the exact point where the two topologies on the hyperplane parameter
+space are reconciled, and it is the reason the Bertini condition and the real
+condition can be separated into different leaves at all: a Zariski-dense open
+subset of the parameter space (the complement of `F = 0`) meets every
+nonempty real box in a rational point.
+
+Proof: `MvPolynomial.funext_set` says a polynomial over an integral domain
+vanishing on a BOX WITH INFINITE SIDES is zero; the rationals in a real
+interval `(v₀ᵢ − ε, v₀ᵢ + ε)` form an infinite set because the interval
+contains a rational sub-interval (`exists_rat_btwn` twice) and `Set.Ioo` in a
+densely ordered type is infinite. Contrapositive. -/
+theorem exists_rat_mem_box_eval_ne_zero {m : ℕ} {F : MvPolynomial (Fin m) ℚ}
+    (hF : F ≠ 0) (v₀ : Fin m → ℝ) {ε : ℝ} (hε : 0 < ε) :
+    ∃ v : Fin m → ℚ, (∀ i, |(v i : ℝ) - v₀ i| < ε) ∧ MvPolynomial.eval v F ≠ 0 := by
+  classical
+  set s : Fin m → Set ℚ := fun i => {q : ℚ | |(q : ℝ) - v₀ i| < ε} with hsdef
+  have hsinf : ∀ i, (s i).Infinite := by
+    intro i
+    obtain ⟨a, ha1, ha2⟩ := exists_rat_btwn (show v₀ i - ε < v₀ i by linarith)
+    obtain ⟨b, hb1, hb2⟩ := exists_rat_btwn (show v₀ i < v₀ i + ε by linarith)
+    have hab : a < b := by exact_mod_cast ha2.trans hb1
+    refine (Set.Ioo_infinite hab).mono ?_
+    intro q hq
+    have h1 : (a : ℝ) < (q : ℝ) := by exact_mod_cast hq.1
+    have h2 : (q : ℝ) < (b : ℝ) := by exact_mod_cast hq.2
+    simp only [hsdef, Set.mem_setOf_eq, abs_lt]
+    constructor <;> linarith
+  by_contra hcon
+  push Not at hcon
+  refine hF (MvPolynomial.funext_set s hsinf ?_)
+  intro y hy
+  rw [map_zero]
+  exact hcon y (fun i => hy i (Set.mem_univ i))
+
+section BertiniLeaves
+
+variable {A : CommRingCat.{u}}
+    (g : AlgebraicGeometry.Spec A ⟶
+      AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A generic hyperplane function is a NONZERODIVISOR** (sorry node,
+2026-07-26 — the elementary third of the Bertini cut; no Bertini theorem is
+involved and it is independent of the other two leaves).
+
+For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` presented
+in coordinates `x : Fin n → A`, there is a nonzero `F ∈ ℚ[X₀,…,X_n]` such
+that every rational parameter `v` off `F = 0` gives an affine-linear form
+`ℓ_v = ∑ vᵢ xᵢ − v_last` that is a nonzerodivisor in `A`.
+
+WHY IT IS TRUE, and what a prover has to build:
+
+* `A` IS A DOMAIN. Geometric irreducibility gives `IrreducibleSpace (Spec A)`
+  — mathlib has `GeometricallyIrreducible → Surjective` and, for a
+  universally open morphism onto an irreducible base, `IrreducibleSpace X`;
+  the base `Spec (ULift ℚ)` is a point, so this is available — and
+  `PrimeSpectrum.irreducibleSpace_iff` turns it into "the nilradical is
+  prime". Smoothness over a field gives geometric reducedness, hence
+  `IsReduced A`, so the nilradical is `⊥` and `A` is a domain. **The one
+  genuinely missing mathlib ingredient is "smooth over a field ⟹ reduced"**
+  (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` at this pin only ever
+  takes `[IsReduced X]` as a hypothesis, never concludes it). In a domain
+  `mem_nonZeroDivisors_of_ne_zero` reduces everything to `ℓ_v ≠ 0`.
+* `ℓ_v ≠ 0` GENERICALLY, and the witness `F` is LINEAR. The map
+  `v ↦ ℓ_v` is `ℚ`-linear from `ℚ^{n+1}` to `A`; its kernel `K` is a proper
+  subspace because the parameter `v = e_last` gives `ℓ_v = −1 ≠ 0` in the
+  nontrivial ring `A`. A proper subspace of a finite-dimensional space is
+  contained in the kernel of a nonzero linear functional `λ`, and
+  `F := ∑ λᵢ Xᵢ` then works: `F(v) ≠ 0` forces `v ∉ K`, i.e. `ℓ_v ≠ 0`.
+
+NOTE. `hdim` is deliberately NOT a hypothesis here: unlike the Bertini
+genericity leaf, this statement is true in every dimension. -/
+theorem exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    {n : ℕ} (x : Fin n → A)
+    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+      Set.range x) = ⊤) :
+    ∃ F : MvPolynomial (Fin (n + 1)) ℚ, F ≠ 0 ∧
+      ∀ v : Fin (n + 1) → ℚ, MvPolynomial.eval v F ≠ 0 →
+        affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v ∈ nonZeroDivisors A :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **BERTINI in characteristic zero: the generic hyperplane section is
+smooth and geometrically irreducible** (sorry node, 2026-07-26 — the purely
+algebro-geometric half of step (i) of Moret–Bailly's route, with the real
+topology entirely removed).
+
+For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` of
+dimension `> 1`, presented in coordinates `x : Fin n → A`, there is a nonzero
+`F ∈ ℚ[X₀,…,X_n]` such that for every rational parameter `v` off `F = 0` the
+hyperplane section `Spec (A ⧸ (ℓ_v))` is again smooth and geometrically
+irreducible over `ℚ`.
+
+THE TWO CLASSICAL THEOREMS, both stated for the parameter space here:
+
+* BERTINI SMOOTHNESS — the general member of a base-point-free linear system
+  on a smooth variety is smooth (Hartshorne, *Algebraic Geometry*, II.8.18
+  and III.7; Jouanolou, *Théorèmes de Bertini et applications*, Ch. I). The
+  hyperplanes of `𝔸ⁿ` cut out a base-point-free system on `Spec A`, and
+  characteristic zero removes the inseparability caveat.
+* BERTINI IRREDUCIBILITY — the general hyperplane section of an irreducible
+  variety of dimension `≥ 2` is irreducible (Jouanolou, Ch. I, Thm 6.3).
+  **`hdim` is exactly this hypothesis and it is LOAD-BEARING**: a general
+  hyperplane section of a CURVE is a finite set of points, so at `dim = 1`
+  the statement is false. Dimension `≥ 2` is also what makes the section
+  NONEMPTY (the projective closure meets a general hyperplane in something of
+  dimension `≥ 1`, which is therefore not contained in the hyperplane at
+  infinity), which geometric irreducibility requires.
+
+WHY THE GOOD LOCUS IS DEFINED OVER `ℚ` and contains a basic open. Both
+conditions are open on the parameter space `𝔸^{n+1}` of the family, and the
+family is defined over `ℚ`, so the good locus is a `ℚ`-rational open subset;
+it is nonempty by the two theorems above applied at the generic point, and a
+nonempty open subset of the irreducible space `𝔸^{n+1}_ℚ` contains a nonempty
+basic open `D(F)`. This is the content of the `∃ F ≠ 0` packaging.
+
+MACHINERY MISSING AT THIS PIN: Bertini's theorems in any form. This leaf is
+pure algebraic geometry — no arithmetic, no real analysis, no
+Galois-representation input — and is the largest of the three.
+
+The parameter `x` is only assumed to GENERATE `A` as a ring over the base;
+that is exactly a closed embedding `Spec A ↪ 𝔸ⁿ_ℚ`, which is what makes
+"hyperplane section" meaningful and is supplied by
+`exists_affineCoordinates_of_locallyOfFiniteType`. -/
+theorem exists_bertiniGenericLocus_of_affine_geometricallyIrreducible
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
+    {n : ℕ} (x : Fin n → A)
+    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+      Set.range x) = ⊤) :
+    ∃ F : MvPolynomial (Fin (n + 1)) ℚ, F ≠ 0 ∧
+      ∀ v : Fin (n + 1) → ℚ, MvPolynomial.eval v F ≠ 0 →
+        AlgebraicGeometry.Smooth (specQuotSpanSingleton
+          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) ∧
+        AlgebraicGeometry.GeometricallyIrreducible (specQuotSpanSingleton
+          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **THE REAL APPROXIMATION: a whole BOX of parameters keeps a real point**
+(sorry node, 2026-07-26 — the `ℝ`-topology half of step (i), with Bertini
+entirely removed).
+
+For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` of
+dimension `> 1` WITH A REAL POINT, presented in coordinates `x : Fin n → A`,
+there is a real parameter `v₀ : Fin (n+1) → ℝ` and an `ε > 0` such that EVERY
+rational parameter `v` with `|vᵢ − v₀ᵢ| < ε` for all `i` gives a hyperplane
+section `Spec (A ⧸ (ℓ_v))` that again has a real point.
+
+WHY IT IS TRUE, and why the conclusion is a whole BALL rather than one
+parameter. A `ℚ`-rational hyperplane through a prescribed REAL point
+generally does not exist — the incidence conditions are `ℝ`-linear conditions
+on `ℚ`-coefficients and their solution set typically meets `ℚⁿ` only in `0`.
+So one cannot ask for the section THROUGH the given point. Moret–Bailly's
+argument instead uses the `ℝ`-topology:
+
+let `p ∈ X(ℝ)` be the given real point. Smoothness makes `X(ℝ) ⊆ ℝⁿ` a real
+analytic manifold near `p`, of dimension `dim X ≥ 2 ≥ 1`. Since the `xᵢ`
+generate, their differentials span the cotangent space at `p`, so there is a
+real coefficient vector `c₀ ∈ ℝⁿ` for which `q ↦ ∑ c₀ᵢ qᵢ` has NONVANISHING
+differential along `X(ℝ)` at `p`; put `b₀ := ∑ c₀ᵢ pᵢ` and
+`v₀ := (c₀, b₀)`. The map `Ψ(q, v) = ∑ vᵢ qᵢ − v_last` on
+`X(ℝ) × ℝ^{n+1}` vanishes at `(p, v₀)` with surjective partial derivative in
+`q`, so the IMPLICIT FUNCTION THEOREM WITH PARAMETERS produces, for every `v`
+in a neighbourhood of `v₀`, a real point of `X(ℝ)` on which `ℓ_v` vanishes —
+i.e. a real point of the section. Shrinking that neighbourhood to a box gives
+the `ε`. **The conclusion is a ball precisely so that it can be intersected
+with the Zariski-generic locus of the Bertini leaf**; that intersection is
+nonempty by `exists_rat_mem_box_eval_ne_zero`, and it is what makes the two
+halves separable at all.
+
+MACHINERY MISSING AT THIS PIN: the real-analytic structure on the real points
+of a smooth `ℚ`-variety — mathlib has NO functor from schemes to real
+manifolds, so the identification of `X(ℝ)` with a submanifold of `ℝⁿ` and its
+tangent space with the kernel of the Jacobian must be built. The analytic
+input itself is present: `HasStrictFDerivAt.implicitFunction` /
+`ImplicitFunctionData`. This leaf is real analysis plus scheme-to-manifold
+bookkeeping; it contains no Bertini theorem and no arithmetic.
+
+`hdim` is used only through `dim X ≥ 1`, which is what makes the tangent
+space at `p` nonzero; `1 < dim` is carried to keep the hypotheses parallel
+with the sibling leaf. -/
+theorem exists_realApproximationBall_of_affine_geometricallyIrreducible
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hreal : HasRationalPoint g (ULift.{u} ℝ))
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
+    {n : ℕ} (x : Fin n → A)
+    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+      Set.range x) = ⊤) :
+    ∃ (v₀ : Fin (n + 1) → ℝ) (ε : ℝ), 0 < ε ∧
+      ∀ v : Fin (n + 1) → ℚ, (∀ i, |(v i : ℝ) - v₀ i| < ε) →
+        HasRationalPoint (specQuotSpanSingleton
+          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) (ULift.{u} ℝ) :=
+  sorry
+
+end BertiniLeaves
+
+open CategoryTheory AlgebraicGeometry in
+/-- **BERTINI + REAL APPROXIMATION: ONE good hyperplane function**
+(**PROVEN 2026-07-26** over three leaves — the whole geometric content of
+step (i) of Moret–Bailly's route; cut out of
+`exists_dimensionDrop_of_affine_geometricallyIrreducible` on 2026-07-26,
+which is PROVEN over it).
+
+THE DECOMPOSITION (2026-07-26). The earlier docstring below argued that the
+Bertini half and the real-approximation half are inseparable because ONE
+hyperplane must be simultaneously Bertini-generic and `ℝ`-close. That
+argument shows they cannot be separated *without naming the parameter space*;
+once the parameter space IS named, they separate cleanly, and the assembly is
+short. So this is now proven over:
+
+* `exists_affineCoordinates_of_locallyOfFiniteType` (PROVEN) — a closed
+  embedding `Spec A ↪ 𝔸ⁿ_ℚ`, i.e. ring generators `x : Fin n → A`, over which
+  the hyperplane family `ℓ_v = ∑ vᵢ xᵢ − v_last` (`affineLinearForm`) is
+  parameterized by `v : Fin (n+1) → ℚ`;
+* `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` (SORRY,
+  elementary) — off a proper `ℚ`-rational closed subset of the parameter
+  space, `ℓ_v` is a nonzerodivisor;
+* `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` (SORRY —
+  the two Bertini theorems) — off a proper `ℚ`-rational closed subset, the
+  section is smooth and geometrically irreducible;
+* `exists_realApproximationBall_of_affine_geometricallyIrreducible` (SORRY —
+  the `ℝ`-topology and the implicit function theorem) — every rational
+  parameter in a nonempty real BOX gives a section with a real point;
+* `exists_rat_mem_box_eval_ne_zero` (PROVEN) — the reconciliation: a nonzero
+  rational polynomial has a rational non-root in every real box, so the
+  Zariski-generic locus meets the real box.
+
+The assembly multiplies the two genericity polynomials (`MvPolynomial (Fin
+(n+1)) ℚ` is a domain, so the product is nonzero and a non-root of the
+product is a non-root of each factor) and picks a rational parameter that is
+both a non-root and inside the box. This is the classical argument's own
+structure, unchanged; what the cut buys is that each of the three surviving
+leaves is a single named theorem — Bertini, elementary linear algebra, and
+the implicit function theorem — attackable independently.
+
+--- the original statement-level docstring follows ---
 
 Given an affine `ℚ`-variety `Spec A` which is smooth, separated, of finite
 type, quasi-compact and geometrically irreducible over `ℚ`, has a REAL
@@ -1451,24 +1830,41 @@ theorem exists_bertiniHyperplane_of_affine_geometricallyIrreducible
     (g : AlgebraicGeometry.Spec A ⟶
       AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (hsmooth : AlgebraicGeometry.Smooth g)
-    (hsep : AlgebraicGeometry.IsSeparated g)
+    (_hsep : AlgebraicGeometry.IsSeparated g)
     (hft : AlgebraicGeometry.LocallyOfFiniteType g)
-    (hqc : AlgebraicGeometry.QuasiCompact g)
+    (_hqc : AlgebraicGeometry.QuasiCompact g)
     (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
     (hreal : HasRationalPoint g (ULift.{u} ℝ))
     (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A)) :
     ∃ ℓ : A, ℓ ∈ nonZeroDivisors A ∧
       AlgebraicGeometry.Smooth (specQuotSpanSingleton ℓ ≫ g) ∧
       AlgebraicGeometry.GeometricallyIrreducible (specQuotSpanSingleton ℓ ≫ g) ∧
-      HasRationalPoint (specQuotSpanSingleton ℓ ≫ g) (ULift.{u} ℝ) :=
-  sorry
+      HasRationalPoint (specQuotSpanSingleton ℓ ≫ g) (ULift.{u} ℝ) := by
+  -- a closed embedding `Spec A ↪ 𝔸ⁿ_ℚ`, i.e. the hyperplane parameter space
+  obtain ⟨n, x, hx⟩ := exists_affineCoordinates_of_locallyOfFiniteType g hft
+  -- the two Zariski-generic loci, each a nonempty basic open `D(Fᵢ)`
+  obtain ⟨F₁, hF₁0, hF₁⟩ :=
+    exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible g hsmooth hft hgi x hx
+  obtain ⟨F₂, hF₂0, hF₂⟩ :=
+    exists_bertiniGenericLocus_of_affine_geometricallyIrreducible g hsmooth hft hgi hdim x hx
+  -- the real box on which the section keeps a real point
+  obtain ⟨v₀, ε, hε, hball⟩ :=
+    exists_realApproximationBall_of_affine_geometricallyIrreducible g hsmooth hft hgi hreal
+      hdim x hx
+  -- a rational parameter inside the box and off both closed subsets
+  obtain ⟨v, hvball, hvF⟩ := exists_rat_mem_box_eval_ne_zero (mul_ne_zero hF₁0 hF₂0) v₀ hε
+  rw [map_mul] at hvF
+  obtain ⟨hsm, hgi'⟩ := hF₂ v (right_ne_zero_of_mul hvF)
+  exact ⟨_, hF₁ v (left_ne_zero_of_mul hvF), hsm, hgi', hball v hvball⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **ONE BERTINI CUT: a single dimension-lowering step** (**PROVEN
-2026-07-26** over the single hyperplane-function leaf
-`exists_bertiniHyperplane_of_affine_geometricallyIrreducible`; what remains
-open is the geometry of choosing the hyperplane, not any of the bookkeeping
-around it).
+2026-07-26** over the single hyperplane-function step
+`exists_bertiniHyperplane_of_affine_geometricallyIrreducible`, itself PROVEN
+the same day over the hyperplane parameter space and its three leaves; what
+remains open is the geometry of choosing the hyperplane — Bertini, the
+elementary nonzerodivisor step, and the real-topology approximation — not any
+of the bookkeeping around it).
 
 Given `X` affine, smooth, separated, of finite type, quasi-compact and
 geometrically irreducible over `ℚ`, with a REAL point, and of dimension
