@@ -119,6 +119,7 @@ def scan(path):
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     names_only = "--names" in sys.argv[1:]
+    as_json = "--json" in sys.argv[1:]
 
     by_module = collections.OrderedDict()
     for path in sorted(SRC.rglob("*.lean")):
@@ -130,6 +131,17 @@ def main():
             by_module[rel] = leaves
 
     total = sum(len(v) for v in by_module.values())
+    # `--json`: the machine-readable form the Stop hook consumes (2026-07-26,
+    # when the hook's census route was retired — it read oleans this checkout
+    # never builds under the release model, so it failed open at every stop).
+    # One object per leaf; `module` is the repo-relative source path, which is
+    # what the hook prints back to the orchestrator.
+    if as_json:
+        import json
+        print(json.dumps([{"name": n, "module": rel, "line": ln}
+                          for rel, leaves in by_module.items()
+                          for n, ln in leaves]))
+        return 0
     if names_only:
         for leaves in by_module.values():
             for name, _ in leaves:
