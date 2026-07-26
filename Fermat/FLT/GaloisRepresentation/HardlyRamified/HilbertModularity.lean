@@ -184,6 +184,20 @@ public import Mathlib.RingTheory.Finiteness.Basic
 public import Mathlib.LinearAlgebra.TensorProduct.Pi
 public import Mathlib.LinearAlgebra.Dimension.Constructions
 public import Mathlib.Topology.Algebra.Algebra
+-- `Modularity.PatchedModule` and `Modularity.PatchedModule.injective`: the
+-- BASE-FIELD-INDEPENDENT core of Taylor–Wiles patching. This is what
+-- `injective_classifyingMap_hilbertHeckeDatum` below is assembled over, and
+-- the reason it is a HOISTED module rather than a local copy is recorded in
+-- that module's header: the material lived in `Modularity/Patching.lean`,
+-- which is DOWNSTREAM of this file (it imports `HardlyRamified/Deformation.lean`,
+-- which `public import`s this module), so the `ℚ`-level file cannot be imported
+-- here and duplicating 860 lines of commutative algebra was the alternative.
+public import Fermat.FLT.Modularity.PatchingCore
+-- `Nat.ModEq` (the `≡ … [MOD …]` notation) and `Ideal.Quotient`, for the
+-- Taylor–Wiles congruence `N w ≡ 1 mod ℓ ^ n` on places of `F` in
+-- `IsHilbertTaylorWilesPrimeSet` below.
+public import Mathlib.Data.Nat.ModEq
+public import Mathlib.RingTheory.Ideal.Quotient.Operations
 
 @[expose] public section
 
@@ -2282,8 +2296,172 @@ theorem surjective_classifyingMap_hilbertHeckeDatum
     Function.Surjective ψ :=
   sorry
 
-/-- **`R_F ↪ T_F`: the classifying map is INJECTIVE** (LEAF — new 2026-07-26;
-the `F`-level twin of `Modularity/Patching.lean`'s
+/-- **Taylor–Wiles primes of a totally real field `F`** — the `F`-level twin of
+`Modularity/Patching.lean`'s `IsTaylorWilesPrimeSet`, with rational primes
+replaced by finite places of `F`.
+
+A place `w` of `F` is a Taylor–Wiles prime of level `n` for `ρbar|_{G_F}` when
+
+* it is GOOD: `w ∤ 2ℓ`, so `ρbar|_{G_F}` is unramified at `w` and the
+  `F`-level hardly ramified conditions impose nothing there;
+* its residue field satisfies `N w ≡ 1 mod ℓ ^ n`, so that the `ℓ`-part of
+  `(𝓞_F/w)ˣ` has order divisible by `ℓ ^ n` — this is what supplies the
+  diamond torus `Δ_{Q_n}` and makes the auxiliary levels converge;
+* `ρbar(Frob_w)` has DISTINCT eigenvalues in `k`, which is what splits the
+  local deformation problem at `w` into a torus and lets the diamond operators
+  act.
+
+The eigenvalue condition is written on the characteristic polynomial so that it
+makes sense over `k` without choosing a basis: `charFrob w` is monic of degree
+`2`, and asking it to be `(X - α)(X - β)` with `α ≠ β` is exactly "split with
+distinct eigenvalues".
+
+This is the `F`-level form of Wiles, Ann. of Math. 141 (1995), ch. 3;
+Diamond–Darmon–Taylor (1995), §5.3, as used by Fujiwara and Skinner–Wiles over
+totally real fields. -/
+def IsHilbertTaylorWilesPrimeSet (ℓ : ℕ) (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    (ρbar : GaloisRep ℚ k V) (n : ℕ)
+    (Q : Finset (HeightOneSpectrum (𝓞 F))) : Prop :=
+  ∀ w ∈ Q, ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal ∧ ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal ∧
+    Nat.card (𝓞 F ⧸ w.asIdeal) ≡ 1 [MOD ℓ ^ n] ∧
+    ∃ α β : k, α ≠ β ∧
+      (ρbar.map (algebraMap ℚ F)).charFrob w =
+        (Polynomial.X - Polynomial.C α) * (Polynomial.X - Polynomial.C β)
+
+/-- **The Taylor–Wiles prime supply over `F`** (LEAF — new 2026-07-26; the
+`F`-level twin of `Modularity/Patching.lean`'s PROVEN
+`exists_taylorWilesPrimeSet`).
+
+For every level `n` and every required size `r` there is a set of at least `r`
+Taylor–Wiles primes of `F` of level `n`.
+
+THE CLASSICAL ROUTE, and it is Chebotarev over `F` rather than over `ℚ`: the
+group-theoretic input is that `ρbar|_{G_F}` is irreducible with determinant the
+mod-`ℓ` cyclotomic character — which is what `𝒟₀` supplies, since
+`HilbertDeformationDatum.resid` transports the determinant clause of
+`isHilbertHardlyRamified` down to the residual representation. For `ℓ ≥ 5` the
+restriction of `ρbar|_{G_F}` to `Gal(F̄/F(ζ_{ℓ^n}))` then still has an element
+`σ` whose image has two distinct eigenvalues (the odd-prime dichotomy of
+Diamond–Darmon–Taylor §4.3; base change to `F` costs nothing because
+irreducibility is hypothesised over `F`). Chebotarev density in the finite
+extension cut out by `ρbar|_{G_F}` and `ζ_{ℓ^n}` produces infinitely many
+places `w` of `F` with `Frob_w` in the class of `σ`, and each is automatically
+good, satisfies `N w ≡ 1 mod ℓ ^ n` (because `σ` fixes `ζ_{ℓ^n}`), and has
+split distinct-eigenvalue Frobenius.
+
+`htr` and `hgal` are deliberately ABSENT: the prime supply is a Chebotarev
+statement about `F` and the representation, with no archimedean or base-change
+input. They enter only in `exists_hilbertPatchedModule` below, where the
+Selmer/dual-Selmer count and Brauer induction genuinely need them.
+
+References: Wiles, Ann. of Math. 141 (1995), ch. 3; Diamond–Darmon–Taylor
+(1995), Lemma 5.31; Fujiwara, *Deformation rings and Hecke algebras in the
+totally real case*, §3; Skinner–Wiles, Duke 107 (2001), §2. -/
+theorem exists_hilbertTaylorWilesPrimeSet
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) :
+    ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q :=
+  sorry
+
+/-- **The Taylor–Wiles patching construction over `F`** (LEAF — new
+2026-07-26; the `F`-level twin of `Modularity/Patching.lean`'s
+`exists_patchedModule`, and the ONLY genuinely `F`-specific input to
+`injective_classifyingMap_hilbertHeckeDatum` below).
+
+Out of the `F`-level deformation and Hecke data, and the Taylor–Wiles prime
+supply `hTW`, produce a `Modularity.PatchedModule` for the classifying map
+`ψ : R_F → T_F` — the limit object of the patching process, carrying `M_∞`
+finite over `R_∞ = ℤ_ℓ[[x₁, …, x_q]]` with an `M_∞`-regular sequence of length
+`q + 1` in the maximal ideal, the patching surjection `R_∞ ↠ R_F`, and the
+bottom identification `M_∞/𝔞M_∞ ≅ M₀` intertwining the actions through `ψ`.
+
+WHY THE CUT IS HERE, and not lower. `Modularity.PatchedModule` mentions no base
+field whatsoever — it is a statement about a ring map `ψ : Runiv →+* T` and a
+module over a power-series ring — which is precisely why it, the
+Auslander–Buchsbaum development behind it, and `PatchedModule.injective` could
+be HOISTED out of the `ℚ`-level `Modularity/Patching.lean` into
+`Modularity/PatchingCore.lean` and shared between the two base fields (see that
+module's header for why hoisting rather than duplicating). Everything BELOW
+this cut is pure commutative algebra and is already PROVEN; everything ABOVE it
+is the arithmetic of Hilbert modular forms, and that is what this leaf asks
+for:
+
+* **Auxiliary deformation rings over `F`.** For each `n`, the deformation
+  problem of `ρbar|_{G_F}` with the level raised at `Q_n` — `IsHilbertHardlyRamified`
+  away from `Q_n`, and the split-torus local condition at each `w ∈ Q_n`
+  supplied by the distinct-eigenvalue clause of `IsHilbertTaylorWilesPrimeSet`.
+  The tangent-space bound making these quotients of a power-series ring in
+  `q = dim_k H¹_{Q_n}(F, ad⁰ ρbar)` variables is the Greenberg–Wiles formula
+  over `F`, and TOTAL REALNESS is exactly what makes its archimedean local
+  terms come out — this is where `htr` is used.
+* **Auxiliary Hecke modules of Hilbert modular forms.** The cohomology of the
+  Shimura variety attached to a quaternion algebra over `F`, at level raised by
+  `Q_n`, finite free over `ℤ_ℓ[Δ_{Q_n}]` by the Taylor–Wiles freeness lemma in
+  Fujiwara's form; `Δ_{Q_n}` has order divisible by `ℓ ^ n` by the congruence
+  clause of `IsHilbertTaylorWilesPrimeSet`.
+* **Descent of the base change.** Identifying the bottom of the tower with the
+  given Hecke data requires descending the base change from `F` to `ℚ`, which
+  is Brauer induction over the Galois `F` — this is where `hgal` is used.
+* **The pigeonhole / inverse-limit extraction** then produces the limit object.
+
+WHAT THIS DELIBERATELY DOES NOT USE. The `ℚ`-level development also carries a
+LEVEL-WISE interface, `TaylorWilesSystem`/`TaylorWilesLevelRaw`, between "the
+arithmetic at each finite level" and "the extraction of the limit". That
+interface has a known defect — its level-wise cut is missing the augmented
+bound `bIdeal_le_aug`, so the bottom-level `bIdeal_le` is vacuous and no raw
+level exists above the bottom datum — and its structures hardcode
+`MvPowerSeries (Fin q) ℤ_[p]` in BOTH the diamond-coordinate and the
+presentation role, which is correct only when `k = 𝔽_ℓ`. Cutting at
+`PatchedModule` instead means this leaf inherits neither problem: it is stated
+against the limit object only, and the limit object's regular sequence is
+stated directly rather than assembled level by level.
+
+`h𝒟w` and `h𝒟t` are what identify `ψ` with THE classifying map (see
+`isUniversal_of_isWeaklyUniversal_isTraceGenerated` above), without which the
+patched situation would be built for the wrong map; `e` is what supplies
+`Module.Finite ℤ_[ℓ] 𝒟T.R` on the Hecke side.
+
+References: Taylor–Wiles, Ann. of Math. 141 (1995); Diamond, Invent. Math. 128
+(1997); Fujiwara, *Deformation rings and Hecke algebras in the totally real
+case*; Skinner–Wiles, Duke 107 (2001); Kisin, Ann. of Math. 170 (2009);
+Barnet-Lamb–Gee–Geraghty–Taylor, *Potential automorphy and change of weight*,
+§§1–2. -/
+theorem exists_hilbertPatchedModule
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 𝒟T : HilbertDeformationDatum ℓ F ρbar)
+    (T : HilbertHeckeAlgebra ℓ F ρbar) (e : 𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T)
+    (h𝒟w : 𝒟.IsWeaklyUniversal) (h𝒟t : 𝒟.IsTraceGenerated)
+    (ψ : 𝒟.R →+* 𝒟T.R)
+    (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
+    (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
+    (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly)
+    (hTW : ∀ n r : ℕ, ∃ Q : Finset (HeightOneSpectrum (𝓞 F)),
+      r ≤ Q.card ∧ IsHilbertTaylorWilesPrimeSet ℓ F ρbar n Q) :
+    Nonempty (Modularity.PatchedModule.{u, u, u, u} ℓ ψ) :=
+  sorry
+
+/-- **`R_F ↪ T_F`: the classifying map is INJECTIVE** (PROVEN 2026-07-26 as
+glue over `exists_hilbertTaylorWilesPrimeSet` and
+`exists_hilbertPatchedModule`, on top of the HOISTED and already-proven
+`Modularity.PatchedModule.injective`; the `F`-level twin of
+`Modularity/Patching.lean`'s
 `injective_ringHom_of_isWeaklyUniversal`, and the mathematical heart of the
 whole module).
 
@@ -2305,15 +2483,31 @@ above and the faithfulness audit at the head of this section, where
 `𝒟₀.R⟦X⟧` is a weakly universal datum admitting a compatible non-injective
 map to the very same target.
 
-WHAT IS AVAILABLE TO PORT: `Modularity/Patching.lean` carries the entire
-`ℚ`-level development — `IsTaylorWilesPrimeSet`, `exists_taylorWilesPrimeSet`,
-`TaylorWilesSystem`, `PatchedModule` and its `injective`, plus the
-Auslander–Buchsbaum and power-series plumbing — in about 8900 lines, of which
-the commutative algebra (everything from `exists_add_notMem_of_forall_not_le`
-to `free_of_isRegular_mvPowerSeries`) is base-field-independent and should be
-hoisted rather than duplicated. What is genuinely `F`-specific is the
-production of Taylor–Wiles primes (places of `F`, not rational primes) and the
-Hecke modules of Hilbert modular forms at the augmented levels.
+PROOF (glue, 2026-07-26). The earlier version of this docstring recorded that
+`Modularity/Patching.lean` carries the entire `ℚ`-level development in about
+8900 lines, of which the commutative algebra — everything from
+`exists_add_notMem_of_forall_not_le` to `free_of_isRegular_mvPowerSeries`,
+together with the `PatchedModule` interface and `PatchedModule.injective` — is
+base-field-independent and **should be hoisted rather than duplicated**. That
+hoist has now been carried out: those 860 lines moved VERBATIM into
+`Fermat/FLT/Modularity/PatchingCore.lean`, which is imported both by
+`Modularity/Patching.lean` and by this module. It had to be a hoist and not a
+local copy because `Modularity/Patching.lean` is DOWNSTREAM of this file (it
+imports `HardlyRamified/Deformation.lean`, which `public import`s this module),
+so the `ℚ`-level file cannot be imported here at all.
+
+With that in hand this node is glue, and the frontier below it is exactly the
+`F`-specific arithmetic:
+
+1. `exists_hilbertTaylorWilesPrimeSet` — Taylor–Wiles primes at places of `F`
+   rather than rational primes (Chebotarev over `F`).
+2. `exists_hilbertPatchedModule` — the auxiliary deformation rings over `F` and
+   the Hecke modules of Hilbert modular forms at the augmented levels, patched
+   to the limit object. This is where `htr` (Greenberg–Wiles at the
+   archimedean places) and `hgal` (Brauer induction for the base change) are
+   consumed.
+3. `Modularity.PatchedModule.injective` — PROVEN, and shared with the
+   `ℚ`-level theorem.
 
 References: Taylor–Wiles, *Ring-theoretic properties of certain Hecke
 algebras*, Ann. of Math. 141 (1995); Fujiwara, *Deformation rings and Hecke
@@ -2338,7 +2532,10 @@ theorem injective_classifyingMap_hilbertHeckeDatum
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly) :
     Function.Injective ψ :=
-  sorry
+  (exists_hilbertPatchedModule ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
+      hψalg hψπ hψρ
+      (exists_hilbertTaylorWilesPrimeSet ℓ hℓ5 F hirrF 𝒟)).elim
+    Modularity.PatchedModule.injective
 
 /-- **`R_F` IS a Hilbert Hecke algebra** (PROVEN 2026-07-26 over the three
 leaves above, after the FAITHFULNESS REPAIR recorded below; the
