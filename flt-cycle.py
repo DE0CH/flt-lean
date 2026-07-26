@@ -446,12 +446,36 @@ def cmd_regress(args):
     fine (a decomposition adds leaves); resurrected ones never are.
     """
     base = args.base or "main"
-    before = _sorry_names_at(base)
-    r = run([sys.executable, os.path.join(REPO, "flt-frontier.py"), "--names"],
-            cwd=REPO)
+    # WHICH TREE we scan is the whole correctness of this check (fixed
+    # 2026-07-26, after it silently reported success for a merger cycle).
+    # `flt-frontier.py` takes its scan root from `__file__`, NOT from cwd — so
+    # invoking REPO's copy scans REPO no matter where it is run from. Run from
+    # the merger worktree it therefore compared main against main and printed
+    # "97 -> 97, no proofs lost" regardless of what the merge had done: a gate
+    # that cannot fail, which is worse than no gate.
+    #
+    # Fix: copy the scanner INTO the tree under test and run it there, exactly
+    # as `_sorry_names_at` already does for the base revision.
+    import shutil
+    tree = os.path.abspath(args.tree or os.getcwd())
+    if not os.path.isdir(os.path.join(tree, "Fermat")):
+        raise SystemExit(
+            f"{tree} is not a project tree (no Fermat/). Pass --tree, or run "
+            "from the worktree you want checked.")
+    scanner = os.path.join(tree, ".flt-frontier-check.py")
+    shutil.copy(os.path.join(REPO, "flt-frontier.py"), scanner)
+    try:
+        r = run([sys.executable, scanner, "--names"], cwd=tree)
+    finally:
+        try:
+            os.unlink(scanner)
+        except OSError:
+            pass
     if r.returncode != 0:
-        raise SystemExit(f"scan of working tree failed: {r.stderr[:200]}")
+        raise SystemExit(f"scan of {tree} failed: {r.stderr[:200]}")
     after = set(r.stdout.split())
+    print(f"scanned tree: {tree}")
+    before = _sorry_names_at(base)
 
     lost = sorted(after - before)          # proven at base, sorried now
     gained = sorted(before - after)        # closed since base -- the good news
@@ -625,9 +649,17 @@ def cmd_done(args):
         cur = read_entries(pf)
         out = []
         for n, s, e in cur:
-            if n in args.worktrees and s in ("claimed", "reclaiming"):
+            # `free`/`retired` included (2026-07-26): `done` is called on
+            # whatever finished, and a worktree can already have been released
+            # back to `free` by an earlier release while still holding NEW
+            # unreleased commits. Leaving it `free` means the next dispatch
+            # allocates it, and the ff-only advance then fails on its diverged
+            # branch -- or worse, its uncommitted work is destroyed. Preflight
+            # caught exactly that.
+            if n in args.worktrees and s in ("claimed", "reclaiming",
+                                             "free", "retired"):
                 # `reclaiming` still retires rather than returning to the pool.
-                out.append((n, "batched" if s == "claimed" else "batched", e
+                out.append((n, "batched", e
                             + (["retire"] if s == "reclaiming" else [])))
                 print(f"{n}: {s} -> batched")
             else:
@@ -914,6 +946,7 @@ def main():
     p = sub.add_parser("regress",
                        help="MERGER: did a merge drop a proof? (proven -> sorried)")
     p.add_argument("base", nargs="?", help="base ref (default main)")
+    p.add_argument("--tree", help="worktree to check (default: cwd)")
     p.set_defaults(fn=cmd_regress)
 
     p = sub.add_parser("nscheck",
