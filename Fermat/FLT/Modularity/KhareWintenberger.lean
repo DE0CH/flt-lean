@@ -289,6 +289,20 @@ import Mathlib.NumberTheory.NumberField.Ideal.Basic
 -- `Mathlib.Algebra.Field.ULift` is already `public import`ed far above.
 import Mathlib.Algebra.Module.ULift
 import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
+-- proof-only (2026-07-26, `finite_heightOneSpectrum_mem_of_ne_zero`): only
+-- finitely many height-one primes of a Dedekind domain divide a fixed nonzero
+-- ideal (`Ideal.finite_factors`). This is what makes "the places of `F` over
+-- `3`" a `Finset`, which is what lets the Carayol citation below be narrowed
+-- so that it no longer claims local–global compatibility at the places where
+-- its own `3`-adic representation ramifies.
+import Mathlib.RingTheory.DedekindDomain.Factorization
+-- proof-only (2026-07-26, the coefficient-ring QUOTIENT normalization
+-- `exists_domain_coefficientRing_of_ringHom`, which removes `IsDomain` from
+-- the Carayol citation): a basis of a free module base-changes
+-- (`Module.Basis.baseChange`), and the kernel of a ring map into a domain is
+-- prime (`RingHom.ker_isPrime`).
+import Mathlib.LinearAlgebra.TensorProduct.Basis
+import Mathlib.RingTheory.Ideal.Maps
 
 @[expose] public section
 
@@ -6614,6 +6628,199 @@ theorem isLocalRing_of_finite_padicInt_domain {p : ℕ} [Fact p.Prime]
     rw [pow_succ] at hunit
     exact isUnit_of_mul_isUnit_right hunit
 
+/-! ### Coefficient-ring quotient normalization (2026-07-26)
+
+The five declarations below remove `IsDomain B` from the Carayol/Taylor
+citation. The mathematics is one line — the kernel of `ιB : B →+* ℚ̄_3` is
+prime, so `B ⧸ ker ιB` is a domain, and everything in sight descends to it —
+but "everything in sight" includes a Galois representation, so the descent
+needs a COEFFICIENT base change with a `charFrob` compatibility.
+
+`Modularity/Patching.lean` has exactly that bridge (`charFrob_baseChange`,
+`charFrob_conj`) and it is unusable here twice over: that module is not in
+this one's import cone, and its versions are stated over the base field `ℚ`
+whereas the Carayol representation lives over `F`. So the two are restated
+here for a general number field — the proofs are unchanged, since neither
+ever used anything about `ℚ` — under names that cannot collide with
+`Patching.lean`'s, because both modules live in this namespace and
+`Modularity/Interface.lean` imports both. -/
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **`charFrob` commutes with coefficient base change, over any number
+field** (PROVEN 2026-07-26; the general-base restatement of
+`Modularity/Patching.lean`'s `charFrob_baseChange`, whose proof is
+base-field agnostic and is reproduced verbatim). -/
+theorem charFrob_baseChange_of_numberField {K : Type*} [Field K] [NumberField K]
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    [IsTopologicalRing A] {B : Type*} [CommRing B] [TopologicalSpace B]
+    [IsTopologicalRing B] [Algebra A B] [ContinuousSMul A B]
+    {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M]
+    [Module.Free A M]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (ρ : GaloisRep K A M) :
+    (ρ.baseChange B).charFrob v = (ρ.charFrob v).map (algebraMap A B) := by
+  show ((ρ.baseChange B).toLocal v
+      (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly =
+    ((ρ.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly).map
+      (algebraMap A B)
+  rw [show (ρ.baseChange B).toLocal v
+        (Field.AbsoluteGaloisGroup.adicArithFrob v) =
+      LinearMap.baseChange B (ρ.toLocal v
+        (Field.AbsoluteGaloisGroup.adicArithFrob v)) from rfl,
+    LinearMap.charpoly_baseChange]
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **`charFrob` is conjugation-invariant, over any number field** (PROVEN
+2026-07-26; the general-base restatement of `Modularity/Patching.lean`'s
+`charFrob_conj`). -/
+theorem charFrob_conj_of_numberField {K : Type*} [Field K] [NumberField K]
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M]
+    [Module.Free A M]
+    {N : Type*} [AddCommGroup N] [Module A N] [Module.Finite A N]
+    [Module.Free A N]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (ρ : GaloisRep K A M) (e : M ≃ₗ[A] N) :
+    (ρ.conj e).charFrob v = ρ.charFrob v := by
+  show ((ρ.conj e).toLocal v
+      (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly =
+    ((ρ.toLocal v (Field.AbsoluteGaloisGroup.adicArithFrob v)).charpoly)
+  rw [show (ρ.conj e).toLocal v
+        (Field.AbsoluteGaloisGroup.adicArithFrob v) =
+      (LinearEquiv.conj e) (ρ.toLocal v
+        (Field.AbsoluteGaloisGroup.adicArithFrob v)) from rfl,
+    LinearEquiv.charpoly_conj]
+
+/-- **A continuous `algebraMap` into a topological ring gives a continuous
+scalar action** (PROVEN 2026-07-26): `a • x = algebraMap a * x`. -/
+theorem continuousSMul_of_algebraMap_continuous {A : Type*} {B : Type*}
+    [CommRing A] [CommRing B] [TopologicalSpace A] [TopologicalSpace B]
+    [Algebra A B] [ContinuousMul B] (h : Continuous (algebraMap A B)) :
+    ContinuousSMul A B := by
+  constructor
+  have hc : Continuous fun x : A × B => (algebraMap A B) x.1 * x.2 :=
+    continuous_mul.comp ((h.comp continuous_fst).prodMk continuous_snd)
+  exact hc.congr fun x => (Algebra.smul_def x.1 x.2).symm
+
+open TensorProduct in
+/-- **A framed rank-`2` representation pushes forward along a continuous map
+of coefficient rings, multiplying `charFrob` by that map** (PROVEN
+2026-07-26): base change the representation and re-frame it by the
+base-changed basis. -/
+theorem exists_charFrob_map_algebraMap {K : Type*} [Field K] [NumberField K]
+    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    {B' : Type*} [CommRing B'] [TopologicalSpace B'] [IsTopologicalRing B']
+    [Algebra B B'] [ContinuousSMul B B']
+    (τ : GaloisRep K B (Fin 2 → B)) :
+    ∃ τ' : GaloisRep K B' (Fin 2 → B'),
+      ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers K),
+        τ'.charFrob w = (τ.charFrob w).map (algebraMap B B') := by
+  classical
+  let e : B' ⊗[B] (Fin 2 → B) ≃ₗ[B'] (Fin 2 → B') :=
+    ((Pi.basisFun B (Fin 2)).baseChange B').equiv (Pi.basisFun B' (Fin 2))
+      (Equiv.refl _)
+  refine ⟨(τ.baseChange B').conj e, fun w => ?_⟩
+  rw [charFrob_conj_of_numberField, charFrob_baseChange_of_numberField]
+
+/-- **The coefficient ring of a realization may be assumed a DOMAIN**
+(PROVEN 2026-07-26 — the brick that removes `IsDomain B` from the
+Carayol/Taylor citation below).
+
+Given a framed rank-`2` representation `τ` over a coefficient ring `B` which
+is module-finite over `ℤ_p` and carries the `ℤ_p`-module topology, together
+with ANY ring map `ιB : B →+* C` into a field, the pair `(B, τ, ιB)` may be
+replaced by one whose coefficient ring is a domain, WITHOUT changing any
+`ιB`-image of a Frobenius characteristic polynomial: take
+`B' := B ⧸ ker ιB`, which is a domain because `ker ιB` is prime, is still
+module-finite over `ℤ_p`, and receives the induced embedding.
+
+The representation descends by `exists_charFrob_map_algebraMap`, whose
+hypothesis `ContinuousSMul B B'` holds because the quotient map is
+`ℤ_p`-linear between two module topologies, hence continuous
+(`IsModuleTopology.continuous_of_linearMap`), and multiplication in `B'` is
+continuous. Completeness plays no role: this is a quotient, not a lift. -/
+theorem exists_domain_coefficientRing_of_ringHom {p : ℕ} [Fact p.Prime]
+    {K : Type*} [Field K] [NumberField K]
+    {B : Type u} [CommRing B] [Algebra ℤ_[p] B] [Module.Finite ℤ_[p] B]
+    [TopologicalSpace B] [IsTopologicalRing B] [IsModuleTopology ℤ_[p] B]
+    {C : Type*} [Field C] (ιB : B →+* C)
+    (τ : GaloisRep K B (Fin 2 → B)) :
+    ∃ (B' : Type u) (_ : CommRing B') (_ : IsDomain B')
+      (_ : Algebra ℤ_[p] B') (_ : Module.Finite ℤ_[p] B'),
+      letI : TopologicalSpace B' := moduleTopology ℤ_[p] B'
+      letI : IsTopologicalRing B' :=
+        isTopologicalRing_moduleTopology_of_finite p B'
+      ∃ (τ' : GaloisRep K B' (Fin 2 → B')) (ιB' : B' →+* C),
+        ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers K),
+          (τ'.charFrob w).map ιB' = (τ.charFrob w).map ιB := by
+  classical
+  haveI hp : (RingHom.ker ιB).IsPrime := RingHom.ker_isPrime ιB
+  haveI hfin : Module.Finite ℤ_[p] (B ⧸ RingHom.ker ιB) :=
+    Module.Finite.of_surjective
+      (Ideal.Quotient.mkₐ ℤ_[p] (RingHom.ker ιB)).toLinearMap
+      Ideal.Quotient.mk_surjective
+  letI : TopologicalSpace (B ⧸ RingHom.ker ιB) :=
+    moduleTopology ℤ_[p] (B ⧸ RingHom.ker ιB)
+  haveI : IsModuleTopology ℤ_[p] (B ⧸ RingHom.ker ιB) := ⟨rfl⟩
+  haveI hTR : IsTopologicalRing (B ⧸ RingHom.ker ιB) :=
+    IsModuleTopology.isTopologicalRing ℤ_[p] (B ⧸ RingHom.ker ιB)
+  haveI hcsmul : ContinuousSMul B (B ⧸ RingHom.ker ιB) := by
+    refine continuousSMul_of_algebraMap_continuous ?_
+    exact IsModuleTopology.continuous_of_linearMap (R := ℤ_[p])
+      (Ideal.Quotient.mkₐ ℤ_[p] (RingHom.ker ιB)).toLinearMap
+  obtain ⟨τ', hτ'⟩ :=
+    exists_charFrob_map_algebraMap (B' := B ⧸ RingHom.ker ιB) τ
+  refine ⟨B ⧸ RingHom.ker ιB, inferInstance, inferInstance, inferInstance,
+    hfin, τ', Ideal.Quotient.lift (RingHom.ker ιB) ιB (fun a ha => ha),
+    fun w => ?_⟩
+  rw [hτ', Polynomial.map_map]
+  congr 1
+
+/-- **Only finitely many places of a number field contain a fixed nonzero
+integer** (PROVEN 2026-07-26; pure Dedekind-domain theory — the brick that
+makes "the places of `F` over `3`" a `Finset`).
+
+`w ∋ a` is `w.asIdeal ∣ (a)` (`Ideal.dvd_span_singleton`), and only finitely
+many height-one primes divide a fixed nonzero ideal
+(`Ideal.finite_factors`).
+
+This is what lets the Carayol/Taylor citation below be NARROWED by the
+hypothesis `hbad3` (see its docstring): the exceptional set of the matching
+clause can always be enlarged by the places over `3` for free, so demanding
+that it already contains them costs the consumer nothing while removing from
+the citation a claim it has no right to make. -/
+theorem finite_heightOneSpectrum_mem_of_ne_zero {F : Type*} [Field F]
+    [NumberField F] (a : NumberField.RingOfIntegers F) (ha : a ≠ 0) :
+    {w : HeightOneSpectrum (NumberField.RingOfIntegers F) | a ∈ w.asIdeal}.Finite := by
+  have h : {w : HeightOneSpectrum (NumberField.RingOfIntegers F) | a ∈ w.asIdeal}
+      = {w : HeightOneSpectrum (NumberField.RingOfIntegers F) |
+          w.asIdeal ∣ Ideal.span {a}} := by
+    ext w
+    simp [Ideal.dvd_span_singleton]
+  rw [h]
+  exact Ideal.finite_factors (by simpa using ha)
+
+/-- **Any finite set of places can be enlarged to contain all the places
+above a fixed nonzero integer** (PROVEN 2026-07-26; the discharge form of
+`finite_heightOneSpectrum_mem_of_ne_zero`).
+
+This is the whole cost of the `hbad3` narrowing of the Carayol/Taylor
+citation below: because a matching clause `∀ w ∉ badF, …` only WEAKENS as
+`badF` grows, the consumer can always move to `badF'` and hand the citation
+the hypothesis it now demands. Nothing downstream assumes more. -/
+theorem exists_finset_superset_of_places_mem {F : Type*} [Field F]
+    [NumberField F] (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (a : NumberField.RingOfIntegers F) (ha : a ≠ 0) :
+    ∃ badF' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      badF ⊆ badF' ∧
+      ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+        a ∈ w.asIdeal → w ∈ badF' := by
+  classical
+  refine ⟨badF ∪ (finite_heightOneSpectrum_mem_of_ne_zero a ha).toFinset,
+    Finset.subset_union_left, ?_⟩
+  intro w hw
+  exact Finset.mem_union_right _ (by simpa using hw)
+
 /-- **The Hilbert-modular `3`-adic realization, geometric core**
 (sorry node — Carayol 1986, Théorème (A)/(B) / Taylor 1989; THE
 citation leaf of the `3`-adic realization node, in its narrowest form
@@ -6660,6 +6867,54 @@ less:
   it does not — completeness enters ONLY through the idempotent lift,
   and the missing pin half (precompleteness of a finite free module)
   is four short lemmas, proven above.
+
+* `IsDomain B` — GONE (2026-07-26), by
+  `exists_domain_coefficientRing_of_ringHom`: the kernel of the
+  comparison embedding `ιB` is prime because `ℚ̄_3` is a domain, so the
+  whole package descends to `B ⧸ ker ιB` — still module-finite over
+  `ℤ_3`, still carrying the representation (by the coefficient base
+  change `exists_charFrob_map_algebraMap`), still receiving the induced
+  embedding — and no `ιB`-image of a Frobenius characteristic polynomial
+  moves. Note this is a QUOTIENT, not a lift: unlike the locality brick
+  it uses no completeness at all.
+
+NARROWED AGAIN 2026-07-26 — the matching clause no longer claims
+local–global compatibility at the places over `3`, via the new
+hypothesis `hbad3`. This one is a FAITHFULNESS repair as well as a
+shrink, and the gap it closes is sharp:
+
+* the exceptional set `badF` is supplied from the `ℓ`-adic side, and
+  `hmod` constrains it only through the `ℓ`-adic `ρ`. Since `ρ` is
+  hardly ramified it is ramified only at `2` and `ℓ`, so `hmod` gives
+  `badF` no reason whatever to contain the places of `F` over `3` —
+  and for the intended instantiation it does not have to;
+* but the representation this leaf PRODUCES is the `3`-adic member of
+  the compatible system, and that member RAMIFIES at every place over
+  `3`. At a ramified place `charFrob` is not even independent of the
+  choices: `GaloisRepTransport`'s module docstring records that two
+  arithmetic Frobenii at one prime differ by an inertia element, so no
+  choice-free comparison holds there. Carayol's Théorème (A) asserts
+  local–global compatibility at `w`, and the identification of the
+  Frobenius characteristic polynomial with the Hecke polynomial only
+  at the places where the `λ`-adic member is unramified.
+* So the OLD statement asserted, at every `w | 3`, an equality that the
+  literature does not give and that would hold only by accident. The
+  hypothesis `hbad3 : ∀ w, (3 : 𝓞 F) ∈ w.asIdeal → w ∈ badF` deletes
+  exactly those instances and nothing else.
+
+It costs the consumers NOTHING, which is why this is a shrink rather
+than a relocation: `badF` is chosen existentially upstream
+(`exists_heckePackage_of_seed`) and the matching clause only WEAKENS
+when it grows, so `exists_potentialModularityWitness_of_five_le`
+discharges `hbad3` by replacing `badF` with
+`badF ∪ {w : w ∋ 3}` — a `Finset` by
+`finite_heightOneSpectrum_mem_of_ne_zero` above — and carries the
+enlarged set into the witness. No other citation assumes more; the
+`PotentialModularityWitness` docstring already said `badF` contains
+the places over `2`, `3` and `ℓ`, so this makes the formal statement
+say what the interface always claimed. The twin Brauer node
+`blggt_threeadicBrauerSum_of_witness` never had this gap — it excludes
+`q = 3` explicitly and chooses its own exceptional set `S₁`.
 
 What remains is the genuinely geometric core: the automorphic
 construction of a `2`-dimensional `3`-adic representation of `G_F` with
@@ -6722,11 +6977,49 @@ audit for the record: (i) the valuation-uniqueness reading is a detour
 finite free module (the pin has the `IsHausdorff` half only), which is
 `isPrecomplete_of_free_finite` and its three supporting lemmas above.
 
-Nothing further is now scheduled to leave this citation: the remaining
-components (`B` with `CommRing`, `IsDomain`, `Algebra ℤ_3`,
-`Module.Finite ℤ_3`, the representation `τF`, the place `ψ₃`, the
-embedding `ιB` and the matching clause) are the automorphic
-construction itself.
+TERMINALITY AUDIT, component by component (2026-07-26 — the whole
+conclusion was re-audited for further shrinks. Result: the one
+component that was a formal consequence of the others, `IsDomain B`,
+has been removed; every component that remains is terminal, and the
+argument for each is below. Do not re-litigate without new evidence).
+
+* `B : Type u`, `CommRing B`, `Algebra ℤ_3 B` — the carrier and the
+  structures without which `Module.Finite ℤ_3 B` cannot be stated.
+  Nothing to remove.
+* `Module.Finite ℤ_3 B` — TERMINAL. Not a consequence of the other
+  components: a ring receiving `ℤ_3` and mapping to `ℚ̄_3` need not be
+  module-finite over `ℤ_3`. Classically it is the INTEGRALITY of the
+  realization — Carayol's `E_λ`-adic representation plus the
+  stable-lattice step (Serre I §1) — and the route audit below records
+  why splitting that step off trades one citation for two. It is also
+  what feeds `free_of_finite_of_algebraMap_padicInt_injective`
+  downstream, so it cannot simply be dropped.
+* `IsDomain B` — REMOVED, see the shrink bullet above. It was the only
+  component of the old conclusion that was a formal consequence of the
+  others, and it is worth recording exactly why it took work rather
+  than a line: the descent to `B ⧸ ker ιB` moves a GALOIS
+  REPRESENTATION, so it needs a coefficient base change with a
+  `charFrob` compatibility. That bridge existed in-tree only in
+  `Modularity/Patching.lean`, only over the base field `ℚ`, and that
+  module is not in this one's import cone; the three declarations
+  `charFrob_baseChange_of_numberField`, `charFrob_conj_of_numberField`
+  and `exists_charFrob_map_algebraMap` above are the general-base
+  replacement.
+* `τF`, `ψ₃`, `ιB` and the matching clause — TERMINAL, and they are
+  terminal TOGETHER rather than one at a time. Taken in isolation each
+  of the three data is cheap (`ψ₃` exists because a number field embeds
+  into the algebraically closed characteristic-zero `ℚ̄_3`; `ιB` exists
+  because `Frac B` is then a finite extension of `ℚ_3`), but none of
+  them may be quantified away, because it is precisely their COUPLING
+  by the matching clause that is Carayol's Théorème (A). Two rewrites
+  of this block were audited and rejected as going the WRONG WAY, i.e.
+  as making the citation assert MORE: replacing `ψ₃`/`ιB` by a single
+  `E →+* Frac B` (that additionally asserts the Hecke field embeds in
+  the coefficient field, which the present pair does not), and moving
+  `ψ₃` from the existential into a hypothesis (that asserts the whole
+  compatible system rather than one member). The trace/determinant
+  restatement was audited separately below and is equivalent, not
+  weaker.
 
 Also audited and deliberately NOT done: restating the matching clause
 as the pair `ιB (tr τF(Frob_w)) = ψ₃ a_w`, `ιB (det τF(Frob_w)) =
@@ -6808,8 +7101,10 @@ theorem carayol_threeadic_realization_of_heckePackage
     (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
     (hmod : ∀ w ∉ badF,
       ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-        (heckeF w).map ψℓ) :
-    ∃ (B : Type u) (_ : CommRing B) (_ : IsDomain B)
+        (heckeF w).map ψℓ)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
+    ∃ (B : Type u) (_ : CommRing B)
       (_ : Algebra ℤ_[3] B) (_ : Module.Finite ℤ_[3] B),
       letI : TopologicalSpace B := moduleTopology ℤ_[3] B
       letI : IsTopologicalRing B :=
@@ -6846,8 +7141,23 @@ coefficient ring, the representation, the place `ψ₃`, the embedding
 from the citation, so there is no lattice change and no charpoly to
 re-compute.
 
+NARROWED AGAIN 2026-07-26, twice. (i) The core no longer asserts
+`IsDomain` of its coefficient ring; step (a') of the proof below
+recovers it by quotienting by `ker ιB`, which is prime because `ℚ̄_3`
+is a domain, and carries the representation across by the coefficient
+base change `exists_domain_coefficientRing_of_ringHom`. (ii) The
+hypothesis `hbad3` (the places of `F` over `3` lie in `badF`) is
+threaded straight through to the core. It is
+a faithfulness repair — the `3`-adic member ramifies at every place
+over `3`, so the matching clause had no business reaching there — and
+it costs nothing, because `badF` is chosen existentially upstream and
+the clause only weakens as it grows. See the core's docstring for the
+argument and `exists_potentialModularityWitness_of_five_le` for the
+discharge.
+
 See `carayol_threeadic_realization_of_heckePackage` for the full
-literature, pin, route and soundness audits (including what was
+literature, pin, route and soundness audits (including the
+component-by-component TERMINALITY AUDIT of what is left, and what was
 deliberately NOT pulled out of the citation, and why).
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
@@ -6884,7 +7194,9 @@ theorem exists_threeadic_realization_domain_of_heckePackage
     (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
     (hmod : ∀ w ∉ badF,
       ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-        (heckeF w).map ψℓ) :
+        (heckeF w).map ψℓ)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
     ∃ (B : Type u) (_ : CommRing B) (_ : IsDomain B)
       (_ : TopologicalSpace B)
       (_ : IsTopologicalRing B) (_ : Algebra ℤ_[3] B) (_ : IsLocalRing B)
@@ -6896,12 +7208,21 @@ theorem exists_threeadic_realization_domain_of_heckePackage
       ∀ w ∉ badF, (τF.charFrob w).map ιB = (heckeF w).map ψ₃ := by
   classical
   -- (a) the NARROWED Carayol/Taylor citation: the coefficient ring comes
-  -- back as a bare local domain, module-finite over `ℤ_3`, with no
-  -- topology, no `ℤ_3`-injectivity and no injectivity of the comparison
-  -- embedding asserted
-  obtain ⟨B, hCR, hDom, hAlg, hFin, τF, ψ₃, ιB, hmatch⟩ :=
+  -- back as a BARE commutative ring, module-finite over `ℤ_3`, with no
+  -- topology, no domain hypothesis, no `ℤ_3`-injectivity and no
+  -- injectivity of the comparison embedding asserted
+  obtain ⟨B₀, hCR₀, hAlg₀, hFin₀, τ₀, ψ₃, ι₀, hmatch₀⟩ :=
     carayol_threeadic_realization_of_heckePackage hℓodd hℓ5 hZinj hrank hρ hW
-      hρbar hirr π hπsurj hπ F hFtr hFgal E badF heckeF ψℓ ιO hιO hmod
+      hρbar hirr π hπsurj hπ F hFtr hFgal E badF heckeF ψℓ ιO hιO hmod hbad3
+  -- (a') DOMAIN NORMALIZATION: `ker ι₀` is prime, so the whole package
+  -- descends to `B₀ ⧸ ker ι₀` without moving any `ι₀`-image of a Frobenius
+  -- characteristic polynomial. This is why the citation no longer has to
+  -- assert `IsDomain`.
+  letI : TopologicalSpace B₀ := moduleTopology ℤ_[3] B₀
+  haveI : IsModuleTopology ℤ_[3] B₀ := ⟨rfl⟩
+  haveI : IsTopologicalRing B₀ := isTopologicalRing_moduleTopology_of_finite 3 B₀
+  obtain ⟨B, hCR, hDom, hAlg, hFin, τF, ιB, hdesc⟩ :=
+    exists_domain_coefficientRing_of_ringHom (p := 3) (K := F) ι₀ τ₀
   -- locality of the coefficient ring is now a THEOREM of the Henselian
   -- property of `ℤ_3`, not a component of the citation
   have hLR : IsLocalRing B :=
@@ -6918,7 +7239,8 @@ theorem exists_threeadic_realization_domain_of_heckePackage
   exact ⟨B, hCR, hDom, moduleTopology ℤ_[3] B,
     isTopologicalRing_moduleTopology_of_finite 3 B, hAlg, hLR, hFin, ⟨rfl⟩,
     injective_algebraMap_of_ringHom_charZero ιB, τF, ψ₃, ιB,
-    injective_of_finite_padicInt_charZero (p := 3) ιB, hmatch⟩
+    injective_of_finite_padicInt_charZero (p := 3) ιB,
+    fun w hw => (hdesc w).trans (hmatch₀ w hw)⟩
 
 /-- **The Hilbert-modular `3`-adic realization** (PROVEN assembly,
 2026-07-24 — Carayol 1986 / Taylor 1989 at one remove): a
@@ -6941,8 +7263,10 @@ The node splits at its one genuine literature joint into
   half is itself PROVEN, over the strictly narrower geometric core
   `carayol_threeadic_realization_of_heckePackage` (which no longer
   asserts the topology on the coefficient ring, nor its LOCALITY, nor
-  either injectivity component) — the sole residual sorry of the node
-  is now that core;
+  that it is a DOMAIN, nor either injectivity component, and since
+  2026-07-26 no longer claims the Hecke matching at the places over
+  `3`, where its own `3`-adic representation ramifies) — the sole
+  residual sorry of the node is now that core;
 * (b) the FORMAL half, `free_of_finite_of_algebraMap_padicInt_injective`
   — the free-lattice normalization, PROVEN in-tree: `ℤ_3` is a DVR
   hence a PID, injectivity of `algebraMap ℤ_3 B` between domains is
@@ -7011,7 +7335,9 @@ theorem exists_threeadic_realization_of_heckePackage
     (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
     (hmod : ∀ w ∉ badF,
       ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-        (heckeF w).map ψℓ) :
+        (heckeF w).map ψℓ)
+    (hbad3 : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (3 : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
     ∃ (B : Type u) (_ : CommRing B) (_ : TopologicalSpace B)
       (_ : IsTopologicalRing B) (_ : Algebra ℤ_[3] B) (_ : IsLocalRing B)
       (_ : Module.Finite ℤ_[3] B) (_ : Module.Free ℤ_[3] B)
@@ -7027,7 +7353,7 @@ theorem exists_threeadic_realization_of_heckePackage
     ιB, hιB, hmatch⟩ :=
     exists_threeadic_realization_domain_of_heckePackage hℓodd hℓ5 hZinj
       hrank hρ hW hρbar hirr π hπsurj hπ F hFtr hFgal E badF heckeF ψℓ
-      ιO hιO hmod
+      ιO hιO hmod hbad3
   -- (c) the eigensystem-match transport: the normalization below does
   -- not move the coefficient ring, so `hmatch` is carried verbatim and
   -- only the `Module.Free` component remains to be supplied
@@ -7087,7 +7413,17 @@ local-global, producing the ℓ-adic Hecke block `E`/`badF`/`heckeF`/
 Taylor 1989, producing the `3`-adic block `B`/`τF`/`ψ₃`/`ιB`/
 `matchF₃`), glued by instantiating the carrier fieldwise. Those three
 leaves are now the residual sorries of the inhabitation node; the
-circularity guard above binds each of them. -/
+circularity guard above binds each of them.
+
+BAD-SET ENLARGEMENT (2026-07-26, step (ii') of the proof): the carrier
+is built with `badF ∪ {w : w ∋ 3}` rather than with the `badF` that
+`exists_heckePackage_of_seed` returns. This is free — `modularF` only
+weakens as its exceptional set grows — and it is what discharges the
+narrowed Carayol citation's `hbad3`, i.e. what stops that citation
+claiming Hecke matching at the places where the `3`-adic member of the
+compatible system ramifies. The `PotentialModularityWitness` docstring
+already specified `badF` to contain the places over `2`, `3` and `ℓ`;
+this makes it formally so. -/
 theorem exists_potentialModularityWitness_of_five_le
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -7119,15 +7455,31 @@ theorem exists_potentialModularityWitness_of_five_le
   obtain ⟨E, hE, hNE, badF, heckeF, ψℓ, ιO, hιO, hmod⟩ :=
     exists_heckePackage_of_seed hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr
       π hπsurj hπ F hFtr hFgal hirrF seed
+  -- (ii') ENLARGE the exceptional set by the places of `F` over `3`
+  -- (2026-07-26). The `ℓ`-adic clause `hmod` only WEAKENS when its
+  -- exceptional set grows, so this is free; and it is what discharges the
+  -- narrowed Carayol citation's `hbad3`, which exists because the `3`-adic
+  -- member of the compatible system RAMIFIES at every place over `3` and so
+  -- has no Frobenius characteristic polynomial to match there. The
+  -- `PotentialModularityWitness` docstring already specified `badF` to
+  -- contain the places over `2`, `3` and `ℓ`; the witness is now built with
+  -- a `badF` that formally does.
+  have h3ne : (3 : NumberField.RingOfIntegers F) ≠ 0 := by norm_num
+  obtain ⟨badF', hsub, hbad3⟩ :=
+    exists_finset_superset_of_places_mem badF (3 : NumberField.RingOfIntegers F) h3ne
+  have hmod' : ∀ w ∉ badF',
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO = (heckeF w).map ψℓ :=
+    fun w hw => hmod w fun h => hw (hsub h)
   -- (iii) the Hilbert-modular `3`-adic realization: the 3-adic block
   obtain ⟨B, hB₁, hB₂, hB₃, hB₄, hB₅, hB₆, hB₇, hB₈, τF, ψ₃, ιB, hιB,
     hmatch⟩ :=
     exists_threeadic_realization_of_heckePackage hℓodd hℓ5 hZinj hrank hρ
-      hW hρbar hirr π hπsurj hπ F hFtr hFgal E badF heckeF ψℓ ιO hιO hmod
+      hW hρbar hirr π hπsurj hπ F hFtr hFgal E badF' heckeF ψℓ ιO hιO hmod'
+      hbad3
   -- glue: instantiate the carrier fieldwise
   exact ⟨{ F := F, totallyReal := hFtr, galoisF := hFgal, E := E,
-           badF := badF, heckeF := heckeF, ψℓ := ψℓ, ιO := ιO,
-           ιO_injective := hιO, modularF := hmod, B := B, τF := τF,
+           badF := badF', heckeF := heckeF, ψℓ := ψℓ, ιO := ιO,
+           ιO_injective := hιO, modularF := hmod', B := B, τF := τF,
            ψ₃ := ψ₃, ιB := ιB, ιB_injective := hιB, matchF₃ := hmatch }⟩
 
 section ArtinInduction
