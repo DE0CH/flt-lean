@@ -404,6 +404,11 @@ import Mathlib.RingTheory.DedekindDomain.Factorization
 -- prime (`RingHom.ker_isPrime`).
 import Mathlib.LinearAlgebra.TensorProduct.Basis
 import Mathlib.RingTheory.Ideal.Maps
+-- `isRegularLocalRing_quotient_span_list_aux` (PROVEN 2026-07-26, the
+-- commutative-algebra engine under `isRegularLocalRing_stalk_of_smooth_over_field`)
+-- reassembles the iterated quotient `(R ⧸ (x)) ⧸ (t)` as `R ⧸ (x :: t)` through
+-- `DoubleQuot.quotQuotEquivQuotSup`, which lives here.
+public import Mathlib.RingTheory.Ideal.Quotient.Operations
 
 @[expose] public section
 
@@ -2528,10 +2533,307 @@ theorem isDomain_of_isRegularLocalRing (R : Type u) [CommRing R] [IsRegularLocal
     IsDomain R :=
   isDomain_of_isRegularLocalRing_aux _ R rfl
 
+/-- **REGULAR LOCAL MOD ONE ELEMENT OF `𝔪 ∖ 𝔪²` IS REGULAR LOCAL**
+(**PROVEN 2026-07-26**).
+
+For `R` regular local and `x ∈ 𝔪 ∖ 𝔪²`, the quotient `R ⧸ (x)` is again a
+regular local ring — of embedding dimension and Krull dimension one less.
+
+This is the single-element case of "a quotient by part of a regular system of
+parameters is regular", and mathlib has NO form of it: `RegularLocalRing/`
+consists of exactly two files (`Defs.lean`, `Polynomial.lean`) and neither
+mentions quotients. It is a general, reusable statement and a genuine mathlib
+contribution, on a par with `isDomain_of_isRegularLocalRing` above.
+
+THE PROOF is the two halves of Krull's height theorem squeezing `dim R ⧸ (x)`
+against the embedding dimension, exactly as in the inductive step of
+`isDomain_of_isRegularLocalRing_aux`:
+
+* `𝔪 ⊄ 𝔪²` gives `spanFinrank 𝔪 = m + 1`, hence `ringKrullDim R = m + 1` by
+  regularity;
+* the exchange lemma `exists_finset_card_span_insert_eq_maximalIdeal` (PROVEN
+  above) produces `T` with `#T = m` and `span (insert x T) = 𝔪`; since `x ↦ 0`
+  the image of `T` alone generates `𝔪 (R ⧸ (x))`, so
+  `spanFinrank 𝔪 (R ⧸ (x)) ≤ m`;
+* `ringKrullDim_le_ringKrullDim_quotient_add_encard` gives
+  `ringKrullDim R ≤ ringKrullDim (R ⧸ (x)) + 1`, and cancelling the `+ 1` in
+  `WithBot ℕ∞` (`ENat.WithBot.add_le_add_one_right_iff`) gives
+  `m ≤ ringKrullDim (R ⧸ (x))`.
+
+`IsRegularLocalRing.of_spanFinrank_maximalIdeal_le` closes it: the reverse
+inequality `ringKrullDim ≤ spanFinrank 𝔪` is free.
+
+NOTE this is deliberately a SEPARATE declaration rather than a refactoring of
+`isDomain_of_isRegularLocalRing_aux`, whose inductive step contains the same
+argument inline. That file region has another owner and concurrent worktrees
+are editing it; duplicating twenty lines is cheaper than the merge conflict. -/
+theorem isRegularLocalRing_quotient_span_singleton
+    {R : Type u} [CommRing R] [IsRegularLocalRing R] {x : R}
+    (hxm : x ∈ IsLocalRing.maximalIdeal R)
+    (hx2 : x ∉ (IsLocalRing.maximalIdeal R) ^ 2) :
+    IsRegularLocalRing (R ⧸ Ideal.span {x}) := by
+  classical
+  -- the embedding dimension is a successor, since `x ∈ 𝔪 ∖ 𝔪²`
+  obtain ⟨m, hn⟩ : ∃ m, (IsLocalRing.maximalIdeal R).spanFinrank = m + 1 := by
+    rcases Nat.eq_zero_or_pos (IsLocalRing.maximalIdeal R).spanFinrank with h | h
+    · exfalso
+      have hbot : IsLocalRing.maximalIdeal R = ⊥ :=
+        (Submodule.spanFinrank_eq_zero_iff_eq_bot (IsNoetherian.noetherian _)).1 h
+      rw [hbot] at hxm
+      simp only [Ideal.mem_bot] at hxm
+      exact hx2 (hxm ▸ Ideal.zero_mem _)
+    · exact ⟨_, (Nat.succ_pred_eq_of_pos h).symm⟩
+  have hdim : ringKrullDim R = ((m + 1 : ℕ) : WithBot ℕ∞) := by
+    rw [← IsRegularLocalRing.spanFinrank_maximalIdeal (R := R), hn]
+  obtain ⟨T, hTcard, hTspan⟩ := exists_finset_card_span_insert_eq_maximalIdeal hxm hx2 hn
+  set I : Ideal R := Ideal.span {x} with hI
+  have hIm : I ≤ IsLocalRing.maximalIdeal R := by rw [hI, Ideal.span_le]; simpa using hxm
+  have hInt : I ≠ ⊤ := fun h =>
+    (IsLocalRing.maximalIdeal.isMaximal R).ne_top (top_le_iff.mp (h ▸ hIm))
+  haveI : Nontrivial (R ⧸ I) := Ideal.Quotient.nontrivial_iff.mpr hInt
+  haveI : IsLocalRing (R ⧸ I) := IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+  have hmapmax : (IsLocalRing.maximalIdeal R).map (Ideal.Quotient.mk I)
+      = IsLocalRing.maximalIdeal (R ⧸ I) :=
+    IsLocalRing.map_maximalIdeal_of_surjective _ Ideal.Quotient.mk_surjective
+  have hsr : (IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank ≤ m := by
+    have himg : IsLocalRing.maximalIdeal (R ⧸ I)
+        = Ideal.span ((Ideal.Quotient.mk I) '' (T : Set R)) := by
+      rw [← hmapmax, ← hTspan, Ideal.map_span, Set.image_insert_eq]
+      have hx0 : (Ideal.Quotient.mk I) x = 0 := by
+        rw [Ideal.Quotient.eq_zero_iff_mem, hI]; exact Ideal.subset_span rfl
+      rw [hx0, Ideal.span_insert_zero]
+    rw [himg]
+    refine le_trans (Submodule.spanFinrank_span_le_ncard_of_finite
+      ((T : Set R).toFinite.image _)) ?_
+    exact le_trans (Set.ncard_image_le (T : Set R).toFinite) (by simp [hTcard])
+  have hjac : ({x} : Set R) ⊆ Ring.jacobson R := by
+    intro y hy
+    rw [Set.mem_singleton_iff] at hy
+    subst hy
+    show y ∈ Ring.jacobson R
+    rw [IsLocalRing.ringJacobson_eq_maximalIdeal]
+    exact hxm
+  have hkey : ringKrullDim R ≤ ringKrullDim (R ⧸ I) + 1 := by
+    have h := ringKrullDim_le_ringKrullDim_quotient_add_encard ({x} : Set R) hjac
+    simpa [hI] using h
+  have hdimq : ((m : ℕ) : WithBot ℕ∞) ≤ ringKrullDim (R ⧸ I) := by
+    rw [hdim] at hkey
+    push_cast at hkey
+    exact ENat.WithBot.add_le_add_one_right_iff.mp hkey
+  exact IsRegularLocalRing.of_spanFinrank_maximalIdeal_le _
+    (le_trans (by exact_mod_cast hsr) hdimq)
+
+/-- **REGULAR LOCAL MOD A LIST INDEPENDENT MOD `𝔪²` IS REGULAR LOCAL**
+(**PROVEN 2026-07-26** — the commutative-algebra ENGINE under
+`isRegularLocalRing_stalk_of_smooth_over_field`).
+
+For `R` regular local and `l = [f₀, …, f_{c-1}]` a list in `𝔪` satisfying the
+ITERATED INDEPENDENCE condition
+
+    ∀ n < c,  f_n ∉ 𝔪² ⊔ (f₀, …, f_{n-1}),
+
+the quotient `R ⧸ (f₀, …, f_{c-1})` is again a regular local ring (of dimension
+`dim R − c`). This is "a quotient by part of a regular system of parameters is
+regular" in the generality the smooth case needs.
+
+WHY THE HYPOTHESIS IS IN THIS FORM. The mathematically natural hypothesis is
+that the images of the `f_i` be LINEARLY INDEPENDENT in the cotangent space
+`𝔪/𝔪²` over the residue field. That is equivalent to the displayed condition —
+a family in a vector space is independent iff no member lies in the span of its
+predecessors — but the displayed form is what the induction consumes directly,
+with no linear algebra and no residue-field bookkeeping at all. A future
+consumer holding the linear-independence form should convert to this one; the
+conversion is pure linear algebra over `IsLocalRing.CotangentSpace`.
+
+THE PROOF is induction on `c`, quantified over the RING as well (as in
+`isDomain_of_isRegularLocalRing_aux`, and for the same reason: the step passes
+to `R ⧸ (f₀)`). At `c = 0` the ideal is `⊥` and `RingEquiv.quotientBot`
+finishes. At `c = m + 1`:
+
+* `n = 0` of the hypothesis says `f₀ ∈ 𝔪 ∖ 𝔪²`, so
+  `isRegularLocalRing_quotient_span_singleton` makes `R' := R ⧸ (f₀)` regular
+  local;
+* the hypothesis TRANSPORTS to the mapped tail `t.map (mk (f₀))` in `R'`
+  verbatim: `𝔪'² ⊔ (t.take n)` is the image of `𝔪² ⊔ (f₀ :: t.take n)`, and
+  since that ideal contains `ker (mk (f₀)) = (f₀)`, `Ideal.comap_map_of_surjective`
+  turns membership upstairs into membership downstairs with no loss. This is
+  precisely why the condition is stated with the PREFIX `(f₀, …, f_{n-1})`
+  rather than merely `f_n ∉ 𝔪²`: the prefix is what absorbs the kernel;
+* the induction hypothesis applies to the tail, and
+  `DoubleQuot.quotQuotEquivQuotSup` reassembles
+  `(R ⧸ (f₀)) ⧸ (t) ≃+* R ⧸ ((f₀) ⊔ (t)) = R ⧸ (f₀ :: t)`.
+
+Indices are by POSITION (`l[n]`, `l.take n`) rather than by splitting `l` into
+`t ++ x :: s`: the mapped-list lemmas `List.getElem_map` and `List.map_take`
+exist at this pin and make the transport a two-line rewrite, whereas the
+split form needs `List.map_eq_append_iff`, which does NOT exist here. -/
+theorem isRegularLocalRing_quotient_span_list_aux (c : ℕ) :
+    ∀ (R : Type u) [CommRing R] [IsRegularLocalRing R] (l : List R),
+      l.length = c →
+      (∀ (n : ℕ) (hn : n < l.length),
+        l[n] ∈ IsLocalRing.maximalIdeal R ∧
+          l[n] ∉ (IsLocalRing.maximalIdeal R) ^ 2 ⊔ Ideal.span {y | y ∈ l.take n}) →
+      IsRegularLocalRing (R ⧸ Ideal.span {y | y ∈ l}) := by
+  classical
+  induction c with
+  | zero =>
+    intro R _ _ l hlen _
+    have hl : l = [] := List.eq_nil_of_length_eq_zero hlen
+    subst hl
+    have hbot : Ideal.span {y : R | y ∈ ([] : List R)} = ⊥ := by simp
+    rw [hbot]
+    exact IsRegularLocalRing.of_ringEquiv (RingEquiv.quotientBot R).symm
+  | succ m ih =>
+    intro R _ _ l hlen hind
+    obtain ⟨x, t, rfl⟩ : ∃ x t, l = x :: t := by
+      cases l with
+      | nil => simp at hlen
+      | cons a s => exact ⟨a, s, rfl⟩
+    have htlen : t.length = m := by simpa using hlen
+    -- the head lies in `𝔪 ∖ 𝔪²`
+    obtain ⟨hxm, hx2'⟩ := hind 0 (by simp)
+    simp only [List.getElem_cons_zero, List.take_zero] at hxm hx2'
+    have hx2 : x ∉ (IsLocalRing.maximalIdeal R) ^ 2 := fun h => hx2' (Ideal.mem_sup_left h)
+    set I : Ideal R := Ideal.span {x} with hI
+    set f := Ideal.Quotient.mk I with hf
+    haveI : IsRegularLocalRing (R ⧸ I) := isRegularLocalRing_quotient_span_singleton hxm hx2
+    have hfx : f x = 0 := by
+      rw [hf, Ideal.Quotient.eq_zero_iff_mem, hI]; exact Ideal.subset_span rfl
+    have hker : Ideal.comap f (⊥ : Ideal (R ⧸ I)) = I := Ideal.mk_ker
+    -- membership in the image of an ideal CONTAINING `ker f = (x)` loses nothing
+    have hmem : ∀ (J : Ideal R), I ≤ J → ∀ y : R, f y ∈ J.map f ↔ y ∈ J := by
+      intro J hJ y
+      rw [← Ideal.mem_comap, Ideal.comap_map_of_surjective f Ideal.Quotient.mk_surjective,
+        hker, sup_eq_left.mpr hJ]
+    have hmaxq : IsLocalRing.maximalIdeal (R ⧸ I) = (IsLocalRing.maximalIdeal R).map f :=
+      (IsLocalRing.map_maximalIdeal_of_surjective _ Ideal.Quotient.mk_surjective).symm
+    -- transport the independence hypothesis to the quotient
+    have hind' : ∀ (n : ℕ) (hn : n < (t.map f).length),
+        (t.map f)[n] ∈ IsLocalRing.maximalIdeal (R ⧸ I) ∧
+          (t.map f)[n] ∉ (IsLocalRing.maximalIdeal (R ⧸ I)) ^ 2 ⊔
+            Ideal.span {y | y ∈ (t.map f).take n} := by
+      intro n hn
+      have hn' : n < t.length := by simpa using hn
+      obtain ⟨h1, h2⟩ := hind (n + 1) (by simp [hn'])
+      simp only [List.getElem_cons_succ, List.take_succ_cons] at h1 h2
+      have hget : (t.map f)[n] = f t[n] := by simp
+      constructor
+      · rw [hget, hmaxq]; exact Ideal.mem_map_of_mem _ h1
+      · rw [hget]
+        intro hcon
+        refine h2 ?_
+        have hspanmap : (Ideal.span {y : R | y ∈ x :: t.take n}).map f
+            = Ideal.span {y | y ∈ (t.map f).take n} := by
+          have e1 : {y : R | y ∈ x :: t.take n} = insert x {y : R | y ∈ t.take n} := by
+            ext y; simp
+          have e2 : {y | y ∈ (t.map f).take n} = f '' {y : R | y ∈ t.take n} := by
+            ext y; simp [← List.map_take, List.mem_map]
+          rw [Ideal.map_span, e1, Set.image_insert_eq, hfx, e2, Ideal.span_insert_zero]
+        have hJ : ((IsLocalRing.maximalIdeal R) ^ 2 ⊔ Ideal.span {y | y ∈ x :: t.take n}).map f
+            = (IsLocalRing.maximalIdeal (R ⧸ I)) ^ 2 ⊔
+              Ideal.span {y | y ∈ (t.map f).take n} := by
+          rw [Ideal.map_sup, hmaxq, ← Ideal.map_pow, hspanmap]
+        rw [← hmem _ ?_ t[n], hJ]
+        · exact hcon
+        · rw [hI, Ideal.span_le]
+          intro z hz
+          rw [Set.mem_singleton_iff] at hz
+          subst hz
+          exact Ideal.mem_sup_right (Ideal.subset_span (by simp))
+    haveI := ih (R ⧸ I) (t.map f) (by simpa using htlen) hind'
+    -- reassemble `(R ⧸ (x)) ⧸ (t) ≃+* R ⧸ (x :: t)`
+    have hspan : Ideal.span {y | y ∈ (t.map f)} = (Ideal.span {y | y ∈ t}).map f := by
+      rw [Ideal.map_span]
+      congr 1
+      ext y
+      simp [List.mem_map]
+    rw [hspan] at this
+    have hsup : I ⊔ Ideal.span {y | y ∈ t} = Ideal.span {y : R | y ∈ x :: t} := by
+      rw [hI, ← Ideal.span_union]
+      congr 1
+      ext y
+      simp
+    exact IsRegularLocalRing.of_ringEquiv
+      ((DoubleQuot.quotQuotEquivQuotSup I (Ideal.span {y | y ∈ t})).trans
+        (Ideal.quotEquivOfEq hsup))
+
 open CategoryTheory AlgebraicGeometry in
-/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE REGULAR LOCAL RINGS** (sorry node,
-cut 2026-07-26 out of `isDomain_stalk_of_smooth_over_field`; it is now the ONLY
-open leaf of that node, and the whole of its remaining geometric content).
+/-- **THE STALK OF A SMOOTH `K`-SCHEME IS A REGULAR LOCAL RING MODULO AN
+INDEPENDENT LIST** (sorry node, cut 2026-07-26 out of
+`isRegularLocalRing_stalk_of_smooth_over_field`; it is now the ONLY open leaf
+below that node, and carries all of its remaining GEOMETRIC content).
+
+For `Z` smooth over `Spec K` and `z : Z`, the stalk `𝒪_{Z,z}` is
+`B ⧸ (f₀, …, f_{c-1})` for some REGULAR LOCAL `B` and some list satisfying the
+iterated independence condition of `isRegularLocalRing_quotient_span_list_aux`.
+
+WHAT IS LEFT TO DO, and it is a presentation-plus-Jacobian argument over
+machinery that already exists at this pin:
+
+1. `AlgebraicGeometry.Smooth.exists_isStandardSmooth` (mathlib) gives affine
+   opens `U ∋ f.base z` in `Spec K` and `V ∋ z` in `Z` with
+   `(f.appLE U V e).hom.IsStandardSmooth`. `Spec K` is a one-point space, so
+   `U = ⊤` and `Γ(Spec K, U) ≅ K` by `Scheme.ΓSpecIso`; put `A := Γ(Z, V)`, so
+   `A` is a standard smooth `K`-algebra and
+   `𝒪_{Z,z} ≅ A_p` by `IsAffineOpen.isLocalization_stalk`.
+2. `Algebra.IsStandardSmooth K A` unpacks to a `SubmersivePresentation`:
+   `A = P ⧸ (r_σ)` with `P = MvPolynomial ι K`, `ι` and `σ` finite, and the
+   Jacobian a unit. Take `q` the preimage of `p` in `P` and put `B := P_q`.
+3. `B` IS REGULAR LOCAL FOR FREE: `MvPolynomial.isRegularRing_of_isRegularRing`
+   (`Mathlib/RingTheory/RegularLocalRing/Polynomial.lean`) gives
+   `IsRegularRing (MvPolynomial ι K)`, whose `isRegularLocalRing_localization`
+   field is exactly `IsRegularLocalRing (Localization.AtPrime q)`. Nothing has
+   to be proven here — it is `infer_instance`.
+4. `A_p ≅ B ⧸ (r_σ)B` is the commutation of localization with the quotient.
+5. THE ONLY REAL CONTENT: the images of the `r_σ` in `𝔪_B/𝔪_B²` are linearly
+   independent. This is the Jacobian criterion, and mathlib supplies it in
+   cotangent-complex form: `SubmersivePresentation.cotangentComplex_injective`
+   says `I/I² → S ⊗_P Ω_{P/K}` is INJECTIVE, and `sectionCotangent_comp`
+   exhibits a RETRACTION of it — so the injection is SPLIT and therefore stays
+   injective after base change to the residue field `κ(p)`. Since the composite
+   `J/𝔪J → 𝔪_B/𝔪_B² → κ ⊗_P Ω_{P/K}` is injective, its FIRST factor is, which
+   is the required independence. Then convert independence to the iterated
+   prefix form the engine consumes.
+
+WHY THIS IS THE RIGHT PLACE TO CUT. Everything downstream of the independence
+statement is now PROVEN: `isRegularLocalRing_quotient_span_singleton` and
+`isRegularLocalRing_quotient_span_list_aux` (both above) are a complete,
+general "quotient by part of a regular system of parameters is regular", which
+mathlib does not have in any form — `RegularLocalRing/` is two files and
+neither mentions quotients. So the remaining gap is no longer commutative
+algebra at all; it is the presentation bookkeeping of items 1–4 plus the
+cotangent-complex translation of item 5.
+
+TWO ROUTES EXPLICITLY REJECTED, both recorded so nobody re-walks them:
+
+* the **Kähler-differential / transcendence-degree** route needs the dimension
+  formula `dim A_p + trdeg κ(p) = dim A`, and dimension theory over a field is
+  barely present at this pin — even `dim k[x₁..xₙ] = n` is still a
+  `proof_wanted` (`MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing`,
+  `Mathlib/RingTheory/KrullDimension/Basic.lean:94`), and there is NO
+  transcendence-degree material under `KrullDimension/` at all;
+* the **Cohen structure theorem** route needs both Cohen and a
+  "completion regular ⟹ regular" transfer, neither of which exists here.
+
+The route above needs NEITHER: the polynomial base is regular by an existing
+instance, and the dimension drop is Krull's height theorem, which the engine
+lemmas already consume. -/
+theorem exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field
+    {K : Type u} [Field K] {Z : AlgebraicGeometry.Scheme.{u}}
+    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
+    (hf : AlgebraicGeometry.Smooth f) (z : Z) :
+    ∃ (B : Type u) (_ : CommRing B) (_ : IsRegularLocalRing B) (l : List B),
+      (∀ (n : ℕ) (hn : n < l.length),
+        l[n] ∈ IsLocalRing.maximalIdeal B ∧
+          l[n] ∉ (IsLocalRing.maximalIdeal B) ^ 2 ⊔ Ideal.span {y | y ∈ l.take n}) ∧
+      Nonempty ((Z.presheaf.stalk z : Type u) ≃+* (B ⧸ Ideal.span {y | y ∈ l})) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE REGULAR LOCAL RINGS**
+(**PROVEN 2026-07-26** over the single leaf
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` and the
+commutative-algebra engine `isRegularLocalRing_quotient_span_list_aux`).
 
 For `Z` smooth over `Spec K` with `K` any field, every local ring `𝒪_{Z,z}` is
 a REGULAR local ring. Combined with `isDomain_of_isRegularLocalRing` (PROVEN
@@ -2600,19 +2902,31 @@ domain property: `Scheme.exists_Spec_apply_eq` gives an open immersion
 the open immersion `g`, so `R` is a smooth `K`-algebra through
 `HasRingHomProperty @Smooth RingHom.Smooth`. That reduction was NOT carried out
 here — it is scheme-theoretic bookkeeping with no mathematical content, and it
-is deliberately left with the leaf so the leaf's owner may choose whether the
-affine or the scheme-level route is the better place to attack. -/
+is folded into the single remaining leaf above, whose docstring writes the
+recipe out in five steps.
+
+**STATUS 2026-07-26.** This node is now PROVEN, in three lines, over
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` (SORRY —
+present the stalk as regular-local-modulo-an-independent-list) and
+`isRegularLocalRing_quotient_span_list_aux` (PROVEN — that such a quotient is
+regular local). The whole COMMUTATIVE-ALGEBRA half is therefore closed, and
+what remains is presentation bookkeeping plus the cotangent-complex form of
+the Jacobian criterion. -/
 theorem isRegularLocalRing_stalk_of_smooth_over_field {K : Type u} [Field K]
     {Z : AlgebraicGeometry.Scheme.{u}}
     (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
     (hf : AlgebraicGeometry.Smooth f) (z : Z) :
-    IsRegularLocalRing (Z.presheaf.stalk z) :=
-  sorry
+    IsRegularLocalRing (Z.presheaf.stalk z) := by
+  obtain ⟨B, _, _, l, hindep, ⟨e⟩⟩ :=
+    exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field f hf z
+  haveI : IsRegularLocalRing (B ⧸ Ideal.span {y | y ∈ l}) :=
+    isRegularLocalRing_quotient_span_list_aux l.length B l rfl hindep
+  exact IsRegularLocalRing.of_ringEquiv e.symm
 
 open CategoryTheory AlgebraicGeometry in
 /-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE DOMAINS** (**PROVEN 2026-07-26** over
-`isRegularLocalRing_stalk_of_smooth_over_field` (SORRY) and
-`isDomain_of_isRegularLocalRing` (PROVEN)).
+`isRegularLocalRing_stalk_of_smooth_over_field` (**PROVEN 2026-07-26**, over one
+remaining geometric leaf) and `isDomain_of_isRegularLocalRing` (PROVEN)).
 
 For `Z` smooth over `Spec K` with `K` any field, every local ring `𝒪_{Z,z}` is
 an integral domain.
@@ -2631,10 +2945,15 @@ that the pin already carries — in particular NOT the associated graded ring
 that the earlier version of this docstring proposed. It is a general, reusable
 statement and a genuine mathlib contribution.
 
-**WHAT REMAINS** is exactly `isRegularLocalRing_stalk_of_smooth_over_field`
-(SORRY, stated immediately above with its own audit): smooth over a field ⟹
-the local rings are REGULAR. That is the whole geometric content of this node
-and the only thing between it and a proof.
+**AND SO IS THE OTHER, DOWN TO ONE GEOMETRIC LEAF (2026-07-26).**
+`isRegularLocalRing_stalk_of_smooth_over_field` (stated immediately above) is
+now PROVEN over `isRegularLocalRing_quotient_span_list_aux` (PROVEN — a general
+"quotient by part of a regular system of parameters is regular", which mathlib
+lacks entirely) and the single remaining leaf
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` (SORRY),
+which asks only that the stalk BE presented as a regular local ring modulo a
+list independent mod `𝔪²`. So no commutative algebra is left below this node —
+only presentation bookkeeping and the Jacobian criterion.
 
 Note this SUBSUMES the weaker "smooth over a field ⟹ reduced": the sibling
 `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` was proven on
