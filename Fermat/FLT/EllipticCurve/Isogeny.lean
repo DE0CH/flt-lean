@@ -6,9 +6,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 module
 
 public import Fermat.FLT.EllipticCurve.Velu
+-- The two geometric inputs (`nsmul_surjective`, `finite_nsmulKer`) are PROVEN
+-- from the division-polynomial development. `PhiPsiCoprime` and
+-- `DivisionPolynomial.Degree` are imported PUBLICLY rather than relied on
+-- transitively: `TorsionCard.lean` imports both privately, so their lemmas
+-- would be unavailable here even in proof bodies.
+public import Fermat.FLT.EllipticCurve.TorsionCard
+public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
+public import Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree
+public import Mathlib.GroupTheory.QuotientGroup.Basic
+public import Mathlib.GroupTheory.Coset.Card
 -- Only for the `𝔽₅` counterexample in the FALSITY AUDIT of `IsIsogeny.add`.
 public import Mathlib.Algebra.Field.ZMod
--- Only for the `𝔽̄₂` counterexample in the FALSITY AUDIT of `IsRationalMap.add`.
+-- Only for the `𝔽̄₂` counterexamples in the FALSITY AUDITs of `IsRationalMap.add`
+-- and `Isogeny.isRationalMap_dualHom`.
 public import Mathlib.Algebra.Module.ZMod
 public import Mathlib.LinearAlgebra.Basis.VectorSpace
 
@@ -131,19 +142,24 @@ kernels, all of which behave in characteristic `p`.
 
 ## Open leaves left by this file
 
-`IsRationalMap.add`, `IsRationalMap.isIsogeny`, `nsmul_surjective`,
-`finite_nsmulKer`, `Isogeny.isRationalMap_dualHom`, `Isogeny.degree_comp`.
+`IsRationalMap.add`, `IsRationalMap.isIsogeny`, `Isogeny.isRationalMap_dualHom`.
+That is the whole frontier of this file; everything else here is proven.
 
-`IsRationalMap.neg` was on this list and is now PROVEN.
-
-`IsRationalMap.comp` was on this list and is now **PROVEN and axiom-clean**, hence
-so is `IsIsogeny.comp`. It rests on `homogSubst` (substitute `A/B`, clear
-denominators), `eval_homogSubst`, `exists_const_of_homogSubst_eq_zero` (the
-degeneracy criterion) and `IsRationalMap.comp_of_constX` (the constant-`x` case) —
-all proven here.
+`IsRationalMap.neg` was on this list and is now PROVEN. So, as of 2026-07-26, are
+all three of `nsmul_surjective`, `finite_nsmulKer` and `Isogeny.degree_comp` — see
+the two sections below — and also `IsRationalMap.comp`, hence `IsIsogeny.comp`.
+`IsRationalMap.comp` rests on `homogSubst` (substitute `A/B`, clear denominators),
+`eval_homogSubst`, `exists_const_of_homogSubst_eq_zero` (the degeneracy criterion)
+and `IsRationalMap.comp_of_constX` (the constant-`x` case) — all proven here.
 
 `IsIsogeny.add` was on this list; it is now PROVEN from `IsRationalMap.add` and
 `IsRationalMap.isIsogeny`, after being refuted and restated (above).
+
+**All three remaining leaves were REFUTED as originally stated and restated on
+2026-07-26**, with machine-checked counterexamples in `NotIsIsogenyAdd`,
+`NotIsRationalMapAdd` and `Isogeny.NotIsRationalMapDualHom`. Their present
+hypotheses are load-bearing, not decoration; do not try to weaken them without
+reading those audits.
 
 ## Two techniques from `IsRationalMap.comp` that the remaining leaves will want
 
@@ -159,6 +175,23 @@ all proven here.
    The `B ≠ 0` side condition of `IsRationalMap` is the whole difficulty in
    `comp`, and `exists_const_of_homogSubst_eq_zero` reduces it to a single
    degenerate case. Expect the same shape elsewhere.
+
+## Correction to the characteristic caveat above
+
+The design note says this file is "correct only in characteristic zero". That
+remains true of the *interpretation* of `degree` as the classical degree (which
+needs separability) — and the FALSITY AUDIT of `Isogeny.isRationalMap_dualHom`
+below shows the caveat has real teeth there, since Frobenius makes the dual
+construction outright false in characteristic `p`. But it is **not** a restriction
+on the two geometric inputs: both are proven below over an arbitrary algebraically
+closed field, in every characteristic, with no hypothesis beyond `n ≠ 0`. The
+project's `TorsionCard.smul_surjective` needs `(n : k) ≠ 0` only because it works
+over a *separably* closed field, where the root is produced by
+`exists_root_of_derivative_ne_zero` and the derivative of `Φₙ − ξ·ΨSqₙ` genuinely
+vanishes when `char k ∣ n`. Over an algebraically closed field no separability is
+needed: the polynomial is monic of degree `n²` (its `n²`-coefficient is `1`,
+`WeierstrassCurve.coeff_Φ`, while `ΨSqₙ` has degree at most `n² − 1`), so it has a
+root outright, and the `y`-fibre quadratic likewise.
 -/
 
 
@@ -1346,23 +1379,183 @@ def End.toIsogeny [IsAlgClosed F] [W.IsElliptic] (f : End W) : Isogeny W W :=
 
 /-! ### The two geometric inputs -/
 
-/-- **LEAF.** Multiplication by a nonzero integer is surjective on the points of
+/-! Both inputs are PROVEN (2026-07-26) from the division-polynomial development
+in `TorsionCard.lean` / `PhiPsiCoprime.lean`, over an arbitrary algebraically
+closed field and in every characteristic.
+
+Note on the `(V⁄F)` spelling below. `TorsionCard.lean` states everything for the
+base-changed curve `(E⁄k)`, and `(V⁄F) = V` holds by `rfl` — but the two are not
+*syntactically* equal, so `rw` cannot cross between them. The helpers are
+therefore written uniformly in the `(V⁄F)` form, matching `TorsionCard`, and the
+one crossing into the `W.Point` form the rest of this file uses is made by
+`exact` (which goes through `whnf`) in the two leaves themselves. -/
+
+omit [DecidableEq F] in
+/-- `ΨSqₙ ≠ 0` in ANY characteristic, needing only `n ≠ 0`.
+
+The leading-coefficient route fails at `n = p` in characteristic `p`, where
+`coeff_ΨSq n = n²` vanishes. Instead: `IsCoprime a 0` forces `a` to be a unit,
+while `Φₙ` has degree `n² > 0`. (This is `TorsionCharP.ΨSq_ne_zero`, inlined
+here so that this file's import cone need not grow by the whole
+`TorsionCharP`/`WronskianInduction` subtree.) -/
+theorem ΨSq_ne_zero' (V : Affine F) [V.IsElliptic] {n : ℤ} (hn : n ≠ 0) :
+    V.ΨSq n ≠ 0 := by
+  intro h0
+  have hcop : IsCoprime (V.Φ n) (V.ΨSq n) :=
+    WeierstrassCurve.isCoprime_Φ_ΨSq V hn V.isUnit_Δ
+  rw [h0] at hcop
+  have hdeg0 : (V.Φ n).natDegree = 0 :=
+    Polynomial.natDegree_eq_zero_of_isUnit (isCoprime_zero_right.mp hcop)
+  rw [WeierstrassCurve.natDegree_Φ V n] at hdeg0
+  exact hn (Int.natAbs_eq_zero.mp (pow_eq_zero_iff two_ne_zero |>.mp hdeg0))
+
+omit [DecidableEq F] in
+/-- **The fibre node over an algebraically closed field.** Given any `ξ`, there
+is a curve point `(x₀, y₀)` with `Φₙ(x₀) = ξ · ΨSqₙ(x₀)`.
+
+This is `TorsionCard.exists_point_x_smul` with its `(n : F) ≠ 0` hypothesis
+REMOVED, which is exactly what algebraic (rather than separable) closure buys.
+That hypothesis is used there only to show the derivative of `Φₙ − C ξ · ΨSqₙ`
+is nonzero, so that a root exists over a separably closed field. Here the
+polynomial is monic of degree `n² ≥ 1` — its `n²`-coefficient is `1` by
+`coeff_Φ`, and `ΨSqₙ` cannot contribute there since its degree is at most
+`n² − 1` — so `IsAlgClosed.exists_root` applies directly. The `y`-coordinate is
+then a root of the degree-`2` fibre quadratic, again with no separability. -/
+theorem exists_point_x_smul_algClosed [IsAlgClosed F] (V : Affine F) [V.IsElliptic]
+    {n : ℤ} (hn : n ≠ 0) (ξ : F) :
+    ∃ (x₀ y₀ : F) (_ : (V⁄F).toAffine.Nonsingular x₀ y₀),
+      ((V⁄F).Φ n).eval x₀ = ξ * ((V⁄F).ΨSq n).eval x₀ := by
+  classical
+  haveI : (V⁄F).IsElliptic := inferInstanceAs V.IsElliptic
+  have hD1 : 1 ≤ n.natAbs ^ 2 := by
+    have hna : n.natAbs ≠ 0 := Int.natAbs_ne_zero.mpr hn
+    have := pow_ne_zero 2 hna
+    omega
+  set f : F[X] := (V⁄F).Φ n - Polynomial.C ξ * (V⁄F).ΨSq n with hf
+  have hcoeff : f.coeff (n.natAbs ^ 2) = 1 := by
+    rw [hf, Polynomial.coeff_sub, Polynomial.coeff_C_mul,
+      WeierstrassCurve.coeff_Φ,
+      Polynomial.coeff_eq_zero_of_natDegree_lt
+        (lt_of_le_of_lt ((V⁄F).natDegree_ΨSq_le n) (by omega)),
+      mul_zero, sub_zero]
+  have hf0 : f ≠ 0 := by
+    intro hc
+    rw [hc, Polynomial.coeff_zero] at hcoeff
+    exact zero_ne_one hcoeff
+  have hle : n.natAbs ^ 2 ≤ f.natDegree :=
+    Polynomial.le_natDegree_of_ne_zero (by rw [hcoeff]; exact one_ne_zero)
+  have hdeg : f.degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree hf0]
+    intro hc
+    have hnd : f.natDegree = 0 := by exact_mod_cast hc
+    omega
+  obtain ⟨x₀, hx₀⟩ := IsAlgClosed.exists_root f hdeg
+  have hrel : ((V⁄F).Φ n).eval x₀ = ξ * ((V⁄F).ΨSq n).eval x₀ := by
+    have hx := hx₀
+    rw [Polynomial.IsRoot, hf, Polynomial.eval_sub, Polynomial.eval_mul,
+      Polynomial.eval_C] at hx
+    linear_combination hx
+  have hydeg : (TorsionCard.yQuad V x₀).degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree (TorsionCard.yQuad_ne_zero V x₀),
+      TorsionCard.yQuad_natDegree]
+    norm_num
+  obtain ⟨y₀, hy₀⟩ := IsAlgClosed.exists_root (TorsionCard.yQuad V x₀) hydeg
+  refine ⟨x₀, y₀, ?_, hrel⟩
+  exact (V⁄F).toAffine.equation_iff_nonsingular.mp
+    ((TorsionCard.eval_yQuad_eq_zero_iff_equation V x₀ y₀).mp hy₀)
+
+/-- **Divisibility of the point group over an algebraically closed field**, for
+every nonzero integer and in every characteristic.
+
+Same argument as `TorsionCard.smul_surjective`, over the stronger fibre node
+above: `ΨSqₙ(x₀) ≠ 0` by the Bézout identity `isCoprime_Φ_ΨSq` (a common root
+would contradict `A·Φ + B·ΨSq = 1`), so `TorsionCard.exists_smul_some_eq`
+computes `n • (x₀, y₀)` as an affine point with `x`-coordinate `ξ`; its
+`y`-coordinate is `η` or `negY ξ η`, and in the latter case negating the
+preimage fixes it. -/
+theorem zsmul_surjective_algClosed [IsAlgClosed F] (V : Affine F) [V.IsElliptic]
+    {n : ℤ} (hn : n ≠ 0) : Function.Surjective (fun P : (V⁄F).Point => n • P) := by
+  classical
+  haveI : (V⁄F).IsElliptic := inferInstanceAs V.IsElliptic
+  have hpoint : ∀ {x₁ y₁ x₂ y₂ : F} (h₁ : (V⁄F).toAffine.Nonsingular x₁ y₁)
+      (h₂ : (V⁄F).toAffine.Nonsingular x₂ y₂), x₁ = x₂ → y₁ = y₂ →
+      (Affine.Point.some x₁ y₁ h₁ : (V⁄F).Point) = Affine.Point.some x₂ y₂ h₂ := by
+    intro x₁ y₁ x₂ y₂ h₁ h₂ hx hy
+    subst hx; subst hy; rfl
+  intro P₀
+  cases P₀ with
+  | zero => exact ⟨0, smul_zero _⟩
+  | some ξ η h₀ =>
+    obtain ⟨x₀, y₀, hns, hrel⟩ := exists_point_x_smul_algClosed V hn ξ
+    have hΨ : ((V⁄F).ΨSq n).eval x₀ ≠ 0 := by
+      intro h0
+      obtain ⟨A, B, hAB⟩ := WeierstrassCurve.isCoprime_Φ_ΨSq (V⁄F) hn (V⁄F).isUnit_Δ
+      have hev := congrArg (Polynomial.eval x₀) hAB
+      rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_mul,
+        Polynomial.eval_one, hrel, h0] at hev
+      simp at hev
+    obtain ⟨x', y', h', hsmul, hx'⟩ := TorsionCard.exists_smul_some_eq V hn hns hΨ
+    have hx : x' = ξ := by
+      rw [hrel] at hx'
+      exact mul_right_cancel₀ hΨ hx'
+    rcases Affine.Y_eq_of_X_eq h'.1 h₀.1 hx with hy | hy
+    · exact ⟨Affine.Point.some x₀ y₀ hns, hsmul.trans (hpoint h' h₀ hx hy)⟩
+    · refine ⟨-(Affine.Point.some x₀ y₀ hns), ?_⟩
+      show n • (-(Affine.Point.some x₀ y₀ hns) : (V⁄F).Point) = _
+      rw [smul_neg, hsmul, Affine.Point.neg_some]
+      exact hpoint _ h₀ hx (by rw [hy, hx, Affine.negY_negY])
+
+/-- **Finiteness of the `n`-torsion over an algebraically closed field**, in
+every characteristic.
+
+A nonzero `n`-torsion point `(x, y)` has `ΨSqₙ(x) = 0`
+(`TorsionCard.smul_some_eq_zero_iff`); `ΨSqₙ ≠ 0` by `ΨSq_ne_zero'`, so there are
+finitely many such `x`, and at most two points lie over each
+(`TorsionCard.pointsAt`). -/
+theorem finite_zsmul_torsion_algClosed [IsAlgClosed F] (V : Affine F) [V.IsElliptic]
+    {n : ℤ} (hn : n ≠ 0) : {P : (V⁄F).Point | n • P = 0}.Finite := by
+  classical
+  haveI : (V⁄F).IsElliptic := inferInstanceAs V.IsElliptic
+  have hΨ : (V⁄F).ΨSq n ≠ 0 := ΨSq_ne_zero' (V⁄F) hn
+  refine Set.Finite.subset (Finset.finite_toSet (insert (0 : (V⁄F).Point)
+    (((V⁄F).ΨSq n).roots.toFinset.biUnion (TorsionCard.pointsAt V)))) ?_
+  intro P hP
+  simp only [Set.mem_setOf_eq] at hP
+  rw [Finset.mem_coe]
+  cases P with
+  | zero => exact Finset.mem_insert_self _ _
+  | some x y h =>
+    refine Finset.mem_insert_of_mem (Finset.mem_biUnion.mpr ⟨x, ?_, ?_⟩)
+    · rw [Multiset.mem_toFinset, Polynomial.mem_roots hΨ, Polynomial.IsRoot]
+      exact (TorsionCard.smul_some_eq_zero_iff V hn h).mp hP
+    · exact (TorsionCard.mem_pointsAt_iff V).mpr ⟨y, h, rfl⟩
+
+/-- **PROVEN.** Multiplication by a nonzero integer is surjective on the points of
 an elliptic curve over an algebraically closed field.
 
 This is the divisibility of `E(F)`, and it is one of the two geometric inputs on
 which the degree/dual arithmetic rests. It is *not* formal: a homomorphic image
 of a divisible group need not be the whole target. -/
 theorem nsmul_surjective [IsAlgClosed F] [W.IsElliptic] {n : ℕ} (hn : n ≠ 0) :
-    Function.Surjective (fun P : W.Point => n • P) :=
-  sorry
+    Function.Surjective (fun P : W.Point => n • P) := by
+  have h : Function.Surjective (fun P : W.Point => (n : ℤ) • P) :=
+    zsmul_surjective_algClosed W (Int.natCast_ne_zero.mpr hn)
+  intro Q
+  obtain ⟨P, hP⟩ := h Q
+  exact ⟨P, by simpa only [natCast_zsmul] using hP⟩
 
-/-- **LEAF.** The `n`-torsion of an elliptic curve is finite.
+/-- **PROVEN.** The `n`-torsion of an elliptic curve is finite.
 
 The second geometric input. Over an algebraically closed field of characteristic
-zero it is in fact `(ℤ/n)²`; only finiteness is used here. -/
+zero it is in fact `(ℤ/n)²`; only finiteness is used here — and, unlike the
+count, finiteness needs no hypothesis on the characteristic. -/
 theorem finite_nsmulKer [IsAlgClosed F] [W.IsElliptic] {n : ℕ} (hn : n ≠ 0) :
-    {P : W.Point | n • P = 0}.Finite :=
-  sorry
+    {P : W.Point | n • P = 0}.Finite := by
+  have h : {P : W.Point | (n : ℤ) • P = 0}.Finite :=
+    finite_zsmul_torsion_algClosed W (Int.natCast_ne_zero.mpr hn)
+  refine h.subset ?_
+  intro P hP
+  simpa only [Set.mem_setOf_eq, natCast_zsmul] using hP
 
 /-! ### The dual isogeny -/
 
@@ -1724,14 +1917,106 @@ theorem dual_comp [IsAlgClosed F] [CharZero F] [W.IsElliptic] (φ : Isogeny W W'
     (P : W.Point) : ((φ.dual h0).comp φ).toHom P = φ.degree • P :=
   dualHom_comp φ h0 P
 
-/-- **LEAF.** The degree is multiplicative under composition.
+/-- The group-theoretic core of `degree_comp`, isolated from the curves: for a
+composite `h ∘ f` with `f` SURJECTIVE, the kernel cardinalities multiply.
+
+`ker f ↪ ker (h ∘ f) ↠ ker h` is exact — the second map is `f` restricted, which
+is onto `ker h` precisely because `f` is onto — so Lagrange in `ker (h ∘ f)`
+gives the product. Surjectivity of `f` is not decoration: without it the image
+of `f` may meet `ker h` in a proper subgroup and the identity fails. -/
+theorem card_ker_comp {A B C : Type*} [AddCommGroup A] [AddCommGroup B] [AddCommGroup C]
+    (f : A →+ B) (h : B →+ C) (hf : Function.Surjective f) :
+    Nat.card (AddMonoidHom.ker (h.comp f)) =
+      Nat.card (AddMonoidHom.ker h) * Nat.card (AddMonoidHom.ker f) := by
+  classical
+  set K : AddSubgroup A := AddMonoidHom.ker (h.comp f)
+  have hmem : ∀ x : K, f (x : A) ∈ AddMonoidHom.ker h := by
+    intro x
+    have hx : (h.comp f) (x : A) = 0 := (AddMonoidHom.mem_ker).1 x.2
+    exact (AddMonoidHom.mem_ker).2 hx
+  set g : K →+ AddMonoidHom.ker h :=
+    AddMonoidHom.codRestrict (f.comp K.subtype) _ hmem
+  have hgapp : ∀ x : K, (g x : B) = f (x : A) := fun _ => rfl
+  have hgsurj : Function.Surjective g := by
+    rintro ⟨b, hb⟩
+    obtain ⟨a, ha⟩ := hf b
+    have haK : a ∈ K := by
+      refine (AddMonoidHom.mem_ker).2 ?_
+      show h (f a) = 0
+      rw [ha]
+      exact (AddMonoidHom.mem_ker).1 hb
+    exact ⟨⟨a, haK⟩, Subtype.ext ha⟩
+  have hcard1 : Nat.card (K ⧸ AddMonoidHom.ker g) = Nat.card (AddMonoidHom.ker h) :=
+    Nat.card_congr (QuotientAddGroup.quotientKerEquivOfSurjective g hgsurj).toEquiv
+  have hfwd : ∀ x : AddMonoidHom.ker g, ((x : K) : A) ∈ AddMonoidHom.ker f := by
+    intro x
+    refine (AddMonoidHom.mem_ker).2 ?_
+    rw [← hgapp]
+    exact congrArg Subtype.val ((AddMonoidHom.mem_ker).1 x.2)
+  have hbwd : ∀ y : AddMonoidHom.ker f, ((y : A) ∈ K) := by
+    intro y
+    refine (AddMonoidHom.mem_ker).2 ?_
+    show h (f (y : A)) = 0
+    rw [(AddMonoidHom.mem_ker).1 y.2, map_zero]
+  have hbwd2 : ∀ y : AddMonoidHom.ker f,
+      (⟨(y : A), hbwd y⟩ : K) ∈ AddMonoidHom.ker g := by
+    intro y
+    refine (AddMonoidHom.mem_ker).2 (Subtype.ext ?_)
+    rw [hgapp]
+    exact (AddMonoidHom.mem_ker).1 y.2
+  have hcard2 : Nat.card (AddMonoidHom.ker g) = Nat.card (AddMonoidHom.ker f) :=
+    Nat.card_congr
+      { toFun := fun x => ⟨((x : K) : A), hfwd x⟩
+        invFun := fun y => ⟨⟨(y : A), hbwd y⟩, hbwd2 y⟩
+        left_inv := fun x => Subtype.ext (Subtype.ext rfl)
+        right_inv := fun y => Subtype.ext rfl }
+  calc Nat.card K
+      = Nat.card (K ⧸ AddMonoidHom.ker g) * Nat.card (AddMonoidHom.ker g) :=
+        AddSubgroup.card_eq_card_quotient_mul_card_addSubgroup _
+    _ = Nat.card (AddMonoidHom.ker h) * Nat.card (AddMonoidHom.ker f) := by
+        rw [hcard1, hcard2]
+
+/-- **PROVEN.** The degree is multiplicative under composition.
 
 Group-theoretically this is `#ker (ψ ∘ φ) = #ker φ · #ker ψ`, from the short exact
 sequence `ker φ ↪ ker (ψ ∘ φ) ↠ ker ψ` whose surjectivity is surjectivity of
-`φ`. -/
+`φ` — that is `card_ker_comp`. The three degenerate cases are handled first: if
+either factor is the zero map the composite is too, and both sides are `0`;
+conversely if both are nonzero then so is the composite, again by surjectivity
+of `φ`. No hypothesis on the base field is needed, because `degree` is *defined*
+as the kernel cardinality.
+
+**AXIOM NOTE.** `#print axioms` on this theorem still reports `sorryAx`, and that
+is inherited from the STATEMENT, not from the proof: `Isogeny.comp` is a
+structure whose `IsIsogeny` field routes through `IsIsogeny.comp`, whose
+`isRationalMap` field is the still-open `IsRationalMap.comp`. So every statement
+mentioning `Isogeny.comp` is tainted until that leaf closes, and this one will
+become clean automatically when it does. Verified by the control
+`Nat.card (ker (ψ.toHom.comp φ.toHom)) = Nat.card (ker ψ.toHom) * Nat.card (ker φ.toHom)`,
+which is the same content with `Isogeny.comp` expanded away and reports exactly
+`[propext, Classical.choice, Quot.sound]`; `card_ker_comp` itself is clean. -/
 theorem degree_comp (φ : Isogeny W W') (ψ : Isogeny W' W'') :
-    (ψ.comp φ).degree = ψ.degree * φ.degree :=
-  sorry
+    (ψ.comp φ).degree = ψ.degree * φ.degree := by
+  by_cases hφ : φ.toHom = 0
+  · have hc : (ψ.comp φ).toHom = 0 := by
+      ext P
+      show ψ.toHom (φ.toHom P) = 0
+      rw [hφ, AddMonoidHom.zero_apply, map_zero]
+    rw [degree_of_eq_zero hc, degree_of_eq_zero hφ, mul_zero]
+  · by_cases hψ : ψ.toHom = 0
+    · have hc : (ψ.comp φ).toHom = 0 := by
+        ext P
+        show ψ.toHom (φ.toHom P) = 0
+        rw [hψ, AddMonoidHom.zero_apply]
+      rw [degree_of_eq_zero hc, degree_of_eq_zero hψ, zero_mul]
+    · have hcomp : (ψ.comp φ).toHom ≠ 0 := by
+        intro hc
+        refine hψ (AddMonoidHom.ext fun Q => ?_)
+        obtain ⟨P, rfl⟩ := φ.isIsogeny.surjective hφ Q
+        exact congrArg (fun f : W.Point →+ W''.Point => f P) hc
+      rw [degree_of_ne_zero hcomp, degree_of_ne_zero hψ, degree_of_ne_zero hφ,
+        comp_toHom]
+      exact card_ker_comp φ.toHom ψ.toHom (φ.isIsogeny.surjective hφ)
 
 end Isogeny
 
