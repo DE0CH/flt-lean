@@ -96,6 +96,12 @@ import Mathlib.Topology.Algebra.Ring.Compact
 -- "characters of a finite abelian group span its function algebra", the second
 -- engine of half (α).
 public import Mathlib.RingTheory.RootsOfUnity.AlgebraicallyClosed
+-- `HenselianLocalRing` and the uniqueness of a simple Hensel lift
+-- (`IsLocalRing.eq_of_eval_eq_zero_of_not_isUnit_sub`): the strictly henselian
+-- base `unramifiedIntegers` built below for requirements (R1)/(R4) of the
+-- μ-type citation. Public: `HenselianLocalRing` appears in the statements of
+-- the two structural leaves about that base.
+public import Mathlib.RingTheory.Henselian
 
 /-!
 # Hardly ramified representations in compatible families
@@ -2478,6 +2484,226 @@ theorem localInertia_fixes_of_mem_unramifiedTensorSubmodule
   | add y z _ _ hy hz => simp [map_add, hy, hz]
   | smul c y _ hy => simp [map_smul, hy]
 
+/-! ### The strictly henselian base `𝒪ᵖᵥˢʰ`
+
+The μ-type citation below used to be blocked, at its requirements (R1) and
+(R4), on an OBJECT this tree did not have: a strictly henselian base over
+which the étale character group of a multiplicative-type `G°` becomes
+constant. This block builds it and proves what is cheap about it, so that
+(R1)/(R4) become statements about a ring that exists here rather than about
+a ring that has to be invented first.
+
+Nothing in this block is Raynaud; it is pure local algebra. -/
+
+/-- **A local ring in which every monic polynomial of positive degree has a
+root is Henselian** (PROVEN 2026-07-26). Strong induction on the degree,
+peeling one root at a time: a monic `g` of positive degree factors as
+`(X - b) * q` at a root `b`, so `g.eval a₀ = (a₀ - b) * q.eval a₀` lies in
+the (PRIME) maximal ideal exactly when one of the two factors does — the
+left one hands back `b` itself, the right one recurses on `q`, whose degree
+has dropped. The simple-root hypothesis of `HenselianLocalRing` is not even
+needed under this much stronger input. -/
+theorem henselianLocalRing_of_exists_isRoot {B : Type*} [CommRing B] [IsLocalRing B]
+    (H : ∀ f : Polynomial B, f.Monic → 0 < f.natDegree → ∃ b, f.IsRoot b) :
+    HenselianLocalRing B := by
+  have hprime : (IsLocalRing.maximalIdeal B).IsPrime :=
+    (IsLocalRing.maximalIdeal.isMaximal B).isPrime
+  have hone : (1 : B) ∉ IsLocalRing.maximalIdeal B := fun h =>
+    hprime.ne_top ((Ideal.eq_top_iff_one _).mpr h)
+  constructor
+  intro f hf a₀ h₁ _
+  suffices h : ∀ n (g : Polynomial B), g.Monic → g.natDegree ≤ n →
+      Polynomial.eval a₀ g ∈ IsLocalRing.maximalIdeal B →
+      ∃ a, g.IsRoot a ∧ a - a₀ ∈ IsLocalRing.maximalIdeal B from
+    h f.natDegree f hf le_rfl h₁
+  intro n
+  induction n with
+  | zero =>
+      intro g hg hdeg hev
+      rw [Polynomial.eq_one_of_monic_natDegree_zero hg (Nat.le_zero.mp hdeg),
+        Polynomial.eval_one] at hev
+      exact absurd hev hone
+  | succ n ih =>
+      intro g hg hdeg hev
+      rcases Nat.eq_zero_or_pos g.natDegree with h0 | hpos
+      · rw [Polynomial.eq_one_of_monic_natDegree_zero hg h0, Polynomial.eval_one] at hev
+        exact absurd hev hone
+      obtain ⟨b, hb⟩ := H g hg hpos
+      obtain ⟨q, hq⟩ := Polynomial.dvd_iff_isRoot.mpr hb
+      have hXb : (Polynomial.X - Polynomial.C b).Monic := Polynomial.monic_X_sub_C b
+      have hqm : q.Monic := hXb.of_mul_monic_left (hq ▸ hg)
+      have hqdeg : q.natDegree ≤ n := by
+        have hgq : g.natDegree = q.natDegree + 1 := by
+          rw [hq, hXb.natDegree_mul hqm, Polynomial.natDegree_X_sub_C]
+          omega
+        omega
+      have heval : Polynomial.eval a₀ g = (a₀ - b) * Polynomial.eval a₀ q := by
+        rw [hq]; simp
+      rw [heval] at hev
+      rcases hprime.mem_or_mem hev with hm | hm
+      · refine ⟨b, hb, ?_⟩
+        have hneg : -(a₀ - b) ∈ IsLocalRing.maximalIdeal B := neg_mem hm
+        simpa using hneg
+      · obtain ⟨a, ha, ha'⟩ := ih q hqm hqdeg hm
+        exact ⟨a, by rw [Polynomial.IsRoot, hq]; simp [Polynomial.IsRoot.def.mp ha], ha'⟩
+
+/-- **Every monic polynomial of positive degree over the integral closure of
+`R` in an ALGEBRAICALLY CLOSED field `L` has a root there** (PROVEN
+2026-07-26): the polynomial has a root `α` in `L` because `L` is
+algebraically closed, `α` is integral over the closure because the
+polynomial is monic over it, hence integral over `R` by transitivity — and
+the closure is exactly the integral elements. -/
+theorem exists_isRoot_of_monic_integralClosure
+    {R L : Type*} [CommRing R] [Field L] [IsAlgClosed L] [Algebra R L]
+    (f : Polynomial (IntegralClosure R L)) (hf : f.Monic) (hdeg : 0 < f.natDegree) :
+    ∃ b, f.IsRoot b := by
+  have hinj : Function.Injective (algebraMap (IntegralClosure R L) L) := by
+    delta IntegralClosure; exact Subtype.val_injective
+  set φ := algebraMap (IntegralClosure R L) L with hφ
+  have hfm : (f.map φ).Monic := hf.map φ
+  have hnd : (f.map φ).natDegree = f.natDegree := hf.natDegree_map φ
+  have hdeg' : (f.map φ).degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree hfm.ne_zero, hnd]
+    simp only [ne_eq, Nat.cast_eq_zero]
+    omega
+  obtain ⟨α, hα⟩ := IsAlgClosed.exists_root (f.map φ) hdeg'
+  have hint : IsIntegral (IntegralClosure R L) α := by
+    refine ⟨f, hf, ?_⟩
+    rw [Polynomial.eval₂_eq_eval_map]
+    exact hα
+  have hintR : IsIntegral R α := isIntegral_trans α hint
+  refine ⟨⟨α, hintR⟩, hinj ?_⟩
+  rw [map_zero, ← Polynomial.eval₂_at_apply φ (⟨α, hintR⟩ : IntegralClosure R L)]
+  show Polynomial.eval₂ φ α f = 0
+  rw [Polynomial.eval₂_eq_eval_map]
+  exact hα
+
+/-- **The integral closure of `R` in an algebraically closed field is a
+Henselian local ring** (PROVEN 2026-07-26): it has all the roots of its own
+monic polynomials, which is more than Hensel's lemma asks for. -/
+theorem henselianLocalRing_integralClosure_of_isAlgClosed
+    {R L : Type*} [CommRing R] [Field L] [IsAlgClosed L] [Algebra R L]
+    [IsLocalRing (IntegralClosure R L)] :
+    HenselianLocalRing (IntegralClosure R L) :=
+  henselianLocalRing_of_exists_isRoot exists_isRoot_of_monic_integralClosure
+
+variable (p) in
+/-- **The maximal unramified extension `ℚᵖᵥᵘⁿʳ = (ℚᵖᵥᵃˡᵍ)^{I_p}`** of `ℚᵖᵥ`:
+the field `unramifiedTensorSubmodule` above is spanned over. -/
+noncomputable abbrev unramifiedSubfield : IntermediateField ℚᵖᵥ ℚᵖᵥᵃˡᵍ :=
+  IntermediateField.fixedField
+    (localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat)
+
+variable (p) in
+/-- **The strict henselisation `𝒪ᵖᵥˢʰ` of `𝒪ᵖᵥ`** (introduced 2026-07-26):
+the integral closure of `𝒪ᵖᵥ` in the maximal unramified extension
+`ℚᵖᵥᵘⁿʳ`. This is THE object whose absence blocked requirements (R1) and
+(R4) of the μ-type citation below — see the SUPPLY SURVEY in that
+docstring, which records that mathlib has no henselisation construction at
+all but that this ring is the right concrete substitute, since `𝒪ᵖᵥ` is
+complete hence henselian.
+
+It is a local `ValuationRing` and an integral domain for free, by
+`AbsoluteGaloisGroup.valuationRing_integralClosure` (every element of an
+algebraic extension of `ℚᵖᵥ` or its inverse is integral, by the
+spectral-norm dichotomy). What is NOT free — and is stated as the two
+leaves below — is that it is HENSELIAN and that its residue field is
+SEPARABLY CLOSED, which together are what "strictly henselian" means and
+what (R1)/(R4) actually consume. -/
+noncomputable abbrev unramifiedIntegers : Type :=
+  IntegralClosure 𝒪ᵖᵥ ↥(unramifiedSubfield p)
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **The integral closure of `𝒪ᵖᵥ` in `ℚᵖᵥᵃˡᵍ` is Henselian** (PROVEN
+2026-07-26 over the two general lemmas above). This is the ambient ring the
+two leaves below descend from: it is strictly henselian for the trivial
+reason that its fraction field is algebraically closed, which is exactly why
+it says nothing on its own — everything it proves is `ℚᵖᵥᵃˡᵍ`-rational. -/
+theorem henselianLocalRing_integralClosure_algebraicClosure :
+    HenselianLocalRing (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) :=
+  henselianLocalRing_integralClosure_of_isAlgClosed
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **The strict henselisation is Henselian** (SORRY LEAF, introduced
+2026-07-26; pure local algebra, NO Raynaud).
+
+INTENDED PROOF, worked out in full when this leaf was cut — it is short and
+needs nothing that is not already in this file:
+
+Write `A = 𝒪ᵖᵥˢʰ` and `B = IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ`, and `ι : A →+* B`
+for the evident map (an element of `A` is an element of `ℚᵖᵥᵘⁿʳ ⊆ ℚᵖᵥᵃˡᵍ`
+integral over `𝒪ᵖᵥ`).
+
+1. `ι` is a LOCAL homomorphism, and that step needs no inertia: if `ι a` is
+   a unit of `B` then the inverse of `a`'s value lies in the FIELD `ℚᵖᵥᵘⁿʳ`
+   and is integral over `𝒪ᵖᵥ`, hence lies in `A`. So `𝔪_A = ι⁻¹ 𝔪_B`.
+2. Given `f` monic over `A` with a simple root `a₀` mod `𝔪_A`, the
+   hypothesis `_hB` lifts it to a root `b ∈ B` with `b - ι a₀ ∈ 𝔪_B`.
+3. `b` is INERTIA-INVARIANT, hence comes from `A`. For `σ ∈ I_p`: the
+   coefficients of `f.map ι` have values in `ℚᵖᵥᵘⁿʳ`, which `σ` fixes
+   pointwise BY DEFINITION of `unramifiedSubfield` as `fixedField I_p`, so
+   `σ • b` is again a root of `f.map ι`; and `σ • b ≡ b mod 𝔪_B` because
+   `σ • b - b ∈ 𝔪_B` is the DEFINING property of `localInertiaGroup` (it is
+   the inertia of `𝔪 B`, see `AbsoluteGaloisGroup.localInertiaGroup`).
+   Mathlib's `IsLocalRing.eq_of_eval_eq_zero_of_not_isUnit_sub` — uniqueness
+   of a simple Hensel lift — then forces `σ • b = b`. The derivative stays a
+   unit along the way by `Polynomial.sub_dvd_eval_sub` plus
+   `b - ι a₀ ∈ 𝔪_B`.
+
+The hypothesis `_hB` is supplied at the call site by the PROVEN
+`henselianLocalRing_integralClosure_algebraicClosure`; it is taken as a
+hypothesis rather than as an instance so that the input this leaf really
+spends is visible in its statement.
+
+FAITHFULNESS: this is a true statement about a concrete ring, not a
+disguised citation — the henselisation of a complete DVR along an
+unramified extension is standard (Serre, *Corps Locaux*, III §5; Stacks
+04GG). It is NOT vacuous: `𝒪ᵖᵥˢʰ` is nontrivial, being an integral domain
+containing `𝒪ᵖᵥ`. -/
+theorem henselianLocalRing_unramifiedIntegers
+    (_hB : HenselianLocalRing (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ)) :
+    HenselianLocalRing (unramifiedIntegers p) :=
+  sorry
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- **The residue field of the strict henselisation is separably closed**
+(SORRY LEAF, introduced 2026-07-26; pure local algebra, NO Raynaud).
+
+INTENDED PROOF, worked out in full when this leaf was cut. Note it does NOT
+need the residue field of `𝒪ᵖᵥ` to be perfect or finite, and it does not
+need surjectivity of `A → ResidueField B` — both of which earlier sketches
+of this step went through and both of which are extra work.
+
+By `IsSepClosed.of_exists_root` it suffices to give a root of every monic
+irreducible SEPARABLE `ḡ` over `k_A = ResidueField 𝒪ᵖᵥˢʰ`.
+
+1. Lift `ḡ` to a monic `f` over `A` (`Polynomial.lifts_and_degree_eq_and_monic`,
+   the residue map being surjective), and push it to `B` along `ι` of the
+   previous leaf. `ḡ` is monic irreducible so `0 < deg`, and `_hroot` gives
+   a root `α ∈ B` of `f.map ι`.
+2. `ᾱ ∈ k_B` is a root of `ḡ`, and a SIMPLE one: separability is
+   `IsCoprime ḡ ḡ'`, so `a ḡ + b ḡ' = 1` evaluates at `ᾱ` to
+   `b(ᾱ) ḡ'(ᾱ) = 1`. Hence `(f.map ι).derivative.eval α` is a unit of `B`.
+3. `α` is INERTIA-INVARIANT by exactly the argument of the previous leaf —
+   `σ • α` is a root with the same residue, and
+   `IsLocalRing.eq_of_eval_eq_zero_of_not_isUnit_sub` forces `σ • α = α`.
+   So `α` comes from `A`, and its residue in `k_A` is a root of `ḡ`.
+4. `ḡ` irreducible with a root in `k_A` therefore has degree `1`.
+
+The hypothesis `_hroot` is supplied at the call site by the PROVEN
+`exists_isRoot_of_monic_integralClosure`.
+
+FAITHFULNESS: separably closed is the correct and honest strength. The
+residue field of `ℚᵖᵥᵘⁿʳ` is `𝔽̄_p`, and asking for `IsAlgClosed` instead
+would be true as well but would need perfectness of `𝔽_p` on top, which no
+consumer wants: (R4) consumes exactly `IsSepClosed`, through
+`Algebra.FormallyEtale.equivPiOfIsSepClosed`. -/
+theorem isSepClosed_residueField_unramifiedIntegers
+    (_hroot : ∀ f : Polynomial (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ), f.Monic → 0 < f.natDegree →
+      ∃ b, f.IsRoot b) :
+    IsSepClosed (IsLocalRing.ResidueField (unramifiedIntegers p)) :=
+  sorry
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
@@ -2640,8 +2866,15 @@ status:
      flat group scheme killed by `p` acquires, over the STRICT
      HENSELISATION, a composition series whose graded pieces are
      `F`-vector-space schemes (Raynaud 3.3.x). Not formalized here or
-     in mathlib, and it needs the strict henselisation of `𝒪ᵖᵥ` as an
-     object, which this tree does not have.
+     in mathlib. **UPDATED 2026-07-26: the missing OBJECT now exists.**
+     `unramifiedIntegers p` — the integral closure of `𝒪ᵖᵥ` in
+     `ℚᵖᵥᵘⁿʳ` — is built above with its local/valuation-ring/domain
+     structure free, its henselianity and its separably closed residue
+     field isolated as the two pure-local-algebra leaves
+     `henselianLocalRing_unramifiedIntegers` and
+     `isSepClosed_residueField_unramifiedIntegers`, and both of those
+     are available as HYPOTHESES of this statement (`hhens`, `hsep`).
+     So what remains at (R1) is the dévissage ARGUMENT alone.
 (R2) *the order-`p` dichotomy*: each level-one graded piece has
      `v(δ) ∈ {0, 1}`, hence is étale or of `μ`-type. THIS STEP IS
      ALREADY FORMALIZED AND SORRY-FREE in `GroupScheme/ConnectedEtale.lean`
@@ -2657,8 +2890,12 @@ status:
      is étale). This is where FLATNESS does its work — see (S2).
 (R4) *multiplicative type ⟹ unramified character group*: formalizable
      from `Algebra.FormallyEtale.equivPiOfIsSepClosed` once a strictly
-     henselian base is available; blocked on the same missing object as
-     (R1).
+     henselian base is available. **UNBLOCKED 2026-07-26**: that base is
+     `unramifiedIntegers p`, and `hsep` is precisely the `IsSepClosed`
+     input `equivPiOfIsSepClosed` asks for — applied to the residue
+     field of the base, over which the étale character group becomes
+     constant. (R4) is now an argument to write, not an object to
+     invent.
 
 SUPPLY SURVEY (2026-07-26, a later owner). It produced NO new cut; it is
 recorded only so that the next owner does not repeat the search. Every
@@ -2674,6 +2911,11 @@ pointer below was checked against OUR pin.
   field `unramifiedTensorSubmodule` above is already stated over. What
   must be PROVEN of it is that it is local with separably closed residue
   field; nothing must be invented.
+  **DONE 2026-07-26**: that is exactly `unramifiedIntegers p` above.
+  Locality (indeed `ValuationRing`, `IsDomain`, `Algebra.IsIntegral`) came
+  for free from `AbsoluteGaloisGroup.valuationRing_integralClosure`; the
+  two remaining properties are the leaves cited in (R1)/(R4), each with a
+  complete proof recipe recorded in its own docstring.
 * (R4)'s pointer is live: `Algebra.FormallyEtale.equivPiOfIsSepClosed`
   is at `Mathlib/RingTheory/Etale/Field.lean:217`.
 * `~/cs/FLT` does NOT supply the group-scheme side: its
@@ -2738,6 +2980,64 @@ owner does not pay for them again):
      i.e. by UNRAMIFIED classes only, so the ramified unipotent class
      has no finite flat model. Level-one and flatness therefore cannot
      be separated here the way `hstab` separates them at order `p`. -/
+theorem grouplike_corner_mem_unramifiedTensorSubmodule_of_strictlyHenselian
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hhens : HenselianLocalRing (unramifiedIntegers p))
+    (hsep : IsSepClosed (IsLocalRing.ResidueField (unramifiedIntegers p)))
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R))
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (fG : Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ) →+[Field.absoluteGaloisGroup ℚᵖᵥ]
+      (((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀)
+    (x : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G)
+    (hεx : Coalgebra.counit (R := ℚᵖᵥᵃˡᵍ) x = (1 : ℚᵖᵥᵃˡᵍ))
+    (hglx : Coalgebra.comul (R := ℚᵖᵥᵃˡᵍ) x *
+        (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
+      x ⊗ₜ[ℚᵖᵥᵃˡᵍ] x) :
+    x ∈ unramifiedTensorSubmodule G :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+include hpodd in
+/-- **Half (β) of the μ-type node, as an ASSEMBLY over the strictly henselian
+base** (restated 2026-07-26 in this form; it was a bare `sorry` until then).
+
+The mathematical content is unchanged and lives in
+`grouplike_corner_mem_unramifiedTensorSubmodule_of_strictlyHenselian` above,
+whose docstring carries the full citation, the faithfulness audit and the
+requirement list (R1)–(R4). What changed is that (R1) and (R4) — both of
+which were blocked not on an ARGUMENT but on a missing OBJECT, a strictly
+henselian base — now have that object: `unramifiedIntegers p`, the integral
+closure of `𝒪ᵖᵥ` in `ℚᵖᵥᵘⁿʳ`, built above. Its two structural properties
+are supplied here:
+
+* Henselian, by `henselianLocalRing_unramifiedIntegers` applied to the
+  PROVEN `henselianLocalRing_integralClosure_algebraicClosure`;
+* separably closed residue field, by
+  `isSepClosed_residueField_unramifiedIntegers` applied to the PROVEN
+  `exists_isRoot_of_monic_integralClosure`.
+
+Both of those are ordinary local algebra with the proof written out in
+their docstrings, and neither is Raynaud; the group-scheme citation is
+confined to the leaf above. -/
 theorem grouplike_corner_mem_unramifiedTensorSubmodule
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -2767,7 +3067,13 @@ theorem grouplike_corner_mem_unramifiedTensorSubmodule
         (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
       x ⊗ₜ[ℚᵖᵥᵃˡᵍ] x) :
     x ∈ unramifiedTensorSubmodule G :=
-  sorry
+  grouplike_corner_mem_unramifiedTensorSubmodule_of_strictlyHenselian hpodd
+    (henselianLocalRing_unramifiedIntegers
+      henselianLocalRing_integralClosure_algebraicClosure)
+    (isSepClosed_residueField_unramifiedIntegers
+      fun f hf hd => exists_isRoot_of_monic_integralClosure f hf hd)
+    hZinj hRinj χ₁ χ₂ hmul₁ hmul₂ hchar I hI G fG hfG e₀ he₀ hε₀ hprim₀
+    hcomul₀ x hεx hglx
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
