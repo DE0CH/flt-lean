@@ -7044,6 +7044,31 @@ the table equals its factored form in the docstring below, and
 `ellisomat(ellfromj(j))` returns the degree matrix `[1, p; p, 1]` for all eleven
 — each `ℚ`-isogeny class is a single edge. That is what
 `not_cyclicIsogeny_sq_of_jInvariant` consumes.
+
+**RE-VERIFIED INDEPENDENTLY 2026-07-26**, by a second owner and a second PARI
+run, with three outcomes worth keeping:
+
+* The degree matrix is `[1, p; p, 1]` and the class size is `2` for all
+  eleven. This certifies BOTH directions the cluster needs: each listed `j`
+  really does carry a rational `p`-isogeny, so the three
+  `jInvariant_mem_of_isogenyPrime_*` leaves are NOT vacuous; and no vertex has
+  degree `≥ 2`, so `not_two_stable_lines_of_jInvariant` is TRUE and not merely
+  vacuously so.
+* `qfbclassno(coredisc(−p))` over the seven primes returns
+  `1, 4, 1, 2, 1, 1, 1` at fundamental discriminants `−11, −68, −19, −148,
+  −43, −67, −163`, exactly as recorded above.
+* `polclass` against the thirteen class-number-one discriminants shows that
+  **five** of the eleven `j`-values are CM, not nine — see the corrected
+  paragraph in `not_two_stable_lines_of_jInvariant` below, which is where the
+  wrong count lived.
+
+**Corroboration that this cluster is irreducible here** (2026-07-26): the
+reference Lean project `~/cs/FLT` contains no modular curve, Jacobian, Hecke
+algebra or Chabauty development, and takes Mazur as an explicit ASSUMPTION in
+`FLT/Assumptions/Mazur.lean` — and only the TORSION theorem at that, which is
+weaker than the isogeny theorem this section needs. So there is nothing to
+vendor for any of the four open leaves below, and "check the reference project
+first" has been discharged for all of them.
 -/
 
 /-- **The `j`-invariants at the three isogeny primes with `X_0(p)` of genus
@@ -7147,9 +7172,37 @@ for the newform decompositions) — in particular NOT `0`, so the cheap
 "`X(ℚ) ↪ J(ℚ)_tors`, reduce mod a small prime" argument is unavailable — but
 `1 < 3`, `2 < 5` and `6 < 13`, so Chabauty–Coleman does apply to `X_0(p)` itself.
 
+**WHY THE `classPoly` PATTERN DOES NOT TRANSFER HERE** (recorded 2026-07-26,
+after exactly this cut was proposed at dispatch). The sibling prime-power
+levels `125` and `169` are cut as "`j` is a root of the Hilbert class
+polynomial `H_D`" (a sorry leaf, `classPoly500_of_stable_cyclic_subgroup_order_125`
+/ `classPoly676_of_stable_cyclic_subgroup_order_169`) plus "`H_D` has no
+rational root" (`MazurLevel125.classPoly500_no_rat_root` /
+`MazurLevel169.classPoly676_no_rat_root`, both PROVEN). Two independent
+things stop that shape being reused at `p ∈ {43, 67, 163}`:
+
+* **The arithmetic half is empty at class number one.** That split has
+  content only because `h(−500) = h(−676) > 1`, so "no rational root" is a
+  genuine irreducibility computation. Here `h(−p) = 1`, so `H_{−p} = X − j₀`
+  is LINEAR and "`j` is a root of `H_{−p}`" is literally this theorem's
+  conclusion `j = j₀` rewritten. The split would yield one leaf of exactly
+  the present strength plus a `norm_num` — a restatement, not a reduction,
+  which is the same verdict the genus-`1` sibling records for its own
+  proposed split.
+* **The hypotheses are of different kinds.** At levels `125`/`169` the CM is
+  FORCED by the cyclic `p^k`-isogeny, because `k ≥ 2` manufactures an
+  endomorphism. Here the level is PRIME, and "`E` has a rational
+  `p`-isogeny ⟹ `E` has CM" is false in general; it holds at these three
+  primes only as a CONSEQUENCE of Mazur's theorem, i.e. of the very statement
+  being proven. So there is no endomorphism to descend from.
+
 IRREDUCIBLE at this mathlib pin: these are the levels of the Eisenstein-ideal
 descent of Mazur, *Rational isogenies of prime degree*, and no modular curve,
-Jacobian, or Chabauty machinery exists in this development. -/
+Jacobian, or Chabauty machinery exists in this development. Corroborated
+2026-07-26 against the reference project `~/cs/FLT`, which has no modular
+curve or Jacobian development either and takes Mazur as an explicit
+ASSUMPTION (`FLT/Assumptions/Mazur.lean`) — and only the torsion theorem at
+that, not the isogeny theorem needed here. There is nothing to vendor. -/
 theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_classNumberOne
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ}
@@ -7286,12 +7339,60 @@ open is only this level-`p` statement. Three things are gained:
   representation is DIAGONAL, `λ ⊕ χλ⁻¹` with `χ` the mod-`p` cyclotomic
   character by the Weil pairing.
 
-Nine of the eleven curves have CM, and for those there is a clean
-conceptual proof: the curve has CM by the order of a class-number-one
-discriminant `D` in which `p` RAMIFIES, so the unique prime `𝔭 ∣ p` of that
-order gives the unique cyclic `p`-subgroup — a second one would be a second
-ideal of norm `p`. The two non-CM pairs (`p = 17`, `p = 37`) need the
-explicit curves.
+**CM COVERS FIVE OF THE ELEVEN, NOT NINE** (corrected 2026-07-26). The
+previous text here read "Nine of the eleven curves have CM" and named "the
+two non-CM pairs (`p = 17`, `p = 37`)"; both halves were wrong, and they are
+worth correcting because together they make this leaf look four-fifths
+conceptual when the conceptual argument in fact covers under half of it.
+Testing each of the eleven values against `polclass(D)` for the thirteen
+class-number-one discriminants (PARI/GP, untrusted searcher) returns a CM
+discriminant for exactly FIVE rows and `0` for the other six:
+
+    j = −2¹⁵                = −32768                  disc −11   (p = 11)
+    j = −2¹⁵·3³             = −884736                 disc −19   (p = 19)
+    j = −2¹⁸·3³·5³          = −884736000              disc −43   (p = 43)
+    j = −2¹⁵·3³·5³·11³      = −147197952000           disc −67   (p = 67)
+    j = −2¹⁸·3³·5³·23³·29³  = −262537412640768000     disc −163  (p = 163)
+
+So the CM rows are exactly the five `p` with `h(−p) = 1`, one row each,
+which is consistent with the section note above; and the six non-CM values
+form THREE pairs, at `p = 11` (`−11·131³` and `−11²`), at `p = 17` and at
+`p = 37`. The pair the old text missed is the one at `p = 11`: that level has
+three rational points, of which only `−2¹⁵` is the CM point of `disc −11`.
+
+For the five CM rows there is a clean conceptual proof: the curve has CM by
+the maximal order of `ℚ(√−p)`, in which `p` RAMIFIES (all five `p` are
+`≡ 3 (mod 4)`, so the fundamental discriminant is `−p` itself and `p ∣ −p`),
+so the unique prime `𝔭 ∣ p` gives the unique `O`-stable cyclic `p`-subgroup
+— a second one would be a second ideal of norm `p`. The other SIX values have
+no CM to appeal to and need the explicit curves.
+
+**THE LEVEL-`p` AND LEVEL-`p²` STATEMENTS ARE EQUIVALENT** (2026-07-26), so
+the reduction recorded below is not one-way. The section note gives the
+dictionary in a single direction — a cyclic `p²`-subgroup produces two stable
+lines on the Vélu quotient, which is what `not_cyclicIsogeny_sq_of_jInvariant`
+carries out. The CONVERSE also holds, and it is recorded here so that nobody
+attacks this leaf by trying to reduce it to the `p²` statement:
+
+Let `A ≠ B` be the two stable lines, `φ : E → E/A =: E'` the Vélu quotient
+and `φ̂ : E' → E` its dual, so `ker φ̂ = E[p]/A`. Then `φ̂⁻¹(B)` has order `p²`
+(as `φ̂` is surjective with kernel of order `p`) and is CYCLIC: for
+`x ∈ E'[p]` one has `φ(φ̂ x) = p·x = 0`, so `φ̂(E'[p]) ⊆ ker φ = A`; since
+`A ∩ B = 0`, any `x ∈ E'[p] ∩ φ̂⁻¹(B)` therefore already lies in `ker φ̂`.
+Hence `φ̂⁻¹(B) ∩ E'[p]` has order `p` rather than `p²`, which for a group of
+order `p²` is exactly cyclicity. It is Galois-stable because `φ̂` and `B` are.
+And `(p, j(E'))` lies in the same eleven-element table, by
+`jInvariant_mem_of_isogenyPrime_ge_eleven` applied to `E'` and the line
+`ker φ̂`. So `not_cyclicIsogeny_sq_of_jInvariant` applied to `E'` closes this
+leaf.
+
+**That is a CYCLE, not a proof** — `not_cyclicIsogeny_sq_of_jInvariant` is
+proven below FROM this leaf — and it is written down precisely because the
+argument looks like progress and is not. The consequence for whoever owns
+this node: the two statements carry identical content, so the gain claimed in
+the third bullet above is real only in the sense that `j` is pinned at level
+`p`; it is NOT a weakening of the mathematics. Both are Kenku-level, and
+closing either closes both.
 
 **Twist-blindness, worth knowing before attacking it.** The property is
 invariant under quadratic twist: twisting multiplies the mod-`p`
