@@ -72,13 +72,19 @@ The chain, in the order the assembly uses it:
 2. `IsHilbertHardlyRamified` — the `F`-level local deformation condition,
    and `isHilbertHardlyRamified_map_of_isHardlyRamified`: the restriction
    of a hardly ramified representation satisfies it. PROVEN (2026-07-26)
-   over two sharper local leaves; its determinant and unramifiedness
-   clauses are PROVEN glue. `exists_padicTwoEmbedding_of_mem`, the
-   tame-at-`2` half, was itself PROVEN (2026-07-26) over the single
-   remaining leaf `map_mem_inertia_Z2bar_of_mem_localInertiaGroup` — the
-   agreement of the `IntegralClosure 𝒪_v` and `Z2bar` spellings of local
-   inertia at `2`; the flatness half `isFlatAt_map_of_isFlatAt_under` is
-   still open.
+   over ONE remaining local leaf,
+   `map_mem_inertia_Z2bar_of_mem_localInertiaGroup` — the agreement of the
+   `IntegralClosure 𝒪_v` and `Z2bar` spellings of local inertia at `2`.
+   Its determinant and unramifiedness clauses are PROVEN glue; BOTH of the
+   two sharper local halves it was cut over are now closed (2026-07-26):
+
+   * the tame-at-`2` half `exists_padicTwoEmbedding_of_mem` is PROVEN over
+     that single remaining leaf; and
+   * the flatness half `isFlatAt_map_of_isFlatAt_under` is PROVEN through
+     the base-change core
+     `hasFlatProlongationAt_map_of_hasFlatProlongationAt_under`, over the
+     general-field-extension points comparison `extPointsEquiv` of the
+     `FlatBaseChange` section.
 3. `HilbertDeformationDatum` / `IsWeaklyUniversal` — Mazur's category and
    its universal object over `F`, i.e. `R_F`;
    `exists_isWeaklyUniversal_hilbertDeformationDatum` is item 2. It was
@@ -94,6 +100,14 @@ The chain, in the order the assembly uses it:
    2026-07-26 over `BrauerNesbittConjugacy.lean`'s abstract dimension-`2`
    core `exists_linearEquiv_of_charpoly_eq`, under the added `[Finite k]`
    that core is proven with).
+
+   `isHilbertFibreProductClause` is itself PROVEN (2026-07-26) over the two
+   arithmetic residues `isHilbertFlatAt_of_fibreProduct` and
+   `isHilbertTameAtTwo_of_fibreProduct`, and that repair added
+   `hℓ5 : 5 ≤ ℓ` to it and to
+   `exists_isWeaklyUniversal_hilbertDeformationDatum`: the tame-at-`2`
+   residue is FALSE at `ℓ = 3`, by the `ℚ`-level counterexample recorded in
+   `Deformation.lean`, which applies here verbatim at `F = ℚ`.
 
    The FIRST of those clauses is PROVEN (2026-07-26), over the single
    leaf `hasFlatProlongationAt_of_pi_surjection_of_numberField` — Raynaud
@@ -231,6 +245,11 @@ public import Fermat.FLT.GaloisRepresentation.HardlyRamified.ProfiniteLocalNoeth
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRepTransport
 public import Mathlib.Topology.Algebra.Ring.Ideal
 public import Mathlib.Topology.Compactness.Compact
+-- the convolution-monoid bookkeeping of the flat-prolongation package
+-- (`liftEquiv_convOne`/`liftEquiv_convMul`/`liftEquiv_comp`,
+-- `vendored_one_eq_convOne`, `vendored_mul_eq_convMul`), reused by the
+-- base-change points comparison `extPointsEquiv` below
+public import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
 public import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.GroupTheory.Index
@@ -937,39 +956,511 @@ theorem exists_padicTwoEmbedding_of_mem
     (map_mem_inertia_Z2bar_of_mem_localInertiaGroup v e heint hecont hecont'
       (Field.absoluteGaloisGroup.map_mem_localInertiaGroup v w _ hint ι hι))
 
-/-- **Flatness descends to every place over a flat place** (LEAF — the
-flatness half of item 1/2 of the audit's list).
+universe u₁ u₂
 
-`GaloisRep.IsFlatAt v` asks that for every open ideal `I` of the coefficient
-ring the representation on `M/IM` be the geometric points of a finite flat
-group scheme over `𝒪_v` (`GaloisRep.HasFlatProlongationAt`). Finite flat
-group schemes base-change: if `G` is a finite flat `𝒪_v`-Hopf algebra with
-`G ⊗ K_v` étale and geometric points `M/IM`, then `𝒪_w ⊗_{𝒪_v} G` is a
-finite flat `𝒪_w`-Hopf algebra with the same geometric points read over
-`L_w`, because `𝒪_v → 𝒪_w` is a local map of complete DVRs and the geometric
-points are computed in a common algebraic closure.
+/-! #### The points comparison over a general field extension
 
-WHAT IS MISSING: base change of `HopfAlgebra`/`Module.Flat`/`Module.Finite`
-along `𝒪_v → 𝒪_w`, together with the identification of
-`(K_w ⊗_{𝒪_w} (𝒪_w ⊗_{𝒪_v} G)) →ₐ[K_w] K_wᵃˡᵍ` with
-`(K_v ⊗_{𝒪_v} G) →ₐ[K_v] K_vᵃˡᵍ` as `Γ K_w`-sets, along the
-`Field.absoluteGaloisGroup.map` of the completion map — the same map
-`isUnramifiedAt_map_of_isUnramifiedAt_under` uses, with the same
-conjugation ambiguity, which `HasFlatProlongationAt.of_equiv` is already
-shaped to absorb.
+`FlatProlongation.lean` proves the four-layer points comparison
+`dvrPointsEquiv` for the pair `(K, K_v)` of a number field and one of its
+completions, and that is the wrong pair for base change: what is needed
+below is the pair `(K_v, L_w)` of two COMPLETIONS. The five declarations of
+this section are that development at a general field extension `F ⊆ E`;
+they are the only pieces of the `dvrPointsEquiv` package whose statements
+mention a number field, and everything else (`liftEquiv_convOne`,
+`liftEquiv_convMul`, `liftEquiv_comp`, `vendored_one_eq_convOne`,
+`vendored_mul_eq_convMul`) is imported from there unchanged.
+
+The section uses a `variable` block, which the file otherwise avoids: the
+reason for avoiding it (a structure's FIELDS do not trigger automatic
+variable inclusion) does not apply here, since nothing in this section is a
+structure. -/
+
+section FlatBaseChange
+
+open _root_.TensorProduct _root_.WithConv
+
+variable {F E : Type*} [Field F] [Field E] [Algebra F E]
+
+/-- **Every element of `Eᵃˡᵍ` integral over `F` lies in the image of the
+chosen embedding `Fᵃˡᵍ → Eᵃˡᵍ`** (PROVEN): the minimal polynomial of `z`
+over `F` already splits over `Fᵃˡᵍ`, and the roots of the pushed-forward
+polynomial are exactly the images of the roots upstairs.
+
+(The `(K, K_v)` instance of this is `FlatProlongation.lean`'s
+`mem_range_algebraicClosureMap_of_isIntegral`; the argument is pure field
+theory and is repeated here at the generality the base change needs.) -/
+theorem mem_range_algebraicClosureMapExt_of_isIntegral (z : AlgebraicClosure E)
+    (hz : IsIntegral F z) :
+    z ∈ Set.range (AlgebraicClosure.map (algebraMap F E)) := by
+  classical
+  have hμ0 : minpoly F z ≠ 0 := minpoly.ne_zero hz
+  have hsplit : ((minpoly F z).map (algebraMap F (AlgebraicClosure F))).Splits :=
+    IsAlgClosed.splits ((minpoly F z).map (algebraMap F (AlgebraicClosure F)))
+  have hfactor : (minpoly F z).map (algebraMap F (AlgebraicClosure E)) =
+      ((minpoly F z).map (algebraMap F (AlgebraicClosure F))).map
+        (AlgebraicClosure.map (algebraMap F E)) := by
+    rw [Polynomial.map_map]
+    congr 1
+    refine RingHom.ext fun x => ?_
+    show algebraMap F (AlgebraicClosure E) x =
+      AlgebraicClosure.map (algebraMap F E) (algebraMap F (AlgebraicClosure F) x)
+    rw [AlgebraicClosure.map_algebraMap, ← IsScalarTower.algebraMap_apply]
+  have hroot : z ∈ ((minpoly F z).map (algebraMap F (AlgebraicClosure E))).roots := by
+    rw [Polynomial.mem_roots
+      (Polynomial.map_ne_zero_iff (algebraMap F _).injective |>.mpr hμ0)]
+    rw [Polynomial.IsRoot, Polynomial.eval_map, ← Polynomial.aeval_def]
+    exact minpoly.aeval F z
+  rw [hfactor, Polynomial.Splits.roots_map hsplit, Multiset.mem_map] at hroot
+  obtain ⟨r, _, hr⟩ := hroot
+  exact ⟨r, hr⟩
+
+variable (F E) in
+/-- The chosen embedding `Fᵃˡᵍ → Eᵃˡᵍ`, packaged as an `F`-algebra hom. -/
+noncomputable def algebraicClosureMapExtAlgHom :
+    AlgebraicClosure F →ₐ[F] AlgebraicClosure E where
+  toRingHom := AlgebraicClosure.map (algebraMap F E)
+  commutes' := fun x => by
+    show AlgebraicClosure.map (algebraMap F E) (algebraMap F (AlgebraicClosure F) x) = _
+    rw [AlgebraicClosure.map_algebraMap (algebraMap F E) x]
+    exact (IsScalarTower.algebraMap_apply F E (AlgebraicClosure E) x).symm
+
+/-- **The points of a FINITE `F`-algebra do not see the extension** (PROVEN):
+for `B` finite over `F`, postcomposition with `Fᵃˡᵍ → Eᵃˡᵍ` is a bijection
+from the `Fᵃˡᵍ`-points of `B` to its `Eᵃˡᵍ`-points, because every
+`Eᵃˡᵍ`-point has algebraic image and hence factors through the copy of
+`Fᵃˡᵍ` inside `Eᵃˡᵍ`. -/
+noncomputable def algHomEquivExtOfFinite (B : Type*) [CommRing B] [Algebra F B]
+    [Module.Finite F B] :
+    (B →ₐ[F] AlgebraicClosure E) ≃ (B →ₐ[F] AlgebraicClosure F) where
+  toFun φ := (AlgEquiv.ofInjective (algebraicClosureMapExtAlgHom F E)
+      (algebraicClosureMapExtAlgHom F E).toRingHom.injective).symm.toAlgHom.comp
+    (φ.codRestrict (algebraicClosureMapExtAlgHom F E).range (fun b => by
+      obtain ⟨r, hr⟩ := mem_range_algebraicClosureMapExt_of_isIntegral (φ b)
+        ((Algebra.IsIntegral.isIntegral (R := F) b).map φ)
+      exact ⟨r, hr⟩))
+  invFun ψ := (algebraicClosureMapExtAlgHom F E).comp ψ
+  left_inv φ := by
+    refine AlgHom.ext fun b => ?_
+    exact congrArg Subtype.val
+      ((AlgEquiv.ofInjective (algebraicClosureMapExtAlgHom F E)
+        (algebraicClosureMapExtAlgHom F E).toRingHom.injective).apply_symm_apply
+        (φ.codRestrict (algebraicClosureMapExtAlgHom F E).range (fun b => by
+          obtain ⟨r, hr⟩ := mem_range_algebraicClosureMapExt_of_isIntegral (φ b)
+            ((Algebra.IsIntegral.isIntegral (R := F) b).map φ)
+          exact ⟨r, hr⟩) b))
+  right_inv ψ := by
+    refine AlgHom.ext fun b => ?_
+    apply (AlgEquiv.ofInjective (algebraicClosureMapExtAlgHom F E)
+      (algebraicClosureMapExtAlgHom F E).toRingHom.injective).injective
+    refine ((AlgEquiv.ofInjective (algebraicClosureMapExtAlgHom F E)
+      (algebraicClosureMapExtAlgHom F E).toRingHom.injective).apply_symm_apply _).trans ?_
+    apply Subtype.ext
+    rfl
+
+/-- The inverse of `algHomEquivExtOfFinite` is postcomposition with the
+embedding of algebraic closures. -/
+theorem algHomEquivExtOfFinite_symm_apply {B : Type*} [CommRing B] [Algebra F B]
+    [Module.Finite F B] (ψ : B →ₐ[F] AlgebraicClosure F) :
+    (algHomEquivExtOfFinite (E := E) B).symm ψ =
+      (algebraicClosureMapExtAlgHom F E).comp ψ :=
+  rfl
+
+section ExtConv
+
+variable {B : Type*} [CommRing B] [Bialgebra F B] [Module.Finite F B]
+
+/-- `algHomEquivExtOfFinite` preserves the convolution unit. -/
+theorem algHomEquivExtOfFinite_convOne :
+    algHomEquivExtOfFinite (E := E) B
+      ((1 : WithConv (B →ₐ[F] AlgebraicClosure E)).ofConv) =
+      (1 : WithConv (B →ₐ[F] AlgebraicClosure F)).ofConv := by
+  apply (algHomEquivExtOfFinite (E := E) B).symm.injective
+  rw [Equiv.symm_apply_apply, algHomEquivExtOfFinite_symm_apply]
+  refine AlgHom.ext fun b => ?_
+  rw [AlgHom.comp_apply, AlgHom.convOne_apply, AlgHom.convOne_apply, AlgHom.commutes]
+
+/-- `algHomEquivExtOfFinite` preserves the convolution product. -/
+theorem algHomEquivExtOfFinite_convMul
+    (ψ₁ ψ₂ : WithConv (B →ₐ[F] AlgebraicClosure E)) :
+    algHomEquivExtOfFinite (E := E) B ((ψ₁ * ψ₂).ofConv) =
+      (toConv (algHomEquivExtOfFinite (E := E) B ψ₁.ofConv) *
+        toConv (algHomEquivExtOfFinite (E := E) B ψ₂.ofConv)).ofConv := by
+  apply (algHomEquivExtOfFinite (E := E) B).symm.injective
+  rw [Equiv.symm_apply_apply, algHomEquivExtOfFinite_symm_apply,
+    AlgHom.comp_convMul_distrib,
+    ← algHomEquivExtOfFinite_symm_apply (E := E)
+      (algHomEquivExtOfFinite (E := E) B ψ₁.ofConv),
+    ← algHomEquivExtOfFinite_symm_apply (E := E)
+      (algHomEquivExtOfFinite (E := E) B ψ₂.ofConv),
+    Equiv.symm_apply_apply, Equiv.symm_apply_apply]
+
+/-- `algHomEquivExtOfFinite` intertwines postcomposition by `σ ∈ Γ E` with
+postcomposition by its restriction in `Γ F`. -/
+theorem algHomEquivExtOfFinite_comp (σ : Γ E) (ψ : B →ₐ[F] AlgebraicClosure E) :
+    algHomEquivExtOfFinite (E := E) B ((σ.toAlgHom.restrictScalars F).comp ψ) =
+      (Field.absoluteGaloisGroup.map (algebraMap F E) σ).toAlgHom.comp
+        (algHomEquivExtOfFinite (E := E) B ψ) := by
+  apply (algHomEquivExtOfFinite (E := E) B).symm.injective
+  rw [Equiv.symm_apply_apply, algHomEquivExtOfFinite_symm_apply]
+  have h2 : (algebraicClosureMapExtAlgHom F E).comp
+      (algHomEquivExtOfFinite (E := E) B ψ) = ψ := by
+    rw [← algHomEquivExtOfFinite_symm_apply, Equiv.symm_apply_apply]
+  refine AlgHom.ext fun b => ?_
+  refine Eq.symm ?_
+  calc ((algebraicClosureMapExtAlgHom F E).comp
+        ((Field.absoluteGaloisGroup.map (algebraMap F E) σ).toAlgHom.comp
+          (algHomEquivExtOfFinite (E := E) B ψ))) b
+      = σ (AlgebraicClosure.map (algebraMap F E)
+          ((algHomEquivExtOfFinite (E := E) B ψ) b)) :=
+        Field.absoluteGaloisGroup.lift_map _ σ _
+    _ = σ (ψ b) := congrArg σ congr($(h2) b)
+    _ = ((σ.toAlgHom.restrictScalars F).comp ψ) b := rfl
+
+end ExtConv
+
+section ExtCore
+
+variable (R : Type*) [CommRing R] [Algebra R F] [Algebra R E] [IsScalarTower R F E]
+variable (O : Type*) [CommRing O] [Algebra R O] [Algebra O E] [IsScalarTower R O E]
+variable (H : Type*) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
+
+/-- **The four-layer points comparison**, over a general integral package
+`R → O → E` with generic fibre `R → F`: the `Eᵃˡᵍ`-points of the generic
+fibre of the base-changed Hopf algebra `O ⊗[R] H` are the `Fᵃˡᵍ`-points of
+`F ⊗[R] H`. (`AlgHom.liftEquiv` three times, then
+`algHomEquivExtOfFinite`; the exact analogue of `dvrPointsEquiv`.) -/
+noncomputable def extPointsEquiv :
+    ((E ⊗[O] (O ⊗[R] H)) →ₐ[E] AlgebraicClosure E) ≃
+      ((F ⊗[R] H) →ₐ[F] AlgebraicClosure F) :=
+  (AlgHom.liftEquiv O E (O ⊗[R] H) (AlgebraicClosure E)).symm.trans
+    ((AlgHom.liftEquiv R O H (AlgebraicClosure E)).symm.trans
+      ((AlgHom.liftEquiv R F H (AlgebraicClosure E)).trans
+        (algHomEquivExtOfFinite (E := E) (F ⊗[R] H))))
+
+/-- The points comparison sends the convolution unit to the convolution
+unit. -/
+theorem extPointsEquiv_one :
+    extPointsEquiv (F := F) R O H
+        (1 : (E ⊗[O] (O ⊗[R] H)) →ₐ[E] AlgebraicClosure E) =
+      (1 : WithConv ((F ⊗[R] H) →ₐ[F] AlgebraicClosure F)).ofConv := by
+  show algHomEquivExtOfFinite (E := E) (F ⊗[R] H)
+    ((AlgHom.liftEquiv R F H (AlgebraicClosure E))
+      ((AlgHom.liftEquiv R O H (AlgebraicClosure E)).symm
+        ((AlgHom.liftEquiv O E (O ⊗[R] H) (AlgebraicClosure E)).symm 1))) = _
+  rw [vendored_one_eq_convOne, liftEquiv_symm_convOne, liftEquiv_symm_convOne,
+    liftEquiv_convOne, algHomEquivExtOfFinite_convOne]
+
+/-- The points comparison sends the convolution product to the convolution
+product. -/
+theorem extPointsEquiv_mul (φ ψ : (E ⊗[O] (O ⊗[R] H)) →ₐ[E] AlgebraicClosure E) :
+    extPointsEquiv (F := F) R O H (φ * ψ) =
+      (toConv (extPointsEquiv (F := F) R O H φ) *
+        toConv (extPointsEquiv (F := F) R O H ψ)).ofConv := by
+  show algHomEquivExtOfFinite (E := E) (F ⊗[R] H)
+    ((AlgHom.liftEquiv R F H (AlgebraicClosure E))
+      ((AlgHom.liftEquiv R O H (AlgebraicClosure E)).symm
+        ((AlgHom.liftEquiv O E (O ⊗[R] H) (AlgebraicClosure E)).symm (φ * ψ)))) = _
+  rw [vendored_mul_eq_convMul, liftEquiv_symm_convMul, liftEquiv_symm_convMul,
+    liftEquiv_convMul, algHomEquivExtOfFinite_convMul]
+  rfl
+
+/-- The points comparison intertwines the postcomposition action of `Γ E`
+with the postcomposition action of its restriction in `Γ F`. -/
+theorem extPointsEquiv_smul (σ : Γ E)
+    (φ : (E ⊗[O] (O ⊗[R] H)) →ₐ[E] AlgebraicClosure E) :
+    extPointsEquiv (F := F) R O H (σ • φ) =
+      (Field.absoluteGaloisGroup.map (algebraMap F E) σ).toAlgHom.comp
+        (extPointsEquiv (F := F) R O H φ) := by
+  have h₀ : σ • φ = (σ.toAlgHom : AlgebraicClosure E →ₐ[E] AlgebraicClosure E).comp φ :=
+    AlgHom.ext fun _ => rfl
+  show algHomEquivExtOfFinite (E := E) (F ⊗[R] H)
+    ((AlgHom.liftEquiv R F H (AlgebraicClosure E))
+      ((AlgHom.liftEquiv R O H (AlgebraicClosure E)).symm
+        ((AlgHom.liftEquiv O E (O ⊗[R] H) (AlgebraicClosure E)).symm (σ • φ)))) = _
+  rw [h₀, liftEquiv_symm_comp, liftEquiv_symm_comp]
+  have hrs : ((σ.toAlgHom.restrictScalars O).restrictScalars R :
+      AlgebraicClosure E →ₐ[R] AlgebraicClosure E) =
+      ((σ.toAlgHom.restrictScalars F).restrictScalars R) := rfl
+  rw [hrs, liftEquiv_comp, algHomEquivExtOfFinite_comp]
+  rfl
+
+end ExtCore
+
+/-- **Base change of a SINGLE finite flat prolongation along `𝒪_v → 𝒪_w`**
+(PROVEN, 2026-07-26 — the geometric core of the flatness half of item 1/2
+of the audit's list; split off from `isFlatAt_map_of_isFlatAt_under`, which
+is PROVEN over it).
+
+`ρ.HasFlatProlongationAt v` says that the `Γ K_v`-set underlying `M` is the
+set of `K_vᵃˡᵍ`-points of the generic fibre of a finite flat `𝒪_v`-Hopf
+algebra `G`. This leaf is the base-change of that ONE package along the
+local map `𝒪_v → 𝒪_w`; the quantifier over open ideals which distinguishes
+`IsFlatAt` from `HasFlatProlongationAt` has already been discharged by the
+consumer below, so nothing here is about the coefficient ring.
+
+THE PROOF, in the vocabulary of `CompletionTransport.lean` and
+`FlatProlongation.lean` (it is a second copy of the `dvrPointsEquiv`
+development, at a different pair of rings — that copy is the
+`extPointsEquiv` section above):
+
+* `HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ : K_v →+* L_w`
+  exists (the very map `isUnramifiedAt_map_of_isUnramifiedAt_under` builds,
+  from `valuation_map_le_of_le_one` + `WithVal.uniformContinuous_map_of_le`),
+  it is LOCAL (`adicCompletionMap_mem_integers`), and
+  `Field.absoluteGaloisGroup.intMap` restricts it to `𝒪_v →+* 𝒪_w`. That is
+  the `Algebra 𝒪_v 𝒪_w` used below, together with the induced
+  `Algebra 𝒪_v L_w`, `Algebra K_v L_w` and the two scalar towers;
+* the witness upstairs is `G' := 𝒪_w ⊗[𝒪_v] G`. `CommRing`, `HopfAlgebra 𝒪_w`
+  (mathlib's `TensorProduct` Hopf instance, `B := 𝒪_w`, `A := G`),
+  `Module.Flat 𝒪_w` and `Module.Finite 𝒪_w` are all instances;
+* étaleness of the generic fibre is `Algebra.Etale.baseChange` transported
+  across
+  `L_w ⊗[𝒪_w] (𝒪_w ⊗[𝒪_v] G) ≃ₐ L_w ⊗[𝒪_v] G ≃ₐ L_w ⊗[K_v] (K_v ⊗[𝒪_v] G)`
+  (`Algebra.TensorProduct.cancelBaseChange`, twice);
+* the points comparison is `extPointsEquiv 𝒪_v 𝒪_w G` above:
+  `((L_w ⊗[𝒪_w] G') →ₐ[L_w] L_wᵃˡᵍ) ≃ ((K_v ⊗[𝒪_v] G) →ₐ[K_v] K_vᵃˡᵍ)`,
+  by `AlgHom.liftEquiv` three times and then the finite-algebra points
+  bijection `algHomEquivExtOfFinite` (every `L_wᵃˡᵍ`-point of a FINITE
+  `K_v`-algebra has algebraic image, hence lands in the copy of `K_vᵃˡᵍ`
+  inside `L_wᵃˡᵍ`); `liftEquiv_convOne`/`liftEquiv_convMul`/`liftEquiv_comp`
+  carry the convolution-monoid bookkeeping through the `liftEquiv` layers;
+* the equivariance is where the CONJUGATOR enters, exactly as in the
+  tame-at-`2` clause of `isHilbertHardlyRamified_map_of_isHardlyRamified`:
+  the two routes `Γ L_w → Γ K`, one through `Γ L` and one through `Γ K_v`,
+  differ by one argument-independent `μ ∈ Γ K`
+  (`Field.absoluteGaloisGroup.exists_conj_map_comp'`, twice), and the fix is
+  to conjugate the COMPARISON MAP rather than the character: replacing the
+  bijection `f` of the package downstairs by `ρ μ ∘ f` turns
+  `f (ψ σ • φ) = ρ (ψ σ) (f φ)` into
+  `(ρ μ ∘ f) (σ • φ) = ρ (μ * ψ σ * μ⁻¹) ((ρ μ ∘ f) φ)`, which is the
+  `Γ L_w`-equivariance the package upstairs asks for, on the nose.
+
+FORMALIZATION NOTE ON THE UNIVERSES (why `L : Type (max u₁ u₂)` rather than
+`Type*`). `GaloisRep.HasFlatProlongationAt` quantifies its Hopf-algebra
+witness over `Type uK`, the universe of the BASE FIELD. So the conclusion
+demands `G' : Type uL` while the hypothesis supplies `G : Type uK`, and the
+base change `𝒪_w ⊗[𝒪_v] G` lives in `Type (max uK uL)`. Writing
+`L : Type (max u₁ u₂)` for `K : Type u₁` is exactly the constraint
+`uK ≤ uL`, under which that is `Type uL`. This is a formalization artifact,
+not a mathematical hypothesis: `G` is finite flat over the DVR `𝒪_v`, hence
+free of finite rank, so `𝒪_w ⊗[𝒪_v] G` is always `Small.{uL}` and the
+unrestricted statement would follow by transporting the Hopf structure
+along a `Shrink` equivalence — machinery mathlib does not have. Every
+consumer in this development instantiates at `K = ℚ : Type 0`, where the
+constraint is vacuous.
 
 FAITHFULNESS: a statement about the EXISTENCE of a prolongation upstairs
 given one downstairs, produced by base change — not a descent of existence
 from `𝒪^nr`, so the `𝒪ᵥ` rule does not bite. -/
+theorem hasFlatProlongationAt_map_of_hasFlatProlongationAt_under
+    {K : Type u₁} [Field K] [NumberField K]
+    {L : Type (max u₁ u₂)} [Field L] [NumberField L] [Algebra K L]
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (ρ : GaloisRep K A M) (w : HeightOneSpectrum (𝓞 L))
+    (h : ρ.HasFlatProlongationAt (w.under (𝓞 K))) :
+    (ρ.map (algebraMap K L)).HasFlatProlongationAt w := by
+  classical
+  set v : HeightOneSpectrum (𝓞 K) := w.under (𝓞 K)
+  have hcomm : ∀ a : 𝓞 K,
+      (algebraMap K L) (algebraMap (𝓞 K) K a)
+        = algebraMap (𝓞 L) L (algebraMap (𝓞 K) (𝓞 L) a) := fun a => by
+    rw [← IsScalarTower.algebraMap_apply, ← IsScalarTower.algebraMap_apply]
+  have hmem : v.asIdeal ≤ Ideal.comap (algebraMap (𝓞 K) (𝓞 L)) w.asIdeal := le_rfl
+  have hcompl : ∀ s : 𝓞 K, s ∉ v.asIdeal →
+      algebraMap (𝓞 K) (𝓞 L) s ∉ w.asIdeal := fun _ hs => hs
+  have hψ : UniformContinuous
+      (WithVal.map (v.valuation K) (w.valuation L) (algebraMap K L)) :=
+    WithVal.uniformContinuous_map_of_le _ _
+      (HeightOneSpectrum.valuation_surjective K v) _
+      (fun x hx => HeightOneSpectrum.valuation_map_le_of_le_one v w _ _
+        hcomm hmem hcompl x hx)
+  have hint : ∀ x ∈ v.adicCompletionIntegers K,
+      HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ x
+        ∈ w.adicCompletionIntegers L :=
+    fun x hx => HeightOneSpectrum.adicCompletionMap_mem_integers v w _ hψ _ hcomm hx
+  -- `𝒪_v → 𝒪_w`, `K_v → L_w` and the two scalar towers between them
+  letI : Algebra ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) :=
+    (Field.absoluteGaloisGroup.intMap v w
+      (HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ) hint).toAlgebra
+  letI : Algebra (v.adicCompletion K) (w.adicCompletion L) :=
+    (HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ).toAlgebra
+  letI : Algebra ↥(v.adicCompletionIntegers K) (w.adicCompletion L) :=
+    ((algebraMap ↥(w.adicCompletionIntegers L) (w.adicCompletion L)).comp
+      (Field.absoluteGaloisGroup.intMap v w
+        (HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ) hint)).toAlgebra
+  haveI : IsScalarTower ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L)
+      (w.adicCompletion L) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  haveI : IsScalarTower ↥(v.adicCompletionIntegers K) (v.adicCompletion K)
+      (w.adicCompletion L) := IsScalarTower.of_algebraMap_eq fun _ => rfl
+  -- the two routes `Γ L_w → Γ K` differ by the single conjugator `μ`
+  obtain ⟨τ, hτ⟩ := Field.absoluteGaloisGroup.exists_conj_map_comp'
+    (algebraMap K (v.adicCompletion K))
+    (algebraMap (v.adicCompletion K) (w.adicCompletion L))
+    ((algebraMap L (w.adicCompletion L)).comp (algebraMap K L))
+    (RingHom.ext fun x =>
+      HeightOneSpectrum.adicCompletionMap_coe v w (algebraMap K L) hψ x)
+  obtain ⟨τ₀, hτ₀⟩ := Field.absoluteGaloisGroup.exists_conj_map_comp' (algebraMap K L)
+    (algebraMap L (w.adicCompletion L))
+    ((algebraMap L (w.adicCompletion L)).comp (algebraMap K L)) rfl
+  obtain ⟨μ, hμ⟩ : ∃ μ : Γ K, τ₀⁻¹ * τ = μ := ⟨_, rfl⟩
+  have hX : ∀ σ : Γ (w.adicCompletion L),
+      Field.absoluteGaloisGroup.map (algebraMap K L)
+          (Field.absoluteGaloisGroup.map (algebraMap L (w.adicCompletion L)) σ)
+        = μ * Field.absoluteGaloisGroup.map (algebraMap K (v.adicCompletion K))
+            (Field.absoluteGaloisGroup.map
+              (algebraMap (v.adicCompletion K) (w.adicCompletion L)) σ) * μ⁻¹ := by
+    intro σ
+    have h1 := hτ₀ σ
+    rw [hτ σ] at h1
+    rw [← hμ, show τ₀⁻¹ * τ * Field.absoluteGaloisGroup.map
+          (algebraMap K (v.adicCompletion K))
+          (Field.absoluteGaloisGroup.map
+            (algebraMap (v.adicCompletion K) (w.adicCompletion L)) σ) * (τ₀⁻¹ * τ)⁻¹
+        = τ₀⁻¹ * (τ * Field.absoluteGaloisGroup.map (algebraMap K (v.adicCompletion K))
+            (Field.absoluteGaloisGroup.map
+              (algebraMap (v.adicCompletion K) (w.adicCompletion L)) σ) * τ⁻¹) * τ₀
+        from by group, h1]
+    group
+  have hinv : ∀ x : M, (ρ μ⁻¹) ((ρ μ) x) = x := by
+    intro x
+    show (ρ μ⁻¹ * ρ μ) x = x
+    rw [← map_mul, inv_mul_cancel, map_one]
+    rfl
+  have hinv' : ∀ x : M, (ρ μ) ((ρ μ⁻¹) x) = x := by
+    intro x
+    show (ρ μ * ρ μ⁻¹) x = x
+    rw [← map_mul, mul_inv_cancel, map_one]
+    rfl
+  have hρμ : Function.Bijective ⇑(ρ μ) :=
+    ⟨fun a b hab => by rw [← hinv a, ← hinv b, hab], fun y => ⟨ρ μ⁻¹ y, hinv' y⟩⟩
+  obtain ⟨G, hCR, hHopf, hFlat, hFin, hEt, f, hbij⟩ := h
+  letI := hCR
+  letI := hHopf
+  letI := hFlat
+  letI := hFin
+  letI := hEt
+  refine ⟨↥(w.adicCompletionIntegers L) ⊗[↥(v.adicCompletionIntegers K)] G,
+    (inferInstance : CommRing
+      (↥(w.adicCompletionIntegers L) ⊗[↥(v.adicCompletionIntegers K)] G)),
+    (inferInstance : HopfAlgebra ↥(w.adicCompletionIntegers L)
+      (↥(w.adicCompletionIntegers L) ⊗[↥(v.adicCompletionIntegers K)] G)),
+    (inferInstance : Module.Flat ↥(w.adicCompletionIntegers L)
+      (↥(w.adicCompletionIntegers L) ⊗[↥(v.adicCompletionIntegers K)] G)),
+    (inferInstance : Module.Finite ↥(w.adicCompletionIntegers L)
+      (↥(w.adicCompletionIntegers L) ⊗[↥(v.adicCompletionIntegers K)] G)),
+    Algebra.Etale.of_equiv
+      ((Algebra.TensorProduct.cancelBaseChange ↥(v.adicCompletionIntegers K)
+          (v.adicCompletion K) (w.adicCompletion L) (w.adicCompletion L) G).trans
+        (Algebra.TensorProduct.cancelBaseChange ↥(v.adicCompletionIntegers K)
+          ↥(w.adicCompletionIntegers L) (w.adicCompletion L) (w.adicCompletion L) G).symm),
+    { toFun := fun Φ => ρ μ (f (Additive.ofMul
+        (extPointsEquiv (F := v.adicCompletion K) ↥(v.adicCompletionIntegers K)
+          ↥(w.adicCompletionIntegers L) G Φ.toMul)))
+      map_smul' := fun σ Φ => by
+        show ρ μ (f (Additive.ofMul (extPointsEquiv (F := v.adicCompletion K)
+            ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G
+            (Additive.toMul (σ • Φ)))))
+          = ((ρ.map (algebraMap K L)).toLocal w) σ
+              (ρ μ (f (Additive.ofMul (extPointsEquiv (F := v.adicCompletion K)
+                ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G Φ.toMul))))
+        have hΦ : Additive.toMul (σ • Φ) = σ • Φ.toMul := rfl
+        rw [hΦ, extPointsEquiv_smul]
+        have hact : ∀ (g : Γ (v.adicCompletion K))
+            (χ : (v.adicCompletion K ⊗[↥(v.adicCompletionIntegers K)] G)
+              →ₐ[v.adicCompletion K] AlgebraicClosure (v.adicCompletion K)),
+            f (Additive.ofMul (g.toAlgHom.comp χ))
+              = ρ (Field.absoluteGaloisGroup.map
+                  (algebraMap K (v.adicCompletion K)) g) (f (Additive.ofMul χ)) := by
+          intro g χ
+          exact map_smul f g (Additive.ofMul χ)
+        have key : ∀ (g : Γ K) (y : M), ρ μ (ρ g y) = ρ (μ * g * μ⁻¹) (ρ μ y) := by
+          intro g y
+          show (ρ μ * ρ g) y = (ρ (μ * g * μ⁻¹) * ρ μ) y
+          rw [← map_mul, ← map_mul]
+          congr 2
+          group
+        have hgoal : ((ρ.map (algebraMap K L)).toLocal w) σ
+            = ρ (μ * Field.absoluteGaloisGroup.map (algebraMap K (v.adicCompletion K))
+                (Field.absoluteGaloisGroup.map
+                  (algebraMap (v.adicCompletion K) (w.adicCompletion L)) σ) * μ⁻¹) := by
+          rw [← hX σ]
+          rfl
+        rw [hact, hgoal]
+        exact key _ _
+      map_zero' := by
+        show ρ μ (f (Additive.ofMul (extPointsEquiv (F := v.adicCompletion K)
+          (E := w.adicCompletion L)
+          ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G
+          (Additive.toMul 0)))) = 0
+        rw [toMul_zero, extPointsEquiv_one, ← vendored_one_eq_convOne, ofMul_one,
+          map_zero]
+        exact LinearMap.map_zero _
+      map_add' := fun Φ Ψ => by
+        have hmul : extPointsEquiv (F := v.adicCompletion K)
+              (E := w.adicCompletion L) ↥(v.adicCompletionIntegers K)
+              ↥(w.adicCompletionIntegers L) G (Additive.toMul (Φ + Ψ))
+            = extPointsEquiv (F := v.adicCompletion K) (E := w.adicCompletion L)
+                ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G Φ.toMul
+              * extPointsEquiv (F := v.adicCompletion K) (E := w.adicCompletion L)
+                ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G Ψ.toMul :=
+          (extPointsEquiv_mul (F := v.adicCompletion K) (E := w.adicCompletion L)
+            ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G
+            (Additive.toMul Φ) (Additive.toMul Ψ)).trans
+            (vendored_mul_eq_convMul _ _).symm
+        have h1 : f (Additive.ofMul
+              (extPointsEquiv (F := v.adicCompletion K) (E := w.adicCompletion L)
+                  ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G Φ.toMul
+                * extPointsEquiv (F := v.adicCompletion K) (E := w.adicCompletion L)
+                  ↥(v.adicCompletionIntegers K) ↥(w.adicCompletionIntegers L) G Ψ.toMul))
+            = f (Additive.ofMul (extPointsEquiv (F := v.adicCompletion K)
+                (E := w.adicCompletion L) ↥(v.adicCompletionIntegers K)
+                ↥(w.adicCompletionIntegers L) G Φ.toMul))
+              + f (Additive.ofMul (extPointsEquiv (F := v.adicCompletion K)
+                (E := w.adicCompletion L) ↥(v.adicCompletionIntegers K)
+                ↥(w.adicCompletionIntegers L) G Ψ.toMul)) :=
+          map_add f (Additive.ofMul _) (Additive.ofMul _)
+        show ρ μ (f (Additive.ofMul (extPointsEquiv (F := v.adicCompletion K)
+            (E := w.adicCompletion L) ↥(v.adicCompletionIntegers K)
+            ↥(w.adicCompletionIntegers L) G (Additive.toMul (Φ + Ψ))))) = _
+        exact (congrArg (fun x => (ρ μ) (f (Additive.ofMul x))) hmul).trans
+          ((congrArg (⇑(ρ μ)) h1).trans (LinearMap.map_add (ρ μ) _ _)) }, ?_⟩
+  exact hρμ.comp (hbij.comp (Additive.ofMul.bijective.comp
+    ((extPointsEquiv (F := v.adicCompletion K) ↥(v.adicCompletionIntegers K)
+      ↥(w.adicCompletionIntegers L) G).bijective.comp Additive.toMul.bijective)))
+
+end FlatBaseChange
+
+/-- **Flatness descends to every place over a flat place** (PROVEN,
+2026-07-26, over `hasFlatProlongationAt_map_of_hasFlatProlongationAt_under`).
+
+`GaloisRep.IsFlatAt v` asks that for every open ideal `I` of the coefficient
+ring the representation on `M/IM` be the geometric points of a finite flat
+group scheme over `𝒪_v` (`GaloisRep.HasFlatProlongationAt`). Two things
+separate that from the leaf above, and both are discharged here:
+
+* the quantifier over open ideals — the same `I` works upstairs and
+  downstairs, so it is transported unchanged;
+* the commutation `(ρ.map f).baseChange B = (ρ.baseChange B).map f`, which
+  holds definitionally: `map` precomposes with `Field.absoluteGaloisGroup.map
+  f` and `baseChange` postcomposes with `Module.End.baseChangeHom`, and the
+  two act on opposite sides of `ρ`.
+
+For the universe restriction on `L`, see the leaf's FORMALIZATION NOTE. -/
 theorem isFlatAt_map_of_isFlatAt_under
-    {K : Type*} [Field K] [NumberField K] {L : Type*} [Field L] [NumberField L]
-    [Algebra K L]
+    {K : Type u₁} [Field K] [NumberField K]
+    {L : Type (max u₁ u₂)} [Field L] [NumberField L] [Algebra K L]
     {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A] [IsLocalRing A]
     {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M] [Module.Free A M]
     (ρ : GaloisRep K A M) (w : HeightOneSpectrum (𝓞 L))
     (h : ρ.IsFlatAt (w.under (𝓞 K))) :
-    (ρ.map (algebraMap K L)).IsFlatAt w :=
-  sorry
+    (ρ.map (algebraMap K L)).IsFlatAt w := by
+  refine ⟨fun I hI => ?_⟩
+  have heq : (ρ.map (algebraMap K L)).baseChange (A ⧸ I)
+      = (ρ.baseChange (A ⧸ I)).map (algebraMap K L) := GaloisRep.ext fun _ => rfl
+  rw [heq]
+  exact hasFlatProlongationAt_map_of_hasFlatProlongationAt_under
+    (ρ.baseChange (A ⧸ I)) w (h.cond I hI)
 
 /-- **Restriction of a hardly ramified representation is hardly ramified
 over `F`** (PROVEN, 2026-07-26, over the two local leaves above).
@@ -987,9 +1478,9 @@ sharply stated local leaves:
   lies over a rational prime `p ∉ {2, ℓ}` (`exists_prime_eq_ratPlace`,
   `natCast_mem_asIdeal_of_under_eq`), and inertia at `w` maps into inertia
   at `p` (`isUnramifiedAt_map_of_isUnramifiedAt_under`);
-* *flatness* (over `isFlatAt_map_of_isFlatAt_under`): a place `w | ℓ` lies
-  over `ℓ` (`under_eq_of_natCast_mem`), and flat prolongations base-change
-  along `𝒪_ℓ → 𝒪_w`;
+* *flatness* (PROVEN, through `isFlatAt_map_of_isFlatAt_under`): a place
+  `w | ℓ` lies over `ℓ` (`under_eq_of_natCast_mem`), and flat prolongations
+  base-change along `𝒪_ℓ → 𝒪_w`;
 * *tameness at `2`* (over `exists_padicTwoEmbedding_of_mem`): PROVEN glue
   from the local embedding `φ : ℚ_[2] →+* F_w`, see below.
 
@@ -1294,6 +1785,245 @@ noncomputable def framePushforward {F : Type u} [Field F] [NumberField F]
   letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
     (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
   (ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))
+
+/-! #### Bookkeeping for `framePushforward`
+
+The two lemmas below are the `F`-level copies of `Deformation.lean`'s
+`pushforwardFrame_apply_map` and `det_pushforwardFrame` — same statements
+and same proofs with the base field `ℚ` replaced by `F`, and, like
+`rank_finTwoPi` and `framePushforward` themselves, neither may be replaced
+by the other without moving a declaration across the import edge. Together
+they say that `framePushforward ψ` really is "apply `ψ` to the matrix
+entries": it acts entrywise on vectors already in the image of `ψ`, and its
+determinant is `ψ` of the determinant. That is exactly what a fibre-product
+argument needs, because it turns a statement over `B` into a pair of
+statements about VALUES in `A₁` and `A₂`, and values descend along the
+injection `b ↦ (p₁ b, p₂ b)`.
+
+**IF YOU ARE ANOTHER CLAUSE OWNER AND NEED THESE, USE THEM — DO NOT ADD A
+SECOND COPY.** `Deformation.lean` records what that costs: two concurrent
+owners each landed a byte-identical `det_pushforwardFrame`, git merged the
+disjoint regions cleanly, every source scan saw a clean file, and the
+module then failed to elaborate at all with "has already been declared",
+producing no `.olean` and silently blocking every downstream module. -/
+
+open scoped TensorProduct in
+/-- **`framePushforward` computed on the image of a `B`-vector** (PROVEN;
+the `F`-level copy of `Deformation.lean`'s `pushforwardFrame_apply_map`).
+
+`(1 : A) ⊗ₜ v` is a preimage of `ψ ∘ v` under
+`TensorProduct.piScalarRight`, so `LinearEquiv.conj_apply_apply` moves the
+conjugation out of the way and `GaloisRep.baseChange_tmul` finishes;
+nothing has to be said about `piScalarRight.symm` on a general element,
+which is a sum.
+
+This is the handle that lets a fibre-product argument compare `ρ g` with
+`1` ENTRYWISE, which is the shape the injectivity of `b ↦ (p₁ b, p₂ b)`
+can act on. -/
+lemma framePushforward_apply_map {F : Type u} [Field F] [NumberField F]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    (ψ : B →+* A) (hψ : Continuous ψ) (ρ : FramedGaloisRep F B (Fin 2))
+    (g : Γ F) (v : Fin 2 → B) (i : Fin 2) :
+    framePushforward ψ hψ ρ g (fun j => ψ (v j)) i = ψ (ρ g v i) := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  have hsmul : ∀ (b : B) (a : A), b • a = ψ b * a := fun _ _ => rfl
+  have h1 : (fun j => ψ (v j)) =
+      (TensorProduct.piScalarRight B A A (Fin 2)) ((1 : A) ⊗ₜ[B] v) := by
+    funext j
+    rw [TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
+    simp [hsmul]
+  show (((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g)
+      (fun j => ψ (v j)) i = _
+  rw [h1, GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+    LinearEquiv.symm_apply_apply, GaloisRep.baseChange_tmul,
+    TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
+  simp [hsmul]
+
+open scoped TensorProduct in
+/-- **`det` commutes with `framePushforward`** (PROVEN; the `F`-level copy
+of `Deformation.lean`'s `det_pushforwardFrame`).
+
+`LinearMap.det_conj` absorbs the framing identification and
+`LinearMap.det_baseChange` turns the base-changed determinant into
+`algebraMap B A` of the original, which is `ψ` by
+`RingHom.algebraMap_toAlgebra`. This is the direction that lets a
+determinant identity be REFLECTED BACK from the two projections to `B`,
+and equally lets the determinant clause of `isHilbertProLimitClause` be
+reflected back from the levels to `R`. -/
+lemma det_framePushforward {F : Type u} [Field F] [NumberField F]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    (ψ : B →+* A) (hψ : Continuous ψ) (ρ : FramedGaloisRep F B (Fin 2))
+    (g : Γ F) :
+    (framePushforward ψ hψ ρ).det g = ψ (ρ.det g) := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  show LinearMap.det
+    ((((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g)) = _
+  rw [GaloisRep.conj_apply, LinearEquiv.conj_apply, LinearMap.comp_assoc,
+    LinearMap.det_conj]
+  show LinearMap.det (LinearMap.baseChange A (ρ g)) = _
+  rw [LinearMap.det_baseChange, RingHom.algebraMap_toAlgebra]
+  rfl
+
+/-! #### The two arithmetic residues of Schlessinger's H1/H2 over `F`
+
+`isHilbertFibreProductClause` below is PROVEN over exactly these two
+leaves; the determinant and unramifiedness clauses are formal and are
+discharged there. The split is `Deformation.lean`'s, one for one: over `ℚ`
+the same two residues are `isFlatAt_of_fibreProduct` and
+`isTameAtTwo_of_fibreProduct`, and everything else in
+`isHardlyRamified_of_fibreProduct` is bookkeeping.
+
+They are stated HERE rather than immediately above their consumer only to
+keep this file's concurrently-edited regions apart; nothing in them depends
+on the clause definitions below. -/
+
+/-- **Flatness at a place over `ℓ` glues along a fibre product** (LEAF;
+Ramakrishna and Raynaud — the first arithmetic residue of Schlessinger's
+H1/H2 over `F`, and the `F`-level twin of `Deformation.lean`'s
+`isFlatAt_of_fibreProduct`).
+
+`B` is the fibre product `A₁ ×_{A₀} A₂` of finite local `ℤ_ℓ`-algebras
+along a SURJECTION `f₂`, presented by its universal property rather than as
+a construction: `hcart` says every compatible pair comes from `B`, and
+`hemb` says `B` carries the induced topology and injects, so `B` really is
+the fibre product AS A TOPOLOGICAL RING.
+
+WHY IT IS NOT FORMAL, and where each hypothesis is spent.
+`GaloisRep.IsFlatAt w` quantifies over the OPEN IDEALS `I` of the
+coefficient ring and asks that `ρ ⊗ (B ⧸ I)` be the geometric points of a
+finite flat group scheme over `𝒪_{F_w}`. The open ideals of `B` are NOT in
+general pullbacks of open ideals of `A₁` and `A₂`, so `h₁` and `h₂` cannot
+simply be evaluated at the ideal one is handed: one first has to shrink `I`
+to an open ideal that IS a pullback, which is where finiteness of the rings
+and `hemb` enter (over `ℚ` this is exactly what
+`exists_isOpen_ideal_subset_of_finite` was cut out of
+`isFlatAt_of_fibreProduct` to do). The gluing of the two prolongations is
+then Raynaud's: over the complete DVR `𝒪_{F_w}` a finite flat group scheme
+with the given generic fibre is determined by its geometric points, and a
+fibre product of two such along a common quotient — this is where the
+surjectivity `hf₂` is used, so that the quotient really is common — is
+again finite and flat.
+
+`hw : ℓ ∈ w` is what makes the clause meaningful: at a place not over `ℓ`
+the flatness clause of `IsHilbertHardlyRamified` is not asserted at all.
+
+FAITHFULNESS: the statement asks for the EXISTENCE of a prolongation over
+`𝒪_{F_w}` produced from two given ones, not for a descent of existence from
+`𝒪^nr`, so the `𝒪ᵥ` descent rule does not bite. Nothing here needs `F`
+totally real or `F/ℚ` Galois.
+
+References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
+(1974); Ramakrishna, Compositio 87 (1994), §1; Conrad–Diamond–Taylor, JAMS
+12 (1999), §2. -/
+theorem isHilbertFlatAt_of_fibreProduct (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
+    {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+    [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
+    {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+    [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
+    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀) (hf₂ : Function.Surjective f₂)
+    (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁) (hp₂ : Continuous p₂)
+    (hcomm : f₁.comp p₁ = f₂.comp p₂)
+    (hemb : Topology.IsEmbedding fun b : B => (p₁ b, p₂ b))
+    (hcart : ∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂)
+    {ρ : FramedGaloisRep F B (Fin 2)}
+    (w : HeightOneSpectrum (𝓞 F)) (hw : ((ℓ : ℕ) : 𝓞 F) ∈ w.asIdeal)
+    (h₁ : (framePushforward p₁ hp₁ ρ).IsFlatAt w)
+    (h₂ : (framePushforward p₂ hp₂ ρ).IsFlatAt w) :
+    ρ.IsFlatAt w :=
+  sorry
+
+/-- **The tame quadratic quotient at a place over `2` glues along a fibre
+product** (LEAF; Conrad–Diamond–Taylor — the second arithmetic residue of
+Schlessinger's H1/H2 over `F`, and the `F`-level twin of
+`Deformation.lean`'s `isTameAtTwo_of_fibreProduct`).
+
+**THIS STATEMENT CARRIES `hℓ5 : 5 ≤ ℓ`, AND MUST — see the faithfulness
+note on `isHilbertFibreProductClause` below.** The `ℓ = 3` case is not
+merely open: the `ℚ`-level twin's `ℓ = 3` case was REFUTED on 2026-07-26
+with an explicit counterexample, recorded in full in the block comment
+above `isTameAtTwo_of_fibreProduct` in `Deformation.lean`, and that
+counterexample is a counterexample HERE TOO at `F = ℚ`, because
+`IsHilbertHardlyRamified ℓ ℚ` is the `ℚ`-level condition place by place.
+Do not drop `hℓ5`, and do not restate this leaf without it.
+
+WHY IT IS NOT FORMAL. The tame clause is an EXISTENTIAL — SOME surjection
+`p` and SOME unramified quadratic `δ`. So `h₁` and `h₂` hand you a line
+over `A₁` and a line over `A₂` with no compatibility whatever over `A₀`,
+while a line over the fibre product is exactly a compatible PAIR of lines.
+Everything turns on a uniqueness statement forcing the two given choices to
+agree over `A₀`, and that uniqueness is what `hdet` and `hℓ5` buy:
+
+* `χ_ℓ` is unramified on `G_{F_w}` with `χ_ℓ(Frob_w) = 2^{f(w|2)}`, because
+  `ℓ` is odd, so the residual representation restricted to `G_{F_w}` is
+  never scalar and its two Jordan–Hölder characters `χ̄δ̄` and `δ̄` differ by
+  `χ̄|_{G_w}`;
+* those two characters can COINCIDE as candidates for the clause only when
+  `χ̄²|_{G_w} = 1`, i.e. when `2^{2f} ≡ 1 mod ℓ`; at `ℓ = 3` that holds for
+  every `w | 2` and every `F`, which is exactly the degeneracy the `ℚ`-level
+  counterexample exploits, and at `ℓ ≥ 5` the argument of the `ℚ`-level
+  proof — the two surjections are unimodular rows that are left
+  eigenvectors of `ρ(Frob_w)`, and `det − d₁d₂` is a unit — forces them
+  proportional over `A₀`, after which `hf₂` rescales one of them and
+  `hcart` glues them entrywise.
+
+FAITHFULNESS: as over `ℚ`, the two nontrivial conditions on the glued `δ`
+are an inertia-only containment and an IDENTITY of values, both on the true
+side of the `𝒪ᵥ` descent rule; no element of `Γ` and no `Γ`-wide
+rationality is demanded.
+
+References: Conrad–Diamond–Taylor, JAMS 12 (1999), §2; Mazur, *Deforming
+Galois representations*, MSRI Publ. 16 (1989), §§18–23; Schlessinger,
+Trans. AMS 130 (1968), Thm. 2.11. -/
+theorem isHilbertTameAtTwo_of_fibreProduct (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
+    {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+    [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
+    {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+    [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
+    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀) (hf₂ : Function.Surjective f₂)
+    (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁) (hp₂ : Continuous p₂)
+    (hcomm : f₁.comp p₁ = f₂.comp p₂)
+    (hemb : Topology.IsEmbedding fun b : B => (p₁ b, p₂ b))
+    (hcart : ∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂)
+    {ρ : FramedGaloisRep F B (Fin 2)}
+    (hdet : ∀ g : Γ F, ρ.det g = algebraMap ℤ_[ℓ] B
+      (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv))
+    (w : HeightOneSpectrum (𝓞 F)) (hw : ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal)
+    (h₁ : ∃ (p : (Fin 2 → A₁) →ₗ[A₁] A₁) (_ : Function.Surjective p)
+      (δ : GaloisRep (w.adicCompletion F) A₁ A₁),
+      (∀ g : Γ (w.adicCompletion F), ∀ v : Fin 2 → A₁,
+        p ((framePushforward p₁ hp₁ ρ).toLocal w g v) = δ g (p v)) ∧
+      localInertiaGroup w ≤ δ.ker ∧
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1)
+    (h₂ : ∃ (p : (Fin 2 → A₂) →ₗ[A₂] A₂) (_ : Function.Surjective p)
+      (δ : GaloisRep (w.adicCompletion F) A₂ A₂),
+      (∀ g : Γ (w.adicCompletion F), ∀ v : Fin 2 → A₂,
+        p ((framePushforward p₂ hp₂ ρ).toLocal w g v) = δ g (p v)) ∧
+      localInertiaGroup w ≤ δ.ker ∧
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1) :
+    ∃ (p : (Fin 2 → B) →ₗ[B] B) (_ : Function.Surjective p)
+      (δ : GaloisRep (w.adicCompletion F) B B),
+      (∀ g : Γ (w.adicCompletion F), ∀ v : Fin 2 → B,
+        p (ρ.toLocal w g v) = δ g (p v)) ∧
+      localInertiaGroup w ≤ δ.ker ∧
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 :=
+  sorry
 
 /-! #### The four deformation-condition clauses over `F`, and residual rigidity
 
@@ -1875,21 +2605,137 @@ theorem isHilbertBaseChangeClause (ℓ : ℕ) [Fact ℓ.Prime]
     (isHilbertHardlyRamified_baseChange ℓ F A hrank hρ)
     (TensorProduct.piScalarRight B A A (Fin 2))
 
-/-- **Gluing along fibre products** (LEAF; Schlessinger's H1 and H2).
+/-- **Gluing along fibre products** (Schlessinger's H1 and H2; PROVEN
+2026-07-26 over the two arithmetic leaves `isHilbertFlatAt_of_fibreProduct`
+and `isHilbertTameAtTwo_of_fibreProduct` stated above — the determinant and
+unramifiedness clauses are formal and are proven here).
 
-Over `ℚ` this is `Deformation.lean`'s leaf `isHardlyRamified_of_fibreProduct`.
-The mathematical content is that each clause of the local condition is
-detected componentwise: a homomorphism into `GL₂` of a fibre product is
-exactly a compatible pair of homomorphisms, the determinant clause and the
-order-`2` clause are equations that hold iff they hold in both components,
-and the inertia-kernel clauses are intersections. Only the flatness clause
-at `w ∣ ℓ` needs an argument — the fibre product of two finite flat group
-schemes over `𝒪_{F_w}` along a common quotient is again one, which is where
-the surjectivity of `f₂` and the embedding hypothesis are used. -/
-theorem isHilbertFibreProductClause (ℓ : ℕ) [Fact ℓ.Prime]
+Over `ℚ` this is `Deformation.lean`'s `isHardlyRamified_of_fibreProduct`,
+and the cut here is that theorem's, one leaf for one leaf.
+
+**FAITHFULNESS REPAIR, 2026-07-26: THIS THEOREM NOW CARRIES
+`hℓ5 : 5 ≤ ℓ`, WHICH IT DID NOT WHEN IT WAS FIRST STATED.** The previous
+version's docstring asserted that "only the flatness clause at `w ∣ ℓ`
+needs an argument" and that the order-`2` clause is "an equation that holds
+iff it holds in both components". **Both halves of that are wrong**, and
+the second is wrong in the dangerous direction:
+
+* the tame clause is not an equation but an EXISTENTIAL — some rank-one
+  quotient, some unramified quadratic character — so `h₁` and `h₂` supply
+  two lines with no compatibility over `A₀`, and gluing them needs a
+  uniqueness argument, not a componentwise reading;
+* that uniqueness argument is FALSE at `ℓ = 3`. The `ℚ`-level twin's
+  `ℓ = 3` case was refuted on 2026-07-26 with an explicit counterexample
+  over `K = ℚ(∛2, μ₃)` — `A₀ = 𝔽₃`, `A₁ = 𝔽₃[ε₁]`, `A₂ = 𝔽₃[ε₂]`,
+  `B = 𝔽₃[ε₁,ε₂]/(ε₁,ε₂)²` and
+  `ρ(g) = !![1, ε₂c'(g); ε₁c(g), χ(g)]` for `c` the Kummer cocycle of `2`
+  and `c' = χc` — verified exhaustively over the 27-element ring `B`, and
+  recorded in the block comment above `isTameAtTwo_of_fibreProduct` in
+  `Deformation.lean`. That configuration is a counterexample to the
+  `F`-level statement TOO, at `F = ℚ`: `IsHilbertHardlyRamified ℓ ℚ` is the
+  `ℚ`-level condition read place by place, and `ℚ` is a number field, so
+  nothing in `IsHilbertFibreProductClause ℓ F` excludes it.
+* the degeneracy is uniform in `F`, not special to `ℚ`: at a place `w ∣ 2`
+  of residue degree `f` one has `χ̄(Frob_w) = 2^f`, and the two candidate
+  lines both satisfy the clause exactly when `2^{2f} ≡ 1 mod ℓ`, which at
+  `ℓ = 3` holds for every `f`.
+
+The repair is the `ℚ`-level one and is deliberately made in the THEOREM
+rather than in the `Prop`-valued definition `IsHilbertFibreProductClause`:
+the definition is left untouched (so the machine leaf
+`exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses`, which takes
+it as a hypothesis, is unchanged), and `5 ≤ ℓ` is threaded down from the
+consumer `exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified`,
+which already carries it, through
+`exists_isWeaklyUniversal_hilbertDeformationDatum`. `IsHilbertHardlyRamified`
+itself is unchanged.
+
+WHAT IS PROVEN HERE. `hemb` gives the injectivity of `b ↦ (p₁ b, p₂ b)`,
+and both formal clauses are statements about VALUES, which is exactly what
+descends along an injection:
+
+* *determinant*: `det` commutes with `framePushforward`
+  (`det_framePushforward`), so the identity `ρ.det g = χ_ℓ(g)` may be
+  checked after applying `p₁` and `p₂`, where it is `h₁.det`/`h₂.det`
+  transported by the `ℤ_ℓ`-compatibilities `halg₁`/`halg₂`;
+* *unramifiedness*: by `framePushforward_apply_map` an endomorphism of
+  `Fin 2 → B` whose two projections are the identity is the identity, entry
+  by entry, so inertia at `w` is killed by `ρ` as soon as it is killed by
+  both projections.
+
+The determinant identity is proven before the case split because the tame
+leaf consumes it as `hdet` — it is the uniqueness input that makes the
+gluing of the two lines possible at all.
+
+References: Schlessinger, *Functors of Artin rings*, Trans. AMS 130 (1968),
+Thm. 2.11 (H1, H2); Mazur, *Deforming Galois representations*, MSRI Publ.
+16 (1989), §§18–23; Ramakrishna, Compositio 87 (1994), §1;
+Conrad–Diamond–Taylor, JAMS 12 (1999), §2. -/
+theorem isHilbertFibreProductClause (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F] :
-    IsHilbertFibreProductClause ℓ F :=
-  sorry
+    IsHilbertFibreProductClause ℓ F := by
+  intro A₀ _ _ _ _ _ _ A₁ _ _ _ _ _ _ A₂ _ _ _ _ _ _ B _ _ _ _ _ _
+    f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ halg₁ halg₂ hcomm hemb hcart ρ h₁ h₂
+  -- An element of `B` is determined by its two projections: this is the
+  -- only consequence of `hemb` the two formal clauses need.
+  have hinj : ∀ b b' : B, p₁ b = p₁ b' → p₂ b = p₂ b' → b = b' := by
+    intro b b' hb₁ hb₂
+    exact hemb.injective (by simp only [Prod.mk.injEq]; exact ⟨hb₁, hb₂⟩)
+  -- The determinant identity, reflected back from the two projections.
+  -- Used twice: as the `det` clause, and as `hdet` for the tame leaf.
+  have hdet : ∀ g : Γ F, ρ.det g = algebraMap ℤ_[ℓ] B
+      (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv) := by
+    intro g
+    refine hinj _ _ ?_ ?_
+    · have hcompat : p₁ (algebraMap ℤ_[ℓ] B
+          (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv)) =
+          algebraMap ℤ_[ℓ] A₁
+            (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+              (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv) := by
+        rw [← halg₁]; rfl
+      rw [← det_framePushforward p₁ hp₁ ρ g, h₁.det g, hcompat]
+    · have hcompat : p₂ (algebraMap ℤ_[ℓ] B
+          (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv)) =
+          algebraMap ℤ_[ℓ] A₂
+            (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+              (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv) := by
+        rw [← halg₂]; rfl
+      rw [← det_framePushforward p₂ hp₂ ρ g, h₂.det g, hcompat]
+  refine ⟨hdet, ?_, ?_, ?_⟩
+  · -- UNRAMIFIEDNESS: formal. An endomorphism of `Fin 2 → B` killed by
+    -- both projections is the identity, entrywise.
+    intro w hw2 hwl
+    have key : ∀ g : Γ F, framePushforward p₁ hp₁ ρ g = 1 →
+        framePushforward p₂ hp₂ ρ g = 1 → ρ g = 1 := by
+      intro g hg₁ hg₂
+      refine LinearMap.ext fun v => funext fun i => ?_
+      refine hinj _ _ ?_ ?_
+      · have hv := framePushforward_apply_map p₁ hp₁ ρ g v i
+        rw [hg₁] at hv
+        simpa using hv.symm
+      · have hv := framePushforward_apply_map p₂ hp₂ ρ g v i
+        rw [hg₂] at hv
+        simpa using hv.symm
+    refine ⟨?_⟩
+    intro σ hσ
+    have e₁ : (framePushforward p₁ hp₁ ρ).toLocal w σ = 1 :=
+      (h₁.isUnramified w hw2 hwl).localInertiaGroup_le hσ
+    have e₂ : (framePushforward p₂ hp₂ ρ).toLocal w σ = 1 :=
+      (h₂.isUnramified w hw2 hwl).localInertiaGroup_le hσ
+    show ρ.toLocal w σ = 1
+    rw [GaloisRep.toLocal_apply] at e₁ e₂ ⊢
+    exact key _ e₁ e₂
+  · -- FLATNESS at `ℓ`: Ramakrishna/Raynaud, the first arithmetic leaf.
+    intro w hw
+    exact isHilbertFlatAt_of_fibreProduct ℓ F f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ hcomm hemb
+      hcart w hw (h₁.isFlat w hw) (h₂.isFlat w hw)
+  · -- TAMENESS at `2`: Conrad–Diamond–Taylor, the second arithmetic leaf.
+    intro w hw
+    exact isHilbertTameAtTwo_of_fibreProduct ℓ hℓ5 F f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ hcomm
+      hemb hcart hdet w hw (h₁.isTameAtTwo w hw) (h₂.isTameAtTwo w hw)
 
 /-! #### Hermite–Minkowski over `F` — the cut of Schlessinger's H3
 
@@ -2258,32 +3104,6 @@ lemma framePushforward_apply {F : Type u} [Field F] [NumberField F]
   funext j
   rw [TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
   exact hsm _
-
-open scoped TensorProduct in
-/-- **`det` commutes with `framePushforward`** (PROVEN; the `F`-level twin of
-`Deformation.lean`'s `det_pushforwardFrame`): `LinearMap.det_conj` absorbs
-the framing identification and `LinearMap.det_baseChange` turns the
-base-changed determinant into `algebraMap B A` of the original, which is `ψ`
-by `RingHom.algebraMap_toAlgebra`.
-
-This is what lets the determinant clause of `isHilbertProLimitClause` be
-REFLECTED BACK from the levels to `R`. -/
-lemma det_framePushforward {F : Type u} [Field F] [NumberField F]
-    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
-    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
-    (ψ : B →+* A) (hψ : Continuous ψ) (ρ : FramedGaloisRep F B (Fin 2))
-    (g : Γ F) :
-    (framePushforward ψ hψ ρ).det g = ψ (ρ.det g) := by
-  letI : Algebra B A := ψ.toAlgebra
-  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
-    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
-  show LinearMap.det
-    ((((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g)) = _
-  rw [GaloisRep.conj_apply, LinearEquiv.conj_apply, LinearMap.comp_assoc,
-    LinearMap.det_conj]
-  show LinearMap.det (LinearMap.baseChange A (ρ g)) = _
-  rw [LinearMap.det_baseChange, RingHom.algebraMap_toAlgebra]
-  rfl
 
 open scoped TensorProduct in
 /-- **A flat prolongation descends through the base change to `A ⧸ ⊥`**
@@ -3096,9 +3916,19 @@ needs it and why no consumer loses anything — the residue field of the
 deformation problem is finite in every consumer of this module. The other
 two come by inheritance from the machine node, whose SECOND FAITHFULNESS
 REPAIR (2026-07-26) added them. The consumer at the bottom of this module
-already assumes all three, so nothing downstream changes. -/
+already assumes all three, so nothing downstream changes.
+
+**`hℓ5 : 5 ≤ ℓ` (added 2026-07-26) IS LOAD-BEARING AND IS SPENT ON THE
+GLUING CLAUSE**, exactly as at the `ℚ` level. It reaches this assembly from
+`isHilbertFibreProductClause`, whose tame-at-`2` residue is FALSE at
+`ℓ = 3` — see the faithfulness repair recorded on that theorem, and the
+explicit counterexample it points at. Nothing else here needs it, and the
+consumer at the bottom of this module,
+`exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified`, already
+carried `5 ≤ ℓ`, so the hypothesis costs nothing downstream. -/
 theorem exists_isWeaklyUniversal_hilbertDeformationDatum
-    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     [DiscreteTopology k] [Algebra ℤ_[ℓ] k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -3108,7 +3938,7 @@ theorem exists_isWeaklyUniversal_hilbertDeformationDatum
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) :
     ∃ 𝒟 : HilbertDeformationDatum ℓ F ρbar, 𝒟.IsWeaklyUniversal :=
   exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses ℓ F hirrF 𝒟₀
-    (isHilbertBaseChangeClause ℓ F) (isHilbertFibreProductClause ℓ F)
+    (isHilbertBaseChangeClause ℓ F) (isHilbertFibreProductClause ℓ hℓ5 F)
     (isHilbertFiniteFramesClause ℓ F) (isHilbertProLimitClause ℓ F)
     (isHilbertResidualRigidityClause F ρbar)
 
@@ -4746,7 +5576,7 @@ theorem exists_heckeDatum_isWeaklyUniversal_isTraceGenerated
   -- (1) the `F`-level universal ring, made trace-generated. Both steps are
   -- already cut leaves of this module; `𝒟₀` is what makes the first one apply.
   obtain ⟨𝒟₁, h𝒟₁⟩ :=
-    exists_isWeaklyUniversal_hilbertDeformationDatum ℓ F hirrF 𝒟₀
+    exists_isWeaklyUniversal_hilbertDeformationDatum ℓ hℓ5 F hirrF 𝒟₀
   obtain ⟨𝒟, h𝒟w, h𝒟t⟩ :=
     exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum ℓ hℓ5 F
       (natCast_eq_zero_of_finite_algebra ℓ k) hirrF 𝒟₁ h𝒟₁
@@ -4965,7 +5795,7 @@ theorem exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified
   -- the weakly-universal datum it returns is then upgraded to a trace-generated
   -- one, which is what step (4) below needs.
   obtain ⟨𝒟₀, h𝒟₀⟩ :=
-    exists_isWeaklyUniversal_hilbertDeformationDatum ℓ P.F P.irreducibleF 𝒟'
+    exists_isWeaklyUniversal_hilbertDeformationDatum ℓ hℓ5 P.F P.irreducibleF 𝒟'
   obtain ⟨𝒟, h𝒟, ht𝒟⟩ :=
     exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum ℓ hℓ5 P.F
       (natCast_eq_zero_of_finite_algebra ℓ k) P.irreducibleF 𝒟₀ h𝒟₀
