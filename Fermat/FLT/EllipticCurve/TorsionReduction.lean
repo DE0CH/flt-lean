@@ -39,8 +39,20 @@ because *any* elliptic curve over `𝔽₅` has fewer than `37` points.
 ## The two bricks
 
 `exists_injective_torsion_toReduction` (good reduction) and
-`exists_reduction_dvd_addOrderOf_of_jIntegral` (potentially good reduction) are
-the two open leaves of this module. Both are Silverman *AEC* VII; see their
+`exists_goodReductionHom_of_jIntegral` (potentially good reduction) are the two
+open leaves of this module.
+
+UPDATED 2026-07-26: the second brick used to be
+`exists_reduction_dvd_addOrderOf_of_jIntegral` itself. That declaration is now
+PROVEN, and the reduction-theoretic content it rested on was factored out into
+`exists_goodReductionHom_of_jIntegral` — "there is a group homomorphism
+`E(ℚ) → W(𝔽_ℓ)` onto an elliptic curve over `𝔽_ℓ` that does not kill
+prime-to-`ℓ` torsion". Everything downstream of that (Lagrange, and the passage
+from a point of order `p` to `p ∣ #W(𝔽_ℓ)`) is elementary and is proven. So the
+open frontier of this module is smaller than it was, but not easier: the two
+leaves below are the same missing theory in its good and potentially-good forms.
+
+Both are Silverman *AEC* VII; see their
 docstrings for the precise citation, the proof route, and an AUDIT of what this
 tree already has towards them. In short: `PointReduction.lean` has the
 reduction homomorphism on points and its kernel, sorry-free, and
@@ -68,6 +80,10 @@ injection into a contradiction:
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.SetTheory.Cardinal.NatCard
 public import Mathlib.Data.ZMod.Basic
+-- `Field (ZMod ℓ)` from `[Fact ℓ.Prime]`, which is what puts the `AddCommGroup`
+-- structure on `W.toAffine.Point` for `W` over `ZMod ℓ`: mathlib's group law on
+-- `Affine.Point` is stated for a field. `Data.ZMod.Basic` alone does not supply it.
+public import Mathlib.Algebra.Field.ZMod
 
 @[expose] public section
 
@@ -218,8 +234,97 @@ theorem exists_injective_torsion_toReduction
         (W.map (Int.castRingHom (ZMod ℓ))).toAffine.Point, Function.Injective f :=
   sorry
 
+/-- **Potentially good reduction at a tame prime, packaged as a reduction
+homomorphism injective on prime-to-`ℓ` torsion** (sorry leaf, opened 2026-07-26
+as the cut of `exists_reduction_dvd_addOrderOf_of_jIntegral`): if `ℓ ≥ 5` and
+`j(E)` is `ℓ`-integral, then there is an elliptic curve `W` over `𝔽_ℓ` and a
+group homomorphism `f : E(ℚ) → W(𝔽_ℓ)` such that a point killed by an integer
+prime to `ℓ` and lying in `ker f` is already `0`.
+
+THIS IS THE WHOLE REDUCTION-THEORETIC CONTENT of
+`exists_reduction_dvd_addOrderOf_of_jIntegral`; that theorem is now PROVEN over
+this leaf by Lagrange, and it is the only consumer. The cut was chosen here
+because everything downstream of "the reduction map exists and does not kill
+prime-to-`ℓ` torsion" is elementary group theory, while everything upstream is
+Silverman *AEC* VII and is a theory this repository does not have.
+
+WHY THE KERNEL CONDITION IS PHRASED WITH AN ARBITRARY `n` rather than as
+`Function.Injective f`. Injectivity on the nose is FALSE: `E(ℚ)` may have
+positive rank, and the kernel of reduction is an infinite pro-`ℓ` group, so `f`
+kills plenty. Injectivity holds exactly on the prime-to-`ℓ` torsion, and
+`∀ P n, ¬ ℓ ∣ n → n • P = 0 → f P = 0 → P = 0` is that statement written
+without having to name a torsion subgroup. Note `¬ ℓ ∣ n` already forces
+`n ≠ 0`, since `ℓ ∣ 0`, so no separate nondegeneracy hypothesis is needed.
+The `ℓ`-primary torsion really is NOT covered, and must not be: at a prime of
+good ordinary reduction the `ℓ`-torsion of the kernel is where the formal group
+lives.
+
+CLASSICAL STATEMENT AND ROUTE. Silverman *AEC* VII.5.5 plus VII.3.1, in four
+steps, of which the first three are the missing theory:
+
+1. `¬ ℓ ∣ E.j.den` says `v_ℓ(j) ≥ 0`, so `E/ℚ_ℓ` has POTENTIALLY GOOD REDUCTION
+   (*AEC* VII.5.5). This is an iff, and only this direction is needed.
+2. Because `ℓ ≥ 5` the ramification is TAME, and good reduction is attained over
+   a TOTALLY RAMIFIED extension `L/ℚ_ℓ` of degree `e = 12 / gcd(v_ℓ(Δ_min), 12)`,
+   so `e ∈ {1, 2, 3, 4, 6, 12}` and `gcd(e, ℓ) = 1`. Concretely, choosing
+   `u ∈ L` with `v_L(u) = v_ℓ(Δ_min) · e / 12` — an integer by the choice of
+   `e` — the variable change `(x, y) ↦ (u²x, u³y)` scales `Δ` by `u^{-12}` and
+   lands `v_L(Δ') = 0`.
+   TOTALLY RAMIFIED IS THE LOAD-BEARING WORD: it makes the residue field of `L`
+   equal to `𝔽_ℓ` rather than an extension of it, which is what keeps the
+   resulting point count inside the `(#𝔽_ℓ)² + 1` bound the consumers use. An
+   unramified or mixed extension would make this leaf true but useless.
+3. Reduction `W(L) → W(𝔽_ℓ)` on the good model is a group homomorphism whose
+   kernel is `E₁(L)`, the group of points of the formal group `Ê(𝔪_L)`, hence a
+   PRO-`ℓ` group (*AEC* VII.3.1 with VII.2.2): an element killed by an integer
+   prime to `ℓ` is therefore `0`. Composing with `E(ℚ) ⊆ E(ℚ_ℓ) ⊆ E(L) ≅ W(L)`
+   gives `f`.
+4. `W.IsElliptic` is exactly `v_L(Δ') = 0` read in the residue field.
+
+WHAT THIS TREE HAS, AND THE THREE GAPS. Identical audit to
+`exists_injective_torsion_toReduction` above, and the two leaves should be
+attacked together by whoever builds the theory — they are the same machinery in
+the good and the potentially-good case, and neither is a short composition:
+
+* `Fermat/FLT/KnownIn1980s/EllipticCurves/PointReduction.lean` (sorry-free) has
+  the reduction homomorphism on points, `redHom`, for a `ValuationSubring` and a
+  local ring hom to a field, plus `redFun_eq_zero_iff` identifying the kernel by
+  non-integrality of the abscissa. That is step 3's SHAPE but not its content.
+* `Fermat/FLT/KnownIn1980s/EllipticCurves/GoodReduction.lean` (sorry-free) has
+  Lutz–Nagell integrality, `torsion_abscissa_mem` and `torsion_ordinate_mem` —
+  but under `[NeZero (n : ResidueField R)]`, i.e. only for prime-to-`ℓ` torsion.
+  THAT IS EXACTLY THE RANGE THIS LEAF ASKS FOR, which is why this leaf is the
+  more reachable of the two: unlike its sibling it does NOT need the
+  formal-group `e < ℓ − 1` argument, only the pro-`ℓ` statement restricted to
+  the prime-to-`ℓ` part, which is formal.
+* GAP A (bookkeeping, a few hundred lines): nothing builds the `ℓ`-adic
+  valuation subring of `ℚ`, or of a totally ramified `L/ℚ_ℓ`, in the form
+  `redHom` wants. `MazurTorsion.lean`'s reductions go through
+  `AlgebraicClosure (adicCompletion ℚ v)` and land in `𝔽̄_ℓ`, whose infinite
+  residue field is useless for a cardinality bound — hence step 2's insistence
+  on a totally ramified `L`.
+* GAP B (real): step 1, the criterion `v(j) ≥ 0 ⟹ potentially good reduction`,
+  is in neither this tree nor mathlib.
+* GAP C (real): step 2, the tame totally-ramified model, needs minimal models
+  and `v(Δ_min)`, which mathlib's `EllipticCurve/Reduction.lean` does not
+  supply beyond `IsMinimal`.
+
+NOT VACUOUS. The hypotheses are satisfiable — `ℓ = 5`, `E = 14a4`, whose `j` is
+an integer — and there the conclusion is a genuine assertion, since `14a4(ℚ)`
+has a point of order `7`. Nor is the conclusion satisfiable by junk: the zero
+homomorphism does not work, because it would force every prime-to-`ℓ` torsion
+point of `E(ℚ)` to vanish. -/
+theorem exists_goodReductionHom_of_jIntegral
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {ℓ : ℕ} [Fact ℓ.Prime]
+    (hℓ5 : 5 ≤ ℓ) (hj : ¬ (ℓ ∣ E.j.den)) :
+    ∃ (W : WeierstrassCurve (ZMod ℓ)) (f : (E⁄ℚ).Point →+ W.toAffine.Point),
+      W.IsElliptic ∧
+        ∀ (P : (E⁄ℚ).Point) (n : ℕ), ¬ (ℓ ∣ n) → n • P = 0 → f P = 0 → P = 0 :=
+  sorry
+
 /-- **A rational point of prime order `p` survives reduction at any prime `ℓ ≥ 5`
-of potentially good reduction** (sorry leaf, opened 2026-07-26): if `j(E)` is
+of potentially good reduction** (PROVEN 2026-07-26 over the leaf
+`exists_goodReductionHom_of_jIntegral` above): if `j(E)` is
 `ℓ`-integral and `E/ℚ` carries a rational point of exact order `p ≠ ℓ`, then some
 elliptic curve over `𝔽_ℓ` has `p` dividing its number of points.
 
@@ -252,12 +357,37 @@ NOT VACUOUS. The conclusion is a genuine assertion about `𝔽_ℓ`-curves; it i
 the consumers that combine it with `#W(𝔽_ℓ) ≤ (#𝔽_ℓ)² + 1` to reach a
 contradiction. In particular the hypotheses are jointly satisfiable for small
 `p` — e.g. `p = 7`, `ℓ = 5`, `E = 14a4` — where the conclusion is true and
-non-trivial. -/
+non-trivial.
+
+DECOMPOSED 2026-07-26, and this declaration is now PROVEN. All of the
+reduction-theoretic content was factored out into the single leaf
+`exists_goodReductionHom_of_jIntegral` below; what remains here — the passage
+from "a homomorphism injective on prime-to-`ℓ` torsion" to the divisibility
+`p ∣ #W(𝔽_ℓ)` — is Lagrange plus `addOrderOf_map_dvd`, and is proven. See that
+leaf's docstring for the route and the audit. -/
 theorem exists_reduction_dvd_addOrderOf_of_jIntegral
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {ℓ p : ℕ} [Fact ℓ.Prime]
     (hℓ5 : 5 ≤ ℓ) (hp : p.Prime) (hpℓ : p ≠ ℓ) (hj : ¬ (ℓ ∣ E.j.den))
     (Q : (E⁄ℚ).Point) (hQ : addOrderOf Q = p) :
-    ∃ W : WeierstrassCurve (ZMod ℓ), W.IsElliptic ∧ p ∣ Nat.card W.toAffine.Point :=
-  sorry
+    ∃ W : WeierstrassCurve (ZMod ℓ), W.IsElliptic ∧ p ∣ Nat.card W.toAffine.Point := by
+  obtain ⟨W, f, hW, hker⟩ := E.exists_goodReductionHom_of_jIntegral hℓ5 hj
+  refine ⟨W, hW, ?_⟩
+  -- `ℓ ∤ p`: two distinct primes.
+  have hℓp : ¬ (ℓ ∣ p) := fun h => hpℓ ((Nat.prime_dvd_prime_iff_eq Fact.out hp).mp h).symm
+  -- `Q` is killed by `p`, which is prime to `ℓ`, so `Q` is not in the kernel of `f`.
+  have hpQ : p • Q = 0 := hQ ▸ addOrderOf_nsmul_eq_zero Q
+  have hfQ0 : f Q ≠ 0 := by
+    intro h
+    have hQ0 : Q = 0 := hker Q p hℓp hpQ h
+    rw [hQ0, addOrderOf_zero] at hQ
+    exact hp.one_lt.ne hQ
+  -- Its image therefore has order exactly `p`.
+  have hdvd : addOrderOf (f Q) ∣ p := hQ ▸ addOrderOf_map_dvd f Q
+  have hfQ : addOrderOf (f Q) = p := by
+    rcases (Nat.Prime.eq_one_or_self_of_dvd hp _ hdvd) with h1 | hpp
+    · exact absurd (AddMonoid.addOrderOf_eq_one_iff.mp h1) hfQ0
+    · exact hpp
+  -- Lagrange in the finite group `W(𝔽_ℓ)`.
+  exact hfQ ▸ addOrderOf_dvd_natCard (f Q)
 
 end WeierstrassCurve
