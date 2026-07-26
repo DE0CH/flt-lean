@@ -75,10 +75,13 @@ frame notion must carry a ring map `𝒪_D →+* O` intertwining `φ` with
 
 ## What is proven here
 
-Nothing. This module contains exactly one definition and two sorried
-leaves; its content is the cut. The definition carries no axioms of its
-own, so the leaves are statements about the geometric objects of
-`AbelianScheme.lean` and about nothing else.
+One lemma, `isIrreducible_map_of_restrictionSurjective`: irreducibility
+of a Galois representation descends along a restriction that preserves
+the image. It is what lets the consumer supply the irreducibility
+hypothesis that the first leaf needs at `λ` (see the FAITHFULNESS AUDIT
+there — the leaf was FALSE without it). Otherwise this module is the cut:
+one definition and two sorried leaves, both statements about the
+geometric objects of `AbelianScheme.lean` and about nothing else.
 -/
 module
 
@@ -136,6 +139,48 @@ def TatePt {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
   {y : ℕ → GeomFibrePt f x //
     (∀ n, y n ∈ (m.torsion x (I ^ n)).1) ∧ (∀ n, m.act π (y (n + 1)) = y n)}
 
+/-! ### Irreducibility along an image-preserving restriction -/
+
+/-- **Irreducibility descends to a subgroup with the same image** (PROVEN).
+
+If every value of `ρ` is already a value of `ρ.map f` — which is what the
+`hrestr` hypothesis of the twisted moduli problem asserts — then the two
+representations have literally the same invariant submodules, so the
+lattice of subrepresentations is the same and simplicity transfers.
+
+This is what carries the irreducibility hypothesis of
+`exists_twistedHilbertBlumenthalModuli_of_five_le` from `Γ_ℚ` down to
+`Γ_F`, where `exists_tateFrame_of_levelStructure` needs it; see the
+FAITHFULNESS AUDIT there for why it is needed. -/
+theorem isIrreducible_map_of_restrictionSurjective
+    {F : Type u} [Field F]
+    {k : Type u} [Field k] [TopologicalSpace k]
+    {W : Type v} [AddCommGroup W] [Module k W]
+    (ρ : GaloisRep ℚ k W) (f : ℚ →+* F)
+    (hrestr : ∀ g : Field.absoluteGaloisGroup ℚ,
+      ∃ h : Field.absoluteGaloisGroup F, (ρ.map f) h = ρ g)
+    (hirr : ρ.IsIrreducible) : (ρ.map f).IsIrreducible := by
+  have key : ∀ s : Submodule k W,
+      (∀ (h : Field.absoluteGaloisGroup F) ⦃v : W⦄, v ∈ s → (ρ.map f) h v ∈ s) ↔
+        (∀ (g : Field.absoluteGaloisGroup ℚ) ⦃v : W⦄, v ∈ s → ρ g v ∈ s) := by
+    intro s
+    constructor
+    · intro hs g v hv
+      obtain ⟨h, hh⟩ := hrestr g
+      have hmem := hs h hv
+      rwa [hh] at hmem
+    · intro hs h v hv
+      have hmem := hs (Field.absoluteGaloisGroup.map f h) hv
+      rwa [← GaloisRep.map_apply] at hmem
+  let e : Subrepresentation (ρ.map f).toRepresentation ≃o
+      Subrepresentation ρ.toRepresentation :=
+    { toFun := fun s => ⟨s.toSubmodule, (key _).mp s.apply_mem_toSubmodule⟩
+      invFun := fun s => ⟨s.toSubmodule, (key _).mpr s.apply_mem_toSubmodule⟩
+      left_inv := fun _ => rfl
+      right_inv := fun _ => rfl
+      map_rel_iff' := Iff.rfl }
+  exact (OrderIso.isSimpleOrder_iff e).mpr hirr
+
 /-! ### The two leaves of the Tate-module construction -/
 
 /-- **Tate modules are free of rank two, and reduce to the torsion**
@@ -173,12 +218,94 @@ Two remarks on the statement.
   an isomorphism of `Γ_F`-modules, so the `k'`-structure of `ρ'` and the
   `𝒪_D/I`-structure transported from `A[I]` are two embeddings of a
   finite field into the commutant of the Galois image, conjugate only up
-  to an automorphism of that field (Wedderburn–Malcev). Composing the
-  residue map with that automorphism is exactly what `ι₀` absorbs. It is
-  also why the two-dimensionality hypothesis `hV` cannot be dropped: see
-  the FAITHFULNESS AUDIT in
+  to an automorphism of that field. Composing the residue map with that
+  automorphism is exactly what `ι₀` absorbs — but ONLY under `hirr`; see
+  the audit below. It is also why the two-dimensionality hypothesis `hV`
+  cannot be dropped: see the FAITHFULNESS AUDIT in
   `nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`,
-  where dropping it makes the consumer FALSE. -/
+  where dropping it makes the consumer FALSE.
+
+THE FRAME REMEMBERS THE REAL MULTIPLICATION (2026-07-26, requested by
+the owner of `exists_weilFrobeniusSystem_of_mult`, whose leaf is FALSE
+without it). The conclusion also produces a ring map
+`j : 𝒪_D →+* O` together with `hj`, saying that the `O`-action
+transported to `TatePt` along `φ` EXTENDS the real multiplication
+`m.act`. Without that clause `O` ranges over every commutative subring
+of `End_{Γ_F}(T)` of the right `ℤ_q`-rank over which `T` is free of rank
+two, and when `A_x` has endomorphisms beyond `𝒪_D` such rings exist and
+are not `𝒪_{D,I}`: for `D = ℚ(√5)`, `A = E × E` with `𝒪_D` acting by the
+companion matrix of `X² - X - 1` and `q = 13` inert, `O = ℤ₁₃[N] ≅
+ℤ₁₃[ε]/(ε²)` with `N` nilpotent satisfies every other clause of this
+conclusion and admits NO injective ring map into `AlgebraicClosure ℚ₁₃`.
+With `j` and `hj` the image of `𝒪_D ⊗ ℤ_q` lies in `O`, and with the
+rank count and integral closedness `O = 𝒪_{D,I}`; then `τ.charFrob` is
+the reduced rank-two Frobenius polynomial that Weil/Faltings is about.
+This is free for the prover, who constructs `𝒪_{D,I}` anyway: `j` is its
+structure map and `hj` is how the action was built.
+
+FAITHFULNESS AUDIT (2026-07-26): **THE LEAF WAS FALSE AS STATED**, and
+is repaired here by the hypothesis `hirr : ρ'.IsIrreducible`.
+
+The refuted claim is the one recorded in the ASSEMBLY docstring of
+`nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`:
+that the `k'`-structure of `ρ'` and the `𝒪_D/I`-structure transported
+from `A[I]` are "two embeddings of `𝔽_q` into the commutant of the
+Galois image, conjugate up to an automorphism of `𝔽_q` by
+Wedderburn–Malcev". That is not a theorem. Wedderburn–Malcev and
+Noether–Skolem conjugate embeddings inside a SIMPLE algebra, and the
+commutant `C := End_{ℤ[Γ_F]}(A[I])` need not be simple; when it is
+commutative it has no inner automorphisms at all, and two embeddings of
+`𝔽_q` into it are genuinely inequivalent.
+
+COUNTEREXAMPLE (no hypothesis of the previous statement is violated).
+Let `A₀/ℚ` be a Hilbert–Blumenthal abelian surface with real
+multiplication by `𝒪_D`, `D` real quadratic, `A₀` without complex
+multiplication — e.g. `J₀(23)`, with `D = ℚ(√5)`. By Ribet's big-image
+theorem the mod-`I` image contains `SL₂(𝒪_D/I)` for all but finitely
+many `I`, and the `I`-adic image is open in `GL₂(𝒪_{D,I})`. Choose such
+an `I` with `q` INERT in `D`, so `k := 𝒪_D/I ≅ 𝔽_{q²}`. Let `F` be the
+fixed field of the preimage under `ρ̄ := ρ̄_{A₀,I}` of the diagonal
+torus and `A := A₀ ×_ℚ F`; then `ρ̄|_{Γ_F} = α ⊕ β` with `(α,β)`
+surjecting onto `{(a, a⁻¹) : a ∈ 𝔽_{q²}ˣ}`.
+
+Take `V := A[I]` as an abelian group, `e := id`, and give `V` the
+`k' := 𝔽_{q²}`-structure `λ ∗ (a₁, a₂) := (λ a₁, λ^q a₂)` in the
+eigenbasis. It commutes with the diagonal Galois action, so `e` is an
+additive `Γ_F`-equivariant bijection onto `(m.torsion x I).1`,
+`Module.rank k' V = 2`, and `ρ'` is the `k'`-linear representation
+`diag(α, β^q)`. Every hypothesis of the previous statement holds.
+
+But openness of the `I`-adic image forces `End_{ℤ[Γ_F]}(T_I A) =
+𝒪_{D,I}`, so any frame forces `O ≅ 𝒪_{D,I}` and `charpoly (τ σ)` to be
+a `ψ`-twist of the canonical one, `ψ ∈ Aut(𝒪_{D,I}/ℤ_q)`; and every ring
+map `ι₀ : O →+* k'` is the residue map followed by a field isomorphism
+`k ≅ k'`. So the achievable residual characteristic polynomials are
+exactly `(X - θα)(X - θβ)` for `θ ∈ Aut(k)`, while the conclusion
+demands `(X - α)(X - β^q)` at every `w`. Pick `w` with `α(Frob_w)` of
+order `q² - 1` (Chebotarev): `θ = id` would need `β = β^q` and
+`θ = Frob` would need `α = α^q`, both false. No `ι₀` exists.
+
+THE REPAIR, and why it is exactly right. If `ρ'` is irreducible then
+`A[I]` is a semisimple `𝔽_p[Γ_F]`-module (`k'/𝔽_p` is separable, so
+`J(k'[Γ]) = k' ⊗ J(𝔽_p[Γ])`) and the `𝒪_D/I`-structure representation
+`ρ̄` is irreducible as well: a split `ρ̄ = α ⊕ β` with `α ≠ β` has
+commutant `k × k` and a scalar `ρ̄` has commutant `M₂(k)`, and in both
+every field structure of order `#k` makes `ρ'` REDUCIBLE. With `ρ̄`
+irreducible, `C` is either a finite field — when `ρ̄` is irreducible but
+not absolutely irreducible — or a central simple algebra over its centre
+in which `k` is self-centralizing; in both cases the two embeddings of
+`k` into `C` differ by an inner automorphism of `C` composed with an
+element of `Aut(k)`. The inner automorphism is an additive
+`Γ_F`-equivariant change of frame, absorbed by `φ`; the field
+automorphism is absorbed by `ι₀`. That is the argument the previous
+docstring intended, and irreducibility is exactly what makes it
+available.
+
+`hirr` costs the consumers nothing: at `𝔭` the moduli condition
+`IsTwistedHilbertBlumenthalModuli` already carries `ρbarp.IsIrreducible`,
+and at `λ` the irreducibility of `ρbar` is a hypothesis of
+`exists_twistedHilbertBlumenthalModuli_of_five_le`, transported to `Γ_F`
+along `hrestr` by `isIrreducible_map_of_restrictionSurjective` above. -/
 theorem exists_tateFrame_of_levelStructure
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -193,6 +320,7 @@ theorem exists_tateFrame_of_levelStructure
     {V : Type v} [AddCommGroup V] [Module k' V] [Module.Finite k' V] [Module.Free k' V]
     (hV : Module.rank k' V = 2)
     (ρ' : GaloisRep F k' V)
+    (hirr : ρ'.IsIrreducible)
     (e : V → GeomFibrePt f x)
     (headd : ∀ v v' : V, e (v + v') = ab.add (e v) (e v'))
     (heinj : Function.Injective e)
@@ -204,14 +332,17 @@ theorem exists_tateFrame_of_levelStructure
       (_ : Algebra ℤ_[q] O) (_ : IsLocalRing O) (_ : Module.Finite ℤ_[q] O)
       (_ : Module.Free ℤ_[q] O) (_ : IsModuleTopology ℤ_[q] O)
       (τ : GaloisRep F O (Fin 2 → O))
-      (φ : (Fin 2 → O) → TatePt m x I π) (ι₀ : O →+* k'),
+      (φ : (Fin 2 → O) → TatePt m x I π) (ι₀ : O →+* k')
+      (j : NumberField.RingOfIntegers D →+* O),
       (∀ (u u' : Fin 2 → O) (n : ℕ),
         (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n)) ∧
       Function.Bijective φ ∧
       (∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
         (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n)) ∧
-      ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-        (τ.charFrob w).map ι₀ = ρ'.charFrob w :=
+      (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+        (τ.charFrob w).map ι₀ = ρ'.charFrob w) ∧
+      ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+        (φ (j a • u)).1 n = m.act a ((φ u).1 n) :=
   sorry
 
 /-- **The Frobenius characteristic polynomials of the Tate modules form
