@@ -5518,11 +5518,10 @@ meets `R'²` only inside `𝔪'R'²`.
 THE `ℚ`-LEVEL ROUTE, which is the one to port, and where the arithmetic
 enters. Pick `g₀ ∈ Γ F_w` with `χ_ℓ(g₀) ≢ 1 (mod ℓ)` — over `ℚ_2` this is
 `Deformation.lean`'s `exists_cyclotomicCharacter_padicTwo_sub_one_isUnit`,
-concretely a Frobenius, where `χ_ℓ = 2`; over a general `F_w ∣ 2` the same
-statement holds because `F_w` is a finite extension of `ℚ_2` and so has no
-primitive `ℓ`-th root of unity for `ℓ ≥ 5`. Cayley–Hamilton against the
-unimodular eigenrow forces `det ρ'(g₀) = δ(g₀)·tr ρ'(g₀) − 1`, so the two
-eigenvalues of `ρ'(g₀)` are `δ(g₀)` and `κ(g₀)` with
+concretely a Frobenius, where `χ_ℓ = 2` and `1 − 2 = −1` is a unit.
+Cayley–Hamilton against the unimodular eigenrow then forces
+`det ρ'(g₀) = δ(g₀)·tr ρ'(g₀) − 1`, so the two eigenvalues of `ρ'(g₀)` are
+`δ(g₀)` and `κ(g₀)` with
 `(δ(g₀) − κ(g₀))·δ(g₀) = 1 − det ρ'(g₀) = 1 − χ_ℓ(g₀)`, a UNIT. The
 eigen-projector `ρ'(g₀) − κ(g₀)` is then defined over `R'` with unit trace,
 so one of its two rows is unimodular over the local ring `R'`, and each of
@@ -5530,6 +5529,35 @@ its rows is proportional to the frame row by one of the two
 eigen-equations — which transfers the equivariance for ALL of `Γ F_w`, not
 just for `g₀`. In the counterexample above the two characters coincide,
 which is exactly what `χ_ℓ(g₀) ≠ 1` excludes.
+
+**THE ARITHMETIC INPUT DOES *NOT* TRANSPORT VERBATIM — READ THIS BEFORE
+STARTING** (flagged 2026-07-26 at the cut, by the author of the consumer).
+The step "pick `g₀` with `χ_ℓ(g₀) ≢ 1`" is available over `ℚ_2` and is
+**NOT** available over an arbitrary `F_w ∣ 2`. `χ_ℓ mod ℓ` is trivial on
+`Γ F_w` exactly when `μ_ℓ ⊆ F_w`, and `ℚ_2(μ_ℓ)` is the UNRAMIFIED
+extension of `ℚ_2` of degree `ord_ℓ(2)`, which is finite — so any `F` whose
+completion at `w` contains it (e.g. `ℓ = 7` and residue degree `3`, where
+`χ_ℓ(Frob) = 2³ = 8 ≡ 1 mod 7`) kills the argument. Nothing in
+`HilbertDeformationDatum` excludes such an `F`: the totally real field here
+is whatever potential modularity produced.
+
+So a prover has three honest options, in order of preference, and should
+NOT quietly re-derive the `ℚ` argument and hope:
+
+1. find a different `g₀ ∈ Γ F_w` separating the two residual eigenvalues
+   (the condition is exactly `χ_ℓ(g₀) ≢ 1`, so this is the same obstruction
+   — it is a statement about `μ_ℓ ⊆ F_w`, not about the choice of `g₀`);
+2. prove the descent when `μ_ℓ ⊆ F_w` by a route that does not need the two
+   residual characters to be distinct, using instead the tame datum of `𝒟`
+   itself and the fact that `δ` is already `R'`-valued;
+3. REFUTE it with an explicit `F`, `w`, `𝒟` and descent for which the
+   `Γ F_w`-stable line meets `R'²` only inside `𝔪'R'²`. That is a fully
+   successful outcome and MUST be reported rather than repaired by
+   weakening this statement, because the consumer
+   `exists_framedGaloisRep_hilbertTraceSubring` asserts the full
+   `IsHilbertHardlyRamified` package: a refutation here is a refutation of
+   the cut one level up, and possibly of the `F`-level shape of Carayol's
+   Théorème 1 as this module states it.
 
 FAITHFULNESS: the conclusion quantifies over `localInertiaGroup w` and MUST
 NOT be widened to `Γ F` or even to `Γ F_w` — the quotient character is
