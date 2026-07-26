@@ -4588,14 +4588,19 @@ theorem WeierstrassCurve.no_torsion_order_24 (E : WeierstrassCurve ℚ)
   simp only [Finset.mem_insert, Finset.mem_singleton] at h
   omega
 
-/-- **No rational point of order `25`** (sorry node — irreducible
-literature citation): `X_1(25)` has genus `12` and no non-cuspidal
+/-- **`X_1(25)` in Tate coordinates: the origin never has order `25`**
+(sorry node — literature citation; RESTATED in Tate coordinates and
+RE-AUDITED 2026-07-26, see the REFUTED block below): `X_1(25)` has genus
+`12` and no non-cuspidal
 rational point (subsumed in Mazur 1977, Thm 8). The `X_0` shortcut is
 NOT available at this level: a rational cyclic `25`-isogeny does exist
 (the class `11a` contains one), so `X_0(25)` has non-cuspidal rational
 points and only the `X_1` statement excludes an order-`25` point.
 
-IRREDUCIBLE at this mathlib pin (audit 2026-07-25, re-audited the same
+IRREDUCIBLE at this mathlib pin — meaning no OTHER node of this file
+implies it, which is still true; but NOT "no shallower node exists",
+which was the 2026-07-25 verdict and is refuted below (audit
+2026-07-25, re-audited the same
 day when level `27` — the other level of Kenku's list where `X_0` still
 bites — was reduced to its `X_0(27)` `j`-determination). The
 genus `12` is the standard formula
@@ -4644,21 +4649,118 @@ there, a prescribed `j`-invariant — becomes a one-variable polynomial
 equation that can be refuted by a congruence. Here the descent by one
 prime power gives only a point of order `5`, i.e. the genus-`0` line
 `b = c` of `X_1(5)`; but the residual condition that the order-`5` point
-be `5` times a rational point of order `25` is `X_1(25)` itself, of
-genus `12`, and there is no auxiliary hypothesis (no `j`-invariant, no
-isogeny obstruction — see the `X_0(25)` bullet above) to cut it down to
-a curve of genus `0`. The intermediate quotients of `X_1(25)` by the
-diamond operators do not help either: the only one of genus `0` is the
-index-`2` quotient, which is the level at which a point of order `25` is
-remembered merely up to `(ℤ/25)^×`-multiples of order dividing `5`, and
-that structure is realised by `11a1`'s `25`-isogeny (PARI/GP `ellisomat`
-on `[0,-1,1,-10,-20]` returns the degree matrix `[1,5,5; 5,1,25;
-5,25,1]`, recomputed 2026-07-25). So level `25` remains irreducible for
-the reason recorded above, and is the only level of the eleven for which
-no shallower node is known. -/
+be `5` times a rational point of order `25` is `X_1(25)` itself, and
+there is no auxiliary hypothesis (no `j`-invariant, no isogeny
+obstruction — see the `X_0(25)` bullet above) to cut it down to a curve
+of genus `0`. That much stands.
+
+**REFUTED 2026-07-26: "the only intermediate quotient is the genus-`0`
+one, so `25` is the only level of the eleven with no shallower node".**
+Both halves are wrong, and what replaces them is a complete classical
+proof with every number checked. All computations below are Magma —
+untrusted searcher, statement check only, never a proof.
+
+* *There IS a genus-`4` intermediate curve.* The diamond group is
+  `(ℤ/25)^× / ±1 ≅ ℤ/10`, so the curves between `X_1(25)` and `X_0(25)`
+  are the `X_Δ(25)` for the subgroups `Δ ⊆ (ℤ/25)^×` containing `−1`:
+  `{±1}`, `⟨7⟩ = {±1, ±7}`, the squares, and everything. Each genus is
+  `Σ_χ dim S_2(25, χ)` over the `χ` trivial on `Δ`, and
+  `dim S_2(25, χ) = 0, 0, 1, 2` for `χ` even of order `1, 2, 5, 10`
+  (total `0 + 0 + 4·1 + 4·2 = 12 = g(X_1(25))` ✓). So the four genera
+  are `12`, **`4`**, `0`, `0`. The earlier audit found the genus-`0`
+  quotient and stopped; the genus-`4` curve `X_{⟨7⟩}(25)` — a point of
+  order `25` remembered up to `P ↦ ±P, ±7P` — was missed.
+  Confirmed twice more, independently of modular symbols. (i) The
+  congruence-subgroup genus formula: `Γ_{⟨7⟩}(25)` has index
+  `[SL₂(ℤ) : Γ_1(25)]/|⟨7⟩| = 600/4 = 150` in `PSL₂(ℤ)` (unchanged by
+  `±`, as `−I ∈ Γ_{⟨7⟩}`), `ν₂ = 10`, `ν₃ = 0`, `ν_∞ = 14`, giving
+  `1 + 150/12 − 10/4 − 14/2 = 4`. (ii) Riemann–Hurwitz for the
+  degree-`2` diamond quotient `X_1(25) → X_{⟨7⟩}(25)`: `⟨7⟩` fixes
+  `(E, P)` exactly when some automorphism `α` of `E` has `αP = 7P`,
+  which forces `α = i` and `j = 1728` (since `7² = 49 ≡ −1 mod 25`),
+  and there are `10` such points; `2·12 − 2 = 2(2g − 2) + 10` gives
+  `g = 4`.
+* *`J_1(25)` has Mordell–Weil rank `0`.* It is `ℚ`-isogenous to
+  `A₄ × A₈`, of dimensions `4` and `8` (the quintic- and
+  order-`10`-character parts), and `L(A, 1) ≠ 0` for BOTH:
+  `LRatio(A, 1) = 1/5041` and `1/10272025`. By Kolyvagin–Logachev
+  (or Kato) the rank is `0`, so `J_1(25)(ℚ)` is FINITE.
+  `Jac X_{⟨7⟩}(25) = A₄`, hence also rank `0`.
+* *The point count then closes the level outright — no Chabauty.*
+  `X_1(25)` has good reduction away from `5`, and
+  `#X_1(25)(𝔽_p) = p + 1 − Tr(T_p ∣ S_2(Γ_1(25))) = 10` for
+  `p = 2, 3, 7, 13`. Its rational cusps are exactly the `φ(25)/2 = 10`
+  carried by the Néron `25`-gon (the point of order `25` meets every
+  component, so the pair is rational); the `10` on the `1`-gon `𝔾_m`
+  have `P ∈ μ₂₅` and form ONE Galois orbit over `ℚ(ζ₂₅)⁺`, and the `8`
+  of denominator `5` lie over the irrational denominator-`5` cusps of
+  `X_0(25)`. Embedding `X_1(25)(ℚ) ↪ J_1(25)(ℚ)` at a rational cusp and
+  reducing at the odd good prime `3` (injective on torsion) gives
+  `#X_1(25)(ℚ) ≤ #X_1(25)(𝔽_3) = 10 = #(rational cusps)`. So every
+  rational point is a cusp — which IS this node. The genus-`4` quotient
+  gives the same conclusion independently:
+  `#X_{⟨7⟩}(25)(𝔽_3) = #X_{⟨7⟩}(25)(𝔽_13) = 5`, and it has exactly `5`
+  rational cusps (`⟨7⟩/±` acts freely on the `10`, since `7P = ±P` is
+  impossible for `P` of order `25`, and the other cusp orbits stay
+  irrational because they stay irrational already on `X_0(25)` or are
+  permuted transitively by `Gal(ℚ(ζ₂₅)⁺/ℚ)`).
+* *Cross-check that the pipeline is sound.* The identical computation
+  returns `#X_1(11)(𝔽_3) = 5 = φ(11)/2` and `#X_1(13)(𝔽_3) = 6 =
+  φ(13)/2`, reproducing Billing–Mahler and Mazur–Tate exactly.
+* *Cross-check of the genus-`4` claim itself.* It predicts that the
+  `11a` cyclic `25`-isogeny does NOT give a non-cuspidal rational point
+  of `X_{⟨7⟩}(25)`: its kernel character must have order `5`, `10` or
+  `20`, not dividing `4`. Since the only cyclic quartic field
+  unramified outside `{5, 11}` is `ℚ(ζ₅)`, that is testable, and it
+  holds — the torsion of `11a1, 11a2, 11a3` over `ℚ(ζ₅)` is
+  `ℤ/5 × ℤ/5`, `ℤ/5`, `ℤ/5`, with no `25`-torsion anywhere. (This also
+  corrects the old text: the cyclic `25`-isogeny of the class joins
+  `11a2` and `11a3`; `11a1` itself has only the two `5`-isogenies, and
+  its `ℤ/5 × ℤ/5` over `ℚ(ζ₅)` is exactly the split `ℤ/5 ⊕ μ₅` that
+  makes the class work.)
+
+**THIS IS ONE MISSING THEORY FOR SEVEN LEVELS, NOT ONE.** Every
+`ℚ`-simple factor of `J_1(N)` has `L(1) ≠ 0` for
+`N ∈ {11, 13, 16, 17, 18, 19, 21, 24, 25, 27}`, and
+`min_p #X_1(N)(𝔽_p) = φ(N)/2 = #(rational cusps)` for
+`N ∈ {11, 13, 17, 19, 21, 25, 27}`. So the single theory — `X_1(N)/ℚ`
+with its cusps, `rank J_1(N)(ℚ) = 0` from `L(1) ≠ 0`, and injectivity
+of torsion under good reduction — closes levels
+`11, 13, 17, 19, 21, 25, 27` in one blow, i.e. seven of this file's
+sorried nodes rather than this one. It breaks at `37` in a precisely
+identifiable place: `J_1(37)` has a rank-`1` factor (`LRatio(1) = 0`,
+the elliptic curve `37a`), so `37, 43, 67, 163` need the
+winding/Eisenstein quotient instead of the whole Jacobian. None of it
+exists here: `grep ModularCurve` over mathlib returns nothing, and
+`~/cs/FLT` takes the Mazur bound as a bare `axiom`.
+
+STATED IN TATE COORDINATES (2026-07-26), matching levels `11, 13, 17,
+19, 37, 43, 67, 163`. The general form of this level — no rational
+point of order `25` on ANY elliptic curve over `ℚ` — is
+`no_torsion_order_25` just below, and is PROVEN from this node. Here
+the curve is the explicit two-parameter family `tateNormalForm b c` and
+the point is the origin, so this node IS the plane model of `X_1(25)`
+in the `(b, c)`-coordinates rather than a statement quantified over all
+curves. The passage between the two is the PROVEN
+`exists_tateNormalForm`; everything above about genus, witnesses and
+citation is unchanged by the restatement. -/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_25 (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 25 :=
+  sorry
+
+/-- **No rational point of order `25`** (PROVEN 2026-07-26 from the
+Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
+a point of order `25 ≥ 4` puts its curve in Tate normal form at the
+origin, so the general statement follows from the one about the
+explicit family. All the mathematical content is in the node above,
+whose docstring carries this level's citation and audit. -/
 theorem WeierstrassCurve.no_torsion_order_25 (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 25 :=
-  sorry
+  WeierstrassCurve.no_torsion_order_of_tateNormalForm (by norm_num)
+    (fun b c hell h00 =>
+      @WeierstrassCurve.tateNormalForm_origin_order_ne_25 b c hell h00) E Q
 
 /-! ### `X_0(27)` is the Fermat cubic — the Mordell–Weil half, PROVEN
 
