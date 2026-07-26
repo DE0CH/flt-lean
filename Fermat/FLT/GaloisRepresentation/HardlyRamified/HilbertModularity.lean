@@ -198,9 +198,11 @@ The chain, in the order the assembly uses it:
    without it.
    DECOMPOSED 2026-07-26 along the `ℚ`-level architecture and now PROVEN
    as composition glue over `exists_hilbertTraceDescent` (itself PROVEN)
-   and the two arithmetic leaves of the Carayol package,
+   and the two arithmetic strata of the Carayol package,
    `exists_isLocalRing_hilbertTraceSubring` (Lemme 1 — the trace subring
-   is again a coefficient ring; the content is NOETHERIANITY) and
+   is again a coefficient ring; the content is NOETHERIANITY, and it is
+   PROVEN 2026-07-26 as soft glue over the single arithmetic leaf
+   `fg_comap_maximalIdeal_hilbertTraceSubring`) and
    `exists_framedGaloisRep_hilbertTraceSubring` (Théorème 1 — the
    conjugation of `𝒟.ρ` into `GL₂(R')`). The `ℚ` level's THIRD leaf, the
    Chebotarev density step, has no `F`-level counterpart: this module's
@@ -289,6 +291,19 @@ import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 -- `HenselianLocalRing`, for the Teichmüller-root existence lemma
 -- `exists_mem_teichmullerRootSet_map_eq` in the Carayol trace-descent section.
 import Mathlib.RingTheory.Henselian
+-- proof-only: `ProfiniteLocal.compactSpace_of_isAdic_of_finite_quotient`, which
+-- makes the coefficient ring of a `HilbertDeformationDatum` PROFINITE and hence
+-- its closed trace subring compact — the hypothesis of
+-- `ProfiniteLocalNoetherian.isAdic_isAdicComplete_of_isOpen_of_fg` in
+-- `exists_isLocalRing_hilbertTraceSubring` below. `ProfiniteLocal.lean` imports
+-- only mathlib, so it is well outside the circularity guard.
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.ProfiniteLocal
+-- `CompleteLocalNoetherian.isNoetherianRing_of_isAdicComplete_of_fg` (Stacks
+-- 05GH), the "complete + `𝔪` finitely generated ⟹ Noetherian" step of
+-- `exists_isLocalRing_hilbertTraceSubring`. `ProfiniteLocalNoetherian.lean`
+-- reaches that module only through a PRIVATE `import`, which is not
+-- re-exported, so a `public import` here is Lean's own remedy.
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.CompleteLocalNoetherian
 
 @[expose] public section
 
@@ -5587,7 +5602,8 @@ already carries at the `ℚ` level, declaration for declaration:
 | `Deformation.lean` (`ℚ`) | here (`F`) | status |
 | --- | --- | --- |
 | `traceSubring` | `hilbertTraceSubring` | definition |
-| `exists_isLocalRing_traceSubring` | `exists_isLocalRing_hilbertTraceSubring` | LEAF |
+| `exists_isLocalRing_traceSubring` | `exists_isLocalRing_hilbertTraceSubring` | PROVEN |
+| `fg_comap_maximalIdeal_traceSubring` | `fg_comap_maximalIdeal_hilbertTraceSubring` | LEAF |
 | `exists_framedGaloisRep_traceSubring` | `exists_framedGaloisRep_hilbertTraceSubring` | LEAF |
 | `traceSubring_eq_top_of_charFrob_map` | `hilbertTraceSubring_eq_top_of_charpoly_map` | PROVEN |
 | `exists_isTraceGenerated_ringHom_of_forall_trace_mem` | `exists_hilbertTraceDescent` | PROVEN |
@@ -5606,10 +5622,16 @@ element — so the generating set literally contains every trace and the
 hypothesis is `charpoly_coeff_mem_hilbertTraceSubring`, a one-liner. The
 `ℚ`-level Chebotarev leaf simply does not arise.
 
-**THE FOUR COMMUTATIVE-ALGEBRA HELPERS BELOW ARE LOCAL COPIES**, for the
+**THE COMMUTATIVE-ALGEBRA HELPERS BELOW ARE LOCAL COPIES**, for the
 same reason as `rank_finTwoPi`, `teichmullerRootSet` and `framePushforward`
 above: their originals are in `Deformation.lean`, which is DOWNSTREAM. That
-makes EIGHT duplicated helpers in this module now. Hoisting the shared
+makes ELEVEN duplicated helpers in this module now — the three added
+2026-07-26 with the proof of `exists_isLocalRing_hilbertTraceSubring`
+(`isUnit_of_isClosed_subring_of_notMem_maximalIdeal`,
+`isLocalRing_of_isClosed_subring_of_finite_residueField`,
+`maximalIdeal_eq_comap_of_isClosed_subring_of_finite_residueField`) carry
+names DIFFERENT from their `ℚ`-level originals on purpose, both files
+living in namespace `GaloisRepresentation`. Hoisting the shared
 originals into `Defs.lean` is the right fix and needs a single owner across
 both files; it is not done here because `Deformation.lean` has concurrent
 owners.
@@ -5883,8 +5905,244 @@ def HilbertDeformationDatum.IsTraceDescent {ℓ : ℕ} [Fact ℓ.Prime]
     𝒟.π.comp ι = 𝒟'.π ∧
     ∀ g : Γ F, ((𝒟'.ρ g).charpoly).map ι = (𝒟.ρ g).charpoly
 
-/-- **Carayol's Lemme 1 at the `F` level** (LEAF — new 2026-07-26; the
-`F`-level twin of `Deformation.lean`'s `exists_isLocalRing_traceSubring`,
+/-- **The residual field of an `F`-level datum has characteristic `ℓ`**
+(PROVEN, elementary): the coefficient ring of a `HilbertDeformationDatum`
+is a `ℤ_ℓ`-algebra surjecting onto `k`, so `k` receives `ℤ_ℓ` as well, and
+a FINITE field receiving `ℤ_ℓ` has characteristic `ℓ`
+(`natCast_eq_zero_of_finite_algebra`).
+
+This is what lets `exists_isLocalRing_hilbertTraceSubring` below feed the
+side condition `hlk` to its arithmetic leaf without carrying an
+`[Algebra ℤ_[ℓ] k]` binder of its own: the datum already supplies one. -/
+lemma natCast_eq_zero_of_hilbertDeformationDatum (ℓ : ℕ) [Fact ℓ.Prime]
+    {F : Type u} [Field F] [NumberField F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V} (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
+    ((ℓ : ℕ) : k) = 0 := by
+  letI : Algebra ℤ_[ℓ] k := (𝒟.π.comp (algebraMap ℤ_[ℓ] 𝒟.R)).toAlgebra
+  exact natCast_eq_zero_of_finite_algebra ℓ k
+
+open Filter Topology in
+/-- **A closed subring of an adically topologized local ring with finite
+residue field contains the inverse of every element of its own outside
+`𝔪`** (PROVEN; NINTH local copy of a `Deformation.lean` helper — the
+original is `isUnit_of_isClosed_of_notMem_maximalIdeal`, which lives
+DOWNSTREAM of this module and so cannot be imported. The name differs from
+the `ℚ`-level one deliberately: both files live in namespace
+`GaloisRepresentation`, and a silently colliding duplicate has broken
+`Deformation.lean` through the re-exported namespace once already.)
+
+The residue of `x` is a nonzero element of the FINITE field `A ⧸ 𝔪`, so
+`x ^ (q − 1) = 1 − y` with `q = |A ⧸ 𝔪|` and `y ∈ 𝔪 ∩ C`; the geometric
+series `∑ yⁱ`, whose partial sums all lie in `C`, converges in `A` to the
+inverse of `1 − y`, because `y ^ N ∈ 𝔪 ^ N → 0` for the adic topology.
+`C` is closed, so that inverse lies in `C`, and
+`x⁻¹ = x ^ (q − 2) · (x ^ (q − 1))⁻¹`.
+
+No completeness of `A` is used: the limit is exhibited as an inverse that
+already exists in the LOCAL ring `A`. -/
+theorem isUnit_of_isClosed_subring_of_notMem_maximalIdeal {A : Type*}
+    [CommRing A] [TopologicalSpace A] [IsLocalRing A]
+    [Finite (IsLocalRing.ResidueField A)]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal A))
+    {C : Subring A} (hC : IsClosed (C : Set A)) (x : C)
+    (hx : (x : A) ∉ IsLocalRing.maximalIdeal A) : IsUnit x := by
+  classical
+  haveI : Fintype (IsLocalRing.ResidueField A) := Fintype.ofFinite _
+  set q := Fintype.card (IsLocalRing.ResidueField A)
+  have hq1 : 0 < q - 1 := Nat.sub_pos_of_lt Fintype.one_lt_card
+  -- `x ^ (q - 1) = 1 - y` with `y ∈ 𝔪 ∩ C`
+  have hres : IsLocalRing.residue A ((x : A) ^ (q - 1)) = 1 := by
+    rw [map_pow]
+    exact FiniteField.pow_card_sub_one_eq_one _
+      (fun hz => hx ((IsLocalRing.residue_eq_zero_iff _).mp hz))
+  set y : C := 1 - x ^ (q - 1) with hy
+  have hyc : ((y : C) : A) = 1 - (x : A) ^ (q - 1) := by rw [hy]; push_cast; ring
+  have hyR : (y : A) ∈ IsLocalRing.maximalIdeal A := by
+    rw [← IsLocalRing.residue_eq_zero_iff, hyc, map_sub, hres, map_one, sub_self]
+  have hone : (1 : A) - (y : A) = (x : A) ^ (q - 1) := by rw [hyc]; ring
+  -- the inverse of `1 - y` in `A`
+  have hu : IsUnit ((1 : A) - (y : A)) := by
+    rw [← IsLocalRing.notMem_maximalIdeal, hone]
+    intro hmem
+    exact hx ((Ideal.IsPrime.pow_mem_iff_mem
+      ((IsLocalRing.maximalIdeal.isMaximal A).isPrime) _ hq1).mp hmem)
+  set u := hu.unit
+  set L : A := ((u⁻¹ : Aˣ) : A) with hL
+  have huL : ((1 : A) - (y : A)) * L = 1 := by
+    rw [hL, show ((1 : A) - (y : A)) = (u : A) from (hu.unit_spec).symm]
+    exact u.mul_inv
+  -- the partial sums of the geometric series lie in `C`
+  set s : ℕ → C := fun N => ∑ i ∈ Finset.range N, y ^ i with hs
+  have hsc : ∀ N, ((s N : C) : A) = ∑ i ∈ Finset.range N, (y : A) ^ i := by
+    intro N
+    rw [hs]
+    push_cast
+    rfl
+  have hsL : ∀ N, L - ((s N : C) : A) = L * (y : A) ^ N := by
+    intro N
+    have h1 : ((1 : A) - (y : A)) * ((s N : C) : A) = 1 - (y : A) ^ N := by
+      rw [hsc]; exact mul_neg_geom_sum _ _
+    have h2 : ((s N : C) : A) = L * (1 - (y : A) ^ N) := by
+      calc ((s N : C) : A) = (L * ((1 : A) - (y : A))) * ((s N : C) : A) := by
+            rw [mul_comm L, huL, one_mul]
+        _ = L * (((1 : A) - (y : A)) * ((s N : C) : A)) := by ring
+        _ = L * (1 - (y : A) ^ N) := by rw [h1]
+    rw [h2]; ring
+  -- so their limit `L` lies in `C`
+  have htend : Tendsto (fun N => ((s N : C) : A)) atTop (𝓝 L) := by
+    rw [(hadic.hasBasis_nhds L).tendsto_right_iff]
+    intro n _
+    filter_upwards [eventually_ge_atTop n] with N hN
+    refine ⟨-(L * (y : A) ^ N), ?_, ?_⟩
+    · refine Ideal.pow_le_pow_right hN ?_
+      exact neg_mem (Ideal.mul_mem_left _ _ (Ideal.pow_mem_pow hyR N))
+    · rw [← hsL N]; ring
+  have hLC : L ∈ C := hC.mem_of_tendsto htend (.of_forall fun N => (s N).2)
+  -- hence `1 - y = x ^ (q - 1)` is a unit of `C`, and therefore so is `x`
+  have hunit : IsUnit (1 - y : C) := by
+    refine ⟨⟨1 - y, ⟨L, hLC⟩, ?_, ?_⟩, rfl⟩
+    · ext
+      push_cast
+      exact huL
+    · ext
+      push_cast
+      rw [mul_comm]
+      exact huL
+  have hxq : IsUnit (x ^ (q - 1) : C) := by
+    have hxy : (1 - y : C) = x ^ (q - 1) := by rw [hy]; ring
+    rwa [hxy] at hunit
+  refine isUnit_of_mul_isUnit_left (y := x ^ (q - 1 - 1)) ?_
+  have hpow : x * x ^ (q - 1 - 1) = x ^ (q - 1) := by
+    rw [← pow_succ']
+    congr 1
+    omega
+  rw [hpow]
+  exact hxq
+
+/-- **A closed subring of a local ring with finite residue field and adic
+topology is LOCAL** (PROVEN; local copy of `Deformation.lean`'s
+`isLocalRing_of_isClosed_subring`, under a distinct name — see the note on
+the previous lemma): the nonunits of `C` are exactly `𝔪 ∩ C` by
+`isUnit_of_isClosed_subring_of_notMem_maximalIdeal`, and that is an
+ideal. -/
+theorem isLocalRing_of_isClosed_subring_of_finite_residueField {A : Type*}
+    [CommRing A] [TopologicalSpace A] [IsLocalRing A]
+    [Finite (IsLocalRing.ResidueField A)]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal A))
+    {C : Subring A} (hC : IsClosed (C : Set A)) : IsLocalRing C := by
+  haveI : Nontrivial C := ⟨⟨0, 1, fun hz => zero_ne_one (congrArg Subtype.val hz)⟩⟩
+  refine IsLocalRing.of_nonunits_add ?_
+  intro a b ha hb
+  have hmem : ∀ c : C, c ∈ nonunits C → (c : A) ∈ IsLocalRing.maximalIdeal A := by
+    intro c hc
+    by_contra hcm
+    exact hc (isUnit_of_isClosed_subring_of_notMem_maximalIdeal hadic hC c hcm)
+  intro hab
+  have hsum : ((a : A) + (b : A)) ∈ IsLocalRing.maximalIdeal A :=
+    Ideal.add_mem _ (hmem a ha) (hmem b hb)
+  have hunit : IsUnit ((a : A) + (b : A)) := by simpa using hab.map C.subtype
+  exact IsLocalRing.notMem_maximalIdeal.mpr hunit hsum
+
+/-- **The maximal ideal of such a closed subring is `𝔪 ∩ C`** (PROVEN;
+local copy of `Deformation.lean`'s
+`maximalIdeal_eq_comap_of_isClosed_subring`, under a distinct name). -/
+theorem maximalIdeal_eq_comap_of_isClosed_subring_of_finite_residueField
+    {A : Type*} [CommRing A] [TopologicalSpace A] [IsLocalRing A]
+    [Finite (IsLocalRing.ResidueField A)]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal A))
+    {C : Subring A} (hC : IsClosed (C : Set A)) [IsLocalRing C] :
+    IsLocalRing.maximalIdeal C =
+      Ideal.comap C.subtype (IsLocalRing.maximalIdeal A) := by
+  ext a
+  rw [IsLocalRing.mem_maximalIdeal, Ideal.mem_comap]
+  constructor
+  · intro ha
+    by_contra hcm
+    exact ha (isUnit_of_isClosed_subring_of_notMem_maximalIdeal hadic hC a hcm)
+  · intro ha hu
+    have hunit : IsUnit (a : A) := by simpa using hu.map C.subtype
+    exact IsLocalRing.notMem_maximalIdeal.mpr hunit ha
+
+/-- **Finite generation of `𝔪' = 𝔪 ∩ R'`, at the `F` level** (LEAF — new
+2026-07-26, the SINGLE arithmetic input of Carayol's Lemme 1 here; the
+`F`-level twin of `Deformation.lean`'s PROVEN
+`fg_comap_maximalIdeal_traceSubring`): the maximal ideal of Carayol's
+closed trace subring `R' = hilbertTraceSubring ℓ 𝒟.ρ` is finitely
+generated.
+
+**THIS IS THE WHOLE CONTENT of `exists_isLocalRing_hilbertTraceSubring`
+below**, which is otherwise soft: `R'` is a closed subring of the
+PROFINITE ring `𝒟.R`, hence profinite itself; it is local with
+`𝔪' = 𝔪 ∩ R'` (`isLocalRing_of_isClosed_subring_of_finite_residueField`);
+`𝔪'` is open; and a profinite local ring whose maximal ideal is open and
+FINITELY GENERATED is adic, adically complete and — by Stacks 05GH —
+Noetherian, which is
+`ProfiniteLocalNoetherian.isAdic_isAdicComplete_of_isOpen_of_fg` plus
+`CompleteLocalNoetherian.isNoetherianRing_of_isAdicComplete_of_fg`, both
+UPSTREAM of this module. Note that this shape needs NO separate Lemme 1
+leaf `∀ n, ∃ m, 𝔪 ^ m ∩ R' ⊆ 𝔪' ^ n`: over a profinite ring the two
+filtrations are cofinal as soon as `𝔪'` is finitely generated, so the
+`ℚ`-level pair of arithmetic leaves collapses to this single one here.
+
+**WHY IT IS NOT FORMAL.** `C = k[[x, xy, xy², …]] ⊆ k[[x, y]]` is a closed
+— indeed profinite — local subring of a complete Noetherian local ring
+with the same finite residue field, whose maximal ideal is NOT finitely
+generated (`𝔪_C ⧸ 𝔪_C ^ 2` is infinite dimensional, the `x y ⁿ` being
+independent modulo `𝔪_C ^ 2 ⊆ (x ^ 2)`). So no argument using only
+closedness can work, and the Carayol hypotheses — `hℓ5`, irreducibility of
+`ρbar|_{G_F}`, and the local conditions bundled inside
+`𝒟.isHilbertHardlyRamified` — are load-bearing here.
+
+**THE `ℚ`-LEVEL ROUTE, which is the one to port**, and which is PROVEN
+there in full:
+
+1. `exists_noetherianLocal_surjective_quotient_traceSubring` — ONE fixed
+   Noetherian local ring (the weakly universal ring) surjects onto EVERY
+   level quotient `R' ⧸ (𝔪 ^ n ∩ R')`. This is Carayol's Théorème 1 run at
+   each FINITE level `𝒟.R ⧸ 𝔪 ^ n`, where the trace subring carries no
+   ring-theoretic burden at all — it is finite, hence Noetherian; closed,
+   hence local; and its maximal ideal is nilpotent, hence adic and
+   complete. The `F`-level conjugation input is the SIBLING leaf
+   `exists_framedGaloisRep_hilbertTraceSubring`, which takes exactly that
+   locality as its hypothesis `hloc`, so the use is NOT circular.
+2. `exists_uniform_span_maximalIdeal_of_forall_surjective` (general
+   commutative algebra, PROVEN in `Deformation.lean` and short enough to
+   re-prove here) turns that into a UNIFORM bound: one `r`, the number of
+   generators of the maximal ideal of that Noetherian ring, such that
+   `𝔪'` is generated by `r` elements modulo every filtration step.
+3. `ProfiniteLocal.fg_comap_of_uniform_span` (UPSTREAM, imported here)
+   replaces the incompatible level-wise tuples by ONE tuple by compactness
+   of `R' ^ r`, whence `𝔪'` is finitely generated outright.
+
+`hlk` (`char k = ℓ`) is supplied by the consumer from the datum itself
+(`natCast_eq_zero_of_hilbertDeformationDatum`); it is what makes the
+Teichmüller roots of `𝒟.R` reduce ONTO `k`, hence what makes the residue
+field of `R'` equal to `k` on the nose and the level quotients objects of
+the `F`-level deformation category at all.
+
+References: Carayol, *Formes modulaires et représentations galoisiennes à
+valeurs dans un anneau local complet* (Contemp. Math. 165), Théorème 1 and
+Lemme 1; Nyssen, *Pseudo-représentations*; Rouquier, *Caractérisation des
+caractères et pseudo-caractères*; Mazur, *Deforming Galois
+representations*, §1.6. -/
+theorem fg_comap_maximalIdeal_hilbertTraceSubring
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V} (hlk : ((ℓ : ℕ) : k) = 0)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
+    (Ideal.comap (hilbertTraceSubring ℓ 𝒟.ρ).subtype
+      (IsLocalRing.maximalIdeal 𝒟.R)).FG :=
+  sorry
+
+/-- **Carayol's Lemme 1 at the `F` level** (PROVEN 2026-07-26 over the
+SINGLE arithmetic leaf `fg_comap_maximalIdeal_hilbertTraceSubring` above;
+the `F`-level twin of `Deformation.lean`'s `exists_isLocalRing_traceSubring`,
 which is PROVEN there over its own four-way cut): the closed trace subring
 `R' = hilbertTraceSubring ℓ 𝒟.ρ` is again a COEFFICIENT RING — local,
 Noetherian, adically topologized and adically complete.
@@ -5895,29 +6153,59 @@ is a closed local subring with the same residue field and a
 non-finitely-generated maximal ideal, and it also refutes Lemme 1. So the
 Carayol hypotheses — `hℓ5`, irreducibility of `ρbar|_{G_F}`, and the local
 conditions bundled inside `𝒟.isHilbertHardlyRamified` — are carried here
-even though a soft-half proof would consume none of them.
+even though the SOFT HALF proven below consumes none of them. They are
+passed, unspent, to the leaf, which is where that counterexample bites.
 
-THE `ℚ`-LEVEL ROUTE, which is the one to port. `exists_isLocalRing_traceSubring`
-is proven over: `exists_uniform_span_maximalIdeal_traceSubring` (a UNIFORM
-bound on the number of generators of `𝔪'` modulo the induced filtration,
-obtained by running Carayol's Théorème 1 at each FINITE level `R ⧸ 𝔪ⁿ`,
-where the trace subring is automatically local, Noetherian, adic and
-complete); `fg_comap_maximalIdeal_traceSubring` (finite generation of `𝔪'`,
-by the compactness transfer `ProfiniteLocal.fg_comap_of_uniform_span`);
+WHAT IS PROVEN HERE — the soft half, and it is shorter than the `ℚ`-level
+one because this module has `ProfiniteLocalNoetherian.lean` UPSTREAM of it
+where `Deformation.lean` does not:
+
+* **`𝒟.R` is PROFINITE.** Its residue field is `k`, which is FINITE, so
+  every `𝒟.R ⧸ 𝔪 ^ n` is finite (`Ideal.finite_quotient_pow`, over
+  Noetherianity of `𝒟.R`); adic precompleteness then assembles the
+  level-wise residues of an ultrafilter into a limit point
+  (`ProfiniteLocal.compactSpace_of_isAdic_of_finite_quotient`), and adic
+  separatedness gives Hausdorffness
+  (`t2Space_of_isAdic_of_isHausdorff`).
+* **`R'` is a CLOSED subring** of it, being a topological closure, hence
+  compact and Hausdorff — profinite in its own right.
+* **`R'` is LOCAL with `𝔪' = 𝔪 ∩ R'`**, outright and with no input from
+  the trace data: `isLocalRing_of_isClosed_subring_of_finite_residueField`
+  and `maximalIdeal_eq_comap_of_isClosed_subring_of_finite_residueField`.
+* **`𝔪'` is OPEN** and the open ideals of `R'` are a neighbourhood basis
+  of `0`, both by pulling the `𝔪`-adic basis of `𝒟.R` back along the
+  (continuous, inducing) inclusion.
+* **Adic, complete and Noetherian** then follow from FINITE GENERATION of
+  `𝔪'` alone: `ProfiniteLocalNoetherian.isAdic_isAdicComplete_of_isOpen_of_fg`
+  (a profinite local ring whose maximal ideal is open and finitely
+  generated carries the `𝔪`-adic topology and is complete — the two
+  filtrations are cofinal because `𝔪' ^ n` is then compact, hence closed,
+  and of finite index, hence open) and
+  `CompleteLocalNoetherian.isNoetherianRing_of_isAdicComplete_of_fg`
+  (Stacks 05GH).
+
+**THE `ℚ`-LEVEL PAIR OF ARITHMETIC LEAVES COLLAPSES TO ONE HERE.** Over
+`ℚ` the same conclusion is assembled from BOTH
+`fg_comap_maximalIdeal_traceSubring` and
 `exists_pow_comap_le_pow_maximalIdeal_traceSubring` (Lemme 1 proper,
-`∀ n, ∃ m, 𝔪^m ∩ R' ⊆ 𝔪'^n`, by Chevalley's theorem in its compactness
-form); and the general `isNoetherianRing_of_fg_maximalIdeal` ("complete +
-`𝔪` f.g. ⟹ Noetherian", Stacks 05GH, in
-`HardlyRamified/CompleteLocalNoetherian.lean`, which IS upstream of this
-module and so directly usable here). Only the first three are `ℚ`-specific.
+`∀ n, ∃ m, 𝔪 ^ m ∩ R' ⊆ 𝔪' ^ n`, by Chevalley's theorem in its
+compactness form), because that file routes through
+`isAdic_comap_maximalIdeal_of_forall_exists_le`, which needs the
+cofinality as an input. Going through `isAdic_isAdicComplete_of_isOpen_of_fg`
+instead derives the cofinality FROM finite generation, so only finite
+generation is left to prove. The two `ℚ`-level leaves are of course
+themselves proven over one arithmetic input; see the leaf's docstring for
+the route to port.
 
 The `[Finite k]` hypothesis is what makes the residue field of `𝒟.R`
-finite, which the closed-subring machinery uses throughout.
+finite, which the closed-subring machinery uses throughout; `char k = ℓ`
+is not a hypothesis but a CONSEQUENCE of the datum
+(`natCast_eq_zero_of_hilbertDeformationDatum`), and is passed to the leaf.
 
 References: Carayol, *Formes modulaires et représentations galoisiennes à
 valeurs dans un anneau local complet* (Contemp. Math. 165), Théorème 1 and
 Lemme 1; Nyssen, *Pseudo-représentations*; Rouquier, *Caractérisation des
-caractères et pseudo-caractères*. -/
+caractères et pseudo-caractères*; Stacks 05GH. -/
 theorem exists_isLocalRing_hilbertTraceSubring
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
@@ -5931,8 +6219,82 @@ theorem exists_isLocalRing_hilbertTraceSubring
       IsNoetherianRing (hilbertTraceSubring ℓ 𝒟.ρ) ∧
       IsAdic (IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ)) ∧
       IsAdicComplete (IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ))
-        (hilbertTraceSubring ℓ 𝒟.ρ) :=
-  sorry
+        (hilbertTraceSubring ℓ 𝒟.ρ) := by
+  classical
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.R := 𝒟.isAdicComplete
+  haveI : IsHausdorff (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.R :=
+    (𝒟.isAdicComplete).toIsHausdorff
+  -- **the residue field of `𝒟.R` is `k`**, hence finite
+  have hker : RingHom.ker 𝒟.π = IsLocalRing.maximalIdeal 𝒟.R :=
+    IsLocalRing.ker_eq_maximalIdeal 𝒟.π 𝒟.π_surjective
+  haveI hresfin : Finite (IsLocalRing.ResidueField 𝒟.R) := by
+    have hlift : IsLocalRing.ResidueField 𝒟.R →+* k :=
+      Ideal.Quotient.lift (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.π
+        (fun a ha => by rwa [← RingHom.mem_ker, hker])
+    exact Finite.of_injective hlift hlift.injective
+  haveI hqfin : Finite (𝒟.R ⧸ IsLocalRing.maximalIdeal 𝒟.R) := hresfin
+  -- **`𝒟.R` is profinite**: Hausdorff by adic separatedness, compact because
+  -- every level `𝒟.R ⧸ 𝔪 ^ n` is finite and `𝒟.R` is adically precomplete
+  haveI hT2 : T2Space 𝒟.R := t2Space_of_isAdic_of_isHausdorff 𝒟.isAdic
+  have hmfg : (IsLocalRing.maximalIdeal 𝒟.R).FG :=
+    IsNoetherian.noetherian (IsLocalRing.maximalIdeal 𝒟.R)
+  haveI hcompact : CompactSpace 𝒟.R :=
+    _root_.ProfiniteLocal.compactSpace_of_isAdic_of_finite_quotient 𝒟.isAdic
+      (fun n => Ideal.finite_quotient_pow hmfg n)
+  -- **`R'` is closed**, being a topological closure, hence profinite too
+  have hclosed : IsClosed ((hilbertTraceSubring ℓ 𝒟.ρ : Subring 𝒟.R) :
+      Set 𝒟.R) := Subring.isClosed_topologicalClosure _
+  haveI : CompactSpace (hilbertTraceSubring ℓ 𝒟.ρ) :=
+    isCompact_iff_compactSpace.mp hclosed.isCompact
+  -- **`R'` is local**, with maximal ideal `𝔪 ∩ R'`
+  haveI hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ) :=
+    isLocalRing_of_isClosed_subring_of_finite_residueField 𝒟.isAdic hclosed
+  have hmax : IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ) =
+      Ideal.comap (hilbertTraceSubring ℓ 𝒟.ρ).subtype
+        (IsLocalRing.maximalIdeal 𝒟.R) :=
+    maximalIdeal_eq_comap_of_isClosed_subring_of_finite_residueField 𝒟.isAdic
+      hclosed
+  -- **the open ideals of `R'` are a neighbourhood basis of `0`**: pull the
+  -- `𝔪`-adic basis of `𝒟.R` back along the inclusion, which is inducing
+  have hcomapopen : ∀ n : ℕ, IsOpen ((Ideal.comap
+      (hilbertTraceSubring ℓ 𝒟.ρ).subtype
+        ((IsLocalRing.maximalIdeal 𝒟.R) ^ n) :
+      Ideal (hilbertTraceSubring ℓ 𝒟.ρ)) :
+      Set (hilbertTraceSubring ℓ 𝒟.ρ)) := by
+    intro n
+    exact ((isAdic_iff.mp 𝒟.isAdic).1 n).preimage continuous_subtype_val
+  have hbasis : ∀ U ∈ nhds (0 : hilbertTraceSubring ℓ 𝒟.ρ),
+      ∃ I : Ideal (hilbertTraceSubring ℓ 𝒟.ρ),
+        IsOpen ((I : Ideal (hilbertTraceSubring ℓ 𝒟.ρ)) :
+          Set (hilbertTraceSubring ℓ 𝒟.ρ)) ∧
+        ((I : Ideal (hilbertTraceSubring ℓ 𝒟.ρ)) :
+          Set (hilbertTraceSubring ℓ 𝒟.ρ)) ⊆ U := by
+    intro U hU
+    rw [nhds_induced, Filter.mem_comap] at hU
+    obtain ⟨t, ht, hts⟩ := hU
+    obtain ⟨n, hn⟩ := (isAdic_iff.mp 𝒟.isAdic).2 t (by simpa using ht)
+    exact ⟨Ideal.comap (hilbertTraceSubring ℓ 𝒟.ρ).subtype
+      ((IsLocalRing.maximalIdeal 𝒟.R) ^ n), hcomapopen n,
+      fun z hz => hts (hn hz)⟩
+  -- **`𝔪'` is open**, being the preimage of the open `𝔪`
+  have hopen : IsOpen ((IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ) :
+      Ideal (hilbertTraceSubring ℓ 𝒟.ρ)) :
+      Set (hilbertTraceSubring ℓ 𝒟.ρ)) := by
+    rw [hmax, ← pow_one (IsLocalRing.maximalIdeal 𝒟.R)]
+    exact hcomapopen 1
+  -- **`𝔪'` is finitely generated**: the arithmetic leaf, whose side condition
+  -- `char k = ℓ` the datum itself supplies
+  have hfg : (IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ)).FG := by
+    rw [hmax]
+    exact fg_comap_maximalIdeal_hilbertTraceSubring ℓ hℓ5 F
+      (natCast_eq_zero_of_hilbertDeformationDatum ℓ 𝒟) hirrF 𝒟
+  -- **assemble**: open + finitely generated maximal ideal in a profinite local
+  -- ring gives adic and complete, and Stacks 05GH gives Noetherian
+  obtain ⟨hadic', hcompl'⟩ :=
+    _root_.ProfiniteLocalNoetherian.isAdic_isAdicComplete_of_isOpen_of_fg
+      hbasis hopen hfg
+  exact ⟨hloc, _root_.CompleteLocalNoetherian.isNoetherianRing_of_isAdicComplete_of_fg
+    hcompl' hfg, hadic', hcompl'⟩
 
 /-- **Carayol's Théorème 1 at the `F` level** (LEAF — new 2026-07-26; the
 `F`-level twin of `Deformation.lean`'s `exists_framedGaloisRep_traceSubring`,
