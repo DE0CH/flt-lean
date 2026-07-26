@@ -1089,8 +1089,30 @@ theorem WeierstrassCurve.exists_stable_cyclic_subgroup_of_rational_point
       (Affine.Point.map_injective (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))) Q
   · intro σ x hx
     obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
-    rw [map_zsmul, Affine.Point.map_baseChange
-      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q]
+    -- REPAIR (2026-07-26, flt-lean-128). This step was a HARD ERROR on main,
+    -- blocking every module downstream of `MazurTorsion` — including
+    -- `Modularity/KhareWintenberger.lean`. It read
+    --   `rw [map_zsmul, Affine.Point.map_baseChange σ.toAlgHom Q]`
+    -- and failed with "did not find an occurrence of the pattern", quoting a
+    -- pattern that is VISIBLY PRESENT in the printed goal: the duplicate
+    -- instances that print identically (CLAUDE.md). Passing
+    -- `map_baseChange`'s arguments explicitly makes `rw` build its pattern
+    -- from the LEMMA's own instance elaboration, which is only DEFEQ to — not
+    -- syntactically equal to — the goal's; `rw` cannot cross that gap, and
+    -- dropping the arguments so `rw` unifies does not help either (keyed
+    -- matching fails the same way).
+    -- The fix is to bind the equation as a `have` whose STATEMENT is written
+    -- in the goal's own surface syntax: its LHS then elaborates with the
+    -- goal's instances, while the lemma discharges it up to defeq at the term
+    -- level, where defeq is enough. Verified by a two-way reproduction: the
+    -- old form fails and this one is clean in the same scratch module.
+    have hfix : Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+        (Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q)
+        = Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q :=
+      Affine.Point.map_baseChange
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q
+    rw [map_zsmul, hfix]
     exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples _) k
 
 /-- **A rational torsion point has Kenku degree** (PROVEN 2026-07-25):

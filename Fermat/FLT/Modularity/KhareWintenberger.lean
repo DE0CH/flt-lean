@@ -204,6 +204,8 @@ import Mathlib.NumberTheory.Padics.RingHoms
 import Mathlib.Topology.Algebra.Module.ModuleTopology
 import Mathlib.Topology.Algebra.Algebra
 import Mathlib.LinearAlgebra.Dimension.Constructions
+public import Mathlib.Topology.KrullDimension
+public import Mathlib.FieldTheory.Normal.Closure
 public import Fermat.FLT.Modularity.AbelianScheme
 -- coefficient-ring locality (2026-07-25): the henselian-pair /
 -- idempotent-lifting bricks used by `isLocalRing_of_finite_padicInt`
@@ -859,33 +861,49 @@ declarations below may be discharged through `Family.lean`,
 `exists_totallyReal_point_of_geometricallyIrreducible` (**PROVEN
 2026-07-25** — no longer a leaf: it is now the affine reduction over the
 next name),
-`exists_totallyReal_point_of_affine_geometricallyIrreducible` (SORRY —
-Moret–Bailly 1989 Thm 1.3, affine case; the surviving geometric leaf), and
+`exists_totallyReal_point_of_affine_geometricallyIrreducible` (**PROVEN
+2026-07-26** — no longer a leaf: it is now the Bertini assembly over the
+next two names),
+`isTotallyReal_of_normal_of_realEmbedding` (PROVEN glue, added 2026-07-26),
+`exists_affineCurve_of_affine_geometricallyIrreducible` (SORRY — Bertini
+in characteristic zero, step (i) of Moret–Bailly's route),
+`exists_normalRealPoint_of_affine_curve` (SORRY — Moret–Bailly 1989
+Thm 1.3 on a CURVE, steps (ii)+(iii); the arithmetic heart), and
 `exists_twistedHilbertBlumenthalModuli_of_five_le` (SORRY — Taylor
 2002 §2). `exists_hilbertBlumenthalPoint_of_five_le` itself is now
 PROVEN and is no longer a leaf.
 
-MISSING MACHINERY for the surviving geometric leaf, in dependency order
-(2026-07-25 audit of this pin; none of these exists in mathlib):
+MISSING MACHINERY for the surviving geometric leaves, in dependency order
+(2026-07-25 audit of this pin; none of these exists in mathlib. Updated
+2026-07-26 with the owning leaf of each item):
 
 1. **The field `ℚ^tr` of totally real algebraic numbers**, as a field with
    the property that a number field embeds in it iff it is totally real.
-   Cheapest of the three and a prerequisite for stating the others.
+   Cheapest of the four and a prerequisite for item 2. **NOTE (2026-07-26):
+   it is NOT needed to STATE any leaf here, and building it before item 2
+   would be free-floating.** The Bertini cut replaced "produce a totally
+   real Galois field" by "produce a NORMAL number field with a ring map to
+   `ℝ`" (`isTotallyReal_of_normal_of_realEmbedding` supplies the upgrade),
+   which is exactly what a subfield of `ℚ^tr` contributes; so `ℚ^tr`
+   belongs to the PROOF of item 2, not to any statement.
 2. **Ampleness/largeness of `ℚ^tr`** (Pop): a smooth `ℚ^tr`-variety with a
    `ℚ^tr`-point has a Zariski-dense set of them. This is the modern
    packaging of Moret–Bailly's conclusion, and is what makes step 3's
-   local–global principle usable.
+   local–global principle usable. Owned by
+   `exists_normalRealPoint_of_affine_curve`.
 3. **Bertini over a field of characteristic zero**: a smooth
    geometrically irreducible quasi-projective variety of dimension `> 1`
-   has a smooth geometrically irreducible hyperplane section through a
-   prescribed rational point. This is the (i) of the classical route and
-   reduces the leaf to a curve.
+   has a smooth geometrically irreducible hyperplane section, plus a
+   real-topology approximation step to keep a real point. This is step (i)
+   of the classical route and is now the whole content of
+   `exists_affineCurve_of_affine_geometricallyIrreducible`.
 4. **Picard schemes / Jacobians as schemes**, with the torsor formalism
    and the "incompressible neighbourhood" existence statement — step (ii),
-   and by far the largest of the four.
+   and by far the largest of the four. Owned by
+   `exists_normalRealPoint_of_affine_curve`.
 
-Each is an independently ownable subproject; 1 and 3 are the ones that can
-be started without the other two. -/
+Each is an independently ownable subproject; item 3 is now a leaf of its
+own and can be attacked without any of the others. -/
 
 /-- **The structure morphism of a `ℚ`-algebra's spectrum.** `ℚ` lives in
 `Type 0` while the number field produced by Moret–Bailly must land in
@@ -986,10 +1004,12 @@ theorem exists_isAffineOpen_hasRationalPoint {X : AlgebraicGeometry.Scheme.{u}}
   rw [← Category.assoc, IsOpenImmersion.lift_fac]
   exact hx
 
-/-- **Moret–Bailly's existence theorem, AFFINE CASE** (sorry node — pure
-algebraic geometry, no arithmetic of `ρbar`): exactly the statement of
-`exists_totallyReal_point_of_geometricallyIrreducible` below, with `X`
-required AFFINE. Concretely `X = Spec A` for `A` a finitely generated,
+/-! #### Moret–Bailly's existence theorem, AFFINE CASE — the Bertini cut
+
+**Moret–Bailly's existence theorem, AFFINE CASE** (PROVEN 2026-07-26 over
+two leaves; pure algebraic geometry, no arithmetic of `ρbar`): exactly the
+statement of `exists_totallyReal_point_of_geometricallyIrreducible` below,
+with `X` required AFFINE. Concretely `X = Spec A` for `A` a finitely generated,
 smooth, geometrically integral `ℚ`-algebra admitting a `ℚ`-algebra map to
 `ℝ`, and the conclusion produces a totally real Galois `F` — disjoint from
 the fixed field of `N` — with a `ℚ`-algebra map `A → F`.
@@ -1031,34 +1051,249 @@ they are not the content. (Correspondingly the parent's own `hqc` is not
 consumed by the reduction: quasi-compactness of the affine open is
 re-derived rather than inherited.)
 
-WHAT REMAINS — the whole theorem. Given `A` as above with a real point,
-produce a TOTALLY REAL `F`. A real point only supplies a residue field
-admitting SOME real embedding — for instance `ℚ(2^(1/3))` — which is
-emphatically not totally real, and no shrinking, specialization or
-Galois-closure step repairs that: the Galois closure of a field with one
-real embedding need not be totally real, and enlarging `F` to its Galois
-closure also destroys the disjointness condition `N ⊔ Γ F = ⊤` (take `F`
-cubic non-Galois and `N` the group of the quadratic subfield of its Galois
-closure). So the totally real conclusion and the disjointness conclusion
-must BOTH come from Moret–Bailly's construction; neither is formal given
-the other.
+WHAT REMAINS, AND HOW IT IS CUT (2026-07-26 — this docstring now describes
+a PROVEN assembly; the content moved to the two leaves named at the end).
+Given `A` as above with a real point, produce a TOTALLY REAL `F`. A real
+point only supplies a residue field admitting SOME real embedding — for
+instance `ℚ(2^(1/3))` — which is emphatically not totally real, and no
+shrinking, specialization or Galois-closure step repairs that: the Galois
+closure of a field with one real embedding need not be totally real, and
+enlarging `F` to its Galois closure also destroys the disjointness
+condition `N ⊔ Γ F = ⊤` (take `F` cubic non-Galois and `N` the group of
+the quadratic subfield of its Galois closure). So the totally real
+conclusion and the disjointness conclusion must BOTH come from
+Moret–Bailly's construction; neither is formal given the other. Those two
+counterexamples are still valid and still forbid the obvious shortcuts.
 
-The classical route (Moret–Bailly, *Groupes de Picard et problèmes de
-Skolem II*, Ann. Sci. ÉNS 22 (1989), Thm 1.3; cf. Rumely's local–global
-principle over the ring of totally real algebraic integers, and Pop's
-theorem that `ℚ^tr` is a large/ample field) is: (i) cut `X` down to a
-smooth geometrically irreducible CURVE through the real point by a
-Bertini-type argument that preserves the real point; (ii) on that curve,
-exhibit the wanted point via a torsor under the Jacobian, using an
-"incompressible neighbourhood" in the Picard scheme; (iii) conclude by the
-local–global principle over `ℚ^tr`. None of Bertini, Picard schemes as
-schemes, or `ℚ^tr` exists at this pin — see the MISSING MACHINERY list in
-the section docstring above.
+WHAT IS NEVERTHELESS FORMAL, and is peeled off below, is a THIRD statement
+that neither counterexample touches: for an extension of `ℚ` that is
+NORMAL, having ONE real embedding already forces TOTAL reality
+(`isTotallyReal_of_normal_of_realEmbedding`, PROVEN). Indeed if
+`ι : F →+* ℝ` and `φ : F →+* ℂ`, then for `x : F` the value `φ x` is a
+root of `minpoly ℚ x`, which by normality already splits inside `F`; so
+every complex root of `minpoly ℚ x` is the image of an element of `F`
+under the complexification of `ι`, hence real; hence `φ x` is real. The
+first counterexample above is not a counterexample to this — `ℚ(2^(1/3))`
+is not normal — and the second concerns the disjointness conjunct, which
+this cut carries through untouched. Since characteristic zero makes
+separability automatic, `IsGalois ℚ F` is free from `Normal ℚ F` as well.
+**Consequence: the surviving leaves have only to produce a NORMAL number
+field equipped with a ring map to `ℝ`.** That is also the honest shape of
+the classical construction, which produces `F` inside the field `ℚ^tr` of
+totally real algebraic numbers — i.e. inside `ℝ` — and takes a Galois
+closure there.
+
+THE ROUTE, AND WHERE IT IS CUT. Moret–Bailly, *Groupes de Picard et
+problèmes de Skolem II*, Ann. Sci. ÉNS 22 (1989), Thm 1.3; cf. Rumely's
+local–global principle over the ring of totally real algebraic integers,
+and Pop's theorem that `ℚ^tr` is a large/ample field. The argument is:
+
+(i) cut `X` down to a smooth geometrically irreducible CURVE through the
+    real point by a Bertini-type argument that preserves the real point;
+(ii) on that curve, exhibit the wanted point via a torsor under the
+    Jacobian, using an "incompressible neighbourhood" in the Picard
+    scheme;
+(iii) conclude by the local–global principle over `ℚ^tr`.
+
+**Step (i) is `exists_affineCurve_of_affine_geometricallyIrreducible`
+(SORRY) and steps (ii)+(iii) are
+`exists_normalRealPoint_of_affine_curve` (SORRY).** The cut point is
+exactly the classical one, so neither leaf is an artefact of the
+formalization. Note that (i) is genuinely arithmetic and not a formality:
+a `ℚ`-rational hyperplane through a given REAL point need not exist, so
+the classical proof chooses a `ℚ`-hyperplane `ℝ`-close to one through the
+point and recovers a real point of the section from the implicit function
+theorem — which is why the leaf is stated as "there is a curve with a real
+point and a `ℚ`-morphism to `X`" rather than "the section through the
+point". Neither Bertini, nor Picard schemes as schemes, nor `ℚ^tr` exists
+at this pin — see the MISSING MACHINERY list in the section docstring
+above; but note that `ℚ^tr` is NOT needed to state either leaf, because
+"normal, with a real embedding" already captures what a subfield of
+`ℚ^tr` contributes.
 
 CIRCULARITY GUARD: a statement of algebraic geometry with no
 Galois-representation hypotheses, so no route through `Family.lean`,
 `Lift.lean` or `Modularity/Interface.lean` is even relevant; it must be
 proven by the geometric argument recorded above. -/
+
+/-- **Normal + one real embedding ⟹ totally real** (PROVEN glue,
+2026-07-26). If `F` is a number field, `Normal` over `ℚ`, and admits ANY
+ring homomorphism `ι : F →+* ℝ`, then `F` is totally real.
+
+Proof: let `ψ : F →+* ℂ` be the complexification of `ι` and let
+`φ : F →+* ℂ` be arbitrary. For `x : F`, `φ x` is a root of `minpoly ℚ x`;
+normality makes `minpoly ℚ x` split already inside `F`, so
+`Polynomial.Splits.roots_map` identifies the complex roots with the
+`ψ`-images of the roots in `F` — all of which are real. Hence `φ x` is
+real for every `x`, i.e. `φ` is a real embedding; as `φ` was arbitrary,
+every infinite place of `F` is real.
+
+This is what lets the two surviving geometric leaves below be stated with
+the much weaker conclusion "`F` is a normal number field with a ring map
+to `ℝ`" instead of "`F` is totally real and Galois". See the section
+docstring above for why this does NOT contradict the two counterexamples
+recorded there. -/
+theorem isTotallyReal_of_normal_of_realEmbedding
+    {F : Type*} [Field F] [NumberField F] [Normal ℚ F] (ι : F →+* ℝ) :
+    NumberField.IsTotallyReal F := by
+  classical
+  set ψ : F →+* ℂ := (Complex.ofRealHom).comp ι with hψ
+  -- every value of every complex embedding is a `ψ`-value, hence real
+  have key : ∀ (φ : F →+* ℂ) (x : F), ∃ r : F, ψ r = φ x := by
+    intro φ x
+    have hint : IsIntegral ℚ x := (Normal.isIntegral (‹Normal ℚ F›) x)
+    have hne : (minpoly ℚ x) ≠ 0 := minpoly.ne_zero hint
+    set q : F[X] := (minpoly ℚ x).map (algebraMap ℚ F) with hq
+    have hqsplits : q.Splits := Normal.splits ‹Normal ℚ F› x
+    have hmapeq : q.map ψ = (minpoly ℚ x).map (algebraMap ℚ ℂ) := by
+      rw [hq, Polynomial.map_map]
+      congr 1
+      exact Subsingleton.elim _ _
+    have hroot : φ x ∈ (q.map ψ).roots := by
+      rw [hmapeq, Polynomial.mem_roots ((Polynomial.map_ne_zero_iff
+        (algebraMap ℚ ℂ).injective).mpr hne)]
+      have hz : Polynomial.aeval (φ x) (minpoly ℚ x) = 0 := by
+        have h1 : Polynomial.aeval x (minpoly ℚ x) = (0 : F) := minpoly.aeval ℚ x
+        have h2 : (φ : F →+* ℂ) (Polynomial.aeval x (minpoly ℚ x)) =
+            Polynomial.aeval (φ x) (minpoly ℚ x) := by
+          simpa using (Polynomial.aeval_algHom_apply
+            (φ.toRatAlgHom : F →ₐ[ℚ] ℂ) x (minpoly ℚ x)).symm
+        rw [← h2, h1, map_zero]
+      simpa [Polynomial.IsRoot, Polynomial.eval_map, ← Polynomial.aeval_def] using hz
+    rw [hqsplits.roots_map ψ, Multiset.mem_map] at hroot
+    obtain ⟨r, -, hr⟩ := hroot
+    exact ⟨r, hr⟩
+  refine ⟨fun v => ?_⟩
+  rw [← NumberField.InfinitePlace.mk_embedding v,
+    NumberField.InfinitePlace.isReal_mk_iff]
+  refine NumberField.ComplexEmbedding.isReal_iff.mpr ?_
+  ext x
+  obtain ⟨r, hr⟩ := key v.embedding x
+  rw [NumberField.ComplexEmbedding.conjugate_coe_eq, ← hr, hψ]
+  simp
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Step (i) of Moret–Bailly's route: BERTINI, cutting down to a curve**
+(sorry node — pure algebraic geometry over `ℚ`, char. zero Bertini plus one
+real-topology approximation step).
+
+Given `X` affine, smooth, separated, of finite type, quasi-compact and
+geometrically irreducible over `ℚ`, with a REAL point, there is an affine
+smooth geometrically irreducible `ℚ`-curve `C` — `topologicalKrullDim C ≤ 1`
+— which also has a real point, together with a `ℚ`-morphism `g : C ⟶ X`.
+
+WHY THIS IS TRUE, and why it is stated in this (weak) form. Iterating
+Bertini's theorems in characteristic zero — smoothness of the general
+hyperplane section, and irreducibility of the general hyperplane section of
+a geometrically irreducible variety of dimension `≥ 2` — cuts `X` down to a
+curve, and a closed subscheme of an affine scheme is affine, so all of
+`IsAffine`, `IsSeparated`, `LocallyOfFiniteType` and `QuasiCompact` are
+inherited. The affine case of `X` is quasi-projective (it is quasi-affine),
+so Bertini applies as classically stated; this is the same discharge of the
+quasi-projectivity caveat recorded on the parent.
+
+THE REAL POINT IS THE DELICATE PART, and it is why the conclusion asks only
+for SOME real point of `C` and SOME morphism `C ⟶ X`, rather than for a
+hyperplane section through the given real point. A hyperplane defined over
+`ℚ` through a prescribed `ℝ`-point generally does not exist: the incidence
+conditions are `ℝ`-linear conditions on `ℚ`-coefficients. Moret–Bailly's
+argument instead uses the `ℝ`-topology — pick a `ℚ`-rational hyperplane
+`ℝ`-close to one through the point and transverse to `X` there, and produce
+a real point of the section by the implicit function theorem on the real
+manifold `X(ℝ)`. The weak form asked for here is exactly what the assembly
+consumes (an `F`-point of `C` is an `F`-point of `X` by
+`HasRationalPoint.of_comp`) and is what that argument delivers.
+
+NOT VACUOUS: the dimension-`0` and dimension-`1` cases are discharged by
+`C := X`, `g := 𝟙 X`, but in every higher dimension the conclusion asserts
+a genuine curve, which is the content of Bertini.
+
+CIRCULARITY GUARD: inherited from the parent — no route through
+`Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
+theorem exists_affineCurve_of_affine_geometricallyIrreducible
+    {X : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine X]
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fX)
+    (hsep : AlgebraicGeometry.IsSeparated fX)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fX)
+    (hqc : AlgebraicGeometry.QuasiCompact fX)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fX)
+    (hreal : HasRationalPoint fX (ULift.{u} ℝ)) :
+    ∃ (C : AlgebraicGeometry.Scheme.{u}) (_ : AlgebraicGeometry.IsAffine C)
+      (g : C ⟶ X),
+      AlgebraicGeometry.Smooth (g ≫ fX) ∧
+      AlgebraicGeometry.IsSeparated (g ≫ fX) ∧
+      AlgebraicGeometry.LocallyOfFiniteType (g ≫ fX) ∧
+      AlgebraicGeometry.QuasiCompact (g ≫ fX) ∧
+      AlgebraicGeometry.GeometricallyIrreducible (g ≫ fX) ∧
+      HasRationalPoint (g ≫ fX) (ULift.{u} ℝ) ∧
+      topologicalKrullDim C ≤ 1 :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Steps (ii)+(iii) of Moret–Bailly's route: the CURVE case** (sorry
+node — the arithmetic heart: Jacobians as schemes, an incompressible
+neighbourhood in the Picard scheme, and the local–global principle over
+`ℚ^tr`).
+
+Exactly the affine statement, with `X` further required to be a CURVE
+(`topologicalKrullDim C ≤ 1`), and with the conclusion in its "raw"
+geometric form: the field produced is only asked to be a NUMBER FIELD that
+is NORMAL over `ℚ` and admits a ring map to `ℝ`. That is what the classical
+construction delivers — `F` is built inside the field `ℚ^tr` of totally
+real algebraic numbers, hence inside `ℝ`, and is replaced by its Galois
+closure there — and `isTotallyReal_of_normal_of_realEmbedding` upgrades it
+to `NumberField.IsTotallyReal F` and `IsGalois ℚ F` for free.
+
+The disjointness conjunct `N ⊔ Γ F = ⊤` is NOT free and is stated here
+unchanged: as the parent records, a Galois closure can destroy it, so it
+must be produced by the construction itself, at the same time as the field.
+This is Moret–Bailly's avoidance datum and it is what makes the theorem
+more than a "large field" statement.
+
+WHAT THE MISSING MACHINERY LIST BUYS. Of the four items recorded in the
+section docstring, this leaf needs (2) largeness/ampleness of `ℚ^tr` (Pop)
+and (4) Picard schemes/Jacobians with the incompressible-neighbourhood
+statement; item (1), the field `ℚ^tr` itself, is a prerequisite for those
+but does NOT appear in this statement, because "normal, with a ring map to
+`ℝ`" already captures everything a subfield of `ℚ^tr` contributes to the
+conclusion. Item (3), Bertini, has been moved off this leaf onto
+`exists_affineCurve_of_affine_geometricallyIrreducible`.
+
+CIRCULARITY GUARD: inherited from the parent — no route through
+`Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
+theorem exists_normalRealPoint_of_affine_curve
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hsep : AlgebraicGeometry.IsSeparated fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hqc : AlgebraicGeometry.QuasiCompact fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hreal : HasRationalPoint fC (ULift.{u} ℝ))
+    (hdim : topologicalKrullDim C ≤ 1)
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ))) :
+    ∃ (F : Type u) (_ : Field F) (_ : NumberField F) (_ : Normal ℚ F)
+      (_ : F →+* ℝ),
+      N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ ∧
+      HasRationalPoint fC F :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly's existence theorem, AFFINE CASE** (PROVEN 2026-07-26
+as the assembly of Bertini + the curve case + the normality upgrade; see
+the section docstring "Moret–Bailly's existence theorem, AFFINE CASE — the
+Bertini cut" above for the mathematics and the faithfulness audit).
+
+ASSEMBLY: `exists_affineCurve_of_affine_geometricallyIrreducible` supplies
+an affine `ℚ`-curve `g : C ⟶ X` with a real point, carrying all five
+geometric hypotheses for `g ≫ fX`;
+`exists_normalRealPoint_of_affine_curve` supplies a normal number field
+`F` with a ring map to `ℝ`, the disjointness conjunct, and an `F`-point of
+`C`; `isTotallyReal_of_normal_of_realEmbedding` upgrades `F` to totally
+real, characteristic zero upgrades `Normal ℚ F` to `IsGalois ℚ F`, and
+`HasRationalPoint.of_comp` pushes the point from `C` to `X`. -/
 theorem exists_totallyReal_point_of_affine_geometricallyIrreducible
     {X : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine X]
     (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -1073,8 +1308,22 @@ theorem exists_totallyReal_point_of_affine_geometricallyIrreducible
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
       (_ : NumberField.IsTotallyReal F) (_ : IsGalois ℚ F),
       N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ ∧
-      HasRationalPoint fX F :=
-  sorry
+      HasRationalPoint fX F := by
+  classical
+  -- (i) Bertini: cut down to an affine `ℚ`-curve with a real point
+  obtain ⟨C, hCaff, g, hCsm, hCsep, hCft, hCqc, hCgi, hCreal, hCdim⟩ :=
+    exists_affineCurve_of_affine_geometricallyIrreducible fX hsmooth hsep hft hqc hgi hreal
+  haveI : AlgebraicGeometry.IsAffine C := hCaff
+  -- (ii)+(iii) Moret–Bailly on the curve: a NORMAL number field inside `ℝ`
+  obtain ⟨F, hF, hNF, hnorm, ι, hsup, hpt⟩ :=
+    exists_normalRealPoint_of_affine_curve (g ≫ fX) hCsm hCsep hCft hCqc hCgi hCreal hCdim
+      N hNopen
+  haveI : Normal ℚ F := hnorm
+  -- normality + one real embedding ⟹ totally real; char. zero ⟹ Galois
+  have hsep' : Algebra.IsSeparable ℚ F := inferInstance
+  exact ⟨F, hF, hNF, isTotallyReal_of_normal_of_realEmbedding ι,
+    { to_isSeparable := hsep', to_normal := hnorm }, hsup,
+    HasRationalPoint.of_comp g fX hpt⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly's existence theorem for global points with prescribed
