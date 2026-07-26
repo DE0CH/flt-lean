@@ -75,9 +75,10 @@ are load-bearing:
 
 ## Open leaves left by this file
 
-`IsRationalMap.neg`, `IsRationalMap.comp`, `IsRationalMap.add`,
-`IsRationalMap.dualHom`, `IsIsogeny.add`, `nsmul_surjective`, `finite_nsmulKer`,
-`Isogeny.degree_comp`.
+`IsRationalMap.comp`, `IsRationalMap.add`, `IsIsogeny.add`, `nsmul_surjective`,
+`finite_nsmulKer`, `Isogeny.isRationalMap_dualHom`, `Isogeny.degree_comp`.
+
+`IsRationalMap.neg` was on this list and is now PROVEN.
 -/
 
 
@@ -121,16 +122,29 @@ theorem IsRationalMap.id : IsRationalMap (AddMonoidHom.id W.Point) := by
   refine ⟨X, 1, 1, 0, 1, one_ne_zero, one_ne_zero, fun P _ => ?_⟩
   simp
 
-/-- **LEAF.** A negated rational map is rational.
+/-- A negated rational map is rational.
 
 `x(-Q) = x(Q)`, so `A, B` are unchanged; `y(-Q) = negY (x Q) (y Q)
 = -y(Q) - a₁ x(Q) - a₃`, so substituting `x(φ P) = A/B` and clearing the extra
 denominator gives the `y`-witness
-`(C', D', E') = (-C·B, -D·B - a₁·A·E - a₃·B·E, E·B)`. The proof is the two
-`Velu` lemmas `velu_pointX_neg` and `velu_pointY_neg` plus `ring`. -/
+`(C', D', E') = (-C·B, -D·B - a₁·A·E - a₃·B·E, E·B)`. -/
 theorem IsRationalMap.neg {φ : W.Point →+ W'.Point} (h : IsRationalMap φ) :
-    IsRationalMap (-φ) :=
-  sorry
+    IsRationalMap (-φ) := by
+  obtain ⟨A, B, C, D, E, hB, hE, hcert⟩ := h
+  refine ⟨A, B, -(C * B),
+    -(D * B) - Polynomial.C W'.a₁ * A * E - Polynomial.C W'.a₃ * B * E, E * B,
+    hB, mul_ne_zero hE hB, fun P hP => ?_⟩
+  have hφP : φ P ≠ 0 := fun hc => hP (by show -(φ P) = 0; rw [hc, neg_zero])
+  obtain ⟨hx, hy⟩ := hcert P hφP
+  have hnegapp : (-φ) P = -(φ P) := rfl
+  refine ⟨?_, ?_⟩
+  · rw [hnegapp, velu_pointX_neg]
+    exact hx
+  · rw [hnegapp, velu_pointY_neg _ hφP]
+    simp only [Polynomial.eval_mul, Polynomial.eval_neg, Polynomial.eval_sub,
+      Polynomial.eval_C]
+    linear_combination (-(B.eval (veluPointX P))) * hy
+      - (W'.a₁ * E.eval (veluPointX P)) * hx
 
 /-- **LEAF.** The composite of two rational maps is rational.
 
