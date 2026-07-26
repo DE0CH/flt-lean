@@ -56,7 +56,7 @@ The consumer of everything below is
 LAST declaration of this module: for a hardly ramified deformation `ρ` of
 an irreducible hardly ramified `ρbar` at `ℓ ≥ 5`, the traces of `ρ` are
 integral over `ℤ_ℓ` on a finite-index subgroup of `G_ℚ`. It is PROVEN
-over the five leaves below and is what `Deformation.lean` consumes.
+over the six leaves below and is what `Deformation.lean` consumes.
 
 The chain, in the order the assembly uses it:
 
@@ -1190,7 +1190,7 @@ theorem moduleFinite_hilbertDeformation_of_isWeaklyUniversal
 /-! ### The assembly: integrality of the traces on a finite-index subgroup -/
 
 /-- **The Hilbert-modular input of pillar α, assembled** (PROVEN over the
-five leaves above): for a hardly ramified deformation `ρ` of an
+six leaves above): for a hardly ramified deformation `ρ` of an
 irreducible hardly ramified `ρbar` at `ℓ ≥ 5`, there is a FINITE-INDEX
 subgroup `H ≤ G_ℚ` — namely `G_F` for the totally real field `F` of
 potential modularity — on which the Frobenius-free traces of `ρ` are
