@@ -762,6 +762,31 @@ structure HilbertBlumenthalPoint (ℓ : ℕ) [Fact ℓ.Prime]
   ιO₀_injective : Function.Injective ιO₀
   /-- The `ℓ`-adic member belongs to the system. -/
   matchℓ : ∀ w ∉ bad, (σ.charFrob w).map ιO₀ = (P w).map ψDℓ
+  /-- **The Weil-pairing determinant** (field added 2026-07-26; see the
+  cut note before
+  `exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint`): the
+  determinant of Frobenius on the `ℓ`-adic member is the absolute norm.
+  Classically this is the `𝒪_D`-linear Weil pairing on the
+  Hilbert–Blumenthal abelian variety — `det σ` is the `λ`-adic
+  cyclotomic character, whose value at `Frob_w` is `Nw` — and it is the
+  parallel-weight-`2` normalization `P w = X² − a_w·X + Nw` of the whole
+  compatible system, since `matchℓ` and injectivity of `ψDℓ` carry it to
+  `P` and `matchp` with `ιC_injective` carry it on to `τp`.
+
+  It is a FIELD rather than a theorem because it is **not derivable from
+  the rest of the interface, and is refutable relative to it**: twisting
+  `(D, O₀, σ, C, τp, ρbarp)` by a character `χ` of order `ℓ` unramified
+  outside a finite set satisfies every other field over the same `ρbarF`
+  (`ζ_ℓ ≡ 1` modulo the maximal ideal of `ℤ_ℓ[ζ_ℓ]`, so `χ` reduces
+  trivially and `residualℓ` survives; `residualp` is restored by twisting
+  the datum `ρbarp`, and irreducibility and dihedrality are
+  twist-invariant) while multiplying the determinant by `χ²`, which is
+  nontrivial on a set of places of positive density — so no finite bad
+  set repairs it.  See the refutation written out in the docstring of
+  `exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint`. -/
+  detσ : ∀ w ∉ bad,
+    LinearMap.det (σ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)) =
+      (Ideal.absNorm w.asIdeal : O₀)
   /-- The reduction map onto the residual coefficient field. -/
   π₀ : O₀ →+* k
   /-- FIRST moduli condition: the `ℓ`-torsion of `A` realizes
@@ -2569,7 +2594,11 @@ produced, an exceptional set and the embeddings realizing `matchℓ` and
 `matchp`. The point's `bad` is the union of those two exceptional sets
 (each contains the places over its own residue characteristic, where the
 member is ramified — which is why the second leaf cannot quantify one
-`bad` before `q`). The dihedral data `kp`, `ρbarp`, `L` and the two
+`bad` before `q`) TOGETHER WITH the exceptional set of the `ℓ`-adic
+frame's determinant clause (2026-07-26), which supplies the field
+`detσ`; the `p`-adic frame's determinant clause is discarded, since
+`matchp` and `ιC_injective` recover it from `detσ` through `P`. The
+dihedral data `kp`, `ρbarp`, `L` and the two
 conditions on them come from the seam unchanged.
 
 BINDER NOTE (not a vacuity signal): `_hF`, `_hNF`, `_hFtr` and `_hFgal`
@@ -2620,14 +2649,18 @@ theorem nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli
     Fermat.isIrreducible_map_of_restrictionSurjective ρbar (algebraMap ℚ F) hrestr hirr
   -- the `λ`-adic member, framed on the Tate module `TatePt m x lam ϖℓ`;
   -- `_jD₀`/`_hjD₀` are the real-multiplication clause of the frame, kept bound for
-  -- the compatible-system leaf, which does not yet take them
-  obtain ⟨ϖℓ, hϖℓ, hϖℓ2, O₀, _, _, _, _, _, _, _, _, σ, φ₀, ι₀, _jD₀,
-      hφ₀add, hφ₀bij, hφ₀eq, hres₀, _hjD₀⟩ :=
+  -- the compatible-system leaf, which does not yet take them.  `baddet`/`hdet₀`
+  -- are the determinant (Weil-pairing) clause, consumed by the field
+  -- `HilbertBlumenthalPoint.detσ` below.
+  obtain ⟨ϖℓ, hϖℓ, hϖℓ2, O₀, _, _, _, _, _, _, _, _, σ, φ₀, ι₀, _jD₀, baddet,
+      hφ₀add, hφ₀bij, hφ₀eq, hres₀, _hjD₀, hdet₀⟩ :=
     Fermat.exists_tateFrame_of_levelStructure m x hdim ℓ lam hlam hℓlam hW
       (ρbar.map (algebraMap ℚ F)) hirrF e headd heinj heequiv heimg
-  -- the `𝔭`-adic member, framed on `TatePt m x frp ϖp`
-  obtain ⟨ϖp, hϖp, hϖp2, C, _, _, _, _, _, _, _, _, τp, φp, ιp, _jDp,
-      hφpadd, hφpbij, hφpeq, hresp, _hjDp⟩ :=
+  -- the `𝔭`-adic member, framed on `TatePt m x frp ϖp`; its own
+  -- determinant clause is not needed — the point records the `ℓ`-adic
+  -- one, and `matchp`/`ιC_injective` recover the `p`-adic one from it
+  obtain ⟨ϖp, hϖp, hϖp2, C, _, _, _, _, _, _, _, _, τp, φp, ιp, _jDp, _,
+      hφpadd, hφpbij, hφpeq, hresp, _hjDp, _⟩ :=
     Fermat.exists_tateFrame_of_levelStructure m x hdim p frp hfrp hpfrp
       (by simp) ρbarp hirrp e' h'add h'inj h'equiv h'img
   -- ONE `D`-rational compatible system, read at both members through their frames;
@@ -2640,15 +2673,19 @@ theorem nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli
   obtain ⟨badp, ψp, ιC, hιCinj, hmatchp⟩ :=
     hP p inferInstance frp hfrp hpfrp ϖp hϖp hϖp2 C inferInstance inferInstance
       inferInstance τp φp hφpadd hφpbij hφpeq
-  exact ⟨{ bad := badℓ ∪ badp, D := D, P := P, O₀ := O₀, σ := σ, ψDℓ := ψℓ, ιO₀ := ιℓ,
+  exact ⟨{ bad := badℓ ∪ badp ∪ baddet, D := D, P := P, O₀ := O₀, σ := σ,
+           ψDℓ := ψℓ, ιO₀ := ιℓ,
            ιO₀_injective := hιℓinj,
-           matchℓ := fun w hw => hmatchℓ w fun hb => hw (Finset.mem_union_left _ hb),
+           matchℓ := fun w hw => hmatchℓ w fun hb =>
+             hw (Finset.mem_union_left _ (Finset.mem_union_left _ hb)),
+           detσ := fun w hw => hdet₀ w fun hb => hw (Finset.mem_union_right _ hb),
            π₀ := ι₀,
            residualℓ := fun w _ => hres₀ w,
            p := p, pfact := ⟨hp⟩, p_ne_ℓ := hpne,
            C := C, τp := τp, ψDp := ψp, ιC := ιC,
            ιC_injective := hιCinj,
-           matchp := fun w hw => hmatchp w fun hb => hw (Finset.mem_union_right _ hb),
+           matchp := fun w hw => hmatchp w fun hb =>
+             hw (Finset.mem_union_left _ (Finset.mem_union_right _ hb)),
            kp := kp, ρbarp := ρbarp, πp := ιp,
            residualp := fun w _ => hresp w,
            irreduciblep := hirrp, L := L, finrankL := hLrank, dihedralp := hLred }⟩
@@ -3047,8 +3084,10 @@ now a THEOREM: the node is PROVEN below as an assembly over
 
 * `exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint` — the
   determinant (Weil-pairing) clause for the compatible system of the
-  Hilbert–Blumenthal abelian variety, the ONLY sorried leaf this node
-  consumes.  CONVERGENT CUT (2026-07-25): that leaf was extracted
+  Hilbert–Blumenthal abelian variety — itself PROVEN 2026-07-26 by the
+  cut-level repair that made the clause the FIELD
+  `HilbertBlumenthalPoint.detσ`, so this node consumes no sorried leaf
+  of its own any more.  CONVERGENT CUT (2026-07-25): that leaf was extracted
   independently, on the same day and at the same seam, by the owner of
   the sibling joint `exists_heckeSystem_of_residualModularity`, whose
   VACUITY AUDIT identified the same single equation as everything joint
@@ -3083,14 +3122,13 @@ at `ℓ ≥ 5`, classically unsatisfiable (headline below) — that makes it
 classically true, exactly as for its two siblings.  Do NOT restate it
 without the package.
 
-WHERE THE CLAUSE REALLY BELONGS (recommendation restated, still NOT
-performed here): as a FIELD of `HilbertBlumenthalPoint`, discharged by
+WHERE THE CLAUSE REALLY BELONGS (recommendation, PERFORMED 2026-07-26):
+as a FIELD of `HilbertBlumenthalPoint` — `detσ` — discharged through
 `exists_twistedHilbertBlumenthalModuli_of_five_le`, whose conclusion is
-`Nonempty (HilbertBlumenthalPoint …)` and would therefore absorb the new
-field with no change to its own statement — that is where the Weil pairing
-on `A[p]` is actually available.  It is a cut-level change to a structure
-that other leaves are concurrently owned against, so it is recorded here
-rather than made.
+`Nonempty (HilbertBlumenthalPoint …)` and therefore absorbed the new
+field with no change to its own statement, down to
+`Fermat.exists_tateFrame_of_levelStructure`, where the Weil pairing on
+the Tate module is actually available.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): none of the
 declarations below may be discharged through `Family.lean`, `Lift.lean`,
@@ -3379,7 +3417,9 @@ theorem residual_charFrob_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint
   simp
 
 /-- **The parallel-weight-`2` normalization of the point's compatible
-system** (sorry node, EXTRACTED 2026-07-25 as the exact residual
+system** (**PROVEN 2026-07-26** by the cut-level repair recorded below —
+the determinant clause is now the FIELD `HilbertBlumenthalPoint.detσ`;
+EXTRACTED 2026-07-25 as the exact residual
 content of joint (b) — see the VACUITY AUDIT of
 `exists_heckeSystem_of_residualModularity` below, which identified this
 single equation as everything that node formally asserts): away from a
@@ -3396,13 +3436,14 @@ parallel-weight-`2` normalization.  Equivalently, `det τp` is the
 members lie in the single system with coefficient field `D`, the clause
 is a statement about `P` alone and is characteristic-free.
 
-WHY IT IS A SORRY NODE AND NOT PROVEN HERE.  The
-`HilbertBlumenthalPoint` interface records `P`, `τp`, `σ` and the two
-matching clauses `matchp`/`matchℓ`, but records NO determinant
-condition on any of them: `P` is arbitrary polynomial data there.  So
-the clause is not derivable from the interface, and it is exactly the
-piece of the abelian variety's geometry that the interface currently
-drops.  The in-tree PROVEN analogue for a representation that IS
+WHY IT WAS A SORRY NODE (history, and the reason for the repair).  The
+`HilbertBlumenthalPoint` interface recorded `P`, `τp`, `σ` and the two
+matching clauses `matchp`/`matchℓ`, but NO determinant
+condition on any of them: `P` was arbitrary polynomial data there.  So
+the clause was not derivable from the interface, and it is exactly the
+piece of the abelian variety's geometry that the interface dropped —
+which is why the repair is a new FIELD and not a new proof.
+The in-tree PROVEN analogue for a representation that IS
 hypothesized hardly ramified is
 `charFrob_baseChange_coeff_zero_eq_absNorm` further down this module
 (the determinant half of the Carayol/Shimura sub-cut): it derives the
@@ -3411,12 +3452,14 @@ same equation from `IsHardlyRamified.det` plus
 applicable to `pt.τp`, which is not `ρ.map (algebraMap ℚ F)` and
 carries no hardly-ramified hypothesis.
 
-WHERE IT SHOULD EVENTUALLY LIVE (cut-level, not performed here): as a
-FIELD of `HilbertBlumenthalPoint`, supplied by the geometric joint
-`exists_hilbertBlumenthalPoint_of_five_le` — that is the node which
-classically builds `A`, hence the only node that can see its Weil
-pairing.  Adding the field would discharge this leaf by projection.
-Until then it is stated here, as the honest residual of joint (b).
+WHERE IT NOW LIVES (cut-level repair, PERFORMED 2026-07-26): as the
+FIELD `HilbertBlumenthalPoint.detσ`, supplied — through the geometric
+joint `exists_hilbertBlumenthalPoint_of_five_le` and its two PROVEN
+assemblies — by the frame that
+`Fermat.exists_tateFrame_of_levelStructure` chooses, which is the only
+place in the tree where the abelian variety's Weil pairing is visible.
+This leaf is discharged by projection onto that field plus the algebra
+recorded under SKELETON below.
 
 SHARED WITH JOINT (a).  The sibling joint
 `exists_residualModularity_of_hilbertBlumenthalPoint` has the SAME
@@ -3438,24 +3481,27 @@ hypothesis package (an irreducible hardly ramified mod-`ℓ`
 representation with `ℓ ≥ 5`) is classically unsatisfiable (headline
 below), so the statement is classically true for every package.
 
-SKELETON (2026-07-26 — glue first).  The bare `sorry` has been replaced
-by the full assembly, PROVEN, over ONE sorried `have` carrying the
+SKELETON (2026-07-26 — glue first, then the cut).  The bare `sorry` was
+first replaced by the full assembly over ONE sorried `have` carrying the
 entire mathematical content: the WEIL-PAIRING DETERMINANT of the point's
 `ℓ`-adic member,
 
   `∀ w ∉ pt.bad, LinearMap.det (pt.σ.toLocal w Frob_w) = (Nw : pt.O₀)`.
 
-Everything around it is now compiler-checked rather than asserted: the
+That `have` is now discharged by `pt.detσ` — it is verbatim the new
+field — and the leaf is PROVEN.  Everything around it was already
+compiler-checked rather than asserted: the
 constant coefficient of a rank-`2` charpoly is the determinant
 (`LinearMap.det_eq_sign_charpoly_coeff` together with
 `Module.finrank_fin_fun`), `pt.matchℓ` transports the identity into
 `ℚ̄_ℓ`, ring homomorphisms preserve `Nat.cast`, and `pt.ψDℓ` — a
 homomorphism out of a field — is injective, so the identity descends to
-`pt.D`.  The `have` is stated in exactly the form a FIELD of
-`HilbertBlumenthalPoint` would take, and is deliberately NOT split off
-as a named theorem: by the refutation below it is not dispatchable work,
-so a separate node would only manufacture a phantom leaf for the fleet
-to send an agent at.
+`pt.D`.  The `have` was stated in exactly the form a FIELD of
+`HilbertBlumenthalPoint` would take, and was deliberately NOT split off
+as a named theorem: by the refutation below it is not dispatchable work
+AT THIS NODE, so a separate node here would only have manufactured a
+phantom leaf for the fleet to send an agent at.  The repair made it a
+field instead.
 
 NO PROOF OF THAT `have` CAN EXIST FROM THE INTERFACE — an explicit
 refutation RELATIVE TO the interface (2026-07-26).  The audit above says
@@ -3495,20 +3541,39 @@ outer hypotheses are load-bearing for TRUTH while being unusable in any
 PROOF, which is why the proof below consumes none of them.
 
 CONSEQUENCE — THE ONLY DISCHARGE IS A FIELD OF THE STRUCTURE
-(cut-level, NOT performed here; reported 2026-07-26).
-`HilbertBlumenthalPoint` must carry
+(cut-level, PERFORMED 2026-07-26).  `HilbertBlumenthalPoint` now carries
 
   `detσ : ∀ w ∉ bad, LinearMap.det (σ.toLocal w Frob_w) = (Nw : O₀)`
 
 (equivalently the `τp` form, which `matchp` and `ιC_injective` make
-interchangeable with it), supplied by the geometric joint
-`exists_hilbertBlumenthalPoint_of_five_le` — the only node that can see
-the abelian variety's Weil pairing.  Note that even a complete
-Weil-pairing theory in the tree could not discharge this leaf as stated:
+interchangeable with it; the `σ` form was chosen because it keeps the
+algebra above alive and because the `ℓ`-adic frame is where the clause
+is supplied).  Note that even a complete Weil-pairing theory in the tree
+could not have discharged this leaf as stated:
 `HilbertBlumenthalPoint` carries no abelian scheme at all, and
 `Modularity/AbelianScheme.lean` (sorry-free) has geometric points and
 Galois-stable torsion but no Tate module, no Weil pairing and no
-Frobenius charpoly — so there would be nothing here to apply it TO.
+Frobenius charpoly — so there would have been nothing here to apply
+it TO.
+
+WHERE THE FIELD IS SUPPLIED, and why that site is the honest one.  The
+ONLY construction site of `HilbertBlumenthalPoint` in the tree is
+`nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`
+(the geometric joint reaches it through
+`exists_twistedHilbertBlumenthalModuli_of_five_le`), and there the
+`ℓ`-adic member is the frame produced by
+`Fermat.exists_tateFrame_of_levelStructure`.  The determinant clause was
+added as one extra conjunct of THAT leaf's existential conclusion, and
+the point's `bad` is now the union of three finite sets rather than two.
+Putting it there is what makes it TRUE: the frame is chosen by the
+prover, so the honest Tate frame discharges it, whereas the same clause
+for a GIVEN frame is false — `φ` is only additive and `Γ_F`-equivariant,
+so the `O`-structure it transports is an arbitrary embedding into
+`End_{ℤ_q[Γ_F]}(T)`, and a second rank-`2` structure twisted by an
+automorphism of `𝒪_{D,I}/ℤ_q` changes the determinant.  That is the same
+counterexample that refuted the sibling
+`Fermat.exists_weilFrobeniusSystem_of_mult`; see the DETERMINANT CLAUSE
+paragraph in `Modularity/TateModule.lean`.
 
 FAITHFULNESS (2026-07-26): `S₂` is EXISTENTIALLY quantified, so the
 question "must `S₂` exclude the places above `p` as well as the ramified
@@ -3548,16 +3613,16 @@ theorem exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint
     (pt : HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :
     ∃ S₂ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
       ∀ w ∉ S₂, (pt.P w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.D) := by
-  -- THE ONE OPEN STEP — the Weil pairing on the Hilbert–Blumenthal
-  -- abelian variety: the determinant of Frobenius on the `λ`-adic Tate
-  -- module is the cyclotomic value `Nw`.  Not derivable from the
-  -- interface, and refutable relative to it (twisting argument in the
-  -- docstring); this is the proposition that must become a FIELD of
-  -- `HilbertBlumenthalPoint`, supplied by the geometric joint.
+  -- THE WEIL PAIRING on the Hilbert–Blumenthal abelian variety: the
+  -- determinant of Frobenius on the `λ`-adic Tate module is the
+  -- cyclotomic value `Nw`.  Not derivable from the interface, and
+  -- refutable relative to it (twisting argument in the docstring) — so
+  -- since 2026-07-26 it IS the interface: the field `detσ`, supplied
+  -- where the Weil pairing is visible (the frame chosen by
+  -- `Fermat.exists_tateFrame_of_levelStructure`).
   have hweil : ∀ w ∉ pt.bad,
       LinearMap.det (pt.σ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)) =
-        (Ideal.absNorm w.asIdeal : pt.O₀) := by
-    sorry
+        (Ideal.absNorm w.asIdeal : pt.O₀) := pt.detσ
   -- the constant coefficient of a rank-`2` charpoly is the determinant
   have hcoeff : ∀ w ∉ pt.bad,
       (pt.σ.charFrob w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.O₀) := by

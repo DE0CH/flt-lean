@@ -21,7 +21,11 @@ varieties:
   missing-machinery list: `T_I A` is free of rank `2` over the
   completion `𝒪_{D,I}`, with continuous `Γ_F`-action, and its reduction
   is `A[I]`, so the Frobenius characteristic polynomials of `T_I A`
-  reduce to those of the level structure;
+  reduce to those of the level structure — and, since 2026-07-26, that
+  the determinant of Frobenius on the frame is the absolute norm (the
+  Weil pairing; see the DETERMINANT CLAUSE paragraph in that leaf's
+  docstring for why it belongs in an existentially quantified frame and
+  is false for a given one);
 * `exists_weilFrobeniusSystem_of_mult` — item 9, Weil/Faltings: those
   characteristic polynomials are already defined over `D` and are
   INDEPENDENT of `I`, i.e. the `T_I A` for varying `I` are members of one
@@ -114,6 +118,11 @@ public import Mathlib.RingTheory.AdicCompletion.Basic
 -- `Ideal.exists_mem_pow_notMem_pow_succ`: the uniformizer of
 -- `exists_mem_notMem_sq_of_isMaximal`
 public import Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
+-- `Ideal.absNorm`: the determinant clause of
+-- `exists_tateFrame_of_levelStructure` (the Weil pairing, added
+-- 2026-07-26) states the determinant of Frobenius to be the absolute
+-- norm of the place, so `absNorm` occurs in a STATEMENT here
+public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
 -- `NumberField.IsTotallyReal`: the real-multiplication field of a
 -- Hilbert–Blumenthal family is totally real, in both leaf STATEMENTS
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
@@ -542,7 +551,41 @@ available.
 `IsTwistedHilbertBlumenthalModuli` already carries `ρbarp.IsIrreducible`,
 and at `λ` the irreducibility of `ρbar` is a hypothesis of
 `exists_twistedHilbertBlumenthalModuli_of_five_le`, transported to `Γ_F`
-along `hrestr` by `isIrreducible_map_of_restrictionSurjective` above. -/
+along `hrestr` by `isIrreducible_map_of_restrictionSurjective` above.
+
+DETERMINANT CLAUSE, ADDED 2026-07-26 (the WEIL PAIRING; one extra
+existential `bad` and one extra conjunct, nothing else changed).  The
+frame now also reports that the determinant of Frobenius on it is the
+absolute norm,
+
+  `∀ w ∉ bad, LinearMap.det (τ.toLocal w Frobᵥ) = (Nw : O)`,
+
+away from a finite set (the places of bad reduction of `A_x` together
+with those above `q`, where the `I`-adic representation is ramified).
+Classically this is the `𝒪_D`-linear Weil pairing: a polarization makes
+`∧²_{𝒪_{D,I}} T_I A` the inverse different twisted by the cyclotomic
+character, so `det τ = χ_cyc` and `χ_cyc(Frob_w) = Nw` (Taylor 2002 §2;
+Carayol's normalization).  Nothing else in the tree can see it —
+`Modularity/AbelianScheme.lean` has geometric points and Galois-stable
+torsion but no pairing — which is why it rides here rather than being
+derived.
+
+WHY IT IS SOUND TO PUT IT HERE AND NOT IN A LEAF OF ITS OWN
+(faithfulness, checked 2026-07-26).  The frame is EXISTENTIALLY
+quantified, so the clause constrains only the frame this leaf chooses,
+and the honest Tate frame satisfies it.  Stated instead for a GIVEN
+frame it would be **FALSE**, by exactly the counterexample that refuted
+the sibling `exists_weilFrobeniusSystem_of_mult`: `φ` is only additive
+and `Γ_F`-equivariant, so the `O`-structure it transports to `T` is an
+arbitrary embedding `O ↪ End_{ℤ_q[Γ_F]}(T)`, and when that commutant is
+larger than `𝒪_{D,I}` — e.g. `T ⊗ ℚ_q = χ₁ ⊕ χ₂` with `𝒪_{D,I}/ℤ_q`
+carrying a nontrivial automorphism `ψ`, so that `a ∗ (u₁, u₂) :=
+(a u₁, ψ(a) u₂)` is a second rank-`2` free structure — the determinant
+becomes `χ₁ · ψ⁻¹(χ₂)` instead of `χ₁ · χ₂ = Nw`.  A determinant leaf
+over a given frame therefore needs the real-multiplication tie
+(`j`/`hj`) that the sibling was repaired with; over a frame the prover
+chooses, it needs nothing.  Its consumer is the field
+`HilbertBlumenthalPoint.detσ`. -/
 theorem exists_tateFrame_of_levelStructure
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -570,7 +613,8 @@ theorem exists_tateFrame_of_levelStructure
       (_ : Module.Free ℤ_[q] O) (_ : IsModuleTopology ℤ_[q] O)
       (τ : GaloisRep F O (Fin 2 → O))
       (φ : (Fin 2 → O) → TatePt m x I π) (ι₀ : O →+* k')
-      (j : NumberField.RingOfIntegers D →+* O),
+      (j : NumberField.RingOfIntegers D →+* O)
+      (bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F))),
       (∀ (u u' : Fin 2 → O) (n : ℕ),
         (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n)) ∧
       Function.Bijective φ ∧
@@ -578,8 +622,11 @@ theorem exists_tateFrame_of_levelStructure
         (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n)) ∧
       (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
         (τ.charFrob w).map ι₀ = ρ'.charFrob w) ∧
-      ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
-        (φ (j a • u)).1 n = m.act a ((φ u).1 n) := by
+      (∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+        (φ (j a • u)).1 n = m.act a ((φ u).1 n)) ∧
+      ∀ w ∉ bad,
+        LinearMap.det (τ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)) =
+          (Ideal.absNorm w.asIdeal : O) := by
   -- `I` is nonzero: it contains the rational prime `q`.
   have hI0 : I ≠ ⊥ := by
     intro h
@@ -595,8 +642,19 @@ theorem exists_tateFrame_of_levelStructure
   obtain ⟨ι₀, hι₀⟩ :=
     exists_residualEmbedding_of_tateFrame m x I hI π hπ hπ2 O j hker τ φ hφadd hφbij hφequiv
       hφj hV ρ' hirr e headd heinj heequiv heimg
-  exact ⟨π, hπ, hπ2, O, iCR, iTS, iTR, iAlg, iLoc, iFin, iFree, iMT, τ, φ, ι₀, j,
-    hφadd, hφbij, hφequiv, hι₀, hφj⟩
+  -- The determinant (Weil-pairing) clause, added 2026-07-26 by another owner
+  -- and merged onto this assembly: the `𝒪_D`-linear Weil pairing makes
+  -- `∧²_{𝒪_{D,I}} T_I A` the inverse different twisted by `χ_cyc`, so
+  -- `det τ = χ_cyc` and `χ_cyc(Frob_w) = Nw` away from the bad places.  It is
+  -- a statement about the pairing, which none of the three leaves above sees,
+  -- so it is the ONE clause of this conclusion still open.
+  have hdet : ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ w ∉ bad,
+        LinearMap.det (τ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)) =
+          (Ideal.absNorm w.asIdeal : O) := sorry
+  obtain ⟨bad, hbad⟩ := hdet
+  exact ⟨π, hπ, hπ2, O, iCR, iTS, iTR, iAlg, iLoc, iFin, iFree, iMT, τ, φ, ι₀, j, bad,
+    hφadd, hφbij, hφequiv, hι₀, hφj, hbad⟩
 
 /-- **The Frobenius characteristic polynomials of the Tate modules form
 one `D`-rational compatible system** (sorry node — item 9 of the
