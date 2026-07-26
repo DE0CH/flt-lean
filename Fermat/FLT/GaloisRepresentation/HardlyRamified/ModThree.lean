@@ -35863,9 +35863,88 @@ theorem exists_pow_eq_one_of_isOpen_ker_ray_class
   have hfin := (pow_eq_zero_iff h3).mp hzero
   linear_combination hfin
 
+/-- **An integer prime to `v` is a unit in the completed integers `𝒪ᵥ`**
+(PROVEN 2026-07-26; helper (A1a) for
+`globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class` just below):
+if `(m : 𝓞 F) ∉ v`, then `m` is invertible in
+`v.adicCompletionIntegers F`.
+
+This is the general-base-field form of `Chebotarev.lean`'s
+`isUnit_natCast_adicCompletionIntegers`, which is stated only for the
+place of `ℚ` attached to a rational prime. Proof as implemented: a unit
+of the valuation subring is exactly an element of valuation one
+(`adicCompletionIntegers.isUnit_iff_valued_eq_one`); the valuation of
+the completion restricts on a global integer to the `v`-adic
+`intValuation` (`valuedAdicCompletion_eq_valuation`,
+`valuation_of_algebraMap`), which is one exactly when that integer is
+outside `v` (`intValuation_eq_one_iff`). -/
+theorem isUnit_natCast_adicCompletionIntegers_of_notMem_ray_class
+    (F : Type*) [Field F] [NumberField F] (m : ℕ)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hm : (m : NumberField.RingOfIntegers F) ∉ v.asIdeal) :
+    IsUnit ((m : ℕ) :
+      IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v) := by
+  rw [IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers.isUnit_iff_valued_eq_one]
+  have h2 := IsDedekindDomain.HeightOneSpectrum.valuedAdicCompletion_eq_valuation
+    (K := F) v ((m : ℕ) : NumberField.RingOfIntegers F)
+  rw [IsDedekindDomain.HeightOneSpectrum.valuation_of_algebraMap,
+    IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff.mpr hm] at h2
+  refine Eq.trans ?_ h2
+  congr 1
+  push_cast
+  rfl
+
+/-- **The residue field of `𝒪ᵥ` has `N v = absNorm v` elements** (PROVEN
+2026-07-26; helper (A1b) for
+`globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class` just below):
+the contraction to `𝒪ᵥ` of the maximal ideal of the integral closure of
+`𝒪ᵥ` in `Fᵥᵃˡᵍ` — which is the ideal whose residue cardinality is the
+exponent in `AlgHom.IsArithFrobAt` — cuts out a quotient of cardinality
+`Ideal.absNorm v.asIdeal`.
+
+This is the general-base-field form of `ResidueCardinality.lean`'s
+`natCard_residue_quotient_toHeightOneSpectrum`, which computes the same
+number as `q` for the place of `ℚ` attached to a rational prime `q`.
+Proof as implemented, in two steps: the contraction of a maximal ideal
+along an integral extension is maximal, hence IS the maximal ideal of
+the local ring `𝒪ᵥ` (`IsLocalRing.eq_maximalIdeal`, `Ideal.IsMaximal.under`);
+and the residue field of `𝒪ᵥ` is canonically `𝓞 F ⧸ v`
+(`ResidueFieldEquivCompletionResidueField`), whose cardinality is
+`absNorm v.asIdeal` by definition of the absolute norm
+(`Ideal.absNorm_apply`, `Submodule.cardQuot_apply`). -/
+theorem natCard_residue_quotient_absNorm_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F)) :
+    Nat.card ((IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v) ⧸
+      ((IsLocalRing.maximalIdeal (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion F v)))).under
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v))) =
+      Ideal.absNorm v.asIdeal := by
+  have hunder : ((IsLocalRing.maximalIdeal (IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v)
+      (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion F v)))).under
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v)) =
+      IsLocalRing.maximalIdeal
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v) :=
+    IsLocalRing.eq_maximalIdeal (Ideal.IsMaximal.under
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v)
+      (IsLocalRing.maximalIdeal (IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion F v)))))
+  rw [hunder, Ideal.absNorm_apply, Submodule.cardQuot_apply,
+    Nat.card_congr
+      (IsDedekindDomain.HeightOneSpectrum.ResidueFieldEquivCompletionResidueField
+        F v).toEquiv]
+  rfl
+
 /-- **The global Frobenius acts on roots of unity of order prime to `v`
-by the `N v`-th power** (sorry node, created 2026-07-26 as sub-leaf (A1)
-of `exists_conductor_artinSymbol_span_eq_one_ray_class` below, consumed
+by the `N v`-th power** (PROVEN 2026-07-26; created the same day as
+sub-leaf (A1) of `exists_conductor_artinSymbol_span_eq_one_ray_class`
+below, consumed
 through the base-case leaf
 `artinSymbol_span_eq_one_of_cyclotomic_ray_class` just below): for a
 finite place `v` of a number field `F` and `m ≥ 1` with `m ∉ v` — i.e.
@@ -35897,7 +35976,32 @@ Nearby in tree, but not a substitute: `exists_algEquiv_map_zeta_eq_pow_absNorm`
 and `exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd` (`Chebotarev.lean`)
 assert the EXISTENCE of some `σ ∈ Gal(E/F)` with `σ ζ = ζ ^ (N I)` for a
 cyclotomic `E/F`; this leaf identifies WHICH element does it, namely
-`globalFrob v`, which is what the Artin symbol is built from. -/
+`globalFrob v`, which is what the Artin symbol is built from.
+
+**Proof as implemented** — the general-base-field form of the `hfrob`
+step inside `Chebotarev.lean`'s `cyclotomicCharacter_globalFrob` (which
+runs the identical argument for `F = ℚ`, `m = ℓ ^ k`, `N v = q`), with
+the two `ℚ`-specific ingredients replaced by the general helpers proven
+just above. Transport `ζ` along the fixed embedding
+`Fᵃˡᵍ → Fᵥᵃˡᵍ` (`Field.absoluteGaloisGroup.lift_map`, whose
+`algebraMap F Fᵥ` must be PINNED to
+`instAlgebraAdicCompletion` — the instance `globalFrob`'s own definition
+uses); the image `η` is a root of unity, hence integral over `𝒪ᵥ`
+(`IsIntegral.of_pow`), so it lives in `IntegralClosure 𝒪ᵥ Fᵥᵃˡᵍ`, where
+`Frobᵥ` is an arithmetic Frobenius at the maximal ideal
+(`Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`).
+`AlgHom.IsArithFrobAt.apply_of_pow_eq_one` then gives
+`Frobᵥ η = η ^ Nat.card (𝒪ᵥ ⧸ 𝔪.under 𝒪ᵥ)` — its side condition is
+exactly that `m` is outside the maximal ideal, i.e.
+`isUnit_natCast_adicCompletionIntegers_of_notMem_ray_class` applied to
+`hv`, which is where `v ∤ (m)` is consumed — and
+`natCard_residue_quotient_absNorm_ray_class` identifies that exponent
+with `Ideal.absNorm v.asIdeal`. Descending through the injective
+`AlgebraicClosure.map` gives the statement, `globalFrob v` being by
+definition the image of `Frobᵥ`.
+
+The hypothesis `hm : 0 < m` is used only for `IsIntegral.of_pow`; it is
+in any case implied by `hv` (were `m = 0`, `(0 : 𝓞 F) ∈ v.asIdeal`). -/
 theorem globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class
     (F : Type*) [Field F] [NumberField F]
     (m : ℕ) (hm : 0 < m)
@@ -35905,7 +36009,61 @@ theorem globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class
     (hv : (m : NumberField.RingOfIntegers F) ∉ v.asIdeal)
     (ζ : AlgebraicClosure F) (hζ : ζ ^ m = 1) :
     globalFrob v ζ = ζ ^ Ideal.absNorm v.asIdeal := by
-  sorry
+  have hι := Field.absoluteGaloisGroup.lift_map
+    (@algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F v) _ _
+      (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+        (NumberField.RingOfIntegers F) F v))
+    (Field.AbsoluteGaloisGroup.adicArithFrob v) ζ
+  set η := AlgebraicClosure.map
+    (@algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F v) _ _
+      (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+        (NumberField.RingOfIntegers F) F v)) ζ with hηdef
+  have hη : η ^ m = 1 := by rw [hηdef, ← map_pow, hζ, map_one]
+  have hint : IsIntegral
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v) η := by
+    refine IsIntegral.of_pow (n := m) hm ?_
+    rw [hη]
+    exact isIntegral_one
+  have harith := Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob (v := v)
+  have hnotmem : ((m : ℕ) : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v)
+      (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion F v))) ∉
+      IsLocalRing.maximalIdeal _ := by
+    have hu : IsUnit ((m : ℕ) :
+        IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v) :=
+      isUnit_natCast_adicCompletionIntegers_of_notMem_ray_class F m v hv
+    have hu2 : IsUnit ((m : ℕ) : IntegralClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v)
+        (AlgebraicClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletion F v))) := by
+      have h := hu.map (algebraMap
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v)
+        (IntegralClosure
+          (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v)
+          (AlgebraicClosure
+            (IsDedekindDomain.HeightOneSpectrum.adicCompletion F v))))
+      rwa [map_natCast] at h
+    exact fun hmem => ((IsLocalRing.mem_maximalIdeal _).mp hmem) hu2
+  have hpow : (⟨η, hint⟩ : IntegralClosure
+      (IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers F v)
+      (AlgebraicClosure
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion F v))) ^ m = 1 := by
+    apply Subtype.ext
+    show η ^ m = 1
+    exact hη
+  have happ := AlgHom.IsArithFrobAt.apply_of_pow_eq_one harith hpow hnotmem
+  rw [natCard_residue_quotient_absNorm_ray_class F v] at happ
+  have hcoord := congrArg Subtype.val happ
+  have hact : Field.AbsoluteGaloisGroup.adicArithFrob v η =
+      η ^ Ideal.absNorm v.asIdeal := hcoord
+  apply (AlgebraicClosure.map
+    (@algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F v) _ _
+      (IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion
+        (NumberField.RingOfIntegers F) F v))).injective
+  rw [map_pow]
+  unfold globalFrob
+  exact hι.trans hact
 
 /-- **Artin reciprocity in the CYCLOTOMIC case — Childress's base case**
 (sorry node, created 2026-07-26 as sub-leaf (A2) of
