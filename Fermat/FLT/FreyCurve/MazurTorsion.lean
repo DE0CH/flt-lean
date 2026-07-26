@@ -417,6 +417,16 @@ values `j = −140625/8` and `j = 3375/2` with a rational cyclic
 one-parameter family of them. Those two levels are therefore the only
 bare sorry nodes left among the eleven.
 
+Level `15` was taken one step further on 2026-07-25: the genus-`0` Tate
+normal form its docstring named as missing is now BUILT and PROVEN (see
+"Tate normal form at a rational point of order `5`" below), so
+`not_order_three_and_order_five_point` is DERIVED and the surviving leaf
+is `WeierstrassCurve.tateNF_self_no_order_three` — the single-parameter
+statement that `y² + (1 − b) x y − b y = x³ − b x²` never has a rational
+`3`-torsion point, which is `X_1(15)` itself. What that leaf still needs
+is a rank-`0` Mordell–Weil computation, i.e. descent machinery mathlib
+does not have.
+
 A sweep over `≈ 4.8 · 10⁵` integral models with `|a₄|, |a₆| ≤ 100`
 found exact rational point orders only in `{1, …, 10}`, consistent with
 all eleven statements.
@@ -2497,39 +2507,394 @@ theorem WeierstrassCurve.no_torsion_order_14 (E : WeierstrassCurve ℚ)
   · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
   · rw [addOrderOf_nsmul' Q (by decide), hQ]; decide
 
+/-!
+### Tate normal form at a rational point of order `5` (2026-07-25)
+
+Machinery built to decompose `not_order_three_and_order_five_point`, whose
+docstring previously read "IRREDUCIBLE at this mathlib pin"; that audit is
+hereby superseded — the level-`5` genus-`0` parametrisation it named as
+missing is supplied below, and the node is now DERIVED.
+
+The classical normalisation (Tate; Kubert, *Universal bounds on the torsion
+of elliptic curves*, Proc. LMS 33 (1976), §2) says that an elliptic curve
+carrying a rational point `Q` of order `N ≥ 4` is `ℚ`-isomorphic, by a change
+of variables carrying `Q` to `(0, 0)`, to
+`E(b, c) : y² + (1 − c) x y − b y = x³ − b x²` (`WeierstrassCurve.tateNF`),
+and that the exact order of `(0, 0)` is a polynomial condition on `(b, c)`.
+Only `N = 5` is needed here, where the condition is `c = b`; the resulting
+one-parameter family `E(b, b)` IS the genus-`0` modular curve `X_1(5)`.
+
+Everything in this section is PROVEN. It rests on the project's
+`Affine.Point.equivVariableChange` (the group isomorphism
+`(C • W).Point ≃+ W.Point` induced by an admissible change of variables),
+which is what makes a normal form usable on the *group of points* rather than
+merely on equations — mathlib has no such transport.
+
+The construction, for `Q = (x₀, y₀)` a point of order `5` on `W`:
+
+* `A₃ := a₃ + x₀ a₁ + 2 y₀` is the `a₃`-coefficient after translating `Q` to
+  the origin. It equals `y₀ − negY(x₀, y₀)`, so it is nonzero exactly because
+  `2 • Q ≠ 0`.
+* `A₄ := a₄ + 2 x₀ a₂ − y₀ a₁ + 3 x₀²`; the shear `s := A₄ / A₃` kills the
+  `a₄`-coefficient.
+* `A₂ := a₂ + 3 x₀ − s a₁ − s²` is the `a₂`-coefficient after those two steps.
+  It is nonzero exactly because `3 • Q ≠ 0`: were it zero the curve would be
+  `y² + α x y + A₃ y = x³`, on which `(0, 0)` satisfies `2P = −P` outright
+  (`three_nsmul_zero_of_a₂_eq_zero`).
+* the scaling by `u := A₃ / A₂` then equalises the `a₂`- and
+  `a₃`-coefficients, giving `E(b, c)` with `b = −A₂³/A₃²` and
+  `c = 1 − (A₂/A₃)(a₁ + 2 s)`.
+
+On `E(b, c)` the group law gives `2 · (0,0) = (b, bc)` (`tateNF_double`) and
+`3 · (0,0) = (c, b − c)` (`tateNF_triple`), while `−2 · (0,0) = (b, 0)`; so
+`5 · (0,0) = 0` forces `c = b` (`tateNF_c_eq_b_of_order_five`).
+-/
+
+namespace WeierstrassCurve
+
+/-- **The Tate normal form** `y² + (1 − c) x y − b y = x³ − b x²`, i.e. the
+Weierstrass curve `⟨1 − c, −b, −b, 0, 0⟩`. Its origin `(0, 0)` is a rational
+point of order `≥ 4` whenever the curve is elliptic, and every elliptic curve
+over `ℚ` with a marked rational point of order `≥ 4` is `ℚ`-isomorphic to one
+of these with the marked point at the origin (Kubert, Proc. LMS 33 (1976),
+§2). -/
+def tateNF (b c : ℚ) : WeierstrassCurve ℚ := ⟨1 - c, -b, -b, 0, 0⟩
+
+@[simp] lemma tateNF_a₁ (b c : ℚ) : (tateNF b c).a₁ = 1 - c := rfl
+@[simp] lemma tateNF_a₂ (b c : ℚ) : (tateNF b c).a₂ = -b := rfl
+@[simp] lemma tateNF_a₃ (b c : ℚ) : (tateNF b c).a₃ = -b := rfl
+@[simp] lemma tateNF_a₄ (b c : ℚ) : (tateNF b c).a₄ = 0 := rfl
+@[simp] lemma tateNF_a₆ (b c : ℚ) : (tateNF b c).a₆ = 0 := rfl
+
+/-- The Tate normal form degenerates at `b = 0` (there `(0,0)` would be the
+singular point). -/
+lemma tateNF_Δ_of_b_eq_zero (c : ℚ) : (tateNF 0 c).Δ = 0 := by
+  simp only [WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+    WeierstrassCurve.b₈, tateNF_a₁, tateNF_a₂, tateNF_a₃, tateNF_a₄, tateNF_a₆]
+  ring
+
+lemma tateNF_b_ne_zero {b c : ℚ} [(tateNF b c).IsElliptic] : b ≠ 0 := by
+  rintro rfl
+  exact (isUnit_iff_ne_zero.mp (tateNF 0 c).isUnit_Δ) (tateNF_Δ_of_b_eq_zero c)
+
+/-- The marked point `(0, 0)` of the Tate normal form. -/
+lemma tateNF_nonsingular_zero {b c : ℚ} (hb : b ≠ 0) :
+    (tateNF b c).toAffine.Nonsingular 0 0 :=
+  Affine.nonsingular_zero.mpr ⟨tateNF_a₆ b c, Or.inl (by simpa using hb)⟩
+
+/-- `−(0, 0) = (0, b)` on the Tate normal form. -/
+lemma tateNF_negY_zero (b c : ℚ) : (tateNF b c).toAffine.negY 0 0 = b := by
+  simp only [Affine.negY, tateNF_a₁, tateNF_a₃]; ring
+
+lemma tateNF_equation_two (b c : ℚ) : (tateNF b c).toAffine.Equation b (b * c) := by
+  rw [Affine.equation_iff]
+  simp only [tateNF_a₁, tateNF_a₂, tateNF_a₃, tateNF_a₄, tateNF_a₆]; ring
+
+lemma tateNF_equation_three (b c : ℚ) : (tateNF b c).toAffine.Equation c (b - c) := by
+  rw [Affine.equation_iff]
+  simp only [tateNF_a₁, tateNF_a₂, tateNF_a₃, tateNF_a₄, tateNF_a₆]; ring
+
+/-- On the Tate normal form, `2 · (0, 0) = (b, bc)`. The tangent at `(0, 0)`
+is horizontal (`slope = 0`) because `a₄ = 0`. -/
+lemma tateNF_double {b c : ℚ} (hb : b ≠ 0)
+    (h0 : (tateNF b c).toAffine.Nonsingular 0 0)
+    (h2 : (tateNF b c).toAffine.Nonsingular b (b * c)) :
+    (Point.some 0 0 h0 + Point.some 0 0 h0 : (tateNF b c).toAffine.Point) =
+      Point.some b (b * c) h2 := by
+  have hy : (0 : ℚ) ≠ (tateNF b c).toAffine.negY 0 0 := by
+    rw [tateNF_negY_zero]; exact fun h => hb h.symm
+  have hsl : (tateNF b c).toAffine.slope 0 0 0 0 = 0 := by
+    rw [Affine.slope_of_Y_ne rfl hy, tateNF_negY_zero]
+    simp only [tateNF_a₁, tateNF_a₂, tateNF_a₄]
+    norm_num
+  rw [Point.add_self_of_Y_ne hy]
+  refine Point.some_eq_some _ ?_ ?_ <;>
+    simp only [Affine.addX, Affine.addY, Affine.negAddY, Affine.negY, hsl, tateNF_a₁, tateNF_a₂,
+      tateNF_a₃] <;> ring
+
+/-- On the Tate normal form, `3 · (0, 0) = (c, b − c)`: the chord through
+`(0, 0)` and `2 · (0, 0) = (b, bc)` has slope `c`. -/
+lemma tateNF_triple {b c : ℚ} (hb : b ≠ 0)
+    (h0 : (tateNF b c).toAffine.Nonsingular 0 0)
+    (h2 : (tateNF b c).toAffine.Nonsingular b (b * c))
+    (h3 : (tateNF b c).toAffine.Nonsingular c (b - c)) :
+    (Point.some 0 0 h0 + Point.some b (b * c) h2 : (tateNF b c).toAffine.Point) =
+      Point.some c (b - c) h3 := by
+  have hxy : ¬((0 : ℚ) = b ∧ (0 : ℚ) = (tateNF b c).toAffine.negY b (b * c)) := by
+    rintro ⟨h, -⟩; exact hb h.symm
+  have hsl : (tateNF b c).toAffine.slope 0 b 0 (b * c) = c := by
+    rw [Affine.slope_of_X_ne (fun h => hb h.symm)]
+    field_simp
+    ring
+  rw [Point.add_some hxy]
+  refine Point.some_eq_some _ ?_ ?_ <;>
+    simp only [Affine.addX, Affine.addY, Affine.negAddY, Affine.negY, hsl, tateNF_a₁, tateNF_a₂,
+      tateNF_a₃] <;> ring
+
+/-- **Order five forces `c = b`** (PROVEN 2026-07-25): if the origin of the
+Tate normal form `E(b, c)` is killed by `5`, then `c = b`. Indeed
+`3 · (0,0) = (c, b − c)` and `−2 · (0,0) = (b, 0)`, and `5 · (0,0) = 0` says
+exactly that these agree. This is the level-`5` half of Kubert's table, and
+identifies `E(b, b)` as the universal curve over `X_1(5)`. -/
+theorem tateNF_c_eq_b_of_order_five {b c : ℚ} [(tateNF b c).IsElliptic]
+    (h0 : (tateNF b c).toAffine.Nonsingular 0 0)
+    (h5 : (5 : ℕ) • (Point.some 0 0 h0 : (tateNF b c).toAffine.Point) = 0) : c = b := by
+  have hb : b ≠ 0 := tateNF_b_ne_zero (b := b) (c := c)
+  have h2 : (tateNF b c).toAffine.Nonsingular b (b * c) :=
+    Affine.equation_iff_nonsingular.mp (tateNF_equation_two b c)
+  have h3 : (tateNF b c).toAffine.Nonsingular c (b - c) :=
+    Affine.equation_iff_nonsingular.mp (tateNF_equation_three b c)
+  have e5 : (5 : ℕ) • (Point.some 0 0 h0 : (tateNF b c).toAffine.Point) =
+      (Point.some 0 0 h0 + (Point.some 0 0 h0 + Point.some 0 0 h0)) +
+        (Point.some 0 0 h0 + Point.some 0 0 h0) := by
+    rw [show (5 : ℕ) = 4 + 1 from rfl, succ_nsmul, show (4 : ℕ) = 3 + 1 from rfl, succ_nsmul,
+      show (3 : ℕ) = 2 + 1 from rfl, succ_nsmul, two_nsmul]
+    abel
+  rw [e5] at h5
+  have hneg : (Point.some 0 0 h0 + (Point.some 0 0 h0 + Point.some 0 0 h0) :
+      (tateNF b c).toAffine.Point) = -(Point.some 0 0 h0 + Point.some 0 0 h0) := by
+    rw [eq_neg_iff_add_eq_zero]; exact h5
+  rw [tateNF_double hb h0 h2, tateNF_triple hb h0 h2 h3, Point.neg_some] at hneg
+  injection hneg with hx hy
+
+/-- If `a₂ = a₄ = 0` and `a₃ ≠ 0` then the origin satisfies `2P = −P`, hence
+is killed by `3`. This is the degenerate case that the Tate normalisation must
+avoid, and it is exactly the level-`3` normal form `y² + a₁ x y + a₃ y = x³`. -/
+lemma three_nsmul_zero_of_a₂_eq_zero {V : WeierstrassCurve ℚ}
+    (ha₂ : V.a₂ = 0) (ha₄ : V.a₄ = 0) (ha₃ : V.a₃ ≠ 0)
+    (h0 : V.toAffine.Nonsingular 0 0) :
+    (3 : ℕ) • (Point.some 0 0 h0 : V.toAffine.Point) = 0 := by
+  have hnegY : V.toAffine.negY 0 0 = -V.a₃ := by simp [Affine.negY]
+  have hy : (0 : ℚ) ≠ V.toAffine.negY 0 0 := by
+    rw [hnegY]
+    intro h
+    exact ha₃ (by linarith)
+  have hsl : V.toAffine.slope 0 0 0 0 = 0 := by
+    rw [Affine.slope_of_Y_ne rfl hy, hnegY, ha₄]
+    norm_num
+  have hdbl : (Point.some 0 0 h0 + Point.some 0 0 h0 : V.toAffine.Point)
+      = -Point.some 0 0 h0 := by
+    rw [Point.add_self_of_Y_ne hy, Point.neg_some]
+    refine Point.some_eq_some _ ?_ ?_ <;>
+      simp only [Affine.addX, Affine.addY, Affine.negAddY, Affine.negY, hsl, ha₂] <;> ring
+  rw [show (3 : ℕ) = 2 + 1 from rfl, succ_nsmul, two_nsmul, hdbl, neg_add_cancel]
+
+/-- **Tate normal form at a rational point of order `5`** (PROVEN
+2026-07-25): an elliptic curve over `ℚ` carrying a rational point of order
+`5` is `ℚ`-isomorphic — as a group of rational points — to the curve
+`E(b, b) : y² + (1 − b) x y − b y = x³ − b x²` for some `b`. Equivalently,
+`E(b, b)` is the universal elliptic curve over the genus-`0` modular curve
+`X_1(5)`, with `b` its coordinate.
+
+The isomorphism is produced explicitly (translate the point to the origin,
+shear to kill `a₄`, scale to equalise `a₂` and `a₃`) and transported to the
+groups of points by `Affine.Point.equivVariableChange`; the identification
+`c = b` is `tateNF_c_eq_b_of_order_five`. See the section header above for the
+formulas. -/
+theorem exists_tateNF_equiv_of_order_five (W : WeierstrassCurve ℚ) [W.IsElliptic]
+    (Q : W.toAffine.Point) (hQ : addOrderOf Q = 5) :
+    ∃ b : ℚ, ∃ _ : (tateNF b b).IsElliptic,
+      Nonempty ((tateNF b b).toAffine.Point ≃+ W.toAffine.Point) := by
+  have h5Q : (5 : ℕ) • Q = 0 := by rw [← hQ]; exact addOrderOf_nsmul_eq_zero Q
+  have h2Q : (2 : ℕ) • Q ≠ 0 := by
+    intro h
+    have hd := addOrderOf_dvd_of_nsmul_eq_zero h
+    rw [hQ] at hd; norm_num at hd
+  have h3Q : (3 : ℕ) • Q ≠ 0 := by
+    intro h
+    have hd := addOrderOf_dvd_of_nsmul_eq_zero h
+    rw [hQ] at hd; norm_num at hd
+  have hQ0 : Q ≠ 0 := by
+    intro h
+    rw [h, addOrderOf_zero] at hQ
+    norm_num at hQ
+  obtain _ | ⟨xQ, yQ, hns⟩ := Q
+  · exact absurd rfl hQ0
+  have heq : yQ ^ 2 + W.a₁ * xQ * yQ + W.a₃ * yQ
+      = xQ ^ 3 + W.a₂ * xQ ^ 2 + W.a₄ * xQ + W.a₆ := by
+    have h := hns.1
+    rwa [Affine.equation_iff] at h
+  -- The coefficients after translating `Q` to the origin and shearing.
+  set A₃ : ℚ := W.a₃ + xQ * W.a₁ + 2 * yQ with hA₃
+  have hA₃ne : A₃ ≠ 0 := by
+    intro h
+    refine h2Q ?_
+    rw [two_nsmul]
+    refine Point.add_self_of_Y_eq ?_
+    simp only [Affine.negY]
+    rw [hA₃] at h
+    linarith
+  set A₄ : ℚ := W.a₄ + 2 * xQ * W.a₂ - yQ * W.a₁ + 3 * xQ ^ 2 with hA₄
+  set s : ℚ := A₄ / A₃ with hsdef
+  set A₂ : ℚ := W.a₂ + 3 * xQ - s * W.a₁ - s ^ 2 with hA₂
+  -- The shear-and-translate change of variables (`u = 1`).
+  have hC₀ : (⟨1, xQ, s, yQ⟩ : VariableChange ℚ) • W
+      = (⟨W.a₁ + 2 * s, A₂, A₃, 0, 0⟩ : WeierstrassCurve ℚ) := by
+    ext
+    · rw [variableChange_a₁]; simp
+    · rw [variableChange_a₂]; simp [hA₂]; ring
+    · rw [variableChange_a₃]; simp [hA₃]
+    · rw [variableChange_a₄]; simp only [inv_one, Units.val_one, one_pow, one_mul]
+      rw [hsdef]; field_simp [hA₄, hA₃]; ring
+    · rw [variableChange_a₆]; simp only [inv_one, Units.val_one, one_pow, one_mul]
+      linarith [heq]
+  -- `A₂ = 0` would make the origin a point of order `3`.
+  have hA₂ne : A₂ ≠ 0 := by
+    intro h
+    refine h3Q ?_
+    have hV : ((⟨1, xQ, s, yQ⟩ : VariableChange ℚ) • W).a₂ = 0 := by rw [hC₀]; exact h
+    have hV4 : ((⟨1, xQ, s, yQ⟩ : VariableChange ℚ) • W).a₄ = 0 := by rw [hC₀]
+    have hV3 : ((⟨1, xQ, s, yQ⟩ : VariableChange ℚ) • W).a₃ ≠ 0 := by rw [hC₀]; exact hA₃ne
+    have hV6 : ((⟨1, xQ, s, yQ⟩ : VariableChange ℚ) • W).a₆ = 0 := by rw [hC₀]
+    have h0V : ((⟨1, xQ, s, yQ⟩ : VariableChange ℚ) • W).toAffine.Nonsingular 0 0 :=
+      Affine.nonsingular_zero.mpr ⟨hV6, Or.inl hV3⟩
+    have hmap : Point.equivVariableChange W ⟨1, xQ, s, yQ⟩ (Point.some 0 0 h0V)
+        = Point.some xQ yQ hns := by
+      rw [Point.equivVariableChange_some]
+      exact Point.some_eq_some W (by simp) (by simp)
+    calc (3 : ℕ) • (Point.some xQ yQ hns : W.toAffine.Point)
+        = (3 : ℕ) • (Point.equivVariableChange W ⟨1, xQ, s, yQ⟩ (Point.some 0 0 h0V)) := by
+          rw [hmap]
+      _ = Point.equivVariableChange W ⟨1, xQ, s, yQ⟩ ((3 : ℕ) • Point.some 0 0 h0V) :=
+          (map_nsmul _ _ _).symm
+      _ = 0 := by
+          rw [three_nsmul_zero_of_a₂_eq_zero hV hV4 hV3 h0V]; exact map_zero _
+  -- The scaling that equalises `a₂` and `a₃`.
+  set v : ℚˣ := Units.mk0 (A₂ / A₃) (div_ne_zero hA₂ne hA₃ne) with hv
+  set bb : ℚ := -(A₂ ^ 3 / A₃ ^ 2) with hbb
+  set cc : ℚ := 1 - (A₂ / A₃) * (W.a₁ + 2 * s) with hcc
+  have hvv : ((v⁻¹⁻¹ : ℚˣ) : ℚ) = A₂ / A₃ := by rw [inv_inv, hv]; simp
+  have hCW : (⟨v⁻¹, xQ, s, yQ⟩ : VariableChange ℚ) • W = tateNF bb cc := by
+    ext
+    · rw [variableChange_a₁, tateNF_a₁]
+      show ((v⁻¹⁻¹ : ℚˣ) : ℚ) * (W.a₁ + 2 * s) = 1 - cc
+      rw [hvv, hcc]; ring
+    · rw [variableChange_a₂, tateNF_a₂]
+      show ((v⁻¹⁻¹ : ℚˣ) : ℚ) ^ 2 * (W.a₂ - s * W.a₁ + 3 * xQ - s ^ 2) = -bb
+      have hX : W.a₂ - s * W.a₁ + 3 * xQ - s ^ 2 = A₂ := by rw [hA₂]; ring
+      rw [hvv, hbb, hX]; field_simp
+    · rw [variableChange_a₃, tateNF_a₃]
+      show ((v⁻¹⁻¹ : ℚˣ) : ℚ) ^ 3 * (W.a₃ + xQ * W.a₁ + 2 * yQ) = -bb
+      rw [hvv, hbb, ← hA₃]; field_simp
+    · rw [variableChange_a₄, tateNF_a₄]
+      show ((v⁻¹⁻¹ : ℚˣ) : ℚ) ^ 4 * (W.a₄ - s * W.a₃ + 2 * xQ * W.a₂
+        - (yQ + xQ * s) * W.a₁ + 3 * xQ ^ 2 - 2 * s * yQ) = 0
+      rw [hvv]
+      have hY : W.a₄ - s * W.a₃ + 2 * xQ * W.a₂ - (yQ + xQ * s) * W.a₁ + 3 * xQ ^ 2
+          - 2 * s * yQ = A₄ - s * A₃ := by rw [hA₄, hA₃]; ring
+      rw [hY, hsdef]; field_simp; ring
+    · rw [variableChange_a₆, tateNF_a₆]
+      show ((v⁻¹⁻¹ : ℚˣ) : ℚ) ^ 6 * (W.a₆ + xQ * W.a₄ + xQ ^ 2 * W.a₂ + xQ ^ 3
+        - yQ * W.a₃ - yQ ^ 2 - xQ * yQ * W.a₁) = 0
+      rw [show W.a₆ + xQ * W.a₄ + xQ ^ 2 * W.a₂ + xQ ^ 3 - yQ * W.a₃ - yQ ^ 2
+          - xQ * yQ * W.a₁ = 0 from by linarith [heq]]
+      ring
+  haveI hell : (tateNF bb cc).IsElliptic :=
+    hCW ▸ (inferInstance : ((⟨v⁻¹, xQ, s, yQ⟩ : VariableChange ℚ) • W).IsElliptic)
+  have h0 : (tateNF bb cc).toAffine.Nonsingular 0 0 :=
+    tateNF_nonsingular_zero (tateNF_b_ne_zero (b := bb) (c := cc))
+  have h0C : ((⟨v⁻¹, xQ, s, yQ⟩ : VariableChange ℚ) • W).toAffine.Nonsingular 0 0 := by
+    rw [hCW]; exact h0
+  have hmapC : Point.equivVariableChange W ⟨v⁻¹, xQ, s, yQ⟩ (Point.some 0 0 h0C)
+      = Point.some xQ yQ hns := by
+    rw [Point.equivVariableChange_some]
+    exact Point.some_eq_some W (by simp) (by simp)
+  have h5C : (5 : ℕ) • (Point.some 0 0 h0C :
+      ((⟨v⁻¹, xQ, s, yQ⟩ : VariableChange ℚ) • W).toAffine.Point) = 0 := by
+    apply (Point.equivVariableChange W ⟨v⁻¹, xQ, s, yQ⟩).injective
+    rw [map_nsmul, hmapC, map_zero]
+    exact h5Q
+  -- Transport to the Tate normal form and read off `c = b`.
+  have h5T : (5 : ℕ) • (Point.some 0 0 h0 : (tateNF bb cc).toAffine.Point) = 0 := by
+    apply (Point.equivOfEq hCW.symm).injective
+    rw [map_nsmul, map_zero, Point.equivOfEq_some]
+    exact h5C
+  have hcb : cc = bb := tateNF_c_eq_b_of_order_five h0 h5T
+  have htate : tateNF bb cc = tateNF bb bb := by rw [hcb]
+  exact ⟨bb, htate ▸ hell,
+    ⟨(Point.equivOfEq htate.symm).trans
+      ((Point.equivOfEq hCW.symm).trans (Point.equivVariableChange W ⟨v⁻¹, xQ, s, yQ⟩))⟩⟩
+
+/-- **`X_1(15)` has no non-cuspidal rational point** (sorry node, cut
+2026-07-25 out of `not_order_three_and_order_five_point`): the Tate normal
+form `E(b, b) : y² + (1 − b) x y − b y = x³ − b x²` — the universal curve over
+`X_1(5)`, whose origin is a rational point of order `5` for every `b` making
+it elliptic — never carries a rational point of order `3`.
+
+This is the `X_1(15)` content in its sharpest form. `b` is the coordinate on
+the genus-`0` modular curve `X_1(5)`, and the `3`-torsion condition on
+`E(b, b)` cuts out of it the genus-`1` curve `X_1(15)` (recomputed
+2026-07-25: `μ/12 = 8`, `16` cusps, so `g = 1 + 8 − 8 = 1`), whose Jacobian
+has Mordell–Weil rank `0` over `ℚ`, so `X_1(15)(ℚ)` is finite and cuspidal
+(Kubert; Ligozat; subsumed in Mazur 1977, Thm 8).
+
+NOT VACUOUS, and both hypotheses are load-bearing: `E(b, b)` is elliptic for
+every `b` outside the vanishing locus of `Δ`, the origin genuinely has order
+`5` there (`tateNF_c_eq_b_of_order_five` is an equivalence in this direction:
+`c = b` makes `3 · (0,0) = −2 · (0,0)`), and an order-`3` point would produce
+a rational point of order `15`.
+
+What remains, in dependency order; none of it exists at this mathlib pin:
+
+1. *The explicit affine model of `X_1(15)`.* Translating a candidate
+   `3`-torsion point `(x, y)` of `E(b, b)` to the origin must make the
+   translated `a₄` vanish and the translated `b₈` vanish, i.e. — writing
+   `A₂' = 3x − b`, `A₃' = (1 − b) x + 2 y − b`, `A₄' = 3x² − 2 b x − (1 − b) y`
+   for the translated coefficients — the pair of equations
+   `y² + (1 − b) x y − b y = x³ − b x²` and
+   `A₄'² + (1 − b) A₃' A₄' = A₂' A₃'²` in `(b, x, y)`, together with
+   `A₃' ≠ 0`. (The criterion "`(0,0)` has order `3` iff `a₆ = 0`, `b₈ = 0`,
+   `a₃ ≠ 0`" is elementary: `2 · (0,0) = −(0,0)` reduces to
+   `a₄² + a₁ a₃ a₄ − a₂ a₃² = 0`, which is `−b₈` when `a₆ = 0`.)
+2. *Its reduction to a Weierstrass model* — `X_1(15)` is a curve of
+   conductor `50` in the standard tables.
+3. *A rank-`0` Mordell–Weil computation for that curve*, i.e. a `2`-descent
+   exhibiting the Selmer group as exhausted by torsion. Mathlib has no
+   descent machinery of any kind, so this is the genuinely missing theory.
+
+Routes checked and rejected (audit 2026-07-25, carried over from the
+level-structure form of this node):
+
+* *The `X_0` / isogeny shortcut is NOT available here* (unlike levels
+  `20, 24, 35, 49`). `15` is a rational cyclic isogeny degree:
+  `[1,0,1,−1,−2]` of conductor `50` has isogeny-degree set `{1, 3, 5, 15}`
+  (PARI/GP `ellisomat`), so `X_0(15)` has non-cuspidal rational points and
+  only the `X_1` statement excludes an order-`15` point.
+* *Divisor reduction fails by design.* The proper divisors `1, 3, 5` of `15`
+  all lie in Mazur's allowed set `{1, …, 10, 12}`.
+* *Reduction plus Hasse only bounds the conductor.* `15 ∣ #Ẽ(𝔽_p)` at every
+  good `p` (including `p = 2`, since `15` is odd), and `p + 1 + 2√p < 15` for
+  `p ≤ 7`, so bad reduction is forced exactly at `2, 3, 5, 7`: `210 ∣ N_E`,
+  and nothing more. -/
+theorem tateNF_self_no_order_three (b : ℚ) [(tateNF b b).IsElliptic]
+    (P : (tateNF b b).toAffine.Point) (hP : addOrderOf P = 3) : False :=
+  sorry
+
+end WeierstrassCurve
+
 /-- **No rational point of order `3` together with a rational point of
-order `5`** (sorry node — the `X_1(15)` content in its level-structure
-form): no elliptic curve over `ℚ` carries both. The hypotheses say
-exactly that `E(ℚ) ⊇ ℤ/3 ⊕ ℤ/5 ≅ ℤ/15`, i.e. that `(E, P + Q)` is a
-non-cuspidal rational point of `X_1(15)` — a curve of genus `1`
-(recomputed 2026-07-25: `μ/12 = 8`, `16` cusps, so `g = 1 + 8 − 8 = 1`)
-whose Jacobian has Mordell–Weil rank `0` over `ℚ`, so `X_1(15)(ℚ)` is
-finite and cuspidal (Kubert; Ligozat; subsumed in Mazur 1977, Thm 8).
+order `5`** (DERIVED 2026-07-25 from the Tate-normal-form reduction
+`WeierstrassCurve.exists_tateNF_equiv_of_order_five` and the `X_1(15)` leaf
+`WeierstrassCurve.tateNF_self_no_order_three`): no elliptic curve over `ℚ`
+carries both. The hypotheses say exactly that `E(ℚ) ⊇ ℤ/3 ⊕ ℤ/5 ≅ ℤ/15`, i.e.
+that `(E, P + Q)` is a non-cuspidal rational point of `X_1(15)` — a curve of
+genus `1` whose Jacobian has Mordell–Weil rank `0` over `ℚ`, so `X_1(15)(ℚ)`
+is finite and cuspidal (Kubert; Ligozat; subsumed in Mazur 1977, Thm 8).
 
-IRREDUCIBLE at this mathlib pin (audit 2026-07-25). Equivalent to
-`no_torsion_order_15` below, but stated as the fibre product
-`X_1(3) ×_{X_1(1)} X_1(5)` of two genus-`0` modular curves, which is
-the shape any elementary attack must use. Routes checked and rejected:
-
-* *The `X_0` / isogeny shortcut is NOT available here.* `15` is a
-  rational cyclic isogeny degree: `[1,0,1,−1,−2]` of conductor `50` has
-  isogeny-degree set `{1, 3, 5, 15}` (PARI/GP `ellisomat`, witness
-  recomputed 2026-07-25), so `X_0(15)` has non-cuspidal rational points.
-* *Divisor reduction fails by design.* The proper divisors `1, 3, 5` all
-  lie in Mazur's allowed set.
-* *Reduction plus Hasse only bounds the conductor.* `15 ∣ #Ẽ(𝔽_p)` at
-  every good `p` (including `p = 2`, since `15` is odd), and
-  `p + 1 + 2√p < 15` for `p ≤ 7`, so bad reduction is forced exactly at
-  `2, 3, 5, 7`: `210 ∣ N_E`, and nothing more.
-
-A formal proof needs the genus-`0` parametrisations of `X_1(3)` and
-`X_1(5)` in Tate normal form (`X_1(5)`: `b = c`), their fibre product —
-the genus-`1` curve `X_1(15)` — and a rank-`0` Mordell–Weil computation
-for it; none of that exists here. -/
+The derivation normalises away the level-`5` structure: the point `Q` of order
+`5` puts `E` into the Tate normal form `E(b, b)` by an explicit `ℚ`-isomorphism
+of point groups, along which the order-`3` point `P` transports; what is left
+is the genus-`1` statement, which is the remaining leaf. The old docstring's
+claim that this node is "IRREDUCIBLE at this mathlib pin" is superseded: the
+genus-`0` parametrisation of `X_1(5)` that it named as missing is now
+proven. -/
 theorem WeierstrassCurve.not_order_three_and_order_five_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (P Q : (E⁄ℚ).Point)
-    (hP : addOrderOf P = 3) (hQ : addOrderOf Q = 5) : False :=
-  sorry
+    (hP : addOrderOf P = 3) (hQ : addOrderOf Q = 5) : False := by
+  obtain ⟨b, hell, ⟨Φ⟩⟩ := WeierstrassCurve.exists_tateNF_equiv_of_order_five (E⁄ℚ) Q hQ
+  haveI := hell
+  exact WeierstrassCurve.tateNF_self_no_order_three b (Φ.symm P)
+    (by rw [← hP]; exact Φ.symm.addOrderOf_eq P)
 
 /-- **No rational point of order `15`** (DERIVED 2026-07-25 from the
 level-structure leaf `not_order_three_and_order_five_point` by
