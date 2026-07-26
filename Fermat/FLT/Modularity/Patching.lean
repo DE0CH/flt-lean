@@ -4307,6 +4307,64 @@ theorem nonempty_taylorWilesLevel_of_raw.{a, b, c, s, uR}
     rwa [Submodule.map_smul'', Submodule.map_top, LinearEquiv.range,
       e.apply_symm_apply] at hmap
 
+/-- **The residual input of Taylor–Wiles patching** (ADDED 2026-07-26
+as the cut-level repair of the circular discharge recorded at
+`exists_taylorWilesBottomLevel` below): the properties of the residual
+representation `ρbar` that the Taylor–Wiles argument actually consumes,
+separated from the FLT-specific hardly ramified package.
+
+Two fields, both taken verbatim from `IsHardlyRamified` (whose
+projections `det` and `isUnramified` supply them directly, which is how
+`exists_taylorWilesTower` below instantiates this):
+
+* `det` — the determinant is the `p`-adic cyclotomic character.  This is
+  the ODDNESS input: it is what makes `dim H¹ − dim H¹_dual` come out
+  right in Wiles's product formula, and what makes the Taylor–Wiles
+  primes exist at all (`exists_fixing_rootsOfUnity_charpoly_split`).
+* `isUnramified` — `ρbar` is unramified outside `{2, p}`, so the Selmer
+  and dual Selmer groups of `ad⁰ρbar` are finite and the numerology of
+  ingredient 1 is available.
+
+**WHAT IS DELIBERATELY ABSENT, AND WHY** (this is the whole point of the
+definition).  `IsHardlyRamified` has two further fields, `isFlat` (at
+`p`) and `isTameAtTwo`.  Together with irreducibility those two are
+exactly what the tree REFUTES, for every odd prime — at `p = 3` through
+`IsHardlyRamified.mod_three_reducible`, at `p ≥ 5` through
+`not_isIrreducible_of_isHardlyRamified_of_five_le`.  A patching leaf
+carrying the full package therefore has an unsatisfiable hypothesis set
+and can be discharged from `False`; see the RE-OPENING section of
+`exists_taylorWilesBottomLevel`.  The Taylor–Wiles method does not use
+either field — the local conditions at `2` and `p` enter only through
+the deformation problem, which the patching leaves receive abstractly
+through `IsWeaklyUniversalDeformation` — so dropping them costs the
+leaves nothing mathematically and removes the free proof.
+
+This weakening is CLASSICALLY EMPTY, which is why it is safe: in the
+hypothesis package of either leaf, `ρT` is hardly ramified over `T` and
+reduces to `ρbar` on Frobenius traces away from a finite set, so any
+`ρbar` to which the leaves are ever applied is hardly ramified anyway.
+What changes is only that the leaf can no longer HELP ITSELF to that
+fact, since deriving it needs Brauer–Nesbitt/Chebotarev plus a
+reduction-descent theorem for flatness and tameness that this tree does
+not have.
+
+Instances mirror `IsHardlyRamified`'s, so `hres := ⟨h.det, fun q hq h2
+hp => h.isUnramified q hq ⟨h2, hp⟩⟩` typechecks for any
+`h : IsHardlyRamified hpodd hdim ρbar`. -/
+structure IsTaylorWilesResidual {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
+    {k : Type*} [CommRing k] [TopologicalSpace k] [IsTopologicalRing k]
+    [IsLocalRing k] [Algebra ℤ_[p] k]
+    {W : Type*} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W] (hdim : Module.rank k W = 2)
+    (ρbar : GaloisRep ℚ k W) : Prop where
+  /-- The determinant is the `p`-adic cyclotomic character (oddness). -/
+  det : ∀ g, ρbar.det g =
+    algebraMap ℤ_[p] k
+      (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv)
+  /-- `ρbar` is unramified outside `{2, p}`. -/
+  isUnramified : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ p →
+    ρbar.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat
+
 set_option linter.checkUnivs false in
 /-- **The bottom Taylor–Wiles level** (patching leaf 2a-i-α, sorry
 node — the MODULARITY-SUBTREE PLUG POINT): under the full hypothesis
@@ -4498,72 +4556,102 @@ the diamond role moved too, the interface would have had to carry a
 shared `structMap : 𝒪 →+* Runiv` together with
 `((toRuniv n).comp (diamond n)).comp C = structMap`.
 
-WHAT THIS LEAF NOW OWES, beyond the arithmetic already listed: the
+WHAT THIS LEAF OWES, beyond the arithmetic already listed: the
 existence of `𝒪` itself, i.e. `WittVector p k` presented as a
 `TaylorWilesCoefficients`.  That is deliberate — it is part of the
 classical Taylor–Wiles construction, not a commutative-algebra
-obligation on the proven side, and mathlib's `WittVector` layer (which
-has `quotientPEquiv` and `isAdicCompleteIdealSpanP` but neither
-`Algebra ℤ_[p] (𝕎 k)` nor `ResidueField (𝕎 k) ≃+* k`) would otherwise
-have to be built before this leaf could even be stated faithfully.
-`TaylorWilesCoefficients.padicInt` witnesses that the bundle is
+obligation on the proven side.  This obligation is GENUINELY OWED again
+as of the re-opening below (while the leaf was discharged from `False`
+it was not: the witness `coeff` came out of the empty context and no
+Witt-vector theory was consumed anywhere in the cone).  The survey has
+been done, so do not repeat it: mathlib's pin DOES carry
+`WittVector.isDiscreteValuationRing` (for `k` a perfect field of
+characteristic `p`), which supplies `isLocalRing`, `isNoetherianRing`
+and `exists_isRegular_maximalIdeal` nearly directly.  What is genuinely
+missing is the TOPOLOGICAL half — `IsTopologicalRing (𝕎 k)`,
+`CompactSpace`, `T2Space` and `TotallyDisconnectedSpace` for the
+coefficientwise product topology (reachable through
+`WittVector.wittAdd_vars` / `wittMul_vars`, which bound each structure
+polynomial's variables by `Finset.range (n+1)`, hence give continuity
+coordinate by coordinate) — together with
+`Algebra.TopologicallyFG ℤ (𝕎 k)`.  Note the bundle needs NEITHER
+`Algebra ℤ_[p] (𝕎 k)` NOR `ResidueField (𝕎 k) ≃+* k`, only a FINITE
+residue field; an earlier version of this note said otherwise and was
+wrong.  `TaylorWilesCoefficients.padicInt` witnesses that the bundle is
 INHABITED, so the leaf is not vacuously unstatable.
 
-# VACUITY AUDIT AND DISCHARGE (2026-07-26)
+# RE-OPENED 2026-07-26 — THE PREVIOUS DISCHARGE WAS CIRCULAR IN SUBSTANCE
 
-**The statement is TRUE but VACUOUS, and it is discharged here through
-the emptiness of its hypothesis package** — by the sanctioned odd-prime
-dichotomy already used three times in this module
-(`topologicalClosure_adjoin_charFrobCoeff_univ_eq_top`,
-`exists_fixing_rootsOfUnity_charpoly_split`, and — with the identical
-hypothesis package to this leaf — the SIBLING
-`exists_taylorWilesLevelRaw` below):
+**This leaf was PROVEN on 2026-07-26 and has been deliberately restated
+and re-sorried.  The proof was correct and the vacuity doctrine
+sanctioned it; the defect was at the CUT level, and it is worth
+recording in full so nobody re-derives it.**
 
-* at `p = 3`, `IsHardlyRamified.mod_three_reducible` (`ModThree.lean`,
-  the Fontaine/Odlyzko discriminant-bound route) produces a proper
-  nonzero stable submodule of `W`, which refutes `hirr` through
-  `Slop.OddRep.isIrreducible_iff_forall`;
-* at `p ≥ 5`, the Family-free Khare–Wintenberger headline
-  `not_isIrreducible_of_isHardlyRamified_of_five_le`
-  (`Modularity/KhareWintenberger.lean`) refutes `hirr` directly.
+What the proof did.  The hypothesis package contained an irreducible
+hardly ramified `ρbar` over `ℚ`, which the tree refutes for every odd
+prime: at `p = 3` through `IsHardlyRamified.mod_three_reducible`
+(`ModThree.lean`) and `Slop.OddRep.isIrreducible_iff_forall`; at
+`p ≥ 5` through `not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`).  `Odd p` plus `p.Prime` leaves no
+third case, so both this leaf and its sibling `exists_taylorWilesLevelRaw`
+were discharged from `False`, with every unconsumed hypothesis
+underscored and a vacuity audit recorded.
 
-`Odd p` plus `p.Prime` leaves no third case (`p = 2` is excluded by
-`hpodd`).  Both imports are already audited acyclic for this file — the
-CIRCULARITY GUARD is respected, neither route passes through
-`Family.lean` or anything downstream of it — and the sibling leaf
-already compiles against exactly these two.
+Why that had to be reversed.  These two are the ONLY arithmetic inputs
+of `exists_taylorWilesTower`, so the whole Taylor–Wiles patching stack
+of this module asserted nothing beyond `ModThree.lean` and
+`KhareWintenberger.lean`.  And
+`not_isIrreducible_of_isHardlyRamified_of_five_le` is itself an OPEN
+leaf whose eventual proof runs THROUGH modularity lifting — that is,
+through patching.  Discharging the patching leaves from it proves
+patching from its own consequence.  Lean cannot see this: the build
+stays green and `#print axioms` stays honest, because the dependency is
+in the intended proof of an open leaf, not in any elaborated term.  Only
+a human reading catches it.
 
-Every hypothesis the proof does not consume is UNDERSCORE-PREFIXED
-below, so the emptiness is mechanically visible: only `hpodd`, `hW`,
-`hρbar` and `hirr` are used.  In particular the entire `ψ`-package, the
-weak-universality certificate `hfact`, the Hecke packet `(T, ρT, π)`
-and the prime supply `hTWq` are NOT consumed.
+**The vacuity doctrine is NOT repealed.**  It is right in general —
+nobody should spend a cycle proving something unsatisfiable.  It goes
+wrong at exactly this spot, where the refuting fact is DOWNSTREAM of the
+thing being discharged.
 
-**CONSEQUENCE FOR THE COEFFICIENT OBLIGATION RECORDED JUST ABOVE.**
-The `𝒪`-existence obligation ("`WittVector p k` presented as a
-`TaylorWilesCoefficients`") is therefore NOT owed by the tree as it
-stands: the witness `coeff` is produced from `False`, so no Witt-vector
-theory is consumed anywhere in the cone.  Recorded for whoever revisits
-this, since the survey behind it was done and is worth not repeating:
-mathlib's pin DOES carry `WittVector.isDiscreteValuationRing` (for `k`
-a perfect field of characteristic `p`), which supplies `isLocalRing`,
-`isNoetherianRing` and `exists_isRegular_maximalIdeal` almost directly;
-what is genuinely missing for a content-carrying witness is the
-TOPOLOGICAL half — `IsTopologicalRing (𝕎 k)`, `CompactSpace`, `T2Space`
-and `TotallyDisconnectedSpace` for the coefficientwise product topology
-(available through `WittVector.wittAdd_vars` / `wittMul_vars`, which
-bound each structure polynomial's variables by `Finset.range (n+1)`,
-hence give continuity coordinate by coordinate) — together with
-`Algebra.TopologicallyFG ℤ (𝕎 k)`.
+# THE REPAIR: WHAT CHANGED IN THE STATEMENT
 
-**REPORTED, per the vacuity doctrine**: this leaf and its sibling
-`exists_taylorWilesLevelRaw` are the ONLY two arithmetic inputs of
-`exists_taylorWilesTower`, and both now reduce to the odd-prime
-dichotomy.  The Taylor–Wiles patching stack of this module therefore
-carries no arithmetic content beyond `ModThree.lean` and
-`KhareWintenberger.lean`; that is a CUT-LEVEL fact, not a defect of
-either leaf, and restoring content would mean forbidding the dichotomy
-route at these two leaves explicitly.
+`hρbar : IsHardlyRamified hpodd hW ρbar` has been replaced by
+`hres : IsTaylorWilesResidual hpodd hW ρbar` (defined immediately above): the
+determinant is the cyclotomic character, and `ρbar` is unramified
+outside `{2, p}`.  The two dropped fields — `isFlat` at `p` and
+`isTameAtTwo` — are precisely the ones the two refutations consume, and
+the Taylor–Wiles method does not use them: the local conditions enter
+only through the deformation problem, which this leaf receives
+abstractly through `hfact : IsWeaklyUniversalDeformation`.  `hirr` is
+KEPT, because residual irreducibility is a genuine Taylor–Wiles input
+(representability, and Diamond's freeness certificate) and dropping it
+would risk making the leaf false — which is worse than leaving it open.
+
+So the statement is now formally STRONGER on the residual side and the
+odd-prime dichotomy can no longer reach it.  The strengthening is
+classically empty: `hρT` still says `ρT` is hardly ramified over `T` and
+`hred` still says it reduces to `ρbar`, so every `ρbar` this leaf is
+ever applied to is hardly ramified in fact.  What the leaf has lost is
+only the ability to HELP ITSELF to that fact.
+
+**CIRCULARITY GUARD — read this before attempting a proof.**  The
+following are BANNED as inputs to this leaf and to
+`exists_taylorWilesLevelRaw`, whatever route reaches them:
+
+* `not_isIrreducible_of_isHardlyRamified_of_five_le` and anything that
+  consumes it;
+* `IsHardlyRamified.mod_three_reducible` and
+  `Slop.OddRep.isIrreducible_iff_forall` used to contradict `hirr`;
+* any lemma deriving `IsHardlyRamified hpodd hW ρbar` from `hρT`/`hρuniv`
+  by reduction-descent, which would restore the dichotomy through the
+  back door;
+* `Family.lean` and anything downstream of it (the inherited pillar-3b
+  guard).
+
+A proof of this leaf must construct the auxiliary deformation ring and
+Hecke module of the Taylor–Wiles construction.  If it instead ends in
+`exfalso`, it is the circular discharge again and must be rejected.
 -/
 theorem exists_taylorWilesBottomLevel.{s, t, uK, uW, uR}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
@@ -4572,74 +4660,51 @@ theorem exists_taylorWilesBottomLevel.{s, t, uK, uW, uR}
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hres : IsTaylorWilesResidual hpodd hW ρbar)
     (hirr : ρbar.IsIrreducible)
     {Runiv : Type uR} [CommRing Runiv] [TopologicalSpace Runiv]
     [IsTopologicalRing Runiv] [IsLocalRing Runiv] [Algebra ℤ_[p] Runiv]
     [IsNoetherianRing Runiv]
-    (_hadic : IsAdic (IsLocalRing.maximalIdeal Runiv))
-    (_hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
+    (hadic : IsAdic (IsLocalRing.maximalIdeal Runiv))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
     {ρuniv : GaloisRep ℚ Runiv (Fin 2 → Runiv)}
     (hranku : Module.rank Runiv (Fin 2 → Runiv) = 2)
-    (_hρuniv : IsHardlyRamified hpodd hranku ρuniv)
-    {πuniv : Runiv →+* k} (_hπuniv : Function.Surjective πuniv)
+    (hρuniv : IsHardlyRamified hpodd hranku ρuniv)
+    {πuniv : Runiv →+* k} (hπuniv : Function.Surjective πuniv)
     {Suniv : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (_hunivred : ∀ (q : ℕ) (hq : q.Prime),
+    (hunivred : ∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv →
       πuniv ((ρuniv.charFrob
           hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (_hfact : IsWeaklyUniversalDeformation.{s, t, uK, uW, uR} hpodd ρbar
+    (hfact : IsWeaklyUniversalDeformation.{s, t, uK, uW, uR} hpodd ρbar
       ρuniv πuniv)
     {T : Type s} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
     [Algebra ℤ_[p] T] [IsLocalRing T] [Module.Finite ℤ_[p] T]
     [Module.Free ℤ_[p] T] [IsModuleTopology ℤ_[p] T]
     {ρT : GaloisRep ℚ T (Fin 2 → T)}
     (hrankT : Module.rank T (Fin 2 → T) = 2)
-    (_hρT : IsHardlyRamified hpodd hrankT ρT)
-    {π : T →+* k} (_hπ : Function.Surjective π)
+    (hρT : IsHardlyRamified hpodd hrankT ρT)
+    {π : T →+* k} (hπ : Function.Surjective π)
     {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (_hred : ∀ (q : ℕ) (hq : q.Prime),
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
       π ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     (ψ : Runiv →+* T)
-    (_hψalg : ψ.comp (algebraMap ℤ_[p] Runiv) = algebraMap ℤ_[p] T)
-    (_hψπ : π.comp ψ = πuniv)
+    (hψalg : ψ.comp (algebraMap ℤ_[p] Runiv) = algebraMap ℤ_[p] T)
+    (hψπ : π.comp ψ = πuniv)
     {Sψ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (_hψ : ∀ (q : ℕ) (hq : q.Prime),
+    (hψ : ∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ →
       ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (_hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
+    (hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
       Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q) :
     ∃ (q d : ℕ) (coeff : TaylorWilesCoefficients) (M0 : Type)
       (_ : AddCommGroup M0) (_ : Module T M0) (_ : Nontrivial M0),
-      Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0) := by
-  exfalso
-  -- the odd-prime dichotomy, inlined (see the VACUITY AUDIT above)
-  have hp := (Fact.out : p.Prime)
-  rcases Nat.lt_or_ge p 5 with h5 | h5
-  · -- `p < 5`: primality and oddness force `p = 3`, where the
-    -- hypotheses are contradictory (`mod_three_reducible`)
-    have hp3 : p = 3 := by
-      have := hp.two_le
-      have := Nat.odd_iff.mp hpodd
-      omega
-    subst hp3
-    obtain ⟨W₀, hW₀0, hW₀top, hW₀stable⟩ :=
-      IsHardlyRamified.mod_three_reducible W hW hρbar
-    have hirr' : ρbar.toRepresentation.IsIrreducible := hirr
-    obtain ⟨-, hsub⟩ :=
-      (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr'
-    rcases hsub W₀
-        (fun g v hv => hW₀stable g (Submodule.mem_map_of_mem hv)) with
-      hb | ht
-    · exact hW₀0 hb
-    · exact hW₀top ht
-  · -- `p ≥ 5`: the Family-free Khare–Wintenberger headline
-    exact absurd hirr
-      (not_isIrreducible_of_isHardlyRamified_of_five_le hpodd h5 hW hρbar)
+      Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0) :=
+  sorry
 
 set_option linter.checkUnivs false in
 /-- **The auxiliary Taylor–Wiles levels** (patching leaf 2a-i-β, sorry
@@ -4759,29 +4824,38 @@ for a `TaylorWilesCoefficients` supplied by the bottom leaf, so this
 leaf no longer forces `k ≃+* ZMod p` either.  Both defects are fixed;
 what remains open here is the arithmetic of ingredients 1–4.
 
-VACUITY AUDIT: being unprovable through its named inputs, the leaf is
-discharged here through the EMPTINESS of its hypothesis package, by
-the sanctioned odd-prime dichotomy already used twice in this module
-(`topologicalClosure_adjoin_charFrobCoeff_univ_eq_top`,
-`exists_fixing_rootsOfUnity_charpoly_split`): at `p = 3`
-`IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, the
-Fontaine/Odlyzko discriminant-bound route) refutes `hirr` through
-`Slop.OddRep.isIrreducible_iff_forall`; at `p ≥ 5` the Family-free
-Khare–Wintenberger headline
-`not_isIrreducible_of_isHardlyRamified_of_five_le`
-(`Modularity/KhareWintenberger.lean`) refutes it directly.  Both
-imports are already audited acyclic for this file — see the Hecke
-generation leaf's ROUTE note.  Every hypothesis the proof does not
-consume is UNDERSCORE-PREFIXED below, so the emptiness is mechanically
-visible: only `hpodd`, `hW`, `hρbar`, `hirr` are used — in particular
-`hbot`, `hM0`, `hTWq`, `hfact` and the whole `ψ`-package are not.
+# RE-OPENED 2026-07-26 — SAME CIRCULAR DISCHARGE AS THE BOTTOM LEAF
+
+This leaf was PROVEN on 2026-07-26 by the odd-prime dichotomy, from the
+emptiness of a hypothesis package containing an irreducible hardly
+ramified `ρbar` over `ℚ`, and has been deliberately restated and
+re-sorried.  The full account — what the proof did, why it is circular
+in substance even though Lean cannot see it, and why the vacuity
+doctrine is not being repealed — is recorded once, in the RE-OPENING
+section of `exists_taylorWilesBottomLevel` above.  Read it there.
+
+The statement change is the same one: `hρbar : IsHardlyRamified hpodd
+hW ρbar` has become `hres : IsTaylorWilesResidual hpodd hW ρbar`, keeping the
+cyclotomic determinant and unramifiedness outside `{2, p}` and dropping
+`isFlat` and `isTameAtTwo`, which are exactly what the two refutations
+consume and what the Taylor–Wiles method does not use.  `hirr` is kept.
+The underscore prefixes have been removed from the hypotheses, since
+the intended proof consumes all of them.
+
+**CIRCULARITY GUARD.**  Identical to the bottom leaf's, and it is the
+operative constraint here: `not_isIrreducible_of_isHardlyRamified_of_five_le`,
+`IsHardlyRamified.mod_three_reducible` against `hirr`, any
+reduction-descent lemma producing `IsHardlyRamified hpodd hW ρbar` from
+`hρT`/`hρuniv`, and `Family.lean` with everything downstream of it, are
+all banned as inputs.  A proof that ends in `exfalso` is the circular
+discharge again and must be rejected.
 
 Both-ways audit: at the intended instantiation ingredients 1–4 are the
-cited Taylor–Wiles construction; abstractly the hypothesis set contains
-the classically unsatisfiable irreducible hardly ramified `ρbar`
-(section audit of `Interface.lean`), so the statement is classically
-true outright.  CIRCULARITY GUARD (inherited from pillar 3b): must not
-be proven through `Family.lean` or anything downstream of it. -/
+cited Taylor–Wiles construction.  The hypothesis package is no longer
+the classically unsatisfiable one — `ρbar` is now only required to be
+irreducible, odd and unramified outside `{2, p}`, which real residual
+representations satisfy — so the statement is not classically true
+outright and carries the arithmetic listed above. -/
 theorem exists_taylorWilesLevelRaw.{s, t, uK, uW, uR}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -4789,77 +4863,54 @@ theorem exists_taylorWilesLevelRaw.{s, t, uK, uW, uR}
     {W : Type uW} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hpodd hW ρbar)
+    (hres : IsTaylorWilesResidual hpodd hW ρbar)
     (hirr : ρbar.IsIrreducible)
     {Runiv : Type uR} [CommRing Runiv] [TopologicalSpace Runiv]
     [IsTopologicalRing Runiv] [IsLocalRing Runiv] [Algebra ℤ_[p] Runiv]
     [IsNoetherianRing Runiv]
-    (_hadic : IsAdic (IsLocalRing.maximalIdeal Runiv))
-    (_hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
+    (hadic : IsAdic (IsLocalRing.maximalIdeal Runiv))
+    (hcomplete : IsAdicComplete (IsLocalRing.maximalIdeal Runiv) Runiv)
     {ρuniv : GaloisRep ℚ Runiv (Fin 2 → Runiv)}
     (hranku : Module.rank Runiv (Fin 2 → Runiv) = 2)
-    (_hρuniv : IsHardlyRamified hpodd hranku ρuniv)
-    {πuniv : Runiv →+* k} (_hπuniv : Function.Surjective πuniv)
+    (hρuniv : IsHardlyRamified hpodd hranku ρuniv)
+    {πuniv : Runiv →+* k} (hπuniv : Function.Surjective πuniv)
     {Suniv : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (_hunivred : ∀ (q : ℕ) (hq : q.Prime),
+    (hunivred : ∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ Suniv →
       πuniv ((ρuniv.charFrob
           hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (_hfact : IsWeaklyUniversalDeformation.{s, t, uK, uW, uR} hpodd ρbar
+    (hfact : IsWeaklyUniversalDeformation.{s, t, uK, uW, uR} hpodd ρbar
       ρuniv πuniv)
     {T : Type s} [CommRing T] [TopologicalSpace T] [IsTopologicalRing T]
     [Algebra ℤ_[p] T] [IsLocalRing T] [Module.Finite ℤ_[p] T]
     [Module.Free ℤ_[p] T] [IsModuleTopology ℤ_[p] T]
     {ρT : GaloisRep ℚ T (Fin 2 → T)}
     (hrankT : Module.rank T (Fin 2 → T) = 2)
-    (_hρT : IsHardlyRamified hpodd hrankT ρT)
-    {π : T →+* k} (_hπ : Function.Surjective π)
+    (hρT : IsHardlyRamified hpodd hrankT ρT)
+    {π : T →+* k} (hπ : Function.Surjective π)
     {S_T : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (_hred : ∀ (q : ℕ) (hq : q.Prime),
+    (hred : ∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ S_T →
       π ((ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     (ψ : Runiv →+* T)
-    (_hψalg : ψ.comp (algebraMap ℤ_[p] Runiv) = algebraMap ℤ_[p] T)
-    (_hψπ : π.comp ψ = πuniv)
+    (hψalg : ψ.comp (algebraMap ℤ_[p] Runiv) = algebraMap ℤ_[p] T)
+    (hψπ : π.comp ψ = πuniv)
     {Sψ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
-    (_hψ : ∀ (q : ℕ) (hq : q.Prime),
+    (hψ : ∀ (q : ℕ) (hq : q.Prime),
       hq.toHeightOneSpectrumRingOfIntegersRat ∉ Sψ →
       ψ ((ρuniv.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1) =
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
-    (_hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
+    (hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
       Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q)
     (q d : ℕ) (coeff : TaylorWilesCoefficients)
     (M0 : Type) [AddCommGroup M0] [Module T M0]
-    (_hM0 : Nontrivial M0)
-    (_hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0))
+    (hM0 : Nontrivial M0)
+    (hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0))
     (n : ℕ) :
-    Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d n coeff M0) := by
-  exfalso
-  -- the odd-prime dichotomy, inlined (see the VACUITY AUDIT above)
-  have hp := (Fact.out : p.Prime)
-  rcases Nat.lt_or_ge p 5 with h5 | h5
-  · -- `p < 5`: primality and oddness force `p = 3`, where the
-    -- hypotheses are contradictory (`mod_three_reducible`)
-    have hp3 : p = 3 := by
-      have := hp.two_le
-      have := Nat.odd_iff.mp hpodd
-      omega
-    subst hp3
-    obtain ⟨W₀, hW₀0, hW₀top, hW₀stable⟩ :=
-      IsHardlyRamified.mod_three_reducible W hW hρbar
-    have hirr' : ρbar.toRepresentation.IsIrreducible := hirr
-    obtain ⟨-, hsub⟩ :=
-      (Slop.OddRep.isIrreducible_iff_forall ρbar.toRepresentation).mp hirr'
-    rcases hsub W₀
-        (fun g v hv => hW₀stable g (Submodule.mem_map_of_mem hv)) with
-      hb | ht
-    · exact hW₀0 hb
-    · exact hW₀top ht
-  · -- `p ≥ 5`: the Family-free Khare–Wintenberger headline
-    exact absurd hirr
-      (not_isIrreducible_of_isHardlyRamified_of_five_le hpodd h5 hW hρbar)
+    Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d n coeff M0) :=
+  sorry
 
 /-- **Existence of the Taylor–Wiles tower** (patching leaf 2a-i;
 DECOMPOSED 2026-07-25 into a PROVEN assembly over the level-wise cut —
@@ -4949,12 +5000,41 @@ is harmless since all intended objects are (pro)finitely presented over
 `ℤ_p`-modules up to isomorphism), so universe copies can be taken
 through quotient presentations.
 
+# STATUS OF THE ARITHMETIC INPUTS (2026-07-26)
+
+**Both arithmetic inputs of this assembly are GENUINELY OPEN.**  They
+were briefly proven — on 2026-07-26, by the odd-prime dichotomy, from
+the emptiness of a hypothesis package containing an irreducible hardly
+ramified `ρbar` over `ℚ` — and were deliberately restated and
+re-sorried the same day, because that discharge is circular in
+substance: `not_isIrreducible_of_isHardlyRamified_of_five_le` is itself
+an open leaf whose intended proof runs through modularity lifting, i.e.
+through patching.  The full account is in the RE-OPENING section of
+`exists_taylorWilesBottomLevel`.
+
+So this theorem is a PROVEN assembly over two OPEN leaves, and the
+Taylor–Wiles patching stack of this module is once again carrying its
+own arithmetic rather than borrowing it from `ModThree.lean` and
+`KhareWintenberger.lean`.  Anything reading a claim that the tower is
+discharged is reading a stale note.
+
+What the assembly now does at the leaf interface: it derives
+`hres : IsTaylorWilesResidual hpodd hW ρbar` from `hρbar` (the two structure
+projections `det` and `isUnramified`) and passes THAT, not `hρbar`, to
+both leaves — so neither leaf can see the `isFlat`/`isTameAtTwo` fields
+that the odd-prime refutations consume.
+
 Both-ways audit: at the intended instantiation this is the cited
-tower; abstractly the hypothesis set contains the classically
-unsatisfiable irreducible hardly ramified `ρbar` (section audit of
-`Interface.lean`), so the statement is also classically true outright.
+tower.  The hypothesis set of THIS theorem still contains the
+classically unsatisfiable irreducible hardly ramified `ρbar` (section
+audit of `Interface.lean`), so this statement is still classically true
+outright — but it is PROVEN by the assembly, so nobody will be
+dispatched at it, and its leaves no longer share that defect.
 CIRCULARITY GUARD (inherited from pillar 3b): must not be proven
-through `Family.lean` or anything downstream of it. -/
+through `Family.lean` or anything downstream of it, and — added
+2026-07-26 — must not be re-proven by the odd-prime dichotomy, which
+would reintroduce at this node exactly the circularity just removed
+from its leaves. -/
 theorem exists_taylorWilesTower.{s, t, uK, uW, uR}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
     {k : Type uK} [Field k] [Finite k] [Algebra ℤ_[p] k]
@@ -5004,8 +5084,12 @@ theorem exists_taylorWilesTower.{s, t, uK, uW, uR}
     (hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
       Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q) :
     Nonempty (TaylorWilesTower.{0, 0, 0, s, uR} p ψ) := by
+  -- the two arithmetic leaves take only the Taylor–Wiles residual input,
+  -- not the full hardly ramified package (see their RE-OPENING sections)
+  have hres : IsTaylorWilesResidual hpodd hW ρbar :=
+    ⟨hρbar.det, fun q hq h2 hpne => hρbar.isUnramified q hq ⟨h2, hpne⟩⟩
   obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hbot⟩ :=
-    exists_taylorWilesBottomLevel.{s, t, uK, uW, uR} hpodd hW hρbar hirr
+    exists_taylorWilesBottomLevel.{s, t, uK, uW, uR} hpodd hW hres hirr
       hadic hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ hred
       ψ hψalg hψπ hψ hTWq
   letI := iAG
@@ -5019,7 +5103,7 @@ theorem exists_taylorWilesTower.{s, t, uK, uW, uR}
            nontrivialM0 := iNt
            level := fun n =>
              (nonempty_taylorWilesLevel_of_raw iNt
-               (exists_taylorWilesLevelRaw.{s, t, uK, uW, uR} hpodd hW hρbar
+               (exists_taylorWilesLevelRaw.{s, t, uK, uW, uR} hpodd hW hres
                  hirr hadic hcomplete hranku hρuniv hπuniv hunivred hfact
                  hrankT hρT hπ hred ψ hψalg hψπ hψ hTWq q d coeff M0 iNt
                  hbot n).some).some }⟩

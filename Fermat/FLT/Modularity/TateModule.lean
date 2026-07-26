@@ -1209,7 +1209,53 @@ group structure `ab.addCommGroup`, so that it mentions only `ab`: no
 real multiplication, no rank count, no coefficient ring. It is the
 classical divisibility statement and nothing more. Its only consumer,
 `exists_mem_torsion_act_uniformizer_eq` below, converts it into
-divisibility by a nonzero element of `𝒪_D` through the absolute norm. -/
+divisibility by a nonzero element of `𝒪_D` through the absolute norm.
+
+## FAITHFULNESS: CONFIRMED TRUE (2026-07-26, audited by a later owner)
+
+The statement is faithful, and in particular there is no counterexample
+to hunt for.  Three checks:
+
+* `GeomFibrePt f x` is `RelPoint f (specAlgClos F ≫ x)`, i.e. the
+  `F̄`-points of `A ×_S Spec F̄`.  Base change of an abelian scheme is an
+  abelian scheme, and `F̄` is algebraically closed, so this really is the
+  point group of an abelian VARIETY, not of some larger object.
+* `ab`'s `proper`, `smooth` and `connected` fields are exactly what makes
+  each geometric fibre an abelian variety; the group structure is on the
+  functor of points, so by Yoneda the fibre is a group scheme.
+* Divisibility holds in EVERY characteristic — `[N]` is an isogeny for
+  every `N ≠ 0`, inseparable but still surjective when `p ∣ N`.  So the
+  absence of any characteristic hypothesis is correct and not an
+  oversight.  If the fibre is empty the statement is vacuously true.
+
+## IRREDUCIBLE AT THIS PIN, and why it is not worth decomposing yet
+
+Surveyed 2026-07-26: there is **no abelian-variety theory anywhere**.
+`grep AbelianVariety` over the whole of `Mathlib` returns nothing,
+`Mathlib/AlgebraicGeometry/` has no theorem of the cube, no isogeny, no
+degree and no fibre-dimension theory in a usable form, and `~/cs/FLT`
+has none either.
+
+The classical proof is a three-step chain — (a) `[N]` has FINITE kernel
+(theorem of the cube, via `[N]^* L ≅ L^{N²}` for a symmetric ample `L`);
+(b) a proper morphism with finite fibres between irreducible varieties of
+equal dimension is surjective; (c) surjective over an algebraically
+closed field gives surjectivity on points — and step (a) is genuinely
+unavoidable: for a connected commutative algebraic group that is *not*
+proper the statement is FALSE (`𝔾_a` in characteristic `p` with `N = p`
+has `[p] = 0`), so no argument can avoid using properness through
+something of the cube's strength.
+
+Writing (a)–(c) as Lean leaves is therefore **not** a decomposition into
+shallower nodes: it would require first introducing `[N]` as a morphism
+of schemes (this module has the group law only on the functor of points,
+so that needs representability of the fibre), then kernels as subgroup
+schemes, then dimension.  That is a large speculative interface whose
+leaves would be no closer to `Mathlib` than this one, and the risk of
+manufacturing a false or vacuous statement in it is high — this
+development has lost more to that than to open sorries.  So the node is
+deliberately left as ONE honest leaf.  The right next step is a general
+abelian-variety subtree, not a cut here. -/
 theorem exists_nsmul_eq_geomFibrePt
     {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
     {F : Type u} [Field F]
@@ -3358,9 +3404,11 @@ scheme, no `Mult` and no `TatePt` in sight.
   (the absolutely irreducible case; PROVEN, and it needs neither `hirr`
   nor any simplicity theorem) and
   `exists_residualEmbedding_of_nonScalarCommutant` (the remaining case;
-  open — the only place Wedderburn and Noether–Skolem are still needed).
-  Both halves are stated for an abstract monoid and mathlib's
-  `Representation`, so the surviving leaf is Galois-free pure algebra.
+  PROVEN 2026-07-26 as well, by a semilinear-eigenvector argument that
+  needs neither Wedderburn nor Noether–Skolem, and in fact does not use
+  the commutant hypothesis at all). Both halves are stated for an
+  abstract monoid and mathlib's `Representation`, so the whole step is
+  Galois-free pure algebra.
 
 Together the first two say `T / π T ≅ A[I]` as `Γ_F`-modules, which
 composed with the level structure `e` is exactly the hypothesis of the
@@ -3586,13 +3634,16 @@ The dichotomy is on the commutant `C := End_{ℤ[G]}(V)`:
 * `exists_residualEmbedding_of_scalarCommutant` — the case `C = k'`
   (equivalently, `ρ'` is ABSOLUTELY irreducible). **PROVEN.**
 * `exists_residualEmbedding_of_nonScalarCommutant` — the case `C ⊋ k'`
-  (`ρ'` irreducible but not absolutely irreducible). Open.
+  (`ρ'` irreducible but not absolutely irreducible). **PROVEN
+  2026-07-26**, and it turned out NOT to need the commutant hypothesis
+  at all: see the `_hC` note on that declaration.
 
-The split is genuine, not bookkeeping: in the first case the two
-coefficient rings are forced to *coincide*, `ψ` itself is the required
-change of basis, and no simplicity theorem is needed at all — which is
-why that case is proven here in a few hundred lines while the other one
-still needs the Wedderburn/Noether–Skolem apparatus. -/
+The split was worth making — the first case is short and self-contained
+— but it is no longer NECESSARY: the second half is proven for arbitrary
+commutant, so a later cleanup may collapse the `Classical.em` in
+`exists_residualEmbedding_of_residualComparison` and call the second
+half directly. Neither half needs the Wedderburn/Noether–Skolem
+apparatus that this cut was written expecting. -/
 
 /-- **The residual comparison when the commutant is just the scalars**
 (PROVEN 2026-07-26). This is the ABSOLUTELY IRREDUCIBLE case of
@@ -3770,11 +3821,206 @@ theorem exists_residualEmbedding_of_scalarCommutant
     rw [← hcoord (τ g (Pi.single j (1 : O))), hψequiv, hbbv, hb]
   exact hkey.symm
 
+section ResidualEmbeddingNonScalarCommutant
+
+open _root_.IsLocalRing
+
+/-! ### Machinery for the non-scalar-commutant half of the Noether–Skolem step
+
+The four lemmas below are exactly what
+`exists_residualEmbedding_of_nonScalarCommutant` needs; all four are pure
+module theory over mathlib, and none of them mentions `G`, a Galois group
+or a scheme. Together they replace the Wedderburn / Noether–Skolem
+apparatus that the leaf's original cut expected to have to build. -/
+
+/-! ### Step 1: nonzero socle of a finite module over a local ring -/
+
+theorem exists_ne_zero_maximalIdeal_smul_eq_zero
+    {O : Type*} [CommRing O] [IsLocalRing O]
+    {M : Type*} [AddCommGroup M] [Module O M] [Finite M] [Nontrivial M] :
+    ∃ x : M, x ≠ 0 ∧ ∀ a ∈ maximalIdeal O, a • x = 0 := by
+  classical
+  have htop : (⊤ : Submodule O M) ≠ ⊥ := by
+    obtain ⟨x, hx⟩ := exists_ne (0 : M)
+    intro h
+    exact hx (by simpa using (h ▸ Submodule.mem_top : x ∈ (⊥ : Submodule O M)))
+  have hP : ∃ n, ∃ N : Submodule O M, N ≠ ⊥ ∧ Nat.card N = n := ⟨_, ⊤, htop, rfl⟩
+  obtain ⟨N, hN0, hNc⟩ := Nat.find_spec hP
+  by_cases hsm : (maximalIdeal O) • N = ⊥
+  · obtain ⟨x, hxN, hx0⟩ := (Submodule.ne_bot_iff N).mp hN0
+    refine ⟨x, hx0, fun a ha => ?_⟩
+    have hmem : a • x ∈ (maximalIdeal O) • N := Submodule.smul_mem_smul ha hxN
+    rw [hsm] at hmem
+    simpa using hmem
+  · exfalso
+    set T : Submodule O M := (maximalIdeal O) • N with hT
+    have hle : T ≤ N := Submodule.smul_le_right
+    have hmin : Nat.find hP ≤ Nat.card T := Nat.find_le ⟨_, hsm, rfl⟩
+    have hsub : (T : Set M) ⊆ (N : Set M) := hle
+    have hfin : (N : Set M).Finite := Set.toFinite _
+    have hcards : (N : Set M).ncard ≤ (T : Set M).ncard := by
+      have h1 : (N : Set M).ncard = Nat.card N := rfl
+      have h2 : (T : Set M).ncard = Nat.card T := rfl
+      rw [h1, h2, hNc]
+      exact hmin
+    have heq : T = N :=
+      SetLike.coe_injective (Set.eq_of_subset_of_ncard_le hsub hcards hfin)
+    haveI : Module.Finite O N := Module.Finite.of_finite
+    have hfg : N.FG := (Submodule.fg_top N).mp (Module.finite_def.mp inferInstance)
+    exact hN0 (Submodule.eq_bot_of_le_smul_of_le_jacobson_bot (maximalIdeal O) N hfg
+      (by rw [← hT, heq]) (maximalIdeal_le_jacobson ⊥))
+
+/-! ### Step 2: Lagrange for a submodule, via an explicit section -/
+
+theorem card_eq_card_mul_card_quotient
+    {O : Type*} [CommRing O]
+    {M : Type u} [AddCommGroup M] [Module O M] (N : Submodule O M) :
+    Nat.card M = Nat.card N * Nat.card (M ⧸ N) := by
+  classical
+  obtain ⟨sec, hsec⟩ :=
+    Function.Surjective.hasRightInverse (Submodule.Quotient.mk_surjective N)
+  have hbij : Function.Bijective (fun p : N × (M ⧸ N) => (p.1 : M) + sec p.2) := by
+    constructor
+    · rintro ⟨n₁, z₁⟩ ⟨n₂, z₂⟩ h
+      simp only at h
+      have hz : z₁ = z₂ := by
+        have := congrArg (Submodule.Quotient.mk (p := N)) h
+        rwa [Submodule.Quotient.mk_add, Submodule.Quotient.mk_add,
+          (Submodule.Quotient.mk_eq_zero N).mpr n₁.2,
+          (Submodule.Quotient.mk_eq_zero N).mpr n₂.2, zero_add, zero_add,
+          hsec, hsec] at this
+      subst hz
+      have : (n₁ : M) = (n₂ : M) := by
+        have := h
+        simpa using this
+      exact Prod.ext (Subtype.ext this) rfl
+    · intro m
+      refine ⟨⟨⟨m - sec (Submodule.Quotient.mk m), ?_⟩, Submodule.Quotient.mk m⟩, by
+        show m - sec (Submodule.Quotient.mk m) + sec (Submodule.Quotient.mk m) = m
+        abel⟩
+      rw [← Submodule.Quotient.mk_eq_zero]
+      rw [Submodule.Quotient.mk_sub, hsec, sub_self]
+  rw [← Nat.card_prod]
+  exact (Nat.card_congr (Equiv.ofBijective _ hbij)).symm
+
+/-! ### Step 3: the cardinality of a finite module over a local ring is a power of `#𝔽` -/
+
+theorem card_eq_pow_card_residue
+    (O : Type*) [CommRing O] [IsLocalRing O] :
+    ∀ (n : ℕ) (M : Type u) [AddCommGroup M] [Module O M] [Finite M],
+      Nat.card M = n → ∃ d : ℕ, n = (Nat.card (O ⧸ maximalIdeal O)) ^ d := by
+  classical
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro M _ _ _ hM
+    by_cases hnt : Nontrivial M
+    · obtain ⟨x, hx0, hx⟩ := exists_ne_zero_maximalIdeal_smul_eq_zero (O := O) (M := M)
+      -- the cyclic submodule generated by `x` is killed by `𝔪`, hence a copy of `𝔽`
+      set f : O →ₗ[O] M := LinearMap.toSpanSingleton O M x with hf
+      set N : Submodule O M := LinearMap.range f with hNdef
+      have hkerne : LinearMap.ker f ≠ ⊤ := by
+        intro h
+        have : (1 : O) ∈ LinearMap.ker f := h ▸ Submodule.mem_top
+        rw [LinearMap.mem_ker, hf] at this
+        simp only [LinearMap.toSpanSingleton_apply, one_smul] at this
+        exact hx0 this
+      have hkerle : maximalIdeal O ≤ LinearMap.ker f := by
+        intro a ha
+        rw [LinearMap.mem_ker, hf]
+        simpa using hx a ha
+      have hker : LinearMap.ker f = maximalIdeal O :=
+        ((maximalIdeal.isMaximal O).eq_of_le hkerne hkerle).symm
+      have hNcard : Nat.card N = Nat.card (O ⧸ maximalIdeal O) := by
+        rw [← hker]
+        exact (Nat.card_congr (f.quotKerEquivRange).toEquiv).symm
+      have hlag : Nat.card M = Nat.card N * Nat.card (M ⧸ N) :=
+        card_eq_card_mul_card_quotient N
+      haveI : Finite N := Set.toFinite _
+      have hNne : 1 < Nat.card N := by
+        haveI : Nontrivial N := ⟨⟨0, ⟨x, ⟨1, by simp [hf]⟩⟩,
+          fun h => hx0 (congrArg Subtype.val h).symm⟩⟩
+        haveI : Fintype N := Fintype.ofFinite N
+        rw [Nat.card_eq_fintype_card]
+        exact Fintype.one_lt_card
+      haveI : Finite (M ⧸ N) := Finite.of_surjective _ (Submodule.Quotient.mk_surjective N)
+      have hpos : 0 < Nat.card (M ⧸ N) := Nat.card_pos
+      have hlt : Nat.card (M ⧸ N) < n := by
+        rw [← hM, hlag]
+        calc Nat.card (M ⧸ N) = 1 * Nat.card (M ⧸ N) := (one_mul _).symm
+          _ < Nat.card N * Nat.card (M ⧸ N) :=
+              Nat.mul_lt_mul_of_lt_of_le hNne (le_refl _) hpos
+      obtain ⟨e, he⟩ := ih _ hlt (M ⧸ N) rfl
+      exact ⟨1 + e, by rw [← hM, hlag, hNcard, he, pow_add, pow_one]⟩
+    · refine ⟨0, ?_⟩
+      rw [← hM, pow_zero]
+      haveI : Subsingleton M := not_nontrivial_iff_subsingleton.mp hnt
+      simp
+
+/-! ### Step 4: an eigenvector for an endomorphism with `A ^ #k' = A` -/
+
+theorem exists_eigenvector_of_pow_card
+    {k' : Type*} [Field k'] [Fintype k']
+    {N : Type*} [AddCommGroup N] [Module k' N] [Nontrivial N]
+    (A : Module.End k' N) (hA : A ^ (Fintype.card k') = A) :
+    ∃ (lam : k') (x : N), x ≠ 0 ∧ A x = lam • x := by
+  classical
+  have key : ∀ (s : Finset k') (x : N),
+      (Polynomial.aeval A (∏ a ∈ s, (X - C a))) x = 0 → x ≠ 0 →
+      ∃ (lam : k') (y : N), y ≠ 0 ∧ A y = lam • y := by
+    intro s
+    induction s using Finset.induction with
+    | empty => intro x hx hx0; simp at hx; exact absurd hx hx0
+    | insert a s ha ih =>
+      intro x hx hx0
+      rw [Finset.prod_insert ha, map_mul] at hx
+      by_cases hy0 : (Polynomial.aeval A (∏ b ∈ s, (X - C b))) x = 0
+      · exact ih x hy0 hx0
+      · refine ⟨a, (Polynomial.aeval A (∏ b ∈ s, (X - C b))) x, hy0, ?_⟩
+        have hxx : (Polynomial.aeval A (X - C a))
+            ((Polynomial.aeval A (∏ b ∈ s, (X - C b))) x) = 0 := hx
+        rw [map_sub, Polynomial.aeval_X, Polynomial.aeval_C] at hxx
+        have hzero : A ((Polynomial.aeval A (∏ b ∈ s, (X - C b))) x)
+            - a • ((Polynomial.aeval A (∏ b ∈ s, (X - C b))) x) = 0 := by
+          simpa [Module.algebraMap_end_apply] using hxx
+        exact sub_eq_zero.mp hzero
+  obtain ⟨x, hx0⟩ := exists_ne (0 : N)
+  have hQ1 : 1 < Fintype.card k' := Fintype.one_lt_card
+  have hmonic : (X ^ (Fintype.card k') - X : k'[X]).Monic :=
+    Polynomial.monic_X_pow_sub (by rw [Polynomial.degree_X]; exact_mod_cast hQ1)
+  have hroots : (X ^ (Fintype.card k') - X : k'[X]).roots = Finset.univ.val :=
+    FiniteField.roots_X_pow_card_sub_X k'
+  have hdeg : (X ^ (Fintype.card k') - X : k'[X]).natDegree = Fintype.card k' :=
+    FiniteField.X_pow_card_sub_X_natDegree_eq k' hQ1
+  have hsplit : (∏ a : k', (X - C a)) = X ^ (Fintype.card k') - X := by
+    have hcount : (X ^ (Fintype.card k') - X : k'[X]).roots.card
+        = (X ^ (Fintype.card k') - X : k'[X]).natDegree := by
+      rw [hroots, hdeg]
+      simp
+    have hprod := Polynomial.prod_multiset_X_sub_C_of_monic_of_roots_card_eq hmonic hcount
+    rw [hroots] at hprod
+    exact hprod
+  refine key Finset.univ x ?_ hx0
+  rw [hsplit]
+  simp [hA]
+
 /-- **The residual comparison when the commutant is bigger than the
-scalars** (sorry node — the Wedderburn/Noether–Skolem half). This is the
-complement of `exists_residualEmbedding_of_scalarCommutant`: the case in
-which `ρ'` is irreducible but NOT absolutely irreducible, stated over an
-abstract monoid `G` so that it can be attacked with mathlib alone.
+scalars** (PROVEN 2026-07-26 — and NOT by Wedderburn or Noether–Skolem;
+see THE PROOF below, which needs neither). This is the complement of
+`exists_residualEmbedding_of_scalarCommutant`: the case in which `ρ'` is
+irreducible but NOT absolutely irreducible, stated over an abstract
+monoid `G` so that it can be attacked with mathlib alone.
+
+**`_hC` IS NOT USED, AND THAT IS A RESULT, NOT AN OVERSIGHT.** The proof
+below never looks at the commutant, so it establishes the conclusion on
+BOTH sides of the parent's `Classical.em` dichotomy. The hypothesis is
+kept in the signature only so that the already-proven parent
+`exists_residualEmbedding_of_residualComparison` continues to typecheck
+unchanged; a later cleanup could delete the dichotomy entirely and call
+this leaf directly. What IS essential is `hirr` (used exactly once, to
+know that the `k'`-span of the image of the semilinear map is all of
+`V`), `hψsurj` (for the cardinality count), `hϖ`, `[IsLocalRing O]` and
+`[Finite k']`.
 
 Statement. Same data as in the scalar-commutant case — a two-dimensional
 `k'`-representation `ρ'` of `G`, a rank-two `O`-representation `τ`, and
@@ -3802,42 +4048,49 @@ for `ι₀` are the embeddings `𝔽 ↪ k'`, and they form one orbit under
 `Aut(k')` — that Galois ambiguity is exactly what the existential
 quantifier on `ι₀` absorbs.
 
-Now `ρ'` irreducible makes `V` an ISOTYPIC `𝔽_p[G]`-module (`V` is
-`𝔽_p[G]`-semisimple because `k'/𝔽_p` is separable, and every isotypic
-component is stable under everything commuting with `G`, in particular
-under the `k'`-scalars; two components would split `V` into two nonzero
-`k'`-stable subrepresentations). Hence `C ≅ M_r(E)` for a finite field
-`E` (Wedderburn, plus `LittleWedderburn` for "finite division ring is a
-field"), and `V ≅ S^{⊕m}` for the simple `C`-module `S`, with
-`S|_Ō ≅ Ō^s`, `S|_{k'} ≅ k'^{s'}` and `s·m = s'·m = 2` by
-Krull–Schmidt over the local ring `Ō`. Two cases:
+THE PROOF, which is where this leaf turned out to be much cheaper than
+its cut expected. The structure theory sketched in the paragraph above
+(isotypic decomposition, Wedderburn, Krull–Schmidt, Noether–Skolem) is
+NOT NEEDED. What replaces it is the observation that the required datum
+is exactly a nonzero additive `G`-equivariant `ι₀`-SEMILINEAR map out of
+`O²`, and that such a map can be produced as an EIGENVECTOR:
 
-* `m = 2`, `s = s' = 1`. Then `E ↪ k'` and `E ↪ Ō` (both act
-  `E`-linearly on a free rank-one module), `V ≅ S ⊗_E E²` with `G`
-  acting through the second factor, so `τ ≡ ρ_W ⊗_E Ō` and
-  `ρ' ≅ ρ_W ⊗_E k'`. Since `E ⊆ 𝔽 ⊆ Ō` and `#Ō = #k'` forces
-  `[𝔽:E] ∣ [k':E]`, an `E`-embedding `ι₀ : 𝔽 ↪ k'` exists, and
-  `ρ̄ ⊗_{𝔽,ι₀} k' = ρ_W ⊗_E k' ≅ ρ'`.
-* `m = 1`, `V ≅ S`. Then `G` acts on `V` through `E^×` by a character
-  `χ`, `L₀ := 𝔽_p[χ(G)]` is a field, and irreducibility of `ρ'` says
-  exactly that `L₀ ⊄ k'`, so `L := k'L₀` is quadratic over `k'` and
-  `V ≅ L`. The reduction `ρ̄` is then IRREDUCIBLE too: `ρ̄` reducible
-  would mean `L₀ ↪ 𝔽`, and `𝔽 ↪ k'` would give `L₀ ↪ k'`. Finally
-  `k' ⊗_{𝔽} 𝔽L₀` is a FIELD (if it were split, `[𝔽L₀ : 𝔽] = 2` would
-  divide `[k':𝔽]`, putting `L₀` inside `k'` again), so `ρ̄ ⊗_{𝔽,ι₀} k'`
-  is the unique one-dimensional `L`-module, i.e. `ρ'`.
+1. *Counting.* `ψ` induces a bijection `(O ⧸ (ϖ))² ≃ V`, so
+   `#(O ⧸ (ϖ)) = #k'`; and `#M` is a power of `#𝔽` for EVERY finite
+   module `M` over the local ring `O` (`card_eq_pow_card_residue`, proved
+   by induction on `#M`: the socle of `M` is a nonzero cyclic module
+   killed by `𝔪`, hence a copy of `𝔽`, and one divides it out). Hence
+   `#k' = #𝔽 ^ d`, so iterated Frobenius gives `y ^ #k' = y` for every
+   `y : 𝔽` — the arithmetic form of `𝔽 ↪ k'`.
+2. *A nonzero test map.* Choose `c ∈ O` with `c ∉ (ϖ)` and `𝔪·c ⊆ (ϖ)`
+   (the socle of `O ⧸ (ϖ)`, from `exists_ne_zero_maximalIdeal_smul_eq_zero`).
+   Then `θ₀ : u ↦ ψ (c • u)` is additive, `G`-equivariant, nonzero, and
+   KILLS `𝔪 · O²`.
+3. *The eigenvector.* Let `M` be the `k'`-subspace of additive maps
+   `O² → V` that are `G`-equivariant and kill `𝔪 · O²`; it is nonzero by
+   step 2. Precomposition by a lift `α ∈ O` of a generator of `𝔽ˣ` is a
+   `k'`-linear endomorphism `A` of `M`, and `A ^ #k' = A` because
+   `α ^ #k' - α ∈ 𝔪` by step 1. Since `X ^ #k' - X = ∏_{λ ∈ k'} (X - λ)`
+   splits over `k'`, some factor `A - λ` is non-injective
+   (`exists_eigenvector_of_pow_card`), giving `θ ≠ 0` in `M` with
+   `θ (α • u) = λ • θ u`.
+4. *The ring map.* `{y : O | ∃ cc, ∀ u, θ (y • u) = cc • θ u}` contains
+   `𝔪` (value `0`) and every power of `α` (value `λ ^ n`), and is closed
+   under sums and products; since `𝔽ˣ = ⟨ᾱ⟩` every `y : O` is congruent
+   to a power of `α` mod `𝔪`, so it is ALL of `O`. The value is unique
+   because `θ ≠ 0`, so `y ↦ cc` is a ring map `ι₀ : O →+* k'` and `θ` is
+   `ι₀`-semilinear.
+5. *The basis.* `b j := θ (e j)` spans a nonzero `ρ'`-stable
+   `k'`-subspace, which is `⊤` by `hirr` — the ONLY use of
+   irreducibility — hence a basis by
+   `basisOfTopLeSpanOfCardEqFinrank`, and in it the matrix of `ρ' g` is
+   the `ι₀`-image of the matrix of `τ g`, exactly as in the sibling.
 
 The `𝔽_p[ε]/(ε²)` phenomenon flagged on the parent is real and is
-covered: `Ō` is NOT assumed to be a field anywhere above — only `Ō`
-LOCAL is used, through Krull–Schmidt and through `T`'s image killing no
-nilpotent in `k'`.
-
-MACHINERY STATUS. mathlib has `RingTheory/SimpleModule/WedderburnArtin`
-and `RingTheory/LittleWedderburn`, but no Noether–Skolem and no isotypic
-decomposition; both must be built (Lam, *A First Course in
-Noncommutative Rings*, §3 and §13; Curtis–Reiner §3). The prover should
-develop against a scratch module importing mathlib only — none of `G`,
-`O`, `k'`, `V` here touches the Galois or scheme cones. -/
+covered: `O ⧸ (ϖ)` is nowhere assumed to be a field. Note also that
+step 1 is the only place the hypothesis `hψsurj` is used, and that the
+proof never needs `O` complete, `G` a group, or `V` semisimple over
+`𝔽_p[G]`. -/
 theorem exists_residualEmbedding_of_nonScalarCommutant
     {G : Type*} [Monoid G]
     {O : Type*} [CommRing O] [IsLocalRing O] (ϖ : O) (hϖ : ¬ IsUnit ϖ)
@@ -3846,7 +4099,7 @@ theorem exists_residualEmbedding_of_nonScalarCommutant
     {V : Type*} [AddCommGroup V] [Module k' V] [Module.Finite k' V] [Module.Free k' V]
     (hV : Module.rank k' V = 2)
     (ρ' : Representation k' G V) (hirr : ρ'.IsIrreducible)
-    (hC : ¬ ∀ c : V →+ V, (∀ (g : G) (v : V), c (ρ' g v) = ρ' g (c v)) →
+    (_hC : ¬ ∀ c : V →+ V, (∀ (g : G) (v : V), c (ρ' g v) = ρ' g (c v)) →
       ∃ a : k', ∀ v, c v = a • v)
     (ψ : (Fin 2 → O) → V)
     (hψadd : ∀ u u' : Fin 2 → O, ψ (u + u') = ψ u + ψ u')
@@ -3854,15 +4107,324 @@ theorem exists_residualEmbedding_of_nonScalarCommutant
     (hψker : ∀ u : Fin 2 → O, ψ u = 0 ↔ ∀ i, u i ∈ Ideal.span {ϖ})
     (hψequiv : ∀ (g : G) (u : Fin 2 → O), ψ (τ g u) = ρ' g (ψ u)) :
     ∃ (ι₀ : O →+* k') (E : (Fin 2 → k') ≃ₗ[k'] V),
-      ∀ g : G, ρ' g = E.conj (Matrix.toLin' ((LinearMap.toMatrix' (τ g)).map ι₀)) :=
-  sorry
+      ∀ g : G, ρ' g = E.conj (Matrix.toLin' ((LinearMap.toMatrix' (τ g)).map ι₀)) := by
+  classical
+  haveI := hirr
+  haveI : Fintype k' := Fintype.ofFinite k'
+  set I : Ideal O := Ideal.span {ϖ} with hIdef
+  set Ψ : (Fin 2 → O) →+ V := AddMonoidHom.mk' ψ hψadd with hΨdef
+  have hΨa : ∀ u, Ψ u = ψ u := fun _ => rfl
+  have hψsub : ∀ u u' : Fin 2 → O, ψ (u - u') = ψ u - ψ u' := by
+    intro u u'; rw [← hΨa, map_sub, hΨa, hΨa]
+  have hcong : ∀ u u' : Fin 2 → O, (∀ i, u i - u' i ∈ I) → ψ u = ψ u' := by
+    intro u u' h
+    have h0 : ψ (u - u') = 0 := (hψker _).mpr (by simpa using h)
+    rw [hψsub] at h0
+    exact sub_eq_zero.mp h0
+  -- `V` is finite, of cardinality `(#k')²`
+  have hfr : Module.finrank k' V = 2 := Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+  haveI : Finite V := Module.finite_of_finite k'
+  haveI : Fintype V := Fintype.ofFinite V
+  have hcardV : Nat.card V = (Nat.card k') ^ 2 := by
+    rw [Nat.card_eq_fintype_card (α := V), Nat.card_eq_fintype_card (α := k'),
+      Module.card_eq_pow_finrank (K := k') (V := V), hfr]
+  -- a set-theoretic section of `O → O ⧸ (ϖ)`
+  obtain ⟨sec, hsec⟩ :=
+    Function.Surjective.hasRightInverse (Ideal.Quotient.mk_surjective (I := I))
+  have hFbij : Function.Bijective (fun w : Fin 2 → O ⧸ I => ψ (fun i => sec (w i))) := by
+    constructor
+    · intro w w' h
+      funext i
+      have h0 : ψ ((fun j => sec (w j)) - fun j => sec (w' j)) = 0 := by
+        rw [hψsub]
+        simp only at h
+        rw [h, sub_self]
+      have h1 : sec (w i) - sec (w' i) ∈ I := by simpa using (hψker _).mp h0 i
+      have h2 : Ideal.Quotient.mk I (sec (w i)) = Ideal.Quotient.mk I (sec (w' i)) :=
+        (Ideal.Quotient.mk_eq_mk_iff_sub_mem _ _).mpr h1
+      rwa [hsec, hsec] at h2
+    · intro v
+      obtain ⟨u, rfl⟩ := hψsurj v
+      refine ⟨fun i => Ideal.Quotient.mk I (u i), hcong _ _ (fun i => ?_)⟩
+      rw [← Ideal.Quotient.mk_eq_mk_iff_sub_mem, hsec]
+  haveI : Finite (Fin 2 → O ⧸ I) := Finite.of_injective _ hFbij.injective
+  haveI : Finite (O ⧸ I) :=
+    Finite.of_injective (fun a : O ⧸ I => (fun _ => a : Fin 2 → O ⧸ I))
+      (fun a b h => congrFun h 0)
+  have hcardOI : Nat.card V = (Nat.card (O ⧸ I)) ^ 2 := by
+    rw [← Nat.card_congr (Equiv.ofBijective _ hFbij), Nat.card_fun]
+    simp
+  have hcardq : Nat.card (O ⧸ I) = Nat.card k' :=
+    (Nat.pow_left_injective (by norm_num) (hcardV.symm.trans hcardOI)).symm
+  -- `(ϖ) ≤ 𝔪`, so the residue field is finite too
+  have hϖm : ϖ ∈ maximalIdeal O := by
+    by_contra h
+    exact hϖ (IsLocalRing.notMem_maximalIdeal.mp h)
+  have hIm : I ≤ maximalIdeal O := by
+    rw [hIdef]
+    exact Ideal.span_le.mpr (by simpa using hϖm)
+  haveI : Finite (ResidueField O) := by
+    refine Finite.of_surjective
+      (Ideal.Quotient.lift I (IsLocalRing.residue O) (fun a ha => ?_)) (fun z => ?_)
+    · exact (IsLocalRing.residue_eq_zero_iff a).mpr (hIm ha)
+    · obtain ⟨a, ha⟩ := Ideal.Quotient.mk_surjective (I := maximalIdeal O) z
+      exact ⟨Ideal.Quotient.mk I a, ha⟩
+  haveI : Fintype (ResidueField O) := Fintype.ofFinite _
+  -- `#k'` is a power of `#𝔽`, so the Frobenius of `k'` is the identity on `𝔽`
+  obtain ⟨d, hd⟩ := card_eq_pow_card_residue O (Nat.card (O ⧸ I)) (O ⧸ I) rfl
+  have hQpow : Fintype.card k' = (Fintype.card (ResidueField O)) ^ d := by
+    rw [← Nat.card_eq_fintype_card (α := k'), ← Nat.card_eq_fintype_card (α := ResidueField O),
+      ← hcardq]
+    exact hd
+  have hfrobpow : ∀ (m : ℕ) (y : ResidueField O),
+      y ^ ((Fintype.card (ResidueField O)) ^ m) = y := by
+    intro m
+    induction m with
+    | zero => intro y; simp
+    | succ m ih => intro y; rw [pow_succ, pow_mul, ih y, FiniteField.pow_card]
+  have hfrob : ∀ y : ResidueField O, y ^ (Fintype.card k') = y := by
+    intro y; rw [hQpow]; exact hfrobpow d y
+  -- the socle of `O ⧸ (ϖ)`: an element `c ∉ (ϖ)` with `𝔪 c ⊆ (ϖ)`
+  haveI : Nontrivial (O ⧸ I) := by
+    refine ⟨⟨1, 0, fun h => hϖ ?_⟩⟩
+    have h1 : (1 : O) ∈ I := by
+      rw [← Ideal.Quotient.eq_zero_iff_mem, map_one]
+      exact h
+    rw [hIdef] at h1
+    exact Ideal.span_singleton_eq_top.mp ((Ideal.eq_top_iff_one _).mpr h1)
+  obtain ⟨cbar, hcbar0, hcbar⟩ :=
+    exists_ne_zero_maximalIdeal_smul_eq_zero (O := O) (M := O ⧸ I)
+  set c : O := sec cbar with hcdef
+  have hmkc : Ideal.Quotient.mk I c = cbar := hsec cbar
+  have hcI : c ∉ I := by
+    intro h
+    exact hcbar0 (by rw [← hmkc]; exact (Ideal.Quotient.eq_zero_iff_mem).mpr h)
+  have hmc : ∀ a ∈ maximalIdeal O, a * c ∈ I := by
+    intro a ha
+    have h1 := hcbar a ha
+    rw [← hmkc] at h1
+    have h2 : Ideal.Quotient.mk I (a * c) = 0 := by
+      rw [← h1]
+      rfl
+    exact (Ideal.Quotient.eq_zero_iff_mem).mp h2
+  -- a generator of `𝔽ˣ` and a lift of it to `O`
+  obtain ⟨gen, hgen⟩ := IsCyclic.exists_generator (α := (ResidueField O)ˣ)
+  obtain ⟨α, hα⟩ := Ideal.Quotient.mk_surjective (I := maximalIdeal O) (gen : ResidueField O)
+  have hαres : IsLocalRing.residue O α = (gen : ResidueField O) := hα
+  -- the space of additive `G`-equivariant maps killing `𝔪 · O²`
+  set Sα : (Fin 2 → O) →ₗ[ℤ] (Fin 2 → O) :=
+    { toFun := fun u => α • u
+      map_add' := fun u u' => smul_add _ _ _
+      map_smul' := fun n u => smul_comm α n u } with hSαdef
+  set Msub : Submodule k' ((Fin 2 → O) →ₗ[ℤ] V) :=
+    { carrier := {θ | (∀ (g : G) (u : Fin 2 → O), θ (τ g u) = ρ' g (θ u)) ∧
+        (∀ a ∈ maximalIdeal O, ∀ u : Fin 2 → O, θ (a • u) = 0)}
+      add_mem' := by
+        rintro θ η ⟨h1, h2⟩ ⟨h3, h4⟩
+        exact ⟨fun g u => by simp [h1 g u, h3 g u], fun a ha u => by simp [h2 a ha u, h4 a ha u]⟩
+      zero_mem' := ⟨fun g u => by simp, fun a ha u => by simp⟩
+      smul_mem' := by
+        rintro cc θ ⟨h1, h2⟩
+        exact ⟨fun g u => by simp [h1 g u], fun a ha u => by simp [h2 a ha u]⟩ } with hMsubdef
+  set θ₀ : (Fin 2 → O) →ₗ[ℤ] V :=
+    { toFun := fun u => ψ (c • u)
+      map_add' := fun u u' => by rw [smul_add, hψadd]
+      map_smul' := fun n u => by
+        show ψ (c • (n • u)) = n • ψ (c • u)
+        rw [smul_comm, ← hΨa, ← hΨa, map_zsmul] } with hθ₀def
+  have hθ₀mem : θ₀ ∈ Msub := by
+    refine ⟨fun g u => ?_, fun a ha u => ?_⟩
+    · show ψ (c • τ g u) = ρ' g (ψ (c • u))
+      rw [← hψequiv g (c • u)]
+      congr 1
+      exact ((τ g).map_smul c u).symm
+    · show ψ (c • (a • u)) = 0
+      refine (hψker _).mpr (fun i => ?_)
+      have hco : (c • (a • u)) i = (a * c) * u i := by
+        show c * (a * u i) = (a * c) * u i
+        ring
+      rw [hco]
+      exact Ideal.mul_mem_right _ _ (hmc a ha)
+  have hθ₀ne : θ₀ ≠ 0 := by
+    intro h
+    have h1 : ψ (c • (Pi.single (0 : Fin 2) (1 : O))) = 0 := by
+      have h2 := congrArg (fun (f : (Fin 2 → O) →ₗ[ℤ] V) => f (Pi.single (0 : Fin 2) (1 : O))) h
+      simpa [hθ₀def] using h2
+    have h3 := (hψker _).mp h1 0
+    apply hcI
+    have h4 : (c • (Pi.single (0 : Fin 2) (1 : O))) 0 = c := by simp
+    rwa [h4] at h3
+  -- precomposition by `α`
+  set Aamb : Module.End k' ((Fin 2 → O) →ₗ[ℤ] V) :=
+    { toFun := fun θ => θ.comp Sα
+      map_add' := fun _ _ => rfl
+      map_smul' := fun _ _ => rfl } with hAambdef
+  have hAmap : ∀ θ ∈ Msub, Aamb θ ∈ Msub := by
+    rintro θ ⟨h1, h2⟩
+    refine ⟨fun g u => ?_, fun a ha u => ?_⟩
+    · show θ (α • τ g u) = ρ' g (θ (α • u))
+      rw [← h1 g (α • u)]
+      congr 1
+      exact ((τ g).map_smul α u).symm
+    · show θ (α • (a • u)) = 0
+      rw [smul_comm]
+      exact h2 a ha (α • u)
+  set Ares : Module.End k' Msub := Aamb.restrict hAmap with hAresdef
+  haveI : Nontrivial Msub :=
+    ⟨⟨0, ⟨θ₀, hθ₀mem⟩, fun h => hθ₀ne (congrArg Subtype.val h).symm⟩⟩
+  have hArest : ∀ (x : Msub) (u : Fin 2 → O),
+      ((Ares x : (Fin 2 → O) →ₗ[ℤ] V)) u = (x : (Fin 2 → O) →ₗ[ℤ] V) (α • u) := by
+    intro x u
+    rw [hAresdef, LinearMap.restrict_apply]
+    rfl
+  have hpow : ∀ (n : ℕ) (x : Msub) (u : Fin 2 → O),
+      ((Ares ^ n) x : (Fin 2 → O) →ₗ[ℤ] V) u = (x : (Fin 2 → O) →ₗ[ℤ] V) (α ^ n • u) := by
+    intro n
+    induction n with
+    | zero => intro x u; simp
+    | succ m ih =>
+        intro x u
+        rw [pow_succ, Module.End.mul_apply, ih (Ares x) u, hArest x, smul_smul, ← pow_succ']
+  have hAQ : Ares ^ (Fintype.card k') = Ares := by
+    refine LinearMap.ext fun x => Subtype.ext (LinearMap.ext fun u => ?_)
+    rw [hpow, hArest]
+    have hmem : α ^ (Fintype.card k') - α ∈ maximalIdeal O := by
+      rw [← IsLocalRing.residue_eq_zero_iff, map_sub, map_pow, hαres, hfrob, sub_self]
+    have hz := x.2.2 _ hmem u
+    rw [sub_smul, map_sub, sub_eq_zero] at hz
+    exact hz
+  obtain ⟨lam, xeig, hxeig0, hxeig⟩ := exists_eigenvector_of_pow_card Ares hAQ
+  set θ : (Fin 2 → O) →ₗ[ℤ] V := (xeig : (Fin 2 → O) →ₗ[ℤ] V) with hθdef
+  have hθequiv : ∀ (g : G) (u : Fin 2 → O), θ (τ g u) = ρ' g (θ u) := xeig.2.1
+  have hθker : ∀ a ∈ maximalIdeal O, ∀ u : Fin 2 → O, θ (a • u) = 0 := xeig.2.2
+  have hθα : ∀ u, θ (α • u) = lam • θ u := by
+    intro u
+    have h1 := congrArg (fun (z : Msub) => (z : (Fin 2 → O) →ₗ[ℤ] V) u) hxeig
+    rw [hArest xeig u] at h1
+    exact h1
+  have hθne : θ ≠ 0 := fun h => hxeig0 (Subtype.ext h)
+  have hθpow : ∀ (n : ℕ) (u : Fin 2 → O), θ (α ^ n • u) = lam ^ n • θ u := by
+    intro n
+    induction n with
+    | zero => intro u; simp
+    | succ m ih =>
+        intro u
+        rw [pow_succ', ← smul_smul, hθα, ih, smul_smul, ← pow_succ']
+  -- every scalar acts on `θ` through a scalar of `k'`
+  have hexc : ∀ y : O, ∃ cc : k', ∀ u, θ (y • u) = cc • θ u := by
+    intro y
+    by_cases hy : y ∈ maximalIdeal O
+    · exact ⟨0, fun u => by rw [hθker y hy u, zero_smul]⟩
+    · have hres : IsLocalRing.residue O y ≠ 0 := by
+        rw [Ne, IsLocalRing.residue_eq_zero_iff]
+        exact hy
+      obtain ⟨yu, hyu⟩ : ∃ yu : (ResidueField O)ˣ,
+          (yu : ResidueField O) = IsLocalRing.residue O y :=
+        ⟨(isUnit_iff_ne_zero.mpr hres).unit, IsUnit.unit_spec _⟩
+      obtain ⟨n, hn⟩ : ∃ n : ℕ, gen ^ n = yu := by
+        have hmem := hgen yu
+        rwa [← mem_powers_iff_mem_zpowers, Submonoid.mem_powers_iff] at hmem
+      refine ⟨lam ^ n, fun u => ?_⟩
+      have hdiff : y - α ^ n ∈ maximalIdeal O := by
+        rw [← IsLocalRing.residue_eq_zero_iff, map_sub, map_pow, hαres, ← hyu, ← hn,
+          Units.val_pow_eq_pow_val, sub_self]
+      calc θ (y • u) = θ ((y - α ^ n) • u + α ^ n • u) := by rw [← add_smul]; ring_nf
+        _ = θ ((y - α ^ n) • u) + θ (α ^ n • u) := map_add _ _ _
+        _ = lam ^ n • θ u := by rw [hθker _ hdiff u, hθpow, zero_add]
+  obtain ⟨u₀, hu₀⟩ : ∃ u, θ u ≠ 0 := by
+    by_contra h
+    push Not at h
+    exact hθne (LinearMap.ext h)
+  choose ι₀f hι₀f using hexc
+  have huniq : ∀ (y : O) (cc : k'), (∀ u, θ (y • u) = cc • θ u) → cc = ι₀f y := by
+    intro y cc h
+    have h0 : (cc - ι₀f y) • θ u₀ = 0 := by
+      rw [sub_smul, ← h u₀, ← hι₀f y u₀, sub_self]
+    rcases smul_eq_zero.mp h0 with h1 | h1
+    · exact sub_eq_zero.mp h1
+    · exact absurd h1 hu₀
+  set ι₀ : O →+* k' :=
+    { toFun := ι₀f
+      map_one' := (huniq 1 1 (fun u => by rw [one_smul, one_smul])).symm
+      map_mul' := fun a b => (huniq (a * b) (ι₀f a * ι₀f b) (fun u => by
+        rw [mul_smul, hι₀f a, hι₀f b, smul_smul])).symm
+      map_zero' := (huniq 0 0 (fun u => by rw [zero_smul, zero_smul, map_zero])).symm
+      map_add' := fun a b => (huniq (a + b) (ι₀f a + ι₀f b) (fun u => by
+        rw [add_smul, map_add, hι₀f a, hι₀f b, ← add_smul])).symm } with hι₀def
+  have hι₀a : ∀ y, ι₀ y = ι₀f y := fun _ => rfl
+  -- the two images span, by irreducibility
+  set b : Fin 2 → V := fun i => θ (Pi.single i 1) with hbdef
+  have hcoord : ∀ u : Fin 2 → O, θ u = ι₀ (u 0) • b 0 + ι₀ (u 1) • b 1 := by
+    intro u
+    have hu : u = u 0 • Pi.single (0 : Fin 2) (1 : O) + u 1 • Pi.single (1 : Fin 2) (1 : O) := by
+      ext i; fin_cases i <;> simp
+    calc θ u
+        = θ (u 0 • Pi.single (0 : Fin 2) (1 : O) + u 1 • Pi.single (1 : Fin 2) (1 : O)) := by
+          rw [← hu]
+      _ = θ (u 0 • Pi.single (0 : Fin 2) (1 : O)) + θ (u 1 • Pi.single (1 : Fin 2) (1 : O)) :=
+          map_add _ _ _
+      _ = ι₀ (u 0) • b 0 + ι₀ (u 1) • b 1 := by rw [hι₀f, hι₀f, hι₀a, hι₀a, hbdef]
+  set W : Submodule k' V := Submodule.span k' (Set.range b) with hWdef
+  have hmemW : ∀ u : Fin 2 → O, θ u ∈ W := by
+    intro u
+    rw [hcoord u]
+    exact Submodule.add_mem _
+      (Submodule.smul_mem _ _ (Submodule.subset_span ⟨0, rfl⟩))
+      (Submodule.smul_mem _ _ (Submodule.subset_span ⟨1, rfl⟩))
+  have hstable : ∀ (g : G) ⦃v : V⦄, v ∈ W → ρ' g v ∈ W := by
+    intro g v hv
+    have hle : W ≤ Submodule.comap (ρ' g) W := by
+      rw [hWdef, Submodule.span_le]
+      rintro _ ⟨j, rfl⟩
+      show ρ' g (b j) ∈ W
+      rw [hbdef]
+      simp only
+      rw [← hθequiv g (Pi.single j 1)]
+      exact hmemW _
+    exact hle hv
+  have hWne : W ≠ ⊥ := by
+    intro h
+    apply hu₀
+    have h1 := hmemW u₀
+    rw [h] at h1
+    simpa using h1
+  have hWtop : W = ⊤ := by
+    rcases IsSimpleOrder.eq_bot_or_eq_top (⟨W, hstable⟩ : Subrepresentation ρ') with h | h
+    · exact absurd (congrArg Subrepresentation.toSubmodule h) hWne
+    · exact congrArg Subrepresentation.toSubmodule h
+  have hcard : Fintype.card (Fin 2) = Module.finrank k' V := by simp [hfr]
+  have hspan : ⊤ ≤ Submodule.span k' (Set.range b) := le_of_eq hWtop.symm
+  set bb : Module.Basis (Fin 2) k' V := basisOfTopLeSpanOfCardEqFinrank b hspan hcard with hbb
+  have hbbv : ∀ i, bb i = b i := fun i =>
+    congrFun (coe_basisOfTopLeSpanOfCardEqFinrank b hspan hcard) i
+  refine ⟨ι₀, bb.equivFun.symm, fun g => ?_⟩
+  apply bb.ext
+  intro j
+  have hEsymm : bb.equivFun.symm (Pi.single j (1 : k')) = bb j := by
+    rw [Module.Basis.equivFun_symm_apply]
+    simp
+  have hkey : (LinearEquiv.conj bb.equivFun.symm
+      (Matrix.toLin' ((LinearMap.toMatrix' (τ g)).map ι₀))) (bb j) = ρ' g (bb j) := by
+    rw [LinearEquiv.conj_apply_apply]
+    have h1 : bb.equivFun.symm.symm (bb j) = Pi.single j (1 : k') := by
+      rw [← hEsymm]; exact (bb.equivFun.symm).symm_apply_apply _
+    rw [h1]
+    have h2 : (Matrix.toLin' ((LinearMap.toMatrix' (τ g)).map ι₀)) (Pi.single j (1 : k')) =
+        fun i => ι₀ (τ g (Pi.single j (1 : O)) i) := by
+      ext i
+      simp [Matrix.toLin'_apply, Matrix.map_apply, LinearMap.toMatrix'_apply]
+    rw [h2, Module.Basis.equivFun_symm_apply]
+    rw [Fin.sum_univ_two, hbbv, hbbv]
+    rw [← hcoord (τ g (Pi.single j (1 : O))), hθequiv, hbbv, hbdef]
+  exact hkey.symm
+
+end ResidualEmbeddingNonScalarCommutant
 
 /-- **Two rank-two structures on one irreducible residual representation
 differ by a ring map** (PROVEN 2026-07-26 by the commutant dichotomy over
-`exists_residualEmbedding_of_scalarCommutant` — proven — and
-`exists_residualEmbedding_of_nonScalarCommutant` — open; representation
-theory: Schur, Wedderburn and Noether–Skolem; this is the leaf carrying
-`hirr`).
+`exists_residualEmbedding_of_scalarCommutant` and
+`exists_residualEmbedding_of_nonScalarCommutant`, both now PROVEN; this
+is the leaf carrying `hirr`).
 
 Statement. Let `τ` be a rank-two representation of `Γ_F` over a local
 ring `O`, let `ρ'` be a two-dimensional representation over a finite
@@ -3923,11 +4485,10 @@ HOW THE PROOF BELOW SPLITS THAT (2026-07-26). The dichotomy is decided by
 commutant `C` is as small as it can be. On the affirmative side the two
 coefficient rings are forced to COINCIDE, `ψ` itself is the change of
 basis, and `exists_residualEmbedding_of_scalarCommutant` closes the case
-outright, with `hirr` never used. Only the negative side — `ρ'`
-irreducible but not absolutely irreducible — needs the simplicity
-apparatus, and it is isolated in
-`exists_residualEmbedding_of_nonScalarCommutant`, whose docstring carries
-the full case analysis and a truth audit of the remaining statement.
+outright, with `hirr` never used. The negative side is isolated in
+`exists_residualEmbedding_of_nonScalarCommutant`, also PROVEN: it needs
+`hirr` but, as it turned out, no simplicity apparatus and not even its
+own commutant hypothesis; its docstring carries the argument.
 
 Both halves are stated for an ABSTRACT MONOID and mathlib's
 `Representation`, deliberately: `GaloisRep`'s `FunLike` hides a
@@ -5055,8 +5616,200 @@ theorem exists_tateFrame_of_levelStructure
   exact ⟨π, hπ, hπ2, O, iCR, iTS, iTR, iAlg, iLoc, iFin, iFree, iMT, τ, φ, ι₀, j, bad,
     hφadd, hφbij, hφequiv, hι₀, hφj, hdet⟩
 
+/-! ### The compatible system, cut into its two inputs
+
+`exists_weilFrobeniusSystem_of_mult` below — item 9, the Weil/Faltings
+citation — is no longer a single opaque leaf.  Once the frame is pinned
+to the real multiplication by `j`/`hj` (the repair recorded in its
+FAITHFULNESS AUDIT), the statement splits along an entirely mechanical
+seam into two mathematically distinct inputs:
+
+* `exists_algebraicClosureEmbedding_of_tateFrame_mult` — *the frame's
+  coefficient ring is `𝒪_{D,I}`*.  This is what supplies the embeddings
+  `ψ` and `ι` and, in particular, the INJECTIVITY of `ι`, which the
+  audit shows is not available for an unpinned frame at all.  Pure
+  commutative algebra: no Frobenius, no compatible system.
+* `exists_intWeilPolynomial_of_mult` — *the Frobenius characteristic
+  polynomial is `X² - a_w X + b_w` with `a_w, b_w ∈ 𝒪_D` independent of
+  `I`*.  This is the arithmetic: Weil's Riemann hypothesis for abelian
+  varieties over finite fields (the coefficients are algebraic integers
+  of the right size) together with Faltings' independence of `λ` (they
+  do not depend on the residue characteristic).
+
+Why this is the right seam, and not an arbitrary one.  The old statement
+buried BOTH inputs inside one existential over `AlgebraicClosure ℚ_[q]`,
+where they are hard to tell apart — which is precisely how the false
+`Function.Injective ι` clause got in unnoticed, since an assertion about
+the SHAPE of `O` was hiding inside an assertion about Frobenius.  Cutting
+here separates them: the injectivity now lives in a statement that
+mentions no Frobenius, and the compatible system now lives in a statement
+whose coefficients are `𝒪_D`-integral BY CONSTRUCTION, so no embedding
+into `ℚ̄_q` is needed to say what `D`-rationality means.  The polynomial
+`P` of the conclusion is then not existential magic but the explicit
+`X² - a_w X + b_w` read in `D`, and the two leaves meet only through the
+compatibility `ι ∘ j = ψ ∘ (𝒪_D ↪ D)`.
+
+Both leaves inherit the pinning hypotheses `j`/`hj` verbatim; neither is
+provable without them, by the two counterexamples in the audit below. -/
+
+/-- **The coefficient ring of an `𝒪_D`-frame of the Tate module is
+`𝒪_{D,I}`, hence embeds in `ℚ̄_q` compatibly with `D`** (sorry leaf —
+the commutative-algebra half of `exists_weilFrobeniusSystem_of_mult`).
+
+Given a frame `(O, τ, φ)` of `TatePt m x I π` which REMEMBERS THE REAL
+MULTIPLICATION — i.e. carries `j : 𝒪_D →+* O` with the intertwining
+`hj` — there are a ring map `ψ : D →+* ℚ̄_q`, an INJECTIVE ring map
+`ι : O →+* ℚ̄_q`, and the compatibility `ι ∘ j = ψ ∘ (𝒪_D ↪ D)`.
+
+THE ARGUMENT (this is the guidance the repairer of the sibling left for
+its prover, and it is recorded here because this is now where it is
+owed).  Do NOT look for a hypothesis that hands you `Function.Injective
+ι`, and do NOT reintroduce `IsDomain O`: derive `O = 𝒪_{D,I}` instead.
+
+1. `O` is a `ℤ_q`-algebra, finite and free.  Nothing says so, but `φ`
+   forces `O ⊕ O ≅ T ≅ ℤ_q^{2d}` as abelian groups, and every additive
+   endomorphism of `ℤ_q^n` is `ℤ_q`-linear (divisibility by `q^n` is
+   preserved).  In particular `rank_{ℤ_q} O = d = [𝒪_{D,I} : ℤ_q]`,
+   using `hdim` to know `T` has `ℤ_q`-rank `2d`.
+2. `j` is injective and `O` contains `𝒪_{D,I}`.  By `hj`, `j a` acts on
+   `T` as `m.act a`, so `j` is injective (a nonzero `a ∈ 𝒪_D` acts
+   injectively on the `I`-adic Tate module, `T` being `I`-adically
+   separated), and the closure of `j(𝒪_D)` inside the `q`-adically
+   complete `O` is a copy of the `I`-adic completion `𝒪_{D,I}`.
+3. `O = 𝒪_{D,I}`.  `O` is a ring extension of `𝒪_{D,I}` of the same
+   `ℤ_q`-rank, hence integral over it and contained in its fraction
+   field; `𝒪_{D,I}` is integrally closed, so the inclusion is an
+   equality.
+4. `𝒪_{D,I}` is a complete discrete valuation ring of characteristic
+   zero with residue characteristic `q`, so its fraction field is a
+   finite extension of `ℚ_q` and embeds in `ℚ̄_q`; `ψ` is the induced
+   place of `D` over `q` and injectivity of `ι` is automatic, a field
+   map being injective.
+
+Step 3 is where the two counterexamples of the audit below die:
+`ℤ₁₃[ε]` is not integrally closed in the relevant sense (it has a
+nonzero nilpotent, so it is not contained in any field) and admits no
+`j` at all, and `ℤ₁₃ × ℤ₁₃` admits no `j` because `𝒪_D` acts through the
+multiplicity space and is scalar on neither factor.  Neither survives
+the pinning, which is the whole content of the repair.
+
+Note `hφequiv` and `τ` are carried but not needed for the argument: the
+conclusion is about the RING `O`, and Galois-equivariance of the frame
+plays no part in identifying it.  They are kept so that the hypothesis
+block is literally the frame produced by
+`exists_tateFrame_of_levelStructure`, which is what the consumer has. -/
+theorem exists_algebraicClosureEmbedding_of_tateFrame_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) (hq : Fact q.Prime)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) (iCR : CommRing O) (iTS : TopologicalSpace O) (iTR : IsTopologicalRing O)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hφadd : ∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n))
+    (hφbij : Function.Bijective φ)
+    (hφequiv : ∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n))
+    (hj : ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j a • u)).1 n = m.act a ((φ u).1 n)) :
+    ∃ (ψ : D →+* AlgebraicClosure ℚ_[q]) (ι : O →+* AlgebraicClosure ℚ_[q]),
+      Function.Injective ι ∧
+      ∀ a : NumberField.RingOfIntegers D,
+        ι (j a) = ψ (algebraMap (NumberField.RingOfIntegers D) D a) :=
+  sorry
+
+/-- **The Frobenius characteristic polynomials of the `𝒪_D`-Tate modules
+are `X² - a_w X + b_w` with `a_w, b_w ∈ 𝒪_D` independent of `I`**
+(sorry leaf — the arithmetic half of
+`exists_weilFrobeniusSystem_of_mult`, and the deepest statement in the
+chain: Weil's Riemann hypothesis for abelian varieties over finite
+fields together with Faltings' theorem that the system is independent of
+the residue characteristic; Faltings, *Endlichkeitssätze für abelsche
+Varietäten über Zahlkörpern*, Invent. Math. 73 (1983); Taylor 2002 §1–2
+and Shimura for the Hilbert–Blumenthal normalization).
+
+For an abelian scheme with real multiplication by `𝒪_D` and an
+`F`-point `x` there are two families `a, b : w ↦ 𝒪_D` such that for
+EVERY maximal ideal `I` of `𝒪_D`, every `π`, and every frame `φ` of
+`TatePt m x I π` by a rank-two representation `τ` over a coefficient
+ring `O` WHICH REMEMBERS THE REAL MULTIPLICATION (`j`, `hj`), one has
+
+    τ.charFrob w = X² - j(a_w)·X + j(b_w)
+
+for all but finitely many `w`.  Classically `a_w` is the trace and `b_w`
+the determinant of `Frob_w` on the `𝒪_D`-Tate module of the reduction;
+both are algebraic integers of `D`, and they do not depend on `I` —
+that independence IS Faltings' theorem, and it is what makes the
+`λ`-adic and `𝔭`-adic Tate modules of one abelian variety two members of
+ONE compatible system.
+
+What is load-bearing in the way this is stated.
+
+* `a` and `b` are quantified BEFORE `q` and `I`; the frame data and
+  `bad` after.  That ordering is the independence-of-`λ` statement, and
+  reversing it would make the leaf either false or vacuous.
+* The coefficients live in `𝒪_D` ITSELF and are transported into `O`
+  along `j`, not along some embedding chosen per `I`.  This is what
+  makes the statement `D`-rational without any mention of `ℚ̄_q`, and it
+  is why the compatible-system content is now visible on the face of the
+  statement rather than hidden inside an existential over embeddings.
+* `bad` is quantified AFTER `q` and this is not slack — it must contain
+  the places of `F` above `q`, where the `I`-adic representation is
+  ramified and its Frobenius characteristic polynomial is not the Weil
+  polynomial at all; since `q` ranges over every rational prime, no
+  single finite set can contain the places above all of them.  Only the
+  places of bad reduction of `A_x` are independent of `q`.
+* `j` and `hj` may NOT be dropped.  Without them `O`, `τ` and `φ` range
+  over frames that do not remember the real multiplication, and the
+  conclusion is FALSE by Counterexample 2 of the audit below — the
+  exotic frame `O = ℤ₁₃ × ℤ₁₃` has `τ.charFrob w = (X - c_w)²`, a
+  square, while the honest frame has `X² - a_w X + N(w)`, and these
+  disagree at infinitely many `w` by Chebotarev.  The monicity of the
+  displayed polynomial is not an extra assumption: `τ.charFrob` is a
+  characteristic polynomial of an endomorphism of a free rank-two
+  module, so it is monic of degree two whatever the frame. -/
+theorem exists_intWeilPolynomial_of_mult
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f) :
+    ∃ a b : HeightOneSpectrum (NumberField.RingOfIntegers F) →
+        NumberField.RingOfIntegers D,
+      ∀ (q : ℕ) (_ : Fact q.Prime)
+        (I : Ideal (NumberField.RingOfIntegers D)) (_ : I.IsMaximal)
+        (_ : (q : NumberField.RingOfIntegers D) ∈ I)
+        (π : NumberField.RingOfIntegers D) (_ : π ∈ I) (_ : π ∉ I ^ 2)
+        (O : Type u) (_ : CommRing O) (_ : TopologicalSpace O) (_ : IsTopologicalRing O)
+        (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+        (j : NumberField.RingOfIntegers D →+* O),
+        (∀ (u u' : Fin 2 → O) (n : ℕ),
+          (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n)) →
+        Function.Bijective φ →
+        (∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+          (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n)) →
+        (∀ (c : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+          (φ (j c • u)).1 n = m.act c ((φ u).1 n)) →
+        ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+          ∀ w ∉ bad,
+            τ.charFrob w =
+              Polynomial.X ^ 2 - Polynomial.C (j (a w)) * Polynomial.X +
+                Polynomial.C (j (b w)) :=
+  sorry
+
 /-- **The Frobenius characteristic polynomials of the Tate modules form
-one `D`-rational compatible system** (sorry node — item 9 of the
+one `D`-rational compatible system** (PROVEN 2026-07-26 by assembly over
+the two leaves just above, `exists_algebraicClosureEmbedding_of_tateFrame_mult`
+and `exists_intWeilPolynomial_of_mult`; see the section note there for
+why that is the seam — item 9 of the
 Tate-module construction, and the deepest statement in the chain: Weil's
 Riemann hypothesis for abelian varieties over finite fields together
 with Faltings' theorem that the system is independent of the residue
@@ -5324,7 +6077,28 @@ counterexample 2 standing).
 
 The sibling `exists_tateFrame_of_levelStructure` was NOT itself false —
 the honest `I`-adic Tate module does frame it — it was merely too weak,
-and that weakness is what this leaf inherited. -/
+and that weakness is what this leaf inherited.
+
+### THE PROOF (2026-07-26): the repaired leaf is an ASSEMBLY
+
+With `j`/`hj` in place the statement is no longer atomic, and it is
+discharged here over the two leaves above.  `P` is the explicit
+polynomial `X² - a_w X + b_w` read in `D`, with `a`, `b` the
+`𝒪_D`-integral families of `exists_intWeilPolynomial_of_mult`; the
+embeddings `ψ` and `ι` and the injectivity of `ι` come from
+`exists_algebraicClosureEmbedding_of_tateFrame_mult`; and the matching
+of the two sides is the compatibility `ι ∘ j = ψ ∘ (𝒪_D ↪ D)` applied
+coefficient by coefficient through `Polynomial.map`.
+
+Note what this does to the refuted clause.  `Function.Injective ι` is no
+longer asserted here at all — it is IMPORTED from a statement that
+mentions no Frobenius and whose proof obligation is exactly "the frame's
+coefficient ring is `𝒪_{D,I}`".  That is the repair carried through to
+its conclusion: the clause is now owed where it can be discharged,
+rather than smuggled into a conclusion about characteristic polynomials.
+The counterexamples above are retained because they are what pins the
+repair down, and because any future weakening of `j`/`hj` — in this
+declaration or in either leaf — reinstates them verbatim. -/
 theorem exists_weilFrobeniusSystem_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -5350,7 +6124,25 @@ theorem exists_weilFrobeniusSystem_of_mult
         ∃ (bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
           (ψ : D →+* AlgebraicClosure ℚ_[q]) (ι : O →+* AlgebraicClosure ℚ_[q]),
           Function.Injective ι ∧
-          ∀ w ∉ bad, (τ.charFrob w).map ι = (P w).map ψ :=
-  sorry
+          ∀ w ∉ bad, (τ.charFrob w).map ι = (P w).map ψ := by
+  -- The `𝒪_D`-integral compatible system: one pair of families for every `q` and `I`.
+  obtain ⟨a, b, hab⟩ := exists_intWeilPolynomial_of_mult m x hdim
+  -- `P` is that system read in `D`.
+  refine ⟨fun w => Polynomial.X ^ 2 -
+      Polynomial.C (algebraMap (NumberField.RingOfIntegers D) D (a w)) * Polynomial.X +
+      Polynomial.C (algebraMap (NumberField.RingOfIntegers D) D (b w)), ?_⟩
+  intro q hq I hI hqI π hπ hπ2 O iCR iTS iTR τ φ j hφadd hφbij hφequiv hj
+  obtain ⟨bad, hbad⟩ :=
+    hab q hq I hI hqI π hπ hπ2 O iCR iTS iTR τ φ j hφadd hφbij hφequiv hj
+  -- The frame remembers `m.act`, so its coefficient ring is `𝒪_{D,I}`: that is what
+  -- supplies `ψ`, `ι`, the injectivity, and the compatibility `ι ∘ j = ψ ∘ (𝒪_D ↪ D)`.
+  obtain ⟨ψ, ι, hιinj, hcompat⟩ :=
+    exists_algebraicClosureEmbedding_of_tateFrame_mult m x hdim q hq I hI hqI π hπ hπ2 O
+      iCR iTS iTR τ φ j hφadd hφbij hφequiv hj
+  refine ⟨bad, ψ, ι, hιinj, fun w hw => ?_⟩
+  -- Both sides are `X² - (…)·X + (…)`, and the two constant terms agree by `hcompat`.
+  rw [hbad w hw]
+  simp only [Polynomial.map_add, Polynomial.map_sub, Polynomial.map_mul, Polynomial.map_pow,
+    Polynomial.map_X, Polynomial.map_C, hcompat]
 
 end Fermat
