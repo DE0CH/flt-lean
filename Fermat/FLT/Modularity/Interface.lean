@@ -24714,8 +24714,124 @@ theorem isNewAtPrime_of_isWeightTwoNewform {M : ℕ}
   · exact absurd hold
       (not_exists_eigenform_level_not_dvd_of_isWeightTwoNewform hg hqM)
 
-/-- **Carayol's conductor theorem at the NEWFORM level** (sorry node —
-the residual away-from-`p` literature leaf, re-pinned 2026-07-25 at the
+/-- **Ramifiedness half of Carayol's conductor theorem at the NEWFORM
+level** (sorry node — one of the two components into which the single
+newform-level Carayol citation was SPLIT on 2026-07-26; Carayol, *Sur
+les représentations `ℓ`-adiques associées aux formes modulaires de
+Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A)): for a weight-2
+NEWFORM `g₀` of level `M₀`, an IRREDUCIBLE `τ` matching its Hecke
+polynomials away from a finite set is RAMIFIED at every prime
+`q ∣ M₀` with `q ≠ p`.
+
+This is the `a_q ≠ 0` half of `ord_q (cond ρ_{g₀,λ}) = ord_q M₀`, and
+it is the half that BOTH classical local types deliver: `q ∥ M₀` gives
+an unramified twist of Steinberg (inertia acting through a nontrivial
+transvection) and `q² ∣ M₀` ramified principal series or supercuspidal.
+It carries no information about the SIZE of the conductor exponent —
+that is the business of the companion leaf
+`exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one`
+below, which is needed only in the `q ∥ M₀` case.
+
+WHY THE SPLIT (2026-07-26, fifth owner). Through
+`GaloisRep.HasConductorExponentAt` — whose wild summand is
+existentially quantified — the cited identity `a_q = ord_q M₀` says
+exactly "ramified at `q`" AND "`2 − dim V^{I_q} ≤ ord_q M₀`"
+(`GaloisRep.hasConductorExponentAt_iff_tameExponent_le_of_not_isUnramifiedAt`).
+The second conjunct is arithmetically EMPTY as soon as
+`ord_q M₀ ≥ 2`, because the tame exponent of a 2-dimensional
+representation never exceeds `2`
+(`GaloisRep.tameExponent_le_finrank`). That observation used to be
+prose in the FORMAL-CONTENT AUDIT of the composite leaf; it is now
+checked Lean, and the consequence is that the composite citation is
+needed only in the shape of THIS leaf plus a fixed line in the single
+case `ord_q M₀ = 1`.
+
+This leaf is NOT a duplicate of
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` below, which is
+the corresponding statement over the weaker `IsWeightTwoEigenform`
+carrier with `IsNewAtPrime` in place of newform-ness, and which is
+PROVEN — by descent through
+`hasConductorExponentAt_factorization_of_isNewAtPrime`, hence
+ultimately through this leaf. The dependency runs newform → eigenform,
+never back. -/
+theorem not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
+    ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
+/-- **Tame half of Carayol's conductor theorem at the NEWFORM level, in
+the only case where it carries content** (sorry node — the second of
+the two components of the 2026-07-26 split; Carayol, Théorème (A),
+together with the Langlands/Deligne local computation at a prime
+exactly dividing the level): if `q ∥ M₀` — i.e. `ord_q M₀ = 1` — then
+inertia at `q` fixes a NONZERO vector of `τ`.
+
+The local automorphic representation of `g₀` at such a `q` is an
+unramified twist of Steinberg, whose Weil–Deligne parameter is the
+special one with nonzero monodromy `N`; inertia acts through the
+unipotent `σ ↦ (1, t_p(σ); 0, 1)`, so `dim V^{I_q} = 1` and in
+particular a fixed line exists. Only the EXISTENCE of the fixed vector
+is asserted here — the dimension is not pinned, and need not be: a
+fixed line is exactly what the tame dictionary consumes
+(`GaloisRep.tameExponent_add_one_le_finrank_of_fixed`).
+
+WHY THIS SHAPE RATHER THAN UNIPOTENCE. The classical statement is
+stronger — `(τσ − 1)² = 0` for every `σ ∈ I_q` — and deriving a COMMON
+fixed line from it needs Kolchin's theorem in dimension 2, absent from
+this pin. Assuming the stronger unipotence and proving Kolchin would
+make the development's faith LARGER, not smaller, so the pin is placed
+at the weakest form that the consumer actually needs.
+
+`q ≠ p` is load-bearing: at `q = p` with `p ∥ M₀` the local
+representation is still special, but `ρ|_{I_p}` is not unipotent (the
+Steinberg parameter is twisted by the cyclotomic character there), and
+`V^{I_p}` may well vanish. That is the same reason the at-`p` place of
+this development keeps its own geometric Saito/flatness leaf.
+
+REUSE NOTE (2026-07-26). This is precisely the TAME half that step 3 of
+the repair plan in the FALSITY AUDIT of
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` below asks
+for. That leaf is FALSE AS STATED because `HasConductorExponentAt`
+cannot carry an upper bound in HYPOTHESIS position; a fixed line, by
+contrast, is upper-bound information in a form that survives, so the
+statement here is available to whoever performs that repair. -/
+theorem exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p)
+    (hord : M₀.factorization q = 1) :
+    ∃ w₀ : Fin 2 → AlgebraicClosure ℚ_[p], w₀ ≠ 0 ∧
+      ∀ σ ∈ localInertiaGroup hq.toHeightOneSpectrumRingOfIntegersRat,
+        τ.toLocal hq.toHeightOneSpectrumRingOfIntegersRat σ w₀ = w₀ :=
+  sorry
+
+/-- **Carayol's conductor theorem at the NEWFORM level** (PROVEN
+2026-07-26 from the two-component split below — was the residual
+away-from-`p` literature leaf, re-pinned 2026-07-25 at the
 level where the cited theorem is actually stated: Carayol, *Sur les
 représentations `ℓ`-adiques associées aux formes modulaires de Hilbert*,
 Ann. Sci. ÉNS 19 (1986), Théorème (A) — local–global compatibility at a
@@ -24778,7 +24894,52 @@ every instance is an instance of the cited theorem: `IsWeightTwoNewform`
 has exactly the classical minimal-level normalized eigenforms as
 inhabitants, and irreducibility supplies the rigidity identification of
 `τ` with `ρ_{g₀,λ}` (PROVEN `exists_linearEquiv_of_charFrob_eq`), across
-which the conductor exponent is invariant. -/
+which the conductor exponent is invariant.
+
+SPLIT (2026-07-26, fifth owner — this statement is now PROVEN, and the
+citation it carried is strictly SMALLER). The FORMAL-CONTENT AUDIT above
+identified the conclusion as the conjunction of ramifiedness at `q` with
+the tame bound `2 − dim V^{I_q} ≤ ord_q M₀`, and observed in prose that
+the second conjunct "is arithmetically empty once `ord_q M₀ ≥ 2`". That
+observation is now CHECKED LEAN, via the trivial-but-decisive
+`GaloisRep.tameExponent_le_finrank` (a tame exponent is a codimension,
+hence `≤ dim V = 2`), and the citation splits accordingly into
+
+* `not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` —
+  ramifiedness at `q`, needed for every `ord_q M₀ ≥ 1`; and
+* `exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one` —
+  a nonzero inertia-fixed vector, needed ONLY when `ord_q M₀ = 1`.
+
+What the development now takes on faith about the case `q² ∣ M₀` is
+therefore ramifiedness alone: the Steinberg/principal-series local-type
+computation is assumed only at `q ∥ M₀`, where the assumption is a
+single fixed line rather than a conductor identity. The two components
+are also independently reusable — the first is the away-from-`p`
+ramification input the level-lowering assemblies consume, and the second
+is the TAME half that the FALSITY AUDIT of
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` requests in
+step 3 of its repair plan.
+
+NO FAITH IS ADDED BY THE SPLIT — the pair is EQUIVALENT to the old
+single citation, and the converse direction is elementary rather than
+asserted. From this statement one recovers
+`not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible` by
+`GaloisRep.HasConductorExponentAt.not_isUnramifiedAt_of_ne_zero`
+(`ord_q M₀ ≥ 1` since `q ∣ M₀`), and, in the case `ord_q M₀ = 1`,
+`exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one`
+because `tameExponent ≤ 1` on a 2-dimensional space forces
+`dim V^{I_q} ≥ 1`, hence a nonzero inertia-fixed vector. So the sorry
+count rises by one while the assumed mathematics is unchanged; what the
+split buys is that the `q² ∣ M₀` half of the old leaf is now DISCHARGED
+outright, and that the two remaining assumptions are separately
+statable, separately attackable and separately reusable. (The converse
+lemmas are deliberately not added to the tree: nothing would consume
+them, so they would be free-floating code.)
+
+The `q ≥ 2` arithmetic that makes the split exhaustive is elementary:
+`q ∣ M₀` with `0 < M₀` gives `1 ≤ ord_q M₀`, and `ord_q M₀ ≥ 2` is
+handled by `GaloisRep.hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt`,
+`ord_q M₀ = 1` by `GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt`. -/
 theorem hasConductorExponentAt_factorization_of_isWeightTwoNewform
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -24795,8 +24956,30 @@ theorem hasConductorExponentAt_factorization_of_isWeightTwoNewform
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
     τ.HasConductorExponentAt hq.toHeightOneSpectrumRingOfIntegersRat
-      (M₀.factorization q) :=
-  sorry
+      (M₀.factorization q) := by
+  classical
+  -- the dimension of the representation space, the only number the tame
+  -- dictionary is measured against
+  have hfr : Module.finrank (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
+  -- ramifiedness at `q`: the half of the citation that both local types give
+  have hram : ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+    not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible hM₀ hg₀ κ₀ hτ
+      hirr hq hqp hqM₀
+  -- `q ∣ M₀` with `0 < M₀` makes the exponent positive
+  have hpos : 0 < M₀.factorization q :=
+    hq.factorization_pos_of_dvd hM₀.ne' hqM₀
+  rcases Nat.lt_or_ge (M₀.factorization q) 2 with hlt | hge
+  · -- `q ∥ M₀`: the tame bound is real content, supplied by the fixed line
+    have hord : M₀.factorization q = 1 := by omega
+    obtain ⟨w₀, hw₀, hfix⟩ :=
+      exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one hM₀ hg₀
+        κ₀ hτ hirr hq hqp hord
+    exact GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt hw₀
+      hfix (by rw [hfr]; omega) hram
+  · -- `q² ∣ M₀`: the tame bound is vacuous, ramifiedness is the whole content
+    exact GaloisRep.hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt
+      (by rw [hfr]; omega) hram
 
 /-- **Carayol's conductor theorem, ONE shared leaf in conductor-exponent
 form** (PROVEN 2026-07-25 from the newform-level citation
