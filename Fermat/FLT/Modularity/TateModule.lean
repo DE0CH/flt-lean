@@ -835,34 +835,156 @@ limit, bijectivity of the frame, `O`-linearity of the Galois action and
 the `j`-compatibility clause — is PROVEN in
 `exists_tateFrame_of_adicCoefficientRing` from those three. -/
 
-/-- **The `Iⁿ`-torsion is free of rank two over `𝒪_D/Iⁿ`, compatibly in
-`n`** (sorry node — abelian varieties; Mumford *Abelian Varieties* §18,
-Silverman *AEC* III.7, Taylor 2002 §2).
+/-! #### The three sub-leaves of `exists_levelwiseTateFrame`
 
-This is the finite-level form of "the Tate module has rank two", and it
-is the ONLY place in the Tate-module cluster where the dimension count
-is used. Concretely it asks for maps
+The levelwise frame is itself assembled below, and the assembly is the
+inverse-limit bookkeeping: what the geometry has to supply is a frame at
+each SINGLE level (`exists_levelTateFrame`) and the ability to lift one
+level's frame through multiplication by `π` (`exists_levelTateFrame_succ`),
+and the compatible TOWER is then produced here by recursion.
 
-  `c n : (𝒪_D/Iⁿ)²  →  A[Iⁿ]`
+Making that separation is the whole point of the cut. "Free of rank two
+at every level" and "free of rank two compatibly in `n`" are genuinely
+different statements — the second is a statement about the inverse limit
+and is what the parent consumes — and only the first is a textbook fact
+about abelian varieties. -/
 
-which are additive, `𝒪_D`-semilinear, bijective onto the `Iⁿ`-torsion,
-and compatible with the two towers: multiplication by `π` on the
-abelian variety corresponds to reduction `𝒪_D/Iⁿ⁺¹ → 𝒪_D/Iⁿ`.
+/-- **A level-`J` frame on the `J`-torsion of a geometric fibre**: a
+parametrization
+
+  `c : (𝒪_D ⧸ J)² → A[J]`
+
+which is additive, `𝒪_D`-semilinear and bijective onto the `J`-torsion,
+i.e. exactly the datum "`A[J]` is free of rank two over `𝒪_D ⧸ J`,
+together with a choice of basis".
+
+The five clauses are named once here so that the geometric input
+(`exists_levelTateFrame`), the lifting step
+(`exists_levelTateFrame_succ`) and the assembled tower
+(`exists_levelwiseTateFrame`) can all be stated against the same
+predicate; the tower's own statement is kept in unfolded form because it
+is what the parent `exists_tateFrame_of_adicCoefficientRing` destructures. -/
+def IsLevelTateFrame {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (J : Ideal (NumberField.RingOfIntegers D))
+    (c : (Fin 2 → NumberField.RingOfIntegers D ⧸ J) → GeomFibrePt f x) : Prop :=
+  (∀ u, c u ∈ (m.torsion x J).1) ∧
+  (∀ u v, c (u + v) = ab.add (c u) (c v)) ∧
+  Function.Injective c ∧
+  (∀ y ∈ (m.torsion x J).1, ∃ u, c u = y) ∧
+  (∀ (a : NumberField.RingOfIntegers D)
+      (u : Fin 2 → NumberField.RingOfIntegers D ⧸ J),
+    c (fun i => Ideal.Quotient.mk J a * u i) = m.act a (c u))
+
+/-- **The `Iⁿ`-torsion is free of rank two over `𝒪_D/Iⁿ`, at each single
+level `n`** (sorry node — abelian varieties; Mumford *Abelian Varieties*
+§18, Silverman *AEC* III.7, Taylor 2002 §2).
+
+**This is where the rank count lives, and it is the only genuinely
+geometric input of the levelwise frame.** No compatibility in `n` is
+asserted: the frames at different levels are chosen independently, and
+tying them together is the business of `exists_levelTateFrame_succ` and
+of the recursion in `exists_levelwiseTateFrame`.
 
 The argument. `A_x` is an abelian variety of dimension `g = [D:ℚ]` over
 an algebraically closed field of characteristic zero — that is `hdim`
 together with the properness, smoothness and connectedness carried by
 `ab` — so `H₁(A_x, ℚ)` has `ℚ`-dimension `2g`. The real multiplication
 makes it a module over the FIELD `D`, hence free, of `D`-dimension
-`2g/[D:ℚ] = 2`; this is exactly where `hdim` enters, and it is why the
-rank is two over the coefficient ring rather than over `ℤ_q`. Tensoring
-with `ℚ_q` and projecting to the factor of `D ⊗ ℚ_q = ∏_{I ∣ q} D_I`
-cut out by `I` gives a two-dimensional `D_I`-space; the `Iⁿ`-torsion is
-its `𝒪_{D,I}`-lattice modulo `πⁿ`, and `𝒪_{D,I}/πⁿ = 𝒪_D/Iⁿ` by
-`hπ`/`hπ2` (which make `π` a uniformizer at `I`).
+`2g/[D:ℚ] = 2`; **this is exactly where `hdim` enters, and it is why the
+rank is two over the coefficient ring rather than over `ℤ_q`.** Tensoring
+with `ℚ_q` and projecting to the factor of `D ⊗ ℚ_q = ∏_{I ∣ q} D_I` cut
+out by `I` gives a two-dimensional `D_I`-space; `A[Iⁿ]` is its
+`𝒪_{D,I}`-lattice modulo `Iⁿ`, and `𝒪_{D,I}/Iⁿ = 𝒪_D/Iⁿ`.
 
 At `n = 0` the statement is trivial on both sides: `I⁰ = ⊤`, the
-quotient ring is trivial, and `A[⊤] = 0`. -/
+quotient ring is trivial (so the source is a singleton), and `A[⊤] = 0`
+because `1 ∈ ⊤` acts as the identity. -/
+theorem exists_levelTateFrame
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) (n : ℕ) :
+    ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) → GeomFibrePt f x,
+      IsLevelTateFrame m x (I ^ n) c :=
+  sorry
+
+/-- **A level-`n` frame lifts through multiplication by `π` to a level
+`n+1` frame** (sorry node — commutative algebra over the artinian local
+ring `𝒪_D/Iⁿ⁺¹`).
+
+Given a frame `cn` at level `n`, this produces a frame `c'` at level
+`n+1` whose composite with `·π` is `cn ∘ (reduction)`. It is the single
+inductive step of the compatible tower, and it is the reason
+`exists_levelwiseTateFrame` is not "levelwise and hope": the tower it
+builds is a genuine inverse system.
+
+The argument, and why it is algebra rather than geometry. Take any
+level-`n+1` frame `c'₀` (from `exists_levelTateFrame`). Multiplication
+by `π` carries `A[Iⁿ⁺¹]` onto `A[Iⁿ]` (divisibility of an abelian
+variety, together with `π` being a uniformizer at `I`), so transporting
+it through the two frames gives a SURJECTIVE `𝒪_D`-linear
+
+  `ψ : (𝒪_D/Iⁿ⁺¹)² ↠ (𝒪_D/Iⁿ)²`,   `cn (ψ u) = π · c'₀ u`.
+
+Choose `t j` with `ψ (t j) = ē j` and let `Ψ u = Σ_j u j • t j`; then
+`ψ ∘ Ψ` is the reduction map by construction. Modulo `I` the ring
+`𝒪_D/Iⁿ⁺¹` becomes the residue field `k`, and `ψ̄ ∘ Ψ̄ = id`, so `Ψ̄` is
+an isomorphism of `k²`; since `I·(𝒪_D/Iⁿ⁺¹)` is nilpotent, Nakayama
+upgrades that to `Ψ` being an automorphism, and `c' := c'₀ ∘ Ψ` is the
+required frame. -/
+theorem exists_levelTateFrame_succ
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (n : ℕ) (cn : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) → GeomFibrePt f x)
+    (hcn : IsLevelTateFrame m x (I ^ n) cn) :
+    ∃ c' : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ (n + 1)) → GeomFibrePt f x,
+      IsLevelTateFrame m x (I ^ (n + 1)) c' ∧
+      ∀ u : Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ (n + 1),
+        m.act π (c' u) =
+          cn (fun i => Ideal.Quotient.factor
+            (Ideal.pow_le_pow_right (Nat.le_succ n)) (u i)) :=
+  sorry
+
+/-- **The `Iⁿ`-torsion is free of rank two over `𝒪_D/Iⁿ`, compatibly in
+`n`** (PROVEN 2026-07-26 over `exists_levelTateFrame` and
+`exists_levelTateFrame_succ`; abelian varieties — Mumford *Abelian
+Varieties* §18, Silverman *AEC* III.7, Taylor 2002 §2).
+
+This is the finite-level form of "the Tate module has rank two". It asks
+for maps
+
+  `c n : (𝒪_D/Iⁿ)²  →  A[Iⁿ]`
+
+which are additive, `𝒪_D`-semilinear, bijective onto the `Iⁿ`-torsion,
+and — the clause that makes the inverse limit in the parent work —
+compatible with the two towers: multiplication by `π` on the abelian
+variety corresponds to reduction `𝒪_D/Iⁿ⁺¹ → 𝒪_D/Iⁿ`.
+
+HOW IT IS PROVEN. The compatibility clause is what distinguishes this
+statement from "a frame exists at every level", and it is produced here
+rather than assumed: `exists_levelTateFrame` supplies a frame at level
+`0`, `exists_levelTateFrame_succ` lifts a frame at level `n` to one at
+level `n+1` sitting over it along `·π`, and the tower is the resulting
+`Nat.rec`. The dimension count `2 = 2g/[D:ℚ]` — the only place `hdim` is
+used — lives entirely in `exists_levelTateFrame`; the lifting step is
+commutative algebra over the artinian local ring `𝒪_D/Iⁿ⁺¹`. Both are
+recorded in their own docstrings.
+
+Note that `π` enters ONLY through the lifting step: the frames
+themselves know nothing about it. -/
 theorem exists_levelwiseTateFrame
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -885,8 +1007,30 @@ theorem exists_levelwiseTateFrame
       (∀ (n : ℕ) (u : Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ (n + 1)),
         m.act π (c (n + 1) u) =
           c n (fun i => Ideal.Quotient.factor
-            (Ideal.pow_le_pow_right (Nat.le_succ n)) (u i))) :=
-  sorry
+            (Ideal.pow_le_pow_right (Nat.le_succ n)) (u i))) := by
+  classical
+  -- the frame at level `0`, the base of the tower
+  obtain ⟨c0, hc0⟩ := exists_levelTateFrame m x hdim I hI 0
+  -- the lifting step, as a function by choice
+  choose G hG1 hG2 using fun (n : ℕ)
+      (cn : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) → GeomFibrePt f x)
+      (hcn : IsLevelTateFrame m x (I ^ n) cn) =>
+    exists_levelTateFrame_succ m x hdim I hI π hπ hπ2 n cn hcn
+  -- the tower: a frame at every level, each lying over its predecessor
+  let seq : (n : ℕ) →
+      {c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) → GeomFibrePt f x //
+        IsLevelTateFrame m x (I ^ n) c} := fun n =>
+    Nat.rec (motive := fun n =>
+        {c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) → GeomFibrePt f x //
+          IsLevelTateFrame m x (I ^ n) c})
+      ⟨c0, hc0⟩ (fun k p => ⟨G k p.1 p.2, hG1 k p.1 p.2⟩) n
+  exact ⟨fun n => (seq n).1,
+    fun n u => (seq n).2.1 u,
+    fun n u v => (seq n).2.2.1 u v,
+    fun n => (seq n).2.2.2.1,
+    fun n y hy => (seq n).2.2.2.2.1 y hy,
+    fun n a u => (seq n).2.2.2.2.2 a u,
+    fun n u => hG2 n (seq n).1 (seq n).2 u⟩
 
 /-- **The pointwise stabilizer of the `J`-torsion is open in `Γ_F`**
 (sorry node — arithmetic of abelian varieties; Silverman *AEC* III.7,
