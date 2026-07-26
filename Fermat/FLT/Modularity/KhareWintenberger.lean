@@ -2803,7 +2803,16 @@ derivation recorded in the section note before that leaf.  The hypothesis
 is stated over an ARBITRARY finite exceptional set `S`, which is the shape
 `exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint` delivers; the
 point's own compatibility data is only available off `pt.bad`, so the
-conclusion is stated off the union. -/
+conclusion is stated off the union.
+
+`open scoped Classical in` is REQUIRED and is not decoration: the conclusion
+forms the `Finset` union `S ∪ pt.bad`, and `Finset.instUnion` needs
+`DecidableEq (HeightOneSpectrum (𝓞 F))`, which nothing provides — that type is
+a structure over `Ideal (𝓞 F)`, which has no decidable equality. A `classical`
+inside the proof cannot supply it, because the union occurs in the STATEMENT.
+The sole consumer below opens its proof with `classical`, which installs the
+same `Classical.propDecidable`, so the two union terms agree. -/
+open scoped Classical in
 theorem residual_charFrob_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint
     {ℓ : ℕ} [Fact ℓ.Prime] {F : Type u} [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
