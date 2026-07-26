@@ -209,6 +209,10 @@ import Mathlib.Topology.Algebra.Module.ModuleTopology
 import Mathlib.Topology.Algebra.Algebra
 import Mathlib.LinearAlgebra.Dimension.Constructions
 public import Fermat.FLT.Modularity.AbelianScheme
+-- `Fermat.TatePt` and the two leaves of the Tate-module construction
+-- (`exists_tateFrame_of_levelStructure`, `exists_weilFrobeniusSystem_of_mult`),
+-- consumed by `nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`
+public import Fermat.FLT.Modularity.TateModule
 -- coefficient-ring locality (2026-07-25): the henselian-pair /
 -- idempotent-lifting bricks used by `isLocalRing_of_finite_padicInt`
 -- below, which removes `IsLocalRing A` from the `3`-adic Brauer-sum
@@ -1625,9 +1629,10 @@ theorem exists_twistedHilbertBlumenthalModuliScheme_of_five_le
     geometricallyIrreducible_of_isFormOver_isAlgClosed hKalg fX fX₀ hform₀ hgi₀,
     hasRationalPoint_of_isFormOver fX fY hformR hYpt, hmod⟩
 
-/-- **The Tate-module construction** (sorry node — the compatible-system
-half of Taylor 2002 §2): a point of a twisted Hilbert–Blumenthal moduli
-family is a `HilbertBlumenthalPoint`.
+/-- **The Tate-module construction** (PROVEN 2026-07-25 as an assembly
+over the two leaves of `Modularity/TateModule.lean`; the
+compatible-system half of Taylor 2002 §2): a point of a twisted
+Hilbert–Blumenthal moduli family is a `HilbertBlumenthalPoint`.
 
 Given an abelian scheme `A ⟶ X` satisfying
 `IsTwistedHilbertBlumenthalModuli` and an `F`-point of `X` over `ℚ`, the
@@ -1647,22 +1652,107 @@ true for any abelian scheme with the displayed level structures. That
 makes it an independently citable statement of the theory of abelian
 varieties, reusable wherever a Tate module is needed.
 
+FAITHFULNESS AUDIT (2026-07-25 — THIS LEAF WAS FALSE AS STATED, and is
+repaired here by the hypothesis `hW`). The leaf was cut deliberately to
+carry no arithmetic of `ρbar`, which makes it a statement about abelian
+varieties that must be true on its own merits. Its original statement
+was not: it omitted any constraint on `Module.rank k W`, and it is
+refuted by the following counterexample.
+
+  Let `D` be a real quadratic field in which `ℓ` is INERT, so that
+  `λ = (ℓ)` is maximal in `𝒪_D` with residue field `𝔽_{ℓ²}`. Let `A/ℚ`
+  be a Hilbert–Blumenthal abelian surface with real multiplication by
+  `𝒪_D` and a dihedral `𝔭`-level structure at some auxiliary `p ≠ ℓ`,
+  and take `X = Spec ℚ`, `fX = 𝟙`, `A ⟶ X` the surface itself. Then
+  `A[λ] = A[ℓ]` is `(𝒪_D/λ)² = 𝔽_{ℓ²}²`, i.e. an `𝔽_ℓ`-vector space of
+  dimension FOUR. Put `k = 𝔽_ℓ` and `W = A[ℓ](ℚ̄)` with its `𝔽_ℓ`-structure
+  and `ρbar` the resulting four-dimensional representation of `Γ_ℚ`.
+  Every hypothesis holds: `IsTwistedHilbertBlumenthalModuli ℓ ρbar fX ab`
+  is witnessed by `D`, `λ`, `𝔭` and the identity level structure — which
+  the seam requires only to be an ADDITIVE `Γ_F`-equivariant bijection
+  onto `(m.torsion x λ).1`, not a `k`-linear one — and `F = ℚ`,
+  `hrestr`, `hpt` are immediate.
+
+  But the conclusion fails. In a `HilbertBlumenthalPoint`, `σ.charFrob w`
+  is the characteristic polynomial of a rank-two representation, hence
+  MONIC OF DEGREE 2, and so is its image under the ring map `π₀`
+  (`k` is a nonzero ring); while `ρbarF.charFrob w` is monic of degree
+  `finrank k W = 4`. The field `residualℓ` demands they be equal for
+  every `w ∉ bad`, and `bad` is finite while the set of finite places is
+  infinite. So no `HilbertBlumenthalPoint` exists.
+
+The defect is a genuine under-specification of the seam
+`IsTwistedHilbertBlumenthalModuli`, whose FIRST moduli condition asks
+only for an additive Galois-equivariant bijection `W ≃ A[λ]` and never
+relates the coefficient field `k` to the residue field `𝒪_D/λ`; the
+classical twisted moduli problem does, by choosing `λ` with
+`𝒪_D/λ ≅ k` and demanding a semilinear level structure. The repair
+adopted here is the MINIMAL one that stays inside this declaration:
+`hW : Module.rank k W = 2` is added as a hypothesis (the consumer
+`exists_twistedHilbertBlumenthalModuli_of_five_le` already carries it
+verbatim and passes it straight through, so nothing downstream is
+weakened). With it, `#W = #k²` and `#A[λ] = #(𝒪_D/λ)²` force
+`k ≅ 𝒪_D/λ`, and the residual comparison goes through: the two
+`𝔽_q`-structures on `W` — the given one and the one transported from
+`A[λ]` — are two embeddings of `𝔽_q` into the commutant of the Galois
+image, conjugate up to an automorphism of `𝔽_q` by Wedderburn–Malcev,
+and that automorphism is absorbed into the choice of the reduction map
+`π₀`, which is why `exists_tateFrame_of_levelStructure` quantifies `ι₀`
+existentially rather than fixing it to be the residue map.
+
+REPORTED, not repaired here: strengthening the seam itself to demand a
+semilinear level structure is a cut-level change to a definition shared
+with `exists_twistedHilbertBlumenthalModuliScheme_of_five_le`, which has
+a separate owner, and is left to them.
+
 MISSING MACHINERY, IN DEPENDENCY ORDER (2026-07-25), continuing the list
-in the sibling leaf's docstring:
+in the sibling leaf's docstring — items 7–9 are now the two leaves of
+`Modularity/TateModule.lean`, and this node is their PROVEN assembly:
 
 7. *Tate modules*: `T_λ A = lim_n A[λ^n]` as a finitely generated free
    `𝒪_{D,λ}`-module of rank `2` with continuous `Γ_F`-action, and
    `T_λ A / λ = A[λ]` — the statement needed is an isomorphism of
    `Γ_F`-modules between the reduction of the Tate module and the
    torsion module, which is what carries the residual conditions
-   `residualℓ` and `residualp` of `HilbertBlumenthalPoint`.
+   `residualℓ` and `residualp` of `HilbertBlumenthalPoint`. **The
+   OBJECT is now written**: `Fermat.TatePt`, the honest inverse limit
+   inside the `Γ_F`-module of geometric points of
+   `Modularity/AbelianScheme.lean`.
 8. *Good reduction and Frobenius*: `A` has good reduction outside a
    finite set of places `bad`, and for `w ∉ bad` the Frobenius acts on
-   `T_λ A` with characteristic polynomial in `𝒪_D[T]`.
+   `T_λ A` with characteristic polynomial in `𝒪_D[T]`. **Leaf**:
+   `Fermat.exists_tateFrame_of_levelStructure` (7 and 8 together — it
+   produces a rank-two FRAME of `TatePt` and the residual comparison).
 9. *Weil / Faltings compatibility*: that characteristic polynomial is
    INDEPENDENT of `λ` — this is what makes the `λ`-adic and `𝔭`-adic
    Tate modules members of ONE compatible system, i.e. the fields
    `matchℓ` and `matchp`, and it is the deepest item in the list.
+   **Leaf**: `Fermat.exists_weilFrobeniusSystem_of_mult`, which
+   quantifies the `D`-rational system `P` BEFORE the ideal, so that one
+   family of polynomials serves every residue characteristic.
+
+WHY THE CUT NEEDED A DEFINITION. "There is a rank-two representation
+whose reduction is `A[λ]`" and "there is a `D`-rational compatible
+system" are statements about unrelated representations unless something
+ties both to `A`; the second is outright FALSE for an arbitrary `τ` with
+the right reduction, since a residual condition constrains `τ` only
+modulo `λ`. `Fermat.TatePt` is that tie: the first leaf produces a frame
+of it and the second consumes one. See the module docstring of
+`Modularity/TateModule.lean`.
+
+ASSEMBLY (PROVEN): the moduli condition at the `F`-point supplied by
+`hpt` gives the two level structures; the first leaf, applied at `λ`
+(over `ℓ`) and at `𝔭` (over `p`), gives the two members `σ`, `τp` with
+their coefficient rings and their residual comparisons — the latter at
+EVERY place, so `residualℓ` and `residualp` need no bad set; the second
+leaf gives ONE `D`-rational system `P` serving both residue
+characteristics, and then, once per member through the frame just
+produced, an exceptional set and the embeddings realizing `matchℓ` and
+`matchp`. The point's `bad` is the union of those two exceptional sets
+(each contains the places over its own residue characteristic, where the
+member is ramified — which is why the second leaf cannot quantify one
+`bad` before `q`). The dihedral data `kp`, `ρbarp`, `L` and the two
+conditions on them come from the seam unchanged.
 
 BINDER NOTE (not a vacuity signal): `_hF`, `_hNF`, `_hFtr` and `_hFgal`
 carry the underscore prefix because they are the *instance-carrying*
@@ -1679,7 +1769,7 @@ theorem nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli
     {ℓ : ℕ} [Fact ℓ.Prime]
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W] {ρbar : GaloisRep ℚ k W}
+    [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
     {X : AlgebraicGeometry.Scheme.{u}}
     {fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))}
     {A : AlgebraicGeometry.Scheme.{u}} {fA : A ⟶ X}
@@ -1691,8 +1781,51 @@ theorem nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli
       ∃ h : Field.absoluteGaloisGroup F,
         (ρbar.map (algebraMap ℚ F)) h = ρbar g)
     (hpt : HasRationalPoint fX F) :
-    Nonempty (HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :=
-  sorry
+    Nonempty (HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) := by
+  -- the union of the two exceptional sets below needs decidable equality of places
+  classical
+  -- the moduli datum: the coefficient field, the real multiplication, the
+  -- auxiliary prime and the two level ideals
+  obtain ⟨D, _, _, _, m, p, lam, frp, hp, hpne, hlam, hfrp, hℓlam, hpfrp, hdim, hcond⟩ := hmod
+  -- the `F`-point of `X` at which the level structures are read
+  obtain ⟨x, hx⟩ := hpt
+  obtain ⟨⟨e, headd, heinj, heequiv, heimg⟩,
+      kp, _, _, _, _, ρbarp, e', h'add, h'inj, h'equiv, h'img, hirrp,
+      L, _, _, hLrank, hLred⟩ :=
+    hcond F _hF _hNF _hFtr _hFgal hrestr x hx
+  haveI : Fact p.Prime := ⟨hp⟩
+  -- the `λ`-adic member, framed on the Tate module `TatePt m x lam ϖℓ`
+  obtain ⟨ϖℓ, hϖℓ, hϖℓ2, O₀, _, _, _, _, _, _, _, _, σ, φ₀, ι₀,
+      hφ₀add, hφ₀bij, hφ₀eq, hres₀⟩ :=
+    Fermat.exists_tateFrame_of_levelStructure m x hdim ℓ lam hlam hℓlam hW
+      (ρbar.map (algebraMap ℚ F)) e headd heinj heequiv heimg
+  -- the `𝔭`-adic member, framed on `TatePt m x frp ϖp`
+  obtain ⟨ϖp, hϖp, hϖp2, C, _, _, _, _, _, _, _, _, τp, φp, ιp,
+      hφpadd, hφpbij, hφpeq, hresp⟩ :=
+    Fermat.exists_tateFrame_of_levelStructure m x hdim p frp hfrp hpfrp
+      (by simp) ρbarp e' h'add h'inj h'equiv h'img
+  -- ONE `D`-rational compatible system, read at both members through their frames;
+  -- the two exceptional sets are produced separately (they contain the places over
+  -- `ℓ` resp. `p`) and the point's `bad` is their union
+  obtain ⟨P, hP⟩ := Fermat.exists_weilFrobeniusSystem_of_mult m x hdim
+  obtain ⟨badℓ, ψℓ, ιℓ, hιℓinj, hmatchℓ⟩ :=
+    hP ℓ inferInstance lam hlam hℓlam ϖℓ hϖℓ hϖℓ2 O₀ inferInstance inferInstance
+      inferInstance σ φ₀ hφ₀add hφ₀bij hφ₀eq
+  obtain ⟨badp, ψp, ιC, hιCinj, hmatchp⟩ :=
+    hP p inferInstance frp hfrp hpfrp ϖp hϖp hϖp2 C inferInstance inferInstance
+      inferInstance τp φp hφpadd hφpbij hφpeq
+  exact ⟨{ bad := badℓ ∪ badp, D := D, P := P, O₀ := O₀, σ := σ, ψDℓ := ψℓ, ιO₀ := ιℓ,
+           ιO₀_injective := hιℓinj,
+           matchℓ := fun w hw => hmatchℓ w fun hb => hw (Finset.mem_union_left _ hb),
+           π₀ := ι₀,
+           residualℓ := fun w _ => hres₀ w,
+           p := p, pfact := ⟨hp⟩, p_ne_ℓ := hpne,
+           C := C, τp := τp, ψDp := ψp, ιC := ιC,
+           ιC_injective := hιCinj,
+           matchp := fun w hw => hmatchp w fun hb => hw (Finset.mem_union_right _ hb),
+           kp := kp, ρbarp := ρbarp, πp := ιp,
+           residualp := fun w _ => hresp w,
+           irreduciblep := hirrp, L := L, finrankL := hLrank, dihedralp := hLred }⟩
 
 /-- **The twisted Hilbert–Blumenthal moduli variety** (PROVEN 2026-07-25
 as the assembly of the moduli cut above — see the section note before
@@ -1788,7 +1921,7 @@ theorem exists_twistedHilbertBlumenthalModuli_of_five_le
   -- (ii) the Tate-module construction at each `F`-point
   exact ⟨X, fX, hsm, hsep, hft, hqc, hgi, hreal,
     fun F hF hNF hFtr hFgal hrestr hpt =>
-      nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli hmod F hF hNF
+      nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli hW hmod F hF hNF
         hFtr hFgal hrestr hpt⟩
 
 /-- **The kernel of a residual representation is open** (PROVEN): for a
