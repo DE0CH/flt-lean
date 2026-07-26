@@ -120,9 +120,13 @@ The chain, in the order the assembly uses it:
    either: it was DECOMPOSED 2026-07-26 along the Hermite–Minkowski cut
    and is now PROVEN over the two bookkeeping lemmas
    `finite_setOf_framedGaloisRep_isUnramifiedAt` and
-   `finite_setOf_subgroup_hilbertInertiaAt_le`, above the single
-   ARITHMETIC leaf `finite_setOf_intermediateField_hilbertInertiaAt_le`
-   (Hermite's theorem for `F`).
+   `finite_setOf_subgroup_hilbertInertiaAt_le`, above Hermite's theorem
+   for `F`, `finite_setOf_intermediateField_hilbertInertiaAt_le` — which
+   is itself PROVEN (2026-07-26) over the TWO arithmetic leaves
+   `discr_factorization_le_of_finrank_le` (the discriminant exponent
+   from the degree, base-free) and
+   `not_dvd_discr_of_hilbertInertiaTrivialAt` (the `F`-level
+   inertia-to-discriminant transport).
 
    `isHilbertProLimitClause` is PROVEN too (2026-07-26), over the single
    residual leaf `isHilbertTameAtTwo_of_forall_isOpen_quotient`: its
@@ -251,6 +255,12 @@ public import Mathlib.Topology.Compactness.Compact
 -- base-change points comparison `extPointsEquiv` below
 public import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
+-- `NumberField.discr`, `NumberField.discr_ne_zero` and Hermite's theorem
+-- `NumberField.finite_of_discr_bdd`, consumed by the Hermite–Minkowski cut
+-- `finite_setOf_intermediateField_hilbertInertiaAt_le` below (and by the two
+-- arithmetic leaves it rests on, whose STATEMENTS mention `discr` — hence
+-- `public`)
+public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
 public import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.GroupTheory.Index
 public import Mathlib.LinearAlgebra.Charpoly.Basic
@@ -2758,10 +2768,19 @@ base field `F`. The split it produces is the point of the exercise:
   index, unramifiedness puts the local inertia inside that kernel, and
   the infinite Galois correspondence turns such kernels into finite
   Galois subextensions of `Fᵃˡᵍ/F` of bounded degree;
-* ALL the arithmetic is isolated in the single leaf
-  `finite_setOf_intermediateField_hilbertInertiaAt_le`, Hermite's theorem
-  for `F`: finitely many finite Galois extensions of `F` of bounded degree
-  unramified outside the places over `2ℓ`.
+* ALL the arithmetic is isolated in Hermite's theorem for `F`,
+  `finite_setOf_intermediateField_hilbertInertiaAt_le` — finitely many
+  finite Galois extensions of `F` of bounded degree unramified outside
+  the places over `2ℓ` — which is itself PROVEN (2026-07-26) over
+  exactly TWO arithmetic leaves:
+  `discr_factorization_le_of_finrank_le`, the base-free bound on the
+  exponent of a rational prime in `|d_L|` in terms of `[L : ℚ]` alone
+  (`Modularity/Patching.lean` proves the same statement with the ambient
+  pinned; the hoist has only to move that proof), and
+  `not_dvd_discr_of_hilbertInertiaTrivialAt`, the `F`-level
+  inertia-to-discriminant transport (the `F`-level twin of
+  `MazurTorsion.lean`'s `isUnramifiedAt_of_inertia_le_fixingSubgroup`,
+  followed by ramification in the tower `ℚ ⊆ F ⊆ K`).
 -/
 
 /-- **Triviality of the local inertia at a place `w` of `F` on a subgroup
@@ -2782,40 +2801,152 @@ def HilbertInertiaTrivialAt {F : Type u} [Field F] [NumberField F]
   ∀ σ ∈ localInertiaGroup w,
     Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) σ ∈ N
 
-/-- **Hermite–Minkowski over `F`** (LEAF — the ONLY arithmetic input of
-Schlessinger's H3 at the `F` level): for a fixed degree bound `n` there
-are only finitely many finite Galois subextensions `K` of `Fᵃˡᵍ/F` with
-`[K : F] ≤ n` on which the local inertia at every place of `F` away from
-`2` and `ℓ` acts trivially.
+/-- **The discriminant exponent from the degree alone** (LEAF — the
+first of the two arithmetic inputs of Hermite–Minkowski over `F`): for a
+number field `L` with `[L : ℚ] ≤ n` and ANY natural number `q`, the
+exponent of `q` in `|d_L|` is at most `(n + 1)·n`.
 
-MATHEMATICAL CONTENT. Such a `K` is a number field of degree
-`[K : ℚ] = [K : F]·[F : ℚ] ≤ n·[F : ℚ]`, and it is unramified over `F`
-outside the finitely many places above `2ℓ`, hence unramified over `ℚ`
-outside the finite set of rational primes dividing `2·ℓ·d_F`. The
-exponent of a prime `q` in the different of `K/ℚ` is bounded by
-`e − 1 + e·v_q(e)` with `e ≤ [K : ℚ]` (Serre, *Corps Locaux* III §6
-Prop. 13), so `|d_K|` is bounded by a constant depending only on `n`,
-`F` and `ℓ`; Hermite's theorem (mathlib's
-`NumberField.finite_of_discr_bdd`) then leaves finitely many such
-fields.
+Stated BASE-FREE — over an abstract number field `L`, with no ambient
+algebraic closure and with a bound uniform in `q` — because that is the
+form the eventual module split needs. `Modularity/Patching.lean`'s
+`exists_discr_factorization_le_of_finrank_le` is the SAME statement with
+the ambient pinned to `IntermediateField ℚ ℚᵃˡᵍ` and the (identical)
+bound `(n + 1)·n` hidden behind an existential; nothing in its proof uses
+the ambient. Hoisting that proof to this signature is the mechanical half
+of the dedupe recorded below.
 
-ROUTE TO A PROOF, and why it is not taken here. `Modularity/Patching.lean`
-carries the whole of this argument over `ℚ` and over the two-prime set
-`{2, p}`, as the PROVEN
-`finite_setOf_intermediateField_inertiaAt_le`, over the
-discriminant-exponent bound `exists_discr_factorization_le_of_finrank_le`
-and the inertia-to-discriminant transport
-`not_dvd_discr_of_inertiaTrivialAt`. None of it is reachable from this
-module: `Modularity/*` is forbidden by the circularity guard, and the
-`ℚ`-level statement is in any case indexed by rational primes and by
-`IntermediateField ℚ ℚᵃˡᵍ`, so consuming it would additionally need the
-base-change dictionary "a place of `K` over a place of `F` over a prime
-`q`". The honest discharge is the module split recorded in
-`~/.flt-design-deformation-patching-dedup.md` — hoist the
-Hermite–Minkowski block into a module upstream of BOTH this one and
-`Patching.lean`, and generalize it there from `ℚ` and `{2, p}` to a
-variable base number field and a finite set of places — not a third
-re-proof here.
+MATHEMATICAL CONTENT (Serre, *Corps Locaux* III §6 Prop. 13, and the norm
+bookkeeping). For a prime `Q` of `𝓞 L` over `q` with ramification index
+`e` the different exponent satisfies `d_Q ≤ e − 1 + e·v_q(e)`; here
+`e ≤ [L : ℚ] ≤ n` (`Ideal.ramificationIdx_le_finrank`, through the
+fundamental identity) and `v_q(e) < e ≤ n` (`Nat.factorization_lt`), so
+`d_Q ≤ (n + 1)·e`. Pushing this through
+`N(𝔡_{L/ℚ}) = |d_L|` and `Σ_Q e_Q·f_Q = [L : ℚ]`
+(`ModThree.lean`'s PROVEN
+`discr_factorization_le_of_forall_differentIdeal_pow_dvd`, which is
+already stated base-free in exactly this shape) gives
+`v_q(|d_L|) ≤ (n + 1)·[L : ℚ] ≤ (n + 1)·n`. For `q` not prime, or `q`
+unramified in `L`, the left-hand side is `0`.
+
+BOTH-WAYS AUDIT. A plain universally quantified inequality about number
+fields: classically true outright as cited, with no representation
+theory and no vacuity — for `n = 0` the hypothesis `[L : ℚ] ≤ 0` is
+unsatisfiable, but for every `n ≥ 1` there are number fields meeting it
+and the inequality is the real content. NOT vacuous. -/
+theorem discr_factorization_le_of_finrank_le (n : ℕ) (L : Type*) [Field L]
+    [NumberField L] (hrank : Module.finrank ℚ L ≤ n) (q : ℕ) :
+    (NumberField.discr L).natAbs.factorization q ≤ (n + 1) * n :=
+  sorry
+
+/-- **Inertia-trivial extensions of `F` have discriminant supported over
+`2ℓd_F`** (LEAF — the second and genuinely `F`-level arithmetic input of
+Hermite–Minkowski over `F`): if the local inertia of `F` at every place
+away from `2` and `ℓ` acts trivially on the finite Galois subextension
+`K ⊆ Fᵃˡᵍ`, then no rational prime `q ∉ {2, ℓ}` with `q ∤ d_F` divides
+the discriminant of `K` viewed as a number field over `ℚ`.
+
+MATHEMATICAL CONTENT, and the cut this leaf still hides. Two steps, of
+which only the FIRST is genuinely new at the `F` level:
+
+1. *Local-global inertia transport over `F`* — pointwise triviality of
+   the image of `localInertiaGroup w` in `Γ F` on `K` forces every prime
+   `P` of `𝓞 K` over `w` to be unramified over `𝓞 F`. This is the
+   `F`-level twin of `FreyCurve/MazurTorsion.lean`'s PROVEN
+   `isUnramifiedAt_of_inertia_le_fixingSubgroup` (via
+   `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` and
+   `inertia_eq_bot_of_exists_prime_over`): the embedding-determined prime
+   over `w` has trivial ideal-inertia because the local Galois group
+   surjects onto the decomposition group, and conjugacy under
+   `Gal(K/F)` — transitive on the primes over `w` — propagates it to all
+   of them. Every line of that chain is written over `ℚ` and over
+   `hq.toHeightOneSpectrumRingOfIntegersRat`; the `F`-level version needs
+   the same argument with `w : HeightOneSpectrum (𝓞 F)` in place of the
+   rational prime.
+2. *Ramification in the tower `ℚ ⊆ F ⊆ K`* — a rational prime `q` with
+   `q ∤ d_F` is unramified in `F`, so `e(w ∣ q) = 1` for the place `w`
+   below `P`; combined with `e(P ∣ w) = 1` from (1), multiplicativity of
+   the ramification index gives `e(P ∣ q) = 1`, and a prime unramified in
+   every prime above it does not divide the discriminant
+   (`NumberField.not_dvd_discr_iff_forall_mem`). In the different
+   language this is mathlib's tower formula
+   `differentIdeal_eq_differentIdeal_mul_differentIdeal` together with
+   `not_dvd_differentIdeal_iff`, and it is the routine half.
+
+The hypotheses are exactly what makes `q` avoid the bad set: `q ≠ 2` and
+`q ≠ ℓ` put every place `w` of `F` over `q` outside `{w ∣ 2ℓ}`, where the
+inertia hypothesis applies, and `q ∤ d_F` is step (2)'s input.
+
+BOTH-WAYS AUDIT. Faithful in both directions. It is not vacuous: the
+hypothesis set is inhabited (`K = ⊥` satisfies every clause, and so does
+any everywhere-unramified extension of `F`, e.g. the Hilbert class
+field), and the conclusion is a genuine restriction — dropping `q ∤ d_F`
+makes the statement FALSE, since `d_K` is divisible by `d_F^{[K : F]}`
+by the discriminant tower formula, so every prime dividing `d_F` divides
+`d_K` no matter how unramified `K/F` is. Dropping `q ≠ 2` or `q ≠ ℓ` is
+likewise false (a ramified place over `2` or `ℓ` is not excluded by any
+hypothesis). -/
+theorem not_dvd_discr_of_hilbertInertiaTrivialAt (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    (K : IntermediateField F (AlgebraicClosure F))
+    (hfd : FiniteDimensional F K) (hgal : IsGalois F K)
+    (hinert : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal →
+      ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal → HilbertInertiaTrivialAt w K.fixingSubgroup)
+    {q : ℕ} (hq : q.Prime) (hq2 : q ≠ 2) (hqℓ : q ≠ ℓ)
+    (hqF : ¬ ((q : ℤ) ∣ NumberField.discr F))
+    (hfdQ : FiniteDimensional ℚ (K.restrictScalars ℚ)) :
+    haveI : NumberField (K.restrictScalars ℚ) := @NumberField.mk _ _ inferInstance hfdQ
+    ¬ ((q : ℤ) ∣ NumberField.discr (K.restrictScalars ℚ)) :=
+  sorry
+
+/-- **Hermite–Minkowski over `F`** (PROVEN 2026-07-26 over the two
+arithmetic leaves above — the ONLY arithmetic input of Schlessinger's H3
+at the `F` level): for a fixed degree bound `n` there are only finitely
+many finite Galois subextensions `K` of `Fᵃˡᵍ/F` with `[K : F] ≤ n` on
+which the local inertia at every place of `F` away from `2` and `ℓ` acts
+trivially.
+
+PROOF (the whole non-arithmetic half, written out here). Restriction of
+scalars `K ↦ K.restrictScalars ℚ` is injective
+(`IntermediateField.restrictScalars_injective`), so it suffices to make
+the IMAGE finite, and the image sits inside the fields of `Fᵃˡᵍ` of
+bounded discriminant, which is Hermite's theorem
+(`NumberField.finite_of_discr_bdd`, applicable because `Fᵃˡᵍ` is a field
+of characteristic zero — algebraic closedness is not needed). The bound:
+put `N = [F : ℚ]·n`, `c = (N + 1)·N` and `M = 2·ℓ·|d_F|`. Then
+
+* `[K : ℚ] = [F : ℚ]·[K : F] ≤ N` (`Module.finrank_mul_finrank`, with
+  `FiniteDimensional.trans` supplying finiteness over `ℚ`);
+* every prime `q` dividing `|d_K|` divides `M`, by
+  `not_dvd_discr_of_hilbertInertiaTrivialAt` — a `q` dividing neither
+  `2`, nor `ℓ`, nor `|d_F|` is excluded;
+* `v_q(|d_K|) ≤ c` for every `q`, by
+  `discr_factorization_le_of_finrank_le`;
+
+so `|d_K|.factorization ≤ c • M.factorization` pointwise, i.e.
+`|d_K| ∣ M^c` (`Nat.factorization_le_iff_dvd`), whence `|d_K| ≤ M^c`.
+
+MATHEMATICAL CONTENT of the two leaves: such a `K` is unramified over
+`F` outside the places above `2ℓ`, hence unramified over `ℚ` outside the
+rational primes dividing `2·ℓ·d_F`, with different exponents bounded in
+terms of the degree alone (Serre, *Corps Locaux* III §6 Prop. 13).
+
+THE DEDUPE THIS CUT IS DESIGNED FOR. Three copies of Hermite–Minkowski
+exist in the tree: `Modularity/Patching.lean`'s
+`finite_setOf_intermediateField_inertiaAt_le` (over `ℚ`, place-indexed
+by rational primes, PROVEN over the same two ingredients),
+`Deformation.lean`'s `finite_setOf_isHardlyRamified_frames` (the `ℚ`
+consumer), and this one. The honest discharge is the module split
+recorded in `~/.flt-design-deformation-patching-dedup.md` — hoist the
+Hermite–Minkowski block into a module upstream of all three and
+generalize it from `ℚ`/`{2, p}` to a variable base number field and a
+finite set of places. It was NOT taken on 2026-07-26 only because
+`Patching.lean` and `Deformation.lean` had a dozen concurrent owners; the
+cut above is the hoist's target API stated in advance, so that the split,
+when it happens, has only to move `Patching.lean`'s proof of
+`exists_discr_factorization_le_of_finrank_le` onto
+`discr_factorization_le_of_finrank_le` (a signature change, no
+mathematics) and generalize `MazurTorsion.lean`'s inertia dictionary from
+`ℚ` to `F` (the one genuinely new argument).
 
 BOTH-WAYS AUDIT. A plain classical finiteness statement about
 extensions of a number field: true outright as cited, with no
@@ -2836,8 +2967,81 @@ theorem finite_setOf_intermediateField_hilbertInertiaAt_le (ℓ : ℕ) [Fact ℓ
         IsGalois F K ∧ Module.finrank F K ≤ n ∧
         ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal →
           ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal →
-            HilbertInertiaTrivialAt w K.fixingSubgroup}.Finite :=
-  sorry
+            HilbertInertiaTrivialAt w K.fixingSubgroup}.Finite := by
+  classical
+  -- the degree bound over `ℚ`, the exponent bound, and the bad modulus
+  set N : ℕ := Module.finrank ℚ F * n with hNdef
+  set c : ℕ := (N + 1) * N with hcdef
+  set M : ℕ := 2 * ℓ * (NumberField.discr F).natAbs with hMdef
+  have hdF0 : (NumberField.discr F).natAbs ≠ 0 :=
+    Int.natAbs_ne_zero.mpr (NumberField.discr_ne_zero F)
+  have hM0 : M ≠ 0 := by
+    rw [hMdef]
+    exact Nat.mul_ne_zero (Nat.mul_ne_zero two_ne_zero (Fact.out : ℓ.Prime).ne_zero) hdF0
+  -- restriction of scalars is injective, so it suffices to bound the image
+  refine Set.Finite.of_finite_image
+    (f := fun K : IntermediateField F (AlgebraicClosure F) => K.restrictScalars ℚ)
+    ?_ (Set.injOn_of_injective (IntermediateField.restrictScalars_injective ℚ))
+  refine Set.Finite.subset
+    ((NumberField.finite_of_discr_bdd (AlgebraicClosure F) (M ^ c)).image Subtype.val) ?_
+  rintro _ ⟨K, ⟨hfd, hgal, hrank, hinert⟩, rfl⟩
+  haveI := hfd
+  have hfdQ : FiniteDimensional ℚ (K.restrictScalars ℚ) := FiniteDimensional.trans ℚ F K
+  refine ⟨⟨K.restrictScalars ℚ, hfdQ⟩, ?_, rfl⟩
+  haveI hNF : NumberField (K.restrictScalars ℚ) := @NumberField.mk _ _ inferInstance hfdQ
+  show |NumberField.discr (K.restrictScalars ℚ)| ≤ ((M ^ c : ℕ) : ℤ)
+  set a : ℕ := (NumberField.discr (K.restrictScalars ℚ)).natAbs with hadef
+  have ha0 : a ≠ 0 := Int.natAbs_ne_zero.mpr (NumberField.discr_ne_zero _)
+  -- `[K : ℚ] = [F : ℚ]·[K : F] ≤ N`
+  have hrankQ : Module.finrank ℚ (K.restrictScalars ℚ) ≤ N := by
+    calc Module.finrank ℚ (K.restrictScalars ℚ)
+        = Module.finrank ℚ F * Module.finrank F K := (Module.finrank_mul_finrank ℚ F K).symm
+      _ ≤ Module.finrank ℚ F * n := Nat.mul_le_mul_left _ hrank
+      _ = N := hNdef.symm
+  -- the two arithmetic inputs
+  have hexp : ∀ q : ℕ, a.factorization q ≤ c := fun q => by
+    rw [hcdef, hadef]
+    exact discr_factorization_le_of_finrank_le N (K.restrictScalars ℚ) hrankQ q
+  have hsupp : ∀ q : ℕ, q.Prime → q ∣ a → q ∣ M := by
+    intro q hq hqa
+    by_contra hqM
+    have h2 : q ≠ 2 := by
+      rintro rfl
+      exact hqM (by rw [hMdef]; exact ⟨ℓ * (NumberField.discr F).natAbs, by ring⟩)
+    have hl : q ≠ ℓ := by
+      rintro rfl
+      exact hqM (by rw [hMdef]; exact ⟨2 * (NumberField.discr F).natAbs, by ring⟩)
+    have hdF : ¬ ((q : ℤ) ∣ NumberField.discr F) := by
+      intro hdvd
+      have hnat : q ∣ (NumberField.discr F).natAbs := by
+        simpa using Int.natAbs_dvd_natAbs.mpr hdvd
+      exact hqM (by rw [hMdef]; exact hnat.mul_left (2 * ℓ))
+    have hZ : ((q : ℤ)) ∣ NumberField.discr (K.restrictScalars ℚ) := by
+      have h1 : ((a : ℤ)) ∣ NumberField.discr (K.restrictScalars ℚ) := by
+        rw [hadef, Int.natCast_natAbs]
+        exact (abs_dvd _ _).mpr dvd_rfl
+      exact dvd_trans (Int.natCast_dvd_natCast.mpr hqa) h1
+    exact not_dvd_discr_of_hilbertInertiaTrivialAt ℓ F K hfd hgal hinert hq h2 hl hdF hfdQ hZ
+  -- pointwise on factorizations, hence `|d_K| ∣ M ^ c`
+  have hdvdM : a ∣ M ^ c := by
+    rw [← Nat.factorization_le_iff_dvd ha0 (pow_ne_zero _ hM0)]
+    refine Finsupp.le_def.mpr fun q => ?_
+    simp only [Nat.factorization_pow, Finsupp.smul_apply, smul_eq_mul]
+    by_cases hq0 : a.factorization q = 0
+    · simp [hq0]
+    · have hmem : q ∈ a.primeFactors := by
+        rw [← Nat.support_factorization]
+        exact Finsupp.mem_support_iff.mpr hq0
+      have h1 : 1 ≤ M.factorization q :=
+        Nat.Prime.factorization_pos_of_dvd (Nat.prime_of_mem_primeFactors hmem) hM0
+          (hsupp q (Nat.prime_of_mem_primeFactors hmem) (Nat.dvd_of_mem_primeFactors hmem))
+      calc a.factorization q ≤ c := hexp q
+        _ = c * 1 := (mul_one c).symm
+        _ ≤ c * M.factorization q := Nat.mul_le_mul_left _ h1
+  have hle : a ≤ M ^ c := Nat.le_of_dvd (Nat.pos_of_ne_zero (pow_ne_zero _ hM0)) hdvdM
+  calc |NumberField.discr (K.restrictScalars ℚ)| = (a : ℤ) := by
+        rw [hadef, Int.natCast_natAbs]
+    _ ≤ ((M ^ c : ℕ) : ℤ) := by exact_mod_cast hle
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Finiteness of open normal subgroups of `Γ F` of bounded index
