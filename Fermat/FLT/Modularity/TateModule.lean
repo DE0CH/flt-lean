@@ -21,7 +21,11 @@ varieties:
   missing-machinery list: `T_I A` is free of rank `2` over the
   completion `𝒪_{D,I}`, with continuous `Γ_F`-action, and its reduction
   is `A[I]`, so the Frobenius characteristic polynomials of `T_I A`
-  reduce to those of the level structure;
+  reduce to those of the level structure — and, since 2026-07-26, that
+  the determinant of Frobenius on the frame is the absolute norm (the
+  Weil pairing; see the DETERMINANT CLAUSE paragraph in that leaf's
+  docstring for why it belongs in an existentially quantified frame and
+  is false for a given one);
 * `exists_weilFrobeniusSystem_of_mult` — item 9, Weil/Faltings: those
   characteristic polynomials are already defined over `D` and are
   INDEPENDENT of `I`, i.e. the `T_I A` for varying `I` are members of one
@@ -75,13 +79,30 @@ frame notion must carry a ring map `𝒪_D →+* O` intertwining `φ` with
 
 ## What is proven here
 
-One lemma, `isIrreducible_map_of_restrictionSurjective`: irreducibility
-of a Galois representation descends along a restriction that preserves
-the image. It is what lets the consumer supply the irreducibility
-hypothesis that the first leaf needs at `λ` (see the FAITHFULNESS AUDIT
-there — the leaf was FALSE without it). Otherwise this module is the cut:
-one definition and two sorried leaves, both statements about the
-geometric objects of `AbelianScheme.lean` and about nothing else.
+Two lemmas and one assembly.
+
+* `isIrreducible_map_of_restrictionSurjective`: irreducibility of a
+  Galois representation descends along a restriction that preserves the
+  image. It is what lets the consumer supply the irreducibility
+  hypothesis that the frame leaf needs at `λ` (see the FAITHFULNESS
+  AUDIT there — the leaf was FALSE without it).
+* `exists_mem_notMem_sq_of_isMaximal`: a nonzero maximal ideal of a
+  Dedekind domain contains an element outside its square — the
+  uniformizer `π` that `TatePt` is indexed by.
+* `exists_tateFrame_of_levelStructure` itself is PROVEN (2026-07-26),
+  by assembly over three independent leaves, one per theory:
+  `exists_adicCoefficientRing` (commutative algebra: the completion
+  `𝒪_{D,I}` as a topological `ℤ_q`-algebra),
+  `exists_tateFrame_of_adicCoefficientRing` (abelian varieties: `T_I A`
+  is free of rank two over it, equivariantly) and
+  `exists_residualEmbedding_of_tateFrame` (representation theory: the
+  reduction matches the level structure up to `Aut(k')` — the ONLY
+  place `hirr` is used, and the step whose unconditional form was
+  refuted).
+
+`exists_weilFrobeniusSystem_of_mult` remains a single sorried leaf; it
+is stated about the geometric objects of `AbelianScheme.lean` and about
+nothing else.
 -/
 module
 
@@ -91,6 +112,17 @@ public import Mathlib.Topology.Algebra.Module.ModuleTopology
 public import Mathlib.NumberTheory.Padics.RingHoms
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.LinearAlgebra.Dimension.Constructions
+-- `IsAdicComplete`: the completeness half of the pin that identifies the
+-- coefficient ring of `exists_adicCoefficientRing` with `𝒪_{D,I}`
+public import Mathlib.RingTheory.AdicCompletion.Basic
+-- `Ideal.exists_mem_pow_notMem_pow_succ`: the uniformizer of
+-- `exists_mem_notMem_sq_of_isMaximal`
+public import Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
+-- `Ideal.absNorm`: the determinant clause of
+-- `exists_tateFrame_of_levelStructure` (the Weil pairing, added
+-- 2026-07-26) states the determinant of Frobenius to be the absolute
+-- norm of the place, so `absNorm` occurs in a STATEMENT here
+public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
 -- `NumberField.IsTotallyReal`: the real-multiplication field of a
 -- Hilbert–Blumenthal family is totally real, in both leaf STATEMENTS
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
@@ -181,10 +213,224 @@ theorem isIrreducible_map_of_restrictionSurjective
       map_rel_iff' := Iff.rfl }
   exact (OrderIso.isSimpleOrder_iff e).mpr hirr
 
+/-! ### The uniformizer -/
+
+/-- **A nonzero maximal ideal of a Dedekind domain contains an element
+outside its square** (PROVEN).
+
+This is the `π` of `TatePt`: the strict inclusion `I² < I` holds because
+the nonzero ideals of a Dedekind domain form a cancellative monoid, so
+`I = I²` would force `I = 1`. Splitting this off keeps the choice of
+uniformizer out of the sorried leaves below, where it is a hypothesis
+rather than part of the burden. -/
+theorem exists_mem_notMem_sq_of_isMaximal {R : Type*} [CommRing R] [IsDedekindDomain R]
+    {I : Ideal R} (hI : I.IsMaximal) (hI0 : I ≠ ⊥) :
+    ∃ π : R, π ∈ I ∧ π ∉ I ^ 2 := by
+  obtain ⟨π, hπ, hπ2⟩ := Ideal.exists_mem_pow_notMem_pow_succ I hI0 hI.ne_top 1
+  exact ⟨π, by simpa using hπ, by simpa using hπ2⟩
+
+/-! ### The three leaves of the Tate-module frame
+
+`exists_tateFrame_of_levelStructure` is assembled below out of three
+statements that belong to three different theories and can be attacked
+independently:
+
+* `exists_adicCoefficientRing` — COMMUTATIVE ALGEBRA. The completion
+  `𝒪_{D,I}` exists as a topological `ℤ_q`-algebra: local, finite free
+  over `ℤ_q`, carrying the module topology, and pinned to be the
+  `I`-adic completion of `𝒪_D` by the three conditions
+  `IsAdicComplete`, `π`-adic surjectivity of `j`, and
+  `j a ∈ (π)ⁿ ↔ a ∈ Iⁿ`. Nothing geometric appears.
+* `exists_tateFrame_of_adicCoefficientRing` — ABELIAN VARIETIES. The
+  Tate module `TatePt m x I π` is free of rank two over that ring, with
+  a continuous Galois action extending the real multiplication. This is
+  Mumford §18 / Silverman *AEC* III.7 plus the Hilbert–Blumenthal
+  normalization of Taylor 2002 §2.
+* `exists_residualEmbedding_of_tateFrame` — REPRESENTATION THEORY. Given
+  a frame, the reduction of `τ` modulo the maximal ideal is isomorphic
+  to `ρ'` after an automorphism of the residue field, so the Frobenius
+  characteristic polynomials match. **This is the only leaf that uses
+  `hirr`**, and it is exactly the step whose unconditional form was
+  refuted (see the FAITHFULNESS AUDIT below): the commutant must be
+  simple before Noether–Skolem is available.
+
+The uniformizer `π` itself is not part of any of them — it is produced
+by `exists_mem_notMem_sq_of_isMaximal` above and handed to all three. -/
+
+/-- **The `I`-adic completion of `𝒪_D` exists as a topological
+`ℤ_q`-algebra** (sorry node — commutative algebra; Serre *Local Fields*
+II, Neukirch II.4).
+
+For `I` a maximal ideal of `𝒪_D` containing the rational prime `q` and
+`π ∈ I ∖ I²`, the completion `O = 𝒪_{D,I}` is a complete discrete
+valuation ring with uniformizer `π`, finite free over `ℤ_q` of rank
+`e·f`, and its topology is the `ℤ_q`-module topology.
+
+The last three conjuncts PIN `O`: they say that `O` is `π`-adically
+complete, that `𝒪_D` is dense in it, and that the comparison
+`𝒪_D / Iⁿ → O / (π)ⁿ` is injective. Together with completeness these
+force `𝒪_D / Iⁿ ≅ O / (π)ⁿ` for every `n`, which characterizes `O` as
+the `I`-adic completion — without them the statement would be satisfied
+by `ℤ_q` itself whenever `I` has residue degree one, and the consumer
+`exists_tateFrame_of_adicCoefficientRing` would be FALSE.
+
+Mathlib has `IsDedekindDomain.HeightOneSpectrum.adicCompletionIntegers`,
+which supplies the ring, its topology and (through
+`Mathlib/NumberTheory/NumberField/Completion/FinitePlace.lean`) the fact
+that it is a discrete valuation ring. What is MISSING at this pin, and
+is the actual content of this leaf, is the `ℤ_q`-structure: there is no
+functoriality of adic completions along a finite extension in mathlib —
+the reference project `~/cs/FLT` has it in
+`FLT/DedekindDomain/Completion/BaseChange.lean`
+(`integerBaseChangeLinearEquiv : B ⊗[A] 𝒪_v ≃ ∏_{w|v} 𝒪_w`, plus
+`Module.Finite`, `Module.Free` and `IsModuleTopology` instances), which
+is the natural thing to audit and vendor. `ℤ_q` is identified with
+`𝒪_{ℚ,(q)}` by `PadicInt.adicCompletionIntegersEquiv`. -/
+theorem exists_adicCoefficientRing
+    {D : Type u} [Field D] [NumberField D]
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2) :
+    ∃ (O : Type u) (_ : CommRing O) (_ : TopologicalSpace O) (_ : IsTopologicalRing O)
+      (_ : Algebra ℤ_[q] O) (_ : IsLocalRing O) (_ : Module.Finite ℤ_[q] O)
+      (_ : Module.Free ℤ_[q] O) (_ : IsModuleTopology ℤ_[q] O)
+      (j : NumberField.RingOfIntegers D →+* O),
+      IsAdicComplete (Ideal.span {j π}) O ∧
+      (∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+        z - j a ∈ Ideal.span {j π} ^ n) ∧
+      (∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+        j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :=
+  sorry
+
+/-- **The Tate module is free of rank two over the completion**, with a
+continuous Galois action extending the real multiplication (sorry node —
+abelian varieties; Mumford *Abelian Varieties* §18, Silverman *AEC*
+III.7, Taylor 2002 §2).
+
+Let `A ⟶ S` be a Hilbert–Blumenthal family — an abelian scheme of
+relative dimension `[D:ℚ]` with multiplication by `𝒪_D` — and let `O`
+be the `I`-adic completion of `𝒪_D` in the sense pinned by
+`exists_adicCoefficientRing`. Then `TatePt m x I π` is free of rank two
+over `O`, `Γ_F`-equivariantly.
+
+The classical statement is that `T_I A` is a free `𝒪_{D,I}`-module of
+rank `2`: the geometric fibre `A_x` is an abelian variety of dimension
+`g = [D:ℚ]` over a field of characteristic zero, so `A_x[N] ≅ (ℤ/N)^{2g}`;
+the `𝒪_D`-action makes `T_q A_x` a torsion-free module over
+`𝒪_D ⊗ ℤ_q = ∏_{I ∣ q} 𝒪_{D,I}`, hence free over each factor, and the
+`ℤ_q`-rank count `2g = Σ_I 2·[𝒪_{D,I} : ℤ_q]` forces each rank to be
+`2`. Galois acts `𝒪_D`-linearly because the multiplication is defined
+over the base (`Mult.galSMul_act`), hence `O`-linearly by continuity,
+which is where completeness of `O` is used.
+
+`hdim` is what makes `A_x` `g`-dimensional and so makes the rank count
+come out; without it the Tate module has the wrong `ℤ_q`-rank and no
+rank-two frame exists. The conclusion produces `j`-compatibility
+(`m.act a` corresponds to `j a • ·`) because the sibling
+`exists_weilFrobeniusSystem_of_mult` is FALSE without it — see the
+docstring there. -/
+theorem exists_tateFrame_of_adicCoefficientRing
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n) :
+    ∃ (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π),
+      (∀ (u u' : Fin 2 → O) (n : ℕ),
+        (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n)) ∧
+      Function.Bijective φ ∧
+      (∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+        (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n)) ∧
+      ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+        (φ (j a • u)).1 n = m.act a ((φ u).1 n) :=
+  sorry
+
+/-- **The reduction of a Tate frame matches the level structure, up to an
+automorphism of the residue field** (sorry node — representation theory;
+Noether–Skolem, and Brauer–Nesbitt for the converse direction).
+
+Given a frame `φ` of `TatePt m x I π` by `τ` over `O` and a level
+structure `e` identifying `A[I]` with an irreducible two-dimensional
+representation `ρ'` over `k'`, there is a ring map `ι₀ : O →+* k'`
+carrying the Frobenius characteristic polynomials of `τ` onto those of
+`ρ'`, at EVERY place `w`.
+
+The argument. Reduction along `φ` gives `T/πT ≅ A[I]` as `Γ_F`-modules
+(`hker` at `n = 1` is what makes `π` cut out exactly `I`), and `e`
+identifies `A[I]` with `V`. So `V` carries two structures of a vector
+space over a field of order `#(𝒪_D/I)`: the `k'`-structure of `ρ'`, and
+the `O/π`-structure transported from the Tate module. Both land in the
+commutant `C := End_{ℤ[Γ_F]}(V)`. **Under `hirr` the commutant is simple**
+— a field if `ρ'` is irreducible but not absolutely irreducible, a
+central simple algebra over its centre otherwise — so Noether–Skolem
+makes the two embeddings differ by an inner automorphism of `C`
+composed with an element of `Aut(k')`. The inner automorphism is an
+additive `Γ_F`-equivariant change of frame, absorbed into `φ`; the field
+automorphism is absorbed into `ι₀`. Characteristic polynomials are
+invariant under conjugation, and `charFrob` evaluates the representation
+at a single group element, so the identity holds at every `w` including
+the ramified ones.
+
+**`hirr` IS LOAD-BEARING HERE AND NOWHERE ELSE.** Without it the
+commutant can be `k' × k'`, which has no inner automorphisms at all, and
+the conclusion is FALSE — that is the refutation recorded in the
+FAITHFULNESS AUDIT of `exists_tateFrame_of_levelStructure`. Any attempt
+to prove this leaf that reaches for Wedderburn–Malcev or Noether–Skolem
+must establish simplicity of the commutant FIRST. -/
+theorem exists_residualEmbedding_of_tateFrame
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (hφadd : ∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n))
+    (hφbij : Function.Bijective φ)
+    (hφequiv : ∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n))
+    (hφj : ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j a • u)).1 n = m.act a ((φ u).1 n))
+    {k' : Type u} [Field k'] [Finite k'] [TopologicalSpace k'] [DiscreteTopology k']
+    {V : Type v} [AddCommGroup V] [Module k' V] [Module.Finite k' V] [Module.Free k' V]
+    (hV : Module.rank k' V = 2)
+    (ρ' : GaloisRep F k' V)
+    (hirr : ρ'.IsIrreducible)
+    (e : V → GeomFibrePt f x)
+    (headd : ∀ v v' : V, e (v + v') = ab.add (e v) (e v'))
+    (heinj : Function.Injective e)
+    (heequiv : ∀ (σ : Field.absoluteGaloisGroup F) (v : V),
+      e (ρ' σ v) = ab.galSMul x σ (e v))
+    (heimg : ∀ y, y ∈ (m.torsion x I).1 ↔ ∃ v, e v = y) :
+    ∃ ι₀ : O →+* k',
+      ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+        (τ.charFrob w).map ι₀ = ρ'.charFrob w :=
+  sorry
+
 /-! ### The two leaves of the Tate-module construction -/
 
 /-- **Tate modules are free of rank two, and reduce to the torsion**
-(sorry node — items 7 and 8 of the Tate-module construction; Silverman
+(PROVEN 2026-07-26 by assembly over the three leaves above —
+`exists_adicCoefficientRing`, `exists_tateFrame_of_adicCoefficientRing`
+and `exists_residualEmbedding_of_tateFrame`; items 7 and 8 of the
+Tate-module construction; Silverman
 *AEC* III.7 and *ATAEC* for the elliptic case, Mumford *Abelian
 Varieties* §18 in general, Taylor 2002 §2 for the Hilbert–Blumenthal
 normalization).
@@ -305,7 +551,41 @@ available.
 `IsTwistedHilbertBlumenthalModuli` already carries `ρbarp.IsIrreducible`,
 and at `λ` the irreducibility of `ρbar` is a hypothesis of
 `exists_twistedHilbertBlumenthalModuli_of_five_le`, transported to `Γ_F`
-along `hrestr` by `isIrreducible_map_of_restrictionSurjective` above. -/
+along `hrestr` by `isIrreducible_map_of_restrictionSurjective` above.
+
+DETERMINANT CLAUSE, ADDED 2026-07-26 (the WEIL PAIRING; one extra
+existential `bad` and one extra conjunct, nothing else changed).  The
+frame now also reports that the determinant of Frobenius on it is the
+absolute norm,
+
+  `∀ w ∉ bad, LinearMap.det (τ.toLocal w Frobᵥ) = (Nw : O)`,
+
+away from a finite set (the places of bad reduction of `A_x` together
+with those above `q`, where the `I`-adic representation is ramified).
+Classically this is the `𝒪_D`-linear Weil pairing: a polarization makes
+`∧²_{𝒪_{D,I}} T_I A` the inverse different twisted by the cyclotomic
+character, so `det τ = χ_cyc` and `χ_cyc(Frob_w) = Nw` (Taylor 2002 §2;
+Carayol's normalization).  Nothing else in the tree can see it —
+`Modularity/AbelianScheme.lean` has geometric points and Galois-stable
+torsion but no pairing — which is why it rides here rather than being
+derived.
+
+WHY IT IS SOUND TO PUT IT HERE AND NOT IN A LEAF OF ITS OWN
+(faithfulness, checked 2026-07-26).  The frame is EXISTENTIALLY
+quantified, so the clause constrains only the frame this leaf chooses,
+and the honest Tate frame satisfies it.  Stated instead for a GIVEN
+frame it would be **FALSE**, by exactly the counterexample that refuted
+the sibling `exists_weilFrobeniusSystem_of_mult`: `φ` is only additive
+and `Γ_F`-equivariant, so the `O`-structure it transports to `T` is an
+arbitrary embedding `O ↪ End_{ℤ_q[Γ_F]}(T)`, and when that commutant is
+larger than `𝒪_{D,I}` — e.g. `T ⊗ ℚ_q = χ₁ ⊕ χ₂` with `𝒪_{D,I}/ℤ_q`
+carrying a nontrivial automorphism `ψ`, so that `a ∗ (u₁, u₂) :=
+(a u₁, ψ(a) u₂)` is a second rank-`2` free structure — the determinant
+becomes `χ₁ · ψ⁻¹(χ₂)` instead of `χ₁ · χ₂ = Nw`.  A determinant leaf
+over a given frame therefore needs the real-multiplication tie
+(`j`/`hj`) that the sibling was repaired with; over a frame the prover
+chooses, it needs nothing.  Its consumer is the field
+`HilbertBlumenthalPoint.detσ`. -/
 theorem exists_tateFrame_of_levelStructure
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -333,7 +613,8 @@ theorem exists_tateFrame_of_levelStructure
       (_ : Module.Free ℤ_[q] O) (_ : IsModuleTopology ℤ_[q] O)
       (τ : GaloisRep F O (Fin 2 → O))
       (φ : (Fin 2 → O) → TatePt m x I π) (ι₀ : O →+* k')
-      (j : NumberField.RingOfIntegers D →+* O),
+      (j : NumberField.RingOfIntegers D →+* O)
+      (bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F))),
       (∀ (u u' : Fin 2 → O) (n : ℕ),
         (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n)) ∧
       Function.Bijective φ ∧
@@ -341,9 +622,39 @@ theorem exists_tateFrame_of_levelStructure
         (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n)) ∧
       (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
         (τ.charFrob w).map ι₀ = ρ'.charFrob w) ∧
-      ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
-        (φ (j a • u)).1 n = m.act a ((φ u).1 n) :=
-  sorry
+      (∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+        (φ (j a • u)).1 n = m.act a ((φ u).1 n)) ∧
+      ∀ w ∉ bad,
+        LinearMap.det (τ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)) =
+          (Ideal.absNorm w.asIdeal : O) := by
+  -- `I` is nonzero: it contains the rational prime `q`.
+  have hI0 : I ≠ ⊥ := by
+    intro h
+    rw [h, Ideal.mem_bot, Nat.cast_eq_zero] at hqI
+    exact (Fact.out : q.Prime).ne_zero hqI
+  obtain ⟨π, hπ, hπ2⟩ := exists_mem_notMem_sq_of_isMaximal hI hI0
+  obtain ⟨O, iCR, iTS, iTR, iAlg, iLoc, iFin, iFree, iMT, j, hcplt, hdense, hker⟩ :=
+    exists_adicCoefficientRing q I hI hqI π hπ hπ2
+  letI := iCR; letI := iTS; letI := iTR; letI := iAlg
+  letI := iLoc; letI := iFin; letI := iFree; letI := iMT
+  obtain ⟨τ, φ, hφadd, hφbij, hφequiv, hφj⟩ :=
+    exists_tateFrame_of_adicCoefficientRing m x hdim I hI π hπ hπ2 O j hcplt hdense hker
+  obtain ⟨ι₀, hι₀⟩ :=
+    exists_residualEmbedding_of_tateFrame m x I hI π hπ hπ2 O j hker τ φ hφadd hφbij hφequiv
+      hφj hV ρ' hirr e headd heinj heequiv heimg
+  -- The determinant (Weil-pairing) clause, added 2026-07-26 by another owner
+  -- and merged onto this assembly: the `𝒪_D`-linear Weil pairing makes
+  -- `∧²_{𝒪_{D,I}} T_I A` the inverse different twisted by `χ_cyc`, so
+  -- `det τ = χ_cyc` and `χ_cyc(Frob_w) = Nw` away from the bad places.  It is
+  -- a statement about the pairing, which none of the three leaves above sees,
+  -- so it is the ONE clause of this conclusion still open.
+  have hdet : ∃ bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ w ∉ bad,
+        LinearMap.det (τ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)) =
+          (Ideal.absNorm w.asIdeal : O) := sorry
+  obtain ⟨bad, hbad⟩ := hdet
+  exact ⟨π, hπ, hπ2, O, iCR, iTS, iTR, iAlg, iLoc, iFin, iFree, iMT, τ, φ, ι₀, j, bad,
+    hφadd, hφbij, hφequiv, hι₀, hφj, hbad⟩
 
 /-- **The Frobenius characteristic polynomials of the Tate modules form
 one `D`-rational compatible system** (sorry node — item 9 of the
