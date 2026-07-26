@@ -22500,9 +22500,12 @@ named:
   joint GENERALIZED eigenspace at the eigensystem `{a_q(g)}` is `ℂ·g`),
   is itself PROVEN as of 2026-07-26, and after two rounds of cutting the
   sorried leaves left on the complex side are exactly the TWO classical
-  theorems this pin lacks: `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`
-  (Petersson self-adjointness of `T_q` at `q ∤ M`, hence semisimplicity;
-  D–S Thm 5.5.3) and `exists_smul_of_heckeOp_eq_smul_of_not_dvd_level`
+  theorems this pin lacks: `exists_peterssonProduct_selfAdjoint_heckeOp`
+  (the Petersson product, with `T_q` self-adjoint for it at `q ∤ M`;
+  D–S Thm 5.5.3 — its consumer
+  `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`, semisimplicity
+  of `T_q`, is PROVEN over it as of 2026-07-26) and
+  `exists_smul_of_heckeOp_eq_smul_of_not_dvd_level`
   (Atkin–Lehner strong multiplicity one; D–S Thm 5.8.3);
 * the TRANSPORT is the `comparison` field of
   `ModularHeckeComparisonPackage`: given that complex idempotent, the
@@ -22809,12 +22812,207 @@ theorem eq_qCoeff_one_smul_of_heckeOp_eigen {M : ℕ} (hM : 0 < M)
   rw [qCoeff_smul]
   exact qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen hM hg hv m
 
-/-- **SEMISIMPLICITY OF THE GOOD HECKE OPERATORS on `S₂(Γ₀(M))`** (sorry
-leaf — cut 2026-07-26 out of
+/-- **A SELF-ADJOINT OPERATOR FOR A DEFINITE HERMITIAN FORM HAS NO
+GENERALIZED EIGENVECTORS BEYOND ITS EIGENVECTORS** (PROVEN 2026-07-26 —
+the pure linear algebra behind
+`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`, stated over an
+arbitrary `ℂ`-module so that the analytic input enters only through the
+form `B`).
+
+`B` is assumed additive and `ℂ`-homogeneous in its FIRST slot,
+conjugate-symmetric, and DEFINITE (`B x x = 0 → x = 0`); `T` is assumed
+self-adjoint for it. Then `(T − c)ⁿ x = 0` forces `(T − c) x = 0`, for
+every complex `c` and every `n`.
+
+WHAT THIS DOES *NOT* NEED, deliberately: no positivity (definiteness
+alone), no finite-dimensionality, no spectral theorem, no
+`InnerProductSpace` instance — so no norm has to be manufactured on the
+carrier and no instance diamond can arise. The argument is the standard
+one for a NORMAL operator, unwound by hand:
+
+* conjugate symmetry upgrades slot-one additivity/homogeneity to
+  slot-two additivity/conjugate-homogeneity;
+* `N = T − c` has adjoint `N' = T − c̄` (both are polynomials in the
+  self-adjoint `T`), and `N N' = N' N`;
+* hence `B (N x) (N x) = B x (N' N x)` and `B (N' x) (N' x) =
+  B x (N N' x)` agree, so `ker N = ker N'` by definiteness;
+* if `N (N x) = 0` then `N' (N x) = 0`, so
+  `B (N x) (N x) = B x (N' (N x)) = 0` and `N x = 0`;
+* induction on `n` reduces `Nⁿ x = 0` to that case. -/
+theorem eq_smul_of_pow_sub_smul_apply_eq_zero_of_selfAdjointForm
+    {V : Type*} [AddCommGroup V] [Module ℂ V]
+    {B : V → V → ℂ}
+    (hadd : ∀ x y z : V, B (x + y) z = B x z + B y z)
+    (hsmul : ∀ (a : ℂ) (x y : V), B (a • x) y = a * B x y)
+    (hsymm : ∀ x y : V, B y x = starRingEnd ℂ (B x y))
+    (hdef : ∀ x : V, B x x = 0 → x = 0)
+    {T : Module.End ℂ V} (hT : ∀ x y : V, B (T x) y = B x (T y))
+    {c : ℂ} {v : V} {n : ℕ}
+    (hv : ((T - c • (1 : Module.End ℂ V)) ^ n) v = 0) :
+    T v = c • v := by
+  -- Second-slot additivity and conjugate-homogeneity, from conjugate symmetry.
+  have hadd₂ : ∀ x y z : V, B x (y + z) = B x y + B x z := by
+    intro x y z
+    rw [hsymm (y + z) x, hadd y z x, map_add, ← hsymm y x, ← hsymm z x]
+  have hsmul₂ : ∀ (a : ℂ) (x y : V), B x (a • y) = starRingEnd ℂ a * B x y := by
+    intro a x y
+    rw [hsymm (a • y) x, hsmul a y x, map_mul, ← hsymm y x]
+  have hzero₂ : ∀ x : V, B x 0 = 0 := by
+    intro x
+    have h := hsmul₂ 0 x 0
+    simpa using h
+  have hsub : ∀ x y z : V, B (x - y) z = B x z - B y z := by
+    intro x y z
+    have h : B (x + (-1 : ℂ) • y) z = B x z + (-1 : ℂ) * B y z := by
+      rw [hadd, hsmul]
+    simpa [sub_eq_add_neg] using h
+  have hsub₂ : ∀ x y z : V, B x (y - z) = B x y - B x z := by
+    intro x y z
+    have h : B x (y + (-1 : ℂ) • z) = B x y + starRingEnd ℂ (-1 : ℂ) * B x z := by
+      rw [hadd₂, hsmul₂]
+    simpa [sub_eq_add_neg] using h
+  -- The operator `N = T − c` and its adjoint `N' = T − c̄`.
+  set N : Module.End ℂ V := T - c • (1 : Module.End ℂ V) with hNdef
+  set N' : Module.End ℂ V := T - (starRingEnd ℂ c) • (1 : Module.End ℂ V) with hN'def
+  have hNapp : ∀ x : V, N x = T x - c • x := by
+    intro x; simp [hNdef]
+  have hN'app : ∀ x : V, N' x = T x - (starRingEnd ℂ c) • x := by
+    intro x; simp [hN'def]
+  have hAdj : ∀ x y : V, B (N x) y = B x (N' y) := by
+    intro x y
+    rw [hNapp, hN'app, hsub, hsmul, hT, hsub₂, hsmul₂, Complex.conj_conj]
+  have hAdj' : ∀ x y : V, B (N' x) y = B x (N y) := by
+    intro x y
+    rw [hNapp, hN'app, hsub, hsmul, hT, hsub₂, hsmul₂]
+  have hcomm : ∀ x : V, N (N' x) = N' (N x) := by
+    intro x
+    simp only [hNapp, hN'app, map_sub, map_smul, smul_sub, smul_smul]
+    module
+  -- `N` and its adjoint have the same kernel, and `N` is injective off its kernel.
+  have hker : ∀ x : V, N x = 0 → N' x = 0 := by
+    intro x hx
+    refine hdef _ ?_
+    rw [hAdj' x (N' x), hcomm x, hx, map_zero, hzero₂]
+  have hsq : ∀ x : V, N (N x) = 0 → N x = 0 := by
+    intro x hx
+    refine hdef _ ?_
+    rw [hAdj x (N x), hker (N x) hx, hzero₂]
+  have hpow : ∀ (m : ℕ) (x : V), (N ^ m) x = 0 → N x = 0 := by
+    intro m
+    induction m with
+    | zero =>
+      intro x hx
+      simp only [pow_zero, Module.End.one_apply] at hx
+      rw [hx, map_zero]
+    | succ k ih =>
+      intro x hx
+      have h : (N ^ k) (N x) = 0 := by
+        rw [pow_succ, Module.End.mul_apply] at hx
+        exact hx
+      exact hsq x (ih (N x) h)
+  have hfin := hpow n v hv
+  rw [hNapp] at hfin
+  exact sub_eq_zero.mp hfin
+
+/-- **THE PETERSSON PRODUCT ON `S₂(Γ₀(M))`, WITH THE GOOD HECKE
+OPERATORS SELF-ADJOINT FOR IT** (sorry leaf — cut 2026-07-26 out of
+`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`, which is PROVEN
+over it; Diamond–Shurman *A First Course in Modular Forms* §5.5,
+Theorem 5.5.3): there is a form `B` on `S₂(Γ₀(M))` that is additive and
+`ℂ`-homogeneous in its first slot, conjugate-symmetric, DEFINITE, and
+for which every GOOD Hecke operator `T_q`, `q ∤ M`, is self-adjoint.
+
+This is the whole analytic content of the semisimplicity leaf; the
+linear algebra that consumes it is
+`eq_smul_of_pow_sub_smul_apply_eq_zero_of_selfAdjointForm`, PROVEN above.
+
+WHY ONE EXISTENTIAL AND NOT TWO (anti-vacuity design note — read before
+"simplifying" this). The tempting cut is "there is a definite Hermitian
+form" plus "the Hecke operators are self-adjoint for it". The first half
+is then TRIVIALLY TRUE and carries NO arithmetic — on a
+finite-dimensional space (`cuspForm_finiteDimensional`, PROVEN above)
+ANY basis manufactures a definite Hermitian form — and the second half,
+quantified over a form obtained by `choice` from it, becomes FALSE.
+Self-adjointness is a statement about the *Petersson* form specifically,
+so the existential must bind the form ONCE and assert both properties of
+the same `B`. The alternative honest cut is to DEFINE the form as an
+integral, which needs a fundamental domain for `Γ₀(M)` (see below);
+until that exists, this conjunction is the faithful shape.
+
+CLASSICAL PROOF (the intended witness). `B f g = ⟨f, g⟩ =
+∫_{Γ₀(M)\ℍ} f(τ) conj(g(τ)) y² dμ`, `dμ = dx dy / y²`, the Petersson
+product. Convergence is the exponential decay of a cusp form at the
+cusps, definiteness (indeed positivity, `⟨f, f⟩ > 0` for `f ≠ 0`) is
+positivity of the integrand, and self-adjointness of `T_q` at `q ∤ M` is
+D–S Theorem 5.5.3: for `α ∈ GL₂⁺(ℚ)` the Petersson adjoint of the
+double-coset operator `[Γ₀(M) α Γ₀(M)]` is `[Γ₀(M) α' Γ₀(M)]` with
+`α' = det(α)·α⁻¹`, and at `q ∤ M` this returns `⟨q⟩⁻¹T_q`, where the
+diamond operator `⟨q⟩` is the IDENTITY on `S₂(Γ₀(M))` (weight 2, trivial
+character). At `q ∣ M` the same computation gives no such identity, and
+indeed `U_q` is genuinely non-semisimple — see the FAITHFULNESS AUDIT on
+the consumer below, whose counterexample lives at `M = M'q³`.
+
+DEPENDENCY MAP for whoever attacks this (checked against this pin,
+2026-07-26). Mathlib supplies more than the earlier note claimed, but
+still not the integral:
+
+* `Mathlib/Analysis/Complex/UpperHalfPlane/Measure.lean` — the INVARIANT
+  measure `dx dy / y²` on `ℍ` as `(volume : Measure ℍ)`, with
+  `SMulInvariantMeasure (GL (Fin 2) ℝ) ℍ volume`. This is the measure
+  the product integrates against, and the invariance needed for the
+  change of variables is already there;
+* `Mathlib/NumberTheory/ModularForms/Petersson.lean` — the integrand
+  `petersson k f g τ = conj (f τ) * g τ * τ.im ^ k`, and crucially
+  `petersson_slash`, the transformation law
+  `petersson k (f ∣[k] g) (f' ∣[k] g) τ = |det g|^(k−2) · σ g (petersson k f f' (g • τ))`,
+  which is the identity the unfolding argument runs on;
+* `Mathlib/NumberTheory/ModularForms/Bounds.lean` —
+  `CuspFormClass.petersson_bounded_left/right`, boundedness of the
+  integrand for a cusp form, hence integrability once the domain has
+  finite volume;
+* MISSING, and this is the real work: a measure-theoretic fundamental
+  domain. `Mathlib/NumberTheory/Modular.lean` has the standard set `𝒟`
+  for `SL(2,ℤ)` with `exists_smul_mem_fd` and the disjointness of `𝒟ᵒ`
+  from its translates, but NOWHERE in mathlib is any modular group's
+  domain registered as `MeasureTheory.IsFundamentalDomain` (grep: that
+  predicate occurs only in `MeasureTheory/Group/FundamentalDomain.lean`
+  and `MeasureTheory/Measure/Haar/Quotient.lean`). Three further steps
+  are then needed: the `±1` nuisance (the kernel of the action must be
+  quotiented out before any domain can be a fundamental domain for the
+  group itself), the union `⋃ᵢ γᵢ 𝒟` over coset representatives of
+  `Γ₀(M) \ SL(2,ℤ)`, and finally the unfolding computation for the
+  double coset.
+
+`~/cs/FLT` does NOT help here: its only inner-product material,
+`AutomorphicForm/QuaternionAlgebra/InnerProduct.lean`, is the definite
+quaternionic setting, where the "integral" is a finite sum over a class
+set — no analysis and nothing transferable.
+
+FORMAL-CONTENT NOTE. The consumer uses DEFINITENESS only (not
+positivity) and does NOT use finite-dimensionality; both are stated
+here at the weakest form that the argument consumes, so that the future
+prover owes as little as possible. The witness of course satisfies the
+stronger properties. -/
+theorem exists_peterssonProduct_selfAdjoint_heckeOp {M : ℕ} (hM : 0 < M) :
+    ∃ B : CuspForm (Gamma0GL M) 2 → CuspForm (Gamma0GL M) 2 → ℂ,
+      (∀ f₁ f₂ g : CuspForm (Gamma0GL M) 2, B (f₁ + f₂) g = B f₁ g + B f₂ g) ∧
+      (∀ (a : ℂ) (f g : CuspForm (Gamma0GL M) 2), B (a • f) g = a * B f g) ∧
+      (∀ f g : CuspForm (Gamma0GL M) 2, B g f = starRingEnd ℂ (B f g)) ∧
+      (∀ f : CuspForm (Gamma0GL M) 2, B f f = 0 → f = 0) ∧
+      (∀ q : ℕ, q.Prime → ¬ q ∣ M →
+        ∀ f g : CuspForm (Gamma0GL M) 2,
+          B (heckeOp M q f) g = B f (heckeOp M q g)) :=
+  sorry
+
+/-- **SEMISIMPLICITY OF THE GOOD HECKE OPERATORS on `S₂(Γ₀(M))`** (PROVEN
+2026-07-26 over the single analytic leaf
+`exists_peterssonProduct_selfAdjoint_heckeOp` — the Petersson product
+with the good Hecke operators self-adjoint for it — and the general
+linear algebra `eq_smul_of_pow_sub_smul_apply_eq_zero_of_selfAdjointForm`;
+cut 2026-07-26 out of
 `heckeOp_apply_eq_smul_of_generalizedEigen_of_newform`; Diamond–Shurman
-Theorem 5.5.3 — self-adjointness of `T_q` for the Petersson product —
-together with the spectral theorem on the finite-dimensional space
-`S₂(Γ₀(M))`): at a GOOD prime `q ∤ M`, the operator `T_q` is semisimple,
+Theorem 5.5.3 — self-adjointness of `T_q` for the Petersson product):
+at a GOOD prime `q ∤ M`, the operator `T_q` is semisimple,
 i.e. its GENERALIZED eigenspaces are already honest eigenspaces. Stated
 elementwise, at an arbitrary scalar `c` and with the exponent existential
 already instantiated by the consumer: a cusp form killed by a POWER of
@@ -22824,18 +23022,20 @@ This is the ANALYTIC half of the two-leaf cut of the reducedness node.
 It knows nothing about newforms, and the eigenvalue `c` is arbitrary —
 no `IsWeightTwoEigenform`, no `eigensystem_minimal`, no `g`.
 
-CLASSICAL PROOF. The Petersson product
-`⟨f, h⟩ = ∫_{Γ₀(M)\ℍ} f(τ) conj(h(τ)) dxdy` is a positive-definite
-Hermitian form on `S₂(Γ₀(M))` (mathlib has the integrand and its
-invariance and decay properties in
-`Mathlib/NumberTheory/ModularForms/Petersson.lean`, but NOT the integral,
-NOT positive-definiteness and NOT the inner-product-space structure), the
-space is finite-dimensional (`cuspForm_finiteDimensional`, PROVEN above),
-and for `q ∤ M` the double coset defining `T_q` is stable under the
-Petersson adjoint, so `T_q` is self-adjoint (D–S Thm 5.5.3, weight `2`
-and trivial character, where the usual `⟨q⟩`-twist is trivial). A
-self-adjoint operator on a finite-dimensional complex inner-product space
-is diagonalizable, hence semisimple, which is exactly this statement.
+PROOF (2026-07-26). Take the Petersson product `B` and the
+self-adjointness of `T_q` at `q ∤ M` from
+`exists_peterssonProduct_selfAdjoint_heckeOp`, and feed them to
+`eq_smul_of_pow_sub_smul_apply_eq_zero_of_selfAdjointForm`: a
+self-adjoint operator for a DEFINITE conjugate-symmetric form has no
+generalized eigenvector that is not an eigenvector, because
+`N = T_q − c` and its adjoint `N' = T_q − c̄` commute and have equal
+kernels, whence `Nⁿ v = 0 ⇒ N v = 0`.
+
+Two things the classical account uses and this proof does NOT: the
+SPECTRAL THEOREM (the normal-operator kernel argument replaces it) and
+FINITE-DIMENSIONALITY (`cuspForm_finiteDimensional` is not consumed
+here). Definiteness of the Petersson product alone suffices, which is
+why the leaf above asks only for that.
 
 FAITHFULNESS AUDIT (2026-07-26). `hqM : ¬ q ∣ M` is LOAD-BEARING and the
 statement is FALSE without it: at `q ∣ M` the operator is `U_q`, which is
@@ -22859,18 +23059,21 @@ level `M'·q²`, so `h(q·) ∈ S₂(Γ₀(M))`, and `U_q ∘ V_q = id` gives
 good-prime hypothesis is not decoration; the same phenomenon is exactly
 what makes the consumer node's own counterexample work.
 
-DEPENDENCY NOTE for whoever attacks this: nothing in the Petersson theory
-of `Mathlib.NumberTheory.ModularForms.Petersson` beyond the integrand
-`petersson` and its `SL(2,ℤ)`-invariance and exponential decay exists on
-this pin; the integral over a fundamental domain, the inner-product
-structure, and the adjointness computation all have to be built. -/
+DEPENDENCY NOTE. Everything analytic now lives in the single leaf
+`exists_peterssonProduct_selfAdjoint_heckeOp` above, whose docstring
+carries the full map of what this mathlib pin does and does not
+provide (invariant measure and the `petersson` transformation law: yes;
+a measure-theoretic fundamental domain for any modular group: no). -/
 theorem heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level {M : ℕ} (hM : 0 < M)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (c : ℂ)
     {v : CuspForm (Gamma0GL M) 2} {n : ℕ}
     (hv : ((heckeOp M q -
       c • (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n) v = 0) :
-    heckeOp M q v = c • v :=
-  sorry
+    heckeOp M q v = c • v := by
+  obtain ⟨B, hadd, hsmul, hsymm, hdef, hadj⟩ :=
+    exists_peterssonProduct_selfAdjoint_heckeOp hM
+  exact eq_smul_of_pow_sub_smul_apply_eq_zero_of_selfAdjointForm hadd hsmul hsymm
+    hdef (hadj q hq hqM) hv
 
 /-- **STRONG MULTIPLICITY ONE for the AWAY-FROM-`M` eigensystem of a
 newform** (sorry leaf — cut 2026-07-26 out of
@@ -22948,11 +23151,12 @@ bad-prime eigen-equations arrive at the very end, for free, from
 two pieces are independent named theorems rather than one analytic lump:
 
 * at `q ∤ M`, `T_q` is SELF-ADJOINT for the Petersson product, hence
-  diagonalizable on the finite-dimensional space `S₂(Γ₀(M))`
-  (`cuspForm_finiteDimensional`), hence semisimple: a generalized
-  eigenvector at `q` is an honest one. That is
-  `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`, and it uses
-  nothing about `g`.
+  semisimple: a generalized eigenvector at `q` is an honest one. That is
+  `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`, PROVEN
+  2026-07-26 over the analytic leaf
+  `exists_peterssonProduct_selfAdjoint_heckeOp` (finite-dimensionality
+  turned out NOT to be needed — definiteness of the form alone gives the
+  kernel argument), and it uses nothing about `g`.
 * an honest joint eigenvector for the GOOD operators alone, at a
   NEWFORM's eigensystem, lies on the line `ℂ·g` — the Atkin–Lehner
   decomposition, where `hg.eigensystem_minimal` kills every proper
@@ -23051,8 +23255,10 @@ statements; exactly one of them survives as a leaf.
   nilpotents, so the GENERALIZED eigenspace coincides with the honest
   eigenspace. This is `heckeOp_apply_eq_smul_of_generalizedEigen_of_newform`,
   itself PROVEN 2026-07-26 over the two surviving classical leaves
-  `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` (Petersson
-  self-adjointness of `T_q` at `q ∤ M`, hence semisimplicity) and
+  `exists_peterssonProduct_selfAdjoint_heckeOp` (the Petersson product
+  with `T_q` self-adjoint for it at `q ∤ M`, through which
+  `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` — semisimplicity
+  of `T_q` — is PROVEN) and
   `exists_smul_of_heckeOp_eq_smul_of_not_dvd_level` (Atkin–Lehner strong
   multiplicity one for the away-from-`M` eigensystem). Counterexamples
   showing that each of `q ∤ M` and `hg`'s minimality is indispensable are
