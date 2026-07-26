@@ -81,12 +81,18 @@ The chain, in the order the assembly uses it:
    REFUTED and REPAIRED on 2026-07-26 (it needs the category to be
    NONEMPTY; see the faithfulness section on it and the proven refutation
    `rank_eq_two_of_hilbertDeformationDatum`), and is now PROVEN as an
-   assembly over SIX leaves — the arithmetic-free Schlessinger machine
+   assembly over the arithmetic-free Schlessinger machine
    `exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses` together
    with the four deformation-condition clauses
    `isHilbertBaseChangeClause`, `isHilbertFibreProductClause`,
    `isHilbertFiniteFramesClause`, `isHilbertProLimitClause` and the
    Brauer–Nesbitt clause `isHilbertResidualRigidityClause`.
+   The FIRST of those clauses is PROVEN (2026-07-26), over the single
+   leaf `hasFlatProlongationAt_of_pi_surjection_of_numberField` — Raynaud
+   closure over a VARIABLE number field — via the proven transfers
+   `isHilbertTameAtTwo_baseChange`, `isFlatAt_baseChange_of_numberField`,
+   `isHilbertHardlyRamified_conj` and
+   `isHilbertHardlyRamified_baseChange`.
 4. `HilbertHeckeAlgebra` — `T_F`, carrying finiteness AND FREENESS of
    `T_F` over `ℤ_[ℓ]`, generation by Hecke operators, and the
    **Hecke-valued Galois representation** `ρT : G_F → GL₂(T_F)` reducing
@@ -164,6 +170,9 @@ public import Mathlib.RingTheory.AdicCompletion.Basic
 public import Mathlib.RingTheory.Finiteness.Basic
 public import Mathlib.LinearAlgebra.TensorProduct.Pi
 public import Mathlib.LinearAlgebra.Dimension.Constructions
+-- `LinearMap.det_baseChange`, for the determinant clause of
+-- `isHilbertHardlyRamified_baseChange`
+public import Mathlib.LinearAlgebra.Charpoly.BaseChange
 public import Mathlib.Topology.Algebra.Algebra
 
 @[expose] public section
@@ -1095,24 +1104,464 @@ def IsHilbertResidualRigidityClause (F : Type u) [Field F] [NumberField F]
     (∀ g : Γ F, (τ g).charpoly = ((ρbar.map (algebraMap ℚ F)) g).charpoly) →
     ∃ e : (Fin 2 → k) ≃ₗ[k] V, τ.conj e = ρbar.map (algebraMap ℚ F)
 
-/-- **Functoriality of the `F`-level condition** (LEAF).
+/-! #### The functoriality clause, and the base-field hoist it needed
 
-Over `ℚ` this is `Deformation.lean`'s PROVEN
-`isHardlyRamified_pushforwardFrame`, whose only genuine residue is the
-flatness transfer `isFlatAt_baseChange`; the other three clauses of
-`IsHardlyRamified` are formal. The same split applies here, place by place:
-the determinant clause is an identity in `R` pushed along `ψ`, the
-unramifiedness and tameness clauses are inclusions of kernels, and the
-flatness clause at each `w ∣ ℓ` is the base change of a finite flat group
-scheme along `𝒪_{F_w} → 𝒪_{F_w} ⊗ A`.
+`isHilbertBaseChangeClause` is now PROVEN (2026-07-26), over the single
+leaf `hasFlatProlongationAt_of_pi_surjection_of_numberField` below. The
+cut is `Deformation.lean`'s `ℚ`-level cut of
+`isHardlyRamified_pushforwardFrame`, one for one:
 
-None of that development exists over a general number field: `Threeadic.lean`
-and `Deformation.lean` state their flat-prolongation transfer over `ℚ`'s
-places. Hoisting it to a variable base field is the bulk of this leaf. -/
+* `isHilbertTameAtTwo_baseChange` — the tame quadratic quotient at a place
+  over `2` base-changes (PROVEN, the `ℚ`-level `isTameAtTwo_baseChange`
+  transcribed with `toLocal w` in place of `map (algebraMap ℚ ℚ_[2])`);
+* `isFlatAt_baseChange_of_numberField` — the flatness transfer, PROVEN
+  over the Raynaud leaf by the same explicit equivariant surjection out
+  of a finite power;
+* `isHilbertHardlyRamified_conj` and `isHilbertHardlyRamified_baseChange`
+  — conjugation invariance and base change of the whole four-clause
+  condition (PROVEN);
+* `isHilbertBaseChangeClause` — the composite, since
+  `framePushforward = conj ∘ baseChange` by definition.
+
+The observation that made this cheap: `GaloisRep.HasFlatProlongationAt`,
+`GaloisRep.IsFlatAt`, `GaloisRep.toLocal` and the base-change instance for
+`GaloisRep.IsUnramifiedAt` are ALREADY stated over a variable number field
+in `Deformations/RepresentationTheory/GaloisRep.lean`. The `ℚ` in
+`Deformation.lean`'s versions of these transfers is incidental — it comes
+from the place being written as
+`Nat.Prime.toHeightOneSpectrumRingOfIntegersRat`, not from anything in the
+argument. So only ONE statement in the chain is genuinely `ℚ`-bound, and
+it is the Raynaud closure. -/
+
+/-- **Raynaud closure for flat prolongations over a VARIABLE number field,
+in surjection-from-a-finite-power form** (LEAF, new 2026-07-26): if the
+local space of `ρ₁` at a place `w` of `K` is the geometric-point group of a
+finite flat group scheme over `𝒪_w`, then so is every `Γ K_w`-equivariant
+additive QUOTIENT of a finite POWER of it.
+
+Mathematically this is the statement that the essential image of the
+generic-fibre functor (finite flat group schemes over the DVR `𝒪_w`) ⟶
+(finite `Γ K_w`-modules) is closed under finite products and under
+equivariant quotients: products are represented by the tensor product of
+the Hopf algebras, and quotients come from the schematic-closure
+construction — an equivariant surjection of point groups is induced by a
+surjection of the finite étale generic-fibre Hopf algebras, and the image
+of a Hopf order under a surjective bialgebra map is again a Hopf order.
+The EXISTENCE direction used here needs no `e < ℓ − 1` bound; Raynaud's
+bound enters only for UNIQUENESS of the prolongation, which is not
+asserted.
+
+**WHY THIS IS OPEN HERE WHEN IT IS PROVEN AT `K = ℚ`, AND EXACTLY WHAT
+CLOSES IT.** At `K = ℚ` this is `Deformation.lean`'s PROVEN
+`hasFlatProlongationAt_of_pi_surjection`, which lives DOWNSTREAM of this
+module and so is unreachable from here. That proof is four lines: it
+passes to the representation-free carrier
+`GaloisRepresentation.Modularity.IsFlatPointsGroupAt` and applies
+`IsFlatPointsGroupAt.pi` and `IsFlatPointsGroupAt.of_surjective`, both
+PROVEN, in `Deformations/RepresentationTheory/FlatPointsGroup.lean`.
+
+That whole file — 1950 sorry-free lines — mentions `ℚ` exactly EIGHT
+times, all of them inside `variable (v : HeightOneSpectrum (𝓞 ℚ))` and the
+four `local notation`s `Kᵥ`/`𝒪ᵥ`/`Γᵥ`/`Ωᵥ` derived from it, plus one
+`CharZero (adicCompletion ℚ v)` instance step. Nothing in its mathematics
+is about `ℚ`: every argument is about the local field `K_w` and the DVR
+`𝒪_w`. So the honest way to close THIS leaf is to hoist that `variable`
+line to a general `(K : Type u) [Field K] [NumberField K]`, after which the
+`ℚ` statement becomes an instance of the general one and BOTH leaves close
+together — a strictly copy-count-reducing change.
+
+It was not done in this task because it is a cross-cutting edit to a file
+with several concurrent owners, and because consuming
+`FlatPointsGroup.lean` from here would pull
+`KnownIn1980s/EllipticCurves/Flat.lean` (the Gelfand-duality machinery,
+itself over the division-polynomial cone) into this module's deliberately
+minimal import surface — which is what lets `Deformation.lean`
+`public import` this module without touching the circularity guard. The
+right sequencing is: hoist `FlatPointsGroup.lean` first, then decide where
+the shared statement lives.
+
+FAITHFULNESS: the hypotheses are exactly those of the `ℚ`-level theorem
+with `ℚ` replaced by `K`, and the conclusion asks only for EXISTENCE of a
+prolongation upstairs produced by a product-then-quotient construction —
+not for a descent of existence from `𝒪^nr`, so the `𝒪ᵥ` discriminating
+rule does not bite.
+
+References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
+(1974), §3; Tate–Oort, *A classification of group schemes of order p*,
+Ann. Sci. ÉNS 3 (1970). -/
+theorem hasFlatProlongationAt_of_pi_surjection_of_numberField
+    {K : Type u} [Field K] [NumberField K] (w : HeightOneSpectrum (𝓞 K))
+    {A₁ : Type*} [CommRing A₁] [TopologicalSpace A₁]
+    {M₁ : Type*} [AddCommGroup M₁] [Module A₁ M₁]
+    {A₂ : Type*} [CommRing A₂] [TopologicalSpace A₂]
+    {M₂ : Type*} [AddCommGroup M₂] [Module A₂ M₂]
+    {ρ₁ : GaloisRep K A₁ M₁} {ρ₂ : GaloisRep K A₂ M₂} (n : ℕ)
+    (h : ρ₁.HasFlatProlongationAt w)
+    (π : (Fin n → (ρ₁.toLocal w).Space) →+ (ρ₂.toLocal w).Space)
+    (hsurj : Function.Surjective π)
+    (hequiv : ∀ (g : Γ (w.adicCompletion K))
+        (x : Fin n → (ρ₁.toLocal w).Space), π (g • x) = g • π x) :
+    ρ₂.HasFlatProlongationAt w :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Flatness at a place transfers along an arbitrary base change to a
+FINITE coefficient algebra, over a VARIABLE number field** (PROVEN
+2026-07-26 over the Raynaud leaf above; the `K = ℚ` case is
+`Deformation.lean`'s `isFlatAt_baseChange`, whose proof this is verbatim
+with the place left variable).
+
+Route. Let `I` be an open ideal of `B` and put `J := (algebraMap R B)⁻¹ I`,
+an open ideal of `R` because the structure map is continuous
+(`ContinuousSMul R B`, whence `continuous_algebraMap`). `hflat` supplies a
+finite flat prolongation of `(R ⧸ J) ⊗_R M`, and what remains is that the
+prolongation survives the COEFFICIENT EXTENSION `R ⧸ J → B ⧸ I` of finite
+rings. That is done as an explicit equivariant SURJECTION rather than a
+second tensor cancellation, which is what keeps the cut shallow: `B ⧸ I` is
+finite, so enumerating it as `b₀, …, b_{n−1}` gives an additive surjection
+`(Fin n → (R ⧸ J) ⊗_R M) ↠ (B ⧸ I) ⊗_R M`, `(xᵢ) ↦ Σᵢ bᵢ • ι(xᵢ)`, where
+`ι` is `id ⊗ (R ⧸ J → B ⧸ I)`; surjectivity holds already on the generators
+`c ⊗ m = b_{e(c)} • (1 ⊗ m)`, and `Γ K_w`-equivariance holds because the
+Galois action lives on the `M`-factor while both `bᵢ • −` and `ι` act on the
+coefficient factor. Composing with the inverse of
+`TensorProduct.AlgebraTensorModule.cancelBaseChange` — which identifies
+`(B ⧸ I) ⊗_B (B ⊗_R M)`, the space the goal actually names, with
+`(B ⧸ I) ⊗_R M` — this is exactly the Raynaud leaf's hypothesis. The route
+needs NO `(R ⧸ J)`-algebra structure on `B ⧸ I`, and in particular neither
+`IsScalarTower R (R ⧸ J) (B ⧸ I)` nor `ContinuousSMul (R ⧸ J) (B ⧸ I)`,
+neither of which is available as an instance.
+
+`[Finite B]` is part of the statement and not a convenience: a finite flat
+`𝒪_w`-algebra has only finitely many geometric points, so
+`HasFlatProlongationAt` forces the space to be finite, and the unrestricted
+form is FALSE (see the `ℚ`-level docstring for the counterexample). Every
+consumer lives in the Artinian category, so the restriction costs nothing.
+
+References: Ramakrishna, *On a variation of Mazur's deformation functor*,
+Compositio 87 (1994), §1; Conrad–Diamond–Taylor, JAMS 12 (1999), §2. -/
+theorem isFlatAt_baseChange_of_numberField
+    {K : Type u} [Field K] [NumberField K] (w : HeightOneSpectrum (𝓞 K))
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R]
+    {M : Type*} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    (B : Type*) [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Finite B] [Algebra R B] [ContinuousSMul R B]
+    {ρ : GaloisRep K R M} (hflat : ρ.IsFlatAt w) :
+    (ρ.baseChange B).IsFlatAt w := by
+  classical
+  constructor
+  intro I hI
+  -- the contracted open ideal of `R`
+  set J : Ideal R := I.comap (algebraMap R B)
+  have hJopen : IsOpen (J : Set R) := hI.preimage (continuous_algebraMap R B)
+  have hflatJ : (ρ.baseChange (R ⧸ J)).HasFlatProlongationAt w :=
+    hflat.cond J hJopen
+  -- an enumeration of the finite ring `B ⧸ I`
+  haveI : Finite (B ⧸ I) := Finite.of_surjective _ Ideal.Quotient.mk_surjective
+  obtain ⟨n, ⟨enum⟩⟩ := Finite.exists_equiv_fin (B ⧸ I)
+  -- the coefficient map `R ⧸ J → B ⧸ I`, `R`-linearly
+  let cmap : (R ⧸ J) →ₗ[R] (B ⧸ I) :=
+    Submodule.liftQ J (Algebra.linearMap R (B ⧸ I)) (by
+      intro r hr
+      show algebraMap R (B ⧸ I) r = 0
+      rw [IsScalarTower.algebraMap_apply R B (B ⧸ I)]
+      exact Ideal.Quotient.eq_zero_iff_mem.mpr hr)
+  have hcmap : ∀ r : R, cmap (Ideal.Quotient.mk J r) = algebraMap R (B ⧸ I) r :=
+    fun _ => rfl
+  let ι : ((R ⧸ J) ⊗[R] M) →ₗ[R] ((B ⧸ I) ⊗[R] M) := LinearMap.rTensor M cmap
+  let can := TensorProduct.AlgebraTensorModule.cancelBaseChange R B (B ⧸ I) (B ⧸ I) M
+  -- the equivariant surjection out of a finite power of `(R ⧸ J) ⊗ M`
+  let π₀ : (Fin n → ((R ⧸ J) ⊗[R] M)) →+ ((B ⧸ I) ⊗[R] M) :=
+    { toFun := fun x => ∑ i, (enum.symm i) • ι (x i)
+      map_zero' := by simp
+      map_add' := fun x y => by simp [smul_add, Finset.sum_add_distrib] }
+  let π : (Fin n → ((ρ.baseChange (R ⧸ J)).toLocal w).Space) →+
+      (((ρ.baseChange B).baseChange (B ⧸ I)).toLocal w).Space :=
+    (can.symm.toAddEquiv.toAddMonoidHom).comp π₀
+  refine hasFlatProlongationAt_of_pi_surjection_of_numberField w n hflatJ π ?_ ?_
+  · -- surjectivity: already on the generators `c ⊗ m = b_{e c} • (1 ⊗ m)`
+    have hsurj0 : Function.Surjective π₀ := by
+      intro z
+      induction z using TensorProduct.induction_on with
+      | zero => exact ⟨0, map_zero _⟩
+      | tmul c m =>
+        refine ⟨(Pi.single (enum c) ((1 : R ⧸ J) ⊗ₜ[R] m) :
+          Fin n → ((R ⧸ J) ⊗[R] M)), ?_⟩
+        show ∑ i, (enum.symm i) • ι ((Pi.single (enum c) ((1 : R ⧸ J) ⊗ₜ[R] m) :
+          Fin n → ((R ⧸ J) ⊗[R] M)) i) = c ⊗ₜ[R] m
+        rw [Finset.sum_eq_single_of_mem (enum c) (Finset.mem_univ _)]
+        · rw [Pi.single_eq_same]
+          show (enum.symm (enum c)) • (cmap 1 ⊗ₜ[R] m) = c ⊗ₜ[R] m
+          rw [Equiv.symm_apply_apply,
+            show cmap 1 = 1 from (hcmap 1).trans (map_one _)]
+          rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+        · intro i _ hne
+          rw [Pi.single_eq_of_ne hne]
+          simp
+      | add a b ha hb =>
+        obtain ⟨u, hu⟩ := ha
+        obtain ⟨t, ht⟩ := hb
+        exact ⟨u + t, by rw [map_add, hu, ht]⟩
+    exact can.symm.surjective.comp hsurj0
+  · -- `Γ K_w`-equivariance: the action is on the `M`-factor throughout
+    intro g x
+    have key : ∀ (i : Fin n) (y : (R ⧸ J) ⊗[R] M),
+        can.symm ((enum.symm i) • ι (((ρ.baseChange (R ⧸ J)).toLocal w) g y))
+          = (((ρ.baseChange B).baseChange (B ⧸ I)).toLocal w) g
+              (can.symm ((enum.symm i) • ι y)) := by
+      intro i y
+      induction y using TensorProduct.induction_on with
+      | zero => simp
+      | add a b ha hb => simp only [map_add, smul_add, ha, hb]
+      | tmul a m => rfl
+    show can.symm (∑ i, (enum.symm i) • ι (((ρ.baseChange (R ⧸ J)).toLocal w) g (x i)))
+        = (((ρ.baseChange B).baseChange (B ⧸ I)).toLocal w) g
+            (can.symm (∑ i, (enum.symm i) • ι (x i)))
+    rw [map_sum, map_sum, map_sum]
+    exact Finset.sum_congr rfl fun i _ => key i (x i)
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **Tameness at a place over `2` transfers along base change** (PROVEN
+2026-07-26): the rank-one tame quadratic quotient `(p, δ)` of `ρ` at `w`
+base-changes to `(rid ∘ (p ⊗ 1), (δ ⊗ 1)ᵉ)` for `ρ ⊗ B`.
+
+This is `Deformation.lean`'s `isTameAtTwo_baseChange` with the local
+representation spelled `ρ.toLocal w` — the restriction along
+`Γ F_w → Γ F` — instead of `ρ.map (algebraMap ℚ ℚ_[2])`, and with the
+inertia subgroup spelled `localInertiaGroup w` instead of the bespoke
+`Z2bar` one. Nothing else changes: the equivariance is checked on simple
+tensors, the kernel of a character only GROWS under base change followed by
+conjugation, and `δ² = 1` is an identity transported through a monoid
+homomorphism. -/
+lemma isHilbertTameAtTwo_baseChange {F : Type u} [Field F] [NumberField F]
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    {M : Type*} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    (B : Type*) [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [Algebra R B] [ContinuousSMul R B]
+    (w : HeightOneSpectrum (𝓞 F)) {ρ : GaloisRep F R M}
+    (htame : ∃ (p : M →ₗ[R] R) (_ : Function.Surjective p)
+      (δ : GaloisRep (w.adicCompletion F) R R),
+      (∀ g : Γ (w.adicCompletion F), ∀ x : M, p (ρ.toLocal w g x) = δ g (p x)) ∧
+      localInertiaGroup w ≤ δ.ker ∧
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1) :
+    ∃ (p : (B ⊗[R] M) →ₗ[B] B) (_ : Function.Surjective p)
+      (δ : GaloisRep (w.adicCompletion F) B B),
+      (∀ g : Γ (w.adicCompletion F), ∀ x : B ⊗[R] M,
+        p ((ρ.baseChange B).toLocal w g x) = δ g (p x)) ∧
+      localInertiaGroup w ≤ δ.ker ∧
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 := by
+  obtain ⟨p, hpsurj, δ, h⟩ := htame
+  -- the canonical identification `B ⊗[R] R ≃ₗ[B] B`
+  let e : (B ⊗[R] R) ≃ₗ[B] B := TensorProduct.AlgebraTensorModule.rid R B B
+  refine ⟨e.toLinearMap ∘ₗ LinearMap.baseChange B p, ?_,
+    (δ.baseChange B).conj e, ?_, ?_, ?_⟩
+  · -- surjectivity: hit `c` with `c ⊗ v₀` for a preimage `v₀` of `1`
+    intro c
+    obtain ⟨v₀, hv₀⟩ := hpsurj 1
+    refine ⟨c ⊗ₜ v₀, ?_⟩
+    simp [e, LinearMap.baseChange_tmul, hv₀,
+      TensorProduct.AlgebraTensorModule.rid_tmul]
+  · -- equivariance, by linearity on simple tensors
+    intro g y
+    induction y using TensorProduct.induction_on with
+    | zero => simp
+    | tmul c x =>
+      have h1 := h.1 g x
+      simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
+      rw [show ((ρ.baseChange B).toLocal w) g (c ⊗ₜ x) =
+        c ⊗ₜ ((ρ.toLocal w) g x) from rfl,
+        LinearMap.baseChange_tmul, h1,
+        GaloisRep.conj_apply, LinearMap.baseChange_tmul]
+      rw [LinearEquiv.conj_apply, LinearMap.comp_apply, LinearMap.comp_apply,
+        LinearEquiv.coe_coe, LinearEquiv.coe_coe,
+        TensorProduct.AlgebraTensorModule.rid_symm_apply,
+        show ((δ.baseChange B) g : Module.End B (B ⊗[R] R)) =
+          LinearMap.baseChange B (δ g) from rfl,
+        LinearMap.baseChange_tmul,
+        TensorProduct.AlgebraTensorModule.rid_tmul]
+      rw [show (δ g) (p x) = p x • (δ g) 1 from by
+        conv_lhs => rw [show (p x : R) = p x • (1 : R) from by
+          rw [smul_eq_mul, mul_one]]
+        rw [map_smul]]
+      simp [e, TensorProduct.AlgebraTensorModule.rid_tmul, smul_smul,
+        mul_comm]
+    | add x y hx hy =>
+      simp only [map_add, hx, hy]
+  · -- unramifiedness: the kernel only grows under base change + conj
+    intro σ hσ
+    have hδσ : δ σ = 1 := h.2.1 hσ
+    show (δ.baseChange B).conj e σ = 1
+    rw [GaloisRep.conj_apply]
+    rw [show (δ.baseChange B) σ = LinearMap.baseChange B (δ σ) from rfl, hδσ]
+    refine LinearMap.ext fun c => ?_
+    simp
+  · -- the quadratic condition transfers through the monoid hom
+    intro g'
+    have hsq : δ g' * δ g' = 1 := h.2.2 g'
+    calc (δ.baseChange B).conj e g' * (δ.baseChange B).conj e g'
+        = (δ.baseChange B).conj e (g' * g') := (map_mul _ _ _).symm
+      _ = 1 := by
+          rw [GaloisRep.conj_apply]
+          rw [show (δ.baseChange B) (g' * g') =
+            LinearMap.baseChange B (δ (g' * g')) from rfl,
+            map_mul δ, hsq]
+          refine LinearMap.ext fun c => ?_
+          simp
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **The `F`-level condition is invariant under an isomorphism of the
+representation space** (PROVEN 2026-07-26; the `F`-analogue of
+`Deformation.lean`'s `isHardlyRamified_conj`).
+
+The determinant is conjugation-invariant, the kernels of the local
+representations only grow, flatness transports through
+`HasFlatProlongationAt.of_equiv` along the base-changed isomorphism at
+EVERY place `w ∣ ℓ`, and the tame quadratic quotient at every `w ∣ 2` is
+composed with the inverse isomorphism. -/
+lemma isHilbertHardlyRamified_conj (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R]
+    {M : Type*} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M]
+    {N : Type*} [AddCommGroup N] [Module R N] [Module.Finite R N]
+    [Module.Free R N]
+    {hdimM : Module.rank R M = 2} (hdimN : Module.rank R N = 2)
+    {ρ : GaloisRep F R M} (h : IsHilbertHardlyRamified ℓ F hdimM ρ)
+    (e : M ≃ₗ[R] N) :
+    IsHilbertHardlyRamified ℓ F hdimN (ρ.conj e) := by
+  constructor
+  · -- determinant: conjugation-invariant
+    intro g
+    rw [GaloisRep.det_apply, GaloisRep.conj_apply, LinearEquiv.conj_apply,
+      LinearMap.comp_assoc, LinearMap.det_conj]
+    exact h.det g
+  · -- unramifiedness: the kernel of the local representation only grows
+    intro w hw2 hwl
+    have hun := h.isUnramified w hw2 hwl
+    refine ⟨le_trans hun.localInertiaGroup_le ?_⟩
+    intro σ hσ
+    have h1 : ρ.toLocal w σ = 1 := hσ
+    show (ρ.conj e).toLocal w σ = 1
+    rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply,
+      ← GaloisRep.toLocal_apply, h1]
+    refine LinearMap.ext fun x => ?_
+    simp
+  · -- flatness: transport along the base-changed equivariant isomorphism
+    intro w hw
+    constructor
+    intro I hI
+    refine ((h.isFlat w hw).cond I hI).of_equiv _
+      (LinearEquiv.baseChange R (R ⧸ I) M N e).toAddEquiv ?_
+    intro g x
+    show (LinearEquiv.baseChange R (R ⧸ I) M N e)
+        (((ρ.baseChange (R ⧸ I)).toLocal w g) x) =
+      (((ρ.conj e).baseChange (R ⧸ I)).toLocal w g)
+        ((LinearEquiv.baseChange R (R ⧸ I) M N e) x)
+    induction x using TensorProduct.induction_on with
+    | zero => simp
+    | add a b ha hb => simp only [map_add, ha, hb]
+    | tmul c m =>
+      simp only [GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul,
+        LinearEquiv.baseChange_tmul, GaloisRep.conj_apply,
+        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply]
+  · -- tameness at `2`: compose the quotient with the inverse isomorphism
+    intro w hw
+    obtain ⟨p, hpsurj, δ, hδ⟩ := h.isTameAtTwo w hw
+    refine ⟨p.comp (e.symm : N →ₗ[R] M), ?_, δ, ?_, hδ.2.1, hδ.2.2⟩
+    · intro r
+      obtain ⟨m, hm⟩ := hpsurj r
+      exact ⟨e m, by simp [hm]⟩
+    · intro g x
+      have h1 := hδ.1 g (e.symm x)
+      show p (e.symm ((ρ.conj e).toLocal w g x)) = δ g (p (e.symm x))
+      rw [GaloisRep.toLocal_apply, GaloisRep.conj_apply,
+        LinearEquiv.conj_apply_apply, LinearEquiv.symm_apply_apply,
+        ← GaloisRep.toLocal_apply, h1]
+
+set_option backward.isDefEq.respectTransparency false in
+open scoped TensorProduct in
+/-- **The `F`-level condition transfers along an arbitrary base change to a
+FINITE coefficient algebra** (PROVEN 2026-07-26 over the single Raynaud
+leaf; the `F`-analogue of `Deformation.lean`'s
+`isHardlyRamified_baseChange`).
+
+Same four clauses, same proofs: the determinant maps along the structure
+morphism (`LinearMap.det_baseChange`, then `IsScalarTower` for the
+`ℤ_ℓ`-compatibility, which is what the cyclotomic condition is stated
+against), unramifiedness at every `w ∤ 2ℓ` passes to any base change by the
+existing instance on `GaloisRep.IsUnramifiedAt`, flatness at every `w ∣ ℓ`
+is `isFlatAt_baseChange_of_numberField`, and tameness at every `w ∣ 2` is
+`isHilbertTameAtTwo_baseChange`. -/
+lemma isHilbertHardlyRamified_baseChange (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] [Algebra ℤ_[ℓ] R]
+    {M : Type*} [AddCommGroup M] [Module R M] [Module.Finite R M]
+    [Module.Free R M] {hdimM : Module.rank R M = 2}
+    (B : Type*) [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Finite B] [Algebra ℤ_[ℓ] B] [Algebra R B]
+    [ContinuousSMul R B] [IsScalarTower ℤ_[ℓ] R B]
+    (hdimB : Module.rank B (B ⊗[R] M) = 2)
+    {ρ : GaloisRep F R M} (h : IsHilbertHardlyRamified ℓ F hdimM ρ) :
+    IsHilbertHardlyRamified ℓ F hdimB (ρ.baseChange B) := by
+  constructor
+  · -- the determinant maps along the structure morphism
+    intro g
+    have hdet : (ρ.baseChange B).det g = algebraMap R B (ρ.det g) := by
+      show LinearMap.det ((ρ.baseChange B) g) = _
+      rw [show ((ρ.baseChange B) g : Module.End B (B ⊗[R] M)) =
+        LinearMap.baseChange B (ρ g) from rfl, LinearMap.det_baseChange]
+      rfl
+    rw [hdet, h.det g, ← IsScalarTower.algebraMap_apply]
+  · -- unramifiedness passes to the base change (existing instance)
+    intro w hw2 hwl
+    letI : ρ.IsUnramifiedAt w := h.isUnramified w hw2 hwl
+    infer_instance
+  · -- flatness at every `w ∣ ℓ`
+    intro w hw
+    exact isFlatAt_baseChange_of_numberField w B (h.isFlat w hw)
+  · -- tameness at every `w ∣ 2`
+    intro w hw
+    exact isHilbertTameAtTwo_baseChange B w (h.isTameAtTwo w hw)
+
+open scoped TensorProduct in
+/-- **Functoriality of the `F`-level condition** (PROVEN 2026-07-26 over the
+single leaf `hasFlatProlongationAt_of_pi_surjection_of_numberField`).
+
+`framePushforward ψ hψ ρ` is by definition `(ρ.baseChange A).conj
+(TensorProduct.piScalarRight B A A (Fin 2))`, so this is
+`isHilbertHardlyRamified_baseChange` followed by
+`isHilbertHardlyRamified_conj`, exactly the two-step pattern of the
+`ℚ`-level `isHardlyRamified_pushforwardFrame`. The hypothesis `halg` —
+that `ψ` is a `ℤ_ℓ`-algebra map — is what manufactures the
+`IsScalarTower ℤ_[ℓ] B A` instance the determinant clause is stated
+against, and `[Finite A]` is what the flatness clause needs (a finite flat
+group scheme has only finitely many geometric points).
+
+It is Schlessinger's functoriality clause: the `F`-level framed hardly
+ramified lifts form a FUNCTOR on the Artinian category. -/
 theorem isHilbertBaseChangeClause (ℓ : ℕ) [Fact ℓ.Prime]
     (F : Type u) [Field F] [NumberField F] :
-    IsHilbertBaseChangeClause ℓ F :=
-  sorry
+    IsHilbertBaseChangeClause ℓ F := by
+  intro B _ _ _ _ _ A _ _ _ _ _ _ ψ hψ halg ρ hρ
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  letI : IsScalarTower ℤ_[ℓ] B A := IsScalarTower.of_algebraMap_eq' (by
+    rw [RingHom.algebraMap_toAlgebra]
+    exact halg.symm)
+  have hrank : Module.rank A (A ⊗[B] (Fin 2 → B)) = 2 := by
+    rw [Module.rank_baseChange, rank_finTwoPi]
+    simp
+  exact isHilbertHardlyRamified_conj ℓ F (rank_finTwoPi A)
+    (isHilbertHardlyRamified_baseChange ℓ F A hrank hρ)
+    (TensorProduct.piScalarRight B A A (Fin 2))
 
 /-- **Gluing along fibre products** (LEAF; Schlessinger's H1 and H2).
 
