@@ -1949,16 +1949,30 @@ exactly `C`.
 
 Primality of the order is NOT needed: Vélu's construction works for any finite
 subgroup, and oddness is used only to halve the `±`-invariant sums defining `t`
-and `w`. -/
-theorem exists_velu_quotient_isogeny (E : WeierstrassCurve ℚ) [E.IsElliptic]
+and `w`.
+
+**This is the MODEL-NAMING form** (strengthened 2026-07-26 for
+`WeierstrassCurve.exists_tateInvariants_of_stableThreeSubgroup`): the quotient
+curve is not merely *some* `E'`, it is literally `E.veluModel t w`, and the two
+rational coefficients `t`, `w` are pinned by `algebraMap ℚ ℚ̄ t = veluT …`,
+`algebraMap ℚ ℚ̄ w = veluW …` over `hCfin.toFinset`. A consumer that knows the
+kernel explicitly can therefore evaluate Vélu's sums and obtain the quotient's
+`c₄` and `Δ` by `ring`. The unnamed form is `exists_velu_quotient_isogeny`
+below. -/
+theorem exists_velu_quotient_isogeny_model (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
     (hCfin : (C : Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
     (hCodd : Odd (Nat.card C))
     (hCstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ C,
       Affine.Point.map
         (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈ C) :
-    ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
-      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point),
+    ∃ (t w : ℚ) (_ : (E.veluModel t w).IsElliptic)
+      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+
+        ((E.veluModel t w)⁄(AlgebraicClosure ℚ)).Point),
+      algebraMap ℚ (AlgebraicClosure ℚ) t =
+          veluT (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset ∧
+      algebraMap ℚ (AlgebraicClosure ℚ) w =
+          veluW (E⁄(AlgebraicClosure ℚ)) hCfin.toFinset ∧
       (∀ (σ : Field.absoluteGaloisGroup ℚ)
         (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
         φ (Affine.Point.map
@@ -2012,10 +2026,10 @@ theorem exists_velu_quotient_isogeny (E : WeierstrassCurve ℚ) [E.IsElliptic]
   set ψ : ((E⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)).veluCurve S).Point ≃+
       ((E.veluModel t w)⁄(AlgebraicClosure ℚ) : Affine (AlgebraicClosure ℚ)).Point :=
     pointAddEquivOfEq hEq.symm with hψdef
-  refine ⟨E.veluModel t w, isElliptic_of_baseChange _ hE'K,
+  refine ⟨t, w, isElliptic_of_baseChange _ hE'K,
     AddMonoidHom.mk' (fun P => ψ (veluMap (E⁄(AlgebraicClosure ℚ)) S hS hodd P))
       (fun P Q => by
-        rw [velu_map_add _ S hS hodd P Q, map_add]), ?_, ?_⟩
+        rw [velu_map_add _ S hS hodd P Q, map_add]), ht, hw, ?_, ?_⟩
   · -- Galois equivariance
     intro σ Pt
     show ψ (veluMap (E⁄(AlgebraicClosure ℚ)) S hS hodd
@@ -2046,6 +2060,35 @@ theorem exists_velu_quotient_isogeny (E : WeierstrassCurve ℚ) [E.IsElliptic]
       exact ψ.injective (by rw [h, map_zero])
     · intro h
       rw [h, map_zero]
+
+/-- **The quotient isogeny by a finite Galois-stable subgroup of ODD order**,
+in the form that forgets the model: for an elliptic curve `E/ℚ` and a finite
+Galois-stable subgroup `C` of odd order in `E(ℚ̄)` there are an elliptic curve
+`E'/ℚ` and a Galois-equivariant group homomorphism `E(ℚ̄) →+ E'(ℚ̄)` with kernel
+exactly `C`.
+
+This is `exists_velu_quotient_isogeny_model` with the identification
+`E' = E.veluModel t w` and the two Vélu-sum equations discarded; consumers that
+need to compute the quotient's invariants must use the model form. -/
+theorem exists_velu_quotient_isogeny (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (C : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point))
+    (hCfin : (C : Set ((E⁄(AlgebraicClosure ℚ)).Point)).Finite)
+    (hCodd : Odd (Nat.card C))
+    (hCstable : ∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ C,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈ C) :
+    ∃ (E' : WeierstrassCurve ℚ) (_ : E'.IsElliptic)
+      (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point),
+      (∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt)) ∧
+      (∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point, φ Pt = 0 ↔ Pt ∈ C) := by
+  obtain ⟨t, w, hell, φ, -, -, hgal, hker⟩ :=
+    exists_velu_quotient_isogeny_model E C hCfin hCodd hCstable
+  exact ⟨E.veluModel t w, hell, φ, hgal, hker⟩
 
 end Descent
 
