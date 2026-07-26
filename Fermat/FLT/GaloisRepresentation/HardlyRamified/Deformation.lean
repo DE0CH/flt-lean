@@ -9756,6 +9756,57 @@ theorem exists_conj_eq_single_of_mul_self
   rw [show E⁻¹ * u * E = E⁻¹ * (u * E) by noncomm_ring, hkey,
     ← mul_assoc, Matrix.nonsing_inv_mul E hdet, one_mul]
 
+/-- **Peirce decomposition in coordinates** (PROVEN 2026-07-26): a subring
+`A ⊆ M₂(B)` containing the matrix unit `E₁₁` — hence also
+`E₂₂ = 1 − E₁₁` — contains a matrix `M` if and only if it contains each of
+the four "corner" matrices `Mᵢⱼ · Eᵢⱼ`.
+
+Forward is `Eᵢᵢ M Eⱼⱼ = Mᵢⱼ · Eᵢⱼ` (`Matrix.single_mul_mul_single`);
+backward is `M = ∑ᵢⱼ Mᵢⱼ · Eᵢⱼ` (`Matrix.matrix_eq_sum_single`) and
+closure under addition.
+
+WHAT THIS IS FOR. It converts the module-theoretic Peirce decomposition
+`A = ⨁ᵢⱼ Eᵢᵢ A Eⱼⱼ` into a statement about the four `C`-submodules
+`Iᵢⱼ := {x : B | x · Eᵢⱼ ∈ A}` of `B`: the lemma says exactly
+`A = {M | ∀ i j, Mᵢⱼ ∈ Iᵢⱼ}`, and multiplicativity of `A` says
+`Iᵢⱼ · Iⱼₗ ⊆ Iᵢₗ`, with `1 ∈ I₁₁ ∩ I₂₂`. See the leaf below for how the
+rest of the argument runs from here. -/
+theorem mem_iff_smul_single_mem {B : Type*} [CommRing B]
+    (A : Subring (Matrix (Fin 2) (Fin 2) B))
+    (h11 : (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) ∈ A)
+    (M : Matrix (Fin 2) (Fin 2) B) :
+    M ∈ A ↔ ∀ i j : Fin 2,
+      (M i j) • (Matrix.single i j 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := by
+  classical
+  have hdiag : ∀ i : Fin 2,
+      (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := by
+    intro i
+    fin_cases i
+    · exact h11
+    · have h1 : (Matrix.single 1 1 1 : Matrix (Fin 2) (Fin 2) B)
+          = 1 - Matrix.single 0 0 1 := by
+        ext p q
+        fin_cases p <;> fin_cases q <;> simp [Matrix.single]
+      simpa [h1] using A.sub_mem A.one_mem h11
+  have hsingle : ∀ (i j : Fin 2), (Matrix.single i j (M i j)
+      : Matrix (Fin 2) (Fin 2) B) = (M i j) • Matrix.single i j 1 := by
+    intro i j
+    ext a c
+    simp [Matrix.single]
+  constructor
+  · intro hM i j
+    have hprod : (Matrix.single i i 1 : Matrix (Fin 2) (Fin 2) B) * M
+        * Matrix.single j j 1 = Matrix.single i j (M i j) := by
+      rw [Matrix.single_mul_mul_single]
+      simp
+    rw [← hsingle, ← hprod]
+    exact A.mul_mem (A.mul_mem (hdiag i) hM) (hdiag j)
+  · intro hM
+    rw [Matrix.matrix_eq_sum_single M]
+    refine Subring.sum_mem _ fun i _ => Subring.sum_mem _ fun j _ => ?_
+    rw [hsingle]
+    exact hM i j
+
 open scoped Matrix in
 /-- **Carayol's Théorème 1, step 2c: a `C`-order CONTAINING `E₁₁` is
 conjugate into `M₂(C)`** (sorry leaf, cut 2026-07-26 out of
@@ -9767,18 +9818,41 @@ the matrix unit `E₁₁` already lies in the order `A' = ∑ᵢ C·bᵢ`. The
 reduction of the general case to this one is PROVEN below, by lifting an
 idempotent and conjugating it to `E₁₁`.
 
-THE GRADING ARGUMENT. `A'` is a subring of `M₂(B)`, free of rank `4` over
-the local `C` (`isLocalRing_of_isClosed_subring`), and now contains the
-orthogonal idempotents `E₁₁` and `E₂₂ = 1 − E₁₁`. Peirce decomposition
-gives `A' = ⨁ᵢⱼ Eᵢᵢ A' Eⱼⱼ` as a `C`-module, each summand a direct
-summand of the free rank-`4` `A'`, hence finitely generated projective,
-hence FREE over the local `C`; and each is nonzero because `A'` spans
-`M₂(B)` over `B`. Four nonzero free summands of total rank `4` are each of
-rank one: `Eᵢᵢ A' Eⱼⱼ = C·aᵢⱼ` with `aᵢⱼ ∈ B` (a rank-one `C`-submodule of
-the `B`-line `B·Eᵢⱼ`). The diagonal summands are subrings containing `1`,
-so `a₁₁, a₂₂ ∈ C^×` and `A₁₁ = A₂₂ = C`; then `a₁₂a₂₁` generates
-`A₁₁ = C`, hence is a unit of `C`, and the further conjugation by
-`diag(1, a₁₂⁻¹)` — which fixes `E₁₁` — turns `A'` into exactly `M₂(C)`.
+THE GRADING ARGUMENT, IN THE COORDINATES THIS FILE ALREADY HAS. Work with
+the four `C`-submodules of `B`
+
+    Iᵢⱼ := {x : B | x · Eᵢⱼ ∈ A'},      A' = ∑ᵢ C·bᵢ.
+
+The PROVEN `mem_iff_smul_single_mem` above says exactly
+`A' = {M | ∀ i j, Mᵢⱼ ∈ Iᵢⱼ}` — that is the Peirce decomposition, with no
+direct sums to construct — and multiplicativity of `A'` gives
+`Iᵢⱼ · Iⱼₗ ⊆ Iᵢₗ`, while `E₁₁, E₂₂ ∈ A'` gives `1 ∈ I₁₁ ∩ I₂₂`. Five steps
+remain, and only the first is not routine:
+
+1. *Each `Iᵢⱼ` is a PRINCIPAL `C`-submodule* `Iᵢⱼ = C·aᵢⱼ`. This is the
+   one genuinely module-theoretic step: `A'` is free of rank `4` over the
+   local `C` (`isLocalRing_of_isClosed_subring`, `b` being `C`-linearly
+   independent because it is `B`-linearly independent), and the four
+   `Iᵢⱼ` are its `C`-module direct summands, hence finitely generated
+   projective, hence FREE over the local `C`, with ranks summing to `4`;
+   each is nonzero because `A'` contains a `B`-basis of `M₂(B)`, so each
+   rank is exactly `1`.
+2. *`a₁₂` and `a₂₁` are UNITS OF `B`.* The `B`-span of `A'` is
+   `{M | Mᵢⱼ ∈ B·Iᵢⱼ}` and equals `M₂(B)`, so `B·aᵢⱼ = B`; `B` is local,
+   so `aᵢⱼ ∉ 𝔪`.
+3. *`I₁₁ = I₂₂ = C`.* Write `1 = c·a₁₁` with `c ∈ C`. Then `c` is a unit
+   of `B`, so `c ∈ C^×` by the PROVEN
+   `isUnit_of_isClosed_of_notMem_maximalIdeal` — THIS is where closedness
+   and the finite residue field re-enter, and it is the only place — hence
+   `a₁₁ = c⁻¹ ∈ C` and `I₁₁ = C·a₁₁ = C`. Same for `I₂₂`.
+4. *`a₁₂·a₂₁ ∈ C^×`*: it lies in `I₁₁ = C` by step 1, and is a unit of `B`
+   by step 2, so again `isUnit_of_isClosed_of_notMem_maximalIdeal`.
+5. *Conjugate.* For `E = diag(1, a₁₂)` one has `(E⁻¹ M E)ᵢⱼ = dᵢ⁻¹ Mᵢⱼ dⱼ`,
+   so the corners become `I'₁₂ = I₁₂·a₁₂⁻¹ = C`, `I'₂₁ = a₁₂·I₂₁ =
+   C·a₁₂a₂₁ = C`, and `I'₁₁ = I'₂₂ = C` unchanged. By
+   `mem_iff_smul_single_mem` again, the conjugate of `A'` is exactly
+   `M₂(C)`. Note `diag(1, a₁₂)` fixes `E₁₁`, so it composes with the
+   caller's conjugation without disturbing step 2c's hypothesis.
 
 WHAT `hres` BUYS, AND WHY IT IS NOT DROPPABLE. `hres` is not used by the
 grading argument itself; it is what makes the CALLER able to produce an
