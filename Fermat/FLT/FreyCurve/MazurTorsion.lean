@@ -315,6 +315,40 @@ that the same pipeline reproduces Billing–Mahler at `11` and
 Mazur–Tate at `13`) are in the docstring of
 `tateNormalForm_origin_order_ne_25`.
 
+**THE SAME APPLIES ON THE `X_0` SIDE — the isogeny nodes below do not
+need Chabauty either** (2026-07-26, same Magma reconnaissance). For the
+levels of the prime-power and composite determination, `J_0(N)` has
+Mordell–Weil rank `0` — every `ℚ`-simple factor has `L(1) ≠ 0` — for
+`N ∈ {20, 24, 28, 30, 32, 36, 42, 45, 50, 54, 63, 75, 81}`. So every
+one of `not_cyclicIsogeny_twenty`, `…_twentyFour`, `…_twentyEight`,
+`…_thirty`, `…_thirtyTwo`, `…_thirtySix`, `…_fortyTwo`, `…_fortyFive`,
+`…_fifty`, `…_fiftyFour`, `…_sixtyThree`, `…_seventyFive` and
+`…_eightyOne` is a rank-`0` statement, not a Chabauty one, and the
+docstrings below that call for "a genus-`g` Chabauty computation"
+overstate what is required.
+
+For seven of them the bare point count already finishes the job —
+`min_p #X_0(N)(𝔽_p)` over odd primes `p` of good reduction equals the
+number of rational cusps for `N ∈ {20, 24, 28, 32, 36, 42, 50}`
+(`6, 8, 6, 4, 6, 8, 4` respectively). Recall a cusp of `X_0(N)` of
+denominator `d` is defined over `ℚ(ζ_{gcd(d, N/d)})`, so the rational
+cusps are exactly the `d ∣ N` with `gcd(d, N/d) ≤ 2`. For the remaining
+six (`30, 45, 54, 63, 75, 81`) the count overshoots the cusp number, so
+those need the finer step of identifying `J_0(N)(ℚ)` itself — still far
+short of Chabauty.
+
+`125` is the single genuine exception on this side: `J_0(125)` has a
+factor with `L(1) = 0`, so `not_cyclicIsogeny_oneHundredTwentyFive`
+really does need more than a rank-`0` count — as one would expect,
+since it is the level of Kenku's dedicated 1981 paper.
+
+Net effect: ONE theory — modular curves `X_0(N)` and `X_1(N)` over `ℚ`
+with their cusps, `rank J(ℚ) = 0` from `L(1) ≠ 0`, and injectivity of
+torsion under reduction at an odd good prime — settles fourteen of this
+file's sorried nodes (seven `X_1` levels and seven `X_0` levels)
+outright, and reduces six more to a Mordell–Weil determination. That is
+the single highest-leverage missing theory in this file.
+
 Genera, computed from the standard formula
 `g(X_1(N)) = 1 + (N²/24)∏_{p ∣ N}(1 − p⁻²) − ¼ Σ_{d ∣ N} φ(d)φ(N/d)`:
 `14 ↦ 1`, `15 ↦ 1`, `16 ↦ 2`, `18 ↦ 2`, `20 ↦ 3`, `21 ↦ 5`, `24 ↦ 5`,
@@ -812,12 +846,29 @@ divisor descent this single statement disposes of every `2^k` with
 
 IRREDUCIBLE at this mathlib pin: `X_0(32)` has genus `1` (recomputed
 2026-07-25 from the standard formula: `μ = 48`, `ν₂ = ν₃ = 0`, `8`
-cusps, so `g = 1 + 4 − 4 = 1`), and the statement is that its Jacobian —
-an elliptic curve of Mordell–Weil rank `0` over `ℚ` — has only the eight
-cusps as rational points. No modular curve and no Jacobian exists in
-this development. (Ogg, "Rational points on certain elliptic modular
+cusps, so `g = 1 + 4 − 4 = 1`). No modular curve and no Jacobian exists
+in this development. (Ogg, "Rational points on certain elliptic modular
 curves", Proc. Sympos. Pure Math. 24 (1973); subsumed in the
-Mazur–Kenku classification.) -/
+Mazur–Kenku classification.)
+
+**CORRECTION 2026-07-26 — "only the eight cusps as rational points" was
+FALSE, and the level is cheaper than advertised.** Only `4` of the `8`
+cusps are rational: a cusp of `X_0(N)` of denominator `d` is defined
+over `ℚ(ζ_{gcd(d, N/d)})`, and for `N = 32` the values of
+`gcd(d, 32/d)` over `d ∣ 32` are `1, 2, 4, 4, 2, 1`, so only the four
+with `gcd ≤ 2` are rational. Independently: `X_0(32)` IS the elliptic
+curve `32a1`, of rank `0` with torsion `ℤ/4`, so `#X_0(32)(ℚ) = 4`
+exactly — it cannot have eight rational points. Both counts agree, and
+the correct statement of this node is that all four rational points of
+`X_0(32)` are cusps.
+
+That also makes the route explicit, and it is NOT a Chabauty argument:
+`J_0(32)` has rank `0` (`LRatio(1) = 1/4 ≠ 0`), and
+`#X_0(32)(𝔽_p) = 4 = #(rational cusps)` at an odd prime of good
+reduction, so reduction alone forces every rational point to be a cusp.
+See the section note above for the seven `X_0` levels and seven `X_1`
+levels that this one theory settles. (Magma, untrusted searcher,
+statement checks only.) -/
 theorem WeierstrassCurve.not_cyclicIsogeny_thirtyTwo (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 32)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
