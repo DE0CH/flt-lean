@@ -3353,40 +3353,47 @@ quotient leaf being stated. That duplicate was written first and deleted:
 declaration order was the only thing forcing it, and a redundant sorried
 leaf is exactly what generates phantom dispatches here.
 
-WHAT DISCHARGES THE LEAF BELOW — the same thing that discharges its
-quotient sibling, so read that leaf's docstring too.
-`Deformations/RepresentationTheory/FlatPointsGroup.lean` already carries
+WHAT DISCHARGED THE LEAF BELOW — the same thing that discharged its
+quotient sibling, so read that leaf's docstring too. DONE 2026-07-26; the
+prediction recorded here held exactly, and the record is kept because the
+reasoning is reusable.
+`Deformations/RepresentationTheory/FlatPointsGroup.lean` already carried
 the closure properties of "the geometric-point group of a finite flat
 `𝒪ᵥ`-group scheme with étale generic fibre" — `IsFlatPointsGroupAt.prod`,
-`.pi`, `.of_injective`, `.of_surjective` — and all four are PROVEN there.
-They are, however, available only at a place of `ℚ`: that file's
-`RaynaudClosure` section opens with
+`.pi`, `.of_injective`, `.of_surjective` — all four PROVEN there.
+They were, however, available only at a place of `ℚ`: that file's
+`RaynaudClosure` section opened with
 
     variable (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
 
 and `IsFlatPointsGroupAt` itself is defined inside it. So `Deformation.lean`
-can consume them, while THIS module — whose places `w` run over an
-arbitrary totally real `F` — cannot.
+could consume them, while THIS module — whose places `w` run over an
+arbitrary totally real `F` — could not.
 
-**This is therefore not new mathematics and should not be attacked as
-such.** Hoisting that `variable` line to a general
-`(K : Type u) [Field K] [NumberField K]` closes this leaf AND
+**This was therefore not new mathematics and was not attacked as such.**
+That `variable` line was HOISTED to a general
+`{K : Type u} [Field K] [NumberField K]`, which closed this leaf AND
 `hasFlatProlongationAt_of_pi_surjection_of_numberField` together, each by a
-two-line consumption — nothing in those proofs uses `K = ℚ`, only the
+two-line consumption — nothing in those proofs used `K = ℚ`, only the
 complete DVR `𝒪ᵥ`, its fraction field `Kᵥ`, an algebraic closure `Ωᵥ` and
 the action of `Γ Kᵥ`, all of which `FlatProlongation.lean` — imported here
-— already carries over a variable `{K : Type uKf} [Field K] [NumberField K]`.
-The same change also lets `Deformation.lean`'s still-open
+— already carried over a variable `{K : Type uKf} [Field K] [NumberField K]`.
+The same change also retired `Deformation.lean`'s
 `hasFlatProlongationAt_of_prod_injection` (the `K = ℚ` instance of the leaf
-below) be redirected here, retiring one more copy.
+below), which is now PROVEN by the identical three-line assembly against
+the same hoisted lemmas. It was proven in place rather than redirected to
+this module: both forms cost the same three lines over
+`FlatPointsGroup.lean`, and proving it in place keeps `Deformation.lean`'s
+proof independent of declaration ORDER in this file — the very hazard the
+note at the head of this section is about.
 
 The name differs from `Deformation.lean`'s deliberately: that module
 `public import`s this one into the SAME namespace, so a matching name is a
 "has already been declared" outage. -/
 
 /-- **Raynaud closure, sub-of-a-product form, over an arbitrary number
-field** (LEAF): a `Γ Kᵥ`-equivariant additive SUBOBJECT of the product of
-two flat point-groups at `w` is again one.
+field** (PROVEN 2026-07-26): a `Γ Kᵥ`-equivariant additive SUBOBJECT of
+the product of two flat point-groups at `w` is again one.
 
 Mathematically: `ρ₁` and `ρ₂` have finite flat prolongations `G₁`, `G₂`
 over the complete DVR `𝒪_{K_w}`; the product group scheme `G₁ × G₂`
@@ -3399,9 +3406,10 @@ against `ℓ − 1`, which is why this form of the statement has no hypothesis
 relating `ℓ` to `w`.
 
 DISCHARGED BY: `Modularity.IsFlatPointsGroupAt.prod` followed by
-`.of_injective`, once both are stated over a variable number field; see
-the section note above. At `K = ℚ` this is verbatim `Deformation.lean`'s
-`hasFlatProlongationAt_of_prod_injection`.
+`.of_injective`, both now stated over a variable number field; see the
+section note above. At `K = ℚ` this is verbatim `Deformation.lean`'s
+`hasFlatProlongationAt_of_prod_injection`, which is PROVEN by the same
+three-line assembly against the same two hoisted lemmas.
 
 References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
 (1974), §3; Conrad, *Finite group schemes over bases with low
@@ -3421,8 +3429,77 @@ theorem hasFlatProlongationAt_of_prod_injection_over_numberField
     (hinj : Function.Injective ι)
     (hequiv : ∀ (g : Γ (w.adicCompletion K)) (x : (ρ₃.toLocal w).Space),
       ι (g • x) = g • ι x) :
-    ρ₃.HasFlatProlongationAt w :=
-  sorry
+    ρ₃.HasFlatProlongationAt w := by
+  -- pass both flat prolongations to the representation-free point-group carrier
+  have hp₁ : Modularity.IsFlatPointsGroupAt w (ρ₁.toLocal w).Space :=
+    (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₁).mp h₁
+  have hp₂ : Modularity.IsFlatPointsGroupAt w (ρ₂.toLocal w).Space :=
+    (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₂).mp h₂
+  -- binary products: the product group scheme is represented by the tensor
+  -- product of the two witness Hopf algebras
+  have hprod : Modularity.IsFlatPointsGroupAt w
+      ((ρ₁.toLocal w).Space × (ρ₂.toLocal w).Space) := hp₁.prod hp₂
+  -- subobjects: schematic closure over the DVR along the equivariant injection
+  exact (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₃).mpr
+    (hprod.of_injective ι hinj hequiv)
+
+/-- **A finite topological ring has a MINIMUM open ideal**, so every
+neighbourhood of `0` contains an OPEN IDEAL (PROVEN 2026-07-26,
+elementary).
+
+`⋂₀ {W | IsOpen W ∧ 0 ∈ W}`, the intersection of ALL open neighbourhoods
+of `0`, is open because a finite type has only finitely many subsets
+(`Set.toFinite`, then `Set.Finite.isOpen_sInter`); it is an ideal because
+for fixed `a` the maps `x ↦ a + x` and `x ↦ a * x` are continuous, so
+they pull an open neighbourhood of `a + 0` resp. of `0` back to one of
+`0`; and it is contained in every open neighbourhood of `0` by
+construction.
+
+This is the ideal-theoretic substitute for "the topology is adic", which
+a finite topological ring carries but is not PRESENTED with. It is what
+lets `isHilbertFlatAt_of_fibreProduct` below — and, downstream, its
+`F = ℚ` twin `Deformation.lean`'s `isFlatAt_of_fibreProduct` — convert two
+open neighbourhoods of `0` in the factors of a fibre product into two open
+IDEALS at which the flatness hypotheses can actually be evaluated.
+
+HOME NOTE (2026-07-26). This lemma previously existed TWICE: as a
+standalone in `Deformation.lean` and, because that module `public import`s
+THIS one into the SAME namespace — so a matching top-level name here was a
+"has already been declared" outage, not a duplicate-name warning — as a
+local `have hshrink` inside `isHilbertFlatAt_of_fibreProduct`. The
+duplication was resolved in the prescribed direction: the lemma was moved
+UP to here, the local `have` was deleted, and the downstream standalone was
+deleted so that `Deformation.lean` inherits this one through its
+`public import`. Nothing about the statement is arithmetic — it is pure
+topological-ring algebra over an arbitrary finite `R` — so this module,
+being the upstream one, is its correct home. -/
+lemma exists_isOpen_ideal_subset_of_finite {R : Type*} [CommRing R]
+    [TopologicalSpace R] [IsTopologicalRing R] [Finite R]
+    {U : Set R} (hU : IsOpen U) (h0 : (0 : R) ∈ U) :
+    ∃ J : Ideal R, IsOpen (J : Set R) ∧ (J : Set R) ⊆ U := by
+  classical
+  have hshift : ∀ (a : R) (V : Set R), IsOpen V → a ∈ V →
+      ∀ x ∈ ⋂₀ {W : Set R | IsOpen W ∧ (0 : R) ∈ W}, a + x ∈ V := by
+    intro a V hV ha x hx
+    exact hx ((fun y : R => a + y) ⁻¹' V)
+      ⟨hV.preimage (continuous_const_add a), by simpa using ha⟩
+  have hmul : ∀ (c : R) (V : Set R), IsOpen V → (0 : R) ∈ V →
+      ∀ x ∈ ⋂₀ {W : Set R | IsOpen W ∧ (0 : R) ∈ W}, c * x ∈ V := by
+    intro c V hV h0V x hx
+    exact hx ((fun y : R => c * y) ⁻¹' V)
+      ⟨hV.preimage (continuous_const_mul c), by simpa using h0V⟩
+  refine ⟨{ carrier := ⋂₀ {W : Set R | IsOpen W ∧ (0 : R) ∈ W}
+            add_mem' := ?_
+            zero_mem' := ?_
+            smul_mem' := ?_ }, ?_, ?_⟩
+  · intro a b ha hb V hV
+    exact hshift a V hV.1 (ha V hV) b hb
+  · intro V hV
+    exact hV.2
+  · intro c x hx V hV
+    simpa [smul_eq_mul] using hmul c V hV.1 hV.2 x hx
+  · exact (Set.toFinite _).isOpen_sInter fun V hV => hV.1
+  · exact fun x hx => hx U ⟨hU, h0⟩
 
 open scoped TensorProduct in
 /-- **Flatness at a place over `ℓ` glues along a fibre product** (PROVEN
@@ -3458,11 +3535,12 @@ transcribed:
 * `I` need not be a pullback, but it CONTAINS one. `hemb` gives an open
   `W ⊆ A₁ × A₂` with `(p₁, p₂)⁻¹ W = I`; shrink `W` to a box `U₁ × U₂`
   around `(0,0)` and shrink each `Uᵢ` to an OPEN IDEAL `Jᵢ` using that a
-  FINITE topological ring has a minimum open ideal (the local `hshrink`
-  below; at `ℚ` this is `Deformation.lean`'s
-  `exists_isOpen_ideal_subset_of_finite`, which cannot be imported here
-  because that module is DOWNSTREAM of this one — see the comment on
-  `hshrink`). Then `K := p₁⁻¹ J₁ ⊓ p₂⁻¹ J₂` is an open ideal of `B` with
+  FINITE topological ring has a minimum open ideal
+  (`exists_isOpen_ideal_subset_of_finite`, immediately above; it was a local
+  `have hshrink` here until 2026-07-26, when it was hoisted out of this
+  proof and the rival copy in the DOWNSTREAM `Deformation.lean` was deleted
+  in its favour — see its HOME NOTE). Then `K := p₁⁻¹ J₁ ⊓ p₂⁻¹ J₂` is an
+  open ideal of `B` with
   `K ≤ I`.
 * By CONSTRUCTION of `K` the pair map `B ⧸ K → (A₁ ⧸ J₁) × (A₂ ⧸ J₂)` IS
   injective, and tensoring with the standard frame — via
@@ -3528,40 +3606,6 @@ theorem isHilbertFlatAt_of_fibreProduct (ℓ : ℕ) [Fact ℓ.Prime]
     (h₂ : (framePushforward p₂ hp₂ ρ).IsFlatAt w) :
     ρ.IsFlatAt w := by
   classical
-  -- A FINITE topological ring has a MINIMUM open ideal, so every
-  -- neighbourhood of `0` contains an open ideal. `Deformation.lean` has this
-  -- as the standalone `exists_isOpen_ideal_subset_of_finite`, but that module
-  -- `public import`s THIS one into the SAME namespace, so restating it here at
-  -- top level is a "has already been declared" outage; it is therefore carried
-  -- as a local `have`. (Moving the lemma UP into this module and deleting the
-  -- downstream copy is the right long-term repair, and belongs to that
-  -- module's owner.)
-  have hshrink : ∀ (R : Type u) [CommRing R] [TopologicalSpace R]
-      [IsTopologicalRing R] [Finite R] (U : Set R), IsOpen U → (0 : R) ∈ U →
-      ∃ J : Ideal R, IsOpen (J : Set R) ∧ (J : Set R) ⊆ U := by
-    intro R _ _ _ _ U hU h0
-    have hshift : ∀ (a : R) (V : Set R), IsOpen V → a ∈ V →
-        ∀ x ∈ ⋂₀ {W : Set R | IsOpen W ∧ (0 : R) ∈ W}, a + x ∈ V := by
-      intro a V hV ha x hx
-      exact hx ((fun y : R => a + y) ⁻¹' V)
-        ⟨hV.preimage (continuous_const_add a), by simpa using ha⟩
-    have hmul : ∀ (c : R) (V : Set R), IsOpen V → (0 : R) ∈ V →
-        ∀ x ∈ ⋂₀ {W : Set R | IsOpen W ∧ (0 : R) ∈ W}, c * x ∈ V := by
-      intro c V hV h0V x hx
-      exact hx ((fun y : R => c * y) ⁻¹' V)
-        ⟨hV.preimage (continuous_const_mul c), by simpa using h0V⟩
-    refine ⟨{ carrier := ⋂₀ {W : Set R | IsOpen W ∧ (0 : R) ∈ W}
-              add_mem' := ?_
-              zero_mem' := ?_
-              smul_mem' := ?_ }, ?_, ?_⟩
-    · intro a b ha hb V hV
-      exact hshift a V hV.1 (ha V hV) b hb
-    · intro V hV
-      exact hV.2
-    · intro c x hx V hV
-      simpa [smul_eq_mul] using hmul c V hV.1 hV.2 x hx
-    · exact (Set.toFinite _).isOpen_sInter fun V hV => hV.1
-    · exact fun x hx => hx U ⟨hU, h0⟩
   constructor
   intro I hI
   -- STEP 1: open ideals of the two factors whose joint preimage sits inside `I`
@@ -3571,8 +3615,8 @@ theorem isHilbertFlatAt_of_fibreProduct (ℓ : ℕ) [Fact ℓ.Prime]
       rw [hWpre]; exact I.zero_mem
     simpa using h0I
   obtain ⟨U₁, U₂, hU₁, hU₂, h0₁, h0₂, hUW⟩ := isOpen_prod_iff.mp hWopen 0 0 h0W
-  obtain ⟨J₁, hJ₁open, hJ₁U⟩ := hshrink A₁ U₁ hU₁ h0₁
-  obtain ⟨J₂, hJ₂open, hJ₂U⟩ := hshrink A₂ U₂ hU₂ h0₂
+  obtain ⟨J₁, hJ₁open, hJ₁U⟩ := exists_isOpen_ideal_subset_of_finite hU₁ h0₁
+  obtain ⟨J₂, hJ₂open, hJ₂U⟩ := exists_isOpen_ideal_subset_of_finite hU₂ h0₂
   set K : Ideal B := (J₁.comap p₁) ⊓ (J₂.comap p₂)
   have hKmem : ∀ b : B, b ∈ K ↔ (p₁ b ∈ J₁ ∧ p₂ b ∈ J₂) := fun b => Submodule.mem_inf
   have hKle : K ≤ I := by

@@ -2562,53 +2562,27 @@ lemma det_pushforwardFrame {B : Type u} [CommRing B]
   rw [LinearMap.det_baseChange, RingHom.algebraMap_toAlgebra]
   rfl
 
-/-- **A finite topological ring has a MINIMUM open ideal**, so every
-neighbourhood of `0` contains an OPEN IDEAL (PROVEN 2026-07-26,
-elementary).
+/-! **`exists_isOpen_ideal_subset_of_finite` MOVED UP, 2026-07-26** — a
+finite topological ring has a MINIMUM open ideal, so every neighbourhood of
+`0` contains an OPEN IDEAL. It now lives in
+`HardlyRamified/HilbertModularity.lean`, immediately above
+`isHilbertFlatAt_of_fibreProduct`, and reaches this module through the
+`public import` of that one at the head of this file — so it is still
+spelled exactly `exists_isOpen_ideal_subset_of_finite` here and
+`isFlatAt_of_fibreProduct` below consumes it unchanged.
 
-`⋂₀ {W | IsOpen W ∧ 0 ∈ W}`, the intersection of ALL open neighbourhoods
-of `0`, is open because a finite type has only finitely many subsets
-(`Set.toFinite`, then `Set.Finite.isOpen_sInter`); it is an ideal because
-for fixed `a` the maps `x ↦ a + x` and `x ↦ a * x` are continuous, so
-they pull an open neighbourhood of `a + 0` resp. of `0` back to one of
-`0`; and it is contained in every open neighbourhood of `0` by
-construction.
-
-This is the ideal-theoretic substitute for "the topology is adic", which
-a finite topological ring carries but is not PRESENTED with. It is what
-lets `isFlatAt_of_fibreProduct` below convert two open neighbourhoods of
-`0` in the factors of a fibre product into two open IDEALS at which the
-flatness hypotheses can actually be evaluated. -/
-lemma exists_isOpen_ideal_subset_of_finite {R : Type*} [CommRing R]
-    [TopologicalSpace R] [IsTopologicalRing R] [Finite R]
-    {U : Set R} (hU : IsOpen U) (h0 : (0 : R) ∈ U) :
-    ∃ J : Ideal R, IsOpen (J : Set R) ∧ (J : Set R) ⊆ U := by
-  classical
-  have hshift : ∀ (a : R) (V : Set R), IsOpen V → a ∈ V →
-      ∀ x ∈ ⋂₀ {W : Set R | IsOpen W ∧ (0 : R) ∈ W}, a + x ∈ V := by
-    intro a V hV ha x hx
-    exact hx ((fun y : R => a + y) ⁻¹' V)
-      ⟨hV.preimage (continuous_const_add a), by simpa using ha⟩
-  have hmul : ∀ (c : R) (V : Set R), IsOpen V → (0 : R) ∈ V →
-      ∀ x ∈ ⋂₀ {W : Set R | IsOpen W ∧ (0 : R) ∈ W}, c * x ∈ V := by
-    intro c V hV h0V x hx
-    exact hx ((fun y : R => c * y) ⁻¹' V)
-      ⟨hV.preimage (continuous_const_mul c), by simpa using h0V⟩
-  refine ⟨{ carrier := ⋂₀ {W : Set R | IsOpen W ∧ (0 : R) ∈ W}
-            add_mem' := ?_
-            zero_mem' := ?_
-            smul_mem' := ?_ }, ?_, ?_⟩
-  · intro a b ha hb V hV
-    exact hshift a V hV.1 (ha V hV) b hb
-  · intro V hV
-    exact hV.2
-  · intro c x hx V hV
-    simpa [smul_eq_mul] using hmul c V hV.1 hV.2 x hx
-  · exact (Set.toFinite _).isOpen_sInter fun V hV => hV.1
-  · exact fun x hx => hx U ⟨hU, h0⟩
+WHY IT MOVED. It existed twice: here, and as a local `have hshrink` inside
+`isHilbertFlatAt_of_fibreProduct` upstream. The duplication was NOT
+laziness — this module `public import`s that one into the SAME namespace,
+so a top-level restatement upstream would have been a "has already been
+declared" outage rather than a duplicate-name warning, and a local `have`
+was the only thing the upstream owner could safely write. Since the
+statement is pure topological-ring algebra over an arbitrary finite `R`,
+with nothing arithmetic in it, the upstream module is its correct home; the
+lemma was hoisted there and both copies deleted. -/
 
 /-- **Raynaud closure for flat prolongations, in sub-of-a-product form**
-(sorry node, cut 2026-07-26 out of `isFlatAt_of_fibreProduct` below): if
+(PROVEN 2026-07-26; cut 2026-07-26 out of `isFlatAt_of_fibreProduct` below): if
 the local spaces of `ρ₁` and `ρ₂` are geometric-point groups of finite
 flat group schemes over `𝒪ᵥ`, then so is every `Γ Kᵥ`-equivariant
 additive SUBOBJECT of their product.
@@ -2638,24 +2612,32 @@ generic fibre, which is not asserted here; EXISTENCE by schematic closure
 holds over an arbitrary DVR. The same remark is already recorded on
 `hasFlatProlongationAt_of_pi_surjection`.
 
-DUPLICATION / HOME AUDIT (please read before restating this anywhere).
-This statement is exactly the composite
+DUPLICATION / HOME AUDIT — RESOLVED, and the resolution is the proof
+(updated 2026-07-26; the previous text is kept in outline because its
+diagnosis was right and only its "cannot be consumed here" was overtaken
+by events). This statement is exactly the composite
 
     GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt
       ∘ IsFlatPointsGroupAt.of_injective ∘ IsFlatPointsGroupAt.prod
 
-of three declarations that ALREADY EXIST WITH PROOFS in
-`Modularity/Interface.lean`. They cannot be consumed here: `Interface`
-imports `KhareWintenberger`, which imports this module, and the
-circularity guard at the head of this file forbids importing
-`Modularity/*`. So the RIGHT repair is not to prove this leaf again but
-to MOVE the `IsFlatPointsGroupAt` development down into
-`Deformations/RepresentationTheory/FlatProlongation.lean` — the neutral
-home already nominated by the audit on
-`hasFlatProlongationAt_of_pi_surjection` — after which BOTH this leaf and
-that one become three-line assemblies and
-`Modularity/KhareWintenberger.lean`'s `hasFlatProlongationAt_of_surjective`
-disappears as well. Do NOT add a fourth copy of the content.
+of three declarations that already existed with proofs. The audit
+recorded them as living in `Modularity/Interface.lean` and hence
+unreachable from here — `Interface` imports `KhareWintenberger`, which
+imports this module, and the circularity guard at the head of this file
+forbids importing `Modularity/*`. That is NO LONGER THE SITUATION: the
+`IsFlatPointsGroupAt` development was moved to the neutral home
+`Deformations/RepresentationTheory/FlatPointsGroup.lean`, which this
+module already imports directly (see the import note near the head of
+this file), exactly as the audit prescribed. So the leaf is discharged
+below by the three-line assembly the audit predicted, with NO fourth
+copy of the content — the same shape as its sibling
+`hasFlatProlongationAt_of_pi_surjection` above.
+
+The one remaining item of that audit is still open and belongs to
+another owner: `Modularity/KhareWintenberger.lean`'s
+`hasFlatProlongationAt_of_surjective` is this file's
+`hasFlatProlongationAt_of_pi_surjection` at `n = 1` and should be
+redirected rather than reproven.
 
 References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF
 102 (1974), §3; Tate–Oort, *A classification of group schemes of order
@@ -2677,8 +2659,19 @@ theorem hasFlatProlongationAt_of_prod_injection
     (hequiv : ∀ (g : Field.absoluteGaloisGroup
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ w))
         (x : (ρ₃.toLocal w).Space), ι (g • x) = g • ι x) :
-    ρ₃.HasFlatProlongationAt w :=
-  sorry
+    ρ₃.HasFlatProlongationAt w := by
+  -- pass both flat prolongations to the representation-free point-group carrier
+  have hp₁ : Modularity.IsFlatPointsGroupAt w (ρ₁.toLocal w).Space :=
+    (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₁).mp h₁
+  have hp₂ : Modularity.IsFlatPointsGroupAt w (ρ₂.toLocal w).Space :=
+    (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₂).mp h₂
+  -- binary products: the product group scheme is represented by the tensor
+  -- product of the two witness Hopf algebras
+  have hprod : Modularity.IsFlatPointsGroupAt w
+      ((ρ₁.toLocal w).Space × (ρ₂.toLocal w).Space) := hp₁.prod hp₂
+  -- subobjects: schematic closure over the DVR along the equivariant injection
+  exact (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₃).mpr
+    (hprod.of_injective ι hinj hequiv)
 
 open scoped TensorProduct in
 /-- **Flatness at `ℓ` glues along a fibre product** (PROVEN 2026-07-26
