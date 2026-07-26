@@ -13072,6 +13072,24 @@ is standard, and essentially all of the cost is in step 6:
    verbatim copy. Vendoring the three is the recommended first commit
    of the development.
 
+   **PIN GAP RE-VERIFIED (2026-07-26, a later owner.)** Both halves of
+   that claim were re-checked mechanically rather than taken on trust,
+   and both hold: `IsModuleTopology.trans` / `moduleTopology.trans` are
+   absent from OUR pin (no match anywhere in `Mathlib/`), and present in
+   the reference project — `lemma trans` at
+   `~/cs/FLT/FLT/Mathlib/Topology/Algebra/Module/ModuleTopology.lean:194`
+   with `of_continuous_isOpenMap_algebraMap` at `:212`, as recorded. So
+   the vendoring step is real work and not a lookup.
+
+   **A WARNING FOR WHOEVER TAKES IT, and the reason this development has
+   not been started piecemeal:** the three vendored lemmas would be
+   FREE-FLOATING until step 6 consumes them, and free-floating code is
+   barred by the project's own check. This development therefore cannot
+   be landed as its "recommended first commit" alone — steps 1–6 have to
+   arrive together, or at least far enough for the topology lemmas to
+   have a written consumer. Budget it as ONE whole task, not as an
+   incremental series.
+
 (2) FIXING THE CARRIER — returning the representation over the
 integers of `ℚ_3(ψ₃ E)`, i.e. over `O_{E_λ}` — REJECTED. It does make
 `Module.Finite ℤ_3 B` provable (`ψ₃ E` is generated over `ℚ_3` by one
@@ -18424,6 +18442,15 @@ owner would be dispatched at):
 Item 4 composed with items 3–1 IS clause (2); there is no intermediate
 at which that sorry can honestly be split.
 
+RE-VERIFIED MECHANICALLY 2026-07-26 (a later owner): item 3's "deepest
+missing prerequisite", the period ring `B_cris`, is still absent —
+`BCris|B_cris|crystallineRep|HodgeTate` matches NO file in `Mathlib/`,
+and `RingTheory/Perfectoid/` still contains exactly `BDeRham.lean`,
+`FontaineTheta.lean` and `Untilt.lean`. Nor is there any Hilbert
+modular form or Shimura curve development to state item 4 over. So the
+"no intermediate" verdict above is not merely inherited; it has been
+re-checked against the pin as it stands today.
+
 Literature for (2): Fontaine–Laffaille, *Construction de représentations
 p-adiques*, Ann. Sci. ÉNS 15 (1982); Raynaud, *Schémas en groupes de
 type (p, …, p)*, Bull. SMF 102 (1974); Carayol, Ann. Sci. ÉNS 19 (1986)
@@ -19437,6 +19464,45 @@ higher ramification groups → tame quotient → tame character → local
 monodromy → Weil group → Weil–Deligne representations. That is a
 multi-agent theory-building programme, not a leaf.
 
+MACHINERY AUDIT RE-VERIFIED MECHANICALLY (2026-07-26, a later owner;
+recorded so the sweep is not run a third time). Every absence claim of
+the MACHINERY AUDIT above was re-run against the CURRENT pin rather
+than taken on trust, and all of them still hold:
+
+* `WeilDeligne|weilGroup|WeilGroup` — no file matches, in `Mathlib/` OR
+  in `~/cs/FLT/FLT`. Confirmed empty in both trees;
+* `Mathlib/RingTheory/Valuation/RamificationGroup.lean` is still
+  **exactly 54 lines**, with the `TODO: Define higher ramification
+  groups in lower numbering` on line 16 and `decompositionSubgroup` /
+  `inertiaSubgroup` its only content;
+* `SmoothRep|AdmissibleRep|LocalLanglands` — no matches in `Mathlib/`;
+* `BCris|B_cris|crystallineRep|HodgeTate` — no matches in `Mathlib/`;
+  `RingTheory/Perfectoid/` still contains exactly `BDeRham.lean`,
+  `FontaineTheta.lean`, `Untilt.lean` and nothing else;
+* Hilbert modular forms / Shimura curves — no matches (the single
+  `shimura` hit anywhere in `Mathlib/` is a prose mention inside
+  `NumberTheory/HeckeRing/Defs.lean`, not a development).
+
+THE "ONE MISSING LEMMA" IS STILL MISSING — re-checked directly, because
+it is the one claim above that an in-tree lemma could plausibly have
+falsified since it was written. Every declaration in the tree mentioning
+`localInertiaGroup` was enumerated and classified; none supplies the ONTO
+half. The two that come closest, and why neither is it:
+
+* `exists_mem_localInertiaGroup_restrictNormalHom_eq`
+  (`LocalInertiaFixedField.lean:1450`) lifts an inertia element from a
+  finite Galois LEVEL `N` to the full local inertia group **at the same
+  place `v`** (the profinite half of Neukirch II.9.11). That is a
+  VERTICAL lift inside one completion, not the HORIZONTAL `w → v` lift
+  between two different fields' completions that is wanted here;
+* `Field.absoluteGaloisGroup.exists_finset_conj_localInertiaGroup_le`
+  (`GaloisRepTransport.lean:611`) is the push-down direction again —
+  `I_w` lands in a CONJUGATE of `I_v`, for all but finitely many `w`.
+
+So the audit's verdict stands verbatim and the gap is real. Also note
+`restrictNormalHom_mem_inertia_of_mem_localInertiaGroup` has drifted to
+`Threeadic.lean:5212` (cited as `:4598` above); locate it by name.
+
 ROUTE AUDIT, THIRD CLOSURE (2026-07-26, 07:53 — **SUPERSEDED AT 09:17
 THE SAME DAY; READ THE REFUTATION ABOVE BEFORE ACTING ON ANY OF THIS**):
 the `τF`-FREE variant of the relocation is closed too — and by a
@@ -19739,6 +19805,14 @@ restating this
 leaf over `WD_p(−)` is not a shortcut but a multi-agent theory-building
 programme; it is NOT single-agent-sized, and this leaf should not be
 re-scoped as though it were.
+
+RE-VERIFIED MECHANICALLY 2026-07-26 (a later owner): every absence claim
+of that search was re-run against the CURRENT pin and all still hold —
+see the `MACHINERY AUDIT RE-VERIFIED MECHANICALLY` block in the sibling
+for the exact results. Relevant to THIS leaf in particular: the `I_p =
+I_w` identification that the second closure's `τF` revival needs is
+still not available in either direction that would help, and the ONTO
+half of the inertia lift is still absent from the tree.
 
 MACHINERY BUILT (2026-07-26 — a POSITIVE note, so it is not looked for
 again). The RIGIDITY step that `hirr` exists to buy — Frobenius data
