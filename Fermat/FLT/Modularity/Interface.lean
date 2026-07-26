@@ -2177,7 +2177,20 @@ therefore fully discharged here; only the arithmetic finiteness of
 prime — exactly the hypotheses under which the slash-sum is known to
 preserve `S₂(Γ₀(N))`. The function-level slash-sum `heckeTransform`
 stays the primitive; this is the operator-level packaging that the
-Hecke-algebra material below needs. -/
+Hecke-algebra material below needs.
+
+DUPLICATION NOTICE (2026-07-26): `heckeOp`/`heckeOp_coe`, in the
+`ComplexHeckeAlgebra` section far below, is the SAME construction,
+built concurrently by another owner for the Eichler–Shimura seam. The
+two cannot presently be merged in either direction by their authors
+alone: this one is needed at THIS point of the file (the bounded
+denominators assembly is consumed by
+`exists_integral_qExpansion_spanning` a few hundred lines below),
+while `heckeOp` is defined ~18k lines later. Consolidation is a
+one-declaration move for whichever owner touches the later section —
+delete `exists_heckeOpLinear_total`/`heckeOp` and let `heckeOp` be
+notation for `heckeEndo`, whose `coe_heckeEndo` is exactly
+`heckeOp_coe`. -/
 noncomputable def heckeEndo (N q : ℕ) :
     Module.End ℂ (CuspForm (Gamma0GL N) 2) :=
   if h : 0 < N ∧ q.Prime then
@@ -20863,7 +20876,12 @@ theorem heckeOp_coe {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime)
 functional `qCoeffL`). -/
 theorem qCoeff_smul {N : ℕ} (c : ℂ) (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
     qCoeff N (c • f) m = c * qCoeff N f m := by
-  simpa using (qCoeffL N m).map_smul c f
+  -- (2026-07-26, build repair) `simpa` simplified the SUPPLIED term to `True`
+  -- without touching the goal; do the rewriting explicitly instead, as the
+  -- other `qCoeffL`-linearity steps in this file already do.
+  have h := (qCoeffL N m).map_smul c f
+  simp only [smul_eq_mul, qCoeffL_apply] at h
+  exact h
 
 /-- **A normalized weight-2 eigenform is an eigenvector of the Hecke
 operator** (PROVEN — the eigenform carrier `IsWeightTwoEigenform`,
