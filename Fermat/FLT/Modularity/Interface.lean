@@ -363,10 +363,11 @@ import Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 -- `Fermat.FLT.Modularity.KhareWintenberger`; named explicitly here since
 -- a proof in this file depends on it. Non-public: proof only.
 import Mathlib.NumberTheory.Basic
--- `GaloisRep.inertiaInvariants`, `GaloisRep.tameExponent` and
+-- `GaloisRep.inertiaInvariants`, `GaloisRep.tameExponent`,
+-- `GaloisRep.swanExponent`, `GaloisRep.conductorExponent` and
 -- `GaloisRep.HasConductorExponentAt`: the Artin conductor exponent of a
 -- Galois representation at a finite place, with the tame part computed
--- from the inertia invariants and the Swan part an explicit input. PUBLIC:
+-- from the inertia invariants and the Swan part an OPAQUE constant. PUBLIC:
 -- `HasConductorExponentAt` appears in the SIGNATURE of the shared Carayol
 -- conductor leaf `hasConductorExponentAt_factorization_of_isNewAtPrime`
 -- below.
@@ -27033,22 +27034,6 @@ theorem heckeSubalgebra_modularTatePadic (M : ℕ) :
   rw [h1]
   exact adjoin_frameAction_eq_range _ (adjoin_modularTateGen_eq_top M)
 
-/-- **`𝕋_ℚ` is a finite-dimensional `ℚ`-algebra** (sorry node — the
-one genuinely ANALYTIC input to the geometric side, and the same fact
-that step (b) of the sub-cut suggested for
-`exists_newformFactor_modularHeckeAlgebraQ` needs: the Hecke algebra
-is finitely generated as a `ℤ`-module by the Sturm bound together with
-integrality of the `q`-expansion coefficients, Diamond–Shurman §5.8 and
-Proposition 5.8.5. `SturmFiniteness` and `heckeField_finiteDimensional`
-above are the machinery to start from.)
-
-It enters here as the `moduleFinite` field: `Vp = (𝕋_ℚ ⊗ ℚ̄_p)²` is a
-finite-dimensional `ℚ̄_p`-space exactly when `𝕋_ℚ` is a
-finite-dimensional `ℚ`-space. -/
-theorem finiteDimensional_modularHeckeAlgebraQ {M : ℕ} (hM : 0 < M) :
-    FiniteDimensional ℚ ↥(modularHeckeAlgebraQ M) :=
-  sorry
-
 /-- **The residual ARITHMETIC of the geometric leaf** (2026-07-26,
 eighth decomposition): the Galois action on the concrete Tate space
 `(𝕋_ℚ ⊗ ℚ̄_p)²`, the exceptional set, and the twisted Weil pairing,
@@ -30303,7 +30288,19 @@ The `q ≥ 2` arithmetic that makes the split exhaustive is elementary:
 splits into `ord_q M₀ = 1` — handled by the second leaf feeding
 `GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt` — and
 `ord_q M₀ ≥ 2`, handled by the first feeding
-`GaloisRep.hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt`. -/
+`GaloisRep.hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt`.
+**RE-SORRIED 2026-07-26 (merge worker, flt-lean-42's pin).** Everything
+above from "The `q ≥ 2` arithmetic" describes a PROOF THAT NO LONGER
+EXISTS, and must not be reinstated. That proof discharged the case
+`ord_q M₀ ≥ 2` from ramifiedness ALONE, which was possible only because
+`HasConductorExponentAt` was then the existential weakening — upward
+closed in `a` at a ramified place. Under the pinned definition
+(`a = ρ.conductorExponent v`) the two constructor lemmas it fed on,
+`GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt` and
+`..._of_finrank_le_of_not_isUnramifiedAt`, are FALSE and have been
+withdrawn from `ArtinConductor.lean`; see the WITHDRAWN section there.
+So this is now an honest citation leaf: Carayol's identity at the
+NEWFORM level, `a_q(τ) = ord_q M₀`. -/
 theorem hasConductorExponentAt_factorization_of_isWeightTwoNewform
     {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
     (hg₀ : IsWeightTwoNewform M₀ g₀)
@@ -30320,31 +30317,8 @@ theorem hasConductorExponentAt_factorization_of_isWeightTwoNewform
     (hirr : τ.IsIrreducible)
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
     τ.HasConductorExponentAt hq.toHeightOneSpectrumRingOfIntegersRat
-      (M₀.factorization q) := by
-  classical
-  -- the dimension of the representation space, the only number the tame
-  -- dictionary is measured against
-  have hfr : Module.finrank (AlgebraicClosure ℚ_[p])
-      (Fin 2 → AlgebraicClosure ℚ_[p]) = 2 := by simp
-  -- `q ∣ M₀` with `0 < M₀` makes the exponent positive
-  have hpos : 0 < M₀.factorization q :=
-    hq.factorization_pos_of_dvd hM₀.ne' hqM₀
-  rcases Nat.lt_or_ge (M₀.factorization q) 2 with hlt | hge
-  · -- `q ∥ M₀`: the local type is Steinberg, and the ONE local computation
-    -- there supplies both ramifiedness and the fixed line that makes the
-    -- tame bound real content
-    have hord : M₀.factorization q = 1 := by omega
-    obtain ⟨hram, w₀, hw₀, hfix⟩ :=
-      exists_inertiaFixed_of_isWeightTwoNewform_of_factorization_eq_one hM₀ hg₀
-        κ₀ hτ hirr hq hqp hord
-    exact GaloisRep.hasConductorExponentAt_of_fixed_of_not_isUnramifiedAt hw₀
-      hfix (by rw [hfr]; omega) hram
-  · -- `q² ∣ M₀`: the tame bound is vacuous, ramifiedness is the whole content
-    have hram : ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
-      not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible hM₀ hg₀ κ₀ hτ
-        hirr hq hqp hge
-    exact GaloisRep.hasConductorExponentAt_of_finrank_le_of_not_isUnramifiedAt
-      (by rw [hfr]; omega) hram
+      (M₀.factorization q) :=
+  sorry
 
 /-- **Carayol's conductor theorem, ONE shared leaf in conductor-exponent
 form** (PROVEN 2026-07-25 from the newform-level citation
@@ -30381,8 +30355,12 @@ one identity yields BOTH per-place spellings mechanically:
   vanishes in odd residue characteristic, so `ord₂ M = a₂ ≤ 1` — the
   conclusion of
   `weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`,
-  which is now PROVEN from this leaf together with the wild-vanishing
-  leaf `hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` below.
+  which is now PROVEN from this leaf together with the purely local
+  at-`2` bound `conductorExponent_two_le_one_of_inertia_sq_eq_zero`
+  below (itself the glue over the tame leaf
+  `tameExponent_two_le_one_of_inertia_sq_eq_zero` and the
+  wild-vanishing leaf
+  `swanExponent_two_eq_zero_of_inertia_sq_eq_zero`).
 
 The two classical local types behind the positivity are unchanged:
 `q ∥ M₀` gives an unramified twist of Steinberg — special Weil–Deligne
@@ -30404,20 +30382,32 @@ rigidity `exists_linearEquiv_of_charFrob_eq` identifies `ρ_{g₀,λ}` (the
 polynomials by Eichler–Shimura) with `τ`, and the conductor exponent is
 an invariant of the equivalence class.
 
-WHY THE STATED CONCLUSION IS THE WEAKENED RELATION AND NOT AN EQUATION
-BETWEEN NUMBERS. `GaloisRep.HasConductorExponentAt τ v a` unfolds to
-`∃ s, a = τ.tameExponent v + s ∧ (τ.IsUnramifiedAt v → s = 0)`: the tame
-summand is computed, the wild summand `s` — the Swan conductor — is
-existentially quantified because the Swan conductor is NOT definable on
-this pin (mathlib has `G_0` and an explicit TODO for the higher
+WHAT THE STATED CONCLUSION MEANS (rewritten 2026-07-26 — the previous
+paragraph here described the OLD existential packaging, which was
+withdrawn; see `ArtinConductor.lean`'s module docstring for why).
+`GaloisRep.HasConductorExponentAt τ v a` unfolds to the EQUATION
+`a = τ.conductorExponent v = τ.tameExponent v + τ.swanExponent v`. The
+tame summand is computed from the inertia invariants; the wild summand
+is `GaloisRep.swanExponent`, built on the `opaque` constant
+`GaloisRep.swanExponentAux`, because the Swan conductor is NOT definable
+on this pin (mathlib has `G_0` and an explicit TODO for the higher
 ramification groups; and the lower numbering collapses over `Kᵥᵃˡᵍ`,
 whose value group is divisible, so the upper numbering — Herbrand's
 function — is genuinely required; see the module docstring of
-`ArtinConductor.lean`). The relation is therefore a CONSEQUENCE of
-Carayol's identity `a_q(ρ_{g₀,λ}) = ord_q M` rather than a
-reformulation of it — witnessed by `s := Sw_q`, which does vanish for an
-unramified representation — so this leaf is a sound citation and not an
-assertion about an under-determined symbol.
+`ArtinConductor.lean`). `opaque` introduces no axiom and no `sorry`.
+
+So this leaf asserts EXACTLY Carayol's identity
+`a_q(ρ_{g₀,λ}) = ord_q M`, no weaker and no stronger, under the intended
+interpretation `swanExponentAux ρ v := Sw_v(ρ)` — which is the standard
+soundness argument for a cited invariant that cannot yet be defined.
+
+The earlier packaging quantified the wild summand existentially on the
+argument that a weakening "can never be false". That argument holds only
+in CONCLUSION position, which is where THIS leaf sits, so nothing about
+this leaf was ever wrong; but the same weakening made the at-`2` sibling
+— which consumed the predicate as a HYPOTHESIS to derive an upper
+bound — FALSE AS STATED. Pinning `a` is what repaired that, and it costs
+this leaf nothing.
 
 `v = p` IS DELIBERATELY EXCLUDED, and not for convenience: at `q = p`
 the Artin conductor of the `p`-adic representation is the WRONG
@@ -30483,7 +30473,18 @@ The hypothesis `hqM : q ∣ M` is REDUNDANT given `hnew` (the descent
 yields `q ∣ M₀ ∣ M`) and is unused by the proof; it is underscored for
 that reason and kept in the signature only because both consumers pass
 it positionally. Its redundancy is a fact about `IsNewAtPrime`, not a
-sign that the conclusion is vacuous. -/
+sign that the conclusion is vacuous.
+**RE-SORRIED 2026-07-26 (merge worker, flt-lean-42's pin).** The
+paragraph above about what this "actually asserts" describes the
+WITHDRAWN existential packaging; under the pinned definition this leaf
+asserts exactly Carayol's identity `a_q(τ) = ord_q M`, no weaker. The
+former proof descended to the newform level `M₀` and then transported
+the exponent UPWARD along `M₀ ∣ M` via
+`HasConductorExponentAt.mono_of_not_isUnramifiedAt`. That step is
+unsound once `a` is pinned: it needs `ord_q M₀ = ord_q M`, which
+`IsNewAtPrime` does NOT supply (it forbids `q`-FREE realization levels,
+not `M₀` with `ord_q M₀ = 1` inside `q² ∣ M`). Do not restore the
+descent without first settling that equality. -/
 theorem hasConductorExponentAt_factorization_of_isNewAtPrime
     {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
@@ -30501,65 +30502,32 @@ theorem hasConductorExponentAt_factorization_of_isNewAtPrime
     {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (_hqM : q ∣ M)
     (hnew : IsNewAtPrime M q g) :
     τ.HasConductorExponentAt hq.toHeightOneSpectrumRingOfIntegersRat
-      (M.factorization q) := by
-  classical
-  -- step 1: the newform behind `g` (Diamond–Shurman Prop. 5.8.4)
-  obtain ⟨M₀, hM₀dvd, hM₀pos, g₀, hg₀, hagree⟩ :=
-    exists_weightTwoNewform_of_weightTwoEigenform hM hg
-  -- step 2: `q`-newness forbids the `q`-free realization level `M₀`
-  have hqM₀ : q ∣ M₀ := by
-    by_contra hq0
-    exact hnew M₀ hM₀dvd hq0 g₀ hg₀.toIsWeightTwoEigenform hagree
-  -- step 3: transport the `p`-adic embedding to the newform's Hecke field
-  obtain ⟨κ₀, hκ₀⟩ := exists_ringHom_heckeField_of_qCoeff_eq hM₀pos
-    hg₀.toIsWeightTwoEigenform κ hagree
-  -- step 4: `τ` matches `g₀`'s Hecke polynomials away from `S_τ ∪ (primes ∣ M)`
-  set badM : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
-    M.primeFactors.attach.image fun r =>
-      (Nat.prime_of_mem_primeFactors r.2).toHeightOneSpectrumRingOfIntegersRat
-  have hτ₀ : ∀ (r : ℕ) (hr : r.Prime),
-      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ ∪ badM →
-      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
-        Polynomial.X ^ 2
-          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
-          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])) := by
-    intro r hr hrS
-    have hrM : ¬ r ∣ M := by
-      intro hdvd
-      exact hrS (Finset.mem_union_right _ (Finset.mem_image.mpr
-        ⟨⟨r, Nat.mem_primeFactors.mpr ⟨hr, hdvd, hM.ne'⟩⟩,
-          Finset.mem_attach _ _, rfl⟩))
-    rw [hτ r hr fun h => hrS (Finset.mem_union_left _ h), hκ₀ r hr hrM]
-  -- step 5: Carayol's theorem at the newform level
-  have hcond₀ := hasConductorExponentAt_factorization_of_isWeightTwoNewform
-    hM₀pos hg₀ κ₀ hτ₀ hirr hq hqp hqM₀
-  -- step 6: `ord_q M₀ ≥ 1` makes `τ` ramified at `q`
-  have hram : ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
-    hcond₀.not_isUnramifiedAt_of_ne_zero
-      (hq.factorization_pos_of_dvd hM₀pos.ne' hqM₀).ne'
-  -- step 7: `M₀ ∣ M`, so the exponent transports upward at a ramified place
-  have hle : M₀.factorization q ≤ M.factorization q :=
-    (hq.pow_dvd_iff_le_factorization hM.ne').mp
-      ((Nat.ordProj_dvd M₀ q).trans hM₀dvd)
-  exact hcond₀.mono_of_not_isUnramifiedAt hle hram
+      (M.factorization q) :=
+  sorry
 
-include hpodd in
-/-- **The conductor exponent at `2` of a square-zero-unipotent inertia
-action in ODD residue characteristic is at most `1`** (sorry node — the
-LOCAL half of the at-`2` conductor cut, isolated 2026-07-25; Serre,
-*Local Fields* IV §2 and VI §2, plus Kolchin's theorem): if every element
-of the inertia at `2` acts on the 2-dimensional `ℚ̄_p`-space through a
-square-zero unipotent (`(τσ − 1)² = 0`) and `p` is ODD, then any Artin
-conductor exponent of `τ` at `2` is at most `1`.
+/-- **THE TAME HALF of the at-`2` conductor bound: a square-zero-unipotent
+inertia action at `2` caps the TAME exponent at `1`** (sorry node —
+Kolchin's theorem in dimension `2`, plus the inertia-spelling bridge; cut
+out 2026-07-26 from the REFUTED leaf
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`, whose falsity
+audit is preserved in full below because the lesson generalizes): if every
+element of the inertia at `2` acts on the 2-dimensional `ℚ̄_p`-space
+through a square-zero unipotent (`(τσ − 1)² = 0`), then
+`τ.tameExponent v₂ ≤ 1`.
+
+Note there is NO `hpodd` here, and that is not an oversight: odd residue
+characteristic is what kills the WILD part, and the wild part is now the
+sibling leaf `swanExponent_two_eq_zero_of_inertia_sq_eq_zero` below. The
+tame bound is characteristic-free.
 
 This leaf carries NO automorphic input — it is a purely local statement
-about a Galois representation, and it is the piece of the former at-`2`
-citation that survives once Carayol's theorem has been factored out into
-the single shared leaf
-`hasConductorExponentAt_factorization_of_isNewAtPrime` above. Its two
-halves:
+about a Galois representation, and it is (half of) the piece of the former
+at-`2` citation that survives once Carayol's theorem has been factored out
+into the single shared leaf
+`hasConductorExponentAt_factorization_of_isNewAtPrime` above. The two
+halves, as they were originally recorded:
 
-* TAME part `2 − dim V^{I₂} ≤ 1`: the image `τ(I₂)` consists of
+* TAME part `2 − dim V^{I₂} ≤ 1` — THIS LEAF: the image `τ(I₂)` consists of
   unipotent elements, and a unipotent subgroup of `GL₂` fixes a line
   (Kolchin; in dimension `2` it is the elementary statement that two
   square-zero unipotents with distinct fixed lines generate a
@@ -30585,7 +30553,8 @@ they name (`DivisionRing.toRatAlgebra` vs
 `HeightOneSpectrum.instAlgebraAdicCompletion` — propositionally equal by
 `algebraRat.subsingleton`, not syntactically), and that bookkeeping
 belongs with the local computation, not in the level-lowering assembly.
-* WILD part `Sw₂ = 0`: `σ ↦ τσ − 1` is a homomorphism from `I₂` into the
+* WILD part `Sw₂ = 0` — the SIBLING leaf
+  `swanExponent_two_eq_zero_of_inertia_sq_eq_zero`: `σ ↦ τσ − 1` is a homomorphism from `I₂` into the
   additive group `Hom(V/L, L) ≅ (ℚ̄_p, +)` (a homomorphism precisely
   because the elements are square-zero). The wild inertia `P₂ ≤ I₂` is
   pro-`2`, so its continuous image is a compact subgroup of `(ℚ̄_p, +)`,
@@ -30614,17 +30583,24 @@ Kolchin. Both halves nevertheless remain honest, reusable, purely local
 targets, and neither is a restatement of an automorphic theorem — that
 is the point of factoring the old at-`2` citation this way.
 
-SOUNDNESS AUDIT (2026-07-25): non-vacuously satisfiable — take `τ`
-unramified at `2` (then `τσ − 1 = 0` for `σ ∈ I₂`, the hypothesis holds,
-and `a₂ = 0 ≤ 1` by
-`GaloisRep.HasConductorExponentAt.eq_zero_of_isUnramifiedAt`), or the
-Steinberg configuration at `2` (inertia acting by a nontrivial
-transvection, `a₂ = 1`). The conclusion is sharp: `a₂ = 1` is attained,
-so `≤ 1` cannot be improved to `= 0`.
+SOUNDNESS AUDIT (2026-07-25, restricted 2026-07-26 to the tame half):
+non-vacuously satisfiable — take `τ` unramified at `2` (then `τσ − 1 = 0`
+for `σ ∈ I₂`, the hypothesis holds, and `tameExponent = 0 ≤ 1` by
+`GaloisRep.tameExponent_eq_zero_of_isUnramifiedAt`), or the Steinberg
+configuration at `2` (inertia acting by a nontrivial transvection,
+`dim V^{I₂} = 1`, `tameExponent = 1`). The conclusion is sharp:
+`tameExponent = 1` is attained, so `≤ 1` cannot be improved to `= 0`.
 
-FALSITY AUDIT (2026-07-25, fourth owner — **THIS LEAF IS FALSE AS
-STATED**; do not dispatch a prover at it, the repair is cut-level and is
-spelled out at the end of this audit).
+FALSITY AUDIT (2026-07-25, fourth owner — **THE LEAF THIS DOCSTRING WAS
+ATTACHED TO,
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`, WAS FALSE AS
+STATED**. It was WITHDRAWN and replaced on 2026-07-26 by the present
+leaf, its sibling `swanExponent_two_eq_zero_of_inertia_sq_eq_zero` and
+the PROVEN glue `conductorExponent_two_le_one_of_inertia_sq_eq_zero`,
+after the packaging defect the audit identifies was repaired in
+`ArtinConductor.lean`. The audit is kept verbatim because its lesson is
+general and because it is the only record of why the seam is where it
+is.)
 
 `GaloisRep.HasConductorExponentAt ρ v a` unfolds to
 `∃ s, a = ρ.tameExponent v + s ∧ (ρ.IsUnramifiedAt v → s = 0)`, and its
@@ -30707,23 +30683,137 @@ even STATE. Repair, in dependency order:
    *Local Fields* IV §2 — the pro-`2`/pro-`p` clash of the second bullet
    above), which is an honest, purely local citation leaf.
 
-Until that repair lands this `sorry` must STAY: the statement cannot be
-proven, and the consumer
-`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`
-below applies it verbatim, so weakening it in place would only move the
-red. -/
-theorem hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero
+REPAIR LANDED (2026-07-26, fifth owner — the cut-level repair the audit
+above prescribes, carried out). `ArtinConductor.lean` now carries an
+`opaque GaloisRep.swanExponentAux`, the derived `GaloisRep.swanExponent`
+and `GaloisRep.conductorExponent`, and
+`HasConductorExponentAt ρ v a := a = ρ.conductorExponent v`, so `a` is
+PINNED and upper bounds transfer
+(`GaloisRep.HasConductorExponentAt.le_of_conductorExponent_le`). Two
+deviations from the plan above, both improvements:
+
+* step 2 did NOT need a new sorry. `swanExponent ρ v` is defined as
+  `if ρ.IsUnramifiedAt v then 0 else swanExponentAux ρ v`, which bakes in
+  the one Swan property this development uses and keeps
+  `GaloisRep.swanExponent_eq_zero_of_isUnramifiedAt` a THEOREM. This is
+  conservative: the true Swan conductor does vanish at an unramified
+  place, so the intended interpretation `swanExponentAux := Sw_v` still
+  gives `swanExponent = Sw_v` on the nose.
+* step 3 is split into the two honest halves as separate declarations
+  rather than one leaf, so that `hpodd` is visibly consumed by the WILD
+  half only.
+
+Net effect on the frontier: ONE false leaf out, TWO true leaves in
+(this one and `swanExponent_two_eq_zero_of_inertia_sq_eq_zero`), plus a
+PROVEN glue `conductorExponent_two_le_one_of_inertia_sq_eq_zero` that
+the level-lowering consumer now calls instead. No consumer lost content:
+the consumer needed `ord₂ M ≤ 1` from `ord₂ M = a₂` and `a₂ ≤ 1`, and it
+still gets exactly that — the difference is that `a₂` now denotes a
+single number rather than any number above the tame part. -/
+theorem tameExponent_two_le_one_of_inertia_sq_eq_zero
     {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
       (Fin 2 → AlgebraicClosure ℚ_[p])}
-    {a : ℕ}
     (hsq : ∀ σ ∈ AddSubgroup.inertia
         ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
         (Field.absoluteGaloisGroup ℚ_[2]),
-      (τ.map (algebraMap ℚ ℚ_[2]) σ - 1) ^ 2 = 0)
-    (ha : τ.HasConductorExponentAt
-      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat a) :
-    a ≤ 1 :=
+      (τ.map (algebraMap ℚ ℚ_[2]) σ - 1) ^ 2 = 0) :
+    τ.tameExponent Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat ≤ 1 :=
   sorry
+
+include hpodd in
+/-- **THE WILD HALF of the at-`2` conductor bound: the Swan conductor at
+`2` of a square-zero-unipotent inertia action vanishes in ODD residue
+characteristic** (sorry node — Serre, *Local Fields* IV §2; cut out
+2026-07-26 from the refuted leaf
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`, whose full
+falsity audit is in the docstring of the tame sibling
+`tameExponent_two_le_one_of_inertia_sq_eq_zero` above).
+
+The argument, in one paragraph: with `(τσ − 1)² = 0` for every `σ ∈ I₂`,
+the map `σ ↦ τσ − 1` is a homomorphism from `I₂` into the additive group
+`Hom(V/L, L) ≅ (ℚ̄_p, +)` (a homomorphism *precisely because* the
+elements are square-zero). The wild inertia `P₂ ≤ I₂` is pro-`2`, so its
+continuous image is a compact subgroup of `(ℚ̄_p, +)`, hence a
+`ℤ_p`-module and pro-`p`; with `p` ODD (`hpodd`) the pro-`2`/pro-`p`
+clash forces the image to be trivial. So `P₂` acts trivially and the
+Swan conductor — a sum over the wild ramification breaks — vanishes.
+
+This is a CITATION and not a restatement of an automorphic theorem: it
+carries no `M`, no eigenform and no Hecke data, and it is the exact
+statement `Sw₂(τ) = 0` that the previous existential packaging of the
+conductor exponent could not even express (which is why the at-`2` leaf
+was false as stated rather than merely open).
+
+WHY IT IS NOT PROVABLE AT THIS PIN, and what a prover would need first:
+`GaloisRep.swanExponent` is built on the `opaque`
+`GaloisRep.swanExponentAux`, deliberately so, because the Swan conductor
+needs the higher ramification filtration in the UPPER numbering —
+absent from mathlib, and not replaceable by the lower numbering over
+`ℚ₂ᵃˡᵍ`, whose value group is divisible (see `ArtinConductor.lean`).
+Until that filtration exists, NOTHING about `swanExponentAux` is
+provable, so this leaf is terminal by construction. Its soundness is
+checked against the intended interpretation `swanExponentAux ρ v :=
+Sw_v(V)`, under which it is exactly the cited theorem.
+
+PROVENANCE OF THE HYPOTHESIS SHAPE: `hsq` is stated over `Γ ℚ_[2]` (via
+`Z2bar`) because that is the spelling the at-`2` consumers already use,
+and squaring to zero is CONJUGATION-INVARIANT, which is what lets the
+per-element conjugacy in the inertia bridge
+`localInertia_two_eq_map_padic` be absorbed here rather than in the
+level-lowering assembly.
+
+SOUNDNESS AUDIT (2026-07-26): non-vacuously satisfiable and not
+vacuously true — `τ` unramified at `2` satisfies `hsq` and has
+`swanExponent = 0` by
+`GaloisRep.swanExponent_eq_zero_of_isUnramifiedAt`; the load-bearing
+case is the Steinberg configuration (`τ` RAMIFIED at `2`, inertia acting
+by a nontrivial transvection, e.g. `V₅(E)` for `E/ℚ` of conductor `14`),
+where `swanExponent` reduces to the opaque `swanExponentAux` and the
+statement has genuine content. -/
+theorem swanExponent_two_eq_zero_of_inertia_sq_eq_zero
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    (hsq : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      (τ.map (algebraMap ℚ ℚ_[2]) σ - 1) ^ 2 = 0) :
+    τ.swanExponent Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat = 0 :=
+  sorry
+
+include hpodd in
+/-- **The Artin conductor exponent at `2` of a square-zero-unipotent
+inertia action in ODD residue characteristic is at most `1`** (PROVEN
+glue, 2026-07-26 — the honest replacement for the REFUTED leaf
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`).
+
+`a₂ = (2 − dim V^{I₂}) + Sw₂` is `GaloisRep.conductorExponent`; the tame
+summand is capped at `1` by
+`tameExponent_two_le_one_of_inertia_sq_eq_zero` (Kolchin) and the wild
+summand vanishes by `swanExponent_two_eq_zero_of_inertia_sq_eq_zero`
+(the pro-`2`/pro-`p` clash, which is where `hpodd` is used and the only
+place it is used).
+
+This is the shape the level-lowering consumer
+`weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrreducible`
+below wants, and — unlike its refuted predecessor — it takes NO
+`HasConductorExponentAt` hypothesis. That is the whole point of the
+repair: an upper bound must be derived FROM the conductor exponent, not
+imposed on an under-determined `a`. The consumer combines it with the
+shared Carayol leaf through
+`GaloisRep.HasConductorExponentAt.le_of_conductorExponent_le`. -/
+theorem conductorExponent_two_le_one_of_inertia_sq_eq_zero
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    (hsq : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      (τ.map (algebraMap ℚ ℚ_[2]) σ - 1) ^ 2 = 0) :
+    τ.conductorExponent Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
+      ≤ 1 := by
+  have htame := tameExponent_two_le_one_of_inertia_sq_eq_zero hsq
+  have hwild := swanExponent_two_eq_zero_of_inertia_sq_eq_zero hpodd hsq
+  rw [GaloisRep.conductorExponent, hwild]
+  omega
 
 /-- **Ramification at `q` of the representation attached to a `q`-NEW
 eigenform** (PROVEN — the single residual literature leaf of the
@@ -30851,13 +30941,14 @@ one here, because over `Kᵥᵃˡᵍ` the value group is divisible, so
 `𝔪 ^ (i+1) = 𝔪` and every lower ramification group collapses onto
 inertia. But NONE of that blocks the dedup, because the dedup only needs
 the TAME half of the dictionary to be computed: with the wild summand
-carried as an explicit existential input rather than a function, the
+carried as an OPAQUE constant rather than a defined function, the
 Artin conductor exponent is definable outright
 (`Fermat/FLT/Deformations/RepresentationTheory/ArtinConductor.lean`:
 `GaloisRep.inertiaInvariants`, `GaloisRep.tameExponent`,
-`GaloisRep.HasConductorExponentAt`, all sorry-free), and the two
-away-from-`p` citations collapse onto ONE. This leaf is therefore NOT
-terminal, and is proven below.
+`GaloisRep.swanExponent`, `GaloisRep.conductorExponent`,
+`GaloisRep.HasConductorExponentAt`, all sorry-free and axiom-free), and
+the two away-from-`p` citations collapse onto ONE. This leaf is
+therefore NOT terminal, and is proven below.
 
 DEDUP (2026-07-25 — this leaf is now PROVEN, no longer a citation): the
 Carayol content recorded above has been factored out into the ONE shared
@@ -30865,7 +30956,7 @@ conductor-exponent leaf
 `hasConductorExponentAt_factorization_of_isNewAtPrime`, and this
 statement is now a two-line COROLLARY of it: unramifiedness at `q` makes
 the conductor exponent vanish (`GaloisRep.tameExponent` vanishes because
-`V^{I_q} = V`, and the Swan clause of `GaloisRep.HasConductorExponentAt`
+`V^{I_q} = V`, and `GaloisRep.swanExponent_eq_zero_of_isUnramifiedAt`
 kills the wild part), while `q ∣ M` with `0 < M` makes `ord_q M`
 positive. The COORDINATION note above is therefore DISCHARGED for this
 place: the Artin conductor exponent it asks for exists
@@ -33511,8 +33602,8 @@ does NOT contain is the reason the wild image has finite order in the
 first place (`GL₂(ℚ̄_p)` has no small pro-`2` subgroups for odd `p`) —
 that is a topological statement about compact subgroups of `GL₂` over
 `ℚ̄_p` and stays in the purely local citation leaf
-`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` (its WILD
-half), which is where that burden now lives.
+`swanExponent_two_eq_zero_of_inertia_sq_eq_zero` (the WILD half of the
+at-`2` conductor bound), which is where that burden now lives.
 
 UNCONSUMED AT MERGE (2026-07-25, flt-lean-61 ← main). This brick was
 carved as the formal half of the at-`2` cut whose citation leaf was
@@ -33520,8 +33611,8 @@ carved as the formal half of the at-`2` cut whose citation leaf was
 that leaf lost to the FINER concurrent cut through
 `GaloisRep.HasConductorExponentAt` and was retired here, so this brick
 currently has no consumer. It is PROVEN, fully general (any field, any
-module) and is the natural formal input to the wild half of
-`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`, so it is kept
+module) and is the natural formal input to
+`swanExponent_two_eq_zero_of_inertia_sq_eq_zero`, so it is kept
 rather than deleted; whoever proves that leaf should consume it. -/
 theorem transvection_apply_eq_self_of_pow_apply_eq_self
     {A : Type*} [Field A] {V : Type*} [AddCommGroup V] [Module A V]
@@ -33575,8 +33666,10 @@ include hpodd in
 exponent form** (DECOMPOSED and PROVEN 2026-07-25 over the two
 conductor-exponent leaves
 `hasConductorExponentAt_factorization_of_isNewAtPrime` (shared, all
-places `q ≠ p`) and `hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`
-(purely local at `2`): Carayol, *Sur les
+places `q ≠ p`) and `conductorExponent_two_le_one_of_inertia_sq_eq_zero`
+(purely local at `2`; RESTATED 2026-07-26 — its predecessor
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` was refuted,
+see there): Carayol, *Sur les
 représentations `ℓ`-adiques associées aux formes modulaires de
 Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A), combined with the
 Artin conductor exponent formula
@@ -33605,7 +33698,9 @@ Artin exponent formula `n(2, τ) = dim V/V^{I₂} + b(V)` (Duke 54 (1987)
 §1.2, (1.2.1)–(1.2.2)) together with (c) the single topological input
 this pin cannot supply — that the pro-`2` wild inertia has FINITE image
 in `GL₂(ℚ̄_p)` for odd `p` — live in the purely local, automorphic-input-free
-leaf `hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`. See
+leaves `tameExponent_two_le_one_of_inertia_sq_eq_zero` and
+`swanExponent_two_eq_zero_of_inertia_sq_eq_zero`, joined by the PROVEN
+glue `conductorExponent_two_le_one_of_inertia_sq_eq_zero`. See
 those leaves' docstrings for the pieces named separately.
 
 MERGE NOTE (2026-07-25, flt-lean-61 ← main). A CONCURRENT cut of this
@@ -33719,11 +33814,17 @@ Carayol content recorded above has been factored out into the ONE shared
 conductor-exponent leaf
 `hasConductorExponentAt_factorization_of_isNewAtPrime`, and the local
 exponent computation at `2` into the purely local, automorphic-input-free
-leaf `hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`. What is
+bound `conductorExponent_two_le_one_of_inertia_sq_eq_zero` (RESTATED
+2026-07-26: its predecessor
+`hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero` consumed
+`HasConductorExponentAt` as a HYPOTHESIS to derive an UPPER bound and
+was therefore false as stated; the replacement derives the bound FROM
+`GaloisRep.conductorExponent`, and the two are joined here by
+`GaloisRep.HasConductorExponentAt.le_of_conductorExponent_le`). What is
 proven here is the glue: `2 ∤ M` is trivial; otherwise `2 ≠ p` (`hpodd`)
 and newform-ness gives `2`-newness
 (`isNewAtPrime_of_isWeightTwoNewform`), the shared leaf gives
-`a₂ = ord₂ M`, and the local leaf caps `a₂ ≤ 1`. The local leaf's
+`a₂ = ord₂ M`, and the local bound caps `a₂ ≤ 1`. The local bound's
 square-zero hypothesis is discharged HERE, directly from
 `hfixline`/`hquotline`: every inertia displacement lands on
 `span {w₀}` and `w₀` is fixed, so a second application kills it. The
@@ -33767,7 +33868,8 @@ theorem weightTwoNewform_factorization_two_le_one_of_inertia_fixed_line_of_isIrr
       hg.toIsWeightTwoEigenform κ hτ hirr Nat.prime_two hp2 h2M
       (isNewAtPrime_of_isWeightTwoNewform hg h2M)
     -- and the purely local at-`2` bound `a₂ ≤ 1`
-    refine hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero hpodd ?_ hcond
+    refine hcond.le_of_conductorExponent_le
+      (conductorExponent_two_le_one_of_inertia_sq_eq_zero hpodd ?_)
     -- its hypothesis: the inertia at `2` acts by SQUARE-ZERO unipotents.
     -- `hquotline` puts every displacement on the line `span {w₀}`, which
     -- `hfixline` says is killed by a second application.
