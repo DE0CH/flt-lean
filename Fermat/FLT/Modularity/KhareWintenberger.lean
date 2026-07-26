@@ -11866,8 +11866,12 @@ module, not a docstring claim:
 
 So `absurd hirr (not_isIrreducible_of_isHardlyRamified_of_five_le …)` —
 the route ~40 leaves of this development legitimately take — is CIRCULAR
-here.  It is also mechanically impossible: the dichotomy is declared some
-5100 lines BELOW this node in the same module.  The two other copies of
+here.  It is also mechanically impossible: the dichotomy, and every
+intermediate link of the chain above, is declared FAR BELOW this node in
+the same module, so none of them is in scope at all.  (A line count stood
+here and is deliberately gone: it drifted by ~800 lines in a day, which is
+exactly how docstring prose in this file goes stale.  Locate the links by
+NAME.)  The two other copies of
 the dichotomy are excluded as well: `IsHardlyRamified.mod_three_reducible`
 is the `p = 3` half and says nothing at `ℓ ≥ 5`, and `Reducible.lean`'s B5
 routes through `Family.lean`, which the inherited circularity guard above
@@ -12048,7 +12052,27 @@ is the DESCENT-CLOSURE note now carried by the
 `PotentialModularityWitness` docstring, by its `E` field, and by
 `exists_potentialModularityWitness_of_five_le`.  Route (i) is thereby
 available at this node for the intended carrier, and route (ii) remains
-available for every carrier; the citation's own content is unchanged. -/
+available for every carrier; the citation's own content is unchanged.
+
+────────────────────────────────────────────────────────────────────
+UPSTREAM NOTE — THE `R = 𝕋` REPAIR DOES NOT REACH THIS NODE (recorded
+2026-07-26, third owner; a note, NOT a fourth audit).
+
+`exists_heckeEigensystem_of_congruentSeed` is being repaired from a
+formally empty package (`badF := ∅`, eigenvalues read off the
+characteristic polynomial) into a genuine `R = 𝕋` citation outputting a
+number field, an embedding into `ℚ̄_ℓ`, a bad set containing the places
+over `ℓ`, and the TRACE only.  That leaf reaches this one along exactly
+one path — `exists_heckePackage_of_seed`, then
+`exists_potentialModularityWitness_of_five_le`, i.e. it supplies the
+carrier's Hecke block over `F`, `Wit.modularF`.  And the `F`-axis bullet
+of the INFORMATION AUDIT above closes that path OUTRIGHT: at every place
+`u` of `F` above `w` one has `p ∣ f(u/w)`, so `modularF` at `u` is the
+formal consequence `D_e(D_p(s, Nw), Nw^p)` of the `hPL` datum this node
+already receives.  A redundant constraint does not stop being redundant
+when its supplier gets stronger, so the repair changes nothing here and
+the terminality argument stands unmodified.  Do not re-open this node on
+the strength of that repair. -/
 theorem exists_heckeTrace_of_prime_cyclic_step_of_inert
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
