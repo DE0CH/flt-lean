@@ -222,4 +222,68 @@ lemma HasConductorExponentAt.eq_zero_of_isUnramifiedAt {ρ : GaloisRep K A M}
   obtain ⟨s, hs, hs0⟩ := h
   rw [hs, ρ.tameExponent_eq_zero_of_isUnramifiedAt v, hs0 ‹_›]
 
+/-- **A positive conductor exponent forces ramification** — the
+contrapositive of `HasConductorExponentAt.eq_zero_of_isUnramifiedAt`,
+in the form the level-lowering assemblies consume it: if some conductor
+exponent of `ρ` at `v` is nonzero then `ρ` is ramified at `v`. -/
+lemma HasConductorExponentAt.not_isUnramifiedAt_of_ne_zero
+    {ρ : GaloisRep K A M} {v : HeightOneSpectrum (𝓞 K)} {a : ℕ}
+    (h : ρ.HasConductorExponentAt v a) (ha : a ≠ 0) :
+    ¬ ρ.IsUnramifiedAt v := by
+  intro hun
+  haveI : ρ.IsUnramifiedAt v := hun
+  exact ha h.eq_zero_of_isUnramifiedAt
+
+/-- **FORMAL-CONTENT AUDIT of `HasConductorExponentAt` at a RAMIFIED
+place** (2026-07-25): at a place where `ρ` is ramified, the relation
+`ρ.HasConductorExponentAt v a` says *exactly* `ρ.tameExponent v ≤ a`
+— nothing more.
+
+This is not a defect of the packaging, it is the price of the wild
+summand being existentially quantified: the Swan clause
+`ρ.IsUnramifiedAt v → s = 0` is the ONLY constraint on `s`, and at a
+ramified place that implication is vacuously true, so `s` ranges over
+all of `ℕ`. Consequently, at a ramified place the relation is UPWARD
+CLOSED in `a` (`mono_of_not_isUnramifiedAt` below), and a leaf asserting
+`HasConductorExponentAt ρ v a` there is a LOWER-BOUND statement about the
+tame codimension, not an identity pinning the conductor exponent to `a`.
+
+Anyone citing a conductor identity `a_v(V) = a` through this relation
+should therefore read the resulting hypothesis as the pair
+
+* `ρ` is ramified at `v` (available when `a ≠ 0`, via
+  `not_isUnramifiedAt_of_ne_zero`), and
+* `dim V − dim V^{I_v} ≤ a`,
+
+and nothing else. Recovering the full identity needs the Swan conductor,
+i.e. the higher ramification filtration in the upper numbering, which is
+absent from the pin (see the module docstring). -/
+lemma hasConductorExponentAt_iff_tameExponent_le_of_not_isUnramifiedAt
+    {ρ : GaloisRep K A M} {v : HeightOneSpectrum (𝓞 K)} {a : ℕ}
+    (hram : ¬ ρ.IsUnramifiedAt v) :
+    ρ.HasConductorExponentAt v a ↔ ρ.tameExponent v ≤ a := by
+  refine ⟨HasConductorExponentAt.tameExponent_le, fun hle => ?_⟩
+  exact ⟨a - ρ.tameExponent v, by omega, fun hu => absurd hu hram⟩
+
+/-- **The conductor-exponent relation is upward closed at a ramified
+place**: if `ρ` is ramified at `v` and `a ≤ b`, then
+`ρ.HasConductorExponentAt v a` gives `ρ.HasConductorExponentAt v b`.
+
+This is the transport that lets a conductor statement proven at the
+level `M₀` of the underlying NEWFORM be read at any larger level
+`M₀ ∣ M` — the step the level-lowering assemblies in
+`Fermat/FLT/Modularity/Interface.lean` need, since `ord_q M₀` may be
+strictly smaller than `ord_q M` for a `q`-new eigenform of level `M`
+(newness forbids `q`-FREE realization levels, not the level `q ∥ M₀`
+inside `q² ∣ M`). See the audit above for why this monotonicity is
+available at all: it is the exact measure of the wild summand's
+freedom. -/
+lemma HasConductorExponentAt.mono_of_not_isUnramifiedAt
+    {ρ : GaloisRep K A M} {v : HeightOneSpectrum (𝓞 K)} {a b : ℕ}
+    (h : ρ.HasConductorExponentAt v a) (hab : a ≤ b)
+    (hram : ¬ ρ.IsUnramifiedAt v) :
+    ρ.HasConductorExponentAt v b :=
+  (hasConductorExponentAt_iff_tameExponent_le_of_not_isUnramifiedAt hram).mpr
+    (h.tameExponent_le.trans hab)
+
 end GaloisRep

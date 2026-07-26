@@ -22963,8 +22963,94 @@ theorem isNewAtPrime_of_isWeightTwoNewform {M : ℕ}
   · exact absurd hold
       (not_exists_eigenform_level_not_dvd_of_isWeightTwoNewform hg hqM)
 
+/-- **Carayol's conductor theorem at the NEWFORM level** (sorry node —
+the residual away-from-`p` literature leaf, re-pinned 2026-07-25 at the
+level where the cited theorem is actually stated: Carayol, *Sur les
+représentations `ℓ`-adiques associées aux formes modulaires de Hilbert*,
+Ann. Sci. ÉNS 19 (1986), Théorème (A) — local–global compatibility at a
+prime `q ≠ p`; for weight 2 over `ℚ` the underlying input is
+Deligne–Rapoport's model of `X₀(M₀)` at `q` together with the
+Langlands/Deligne local computations at the bad primes): if `τ` is
+IRREDUCIBLE and matches the Hecke polynomials of the weight-2 NEWFORM
+`g₀` of level `M₀` away from a finite set, then for every prime
+`q ∣ M₀` with `q ≠ p` the Artin conductor exponent of `τ` at `q` is
+`ord_q M₀`.
+
+WHY THE PIN IS AT THE NEWFORM AND NOT AT AN ARBITRARY EIGENFORM.
+Carayol's identity is `ord_q (cond ρ_{g₀,λ}) = ord_q M₀` with `M₀` the
+level of a NEWFORM; for an old eigenform `g` of level `M` the conductor
+is still that of the newform behind it, and `ord_q M₀` can be STRICTLY
+SMALLER than `ord_q M` even when `g` is `q`-new in the sense of
+`IsNewAtPrime` (take `M = q²` with underlying newform level `M₀ = q`:
+no `q`-FREE divisor level realizes the eigensystem, so `IsNewAtPrime`
+holds, yet `ord_q M₀ = 1 < 2 = ord_q M`). The eigenform-level statement
+`hasConductorExponentAt_factorization_of_isNewAtPrime` below is
+therefore NOT the cited identity but a strictly weaker consequence of
+it, sound only because `GaloisRep.HasConductorExponentAt` is upward
+closed at a ramified place
+(`GaloisRep.HasConductorExponentAt.mono_of_not_isUnramifiedAt`). Pinning
+the citation here puts the sorry exactly on the literature statement and
+turns the `IsNewAtPrime` descent — previously prose in the docstring
+below — into checked Lean.
+
+FORMAL-CONTENT AUDIT (2026-07-25). Read through
+`GaloisRep.hasConductorExponentAt_iff_tameExponent_le_of_not_isUnramifiedAt`,
+the conclusion of this leaf is EXACTLY the conjunction
+
+* `τ` is ramified at `q` (the Swan clause of
+  `GaloisRep.HasConductorExponentAt`, since `ord_q M₀ ≥ 1`), and
+* `2 − dim V^{I_q} ≤ ord_q M₀`,
+
+and nothing more: the wild summand is existentially quantified and, at a
+ramified place, unconstrained. This is a genuine consequence of
+Carayol's identity, never an assertion about an under-determined symbol
+— but a downstream consumer must not read it as pinning the conductor
+exponent. Recovering the identity needs the Swan conductor, i.e. the
+higher ramification filtration in the upper numbering, absent from the
+pin (see `ArtinConductor.lean`'s module docstring). In particular the
+second bullet is arithmetically empty once `ord_q M₀ ≥ 2`, so the ONLY
+tame content of this leaf is the classical `q ∥ M₀` case: there the
+local type is an unramified twist of Steinberg, inertia acts through
+`σ ↦ (1, t_p(σ); 0, 1)`, and `dim V^{I_q} = 1`.
+
+The hypothesis `hqM₀ : q ∣ M₀` is retained although Carayol's theorem
+covers `q ∤ M₀` as well (where it asserts unramifiedness at `q`): the
+weaker leaf is all its consumer needs, and it keeps the ramification
+half of the content visible in the statement.
+
+SOUNDNESS AUDIT (2026-07-25): non-vacuously satisfiable — take any
+classical newform `g₀` of level `M₀` divisible by a prime `q ∉ {p}`, and
+`τ := ρ_{g₀,λ}` (irreducible by Ribet 1977, matched to `g₀`'s Hecke
+polynomials away from `M₀p` by Eichler–Shimura); the conclusion is
+Carayol's theorem read through the conductor dictionary. Conversely
+every instance is an instance of the cited theorem: `IsWeightTwoNewform`
+has exactly the classical minimal-level normalized eigenforms as
+inhabitants, and irreducibility supplies the rigidity identification of
+`τ` with `ρ_{g₀,λ}` (PROVEN `exists_linearEquiv_of_charFrob_eq`), across
+which the conductor exponent is invariant. -/
+theorem hasConductorExponentAt_factorization_of_isWeightTwoNewform
+    {M₀ : ℕ} (hM₀ : 0 < M₀) {g₀ : CuspForm (Gamma0GL M₀) 2}
+    (hg₀ : IsWeightTwoNewform M₀ g₀)
+    (κ₀ : heckeField M₀ g₀ →+* AlgebraicClosure ℚ_[p])
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    {S_τ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (hτ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
+    (hirr : τ.IsIrreducible)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
+    τ.HasConductorExponentAt hq.toHeightOneSpectrumRingOfIntegersRat
+      (M₀.factorization q) :=
+  sorry
+
 /-- **Carayol's conductor theorem, ONE shared leaf in conductor-exponent
-form** (sorry node — the DEDUPLICATED away-from-`p` literature leaf,
+form** (PROVEN 2026-07-25 from the newform-level citation
+`hasConductorExponentAt_factorization_of_isWeightTwoNewform` plus the
+newform descent — was the DEDUPLICATED away-from-`p` literature leaf,
 2026-07-25: Carayol, *Sur les représentations `ℓ`-adiques associées aux
 formes modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A) —
 local–global compatibility at a prime `q ≠ p`; for weight 2 over `ℚ` the
@@ -23054,7 +23140,51 @@ Carayol's theorem read through the conductor dictionary. Conversely
 every instance is an instance of the cited theorem: the carrier
 `IsWeightTwoEigenform` has exactly the classical normalized eigenforms
 as inhabitants, `IsNewAtPrime` pins the underlying newform to a level
-divisible by `q`, and irreducibility supplies the rigidity. -/
+divisible by `q`, and irreducibility supplies the rigidity.
+
+DECOMPOSITION (2026-07-25, fourth owner — this statement is now PROVEN).
+The paragraph above beginning "behind `g` lies a newform `g₀`" was the
+only formalizable content of this docstring, and it is now Lean rather
+than prose: the citation has been re-pinned at the newform level as
+`hasConductorExponentAt_factorization_of_isWeightTwoNewform` (which IS
+Carayol's theorem verbatim), and this statement is assembled from it in
+five checked steps — newform descent
+(`exists_weightTwoNewform_of_weightTwoEigenform`), `q ∣ M₀` out of
+`IsNewAtPrime`, transport of the `p`-adic Hecke embedding
+(`exists_ringHom_heckeField_of_qCoeff_eq`), ramification at `q` from the
+positivity of `ord_q M₀`
+(`GaloisRep.HasConductorExponentAt.not_isUnramifiedAt_of_ne_zero`), and
+the transport `ord_q M₀ ≤ ord_q M`
+(`GaloisRep.HasConductorExponentAt.mono_of_not_isUnramifiedAt`).
+
+This is NOT the re-pin that the ROUTE AUDIT of
+`not_isUnramifiedAt_of_isNewAtPrime_of_isIrreducible` below examined and
+rejected. That one would have re-pinned RAMIFIEDNESS at the newform
+level, where it is the exact contrapositive of the already-proven
+`weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible` — a
+duplicated sorry. The newform-level CONDUCTOR EXPONENT duplicates
+nothing: no proven declaration in this development produces a conductor
+exponent, and the descent glue really is discharged here rather than
+restated.
+
+WHY THE LAST STEP NEEDS `mono`, and what it reveals. `ord_q M₀` may be
+STRICTLY SMALLER than `ord_q M`: `IsNewAtPrime M q g` forbids
+realization at `q`-FREE divisor levels only, so `M = q²` with underlying
+newform level `M₀ = q` satisfies it while `ord_q M₀ = 1 < 2 = ord_q M`.
+The conductor exponent of `τ` at `q` is then `1`, not `ord_q M` — so
+this statement would be FALSE if `GaloisRep.HasConductorExponentAt` were
+read as pinning the exponent. It is true, and provable, only because the
+relation is upward closed at a ramified place (see the FORMAL-CONTENT
+AUDIT on the newform leaf above): what it actually asserts is that `τ`
+is ramified at `q` and that `2 − dim V^{I_q} ≤ ord_q M`. Consumers
+should read it that way, and both current consumers do — one uses only
+`eq_zero_of_isUnramifiedAt`, the other only the upper bound at `q = 2`.
+
+The hypothesis `hqM : q ∣ M` is REDUNDANT given `hnew` (the descent
+yields `q ∣ M₀ ∣ M`) and is unused by the proof; it is underscored for
+that reason and kept in the signature only because both consumers pass
+it positionally. Its redundancy is a fact about `IsNewAtPrime`, not a
+sign that the conclusion is vacuous. -/
 theorem hasConductorExponentAt_factorization_of_isNewAtPrime
     {M : ℕ} (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2}
     (hg : IsWeightTwoEigenform M g)
@@ -23069,11 +23199,50 @@ theorem hasConductorExponentAt_factorization_of_isNewAtPrime
           - Polynomial.C (κ (heckeCoeff M g r)) * Polynomial.X
           + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
     (hirr : τ.IsIrreducible)
-    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM : q ∣ M)
+    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (_hqM : q ∣ M)
     (hnew : IsNewAtPrime M q g) :
     τ.HasConductorExponentAt hq.toHeightOneSpectrumRingOfIntegersRat
-      (M.factorization q) :=
-  sorry
+      (M.factorization q) := by
+  classical
+  -- step 1: the newform behind `g` (Diamond–Shurman Prop. 5.8.4)
+  obtain ⟨M₀, hM₀dvd, hM₀pos, g₀, hg₀, hagree⟩ :=
+    exists_weightTwoNewform_of_weightTwoEigenform hM hg
+  -- step 2: `q`-newness forbids the `q`-free realization level `M₀`
+  have hqM₀ : q ∣ M₀ := by
+    by_contra hq0
+    exact hnew M₀ hM₀dvd hq0 g₀ hg₀.toIsWeightTwoEigenform hagree
+  -- step 3: transport the `p`-adic embedding to the newform's Hecke field
+  obtain ⟨κ₀, hκ₀⟩ := exists_ringHom_heckeField_of_qCoeff_eq hM₀pos
+    hg₀.toIsWeightTwoEigenform κ hagree
+  -- step 4: `τ` matches `g₀`'s Hecke polynomials away from `S_τ ∪ (primes ∣ M)`
+  set badM : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+    M.primeFactors.attach.image fun r =>
+      (Nat.prime_of_mem_primeFactors r.2).toHeightOneSpectrumRingOfIntegersRat
+  have hτ₀ : ∀ (r : ℕ) (hr : r.Prime),
+      hr.toHeightOneSpectrumRingOfIntegersRat ∉ S_τ ∪ badM →
+      τ.charFrob hr.toHeightOneSpectrumRingOfIntegersRat =
+        Polynomial.X ^ 2
+          - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
+          + Polynomial.C ((r : AlgebraicClosure ℚ_[p])) := by
+    intro r hr hrS
+    have hrM : ¬ r ∣ M := by
+      intro hdvd
+      exact hrS (Finset.mem_union_right _ (Finset.mem_image.mpr
+        ⟨⟨r, Nat.mem_primeFactors.mpr ⟨hr, hdvd, hM.ne'⟩⟩,
+          Finset.mem_attach _ _, rfl⟩))
+    rw [hτ r hr fun h => hrS (Finset.mem_union_left _ h), hκ₀ r hr hrM]
+  -- step 5: Carayol's theorem at the newform level
+  have hcond₀ := hasConductorExponentAt_factorization_of_isWeightTwoNewform
+    hM₀pos hg₀ κ₀ hτ₀ hirr hq hqp hqM₀
+  -- step 6: `ord_q M₀ ≥ 1` makes `τ` ramified at `q`
+  have hram : ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
+    hcond₀.not_isUnramifiedAt_of_ne_zero
+      (hq.factorization_pos_of_dvd hM₀pos.ne' hqM₀).ne'
+  -- step 7: `M₀ ∣ M`, so the exponent transports upward at a ramified place
+  have hle : M₀.factorization q ≤ M.factorization q :=
+    (hq.pow_dvd_iff_le_factorization hM.ne').mp
+      ((Nat.ordProj_dvd M₀ q).trans hM₀dvd)
+  exact hcond₀.mono_of_not_isUnramifiedAt hle hram
 
 include hpodd in
 /-- **The conductor exponent at `2` of a square-zero-unipotent inertia
