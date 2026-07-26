@@ -27046,32 +27046,167 @@ leaf. The duplicate declaration that stood here was removed at
 integration (2026-07-26): the fact is proven once and consumed twice,
 here and in `exists_newformFactor_modularHeckeAlgebraQ`. -/
 
-/-- **The Weil bound for a weight-two newform** (sorry node, NINTH
-decomposition 2026-07-26 — cut out of `ModularTateGaloisData` below,
-where it was buried inside `irred_eigenspace`): the `q`-expansion
-coefficients of a normalized weight-two newform of level `M` satisfy
-`|a_q| ≤ 2√q` at every prime.
+/-- **The Weil bound at a GOOD prime** (sorry node, TENTH decomposition
+2026-07-26 — the deep third of `norm_qCoeff_le_two_mul_sqrt` below): at
+a prime `q ∤ M` the `q`-th coefficient of a normalized weight-two
+newform of level `M` splits as `a_q = α + β` with `|α| = |β| = √q`.
+
+Classical content, and the reason this is THE hard case. By
+Eichler–Shimura (Diamond–Shurman Theorem 8.7.2) `a_q` is the trace of
+`Frob_q` acting on the `ℓ`-adic Tate module of `J₀(M)`, and `α, β` are
+the two eigenvalues of `Frob_q` on the `g`-isotypic part — the roots of
+the Hecke polynomial `X² − a_q X + q`. That `|α| = |β| = √q` is the
+**Riemann hypothesis for curves over finite fields** (Weil), applied to
+the good reduction `X₀(M)/𝔽_q`; equivalently it is the Hasse–Weil bound
+`|#X₀(M)(𝔽_q) − q − 1| ≤ 2g√q`. For weight two this is a THEOREM, not
+the Ramanujan–Petersson conjecture — Deligne is needed only for `k > 2`.
+
+Stated as a splitting rather than as the inequality on purpose: the
+inequality is then one triangle-inequality step, and the arithmetic
+content (`αβ = q`, forced by `|α| = |β| = √q` together with the Hecke
+recursion) stays where it belongs. Note the roots are automatically
+complex conjugates here, since `a_q` is real; the statement does not
+need to say so.
+
+Missing from the pin: Weil RH for curves, the good reduction of `X₀(M)`
+at `q ∤ M` (Igusa), and the Eichler–Shimura relation. -/
+theorem exists_frobRoots_qCoeff_of_not_dvd {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
+    ∃ α β : ℂ, qCoeff M g q = α + β ∧
+      ‖α‖ = Real.sqrt q ∧ ‖β‖ = Real.sqrt q :=
+  sorry
+
+/-- **Atkin–Lehner at a prime EXACTLY dividing the level** (sorry node,
+TENTH decomposition 2026-07-26): for `q ‖ M` the `q`-th coefficient of a
+normalized weight-two newform has absolute value `1`.
+
+Classical content (Atkin–Lehner; Diamond–Shurman §5.8, Theorem 5.8.2
+together with the `U_q`-eigenvalue computation): at a prime exactly
+dividing the level of a newform of weight `k` and trivial nebentypus,
+`a_q = ±q^{k/2−1}`, so `|a_q| = q^{k/2−1}`. At **weight two** the
+exponent is `0` and the value is `±1` — NOT `√q`. The elliptic-curve
+shadow of this is the familiar `a_q = +1` at split and `−1` at
+nonsplit multiplicative reduction; `X₀(11)` with `a₁₁ = 1` is the
+smallest instance.
+
+This case involves **no Weil RH at all** — the eigenvalue is pinned by
+the Atkin–Lehner involution `W_q`, whose eigenvalue on a newform is
+`−a_q` at weight two — which is exactly why it is a leaf separate from
+`exists_frobRoots_qCoeff_of_not_dvd`.
+
+NUMERICAL CONFIRMATION (PARI/GP, 2026-07-26, as an untrusted searcher —
+not a proof, but enough to have caught the docstring error this cut
+repairs). All three cases of the trichotomy were checked against twelve
+weight-two newforms realized as elliptic curves of conductors
+`11, 14, 15, 20, 24, 27, 32, 36, 37, 49, 50, 1666`, at every prime
+`q ≤ 60`: zero violations of `a_q = 0` at `q² ∣ N`, of `|a_q| = 1` at
+`q ‖ N`, and of `|a_q| ≤ 2√q` at `q ∤ N`. The single datum
+`N = 11, q = 11, a₁₁ = 1` already refutes the `|a_q| = √q` that the
+ninth cut's docstring asserted here, since `√11 ≈ 3.317`.
+
+Missing from the pin: the `U_q` and `W_q` operators and Atkin–Lehner
+theory for the `q`-old/`q`-new decomposition. -/
+theorem norm_qCoeff_eq_one_of_exactly_dvd {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
+    ‖qCoeff M g q‖ = 1 :=
+  sorry
+
+/-- **Atkin–Lehner at a prime whose SQUARE divides the level** (sorry
+node, TENTH decomposition 2026-07-26): for `q² ∣ M` the `q`-th
+coefficient of a normalized weight-two newform vanishes.
+
+Classical content (Atkin–Lehner; Diamond–Shurman Theorem 5.8.2 and the
+local-representation description): when `q² ∣ M` the local component of
+the automorphic representation at `q` is supercuspidal or a ramified
+principal series, and the `U_q`-eigenvalue on the newvector is `0`. The
+elliptic-curve shadow is additive reduction, where `a_q = 0`.
+
+The cheapest of the three cases in the trichotomy, and the only one
+whose conclusion is an equation rather than an estimate; it discharges
+the bound trivially since `0 ≤ 2√q`.
+
+Missing from the pin: the same Atkin–Lehner theory as the previous
+leaf. -/
+theorem qCoeff_eq_zero_of_sq_dvd {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM2 : q ^ 2 ∣ M) :
+    qCoeff M g q = 0 :=
+  sorry
+
+/-- **The Weil bound for a weight-two newform** (PROVEN 2026-07-26 as
+the TENTH decomposition — an ASSEMBLY over the three prime cases above;
+it was a sorry node from the NINTH decomposition, which cut it out of
+`ModularTateGaloisData` below, where it was buried inside
+`irred_eigenspace`): the `q`-expansion coefficients of a normalized
+weight-two newform of level `M` satisfy `|a_q| ≤ 2√q` at every prime.
 
 Classical content (Diamond–Shurman Theorem 5.9.1; Eichler–Shimura,
 i.e. the Hasse–Weil bound for the abelian variety `J₀(M)` — for weight
 two this is a THEOREM, not the Ramanujan–Petersson conjecture): at a
 prime `q ∤ M` one writes `a_q = α + β` with `αβ = q` and
 `|α| = |β| = √q`, giving `|a_q| ≤ 2√q`; at `q ‖ M` one has
-`|a_q| = √q`, and at `q² ∣ M` one has `a_q = 0`. So the stated bound
+`|a_q| = 1`, and at `q² ∣ M` one has `a_q = 0`. So the stated bound
 holds at EVERY prime and no divisibility hypothesis is needed — which
 is why the leaf is stated without one.
+
+DOCSTRING CORRECTION (2026-07-26, TENTH cut). The ninth cut's version of
+this paragraph asserted `|a_q| = √q` at `q ‖ M`. **That is false.** The
+general Atkin–Lehner value at a prime exactly dividing the level is
+`|a_q| = q^{k/2−1}`, which at weight `k = 2` is `q⁰ = 1`, not `q^{1/2}`.
+The elliptic-curve case is the counterexample to keep in mind: `X₀(11)`
+has `a₁₁ = 1` while `√11 ≈ 3.317`, and generally a curve with
+multiplicative reduction at `q` has `a_q = ±1` (split / nonsplit). The
+LEAF STATEMENT was never affected — `1 ≤ 2√q` for every prime `q` — so
+only the justification was wrong; it is corrected here and split out as
+`norm_qCoeff_eq_one_of_exactly_dvd` below, where the correct value is
+now the statement a successor must prove.
 
 Missing from the pin: the Eichler–Shimura relation and the Riemann
 hypothesis for curves over finite fields. This is a purely ANALYTIC
 statement about `q`-expansions — no Galois representation and no
 modular-curve geometry appears in it — which is exactly why it is
 worth having as a leaf of its own rather than as a clause buried in
-the arithmetic leaf below. -/
+the arithmetic leaf below.
+
+THE TENTH CUT, EXECUTED HERE (2026-07-26). The bound is no longer a
+leaf: it is an ASSEMBLY over the three prime cases, which rest on
+GENUINELY DIFFERENT mathematics and are therefore independently
+dispatchable, exactly as the ninth cut separated this bound from Ribet
+irreducibility:
+
+* `q ∤ M` — `exists_frobRoots_qCoeff_of_not_dvd`, the deep case: the
+  Riemann hypothesis for curves over finite fields (Weil), reached
+  through the Eichler–Shimura relation;
+* `q ‖ M` — `norm_qCoeff_eq_one_of_exactly_dvd`: Atkin–Lehner theory
+  for the `U_q`-eigenvalue, no Weil RH involved;
+* `q² ∣ M` — `qCoeff_eq_zero_of_sq_dvd`: Atkin–Lehner again, and the
+  cheapest of the three.
+
+Only the last two touch the level, so the trichotomy is the natural
+partition and nothing is duplicated across it. The assembly below is
+PROVEN: the triangle inequality in the good case, and `1 ≤ 2√q` (from
+`q ≥ 2`) in the two bad ones. -/
 theorem norm_qCoeff_le_two_mul_sqrt {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) :
-    ‖qCoeff M g q‖ ≤ 2 * Real.sqrt q :=
-  sorry
+    ‖qCoeff M g q‖ ≤ 2 * Real.sqrt q := by
+  have hq1 : (1 : ℝ) ≤ Real.sqrt q := by
+    have h1 : (1 : ℝ) ≤ (q : ℝ) := by exact_mod_cast hq.one_lt.le
+    calc (1 : ℝ) = Real.sqrt 1 := Real.sqrt_one.symm
+      _ ≤ Real.sqrt q := Real.sqrt_le_sqrt h1
+  by_cases hdvd : q ∣ M
+  · by_cases hsq : q ^ 2 ∣ M
+    · rw [qCoeff_eq_zero_of_sq_dvd hM g hg hq hsq, norm_zero]
+      linarith
+    · rw [norm_qCoeff_eq_one_of_exactly_dvd hM g hg hq hdvd hsq]
+      linarith
+  · obtain ⟨α, β, hsum, hα, hβ⟩ :=
+      exists_frobRoots_qCoeff_of_not_dvd hM g hg hq hdvd
+    rw [hsum]
+    calc ‖α + β‖ ≤ ‖α‖ + ‖β‖ := norm_add_le _ _
+      _ = 2 * Real.sqrt q := by rw [hα, hβ]; ring
 
 /-- **Ribet irreducibility, as a theorem about the frame** (sorry node,
 NINTH decomposition 2026-07-26): the `κ`-eigencomponent of the concrete
@@ -27114,9 +27249,10 @@ the weight-two trivial-nebentypus case; see also Ribet, *Invent. Math.*
    identifies `det ρ` with the `p`-adic cyclotomic character.
 5. `hcomm` is what makes `E` Galois-stable in the first place, so that
    `ρ` exists at all.
-6. Both `δᵢ` are unramified outside `S`, so by global class field
-   theory over `ℚ` each is a finite-order character times an integral
-   power of the cyclotomic character, and step 4 forces the two
+6. Both `δᵢ` are unramified outside `S`, and each is a finite-order
+   character times an integral power of the cyclotomic character — see
+   the STEP 6 CORRECTION below for what that actually requires, because
+   unramifiedness alone does NOT give it. Step 4 forces the two
    exponents to sum to one. Hence `κ(a_q) = δ₁(Frob_q) + δ₂(Frob_q)`
    is, up to roots of unity, of shape `1 + q`: an algebraic number
    whose archimedean absolute value grows like `q`. That contradicts
@@ -27125,15 +27261,61 @@ the weight-two trivial-nebentypus case; see also Ribet, *Invent. Math.*
    `Fermat/FLT/GaloisRepresentation/Chebotarev.lean`) supplies
    infinitely many such `q ∉ S`.
 
+STEP 6 CORRECTION (2026-07-26, TENTH cut — the previous version of this
+docstring stated step 6 as bare class field theory, and **as stated that
+is false**; a successor following it would have set out to prove a false
+lemma).
+
+The claim "a continuous character `δ : Γℚ → ℚ̄_pˣ` unramified outside a
+finite set `S` is a finite-order character times an integral power of
+`χ_cyc`" is FALSE. Explicit counterexample: `χ_cyc` is itself unramified
+outside `{p}` and lands in `ℤ_pˣ ≅ μ_{p−1} × (1 + pℤ_p) ≅ μ_{p−1} × ℤ_p`;
+composing it with any continuous `ℤ_p → ℚ̄_pˣ`, `x ↦ u^x = exp(x log u)`
+for `u` close enough to `1`, gives a continuous character unramified
+outside `{p}`. Taking `u = (1+p)^s` yields `⟨χ_cyc⟩^s` for arbitrary
+`s ∈ ℤ_p`, and for `s ∈ ℤ_p ∖ ℤ` this is neither of finite order nor an
+integral power of `χ_cyc` times one. The wildness sits entirely at `p`:
+away from `p` the argument really is CFT, since a continuous map from a
+pro-`ℓ` group to `ℚ̄_pˣ` with `ℓ ≠ p` has finite image.
+
+So the classification needs ONE further input beyond unramifiedness, and
+there are two standard ones:
+
+* **Algebraicity of the Frobenius values** (Serre, *Abelian ℓ-adic
+  Representations and Elliptic Curves*, Ch. III §§1–3): a character
+  unramified outside `S` whose Frobenius values are algebraic of bounded
+  height is locally algebraic, hence of type `A₀`. **This is the route
+  available HERE**, and it is why the leaf needs no new hypothesis:
+  `δ₁(Frob_q)` and `δ₂(Frob_q)` are the two roots of
+  `X² − κ(a_q)·X + q`, whose coefficients are images under `κ` of
+  elements of `heckeField M g` — a NUMBER FIELD, by
+  `heckeField_finiteDimensional`. The algebraicity is therefore already
+  in the hypotheses, carried by `κ`, and a successor should use it.
+* **Hodge–Tate-ness** (Tate): a Hodge–Tate character of `Γℚ` is
+  finite-order times `χ_cyc^n`. This is the route taken in Ribet's own
+  write-up, where `ρ` is the Tate module of an abelian variety and hence
+  de Rham. It is NOT available here: this leaf deliberately hypothesizes
+  only that `τJ` is a continuous `GaloisRep` with the congruence and
+  pairing properties, and says nothing about `p`-adic Hodge theory — by
+  design, since the whole point of the ninth cut was to keep the
+  geometry out.
+
+The correction does not weaken the leaf and does not make it false; it
+identifies which of two classical theorems a successor must formalize,
+and rules out the one that this statement's hypotheses cannot support.
+
 Missing from the pin, and the reason this is still a leaf: the Weil
-bound itself is the separate leaf `norm_qCoeff_le_two_mul_sqrt` above
-(so it enters here as the hypothesis `hweil`), and the classification
-of continuous `ℚ̄_pˣ`-valued characters of `Γℚ` unramified outside a
-finite set — global class field theory over `ℚ` — is not available
-either. Steps 1, 2, 4 and 5 are linear algebra over the frame and step
-3 is reachable from the pin today; step 6 is the genuinely missing
-half, and a successor should attack it there rather than at the whole
-statement.
+bound enters as the hypothesis `hweil`, supplied by
+`norm_qCoeff_le_two_mul_sqrt` above — which since the TENTH cut is
+itself PROVEN, as an assembly over the three prime cases
+`exists_frobRoots_qCoeff_of_not_dvd`, `norm_qCoeff_eq_one_of_exactly_dvd`
+and `qCoeff_eq_zero_of_sq_dvd`; and the classification of continuous
+`ℚ̄_pˣ`-valued characters of `Γℚ` unramified outside a finite set — in
+the corrected, locally-algebraic form above, NOT bare class field
+theory — is not available either. Steps 1, 2, 4 and 5 are linear
+algebra over the frame and step 3 is reachable from the pin today;
+step 6 is the genuinely missing half, and a successor should attack it
+there rather than at the whole statement.
 
 FAITHFULNESS: the conclusion is VERBATIM the `irred_eigenspace` field
 that stood in `ModularTateGaloisData` until this cut, with the
