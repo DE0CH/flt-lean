@@ -21246,7 +21246,14 @@ theorem heckeOp_coe {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime)
 functional `qCoeffL`). -/
 theorem qCoeff_smul {N : ℕ} (c : ℂ) (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
     qCoeff N (c • f) m = c * qCoeff N f m := by
-  simpa using (qCoeffL N m).map_smul c f
+  -- NOT `simpa using …`: `map_smul` is itself a `simp` lemma, so simp normalises
+  -- the LHS of `(qCoeffL N m).map_smul c f` to its own RHS and collapses the whole
+  -- term to `True`, while the goal — phrased in `qCoeff` rather than `qCoeffL` —
+  -- is untouched, so nothing is left to close it with.  Rewrite with the
+  -- definitional bridge `qCoeffL_apply` explicitly instead.
+  have h := (qCoeffL N m).map_smul c f
+  simp only [qCoeffL_apply, RingHom.id_apply, smul_eq_mul] at h
+  exact h
 
 /-- **A normalized weight-2 eigenform is an eigenvector of the Hecke
 operator** (PROVEN — the eigenform carrier `IsWeightTwoEigenform`,
