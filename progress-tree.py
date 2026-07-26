@@ -117,26 +117,31 @@ def regenerate_census_header():
     of the CURRENT census input file). Missing markers are a script/repo
     bug and crash loudly.
 
-    The fingerprint line matters for the report server: the input json
-    is read at ELABORATION time, so a names/root change with unchanged
-    sources must still change the census file's BODY text — otherwise a
-    bumped-version didChange would serve the previous input's cached
-    elaboration. Callers therefore write CENSUS_INPUT BEFORE calling
-    this function. The line sits after the imports, so it is body text
-    (a change re-elaborates the census without an import reload)."""
+    The fingerprint line ties the generated file to the input it was
+    generated for: the input json is read at ELABORATION time, so
+    without it a names/root change with unchanged sources would leave
+    the census file byte-identical and give no evidence of which input
+    a given ProgressCensus.lean belongs to. Callers therefore write
+    CENSUS_INPUT BEFORE calling this function.
+
+    (It was originally load-bearing for a different reason — the
+    resident report server would otherwise have served the previous
+    input's cached elaboration for a bumped-version didChange. That
+    server is deleted and every run is now a fresh process, so nothing
+    can be cached across runs; the line is kept because a generated
+    file that records its own input is worth having.)"""
     src = open(CENSUS_LEAN, encoding="utf-8").read()
     i = src.index(_BEGIN)
     j = src.index(_END)
     block = _BEGIN + "\n"
     for mod in scan_fermat_modules():
         block += f"import {mod}\n"
-    # RELATIVE path (Deyao's fleet, 2026-07-23): the report server's cwd
-    # is its own worktree root (systemd WorkingDirectory=%h/%i), and the
-    # standalone `lake lean ProgressCensus.lean` route also runs from the
-    # root — so a relative path resolves correctly everywhere, and the
-    # generated file stays BYTE-IDENTICAL across all 14 worktrees at the
-    # same commit. An absolute path here made every worktree's census
-    # regeneration dirty its ProgressCensus.lean, tripping the dispatch
+    # RELATIVE path (Deyao's fleet, 2026-07-23): run_census() cd's to the
+    # worktree ROOT before invoking `lake env lean ProgressCensus.lean`, so a
+    # relative path resolves correctly, and — the reason it must stay relative
+    # — the generated file then stays BYTE-IDENTICAL across every worktree at
+    # the same commit. An absolute path here made each worktree's census
+    # regeneration dirty its own ProgressCensus.lean, tripping the dispatch
     # pool-hook's clean-worktree guard.
     block += ('def censusInputPath : System.FilePath := '
               '"progress-census-input.json"\n')

@@ -60,6 +60,7 @@ import Fermat.FLT.EllipticCurve.TorsionCard
 import Fermat.FLT.EllipticCurve.TorsionCardSep
 import Fermat.FLT.EllipticCurve.TorsionCounting
 import Fermat.FLT.EllipticCurve.UniversalCurve
+import Fermat.FLT.EllipticCurve.Velu
 import Fermat.FLT.EllipticCurve.WeilPairing
 import Fermat.FLT.EllipticCurve.WeilPairingDescent
 import Fermat.FLT.EllipticCurve.WeilPairingRecgen
@@ -87,6 +88,8 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.Frey
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.ProfiniteLocal
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.ProfiniteLocalNoetherian
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Reducible
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Residual
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Threeadic
@@ -94,6 +97,7 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.ZLatticePoisson
 import Fermat.FLT.GroupScheme.ConnectedEtale
 import Fermat.FLT.KnownIn1980s.EllipticCurves.Flat
 import Fermat.FLT.KnownIn1980s.EllipticCurves.GoodReduction
+import Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.QuadraticTwists
 import Fermat.FLT.KnownIn1980s.EllipticCurves.QuadraticTwists.SplitMultiplicativeReduction
 import Fermat.FLT.KnownIn1980s.EllipticCurves.TateCurve
@@ -138,6 +142,7 @@ import Fermat.FLT.Mathlib.RingTheory.Norm.Quadratic
 import Fermat.FLT.Mathlib.RingTheory.Norm.Quotient
 import Fermat.FLT.Mathlib.RingTheory.PadicIntegralClosure
 import Fermat.FLT.Mathlib.RingTheory.Polynomial.GaussLemma
+import Fermat.FLT.Mathlib.RingTheory.PowerSeries.AdicComplete
 import Fermat.FLT.Mathlib.RingTheory.Unramified.LocalRing
 import Fermat.FLT.Mathlib.RingTheory.Valuation.Discrete.IsDiscreteValuationRing
 import Fermat.FLT.Mathlib.RingTheory.Valuation.ValuationSubring
@@ -146,6 +151,7 @@ import Fermat.FLT.Mathlib.Topology.Algebra.ContinuousSMulDiscrete
 import Fermat.FLT.Mathlib.Topology.Algebra.Group.Basic
 import Fermat.FLT.Mathlib.Topology.Algebra.IsUniformGroup.Basic
 import Fermat.FLT.Mathlib.Topology.Algebra.ValuativeRel.ValuativeTopology
+import Fermat.FLT.Modularity.AbelianScheme
 import Fermat.FLT.Modularity.Interface
 import Fermat.FLT.Modularity.KhareWintenberger
 import Fermat.FLT.Modularity.Patching
