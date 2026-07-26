@@ -9771,7 +9771,7 @@ representations associated to Hilbert modular forms*, Invent. Math. 98 (1989);
 Fujiwara, *Deformation rings and Hecke algebras in the totally real case*;
 Jarvis, *Level lowering for modular mod `ℓ` representations over totally real
 fields*, Math. Ann. 313 (1999); Rajaei, *On the levels of mod `ℓ` Hilbert
-modular forms*, J. reine angew. Math. 537 (2001). -/
+modular forms*, J. reine angew. Math. 537 (2001).
 
 FORMAL-CONTENT AUDIT retained from the concurrent owner whose vacuous
 proof this strengthening replaced -- it is the reason the strengthening
