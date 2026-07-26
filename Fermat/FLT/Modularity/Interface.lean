@@ -201,6 +201,19 @@ import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
 -- PUBLIC because the glue lemmas' statements mention the `WithConv`
 -- convolution monoid and this file is one `@[expose] public section`
 public import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+-- the Raynaud closure cut on the point-group carrier (`IsFlatPointsGroupAt`
+-- and its `prod` / `pi` / `of_addEquiv` / `of_subsingleton` / `of_surjective`
+-- / `of_injective` closure properties, plus the two Hopf-order and two
+-- étale–Galois nodes they run over), MOVED out of this file 2026-07-26 to a
+-- home BELOW `GaloisRepresentation/HardlyRamified/Deformation.lean`, which
+-- needs it and used to be import-unreachable from it.
+-- PUBLIC, and imported HERE rather than relied on transitively: this file
+-- states theorems whose types mention `IsFlatPointsGroupAt`, and
+-- `Deformation.lean` imports the module non-publicly (it needs it only in a
+-- proof), so under the module system the names do NOT arrive through that
+-- edge. Getting this wrong is exactly the "Unknown identifier" this import
+-- was added to fix.
+public import Fermat.FLT.Deformations.RepresentationTheory.FlatPointsGroup
 -- `integralClosureInclusion`, used in the STATEMENT (not merely the proof)
 -- of `mem_maximalIdeal_of_integralClosureInclusion` below, which serves the
 -- at-`2` tame-Frobenius leaf.  It reached this file only transitively and
@@ -18736,7 +18749,15 @@ theorem heckeOp_coe {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime)
 functional `qCoeffL`). -/
 theorem qCoeff_smul {N : ℕ} (c : ℂ) (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
     qCoeff N (c • f) m = c * qCoeff N f m := by
-  simpa using (qCoeffL N m).map_smul c f
+  -- REPAIR 2026-07-26: was `simpa using …`, which had started failing with
+  -- "after simplification, term has type True": the default simp set closes
+  -- the SUPPLIED equation outright while making no progress on the goal, so
+  -- `simpa` has nothing left to match. Naming the two rewrites that are
+  -- actually wanted (`qCoeffL_apply`, itself `rfl`, and `smul_eq_mul`) makes
+  -- the step deterministic and independent of the ambient simp set. This
+  -- declaration ERRORED rather than sorried, so it was invisible to every
+  -- frontier scan while silently blocking the whole module.
+  simpa only [qCoeffL_apply, smul_eq_mul] using (qCoeffL N m).map_smul c f
 
 /-- **A normalized weight-2 eigenform is an eigenvector of the Hecke
 operator** (PROVEN — the eigenform carrier `IsWeightTwoEigenform`,
