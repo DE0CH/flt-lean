@@ -99,6 +99,14 @@ Two lemmas and one assembly.
   reduction matches the level structure up to `Aut(k')` — the ONLY
   place `hirr` is used, and the step whose unconditional form was
   refuted).
+* `exists_adicCoefficientRing` is itself PROVEN (2026-07-26): `O` is
+  mathlib's `v.adicCompletionIntegers D`, all three PIN conjuncts are
+  discharged here (`isAdicComplete_span_uniformizer`,
+  `exists_sub_mem_span_uniformizer_pow`, `mem_span_uniformizer_pow_iff`),
+  and its `ℤ_q`-algebra structure is `padicIntAlgebra`, built from a
+  general `padicIntLiftHom : ℤ_[p] →+* O` for `p`-adically complete `O`
+  that mathlib does not have.  Its one residual leaf is
+  `module_finite_free_moduleTopology_padicIntAlgebra`.
 
 `exists_weilFrobeniusSystem_of_mult` remains a single sorried leaf; it
 is stated about the geometric objects of `AbelianScheme.lean` and about
@@ -253,6 +261,136 @@ What is NOT proven here, and is the one remaining leaf, is the
 `ℤ_q`-structure: mathlib has no functoriality of adic completions along
 a finite extension, so `Algebra ℤ_[q] 𝒪_v` does not exist upstream.  See
 the docstring of `exists_padicIntStructure_adicCompletionIntegers`. -/
+
+/-! ### Mapping out of `ℤ_p` into a `p`-adically complete ring
+
+Mathlib has the universal property of `ℤ_p` as a projective LIMIT
+(`PadicInt.lift`, which maps INTO `ℤ_p`) but not the one that says `ℤ_p`
+is the `p`-adic COMPLETION of `ℤ`, which is what produces maps OUT of
+it. This subsection supplies exactly that, from `PadicInt.appr` and
+`IsAdicComplete`. It is used to give `𝒪_{D,I}` its `ℤ_q`-algebra
+structure, which is otherwise unavailable at this pin. -/
+
+section PadicIntLift
+
+variable {p : ℕ} [hp : Fact p.Prime] {O : Type*} [CommRing O]
+
+omit hp in
+/-- Naturals congruent mod `pⁿ` have images differing by `(p)ⁿ`
+(PROVEN). -/
+theorem sub_mem_span_pow_of_modEq {a b n : ℕ} (h : a ≡ b [MOD p ^ n]) :
+    ((a : O)) - (b : O) ∈ Ideal.span {(p : O)} ^ n := by
+  rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton]
+  obtain ⟨c, hc⟩ := (Nat.modEq_iff_dvd (n := p ^ n)).mp h
+  refine ⟨-(c : O), ?_⟩
+  have := congrArg (fun z : ℤ => (z : O)) hc
+  push_cast at this ⊢
+  linear_combination -this
+
+/-- `PadicInt.appr x n` is the unique natural, mod `pⁿ`, congruent to
+`x` (PROVEN). -/
+theorem appr_modEq (x : ℤ_[p]) (a n : ℕ) (h : x - (a : ℤ_[p]) ∈ Ideal.span {(p : ℤ_[p]) ^ n}) :
+    x.appr n ≡ a [MOD p ^ n] := by
+  have := PadicInt.zmod_congr_of_sub_mem_span n x (x.appr n) a (PadicInt.appr_spec n x) h
+  rwa [ZMod.natCast_eq_natCast_iff] at this
+
+variable (O) in
+/-- The approximants of `x` form a Cauchy sequence in any ring (PROVEN). -/
+theorem appr_sub_appr_mem (x : ℤ_[p]) : ∀ {m n : ℕ}, m ≤ n →
+    ((x.appr m : ℕ) : O) - ((x.appr n : ℕ) : O) ∈ Ideal.span {(p : O)} ^ m := by
+  intro m n hmn
+  refine sub_mem_span_pow_of_modEq (O := O) ?_
+  rw [Nat.modEq_iff_dvd' (x.appr_mono hmn)]
+  exact PadicInt.dvd_appr_sub_appr x m n hmn
+
+/-- Transport of `appr_modEq` into the target ring (PROVEN). -/
+theorem appr_sub_natCast_mem (x : ℤ_[p]) (a n : ℕ)
+    (h : x - (a : ℤ_[p]) ∈ Ideal.span {(p : ℤ_[p]) ^ n}) :
+    ((x.appr n : ℕ) : O) - (a : O) ∈ Ideal.span {(p : O)} ^ n :=
+  sub_mem_span_pow_of_modEq (appr_modEq x a n h)
+
+variable [IsAdicComplete (Ideal.span {(p : O)}) O]
+
+/-- **The approximants of a `p`-adic integer converge in any
+`p`-adically complete ring, to a unique limit** (PROVEN).  Existence is
+`IsPrecomplete`, uniqueness is `IsHausdorff`. -/
+theorem existsUnique_padicIntLift (x : ℤ_[p]) :
+    ∃! L : O, ∀ n : ℕ, ((x.appr n : ℕ) : O) - L ∈ Ideal.span {(p : O)} ^ n := by
+  obtain ⟨L, hL⟩ := IsPrecomplete.prec (I := Ideal.span {(p : O)}) inferInstance
+    (f := fun n => ((x.appr n : ℕ) : O)) (by
+      intro m n hmn
+      simpa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] using appr_sub_appr_mem O x hmn)
+  refine ⟨L, fun n => by simpa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] using hL n, ?_⟩
+  intro L' hL'
+  rw [IsHausdorff.eq_iff_smodEq (I := Ideal.span {(p : O)})]
+  intro n
+  simp only [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+  have h1 := hL' n
+  have h2 : ((x.appr n : ℕ) : O) - L ∈ Ideal.span {(p : O)} ^ n := by
+    simpa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] using hL n
+  have := Ideal.sub_mem _ h2 h1
+  simpa using this
+
+/-- The image of a `p`-adic integer in a `p`-adically complete ring. -/
+noncomputable def padicIntLift (x : ℤ_[p]) : O := (existsUnique_padicIntLift (O := O) x).choose
+
+theorem padicIntLift_spec (x : ℤ_[p]) (n : ℕ) :
+    ((x.appr n : ℕ) : O) - padicIntLift (O := O) x ∈ Ideal.span {(p : O)} ^ n :=
+  (existsUnique_padicIntLift (O := O) x).choose_spec.1 n
+
+theorem padicIntLift_eq (x : ℤ_[p]) (L : O)
+    (h : ∀ n : ℕ, ((x.appr n : ℕ) : O) - L ∈ Ideal.span {(p : O)} ^ n) :
+    padicIntLift (O := O) x = L :=
+  (existsUnique_padicIntLift (O := O) x).unique
+    (existsUnique_padicIntLift (O := O) x).choose_spec.1 h
+
+/-- **The canonical ring homomorphism from `ℤ_p` into a `p`-adically
+complete ring** (PROVEN).  Every clause is the uniqueness half of
+`existsUnique_padicIntLift` applied to a congruence between
+approximants. -/
+noncomputable def padicIntLiftHom : ℤ_[p] →+* O where
+  toFun := padicIntLift
+  map_zero' := padicIntLift_eq _ _ fun n => by
+    have h : (0 : ℤ_[p]) - ((0 : ℕ) : ℤ_[p]) ∈ Ideal.span {(p : ℤ_[p]) ^ n} := by simp
+    simpa using appr_sub_natCast_mem (O := O) (0 : ℤ_[p]) 0 n h
+  map_one' := padicIntLift_eq _ _ fun n => by
+    have h : (1 : ℤ_[p]) - ((1 : ℕ) : ℤ_[p]) ∈ Ideal.span {(p : ℤ_[p]) ^ n} := by simp
+    simpa using appr_sub_natCast_mem (O := O) (1 : ℤ_[p]) 1 n h
+  map_add' x y := padicIntLift_eq _ _ fun n => by
+    have hx := PadicInt.appr_spec n x
+    have hy := PadicInt.appr_spec n y
+    have h : x + y - ((x.appr n + y.appr n : ℕ) : ℤ_[p]) ∈ Ideal.span {(p : ℤ_[p]) ^ n} := by
+      have := Ideal.add_mem (Ideal.span {(p : ℤ_[p]) ^ n}) hx hy
+      push_cast
+      convert this using 1
+      ring
+    have h1 := appr_sub_natCast_mem (O := O) (x + y) (x.appr n + y.appr n) n h
+    have h2 := padicIntLift_spec (O := O) x n
+    have h3 := padicIntLift_spec (O := O) y n
+    have := Ideal.add_mem _ h1 (Ideal.add_mem _ h2 h3)
+    push_cast at this ⊢
+    convert this using 1
+    ring
+  map_mul' x y := padicIntLift_eq _ _ fun n => by
+    have hx := PadicInt.appr_spec n x
+    have hy := PadicInt.appr_spec n y
+    have h : x * y - ((x.appr n * y.appr n : ℕ) : ℤ_[p]) ∈ Ideal.span {(p : ℤ_[p]) ^ n} := by
+      have := Ideal.add_mem (Ideal.span {(p : ℤ_[p]) ^ n})
+        (Ideal.mul_mem_right y _ hx) (Ideal.mul_mem_left _ ((x.appr n : ℕ) : ℤ_[p]) hy)
+      push_cast
+      convert this using 1
+      ring
+    have h1 := appr_sub_natCast_mem (O := O) (x * y) (x.appr n * y.appr n) n h
+    have h2 := padicIntLift_spec (O := O) x n
+    have h3 := padicIntLift_spec (O := O) y n
+    have := Ideal.add_mem _ h1 (Ideal.add_mem _
+      (Ideal.mul_mem_left _ ((x.appr n : ℕ) : O) h3)
+      (Ideal.mul_mem_right (padicIntLift (O := O) y) _ h2))
+    push_cast at this ⊢
+    convert this using 1
+    ring
+
+end PadicIntLift
 
 section AdicCompletionIntegers
 
@@ -447,16 +585,68 @@ theorem isAdicComplete_span_uniformizer (π : 𝓞 D) (hπ : π ∈ v.asIdeal)
     ⟨(Valued.isClosed_valuationSubring (Γ₀ := WithZero (Multiplicative ℤ))
       (v.adicCompletion D)).completeSpace_coe, inferInstance⟩
 
-/-- **The `I`-adic completion of `𝒪_D` is a finite free topological
-`ℤ_q`-algebra** (sorry node — commutative algebra; Serre *Local Fields*
-II, Neukirch II.4).
+/-- **`𝒪ᵥ` is `q`-adically complete**, `q` the residue characteristic
+(PROVEN).  As ideals of `𝒪ᵥ`, `(q) = (π)ᵉ` with `e ≥ 1` the ramification
+index, so this follows from `isAdic_span_uniformizer` through
+`is_ideal_adic_pow`.  It is what gives `𝒪ᵥ` its `ℤ_q`-algebra structure
+below. -/
+theorem isAdicComplete_span_natCast (q : ℕ) [Fact q.Prime] (hqv : (q : 𝓞 D) ∈ v.asIdeal) :
+    IsAdicComplete (Ideal.span {(q : v.adicCompletionIntegers D)})
+      (v.adicCompletionIntegers D) := by
+  obtain ⟨π, hπ, hπ2⟩ : ∃ π : 𝓞 D, π ∈ v.asIdeal ∧ π ∉ v.asIdeal ^ 2 := by
+    obtain ⟨π, hπ, hπ2⟩ :=
+      Ideal.exists_mem_pow_notMem_pow_succ v.asIdeal v.ne_bot v.isPrime.ne_top 1
+    exact ⟨π, by simpa using hπ, by simpa using hπ2⟩
+  -- the ramification index `e`, read off the valuation of `q`
+  have hq0 : (q : 𝓞 D) ≠ 0 := Nat.cast_ne_zero.mpr (Fact.out : q.Prime).ne_zero
+  have hqne : v.intValuation (q : 𝓞 D) ≠ 0 := v.intValuation_ne_zero _ hq0
+  obtain ⟨k, hk⟩ : ∃ k : ℤ, v.intValuation (q : 𝓞 D) = exp k := ⟨_, (exp_log hqne).symm⟩
+  have hk1 : k ≤ -1 := by
+    have h := (v.intValuation_le_pow_iff_mem (q : 𝓞 D) 1).mpr (by simpa using hqv)
+    rw [hk, exp_le_exp] at h
+    push_cast at h
+    omega
+  obtain ⟨e, he, he0⟩ : ∃ e : ℕ, k = -(e : ℤ) ∧ 0 < e :=
+    ⟨(-k).toNat, by omega, by omega⟩
+  -- as ideals of `𝒪ᵥ`, `(q) = (π)ᵉ`
+  have hIdeal : Ideal.span {(q : v.adicCompletionIntegers D)}
+      = Ideal.span {algebraMap (𝓞 D) (v.adicCompletionIntegers D) π} ^ e := by
+    apply SetLike.coe_injective
+    rw [coe_span_uniformizer_pow v π hπ hπ2 e]
+    have hv := HeightOneSpectrum.adicCompletionIntegers.integers (K := D) v
+    have hcast : (q : v.adicCompletionIntegers D)
+        = algebraMap (𝓞 D) (v.adicCompletionIntegers D) (q : 𝓞 D) := by
+      simp
+    rw [hcast, hv.coe_span_singleton_eq_setOf_le_v_algebraMap,
+      valued_algebraMap_adicCompletionIntegers, hk, he]
+    rfl
+  rw [hIdeal]
+  exact (IsAdic.isAdicComplete_iff
+      (is_ideal_adic_pow (isAdic_span_uniformizer v π hπ hπ2) he0)).mpr
+    ⟨(Valued.isClosed_valuationSubring (Γ₀ := WithZero (Multiplicative ℤ))
+      (v.adicCompletion D)).completeSpace_coe, inferInstance⟩
+
+/-- **The `ℤ_q`-algebra structure on `𝒪ᵥ`** — the unique one continuous
+for the valuation topology, obtained by `padicIntLiftHom` from
+`q`-adic completeness.  This PINS the algebra structure that
+`exists_adicCoefficientRing` produces; without it the leaf would admit
+any `ℤ_q`-structure whatever. -/
+@[implicit_reducible]
+noncomputable def padicIntAlgebra (q : ℕ) [Fact q.Prime] (hqv : (q : 𝓞 D) ∈ v.asIdeal) :
+    Algebra ℤ_[q] (v.adicCompletionIntegers D) :=
+  letI := isAdicComplete_span_natCast v q hqv
+  (padicIntLiftHom : ℤ_[q] →+* v.adicCompletionIntegers D).toAlgebra
+
+/-- **`𝒪_v` is finite and free over `ℤ_q`, with the module topology**
+(sorry node — commutative algebra; Serre *Local Fields* II, Neukirch
+II.4).
 
 For `v` a height-one point of `𝒪_D` lying over the rational prime `q`,
 the completion `𝒪_v` is finite and free over `ℤ_q` of rank `e·f`, and
-its valuation topology is the `ℤ_q`-module topology.  Nothing about the
-map `𝒪_D → 𝒪_v` is asserted here — this leaf is exactly the missing
-`ℤ_q`-structure, and it is all that `exists_adicCoefficientRing` still
-needs (its three pin conjuncts are proven above).
+its valuation topology is the `ℤ_q`-module topology.  The `ℤ_q`-algebra
+structure is not part of the burden — it is `padicIntAlgebra` above,
+PROVEN; and neither are the three pin conjuncts of
+`exists_adicCoefficientRing`.  This is all that leaf still needs.
 
 WHAT IS MISSING UPSTREAM, precisely.  Mathlib has `𝒪_v` with its ring,
 topology, locality and discrete-valuation structure, and (in
@@ -464,8 +654,8 @@ topology, locality and discrete-valuation structure, and (in
 `Module.Finite Kᵥ L_w` for completions of a finite extension — but that
 instance takes `Algebra Kᵥ L_w` as a HYPOTHESIS.  There is no
 functoriality of adic completions along a finite extension in mathlib:
-no `Algebra (v.adicCompletion K) (w.adicCompletion L)`, hence none of
-`Module.Finite`, `Module.Free`, `IsModuleTopology` for the integers
+no `Algebra (v.adicCompletion K) (w.adicCompletion L)`, hence no
+`Module.Finite` / `Module.Free` / `IsModuleTopology` for the integers
 either.
 
 THE VENDORING TARGET.  `~/cs/FLT/FLT/DedekindDomain/Completion/BaseChange.lean`
@@ -479,25 +669,38 @@ mathlib's `PadicInt.adicCompletionIntegersEquiv`.  That file's mathlib
 pin is `81a5d2` against ours `a3364fa`, so every name and signature
 lifted needs re-checking.
 
-A CHEAPER ROUTE FOR THE `Algebra` COMPONENT ALONE, if the base change is
-too heavy: `isAdic_span_uniformizer` above plus `is_ideal_adic_pow`
-gives `IsAdic (Ideal.span {(q : 𝒪ᵥ)})` (as ideals, `(q) = (π)ᵉ`), hence
-`IsAdicComplete (Ideal.span {(q : 𝒪ᵥ)}) 𝒪ᵥ` by
-`IsAdic.isAdicComplete_iff`; and a `q`-adically complete ring receives a
-canonical ring map from `ℤ_q`, built from `PadicInt.appr`,
-`PadicInt.appr_spec` and `PadicInt.dvd_appr_sub_appr` by
-`IsPrecomplete.prec'` with uniqueness from `IsHausdorff`.  `Module.Free`
-is then automatic from `Module.Finite` (`ℤ_q` is a PID and `𝒪ᵥ` is a
-domain containing it, hence torsion-free), so the real content that
-remains is `Module.Finite` — the rank count `Σ eᵢfᵢ = [D:ℚ]` — and
-`IsModuleTopology`. -/
+ROUTES THAT AVOID THE BASE CHANGE.  `Module.Free` should be automatic
+from `Module.Finite`: `ℤ_q` is a principal ideal domain and `𝒪_v` is a
+domain into which it injects (a nonzero ring map from a DVR whose
+target has characteristic zero), so `𝒪_v` is torsion-free and
+`Module.free_of_finite_type_torsion_free'` applies.  For `Module.Finite`
+the classical argument is complete Nakayama: `𝒪_v` is `q`-adically
+complete (`isAdicComplete_span_natCast`) and `𝒪_v / q𝒪_v ≅ 𝒪_D / Iᵉ` is
+FINITE — the isomorphism being exactly what
+`exists_sub_mem_span_uniformizer_pow` (surjectivity) and
+`mem_span_uniformizer_pow_iff` (kernel) above supply.  For
+`IsModuleTopology`, `isAdic_span_uniformizer` says the topology of `𝒪_v`
+has `{(π)ⁿ}` as a basis of neighbourhoods of `0`, and `(π)ᵉ = (q)`, so
+once a `ℤ_q`-basis is in hand the topology is the product one. -/
+theorem module_finite_free_moduleTopology_padicIntAlgebra
+    (q : ℕ) [Fact q.Prime] (hqv : (q : 𝓞 D) ∈ v.asIdeal) :
+    letI := padicIntAlgebra v q hqv
+    Module.Finite ℤ_[q] (v.adicCompletionIntegers D) ∧
+      Module.Free ℤ_[q] (v.adicCompletionIntegers D) ∧
+      IsModuleTopology ℤ_[q] (v.adicCompletionIntegers D) :=
+  sorry
+
+/-- **`𝒪_v` carries a topological `ℤ_q`-algebra structure that is finite
+and free** (PROVEN over `module_finite_free_moduleTopology_padicIntAlgebra`;
+the structure produced is the canonical one, `padicIntAlgebra`). -/
 theorem exists_padicIntStructure_adicCompletionIntegers
     (q : ℕ) [Fact q.Prime] (hqv : (q : 𝓞 D) ∈ v.asIdeal) :
     ∃ (_ : Algebra ℤ_[q] (v.adicCompletionIntegers D))
       (_ : Module.Finite ℤ_[q] (v.adicCompletionIntegers D))
       (_ : Module.Free ℤ_[q] (v.adicCompletionIntegers D)),
-      IsModuleTopology ℤ_[q] (v.adicCompletionIntegers D) :=
-  sorry
+      IsModuleTopology ℤ_[q] (v.adicCompletionIntegers D) := by
+  obtain ⟨hfin, hfree, hmt⟩ := module_finite_free_moduleTopology_padicIntAlgebra v q hqv
+  exact ⟨padicIntAlgebra v q hqv, hfin, hfree, hmt⟩
 
 end AdicCompletionIntegers
 
@@ -512,7 +715,9 @@ independently:
   over `ℤ_q`, carrying the module topology, and pinned to be the
   `I`-adic completion of `𝒪_D` by the three conditions
   `IsAdicComplete`, `π`-adic surjectivity of `j`, and
-  `j a ∈ (π)ⁿ ↔ a ∈ Iⁿ`. Nothing geometric appears.
+  `j a ∈ (π)ⁿ ↔ a ∈ Iⁿ`. Nothing geometric appears. **PROVEN
+  2026-07-26** in the subsection above, over the one residual leaf
+  `module_finite_free_moduleTopology_padicIntAlgebra`.
 * `exists_tateFrame_of_adicCoefficientRing` — ABELIAN VARIETIES. The
   Tate module `TatePt m x I π` is free of rank two over that ring, with
   a continuous Galois action extending the real multiplication. This is
@@ -551,19 +756,22 @@ HOW IT IS PROVEN (2026-07-26).  `O` is mathlib's
 `v.adicCompletionIntegers D` at the height-one point `v = ⟨I, …⟩` and
 `j` is its structure map.  The three pin conjuncts are
 `isAdicComplete_span_uniformizer`, `exists_sub_mem_span_uniformizer_pow`
-and `mem_span_uniformizer_pow_iff` above, all PROVEN; the residual
-burden — the `ℤ_q`-algebra structure with `Module.Finite`,
-`Module.Free` and `IsModuleTopology`, which mathlib does not have
-because it has no functoriality of adic completions along a finite
-extension — is the single leaf
-`exists_padicIntStructure_adicCompletionIntegers`, whose docstring
-records the vendoring target in `~/cs/FLT`.
+and `mem_span_uniformizer_pow_iff` above, all PROVEN, as is the
+`ℤ_q`-algebra structure (`padicIntAlgebra`, built from the general
+`padicIntLiftHom`).  The residual burden is the single leaf
+`module_finite_free_moduleTopology_padicIntAlgebra`: `Module.Finite`,
+`Module.Free` and `IsModuleTopology` over `ℤ_q`, which mathlib does not
+have because it has no functoriality of adic completions along a finite
+extension.  Its docstring records the vendoring target in `~/cs/FLT`.
 
 Note that the statement does NOT tie the `ℤ_q`-structure to `j`: the
 `Algebra ℤ_[q] O` conjunct and the three pin conjuncts are logically
 independent halves of this leaf.  That is how it was stated by the
 author of the cut and is preserved here; a consumer that needs
-`ℤ_q → 𝒪_D → O` to commute must ask for it. -/
+`ℤ_q → 𝒪_D → O` to commute must ask for it.  As it happens the witness
+supplied here DOES make them commute — `padicIntAlgebra` is the unique
+continuous `ℤ_q`-structure — but that is not recorded in the statement,
+so no consumer may rely on it without a restatement. -/
 theorem exists_adicCoefficientRing
     {D : Type u} [Field D] [NumberField D]
     (q : ℕ) [Fact q.Prime]
