@@ -67,8 +67,9 @@ them without a human. Do not re-wrap it.
 - `hasFlatProlongationAt_of_prod_injection`
 - `exists_cyclotomicCharacter_padicTwo_eq_two`
 - `exists_ringHom_matrix_quotient_of_finite`
-- `exists_basis_toMatrix'_isUnit_traceGram`
-- `exists_conj_entries_mem_of_basis_repr_mem`
+- `exists_residual_basis_toMatrix'`
+- `exists_isIdempotentElem_mem_of_sq_sub_mem`
+- `exists_conj_entries_mem_of_single_mem`
 - `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`
 - `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
 
@@ -244,7 +245,17 @@ the surjectivity and minimality strata of the minimal presentation,
   `exists_basis_toMatrix'_isUnit_traceGram` (the representation theory —
   a Galois basis of `M₂(D.R)` with nondegenerate trace form) and
   `exists_conj_entries_mem_of_basis_repr_mem` (the pure algebra —
-  splitting the resulting `R'`-order). The dual-basis linear algebra
+  splitting the resulting `R'`-order). Both of THOSE were then PROVEN in
+  turn (2026-07-26): the first over the single residual leaf
+  `exists_residual_basis_toMatrix'` (Burnside density plus the residual
+  identification), adding the Nakayama lift and the trace-form
+  nondegeneracy (`trace_single_mul`, `det_traceGram_ne_zero`) as proven
+  glue; the second over `exists_isIdempotentElem_mem_of_sq_sub_mem`
+  (`𝔪`-adic Newton iteration) and `exists_conj_entries_mem_of_single_mem`
+  (the Peirce/grading core), with `exists_conj_eq_single_of_mul_self`
+  PROVEN and the construction of the `C`-order, its closedness, the
+  `hres`-lift of `E₁₁` and the conjugation bookkeeping all proven glue.
+  The dual-basis linear algebra
   (`repr_mem_subring_of_trace_mem`, `exists_basis_repr_mem_traceSubring`)
   and the whole representation-rebuilding/continuity burden
   (`exists_framedGaloisRep_toMatrix'_map_eq_of_forall_mem`) are PROVEN.
@@ -8687,18 +8698,75 @@ theorem repr_mem_subring_of_trace_mem
   rw [show b.repr M i = ((cC i : C) : B) from congrFun hfinal i]
   exact (cC i).2
 
-open scoped Matrix in
-/-- **Carayol's Théorème 1, step 1: a Galois basis of `M₂(D.R)` whose
-trace form is nondegenerate** (sorry leaf, cut 2026-07-26 out of
-`exists_framedGaloisRep_baseChange_traceSubring`): there are four
-elements `g₁, …, g₄` of `Gal(ℚ̄/ℚ)` whose matrices `D.ρ(gᵢ)` form a
-`D.R`-basis of `M₂(D.R)` and whose trace Gram matrix
-`(tr (D.ρ(gᵢ) D.ρ(gⱼ)))` has UNIT determinant.
+/-- **The trace form of `Mₙ` separates points, in EVERY characteristic**
+(PROVEN 2026-07-26): pairing a matrix `X` against the elementary matrix
+`E_{b a}` reads off the entry `X a b`. This one line is the whole content
+of the nondegeneracy of `(X, Y) ↦ tr (X Y)`, and it consumes no
+hypothesis on the coefficient ring — in particular no separability and no
+restriction on the characteristic, which is why the Gram determinant
+below is a unit even for `ℓ ∣ n`. -/
+theorem trace_single_mul {R : Type*} [CommRing R] {n : Type*} [Fintype n]
+    [DecidableEq n] (a b : n) (X : Matrix n n R) :
+    Matrix.trace (Matrix.single b a 1 * X) = X a b := by
+  simp [Matrix.trace, Matrix.diag, Matrix.mul_apply, Matrix.single, ite_and,
+    Finset.sum_ite_eq]
 
-This is the REPRESENTATION THEORY of Carayol's theorem and nothing else —
-the trace subring does not occur in the statement, because the passage
-from this basis to the `R'`-order is the separate, PROVEN, pure linear
-algebra of `repr_mem_subring_of_trace_mem` above.
+/-- **The trace Gram matrix of a basis of `Mₙ(K)` is nonsingular** (PROVEN
+2026-07-26, over a FIELD, in every characteristic): if
+`det (tr (cᵢ cⱼ)) = 0` then some nonzero vector `v` is killed by the Gram
+matrix (`Matrix.exists_mulVec_eq_zero_iff`), so `X = ∑ⱼ vⱼ cⱼ` is
+trace-orthogonal to every `cᵢ`, hence — the `cᵢ` spanning — to EVERY
+matrix, hence zero by `trace_single_mul`; and then `v = 0` by linear
+independence, a contradiction. -/
+theorem det_traceGram_ne_zero {K : Type*} [Field K] {n : Type*} [Fintype n]
+    [DecidableEq n] {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (c : Module.Basis ι K (Matrix n n K)) :
+    (Matrix.of fun i j => Matrix.trace (c i * c j)).det ≠ 0 := by
+  intro hdet
+  obtain ⟨v, hv, hmul⟩ := Matrix.exists_mulVec_eq_zero_iff.mpr hdet
+  set X : Matrix n n K := ∑ j, v j • c j with hX
+  have hrow : ∀ i, Matrix.trace (c i * X) = 0 := by
+    intro i
+    have h := congrFun hmul i
+    simp only [Matrix.mulVec, dotProduct, Matrix.of_apply, Pi.zero_apply] at h
+    rw [hX, Finset.mul_sum, Matrix.trace_sum, ← h]
+    exact Finset.sum_congr rfl fun j _ => by
+      rw [Matrix.mul_smul, Matrix.trace_smul, smul_eq_mul, mul_comm]
+  have hall : ∀ Y : Matrix n n K, Matrix.trace (Y * X) = 0 := by
+    intro Y
+    have hY : Y ∈ Submodule.span K (Set.range (c : ι → Matrix n n K)) := by
+      rw [c.span_eq]; trivial
+    induction hY using Submodule.span_induction with
+    | mem y hy => obtain ⟨i, rfl⟩ := hy; exact hrow i
+    | zero => simp
+    | add u w _ _ hu hw => rw [Matrix.add_mul, Matrix.trace_add, hu, hw, add_zero]
+    | smul a u _ hu => rw [Matrix.smul_mul, Matrix.trace_smul, hu, smul_zero]
+  have hX0 : X = 0 := by
+    ext a b
+    have h := hall (Matrix.single b a 1)
+    rw [trace_single_mul] at h
+    simpa using h
+  refine hv (funext fun i => ?_)
+  have hsum : ∑ j, v j • c j = 0 := by rw [← hX]; exact hX0
+  simpa using Fintype.linearIndependent_iff.mp c.linearIndependent v hsum i
+
+/-- The coordinates of a matrix against `Matrix.stdBasis` are its entries. -/
+theorem stdBasis_repr_apply {R : Type*} [CommRing R] {m n : Type*} [Fintype m]
+    [Fintype n] [DecidableEq m] [DecidableEq n] (M : Matrix m n R) (p : m × n) :
+    (Matrix.stdBasis R m n).repr M p = M p.1 p.2 := by
+  simp [Matrix.stdBasis]
+
+open scoped Matrix in
+/-- **Carayol's Théorème 1, step 1a: four Galois elements whose RESIDUAL
+matrices are a `k`-basis of `M₂(k)`** (sorry leaf, cut 2026-07-26 out of
+`exists_basis_toMatrix'_isUnit_traceGram`, whose remaining content —
+Nakayama and the nondegeneracy of the trace form — is PROVEN over this
+leaf below).
+
+This is the BURNSIDE/JACOBSON-DENSITY half of Carayol's Théorème 1, and
+nothing else: neither the coefficient ring `D.R`, nor the trace subring,
+nor the trace form occurs in the statement, only the reduction
+`g ↦ D.ρ(g) mod 𝔪` into `M₂(k)`.
 
 Mathematical content.
 
@@ -8709,22 +8777,81 @@ Mathematical content.
 * The reduction of `D.ρ` modulo `𝔪` has the same Frobenius
   characteristic polynomials as `ρbar` (`D.charFrob_compat`), hence is
   conjugate to `ρbar` by the PROVEN Chebotarev–Brauer–Nesbitt node
-  `exists_conj_of_charFrob_eq`; so it is absolutely irreducible too.
-* Burnside/Jacobson density: the `k`-SPAN of the image of an absolutely
-  irreducible two-dimensional representation is all of `M₂(k)` — the
-  span of a group image is a subalgebra, and a proper subalgebra of
-  `M₂(k)` has a commutant bigger than `k`. So four group elements `gᵢ`
-  can be chosen with the residual `ρbar(gᵢ)` a `k`-basis of `M₂(k)`.
+  `exists_conj_of_charFrob_eq`; so it is absolutely irreducible too. This
+  is the plumbing half of the leaf: it is `D.ρ.baseChange k` that
+  `exists_conj_of_charFrob_eq` accepts (see the proven
+  `exists_isWeaklyUniversal` for the pattern), and the residual MATRICES
+  are obtained from it through the standard basis of `k ⊗_{D.R} D.R²`.
+* Burnside/Jacobson density: the `k`-span of the image of an absolutely
+  irreducible two-dimensional representation is ALL of `M₂(k)` — the span
+  of a group image is a subalgebra, and by Jacobson density
+  (`jacobson_density`, mathlib; used in the same way by
+  `BrauerNesbittConjugacy.lean`'s `exists_toModuleEnd_eq_of_forall_comm`)
+  a subalgebra acting simply with commutant `k` is everything. Four group
+  elements can then be chosen with the residual `ρbar(gᵢ)` a `k`-basis;
+  extracting a basis from a spanning family indexed by `Γ` is the last,
+  purely linear-algebraic, step.
+
+CIRCULARITY GUARD (inherited): the hypothesis package is the one
+`not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and that
+dichotomy is proven over this file's cone; the leaf may not be discharged
+through it.
+
+References: Carayol, *Formes modulaires et représentations galoisiennes à
+valeurs dans un anneau local complet* (Contemp. Math. 165), Théorème 1;
+Curtis–Reiner, *Methods of Representation Theory* §3 (Burnside). -/
+theorem exists_residual_basis_toMatrix' (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) :
+    letI := D.commRing; letI := D.topologicalSpace
+    letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+    ∃ g : Fin 2 × Fin 2 → Field.absoluteGaloisGroup ℚ,
+      ∃ c : Module.Basis (Fin 2 × Fin 2) k (Matrix (Fin 2) (Fin 2) k),
+        ∀ i, c i = (LinearMap.toMatrix' (D.ρ (g i))).map ⇑D.π :=
+  sorry
+
+open scoped Matrix in
+/-- **Carayol's Théorème 1, step 1: a Galois basis of `M₂(D.R)` whose
+trace form is nondegenerate** (PROVEN 2026-07-26 over the single residual
+leaf `exists_residual_basis_toMatrix'` above; cut 2026-07-26 out of
+`exists_framedGaloisRep_baseChange_traceSubring`): there are four
+elements `g₁, …, g₄` of `Gal(ℚ̄/ℚ)` whose matrices `D.ρ(gᵢ)` form a
+`D.R`-basis of `M₂(D.R)` and whose trace Gram matrix
+`(tr (D.ρ(gᵢ) D.ρ(gⱼ)))` has UNIT determinant.
+
+This is the REPRESENTATION THEORY of Carayol's theorem and nothing else —
+the trace subring does not occur in the statement, because the passage
+from this basis to the `R'`-order is the separate, PROVEN, pure linear
+algebra of `repr_mem_subring_of_trace_mem` above.
+
+Mathematical content, and WHAT IS PROVEN HERE. The representation theory
+— absolute irreducibility of `ρbar`, the residual identification through
+`exists_conj_of_charFrob_eq`, and Burnside/Jacobson density — is entirely
+in the leaf `exists_residual_basis_toMatrix'` above, which hands over four
+Galois elements whose reductions are a `k`-basis of `M₂(k)`. What the
+proof below adds is the two commutative-algebra steps, both PROVEN:
+
 * Nakayama over the local `D.R`: four elements of the finite free module
   `M₂(D.R)` whose reductions form a `k`-basis are themselves a
-  `D.R`-basis.
+  `D.R`-basis. Formally this is `Module.Basis.is_basis_iff_det` against
+  the standard basis `Matrix.stdBasis`: the change-of-basis matrix `P`
+  has `D.π P.det = (P.map D.π).det ≠ 0`, and `ker D.π = 𝔪`
+  (`IsLocalRing.ker_eq_maximalIdeal`, `D.π` being surjective), so
+  `P.det ∉ 𝔪` and `P.det` is a unit.
 * The trace form `(X, Y) ↦ tr (X Y)` of `M₂` is nondegenerate in EVERY
-  characteristic: its Gram matrix in the elementary basis `Eᵢⱼ` is a
-  permutation matrix, of determinant `±1`. The Gram determinant of the
-  basis `ρbar(gᵢ)` is therefore `±1` times the square of the
-  change-of-basis determinant, hence nonzero residually, hence a unit,
-  `D.R` being local. (No characteristic hypothesis enters here; oddness
-  of `ℓ` is consumed only through absolute irreducibility.)
+  characteristic (`trace_single_mul` above: `tr (E_{ba} X) = X a b`), so
+  the Gram determinant of ANY `k`-basis of `M₂(k)` is nonzero
+  (`det_traceGram_ne_zero`). The Gram matrix upstairs reduces entrywise
+  to the residual one, so its determinant is again a unit of the local
+  `D.R`. No characteristic hypothesis enters at either step; oddness of
+  `ℓ` and `5 ≤ ℓ` are consumed only inside the residual leaf, through
+  absolute irreducibility.
+
+The index juggling is cosmetic: the natural index type here is
+`Fin 2 × Fin 2` (that of `Matrix.stdBasis`), and the `Fin 4` of the
+statement is reached by `Module.Basis.reindex`, under which the Gram
+determinant is invariant (`Matrix.det_submatrix_equiv_self`).
 
 CIRCULARITY GUARD (inherited): the hypothesis package is the one
 `not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and that
@@ -8745,8 +8872,78 @@ theorem exists_basis_toMatrix'_isUnit_traceGram (hℓ5 : 5 ≤ ℓ)
       (∀ i : Fin 4, ∃ g : Field.absoluteGaloisGroup ℚ,
           b i = LinearMap.toMatrix' (D.ρ g)) ∧
       IsUnit (Matrix.of (fun i j : Fin 4 =>
-        Matrix.trace (b i * b j))).det :=
-  sorry
+        Matrix.trace (b i * b j))).det := by
+  classical
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  obtain ⟨g, c, hc⟩ := exists_residual_basis_toMatrix' hℓOdd hdim hℓ5 h hirr D
+  -- `𝔪 = ker D.π`, so an element with nonzero residue is a unit
+  have hker : RingHom.ker D.π = IsLocalRing.maximalIdeal D.R :=
+    IsLocalRing.ker_eq_maximalIdeal D.π D.π_surjective
+  have hunit : ∀ x : D.R, D.π x ≠ 0 → IsUnit x := by
+    intro x hx
+    refine IsLocalRing.notMem_maximalIdeal.mp ?_
+    rw [← hker]
+    exact fun hm => hx (RingHom.mem_ker.mp hm)
+  set v : Fin 2 × Fin 2 → Matrix (Fin 2) (Fin 2) D.R :=
+    fun i => LinearMap.toMatrix' (D.ρ (g i)) with hv
+  set e₀ : Module.Basis (Fin 2 × Fin 2) D.R (Matrix (Fin 2) (Fin 2) D.R) :=
+    Matrix.stdBasis D.R (Fin 2) (Fin 2) with he₀
+  set e₁ : Module.Basis (Fin 2 × Fin 2) k (Matrix (Fin 2) (Fin 2) k) :=
+    Matrix.stdBasis k (Fin 2) (Fin 2) with he₁
+  -- the change-of-basis matrix reduces to the residual one
+  have hPmap : (e₀.toMatrix v).map ⇑D.π = e₁.toMatrix (fun i => c i) := by
+    ext p i
+    show D.π (e₀.repr (v i) p) = e₁.repr (c i) p
+    rw [he₀, he₁, stdBasis_repr_apply, stdBasis_repr_apply, hc i]
+    rfl
+  -- … which is invertible, so `P.det` is a unit of the local `D.R` (Nakayama)
+  have hPdet : IsUnit (e₀.toMatrix v).det := by
+    refine hunit _ ?_
+    rw [RingHom.map_det]
+    show ((e₀.toMatrix v).map ⇑D.π).det ≠ 0
+    rw [hPmap]
+    have hu : IsUnit (e₁.det (fun i => c i)) := e₁.isUnit_det c
+    rw [Module.Basis.det_apply] at hu
+    exact hu.ne_zero
+  have hbi : LinearIndependent D.R v ∧ Submodule.span D.R (Set.range v) = ⊤ :=
+    (Module.Basis.is_basis_iff_det e₀).mpr
+      (by rw [Module.Basis.det_apply]; exact hPdet)
+  set b₀ : Module.Basis (Fin 2 × Fin 2) D.R (Matrix (Fin 2) (Fin 2) D.R) :=
+    Module.Basis.mk hbi.1 (le_of_eq hbi.2.symm) with hb₀
+  have hb₀v : ∀ i, b₀ i = v i := by
+    intro i
+    rw [hb₀]
+    exact congrFun (Module.Basis.coe_mk hbi.1 (le_of_eq hbi.2.symm)) i
+  -- the Gram matrix reduces entrywise to the residual Gram matrix
+  set Gr : Matrix (Fin 2 × Fin 2) (Fin 2 × Fin 2) D.R :=
+    Matrix.of fun i j => Matrix.trace (b₀ i * b₀ j) with hGr
+  have hGrmap : Gr.map ⇑D.π = Matrix.of fun i j => Matrix.trace (c i * c j) := by
+    ext i j
+    show D.π (Matrix.trace (b₀ i * b₀ j)) = Matrix.trace (c i * c j)
+    rw [hb₀v, hb₀v, hc i, hc j]
+    rw [show D.π (Matrix.trace (v i * v j)) = Matrix.trace ((v i * v j).map ⇑D.π) by
+      simp [Matrix.trace, Matrix.diag]]
+    rw [Matrix.map_mul]
+  have hGrdet : IsUnit Gr.det := by
+    refine hunit _ ?_
+    rw [RingHom.map_det]
+    show (Gr.map ⇑D.π).det ≠ 0
+    rw [hGrmap]
+    exact det_traceGram_ne_zero c
+  -- reindex `Fin 2 × Fin 2` to `Fin 4`
+  set idx : Fin 2 × Fin 2 ≃ Fin 4 := finProdFinEquiv.trans (finCongr (by norm_num))
+    with hidx
+  refine ⟨b₀.reindex idx, ?_, ?_⟩
+  · intro i
+    exact ⟨g (idx.symm i), by rw [Module.Basis.reindex_apply, hb₀v]⟩
+  · have hsub : (Matrix.of fun i j : Fin 4 =>
+        Matrix.trace ((b₀.reindex idx) i * (b₀.reindex idx) j))
+        = Gr.submatrix idx.symm idx.symm := by
+      ext i j
+      simp [Module.Basis.reindex_apply, hGr]
+    rw [hsub, Matrix.det_submatrix_equiv_self]
+    exact hGrdet
 
 open scoped Matrix in
 /-- **The `R'`-order of Carayol's Théorème 1** (PROVEN 2026-07-26 over
@@ -8827,9 +9024,226 @@ theorem exists_basis_repr_mem_traceSubring (hℓ5 : 5 ≤ ℓ)
     (MonoidHom.mrange Φ) htrS b hbS hgram (LinearMap.toMatrix' (D.ρ g))
     ⟨g, rfl⟩ i
 
+/-- **Entrywise congruence of matrices modulo an ideal is multiplicative**
+(PROVEN 2026-07-26): `X ≡ X'` and `Y ≡ Y'` entrywise mod `I` imply
+`X Y ≡ X' Y'`, by the usual `XY − X'Y' = (X−X')Y + X'(Y−Y')`. -/
+theorem matrix_sub_mem_mul {B : Type*} [CommRing B] {n : Type*} [Fintype n]
+    (I : Ideal B) {X Y X' Y' : Matrix n n B}
+    (hX : ∀ i j, (X - X') i j ∈ I) (hY : ∀ i j, (Y - Y') i j ∈ I) :
+    ∀ i j, (X * Y - X' * Y') i j ∈ I := by
+  intro i j
+  have hEq : X * Y - X' * Y' = (X - X') * Y + X' * (Y - Y') := by noncomm_ring
+  rw [hEq, Matrix.add_apply, Matrix.mul_apply, Matrix.mul_apply]
+  exact Ideal.add_mem _
+    (Ideal.sum_mem _ fun m _ => Ideal.mul_mem_right _ _ (hX i m))
+    (Ideal.sum_mem _ fun m _ => Ideal.mul_mem_left _ _ (hY m j))
+
+/-- **The coordinates of a matrix against any basis are a fixed linear
+form in its ENTRIES** (PROVEN 2026-07-26): expanding `M` in the elementary
+matrices turns `b.repr M i` into `∑ₚ,q M p q · b.repr (E_{pq}) i`. This is
+what makes each coordinate map CONTINUOUS over a topological ring, which
+is how the `C`-order below is shown to be a closed subring. -/
+theorem basis_repr_eq_sum_entries {B : Type*} [CommRing B] {n : Type*}
+    [Fintype n] [DecidableEq n] {ι : Type*} [Fintype ι]
+    (b : Module.Basis ι B (Matrix n n B)) (M : Matrix n n B) (i : ι) :
+    b.repr M i = ∑ p : n, ∑ q : n, M p q * b.repr (Matrix.single p q 1) i := by
+  conv_lhs => rw [Matrix.matrix_eq_sum_single M]
+  rw [map_sum]
+  simp only [Finsupp.coe_finsetSum, Finset.sum_apply]
+  refine Finset.sum_congr rfl fun p _ => ?_
+  rw [map_sum]
+  simp only [Finsupp.coe_finsetSum, Finset.sum_apply]
+  refine Finset.sum_congr rfl fun q _ => ?_
+  rw [show Matrix.single p q (M p q) = M p q • Matrix.single p q (1 : B) by
+    ext a c; simp [Matrix.single]]
+  rw [map_smul]
+  simp
+
+/-- **Carayol's Théorème 1, step 2a: idempotent lifting inside a CLOSED
+subring of a complete matrix algebra** (sorry leaf, cut 2026-07-26 out of
+`exists_conj_entries_mem_of_basis_repr_mem`; PURE ALGEBRA): over a local
+ring `B` carrying its `𝔪`-adic topology and `𝔪`-adically complete, an
+element `x` of a closed subring `A ⊆ Mₙ(B)` which is idempotent MODULO `𝔪`
+is congruent mod `𝔪` to a genuine idempotent OF `A`.
+
+Newton's iteration `f(z) = 3z² − 2z³ = z − (2z−1)(z² − z)` does it. The
+polynomial identity that makes it converge is
+
+    f(z)² − f(z) = (z² − z)² · ((2z−1)² − 4),
+
+so writing `t = x² − x` and `x₀ = x`, `x_{m+1} = f(x_m)`, one has
+`x_m² − x_m ∈ 𝔪^{2^m}` and `x_{m+1} − x_m ∈ 𝔪^{2^m}` entrywise. The
+sequence is therefore Cauchy for the `𝔪`-adic filtration in each of the
+`n²` entries; `IsAdicComplete` supplies the limit entrywise, the adic
+topology makes that limit a topological limit of the sequence, CLOSEDNESS
+of `A` puts it in `A`, and continuity of multiplication passes `x_m² −
+x_m → 0` to `u² = u`.
+
+BOTH TOPOLOGICAL HYPOTHESES ARE LOAD-BEARING and neither can be traded
+for the other: completeness produces the limit, closedness keeps it
+inside `A`. Without closedness the limit is an idempotent of `Mₙ(B)` with
+no reason to have coordinates in `C`, which is exactly what the caller
+needs. -/
+theorem exists_isIdempotentElem_mem_of_sq_sub_mem
+    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal B))
+    (hcompl : IsAdicComplete (IsLocalRing.maximalIdeal B) B)
+    {n : Type*} [Fintype n] [DecidableEq n]
+    (A : Subring (Matrix n n B))
+    (hA : IsClosed ((A : Subring (Matrix n n B)) : Set (Matrix n n B)))
+    {x : Matrix n n B} (hxA : x ∈ A)
+    (hx : ∀ i j, (x * x - x) i j ∈ IsLocalRing.maximalIdeal B) :
+    ∃ u ∈ A, u * u = u ∧ ∀ i j, (u - x) i j ∈ IsLocalRing.maximalIdeal B :=
+  sorry
+
+/-- **Carayol's Théorème 1, step 2b: an idempotent of `M₂(B)` congruent to
+`E₁₁` is CONJUGATE to `E₁₁`** (PROVEN 2026-07-26, elementary and with an
+explicit conjugating matrix): over a local ring `B`, if `u² = u` and
+`u ≡ E₁₁ mod 𝔪` entrywise then `E⁻¹ u E = E₁₁` for the invertible
+
+    E := u · E₁₁ + (1 − u) · E₂₂
+
+(whose columns are `u e₁` and `(1 − u) e₂` — the classical choice).
+
+Two computations, no analysis. First `u E = E E₁₁`: expanding and using
+`E₁₁² = E₁₁`, `E₂₂E₁₁ = 0` and `u² = u`, both sides equal `u E₁₁`.
+Second, `E` is invertible: writing `w := u − E₁₁` (entries in `𝔪`) and
+using `E₁₁ + E₂₂ = 1`, `E₁₁² = E₁₁`, `E₂₂² = E₂₂`, one gets exactly
+`E − 1 = w (E₁₁ − E₂₂)`, so `E ≡ 1` entrywise, so `det E ≡ 1 mod 𝔪` by
+`Matrix.det_fin_two`, so `det E ∉ 𝔪` — and `B` is local. Then
+`E⁻¹ u E = E⁻¹ (u E) = E⁻¹ (E E₁₁) = E₁₁`.
+
+Note what is NOT needed: no completeness, no topology, no finiteness of
+the residue field, and no hypothesis on the characteristic. -/
+theorem exists_conj_eq_single_of_mul_self
+    {B : Type*} [CommRing B] [IsLocalRing B]
+    {u : Matrix (Fin 2) (Fin 2) B} (hu : u * u = u)
+    (hures : ∀ i j, (u - (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B)) i j ∈
+      IsLocalRing.maximalIdeal B) :
+    ∃ E : Matrix (Fin 2) (Fin 2) B, IsUnit E.det ∧
+      E⁻¹ * u * E = Matrix.single 0 0 1 := by
+  classical
+  set F₀ : Matrix (Fin 2) (Fin 2) B := Matrix.single 0 0 1 with hF₀
+  set F₁ : Matrix (Fin 2) (Fin 2) B := Matrix.single 1 1 1 with hF₁
+  have hF₀F₀ : F₀ * F₀ = F₀ := by rw [hF₀]; simp
+  have hF₁F₁ : F₁ * F₁ = F₁ := by rw [hF₁]; simp
+  have hF₁F₀ : F₁ * F₀ = 0 := by
+    rw [hF₀, hF₁]
+    ext p q
+    fin_cases p <;> fin_cases q <;> simp [Matrix.single, Matrix.mul_apply]
+  have hFsum : F₀ + F₁ = 1 := by
+    rw [hF₀, hF₁]
+    ext p q
+    fin_cases p <;> fin_cases q <;> simp [Matrix.single]
+  set E : Matrix (Fin 2) (Fin 2) B := u * F₀ + (1 - u) * F₁ with hE
+  have hkey : u * E = E * F₀ := by
+    rw [hE]
+    have h1 : u * (u * F₀ + (1 - u) * F₁) = (u * u) * F₀ + (u - u * u) * F₁ := by
+      noncomm_ring
+    have h2 : (u * F₀ + (1 - u) * F₁) * F₀ = u * (F₀ * F₀) + (1 - u) * (F₁ * F₀) := by
+      noncomm_ring
+    rw [h1, h2, hu, hF₀F₀, hF₁F₀, sub_self]
+    simp
+  set w : Matrix (Fin 2) (Fin 2) B := u - F₀ with hw
+  have hE1 : E - 1 = w * (F₀ - F₁) := by
+    have hu' : u = F₀ + w := by rw [hw]; abel
+    have h3 : E = F₀ * F₀ + w * F₀ + (F₁ * F₁ - w * F₁) := by
+      rw [hE, hu', ← hFsum]
+      noncomm_ring
+    rw [h3, hF₀F₀, hF₁F₁]
+    rw [show F₀ + w * F₀ + (F₁ - w * F₁) - 1 = (F₀ + F₁) - 1 + w * (F₀ - F₁) by
+      noncomm_ring, hFsum, sub_self, zero_add]
+  have hEres : ∀ p q, (E - 1) p q ∈ IsLocalRing.maximalIdeal B := by
+    intro p q
+    rw [hE1, Matrix.mul_apply]
+    exact Ideal.sum_mem _ fun m _ => Ideal.mul_mem_right _ _ (hures p m)
+  have hdet : IsUnit E.det := by
+    refine IsLocalRing.notMem_maximalIdeal.mp ?_
+    intro hmem
+    have h00 : E 0 0 - 1 ∈ IsLocalRing.maximalIdeal B := by
+      simpa [Matrix.one_apply] using hEres 0 0
+    have h11 : E 1 1 - 1 ∈ IsLocalRing.maximalIdeal B := by
+      simpa [Matrix.one_apply] using hEres 1 1
+    have h10 : E 1 0 ∈ IsLocalRing.maximalIdeal B := by
+      simpa [Matrix.one_apply] using hEres 1 0
+    have hd1 : E.det - 1 ∈ IsLocalRing.maximalIdeal B := by
+      rw [Matrix.det_fin_two]
+      rw [show E 0 0 * E 1 1 - E 0 1 * E 1 0 - 1
+          = (E 0 0 - 1) * E 1 1 + (E 1 1 - 1) - E 0 1 * E 1 0 by ring]
+      exact Ideal.sub_mem _ (Ideal.add_mem _ (Ideal.mul_mem_right _ _ h00) h11)
+        (Ideal.mul_mem_left _ _ h10)
+    have hone : (1 : B) ∈ IsLocalRing.maximalIdeal B := by
+      have hsub : E.det - (E.det - 1) ∈ IsLocalRing.maximalIdeal B :=
+        Ideal.sub_mem _ hmem hd1
+      rwa [sub_sub_cancel] at hsub
+    exact (IsLocalRing.maximalIdeal.isMaximal B).ne_top
+      (Ideal.eq_top_iff_one _ |>.mpr hone)
+  refine ⟨E, hdet, ?_⟩
+  rw [show E⁻¹ * u * E = E⁻¹ * (u * E) by noncomm_ring, hkey,
+    ← mul_assoc, Matrix.nonsing_inv_mul E hdet, one_mul]
+
+open scoped Matrix in
+/-- **Carayol's Théorème 1, step 2c: a `C`-order CONTAINING `E₁₁` is
+conjugate into `M₂(C)`** (sorry leaf, cut 2026-07-26 out of
+`exists_conj_entries_mem_of_basis_repr_mem`; PURE ALGEBRA — this is the
+Peirce/grading core of the theorem and all that remains of it): the
+hypotheses are verbatim those of
+`exists_conj_entries_mem_of_basis_repr_mem` PLUS `hone`, which says that
+the matrix unit `E₁₁` already lies in the order `A' = ∑ᵢ C·bᵢ`. The
+reduction of the general case to this one is PROVEN below, by lifting an
+idempotent and conjugating it to `E₁₁`.
+
+THE GRADING ARGUMENT. `A'` is a subring of `M₂(B)`, free of rank `4` over
+the local `C` (`isLocalRing_of_isClosed_subring`), and now contains the
+orthogonal idempotents `E₁₁` and `E₂₂ = 1 − E₁₁`. Peirce decomposition
+gives `A' = ⨁ᵢⱼ Eᵢᵢ A' Eⱼⱼ` as a `C`-module, each summand a direct
+summand of the free rank-`4` `A'`, hence finitely generated projective,
+hence FREE over the local `C`; and each is nonzero because `A'` spans
+`M₂(B)` over `B`. Four nonzero free summands of total rank `4` are each of
+rank one: `Eᵢᵢ A' Eⱼⱼ = C·aᵢⱼ` with `aᵢⱼ ∈ B` (a rank-one `C`-submodule of
+the `B`-line `B·Eᵢⱼ`). The diagonal summands are subrings containing `1`,
+so `a₁₁, a₂₂ ∈ C^×` and `A₁₁ = A₂₂ = C`; then `a₁₂a₂₁` generates
+`A₁₁ = C`, hence is a unit of `C`, and the further conjugation by
+`diag(1, a₁₂⁻¹)` — which fixes `E₁₁` — turns `A'` into exactly `M₂(C)`.
+
+WHAT `hres` BUYS, AND WHY IT IS NOT DROPPABLE. `hres` is not used by the
+grading argument itself; it is what makes the CALLER able to produce an
+element of `A'` congruent to `E₁₁`, i.e. it is consumed in the reduction
+below. Kept in this signature because the reduction and this core are two
+halves of one theorem and a successor may wish to redistribute the work.
+Without `hres` the residual algebra `A'/𝔪_C A'` is only a `k'`-FORM of
+`M₂(k)` over the subfield `k' = C/𝔪_C ⊆ k` — a quaternion algebra — and
+one needs Wedderburn's little theorem (`k'` finite ⟹ split) to find a
+rank-one idempotent at all; over an INFINITE `k'` that form may be a
+DIVISION algebra, `A'` a maximal order in it, and the statement outright
+FALSE. That is the fallback route, recorded here deliberately.
+
+References: Carayol, Contemp. Math. 165, Théorème 1; Nyssen, Math. Ann.
+306; Auslander–Goldman, *The Brauer group of a commutative ring*. -/
+theorem exists_conj_entries_mem_of_single_mem
+    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Finite (IsLocalRing.ResidueField B)]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal B))
+    (hcompl : IsAdicComplete (IsLocalRing.maximalIdeal B) B)
+    (C : Subring B) (hclosed : IsClosed ((C : Subring B) : Set B))
+    (hres : ∀ y : B, ∃ x : C, (x : B) - y ∈ IsLocalRing.maximalIdeal B)
+    (S : Submonoid (Matrix (Fin 2) (Fin 2) B))
+    (b : Module.Basis (Fin 4) B (Matrix (Fin 2) (Fin 2) B))
+    (hbS : ∀ i : Fin 4, b i ∈ S)
+    (hrepr : ∀ M ∈ S, ∀ i : Fin 4, b.repr M i ∈ C)
+    (hone : ∀ i : Fin 4,
+      b.repr (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) i ∈ C) :
+    ∃ E : Matrix (Fin 2) (Fin 2) B, IsUnit E.det ∧
+      ∀ M ∈ S, ∀ i j : Fin 2, (E⁻¹ * M * E) i j ∈ C :=
+  sorry
+
 open scoped Matrix in
 /-- **Carayol's Théorème 1, step 2: a `C`-order in `M₂(B)` with split
-residual algebra is conjugate into `M₂(C)`** (sorry leaf, cut 2026-07-26
+residual algebra is conjugate into `M₂(C)`** (PROVEN 2026-07-26 over the
+three sub-leaves `exists_isIdempotentElem_mem_of_sq_sub_mem` (open),
+`exists_conj_eq_single_of_mul_self` (PROVEN) and
+`exists_conj_entries_mem_of_single_mem` (open); cut 2026-07-26
 out of `exists_framedGaloisRep_baseChange_traceSubring`; PURE ALGEBRA —
 no Galois representation and no arithmetic occurs in it): let `B` be a
 local topological ring whose topology is `𝔪`-adic, which is `𝔪`-adically
@@ -8854,15 +9268,27 @@ a `k`-subspace of `M₂(k)` of `k`-dimension `4`, hence ALL of `M₂(k)`:
 leaf elementary**, and it is why no Brauer-group input is needed — see
 the note below on what its absence would cost.
 
-So `A'` contains an element whose reduction is a rank-one idempotent. The
-Newton iteration `z ↦ 3z² − 2z³` converges `𝔪`-adically in the complete
-`M₂(B)` and stays inside `A'`, which is CLOSED (`C` is closed and the
-`b`-coordinate maps are continuous, `A'` being the preimage of `C⁴`).
-Hence `A'` contains an idempotent `u` of residual rank one. Over the
-local `B` such a `u` is conjugate to `E₁₁`, so after one conjugation
-`E₁₁, E₂₂ ∈ A'` and `A' = ⨁ᵢⱼ EᵢᵢA'Eⱼⱼ` with each summand a rank-one
-`C`-submodule `C·aᵢⱼ` of `B`. The diagonal ones contain `1` and are
-closed under multiplication, so `a₁₁, a₂₂ ∈ C^×` and `A₁₁ = A₂₂ = C`;
+WHAT THE PROOF BELOW ESTABLISHES, all of it verified: that `A'` really is
+a subring of `M₂(B)` (its `mul_mem'` is the expansion
+`(∑ cᵢbᵢ)(∑ dⱼbⱼ) = ∑ cᵢdⱼ (bᵢbⱼ)` together with `bᵢbⱼ ∈ S`); that `A'` is
+CLOSED, being the preimage of `C⁴` under the coordinate maps, which are
+continuous because each is a fixed linear form in the matrix ENTRIES
+(`basis_repr_eq_sum_entries`); that `A'` contains an element `x` with
+`x ≡ E₁₁ mod 𝔪` entrywise — this is the ONE place `hres` is consumed,
+each coordinate of `E₁₁` being replaced by a `C`-element congruent to it —
+hence with `x² ≡ x`; and, given the idempotent `u ∈ A'` produced by
+`exists_isIdempotentElem_mem_of_sq_sub_mem` and the conjugation `E₀`
+produced by `exists_conj_eq_single_of_mul_self`, that the WHOLE
+hypothesis package transports along `M ↦ E₀⁻¹ M E₀` (a monoid isomorphism
+and a `B`-linear automorphism at once) to an instance of
+`exists_conj_entries_mem_of_single_mem`, whose conjugation `E₁` composes
+with `E₀` into the required `E = E₀E₁`.
+
+What is left open is therefore exactly two things: the `𝔪`-adic Newton
+iteration, and the Peirce/grading argument. The latter runs: after the
+conjugation `E₁₁, E₂₂ ∈ A'` and `A' = ⨁ᵢⱼ EᵢᵢA'Eⱼⱼ` with each summand a
+rank-one `C`-submodule `C·aᵢⱼ` of `B`. The diagonal ones contain `1` and
+are closed under multiplication, so `a₁₁, a₂₂ ∈ C^×` and `A₁₁ = A₂₂ = C`;
 then `a₁₂a₂₁` generates `A₁₁ = C`, so it is a unit of `C`, and the
 further conjugation by `diag(1, a₁₂⁻¹)` turns `A'` into exactly `M₂(C)`.
 
@@ -8908,8 +9334,153 @@ theorem exists_conj_entries_mem_of_basis_repr_mem
     (hbS : ∀ i : Fin 4, b i ∈ S)
     (hrepr : ∀ M ∈ S, ∀ i : Fin 4, b.repr M i ∈ C) :
     ∃ E : Matrix (Fin 2) (Fin 2) B, IsUnit E.det ∧
-      ∀ M ∈ S, ∀ i j : Fin 2, (E⁻¹ * M * E) i j ∈ C :=
-  sorry
+      ∀ M ∈ S, ∀ i j : Fin 2, (E⁻¹ * M * E) i j ∈ C := by
+  classical
+  -- the `C`-order `A' = ∑ᵢ C·bᵢ`, as a subring of `M₂(B)`
+  set A : Subring (Matrix (Fin 2) (Fin 2) B) :=
+    { carrier := {M | ∀ i, b.repr M i ∈ C}
+      zero_mem' := by intro i; simp
+      one_mem' := fun i => hrepr 1 S.one_mem i
+      add_mem' := fun {x y} hx hy i => by simpa using C.add_mem (hx i) (hy i)
+      neg_mem' := fun {x} hx i => by simpa using C.neg_mem (hx i)
+      mul_mem' := by
+        intro x y hx hy n
+        have hxy : x * y = ∑ i, ∑ j, (b.repr x i * b.repr y j) • (b i * b j) := by
+          conv_lhs => rw [← b.sum_repr x, ← b.sum_repr y]
+          rw [Finset.sum_mul]
+          refine Finset.sum_congr rfl fun i _ => ?_
+          rw [Finset.mul_sum]
+          refine Finset.sum_congr rfl fun j _ => ?_
+          rw [smul_mul_assoc, mul_smul_comm, smul_smul]
+        rw [hxy]
+        simp only [map_sum, map_smul, Finsupp.coe_finsetSum, Finsupp.coe_smul,
+          Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+        refine Subring.sum_mem _ fun i _ => Subring.sum_mem _ fun j _ => ?_
+        exact C.mul_mem (C.mul_mem (hx i) (hy j))
+          (hrepr _ (S.mul_mem (hbS i) (hbS j)) n) } with hAdef
+  have hmemA : ∀ M : Matrix (Fin 2) (Fin 2) B, M ∈ A ↔ ∀ i, b.repr M i ∈ C :=
+    fun M => Iff.rfl
+  -- each coordinate map is continuous, so the order is CLOSED
+  have hcont : ∀ i : Fin 4,
+      Continuous (fun M : Matrix (Fin 2) (Fin 2) B => b.repr M i) := by
+    intro i
+    have hEq : (fun M : Matrix (Fin 2) (Fin 2) B => b.repr M i) =
+        fun M => ∑ p : Fin 2, ∑ q : Fin 2, M p q * b.repr (Matrix.single p q 1) i := by
+      funext M
+      exact basis_repr_eq_sum_entries b M i
+    rw [hEq]
+    refine continuous_finsetSum _ fun p _ => continuous_finsetSum _ fun q _ => ?_
+    exact Continuous.mul (by fun_prop) continuous_const
+  have hAclosed : IsClosed ((A : Subring (Matrix (Fin 2) (Fin 2) B)) :
+      Set (Matrix (Fin 2) (Fin 2) B)) := by
+    have hEq : ((A : Subring (Matrix (Fin 2) (Fin 2) B)) :
+          Set (Matrix (Fin 2) (Fin 2) B))
+        = ⋂ i : Fin 4, (fun M : Matrix (Fin 2) (Fin 2) B => b.repr M i) ⁻¹'
+            (C : Set B) := by
+      ext M
+      simp [hmemA M, Set.mem_iInter]
+    rw [hEq]
+    exact isClosed_iInter fun i => hclosed.preimage (hcont i)
+  -- `hres` puts an element congruent to `E₁₁` into the order
+  set E11 : Matrix (Fin 2) (Fin 2) B := Matrix.single 0 0 1 with hE11
+  have hE11sq : E11 * E11 = E11 := by rw [hE11]; simp
+  choose cc hcc using fun i : Fin 4 => hres (b.repr E11 i)
+  set x : Matrix (Fin 2) (Fin 2) B := ∑ i, ((cc i : B)) • b i with hx
+  have hxA : x ∈ A := by
+    rw [hmemA]
+    intro n
+    rw [hx]
+    simp only [map_sum, map_smul, Finsupp.coe_finsetSum, Finsupp.coe_smul,
+      Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+    exact Subring.sum_mem _ fun i _ => C.mul_mem (cc i).2 (hrepr _ (hbS i) n)
+  have hxres : ∀ p q, (x - E11) p q ∈ IsLocalRing.maximalIdeal B := by
+    have hdiff : x - E11 = ∑ i, ((cc i : B) - b.repr E11 i) • b i := by
+      conv_lhs => rw [hx, ← b.sum_repr E11]
+      rw [← Finset.sum_sub_distrib]
+      exact Finset.sum_congr rfl fun i _ => (sub_smul _ _ _).symm
+    intro p q
+    rw [hdiff]
+    simp only [Matrix.sum_apply, Matrix.smul_apply, smul_eq_mul]
+    exact Ideal.sum_mem _ fun i _ => Ideal.mul_mem_right _ _ (hcc i)
+  have hxsq : ∀ p q, (x * x - x) p q ∈ IsLocalRing.maximalIdeal B := by
+    intro p q
+    have hsplit : x * x - x = (x * x - E11 * E11) + (E11 - x) := by
+      rw [hE11sq]; noncomm_ring
+    rw [hsplit, Matrix.add_apply]
+    refine Ideal.add_mem _ (matrix_sub_mem_mul _ hxres hxres p q) ?_
+    have hneg : (E11 - x) p q = -((x - E11) p q) := by simp
+    rw [hneg]
+    exact neg_mem (hxres p q)
+  -- lift it to a genuine idempotent of the order, and conjugate that to `E₁₁`
+  obtain ⟨u, huA, hu2, hures⟩ :=
+    exists_isIdempotentElem_mem_of_sq_sub_mem hadic hcompl A hAclosed hxA hxsq
+  have hures' : ∀ p q, (u - E11) p q ∈ IsLocalRing.maximalIdeal B := by
+    intro p q
+    have hsplit : u - E11 = (u - x) + (x - E11) := by noncomm_ring
+    rw [hsplit, Matrix.add_apply]
+    exact Ideal.add_mem _ (hures p q) (hxres p q)
+  obtain ⟨E₀, hE₀det, hE₀u⟩ := exists_conj_eq_single_of_mul_self hu2 hures'
+  have hinv1 : E₀⁻¹ * E₀ = 1 := Matrix.nonsing_inv_mul _ hE₀det
+  have hinv2 : E₀ * E₀⁻¹ = 1 := Matrix.mul_nonsing_inv _ hE₀det
+  -- transport the whole hypothesis package along `M ↦ E₀⁻¹ M E₀`
+  set Φ : Matrix (Fin 2) (Fin 2) B →* Matrix (Fin 2) (Fin 2) B :=
+    { toFun := fun M => E₀⁻¹ * M * E₀
+      map_one' := by simp only [mul_one]; exact hinv1
+      map_mul' := fun M N => by
+        show E₀⁻¹ * (M * N) * E₀ = (E₀⁻¹ * M * E₀) * (E₀⁻¹ * N * E₀)
+        have h1 : (E₀⁻¹ * M * E₀) * (E₀⁻¹ * N * E₀)
+            = E₀⁻¹ * M * (E₀ * E₀⁻¹) * N * E₀ := by noncomm_ring
+        rw [h1, hinv2, mul_one]
+        noncomm_ring } with hΦ
+  set Ψ : Matrix (Fin 2) (Fin 2) B ≃ₗ[B] Matrix (Fin 2) (Fin 2) B :=
+    { toFun := fun M => E₀⁻¹ * M * E₀
+      map_add' := fun M N => by noncomm_ring
+      map_smul' := fun c M => by simp [Matrix.smul_mul]
+      invFun := fun M => E₀ * M * E₀⁻¹
+      left_inv := fun M => by
+        show E₀ * (E₀⁻¹ * M * E₀) * E₀⁻¹ = M
+        have h1 : E₀ * (E₀⁻¹ * M * E₀) * E₀⁻¹ = (E₀ * E₀⁻¹) * M * (E₀ * E₀⁻¹) := by
+          noncomm_ring
+        rw [h1, hinv2, one_mul, mul_one]
+      right_inv := fun M => by
+        show E₀⁻¹ * (E₀ * M * E₀⁻¹) * E₀ = M
+        have h1 : E₀⁻¹ * (E₀ * M * E₀⁻¹) * E₀ = (E₀⁻¹ * E₀) * M * (E₀⁻¹ * E₀) := by
+          noncomm_ring
+        rw [h1, hinv1, one_mul, mul_one] } with hΨ
+  have hΨΦ : ∀ M, Ψ M = Φ M := fun M => rfl
+  have hreprmap : ∀ (M : Matrix (Fin 2) (Fin 2) B) (i : Fin 4),
+      (b.map Ψ).repr M i = b.repr (Ψ.symm M) i := by
+    intro M i
+    rw [Module.Basis.map_repr]
+    rfl
+  have hbS' : ∀ i : Fin 4, (b.map Ψ) i ∈ S.map Φ := by
+    intro i
+    rw [Module.Basis.map_apply]
+    exact ⟨b i, hbS i, (hΨΦ (b i)).symm⟩
+  have hrepr' : ∀ M ∈ S.map Φ, ∀ i : Fin 4, (b.map Ψ).repr M i ∈ C := by
+    rintro _ ⟨N, hN, rfl⟩ i
+    rw [hreprmap]
+    rw [show Ψ.symm (Φ N) = N from by rw [← hΨΦ N]; exact Ψ.symm_apply_apply N]
+    exact hrepr N hN i
+  have hone' : ∀ i : Fin 4, (b.map Ψ).repr E11 i ∈ C := by
+    intro i
+    rw [hreprmap]
+    rw [show Ψ.symm E11 = u from by
+      rw [hE11, ← hE₀u]
+      exact Ψ.symm_apply_apply u]
+    exact (hmemA u).mp huA i
+  obtain ⟨E₁, hE₁det, hE₁mem⟩ :=
+    exists_conj_entries_mem_of_single_mem hadic hcompl C hclosed hres (S.map Φ)
+      (b.map Ψ) hbS' hrepr' hone'
+  refine ⟨E₀ * E₁, ?_, ?_⟩
+  · rw [Matrix.det_mul]; exact hE₀det.mul hE₁det
+  · intro M hM i j
+    have hMS' : Φ M ∈ S.map Φ := ⟨M, hM, rfl⟩
+    have hres2 := hE₁mem (Φ M) hMS' i j
+    have heq : (E₀ * E₁)⁻¹ * M * (E₀ * E₁) = E₁⁻¹ * (E₀⁻¹ * M * E₀) * E₁ := by
+      rw [Matrix.mul_inv_rev]; noncomm_ring
+    rw [heq]
+    exact hres2
 
 open scoped TensorProduct in
 /-- **Carayol's Théorème 1, the conjugation proper** (PROVEN 2026-07-26
