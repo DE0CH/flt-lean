@@ -7265,12 +7265,110 @@ caveat applies IN FULL FORCE — `hshape` determines `aF w` as
 over `ℚ_[ℓ]` and NOT over `ℚ` — so the statement survives only by the
 collapse route.  The full hypothesis list is retained DELIBERATELY.
 
-INSTANTIATION DEFECT (inherited from the parent, unchanged): the only
-supplier, `exists_heckeEigensystem_of_congruentSeed`, is formally empty
-and hands `badF := ∅`, so at the instantiation that actually reaches
-this node the statement asserts algebraicity of the Frobenius traces at
-EVERY place of `F`, including the ramified ones.  The fix is upstream,
-not here.
+INSTANTIATION DEFECT (inherited from the parent; CORRECTED 2026-07-26 —
+the inherited wording had gone stale): the only supplier,
+`exists_heckeEigensystem_of_congruentSeed`, is formally empty and hands
+`badF₀ := ∅`, but the consumer `exists_heckePackage_of_seed` then
+ENLARGES the exceptional set by the places of `F` over `ℓ`
+(`exists_finset_superset_of_places_mem`) before the shape clause is
+handed on — the repair that discharges `hbadℓ` for
+`exists_heckeSubfield_of_determinants`.  So the set actually reaching
+this node is `{w : w ∣ ℓ}`, not `∅`, and the statement asserts
+algebraicity of the Frobenius traces at every place of `F` NOT over
+`ℓ` — still including the places over `2` and every place where
+`ρ|_{G_F}` is ramified, where `charFrob w` is not a Hecke polynomial.
+The defect is smaller than recorded but not gone, and the fix remains
+upstream, not here.
+
+PROVABILITY AUDIT (2026-07-26, this node's owner) — READ BEFORE
+DISPATCHING A PROOF EFFORT AT THIS NODE.  As stated it has NO
+admissible discharge.  All three routes were checked and all three are
+closed:
+
+1. FROM THE HYPOTHESES, DIRECTLY — closed.  `hshape` pins
+   `aF w = -ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1)` and
+   nothing else in the binder list constrains `aF` at all.  `ιO` is
+   hypothesized ONLY injective — not continuous, not a `ℤ_[ℓ]`-algebra
+   map — so it need not respect the `ℤ_[ℓ]`-structure that makes `O`
+   module-finite, and `ιO O` need lie in no finite extension of
+   `ℚ_[ℓ]`.  Strengthening the embedding data does NOT rescue the node:
+   even with `ιO` a `ℤ_[ℓ]`-algebra map one gets `aF w` inside a finite
+   extension of `ℚ_[ℓ]`, i.e. `IsIntegral ℚ_[ℓ] (aF w)`, which is
+   orthogonal to `IsIntegral ℚ (aF w)` — `ℚ_[ℓ]` itself has uncountable
+   transcendence degree over `ℚ`, so an algebraic pin over one base is
+   no pin at all over the other.  The missing input is arithmetic, not
+   coefficient bookkeeping.
+
+2. BY COLLAPSE — BANNED, not merely unavailable.  The hypothesis
+   package (`hρbar` together with `hirr`, at `ℓ ≥ 5`) is classically
+   unsatisfiable, which is this module's headline and is why the
+   statement is classically true for every package; but the only
+   formalization of that unsatisfiability runs through `Family.lean`,
+   `Lift.lean` and `Modularity/Interface.lean`, which the CIRCULARITY
+   GUARD below forbids.  So the collapse route is closed by
+   construction and cannot be what closes this node.
+
+3. BY REFUTATION — closed.  A counterexample must instantiate EVERY
+   hypothesis, `hρbar : IsHardlyRamified hℓodd hW ρbar` with `hirr` at
+   `ℓ ≥ 5` included, i.e. exhibit an irreducible hardly ramified
+   mod-`ℓ` representation.  Checked rather than assumed:
+   `IsHardlyRamified` (`GaloisRepresentation/HardlyRamified/Defs.lean`)
+   is a substantive four-clause structure — cyclotomic determinant,
+   unramified outside `2ℓ`, flat at `ℓ`, and a `1`-dimensional
+   unramified quotient at `2` with trivial square — admitting no
+   degenerate instance, so producing one is exactly as hard as refuting
+   FLT.
+
+CONTRAST THAT LOCATES THE MISSING INPUT.  The analogous statement for
+the OTHER coefficient is already discharged formally, with no
+automorphic input: at `w ∤ ℓ` the cyclotomic-determinant clause of `hρ`
+forces `dF w` to be the rational integer `Nw`
+(`charFrob_baseChange_coeff_zero_eq_absNorm`), so `IsIntegral ℚ (dF w)`
+is a theorem in this module.  The trace has no such handle — nothing in
+`IsHardlyRamified` constrains `tr ρ(Frob_w)` beyond its lying in `O` —
+and its algebraicity over `ℚ` IS the automorphic statement.  So this
+node is not the hard half of a formal exercise; it is the exact point
+at which modularity must enter, and no rearrangement of the present
+hypotheses can supply it.
+
+UPSTREAM REPAIR (specified here because it is not performable at this
+node, and deliberately NOT performed unilaterally: the signature ripple
+crosses several declarations that were under concurrent ownership when
+this audit was written).  The root defect is that nothing in the binder
+list says `ρ|_{G_F}` is modular — see the parent's PIN AUDIT, which
+already records `R = 𝕋` as absent from the hypotheses.  Two repairs,
+and the second is the structurally honest one:
+
+* MINIMAL: thread a modularity clause down from
+  `exists_heckePackage_of_seed` into this node's hypothesis package —
+  e.g. a number field `E`, an embedding `ψ : E →+* ℚ̄_ℓ` and
+  `a : HeightOneSpectrum (𝓞 F) → E` with `aF w = ψ (a w)` for
+  `w ∉ badF`.  This node then closes immediately (`IsIntegral ℚ (ψ (a w))`
+  from `NumberField E` and `IsIntegral.map`), and the burden sits where
+  the arithmetic is.
+
+* STRUCTURAL, and the one to prefer: an honest `R = 𝕋` already
+  DELIVERS that clause, so the two-stage shape of the present cut
+  double-counts.  `exists_heckeEigensystem_of_congruentSeed` is cut to
+  emit a raw `ℚ̄_ℓ`-valued eigensystem read off `charFrob`, and a
+  separate "Shimura rationality" citation downstream is then asked to
+  put the values back into a number field.  But `𝕋` is generated over
+  `ℤ` by the `T_w`, so an eigensystem arising from `R = 𝕋` is
+  `E`-rational by construction: rationality is not a theorem
+  downstream of `R = 𝕋`, it is part of what `R = 𝕋` asserts.  Give
+  that node the conclusion it should have had — the eigensystem as the
+  `ψ`-image of a number-field-valued system, which is exactly the
+  restatement its own FORMAL-CONTENT AUDIT calls for — and this node,
+  its sibling `exists_heckeGenerators_of_eigenvalues`, and the parent
+  `exists_heckeSubfield_of_eigenvalues` all become formal.
+
+Either repair touches `exists_heckeEigensystem_of_congruentSeed`,
+`exists_heckePackage_of_seed`, `exists_heckeField_of_eigensystem`,
+`exists_heckeField_mem_range_of_eigensystem`,
+`exists_heckeSubfield_of_eigenvalues`, this node and its sibling, so it
+is a single-owner cut-level restatement and must not be attempted
+piecewise.  Until it is done, this node is a placeholder for a
+hypothesis, not a citation anybody can discharge.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
