@@ -38,8 +38,17 @@ public import Mathlib.RingTheory.Regular.Flat
 public import Mathlib.RingTheory.Regular.Free
 public import Mathlib.RingTheory.Regular.RegularSequence
 public import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
+public import Mathlib.NumberTheory.Padics.ProperSpace
+public import Mathlib.Topology.Algebra.Algebra
+public import Mathlib.Topology.Algebra.Module.Compact
+public import Mathlib.Topology.Connected.TotallyDisconnected
+public import Mathlib.Topology.MetricSpace.Ultra.TotallySeparated
 public import Fermat.FLT.Mathlib.RingTheory.AdicCompletion.Finite
 public import Fermat.FLT.Mathlib.RingTheory.PowerSeries.AdicComplete
+-- `Algebra.TopologicallyFG`, a field of `TaylorWilesCoefficients`. This
+-- vendored module imports only mathlib, so it is safe upstream of
+-- `HardlyRamified/HilbertModularity.lean`.
+public import Fermat.FLT.Modularity.PatchingVendored.TopologicallyFG
 
 /-!
 # Taylor–Wiles patching: the BASE-FIELD-INDEPENDENT core
@@ -63,7 +72,7 @@ nothing else* from `Patching.lean` — and it cannot import it, because
 `HardlyRamified/Deformation.lean`, which `public import`s
 `HilbertModularity.lean`.
 
-Duplicating 860 lines of commutative algebra into the Hilbert module was the
+Duplicating 990 lines of commutative algebra into the Hilbert module was the
 alternative, and `HilbertModularity.lean` already carries eight local copies of
 downstream helpers for exactly this reason.  So the block was HOISTED here
 instead: `Patching.lean` and `HilbertModularity.lean` both import it, and there
@@ -78,6 +87,9 @@ declaration for declaration, with no change to any statement or proof.
 
 ## Contents
 
+* `TaylorWilesCoefficients` — the coefficient ring `𝒪` of the presentation
+  `R_∞ = 𝒪[[x₁, …, x_q]]` (classically `W(k)`), bundled with the properties the
+  proven half of the stack consumes.
 * `PatchedModule` — the limit object of the patching process, recorded with
   exactly the fields the injectivity assembly consumes.
 * `section AuslanderBuchsbaum` — the dimension induction
@@ -101,6 +113,80 @@ declaration for declaration, with no change to any statement or proof.
 @[expose] public section
 
 namespace GaloisRepresentation.Modularity
+
+/-- **The coefficient ring of the Taylor–Wiles presentation** (added
+2026-07-26 as the repair of the residual-field obstruction; see the
+`REPAIR` block of `exists_taylorWilesBottomLevel` below for the full
+derivation and the decision record).
+
+Classically the auxiliary deformation rings `R_{Q_n}` of the
+Taylor–Wiles method are quotients of `𝒪[[x₁, …, x_q]]` for
+`𝒪 = W(k)`, the Witt vectors of the residual field — NOT of
+`ℤ_p[[x₁, …, x_q]]`.  Hardcoding `ℤ_[p]` in the presentation role is
+correct exactly when `k = 𝔽_p`, and in general it makes the interface
+UNSATISFIABLE: a surjection `ℤ_p[[x]] ↠ R ↠ R_univ ↠ k` forces
+`k ≃+* ZMod p` (the maximal ideal of a power series ring over a local
+ring is the preimage of the base's maximal ideal, so the composite
+already factors through `ℤ_[p] ↠ k`).
+
+This bundles the coefficient ring together with exactly the properties
+the PROVEN half of the patching stack consumes, so that the sorried
+arithmetic leaves may CHOOSE it (classically `WittVector p k`) instead
+of being handed `ℤ_[p]`.  Bundling rather than ten separate binders is
+deliberate: `TaylorWilesLevel`/`TaylorWilesLevelRaw` take it as a
+single parameter, and the two arithmetic leaves produce a single
+existential witness.
+
+The carrier is a `Type` (universe `0`) for the same reason the tower's
+other data is: every intended object is a countable pro-finitely
+presented `ℤ_p`-algebra — `W(k)` for finite `k` is countable — so a
+universe-`0` copy always exists, and this keeps the whole patching
+stack universe-monomorphic in the coefficient argument.
+
+Where each field is consumed: `isLocalRing`/`isNoetherianRing` and
+`exists_isRegular_maximalIdeal` feed the Auslander–Buchsbaum endgame
+(`free_of_isRegular_mvPowerSeries`, through
+`exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries` — the last
+field says exactly that `𝒪` is a DVR, i.e. that `𝒪[[x₁, …, x_q]]` is
+regular of dimension `q + 1`); `finite_residueField`,
+`compactSpace` and `topologicallyFG` feed the vendored patching
+construction (`PatchingAlgebra.lift` and the uniform-rank bounds) at
+the presentation ring.  All hold for `W(k)` with `k` a finite
+field. -/
+structure TaylorWilesCoefficients where
+  /-- The underlying ring `𝒪`. -/
+  carrier : Type
+  [commRing : CommRing carrier]
+  [topologicalSpace : TopologicalSpace carrier]
+  [isTopologicalRing : IsTopologicalRing carrier]
+  [compactSpace : CompactSpace carrier]
+  [t2Space : T2Space carrier]
+  [totallyDisconnectedSpace : TotallyDisconnectedSpace carrier]
+  [isLocalRing : IsLocalRing carrier]
+  [isNoetherianRing : IsNoetherianRing carrier]
+  /-- The residue field of `𝒪` is finite (classically it is `k`). -/
+  finite_residueField : Finite (carrier ⧸ IsLocalRing.maximalIdeal carrier)
+  /-- `𝒪` is topologically finitely generated over `ℤ` (classically
+  `W(k) = ℤ_p[ζ]` is the closure of `ℤ[ζ]`). -/
+  topologicallyFG : Algebra.TopologicallyFG ℤ carrier
+  /-- `𝔪_𝒪` is generated by a single `𝒪`-regular element — `𝒪` is a
+  discrete valuation ring.  This is what makes `𝒪[[x₁, …, x_q]]`
+  regular local of dimension `q + 1`, the input to the
+  Auslander–Buchsbaum step. -/
+  exists_isRegular_maximalIdeal : ∃ ts : List carrier, ts.length = 0 + 1 ∧
+    RingTheory.Sequence.IsRegular carrier ts ∧
+    Ideal.ofList ts = IsLocalRing.maximalIdeal carrier
+
+attribute [instance] TaylorWilesCoefficients.commRing
+  TaylorWilesCoefficients.topologicalSpace
+  TaylorWilesCoefficients.isTopologicalRing
+  TaylorWilesCoefficients.compactSpace
+  TaylorWilesCoefficients.t2Space
+  TaylorWilesCoefficients.totallyDisconnectedSpace
+  TaylorWilesCoefficients.isLocalRing
+  TaylorWilesCoefficients.isNoetherianRing
+  TaylorWilesCoefficients.finite_residueField
+  TaylorWilesCoefficients.topologicallyFG
 
 set_option linter.checkUnivs false in
 /-- **The patched module** — the limit object of the Taylor–Wiles
@@ -164,23 +250,28 @@ structure PatchedModule.{v, w, s, uR} (p : ℕ) [Fact p.Prime]
   /-- The number of Taylor–Wiles primes at each level (equivalently,
   power-series variables of `R_∞`). -/
   q : ℕ
+  /-- The coefficient ring `𝒪` of the presentation `R_∞ = 𝒪[[x₁, …, x_q]]`
+  (classically `W(k)`; see `TaylorWilesCoefficients`).  Hardcoding
+  `ℤ_[p]` here was the residual-field obstruction repaired
+  2026-07-26. -/
+  coeff : TaylorWilesCoefficients
   /-- The patched module `M_∞`. -/
   Minf : Type v
   [addCommGroupMinf : AddCommGroup Minf]
-  [moduleMinf : Module (MvPowerSeries (Fin q) ℤ_[p]) Minf]
+  [moduleMinf : Module (MvPowerSeries (Fin q) coeff.carrier) Minf]
   /-- `M_∞` is finite over `R_∞` (patched from module-finiteness at
   every level). -/
-  finiteMinf : Module.Finite (MvPowerSeries (Fin q) ℤ_[p]) Minf
+  finiteMinf : Module.Finite (MvPowerSeries (Fin q) coeff.carrier) Minf
   /-- The Taylor–Wiles depth input: an `M_∞`-regular sequence of
   length `q + 1` inside the maximal ideal of `R_∞` (the image of the
   maximal regular sequence of `Λ_∞ = ℤ_p[[S₁, …, S_q]]`, over which
   `M_∞` is finite free by the Taylor–Wiles freeness lemma). -/
-  exists_isRegular : ∃ rs : List (MvPowerSeries (Fin q) ℤ_[p]),
+  exists_isRegular : ∃ rs : List (MvPowerSeries (Fin q) coeff.carrier),
     rs.length = q + 1 ∧
-    (∀ x ∈ rs, x ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p])) ∧
+    (∀ x ∈ rs, x ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) coeff.carrier)) ∧
     RingTheory.Sequence.IsRegular Minf rs
   /-- The patching surjection `R_∞ ↠ R_univ`. -/
-  toRuniv : MvPowerSeries (Fin q) ℤ_[p] →+* Runiv
+  toRuniv : MvPowerSeries (Fin q) coeff.carrier →+* Runiv
   toRuniv_surjective : Function.Surjective toRuniv
   /-- The bottom Hecke module (classically `H¹(X₀(N), ℤ_p)_𝔪`). -/
   M0 : Type w
@@ -192,14 +283,14 @@ structure PatchedModule.{v, w, s, uR} (p : ℕ) [Fact p.Prime]
   proj_surjective : Function.Surjective proj
   /-- Action compatibility: the `R_∞`-action on `M_∞` descends through
   `toRuniv` and `ψ` to the `T`-action on `M₀`. -/
-  proj_smul : ∀ (x : MvPowerSeries (Fin q) ℤ_[p]) (m : Minf),
+  proj_smul : ∀ (x : MvPowerSeries (Fin q) coeff.carrier) (m : Minf),
     proj (x • m) = ψ (toRuniv x) • proj m
   /-- The kernel of the bottom identification is exactly the
   augmentation submodule `𝔞·M_∞`, `𝔞 = ker(R_∞ ↠ R_univ)` (this
   inclusion; the reverse follows from `proj_smul`). -/
   mem_smul_top_of_proj_eq_zero : ∀ m : Minf, proj m = 0 →
     m ∈ RingHom.ker toRuniv •
-      (⊤ : Submodule (MvPowerSeries (Fin q) ℤ_[p]) Minf)
+      (⊤ : Submodule (MvPowerSeries (Fin q) coeff.carrier) Minf)
 
 /-! #### The Auslander–Buchsbaum machinery behind patching leaf 3
 
@@ -848,11 +939,21 @@ theorem isNoetherianRing_mvPowerSeries.{uA} (n : ℕ) {A : Type uA} [CommRing A]
       (((MvPowerSeries.renameEquiv A (finSuccEquiv n)).toRingEquiv.trans
         (optionCurryEquiv (Fin n) A)).symm)
 
-/-- **The regular system of parameters of `ℤ_p[[x₁, …, x_q]]`**
-(power-series leaf; PROVEN 2026-07-24): the maximal ideal of
-`R_∞ = ℤ_p[[x₁, …, x_q]]` is spanned by a regular sequence of length
-`q + 1` — concretely the image of `(x_q, …, x_1, p)` under the
-currying isomorphisms.  Unconditionally true, zero arithmetic content.
+/-- **The regular system of parameters of `𝒪[[x₁, …, x_q]]`**
+(power-series leaf; PROVEN 2026-07-24, GENERALIZED to an arbitrary
+coefficient ring 2026-07-26): if the maximal ideal of the local ring
+`𝒪` is spanned by a length-one regular sequence — i.e. `𝒪` is a DVR,
+the hypothesis `hO`, satisfied by `ℤ_[p]` through
+`exists_isRegular_ofList_eq_maximalIdeal_padicInt` and by
+`𝒪 = W(k)` — then the maximal ideal of `R_∞ = 𝒪[[x₁, …, x_q]]` is
+spanned by a regular sequence of length `q + 1`, concretely the image
+of `(x_q, …, x_1, ϖ)` under the currying isomorphisms.
+
+The coefficient ring is a parameter rather than `ℤ_[p]` because of the
+INTERFACE OBSTRUCTION recorded at `exists_taylorWilesBottomLevel`
+below: presenting the Taylor–Wiles deformation rings over `ℤ_[p]`
+silently forces the residual field to be `𝔽_p`.  Unconditionally true,
+zero arithmetic content.
 Proven by induction on the number of variables from the one-variable
 step `exists_isRegular_ofList_eq_maximalIdeal_powerSeries` (prepending
 `X` to a regular system of parameters of the local base `B` gives one
@@ -862,25 +963,30 @@ of `B⟦X⟧`: `X` is a nonzerodivisor, `B⟦X⟧/(X) ≃ B`, and
 and transported at each step along
 `MvPowerSeries (Fin (q+1)) ℤ_p ≃+* (MvPowerSeries (Fin q) ℤ_p)⟦X⟧`.
 Consumed by `free_of_isRegular_mvPowerSeries`. -/
-theorem exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries (p : ℕ) [Fact p.Prime]
+theorem exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries {O : Type}
+    [CommRing O] [IsLocalRing O]
+    (hO : ∃ ts : List O, ts.length = 0 + 1 ∧ RingTheory.Sequence.IsRegular O ts ∧
+      Ideal.ofList ts = maximalIdeal O)
     (q : ℕ) :
-    ∃ ts : List (MvPowerSeries (Fin q) ℤ_[p]), ts.length = q + 1 ∧
-      RingTheory.Sequence.IsRegular (MvPowerSeries (Fin q) ℤ_[p]) ts ∧
-      Ideal.ofList ts = maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) := by
+    ∃ ts : List (MvPowerSeries (Fin q) O), ts.length = q + 1 ∧
+      RingTheory.Sequence.IsRegular (MvPowerSeries (Fin q) O) ts ∧
+      Ideal.ofList ts = maximalIdeal (MvPowerSeries (Fin q) O) := by
   induction q with
   | zero =>
     exact exists_isRegular_ofList_eq_maximalIdeal_of_ringEquiv
-      (mvPowerSeriesIsEmptyRingEquiv (Fin 0) ℤ_[p])
-      (exists_isRegular_ofList_eq_maximalIdeal_padicInt p)
+      (mvPowerSeriesIsEmptyRingEquiv (Fin 0) O) hO
   | succ q ih =>
     exact exists_isRegular_ofList_eq_maximalIdeal_of_ringEquiv
-      (((MvPowerSeries.renameEquiv ℤ_[p] (finSuccEquiv q)).toRingEquiv.trans
-        (optionCurryEquiv (Fin q) ℤ_[p])).symm)
+      (((MvPowerSeries.renameEquiv O (finSuccEquiv q)).toRingEquiv.trans
+        (optionCurryEquiv (Fin q) O)).symm)
       (exists_isRegular_ofList_eq_maximalIdeal_powerSeries _ (q + 1) ih)
 
 /-- **The commutative-algebra endgame** (patching leaf 3; PROVEN
-2026-07-24): a finite module over the regular local ring
-`R_∞ = ℤ_p[[x₁, …, x_q]]` carrying a regular sequence of length
+2026-07-24, GENERALIZED to an arbitrary DVR coefficient ring `𝒪`
+2026-07-26 — see `exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`
+above and the INTERFACE OBSTRUCTION at `exists_taylorWilesBottomLevel`
+below): a finite module over the regular local ring
+`R_∞ = 𝒪[[x₁, …, x_q]]` carrying a regular sequence of length
 `q + 1 = dim R_∞` inside the maximal ideal — i.e. of depth at least
 `dim R_∞` — is FREE.  This is the Auslander–Buchsbaum step of the
 patching argument (Diamond, *The Taylor–Wiles construction and
@@ -894,24 +1000,58 @@ dimension induction `free_of_isRegular_of_ofList_eq_maximalIdeal`
 header above) at the two concrete power-series leaves
 `isNoetherianRing_mvPowerSeries` and
 `exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`. -/
-theorem free_of_isRegular_mvPowerSeries.{v} {p : ℕ} [Fact p.Prime] {q : ℕ}
+theorem free_of_isRegular_mvPowerSeries.{v} {O : Type} [CommRing O]
+    [IsLocalRing O] [IsNoetherianRing O] {q : ℕ}
+    (hO : ∃ ts : List O, ts.length = 0 + 1 ∧ RingTheory.Sequence.IsRegular O ts ∧
+      Ideal.ofList ts = maximalIdeal O)
     {M : Type v} [AddCommGroup M]
-    [Module (MvPowerSeries (Fin q) ℤ_[p]) M]
-    (hfin : Module.Finite (MvPowerSeries (Fin q) ℤ_[p]) M)
-    {rs : List (MvPowerSeries (Fin q) ℤ_[p])} (hlen : rs.length = q + 1)
+    [Module (MvPowerSeries (Fin q) O) M]
+    (hfin : Module.Finite (MvPowerSeries (Fin q) O) M)
+    {rs : List (MvPowerSeries (Fin q) O)} (hlen : rs.length = q + 1)
     (hmem : ∀ x ∈ rs, x ∈ IsLocalRing.maximalIdeal
-      (MvPowerSeries (Fin q) ℤ_[p]))
+      (MvPowerSeries (Fin q) O))
     (hreg : RingTheory.Sequence.IsRegular M rs) :
-    Module.Free (MvPowerSeries (Fin q) ℤ_[p]) M := by
+    Module.Free (MvPowerSeries (Fin q) O) M := by
   haveI := hfin
-  haveI : IsNoetherianRing (MvPowerSeries (Fin q) ℤ_[p]) :=
+  haveI : IsNoetherianRing (MvPowerSeries (Fin q) O) :=
     isNoetherianRing_mvPowerSeries q
   obtain ⟨ts, htslen, hts, htsspan⟩ :=
-    exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries p q
+    exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries hO q
   exact free_of_isRegular_of_ofList_eq_maximalIdeal (q + 1) ts hts htslen htsspan
     rs hreg hlen hmem
 
 end AuslanderBuchsbaum
+
+/-- **`ℤ_[p]` is a Taylor–Wiles coefficient ring** (PROVEN 2026-07-26)
+— the classical instance at residual field `𝔽_p`, and the witness every
+`ℤ_[p]`-shaped call site of the patching stack now supplies
+explicitly.  Local Noetherian complete DVR with residue field `ZMod p`
+(`PadicInt.residueField`), compact, and topologically generated over
+`ℤ` by the empty set since `ℤ` is dense in `ℤ_[p]`
+(`PadicInt.denseRange_intCast`); its maximal ideal is `(p)` with `p` a
+nonzerodivisor
+(`exists_isRegular_ofList_eq_maximalIdeal_padicInt`). -/
+theorem finite_residueField_padicInt (p : ℕ) [Fact p.Prime] :
+    Finite (ℤ_[p] ⧸ IsLocalRing.maximalIdeal ℤ_[p]) :=
+  Finite.of_equiv (ZMod p) (PadicInt.residueField (p := p)).symm.toEquiv
+
+/-- `ℤ` is dense in `ℤ_[p]`, so `ℤ_[p]` is topologically generated over
+`ℤ` by the EMPTY set (`PadicInt.denseRange_intCast`). -/
+theorem topologicallyFG_int_padicInt (p : ℕ) [Fact p.Prime] :
+    Algebra.TopologicallyFG ℤ ℤ_[p] := by
+  refine ⟨⟨∅, ?_⟩⟩
+  have he : ((Algebra.adjoin ℤ ((∅ : Finset ℤ_[p]) : Set ℤ_[p]) : Subalgebra ℤ ℤ_[p]) :
+      Set ℤ_[p]) = Set.range (algebraMap ℤ ℤ_[p]) := by
+    simp [Algebra.adjoin_empty, Algebra.coe_bot]
+  rw [he]
+  exact PadicInt.denseRange_intCast
+
+noncomputable def TaylorWilesCoefficients.padicInt (p : ℕ) [Fact p.Prime] :
+    TaylorWilesCoefficients where
+  carrier := ℤ_[p]
+  finite_residueField := finite_residueField_padicInt p
+  topologicallyFG := topologicallyFG_int_padicInt p
+  exists_isRegular_maximalIdeal := exists_isRegular_ofList_eq_maximalIdeal_padicInt p
 
 /-- **The patched faithfulness assembly** (PROVEN): a `PatchedModule`
 for `ψ` forces `ψ` to be injective.  This is the classical endgame of
@@ -938,19 +1078,20 @@ theorem PatchedModule.injective.{v, w, s, uR} {p : ℕ} [Fact p.Prime]
   haveI : Nontrivial P.M0 := P.nontrivialM0
   haveI : Nontrivial P.Minf := P.proj_surjective.nontrivial
   obtain ⟨rs, hlen, hmem, hreg⟩ := P.exists_isRegular
-  haveI : Module.Free (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf :=
-    free_of_isRegular_mvPowerSeries P.finiteMinf hlen hmem hreg
+  haveI : Module.Free (MvPowerSeries (Fin P.q) P.coeff.carrier) P.Minf :=
+    free_of_isRegular_mvPowerSeries
+      P.coeff.exists_isRegular_maximalIdeal P.finiteMinf hlen hmem hreg
   rw [injective_iff_map_eq_zero]
   intro r hr
   obtain ⟨x, rfl⟩ := P.toRuniv_surjective r
-  let b := Module.Free.chooseBasis (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf
+  let b := Module.Free.chooseBasis (MvPowerSeries (Fin P.q) P.coeff.carrier) P.Minf
   obtain ⟨i⟩ := b.index_nonempty
   have hproj0 : P.proj (x • b i) = 0 := by
     rw [P.proj_smul, hr, zero_smul]
   have hmem2 := P.mem_smul_top_of_proj_eq_zero _ hproj0
   have hle : Submodule.map (b.coord i)
       (RingHom.ker P.toRuniv •
-        (⊤ : Submodule (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf)) ≤
+        (⊤ : Submodule (MvPowerSeries (Fin P.q) P.coeff.carrier) P.Minf)) ≤
       RingHom.ker P.toRuniv := by
     rw [Submodule.map_smul'']
     exact Submodule.smul_le.mpr fun a ha y _ => by
