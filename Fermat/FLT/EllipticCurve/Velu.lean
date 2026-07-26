@@ -921,10 +921,28 @@ is how the classical `2`-isogeny is handled in `MazurTorsion.twoIsogenyFun_add_o
 for general `S` the identity involves the `|S|` translates and does not reduce to a single
 `ring` call.
 
-Note that the coordinate shadow of this leaf — the special case in which the two images are
-negatives of one another, which cannot happen for `P + Q ∉ S` — is also what
-`velu_exists_three_twoTorsion` needs for its distinctness clause, so the two leaves are
-worth attacking together. -/
+**The reduction to coordinates, machine-checked on 2026-07-26 and recorded here so that it
+need not be rediscovered.** Writing `X = veluCoordX W S`, `Y = veluCoordY W S` and
+`V = W.veluCurve S`, the three `veluMap`s unfold by `veluMap_of_notMem` and the case split
+`by_cases hxy : X P = X Q ∧ Y P = V.negY (X Q) (Y Q)` leaves EXACTLY three goals:
+
+1. `hxy → False`. By `veluCoordX_neg` and `veluCoordY_neg` the hypothesis says precisely that
+   `P` and `−Q` have the same Vélu coordinate pair, while `P − (−Q) = P + Q ∉ S`; so this
+   goal is the coordinate form of "the fibres of the Vélu map are exactly the cosets of `S`",
+   i.e. injectivity modulo the kernel. It is the same fact that
+   `velu_coordX_twoTorsion_ne` needs for its distinctness clause.
+2. `X (P + Q) = V.addX (X P) (X Q) (V.slope (X P) (X Q) (Y P) (Y Q))`.
+3. `Y (P + Q) = V.addY (X P) (X Q) (Y P) (V.slope (X P) (X Q) (Y P) (Y Q))`.
+
+(The remaining glue is `Affine.Point.add_some hxy` and `velu_point_some_eq`.)
+
+That decomposition is deliberately NOT committed as three sorried leaves: goals 2 and 3
+commit the proof to the finite/rational-function route judged impractical above, and a
+function-field development would supply all three at once. Take it as a map, not as a cut.
+
+So this leaf and `velu_coordX_twoTorsion_ne` are two faces of one fact — that the Vélu map
+is a homomorphism with kernel exactly `S`, read on coordinates — and are worth attacking
+together, by one owner. -/
 theorem velu_map_add_of_notMem (S : Finset W.Point) (hS : IsPointSubgroup S)
     (hodd : Odd S.card) {P Q : W.Point} (_hP : P ∉ S) (_hQ : Q ∉ S) (_hPQ : P + Q ∉ S) :
     W.veluMap S hS hodd (P + Q) = W.veluMap S hS hodd P + W.veluMap S hS hodd Q :=
