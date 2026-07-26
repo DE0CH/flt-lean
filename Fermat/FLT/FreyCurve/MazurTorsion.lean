@@ -818,8 +818,55 @@ reduction on torsion gives `f(x) = f(∞)`; `f` is a formal immersion at
 `a₁ ≠ 0`; so `x = ∞`, contradicting non-cuspidality.
 
 This is the leaf that genuinely needs `X_0(N)`, `J_0(N)`, the Hecke
-algebra and the Eisenstein ideal — none of which exist in this
-development. Note that NONE of them appear in the statement. -/
+algebra and the Eisenstein ideal. Note that NONE of them appear in the
+statement.
+
+CORRECTION TO A STALE NOTE (2026-07-26). This paragraph used to end
+"none of which exist in this development". That is now WRONG about the
+first item: `Fermat/FLT/ModularCurve/X0.lean` carries a scheme-theoretic
+`X_0(N)`/`Y_0(N)` layer (`Gamma0Datum`, `IsCoarseModuliY0`,
+`IsX0Compactification`, `IsJacobianOf`, `HasRankZeroJacobian`). What is
+still genuinely absent is the **Eisenstein quotient** `J_e(N)` and the
+**formal immersion** criterion. The distinction matters: `X0.lean`'s
+rank-`0` layer is about `J_0(N)` itself, which has POSITIVE rank for many
+`N`, whereas Mazur's argument needs the Eisenstein quotient, which has
+rank `0` for EVERY `N`. So that layer does not apply here, and this leaf
+is not reducible to it.
+
+**CIRCULARITY HAZARD — DO NOT CLOSE THIS LEAF WITH `X0.lean`** (recorded
+2026-07-26 after an owner checked and declined to). `X0.lean` states
+`y0HasNoRationalPoint_prime` — for a prime `p ∉ mazurIsogenyPrimes =
+{2,3,5,7,11,13,17,19,37,43,67,163}`, `Y_0(p)(ℚ) = ∅` — as its OWN sorry
+node, and it is exactly Mazur 1978, Theorem 1. Combined with
+`nonempty_gamma0Datum_of_stable` and `false_of_stable_of_y0HasNoRationalPoint`
+it would discharge this leaf for every `N` outside the four exceptional
+primes in about ten lines, leaving only `N ∈ {37, 43, 67, 163}`. Lean
+would accept it — the two sorries are formally independent, so there is
+no dependency cycle to detect — but it would be MATHEMATICALLY CIRCULAR:
+this leaf exists precisely to PROVE Mazur's isogeny theorem, via steps
+1–3 above, and deriving it from that theorem makes the entire chain
+vacuous while leaving the sorry count unchanged. A green build would not
+notice. Anyone tempted by that route should close `X0.lean`'s node
+instead, and then delete this chain rather than route it through itself.
+
+FAITHFULNESS AUDIT (2026-07-26, PARI as an untrusted searcher). The
+statement is TRUE and NON-VACUOUS, and it is strictly weaker than the
+truth:
+
+* Non-vacuous: the hypotheses are satisfiable. `ellisomat` confirms a
+  rational `37`-isogeny on the two curves with `j = −9317` and
+  `j = −162677523113838677`, and rational isogenies of degree `43`, `67`,
+  `163` on the class-number-one CM curves with `j = −884736000`,
+  `−147197952000`, `−262537412640768000`. So no proof can discharge this
+  by contradicting its own hypotheses.
+* True: those five `j`-invariants are the only ones available for a
+  prime `N > 19` (Mazur), and every one of them is an INTEGER — so in
+  fact `0 ≤ v_q(j(E))` for EVERY prime `q`, including `q = 2` and
+  `q = N`. The two excluded primes cost nothing mathematically; they are
+  in the statement because Mazur's *proof* needs `q ≠ 2` (the formal
+  immersion is a formal immersion only in characteristic `≠ 2`) and
+  `q ≠ N`. Leaving them in keeps the leaf as weak as possible, which is
+  the direction that makes it easier to discharge. -/
 theorem WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
