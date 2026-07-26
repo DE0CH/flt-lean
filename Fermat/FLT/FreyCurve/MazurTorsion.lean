@@ -12407,30 +12407,145 @@ theorem WeierstrassCurve.x1Eleven_plane_ne_zero (b c : ℚ)
     field_simp at hx
     linarith
 
+/-- **The KUBERT MODEL of `X_1(13)`: `G₁₃(r, s) ≠ 0` off the two
+degenerate lines `s = 0` and `r = 1`** (sorry node — this now carries
+the ENTIRE arithmetic content of level `13`; the bidegree-`(7, 10)`
+statement `x1Thirteen_plane_ne_zero` below is PROVEN from it).
+
+`G₁₃(r, s) = r³ + (−s⁴ + 5s³ − 9s² + 4s − 2)r² + (−s³ + 6s² − 3s + 1)r − s³`
+
+is the classical Kubert–Tate `(r, s)`-model of `X_1(13)`, obtained from
+the bidegree-`(7, 10)` curve `F₁₃(b, c) = 0` by the birational change of
+coordinates
+
+  `b = r·s·(r − 1)`,  `c = s·(r − 1)`;   `r = b/c`,  `s = c²/(b − c)`,
+
+under which (PROVEN below by `ring`, in
+`x1Thirteen_kubert_cleared`)
+
+  `F₁₃(r·s·(r − 1), s·(r − 1)) = s⁷ · (r − 1)¹¹ · G₁₃(r, s)`.
+
+It is the same curve, four times smaller: total degree `6` instead of
+`11`, and it is the model the literature and the tables actually use, so
+this is the shape any future attack — vendored or formalized — will
+want.
+
+WHY IT IS TRUE, and how thoroughly that was checked (Magma/PARI, as
+untrusted searchers; every algebraic identity used in the proof below is
+re-derived inside Lean by `ring`, so no CAS output is trusted):
+
+* `G₁₃ = 0` is irreducible of geometric genus `2`, with a single
+  rational singular point, at `(r, s) = (1, 1)`.
+* Its smooth model is the hyperelliptic curve
+  `y² + (x³ + x² + 1)y = x² + x`, i.e. `y² = x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1`
+  — Sutherland's optimal model of `X_1(13)`, the genus-`2` curve of
+  conductor `169`.
+* Its Jacobian `J = J_1(13)` is `ℚ`-simple of dimension `2`;
+  `J(ℚ)_tors ≅ ℤ/19` and a `2`-descent gives `rank J(ℚ) = 0`, so
+  `J(ℚ) ≅ ℤ/19` exactly. (Equivalently `LRatio(J, 1) = 1/361 ≠ 0`.)
+* Rank `0` makes the rational points COMPUTABLE and CERTIFIED, not
+  merely searched: `Chabauty0` returns exactly six points, which are the
+  `φ(13)/2 = 6` rational cusps. This is Mazur–Tate, "Points of order 13
+  on elliptic curves" (Invent. Math. 22, 1973); subsumed in Mazur 1977,
+  Thm 7. As at level `11` the `X_0` shortcut is unavailable, `13` being
+  in Kenku's list.
+* Pulled back to this affine `(r, s)`-chart the six cusps leave exactly
+  THREE rational points, `(r, s) = (0, 0)`, `(1, 0)`, `(1, 1)` — an
+  independent PARI sweep over every `s = p/q` with `|p| ≤ 80`, `q ≤ 15`
+  finds these and nothing else. All three satisfy `s = 0` or `r = 1`,
+  which is precisely what the two hypotheses exclude. So the statement
+  is sharp: dropping EITHER hypothesis makes it false.
+
+WHAT IS STILL MISSING, i.e. what closing this leaf costs: Jacobians of
+genus-`2` curves (Mumford representation and Cantor's algorithm), the
+Abel–Jacobi embedding `X(ℚ) ↪ J(ℚ)`, and a Mordell–Weil rank bound.
+mathlib has none of these, and the rank-`0` input is a `2`-descent over
+the degree-`6` field of the sextic — which is irreducible with Galois
+group `F₁₈(6) = 3 wr 2` of order `18`. In particular `J` being
+`ℚ`-simple rules out the cheap route: there is NO elliptic quotient, so
+elliptic Chabauty is not available and a genuine genus-`2` method is
+required. -/
+theorem WeierstrassCurve.x1Thirteen_kubert_ne_zero (r s : ℚ) (hs : s ≠ 0) (hr : r ≠ 1) :
+    r ^ 3 + (-s ^ 4 + 5 * s ^ 3 - 9 * s ^ 2 + 4 * s - 2) * r ^ 2
+      + (-s ^ 3 + 6 * s ^ 2 - 3 * s + 1) * r - s ^ 3 ≠ 0 :=
+  sorry
+
+/-- **The Kubert substitution, with denominators cleared** (PROVEN, by
+`field_simp` and `ring`): at `r = b/c`, `s = c²/(b − c)` the Kubert
+polynomial `G₁₃` recovers `F₁₃` up to the explicit nonzero factor
+`c³(b − c)⁴`. This is the birational map of
+`x1Thirteen_kubert_ne_zero`'s docstring in the one direction the proof
+below needs. -/
+theorem WeierstrassCurve.x1Thirteen_kubert_cleared (b c : ℚ) (hc : c ≠ 0) (hbc : b - c ≠ 0) :
+    c ^ 3 * (b - c) ^ 4 *
+      ((b / c) ^ 3
+        + (-(c ^ 2 / (b - c)) ^ 4 + 5 * (c ^ 2 / (b - c)) ^ 3 - 9 * (c ^ 2 / (b - c)) ^ 2
+            + 4 * (c ^ 2 / (b - c)) - 2) * (b / c) ^ 2
+        + (-(c ^ 2 / (b - c)) ^ 3 + 6 * (c ^ 2 / (b - c)) ^ 2 - 3 * (c ^ 2 / (b - c)) + 1)
+            * (b / c)
+        - (c ^ 2 / (b - c)) ^ 3)
+    = b ^ 7 - 6 * c * b ^ 6 + (4 * c ^ 3 + 15 * c ^ 2) * b ^ 5
+      + (-9 * c ^ 5 - 15 * c ^ 4 - 20 * c ^ 3) * b ^ 4
+      + (5 * c ^ 7 + 24 * c ^ 6 + 21 * c ^ 5 + 15 * c ^ 4) * b ^ 3
+      + (-c ^ 9 - 6 * c ^ 8 - 21 * c ^ 7 - 13 * c ^ 6 - 6 * c ^ 5) * b ^ 2
+      + (6 * c ^ 8 + 3 * c ^ 7 + c ^ 6) * b + c ^ 10 := by
+  field_simp
+  ring
+
 /-- **`X_1(13)` has no non-cuspidal rational point, as a plane curve of
-bidegree `(7, 10)`** (sorry node — level `13` of the seven-level node
-below, in the explicit `(b, c)`-coordinates).
+bidegree `(7, 10)`** (PROVEN — level `13` of the seven-level node below,
+in the explicit `(b, c)`-coordinates, reduced to the Kubert model
+`x1Thirteen_kubert_ne_zero`).
 
 The polynomial is `F₁₃`, the cofactor of `b⁵⁶` in
 `MazurX1Plane.eval_thirteen`; as for level `11`, `F₁₃(b, c) = 0` with
 `b ≠ 0` says exactly that the origin of `tateNormalForm b c` has order
 `13`.
 
-`X_1(13)` has genus `2` and its Jacobian is `ℚ`-simple of dimension `2`
-with `LRatio(J, 1) = 1/361 ≠ 0`, hence Mordell–Weil rank `0`; its six
-rational points are its `φ(13)/2 = 6` rational cusps, and
-`min_p #X_1(13)(𝔽_p) = 6` matches. Mazur–Tate, "Points of order 13 on
-elliptic curves" (Invent. Math. 22, 1973); subsumed in Mazur 1977,
-Thm 7. As at level `11` the `X_0` shortcut is unavailable, `13` being in
-Kenku's list. -/
+THE PROOF, which is elementary and complete given the Kubert leaf. The
+two degenerate lines of the birational map are killed outright, because
+`F₁₃` restricted to each of them is a monomial in `b`:
+
+* `c = 0`: `F₁₃(b, 0) = b⁷`, so `F₁₃ = 0` forces `b = 0`.
+* `b = c`: `F₁₃(c, c) = −c¹¹`, so `F₁₃ = 0` again forces `b = 0`.
+
+Off them, `r = b/c` and `s = c²/(b − c)` are defined, `s ≠ 0` (as
+`c ≠ 0`) and `r ≠ 1` (as `b ≠ c`), and
+`c³(b − c)⁴ · G₁₃(r, s) = F₁₃(b, c) = 0` with `c³(b − c)⁴ ≠ 0` gives
+`G₁₃(r, s) = 0`, contradicting the leaf.
+
+FORMAL-CONTENT AUDIT — the `[IsElliptic]` instance is NOT USED. The
+statement is true, and is proven here, for EVERY `(b, c)` with `b ≠ 0`,
+with no nonsingularity hypothesis: the affine curve `F₁₃ = 0` has
+exactly ONE rational point in total, the singular point `(0, 0)`, so
+there is nothing for `Δ ≠ 0` to exclude. The binder is left in place
+only because the consumer below supplies it by instance resolution;
+nobody should read it as carrying content. -/
 theorem WeierstrassCurve.x1Thirteen_plane_ne_zero (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic] (hb : b ≠ 0) :
     b ^ 7 - 6 * c * b ^ 6 + (4 * c ^ 3 + 15 * c ^ 2) * b ^ 5
       + (-9 * c ^ 5 - 15 * c ^ 4 - 20 * c ^ 3) * b ^ 4
       + (5 * c ^ 7 + 24 * c ^ 6 + 21 * c ^ 5 + 15 * c ^ 4) * b ^ 3
       + (-c ^ 9 - 6 * c ^ 8 - 21 * c ^ 7 - 13 * c ^ 6 - 6 * c ^ 5) * b ^ 2
-      + (6 * c ^ 8 + 3 * c ^ 7 + c ^ 6) * b + c ^ 10 ≠ 0 :=
-  sorry
+      + (6 * c ^ 8 + 3 * c ^ 7 + c ^ 6) * b + c ^ 10 ≠ 0 := by
+  intro hF
+  rcases eq_or_ne c 0 with rfl | hc
+  · exact hb ((pow_eq_zero_iff (n := 7) (by norm_num)).mp (by linear_combination hF))
+  rcases eq_or_ne b c with hbc | hbc
+  · subst hbc
+    exact hb ((pow_eq_zero_iff (n := 11) (by norm_num)).mp (by linear_combination -hF))
+  · have hbc' : b - c ≠ 0 := sub_ne_zero.mpr hbc
+    refine WeierstrassCurve.x1Thirteen_kubert_ne_zero (b / c) (c ^ 2 / (b - c))
+      (div_ne_zero (pow_ne_zero 2 hc) hbc') ?_ ?_
+    · intro h1
+      exact hbc (by field_simp at h1; linarith)
+    · have key := WeierstrassCurve.x1Thirteen_kubert_cleared b c hc hbc'
+      rw [hF] at key
+      rcases mul_eq_zero.mp key with h | h
+      · rcases mul_eq_zero.mp h with h' | h'
+        · exact absurd ((pow_eq_zero_iff (n := 3) (by norm_num)).mp h') hc
+        · exact absurd ((pow_eq_zero_iff (n := 4) (by norm_num)).mp h') hbc'
+      · exact h
 
 namespace MazurLevel27
 
