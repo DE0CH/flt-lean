@@ -134,6 +134,7 @@ it is split off as separate sorried leaves
 module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
+public import Fermat.FLT.Modularity.HeckeFrame
 public import Mathlib.NumberTheory.ModularForms.Basic
 public import Mathlib.NumberTheory.ModularForms.CongruenceSubgroups
 public import Mathlib.NumberTheory.ModularForms.QExpansion
@@ -26687,17 +26688,171 @@ theorem exists_newformFactor_modularHeckeAlgebraQ {M : ℕ} (hM : 0 < M)
       mul_comm e ⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩]
     rfl
 
-/-- **Inhabitation of the geometric carrier** (sorry node — the
-GEOMETRIC half of the 2026-07-26 seventh decomposition, and now THE
-residual modular-curve leaf of the whole modularity subtree).
+/-! #### The EIGHTH decomposition: naming `Vp` (2026-07-26)
 
-Everything analytic has left this leaf: the newform structure of
-`𝕋_ℚ` is `exists_newformFactor_modularHeckeAlgebraQ`, and what remains
-is the construction of `J₀(M)`, its Tate module, and the realization
-of the Hecke algebra on it. The classical construction, field by field,
-is in the docstring of `nonempty_modularRationalHeckePackage` below;
-the missing theories, in dependency order and NONE of them present in
-mathlib on this pin, are
+The seventh cut named `T`; this one names `Vp`, and for exactly the
+same reason. Its predecessor's docstring said the geometric fields
+"cannot be separated from one another without a rigid name for `Vp`
+in the way `Tgen_prime` gives one for `T` — which needs a modular-curve
+moduli theory". That is true of the modular-curve ROUTE to the name.
+It is not true of the name itself, because the freeness fields already
+determine `Vp` up to `𝕋`-linear isomorphism:
+
+* `padic_indep` makes `𝕋_ℚ ⊗_ℚ ℚ̄_p` act FAITHFULLY, so the operator
+  algebra `heckeSubalgebra (padic ∘ Tgen)` IS `𝕋_ℚ ⊗_ℚ ℚ̄_p`;
+* `basis₁`, `basis₂`, `span_free`, `indep_free` say `Vp` is FREE OF
+  RANK TWO over that algebra.
+
+Together: `Vp ≅ (𝕋_ℚ ⊗_ℚ ℚ̄_p)²` as a module over `𝕋_ℚ ⊗_ℚ ℚ̄_p`, and
+the isomorphism carries `padic` to multiplication. Classically this is
+the content of Mazur (*Modular curves and the Eisenstein ideal*, ch.
+II) and Ribet (*Invent. Math.* 100 (1990), §2): `H₁(X₀(M); ℚ)` is free
+of rank two over `𝕋_ℚ`, and `V_p(J₀(M)) ⊗ ℚ̄_p` is its base change.
+
+So define `Vp` to BE that free module — `modularTateSpace`, the
+`HeckeFrame` of `Modularity/HeckeFrame.lean` — and transport the
+Galois action, the exceptional set and the twisted Weil pairing along
+the isomorphism. Everything that does not mention `τJ` or `pair`
+becomes a THEOREM about the frame (`frame_span`, `frame_indep`,
+`linearIndependent_frameAction`, `adjoin_frameAction_eq_range`), and
+the residue is `ModularTateGaloisData`: the arithmetic of the Galois
+action alone.
+
+SOUNDNESS. The cut is legitimate for the same reason the seventh one
+was, and would be illegitimate without the naming. The junk carrier
+`T := ℚ` of the section note above shows that a leaf conditioned on an
+EXISTENTIALLY produced package is false about legitimate inhabitants of
+it; here nothing is existentially produced upstream of the leaf — `T`
+and `Vp` are both concrete definitions and `padic` is literally
+multiplication, so `ModularTateGaloisData` is a statement about ONE
+named object.
+
+FAITHFULNESS. `nonempty_modularTateGaloisData` is no stronger than
+`nonempty_modularTateModuleData` was: from the classical inhabitant
+`(V_p(J₀(M)) ⊗ ℚ̄_p, τJ, pair)`, freeness supplies a `𝕋 ⊗ ℚ̄_p`-linear
+isomorphism onto the frame, `padic` becomes multiplication because the
+isomorphism is `𝕋`-linear, and `τJ`, `S` and `pair` transport with all
+their properties — `congruence`, `pair_frob` and `irred_eigenspace`
+are all phrased through `padic ∘ Tgen` and the Galois action, so they
+are carried by any `𝕋`-linear isomorphism. Conversely the assembly
+below rebuilds the old statement, so nothing is lost.
+
+WHAT THE CUT BUYS. The remaining leaf is now stated over a CONCRETE
+`Vp`, which is precisely the precondition the seventh cut identified
+for decomposing further: `irred_eigenspace` can now be restated as a
+theorem about `(𝕋 ⊗ ℚ̄_p)²` taking `congruence`, `pair_frob` and the
+Weil bound as hypotheses, without a hypothesis block naming an
+existential carrier. -/
+
+/-- **The `p`-adic Tate space of `J₀(M)`, CONCRETELY**: the free
+rank-two module `(𝕋_ℚ ⊗_ℚ ℚ̄_p)²`. See the section note above for why
+this is the right name for `V_p(J₀(M)) ⊗ ℚ̄_p` and why naming it is
+sound. -/
+abbrev modularTateSpace (M : ℕ) : Type :=
+  HeckeFrame ℚ (AlgebraicClosure ℚ_[p]) ↥(modularHeckeAlgebraQ M)
+
+/-- **The abstract Hecke operators inside `𝕋_ℚ`**: the analytic Hecke
+operator at a prime index, and junk (zero) elsewhere — which is all
+that `ModularTateModuleData` ever looks at, since every field but
+`hecke_comm` quantifies over primes and `hecke_comm` is trivial at
+`0`. -/
+noncomputable def modularTateGen (M q : ℕ) : ↥(modularHeckeAlgebraQ M) :=
+  if hq : q.Prime then ⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩ else 0
+
+/-- The pin: at a prime index `modularTateGen` is the analytic Hecke
+operator. -/
+theorem modularTateGen_prime {M q : ℕ} (hq : q.Prime) :
+    ((modularTateGen M q : ↥(modularHeckeAlgebraQ M)) :
+        Module.End ℂ (CuspForm (Gamma0GL M) 2)) = heckeOp M q := by
+  have h : modularTateGen M q =
+      ⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩ := dif_pos hq
+  rw [h]
+
+/-- **The `p`-adic realization at the concrete carrier**: `t` acts on
+`(𝕋_ℚ ⊗ ℚ̄_p)²` by multiplication by `1 ⊗ t`. -/
+noncomputable def modularTatePadic (M : ℕ) :
+    ↥(modularHeckeAlgebraQ M) →+*
+      Module.End (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M) :=
+  frameAction ℚ (AlgebraicClosure ℚ_[p]) ↥(modularHeckeAlgebraQ M)
+
+/-- The prime-indexed operators generate `𝕋_ℚ` — the `Tgen_adjoin`
+field, at the concrete carrier (`Algebra.adjoin_adjoin_coe_preimage`,
+exactly as in `nonempty_modularRationalHeckePackage` below). -/
+theorem adjoin_modularTateGen_eq_top (M : ℕ) :
+    Algebra.adjoin ℚ
+        {x : ↥(modularHeckeAlgebraQ M) | ∃ q : ℕ, q.Prime ∧ x = modularTateGen M q} = ⊤ := by
+  have hset :
+      {x : ↥(modularHeckeAlgebraQ M) | ∃ q : ℕ, q.Prime ∧ x = modularTateGen M q} =
+        ((↑) : ↥(modularHeckeAlgebraQ M) →
+            Module.End ℂ (CuspForm (Gamma0GL M) 2)) ⁻¹'
+          {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+            ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q} := by
+    ext x
+    constructor
+    · rintro ⟨q, hq, rfl⟩
+      exact ⟨q, hq, modularTateGen_prime hq⟩
+    · rintro ⟨q, hq, hx⟩
+      exact ⟨q, hq, Subtype.ext (hx.trans (modularTateGen_prime hq).symm)⟩
+  rw [hset]
+  exact Algebra.adjoin_adjoin_coe_preimage
+
+/-- The operator family of the concrete carrier is the image of the
+generating set of `𝕋_ℚ` under the frame action. -/
+theorem heckeSubalgebra_modularTatePadic (M : ℕ) :
+    heckeSubalgebra (fun m => modularTatePadic (p := p) M (modularTateGen M m)) =
+      (frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p])
+        (T := ↥(modularHeckeAlgebraQ M))).range := by
+  have hset :
+      {φ : Module.End (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M) |
+          ∃ q : ℕ, q.Prime ∧ φ = modularTatePadic (p := p) M (modularTateGen M q)} =
+        (fun t => frameAction ℚ (AlgebraicClosure ℚ_[p])
+            ↥(modularHeckeAlgebraQ M) t) ''
+          {x : ↥(modularHeckeAlgebraQ M) | ∃ q : ℕ, q.Prime ∧ x = modularTateGen M q} := by
+    ext φ
+    constructor
+    · rintro ⟨q, hq, rfl⟩
+      exact ⟨modularTateGen M q, ⟨q, hq, rfl⟩, rfl⟩
+    · rintro ⟨t, ⟨q, hq, rfl⟩, rfl⟩
+      exact ⟨q, hq, rfl⟩
+  have h1 : heckeSubalgebra (fun m => modularTatePadic (p := p) M (modularTateGen M m)) =
+      Algebra.adjoin (AlgebraicClosure ℚ_[p])
+        ((fun t => frameAction ℚ (AlgebraicClosure ℚ_[p])
+            ↥(modularHeckeAlgebraQ M) t) ''
+          {x : ↥(modularHeckeAlgebraQ M) | ∃ q : ℕ, q.Prime ∧ x = modularTateGen M q}) := by
+    rw [← hset]
+    rfl
+  rw [h1]
+  exact adjoin_frameAction_eq_range _ (adjoin_modularTateGen_eq_top M)
+
+/-- **`𝕋_ℚ` is a finite-dimensional `ℚ`-algebra** (sorry node — the
+one genuinely ANALYTIC input to the geometric side, and the same fact
+that step (b) of the sub-cut suggested for
+`exists_newformFactor_modularHeckeAlgebraQ` needs: the Hecke algebra
+is finitely generated as a `ℤ`-module by the Sturm bound together with
+integrality of the `q`-expansion coefficients, Diamond–Shurman §5.8 and
+Proposition 5.8.5. `SturmFiniteness` and `heckeField_finiteDimensional`
+above are the machinery to start from.)
+
+It enters here as the `moduleFinite` field: `Vp = (𝕋_ℚ ⊗ ℚ̄_p)²` is a
+finite-dimensional `ℚ̄_p`-space exactly when `𝕋_ℚ` is a
+finite-dimensional `ℚ`-space. -/
+theorem finiteDimensional_modularHeckeAlgebraQ {M : ℕ} (hM : 0 < M) :
+    FiniteDimensional ℚ ↥(modularHeckeAlgebraQ M) :=
+  sorry
+
+/-- **The residual ARITHMETIC of the geometric leaf** (2026-07-26,
+eighth decomposition): the Galois action on the concrete Tate space
+`(𝕋_ℚ ⊗ ℚ̄_p)²`, the exceptional set, and the twisted Weil pairing,
+with the four properties that are genuinely about the arithmetic of
+`J₀(M)` — commutation with the Hecke correspondences, the
+Eichler–Shimura congruence, the Weil-pairing multiplier at good
+Frobenii, and Ribet irreducibility.
+
+Everything else in `ModularTateModuleData` — the operators, the
+carrier, the realization, its faithfulness after base change, and
+freeness of rank two — is a theorem about the frame and is discharged
+in `nonempty_modularTateModuleData` below. The missing theories are
+unchanged, and in dependency order:
 
 1. `X₀(M)` as a smooth projective curve over `ℚ` (Deligne–Rapoport;
    moduli of elliptic curves with `Γ₀(M)`-structure);
@@ -26712,26 +26867,135 @@ mathlib on this pin, are
 5. good reduction at `q ∤ Mp` and the Eichler–Shimura congruence
    (Igusa; D–S Theorems 8.6.1 and 8.7.2);
 6. the Eichler–Shimura isomorphism to `S₂(Γ₀(M))`, which is what makes
-   `padic` a realization of the ANALYTIC Hecke algebra
-   (`Tgen_prime`) — the one place where the two sides of the seam
-   still meet.
+   the realization one of the ANALYTIC Hecke algebra — the one place
+   where the two sides of the seam still meet;
+7. freeness of `H₁(X₀(M); ℚ)` of rank two over `𝕋_ℚ` (Mazur ch. II;
+   Ribet §2), which is what licenses the identification of the carrier
+   with the frame.
 
-WHY THIS IS NOT FURTHER CUT. A tower of `Nonempty` sub-leaves is
-unsound here (see the junk counterexample in the section note above),
-and the fields cannot be separated from one another without a rigid
-name for `Vp` in the way `Tgen_prime` gives one for `T` — which needs
-a modular-curve moduli theory, i.e. item 1. The one cut that does look
-sound without it is `irred_eigenspace`: the classical Ribet argument
-derives it from `congruence`, freeness and `pair_frob` together with
-the Weil bound `|a_q| ≤ 2√q` and class field theory over `ℚ`, so it
-could be restated as a theorem taking ALL the other fields as
-hypotheses. It is not done here because the hypothesis block would be
-the whole structure and the Weil bound is itself absent from the pin;
-a successor with `S₂`-analytic machinery in hand should reconsider
-it. -/
-theorem nonempty_modularTateModuleData {M : ℕ} (hM : 0 < M) :
-    Nonempty (ModularTateModuleData (p := p) M) :=
+The one cut that is now available and was not before: `irred_eigenspace`
+can be restated as a THEOREM about the frame taking `congruence`,
+`pair_frob` and the Weil bound `|a_q| ≤ 2√q` as hypotheses. It is not
+done here because the Weil bound is itself absent from the pin. -/
+structure ModularTateGaloisData (M : ℕ) where
+  /-- The continuous Galois action on the concrete Tate space. -/
+  τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M)
+  /-- The exceptional set (intended: the places over `Mp`). -/
+  S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+  /-- Hecke correspondences are defined over `ℚ`. -/
+  hecke_comm : ∀ (m : ℕ) (γ : Field.absoluteGaloisGroup ℚ),
+    modularTatePadic (p := p) M (modularTateGen M m) * τJ γ =
+      τJ γ * modularTatePadic (p := p) M (modularTateGen M m)
+  /-- The Eichler–Shimura congruence relation at good primes. -/
+  congruence : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2
+      - modularTatePadic (p := p) M (modularTateGen M q) *
+        τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+      + (q : AlgebraicClosure ℚ_[p]) • 1 = 0
+  /-- The Atkin–Lehner-twisted Weil pairing. -/
+  pair : modularTateSpace (p := p) M →ₗ[AlgebraicClosure ℚ_[p]]
+    modularTateSpace (p := p) M →ₗ[AlgebraicClosure ℚ_[p]] AlgebraicClosure ℚ_[p]
+  /-- The pairing is alternating. -/
+  pair_self : ∀ x : modularTateSpace (p := p) M, pair x x = 0
+  /-- The pairing is nondegenerate. -/
+  pair_nondeg : ∀ x : modularTateSpace (p := p) M,
+    (∀ y : modularTateSpace (p := p) M, pair x y = 0) → x = 0
+  /-- The Hecke operators are self-adjoint for the twisted pairing. -/
+  pair_hecke : ∀ (q : ℕ), q.Prime →
+    ∀ x y : modularTateSpace (p := p) M,
+      pair (modularTatePadic (p := p) M (modularTateGen M q) x) y =
+        pair x (modularTatePadic (p := p) M (modularTateGen M q) y)
+  /-- Galois Frobenii off `S` scale the pairing by `q`. -/
+  pair_frob : ∀ (q : ℕ) (hq : q.Prime),
+    hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+    ∀ x y : modularTateSpace (p := p) M,
+      pair (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+          (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
+        (q : AlgebraicClosure ℚ_[p]) * pair x y
+  /-- Ribet irreducibility. -/
+  irred_eigenspace : ∀ (g : CuspForm (Gamma0GL M) 2),
+    IsWeightTwoNewform M g →
+    ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
+    ∀ U : Submodule (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M),
+      U ≤ heckeEigenspace
+            (fun m => modularTatePadic (p := p) M (modularTateGen M m))
+            (fun m => κ (heckeCoeff M g m)) →
+      (∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ U, τJ γ x ∈ U) →
+      U = ⊥ ∨ U = heckeEigenspace
+            (fun m => modularTatePadic (p := p) M (modularTateGen M m))
+            (fun m => κ (heckeCoeff M g m))
+
+/-- **Inhabitation of the residual arithmetic** (sorry node — THE
+residual modular-curve leaf of the whole modularity subtree, over a
+CONCRETE Tate space). See `ModularTateGaloisData` for the missing
+theories and for the further cut this one makes available. -/
+theorem nonempty_modularTateGaloisData {M : ℕ} (hM : 0 < M) :
+    Nonempty (ModularTateGaloisData (p := p) M) :=
   sorry
+
+/-- **Inhabitation of the geometric carrier** (PROVEN 2026-07-26 — an
+ASSEMBLY over the two leaves of the EIGHTH decomposition; until then it
+was itself the residual geometric leaf of the seventh).
+
+`Vp` is the concrete frame `(𝕋_ℚ ⊗_ℚ ℚ̄_p)²`, `padic` is multiplication
+and `Tgen` is the analytic Hecke operator at each prime, so:
+
+* `Tgen_prime` is `modularTateGen_prime`, true by definition;
+* `moduleFinite` is base change of `finiteDimensional_modularHeckeAlgebraQ`
+  (the ANALYTIC leaf);
+* `padic_indep` is `linearIndependent_frameAction` — base change of a
+  `ℚ`-independent family along the field extension `ℚ ⊆ ℚ̄_p`, then
+  through the faithful multiplication action;
+* `basis₁`, `basis₂`, `span_free`, `indep_free` are the standard frame
+  and `frame_span` / `frame_indep`, using
+  `heckeSubalgebra_modularTatePadic` to identify the operator algebra
+  with the multiplication algebra of `𝕋_ℚ ⊗ ℚ̄_p`;
+* every remaining field is the corresponding field of
+  `nonempty_modularTateGaloisData`, the ARITHMETIC leaf. -/
+theorem nonempty_modularTateModuleData {M : ℕ} (hM : 0 < M) :
+    Nonempty (ModularTateModuleData (p := p) M) := by
+  classical
+  haveI : FiniteDimensional ℚ ↥(modularHeckeAlgebraQ M) :=
+    finiteDimensional_modularHeckeAlgebraQ hM
+  obtain ⟨G⟩ := nonempty_modularTateGaloisData (p := p) hM
+  refine ⟨{ Tgen := modularTateGen M
+            Tgen_prime := fun _ hq => modularTateGen_prime hq
+            Vp := modularTateSpace (p := p) M
+            addCommGroup := inferInstance
+            module := inferInstance
+            moduleFinite := inferInstance
+            τJ := G.τJ
+            padic := modularTatePadic (p := p) M
+            padic_indep := fun _ x hx => linearIndependent_frameAction x hx
+            S := G.S
+            hecke_comm := G.hecke_comm
+            congruence := G.congruence
+            basis₁ := frameBasis₁
+            basis₂ := frameBasis₂
+            span_free := ?_
+            indep_free := ?_
+            pair := G.pair
+            pair_self := G.pair_self
+            pair_nondeg := G.pair_nondeg
+            pair_hecke := G.pair_hecke
+            pair_frob := G.pair_frob
+            irred_eigenspace := G.irred_eigenspace }⟩
+  · -- `span_free`: the frame spans, over the multiplication algebra.
+    intro x
+    refine ⟨frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p]) (x 0), ?_,
+      frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p]) (x 1), ?_, frame_span x⟩
+    · rw [heckeSubalgebra_modularTatePadic M]
+      exact (AlgHom.mem_range _).mpr ⟨x 0, rfl⟩
+    · rw [heckeSubalgebra_modularTatePadic M]
+      exact (AlgHom.mem_range _).mpr ⟨x 1, rfl⟩
+  · -- `indep_free`: and it is independent over it.
+    intro a ha b hb hab
+    rw [heckeSubalgebra_modularTatePadic M] at ha hb
+    obtain ⟨r, rfl⟩ := (AlgHom.mem_range _).mp ha
+    obtain ⟨s, rfl⟩ := (AlgHom.mem_range _).mp hb
+    obtain ⟨hr, hs⟩ := frame_indep hab
+    exact ⟨by rw [hr]; exact map_zero _, by rw [hs]; exact map_zero _⟩
 
 /-- **Inhabitation of the modular rational Hecke package** (PROVEN
 2026-07-26 — an ASSEMBLY over the two leaves of the SEVENTH
