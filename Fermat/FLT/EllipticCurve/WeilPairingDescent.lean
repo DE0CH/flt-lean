@@ -7729,10 +7729,8 @@ theorem count_pointEval_YClass_of_smul_ne_zero
     · exact absurd h hne21
     · exact h
     · rw [hnegP₃] at h; exact absurd (by simpa using h.symm : P₁ = 0) hP₁0
-    · exact absurd (by rw [← hnegP₃, h, neg_neg] : P₁ + P₂ = P₁) (by
-        simpa using hP₂0)
-    · exact absurd (by rw [← hnegP₃, h, neg_neg] : P₁ + P₂ = P₂) (by
-        simpa using hP₁0)
+    · exact absurd (by rw [← hnegP₃, h, neg_neg] : P₁ + P₂ = P₁) (by simp)
+    · exact absurd (by rw [← hnegP₃, h, neg_neg] : P₁ + P₂ = P₂) (by simp)
     · exact h
   have hex12 : ∀ Q : W.Point, Q = -Q → Q = P₁ → Q = P₂ → False := by
     intro Q hQ e1 e2
@@ -7740,11 +7738,11 @@ theorem count_pointEval_YClass_of_smul_ne_zero
   have hex13 : ∀ Q : W.Point, Q = -Q → Q = P₁ → Q = P₃ → False := by
     intro Q hQ e1 e3
     have h1 : P₁ + P₂ = P₁ := by rw [← hnegP₃, ← e3, ← hQ]; exact e1
-    exact hP₂0 (by simpa using h1)
+    exact absurd h1 (by simp)
   have hex23 : ∀ Q : W.Point, Q = -Q → Q = P₂ → Q = P₃ → False := by
     intro Q hQ e2 e3
     have h1 : P₁ + P₂ = P₂ := by rw [← hnegP₃, ← e3, ← hQ]; exact e2
-    exact hP₁0 (by simpa using h1)
+    exact absurd h1 (by simp)
   have hle1 : ∀ Q : W.Point, Q = -Q →
       Multiset.count Q (P₁ ::ₘ P₂ ::ₘ P₃ ::ₘ 0) ≤ 1 := by
     intro Q hQ
