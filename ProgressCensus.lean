@@ -89,6 +89,7 @@ import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Family
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Frey
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.FreyConditions
+import Fermat.FLT.GaloisRepresentation.HardlyRamified.HilbertModularity
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.LevelLimit
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.Lift
 import Fermat.FLT.GaloisRepresentation.HardlyRamified.ModThree
@@ -140,6 +141,7 @@ import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.AdicValuation
 import Fermat.FLT.Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 import Fermat.FLT.Mathlib.RingTheory.DiscreteValuationRing.AdjoinRoot
 import Fermat.FLT.Mathlib.RingTheory.DiscreteValuationRing.Separable
+import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
 import Fermat.FLT.Mathlib.RingTheory.Ideal.Quotient.Basic
 import Fermat.FLT.Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic
 import Fermat.FLT.Mathlib.RingTheory.Norm.Quadratic
