@@ -33063,8 +33063,110 @@ theorem exists_conductor_artinSymbol_span_eq_one_ray_class
     c' hcmul' hcfrob' δ hδ0 hδpos hδcong
 
 set_option maxHeartbeats 1000000 in
-/-- **One unramified prime may be struck off the modulus** (sorry node,
-created 2026-07-26 as the single sub-leaf (B1) of the conductor leaf (B)
+/-- **The conductor: an admissible modulus contains an admissible
+divisor supported on the RAMIFIED primes** (sorry node, created
+2026-07-26 as the single sub-leaf (B1a) of
+`artinSymbol_ray_class_descend_unramified_prime` just below, which is now
+PROVEN as ideal arithmetic over it): if `mm ≠ ⊥` is admissible for the
+Artin symbol `c` — i.e. `c ((δ)) = 1` for every totally positive
+`δ ≡ 1 (mod mm)` — then some `ff ∣ mm` is *also* admissible and is
+divisible only by primes at which `χ` is RAMIFIED (inertia not contained
+in `ker χ`).
+
+This is **Childress, *Class Field Theory* (Universitext, 2009), Theorem
+5.2.1(ii) together with the conductor theorem of ch. 5 §1, p. 107**,
+stated in this file's own vocabulary (no ray class group, no Artin map,
+no extension `M/F` is named — `χ` and `c` carry all of it). Writing `M`
+for the finite abelian extension of `F` cut out by `ker χ` (finite
+because `χ` is trivial on the open subgroup `V`, and abelian because the
+values of `χ` commute), `A` for the Artin map and `𝔣(M/F)` for the
+conductor, the witness is the FINITE PART of `𝔣(M/F)`: admissibility of
+`mm` says `𝔣 ∣ mm ·∏_{v real} v`, hence its finite part divides `mm`;
+the conductor is itself admissible; and the conductor theorem says its
+prime support is exactly the set of ramified primes.
+
+**The archimedean part is never removed and must not be.** Every
+`admissible` clause here carries total positivity at ALL real places, so
+the modulus in play is really `(ff, ∏_{v real} v)`; that is what makes
+the witness the finite part of `𝔣(M/F)` rather than `𝔣(M/F)` itself, and
+it is why the conclusion of the whole cluster is restricted to totally
+positive generators. Reproduced in PARI/GP 2026-07-26 at `F = ℚ(√3)`:
+`bnfinit(x^2-3,1).no = 1` and `.cyc = []` (so `h = 1`), while
+`bnrinit(F,[1,[1,1]],1).cyc = [2]` (so `Cl⁺ ≅ ℤ/2`), the narrow ray class
+field has `bnrconductor = [[1,0;0,1], [1,1]]` — trivial finite part, BOTH
+real places — and `(√3)` is trivial in `Cl` (`bnfisprincipal` returns
+`[]~`) but nontrivial in `Cl⁺` (`bnrisprincipal` returns `[1]~`).
+
+**FAITHFULNESS (audited 2026-07-26).** TRUE as stated, and non-vacuous:
+`hadm` is satisfiable (take `χ` trivial, or any `χ` whose fixed field is
+inside the narrow ray class field of `mm`), and the conclusion is not
+free — `ff = mm` is admissible but generally has unramified prime
+divisors, and `ff = ⊤` is generally not admissible.
+
+One point deserves care, because `c` is specified at EVERY prime, ramified
+ones included, where `χ (globalFrob w)` is a junk value (the Frobenius is
+well defined only modulo inertia, and `χ` does not kill inertia at a
+ramified `w`). It does no harm: `hadm` already forces every ramified
+prime to divide `mm` — admissibility of `mm` gives `𝔣 ∣ mm` and the
+ramified primes divide `𝔣` — so `δ ≡ 1 (mod mm)` is automatically coprime
+to every ramified prime, and the same then holds for `ff` since the
+primes dividing `ff` are ramified. No junk value is ever evaluated.
+
+**What it needs, and why nothing smaller will do.** The proof of the
+conductor theorem runs through the norm-group description of the kernel
+of the Artin map, `ker A = P⁺_𝔪 · N_{M/F} I_M(𝔪)` for admissible `𝔪`,
+i.e. through Artin reciprocity itself; the LOCAL input — surjectivity of
+`N : U_w → U_v` for `M_w/F_v` unramified (Serre, *Corps Locaux* V §2;
+Neukirch *ANT* V (1.2)) — enters only inside the norm-index computation
+`[U_v : N U_w] = e_v`, which is one factor of the two norm-index
+inequalities (Childress ch. 4). So the local statement is necessary but
+very far from sufficient, and — this matters for dispatch — it is not
+CONSUMABLE on its own: nothing in this file's vocabulary can use it until
+the norm group exists, so building it standalone would be free-floating
+code. Build order for a fleet: (1) the ideal-group/ray-class API with the
+archimedean part, (2) the Artin map and its surjectivity (Chebotarev is
+already in tree: `dense_conjClasses_globalFrob`,
+`exists_globalFrob_restrictNormalHom_conj`), (3) the norm group and the
+two norm-index inequalities (this is where the local surjectivity is
+consumed), (4) reciprocity and then the conductor theorem.
+
+**Mathlib survey (2026-07-26): nothing to build on.** Conductors of
+abelian extensions, ray class groups, the Artin map and local class field
+theory are all absent from the pin, and `~/cs/FLT` has no class field
+theory either. -/
+theorem exists_conductor_dvd_admissible_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (mm : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥)
+    (hadm : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      (∀ φ : F →+* ℝ,
+        0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
+      δ - 1 ∈ mm → c (Ideal.span {δ}) = 1) :
+    ∃ ff : Ideal (NumberField.RingOfIntegers F), ff ∣ mm ∧
+      (∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+        (∀ φ : F →+* ℝ,
+          0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
+        δ - 1 ∈ ff → c (Ideal.span {δ}) = 1) ∧
+      (∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        w.asIdeal ∣ ff → ∃ a : Γ F, ∃ σ ∈ localInertiaGroup w,
+          χ (a * Field.absoluteGaloisGroup.map
+            (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹)
+            ≠ 1) :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **One unramified prime may be struck off the modulus** (PROVEN
+2026-07-26 as ideal arithmetic over its single new sub-leaf (B1a)
+`exists_conductor_dvd_admissible_ray_class` just above; created
+2026-07-26 as the single sub-leaf (B1) of the conductor leaf (B)
 `artinSymbol_span_eq_one_of_pos_of_conductor_ray_class` just below, which
 is now PROVEN as a descending induction over this step): if the Artin
 symbol `c` of `χ` kills the ray `P⁺_{F, v·mm'}` (`hray`) and `χ` is
@@ -33078,7 +33180,16 @@ primes". Everything global in (B) — the descent from an arbitrary
 modulus down to `(1)` — is the induction in the consumer; what is left
 here is the single-prime statement, and it is genuinely LOCAL.
 
-**Route.** Let `M/F` be the finite abelian extension cut out by
+**PROOF, as written below.** All of it is ideal arithmetic over (B1a):
+`hray` says `v·mm'` is admissible, so (B1a) hands back an admissible
+`ff ∣ v·mm'` all of whose prime divisors are ramified for `χ`; `hunrv`
+says `v` is NOT one of them, so `v ∤ ff`; `v` is maximal, so `ff` and `v`
+are coprime and `ff ∣ v·mm'` gives `ff ∣ mm'`; hence `mm' ≤ ff`, so a
+`δ ≡ 1 (mod mm')` is `≡ 1 (mod ff)` and admissibility of `ff` finishes.
+Total positivity is carried through untouched.
+
+**Route of (B1a), i.e. where the mathematics went.** Let `M/F` be the
+finite abelian extension cut out by
 `ker χ` (finite because `χ` is trivial on the open subgroup `V`, whose
 index in the profinite group `Γ F` is finite), `G = Gal(M/F)`, and
 `A : I_F → G` the Artin map, so `c = ι ∘ A`. `hray` says
@@ -33111,26 +33222,71 @@ proves it.
 
 **`ℓ`, `hℓ`, `hℓ3`, `k`, `hord` are carried for uniformity with the
 sibling leaf (A) and are NOT needed by this argument** — the conductor
-theorem is insensitive to the order of `χ`. `hmul`, `V`, `hVopen`,
-`hVker`, `hcmul`, `hcfrob` all ARE needed: the first four to produce the
-finite abelian `M/F`, the last two to know that `c` is the Artin symbol
-of `χ` and not a junk function on ideals.
+theorem is insensitive to the order of `χ`. Confirmed by the proof: the
+three hypothesis binders among them are underscore-prefixed, so their
+non-use is now mechanically visible rather than merely asserted (`ℓ` and
+`k` still appear, in the TYPE of `_hord`). `hmul`, `V`, `hVopen`,
+`hVker`, `hcmul`, `hcfrob` all ARE needed — the first four to produce
+the finite abelian `M/F`, the last two to know that `c` is the Artin
+symbol of `χ` and not a junk function on ideals — and they are needed by
+(B1a), which is where they are now passed.
+
+**FAITHFULNESS (audited 2026-07-26, statement UNCHANGED): TRUE as
+stated.** The one thing worth checking, since `c` is pinned at EVERY
+prime including ramified ones — where `χ (globalFrob w)` is a junk value,
+the Frobenius being well defined only modulo an inertia group that `χ`
+does not kill — is that no junk value can reach the conclusion. It
+cannot: `hray` forces every prime ramified for `χ` to divide `mm'`.
+Indeed admissibility of `v·mm'` forces `𝔣(M/F) ∣ v·mm'`, the ramified
+primes divide `𝔣`, and `v` is unramified, so they all divide `mm'`; and
+`δ ≡ 1 (mod mm')` is coprime to `mm'`. So `hray` does double duty here —
+it is the descent's starting point AND what makes the extension of `c`
+to the ramified primes harmless.
+
+**TWO NEGATIVE RESULTS, recorded so nobody re-derives them** (both
+2026-07-26). They say that (B1a) — reciprocity — is genuinely needed, and
+in particular that the elementary attacks fail.
+
+* *The obvious correcting-element trick fails.* One wants, for
+  `δ ≫ 0` with `δ ≡ 1 (mod mm')`, an `ε ≫ 0` with `δ·ε ≡ 1 (mod v·mm')`
+  and `c ((ε)) = 1`, since then `c ((δ)) · c ((ε)) = c ((δε)) = 1` by
+  `hray`. But `ord_v` is a monoid homomorphism on the ray, so it can only
+  INCREASE under multiplication: as soon as `v ∤ mm'` and `ord_v δ ≥ 1`
+  — which is possible exactly then — no such `ε` exists. The `v`-part of
+  `(δ)` can never be cancelled from inside `P⁺_{mm'}`.
+* *No formal consequence of the hypotheses.* Nor does the norm-group
+  route close it formally. Everything `hray`, `hcmul` and `hcfrob` give
+  for free is triviality of `c` on the subgroup generated by
+  `P⁺_{F,v·mm'}` and the "norm" ideals `p^{d_p}`,
+  `d_p := orderOf (χ (globalFrob p))` (`c (p^{d_p}) = 1` by `hcfrob`
+  alone). That subgroup does NOT contain `P⁺_{F,mm'}`: if `v` is inert in
+  `M` with residue degree `f = d_v = 2` and `δ ≫ 0` has `ord_v δ = 1`,
+  every generator has EVEN `ord_v` while `(δ)` has odd `ord_v`. The
+  statement is nevertheless true, because `(δ)` being PRINCIPAL is an
+  extra global relation — which is precisely the content of Artin
+  reciprocity. So any proof must use the global reciprocity law; there is
+  no algebraic shortcut from `hray` plus multiplicativity.
 
 **Mathlib survey (2026-07-26): nothing to build on.** Conductors of
 abelian extensions, ray class groups, the Artin map and local class
 field theory are all absent from the pin, and `~/cs/FLT` has no class
-field theory either. The bounded missing piece a fleet should build
-first is the local one named above — surjectivity of `N : U_w → U_v` for
-`M_w/F_v` unramified — since it is what the conductor theorem consumes
-at `v` and it needs no global input. -/
+field theory either. **The earlier note here recommended building the
+local norm surjectivity `N : U_w → U_v` first, as a bounded piece needing
+no global input; that advice is withdrawn.** It is true that the
+conductor theorem consumes it, but only inside the norm-index computation
+`[U_v : N U_w] = e_v` — one factor of the two global norm-index
+inequalities — so it is not sufficient, and, more practically, it is not
+CONSUMABLE: nothing statable in this file's vocabulary can use it until
+the norm group of `M/F` exists, so building it now would be free-floating
+code. The build order is in (B1a)'s docstring. -/
 theorem artinSymbol_ray_class_descend_unramified_prime
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
     (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
     (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
     (hVker : ∀ a ∈ V, χ a = 1)
-    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
-    (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
+    (ℓ : ℕ) (_hℓ : ℓ.Prime) (_hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (_hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
     (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
     (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
       c (I * J) = c I * c J)
@@ -33149,7 +33305,34 @@ theorem artinSymbol_ray_class_descend_unramified_prime
       (∀ φ : F →+* ℝ,
         0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
       δ - 1 ∈ mm' → c (Ideal.span {δ}) = 1 := by
-  sorry
+  -- `hray` says the modulus `v · mm'` is admissible for `c`, so (B1a) returns
+  -- an admissible divisor `ff ∣ v · mm'` supported on the RAMIFIED primes.
+  have hvmm : v.asIdeal * mm' ≠ ⊥ := by
+    rw [Ne, Ideal.mul_eq_bot]
+    rintro (h | h)
+    · exact v.ne_bot h
+    · exact hmm' h
+  obtain ⟨ff, hffdvd, hffadm, hffram⟩ :=
+    exists_conductor_dvd_admissible_ray_class F χ hmul V hVopen hVker c hcmul hcfrob
+      (v.asIdeal * mm') hvmm hray
+  -- `v` is unramified for `χ` (`hunrv`), so `v ∤ ff`.
+  have hvnd : ¬ v.asIdeal ∣ ff := by
+    intro hdvd
+    obtain ⟨a, σ, hσ, hne⟩ := hffram v hdvd
+    exact hne (hunrv a σ hσ)
+  -- `v` is maximal, so `ff` is coprime to `v`, and `ff ∣ v · mm'` gives `ff ∣ mm'`.
+  have hvmax : v.asIdeal.IsMaximal := inferInstance
+  have hsup : v.asIdeal ⊔ ff = ⊤ := by
+    by_contra hne
+    have heq : v.asIdeal = v.asIdeal ⊔ ff := hvmax.eq_of_le hne le_sup_left
+    have hle : ff ≤ v.asIdeal := by rw [heq]; exact le_sup_right
+    exact hvnd (Ideal.dvd_iff_le.mpr hle)
+  have hcop : IsCoprime ff v.asIdeal :=
+    (Ideal.isCoprime_iff_sup_eq.mpr hsup).symm
+  have hffmm : ff ∣ mm' := hcop.dvd_of_dvd_mul_left hffdvd
+  -- hence the ray at `mm'` sits inside the ray at `ff`, where `c` is trivial.
+  intro δ hδ0 hδpos hδmem
+  exact hffadm δ hδ0 hδpos (Ideal.le_of_dvd hffmm hδmem)
 
 set_option maxHeartbeats 1000000 in
 /-- **The conductor of an everywhere-unramified character is trivial at
@@ -33203,8 +33386,11 @@ full reciprocity from nothing.
 **DECOMPOSED and PROVEN AS A DESCENDING INDUCTION 2026-07-26** over the
 single new leaf (B1) `artinSymbol_ray_class_descend_unramified_prime`
 stated immediately above, which strikes ONE unramified prime off the
-modulus. The global half — "get all the way down to `(1)`" — is the
-induction implemented here and needs no arithmetic:
+modulus and is itself PROVEN (2026-07-26) as ideal arithmetic over the
+conductor leaf (B1a) `exists_conductor_dvd_admissible_ray_class`, so
+that (B)'s whole remaining debt is that one statement. The global half —
+"get all the way down to `(1)`" — is the induction implemented here and
+needs no arithmetic:
 
 * if `nn = ⊤` the ray hypothesis IS the goal, since `δ - 1 ∈ ⊤` always;
 * otherwise `nn` lies in a maximal ideal `w`, which in a Dedekind domain
@@ -33403,8 +33589,9 @@ makes (Childress, *Class Field Theory* (Universitext, 2009), Theorem
   independent of (A). **PROVEN 2026-07-26** as a descending induction on
   `Ideal.absNorm` of the modulus over its own single sub-leaf (B1)
   `artinSymbol_ray_class_descend_unramified_prime`, which strikes ONE
-  unramified prime off the modulus and is where all of (B)'s arithmetic
-  now sits.
+  unramified prime off the modulus and is itself PROVEN (2026-07-26) as
+  ideal arithmetic over `exists_conductor_dvd_admissible_ray_class`,
+  where all of (B)'s arithmetic now sits.
 
 Neither leaf implies the target on its own — (A) is the target with the
 modulus weakened, (B) is the target with `hray` assumed — and together
@@ -33547,8 +33734,12 @@ just above:
   `artinSymbol_span_eq_one_of_pos_of_conductor_ray_class` (PROVEN
   2026-07-26 — an everywhere-finite-unramified character has conductor
   `(1)` — by a descending induction on the modulus over its own single
-  sub-leaf `artinSymbol_ray_class_descend_unramified_prime` (SORRY —
-  one unramified prime comes off the modulus; purely local)).
+  sub-leaf `artinSymbol_ray_class_descend_unramified_prime` (PROVEN
+  2026-07-26 — one unramified prime comes off the modulus — as ideal
+  arithmetic over ITS single sub-leaf
+  `exists_conductor_dvd_admissible_ray_class` (SORRY — an admissible
+  modulus has an admissible divisor supported on the ramified primes:
+  the conductor theorem, hence reciprocity))).
 
 The reduction of the general case to the prime-power case, proven here,
 is the standard first step of Artin's proof and runs as follows. By (i),
