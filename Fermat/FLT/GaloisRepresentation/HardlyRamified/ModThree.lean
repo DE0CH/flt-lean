@@ -6256,11 +6256,530 @@ theorem exists_pointsField_le
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
+/-- **A downward-closed predicate cuts an INITIAL SEGMENT out of
+`Finset.range n`** (PROVEN 2026-07-26 — the elementary bookkeeping
+behind the `φ`-free Herbrand transport below).  The ramification
+filtrations `G_i` are antitone, so for a fixed substitution `σ` the
+predicate `i ↦ σ ∈ G_{i+1}` is downward closed; this lemma is what
+turns the CARDINAL `#{i < n | σ ∈ G_{i+1}}` (the truncated depth of
+`σ`) into a usable order-theoretic quantity. -/
+theorem filter_range_eq_range_card {P : ℕ → Prop} [DecidablePred P]
+    (hP : ∀ i j : ℕ, i ≤ j → P j → P i) (n : ℕ) :
+    (Finset.range n).filter P = Finset.range ((Finset.range n).filter P).card := by
+  induction n with
+  | zero => simp
+  | succ k ih =>
+    by_cases hk : P k
+    · have hall : (Finset.range (k + 1)).filter P = Finset.range (k + 1) :=
+        Finset.filter_true_of_mem fun i hi =>
+          hP i k (Nat.lt_succ_iff.mp (Finset.mem_range.mp hi)) hk
+      rw [hall, Finset.card_range]
+    · rw [Finset.range_add_one, Finset.filter_insert, if_neg hk]
+      exact ih
+
+/-- **Membership below the cut-off is being below the count** (PROVEN
+2026-07-26): the companion of `filter_range_eq_range_card`.  For the
+ramification filtration this reads `σ ∈ G_{i+1} ↔ i < depthₙ σ` for
+`i < n`, which is the only property of the truncated depth the
+Herbrand argument uses. -/
+theorem mem_iff_lt_card_filter {P : ℕ → Prop} [DecidablePred P]
+    (hP : ∀ i j : ℕ, i ≤ j → P j → P i) {n i : ℕ} (hi : i < n) :
+    P i ↔ i < ((Finset.range n).filter P).card := by
+  have h := filter_range_eq_range_card hP n
+  constructor
+  · intro hPi
+    have hmem : i ∈ (Finset.range n).filter P :=
+      Finset.mem_filter.mpr ⟨Finset.mem_range.mpr hi, hPi⟩
+    rw [h] at hmem
+    exact Finset.mem_range.mp hmem
+  · intro hlt
+    have hmem : i ∈ Finset.range ((Finset.range n).filter P).card := Finset.mem_range.mpr hlt
+    rw [← h] at hmem
+    exact (Finset.mem_filter.mp hmem).2
+
+/-- **Retruncating a downward-closed count is a `min`** (PROVEN
+2026-07-26): `depth_d = min d depth_n` for `d ≤ n`.  This is what lets
+the per-fibre Herbrand bound (stated at the level `n` of the incoming
+hypothesis) and the coset-maximality bound (stated at the level `d` of
+the OUTGOING conclusion) be combined into a single bound at level
+`d`. -/
+theorem card_filter_range_min {P : ℕ → Prop} [DecidablePred P]
+    (hP : ∀ i j : ℕ, i ≤ j → P j → P i) {d n : ℕ} (hdn : d ≤ n) :
+    ((Finset.range d).filter P).card = min d ((Finset.range n).filter P).card := by
+  have h1 : (Finset.range d).filter P =
+      Finset.range d ∩ Finset.range ((Finset.range n).filter P).card := by
+    rw [← filter_range_eq_range_card hP n]
+    ext i
+    simp only [Finset.mem_filter, Finset.mem_inter, Finset.mem_range]
+    constructor
+    · rintro ⟨hi, hPi⟩
+      exact ⟨hi, hi.trans_le hdn, hPi⟩
+    · rintro ⟨hi, _, hPi⟩
+      exact ⟨hi, hPi⟩
+  have h2 : Finset.range d ∩ Finset.range ((Finset.range n).filter P).card =
+      Finset.range (min d ((Finset.range n).filter P).card) := by
+    ext i
+    simp
+  rw [h1, h2, Finset.card_range]
+
+/-- **`|A| = |A ⊓ ker f| · |B|` when `f` carries `A` ONTO `B`** (PROVEN
+2026-07-26): the first isomorphism theorem plus Lagrange, in the exact
+shape the tower multiplicativity of ramification indices needs
+(`e(L/ℚ₃ᵥ) = e(L/M)·e(M/ℚ₃ᵥ)`, with `A` the inertia of `L`, `B` the
+inertia of `M`, and `A ⊓ ker f` the inertia of `L/M`). -/
+theorem card_inf_ker_mul_card_of_surjOn
+    {G H : Type*} [Group G] [Group H] [Finite G] (f : G →* H)
+    (A : Subgroup G) (B : Subgroup H)
+    (hmaps : ∀ a ∈ A, f a ∈ B)
+    (hsurj : ∀ b ∈ B, ∃ a ∈ A, f a = b) :
+    Nat.card ↥(A ⊓ f.ker) * Nat.card ↥B = Nat.card ↥A := by
+  classical
+  set g : ↥A →* H := f.comp A.subtype
+  have hrange : g.range = B := by
+    refine le_antisymm ?_ ?_
+    · rintro _ ⟨a, rfl⟩
+      exact hmaps (a : G) a.2
+    · intro b hb
+      obtain ⟨a, ha, rfl⟩ := hsurj b hb
+      exact ⟨⟨a, ha⟩, rfl⟩
+  have hker : Nat.card ↥(A ⊓ f.ker) = Nat.card ↥g.ker := by
+    refine Nat.card_congr ⟨fun x => ⟨⟨(x : G), (Subgroup.mem_inf.mp x.2).1⟩,
+      (Subgroup.mem_inf.mp x.2).2⟩, fun y => ⟨((y : ↥A) : G),
+      Subgroup.mem_inf.mpr ⟨(y : ↥A).2, y.2⟩⟩, ?_, ?_⟩ <;> intro x <;> rfl
+  have h2 : g.ker.index = Nat.card ↥B := by rw [Subgroup.index_ker, hrange]
+  rw [hker, ← h2]
+  exact Subgroup.card_mul_index g.ker
+
+open scoped Classical in
+/-- **HERBRAND TRANSPORT — the abstract combinatorial core** (PROVEN
+2026-07-26; this is where all of leaf (ii-a′-2) EXCEPT Serre IV §1
+Prop. 3 lives).  `res : G →* H` is a homomorphism of finite groups
+carrying an antitone filtration `𝒢` to an antitone filtration `𝒢'`;
+`σ₀ ∈ 𝒢 (n+1)`; the numerical hypothesis `hlt` is
+`#𝒢 1 < 2·Σ_{i<n} #𝒢 (i+2)`, i.e. `φ_{L/K}(n) > 1/2` after clearing
+denominators.  The conclusion produces the transported level `m'`.
+
+THE ARGUMENT, with the two counting identities named.  Write
+`c σ := #{i < n | σ ∈ 𝒢 (i+2)}` for the truncated depth, so that
+`Σ_{i<n} #𝒢 (i+2) = Σ_{σ ∈ G} c σ` (double counting, `hdc`) and
+likewise on the `H` side.  Split the right-hand side over the fibres of
+`res` (`hfib`).  Two bounds are then available for each fibre:
+
+* `herb τ` — Herbrand's lemma, the ONLY arithmetic input, supplied as a
+  hypothesis; and
+* `hcoset` — **the fibre of `1` maximises the truncated depth sum**,
+  which is ELEMENTARY: pick `σ₁` maximising `c` on the coset `gH`; then
+  `σ₁ h ∈ 𝒢 (i+2) ↔ σ₁ ∈ 𝒢 (i+2) ∧ h ∈ 𝒢 (i+2)` (forwards by
+  maximality of `σ₁`, backwards because `𝒢 (i+2)` is a SUBGROUP), so
+  `c (σ₁ h) ≤ c h` termwise along the bijection `h ↦ σ₁ h`.  This is
+  the integer avatar of `i_L(σ₁h) = min(i_L(σ₁), i_L(h))` and it
+  replaces the usual appeal to the ultrametric inequality for `i_L`.
+
+Since `c σ₀ = n` is maximal, `σ₀`'s own fibre realises the maximum
+(`hcoset0`), so `herb` applied at `res σ₀` bounds EVERY fibre sum by
+`e·d` with `d := #{i < n | res σ₀ ∈ 𝒢' (i+2)}`; combined with `herb τ`
+and `card_filter_range_min` this gives the per-fibre bound at level
+`d`.  Summing and cancelling `e = #(𝒢 1 ⊓ ker res) > 0` against
+`htower` yields the conclusion at `m' = d - 1`; `d ≥ 1` because the
+fibre sum is at least `c σ₀ = n ≥ 1`. -/
+theorem exists_index_of_herbrand
+    {G H : Type*} [Group G] [Group H] [Fintype G] [Fintype H]
+    (res : G →* H)
+    (𝒢 : ℕ → Subgroup G) (𝒢' : ℕ → Subgroup H)
+    (hanti : ∀ i j : ℕ, i ≤ j → 𝒢 j ≤ 𝒢 i)
+    (hanti' : ∀ i j : ℕ, i ≤ j → 𝒢' j ≤ 𝒢' i)
+    (n : ℕ) (hn : 0 < n)
+    (σ₀ : G) (hσ₀ : σ₀ ∈ 𝒢 (n + 1))
+    (herb : ∀ τ : H,
+      ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ),
+          ((Finset.range n).filter (fun i => σ ∈ 𝒢 (i + 2))).card ≤
+        Nat.card ↥(𝒢 1 ⊓ res.ker) *
+          ((Finset.range n).filter (fun i => τ ∈ 𝒢' (i + 2))).card)
+    (htower : Nat.card ↥(𝒢 1 ⊓ res.ker) * Nat.card ↥(𝒢' 1) ≤ Nat.card ↥(𝒢 1))
+    (hlt : Nat.card ↥(𝒢 1) < 2 * ∑ i ∈ Finset.range n, Nat.card ↥(𝒢 (i + 2))) :
+    ∃ m' : ℕ, res σ₀ ∈ 𝒢' (m' + 2) ∧
+      Nat.card ↥(𝒢' 1) <
+        2 * ∑ i ∈ Finset.range (m' + 1), Nat.card ↥(𝒢' (i + 2)) := by
+  classical
+  set c : G → ℕ := fun σ => ((Finset.range n).filter (fun i => σ ∈ 𝒢 (i + 2))).card with hcdef
+  set cb : H → ℕ := fun τ => ((Finset.range n).filter (fun i => τ ∈ 𝒢' (i + 2))).card with hcbdef
+  set e : ℕ := Nat.card ↥(𝒢 1 ⊓ res.ker)
+  -- downward closedness of the two filtrations
+  have hdown : ∀ (σ : G) (i j : ℕ), i ≤ j → σ ∈ 𝒢 (j + 2) → σ ∈ 𝒢 (i + 2) :=
+    fun σ i j hij h => hanti (i + 2) (j + 2) (by omega) h
+  have hdown' : ∀ (τ : H) (i j : ℕ), i ≤ j → τ ∈ 𝒢' (j + 2) → τ ∈ 𝒢' (i + 2) :=
+    fun τ i j hij h => hanti' (i + 2) (j + 2) (by omega) h
+  have hmem : ∀ (σ : G) (i : ℕ), i < n → (σ ∈ 𝒢 (i + 2) ↔ i < c σ) :=
+    fun σ i hi => mem_iff_lt_card_filter (hdown σ) hi
+  have hmem' : ∀ (τ : H) (i : ℕ), i < n → (τ ∈ 𝒢' (i + 2) ↔ i < cb τ) :=
+    fun τ i hi => mem_iff_lt_card_filter (hdown' τ) hi
+  have hcble : ∀ τ, cb τ ≤ n := by
+    intro τ
+    simpa [hcbdef] using (Finset.card_filter_le (Finset.range n) (fun i => τ ∈ 𝒢' (i + 2)))
+  have hcσ₀ : c σ₀ = n := by
+    have hall : (Finset.range n).filter (fun i => σ₀ ∈ 𝒢 (i + 2)) = Finset.range n := by
+      refine Finset.filter_true_of_mem fun i hi => ?_
+      exact hanti (i + 2) (n + 1) (by simpa using Nat.succ_le_of_lt (Finset.mem_range.mp hi)) hσ₀
+    simp [hcdef, hall]
+  -- counting a subgroup as a filter of `univ`
+  have hcard : ∀ K : Subgroup G, Nat.card ↥K = (Finset.univ.filter (fun σ : G => σ ∈ K)).card := by
+    intro K
+    rw [Nat.card_eq_fintype_card, Fintype.card_subtype]
+  have hcard' : ∀ K : Subgroup H, Nat.card ↥K = (Finset.univ.filter (fun τ : H => τ ∈ K)).card := by
+    intro K
+    rw [Nat.card_eq_fintype_card, Fintype.card_subtype]
+  -- double counting on both sides
+  have hdc : ∀ k : ℕ, ∑ i ∈ Finset.range k, Nat.card ↥(𝒢 (i + 2)) =
+      ∑ σ : G, ((Finset.range k).filter (fun i => σ ∈ 𝒢 (i + 2))).card := by
+    intro k
+    simp only [hcard, Finset.card_filter]
+    exact Finset.sum_comm
+  have hdc' : ∀ k : ℕ, ∑ i ∈ Finset.range k, Nat.card ↥(𝒢' (i + 2)) =
+      ∑ τ : H, ((Finset.range k).filter (fun i => τ ∈ 𝒢' (i + 2))).card := by
+    intro k
+    simp only [hcard', Finset.card_filter]
+    exact Finset.sum_comm
+  have hfib : ∑ σ : G, c σ =
+      ∑ τ : H, ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ), c σ :=
+    (Finset.sum_fiberwise Finset.univ (fun σ : G => res σ) c).symm
+  -- the coset carrying `1` maximises the truncated depth sum
+  have hcoset : ∀ g : G, (∀ σ : G, res σ = res g → c σ ≤ c g) →
+      ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = res g), c σ ≤
+        ∑ h ∈ Finset.univ.filter (fun h : G => res h = 1), c h := by
+    intro g hg
+    have hset : Finset.univ.filter (fun σ : G => res σ = res g) =
+        (Finset.univ.filter (fun h : G => res h = 1)).image (fun h => g * h) := by
+      ext σ
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_image]
+      constructor
+      · intro hσ
+        refine ⟨g⁻¹ * σ, by simp [map_mul, hσ], by group⟩
+      · rintro ⟨h, hh, rfl⟩
+        simp [map_mul, hh]
+    rw [hset, Finset.sum_image (fun x _ y _ hxy => mul_left_cancel hxy)]
+    refine Finset.sum_le_sum fun h hh => ?_
+    have hres : res (g * h) = res g := by
+      have := (Finset.mem_filter.mp hh).2
+      simp [map_mul, this]
+    refine Finset.card_le_card fun i hi => ?_
+    simp only [Finset.mem_filter, Finset.mem_range] at hi ⊢
+    obtain ⟨hin, hmemi⟩ := hi
+    refine ⟨hin, ?_⟩
+    have hglt : i < c g := lt_of_lt_of_le ((hmem (g * h) i hin).mp hmemi) (hg (g * h) hres)
+    have hgmem : g ∈ 𝒢 (i + 2) := (hmem g i hin).mpr hglt
+    have hrw : h = g⁻¹ * (g * h) := by group
+    rw [hrw]
+    exact mul_mem (inv_mem hgmem) hmemi
+  -- and the coset of `σ₀` realises that maximum
+  have hcoset0 : ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = res σ₀), c σ =
+      ∑ h ∈ Finset.univ.filter (fun h : G => res h = 1), c h := by
+    have hset : Finset.univ.filter (fun σ : G => res σ = res σ₀) =
+        (Finset.univ.filter (fun h : G => res h = 1)).image (fun h => σ₀ * h) := by
+      ext σ
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_image]
+      constructor
+      · intro hσ
+        refine ⟨σ₀⁻¹ * σ, by simp [map_mul, hσ], by group⟩
+      · rintro ⟨h, hh, rfl⟩
+        simp [map_mul, hh]
+    rw [hset, Finset.sum_image (fun x _ y _ hxy => mul_left_cancel hxy)]
+    refine Finset.sum_congr rfl fun h _ => ?_
+    have h0 : ∀ i : ℕ, i < n → σ₀ ∈ 𝒢 (i + 2) := fun i hi =>
+      (hmem σ₀ i hi).mpr (by rw [hcσ₀]; exact hi)
+    have hEq : (Finset.range n).filter (fun i => σ₀ * h ∈ 𝒢 (i + 2)) =
+        (Finset.range n).filter (fun i => h ∈ 𝒢 (i + 2)) := by
+      ext i
+      simp only [Finset.mem_filter, Finset.mem_range]
+      constructor
+      · rintro ⟨hin, hmemi⟩
+        refine ⟨hin, ?_⟩
+        have hrw : h = σ₀⁻¹ * (σ₀ * h) := by group
+        rw [hrw]
+        exact mul_mem (inv_mem (h0 i hin)) hmemi
+      · rintro ⟨hin, hmemi⟩
+        exact ⟨hin, mul_mem (h0 i hin) hmemi⟩
+    simp only [hcdef]
+    rw [hEq]
+  -- the index `d`
+  set d : ℕ := cb (res σ₀)
+  have hdle : d ≤ n := hcble _
+  have hsum0 : ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = res σ₀), c σ ≤ e * d :=
+    herb (res σ₀)
+  have hnle : n ≤ ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = res σ₀), c σ := by
+    have h1 : c σ₀ ≤ ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = res σ₀), c σ :=
+      Finset.single_le_sum (f := c)
+        (s := Finset.univ.filter (fun σ : G => res σ = res σ₀))
+        (fun i _ => Nat.zero_le _)
+        (Finset.mem_filter.mpr ⟨Finset.mem_univ _, rfl⟩)
+    rw [hcσ₀] at h1
+    exact h1
+  have hd1 : 1 ≤ d := by
+    rcases Nat.eq_zero_or_pos d with h | h
+    · exfalso
+      rw [h, Nat.mul_zero] at hsum0
+      omega
+    · exact h
+  -- the per-fibre bound, truncated at `d`
+  have hper : ∀ τ : H, ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ), c σ ≤
+      e * ((Finset.range d).filter (fun i => τ ∈ 𝒢' (i + 2))).card := by
+    intro τ
+    have h1 := herb τ
+    have h2 : ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ), c σ ≤ e * d := by
+      by_cases hne : (Finset.univ.filter (fun σ : G => res σ = τ)).Nonempty
+      · obtain ⟨g, hg, hgmax⟩ := Finset.exists_max_image _ c hne
+        have hresg : res g = τ := (Finset.mem_filter.mp hg).2
+        have hstep := hcoset g fun σ hσ =>
+          hgmax σ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, by rw [hσ, hresg]⟩)
+        rw [hresg] at hstep
+        exact le_trans (le_trans hstep hcoset0.ge) hsum0
+      · rw [Finset.not_nonempty_iff_eq_empty] at hne
+        simp [hne]
+    have hmin : ((Finset.range d).filter (fun i => τ ∈ 𝒢' (i + 2))).card = min d (cb τ) :=
+      card_filter_range_min (hdown' τ) hdle
+    rw [hmin]
+    rcases le_total d (cb τ) with hle | hle
+    · rw [min_eq_left hle]
+      exact h2
+    · rw [min_eq_right hle]
+      exact h1
+  -- assemble (the final cancellation of `e` needs no positivity: `e = 0`
+  -- would make `hchain` read `0 < 0`)
+  refine ⟨d - 1, ?_, ?_⟩
+  · have hd1n : d - 1 < n := by omega
+    have := (hmem' (res σ₀) (d - 1) hd1n).mpr (by omega)
+    simpa [Nat.sub_add_cancel hd1] using this
+  · have hrange : Finset.range (d - 1 + 1) = Finset.range d := by
+      congr 1
+      omega
+    rw [hrange]
+    have hchain : e * Nat.card ↥(𝒢' 1) <
+        e * (2 * ∑ i ∈ Finset.range d, Nat.card ↥(𝒢' (i + 2))) := by
+      calc e * Nat.card ↥(𝒢' 1) ≤ Nat.card ↥(𝒢 1) := htower
+        _ < 2 * ∑ i ∈ Finset.range n, Nat.card ↥(𝒢 (i + 2)) := hlt
+        _ = 2 * ∑ σ : G, c σ := by rw [hdc n]
+        _ = 2 * ∑ τ : H, ∑ σ ∈ Finset.univ.filter (fun σ : G => res σ = τ), c σ := by rw [hfib]
+        _ ≤ 2 * ∑ τ : H, e * ((Finset.range d).filter (fun i => τ ∈ 𝒢' (i + 2))).card := by
+              exact Nat.mul_le_mul_left 2 (Finset.sum_le_sum fun τ _ => hper τ)
+        _ = 2 * (e * ∑ τ : H, ((Finset.range d).filter (fun i => τ ∈ 𝒢' (i + 2))).card) := by
+              rw [← Finset.mul_sum]
+        _ = 2 * (e * ∑ i ∈ Finset.range d, Nat.card ↥(𝒢' (i + 2))) := by rw [hdc' d]
+        _ = e * (2 * ∑ i ∈ Finset.range d, Nat.card ↥(𝒢' (i + 2))) := by ring
+    exact Nat.lt_of_mul_lt_mul_left hchain
+
+/-- **The inertia filtration is ANTITONE in the exponent** (PROVEN
+2026-07-26): `I^j ≤ I^i` for `i ≤ j`, applied inside the inertia
+condition `σ • x - x ∈ I`. -/
+theorem inertia_pow_antitone {R : Type*} [CommRing R] (I : Ideal R)
+    (Grp : Type*) [Group Grp] [MulSemiringAction Grp R] {i j : ℕ} (hij : i ≤ j) :
+    (I ^ j).inertia Grp ≤ (I ^ i).inertia Grp := by
+  intro σ hσ
+  rw [AddSubgroup.mem_inertia] at hσ ⊢
+  intro x
+  exact Ideal.pow_le_pow_right hij (hσ x)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **`restrictToLE` as a GROUP HOMOMORPHISM** (PROVEN 2026-07-26):
+`restrictToLE` is the composite of the `MulEquiv` `AlgEquiv.autCongr`
+with the `MonoidHom` `AlgEquiv.restrictNormalHom`, so it IS a monoid
+homomorphism; bundling it is what gives the Herbrand argument a kernel
+`Gal(L/M)` and fibres to sum over.  `restrictToLEHom M L hML σ` is
+DEFINITIONALLY `restrictToLE M L hML σ`. -/
+noncomputable def restrictToLEHom
+    (M L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hML : M ≤ L)
+    [IsGalois ℚ₃ᵥ M] : (L ≃ₐ[ℚ₃ᵥ] L) →* (M ≃ₐ[ℚ₃ᵥ] M) :=
+  letI : Normal ℚ₃ᵥ ↥(reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) :=
+    normal_reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML
+  (AlgEquiv.autCongr
+      (reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML)).toMonoidHom.comp
+    (AlgEquiv.restrictNormalHom
+      (reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L))
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **`restrictToLEHom` carries inertia INTO inertia** (PROVEN
+2026-07-26): `restrictNormalHom_mem_inertia_intermediate` at the
+reification, then `autCongr_mem_inertia` to transport back to `M`. -/
+theorem restrictToLEHom_mem_inertia
+    (M L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hML : M ≤ L)
+    [FiniteDimensional ℚ₃ᵥ M] [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ L]
+    (σ : L ≃ₐ[ℚ₃ᵥ] L)
+    (hσ : σ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) :
+    restrictToLEHom M L hML σ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M) := by
+  haveI : Normal ℚ₃ᵥ ↥(reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) :=
+    normal_reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML
+  exact autCongr_mem_inertia Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat
+    ↥(reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L)
+    (reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML) _
+    (restrictNormalHom_mem_inertia_intermediate
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ↥L
+      (reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) σ hσ)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **`restrictToLEHom` carries inertia ONTO inertia** (PROVEN
+2026-07-26): the finite-level inertia surjectivity
+`restrictNormalHom_inertia_surjective` of `LocalInertiaFixedField`,
+transported through the reification by `autCongr_mem_inertia`.  This
+is the surjectivity that makes `e(L/ℚ₃ᵥ) = e(L/M)·e(M/ℚ₃ᵥ)` an
+EQUALITY rather than a divisibility. -/
+theorem exists_restrictToLEHom_eq_of_mem_inertia
+    (M L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hML : M ≤ L)
+    [FiniteDimensional ℚ₃ᵥ M] [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ L]
+    (τ : M ≃ₐ[ℚ₃ᵥ] M)
+    (hτ : τ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) :
+    ∃ σ : L ≃ₐ[ℚ₃ᵥ] L,
+      σ ∈ (IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L) ∧
+      restrictToLEHom M L hML σ = τ := by
+  haveI : Normal ℚ₃ᵥ ↥(reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) :=
+    normal_reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML
+  have hτ' := autCongr_mem_inertia
+    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ↥M
+    (reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML).symm τ hτ
+  obtain ⟨σ, hσI, hσres⟩ := restrictNormalHom_inertia_surjective
+    Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat ↥L
+    (reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L)
+    (AlgEquiv.autCongr
+      (reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML).symm τ) hτ'
+  refine ⟨σ, hσI, ?_⟩
+  show AlgEquiv.autCongr
+    (reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML)
+    (AlgEquiv.restrictNormalHom
+      (reifySubextension Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) σ) = τ
+  rw [hσres, ← AlgEquiv.autCongr_symm]
+  exact (AlgEquiv.autCongr
+    (reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML)).apply_symm_apply τ
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **TOWER MULTIPLICATIVITY OF THE INERTIA COUNT** (PROVEN
+2026-07-26): `#I(L/ℚ₃ᵥ) = #I(L/M) · #I(M/ℚ₃ᵥ)`, i.e.
+`e_{L/ℚ₃ᵥ} = e_{L/M}·e_{M/ℚ₃ᵥ}`, with `I(L/M)` realised as
+`I(L/ℚ₃ᵥ) ⊓ ker(res)`.  Immediate from
+`card_inf_ker_mul_card_of_surjOn` and the two lemmas above. -/
+theorem card_inertia_inf_ker_mul
+    (M L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hML : M ≤ L)
+    [FiniteDimensional ℚ₃ᵥ M] [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ L] :
+    Nat.card ↥((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L) ⊓
+        (restrictToLEHom M L hML).ker) *
+      Nat.card ↥((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) =
+      Nat.card ↥((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) :=
+  card_inf_ker_mul_card_of_surjOn _ _ _
+    (fun a ha => restrictToLEHom_mem_inertia M L hML a ha)
+    (fun b hb => exists_restrictToLEHom_eq_of_mem_inertia M L hML b hb)
+
+open scoped Classical in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **HERBRAND'S LEMMA — Serre, *Corps Locaux* IV §1, Prop. 3, in
+TRUNCATED, INTEGER, `φ`-FREE form** (sorry node, created 2026-07-26 by
+decomposing leaf (ii-a′-2); this is the ONLY arithmetic input the
+`φ`-free Herbrand transport needs, everything else around it is
+counting and is PROVEN).
+
+Write `G = Gal(L/ℚ₃ᵥ)`, `H = ker(res) = Gal(L/M)`, `Ḡ = Gal(M/ℚ₃ᵥ)`,
+and for the lower-numbering filtrations
+`G_i = inertia(𝔪_L^(i+1))`, `Ḡ_i = inertia(𝔪_M^(i+1))`.  In terms of
+Serre's function `i_L(σ) = min_{x ∈ 𝒪_L} v_L(σx − x)`, the counts in
+the statement are the TRUNCATED DEPTHS
+
+  `#{i < n | σ ∈ G_{i+1}} = min(n, i_L(σ) − 1)`,
+  `#{i < n | τ ∈ Ḡ_{i+1}} = min(n, i_M(τ) − 1)`,
+
+so the assertion is, for every `τ ∈ Ḡ`,
+
+  `Σ_{σ ↦ τ} min(n, i_L(σ) − 1) ≤ e_{L/M} · min(n, i_M(τ) − 1)`,
+
+where `e_{L/M} = #(G_0 ⊓ H) = #H_0` is the ramification index of
+`L/M`.
+
+WHY IT IS TRUE, and why it is exactly Serre IV §1 Prop. 3.  That
+proposition states `Σ_{σ ↦ τ} i_L(σ) = e_{L/M} · i_M(τ)`.  Subtracting
+`1` from each of the `#H` terms on the left and using that the fibre of
+`τ` meets `G_0` in a coset of `H_0` (surjectivity of inertia in the
+tower, `exists_restrictToLEHom_eq_of_mem_inertia`, so that meet has
+exactly `e_{L/M}` elements when `τ ∈ Ḡ_0`, and is empty otherwise)
+gives `Σ_{σ ↦ τ} (i_L(σ) − 1)₊ = e_{L/M}·(i_M(τ) − 1)₊`.  Truncating
+each summand at `n` only decreases the left side, which yields the
+bound against `e_{L/M}·(i_M(τ) − 1)`; and the left side is also at most
+`#(fibre ∩ G_1)·n ≤ e_{L/M}·n` because a summand is nonzero only for
+`σ ∈ G_1 ⊆ G_0`.  The two bounds together are exactly
+`≤ e_{L/M}·min(n, i_M(τ) − 1)`.
+
+WHAT IT NEEDS, IN DEPENDENCY ORDER (none of it in mathlib at this pin —
+`Ideal.inertia` is the only ramification-group notion there is, and
+there is no `i_L`, no different, no `φ`):
+(1) the function `i_L : Gal(L/M') → ℕ` and its identification with the
+    filtration, `σ ∈ inertia(𝔪^k) ↔ k ≤ i_L(σ)` — the truncated depths
+    above are then `min(n, i_L − 1)` by `mem_iff_lt_card_filter`;
+(2) MONOGENICITY of `𝒪_L` over `𝒪_M` (`𝒪_L = 𝒪_M[x]`, available for
+    local fields with finite residue field) and the identity
+    `i_L(σ) = v_L(σx − x)`;
+(3) the norm computation of Serre IV §1 Prop. 3 itself: with
+    `a = τ y − y` for a generator `y` of `𝒪_M` over `𝒪_{ℚ₃ᵥ}` and
+    `b = Π_{σ ↦ τ} (σ x − x)`, one shows `v_L(a) = v_L(b)` by proving
+    each divides the other — `b = (τ f)(x)` for `f` the minimal
+    polynomial of `x` over `𝒪_M`, and `a | b` because `τ f − f` has all
+    coefficients divisible by `a`.
+
+NOT VACUOUS.  At `M = L` the statement is an equality with
+`e_{L/M} = 1` and both sides `min(n, i_L(τ) − 1)`.  At
+`L = ℚ₃(ζ₉) ⊇ M = ℚ₃(ζ₃)` one has `e_{L/M} = 3`, `#H = 3`; for the
+nontrivial `τ ∈ Ḡ` the fibre consists of three substitutions with
+`i_L = 1`, so the left side is `0` for every `n`, matching
+`i_M(τ) − 1 = 0` on the right.  For `τ = 1` the left side is
+`n + 2·min(n, 2)` and the right side is `3n`, a strict inequality for
+`n ≥ 3` — which is precisely the compression `φ_{L/M}(n) < n` that the
+whole Herbrand argument is about. -/
+theorem sum_card_filter_inertia_fiber_le
+    (M L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hML : M ≤ L)
+    [FiniteDimensional ℚ₃ᵥ M] [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ L]
+    (n : ℕ) (τ : M ≃ₐ[ℚ₃ᵥ] M) :
+    ∑ σ ∈ Finset.univ.filter
+        (fun σ : L ≃ₐ[ℚ₃ᵥ] L => restrictToLEHom M L hML σ = τ),
+        ((Finset.range n).filter (fun i =>
+          σ ∈ (IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L))).card ≤
+      Nat.card ↥((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L) ⊓
+          (restrictToLEHom M L hML).ker) *
+        ((Finset.range n).filter (fun i =>
+          τ ∈ (IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ M) ^ (i + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M))).card := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
 /-- **Herbrand transport of the ramification hypothesis to a
-subextension, in an integer, `φ`-FREE form** (sorry node, created
-2026-07-26 — leaf (ii-a′-2) of the Fontaine decomposition, PURE local
-ramification theory; Serre, *Corps Locaux* IV §3 Lemma 5 together with
-the transitivity `φ_{L/K} = φ_{M/K} ∘ φ_{L/M}` of IV §3 Prop. 15):
+subextension, in an integer, `φ`-FREE form** (PROVEN 2026-07-26 over
+the single arithmetic leaf `sum_card_filter_inertia_fiber_le`
+(Serre IV §1 Prop. 3); leaf (ii-a′-2) of the Fontaine decomposition,
+PURE local ramification theory; Serre, *Corps Locaux* IV §3 Lemma 5
+together with the transitivity `φ_{L/K} = φ_{M/K} ∘ φ_{L/M}` of
+IV §3 Prop. 15):
 let `M ≤ L` be finite Galois subextensions of `ℚ₃ᵥᵃˡᵍ/ℚ₃ᵥ`, with
 lower-numbering filtrations `G_i = inertia(𝔪_L^(i+1))` and
 `Ḡ_i = inertia(𝔪_M^(i+1))`.  If `σ ∈ G_{m+1}` sits at a level whose
@@ -6287,7 +6806,19 @@ Prop. 15 for the composition, and
 `φ_{M/ℚ₃ᵥ}(j) = (1/#Ḡ_0)·Σ_{i=1}^{j} #Ḡ_i` at integer arguments).
 DEGENERATE CASE, worth checking first: at `M = L` the statement holds
 with `m' = m` and `res_M σ = σ`, so the leaf is certainly not vacuous
-in the trivial direction; the content is entirely in the level shift. -/
+in the trivial direction; the content is entirely in the level shift.
+PROOF AS ACTUALLY CARRIED OUT (2026-07-26), which is NOT the intended
+proof above and is strictly cheaper.  No `φ`, no upper numbering and no
+`⌈·⌉` are used, and Herbrand's THEOREM (IV §3 Lemma 5) is never needed:
+only Herbrand's LEMMA (IV §1 Prop. 3), isolated as the single sorried
+leaf `sum_card_filter_inertia_fiber_le`.  Everything else is
+`exists_index_of_herbrand`, a purely combinatorial statement about a
+homomorphism of finite groups carrying one antitone filtration to
+another — see its docstring.  The transported level is
+`m' + 1 = #{i ≤ m | res_M σ ∈ Ḡ_{i+1}}`, i.e. `min(m+1, i_M(res σ)−1)`,
+which is the integer avatar of `⌈φ_{L/M}(m+1)⌉` without either the
+ceiling or the function.  The `pow_one` rewrites below only reconcile
+the `𝔪` of the hypothesis with the `𝔪 ^ 1` of the filtration. -/
 theorem exists_restrictToLE_mem_inertia_of_lt_two_mul_sum_card_inertia
     (M L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ)
     [FiniteDimensional ℚ₃ᵥ M] [FiniteDimensional ℚ₃ᵥ L]
@@ -6309,7 +6840,24 @@ theorem exists_restrictToLE_mem_inertia_of_lt_two_mul_sum_card_inertia
         2 * ∑ i ∈ Finset.range (m' + 1),
           Nat.card ((IsLocalRing.maximalIdeal
             (IntegralClosure 𝒪₃ᵥ M) ^ (i + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) := by
-  sorry
+  classical
+  obtain ⟨m', h1, h2⟩ := exists_index_of_herbrand
+    (restrictToLEHom M L hML)
+    (fun j => (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L) ^ j).inertia (L ≃ₐ[ℚ₃ᵥ] L))
+    (fun j => (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ M) ^ j).inertia (M ≃ₐ[ℚ₃ᵥ] M))
+    (fun i j hij => inertia_pow_antitone _ _ hij)
+    (fun i j hij => inertia_pow_antitone _ _ hij)
+    (m + 1) (Nat.succ_pos m) σ hσ
+    (fun τ => by
+      simpa only [pow_one] using sum_card_filter_inertia_fiber_le M L hML (m + 1) τ)
+    (by simpa only [pow_one] using (card_inertia_inf_ker_mul M L hML).le)
+    (by simpa only [pow_one] using hlt)
+  refine ⟨m', ?_, by simpa only [pow_one] using h2⟩
+  have hbridge : restrictToLE M L hML σ = restrictToLEHom M L hML σ := rfl
+  rw [hbridge]
+  exact h1
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
