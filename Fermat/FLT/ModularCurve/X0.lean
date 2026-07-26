@@ -532,6 +532,11 @@ theorem nonempty_gamma0Datum_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
           AddSubgroup.zmultiples g) :
     Nonempty (Gamma0Datum N SpecQ) := by
   obtain ⟨A, f, ab, hdim, e, he⟩ := exists_ellipticScheme_of_weierstrass E
+  -- The `AddCommGroup` structure on the geometric fibre.  This binding is
+  -- load-bearing, not decoration: the `letI`s inside the two `have`
+  -- statements below scope over those statements only, so without this the
+  -- ambient `AddMonoid`/`AddMonoidHomClass` instances needed by their
+  -- proofs (`AddEquiv.addOrderOf_eq`, `map_zsmul`) fail to synthesize.
   letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
   -- The order of the generator transports along the additive equivalence.
   have hord : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
