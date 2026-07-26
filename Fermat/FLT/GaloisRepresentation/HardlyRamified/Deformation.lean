@@ -61,7 +61,6 @@ them without a human. Do not re-wrap it.
 - `frameLevels_classification`
 - `exists_universalFrame_profinite_of_levelIdealSystem`
 - `exists_levelIdealSystem_of_deformationCondition`
-- `isStrictlyUniversalOnFrames_of_levelSystem`
 - `hasFlatProlongationAt_of_pi_surjection`
 - `hasFlatProlongationAt_of_prod_injection`
 - `exists_cyclotomicCharacter_padicTwo_eq_two`
@@ -7734,8 +7733,83 @@ theorem exists_levelIdealSystem_of_deformationCondition (hℓ5 : 5 ≤ ℓ)
 -- use sites precede this point. This copy was therefore dropped at
 -- integration; everything below still resolves, to the earlier copy.
 
+/-! #### Matrix bookkeeping for the strict-universality bridge
+
+The five lemmas below are the elementary linear algebra that
+`isStrictlyUniversalOnFrames_of_levelSystem` runs on. They are stated
+here, immediately above their only consumer, rather than in the
+`FrameRing` section, because they mention neither `ρbar` nor the level
+system — they are statements about `Matrix (Fin 2) (Fin 2) R` and
+`(Fin 2 → R) ≃ₗ[R] (Fin 2 → R)` alone.
+
+NOTE (2026-07-26) on why these are NOT the pair
+`exists_conj_baseChange_of_matrix` / `exists_matrix_of_conj_baseChange`
+far below in this file: those two convert between a tensor framing
+`(B ⊗[R] (Fin 2 → R)) ≃ₗ[B] (Fin 2 → B)` and a matrix INTERTWINER, and
+both live below line 8900, i.e. below the consumer. Rather than hoist
+two declarations that other owners are working near, the proof below
+routes through `LinearMap.toMatrix'` directly — which needs only the
+extensionality `framedGaloisRep_ext_toMatrix'` and the conjugation
+formula `toMatrix'_linearEquiv_conj`, both proved from mathlib alone. -/
+
+/-- **The matrix of a conjugated endomorphism** (PROVEN): conjugation by
+a linear automorphism of `Fin 2 → R` is matrix conjugation. -/
+theorem toMatrix'_linearEquiv_conj {R : Type*} [CommRing R]
+    (e : (Fin 2 → R) ≃ₗ[R] (Fin 2 → R)) (m : Module.End R (Fin 2 → R)) :
+    LinearMap.toMatrix' (e.conj m) =
+      LinearMap.toMatrix' (e : (Fin 2 → R) →ₗ[R] (Fin 2 → R)) *
+        LinearMap.toMatrix' m *
+        LinearMap.toMatrix' (e.symm : (Fin 2 → R) →ₗ[R] (Fin 2 → R)) := by
+  rw [LinearEquiv.conj_apply, LinearMap.toMatrix'_comp, LinearMap.toMatrix'_comp]
+
+/-- **A framed representation is determined by its matrices** (PROVEN):
+`GaloisRep.ext` composed with the injectivity of `LinearMap.toMatrix'`.
+
+This is what lets the strict-universality proof below do all its work on
+matrices and only convert back at the very end. -/
+theorem framedGaloisRep_ext_toMatrix' {A : Type u} [CommRing A]
+    [TopologicalSpace A] [IsTopologicalRing A]
+    {ρ σ : FramedGaloisRep ℚ A (Fin 2)}
+    (h : ∀ g, LinearMap.toMatrix' (ρ g) = LinearMap.toMatrix' (σ g)) :
+    ρ = σ := by
+  refine GaloisRep.ext fun g => ?_
+  exact (LinearMap.toMatrix' (n := Fin 2) (m := Fin 2)).injective (h g)
+
+/-- **Matrix of an automorphism times matrix of its inverse** (PROVEN). -/
+theorem toMatrix'_mul_symm {R : Type*} [CommRing R]
+    (e : (Fin 2 → R) ≃ₗ[R] (Fin 2 → R)) :
+    LinearMap.toMatrix' (e : (Fin 2 → R) →ₗ[R] (Fin 2 → R)) *
+      LinearMap.toMatrix' (e.symm : (Fin 2 → R) →ₗ[R] (Fin 2 → R)) = 1 := by
+  rw [← LinearMap.toMatrix'_comp,
+    show (e : (Fin 2 → R) →ₗ[R] (Fin 2 → R)) ∘ₗ
+      (e.symm : (Fin 2 → R) →ₗ[R] (Fin 2 → R)) = LinearMap.id from by
+      ext x; simp,
+    LinearMap.toMatrix'_id]
+
+/-- **Matrix of the inverse times matrix of the automorphism** (PROVEN). -/
+theorem toMatrix'_symm_mul {R : Type*} [CommRing R]
+    (e : (Fin 2 → R) ≃ₗ[R] (Fin 2 → R)) :
+    LinearMap.toMatrix' (e.symm : (Fin 2 → R) →ₗ[R] (Fin 2 → R)) *
+      LinearMap.toMatrix' (e : (Fin 2 → R) →ₗ[R] (Fin 2 → R)) = 1 := by
+  rw [← LinearMap.toMatrix'_comp,
+    show (e.symm : (Fin 2 → R) →ₗ[R] (Fin 2 → R)) ∘ₗ
+      (e : (Fin 2 → R) →ₗ[R] (Fin 2 → R)) = LinearMap.id from by
+      ext x; simp,
+    LinearMap.toMatrix'_id]
+
+/-- **A matrix lifts entrywise along a surjective ring map** (PROVEN):
+choice on each of the four entries. -/
+theorem exists_matrix_map_eq {A : Type u} [CommRing A] {kk : Type u}
+    [CommRing kk] (f : A →+* kk) (hf : Function.Surjective f)
+    (C : Matrix (Fin 2) (Fin 2) kk) :
+    ∃ L : Matrix (Fin 2) (Fin 2) A, L.map ⇑f = C := by
+  classical
+  refine ⟨Matrix.of fun i j => Classical.choose (hf (C i j)), ?_⟩
+  ext i j
+  exact Classical.choose_spec (hf (C i j))
+
 open scoped Matrix in
-/-- **Strict universality of the limit frame** (sorry node, cut 2026-07-26
+/-- **Strict universality of the limit frame** (PROVEN 2026-07-26; cut 2026-07-26
 out of `exists_universalFrame_profinite_of_levelIdealSystem` below: it is
 the ONE clause of that node's conclusion which is not read straight off the
 inverse limit).
@@ -7768,9 +7842,12 @@ is the content left here:
 The `ℤ_ℓ`-compatibility `πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k`
 which `hclass` demands is a statement about the TEST object's `πA`, so it is
 not among the hypotheses and must be derived: two ring maps `ℤ_[ℓ] →+* k`
-into a finite field are equal (`ringHom_padicInt_ext` below in this file — its
-content is that `ker` is forced to be `(ℓ)`, since `ℤ_[ℓ]` does not embed into
-a finite ring). The corresponding compatibility for `πuniv` IS supplied, as
+into a finite field are equal. The lemma for that is
+`ringHom_padicInt_ext_finite` ABOVE in this file (a previous version of this
+docstring named `ringHom_padicInt_ext`, which is a DIFFERENT lemma living
+~8900 lines BELOW this point and therefore unusable here; corrected
+2026-07-26). Its content is that `ker` is forced to be `(ℓ)`, since `ℤ_[ℓ]`
+does not embed into a finite ring. The corresponding compatibility for `πuniv` IS supplied, as
 `hπalg`; it is what the assembly can hand over, and it is what makes the
 conclusion `πA.comp ψ = πuniv` consistent.
 
@@ -7827,8 +7904,130 @@ theorem isStrictlyUniversalOnFrames_of_levelSystem
       [IsTopologicalRing A] [Finite A] [DiscreteTopology A] (f : P →+* A),
       (∃ J ∈ 𝒥, J ≤ RingHom.ker f) →
       ∃ ψ : R →+* A, Continuous ψ ∧ ∀ p : P, ψ (ι p) = f p) :
-    IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv :=
-  sorry
+    IsStrictlyUniversalOnFrames hℓOdd ρbar ρuniv πuniv := by
+  classical
+  intro A iCR iTS iTR iLR iAlg iFin iDisc ρA hρA πA hπAsurj hπA hid
+  -- (0) the `ℤ_ℓ`-compatibility of the TEST reduction, which `hclass` demands
+  -- but which is not among the hypotheses: `k` is FINITE, so it receives
+  -- exactly one ring map from `ℤ_[ℓ]`.
+  have hπAalg : πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k :=
+    ringHom_padicInt_ext_finite _ _
+  -- (1) the residual identification, read in STRICT frame form: the tensor
+  -- framing `e₀` becomes a framing `e₁ : (Fin 2 → k) ≃ₗ[k] V` of the
+  -- pushforward, because `pushforwardFrame` IS `baseChange` followed by
+  -- `conj piScalarRight`.
+  obtain ⟨e₁, hframe⟩ :
+      ∃ e₁ : (Fin 2 → k) ≃ₗ[k] V, (pushforwardFrame πA hπA ρA).conj e₁ = ρbar := by
+    letI : Algebra A k := πA.toAlgebra
+    letI : ContinuousSMul A k := continuousSMul_of_algebraMap A k
+      (by rw [RingHom.algebraMap_toAlgebra]; exact hπA)
+    obtain ⟨e₀, he₀⟩ := hid
+    refine ⟨(TensorProduct.piScalarRight A k k (Fin 2)).symm.trans e₀, ?_⟩
+    rw [show pushforwardFrame πA hπA ρA =
+        (ρA.baseChange k).conj (TensorProduct.piScalarRight A k k (Fin 2)) from rfl,
+      LevelLimit.conj_trans,
+      show (TensorProduct.piScalarRight A k k (Fin 2)).trans
+          ((TensorProduct.piScalarRight A k k (Fin 2)).symm.trans e₀) = e₀ from by
+        refine LinearEquiv.ext fun x => ?_
+        simp only [LinearEquiv.trans_apply, LinearEquiv.symm_apply_apply]]
+    exact he₀
+  -- (2) the comparison automorphism `c` of `Fin 2 → k`, carrying the test
+  -- frame onto the STRICT model frame `ρbar.conj e0` that `hclass` demands.
+  obtain ⟨c, hpfc⟩ : ∃ c : (Fin 2 → k) ≃ₗ[k] (Fin 2 → k),
+      (pushforwardFrame πA hπA ρA).conj c = ρbar.conj e0 := by
+    refine ⟨e₁.trans e0, ?_⟩
+    rw [← LevelLimit.conj_trans, hframe]
+  -- (3) its matrix `C ∈ GL₂(k)` LIFTS to `GL₂(A)`: lift the entries along the
+  -- surjection `πA`, and the lift's determinant is a unit because its residue
+  -- is and `πA` is a local hom.
+  have hCC' := toMatrix'_mul_symm c
+  have hC'C := toMatrix'_symm_mul c
+  obtain ⟨L, hL⟩ := exists_matrix_map_eq πA hπAsurj
+    (LinearMap.toMatrix' (c : (Fin 2 → k) →ₗ[k] (Fin 2 → k)))
+  have hdetmap : πA L.det =
+      (LinearMap.toMatrix' (c : (Fin 2 → k) →ₗ[k] (Fin 2 → k))).det := by
+    rw [← hL]; exact RingHom.map_det πA L
+  haveI : IsLocalHom πA := IsLocalHom.of_surjective πA hπAsurj
+  have hLdet : IsUnit L.det :=
+    IsUnit.of_map πA L.det (by
+      rw [hdetmap]
+      exact Matrix.isUnit_det_of_right_inverse hCC')
+  haveI iL : Invertible L := Matrix.invertibleOfIsUnitDet L hLdet
+  -- (4) conjugating the test object by that lift makes it STRICTLY identified,
+  -- and `isHardlyRamified_conj` keeps it hardly ramified.
+  have hu : LinearMap.toMatrix'
+      ((L.toLinearEquiv' iL : (Fin 2 → A) ≃ₗ[A] (Fin 2 → A)) :
+        (Fin 2 → A) →ₗ[A] (Fin 2 → A)) = L := by
+    rw [Matrix.toLinearEquiv'_apply, LinearMap.toMatrix'_toLin']
+  have hLN : L * LinearMap.toMatrix'
+      (((L.toLinearEquiv' iL : (Fin 2 → A) ≃ₗ[A] (Fin 2 → A)).symm) :
+        (Fin 2 → A) →ₗ[A] (Fin 2 → A)) = 1 := by
+    have h := toMatrix'_mul_symm (L.toLinearEquiv' iL)
+    rwa [hu] at h
+  have hNmap : (LinearMap.toMatrix'
+      (((L.toLinearEquiv' iL : (Fin 2 → A) ≃ₗ[A] (Fin 2 → A)).symm) :
+        (Fin 2 → A) →ₗ[A] (Fin 2 → A))).map ⇑πA =
+      LinearMap.toMatrix' (c.symm : (Fin 2 → k) →ₗ[k] (Fin 2 → k)) := by
+    have h1 : LinearMap.toMatrix' (c : (Fin 2 → k) →ₗ[k] (Fin 2 → k)) *
+        (LinearMap.toMatrix'
+          (((L.toLinearEquiv' iL : (Fin 2 → A) ≃ₗ[A] (Fin 2 → A)).symm) :
+            (Fin 2 → A) →ₗ[A] (Fin 2 → A))).map ⇑πA = 1 := by
+      rw [← hL, ← Matrix.map_mul, hLN, Matrix.map_one _ (map_zero πA) (map_one πA)]
+    calc (LinearMap.toMatrix'
+          (((L.toLinearEquiv' iL : (Fin 2 → A) ≃ₗ[A] (Fin 2 → A)).symm) :
+            (Fin 2 → A) →ₗ[A] (Fin 2 → A))).map ⇑πA
+        = 1 * _ := (one_mul _).symm
+      _ = (LinearMap.toMatrix' (c.symm : (Fin 2 → k) →ₗ[k] (Fin 2 → k)) *
+            LinearMap.toMatrix' (c : (Fin 2 → k) →ₗ[k] (Fin 2 → k))) * _ := by
+          rw [hC'C]
+      _ = LinearMap.toMatrix' (c.symm : (Fin 2 → k) →ₗ[k] (Fin 2 → k)) *
+            (LinearMap.toMatrix' (c : (Fin 2 → k) →ₗ[k] (Fin 2 → k)) * _) := by
+          rw [mul_assoc]
+      _ = LinearMap.toMatrix' (c.symm : (Fin 2 → k) →ₗ[k] (Fin 2 → k)) * 1 := by rw [h1]
+      _ = _ := mul_one _
+  have hρA'hr : IsHardlyRamified hℓOdd (rank_finTwoFun A)
+      (ρA.conj (L.toLinearEquiv' iL)) :=
+    isHardlyRamified_conj hℓOdd (rank_finTwoFun A) hρA _
+  have hstrict : pushforwardFrame πA hπA (ρA.conj (L.toLinearEquiv' iL)) =
+      ρbar.conj e0 := by
+    rw [← hpfc]
+    refine framedGaloisRep_ext_toMatrix' fun g => ?_
+    rw [toMatrix'_pushforwardFrame, GaloisRep.conj_apply, toMatrix'_linearEquiv_conj,
+      GaloisRep.conj_apply, toMatrix'_linearEquiv_conj, toMatrix'_pushforwardFrame,
+      Matrix.map_mul, Matrix.map_mul, hu, hL, hNmap]
+  -- (5) the level system CLASSIFIES the now strictly identified test object
+  obtain ⟨f, hfalg, hfπ, hfM, J, hJ, hJker⟩ :=
+    hclass A πA hπA hπAsurj (ρA.conj (L.toLinearEquiv' iL)) hρA'hr hπAalg hstrict
+  -- (6) and `hlift` extends `f` continuously over the limit
+  obtain ⟨ψ, hψcont, hψι⟩ := hlift A f ⟨J, hJ, hJker⟩
+  have hψιcomp : ψ.comp ι = f := RingHom.ext hψι
+  refine ⟨ψ, hψcont, ?_, ?_, ?_⟩
+  · rw [halgι, ← RingHom.comp_assoc, hψιcomp, hfalg]
+  · -- `πA ∘ ψ` and `πuniv` are continuous into the discrete `k` and agree on
+    -- the DENSE image of `P`, hence are equal.
+    have heq : (fun r => πA (ψ r)) = (fun r => πuniv r) := by
+      refine Continuous.ext_on hdense (hπA.comp hψcont) hπcont ?_
+      rintro _ ⟨p, rfl⟩
+      show πA (ψ (ι p)) = πuniv (ι p)
+      rw [hψι p, hπι p, ← hfπ]
+      rfl
+    exact RingHom.ext fun x => congrFun heq x
+  · -- the framing: `pushforwardFrame ψ ρuniv` IS the conjugated test object,
+    -- so conjugating back by the lift produces the required framing.
+    letI : Algebra R A := ψ.toAlgebra
+    letI : ContinuousSMul R A := continuousSMul_of_algebraMap R A
+      (by rw [RingHom.algebraMap_toAlgebra]; exact hψcont)
+    have hpfψ : pushforwardFrame ψ hψcont ρuniv = ρA.conj (L.toLinearEquiv' iL) := by
+      refine framedGaloisRep_ext_toMatrix' fun g => ?_
+      rw [toMatrix'_pushforwardFrame, hmat g, Matrix.map_map,
+        show ((⇑ψ ∘ ⇑ι) : P → A) = ⇑(ψ.comp ι) from rfl, hψιcomp]
+      exact hfM g
+    refine ⟨(TensorProduct.piScalarRight R A A (Fin 2)).trans
+      (L.toLinearEquiv' iL).symm, ?_⟩
+    rw [← LevelLimit.conj_trans,
+      show (ρuniv.baseChange A).conj (TensorProduct.piScalarRight R A A (Fin 2)) =
+        pushforwardFrame ψ hψcont ρuniv from rfl, hpfψ,
+      LevelLimit.conj_trans, LinearEquiv.self_trans_symm, LevelLimit.conj_refl]
 
 /-- **The profinite limit of a level system** (PROVEN 2026-07-26 over the
 single leaf `isStrictlyUniversalOnFrames_of_levelSystem` above — the
@@ -11996,8 +12195,98 @@ theorem mem_iff_smul_single_mem {B : Type*} [CommRing B]
     exact hM i j
 
 open scoped Matrix in
+/-- **The PEIRCE CORNERS of a `C`-order containing `E₁₁` are principal, with
+unit off-diagonal generators** (sorry leaf, cut 2026-07-26 out of
+`exists_conj_entries_mem_of_single_mem` below — steps 1–4 of that leaf's
+grading argument; PURE MODULE THEORY, no matrices beyond the four corners
+and no topology beyond `hclosed`).
+
+The hypotheses are verbatim those of `exists_conj_entries_mem_of_single_mem`,
+so that the two halves can be redistributed freely. Write
+`A' = {M | ∀ n, b.repr M n ∈ C}` for the order (this is `∑ᵢ C·bᵢ`; the
+`Subring` structure is built in the consumer) and
+
+    Iᵢⱼ = {x : B | x • Eᵢⱼ ∈ A'},
+
+which is what the four `↔`s below say, spelled out through
+`hmemA : M ∈ A' ↔ ∀ n, b.repr M n ∈ C` so that `A'` itself need not appear in
+the statement. The conclusion is exactly:
+
+* `I₀₁ = C·a₀₁` and `I₁₀ = C·a₁₀` are PRINCIPAL (step 1),
+* `a₀₁` is a UNIT of `B` (step 2),
+* `I₀₀ = I₁₁ = C` (step 3),
+* `a₀₁·a₁₀ ∈ C` (step 4).
+
+Step 5 — the conjugation by `diag(1, a₀₁⁻¹)` that turns these four facts
+into the conclusion of `exists_conj_entries_mem_of_single_mem` — is PROVEN
+in that consumer, so this is now the whole residual of Carayol's step 2c.
+
+THE ARGUMENT, and one simplification worth recording. The PROVEN
+`mem_iff_smul_single_mem` gives `A' = {M | ∀ i j, Mᵢⱼ ∈ Iᵢⱼ}`, i.e. an
+isomorphism of `C`-modules `A' ≅ I₀₀ ⊕ I₀₁ ⊕ I₁₀ ⊕ I₁₁`, and `A'` is free
+of rank `4` over the local ring `C` (`isLocalRing_of_isClosed_subring`, `b`
+being `C`-linearly independent because it is `B`-linearly independent).
+
+The plan previously recorded here routed step 1 through PROJECTIVITY —
+each `Iᵢⱼ` is a direct summand of a free module, hence finitely generated
+projective, hence free over the local `C` by
+`Module.free_of_flat_of_isLocalRing`, with the four ranks summing to `4`.
+**That detour is unnecessary.** `Iᵢⱼ` is the image of the `C`-linear
+entry map `A' → B`, `M ↦ Mᵢⱼ`, so it is finitely generated; by
+`maximalIdeal_eq_comap_of_isClosed_subring` the residue field of `C` is
+`k`, so `A'/𝔪_C A'` has `k`-dimension `4` and splits as
+`⊕ᵢⱼ Iᵢⱼ/𝔪_C Iᵢⱼ`; each summand is nonzero because the `B`-span of `A'`
+is all of `M₂(B)`, forcing `B·Iᵢⱼ = B`; so each summand has dimension
+exactly `1`, and NAKAYAMA makes each `Iᵢⱼ` CYCLIC. Cyclic is all step 1
+needs — freeness is never used — which removes the projective-module
+theory from the critical path entirely.
+
+Steps 2–4 are then as before: `B·Iᵢⱼ = B` and `B` local give `a₀₁, a₁₀ ∉ 𝔪`;
+writing `1 = c·a₀₀` with `c ∈ C` makes `c` a unit of `B`, hence of `C` by the
+PROVEN `isUnit_of_isClosed_of_notMem_maximalIdeal` — the ONLY place
+closedness and the finite residue field are consumed — so `I₀₀ = C`, and
+likewise `I₁₁`; and `a₀₁·a₁₀ ∈ I₀₀ = C`.
+
+`hadic`, `hcompl` and `hres` are inherited from the consumer's signature.
+`hres` is what makes the residual algebra split (see the note on the
+consumer); `hcompl` is used only by the idempotent lifting that happens
+upstream of this leaf, and is kept here solely so the two halves share one
+hypothesis package.
+
+References: Carayol, Contemp. Math. 165, Théorème 1; Nyssen, Math. Ann.
+306; Auslander–Goldman, *The Brauer group of a commutative ring*. -/
+theorem exists_peirceGenerators_of_single_mem
+    {B : Type*} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Finite (IsLocalRing.ResidueField B)]
+    (hadic : IsAdic (IsLocalRing.maximalIdeal B))
+    (hcompl : IsAdicComplete (IsLocalRing.maximalIdeal B) B)
+    (C : Subring B) (hclosed : IsClosed ((C : Subring B) : Set B))
+    (hres : ∀ y : B, ∃ x : C, (x : B) - y ∈ IsLocalRing.maximalIdeal B)
+    (S : Submonoid (Matrix (Fin 2) (Fin 2) B))
+    (b : Module.Basis (Fin 4) B (Matrix (Fin 2) (Fin 2) B))
+    (hbS : ∀ i : Fin 4, b i ∈ S)
+    (hrepr : ∀ M ∈ S, ∀ i : Fin 4, b.repr M i ∈ C)
+    (hone : ∀ i : Fin 4,
+      b.repr (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) i ∈ C) :
+    ∃ a01 a10 : B, IsUnit a01 ∧ (a01 * a10) ∈ C ∧
+      (∀ x : B, (∀ n : Fin 4,
+          b.repr (x • (Matrix.single 0 1 1 : Matrix (Fin 2) (Fin 2) B)) n ∈ C) ↔
+        ∃ c : C, x = (c : B) * a01) ∧
+      (∀ x : B, (∀ n : Fin 4,
+          b.repr (x • (Matrix.single 1 0 1 : Matrix (Fin 2) (Fin 2) B)) n ∈ C) ↔
+        ∃ c : C, x = (c : B) * a10) ∧
+      (∀ x : B, (∀ n : Fin 4,
+          b.repr (x • (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B)) n ∈ C) ↔
+        x ∈ C) ∧
+      (∀ x : B, (∀ n : Fin 4,
+          b.repr (x • (Matrix.single 1 1 1 : Matrix (Fin 2) (Fin 2) B)) n ∈ C) ↔
+        x ∈ C) :=
+  sorry
+
+open scoped Matrix in
 /-- **Carayol's Théorème 1, step 2c: a `C`-order CONTAINING `E₁₁` is
-conjugate into `M₂(C)`** (sorry leaf, cut 2026-07-26 out of
+conjugate into `M₂(C)`** (PROVEN 2026-07-26 over the single sub-leaf
+`exists_peirceGenerators_of_single_mem` above; cut 2026-07-26 out of
 `exists_conj_entries_mem_of_basis_repr_mem`; PURE ALGEBRA — this is the
 Peirce/grading core of the theorem and all that remains of it): the
 hypotheses are verbatim those of
@@ -12015,7 +12304,10 @@ The PROVEN `mem_iff_smul_single_mem` above says exactly
 `A' = {M | ∀ i j, Mᵢⱼ ∈ Iᵢⱼ}` — that is the Peirce decomposition, with no
 direct sums to construct — and multiplicativity of `A'` gives
 `Iᵢⱼ · Iⱼₗ ⊆ Iᵢₗ`, while `E₁₁, E₂₂ ∈ A'` gives `1 ∈ I₁₁ ∩ I₂₂`. Five steps
-remain, and only the first is not routine:
+were listed here; **steps 1–4 are now the sub-leaf
+`exists_peirceGenerators_of_single_mem` above, and step 5 is PROVEN below**,
+so this node is closed over that one leaf. The list is kept because it is
+the map of the remaining work:
 
 1. *Each `Iᵢⱼ` is a PRINCIPAL `C`-submodule* `Iᵢⱼ = C·aᵢⱼ`. This is the
    one genuinely module-theoretic step: `A'` is free of rank `4` over the
@@ -12035,11 +12327,17 @@ remain, and only the first is not routine:
    `a₁₁ = c⁻¹ ∈ C` and `I₁₁ = C·a₁₁ = C`. Same for `I₂₂`.
 4. *`a₁₂·a₂₁ ∈ C^×`*: it lies in `I₁₁ = C` by step 1, and is a unit of `B`
    by step 2, so again `isUnit_of_isClosed_of_notMem_maximalIdeal`.
-5. *Conjugate.* For `E = diag(1, a₁₂)` one has `(E⁻¹ M E)ᵢⱼ = dᵢ⁻¹ Mᵢⱼ dⱼ`,
-   so the corners become `I'₁₂ = I₁₂·a₁₂⁻¹ = C`, `I'₂₁ = a₁₂·I₂₁ =
-   C·a₁₂a₂₁ = C`, and `I'₁₁ = I'₂₂ = C` unchanged. By
+5. *Conjugate.* PROVEN below. The conjugator is `E = diag(1, a₁₂⁻¹)` —
+   **not** `diag(1, a₁₂)`, which is what this line used to say and which
+   conjugates the wrong way: with `E = diag(d₁, d₂)` one has
+   `(E⁻¹ M E)ᵢⱼ = dᵢ⁻¹ Mᵢⱼ dⱼ`, so it is `d₂ = a₁₂⁻¹` that sends
+   `I₁₂ = C·a₁₂` into `C`. (The rest of the old line was already computing
+   with `a₁₂⁻¹`, so only the displayed matrix was wrong.) The corners then
+   become `I'₁₂ = I₁₂·a₁₂⁻¹ = C`, `I'₂₁ = a₁₂·I₂₁ = C·a₁₂a₂₁ = C`, and
+   `I'₁₁ = I'₂₂ = C` unchanged — the last because `B` is COMMUTATIVE, so
+   the diagonal conjugation `x ↦ d x d⁻¹` is the identity. By
    `mem_iff_smul_single_mem` again, the conjugate of `A'` is exactly
-   `M₂(C)`. Note `diag(1, a₁₂)` fixes `E₁₁`, so it composes with the
+   `M₂(C)`. Note `diag(1, a₁₂⁻¹)` fixes `E₁₁`, so it composes with the
    caller's conjugation without disturbing step 2c's hypothesis.
 
 WHAT `hres` BUYS, AND WHY IT IS NOT DROPPABLE. `hres` is not used by the
@@ -12070,8 +12368,78 @@ theorem exists_conj_entries_mem_of_single_mem
     (hone : ∀ i : Fin 4,
       b.repr (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) i ∈ C) :
     ∃ E : Matrix (Fin 2) (Fin 2) B, IsUnit E.det ∧
-      ∀ M ∈ S, ∀ i j : Fin 2, (E⁻¹ * M * E) i j ∈ C :=
-  sorry
+      ∀ M ∈ S, ∀ i j : Fin 2, (E⁻¹ * M * E) i j ∈ C := by
+  classical
+  -- the `C`-order `A' = ∑ᵢ C·bᵢ`, as a subring of `M₂(B)`
+  set A : Subring (Matrix (Fin 2) (Fin 2) B) :=
+    { carrier := {M | ∀ i, b.repr M i ∈ C}
+      zero_mem' := by intro i; simp
+      one_mem' := fun i => hrepr 1 S.one_mem i
+      add_mem' := fun {x y} hx hy i => by simpa using C.add_mem (hx i) (hy i)
+      neg_mem' := fun {x} hx i => by simpa using C.neg_mem (hx i)
+      mul_mem' := by
+        intro x y hx hy n
+        have hxy : x * y = ∑ i, ∑ j, (b.repr x i * b.repr y j) • (b i * b j) := by
+          conv_lhs => rw [← b.sum_repr x, ← b.sum_repr y]
+          rw [Finset.sum_mul]
+          refine Finset.sum_congr rfl fun i _ => ?_
+          rw [Finset.mul_sum]
+          refine Finset.sum_congr rfl fun j _ => ?_
+          rw [smul_mul_assoc, mul_smul_comm, smul_smul]
+        rw [hxy]
+        simp only [map_sum, map_smul, Finsupp.coe_finsetSum, Finsupp.coe_smul,
+          Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+        refine Subring.sum_mem _ fun i _ => Subring.sum_mem _ fun j _ => ?_
+        exact C.mul_mem (C.mul_mem (hx i) (hy j))
+          (hrepr _ (S.mul_mem (hbS i) (hbS j)) n) }
+  have hE11A : (Matrix.single 0 0 1 : Matrix (Fin 2) (Fin 2) B) ∈ A := hone
+  -- the Peirce corner generators, from the sub-leaf
+  obtain ⟨a01, a10, hu01, hprod, hI01, hI10, hI00, hI11⟩ :=
+    exists_peirceGenerators_of_single_mem hadic hcompl C hclosed hres S b hbS
+      hrepr hone
+  obtain ⟨v, hv⟩ := hu01
+  -- STEP 5: conjugate by `diag(1, a₀₁⁻¹)`
+  refine ⟨Matrix.diagonal ![1, ((v⁻¹ : Bˣ) : B)], ?_, ?_⟩
+  · rw [Matrix.det_diagonal]
+    simp only [Fin.prod_univ_two, Matrix.cons_val_zero, Matrix.cons_val_one,
+      one_mul]
+    exact (v⁻¹ : Bˣ).isUnit
+  · have hEinv : (Matrix.diagonal ![1, ((v⁻¹ : Bˣ) : B)])⁻¹
+        = Matrix.diagonal ![1, ((v : Bˣ) : B)] := by
+      refine Matrix.inv_eq_right_inv ?_
+      have hfun : (fun i => ![1, ((v⁻¹ : Bˣ) : B)] i * ![1, ((v : Bˣ) : B)] i)
+          = (1 : Fin 2 → B) := by
+        funext i; fin_cases i <;> simp
+      rw [Matrix.diagonal_mul_diagonal, hfun]
+      exact Matrix.diagonal_one
+    intro M hM
+    have hMA : M ∈ A := fun n => hrepr M hM n
+    have hpeirce := (mem_iff_smul_single_mem A hE11A M).mp hMA
+    have hentry : ∀ i j : Fin 2,
+        ((Matrix.diagonal ![1, ((v⁻¹ : Bˣ) : B)])⁻¹ * M
+          * Matrix.diagonal ![1, ((v⁻¹ : Bˣ) : B)]) i j
+        = ![1, ((v : Bˣ) : B)] i * M i j * ![1, ((v⁻¹ : Bˣ) : B)] j := by
+      intro i j
+      rw [hEinv, Matrix.mul_diagonal, Matrix.diagonal_mul]
+    simp only [Fin.forall_fin_two, hentry, Matrix.cons_val_zero,
+      Matrix.cons_val_one, Matrix.head_cons, one_mul, mul_one]
+    refine ⟨⟨?_, ?_⟩, ?_, ?_⟩
+    · exact (hI00 (M 0 0)).mp (hpeirce 0 0)
+    · obtain ⟨c, hc⟩ := (hI01 (M 0 1)).mp (hpeirce 0 1)
+      have key : M 0 1 * ((v⁻¹ : Bˣ) : B) = (c : B) := by
+        rw [hc, ← hv, mul_assoc, Units.mul_inv, mul_one]
+      rw [key]
+      exact c.2
+    · obtain ⟨c, hc⟩ := (hI10 (M 1 0)).mp (hpeirce 1 0)
+      have key : ((v : Bˣ) : B) * M 1 0 = (c : B) * (a01 * a10) := by
+        rw [hc, hv]; ring
+      rw [key]
+      exact C.mul_mem c.2 hprod
+    · have h := (hI11 (M 1 1)).mp (hpeirce 1 1)
+      have key : ((v : Bˣ) : B) * M 1 1 * ((v⁻¹ : Bˣ) : B) = M 1 1 := by
+        rw [mul_comm ((v : Bˣ) : B) (M 1 1), mul_assoc, Units.mul_inv, mul_one]
+      rw [key]
+      exact h
 
 open scoped Matrix in
 /-- **Carayol's Théorème 1, step 2: a `C`-order in `M₂(B)` with split
@@ -17702,6 +18070,47 @@ statement would therefore be discharged for free in exactly the
 situation where it has content. The cardinal-valued `Module.rank` has
 no such degenerate case, and the consumer recovers finite-dimensionality
 from the bound itself.
+
+EXPOSURE AUDIT AND CIRCULARITY GUARD (2026-07-26 — added because this
+was the only leaf of its audit batch carrying neither). The hypothesis
+package here contains an irreducible hardly ramified `ρbar` over `ℚ`,
+which is exactly the package this development refutes for every odd
+prime. So the question "is this leaf dischargeable from `False`?" has to
+be asked, and the answer is NO, for two INDEPENDENT reasons:
+
+* **Applicability.** `IsHardlyRamified.mod_three_reducible`
+  (`ModThree.lean`) is hard-wired to the prime `3`: it demands
+  `[Algebra ℤ_[3] k]` and `IsHardlyRamified (show Odd 3 by decide)`.
+  This leaf carries `hℓ5 : 5 ≤ ℓ`, so there is no `ℓ = 3` instance to
+  feed it. That route is closed MATHEMATICALLY, not merely by scope,
+  and it stays closed however the imports are rearranged.
+* **Scope.** Both `ℓ ≥ 5` refutations are DOWNSTREAM of this module —
+  `not_isIrreducible_of_isHardlyRamified_of_five_le`
+  (`Modularity/KhareWintenberger.lean`) and
+  `not_isIrreducible_of_isHardlyRamified_of_odd`
+  (`Modularity/Interface.lean`) — and this file imports neither, nor
+  `ModThree.lean`.
+
+BANNED INPUTS, should either ever come into scope: neither refutation
+may be used here, nor anything proven over them. Both are themselves
+OPEN leaves whose intended proofs run THROUGH modularity lifting, which
+is in turn proven over the deformation-theoretic bound this leaf
+supplies — so a discharge from them would prove this leaf from its own
+consequence. The build would stay green and `#print axioms` would stay
+honest; only a human-level reading catches it.
+
+*Why the hypothesis package is nevertheless left UNCHANGED.* `h :
+IsHardlyRamified hℓOdd hdim ρbar` is very nearly redundant here: the
+argument above uses only its `det` field (to pin `dim_k ad⁰ ρbar = 3`),
+and the flat-at-`ℓ` and tame-at-`2` local conditions with respect to
+which the `Ш²_S` count is taken arrive through `D.isHardlyRamified` —
+a condition on the DEFORMATION, not on `ρbar`. Narrowing `h` to its
+`det` clause would therefore cost the leaf nothing mathematically. It is
+not done, because it would close no discharge route (none is open, per
+the two reasons above) while costing every consumer a signature change.
+Contrast `Patching.lean`'s `IsTaylorWilesResidual`, where the same
+narrowing WAS made — there the refutations are genuinely in scope, so
+the narrowing removes a real free proof.
 
 References: Böckle, *Presentations of universal deformation rings*
 (and his appendix to Khare's Serre-conjecture notes);
