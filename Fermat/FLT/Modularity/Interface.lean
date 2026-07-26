@@ -432,6 +432,10 @@ public import Mathlib.LinearAlgebra.TensorProduct.Pi
 public import Mathlib.LinearAlgebra.TensorProduct.Free
 public import Mathlib.LinearAlgebra.TensorProduct.Finiteness
 public import Mathlib.LinearAlgebra.Finsupp.VectorSpace
+public import Mathlib.NumberTheory.Modular
+public import Mathlib.MeasureTheory.Measure.Lebesgue.Complex
+public import Mathlib.MeasureTheory.Measure.Prod
+public import Mathlib.Analysis.SpecialFunctions.ImproperIntegrals
 
 @[expose] public section
 
@@ -26786,68 +26790,6 @@ theorem upperHalfPlane_volume_isOpenPosMeasure :
     intro hcon
     exact absurd (congrArg NNReal.toReal hcon) (by simpa using z.im_pos.ne')
 
-/-- **THE PETERSSON DOMAIN** (sorry leaf — cut 2026-07-26 out of
-`exists_peterssonProduct_selfAdjoint_heckeOp` below, which is PROVEN over
-it; Diamond–Shurman *A First Course in Modular Forms* §5.4–§5.5, Theorem
-5.5.3): there is a set `D ⊆ ℍ` of FINITE invariant volume, containing a
-nonempty open set, over which the Petersson integrand pairs the good Hecke
-operators `T_q`, `q ∤ M`, self-adjointly.
-
-The intended witness is a fundamental domain for `Γ₀(M)` acting on `ℍ`; the
-three conjuncts are, in order, its finite volume, the fact that it has
-interior, and the unfolding computation.  Everything ELSE that the Petersson
-product needs — integrability, additivity, homogeneity, conjugate symmetry
-and DEFINITENESS — is proven below from these three, so this is all that is
-left of the analysis.
-
-WHY THIS IS NOT PHRASED WITH `MeasureTheory.IsFundamentalDomain`, which is
-the first thing anyone will try.  `Gamma0GL M` contains `-1` (the image of
-`-I ∈ Γ₀(M) ⊆ SL(2,ℤ)`), which acts TRIVIALLY on `ℍ`.  So
-`IsFundamentalDomain (Gamma0GL M) D volume` is FALSE for every `D` of
-positive measure: its `aedisjoint` field would demand
-`AEDisjoint volume ((-1) • D) D`, i.e. `volume D = 0`.  A fundamental domain
-here exists only for the quotient by `±1`, and the pin has no action of that
-quotient on `ℍ` — hence the hand-rolled conjuncts.  (Checked against this
-pin: `IsFundamentalDomain` occurs nowhere in `Mathlib/NumberTheory`, and no
-subset of `ℍ` is registered as one anywhere.)
-
-WHAT THE PIN SUPPLIES for whoever attacks this (checked 2026-07-26):
-
-* `Mathlib/Analysis/Complex/UpperHalfPlane/Measure.lean` — the INVARIANT
-  measure `dx dy / y²` as `(volume : Measure ℍ)`, with the instance
-  `SMulInvariantMeasure (GL (Fin 2) ℝ) ℍ volume`.  The change of variables
-  is therefore DONE;
-* `Mathlib/NumberTheory/ModularForms/Petersson.lean` — `petersson_slash`,
-  the full `GL₂⁺` transformation law, which is the identity the unfolding
-  argument runs on;
-* `Mathlib/NumberTheory/Modular.lean` — the standard set `𝒟` for `SL(2,ℤ)`
-  with `exists_smul_mem_fd`, `eq_one_or_neg_one_of_mem_fdo_mem_fd`,
-  `isClosed_fd`, `fdo_eq_interior_fd` (so the SECOND conjunct is immediate
-  for `𝒟`, since `𝒟ᵒ` is open, nonempty and contained in `𝒟`);
-* MISSING and the real work: `volume 𝒟 ≠ ⊤` (no measure computation on `ℍ`
-  exists in the pin at all), the coset union `⋃ᵢ γᵢ 𝒟` over
-  representatives of `Γ₀(M) \ SL(2,ℤ)` — `(Gamma0 M).FiniteIndex` is an
-  instance but no explicit representatives exist — and the double-coset
-  unfolding for the third conjunct.
-
-`~/cs/FLT` does NOT help: its only inner-product material,
-`AutomorphicForm/QuaternionAlgebra/InnerProduct.lean`, is the definite
-quaternionic setting where the "integral" is a finite sum over a class set.
-
-FAITHFULNESS.  A degenerate witness cannot cheapen the consumer: the
-conclusion of `exists_peterssonProduct_selfAdjoint_heckeOp` is UNCHANGED by
-this cut, and definiteness of the resulting form is DERIVED below rather
-than assumed, so any `D` satisfying these three conjuncts really does prove
-the consumer.  In particular `D = ∅` is ruled out by the second conjunct. -/
-theorem exists_peterssonDomain {M : ℕ} (hM : 0 < M) :
-    ∃ D : Set ℍ,
-      volume D ≠ ⊤ ∧
-      (∃ U : Set ℍ, IsOpen U ∧ U.Nonempty ∧ U ⊆ D) ∧
-      (∀ q : ℕ, q.Prime → ¬ q ∣ M → ∀ f g : CuspForm (Gamma0GL M) 2,
-        (∫ τ in D, petersson (2 : ℤ) ⇑g ⇑(heckeOp M q f) τ)
-          = ∫ τ in D, petersson (2 : ℤ) ⇑(heckeOp M q g) ⇑f τ) :=
-  sorry
-
 /-- **THE PETERSSON INTEGRAND IS INTEGRABLE OVER ANY FINITE-VOLUME SET**
 (PROVEN 2026-07-26): no fundamental-domain property is needed, only that
 `volume D < ∞`.  The integrand is continuous
@@ -26938,6 +26880,379 @@ theorem cuspForm_eq_zero_of_setIntegral_petersson_self_eq_zero {M : ℕ} (hM : 0
   have hzero : (⇑f : ℍ → ℂ) = 0 :=
     UpperHalfPlane.eq_zero_of_frequently (ModularFormClass.holo f) hfreq
   exact DFunLike.coe_injective (by simpa using hzero)
+
+section Gamma0FundamentalDomain
+
+open scoped Pointwise NNReal ENNReal
+
+/-! ### The `Γ₀(M)` fundamental domain, and its finite volume
+
+`exists_peterssonDomain` below asks for a set of FINITE invariant volume, with
+interior, over which the good Hecke operators pair self-adjointly.  This block
+BUILDS that set — `gamma0Domain M`, the union of the `[SL(2,ℤ) : Γ₀(M)]`
+translates of mathlib's standard domain `𝒟` — and PROVES its finite volume, its
+interior and its `Γ₀(M)`-covering property, leaving only the two genuinely open
+facts (a.e.-disjointness, and the double-coset unfolding) as leaves.
+
+The finite-volume computation is new to this pin: as the survey below records,
+mathlib has the invariant measure `dx dy / y²` on `ℍ` but NO measure
+computation on `ℍ` whatsoever, so `volume 𝒟 ≠ ⊤` had to be proven here. -/
+
+/-- **THE MODULAR DOMAIN SITS IN A VERTICAL STRIP** (PROVEN 2026-07-26):
+`𝒟 = {z : 1 ≤ |z|, |re z| ≤ 1/2}` is contained in `{|x| ≤ 1/2, y ≥ 1/2}`,
+because `|z| ≥ 1` together with `re z ² ≤ 1/4` forces `im z ² ≥ 3/4 > 1/4`.
+(The sharp bound is `y ≥ √3/2`, which is what
+`ModularGroup.three_le_four_mul_im_sq_of_mem_fd` records; `1/2` is all the
+volume estimate needs and it avoids carrying a square root.)
+
+The strip is written as a PREIMAGE under `Complex.measurableEquivRealProd`
+rather than as a set-builder, because that is the shape in which
+`Complex.volume_preserving_equiv_real_prod` transports the integral to
+`ℝ × ℝ`, where Tonelli applies. -/
+theorem coe_modularFd_subset_strip :
+    ((↑) '' (ModularGroup.fd) : Set ℂ) ⊆
+      Complex.measurableEquivRealProd ⁻¹'
+        (Set.Icc (-(1/2) : ℝ) (1/2) ×ˢ Set.Ici (1/2 : ℝ)) := by
+  rw [ModularGroup.coe_fd]
+  rintro z ⟨him, hnorm, hre⟩
+  have hre' := abs_le.mp hre
+  have hns' : z.re ^ 2 + z.im ^ 2 = ‖z‖ ^ 2 := by
+    rw [← Complex.normSq_eq_norm_sq, Complex.normSq_apply]; ring
+  have hnorm2 : (1 : ℝ) ≤ ‖z‖ ^ 2 := by nlinarith [norm_nonneg z]
+  have hre2 : z.re ^ 2 ≤ 1 / 4 := by nlinarith [hre'.1, hre'.2]
+  have him2 : (1 / 2 : ℝ) ≤ z.im := by nlinarith [him]
+  exact ⟨Set.mem_Icc.mpr hre', him2⟩
+
+/-- **`∫_{1/2}^∞ dy/y² < ∞`** (PROVEN 2026-07-26), in the `ℝ≥0∞` form in
+which `UpperHalfPlane.volume_eq_lintegral` presents the invariant density.
+Obtained from `integrableOn_Ioi_rpow_of_lt` at the exponent `-2 < -1` on
+`(1/4, ∞) ⊇ [1/2, ∞)`, whose `HasFiniteIntegral` field IS this
+`lintegral < ⊤` once `‖y ^ (-2 : ℝ)‖ₑ` is identified with `(1/‖y‖₊)²`. -/
+theorem lintegral_Ici_inv_sq_lt_top :
+    (∫⁻ y : ℝ in Set.Ici (1/2 : ℝ), (((1 / ‖y‖₊) ^ 2 : NNReal) : ℝ≥0∞)) < ⊤ := by
+  have hint : IntegrableOn (fun t : ℝ ↦ t ^ (-2 : ℝ)) (Set.Ioi (1/4 : ℝ)) :=
+    integrableOn_Ioi_rpow_of_lt (by norm_num) (by norm_num)
+  have hfin : (∫⁻ y : ℝ in Set.Ioi (1/4 : ℝ), ‖y ^ (-2 : ℝ)‖ₑ) < ⊤ := hint.2
+  have hsub : Set.Ici (1/2 : ℝ) ⊆ Set.Ioi (1/4 : ℝ) := fun y hy =>
+    lt_of_lt_of_le (by norm_num) (Set.mem_Ici.mp hy)
+  have hcongr : (∫⁻ y : ℝ in Set.Ioi (1/4 : ℝ), (((1 / ‖y‖₊) ^ 2 : NNReal) : ℝ≥0∞))
+      = ∫⁻ y : ℝ in Set.Ioi (1/4 : ℝ), ‖y ^ (-2 : ℝ)‖ₑ := by
+    refine setLIntegral_congr_fun measurableSet_Ioi (fun y hy => ?_)
+    have hy0 : (0 : ℝ) < y := lt_trans (by norm_num) hy
+    have h1 : y ^ (-2 : ℝ) = (y ^ (2 : ℕ))⁻¹ := by
+      rw [show (-2 : ℝ) = -((2 : ℕ) : ℝ) by norm_num, Real.rpow_neg hy0.le,
+        Real.rpow_natCast]
+    rw [h1, enorm_eq_nnnorm]
+    congr 1
+    rw [nnnorm_inv, nnnorm_pow, one_div, inv_pow]
+  calc (∫⁻ y : ℝ in Set.Ici (1/2 : ℝ), (((1 / ‖y‖₊) ^ 2 : NNReal) : ℝ≥0∞))
+      ≤ ∫⁻ y : ℝ in Set.Ioi (1/4 : ℝ), (((1 / ‖y‖₊) ^ 2 : NNReal) : ℝ≥0∞) :=
+        lintegral_mono_set hsub
+    _ = ∫⁻ y : ℝ in Set.Ioi (1/4 : ℝ), ‖y ^ (-2 : ℝ)‖ₑ := hcongr
+    _ < ⊤ := hfin
+
+/-- **THE STRIP HAS FINITE INVARIANT VOLUME** (PROVEN 2026-07-26): the
+hyperbolic area `∫∫ dx dy / y²` of `{|x| ≤ 1/2, y ≥ 1/2}` is finite.
+
+Transport to `ℝ × ℝ` by `Complex.volume_preserving_equiv_real_prod`, apply
+Tonelli (`setLIntegral_prod`), and the `x`-integral is a constant over an
+interval of length `1` while the `y`-integral is
+`lintegral_Ici_inv_sq_lt_top`. -/
+theorem lintegral_strip_lt_top :
+    (∫⁻ z : ℂ in Complex.measurableEquivRealProd ⁻¹'
+        (Set.Icc (-(1/2) : ℝ) (1/2) ×ˢ Set.Ici (1/2 : ℝ)),
+      (((1 / ‖z.im‖₊) ^ 2 : NNReal) : ℝ≥0∞)) < ⊤ := by
+  have hmeas : Measurable (fun p : ℝ × ℝ => (((1 / ‖p.2‖₊) ^ 2 : NNReal) : ℝ≥0∞)) := by
+    fun_prop
+  have key : (∫⁻ z : ℂ in Complex.measurableEquivRealProd ⁻¹'
+        (Set.Icc (-(1/2) : ℝ) (1/2) ×ˢ Set.Ici (1/2 : ℝ)),
+        (((1 / ‖z.im‖₊) ^ 2 : NNReal) : ℝ≥0∞))
+      = ∫⁻ p : ℝ × ℝ in (Set.Icc (-(1/2) : ℝ) (1/2) ×ˢ Set.Ici (1/2 : ℝ)),
+          (((1 / ‖p.2‖₊) ^ 2 : NNReal) : ℝ≥0∞) :=
+    Complex.volume_preserving_equiv_real_prod.setLIntegral_comp_preimage_emb
+      Complex.measurableEquivRealProd.measurableEmbedding
+      (fun p : ℝ × ℝ => (((1 / ‖p.2‖₊) ^ 2 : NNReal) : ℝ≥0∞)) _
+  rw [key, Measure.volume_eq_prod, setLIntegral_prod _ hmeas.aemeasurable]
+  dsimp only
+  rw [lintegral_const, Measure.restrict_apply_univ]
+  exact ENNReal.mul_lt_top lintegral_Ici_inv_sq_lt_top (by simp)
+
+/-- **THE STANDARD MODULAR DOMAIN HAS FINITE HYPERBOLIC AREA**
+(PROVEN 2026-07-26 — the fact the pin does NOT have, and the reason no
+`Γ₀(M)`-domain of finite volume could previously be exhibited):
+`volume 𝒟 ≠ ⊤` for the invariant measure `dx dy / y²` on `ℍ`.
+
+`UpperHalfPlane.volume_eq_lintegral` turns `volume 𝒟` into a Lebesgue
+integral of the density over `(↑) '' 𝒟 ⊆ ℂ`; `coe_modularFd_subset_strip`
+puts that inside the strip and `lintegral_strip_lt_top` bounds it.  (The
+true value is `π/3`; only finiteness is used anywhere below.) -/
+theorem volume_modularFd_ne_top : volume (ModularGroup.fd) ≠ ⊤ := by
+  rw [UpperHalfPlane.volume_eq_lintegral]
+  exact (lt_of_le_of_lt (lintegral_mono_set coe_modularFd_subset_strip)
+    lintegral_strip_lt_top).ne
+
+open scoped Classical in
+/-- Chosen representatives for the LEFT cosets `SL(2,ℤ) ⧸ Γ₀(M)`, normalised so
+that the trivial coset is represented by `1` (which is what puts `𝒟` itself,
+hence an open set, inside `gamma0Domain M`).  `Quotient.out` alone would not:
+its representative of the trivial coset is an arbitrary element of `Γ₀(M)`. -/
+noncomputable def gamma0Rep (M : ℕ) (c : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M) :
+    SL(2, ℤ) :=
+  if c = QuotientGroup.mk 1 then 1 else Quotient.out c
+
+/-- `gamma0Rep M c` really does represent the coset `c`. -/
+theorem gamma0Rep_spec (M : ℕ) (c : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M) :
+    (QuotientGroup.mk (gamma0Rep M c) : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M) = c := by
+  classical
+  rw [gamma0Rep]
+  split_ifs with h
+  · exact h.symm
+  · exact Quotient.out_eq c
+
+/-- The trivial coset is represented by `1`. -/
+theorem gamma0Rep_one (M : ℕ) :
+    gamma0Rep M (QuotientGroup.mk 1 : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M) = 1 := by
+  classical
+  rw [gamma0Rep, if_pos rfl]
+
+/-- **THE `Γ₀(M)` FUNDAMENTAL DOMAIN**: `⋃_c γ_c⁻¹ 𝒟`, over the (finitely
+many) left cosets `c = γ_c Γ₀(M)` of `Γ₀(M)` in `SL(2,ℤ)`.
+
+The inverses are what makes the covering property come out on the correct
+side: if `g • τ ∈ 𝒟` and `g = γ_c h` with `h ∈ Γ₀(M)`, then
+`h • τ = γ_c⁻¹ • (g • τ) ∈ γ_c⁻¹ 𝒟`, so it is `Γ₀(M)` — not `SL(2,ℤ)` —
+that moves an arbitrary `τ` into this set. -/
+noncomputable def gamma0Domain (M : ℕ) : Set ℍ :=
+  ⋃ c : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M, (gamma0Rep M c)⁻¹ • (ModularGroup.fd)
+
+/-- The invariant measure is `SL(2,ℤ)`-invariant, the action being the
+restriction along `Matrix.SpecialLinearGroup.mapGL` of the `GL(2,ℝ)` action for
+which the pin registers `SMulInvariantMeasure`. -/
+theorem volume_smul_specialLinearGroup (g : SL(2, ℤ)) (s : Set ℍ) :
+    volume (g • s) = volume s := by
+  have h : g • s = (Matrix.SpecialLinearGroup.mapGL ℝ g) • s := rfl
+  rw [h]
+  exact measure_smul volume _ s
+
+/-- **THE `Γ₀(M)` DOMAIN HAS FINITE VOLUME** (PROVEN 2026-07-26): a finite
+union — `[SL(2,ℤ) : Γ₀(M)] < ∞` by `CongruenceSubgroup.instFiniteIndexGamma0` —
+of isometric copies of `𝒟`, each of finite volume by
+`volume_modularFd_ne_top`. -/
+theorem volume_gamma0Domain_ne_top (M : ℕ) [NeZero M] :
+    volume (gamma0Domain M) ≠ ⊤ := by
+  have hle : volume (gamma0Domain M)
+      ≤ ∑' c : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M,
+          volume ((gamma0Rep M c)⁻¹ • (ModularGroup.fd)) := measure_iUnion_le _
+  classical
+  letI := Fintype.ofFinite (SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M)
+  refine ne_of_lt (lt_of_le_of_lt hle ?_)
+  rw [tsum_fintype]
+  refine ENNReal.sum_lt_top.mpr (fun c _ => ?_)
+  rw [volume_smul_specialLinearGroup]
+  exact volume_modularFd_ne_top.lt_top
+
+/-- `𝒟 ⊆ gamma0Domain M` — the trivial coset contributes `1⁻¹ 𝒟 = 𝒟`.  This is
+exactly what `gamma0Rep`'s normalisation at the trivial coset buys. -/
+theorem modularFd_subset_gamma0Domain (M : ℕ) :
+    (ModularGroup.fd) ⊆ gamma0Domain M := by
+  refine le_trans (le_of_eq ?_)
+    (Set.subset_iUnion _ (QuotientGroup.mk 1 : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M))
+  rw [gamma0Rep_one, inv_one, one_smul]
+
+/-- **THE `Γ₀(M)` DOMAIN HAS INTERIOR** (PROVEN 2026-07-26): it contains the
+open modular domain `𝒟ᵒ`, which is nonempty (`2i ∈ 𝒟ᵒ`). -/
+theorem exists_open_subset_gamma0Domain (M : ℕ) :
+    ∃ U : Set ℍ, IsOpen U ∧ U.Nonempty ∧ U ⊆ gamma0Domain M := by
+  have hz : (⟨2 * Complex.I, by norm_num⟩ : ℍ) ∈ ModularGroup.fdo := by
+    constructor <;> norm_num [Complex.normSq_apply, UpperHalfPlane.re]
+  exact ⟨ModularGroup.fdo, ModularGroup.isOpen_fdo, ⟨_, hz⟩,
+    le_trans ModularGroup.fdo_subset_fd (modularFd_subset_gamma0Domain M)⟩
+
+/-- **THE `Γ₀(M)` DOMAIN COVERS `ℍ` UNDER `Γ₀(M)`** (PROVEN 2026-07-26): every
+`τ ∈ ℍ` is moved into `gamma0Domain M` by an element of `Gamma0GL M`.
+
+`ModularGroup.exists_smul_mem_fd` supplies `g ∈ SL(2,ℤ)` with `g • τ ∈ 𝒟`;
+writing `c` for its coset and `h = γ_c⁻¹ g ∈ Γ₀(M)` (which is exactly
+`QuotientGroup.eq` for `gamma0Rep_spec`), `h • τ = γ_c⁻¹ • (g • τ)` lands in
+the `c`-th piece.  The `Gamma0GL` element is the `mapGL` image of `h`, and the
+two actions agree definitionally since the `SL` action is `compHom` along
+`mapGL`. -/
+theorem exists_mem_gamma0Domain (M : ℕ) (τ : ℍ) :
+    ∃ γ ∈ Gamma0GL M, γ • τ ∈ gamma0Domain M := by
+  obtain ⟨g, hg⟩ := ModularGroup.exists_smul_mem_fd τ
+  set c : SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M := QuotientGroup.mk g with hc
+  have hout : (QuotientGroup.mk (gamma0Rep M c) :
+      SL(2, ℤ) ⧸ CongruenceSubgroup.Gamma0 M) = c := gamma0Rep_spec M c
+  have hmem : (gamma0Rep M c)⁻¹ * g ∈ CongruenceSubgroup.Gamma0 M := by
+    rw [← QuotientGroup.eq, hout, hc]
+  refine ⟨Matrix.SpecialLinearGroup.mapGL ℝ ((gamma0Rep M c)⁻¹ * g), ⟨_, hmem, rfl⟩, ?_⟩
+  have hact : (Matrix.SpecialLinearGroup.mapGL ℝ ((gamma0Rep M c)⁻¹ * g)) • τ
+      = ((gamma0Rep M c)⁻¹ * g) • τ := rfl
+  rw [hact, mul_smul]
+  exact Set.mem_iUnion.mpr ⟨c, Set.smul_mem_smul_set hg⟩
+
+/-- **A.E.-DISJOINTNESS OF THE `Γ₀(M)` DOMAIN** (sorry leaf — cut 2026-07-26
+out of `exists_peterssonDomain` below, together with
+`peterssonSelfAdjoint_of_gamma0FundamentalDomain`): distinct `Γ₀(M)`-translates
+of `gamma0Domain M` meet in a null set, once the two elements acting trivially
+on `ℍ` are excluded.
+
+WHY `±1` MUST BE EXCLUDED, and why this is not
+`MeasureTheory.IsFundamentalDomain`.  `Gamma0GL M` contains `-1` (the image of
+`-I ∈ Γ₀(M) ⊆ SL(2,ℤ)`), which acts TRIVIALLY on `ℍ`.  So
+`IsFundamentalDomain (Gamma0GL M) D volume` is FALSE for every `D` of positive
+measure: its `aedisjoint` field would demand `AEDisjoint volume ((-1) • D) D`,
+i.e. `volume D = 0`.  A fundamental domain here exists only for the quotient by
+`±1`, and the pin has no action of that quotient on `ℍ` — hence this
+hand-rolled conjunct.  (Checked against this pin: `IsFundamentalDomain` occurs
+nowhere in `Mathlib/NumberTheory`, and no subset of `ℍ` is registered as one.)
+Note `±1` are the ONLY trivially-acting elements: the kernel of the `SL(2,ℝ)`
+action on `ℍ` is `{±I}`, so nothing else has to be excluded and the statement
+is not weakened by the exclusion.
+
+PROOF PLAN (the mathematics is settled; what is missing is one measure fact).
+Let `h ∈ Γ₀(M)`, `h ≠ ±1`, and suppose `z ∈ (h • D) ∩ D` with
+`D = ⋃_c γ_c⁻¹ 𝒟`.  Then `z ∈ γ_{c'}⁻¹ 𝒟` and `h⁻¹ z ∈ γ_c⁻¹ 𝒟` for some
+cosets `c, c'`.  Put `w = γ_{c'} z ∈ 𝒟` and `g = γ_c h⁻¹ γ_{c'}⁻¹ ∈ SL(2,ℤ)`,
+so that `g • w ∈ 𝒟`.  If `w ∈ 𝒟ᵒ` then
+`ModularGroup.eq_one_or_neg_one_of_mem_fdo_mem_fd` forces `g = ±1`; since
+`-1 ∈ Γ₀(M)`, `g = ±1` gives `γ_c Γ₀(M) = γ_{c'} Γ₀(M)`, i.e. `c = c'`, and
+then `γ_c h⁻¹ γ_c⁻¹ = ±1`, i.e. `h = ±1` — excluded.  So the intersection is
+contained in `⋃_{c'} γ_{c'}⁻¹ (𝒟 \ 𝒟ᵒ)`, a finite union of translates of the
+BOUNDARY of `𝒟`.
+
+THE ONE MISSING FACT is therefore `volume (𝒟 \ 𝒟ᵒ) = 0` — the boundary of the
+modular domain is null.  `ModularGroup.fdo_eq_interior_fd` and
+`ModularGroup.isClosed_fd` identify `𝒟 \ 𝒟ᵒ` with `frontier 𝒟`; the boundary is
+contained in the union of the vertical lines `re z = ±1/2` and the unit circle
+`|z| = 1`, each of which is null for planar Lebesgue measure (and hence, being
+a set of the same null sets, for `volume` on `ℍ` — the density is finite and
+strictly positive there).  `volume_modularFd_ne_top` above is the model for how
+to move between `volume` on `ℍ` and Lebesgue measure on `ℂ`
+(`UpperHalfPlane.volume_eq_lintegral`). -/
+theorem volume_smul_inter_gamma0Domain_eq_zero {M : ℕ} (hM : 0 < M)
+    {γ : GL (Fin 2) ℝ} (hγ : γ ∈ Gamma0GL M) (h1 : γ ≠ 1) (h2 : γ ≠ -1) :
+    volume ((γ • gamma0Domain M) ∩ gamma0Domain M) = 0 :=
+  sorry
+
+/-- **SELF-ADJOINTNESS OF THE GOOD HECKE OPERATORS OVER A `Γ₀(M)` FUNDAMENTAL
+DOMAIN** (sorry leaf — cut 2026-07-26 out of `exists_peterssonDomain` below;
+Diamond–Shurman *A First Course in Modular Forms* §5.5, Theorem 5.5.3, and
+Shimura, *Introduction to the arithmetic theory of automorphic functions*, for
+the double-coset computation): over ANY set `D` of finite volume that covers
+`ℍ` under `Γ₀(M)` and is a.e.-disjoint from its nontrivial `Γ₀(M)`-translates,
+the Petersson integrand pairs `T_q` self-adjointly at every good prime `q ∤ M`.
+
+This is the whole analytic content that survives the cut: `exists_peterssonDomain`
+below supplies the domain (`gamma0Domain M`, whose finite volume, interior and
+covering property are PROVEN above and whose a.e.-disjointness is the sibling
+leaf `volume_smul_inter_gamma0Domain_eq_zero`), and everything the Petersson
+product needs BEYOND self-adjointness — integrability, additivity, homogeneity,
+conjugate symmetry and DEFINITENESS — is proven below from finite volume and
+interior alone.
+
+WHAT THE PIN SUPPLIES (checked 2026-07-26):
+
+* `Mathlib/Analysis/Complex/UpperHalfPlane/Measure.lean` — the INVARIANT
+  measure `dx dy / y²` as `(volume : Measure ℍ)`, with the instance
+  `SMulInvariantMeasure (GL (Fin 2) ℝ) ℍ volume`.  The change of variables is
+  therefore DONE;
+* `Mathlib/NumberTheory/ModularForms/Petersson.lean` — `petersson_slash`,
+  the full `GL₂⁺` transformation law
+  `petersson k (f∣γ) (f'∣γ) τ = |det γ|^{k-2} · σ γ (petersson k f f' (γ • τ))`.
+  **At `k = 2` the determinant factor is `|det γ|⁰ = 1`**, and `σ γ = id` for
+  `det γ > 0`, so the law degenerates to the clean
+  `petersson 2 (f∣γ) (f'∣γ) τ = petersson 2 f f' (γ • τ)`.  That is the single
+  identity the whole unfolding runs on, and weight `2` is exactly the weight at
+  which it is free of determinant bookkeeping;
+* `heckeTransform`/`heckeOp_coe` above — `T_q f = Σ_{j<q} f∣[1,j;0,q] + f∣[q,0;0,1]`
+  at `q ∤ M`, with the representatives explicit.
+
+PROOF PLAN (reconstructed 2026-07-26; D–S Thm 5.5.3).  Write `Γ = Γ₀(M)`,
+`α = [1,0;0,q]`, `Γ' = Γ ∩ α⁻¹Γα`, and `Γ = ⊔_i Γ' γ_i`, so that
+`T_q f = Σ_i (f∣α)∣γ_i`.  Three steps, each a change of variables under the
+invariant measure:
+
+1. FOLD UP.  For `γ ∈ Γ`, `petersson 2 g (h∣γ) = petersson 2 (g∣γ) (h∣γ)
+   = (petersson 2 g h) ∘ γ`, so `∫_D petersson 2 g ((f∣α)∣γ_i) = ∫_{γ_i D}
+   petersson 2 g (f∣α)`; and `petersson 2 g (f∣α)` is `Γ'`-invariant, so the sum
+   over `i` is `∫_{D'} petersson 2 g (f∣α)` for `D' = ⊔_i γ_i D`, a fundamental
+   domain for `Γ'`.  (This is where the covering and a.e.-disjointness
+   hypotheses are consumed, via additivity of the integral over an essentially
+   disjoint union.)
+2. MOVE BY `α`.  `petersson 2 g (f∣α) = petersson 2 (g∣α⁻¹) f ∘ α`, so the
+   integral becomes `∫_{αD'} petersson 2 (g∣α⁻¹) f`, and `α D'` is a
+   fundamental domain for `Γ'' = αΓα⁻¹ ∩ Γ`.  At weight `2` scalar matrices act
+   trivially (`f∣(cI) = c^{k-2} f = f`), so `g∣α⁻¹ = g∣α'` with
+   `α' = det(α)·α⁻¹ = [q,0;0,1]` INTEGRAL.
+3. FOLD DOWN, AND `α' ∼ α`.  Running step 1 backwards for the double coset
+   `Γα'Γ` returns `∫_D petersson 2 ([Γα'Γ] g) f`.  It remains that
+   `[Γα'Γ] = [ΓαΓ] = T_q` on `S₂(Γ₀(M))`, which holds because `α' ∈ ΓαΓ`:
+   with `qu − Mv = 1` (available exactly because `q ∤ M` — THIS is where the
+   good-prime hypothesis enters, and the identity is false at `q ∣ M`),
+   `α' = γ₁ α γ₂` with `γ₁ = [q,v;M,u]` and `γ₂ = [uq,−v;−M,1]`, both of
+   determinant `1` with lower-left divisible by `M`, hence both in `Γ₀(M)`.
+   Classically this last step is "the diamond operator `⟨q⟩` is the identity at
+   weight 2 with trivial character".
+
+FAITHFULNESS.  `hqM` is LOAD-BEARING (see the FAITHFULNESS AUDIT on the
+consumer `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` below: at
+`q ∣ M` the operator `U_q` is genuinely non-semisimple), and the `±1`
+exclusions in `hdisj` are forced, not cosmetic — see
+`volume_smul_inter_gamma0Domain_eq_zero` above. -/
+theorem peterssonSelfAdjoint_of_gamma0FundamentalDomain {M : ℕ} (hM : 0 < M)
+    {D : Set ℍ} (hDvol : volume D ≠ ⊤)
+    (hcov : ∀ τ : ℍ, ∃ γ ∈ Gamma0GL M, γ • τ ∈ D)
+    (hdisj : ∀ γ ∈ Gamma0GL M, γ ≠ 1 → γ ≠ -1 → volume ((γ • D) ∩ D) = 0)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (f g : CuspForm (Gamma0GL M) 2) :
+    (∫ τ in D, petersson (2 : ℤ) ⇑g ⇑(heckeOp M q f) τ)
+      = ∫ τ in D, petersson (2 : ℤ) ⇑(heckeOp M q g) ⇑f τ :=
+  sorry
+
+/-- **THE PETERSSON DOMAIN** (PROVEN 2026-07-26 over the two leaves
+`volume_smul_inter_gamma0Domain_eq_zero` and
+`peterssonSelfAdjoint_of_gamma0FundamentalDomain` above; cut 2026-07-26 out of
+`exists_peterssonProduct_selfAdjoint_heckeOp` below, which is PROVEN over it;
+Diamond–Shurman §5.4–§5.5, Theorem 5.5.3): there is a set `D ⊆ ℍ` of FINITE
+invariant volume, containing a nonempty open set, over which the Petersson
+integrand pairs the good Hecke operators `T_q`, `q ∤ M`, self-adjointly.
+
+The witness is `gamma0Domain M`, the union of the `[SL(2,ℤ) : Γ₀(M)]` translates
+of mathlib's standard domain `𝒟`.  Of the three conjuncts, the first two are now
+PROVEN (`volume_gamma0Domain_ne_top`, over the new `volume_modularFd_ne_top`,
+and `exists_open_subset_gamma0Domain`); the third is the analytic leaf, applied
+through the covering property `exists_mem_gamma0Domain` (PROVEN) and the
+geometric leaf `volume_smul_inter_gamma0Domain_eq_zero`.
+
+Everything ELSE that the Petersson product needs — integrability, additivity,
+homogeneity, conjugate symmetry and DEFINITENESS — is proven below from the
+first two conjuncts, so the third is all that is left of the analysis.
+
+`~/cs/FLT` does NOT help: its only inner-product material,
+`AutomorphicForm/QuaternionAlgebra/InnerProduct.lean`, is the definite
+quaternionic setting where the "integral" is a finite sum over a class set.
+
+FAITHFULNESS.  A degenerate witness cannot cheapen the consumer: the conclusion
+of `exists_peterssonProduct_selfAdjoint_heckeOp` is UNCHANGED by this cut, and
+definiteness of the resulting form is DERIVED below rather than assumed, so any
+`D` satisfying these three conjuncts really does prove the consumer.  In
+particular `D = ∅` is ruled out by the second conjunct. -/
+theorem exists_peterssonDomain {M : ℕ} (hM : 0 < M) :
+    ∃ D : Set ℍ,
+      volume D ≠ ⊤ ∧
+      (∃ U : Set ℍ, IsOpen U ∧ U.Nonempty ∧ U ⊆ D) ∧
+      (∀ q : ℕ, q.Prime → ¬ q ∣ M → ∀ f g : CuspForm (Gamma0GL M) 2,
+        (∫ τ in D, petersson (2 : ℤ) ⇑g ⇑(heckeOp M q f) τ)
+          = ∫ τ in D, petersson (2 : ℤ) ⇑(heckeOp M q g) ⇑f τ) := by
+  haveI : NeZero M := ⟨hM.ne'⟩
+  refine ⟨gamma0Domain M, volume_gamma0Domain_ne_top M,
+    exists_open_subset_gamma0Domain M, fun q hq hqM f g => ?_⟩
+  exact peterssonSelfAdjoint_of_gamma0FundamentalDomain hM
+    (volume_gamma0Domain_ne_top M) (exists_mem_gamma0Domain M)
+    (fun γ hγ hne1 hne2 => volume_smul_inter_gamma0Domain_eq_zero hM hγ hne1 hne2)
+    hq hqM f g
+
+end Gamma0FundamentalDomain
 
 /-- **THE PETERSSON PRODUCT ON `S₂(Γ₀(M))`, WITH THE GOOD HECKE
 OPERATORS SELF-ADJOINT FOR IT** (PROVEN 2026-07-26 over the single leaf
