@@ -352,10 +352,13 @@ instance (L : IntermediateField K (AlgebraicClosure K)) [FiniteDimensional K L]
 
 /-- The Galois action on `𝓞 L` commutes with the `𝓞 K`-scalar action:
 `e ∈ Gal(L/K)` fixes `K` pointwise, hence fixes the image of `𝓞 K`.
-(Stated here against the ambient project action instance on `𝓞 L` —
-the vendored `MulSemiringAction G (𝓞 K)` instance in
-`Fermat.FLT.Deformations.Lemmas` shadows mathlib's, so mathlib's
-`IsGaloisGroup`-derived instance does not apply.) -/
+(Mathlib supplies `SMulCommClass G R (integralClosure R K)` only for the
+BASE ring `R` of the integral closure, i.e. `R = ℤ` here; the mixed
+`𝓞 K` / `𝓞 L` form is not packaged, so it is proven here. The earlier
+version of this comment blamed a vendored `MulSemiringAction G (𝓞 K)`
+instance in `Fermat.FLT.Deformations.Lemmas` for shadowing mathlib's —
+that instance was deleted on 2026-07-26 and this one is now stated
+against mathlib's action.) -/
 instance (L : IntermediateField K (AlgebraicClosure K)) :
     SMulCommClass (L ≃ₐ[K] L) (𝓞 K) (𝓞 L) where
   smul_comm e r x := by
