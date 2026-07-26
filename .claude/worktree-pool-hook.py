@@ -56,16 +56,29 @@ The drain exists because the user slice is CPU-quota-capped at 24 cores
 (cpu.max 2400000/100000), throttled in ~76% of periods, so workers past the
 quota lengthen every verification instead of adding throughput.
 
-Worktree allocation is unchanged: find a `free` entry in
-~/.flt-worktree-pool, check it is git-clean and its branch is an
-ancestor of staging, fast-forward it to staging (--ff-only), mark it
-`claimed`. A worktree marked free but dirty/diverged is NOT a normal
-condition and is NOT auto-corrected — hard crash (traceback, exit 2,
-tool call blocked): something beyond allocation went wrong.
+Worktree allocation: find a `free` entry in ~/.flt-worktree-pool, check
+it is git-clean and its branch is an ancestor of MAIN, fast-forward it
+to main (--ff-only), mark it `claimed`. A worktree marked free but
+dirty/diverged is NOT a normal condition and is NOT auto-corrected —
+hard crash (traceback, exit 2, tool call blocked): something beyond
+allocation went wrong.
 
-Freeing a worktree after its work is merged, and pushing to the task
-queue, are both the orchestrator hand-editing the respective text
-file. No scripts on that side.
+RELEASE MODEL (Deyao, 2026-07-26). `main` is the only branch anything
+is dispatched from, and ONLY THE MERGER MOVES IT, only to a sha it has
+built green. The orchestrator never merges. When an agent finishes, its
+worktree name goes into ~/.flt-merge-batch (flt-batch.py) and sits
+there; the merger claims the batch, merges it, resolves conflicts,
+drives the build green, and moves main. That is a RELEASE. The
+orchestrator then runs flt-release.py, which fast-forwards idle
+worktrees to main and seeds their `.lake` from the merger's own build,
+and only then dispatches queued work.
+
+The merger is self-paced: the moment it finishes a batch it claims the
+next one. Nothing schedules it.
+
+Freeing a worktree, batching it, and pushing to the task queue are the
+orchestrator editing text files (or the two thin scripts flt-batch.py /
+flt-release.py). No merging on that side.
 
 CONCURRENCY (fixed 2026-07-25). Everything below runs under ONE
 exclusive flock on the pool file, held for the whole dispatch decision:
@@ -347,9 +360,19 @@ def _spend(host):
         pass
 
 
-def pick_free(entries):
-    """Choose which free worktree to hand out: the one on the machine with the
+def pick_free(entries, candidate_state="ready"):
+    """Choose which worktree to hand out: the one on the machine with the
     most FREE CPU right now, subject to a hard RAM veto (Deyao, 2026-07-25).
+
+    `candidate_state` is what makes LAZY SEEDING work (Deyao, 2026-07-26).
+    Dispatch draws from `ready` -- advanced to the release AND holding `.lake`
+    artifacts copied from the build that verified it. `flt-release.py` calls
+    this same function with `candidate_state="free"` to decide WHICH worktrees
+    are worth seeding, so the expensive copy lands only where work will
+    actually run, and the choice of where to seed is made by exactly the
+    capacity logic documented below rather than by a second, drifting copy of
+    it. A `free` worktree is at the release but its artifacts are stale, so
+    handing one out would hand out a from-source rebuild.
 
     Two rules, and the difference between them is the point:
 
@@ -382,7 +405,7 @@ def pick_free(entries):
 
     Falls back to pool order if no measurement can be obtained at all; allocation
     must never fail because a probe did."""
-    free = [n for n, status, _ in entries if status == "free"]
+    free = [n for n, status, _ in entries if status == candidate_state]
     if not free:
         return None
 
@@ -462,39 +485,44 @@ def allocate_worktree(pool_fh):
             f"worktree {free_name} is marked free in {POOL_FILE} but has "
             f"uncommitted changes:\n{status_out.stdout}")
 
-    # Ancestor of STAGING, not main (Deyao, 2026-07-25): integration merges into
-    # staging, so a finished branch becomes an ancestor of staging immediately and
-    # only reaches main once the staging worker has verified a green build. Testing
-    # against main here would hard-crash on every correctly-integrated worktree.
-    anc = git(["merge-base", "--is-ancestor", free_name, "staging"], worktree_path)
+    # Ancestor of MAIN (Deyao, 2026-07-26, RELEASE MODEL -- reverses the staging
+    # rule below it). `main` is now the only branch anything is dispatched from,
+    # and it moves only when the merger has built a batch green. So a finished
+    # branch becomes an ancestor of main exactly when its work has been released.
+    anc = git(["merge-base", "--is-ancestor", free_name, "main"], worktree_path)
     if anc.returncode != 0:
         raise RuntimeError(
             f"worktree {free_name}'s branch is marked free in {POOL_FILE} "
-            "but is NOT an ancestor of staging (diverged/unmerged commits) "
-            "-- integration was likely skipped for this branch")
+            "but is NOT an ancestor of main (diverged/unreleased commits) "
+            "-- its work has not been through the merger yet; either it was "
+            "never added to ~/.flt-merge-batch, or the merger has not cut a "
+            "release containing it")
 
-    # Advance to STAGING, not main (Deyao, 2026-07-25). This reverses the
-    # first cut of the staging design, which had workers branch off the green
-    # main. The reason is dispatch, not cleanliness: almost every completion
-    # proves its target over a finer cut and leaves NEW leaves behind, and those
-    # leaves exist only on staging until a green build promotes them. A worker
-    # dispatched at one of them while fast-forwarding to main would land on a
-    # tree where the declaration does not exist yet -- a phantom dispatch
-    # manufactured out of a correct report, which is a failure mode this fleet
-    # has already hit once from a different cause.
+    # Advance to MAIN, the release (Deyao, 2026-07-26). This reverses the
+    # staging rule, which had workers advance to a branch that accumulated
+    # unbuilt work continuously.
     #
-    # The cost is that a worker may start from a tree with a known red in it.
-    # That is strictly the lesser evil: a red is visible and owned, whereas a
-    # worker hunting a leaf that is not there wastes a whole cycle and reports
-    # the leaf as missing.
+    # The phantom-dispatch worry that motivated the staging rule -- a worker
+    # sent at a leaf that exists only on an unmerged branch, landing on a tree
+    # where the declaration is absent -- is now handled by ORDERING instead of
+    # by branch choice: work is queued when its leaf is not yet released, and
+    # dispatched only after a release contains it. The queue, not the branch
+    # pointer, is what absorbs the lag.
+    #
+    # What this buys is worth the wait: every worker starts from a tree that is
+    # KNOWN TO COMPILE, with `.lake` artifacts seeded from the very build that
+    # verified it (flt-release.py). Under the staging rule a worker could start
+    # from a red it did not cause and could not see, and its `.lake` never
+    # matched its source -- the inconsistent-olean trap that manufactures
+    # phantom kernel errors and cost several agents a full cycle each.
     #
     # Always advance, never backwards (see split_base: pinning was reverted
     # because a backwards move invalidates `.lake` and forces a from-source
     # rebuild of the import cone on the agent's first query).
-    ff = git(["merge", "--ff-only", "staging"], worktree_path)
+    ff = git(["merge", "--ff-only", "main"], worktree_path)
     if ff.returncode != 0:
         raise RuntimeError(
-            f"ff-only advance of {free_name} to staging failed: {ff.stderr}")
+            f"ff-only advance of {free_name} to main failed: {ff.stderr}")
 
     new_lines = [
         " ".join([n, "claimed" if n == free_name else status] + extra)
