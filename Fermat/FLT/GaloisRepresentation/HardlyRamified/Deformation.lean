@@ -68,7 +68,6 @@ them without a human. Do not re-wrap it.
 - `exists_cyclotomicCharacter_padicTwo_eq_two`
 - `exists_ringHom_matrix_quotient_of_finite`
 - `exists_residual_basis_toMatrix'`
-- `exists_isIdempotentElem_mem_of_sq_sub_mem`
 - `exists_conj_entries_mem_of_single_mem`
 - `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`
 - `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
@@ -250,10 +249,11 @@ the surjectivity and minimality strata of the minimal presentation,
   `exists_residual_basis_toMatrix'` (Burnside density plus the residual
   identification), adding the Nakayama lift and the trace-form
   nondegeneracy (`trace_single_mul`, `det_traceGram_ne_zero`) as proven
-  glue; the second over `exists_isIdempotentElem_mem_of_sq_sub_mem`
-  (`𝔪`-adic Newton iteration) and `exists_conj_entries_mem_of_single_mem`
-  (the Peirce/grading core), with `exists_conj_eq_single_of_mul_self`
-  PROVEN and the construction of the `C`-order, its closedness, the
+  glue; the second over the single leaf
+  `exists_conj_entries_mem_of_single_mem` (the Peirce/grading core), with
+  the `𝔪`-adic Newton iteration `exists_isIdempotentElem_mem_of_sq_sub_mem`
+  and the idempotent conjugation `exists_conj_eq_single_of_mul_self` both
+  PROVEN, and the construction of the `C`-order, its closedness, the
   `hres`-lift of `E₁₁` and the conjugation bookkeeping all proven glue.
   The dual-basis linear algebra
   (`repr_mem_subring_of_trace_mem`, `exists_basis_repr_mem_traceSubring`)
@@ -9060,8 +9060,9 @@ theorem basis_repr_eq_sum_entries {B : Type*} [CommRing B] {n : Type*}
   simp
 
 /-- **Carayol's Théorème 1, step 2a: idempotent lifting inside a CLOSED
-subring of a complete matrix algebra** (sorry leaf, cut 2026-07-26 out of
-`exists_conj_entries_mem_of_basis_repr_mem`; PURE ALGEBRA): over a local
+subring of a complete matrix algebra** (PROVEN 2026-07-26; cut the same
+day out of `exists_conj_entries_mem_of_basis_repr_mem`; PURE
+ALGEBRA): over a local
 ring `B` carrying its `𝔪`-adic topology and `𝔪`-adically complete, an
 element `x` of a closed subring `A ⊆ Mₙ(B)` which is idempotent MODULO `𝔪`
 is congruent mod `𝔪` to a genuine idempotent OF `A`.
@@ -9094,8 +9095,146 @@ theorem exists_isIdempotentElem_mem_of_sq_sub_mem
     (hA : IsClosed ((A : Subring (Matrix n n B)) : Set (Matrix n n B)))
     {x : Matrix n n B} (hxA : x ∈ A)
     (hx : ∀ i j, (x * x - x) i j ∈ IsLocalRing.maximalIdeal B) :
-    ∃ u ∈ A, u * u = u ∧ ∀ i j, (u - x) i j ∈ IsLocalRing.maximalIdeal B :=
-  sorry
+    ∃ u ∈ A, u * u = u ∧ ∀ i j, (u - x) i j ∈ IsLocalRing.maximalIdeal B := by
+  classical
+  -- entrywise ideal membership is inherited through matrix products
+  have hmulL : ∀ (I : Ideal B) (X Y : Matrix n n B), (∀ i j, X i j ∈ I) →
+      ∀ i j, (X * Y) i j ∈ I := by
+    intro I X Y hX i j
+    rw [Matrix.mul_apply]
+    exact Ideal.sum_mem _ fun m _ => Ideal.mul_mem_right _ _ (hX i m)
+  have hmulR : ∀ (I : Ideal B) (X Y : Matrix n n B), (∀ i j, Y i j ∈ I) →
+      ∀ i j, (X * Y) i j ∈ I := by
+    intro I X Y hY i j
+    rw [Matrix.mul_apply]
+    exact Ideal.sum_mem _ fun m _ => Ideal.mul_mem_left _ _ (hY m j)
+  have hmulM : ∀ (I J : Ideal B) (X Y : Matrix n n B), (∀ i j, X i j ∈ I) →
+      (∀ i j, Y i j ∈ J) → ∀ i j, (X * Y) i j ∈ I * J := by
+    intro I J X Y hX hY i j
+    rw [Matrix.mul_apply]
+    exact Ideal.sum_mem _ fun m _ => Ideal.mul_mem_mul (hX i m) (hY m j)
+  -- Newton's map `f z = 3z² − 2z³`, written without numerals so that
+  -- membership in the subring `A` is immediate
+  set f : Matrix n n B → Matrix n n B :=
+    fun z => (z * z + z * z + z * z) - (z * z * z + z * z * z) with hf
+  have hfA : ∀ z ∈ A, f z ∈ A := by
+    intro z hz
+    simp only [hf]
+    exact A.sub_mem (A.add_mem (A.add_mem (A.mul_mem hz hz) (A.mul_mem hz hz))
+      (A.mul_mem hz hz))
+      (A.add_mem (A.mul_mem (A.mul_mem hz hz) hz) (A.mul_mem (A.mul_mem hz hz) hz))
+  -- the two polynomial identities: `f(z)² − f(z) = (z²−z)²((2z−1)²−4)` …
+  have hfsq : ∀ z : Matrix n n B, f z * f z - f z
+      = ((z * z - z) * (z * z - z)) * ((2 * z - 1) * (2 * z - 1) - 4) := by
+    intro z; simp only [hf]; noncomm_ring
+  -- … and `f(z) − z = −(2z−1)(z²−z)`
+  have hfdiff : ∀ z : Matrix n n B, f z - z = -((2 * z - 1) * (z * z - z)) := by
+    intro z; simp only [hf]; noncomm_ring
+  set seq : ℕ → Matrix n n B := fun m => f^[m] x with hseq
+  have hseq0 : seq 0 = x := rfl
+  have hseqS : ∀ m, seq (m + 1) = f (seq m) := fun m =>
+    Function.iterate_succ_apply' f m x
+  have hinvA : ∀ m, seq m ∈ A := by
+    intro m
+    induction m with
+    | zero => rw [hseq0]; exact hxA
+    | succ m ih => rw [hseqS]; exact hfA _ ih
+  -- quadratic convergence of the defect
+  have hinvP : ∀ m, ∀ p q, (seq m * seq m - seq m) p q ∈
+      IsLocalRing.maximalIdeal B ^ (2 ^ m) := by
+    intro m
+    induction m with
+    | zero => simpa [hseq0] using hx
+    | succ m ih =>
+      intro p q
+      rw [hseqS, hfsq]
+      refine hmulL _ _ _ (fun i j => ?_) p q
+      have h2 := hmulM _ _ _ _ ih ih i j
+      rwa [← pow_add, show 2 ^ m + 2 ^ m = 2 ^ (m + 1) by ring] at h2
+  have hdiff : ∀ m, ∀ p q, (seq (m + 1) - seq m) p q ∈
+      IsLocalRing.maximalIdeal B ^ (2 ^ m) := by
+    intro m p q
+    rw [hseqS, hfdiff]
+    have h1 := hmulR _ (2 * seq m - 1) (seq m * seq m - seq m) (hinvP m) p q
+    simpa using neg_mem h1
+  have hmono : ∀ m m', m ≤ m' → ∀ p q, (seq m' - seq m) p q ∈
+      IsLocalRing.maximalIdeal B ^ (2 ^ m) := by
+    intro m m' hle
+    induction m', hle using Nat.le_induction with
+    | base => intro p q; simp
+    | succ m' hle ih =>
+      intro p q
+      have hsplit : seq (m' + 1) - seq m
+          = (seq (m' + 1) - seq m') + (seq m' - seq m) := by noncomm_ring
+      rw [hsplit, Matrix.add_apply]
+      refine Ideal.add_mem _ ?_ (ih p q)
+      exact Ideal.pow_le_pow_right (Nat.pow_le_pow_right (by norm_num) hle)
+        (hdiff m' p q)
+  -- entrywise adic completeness produces the limit
+  have hprec : ∀ p q : n, ∃ L : B, ∀ m, seq m p q - L ∈
+      IsLocalRing.maximalIdeal B ^ m := by
+    intro p q
+    have hc : ∀ {a b : ℕ}, a ≤ b → seq a p q ≡ seq b p q
+        [SMOD (IsLocalRing.maximalIdeal B ^ a) • (⊤ : Submodule B B)] := by
+      intro a b hab
+      simp only [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+      refine Ideal.pow_le_pow_right (le_of_lt Nat.lt_two_pow_self) ?_
+      have h2 := hmono a b hab p q
+      have h3 : seq a p q - seq b p q = -((seq b - seq a) p q) := by simp
+      rw [h3]
+      exact neg_mem h2
+    obtain ⟨L, hL⟩ := hcompl.toIsPrecomplete.prec hc
+    refine ⟨L, fun m => ?_⟩
+    have h4 := hL m
+    simpa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] using h4
+  choose L hL using hprec
+  set u : Matrix n n B := Matrix.of fun p q => L p q with hu
+  have hLu : ∀ m p q, (seq m - u) p q ∈ IsLocalRing.maximalIdeal B ^ m := by
+    intro m p q
+    simpa [hu] using hL p q m
+  -- the limit is topological, so CLOSEDNESS of `A` keeps it inside `A`
+  have htend : Filter.Tendsto seq Filter.atTop (nhds u) := by
+    refine tendsto_pi_nhds.mpr fun p => tendsto_pi_nhds.mpr fun q => ?_
+    rw [(hadic.hasBasis_nhds (u p q)).tendsto_right_iff]
+    intro i _
+    filter_upwards [Filter.eventually_ge_atTop i] with N hN
+    exact ⟨seq N p q - u p q, Ideal.pow_le_pow_right hN (hLu N p q), by ring⟩
+  have huA : u ∈ A := hA.mem_of_tendsto htend (.of_forall fun m => hinvA m)
+  -- and separatedness turns the vanishing defect into an exact identity
+  have huu : u * u = u := by
+    have hall : ∀ p q, (u * u - u) p q = 0 := by
+      intro p q
+      refine hcompl.toIsHausdorff.haus _ (fun m => ?_)
+      simp only [SModEq.zero, smul_eq_mul, Ideal.mul_top]
+      have hus : ∀ i j, (u - seq m) i j ∈ IsLocalRing.maximalIdeal B ^ m := by
+        intro i j
+        have h5 := hLu m i j
+        have h6 : (u - seq m) i j = -((seq m - u) i j) := by simp
+        rw [h6]
+        exact neg_mem h5
+      have hsplit : u * u - u
+          = (u * u - seq m * seq m) + ((seq m * seq m - seq m) + (seq m - u)) := by
+        noncomm_ring
+      rw [hsplit, Matrix.add_apply, Matrix.add_apply]
+      refine Ideal.add_mem _ (matrix_sub_mem_mul _ hus hus p q)
+        (Ideal.add_mem _ ?_ (hLu m p q))
+      exact Ideal.pow_le_pow_right (le_of_lt Nat.lt_two_pow_self) (hinvP m p q)
+    ext p q
+    have h7 := hall p q
+    rw [Matrix.sub_apply, sub_eq_zero] at h7
+    exact h7
+  refine ⟨u, huA, huu, ?_⟩
+  intro p q
+  have h1 : u - x = -(seq 1 - u) + (seq 1 - seq 0) := by rw [hseq0]; noncomm_ring
+  rw [h1, Matrix.add_apply]
+  refine Ideal.add_mem _ ?_ ?_
+  · have h8 := hLu 1 p q
+    rw [pow_one] at h8
+    have h9 : (-(seq 1 - u)) p q = -((seq 1 - u) p q) := by simp
+    rw [h9]
+    exact neg_mem h8
+  · have h10 := hdiff 0 p q
+    simpa using h10
 
 /-- **Carayol's Théorème 1, step 2b: an idempotent of `M₂(B)` congruent to
 `E₁₁` is CONJUGATE to `E₁₁`** (PROVEN 2026-07-26, elementary and with an
@@ -9241,9 +9380,9 @@ theorem exists_conj_entries_mem_of_single_mem
 open scoped Matrix in
 /-- **Carayol's Théorème 1, step 2: a `C`-order in `M₂(B)` with split
 residual algebra is conjugate into `M₂(C)`** (PROVEN 2026-07-26 over the
-three sub-leaves `exists_isIdempotentElem_mem_of_sq_sub_mem` (open),
-`exists_conj_eq_single_of_mul_self` (PROVEN) and
-`exists_conj_entries_mem_of_single_mem` (open); cut 2026-07-26
+single sub-leaf `exists_conj_entries_mem_of_single_mem`, the two
+auxiliary nodes `exists_isIdempotentElem_mem_of_sq_sub_mem` and
+`exists_conj_eq_single_of_mul_self` being PROVEN; cut 2026-07-26
 out of `exists_framedGaloisRep_baseChange_traceSubring`; PURE ALGEBRA —
 no Galois representation and no arithmetic occurs in it): let `B` be a
 local topological ring whose topology is `𝔪`-adic, which is `𝔪`-adically
@@ -9284,8 +9423,8 @@ and a `B`-linear automorphism at once) to an instance of
 `exists_conj_entries_mem_of_single_mem`, whose conjugation `E₁` composes
 with `E₀` into the required `E = E₀E₁`.
 
-What is left open is therefore exactly two things: the `𝔪`-adic Newton
-iteration, and the Peirce/grading argument. The latter runs: after the
+What is left open is therefore exactly ONE thing, the Peirce/grading
+argument, which runs: after the
 conjugation `E₁₁, E₂₂ ∈ A'` and `A' = ⨁ᵢⱼ EᵢᵢA'Eⱼⱼ` with each summand a
 rank-one `C`-submodule `C·aᵢⱼ` of `B`. The diagonal ones contain `1` and
 are closed under multiplication, so `a₁₁, a₂₂ ∈ C^×` and `A₁₁ = A₂₂ = C`;
