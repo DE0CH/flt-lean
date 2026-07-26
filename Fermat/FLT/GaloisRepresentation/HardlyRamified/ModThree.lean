@@ -37878,9 +37878,266 @@ theorem exists_subgroup_of_independent_ray_class
     rw [hw1, hf1, one_mul] at h1
     exact h1.symm
 
+/-- **The fixer of `μ_m` inside `Γ F`, as a subgroup** (PROVEN 2026-07-26;
+created the same day so that `exists_artinPackage_ray_class` below can be
+glue rather than a monolith — it is `Γ_{F(ζ_m)}`, the group `C_m` of
+Childress's Lemma 5.2.8). Membership unfolds definitionally to the
+`∀ ζ, ζ ^ m = 1 → x ζ = ζ` that this cluster's statements are phrased
+with, so no translation lemma is ever needed at a call site. -/
+def muFixerRayClass (F : Type u) [Field F] (m : ℕ) : Subgroup (Γ F) where
+  carrier := {x | ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → x ζ = ζ}
+  one_mem' := fun ζ _ => rfl
+  mul_mem' := by
+    intro a b ha hb ζ hζ
+    show a (b ζ) = ζ
+    rw [hb ζ hζ]; exact ha ζ hζ
+  inv_mem' := by
+    intro a ha ζ hζ
+    have h3 : a⁻¹ (a ζ) = ζ := by
+      show (a⁻¹ * a) ζ = ζ
+      rw [inv_mul_cancel]; rfl
+    rw [ha ζ hζ] at h3
+    exact h3
+
+/-- **`μ_m`'s fixer is NORMAL** (PROVEN 2026-07-26): `F(ζ_m)/F` is
+Galois, and in group terms that is the one-line computation
+`(σ x σ⁻¹) ζ = σ (x (σ⁻¹ ζ)) = σ (σ⁻¹ ζ) = ζ`, whose only input is that
+`σ⁻¹ ζ` is again an `m`-th root of unity — `(σ⁻¹ ζ) ^ m = σ⁻¹ (ζ ^ m) = 1`
+by `map_pow` and `map_one`. -/
+instance muFixerRayClass_normal (F : Type u) [Field F] (m : ℕ) :
+    (muFixerRayClass F m).Normal := by
+  constructor
+  intro x hx σ ζ hζ
+  have hinv : (σ⁻¹ ζ) ^ m = 1 := by rw [← map_pow, hζ, map_one]
+  have h1 : x (σ⁻¹ ζ) = σ⁻¹ ζ := hx (σ⁻¹ ζ) hinv
+  show σ (x (σ⁻¹ ζ)) = ζ
+  rw [h1]
+  show (σ * σ⁻¹) ζ = ζ
+  rw [mul_inv_cancel]; rfl
+
+/-- **The kernel of a multiplicative `χ`, as a subgroup** (PROVEN
+2026-07-26; the companion of `muFixerRayClass` above, and the group `N`
+of Childress's Lemma 5.2.8). Closure under inverses is the only step with
+any content and it is two rewrites: `χ a · χ a⁻¹ = χ 1 = 1`, so `χ a = 1`
+forces `χ a⁻¹ = 1`. Note that `χ 1 = 1` is NOT automatic for a
+multiplicative map into a monoid — it is passed in as `h1`, and at every
+call site in this cluster it comes from `hVker 1 V.one_mem`. -/
+def charKernelRayClass {F : Type u} [Field F] {M : Type*} [CommMonoid M]
+    (χ : Γ F → M) (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b) (h1 : χ 1 = 1) :
+    Subgroup (Γ F) where
+  carrier := {x | χ x = 1}
+  one_mem' := h1
+  mul_mem' := by
+    intro a b ha hb
+    show χ (a * b) = 1
+    rw [hmul, ha, hb, one_mul]
+  inv_mem' := by
+    intro a ha
+    show χ a⁻¹ = 1
+    have h : χ a * χ a⁻¹ = 1 := by rw [← hmul, mul_inv_cancel, h1]
+    rwa [ha, one_mul] at h
+
+/-- **`ker χ` is NORMAL** (PROVEN 2026-07-26), because the target is
+COMMUTATIVE: `χ (σ x σ⁻¹) = χ σ · χ x · χ σ⁻¹ = χ x · (χ σ · χ σ⁻¹) = χ x`.
+This is the same observation that makes `χ` a class function, and it is
+the reason the conjugator quantifier in `IsRamifiedCharRayClass` below is
+inert. -/
+instance charKernelRayClass_normal {F : Type u} [Field F] {M : Type*} [CommMonoid M]
+    (χ : Γ F → M) (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b) (h1 : χ 1 = 1) :
+    (charKernelRayClass χ hmul h1).Normal := by
+  constructor
+  intro x hx σ
+  show χ (σ * x * σ⁻¹) = 1
+  have hx' : χ x = 1 := hx
+  rw [hmul, hmul, hx', mul_one, ← hmul, mul_inv_cancel, h1]
+
+/-- **THE PACKAGE IS PURE GROUP THEORY ONCE THE TWO SUBGROUPS ARE GIVEN**
+(PROVEN 2026-07-26, axiom-clean; created the same day as sub-leaf
+(A3a-1-0) of `exists_artinPackage_ray_class` just below, which is now
+glue over this lemma and the arithmetic leaf (A3a-1-1)
+`exists_artinModulus_ray_class`).
+
+This lemma manufactures the two COMMUTATIVE quotients and the two
+homomorphisms that the package asks for, out of nothing but the two
+subgroups they are the kernels of. Read `Kχ` as `ker χ` and `Cm` as
+`Γ_{F(ζ_m)}`; then `A = Q/Kχ` is `Gal(K/F)` and `B = Q/Cm` is
+`Gal(F(ζ_m)/F)`.
+
+**Why the commutativity hypotheses are stated as commutator memberships.**
+`Q/N` is commutative exactly when every commutator lies in `N`, and
+`QuotientGroup.eq` matches the shape `(x y)⁻¹ (y x) ∈ N` literally, so
+each `CommGroup` instance is a two-line `rintro ⟨a⟩ ⟨b⟩`. Stating them
+this way rather than as "`N` contains the commutator subgroup" keeps the
+call sites free of `Subgroup.commutator` API.
+
+**The openness clause is delivered, not assumed, by
+`Subgroup.isOpen_mono`**: any subgroup containing the open `Kχ ⊓ Cm` is
+open. That is the whole reason the consumer of the package needs no
+topology — exactly as the package's docstring below promises.
+
+Every other clause is a one-step transport across `QuotientGroup.mk'`:
+`eq_one_iff` for the two kernel characterisations, `map_zpow`/`map_pow`
+for the exponent and divisibility clauses, and `mul_inv_eq_one` for the
+cyclicity clause (whose hypothesis is stated as `x * w ^ (-i) ∈ Kχ`
+precisely so that it transports without needing `χ` to be unit-valued —
+`Dickson.K 3` is a field, so a `zpow` of `χ w` is not available, and
+phrasing the generation condition inside the GROUP `Γ F` avoids the
+question entirely). -/
+theorem exists_artinPackage_of_subgroups_ray_class
+    {Q : Type u} [Group Q] [TopologicalSpace Q] [IsTopologicalGroup Q]
+    (Kχ Cm : Subgroup Q) [Kχ.Normal] [Cm.Normal]
+    (hKcomm : ∀ x y : Q, (x * y)⁻¹ * (y * x) ∈ Kχ)
+    (hCcomm : ∀ x y : Q, (x * y)⁻¹ * (y * x) ∈ Cm)
+    (hopen : IsOpen ((Kχ ⊓ Cm : Subgroup Q) : Set Q))
+    (n : ℕ) (w f : Q)
+    (hgen : ∀ x : Q, ∃ i : ℤ, x * w ^ (-i) ∈ Kχ)
+    (hexp : ∀ x : Q, x ^ n ∈ Kχ)
+    (hwB : ∀ i : ℤ, w ^ i ∈ Cm → (n : ℤ) ∣ i)
+    (hfB : ∀ j : ℤ, f ^ j ∈ Cm → (n : ℤ) ∣ j)
+    (hind : ∀ i j : ℤ, w ^ i * f ^ j ∈ Cm → w ^ i ∈ Cm ∧ f ^ j ∈ Cm) :
+    ∃ (A B : Type u) (_ : CommGroup A) (_ : CommGroup B)
+      (cA : Q →* A) (cB : Q →* B),
+      (∀ x : Q, cA x = 1 ↔ x ∈ Kχ) ∧
+      (∀ x : Q, cB x = 1 ↔ x ∈ Cm) ∧
+      (∀ x : Q, ∃ i : ℤ, cA x = cA w ^ i) ∧
+      (∀ x : Q, cA x ^ n = 1) ∧
+      (∀ i : ℤ, cB w ^ i = 1 → (n : ℤ) ∣ i) ∧
+      (∀ j : ℤ, cB f ^ j = 1 → (n : ℤ) ∣ j) ∧
+      (∀ i j : ℤ, cB w ^ i * cB f ^ j = 1 → cB w ^ i = 1 ∧ cB f ^ j = 1) ∧
+      (∀ H : Subgroup Q, (∀ x : Q, x ∈ Kχ → x ∈ Cm → x ∈ H) → IsOpen (H : Set Q)) := by
+  letI cgA : CommGroup (Q ⧸ Kχ) :=
+    { QuotientGroup.Quotient.group Kχ with
+      mul_comm := by
+        rintro ⟨a⟩ ⟨b⟩
+        exact QuotientGroup.eq.mpr (hKcomm a b) }
+  letI cgB : CommGroup (Q ⧸ Cm) :=
+    { QuotientGroup.Quotient.group Cm with
+      mul_comm := by
+        rintro ⟨a⟩ ⟨b⟩
+        exact QuotientGroup.eq.mpr (hCcomm a b) }
+  refine ⟨Q ⧸ Kχ, Q ⧸ Cm, cgA, cgB, QuotientGroup.mk' Kχ, QuotientGroup.mk' Cm,
+    fun x => QuotientGroup.eq_one_iff x, fun x => QuotientGroup.eq_one_iff x,
+    ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · intro x
+    obtain ⟨i, hi⟩ := hgen x
+    refine ⟨i, ?_⟩
+    have h1 : (QuotientGroup.mk' Kχ) (x * w ^ (-i)) = 1 :=
+      (QuotientGroup.eq_one_iff _).mpr hi
+    rw [map_mul, map_zpow] at h1
+    have h2 : (QuotientGroup.mk' Kχ) x * ((QuotientGroup.mk' Kχ) w ^ i)⁻¹ = 1 := by
+      rwa [zpow_neg] at h1
+    exact mul_inv_eq_one.mp h2
+  · intro x
+    have h1 : (QuotientGroup.mk' Kχ) (x ^ n) = 1 := (QuotientGroup.eq_one_iff _).mpr (hexp x)
+    rwa [map_pow] at h1
+  · intro i hi
+    refine hwB i ((QuotientGroup.eq_one_iff _).mp ?_)
+    show (QuotientGroup.mk' Cm) (w ^ i) = 1
+    rw [map_zpow]; exact hi
+  · intro j hj
+    refine hfB j ((QuotientGroup.eq_one_iff _).mp ?_)
+    show (QuotientGroup.mk' Cm) (f ^ j) = 1
+    rw [map_zpow]; exact hj
+  · intro i j hij
+    have h1 : (QuotientGroup.mk' Cm) (w ^ i * f ^ j) = 1 := by
+      rw [map_mul, map_zpow, map_zpow]; exact hij
+    obtain ⟨hw, hf⟩ := hind i j ((QuotientGroup.eq_one_iff _).mp h1)
+    refine ⟨?_, ?_⟩
+    · rw [← map_zpow]; exact (QuotientGroup.eq_one_iff _).mpr hw
+    · rw [← map_zpow]; exact (QuotientGroup.eq_one_iff _).mpr hf
+  · intro H hH
+    exact Subgroup.isOpen_mono (H₁ := Kχ ⊓ Cm) (fun x hx => hH x hx.1 hx.2) hopen
+
 set_option maxHeartbeats 1000000 in
-/-- **The arithmetic package behind Artin's Lemma** (sorry node, created
-2026-07-26 as sub-leaf (A3a-1) of `exists_artinAuxiliaryField_ray_class`
+/-- **THE AUXILIARY MODULUS OF CHILDRESS 5.2.7, WITH NO GROUP-THEORETIC
+PACKAGING** (sorry node, created 2026-07-26 as sub-leaf (A3a-1-1) of
+`exists_artinPackage_ray_class` just below, which is now PROVEN as glue
+over this leaf and the pure group theory (A3a-1-0)
+`exists_artinPackage_of_subgroups_ray_class` just above).
+
+**This is the whole of the arithmetic, and none of the bookkeeping.**
+Where the package below asks for two abstract commutative groups with
+homomorphisms out of `Γ F`, this leaf asks only for the modulus `m`, the
+exponent `n` and the element `w`, and states every condition directly in
+terms of `χ` and of the action on the `m`-th roots of unity. Constructing
+`Gal(K/F)` and `Gal(F(ζ_m)/F)` out of that data — including their
+commutativity, and the openness of every subgroup containing
+`ker χ ⊓ Γ_{F(ζ_m)}` — is discharged above.
+
+A witness must supply:
+
+* `m` avoiding the primes of `S` and the residue characteristic of `p`
+  (Childress 2.6 over 2.3–2.5: elementary number theory in `ℕ`, whose own
+  input is Dirichlet on primes in arithmetic progressions, which IS in
+  the pin as `Nat.forall_exists_prime_gt_and_eq_mod`);
+* clause (iii) `ker χ · Γ_{F(ζ_m)} = Γ F`, i.e. `K ∩ F(ζ_m) = F`;
+* **that the action on `μ_m` is ABELIAN** — `(x y) ζ = (y x) ζ` for every
+  `m`-th root of unity `ζ`. This is the one clause the packaging cannot
+  manufacture, and it is exactly the statement that the `μ_m`-action
+  factors through `(ℤ/mℤ)ˣ`;
+* **openness of `ker χ ⊓ Γ_{F(ζ_m)}`**. `ker χ` is open by `hVopen`, and
+  `Γ_{F(ζ_m)}` is open because `F(ζ_m)/F` is finite; it is asked for as a
+  single clause because that is the only form the packaging consumes;
+* a generator `w` and an exponent `n` for the image of `χ` — cyclic
+  because that image is a finite subgroup of the units of a field, and
+  FINITE because `hVopen` makes `ker χ` open in the compact `Γ F`. Note
+  the generation clause is `∃ i : ℤ, χ (x * w ^ (-i)) = 1` rather than
+  `χ x = χ w ^ i`: `Dickson.K 3` is a field and `χ` is not known to be
+  unit-valued, so the `zpow` must happen in the GROUP `Γ F`;
+* the divisibility and INDEPENDENCE conditions of Childress 2.7(ii),(iii)
+  relating `w` and `globalFrob p` inside `Gal(F(ζ_m)/F)`.
+
+**The Minkowski step is the one genuinely global input.** Because `m` is
+prime to every prime ramifying in `F/ℚ`, the field `F ∩ ℚ(ζ_m)` is
+everywhere unramified over `ℚ`, hence equals `ℚ`; therefore
+`Gal(F(ζ_m)/F) ≅ (ℤ/mℤ)ˣ` and the cyclotomic character of `F` is
+SURJECTIVE for this particular `m`. **That is why this cluster's standing
+warning — "do not build the character `ψ` of `(ℤ/mℤ)ˣ`, because the
+cyclotomic character need not be surjective when `F` already contains
+`m`-th roots of unity" — does not apply here**, and a next owner may
+legitimately take the `μ_m`-side group to be `(ZMod m)ˣ`. The choice of
+`m` is exactly what rules out the bad case.
+
+**FAITHFULNESS.** Non-vacuous: the independence clause together with the
+exponent clause is what forces clause (ii) of the ultimate consumer, and
+the `q.Prime` guard on the `S`-avoidance clause is required — see the
+FALSITY AUDIT on `exists_artinAuxiliaryField_ray_class` below, where the
+unguarded form was refuted by `S = {1}`. The abelian-action clause is not
+decoration either: without it `Gal(F(ζ_m)/F)` cannot be given a
+`CommGroup` structure, and `Subgroup.mem_closure_pair` — the whole engine
+of Childress 2.8 — is a commutative-group lemma. -/
+theorem exists_artinModulus_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (S : Finset ℕ) :
+    ∃ (m n : ℕ) (w : Γ F), 0 < m ∧ (∀ q ∈ S, q.Prime → ¬ q ∣ m) ∧
+      (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
+      (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
+      (∀ x y : Γ F, ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (x * y) ζ = (y * x) ζ) ∧
+      IsOpen {x : Γ F | χ x = 1 ∧ ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → x ζ = ζ} ∧
+      (∀ x : Γ F, ∃ i : ℤ, χ (x * w ^ (-i)) = 1) ∧
+      (∀ x : Γ F, χ (x ^ n) = 1) ∧
+      (∀ i : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w ^ i) ζ = ζ) → (n : ℤ) ∣ i) ∧
+      (∀ j : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ) →
+        (n : ℤ) ∣ j) ∧
+      (∀ i j : ℤ, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 →
+          (w ^ i * (globalFrob p) ^ j) ζ = ζ) →
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → (w ^ i) ζ = ζ) ∧
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ((globalFrob p) ^ j) ζ = ζ)) :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The arithmetic package behind Artin's Lemma**
+(**PROVEN 2026-07-26** as glue over its two new sub-leaves (A3a-1-0)
+`exists_artinPackage_of_subgroups_ray_class` — pure group theory, itself
+PROVEN — and (A3a-1-1) `exists_artinModulus_ray_class`, which carries all
+the arithmetic; see the DECOMPOSED note at the end of this docstring.
+Created 2026-07-26 as sub-leaf (A3a-1) of `exists_artinAuxiliaryField_ray_class`
 just below, which is now PROVEN as glue over this leaf and the
 finite-group lemma `exists_subgroup_of_independent_ray_class` just
 above): the auxiliary modulus `m` of Childress Lemma 5.2.7 together with
@@ -37928,7 +38185,34 @@ all `x`, contradicting `hgen`+`hexp` only if `χ` is nontrivial — so a
 witness with trivial `A` exists precisely when `χ` is trivial, which is
 the degenerate case the consumer handles correctly anyway). The
 `q.Prime` guard on the `S`-avoidance clause is required: see the FALSITY
-AUDIT on the consumer below. -/
+AUDIT on the consumer below.
+
+**DECOMPOSED AND PROVEN 2026-07-26.** The seam is between the ARITHMETIC
+and the GROUP-THEORETIC PACKAGING, and it turns out the packaging is all
+of the latter and none of the former:
+
+* `A` and `B` are constructed as the honest quotients `Γ F / ker χ` and
+  `Γ F / Γ_{F(ζ_m)}`, using the two new subgroup definitions
+  `charKernelRayClass` and `muFixerRayClass` above (both PROVEN, with
+  their normality). Membership in each unfolds DEFINITIONALLY to the
+  `χ x = 1` and `∀ ζ, ζ ^ m = 1 → x ζ = ζ` that this cluster's statements
+  are written with, so the six transported clauses need no translation
+  lemmas at all;
+* their COMMUTATIVITY is supplied here: for `ker χ` from the
+  commutativity of `Dickson.K 3` (`χ (y x) = χ (x y)`, so every
+  commutator is killed), and for `Γ_{F(ζ_m)}` from the leaf's
+  abelian-action clause `(x y) ζ = (y x) ζ`. That clause is the ONE
+  thing the packaging cannot manufacture, which is why it appears in the
+  arithmetic leaf rather than here;
+* the openness clause is `Subgroup.isOpen_mono` applied to
+  `ker χ ⊓ Γ_{F(ζ_m)}`, whose openness the leaf supplies as a single
+  set-level statement; the conversion to the subgroup's coercion is
+  `Set.ext fun x => Iff.rfl`.
+
+What is left in `exists_artinModulus_ray_class` is exactly Childress
+2.3–2.7: the modulus, Minkowski, the cyclicity and finiteness of the
+image of `χ`, and the independence of `w` from `globalFrob p` on `μ_m`.
+Nothing about groups, quotients or topology remains there. -/
 theorem exists_artinPackage_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -37952,8 +38236,41 @@ theorem exists_artinPackage_ray_class
         (∀ i j : ℤ, cB w ^ i * cB (globalFrob p) ^ j = 1 →
           cB w ^ i = 1 ∧ cB (globalFrob p) ^ j = 1) ∧
         (∀ H : Subgroup (Γ F), (∀ x : Γ F, cA x = 1 → cB x = 1 → x ∈ H) →
-          IsOpen (H : Set (Γ F))) :=
-  sorry
+          IsOpen (H : Set (Γ F))) := by
+  have h1 : χ 1 = 1 := hVker 1 V.one_mem
+  -- (A3a-1-1): the modulus, the exponent and the generator, stated in terms of `χ`
+  obtain ⟨m, n, w, hm0, hmS, hmp, hiii, hcomm, hopencap, hgen, hexp, hwB, hfB, hind⟩ :=
+    exists_artinModulus_ray_class F χ hmul V hVopen hVker p S
+  refine ⟨m, hm0, hmS, hmp, hiii, ?_⟩
+  -- `ker χ` has commutative quotient because `Dickson.K 3` is commutative
+  have hKcomm : ∀ x y : Γ F, (x * y)⁻¹ * (y * x) ∈ charKernelRayClass χ hmul h1 := by
+    intro x y
+    show χ ((x * y)⁻¹ * (y * x)) = 1
+    rw [hmul]
+    have hi : χ (x * y)⁻¹ * χ (x * y) = 1 := by rw [← hmul, inv_mul_cancel, h1]
+    have hc : χ (y * x) = χ (x * y) := by rw [hmul, hmul, mul_comm]
+    rw [hc, hi]
+  -- `Γ_{F(ζ_m)}` has commutative quotient by the abelian-action clause of the leaf
+  have hCcomm : ∀ x y : Γ F, (x * y)⁻¹ * (y * x) ∈ muFixerRayClass F m := by
+    intro x y ζ hζ
+    show (x * y)⁻¹ ((y * x) ζ) = ζ
+    rw [← hcomm x y ζ hζ]
+    show ((x * y)⁻¹ * (x * y)) ζ = ζ
+    rw [inv_mul_cancel]; rfl
+  have hcap : IsOpen ((charKernelRayClass χ hmul h1 ⊓ muFixerRayClass F m :
+      Subgroup (Γ F)) : Set (Γ F)) := by
+    have hset : ((charKernelRayClass χ hmul h1 ⊓ muFixerRayClass F m :
+        Subgroup (Γ F)) : Set (Γ F))
+        = {x : Γ F | χ x = 1 ∧ ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → x ζ = ζ} :=
+      Set.ext fun x => Iff.rfl
+    rw [hset]; exact hopencap
+  -- (A3a-1-0): the two commutative quotients and the six transported clauses
+  obtain ⟨A, B, cgA, cgB, cA, cB, hA, hB, hgen', hexp', hwB', hfB', hind', hopen'⟩ :=
+    exists_artinPackage_of_subgroups_ray_class
+      (charKernelRayClass χ hmul h1) (muFixerRayClass F m) hKcomm hCcomm hcap
+      n w (globalFrob p) hgen hexp hwB hfB hind
+  exact ⟨A, B, cgA, cgB, cA, cB, n, w, hA, hB, hgen', hexp', hwB', hfB', hind',
+    fun H hH => hopen' H fun x hx1 hx2 => hH x ((hA x).mpr hx1) ((hB x).mpr hx2)⟩
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin's Lemma (Childress 5.2.8), in profinite form over `Γ F`**
