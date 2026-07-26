@@ -701,7 +701,41 @@ with `Z2bar` in the source slot instead of an `IntegralClosure`:
   that into `IsIntegral (Valued.v).integer z` — which needs a
   `Valued ℚ_[2] ℝ≥0` (`NormedField.toValued`) together with its `RankOne`,
   neither of which mathlib provides for `ℚ_[2]` (it provides both for
-  `PadicAlgCl 2`), so they must be built;
+  `PadicAlgCl 2`);
+
+  **A MEASURED WARNING ON THAT STEP, so the next owner does not lose the
+  cycle this one lost.** Building those two instances is easy — `RankOne`
+  copies `PadicAlgCl`'s (`hom' := MonoidWithZeroHom.ValueGroup₀.embedding`,
+  `strictMono' := embedding_strictMono`, nontriviality witnessed by `2`,
+  whose norm is `1/2` by `Padic.norm_p`) and both elaborate in seconds. The
+  step that does NOT work is then applying
+  `isIntegral_of_spectralNorm_le_one` at `K := ℚ_[2]`: that lemma is stated
+  under `attribute [local instance] Valued.toNormedField`, so the
+  `spectralNorm ℚ_[2] _` in ITS hypothesis is taken with respect to
+  `Valued.toNormedField (NormedField.toValued)` — whose norm is
+  `RankOne.hom (Valued.v.restrict x)` — while `Z2bar` and `PadicAlgCl`'s
+  own `spectralNorm` are taken with respect to `Padic.instNormedField`.
+  The two `NormedField ℚ_[2]` structures are propositionally but not
+  definitionally equal, and unification between them **diverges**: the
+  application times out at `whnf` even at `maxHeartbeats 2000000`, so it is
+  not a resource-limit problem and a bump will not fix it. (This is the
+  same class of trap as the two `Algebra ℚ (v.adicCompletion ℚ)` instances
+  handled by the `letI` in `exists_ringEquiv_padicTwo_adicCompletion`,
+  which is why that `letI` is there.)
+
+  Two ways round it, neither attempted here. (a) Prove the roundtrip
+  `Valued.v.norm = (‖·‖)` on `ℚ_[2]` — mathlib does exactly this for
+  `ℂ_[p]` in `PadicComplex.norm_eq_norm'`, and
+  `Valued.toNormedField.norm_le_one_iff` already gives the `≤ 1` half,
+  which may be all that is needed since `spectralValue p ≤ 1` depends only
+  on which coefficients have norm `≤ 1`. (b) Avoid `ℚ_[2]` on the
+  integrality side altogether: apply `isIntegral_of_spectralNorm_le_one` at
+  `K := v.adicCompletion ℚ`, where the adic `Valued` instance is the only
+  one in play and no competing `NormedField` exists — for which one needs
+  `e` to compare spectral norms, and mathlib's
+  `Rat.HeightOneSpectrum.adicCompletion.padicEquiv_bijOn` (`e` carries
+  `𝒪_v` BIJECTIVELY onto the norm-`≤ 1` subring of `ℚ_[2]`) is the
+  quantitative input that direction wants;
 * `he` says `e` carries `ℤ_[2]` into `𝒪_v`, so
   `IsIntegral.map_of_comp_eq` along `AlgebraicClosure.map e` turns that
   into `IsIntegral 𝒪_v (AlgebraicClosure.map e z)`, i.e. gives a ring hom
