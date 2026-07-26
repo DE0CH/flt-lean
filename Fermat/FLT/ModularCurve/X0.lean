@@ -91,7 +91,13 @@ sorried inputs:
 1. `exists_coarseModuliY0 N` — the `Γ₀(N)`-moduli problem over `ℚ` admits
    a coarse moduli space.  TRUE: this is the classical existence
    statement for `Y_0(N)` (Deligne–Rapoport, Katz–Mazur; or classically
-   via the `j`-line and the modular polynomial).
+   via the `j`-line and the modular polynomial).  It is now PROVEN from a
+   split of the level: `exists_coarseModuliY0_of_pos` (`N ≥ 1`) carries
+   the citation — Katz–Mazur Theorem 6.6.1 and (8.1.1), together with a
+   faithfulness audit of the one place where this module's level
+   structure is weaker than theirs — and `exists_coarseModuliY0_zero`
+   disposes of `N = 0`, which lies outside their theorem, from the
+   elementary leaf `isEmpty_of_gamma0Datum_zero`.
 
 2. The bridge from the Weierstrass phrasing to the moduli problem.  This
    was one node, `nonempty_gamma0Datum_of_stable`; it is now PROVEN
@@ -170,6 +176,10 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Fermat.FLT.EllipticCurve.Torsion
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Defs
+-- `emptyIsInitial`, `isInitialOfIsEmpty`: the empty scheme as the initial
+-- object, which is the coarse moduli space of the (empty) `Γ₀(0)`-problem
+-- in `exists_coarseModuliY0_zero`.
+public import Mathlib.AlgebraicGeometry.Limits
 
 @[expose] public section
 
@@ -372,21 +382,169 @@ def Y0HasNoRationalPoint (N : ℕ) : Prop :=
 
 /-! ### The existence of `Y_0(N)`, and the bridge from Weierstrass curves -/
 
-/-- **Existence of the coarse moduli space `Y_0(N)`** (sorry node).
+/-- **The `Γ₀(0)`-moduli problem is supported on the empty scheme** (sorry
+leaf).
 
-TRUE, and classical: the moduli problem `[Γ₀(N)]` over `ℚ` is a separated
-Deligne–Mumford stack of finite type, hence has a coarse moduli space
-(Deligne–Rapoport, *Les schémas de modules de courbes elliptiques*,
-Antwerp II, 1973; Katz–Mazur, *Arithmetic moduli of elliptic curves*,
-1985).  Classically one may instead construct it by hand as the
-normalisation of the plane curve cut out by the modular polynomial
-`Φ_N(X, Y)` inside `𝔸¹ × 𝔸¹`, with the classifying map
-`(E, C) ↦ (j(E), j(E/C))`.
+TRUE, and *elementary* — no modular-curve theory enters.  Suppose
+`d : Gamma0Datum 0 T` and `T` had a point `x`.  Embedding the residue field
+`κ(x)` into an algebraic closure `K` gives a geometric point
+`t : Spec K ⟶ T`, and `d.cyc.geom_cyclic K t` then supplies a relative point
+`y` with `addOrderOf y = 0` — that is, of *infinite* order — such that the
+points of `d.cyc.C` above `t` are exactly `AddSubgroup.zmultiples y`.  But
+`d.cyc.isFinite` makes `d.cyc.ι ≫ d.f` a finite morphism, so the fibre of
+`d.cyc.C` over `t` is `Spec` of a finite-dimensional `K`-algebra and has only
+finitely many `K`-points, whereas `AddSubgroup.zmultiples y ≃ ℤ` is infinite.
+Contradiction, so `T` has no point at all.
 
-IRREDUCIBLE at this mathlib pin: no modular curve, no modular polynomial,
-no moduli stack and no coarse-space existence theorem exists anywhere in
-`Mathlib` or in `~/cs/FLT` (surveyed 2026-07-26). -/
-theorem exists_coarseModuliY0 (N : ℕ) :
+WHY THIS IS A SEPARATE LEAF.  `[Γ₀(N)]` is a moduli problem only for
+`N ≥ 1`, so `N = 0` is *outside* the Katz–Mazur theorem cited at
+`exists_coarseModuliY0_of_pos` below.  Splitting it off is what makes that
+citation honest: the cited theorem really does prove the `N ≥ 1` half, and
+this degenerate half — the only part of `exists_coarseModuliY0` reachable at
+this pin — is separated out rather than silently folded into the citation.
+
+REACHABLE.  Formalising the argument needs exactly three things, all
+present: stability of `IsFinite` under base change
+(`AlgebraicGeometry.IsFinite` is an `IsStableUnderBaseChange` morphism
+property), affineness of a scheme finite over a field, and the finiteness of
+the set of `K`-algebra maps out of an Artinian `K`-algebra. -/
+theorem isEmpty_of_gamma0Datum_zero {T : Scheme.{0}} (d : Gamma0Datum 0 T) :
+    IsEmpty T :=
+  sorry
+
+/-- **Existence of the coarse moduli space, degenerate level `N = 0`**
+(PROVEN, from `isEmpty_of_gamma0Datum_zero`).
+
+VACUITY AUDIT — read this before consuming it.  By
+`isEmpty_of_gamma0Datum_zero` the `Γ₀(0)`-problem has no object over any
+nonempty base, so the empty scheme `∅ ⟶ Spec ℚ` is a coarse moduli space
+for it, for the cheapest possible reason: every base carrying a datum is
+*initial*, so all three clauses of `IsCoarseModuliY0` are equalities of
+morphisms out of an initial object.  This carries **no** arithmetic
+whatsoever, and in particular `Y0HasNoRationalPoint 0` is NOT thereby a
+statement about a modular curve.  It is recorded only so that
+`exists_coarseModuliY0` can be stated for every `N` while the citation
+below is restricted, correctly, to `N ≥ 1`. -/
+theorem exists_coarseModuliY0_zero :
+    ∃ (Y : Scheme.{0}) (str : Y ⟶ SpecQ), Nonempty (IsCoarseModuliY0 0 str) := by
+  classical
+  refine ⟨(∅ : Scheme.{0}), emptyIsInitial.to SpecQ, ⟨?_⟩⟩
+  -- Every base carrying a `Γ₀(0)`-datum is an initial scheme.
+  have hinit : ∀ {T : Scheme.{0}}, Gamma0Datum 0 T → Limits.IsInitial T := by
+    intro T d
+    have : IsEmpty T := isEmpty_of_gamma0Datum_zero d
+    exact isInitialOfIsEmpty
+  exact
+    { classify := fun {_T} _g d => ⟨(hinit d).to _, (hinit d).hom_ext _ _⟩
+      classify_natural := fun {_T' _T} _h {_g _g'} _hg {d'} {_d} _hbc =>
+        Subtype.ext ((hinit d').hom_ext _ _)
+      universal := fun {Y'} _str' _c _hc =>
+        ⟨emptyIsInitial.to Y',
+          ⟨emptyIsInitial.hom_ext _ _, fun {_T} _g d => (hinit d).hom_ext _ _⟩,
+          fun _u _hu => emptyIsInitial.hom_ext _ _⟩ }
+
+/-- **Existence of the coarse moduli space `Y_0(N)` for `N ≥ 1`** (sorry
+node — a CITATION, not a gap in the argument).
+
+## What is cited
+
+Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*, Annals of Mathematics
+Studies 108, Princeton, 1985:
+
+* **Theorem 6.6.1** (p. 166): *the moduli problem `[Γ₀(N)]` is relatively
+  representable over `(Ell)`; it is finite and flat over `(Ell)` of degree
+  `(N²/φ(N))·∏_{p ∣ N}(1 − p⁻²)`, and is regular and two-dimensional.*
+* **(8.1.1)** (p. 224), the construction of the coarse moduli scheme:
+  *let `R` be a ring and `𝒫` a relatively representable moduli problem on
+  `(Ell/R)` which is affine over `(Ell/R)`.*  Locally on `R` pick `n ≥ 3`
+  invertible and a representable `𝒮` finite étale galois over `(Ell/R)`
+  with group `G` — e.g. `𝒮 = [Γ(n)]`, `G = GL₂(ℤ/nℤ)` — and set
+  `M(𝒫) = 𝔐(𝒫, 𝒮)/G`.  Katz–Mazur note that this "exists because
+  `𝔐(𝒫, 𝒮)` is itself affine", and is independent of the choice of `𝒮`,
+  so the local constructions patch.
+* **(8.1.3)** (pp. 224–225): the canonical `G`-equivariant *classifying map*
+  `S → M(𝒫)` attached to `E/S` with a level `𝒫`-structure, again
+  independent of the auxiliary `n`.  This is `classify`, and its
+  construction by descent along `S_n → S` is what makes it natural in `S`,
+  i.e. `classify_natural`.
+* **Lemma 8.1.3.1** (p. 225): for `k` algebraically closed, `M(𝒫)(k)` is
+  the set of `k`-isomorphism classes of elliptic curves with `𝒫`-structure.
+
+The **initiality** clause is not part of Katz–Mazur's *definition* — they
+define `M(𝒫)` by the quotient construction rather than by a universal
+property — but it follows from it: `𝔐(𝒫, [Γ(n)])` is affine, so the
+quotient of (8.1.1) is `Spec` of the ring of invariants, and that is a
+categorical quotient in the category of all schemes (Katz–Mazur Chapter 7,
+*Quotients by finite groups*, and its Appendix *Base change for rings of
+invariants*; Mumford, *Geometric Invariant Theory*, Ch. 0 §2).  Initiality
+of `(Y, classify)` in `IsCoarseModuliY0` is exactly that categorical-quotient
+property transported along (8.1.3).
+
+Deligne–Rapoport, *Les schémas de modules de courbes elliptiques*, in
+*Modular Functions of One Variable II*, Lecture Notes in Math. 349 (1973),
+143–316, is the companion reference and treats the same problem over
+`ℤ[1/N]` (no theorem number is quoted here because it was not checked
+against the text).
+
+## Why the hypotheses match
+
+* *Base ring.*  `R = ℚ`.  (8.1.1) needs some `n ≥ 3` invertible in `R` only
+  locally; over a field of characteristic `0` every `n` is invertible, so
+  the construction is global and no patching is needed.  `SpecQ` is
+  `Spec ℚ`, so `Y ⟶ SpecQ` is exactly an `R`-scheme.
+* *The moduli problem.*  `Gamma0Datum N T` is `[Γ₀(N)]` on `(Ell/ℚ)`:
+  `ab` together with `relativeDimensionOne` is an elliptic curve `E/T`, and
+  `cyc` is the cyclic subgroup of order `N`.  Theorem 6.6.1 supplies both
+  hypotheses (8.1.1) asks for — relative representability, and finiteness
+  over `(Ell)`, which gives affineness over `(Ell)`.
+* *`N ≥ 1`.*  `[Γ₀(N)]` is defined only for `N ≥ 1`; the level `N = 0` is
+  handled separately and degenerately by `exists_coarseModuliY0_zero`.
+
+## FAITHFULNESS AUDIT: one genuine mismatch, and why it is harmless
+
+Katz–Mazur **(6.7.1)** (p. 167) define a *cyclic group of order `N`* to be
+a "finite locally free commutative `S`-group-scheme, of rank `N`, and
+cyclic".  `CyclicSubgroupOfOrder` above asks instead for a closed subgroup
+scheme that is **finite** over the base with **geometric fibres** cyclic of
+order `N`; it does **not** ask for flatness.  Over a non-reduced base these
+differ, and the gap is real rather than notional:
+
+> Over `T = Spec ℚ[ε]` take `E = E₀ ×_ℚ ℚ[ε]` and a rational point `P` of
+> exact order `2` on `E₀`.  Then `C = Spec(ℚ[ε] × ℚ)` — the zero section
+> together with the *non-flat* thickening `ℚ[ε] ↠ ℚ` of the `P`-component
+> of `E[2]` — is closed in `E`, finite over `T`, contains the zero section,
+> and is closed under the group law (`P + P = 0`), and its unique geometric
+> fibre is `ℤ/2`.  So it is a `CyclicSubgroupOfOrder` of order `2` that is
+> not a Katz–Mazur `[Γ₀(2)]`-structure.
+
+So the moduli problem here is a priori *larger* than `[Γ₀(N)]`, and the
+cited theorem does not literally apply to it.  It does apply after one
+extra step, which a successor closing this node must supply: over a
+`ℚ`-scheme `E[N]` is finite étale, the support of such a `C` is open and
+closed in `E[N]` (its geometric fibres all have exactly `N` points), and
+the corresponding open-and-closed subgroup scheme is a canonical finite
+locally free "flatification" `C ⊆ C^♭ ⊆ E[N]` with the same geometric
+fibres, formed compatibly with base change.  Flatification is therefore a
+natural retraction of this moduli problem onto `[Γ₀(N)]`, and a natural
+transformation out of one is the same thing as a natural transformation out
+of the other — so the two problems have the same coarse space and the
+citation transfers.
+
+This mismatch is recorded rather than repaired because repairing it means
+adding a flat variant of `CyclicSubgroupOfOrder` to the interface, which is
+a change to the moduli problem itself and not to this node.
+
+## Why it is IRREDUCIBLE at this pin
+
+Surveyed 2026-07-26: `Mathlib` has no modular curve, no modular polynomial,
+no moduli stack, no coarse-space existence theorem, no geometric invariant
+theory and no quotient of a scheme by a finite group; `~/cs/FLT` takes the
+weaker Mazur torsion bound as a bare `axiom`.  Every route to this
+statement — Katz–Mazur (8.1.1) via `[Γ(n)]`-rigidification and quotients,
+Deligne–Rapoport via stacks, or the classical construction of `Y_0(N)` as
+the normalisation of `Φ_N(X, Y) = 0` in `𝔸¹ × 𝔸¹` with classifying map
+`(E, C) ↦ (j(E), j(E/C))` — needs a theory that does not exist here. -/
+theorem exists_coarseModuliY0_of_pos (N : ℕ) (hN : 0 < N) :
     ∃ (Y : Scheme.{0}) (str : Y ⟶ SpecQ), Nonempty (IsCoarseModuliY0 N str) :=
   sorry
 
@@ -524,6 +682,18 @@ theorem exists_cyclicSubgroupOfOrder_of_galoisStable {A : Scheme.{0}} {f : A ⟶
             ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y) :
     Nonempty (CyclicSubgroupOfOrder ab N) :=
   sorry
+
+/-- **Existence of the coarse moduli space `Y_0(N)`** (PROVEN, as the split
+of the level into the cited case `N ≥ 1` and the degenerate case `N = 0`).
+
+See `exists_coarseModuliY0_of_pos` for the citation (Katz–Mazur Theorem
+6.6.1 and (8.1.1)) and for the faithfulness audit, and
+`exists_coarseModuliY0_zero` for the degenerate level. -/
+theorem exists_coarseModuliY0 (N : ℕ) :
+    ∃ (Y : Scheme.{0}) (str : Y ⟶ SpecQ), Nonempty (IsCoarseModuliY0 N str) := by
+  rcases Nat.eq_zero_or_pos N with hN | hN
+  · subst hN; exact exists_coarseModuliY0_zero
+  · exact exists_coarseModuliY0_of_pos N hN
 
 /-- **A Galois-stable cyclic subgroup of order `N` of `E(ℚ̄)` is a
 `Γ₀(N)`-structure over `Spec ℚ`** (PROVEN 2026-07-26 from the two leaves
