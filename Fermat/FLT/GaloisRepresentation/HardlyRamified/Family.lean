@@ -5248,7 +5248,7 @@ noncomputable def cycScalarRep {ℓ : ℕ} [Fact ℓ.Prime] {B : Type*} [CommRin
   haveI : ContinuousAdd (Module.End B B) := ModuleTopology.continuousAdd B _
   haveI : ContinuousSMul B (Module.End B B) := ModuleTopology.continuousSMul B _
   { toFun := fun g => (cycUnitChar ℓ B g) • (LinearMap.id : Module.End B B)
-    map_one' := by rw [cycUnitChar_one, one_smul]
+    map_one' := by rw [cycUnitChar_one, one_smul]; exact Module.End.one_eq_id.symm
     map_mul' := fun g h => by
       rw [cycUnitChar_mul]
       ext x
@@ -5511,7 +5511,7 @@ variable (Ω D) in
 /-- **The Fourier transform of the group algebra** (PROVEN
 construction): the `Ω`-algebra map `Ω[D] → (D̂ → Ω)` extending
 `muCharEval` through the universal property `MonoidAlgebra.lift`. -/
-def muFourierAlg : MonoidAlgebra Ω D →ₐ[Ω] ((D →* Ωˣ) → Ω) :=
+noncomputable def muFourierAlg : MonoidAlgebra Ω D →ₐ[Ω] ((D →* Ωˣ) → Ω) :=
   MonoidAlgebra.lift Ω _ D (muCharEval Ω D)
 
 /-- The Fourier transform is INJECTIVE (PROVEN): a kernel element is a
@@ -5620,7 +5620,7 @@ universal property `MonoidAlgebra.lift` of the group algebra, and
 character BIDUALITY `CommGroup.monoidHomMonoidHomEquiv` (through
 `MonoidHom.toHomUnitsMulEquiv`, since homomorphisms out of a group land
 in the units). -/
-def muTypePointsEquiv :
+noncomputable def muTypePointsEquiv :
     (S₀ ⊗[R₀] MonoidAlgebra R₀ (Gm →* L₀ˣ) →ₐ[S₀] L₀) ≃ Gm :=
   (AlgHom.liftEquiv R₀ S₀ (MonoidAlgebra R₀ (Gm →* L₀ˣ)) L₀).symm.trans
     ((MonoidAlgebra.lift R₀ L₀ (Gm →* L₀ˣ)).symm.trans
