@@ -11588,8 +11588,7 @@ theorem exists_ribet_walked_frame
     simp only [map_sub, map_smul, hdict, hρO'mat, hE]
     funext i
     fin_cases i <;>
-      simp [hM'app, Matrix.mulVec, dotProduct, Fin.sum_univ_two,
-        Matrix.map_apply, hπbar, hB00 g, hB11 g]
+      simp [hM'app, Matrix.map_apply, hπbar, hB00 g, hB11 g]
     ring
 
 set_option linter.unusedVariables false in
