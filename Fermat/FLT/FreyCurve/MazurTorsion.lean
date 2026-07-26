@@ -4747,6 +4747,53 @@ for `s = 1, …, 5, 1/3, 1/4, 1/5` the curve `ellfromj(j₁₆(s))` has cyclic
 isogeny degrees exactly `{1, 2, 4, 8, 16}`.
 -/
 
+set_option backward.isDefEq.respectTransparency false in
+/-- **Galois descent for points** (PROVEN 2026-07-17): a point of
+`E(ℚ̄)` fixed by every element of the absolute Galois group is the base
+change of a rational point. The coordinates are fixed by all
+automorphisms of the Galois extension `ℚ̄/ℚ`, hence lie in `ℚ`
+(`InfiniteGalois.mem_range_algebraMap_iff_fixed`), and nonsingularity
+descends along the injective base change
+(`baseChange_nonsingular`). -/
+theorem WeierstrassCurve.exists_point_eq_baseChange_of_fixed
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (Pt : (E⁄(AlgebraicClosure ℚ)).Point)
+    (hfix : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt = Pt) :
+    ∃ Q : (E⁄ℚ).Point,
+      Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q = Pt := by
+  cases Pt with
+  | zero => exact ⟨0, rfl⟩
+  | some x y h =>
+    have hx : x ∈ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) := by
+      refine (InfiniteGalois.mem_range_algebraMap_iff_fixed x).mpr fun σ => ?_
+      have h1 := hfix σ
+      rw [Affine.Point.map_some] at h1
+      exact (Affine.Point.some.inj h1).left
+    have hy : y ∈ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) := by
+      refine (InfiniteGalois.mem_range_algebraMap_iff_fixed y).mpr fun σ => ?_
+      have h1 := hfix σ
+      rw [Affine.Point.map_some] at h1
+      exact (Affine.Point.some.inj h1).right
+    obtain ⟨x₀, hx₀⟩ := hx
+    obtain ⟨y₀, hy₀⟩ := hy
+    have h₀ : (E⁄ℚ).Nonsingular x₀ y₀ := by
+      have h2 := h
+      rw [← hx₀, ← hy₀] at h2
+      exact (Affine.baseChange_nonsingular (W := E)
+        (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))
+        (algebraMap ℚ (AlgebraicClosure ℚ)).injective x₀ y₀).mp h2
+    refine ⟨Affine.Point.some x₀ y₀ h₀, ?_⟩
+    have hmap := Affine.Point.map_some
+      (f := Algebra.ofId ℚ (AlgebraicClosure ℚ)) h₀
+    rw [show Affine.Point.baseChange ℚ (AlgebraicClosure ℚ)
+        (Affine.Point.some x₀ y₀ h₀) =
+      Affine.Point.map (Algebra.ofId ℚ (AlgebraicClosure ℚ))
+        (Affine.Point.some x₀ y₀ h₀) from rfl, hmap]
+    subst hx₀ hy₀
+    rfl
+
 namespace MazurLevel16
 
 /-! ### The universal curve over the `X_0(16)` `s`-line
@@ -21094,53 +21141,6 @@ theorem minkowski_character_trivial {T : Type*} [Group T]
   ext g
   have hg : g ∈ χ.ker := hker_top ▸ Subgroup.mem_top g
   simpa [MonoidHom.mem_ker] using hg
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **Galois descent for points** (PROVEN 2026-07-17): a point of
-`E(ℚ̄)` fixed by every element of the absolute Galois group is the base
-change of a rational point. The coordinates are fixed by all
-automorphisms of the Galois extension `ℚ̄/ℚ`, hence lie in `ℚ`
-(`InfiniteGalois.mem_range_algebraMap_iff_fixed`), and nonsingularity
-descends along the injective base change
-(`baseChange_nonsingular`). -/
-theorem WeierstrassCurve.exists_point_eq_baseChange_of_fixed
-    (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (Pt : (E⁄(AlgebraicClosure ℚ)).Point)
-    (hfix : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      Affine.Point.map
-        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt = Pt) :
-    ∃ Q : (E⁄ℚ).Point,
-      Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q = Pt := by
-  cases Pt with
-  | zero => exact ⟨0, rfl⟩
-  | some x y h =>
-    have hx : x ∈ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) := by
-      refine (InfiniteGalois.mem_range_algebraMap_iff_fixed x).mpr fun σ => ?_
-      have h1 := hfix σ
-      rw [Affine.Point.map_some] at h1
-      exact (Affine.Point.some.inj h1).left
-    have hy : y ∈ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) := by
-      refine (InfiniteGalois.mem_range_algebraMap_iff_fixed y).mpr fun σ => ?_
-      have h1 := hfix σ
-      rw [Affine.Point.map_some] at h1
-      exact (Affine.Point.some.inj h1).right
-    obtain ⟨x₀, hx₀⟩ := hx
-    obtain ⟨y₀, hy₀⟩ := hy
-    have h₀ : (E⁄ℚ).Nonsingular x₀ y₀ := by
-      have h2 := h
-      rw [← hx₀, ← hy₀] at h2
-      exact (Affine.baseChange_nonsingular (W := E)
-        (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))
-        (algebraMap ℚ (AlgebraicClosure ℚ)).injective x₀ y₀).mp h2
-    refine ⟨Affine.Point.some x₀ y₀ h₀, ?_⟩
-    have hmap := Affine.Point.map_some
-      (f := Algebra.ofId ℚ (AlgebraicClosure ℚ)) h₀
-    rw [show Affine.Point.baseChange ℚ (AlgebraicClosure ℚ)
-        (Affine.Point.some x₀ y₀ h₀) =
-      Affine.Point.map (Algebra.ofId ℚ (AlgebraicClosure ℚ))
-        (Affine.Point.some x₀ y₀ h₀) from rfl, hmap]
-    subst hx₀ hy₀
-    rfl
 
 /-!
 ### Character bookkeeping on a stable line
