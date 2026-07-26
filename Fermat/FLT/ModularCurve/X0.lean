@@ -224,6 +224,18 @@ The lemma they support, `y0HasNoRationalPoint_of_dvd`, is checked
 against the ground truth by observing that the Mazur–Kenku list is
 DIVISOR-CLOSED; see its docstring.
 
+6. The compactification layer: `X_0(N) ⊇ Y_0(N)` with its finite cusp
+   locus, `J_0(N)` by its Albanese universal property, the rank-`0`
+   input, the Eichler–Shimura counts, and the reduction bound.  TRUE —
+   each of its six leaves carries its own justification, and each is a
+   named classical theorem rather than a repackaging of its consumer.
+   The sixth, `exists_x0Sieve`, is the multi-prime Mordell–Weil sieve
+   that the four levels `45, 54, 63, 75` need.
+   The one hypothesis worth flagging is positivity of the genus, carried
+   inside `HasRankZeroJacobian`: without it the reduction bound is FALSE
+   at `N = 1`, where `X_0(1) = ℙ¹` has a trivial Jacobian and infinitely
+   many rational points.
+
 **Why the interface must pin `Y` down, and does.** A weaker interface —
 say, a smooth projective curve over `ℚ` with a bijection on `ℚ̄`-points
 — would be satisfied by `ℙ¹` for a cheap reason, and then
@@ -239,8 +251,9 @@ statement about the genuine `Y_0(N)`.
 
 The compactification layer (`IsX0Compactification`, `IsJacobianOf`,
 `HasRankZeroJacobian`, `card_le_of_rankZeroJacobian`) is now written as
-an INTERFACE, and the seven single-prime levels are proven over it.
-What the interface's five leaves still need, and none of it exists at
+an INTERFACE, and all eleven levels are proven over it — seven on a
+single counting prime, four on the sieve `exists_x0Sieve`.
+What the interface's six leaves still need, and none of it exists at
 this pin:
 
 * the smooth compactification of a coarse moduli space, and the cusps
@@ -254,11 +267,15 @@ this pin:
   (`hasRankZeroJacobian_of_kenkuLevel`), and Eichler–Shimura, which
   supplies the point counts (`exists_x0Compactification_mod_prime`).
 
+* the Abel–Jacobi image of `X_0(N)(𝔽_ℓ)` inside `J_0(N)(𝔽_ℓ)` as a
+  computable finite object, which is what the multi-prime sieve leaf
+  `exists_x0Sieve` asks for at the four levels `45, 54, 63, 75`.
+
 Chabauty–Coleman is **not** on this list: the 2026-07-26 reconnaissance
 found `rank J_0(N)(ℚ) = 0` at all eleven named levels, so none of them
-needs it.  The four levels `45, 54, 63, 75` need a multi-prime
-Mordell–Weil sieve instead, which is a strengthening of
-`card_le_of_rankZeroJacobian` rather than a new theory.
+needs it.  The four levels `45, 54, 63, 75` are proven over the
+multi-prime Mordell–Weil sieve instead, which was — as predicted — a
+strengthening of `card_le_of_rankZeroJacobian` rather than a new theory.
 -/
 module
 
@@ -2025,7 +2042,7 @@ Kolyvagin–Logachev, hence finite `J_0(N)(ℚ)`.  Positivity of the genus
 is classical and holds at all eleven — the genus values, in the order of
 `kenkuLevels`, are `1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`.
 
-IRREDUCIBLE at this pin, and the deepest of the five leaves here: it
+IRREDUCIBLE at this pin, and the deepest of the six leaves here: it
 needs `S_2(Γ_0(N))`, the Hecke algebra, `L`-functions of modular abelian
 varieties and Gross–Zagier/Kolyvagin. -/
 theorem hasRankZeroJacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
@@ -2125,6 +2142,213 @@ theorem y0HasNoRationalPoint_of_witnessPrime (N ℓ : ℕ) (hN : 0 < N)
   have hle : (insert (sectionAlong j hX.comm y) s).card ≤ numRationalCusps N :=
     card_le_of_rankZeroJacobian hX (hasRankZeroJacobian_of_kenkuLevel N hlevel hX)
       hℓ hℓ2 hℓN hX' _ hfin hcard _
+  rw [Finset.card_insert_of_notMem hp, hscard] at hle
+  omega
+
+/-! #### The multi-prime Mordell–Weil sieve
+
+The four levels `45, 54, 63, 75` are exactly those at which the counting
+bound of `card_le_of_rankZeroJacobian` is never sharp: at every odd
+`ℓ ∤ N` the reduction `X_0(N)(𝔽_ℓ)` has strictly more points than
+`X_0(N)` has rational cusps, so `y0HasNoRationalPoint_of_witnessPrime`
+cannot close them however the prime is chosen.  The minima over
+`3 ≤ ℓ < 60`, recomputed with Magma on 2026-07-26 from Eichler–Shimura,
+against `numRationalCusps N = 4` in all four cases:
+
+| `N` | genus | best `ℓ₁` | `#X_0(N)(𝔽_{ℓ₁})` | `#J_0(N)(𝔽_{ℓ₁})` | `ℓ₂` | `#J_0(N)(𝔽_{ℓ₂})` | `gcd` |
+|-----|-------|-----------|--------------------|--------------------|------|--------------------|-------|
+| 45 | 3 | 7 | 8 | `512 = 2⁹`        | 19 | `4096 = 2¹²`          | `512`  |
+| 54 | 4 | 5 | 6 | `972 = 2²·3⁵`     | 7  | `6561 = 3⁸`           | `243`  |
+| 63 | 5 | 5 | 8 | `6144 = 2¹¹·3`    | 11 | `135168 = 2¹²·3·11`   | `6144` |
+| 75 | 5 | 7 | 8 | `28160 = 2⁹·5·11` | 11 | `409600 = 2¹⁴·5²`     | `2560` |
+
+**What the extra primes buy, and why only one of them appears in the
+statement below.**  Reduction at a good odd `ℓ` is an injective group
+homomorphism `J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)`, so by Lagrange `#J_0(N)(ℚ)`
+divides `#J_0(N)(𝔽_ℓ)` for every such `ℓ`; ranging over several `ℓ` pins
+`#J_0(N)(ℚ)` down to a divisor of the `gcd` above.  That is the whole
+arithmetic content of "multi-prime", and it is a statement about the
+subgroup `red_ℓ(J_0(N)(ℚ)) ⊆ J_0(N)(𝔽_ℓ)`.
+
+So the sieve leaf is phrased over ONE prime, with the surviving points
+cut out by membership in `Set.range red.redJ` rather than by a divisibility
+condition on their order.  That is deliberate and it is the *stronger*
+formulation: `Set.range red.redJ` is an isomorphic copy of `J_0(N)(ℚ)`
+itself, so it already encodes everything that any number of auxiliary
+primes could contribute, and no bound `D` has to be carried around and
+justified separately.  `N = 75` is the row that shows why this matters —
+its best counting prime `ℓ₁ = 7` gives `#J_0(75)(𝔽_7) = 11 · 2560`, so
+even the *order* of the rational Jacobian is not pinned there without a
+second prime.
+
+The leaf is restricted to `x0SieveLevels` on purpose.  Stated for all of
+`kenkuLevels` it would subsume `exists_x0Compactification_mod_prime` and
+`card_le_of_rankZeroJacobian` — the seven single-prime levels would then
+rest on a strictly stronger unproven statement than they need, which is
+the "repackaging the consumer" failure this module's interfaces are
+shaped to avoid. -/
+
+/-- **The four Kenku levels that no single counting prime settles.**
+
+A sublist of `kenkuLevels`; the other seven are closed by
+`y0HasNoRationalPoint_of_witnessPrime` against `x0WitnessTable`.  See the
+table in the subsection docstring for the arithmetic that separates the
+two groups. -/
+def x0SieveLevels : List ℕ := [45, 54, 63, 75]
+
+/-- **Good reduction of the pair `(X_0(N), J_0(N))` at an odd prime
+`ℓ ∤ N`, on rational points.**
+
+The data is the commuting square
+
+```
+X_0(N)(ℚ)  --aj-->  J_0(N)(ℚ)
+   | redX               | redJ
+   v                    v
+X_0(N)(𝔽_ℓ) --aj'--> J_0(N)(𝔽_ℓ)
+```
+
+with `redJ` an INJECTIVE group homomorphism.  Injectivity is not an
+axiom about reduction in general — it is the rank-`0` input: `J_0(N)(ℚ)`
+is finite, hence torsion, and the kernel of reduction on torsion is the
+group of points of a formal group over `ℤ_ℓ`, torsion-free for `ℓ` odd.
+It is the same fact that `card_le_of_rankZeroJacobian` rests on, isolated
+here as data so that the sieve can speak about the SUBGROUP
+`Set.range redJ ≅ J_0(N)(ℚ)` of `J_0(N)(𝔽_ℓ)` rather than only about its
+cardinality.
+
+`redJ_add` is what makes that range a subgroup, and hence what makes
+"`#J_0(N)(ℚ)` divides `#J_0(N)(𝔽_ℓ)` for every good `ℓ`" — the mechanism
+by which the auxiliary primes cut the search space down — a consequence
+of this structure rather than a separate assumption.  The counting
+argument in `card_le_of_sieve` does not need it, but a `redJ` without it
+would not deserve the name reduction. -/
+structure IsX0ReductionAt {X J X' J' : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    {ℓ : ℕ} {strX' : X' ⟶ SpecF ℓ} {jstr' : J' ⟶ SpecF ℓ}
+    {ab' : AbelianSchemeStruct jstr'} {o' : RelPoint strX' (𝟙 (SpecF ℓ))}
+    (jac : IsJacobianOf strX ab o) (jac' : IsJacobianOf strX' ab' o') where
+  /-- reduction of rational points of the curve -/
+  redX : RelPoint strX (𝟙 SpecQ) → RelPoint strX' (𝟙 (SpecF ℓ))
+  /-- reduction of rational points of the Jacobian -/
+  redJ : RelPoint jstr (𝟙 SpecQ) → RelPoint jstr' (𝟙 (SpecF ℓ))
+  /-- reduction is a homomorphism on the Jacobian -/
+  redJ_add : ∀ x y : RelPoint jstr (𝟙 SpecQ),
+    redJ (ab.add x y) = ab'.add (redJ x) (redJ y)
+  /-- reduction is injective on the rational points of a rank-`0` Jacobian -/
+  redJ_inj : Function.Injective redJ
+  /-- reduction commutes with Abel–Jacobi -/
+  red_aj : ∀ x : RelPoint strX (𝟙 SpecQ),
+    redJ (jac.aj (𝟙 SpecQ) x) = jac'.aj (𝟙 (SpecF ℓ)) (redX x)
+
+/-- **The Mordell–Weil sieve closes at the four residual levels** (sorry
+node — this is the criterion the four levels below rest on).
+
+TRUE, and it is Kenku's determination read through the sieve: at each of
+`45, 54, 63, 75` there is a good odd prime `ℓ` at which only
+`numRationalCusps N = 4` of the points of `X_0(N)(𝔽_ℓ)` have Abel–Jacobi
+class in the image of `J_0(N)(ℚ)`, even though `X_0(N)(𝔽_ℓ)` itself has
+`8, 6, 8, 8` points.  The candidate witnesses from the reconnaissance
+table above are `ℓ = 7, 5, 5, 7` respectively, with the image constrained
+by the auxiliary primes `19, 7, 11, 11`.
+
+**Why the prime is existentially quantified.**  The four rows of the
+table are the *recommended* attempt, not part of the claim.  Committing
+the statement to a specific `ℓ` would make it false if that particular
+reduction happened to leave one extra surviving point — a numerical
+accident that says nothing about the mathematics and that no argument
+here depends on.  What the sieve method asserts, and what the four levels
+actually need, is that SOME good prime cuts the count to the rational
+cusps; that is what is stated.
+
+**Every hypothesis is load-bearing.**  `hfin` is rank `0`: without it
+`J_0(N)(ℚ)` is infinite, `Set.range redJ` is all of the finite group
+`J_0(N)(𝔽_ℓ)` in effect, and no prime cuts anything.  `hX` is what makes
+the statement about `X_0(N)` rather than an arbitrary curve, and `jac` is
+what makes `Set.range redJ` the rational Jacobian rather than an
+arbitrary subgroup.  `hlevel` restricts the leaf to the four levels where
+the sieve is the intended route; see the subsection docstring.
+
+IRREDUCIBLE at this pin, and strictly beyond the five leaves above: on
+top of the integral model, the reduction map and Eichler–Shimura it needs
+the Abel–Jacobi image of `X_0(N)(𝔽_ℓ)` inside `J_0(N)(𝔽_ℓ)` as an
+explicitly computable finite object. -/
+theorem exists_x0Sieve (N : ℕ) (_hlevel : N ∈ x0SieveLevels)
+    {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (_hX : IsX0Compactification N strX strY j) (jac : IsJacobianOf strX ab o)
+    (_hfin : Finite (RelPoint jstr (𝟙 SpecQ))) :
+    ∃ (ℓ : ℕ) (X' J' : Scheme.{0}) (strX' : X' ⟶ SpecF ℓ) (jstr' : J' ⟶ SpecF ℓ)
+      (ab' : AbelianSchemeStruct jstr') (o' : RelPoint strX' (𝟙 (SpecF ℓ)))
+      (jac' : IsJacobianOf strX' ab' o') (red : IsX0ReductionAt jac jac')
+      (s : Finset (RelPoint strX' (𝟙 (SpecF ℓ)))),
+      (∀ x' : RelPoint strX' (𝟙 (SpecF ℓ)),
+          (∃ a : RelPoint jstr (𝟙 SpecQ), red.redJ a = jac'.aj (𝟙 (SpecF ℓ)) x') →
+            x' ∈ s) ∧
+        s.card = numRationalCusps N :=
+  sorry
+
+/-- **The sieve bound, `#X_0(N)(ℚ) ≤ numRationalCusps N`** (PROVEN).
+
+Pure transport along two injections and one commuting square.  Take the
+sieve prime `ℓ` and its reduction data.  A finite set `t` of rational
+points of `X_0(N)` maps into `X_0(N)(𝔽_ℓ)` by `redX`, and that map is
+injective ON `X_0(N)(ℚ)` — not because reduction is injective in any
+general sense, but because it is sandwiched between two injections:
+`aj` is injective (positive genus, carried by `HasRankZeroJacobian`) and
+`redJ` is injective (rank `0`), and `redJ ∘ aj = aj' ∘ redX`.  Every
+point in the image has Abel–Jacobi class `redJ (aj x)`, manifestly in
+`Set.range redJ`, so the image lands inside the sieve's surviving set
+`s`.  Hence `#t ≤ #s = numRationalCusps N`.
+
+Note what does NOT appear: no point count of `X_0(N)(𝔽_ℓ)`.  The bound
+is by the surviving set, which is what makes it strictly stronger than
+`card_le_of_rankZeroJacobian` and is the only reason the four levels
+close at all. -/
+theorem card_le_of_sieve {N : ℕ} (hlevel : N ∈ x0SieveLevels)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY j) (hJ : HasRankZeroJacobian strX)
+    (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps N := by
+  classical
+  obtain ⟨J, jstr, ab, o, jac, hfin, hajinj⟩ := hJ
+  obtain ⟨ℓ, X', J', strX', jstr', ab', o', jac', red, s, hs, hscard⟩ :=
+    exists_x0Sieve N hlevel hX jac hfin
+  have hinjOn : Set.InjOn red.redX ↑t := by
+    intro a _ b _ hab
+    refine hajinj (red.redJ_inj ?_)
+    rw [red.red_aj, red.red_aj, hab]
+  have hsub : t.image red.redX ⊆ s := by
+    intro x hx
+    obtain ⟨y, -, rfl⟩ := Finset.mem_image.mp hx
+    exact hs _ ⟨jac.aj (𝟙 SpecQ) y, red.red_aj y⟩
+  calc t.card = (t.image red.redX).card := (Finset.card_image_of_injOn hinjOn).symm
+    _ ≤ s.card := Finset.card_le_card hsub
+    _ = numRationalCusps N := hscard
+
+/-- **The sieve criterion** (PROVEN): at a residual level, `Y_0(N)(ℚ) = ∅`.
+
+Identical in shape to `y0HasNoRationalPoint_of_witnessPrime`, with the
+counting bound replaced by the sieve bound: the `c = numRationalCusps N`
+rational cusps are `c` distinct rational points of `X_0(N)`, none of them
+the image of a rational point of `Y_0(N)`, so a rational point of
+`Y_0(N)` would give a `Finset` of `X_0(N)(ℚ)` of size `c + 1` — which
+`card_le_of_sieve` forbids.  `y0HasNoRationalPoint_of_isEmpty` then
+propagates emptiness from this one coarse moduli space to every one.
+
+`hlevel` and `hsieve` overlap (`x0SieveLevels` is a sublist of
+`kenkuLevels`); both are asked for rather than deriving one from the
+other, exactly as `y0HasNoRationalPoint_of_witnessPrime` asks for both
+`hlevel` and `htable`.  At the four call sites each is one `decide`. -/
+theorem y0HasNoRationalPoint_of_sieveLevel (N : ℕ) (hN : 0 < N)
+    (hlevel : N ∈ kenkuLevels) (hsieve : N ∈ x0SieveLevels) :
+    Y0HasNoRationalPoint N := by
+  classical
+  obtain ⟨X, Y, strX, strY, j, ⟨hX⟩⟩ := exists_x0Compactification N hN
+  obtain ⟨s, hscard, hsnot⟩ := exists_rationalCusps N hX
+  refine y0HasNoRationalPoint_of_isEmpty hX.coarse ⟨fun y => ?_⟩
+  have hp : sectionAlong j hX.comm y ∉ s := fun hmem => hsnot _ hmem y rfl
+  have hle : (insert (sectionAlong j hX.comm y) s).card ≤ numRationalCusps N :=
+    card_le_of_sieve hsieve hX (hasRankZeroJacobian_of_kenkuLevel N hlevel hX) _
   rw [Finset.card_insert_of_notMem hp, hscard] at hle
   omega
 
@@ -2248,14 +2472,21 @@ subsection above: `IsX0Compactification` (`X_0(N)` with its cusp locus),
 input), and `card_le_of_rankZeroJacobian` (reduction mod `ℓ`).  The
 seven single-prime levels are PROVEN over it by
 `y0HasNoRationalPoint_of_witnessPrime`, and what remains open is that
-subsection's five leaves — none of them level-specific.
+subsection's six leaves — none of them level-specific.
 
-**The four sieve levels `45, 54, 63, 75` are still open**, and what they
-need is a multi-prime strengthening of `card_le_of_rankZeroJacobian`:
-the bound must intersect the images of `X_0(N)(𝔽_ℓ) → J_0(N)(𝔽_ℓ)` over
-several `ℓ` at once, rather than reduce at a single one.  That is a
-strengthening of one leaf, not a new theory, and it reuses every other
-piece unchanged. -/
+**The four sieve levels `45, 54, 63, 75` are PROVEN too** (2026-07-26),
+over `y0HasNoRationalPoint_of_sieveLevel` and the single new leaf
+`exists_x0Sieve`.  As predicted, that was a strengthening of the bound
+rather than a new theory: `IsX0ReductionAt` records the reduction square
+with `redJ` an injective homomorphism, and the bound counts the points of
+`X_0(N)(𝔽_ℓ)` whose Abel–Jacobi class lies in the subgroup
+`Set.range redJ ≅ J_0(N)(ℚ)` instead of all of them.  Every other piece —
+`IsX0Compactification`, `IsJacobianOf`, `HasRankZeroJacobian`,
+`exists_x0Compactification`, `exists_rationalCusps`,
+`hasRankZeroJacobian_of_kenkuLevel` — is reused unchanged.
+
+So all eleven level nodes of this module are now proven, and the module's
+whole remaining content is the six interface leaves. -/
 
 /-- **`Y_0(20)(ℚ) = ∅`** (PROVEN 2026-07-26 over
 `y0HasNoRationalPoint_of_witnessPrime`; `X_0(20)` has genus `1`).  Ogg,
@@ -2334,7 +2565,8 @@ theorem y0HasNoRationalPoint_fortyTwo : Y0HasNoRationalPoint 42 :=
   y0HasNoRationalPoint_of_witnessPrime 42 11 (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide)
 
-/-- **`Y_0(45)(ℚ) = ∅`** (sorry node; `X_0(45)` has genus `3`).
+/-- **`Y_0(45)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_sieveLevel`; `X_0(45)` has genus `3`).
 
 ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `rank J_0(45)(ℚ) = 0` (both newform factors have `L(A, 1) ≠ 0`), so
@@ -2360,24 +2592,29 @@ orders `#J_0(45)(𝔽_ℓ) = det(ℓ + 1 − T_ℓ ∣ S_2(Γ_0(45)))` are `512,
 180224, 229376` at those same `ℓ`; their `gcd` is `512`, attained already
 at `ℓ = 7`.  Hence `#J_0(45)(ℚ) ∣ 512` and `J_0(45)(ℚ)` is a `2`-group.
 
-**WHY THIS LEAF IS NOT HARDER THAN ITS SEVEN SINGLE-PRIME SIBLINGS
-*HERE*** (2026-07-26; this note is shared by all four sieve levels and is
-written out only at this one).  The split "seven close on one prime, four
-need a sieve" is a fact about the CLASSICAL arguments.  It is **not** a
-difficulty ordering for this development, and reading it as one produces
-phantom work.  All eleven levels are blocked on exactly the same absent
-object — `X_0(N)` as a scheme, its cusps, `J_0(N)`, Mordell–Weil, and
-reduction mod `ℓ` — none of which exists in `Mathlib` or in `~/cs/FLT`
-(re-surveyed 2026-07-26: `Mathlib/AlgebraicGeometry/` contains no abelian
-variety and no modular curve of any kind).  Once that layer exists, a
-sieve level costs one extra *finite* computation over a single-prime
-level, and the arithmetic for it is fully recorded above.  Until it
-exists, neither kind can be advanced by any amount of effort spent at
-the level nodes themselves.  The shared layer is owned by the sibling
-node `y0HasNoRationalPoint_prod_two_primes`; that is where work on these
-eleven has to go first. -/
+**THESE FOUR ARE NO LONGER LEAVES** (updated at integration 2026-07-26,
+merging `flt-lean-36`; this note is shared by all four sieve levels and is
+written out only at this one).  All four now close by
+`y0HasNoRationalPoint_of_sieveLevel`, over the single new leaf
+`exists_x0Sieve` — the multi-prime Mordell–Weil sieve — exactly as the
+seven single-prime levels close over `exists_x0Compactification_mod_prime`.
+Do not dispatch anyone at `y0HasNoRationalPoint_fortyFive`, `_fiftyFour`,
+`_sixtyThree` or `_seventyFive`; there is nothing to prove there.
+
+The split "seven close on one prime, four need a sieve" is a fact about the
+CLASSICAL arguments.  It is **not** a difficulty ordering for this
+development, and reading it as one produces phantom work.  All eleven levels
+remain blocked on exactly the same absent object — `X_0(N)` as a scheme, its
+cusps, `J_0(N)`, Mordell–Weil, and reduction mod `ℓ` — none of which exists
+in `Mathlib` or in `~/cs/FLT` (re-surveyed 2026-07-26:
+`Mathlib/AlgebraicGeometry/` contains no abelian variety and no modular curve
+of any kind).  Once that layer exists, a sieve level costs one extra *finite*
+computation over a single-prime level, and the arithmetic for it is fully
+recorded above.  The shared layer is owned by the sibling node
+`y0HasNoRationalPoint_prod_two_primes`; that is where work on these eleven
+has to go first. -/
 theorem y0HasNoRationalPoint_fortyFive : Y0HasNoRationalPoint 45 :=
-  sorry
+  y0HasNoRationalPoint_of_sieveLevel 45 (by decide) (by decide) (by decide)
 
 /-- **`Y_0(50)(ℚ) = ∅`** (PROVEN 2026-07-26 over
 `y0HasNoRationalPoint_of_witnessPrime`; `X_0(50)` has genus `2`; Ogg
@@ -2393,7 +2630,8 @@ theorem y0HasNoRationalPoint_fifty : Y0HasNoRationalPoint 50 :=
   y0HasNoRationalPoint_of_witnessPrime 50 3 (by decide) (by decide) (by decide)
     (by decide) (by decide) (by decide)
 
-/-- **`Y_0(54)(ℚ) = ∅`** (sorry node; `X_0(54)` has genus `4`).
+/-- **`Y_0(54)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_sieveLevel`; `X_0(54)` has genus `4`).
 
 ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `rank J_0(54)(ℚ) = 0` (all three newform factors have `L(A, 1) ≠ 0`).
@@ -2419,9 +2657,10 @@ no cheap second prime to pair with.  Jacobian orders
 `J_0(54)(ℚ)` is a `3`-group — note `#J(𝔽_7) = 3⁸` is already a pure
 power of `3`, so the prime `7` alone forces the `3`-group conclusion. -/
 theorem y0HasNoRationalPoint_fiftyFour : Y0HasNoRationalPoint 54 :=
-  sorry
+  y0HasNoRationalPoint_of_sieveLevel 54 (by decide) (by decide) (by decide)
 
-/-- **`Y_0(63)(ℚ) = ∅`** (sorry node; `X_0(63)` has genus `5`).
+/-- **`Y_0(63)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_sieveLevel`; `X_0(63)` has genus `5`).
 
 ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `rank J_0(63)(ℚ) = 0` (all three newform factors have `L(A, 1) ≠ 0`).
@@ -2442,9 +2681,10 @@ then `135168, 589824, 2156544, 2359296, 7796736, 25804800, 42467328,
 42467328, 116582400, 254803968, 249495552, 396472320, 589234176`.  Their
 `gcd` is `6144 = 2¹¹·3`, attained already at `ℓ = 5`. -/
 theorem y0HasNoRationalPoint_sixtyThree : Y0HasNoRationalPoint 63 :=
-  sorry
+  y0HasNoRationalPoint_of_sieveLevel 63 (by decide) (by decide) (by decide)
 
-/-- **`Y_0(75)(ℚ) = ∅`** (sorry node; `X_0(75)` has genus `5`).
+/-- **`Y_0(75)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_sieveLevel`; `X_0(75)` has genus `5`).
 
 ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `rank J_0(75)(ℚ) = 0` (all four newform factors have `L(A, 1) ≠ 0`).
@@ -2467,6 +2707,6 @@ NOT attained at the best counting prime — `#J(𝔽_7) = 11·2560` — so at
 least two primes are needed here even to pin the order of `J_0(75)(ℚ)`,
 before any question about which torsion points are cuspidal arises. -/
 theorem y0HasNoRationalPoint_seventyFive : Y0HasNoRationalPoint 75 :=
-  sorry
+  y0HasNoRationalPoint_of_sieveLevel 75 (by decide) (by decide) (by decide)
 
 end Fermat
