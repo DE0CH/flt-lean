@@ -12601,6 +12601,83 @@ higher ramification groups → tame quotient → tame character → local
 monodromy → Weil group → Weil–Deligne representations. That is a
 multi-agent theory-building programme, not a leaf.
 
+ROUTE AUDIT, THIRD CLOSURE (2026-07-26): the `τF`-FREE variant of the
+relocation is closed too — and by a DIFFERENT obstruction from the
+second closure's, which is worth naming because it is the only
+actionable one in this docstring.
+
+State the Fontaine–Laffaille input directly about `Rlz.τ` restricted to
+`G_F`, never mentioning `Wit.τF` at all:
+
+    ∀ w, (ℓ : 𝓞 Wit.F) ∈ w.asIdeal →
+      (Rlz.τ.map (algebraMap ℚ Wit.F)).IsUnramifiedAt w
+
+Since `I_w ≤ I_ℓ`, this is strictly weaker than the conclusion here, so
+it is a genuine narrowing; and bullet ONE of the second closure — that
+nothing in the interface relates `Rlz.τ|_{G_F}` to `Wit.τF` — EVAPORATES,
+because `Wit.τF` no longer occurs. What survives is bullet TWO alone: the
+residue is the descent `I_w ≤ ker ⟹ I_ℓ ≤ ker`, valid exactly when `ℓ`
+is UNRAMIFIED in `F`.
+
+So the leaf reduces to Fontaine–Laffaille over `F` plus ONE arithmetic
+datum about the auxiliary field. That datum is classically free — Taylor's
+potential modularity chooses `F` linearly disjoint from `ℚ(ζ_ℓ)` and
+unramified at `ℓ`, and it must, since otherwise the modularity lifting
+theorem over `F` has no Fontaine–Laffaille local condition at `ℓ` to lift
+with — but it is recorded NOWHERE in this module, and its honest home is
+four levels up: `F` enters through `exists_moretBailly_seed_of_five_le`,
+so the clause has to be added to that theorem's conclusion, threaded
+through `exists_potentialModularityWitness_of_five_le`, and stored as a
+field of `PotentialModularityWitness` beside `totallyReal` and `galoisF`.
+
+Why this is a CLOSURE and not a plan for THIS leaf: writing the descent as
+a sorried step inside this proof introduces a step that is not merely
+unproven but FALSE for an abstract witness — "for every
+potential-modularity witness, `ℓ` is unramified in `F`" is an assertion
+about a bare field with no representation in it, refuted by any witness
+whose `F` ramifies at `ℓ`. EVERY decomposition of this leaf through
+`Wit.F` has that shape. The abstract-quantification caveat of pillar β
+covers it formally, but a step of that shape is strictly worse than the
+present single citation. The split becomes correct only TOGETHER with the
+four-declaration interface repair above, which is a cut-level task and not
+a leaf.
+
+Second half of the descent, costed, so the repair is not underestimated:
+even with the datum in hand the descent is not free. It needs `F_w/ℚ_ℓ`
+unramified ⟹ `I_ℓ ≤ range (Field.absoluteGaloisGroup.map φ)` together
+with surjectivity of `I_w → I_ℓ` — local-field inertia theory the pin does
+not have. The nearest in-tree machinery,
+`restrictNormalHom_mem_inertia_of_mem_localInertiaGroup`
+(`HardlyRamified/Threeadic.lean`, ~100 lines of instance plumbing), goes
+the OTHER way: it RESTRICTS inertia downwards, and what is needed here is
+lifting it upwards.
+
+REFERENCE-PROJECT AUDIT, CORRECTED (2026-07-26, read at `~/cs/FLT`
+directly). The PRECEDENT note above is imprecise in a way that matters.
+`GaloisRep.IsAutomorphicOfLevel` asserts `ρ.IsUnramifiedAt v` only for
+`v ∤ p` AND `v ∉ S`; at the member's OWN residue characteristic it asserts
+nothing, so it is NOT the analogue of this leaf. The true analogue there
+is `IsHardlyRamified.isUnramified` — unramified at every `p ∉ {2, ℓ}` —
+asserted for EVERY member of the compatible family by `mem_isCompatible`
+(`FLT/GaloisRepresentation/HardlyRamified/Family.lean`), which is itself a
+single `sorry`. So the reference project does not discharge this content
+either: it packages it one level up, in a seam whose shape is "the
+`3`-adic member is itself HARDLY RAMIFIED", not "the realization carries a
+level". That packaging subsumes this leaf, its sibling AND the conductor
+node at once — and it is precisely what `exists_threeadic_member_of_witness`
+below already assembles, which is why the packaging is available to us as a
+relocation only, never as a shortcut. `IsAutomorphicOfLevel` is also not
+vendorable, as recorded: it is defined over that project's `HeckeAlgebra`
+for a totally definite quaternion algebra, which our pin lacks.
+
+LOAD-BEARING AUDIT (2026-07-26): re-confirmed that the leaf can be neither
+dropped nor narrowed away from `ℓ`. Its consumer chain ends at
+`exists_threeadic_member_of_witness`, whose `isUnramified` component is
+`IsHardlyRamified`'s and is quantified over EVERY prime `p ∉ {2, 3}`. The
+sibling transfer leaf covers exactly `p ∉ {2, 3, ℓ}` — it consumes
+`hρ.isUnramified`, which is silent at `ℓ` — so `p = ℓ` is precisely and
+only what this leaf supplies.
+
 SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the
 realization produced by the construction leaf this is the
 Fontaine–Laffaille/Carayol chain above, applied to the descended
