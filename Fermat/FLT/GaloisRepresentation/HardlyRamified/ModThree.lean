@@ -153,6 +153,15 @@ import Fermat.FLT.DedekindDomain.ResidueCardinality
 -- `Nat.ordProj_dvd`/`Nat.coprime_ordCompl`, for the 3-part/coprime
 -- order decomposition in the wild-inertia lemma of the same leaf.
 import Mathlib.Data.Nat.Factorization.Basic
+-- `CompactSpace Gal(K/k)` (the absolute Galois group is profinite),
+-- `Subgroup.quotient_finite_of_isOpen`, `Subgroup.index_dvd_of_le` and
+-- `sub_pow_char_pow`: the finite-exponent argument of
+-- `exists_pow_eq_one_of_isOpen_ker_ray_class`, sub-leaf (i) of the
+-- narrow-ray reciprocity node.
+import Mathlib.FieldTheory.Galois.Profinite
+import Mathlib.Topology.Algebra.OpenSubgroup
+import Mathlib.GroupTheory.Index
+import Mathlib.Algebra.CharP.Lemmas
 -- `IsAlgebraic.exists_integral_multiple`, for the faithfulness of the
 -- Galois action on the finite-level integral closure (same leaf).
 import Mathlib.RingTheory.Algebraic.Integral
@@ -10138,22 +10147,76 @@ theorem archConv_antitoneOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : �
   exact div_le_div_of_nonneg_right
     (mul_le_mul_of_nonneg_right key (h₂.2.1 u (Set.mem_Ioi.mpr hu))) hu.le
 
-/-- **Continuity of the convolution** (sorry node, stated 2026-07-25 —
-stage (α₂) of the decomposition of `archimedeanGammaProfile_exists`):
+open MeasureTheory Set in
+/-- **Continuity of the convolution** (PROVEN 2026-07-25 — stage (α₂)
+of the decomposition of `archimedeanGammaProfile_exists`):
 `archConv H₁ H₂` is continuous on `(0, ∞)`.
 
-Intended proof: continuity of a parametrized integral by dominated
-convergence (`MeasureTheory.continuousOn_of_dominated` /
-`intervalIntegral.continuous_parametric_integral_of_dominated`-style).
-Fix `0 < τ₀` and work on `[τ₀/2, 2τ₀]`: the integrand is continuous in
-`τ` for each `u` (`h₁.1` at `τ/u > 0`), and is dominated uniformly on
-that interval by `u ↦ H₁(τ₀/(2u))·H₂(u)/u` — antitonicity of `H₁`
-turns the `τ`-interval into a single dominating profile — which is
-integrable by `archConv_integrableOn` at `τ₀/2`. -/
+Proof (continuity of a parametrized integral by dominated
+convergence, `MeasureTheory.continuousAt_of_dominated` applied pointwise
+and upgraded by `ContinuousAt.continuousWithinAt`).  Fix `τ₀ > 0`.  Only
+the LOWER half of the intended neighbourhood is needed — `(τ₀/2, ∞)`,
+an open neighbourhood of `τ₀` — because antitonicity of `H₁` makes the
+dominating function the integrand at the LEFT endpoint:
+
+* *Measurability*: for every `τ > τ₀/2` the integrand is integrable on
+  `(0, ∞)` by `archConv_integrableOn`, whose `.1` is exactly the
+  required `AEStronglyMeasurable` for `volume.restrict (Ioi 0)`.
+* *Domination*: for `τ > τ₀/2` and `u > 0` we have `τ₀/(2u) ≤ τ/u`, so
+  `AntitoneOn H₁` gives `H₁(τ/u) ≤ H₁(τ₀/(2u))`; multiplying by the
+  nonnegative `H₂ u` and dividing by `u > 0` dominates the integrand by
+  `u ↦ H₁(τ₀/(2u))·H₂(u)/u`, and the norm bars come off because the
+  integrand is itself nonnegative there (`h₁.2.1`, `h₂.2.1`).  The
+  dominating function is the integrand at `τ = τ₀/2`, hence integrable
+  by `archConv_integrableOn` again.  Note this single bound serves the
+  whole ray `(τ₀/2, ∞)`, so no upper cutoff `2τ₀` is needed.
+* *Pointwise continuity in `τ`*: for a.e. `u` (namely every `u ∈ (0,∞)`,
+  via `ae_restrict_mem measurableSet_Ioi`), `τ ↦ τ/u` is continuous,
+  `τ₀/u > 0`, and `Ioi 0` is open, so `h₁.1` upgrades to
+  `ContinuousAt H₁ (τ₀/u)` by `ContinuousWithinAt.continuousAt`;
+  compose, multiply by the constant `H₂ u` and divide by the constant
+  `u`. -/
 theorem archConv_continuousOn {p q : ℕ} {M₁ M₂ : ℂ → ℂ} {H₁ H₂ : ℝ → ℝ}
     (hp : 0 < p) (hq : 0 < q) (h₁ : IsArchProfile p M₁ H₁) (h₂ : IsArchProfile q M₂ H₂) :
     ContinuousOn (archConv H₁ H₂) (Set.Ioi 0) := by
-  sorry
+  intro τ₀ hτ₀
+  rw [Set.mem_Ioi] at hτ₀
+  refine ContinuousAt.continuousWithinAt ?_
+  have hhalf : (0 : ℝ) < τ₀ / 2 := by linarith
+  -- `(τ₀/2, ∞)` is an open neighbourhood of `τ₀` on which one single
+  -- dominating function works, by antitonicity of `H₁`.
+  have hev : ∀ᶠ τ in nhds τ₀, τ ∈ Ioi (τ₀ / 2) := Ioi_mem_nhds (by linarith)
+  have hmeas : ∀ᶠ τ in nhds τ₀,
+      AEStronglyMeasurable (fun u : ℝ => H₁ (τ / u) * H₂ u / u) (volume.restrict (Ioi (0:ℝ))) := by
+    filter_upwards [hev] with τ hτ
+    exact (archConv_integrableOn hp hq h₁ h₂ (lt_trans hhalf (mem_Ioi.mp hτ))).1
+  have hbound : ∀ᶠ τ in nhds τ₀, ∀ᵐ u ∂(volume.restrict (Ioi (0:ℝ))),
+      ‖H₁ (τ / u) * H₂ u / u‖ ≤ H₁ (τ₀ / 2 / u) * H₂ u / u := by
+    filter_upwards [hev] with τ hτ
+    rw [mem_Ioi] at hτ
+    filter_upwards [ae_restrict_mem measurableSet_Ioi] with u hu
+    rw [mem_Ioi] at hu
+    have hτ0 : (0 : ℝ) < τ := lt_trans hhalf hτ
+    have hH₂u : 0 ≤ H₂ u := h₂.2.1 u (mem_Ioi.mpr hu)
+    have hnn : 0 ≤ H₁ (τ / u) * H₂ u / u :=
+      div_nonneg (mul_nonneg (h₁.2.1 _ (mem_Ioi.mpr (div_pos hτ0 hu))) hH₂u) hu.le
+    rw [Real.norm_of_nonneg hnn]
+    have hτle : τ₀ / 2 ≤ τ := hτ.le
+    have key : H₁ (τ / u) ≤ H₁ (τ₀ / 2 / u) :=
+      h₁.2.2.1 (mem_Ioi.mpr (div_pos hhalf hu)) (mem_Ioi.mpr (div_pos hτ0 hu)) (by gcongr)
+    exact div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_right key hH₂u) hu.le
+  have hcont : ∀ᵐ u ∂(volume.restrict (Ioi (0:ℝ))),
+      ContinuousAt (fun τ : ℝ => H₁ (τ / u) * H₂ u / u) τ₀ := by
+    filter_upwards [ae_restrict_mem measurableSet_Ioi] with u hu
+    rw [mem_Ioi] at hu
+    have hdiv : ContinuousAt (fun τ : ℝ => τ / u) τ₀ := (continuous_id.div_const u).continuousAt
+    have hH₁ : ContinuousAt H₁ (τ₀ / u) :=
+      (h₁.1 _ (mem_Ioi.mpr (div_pos hτ₀ hu))).continuousAt (Ioi_mem_nhds (div_pos hτ₀ hu))
+    have hcomp : ContinuousAt (fun τ : ℝ => H₁ (τ / u)) τ₀ :=
+      ContinuousAt.comp (g := H₁) (f := fun τ : ℝ => τ / u) (x := τ₀) hH₁ hdiv
+    exact (hcomp.mul continuousAt_const).div_const u
+  exact continuousAt_of_dominated hmeas hbound
+    (archConv_integrableOn hp hq h₁ h₂ hhalf) hcont
 
 /-- **Stretched-exponential decay of the convolution** (PROVEN
 2026-07-25 — stage (α₃) of the decomposition of
@@ -31921,6 +31984,186 @@ theorem eq_of_forall_asIdeal_eq_ray_class
     have hpp : p.IsPrime := Ideal.isPrime_of_prime hp
     rw [hfmul p a hp0 ha', hgmul p a hp0 ha', ih ha', hval ⟨p, hpp, hp0⟩]
 
+set_option maxHeartbeats 400000 in
+/-- **A multiplicative character of `Γ F` trivial on an open subgroup has
+finite exponent, and that exponent may be taken prime to `3`** (PROVEN
+2026-07-26; sub-leaf (i) of the narrow-ray reciprocity node
+`exists_artinSymbol_isNarrowPrincipal_ray_class` below, isolated so that
+the reciprocity leaf can be reduced to characters of PRIME-POWER order):
+a function `χ : Γ F → 𝔽̄₃` that is multiplicative (`hmul`) and trivial on
+an open subgroup `V` (`hVopen`, `hVker`) satisfies `χ a ^ n = 1` for all
+`a`, for some `n > 0` with `3 ∤ n`.
+
+NO arithmetic: this is the structure of the value group and nothing else.
+Proof as implemented. The values of `χ` are units (`χ a · χ a⁻¹ = χ 1 = 1`,
+and `χ 1 = 1` because `1 ∈ V`), so `χ` lifts to a genuine group
+homomorphism `χ' : Γ F →* 𝔽̄₃ˣ`. The absolute Galois group of a number
+field is PROFINITE — `IsGalois F F̄` (characteristic zero, so separable,
+and an algebraic closure is normal) plus mathlib's
+`CompactSpace Gal(K/k)` — so the open subgroup `V` has finite index
+(`Subgroup.quotient_finite_of_isOpen`), and `ker χ' ⊇ V` therefore also
+has finite index (`Subgroup.index_dvd_of_le`). Lagrange in the finite
+quotient `Γ F ⧸ ker χ'` (`pow_card_eq_one'`) gives `χ a ^ n₀ = 1` with
+`n₀ = |Γ F ⧸ ker χ'| > 0`. Finally the `3`-part of `n₀` is free: writing
+`n₀ = 3^k · m` with `3 ∤ m` (`Nat.ordProj_mul_ordCompl_eq_self`), the
+identity `(x − 1)^{3^k} = x^{3^k} − 1` in characteristic `3`
+(`sub_pow_char_pow`) turns `(χ a ^ m)^{3^k} = 1` into `χ a ^ m = 1`. That
+last step is the reason the prime `ℓ` in the reciprocity sub-leaf below
+may be assumed different from `3`: a finite-order value in `𝔽̄₃ˣ` never
+has order divisible by the characteristic. -/
+theorem exists_pow_eq_one_of_isOpen_ker_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1) :
+    ∃ n : ℕ, 0 < n ∧ ¬ (3 ∣ n) ∧ ∀ a : Γ F, χ a ^ n = 1 := by
+  classical
+  have hone : χ 1 = 1 := hVker 1 V.one_mem
+  have hne : ∀ a : Γ F, χ a ≠ 0 := by
+    intro a ha
+    have h1 : χ a * χ a⁻¹ = 1 := by rw [← hmul, mul_inv_cancel, hone]
+    rw [ha, zero_mul] at h1
+    exact zero_ne_one h1
+  set χ' : Γ F →* (Dickson.K 3)ˣ :=
+    { toFun := fun a => Units.mk0 (χ a) (hne a)
+      map_one' := by ext; exact hone
+      map_mul' := by intro a b; ext; exact hmul a b } with hχ'def
+  -- `Γ F` is a compact group, so the open subgroup `V` has finite index,
+  -- and so does the (larger) kernel of `χ'`
+  haveI : IsGalois F (AlgebraicClosure F) := ⟨⟩
+  haveI : CompactSpace (Γ F) :=
+    inferInstanceAs (CompactSpace (AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F))
+  haveI : Finite (Γ F ⧸ V) := Subgroup.quotient_finite_of_isOpen V hVopen
+  have hVle : V ≤ χ'.ker := by
+    intro a ha
+    simp only [MonoidHom.mem_ker]
+    ext
+    exact hVker a ha
+  have hVidx : V.index ≠ 0 := Subgroup.index_ne_zero_of_finite
+  have hkidx : χ'.ker.index ≠ 0 := fun h =>
+    hVidx (Nat.eq_zero_of_zero_dvd (h ▸ Subgroup.index_dvd_of_le hVle))
+  haveI : Finite (Γ F ⧸ χ'.ker) := Nat.finite_of_card_ne_zero hkidx
+  obtain ⟨n₀, hn₀pos, hpow⟩ : ∃ n : ℕ, 0 < n ∧ ∀ a : Γ F, χ a ^ n = 1 := by
+    refine ⟨Nat.card (Γ F ⧸ χ'.ker), Nat.card_pos, ?_⟩
+    intro a
+    have h : (QuotientGroup.mk' χ'.ker a) ^ Nat.card (Γ F ⧸ χ'.ker) = 1 :=
+      pow_card_eq_one'
+    rw [← map_pow] at h
+    have hmem : a ^ Nat.card (Γ F ⧸ χ'.ker) ∈ χ'.ker :=
+      (QuotientGroup.eq_one_iff _).mp h
+    have h2 : χ' a ^ Nat.card (Γ F ⧸ χ'.ker) = 1 := by
+      rw [← map_pow]
+      exact hmem
+    have := congrArg (fun u : (Dickson.K 3)ˣ => (u : Dickson.K 3)) h2
+    simpa [hχ'def] using this
+  -- strip the `3`-part: `x ^ (3 ^ k) = 1` forces `x = 1` in characteristic `3`
+  refine ⟨n₀ / 3 ^ (n₀.factorization 3), Nat.ordCompl_pos 3 hn₀pos.ne',
+    Nat.not_dvd_ordCompl Nat.prime_three hn₀pos.ne', ?_⟩
+  intro a
+  have hsplit : 3 ^ (n₀.factorization 3) * (n₀ / 3 ^ (n₀.factorization 3)) = n₀ :=
+    Nat.ordProj_mul_ordCompl_eq_self n₀ 3
+  have hcube : (χ a ^ (n₀ / 3 ^ (n₀.factorization 3))) ^ (3 ^ (n₀.factorization 3)) = 1 := by
+    rw [← pow_mul, mul_comm, hsplit]
+    exact hpow a
+  haveI : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  have hzero : (χ a ^ (n₀ / 3 ^ (n₀.factorization 3)) - 1) ^ (3 ^ (n₀.factorization 3)) = 0 := by
+    rw [sub_pow_char_pow (R := Dickson.K 3), hcube, one_pow, sub_self]
+  have h3 : (3 : ℕ) ^ (n₀.factorization 3) ≠ 0 := pow_ne_zero _ (by norm_num)
+  have hfin := (pow_eq_zero_iff h3).mp hzero
+  linear_combination hfin
+
+set_option maxHeartbeats 1000000 in
+/-- **Artin reciprocity for the narrow Hilbert class field, for a
+character of PRIME-POWER order — the irreducible class-field-theoretic
+core** (sorry node, created 2026-07-26 as sub-leaf (ii) of
+`exists_artinSymbol_isNarrowPrincipal_ray_class` below, which is now
+PROVEN as glue over this leaf and the elementary sub-leaf (i)
+`exists_pow_eq_one_of_isOpen_ker_ray_class` just above): with the data of
+that leaf — `χ : Γ F → 𝔽̄₃` multiplicative (`hmul`), trivial on an open
+subgroup `V` (`hVopen`, `hVker`), unramified at every finite place
+(`hunr`), and `c` a function on ideals multiplicative on NONZERO ideals
+with `c (v.asIdeal) = χ(Frob_v)` (`hcmul`, `hcfrob`) — but with the
+EXTRA hypothesis that `χ` is killed by a power of a single prime
+`ℓ ≠ 3` (`hord`), the Artin symbol kills every totally positive
+principal ideal: `c ((γ)) = 1` for `γ ≠ 0` totally positive.
+
+**Why prime-power order is the right granularity.** This is exactly the
+first reduction in Artin's own proof of the reciprocity law (Artin 1927;
+Neukirch *ANT* VI (7.1)–(7.3); Lang *ANT* ch. X §2): the general case
+follows from the cyclic prime-power case, because the character group of
+a finite abelian group is generated by its primary components, and the
+cyclotomic-descent lemma that carries the proof is stated for cyclic
+extensions of prime-power degree. It is not a cosmetic weakening — the
+auxiliary prime supplied by Artin's Lemma is chosen against a single
+`ℓ`. The reduction itself is PROVEN in the consumer below (see its
+docstring); nothing else of the reciprocity law has been discharged.
+
+**`ℓ ≠ 3` is free**, and is supplied by sub-leaf (i): the values of `χ`
+lie in `𝔽̄₃ˣ`, whose torsion is prime to the characteristic, so the
+exponent of `χ` — and hence the order of any value of `c` — is never
+divisible by `3`. The leaf may therefore be attacked without worrying
+about the wildly ramified `ℓ = p` case of local class field theory.
+
+**Mathlib survey (2026-07-25, re-checked 2026-07-26): there is NOTHING
+to build on.** Ray class groups, narrow class groups, the Hilbert class
+field, the Artin map/symbol, Artin reciprocity, idele class groups and
+Kronecker–Weber are ALL absent from the pin, and `~/cs/FLT` has no class
+field theory either. What exists is plain `ClassGroup`, the
+`HeightOneSpectrum` factorization API, `NumberField.InfinitePlace`,
+abstract Frobenius as `IsArithFrobAt` (`Mathlib/RingTheory/Frobenius.lean`,
+with `isConj_arithFrobAt`), and abelian CFT over `ℚ` only
+(`IsCyclotomicExtension.Rat.galEquivZMod`, identifying Frobenius at `p`
+with `[p] ∈ (ℤ/nℤ)ˣ`).
+
+Dependency order for the development this leaf needs, in the order a
+fleet should build it:
+
+1. *the totally positive API* — `∀ φ : F →+* ℝ, 0 < φ x` as a
+   multiplicative submonoid, and its relation to
+   `NumberField.InfinitePlace`; independent of everything else;
+2. *well-definedness of the abelian Artin symbol at an unramified
+   prime* — mathlib's `IsArithFrobAt` together with
+   `isConj_arithFrobAt` and "conjugate elements of an abelian group are
+   equal"; bounded, needs no class field theory, and every later step
+   consumes it;
+3. *Artin's Lemma* (the genuine crux) — the existence of an auxiliary
+   prime/cyclotomic field splitting the cyclic `ℓ`-power extension; the
+   project's Chebotarev machinery (`dense_conjClasses_globalFrob`,
+   `exists_algEquiv_map_zeta_eq_pow_absNorm`) is the natural input;
+4. *cyclotomic descent*, which finishes reciprocity from 3.
+
+The alternative route (ii) — the two inequalities (analytic first
+inequality over ray class `L`-functions, algebraic second inequality via
+the Herbrand quotient) — reaches an index EQUALITY
+`[I(F) : P₁⁺ · N_{M/F} I(M)] = [M:F]`, but note that the index equality
+plus surjectivity of the Artin map does NOT by itself force
+`P₁⁺ ⊆ ker`: two subgroups of `I(F)/N` of the same index need not
+coincide. That route still has to be closed by an Artin-Lemma-style
+argument, which is why 1–4 above is recorded as the primary plan. -/
+theorem artinSymbol_span_eq_one_of_pos_primePow_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (hunr : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∀ c : Γ F, ∀ σ ∈ localInertiaGroup w,
+        χ (c * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (γ : NumberField.RingOfIntegers F) (hγ0 : γ ≠ 0)
+    (hγpos : ∀ φ : F →+* ℝ,
+      0 < φ (algebraMap (NumberField.RingOfIntegers F) F γ)) :
+    c (Ideal.span {γ}) = 1 := by
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for the narrow Hilbert class field, in
 Artin-symbol existence form — THE class-field-theoretic leaf** (sorry
@@ -31985,48 +32228,97 @@ class `L`-functions (this is where the Weber counting of
 one via the ambiguous-class/Herbrand-quotient computation, then
 reciprocity from the index equality.
 
-**PARTIALLY DISCHARGED 2026-07-25 (glue-first).** Clauses (1) and (2) —
-existence of a multiplicative `c` with `c (v.asIdeal) = χ(Frob_v)` — are
-now PROVEN outright from `exists_ideal_extension_globalFrob_ray_class`,
-which pins `c` as the multiplicative extension of `v ↦ χ(Frob_v)`, and
-clause (3) is reduced by PROVEN ideal-theoretic bookkeeping to the single
-sorried `have hpos` inside the proof: `c ((γ)) = 1` for every nonzero
-TOTALLY POSITIVE `γ`. The reduction: narrow principality gives
-`(α)·I = (β)` with `α, β ≫ 0` and `α ≠ 0`, whence `β ≠ 0`
-(`Ideal.mul_eq_bot`), so multiplicativity gives `c ((β)) = c ((α))·c I`
-and `hpos` at both `α` and `β` leaves `c I = 1`. What remains is
-therefore exactly "the Artin symbol kills the ray `P₁⁺` of totally
-positive principal ideals" — no `∃`, no ideal bookkeeping, no
-narrow-class multipliers.
+**PARTIALLY DISCHARGED 2026-07-25, and now PROVEN AS GLUE 2026-07-26.**
+Clauses (1) and (2) — existence of a multiplicative `c` with
+`c (v.asIdeal) = χ(Frob_v)` — are PROVEN outright from
+`exists_ideal_extension_globalFrob_ray_class`, which pins `c` as the
+multiplicative extension of `v ↦ χ(Frob_v)`, and clause (3) is reduced by
+PROVEN ideal-theoretic bookkeeping to `have hpos` inside the proof:
+`c ((γ)) = 1` for every nonzero TOTALLY POSITIVE `γ`. The reduction:
+narrow principality gives `(α)·I = (β)` with `α, β ≫ 0` and `α ≠ 0`,
+whence `β ≠ 0` (`Ideal.mul_eq_bot`), so multiplicativity gives
+`c ((β)) = c ((α))·c I` and `hpos` at both `α` and `β` leaves `c I = 1`.
 
-**Mathlib survey 2026-07-25: there is NOTHING to build on.** Ray class
-groups, narrow class groups, the Hilbert class field, the Artin
-map/symbol, Artin reciprocity, idele class groups, totally positive
-elements and Kronecker–Weber are ALL absent from the pin. What exists is
-plain `ClassGroup`, the `HeightOneSpectrum` factorization API,
+`hpos` is in turn PROVEN here (2026-07-26) over the two sub-leaves stated
+just above:
+
+* (i) `exists_pow_eq_one_of_isOpen_ker_ray_class` (PROVEN) — a
+  multiplicative `χ` with open kernel has a finite exponent `n`, and `n`
+  may be taken prime to `3`;
+* (ii) `artinSymbol_span_eq_one_of_pos_primePow_ray_class` (SORRY) — the
+  same statement as `hpos` for a `χ` killed by `ℓ^k`, `ℓ ≠ 3` prime.
+
+The reduction of the general case to the prime-power case, proven here,
+is the standard first step of Artin's proof and runs as follows. By (i),
+`χ` has exponent `n` with `3 ∤ n`; by the uniqueness of the
+multiplicative extension (`eq_of_forall_asIdeal_eq_ray_class`, comparing
+`I ↦ c I ^ n` with the constant `1`), `z := c ((γ))` satisfies `zⁿ = 1`,
+so `d := orderOf z` divides `n`. If `z ≠ 1`, take `ℓ = d.minFac`: it is
+prime, divides `n`, and is `≠ 3` because `3 ∤ n`. Applying (ii) to the
+`ℓ`-primary quotient character `χ^{n/ℓ^{vℓ(n)}}` (multiplicative,
+trivial on `V`, unramified, killed by `ℓ^{vℓ(n)}`) together with the
+ideal function `I ↦ c I^{n/ℓ^{vℓ(n)}}` gives `z^{n/ℓ^{vℓ(n)}} = 1`, so
+`d`, hence `ℓ`, divides `ordCompl[ℓ] n` — contradicting
+`Nat.not_dvd_ordCompl`. So `z = 1`.
+
+**Mathlib survey 2026-07-25, re-checked 2026-07-26: there is NOTHING to
+build on.** Ray class groups, narrow class groups, the Hilbert class
+field, the Artin map/symbol, Artin reciprocity, idele class groups,
+totally positive elements and Kronecker–Weber are ALL absent from the
+pin, and `~/cs/FLT` has none of them either. What exists is plain
+`ClassGroup`, the `HeightOneSpectrum` factorization API,
 `NumberField.InfinitePlace`, abstract Frobenius as `IsArithFrobAt`
 (`Mathlib/RingTheory/Frobenius.lean`), and abelian CFT over `ℚ` only
 (`IsCyclotomicExtension.Rat.galEquivZMod`, `galEquivZMod_stabilizer`,
-identifying Frobenius at `p` with `[p] ∈ (ℤ/nℤ)ˣ`). So `hpos` is not a
-bounded missing piece; it is global class field theory and nothing less.
+identifying Frobenius at `p` with `[p] ∈ (ℤ/nℤ)ˣ`). So sub-leaf (ii) is
+not a bounded missing piece; it is global class field theory and nothing
+less. Its docstring records the dependency order for building it.
 
-**But the CONSUMER may not need that strength — the cut above is
-arguably mis-placed.** This leaf is uniform in `F`, yet its only
-instantiation (through
+**Could the CONSUMER avoid reciprocity altogether? The retired route (β)
+was RE-EXAMINED 2026-07-26 and it does NOT dominate this leaf.** This
+leaf is uniform in `F`, yet its only instantiation (through
 `character_globalFrob_sq_eq_one_of_narrow_exponent_two_ray_class`) is at
 `F = ℚ(x)`, `x² = d`, for the seven `d = −1, 2, −2, 3, −3, 6, −6`, and
 what `odd_character_eq_one_of_unramified_everywhere_ray_class` ultimately
-needs is only: *an everywhere-unramified character of `Γ F` of order
-prime to `3` is trivial*. The retired route (β) recorded on that node —
-root-discriminant bounds — proves exactly that with NO reciprocity, since
-an unramified extension preserves the root discriminant. Checked with
-PARI/GP 2026-07-25: the seven fields have `|disc| ≤ 24`, hence root
-discriminant `≤ √24 ≈ 4.899`, while the Minkowski bound
-`(Nᴺ/N!)^(2/N)·π/4` first exceeds `√24` at degree `N = 32` over `ℚ` — so
-Minkowski alone kills every unramified extension of degree `≥ 16`, and
-only the odd degrees `3, 5, …, 15` need the sharper Odlyzko bounds of the
-`poitou_explicit_formula_bound` cluster. That is a bounded,
-reciprocity-free alternative to this entire leaf. -/
+needs is only: *an everywhere-unramified character of `Γ F` of order odd
+and prime to `3` is trivial*. Route (β) would get that from
+root-discriminant bounds, since a finite-place-unramified extension `M/F`
+has `d_M = d_F^{[M:F]}`, hence the SAME root discriminant. Recomputed in
+PARI/GP 2026-07-26, the Minkowski bound `(Nᴺ/N!)^{2/N}·(π/4)^{2r₂/N}` at
+`N = [M:ℚ] = 2n`, against `rd(F) = √|d_F|`:
+
+* `d = −1` (`rd = 2`), `d = −3` (`rd = 1.732`): the bound already exceeds
+  `rd` at `N = 4` (`2.565`), so Minkowski alone kills EVERY unramified
+  extension. `d = −2` (`2.828`) and, being totally real for odd `n`,
+  `d = 2` (`2.828`) and `d = 3` (`3.464`): killed at `N = 6`
+  (`3.155` imaginary, `4.017` real). So five of the seven fields need no
+  Odlyzko input at all — the previously recorded "Minkowski only kills
+  degree `≥ 16`" is the worst case, not the general one.
+* Only `d = ±6` (`rd = √24 = 4.899`) resists. For `d = 6` the extension
+  is totally REAL (a real place of `F` has decomposition group of order
+  dividing the ODD `n`, so it splits), and Minkowski first wins at
+  `N = 12` — but it MISSES `N = 10` by half a percent (`4.8758` against
+  `4.8990`). For `d = −6` the extension is totally imaginary and
+  Minkowski first wins at `N = 32`, i.e. `n ≥ 16`.
+* So route (β) needs unconditional Odlyzko bounds above `4.899` at
+  signatures `(0,5), (0,7), (0,11), (0,13)` and `(10,0)` — the surviving
+  `n` coprime to `6`.
+
+**And it is provably unreachable at `n = 3`**, which matters because it
+shows the route depends on an unstated hypothesis of the consumer. An
+unramified cubic extension of `ℚ(√−6)` would be a totally imaginary
+SEXTIC field of discriminant `(−24)³ = −13824`, `rd = 4.899`; but the
+sextic `x⁶ − x⁵ + x⁴ − 2x³ + 4x² − 3x + 1` is irreducible with `0` real
+roots and field discriminant `−9747` (PARI/GP `nfdisc`/`polsturm`,
+2026-07-26), i.e. `rd = 4.6416`. Hence NO lower bound for signature
+`(0,3)` — Minkowski, Odlyzko, or even a GRH bound — can exceed `4.6416`,
+and none can exclude the cubic case. Route (β) survives only because
+`odd_character_eq_one_of_unramified_everywhere_ray_class` carries
+`¬ (3 ∣ n)` in `hνodd`; that hypothesis is load-bearing for route (β) in
+a way the earlier note did not say. Route (β) is therefore a genuine but
+DELICATE alternative resting on the still-sorried
+`poitou_explicit_formula_bound` cluster, not a cheap bypass of this
+leaf. -/
 theorem exists_artinSymbol_isNarrowPrincipal_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -32051,11 +32343,57 @@ theorem exists_artinSymbol_isNarrowPrincipal_ray_class
   refine ⟨c, hcmul, hcfrob, ?_⟩
   -- THE remaining class-field-theoretic content, isolated to a totally positive
   -- principal generator: the Artin symbol kills the ray `P₁⁺`.  This is Artin
-  -- reciprocity for the narrow Hilbert class field; see the docstring.
+  -- reciprocity for the narrow Hilbert class field; see the docstring.  It is
+  -- reduced here to the PRIME-POWER-order case, which is the granularity at
+  -- which Artin's proof runs.
   have hpos : ∀ γ : NumberField.RingOfIntegers F, γ ≠ 0 →
       (∀ φ : F →+* ℝ, 0 < φ (algebraMap (NumberField.RingOfIntegers F) F γ)) →
       c (Ideal.span {γ}) = 1 := by
-    sorry
+    intro γ hγ0 hγpos
+    -- (i) `χ` has a finite exponent `n`, and `n` may be taken prime to `3`
+    obtain ⟨n, hn0, hn3, hn⟩ :=
+      exists_pow_eq_one_of_isOpen_ker_ray_class F χ hmul V hVopen hVker
+    have hspanγ : Ideal.span {γ} ≠ ⊥ := by
+      simpa [Ideal.span_singleton_eq_bot] using hγ0
+    -- the `n`-th power of the Artin symbol is identically `1` on nonzero
+    -- ideals, by uniqueness of the multiplicative extension
+    have hzn : c (Ideal.span {γ}) ^ n = 1 :=
+      eq_of_forall_asIdeal_eq_ray_class F (Dickson.K 3)
+        (fun I => c I ^ n) (fun _ => 1)
+        (fun I J hI hJ => by rw [hcmul I J hI hJ, mul_pow])
+        (fun _ _ _ _ => (one_mul (1 : Dickson.K 3)).symm)
+        (fun v => by rw [hcfrob v]; exact hn _)
+        (fun v => by
+          rw [hcfrob v, hn _]
+          exact one_ne_zero)
+        (Ideal.span {γ}) hspanγ
+    set z : Dickson.K 3 := c (Ideal.span {γ})
+    have hdvd : orderOf z ∣ n := orderOf_dvd_of_pow_eq_one hzn
+    by_contra hz1
+    have hord1 : orderOf z ≠ 1 := fun h => hz1 (orderOf_eq_one_iff.mp h)
+    set ℓ : ℕ := (orderOf z).minFac
+    have hℓprime : ℓ.Prime := Nat.minFac_prime hord1
+    have hℓdvd : ℓ ∣ orderOf z := Nat.minFac_dvd _
+    have hℓ3 : ℓ ≠ 3 := fun h => hn3 (h ▸ hℓdvd.trans hdvd)
+    have hnne : n ≠ 0 := hn0.ne'
+    have hsplit : ℓ ^ (n.factorization ℓ) * (n / ℓ ^ (n.factorization ℓ)) = n :=
+      Nat.ordProj_mul_ordCompl_eq_self n ℓ
+    -- (ii) reciprocity for the `ℓ`-primary part `χ ^ (n / ℓ ^ vℓ(n))` of `χ`
+    have hkey : (fun I => c I ^ (n / ℓ ^ (n.factorization ℓ))) (Ideal.span {γ}) = 1 :=
+      artinSymbol_span_eq_one_of_pos_primePow_ray_class F
+        (fun a => χ a ^ (n / ℓ ^ (n.factorization ℓ)))
+        (fun a b => by rw [hmul a b, mul_pow])
+        V hVopen (fun a ha => by rw [hVker a ha, one_pow])
+        (fun w d σ hσ => by rw [hunr w d σ hσ, one_pow])
+        ℓ hℓprime hℓ3 (n.factorization ℓ)
+        (fun a => by rw [← pow_mul, mul_comm, hsplit]; exact hn a)
+        (fun I => c I ^ (n / ℓ ^ (n.factorization ℓ)))
+        (fun I J hI hJ => by rw [hcmul I J hI hJ, mul_pow])
+        (fun v => by rw [hcfrob v])
+        γ hγ0 hγpos
+    have hdvd2 : orderOf z ∣ n / ℓ ^ (n.factorization ℓ) :=
+      orderOf_dvd_of_pow_eq_one hkey
+    exact Nat.not_dvd_ordCompl hℓprime hnne (hℓdvd.trans hdvd2)
   -- bookkeeping: narrow principality transports `hpos` to every narrow class
   intro I hI hnar
   obtain ⟨α, β, hα0, hαpos, hβpos, hαI⟩ := hnar
@@ -32101,7 +32439,9 @@ extension has conductor dividing the archimedean modulus, so
 `f ((α)) = 1` for `α ≫ 0`.
 
 **DECOMPOSED and PROVEN as glue 2026-07-25** over the reciprocity leaf
-`exists_artinSymbol_isNarrowPrincipal_ray_class` (sorry) and the two
+`exists_artinSymbol_isNarrowPrincipal_ray_class` (itself PROVEN as glue
+2026-07-26 over the single remaining sorry node
+`artinSymbol_span_eq_one_of_pos_primePow_ray_class`) and the two
 bookkeeping bricks `eq_of_forall_asIdeal_eq_ray_class` /
 `eq_one_top_of_forall_asIdeal_ne_zero_ray_class` (both PROVEN just
 above). Assembly: the values of `χ` never vanish (`χ a · χ a⁻¹ = χ 1 =
@@ -32177,9 +32517,10 @@ and free of all `Γ ℚ`/`θ'` coding; DECOMPOSED and PROVEN as glue
 `exists_ideal_extension_globalFrob_ray_class` (PROVEN) and the
 reciprocity input
 `character_ideal_span_singleton_eq_one_of_forall_pos_ray_class`
-(itself PROVEN as glue 2026-07-25 over the single remaining
-class-field-theoretic leaf
-`exists_artinSymbol_isNarrowPrincipal_ray_class`)): a multiplicative
+(itself PROVEN as glue 2026-07-25 over
+`exists_artinSymbol_isNarrowPrincipal_ray_class`, in turn PROVEN as glue
+2026-07-26 over the single remaining class-field-theoretic leaf
+`artinSymbol_span_eq_one_of_pos_primePow_ray_class`)): a multiplicative
 character `χ` of `Γ F` (values in `𝔽̄₃`)
 that is trivial on an open subgroup `V` and everywhere unramified
 (`hunr`: trivial on every `Γ F`-conjugate of the image of the local
