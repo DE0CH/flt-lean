@@ -7841,57 +7841,6 @@ noncomputable def modelToLocalValuationSubring {p : ℕ} (hp : p.Prime) :
   map_zero' := Subtype.ext (by simp)
   map_add' a b := Subtype.ext (by simp)
 
-open IsDedekindDomain in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 1000000 in
-/-- **The residue-field comparison at a good prime** (SORRY LEAF, cut
-2026-07-26 out of `exists_localReductionDatum_of_good_reduction`; it is
-the ONLY remaining input of that leaf and of the whole local-reduction
-datum): there is a LOCAL ring homomorphism `ρ` from the valuation
-subring `𝒪 = localValuationSubring v` of `ℚ̄_p` to `𝔽̄_p =
-AlgebraicClosure (IsLocalRing.ResidueField (Localization.AtPrime
-v.asIdeal))` whose restriction to the good-reduction model `ℤ_(p) ⊆ ℚ`
-(the map `modelToLocalValuationSubring`) is the residue map of that
-model followed by the structural embedding `𝔽_p → 𝔽̄_p`.
-
-Route to a proof (all of the ANALYTIC content is already available
-here; what is missing is bookkeeping about the two residue fields):
-
-1. `modelToLocalValuationSubring hp` is a LOCAL homomorphism
-   `ℤ_(p) → 𝒪`.  Equivalently `p` is a nonunit of `𝒪`: if `p⁻¹` were
-   integral over `ℤ_p` then, `ℤ_p` being integrally closed in `ℚ_p`, it
-   would lie in `ℤ_p`, making `v p = 1` — contradicting
-   `intValuation p = ofAdd (-1)` (see the computation inside
-   `maximalIdeal_adicCompletionIntegers_eq_span`).
-2. Hence `IsLocalRing.ResidueField.map` gives `𝔽_p → κ(𝒪)`, and `κ(𝒪)`
-   is ALGEBRAIC over `𝔽_p`: every `a ∈ 𝒪` is integral over `ℤ_p`, so
-   its residue is integral over the image of `κ(ℤ_p)`, which is FINITE
-   (`instFinite… : Finite (IsLocalRing.ResidueField 𝒪ᵥ)` in
-   `AbsoluteGaloisGroup.lean`) — equivalently, `κ(𝒪)` is algebraic over
-   the prime field `ZMod p`, and `residueFieldModelEquivZMod` below
-   identifies `𝔽_p` WITH that prime field.
-3. `IsAlgClosed.lift : κ(𝒪) →ₐ[𝔽_p] 𝔽̄_p` then exists, and
-   `ρ := lift ∘ IsLocalRing.residue 𝒪` is local (the residue map is
-   local and a homomorphism out of a field is local); the compatibility
-   is `IsLocalRing.ResidueField.map_residue` followed by
-   `AlgHom.commutes`.
-
-NOTE what is NOT needed here: `κ(𝒪)` is already known to be
-algebraically CLOSED (`isAlgClosed_residueField_localValuationSubring`,
-PROVEN above), and that fact — not this leaf — is what makes every such
-`ρ` surjective (`surjective_of_isLocalHom_localValuationSubring`, also
-PROVEN). So this leaf carries exactly the *existence* of the
-comparison, not its surjectivity. -/
-theorem exists_localResidueHom {p : ℕ} (hp : p.Prime) :
-    ∃ ρ : (localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat) →+*
-        AlgebraicClosure (IsLocalRing.ResidueField
-          (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)),
-      IsLocalHom ρ ∧
-      ∀ r : Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal,
-        ρ (modelToLocalValuationSubring hp r) =
-          algebraMap _ _ (IsLocalRing.residue _ r) :=
-  sorry
-
 /-- **The residue field of the good-reduction model at `p` is `ZMod p`**
 (PROVEN 2026-07-26): `𝓞 ℚ ≅ ℤ` carries `v_p` to `(p)`
 (`asIdeal_toHeightOneSpectrumRingOfIntegersRat`), so the residue field of
@@ -7987,6 +7936,325 @@ theorem surjective_of_isLocalHom_localValuationSubring {p : ℕ} (hp : p.Prime)
   obtain ⟨w, hw⟩ := hbij.2 z
   obtain ⟨a, ha⟩ := IsLocalRing.residue_surjective w
   exact ⟨a, by rw [← hw, ← ha]; rfl⟩
+
+/-! ## Locality of the two structural inclusions -/
+
+open IsDedekindDomain in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+instance algebraIsIntegral_integersLocalValuationSubring {p : ℕ} (hp : p.Prime) :
+    Algebra.IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)
+      (localValuationSubring (K := ℚ) hp.toHeightOneSpectrumRingOfIntegersRat) := by
+  constructor
+  intro a
+  obtain ⟨P, hPm, hP⟩ := a.2
+  refine ⟨P, hPm, ?_⟩
+  have hcomp := Polynomial.hom_eval₂ P
+    (algebraMap (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)
+      (localValuationSubring (K := ℚ) hp.toHeightOneSpectrumRingOfIntegersRat))
+    (algebraMap (localValuationSubring (K := ℚ) hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))) a
+  have hzero : (algebraMap (localValuationSubring (K := ℚ)
+      hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))
+      (Polynomial.eval₂ (algebraMap (HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+        (localValuationSubring (K := ℚ) hp.toHeightOneSpectrumRingOfIntegersRat)) a P)
+      = 0 := by
+    rw [hcomp]; exact hP
+  exact Subtype.ext (by simpa using hzero)
+
+open IsDedekindDomain in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **`p` is not a unit of the local valuation subring of `ℚ̄_p`.** -/
+theorem not_isUnit_natCast_localValuationSubring {p : ℕ} (hp : p.Prime) :
+    ¬ IsUnit ((p : ℕ) :
+      (localValuationSubring (K := ℚ) hp.toHeightOneSpectrumRingOfIntegersRat)) := by
+  intro hu
+  have hpKv : ((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat) ≠ 0 := Nat.cast_ne_zero.mpr hp.ne_zero
+  obtain ⟨u, hu'⟩ := hu
+  -- the inverse of `p` in `𝒪`, read in `ℚ̄_p`
+  have hmul : ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)) *
+      (((u⁻¹ : (localValuationSubring (K := ℚ)
+        hp.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+        (localValuationSubring (K := ℚ) hp.toHeightOneSpectrumRingOfIntegersRat)) :
+        AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)) = 1 := by
+    have h0 : (((p : ℕ) : (localValuationSubring (K := ℚ)
+        hp.toHeightOneSpectrumRingOfIntegersRat)) *
+        ((u⁻¹ : (localValuationSubring (K := ℚ)
+          hp.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+          (localValuationSubring (K := ℚ)
+            hp.toHeightOneSpectrumRingOfIntegersRat))) = 1 := by
+      rw [← hu']; exact u.mul_inv
+    have := congrArg (fun z : (localValuationSubring (K := ℚ)
+      hp.toHeightOneSpectrumRingOfIntegersRat) => (z : AlgebraicClosure
+        (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))) h0
+    simpa using this
+  have hinv : (((u⁻¹ : (localValuationSubring (K := ℚ)
+        hp.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+        (localValuationSubring (K := ℚ) hp.toHeightOneSpectrumRingOfIntegersRat)) :
+        AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)) =
+      algebraMap (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))
+        (((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)⁻¹) := by
+    rw [map_inv₀, map_natCast]
+    exact eq_inv_of_mul_eq_one_right hmul
+  have hintAC : IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)
+      (algebraMap (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+        (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat))
+        (((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)⁻¹)) := by
+    rw [← hinv]
+    exact ((u⁻¹ : (localValuationSubring (K := ℚ)
+      hp.toHeightOneSpectrumRingOfIntegersRat)ˣ) :
+      (localValuationSubring (K := ℚ) hp.toHeightOneSpectrumRingOfIntegersRat)).2
+  have hintKv : IsIntegral (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)
+      (((p : ℕ) : HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)⁻¹) := by
+    rw [← isIntegral_algHom_iff (IsScalarTower.toAlgHom
+      (HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat)
+      (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)))
+      (FaithfulSMul.algebraMap_injective _ _)]
+    exact hintAC
+  obtain ⟨y, hy⟩ := IsIntegrallyClosed.isIntegral_iff.mp hintKv
+  have hunitO : IsUnit ((p : ℕ) : HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat) := by
+    refine IsUnit.of_mul_eq_one y (FaithfulSMul.algebraMap_injective
+      (HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat)
+      (HeightOneSpectrum.adicCompletion ℚ hp.toHeightOneSpectrumRingOfIntegersRat) ?_)
+    rw [map_mul, map_one, map_natCast, hy, mul_inv_cancel₀ hpKv]
+  have hmem : ((p : ℕ) : HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat) ∈
+      IsLocalRing.maximalIdeal _ := by
+    rw [maximalIdeal_adicCompletionIntegers_eq_span hp]
+    exact Ideal.mem_span_singleton_self _
+  exact ((IsLocalRing.mem_maximalIdeal _).mp hmem) hunitO
+
+open IsDedekindDomain in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+instance isLocalHom_integersToLocalValuationSubring {p : ℕ} (hp : p.Prime) :
+    IsLocalHom (integersToLocalValuationSubring hp) := by
+  constructor
+  intro a ha
+  by_contra hnu
+  have hmem : a ∈ IsLocalRing.maximalIdeal _ := (IsLocalRing.mem_maximalIdeal _).mpr hnu
+  rw [maximalIdeal_adicCompletionIntegers_eq_span hp, Ideal.mem_span_singleton] at hmem
+  obtain ⟨t, rfl⟩ := hmem
+  rw [map_mul, map_natCast] at ha
+  exact not_isUnit_natCast_localValuationSubring hp (isUnit_of_mul_isUnit_left ha)
+
+open IsDedekindDomain in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+instance isLocalHom_modelToLocalValuationSubring {p : ℕ} (hp : p.Prime) :
+    IsLocalHom (modelToLocalValuationSubring hp) := by
+  constructor
+  intro a ha
+  by_contra hnu
+  have hmem : a ∈ IsLocalRing.maximalIdeal _ := (IsLocalRing.mem_maximalIdeal _).mpr hnu
+  rw [← Localization.AtPrime.map_eq_maximalIdeal] at hmem
+  have hle : Ideal.map (algebraMap (NumberField.RingOfIntegers ℚ)
+        (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))
+        hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal ≤
+      Ideal.span {((p : ℕ) :
+        Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)} := by
+    rw [Ideal.map_le_iff_le_comap]
+    intro x hx
+    rw [asIdeal_toHeightOneSpectrumRingOfIntegersRat hp, Ideal.mem_span_singleton] at hx
+    obtain ⟨t, rfl⟩ := hx
+    rw [Ideal.mem_comap, map_mul, map_natCast, Ideal.mem_span_singleton]
+    exact ⟨algebraMap _ _ t, rfl⟩
+  have hmem2 := hle hmem
+  rw [Ideal.mem_span_singleton] at hmem2
+  obtain ⟨t, rfl⟩ := hmem2
+  rw [map_mul, map_natCast] at ha
+  exact not_isUnit_natCast_localValuationSubring hp (isUnit_of_mul_isUnit_left ha)
+
+/-- A field in which `p` vanishes has characteristic `p`. -/
+theorem charP_of_natCast_eq_zero {F : Type*} [Field F] {p : ℕ} (hp : p.Prime)
+    (h : ((p : ℕ) : F) = 0) : CharP F p := by
+  have hdvd : ringChar F ∣ p := ringChar.dvd h
+  rcases (Nat.Prime.eq_one_or_self_of_dvd hp _ hdvd) with h1 | h1
+  · exact absurd h1 CharP.ringChar_ne_one
+  · exact h1 ▸ ringChar.charP F
+
+open IsDedekindDomain in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+instance charP_residueField_adicCompletionIntegers {p : ℕ} (hp : p.Prime) :
+    CharP (IsLocalRing.ResidueField (HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat)) p := by
+  refine charP_of_natCast_eq_zero hp ?_
+  rw [← map_natCast (IsLocalRing.residue (HeightOneSpectrum.adicCompletionIntegers ℚ
+    hp.toHeightOneSpectrumRingOfIntegersRat)) p]
+  refine Ideal.Quotient.eq_zero_iff_mem.mpr ?_
+  rw [maximalIdeal_adicCompletionIntegers_eq_span hp]
+  exact Ideal.mem_span_singleton_self _
+
+open IsDedekindDomain in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+instance charP_residueField_localValuationSubring {p : ℕ} (hp : p.Prime) :
+    CharP (IsLocalRing.ResidueField (localValuationSubring (K := ℚ)
+      hp.toHeightOneSpectrumRingOfIntegersRat)) p := by
+  refine charP_of_natCast_eq_zero hp ?_
+  rw [← map_natCast (IsLocalRing.residue (localValuationSubring (K := ℚ)
+    hp.toHeightOneSpectrumRingOfIntegersRat)) p]
+  exact Ideal.Quotient.eq_zero_iff_mem.mpr
+    ((IsLocalRing.mem_maximalIdeal _).mpr (not_isUnit_natCast_localValuationSubring hp))
+
+open IsDedekindDomain in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **The residue field of `𝒪` is integral over the residue field of `ℤ_p`.** -/
+theorem isIntegral_residueFieldMapIntegers {p : ℕ} (hp : p.Prime) :
+    (IsLocalRing.ResidueField.map (integersToLocalValuationSubring hp)).IsIntegral := by
+  intro z
+  obtain ⟨a, rfl⟩ := IsLocalRing.residue_surjective z
+  obtain ⟨P, hPm, hP⟩ := Algebra.IsIntegral.isIntegral
+    (R := HeightOneSpectrum.adicCompletionIntegers ℚ
+      hp.toHeightOneSpectrumRingOfIntegersRat) a
+  refine ⟨P.map (IsLocalRing.residue _), hPm.map _, ?_⟩
+  rw [Polynomial.eval₂_map, IsLocalRing.ResidueField.map_comp_residue,
+    ← Polynomial.hom_eval₂ P (integersToLocalValuationSubring hp)
+      (IsLocalRing.residue _) a]
+  rw [show Polynomial.eval₂ (integersToLocalValuationSubring hp) a P = 0 from hP, map_zero]
+
+open IsDedekindDomain in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **The residue field of `𝒪` is integral over the prime field `ZMod p`.** -/
+theorem isIntegral_zmodCastHom_residueField {p : ℕ} (hp : p.Prime) :
+    (ZMod.castHom (dvd_refl p) (IsLocalRing.ResidueField (localValuationSubring (K := ℚ)
+      hp.toHeightOneSpectrumRingOfIntegersRat))).IsIntegral := by
+  have hc : (ZMod.castHom (dvd_refl p) (IsLocalRing.ResidueField
+      (HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))).IsIntegral := by
+    letI : Algebra (ZMod p) (IsLocalRing.ResidueField
+        (HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)) :=
+      (ZMod.castHom (dvd_refl p) _).toAlgebra
+    haveI : Module.Finite (ZMod p) (IsLocalRing.ResidueField
+        (HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)) := Module.Finite.of_finite
+    haveI := Algebra.IsIntegral.of_finite (ZMod p) (IsLocalRing.ResidueField
+      (HeightOneSpectrum.adicCompletionIntegers ℚ
+        hp.toHeightOneSpectrumRingOfIntegersRat))
+    exact fun x => Algebra.IsIntegral.isIntegral (R := ZMod p) x
+  have h := RingHom.IsIntegral.trans _ _ hc (isIntegral_residueFieldMapIntegers hp)
+  rwa [show (IsLocalRing.ResidueField.map (integersToLocalValuationSubring hp)).comp
+      (ZMod.castHom (dvd_refl p) (IsLocalRing.ResidueField
+        (HeightOneSpectrum.adicCompletionIntegers ℚ
+          hp.toHeightOneSpectrumRingOfIntegersRat)))
+      = ZMod.castHom (dvd_refl p) _ from RingHom.ext_zmod _ _] at h
+
+open IsDedekindDomain in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **The residue-field comparison at a good prime** (PROVEN 2026-07-26):
+there is a LOCAL ring homomorphism `ρ` from the valuation subring
+`𝒪 = localValuationSubring v` of `ℚ̄_p` to `𝔽̄_p = AlgebraicClosure
+(IsLocalRing.ResidueField (Localization.AtPrime v.asIdeal))` whose
+restriction to the good-reduction model `ℤ_(p) ⊆ ℚ` (the map
+`modelToLocalValuationSubring`) is the residue map of that model followed
+by the structural embedding `𝔽_p → 𝔽̄_p`.  This is the whole input of
+`exists_localReductionDatum_of_good_reduction`.
+
+`ρ := IsAlgClosed.lift ∘ IsLocalRing.residue 𝒪`, over the PRIME field
+`ZMod p`: `κ(𝒪)` is integral over `ZMod p`
+(`isIntegral_zmodCastHom_residueField`) and `𝔽̄_p` is algebraically
+closed, so the lift exists; it is local because the residue map is and a
+homomorphism out of a field is.  The compatibility on the model is not
+checked by hand at all — both sides are ring homomorphisms out of
+`𝔽_p ≃+* ZMod p` (`residueFieldModelEquivZMod`), and any two ring
+homomorphisms out of `ZMod p` agree (`RingHom.ext_zmod`). -/
+theorem exists_localResidueHom {p : ℕ} (hp : p.Prime) :
+    ∃ ρ : (localValuationSubring hp.toHeightOneSpectrumRingOfIntegersRat) →+*
+        AlgebraicClosure (IsLocalRing.ResidueField
+          (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)),
+      IsLocalHom ρ ∧
+      ∀ r : Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal,
+        ρ (modelToLocalValuationSubring hp r) =
+          algebraMap _ _ (IsLocalRing.residue _ r) := by
+  classical
+  haveI : Fact p.Prime := ⟨hp⟩
+  haveI hck : CharP (IsLocalRing.ResidueField (Localization.AtPrime
+      hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) p :=
+    charP_of_injective_ringHom
+      (f := ((residueFieldModelEquivZMod hp).symm : ZMod p →+* _))
+      (residueFieldModelEquivZMod hp).symm.injective p
+  haveI hcb : CharP (AlgebraicClosure (IsLocalRing.ResidueField (Localization.AtPrime
+      hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))) p :=
+    charP_of_injective_ringHom (algebraMap (IsLocalRing.ResidueField
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) _).injective p
+  letI : Algebra (ZMod p) (IsLocalRing.ResidueField (localValuationSubring (K := ℚ)
+      hp.toHeightOneSpectrumRingOfIntegersRat)) :=
+    (ZMod.castHom (dvd_refl p) _).toAlgebra
+  letI : Algebra (ZMod p) (AlgebraicClosure (IsLocalRing.ResidueField
+      (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))) :=
+    (ZMod.castHom (dvd_refl p) _).toAlgebra
+  haveI : Algebra.IsIntegral (ZMod p) (IsLocalRing.ResidueField
+      (localValuationSubring (K := ℚ) hp.toHeightOneSpectrumRingOfIntegersRat)) :=
+    ⟨isIntegral_zmodCastHom_residueField hp⟩
+  haveI : Algebra.IsAlgebraic (ZMod p) (IsLocalRing.ResidueField
+      (localValuationSubring (K := ℚ) hp.toHeightOneSpectrumRingOfIntegersRat)) :=
+    Algebra.IsIntegral.isAlgebraic
+  let L : (IsLocalRing.ResidueField (localValuationSubring (K := ℚ)
+        hp.toHeightOneSpectrumRingOfIntegersRat)) →ₐ[ZMod p]
+      AlgebraicClosure (IsLocalRing.ResidueField (Localization.AtPrime
+        hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)) := IsAlgClosed.lift
+  refine ⟨L.toRingHom.comp (IsLocalRing.residue _), ?_, ?_⟩
+  · constructor
+    intro a hua
+    by_contra hnu
+    rw [RingHom.comp_apply, show IsLocalRing.residue _ a = 0 from
+      Ideal.Quotient.eq_zero_iff_mem.mpr ((IsLocalRing.mem_maximalIdeal _).mpr hnu),
+      map_zero] at hua
+    exact not_isUnit_zero hua
+  · intro r
+    have hkey : (L.toRingHom.comp (IsLocalRing.ResidueField.map
+          (modelToLocalValuationSubring hp)))
+        = algebraMap (IsLocalRing.ResidueField (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))
+          (AlgebraicClosure (IsLocalRing.ResidueField (Localization.AtPrime
+            hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))) := by
+      have h1 : ((L.toRingHom.comp (IsLocalRing.ResidueField.map
+            (modelToLocalValuationSubring hp))).comp
+          ((residueFieldModelEquivZMod hp).symm : ZMod p →+* _))
+          = ((algebraMap (IsLocalRing.ResidueField (Localization.AtPrime
+              hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))
+              (AlgebraicClosure (IsLocalRing.ResidueField (Localization.AtPrime
+                hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal)))).comp
+            ((residueFieldModelEquivZMod hp).symm : ZMod p →+* _)) := RingHom.ext_zmod _ _
+      refine RingHom.ext fun c => ?_
+      have h2 := RingHom.congr_fun h1 (residueFieldModelEquivZMod hp c)
+      simp only [RingHom.coe_comp, Function.comp_apply, RingEquiv.coe_toRingHom,
+        RingEquiv.symm_apply_apply] at h2
+      exact h2
+    have h3 := RingHom.congr_fun hkey (IsLocalRing.residue _ r)
+    simpa [IsLocalRing.ResidueField.map_residue] using h3
 
 open IsDedekindDomain in
 set_option synthInstance.maxHeartbeats 1000000 in
