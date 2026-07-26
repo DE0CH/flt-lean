@@ -206,6 +206,15 @@ public import Mathlib.AlgebraicGeometry.Properties
 public import Mathlib.RingTheory.KrullDimension.NonZeroDivisors
 public import Mathlib.RingTheory.KrullDimension.Polynomial
 public import Mathlib.RingTheory.KrullDimension.Field
+-- `isDomain_of_isRegularLocalRing` (PROVEN 2026-07-26, the commutative-algebra
+-- half of `isDomain_stalk_of_smooth_over_field`).  `IsRegularLocalRing` occurs
+-- in the SIGNATURE of `isRegularLocalRing_stalk_of_smooth_over_field`, so its
+-- defining module must be a `public import` and not a bare one.
+public import Mathlib.RingTheory.RegularLocalRing.Defs
+public import Mathlib.RingTheory.Nakayama
+public import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
+public import Mathlib.RingTheory.LocalRing.RingHom.Basic
+public import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 public import Mathlib.RingTheory.FiniteType
 public import Mathlib.RingTheory.Spectrum.Prime.Topology
 -- `exists_isOpen_isIrreducible_primeSpectrum` (PROVEN 2026-07-26, the affine
@@ -2274,40 +2283,367 @@ theorem irreducibleSpace_of_connectedSpace_of_locallyIrreducible
   rw [irreducibleSpace_def, Set.top_eq_univ, ← hZuniv]
   exact isIrreducible_irreducibleComponent
 
+/-- **EXCHANGE STEP: AN ELEMENT OF `𝔪 ∖ 𝔪²` LIES IN A MINIMAL GENERATING SET**
+(**PROVEN 2026-07-26**, the combinatorial half of `isDomain_of_isRegularLocalRing`).
+
+For `R` noetherian local with `(maximalIdeal R).spanFinrank = n + 1` and
+`x ∈ 𝔪 ∖ 𝔪²`, there is a finset `T` of `n` elements with
+`span (insert x T) = 𝔪`.
+
+THE PROOF is Steinitz exchange done by hand, which is what lets the whole
+`regular ⟹ domain` development avoid the cotangent space entirely. Take a
+generating finset `G` of `𝔪` with `#G = n + 1` and write `x = ∑_{g ∈ G} a_g g`.
+Not every `a_g` lies in `𝔪`, since otherwise `x ∈ 𝔪 · 𝔪 = 𝔪²`; pick `g₀` with
+`a_{g₀} ∉ 𝔪`, hence a UNIT because `R` is local. Then
+`g₀ = a_{g₀}⁻¹ (x − ∑_{g ≠ g₀} a_g g)`, so `G ⊆ span (insert x (G.erase g₀))`
+and `T := G.erase g₀` works. -/
+theorem exists_finset_card_span_insert_eq_maximalIdeal
+    {R : Type u} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
+    {x : R} (hx : x ∈ IsLocalRing.maximalIdeal R)
+    (hx2 : x ∉ (IsLocalRing.maximalIdeal R) ^ 2)
+    {n : ℕ} (hn : (IsLocalRing.maximalIdeal R).spanFinrank = n + 1) :
+    ∃ T : Finset R, T.card = n ∧
+      Ideal.span (insert x (T : Set R)) = IsLocalRing.maximalIdeal R := by
+  classical
+  obtain ⟨G, hGcard, hGspan⟩ :=
+    (IsNoetherian.noetherian (IsLocalRing.maximalIdeal R)).exists_span_finset_card_eq_spanFinrank
+  rw [hn] at hGcard
+  have hxG : x ∈ Submodule.span R (G : Set R) := by rw [hGspan]; exact hx
+  obtain ⟨a, -, ha⟩ := Submodule.mem_span_finset.1 hxG
+  have hsome : ∃ g ∈ G, a g ∉ IsLocalRing.maximalIdeal R := by
+    by_contra hcon
+    simp only [not_exists, not_and, not_not] at hcon
+    refine hx2 ?_
+    rw [pow_two, ← ha]
+    refine Ideal.sum_mem _ fun g hg => ?_
+    rw [smul_eq_mul]
+    exact Ideal.mul_mem_mul (hcon g hg) (by rw [← hGspan]; exact Submodule.subset_span hg)
+  obtain ⟨g₀, hg₀G, hg₀u⟩ := hsome
+  refine ⟨G.erase g₀, by rw [Finset.card_erase_of_mem hg₀G, hGcard]; rfl, ?_⟩
+  apply le_antisymm
+  · rw [Ideal.span_le]
+    rintro y hy
+    rcases hy with rfl | hy
+    · exact hx
+    · rw [← hGspan]
+      exact Submodule.subset_span (Finset.mem_of_mem_erase (by exact_mod_cast hy))
+  · rw [← hGspan, Ideal.span_le]
+    intro g hg
+    by_cases hgg : g = g₀
+    · subst hgg
+      have hsplit : ∑ h ∈ G, a h • h = a g • g + ∑ h ∈ G.erase g, a h • h :=
+        (Finset.add_sum_erase _ _ hg).symm
+      have hag : a g * g = x - ∑ h ∈ G.erase g, a h • h := by
+        rw [← smul_eq_mul, ← ha, hsplit]; ring
+      have hkey : a g * g ∈ Ideal.span (insert x ((G.erase g : Finset R) : Set R)) := by
+        rw [hag]
+        refine Ideal.sub_mem _ (Ideal.subset_span (Set.mem_insert _ _)) ?_
+        refine Ideal.sum_mem _ fun h hh => ?_
+        rw [smul_eq_mul]
+        exact Ideal.mul_mem_left _ _
+          (Ideal.subset_span (Set.mem_insert_of_mem _ (by exact_mod_cast hh)))
+      obtain ⟨u, hu⟩ := IsLocalRing.notMem_maximalIdeal.1 hg₀u
+      have hmul := Ideal.mul_mem_left
+        (Ideal.span (insert x ((G.erase g : Finset R) : Set R))) ((↑u⁻¹ : R)) hkey
+      rwa [← mul_assoc, ← hu, Units.inv_mul, one_mul] at hmul
+    · exact Ideal.subset_span
+        (Set.mem_insert_of_mem _ (by exact_mod_cast Finset.mem_erase.2 ⟨hgg, hg⟩))
+
+/-- **REGULAR LOCAL ⟹ DOMAIN, BY INDUCTION ON THE EMBEDDING DIMENSION**
+(**PROVEN 2026-07-26** — this is mathlib's own open TODO, closed here).
+
+The induction hypothesis has to quantify over the RING as well as the
+dimension, because the inductive step passes to `R ⧸ (x)`; hence the
+`∀ (R : Type u) [CommRing R] [IsRegularLocalRing R]` shape rather than a
+statement about one fixed `R`.
+
+THE PROOF (Atiyah–Macdonald 11.23 / Matsumura 14.3), by strong induction on
+`d = (maximalIdeal R).spanFinrank`, which regularity identifies with
+`ringKrullDim R`.
+
+* `d = 0`: `spanFinrank 𝔪 = 0` forces `𝔪 = ⊥`, so `R` is a field.
+* `d = m + 1`: `𝔪 ⊄ 𝔪²` (else Nakayama gives `𝔪 = ⊥` and `d = 0`) and `𝔪` is
+  not a minimal prime (else `𝔪.height = 0 = ringKrullDim R`, contradicting
+  `d = m + 1`). Since `R` is noetherian, `minimalPrimes R` is FINITE, so prime
+  avoidance applies to the finite family `{𝔪²} ∪ minimalPrimes R` — with `𝔪²`
+  in one of the two exceptional slots of `Ideal.subset_union_prime`, which is
+  exactly why that non-prime member is allowed. It yields
+  `x ∈ 𝔪`, `x ∉ 𝔪²`, `x` in no minimal prime.
+* `R' = R ⧸ (x)` is regular local of embedding dimension `m`: the exchange
+  lemma above gives `spanFinrank (𝔪 R') ≤ m`, and Krull's height theorem in the
+  form `ringKrullDim_le_ringKrullDim_quotient_add_encard` gives the reverse
+  dimension bound `ringKrullDim R ≤ ringKrullDim R' + 1`. Cancelling the `+ 1`
+  in `WithBot ℕ∞` is `ENat.WithBot.add_le_add_one_right_iff`.
+* By induction `R'` is a domain, i.e. `(x)` is PRIME. Some minimal prime
+  `q ≤ (x)`; for `y ∈ q` write `y = c x`, and `x ∉ q` with `q` prime forces
+  `c ∈ q`, so `q ≤ (x) · q` and Nakayama gives `q = ⊥`. So `⊥` is prime.
+
+Both halves of Krull's height theorem are already in mathlib
+(`Mathlib/RingTheory/Ideal/KrullsHeightTheorem.lean`); what was missing was
+only this induction, and it is what the `RegularLocalRing/Defs.lean` docstring
+records as an open TODO. -/
+theorem isDomain_of_isRegularLocalRing_aux (n : ℕ) :
+    ∀ (R : Type u) [CommRing R] [IsRegularLocalRing R],
+      (IsLocalRing.maximalIdeal R).spanFinrank = n → IsDomain R := by
+  classical
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro R _ _ hn
+    match n, hn, ih with
+    | 0, hn, _ =>
+      have hbot : IsLocalRing.maximalIdeal R = ⊥ :=
+        (Submodule.spanFinrank_eq_zero_iff_eq_bot (IsNoetherian.noetherian _)).1 hn
+      have hfield : IsField R := IsLocalRing.isField_iff_maximalIdeal_eq.2 hbot
+      letI := hfield.toField
+      infer_instance
+    | (m + 1), hn, ih =>
+      have hdim : ringKrullDim R = ((m + 1 : ℕ) : WithBot ℕ∞) := by
+        rw [← IsRegularLocalRing.spanFinrank_maximalIdeal (R := R), hn]
+      have hm2 : ¬ (IsLocalRing.maximalIdeal R ≤ (IsLocalRing.maximalIdeal R) ^ 2) := by
+        intro hle
+        have hb : IsLocalRing.maximalIdeal R = ⊥ := by
+          refine Submodule.eq_bot_of_le_smul_of_le_jacobson_bot (IsLocalRing.maximalIdeal R) _
+            (IsNoetherian.noetherian _) ?_ ?_
+          · rwa [smul_eq_mul, ← pow_two]
+          · rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top]
+        rw [hb] at hn
+        simp at hn
+      have hmp : ∀ p ∈ minimalPrimes R, ¬ (IsLocalRing.maximalIdeal R ≤ p) := by
+        intro p hp hle
+        haveI := IsMinimalPrime.isPrime hp
+        have hpm : p = IsLocalRing.maximalIdeal R :=
+          le_antisymm (IsLocalRing.le_maximalIdeal Ideal.IsPrime.ne_top') hle
+        have h0 : (IsLocalRing.maximalIdeal R).height = 0 := Ideal.height_eq_zero_iff.2 (hpm ▸ hp)
+        rw [← IsLocalRing.maximalIdeal_height_eq_ringKrullDim, h0] at hdim
+        have hz : ((0 : ℕ) : WithBot ℕ∞) = ((m + 1 : ℕ) : WithBot ℕ∞) := by simpa using hdim
+        have h2 : (0 : ℕ) = m + 1 := by exact_mod_cast hz
+        omega
+      have hfin : (minimalPrimes R).Finite := minimalPrimes.finite_of_isNoetherianRing R
+      set s : Finset (Ideal R) := insert ((IsLocalRing.maximalIdeal R) ^ 2) hfin.toFinset with hs
+      have hnotsub :
+          ¬ ((IsLocalRing.maximalIdeal R : Set R) ⊆ ⋃ i ∈ (↑s : Set (Ideal R)), (i : Set R)) := by
+        intro hsub
+        obtain ⟨i, his, hle⟩ :=
+          (Ideal.subset_union_prime (s := s) (f := fun i => i)
+            ((IsLocalRing.maximalIdeal R) ^ 2) ((IsLocalRing.maximalIdeal R) ^ 2)
+            (fun i hi _ hne => by
+              rw [hs, Finset.mem_insert] at hi
+              rcases hi with rfl | hi
+              · exact absurd rfl hne
+              · exact IsMinimalPrime.isPrime (hfin.mem_toFinset.1 hi))).1 hsub
+        rw [hs, Finset.mem_insert] at his
+        rcases his with rfl | his
+        · exact hm2 hle
+        · exact hmp i (hfin.mem_toFinset.1 his) hle
+      obtain ⟨x, hxm, hxni⟩ := Set.not_subset.1 hnotsub
+      simp only [Set.mem_iUnion, not_exists] at hxni
+      have hx2 : x ∉ (IsLocalRing.maximalIdeal R) ^ 2 := fun h =>
+        hxni _ (by rw [hs, Finset.coe_insert]; exact Set.mem_insert _ _) h
+      have hxmin : ∀ p ∈ minimalPrimes R, x ∉ p := fun p hp h =>
+        hxni p (by
+          rw [hs, Finset.coe_insert]
+          exact Set.mem_insert_of_mem _ (Finset.mem_coe.2 (hfin.mem_toFinset.2 hp))) h
+      obtain ⟨T, hTcard, hTspan⟩ :=
+        exists_finset_card_span_insert_eq_maximalIdeal hxm hx2 hn
+      set I : Ideal R := Ideal.span {x} with hI
+      have hIm : I ≤ IsLocalRing.maximalIdeal R := by rw [hI, Ideal.span_le]; simpa using hxm
+      have hInt : I ≠ ⊤ := fun h =>
+        (IsLocalRing.maximalIdeal.isMaximal R).ne_top (top_le_iff.mp (h ▸ hIm))
+      haveI : Nontrivial (R ⧸ I) := Ideal.Quotient.nontrivial_iff.mpr hInt
+      haveI : IsLocalRing (R ⧸ I) :=
+        IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+      have hmapmax : (IsLocalRing.maximalIdeal R).map (Ideal.Quotient.mk I)
+          = IsLocalRing.maximalIdeal (R ⧸ I) :=
+        IsLocalRing.map_maximalIdeal_of_surjective _ Ideal.Quotient.mk_surjective
+      have hsr : (IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank ≤ m := by
+        have himg : IsLocalRing.maximalIdeal (R ⧸ I)
+            = Ideal.span ((Ideal.Quotient.mk I) '' (T : Set R)) := by
+          rw [← hmapmax, ← hTspan, Ideal.map_span, Set.image_insert_eq]
+          have hx0 : (Ideal.Quotient.mk I) x = 0 := by
+            rw [Ideal.Quotient.eq_zero_iff_mem, hI]
+            exact Ideal.subset_span rfl
+          rw [hx0, Ideal.span_insert_zero]
+        rw [himg]
+        refine le_trans (Submodule.spanFinrank_span_le_ncard_of_finite
+          ((T : Set R).toFinite.image _)) ?_
+        exact le_trans (Set.ncard_image_le (T : Set R).toFinite) (by simp [hTcard])
+      have hjac : ({x} : Set R) ⊆ Ring.jacobson R := by
+        intro y hy
+        rw [Set.mem_singleton_iff] at hy
+        subst hy
+        show y ∈ Ring.jacobson R
+        rw [IsLocalRing.ringJacobson_eq_maximalIdeal]
+        exact hxm
+      have hkey : ringKrullDim R ≤ ringKrullDim (R ⧸ I) + 1 := by
+        have h := ringKrullDim_le_ringKrullDim_quotient_add_encard ({x} : Set R) hjac
+        simpa [hI] using h
+      have hdimq : ((m : ℕ) : WithBot ℕ∞) ≤ ringKrullDim (R ⧸ I) := by
+        rw [hdim] at hkey
+        push_cast at hkey
+        exact ENat.WithBot.add_le_add_one_right_iff.mp hkey
+      have hreg : IsRegularLocalRing (R ⧸ I) :=
+        IsRegularLocalRing.of_spanFinrank_maximalIdeal_le _
+          (le_trans (by exact_mod_cast hsr) hdimq)
+      have hsrq : (IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank = m := by
+        refine le_antisymm hsr ?_
+        have hfr := hreg.spanFinrank_maximalIdeal
+        have h2 : ((m : ℕ) : WithBot ℕ∞)
+            ≤ (((IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank : ℕ) : WithBot ℕ∞) := by
+          rw [hfr]; exact hdimq
+        exact_mod_cast h2
+      haveI : IsDomain (R ⧸ I) := ih m (Nat.lt_succ_self m) (R ⧸ I) hsrq
+      haveI hIprime : I.IsPrime := (Ideal.Quotient.isDomain_iff_prime I).1 inferInstance
+      obtain ⟨q, hq, hqI⟩ := Ideal.exists_minimalPrimes_le (I := (⊥ : Ideal R)) (J := I) bot_le
+      haveI hqp : q.IsPrime := IsMinimalPrime.isPrime hq
+      have hxq : x ∉ q := hxmin q hq
+      have hqq : q ≤ I • q := by
+        intro y hy
+        obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.1 (hqI hy)
+        have hcq : c ∈ q := by
+          rcases hqp.mem_or_mem (show c * x ∈ q from hc ▸ hy) with h | h
+          · exact h
+          · exact absurd h hxq
+        rw [← hc, smul_eq_mul, mul_comm]
+        exact Ideal.mul_mem_mul hcq (Ideal.subset_span rfl)
+      have hqbot : q = ⊥ := by
+        refine Submodule.eq_bot_of_le_smul_of_le_jacobson_bot I q
+          (IsNoetherian.noetherian _) hqq ?_
+        rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top]
+        exact hIm
+      have hbp : (⊥ : Ideal R).IsPrime := hqbot ▸ hqp
+      haveI : NoZeroDivisors R := ⟨fun {a b} h => by
+        have hm := hbp.mem_or_mem (show a * b ∈ (⊥ : Ideal R) by simpa using h)
+        simpa using hm⟩
+      exact NoZeroDivisors.to_isDomain R
+
+/-- **REGULAR LOCAL RINGS ARE INTEGRAL DOMAINS** (**PROVEN 2026-07-26**).
+
+This is the second of the two mathlib gaps named in the docstring of
+`isDomain_stalk_of_smooth_over_field`, and it is no longer a gap: mathlib's
+`Mathlib/RingTheory/RegularLocalRing/Defs.lean` records only
+`IsRegularLocalRing`/`IsRegularRing` with a handful of instances, and its own
+"TODO" is precisely this direction. The proof is
+`isDomain_of_isRegularLocalRing_aux` instantiated at `n = spanFinrank 𝔪`.
+
+Note the route taken is NOT the associated-graded one the earlier docstring
+sketched — no `gr_𝔪(R)`, no filtered ring, no Krull intersection theorem. The
+induction above uses only Nakayama, prime avoidance over the finitely many
+minimal primes of a noetherian ring, and Krull's height theorem, all of which
+mathlib already had. This is general, reusable, and a genuine mathlib
+contribution. -/
+theorem isDomain_of_isRegularLocalRing (R : Type u) [CommRing R] [IsRegularLocalRing R] :
+    IsDomain R :=
+  isDomain_of_isRegularLocalRing_aux _ R rfl
+
 open CategoryTheory AlgebraicGeometry in
-/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE DOMAINS** (sorry node, 2026-07-26 —
-the ONLY genuinely geometric ingredient left in the connected ⟹ irreducible
-upgrade, and a pure mathlib gap).
+/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE REGULAR LOCAL RINGS** (sorry node,
+cut 2026-07-26 out of `isDomain_stalk_of_smooth_over_field`; it is now the ONLY
+open leaf of that node, and the whole of its remaining geometric content).
+
+For `Z` smooth over `Spec K` with `K` any field, every local ring `𝒪_{Z,z}` is
+a REGULAR local ring. Combined with `isDomain_of_isRegularLocalRing` (PROVEN
+above) this gives the domain property, so this leaf is exactly the first of the
+two gaps the parent's docstring named — and the second of them is closed.
+
+WHY THIS IS THE HARD HALF. A smooth morphism has geometrically regular fibres
+(EGA IV 17.5.1), so `Z` is a regular scheme over any field. Mathlib's
+`AlgebraicGeometry/Morphisms/Smooth.lean` never mentions regularity: a
+2026-07-26 sweep of pin `a3364fa` found ZERO cross-references between the
+`Algebra.Smooth`/`RingHom.Smooth`/`AlgebraicGeometry.Smooth` hierarchy and
+`IsRegularLocalRing`/`IsRegularRing`, and there is no `Geometrically/Regular.lean`.
+The sweep was re-run when this leaf was cut and the result is unchanged.
+
+THE TWO CLASSICAL ROUTES, and what each needs that the pin lacks.
+
+* **Cohen structure theorem.** Formal smoothness makes the completion
+  `𝒪̂_{Z,z}` a power-series ring over the residue field, and a local ring whose
+  completion is regular is regular. Mathlib has `Algebra.FormallySmooth` and
+  `Mathlib/RingTheory/Smooth/AdicCompletion.lean`, but no Cohen structure
+  theorem and no "completion regular ⟹ regular" transfer.
+* **Kähler differentials and the second fundamental exact sequence.** For
+  `R = 𝒪_{Z,z}` with residue field `κ`, formal smoothness splits
+  `0 → 𝔪/𝔪² → Ω_{A/K} ⊗_A κ → Ω_{κ/K} → 0`, whence
+  `dim_κ 𝔪/𝔪² = rank Ω − trdeg(κ/K) = dim R`, which is regularity. Mathlib has
+  `Mathlib/RingTheory/Smooth/Kaehler.lean`, so the exact sequence is the
+  reachable part; what is missing is the dimension formula
+  `dim A_p + trdeg κ(p) = dim A` for a finite-type domain over a field. Do NOT
+  start there: dimension theory over a field is barely present at this pin —
+  even `dim k[x₁..xₙ] = n` is still a `proof_wanted`
+  (`MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing`,
+  `Mathlib/RingTheory/KrullDimension/Basic.lean:94`), and there is no
+  transcendence-degree/dimension material anywhere under `KrullDimension/`.
+
+* **THE THIRD ROUTE, AND THE ONE TO TAKE — smooth ASCENT of regularity from a
+  base mathlib already knows is regular** (measured 2026-07-26, and it
+  corrects the pessimistic reading above). The pin is much better supplied
+  than the "nothing exists" sweep suggests: `IsRegularRing k` for a field,
+  `IsRegularRing (MvPolynomial (Fin n) k)` and hence
+  `IsRegularLocalRing (Localization.AtPrime p)` for every prime `p` of a
+  polynomial ring over a field ALL discharge by `infer_instance`, out of
+  `Mathlib/RingTheory/RegularLocalRing/Polynomial.lean`
+  (`MvPolynomial.isRegularRing_of_isRegularRing`). `Noether normalization` is
+  also present (`Mathlib/RingTheory/NoetherNormalization.lean`), and
+  `Mathlib/RingTheory/KrullDimension/Regular.lean` carries the regular-sequence
+  dimension drop (`ringKrullDim_quotient_span_singleton_succ_eq_ringKrullDim_of_mem_nonZeroDivisors`
+  and `ringKrullDim_add_length_eq_ringKrullDim_of_isRegular`).
+
+  So the affine polynomial base is DONE, and the single genuinely missing
+  statement is that regularity ASCENDS along a smooth ring map — concretely,
+  via `Algebra.IsStandardSmooth`, that
+  `k[x₁..xₙ] ⧸ (f₁, …, f_c)` localized at a prime is regular when the Jacobian
+  is invertible there, i.e. that the `f_i` form a regular sequence whose images
+  are linearly independent in `𝔪/𝔪²`. That is one theorem over machinery that
+  exists, not a dimension theory built from scratch. Anyone taking this leaf
+  should start by reading `Mathlib/RingTheory/Smooth/StandardSmooth.lean` and
+  `StandardSmoothCotangent.lean`, NOT by formalizing Cohen or Noether–trdeg.
+
+A FIRST CUT THAT WOULD HELP whoever takes this: reduce to the AFFINE statement
+"`A` a smooth `K`-algebra, `p` prime ⟹ `IsRegularLocalRing (Localization.AtPrime p)`"
+by transporting through an affine chart, exactly as
+`exists_isOpen_isIrreducible_of_isDomain_stalk` (PROVEN, above) transports the
+domain property: `Scheme.exists_Spec_apply_eq` gives an open immersion
+`g : Spec R ⟶ Z` hitting `z`, `Spec.stalkIso` identifies the stalk with
+`Localization.AtPrime y.asIdeal`, and `Smooth` is stable under composition with
+the open immersion `g`, so `R` is a smooth `K`-algebra through
+`HasRingHomProperty @Smooth RingHom.Smooth`. That reduction was NOT carried out
+here — it is scheme-theoretic bookkeeping with no mathematical content, and it
+is deliberately left with the leaf so the leaf's owner may choose whether the
+affine or the scheme-level route is the better place to attack. -/
+theorem isRegularLocalRing_stalk_of_smooth_over_field {K : Type u} [Field K]
+    {Z : AlgebraicGeometry.Scheme.{u}}
+    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
+    (hf : AlgebraicGeometry.Smooth f) (z : Z) :
+    IsRegularLocalRing (Z.presheaf.stalk z) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE DOMAINS** (**PROVEN 2026-07-26** over
+`isRegularLocalRing_stalk_of_smooth_over_field` (SORRY) and
+`isDomain_of_isRegularLocalRing` (PROVEN)).
 
 For `Z` smooth over `Spec K` with `K` any field, every local ring `𝒪_{Z,z}` is
 an integral domain.
 
-THE CLASSICAL ARGUMENT, and the two mathlib gaps it names. A smooth morphism
-has geometrically regular fibres (EGA IV 17.5.1), so `Z` is a regular scheme
-over any field; and a regular local ring is an integral domain. Neither half
-exists at this pin, and the second is a well-known gap:
+THE CLASSICAL ARGUMENT named TWO mathlib gaps. A smooth morphism has
+geometrically regular fibres (EGA IV 17.5.1), so `Z` is a regular scheme over
+any field; and a regular local ring is an integral domain.
 
-* **smooth over a field ⟹ the local rings are REGULAR.** Mathlib's
-  `AlgebraicGeometry/Morphisms/Smooth.lean` never mentions regularity (a
-  2026-07-26 sweep of the pin found ZERO cross-references between the
-  `Algebra.Smooth`/`RingHom.Smooth`/`AlgebraicGeometry.Smooth` hierarchy and
-  `IsRegularLocalRing`/`IsRegularRing`). The classical route is Cohen's
-  structure theorem: formal smoothness makes the completion `𝒪̂_{Z,z}` a
-  power-series ring over the residue field, and a local ring whose completion
-  is regular is regular.
-* **regular local ⟹ IsDomain.** Also absent — `Mathlib/RingTheory/`
-  `RegularLocalRing/Defs.lean` has only `IsRegularLocalRing` and
-  `IsRegularRing` with a handful of instances (PIDs, Dedekind domains,
-  polynomial rings over a regular base), and its own docstring records even
-  "regular local ⟹ regular" as an open TODO. The classical route is the
-  associated graded ring: for a regular local ring `gr_𝔪(R)` is a polynomial
-  ring over `R/𝔪`, hence a domain, and a filtered ring with domain associated
-  graded and `⋂ 𝔪ⁿ = 0` (Krull) is a domain.
+**ONE OF THE TWO IS NOW CLOSED (2026-07-26).** `regular local ⟹ IsDomain` is
+PROVEN here as `isDomain_of_isRegularLocalRing`, over the exchange lemma
+`exists_finset_card_span_insert_eq_maximalIdeal` and the induction
+`isDomain_of_isRegularLocalRing_aux`. It is mathlib's own recorded TODO in
+`Mathlib/RingTheory/RegularLocalRing/Defs.lean`, and the proof needed nothing
+beyond Nakayama, prime avoidance and the two halves of Krull's height theorem
+that the pin already carries — in particular NOT the associated graded ring
+that the earlier version of this docstring proposed. It is a general, reusable
+statement and a genuine mathlib contribution.
 
-Both are general, reusable, and would be genuine mathlib contributions; the
-second in particular is consumed by every "regular ⟹ normal ⟹ irreducible"
-argument in algebraic geometry. Note this SUBSUMES the weaker "smooth over a
-field ⟹ reduced": the sibling
+**WHAT REMAINS** is exactly `isRegularLocalRing_stalk_of_smooth_over_field`
+(SORRY, stated immediately above with its own audit): smooth over a field ⟹
+the local rings are REGULAR. That is the whole geometric content of this node
+and the only thing between it and a proof.
+
+Note this SUBSUMES the weaker "smooth over a field ⟹ reduced": the sibling
 `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` was proven on
 2026-07-26 by a different route (associated primes) and no longer needs it,
 but any future consumer of reducedness can take it from here.
@@ -2320,7 +2656,8 @@ theorem isDomain_stalk_of_smooth_over_field {K : Type u} [Field K]
     (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
     (hf : AlgebraicGeometry.Smooth f) (z : Z) :
     IsDomain (Z.presheaf.stalk z) :=
-  sorry
+  haveI := isRegularLocalRing_stalk_of_smooth_over_field f hf z
+  isDomain_of_isRegularLocalRing _
 
 /-- **A PRIME WITH DOMAIN LOCALIZATION HAS AN IRREDUCIBLE OPEN NEIGHBOURHOOD
 IN `Spec R`** (**PROVEN 2026-07-26** — the affine heart of the
