@@ -153,6 +153,9 @@ public import Fermat.FLT.FreyCurve.QuarticDescent
 -- the twelve levels of Kenku's non-prime-power determination below are proven
 -- from the corresponding rational-point statements about that curve.
 public import Fermat.FLT.ModularCurve.X0
+-- The Tate normal form and the level-`7` parametrisation, used by
+-- `not_order_two_and_order_seven_point` below.
+public import Fermat.FLT.FreyCurve.TateNormalForm
 
 @[expose] public section
 
@@ -7524,7 +7527,8 @@ primes and is a lower bound on the conductor, never a contradiction.
 
 FIRST BRICK BUILT (2026-07-25). Item 1 of the missing-machinery list is
 not reachable in one step, but its elementary prerequisite is, and it is
-now PROVEN here: `exists_tateNormalForm`, the Tate normal form for a
+now PROVEN in `Fermat/FLT/FreyCurve/TateNormalForm.lean`:
+`exists_tateNormalForm`, the Tate normal form for a
 point of order `≥ 4`. Consequently each of the eight nodes is stated in
 the coordinates the literature uses — about the explicit family
 `tateNormalForm b c` and the origin, i.e. about a plane model of
@@ -7540,8 +7544,9 @@ Tate-normal-form section note immediately below.
 
 The eight nodes below are stated in the coordinates the literature
 actually uses. The passage into those coordinates is NOT assumed: it is
-the PROVEN theorem `exists_tateNormalForm` in this section, which is new
-here and has no mathlib counterpart.
+the PROVEN theorem `exists_tateNormalForm` of
+`Fermat/FLT/FreyCurve/TateNormalForm.lean`, which has no mathlib
+counterpart.
 
 An elliptic curve over `ℚ` with a rational point `P` of order `≥ 4` is
 `ℚ`-isomorphic to
@@ -7563,8 +7568,9 @@ exactly why `4` is the threshold:
   precisely `3P ≠ 0`: once `a₄ = a₆ = 0`, the tangent at the origin is
   `y = 0`, which meets `x³ + a₂' x² = 0` in the third point `x = −a₂'`,
   so `a₂' = 0` says the origin is a flex, i.e. a point of order `3`.
-  That direction is the PROVEN `three_nsmul_origin_eq_zero` below, and
-  it is the only place any point arithmetic is needed.
+  That direction is the PROVEN `three_nsmul_origin_eq_zero` of
+  `TateNormalForm.lean`, and it is the only place any point arithmetic is
+  needed.
 
 The transport of the Mordell–Weil group along the changes of variables
 is `Point.equivVariableChange` from the repo's mathlib shim; everything
@@ -7584,150 +7590,17 @@ which are touched here.
 
 namespace WeierstrassCurve
 
-/-- **Tate normal form** `y² + (1 − c) x y − b y = x³ − b x²`, the
-standard plane model in which a point of order `≥ 4` sits at the origin.
-The `(b, c)`-plane is the standard affine model of `X_1(n)` once the
-order-`n` condition on `(0,0)` is imposed. -/
-def tateNormalForm (b c : ℚ) : WeierstrassCurve ℚ := ⟨1 - c, -b, -b, 0, 0⟩
-
-/-- **The origin is a flex when `a₂` vanishes** (PROVEN): on a curve
-`y² + a₁ x y + a₃ y = x³ + a₂ x² + a₄ x` with `a₂ = a₄ = 0` and
-`a₃ ≠ 0`, the origin is a point of order dividing `3`.
-
-`a₄ = 0` makes the tangent slope at `(0,0)` equal `a₄/a₃ = 0`, so the
-tangent is the line `y = 0`; it meets the curve where `x³ + a₂ x² = 0`,
-which with `a₂ = 0` is `x³ = 0` — a triple contact. Concretely the
-doubling formulas give `addX = −a₂ = 0` and `negAddY = 0`, so
-`P + P = −P`. The hypothesis `a₃ ≠ 0` is what makes the tangent
-non-vertical, i.e. `P` not `2`-torsion. -/
-lemma three_nsmul_origin_eq_zero (V : WeierstrassCurve ℚ)
-    (h2 : V.a₂ = 0) (h4 : V.a₄ = 0) (h3 : V.a₃ ≠ 0)
-    (h00 : V.toAffine.Nonsingular 0 0) :
-    Affine.Point.some 0 0 h00 + Affine.Point.some 0 0 h00 +
-      Affine.Point.some 0 0 h00 = 0 := by
-  have hne : (0 : ℚ) ≠ V.toAffine.negY 0 0 := by
-    simp only [Affine.negY]
-    intro h
-    exact h3 (by linarith)
-  have hslope : V.toAffine.slope 0 0 0 0 = 0 := by
-    rw [Affine.slope_of_Y_ne rfl hne]
-    simp only [Affine.negY, h2, h4]
-    ring_nf
-  have key : Affine.Point.some 0 0 h00 + Affine.Point.some 0 0 h00 =
-      -Affine.Point.some 0 0 h00 := by
-    rw [Affine.Point.add_self_of_Y_ne' hne]
-    congr 1
-    refine Affine.Point.some_eq_some V ?_ ?_
-    · simp only [Affine.addX, hslope, h2]; ring
-    · simp only [Affine.negAddY, Affine.addX, hslope, h2]; ring
-  rw [key, neg_add_cancel]
-
-/-- **Tate normal form for a point of order `≥ 4`** (PROVEN 2026-07-25;
-no mathlib counterpart): an elliptic curve `W` over `ℚ` carrying a
-rational point `P` with `4 ≤ addOrderOf P` is `ℚ`-isomorphic to
-`tateNormalForm b c` for some `b, c ∈ ℚ`, by an isomorphism of
-Mordell–Weil groups carrying `P` to `(0, 0)`.
-
-See the section note above for the derivation and for which order
-hypothesis licenses which division. Silverman ATAEC / Husemöller
-"Elliptic Curves" Ch. 4; the form is due to Tate. -/
-theorem exists_tateNormalForm (W : WeierstrassCurve ℚ) [W.IsElliptic]
-    (P : W.toAffine.Point) (h4 : 4 ≤ addOrderOf P) :
-    ∃ (b c : ℚ) (_ : (tateNormalForm b c).IsElliptic)
-      (h00 : (tateNormalForm b c).toAffine.Nonsingular 0 0)
-      (Ψ : W.toAffine.Point ≃+ (tateNormalForm b c).toAffine.Point),
-      Ψ P = Affine.Point.some 0 0 h00 := by
-  have hPP : P + P ≠ 0 := by
-    intro h
-    rw [← two_nsmul] at h
-    have := Nat.le_of_dvd (by norm_num) (addOrderOf_dvd_of_nsmul_eq_zero h)
-    omega
-  have hPPP : P + P + P ≠ 0 := by
-    intro h
-    have h3 : (3 : ℕ) • P = 0 := by
-      rw [show (3 : ℕ) = 2 + 1 from rfl, add_nsmul, two_nsmul, one_nsmul]; exact h
-    have := Nat.le_of_dvd (by norm_num) (addOrderOf_dvd_of_nsmul_eq_zero h3)
-    omega
-  rcases P with _ | ⟨X, Y, hns⟩
-  · exact absurd (by simp [← Affine.Point.zero_def]) hPP
-  -- `2P ≠ 0` is exactly nonvanishing of `a₃'`, the tangent denominator at `P`.
-  have hY2 : W.a₃ + X * W.a₁ + 2 * Y ≠ 0 := by
-    intro h0
-    refine hPP (Affine.Point.add_of_Y_eq rfl ?_)
-    simp only [Affine.negY]
-    linarith
-  set s : ℚ := (W.a₄ + 2 * X * W.a₂ - Y * W.a₁ + 3 * X ^ 2) / (W.a₃ + X * W.a₁ + 2 * Y)
-    with hs
-  have hs4 : s * (W.a₃ + X * W.a₁ + 2 * Y) =
-      W.a₄ + 2 * X * W.a₂ - Y * W.a₁ + 3 * X ^ 2 := div_mul_cancel₀ _ hY2
-  set C₁ : VariableChange ℚ := ⟨1, X, s, Y⟩ with hC₁
-  set W₁ : WeierstrassCurve ℚ := C₁ • W with hW₁
-  have hE : W.toAffine.Equation X Y := hns.1
-  have h₁6 : W₁.a₆ = 0 := by
-    rw [hW₁, variableChange_a₆, hC₁]
-    rw [Affine.equation_iff] at hE
-    simp only [Units.val_one, inv_one, one_pow, one_mul]
-    linarith [hE]
-  have h₁4 : W₁.a₄ = 0 := by
-    rw [hW₁, variableChange_a₄, hC₁]
-    simp only [Units.val_one, inv_one, one_pow, one_mul]
-    linear_combination -hs4
-  have h₁3 : W₁.a₃ = W.a₃ + X * W.a₁ + 2 * Y := by
-    rw [hW₁, variableChange_a₃, hC₁]
-    simp only [Units.val_one, inv_one, one_pow, one_mul]
-  have h₁3ne : W₁.a₃ ≠ 0 := by rw [h₁3]; exact hY2
-  have h₀₁ : W₁.toAffine.Nonsingular 0 0 :=
-    Affine.equation_iff_nonsingular.mp ((Affine.equation_zero (W := W₁)).mpr h₁6)
-  have hΨ₁ : (Point.equivVariableChange W C₁).symm (Affine.Point.some X Y hns) =
-      Affine.Point.some 0 0 h₀₁ := by
-    rw [AddEquiv.symm_apply_eq, Point.equivVariableChange_some]
-    exact (Affine.Point.some_eq_some W (by simp [hC₁]) (by simp [hC₁])).symm
-  -- `3P ≠ 0` is exactly nonvanishing of `a₂'`: otherwise the origin is a flex.
-  have h₁2ne : W₁.a₂ ≠ 0 := by
-    intro h0
-    refine hPPP ?_
-    have h3 := three_nsmul_origin_eq_zero W₁ h0 h₁4 h₁3ne h₀₁
-    have hmap := congrArg (Point.equivVariableChange W C₁) h3
-    rw [map_add, map_add, ← hΨ₁] at hmap
-    simpa [AddEquiv.apply_symm_apply] using hmap
-  set u : ℚˣ := Units.mk0 (W₁.a₃ / W₁.a₂) (div_ne_zero h₁3ne h₁2ne) with hu
-  set C₂ : VariableChange ℚ := ⟨u, 0, 0, 0⟩ with hC₂
-  set W₂ : WeierstrassCurve ℚ := C₂ • W₁ with hW₂
-  set b : ℚ := -(W₁.a₂ ^ 3 / W₁.a₃ ^ 2) with hb
-  set c : ℚ := 1 - (W₁.a₂ / W₁.a₃) * W₁.a₁ with hc
-  have huinv : ((u : ℚ))⁻¹ = W₁.a₂ / W₁.a₃ := by
-    rw [hu]
-    simp only [Units.val_mk0]
-    rw [inv_div]
-  have hEq : W₂ = tateNormalForm b c := by
-    refine WeierstrassCurve.ext ?_ ?_ ?_ ?_ ?_
-    · rw [hW₂, variableChange_a₁, hC₂, tateNormalForm, hc]
-      simp only [Units.val_inv_eq_inv_val, huinv]
-      ring
-    · rw [hW₂, variableChange_a₂, hC₂, tateNormalForm, hb]
-      simp only [Units.val_inv_eq_inv_val, huinv]
-      field_simp
-      ring
-    · rw [hW₂, variableChange_a₃, hC₂, tateNormalForm, hb]
-      simp only [Units.val_inv_eq_inv_val, huinv]
-      field_simp
-      ring
-    · rw [hW₂, variableChange_a₄, hC₂, tateNormalForm, h₁4]
-      simp
-    · rw [hW₂, variableChange_a₆, hC₂, tateNormalForm, h₁6]
-      simp
-  have h₀₂ : W₂.toAffine.Nonsingular 0 0 := by
-    refine Affine.equation_iff_nonsingular.mp ((Affine.equation_zero (W := W₂)).mpr ?_)
-    rw [hW₂, variableChange_a₆, hC₂, h₁6]
-    simp
-  have hΨ₂ : (Point.equivVariableChange W₁ C₂).symm (Affine.Point.some 0 0 h₀₁) =
-      Affine.Point.some 0 0 h₀₂ := by
-    rw [AddEquiv.symm_apply_eq, Point.equivVariableChange_some]
-    exact (Affine.Point.some_eq_some W₁ (by simp [hC₂]) (by simp [hC₂])).symm
-  refine ⟨b, c, hEq ▸ (inferInstance : W₂.IsElliptic), hEq ▸ h₀₂,
-    ((Point.equivVariableChange W C₁).symm.trans
-      ((Point.equivVariableChange W₁ C₂).symm.trans (Point.equivOfEq hEq))), ?_⟩
-  rw [AddEquiv.trans_apply, AddEquiv.trans_apply, hΨ₁, hΨ₂, Point.equivOfEq_some]
+/-! `tateNormalForm`, `three_nsmul_origin_eq_zero` and
+`exists_tateNormalForm` were declared here until 2026-07-25 and now live in
+`Fermat/FLT/FreyCurve/TateNormalForm.lean`, which this module imports. They
+were built twice, independently and on the same day, by the owners of the
+level-`ℓ ≥ 11` nodes and of the `X_1(14)` leaf; keeping two copies is a
+duplicate-declaration error, and the substrate is shared with the
+level-structure leaves at `14, 15, 16, 18`, so it belongs in its own module.
+The statement that survives is the more general one — hypotheses `2P ≠ 0` and
+`3P ≠ 0` rather than `4 ≤ addOrderOf P`, which also covers points of infinite
+order — and `exists_tateNormalForm` is kept there, verbatim in the form used
+below, as its corollary. -/
 
 /-- **Passage to Tate coordinates at a level `ℓ ≥ 11`** (PROVEN): if the
 origin of every `tateNormalForm b c` fails to have order `ℓ`, then no
@@ -8104,8 +7977,9 @@ theorem WeierstrassCurve.no_prime_torsion_ge_eleven (E : WeierstrassCurve ℚ)
     E.no_torsion_order_67 Q hQ, E.no_torsion_order_163 Q hQ]
 
 /-- **No rational point of order `2` together with a rational point of
-order `7`** (sorry node — the `X_1(14)` content in its level-structure
-form): no elliptic curve over `ℚ` carries both. The hypotheses say
+order `7`** (DERIVED 2026-07-25 from the Tate-normal-form decomposition —
+see the RE-CUT note at the end of this docstring; the `X_1(14)` content in
+its level-structure form): no elliptic curve over `ℚ` carries both. The hypotheses say
 exactly that `E(ℚ) ⊇ ℤ/2 ⊕ ℤ/7 ≅ ℤ/14`, i.e. that the pair `(E, P + Q)`
 is a non-cuspidal rational point of `X_1(14)` — a curve of genus `1`
 (standard formula, recomputed 2026-07-25: `μ/12 = 6`, `12` cusps, so
@@ -8135,15 +8009,74 @@ rejected:
   forces bad reduction at `2, 3, 5, 7`, i.e. `210 ∣ N_E` — a lower bound
   on the conductor, never a contradiction.
 
-A formal proof needs the level-`7` Tate normal form (the genus-`0`
-parametrisation `b = d³ − d²`, `c = d² − d` of `X_1(7)`) together with
-the `2`-torsion condition, which cuts out the genus-`1` curve
-`X_1(14)`, and then a rank-`0` Mordell–Weil computation for it. Neither
-the Tate normal form nor Mordell–Weil is available at this pin. -/
+RE-CUT 2026-07-25 (this node is no longer a leaf). The audit above stands as
+a description of the mathematics, but its conclusion — that the statement is
+irreducible here — was a statement about missing *machinery*, not about the
+mathematics, and the machinery is now being built. The classical route is
+executed in `Fermat/FLT/FreyCurve/TateNormalForm.lean`, and this theorem is
+now DERIVED from four nodes there:
+
+* `WeierstrassCurve.exists_tateNormalForm_of_ne` (PROVEN) — the normalisation
+  `(E, Q) ≅ (E(b, c), (0, 0))` for a point `Q` with `2Q ≠ 0 ≠ 3Q`. This is the
+  piece mathlib lacks, and it is SHARED with the sibling level-structure
+  leaves at `15`, `16` and `18` and with the level-`ℓ ≥ 11` nodes above,
+  which consume its order-bound corollary `exists_tateNormalForm`.
+* `WeierstrassCurve.exists_kubert_param_seven` (PROVEN) — the genus-`0`
+  parametrisation `b = d³ − d²`, `c = d² − d` of `X_1(7)`, obtained by
+  computing `2Q`, `3Q` and imposing `4Q = −3Q`.
+* `WeierstrassCurve.exists_two_division_root` (PROVEN) — a rational point of
+  order `2` is a rational root of `4x³ + b₂x² + 2b₄x + b₆`.
+* `WeierstrassCurve.x1_fourteen_no_rational_point` (sorry node) — the
+  irreducible arithmetic core, now stated with no elliptic curve and no
+  modular curve in it: the `2`-division cubic of `E(d³ − d², d² − d)` has no
+  rational root for rational `d ∉ {0, 1}`. That is the affine equation of
+  `X_1(14)`, and it is where the rank-`0` Mordell–Weil input still sits.
+
+The gain is that the surviving arithmetic obstruction is now one explicit
+polynomial equation in two rational variables, attackable by descent, instead
+of a statement about torsion of elliptic curves. -/
 theorem WeierstrassCurve.not_order_two_and_order_seven_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic] (P Q : (E⁄ℚ).Point)
-    (hP : addOrderOf P = 2) (hQ : addOrderOf Q = 7) : False :=
-  sorry
+    (hP : addOrderOf P = 2) (hQ : addOrderOf Q = 7) : False := by
+  -- `Q` has order `7`, so neither `2Q` nor `3Q` vanishes: the Tate
+  -- normalisation applies to `(E, Q)`.
+  have h2 : Q + Q ≠ 0 := by
+    intro h
+    have hdvd : addOrderOf Q ∣ 2 :=
+      addOrderOf_dvd_of_nsmul_eq_zero (by rw [two_nsmul]; exact h)
+    rw [hQ] at hdvd
+    exact absurd hdvd (by decide)
+  have h3 : Q + Q + Q ≠ 0 := by
+    intro h
+    have hdvd : addOrderOf Q ∣ 3 :=
+      addOrderOf_dvd_of_nsmul_eq_zero (by
+        rw [show (3 : ℕ) = 2 + 1 from rfl, add_nsmul, two_nsmul, one_nsmul]
+        exact h)
+    rw [hQ] at hdvd
+    exact absurd hdvd (by decide)
+  -- Tate normal form: `(E, Q) ≅ (E(b, c), (0, 0))`.
+  haveI : (E⁄ℚ).IsElliptic := inferInstanceAs (E.map (algebraMap ℚ ℚ)).IsElliptic
+  obtain ⟨b, c, -, hell, Ψ, hΨ⟩ :=
+    WeierstrassCurve.exists_tateNormalForm_of_ne (E⁄ℚ) Q h2 h3
+  haveI := hell
+  have hQ' : addOrderOf (WeierstrassCurve.tateMarkedPoint b c) = 7 := by
+    rw [← hΨ, Ψ.addOrderOf_eq Q, hQ]
+  have hP' : addOrderOf (Ψ P) = 2 := by
+    rw [Ψ.addOrderOf_eq P, hP]
+  -- Level `7`: the marked point of order `7` pins the Kubert modulus `d`.
+  obtain ⟨d, hd0, hd1, hbd, hcd⟩ := WeierstrassCurve.exists_kubert_param_seven b c hQ'
+  -- Level `2`: the point of order `2` is a rational root of the `2`-division cubic.
+  obtain ⟨x₀, hx₀⟩ :=
+    WeierstrassCurve.exists_two_division_root (WeierstrassCurve.tateNormalForm b c) (Ψ P) hP'
+  -- Together they are a non-cuspidal rational point of `X_1(14)`.
+  refine WeierstrassCurve.x1_fourteen_no_rational_point d x₀ hd0 hd1 ?_
+  simp only [WeierstrassCurve.b₂, WeierstrassCurve.b₄, WeierstrassCurve.b₆,
+    WeierstrassCurve.tateNormalForm_a₁, WeierstrassCurve.tateNormalForm_a₂,
+    WeierstrassCurve.tateNormalForm_a₃, WeierstrassCurve.tateNormalForm_a₄,
+    WeierstrassCurve.tateNormalForm_a₆] at hx₀
+  subst hbd
+  subst hcd
+  linear_combination hx₀
 
 /-- **No rational point of order `14`** (DERIVED 2026-07-25 from the
 level-structure leaf `not_order_two_and_order_seven_point` by splitting
