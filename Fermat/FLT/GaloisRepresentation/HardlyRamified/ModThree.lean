@@ -36069,9 +36069,18 @@ of Artin reciprocity that is proven directly rather than by descent, and
 it is BOUNDED: no class field theory, no index inequality, no Artin
 Lemma.
 
-**Route as implemented** (all steps elementary given the sub-leaf
-`globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class`, supplied here
-as the hypothesis `hfrob`):
+**Nothing here is outstanding.** The Frobenius input
+`globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class` — sub-leaf
+(A1), taken here as the hypothesis `hfrob` — was itself **PROVEN on
+2026-07-26** (branch `flt-lean-150`, commit `3006ac87`), and the
+assembly in `exists_conductor_artinSymbol_span_eq_one_ray_class` below
+already discharges `hfrob` with it. So the hypothesis form is a
+CONVENIENCE, not a debt: keeping `hfrob` abstract is what lets this
+theorem be applied at every auxiliary base field `E` of Artin's descent
+without re-deriving the Frobenius action there. Any docstring in this
+cluster still calling (A1) a sorried sub-leaf is stale.
+
+**Route as implemented** (all steps elementary given `hfrob`):
 
 1. *No `ψ` is ever built.* The textbook route factors `χ` through a
    character `ψ` of `(ℤ/mℤ)ˣ` and shows `c I = ψ (N I)`. That is
