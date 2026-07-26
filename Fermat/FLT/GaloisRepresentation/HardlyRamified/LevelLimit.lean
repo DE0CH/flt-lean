@@ -440,63 +440,13 @@ noncomputable def framedOfMatrices
     LinearMap.toMatrix' (framedOfMatrices mat hone hmul hcont g) = mat g := by
   rw [framedOfMatrices_apply, LinearMap.toMatrix'_toLin']
 
-open scoped Matrix TensorProduct in
-/-- **The canonical framing turns a base change into an entrywise matrix
-image.**
-
-HOME AUDIT (2026-07-26). `Deformation.lean` proves the same computation
-twice below, as `piScalarRight_baseChange_apply` and
-`toMatrix'_pushforwardFrame` — but BOTH live below
-`exists_universalFrame_profinite_of_levelIdealSystem`, which needs it, so
-neither is usable there. This copy is stated over `[Algebra B A]` rather
-than over a `letI`-installed `ψ.toAlgebra`, which is what lets it live in
-a module with no dependence on `pushforwardFrame`; whoever next reorders
-`Deformation.lean` should delete both copies and redirect their use sites
-here. -/
-theorem toMatrix'_baseChange_conj {B : Type u} [CommRing B] [TopologicalSpace B]
-    [IsTopologicalRing B] {A : Type u} [CommRing A] [TopologicalSpace A]
-    [IsTopologicalRing A] [Algebra B A] [ContinuousSMul B A]
-    (ρ : FramedGaloisRep ℚ B (Fin 2)) (g : Field.absoluteGaloisGroup ℚ) :
-    LinearMap.toMatrix'
-        (((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g) =
-      (LinearMap.toMatrix' (ρ g)).map ⇑(algebraMap B A) := by
-  have hptmul : ∀ (b : A) (w : Fin 2 → B),
-      TensorProduct.piScalarRight B A A (Fin 2) (b ⊗ₜ[B] w) =
-        b • (fun j => algebraMap B A (w j)) := by
-    intro b w
-    rw [TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
-    funext j
-    show w j • b = b * algebraMap B A (w j)
-    rw [Algebra.smul_def, mul_comm]
-  have hbase : ∀ x : A ⊗[B] (Fin 2 → B),
-      TensorProduct.piScalarRight B A A (Fin 2) ((ρ.baseChange A) g x) =
-        ((LinearMap.toMatrix' (ρ g)).map ⇑(algebraMap B A)) *ᵥ
-          (TensorProduct.piScalarRight B A A (Fin 2) x) := by
-    intro x
-    induction x using TensorProduct.induction_on with
-    | zero => simp
-    | add a b ha hb => simp only [map_add, ha, hb, Matrix.mulVec_add]
-    | tmul b w =>
-      rw [GaloisRep.baseChange_tmul, hptmul, hptmul]
-      have hmap : (fun j => algebraMap B A ((ρ g w) j)) =
-          (LinearMap.toMatrix' (ρ g)).map ⇑(algebraMap B A) *ᵥ
-            (fun j => algebraMap B A (w j)) := by
-        funext i
-        rw [show (ρ g w) = LinearMap.toMatrix' (ρ g) *ᵥ w from
-          (LinearMap.toMatrix'_mulVec (ρ g) w).symm]
-        exact RingHom.map_mulVec (algebraMap B A) (LinearMap.toMatrix' (ρ g)) w i
-      rw [hmap, Matrix.mulVec_smul]
-  have happ : ∀ w : Fin 2 → A,
-      (((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g) w =
-        ((LinearMap.toMatrix' (ρ g)).map ⇑(algebraMap B A)) *ᵥ w := by
-    intro w
-    rw [GaloisRep.conj_apply, LinearEquiv.conj_apply_apply, hbase,
-      LinearEquiv.apply_symm_apply]
-  have hlin : ((((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g) :
-      (Fin 2 → A) →ₗ[A] (Fin 2 → A)) =
-      Matrix.toLin' ((LinearMap.toMatrix' (ρ g)).map ⇑(algebraMap B A)) :=
-    LinearMap.ext fun w => by rw [Matrix.toLin'_apply, happ]
-  rw [hlin, LinearMap.toMatrix'_toLin']
+-- FLOATING CODE DELETED 2026-07-26: `toMatrix'_baseChange_conj` stood here.
+-- flt-lean-99 added it to serve exactly one consumer — a SECOND hoist of
+-- `Deformation.toMatrix'_pushforwardFrame`, which had to be dropped at
+-- integration because `main` had already hoisted that same declaration
+-- somewhere else. With the consumer gone nothing referenced this, so it fell
+-- outside the used-constant cone of `fermat_last_theorem`. Recover from git
+-- if a future reordering of `Deformation.lean` wants it back.
 
 end Framed
 
