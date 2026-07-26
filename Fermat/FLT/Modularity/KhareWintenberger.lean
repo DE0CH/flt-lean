@@ -180,6 +180,11 @@ public import Mathlib.RingTheory.Flat.Basic
 public import Mathlib.RingTheory.TensorProduct.Basic
 public import Mathlib.RingTheory.TensorProduct.Maps
 public import Mathlib.RingTheory.TensorProduct.Quotient
+public import Mathlib.RingTheory.TensorProduct.MvPolynomial
+public import Mathlib.RingTheory.RingHom.Smooth
+public import Mathlib.RingTheory.Smooth.Basic
+public import Mathlib.RingTheory.Smooth.Locus
+public import Mathlib.RingTheory.Localization.Away.Basic
 public import Mathlib.RingTheory.Etale.Field
 public import Mathlib.RingTheory.Unramified.Field
 public import Mathlib.RingTheory.Jacobson.Ring
@@ -1185,8 +1190,10 @@ names),
 2026-07-26** — no longer a leaf: the presentation, the clearing of
 denominators, the Hensel lift and the descent back to a `ℚ`-algebra map are
 all discharged; what is left is exactly the two arithmetic leaves
-`exists_bound_forall_formallySmooth_integralSystemModel` (SORRY — spreading
-out) and `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible`
+`exists_bound_forall_formallySmooth_integralSystemModel` (**PROVEN 2026-07-26**
+over the residue `exists_inverted_formallySmooth_integralSystemModel` — SORRY,
+spreading out over `ℤ[1/N]`) and
+`exists_bound_forall_zmodSolvable_of_geometricallyIrreducible`
 (SORRY — Lang–Weil, nonemptiness form only)),
 `exists_primes_forall_sup_eq_top_of_isOpen` (**PROVEN 2026-07-26** — no
 longer a leaf: Chebotarev plus the decomposition-group dictionary, over the
@@ -3601,10 +3608,270 @@ theorem exists_integralGenerators {n : ℕ} {I : Ideal (MvPolynomial (Fin n) ℚ
     rw [hgi, Algebra.smul_def]
     exact Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨i, rfl⟩)
 
+section IntegralSystemBaseChange
+
+universe w
+
+open _root_.TensorProduct
+
+variable {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+variable (R : Type v) [CommRing R] (R' : Type w) [CommRing R'] [Algebra R R']
+
+/-- **The generators of an integral system are insensitive to the base**
+(PROVEN): mapping the `R`-generator along `R → R'` gives the `R'`-generator,
+because a ring map out of `ℤ` is unique. -/
+theorem integralSystem_map_map_intCast (i : Fin m) :
+    MvPolynomial.map (algebraMap R R') (MvPolynomial.map (Int.castRingHom R) (f i)) =
+      MvPolynomial.map (Int.castRingHom R') (f i) := by
+  rw [MvPolynomial.map_map, RingHom.ext_int ((algebraMap R R').comp (Int.castRingHom R))
+    (Int.castRingHom R')]
+
+/-- Each base-changed generator lies in the integral system ideal (PROVEN). -/
+theorem gen_mem_integralSystemIdeal (i : Fin m) :
+    MvPolynomial.map (Int.castRingHom R') (f i) ∈ integralSystemIdeal f R' :=
+  Ideal.subset_span ⟨i, rfl⟩
+
+/-- The underlying map of the forward base-change comparison, before descending
+the quotient. -/
+noncomputable def integralSystemBaseChangeFwdAux :
+    MvPolynomial (Fin n) R →ₐ[R] IntegralSystemModel f R' :=
+  ((Ideal.Quotient.mkₐ R' (integralSystemIdeal f R')).restrictScalars R).comp
+    (MvPolynomial.mapAlgHom (Algebra.ofId R R'))
+
+@[simp] theorem integralSystemBaseChangeFwdAux_apply (x : MvPolynomial (Fin n) R) :
+    integralSystemBaseChangeFwdAux f R R' x =
+      Ideal.Quotient.mk _ (MvPolynomial.map (algebraMap R R') x) := rfl
+
+theorem integralSystemIdeal_le_ker_fwdAux :
+    integralSystemIdeal f R ≤ RingHom.ker (integralSystemBaseChangeFwdAux f R R').toRingHom := by
+  rw [integralSystemIdeal, Ideal.span_le]
+  rintro _ ⟨i, rfl⟩
+  simp only [SetLike.mem_coe, RingHom.mem_ker, AlgHom.toRingHom_eq_coe, RingHom.coe_coe,
+    integralSystemBaseChangeFwdAux_apply, integralSystem_map_map_intCast]
+  exact Ideal.Quotient.eq_zero_iff_mem.mpr (gen_mem_integralSystemIdeal f R' i)
+
+/-- The forward comparison `R' ⊗[R] (P_R ⧸ I_R) → P_{R'} ⧸ I_{R'}`. -/
+noncomputable def integralSystemModelBaseChangeFwd :
+    R' ⊗[R] IntegralSystemModel f R →ₐ[R'] IntegralSystemModel f R' :=
+  Algebra.TensorProduct.lift (Algebra.ofId R' _)
+    (Ideal.Quotient.liftₐ (integralSystemIdeal f R) (integralSystemBaseChangeFwdAux f R R')
+      (fun _ ha => integralSystemIdeal_le_ker_fwdAux f R R' ha))
+    (fun _ _ => Commute.all _ _)
+
+/-- The underlying map of the backward base-change comparison. -/
+noncomputable def integralSystemBaseChangeBwdAux :
+    MvPolynomial (Fin n) R' →ₐ[R'] R' ⊗[R] IntegralSystemModel f R :=
+  (Algebra.TensorProduct.map (AlgHom.id R' R') (Ideal.Quotient.mkₐ R _)).comp
+    (MvPolynomial.algebraTensorAlgEquiv R R').symm.toAlgHom
+
+theorem integralSystemIdeal_le_ker_bwdAux :
+    integralSystemIdeal f R' ≤ RingHom.ker (integralSystemBaseChangeBwdAux f R R').toRingHom := by
+  rw [integralSystemIdeal, Ideal.span_le]
+  rintro _ ⟨i, rfl⟩
+  simp only [SetLike.mem_coe, RingHom.mem_ker, AlgHom.toRingHom_eq_coe, RingHom.coe_coe]
+  show (Algebra.TensorProduct.map (AlgHom.id R' R') (Ideal.Quotient.mkₐ R _))
+      ((MvPolynomial.algebraTensorAlgEquiv R R').symm
+        (MvPolynomial.map (Int.castRingHom R') (f i))) = 0
+  rw [← integralSystem_map_map_intCast f R R' i, MvPolynomial.algebraTensorAlgEquiv_symm_map,
+    Algebra.TensorProduct.map_tmul]
+  simp [Ideal.Quotient.eq_zero_iff_mem.mpr (gen_mem_integralSystemIdeal f R i)]
+
+/-- The backward comparison `P_{R'} ⧸ I_{R'} → R' ⊗[R] (P_R ⧸ I_R)`. -/
+noncomputable def integralSystemModelBaseChangeBwd :
+    IntegralSystemModel f R' →ₐ[R'] R' ⊗[R] IntegralSystemModel f R :=
+  Ideal.Quotient.liftₐ (integralSystemIdeal f R') (integralSystemBaseChangeBwdAux f R R')
+    (fun _ ha => integralSystemIdeal_le_ker_bwdAux f R R' ha)
+
+theorem integralSystemModelBaseChangeBwd_mk_map (y : MvPolynomial (Fin n) R) :
+    integralSystemModelBaseChangeBwd f R R'
+        (Ideal.Quotient.mk _ (MvPolynomial.map (algebraMap R R') y)) =
+      1 ⊗ₜ[R] (Ideal.Quotient.mk (integralSystemIdeal f R) y) := by
+  show (Algebra.TensorProduct.map (AlgHom.id R' R') (Ideal.Quotient.mkₐ R _))
+      ((MvPolynomial.algebraTensorAlgEquiv R R').symm
+        (MvPolynomial.map (algebraMap R R') y)) = _
+  rw [MvPolynomial.algebraTensorAlgEquiv_symm_map, Algebra.TensorProduct.map_tmul]
+  simp
+
+/-- **Base change of the integral model** (PROVEN): forming the model of a FIXED
+integral system commutes with extension of the base ring,
+`R' ⊗[R] (P_R ⧸ I_R) ≅ P_{R'} ⧸ I_{R'}`.
+
+This is what makes one integral system `f` serve every base at once, and it is
+the reason the two arithmetic leaves below may be stated over a single fixed
+`f` rather than over a family of models. -/
+noncomputable def integralSystemModelBaseChange :
+    R' ⊗[R] IntegralSystemModel f R ≃ₐ[R'] IntegralSystemModel f R' :=
+  AlgEquiv.ofAlgHom (integralSystemModelBaseChangeFwd f R R')
+    (integralSystemModelBaseChangeBwd f R R')
+    (by
+      refine Ideal.Quotient.algHom_ext (R₁ := R') ?_
+      refine MvPolynomial.algHom_ext fun i => ?_
+      simp [integralSystemModelBaseChangeFwd, integralSystemModelBaseChangeBwd,
+        integralSystemBaseChangeBwdAux, integralSystemBaseChangeFwdAux,
+        MvPolynomial.algebraTensorAlgEquiv_symm_X])
+    (by
+      ext x
+      obtain ⟨y, rfl⟩ := Ideal.Quotient.mk_surjective x
+      show integralSystemModelBaseChangeBwd f R R'
+          (integralSystemModelBaseChangeFwd f R R' (1 ⊗ₜ[R] (Ideal.Quotient.mk _ y))) =
+        1 ⊗ₜ[R] (Ideal.Quotient.mk _ y)
+      simp only [integralSystemModelBaseChangeFwd, Algebra.TensorProduct.lift_tmul, map_one,
+        one_mul, Ideal.Quotient.liftₐ_apply, Ideal.Quotient.lift_mk]
+      exact integralSystemModelBaseChangeBwd_mk_map f R R' y)
+
+/-- **Formal smoothness of the integral model ascends along ANY base change**
+(PROVEN): if the model over `R` is formally smooth over `R`, then the model over
+any `R`-algebra `R'` is formally smooth over `R'`.
+
+Note the statement is deliberately kept at a VARIABLE base: at the concrete pair
+`Localization.Away N` / `ℤ_[p]` the `Semiring` instance that `AlgEquiv` picks for
+the tensor product (`Algebra.TensorProduct.instSemiring`) and the one
+`Algebra.FormallySmooth.of_equiv` demands (`CommRing.toCommSemiring.toSemiring`)
+are defeq but not syntactically equal, and `of_equiv` cannot invert the
+projection to solve for its implicit `A`. Pinning `A` explicitly here, once, at
+a variable base, removes the problem for every instantiation. -/
+theorem formallySmooth_integralSystemModel_baseChange
+    [Algebra.FormallySmooth R (IntegralSystemModel f R)] :
+    Algebra.FormallySmooth R' (IntegralSystemModel f R') := by
+  refine Algebra.FormallySmooth.of_equiv (A := R' ⊗[R] IntegralSystemModel f R) ?_
+  exact integralSystemModelBaseChange f R R'
+
+end IntegralSystemBaseChange
+
 open CategoryTheory AlgebraicGeometry in
-/-- **Spreading out of smoothness** (SORRY LEAF — the first of the two
-genuinely missing theorems behind
-`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible`).
+/-- **The `ℚ`-model of the system is formally smooth** (PROVEN — the
+scheme-to-ring, `Type u`-to-`Type 0` transport that the spreading-out leaf below
+no longer has to carry).
+
+`hsmooth` is a property of a morphism of `Scheme.{u}`; what a commutative
+algebraist needs is `Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ)`, a
+statement about a ring in `Type 0`. The two are connected here, once:
+
+* `HasRingHomProperty @Smooth RingHom.Smooth` turns `Smooth (Spec.map φ)` into
+  `RingHom.Smooth φ` for `φ : ULift ℚ →+* A`;
+* `RingHom.FormallySmooth.of_bijective` makes the ring equivalence
+  `ℚ ≃+* ULift ℚ` formally smooth, and composing cancels the `ULift`, giving
+  `Algebra.FormallySmooth ℚ A` — this is where the `ℚ` versus `ULift ℚ`
+  instance path is confined;
+* `Ideal.quotientKerAlgEquivOfSurjective` and `hker` transport that across the
+  universe gap to the `Type 0` model, `RingEquiv` being universe-polymorphic
+  even though `Scheme.{u}` is not.
+
+This is exactly the conversion the parent's docstring says a prover "may" do;
+doing it here means it is done ONCE rather than inside every arithmetic leaf. -/
+theorem formallySmooth_integralSystemModel_rat
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (A : Type u) [CommRing A] [Algebra ℚ A]
+    (π : MvPolynomial (Fin n) ℚ →ₐ[ℚ] A) (hπ : Function.Surjective π)
+    (hker : RingHom.ker π.toRingHom = integralSystemIdeal f ℚ)
+    (hsmooth : AlgebraicGeometry.Smooth (specRatMap A)) :
+    Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ) := by
+  have h1 : RingHom.Smooth ((algebraMap ℚ A).comp
+      (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom) := by
+    have h := (AlgebraicGeometry.HasRingHomProperty.Spec_iff
+      (P := @AlgebraicGeometry.Smooth) (Q := @RingHom.Smooth)
+      (φ := CommRingCat.ofHom ((algebraMap ℚ A).comp
+        (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom))).mp hsmooth
+    simpa using h
+  have h3 : RingHom.FormallySmooth
+      (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.toRingHom :=
+    RingHom.FormallySmooth.of_bijective
+      (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.bijective
+  have h4 := h3.comp h1.formallySmooth
+  have h5 : ((algebraMap ℚ A).comp
+      (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom).comp
+      (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.toRingHom = algebraMap ℚ A := by
+    ext x; simp
+  rw [h5] at h4
+  haveI : Algebra.FormallySmooth ℚ A := RingHom.formallySmooth_algebraMap.mp h4
+  exact Algebra.FormallySmooth.of_equiv
+    ((Ideal.quotientKerAlgEquivOfSurjective hπ).symm.trans
+      (Ideal.quotientEquivAlgOfEq ℚ hker))
+
+/-- **Spreading out of smoothness, ONE INVERTED INTEGER** (SORRY LEAF —
+2026-07-26, the residue of `exists_bound_forall_formallySmooth_integralSystemModel`
+below after the scheme layer, the universe gap, the `p`-adic specialisation and
+the quantifier over `p` were all discharged).
+
+If the `ℚ`-model of the integral system `f` is formally smooth over `ℚ`, then
+there is a single nonzero integer `N` such that the model over `ℤ[1/N]` is
+formally smooth over `ℤ[1/N]`.
+
+This is EGA IV 8.8.2/17.7.8 ("smoothness spreads out") in its bare
+commutative-algebra form: no schemes, no universes, no `ℤ_[p]`, no quantifier
+over primes. Everything else the parent leaf used to demand is now PROVEN
+above — `formallySmooth_integralSystemModel_rat` supplies the hypothesis from
+the morphism-level `hsmooth`, and `formallySmooth_integralSystemModel_baseChange`
+carries the conclusion from `ℤ[1/N]` to `ℤ_[p]` for every prime `p > N` (such a
+`p` cannot divide `N`, so `N` is already a unit in `ℤ_[p]`).
+
+MATHLIB INVENTORY, RE-AUDITED 2026-07-26 — the parent's claim that "spreading
+out does not exist" at this pin is WRONG, and the correction matters because it
+turns a chapter-sized job into an ordinary one. Every ingredient of the EGA
+argument is present:
+
+* `Algebra.smoothLocus R A` and `Algebra.isOpen_smoothLocus`
+  (`Mathlib/RingTheory/Smooth/Locus.lean:51,124`, needs
+  `[Algebra.FinitePresentation R A]`) — the smooth locus is OPEN. This is the
+  step the parent believed was missing.
+* `Algebra.smoothLocus_eq_univ_iff` (`:100`) — the smooth locus is everything
+  iff the algebra is formally smooth; this is how the `ℚ`-hypothesis is read,
+  and how the `ℤ[1/N]`-conclusion is discharged.
+* `Algebra.basicOpen_subset_smoothLocus_iff_smooth` (`:93`) — a basic open sits
+  inside the smooth locus iff the corresponding localisation is smooth. This is
+  the exact shape "invert one element and become smooth" needs.
+* `PrimeSpectrum.isConstructible_comap_image`
+  (`Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean:38`) — Chevalley: the image
+  of a constructible set under a finitely presented map is constructible.
+
+THE ARGUMENT, in the shape those four lemmas want. Write `S₀` for the
+`ℤ`-model. `S₀` is a finitely presented `ℤ`-algebra (`ℤ` is Noetherian and the
+ideal is generated by the `m` polynomials `f i`), so `smoothLocus ℤ S₀` is open
+and its complement `Z` is closed, hence constructible (`Spec S₀` is a Noetherian
+space). The hypothesis says no point of `Z` lies over the generic point of
+`Spec ℤ`: a prime over `(0)` is a prime of `S₀ ⊗ ℚ`, which is the `ℚ`-model, and
+that model is formally smooth by hypothesis. So, writing `J` for the vanishing
+ideal of `Z`, the ring `S₀ ⧸ J` has NO prime over `(0)`, i.e.
+`(S₀ ⧸ J) ⊗_ℤ ℚ = 0`; since that tensor is the localisation of `S₀ ⧸ J` at
+`ℤ ∖ {0}`, its vanishing means some NONZERO integer `N` lies in `J`. Then
+`Z ⊆ V(N)`, i.e. the basic open `D(N)` is inside the smooth locus, and
+`basicOpen_subset_smoothLocus_iff_smooth` turns that into smoothness of
+`S₀[1/N]` over `ℤ`, whence `Algebra.FormallySmooth.localization_base`
+(`Mathlib/RingTheory/Smooth/Basic.lean:503`) gives it over `ℤ[1/N]`.
+(Chevalley is the alternative route to `N`, taking the image of `Z` in `Spec ℤ`
+directly; the ideal-theoretic extraction above avoids needing constructibility
+at all, and is probably the cheaper of the two.)
+
+The one genuinely fiddly step is the middle one — identifying the primes of
+`S₀` over `(0)` with the primes of the `ℚ`-model COMPATIBLY with the two smooth
+loci, which is a statement about `Algebra.FormallySmooth` under localisation of
+the BASE and has no single lemma covering it at this pin.
+
+CIRCULARITY GUARD: inherited from the parent — no route through `Family.lean`,
+`Lift.lean` or `Modularity/Interface.lean`; this is pure commutative algebra. -/
+theorem exists_inverted_formallySmooth_integralSystemModel
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hQ : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ)) :
+    ∃ N : ℕ, 0 < N ∧
+      Algebra.FormallySmooth (Localization.Away (N : ℤ))
+        (IntegralSystemModel f (Localization.Away (N : ℤ))) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Spreading out of smoothness** (**PROVEN 2026-07-26** over the single
+commutative-algebra leaf `exists_inverted_formallySmooth_integralSystemModel`
+immediately above — it was itself a sorry leaf until then, and was believed to
+need machinery absent from this pin; that belief is corrected in the new leaf's
+MATHLIB INVENTORY, which names the four lemmas that do exist).
+
+WHAT WAS DISCHARGED HERE, and why the residue is strictly shallower: the scheme
+layer and the universe gap (`formallySmooth_integralSystemModel_rat`), the
+`p`-adic specialisation, and the quantifier over `p`. The bound `B` turns out to
+be nothing but the inverted integer `N`: a prime `p > N > 0` cannot divide `N`,
+so `N` is already a unit in `ℤ_[p]`, `ℤ_[p]` becomes a `ℤ[1/N]`-algebra by the
+universal property of the localisation, and
+`formallySmooth_integralSystemModel_baseChange` carries the conclusion across.
+What is left over is one statement about one ring.
 
 Let `f` be a system of polynomials with integer coefficients whose `ℚ`-model
 `MvPolynomial (Fin n) ℚ ⧸ (f)` is (isomorphic to) a SMOOTH `ℚ`-algebra `A`.
@@ -3643,8 +3910,27 @@ theorem exists_bound_forall_formallySmooth_integralSystemModel
     (hker : RingHom.ker π.toRingHom = integralSystemIdeal f ℚ)
     (hsmooth : AlgebraicGeometry.Smooth (specRatMap A)) :
     ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
-      Algebra.FormallySmooth ℤ_[p] (IntegralSystemModel f ℤ_[p]) :=
-  sorry
+      Algebra.FormallySmooth ℤ_[p] (IntegralSystemModel f ℤ_[p]) := by
+  -- The scheme layer and the universe gap come off first.
+  obtain ⟨N, hN, hsm⟩ := exists_inverted_formallySmooth_integralSystemModel f
+    (formallySmooth_integralSystemModel_rat f A π hπ hker hsmooth)
+  -- The bound IS the inverted integer: a prime exceeding `N > 0` cannot divide it.
+  refine ⟨N, fun p _ hp => ?_⟩
+  have hpN : ¬ ((p : ℤ) ∣ ((N : ℕ) : ℤ)) := by
+    intro h
+    rw [Int.natCast_dvd_natCast] at h
+    exact absurd (Nat.le_of_dvd hN h) (not_le.mpr hp)
+  -- So `N` is already a unit in `ℤ_[p]`, making `ℤ_[p]` a `ℤ[1/N]`-algebra.
+  have hunit : IsUnit ((Int.castRingHom ℤ_[p]) ((N : ℕ) : ℤ)) := by
+    by_contra hc
+    rw [PadicInt.not_isUnit_iff] at hc
+    exact hpN ((PadicInt.norm_int_lt_one_iff_dvd ((N : ℕ) : ℤ)).mp (by simpa using hc))
+  letI : Algebra (Localization.Away ((N : ℕ) : ℤ)) ℤ_[p] :=
+    (IsLocalization.Away.lift ((N : ℕ) : ℤ) hunit).toAlgebra
+  haveI := hsm
+  -- and base change carries formal smoothness of the model along `ℤ[1/N] → ℤ_[p]`.
+  exact formallySmooth_integralSystemModel_baseChange f
+    (Localization.Away ((N : ℕ) : ℤ)) ℤ_[p]
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Lang–Weil, NONEMPTINESS FORM** (SORRY LEAF — the second and by far the
@@ -3762,7 +4048,10 @@ open leaves; step 3 and ALL the glue are done in the proof below. Concretely:
   because `ℚ` is Noetherian) and its generators are cleared of denominators
   (`exists_integralGenerators`), producing an INTEGRAL system `f` — this is what
   makes one bound serve every `p` at once, and it is proven, not assumed;
-* `exists_bound_forall_formallySmooth_integralSystemModel` is step 1 (SORRY);
+* `exists_bound_forall_formallySmooth_integralSystemModel` is step 1 (**PROVEN
+  2026-07-26**, over the one commutative-algebra residue
+  `exists_inverted_formallySmooth_integralSystemModel`: smoothness of the model
+  over `ℤ[1/N]` for a single nonzero `N`);
 * `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` is step 2
   (SORRY) — Lang–Weil, in nonemptiness form only;
 * step 3 is discharged in full below with mathlib's
@@ -3789,9 +4078,20 @@ before starting, it decides how the work splits):
   consequence is needed here — NONEMPTINESS of `X(𝔽_p)` for large `p`, not
   the error term — so a proof route that gets `#X(𝔽_q) > 0` for
   `q` past an explicit threshold is enough.
-* Step 1, **spreading out**, also does not exist. `Mathlib/AlgebraicGeometry/
-  AffineTransitionLimit.lean` has the limit formalism that such an argument is
-  usually built on.
+* Step 1, **spreading out**, is now largely DISCHARGED, and the earlier claim
+  here that it "does not exist" was WRONG (corrected 2026-07-26 by re-audit).
+  `exists_bound_forall_formallySmooth_integralSystemModel` is PROVEN, over the
+  single commutative-algebra residue
+  `exists_inverted_formallySmooth_integralSystemModel`; and the ingredients that
+  residue needs are all at this pin —
+  `Algebra.isOpen_smoothLocus`, `Algebra.smoothLocus_eq_univ_iff` and
+  `Algebra.basicOpen_subset_smoothLocus_iff_smooth`
+  (`Mathlib/RingTheory/Smooth/Locus.lean:124,100,93`), plus Chevalley's
+  constructible image (`PrimeSpectrum.isConstructible_comap_image`,
+  `Mathlib/RingTheory/Spectrum/Prime/Chevalley.lean:38`) if one wants it. The
+  limit formalism in `Mathlib/AlgebraicGeometry/AffineTransitionLimit.lean` is
+  NOT needed on that route. See the residue leaf's docstring for the argument
+  written out in the shape those lemmas want.
 
 FAITHFULNESS NOTE. The bound `B` is chosen AFTER `A`, so the exceptional set
 is allowed to depend on the variety — which is what "all but finitely many"
@@ -5316,7 +5616,26 @@ no finer cut is offered):
 
 So the honest ordering of effort is: §3.1 and §3.4-affine first (both
 have mathlib footholds), §3.5–3.6 next (Riemann–Roch is a known large
-target), §3.10.2 last. -/
+target), §3.10.2 last.
+
+RECON CORRECTION (2026-07-26). "Proper + affine implies finite" is NOT
+absent at this pin — it is absent from `Morphisms/Finite.lean`, which is
+where it was looked for, but present in `Morphisms/Proper.lean`:
+`AlgebraicGeometry.IsFinite.iff_isProper_and_isAffineHom` (`:92`) and
+`IsFinite.eq_isProper_inf_isAffineHom` (`:84`). Over a FIELD there is
+also `finite_appTop_of_universallyClosed` (`Proper.lean:154`) and
+`isField_of_universallyClosed` (`:143`), and Zariski's main theorem
+supplies `IsFinite.of_isProper_of_locallyQuasiFinite`
+(`ZariskisMainTheorem.lean:370`). So the `Z ≠ ∅` half of §3.1 — the part
+the leaf's own docstring derives from "proper + affine ⇒ finite ⇒
+dim ≤ 0" — is CHEAP, and only the construction of the model is not; a
+successor should cut §3.1 along that line rather than treating it as one
+block. Also confirmed absent, so those costings stand: no `IsCurve` class,
+no genus, no Riemann–Roch, no divisors-on-curves, no scheme-level Picard
+group or relative Picard functor (only ring-level `CommRing.Pic` with
+`ClassGroup.equivPic`, which is exactly the affine foothold §3.4 wants),
+no symmetric powers of a scheme, no Hilbert scheme, no effective Cartier
+divisors, no Lang–Weil, no strong approximation. -/
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly §3.1: the compactification datum** (SORRY — the smooth
