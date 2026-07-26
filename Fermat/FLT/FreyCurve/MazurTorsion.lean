@@ -10076,6 +10076,171 @@ checked and rejected:
   since `p + 1 + 2√p < 18` for `p ≤ 7` and `#Ẽ(𝔽_2) ≤ 5 < 9`, bad
   reduction is forced at `2, 3, 5, 7` (`210 ∣ N_E`) and no further.
 
+/-- **The `X_0(3)` `j`-line, as pure algebra** (PROVEN 2026-07-26): if a
+curve's `b`-invariants are normalised so that `b₈ = 0` — i.e. so that
+`x = 0` is the abscissa of a `3`-torsion point — then its `j`-invariant
+lies on the classical `X_0(3)` line, with Hauptmodul value
+`h = 729 b₄ / (b₂² − 27 b₄)`.
+
+Everything is stated denominator-free and with the curve replaced by
+plain rationals, so the lemma is a `ring` fact about six numbers:
+
+* `hcf` is `j · Δ = c₄³` (the definition of `j`, cleared of its inverse);
+* `hc4` is `c₄ = b₂² − 24 b₄`;
+* `hkey` is `b₂² Δ = b₄³ (b₂² − 27 b₄)`, which is what `b₈ = 0` buys —
+  substituting `b₆ = b₄²/b₂` into `Δ = −8b₄³ − 27b₆² + 9b₂b₄b₆` gives
+  `b₂²Δ = −8b₂²b₄³ + 9b₂²b₄³ − 27b₄⁴ = b₄³(b₂² − 27b₄)`;
+* `hh` says `h(b₂² − 27b₄) = 729 b₄`.
+
+The proof is the two evaluations `(h + 27)(b₂² − 27b₄) = 27b₂²` and
+`(h + 243)(b₂² − 27b₄) = 243c₄`, after which both sides of the goal,
+multiplied by `(b₂² − 27b₄)⁴`, become `729³ b₂² c₄³` — using
+`27 · 243³ = 729³`. -/
+theorem x0Three_jRelation (J Δ c4 b2 b4 h : ℚ)
+    (hcf : J * Δ = c4 ^ 3)
+    (hc4 : c4 = b2 ^ 2 - 24 * b4)
+    (hkey : b2 ^ 2 * Δ = b4 ^ 3 * (b2 ^ 2 - 27 * b4))
+    (hD : b2 ^ 2 - 27 * b4 ≠ 0)
+    (hh : h * (b2 ^ 2 - 27 * b4) = 729 * b4) :
+    J * h ^ 3 = (h + 27) * (h + 243) ^ 3 := by
+  have e27 : (h + 27) * (b2 ^ 2 - 27 * b4) = 27 * b2 ^ 2 := by linear_combination hh
+  have e243 : (h + 243) * (b2 ^ 2 - 27 * b4) = 243 * c4 := by
+    rw [hc4]; linear_combination hh
+  have ehD : (h * (b2 ^ 2 - 27 * b4)) ^ 3 = 729 ^ 3 * b4 ^ 3 := by rw [hh]; ring
+  refine mul_right_cancel₀ (pow_ne_zero 4 hD) ?_
+  calc J * h ^ 3 * (b2 ^ 2 - 27 * b4) ^ 4
+      = J * (h * (b2 ^ 2 - 27 * b4)) ^ 3 * (b2 ^ 2 - 27 * b4) := by ring
+    _ = J * (729 ^ 3 * b4 ^ 3) * (b2 ^ 2 - 27 * b4) := by rw [ehD]
+    _ = 729 ^ 3 * J * (b4 ^ 3 * (b2 ^ 2 - 27 * b4)) := by ring
+    _ = 729 ^ 3 * J * (b2 ^ 2 * Δ) := by rw [hkey]
+    _ = 729 ^ 3 * b2 ^ 2 * (J * Δ) := by ring
+    _ = 729 ^ 3 * b2 ^ 2 * c4 ^ 3 := by rw [hcf]
+    _ = 27 * b2 ^ 2 * (243 * c4) ^ 3 := by ring
+    _ = ((h + 27) * (b2 ^ 2 - 27 * b4)) * ((h + 243) * (b2 ^ 2 - 27 * b4)) ^ 3 := by
+        rw [e27, e243]
+    _ = (h + 27) * (h + 243) ^ 3 * (b2 ^ 2 - 27 * b4) ^ 4 := by ring
+
+/-- **The degree-`3` cover `X_0(9) → X_0(3)` in Hauptmoduls** (PROVEN
+2026-07-26): the whole degree-`12` `j`-map of `X_0(9)` is the classical
+degree-`4` `j`-map of `X_0(3)` pulled back along `h = t³/(t² + 9t + 27)`.
+
+With `t = (η(τ)/η(9τ))³` on `X_0(9)` and `h = (η(τ)/η(3τ))¹²` on
+`X_0(3)` — the two standard Hauptmoduls, both defined over `ℚ` — the
+covering map computed here from `q`-expansions (PARI/GP, untrusted
+searcher; fitted and then verified as a power-series identity) is
+
+  `h = t³ / (t² + 9t + 27)`,
+
+and the `X_0(3)` `j`-map, verified to `O(q^120)`, is the classical
+
+  `j = (h + 27)(h + 243)³ / h³`.
+
+The substitution is exact and needs no computation beyond `ring`,
+because with `D := t² + 9t + 27`
+
+  `h + 27 = (t³ + 27D)/D = (t + 9)³/D`,
+  `h + 243 = (t³ + 243D)/D = (t³ + 243t² + 2187t + 6561)/D`,
+
+so `(h + 27)(h + 243)³/h³` collapses to
+`(t + 9)³(t³ + 243t² + 2187t + 6561)³ / (t⁹ D)` — the degree-`12`
+function used at level `9`. That the two independently fitted rational
+functions agree *identically* is a strong cross-check on both.
+
+This lemma is the denominator-free form of that collapse, so it does not
+even need `D ≠ 0` (which does hold: `4D = (2t + 9)² + 27 > 0`). -/
+theorem j_of_x0Three_cover (J h t : ℚ)
+    (hj3 : J * h ^ 3 = (h + 27) * (h + 243) ^ 3)
+    (hcov : h * (t ^ 2 + 9 * t + 27) = t ^ 3) :
+    J * (t ^ 9 * (t ^ 2 + 9 * t + 27))
+      = (t + 9) ^ 3 * (t ^ 3 + 243 * t ^ 2 + 2187 * t + 6561) ^ 3 := by
+  have e1 : (h + 27) * (t ^ 2 + 9 * t + 27) = (t + 9) ^ 3 := by linear_combination hcov
+  have e2 : (h + 243) * (t ^ 2 + 9 * t + 27)
+      = t ^ 3 + 243 * t ^ 2 + 2187 * t + 6561 := by linear_combination hcov
+  have e3 : (h * (t ^ 2 + 9 * t + 27)) ^ 3 = t ^ 9 := by rw [hcov]; ring
+  calc J * (t ^ 9 * (t ^ 2 + 9 * t + 27))
+      = J * h ^ 3 * (t ^ 2 + 9 * t + 27) ^ 4 := by rw [← e3]; ring
+    _ = (h + 27) * (h + 243) ^ 3 * (t ^ 2 + 9 * t + 27) ^ 4 := by rw [hj3]
+    _ = ((h + 27) * (t ^ 2 + 9 * t + 27))
+          * ((h + 243) * (t ^ 2 + 9 * t + 27)) ^ 3 := by ring
+    _ = (t + 9) ^ 3 * (t ^ 3 + 243 * t ^ 2 + 2187 * t + 6561) ^ 3 := by rw [e1, e2]
+
+end MazurLevel27
+
+/-- **The `3`-division kernel and the covering condition: the level-`9`
+moduli content with the `j`-invariant eliminated entirely** (sorry node,
+introduced 2026-07-26): if the geometric points of an elliptic curve
+over `ℚ` contain a point `g` of order `9` whose cyclic subgroup is
+`Gal(ℚ̄/ℚ)`-stable, then there are rationals `r` and `t` with
+
+  `3r⁴ + b₂r³ + 3b₄r² + 3b₆r + b₈ = 0`   (i.e. `ψ₃(r) = 0`)
+
+and, writing `B₂ = b₂ + 12r` and `B₄ = b₄ + rb₂ + 6r²` for the
+`b`-invariants after translating the abscissa `r` to `0`,
+
+  `729 B₄ (t² + 9t + 27) = t³ (B₂² − 27B₄)`.
+
+**No `j`-invariant, no Hauptmodul, no modular function appears.** The
+first condition says only that the `3`-torsion subgroup `C₃ = 3⟨g⟩` has
+a rational abscissa — which it does, because a stable subgroup of order
+`3` is `{O, P, −P}` and `P`, `−P` share an abscissa, so the kernel
+polynomial at level `3` is *linear* and its root is Galois-fixed. The
+second says that the resulting `X_0(3)`-point, whose Hauptmodul value is
+`h = 729B₄/(B₂² − 27B₄)`, lifts to `X_0(9)` along the explicit
+degree-`3` cover `h = t³/(t² + 9t + 27)`.
+
+Everything else at this level is PROVEN:
+`MazurLevel27.x0Three_jRelation` turns `ψ₃(r) = 0` into the `X_0(3)`
+`j`-line, and `MazurLevel27.j_of_x0Three_cover` pushes that up to the
+degree-`12` `X_0(9)` map. So the whole modular-function computation has
+been discharged, and what is left is a statement about a root of the
+`3`-division polynomial and one covering equation.
+
+**Why the two conditions must be produced TOGETHER, and a warning.** It
+is tempting to split this into "`E` has a rational `X_0(3)`-parameter"
+and "every such parameter lifts". The second half is FALSE. `j₃` has
+degree `4`, so a curve can carry several rational `3`-isogenies with the
+same `j`, and only the one inside the given `9`-subgroup lifts. Explicit
+counterexample: in the conductor-`27` isogeny class the degree matrix is
+`[1,3,9,27; 3,1,3,9; 9,3,1,3; 27,9,3,1]`, a chain `E₀—E₁—E₂—E₃`; the
+curve `E₁` has a cyclic `9`-isogeny (to `E₃`) and TWO rational
+`3`-isogenies, and the one pointing back to `E₀` does not extend, since
+`E₀`'s only `3`-isogeny returns to `E₁`. So `r` must be the abscissa of
+the *specific* subgroup `3⟨g⟩`, which is why it is bound by the same
+existential as `t`.
+
+Degenerate case, which the statement covers for free: `B₂² − 27B₄ = 0`
+forces `B₂ = B₄ = 0` (anything else makes `Δ = 0`), hence `c₄ = 0` and
+`j = 0` — the curves `y² = x³ + a₆`, whose `3`-torsion at `x = 0` really
+is Galois-stable. There the displayed covering equation reads `0 = 0`
+and holds for every `t`; the consumer below supplies the witness
+`t = −9` itself.
+
+Worked example for the non-degenerate formula, checked by hand:
+`y² = x³ + x² + 2x + 1` has `r = 0`, `B₂ = B₄ = B₆ = 4`, `B₈ = 0`,
+`h = −729/23` and `j = 32000/23`, and `(h + 27)(h + 243)³/h³ = 32000/23`
+✓. -/
+theorem WeierstrassCurve.exists_x0Three_kernel_lift
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 9)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ r t : ℚ,
+      3 * r ^ 4 + E.b₂ * r ^ 3 + 3 * E.b₄ * r ^ 2 + 3 * E.b₆ * r + E.b₈ = 0 ∧
+      729 * (E.b₄ + r * E.b₂ + 6 * r ^ 2) * (t ^ 2 + 9 * t + 27)
+        = t ^ 3 * ((E.b₂ + 12 * r) ^ 2 - 27 * (E.b₄ + r * E.b₂ + 6 * r ^ 2)) :=
+  sorry
+
+/-- **`X_0(9)`, the genus-`0` level: a rational cyclic `9`-subgroup puts
+`j` on the explicit degree-`12` Hauptmodul curve** (PROVEN 2026-07-26
+from `exists_x0Three_kernel_lift` and the covering identity
+`MazurLevel27.j_of_x0Three_cover`): if the geometric
+points of an elliptic curve over `ℚ` contain a point `g` of order `9`
+whose cyclic subgroup is `Gal(ℚ̄/ℚ)`-stable, then there is a rational
+number `t` with
+
 SUPERSEDED (2026-07-25) — the "IRREDUCIBLE at this mathlib pin" verdict
 above was about the node as a whole, and it no longer applies to THIS
 declaration: the level-`9` Tate normal form anticipated in the last
