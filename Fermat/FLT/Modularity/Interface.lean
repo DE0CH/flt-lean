@@ -20538,8 +20538,14 @@ theorem heckeOp_coe {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime)
 /-- Scalar homogeneity of the `q`-expansion coefficients (through the
 functional `qCoeffL`). -/
 theorem qCoeff_smul {N : ℕ} (c : ℂ) (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
-    qCoeff N (c • f) m = c * qCoeff N f m := by
-  simpa using (qCoeffL N m).map_smul c f
+    qCoeff N (c • f) m = c * qCoeff N f m :=
+  -- REPAIR (2026-07-26): was `simpa using …`, which broke when `simp`
+  -- gained enough to reduce the supplied term's type all the way to `True`
+  -- ("after simplification, term … has type True"), leaving nothing to
+  -- close the goal with.  The term needs no simplification at all:
+  -- `qCoeffL N m` has `toFun f := qCoeff N f m`, so both sides match up to
+  -- the projection, and `c • (x : ℂ) = c * x` is `rfl`.
+  (qCoeffL N m).map_smul c f
 
 /-- **A normalized weight-2 eigenform is an eigenvector of the Hecke
 operator** (PROVEN — the eigenform carrier `IsWeightTwoEigenform`,

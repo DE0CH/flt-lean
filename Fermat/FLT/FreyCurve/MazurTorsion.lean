@@ -1085,8 +1085,20 @@ theorem WeierstrassCurve.exists_stable_cyclic_subgroup_of_rational_point
       (Affine.Point.map_injective (f := Algebra.ofId ℚ (AlgebraicClosure ℚ))) Q
   · intro σ x hx
     obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
-    rw [map_zsmul, Affine.Point.map_baseChange
-      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q]
+    -- REPAIR (2026-07-26): `Affine.Point.map_baseChange` must be applied
+    -- through an ASCRIBED `have`, not as a bare `rw` argument.  Elaborated
+    -- on its own the lemma picks its `Algebra ℚ (AlgebraicClosure ℚ)` /
+    -- `IsScalarTower` instances independently of the goal, and the two
+    -- resolutions stopped agreeing syntactically, so `rw` reported "did not
+    -- find an occurrence" against a target that PRINTS identically to its
+    -- own pattern.  Ascribing the equation forces the goal's instances into
+    -- the lemma's implicit arguments, which is what makes the rewrite match.
+    have h : Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom
+        (Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q)
+        = Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q :=
+      Affine.Point.map_baseChange _ Q
+    rw [map_zsmul, h]
     exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples _) k
 
 /-- **A rational torsion point has Kenku degree** (PROVEN 2026-07-25):
