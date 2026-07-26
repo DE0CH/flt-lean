@@ -29456,7 +29456,30 @@ where at `q = p` the Steinberg parameter is cyclotomically twisted and
 `V^{I_p}` can vanish; the claim was inherited from there when the
 composite leaf was split. `hqp` is nevertheless KEPT, because the only
 consumer calls at `q ≠ p` and a narrower hypothesis is a strictly
-smaller assumption.
+smaller assumption; it is UNDERSCORED (`_hqp`, 2026-07-26) so that its
+non-load-bearingness is mechanically visible and is not "restored" as
+though it carried content. Do not delete it: deleting it would ENLARGE
+the assumption, which is the opposite of what the underscore records.
+
+DISPATCH ORDER — THIS LEAF IS BLOCKED BY AN OPEN LEAF BELOW IT, NOT
+MERELY BY THE PIN (2026-07-26, seventh owner; checked against the tree
+rather than recalled). The TERMINALITY AUDIT above names the classical
+prerequisites; every one of them is inside the missing-theory list of
+`nonempty_modularTateModuleData` (the residual GEOMETRIC leaf of the
+modularity subtree, items 1 `X₀(M)` à la Deligne–Rapoport, 2 `J₀(M)`,
+5 good reduction and Eichler–Shimura). So this leaf cannot be proven
+before that one is: no proof of Carayol's identity exists that does not
+factor through the modular-curve geometry which this development is
+still ASSUMING. Dispatching a prover here is therefore premature by
+construction, and stays premature until the geometric carrier is built;
+work spent here is better spent at `nonempty_modularTateModuleData`.
+Two further routes were checked and closed off the same day: the leaf
+is NOT duplicated anywhere (the file's only other ramifiedness
+statement at a bad prime,
+`weightTwoNewform_not_dvd_level_of_isUnramifiedAt_of_isIrreducible`, is
+PROVEN — through this leaf, so it is a consumer and offers no
+deduplication), and the conductor-exponent leaf above is likewise a
+CONSUMER of this one, so neither can be run backwards to discharge it.
 
 TERMINALITY AUDIT (2026-07-26, searched rather than recalled). What a
 proof needs is the equality of the newform level with the conductor of
@@ -29499,7 +29522,7 @@ theorem not_isUnramifiedAt_of_isWeightTwoNewform_of_isIrreducible
           - Polynomial.C (κ₀ (heckeCoeff M₀ g₀ r)) * Polynomial.X
           + Polynomial.C ((r : AlgebraicClosure ℚ_[p])))
     (hirr : τ.IsIrreducible)
-    {q : ℕ} (hq : q.Prime) (hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
+    {q : ℕ} (hq : q.Prime) (_hqp : q ≠ p) (hqM₀ : q ∣ M₀) :
     ¬ τ.IsUnramifiedAt hq.toHeightOneSpectrumRingOfIntegersRat :=
   sorry
 
