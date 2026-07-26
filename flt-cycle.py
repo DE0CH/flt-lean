@@ -852,7 +852,22 @@ def cmd_release(args):
             advanced.append(name)
             # Source moved, so artifacts are now stale: demote to `free` until
             # seeded. Never leave a worktree `ready` across a release.
-            entries[i] = (name, "free", extra)
+            #
+            # EXCEPT a slot that is draining (Deyao, 2026-07-26 — this was
+            # silently resurrecting retired workers). `reclaiming` means "retire
+            # this slot when its agent finishes"; `done` records that as the
+            # `retire` marker on a `batched` entry, and it is THIS line that has
+            # to honour it. Writing `free` unconditionally threw the decision
+            # away twice over: a finished drainee came back as `free retire`
+            # (state wrong, marker stranded), and an already-`retired` slot --
+            # `retired` being in ADVANCEABLE so its source keeps up with main --
+            # was reset to `free` at every release, so retirement never stuck at
+            # all and the fleet quietly refilled to full size.
+            if state == "retired" or "retire" in extra:
+                entries[i] = (name, "retired", [x for x in extra
+                                                if x != "retire"])
+            else:
+                entries[i] = (name, "free", extra)
         print(f"phase 1: advanced {len(advanced)}, left alone {len(skipped)}")
         for n, why in skipped[:12]:
             print(f"  skipped {n}: {why}")
