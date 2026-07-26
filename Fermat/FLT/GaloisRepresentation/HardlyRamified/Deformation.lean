@@ -61,7 +61,6 @@ them without a human. Do not re-wrap it.
 - `finite_setOf_isHardlyRamified_frames`
 - `frameLevels_classification`
 - `exists_universalFrame_profinite_of_levelIdealSystem`
-- `hasFlatProlongationAt_of_pi_surjection`
 - `hasFlatProlongationAt_of_prod_injection`
 - `exists_cyclotomicCharacter_padicTwo_eq_two`
 - `exists_ringHom_matrix_quotient_of_finite`
@@ -352,6 +351,18 @@ import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 -- the H4 Schur stratum below. Its own import cone is pure mathlib, so it
 -- cannot close the forbidden Khare–Wintenberger cycle.
 import Fermat.FLT.GaloisRepresentation.ComplexConjugation
+-- proof-only: the Raynaud closure of finite flat group schemes over the
+-- DVR `𝒪ᵥ`, on the representation-free point-group carrier
+-- (`IsFlatPointsGroupAt`, `.pi`, `.of_surjective`, and the exact
+-- repackaging `hasFlatProlongationAt_iff_isFlatPointsGroupAt`) — the
+-- content `hasFlatProlongationAt_of_pi_surjection` below is proven over.
+-- MOVED there 2026-07-26 out of `Modularity/Interface.lean`, which is
+-- ABOVE this module and so could never have served it; its import cone
+-- (`FlatProlongation.lean` + `KnownIn1980s/EllipticCurves/Flat.lean`) is
+-- disjoint from `Family.lean` / `Lift.lean` / `Modularity/*`, so the
+-- circularity guard at the head of this module is respected — verified
+-- by import-closure computation, not by inspection.
+import Fermat.FLT.Deformations.RepresentationTheory.FlatPointsGroup
 -- proof-only: the characteristic of a finite field, `ℤ_ℓ`-unit lemmas.
 import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.NumberTheory.Padics.RingHoms
@@ -2089,10 +2100,10 @@ noncomputable def pushforwardFrame {B : Type u} [CommRing B]
   (ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))
 
 /-- **Raynaud closure for flat prolongations, in surjection-from-a-finite-power
-form** (sorry node, cut 2026-07-25 out of `isFlatAt_baseChange` below): if the
-local space of `ρ₁` is the geometric-point group of a finite flat group scheme
-over `𝒪ᵥ`, then so is every `Γ Kᵥ`-equivariant additive QUOTIENT of a finite
-POWER of it.
+form** (PROVEN 2026-07-26, cut 2026-07-25 out of `isFlatAt_baseChange` below):
+if the local space of `ρ₁` is the geometric-point group of a finite flat group
+scheme over `𝒪ᵥ`, then so is every `Γ Kᵥ`-equivariant additive QUOTIENT of a
+finite POWER of it.
 
 This is the only genuinely deep input to `isFlatAt_baseChange`: everything else
 in that proof is tensor plumbing, carried out below. Mathematically it is the
@@ -2106,22 +2117,41 @@ image of a Hopf order under a surjective bialgebra map is again a Hopf order.
 Note that the EXISTENCE direction used here needs no `e < ℓ − 1` bound; Raynaud's
 bound enters only for the UNIQUENESS of the prolongation, which is not asserted.
 
-DUPLICATION / HOME AUDIT (please read before restating this anywhere). Two
-other copies of this content already exist in the tree, both import-unreachable
-from this module:
-* `IsFlatPointsGroupAt.of_surjective` in `Modularity/Interface.lean`, a PROVEN
-  assembly over the single leaf `exists_etale_subBialgebra_of_points_surjective`
-  — together with `IsFlatPointsGroupAt.pi` it is exactly this statement;
-* `hasFlatProlongationAt_of_surjective` in `Modularity/KhareWintenberger.lean`,
-  a `sorry` in the `n = 1` special case of this one.
+DUPLICATION / HOME AUDIT — RESOLVED 2026-07-26, by MOVING the content down
+rather than proving a third copy of it. The audit recorded by the previous
+owner said: `IsFlatPointsGroupAt.of_surjective` in `Modularity/Interface.lean`
+is, together with `IsFlatPointsGroupAt.pi`, exactly this statement and was
+already PROVEN there; and `hasFlatProlongationAt_of_surjective` in
+`Modularity/KhareWintenberger.lean` is a `sorry` in the `n = 1` special case.
 Both live ABOVE this module (`Interface` imports `KhareWintenberger`, which
-imports this file), so neither can be consumed here — the circularity guard at
-the head of this module forbids importing `Modularity/*`. The declaration below
-is therefore the LOWEST home for the content and strictly generalizes
-KhareWintenberger's copy (take `n = 1`); whoever unifies them should redirect
-both upward copies at this one — or move this one further down still, into
-`Deformations/RepresentationTheory/FlatProlongation.lean`, which is the neutral
-home KhareWintenberger's own audit nominates — rather than adding a fourth.
+imports this file), so neither could be consumed here. So the mathematics was
+never open — only misplaced.
+
+What was done: the carrier `IsFlatPointsGroupAt`, its exact repackaging
+`GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt`, the transport and
+trivial-package glue, the product half (`prod`, `pi`, over the tensor product
+of the two witness Hopf algebras), the quotient half (`of_surjective`, over
+`exists_etale_subBialgebra_of_points_surjective` and
+`exists_hopfOrder_of_subBialgebra`) AND the subobject half (`of_injective`,
+over the Hopf-order trio and the two étale–Galois nodes) were moved VERBATIM,
+in the same namespace and under the same names, into
+`Deformations/RepresentationTheory/FlatPointsGroup.lean` — a sibling of the
+`FlatProlongation.lean` home that KhareWintenberger's own audit nominates,
+chosen because the cut needs `KnownIn1980s/EllipticCurves/Flat.lean` (the
+Gelfand-duality / étale-Grothendieck machinery) in its cone and
+`FlatProlongation.lean`'s other consumers should not pay for that. The
+subobject half came down too because the sibling leaf
+`hasFlatProlongationAt_of_prod_injection` below needs it and it does NOT
+follow from the quotient half (uniserial counterexample: for a mod-`p` module
+with trivial socle and nontrivial head `χ`, every simple quotient of `W^n` is
+`χ`, so the trivial submodule is a subobject of a power but not a quotient of
+one). `Interface.lean` now keeps only the assembly
+`GaloisRep.hasFlatProlongationAt_of_pi_embedding`, whose consumers are there.
+Nothing was restated, weakened or re-proven; `Interface.lean`'s own consumers
+see the same declarations through the import. THE COPY COUNT IS THEREFORE
+DOWN, not up: `KhareWintenberger.lean`'s `hasFlatProlongationAt_of_surjective`
+is now redundant (it is this theorem at `n = 1`) and should be redirected here
+by its owner.
 
 References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
 (1974), §3; Tate–Oort, *A classification of group schemes of order p*, Ann.
@@ -2139,8 +2169,18 @@ theorem hasFlatProlongationAt_of_pi_surjection
     (hequiv : ∀ (g : Field.absoluteGaloisGroup
         (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ w))
         (x : Fin n → (ρ₁.toLocal w).Space), π (g • x) = g • π x) :
-    ρ₂.HasFlatProlongationAt w :=
-  sorry
+    ρ₂.HasFlatProlongationAt w := by
+  -- pass to the representation-free point-group carrier
+  have h₁ : Modularity.IsFlatPointsGroupAt w (ρ₁.toLocal w).Space :=
+    (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₁).mp h
+  -- products: the finite power is the point group of the tensor power of the
+  -- witness Hopf algebra
+  have hpow : Modularity.IsFlatPointsGroupAt w
+      (∀ _ : Fin n, (ρ₁.toLocal w).Space) :=
+    Modularity.IsFlatPointsGroupAt.pi fun _ => h₁
+  -- quotients: schematic closure over the DVR along the equivariant surjection
+  exact (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₂).mpr
+    (hpow.of_surjective π hsurj hequiv)
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
