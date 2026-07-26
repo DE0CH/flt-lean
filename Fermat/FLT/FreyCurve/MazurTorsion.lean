@@ -1776,17 +1776,105 @@ connecting it back to the isogeny argument is now PROVEN, in
 
 The bound is SHARP and the leaf is NOT vacuous: the hypothesis is satisfied
 exactly by `m ∈ {2, 3, 5, 11, 17, 41}`, i.e. `4m − 1 ∈ {7, 11, 19, 43, 67,
-163}`, the class-number-one discriminants `≡ 3 (mod 4)`. Verified 2026-07-26
-by direct computation over every `m ≤ 1089` (the range in which `f(m−2)`
-stays inside a sieve of `1.2 · 10⁶`); `m = 41` attains the bound, so no
-smaller constant is provable.
+163}`, the class-number-one discriminants `≡ 3 (mod 4)`. `m = 41` attains
+the bound, so no smaller constant is provable.
 
-Routes to a proof, none of them short: Heegner–Stark via the Weber modular
-functions and the resulting quartic Diophantine equation; Baker via linear
-forms in logarithms; or Goldfeld–Gross–Zagier. Nothing in this file
-suggests a cheaper one, and the elementary reductions above provably do not
-bound `m` on their own — they are equivalent to `h(1 − 4m) = 1`, not to a
-bound on it. -/
+SHARPNESS RE-VERIFIED AND EXTENDED (2026-07-26, second pass, independently
+of the first). The original figure was `m ≤ 1089`, the range in which
+`f(m−2)` stays inside a sieve of `1.2 · 10⁶`. Re-run with a deterministic
+Miller–Rabin test instead of a sieve, so the range is not capped by the
+sieve, and with early exit at the first composite value: over EVERY
+`m ≤ 3 · 10⁶` the solution set is still exactly `{2, 3, 5, 11, 17, 41}`.
+Cross-checked in PARI/GP from the other side, through the class number
+rather than the polynomial: `qfbclassno(-q) = 1` for squarefree
+`q ≡ 3 (mod 4)`, `q < 20000`, returns exactly `{3, 7, 11, 19, 43, 67, 163}`.
+The two computations agree, which also re-confirms Rabinowitsch's criterion
+itself on this range. The check that would refute all of this is a single
+`m > 41` for which `x² + x + m` is prime at every `x ≤ m − 2`.
+
+ROUTE AUDIT (2026-07-26; a DATED claim about the pin — re-run the greps
+before believing it). Four routes are known, and the pin supports none of
+them. What is actually present:
+
+* HEEGNER–STARK, via the Weber modular functions and the resulting quartic
+  Diophantine equation. Mathlib has a modular-forms framework
+  (`Mathlib/NumberTheory/ModularForms/`, including `DedekindEta.lean` and
+  `Delta.lean`), but NO `j`-invariant as a modular function, NO Weber
+  functions, and — decisively — NO class field theory of any kind: a grep
+  for `Hilbert class field`, `class field theory`, `ArtinMap`, `artinMap`
+  over all of mathlib returns nothing. Complex multiplication is what turns
+  `h = 1` into a degree bound, so this route has no foundation at all.
+* BAKER, via linear forms in logarithms. ABSENT, and not merely
+  unformalized here: this pin has no transcendence theory whatever — no
+  Baker, no Gelfond–Schneider, no Lindemann–Weierstrass.
+* SIEGEL–TATUZAWA or GOLDFELD–GROSS–ZAGIER, via an effective lower bound on
+  `L(1, χ)`. This is the route with the most support, and still not enough:
+  `Mathlib/NumberTheory/LSeries/` is substantial (`Dirichlet.lean`,
+  `Nonvanishing.lean`, `DirichletCharacter.LFunction_ne_zero_of_re_eq_one`),
+  and the analytic class number formula EXISTS as
+  `NumberField.tendsto_sub_one_mul_dedekindZeta_nhdsGT`
+  (`Mathlib/NumberTheory/NumberField/DedekindZeta.lean`). What is missing is
+  the only part that bounds anything: an effective lower bound on
+  `L(1, χ)`. Siegel's is ineffective by construction, so it could not close
+  this leaf even if formalized.
+* GAUSS FORM-CLASS-GROUP bookkeeping. Binary quadratic forms are ABSENT
+  from mathlib, from `~/cs/FLT` and from this project (no
+  `BinaryQuadraticForm`, no Gauss reduction). `NumberField.classNumber` and
+  `classNumber_eq_one_iff` exist, and `minkowskiBound` exists, but no class
+  number of any imaginary quadratic field is computed anywhere — the only
+  worked `IsPrincipalIdealRing (𝓞 K)` instances in mathlib are cyclotomic
+  (`Mathlib/NumberTheory/NumberField/Cyclotomic/PID.lean`). The words
+  Heegner, Stark and Rabinowitsch occur in mathlib only in a TODO comment
+  in `Mathlib/Analysis/Real/Pi/Chudnovsky.lean`.
+
+WHY THIS LEAF WAS NOT DECOMPOSED FURTHER (2026-07-26, second pass). Every
+available cut is a RENAME: restating the hypothesis as `h(1 − 4m) = 1`, or
+as "the only reduced form of discriminant `1 − 4m` is `(1, 1, m)`", moves
+the leaf to the literature's vocabulary but leaves both halves exactly as
+hard — the bridge is elementary and the bound is the whole problem. A cut
+along Heegner's argument would split it into a monster (CM plus class field
+theory) and a hard-but-finite Diophantine leaf, which is worse than one
+honest statement. So the sorry stands.
+
+THE ELEMENTARY CONTENT IS PROVABLY EXHAUSTED, and here is the quantitative
+form of that, which is the useful thing to know before attacking this leaf
+again. The hypothesis has a much stronger elementary consequence than
+`h = 1` is usually given credit for, and even that consequence does not
+bound `m`:
+
+1. `4m − 1 = q` is PRIME. Any prime `p ∣ q` satisfies `p ∣ f(x)` for the `x`
+   with `2x + 1 ≡ 0 (mod p)`, so by the argument of
+   `mazurIsogeny_primeGenerating_of_inert` every prime factor of `q` is
+   `≥ m`; and `q < m²`, so `q` has exactly one.
+2. `χ(n) = λ(n)` for every `n ≤ m − 1`, where `χ = (1 − 4m | ·)` and `λ` is
+   Liouville's function. Indeed every odd prime `p < m` is inert (step 1 of
+   the bridge above) and `χ(2) = −1` because `q ≡ 3 (mod 8)`, and every
+   prime factor of such an `n` is `≤ n < m`.
+3. `Σ_{0 < n < q/4} χ(n) = 0`, unconditionally, for any `q ≡ 3 (mod 8)`.
+   Proof: write `T` for the sum over `0 < n < q/2` and `S` for the sum over
+   `0 < n < q/4`. The even `n = 2j` in the first range contribute
+   `χ(2) S = −S`, so the odd ones contribute `T + S`; and `n ↦ (q − n)/2` is
+   a bijection from the odd `n < q/2` onto the integers in `(q/4, q/2)`
+   with `χ((q − n)/2) = χ(n)`, so the odd ones also contribute `T − S`.
+   Hence `S = 0`.
+
+Combining, the hypothesis forces `Σ_{n=1}^{m−1} λ(n) = 0` — the Liouville
+summatory function vanishes at `m − 1`. That is a very sharp sieve: over
+`x ≤ 10⁷` it holds at only NINE points, `x ∈ {2, 4, 6, 10, 16, 26, 40, 96,
+586}`, and combined with `m` prime (which is `hgen` at `x = 0`) it leaves
+`m ∈ {3, 5, 7, 11, 17, 41, 97, 587}` — five true solutions and three
+candidates, all three killed by direct evaluation. Every solution `≥ 3` does
+satisfy it, as it must (`m = 2` is the one exception, and for the expected
+reason: `q = 7 ≡ 7 (mod 8)`, so `χ(2) = +1` and step 3 does not apply).
+
+And yet this does NOT bound `m`, which is precisely the point: `λ` sums to
+`0` infinitely often — the Liouville summatory function changes sign
+infinitely often (Haselgrove), and it moves by `±1`, so it must hit `0`
+infinitely often. So the strongest exact elementary consequence available
+still admits infinitely many candidates, and the residue after removing it
+is again the class-number-one problem. Any future attempt should be judged
+against this: a proposed elementary route that does not go strictly beyond
+`Σ_{n<m} λ(n) = 0` cannot work. -/
 theorem mazurIsogeny_rabinowitsch_bound {m : ℕ} (hm : 2 ≤ m)
     (hgen : ∀ x : ℕ, x + 1 < m → Nat.Prime (x ^ 2 + x + m)) : m ≤ 41 :=
   sorry
