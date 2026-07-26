@@ -234,4 +234,95 @@ theorem curve11a3_points (_hfin : Finite curve11a3.toAffine.Point) (x y : ℚ)
       (x, y) = ((1 : ℚ), (0 : ℚ)) ∨ (x, y) = ((1 : ℚ), (-1 : ℚ)) :=
   curve11a3_rational_points x y h
 
+/-! ### `X_1(14)` as the elliptic curve 14a4 -/
+
+/-- **The modular curve `X_1(14)`**, as the elliptic curve
+`y² + xy + y = x³ − x` — Cremona label **14a4**, the curve of conductor `14`
+and discriminant `Δ = −28`.
+
+`X_1(14)` has genus `1` and a rational cusp, so it *is* an elliptic curve over
+`ℚ`; this is that curve. Its Mordell–Weil group is `ℤ/6`, and all six rational
+points are cusps — which is precisely why no elliptic curve over `ℚ` carries a
+rational point of order `2` together with one of order `7`.
+
+IDENTIFICATION (Magma 2026-07-26, untrusted searcher; the classical fact is
+Kubert's and Ligozat's). The `2`-division cubic of the Kubert family
+`E(d³ − d², d² − d)` of `X_1(7)`, i.e. the plane sextic
+
+    4x³ + ((1 + d − d²)² − 4(d³ − d²))x² − 2(1 + d − d²)(d³ − d²)x + (d³ − d²)²
+
+in the coordinates `(d, x)`, has projective closure of `Genus = 1`, and
+`EllipticCurve` + `MinimalModel` return exactly `y² + xy + y = x³ − x`, with
+`Conductor = 14` and `CremonaReference = 14a4`. That birational map is written
+out and PROVEN in `x1_fourteen_no_rational_point`
+(`Fermat/FLT/FreyCurve/TateNormalForm.lean`), so this curve is the whole
+arithmetic content of level `14`, exactly as `curve11a3` is of level `11`. -/
+def curve14a4 : WeierstrassCurve ℚ := ⟨1, 0, 1, -1, 0⟩
+
+/-- `14a4` is an elliptic curve: its discriminant is `Δ = −28 ≠ 0`.
+
+Computed from `b₂ = 1`, `b₄ = −1`, `b₆ = 1`, `b₈ = 0`, giving
+`Δ = −b₂²b₈ − 8b₄³ − 27b₆² + 9b₂b₄b₆ = 0 + 8 − 27 − 9 = −28`. -/
+instance instIsEllipticCurve14a4 : curve14a4.IsElliptic := by
+  refine ⟨?_⟩
+  refine isUnit_iff_ne_zero.mpr ?_
+  simp only [curve14a4, WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+  norm_num
+
+/-- **Rank `0` for `14a4`** (sorry leaf, 2026-07-26), in the concrete form that
+carries the content: every rational point of `y² + xy + y = x³ − x` is a
+torsion point.
+
+Classically this is a descent by the rational `2`-isogeny that `14a4` admits
+(the isogeny class `14a` is `2`- and `3`-isogeny connected, so a `6`-isogeny
+descent is also available): both descent images are trivial, so the rank is
+`0`. `RankBound(E) = 0` with proof flag `true` (Magma 2026-07-26, untrusted
+searcher). Kubert, "Universal bounds on the torsion of elliptic curves" (Proc.
+LMS 33, 1976); Ligozat; subsumed in Mazur 1977, Thm 8.
+
+Stated as `AddMonoid.IsTorsion` rather than as `rank = 0` for the same reason
+as `curve11a3_isTorsion`: there is no rank function here to state the latter
+against, and this form is exactly what `curve14a4_finite` consumes. -/
+theorem curve14a4_isTorsion : AddMonoid.IsTorsion curve14a4.toAffine.Point :=
+  sorry
+
+/-- **`14a4(ℚ)` is finite** (PROVEN 2026-07-26 from the two leaves above).
+
+Same shape as `curve11a3_finite`: finitely generated (Mordell–Weil) plus
+torsion (rank `0`) gives finite, and neither leaf gives finiteness alone. -/
+theorem curve14a4_finite : Finite curve14a4.toAffine.Point :=
+  haveI : AddGroup.FG curve14a4.toAffine.Point := mordellWeil curve14a4
+  AddCommGroup.finite_of_fg_torsion _ curve14a4_isTorsion
+
+/-- **The five affine rational points of `14a4`** (sorry leaf, 2026-07-26):
+given that `14a4(ℚ)` is finite, its affine rational points are exactly
+`(1,−2)`, `(0,−1)`, `(−1,0)`, `(0,0)`, `(1,0)`. Together with the point at
+infinity these are the six elements of `14a4(ℚ) ≅ ℤ/6`.
+
+The finiteness hypothesis is what makes this a finite computation rather than
+a Diophantine problem, and it is supplied by `curve14a4_finite` — so the
+Mordell–Weil leaf is load-bearing here and not decorative. With finiteness in
+hand the group is its own torsion subgroup, which injects into `14a4(𝔽_p)` for
+any prime `p ∤ 14` of good reduction; the five points listed are visibly on the
+curve and distinct.
+
+`MordellWeilGroup` returns `ℤ/6` and lists exactly these five affine points
+plus `(0 : 1 : 0)` (Magma 2026-07-26, untrusted searcher). Note the
+`x`-coordinates take only THREE values, `0`, `1`, `−1`, and that is the form in
+which the consumer uses this leaf.
+
+All six points are CUSPS of `X_1(14)` (`φ(14)/2 = 3` rational cusps, plus the
+three conjugate ones that happen to be rational on this model). That is the
+input to `x1_fourteen_no_rational_point` in
+`Fermat/FLT/FreyCurve/TateNormalForm.lean`, whose proof exhibits the birational
+map from the plane sextic and checks that each of the three `x`-values pulls
+back to `d ∈ {0, 1}` — the two excluded degenerate loci. -/
+theorem curve14a4_points (_hfin : Finite curve14a4.toAffine.Point) (x y : ℚ)
+    (_h : curve14a4.toAffine.Nonsingular x y) :
+    (x, y) = ((1 : ℚ), (-2 : ℚ)) ∨ (x, y) = ((0 : ℚ), (-1 : ℚ)) ∨
+      (x, y) = ((-1 : ℚ), (0 : ℚ)) ∨ (x, y) = ((0 : ℚ), (0 : ℚ)) ∨
+      (x, y) = ((1 : ℚ), (0 : ℚ)) :=
+  sorry
+
 end WeierstrassCurve
