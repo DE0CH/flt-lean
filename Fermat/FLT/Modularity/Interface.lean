@@ -196,11 +196,38 @@ public import Fermat.FLT.Mathlib.RingTheory.PadicIntegralClosure
 -- unit — the arithmetic core of the at-`2` cyclotomic-inertia lemma
 -- `cyclotomicCharacter_eq_one_of_mem_inertia_two_upstream` (pillar E1a)
 import Mathlib.RingTheory.Polynomial.Cyclotomic.Eval
+-- the `p`-th power residue character of the Stickelberger cut lives in
+-- `MulChar (𝓞 CF ⧸ q) (𝓞 CF)`, which occurs in SIGNATURE position in
+-- `exists_powerResidueChar_of_prime_notMem` and
+-- `stickelbergerProd_isPrincipal_of_powerResidueChar`, so the defining
+-- module must be imported publicly rather than reached transitively.
+public import Mathlib.NumberTheory.MulChar.Basic
+-- `Ideal.finiteQuotientOfFreeOfNeBot` (the residue field at a nonzero prime
+-- of a number ring is finite) and the finite-field API behind
+-- `prime_dvd_card_residueField_sub_one`.
+public import Mathlib.LinearAlgebra.FreeModule.IdealQuotient
+public import Mathlib.FieldTheory.Finite.Basic
+-- `Polynomial.isRoot_cyclotomic_iff`, the separability input behind
+-- `residueField_isPrimitiveRoot_of_notMem`.
+public import Mathlib.RingTheory.Polynomial.Cyclotomic.Roots
 -- the base-change convolution lemmas (`liftEquiv_convMul` and friends) and
 -- the bare-hom/`WithConv` bridge, used by the Raynaud product-closure glue;
 -- PUBLIC because the glue lemmas' statements mention the `WithConv`
 -- convolution monoid and this file is one `@[expose] public section`
 public import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
+-- the Raynaud closure cut on the point-group carrier (`IsFlatPointsGroupAt`
+-- and its `prod` / `pi` / `of_addEquiv` / `of_subsingleton` / `of_surjective`
+-- / `of_injective` closure properties, plus the two Hopf-order and two
+-- étale–Galois nodes they run over), MOVED out of this file 2026-07-26 to a
+-- home BELOW `GaloisRepresentation/HardlyRamified/Deformation.lean`, which
+-- needs it and used to be import-unreachable from it.
+-- PUBLIC, and imported HERE rather than relied on transitively: this file
+-- states theorems whose types mention `IsFlatPointsGroupAt`, and
+-- `Deformation.lean` imports the module non-publicly (it needs it only in a
+-- proof), so under the module system the names do NOT arrive through that
+-- edge. Getting this wrong is exactly the "Unknown identifier" this import
+-- was added to fix.
+public import Fermat.FLT.Deformations.RepresentationTheory.FlatPointsGroup
 -- `integralClosureInclusion`, used in the STATEMENT (not merely the proof)
 -- of `mem_maximalIdeal_of_integralClosureInclusion` below, which serves the
 -- at-`2` tame-Frobenius leaf.  It reached this file only transitively and
@@ -5355,9 +5382,21 @@ geometric-point group of the generic fibre of a finite flat
 away (`hasFlatProlongationAt_iff_isFlatPointsGroupAt`, PROVEN
 repackaging). The closure properties then split into
 
-* **products** (`IsFlatPointsGroupAt.prod`, sorry node): closure
+* **products** (`IsFlatPointsGroupAt.prod`, PROVEN 2026-07-25 — the
+  stale `sorry node` label here was corrected 2026-07-26): closure
   under binary products, by the tensor product of the two witness
-  Hopf algebras — see its docstring for the mathlib route;
+  Hopf algebras — see its docstring for the mathlib route. MOVED
+  2026-07-26 to
+  `Deformations/RepresentationTheory/FlatPointsGroup.lean`;
+* **quotients** (`IsFlatPointsGroupAt.of_surjective`, PROVEN): closure
+  under equivariant surjections, over
+  `exists_etale_subBialgebra_of_points_surjective` and
+  `exists_hopfOrder_of_subBialgebra` — also MOVED 2026-07-26, together
+  with the carrier itself and the `pi` / `of_addEquiv` /
+  `of_subsingleton` glue, because
+  `hasFlatProlongationAt_of_pi_surjection` in
+  `GaloisRepresentation/HardlyRamified/Deformation.lean` — a module
+  BELOW this one — is exactly `pi` followed by `of_surjective`;
 * **subobjects** (`IsFlatPointsGroupAt.of_injective`, DECOMPOSED
   2026-07-25 into the two étale–Galois leaves
   `exists_etaleHopfAlgebra_of_points_embedding` and
@@ -5379,1880 +5418,60 @@ E2b′ lattice transfer). -/
 
 /-! ##### Convolution glue for points of a tensor product of Hopf orders
 
-The product half of the Raynaud cut needs one general fact: the
-`Ω`-points of a tensor product of two Hopf algebras are the PAIRS of
-points, compatibly with the convolution group law. The lemmas of this
-section establish that in two steps — first over the base ring
-(`tensorPoints_convOne` / `tensorPoints_convMul` / `tensorPoints_comp`,
-the multiplicativity of `Algebra.TensorProduct.lift` for the
-convolution products of the tensor bialgebra), then transported through
-the base-change adjunction `AlgHom.liftEquiv` to the generic fibres
-(`basePointsTensorEquiv` and its `_one` / `_mul` / `_smul` laws), reusing
-the base-change convolution lemmas of `FlatProlongation.lean`. -/
+MOVED 2026-07-26 to `Deformations/RepresentationTheory/FlatPointsGroup.lean`
+together with the product/quotient half of the Raynaud cut it serves
+(`tensorPoints_convOne` / `_convMul` / `_comp`, `algHomTensorProdEquiv`,
+`basePointsTensorEquiv` and its `_apply` / `_one` / `_mul` / `_smul` laws).
+They are unchanged and in the same namespace, so they are still in scope
+here through the import. -/
 
-section TensorPointsGlue
+/-! ##### The carrier and its product/quotient closure — MOVED 2026-07-26
 
-open WithConv
+`IsFlatPointsGroupAt`, `GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt`,
+`IsFlatPointsGroupAt.of_addEquiv` / `.of_subsingleton` / `.prod` / `.pi` /
+`.of_surjective`, and the two nodes the quotient half runs over
+(`exists_etale_subBialgebra_of_points_surjective`,
+`exists_hopfOrder_of_subBialgebra`) now live in
+`Deformations/RepresentationTheory/FlatPointsGroup.lean`, VERBATIM and in
+this same namespace, so everything below still sees them through the import.
 
-variable {R : Type*} [CommRing R] {C : Type*} [CommRing C] [Algebra R C]
-variable {A B : Type*} [CommRing A] [CommRing B] [Bialgebra R A] [Bialgebra R B]
+WHY: `hasFlatProlongationAt_of_pi_surjection` in
+`GaloisRepresentation/HardlyRamified/Deformation.lean` is exactly
+`pi` followed by `of_surjective`, and that module is BELOW this one
+(`Interface` imports `KhareWintenberger` imports `Deformation`), so the
+content had to be published at a lower home rather than re-sorried a
+third time. What stays here is only what no downstream module needs: the
+Hopf-order trio (`exists_hopfOrder_baseChange`,
+`exists_hopfOrder_map_of_surjective_bialgHom`,
+`isFlatPointsGroupAt_of_hopfOrder`), the two étale–Galois embedding
+nodes, and the SUBOBJECT half `IsFlatPointsGroupAt.of_injective`. -/
 
-/-- **Convolution unit of a tensor product of points** (PROVEN): the
-pair `(1, 1)` of counit-units lifts to the counit-unit of the tensor
-bialgebra `A ⊗[R] B`, because its counit is the product of the two
-counits. -/
-theorem tensorPoints_convOne :
-    Algebra.TensorProduct.lift ((1 : WithConv (A →ₐ[R] C)).ofConv)
-        ((1 : WithConv (B →ₐ[R] C)).ofConv) (fun _ _ => Commute.all _ _) =
-      (1 : WithConv (A ⊗[R] B →ₐ[R] C)).ofConv := by
-  refine AlgHom.ext fun x => ?_
-  induction x with
-  | zero => simp
-  | add x y hx hy => simp only [map_add, hx, hy]
-  | tmul a b => simp [AlgHom.convOne_apply, mul_comm]
+/-! ##### The subobject half — MOVED 2026-07-26
 
-/-- **Convolution product of a tensor product of points** (PROVEN):
-`Algebra.TensorProduct.lift` is multiplicative for the convolution
-products, because the comultiplication of the tensor bialgebra is the
-componentwise one composed with the middle-four exchange — so both
-sides evaluate on `a ⊗ₜ b` to the same sum over
-`comul a ⊗ comul b`. -/
-theorem tensorPoints_convMul (f₁ g₁ : WithConv (A →ₐ[R] C))
-    (f₂ g₂ : WithConv (B →ₐ[R] C)) :
-    Algebra.TensorProduct.lift ((f₁ * g₁).ofConv) ((f₂ * g₂).ofConv)
-        (fun _ _ => Commute.all _ _) =
-      (toConv (Algebra.TensorProduct.lift f₁.ofConv f₂.ofConv (fun _ _ => Commute.all _ _)) *
-        toConv (Algebra.TensorProduct.lift g₁.ofConv g₂.ofConv
-          (fun _ _ => Commute.all _ _))).ofConv := by
-  refine AlgHom.ext fun x => ?_
-  induction x with
-  | zero => simp
-  | add x y hx hy => simp only [map_add, hx, hy]
-  | tmul a b =>
-    rw [Algebra.TensorProduct.lift_tmul, AlgHom.convMul_apply, AlgHom.convMul_apply,
-      AlgHom.convMul_apply, TensorProduct.comul_tmul]
-    induction Coalgebra.comul (R := R) a with
-    | zero => simp
-    | add x y hx hy => simp only [TensorProduct.add_tmul, map_add, add_mul, hx, hy]
-    | tmul a₁ a₂ =>
-      induction Coalgebra.comul (R := R) b with
-      | zero => simp
-      | add x y hx hy => simp only [TensorProduct.tmul_add, map_add, mul_add, hx, hy]
-      | tmul b₁ b₂ =>
-        simp only [TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul,
-          Algebra.TensorProduct.lift_tmul]
-        ring
+The Hopf-order trio (`exists_hopfOrder_baseChange`,
+`exists_hopfOrder_map_of_surjective_bialgHom`,
+`isFlatPointsGroupAt_of_hopfOrder`), the two étale–Galois nodes
+(`exists_etaleHopfAlgebra_of_points_embedding`,
+`exists_surjective_bialgHom_of_points_injection`), the two convolution
+bridges (`algHom_convOne_comp_bialgHom`, `algHom_convMul_comp_bialgHom`)
+and the subobject closure `IsFlatPointsGroupAt.of_injective` itself now
+live in `Deformations/RepresentationTheory/FlatPointsGroup.lean`,
+VERBATIM and in this same namespace, so everything below still sees them
+through the import.
 
-/-- **Postcomposition through the tensor pairing** (PROVEN): the pairing
-`Algebra.TensorProduct.lift` commutes with postcomposition by an algebra
-map, which is what makes the points identification Galois-equivariant. -/
-theorem tensorPoints_comp {D : Type*} [CommRing D] [Algebra R D] (h : C →ₐ[R] D)
-    (ψ₁ : A →ₐ[R] C) (ψ₂ : B →ₐ[R] C) :
-    Algebra.TensorProduct.lift (h.comp ψ₁) (h.comp ψ₂) (fun _ _ => Commute.all _ _) =
-      h.comp (Algebra.TensorProduct.lift ψ₁ ψ₂ (fun _ _ => Commute.all _ _)) := by
-  refine AlgHom.ext fun x => ?_
-  induction x with
-  | zero => simp
-  | add x y hx hy => simp only [map_add, hx, hy]
-  | tmul a b => simp
+WHY (this correction supersedes the note above, which said the subobject
+half was not needed downstream — it is):
+`hasFlatProlongationAt_of_prod_injection` in
+`GaloisRepresentation/HardlyRamified/Deformation.lean` is `iff` + `prod`
++ `of_injective`, and that module is BELOW this one. The subobject half
+does NOT follow from the quotient half: for a uniserial mod-`p` Galois
+module with trivial socle and nontrivial head `χ`, every simple quotient
+of `W^n` is `χ`, so the trivial submodule is a subobject of a power but
+is NOT an equivariant quotient of any power. So both halves had to go
+down. What remains here of this cut is only the assembly
+`GaloisRep.hasFlatProlongationAt_of_pi_embedding` just below, kept in
+place because its consumers are here. -/
 
-/-- **Points of a tensor product are pairs of points** (PROVEN): for a
-COMMUTATIVE target there is no commutation side condition, so
-`Algebra.TensorProduct.lift` and restriction along the two inclusions
-are mutually inverse. -/
-noncomputable def algHomTensorProdEquiv :
-    ((A ⊗[R] B) →ₐ[R] C) ≃ ((A →ₐ[R] C) × (B →ₐ[R] C)) where
-  toFun Φ := (Φ.comp Algebra.TensorProduct.includeLeft,
-    Φ.comp (Algebra.TensorProduct.includeRight (R := R) (A := A) (B := B)))
-  invFun p := Algebra.TensorProduct.lift p.1 p.2 (fun _ _ => Commute.all _ _)
-  left_inv Φ := by ext x <;> simp
-  right_inv p := by
-    refine Prod.ext ?_ ?_ <;> refine AlgHom.ext fun x => ?_ <;> simp
-
-end TensorPointsGlue
-
-section BasePointsGlue
-
-open WithConv
-
-variable {R : Type*} [CommRing R]
-variable {S L : Type u} [Field S] [Field L] [Algebra S L] [Algebra R S] [Algebra R L]
-  [IsScalarTower R S L]
-variable {A B : Type u} [CommRing A] [CommRing B] [Bialgebra R A] [Bialgebra R B]
-
-/-- **The generic-fibre points of a tensor product of Hopf orders**
-(PROVEN): pairs of `L`-points of the base changes `S ⊗[R] A`,
-`S ⊗[R] B` are the `L`-points of the base change of `A ⊗[R] B`. Built
-from the base-change adjunction `AlgHom.liftEquiv` on each side and
-`algHomTensorProdEquiv` over the base ring. -/
-noncomputable def basePointsTensorEquiv :
-    ((S ⊗[R] A →ₐ[S] L) × (S ⊗[R] B →ₐ[S] L)) ≃ (S ⊗[R] (A ⊗[R] B) →ₐ[S] L) :=
-  ((AlgHom.liftEquiv R S A L).symm.prodCongr (AlgHom.liftEquiv R S B L).symm).trans
-    (algHomTensorProdEquiv.symm.trans (AlgHom.liftEquiv R S (A ⊗[R] B) L))
-
-/-- The defining formula of `basePointsTensorEquiv`. -/
-theorem basePointsTensorEquiv_apply (p : (S ⊗[R] A →ₐ[S] L) × (S ⊗[R] B →ₐ[S] L)) :
-    basePointsTensorEquiv p = AlgHom.liftEquiv R S (A ⊗[R] B) L
-      (Algebra.TensorProduct.lift ((AlgHom.liftEquiv R S A L).symm p.1)
-        ((AlgHom.liftEquiv R S B L).symm p.2) (fun _ _ => Commute.all _ _)) := rfl
-
-set_option maxSynthPendingDepth 4 in
-/-- `basePointsTensorEquiv` sends the pair of convolution units to the
-convolution unit (of the bare-hom monoid used by the flat-prolongation
-package). -/
-theorem basePointsTensorEquiv_one :
-    basePointsTensorEquiv ((1 : S ⊗[R] A →ₐ[S] L), (1 : S ⊗[R] B →ₐ[S] L)) = 1 := by
-  rw [basePointsTensorEquiv_apply, vendored_one_eq_convOne (A₀ := S ⊗[R] A),
-    vendored_one_eq_convOne (A₀ := S ⊗[R] B),
-    liftEquiv_symm_convOne, liftEquiv_symm_convOne, tensorPoints_convOne, liftEquiv_convOne,
-    vendored_one_eq_convOne]
-
-set_option maxSynthPendingDepth 4 in
-/-- `basePointsTensorEquiv` is multiplicative for the componentwise
-convolution product. -/
-theorem basePointsTensorEquiv_mul (p q : (S ⊗[R] A →ₐ[S] L) × (S ⊗[R] B →ₐ[S] L)) :
-    basePointsTensorEquiv (p.1 * q.1, p.2 * q.2) =
-      basePointsTensorEquiv p * basePointsTensorEquiv q := by
-  rw [basePointsTensorEquiv_apply, basePointsTensorEquiv_apply, basePointsTensorEquiv_apply,
-    vendored_mul_eq_convMul p.1 q.1, vendored_mul_eq_convMul p.2 q.2,
-    liftEquiv_symm_convMul, liftEquiv_symm_convMul, tensorPoints_convMul, liftEquiv_convMul,
-    vendored_mul_eq_convMul]
-
-set_option maxSynthPendingDepth 4 in
-/-- `basePointsTensorEquiv` is equivariant for the postcomposition
-action of `Gal(L/S)` on points. -/
-theorem basePointsTensorEquiv_smul (σ : L ≃ₐ[S] L)
-    (p : (S ⊗[R] A →ₐ[S] L) × (S ⊗[R] B →ₐ[S] L)) :
-    basePointsTensorEquiv (σ • p.1, σ • p.2) = σ • basePointsTensorEquiv p := by
-  have h1 : ∀ (φ : S ⊗[R] A →ₐ[S] L), σ • φ = (σ.toAlgHom).comp φ :=
-    fun _ => AlgHom.ext fun _ => rfl
-  have h2 : ∀ (φ : S ⊗[R] B →ₐ[S] L), σ • φ = (σ.toAlgHom).comp φ :=
-    fun _ => AlgHom.ext fun _ => rfl
-  have h3 : ∀ (φ : S ⊗[R] (A ⊗[R] B) →ₐ[S] L), σ • φ = (σ.toAlgHom).comp φ :=
-    fun _ => AlgHom.ext fun _ => rfl
-  rw [basePointsTensorEquiv_apply, basePointsTensorEquiv_apply, h1, h2, h3,
-    liftEquiv_symm_comp, liftEquiv_symm_comp, tensorPoints_comp, liftEquiv_comp]
-
-end BasePointsGlue
-
-section RaynaudClosure
-
-variable (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
-
-local notation "Kᵥ" => HeightOneSpectrum.adicCompletion ℚ v
-local notation "𝒪ᵥ" => HeightOneSpectrum.adicCompletionIntegers ℚ v
-local notation "Γᵥ" =>
-  Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ v)
-local notation "Ωᵥ" =>
-  AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **The flat point-group carrier at `v`**: the additive group `X`
-with its `Γ Kᵥ`-action is, equivariantly, the geometric-point group
-of the generic fibre of some finite flat `𝒪ᵥ`-Hopf algebra with
-étale generic fibre. This is exactly the existential package of
-`GaloisRep.HasFlatProlongationAt` with the representation space
-replaced by an abstract `Γ Kᵥ`-module (the equivariant bijection is
-carried as an `AddMonoidHom` plus an explicit equivariance clause so
-the carrier needs no `DistribMulActionHom` instances on abstract
-`X`); `hasFlatProlongationAt_iff_isFlatPointsGroupAt` is the exact
-repackaging. Raynaud's closure properties of finite flat group
-schemes over the DVR `𝒪ᵥ` become closure properties of this
-predicate (`prod`, `of_injective` below). -/
-def IsFlatPointsGroupAt (X : Type*) [AddCommGroup X]
-    [DistribMulAction Γᵥ X] : Prop :=
-  ∃ (G : Type) (_ : CommRing G) (_ : HopfAlgebra 𝒪ᵥ G)
-    (_ : Module.Flat 𝒪ᵥ G) (_ : Module.Finite 𝒪ᵥ G)
-    (_ : Algebra.Etale Kᵥ (Kᵥ ⊗[𝒪ᵥ] G))
-    (f : Additive (Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Ωᵥ) →+ X),
-    Function.Bijective f ∧
-      ∀ (g : Γᵥ) (y : Additive (Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Ωᵥ)),
-        f (g • y) = g • f y
-
-variable {v}
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **The exact repackaging** (PROVEN): a Galois representation has a
-flat prolongation at `v` iff its local space is a flat point-group at
-`v`. The two sides differ only in how the equivariant bijection is
-carried (`DistribMulActionHom` versus `AddMonoidHom` + equivariance
-clause). -/
-theorem GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt
-    {A : Type*} [CommRing A] [TopologicalSpace A]
-    {M : Type*} [AddCommGroup M] [Module A M] (ρ : GaloisRep ℚ A M) :
-    ρ.HasFlatProlongationAt v ↔ IsFlatPointsGroupAt v (ρ.toLocal v).Space := by
-  constructor
-  · rintro ⟨G, i1, i2, i3, i4, i5, f, hbij⟩
-    exact ⟨G, i1, i2, i3, i4, i5,
-      { toFun := f
-        map_zero' := f.map_zero
-        map_add' := f.map_add }, hbij, fun g y => f.map_smul g y⟩
-  · rintro ⟨G, i1, i2, i3, i4, i5, f, hbij, hequiv⟩
-    exact ⟨G, i1, i2, i3, i4, i5,
-      { toFun := f
-        map_smul' := hequiv
-        map_zero' := f.map_zero
-        map_add' := f.map_add }, hbij⟩
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **Transport** (PROVEN): the flat point-group property moves along
-a `Γ Kᵥ`-equivariant additive isomorphism — the Hopf witness is
-reused verbatim and the point identification is composed with the
-isomorphism. -/
-theorem IsFlatPointsGroupAt.of_addEquiv {X Y : Type*}
-    [AddCommGroup X] [AddCommGroup Y]
-    [DistribMulAction Γᵥ X] [DistribMulAction Γᵥ Y]
-    (h : IsFlatPointsGroupAt v X) (e : X ≃+ Y)
-    (he : ∀ (g : Γᵥ) (x : X), e (g • x) = g • e x) :
-    IsFlatPointsGroupAt v Y := by
-  obtain ⟨G, i1, i2, i3, i4, i5, f, hbij, hequiv⟩ := h
-  exact ⟨G, i1, i2, i3, i4, i5, e.toAddMonoidHom.comp f,
-    e.bijective.comp hbij, fun g y => by
-      show e (f (g • y)) = g • e (f y)
-      rw [hequiv, he]⟩
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-/-- **The trivial package** (PROVEN — the abstract form of
-`GaloisRep.hasFlatProlongationAt_of_subsingleton`, by the same
-argument): a subsingleton is a flat point-group at every `v`,
-witnessed by the trivial Hopf algebra `𝒪ᵥ` itself, whose generic
-fibre `Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ ≅ Kᵥ` is étale with a unique `Kᵥᵃˡᵍ`-point. -/
-theorem IsFlatPointsGroupAt.of_subsingleton {X : Type*}
-    [AddCommGroup X] [DistribMulAction Γᵥ X] [Subsingleton X] :
-    IsFlatPointsGroupAt v X := by
-  classical
-  haveI hsub : Subsingleton ((Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ) →ₐ[Kᵥ] Ωᵥ) := by
-    constructor
-    intro φ ψ
-    have h1 : ∀ (χ : (Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ) →ₐ[Kᵥ] Ωᵥ),
-        χ = (χ.comp (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).symm.toAlgHom).comp
-          (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).toAlgHom := by
-      intro χ
-      refine AlgHom.ext fun x => ?_
-      simp
-    rw [h1 φ, h1 ψ, Subsingleton.elim
-      (φ.comp (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).symm.toAlgHom)
-      (ψ.comp (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).symm.toAlgHom)]
-  have hne : Nonempty ((Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ) →ₐ[Kᵥ] Ωᵥ) :=
-    ⟨(IsScalarTower.toAlgHom Kᵥ Kᵥ Ωᵥ).comp
-      (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).toAlgHom⟩
-  exact ⟨𝒪ᵥ, inferInstance, inferInstance, inferInstance, inferInstance,
-    Algebra.Etale.of_equiv (Algebra.TensorProduct.rid 𝒪ᵥ Kᵥ Kᵥ).symm,
-    { toFun := fun _ => (0 : X)
-      map_zero' := rfl
-      map_add' := fun _ _ => (add_zero (0 : X)).symm },
-    ⟨fun a b _ => Subsingleton.elim a b,
-      fun _ => ⟨Additive.ofMul hne.some, Subsingleton.elim _ _⟩⟩,
-    fun g _ => (smul_zero g).symm⟩
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-set_option maxSynthPendingDepth 4 in
-/-- **Product closure** (PROVEN 2026-07-25 — the products half of
-Raynaud closure: finite flat group schemes over the DVR `𝒪ᵥ` are
-closed under finite products): the binary product of two flat
-point-groups at `v` is a flat point-group at `v`. The witness is the
-tensor product `G₁ ⊗[𝒪ᵥ] G₂` of the two witness Hopf algebras —
-* Hopf structure: the `HopfAlgebra 𝒪ᵥ (G₁ ⊗[𝒪ᵥ] G₂)` instance of
-  `Mathlib.RingTheory.HopfAlgebra.TensorProduct`; flatness and
-  module-finiteness of the tensor product are mathlib instances.
-* Generic fibre: `(Kᵥ ⊗[𝒪ᵥ] G₁) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G₂) ≃ₐ[Kᵥ]
-  Kᵥ ⊗[𝒪ᵥ] (G₁ ⊗[𝒪ᵥ] G₂)` (`Algebra.TensorProduct.cancelBaseChange`
-  then `Algebra.TensorProduct.assoc`); étaleness of the left side is
-  base change (`Algebra.Etale.baseChange`, `Kᵥ → Kᵥ ⊗[𝒪ᵥ] G₁`) plus
-  composition (`Algebra.Etale.comp`), and it is transported through
-  the isomorphism by `Algebra.Etale.of_equiv`.
-* Points: `basePointsTensorEquiv` identifies the `Kᵥᵃˡᵍ`-points of
-  the generic fibre with PAIRS of points (no commutation side
-  condition in the commutative target), and
-  `basePointsTensorEquiv_one` / `_mul` / `_smul` make that
-  identification an equivariant isomorphism of convolution groups.
-  Composing with `f₁ × f₂` lands in `X × Y`.
-Unconditionally TRUE; no hypothesis package. -/
-theorem IsFlatPointsGroupAt.prod {X Y : Type*}
-    [AddCommGroup X] [AddCommGroup Y]
-    [DistribMulAction Γᵥ X] [DistribMulAction Γᵥ Y]
-    (hX : IsFlatPointsGroupAt v X) (hY : IsFlatPointsGroupAt v Y) :
-    IsFlatPointsGroupAt v (X × Y) := by
-  classical
-  obtain ⟨G₁, cr₁, hopf₁, flat₁, fin₁, et₁, f₁, hbij₁, heq₁⟩ := hX
-  obtain ⟨G₂, cr₂, hopf₂, flat₂, fin₂, et₂, f₂, hbij₂, heq₂⟩ := hY
-  letI := cr₁; letI := hopf₁; letI := flat₁; letI := fin₁; letI := et₁
-  letI := cr₂; letI := hopf₂; letI := flat₂; letI := fin₂; letI := et₂
-  -- the generic fibre of the tensor witness is étale: base change then composition
-  haveI hEt : Algebra.Etale Kᵥ ((Kᵥ ⊗[𝒪ᵥ] G₁) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G₂)) :=
-    Algebra.Etale.comp Kᵥ (Kᵥ ⊗[𝒪ᵥ] G₁) ((Kᵥ ⊗[𝒪ᵥ] G₁) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G₂))
-  -- the points of the tensor witness are pairs of points, equivariantly and
-  -- compatibly with the convolution group law
-  obtain ⟨e, hesmul⟩ :
-      ∃ e : (Additive (Kᵥ ⊗[𝒪ᵥ] G₁ →ₐ[Kᵥ] Ωᵥ) × Additive (Kᵥ ⊗[𝒪ᵥ] G₂ →ₐ[Kᵥ] Ωᵥ)) ≃+
-          Additive (Kᵥ ⊗[𝒪ᵥ] (G₁ ⊗[𝒪ᵥ] G₂) →ₐ[Kᵥ] Ωᵥ),
-        ∀ (g : Γᵥ) (p : Additive (Kᵥ ⊗[𝒪ᵥ] G₁ →ₐ[Kᵥ] Ωᵥ) ×
-            Additive (Kᵥ ⊗[𝒪ᵥ] G₂ →ₐ[Kᵥ] Ωᵥ)),
-          e (g • p) = g • e p := by
-    refine ⟨{ toFun := fun p =>
-                Additive.ofMul (basePointsTensorEquiv (p.1.toMul, p.2.toMul))
-              invFun := fun Φ =>
-                (Additive.ofMul (basePointsTensorEquiv.symm Φ.toMul).1,
-                  Additive.ofMul (basePointsTensorEquiv.symm Φ.toMul).2)
-              left_inv := fun p => by
-                show (Additive.ofMul (basePointsTensorEquiv.symm
-                      (basePointsTensorEquiv (p.1.toMul, p.2.toMul))).1,
-                    Additive.ofMul (basePointsTensorEquiv.symm
-                      (basePointsTensorEquiv (p.1.toMul, p.2.toMul))).2) = p
-                rw [Equiv.symm_apply_apply]
-                exact rfl
-              right_inv := fun Φ => by
-                show Additive.ofMul (basePointsTensorEquiv
-                    ((basePointsTensorEquiv.symm Φ.toMul).1,
-                      (basePointsTensorEquiv.symm Φ.toMul).2)) = Φ
-                rw [Prod.mk.eta, Equiv.apply_symm_apply]
-                exact rfl
-              map_add' := fun p q => ?_ }, fun g p => ?_⟩
-    · show Additive.ofMul (basePointsTensorEquiv
-        (Additive.toMul (p.1 + q.1), Additive.toMul (p.2 + q.2))) = _
-      show Additive.ofMul (basePointsTensorEquiv
-        (p.1.toMul * q.1.toMul, p.2.toMul * q.2.toMul)) = _
-      rw [basePointsTensorEquiv_mul (p := (p.1.toMul, p.2.toMul))
-        (q := (q.1.toMul, q.2.toMul))]
-      rfl
-    · show Additive.ofMul (basePointsTensorEquiv
-        (Additive.toMul (g • p.1), Additive.toMul (g • p.2))) = _
-      show Additive.ofMul (basePointsTensorEquiv
-        (g • p.1.toMul, g • p.2.toMul)) = _
-      rw [basePointsTensorEquiv_smul (p := (p.1.toMul, p.2.toMul))]
-      rfl
-  refine ⟨G₁ ⊗[𝒪ᵥ] G₂, inferInstance, inferInstance, inferInstance, inferInstance,
-    Algebra.Etale.of_equiv
-      ((Algebra.TensorProduct.cancelBaseChange 𝒪ᵥ Kᵥ Kᵥ (Kᵥ ⊗[𝒪ᵥ] G₁) G₂).trans
-        (Algebra.TensorProduct.assoc 𝒪ᵥ 𝒪ᵥ Kᵥ Kᵥ G₁ G₂)),
-    { toFun := fun Φ => (f₁ (e.symm Φ).1, f₂ (e.symm Φ).2)
-      map_zero' := by simp
-      map_add' := fun Φ Ψ => by simp [map_add e.symm] }, ?_, ?_⟩
-  · -- bijectivity: the pair identification and both point identifications are bijective
-    exact (hbij₁.prodMap hbij₂).comp e.symm.bijective
-  · -- equivariance: `e.symm` is equivariant by `hesmul`, and so is `f₁ × f₂`
-    intro g Φ
-    have hsymm : e.symm (g • Φ) = g • e.symm Φ := by
-      apply e.injective
-      rw [e.apply_symm_apply, hesmul, e.apply_symm_apply]
-    show ((f₁ (e.symm (g • Φ)).1, f₂ (e.symm (g • Φ)).2) : X × Y) =
-      g • ((f₁ (e.symm Φ).1, f₂ (e.symm Φ).2) : X × Y)
-    rw [hsymm]
-    exact Prod.ext (heq₁ g (e.symm Φ).1) (heq₂ g (e.symm Φ).2)
-
-/-! ##### Schematic closure over the DVR (PROVEN 2026-07-25)
-
-The commutative-algebra half of Raynaud's subobject closure: Hopf
-ORDERS (finitely generated `𝒪ᵥ`-subalgebras spanning the generic
-fibre and stable under counit, antipode and comultiplication, in the
-exact vocabulary of the PROVEN
-`exists_flat_hopf_form_of_hopf_order` of
-`KnownIn1980s/EllipticCurves/Flat.lean`) exist canonically in the
-generic fibre of a finite flat Hopf algebra
-(`exists_hopfOrder_baseChange`), push forward along a SURJECTIVE
-bialgebra homomorphism (`exists_hopfOrder_map_of_surjective_bialgHom`
-— the surjective analogue of the vendored
-`exists_hopf_order_map_of_bialgEquiv`), and turn back into a flat
-point-group package (`isFlatPointsGroupAt_of_hopfOrder`). No
-`e < p − 1` bound is needed anywhere: Raynaud's bound enters only for
-uniqueness/full-faithfulness, never for existence. -/
-
-set_option maxHeartbeats 1000000 in
-/-- **The convolution unit is preserved by precomposition with a
-bialgebra homomorphism** (PROVEN): the unit of the vendored bare-hom
-convolution monoid on `C →ₐ[K₁] L₁` (`Deformations/RepresentationTheory/
-Etale.lean`, the monoid used by `GaloisRep.HasFlatProlongationAt` and
-hence by `IsFlatPointsGroupAt`) is `Algebra.ofId ∘ counit`, and a
-bialgebra homomorphism intertwines the counits. -/
-theorem algHom_convOne_comp_bialgHom {K₁ L₁ : Type u} [Field K₁] [Field L₁]
-    [Algebra K₁ L₁] {B C : Type*} [CommRing B] [Bialgebra K₁ B] [CommRing C]
-    [Bialgebra K₁ C] (Φ : B →ₐc[K₁] C) :
-    (1 : C →ₐ[K₁] L₁).comp (Φ : B →ₐ[K₁] C) = 1 := by
-  have hAA : AlgHomClass.toAlgHom Φ = (Φ : B →ₐ[K₁] C) := rfl
-  have hc : (Bialgebra.counitAlgHom K₁ C).comp (Φ : B →ₐ[K₁] C) =
-      Bialgebra.counitAlgHom K₁ B := by
-    rw [← hAA]; exact BialgHomClass.counitAlgHom_comp Φ
-  have h1 : (1 : C →ₐ[K₁] L₁) =
-      (Algebra.ofId K₁ L₁).comp (Bialgebra.counitAlgHom K₁ C) := rfl
-  have h2 : (1 : B →ₐ[K₁] L₁) =
-      (Algebra.ofId K₁ L₁).comp (Bialgebra.counitAlgHom K₁ B) := rfl
-  rw [h1, h2, AlgHom.comp_assoc, hc]
-
-set_option maxHeartbeats 1000000 in
-/-- **The convolution product is preserved by precomposition with a
-bialgebra homomorphism** (PROVEN): the vendored bare-hom convolution
-agrees with mathlib's `WithConv` convolution
-(`vendored_mul_eq_convMul`), for which this is
-`AlgHom.convMul_comp_bialgHom_distrib`. Together with
-`algHom_convOne_comp_bialgHom` this makes precomposition with a
-bialgebra homomorphism an additive map of the point groups. -/
-theorem algHom_convMul_comp_bialgHom {K₁ L₁ : Type u} [Field K₁] [Field L₁]
-    [Algebra K₁ L₁] {B C : Type*} [CommRing B] [Bialgebra K₁ B] [CommRing C]
-    [Bialgebra K₁ C] (Φ : B →ₐc[K₁] C) (φ ψ : C →ₐ[K₁] L₁) :
-    (φ * ψ).comp (Φ : B →ₐ[K₁] C) =
-      (φ.comp (Φ : B →ₐ[K₁] C)) * (ψ.comp (Φ : B →ₐ[K₁] C)) := by
-  rw [vendored_mul_eq_convMul φ ψ, vendored_mul_eq_convMul]
-  exact AlgHom.convMul_comp_bialgHom_distrib
-    (WithConv.toConv φ) (WithConv.toConv ψ) Φ
-
-set_option maxHeartbeats 1000000 in
-/-- **The canonical Hopf order in a base-changed Hopf algebra**
-(PROVEN, curve-free and place-free): for a module-finite Hopf
-`R`-algebra `G` and any `R`-algebra `S`, the image `1 ⊗ G` of `G` in
-`S ⊗[R] G` is a Hopf ORDER — finitely generated over `R`, spanning
-`S ⊗[R] G` over `S`, with counit landing in the image of `R`, stable
-under the antipode, and with comultiplication in the `R`-span of its
-pure tensors — in the exact vocabulary consumed by
-`exists_flat_hopf_form_of_hopf_order`. All five clauses are the
-base-change structure formulas `TensorProduct.counit_tmul`,
-`TensorProduct.comul_tmul` and the definitional antipode of the base
-change, evaluated at `1 ⊗ₜ g`. -/
-theorem exists_hopfOrder_baseChange
-    (R : Type*) [CommRing R] (S : Type*) [CommRing S] [Algebra R S]
-    (G : Type*) [CommRing G] [HopfAlgebra R G] [Module.Finite R G] :
-    ∃ G₀ : Subalgebra R (S ⊗[R] G),
-      (Subalgebra.toSubmodule G₀).FG ∧
-      Submodule.span S (G₀ : Set (S ⊗[R] G)) = ⊤ ∧
-      (∀ x ∈ G₀, Bialgebra.counitAlgHom S (S ⊗[R] G) x ∈ (algebraMap R S).range) ∧
-      (∀ x ∈ G₀, HopfAlgebra.antipode S x ∈ G₀) ∧
-      (∀ x ∈ G₀, Bialgebra.comulAlgHom S (S ⊗[R] G) x ∈
-        Submodule.span R {z : (S ⊗[R] G) ⊗[S] (S ⊗[R] G) |
-          ∃ a ∈ G₀, ∃ b ∈ G₀, a ⊗ₜ[S] b = z}) := by
-  classical
-  set G₀ : Subalgebra R (S ⊗[R] G) :=
-    (⊤ : Subalgebra R G).map (Algebra.TensorProduct.includeRight : G →ₐ[R] S ⊗[R] G)
-    with hG₀
-  have hmem : ∀ g : G, ((1 : S) ⊗ₜ[R] g) ∈ G₀ :=
-    fun g => Subalgebra.mem_map.mpr ⟨g, Algebra.mem_top, rfl⟩
-  have htop : (Subalgebra.toSubmodule (⊤ : Subalgebra R G)) = ⊤ := by ext x; simp
-  refine ⟨G₀, ?_, ?_, ?_, ?_, ?_⟩
-  · rw [hG₀, Subalgebra.map_toSubmodule, htop]
-    exact (Module.finite_def.mp inferInstance).map _
-  · rw [eq_top_iff]
-    rintro x -
-    induction x with
-    | zero => exact Submodule.zero_mem _
-    | tmul s g =>
-        have hs : s ⊗ₜ[R] g = s • ((1 : S) ⊗ₜ[R] g) := by
-          rw [TensorProduct.smul_tmul']; simp
-        rw [hs]
-        exact Submodule.smul_mem _ _ (Submodule.subset_span (hmem g))
-    | add x y hx hy => exact Submodule.add_mem _ hx hy
-  · rintro x hx
-    obtain ⟨g, -, rfl⟩ := Subalgebra.mem_map.mp hx
-    refine ⟨Coalgebra.counit (R := R) g, ?_⟩
-    show algebraMap R S (Coalgebra.counit (R := R) g) =
-      Coalgebra.counit (R := S) ((1 : S) ⊗ₜ[R] g)
-    rw [TensorProduct.counit_tmul]
-    simp [Algebra.smul_def]
-  · rintro x hx
-    obtain ⟨g, -, rfl⟩ := Subalgebra.mem_map.mp hx
-    show HopfAlgebra.antipode (R := S) ((1 : S) ⊗ₜ[R] g) ∈ G₀
-    show (1 : S) ⊗ₜ[R] (HopfAlgebra.antipode (R := R) g) ∈ G₀
-    exact hmem _
-  · rintro x hx
-    obtain ⟨g, -, rfl⟩ := Subalgebra.mem_map.mp hx
-    show Coalgebra.comul (R := S) ((1 : S) ⊗ₜ[R] g) ∈ _
-    rw [TensorProduct.comul_tmul, CommSemiring.comul_apply]
-    generalize Coalgebra.comul (R := R) g = t
-    induction t with
-    | zero => simp
-    | tmul a b =>
-        rw [TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul]
-        exact Submodule.subset_span ⟨_, hmem a, _, hmem b, rfl⟩
-    | add p q hp hq =>
-        rw [TensorProduct.tmul_add, map_add]
-        exact Submodule.add_mem _ hp hq
-
-set_option maxHeartbeats 1000000 in
-/-- **Hopf orders push forward along surjective bialgebra
-homomorphisms** (PROVEN, curve-free and place-free — the SURJECTIVE
-analogue of the vendored `exists_hopf_order_map_of_bialgEquiv`, by
-the same pointwise structure-map compatibilities; surjectivity is
-used only for the spanning clause, where the equivalence proof used
-`Φ.toAlgEquiv.surjective`): the image of a Hopf-closed `R₀`-order
-under a surjective `K₀`-bialgebra homomorphism of commutative Hopf
-`K₀`-algebras (both towers over `R₀`) is again a Hopf-closed order.
-This is the schematic-closure step of Raynaud's subobject theorem:
-the generic-fibre quotient is `H`, and the order is the image of the
-integral model — module-finiteness, counit integrality, antipode
-stability and comultiplication closure transport pointwise, the
-antipode one by `antipodeAlgHom_comp_bialgHom`. -/
-theorem exists_hopfOrder_map_of_surjective_bialgHom
-    {R₀ : Type*} [CommRing R₀] {K₀ : Type*} [Field K₀] [Algebra R₀ K₀]
-    (HK₁ : Type*) [CommRing HK₁] [HopfAlgebra K₀ HK₁]
-    [Algebra R₀ HK₁] [IsScalarTower R₀ K₀ HK₁]
-    (HK₂ : Type*) [CommRing HK₂] [HopfAlgebra K₀ HK₂]
-    [Algebra R₀ HK₂] [IsScalarTower R₀ K₀ HK₂]
-    (Φ : HK₁ →ₐc[K₀] HK₂) (hΦ : Function.Surjective (Φ : HK₁ →ₐ[K₀] HK₂))
-    (H₀ : Subalgebra R₀ HK₁)
-    (hfg : (Subalgebra.toSubmodule H₀).FG)
-    (hspan : Submodule.span K₀ (H₀ : Set HK₁) = ⊤)
-    (hcounit : ∀ x ∈ H₀, Bialgebra.counitAlgHom K₀ HK₁ x ∈ (algebraMap R₀ K₀).range)
-    (hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode K₀ x ∈ H₀)
-    (hcomul : ∀ x ∈ H₀, Bialgebra.comulAlgHom K₀ HK₁ x ∈
-      Submodule.span R₀ {z : HK₁ ⊗[K₀] HK₁ | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K₀] b = z}) :
-    ∃ H₀' : Subalgebra R₀ HK₂,
-      (Subalgebra.toSubmodule H₀').FG ∧
-      Submodule.span K₀ (H₀' : Set HK₂) = ⊤ ∧
-      (∀ x ∈ H₀', Bialgebra.counitAlgHom K₀ HK₂ x ∈ (algebraMap R₀ K₀).range) ∧
-      (∀ x ∈ H₀', HopfAlgebra.antipode K₀ x ∈ H₀') ∧
-      (∀ x ∈ H₀', Bialgebra.comulAlgHom K₀ HK₂ x ∈
-        Submodule.span R₀ {z : HK₂ ⊗[K₀] HK₂ |
-          ∃ a ∈ H₀', ∃ b ∈ H₀', a ⊗ₜ[K₀] b = z}) := by
-  classical
-  set ΦA : HK₁ →ₐ[K₀] HK₂ := (Φ : HK₁ →ₐ[K₀] HK₂) with hΦA
-  set ψ : HK₁ →ₐ[R₀] HK₂ := ΦA.restrictScalars R₀ with hψ
-  have hcounit_pt : ∀ x : HK₁, Bialgebra.counitAlgHom K₀ HK₂ (ΦA x) =
-      Bialgebra.counitAlgHom K₀ HK₁ x := fun x =>
-    AlgHom.congr_fun (BialgHomClass.counitAlgHom_comp Φ) x
-  have hantipode_pt : ∀ x : HK₁, HopfAlgebra.antipode K₀ (ΦA x) =
-      ΦA (HopfAlgebra.antipode K₀ x) := fun x =>
-    AlgHom.congr_fun (antipodeAlgHom_comp_bialgHom Φ) x
-  have hcomul_pt : ∀ x : HK₁, Bialgebra.comulAlgHom K₀ HK₂ (ΦA x) =
-      Algebra.TensorProduct.map ΦA ΦA (Bialgebra.comulAlgHom K₀ HK₁ x) := fun x =>
-    (AlgHom.congr_fun (BialgHomClass.map_comp_comulAlgHom Φ) x).symm
-  refine ⟨H₀.map ψ, ?_, ?_, ?_, ?_, ?_⟩
-  · rw [Subalgebra.map_toSubmodule]
-    exact hfg.map ψ.toLinearMap
-  · have hcoe : (↑(H₀.map ψ) : Set HK₂) = ⇑ΦA.toLinearMap '' (H₀ : Set HK₁) := by
-      rw [Subalgebra.coe_map]; rfl
-    rw [hcoe, Submodule.span_image, hspan, Submodule.map_top, LinearMap.range_eq_top]
-    exact hΦ
-  · rintro y hy
-    obtain ⟨x, hx, rfl⟩ := Subalgebra.mem_map.mp hy
-    show Bialgebra.counitAlgHom K₀ HK₂ (ΦA x) ∈ _
-    rw [hcounit_pt]
-    exact hcounit x hx
-  · rintro y hy
-    obtain ⟨x, hx, rfl⟩ := Subalgebra.mem_map.mp hy
-    show HopfAlgebra.antipode K₀ (ΦA x) ∈ _
-    rw [hantipode_pt]
-    exact Subalgebra.mem_map.mpr ⟨HopfAlgebra.antipode K₀ x, hantipode x hx, rfl⟩
-  · rintro y hy
-    obtain ⟨x, hx, rfl⟩ := Subalgebra.mem_map.mp hy
-    show Bialgebra.comulAlgHom K₀ HK₂ (ΦA x) ∈ _
-    rw [hcomul_pt]
-    set T : HK₁ ⊗[K₀] HK₁ →ₗ[R₀] HK₂ ⊗[K₀] HK₂ :=
-      ((Algebra.TensorProduct.map ΦA ΦA).toLinearMap).restrictScalars R₀ with hT
-    have hmem : T (Bialgebra.comulAlgHom K₀ HK₁ x) ∈
-        Submodule.map T (Submodule.span R₀
-          {z : HK₁ ⊗[K₀] HK₁ | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[K₀] b = z}) :=
-      Submodule.mem_map_of_mem (hcomul x hx)
-    rw [Submodule.map_span] at hmem
-    refine Submodule.span_mono ?_ hmem
-    rintro _ ⟨z, ⟨a, ha, b, hb, rfl⟩, rfl⟩
-    exact ⟨ΦA a, Subalgebra.mem_map.mpr ⟨a, ha, rfl⟩,
-      ΦA b, Subalgebra.mem_map.mpr ⟨b, hb, rfl⟩, rfl⟩
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-/-- **A Hopf order with the right points is a flat point-group
-package** (PROVEN): if a finite étale `Kᵥ`-Hopf algebra `H` carries a
-Hopf `𝒪ᵥ`-order `H₀` and its `Kᵥᵃˡᵍ`-points are, `Γ Kᵥ`-equivariantly,
-the group `X`, then `X` is a flat point-group at `v`. Proof: the
-vendored `exists_flat_hopf_form_of_hopf_order` turns the order into a
-finite flat Hopf `𝒪ᵥ`-algebra `H'` with a bialgebra equivalence
-`Kᵥ ⊗[𝒪ᵥ] H' ≃ₐc H`, whose generic fibre is therefore étale
-(`Algebra.Etale.of_equiv`); precomposition with the inverse
-equivalence identifies the points of `Kᵥ ⊗[𝒪ᵥ] H'` with those of `H`
-— bijectively (an inverse is precomposition with the equivalence
-itself) and ADDITIVELY, since a bialgebra homomorphism preserves the
-convolution unit and product (`algHom_convOne_comp_bialgHom`,
-`algHom_convMul_comp_bialgHom`) — and `Γ Kᵥ`-equivariantly, because
-the Galois action is postcomposition, which commutes with
-precomposition. -/
-theorem isFlatPointsGroupAt_of_hopfOrder {X : Type*} [AddCommGroup X]
-    [DistribMulAction Γᵥ X]
-    (H : Type) [CommRing H] [HopfAlgebra Kᵥ H] [Module.Finite Kᵥ H]
-    [Algebra.Etale Kᵥ H] [Algebra 𝒪ᵥ H] [IsScalarTower 𝒪ᵥ Kᵥ H]
-    (H₀ : Subalgebra 𝒪ᵥ H)
-    (hfg : (Subalgebra.toSubmodule H₀).FG)
-    (hspan : Submodule.span Kᵥ (H₀ : Set H) = ⊤)
-    (hcounit : ∀ x ∈ H₀, Bialgebra.counitAlgHom Kᵥ H x ∈ (algebraMap 𝒪ᵥ Kᵥ).range)
-    (hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode Kᵥ x ∈ H₀)
-    (hcomul : ∀ x ∈ H₀, Bialgebra.comulAlgHom Kᵥ H x ∈
-      Submodule.span 𝒪ᵥ {z : H ⊗[Kᵥ] H | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[Kᵥ] b = z})
-    (e : Additive (H →ₐ[Kᵥ] Ωᵥ) →+ X) (hbij : Function.Bijective e)
-    (hee : ∀ (g : Γᵥ) (y : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • y) = g • e y) :
-    IsFlatPointsGroupAt v X := by
-  classical
-  obtain ⟨H', iCR, iHopf, iFin, iFlat, ⟨Φ⟩⟩ :=
-    exists_flat_hopf_form_of_hopf_order 𝒪ᵥ Kᵥ H H₀ hfg hspan hcounit hantipode hcomul
-  letI := iCR
-  letI := iHopf
-  set Ψ : H →ₐc[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] H') := Φ.symm.toBialgHom with hΨ
-  set ΨA : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] H') := (Ψ : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] H')) with hΨA
-  have hmn : ∀ ψ : (Kᵥ ⊗[𝒪ᵥ] H') →ₐ[Kᵥ] Ωᵥ,
-      (ψ.comp ΨA).comp (Φ.toAlgEquiv.toAlgHom) = ψ := fun ψ =>
-    AlgHom.ext fun x => by
-      show ψ (ΨA (Φ.toAlgEquiv.toAlgHom x)) = ψ x
-      have hx : ΨA (Φ.toAlgEquiv.toAlgHom x) = x := by
-        show Φ.symm (Φ x) = x
-        simp
-      rw [hx]
-  have hnm : ∀ φ : H →ₐ[Kᵥ] Ωᵥ,
-      (φ.comp (Φ.toAlgEquiv.toAlgHom)).comp ΨA = φ := fun φ =>
-    AlgHom.ext fun x => by
-      show φ (Φ.toAlgEquiv.toAlgHom (ΨA x)) = φ x
-      have hx : Φ.toAlgEquiv.toAlgHom (ΨA x) = x := by
-        show Φ (Φ.symm x) = x
-        simp
-      rw [hx]
-  refine ⟨H', iCR, iHopf, iFlat, iFin, Algebra.Etale.of_equiv Φ.toAlgEquiv.symm,
-    { toFun := fun ψ => e (Additive.ofMul ((Additive.toMul ψ).comp ΨA))
-      map_zero' := by
-        show e (Additive.ofMul ((1 : (Kᵥ ⊗[𝒪ᵥ] H') →ₐ[Kᵥ] Ωᵥ).comp ΨA)) = 0
-        rw [hΨA, algHom_convOne_comp_bialgHom Ψ]
-        exact map_zero e
-      map_add' := fun ψ χ => by
-        show e (Additive.ofMul (((Additive.toMul ψ) * (Additive.toMul χ)).comp ΨA)) = _
-        rw [hΨA, algHom_convMul_comp_bialgHom Ψ]
-        exact map_add e _ _ }, ?_, ?_⟩
-  · refine hbij.comp (Additive.ofMul.bijective.comp ?_)
-    exact Function.bijective_iff_has_inverse.mpr
-      ⟨fun φ => φ.comp (Φ.toAlgEquiv.toAlgHom), hmn, hnm⟩
-  · intro g y
-    show e (Additive.ofMul ((Additive.toMul (g • y)).comp ΨA)) = _
-    have h1 : (Additive.toMul (g • y)).comp ΨA =
-        Additive.toMul (g • (Additive.ofMul ((Additive.toMul y).comp ΨA))) :=
-      AlgHom.ext fun _ => rfl
-    rw [h1]
-    exact hee g _
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-/-- **Étale–Galois, existence half** (PROVEN 2026-07-25 — step (β1) of
-the subobject closure, opened the same day by the decomposition of
-`IsFlatPointsGroupAt.of_injective`): a `Γ Kᵥ`-module `Y` that embeds
-`Γ Kᵥ`-equivariantly into the `Kᵥᵃˡᵍ`-points of a finite étale
-`Kᵥ`-Hopf algebra `Q` is ITSELF the point group of a finite étale
-`Kᵥ`-Hopf algebra. This is Grothendieck's anti-equivalence between
-finite étale `Kᵥ`-algebras and finite discrete `Γ Kᵥ`-sets, with the
-group structure carried along. The proof runs entirely inside the
-PROVEN Gelfand-duality machinery of
-`KnownIn1980s/EllipticCurves/Flat.lean`:
-* `Y` is FINITE: `Q` is module-finite over `Kᵥ`, so it has finitely
-  many `Kᵥᵃˡᵍ`-points (`Finite.algHom` is an instance on the pin) and
-  `j` is injective.
-* the action of `Γ Kᵥ` on `Y` factors through a FINITE Galois
-  quotient `Gal(L/Kᵥ)`. Concretely: a `Kᵥ`-basis `b` of `Q` is finite,
-  so the values `φ (b i)` over the finitely many points `φ` form a
-  FINITE subset `T` of `Kᵥᵃˡᵍ`; `L₀ := Kᵥ(T)` is finite over `Kᵥ`
-  (`IntermediateField.finiteDimensional_adjoin`, every element being
-  integral) and contains the whole image of every point, since points
-  are `Kᵥ`-linear in `b`; its normal closure `L` in `Kᵥᵃˡᵍ` is finite
-  (`normalClosure.is_finiteDimensional`) and Galois (normal, and
-  separable in characteristic zero). Two absolute automorphisms with
-  the same restriction to `L` therefore act identically on the points
-  of `Q` (`AlgEquiv.restrictNormalHom_apply`), hence — `j` being
-  equivariant and injective — identically on `Y`. The descended
-  `ρ : Gal(L/Kᵥ) →* AddMonoid.End Y` is built from the canonical lift
-  `AlgEquiv.liftNormal`, whose `restrictNormalHom` is the identity
-  (`AlgEquiv.restrict_liftNormal`), so `map_one`/`map_mul` are
-  instances of that same "agree on `L` ⇒ agree on `Y`" lemma.
-* `exists_finiteQuotient_galoisModule_etale_package` (`Small.{0} Kᵥ`
-  holds, `Ωᵥ` is a separable closure in characteristic zero) then
-  produces exactly `H`, `Module.Finite`, `Algebra.Etale` and an
-  equivariant additive bijection of its points with `Y`; the
-  `WithConv` wrapper of that statement is the same monoid as the
-  vendored bare-hom one by `vendored_mul_eq_convMul` /
-  `vendored_one_eq_convOne`, which is how the `≃+` it returns becomes
-  the bare-hom `AddMonoidHom` demanded here.
-Unconditionally TRUE; no hypothesis package. -/
-theorem exists_etaleHopfAlgebra_of_points_embedding
-    (Q : Type) [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
-    [Algebra.Etale Kᵥ Q]
-    {Y : Type*} [AddCommGroup Y] [DistribMulAction Γᵥ Y]
-    (j : Y →+ Additive (Q →ₐ[Kᵥ] Ωᵥ)) (hj : Function.Injective j)
-    (hje : ∀ (g : Γᵥ) (y : Y), j (g • y) = g • j y) :
-    ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra Kᵥ H) (_ : Module.Finite Kᵥ H)
-      (_ : Algebra.Etale Kᵥ H) (e : Additive (H →ₐ[Kᵥ] Ωᵥ) →+ Y),
-      Function.Bijective e ∧
-        ∀ (g : Γᵥ) (y : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • y) = g • e y := by
-  classical
-  haveI : Finite Y := Finite.of_injective j hj
-  -- a finite `Kᵥ`-basis of `Q`, and the finite set of all the values taken by
-  -- all the (finitely many) points of `Q` on that basis
-  set n := Module.finrank Kᵥ Q
-  set b := Module.finBasis Kᵥ Q
-  set T : Set Ωᵥ := Set.range (fun p : (Q →ₐ[Kᵥ] Ωᵥ) × Fin n => p.1 (b p.2))
-  haveI : Finite T := Set.Finite.to_subtype (Set.finite_range _)
-  -- the finite subextension over which every point of `Q` is defined, and its
-  -- normal (hence Galois, characteristic zero) closure
-  set L₀ : IntermediateField Kᵥ Ωᵥ := IntermediateField.adjoin Kᵥ T
-  haveI : FiniteDimensional Kᵥ L₀ :=
-    IntermediateField.finiteDimensional_adjoin
-      (fun x _ => (Algebra.IsIntegral.isIntegral (R := Kᵥ) x))
-  set L : IntermediateField Kᵥ Ωᵥ := IntermediateField.normalClosure Kᵥ L₀ Ωᵥ
-  -- every point of `Q` takes values in `L`
-  have hbT : ∀ (φ : Q →ₐ[Kᵥ] Ωᵥ) (i : Fin n), φ (b i) ∈ L₀ :=
-    fun φ i => IntermediateField.subset_adjoin Kᵥ T ⟨(φ, i), rfl⟩
-  have hL₀L : L₀ ≤ L := IntermediateField.le_normalClosure L₀
-  have hval : ∀ (φ : Q →ₐ[Kᵥ] Ωᵥ) (x : Q), φ x ∈ L := by
-    intro φ x
-    rw [← b.sum_repr x, map_sum]
-    refine sum_mem (fun i _ => ?_)
-    rw [Algebra.smul_def, map_mul, AlgHom.commutes]
-    exact mul_mem (L.algebraMap_mem _) (hL₀L (hbT φ i))
-  -- two absolute automorphisms agreeing on `L` act the same on the points of `Q`
-  have hagreepts : ∀ (σ τ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ),
-      AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L σ =
-        AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L τ →
-      ∀ φ : Q →ₐ[Kᵥ] Ωᵥ, σ.toAlgHom.comp φ = τ.toAlgHom.comp φ := by
-    intro σ τ h φ
-    refine AlgHom.ext fun x => ?_
-    have h1 := AlgEquiv.restrictNormalHom_apply (F := Kᵥ) (K₁ := Ωᵥ) L σ ⟨φ x, hval φ x⟩
-    have h2 := AlgEquiv.restrictNormalHom_apply (F := Kᵥ) (K₁ := Ωᵥ) L τ ⟨φ x, hval φ x⟩
-    show σ (φ x) = τ (φ x)
-    rw [← h1, ← h2, h]
-  -- hence the same on `Y`, by injectivity of the embedding
-  have hagree : ∀ (σ τ : Γᵥ),
-      AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L σ =
-        AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L τ →
-      ∀ z : Y, σ • z = τ • z := by
-    intro σ τ h z
-    apply hj
-    rw [hje, hje]
-    exact congrArg Additive.ofMul (hagreepts σ τ h (Additive.toMul (j z)))
-  -- the canonical lift of an automorphism of `L` to `Kᵥᵃˡᵍ`
-  set lft : (L ≃ₐ[Kᵥ] L) → Γᵥ := fun s => (AlgEquiv.liftNormal s Ωᵥ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)
-  have hlftr : ∀ s : L ≃ₐ[Kᵥ] L,
-      AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (lft s) = s :=
-    fun s => AlgEquiv.restrict_liftNormal (E := Ωᵥ) s
-  -- the descended action of the finite Galois quotient `Gal(L/Kᵥ)` on `Y`
-  obtain ⟨ρ, hρ⟩ : ∃ ρ : (L ≃ₐ[Kᵥ] L) →* AddMonoid.End Y, ∀ s z, ρ s z = lft s • z := by
-    refine ⟨{ toFun := fun s => DistribMulAction.toAddMonoidEnd Γᵥ Y (lft s)
-              map_one' := ?_, map_mul' := ?_ }, fun _ _ => rfl⟩
-    · refine DFunLike.ext _ _ fun z => ?_
-      have h1 : AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (lft 1) =
-          AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (1 : Γᵥ) := by
-        rw [hlftr, map_one]
-      show lft 1 • z = z
-      rw [hagree _ _ h1, one_smul]
-    · intro s t
-      rw [← map_mul]
-      refine DFunLike.ext _ _ fun z => ?_
-      have h1 : AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (lft (s * t)) =
-          AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L (lft s * lft t) := by
-        rw [hlftr, map_mul, hlftr, hlftr]
-      exact hagree _ _ h1 z
-  -- Grothendieck's construction: `Y` is the point group of a finite étale Hopf algebra
-  obtain ⟨HK, iCR, iHopf, iFin, iEt, f, hf⟩ :
-      ∃ (HK : Type) (_ : CommRing HK) (_ : HopfAlgebra Kᵥ HK)
-        (_ : Module.Finite Kᵥ HK) (_ : Algebra.Etale Kᵥ HK)
-        (f : Additive (WithConv (HK →ₐ[Kᵥ] Ωᵥ)) ≃+ Y),
-        ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : HK →ₐ[Kᵥ] Ωᵥ),
-          f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
-            ρ (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L σ)
-              (f (Additive.ofMul (WithConv.toConv φ))) :=
-    exists_finiteQuotient_galoisModule_etale_package Kᵥ Ωᵥ Y L ρ
-  letI := iCR
-  letI := iHopf
-  letI := iFin
-  letI := iEt
-  -- transport across the vendored/`WithConv` convolution bridge
-  obtain ⟨e, he⟩ : ∃ e : Additive (HK →ₐ[Kᵥ] Ωᵥ) →+ Y,
-      ∀ y, e y = f (Additive.ofMul (WithConv.toConv (Additive.toMul y))) := by
-    refine ⟨{ toFun := fun y => f (Additive.ofMul (WithConv.toConv (Additive.toMul y)))
-              map_zero' := ?_, map_add' := ?_ }, fun _ => rfl⟩
-    · show f (Additive.ofMul (1 : WithConv (HK →ₐ[Kᵥ] Ωᵥ))) = 0
-      rw [ofMul_one, map_zero]
-    · intro y₁ y₂
-      show f (Additive.ofMul (WithConv.toConv
-        (Additive.toMul y₁ * Additive.toMul y₂))) = _
-      rw [vendored_mul_eq_convMul, WithConv.toConv_ofConv, ofMul_mul, map_add]
-  refine ⟨HK, iCR, iHopf, iFin, iEt, e, ?_, ?_⟩
-  · have hfe : ⇑e = fun y : Additive (HK →ₐ[Kᵥ] Ωᵥ) =>
-        f (Additive.ofMul (WithConv.toConv (Additive.toMul y))) := funext he
-    rw [hfe]
-    exact f.bijective.comp (Additive.ofMul.bijective.comp
-      (WithConv.toConv_bijective.comp Additive.toMul.bijective))
-  · intro g y
-    have h1 := hf (g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (Additive.toMul y)
-    have h2 : AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L
-        (lft (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L g)) =
-        AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) L g := hlftr _
-    rw [he, he]
-    show f (Additive.ofMul (WithConv.toConv
-      ((g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ).toAlgHom.comp (Additive.toMul y)))) = _
-    rw [h1, hρ]
-    exact hagree _ _ h2 _
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 2000000 in
-/-- **Étale–Galois, full-faithfulness half** (PROVEN 2026-07-25 — step
-(β2) of the subobject closure, added 2026-07-25 by the decomposition of
-`IsFlatPointsGroupAt.of_injective`): an INJECTIVE, `Γ Kᵥ`-equivariant
-homomorphism `t` of convolution point groups from a finite étale
-`Kᵥ`-Hopf algebra `H` into the points of a finite étale `Kᵥ`-Hopf
-algebra `Q` is induced by a SURJECTIVE `Kᵥ`-bialgebra homomorphism
-`π : Q → H` (restriction of functions along an inclusion of point
-groups). Intended proof, entirely inside the PROVEN machinery of
-`KnownIn1980s/EllipticCurves/Flat.lean`:
-* the ALGEBRA map: `exists_algHom_of_algHom_map` applied with the
-  étale algebra `H` and the plain `Kᵥ`-algebra `Q` and the
-  equivariant `t` gives `π : Q →ₐ[Kᵥ] H` with `φ (π q) = t φ q` for
-  every point `φ` of `H`, i.e. `φ.comp π = t φ`.
-* SURJECTIVITY: the range of `π` is a `Kᵥ`-subalgebra of `H`
-  separating the points of `H` — two points agreeing on the range
-  have `t φ = t ψ`, hence `φ = ψ` by injectivity of `t` — so it is
-  `⊤` by `subalgebra_eq_top_of_algHom_separating`.
-* the BIALGEBRA upgrade: points separate the finite étale `H ⊗[Kᵥ] H`
-  (`eq_zero_of_forall_algHom_eq_zero`, base change plus
-  `Algebra.Etale.comp`), and every point of `H ⊗[Kᵥ] H` is the
-  `Algebra.TensorProduct.lift` of its two restrictions (the target
-  `Kᵥᵃˡᵍ` is commutative); testing `comul ∘ π` against
-  `(π ⊗ π) ∘ comul` at such a point is, after unfolding
-  `AlgHom.convMul_apply`, exactly `htmul`, and testing the counits is
-  `htone` — the same argument as the PROVEN
-  `exists_bialgEquiv_of_algEquiv_conv`, whose `AlgEquiv` hypothesis is
-  never used for these two checks. (CONFIRMED 2026-07-25 while proving
-  this: that lemma's comultiplication and counit tests go through
-  verbatim for a bare `AlgHom`; the equivalence is used there only to
-  transport `hmul` into the `hmul'` shape, which here is supplied
-  directly by `htmul` through `φ.comp π = t φ`.) The antipode needs no
-  check (`→ₐc` preserves it automatically,
-  `antipodeAlgHom_comp_bialgHom`).
-The bridge between the bare-hom convolution monoid on
-`H →ₐ[Kᵥ] Ωᵥ` (in which `htone`/`htmul` are stated) and mathlib's
-`WithConv` monoid (in which `AlgHom.convMul_apply` computes) is
-`vendored_one_eq_convOne` / `vendored_mul_eq_convMul`, both `rfl`.
-`Ωᵥ` is a separable closure of the characteristic-zero field `Kᵥ`
-(`IsSepClosure Kᵥ Ωᵥ` from `IsAlgClosed` plus `Algebra.IsSeparable`),
-which is what lets the three `Flat.lean` ingredients apply.
-Unconditionally TRUE; no hypothesis package. -/
-theorem exists_surjective_bialgHom_of_points_injection
-    (Q : Type) [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
-    [Algebra.Etale Kᵥ Q]
-    (H : Type) [CommRing H] [HopfAlgebra Kᵥ H] [Module.Finite Kᵥ H]
-    [Algebra.Etale Kᵥ H]
-    (t : (H →ₐ[Kᵥ] Ωᵥ) → (Q →ₐ[Kᵥ] Ωᵥ))
-    (htinj : Function.Injective t)
-    (htone : t 1 = 1)
-    (htmul : ∀ φ ψ : H →ₐ[Kᵥ] Ωᵥ, t (φ * ψ) = t φ * t ψ)
-    (hteq : ∀ (g : Γᵥ) (φ : H →ₐ[Kᵥ] Ωᵥ), t (g • φ) = g • t φ) :
-    ∃ π : Q →ₐc[Kᵥ] H, Function.Surjective (π : Q →ₐ[Kᵥ] H) ∧
-      ∀ φ : H →ₐ[Kᵥ] Ωᵥ, φ.comp (π : Q →ₐ[Kᵥ] H) = t φ := by
-  classical
-  -- in characteristic zero the algebraic closure is a separable closure
-  haveI hsepcl : IsSepClosure Kᵥ Ωᵥ := ⟨inferInstance, inferInstance⟩
-  -- (1) the underlying ALGEBRA map, from Grothendieck full faithfulness:
-  -- the equivariance clause in composition form
-  have hteq' : ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : H →ₐ[Kᵥ] Ωᵥ),
-      t (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (t φ) := by
-    intro σ φ
-    have h1 : σ.toAlgHom.comp φ = σ • φ := AlgHom.ext fun _ => rfl
-    have h2 : σ.toAlgHom.comp (t φ) = σ • t φ := AlgHom.ext fun _ => rfl
-    rw [h1, h2]
-    exact hteq σ φ
-  obtain ⟨π₀, hπ₀⟩ := exists_algHom_of_algHom_map Kᵥ Ωᵥ H Q t hteq'
-  have hcomp : ∀ φ : H →ₐ[Kᵥ] Ωᵥ, φ.comp π₀ = t φ :=
-    fun φ => AlgHom.ext fun q => hπ₀ φ q
-  -- (2) SURJECTIVITY: the range of `π₀` separates the points of `H`,
-  -- because two points agreeing on it have the same image under `t`
-  have hrange : π₀.range = ⊤ := by
-    refine subalgebra_eq_top_of_algHom_separating Kᵥ Ωᵥ H π₀.range ?_
-    intro φ ψ hsepφψ
-    refine htinj ?_
-    rw [← hcomp φ, ← hcomp ψ]
-    exact AlgHom.ext fun q => hsepφψ (π₀ q) ⟨q, rfl⟩
-  have hsurj : Function.Surjective π₀ := by
-    intro x
-    have hx : x ∈ π₀.range := by rw [hrange]; trivial
-    exact hx
-  -- (3) the BIALGEBRA upgrade, counit half: `t 1 = 1` says
-  -- `algebraMap ∘ counit_H ∘ π₀ = algebraMap ∘ counit_Q`
-  have hcounit : (Bialgebra.counitAlgHom Kᵥ H).comp π₀ =
-      Bialgebra.counitAlgHom Kᵥ Q := by
-    refine AlgHom.ext fun q => ?_
-    have h1 : (1 : H →ₐ[Kᵥ] Ωᵥ).comp π₀ = (1 : Q →ₐ[Kᵥ] Ωᵥ) := by
-      rw [hcomp 1, htone]
-    have h2 := AlgHom.congr_fun h1 q
-    have h3 : (1 : H →ₐ[Kᵥ] Ωᵥ) (π₀ q) =
-        algebraMap Kᵥ Ωᵥ (Coalgebra.counit (π₀ q)) := rfl
-    have h4 : (1 : Q →ₐ[Kᵥ] Ωᵥ) q = algebraMap Kᵥ Ωᵥ (Coalgebra.counit q) := rfl
-    rw [AlgHom.comp_apply] at h2
-    rw [h3, h4] at h2
-    exact (algebraMap Kᵥ Ωᵥ).injective h2
-  -- (4) the BIALGEBRA upgrade, comultiplication half: test against every
-  -- point of the finite étale `H ⊗[Kᵥ] H`
-  haveI hEt2 : Algebra.Etale Kᵥ (H ⊗[Kᵥ] H) :=
-    Algebra.Etale.comp Kᵥ H (H ⊗[Kᵥ] H)
-  have hmul' : ∀ φ ψ : H →ₐ[Kᵥ] Ωᵥ,
-      (WithConv.toConv (φ.comp π₀) * WithConv.toConv (ψ.comp π₀)).ofConv =
-        ((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp π₀ := by
-    intro φ ψ
-    rw [← vendored_mul_eq_convMul, ← vendored_mul_eq_convMul, hcomp φ, hcomp ψ,
-      hcomp (φ * ψ)]
-    exact (htmul φ ψ).symm
-  have hcomul : (Algebra.TensorProduct.map π₀ π₀).comp
-      (Bialgebra.comulAlgHom Kᵥ Q) =
-      (Bialgebra.comulAlgHom Kᵥ H).comp π₀ := by
-    refine AlgHom.ext fun a => ?_
-    have hsep2 := eq_zero_of_forall_algHom_eq_zero Kᵥ Ωᵥ (H ⊗[Kᵥ] H)
-      ((Algebra.TensorProduct.map π₀ π₀).comp (Bialgebra.comulAlgHom Kᵥ Q) a -
-        (Bialgebra.comulAlgHom Kᵥ H).comp π₀ a)
-    rw [sub_eq_zero] at hsep2
-    apply hsep2
-    intro χ
-    rw [map_sub, sub_eq_zero]
-    -- decompose the point `χ` of `H ⊗[Kᵥ] H` into its two restrictions
-    set φ := χ.comp Algebra.TensorProduct.includeLeft with hφ
-    set ψ := χ.comp (Algebra.TensorProduct.includeRight :
-      H →ₐ[Kᵥ] H ⊗[Kᵥ] H) with hψ
-    have hχ : χ = Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _ := by
-      apply Algebra.TensorProduct.ext
-      · apply AlgHom.ext
-        intro b
-        simp [hφ]
-      · apply AlgHom.ext
-        intro b
-        simp [hψ]
-    -- the left side is the convolution of the transported points
-    have hleft : χ ((Algebra.TensorProduct.map π₀ π₀).comp
-        (Bialgebra.comulAlgHom Kᵥ Q) a) =
-        ((WithConv.toConv (φ.comp π₀) * WithConv.toConv (ψ.comp π₀)).ofConv) a := by
-      rw [hχ]
-      have hlift : (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _).comp
-          (Algebra.TensorProduct.map π₀ π₀) =
-          Algebra.TensorProduct.lift (φ.comp π₀) (ψ.comp π₀)
-            (fun _ _ => Commute.all _ _) := by
-        apply Algebra.TensorProduct.ext
-        · apply AlgHom.ext
-          intro b
-          simp
-        · apply AlgHom.ext
-          intro b
-          simp
-      rw [AlgHom.comp_apply, ← AlgHom.comp_apply (Algebra.TensorProduct.lift φ ψ _),
-        hlift]
-      rw [AlgHom.convMul_apply]
-      rfl
-    -- the right side is the convolution of the original points, at `π₀ a`
-    have hright : χ ((Bialgebra.comulAlgHom Kᵥ H).comp π₀ a) =
-        (((WithConv.toConv φ * WithConv.toConv ψ).ofConv).comp π₀) a := by
-      rw [hχ, AlgHom.comp_apply]
-      rw [show (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _)
-          ((Bialgebra.comulAlgHom Kᵥ H) (π₀ a)) =
-          ((WithConv.toConv φ * WithConv.toConv ψ).ofConv) (π₀ a) from
-        (AlgHom.convMul_apply _ _ _).symm]
-      rfl
-    rw [hleft, hright, hmul' φ ψ]
-  exact ⟨BialgHom.ofAlgHom π₀ hcounit hcomul, hsurj, hcomp⟩
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 4000000 in
-/-- **Subobject closure** (DECOMPOSED 2026-07-25 — the subobjects half
-of Raynaud closure: a Galois-stable subgroup of the generic-fibre
-points of a finite flat group scheme over the DVR `𝒪ᵥ` is the
-generic-fibre point group of a finite flat group scheme, by schematic
-closure): a `Γ Kᵥ`-equivariantly embedded subgroup of a flat
-point-group at `v` is a flat point-group at `v`. The assembly below is
-PROVEN over the four steps of the classical argument; of the two
-étale–Galois leaves the existence half is now PROVEN too, so only the
-full-faithfulness half remains sorried:
-* (α) *transport*: the witness `f` of `hX` identifies `X`
-  equivariantly with the `Kᵥᵃˡᵍ`-points of the generic fibre
-  `Q := Kᵥ ⊗[𝒪ᵥ] G`, so `j` becomes an equivariant injection
-  `j' : Y ↪ points(Q)` (PROVEN here);
-* (β) *étale–Galois*: `Y` is the point group of a finite étale
-  `Kᵥ`-Hopf algebra `H` (`exists_etaleHopfAlgebra_of_points_embedding`,
-  PROVEN), and the induced inclusion of point groups comes from a
-  SURJECTIVE bialgebra homomorphism `π : Q → H`
-  (`exists_surjective_bialgHom_of_points_injection`, PROVEN 2026-07-25)
-  — the two halves of Grothendieck's anti-equivalence. The convolution
-  homomorphism property of the induced `t` is PROVEN here from
-  additivity of `j'` and `e`;
-* (γ) *schematic closure over the DVR*: the canonical Hopf order
-  `1 ⊗ G ⊆ Q` (`exists_hopfOrder_baseChange`) pushes forward along the
-  surjection `π` to a Hopf order in `H`
-  (`exists_hopfOrder_map_of_surjective_bialgHom`) — PROVEN. EXISTENCE
-  of this closure needs no `e < p − 1` bound; Raynaud's bound enters
-  only for uniqueness/full-faithfulness statements;
-* (δ) *conclusion*: a Hopf order in a finite étale `Kᵥ`-Hopf algebra
-  whose points are `Y` is a flat point-group package
-  (`isFlatPointsGroupAt_of_hopfOrder`, PROVEN, over the vendored
-  `exists_flat_hopf_form_of_hopf_order`).
-Unconditionally TRUE; no hypothesis package (for `Y` a subsingleton
-this is already `IsFlatPointsGroupAt.of_subsingleton`). -/
-theorem IsFlatPointsGroupAt.of_injective {X Y : Type*}
-    [AddCommGroup X] [AddCommGroup Y]
-    [DistribMulAction Γᵥ X] [DistribMulAction Γᵥ Y]
-    (hX : IsFlatPointsGroupAt v X) (j : Y →+ X)
-    (hj : Function.Injective j)
-    (hje : ∀ (g : Γᵥ) (y : Y), j (g • y) = g • j y) :
-    IsFlatPointsGroupAt v Y := by
-  classical
-  obtain ⟨G, iCR, iHopf, iFlat, iFin, iEt, f, hfbij, hfeq⟩ := hX
-  letI := iCR; letI := iHopf; letI := iFlat; letI := iFin; letI := iEt
-  -- (α) the equivariant identification of `X` with the points of the generic fibre
-  set fe : Additive ((Kᵥ ⊗[𝒪ᵥ] G) →ₐ[Kᵥ] Ωᵥ) ≃+ X :=
-    AddEquiv.ofBijective f hfbij with hfedef
-  have hfesymm : ∀ (g : Γᵥ) (x : X), fe.symm (g • x) = g • fe.symm x := by
-    intro g x
-    apply fe.injective
-    rw [fe.apply_symm_apply]
-    show g • x = f (g • fe.symm x)
-    rw [hfeq]
-    show g • x = g • fe (fe.symm x)
-    rw [fe.apply_symm_apply]
-  set j' : Y →+ Additive ((Kᵥ ⊗[𝒪ᵥ] G) →ₐ[Kᵥ] Ωᵥ) :=
-    fe.symm.toAddMonoidHom.comp j with hj'def
-  have hj'inj : Function.Injective j' := fe.symm.injective.comp hj
-  have hj'eq : ∀ (g : Γᵥ) (y : Y), j' (g • y) = g • j' y := by
-    intro g y
-    show fe.symm (j (g • y)) = g • fe.symm (j y)
-    rw [hje, hfesymm]
-  -- (β) the étale–Galois package of the subgroup, and the induced surjection
-  obtain ⟨H, hCR, hHopf, hFin, hEt, e, hebij, heeq⟩ :=
-    exists_etaleHopfAlgebra_of_points_embedding (Kᵥ ⊗[𝒪ᵥ] G) j' hj'inj hj'eq
-  letI := hCR; letI := hHopf; letI := hFin; letI := hEt
-  set t : (H →ₐ[Kᵥ] Ωᵥ) → ((Kᵥ ⊗[𝒪ᵥ] G) →ₐ[Kᵥ] Ωᵥ) :=
-    fun φ => Additive.toMul (j' (e (Additive.ofMul φ))) with htdef
-  have htinj : Function.Injective t := fun φ ψ hφψ => by
-    have h1 : j' (e (Additive.ofMul φ)) = j' (e (Additive.ofMul ψ)) :=
-      Additive.toMul.injective hφψ
-    exact Additive.ofMul.injective (hebij.1 (hj'inj h1))
-  have htone : t 1 = 1 := by
-    show Additive.toMul (j' (e (Additive.ofMul (1 : H →ₐ[Kᵥ] Ωᵥ)))) = 1
-    have h0 : Additive.ofMul (1 : H →ₐ[Kᵥ] Ωᵥ) = 0 := rfl
-    rw [h0, map_zero, map_zero]
-    rfl
-  have htmul : ∀ φ ψ : H →ₐ[Kᵥ] Ωᵥ, t (φ * ψ) = t φ * t ψ := by
-    intro φ ψ
-    show Additive.toMul (j' (e (Additive.ofMul (φ * ψ)))) = _
-    have h1 : Additive.ofMul (φ * ψ) =
-        Additive.ofMul φ + Additive.ofMul ψ := rfl
-    rw [h1, map_add, map_add]
-    rfl
-  have hteq : ∀ (g : Γᵥ) (φ : H →ₐ[Kᵥ] Ωᵥ), t (g • φ) = g • t φ := by
-    intro g φ
-    show Additive.toMul (j' (e (Additive.ofMul (g • φ)))) = _
-    have h1 : Additive.ofMul (g • φ) =
-        g • (Additive.ofMul φ : Additive (H →ₐ[Kᵥ] Ωᵥ)) := rfl
-    rw [h1, heeq, hj'eq]
-    rfl
-  obtain ⟨π, hπsurj, -⟩ :=
-    exists_surjective_bialgHom_of_points_injection (Kᵥ ⊗[𝒪ᵥ] G) H t htinj htone
-      htmul hteq
-  -- (γ) schematic closure: push the canonical Hopf order forward along `π`
-  obtain ⟨G₀, hfg, hspan, hcounit, hantipode, hcomul⟩ :=
-    exists_hopfOrder_baseChange 𝒪ᵥ Kᵥ G
-  obtain ⟨H₀, hfg', hspan', hcounit', hantipode', hcomul'⟩ :=
-    exists_hopfOrder_map_of_surjective_bialgHom (Kᵥ ⊗[𝒪ᵥ] G) H π hπsurj G₀
-      hfg hspan hcounit hantipode hcomul
-  -- (δ) conclude
-  exact isFlatPointsGroupAt_of_hopfOrder H H₀ hfg' hspan' hcounit' hantipode'
-    hcomul' e hebij heeq
-
-set_option backward.isDefEq.respectTransparency false in
-/-- **Finite products** (PROVEN glue): a finite product of flat
-point-groups at `v` is a flat point-group at `v`, by `Fin`-recursion
-from the trivial package (`of_subsingleton`, base case) and binary
-products (`prod`), transported along the equivariant additive
-identification `(∀ i : Fin (m+1), X i) ≃+ X 0 × ∀ i : Fin m, X i.succ`
-(`Fin.cons`). -/
-theorem IsFlatPointsGroupAt.pi {n : ℕ} {X : Fin n → Type*}
-    [instG : ∀ i, AddCommGroup (X i)]
-    [instD : ∀ i, DistribMulAction Γᵥ (X i)]
-    (h : ∀ i, IsFlatPointsGroupAt v (X i)) :
-    IsFlatPointsGroupAt v (∀ i, X i) := by
-  induction n generalizing instG instD with
-  | zero =>
-    haveI : Subsingleton (∀ i : Fin 0, X i) :=
-      ⟨fun a b => funext fun i => i.elim0⟩
-    exact IsFlatPointsGroupAt.of_subsingleton
-  | succ m ih =>
-    have htail : IsFlatPointsGroupAt v (∀ i : Fin m, X i.succ) :=
-      ih fun i => h i.succ
-    have hprod : IsFlatPointsGroupAt v (X 0 × ∀ i : Fin m, X i.succ) :=
-      (h 0).prod htail
-    refine hprod.of_addEquiv
-      { toFun := fun p => Fin.cons p.1 p.2
-        invFun := fun q => (q 0, fun i => q i.succ)
-        left_inv := fun p => by
-          refine Prod.ext ?_ ?_
-          · simp
-          · funext i
-            simp
-        right_inv := fun q => by
-          funext i
-          refine Fin.cases ?_ (fun j => ?_) i <;> simp
-        map_add' := fun p q => by
-          funext i
-          refine Fin.cases ?_ (fun j => ?_) i <;> simp }
-      fun g p => ?_
-    funext i
-    refine Fin.cases ?_ (fun j => ?_) i <;> simp
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 4000000 in
-/-- **The étale sub-bialgebra of a point-group quotient** (PROVEN
-2026-07-25 — step (β) of the Raynaud quotient-closure cut, split off
-the same day from `IsFlatPointsGroupAt.of_surjective`): a
-`Γ Kᵥ`-equivariant quotient `Y` of the `Kᵥᵃˡᵍ`-point group of a finite
-étale `Kᵥ`-Hopf algebra `Q` is the point group of a
-`Kᵥ`-sub-bialgebra `H ↪ Q`, again finite étale — the pullback of
-functions along the point surjection. This is Grothendieck's Galois
-correspondence for étale algebras carrying a group structure, i.e. the
-CONVERSE direction of the Gelfand-duality machinery of
-`KnownIn1980s/EllipticCurves/Flat.lean` (which builds the algebra from
-the group); the proof runs entirely inside that PROVEN machinery, in
-five steps:
-* *finiteness*: `Q` is module-finite over `Kᵥ`, so its `Kᵥᵃˡᵍ`-points
-  are finite (`Finite.algHom`) and `Y` is finite through the surjection
-  `p`;
-* *the finite Galois quotient*: a `Kᵥ`-basis `b` of `Q` is enough to
-  pin a point, so two automorphisms of `Kᵥᵃˡᵍ` agreeing on the FINITE
-  set `{φ (b i)}` act equally on every point of `Q` — by `Kᵥ`-linearity
-  of `σ ∘ φ` — hence, `p` being an equivariant surjection, equally on
-  `Y`. The normal closure `L` of `Kᵥ({φ (b i)})` is therefore a finite
-  Galois subextension through which the `Γ Kᵥ`-action on `Y` factors,
-  the factored action `ρ` being built from `AlgEquiv.liftNormal` (which
-  is multiplicative because lifts of equal restrictions act equally);
-* *the algebra*: `exists_finiteQuotient_galoisModule_etale_package`
-  applied to `(Y, L, ρ)` — `Small.{0} Kᵥ` is `small_self` and `Ωᵥ` is a
-  separable closure in characteristic zero — yields a finite étale
-  `Kᵥ`-Hopf algebra `H` with `points(H) ≃+ Y` equivariantly, its
-  `WithConv` convolution monoid identified with the vendored bare-hom
-  one by `vendored_mul_eq_convMul`;
-* *the embedding*: `exists_algHom_of_algHom_map` (the Gelfand transform
-  onto equivariant functions — injective by separation, surjective by
-  Speiser independence) applied to the ÉTALE algebra `Q` and the
-  equivariant point map `t := e⁻¹ ∘ p` produces `ι : H →ₐ[Kᵥ] Q` with
-  `φ ∘ ι = t φ`. It is injective because `p` is surjective, so every
-  point of `H` is some `t φ` and the points of the finite étale `H`
-  separate it (`eq_zero_of_forall_algHom_eq_zero`);
-* *the bialgebra upgrade*: points separate the finite étale
-  `Q ⊗[Kᵥ] Q` and every point of it is the `TensorProduct.lift` of its
-  two restrictions, so testing `comul ∘ ι` against `(ι ⊗ ι) ∘ comul`
-  at such a point is exactly the multiplicativity of `t` (which holds
-  because `p` and `e` are additive), and testing the counits is
-  `t 1 = 1`; `BialgHom.ofAlgHom` assembles `ι : H →ₐc[Kᵥ] Q`, and its
-  induced map on points is `p` — the last clause below.
-Unconditionally TRUE; no hypothesis package (for `p` bijective one may
-take `H = Q` and `ι = id`). -/
-theorem exists_etale_subBialgebra_of_points_surjective
-    {Q : Type} [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
-    [Algebra.Etale Kᵥ Q]
-    {Y : Type*} [AddCommGroup Y] [DistribMulAction Γᵥ Y]
-    (p : Additive (Q →ₐ[Kᵥ] Ωᵥ) →+ Y)
-    (hp : Function.Surjective p)
-    (hpe : ∀ (g : Γᵥ) (x : Additive (Q →ₐ[Kᵥ] Ωᵥ)), p (g • x) = g • p x) :
-    ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra Kᵥ H) (_ : Module.Finite Kᵥ H)
-      (_ : Algebra.Etale Kᵥ H) (ι : H →ₐc[Kᵥ] Q)
-      (_ : Function.Injective (ι : H →ₐ[Kᵥ] Q))
-      (e : Additive (H →ₐ[Kᵥ] Ωᵥ) ≃+ Y),
-      ∀ φ : Q →ₐ[Kᵥ] Ωᵥ,
-        e (Additive.ofMul (φ.comp (ι : H →ₐ[Kᵥ] Q))) = p (Additive.ofMul φ) := by
-  classical
-  -- ### instances: `Ωᵥ` is a separable closure of `Kᵥ`, and the points are finite
-  haveI : CharZero (HeightOneSpectrum.adicCompletion ℚ v) :=
-    charZero_of_injective_algebraMap
-      ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)).injective)
-  haveI hsepcl : IsSepClosure Kᵥ Ωᵥ := ⟨inferInstance, inferInstance⟩
-  haveI hQpts : Finite (Q →ₐ[Kᵥ] Ωᵥ) := Finite.algHom Kᵥ Q Ωᵥ
-  haveI hYfin : Finite Y := Finite.of_surjective p hp
-  -- the Galois action on points is postcomposition
-  have hsm : ∀ (g : Γᵥ) (φ : Q →ₐ[Kᵥ] Ωᵥ),
-      g • φ = ((g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ).toAlgHom).comp φ := fun _ _ => AlgHom.ext fun _ => rfl
-  -- ### (1) a finite Galois subextension through which the action on `Y` factors
-  set b := Module.finBasis Kᵥ Q
-  set Sset : Set Ωᵥ :=
-    Set.range (fun x : (Q →ₐ[Kᵥ] Ωᵥ) × Fin (Module.finrank Kᵥ Q) => x.1 (b x.2))
-  haveI hSfin : Finite ↥Sset := (Set.finite_range _).to_subtype
-  set L₀ : IntermediateField Kᵥ Ωᵥ := IntermediateField.adjoin Kᵥ Sset
-  haveI : FiniteDimensional Kᵥ ↥L₀ :=
-    IntermediateField.finiteDimensional_adjoin fun x _ =>
-      (Algebra.IsSeparable.isSeparable Kᵥ x).isIntegral
-  set L : IntermediateField Kᵥ Ωᵥ := IntermediateField.normalClosure Kᵥ ↥L₀ Ωᵥ
-  haveI : Algebra.IsSeparable Kᵥ ↥L :=
-    Algebra.isSeparable_tower_bot_of_isSeparable Kᵥ ↥L Ωᵥ
-  haveI hGalL : IsGalois Kᵥ ↥L := ⟨⟩
-  have hsub : Sset ⊆ (L : Set Ωᵥ) := fun z hz =>
-    IntermediateField.le_normalClosure L₀ (IntermediateField.subset_adjoin Kᵥ Sset hz)
-  -- automorphisms agreeing on `L` act equally on every point of `Q`
-  have keyL : ∀ (σ τ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ), (∀ l ∈ L, σ l = τ l) →
-      ∀ φ : Q →ₐ[Kᵥ] Ωᵥ, σ.toAlgHom.comp φ = τ.toAlgHom.comp φ := by
-    intro σ τ hστ φ
-    refine AlgHom.ext fun x => ?_
-    have h2 : (σ.toAlgHom.comp φ).toLinearMap = (τ.toAlgHom.comp φ).toLinearMap :=
-      b.ext fun i => hστ _ (hsub ⟨(φ, i), rfl⟩)
-    exact LinearMap.congr_fun h2 x
-  -- hence equally on `Y`, which is a quotient of the points of `Q`
-  have hYact : ∀ σ τ : Γᵥ,
-      (∀ l ∈ L, (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l = (τ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l) →
-      ∀ y : Y, σ • y = τ • y := by
-    intro σ τ hστ y
-    obtain ⟨x, hx⟩ := hp y
-    rw [← hx, ← hpe σ x, ← hpe τ x]
-    refine congrArg p ?_
-    have h1 : (σ • x : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
-        Additive.ofMul (σ • Additive.toMul x) := rfl
-    have h2 : (τ • x : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
-        Additive.ofMul (τ • Additive.toMul x) := rfl
-    rw [h1, h2, hsm σ, hsm τ]
-    exact congrArg Additive.ofMul (keyL _ _ hστ _)
-  -- the `Γ Kᵥ`-action as additive endomorphisms
-  set act : Γᵥ → AddMonoid.End Y := fun g =>
-    { toFun := fun y => g • y
-      map_zero' := smul_zero g
-      map_add' := fun y₁ y₂ => smul_add g y₁ y₂ }
-  -- the action of `Gal(L/Kᵥ)` on `Y` through `AlgEquiv.liftNormal`
-  set ρ : (↥L ≃ₐ[Kᵥ] ↥L) →* AddMonoid.End Y :=
-    { toFun := fun σ' => act (AlgEquiv.liftNormal σ' Ωᵥ)
-      map_one' := by
-        refine AddMonoidHom.ext fun y => ?_
-        have hfix : ∀ l ∈ L, (AlgEquiv.liftNormal (1 : ↥L ≃ₐ[Kᵥ] ↥L) Ωᵥ) l
-            = (1 : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l := by
-          intro l hl
-          have hc := AlgEquiv.liftNormal_commutes (1 : ↥L ≃ₐ[Kᵥ] ↥L) Ωᵥ ⟨l, hl⟩
-          simpa using hc
-        show (AlgEquiv.liftNormal (1 : ↥L ≃ₐ[Kᵥ] ↥L) Ωᵥ) • y = y
-        rw [hYact _ (1 : Γᵥ) hfix y, one_smul]
-      map_mul' := by
-        intro σ' τ'
-        refine AddMonoidHom.ext fun y => ?_
-        have hfix : ∀ l ∈ L, (AlgEquiv.liftNormal (σ' * τ') Ωᵥ) l
-            = ((AlgEquiv.liftNormal σ' Ωᵥ) * (AlgEquiv.liftNormal τ' Ωᵥ) :
-              Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) l := by
-          intro l hl
-          have hc := AlgEquiv.liftNormal_commutes (σ' * τ') Ωᵥ ⟨l, hl⟩
-          have hcτ := AlgEquiv.liftNormal_commutes τ' Ωᵥ ⟨l, hl⟩
-          have hcσ := AlgEquiv.liftNormal_commutes σ' Ωᵥ (τ' ⟨l, hl⟩)
-          simp only [IntermediateField.algebraMap_apply] at hc hcτ hcσ
-          show (AlgEquiv.liftNormal (σ' * τ') Ωᵥ) l
-            = (AlgEquiv.liftNormal σ' Ωᵥ) ((AlgEquiv.liftNormal τ' Ωᵥ) l)
-          rw [hc, hcτ, hcσ]
-          rfl
-        show (AlgEquiv.liftNormal (σ' * τ') Ωᵥ) • y =
-          (AlgEquiv.liftNormal σ' Ωᵥ) • ((AlgEquiv.liftNormal τ' Ωᵥ) • y)
-        rw [hYact _ _ hfix y, mul_smul] }
-  -- the restriction of a global automorphism acts on `Y` as the automorphism itself
-  have hρσ : ∀ (σ : Γᵥ) (y : Y),
-      ρ (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L
-        (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)) y = σ • y := by
-    intro σ y
-    show (AlgEquiv.liftNormal (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L
-      (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)) Ωᵥ) • y = σ • y
-    refine hYact _ _ (fun l hl => ?_) y
-    have hc := AlgEquiv.liftNormal_commutes
-      (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ)) Ωᵥ ⟨l, hl⟩
-    have hr := AlgEquiv.restrictNormalHom_apply (F := Kᵥ) (K₁ := Ωᵥ) L
-      (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) ⟨l, hl⟩
-    simp only [IntermediateField.algebraMap_apply] at hc
-    rw [hc, hr]
-  -- ### (2) the finite étale Hopf algebra with point group `Y`
-  obtain ⟨H, hCR, hHopf, hFin, hEt, f, hf⟩ :
-      ∃ (HK : Type) (_ : CommRing HK) (_ : HopfAlgebra Kᵥ HK)
-        (_ : Module.Finite Kᵥ HK) (_ : Algebra.Etale Kᵥ HK)
-        (f : Additive (WithConv (HK →ₐ[Kᵥ] Ωᵥ)) ≃+ Y),
-        ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : HK →ₐ[Kᵥ] Ωᵥ),
-          f (Additive.ofMul (WithConv.toConv (σ.toAlgHom.comp φ))) =
-            ρ (AlgEquiv.restrictNormalHom (F := Kᵥ) (K₁ := Ωᵥ) ↥L σ)
-              (f (Additive.ofMul (WithConv.toConv φ))) :=
-    exists_finiteQuotient_galoisModule_etale_package Kᵥ Ωᵥ Y L ρ
-  letI := hCR
-  letI := hHopf
-  letI := hFin
-  letI := hEt
-  -- the bare-hom convolution monoid on the points of `H` is mathlib's `WithConv` one
-  set w : Additive (H →ₐ[Kᵥ] Ωᵥ) ≃+ Additive (WithConv (H →ₐ[Kᵥ] Ωᵥ)) :=
-    { toFun := fun u => Additive.ofMul (WithConv.toConv (Additive.toMul u))
-      invFun := fun u => Additive.ofMul (WithConv.ofConv (Additive.toMul u))
-      left_inv := fun _ => rfl
-      right_inv := fun _ => rfl
-      map_add' := fun u₁ u₂ => congrArg Additive.ofMul (by
-        show WithConv.toConv (Additive.toMul u₁ * Additive.toMul u₂) =
-          WithConv.toConv (Additive.toMul u₁) * WithConv.toConv (Additive.toMul u₂)
-        rw [vendored_mul_eq_convMul, WithConv.toConv_ofConv]) }
-  set e : Additive (H →ₐ[Kᵥ] Ωᵥ) ≃+ Y := w.trans f
-  have heapply : ∀ φ : H →ₐ[Kᵥ] Ωᵥ,
-      e (Additive.ofMul φ) = f (Additive.ofMul (WithConv.toConv φ)) := fun _ => rfl
-  have hee : ∀ (g : Γᵥ) (u : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • u) = g • e u := by
-    intro g u
-    have h1 : (g • u : Additive (H →ₐ[Kᵥ] Ωᵥ)) =
-        Additive.ofMul (((g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ).toAlgHom).comp (Additive.toMul u)) := by
-      show Additive.ofMul (g • Additive.toMul u) = _
-      exact congrArg Additive.ofMul (AlgHom.ext fun _ => rfl)
-    have h3 : e u = f (Additive.ofMul (WithConv.toConv (Additive.toMul u))) := rfl
-    rw [h1, heapply, hf (g : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (Additive.toMul u), hρσ g, h3]
-  have heesymm : ∀ (g : Γᵥ) (y : Y), e.symm (g • y) = g • e.symm y := by
-    intro g y
-    apply e.injective
-    rw [e.apply_symm_apply, hee, e.apply_symm_apply]
-  -- ### (3) the induced map of point sets and the algebra homomorphism `H → Q`
-  set t : (Q →ₐ[Kᵥ] Ωᵥ) → (H →ₐ[Kᵥ] Ωᵥ) :=
-    fun φ => Additive.toMul (e.symm (p (Additive.ofMul φ)))
-  have hte : ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : Q →ₐ[Kᵥ] Ωᵥ),
-      t (σ.toAlgHom.comp φ) = σ.toAlgHom.comp (t φ) := by
-    intro σ φ
-    have h1 : (Additive.ofMul (σ.toAlgHom.comp φ) : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
-        (σ : Γᵥ) • Additive.ofMul φ := by
-      refine congrArg Additive.ofMul ?_
-      exact (AlgHom.ext fun _ => rfl : ((σ : Γᵥ) • φ) = σ.toAlgHom.comp φ).symm
-    show Additive.toMul (e.symm (p (Additive.ofMul (σ.toAlgHom.comp φ)))) = _
-    rw [h1, hpe, heesymm]
-    exact AlgHom.ext fun _ => rfl
-  obtain ⟨ι₀, hι₀⟩ := exists_algHom_of_algHom_map Kᵥ Ωᵥ Q H t hte
-  have hcompι : ∀ φ : Q →ₐ[Kᵥ] Ωᵥ, φ.comp ι₀ = t φ := fun φ =>
-    AlgHom.ext fun x => hι₀ φ x
-  -- every point of `H` is a restriction, because `p` is surjective
-  have htsurj : ∀ ψ : H →ₐ[Kᵥ] Ωᵥ, ∃ φ : Q →ₐ[Kᵥ] Ωᵥ, t φ = ψ := by
-    intro ψ
-    obtain ⟨x, hx⟩ := hp (e (Additive.ofMul ψ))
-    refine ⟨Additive.toMul x, ?_⟩
-    show Additive.toMul (e.symm (p (Additive.ofMul (Additive.toMul x)))) = ψ
-    rw [show (Additive.ofMul (Additive.toMul x) : Additive (Q →ₐ[Kᵥ] Ωᵥ)) = x from rfl,
-      hx, e.symm_apply_apply]
-    rfl
-  have hι₀inj : Function.Injective ι₀ := by
-    intro x₁ x₂ hx
-    have hzero : x₁ - x₂ = 0 := by
-      refine eq_zero_of_forall_algHom_eq_zero Kᵥ Ωᵥ H _ fun ψ => ?_
-      obtain ⟨φ, hφ⟩ := htsurj ψ
-      rw [map_sub, sub_eq_zero, ← hφ]
-      show t φ x₁ = t φ x₂
-      rw [← hι₀ φ x₁, ← hι₀ φ x₂, hx]
-    exact sub_eq_zero.mp hzero
-  -- ### (4) the bialgebra upgrade: `ι₀` respects counit and comultiplication
-  have ht1 : t 1 = 1 := by
-    show Additive.toMul (e.symm (p (Additive.ofMul (1 : Q →ₐ[Kᵥ] Ωᵥ)))) = 1
-    rw [show (Additive.ofMul (1 : Q →ₐ[Kᵥ] Ωᵥ)) = (0 : Additive (Q →ₐ[Kᵥ] Ωᵥ)) from rfl,
-      map_zero, map_zero]
-    rfl
-  have htmul : ∀ φ ψ : Q →ₐ[Kᵥ] Ωᵥ, t (φ * ψ) = t φ * t ψ := by
-    intro φ ψ
-    show Additive.toMul (e.symm (p (Additive.ofMul (φ * ψ)))) = _
-    rw [show (Additive.ofMul (φ * ψ) : Additive (Q →ₐ[Kᵥ] Ωᵥ)) =
-      Additive.ofMul φ + Additive.ofMul ψ from rfl, map_add, map_add]
-    rfl
-  have hcounit : (Bialgebra.counitAlgHom Kᵥ Q).comp ι₀ = Bialgebra.counitAlgHom Kᵥ H := by
-    refine AlgHom.ext fun x => ?_
-    refine (algebraMap Kᵥ Ωᵥ).injective ?_
-    have h1 : (1 : Q →ₐ[Kᵥ] Ωᵥ) (ι₀ x) =
-        algebraMap Kᵥ Ωᵥ (Bialgebra.counitAlgHom Kᵥ Q (ι₀ x)) := rfl
-    have h2 : (1 : H →ₐ[Kᵥ] Ωᵥ) x =
-        algebraMap Kᵥ Ωᵥ (Bialgebra.counitAlgHom Kᵥ H x) := rfl
-    rw [AlgHom.comp_apply, ← h1, ← h2, hι₀ 1 x, ht1]
-  haveI hEt2 : Algebra.Etale Kᵥ (Q ⊗[Kᵥ] Q) := Algebra.Etale.comp Kᵥ Q (Q ⊗[Kᵥ] Q)
-  have hcomul : (Algebra.TensorProduct.map ι₀ ι₀).comp (Bialgebra.comulAlgHom Kᵥ H) =
-      (Bialgebra.comulAlgHom Kᵥ Q).comp ι₀ := by
-    refine AlgHom.ext fun a => ?_
-    have hsep := eq_zero_of_forall_algHom_eq_zero Kᵥ Ωᵥ (Q ⊗[Kᵥ] Q)
-      ((Algebra.TensorProduct.map ι₀ ι₀).comp (Bialgebra.comulAlgHom Kᵥ H) a -
-        (Bialgebra.comulAlgHom Kᵥ Q).comp ι₀ a)
-    rw [sub_eq_zero] at hsep
-    apply hsep
-    intro χ
-    rw [map_sub, sub_eq_zero]
-    set φ := χ.comp Algebra.TensorProduct.includeLeft with hφ
-    set ψ := χ.comp (Algebra.TensorProduct.includeRight : Q →ₐ[Kᵥ] Q ⊗[Kᵥ] Q) with hψ
-    have hχ : χ = Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _ := by
-      refine Algebra.TensorProduct.ext ?_ ?_
-      · exact AlgHom.ext fun c => by simp [hφ]
-      · exact AlgHom.ext fun c => by simp [hψ]
-    have hleft : χ ((Algebra.TensorProduct.map ι₀ ι₀)
-        (Bialgebra.comulAlgHom Kᵥ H a)) = ((t φ) * (t ψ)) a := by
-      rw [hχ]
-      have hlift : (Algebra.TensorProduct.lift φ ψ fun _ _ => Commute.all _ _).comp
-          (Algebra.TensorProduct.map ι₀ ι₀) =
-          Algebra.TensorProduct.lift (φ.comp ι₀) (ψ.comp ι₀)
-            (fun _ _ => Commute.all _ _) := by
-        refine Algebra.TensorProduct.ext ?_ ?_
-        · exact AlgHom.ext fun c => by simp
-        · exact AlgHom.ext fun c => by simp
-      rw [← AlgHom.comp_apply, hlift, hcompι, hcompι]
-      rfl
-    have hright : χ ((Bialgebra.comulAlgHom Kᵥ Q) (ι₀ a)) = (φ * ψ) (ι₀ a) := by
-      rw [hχ]; rfl
-    rw [AlgHom.comp_apply, AlgHom.comp_apply, hleft, hright,
-      show (φ * ψ) (ι₀ a) = ((φ * ψ).comp ι₀) a from rfl, hcompι, htmul]
-  -- ### (5) assembly
-  refine ⟨H, hCR, hHopf, hFin, hEt, BialgHom.ofAlgHom ι₀ hcounit hcomul, ?_, e, ?_⟩
-  · exact hι₀inj
-  · intro φ
-    show e (Additive.ofMul (φ.comp ι₀)) = p (Additive.ofMul φ)
-    rw [hcompι φ]
-    show e (Additive.ofMul (Additive.toMul (e.symm (p (Additive.ofMul φ))))) = _
-    rw [show ∀ z : Additive (H →ₐ[Kᵥ] Ωᵥ),
-      (Additive.ofMul (Additive.toMul z) : Additive (H →ₐ[Kᵥ] Ωᵥ)) = z from fun _ => rfl]
-    exact e.apply_symm_apply _
-
-set_option backward.isDefEq.respectTransparency false in
-set_option maxHeartbeats 1000000 in
-set_option synthInstance.maxHeartbeats 400000 in
-/-- **Hopf orders in sub-bialgebras of a generic fibre** (PROVEN
-2026-07-25 — step (γ), the schematic-closure/saturation half of the
-Raynaud quotient-closure cut, split off from
-`IsFlatPointsGroupAt.of_surjective`; Raynaud, *Schémas en groupes de
-type `(p, …, p)`*, Bull. SMF 102 (1974); Tate, *Finite flat group
-schemes*, in Cornell–Silverman–Stevens): a `Kᵥ`-sub-bialgebra `H` of
-the generic fibre `Q := Kᵥ ⊗[𝒪ᵥ] G` of a finite flat `𝒪ᵥ`-Hopf algebra
-`G` carries a finite flat `𝒪ᵥ`-Hopf order — the intersection
-`H ∩ G` formed inside `Q` — whose generic fibre is `H` as a
-`Kᵥ`-bialgebra. This is the DUAL, and the easier half, of the schematic
-closure `IsFlatPointsGroupAt.of_injective` needs: it takes a
-SUB-algebra of the witness where that node must quotient it.
-
-The proof needs NO sub-bialgebra API (the pin has none) and builds NO
-`HopfAlgebra` structure by hand: the whole point is that the vendored
-`exists_flat_hopf_form_of_hopf_order` of
-`KnownIn1980s/EllipticCurves/Flat.lean` already turns a *Hopf ORDER* —
-a finitely generated `𝒪ᵥ`-subalgebra spanning the generic fibre and
-closed under counit, antipode and comultiplication — into a finite flat
-Hopf `𝒪ᵥ`-algebra together with the bialgebra equivalence of generic
-fibres. So all that is proven here is that the intersection
-`H₀ := ι ⁻¹' (1 ⊗ G)`, a `Subalgebra 𝒪ᵥ H` by `Subalgebra.comap`, IS
-such an order. Its five clauses:
-* *denominators* (used twice): every `q ∈ Q` has `c • q ∈ 1 ⊗ G` for
-  some `c ∈ 𝒪ᵥ⁰` — a tensor induction, the pure-tensor case being
-  `IsLocalization.exists_integer_multiple` for `Kᵥ = Frac 𝒪ᵥ`.
-* *spanning*: for `x ∈ H`, `ι (c • x) = c • ι x ∈ 1 ⊗ G` gives
-  `c • x ∈ H₀`, and `c` is invertible in `Kᵥ`
-  (`IsLocalization.map_units`), so `x ∈ span Kᵥ H₀`.
-* *the saturation retraction* — the technical core. Put
-  `A := {g : G | 1 ⊗ g ∈ ι(H)}`, a `Submodule 𝒪ᵥ G`. Then `G ⧸ A` is
-  torsion-free (`c • g ∈ A` forces `1 ⊗ g ∈ ι(H)`, dividing by the unit
-  `c` inside the `Kᵥ`-subspace `ι(H)`) and module-finite, hence FREE
-  over the DVR `𝒪ᵥ` (`Module.free_of_finite_type_torsion_free'`), hence
-  projective: the quotient map `G → G ⧸ A` splits
-  (`LinearMap.exists_rightInverse_of_surjective`), so `A` is a direct
-  summand and `ret := id − sec ∘ mkQ : G →ₗ[𝒪ᵥ] G` retracts `G` onto
-  `A`. Composing with the (Kᵥ-linear, hence 𝒪ᵥ-linear) left inverse
-  `π` of the injection `ι` gives `s := π ∘ (1 ⊗ ·) ∘ ret : G →ₗ[𝒪ᵥ] H`
-  with `ι (s g) = 1 ⊗ ret g`; its base change
-  `ρ := s.liftBaseChange Kᵥ : Q →ₗ[Kᵥ] H` satisfies `ρ (1 ⊗ G) ⊆ H₀`
-  and `ρ ∘ ι = id` (checked on `H₀`, extended by the spanning clause).
-* *finite generation*: `H₀` is exactly `range s` (`⊆` because
-  `ι (s g) = 1 ⊗ ret g`, `⊇` because for `x ∈ H₀` the `g` with
-  `1 ⊗ g = ι x` lies in `A`, so `s g = x`), the image of the
-  module-finite `G`.
-* *counit* and *antipode*: transport along the bialgebra homomorphism
-  `ι` (`BialgHomClass.counitAlgHom_comp`,
-  `antipodeAlgHom_comp_bialgHom`) and then read off the base-change
-  structure formulas at `1 ⊗ g` (`TensorProduct.counit_tmul`; the
-  antipode of the base change is definitionally `1 ⊗ antipode`).
-* *comultiplication* — the saturation step proper. `comul` of `ι x` is
-  in the `𝒪ᵥ`-span of the pure tensors of `1 ⊗ G`
-  (`TensorProduct.comul_tmul`, as in `exists_hopfOrder_baseChange`),
-  and `ρ ⊗ ρ` maps that span into the `𝒪ᵥ`-span of the pure tensors of
-  `H₀` while fixing `comul x` — because `(ρ ⊗ ρ) ∘ (ι ⊗ ι) = id`. This
-  is the Lean incarnation of "`H₀ ⊗ H₀` is the intersection of
-  `H ⊗[Kᵥ] H` with the image of `G ⊗[𝒪ᵥ] G`": saturation is what makes
-  the retraction `ρ` exist integrally.
-EXISTENCE of the order needs no `e < p − 1` bound — Raynaud's bound
-enters only for uniqueness/full-faithfulness statements.
-Unconditionally TRUE; no hypothesis package. -/
-theorem exists_hopfOrder_of_subBialgebra
-    {G : Type} [CommRing G] [HopfAlgebra 𝒪ᵥ G] [Module.Flat 𝒪ᵥ G]
-    [Module.Finite 𝒪ᵥ G]
-    {H : Type} [CommRing H] [HopfAlgebra Kᵥ H] [Module.Finite Kᵥ H]
-    (ι : H →ₐc[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))
-    (hι : Function.Injective (ι : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))) :
-    ∃ (G' : Type) (_ : CommRing G') (_ : HopfAlgebra 𝒪ᵥ G') (_ : Module.Flat 𝒪ᵥ G')
-      (_ : Module.Finite 𝒪ᵥ G'), Nonempty ((Kᵥ ⊗[𝒪ᵥ] G') ≃ₐc[Kᵥ] H) := by
-  classical
-  -- `H` becomes an `𝒪ᵥ`-algebra through `Kᵥ`
-  letI : Algebra 𝒪ᵥ H := ((algebraMap Kᵥ H).comp (algebraMap 𝒪ᵥ Kᵥ)).toAlgebra
-  haveI : IsScalarTower 𝒪ᵥ Kᵥ H := IsScalarTower.of_algebraMap_eq (fun _ => rfl)
-  set ιA : H →ₐ[Kᵥ] Kᵥ ⊗[𝒪ᵥ] G := (ι : H →ₐ[Kᵥ] Kᵥ ⊗[𝒪ᵥ] G)
-  -- the canonical integral model `1 ⊗ G` inside the generic fibre
-  obtain ⟨G₀, hmemG₀, hG₀mem⟩ : ∃ G₀ : Subalgebra 𝒪ᵥ (Kᵥ ⊗[𝒪ᵥ] G),
-      (∀ g : G, ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈ G₀) ∧
-      (∀ q ∈ G₀, ∃ g : G, ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) = q) :=
-    ⟨(Algebra.TensorProduct.includeRight : G →ₐ[𝒪ᵥ] Kᵥ ⊗[𝒪ᵥ] G).range,
-      fun g => ⟨g, rfl⟩, fun _ hq => hq⟩
-  -- the Hopf order candidate: the intersection `H ∩ G` formed inside the generic fibre
-  obtain ⟨H₀, hmemH₀⟩ : ∃ H₀ : Subalgebra 𝒪ᵥ H, ∀ x : H, x ∈ H₀ ↔ ιA x ∈ G₀ :=
-    ⟨G₀.comap (ιA.restrictScalars 𝒪ᵥ), fun _ => Iff.rfl⟩
-  have hιsmul : ∀ (c : 𝒪ᵥ) (x : H), ιA (c • x) = c • ιA x := by
-    intro c x
-    rw [← IsScalarTower.algebraMap_smul Kᵥ c x, ← IsScalarTower.algebraMap_smul Kᵥ c (ιA x),
-      map_smul]
-  -- ### the three base-change structure formulas at `1 ⊗ g`
-  have hcounitG : ∀ g : G,
-      Bialgebra.counitAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈
-        (algebraMap 𝒪ᵥ Kᵥ).range := by
-    intro g
-    refine ⟨Coalgebra.counit (R := 𝒪ᵥ) g, ?_⟩
-    show algebraMap 𝒪ᵥ Kᵥ (Coalgebra.counit (R := 𝒪ᵥ) g) =
-      Coalgebra.counit (R := Kᵥ) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g)
-    rw [TensorProduct.counit_tmul]
-    simp [Algebra.smul_def]
-  have hantipodeG : ∀ g : G, HopfAlgebra.antipode Kᵥ ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) =
-      (1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (HopfAlgebra.antipode 𝒪ᵥ g) := fun _ => rfl
-  have hcomulG : ∀ g : G, Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈
-      Submodule.span 𝒪ᵥ {z : (Kᵥ ⊗[𝒪ᵥ] G) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G) |
-        ∃ a ∈ G₀, ∃ b ∈ G₀, a ⊗ₜ[Kᵥ] b = z} := by
-    intro g
-    show Coalgebra.comul (R := Kᵥ) ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) ∈ _
-    rw [TensorProduct.comul_tmul, CommSemiring.comul_apply]
-    generalize Coalgebra.comul (R := 𝒪ᵥ) g = t
-    induction t with
-    | zero => simp
-    | tmul a b =>
-        rw [TensorProduct.AlgebraTensorModule.tensorTensorTensorComm_tmul]
-        exact Submodule.subset_span ⟨_, hmemG₀ a, _, hmemG₀ b, rfl⟩
-    | add p q hp hq =>
-        rw [TensorProduct.tmul_add, map_add]
-        exact Submodule.add_mem _ hp hq
-  -- ### denominators: every element of the generic fibre has an integral multiple
-  have hden : ∀ q : Kᵥ ⊗[𝒪ᵥ] G, ∃ c ∈ nonZeroDivisors 𝒪ᵥ, c • q ∈ G₀ := by
-    intro q
-    induction q with
-    | zero => exact ⟨1, one_mem _, by rw [one_smul]; exact zero_mem G₀⟩
-    | tmul k g =>
-        obtain ⟨⟨c, hc⟩, c', hc'⟩ :=
-          IsLocalization.exists_integer_multiple (nonZeroDivisors 𝒪ᵥ) k
-        refine ⟨c, hc, ?_⟩
-        have hc'' : algebraMap 𝒪ᵥ Kᵥ c' = c • k := hc'
-        have h1 : c • (k ⊗ₜ[𝒪ᵥ] g) = c' • ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g) := by
-          rw [TensorProduct.smul_tmul' c k g, TensorProduct.smul_tmul' c' (1 : Kᵥ) g,
-            ← hc'', Algebra.smul_def, mul_one]
-        rw [h1]
-        exact G₀.smul_mem (hmemG₀ g) c'
-    | add p q hp hq =>
-        obtain ⟨c₁, hc₁, h₁⟩ := hp
-        obtain ⟨c₂, hc₂, h₂⟩ := hq
-        refine ⟨c₁ * c₂, mul_mem hc₁ hc₂, ?_⟩
-        have h1 : (c₁ * c₂) • (p + q) = c₂ • (c₁ • p) + c₁ • (c₂ • q) := by
-          simp only [smul_add, smul_smul]
-          rw [mul_comm c₂ c₁]
-        rw [h1]
-        exact add_mem (G₀.smul_mem h₁ c₂) (G₀.smul_mem h₂ c₁)
-  -- ### the saturated preimage lattice inside `G`
-  obtain ⟨A, hmemA⟩ : ∃ A : Submodule 𝒪ᵥ G,
-      ∀ g : G, g ∈ A ↔ ∃ x : H, ιA x = (1 : Kᵥ) ⊗ₜ[𝒪ᵥ] g :=
-    ⟨Submodule.comap
-      ((Algebra.TensorProduct.includeRight : G →ₐ[𝒪ᵥ] Kᵥ ⊗[𝒪ᵥ] G).toLinearMap)
-      (Submodule.restrictScalars 𝒪ᵥ (LinearMap.range ιA.toLinearMap)), fun _ => Iff.rfl⟩
-  haveI : Module.Finite 𝒪ᵥ (G ⧸ A) :=
-    Module.Finite.of_surjective A.mkQ (Submodule.mkQ_surjective A)
-  haveI : Module.IsTorsionFree 𝒪ᵥ (G ⧸ A) := by
-    refine ⟨fun r hr x y hxy => ?_⟩
-    obtain ⟨a, rfl⟩ := Submodule.mkQ_surjective A x
-    obtain ⟨b, rfl⟩ := Submodule.mkQ_surjective A y
-    have hr0 : r ≠ 0 := isRegular_iff_ne_zero.mp hr
-    have hrK : algebraMap 𝒪ᵥ Kᵥ r ≠ 0 := fun h0 =>
-      hr0 ((injective_iff_map_eq_zero _).mp (IsFractionRing.injective 𝒪ᵥ Kᵥ) r h0)
-    have hsub : r • (a - b) ∈ A := by
-      rw [← Submodule.Quotient.mk_eq_zero, ← Submodule.mkQ_apply, map_smul, map_sub, smul_sub,
-        sub_eq_zero]
-      exact hxy
-    have hab : a - b ∈ A := by
-      obtain ⟨w, hw⟩ := (hmemA _).mp hsub
-      refine (hmemA _).mpr ⟨(algebraMap 𝒪ᵥ Kᵥ r)⁻¹ • w, ?_⟩
-      rw [map_smul, hw, TensorProduct.tmul_smul,
-        ← IsScalarTower.algebraMap_smul Kᵥ r ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (a - b)), inv_smul_smul₀ hrK]
-    rw [Submodule.mkQ_apply, Submodule.mkQ_apply, Submodule.Quotient.eq]
-    exact hab
-  -- the retraction of `G` onto the saturated lattice `A` (its cokernel is free)
-  obtain ⟨ret, hretmem, hretid⟩ : ∃ ret : G →ₗ[𝒪ᵥ] G,
-      (∀ g : G, ret g ∈ A) ∧ (∀ g ∈ A, ret g = g) := by
-    obtain ⟨sec, hsec⟩ :=
-      A.mkQ.exists_rightInverse_of_surjective (by rw [Submodule.range_mkQ])
-    refine ⟨LinearMap.id - sec ∘ₗ A.mkQ, fun g => ?_, fun g hg => ?_⟩
-    · have h0 : A.mkQ (g - sec (A.mkQ g)) = 0 := by
-        rw [map_sub, sub_eq_zero]
-        exact (LinearMap.congr_fun hsec (A.mkQ g)).symm
-      rw [← Submodule.Quotient.mk_eq_zero, ← Submodule.mkQ_apply]
-      exact h0
-    · have h0 : A.mkQ g = 0 := by
-        rw [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
-        exact hg
-      show g - sec (A.mkQ g) = g
-      rw [h0, map_zero, sub_zero]
-  -- ### the integral retraction `G → H₀` and its base change `ρ`
-  obtain ⟨π, hπ⟩ := ιA.toLinearMap.exists_leftInverse_of_injective
-    (LinearMap.ker_eq_bot.mpr hι)
-  have hπι : ∀ x : H, π (ιA x) = x := fun x => LinearMap.congr_fun hπ x
-  obtain ⟨s, hsapp⟩ : ∃ s : G →ₗ[𝒪ᵥ] H, ∀ g : G, s g = π ((1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (ret g)) :=
-    ⟨(π.restrictScalars 𝒪ᵥ) ∘ₗ
-      ((Algebra.TensorProduct.includeRight : G →ₐ[𝒪ᵥ] Kᵥ ⊗[𝒪ᵥ] G).toLinearMap ∘ₗ ret),
-      fun _ => rfl⟩
-  have hsιA : ∀ g : G, ιA (s g) = (1 : Kᵥ) ⊗ₜ[𝒪ᵥ] (ret g) := by
-    intro g
-    obtain ⟨x, hx⟩ := (hmemA _).mp (hretmem g)
-    rw [hsapp, ← hx, hπι]
-  have hsmem : ∀ g : G, s g ∈ H₀ := by
-    intro g
-    rw [hmemH₀, hsιA]
-    exact hmemG₀ _
-  have hsH₀ : ∀ x ∈ H₀, ∃ g : G, s g = x := by
-    intro x hx
-    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
-    refine ⟨g, hι ?_⟩
-    rw [hsιA, hretid g ((hmemA g).mpr ⟨x, hg.symm⟩)]
-    exact hg
-  obtain ⟨ρ, hρtmul⟩ : ∃ ρ : (Kᵥ ⊗[𝒪ᵥ] G) →ₗ[Kᵥ] H,
-      ∀ (k : Kᵥ) (g : G), ρ (k ⊗ₜ[𝒪ᵥ] g) = k • s g :=
-    ⟨s.liftBaseChange Kᵥ, fun _ _ => rfl⟩
-  have hρG₀ : ∀ q ∈ G₀, ρ q ∈ H₀ := by
-    intro q hq
-    obtain ⟨g, hg⟩ := hG₀mem q hq
-    rw [← hg, hρtmul, one_smul]
-    exact hsmem g
-  -- ### clause 2: the order spans the sub-bialgebra over `Kᵥ`
-  have hspan : Submodule.span Kᵥ (H₀ : Set H) = ⊤ := by
-    rw [eq_top_iff]
-    rintro x -
-    obtain ⟨c, hc, hcq⟩ := hden (ιA x)
-    have hcx : c • x ∈ H₀ := by
-      rw [hmemH₀, hιsmul]
-      exact hcq
-    obtain ⟨u, hu⟩ := IsLocalization.map_units Kᵥ (⟨c, hc⟩ : nonZeroDivisors 𝒪ᵥ)
-    have hx : x = (↑u⁻¹ : Kᵥ) • (c • x) := by
-      rw [← IsScalarTower.algebraMap_smul Kᵥ c x]
-      show x = (↑u⁻¹ : Kᵥ) • ((algebraMap 𝒪ᵥ Kᵥ c) • x)
-      rw [← hu, smul_smul, Units.inv_mul, one_smul]
-    rw [hx]
-    exact Submodule.smul_mem _ _ (Submodule.subset_span hcx)
-  -- ### clause 1: finite generation
-  have hH₀range : (Subalgebra.toSubmodule H₀ : Submodule 𝒪ᵥ H) = LinearMap.range s := by
-    refine le_antisymm ?_ ?_
-    · intro x hx
-      obtain ⟨g, hg⟩ := hsH₀ x hx
-      exact ⟨g, hg⟩
-    · rintro x ⟨g, rfl⟩
-      exact hsmem g
-  have hfg : (Subalgebra.toSubmodule H₀).FG := by
-    rw [hH₀range, LinearMap.range_eq_map]
-    exact (Module.finite_def.mp inferInstance).map s
-  -- ### clause 3: counit integrality
-  have hcounit : ∀ x ∈ H₀, Bialgebra.counitAlgHom Kᵥ H x ∈ (algebraMap 𝒪ᵥ Kᵥ).range := by
-    intro x hx
-    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
-    have hcc : Bialgebra.counitAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x) =
-        Bialgebra.counitAlgHom Kᵥ H x :=
-      AlgHom.congr_fun (BialgHomClass.counitAlgHom_comp ι) x
-    rw [← hcc, ← hg]
-    exact hcounitG g
-  -- ### clause 4: antipode stability
-  have hantipode : ∀ x ∈ H₀, HopfAlgebra.antipode Kᵥ x ∈ H₀ := by
-    intro x hx
-    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
-    have hap : HopfAlgebra.antipode Kᵥ (ιA x) = ιA (HopfAlgebra.antipode Kᵥ x) :=
-      AlgHom.congr_fun (antipodeAlgHom_comp_bialgHom ι) x
-    rw [hmemH₀, ← hap, ← hg, hantipodeG g]
-    exact hmemG₀ _
-  -- ### clause 5: comultiplication closure — the saturation step
-  have hsret : ∀ g : G, s (ret g) = s g := by
-    intro g
-    refine hι ?_
-    rw [hsιA, hsιA, hretid _ (hretmem g)]
-  have hρι : ∀ x : H, ρ (ιA x) = x := by
-    have hext : (ρ ∘ₗ ιA.toLinearMap) = LinearMap.id (R := Kᵥ) (M := H) := by
-      refine LinearMap.ext_on hspan ?_
-      intro x hx
-      obtain ⟨g, hg⟩ := hsH₀ x hx
-      show ρ (ιA x) = x
-      rw [← hg, hsιA, hρtmul, one_smul, hsret]
-    intro x
-    exact LinearMap.congr_fun hext x
-  have hmapid : ∀ t : H ⊗[Kᵥ] H,
-      TensorProduct.map ρ ρ (Algebra.TensorProduct.map ιA ιA t) = t := by
-    intro t
-    induction t with
-    | zero => simp
-    | tmul a b =>
-        rw [Algebra.TensorProduct.map_tmul, TensorProduct.map_tmul, hρι, hρι]
-    | add p q hp hq => rw [map_add, map_add, hp, hq]
-  have hcomul : ∀ x ∈ H₀, Bialgebra.comulAlgHom Kᵥ H x ∈
-      Submodule.span 𝒪ᵥ {z : H ⊗[Kᵥ] H | ∃ a ∈ H₀, ∃ b ∈ H₀, a ⊗ₜ[Kᵥ] b = z} := by
-    intro x hx
-    obtain ⟨g, hg⟩ := hG₀mem _ ((hmemH₀ x).mp hx)
-    have hcm : Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x) =
-        Algebra.TensorProduct.map ιA ιA (Bialgebra.comulAlgHom Kᵥ H x) :=
-      (AlgHom.congr_fun (BialgHomClass.map_comp_comulAlgHom ι) x).symm
-    have hmem0 : Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x) ∈
-        Submodule.span 𝒪ᵥ {z : (Kᵥ ⊗[𝒪ᵥ] G) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G) |
-          ∃ a ∈ G₀, ∃ b ∈ G₀, a ⊗ₜ[Kᵥ] b = z} := by
-      rw [← hg]
-      exact hcomulG g
-    obtain ⟨F, hFapp⟩ : ∃ F : ((Kᵥ ⊗[𝒪ᵥ] G) ⊗[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G)) →ₗ[𝒪ᵥ] (H ⊗[Kᵥ] H),
-        ∀ z, F z = TensorProduct.map ρ ρ z :=
-      ⟨(TensorProduct.map ρ ρ).restrictScalars 𝒪ᵥ, fun _ => rfl⟩
-    have h2 := Submodule.mem_map_of_mem (f := F) hmem0
-    rw [Submodule.map_span] at h2
-    have h3 : F (Bialgebra.comulAlgHom Kᵥ (Kᵥ ⊗[𝒪ᵥ] G) (ιA x)) =
-        Bialgebra.comulAlgHom Kᵥ H x := by
-      rw [hFapp, hcm]
-      exact hmapid _
-    rw [h3] at h2
-    refine Submodule.span_mono ?_ h2
-    rintro _ ⟨z, ⟨a, ha, b, hb, rfl⟩, rfl⟩
-    exact ⟨ρ a, hρG₀ a ha, ρ b, hρG₀ b hb, by rw [hFapp, TensorProduct.map_tmul]⟩
-  -- ### assemble: the Hopf order is a finite flat Hopf form
-  obtain ⟨G', iCR, iHopf, iFin, iFlat, hequiv⟩ :=
-    exists_flat_hopf_form_of_hopf_order 𝒪ᵥ Kᵥ H H₀ hfg hspan hcounit hantipode hcomul
-  exact ⟨G', iCR, iHopf, iFlat, iFin, hequiv⟩
-
-set_option backward.isDefEq.respectTransparency false in
-set_option synthInstance.maxHeartbeats 1000000 in
-set_option maxHeartbeats 4000000 in
-/-- **Quotient closure** (DECOMPOSED 2026-07-25 into the two leaves
-`exists_etale_subBialgebra_of_points_surjective` (β, since PROVEN) and
-`exists_hopfOrder_of_subBialgebra` (γ, still open) above, with the
-assembly below PROVEN — the quotients half of Raynaud closure, added
-2026-07-24 for
-the E2b′ lattice-flatness transfer: the quotient of a finite flat group
-scheme over the DVR `𝒪ᵥ` by a flat closed subgroup scheme is finite
-flat — Raynaud, *Schémas en groupes de type `(p, …, p)`*, Bull. SMF 102
-(1974); Tate, *Finite flat group schemes*, in
-Cornell–Silverman–Stevens): a `Γ Kᵥ`-equivariant quotient of a flat
-point-group at `v` is a flat point-group at `v`. The classical argument
-is dual to `of_injective`, taking SUB-algebras of the witness where
-that node quotients it, so the schematic-closure step is the easier
-one; it runs in four steps, of which (α) is vacuous here and (δ) is the
-proven glue below:
-* (α) *finiteness* — folded into leaf (β), which needs it internally:
-  the ambient point group of `Q := Kᵥ ⊗[𝒪ᵥ] G` is finite, hence so is
-  `Y` through the surjection `π`.
-* (β) *étale–Galois* — `exists_etale_subBialgebra_of_points_surjective`
-  (PROVEN 2026-07-25): `Y` is the point group of a finite étale
-  `Kᵥ`-Hopf algebra `H` embedded in `Q` by an injective `Kᵥ`-bialgebra
-  map `ι`, the pullback of functions along the point surjection.
-* (γ) *schematic closure over the DVR* — the leaf
-  `exists_hopfOrder_of_subBialgebra`: `G' := H ∩ G` is a finite flat
-  `𝒪ᵥ`-Hopf order with `Kᵥ ⊗[𝒪ᵥ] G' ≃ₐc[Kᵥ] H`.
-* (δ) *conclusion* — PROVEN below: étaleness of the generic fibre
-  transports along the underlying algebra equivalence
-  (`Algebra.Etale.of_equiv`); precomposition with the bialgebra
-  equivalence is an isomorphism of convolution point groups
-  (`AlgHom.convMul_comp_bialgHom_distrib`, through the local
-  `hbridge` identifying the bare-hom convolution monoid baked into
-  `IsFlatPointsGroupAt` with mathlib's `WithConv` one — both are
-  `lift φ ψ ∘ comul`) and is `Γ Kᵥ`-equivariant by
-  associativity of composition; and the identification `e` supplied by
-  (β) is equivariant because it is compatible with the equivariant
-  surjection `π ∘ f`, which forces restriction of points along `ι` to be
-  surjective.
-Unconditionally TRUE; no hypothesis package (for `π` bijective this
-is already `of_addEquiv`). CONSUMERS: the E2b′ lattice-flatness glue
-`isFlatAt_lattice_of_generic_iso` (reduction of arbitrary open-ideal
-levels to the cofinal `p`-power subtower); available to any future
-finite-flat quotient need (e.g. E1b's closure half). -/
-theorem IsFlatPointsGroupAt.of_surjective {X Y : Type*}
-    [AddCommGroup X] [AddCommGroup Y]
-    [DistribMulAction Γᵥ X] [DistribMulAction Γᵥ Y]
-    (hX : IsFlatPointsGroupAt v X) (π : X →+ Y)
-    (hπ : Function.Surjective π)
-    (hπe : ∀ (g : Γᵥ) (x : X), π (g • x) = g • π x) :
-    IsFlatPointsGroupAt v Y := by
-  classical
-  obtain ⟨G, iCR, iHopf, iFlat, iFin, iEt, f, hfbij, hfe⟩ := hX
-  letI := iCR
-  letI := iHopf
-  letI := iFlat
-  letI := iFin
-  letI := iEt
-  -- the composed equivariant surjection onto `Y` from the points of the
-  -- generic fibre `Q := Kᵥ ⊗[𝒪ᵥ] G`
-  have hpsurj : Function.Surjective (π.comp f) := hπ.comp hfbij.2
-  have hpe : ∀ (g : Γᵥ) (x : Additive (Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Ωᵥ)),
-      (π.comp f) (g • x) = g • (π.comp f) x := by
-    intro g x
-    show π (f (g • x)) = g • π (f x)
-    rw [hfe, hπe]
-  -- (β): the étale sub-bialgebra `H ↪ Q` with point group `Y`
-  obtain ⟨H, jCR, jHopf, jFin, jEt, ι, hιinj, e, he⟩ :=
-    exists_etale_subBialgebra_of_points_surjective (Q := Kᵥ ⊗[𝒪ᵥ] G) (π.comp f)
-      hpsurj hpe
-  letI := jCR
-  letI := jHopf
-  letI := jFin
-  letI := jEt
-  -- postcomposition by a Galois element commutes with precomposition
-  have hsmulcomp : ∀ {B C : Type} [CommRing B] [Algebra Kᵥ B] [CommRing C]
-      [Algebra Kᵥ C] (g : Γᵥ) (χ : B →ₐ[Kᵥ] C) (ψ : C →ₐ[Kᵥ] Ωᵥ),
-      (g • ψ).comp χ = g • (ψ.comp χ) := fun g χ ψ => AlgHom.ext fun _ => rfl
-  -- the identification of the points of `H` with `Y` is equivariant:
-  -- restriction of points along `ι` is surjective because `π ∘ f` is
-  have hee : ∀ (g : Γᵥ) (u : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • u) = g • e u := by
-    intro g u
-    obtain ⟨w, hw⟩ := hpsurj (e u)
-    have hφ : Additive.ofMul
-        ((Additive.toMul w).comp (ι : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))) = u :=
-      e.injective (by rw [he]; exact hw)
-    rw [← hφ]
-    have h1 : g • Additive.ofMul
-        ((Additive.toMul w).comp (ι : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))) =
-        Additive.ofMul ((g • Additive.toMul w).comp
-          (ι : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))) :=
-      congrArg Additive.ofMul (hsmulcomp g _ _).symm
-    rw [h1, he, he]
-    exact hpe g w
-  -- (γ): the finite flat Hopf order `G'` with generic fibre `H`
-  obtain ⟨G', kCR, kHopf, kFlat, kFin, ⟨ε⟩⟩ :=
-    exists_hopfOrder_of_subBialgebra (G := G) (H := H) ι hιinj
-  letI := kCR
-  letI := kHopf
-  letI := kFlat
-  letI := kFin
-  -- (δ): precomposition with the form equivalence identifies the points
-  let ι' : H →ₐc[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G') := ε.symm.toBialgHom
-  let ι'' : (Kᵥ ⊗[𝒪ᵥ] G') →ₐc[Kᵥ] H := ε.toBialgHom
-  let Φ : ((Kᵥ ⊗[𝒪ᵥ] G') →ₐ[Kᵥ] Ωᵥ) ≃ (H →ₐ[Kᵥ] Ωᵥ) :=
-    { toFun := fun ψ => ψ.comp (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G'))
-      invFun := fun φ => φ.comp (ι'' : (Kᵥ ⊗[𝒪ᵥ] G') →ₐ[Kᵥ] H)
-      left_inv := fun ψ => AlgHom.ext fun x => by
-        show ψ ((ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G'))
-          ((ι'' : (Kᵥ ⊗[𝒪ᵥ] G') →ₐ[Kᵥ] H) x)) = ψ x
-        congr 1
-        exact ε.symm_apply_apply x
-      right_inv := fun φ => AlgHom.ext fun x => by
-        show φ ((ι'' : (Kᵥ ⊗[𝒪ᵥ] G') →ₐ[Kᵥ] H)
-          ((ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G')) x)) = φ x
-        congr 1
-        exact ε.apply_symm_apply x }
-  -- the bare-hom convolution monoid on `B →ₐ[Kᵥ] Ωᵥ` (the one baked into
-  -- `IsFlatPointsGroupAt`) has the same product as mathlib's `WithConv`:
-  -- both are `lift φ ψ ∘ comul`
-  have hbridge : ∀ {B : Type} [CommRing B] [Bialgebra Kᵥ B] (φ ψ : B →ₐ[Kᵥ] Ωᵥ),
-      φ * ψ = (WithConv.toConv φ * WithConv.toConv ψ).ofConv :=
-    fun {_} _ _ φ ψ => AlgHom.ext fun x => by
-      rw [AlgHom.convMul_apply]
-      rfl
-  have hΦmul : ∀ ψ₁ ψ₂ : (Kᵥ ⊗[𝒪ᵥ] G') →ₐ[Kᵥ] Ωᵥ, Φ (ψ₁ * ψ₂) = Φ ψ₁ * Φ ψ₂ := by
-    intro ψ₁ ψ₂
-    show (ψ₁ * ψ₂).comp (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G')) =
-      (ψ₁.comp (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G'))) *
-        (ψ₂.comp (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G')))
-    have d := AlgHom.convMul_comp_bialgHom_distrib
-      (WithConv.toConv ψ₁) (WithConv.toConv ψ₂) ι'
-    rw [hbridge ψ₁ ψ₂,
-      hbridge (ψ₁.comp (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G')))
-        (ψ₂.comp (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G')))]
-    exact d
-  let g₀ : Additive ((Kᵥ ⊗[𝒪ᵥ] G') →ₐ[Kᵥ] Ωᵥ) ≃+ Additive (H →ₐ[Kᵥ] Ωᵥ) :=
-    { toFun := fun x => Additive.ofMul (Φ (Additive.toMul x))
-      invFun := fun y => Additive.ofMul (Φ.symm (Additive.toMul y))
-      left_inv := fun x => congrArg Additive.ofMul (Φ.symm_apply_apply _)
-      right_inv := fun y => congrArg Additive.ofMul (Φ.apply_symm_apply _)
-      map_add' := fun x y => congrArg Additive.ofMul (hΦmul _ _) }
-  refine ⟨G', kCR, kHopf, kFlat, kFin,
-    Algebra.Etale.of_equiv ε.toAlgEquiv.symm,
-    (g₀.trans e).toAddMonoidHom, (g₀.trans e).bijective, ?_⟩
-  intro g y
-  show e (g₀ (g • y)) = g • e (g₀ y)
-  have hg : g₀ (g • y) = g • g₀ y :=
-    congrArg Additive.ofMul
-      (hsmulcomp g (ι' : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G')) (Additive.toMul y))
-  rw [hg]
-  exact hee g (g₀ y)
-
-end RaynaudClosure
 
 /-- **Raynaud closure for flat prolongations** (DECOMPOSED 2026-07-24
 into a PROVEN assembly over the Raynaud-closure cut above — Raynaud,
@@ -7266,14 +5485,19 @@ has a flat prolongation at `v`, then it has a flat prolongation at
 `v`. Proof: through the repackaging
 `hasFlatProlongationAt_iff_isFlatPointsGroupAt`, each factor space is
 a flat point-group at `v`; their product is one by
-`IsFlatPointsGroupAt.pi` (`Fin`-recursion over the sorried binary
-tensor-product leaf `IsFlatPointsGroupAt.prod`); and the embedded
+`IsFlatPointsGroupAt.pi` (`Fin`-recursion over the binary
+tensor-product node `IsFlatPointsGroupAt.prod`); and the embedded
 `(ρ.toLocal v).Space` is one by the schematic-closure node
-`IsFlatPointsGroupAt.of_injective` (PROVEN assembly over the two
-sorried étale–Galois leaves). Sound as stated: unconditionally
-TRUE — this node and both remaining leaves carry no hypothesis
-package (at `n = 0` injectivity forces `M` subsingleton, matching
-`IsFlatPointsGroupAt.of_subsingleton`). -/
+`IsFlatPointsGroupAt.of_injective`. Sound as stated: unconditionally
+TRUE — no hypothesis package (at `n = 0` injectivity forces `M`
+subsingleton, matching `IsFlatPointsGroupAt.of_subsingleton`).
+
+STATUS CORRECTION 2026-07-26: the whole cut this stands on is now
+PROVEN and lives in
+`Deformations/RepresentationTheory/FlatPointsGroup.lean`; the "sorried
+binary tensor-product leaf" and "two sorried étale–Galois leaves" this
+docstring used to name were all closed on 2026-07-25/26, so this
+theorem is sorry-free. -/
 theorem GaloisRep.hasFlatProlongationAt_of_pi_embedding
     (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
     {A : Type*} [CommRing A] [TopologicalSpace A]
@@ -13106,94 +11330,500 @@ theorem isFlatPointsGroupAt_of_subquotient
     induction z using QuotientAddGroup.induction_on with
     | H x => exact hπe g x
 
-/-- **Barsotti–Tate comparison lattice for the `O`-structure**
-(Eisenstein pillar E2b′-flat, CITATION LEAF carved out 2026-07-25 —
-the sole classical `p`-adic-Hodge-theoretic input of the lattice
-flatness transfer): the `ℤ_p`-lattice `Fin 2 → O` underlying `ρO` is
-`Γ ℚ`-equivariantly commensurable with the Tate module of a
-`p`-divisible group over `ℤ_p`. Concretely the leaf produces a
-`ℤ_p`-lattice `T` with a `Γ ℚ`-action `ρT` all of whose `p`-power
-levels `T ⧸ p^k` have finite flat prolongations at `p`, together with
-an equivariant `ℤ_p`-linear `f : (Fin 2 → O) → T` and a `ℤ_p`-linear
-`g : T → (Fin 2 → O)` with `g ∘ f = p^c` — i.e. `f` realises
-`Fin 2 → O` as a sublattice of `T` up to the bounded `p`-power `p^c`,
-which is exactly commensurability of the two lattices inside the
-common `ℚ_p`-space they span.
+/-- **Open `p`-power ideals of a module-finite topological `ℤ_p`-algebra**
+(PROVEN 2026-07-26 — the converse of `exists_pow_p_mem_of_isOpen`, and
+the bookkeeping that reads `GaloisRep.IsFlatAt` off at the cofinal
+`p`-power subtower): `p^k A` is open in `A`. Choose a `ℤ_p`-linear
+surjection `F : ℤ_p^n ↠ A` (module-finiteness); it is an open map for the
+module topology (`IsModuleTopology.isOpenMap_of_surjective`); the box
+`(p^k ℤ_p)^n` is open (`p^k ℤ_p` is the closed ball of radius `p^{-k}`,
+which in `ℤ_p` is also the OPEN ball of radius `p^{-k+1}`), and its image
+under `F` is exactly `p^k A`. -/
+theorem isOpen_span_pow_p {A : Type*} [CommRing A] [Algebra ℤ_[p] A]
+    [TopologicalSpace A] [IsTopologicalRing A] [IsModuleTopology ℤ_[p] A]
+    [Module.Finite ℤ_[p] A] (k : ℕ) :
+    IsOpen ((Ideal.span {(p : A) ^ k} : Ideal A) : Set A) := by
+  classical
+  obtain ⟨n, F, hF⟩ := Module.Finite.exists_fin' ℤ_[p] A
+  have hopenmap : IsOpenMap F := IsModuleTopology.isOpenMap_of_surjective hF
+  set S : Set (Fin n → ℤ_[p]) :=
+    {x | ∀ i, x i ∈ (Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p])} with hS
+  have hspan : IsOpen ((Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p]) : Set ℤ_[p]) := by
+    have hset : ((Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p]) : Set ℤ_[p]) =
+        {x : ℤ_[p] | ‖x‖ < (p : ℝ) ^ (-(k : ℤ) + 1)} := by
+      ext x
+      rw [SetLike.mem_coe, ← PadicInt.norm_le_pow_iff_mem_span_pow]
+      exact PadicInt.norm_le_pow_iff_norm_lt_pow_add_one x (-(k : ℤ))
+    rw [hset]
+    exact isOpen_lt continuous_norm continuous_const
+  have hSopen : IsOpen S := by
+    rw [hS]
+    have : {x : Fin n → ℤ_[p] | ∀ i, x i ∈ (Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p])} =
+        Set.pi Set.univ (fun _ : Fin n =>
+          ((Ideal.span {(p : ℤ_[p]) ^ k} : Ideal ℤ_[p]) : Set ℤ_[p])) := by
+      ext x; simp [Set.mem_pi]
+    rw [this]
+    exact isOpen_set_pi Set.finite_univ (fun i _ => hspan)
+  have himg : F '' S = ((Ideal.span {(p : A) ^ k} : Ideal A) : Set A) := by
+    have hpA : algebraMap ℤ_[p] A ((p : ℤ_[p]) ^ k) = (p : A) ^ k := by
+      rw [map_pow, map_natCast]
+    ext y
+    constructor
+    · rintro ⟨x, hx, rfl⟩
+      choose cc hcc using fun i => Ideal.mem_span_singleton'.mp (hx i)
+      have hxc : x = (p : ℤ_[p]) ^ k • cc := funext fun i => by
+        rw [Pi.smul_apply, smul_eq_mul, ← hcc i, mul_comm]
+      rw [hxc, map_smul, SetLike.mem_coe, Ideal.mem_span_singleton']
+      exact ⟨F cc, by rw [Algebra.smul_def, hpA, mul_comm]⟩
+    · intro hy
+      rw [SetLike.mem_coe, Ideal.mem_span_singleton'] at hy
+      obtain ⟨b, hb⟩ := hy
+      obtain ⟨z, rfl⟩ := hF b
+      refine ⟨(p : ℤ_[p]) ^ k • z, fun i => ?_, ?_⟩
+      · refine Ideal.mem_span_singleton'.mpr ⟨z i, ?_⟩
+        rw [Pi.smul_apply, smul_eq_mul, mul_comm]
+      · rw [map_smul, Algebra.smul_def, hpA, mul_comm]
+        exact hb
+  rw [← himg]
+  exact hopenmap _ hSopen
 
-CLASSICAL ROUTE (Fontaine; Raynaud; Tate, *`p`-divisible groups*, and
-Tate's article in Cornell–Silverman–Stevens ch. V):
-1. `hρ.isFlat` says every `p`-power level of the `R`-tower is finite
-   flat at `p`, i.e. `V` is the Tate module of a `p`-divisible group
-   over `ℤ_p`, so `V ⊗ ℚ_p` is Barsotti–Tate (crystalline with
-   Hodge–Tate weights in `{0, 1}`);
-2. every `ℚ̄_p`-fibre of the `O`-structure is an
-   `Aut(ℚ̄_p / ℚ_p)`-conjugate of a fibre of the `R`-structure: through
-   `e` the matrices of `ρO` over `ι(O) ⊆ ℚ̄_p` are a
-   `GL₂(ℚ̄_p)`-conjugate of those of `ρ` over `ι_R(R)`
-   (`hOinj`/`hZOcompat` make the two coefficient embeddings compatible
-   over `ℤ_p`), so applying `τ ∈ Aut(ℚ̄_p / ℚ_p)` carries the
-   `τ ∘ ι`-fibre of the `O`-structure to a `τ ∘ ι_R`-fibre of the
-   `R`-structure; being crystalline with weights in `{0, 1}` is
-   insensitive to such conjugation, so
-   `U := (Fin 2 → O) ⊗_{ℤ_p} ℚ_p` — whose `ℚ̄_p`-base change is the
-   direct sum of the embedding fibres — is again Barsotti–Tate;
-3. a Barsotti–Tate `ℚ_p`-representation contains a `Γ`-stable lattice
-   `T` which is the Tate module of a `p`-divisible group over `ℤ_p`
-   (Fontaine/Raynaud), and any two full-rank `Γ`-stable `ℤ_p`-lattices
-   in the same finite-dimensional `ℚ_p`-space are commensurable: after
-   scaling `T` by a `p`-power one may assume `f : (Fin 2 → O) ↪ T` is
-   the inclusion and `p^c T ⊆ (Fin 2 → O)`, whence `g` is
-   multiplication by `p^c` followed by that inclusion and
-   `g ∘ f = p^c`. Flatness of the levels `T ⧸ p^k` is the defining
-   property of the Tate module of a `p`-divisible group.
+/-- **Generic cover of the `O`-lattice by a power of the `R`-lattice**
+(Eisenstein pillar E2b′-flat, arithmetic half; CARVED 2026-07-26 — this
+leaf REPLACES the Barsotti–Tate/Fontaine citation that used to sit at
+`exists_flatIsogenousLattice_of_generic_iso`): there are `N`, `c` and a
+`Γ ℚ`-equivariant, `ℤ_p`-semilinear additive map
+`ψ : V^N → (Fin 2 → O)` whose image contains `p^c (Fin 2 → O)`.
 
-WHY NOT THE PI-EMBEDDING ROUTE (recorded 2026-07-24, re-audited
-2026-07-25): `e(Fin 2 → O)` and the image of `V` have different
-`ℤ_p`-ranks whenever `rank_ℤp O ≠ rank_ℤp R`, so no `p`-power scaling
-relates them inside `ℚ̄_p ⊗ V`; and a non-split level `(Fin 2 → O) ⧸ I`
-cannot embed `Γ ℚ_p`-equivariantly into a finite product of `R`-levels
-whose `p`-torsion socle is semisimple. Commensurability is legitimate
-only in `U`, which is what step 2 supplies — that is precisely the
-content isolated here.
+ROUTE — ELEMENTARY; no `p`-adic Hodge theory, no `p`-divisible groups,
+no crystalline representations. Write `U := (Fin 2 → O) ⊗ ℚ_p` and
+`W := V ⊗_{ℤ_p} ℚ_p` for the two generic fibres over `ℚ_p`, and `ι`,
+`ι_R` for the given embeddings of `O`, `R` into `ℚ̄_p`.
+1. `O` is a domain, module-finite over `ℤ_p`, and `hOinj` embeds it into
+   the characteristic-zero field `ℚ̄_p`; so `F_O := O ⊗_{ℤ_p} ℚ_p` is a
+   FIELD, finite over `ℚ_p`, hence separable, hence
+   `O ⊗_{ℤ_p} ℚ̄_p ≅ ∏_{τ ∈ Hom_{ℚ_p}(F_O, ℚ̄_p)} ℚ̄_p`. Since
+   `Fin 2 → O` is `O`-free, `U ⊗_{ℚ_p} ℚ̄_p ≅ ⊕_τ fibre_τ(ρO)`.
+2. Every `τ` is `τ′ ∘ ι` for some `ℚ_p`-automorphism `τ′` of `ℚ̄_p`
+   (two embeddings of a finite extension of `ℚ_p` into an algebraic
+   closure differ by an automorphism). Conjugating `e` by `τ′` — legitimate
+   because `Γ ℚ` acts `ℚ̄_p`-LINEARLY on both base changes, so coefficient
+   conjugation commutes with it — gives
+   `fibre_{τ′∘ι}(ρO) ≅ fibre_{τ′∘ι_R}(ρ)` as `ℚ̄_p[Γ ℚ]`-modules.
+3. `fibre_{τ′∘ι_R}(ρ) = V ⊗_{R, τ′∘ι_R} ℚ̄_p` is a `Γ ℚ`-equivariant
+   QUOTIENT of `V ⊗_{ℤ_p} ℚ̄_p = W ⊗_{ℚ_p} ℚ̄_p`, namely the base change
+   of `V` along the surjective `ℚ̄_p`-algebra map `R ⊗_{ℤ_p} ℚ̄_p ↠ ℚ̄_p`
+   induced by `τ′∘ι_R` (right-exactness of `⊗`; equivariant because `ρ`
+   is `R`-linear). *This is the step the retired Barsotti–Tate citation
+   did not use, and it is why no crystalline theory is needed: every
+   `ℚ̄_p`-fibre of the `R`-family is visible inside the `R`-lattice
+   itself, as a quotient — one does not have to reconstruct a lattice
+   from a Hodge-theoretic classification.*
+4. Steps 1–3 give a `Γ ℚ`-equivariant `ℚ̄_p`-surjection
+   `(W ⊗ ℚ̄_p)^d ↠ U ⊗ ℚ̄_p`, `d = [F_O : ℚ_p]`. Hom-descent:
+   `Hom_{ℚ_p[Γ]}(W^d, U) ⊗_{ℚ_p} ℚ̄_p = Hom_{ℚ̄_p[Γ]}((W ⊗ ℚ̄_p)^d, U ⊗ ℚ̄_p)`
+   (Hom between finite-dimensional spaces is the kernel of a linear map,
+   and base change is flat), so writing that surjection as `Σ_j φ_j ⊗ λ_j`
+   with `φ_j` defined over `ℚ_p` forces `Σ_j im φ_j = U`. Hence there is
+   already a `Γ ℚ`-equivariant `ℚ_p`-linear SURJECTION `ψ_ℚ : W^N ↠ U`
+   with `N = d·(number of `φ_j`)`.
+5. Clear denominators: for some `a`, `p^a ψ_ℚ` carries the lattice `V^N`
+   into `Fin 2 → O`; its image is a full-rank `ℤ_p`-lattice in `U`,
+   hence contains `p^c (Fin 2 → O)` for some `c`. Take `ψ := p^a ψ_ℚ`
+   restricted to `V^N`, which is `ℤ_p`-semilinear over `algebraMap ℤ_p R`
+   and `Γ ℚ`-equivariant by construction.
 
-Soundness: the hypothesis set is classically INHABITED (take `O = R`,
-`ρO` a frame of `ρ`, `e` the identity; then `T = Fin 2 → R` viewed
-over `ℤ_p`, `c = 0`, `f = g = id` works) and the conclusion holds for
-every inhabitant by the route above. Circularity guard (inherited from
-E2b′): must not route through `Family.lean` or `Reducible.lean`'s
-B5.
+WHAT THIS LEAF DOES NOT NEED: `hρ` (hardly-ramifiedness, in particular
+flatness) is NOT among its hypotheses — flatness enters only in the
+consumer, which pushes the flat `R`-levels along `ψ`. Nor does it need
+`hv` (rank two).
 
-TERMINAL CITATION — audited 2026-07-25, do NOT dispatch a proof effort
-here. Three findings, recorded so the leaf is not re-attacked:
+RETIRED CITATION (recorded so it is not reinstated): this position used
+to carry a Fontaine/Raynaud/Tate statement — `V ⊗ ℚ_p` is Barsotti–Tate,
+so every conjugate fibre is, so `U` is, so `U` contains a lattice that is
+the Tate module of a `p`-divisible group — audited on 2026-07-25 as a
+TERMINAL citation on the grounds that the pin has no `p`-divisible
+groups, no crystalline or Barsotti–Tate representations and nothing to
+vendor. That audit was correct about the substrate and wrong about the
+necessity: the classical route reconstructs a flat lattice from a
+Hodge-theoretic classification, whereas step 3 above PRODUCES one as the
+image of a power of the flat `R`-lattice already in hand. The audit’s
+other two findings still stand (do not cut at bare commensurability;
+this leaf is equivalent to its consumer, not weaker).
 
-1. *No substrate on this pin.* Steps 1–3 are Fontaine/Raynaud/Tate
-   `p`-adic Hodge theory, and the pin has none of it: a search of the
-   whole of mathlib for `pDivisible`, `BarsottiTate`, `IsCrystalline`
-   or `crystalline` returns only the unrelated `RingTheory.DividedPowers`
-   files — no `p`-divisible groups, no crystalline or Barsotti–Tate
-   representations, no Hodge–Tate weights. The reference project
-   `~/cs/FLT` has none either, so there is nothing to vendor.
-2. *Do not cut at commensurability instead.* With `p^κ·L ⊆ T ⊆ p^(−κ)·L`,
-   multiplication by `p^κ` embeds `L ⧸ p^m L` into `T ⧸ p^m T` with the
-   NONZERO kernel `p^(m−κ)L ⧸ p^m L`, and the transition map
-   `T ⧸ p^(m+κ)T → L ⧸ p^m L` has image only `p^κ L ⧸ p^m L`; so
-   `L ⧸ p^m L` is an EXTENSION assembled from levels of `T`, which is
-   exactly what `IsFlatPointsGroupAt.of_injective` and `.of_surjective`
-   do not provide. Cutting there would plant an unfaithful leaf.
-3. *This leaf is EQUIVALENT to its consumer, not weaker.* Granting
-   `hasFlatProlongationAt_lattice_pPow_of_generic_iso` for every `m`,
-   this statement is inhabited by `T := (Fin 2 → O)` regarded as a
-   `ℤ_p`-module (free, being finitely generated and torsion-free over
-   the PID `ℤ_p`), `ρT := ρO` with scalars restricted, `c = 0` and
-   `f = g = id`: the `ℤ_p`-level `p^k · (Fin 2 → O)` and the `O`-level
-   `(p : O)^k · (Fin 2 → O)` are the SAME subgroup, so the two level
-   representations coincide. Hence the E2b′-flat cut buys the classical
-   STATEMENT SHAPE — Tate module of a `p`-divisible group plus
-   commensurability, which is what a citation can actually supply —
-   and not a reduction in strength. Two consequences: further
-   decomposition can only relabel the content, never shrink it; and the
-   leaf is soundness-safe, being exactly as strong as the theorem it
-   serves, so it cannot be false while that theorem is true. -/
+Soundness: the hypothesis set is classically INHABITED (`O = R`, `ρO` a
+frame of `ρ`, `e` the identity — then `N = 1`, `c = 0`, `ψ` the frame
+identification). Circularity guard (inherited from E2b′): must not route
+through `Family.lean` or `Reducible.lean`’s B5. -/
+theorem exists_equivariantCover_of_generic_iso
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [IsModuleTopology ℤ_[p] O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    (hZOcompat : ∀ x : ℤ_[p],
+      algebraMap O (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] O x) =
+        algebraMap R (AlgebraicClosure ℚ_[p]) (algebraMap ℤ_[p] R x))
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (e : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]] ((AlgebraicClosure ℚ_[p]) ⊗[R] V))
+    (he : ∀ g x, e ((ρO.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρ.baseChange (AlgebraicClosure ℚ_[p])) g (e x)) :
+    ∃ (N c : ℕ) (ψ : (Fin N → V) →+ (Fin 2 → O)),
+      (∀ (a : ℤ_[p]) (x : Fin N → V),
+        ψ ((algebraMap ℤ_[p] R a) • x) = a • ψ x) ∧
+      (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin N → V),
+        ψ (fun i => ρ σ (x i)) = ρO σ (ψ x)) ∧
+      (∀ y : Fin 2 → O, ∃ z, ψ z = (p : ℤ_[p]) ^ c • y) :=
+  sorry
+
+/-- **Isogeny packaging of an equivariant lattice cover** (PROVEN
+2026-07-26 — the module-theoretic half of E2b′-flat, stated in the
+generality it is proved in): if the `p`-power levels of a Galois lattice
+`W` over a module-finite topological `ℤ_p`-algebra `A` all have finite
+flat prolongations at `p`, and `ψ : W^N →+ (Fin 2 → O)` is
+`ℤ_p`-semilinear, `Γ ℚ`-equivariant and covers `p^c (Fin 2 → O)`, then
+the `O`-lattice is isogenous to a `ℤ_p`-lattice `T` all of whose
+`p`-power levels have finite flat prolongations at `p`.
+
+PROOF. Take `T := range ψ`, a `ℤ_p`-submodule of `Fin 2 → O`; it is
+module-finite (`ℤ_p` is noetherian) and FREE, because `algebraMap ℤ_p O`
+is injective (a nonzero kernel would make `p` nilpotent in the domain
+`O`, contradicting `hpO`) so `Fin 2 → O` is `ℤ_p`-torsion-free, and a
+finite torsion-free module over the PID `ℤ_p` is free.
+* GALOIS ACTION. `T` is `ρO`-stable by equivariance of `ψ`, and the
+  restricted action is CONTINUOUS: `T` is free, hence projective, so the
+  surjection `ψ : W^N ↠ T` has a `ℤ_p`-linear section `s`, and
+  `χ : φ ↦ ψ ∘ φ^N ∘ s` is a `ℤ_p`-LINEAR map `End_A W → End_{ℤ_p} T`
+  with `χ (ρ′ σ) = ρT σ` for every `σ` (this is where equivariance and
+  `ψ ∘ s = id` are used); a `ℤ_p`-linear map out of a module topology is
+  continuous, and `End_A W` does carry the `ℤ_p`-module topology because
+  a basis identifies it with `Matrix ι ι A` and `A` carries the
+  `ℤ_p`-module topology.
+* FLAT LEVELS. The level `(ℤ_p ⧸ p^k) ⊗ T` is an equivariant SUBQUOTIENT
+  of the flat level `(A ⧸ p^k) ⊗ W` in `N` copies: with `L := W^N`,
+  `F : x ↦ (1 ⊗ x i)_i` and `π : x ↦ 1 ⊗ ψ x`, one has
+  `ker F ⊆ ker π` — `F x = 0` forces each `x i ∈ p^k W`
+  (`exists_smul_of_tmul_one_eq_zero`), hence `ψ x ∈ p^k T`, hence
+  `π x = 0` — and `π` is surjective because `A ⧸ p^k` is generated by
+  `1`. So `IsFlatPointsGroupAt.pi` followed by
+  `isFlatPointsGroupAt_of_subquotient` gives the claim, through the
+  repackaging `hasFlatProlongationAt_iff_isFlatPointsGroupAt`.
+* ISOGENY. `f := p^c ·` lands in `T` by the covering hypothesis and is
+  equivariant since `ρO` is `ℤ_p`-linear; `g := ` the inclusion; so
+  `g ∘ f = p^c`. -/
+theorem exists_flatIsogenousLattice_of_equivariantCover
+    {A : Type u} [CommRing A] [Algebra ℤ_[p] A]
+    [Module.Finite ℤ_[p] A] [TopologicalSpace A] [IsTopologicalRing A]
+    [IsModuleTopology ℤ_[p] A]
+    {W : Type*} [AddCommGroup W] [Module A W] [Module.Finite A W] [Module.Free A W]
+    {ρ' : GaloisRep ℚ A W}
+    (hflatW : ∀ k : ℕ,
+      (ρ'.baseChange (A ⧸ Ideal.span {(p : A) ^ k})).HasFlatProlongationAt 𝔭ᵥ)
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O]
+    (hpO : (p : O) ≠ 0)
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    {N c : ℕ} (ψ : (Fin N → W) →+ (Fin 2 → O))
+    (hψsmul : ∀ (a : ℤ_[p]) (x : Fin N → W),
+      ψ ((algebraMap ℤ_[p] A a) • x) = a • ψ x)
+    (hψeq : ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin N → W),
+      ψ (fun i => ρ' σ (x i)) = ρO σ (ψ x))
+    (hψcov : ∀ y : Fin 2 → O, ∃ z, ψ z = (p : ℤ_[p]) ^ c • y) :
+    ∃ (T : Type u) (_ : AddCommGroup T) (_ : Module ℤ_[p] T)
+      (_ : Module.Finite ℤ_[p] T) (_ : Module.Free ℤ_[p] T)
+      (ρT : GaloisRep ℚ ℤ_[p] T) (c' : ℕ)
+      (f : (Fin 2 → O) →ₗ[ℤ_[p]] T) (g : T →ₗ[ℤ_[p]] (Fin 2 → O)),
+      (∀ k : ℕ,
+        (ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).HasFlatProlongationAt 𝔭ᵥ) ∧
+      (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin 2 → O),
+        f (ρO σ x) = ρT σ (f x)) ∧
+      (∀ x : Fin 2 → O, g (f x) = (p : ℤ_[p]) ^ c' • x) := by
+  classical
+  -- `ℤ_p` embeds in the domain `O` (a nonzero kernel would make `p` nilpotent)
+  have hZOinj : Function.Injective (algebraMap ℤ_[p] O) := by
+    rw [injective_iff_map_eq_zero]
+    intro a ha
+    by_contra hne
+    obtain ⟨k, u, hu⟩ :=
+      IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hne PadicInt.irreducible_p
+    have hunit : IsUnit ((algebraMap ℤ_[p] O) (u : ℤ_[p])) := u.isUnit.map _
+    have h1 : (algebraMap ℤ_[p] O) (u : ℤ_[p]) * ((p : O)) ^ k = 0 := by
+      have h2 := congrArg (algebraMap ℤ_[p] O) hu
+      rw [ha, map_mul, map_pow, map_natCast] at h2
+      exact h2.symm
+    have hzero : ((p : O)) ^ k = 0 := (hunit.mul_right_eq_zero).mp h1
+    rcases Nat.eq_zero_or_pos k with hk0 | hk0
+    · subst hk0
+      simp only [pow_zero] at hzero
+      exact one_ne_zero hzero
+    · exact hpO (pow_eq_zero_iff hk0.ne' |>.mp hzero)
+  haveI : Module.IsTorsionFree ℤ_[p] O :=
+    Module.IsTorsionFree.comap (M := O) (algebraMap ℤ_[p] O)
+      (fun r hr => by
+        rw [isRegular_iff_ne_zero] at hr ⊢
+        exact fun h => hr (hZOinj (by rw [h, map_zero])))
+      (fun r m => algebraMap_smul O r m)
+  -- the lattice: the image of the cover map
+  let Tsub : Submodule ℤ_[p] (Fin 2 → O) :=
+    { carrier := Set.range ψ
+      add_mem' := by rintro _ _ ⟨x, rfl⟩ ⟨y, rfl⟩; exact ⟨x + y, map_add ψ x y⟩
+      zero_mem' := ⟨0, map_zero ψ⟩
+      smul_mem' := by
+        rintro a _ ⟨x, rfl⟩
+        exact ⟨(algebraMap ℤ_[p] A a) • x, hψsmul a x⟩ }
+  haveI hfinT : Module.Finite ℤ_[p] Tsub := inferInstance
+  haveI hfreeT : Module.Free ℤ_[p] Tsub := inferInstance
+  -- the `ℤ_p`-structure on the source, through `A`
+  letI : Module ℤ_[p] W := Module.compHom W (algebraMap ℤ_[p] A)
+  -- `ψ`, corestricted to its image, as a `ℤ_p`-linear surjection
+  let ψlin : (Fin N → W) →ₗ[ℤ_[p]] Tsub :=
+    { toFun := fun x => ⟨ψ x, ⟨x, rfl⟩⟩
+      map_add' := fun x y => Subtype.ext (map_add ψ x y)
+      map_smul' := fun a x => Subtype.ext (hψsmul a x) }
+  have hψlinsurj : Function.Surjective ψlin := by
+    rintro ⟨_, x, rfl⟩
+    exact ⟨x, rfl⟩
+  have hψlincoe : ∀ x, ((ψlin x : Tsub) : Fin 2 → O) = ψ x := fun _ => rfl
+  -- a `ℤ_p`-linear section (the image is free, hence projective)
+  obtain ⟨sec, hsec⟩ :=
+    Module.projective_lifting_property ψlin (LinearMap.id : Tsub →ₗ[ℤ_[p]] Tsub) hψlinsurj
+  have hsecapp : ∀ t : Tsub, ψ (sec t) = (t : Fin 2 → O) := by
+    intro t
+    have := congrArg (fun F => (F t : Tsub)) hsec
+    exact congrArg (Subtype.val) this
+  -- the transported Galois action on the image
+  letI : Module ℤ_[p] (Module.End A W) := Module.compHom _ (algebraMap ℤ_[p] A)
+  letI : TopologicalSpace (Module.End A W) := moduleTopology A (Module.End A W)
+  letI : TopologicalSpace (Module.End ℤ_[p] Tsub) :=
+    moduleTopology ℤ_[p] (Module.End ℤ_[p] Tsub)
+  haveI : IsModuleTopology ℤ_[p] (Module.End ℤ_[p] Tsub) := ⟨rfl⟩
+  haveI : IsModuleTopology A (Module.End A W) := ⟨rfl⟩
+  haveI : ContinuousAdd (Module.End A W) :=
+    ModuleTopology.continuousAdd A (Module.End A W)
+  haveI : ContinuousSMul A (Module.End A W) :=
+    ModuleTopology.continuousSMul A (Module.End A W)
+  haveI hTOP : IsModuleTopology ℤ_[p] (Module.End A W) := by
+    classical
+    set ι := Module.Free.ChooseBasisIndex A W with hι
+    set b : Module.Basis ι A W := Module.Free.chooseBasis A W with hb
+    -- `End A W ≅ Matrix ι ι A`, both carrying their `A`-module topologies
+    set ee : Module.End A W ≃ₗ[A] (ι → ι → A) := LinearMap.toMatrix b b with hee
+    have hcont1 : Continuous (ee : Module.End A W → (ι → ι → A)) :=
+      IsModuleTopology.continuous_of_linearMap (ee : Module.End A W →ₗ[A] (ι → ι → A))
+    have hcont2 : Continuous (ee.symm : (ι → ι → A) → Module.End A W) :=
+      IsModuleTopology.continuous_of_linearMap (ee.symm : (ι → ι → A) →ₗ[A] Module.End A W)
+    -- the same equivalence, read `ℤ_p`-linearly
+    let ee2 : (ι → ι → A) ≃ₗ[ℤ_[p]] Module.End A W :=
+      { toFun := ee.symm
+        invFun := ee
+        map_add' := fun x y => ee.symm.map_add x y
+        map_smul' := fun a x => by
+          show ee.symm (a • x) = (algebraMap ℤ_[p] A a) • ee.symm x
+          rw [← algebraMap_smul A a x]
+          exact ee.symm.map_smul _ x
+        left_inv := ee.apply_symm_apply
+        right_inv := ee.symm_apply_apply }
+    exact IsModuleTopology.iso
+      ({ toLinearEquiv := ee2
+         continuous_toFun := hcont2
+         continuous_invFun := hcont1 } : (ι → ι → A) ≃L[ℤ_[p]] Module.End A W)
+  haveI : ContinuousAdd (Module.End ℤ_[p] Tsub) :=
+    ModuleTopology.continuousAdd ℤ_[p] (Module.End ℤ_[p] Tsub)
+  haveI : ContinuousSMul ℤ_[p] (Module.End ℤ_[p] Tsub) :=
+    ModuleTopology.continuousSMul ℤ_[p] (Module.End ℤ_[p] Tsub)
+  have hsecadd : ∀ (t t' : Tsub) (i : Fin N), sec (t + t') i = sec t i + sec t' i := by
+    intro t t' i; rw [map_add]; rfl
+  have hsecsmul : ∀ (a : ℤ_[p]) (t : Tsub) (i : Fin N),
+      sec (a • t) i = (algebraMap ℤ_[p] A a) • (sec t i) := by
+    intro a t i; rw [map_smul]; rfl
+  let χ : (Module.End A W) →ₗ[ℤ_[p]] (Module.End ℤ_[p] Tsub) :=
+    { toFun := fun φ =>
+        { toFun := fun t => ψlin (fun i => φ (sec t i))
+          map_add' := fun t t' => by
+            rw [← map_add ψlin]
+            congr 1
+            funext i
+            rw [Pi.add_apply, hsecadd t t' i, map_add]
+          map_smul' := fun a t => by
+            show ψlin (fun i => φ (sec (a • t) i)) = a • ψlin (fun i => φ (sec t i))
+            rw [← map_smul ψlin]
+            congr 1
+            funext i
+            rw [hsecsmul a t i, map_smul]
+            rfl }
+      map_add' := fun φ φ' => by
+        refine LinearMap.ext fun t => ?_
+        show ψlin (fun i => (φ + φ') (sec t i)) =
+          ψlin (fun i => φ (sec t i)) + ψlin (fun i => φ' (sec t i))
+        rw [← map_add ψlin]
+        congr 1
+      map_smul' := fun a φ => by
+        refine LinearMap.ext fun t => ?_
+        show ψlin (fun i => (a • φ) (sec t i)) = a • ψlin (fun i => φ (sec t i))
+        rw [← map_smul ψlin]
+        congr 1 }
+  have hχapp : ∀ (φ : Module.End A W) (t : Tsub),
+      ((χ φ t : Tsub) : Fin 2 → O) = ψ (fun i => φ (sec t i)) := fun _ _ => rfl
+  -- the transported action is the restriction of `ρO`
+  have hkey : ∀ (σ : Field.absoluteGaloisGroup ℚ) (t : Tsub),
+      ((χ (ρ' σ) t : Tsub) : Fin 2 → O) = ρO σ (t : Fin 2 → O) := by
+    intro σ t
+    rw [hχapp, hψeq, hsecapp]
+  let ρT : GaloisRep ℚ ℤ_[p] Tsub :=
+    { toFun := fun σ => χ (ρ' σ)
+      map_one' := by
+        refine LinearMap.ext fun t => Subtype.ext ?_
+        rw [hkey, map_one]
+        rfl
+      map_mul' := fun σ τ => by
+        refine LinearMap.ext fun t => Subtype.ext ?_
+        rw [hkey, map_mul]
+        show ρO σ (ρO τ (t : Fin 2 → O)) = _
+        rw [show ((χ (ρ' σ) * χ (ρ' τ)) t : Tsub) = χ (ρ' σ) (χ (ρ' τ) t) from rfl,
+          hkey, hkey]
+      continuous_toFun := by
+        have hcρ : Continuous (fun σ : Field.absoluteGaloisGroup ℚ =>
+            (ρ' σ : Module.End A W)) := ContinuousMonoidHom.continuous_toFun ρ'
+        exact (IsModuleTopology.continuous_of_linearMap χ).comp hcρ }
+  have hρTcoe : ∀ (σ : Field.absoluteGaloisGroup ℚ) (t : Tsub),
+      ((ρT σ t : Tsub) : Fin 2 → O) = ρO σ (t : Fin 2 → O) := hkey
+  -- the comparison maps
+  let g0 : Tsub →ₗ[ℤ_[p]] (Fin 2 → O) := Tsub.subtype
+  let f0 : (Fin 2 → O) →ₗ[ℤ_[p]] Tsub :=
+    { toFun := fun y => ⟨(p : ℤ_[p]) ^ c • y, hψcov y⟩
+      map_add' := fun x y => Subtype.ext (smul_add ((p : ℤ_[p]) ^ c) x y)
+      map_smul' := fun a x => Subtype.ext (smul_comm ((p : ℤ_[p]) ^ c) a x) }
+  have hflatT : ∀ k : ℕ,
+      (ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).HasFlatProlongationAt 𝔭ᵥ := by
+    intro k
+    refine (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt _).mpr ?_
+    -- the flat source: `N` copies of the level-`k` `A`-tower
+    have hpi : IsFlatPointsGroupAt 𝔭ᵥ (Fin N →
+        (((ρ'.baseChange (A ⧸ Ideal.span {(p : A) ^ k})).toLocal 𝔭ᵥ).Space)) :=
+      IsFlatPointsGroupAt.pi (fun _ =>
+        (GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt _).mp (hflatW k))
+    -- the ambient lattice power, with its action as a first-order family
+    have hact1 : ∀ x : Fin N → W,
+        (fun i => ((ρ'.toLocal 𝔭ᵥ) 1) (x i)) = x := by
+      intro x; funext i; simp only [map_one, Module.End.one_apply]
+    have hactmul : ∀ (a b : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ 𝔭ᵥ)) (x : Fin N → W),
+        (fun i => ((ρ'.toLocal 𝔭ᵥ) (a * b)) (x i)) =
+          (fun i => ((ρ'.toLocal 𝔭ᵥ) a) (((ρ'.toLocal 𝔭ᵥ) b) (x i))) := by
+      intro a b x; funext i; simp only [map_mul, Module.End.mul_apply]
+    let act : Field.absoluteGaloisGroup
+        (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ 𝔭ᵥ) →
+          ((Fin N → W) →+ (Fin N → W)) := fun σ =>
+      { toFun := fun x i => ((ρ'.toLocal 𝔭ᵥ) σ) (x i)
+        map_zero' := by funext i; exact map_zero _
+        map_add' := fun x y => by funext i; exact map_add _ _ _ }
+    let F : (Fin N → W) →+
+        (Fin N → (((ρ'.baseChange (A ⧸ Ideal.span {(p : A) ^ k})).toLocal 𝔭ᵥ).Space)) :=
+      { toFun := fun x i => (1 : A ⧸ Ideal.span {(p : A) ^ k}) ⊗ₜ[A] (x i)
+        map_zero' := by funext i; exact TensorProduct.tmul_zero _ _
+        map_add' := fun x y => by funext i; exact TensorProduct.tmul_add _ _ _ }
+    let π : (Fin N → W) →+
+        (((ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).toLocal 𝔭ᵥ).Space) :=
+      { toFun := fun x =>
+          (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]] (ψlin x)
+        map_zero' := by rw [map_zero, TensorProduct.tmul_zero] <;> rfl
+        map_add' := fun x y => by rw [map_add, TensorProduct.tmul_add] <;> rfl }
+    refine isFlatPointsGroupAt_of_subquotient act hact1 hactmul hpi F ?_ π ?_ ?_ ?_
+    · intro σ x
+      funext i
+      show (1 : A ⧸ Ideal.span {(p : A) ^ k}) ⊗ₜ[A] (((ρ'.toLocal 𝔭ᵥ) σ) (x i)) =
+        ((ρ'.baseChange (A ⧸ Ideal.span {(p : A) ^ k})).toLocal 𝔭ᵥ) σ
+          ((1 : A ⧸ Ideal.span {(p : A) ^ k}) ⊗ₜ[A] (x i))
+      rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul]
+    · intro σ x
+      show (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]]
+          (ψlin (fun i => ((ρ'.toLocal 𝔭ᵥ) σ) (x i))) =
+        ((ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).toLocal 𝔭ᵥ) σ
+          ((1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]] (ψlin x))
+      rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply, GaloisRep.baseChange_tmul]
+      congr 1
+      refine Subtype.ext ?_
+      rw [hρTcoe]
+      exact hψeq _ x
+    · rintro z
+      induction z using TensorProduct.induction_on with
+      | zero => exact ⟨0, map_zero _⟩
+      | add a b ha hb =>
+        obtain ⟨x, hx⟩ := ha
+        obtain ⟨y, hy⟩ := hb
+        exact ⟨x + y, by rw [map_add, hx, hy] <;> rfl⟩
+      | tmul cc t =>
+        obtain ⟨cc', rfl⟩ := Ideal.Quotient.mk_surjective cc
+        obtain ⟨z0, hz0⟩ := hψlinsurj t
+        refine ⟨(algebraMap ℤ_[p] A cc') • z0, ?_⟩
+        show (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]]
+            (ψlin ((algebraMap ℤ_[p] A cc') • z0)) = _
+        rw [show ψlin ((algebraMap ℤ_[p] A cc') • z0) = cc' • ψlin z0 from
+          Subtype.ext (hψsmul cc' z0), TensorProduct.tmul_smul, TensorProduct.smul_tmul',
+          hz0]
+        congr 1
+        rw [Algebra.smul_def, mul_one]
+        rfl
+    · intro x hx
+      have hxi : ∀ i, ∃ y : W, x i = (p : A) ^ k • y := by
+        intro i
+        refine exists_smul_of_tmul_one_eq_zero ((p : A) ^ k) (x i) ?_
+        exact congrFun hx i
+      choose y hy using hxi
+      have hxy : x = (algebraMap ℤ_[p] A ((p : ℤ_[p]) ^ k)) • y := by
+        funext i
+        rw [hy i, Pi.smul_apply, map_pow, map_natCast]
+      show (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]] (ψlin x) = 0
+      rw [hxy, show ψlin ((algebraMap ℤ_[p] A ((p : ℤ_[p]) ^ k)) • y)
+          = (p : ℤ_[p]) ^ k • ψlin y from Subtype.ext (hψsmul _ y),
+        TensorProduct.tmul_smul, TensorProduct.smul_tmul']
+      have hz : ((p : ℤ_[p]) ^ k • (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})) = 0 := by
+        rw [Algebra.smul_def]; simp
+      rw [hz, TensorProduct.zero_tmul] <;> rfl
+  refine ⟨Tsub, inferInstance, inferInstance, hfinT, hfreeT, ρT, c, f0, g0, hflatT, ?_, ?_⟩
+  · intro σ x
+    refine Subtype.ext ?_
+    rw [hρTcoe]
+    show (p : ℤ_[p]) ^ c • (ρO σ x) = ρO σ ((p : ℤ_[p]) ^ c • x)
+    rw [← algebraMap_smul O ((p : ℤ_[p]) ^ c) x, LinearMap.map_smul,
+      algebraMap_smul]
+  · intro x
+    rfl
+
+/-- **Flat isogenous lattice for the `O`-structure** (Eisenstein pillar
+E2b′-flat; PROVEN 2026-07-26 over the single arithmetic leaf
+`exists_equivariantCover_of_generic_iso`, which REPLACED the
+Barsotti–Tate/Fontaine citation that used to sit here): the `ℤ_p`-lattice
+`Fin 2 → O` underlying `ρO` is `Γ ℚ`-equivariantly isogenous to a
+`ℤ_p`-lattice `T` all of whose `p`-power levels `T ⧸ p^k` have finite
+flat prolongations at `p`.
+
+PROOF: `exists_equivariantCover_of_generic_iso` produces an equivariant
+`ℤ_p`-semilinear `ψ : V^N →+ (Fin 2 → O)` covering `p^c (Fin 2 → O)`
+(elementary: conjugate fibres, Hom-descent from `ℚ̄_p` to `ℚ_p`, and
+clearing denominators — see its docstring), `hρ.isFlat` supplies the
+flatness of the `p`-power levels of the `R`-tower at the open ideals
+`p^k R` (`isOpen_span_pow_p`), and
+`exists_flatIsogenousLattice_of_equivariantCover` packages the image of
+`ψ` as the required lattice. `hpO` — `p ≠ 0` in `O` — is read off from
+the embedding of `O` into the characteristic-zero field `ℚ̄_p`.
+
+HISTORY (2026-07-25 → 2026-07-26): this node was a TERMINAL CITATION
+carrying Fontaine/Raynaud/Tate `p`-adic Hodge theory, audited as
+undischargeable on this pin (no `p`-divisible groups, no crystalline or
+Barsotti–Tate representations in mathlib, nothing to vendor from
+`~/cs/FLT`). The citation is now retired: the flat lattice is PRODUCED as
+the image of a power of the flat `R`-lattice rather than reconstructed
+from a Hodge-theoretic classification, so the whole subtree now rests on
+linear algebra and field theory that mathlib does have. The retired
+route, and why its audit did not imply necessity, are recorded on
+`exists_equivariantCover_of_generic_iso`. Circularity guard (inherited
+from E2b′): must not route through `Family.lean` or `Reducible.lean`’s
+B5. -/
 theorem exists_flatIsogenousLattice_of_generic_iso
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -13221,8 +11851,17 @@ theorem exists_flatIsogenousLattice_of_generic_iso
           (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : p.Prime))) ∧
       (∀ (σ : Field.absoluteGaloisGroup ℚ) (x : Fin 2 → O),
         f (ρO σ x) = ρT σ (f x)) ∧
-      (∀ x : Fin 2 → O, g (f x) = (p : ℤ_[p]) ^ c • x) :=
-  sorry
+      (∀ x : Fin 2 → O, g (f x) = (p : ℤ_[p]) ^ c • x) := by
+  obtain ⟨N, c, ψ, hψsmul, hψeq, hψcov⟩ :=
+    exists_equivariantCover_of_generic_iso (ρ := ρ) hOinj hZOcompat e he
+  have hpO : (p : O) ≠ 0 := by
+    intro h0
+    have h2 : ((p : ℕ) : AlgebraicClosure ℚ_[p]) = 0 := by
+      rw [← map_natCast (algebraMap O (AlgebraicClosure ℚ_[p])), h0, map_zero]
+    exact (Nat.cast_ne_zero.mpr (Fact.out : p.Prime).ne_zero) h2
+  exact exists_flatIsogenousLattice_of_equivariantCover
+    (ρ' := ρ) (fun k => hρ.isFlat.cond _ (isOpen_span_pow_p k))
+    hpO ψ hψsmul hψeq hψcov
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **Lattice flatness at the `p`-power levels** (Eisenstein pillar
@@ -17469,11 +16108,13 @@ The classical chain, and what each link costs on this pin:
   2026-07-25). Two of the three resulting cases are discharged here:
   `A` principal, and `A` the ramified prime above `p`, which for the
   PRIME conductor `p` is `(ζ − 1)` and hence principal
-  (`cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`). THE ONE
-  REMAINING `sorry` of this chain is the third case —
-  `stickelberger_prod_map_prime_ideal_isPrincipal`, the theorem for a
-  single prime `q` with `p ∉ q`, whose own docstring carries the
-  dependency-ordered list of what is still missing from the pin.
+  (`cyclotomic_isPrincipal_of_isPrime_of_natCast_mem`). The third case
+  — a single prime `q` with `p ∉ q` — is
+  `stickelberger_prod_map_prime_ideal_isPrincipal`, itself PROVEN
+  (2026-07-25) over the character-fed leaf
+  `stickelbergerProd_isPrincipal_of_powerResidueChar`, whose docstring
+  carries the dependency-ordered list of what is still missing from
+  the pin. THE ONE REMAINING `sorry` of this chain is that leaf.
 * **(d′) … annihilates the ideal class group** (Thm. 6.10, second
   sentence): PROVEN here as `stickelberger_annihilates_classGroup`,
   from (d) through the generic class-group brick
@@ -17485,15 +16126,15 @@ The classical chain, and what each link costs on this pin:
   floor arithmetic `sum_Ico_mul_two_mul_div_eq`.
 
 So: (a) is mathlib, (b) is folded into (d), (c)/(d′)/(e) are PROVEN,
-and (d) is now PROVEN too, over a single narrower citation. The next
-owner's frontier is exactly that citation,
-`stickelberger_prod_map_prime_ideal_isPrincipal`: one prime ideal `q`
-prime to `p`, for which the route is (b) plus §6.2's descent, or the
-shorter §15.1 route (Gauss sums attached to a degree-one prime
-`ℓ ≡ 1 (mod p)` lying in the given ideal class — so a
-Chebotarev/Dirichlet input as well — plus the same Kummer descent).
-Neither route is cheap on this pin; both are itemised, as statements,
-in that leaf's docstring. -/
+and (d) is now PROVEN too, over a single narrower citation which is
+itself PROVEN over the still narrower leaf
+`stickelbergerProd_isPrincipal_of_powerResidueChar` (2026-07-25). The
+next owner's frontier is exactly that leaf: one prime ideal `q` prime
+to `p`, together with a `p`-th power residue character at `q` supplied
+as a hypothesis (`exists_powerResidueChar_of_prime_notMem`, PROVEN),
+for which the route is (b) plus §6.2's Jacobi-sum descent — the §15.1
+route needs a Chebotarev/Dirichlet input this pin does not have. What
+remains is itemised, as statements, in that leaf's docstring. -/
 
 /-- **Principality of the twisted ideal product kills the ideal class**
 (PROVEN 2026-07-25; the generic class-group brick of the Stickelberger
@@ -17696,6 +16337,307 @@ noncomputable def stickelbergerProd (CF : Type) [Field CF] [NumberField CF]
   twistedIdealProd (fun u : (ZMod p)ˣ => cycGalRingOfIntegersEquiv CF u⁻¹)
     (fun u => t * ((u : ZMod p).val) / p) J
 
+/-- **The residue field of an unramified prime carries `μ_p`** (PROVEN
+2026-07-25; step 1 of the Stickelberger cut, item 1 of the list in
+`stickelberger_prod_map_prime_ideal_isPrincipal` below): if `q` is a
+prime ideal of `𝓞 CF` with `p ∉ q` — equivalently `q` lies over a
+rational prime `ℓ ≠ p` — then the reduction mod `q` of a primitive
+`p`-th root of unity `ζ ∈ 𝓞 CF` is again a primitive `p`-th root of
+unity in the residue ring `𝓞 CF ⧸ q`.
+
+This is the statement Washington uses silently at the top of the proof
+of Thm. 6.10 ("since the `(q−1)`st roots of unity are distinct mod
+`𝔭`"), and the pin has no packaged form of it. The proof is the
+separability of `Φ_p` away from `p`: `ζ` is a root of
+`cyclotomic p (𝓞 CF)` (`IsPrimitiveRoot.isRoot_cyclotomic`), the
+quotient map carries that to a root of `cyclotomic p (𝓞 CF ⧸ q)`
+(`Polynomial.map_cyclotomic`), and over a domain in which `p` is
+invertible — which is exactly `p ∉ q` — being a root of the `p`-th
+cyclotomic polynomial IS being a primitive `p`-th root of unity
+(`Polynomial.isRoot_cyclotomic_iff`, whose `NeZero (p : 𝓞 CF ⧸ q)`
+hypothesis is `Ideal.Quotient.eq_zero_iff_mem` applied to `hpq`).
+
+Note that `q ≠ ⊥` is NOT needed here: for `q = ⊥` the quotient is
+`𝓞 CF` itself and the statement is the hypothesis. -/
+theorem residueField_isPrimitiveRoot_of_notMem
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hpq : (p : 𝓞 CF) ∉ q)
+    {ζ : 𝓞 CF} (hζ : IsPrimitiveRoot ζ p) :
+    IsPrimitiveRoot (Ideal.Quotient.mk q ζ) p := by
+  haveI : q.IsPrime := hq
+  haveI : NeZero ((p : ℕ) : 𝓞 CF ⧸ q) := by
+    refine ⟨fun h => hpq ?_⟩
+    rw [← map_natCast (Ideal.Quotient.mk q) p, Ideal.Quotient.eq_zero_iff_mem] at h
+    exact h
+  rw [← Polynomial.isRoot_cyclotomic_iff]
+  have h1 : Polynomial.IsRoot (Polynomial.cyclotomic p (𝓞 CF)) ζ :=
+    hζ.isRoot_cyclotomic hp.out.pos
+  have h2 := h1.map (f := (Ideal.Quotient.mk q))
+  rwa [Polynomial.map_cyclotomic] at h2
+
+/-- **`p ∣ Q − 1` at a prime not above `p`** (PROVEN 2026-07-25; the
+numerical half of item 1 of the list in
+`stickelberger_prod_map_prime_ideal_isPrincipal`): writing
+`Q := #(𝓞 CF ⧸ q)` for the norm of a nonzero prime `q` of `𝓞 CF` with
+`p ∉ q`, the prime `p` divides `Q − 1`.
+
+This is what makes the exponent `(Q−1)/p` of the `p`-th power residue
+character an integer, and it is the reason `μ_p ⊆ F^×`. Proof: the
+residue ring is a finite field (`Ideal.IsPrime.isMaximal` in the
+Dedekind domain `𝓞 CF`, plus `Ideal.finiteQuotientOfFreeOfNeBot`), the
+reduction of `ζ` is a primitive `p`-th root of unity there
+(`residueField_isPrimitiveRoot_of_notMem`), so `p` is its order
+(`IsPrimitiveRoot.eq_orderOf`), and the order of a nonzero element of
+a finite field divides `Q − 1`
+(`FiniteField.pow_card_sub_one_eq_one`). -/
+theorem prime_dvd_card_residueField_sub_one
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) (hpq : (p : 𝓞 CF) ∉ q) :
+    p ∣ Nat.card (𝓞 CF ⧸ q) - 1 := by
+  haveI : q.IsPrime := hq
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  haveI : Finite (𝓞 CF ⧸ q) := Ideal.finiteQuotientOfFreeOfNeBot q hq0
+  haveI : Fintype (𝓞 CF ⧸ q) := Fintype.ofFinite _
+  have hζ : IsPrimitiveRoot (IsCyclotomicExtension.zeta p ℚ CF) p :=
+    IsCyclotomicExtension.zeta_spec p ℚ CF
+  have hprim : IsPrimitiveRoot (Ideal.Quotient.mk q hζ.toInteger) p :=
+    residueField_isPrimitiveRoot_of_notMem CF hq hpq hζ.toInteger_isPrimitiveRoot
+  have hz0 : (Ideal.Quotient.mk q hζ.toInteger) ≠ 0 := by
+    intro h
+    have h1 := hprim.pow_eq_one
+    rw [h, zero_pow hp.out.ne_zero] at h1
+    exact zero_ne_one h1
+  have hord : orderOf (Ideal.Quotient.mk q hζ.toInteger) = p := hprim.eq_orderOf.symm
+  have hcard : (Ideal.Quotient.mk q hζ.toInteger) ^ (Fintype.card (𝓞 CF ⧸ q) - 1) = 1 := by
+    refine FiniteField.pow_card_sub_one_eq_one (K := 𝓞 CF ⧸ q) _ ?_
+    intro h
+    exact hz0 h
+  rw [Nat.card_eq_fintype_card, ← hord]
+  exact orderOf_dvd_of_pow_eq_one hcard
+
+/-- **The `p`-th power residue character at a prime `q ∤ p`** (PROVEN
+2026-07-25; item 2 of the list in
+`stickelberger_prod_map_prime_ideal_isPrincipal` below, which recorded
+it as MISSING from this pin): for a nonzero prime `q` of `𝓞 CF` with
+`p ∉ q`, there is a multiplicative character
+
+`χ_q : (𝓞 CF ⧸ q) → 𝓞 CF`
+
+taking values in `μ_p(𝓞 CF)` and characterised by the congruence
+
+`χ_q(x) ≡ x^{(Q−1)/p}  (mod q)`,  `Q := #(𝓞 CF ⧸ q)`,
+
+together with nontriviality. This is Washington's `ω^{−d}` (§6.2,
+`d = (Q−1)/m`) written multiplicatively as a `MulChar`, i.e. the
+arithmetic Teichmüller character at `q`; it is the character whose
+Gauss sum factors as the Stickelberger divisor. (**Not** the
+Witt-vector Teichmüller lift of `Mathlib.RingTheory.Teichmuller`,
+which is unrelated.) The convention here is the reciprocal of
+Washington's `ω^{−d}`; the two differ by inversion, which changes
+`θ` into its complex conjugate and nothing else.
+
+Construction. The residue ring is a finite field with `p ∣ Q − 1`
+(`prime_dvd_card_residueField_sub_one`), so for `x ≠ 0` the element
+`x^{(Q−1)/p}` satisfies `(x^{(Q−1)/p})^p = x^{Q−1} = 1` and hence is a
+power of the reduction of `ζ`
+(`residueField_isPrimitiveRoot_of_notMem` and
+`IsPrimitiveRoot.eq_pow_of_pow_eq_one`); choosing such an exponent `k`
+and setting `χ_q(x) := ζ^k` (and `χ_q(0) := 0`) gives a well-defined
+map because reduction is INJECTIVE on `μ_p(𝓞 CF)`: `ζ` and its
+reduction both have exact order `p`, so `ζ^i ≡ ζ^j (mod q)` forces
+`i ≡ j (mod p)`. Multiplicativity is that same injectivity applied to
+`χ_q(xy)` and `χ_q(x)χ_q(y)`, both powers of `ζ` with the same
+reduction `(xy)^{(Q−1)/p}`. Nontriviality is `g^{(Q−1)/p} ≠ 1` for a
+generator `g` of the cyclic group `(𝓞 CF ⧸ q)ˣ`, which holds because
+`0 < (Q−1)/p < Q − 1`. -/
+theorem exists_powerResidueChar_of_prime_notMem
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥) (hpq : (p : 𝓞 CF) ∉ q)
+    (hQ : p ∣ Nat.card (𝓞 CF ⧸ q) - 1) :
+    ∃ χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF),
+      χ ≠ 1 ∧ (∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1) ∧
+      (∀ x : 𝓞 CF ⧸ q,
+        Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) := by
+  classical
+  haveI : q.IsPrime := hq
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  haveI : Finite (𝓞 CF ⧸ q) := Ideal.finiteQuotientOfFreeOfNeBot q hq0
+  haveI : Fintype (𝓞 CF ⧸ q) := Fintype.ofFinite _
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  have hcard : Nat.card (𝓞 CF ⧸ q) = Fintype.card (𝓞 CF ⧸ q) := Nat.card_eq_fintype_card
+  have hQ2 : 2 ≤ Fintype.card (𝓞 CF ⧸ q) := Fintype.one_lt_card
+  have hQ' : p ∣ Fintype.card (𝓞 CF ⧸ q) - 1 := by rwa [hcard] at hQ
+  set d : ℕ := (Fintype.card (𝓞 CF ⧸ q) - 1) / p
+  have hdp : d * p = Fintype.card (𝓞 CF ⧸ q) - 1 := Nat.div_mul_cancel hQ'
+  have hd0 : 0 < d := by
+    rcases Nat.eq_zero_or_pos d with h | h
+    · rw [h, zero_mul] at hdp; omega
+    · exact h
+  have hdlt : d < Fintype.card (𝓞 CF ⧸ q) - 1 := by
+    have h2 : 2 ≤ p := hp.out.two_le
+    have hkey : d * 2 ≤ d * p := Nat.mul_le_mul (le_refl d) h2
+    rw [hdp] at hkey
+    omega
+  have hζ := IsCyclotomicExtension.zeta_spec p ℚ CF
+  set ζ : 𝓞 CF := hζ.toInteger
+  have hζp : IsPrimitiveRoot ζ p := hζ.toInteger_isPrimitiveRoot
+  have hzp : IsPrimitiveRoot (Ideal.Quotient.mk q ζ) p :=
+    residueField_isPrimitiveRoot_of_notMem CF hq hpq hζp
+  have hpowmodR : ∀ i : ℕ, ζ ^ i = ζ ^ (i % p) := by
+    intro i
+    conv_lhs => rw [← Nat.div_add_mod i p]
+    rw [pow_add, pow_mul, hζp.pow_eq_one, one_pow, one_mul]
+  have hpowmodF : ∀ i : ℕ, (Ideal.Quotient.mk q ζ) ^ i = (Ideal.Quotient.mk q ζ) ^ (i % p) := by
+    intro i
+    conv_lhs => rw [← Nat.div_add_mod i p]
+    rw [pow_add, pow_mul, hzp.pow_eq_one, one_pow, one_mul]
+  have hinj : ∀ i j : ℕ,
+      Ideal.Quotient.mk q (ζ ^ i) = Ideal.Quotient.mk q (ζ ^ j) → ζ ^ i = ζ ^ j := by
+    intro i j hij
+    rw [map_pow, map_pow, hpowmodF i, hpowmodF j] at hij
+    have h1 : i % p = j % p :=
+      hzp.pow_inj (Nat.mod_lt _ hp.out.pos) (Nat.mod_lt _ hp.out.pos) hij
+    rw [hpowmodR i, hpowmodR j, h1]
+  have hex : ∀ x : 𝓞 CF ⧸ q, ∃ k : ℕ, x ≠ 0 → (Ideal.Quotient.mk q ζ) ^ k = x ^ d := by
+    intro x
+    by_cases hx : x = 0
+    · exact ⟨0, fun h => absurd hx h⟩
+    · have hroot : (x ^ d) ^ p = 1 := by
+        rw [← pow_mul, hdp]
+        exact FiniteField.pow_card_sub_one_eq_one (K := 𝓞 CF ⧸ q) x hx
+      obtain ⟨i, -, hi⟩ := hzp.eq_pow_of_pow_eq_one hroot
+      exact ⟨i, fun _ => hi⟩
+  choose kf hkf using hex
+  set L : (𝓞 CF ⧸ q) → 𝓞 CF := fun x => if x = 0 then 0 else ζ ^ kf x with hLdef
+  have hLne : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → L x = ζ ^ kf x := by
+    intro x hx; simp [hLdef, hx]
+  have hLred : ∀ x : 𝓞 CF ⧸ q, Ideal.Quotient.mk q (L x) = x ^ d := by
+    intro x
+    by_cases hx : x = 0
+    · subst hx; simp [hLdef, zero_pow hd0.ne']
+    · rw [hLne x hx, map_pow, hkf x hx]
+  have hmul : ∀ x y : 𝓞 CF ⧸ q, L (x * y) = L x * L y := by
+    intro x y
+    by_cases hx : x = 0
+    · subst hx; simp [hLdef]
+    by_cases hy : y = 0
+    · subst hy; simp [hLdef]
+    have hxy : x * y ≠ 0 := mul_ne_zero hx hy
+    rw [hLne _ hxy, hLne x hx, hLne y hy, ← pow_add]
+    refine hinj _ _ ?_
+    rw [map_pow, map_pow, hkf _ hxy, pow_add, hkf x hx, hkf y hy, mul_pow]
+  have hone : L 1 = 1 := by
+    have h1 : (1 : 𝓞 CF ⧸ q) ≠ 0 := one_ne_zero
+    rw [hLne 1 h1]
+    have hz : ζ ^ kf 1 = ζ ^ 0 := by
+      refine hinj _ _ ?_
+      rw [map_pow, map_pow, hkf 1 h1, one_pow, pow_zero]
+    rw [hz, pow_zero]
+  refine ⟨{ toFun := L, map_one' := hone, map_mul' := hmul, map_nonunit' := ?_ }, ?_, ?_, ?_⟩
+  · intro a ha
+    have ha0 : a = 0 := by
+      by_contra h
+      exact ha (isUnit_iff_ne_zero.mpr h)
+    simp [hLdef, ha0]
+  · intro hone'
+    obtain ⟨g, hg⟩ := IsCyclic.exists_generator (α := (𝓞 CF ⧸ q)ˣ)
+    have hord : orderOf g = Fintype.card (𝓞 CF ⧸ q)ˣ := by
+      rw [orderOf_eq_card_of_forall_mem_zpowers hg, Nat.card_eq_fintype_card]
+    have hcu : Fintype.card (𝓞 CF ⧸ q)ˣ = Fintype.card (𝓞 CF ⧸ q) - 1 :=
+      Fintype.card_units (𝓞 CF ⧸ q)
+    have hgd : g ^ d ≠ 1 := by
+      intro h
+      have hdvd := orderOf_dvd_of_pow_eq_one h
+      rw [hord, hcu] at hdvd
+      exact absurd (Nat.le_of_dvd hd0 hdvd) (by omega)
+    have hval : ((g : 𝓞 CF ⧸ q)) ^ d ≠ 1 := by
+      intro h
+      apply hgd
+      ext
+      rw [Units.val_pow_eq_pow_val, h, Units.val_one]
+    apply hval
+    have hL1 : L (g : 𝓞 CF ⧸ q) = 1 := by
+      have hc := congrArg (fun (c : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) => c (g : 𝓞 CF ⧸ q)) hone'
+      simpa [MulChar.one_apply_coe] using hc
+    have hr := hLred (g : 𝓞 CF ⧸ q)
+    rw [hL1, map_one] at hr
+    exact hr.symm
+  · intro x hx
+    show L x ^ p = 1
+    rw [hLne x hx, ← pow_mul, mul_comm, pow_mul, hζp.pow_eq_one, one_pow]
+  · intro x
+    show Ideal.Quotient.mk q (L x) = _
+    rw [hLred x, hcard]
+
+/-- **Stickelberger's theorem for one prime, GIVEN the `p`-th power
+residue character** — THE SORRY LEAF of the Stickelberger cut as of
+2026-07-25 (Stickelberger 1890; Kummer 1847; Washington,
+*Introduction to Cyclotomic Fields*, Thm. 6.10, §6.1–§6.2): for a
+nonzero prime `q` of `𝓞 CF` with `p ∉ q` and a `p`-th power residue
+character `χ` at `q` — supplied by
+`exists_powerResidueChar_of_prime_notMem` — the ideal
+
+`q^{(t − σ_t)θ} = ∏_{a=1}^{p−1} σ_a⁻¹(q)^{⌊ta/p⌋}`
+
+is PRINCIPAL.
+
+**What this leaf carries, and what it no longer carries.** Items 1
+and 2 of the classical proof — the reduction of `μ_p` at `q` and the
+existence of the character `χ_q` with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)` —
+are now PROVEN above (`residueField_isPrimitiveRoot_of_notMem`,
+`prime_dvd_card_residueField_sub_one`,
+`exists_powerResidueChar_of_prime_notMem`), and `χ` reaches this leaf
+as a hypothesis rather than something to be built. What remains is the
+Gauss-sum core, items 3–6, in dependency order. Write `ℓ` for the
+rational prime under `q`, `F := 𝓞 CF ⧸ q`, `Q := #F = ℓ^f`.
+
+3. **The Gauss sum `g(χ) = −∑_{x ∈ F^×} χ(x)⁻¹ ψ(x)`** for a
+   nontrivial additive character `ψ : F → μ_ℓ`, as an element of the
+   ring of integers of the compositum `L := CF(ζ_ℓ)`. PARTLY PRESENT:
+   `gaussSum`, `gaussSum_mul_gaussSum_eq_card`, `gaussSum_frob` and
+   `Mathlib.NumberTheory.JacobiSum.Basic` are on this pin, and
+   `gaussSum` takes exactly a `MulChar F R'` and an `AddChar F R'`, so
+   `χ` above is already in the shape mathlib wants. MISSING: the
+   compositum `L` as a concrete cyclotomic extension, its ring of
+   integers, and its primes `𝒬` above `q`.
+4. **Stickelberger's congruence** (Washington Lemmas 6.11–6.12,
+   Prop. 6.13, Lemma 6.14): `v_𝒬(g(χ^{−h}))` is the `ℓ`-adic digit sum
+   of `h`, equivalently `v_𝒬(g(χ^{−h})) = (p−1) ∑_{i<f} {ℓ^i h/(Q−1)}`.
+   MISSING entirely, and it is the mathematical core: it is what
+   produces the fractional parts `{a/p}` that DEFINE `θ`.
+5. **The Jacobi descent.** `σ_t(g(χ)) = g(χ^t)`, because `σ_t` moves
+   `ζ_p` and fixes `ζ_ℓ`; and `g(χ)^t / g(χ^t)` is a product of Jacobi
+   sums `∏_{a<t} J(χ, χ^a)` (Washington Lemmas 6.2, 6.4), hence
+   already lies in `CF`. This is precisely WHY the annihilator is
+   `(t − σ_t)θ` and not `θ`, and — for THIS `ρ = t − σ_t`, unlike
+   Washington's general `ρ ∈ I'` — it makes the Kummer/unramifiedness
+   descent of Washington Lemma 6.15 UNNECESSARY: the generator is
+   manifestly in `CF` from the start.
+6. **Assembly.** Items 4 and 5 give `(g(χ)^{t−σ_t}) = q^{(t−σ_t)θ}` as
+   ideals of `𝓞 CF`, which is this leaf.
+
+Washington's §15.1 route replaces item 4 by a Chebotarev/Dirichlet
+input; this pin has no Chebotarev density theorem, so it is not
+cheaper here.
+
+Soundness of the exact form stated: for `t` prime to `p` the element
+`∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which lies in the Stickelberger
+ideal `I(ℚ(ζ_p)) = ℤ[G] ∩ θℤ[G]` by Washington Lemma 6.9, so Thm. 6.10
+applies verbatim. `hq0` is kept because `q = ⊥` has no residue field;
+`hpq` is what makes `q` unramified and gives `μ_p ⊆ F^×`. -/
+theorem stickelbergerProd_isPrincipal_of_powerResidueChar
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    (t : ℕ) (ht : ¬ (p ∣ t)) {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) :
+    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) :=
+  sorry
+
 /-- **Stickelberger's theorem for ONE prime ideal prime to `p`** — THE
 SORRY LEAF of the Stickelberger cut (re-cut 2026-07-25; it replaces
 the former all-ideals citation, which is now PROVEN from this;
@@ -17724,52 +16666,22 @@ over `p` is `(ζ − 1)`
 principal and its Stickelberger product is principal for free. Hence
 the hypothesis `p ∉ q` here.
 
-**What remains — the classical proof, in dependency order, with each
-piece missing from this mathlib pin named as a statement.** Write `ℓ`
-for the rational prime under `q`, `F := 𝓞 CF ⧸ q` for the residue
-field, and `Q := #F = ℓ^f`.
+**PROVEN 2026-07-25 over a finer cut; this is no longer a leaf.** The
+classical proof was listed here in six steps; steps 1 and 2 — the
+reduction of `μ_p` at an unramified prime and the `p`-th power residue
+character `χ_q` with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)`, both of which
+that list recorded as MISSING from this pin — are now theorems above:
 
-1. **`p ∣ Q − 1`, and `F` carries `μ_p`.** The reduction of `ζ` has
-   exact order `p` in `Fˣ`, because `Φ_p` stays separable mod `q` when
-   `ℓ ≠ p`. MISSING as a statement: the pin has `IsPrimitiveRoot`,
-   `Ideal.absNorm` and the finite-field API, but nothing packaging
-   "the reduction of a primitive `p`-th root of unity at a prime not
-   above `p` is a primitive `p`-th root of unity in the residue
-   field".
-2. **The `p`-th power residue character `χ_q : Fˣ → μ_p(𝓞 CF)`**, the
-   unique character with `χ_q(x) ≡ x^{(Q−1)/p} (mod q)`; this is the
-   Teichmüller character of the cut. MISSING: the pin has `MulChar`
-   and `MulChar.Duality` but no character attached to a prime ideal,
-   and `Mathlib.RingTheory.Teichmuller` is the Witt-vector
-   Teichmüller lift, unrelated.
-3. **The Gauss sum `g(χ_q) = −∑_{x ∈ Fˣ} χ_q(x)⁻¹ ψ(x)`** for a
-   nontrivial additive character `ψ : F → μ_ℓ`, as an element of the
-   ring of integers of the compositum `CF(ζ_ℓ)`. PARTLY PRESENT — this
-   is link (a): `gaussSum`, `gaussSum_mul_gaussSum_eq_card`,
-   `gaussSum_frob` and `Mathlib.NumberTheory.JacobiSum.Basic` are all
-   on the pin, so what is missing is only the compositum `CF(ζ_ℓ)` as
-   a concrete cyclotomic extension together with its ring of integers
-   and the primes of it above `q`.
-4. **Stickelberger's congruence** (Washington Prop. 6.13, from Lemmas
-   6.11 and 6.12; equivalently Lemma 6.14): the `𝒬`-adic valuation of
-   `g(χ_q^{−h})` at a prime `𝒬` of `CF(ζ_ℓ)` above `q` is the sum of
-   the `ℓ`-adic digits of `h`, i.e.
-   `v_𝒬(g(χ_q^{−h})) = (p−1) ∑_{i<f} {ℓ^i h/(Q−1)}`. MISSING
-   entirely, and this is the mathematical core of the leaf: it is what
-   produces the fractional parts `{a/p}` that DEFINE `θ`.
-5. **Galois descent of the Gauss sum.** `σ_t(g(χ)) = g(χ^t)`, because
-   `σ_t` moves `ζ_p` and fixes `ζ_ℓ`; and `g(χ)^t/g(χ^t)` is a product
-   of Jacobi sums, hence already lies in `CF` (Washington Lemmas 6.2
-   and 6.4). This is precisely WHY the annihilator is `(t − σ_t)θ` and
-   not `θ`: `g(χ)^{t−σ_t}` is the element of `CF` that generates
-   `q^{(t−σ_t)θ}`. The Jacobi-sum identities are on the pin; the
-   descent statement is not.
-6. **Assembly.** Steps 4 and 5 give
-   `(g(χ)^{t−σ_t}) = q^{(t−σ_t)θ}` as ideals of `𝓞 CF`, which is this
-   leaf. Washington's alternative §15.1 route replaces step 4 by a
-   Chebotarev/Dirichlet input — choose a degree-one prime `ℓ ≡ 1 mod
-   p` in the given class — plus the same Kummer descent; the pin has
-   no Chebotarev density theorem either, so it is not cheaper here.
+* `residueField_isPrimitiveRoot_of_notMem`,
+* `prime_dvd_card_residueField_sub_one`,
+* `exists_powerResidueChar_of_prime_notMem`.
+
+What is left, steps 3–6 (the Gauss sum `g(χ_q)` in the compositum
+`CF(ζ_ℓ)`, Stickelberger's congruence, the Jacobi descent, and the
+assembly), is the single leaf
+`stickelbergerProd_isPrincipal_of_powerResidueChar` above, which takes
+the character as a HYPOTHESIS. Its docstring itemises what remains;
+this theorem is now just the two of them composed.
 
 Soundness of the exact form stated: for `t` prime to `p` the element
 `∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which lies in the Stickelberger
@@ -17783,12 +16695,15 @@ theorem stickelberger_prod_map_prime_ideal_isPrincipal
     (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
     (t : ℕ) (ht : ¬ (p ∣ t)) {q : Ideal (𝓞 CF)} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
     (hpq : (p : 𝓞 CF) ∉ q) :
-    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) :=
-  sorry
+    Submodule.IsPrincipal (stickelbergerProd (p := p) CF t q) := by
+  obtain ⟨χ, hχ1, hχp, hχcong⟩ :=
+    exists_powerResidueChar_of_prime_notMem CF hq hq0 hpq
+      (prime_dvd_card_residueField_sub_one CF hq hq0 hpq)
+  exact stickelbergerProd_isPrincipal_of_powerResidueChar CF t ht hq hq0 hpq χ hχ1 hχp hχcong
 
 /-- **Stickelberger's theorem, reduced to primes** (PROVEN 2026-07-25
-over the single leaf
-`stickelberger_prod_map_prime_ideal_isPrincipal`): the Stickelberger
+over `stickelberger_prod_map_prime_ideal_isPrincipal`, itself proven
+over `stickelbergerProd_isPrincipal_of_powerResidueChar`): the Stickelberger
 operator sends EVERY ideal of `𝓞 CF` to a principal ideal. This is
 `twistedIdealProd_isPrincipal_of_forall_prime` fed with the two prime
 cases — `cyclotomic_isPrincipal_of_isPrime_of_natCast_mem` together
@@ -17845,11 +16760,13 @@ everywhere, hence trivial by Lemma 6.15. §15.1 gives a shorter route
 at the cost of a Chebotarev input. Neither is available on this pin:
 mathlib has Gauss sums and Jacobi sums
 (`Mathlib.NumberTheory.GaussSum`, `.JacobiSum` — link (a)) but no
-Teichmüller character attached to a prime, no valuation of Gauss sums,
-and no Stickelberger/Herbrand material at all (grepped 2026-07-24 and
-re-verified 2026-07-25). The itemised remainder now lives on the leaf
-`stickelberger_prod_map_prime_ideal_isPrincipal`, which is the honest
-citation boundary.
+valuation of Gauss sums and no Stickelberger/Herbrand material at all
+(grepped 2026-07-24, re-verified 2026-07-25). The Teichmüller
+character at a prime, which the pin also lacked, is now PROVEN here
+(`exists_powerResidueChar_of_prime_notMem`), and the itemised
+remainder lives on the leaf
+`stickelbergerProd_isPrincipal_of_powerResidueChar`, which is the
+honest citation boundary.
 
 Soundness of the exact form stated: for `t` prime to `p` the element
 `∑_a ⌊ta/p⌋ σ_a⁻¹` is `(t − σ_t)θ`, which is in the Stickelberger
@@ -20547,7 +19464,14 @@ theorem heckeOp_coe {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime)
 functional `qCoeffL`). -/
 theorem qCoeff_smul {N : ℕ} (c : ℂ) (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
     qCoeff N (c • f) m = c * qCoeff N f m := by
-  simpa using (qCoeffL N m).map_smul c f
+  -- NOT `simpa using …`: `map_smul` is itself a `simp` lemma, so simp normalises
+  -- the LHS of `(qCoeffL N m).map_smul c f` to its own RHS and collapses the whole
+  -- term to `True`, while the goal — phrased in `qCoeff` rather than `qCoeffL` —
+  -- is untouched, so nothing is left to close it with.  Rewrite with the
+  -- definitional bridge `qCoeffL_apply` explicitly instead.
+  have h := (qCoeffL N m).map_smul c f
+  simp only [qCoeffL_apply, RingHom.id_apply, smul_eq_mul] at h
+  exact h
 
 /-- **A normalized weight-2 eigenform is an eigenvector of the Hecke
 operator** (PROVEN — the eigenform carrier `IsWeightTwoEigenform`,
