@@ -91,7 +91,13 @@ sorried inputs:
 1. `exists_coarseModuliY0 N` — the `Γ₀(N)`-moduli problem over `ℚ` admits
    a coarse moduli space.  TRUE: this is the classical existence
    statement for `Y_0(N)` (Deligne–Rapoport, Katz–Mazur; or classically
-   via the `j`-line and the modular polynomial).
+   via the `j`-line and the modular polynomial).  It is now PROVEN from a
+   split of the level: `exists_coarseModuliY0_of_pos` (`N ≥ 1`) carries
+   the citation — Katz–Mazur Theorem 6.6.1 and (8.1.1), together with a
+   faithfulness audit of the one place where this module's level
+   structure is weaker than theirs — and `exists_coarseModuliY0_zero`
+   disposes of `N = 0`, which lies outside their theorem, from the
+   elementary leaf `isEmpty_of_gamma0Datum_zero`.
 
 2. The bridge from the Weierstrass phrasing to the moduli problem.  This
    was one node, `nonempty_gamma0Datum_of_stable`; it is now PROVEN
@@ -115,6 +121,24 @@ sorried inputs:
    163}` (Mazur 1978, Kenku 1979–1982), and none of `20, 24, 28, 30, 36,
    42, 45, 50, 54, 63, 75` — nor any product of two distinct primes
    outside `{6, 10, 14, 15, 21}` — lies in that list.
+
+*Amended 2026-07-26.*  Shape 3 no longer covers the semiprime family
+directly: `y0HasNoRationalPoint_prod_two_primes` is now PROVEN, and its
+content sits in the two nodes `y0HasNoRationalPoint_prime` (Mazur 1978,
+the only UNIFORM input in the module) and
+`y0HasNoRationalPoint_semiprime_of_mazurPrimes` (Kenku, `61` explicit
+levels).  Two further sorried shapes were introduced by that
+decomposition, both about the degeneracy map `Y_0(N) ⟶ Y_0(M)` for
+`M ∣ N`, and both TRUE:
+
+4. `CyclicSubgroupOfOrder.ofDvd` — the sub-level structure `C[M] ⊆ C`,
+   i.e. the kernel of `[N / M]` on `C`.
+
+5. `liesIn_ofDvd_iff` — that kernel commutes with base change.
+
+The lemma they support, `y0HasNoRationalPoint_of_dvd`, is checked
+against the ground truth by observing that the Mazur–Kenku list is
+DIVISOR-CLOSED; see its docstring.
 
 **Why the interface must pin `Y` down, and does.** A weaker interface —
 say, a smooth projective curve over `ℚ` with a bijection on `ℚ̄`-points
@@ -152,6 +176,10 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Fermat.FLT.EllipticCurve.Torsion
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Defs
+-- `emptyIsInitial`, `isInitialOfIsEmpty`: the empty scheme as the initial
+-- object, which is the coarse moduli space of the (empty) `Γ₀(0)`-problem
+-- in `exists_coarseModuliY0_zero`.
+public import Mathlib.AlgebraicGeometry.Limits
 
 @[expose] public section
 
@@ -354,21 +382,169 @@ def Y0HasNoRationalPoint (N : ℕ) : Prop :=
 
 /-! ### The existence of `Y_0(N)`, and the bridge from Weierstrass curves -/
 
-/-- **Existence of the coarse moduli space `Y_0(N)`** (sorry node).
+/-- **The `Γ₀(0)`-moduli problem is supported on the empty scheme** (sorry
+leaf).
 
-TRUE, and classical: the moduli problem `[Γ₀(N)]` over `ℚ` is a separated
-Deligne–Mumford stack of finite type, hence has a coarse moduli space
-(Deligne–Rapoport, *Les schémas de modules de courbes elliptiques*,
-Antwerp II, 1973; Katz–Mazur, *Arithmetic moduli of elliptic curves*,
-1985).  Classically one may instead construct it by hand as the
-normalisation of the plane curve cut out by the modular polynomial
-`Φ_N(X, Y)` inside `𝔸¹ × 𝔸¹`, with the classifying map
-`(E, C) ↦ (j(E), j(E/C))`.
+TRUE, and *elementary* — no modular-curve theory enters.  Suppose
+`d : Gamma0Datum 0 T` and `T` had a point `x`.  Embedding the residue field
+`κ(x)` into an algebraic closure `K` gives a geometric point
+`t : Spec K ⟶ T`, and `d.cyc.geom_cyclic K t` then supplies a relative point
+`y` with `addOrderOf y = 0` — that is, of *infinite* order — such that the
+points of `d.cyc.C` above `t` are exactly `AddSubgroup.zmultiples y`.  But
+`d.cyc.isFinite` makes `d.cyc.ι ≫ d.f` a finite morphism, so the fibre of
+`d.cyc.C` over `t` is `Spec` of a finite-dimensional `K`-algebra and has only
+finitely many `K`-points, whereas `AddSubgroup.zmultiples y ≃ ℤ` is infinite.
+Contradiction, so `T` has no point at all.
 
-IRREDUCIBLE at this mathlib pin: no modular curve, no modular polynomial,
-no moduli stack and no coarse-space existence theorem exists anywhere in
-`Mathlib` or in `~/cs/FLT` (surveyed 2026-07-26). -/
-theorem exists_coarseModuliY0 (N : ℕ) :
+WHY THIS IS A SEPARATE LEAF.  `[Γ₀(N)]` is a moduli problem only for
+`N ≥ 1`, so `N = 0` is *outside* the Katz–Mazur theorem cited at
+`exists_coarseModuliY0_of_pos` below.  Splitting it off is what makes that
+citation honest: the cited theorem really does prove the `N ≥ 1` half, and
+this degenerate half — the only part of `exists_coarseModuliY0` reachable at
+this pin — is separated out rather than silently folded into the citation.
+
+REACHABLE.  Formalising the argument needs exactly three things, all
+present: stability of `IsFinite` under base change
+(`AlgebraicGeometry.IsFinite` is an `IsStableUnderBaseChange` morphism
+property), affineness of a scheme finite over a field, and the finiteness of
+the set of `K`-algebra maps out of an Artinian `K`-algebra. -/
+theorem isEmpty_of_gamma0Datum_zero {T : Scheme.{0}} (d : Gamma0Datum 0 T) :
+    IsEmpty T :=
+  sorry
+
+/-- **Existence of the coarse moduli space, degenerate level `N = 0`**
+(PROVEN, from `isEmpty_of_gamma0Datum_zero`).
+
+VACUITY AUDIT — read this before consuming it.  By
+`isEmpty_of_gamma0Datum_zero` the `Γ₀(0)`-problem has no object over any
+nonempty base, so the empty scheme `∅ ⟶ Spec ℚ` is a coarse moduli space
+for it, for the cheapest possible reason: every base carrying a datum is
+*initial*, so all three clauses of `IsCoarseModuliY0` are equalities of
+morphisms out of an initial object.  This carries **no** arithmetic
+whatsoever, and in particular `Y0HasNoRationalPoint 0` is NOT thereby a
+statement about a modular curve.  It is recorded only so that
+`exists_coarseModuliY0` can be stated for every `N` while the citation
+below is restricted, correctly, to `N ≥ 1`. -/
+theorem exists_coarseModuliY0_zero :
+    ∃ (Y : Scheme.{0}) (str : Y ⟶ SpecQ), Nonempty (IsCoarseModuliY0 0 str) := by
+  classical
+  refine ⟨(∅ : Scheme.{0}), emptyIsInitial.to SpecQ, ⟨?_⟩⟩
+  -- Every base carrying a `Γ₀(0)`-datum is an initial scheme.
+  have hinit : ∀ {T : Scheme.{0}}, Gamma0Datum 0 T → Limits.IsInitial T := by
+    intro T d
+    have : IsEmpty T := isEmpty_of_gamma0Datum_zero d
+    exact isInitialOfIsEmpty
+  exact
+    { classify := fun {_T} _g d => ⟨(hinit d).to _, (hinit d).hom_ext _ _⟩
+      classify_natural := fun {_T' _T} _h {_g _g'} _hg {d'} {_d} _hbc =>
+        Subtype.ext ((hinit d').hom_ext _ _)
+      universal := fun {Y'} _str' _c _hc =>
+        ⟨emptyIsInitial.to Y',
+          ⟨emptyIsInitial.hom_ext _ _, fun {_T} _g d => (hinit d).hom_ext _ _⟩,
+          fun _u _hu => emptyIsInitial.hom_ext _ _⟩ }
+
+/-- **Existence of the coarse moduli space `Y_0(N)` for `N ≥ 1`** (sorry
+node — a CITATION, not a gap in the argument).
+
+## What is cited
+
+Katz–Mazur, *Arithmetic Moduli of Elliptic Curves*, Annals of Mathematics
+Studies 108, Princeton, 1985:
+
+* **Theorem 6.6.1** (p. 166): *the moduli problem `[Γ₀(N)]` is relatively
+  representable over `(Ell)`; it is finite and flat over `(Ell)` of degree
+  `(N²/φ(N))·∏_{p ∣ N}(1 − p⁻²)`, and is regular and two-dimensional.*
+* **(8.1.1)** (p. 224), the construction of the coarse moduli scheme:
+  *let `R` be a ring and `𝒫` a relatively representable moduli problem on
+  `(Ell/R)` which is affine over `(Ell/R)`.*  Locally on `R` pick `n ≥ 3`
+  invertible and a representable `𝒮` finite étale galois over `(Ell/R)`
+  with group `G` — e.g. `𝒮 = [Γ(n)]`, `G = GL₂(ℤ/nℤ)` — and set
+  `M(𝒫) = 𝔐(𝒫, 𝒮)/G`.  Katz–Mazur note that this "exists because
+  `𝔐(𝒫, 𝒮)` is itself affine", and is independent of the choice of `𝒮`,
+  so the local constructions patch.
+* **(8.1.3)** (pp. 224–225): the canonical `G`-equivariant *classifying map*
+  `S → M(𝒫)` attached to `E/S` with a level `𝒫`-structure, again
+  independent of the auxiliary `n`.  This is `classify`, and its
+  construction by descent along `S_n → S` is what makes it natural in `S`,
+  i.e. `classify_natural`.
+* **Lemma 8.1.3.1** (p. 225): for `k` algebraically closed, `M(𝒫)(k)` is
+  the set of `k`-isomorphism classes of elliptic curves with `𝒫`-structure.
+
+The **initiality** clause is not part of Katz–Mazur's *definition* — they
+define `M(𝒫)` by the quotient construction rather than by a universal
+property — but it follows from it: `𝔐(𝒫, [Γ(n)])` is affine, so the
+quotient of (8.1.1) is `Spec` of the ring of invariants, and that is a
+categorical quotient in the category of all schemes (Katz–Mazur Chapter 7,
+*Quotients by finite groups*, and its Appendix *Base change for rings of
+invariants*; Mumford, *Geometric Invariant Theory*, Ch. 0 §2).  Initiality
+of `(Y, classify)` in `IsCoarseModuliY0` is exactly that categorical-quotient
+property transported along (8.1.3).
+
+Deligne–Rapoport, *Les schémas de modules de courbes elliptiques*, in
+*Modular Functions of One Variable II*, Lecture Notes in Math. 349 (1973),
+143–316, is the companion reference and treats the same problem over
+`ℤ[1/N]` (no theorem number is quoted here because it was not checked
+against the text).
+
+## Why the hypotheses match
+
+* *Base ring.*  `R = ℚ`.  (8.1.1) needs some `n ≥ 3` invertible in `R` only
+  locally; over a field of characteristic `0` every `n` is invertible, so
+  the construction is global and no patching is needed.  `SpecQ` is
+  `Spec ℚ`, so `Y ⟶ SpecQ` is exactly an `R`-scheme.
+* *The moduli problem.*  `Gamma0Datum N T` is `[Γ₀(N)]` on `(Ell/ℚ)`:
+  `ab` together with `relativeDimensionOne` is an elliptic curve `E/T`, and
+  `cyc` is the cyclic subgroup of order `N`.  Theorem 6.6.1 supplies both
+  hypotheses (8.1.1) asks for — relative representability, and finiteness
+  over `(Ell)`, which gives affineness over `(Ell)`.
+* *`N ≥ 1`.*  `[Γ₀(N)]` is defined only for `N ≥ 1`; the level `N = 0` is
+  handled separately and degenerately by `exists_coarseModuliY0_zero`.
+
+## FAITHFULNESS AUDIT: one genuine mismatch, and why it is harmless
+
+Katz–Mazur **(6.7.1)** (p. 167) define a *cyclic group of order `N`* to be
+a "finite locally free commutative `S`-group-scheme, of rank `N`, and
+cyclic".  `CyclicSubgroupOfOrder` above asks instead for a closed subgroup
+scheme that is **finite** over the base with **geometric fibres** cyclic of
+order `N`; it does **not** ask for flatness.  Over a non-reduced base these
+differ, and the gap is real rather than notional:
+
+> Over `T = Spec ℚ[ε]` take `E = E₀ ×_ℚ ℚ[ε]` and a rational point `P` of
+> exact order `2` on `E₀`.  Then `C = Spec(ℚ[ε] × ℚ)` — the zero section
+> together with the *non-flat* thickening `ℚ[ε] ↠ ℚ` of the `P`-component
+> of `E[2]` — is closed in `E`, finite over `T`, contains the zero section,
+> and is closed under the group law (`P + P = 0`), and its unique geometric
+> fibre is `ℤ/2`.  So it is a `CyclicSubgroupOfOrder` of order `2` that is
+> not a Katz–Mazur `[Γ₀(2)]`-structure.
+
+So the moduli problem here is a priori *larger* than `[Γ₀(N)]`, and the
+cited theorem does not literally apply to it.  It does apply after one
+extra step, which a successor closing this node must supply: over a
+`ℚ`-scheme `E[N]` is finite étale, the support of such a `C` is open and
+closed in `E[N]` (its geometric fibres all have exactly `N` points), and
+the corresponding open-and-closed subgroup scheme is a canonical finite
+locally free "flatification" `C ⊆ C^♭ ⊆ E[N]` with the same geometric
+fibres, formed compatibly with base change.  Flatification is therefore a
+natural retraction of this moduli problem onto `[Γ₀(N)]`, and a natural
+transformation out of one is the same thing as a natural transformation out
+of the other — so the two problems have the same coarse space and the
+citation transfers.
+
+This mismatch is recorded rather than repaired because repairing it means
+adding a flat variant of `CyclicSubgroupOfOrder` to the interface, which is
+a change to the moduli problem itself and not to this node.
+
+## Why it is IRREDUCIBLE at this pin
+
+Surveyed 2026-07-26: `Mathlib` has no modular curve, no modular polynomial,
+no moduli stack, no coarse-space existence theorem, no geometric invariant
+theory and no quotient of a scheme by a finite group; `~/cs/FLT` takes the
+weaker Mazur torsion bound as a bare `axiom`.  Every route to this
+statement — Katz–Mazur (8.1.1) via `[Γ(n)]`-rigidification and quotients,
+Deligne–Rapoport via stacks, or the classical construction of `Y_0(N)` as
+the normalisation of `Φ_N(X, Y) = 0` in `𝔸¹ × 𝔸¹` with classifying map
+`(E, C) ↦ (j(E), j(E/C))` — needs a theory that does not exist here. -/
+theorem exists_coarseModuliY0_of_pos (N : ℕ) (hN : 0 < N) :
     ∃ (Y : Scheme.{0}) (str : Y ⟶ SpecQ), Nonempty (IsCoarseModuliY0 N str) :=
   sorry
 
@@ -507,6 +683,18 @@ theorem exists_cyclicSubgroupOfOrder_of_galoisStable {A : Scheme.{0}} {f : A ⟶
     Nonempty (CyclicSubgroupOfOrder ab N) :=
   sorry
 
+/-- **Existence of the coarse moduli space `Y_0(N)`** (PROVEN, as the split
+of the level into the cited case `N ≥ 1` and the degenerate case `N = 0`).
+
+See `exists_coarseModuliY0_of_pos` for the citation (Katz–Mazur Theorem
+6.6.1 and (8.1.1)) and for the faithfulness audit, and
+`exists_coarseModuliY0_zero` for the degenerate level. -/
+theorem exists_coarseModuliY0 (N : ℕ) :
+    ∃ (Y : Scheme.{0}) (str : Y ⟶ SpecQ), Nonempty (IsCoarseModuliY0 N str) := by
+  rcases Nat.eq_zero_or_pos N with hN | hN
+  · subst hN; exact exists_coarseModuliY0_zero
+  · exact exists_coarseModuliY0_of_pos N hN
+
 /-- **A Galois-stable cyclic subgroup of order `N` of `E(ℚ̄)` is a
 `Γ₀(N)`-structure over `Spec ℚ`** (PROVEN 2026-07-26 from the two leaves
 above; formerly itself a sorry node).
@@ -577,6 +765,234 @@ theorem false_of_stable_of_y0HasNoRationalPoint {N : ℕ}
   obtain ⟨d⟩ := nonempty_gamma0Datum_of_stable E g hg hstable
   exact (hY Y str M).elim (M.classify (𝟙 SpecQ) d)
 
+/-! ### Functoriality in the level, and the descent along divisors
+
+The twelve level nodes below are twelve *separate* determinations of the
+rational points of a curve of genus `≥ 1`, and nothing about that is
+uniform.  What IS uniform, and is built here, is the degeneracy map
+
+`Y_0(N) ⟶ Y_0(M)` for `M ∣ N`, `(E, C) ↦ (E, C[M])`,
+
+together with its consequence `y0HasNoRationalPoint_of_dvd`.  That single
+lemma is what turns the one *infinite* family among the twelve —
+`y0HasNoRationalPoint_prod_two_primes`, quantified over all pairs of
+distinct primes — into a finite list of levels, by letting Mazur's prime
+theorem be applied to a prime divisor of the level rather than to the
+level itself.  It is stated here, once, rather than reproved inside each
+level node.
+
+**Why it is stated over the coarse space and not over data.**  A rational
+point of `Y_0(N)` need not come from a `Γ₀(N)`-datum over `ℚ` — that is
+exactly what "coarse" costs — so the map on points cannot be defined
+pointwise.  It is obtained instead from the *universal property* of
+`Y_0(N)`: `d ↦ classify_M (d.ofDvd)` is a natural transformation from the
+`Γ₀(N)`-moduli problem to `Y_0(M)`, and initiality produces the morphism
+`u : Y_0(N) ⟶ Y_0(M)` over `ℚ` through which every rational point is
+pushed.  This is the only place in the module where `universal` is used,
+and it is why that field was stated. -/
+
+/-- **The sub-level structure `C[M] ⊆ C` of a cyclic subgroup scheme of
+order `N`, for `M ∣ N`** (sorry node).
+
+TRUE, and it is the kernel of multiplication by `N / M` on `C`: over a
+base where `C` is finite étale with geometric fibres cyclic of order `N`,
+the fibres of that kernel are the unique order-`M` subgroups, so the
+kernel is again finite, closed in `C` — hence closed in `E` — and cyclic
+of order exactly `M` on geometric fibres.
+
+IRREDUCIBLE at this mathlib pin for the same reason as
+`nonempty_gamma0Datum_of_stable`: it needs the kernel of an endomorphism
+of a finite flat group scheme as a *scheme*, i.e. a fibre product, and
+the composite of closed immersions — none of which is packaged for the
+functor-of-points presentation used here.
+
+`hN` excludes `N = 0`.  It is not cosmetic: `N = 0` asks the geometric
+fibres of a scheme FINITE over the base to be infinite cyclic, so
+`CyclicSubgroupOfOrder ab 0` is in fact vacuous — but vacuous for a
+reason (finiteness of `ι ≫ f`) that this development does not have the
+machinery to exploit, and without `hN` the statement would read as the
+false claim that an infinite cyclic group has a subgroup of order `M`. -/
+noncomputable def CyclicSubgroupOfOrder.ofDvd {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {M N : ℕ} (_hN : N ≠ 0) (_hMN : M ∣ N)
+    (_c : CyclicSubgroupOfOrder ab N) : CyclicSubgroupOfOrder ab M :=
+  sorry
+
+/-- **The degeneracy map on `Γ₀`-data, `(E, C) ↦ (E, C[M])` for `M ∣ N`.**
+
+The elliptic scheme is untouched — same total space, same structure
+morphism, same abelian-scheme structure, same relative dimension — and
+only the level structure is cut down by `CyclicSubgroupOfOrder.ofDvd`.
+Writing it this way is what makes `IsBaseChangeOf.ofDvd` below carry the
+*same* `map` and the *same* cartesian square, so that the only thing left
+to check there is the level-structure axiom. -/
+noncomputable def Gamma0Datum.ofDvd {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
+    {T : Scheme.{u}} (d : Gamma0Datum N T) : Gamma0Datum M T where
+  E := d.E
+  f := d.f
+  ab := d.ab
+  relativeDimensionOne := d.relativeDimensionOne
+  cyc := d.cyc.ofDvd hN hMN
+
+/-- **The degeneracy map is compatible with base change, on the level
+structure** (sorry node).
+
+TRUE: `C'[M]` is the kernel of `N / M` on `C'`, `C' = C ×_T T'` as a
+subgroup scheme of `E'` by `hb.liesIn_iff`, and forming the kernel of an
+endomorphism commutes with base change.  So a relative point of `E'` lies
+in `C'[M]` exactly when its image lies in `C[M]`.
+
+This is the *only* axiom of `IsBaseChangeOf` that the degeneracy map does
+not inherit verbatim from `hb`, because the other four mention only data
+that `Gamma0Datum.ofDvd` copies unchanged. -/
+theorem liesIn_ofDvd_iff {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
+    {T' T : Scheme.{u}} {h : T' ⟶ T} {d' : Gamma0Datum N T'}
+    {d : Gamma0Datum N T} (hb : IsBaseChangeOf h d' d)
+    {T'' : Scheme.{u}} {g : T'' ⟶ T'} (x : RelPoint d'.f g) :
+    RelPoint.LiesIn (d'.ofDvd hN hMN).cyc.ι x ↔
+      RelPoint.LiesIn (d.ofDvd hN hMN).cyc.ι
+        (RelPoint.along hb.map hb.isPullback.w x) :=
+  sorry
+
+/-- **A base change of `Γ₀(N)`-data induces a base change of the
+degenerated `Γ₀(M)`-data.**
+
+Four of the five axioms are `hb`'s own, because `Gamma0Datum.ofDvd`
+changes nothing they mention; the fifth is `liesIn_ofDvd_iff`. -/
+noncomputable def IsBaseChangeOf.ofDvd {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
+    {T' T : Scheme.{u}} {h : T' ⟶ T} {d' : Gamma0Datum N T'}
+    {d : Gamma0Datum N T} (hb : IsBaseChangeOf h d' d) :
+    IsBaseChangeOf h (d'.ofDvd hN hMN) (d.ofDvd hN hMN) where
+  map := hb.map
+  isPullback := hb.isPullback
+  map_zero := hb.map_zero
+  map_add := hb.map_add
+  liesIn_iff x := liesIn_ofDvd_iff hN hMN hb x
+
+/-- **Descent along divisors of the level: if `Y_0(M)(ℚ) = ∅` and
+`M ∣ N` then `Y_0(N)(ℚ) = ∅`** (PROVEN).
+
+This is the uniform half of every composite level statement.  The proof
+is the universal property and nothing else: `d ↦ classify_M (d.ofDvd)` is
+a natural transformation from the `Γ₀(N)`-moduli problem to a coarse
+space of the `Γ₀(M)`-problem, so initiality of `Y_0(N)` yields a
+`ℚ`-morphism `u : Y_0(N) ⟶ Y_0(M)`, and composing a rational point of
+`Y_0(N)` with `u` gives one of `Y_0(M)`.
+
+**Sanity check against the ground truth.**  The contrapositive says the
+set of levels with a rational point is closed under divisors, and the
+Mazur–Kenku list `{1, …, 19, 21, 25, 27, 37, 43, 67, 163}` is indeed
+divisor-closed: `27 ↦ 9, 3`; `25 ↦ 5`; `21 ↦ 3, 7`; `18 ↦ 9, 6, 3, 2`;
+`16 ↦ 8, 4, 2`; `12 ↦ 6, 4, 3, 2`, and every proper divisor of a level
+`≤ 19` is `≤ 19`.  The four large primes `37, 43, 67, 163` have no proper
+divisor but `1`.  So this lemma is consistent with the classification,
+which is the check that matters — a level statement that contradicted it
+would be false rather than open. -/
+theorem y0HasNoRationalPoint_of_dvd {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
+    (hM : Y0HasNoRationalPoint M) : Y0HasNoRationalPoint N := by
+  intro Y str hcoarse
+  obtain ⟨Y', str', ⟨cM⟩⟩ := exists_coarseModuliY0 M
+  obtain ⟨u, ⟨hu, -⟩, -⟩ :=
+    hcoarse.universal str' (fun g d => cM.classify g (d.ofDvd hN hMN))
+      (by intro _ _ h _ _ hg _ _ hb; exact cM.classify_natural h hg (hb.ofDvd hN hMN))
+  refine ⟨fun x => (hM Y' str' cM).elim ⟨x.1 ≫ u, ?_⟩⟩
+  rw [Category.assoc, hu, x.2]
+
+/-! ### The prime levels, and the finite residue of the semiprime family -/
+
+/-- **The twelve primes admitting a rational cyclic isogeny of that
+degree**, `{2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`.
+
+These are exactly the primes in the Mazur–Kenku list
+`{1, …, 19, 21, 25, 27, 37, 43, 67, 163}`.  The elliptic-curve-side
+statement carrying the same list is
+`WeierstrassCurve.prime_mem_cyclicIsogenyDegrees` in
+`FreyCurve/MazurTorsion.lean`, which is downstream of this module and so
+cannot be used here. -/
+def mazurIsogenyPrimes : Finset ℕ := {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}
+
+/-- **Mazur's rational isogenies of prime degree, on the modular curve**
+(sorry node): `Y_0(p)(ℚ) = ∅` for every prime `p` outside
+`mazurIsogenyPrimes`.
+
+TRUE — this is Mazur, *Rational isogenies of prime degree*, Invent. Math.
+44 (1978), Theorem 1, in its modular-curve form: `X_0(p)(ℚ)` consists of
+the two cusps for every prime `p ∉ {2, 3, 5, 7, 11, 13, 17, 19, 37, 43,
+67, 163}`.
+
+**This is the statement that makes the semiprime family finite**, via
+`y0HasNoRationalPoint_of_dvd` applied to `p ∣ p * q`; it is the only
+uniform input available, since every other tool here is a per-level
+computation.
+
+Relation to what is already in the tree.  The elliptic-curve phrasing,
+`WeierstrassCurve.prime_mem_cyclicIsogenyDegrees`, is PROVEN in
+`FreyCurve/MazurTorsion.lean` from the single leaf
+`WeierstrassCurve.not_isogenyCharacter_of_prime_ge_twentyThree`.  That
+module *imports* this one, so the implication cannot be used in this
+direction, and in any case the modular-curve statement is genuinely
+STRONGER: it rules out rational points of the coarse moduli space, which
+need not be represented by a pair `(E, C)` defined over `ℚ`.  The two
+should be reconciled once the layer below exists — the honest route is to
+prove this node and *derive* the elliptic-curve one from it through
+`false_of_stable_of_y0HasNoRationalPoint`, which is exactly the shape
+`MazurTorsion.lean` already uses for the twelve composite levels.
+
+IRREDUCIBLE at this pin: Mazur's argument is the Eisenstein ideal in the
+Hecke algebra acting on `J_0(p)`, none of which exists here.  See the
+module docstring for the three missing subtrees. -/
+theorem y0HasNoRationalPoint_prime {p : ℕ} (hp : p.Prime)
+    (hmem : p ∉ mazurIsogenyPrimes) : Y0HasNoRationalPoint p :=
+  sorry
+
+/-- **Kenku's semiprime determination, on the residual finite range**
+(sorry node): `Y_0(pq)(ℚ) = ∅` for distinct primes `p, q` BOTH in
+`mazurIsogenyPrimes` with `p * q ∉ {6, 10, 14, 15, 21}`.
+
+TRUE: the semiprimes in the Mazur–Kenku list are exactly `6, 10, 14, 15,
+21`, so every other product of two distinct primes is absent from it.
+
+**This node is finite, and that is the whole point of the decomposition
+above.**  `mazurIsogenyPrimes` has `12` elements, so there are `66`
+unordered pairs; five of them give the excluded products; `61` remain,
+the smallest being `2 · 11 = 22` and the largest `67 · 163 = 10921`.
+Sources: Kenku, Math. Proc. Cambridge Philos. Soc. **85** (1979) 21–23
+(`X_0(35)`, `X_0(39)`); ibid. **87** (1980) 15–20 (`X_0(65)`, `X_0(91)`);
+J. London Math. Soc. (2) **22** (1980) 249–256; ibid. **23** (1981)
+415–427; J. Number Theory **15** (1982) 199–202.
+
+**WHAT THIS NODE STILL NEEDS, and why it is a subtree rather than a
+leaf.**  Every one of the `61` pairs has `X_0(pq)` of genus `≥ 2` —
+already `X_0(22)` has genus `2`, and no semiprime level has genus `1`
+(the genus-`1` levels are `11, 14, 15, 17, 19, 20, 21, 24, 27, 32, 36,
+49`, of which only `14, 15, 21` are semiprimes and all three are
+excluded).  So none of them is an elliptic-curve rank computation, and
+each is settled by one of:
+
+* **rank `0` plus reduction** — `J_0(pq)(ℚ)` finite, Abel–Jacobi
+  `X_0(pq) ↪ J_0(pq)` at a rational cusp, injectivity of reduction at a
+  good prime `ℓ`, and then `#X_0(pq)(ℚ) ≤ #X_0(pq)(𝔽_ℓ) = #cusps`;
+* **Chabauty–Coleman** for the pairs where the rank is positive but
+  below the genus.
+
+Neither is stated as a leaf here, deliberately.  Both are statements
+about `X_0(pq)` — the SMOOTH COMPACTIFICATION, its cusps, its Jacobian,
+and an integral model to reduce along — and this module stops at the
+affine coarse space `Y_0(N)` precisely to keep that out of the critical
+path.  Writing either criterion against `Y_0(N)` alone would have to
+smuggle the point count into a hypothesis, since rank `0` by itself gives
+FINITENESS of `X_0(N)(ℚ)` and never emptiness of `Y_0(N)(ℚ)`; the step
+from finite to empty *is* the cusp count.  A criterion whose hypothesis
+is equivalent to its conclusion would be a false economy, so the honest
+next decomposition is the compactification interface first
+(`X_0(N) ⊇ Y_0(N)` proper smooth, with its rational cusps), then
+`J_0(N)` as an abelian scheme, and only then the two criteria. -/
+theorem y0HasNoRationalPoint_semiprime_of_mazurPrimes {p q : ℕ} (hp : p.Prime)
+    (hq : q.Prime) (hpq : p ≠ q) (hpm : p ∈ mazurIsogenyPrimes)
+    (hqm : q ∈ mazurIsogenyPrimes)
+    (hmem : p * q ∉ ({6, 10, 14, 15, 21} : Finset ℕ)) :
+    Y0HasNoRationalPoint (p * q) :=
+  sorry
+
 /-! ### The twelve levels of Kenku's non-prime-power determination
 
 Each statement below is the level `N` of the Mazur–Kenku classification,
@@ -606,12 +1022,34 @@ The statement is uniform but its content is finite: by Mazur's prime
 node both `p` and `q` lie in `{2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67,
 163}`, so `61` of the `66` unordered pairs need excluding — among them
 `X_0(35)` and `X_0(39)` (Kenku 1979), `X_0(65)` and `X_0(91)` (Kenku
-1980).  Already `X_0(22)` has genus `2`. -/
+1980).  Already `X_0(22)` has genus `2`.
+
+PROVEN 2026-07-26, as exactly that reduction from an infinite family to a
+finite one.  The case split is on whether the two prime divisors of the
+level lie in `mazurIsogenyPrimes`:
+
+* if `p` does not, then `Y_0(p)(ℚ) = ∅` by `y0HasNoRationalPoint_prime`,
+  and `p ∣ p * q` carries it up to the level by
+  `y0HasNoRationalPoint_of_dvd` — this is where the infinitude goes;
+* symmetrically for `q`;
+* if both do, the level is one of the `61` residual products and the
+  content is `y0HasNoRationalPoint_semiprime_of_mazurPrimes`.
+
+So the mathematics is relocated onto two nodes — Mazur's prime theorem
+and Kenku's finite check — and the quantifier over all pairs of distinct
+primes is discharged here by the degeneracy map `Y_0(pq) ⟶ Y_0(p)`. -/
 theorem y0HasNoRationalPoint_prod_two_primes {p q : ℕ} (hp : p.Prime)
     (hq : q.Prime) (hpq : p ≠ q)
     (hmem : p * q ∉ ({6, 10, 14, 15, 21} : Finset ℕ)) :
-    Y0HasNoRationalPoint (p * q) :=
-  sorry
+    Y0HasNoRationalPoint (p * q) := by
+  have hN : p * q ≠ 0 := Nat.mul_ne_zero hp.pos.ne' hq.pos.ne'
+  by_cases hpm : p ∈ mazurIsogenyPrimes
+  · by_cases hqm : q ∈ mazurIsogenyPrimes
+    · exact y0HasNoRationalPoint_semiprime_of_mazurPrimes hp hq hpq hpm hqm hmem
+    · exact y0HasNoRationalPoint_of_dvd hN (dvd_mul_left q p)
+        (y0HasNoRationalPoint_prime hq hqm)
+  · exact y0HasNoRationalPoint_of_dvd hN (dvd_mul_right p q)
+      (y0HasNoRationalPoint_prime hp hpm)
 
 /-! #### Reconnaissance for the eleven named levels (2026-07-26)
 

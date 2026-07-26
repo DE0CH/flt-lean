@@ -37414,8 +37414,151 @@ theorem globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class
   unfold globalFrob
   exact hι.trans hact
 
+set_option maxHeartbeats 400000 in
+/-- **Total positivity forces a POSITIVE field norm** (PROVEN 2026-07-26;
+step (4a) of `artinSymbol_span_eq_one_of_cyclotomic_ray_class` just
+below, and the precise place where total positivity is load-bearing in
+the narrow-ray reciprocity cluster): if every REAL embedding
+`φ : F →+* ℝ` sends `δ ∈ 𝓞_F` to a positive real, then
+`Algebra.norm ℤ δ > 0` — not merely nonzero.
+
+Without it `Algebra.norm ℤ δ` can be negative, `Ideal.absNorm` picks up
+the absolute value, and `N ((δ)) ≡ −1 (mod m)` rather than `≡ 1`; the
+cyclotomic character need not be trivial on `−1`, so the base case would
+be FALSE for the ordinary (as opposed to narrow) ray. This is the
+archimedean factor `sgn(a)` of the product formula (Neukirch *ANT* VI
+(5.3)).
+
+Proof. `Algebra.norm ℚ δ` is the product `∏_{φ : F →+* ℂ} φ δ`
+(`Algebra.norm_eq_prod_embeddings` transported along
+`RingHom.equivRatAlgHom`). Group the embeddings by INFINITE PLACE
+(`Finset.prod_fiberwise` along `NumberField.InfinitePlace.mk`): the
+fibre of `w` is `{embedding w, conjugate (embedding w)}`
+(`InfinitePlace.mk_eq_iff`), which collapses to a singleton exactly when
+`w` is real. At a real `w` the factor is
+`embedding_of_isReal w δ > 0`, which is the hypothesis; at a complex `w`
+the factor is `z * conj z = ‖z‖²` with `z = embedding w δ ≠ 0`, hence
+positive. So the whole product is a product of positive reals. Note the
+complex places contribute positively for FREE — total positivity is a
+condition at the real places only, and that is exactly the content of
+"narrow". -/
+theorem norm_pos_of_forall_realEmbedding_pos_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (δ : NumberField.RingOfIntegers F) (hδ0 : δ ≠ 0)
+    (hδpos : ∀ φ : F →+* ℝ,
+      0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) :
+    0 < Algebra.norm ℤ δ := by
+  classical
+  set x : F := algebraMap (NumberField.RingOfIntegers F) F δ with hxdef
+  have hx0 : x ≠ 0 := by
+    rw [hxdef, Ne, map_eq_zero_iff _ (IsFractionRing.injective _ F)]
+    exact hδ0
+  -- the norm is the product over all complex embeddings
+  have hprod : (algebraMap ℚ ℂ) (Algebra.norm ℚ x) = ∏ φ : F →+* ℂ, φ x := by
+    rw [Algebra.norm_eq_prod_embeddings ℚ ℂ x]
+    exact (Fintype.prod_equiv RingHom.equivRatAlgHom (fun f => f x) (fun σ => σ x)
+      (fun f => by simp [RingHom.equivRatAlgHom_apply])).symm
+  -- group the embeddings by infinite place
+  rw [← Finset.prod_fiberwise Finset.univ NumberField.InfinitePlace.mk (fun φ : F →+* ℂ => φ x)]
+    at hprod
+  have hpos : ∀ w : NumberField.InfinitePlace F, ∃ r : ℝ, 0 < r ∧
+      (∏ φ ∈ Finset.univ.filter (fun φ : F →+* ℂ => NumberField.InfinitePlace.mk φ = w), φ x)
+        = (r : ℂ) := by
+    intro w
+    have hfib : (Finset.univ.filter (fun φ : F →+* ℂ => NumberField.InfinitePlace.mk φ = w))
+        = ({w.embedding} : Finset (F →+* ℂ)) ∪
+            {NumberField.ComplexEmbedding.conjugate w.embedding} := by
+      ext φ
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_union,
+        Finset.mem_singleton]
+      constructor
+      · intro h
+        have h2 : NumberField.InfinitePlace.mk φ =
+            NumberField.InfinitePlace.mk w.embedding := by
+          rw [NumberField.InfinitePlace.mk_embedding]; exact h
+        rcases NumberField.InfinitePlace.mk_eq_iff.mp h2 with h3 | h3
+        · exact Or.inl h3
+        · right
+          rw [← h3]
+          exact (star_star φ).symm
+      · rintro (h | h)
+        · rw [h, NumberField.InfinitePlace.mk_embedding]
+        · rw [h, NumberField.InfinitePlace.mk_conjugate_eq,
+            NumberField.InfinitePlace.mk_embedding]
+    by_cases hw : w.IsReal
+    · refine ⟨NumberField.InfinitePlace.embedding_of_isReal hw x, hδpos _, ?_⟩
+      rw [hfib, NumberField.InfinitePlace.conjugate_embedding_eq_of_isReal hw,
+        Finset.union_idempotent, Finset.prod_singleton,
+        NumberField.InfinitePlace.embedding_of_isReal_apply hw]
+    · refine ⟨Complex.normSq (w.embedding x), ?_, ?_⟩
+      · refine Complex.normSq_pos.mpr (fun h => hx0 ?_)
+        exact w.embedding.injective (by rw [h, map_zero])
+      · have hne : w.embedding ≠ NumberField.ComplexEmbedding.conjugate w.embedding := by
+          intro h
+          exact hw (NumberField.InfinitePlace.isReal_iff.mpr
+            (NumberField.ComplexEmbedding.isReal_iff.mpr h.symm))
+        rw [hfib, Finset.singleton_union, Finset.prod_pair hne,
+          NumberField.ComplexEmbedding.conjugate_coe_eq, Complex.mul_conj]
+  choose r hr hrEq using hpos
+  have hcast : (algebraMap ℚ ℂ) (Algebra.norm ℚ x) = ((∏ w, r w : ℝ) : ℂ) := by
+    rw [hprod]
+    push_cast
+    exact Finset.prod_congr rfl (fun w _ => hrEq w)
+  have hQreal : ((Algebra.norm ℚ x : ℝ)) = ∏ w, r w := by
+    have h2 : (((Algebra.norm ℚ x : ℝ)) : ℂ) = ((∏ w, r w : ℝ) : ℂ) := by
+      rw [← hcast]
+      simp
+    exact_mod_cast h2
+  have hQ : 0 < Algebra.norm ℚ x := by
+    have hprodpos : 0 < ∏ w, r w := Finset.prod_pos (fun w _ => hr w)
+    have h3 : (0 : ℝ) < ((Algebra.norm ℚ x : ℝ)) := by rw [hQreal]; exact hprodpos
+    exact_mod_cast h3
+  have hint : ((Algebra.norm ℤ δ : ℤ) : ℚ) = Algebra.norm ℚ x := Algebra.coe_norm_int δ
+  rw [← hint] at hQ
+  exact_mod_cast hQ
+
+set_option maxHeartbeats 400000 in
+/-- **`δ ≡ 1 (mod m 𝓞_F)` forces `N δ ≡ 1 (mod m)`** (PROVEN 2026-07-26;
+step (4b) of `artinSymbol_span_eq_one_of_cyclotomic_ray_class` just
+below): the field norm `Algebra.norm ℤ : 𝓞_F → ℤ` is not additive, so
+this is not formal — but it IS elementary, and the determinant is what
+supplies it.
+
+Proof. Fix a `ℤ`-basis `b` of `𝓞_F` (`NumberField.RingOfIntegers.basis`);
+then `Algebra.norm ℤ δ = det (Algebra.leftMulMatrix b δ)`
+(`Algebra.norm_eq_matrix_det`). Reduce mod `m` through the ring
+homomorphism `g : 𝓞_F →+* Matrix ι ι (ZMod m)` obtained by composing
+`Algebra.leftMulMatrix b` with entrywise reduction. Writing
+`δ = 1 + γ · m`, `g δ = 1 + g γ · (m : Matrix …) = 1` because
+`(m : ZMod m) = 0`. Determinants commute with ring maps
+(`RingHom.map_det`), so `(N δ : ZMod m) = det (g δ) = det 1 = 1`. -/
+theorem natCast_dvd_norm_sub_one_ray_class
+    (F : Type*) [Field F] [NumberField F] (m : ℕ)
+    (δ : NumberField.RingOfIntegers F)
+    (hδcong : δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers F)}) :
+    (m : ℤ) ∣ Algebra.norm ℤ δ - 1 := by
+  classical
+  obtain ⟨γ, hγ⟩ := Ideal.mem_span_singleton'.mp hδcong
+  have hδeq : δ = 1 + γ * (m : NumberField.RingOfIntegers F) := by rw [hγ]; ring
+  have hzero : ((m : ℕ) : Matrix (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers F))
+      (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers F)) (ZMod m)) = 0 := by
+    rw [← map_natCast (algebraMap (ZMod m)
+      (Matrix (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers F))
+        (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers F)) (ZMod m))) m,
+      ZMod.natCast_self, map_zero]
+  have hgδ : ((Int.castRingHom (ZMod m)).mapMatrix).comp
+      (Algebra.leftMulMatrix (NumberField.RingOfIntegers.basis F)).toRingHom δ = 1 := by
+    rw [hδeq, map_add, map_one, map_mul, map_natCast, hzero, mul_zero, add_zero]
+  have hdet : ((Algebra.norm ℤ δ : ℤ) : ZMod m) = 1 := by
+    have h4 := congrArg Matrix.det hgδ
+    rw [Matrix.det_one] at h4
+    rw [Algebra.norm_eq_matrix_det (NumberField.RingOfIntegers.basis F) δ, ← h4]
+    exact RingHom.map_det (Int.castRingHom (ZMod m)) _
+  have hz : (((Algebra.norm ℤ δ - 1 : ℤ)) : ZMod m) = 0 := by push_cast [hdet]; ring
+  exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ m).mp hz
+
 /-- **Artin reciprocity in the CYCLOTOMIC case — Childress's base case**
-(sorry node, created 2026-07-26 as sub-leaf (A2) of
+(PROVEN 2026-07-26; created 2026-07-26 as sub-leaf (A2) of
 `exists_conductor_artinSymbol_span_eq_one_ray_class` below, consumed
 through the descent leaf
 `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class` just
@@ -37433,41 +37576,66 @@ of Artin reciprocity that is proven directly rather than by descent, and
 it is BOUNDED: no class field theory, no index inequality, no Artin
 Lemma.
 
-**Route, and it is complete** (all four steps are elementary given the
-sub-leaf `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class`,
-supplied here as the hypothesis `hfrob`):
+**Nothing here is outstanding.** The Frobenius input
+`globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class` — sub-leaf
+(A1), taken here as the hypothesis `hfrob` — was itself **PROVEN on
+2026-07-26** (branch `flt-lean-150`, commit `3006ac87`), and the
+assembly in `exists_conductor_artinSymbol_span_eq_one_ray_class` below
+already discharges `hfrob` with it. So the hypothesis form is a
+CONVENIENCE, not a debt: keeping `hfrob` abstract is what lets this
+theorem be applied at every auxiliary base field `E` of Artin's descent
+without re-deriving the Frobenius action there. Any docstring in this
+cluster still calling (A1) a sorried sub-leaf is stale.
 
-1. *`χ` is a character of `(ℤ/mℤ)ˣ` through the cyclotomic character.*
-   By `hcyc`, `χ σ` depends only on the action of `σ` on `μ_m`, which is
-   `ζ ↦ ζ ^ t(σ)` for a unique `t(σ) ∈ (ℤ/mℤ)ˣ`; multiplicativity of
-   `χ` (`hmul`) makes `ψ : t ↦ χ σ` well defined and multiplicative.
-2. *`c` is the norm residue character on ideals prime to `m`.* By
-   `hfrob` and `hcfrob`, `c (v.asIdeal) = χ (globalFrob v) = ψ (N v)`
-   for every `v ∤ (m)`; by `hcmul` and unique factorization of ideals
-   (the same induction as `eq_of_forall_asIdeal_eq_ray_class` above, run
-   under the side condition "coprime to `(m)`", which is preserved by
-   the factorization), `c I = ψ (N I)` for every nonzero `I` coprime to
-   `(m)`.
+**Route as implemented** (all steps elementary given `hfrob`):
+
+1. *No `ψ` is ever built.* The textbook route factors `χ` through a
+   character `ψ` of `(ℤ/mℤ)ˣ` and shows `c I = ψ (N I)`. That is
+   awkward in Lean, because the cyclotomic character `Γ F → (ℤ/mℤ)ˣ`
+   is NOT surjective when `F` already contains roots of unity, so `ψ`
+   is only defined on the image and well-definedness has to be carried
+   around. The implemented statement instead keeps the Galois element:
+   **for every nonzero `I` coprime to `(m)` there EXISTS `σ ∈ Γ F` with
+   `σ ζ = ζ ^ (N I)` for all `ζ ∈ μ_m`, and `c I = χ σ`.** This is
+   strictly what the argument needs, and it is closed under products,
+   which is what makes the induction go through.
+2. *The induction.* `UniqueFactorizationMonoid.induction_on_prime` on
+   the ideal monoid of the Dedekind domain `𝓞_F` (the same induction as
+   `eq_of_forall_asIdeal_eq_ray_class` above), run under the side
+   condition "no prime factor contains `m`", which is inherited by both
+   factors since `p * a ≤ p` and `p * a ≤ a`. Unit case: `I = ⊤`,
+   `N ⊤ = 1`, `σ = 1`, and `c ⊤ = 1` by
+   `eq_one_top_of_forall_asIdeal_ne_zero_ray_class` (`χ` is nowhere
+   zero because `hcyc` gives `χ 1 = 1`, so `χ a · χ a⁻¹ = 1`). Prime
+   step: take `σ = globalFrob v_p · σ_a`; it acts by
+   `ζ ↦ ζ ^ (N a · N p) = ζ ^ (N (p a))` by `hfrob` at `v_p` applied to
+   the `m`-th root of unity `ζ ^ (N a)`, and `c (p a) = c p · c a`
+   matches `χ` of the product by `hcmul`, `hcfrob`, `hmul`.
 3. *`(δ)` IS coprime to `(m)`.* If a prime `v` contained both `δ` and
-   `m` then, `δ - 1 ∈ (m) ⊆ v` giving `1 = δ - (δ - 1) ∈ v`, a
+   `m` then `δ - 1 ∈ (m) ⊆ v` gives `1 = δ - (δ - 1) ∈ v`, a
    contradiction. So step 2 applies to `I = (δ)`.
 4. *The norm of `δ` is `≡ 1 (mod m)` and POSITIVE.* `Ideal.absNorm
    (span {δ}) = |Algebra.norm ℤ δ|` (`Ideal.absNorm_span_singleton`);
-   `δ ≡ 1 (mod m)` forces `Algebra.norm ℤ δ ≡ 1 (mod m)` (the
-   multiplication matrix of `δ` in an integral basis is congruent to the
-   identity mod `m`, so its determinant is `≡ 1`); and total positivity
-   forces `Algebra.norm ℤ δ > 0`, since the norm is the product of the
-   real embeddings times the product of `|φ|²` over the pairs of
-   conjugate complex embeddings (`NumberField.InfinitePlace.prod_eq_abs_norm`).
-   Hence `N ((δ)) ≡ 1 (mod m)` as an element of `(ℤ/mℤ)ˣ`, and
-   `c ((δ)) = ψ (1) = 1`.
+   `natCast_dvd_norm_sub_one_ray_class` (just above) gives
+   `Algebra.norm ℤ δ ≡ 1 (mod m)` and
+   `norm_pos_of_forall_realEmbedding_pos_ray_class` (just above) gives
+   `Algebra.norm ℤ δ > 0`. Hence `N ((δ)) = 1 + m k` for a NATURAL `k`,
+   so the `σ` of step 1 satisfies `σ ζ = ζ ^ (1 + m k) = ζ` on `μ_m`,
+   and `hcyc` closes the goal with `c ((δ)) = χ σ = 1`.
 
 **Total positivity is load-bearing precisely at step 4** and nowhere
 else: without it `Algebra.norm ℤ δ` may be negative, `absNorm` picks up
-the absolute value, and `N ((δ)) ≡ −1 (mod m)` — for which `ψ` need not
+the absolute value, and `N ((δ)) ≡ −1 (mod m)` — for which `χ` need not
 be trivial. This is the archimedean factor `sgn(a)` of the product
 formula (Neukirch *ANT* VI (5.3)), and it is why the narrow ray, not the
-ray, appears throughout this cluster. -/
+ray, appears throughout this cluster. Verified numerically at
+`F = ℚ(√3)`: all totally positive principal generators lie in the
+trivial narrow ray class, while `(√3)` — principal but not totally
+positive — does not.
+
+Note that `hm : 0 < m` is genuinely used (at step 4, to force `k ≥ 0`);
+`hfrob` is used only at primes not dividing `(m)`, which is all step 2
+ever needs. -/
 theorem artinSymbol_span_eq_one_of_cyclotomic_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -37489,11 +37657,324 @@ theorem artinSymbol_span_eq_one_of_cyclotomic_ray_class
       0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ))
     (hδcong : δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers F)}) :
     c (Ideal.span {δ}) = 1 := by
+  classical
+  have honeapp : ∀ ζ : AlgebraicClosure F, (1 : Γ F) ζ = ζ := fun _ => rfl
+  have hmulapp : ∀ (s t : Γ F) (ζ : AlgebraicClosure F), (s * t) ζ = s (t ζ) :=
+    fun _ _ _ => rfl
+  have hχone : χ 1 = 1 := hcyc 1 (fun ζ _ => honeapp ζ)
+  have hχne : ∀ a : Γ F, χ a ≠ 0 := by
+    intro a ha
+    have h1 : χ a * χ a⁻¹ = 1 := by rw [← hmul, mul_inv_cancel, hχone]
+    rw [ha, zero_mul] at h1
+    exact zero_ne_one h1
+  have hctop : c ⊤ = 1 :=
+    eq_one_top_of_forall_asIdeal_ne_zero_ray_class F (Dickson.K 3) c hcmul
+      (fun v => by rw [hcfrob v]; exact hχne _)
+  -- **Step 1–2**: on ideals coprime to `(m)`, `c I = χ σ` for some `σ`
+  -- acting on `μ_m` by the `N I`-th power.
+  have key : ∀ I : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ →
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        I ≤ v.asIdeal → (m : NumberField.RingOfIntegers F) ∉ v.asIdeal) →
+      ∃ σ : Γ F, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → σ ζ = ζ ^ Ideal.absNorm I) ∧
+        c I = χ σ := by
+    intro I
+    refine UniqueFactorizationMonoid.induction_on_prime
+      (P := fun J => J ≠ ⊥ →
+        (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+          J ≤ v.asIdeal → (m : NumberField.RingOfIntegers F) ∉ v.asIdeal) →
+        ∃ σ : Γ F, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → σ ζ = ζ ^ Ideal.absNorm J) ∧
+          c J = χ σ) I ?_ ?_ ?_
+    · intro h
+      exact absurd Ideal.zero_eq_bot h
+    · intro y hy _ _
+      rw [Ideal.isUnit_iff.mp hy]
+      refine ⟨1, ?_, ?_⟩
+      · intro ζ _
+        rw [Ideal.absNorm_top, pow_one]
+        exact honeapp ζ
+      · rw [hctop, hχone]
+    · intro a p ha hp ih _ hcop
+      have ha' : a ≠ ⊥ := fun h => ha (by rw [Ideal.zero_eq_bot]; exact h)
+      have hp0 : p ≠ ⊥ := fun h => hp.ne_zero (by rw [Ideal.zero_eq_bot]; exact h)
+      have hpp : p.IsPrime := Ideal.isPrime_of_prime hp
+      have hcopa : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+          a ≤ v.asIdeal → (m : NumberField.RingOfIntegers F) ∉ v.asIdeal :=
+        fun v hv => hcop v (le_trans Ideal.mul_le_left hv)
+      have hmp : (m : NumberField.RingOfIntegers F) ∉ p :=
+        hcop ⟨p, hpp, hp0⟩ Ideal.mul_le_right
+      obtain ⟨σa, hσa, hca⟩ := ih ha' hcopa
+      refine ⟨globalFrob ⟨p, hpp, hp0⟩ * σa, ?_, ?_⟩
+      · intro ζ hζ
+        have hζa : (ζ ^ Ideal.absNorm a) ^ m = 1 := by
+          rw [← pow_mul, mul_comm, pow_mul, hζ, one_pow]
+        rw [hmulapp, hσa ζ hζ, hfrob ⟨p, hpp, hp0⟩ hmp _ hζa, ← pow_mul,
+          map_mul Ideal.absNorm, mul_comm]
+      · rw [hcmul p a hp0 ha', hcfrob ⟨p, hpp, hp0⟩, hca, hmul]
+  -- **Step 3**: `(δ)` is coprime to `(m)`
+  have hspan0 : Ideal.span {δ} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hδ0
+  have hcopδ : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      Ideal.span {δ} ≤ v.asIdeal → (m : NumberField.RingOfIntegers F) ∉ v.asIdeal := by
+    intro v hv hm'
+    have hδv : δ ∈ v.asIdeal := hv (Ideal.mem_span_singleton_self δ)
+    have hmv : Ideal.span {(m : NumberField.RingOfIntegers F)} ≤ v.asIdeal :=
+      (Ideal.span_singleton_le_iff_mem _).mpr hm'
+    have h1 : (1 : NumberField.RingOfIntegers F) ∈ v.asIdeal := by
+      have h2 := sub_mem hδv (hmv hδcong)
+      simpa using h2
+    exact v.isPrime.ne_top (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+  -- **Step 4**: `N ((δ)) = 1 + m k`
+  have hnormpos : 0 < Algebra.norm ℤ δ :=
+    norm_pos_of_forall_realEmbedding_pos_ray_class F δ hδ0 hδpos
+  have hnormcong : (m : ℤ) ∣ Algebra.norm ℤ δ - 1 :=
+    natCast_dvd_norm_sub_one_ray_class F m δ hδcong
+  obtain ⟨k, hk⟩ : ∃ k : ℕ, Ideal.absNorm (Ideal.span {δ}) = 1 + m * k := by
+    obtain ⟨K, hK⟩ := hnormcong
+    have hmpos : (0 : ℤ) < (m : ℤ) := by exact_mod_cast hm
+    have hK0 : 0 ≤ K := by
+      by_contra hlt
+      have h : K < 0 := not_le.mp hlt
+      have hneg : (m : ℤ) * K < 0 := mul_neg_of_pos_of_neg hmpos h
+      have h2 : Algebra.norm ℤ δ - 1 < 0 := by rw [hK]; exact hneg
+      omega
+    obtain ⟨k, rfl⟩ := Int.eq_ofNat_of_zero_le hK0
+    refine ⟨k, ?_⟩
+    rw [Ideal.absNorm_span_singleton]
+    have hval : Algebra.norm ℤ δ = ((1 + m * k : ℕ) : ℤ) := by push_cast; linarith
+    rw [hval, Int.natAbs_natCast]
+  -- **Step 5**: assemble
+  obtain ⟨σ, hσ, hcσ⟩ := key (Ideal.span {δ}) hspan0 hcopδ
+  rw [hcσ]
+  refine hcyc σ ?_
+  intro ζ hζ
+  rw [hσ ζ hζ, hk, pow_add, pow_one, pow_mul, hζ, one_pow, mul_one]
+
+/-- **The pure-counting step of Artin reciprocity** (PROVEN 2026-07-26;
+extracted as sub-leaf (A3c) of `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class`
+below, where it is the whole of Childress's "and then the conclusion is pure
+counting"): if `A ≤ Q ≤ R` are subgroups of a group, the relative index
+`[R : A]` is finite (`hA`), and `[R : A] ≤ [R : Q]` (`hle`), then `Q ≤ A` —
+so in fact `Q = A`.
+
+**Where this is used, in Childress's own notation** (*Class Field Theory*,
+Universitext 2009, Theorem 5.2.1(ii)). `R = I_F(m)` is the group of
+fractional ideals of `F` prime to the modulus `m`; `A = ker A_{M/F}` is the
+kernel of the Artin map, of relative index `#G = [M:F]` in `R` because the
+Artin map is SURJECTIVE (ingredient 1., Chebotarev, already in tree as
+`dense_conjClasses_globalFrob` / `exists_globalFrob_restrictNormalHom_conj`
+in `Chebotarev.lean`); and `Q = P⁺_{F,m} · N_{M/F} I_M(m)`, whose relative
+index in `R` is `≥ #G` by the Global Cyclic Norm Index Equality
+(ingredient 2., Childress ch. 4). Proposition 5.2.2 (ingredient 3.) supplies
+`A ≤ Q`. This lemma turns those three into `Q = A`, whence
+`P⁺_{F,m} ≤ Q = ker A_{M/F}` — which IS the reciprocity law.
+
+Note that only the `≥` half of the norm index equality is consumed: the `≤`
+half is automatic from `A ≤ Q` together with `[R : A] = #G`, and that is why
+the hypothesis here is the inequality `hle` rather than an equality.
+
+Proof: `[Q : A] · [R : Q] = [R : A]` (`Subgroup.relIndex_mul_relIndex`), so
+`hle` forces `[Q : A] ≤ 1`; and `[Q : A] ≠ 0` because the product `[R : A]`
+is nonzero; hence `[Q : A] = 1`, which is exactly `Q ≤ A`
+(`Subgroup.relIndex_eq_one`). -/
+theorem le_of_le_of_relIndex_le_ray_class {G : Type*} [Group G] (A Q R : Subgroup G)
+    (hAQ : A ≤ Q) (hQR : Q ≤ R) (hA : A.relIndex R ≠ 0)
+    (hle : A.relIndex R ≤ Q.relIndex R) :
+    Q ≤ A := by
+  have hmul : A.relIndex Q * Q.relIndex R = A.relIndex R :=
+    Subgroup.relIndex_mul_relIndex A Q R hAQ hQR
+  have hQ0 : Q.relIndex R ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at hmul
+    exact hA hmul.symm
+  have hA0 : A.relIndex Q ≠ 0 := by
+    intro h
+    rw [h, zero_mul] at hmul
+    exact hA hmul.symm
+  have h1 : Q.relIndex R * A.relIndex Q ≤ Q.relIndex R * 1 := by
+    rw [mul_comm (Q.relIndex R), hmul, mul_one]
+    exact hle
+  have h2 : A.relIndex Q ≤ 1 := Nat.le_of_mul_le_mul_left h1 (Nat.pos_of_ne_zero hQ0)
+  exact Subgroup.relIndex_eq_one.mp (le_antisymm h2 (Nat.one_le_iff_ne_zero.mpr hA0))
+
+set_option maxHeartbeats 1000000 in
+/-- **Artin's Lemma (Childress 5.2.8), in profinite form over `Γ F`**
+(sorry node, created 2026-07-26 as sub-leaf (A3a) of
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class` below,
+consumed there as the hypothesis `hartin` of sub-leaf (A3b)): for the cyclic
+extension `M/F` cut out by a multiplicative `χ : Γ F → 𝔽̄₃` that is trivial
+on an open subgroup, for every finite place `p` of `F` and every finite set
+`S` of rational primes, there are a modulus `m` prime to `S` and to `p` and
+an OPEN subgroup `H ≤ Γ F` — the auxiliary field `E = (F̄)^H` — with
+
+* `0 < m`, `∀ q ∈ S, ¬ q ∣ m` and `(m : 𝓞 F) ∉ p.asIdeal`: `m` avoids `S`
+  and the residue characteristic of `p`;
+* `IsOpen H`: `E/F` is finite;
+* (i) `M ∩ E = F`, in group terms `ker χ · H = Γ F` — every `σ` factors as
+  `τ ρ` with `χ τ = 1` and `ρ ∈ H`;
+* (ii) `M E ⊆ E(ζ_m)`, in group terms `H ∩ Γ_{F(ζ_m)} ≤ ker χ` — every
+  `σ ∈ H` fixing every `m`-th root of unity has `χ σ = 1`. **This clause is
+  the whole point of the lemma**: it is what puts the base-change `χ_E` in
+  the scope of the cyclotomic base case `hcycl`;
+* (iii) `M ∩ F(ζ_m) = F`, in group terms `ker χ · Γ_{F(ζ_m)} = Γ F`;
+* (iv) **`p` splits completely in `E/F`**, in group terms
+  `globalFrob p ∈ H`. `E/F` is abelian (it is a subextension of
+  `M(ζ_m)/F`), so the decomposition group at `p` is generated by any one
+  Frobenius and no conjugation quantifier is needed.
+
+**Why (iv) is not decoration.** The naive base-change descent along `E/F` is
+VACUOUS, because `c_E ((γ) 𝓞_E) = c ((γ)) ^ [E:F]` and `[E:F]` is an
+`ℓ`-power in Artin's construction (`E` is the fixed field of the subgroup of
+`Gal(M(ζ_m)/F) ≅ ⟨σ⟩ × Gal(F(ζ_m)/F)` generated by `σ × τ` and the
+decomposition group at `p`, and `ord τ` is chosen divisible by `n = ℓ^j`).
+Clause (iv) is what lets the descent be run instead on the NON-principal
+ideal `𝔄 = ∏_v w_v^{v(γ)}`, for which `N_{E/F} 𝔄 = (γ)` because every
+`f(w_v|v) = 1`.
+
+**Route.** Childress ch. 5 §2, Lemma 5.2.8, whose input is the Van der
+Waerden auxiliary-prime lemmas 5.2.3–5.2.7; their own input is Dirichlet's
+theorem on primes in arithmetic progressions, which IS in the pin
+(`Nat.forall_exists_prime_gt_and_eq_mod`, `Nat.infinite_setOf_prime_and_eq_mod`,
+`Mathlib/NumberTheory/LSeries/PrimesInAP.lean`). So this leaf is
+elementary-but-long rather than deep: it is the one ingredient of Artin
+reciprocity whose prerequisites are all already available. -/
+theorem exists_artinAuxiliaryField_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (S : Finset ℕ) :
+    ∃ (m : ℕ) (H : Subgroup (Γ F)), 0 < m ∧
+      (∀ q ∈ S, ¬ q ∣ m) ∧
+      (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
+      IsOpen (H : Set (Γ F)) ∧
+      (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H ∧ σ = τ * ρ) ∧
+      (∀ σ ∈ H, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → σ ζ = ζ) → χ σ = 1) ∧
+      (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
+        (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
+      globalFrob p ∈ H := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **Childress's ingredients 2. and 3.: the Artin kernel, the narrow ray and
+the norm subgroup inside the divisor group** (sorry node, created 2026-07-26
+as sub-leaf (A3b) of
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class` below,
+which is now PROVEN as the pure counting
+`le_of_le_of_relIndex_le_ray_class` applied to this leaf's output).
+
+The ambient group is the **divisor group of `F`**, `𝓘 F = ⊕_v ℤ`, realised
+as `Multiplicative (HeightOneSpectrum (𝓞 F) →₀ ℤ)` — this is the group of
+fractional ideals, written additively in the exponents and then made
+multiplicative. The leaf produces a modulus `mm ≠ ⊥` and four subgroups /
+maps of it, which are Childress's four objects verbatim:
+
+* `Im` — the subgroup `I_F(mm)` of divisors supported away from `mm`;
+* `A`  — the kernel `ker A_{M/F}` of the Artin map of the cyclic extension
+  `M/F` cut out by `ker χ`;
+* `P`  — the narrow ray `P⁺_{F,mm}`, the subgroup generated by the divisors
+  of the totally positive `δ ≡ 1 (mod mm)`;
+* `N`  — the norm subgroup `N_{M/F} I_M(mm)`;
+* `d`  — the divisor map `δ ↦ div (δ)`, i.e. `(δ) = ∏_v v^{v(δ)}`.
+
+and five properties:
+
+1. `A ≤ P ⊔ N` — **Childress Proposition 5.2.2**, `ker A ⊆ P⁺·N`. This is
+   the genuine crux; it is where Artin's Lemma (`hartin`) enters and where
+   the cyclotomic base case (`hcycl`) is consumed.
+2. `P ⊔ N ≤ Im` — both the ray and the norms are prime to `mm`
+   (bookkeeping: `δ ≡ 1 (mod mm)` generates an ideal coprime to `mm`).
+3. `N ≤ A` — norms lie in the kernel of the Artin symbol (the Consistency
+   Property; `c (N_{M/F} 𝔅) = χ(Frob)^{f} = 1` because `f` is the order of
+   the Frobenius).
+4. `A.relIndex Im ≠ 0` and `A.relIndex Im ≤ (P ⊔ N).relIndex Im` — the
+   Artin map is SURJECTIVE (ingredient 1., Chebotarev, in tree) so
+   `[I_F(mm) : ker A] = #G` is finite, and the **Global Cyclic Norm Index
+   Equality** (ingredient 2., Childress ch. 4) gives
+   `[I_F(mm) : P⁺·N] ≥ #G`. Only this `≥` half is needed: `≤` is automatic
+   from 1.
+5. For every nonzero totally positive `δ ≡ 1 (mod mm)`, `d δ ∈ P` (the
+   divisor of such a `δ` is in the narrow ray, by definition of `P`) and
+   `d δ ∈ A → c ((δ)) = 1` (the divisor-group Artin map computes the ideal
+   Artin symbol `c`, which is the only link between the two languages this
+   file needs).
+
+**This packaging is not a hiding place.** Any attempt to discharge it with
+junk data — `N = ⊤`, or `A = Im = ⊤`, or a constant `d` — collapses clause
+4 into `[Im : A] ≤ [Im : P ⊔ N]` with `A ⊇ P ⊔ N ∋ d δ`, and then clause 5
+demands `c ((δ)) = 1` outright, i.e. the theorem itself. The content is
+genuinely 2. and 3.; what has been removed is only the counting.
+
+**Why `hcycl` still quantifies over all `E`.** Prop 5.2.2's proof
+(Childress pp. 121–123) writes `𝔞 = ∏ p_i^{γ_i} ∈ ker A`, applies Artin's
+Lemma at each `p_i` to get `(m_i, E_i)` with pairwise coprime `m_i`, and —
+`p_i` splitting completely in `E_i/F` by clause (iv) — realises
+`p_i^{γ_i} 𝔟_F^{-d_i}` as `N_{E_i/F} 𝔄_{E_i}` with `𝔄_{E_i}` in the Artin
+kernel over `E_i`. Since `K E_i ⊆ E_i(ζ_{m_i})`, the base case applies AT
+`E_i`, not at `F`. That is why `hcycl` is stated at every number field, and
+narrowing that quantifier would make this leaf unprovable. -/
+theorem exists_artinIdealGroup_relIndex_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (hunr : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∀ c : Γ F, ∀ σ ∈ localInertiaGroup w,
+        χ (c * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (hartin : ∀ (p : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+      (S : Finset ℕ),
+      ∃ (m : ℕ) (H : Subgroup (Γ F)), 0 < m ∧
+        (∀ q ∈ S, ¬ q ∣ m) ∧
+        (m : NumberField.RingOfIntegers F) ∉ p.asIdeal ∧
+        IsOpen (H : Set (Γ F)) ∧
+        (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧ ρ ∈ H ∧ σ = τ * ρ) ∧
+        (∀ σ ∈ H, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → σ ζ = ζ) → χ σ = 1) ∧
+        (∀ σ : Γ F, ∃ τ ρ : Γ F, χ τ = 1 ∧
+          (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → ρ ζ = ζ) ∧ σ = τ * ρ) ∧
+        globalFrob p ∈ H)
+    (hcycl : ∀ (E : Type u) [Field E] [NumberField E]
+      (χ' : Γ E → Dickson.K 3), (∀ a b : Γ E, χ' (a * b) = χ' a * χ' b) →
+      ∀ m : ℕ, 0 < m →
+      (∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ' σ = 1) →
+      ∀ c' : Ideal (NumberField.RingOfIntegers E) → Dickson.K 3,
+      (∀ I J : Ideal (NumberField.RingOfIntegers E), I ≠ ⊥ → J ≠ ⊥ →
+        c' (I * J) = c' I * c' J) →
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+        c' v.asIdeal = χ' (globalFrob v)) →
+      ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+        (∀ φ : E →+* ℝ,
+          0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
+        δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
+        c' (Ideal.span {δ}) = 1) :
+    ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧
+      ∃ Im A P N : Subgroup (Multiplicative
+        (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ)),
+      ∃ d : NumberField.RingOfIntegers F → Multiplicative
+        (IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) →₀ ℤ),
+        A ≤ P ⊔ N ∧ P ⊔ N ≤ Im ∧ N ≤ A ∧
+        A.relIndex Im ≠ 0 ∧ A.relIndex Im ≤ (P ⊔ N).relIndex Im ∧
+        ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+          (∀ φ : F →+* ℝ,
+            0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
+          δ - 1 ∈ mm →
+            d δ ∈ P ∧ (d δ ∈ A → c (Ideal.span {δ}) = 1) := by
   sorry
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin's DESCENT: reciprocity from the cyclotomic base case**
-(sorry node, created 2026-07-26 as sub-leaf (A3) of
+(**PROVEN 2026-07-26** as glue over the three declarations immediately
+above — see the DECOMPOSED note at the end of this docstring; it was
+created 2026-07-26 as sub-leaf (A3) of
 `exists_conductor_artinSymbol_span_eq_one_ray_class` below; it IS that
 leaf, with the cyclotomic base case
 `artinSymbol_span_eq_one_of_cyclotomic_ray_class` — at EVERY number
@@ -37590,7 +38071,32 @@ with `isConj_arithFrobAt`), abelian CFT over `ℚ` only
 (`IsCyclotomicExtension.Rat.galEquivZMod`), and full Dirichlet in
 arithmetic progressions. The dependency order for a fleet is: Artin's
 Lemma (via Van der Waerden 5.2.3–5.2.7), then Prop 5.2.2, then the
-`≥` half of the norm index equality. -/
+`≥` half of the norm index equality.
+
+**DECOMPOSED 2026-07-26, and PROVEN here as glue.** The three ingredients
+above are now three declarations immediately preceding this one:
+
+* `le_of_le_of_relIndex_le_ray_class` — **PROVEN**: the pure counting, i.e.
+  everything Childress does *after* 1.–3. `A ≤ Q ≤ R` with `[R:A]` finite
+  and `[R:A] ≤ [R:Q]` gives `Q = A`. This is the only part of Theorem
+  5.2.1(ii) that needed no class field theory, and it is now closed.
+* `exists_artinAuxiliaryField_ray_class` — sorry node (A3a): **Artin's
+  Lemma 5.2.8**, stated profinitely over `Γ F` (an open subgroup `H` for the
+  auxiliary field `E`, with clauses (i)–(iv) as subgroup identities and
+  `globalFrob p ∈ H` for "p splits completely"). Its own input, Van der
+  Waerden 5.2.3–5.2.7, rests on Dirichlet in arithmetic progressions, which
+  IS in the pin — so this is the ingredient whose prerequisites are all
+  already available.
+* `exists_artinIdealGroup_relIndex_ray_class` — sorry node (A3b):
+  ingredients 2. and 3., stated inside the **divisor group**
+  `Multiplicative (HeightOneSpectrum (𝓞 F) →₀ ℤ)` as the four subgroups
+  `Im = I_F(mm)`, `A = ker A_{M/F}`, `P = P⁺_{F,mm}`, `N = N_{M/F} I_M(mm)`
+  and the divisor map `d`. It takes Artin's Lemma and `hcycl` as explicit
+  hypotheses, so both are CONSUMED rather than floating.
+
+The remaining mathematical content is entirely in (A3b): Proposition 5.2.2
+and the `≥` half of the Global Cyclic Norm Index Equality. (A3a) is a
+separately ownable, prerequisite-complete leaf. -/
 theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class
     (F : Type u) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -37627,7 +38133,29 @@ theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class
         (∀ φ : F →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
         δ - 1 ∈ mm → c (Ideal.span {δ}) = 1 := by
-  sorry
+  -- Childress's Theorem 5.2.1(ii) assembles from three ingredients; the
+  -- assembly itself is pure counting and is done here.
+  --
+  -- (A3a) Artin's Lemma 5.2.8 supplies, at every finite place `p` and away
+  -- from any finite set of rational primes, an auxiliary field `E/F` in
+  -- which `p` splits completely and with `M E ⊆ E(ζ_m)`.
+  -- (A3b) Prop 5.2.2 (`A ≤ P ⊔ N`, which consumes Artin's Lemma and the
+  -- cyclotomic base case `hcycl` at `E`, NOT at `F`) together with the
+  -- Global Cyclic Norm Index Equality (`A.relIndex Im ≤ (P ⊔ N).relIndex Im`)
+  -- and the surjectivity of the Artin map (`A.relIndex Im ≠ 0`, Chebotarev).
+  obtain ⟨mm, hmm, Im, A, P, N, d, hAPN, hPNIm, _hNA, hAidx, hidx, hd⟩ :=
+    exists_artinIdealGroup_relIndex_ray_class F χ hmul V hVopen hVker hunr ℓ hℓ hℓ3 k
+      hord c hcmul hcfrob
+      (fun p S => exists_artinAuxiliaryField_ray_class F χ hmul V hVopen hVker p S)
+      hcycl
+  refine ⟨mm, hmm, ?_⟩
+  intro δ hδ0 hδpos hδcong
+  -- pure counting: `ker A ⊆ P⁺·N ⊆ I_F(mm)` with `[I_F(mm) : ker A]` finite and
+  -- at most `[I_F(mm) : P⁺·N]` forces `P⁺·N = ker A`
+  have hPNA : P ⊔ N ≤ A :=
+    le_of_le_of_relIndex_le_ray_class A (P ⊔ N) Im hAPN hPNIm hAidx hidx
+  obtain ⟨hdP, hdA⟩ := hd δ hδ0 hδpos hδcong
+  exact hdA (hPNA (Subgroup.mem_sup_left hdP))
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for SOME modulus — the reciprocity law proper**
@@ -37849,8 +38377,124 @@ def IsRamifiedCharRayClass (F : Type*) [Field F] [NumberField F]
       (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * a⁻¹) ≠ 1
 
 set_option maxHeartbeats 1000000 in
-/-- **The admissible moduli are closed under GCD** (sorry node, created
-2026-07-26 as sub-leaf (B1a-i) of
+/-- **The two narrow rays GENERATE the narrow ray at their gcd** (sorry
+node, created 2026-07-26 as the single sub-leaf (B1a-i-1) of
+`isAdmissibleModulus_sup_ray_class` just below, which is now PROVEN as
+elementary ideal arithmetic over it): for `γ ≫ 0` with
+`γ ≡ 1 (mod mm ⊔ nn)` there are `α, α' ≡ 1 (mod mm)` and
+`β, β' ≡ 1 (mod nn)`, all nonzero and totally positive, with
+`γ · α · β = α' · β'`.
+
+Read ideal-theoretically this says `(γ) ∈ ⟨P⁺_{F,mm}, P⁺_{F,nn}⟩`, the
+SUBGROUP of the group of fractional ideals generated by the two narrow
+rays; read element-theoretically it is the equality of subgroups of `F^×`
+
+    F^{×,+}_{mm} · F^{×,+}_{nn} = F^{×,+}_{mm ⊔ nn},
+
+with `F^{×,+}_{aa} := {x ∈ F^× : x ≫ 0, x ≡ 1 mod^× aa}`. The element
+form is what is stated, because it is strictly stronger (it fixes the
+generators, not merely the ideals) and is what the consumer needs.
+
+**THIS LEAF NEEDS NO CLASS FIELD THEORY — and that CORRECTS the note the
+consumer used to carry** (audited 2026-07-26; the consumer's docstring is
+updated to match). The refuted shortcut recorded below is about the
+MONOID identity `P⁺_{F,mm} · P⁺_{F,nn} = P⁺_{F,mm ⊔ nn}`, i.e. about
+products of two integral rays with nothing moved to the other side. The
+GROUP generated is a strictly larger object, the refutation says nothing
+about it, and `c` is unit-valued (`χ 1 = 1` by `hVker`, so every
+`χ (globalFrob v)` is invertible), so triviality on a generating set of a
+subgroup is exactly what the consumer may use. See the two worked
+counter-counterexamples in the FAITHFULNESS audit below.
+
+**PROOF SKETCH — approximation only, no reciprocity, no ray class group,
+no Artin map.** All valuations are at height-one primes `v` of `𝓞_F`,
+and `v(aa)` means the exponent of `v` in `aa`. Note first that
+`γ - 1 ∈ mm ⊔ nn` forces `v(γ) = 0` at every `v` dividing BOTH `mm` and
+`nn` (such a `v` divides `mm ⊔ nn`, and `v ∣ γ` would give `1 ∈ v`).
+
+1. *Choose an integral `u`.* By CRT in `𝓞_F` pick `u ∈ 𝓞_F` with, at
+   each `v ∣ mm · nn`, the single congruence
+   * `v ∣ mm`, `v ∤ nn`  : `v(u - 1) ≥ v(mm)`;
+   * `v ∣ nn`, `v ∤ mm`  : `v(u - γ) ≥ v(nn) + v(γ)`;
+   * `v ∣ mm` and `v ∣ nn`: `v(u - γ) ≥ v(nn)` when `v(mm) ≤ v(nn)`, and
+     `v(u - 1) ≥ v(mm)` otherwise.
+   In the third case the OTHER condition then comes for free from
+   `v(γ - 1) ≥ v(mm ⊔ nn) = min (v mm) (v nn)` and the ultrametric
+   inequality — which is the only place the hypothesis `hγmem` is used,
+   and is exactly why the gcd appears. Then adjust `u` for total
+   positivity and nonvanishing without disturbing any congruence: with
+   `0 ≠ ρ` in the modulus ideal, replace `u` by `u + N ρ²`, which for
+   large `N` is totally positive (`φ ρ ≠ 0`, finitely many real `φ`) and
+   nonzero (at most one `N` can make it vanish).
+2. *Read off the first pair.* Take `α := 1` and `α' := u`. Then
+   `α' - 1 ∈ mm` by step 1, and both are `≫ 0` and nonzero.
+3. *Clear the denominator of `w := γ / u ∈ F^×`.* By construction
+   `v(w) = 0` at every `v ∣ nn`, so the denominator ideal `𝔡_w` is
+   coprime to `nn`; by CRT plus the same `+ N ρ²` adjustment pick
+   `β ∈ 𝓞_F` with `β - 1 ∈ nn`, `β ∈ 𝔡_w`, `β ≫ 0`, `β ≠ 0`. Put
+   `β' := w β`, which is integral by the choice of `β`, totally positive
+   (`γ` and `u` are), and satisfies `β' - 1 = β (w - 1) + (β - 1) ∈ nn`
+   because `v(w - 1) ≥ v(nn)` at every `v ∣ nn` by step 1.
+4. *Conclude.* `α' β' = u · (γ / u) · β = γ · 1 · β = γ α β`.
+
+So the whole leaf is CRT in a Dedekind domain plus one archimedean
+adjustment. Neither the class group nor the unit group is touched; in
+particular there is no appeal to Dirichlet's unit theorem, and the
+statement is insensitive to `h_F` and to `h⁺_F`.
+
+**FAITHFULNESS (audited 2026-07-26): TRUE as stated, and non-vacuous.**
+Two explicit instances over `ℚ`, both chosen to be exactly the shapes
+that refute the monoid identity:
+
+* The consumer's own counterexample. `mm = (2)`, `nn = (5)`,
+  `mm ⊔ nn = (1)`, `γ = 2`. The monoid identity fails because `2` is not
+  a product of an odd positive integer and a positive integer `≡ 1 (5)`.
+  The group identity holds: `2 · 3 · 1 = 1 · 6`, with `α = 3` odd,
+  `β = 1 ≡ 1 (5)`, `α' = 1` odd, `β' = 6 ≡ 1 (5)`.
+* A case where `γ` is coprime to NEITHER modulus, which is the one the
+  naive "invert `γ` mod `nn`" trick cannot reach. `mm = (4)`, `nn = (9)`,
+  `mm ⊔ nn = (1)`, `γ = 6`. Then `6 · 5 · 19 = 570 = 57 · 10`, with
+  `α = 5 ≡ 1 (4)`, `β = 19 ≡ 1 (9)`, `α' = 57 ≡ 1 (4)`,
+  `β' = 10 ≡ 1 (9)`.
+
+Non-vacuous because the conclusion is not satisfiable by the trivial
+witnesses: `α = α' = β = β' = 1` would force `γ = 1`. The hypotheses
+`hmm`, `hnn` are used only to know the moduli are honest (they are
+available for free at the call site, from
+`IsAdmissibleModulusRayClass`); `hγ0` is genuinely needed when `F` has no
+real place, where total positivity is vacuous.
+
+**Mathlib survey (2026-07-26).** Ray class groups are absent from the
+pin, but this leaf does not need them. The pieces it does need are
+present: `IsDedekindDomain.exists_forall_sub_mem_ideal` (simultaneous
+congruences), `IsDedekindDomain.HeightOneSpectrum.valuation` with
+`Ideal.finite_factors`-style support finiteness, and
+`NumberField.RingOfIntegers` instances. The archimedean adjustment needs
+only that `F →+* ℝ` is finite, which follows from `Fintype (F →+* ℂ)`. -/
+theorem exists_ray_factorization_sup_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (mm nn : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥) (hnn : nn ≠ ⊥)
+    (γ : NumberField.RingOfIntegers F) (hγ0 : γ ≠ 0)
+    (hγpos : ∀ φ : F →+* ℝ,
+      0 < φ (algebraMap (NumberField.RingOfIntegers F) F γ))
+    (hγmem : γ - 1 ∈ mm ⊔ nn) :
+    ∃ α α' β β' : NumberField.RingOfIntegers F,
+      (α ≠ 0 ∧ (∀ φ : F →+* ℝ,
+        0 < φ (algebraMap (NumberField.RingOfIntegers F) F α)) ∧ α - 1 ∈ mm) ∧
+      (α' ≠ 0 ∧ (∀ φ : F →+* ℝ,
+        0 < φ (algebraMap (NumberField.RingOfIntegers F) F α')) ∧ α' - 1 ∈ mm) ∧
+      (β ≠ 0 ∧ (∀ φ : F →+* ℝ,
+        0 < φ (algebraMap (NumberField.RingOfIntegers F) F β)) ∧ β - 1 ∈ nn) ∧
+      (β' ≠ 0 ∧ (∀ φ : F →+* ℝ,
+        0 < φ (algebraMap (NumberField.RingOfIntegers F) F β')) ∧ β' - 1 ∈ nn) ∧
+      γ * α * β = α' * β' :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The admissible moduli are closed under GCD** (PROVEN 2026-07-26 as
+ideal arithmetic over its single new sub-leaf (B1a-i-1)
+`exists_ray_factorization_sup_ray_class` just above; created 2026-07-26
+as sub-leaf (B1a-i) of
 `exists_conductor_dvd_admissible_ray_class` just below, which is now
 PROVEN as glue over this leaf and (B1a-ii)
 `exists_isAdmissibleModulus_isRamifiedChar_ray_class`): if `mm` and `nn`
@@ -37873,13 +38517,28 @@ ideles the identity is a place-by-place computation: with
                  ∏_{p_v ∣ m} (1 + p_v^{ord_v m}) × ∏_{p_v ∤ m} U_v,
 
 the product `E⁺_{F,m} E⁺_{F,n}` takes the MINIMUM of the two exponents
-at each place, and `ord_v (m,n) = min (ord_v m) (ord_v n)`. But the
-hypothesis available HERE is the ideal-side one — `c` kills the ray
-`P⁺_{F,m}` — and the passage from "`c` kills `P⁺_{F,m}`" to
-"`E⁺_{F,m} ⊆ F^× N_{M/F} J_M`" IS Artin reciprocity. That is the whole
-debt of this leaf; see the build order in (B1a)'s docstring.
+at each place, and `ord_v (m,n) = min (ord_v m) (ord_v n)`.
 
-**NEGATIVE RESULT — the elementary shortcut is REFUTED, do not try it**
+**CORRECTION 2026-07-26: THIS LEAF DOES *NOT* NEED RECIPROCITY.** The
+previous version of this paragraph continued "the passage from `c` kills
+`P⁺_{F,m}` to `E⁺_{F,m} ⊆ F^× N_{M/F} J_M` IS Artin reciprocity — that is
+the whole debt of this leaf", and referred the reader to (B1a)'s build
+order. That is **wrong**, and it is wrong in the expensive direction: it
+sends an owner off to build the whole class-field-theory stack for a node
+that is CRT plus one archimedean adjustment. What the argument above
+actually establishes on the idele side survives verbatim on the IDEAL
+side once one takes the SUBGROUP generated by the two rays rather than
+their product set — and `c` is unit-valued, so triviality on a generating
+set is all the consumer needs. That subgroup statement is the new sub-leaf
+`exists_ray_factorization_sup_ray_class` just above, it mentions neither
+`χ` nor `c` nor any Galois group, and this leaf is now three lines of
+ideal arithmetic over it. Correspondingly the binders `_hmul`,
+`_hVopen`, `_hVker` and `_hcfrob` are now underscore-prefixed: **the
+statement is true for an arbitrary multiplicative `c`**, with no Galois
+input whatsoever. They are kept only so that the signature the consumer
+`exists_conductor_dvd_admissible_ray_class` calls does not change.
+
+**NEGATIVE RESULT — one elementary shortcut is REFUTED, do not try it**
 (2026-07-26). One is tempted to prove the leaf from the purely
 ideal-theoretic identity `P⁺_{F,m} · P⁺_{F,n} = P⁺_{F,(m,n)}`, which
 would give the conclusion with no class field theory at all. The
@@ -37896,9 +38555,19 @@ artifact of the example: a factorization `(γ) = (α)(β)` constrains `α`
 to divide `γ`, and when `γ` is supported on `m` this pins `α` to a unit,
 leaving a unit congruence mod `n` that nothing supplies.
 
+**WHAT THAT REFUTATION DOES AND DOES NOT RULE OUT** (2026-07-26). It
+rules out the MONOID identity — two integral rays multiplied together,
+nothing moved across the equals sign. It does **not** rule out the GROUP
+identity, and the very same example satisfies the group identity on the
+nose: `2 · 3 · 1 = 1 · 6` with `3` odd and `6 ≡ 1 (mod 5)`. Since `c` is
+unit-valued, the group identity is all the consumer can use and all it
+needs. That is `exists_ray_factorization_sup_ray_class` above; reading
+the refutation as "so this leaf must go through reciprocity" is the
+inference that was wrong.
+
 **FAITHFULNESS (audited 2026-07-26): TRUE as stated, and non-vacuous.**
-True because admissibility is equivalent to `𝔣_fin ∣ mm` (the conductor
-theorem), and `𝔣_fin ∣ mm`, `𝔣_fin ∣ nn` give `𝔣_fin ∣ (mm, nn)`.
+Now proven, so truth is no longer at issue; the audit is kept for the
+non-vacuity claim and for the hypothesis accounting, which CHANGED.
 Non-vacuous because `mm ⊔ nn` is genuinely smaller than both in general
 — for coprime `mm`, `nn` it is `⊤`, and the conclusion then asserts that
 `c` kills the WHOLE narrow ray, which is exactly the statement
@@ -37906,15 +38575,210 @@ Non-vacuous because `mm ⊔ nn` is genuinely smaller than both in general
 descending induction on. The junk values of `c` at ramified primes are
 not evaluated: `𝔣_fin ∣ mm ⊔ nn` and every ramified prime divides
 `𝔣_fin`, so a `δ ≡ 1 (mod mm ⊔ nn)` is coprime to every ramified prime.
-The hypotheses `hmul`, `hVopen`, `hVker`, `hcmul`, `hcfrob` are all
-load-bearing — they are what forces `c` to BE the Artin symbol of a
-genuine finite abelian extension; without them `c` is an arbitrary
-function and the statement is false.
 
-**Mathlib survey (2026-07-26): nothing to build on.** Ray class groups,
-the Artin map, reciprocity and conductors are all absent from the pin,
-and `~/cs/FLT` has no class field theory. -/
+*Hypothesis accounting, corrected.* The previous audit asserted that
+`hmul`, `hVopen`, `hVker`, `hcmul`, `hcfrob` "are all load-bearing —
+without them `c` is an arbitrary function and the statement is false".
+Only `hcmul` is load-bearing. The proof below consumes exactly `hcmul`,
+`hmmadm`, `hnnadm` and the new sub-leaf; the remaining four are
+underscore-prefixed so that their non-use is mechanically visible. The
+statement is therefore true for ANY multiplicative `c` on nonzero ideals
+with values in a commutative monoid — which is not a weakening of the
+leaf but a strengthening of it, and is the reason the sub-leaf could be
+stated without `χ` at all.
+
+**Mathlib survey (2026-07-26).** Ray class groups, the Artin map,
+reciprocity and conductors are all absent from the pin, and `~/cs/FLT`
+has no class field theory — but none of that is needed here any more;
+see the sub-leaf's survey. -/
 theorem isAdmissibleModulus_sup_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (_hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (_hVopen : IsOpen (V : Set (Γ F)))
+    (_hVker : ∀ a ∈ V, χ a = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (_hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (mm nn : Ideal (NumberField.RingOfIntegers F))
+    (hmmadm : IsAdmissibleModulusRayClass F c mm)
+    (hnnadm : IsAdmissibleModulusRayClass F c nn) :
+    IsAdmissibleModulusRayClass F c (mm ⊔ nn) := by
+  refine ⟨?_, ?_⟩
+  · -- `mm ⊔ nn = ⊥` would force `mm = ⊥`, contradicting admissibility of `mm`.
+    intro h
+    exact hmmadm.1 (le_bot_iff.mp (h ▸ (le_sup_left : mm ≤ mm ⊔ nn)))
+  · intro δ hδ0 hδpos hδmem
+    -- (B1a-i-1): `(δ)` lies in the SUBGROUP generated by the two narrow rays,
+    -- witnessed at the level of elements by `δ · α · β = α' · β'`.
+    obtain ⟨α, α', β, β', ⟨hα0, hαpos, hαmem⟩, ⟨hα'0, hα'pos, hα'mem⟩,
+      ⟨hβ0, hβpos, hβmem⟩, ⟨hβ'0, hβ'pos, hβ'mem⟩, heq⟩ :=
+      exists_ray_factorization_sup_ray_class F mm nn hmmadm.1 hnnadm.1 δ hδ0 hδpos hδmem
+    have hsδ : Ideal.span {δ} ≠ ⊥ := by
+      simpa [Ideal.span_singleton_eq_bot] using hδ0
+    have hsα : Ideal.span {α} ≠ ⊥ := by
+      simpa [Ideal.span_singleton_eq_bot] using hα0
+    have hsα' : Ideal.span {α'} ≠ ⊥ := by
+      simpa [Ideal.span_singleton_eq_bot] using hα'0
+    have hsβ : Ideal.span {β} ≠ ⊥ := by
+      simpa [Ideal.span_singleton_eq_bot] using hβ0
+    have hsβ' : Ideal.span {β'} ≠ ⊥ := by
+      simpa [Ideal.span_singleton_eq_bot] using hβ'0
+    have hsδα : Ideal.span {δ} * Ideal.span {α} ≠ ⊥ := by
+      rw [Ne, Ideal.mul_eq_bot]
+      rintro (h | h)
+      · exact hsδ h
+      · exact hsα h
+    -- the element identity, pushed to ideals
+    have hideal : Ideal.span {δ} * Ideal.span {α} * Ideal.span {β}
+        = Ideal.span {α'} * Ideal.span {β'} := by
+      rw [Ideal.span_singleton_mul_span_singleton,
+        Ideal.span_singleton_mul_span_singleton,
+        Ideal.span_singleton_mul_span_singleton, heq]
+    -- `c` is multiplicative and kills all four ray generators
+    have hleft : c (Ideal.span {δ} * Ideal.span {α} * Ideal.span {β})
+        = c (Ideal.span {δ}) := by
+      rw [hcmul _ _ hsδα hsβ, hcmul _ _ hsδ hsα,
+        hmmadm.2 α hα0 hαpos hαmem, hnnadm.2 β hβ0 hβpos hβmem, mul_one, mul_one]
+    have hright : c (Ideal.span {α'} * Ideal.span {β'}) = 1 := by
+      rw [hcmul _ _ hsα' hsβ', hmmadm.2 α' hα'0 hα'pos hα'mem,
+        hnnadm.2 β' hβ'0 hβ'pos hβ'mem, mul_one]
+    rw [← hleft, hideal, hright]
+
+set_option maxHeartbeats 1000000 in
+/-- **THE RAMIFIED RADICAL: only finitely many primes are ramified for
+`χ`** (sorry node, created 2026-07-26 as sub-leaf (B1a-ii-1) of
+`exists_isAdmissibleModulus_isRamifiedChar_ray_class` just below, which
+is now PROVEN as ideal arithmetic over this leaf and (B1a-ii-2)
+`exists_pow_isAdmissibleModulus_of_isRamifiedChar_dvd_ray_class`): there
+is a nonzero ideal `rr` whose prime divisors are EXACTLY the primes at
+which `χ` is ramified.
+
+Packaging finiteness as "there is an ideal with that prime support" is
+what lets the consumer stay inside this file's ideal vocabulary; `rr` is
+the radical `∏_{w ramified} w`, and the `↔` pins both inclusions, so the
+leaf carries the finiteness and nothing else. When `χ` is unramified
+everywhere the witness is `rr = ⊤`, and the `↔` is then the true
+statement that no prime divides `⊤` (in the ideal divisibility order
+`I ∣ J ↔ J ≤ I`, so `w ∣ ⊤` says `w = ⊤`, which a height-one prime is
+not) — so the leaf is not secretly assuming ramification exists.
+
+**The mathematics is standard and BOUNDED — there is no class field
+theory here.** `χ` is multiplicative into the commutative monoid
+`Dickson.K 3` and `hVker` makes it trivial on the open subgroup `V`, so
+`ker χ` is an open — hence finite-index, `Γ F` being compact — subgroup
+of `Γ F`; its fixed field `M` is therefore a FINITE extension of `F`.
+Unwinding `IsRamifiedCharRayClass`, `χ` is ramified at `w` exactly when
+the image of `localInertiaGroup w` is not killed by `χ`, i.e. exactly
+when `w` ramifies in `M/F`; note the conjugation by `a` in the definition
+is harmless because `Dickson.K 3` is commutative, so
+`χ (a σ a⁻¹) = χ a · χ σ · χ a⁻¹ = χ σ · χ (a a⁻¹) = χ σ`. A prime
+ramifies in a finite extension iff it divides the different, and the
+different is a nonzero ideal, so only finitely many do.
+
+**Mathlib route (surveyed 2026-07-26): this one IS supported by the pin.**
+`Mathlib/RingTheory/DedekindDomain/Different.lean` (`differentIdeal`) and
+`Mathlib/NumberTheory/NumberField/Discriminant/Different.lean` give the
+different and the "ramified iff divides the different" criterion;
+`Ideal.finite_factors` / `UniqueFactorizationMonoid.factors` give
+finiteness of the prime support of a nonzero ideal; and the fixed field
+of an open subgroup of the absolute Galois group is already used in this
+development (see `Field.absoluteGaloisGroup` and the openness bookkeeping
+that `hVopen` feeds). No ray class group, no Artin map, no reciprocity.
+
+**FAITHFULNESS (audited 2026-07-26): TRUE as stated, and non-vacuous.**
+True by the paragraph above. Non-vacuous in both directions: the `→`
+direction of the `↔` forbids the junk witness `rr = ⊥` (which every prime
+divides) and any `rr` padded with unramified primes, while the `←`
+direction forbids `rr = ⊤` unless `χ` really is everywhere unramified.
+`hmul` and `hVker` are load-bearing (they are what makes `ker χ` a
+subgroup and an open one); `hVopen` is load-bearing (it is the finiteness
+input). -/
+theorem exists_radical_isRamifiedChar_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1) :
+    ∃ rr : Ideal (NumberField.RingOfIntegers F), rr ≠ ⊥ ∧
+      ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        w.asIdeal ∣ rr ↔ IsRamifiedCharRayClass F χ w :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **SOME POWER of a ramified-supported ideal is an admissible modulus**
+(sorry node, created 2026-07-26 as sub-leaf (B1a-ii-2) of
+`exists_isAdmissibleModulus_isRamifiedChar_ray_class` just below, which
+is now PROVEN as ideal arithmetic over this leaf and (B1a-ii-1)
+`exists_radical_isRamifiedChar_ray_class` just above): if the nonzero
+ideal `rr` is divisible by every prime at which `χ` is ramified, then
+`rr ^ k` is admissible for the Artin symbol `c` for some `k`.
+
+**THIS IS WHERE THE CLASS FIELD THEORY LIVES** — after the split, it is
+the ONLY node of the (B1a) cluster that needs it, and the whole build
+order in `exists_conductor_dvd_admissible_ray_class`'s docstring is aimed
+here. Everything else in the cluster is now ideal arithmetic,
+approximation, or finiteness of ramification.
+
+**The mathematics, and where the local input enters.** Write `M/F` for
+the finite abelian extension cut out by `ker χ` (finite because `χ` is
+trivial on the open subgroup `V`; abelian because the values of `χ`
+commute). The global norm group of unit ideles factors place by place,
+
+    N_{M/F} E_M = ∏_{v fin. unram} U_v × ∏_{v fin. ram} ∏_{w∣v} N_{M_w/F_v} U_w
+                    × ∏_{v infinite} ∏_{w∣v} N_{M_w/F_v} M_w^×,
+
+and at an UNRAMIFIED finite `v` the local norm `N_{M_w/F_v} : U_w → U_v`
+is SURJECTIVE (Serre, *Corps Locaux* V §2; Neukirch *ANT* V (1.2), via
+surjectivity of the norm on residue fields plus successive approximation
+in the unit filtration). So a positive `ord_v` is needed only where
+`N_{M_w/F_v} U_w ≠ U_v`, which cannot happen at an unramified `v`; since
+`hrram` puts every ramified prime into the support of `rr`, and
+`N_{M/F} E_M` is OPEN in `E_F`, a large enough single exponent `k` makes
+`E⁺_{F, rr^k} ⊆ N_{M/F} E_M`. Converting that idelic inclusion into the
+ideal-side statement "`c` kills `P⁺_{F, rr^k}`" is Artin reciprocity,
+which is why this leaf is not merely the local norm statement, and why
+the local statement is not consumable on its own in this file's
+vocabulary. Build order for a fleet: (1) the ideal-group/ray-class API
+with the archimedean part — DONE, it is `IsAdmissibleModulusRayClass` and
+`IsRamifiedCharRayClass` above; (2) the Artin map and its surjectivity
+(Chebotarev is already in tree: `dense_conjClasses_globalFrob`,
+`exists_globalFrob_restrictNormalHom_conj`); (3) the norm group and the
+two norm-index inequalities (this is where the local surjectivity is
+consumed); (4) reciprocity, and then this leaf.
+
+A uniform exponent `k` on all of `rr` is deliberately asked for rather
+than a per-place exponent vector: it is what the consumer's prime-support
+argument needs (a prime dividing `rr ^ k` divides `rr`), it is no weaker
+— the finite part of `𝔣(M/F)` divides `rr ^ k` as soon as `k` exceeds
+every one of its exponents — and it keeps the statement inside the ideal
+vocabulary with no auxiliary function.
+
+**FAITHFULNESS (audited 2026-07-26): TRUE as stated, and non-vacuous.**
+True because the finite part `𝔣_fin` of `𝔣(M/F)` is admissible and its
+prime support is exactly the ramified primes, so `hrram` gives
+`supp 𝔣_fin ⊆ supp rr` and any `k ≥ max_v ord_v 𝔣_fin` gives
+`𝔣_fin ∣ rr ^ k`, whence `rr ^ k` is admissible (a multiple of an
+admissible modulus is admissible — the ray only shrinks). The degenerate
+case is TRUE, not a hole: if `χ` is unramified at every finite prime then
+`rr = ⊤` is permitted by `hrram` and the claim becomes
+`IsAdmissibleModulusRayClass F c ⊤`, i.e. `c` kills the whole narrow ray
+— which is exactly the assertion that `M` lies in the NARROW Hilbert
+class field, and that is correct precisely because this cluster's
+archimedean part is fixed at all real places, so ramification at the real
+places is allowed. Non-vacuous because `k` cannot be chosen to make the
+conclusion free: `rr ^ 0 = ⊤` already asserts the narrow-class-field
+statement, so no exponent trivialises it. `hrr` excludes `rr = ⊥`;
+`hmul`, `hVopen`, `hVker` produce the finite abelian `M/F`; `hcmul` and
+`hcfrob` are what make `c` the Artin symbol of `χ` rather than an
+arbitrary function on ideals, and without them the statement is false.
+
+**Mathlib survey (2026-07-26): nothing to build on.** Local class field
+theory, local norm groups, the Artin map, ray class groups and conductors
+are all absent from the pin, and `~/cs/FLT` has no class field theory. -/
+theorem exists_pow_isAdmissibleModulus_of_isRamifiedChar_dvd_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
     (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
@@ -37925,15 +38789,18 @@ theorem isAdmissibleModulus_sup_ray_class
       c (I * J) = c I * c J)
     (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
       c v.asIdeal = χ (globalFrob v))
-    (mm nn : Ideal (NumberField.RingOfIntegers F))
-    (hmmadm : IsAdmissibleModulusRayClass F c mm)
-    (hnnadm : IsAdmissibleModulusRayClass F c nn) :
-    IsAdmissibleModulusRayClass F c (mm ⊔ nn) :=
+    (rr : Ideal (NumberField.RingOfIntegers F)) (hrr : rr ≠ ⊥)
+    (hrram : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      IsRamifiedCharRayClass F χ w → w.asIdeal ∣ rr) :
+    ∃ k : ℕ, IsAdmissibleModulusRayClass F c (rr ^ k) :=
   sorry
 
 set_option maxHeartbeats 1000000 in
 /-- **SOME admissible modulus is supported only on the RAMIFIED primes**
-(sorry node, created 2026-07-26 as sub-leaf (B1a-ii) of
+(PROVEN 2026-07-26 as ideal arithmetic over its two new sub-leaves
+(B1a-ii-1) `exists_radical_isRamifiedChar_ray_class` and (B1a-ii-2)
+`exists_pow_isAdmissibleModulus_of_isRamifiedChar_dvd_ray_class` just
+above; created 2026-07-26 as sub-leaf (B1a-ii) of
 `exists_conductor_dvd_admissible_ray_class` just below, which is now
 PROVEN as glue over this leaf and (B1a-i)
 `isAdmissibleModulus_sup_ray_class` just above): there is a modulus `nn`
@@ -37980,6 +38847,27 @@ route is the different — `Mathlib/RingTheory/DedekindDomain/Different.lean`
 `Different.lean` — a prime ramifies iff it divides the different, which
 is a nonzero ideal and so has finitely many prime divisors.
 
+**DECOMPOSED 2026-07-26 ALONG EXACTLY THAT SEAM, and PROVEN here as
+glue.** The two paragraphs above name two independent inputs, and they
+are now two separately ownable sub-leaves:
+
+* (B1a-ii-1) `exists_radical_isRamifiedChar_ray_class` — the FINITENESS
+  half: a nonzero ideal `rr` whose prime support is exactly the ramified
+  primes. Standard, bounded, and supported by the pin (the different).
+  **No class field theory.**
+* (B1a-ii-2) `exists_pow_isAdmissibleModulus_of_isRamifiedChar_dvd_ray_class`
+  — the CLASS FIELD THEORY half: some power `rr ^ k` of any such `rr` is
+  admissible. This is where the local norm surjectivity and reciprocity
+  are consumed, and after the split it is the only node of the whole
+  (B1a) cluster that needs them.
+
+The glue is two lines: feed `rr` to (B1a-ii-2) to get `k`, take
+`nn := rr ^ k`, and note that a prime dividing `rr ^ k` divides `rr`
+(`Prime.dvd_of_dvd_pow`) and is therefore ramified by (B1a-ii-1). The
+uniform exponent is what makes that last step work, which is why
+(B1a-ii-2) is stated with one `k` rather than a per-place exponent
+vector.
+
 **FAITHFULNESS (audited 2026-07-26): TRUE as stated, and non-vacuous.**
 True because the finite part of `𝔣(M/F)` is itself such an `nn` (its
 prime support is exactly the ramified primes). Non-vacuous in both
@@ -37994,9 +38882,11 @@ false for a generic admissible modulus. The hypotheses `hmul`,
 ramify and `nn` exists), and `hcmul`/`hcfrob` are what make `c` the
 Artin symbol.
 
-**Mathlib survey (2026-07-26): nothing to build on.** Local class field
-theory, local norm groups, the Artin map and conductors are all absent
-from the pin, and `~/cs/FLT` has no class field theory. -/
+**Mathlib survey (2026-07-26): nothing to build on** *for the second
+sub-leaf*. Local class field theory, local norm groups, the Artin map and
+conductors are all absent from the pin, and `~/cs/FLT` has no class field
+theory. The FIRST sub-leaf is a different matter and IS supported by the
+pin; see its own survey. -/
 theorem exists_isAdmissibleModulus_isRamifiedChar_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -38011,8 +38901,17 @@ theorem exists_isAdmissibleModulus_isRamifiedChar_ray_class
     ∃ nn : Ideal (NumberField.RingOfIntegers F),
       IsAdmissibleModulusRayClass F c nn ∧
       ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
-        w.asIdeal ∣ nn → IsRamifiedCharRayClass F χ w :=
-  sorry
+        w.asIdeal ∣ nn → IsRamifiedCharRayClass F χ w := by
+  -- (B1a-ii-1): the ramified radical, carrying the finiteness of ramification.
+  obtain ⟨rr, hrr0, hrriff⟩ :=
+    exists_radical_isRamifiedChar_ray_class F χ hmul V hVopen hVker
+  -- (B1a-ii-2): a high enough power of it is admissible.
+  obtain ⟨k, hk⟩ :=
+    exists_pow_isAdmissibleModulus_of_isRamifiedChar_dvd_ray_class F χ hmul V hVopen hVker
+      c hcmul hcfrob rr hrr0 (fun w hw => (hrriff w).mpr hw)
+  -- a prime dividing `rr ^ k` divides `rr`, hence is ramified.
+  refine ⟨rr ^ k, hk, fun w hw => (hrriff w).mp ?_⟩
+  exact (Ideal.prime_of_isPrime w.ne_bot w.isPrime).dvd_of_dvd_pow hw
 
 set_option maxHeartbeats 1000000 in
 /-- **The conductor: an admissible modulus contains an admissible
@@ -38097,6 +38996,25 @@ there as step (1) of the build order:
 * (B1a-ii) `exists_isAdmissibleModulus_isRamifiedChar_ray_class` — SOME
   admissible modulus is supported only on the ramified primes (Childress
   ch. 5 §1, p. 107, where the local norm surjectivity is consumed).
+
+**BOTH WERE DECOMPOSED AGAIN 2026-07-26, and both are now PROVEN as glue;
+the reciprocity debt of this whole cluster is now confined to ONE node.**
+The four-way frontier below replaces them, and the build order recorded
+above applies only to the last of the four:
+
+* (B1a-i-1) `exists_ray_factorization_sup_ray_class` — the two narrow
+  rays generate the narrow ray at their gcd. **Needs no class field
+  theory**: CRT in `𝓞_F` plus one archimedean adjustment. This CORRECTS
+  the note (B1a-i) used to carry; the refuted product-set identity ruled
+  out the monoid statement, not the group statement, and `c` is
+  unit-valued so the group statement is what may be used.
+* (B1a-ii-1) `exists_radical_isRamifiedChar_ray_class` — only finitely
+  many primes are ramified for `χ`, packaged as an ideal with that prime
+  support. Standard, and supported by the pin (the different).
+* (B1a-ii-2) `exists_pow_isAdmissibleModulus_of_isRamifiedChar_dvd_ray_class`
+  — some power of such an ideal is admissible. **This is the only node of
+  the cluster that needs reciprocity and the local norm surjectivity**,
+  and it is what the build order below is for.
 
 **The glue is Childress's own two-step argument, and it is exactly the
 construction of the conductor.** From (B1a-i), minimizing

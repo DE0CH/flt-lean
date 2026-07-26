@@ -240,15 +240,24 @@ The chain, in the order the assembly uses it:
    as composition glue over `exists_hilbertTraceDescent` (itself PROVEN)
    and the two arithmetic strata of the Carayol package.  BOTH are now
    PROVEN, by two owners working concurrently:
-   `exists_isLocalRing_hilbertTraceSubring` (Lemme 1 — the trace subring is
-   again a coefficient ring; the content is NOETHERIANITY) as soft glue over
-   the single arithmetic leaf `fg_comap_maximalIdeal_hilbertTraceSubring`,
-   and `exists_framedGaloisRep_hilbertTraceSubring` (Théorème 1 — the
+   `exists_isLocalRing_hilbertTraceSubring` (Lemme 1 — the trace subring
+   is again a coefficient ring; the content is NOETHERIANITY) as soft glue
+   over the single arithmetic leaf
+   `fg_comap_maximalIdeal_hilbertTraceSubring`; and
+   `exists_framedGaloisRep_hilbertTraceSubring` (Théorème 1 — the
    conjugation of `𝒟.ρ` into `GL₂(R')`) over a three-way cut mirroring the
    `ℚ` level, leaving open the Rouquier–Nyssen descent
-   `exists_framedGaloisRep_baseChange_hilbertTraceSubring`, the tame-at-`2`
-   descent `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring`, and (on
+   `exists_framedGaloisRep_baseChange_hilbertTraceSubring` and (on
    the flat side only) the Raynaud sub-object closure
+   `hasFlatProlongationAt_of_injection_of_numberField`. The tame-at-`2`
+   descent `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` was
+   REFUTED as originally cut and PROVEN 2026-07-26 in repaired form: it is
+   FALSE without a ring retraction of the trace-subring inclusion (explicit
+   witness over `F = ℚ(ζ₇)⁺` at `ℓ = 7` in its FALSITY AUDIT), and with one
+   it is formal. The retraction is the new leaf
+   `exists_ringHom_retraction_hilbertTraceSubring`, discharged from
+   `IsWeaklyUniversal` and hence invisible outside the Carayol section. The `ℚ` level's
+   THIRD leaf of the outer cut, the
    Chebotarev density step, has no `F`-level counterpart: this module's
    `IsTraceGenerated` is stated at every `g : Γ F`, so the generating set
    already contains every trace. Two hypotheses were added to the node in
@@ -307,6 +316,7 @@ public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
 -- arithmetic leaves it rests on, whose STATEMENTS mention `discr` — hence
 -- `public`)
 public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
+public import Mathlib.NumberTheory.NumberField.Discriminant.Different
 public import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.GroupTheory.Index
 public import Mathlib.LinearAlgebra.Charpoly.Basic
@@ -4023,8 +4033,43 @@ form the eventual module split needs. `Modularity/Patching.lean`'s
 `exists_discr_factorization_le_of_finrank_le` is the SAME statement with
 the ambient pinned to `IntermediateField ℚ ℚᵃˡᵍ` and the (identical)
 bound `(n + 1)·n` hidden behind an existential; nothing in its proof uses
-the ambient. Hoisting that proof to this signature is the mechanical half
-of the dedupe recorded below.
+the ambient.
+
+**ROUTE AUDIT 2026-07-26 — "this is a mechanical hoist" IS WRONG, and the
+previous version of this docstring said so. Read this before being
+dispatched here.** The MATHEMATICS is indeed ambient-free, but the route
+is not available from this module, for three independent reasons:
+
+* `Modularity/Patching.lean` is **circular** relative to this module — it
+  transitively imports `HilbertModularity.lean` (verified by import-cone
+  computation, not by reading the guard note). So nothing there can be
+  imported, only copied.
+* The proof does not stand alone. It runs over `differentIdeal_exponent_le`
+  (`Patching.lean`), the Serre bound `d_Q ≤ e − 1 + e·v_q(e)`, which is
+  itself proven over `differentIdeal_exponent_le_wild` and the local
+  Eisenstein leaf `exists_eisensteinDerivative_dvd_of_wild` — about 1100
+  lines of `Patching.lean`, not a lemma. **Mathlib has no upper bound on
+  the different exponent at all** (only `pow_sub_one_dvd_differentIdeal`,
+  which is the LOWER bound, and `not_dvd_differentIdeal_iff`), so there
+  is no cheap substitute.
+* The remaining input, `ModThree.lean`'s PROVEN
+  `discr_factorization_le_of_forall_differentIdeal_pow_dvd`, IS
+  importable without a cycle — but importing `ModThree.lean` grows this
+  module's import cone from 32 Fermat modules to 113, and this module is
+  re-exported by `Deformation.lean`, so the whole downstream tree would
+  rebuild on every `ModThree` merge. That is a fleet-wide throughput cost
+  paid to retire one leaf.
+
+The hoist that WOULD retire this leaf properly is: move
+`differentIdeal_exponent_le` and its wild chain out of `Patching.lean`
+into a module upstream of both `Patching.lean` and this one. That was
+checked against `~/.flt-inflight.jsonl` on 2026-07-26 and is **NOT safe
+to do now** — `Patching.lean` had five concurrent owners and
+`ModThree.lean` six, and one of them was working `differentIdeal_exponent_le`'s
+own wild chain (`exists_generator_minpolyDerivative_le_of_wild`). Do the
+hoist when those are quiet; do NOT duplicate the chain here in the
+meantime, and do NOT import `ModThree.lean` for it without deciding the
+cone-growth question deliberately.
 
 MATHEMATICAL CONTENT (Serre, *Corps Locaux* III §6 Prop. 13, and the norm
 bookkeeping). For a prime `Q` of `𝓞 L` over `q` with ramification index
@@ -4049,14 +4094,109 @@ theorem discr_factorization_le_of_finrank_le (n : ℕ) (L : Type*) [Field L]
     (NumberField.discr L).natAbs.factorization q ≤ (n + 1) * n :=
   sorry
 
-/-- **Inertia-trivial extensions of `F` have discriminant supported over
-`2ℓd_F`** (LEAF — the second and genuinely `F`-level arithmetic input of
-Hermite–Minkowski over `F`): if the local inertia of `F` at every place
-away from `2` and `ℓ` acts trivially on the finite Galois subextension
-`K ⊆ Fᵃˡᵍ`, then no rational prime `q ∉ {2, ℓ}` with `q ∤ d_F` divides
-the discriminant of `K` viewed as a number field over `ℚ`.
+/-- **Local-global inertia transport over `F`** (LEAF — new 2026-07-26,
+half (1) of the cut of `not_dvd_discr_of_hilbertInertiaTrivialAt` below;
+the genuinely `F`-level half): if the local inertia at a place `w` of `F`
+acts trivially on the finite Galois subextension `K ⊆ Fᵃˡᵍ`, then every
+prime `P` of `𝓞 K` lying over `w` is unramified over `𝓞 F`.
 
-MATHEMATICAL CONTENT, and the cut this leaf still hides. Two steps, of
+This is the `F`-level twin of `FreyCurve/MazurTorsion.lean`'s PROVEN
+`isUnramifiedAt_of_inertia_le_fixingSubgroup`, and it is genuinely new
+work rather than a reuse: every line of that development is written over
+`ℚ` and over `hq.toHeightOneSpectrumRingOfIntegersRat`, and
+`MazurTorsion.lean` is NOT in this module's import cone (it is not
+importable here without enlarging the cone from 32 to 91 modules, which
+would make this module — and `Deformation.lean`, which re-exports it —
+rebuild on every `MazurTorsion` merge). The argument to port is its
+chain `exists_prime_over_inertia_eq_bot_of_le_fixingSubgroup` followed by
+`inertia_eq_bot_of_exists_prime_over`: the embedding-determined prime
+over `w` has trivial ideal-inertia because the local Galois group
+surjects onto the decomposition group, and conjugacy under `Gal(K/F)` —
+transitive on the primes over `w` — propagates it to all of them.
+
+FAITHFULNESS. The quantifier is over `localInertiaGroup w` — an
+inertia-only hypothesis, which is exactly what makes the conclusion
+`Algebra.IsUnramifiedAt (𝓞 F) P` correct; widening it to all of `Γ F`
+would be a different (and for this purpose wrong) statement. Not
+vacuous: `K = ⊥` and any everywhere-unramified extension of `F` inhabit
+the hypotheses, and the conclusion is a genuine restriction. -/
+theorem isUnramifiedAt_of_hilbertInertiaTrivialAt
+    (F : Type u) [Field F] [NumberField F]
+    (K : IntermediateField F (AlgebraicClosure F))
+    [FiniteDimensional F K] [IsGalois F K] [NumberField ↥K]
+    (w : HeightOneSpectrum (𝓞 F))
+    (hinert : HilbertInertiaTrivialAt w K.fixingSubgroup)
+    (P : Ideal (𝓞 ↥K)) [P.IsPrime] [P.LiesOver w.asIdeal] :
+    Algebra.IsUnramifiedAt (𝓞 F) P :=
+  sorry
+
+/-- **Ramification in the tower `ℚ ⊆ F ⊆ K`** (LEAF — new 2026-07-26,
+half (2) of the cut of `not_dvd_discr_of_hilbertInertiaTrivialAt` below;
+the routine half): a rational prime `q` with `q ∤ d_F` is unramified in
+`F`, so a prime `P` of `𝓞 K` over `q` that is unramified over `𝓞 F` is
+unramified over `ℤ`.
+
+Route: `q ∤ d_F` gives `Algebra.IsUnramifiedAt ℤ (P ∩ 𝓞 F)` through
+mathlib's `NumberField.not_dvd_discr_iff_forall_mem` applied to `F`;
+composing with the hypothesis `Algebra.IsUnramifiedAt (𝓞 F) P` is
+multiplicativity of the ramification index in a tower, which in the
+different language is mathlib's
+`differentIdeal_eq_differentIdeal_mul_differentIdeal` together with
+`not_dvd_differentIdeal_iff`.
+
+FAITHFULNESS. `hqF` (`q ∤ d_F`) is LOAD-BEARING and must not be dropped:
+`d_K` is divisible by `d_F ^ [K : F]` by the discriminant tower formula,
+so every prime dividing `d_F` divides `d_K` however unramified `K/F`
+is. -/
+theorem isUnramifiedAt_int_of_isUnramifiedAt_of_not_dvd_discr
+    (F : Type u) [Field F] [NumberField F]
+    (K : IntermediateField F (AlgebraicClosure F))
+    [FiniteDimensional F K] [NumberField ↥K]
+    {q : ℕ} (hq : q.Prime)
+    (hqF : ¬ ((q : ℤ) ∣ NumberField.discr F))
+    (P : Ideal (𝓞 ↥K)) [P.IsPrime]
+    (hmem : (q : 𝓞 ↥K) ∈ P)
+    (hur : Algebra.IsUnramifiedAt (𝓞 F) P) :
+    Algebra.IsUnramifiedAt ℤ P :=
+  sorry
+
+/-- **Inertia-trivial extensions of `F` have discriminant supported over
+`2ℓd_F`** (PROVEN 2026-07-26 over the two leaves immediately above — it
+was itself a leaf until then; the second and genuinely `F`-level
+arithmetic input of Hermite–Minkowski over `F`): if the local inertia of
+`F` at every place away from `2` and `ℓ` acts trivially on the finite
+Galois subextension `K ⊆ Fᵃˡᵍ`, then no rational prime `q ∉ {2, ℓ}` with
+`q ∤ d_F` divides the discriminant of `K` viewed as a number field over
+`ℚ`.
+
+WHAT IS PROVEN HERE — the whole non-arithmetic half, and it is the
+place-selection bookkeeping that the two halves are glued by. Mathlib's
+`NumberField.not_dvd_discr_iff_forall_mem` reduces the goal to
+`Algebra.IsUnramifiedAt ℤ P` for every prime `P` of `𝓞 K` over `q`; the
+place `w` of `F` below `P` is `P.under (𝓞 F)` (prime, and nonzero
+because it contains `q`); `P ∩ ℤ = (q)` because a prime of `ℤ`
+containing the prime `q` is `(q)`, whence a rational integer lying in
+`w` is divisible by `q`, so `q ≠ 2` and `q ≠ ℓ` put `w` outside
+`{w ∣ 2ℓ}` and the inertia hypothesis applies at `w`. The two leaves
+then compose: `isUnramifiedAt_of_hilbertInertiaTrivialAt` gives
+`IsUnramifiedAt (𝓞 F) P` and
+`isUnramifiedAt_int_of_isUnramifiedAt_of_not_dvd_discr` descends it to
+`ℤ`.
+
+ONE ELABORATION NOTE worth keeping. `↥(K.restrictScalars ℚ)` and `↥K`
+are DEFEQ (`restrictScalars` keeps the carrier), and so are `𝓞` of them;
+but `Algebra F ↥(K.restrictScalars ℚ)` is NOT an instance, so
+`Ideal.under (𝓞 F)` cannot be formed against the `restrictScalars`
+carrier. The proof therefore opens with
+`show ¬ ((q : ℤ) ∣ NumberField.discr ↥K)` and does everything over the
+canonical carrier, where `Algebra F ↥K` and `Algebra (𝓞 F) (𝓞 ↥K)` are
+the canonical instances. Supplying the missing instance by
+`inferInstanceAs` instead does NOT work: it generates auxiliary
+definitions, and the two sides then carry syntactically distinct
+`Algebra` terms that print identically and refuse to unify.
+
+MATHEMATICAL CONTENT, and the cut this declaration NOW MAKES (the two
+leaves above are exactly these two steps). Two steps, of
 which only the FIRST is genuinely new at the `F` level:
 
 1. *Local-global inertia transport over `F`* — pointwise triviality of
@@ -4106,8 +4246,59 @@ theorem not_dvd_discr_of_hilbertInertiaTrivialAt (ℓ : ℕ) [Fact ℓ.Prime]
     (hqF : ¬ ((q : ℤ) ∣ NumberField.discr F))
     (hfdQ : FiniteDimensional ℚ (K.restrictScalars ℚ)) :
     haveI : NumberField (K.restrictScalars ℚ) := @NumberField.mk _ _ inferInstance hfdQ
-    ¬ ((q : ℤ) ∣ NumberField.discr (K.restrictScalars ℚ)) :=
-  sorry
+    ¬ ((q : ℤ) ∣ NumberField.discr (K.restrictScalars ℚ)) := by
+  haveI := hfd
+  haveI := hgal
+  haveI : NumberField (K.restrictScalars ℚ) := @NumberField.mk _ _ inferInstance hfdQ
+  haveI hnfK : NumberField ↥K := inferInstanceAs (NumberField ↥(K.restrictScalars ℚ))
+  have hqZ : Prime ((q : ℤ)) := Nat.prime_iff_prime_int.mp hq
+  -- move to the canonical carrier `↥K`: `↥(K.restrictScalars ℚ)` and `↥K` are
+  -- DEFEQ (`restrictScalars` keeps the carrier), and working over the canonical
+  -- one keeps the `Algebra F ↥K` / `Algebra (𝓞 F) (𝓞 ↥K)` instances canonical
+  show ¬ ((q : ℤ) ∣ NumberField.discr ↥K)
+  rw [NumberField.not_dvd_discr_iff_forall_mem (↥K) (𝓞 ↥K) hqZ]
+  intro P hP hmem
+  haveI := hP
+  have hmem' : (q : 𝓞 ↥K) ∈ P := by exact_mod_cast hmem
+  -- `P ∩ ℤ = (q)`, since a prime of `ℤ` containing the prime `q` is `(q)`
+  haveI hqZmax : (Ideal.span {(q : ℤ)}).IsMaximal :=
+    ((Ideal.span_singleton_prime (by exact_mod_cast hq.ne_zero)).mpr hqZ).isMaximal
+      (by simp only [Ne, Ideal.span_singleton_eq_bot]; exact_mod_cast hq.ne_zero)
+  have hqinP : ((q : ℤ)) ∈ Ideal.under ℤ P := by
+    rw [Ideal.mem_under]
+    exact_mod_cast hmem'
+  have hunderZ : Ideal.under ℤ P = Ideal.span {(q : ℤ)} :=
+    (hqZmax.eq_of_le (Ideal.IsPrime.ne_top inferInstance)
+      (by rwa [Ideal.span_le, Set.singleton_subset_iff])).symm
+  -- the place `w` of `F` below `P`
+  haveI hw0p : (P.under (𝓞 F)).IsPrime := Ideal.IsPrime.under (𝓞 F) P
+  have hqw0 : (q : 𝓞 F) ∈ P.under (𝓞 F) := by
+    rw [Ideal.mem_under]
+    exact_mod_cast hmem'
+  have hw0bot : P.under (𝓞 F) ≠ ⊥ := by
+    intro h
+    rw [h, Ideal.mem_bot] at hqw0
+    exact hq.ne_zero (by exact_mod_cast hqw0)
+  set w : HeightOneSpectrum (𝓞 F) := ⟨P.under (𝓞 F), hw0p, hw0bot⟩ with hwdef
+  -- `2` and `ℓ` avoid `w`: `w` lies over `q`, and `q ∉ {2, ℓ}`
+  have hnat : ∀ m : ℕ, ((m : ℕ) : 𝓞 F) ∈ w.asIdeal → q ∣ m := by
+    intro m hm
+    have hmP : ((m : ℕ) : 𝓞 ↥K) ∈ P := by
+      have hm' : ((m : ℕ) : 𝓞 F) ∈ P.under (𝓞 F) := by rw [hwdef] at hm; exact hm
+      rw [Ideal.mem_under] at hm'
+      exact_mod_cast hm'
+    have hmZ : ((m : ℕ) : ℤ) ∈ Ideal.under ℤ P := by
+      rw [Ideal.mem_under]
+      exact_mod_cast hmP
+    rw [hunderZ, Ideal.mem_span_singleton] at hmZ
+    exact_mod_cast hmZ
+  have h2 : ((2 : ℕ) : 𝓞 F) ∉ w.asIdeal := fun hc =>
+    hq2 ((Nat.prime_dvd_prime_iff_eq hq Nat.prime_two).mp (hnat 2 hc))
+  have hl : ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal := fun hc =>
+    hqℓ ((Nat.prime_dvd_prime_iff_eq hq (Fact.out : ℓ.Prime)).mp (hnat ℓ hc))
+  haveI hlies : P.LiesOver w.asIdeal := ⟨rfl⟩
+  exact isUnramifiedAt_int_of_isUnramifiedAt_of_not_dvd_discr F K hq hqF P hmem'
+    (isUnramifiedAt_of_hilbertInertiaTrivialAt F K w (hinert w h2 hl) P)
 
 /-- **Hermite–Minkowski over `F`** (PROVEN 2026-07-26 over the two
 arithmetic leaves above — the ONLY arithmetic input of Schlessinger's H3
@@ -8290,12 +8481,25 @@ already carries at the `ℚ` level, declaration for declaration:
 | `exists_framedGaloisRep_traceSubring` | `exists_framedGaloisRep_hilbertTraceSubring` | PROVEN |
 | `exists_framedGaloisRep_baseChange_traceSubring` | `exists_framedGaloisRep_baseChange_hilbertTraceSubring` | LEAF |
 | `isFlatAt_of_baseChange_traceSubring` | `isFlatAt_of_subring_baseChange_of_numberField` | PROVEN over a Raynaud LEAF |
-| `isTameAtTwo_of_baseChange_traceSubring` | `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` | LEAF |
+| `isTameAtTwo_of_baseChange_traceSubring` | `isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` | PROVEN over a retraction LEAF |
+| — (no `ℚ`-level counterpart) | `exists_ringHom_retraction_hilbertTraceSubring` | LEAF |
 | `traceSubring_eq_top_of_charFrob_map` | `hilbertTraceSubring_eq_top_of_charpoly_map` | PROVEN |
 | `exists_isTraceGenerated_ringHom_of_forall_trace_mem` | `exists_hilbertTraceDescent` | PROVEN |
 | `exists_isWeaklyUniversal_isTraceGenerated_of_isWeaklyUniversal` | the target below | PROVEN |
 
-**ONE `ℚ`-LEVEL LEAF HAS NO `F`-LEVEL COUNTERPART, AND THAT IS A REAL
+**ONE `F`-LEVEL LEAF HAS NO `ℚ`-LEVEL COUNTERPART, AND THAT ONE IS NOT A
+SIMPLIFICATION BUT A REPAIR** (2026-07-26).
+`exists_ringHom_retraction_hilbertTraceSubring` is new at this level because
+the `ℚ`-level tame descent buys the corresponding content from ARITHMETIC —
+some `g₀ ∈ Γ ℚ_2` has `χ_ℓ(g₀) ≢ 1 (mod ℓ)`, so the two residual characters
+at `2` are distinct and the eigen-projector is defined over `R'`. Over a
+general `F_w ∣ 2` that input is simply false (`F = ℚ(ζ₇)⁺`, `ℓ = 7`), and
+the tame descent is then FALSE without a retraction; the full refutation,
+with an explicit witness, is in the FALSITY AUDIT of
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring`. So the `F` level
+needs one leaf that the `ℚ` level does not.
+
+**ONE `ℚ`-LEVEL LEAF HAS NO `F`-LEVEL COUNTERPART, AND THAT ONE IS A REAL
 SIMPLIFICATION, NOT AN OVERSIGHT.** Over `ℚ` the trace subring is generated
 by the Frobenius characteristic polynomials AT THE GOOD PRIMES ONLY, so the
 descent needs the hypothesis `htr` — that the subring so generated already
@@ -8311,13 +8515,16 @@ hypothesis is `charpoly_coeff_mem_hilbertTraceSubring`, a one-liner. The
 **THE COMMUTATIVE-ALGEBRA HELPERS BELOW ARE LOCAL COPIES**, for the
 same reason as `rank_finTwoPi`, `teichmullerRootSet` and `framePushforward`
 above: their originals are in `Deformation.lean`, which is DOWNSTREAM. Two
-further copies (`charpoly_baseChange_conj_hilbert`, `one_tmul_injective_hilbert`)
-came with `exists_framedGaloisRep_hilbertTraceSubring`, and three more
+further copies (`charpoly_baseChange_conj_hilbert`,
+`one_tmul_injective_hilbert`) came with
+`exists_framedGaloisRep_hilbertTraceSubring`, a seventh
+(`exists_frameCoords_of_baseChange_conj_hilbert`) with the repaired
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring`, and three more
 (`isUnit_of_isClosed_subring_of_notMem_maximalIdeal`,
 `isLocalRing_of_isClosed_subring_of_finite_residueField`,
 `maximalIdeal_eq_comap_of_isClosed_subring_of_finite_residueField`) with
-`exists_isLocalRing_hilbertTraceSubring` — both proofs landing 2026-07-26.
-That makes THIRTEEN duplicated helpers in this module now.  The last three
+`exists_isLocalRing_hilbertTraceSubring` — all landing 2026-07-26.
+That makes FOURTEEN duplicated helpers in this module now.  The last three
 carry names DIFFERENT from their `ℚ`-level originals on purpose, both files
 living in namespace `GaloisRepresentation`. Hoisting the shared
 originals into `Defs.lean` is the right fix and needs a single owner across
@@ -8754,12 +8961,144 @@ theorem maximalIdeal_eq_comap_of_isClosed_subring_of_finite_residueField
     have hunit : IsUnit (a : A) := by simpa using hu.map C.subtype
     exact IsLocalRing.notMem_maximalIdeal.mpr hunit ha
 
-/-- **Finite generation of `𝔪' = 𝔪 ∩ R'`, at the `F` level** (LEAF — new
-2026-07-26, the SINGLE arithmetic input of Carayol's Lemme 1 here; the
-`F`-level twin of `Deformation.lean`'s PROVEN
-`fg_comap_maximalIdeal_traceSubring`): the maximal ideal of Carayol's
-closed trace subring `R' = hilbertTraceSubring ℓ 𝒟.ρ` is finitely
-generated.
+/-- **A uniform generator bound from level-wise surjections** (PROVEN,
+pure commutative algebra with no arithmetic input; another local copy of
+a `Deformation.lean` helper — `exists_uniform_span_maximalIdeal_of_forall_surjective`
+— which lives DOWNSTREAM of this module and so is unusable here; see the
+duplication-debt note in the "Formal prerequisites (local copies)"
+subsection above).
+
+If ONE fixed Noetherian local ring `S` surjects onto every quotient
+`C ⧸ J n` of a local ring `C`, then the number `r` of generators of
+`𝔪_S` bounds, UNIFORMLY in `n`, the number of elements of `𝔪_C` needed
+to generate it modulo `J n`. The proof is the obvious one: pull a
+generating family of `𝔪_S` through the surjection `S ↠ C ⧸ J n`, lift it
+along `C ↠ C ⧸ J n`, and note that the maximal ideal of a local ring maps
+onto the maximal ideal of any surjective image
+(`IsLocalRing.map_maximalIdeal_of_surjective`). The level `J n = ⊤` is
+handled separately, with the empty span. -/
+theorem exists_uniform_span_maximalIdeal_of_forall_surjective_hilbert
+    {C : Type*} [CommRing C] [IsLocalRing C]
+    {S : Type*} [CommRing S] [IsLocalRing S] [IsNoetherianRing S]
+    (J : ℕ → Ideal C)
+    (hf : ∀ n : ℕ, ∃ f : S →+* (C ⧸ J n), Function.Surjective f) :
+    ∃ r : ℕ, ∀ n : ℕ, ∃ z : Fin r → C,
+      Ideal.span (Set.range z) ≤ IsLocalRing.maximalIdeal C ∧
+        IsLocalRing.maximalIdeal C ≤ Ideal.span (Set.range z) ⊔ J n := by
+  obtain ⟨r, s, hs⟩ :=
+    Submodule.fg_iff_exists_fin_generating_family.mp
+      (IsNoetherian.noetherian (IsLocalRing.maximalIdeal S))
+  refine ⟨r, fun n => ?_⟩
+  by_cases hJ : J n = ⊤
+  · refine ⟨fun _ => 0, ?_, ?_⟩
+    · exact Ideal.span_le.mpr (by rintro x ⟨i, rfl⟩; exact Submodule.zero_mem _)
+    · rw [hJ, sup_top_eq]
+      exact le_top
+  · haveI : Nontrivial (C ⧸ J n) := Ideal.Quotient.nontrivial_iff.mpr hJ
+    obtain ⟨f, hfsurj⟩ := hf n
+    haveI : IsLocalRing (C ⧸ J n) := IsLocalRing.of_surjective' f hfsurj
+    have hq : Function.Surjective (Ideal.Quotient.mk (J n)) :=
+      Ideal.Quotient.mk_surjective
+    have hmapS : Ideal.map f (IsLocalRing.maximalIdeal S) =
+        IsLocalRing.maximalIdeal (C ⧸ J n) :=
+      IsLocalRing.map_maximalIdeal_of_surjective f hfsurj
+    have hmapC : Ideal.map (Ideal.Quotient.mk (J n)) (IsLocalRing.maximalIdeal C) =
+        IsLocalRing.maximalIdeal (C ⧸ J n) :=
+      IsLocalRing.map_maximalIdeal_of_surjective _ hq
+    have hmem : ∀ i : Fin r, f (s i) ∈
+        Ideal.map (Ideal.Quotient.mk (J n)) (IsLocalRing.maximalIdeal C) := by
+      intro i
+      rw [hmapC, ← hmapS]
+      exact Ideal.mem_map_of_mem f (by rw [← hs]; exact Ideal.subset_span ⟨i, rfl⟩)
+    choose z hz hzq using fun i => Ideal.mem_map_iff_of_surjective _ hq |>.mp (hmem i)
+    refine ⟨z, Ideal.span_le.mpr ?_, ?_⟩
+    · rintro x ⟨i, rfl⟩; exact hz i
+    · intro x hx
+      have hx' : (Ideal.Quotient.mk (J n)) x ∈
+          Ideal.map (Ideal.Quotient.mk (J n)) (Ideal.span (Set.range z)) := by
+        have h1 : Ideal.map (Ideal.Quotient.mk (J n)) (Ideal.span (Set.range z)) =
+            Ideal.span (Set.range (fun i => (Ideal.Quotient.mk (J n)) (z i))) := by
+          rw [Ideal.map_span, ← Set.range_comp]; rfl
+        have h2 : Ideal.span (Set.range (fun i => (Ideal.Quotient.mk (J n)) (z i))) =
+            IsLocalRing.maximalIdeal (C ⧸ J n) := by
+          rw [show (fun i => (Ideal.Quotient.mk (J n)) (z i)) = fun i => f (s i) from
+            funext hzq, ← hmapS, ← hs, Ideal.map_span, ← Set.range_comp]
+          rfl
+        rw [h1, h2, ← hmapC]
+        exact Ideal.mem_map_of_mem _ hx
+      have hcm := (Ideal.comap_map_of_surjective _ hq (Ideal.span (Set.range z))) ▸
+        (Ideal.mem_comap.mpr hx')
+      rwa [← RingHom.ker_eq_comap_bot, Ideal.mk_ker] at hcm
+
+/-- **Carayol's Théorème 1 at each FINITE level, over `F`** (LEAF — new
+2026-07-26; the SOLE arithmetic input of
+`fg_comap_maximalIdeal_hilbertTraceSubring` below, which is now PROVEN
+over it): ONE fixed Noetherian local ring `S` surjects onto EVERY level
+quotient `R' ⧸ (𝔪 ^ n ∩ R')` of Carayol's trace subring.
+
+This is step 1 of the `ℚ`-level route that the leaf's docstring below
+records, and it is the `F`-level twin of `Deformation.lean`'s PROVEN
+`exists_noetherianLocal_surjective_quotient_traceSubring`. The witness
+there is the WEAKLY UNIVERSAL ring of the deformation problem, which
+surjects onto every finite level because at a FINITE level the trace
+subring carries no ring-theoretic burden at all — it is finite, hence
+Noetherian; closed, hence local; and its maximal ideal is nilpotent,
+hence adic and complete. Level `0` is separate: the quotient is the zero
+ring.
+
+NOT CIRCULAR. The finite-level conjugation input is the sibling leaf
+`exists_framedGaloisRep_hilbertTraceSubring`, which takes the locality of
+the trace subring as its HYPOTHESIS `hloc` rather than proving it; at
+finite level that locality is free, which is exactly why the two may be
+used in this order.
+
+WHY THIS AND NOT THE WHOLE LEAF. Everything else in
+`fg_comap_maximalIdeal_hilbertTraceSubring` is formal and is now written
+out below: the uniform generator bound is
+`exists_uniform_span_maximalIdeal_of_forall_surjective_hilbert` above
+(pure commutative algebra), and the passage from level-wise tuples to a
+SINGLE tuple is `ProfiniteLocal.fg_comap_of_uniform_span`, already
+UPSTREAM of this module. So this leaf is where the counterexample
+`k[[x, xy, xy², …]] ⊂ k[[x,y]]` bites, and the Carayol hypotheses
+(`hℓ5`, irreducibility of `ρbar|_{G_F}`, and the local conditions inside
+`𝒟.isHilbertHardlyRamified`) are load-bearing HERE and nowhere else in
+the package. -/
+theorem exists_noetherianLocal_surjective_quotient_hilbertTraceSubring
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V} (hlk : ((ℓ : ℕ) : k) = 0)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
+    ∃ (S : Type u) (_ : CommRing S) (_ : IsLocalRing S) (_ : IsNoetherianRing S),
+      ∀ n : ℕ, ∃ f : S →+* (hilbertTraceSubring ℓ 𝒟.ρ ⧸
+          Ideal.comap (hilbertTraceSubring ℓ 𝒟.ρ).subtype
+            ((IsLocalRing.maximalIdeal 𝒟.R) ^ n)),
+        Function.Surjective f :=
+  sorry
+
+/-- **Finite generation of `𝔪' = 𝔪 ∩ R'`, at the `F` level** (PROVEN
+2026-07-26 over the SINGLE arithmetic leaf
+`exists_noetherianLocal_surjective_quotient_hilbertTraceSubring` above —
+it was itself a leaf until then; the `F`-level twin of
+`Deformation.lean`'s PROVEN `fg_comap_maximalIdeal_traceSubring`): the
+maximal ideal of Carayol's closed trace subring
+`R' = hilbertTraceSubring ℓ 𝒟.ρ` is finitely generated.
+
+THE THREE-STEP ROUTE RECORDED BELOW IS NOW EXECUTED, and only step 1 is
+left open. Step 1 is the leaf above; step 2 is
+`exists_uniform_span_maximalIdeal_of_forall_surjective_hilbert`, proven
+above as pure commutative algebra; step 3 is
+`ProfiniteLocal.fg_comap_of_uniform_span`, already UPSTREAM. What this
+proof adds is the profiniteness package the transfer needs: the residue
+field of `𝒟.R` is `k`, hence finite, so every `𝒟.R ⧸ 𝔪 ^ n` is finite
+and `𝒟.R` is compact (`compactSpace_of_isAdic_of_finite_quotient`) and
+Hausdorff (`t2Space_of_isAdic_of_isHausdorff`); `R'` is a topological
+closure, hence closed; and `𝔪' = 𝔪 ∩ R'`
+(`maximalIdeal_eq_comap_of_isClosed_subring_of_finite_residueField`),
+which is what lets the level-wise tuples of step 2 be read as tuples for
+`𝔪'`.
 
 **THIS IS THE WHOLE CONTENT of `exists_isLocalRing_hilbertTraceSubring`
 below**, which is otherwise soft: `R'` is a closed subring of the
@@ -8825,11 +9164,55 @@ theorem fg_comap_maximalIdeal_hilbertTraceSubring
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
     (Ideal.comap (hilbertTraceSubring ℓ 𝒟.ρ).subtype
-      (IsLocalRing.maximalIdeal 𝒟.R)).FG :=
-  sorry
+      (IsLocalRing.maximalIdeal 𝒟.R)).FG := by
+  classical
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.R := 𝒟.isAdicComplete
+  haveI : IsHausdorff (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.R :=
+    (𝒟.isAdicComplete).toIsHausdorff
+  -- the residue field of `𝒟.R` is `k`, hence FINITE
+  have hker : RingHom.ker 𝒟.π = IsLocalRing.maximalIdeal 𝒟.R :=
+    IsLocalRing.ker_eq_maximalIdeal 𝒟.π 𝒟.π_surjective
+  haveI hresfin : Finite (IsLocalRing.ResidueField 𝒟.R) := by
+    have hlift : IsLocalRing.ResidueField 𝒟.R →+* k :=
+      Ideal.Quotient.lift (IsLocalRing.maximalIdeal 𝒟.R) 𝒟.π
+        (fun a ha => by rwa [← RingHom.mem_ker, hker])
+    exact Finite.of_injective hlift hlift.injective
+  haveI hqfin : Finite (𝒟.R ⧸ IsLocalRing.maximalIdeal 𝒟.R) := hresfin
+  -- **`𝒟.R` is profinite**, and `R'` is CLOSED in it
+  haveI hT2 : T2Space 𝒟.R := t2Space_of_isAdic_of_isHausdorff 𝒟.isAdic
+  have hmfg : (IsLocalRing.maximalIdeal 𝒟.R).FG :=
+    IsNoetherian.noetherian (IsLocalRing.maximalIdeal 𝒟.R)
+  haveI hcompact : CompactSpace 𝒟.R :=
+    _root_.ProfiniteLocal.compactSpace_of_isAdic_of_finite_quotient 𝒟.isAdic
+      (fun n => Ideal.finite_quotient_pow hmfg n)
+  have hclosed : IsClosed ((hilbertTraceSubring ℓ 𝒟.ρ : Subring 𝒟.R) :
+      Set 𝒟.R) := Subring.isClosed_topologicalClosure _
+  haveI hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ) :=
+    isLocalRing_of_isClosed_subring_of_finite_residueField 𝒟.isAdic hclosed
+  have hmax : IsLocalRing.maximalIdeal (hilbertTraceSubring ℓ 𝒟.ρ) =
+      Ideal.comap (hilbertTraceSubring ℓ 𝒟.ρ).subtype
+        (IsLocalRing.maximalIdeal 𝒟.R) :=
+    maximalIdeal_eq_comap_of_isClosed_subring_of_finite_residueField 𝒟.isAdic
+      hclosed
+  -- **the arithmetic input**: one Noetherian local ring onto every level
+  obtain ⟨S, _, _, _, hS⟩ :=
+    exists_noetherianLocal_surjective_quotient_hilbertTraceSubring ℓ hℓ5 F hlk
+      hirrF 𝒟
+  -- **the uniform bound**, then ONE tuple by compactness of `R'ʳ`
+  obtain ⟨r, hr⟩ :=
+    exists_uniform_span_maximalIdeal_of_forall_surjective_hilbert (S := S)
+      (fun n => Ideal.comap (hilbertTraceSubring ℓ 𝒟.ρ).subtype
+        ((IsLocalRing.maximalIdeal 𝒟.R) ^ n)) hS
+  refine _root_.ProfiniteLocal.fg_comap_of_uniform_span 𝒟.isAdic _ hclosed
+    (r := r) (fun n => ?_)
+  obtain ⟨z, hz1, hz2⟩ := hr n
+  rw [hmax] at hz1 hz2
+  exact ⟨z, hz1, hz2⟩
 
-/-- **Carayol's Lemme 1 at the `F` level** (PROVEN 2026-07-26 over the
-SINGLE arithmetic leaf `fg_comap_maximalIdeal_hilbertTraceSubring` above;
+/-- **Carayol's Lemme 1 at the `F` level** (PROVEN 2026-07-26 over
+`fg_comap_maximalIdeal_hilbertTraceSubring` above — which is ITSELF now
+proven, over the single arithmetic leaf
+`exists_noetherianLocal_surjective_quotient_hilbertTraceSubring`;
 the `F`-level twin of `Deformation.lean`'s `exists_isLocalRing_traceSubring`,
 which is PROVEN there over its own four-way cut): the closed trace subring
 `R' = hilbertTraceSubring ℓ 𝒟.ρ` is again a COEFFICIENT RING — local,
@@ -9350,6 +9733,118 @@ theorem exists_framedGaloisRep_baseChange_hilbertTraceSubring
   sorry
 
 open scoped TensorProduct in
+/-- **Frame coordinates of a base-changed framed representation** (PROVEN;
+the local copy, over a VARIABLE base number field and at a place `w`, of
+`Deformation.lean`'s `exists_frameCoords_of_baseChange_conj`, which is
+hard-coded to `ℚ` and to the single place `ℚ_2`): if a surjective
+`S`-functional `πR` transforms by a scalar `ε` under the local action of
+`ρS = (ρ' ⊗ S)ᵉ`, then reading it through the standard frame
+`x ↦ πR (e (1 ⊗ x))` presents it as a ROW `(a, b) ∈ S²` which is
+unimodular and satisfies the same scalar transformation law on `C²`.
+
+Unimodularity is the only non-formal step: were both `a` and `b` in `𝔪_S`,
+then `πR ∘ e` would land in `𝔪_S` on every pure tensor, hence everywhere by
+`TensorProduct.induction_on`, contradicting surjectivity of `πR`.
+
+Stated with `ε` valued in the AMBIENT `S`, not in the subring `C`: the
+`ℚ`-level original takes `ε : Γ ℚ_2 → C`, which forces its caller to prove
+first that the tame character is already defined over `C` (the sign lemma
+`exists_tameSign_of_deformation` there). The consumer below does not need
+that, because it pushes the character into `C` along the retraction
+instead, so the weaker binder is the useful one here. -/
+theorem exists_frameCoords_of_baseChange_conj_hilbert
+    {F : Type u} [Field F] [NumberField F] (w : HeightOneSpectrum (𝓞 F))
+    {S : Type*} [CommRing S] [TopologicalSpace S] [IsTopologicalRing S]
+    [IsLocalRing S] {C : Subring S}
+    {ρS : GaloisRep F S (Fin 2 → S)} {ρ' : FramedGaloisRep F C (Fin 2)}
+    (e : (S ⊗[C] (Fin 2 → C)) ≃ₗ[S] (Fin 2 → S))
+    (he : (ρ'.baseChange S).conj e = ρS)
+    {πR : (Fin 2 → S) →ₗ[S] S} (hπRsurj : Function.Surjective πR)
+    {ε : Γ (w.adicCompletion F) → S}
+    (hπRequi : ∀ (g : Γ (w.adicCompletion F)) (x : Fin 2 → S),
+      πR (ρS.toLocal w g x) = ε g * πR x) :
+    ∃ a b : S, (IsUnit a ∨ IsUnit b) ∧
+      ∀ (g : Γ (w.adicCompletion F)) (x : Fin 2 → C),
+        (((ρ'.toLocal w g x) 0 : C) : S) * a +
+          (((ρ'.toLocal w g x) 1 : C) : S) * b =
+          ε g * (((x 0 : C) : S) * a + ((x 1 : C) : S) * b) := by
+  classical
+  have hcast : ∀ c : C, (c : S) = algebraMap C S c := fun _ => rfl
+  set φ : (Fin 2 → C) → S := fun x => πR (e ((1 : S) ⊗ₜ[C] x)) with hφdef
+  have hφadd : ∀ x y, φ (x + y) = φ x + φ y := by
+    intro x y
+    show πR (e ((1 : S) ⊗ₜ[C] (x + y))) = _
+    rw [TensorProduct.tmul_add, map_add, map_add]
+  have hφsmul : ∀ (c : C) (x : Fin 2 → C), φ (c • x) = (c : S) * φ x := by
+    intro c x
+    have h1 : (1 : S) ⊗ₜ[C] (c • x) = (c : S) • ((1 : S) ⊗ₜ[C] x) := by
+      rw [TensorProduct.tmul_smul, hcast, algebraMap_smul]
+    show πR (e ((1 : S) ⊗ₜ[C] (c • x))) = _
+    rw [h1, map_smul, map_smul, smul_eq_mul]
+  have hdecomp : ∀ x : Fin 2 → C,
+      x = x 0 • Pi.single (0 : Fin 2) (1 : C) + x 1 • Pi.single 1 1 := by
+    intro x
+    funext i
+    fin_cases i <;> simp
+  have hφw : ∀ x : Fin 2 → C,
+      φ x = (x 0 : S) * φ (Pi.single 0 1) + (x 1 : S) * φ (Pi.single 1 1) := by
+    intro x
+    conv_lhs => rw [hdecomp x]
+    rw [hφadd, hφsmul, hφsmul]
+  have hhe : ∀ (G : Γ F) (y : S ⊗[C] (Fin 2 → C)),
+      e ((ρ'.baseChange S) G y) = ρS G (e y) := by
+    intro G y
+    have h1 : ((ρ'.baseChange S).conj e) G = ρS G := by rw [he]
+    rw [GaloisRep.conj_apply] at h1
+    have h2 := congrArg (fun f : Module.End S (Fin 2 → S) => f (e y)) h1
+    simpa [LinearEquiv.conj_apply] using h2
+  have hφequi : ∀ (g : Γ (w.adicCompletion F)) (x : Fin 2 → C),
+      φ (ρ'.toLocal w g x) = ε g * φ x := by
+    intro g x
+    have h1 : (1 : S) ⊗ₜ[C] (ρ'.toLocal w g x) =
+        (ρ'.baseChange S)
+          (Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F)) g)
+          ((1 : S) ⊗ₜ[C] x) := by
+      rw [GaloisRep.baseChange_tmul, GaloisRep.toLocal_apply]
+    show πR (e ((1 : S) ⊗ₜ[C] (ρ'.toLocal w g x))) = _
+    rw [h1, hhe]
+    have h2 := hπRequi g (e ((1 : S) ⊗ₜ[C] x))
+    rw [GaloisRep.toLocal_apply] at h2
+    rw [h2]
+  have hab : IsUnit (φ (Pi.single 0 1)) ∨ IsUnit (φ (Pi.single 1 1)) := by
+    by_contra hc
+    rw [not_or] at hc
+    have hA : φ (Pi.single 0 1) ∈ IsLocalRing.maximalIdeal S :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hc.1
+    have hB : φ (Pi.single 1 1) ∈ IsLocalRing.maximalIdeal S :=
+      (IsLocalRing.mem_maximalIdeal _).mpr hc.2
+    have hmem : ∀ y : S ⊗[C] (Fin 2 → C),
+        πR (e y) ∈ IsLocalRing.maximalIdeal S := by
+      intro y
+      induction y using TensorProduct.induction_on with
+      | zero => rw [map_zero, map_zero]; exact Ideal.zero_mem _
+      | add x y hx hy => rw [map_add, map_add]; exact Ideal.add_mem _ hx hy
+      | tmul c x =>
+        have h1 : (c ⊗ₜ[C] x) = c • ((1 : S) ⊗ₜ[C] x) := by
+          rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+        rw [h1, map_smul, map_smul, smul_eq_mul]
+        refine Ideal.mul_mem_left _ _ ?_
+        show φ x ∈ _
+        rw [hφw]
+        exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hA)
+          (Ideal.mul_mem_left _ _ hB)
+    obtain ⟨z, hz⟩ := hπRsurj 1
+    have h1 : (1 : S) ∈ IsLocalRing.maximalIdeal S := by
+      rw [← hz, ← e.apply_symm_apply z]
+      exact hmem _
+    exact (IsLocalRing.mem_maximalIdeal _).mp h1 isUnit_one
+  refine ⟨φ (Pi.single 0 1), φ (Pi.single 1 1), hab, ?_⟩
+  intro g x
+  have h1 := hφequi g x
+  rw [hφw (ρ'.toLocal w g x), hφw x] at h1
+  exact h1
+
+open scoped TensorProduct in
 /-- **The tame quadratic quotient at a place over `2` descends to the trace
 subring** (LEAF — new 2026-07-26; the `F`-level twin of
 `Deformation.lean`'s PROVEN `isTameAtTwo_of_baseChange_traceSubring`): if
@@ -9390,34 +9885,71 @@ eigen-equations — which transfers the equivariance for ALL of `Γ F_w`, not
 just for `g₀`. In the counterexample above the two characters coincide,
 which is exactly what `χ_ℓ(g₀) ≠ 1` excludes.
 
-**THE ARITHMETIC INPUT DOES *NOT* TRANSPORT VERBATIM — READ THIS BEFORE
-STARTING** (flagged 2026-07-26 at the cut, by the author of the consumer).
-The step "pick `g₀` with `χ_ℓ(g₀) ≢ 1`" is available over `ℚ_2` and is
-**NOT** available over an arbitrary `F_w ∣ 2`. `χ_ℓ mod ℓ` is trivial on
-`Γ F_w` exactly when `μ_ℓ ⊆ F_w`, and `ℚ_2(μ_ℓ)` is the UNRAMIFIED
-extension of `ℚ_2` of degree `ord_ℓ(2)`, which is finite — so any `F` whose
-completion at `w` contains it (e.g. `ℓ = 7` and residue degree `3`, where
-`χ_ℓ(Frob) = 2³ = 8 ≡ 1 mod 7`) kills the argument. Nothing in
-`HilbertDeformationDatum` excludes such an `F`: the totally real field here
-is whatever potential modularity produced.
+**THE ARITHMETIC INPUT DOES *NOT* TRANSPORT VERBATIM** (flagged 2026-07-26
+at the cut, by the author of the consumer). The step "pick `g₀` with
+`χ_ℓ(g₀) ≢ 1`" is available over `ℚ_2` and is **NOT** available over an
+arbitrary `F_w ∣ 2`. `χ_ℓ mod ℓ` is trivial on `Γ F_w` exactly when
+`μ_ℓ ⊆ F_w`, and `ℚ_2(μ_ℓ)` is the UNRAMIFIED extension of `ℚ_2` of degree
+`ord_ℓ(2)`, which is finite — so any `F` whose completion at `w` contains
+it kills the argument. Nothing in `HilbertDeformationDatum` excludes such an
+`F`: the totally real field here is whatever potential modularity produced.
 
-So a prover has three honest options, in order of preference, and should
-NOT quietly re-derive the `ℚ` argument and hope:
+**FALSITY AUDIT — THE HYPOTHESIS-FREE STATEMENT IS FALSE, AND THIS IS WHY
+THE RETRACTION `f` IS NOW A HYPOTHESIS** (2026-07-26; the leaf as originally
+cut carried no `f`, and in that form it is refuted by the witness below).
 
-1. find a different `g₀ ∈ Γ F_w` separating the two residual eigenvalues
-   (the condition is exactly `χ_ℓ(g₀) ≢ 1`, so this is the same obstruction
-   — it is a statement about `μ_ℓ ⊆ F_w`, not about the choice of `g₀`);
-2. prove the descent when `μ_ℓ ⊆ F_w` by a route that does not need the two
-   residual characters to be distinct, using instead the tame datum of `𝒟`
-   itself and the fact that `δ` is already `R'`-valued;
-3. REFUTE it with an explicit `F`, `w`, `𝒟` and descent for which the
-   `Γ F_w`-stable line meets `R'²` only inside `𝔪'R'²`. That is a fully
-   successful outcome and MUST be reported rather than repaired by
-   weakening this statement, because the consumer
-   `exists_framedGaloisRep_hilbertTraceSubring` asserts the full
-   `IsHilbertHardlyRamified` package: a refutation here is a refutation of
-   the cut one level up, and possibly of the `F`-level shape of Carayol's
-   Théorème 1 as this module states it.
+A *concrete* `(F, ℓ, w)` realising the obstruction exists: take `ℓ = 7` and
+`F = ℚ(ζ₇)⁺`, the real cyclotomic cubic field. `2` has order `3` in
+`(ℤ/7)ˣ`, so `2` is INERT in `F` with residue degree `3`, and the unique
+`w ∣ 2` has `F_w = ℚ_2(μ_7)`, the unramified cubic extension. `F` is
+totally real and `ℓ = 7 ≥ 5`, so every side condition of this module holds,
+and `χ_7(Γ F_w) = 1 + 7ℤ_7` — every `g` has `χ_ℓ(g) ≡ 1 (mod ℓ)`, so NO
+`g₀` separates the two residual eigenvalues.
+
+Against that arithmetic backdrop the LATTICE descent genuinely fails. Put
+`R = ℤ_7[[Y]]` and let `R' = ℤ_7[[Z]] ↪ R` by `Z ↦ 7Y` (injective, local,
+closed). For `c ∈ 1 + 7ℤ_7` set
+
+    M_c = [[1, ((1 − c)/7)·Z], [0, c]] ∈ GL₂(R'),
+
+which is a genuine homomorphism `1 + 7ℤ_7 → GL₂(R')`, since
+`u(c') + u(c)c' = u(cc')` for `u(c) = (1 − c)/7`. Take
+`ρ'|_{Γ F_w} : g ↦ M_{χ_7(g)}`; it is continuous, UNRAMIFIED (it factors
+through `χ_7`, which is unramified at `w ∣ 2` because `ℓ ≠ 2`), and has
+`det = χ_7`, exactly as `IsHilbertHardlyRamified.det` demands. Its traces
+are `1 + c ∈ ℤ_7`, so nothing here obstructs `R'` being the trace subring.
+
+* Over `R` the tame datum EXISTS: the row `(1, Y)` satisfies
+  `(1, Y)·M_c = (1, Y)`, it is unimodular (`1` is a unit), and its character
+  is `δ = 1` — unramified with `δ² = 1`. So `𝒟` is a legitimate datum.
+* Over `R'` it does NOT. The `δ = 1` eigenrows in `R'²` are
+  `{(x, Yx) : x, Yx ∈ R'} = 7·R'·(1, Y) = R'·(7, Z)`, and BOTH entries of
+  `(7, Z)` lie in `𝔪' = (7, Z)`: no unimodular eigenrow exists. The only
+  other eigenrow is `(0, 1)`, with character `χ_7`, and `χ_7² ≠ 1` — so it
+  is barred by the `δ² = 1` clause. Hence there is no admissible `p`.
+
+The counterexample dies exactly when `f` is present: a ring retraction
+`f : R ↠ R'` of the inclusion would give `7·f(Y) = Z`, and `Z ∉ 7·ℤ_7[[Z]]`.
+So the retraction hypothesis is not a convenience — it is *precisely* the
+missing content, and with it the proof below is three steps and needs no
+arithmetic at `w` at all (in particular it is insensitive to whether
+`μ_ℓ ⊆ F_w`, which is what makes it a correct `F`-level statement rather
+than a transplanted `ℚ`-level one).
+
+WHY THE RETRACTION IS AVAILABLE UPSTREAM, and why it is a well-posed leaf
+rather than a smuggled hypothesis: see
+`exists_ringHom_retraction_hilbertTraceSubring` below, which supplies it
+from `𝒟.IsWeaklyUniversal`. Briefly — a weakly universal `𝒟` and the
+genuinely universal trace-generated datum `𝒟ᵘⁿⁱᵛ` map to each other, the
+round trip `Rᵘⁿⁱᵛ → 𝒟.R → Rᵘⁿⁱᵛ` fixes every charpoly coefficient and hence
+is the identity on the trace-generated `Rᵘⁿⁱᵛ` (Mazur §1.8), so `𝒟.R`
+retracts onto the image of `Rᵘⁿⁱᵛ`, which is `R'`.
+
+WHAT THIS COSTS THE CUT. Only `exists_framedGaloisRep_hilbertTraceSubring`
+and `exists_hilbertTraceDescent` change, by carrying `f` as a parameter;
+`exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum`
+discharges it from the `IsWeaklyUniversal` hypothesis it already has, so
+NOTHING outside this section sees the repair.
 
 FAITHFULNESS: the conclusion quantifies over `localInertiaGroup w` and MUST
 NOT be widened to `Γ F` or even to `Γ F_w` — the quotient character is
@@ -9443,6 +9975,8 @@ theorem isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring
     {ρbar : GaloisRep ℚ k V}
     (𝒟 : HilbertDeformationDatum ℓ F ρbar)
     (hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ))
+    (f : 𝒟.R →+* hilbertTraceSubring ℓ 𝒟.ρ)
+    (hf : ∀ x : hilbertTraceSubring ℓ 𝒟.ρ, f (x : 𝒟.R) = x)
     (ρ' : FramedGaloisRep F (hilbertTraceSubring ℓ 𝒟.ρ) (Fin 2))
     (e : (𝒟.R ⊗[hilbertTraceSubring ℓ 𝒟.ρ]
         (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)) ≃ₗ[𝒟.R] (Fin 2 → 𝒟.R))
@@ -9457,8 +9991,140 @@ theorem isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring
         ∀ x : Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ,
         p (ρ'.toLocal w g x) = δ g (p x)) ∧
       localInertiaGroup w ≤ δ.ker ∧
-      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 :=
-  sorry
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 := by
+  classical
+  letI := hloc
+  -- the tame datum of `𝒟` itself, at the place `w`
+  obtain ⟨pR, hpRsurj, δR, hRequi, hRinert, hRsq⟩ :=
+    𝒟.isHilbertHardlyRamified.isTameAtTwo w hw
+  -- `δR` is multiplication by the scalar `ε g`
+  set ε : Γ (w.adicCompletion F) → 𝒟.R := fun g => δR g 1 with hεdef
+  have hεapp : ∀ g : Γ (w.adicCompletion F), ε g = δR g 1 := fun _ => rfl
+  have hδRapp : ∀ (g : Γ (w.adicCompletion F)) (y : 𝒟.R), δR g y = ε g * y := by
+    intro g y
+    calc δR g y = δR g (y • (1 : 𝒟.R)) := by rw [smul_eq_mul, mul_one]
+      _ = y • δR g 1 := by rw [map_smul]
+      _ = ε g * y := by rw [hεapp, smul_eq_mul]; exact mul_comm _ _
+  have hεsq : ∀ g, ε g * ε g = 1 := by
+    intro g
+    have h := congrArg (fun t : Module.End 𝒟.R 𝒟.R => t (1 : 𝒟.R)) (hRsq g)
+    simp only [Module.End.mul_apply, Module.End.one_apply] at h
+    rwa [hδRapp, ← hεapp] at h
+  have hεone : ε 1 = 1 := by
+    rw [hεapp, show δR 1 = 1 from map_one δR]
+    rfl
+  have hεmul : ∀ g h', ε (g * h') = ε g * ε h' := by
+    intro g h'
+    rw [hεapp, hεapp, hεapp, show δR (g * h') = δR g * δR h' from map_mul δR g h',
+      Module.End.mul_apply, hδRapp, ← hεapp]
+  have hεinert : ∀ g ∈ localInertiaGroup w, ε g = 1 := by
+    intro g hg
+    rw [hεapp, show δR g = 1 from hRinert hg]
+    rfl
+  -- frame coordinates of the descent, over `𝒟.R`
+  obtain ⟨a, b, hab, hcoord⟩ :=
+    exists_frameCoords_of_baseChange_conj_hilbert (ρ' := ρ') w e he hpRsurj
+      (ε := ε) (fun g x => by rw [hRequi g x, hδRapp])
+  -- push the frame row into `R'` along the retraction
+  set π : (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)
+      →ₗ[hilbertTraceSubring ℓ 𝒟.ρ] (hilbertTraceSubring ℓ 𝒟.ρ) :=
+    (f a) • LinearMap.proj 0 + (f b) • LinearMap.proj 1 with hπdef
+  have hπapp : ∀ x : Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ,
+      π x = f a * x 0 + f b * x 1 := by
+    intro x; simp [hπdef]
+  have hπsurj : Function.Surjective π := by
+    have hab' : IsUnit (f a) ∨ IsUnit (f b) := by
+      rcases hab with h | h
+      · exact Or.inl (h.map f)
+      · exact Or.inr (h.map f)
+    rcases hab' with h | h
+    · obtain ⟨u, hu⟩ := h.exists_right_inv
+      intro c
+      refine ⟨Pi.single 0 (u * c), ?_⟩
+      rw [hπapp]
+      have h0 : (Pi.single (0 : Fin 2) (u * c) :
+        Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ) 0 = u * c := by simp
+      have h1 : (Pi.single (0 : Fin 2) (u * c) :
+        Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ) 1 = 0 := by simp
+      rw [h0, h1, mul_zero, add_zero, ← mul_assoc, hu, one_mul]
+    · obtain ⟨u, hu⟩ := h.exists_right_inv
+      intro c
+      refine ⟨Pi.single 1 (u * c), ?_⟩
+      rw [hπapp]
+      have h0 : (Pi.single (1 : Fin 2) (u * c) :
+        Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ) 0 = 0 := by simp
+      have h1 : (Pi.single (1 : Fin 2) (u * c) :
+        Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ) 1 = u * c := by simp
+      rw [h0, h1, mul_zero, zero_add, ← mul_assoc, hu, one_mul]
+  -- the descended character: the retraction of the ambient one
+  have hπequi : ∀ (g : Γ (w.adicCompletion F))
+      (x : Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ),
+      π (ρ'.toLocal w g x) = f (ε g) * π x := by
+    intro g x
+    have h := congrArg f (hcoord g x)
+    rw [map_add, map_mul, map_mul, hf, hf, map_mul, map_add, map_mul, map_mul,
+      hf, hf] at h
+    rw [hπapp, hπapp]
+    calc f a * (ρ'.toLocal w g x) 0 + f b * (ρ'.toLocal w g x) 1
+        = (ρ'.toLocal w g x) 0 * f a + (ρ'.toLocal w g x) 1 * f b := by
+          rw [mul_comm (f a), mul_comm (f b)]
+      _ = f (ε g) * (x 0 * f a + x 1 * f b) := h
+      _ = f (ε g) * (f a * x 0 + f b * x 1) := by ring
+  have hεCsq : ∀ g, f (ε g) * f (ε g) = 1 := by
+    intro g; rw [← map_mul, hεsq, map_one]
+  -- continuity of the descended character, read off `π` at a section point
+  obtain ⟨x₀, hx₀⟩ := hπsurj 1
+  letI := moduleTopology (hilbertTraceSubring ℓ 𝒟.ρ)
+    (Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
+      (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ))
+  letI := moduleTopology (hilbertTraceSubring ℓ 𝒟.ρ)
+    (Module.End (hilbertTraceSubring ℓ 𝒟.ρ) (hilbertTraceSubring ℓ 𝒟.ρ))
+  haveI : ContinuousAdd
+      (Module.End (hilbertTraceSubring ℓ 𝒟.ρ) (hilbertTraceSubring ℓ 𝒟.ρ)) :=
+    ModuleTopology.continuousAdd _ _
+  haveI : ContinuousSMul (hilbertTraceSubring ℓ 𝒟.ρ)
+      (Module.End (hilbertTraceSubring ℓ 𝒟.ρ) (hilbertTraceSubring ℓ 𝒟.ρ)) :=
+    ModuleTopology.continuousSMul _ _
+  have hεCcont : Continuous (fun g => f (ε g)) := by
+    have h1 : (fun g => f (ε g)) = fun g =>
+        (π ∘ₗ (LinearMap.applyₗ x₀ :
+          Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
+              (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)
+            →ₗ[hilbertTraceSubring ℓ 𝒟.ρ]
+              (Fin 2 → hilbertTraceSubring ℓ 𝒟.ρ)))
+          ((ρ'.toLocal w) g) := by
+      funext g
+      have h2 := hπequi g x₀
+      rw [hx₀, mul_one] at h2
+      exact h2.symm
+    rw [h1]
+    exact (IsModuleTopology.continuous_of_linearMap _).comp
+      (ρ'.toLocal w).continuous_toFun
+  set δ : GaloisRep (w.adicCompletion F) (hilbertTraceSubring ℓ 𝒟.ρ)
+      (hilbertTraceSubring ℓ 𝒟.ρ) :=
+    { toFun := fun g => f (ε g) • (1 : Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
+        (hilbertTraceSubring ℓ 𝒟.ρ))
+      map_one' := by rw [hεone, map_one, one_smul]
+      map_mul' := fun g h' => by
+        refine LinearMap.ext fun c => ?_
+        simp only [hεmul, map_mul, LinearMap.smul_apply, Module.End.one_apply,
+          Module.End.mul_apply, smul_eq_mul]
+        ring
+      continuous_toFun := hεCcont.smul continuous_const } with hδdef
+  have hδapp : ∀ (g : Γ (w.adicCompletion F))
+      (c : hilbertTraceSubring ℓ 𝒟.ρ), δ g c = f (ε g) * c := by
+    intro g c
+    show (f (ε g) • (1 : Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
+      (hilbertTraceSubring ℓ 𝒟.ρ))) c = f (ε g) * c
+    rw [LinearMap.smul_apply, Module.End.one_apply, smul_eq_mul]
+  refine ⟨π, hπsurj, δ, fun g x => ?_, fun σ hσ => ?_, fun g => ?_⟩
+  · rw [hπequi, hδapp]
+  · show f (ε σ) • (1 : Module.End (hilbertTraceSubring ℓ 𝒟.ρ)
+      (hilbertTraceSubring ℓ 𝒟.ρ)) = 1
+    rw [hεinert σ hσ, map_one, one_smul]
+  · refine LinearMap.ext fun c => ?_
+    show (δ g) ((δ g) c) = c
+    rw [hδapp, hδapp, ← mul_assoc, hεCsq, one_mul]
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
@@ -9518,7 +10184,9 @@ theorem exists_framedGaloisRep_hilbertTraceSubring
     {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar)
-    (hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ)) :
+    (hloc : IsLocalRing (hilbertTraceSubring ℓ 𝒟.ρ))
+    (f : 𝒟.R →+* hilbertTraceSubring ℓ 𝒟.ρ)
+    (hf : ∀ x : hilbertTraceSubring ℓ 𝒟.ρ, f (x : 𝒟.R) = x) :
     letI := hloc
     ∃ ρ' : FramedGaloisRep F (hilbertTraceSubring ℓ 𝒟.ρ) (Fin 2),
       IsHilbertHardlyRamified ℓ F
@@ -9577,11 +10245,68 @@ theorem exists_framedGaloisRep_hilbertTraceSubring
   · -- the tame quadratic quotient at every `w ∣ 2` (descent leaf)
     intro w hw
     exact isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring ℓ hℓ5 F 𝒟 hloc
-      ρ' e he w hw
+      f hf ρ' e he w hw
   · -- the characteristic polynomials, through the base change
     intro g
     conv_rhs => rw [← he]
     exact (charpoly_baseChange_conj_hilbert ρ' e g).symm
+
+/-- **The trace-subring inclusion of a WEAKLY UNIVERSAL datum admits a ring
+retraction** (LEAF — new 2026-07-26, and it is the repaired form of an
+obstruction that was previously hidden inside
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring`): for a weakly
+universal `𝒟` there is a ring homomorphism `f : 𝒟.R → R'` onto the trace
+subring which is the identity on `R'`.
+
+WHY THIS LEAF EXISTS AT ALL, and why it is not a smuggled hypothesis. The
+FALSITY AUDIT in the docstring of
+`isHilbertTameAtTwo_of_baseChange_hilbertTraceSubring` exhibits an explicit
+`R' = ℤ_7[[Z]] ↪ ℤ_7[[Y]] = R` (by `Z ↦ 7Y`), together with a legitimate
+unramified local representation at a place `w ∣ 2` of the totally real field
+`F = ℚ(ζ₇)⁺`, for which the tame datum exists over `R` and does NOT exist
+over `R'`. That refutes the tame descent as a statement about an arbitrary
+datum. What kills the witness is exactly the retraction: `7·f(Y) = Z` is
+unsolvable in `ℤ_7[[Z]]`. So the content that the descent needs is precisely
+this, and it belongs in a named leaf rather than inside a proof.
+
+THE ARGUMENT, which is Mazur §1.8 plus one round trip and is why the
+statement is TRUE (only its formalization is open). Let `𝒟ᵘⁿⁱᵛ` be the
+genuinely universal datum; for absolutely irreducible `ρbar` its ring
+`Rᵘⁿⁱᵛ` is topologically generated by the traces of the universal
+deformation. Weak universality of `𝒟` gives `𝒟.R → Rᵘⁿⁱᵛ`, and `𝒟` being a
+datum gives `h : Rᵘⁿⁱᵛ → 𝒟.R`; both are compatible with the `ℤ_ℓ`-structure
+maps, the reduction maps and — the load-bearing clause — the characteristic
+polynomials at every `g : Γ F`. So the round trip `Rᵘⁿⁱᵛ → 𝒟.R → Rᵘⁿⁱᵛ`
+fixes every charpoly coefficient, hence fixes a topologically generating set
+of `Rᵘⁿⁱᵛ`, hence (being continuous) is the identity. Therefore `h` is split
+injective, its image is closed and is exactly the closed subring generated
+by the charpoly coefficients of `𝒟.ρ` together with `ℤ_ℓ` and the
+Teichmüller roots — that is, `R' = hilbertTraceSubring ℓ 𝒟.ρ` — and
+`f := h ∘ (the retraction)` corestricted to `R'` is the required map.
+
+WHY `IsWeaklyUniversal` MAY NOT BE DROPPED. Without it the statement is
+false, by the same `ℤ_7[[Z]] ↪ ℤ_7[[Y]]` witness: nothing constrains a bare
+datum's ring to retract onto its trace subring.
+
+FAITHFULNESS: `f` is asked to be a bare `RingHom`, not a continuous
+`ℤ_ℓ`-algebra map. That is deliberate and is all the consumer uses — a unit
+of `𝒟.R` lying in `R'` maps to a unit of `R'`, and `f` is automatically
+`R'`-linear because it fixes `R'`. Asking for less makes the leaf easier
+without making the consumer weaker.
+
+References: Mazur, *Deforming Galois representations*, §1.8; Carayol, op.
+cit., Théorème 1. -/
+theorem exists_ringHom_retraction_hilbertTraceSubring
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ) (F : Type u) [Field F] [NumberField F]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
+    {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
+    [Module.Free k V]
+    {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar) (h𝒟 : 𝒟.IsWeaklyUniversal) :
+    ∃ f : 𝒟.R →+* hilbertTraceSubring ℓ 𝒟.ρ,
+      ∀ x : hilbertTraceSubring ℓ 𝒟.ρ, f (x : 𝒟.R) = x :=
+  sorry
 
 /-- **Carayol subring-descent stratum at the `F` level** (PROVEN 2026-07-26
 as glue over the two Carayol strata above —
@@ -9613,14 +10338,16 @@ theorem exists_hilbertTraceDescent
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V} (hlk : ((ℓ : ℕ) : k) = 0)
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟 : HilbertDeformationDatum ℓ F ρbar) :
+    (𝒟 : HilbertDeformationDatum ℓ F ρbar)
+    (f : 𝒟.R →+* hilbertTraceSubring ℓ 𝒟.ρ)
+    (hf : ∀ x : hilbertTraceSubring ℓ 𝒟.ρ, f (x : 𝒟.R) = x) :
     ∃ 𝒟' : HilbertDeformationDatum ℓ F ρbar, 𝒟.IsTraceDescent 𝒟' := by
   classical
   obtain ⟨hloc, hnoeth, hadic, hcompl⟩ :=
     exists_isLocalRing_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟
   letI := hloc
   obtain ⟨ρ', hhr', hcp'⟩ :=
-    exists_framedGaloisRep_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟 hloc
+    exists_framedGaloisRep_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟 hloc f hf
   refine ⟨{ R := hilbertTraceSubring ℓ 𝒟.ρ
             isLocalRing := hloc
             isNoetherianRing := hnoeth
@@ -9684,8 +10411,10 @@ theorem exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum
     (𝒟 : HilbertDeformationDatum ℓ F ρbar) (h𝒟 : 𝒟.IsWeaklyUniversal) :
     ∃ 𝒟' : HilbertDeformationDatum ℓ F ρbar,
       𝒟'.IsWeaklyUniversal ∧ 𝒟'.IsTraceGenerated := by
+  obtain ⟨f, hf⟩ :=
+    exists_ringHom_retraction_hilbertTraceSubring ℓ hℓ5 F hirrF 𝒟 h𝒟
   obtain ⟨𝒟', ht', ι, hι1, hι2, hι3⟩ :=
-    exists_hilbertTraceDescent ℓ hℓ5 F hlk hirrF 𝒟
+    exists_hilbertTraceDescent ℓ hℓ5 F hlk hirrF 𝒟 f hf
   refine ⟨𝒟', ?_, ht'⟩
   intro 𝒟''
   obtain ⟨f, hf1, hf2, hf3⟩ := h𝒟 𝒟''

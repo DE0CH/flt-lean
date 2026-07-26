@@ -32,6 +32,9 @@ import Fermat.FLT.Deformations.RepresentationTheory.FlatProlongation
 -- the STATEMENT of the shared brick `convPow_apply_of_comul_absorbs`
 -- below, hence public.
 public import Mathlib.RingTheory.HopfAlgebra.Convolution
+-- `LinearIndepOn.tmul_of_isDomain`, the flatness input to the linear
+-- independence of corner group-likes (`linearIndepOn_cornerGroupLikeSet`)
+public import Mathlib.RingTheory.Flat.Domain
 -- the CONSTANT group scheme `Spec (G → R)` — the Hopf algebra of functions
 -- on a finite group, dual to its group law. Absent from mathlib on this pin
 -- (`Pi.instCoalgebraStruct` is the componentwise structure, not this one), so
@@ -2952,20 +2955,303 @@ theorem isSepClosed_residueField_unramifiedIntegers
   refine ⟨IsLocalRing.residue (unramifiedIntegers p) a, ?_⟩
   rw [← hfmap, Polynomial.eval_map, Polynomial.eval₂_at_apply, hfa, map_zero]
 
+/-! ### Corner group-likes: linear independence, and requirement (R4)
+
+This block is pure coalgebra over a field. It has nothing to do with `p`, with
+Raynaud, or with the arithmetic of `𝒪ᵖᵥ`; it exists to DISCHARGE requirement
+(R4) of the μ-type citation below — *multiplicative type ⟹ unramified character
+group* — in a formulation that needs no Cartier duality and no character-group
+SCHEME.
+
+The observation that makes (R4) cheap (2026-07-26): "`G°` is of multiplicative
+type" says, in Hopf terms, that the group-likes of the corner GENERATE it, and
+"the character group is unramified" says that EVERY corner group-like is
+unramified. So (R4) is exactly the implication
+
+  *some* generating family of corner group-likes is unramified
+    ⟹ *every* corner group-like is unramified,
+
+and that implication is classical linear independence of characters,
+transplanted from `IsGroupLikeElem` to the corner: a corner group-like lying in
+the span of a set of corner group-likes must BE one of them. Since the
+unramified part is closed under multiplication and contains the corner unit,
+the monomials in the generating family stay unramified, and the conclusion
+follows. No étale-scheme machinery, and in particular no vendoring from
+`~/cs/FLT`'s henselian cluster, turned out to be needed for (R4).
+
+The abstraction is deliberate rather than stylistic: this file already records
+that a corner argument written against the concrete ring timed out at 800,000
+heartbeats and compiled in ~20 s once factored into an abstract lemma. -/
+
+section CornerGroupLikeIndependence
+
+variable {k A : Type*} [Field k] [CommRing A] [Bialgebra k A]
+
+/-- **The group-likes of the corner cut out by an idempotent `e`**: elements
+that are counit-normalised and comultiply diagonally AFTER absorption into the
+corner. For `e = 1` this is mathlib's `IsGroupLikeElem`; in general it is the
+set that half (α) `exists_grouplike_family_generating_corner` produces and that
+the μ-type citation is about. -/
+def cornerGroupLikeSet (k : Type*) [Field k] {A : Type*} [CommRing A]
+    [Bialgebra k A] (e : A) : Set A :=
+  {a : A | Coalgebra.counit (R := k) a = (1 : k) ∧
+    Coalgebra.comul (R := k) a * (e ⊗ₜ[k] e) = a ⊗ₜ[k] a}
+
+/-- **A corner group-like already lies in the corner** (PROVEN 2026-07-26):
+`a * e = a`. This is the formal version of the remark in the μ-type docstring
+that `hglx` by itself forces `x` into the corner.
+
+PROOF. Apply the algebra hom `F = μ ∘ (id ⊗ ε) : A ⊗[k] A →ₐ[k] A`,
+`u ⊗ v ↦ u · ε(v)`, to `Δ a · (e ⊗ e) = a ⊗ a`. On the left `F (Δ a) = a` is the
+counit axiom `Coalgebra.lTensor_counit_comul` (as `F` agrees with
+`rid ∘ lTensor ε`), and `F (e ⊗ e) = e · ε e = e`; on the right
+`F (a ⊗ a) = a · ε a = a`. -/
+theorem mul_idem_eq_of_mem_cornerGroupLikeSet {e a : A}
+    (hεe : Coalgebra.counit (R := k) e = (1 : k))
+    (ha : a ∈ cornerGroupLikeSet k e) : a * e = a := by
+  obtain ⟨hεa, hcom⟩ := ha
+  set F : A ⊗[k] A →ₐ[k] A :=
+    Algebra.TensorProduct.lift (AlgHom.id k A)
+      ((Algebra.ofId k A).comp (Bialgebra.counitAlgHom k A)) (fun _ _ => Commute.all _ _) with hF
+  have hFtmul : ∀ u v : A, F (u ⊗ₜ[k] v) = u * algebraMap k A (Coalgebra.counit (R := k) v) := by
+    intro u v
+    rw [hF]
+    simp [Algebra.ofId_apply]
+  have hEq : (F : A ⊗[k] A →ₗ[k] A) =
+      (TensorProduct.rid k A).toLinearMap ∘ₗ
+        (LinearMap.lTensor A (Coalgebra.counit (R := k) (A := A))) := by
+    apply TensorProduct.ext'
+    intro u v
+    simp [hFtmul, Algebra.smul_def, mul_comm]
+  have hFcomul : F (Coalgebra.comul (R := k) a) = a := by
+    have h := congrArg (fun (f : A ⊗[k] A →ₗ[k] A) => f (Coalgebra.comul (R := k) a)) hEq
+    simp only [LinearMap.coe_comp, Function.comp_apply] at h
+    rw [show F (Coalgebra.comul (R := k) a) = (F : A ⊗[k] A →ₗ[k] A)
+      (Coalgebra.comul (R := k) a) from rfl, h, Coalgebra.lTensor_counit_comul]
+    simp
+  have h := congrArg F hcom
+  rw [map_mul, hFcomul, hFtmul e e, hεe, map_one, mul_one, hFtmul a a, hεa, map_one, mul_one] at h
+  exact h
+
+/-- **Corner group-likes are closed under multiplication** (PROVEN 2026-07-26):
+`Δ` and `ε` are algebra homs, and `e ⊗ e` is idempotent, so the two absorption
+identities multiply. -/
+theorem mul_mem_cornerGroupLikeSet {e a b : A} (he : IsIdempotentElem e)
+    (ha : a ∈ cornerGroupLikeSet k e) (hb : b ∈ cornerGroupLikeSet k e) :
+    a * b ∈ cornerGroupLikeSet k e := by
+  obtain ⟨hεa, hca⟩ := ha
+  obtain ⟨hεb, hcb⟩ := hb
+  have hee : (e ⊗ₜ[k] e) * (e ⊗ₜ[k] e) = (e ⊗ₜ[k] e) := by
+    rw [Algebra.TensorProduct.tmul_mul_tmul, he]
+  refine ⟨?_, ?_⟩
+  · have := map_mul (Bialgebra.counitAlgHom k A) a b
+    simp only [Bialgebra.counitAlgHom_apply] at this
+    rw [this, hεa, hεb, one_mul]
+  · have hmul : Coalgebra.comul (R := k) (a * b) =
+        Coalgebra.comul (R := k) a * Coalgebra.comul (R := k) b :=
+      map_mul (Bialgebra.comulAlgHom k A) a b
+    calc Coalgebra.comul (R := k) (a * b) * (e ⊗ₜ[k] e)
+        = (Coalgebra.comul (R := k) a * (e ⊗ₜ[k] e)) *
+            (Coalgebra.comul (R := k) b * (e ⊗ₜ[k] e)) := by
+          rw [hmul]
+          rw [show (Coalgebra.comul (R := k) a * (e ⊗ₜ[k] e)) *
+            (Coalgebra.comul (R := k) b * (e ⊗ₜ[k] e)) =
+            Coalgebra.comul (R := k) a * Coalgebra.comul (R := k) b *
+              ((e ⊗ₜ[k] e) * (e ⊗ₜ[k] e)) by ring, hee]
+      _ = (a * b) ⊗ₜ[k] (a * b) := by
+          rw [hca, hcb, Algebra.TensorProduct.tmul_mul_tmul]
+
+/-- **Corner group-likes are linearly independent** (PROVEN 2026-07-26).
+
+This is mathlib's `Coalgebra.linearIndepOn_isGroupLikeElem` with the corner
+absorption inserted: the proof is the same induction over finsets, with `Δ`
+replaced throughout by `Δ` followed by multiplication with `e ⊗ e` — a `k`-LINEAR
+map, which is all the argument uses of it. `IsGroupLikeElem` itself is not
+available here, since `Δ x = x ⊗ x` FAILS for a corner group-like as soon as
+`e ≠ 1` (already for `x = e`).
+
+This is the engine of (R4): a corner group-like in the span of corner
+group-likes is one of them. -/
+theorem linearIndepOn_cornerGroupLikeSet (e : A) :
+    LinearIndepOn k id (cornerGroupLikeSet k e) := by
+  classical
+  rw [linearIndepOn_iff_linearIndepOn_finset]
+  rintro s hs
+  induction s using Finset.cons_induction with
+  | empty => simp
+  | cons a s has ih =>
+  simp only [Finset.cons_eq_insert, Finset.coe_insert, Set.subset_def, Set.mem_insert_iff,
+    Finset.mem_coe, forall_eq_or_imp] at hs
+  obtain ⟨ha, hs⟩ := hs
+  specialize ih hs
+  rw [Finset.coe_cons]
+  refine ih.id_insert' ?_
+  simp only [Submodule.mem_span_finset, forall_exists_index, and_imp]
+  rintro d c - hc
+  replace ih := ih.tmul_of_isDomain ih
+  simp_rw [← Finset.coe_product, linearIndepOn_finset_iffₛ, id] at ih
+  have hsum : ∑ x ∈ s, c x • (x ⊗ₜ[k] x) = d • (a ⊗ₜ[k] a) := by
+    have h1 : (LinearMap.mulRight k (e ⊗ₜ[k] e))
+        (Coalgebra.comul (R := k) (∑ x ∈ s, c x • x)) = ∑ x ∈ s, c x • (x ⊗ₜ[k] x) := by
+      rw [map_sum, map_sum]
+      refine Finset.sum_congr rfl fun x hx => ?_
+      rw [map_smul, map_smul]
+      simp only [LinearMap.mulRight_apply]
+      rw [(hs x hx).2]
+    rw [← h1, hc, map_smul, map_smul]
+    simp only [LinearMap.mulRight_apply]
+    rw [ha.2]
+  have key := calc
+        ∑ x ∈ s, ∑ y ∈ s, (if x = y then d * c x else 0) • x ⊗ₜ[k] y
+    _ = d • ∑ x ∈ s, c x • x ⊗ₜ[k] x := by simp [Finset.smul_sum, mul_smul]
+    _ = d • (d • (a ⊗ₜ[k] a)) := by rw [hsum]
+    _ = (d • a) ⊗ₜ[k] (d • a) := by
+        rw [TensorProduct.smul_tmul', TensorProduct.tmul_smul]
+    _ = ∑ x ∈ s, ∑ y ∈ s, (c x * c y) • x ⊗ₜ[k] y := by
+      simp_rw [← hc, TensorProduct.sum_tmul, TensorProduct.smul_tmul, Finset.smul_sum,
+        TensorProduct.tmul_sum, TensorProduct.tmul_smul, mul_smul]
+  simp_rw [← Finset.sum_product'] at key
+  apply ih at key
+  have hane : a ≠ 0 := by
+    intro h
+    have hεa : Coalgebra.counit (R := k) a = (1 : k) := ha.1
+    rw [h, map_zero] at hεa
+    exact zero_ne_one hεa
+  replace key x (hx : x ∈ s) : c x = 0 := by
+    by_contra! hcx
+    have hcy (y) (hys : y ∈ s) (hyx : y ≠ x) : c y = 0 := by
+      simpa [*] using (key (y, x) (by simp [*])).symm
+    rw [Finset.sum_eq_single x (by simp +contextual [hcy]) (by simp [hx])] at hc
+    have hcxa : d = c x := mul_left_injective₀ hcx (by simpa using (key (x, x) (by simp [*])))
+    obtain rfl : x = a := by rwa [hcxa, smul_right_inj hcx] at hc
+    contradiction
+  simp_all [eq_comm]
+
+/-- **(R4), abstractly** (PROVEN 2026-07-26). If the corner of `A` is GENERATED
+as a `k`-algebra by corner group-likes all of which lie in a multiplicatively
+closed set `U` containing the corner unit `e`, then EVERY corner group-like lies
+in `U`.
+
+PROOF. Write `T` for the set `{m · e | m ∈ ⟨y⟩}`, `⟨y⟩` the multiplicative
+closure of the generating family. Every element of `T` is a corner group-like in
+`U`: at `m = 1` it is `e`, at `m = y i` it is `y i` (a corner group-like absorbs
+`e`), and `m₁ m₂ e = (m₁ e)(m₂ e)` by idempotence, with corner group-likes and
+`U` both closed under multiplication. Now `x = x · e` lies in
+`(adjoin k (range y)) · e = span k T` (`Algebra.adjoin_eq_span` plus
+`Submodule.map_span`), and `x` is itself a corner group-like — so by
+`linearIndepOn_cornerGroupLikeSet` it cannot lie in the span of a set of OTHER
+corner group-likes unless it is one of them. Hence `x ∈ T ⊆ U`.
+
+`U` is deliberately a bare multiplicatively closed SET, not a subalgebra: at the
+call site it is `unramifiedTensorSubmodule G`, an `𝒪ᵖᵥ`-submodule which is NOT a
+`k = ℚᵖᵥᵃˡᵍ`-submodule — that is the whole point of the μ-type conclusion. -/
+theorem mem_of_mem_cornerGroupLikeSet_of_adjoin {e : A} (he : IsIdempotentElem e)
+    (heW : e ∈ cornerGroupLikeSet k e)
+    (U : Set A) (heU : e ∈ U) (hUmul : ∀ a ∈ U, ∀ b ∈ U, a * b ∈ U)
+    {ι : Type*} (y : ι → A) (hyW : ∀ i, y i ∈ cornerGroupLikeSet k e) (hyU : ∀ i, y i ∈ U)
+    (hgen : ∀ z : A, z * e ∈ Algebra.adjoin k (Set.range y))
+    {x : A} (hx : x ∈ cornerGroupLikeSet k e) : x ∈ U := by
+  classical
+  set W := cornerGroupLikeSet k e with hW
+  set T : Set A := (fun m => m * e) '' (Submonoid.closure (Set.range y) : Set A) with hT
+  have hclos : ∀ m ∈ Submonoid.closure (Set.range y), m * e ∈ W ∩ U := by
+    intro m hm
+    induction hm using Submonoid.closure_induction with
+    | one => rw [one_mul]; exact ⟨heW, heU⟩
+    | mem z hz =>
+        obtain ⟨i, rfl⟩ := hz
+        rw [mul_idem_eq_of_mem_cornerGroupLikeSet heW.1 (hyW i)]
+        exact ⟨hyW i, hyU i⟩
+    | mul m₁ m₂ _ _ h₁ h₂ =>
+        have hsplit : m₁ * m₂ * e = (m₁ * e) * (m₂ * e) := by
+          rw [show (m₁ * e) * (m₂ * e) = m₁ * m₂ * (e * e) by ring, he]
+        rw [hsplit]
+        exact ⟨mul_mem_cornerGroupLikeSet he h₁.1 h₂.1, hUmul _ h₁.2 _ h₂.2⟩
+  have hTsub : T ⊆ W ∩ U := by
+    rintro t ⟨m, hm, rfl⟩
+    exact hclos m hm
+  have hxe : x * e = x := mul_idem_eq_of_mem_cornerGroupLikeSet heW.1 hx
+  have hspan : x ∈ Submodule.span k T := by
+    have hmem : x * e ∈ Submodule.span k (Submonoid.closure (Set.range y) : Set A) := by
+      rw [← Algebra.adjoin_eq_span]
+      exact hgen x
+    have hmap := Submodule.mem_map_of_mem (f := LinearMap.mulRight k e) hmem
+    rw [Submodule.map_span] at hmap
+    have himg : (LinearMap.mulRight k e) '' (Submonoid.closure (Set.range y) : Set A) = T := rfl
+    rw [himg] at hmap
+    have hfix : (LinearMap.mulRight k e) (x * e) = x := by
+      simp only [LinearMap.mulRight_apply]
+      rw [hxe, hxe]
+    rwa [hfix] at hmap
+  have hli : LinearIndepOn k id W := linearIndepOn_cornerGroupLikeSet e
+  have hTW : T ⊆ W := fun t ht => (hTsub ht).1
+  have hxT : x ∈ T :=
+    ((hli.mono hTW).mem_span_iff_id).mp hspan (hli.mono (Set.insert_subset hx hTW))
+  exact (hTsub hxT).2
+
+end CornerGroupLikeIndependence
+
+/-- **The unramified part is closed under multiplication** (PROVEN 2026-07-26):
+`(a ⊗ g) · (b ⊗ h) = (a b) ⊗ (g h)` and the inertia-fixed field is a subring, so
+the generators of `unramifiedTensorSubmodule G` multiply into generators;
+bilinearity of the product propagates this through the two spans.
+
+This is what lets the `𝒪ᵖᵥ`-submodule `unramifiedTensorSubmodule G` be used as
+the set `U` of `mem_of_mem_cornerGroupLikeSet_of_adjoin`. -/
+theorem mul_mem_unramifiedTensorSubmodule (G : Type) [CommRing G] [Algebra 𝒪ᵖᵥ G]
+    {a b : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G} (ha : a ∈ unramifiedTensorSubmodule G)
+    (hb : b ∈ unramifiedTensorSubmodule G) :
+    a * b ∈ unramifiedTensorSubmodule G := by
+  induction ha using Submodule.span_induction with
+  | mem t ht =>
+      induction hb using Submodule.span_induction with
+      | mem s hs =>
+          obtain ⟨α, hα, g, rfl⟩ := ht
+          obtain ⟨β, hβ, h, rfl⟩ := hs
+          exact Submodule.subset_span
+            ⟨α * β, mul_mem hα hβ, g * h, by rw [Algebra.TensorProduct.tmul_mul_tmul]⟩
+      | zero => simp
+      | add u v _ _ hu hv => rw [mul_add]; exact Submodule.add_mem _ hu hv
+      | smul c u _ hu => rw [mul_smul_comm]; exact Submodule.smul_mem _ _ hu
+  | zero => simp
+  | add u v _ _ hu hv => rw [add_mul]; exact Submodule.add_mem _ hu hv
+  | smul c u _ hu => rw [smul_mul_assoc]; exact Submodule.smul_mem _ _ hu
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 include hpodd in
 /-- **Half (β) of the μ-type node, SHARPENED to an `ℚᵖᵥᵘⁿʳ`-rationality
-statement: every group-like of the connected corner is UNRAMIFIED**
-(SORRY NODE — the genuine Raynaud/Oort–Tate citation of this cut.
-Split off `exists_grouplike_family_of_connected_hopf_package` on
-2026-07-25 as an inertia-invariance statement, and restated on
-2026-07-26 in this `σ`-FREE form, which is what the classification
-actually delivers and which implies the invariance form through the
-PROVEN `localInertia_fixes_of_mem_unramifiedTensorSubmodule` above.
-This is the ONLY place where the `p`-adic hypotheses `hchar`/`fG`
-and the odd-`e = 1` input `hpodd` are spent.)
+statement: the connected corner is DIAGONALIZABLE over the strict
+henselisation** (SORRY NODE — the genuine Raynaud/Oort–Tate citation of this
+cut.
+
+RESTATED 2026-07-26 (third pass, this owner) from "every corner group-like is
+unramified" to "SOME generating family of corner group-likes is unramified",
+i.e. from the CHARACTER-GROUP conclusion to the MULTIPLICATIVE-TYPE hypothesis
+that Raynaud's classification actually delivers. The two are equivalent, and the
+equivalence is the point: the direction that was requirement (R4) —
+*multiplicative type ⟹ unramified character group* — is now PROVEN, in
+`grouplike_corner_mem_unramifiedTensorSubmodule_of_strictlyHenselian` below, via
+`mem_of_mem_cornerGroupLikeSet_of_adjoin` and the linear independence of corner
+group-likes. So (R4) has left the citation, and what remains here is (R1)–(R3):
+the dévissage, the order-`p` dichotomy and the extension step.
+
+The conclusion is deliberately half (α)'s conclusion
+(`exists_grouplike_family_generating_corner`, PROVEN) with ONE clause added: the
+family may be taken inside `unramifiedTensorSubmodule G`. Half (α) supplies the
+family over the algebraically closed `ℚᵖᵥᵃˡᵍ` with no arithmetic input; the added
+clause is precisely the arithmetic, and it is where all of `hchar`/`fG`/`hpodd`
+and the strictly henselian base `hhens`/`hsep` are spent.
+
+EARLIER HISTORY (this node's, inherited unchanged). Split off
+`exists_grouplike_family_of_connected_hopf_package` on 2026-07-25 as an
+inertia-invariance statement, and restated on 2026-07-26 in a `σ`-FREE
+form, which is what the classification actually delivers and which
+implies the invariance form through the PROVEN
+`localInertia_fixes_of_mem_unramifiedTensorSubmodule` above. This is
+the ONLY place where the `p`-adic hypotheses `hchar`/`fG` and the
+odd-`e = 1` input `hpodd` are spent.)
 
 NARROWED 2026-07-26 (second pass): FIVE hypotheses were removed after
 an audit of where the cited proof actually spends its inputs, so the
@@ -3108,7 +3394,9 @@ could have made the leaf FALSE for large `f`.
 
 VERDICT (2026-07-26, this owner): IRREDUCIBLY A CITATION at the present
 state of the tree. What remains, enumerated, with its formalization
-status:
+status. **(R4) IS NO LONGER PART OF IT — see the note under (R4) below;
+it is proven, and this leaf's restatement is exactly what discharging it
+bought.** So the live requirements are (R1)–(R3):
 
 (R1) *Raynaud dévissage*: over `𝒪ᵖᵥ` with `e = 1 < p − 1`, a finite
      flat group scheme killed by `p` acquires, over the STRICT
@@ -3138,14 +3426,32 @@ status:
 (R3) *the extension step*: an iterated extension of `μ`-types over the
      henselian `𝒪ᵖᵥ` is of multiplicative type (dually: étale-by-étale
      is étale). This is where FLATNESS does its work — see (S2).
-(R4) *multiplicative type ⟹ unramified character group*: formalizable
-     from `Algebra.FormallyEtale.equivPiOfIsSepClosed` once a strictly
-     henselian base is available. **UNBLOCKED 2026-07-26**: that base is
-     `unramifiedIntegers p`, and `hsep` is precisely the `IsSepClosed`
-     input `equivPiOfIsSepClosed` asks for — applied to the residue
-     field of the base, over which the étale character group becomes
-     constant. (R4) is now an argument to write, not an object to
-     invent.
+(R4) *multiplicative type ⟹ unramified character group*: **PROVEN
+     2026-07-26, and it is why this leaf now reads as it does.** It was
+     expected to need `Algebra.FormallyEtale.equivPiOfIsSepClosed` over
+     the strictly henselian base, plus the character group of `G°` as an
+     étale SCHEME — i.e. Cartier duality, which this tree does not have.
+     None of that was necessary. In Hopf terms "multiplicative type"
+     says the corner group-likes GENERATE the corner and "unramified
+     character group" says they are ALL unramified, so (R4) is the
+     implication *some generating family is unramified ⟹ every corner
+     group-like is unramified* — and that is classical linear
+     independence of characters. The chain, all proven above:
+     `linearIndepOn_cornerGroupLikeSet` (mathlib's
+     `linearIndepOn_isGroupLikeElem` with the corner absorption
+     inserted), `mul_idem_eq_of_mem_cornerGroupLikeSet`,
+     `mul_mem_cornerGroupLikeSet`, `mul_mem_unramifiedTensorSubmodule`,
+     assembled in `mem_of_mem_cornerGroupLikeSet_of_adjoin` and applied
+     in `grouplike_corner_mem_unramifiedTensorSubmodule_of_strictlyHenselian`.
+
+     Two consequences worth recording, since both contradict what this
+     docstring previously predicted. First, `hhens` and `hsep` are NOT
+     spent by (R4) after all — they survive as hypotheses of this leaf
+     because (R1) still needs them, but the strictly henselian base was
+     never what (R4) was missing. Second, the `~/cs/FLT` henselian
+     cluster (712 sorry-free lines, audited and pin-cleared in the
+     survey below) is NOT needed for (R4) and was not vendored; if it is
+     ever wanted it will be for (R1)'s dévissage.
 
 SUPPLY SURVEY (2026-07-26, a later owner). It produced NO new cut; it is
 recorded only so that the next owner does not repeat the search. Every
@@ -3187,6 +3493,18 @@ pointer below was checked against OUR pin.
   (v4.32.0 against our v4.32.0-rc1), so it needs an audit to vendor.
 * If anyone builds the corner Hopf order as an object, mathlib's corner
   API is `IsIdempotentElem.Corner`, `Mathlib/RingTheory/Idempotents.lean:552`.
+
+A FOURTH ROUTE WAS FOUND (2026-07-26, this owner), and it is none of the
+three below, so the survey that rejected them stands. It is not a cut
+along the ARGUMENT at all: it is the observation that this leaf's
+conclusion quantifies over ONE arbitrary corner group-like, whereas
+Raynaud's classification delivers a STATEMENT ABOUT THE WHOLE CORNER
+(diagonalizability), and that the gap between the two is exactly
+linear independence of characters. Restating the leaf in the
+whole-corner form therefore removes (R4) from the citation at the cost
+of nothing — the equivalence is proven, not assumed. The three routes
+below were all attempts to move (R1)–(R3), which this does not; they
+remain rejected for the reasons given.
 
 NO THIRD CUT was found; the three routes examined collapse into what is
 already refuted below. (a) Citing the INVARIANCE form and descending to
@@ -3234,6 +3552,69 @@ owner does not pay for them again):
      i.e. by UNRAMIFIED classes only, so the ramified unipotent class
      has no finite flat model. Level-one and flatness therefore cannot
      be separated here the way `hstab` separates them at order `p`. -/
+theorem exists_unramified_grouplike_family_generating_corner
+    [Algebra R (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
+    (hhens : HenselianLocalRing (unramifiedIntegers p))
+    (hsep : IsSepClosed (IsLocalRing.ResidueField (unramifiedIntegers p)))
+    (hZinj : Function.Injective (algebraMap ℤ_[p] R))
+    (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
+    (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
+    (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
+    (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
+    (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
+      (Polynomial.X - Polynomial.C (χ₁ g)) * (Polynomial.X - Polynomial.C (χ₂ g)))
+    (I : Ideal R) (hI : IsOpen (I : Set R))
+    (G : Type) [CommRing G]
+    [HopfAlgebra 𝒪ᵖᵥ G] [Module.Flat 𝒪ᵖᵥ G] [Module.Finite 𝒪ᵖᵥ G]
+    [Algebra.Etale ℚᵖᵥ (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G)]
+    (fG : Additive (ℚᵖᵥ ⊗[𝒪ᵖᵥ] G →ₐ[ℚᵖᵥ] ℚᵖᵥᵃˡᵍ) →+[Field.absoluteGaloisGroup ℚᵖᵥ]
+      (((ρ.baseChange (R ⧸ I)).toLocal
+        hp.out.toHeightOneSpectrumRingOfIntegersRat).Space))
+    (hfG : Function.Bijective fG)
+    (e₀ : G) (he₀ : IsIdempotentElem e₀)
+    (hε₀ : Coalgebra.counit (R := 𝒪ᵖᵥ) e₀ = (1 : 𝒪ᵖᵥ))
+    (hprim₀ : ∀ x : G, IsIdempotentElem x → x * e₀ = 0 ∨ x * e₀ = e₀)
+    (hcomul₀ : Coalgebra.comul (R := 𝒪ᵖᵥ) e₀ * (e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      e₀ ⊗ₜ[𝒪ᵖᵥ] e₀) :
+    ∃ (ι : Type) (y : ι → ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G),
+      (∀ i, Coalgebra.counit (R := ℚᵖᵥᵃˡᵍ) (y i) = (1 : ℚᵖᵥᵃˡᵍ)) ∧
+      (∀ i, Coalgebra.comul (R := ℚᵖᵥᵃˡᵍ) (y i) *
+          (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
+        y i ⊗ₜ[ℚᵖᵥᵃˡᵍ] y i) ∧
+      (∀ i, y i ∈ unramifiedTensorSubmodule G) ∧
+      (∀ z : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G, z * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ∈
+        Algebra.adjoin ℚᵖᵥᵃˡᵍ (Set.range y)) :=
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 2000000 in
+include hpodd in
+/-- **Half (β) of the μ-type node: every group-like of the connected corner is
+UNRAMIFIED** (PROVEN 2026-07-26 over the restated citation above; it was the
+sorry node until then).
+
+This is requirement (R4) of that citation — *multiplicative type ⟹ unramified
+character group* — and its whole content is that the two forms of "the corner is
+`ℚᵖᵥᵘⁿʳ`-diagonalizable" are equivalent:
+
+* the citation delivers a GENERATING FAMILY of corner group-likes inside
+  `unramifiedTensorSubmodule G` (`exists_unramified_grouplike_family_generating_corner`);
+* this statement asks that EVERY corner group-like lies there.
+
+The bridge is linear independence of corner group-likes
+(`linearIndepOn_cornerGroupLikeSet`): `x` absorbs the corner unit
+(`mul_idem_eq_of_mem_cornerGroupLikeSet`), so it lies in the span of the
+monomials in the family; those monomials are themselves corner group-likes
+(`mul_mem_cornerGroupLikeSet`) and are unramified, since the unramified part is
+multiplicatively closed (`mul_mem_unramifiedTensorSubmodule`) and contains
+`ē₀ = 1 ⊗ e₀`; and a corner group-like in the span of corner group-likes must be
+one of them. That is `mem_of_mem_cornerGroupLikeSet_of_adjoin`, and this proof is
+its instantiation.
+
+Every hypothesis is passed straight through to the citation, including `hhens`
+and `hsep`: they are spent by (R1), not by this step. -/
 theorem grouplike_corner_mem_unramifiedTensorSubmodule_of_strictlyHenselian
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
@@ -3264,8 +3645,32 @@ theorem grouplike_corner_mem_unramifiedTensorSubmodule_of_strictlyHenselian
     (hglx : Coalgebra.comul (R := ℚᵖᵥᵃˡᵍ) x *
         (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
       x ⊗ₜ[ℚᵖᵥᵃˡᵍ] x) :
-    x ∈ unramifiedTensorSubmodule G :=
-  sorry
+    x ∈ unramifiedTensorSubmodule G := by
+  classical
+  obtain ⟨ι, y, hy₁, hy₂, hyU, hgen⟩ :=
+    exists_unramified_grouplike_family_generating_corner hpodd hhens hsep hZinj hRinj
+      χ₁ χ₂ hmul₁ hmul₂ hchar I hI G fG hfG e₀ he₀ hε₀ hprim₀ hcomul₀
+  have hidem : IsIdempotentElem ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) := by
+    show ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) * ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) = _
+    rw [Algebra.TensorProduct.tmul_mul_tmul, one_mul, he₀]
+  have hcount : Coalgebra.counit (R := ℚᵖᵥᵃˡᵍ) ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) =
+      (1 : ℚᵖᵥᵃˡᵍ) := by
+    rw [counit_one_tmul, hε₀, map_one]
+  have hcom : Coalgebra.comul (R := ℚᵖᵥᵃˡᵍ) ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) *
+      (((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀)) =
+      ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) ⊗ₜ[ℚᵖᵥᵃˡᵍ] ((1 : ℚᵖᵥᵃˡᵍ) ⊗ₜ[𝒪ᵖᵥ] e₀) :=
+    comul_one_tmul_absorbs e₀ hcomul₀
+  -- The `U` of the abstract lemma is the unramified part as a bare SET — it is an
+  -- `𝒪ᵖᵥ`-submodule and emphatically NOT a `ℚᵖᵥᵃˡᵍ`-submodule, which is the whole
+  -- point of the μ-type conclusion. Written as a `setOf` rather than as the
+  -- `SetLike` coercion: the coercion is not inserted against the metavariable that
+  -- the explicit `U` argument presents, and the ascribed form fails to elaborate.
+  refine mem_of_mem_cornerGroupLikeSet_of_adjoin hidem ⟨hcount, hcom⟩
+    {a : ℚᵖᵥᵃˡᵍ ⊗[𝒪ᵖᵥ] G | a ∈ unramifiedTensorSubmodule G} ?_ ?_ y
+    (fun i => ⟨hy₁ i, hy₂ i⟩) ?_ hgen ⟨hεx, hglx⟩
+  · exact Submodule.subset_span ⟨1, one_mem _, e₀, rfl⟩
+  · exact fun _ ha _ hb => mul_mem_unramifiedTensorSubmodule G ha hb
+  · exact hyU
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
