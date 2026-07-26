@@ -4202,6 +4202,202 @@ theorem velu_map_add_of_coordX (S : Finset W.Point) (hS : IsPointSubgroup S)
     rw [W.veluMap_of_notMem hS hodd hAB]; exact hx A B hA hB hAB
   exact velu_pointX_eq_iff hne (hz A B hA hB hAB) hxAB
 
+/-! ### STAR: the norm of a line function, paired with its own negation
+
+The five lemmas below prove `STAR`, the computable half of the norm identity that the open
+leaf `velu_map_add_of_notMem` needs; see the ROUTE MAP in that leaf's docstring for how it
+fits. Writing `f` for the line function `y − (ℓ(x − x_A) + y_A)` on `W` and
+`N(P) = ∏_{Q ∈ S} f(P + Q)` for its norm along the kernel,
+
+  `N(P) · N(−P) = −κ · (X P − X T₁)(X P − X T₂)(X P − X T₃)`,   `κ = ∏ᵢ H(x(Tᵢ))`,
+
+where `T₁, T₂, T₃` are the three points of `W` cut out by the line. The proof is four moves:
+reindex the second product by `Q ↦ −Q` so that the two products pair up termwise; turn each
+pair `f(R)·f(−R)` into `addPolynomial.eval (x R)` using the Weierstrass equation at `R`;
+factor `addPolynomial` through its three roots; and evaluate each of the three resulting
+fibre products with `velu_xNum_sub_eq_prod`, whose value at `x(T)` is `H(x T)·(X P − X T)`
+by `veluXNum_eval`. The sign `(−1)^{|S|} = −1` is where `hodd` enters. -/
+
+omit [DecidableEq F] [CharZero F] [W.IsElliptic] in
+/-- The value of mathlib's `addPolynomial` at a point, in closed form. -/
+lemma velu_addPolynomial_eval (x y ℓ ξ : F) :
+    (W.addPolynomial x y ℓ).eval ξ
+      = (ℓ * (ξ - x) + y) ^ 2 + W.a₁ * ξ * (ℓ * (ξ - x) + y) + W.a₃ * (ℓ * (ξ - x) + y)
+        - (ξ ^ 3 + W.a₂ * ξ ^ 2 + W.a₄ * ξ + W.a₆) := by
+  rw [Affine.addPolynomial_eq]
+  simp only [Cubic.toPoly, Polynomial.eval_neg, Polynomial.eval_add, Polynomial.eval_mul,
+    Polynomial.eval_pow, Polynomial.eval_C, Polynomial.eval_X]
+  ring
+
+omit [CharZero F] [W.IsElliptic] in
+/-- Reindexing a PRODUCT over the kernel by negation, the multiplicative companion of
+`velu_sum_neg`. -/
+lemma velu_prod_neg {S : Finset W.Point} (hS : IsPointSubgroup S) (g : W.Point → F) :
+    ∏ Q ∈ S, g (-Q) = ∏ Q ∈ S, g Q :=
+  Finset.prod_nbij' (fun Q => -Q) (fun Q => -Q)
+    (fun a ha => hS.neg_mem a ha) (fun a ha => hS.neg_mem a ha)
+    (fun a _ => neg_neg a) (fun a _ => neg_neg a) (fun _ _ => rfl)
+
+omit [DecidableEq F] [CharZero F] [W.IsElliptic] in
+/-- **PROVEN.** The line function at `R` times the line function at `−R` is the value of
+`addPolynomial` at `x(R)`: the `y`-linear terms cancel against `negY`, and what is left is
+the Weierstrass equation at `R`. This is the pointwise brick under `STAR`. -/
+lemma velu_line_pair (x y ℓ : F) {R : W.Point} (hR : R ≠ 0) :
+    (veluPointY R - (ℓ * (veluPointX R - x) + y))
+      * (veluPointY (-R) - (ℓ * (veluPointX (-R) - x) + y))
+      = (W.addPolynomial x y ℓ).eval (veluPointX R) := by
+  have heq : W.Equation (veluPointX R) (veluPointY R) := by
+    cases R with
+    | zero => exact absurd rfl hR
+    | some x' y' h => exact h.1
+  rw [Affine.equation_iff] at heq
+  rw [velu_pointX_neg, velu_pointY_neg R hR, velu_addPolynomial_eval]
+  linear_combination -heq
+
+/-- **PROVEN.** The product of `x(P + Q) − c` over the kernel, read off the fibre polynomial
+`velu_xNum_sub_eq_prod`. The sign `(−1)^{|S|} = −1` is where `hodd` is used. -/
+lemma velu_fibre_prod_sub (S : Finset W.Point) (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P : W.Point} (hP : P ∉ S) (c : F) :
+    ∏ Q ∈ S, (veluPointX (P + Q) - c)
+      = W.veluCoordX S P * (veluH S).eval c - (veluXNum S).eval c := by
+  have hkey := congrArg (Polynomial.eval c) (velu_xNum_sub_eq_prod W S hS hodd hP)
+  simp only [Polynomial.eval_sub, Polynomial.eval_mul, Polynomial.eval_C, Polynomial.eval_prod,
+    Polynomial.eval_X] at hkey
+  have hneg : ∏ Q ∈ S, (veluPointX (P + Q) - c)
+      = (-1 : F) ^ S.card * ∏ Q ∈ S, (c - veluPointX (P + Q)) := by
+    rw [← Finset.prod_const, ← Finset.prod_mul_distrib]
+    exact Finset.prod_congr rfl fun Q _ => by ring
+  rw [hneg, ← hkey, hodd.neg_one_pow]
+  ring
+
+/-- **PROVEN.** The same fibre product at the `x`-coordinate of a point `T` OUTSIDE the
+kernel, where `veluXNum_eval` turns `XNum(x T)` into `H(x T)·X T`: the product is
+`H(x T)·(X P − X T)`, i.e. it sees only the Vélu coordinates. -/
+lemma velu_fibre_prod_sub_point (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) {P : W.Point} (hP : P ∉ S) {T : W.Point} (hT : T ∉ S) :
+    ∏ Q ∈ S, (veluPointX (P + Q) - veluPointX T)
+      = (veluH S).eval (veluPointX T) * (W.veluCoordX S P - W.veluCoordX S T) := by
+  rw [velu_fibre_prod_sub W S hS hodd hP, veluXNum_eval hS hodd hT]
+  ring
+
+/-- **STAR, PROVEN 2026-07-26 (general line).** For ANY line `y = ℓ(x − x₀) + y₀` whose
+`addPolynomial` factors through three points `T₁, T₂, T₃` of `W` lying outside the kernel,
+the norm `N(P) = ∏_{Q ∈ S} f(P + Q)` of the line function satisfies
+
+  `N(P) · N(−P) = −(H(x T₁)H(x T₂)H(x T₃)) · (X P − X T₁)(X P − X T₂)(X P − X T₃)`.
+
+The factorization is passed as the hypothesis `hfac` rather than derived, so that the lemma
+covers the TANGENT line (`T₁ = T₂`) on the same footing as the secant — which matters,
+because the tangent case is exactly the degenerate subcase of the additivity leaf.
+
+`STAR` pins the norm only up to SIGN; supplying the sign is `HNORM`, the statement that the
+norm is itself a line function on the quotient, and that is the content still missing. -/
+lemma velu_norm_line_mul_neg (S : Finset W.Point) (hS : IsPointSubgroup S) (hodd : Odd S.card)
+    {P : W.Point} (hP : P ∉ S) (x₀ y₀ ℓ : F)
+    {T₁ T₂ T₃ : W.Point} (h₁ : T₁ ∉ S) (h₂ : T₂ ∉ S) (h₃ : T₃ ∉ S)
+    (hfac : W.addPolynomial x₀ y₀ ℓ
+      = -((Polynomial.X - Polynomial.C (veluPointX T₁))
+          * (Polynomial.X - Polynomial.C (veluPointX T₂))
+          * (Polynomial.X - Polynomial.C (veluPointX T₃)))) :
+    (∏ Q ∈ S, (veluPointY (P + Q) - (ℓ * (veluPointX (P + Q) - x₀) + y₀)))
+      * (∏ Q ∈ S, (veluPointY (-P + Q) - (ℓ * (veluPointX (-P + Q) - x₀) + y₀)))
+      = -((veluH S).eval (veluPointX T₁) * (veluH S).eval (veluPointX T₂)
+            * (veluH S).eval (veluPointX T₃))
+        * ((W.veluCoordX S P - W.veluCoordX S T₁) * (W.veluCoordX S P - W.veluCoordX S T₂)
+            * (W.veluCoordX S P - W.veluCoordX S T₃)) := by
+  classical
+  have hre : (∏ Q ∈ S, (veluPointY (-P + Q) - (ℓ * (veluPointX (-P + Q) - x₀) + y₀)))
+      = ∏ Q ∈ S, (veluPointY (-(P + Q)) - (ℓ * (veluPointX (-(P + Q)) - x₀) + y₀)) := by
+    rw [← velu_prod_neg W hS
+      (fun Q => veluPointY (-P + Q) - (ℓ * (veluPointX (-P + Q) - x₀) + y₀))]
+    exact Finset.prod_congr rfl fun Q _ => by
+      rw [show (-P + -Q : W.Point) = -(P + Q) by abel]
+  have hstep : ∀ Q ∈ S,
+      (veluPointY (P + Q) - (ℓ * (veluPointX (P + Q) - x₀) + y₀))
+        * (veluPointY (-(P + Q)) - (ℓ * (veluPointX (-(P + Q)) - x₀) + y₀))
+      = -((veluPointX (P + Q) - veluPointX T₁) * (veluPointX (P + Q) - veluPointX T₂)
+            * (veluPointX (P + Q) - veluPointX T₃)) := by
+    intro Q hQ
+    have hPQ : P + Q ∉ S := velu_add_notMem hS hP hQ
+    have hPQ0 : P + Q ≠ 0 := fun h => hPQ (h ▸ hS.zero_mem)
+    rw [velu_line_pair W x₀ y₀ ℓ hPQ0, hfac]
+    simp only [Polynomial.eval_neg, Polynomial.eval_mul, Polynomial.eval_sub, Polynomial.eval_X,
+      Polynomial.eval_C]
+  rw [hre, ← Finset.prod_mul_distrib, Finset.prod_congr rfl hstep]
+  have hsplit : (∏ Q ∈ S, -((veluPointX (P + Q) - veluPointX T₁)
+        * (veluPointX (P + Q) - veluPointX T₂) * (veluPointX (P + Q) - veluPointX T₃)))
+      = (-1 : F) ^ S.card * ((∏ Q ∈ S, (veluPointX (P + Q) - veluPointX T₁))
+          * (∏ Q ∈ S, (veluPointX (P + Q) - veluPointX T₂))
+          * (∏ Q ∈ S, (veluPointX (P + Q) - veluPointX T₃))) := by
+    rw [← Finset.prod_const, ← Finset.prod_mul_distrib, ← Finset.prod_mul_distrib,
+      ← Finset.prod_mul_distrib]
+    exact Finset.prod_congr rfl fun Q _ => by ring
+  rw [hsplit, hodd.neg_one_pow, velu_fibre_prod_sub_point W S hS hodd hP h₁,
+    velu_fibre_prod_sub_point W S hS hodd hP h₂, velu_fibre_prod_sub_point W S hS hodd hP h₃]
+  ring
+
+/-- **STAR for the secant through `A` and `B`, PROVEN 2026-07-26.** The specialization of
+`velu_norm_line_mul_neg` to the line of `velu_map_add_of_notMem`: `ℓ` is mathlib's `slope`,
+the three points cut out are `A`, `B` and `−(A + B)`, and `A + B ∉ S` is exactly what
+supplies mathlib's nondegeneracy side condition `¬(x_A = x_B ∧ y_A = negY x_B y_B)`, since
+that condition says precisely `A = −B`.
+
+The third point is recorded through `veluPointX (A + B)`, which is legitimate because
+`veluPointX` and `veluCoordX` are both even (`velu_pointX_neg`, `veluCoordX_neg`), so the
+third factor is stated at `A + B` rather than at `−(A + B)`. -/
+theorem velu_norm_line_mul_neg_slope (S : Finset W.Point) (hS : IsPointSubgroup S)
+    (hodd : Odd S.card) {A B : W.Point} (hA : A ∉ S) (hB : B ∉ S) (hAB : A + B ∉ S)
+    {P : W.Point} (hP : P ∉ S) :
+    (∏ Q ∈ S, (veluPointY (P + Q)
+        - (W.slope (veluPointX A) (veluPointX B) (veluPointY A) (veluPointY B)
+            * (veluPointX (P + Q) - veluPointX A) + veluPointY A)))
+      * (∏ Q ∈ S, (veluPointY (-P + Q)
+        - (W.slope (veluPointX A) (veluPointX B) (veluPointY A) (veluPointY B)
+            * (veluPointX (-P + Q) - veluPointX A) + veluPointY A)))
+      = -((veluH S).eval (veluPointX A) * (veluH S).eval (veluPointX B)
+            * (veluH S).eval (veluPointX (A + B)))
+        * ((W.veluCoordX S P - W.veluCoordX S A) * (W.veluCoordX S P - W.veluCoordX S B)
+            * (W.veluCoordX S P - W.veluCoordX S (A + B))) := by
+  have hA0 : A ≠ 0 := fun h => hA (h ▸ hS.zero_mem)
+  have hB0 : B ≠ 0 := fun h => hB (h ▸ hS.zero_mem)
+  have hAB0 : A + B ≠ 0 := fun h => hAB (h ▸ hS.zero_mem)
+  have heqA : W.Equation (veluPointX A) (veluPointY A) := by
+    cases A with
+    | zero => exact absurd rfl hA0
+    | some x y h => exact h.1
+  have heqB : W.Equation (veluPointX B) (veluPointY B) := by
+    cases B with
+    | zero => exact absurd rfl hB0
+    | some x y h => exact h.1
+  have hxy : ¬(veluPointX A = veluPointX B
+      ∧ veluPointY A = W.negY (veluPointX B) (veluPointY B)) := by
+    rintro ⟨hx, hy⟩
+    refine hAB0 ?_
+    have hAn : A = -B := by
+      cases A with
+      | zero => exact absurd rfl hA0
+      | some xa ya ha =>
+        cases B with
+        | zero => exact absurd rfl hB0
+        | some xb yb hb =>
+          rw [Affine.Point.neg_some]
+          exact velu_point_some_eq hx hy
+    rw [hAn, neg_add_cancel]
+  have hxAB : veluPointX (A + B)
+      = W.addX (veluPointX A) (veluPointX B)
+          (W.slope (veluPointX A) (veluPointX B) (veluPointY A) (veluPointY B)) := by
+    cases A with
+    | zero => exact absurd rfl hA0
+    | some xa ya ha =>
+      cases B with
+      | zero => exact absurd rfl hB0
+      | some xb yb hb =>
+        simp only [veluPointX_some, veluPointY_some] at hxy ⊢
+        rw [Affine.Point.add_some hxy]
+        rfl
+  refine velu_norm_line_mul_neg W S hS hodd hP (veluPointX A) (veluPointY A) _ hA hB hAB ?_
+  rw [Affine.addPolynomial_slope heqA heqB hxy, hxAB]
+
 /-- **SORRY LEAF: the generic case of Vélu additivity**, cut 2026-07-26 out of
 `velu_map_add`: `P`, `Q` and `P + Q` all lie OUTSIDE the kernel, so all three Vélu images
 are affine points and the identity is the genuine addition law on the quotient curve.
@@ -4309,7 +4505,8 @@ That is "the norm of the line function is again a line function", i.e. the norm 
 `F(V)` — the invariant-function statement in its most concrete form. Verified in the sweep
 above, `c² = κ` included.
 
-**THE COMPUTABLE HALF IS ALREADY IN REACH HERE, AND IT IS SIGN-BLIND.** The companion
+**THE COMPUTABLE HALF IS NOW PROVEN (2026-07-26, third owner), AND IT IS SIGN-BLIND.** The
+companion
 
   **(STAR)  N(P)·N(−P) = −κ · (X P − X A)(X P − X B)(X P − X C)   for `P ∉ S`**
 
@@ -4326,8 +4523,15 @@ scratch module — it is four lines (`congrArg (Polynomial.eval c)`, then `simp 
 the Weierstrass equation at `R` gives exactly `(W.addPolynomial x_A y_A ℓ).eval x_R`, and
 `addX x_A x_B ℓ = x_{A+B} = x_C`. Assembling the two over `S` (reindexing
 `∏_{Q} F(−(P+Q)) = N(−P)` by `Q ↦ −Q`, and using `veluXNum_eval` to turn
-`XNum(x_T)` into `H(x_T)·X T`) gives STAR; all the sign powers of `(−1)^n` cancel. Estimated
-80–120 lines. STAR was verified in the same PARI sweep.
+`XNum(x_T)` into `H(x_T)·X T`) gives STAR; all the sign powers of `(−1)^n` cancel.
+
+That is now DONE, and it came in at the low end of the estimate. STAR is
+`velu_norm_line_mul_neg` (general line, hypothesis `hfac` supplying the factorization, so
+the TANGENT case is covered too) and `velu_norm_line_mul_neg_slope` (the secant through `A`
+and `B`), just above this docstring, off the four bricks `velu_addPolynomial_eval`,
+`velu_prod_neg`, `velu_line_pair` and `velu_fibre_prod_sub` / `velu_fibre_prod_sub_point`.
+Every one of them is `[propext, Classical.choice, Quot.sound]`. STAR was verified in the
+same PARI sweep.
 
 The reason to record STAR is what it shows: it pins `N` only up to SIGN, and **the missing
 sign is exactly the content of this leaf**. The norm of a VERTICAL line is computable from
@@ -4354,6 +4558,71 @@ fix, legitimate here because `CharZero F` makes `W(F̄)` infinite and `velu_base
 `veluBaseChangePoint` / `velu_baseChange_isPointSubgroup` are already in this file (a
 base-change lemma for `veluCoordX` itself would have to be added). That subcase is real, not
 hypothetical, and a decomposition that skipped it would be unfaithful.
+
+## WITH STAR PROVEN: THE ASSEMBLY FROM HNORM IS ~40 LINES, NOT A COEFFICIENT COMPARISON
+
+(2026-07-26, third owner.) The coefficient-comparison finish sketched above works, but it is
+not the cheap one, and it is what forces the case split on collisions. Write `V` for
+`veluCurve W S` and suppose `HNORM` holds for the secant through `A`, `B`, with constants
+`c, λ, μ` and `c² = κ`. Then:
+
+1. `c ≠ 0`, because `κ ≠ 0` by `veluH_eval_ne_zero` at `A`, `B`, `A + B`, all outside `S`.
+2. `N` vanishes at `A`, at `B` and at `−(A + B)`: in each case the `Q = 0` factor of the
+   product is the line function at a point lying ON the line. With `c ≠ 0`, HNORM turns
+   that into `Y T = λ · X T + μ` for those three `T`; `veluCoordX_neg` and `veluCoordY_neg`
+   move the third one from `−(A + B)` to `A + B`.
+3. Substituting HNORM into STAR, and applying `velu_line_pair` ON `V` at the point `ψP` —
+   whose coordinates are `(X P, Y P)` by `veluMap_of_notMem`, and whose negative has
+   coordinates given by `veluCoordX_neg` / `veluCoordY_neg` — cancels `c² = κ ≠ 0` and
+   leaves, for EVERY `P ∉ S`,
+
+     `(V.addPolynomial (X A) (Y A) λ).eval (X P) = −(X P − X A)(X P − X B)(X P − X (A+B))`.
+
+4. `λ` is `V.slope (X A) (X B) (Y A) (Y B)`: step 2 gives it when `X A ≠ X B`, and the
+   nondegeneracy side condition `¬(X A = X B ∧ Y A = V.negY (X B) (Y B))` is already proven
+   here — it is `velu_coord_ne_neg`.
+5. So `addPolynomial_slope` ON `V` factors the left side as
+   `−(ξ − X A)(ξ − X B)(ξ − V.addX (X A) (X B) λ)`, and the two cubics differ by a product
+   that collapses: `−(ξ−a)(ξ−b)(ξ−u) + (ξ−a)(ξ−b)(ξ−v) = (ξ−a)(ξ−b)(u−v)`. Hence
+
+     `(X P − X A)(X P − X B) · (V.addX (X A) (X B) λ − X (A+B)) = 0`  for every `P ∉ S`.
+
+6. ONE point `P ∉ S` with `X P ≠ X A` and `X P ≠ X B` therefore finishes it, and
+   `V.addX (X A) (X B) λ = X (A+B)` IS the leaf, in the exact form that
+   `velu_map_add_of_coordX` consumes.
+
+No cubic-coefficient comparison, no degree count, and NO separate treatment of the
+degenerate subcase.
+
+**The only remaining gap besides HNORM is that one auxiliary point, and it is real.** Step 6
+needs `P` outside the five cosets `S`, `±A + S`, `±B + S`. Over `F̄` that is free; over `F`
+it can genuinely fail. Take `A` of order `3` modulo `S`, `B ≡ A`, and `W(F) = ⟨A⟩ + S`: then
+`A, B, A + B ∉ S` all hold, every admissible `P` has `X P = X A`, and the conclusion
+(`3·ψA = 0`, true because `3A ∈ S`) is invisible to this argument. So the finish is: base
+change to `F̄`, apply there, descend by injectivity of `veluBaseChangePoint`. The
+base-change lemmas for `H`, `XNum`, `Xi`, `Theta`, `T`, `W`, the curve and
+`IsPointSubgroup` are all already in this file; the ONE that is missing is for `veluCoordX`
+itself, and it should be a short `Finset.prod`/`sum` reindexing off
+`veluBaseChangePoint_pointX`.
+
+**Collisions all reduce to DOUBLING** (recorded so it need not be rederived). `X A = X B`
+forces `A ≡ B mod S`, since `A ≡ −B` is excluded by `A + B ∉ S`, so the claim is
+`ψ(2A) = 2ψA`; `X A = X C` forces `2A + B ∈ S`, i.e. `B ≡ −2A`, and the claim is again
+`ψ(2A) = 2ψA`; `X B = X C` forces `A + 2B ∈ S`, the same statement at `B`. So the collision
+cases carry EXACTLY the duplication content — which is why the collinearity restatement,
+being blind to multiplicity, is vacuous precisely there.
+
+**Why HNORM is irreducible, and the check that would refute that.** `N` is `S`-invariant by
+construction (reindex the product), so HNORM says exactly that an `S`-invariant function
+lies in `F(X, Y)` — the invariant-function theorem for `F(W)` over `F(W)^S`. Two cheaper
+attempts were tried here and both fail for a structural reason: STAR determines `N` only up
+to sign, and no identity pairing `N` against `N∘[−1]` can supply it, because every such
+identity is EVEN; and splitting `N` into even and odd parts does not help either, since the
+odd part is the half carrying the content and it is a PRODUCT that would have to be shown
+proportional to a SUM. The refuting check, for anyone who believes otherwise: exhibit
+`Σ_{Q∈S} u(x(P+Q))·y(P+Q)` as an explicit expression in `X P` and `Y P` for a single `u`
+other than `u = 1`. Vélu's `Y` is precisely the `u = 1` case, and it is a DEFINITION, not a
+theorem.
 
 **Absence re-checked 2026-07-26.** `grep -ril 'isogeny\|RiemannRoch'` over
 `Mathlib/AlgebraicGeometry` and `Mathlib/NumberTheory` returns NOTHING, and the same over
