@@ -738,7 +738,13 @@ become five separate literature nodes:
   - `not_cyclicIsogeny_sq_of_prime_ge_seven` over
     `not_cyclicIsogeny_sq_of_isogenyPrime`, Mazur's prime node cutting the
     uniform `p ≥ 7` down to the nine primes
-    `{7, 11, 13, 17, 19, 37, 43, 67, 163}`.
+    `{7, 11, 13, 17, 19, 37, 43, 67, 163}` — and that node was in turn
+    PROVEN on 2026-07-26 over FOUR leaves, split by the genus of `X_0(p)`:
+    the two genus-`0`-below levels `not_cyclicIsogeny_fortyNine` and
+    `not_cyclicIsogeny_oneHundredSixtyNine`, and, for the other seven
+    primes, `jInvariant_mem_of_isogenyPrime_ge_eleven` (the eleven
+    `j`-invariants with a rational `p`-isogeny) together with
+    `not_cyclicIsogeny_sq_of_jInvariant` (the finite check on them).
 
   The two still-cited ones carry route notes in their docstrings: level
   `81` reduces to the single `j`-invariant `−12288000` as soon as the
@@ -1096,45 +1102,346 @@ theorem WeierstrassCurve.not_cyclicIsogeny_oneHundredTwentyFive
     False :=
   sorry
 
+/-!
+##### The nine levels `X_0(p²)`, split by the GENUS OF `X_0(p)` (2026-07-26)
+
+`not_cyclicIsogeny_sq_of_isogenyPrime` is now PROVEN from four shallower
+nodes. The split is deliberately NOT "one leaf per prime": the nine primes
+fall into exactly two mathematically different regimes, and which regime a
+prime is in is decided by the genus of the level BELOW, `X_0(p)`.
+
+* `p ∈ {7, 13}` — `X_0(p)` has **genus `0`**, so infinitely many curves
+  over `ℚ` carry a cyclic `p`-isogeny and nothing whatever pins `j(E)`.
+  The level `p²` therefore has to be faced as a curve in its own right.
+  These are the two concrete leaves `not_cyclicIsogeny_fortyNine` and
+  `not_cyclicIsogeny_oneHundredSixtyNine`.
+* `p ∈ {11, 17, 19, 37, 43, 67, 163}` — `X_0(p)` has genus `≥ 1` with
+  finitely many rational points, so a cyclic `p`-isogeny already pins
+  `j(E)` to an explicit finite list, and the level `p²` becomes a finite
+  check on that list. This is exactly the shape of
+  `j_of_stable_cyclic_subgroup_order_27`, and it splits into the leaf that
+  SUPPLIES the list (`jInvariant_mem_of_isogenyPrime_ge_eleven` — GENUINE
+  content, satisfiable hypothesis) and the leaf that CHECKS it
+  (`not_cyclicIsogeny_sq_of_jInvariant`).
+
+So seven of the nine primes are handled by one pair of leaves rather than
+seven separate modular curves — which matters, because the seven levels are
+the huge ones: `X_0(26569)` has genus `2146`.
+
+**Modular data, Magma 2026-07-26** (`Genus(Gamma0(N))`, `#Cusps`,
+`Index`; untrusted searcher, never a proof). `[SL₂(ℤ) : Γ₀(p²)] = p² + p`
+and `#cusps = p + 1`, of which exactly `2` are rational (the cusps `0` and
+`∞`; the `p − 1` cusps of denominator `p` are conjugate over `ℚ(ζ_p)`):
+
+    p     N=p²    index    genus    cusps    genus(X_0(N)/w_N)
+    7      49       56       1        8            0
+    11    121      132       6       12            2
+    13    169      182       8       14            3
+    17    289      306      17       18            7
+    19    361      380      22       20            9
+    37   1369     1406      98       38            —
+    43   1849     1892     136       44            —
+    67   4489     4556     346       68            —
+    163 26569    26732    2146      164            —
+
+**Why the second regime is a finite check, and the certificate for it.**
+The non-cuspidal rational points of `X_0(p)` for the seven primes are
+classical (Mazur, *Rational isogenies of prime degree*, Thm 1 and its
+table; the genus-`1` levels `11, 17, 19` are `X_0(p)(ℚ) ≅ ℤ/5, ℤ/4, ℤ/3`
+with `2` cusps each, re-derived here with Magma's `SmallModularCurve`,
+2026-07-26), giving eleven `j`-invariants in all:
+
+    p = 11 : −11·131³ = −24729001,  −2¹⁵ = −32768,  −11² = −121
+    p = 17 : −17²·101³/2 = −297756989/2,
+             −17·373³/2¹⁷ = −882216989/131072
+    p = 19 : −2¹⁵·3³ = −884736
+    p = 37 : −7·11³ = −9317,  −7·137³·2083³ = −162677523113838677
+    p = 43 : −2¹⁸·3³·5³ = −884736000
+    p = 67 : −2¹⁵·3³·5³·11³ = −147197952000
+    p = 163: −2¹⁸·3³·5³·23³·29³ = −262537412640768000
+
+All are CM except the two at `p = 17` and the two at `p = 37`. PARI/GP
+`ellisomat(ellfromj(j))` (2026-07-26, untrusted searcher) returns, for
+every one of the eleven, the degree matrix `[1, p; p, 1]` — i.e. the whole
+`ℚ`-isogeny class is a SINGLE EDGE. That is the certificate, because of the
+standard dictionary recorded next.
+
+**The dictionary that turns `p²` into a statement about the isogeny
+graph.** A cyclic `p²`-subgroup `C ⊆ E` makes `E' := E/C[p]` carry two
+DISTINCT stable subgroups of order `p`, namely `C/C[p]` and `E[p]/C[p]`
+(distinct because `C ∩ E[p] = C[p]` and `#C = p²`); so `E'[p]` is
+diagonalisable over `ℚ`, with characters `λ̄` and `χ λ̄⁻¹`. Conversely two
+independent `p`-isogenies compose to a cyclic `p²`-isogeny. Hence
+
+  *a cyclic `p²`-isogeny exists over `ℚ` **iff** some vertex of the
+   `p`-isogeny graph over `ℚ` has degree `≥ 2`*,
+
+and a class that is a single edge has no such vertex. Equivalently the
+whole node says: no elliptic curve over `ℚ` has diagonal mod-`p`
+representation for `p ≥ 7` — a statement about the isogeny characters this
+file already manufactures in `exists_isogenyCharacter`, which is the route
+to take if the modular curves are ever to be avoided.
+
+**Faithfulness.** The statement is TRUE and non-vacuous in the only sense
+available to a node whose conclusion is `False`: `p²` is absent from the
+Mazur–Kenku list `{1, …, 19, 21, 25, 27, 37, 43, 67, 163}` for every one of
+the nine primes (`49, 121, 169, 289, 361, 1369, 1849, 4489, 26569`), and
+the eleven explicit `ellisomat` matrices above confirm the seven-prime
+regime independently of that list. -/
+
+/-- **No rational cyclic `49`-isogeny** (sorry node — level `X_0(49)`,
+introduced 2026-07-26 by the split of `not_cyclicIsogeny_sq_of_isogenyPrime`
+along the genus of `X_0(p)`): no elliptic curve over `ℚ` carries a
+Galois-stable cyclic subgroup of order `49`.
+
+This is one of the two primes where `X_0(p)` has genus `0`, so `j(E)` is not
+pinned and the level must be faced directly. It is by a wide margin the most
+tractable of the nine: **`X_0(49)` has genus `1`**, and Magma's
+`SmallModularCurve(49)` (2026-07-26, untrusted searcher) gives the model
+
+  `X_0(49) : y² + x y = x³ − x² − 2 x − 1`,
+
+the conductor-`49` curve `49a1`, with CM by `ℤ[(1 + √−7)/2]`,
+`rank = 0` and `torsion ≅ ℤ/2` — so `X_0(49)(ℚ) = {O, (2, −1)}`, exactly
+two points, matching the two rational cusps of `Γ₀(49)` (`8` cusps in all,
+the `6` of denominator `7` conjugate over `ℚ(ζ₇)`). The `2`-torsion point is
+the rational root `x = 2` of `4x³ − 3x² − 8x − 4` and one checks
+`(−1)² + 2·(−1) = −1 = 2³ − 2² − 2·2 − 1` directly.
+
+**Route, on the pattern of level `32` and level `27`.** Both of those are
+now proven over a moduli leaf plus a self-contained Mordell–Weil half
+(`QuarticDescent.rational_point_x0ThirtyTwo` from Fermat's quartic theorem;
+`MazurLevel27.rational_point_x0TwentySeven` from `fermatLastTheoremThree`).
+The same split applies here and is the recommended next cut:
+
+1. the MODULI dictionary — a stable cyclic `49`-subgroup gives a rational
+   point of `y² + x y = x³ − x² − 2 x − 1` lying over the `X_0(7)`
+   Hauptmodul value of `j(E)` (`X_0(7)` is genus `0`, the direct analogue of
+   `exists_x0Sixteen_hauptmodul` / `exists_x0Nine_hauptmodul`); and
+2. the ARITHMETIC half — `E_{49}(ℚ) = {O, (2, −1)}`, i.e. rank `0` plus
+   `torsion ≅ ℤ/2`, a self-contained descent on a CM curve of conductor
+   `49`, and the only one of the nine levels whose arithmetic half is a
+   genus-`1` Mordell–Weil determination rather than a Chabauty computation.
+
+`X_0(49)/w_49` has genus `0` (Magma, via the `+1`-eigenspace of the
+Atkin–Lehner involution on `S₂(Γ₀(49))`), which is the classical reason the
+level is easy: the quotient carries no arithmetic at all and the whole
+content sits in the `−1`-eigenform, the conductor-`49` newform. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_fortyNine
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 49)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `169`-isogeny** (sorry node — level `X_0(169)`,
+introduced 2026-07-26 by the split of `not_cyclicIsogeny_sq_of_isogenyPrime`
+along the genus of `X_0(p)`): no elliptic curve over `ℚ` carries a
+Galois-stable cyclic subgroup of order `169`.
+
+The second of the two primes where `X_0(p)` has genus `0`: `X_0(13)` is a
+rational curve, so infinitely many elliptic curves over `ℚ` admit a cyclic
+`13`-isogeny and `j(E)` is not pinned. Unlike level `49`, the level `169`
+curve is not genus `1`: **`X_0(169)` has genus `8`** (`index = 182`,
+`14` cusps, of which `2` are rational; Magma 2026-07-26), and its
+Atkin–Lehner quotient `X_0(169)/w_169` still has genus `3`, so no quotient
+trick reduces it to an elliptic curve.
+
+This level is exactly the subject of Kenku, "The modular curve `X_0(169)`
+and rational isogeny", J. London Math. Soc. (2) 22 (1980), 239–244, which
+shows `X_0(169)(ℚ)` consists of its two rational cusps. It is the hardest of
+the nine levels for the same reason `X_0(125)` is the hardest of the four
+prime powers (see `not_cyclicIsogeny_oneHundredTwentyFive`): the level below
+is genus `0`, so splitting along `X_0(13)` would produce a Hauptmodul leaf
+plus a level-`169` leaf carrying the entire content — a decomposition that
+relocates the work without reducing it, and it is deliberately NOT done
+here.
+
+IRREDUCIBLE at this mathlib pin: the route is the rational points of a
+genus-`8` curve (Kenku works through the Atkin–Lehner quotient and the
+Eisenstein/rank input at level `13`), and no modular curve, Jacobian or
+Chabauty machinery exists in this development. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_oneHundredSixtyNine
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 169)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False :=
+  sorry
+
+/-- **The eleven `j`-invariants with a rational `p`-isogeny, `p` one of the
+seven isogeny primes with `X_0(p)` of genus `≥ 1`** (sorry node, introduced
+2026-07-26): if `E/ℚ` carries a Galois-stable cyclic subgroup of order
+`p` for `p ∈ {11, 17, 19, 37, 43, 67, 163}`, then the pair `(p, j(E))` is
+one of eleven explicit pairs.
+
+This is Mazur's Theorem 1 *with its table*, i.e. the determination of the
+non-cuspidal rational points of `X_0(p)` for the seven primes at which that
+curve has genus `≥ 1` — the same shape as
+`j_of_stable_cyclic_subgroup_order_27`, which pins `j = −12288000` at level
+`27`, and strictly stronger than `prime_mem_cyclicIsogenyDegrees`, which
+only says the primes occur.
+
+**This leaf is NOT vacuous**: its hypothesis is satisfiable at every one of
+the seven primes — for instance `j = −32768` (the CM curve of discriminant
+`−11`) really does admit a rational `11`-isogeny. It is the leaf carrying
+the genuine content of the seven-prime regime; the sibling
+`not_cyclicIsogeny_sq_of_jInvariant` is the finite check on top of it.
+
+Provenance of the list (Magma `SmallModularCurve(p)`, 2026-07-26, untrusted
+searcher — the values are classical): `X_0(11)`, `X_0(17)`, `X_0(19)` are
+elliptic of rank `0` with torsion `ℤ/5`, `ℤ/4`, `ℤ/3`, two of whose points
+are the cusps, leaving `3 + 2 + 1` values; `X_0(37)` has genus `2` and two
+non-cuspidal rational points (Mazur–Vélu); `X_0(43)`, `X_0(67)`, `X_0(163)`
+have genus `3, 5, 13` and one non-cuspidal rational point each, the CM point
+of the corresponding class-number-one discriminant. In factored form:
+
+    p = 11 : −11·131³,  −2¹⁵,  −11²
+    p = 17 : −17²·101³/2,  −17·373³/2¹⁷
+    p = 19 : −2¹⁵·3³
+    p = 37 : −7·11³,  −7·137³·2083³
+    p = 43 : −2¹⁸·3³·5³
+    p = 67 : −2¹⁵·3³·5³·11³
+    p = 163: −2¹⁸·3³·5³·23³·29³
+
+IRREDUCIBLE at this mathlib pin for the same reason as the prime node it
+refines: the Eisenstein-ideal descent on `J_0(p)`, plus the explicit
+Mordell–Weil computations on the four genus-`1` and higher levels. -/
+theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_ge_eleven
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ}
+    (hp : p ∈ ({11, 17, 19, 37, 43, 67, 163} : Finset ℕ))
+    (hg : addOrderOf g = p)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    (p, E.j) ∈ ([(11, -24729001), (11, -32768), (11, -121),
+        (17, -297756989 / 2), (17, -882216989 / 131072),
+        (19, -884736),
+        (37, -9317), (37, -162677523113838677),
+        (43, -884736000), (67, -147197952000),
+        (163, -262537412640768000)] : List (ℕ × ℚ)) :=
+  sorry
+
+/-- **None of the eleven `j`-invariants admits a cyclic `p²`-isogeny**
+(sorry node, introduced 2026-07-26): if `j(E)` is the `j`-invariant attached
+to `p` in the table of `jInvariant_mem_of_isogenyPrime_ge_eleven`, then `E`
+carries no Galois-stable cyclic subgroup of order `p²`.
+
+This is the finite half of the seven-prime regime, and it is a genuinely
+FINITE computation: eleven explicit curves, each of which must be shown to
+have exactly ONE rational `p`-isogeny. By the dictionary in the section note
+above — a cyclic `p²`-subgroup makes `E/C[p]` carry two independent
+`p`-isogenies, and conversely — that is precisely what excludes `p²`.
+
+The certificate is PARI/GP `ellisomat(ellfromj(j))` (2026-07-26, untrusted
+searcher, verified for all eleven): every one of the eleven classes has
+degree matrix `[1, p; p, 1]`, i.e. the `ℚ`-isogeny class is a single edge
+and no vertex of the `p`-isogeny graph has degree `≥ 2`. Nine of the eleven
+are CM, and for those there is a clean conceptual proof: the curve has CM by
+the order of a class-number-one discriminant `D` in which `p` RAMIFIES, so
+the unique prime `𝔭 ∣ p` of that order gives the unique cyclic `p`-subgroup,
+and `𝔭² = (p)` is the NON-cyclic subgroup `E[p]` — there is no cyclic ideal
+of norm `p²`. The two non-CM pairs (`p = 17`, `p = 37`) need the explicit
+curves.
+
+**VACUITY AUDIT.** Taken together with its hypotheses this leaf's conclusion
+is `False`, so — like every level node in this file
+(`exists_x0ThirtyTwo_point`, `not_cyclicIsogeny_eightyOne`, …) — its
+hypotheses are jointly unsatisfiable and it is vacuously true, hence not
+independently provable by exhibiting a witness. What makes it *reducible*
+rather than empty is that the `j`-invariant is FIXED to one of eleven
+explicit rationals, so a prover has eleven concrete Weierstrass equations in
+front of them rather than a modular curve. The non-vacuous content of this
+regime lives in the sibling `jInvariant_mem_of_isogenyPrime_ge_eleven`.
+
+The table is a `List (ℕ × ℚ)` and NOT a `Finset`, deliberately: `fin_cases`
+and `decide` both get stuck on a `Finset` literal over `ℚ` (the `List.insert`
+deduplication does not reduce, because rational equality is not `rfl`-decidable
+on these numerals). With a list, `simp only [List.mem_cons, List.not_mem_nil,
+or_false, Prod.mk.injEq] at hj` splits the hypothesis into eleven clean
+`p = … ∧ E.j = …` cases — verified 2026-07-26. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_sq_of_jInvariant
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ}
+    (hg : addOrderOf g = p ^ 2)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g)
+    (hj : (p, E.j) ∈ ([(11, -24729001), (11, -32768), (11, -121),
+        (17, -297756989 / 2), (17, -882216989 / 131072),
+        (19, -884736),
+        (37, -9317), (37, -162677523113838677),
+        (43, -884736000), (67, -147197952000),
+        (163, -262537412640768000)] : List (ℕ × ℚ))) :
+    False :=
+  sorry
+
+/-- **No rational cyclic `p²`-isogeny at the seven isogeny primes with
+`X_0(p)` of genus `≥ 1`** (PROVEN 2026-07-26 over
+`jInvariant_mem_of_isogenyPrime_ge_eleven` and
+`not_cyclicIsogeny_sq_of_jInvariant`).
+
+Assembly: `p • g` generates a Galois-stable cyclic subgroup of order `p`
+(`exists_stable_zmultiples_of_dvd`), which pins `(p, j(E))` to the
+eleven-element table; and the table leaf excludes `p²`. -/
+theorem WeierstrassCurve.not_cyclicIsogeny_sq_of_isogenyPrime_ge_eleven
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ}
+    (hp : p ∈ ({11, 17, 19, 37, 43, 67, 163} : Finset ℕ))
+    (hg : addOrderOf g = p ^ 2)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    False := by
+  have hp0 : p ≠ 0 := by
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hp
+    rcases hp with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> norm_num
+  obtain ⟨g', hg', hstable'⟩ :=
+    E.exists_stable_zmultiples_of_dvd g (N := p ^ 2) (d := p)
+      (pow_ne_zero 2 hp0) (dvd_pow_self p two_ne_zero) hg hstable
+  exact E.not_cyclicIsogeny_sq_of_jInvariant g hg hstable
+    (E.jInvariant_mem_of_isogenyPrime_ge_eleven g' hp hg' hstable')
+
 /-- **No rational cyclic `p²`-isogeny at the nine isogeny primes `≥ 7`**
-(sorry node — the levels `X_0(p²)` of Kenku's prime-power determination,
-introduced 2026-07-26 as the residue of
-`not_cyclicIsogeny_sq_of_prime_ge_seven` after Mazur's prime node): for
+(PROVEN 2026-07-26 over the four leaves of the section note above,
+replacing the former single citation): for
 `p ∈ {7, 11, 13, 17, 19, 37, 43, 67, 163}`, no elliptic curve over `ℚ`
 carries a Galois-stable cyclic subgroup of order `p²`.
 
-This is strictly shallower than the statement it serves: the uniform
-quantifier over all primes `p ≥ 7` has been discharged (a cyclic
-`p²`-isogeny yields a cyclic `p`-isogeny by divisor descent, and Mazur's
-`prime_mem_cyclicIsogenyDegrees` then confines `p` to
-`{2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`, of which `p ≥ 7` leaves
-nine). What remains is nine concrete modular curves rather than infinitely
-many.
+The nine primes are those left of Mazur's list after the uniform
+quantifier over `p ≥ 7` was discharged by
+`not_cyclicIsogeny_sq_of_prime_ge_seven`; what this proof does is split
+them by the GENUS OF `X_0(p)`, which is what decides whether the level `p²`
+is a modular curve or a finite table:
 
-The two smallest cases are the classical ones — `X_0(49)` has genus `1`
-(`μ = 56`, `ν₂ = 0`, `ν₃ = 2`, `8` cusps; it is the conductor-`49` CM curve,
-of rank `0` with `X_0(49)(ℚ) ≅ ℤ/2`, and its two rational points are exactly
-its two rational cusps) and `X_0(169)` genus `8` (`μ = 182`,
-`ν₂ = ν₃ = 2`, `14` cusps), the latter being exactly Kenku, "The modular
-curve `X_0(169)` and rational isogeny", J. London Math. Soc. (2) 22 (1980),
-239–244. For the seven larger `p` the input is that only finitely many
-`j`-invariants admit a rational `p`-isogeny at all, all of them known
-explicitly and all CM except at `p = 17` and `p = 37`, and none of them
-admits a cyclic `p²`-isogeny.
+* `p = 7` and `p = 13` — `X_0(p)` genus `0`, so `j(E)` is unpinned and the
+  level must be faced as a curve: `not_cyclicIsogeny_fortyNine`
+  (`X_0(49)` genus `1`, the rank-`0` conductor-`49` curve) and
+  `not_cyclicIsogeny_oneHundredSixtyNine` (`X_0(169)` genus `8`, Kenku
+  1980);
+* the other seven — `X_0(p)` genus `≥ 1`, so `j(E)` is pinned to eleven
+  explicit values and the level `p²` is a finite check:
+  `not_cyclicIsogeny_sq_of_isogenyPrime_ge_eleven`.
 
-A route worth recording, since it is what makes the nine levels finite work
-rather than nine independent Chabauty computations: a cyclic `p²`-subgroup
-`C` makes `E/C[p]` carry TWO independent `p`-isogenies (with characters
-`λ̄` and `χλ̄⁻¹`), i.e. `E'[p]` is diagonalisable over `ℚ`; conversely two
-independent `p`-isogenies compose to a cyclic `p²`-isogeny. So the whole
-statement is "no elliptic curve over `ℚ` has diagonal mod-`p` representation
-for `p ≥ 7`", which is a statement about the isogeny characters this file
-already manufactures in `exists_isogenyCharacter`.
-
-IRREDUCIBLE at this mathlib pin: every known route still runs through the
-rational points of a modular curve of genus `≥ 1`, or through the CM theory
-that classifies the `j`-invariants with a rational `p`-isogeny; neither
-exists in this development. -/
+That is four leaves for nine levels, and it keeps the genus-`2146` level
+`X_0(26569)` out of the tree entirely. See the section note above for the
+modular data, the eleven `j`-invariants, the PARI/GP `ellisomat`
+certificates, and the isogeny-graph dictionary that makes the second regime
+finite. -/
 theorem WeierstrassCurve.not_cyclicIsogeny_sq_of_isogenyPrime
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {p : ℕ}
@@ -1145,8 +1452,14 @@ theorem WeierstrassCurve.not_cyclicIsogeny_sq_of_isogenyPrime
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
-    False :=
-  sorry
+    False := by
+  have hsplit : p = 7 ∨ p = 13 ∨ p ∈ ({11, 17, 19, 37, 43, 67, 163} : Finset ℕ) := by
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hp ⊢
+    tauto
+  rcases hsplit with rfl | rfl | hp'
+  · exact E.not_cyclicIsogeny_fortyNine g (by norm_num [hg]) hstable
+  · exact E.not_cyclicIsogeny_oneHundredSixtyNine g (by norm_num [hg]) hstable
+  · exact E.not_cyclicIsogeny_sq_of_isogenyPrime_ge_eleven g hp' hg hstable
 
 /-- **No rational cyclic `p²`-isogeny for `p ≥ 7`** (PROVEN 2026-07-26 over
 the strictly narrower leaf `not_cyclicIsogeny_sq_of_isogenyPrime`): for a
