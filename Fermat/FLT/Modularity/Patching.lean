@@ -120,6 +120,22 @@ a future de-duplication can identify the two developments.
 module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
+-- BUILD REPAIR (2026-07-26). This module was a HARD ERROR — 101 errors, the
+-- `maxErrors` cap — which made every consumer of `Modularity/Interface.lean`
+-- unbuildable, and which no sorry scan can see. Two independent causes:
+-- (1) `Ideal.ramificationIdx_le_finrank`, used by the discriminant bound of
+--     `exists_discr_factorization_le_of_finrank_le`, was not imported;
+-- (2) the three `open IsLocalRing` below sit inside
+--     `namespace GaloisRepresentation.Modularity`, and
+--     `PatchingVendored/AdicTopology.lean` declares a namespace `IsLocalRing`
+--     INSIDE that same namespace — so `open IsLocalRing` opened
+--     `GaloisRepresentation.Modularity.IsLocalRing` and SHADOWED the root
+--     one, making `maximalIdeal`, `ResidueField`, `local_hom_TFAE`,
+--     `jacobson_eq_maximalIdeal`, … all unknown. They are now
+--     `open _root_.IsLocalRing`.
+public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Defs
+public import Mathlib.NumberTheory.Padics.PadicIntegers
+public import Mathlib.NumberTheory.RamificationInertia.Basic
 public import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
 public import Mathlib.RingTheory.AdicCompletion.Basic
 public import Mathlib.RingTheory.Noetherian.Basic
@@ -2387,7 +2403,7 @@ what the upgrade consumes, all of it pure commutative algebra:
 
 section ProfinitePadicTower
 
-open IsLocalRing
+open _root_.IsLocalRing
 
 universe uTA uTR
 
@@ -4262,7 +4278,7 @@ parameters `(p, x₁, …, x_q)` spanning the maximal ideal
 
 section AuslanderBuchsbaum
 
-open RingTheory.Sequence IsLocalRing Pointwise CategoryTheory Abelian Limits
+open RingTheory.Sequence _root_.IsLocalRing Pointwise CategoryTheory Abelian Limits
 
 /-- **Coset prime avoidance** (E. Davis; Kaplansky, *Commutative
 Rings*, Thm. 124; PROVEN): if none of the finitely many primes
@@ -6388,7 +6404,7 @@ theorem nonempty_patchedModule_of_patchingData.{v, w, s, uR, u}
 
 section PatchingInstantiation
 
-open IsLocalRing
+open _root_.IsLocalRing
 open scoped MvPowerSeries.WithPiTopology
 
 attribute [local instance] Module.quotientAnnihilator
