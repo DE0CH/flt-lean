@@ -410,6 +410,11 @@ public import Mathlib.Analysis.Calculus.Implicit
 public import Mathlib.Algebra.MvPolynomial.PDeriv
 public import Mathlib.Topology.Algebra.MvPolynomial
 public import Mathlib.Analysis.Normed.Module.FiniteDimension
+-- `SubmersivePresentation` / `IsStandardSmooth` / `Localization.Away` occur in the
+-- SIGNATURES of the real-polynomial-model helpers below, so these must be `public`.
+public import Mathlib.RingTheory.Smooth.StandardSmoothOfFree
+public import Mathlib.RingTheory.Extension.Presentation.Submersive
+public import Mathlib.RingTheory.Localization.Away.Basic
 
 @[expose] public section
 
@@ -1291,7 +1296,10 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    **SHRUNK A THIRD TIME, 2026-07-26, and the REAL ANALYSIS IS NOW GONE
    FROM IT.** The chart leaf is PROVEN over
    `exists_realPolynomialModel_of_affine_geometricallyIrreducible`, which is
-   all that survives of this item. The implicit function theorem has been
+   **itself PROVEN as of 2026-07-26** over the single leaf
+   `not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
+   — so all that survives of this item is a DIMENSION COUNT in commutative
+   algebra, with no scheme-to-manifold content left at all. The implicit function theorem has been
    APPLIED, not merely located: `exists_euclideanPatch_of_polynomialSystem`
    (PROVEN) is the classical submersion theorem — the real zero locus of a
    polynomial system with surjective Jacobian contains a Euclidean patch of
@@ -1332,8 +1340,8 @@ their consumer `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible`
 is PROVEN over them), and
 `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` together with
 `exists_bound_forall_formallySmooth_integralSystemModel` (item 5), and
-`exists_realPolynomialModel_of_affine_geometricallyIrreducible` (item 6) -- so
-each can be attacked without any of the others.
+`not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
+(item 6) -- so each can be attacked without any of the others.
 
 ITEM 6'S ANALYTIC HALF IS CLOSED (2026-07-26):
 `exists_realArc_of_affine_geometricallyIrreducible` is PROVEN over one
@@ -1341,9 +1349,11 @@ Euclidean chart, and so is its consumer
 `exists_realApproximationBall_of_affine_geometricallyIrreducible`; the chart
 itself, `exists_realPointChart_of_affine_geometricallyIrreducible`, is PROVEN
 over `exists_euclideanPatch_of_polynomialSystem` (the submersion theorem, also
-PROVEN) and the one remaining leaf
-`exists_realPolynomialModel_of_affine_geometricallyIrreducible`, which is PURE
-SCHEME THEORY. The two `exists_bound_forall_padicAlgHom` / `_padicPoint`
+PROVEN) and `exists_realPolynomialModel_of_affine_geometricallyIrreducible`,
+which is PROVEN too since 2026-07-26. The one remaining leaf of the whole item
+is `not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
+-- a DIMENSION COUNT in commutative algebra, carrying no scheme-to-manifold
+content. The two `exists_bound_forall_padicAlgHom` / `_padicPoint`
 statements are likewise PROVEN and are not leaves either.
 
 The elementary
@@ -2904,11 +2914,280 @@ theorem exists_euclideanPatch_of_polynomialSystem {m c : ℕ}
   · intro w hw j
     exact hτzero (e w) hw j
 
+section RealPolynomialModel
+
+open _root_.MvPolynomial
+
+/-- Evaluating a `ℚ→ℝ`-mapped polynomial at the coordinates of a real point of `T`
+is the same as applying that real point to the `T`-valued `aeval`.
+
+The only input is that a ring hom out of `ℚ` is unique, so no compatibility between
+`φ` and the `ℚ`-algebra structures has to be assumed. -/
+theorem realModel_eval_map_eq {T : Type u} [CommRing T] [Algebra ℚ T] {ι : Type*}
+    (φ : T →+* ℝ) (val : ι → T) (p : MvPolynomial ι ℚ) :
+    eval (fun i => φ (val i)) (MvPolynomial.map (algebraMap ℚ ℝ) p) = φ (aeval val p) := by
+  rw [MvPolynomial.eval_map, MvPolynomial.aeval_def, MvPolynomial.hom_eval₂,
+    show φ.comp (algebraMap ℚ T) = algebraMap ℚ ℝ from Subsingleton.elim _ _]
+
+/-- The real polynomials cut out by a submersive presentation: its relations,
+pushed along `ℚ → ℝ`. -/
+noncomputable abbrev realModelRel {T : Type u} [CommRing T] [Algebra ℚ T] {m c : ℕ}
+    (P : Algebra.SubmersivePresentation ℚ T (Fin m) (Fin c)) (j : Fin c) :
+    MvPolynomial (Fin m) ℝ :=
+  MvPolynomial.map (algebraMap ℚ ℝ) (P.relation j)
+
+section Presentation
+
+variable {T : Type u} [CommRing T] [Algebra ℚ T] {m c : ℕ}
+  (P : Algebra.SubmersivePresentation ℚ T (Fin m) (Fin c))
+
+/-- A real point of `T` whose coordinates are `z` evaluates the image of a polynomial
+by `eval z` on the mapped polynomial. -/
+theorem realModel_hom_algebraMap_eq (ψ : T →+* ℝ) (z : Fin m → ℝ)
+    (hz : ∀ i, ψ (P.val i) = z i) (p : MvPolynomial (Fin m) ℚ) :
+    ψ (algebraMap P.Ring T p) = eval z (MvPolynomial.map (algebraMap ℚ ℝ) p) := by
+  have hzf : (fun i => ψ (P.val i)) = z := funext hz
+  rw [P.algebraMap_apply, ← realModel_eval_map_eq ψ P.val p, hzf]
+
+/-- **A real zero of the relations IS a real point of `T`.** This is the surjectivity
+half of "real points of `ℝ[X]/(P)` are exactly the real zeros of `P`": the evaluation
+map kills the relations, hence kills the whole kernel, hence factors through `T`. -/
+theorem realModel_exists_hom_of_zero (z : Fin m → ℝ)
+    (hz : ∀ j, eval z (realModelRel P j) = 0) :
+    ∃ ψ : T →+* ℝ, ∀ i, ψ (P.val i) = z i := by
+  set ev : P.Ring →+* ℝ := eval₂Hom (algebraMap ℚ ℝ) z with hev
+  have hker : P.ker ≤ RingHom.ker ev := by
+    rw [← P.span_range_relation_eq_ker, Ideal.span_le]
+    rintro _ ⟨j, rfl⟩
+    have hj := hz j
+    rw [realModelRel, MvPolynomial.eval_map] at hj
+    simpa [hev, RingHom.mem_ker, SetLike.mem_coe] using hj
+  refine ⟨(Ideal.Quotient.lift P.ker ev hker).comp P.quotientEquiv.symm.toRingHom, fun i => ?_⟩
+  have hval : P.val i = algebraMap P.Ring T (X i) := by simp [P.algebraMap_apply]
+  rw [hval]
+  have key : P.quotientEquiv.symm.toRingEquiv.toRingHom (algebraMap P.Ring T (X i))
+      = (Ideal.Quotient.mk P.ker (X i) : P.Quotient) := by
+    show P.quotientEquiv.symm (algebraMap P.Ring T (X i)) = _
+    rw [← P.quotientEquiv_mk (X i)]
+    exact P.quotientEquiv.symm_apply_apply _
+  rw [RingHom.comp_apply, key, Ideal.Quotient.lift_mk, hev]
+  simp
+
+/-- The formal partial derivatives of the mapped relations, at a real point. -/
+theorem realModel_eval_pderiv (ψ : T →+* ℝ) (z : Fin m → ℝ) (hz : ∀ i, ψ (P.val i) = z i)
+    (i : Fin m) (j : Fin c) :
+    eval z (pderiv i (realModelRel P j)) = ψ (aeval P.val (pderiv i (P.relation j))) := by
+  have hzf : (fun i => ψ (P.val i)) = z := funext hz
+  rw [realModelRel, pderiv_map, ← hzf, realModel_eval_map_eq ψ P.val]
+
+/-- **THE JACOBIAN OF A SUBMERSIVE PRESENTATION IS SURJECTIVE AT ANY REAL POINT.**
+
+The `c × c` minor indexed by `P.map` has determinant `ψ (P.jacobian)`, and `P.jacobian`
+is a UNIT in `T`, so its image in the field `ℝ` is nonzero. Solving in that minor and
+padding with zeros off the range of `P.map` produces a preimage of any `w`. -/
+theorem realModel_jacobian_surjective (ψ : T →+* ℝ) (z : Fin m → ℝ)
+    (hz : ∀ i, ψ (P.val i) = z i) :
+    Function.Surjective (fun v : Fin m → ℝ => fun j : Fin c =>
+      ∑ i : Fin m, eval z (pderiv i (realModelRel P j)) * v i) := by
+  classical
+  set D : Fin c → Fin m → ℝ := fun j i => eval z (pderiv i (realModelRel P j)) with hD
+  set N : Matrix (Fin c) (Fin c) ℝ := fun j k => D j (P.map k) with hN
+  have hMN : N = Matrix.transpose ((ψ.comp (algebraMap P.Ring T)).mapMatrix P.jacobiMatrix) := by
+    ext j k
+    rw [hN]
+    simp only [Matrix.transpose_apply, RingHom.mapMatrix_apply, Matrix.map_apply,
+      RingHom.comp_apply, P.jacobiMatrix_apply, hD]
+    rw [realModel_eval_pderiv P ψ z hz, P.algebraMap_apply]
+  have hdet : N.det ≠ 0 := by
+    rw [hMN, Matrix.det_transpose, ← RingHom.map_det, RingHom.comp_apply,
+      ← P.jacobian_eq_jacobiMatrix_det]
+    exact isUnit_iff_ne_zero.mp (P.jacobian_isUnit.map ψ)
+  intro w
+  refine ⟨fun i => ∑ k : Fin c, if P.map k = i then (Matrix.mulVec N⁻¹ w) k else 0, ?_⟩
+  funext j
+  show ∑ i : Fin m, D j i * _ = w j
+  have hsum : ∀ u : Fin c → ℝ,
+      ∑ i : Fin m, D j i * (∑ k : Fin c, if P.map k = i then u k else 0)
+        = ∑ k : Fin c, D j (P.map k) * u k := by
+    intro u
+    simp_rw [Finset.mul_sum, mul_ite, mul_zero]
+    rw [Finset.sum_comm]
+    exact Finset.sum_congr rfl fun k _ => by rw [Finset.sum_ite_eq]; simp
+  rw [hsum]
+  have hvec : ∑ k : Fin c, D j (P.map k) * (Matrix.mulVec N⁻¹ w) k
+      = Matrix.mulVec N (Matrix.mulVec N⁻¹ w) j := rfl
+  rw [hvec, Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv N (isUnit_iff_ne_zero.mpr hdet),
+    Matrix.one_mulVec]
+
+end Presentation
+
+/-- **A STANDARD-SMOOTH BASIC OPEN THROUGH A GIVEN REAL POINT.**
+
+`Algebra.Smooth.exists_span_eq_top_isStandardSmooth` covers `Spec R` by basic opens on
+which `R` is standard smooth. The `f`s span the unit ideal, so they cannot all lie in
+the (proper) kernel of a real point `ρ`; any one of them that does not is a basic open
+containing `ρ`. -/
+theorem exists_standardSmoothAway_of_realPoint {R : Type u} [CommRing R] [Algebra ℚ R]
+    [Algebra.Smooth ℚ R] (ρ : R →+* ℝ) :
+    ∃ f : R, ρ f ≠ 0 ∧ Algebra.IsStandardSmooth ℚ (Localization.Away f) := by
+  obtain ⟨s, hs, hstd⟩ := Algebra.Smooth.exists_span_eq_top_isStandardSmooth ℚ R
+  by_cases hex : ∃ x ∈ s, ρ x ≠ 0
+  · obtain ⟨x, hx, hxne⟩ := hex
+    exact ⟨x, hxne, hstd x hx⟩
+  exfalso
+  have hsub : s ⊆ (RingHom.ker ρ : Ideal R) := by
+    intro x hx
+    have hzero : ρ x = 0 := by
+      by_contra hne
+      exact hex ⟨x, hx, hne⟩
+    simpa [RingHom.mem_ker] using hzero
+  have hle : (⊤ : Ideal R) ≤ RingHom.ker ρ := by
+    rw [← hs]; exact Ideal.span_le.mpr hsub
+  have hne : (RingHom.ker ρ) ≠ ⊤ := by
+    intro h
+    have h1 : (1 : R) ∈ RingHom.ker ρ := h ▸ Submodule.mem_top
+    rw [RingHom.mem_ker, map_one] at h1
+    exact one_ne_zero h1
+  exact hne (top_le_iff.mp hle)
+
+/-- **THE REAL POLYNOMIAL MODEL, PURELY ALGEBRAIC FORM** (**PROVEN 2026-07-26** —
+this is steps 4 and 5 of `exists_realPolynomialModel_of_affine_geometricallyIrreducible`'s
+attack path, and it is the bulk of that node).
+
+Given a basic open `D(f)` of `Spec R` on which `R` is STANDARD SMOOTH over `ℚ`, together
+with a real point `ρ` of `R` not killing `f`, the submersive presentation of
+`R[1/f]` is literally a polynomial system: its relations pushed along `ℚ → ℝ` cut out
+`D(f)(ℝ)` inside `ℝ^m`, the Jacobian is surjective at the point `ρ` determines, every
+element of `R` is a polynomial in the coordinates, and distinct real zeros give distinct
+real points.
+
+NOTE the last conjunct, which is what step 6 consumes: if the codimension is MAXIMAL
+(`c = m`) then the presentation has relative dimension `0`, i.e. `R[1/f]` is étale
+over `ℚ`. That is the only thing the dimension count needs to know about the model,
+which is why the two halves can be separated without exporting the whole interface. -/
+theorem exists_realPolynomialModel_of_isStandardSmooth {R : Type u} [CommRing R]
+    [Algebra ℚ R] (f : R) (hstd : Algebra.IsStandardSmooth ℚ (Localization.Away f))
+    (ρ : R →+* ℝ) (hf : ρ f ≠ 0) :
+    ∃ (m c : ℕ) (Pol : Fin c → MvPolynomial (Fin m) ℝ) (z₀ : Fin m → ℝ)
+      (Φ : (Fin m → ℝ) → (R →+* ℝ)),
+      c ≤ m ∧
+      (∀ j, eval z₀ (Pol j) = 0) ∧
+      Function.Surjective (fun v : Fin m → ℝ => fun j : Fin c =>
+        ∑ i : Fin m, eval z₀ (pderiv i (Pol j)) * v i) ∧
+      (∀ a : R, ∃ Q : MvPolynomial (Fin m) ℝ, ∀ z : Fin m → ℝ,
+        (∀ j, eval z (Pol j) = 0) → Φ z a = eval z Q) ∧
+      (∀ z w : Fin m → ℝ, (∀ j, eval z (Pol j) = 0) → (∀ j, eval w (Pol j) = 0) →
+        Φ z = Φ w → z = w) ∧
+      (c = m → Algebra.IsStandardSmoothOfRelativeDimension 0 ℚ (Localization.Away f)) := by
+  classical
+  obtain ⟨ι, σ, _, hι, ⟨P0⟩⟩ := hstd.out
+  cases nonempty_fintype ι
+  cases nonempty_fintype σ
+  refine ⟨Fintype.card ι, Fintype.card σ, ?_⟩
+  set P := P0.reindex (Fintype.equivFin ι).symm (Fintype.equivFin σ).symm with hP
+  set ρ' : Localization.Away f →+* ℝ :=
+    IsLocalization.Away.lift f (isUnit_iff_ne_zero.mpr hf) with hρ'
+  set z₀ : Fin (Fintype.card ι) → ℝ := fun i => ρ' (P.val i) with hz₀
+  set Φ : (Fin (Fintype.card ι) → ℝ) → (R →+* ℝ) := fun z =>
+    if h : ∃ ψ : Localization.Away f →+* ℝ, ∀ i, ψ (P.val i) = z i then
+      h.choose.comp (algebraMap R (Localization.Away f)) else ρ with hΦ
+  have hzero : ∀ j, eval z₀ (realModelRel P j) = 0 := fun j => by
+    rw [hz₀, realModel_eval_map_eq ρ' P.val, P.aeval_val_relation, map_zero]
+  refine ⟨realModelRel P, z₀, Φ, ?_, hzero, ?_, ?_, ?_, ?_⟩
+  · have hcard := P.card_relations_le_card_vars_of_isFinite
+    simpa using hcard
+  · exact realModel_jacobian_surjective P ρ' z₀ (fun i => rfl)
+  · intro a
+    refine ⟨MvPolynomial.map (algebraMap ℚ ℝ)
+      (P.σ (algebraMap R (Localization.Away f) a)), fun z hz => ?_⟩
+    have hex : ∃ ψ : Localization.Away f →+* ℝ, ∀ i, ψ (P.val i) = z i :=
+      realModel_exists_hom_of_zero P z hz
+    rw [hΦ]
+    simp only [dif_pos hex, RingHom.comp_apply]
+    have hval : algebraMap R (Localization.Away f) a
+        = algebraMap P.Ring (Localization.Away f)
+            (P.σ (algebraMap R (Localization.Away f) a)) := by
+      rw [P.algebraMap_apply, P.aeval_val_σ]
+    conv_lhs => rw [hval]
+    rw [realModel_hom_algebraMap_eq P hex.choose z hex.choose_spec]
+  · intro z w hz hw hzw
+    have hez : ∃ ψ : Localization.Away f →+* ℝ, ∀ i, ψ (P.val i) = z i :=
+      realModel_exists_hom_of_zero P z hz
+    have hew : ∃ ψ : Localization.Away f →+* ℝ, ∀ i, ψ (P.val i) = w i :=
+      realModel_exists_hom_of_zero P w hw
+    rw [hΦ] at hzw
+    simp only [dif_pos hez, dif_pos hew] at hzw
+    have hchoose : hez.choose = hew.choose :=
+      IsLocalization.ringHom_ext (Submonoid.powers f) hzw
+    funext i
+    rw [← hez.choose_spec i, ← hew.choose_spec i, hchoose]
+  · intro hcm
+    exact P.isStandardSmoothOfRelativeDimension (by
+      simp [Algebra.Presentation.dimension, hcm])
+
+end RealPolynomialModel
+
 open CategoryTheory AlgebraicGeometry in
-/-- **A SMOOTH POLYNOMIAL MODEL OF `X(ℝ)`** (sorry node, 2026-07-26 — ALL of
-the residual scheme-theoretic content of the Euclidean-chart leaf below, whose
-real-analytic half is now discharged by
-`exists_euclideanPatch_of_polynomialSystem`).
+/-- **THE COORDINATE RING OF A SMOOTH AFFINE `ℚ`-SCHEME IS A SMOOTH `ℚ`-ALGEBRA**
+(**PROVEN 2026-07-26** — step 1 of the attack path below).
+
+`AlgebraicGeometry.Smooth` is `HasRingHomProperty @Smooth RingHom.Smooth`, so on affines
+it says exactly that `ULift ℚ → A` is a smooth ring map; composing with the (bijective,
+hence smooth) `ℚ ≃+* ULift ℚ` descends the base to `ℚ` itself.
+
+The `ℚ`-algebra structure is EXISTENTIALLY bound rather than assumed, because the one
+that `g` induces is the only one that can be meant: a ring hom out of `ℚ` is unique. -/
+theorem exists_ratAlgebra_smooth_of_smooth (hsmooth : AlgebraicGeometry.Smooth g) :
+    ∃ inst : Algebra ℚ A, @Algebra.Smooth ℚ _ ↑A _ inst := by
+  have h1 : RingHom.Smooth (AlgebraicGeometry.Spec.preimage g).hom := by
+    have hmap : AlgebraicGeometry.Smooth (Spec.map (Spec.preimage g)) := by
+      rw [Spec.map_preimage]; exact hsmooth
+    exact AlgebraicGeometry.HasRingHomProperty.Spec_iff.mp hmap
+  have h2 : RingHom.Smooth ((ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.toRingHom) :=
+    RingHom.Smooth.of_bijective (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.bijective
+  exact ⟨_, (h2.comp h1).toAlgebra⟩
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A NONEMPTY BASIC OPEN OF A `≥ 2`-DIMENSIONAL IRREDUCIBLE VARIETY IS NOT ÉTALE**
+(sorry leaf, 2026-07-26 — step 6 of the attack path below, and the ONLY part of
+`exists_realPolynomialModel_of_affine_geometricallyIrreducible` that is not proven).
+
+If `R[1/f]` were standard smooth of relative dimension `0` over `ℚ` it would be étale,
+hence a finite product of finite separable field extensions of `ℚ`
+(`Algebra.Etale.iff_isStandardSmoothOfRelativeDimension_zero` at this pin turns the
+hypothesis into `Algebra.Etale ℚ (Localization.Away f)`), hence Artinian, hence
+`ringKrullDim (Localization.Away f) ≤ 0`.
+
+But `D(f)` is a NONEMPTY open of `Spec A` — nonempty because the real point `ρ` does not
+kill `f` — and `hgi` makes `Spec A` irreducible, so `D(f)` is DENSE. For a finite-type
+algebra over a field, a dense open has the SAME Krull dimension as the whole
+(both compute the transcendence degree of the function field), so
+`1 < topologicalKrullDim (Spec A) = ringKrullDim (Localization.Away f) ≤ 0`, absurd.
+
+WHERE EACH HYPOTHESIS ENTERS. `hgi` gives irreducibility, hence density of `D(f)`; `hft`
+gives finite type over `ℚ`, without which "dense open has the same dimension" is FALSE
+(a dense open of a valuation ring's spectrum can drop dimension); `hdim` supplies the
+`1 <`; `ρ`/`hf` supply nonemptiness. Dropping any one of them makes the statement false.
+
+WHAT IS MISSING AT THIS PIN: mathlib has `PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim`
+and the Artinian side, but not "a dense open of an irreducible finite-type `k`-scheme has
+the ambient dimension". That is the genuine content and it is an independently ownable
+piece of dimension theory, involving no polynomial-model interface whatsoever. -/
+theorem not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible
+    [inst : Algebra ℚ A]
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
+    (f : A) (ρ : A →+* ℝ) (hf : ρ f ≠ 0) :
+    ¬ Algebra.IsStandardSmoothOfRelativeDimension 0 ℚ (Localization.Away f) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A SMOOTH POLYNOMIAL MODEL OF `X(ℝ)`** (**PROVEN 2026-07-26** over the single leaf
+`not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
+— steps 1–5 below are now discharged, and only the DIMENSION COUNT of step 6 remains.
+This node was the residual scheme-theoretic content of the Euclidean-chart leaf below,
+whose real-analytic half was discharged by `exists_euclideanPatch_of_polynomialSystem`).
 
 For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` of
 dimension `> 1` with a real point, there are `c < m` and real polynomials
@@ -2996,8 +3275,26 @@ theorem exists_realPolynomialModel_of_affine_geometricallyIrreducible
       (∀ a : A, ∃ Q : MvPolynomial (Fin m) ℝ, ∀ z : Fin m → ℝ,
         (∀ j, MvPolynomial.eval z (P j) = 0) → Φ z a = MvPolynomial.eval z Q) ∧
       (∀ z w : Fin m → ℝ, (∀ j, MvPolynomial.eval z (P j) = 0) →
-        (∀ j, MvPolynomial.eval w (P j) = 0) → Φ z = Φ w → z = w) :=
-  sorry
+        (∀ j, MvPolynomial.eval w (P j) = 0) → Φ z = Φ w → z = w) := by
+  classical
+  -- steps 1–2: `A` is a smooth `ℚ`-algebra, and `hreal` is a ring hom to `ℝ`
+  obtain ⟨instQ, hsm⟩ := exists_ratAlgebra_smooth_of_smooth g hsmooth
+  letI := instQ
+  haveI : Algebra.Smooth ℚ A := hsm
+  obtain ⟨ψ, -⟩ := (hasRationalPoint_iff_exists_ringHom g (ULift.{u} ℝ)).mp hreal
+  set ρ : A →+* ℝ := (ULift.ringEquiv : ULift.{u} ℝ ≃+* ℝ).toRingHom.comp ψ.hom
+  -- step 3: a standard-smooth basic open through that real point
+  obtain ⟨f, hf, hstd⟩ := exists_standardSmoothAway_of_realPoint ρ
+  -- steps 4–5: the submersive presentation IS the polynomial model
+  obtain ⟨m, c, Pol, z₀, Φ, hcm, hz, hjac, hpoly, hinj, hdeg⟩ :=
+    exists_realPolynomialModel_of_isStandardSmooth f hstd ρ hf
+  refine ⟨m, c, Pol, z₀, Φ, ?_, hz, hjac, hpoly, hinj⟩
+  -- step 6: the codimension is not maximal, else `D(f)` would be étale
+  rcases lt_or_eq_of_le hcm with hlt | heq
+  · exact hlt
+  · exact absurd (hdeg heq)
+      (not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible
+        g hft hgi hdim f ρ hf)
 
 open CategoryTheory AlgebraicGeometry in
 /-- **A EUCLIDEAN CHART ON `X(ℝ)`** (**PROVEN 2026-07-26** over the single leaf
@@ -3029,11 +3326,15 @@ from this leaf alone.
 factors this node through exactly two statements, and the real analysis is no
 longer part of the gap:
 
-* `exists_realPolynomialModel_of_affine_geometricallyIrreducible` (SORRY) —
-  an open piece of `X(ℝ)` is the real zero locus of a smooth polynomial
-  system of codimension `c < m` in `ℝ^m`, functorially and injectively. This
-  is PURE SCHEME THEORY: base change to `ℝ`, a standard smooth presentation
-  at the real point, and the dimension count. It carries every hypothesis.
+* `exists_realPolynomialModel_of_affine_geometricallyIrreducible`
+  (**PROVEN 2026-07-26**) — an open piece of `X(ℝ)` is the real zero locus of a
+  smooth polynomial system of codimension `c < m` in `ℝ^m`, functorially and
+  injectively. It carries every hypothesis. Its own residue is the single leaf
+  `not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
+  (SORRY) — the DIMENSION COUNT: a nonempty basic open of a `≥ 2`-dimensional
+  irreducible finite-type `ℚ`-variety is not étale. No base change to `ℝ` is
+  involved anywhere: the presentation is taken over `ℚ` and its relations are
+  pushed along `ℚ → ℝ`, which is why that step disappeared from the gap.
 * `exists_euclideanPatch_of_polynomialSystem` (**PROVEN**) — the classical
   submersion theorem: such a zero locus contains a Euclidean patch of
   dimension `m − c`. This is the whole of the real analysis, and it rests on
