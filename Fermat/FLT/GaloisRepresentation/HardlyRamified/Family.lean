@@ -2481,6 +2481,7 @@ theorem localInertia_fixes_of_mem_unramifiedTensorSubmodule
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
+include hpodd in
 /-- **Half (β) of the μ-type node, SHARPENED to an `ℚᵖᵥᵘⁿʳ`-rationality
 statement: every group-like of the connected corner is UNRAMIFIED**
 (SORRY NODE — the genuine Raynaud/Oort–Tate citation of this cut.
@@ -2489,8 +2490,41 @@ Split off `exists_grouplike_family_of_connected_hopf_package` on
 2026-07-26 in this `σ`-FREE form, which is what the classification
 actually delivers and which implies the invariance form through the
 PROVEN `localInertia_fixes_of_mem_unramifiedTensorSubmodule` above.
-This is the ONLY place where the `p`-adic hypotheses `hρ`/`hchar`/`fG`
+This is the ONLY place where the `p`-adic hypotheses `hchar`/`fG`
 and the odd-`e = 1` input `hpodd` are spent.)
+
+NARROWED 2026-07-26 (second pass): FIVE hypotheses were removed after
+an audit of where the cited proof actually spends its inputs, so the
+leaf is now strictly stronger and strictly more LOCAL than the form it
+replaces. Removed, with the reason each is not spent:
+
+* `hρ : IsHardlyRamified hpodd hv ρ` (and with it the rank datum
+  `hv`). This was the leaf's only GLOBAL hypothesis — semistability,
+  the ramification conditions away from `p`, the family membership —
+  and none of it enters a classification statement about a finite flat
+  Hopf order over `𝒪ᵖᵥ ≅ ℤ_p`. Everything the argument needs about `ρ`
+  arrives through `hchar` (the two characters) and `fG` (the
+  identification of the point group), both of which are retained. This
+  also removes a VACUITY risk that the previous form carried: `hchar`
+  already forces `ρ ⊗ ℚ̄_p` to have abelian eigenvalue functions, and
+  conjoining that with the full hardly-ramified package could in
+  principle have made the hypothesis set empty, in which case the leaf
+  would have been discharge-by-vacuity rather than mathematics.
+* `hcont₁`, `hcont₂`. Raynaud's classification and the level-one
+  argument below are purely algebraic; they use the multiplicativity of
+  `χ₁`, `χ₂` on `Γ ℚ` and nothing about the topology on `ℚ̄_p`. (`ρ`
+  itself is continuous by construction, which is where continuity is
+  genuinely needed elsewhere in this cluster.)
+* `hone₁`, `hone₂`. These are DERIVABLE, not merely unused: `hchar` at
+  `g = 1` reads `(X − 1)² = (X − χ₁ 1)(X − χ₂ 1)` in
+  `(AlgebraicClosure ℚ_[p])[X]`, and unique factorization in a
+  polynomial ring over a field gives `χ₁ 1 = χ₂ 1 = 1`.
+
+Retained but NOT spent by the classification, and kept only because
+they are what makes `hchar` informative about `ρ` rather than about a
+degenerate image: `hZinj`, `hRinj`. A future owner may drop `hZinj`
+too; `hRinj` should not be dropped, since without it `hchar` can hold
+for reasons that say nothing about `ρ`.
 
 Content: the character group `X = Hom(G°, 𝔾ₘ)` of the connected
 component is ÉTALE over `𝒪ᵖᵥ`, hence constant over the strict
@@ -2586,16 +2620,86 @@ makes `E[p]` self-dual, so the character group `X = Hom(E[p], 𝔾ₘ)` is
 `E[p]` again, and tame inertia acts on it through the same level-`2`
 fundamental characters — manifestly nontrivially. Step 2 above is
 exactly where the input is spent, through the Frobenius-conjugation
-argument in the level-one paragraph. -/
+argument in the level-one paragraph.
+
+(iv) LEVEL ONE IS ROBUST TO A LARGE RESIDUE FIELD. The Frobenius-
+conjugation argument does not assume the residue field of `R` is
+`𝔽_p`: `χ̄₁`, `χ̄₂` are restrictions to `D_p` of characters of `Γ ℚ`
+whatever coefficient field they take values in, and `χ̄(τ)^p = χ̄(τ)`
+on TAME inertia forces `χ̄(τ) ∈ 𝔽_p^×` regardless. So a coefficient
+ring with residue field `𝔽_{p^f}`, `f > 1` — where the naive count
+would allow `𝔽_{p^f}`-vector-space schemes and hence level `f` — still
+only produces level-one graded pieces. This closes the one gap that
+could have made the leaf FALSE for large `f`.
+
+VERDICT (2026-07-26, this owner): IRREDUCIBLY A CITATION at the present
+state of the tree. What remains, enumerated, with its formalization
+status:
+
+(R1) *Raynaud dévissage*: over `𝒪ᵖᵥ` with `e = 1 < p − 1`, a finite
+     flat group scheme killed by `p` acquires, over the STRICT
+     HENSELISATION, a composition series whose graded pieces are
+     `F`-vector-space schemes (Raynaud 3.3.x). Not formalized here or
+     in mathlib, and it needs the strict henselisation of `𝒪ᵖᵥ` as an
+     object, which this tree does not have.
+(R2) *the order-`p` dichotomy*: each level-one graded piece has
+     `v(δ) ∈ {0, 1}`, hence is étale or of `μ`-type. THIS STEP IS
+     ALREADY FORMALIZED AND SORRY-FREE in `GroupScheme/ConnectedEtale.lean`
+     (`OortTate.inertia_character_trivial_or_cyclotomic`,
+     `not_inertia_character_trivial_of_connected`,
+     `exists_muType_coordinate`,
+     `connected_cyclic_point_smul_eq_conv_pow_cyclotomicCharacter`;
+     the whole file was checked sorry-free on 2026-07-26). It is stated
+     for ONE point with an inertia-stable convolution-cyclic subgroup,
+     not for a general `G`, which is why it does not discharge (R1).
+(R3) *the extension step*: an iterated extension of `μ`-types over the
+     henselian `𝒪ᵖᵥ` is of multiplicative type (dually: étale-by-étale
+     is étale). This is where FLATNESS does its work — see (S2).
+(R4) *multiplicative type ⟹ unramified character group*: formalizable
+     from `Algebra.FormallyEtale.equivPiOfIsSepClosed` once a strictly
+     henselian base is available; blocked on the same missing object as
+     (R1).
+
+TWO SHORTCUTS, BOTH EXAMINED AND BOTH REJECTED (recorded so the next
+owner does not pay for them again):
+
+(S1) *"Relocate the citation to POINTS and reuse the sorry-free
+     ConnectedEtale cluster."* The derivation direction genuinely
+     works, and is worth writing down: for a corner point `φ` and a
+     corner group-like `x`, `φ (σ • x) = σ ((σ⁻¹ • φ) x)`; if
+     `σ⁻¹ • φ = φ ^ n'` with `n' ≡ χ_cyc(σ)⁻¹ mod p` then, `x` being
+     group-like, `(φ ^ n') x = (φ x) ^ n'`, and `φ x` is a `p`-th root
+     of unity, so `σ (φ x)^{n'} = (φ x)^{χ_cyc(σ) n'} = φ x`; corner
+     points SEPARATE the corner because the generic fibre is ÉTALE, so
+     `σ • x = x`. But the two statements are EQUIVALENT — the converse
+     runs the same pairing backwards using half (α)'s generation clause
+     — so this is a relocation, not a narrowing. Worse, inside this
+     file the points-level statement
+     `connected_point_smul_eq_conv_pow_cyclotomicCharacter_of_hopf_package`
+     is proved FROM this leaf (through
+     `exists_grouplike_coordinates_of_connected_hopf_package` and
+     `exists_grouplike_family_of_connected_hopf_package`), so invoking
+     it here would be circular.
+(S2) *"Take ConnectedEtale's `hstab` as the one-dimensionality input
+     and derive `hstab` from `hchar`/`fG`."* The second leaf of that
+     cut would be FALSE. `hstab` for every point says inertia acts by
+     SCALARS on the points of `G°`; `hchar` gives only that the
+     residual representation is REDUCIBLE with characters of `Γ ℚ`, and
+     a non-semisimple action with inertia acting by `[[1, c], [0, 1]]`,
+     `c ≠ 0`, satisfies `hchar` while violating `hstab` (a vector off
+     the stable line is not carried into its own cyclic subgroup).
+     What actually excludes that case is FLATNESS: extensions of `μ_p`
+     by `μ_p` in the flat topology over `ℤ_p` are classified by
+     `H¹_fl(Spec ℤ_p, ℤ/p) = H¹_ét(Spec ℤ_p, ℤ/p) = Hom(Γ^ur, ℤ/p)`,
+     i.e. by UNRAMIFIED classes only, so the ramified unipotent class
+     has no finite flat model. Level-one and flatness therefore cannot
+     be separated here the way `hstab` separates them at order `p`. -/
 theorem grouplike_corner_mem_unramifiedTensorSubmodule
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
     (hZinj : Function.Injective (algebraMap ℤ_[p] R))
     (hRinj : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])))
-    (hρ : IsHardlyRamified hpodd hv ρ)
     (χ₁ χ₂ : Field.absoluteGaloisGroup ℚ → AlgebraicClosure ℚ_[p])
-    (hcont₁ : Continuous χ₁) (hcont₂ : Continuous χ₂)
-    (hone₁ : χ₁ 1 = 1) (hone₂ : χ₂ 1 = 1)
     (hmul₁ : ∀ g h, χ₁ (g * h) = χ₁ g * χ₁ h)
     (hmul₂ : ∀ g h, χ₂ (g * h) = χ₂ g * χ₂ h)
     (hchar : ∀ g, ((ρ g).charpoly).map (algebraMap R (AlgebraicClosure ℚ_[p])) =
@@ -2624,6 +2728,14 @@ theorem grouplike_corner_mem_unramifiedTensorSubmodule
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
+-- `hρ`, `hcont₁`, `hcont₂`, `hone₁`, `hone₂` became unreferenced in this
+-- proof on 2026-07-26, when the citation below it
+-- (`grouplike_corner_mem_unramifiedTensorSubmodule`) was narrowed to drop
+-- them; see the NARROWED block in that docstring. They stay in THIS
+-- signature because it is byte-identical to what
+-- `exists_grouplike_family_of_connected_hopf_package` applies, so the
+-- linter is silenced here rather than the statement changed.
+set_option linter.unusedVariables false in
 /-- **Half (β) of the μ-type node: local inertia at `p` fixes EVERY
 group-like of the connected corner** (PROVEN 2026-07-26 as a two-step
 assembly over the sharpened citation
@@ -2689,8 +2801,8 @@ theorem grouplike_corner_invariant_of_localInertia
     Algebra.TensorProduct.map (σ.toAlgHom.restrictScalars 𝒪ᵖᵥ)
       (AlgHom.id 𝒪ᵖᵥ G) x = x :=
   localInertia_fixes_of_mem_unramifiedTensorSubmodule G σ hσ x
-    (grouplike_corner_mem_unramifiedTensorSubmodule hpodd hv hZinj hRinj hρ χ₁ χ₂
-      hcont₁ hcont₂ hone₁ hone₂ hmul₁ hmul₂ hchar I hI G fG hfG e₀ he₀ hε₀ hprim₀
+    (grouplike_corner_mem_unramifiedTensorSubmodule hpodd hZinj hRinj χ₁ χ₂
+      hmul₁ hmul₂ hchar I hI G fG hfG e₀ he₀ hε₀ hprim₀
       hcomul₀ x hεx hglx)
 
 set_option backward.isDefEq.respectTransparency false in
