@@ -298,6 +298,13 @@ public import Mathlib.Data.ZMod.Basic
 -- `Scheme.Hom.image` / `imageι` / `toImage`: the scheme-theoretic image of a
 -- morphism, which is how the descent leaf's closed subscheme `C` is built.
 public import Mathlib.AlgebraicGeometry.IdealSheaf.Subscheme
+-- `Algebra.IsAlgebraic.isIntegral`, the instance turning `ℚ̄/ℚ` algebraic into
+-- `ℚ̄/ℚ` integral.  Reached only PRIVATELY through the imports above, so
+-- `isIntegralHom_specAlgClos` cannot synthesise it without this line.
+public import Mathlib.RingTheory.Algebraic.Integral
+-- `IsIntegralHom.SpecMap_iff` / `IsIntegralHom.of_comp`, the cancellation that
+-- makes each `ℚ̄`-point of `A` a closed map; see `isIntegralHom_geomPt`.
+public import Mathlib.AlgebraicGeometry.Morphisms.Integral
 
 @[expose] public section
 
@@ -1143,11 +1150,175 @@ theorem zmulPts_comp {A : Scheme.{0}} {f : A ⟶ SpecQ}
   letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
   (((k : ℕ) • y : GeomFibrePt f (𝟙 SpecQ))).2
 
+/-! ### Finiteness of the span
+
+The route below is SHORTER than the one predicted in the docstring of
+`isFinite_spanSchemeι`, and does not use artinian schemes at all; see the
+correction recorded there. -/
+
+/-- **`Spec ℚ̄ ⟶ Spec ℚ` is an integral morphism** (PROVEN): `ℚ̄` is
+algebraic, hence integral, over `ℚ`. -/
+theorem isIntegralHom_specAlgClos' {F : Type} [Field F] :
+    IsIntegralHom (specAlgClos F) := by
+  rw [specAlgClos, IsIntegralHom.SpecMap_iff]
+  intro x
+  exact (Algebra.IsAlgebraic.isAlgebraic (R := F) (A := AlgebraicClosure F)
+    (x : AlgebraicClosure F)).isIntegral
+
+/-- **`Spec ℚ̄ ⟶ Spec ℚ` is an integral morphism** (PROVEN).
+
+STATED OVER A VARIABLE BASE FIELD ON PURPOSE, and then instantiated — this
+is CLAUDE.md's `ULift ℚ`/`AlgebraicClosure ℚ` remedy in a fresh spot.  At
+the literal `ℚ`, `Algebra ℚ (AlgebraicClosure ℚ)` does not resolve to
+`AlgebraicClosure.instAlgebra` (the `Rat`-algebra diamond gets there
+first), so `Algebra.IsAlgebraic ℚ (AlgebraicClosure ℚ)` fails to
+synthesise even though every import is present.  At a variable `F` the
+diamond cannot arise and the instance is found immediately. -/
+theorem isIntegralHom_specAlgClos : IsIntegralHom (specAlgClos ℚ) :=
+  isIntegralHom_specAlgClos'
+
+/-- **The range of `geomPtDesc p` is covered by the ranges of the members
+of the family** (PROVEN): every point of `∐_J Spec ℚ̄` lies in one summand,
+and `Sigma.ι j ≫ Sigma.desc p = p j`. -/
+theorem range_geomPtDesc_subset {A : Scheme.{0}} {J : Type}
+    (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A)) :
+    Set.range (geomPtDesc p).base ⊆ ⋃ j, Set.range (p j).base := by
+  rintro _ ⟨y, rfl⟩
+  obtain ⟨⟨j, x⟩, rfl⟩ := (AlgebraicGeometry.sigmaMk
+    (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ)))).surjective y
+  rw [AlgebraicGeometry.sigmaMk_mk]
+  refine Set.mem_iUnion.mpr ⟨j, x, ?_⟩
+  rw [← Scheme.Hom.comp_apply,
+    show Limits.Sigma.ι (fun _ : J => Spec (CommRingCat.of (AlgebraicClosure ℚ))) j
+        ≫ geomPtDesc p = p j from Limits.Sigma.ι_desc p j]
+
+section SpanFinite
+
+variable {A : Scheme.{0}} {f : A ⟶ SpecQ} (ab : AbelianSchemeStruct f)
+  {J : Type} [Finite J]
+  (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
+  (hp : ∀ j, p j ≫ f = specAlgClos ℚ ≫ 𝟙 SpecQ)
+
+omit [Finite J] in
+include ab hp in
+/-- **Each geometric point of the family is an INTEGRAL morphism**
+(PROVEN), hence a closed map.
+
+This is the step that replaces "Zariski's lemma" in the predicted route,
+and it is where properness of `f` does the work: `p j ≫ f` is
+`specAlgClos ℚ`, which is integral, and `f` is separated because it is
+proper, so `p j` is integral by cancellation
+(`IsIntegralHom.of_comp`).  In particular the image of `p j` is a single
+CLOSED point of `A`, with no residue-field computation anywhere. -/
+theorem isIntegralHom_geomPt (j : J) : IsIntegralHom (p j) := by
+  have hsep : IsSeparated f := by have := ab.proper; infer_instance
+  have : IsIntegralHom (p j ≫ f) := by
+    rw [hp j, Category.comp_id]
+    exact isIntegralHom_specAlgClos
+  exact IsIntegralHom.of_comp (p j) f
+
+include ab hp in
+/-- **The span is supported on the finitely many image points of the
+family** (PROVEN).  Each `Set.range (p j)` is closed by
+`isIntegralHom_geomPt`, so their union is closed and already contains the
+closure of `Set.range (geomPtDesc p)`, which is the support of the
+scheme-theoretic image. -/
+theorem range_spanSchemeι_subset :
+    Set.range (spanSchemeι p).base ⊆ ⋃ j, Set.range (p j).base := by
+  have hcl : ∀ j, IsClosed (Set.range (p j).base) := by
+    intro j
+    have := isIntegralHom_geomPt ab p hp j
+    exact (p j).isClosedMap.isClosed_range
+  have hclU : IsClosed (⋃ j, Set.range (p j).base) := isClosed_iUnion_of_finite hcl
+  have hqs : QuasiSeparated f := by have := ab.proper; infer_instance
+  have hqc0 : QuasiCompact (geomPtDesc p ≫ f) :=
+    HasAffineProperty.iff_of_isAffine (P := @QuasiCompact) |>.mpr inferInstance
+  have hqc : QuasiCompact (geomPtDesc p) := QuasiCompact.of_comp (geomPtDesc p) f
+  show Set.range (Scheme.Hom.imageι _).base ⊆ _
+  rw [AlgebraicGeometry.Scheme.IdealSheafData.range_subschemeι, Scheme.Hom.support_ker]
+  exact hclU.closure_subset_iff.mpr (range_geomPtDesc_subset p)
+
+include ab hp in
+/-- **The span is an AFFINE scheme** (PROVEN): its space is finite and
+`T1`, hence discrete, and mathlib's
+`[Finite X] [DiscreteTopology X] → IsAffine X` applies.
+
+This is the statement whose absence the docstring of
+`isFinite_spanSchemeι` recorded as "the one genuine gap"
+(`IsArtinianScheme X → IsAffine X`).  See the correction there: that
+implication is already in the pin, and in fact is not needed — no
+artinian theory enters this proof. -/
+theorem isAffine_spanScheme : IsAffine (spanScheme p) := by
+  have hsub := range_spanSchemeι_subset ab p hp
+  have hfin : (⋃ j, Set.range (p j).base).Finite :=
+    Set.finite_iUnion fun j => Set.finite_range _
+  have hinj : Function.Injective (spanSchemeι p).base :=
+    (spanSchemeι p).isClosedEmbedding.injective
+  have hrf : (Set.range (spanSchemeι p).base).Finite := hfin.subset hsub
+  have : Finite (spanScheme p) := by
+    have hpre := Set.Finite.preimage (f := (spanSchemeι p).base) hinj.injOn hrf
+    rw [Set.preimage_range] at hpre
+    exact Set.finite_univ_iff.mp hpre
+  have : T1Space (spanScheme p) := by
+    refine ⟨fun c => ?_⟩
+    obtain ⟨j, x, hx⟩ : ∃ j, ∃ x, (p j).base x = (spanSchemeι p).base c := by
+      simpa using hsub ⟨c, rfl⟩
+    have hsingle : Set.range (p j).base = {(spanSchemeι p).base c} := by
+      refine Set.eq_singleton_iff_unique_mem.mpr ⟨⟨x, hx⟩, ?_⟩
+      rintro _ ⟨x', rfl⟩
+      rw [← hx]
+      congr 1
+      exact Subsingleton.elim _ _
+    have hclA : IsClosed ({(spanSchemeι p).base c} : Set A) := by
+      rw [← hsingle]
+      have := isIntegralHom_geomPt ab p hp j
+      exact (p j).isClosedMap.isClosed_range
+    have heq : ({c} : Set (spanScheme p))
+        = (spanSchemeι p).base ⁻¹' {(spanSchemeι p).base c} := by
+      ext d
+      simp [Set.mem_preimage, hinj.eq_iff]
+    rw [heq]
+    exact hclA.preimage (spanSchemeι p).continuous
+  infer_instance
+
+end SpanFinite
+
 /-! ### The five properties of the span that the descent leaf needs -/
 
 /-- **The span of finitely many `ℚ̄`-points of a scheme locally of finite
-type over `ℚ` is FINITE over `ℚ`** (sorry leaf (i) of the descent
-decomposition).
+type over `ℚ` is FINITE over `ℚ`** (PROVEN 2026-07-26; formerly leaf (i)
+of the descent decomposition).
+
+**PIN-SURVEY CORRECTION, 2026-07-26 — the survey below is STALE in its
+load-bearing claim, and the correction is what closed this leaf.**  It
+recorded `IsArtinianScheme X → IsAffine X` as "the genuine gap" that
+`grep` does not find in the pin.  Two things are wrong with that:
+
+* The implication IS in the pin, and needs no artinian theory to state:
+  `AlgebraicGeometry.Limits.lean` carries
+  `instance (priority := low) [Finite X] [DiscreteTopology X] : IsAffine X`,
+  and `IsArtinianScheme` supplies both hypotheses
+  (`IsArtinianScheme.finite`, `IsLocallyArtinian.discreteTopology`).  So
+  the implication is `inferInstance`.
+* More to the point, **it is not needed**.  No artinian scheme appears in
+  the proof.
+
+THE PROOF ACTUALLY USED, which is shorter than the route predicted below.
+`IsFinite = IsProper ⊓ IsAffineHom` (`IsFinite.iff_isProper_and_isAffineHom`),
+and properness is FREE here: `spanSchemeι p` is a closed immersion and `f`
+is proper by `ab.proper`.  So the whole leaf collapses to
+`IsAffine (spanScheme p)`, i.e. to `isAffine_spanScheme` above, and that
+follows from the span's space being finite and `T1`.
+
+Both of those come from ONE observation, `isIntegralHom_geomPt`: since
+`p j ≫ f = specAlgClos ℚ` is integral and `f` is separated (being
+proper), `p j` is integral by cancellation, hence a CLOSED map.  So each
+`Set.range (p j)` is a single closed point, the support of the
+scheme-theoretic image is contained in their finite union, and a finite
+`T1` space is discrete.  Zariski's lemma, residue fields, number fields
+and artinian rings all drop out of the argument entirely.
+
+The original (correct but unnecessary) route is preserved below.
 
 TRUE, and classical.  Each `ℚ̄`-point `p j` has image a point of `A` whose
 residue field embeds in `ℚ̄`, hence is a finitely generated `ℚ`-algebra
@@ -1168,10 +1339,11 @@ because the pieces are unusually close:
   `IsIntegralHom (spanSchemeι p ≫ f)`, and `LocallyOfFiniteType` of that
   composite is free (a closed immersion is of finite type, and `f` is
   smooth hence of finite type).
-* **The genuine gap is `IsArtinianScheme X → IsAffine X`** — an artinian
+* ~~**The genuine gap is `IsArtinianScheme X → IsAffine X`** — an artinian
   scheme is a finite disjoint union of `Spec`s of artin local rings — which
-  `grep` does not find anywhere in the pin.  A successor who proves that one
-  statement gets this leaf almost immediately.
+  `grep` does not find anywhere in the pin.~~ **REFUTED 2026-07-26**: it is
+  in the pin as `[Finite X] [DiscreteTopology X] → IsAffine X`, and it is
+  not used here anyway.  See the correction at the head of this docstring.
 
 Note this leaf does NOT need the family to be Galois-stable, and does not
 mention the group law: it is a statement about an arbitrary finite family
@@ -1180,8 +1352,13 @@ theorem isFinite_spanSchemeι {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) {J : Type} [Finite J]
     (p : J → (Spec (CommRingCat.of (AlgebraicClosure ℚ)) ⟶ A))
     (hp : ∀ j, p j ≫ f = specAlgClos ℚ ≫ 𝟙 SpecQ) :
-    IsFinite (spanSchemeι p ≫ f) :=
-  sorry
+    IsFinite (spanSchemeι p ≫ f) := by
+  have := isAffine_spanScheme ab p hp
+  have hproper : IsProper (spanSchemeι p ≫ f) := by
+    have := ab.proper
+    infer_instance
+  rw [IsFinite.iff_isProper_and_isAffineHom]
+  exact ⟨hproper, inferInstance⟩
 
 /-- **A `ℚ`-rational point of `A` whose associated `ℚ̄`-point is a member of
 the family factors through the span** (sorry leaf (ii) of the descent
