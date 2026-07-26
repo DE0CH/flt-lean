@@ -1236,6 +1236,21 @@ to hunt for.  Three checks:
   absence of any characteristic hypothesis is correct and not an
   oversight.  If the fibre is empty the statement is vacuously true.
 
+## WHERE THE GEOMETRY NOW SITS (2026-07-26 — this node HAS been decomposed)
+
+An earlier revision of this docstring argued the node was irreducible at
+this pin, on the grounds that cutting it would require `[N]` as a
+morphism of schemes, then kernels as subgroup schemes, then dimension
+theory.  The first of those turned out to be cheap and the last two turned
+out to be unnecessary: the cut below goes through FLATNESS rather than
+through a kernel dimension count, so the dimension argument lives inside
+the leaf's proof and never has to be stated.  The surviving true part of
+the old note is that properness is genuinely unavoidable — for a connected
+commutative algebraic group that is *not* proper the statement is FALSE
+(`𝔾_a` in characteristic `p` with `N = p` has `[p] = 0`) — which is why
+the one remaining leaf is a theorem-of-the-cube input and not something
+weaker.
+
 **The proof, and where the geometry now sits.** By Yoneda
 (`exists_nsmul_of_exists_comp`) solving `N • w = y` is exactly factoring
 the morphism `y.1 : Spec F̄ ⟶ A` through `[N] : A ⟶ A`, and that
@@ -2316,18 +2331,28 @@ theorem finite_hom_fibre_of_isFinite {X Y : Scheme.{u}} (φ : X ⟶ Y) [IsFinite
     pullback.lift_fst _ _ _⟩
 
 /-- **Multiplication by a nonzero `n` on an abelian scheme is
-QUASI-FINITE** (sorry leaf — abelian varieties; Mumford *Abelian
-Varieties* §6 Application 2 and §18, Milne *Abelian Varieties* I.7,
-Silverman *AEC* III.6).
+QUASI-FINITE** (PROVEN 2026-07-26 over `finite_preimage_mulByNat` in
+`Modularity/AbelianSchemeIsogeny.lean`; Mumford *Abelian Varieties* §6
+Application 2 and §18, Milne *Abelian Varieties* I.7, Silverman *AEC*
+III.6).
 
 Every fibre of `[n] : A ⟶ A` is a finite set of points. Equivalently —
 since `[n]` is PROPER for free (`isProper_mulByNat`) — `[n]` is a FINITE
 morphism, of degree `n^{2g}` on each fibre of `f`.
 
-This is the ONLY residual sorry of the `isOpen_stabilizer_torsion`
-cluster, and it is a pure statement of the theory of abelian varieties:
-no Galois action, no real multiplication, no ideal of `𝒪_D`, no number
-field, no topology.
+**This used to be the leaf, and it is now one step above it.**
+`LocallyQuasiFinite` is (locally of finite type) + (quasi-finite fibres),
+and the first half is FREE (`locallyOfFiniteType_mulByNat`, from
+`[n] ≫ f = f` and the smoothness of `f`), so stating the leaf at this
+level asked a prover for something already proven. Mathlib's
+`LocallyQuasiFinite.of_finite_preimage_singleton` needs exactly
+`[LocallyOfFiniteType]` plus finiteness of the point-set fibres, so the
+residual abelian-variety content is precisely `finite_preimage_mulByNat`,
+which is where the sorry now lives.
+
+The remaining leaf is a pure statement of the theory of abelian
+varieties: no Galois action, no real multiplication, no ideal of `𝒪_D`,
+no number field, no topology.
 
 The argument. Fibrewise over `S` this is the classical statement that
 `[n]` is an isogeny of abelian varieties. Fix a geometric fibre `A_s`,
@@ -2384,7 +2409,8 @@ repackaging that adds a leaf without moving any mathematics, and the
 theorem of the cube would remain the whole of the residual content. -/
 theorem locallyQuasiFinite_mulByNat (ab : AbelianSchemeStruct f) (n : ℕ) (hn : n ≠ 0) :
     LocallyQuasiFinite (ab.mulByNat n) :=
-  sorry
+  haveI := ab.locallyOfFiniteType_mulByNat n
+  LocallyQuasiFinite.of_finite_preimage_singleton _ (finite_preimage_mulByNat ab n hn)
 
 /-- **Multiplication by a nonzero `n` on an abelian scheme is a FINITE
 morphism** (PROVEN 2026-07-26 over `locallyQuasiFinite_mulByNat`).
