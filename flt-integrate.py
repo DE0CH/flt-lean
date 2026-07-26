@@ -30,6 +30,7 @@ Exits nonzero and leaves the pool untouched on conflict, so the caller sees it.
 
 import importlib.util
 import json
+import pathlib
 import re
 import os
 import subprocess
@@ -76,6 +77,15 @@ _frontier_spec = importlib.util.spec_from_file_location(
 _frontier = importlib.util.module_from_spec(_frontier_spec)
 _frontier_spec.loader.exec_module(_frontier)
 strip_noncode = _frontier.strip_noncode
+
+
+def sorry_set():
+    """{name: path} for every DIRECT sorry in the working tree right now."""
+    out = {}
+    for path in sorted((pathlib.Path(ROOT) / "Fermat").rglob("*.lean")):
+        for name, _ in _frontier.scan(path):
+            out[name] = str(path.relative_to(ROOT))
+    return out
 
 
 def touched_lean_files(branch):
@@ -160,6 +170,7 @@ def main():
               f"mistake this script cannot undo for you.", file=sys.stderr)
         return 2
 
+    before = sorry_set()
     ahead = int(git("rev-list", "--count", f"{TARGET_BRANCH}..{branch}").stdout.strip())
     if ahead == 0 and is_ancestor(branch):
         print(f"{branch}: nothing to merge, already an ancestor")
@@ -172,6 +183,25 @@ def main():
             print((r.stdout + r.stderr).strip()[:600], file=sys.stderr)
             return 1
         print(f"{branch}: merged ({ahead} commits)")
+
+    # SORRY-SET DELTA. Reported, not gated -- a leaf legitimately disappears every
+    # time a branch proves one, so this cannot be a pass/fail test. It is printed
+    # because a CLEAN `git merge` EXIT IS NOT EVIDENCE OF A CORRECT MERGE: on
+    # 2026-07-26 an auto-merge of MazurTorsion.lean reported no conflict and exit 0
+    # while producing a stale mixture -- 27 sorries against main's 28, having
+    # silently DROPPED three leaves main had and RESURRECTED two the branch had
+    # already retired. Nothing else we run would have caught it; the agent found it
+    # only by diffing the sorry set by hand. So: read this delta against what the
+    # branch actually claimed. Disappearances it did not claim to prove, and
+    # reappearances of names you remember closing, are the signature.
+    after = sorry_set()
+    gone = sorted(set(before) - set(after))
+    new = sorted(set(after) - set(before))
+    print(f"{branch}: direct sorries {len(before)} -> {len(after)}")
+    for n in gone:
+        print(f"    -{n}")
+    for n in new:
+        print(f"    +{n}  ({after[n]})")
 
     # GATE 1: no conflict markers anywhere. This catches the HAND-RESOLVE path,
     # where the merge conflicted, I resolved it by editing, and committed --
