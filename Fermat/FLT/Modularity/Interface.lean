@@ -26569,6 +26569,129 @@ theorem isOpen_maximalIdeal_pow_of_natCast_ne_zero
   haveI : T2Space R := homR.isEmbedding.t2Space
   exact IsLocalRing.isOpen_maximalIdeal_pow R k
 
+/-- **The cyclotomic determinant, by Chebotarev density** (PROVEN
+2026-07-26 — the determinant analogue of the trace-density half
+`trace_eq_of_charFrob_eq` above, and the CITATION-NARROWING step of the
+`p`-new flat leaf below): a 2-dimensional continuous `ℚ̄_p`-representation
+of `Γ ℚ` whose Frobenius characteristic polynomials have CONSTANT
+COEFFICIENT `q` away from a finite set of places has determinant equal
+to the `p`-adic cyclotomic character at EVERY group element — the
+weight-2 normalization, in the exact spelling of `IsHardlyRamified.det`.
+
+This is what the Hecke-polynomial hypothesis of the leaf below buys
+about `τ` globally, and it is proven here rather than left inside the
+citation. Assembly, following the trace-density template verbatim: both
+sides are continuous (`GaloisRep.det` is a `ContinuousMonoidHom` by
+`IsModuleTopology.continuous_det`; the cyclotomic side is mathlib's
+`cyclotomicCharacter.continuous` pushed along the continuous structure
+map `continuous_algebraMap_padicInt_algebraicClosure`), so the agreement
+locus is CLOSED; both sides are class functions (a determinant is
+multiplicative, and the cyclotomic character lands in the abelian group
+`ℤ_[p]ˣ`), so the locus is conjugation-invariant; and it contains the
+global Frobenius elements away from `S ∪ {p}`, where the constant
+coefficient of a rank-2 characteristic polynomial is the determinant
+(`charpoly_eq_quadratic_of_finrank_two`, `coeff_zero_quadratic`) and
+`cyclotomicCharacter_globalFrob` evaluates the character to `q`. Those
+conjugates are DENSE (`dense_conjClasses_globalFrob`), so the locus is
+everything. The place of `p` must be removed because
+`cyclotomicCharacter_globalFrob` is false there — the cyclotomic
+character is ramified at `p`. -/
+theorem det_eq_cyclotomicCharacter_of_charFrob_coeff_zero
+    {V₁ : Type*} [AddCommGroup V₁] [Module (AlgebraicClosure ℚ_[p]) V₁]
+    [Module.Finite (AlgebraicClosure ℚ_[p]) V₁]
+    [Module.Free (AlgebraicClosure ℚ_[p]) V₁]
+    (hfr : Module.finrank (AlgebraicClosure ℚ_[p]) V₁ = 2)
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) V₁}
+    {S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))}
+    (h : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 0 =
+        (q : AlgebraicClosure ℚ_[p]))
+    (γ : Field.absoluteGaloisGroup ℚ) :
+    LinearMap.det (τ γ) =
+      algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
+          ℤ_[p]) := by
+  classical
+  set Sp : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)) :=
+    insert hp.out.toHeightOneSpectrumRingOfIntegersRat S with hSp
+  -- the two sides agree at the global Frobenius elements away from `Sp`
+  have hFrob : ∀ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ Sp →
+      LinearMap.det (τ (globalFrob v)) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+            (globalFrob v).toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) := by
+    intro v hv
+    obtain ⟨q, hq, rfl⟩ := exists_prime_toHeightOneSpectrum v
+    have hqp : q ≠ p := by
+      rintro rfl
+      exact hv (by rw [hSp]; exact Finset.mem_insert_self _ _)
+    have hqS : hq.toHeightOneSpectrumRingOfIntegersRat ∉ S := fun hmem =>
+      hv (by rw [hSp]; exact Finset.mem_insert_of_mem hmem)
+    have hc0 := h q hq hqS
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob,
+      charpoly_eq_quadratic_of_finrank_two hfr, coeff_zero_quadratic] at hc0
+    rw [hc0, cyclotomicCharacter_globalFrob hq hqp, map_natCast]
+  -- both sides are continuous, so the agreement locus is closed …
+  have hcL : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
+      LinearMap.det (τ γ) :=
+    (ContinuousMonoidHom.continuous_toFun τ.det).congr fun _ => rfl
+  have hcR : Continuous fun γ : Field.absoluteGaloisGroup ℚ =>
+      algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv : ℤ_[p]ˣ) :
+          ℤ_[p]) :=
+    ((continuous_algebraMap_padicInt_algebraicClosure (ℓ := p)).comp
+      (Units.continuous_val.comp
+        (cyclotomicCharacter.continuous p ℚ (AlgebraicClosure ℚ)))).congr
+      fun _ => rfl
+  have hclosed : IsClosed {γ : Field.absoluteGaloisGroup ℚ |
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p])} :=
+    isClosed_eq hcL hcR
+  -- … and it is conjugation-invariant, hence contains the dense set of
+  -- Frobenius conjugates
+  have hsub : {x : Field.absoluteGaloisGroup ℚ |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ Sp ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} ⊆
+      {γ : Field.absoluteGaloisGroup ℚ |
+        LinearMap.det (τ γ) =
+          algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+            ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+              ℤ_[p]ˣ) : ℤ_[p])} := by
+    rintro x ⟨v, hv, g, rfl⟩
+    simp only [Set.mem_setOf_eq]
+    -- the determinant is a class function …
+    have hdetconj : LinearMap.det (τ (g * globalFrob v * g⁻¹)) =
+        LinearMap.det (τ (globalFrob v)) := by
+      have h1 : τ.det g * τ.det g⁻¹ = 1 := by
+        rw [← map_mul, mul_inv_cancel, map_one]
+      show τ.det (g * globalFrob v * g⁻¹) = τ.det (globalFrob v)
+      rw [map_mul, map_mul]
+      calc τ.det g * τ.det (globalFrob v) * τ.det g⁻¹
+          = τ.det (globalFrob v) * (τ.det g * τ.det g⁻¹) := by ring
+        _ = τ.det (globalFrob v) := by rw [h1, mul_one]
+    -- … and so is the cyclotomic character, which lands in an abelian group
+    have hcycconj : ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          (g * globalFrob v * g⁻¹).toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) =
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) p
+          (globalFrob v).toRingEquiv : ℤ_[p]ˣ) : ℤ_[p]) := by
+      have hmul : ∀ a b : Field.absoluteGaloisGroup ℚ,
+          (a * b).toRingEquiv = a.toRingEquiv * b.toRingEquiv := fun _ _ => rfl
+      have hinv : ∀ a : Field.absoluteGaloisGroup ℚ,
+          (a⁻¹).toRingEquiv = (a.toRingEquiv)⁻¹ := fun _ => rfl
+      rw [hmul, hmul, hinv, map_mul, map_mul, map_inv]
+      rw [mul_comm, ← mul_assoc, inv_mul_cancel, one_mul]
+    rw [hdetconj, hcycconj]
+    exact hFrob v hv
+  have hγ : γ ∈ closure {x : Field.absoluteGaloisGroup ℚ |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ), v ∉ Sp ∧
+        ∃ g, x = g * globalFrob v * g⁻¹} := by
+    rw [(dense_conjClasses_globalFrob (K := ℚ) Sp).closure_eq]
+    trivial
+  exact closure_minimal hsub hclosed hγ
+
 include hpodd in
 /-- **Serre's flat-level criterion for a `p`-new eigensystem: SOME FINITE
 LEVEL of the `p`-adic tower admits no flat prolongation** (sorry node —
@@ -26617,6 +26740,25 @@ Kummer-class criterion — is carried over undiminished. The cut relocates
 that citation to the finite level at which the criterion is actually
 stated in the source, which is where any future proof must start.
 
+NARROWED 2026-07-26 (fifth owner) BY THE CYCLOTOMIC DETERMINANT `hdet`.
+The leaf now RECEIVES the weight-2 normalization `det τ = χ_cyc` at
+every element of `G_ℚ`, instead of being expected to extract it from
+the Frobenius data itself. That hypothesis is DERIVABLE — it is proven
+in the consumer by the new
+`det_eq_cyclotomicCharacter_of_charFrob_coeff_zero` above, the
+determinant analogue of the trace-density half `trace_eq_of_charFrob_eq`
+— so the statement is strictly WEAKER than before and nothing
+downstream changes; what moves is the Chebotarev-density step of the
+classical argument, out of the citation and into a proof term. It is
+the exact hypothesis the classical local theory consumes: Raynaud's
+classification and Serre's Kummer-class criterion are applied to
+representations of determinant `χ_cyc` (this is what "weight 2" means
+locally, and it is the shape in which the tree's own flat machinery
+takes it — `IsHardlyRamified.det`, consumed by `Family.lean`'s per-level
+Raynaud trace congruence). Note the density argument must delete the
+place of `p` from the agreement set, since `χ_cyc` is ramified there;
+that is harmless, a finite set stays finite.
+
 TERMINALITY, RE-AUDITED (2026-07-25, fourth owner, independently of the
 two INFRASTRUCTURE audits below). Those audits are confirmed: there is
 no crystalline/Barsotti–Tate predicate, no Fontaine functor and no
@@ -26640,6 +26782,46 @@ missing infrastructure that a deformation-theory owner could supply.
 Building crystalline theory would therefore NOT close this leaf; the
 missing dependency is the geometry of modular curves at `p`. It is
 recorded here so that no fifth owner spends the cycle rediscovering it.
+
+TERMINALITY, FIFTH AUDIT (2026-07-26). The fourth owner's two findings
+are confirmed, and each is SHARPENED by one degree.
+
+* The in-tree Raynaud machinery is not merely insufficient here — it is
+  INAPPLICABLE. Both `Family.lean`'s per-level congruence
+  `trace_sub_one_add_cyclotomicCharacter_mem_of_hopf_package` and its
+  Krull-assembled consequence
+  `char_add_char_eq_one_add_cyclotomicCharacter_of_mem_localInertiaGroup_p`
+  carry the hypothesis `hchar : ∀ g, (ρ g).charpoly.map = (X − χ₁ g)(X
+  − χ₂ g)` with `χ₁, χ₂` CONTINUOUS and MULTIPLICATIVE. That is global
+  reducibility: it forces `tr ρ = χ₁ + χ₂`, hence `ρ^ss ≅ χ₁ ⊕ χ₂`, which
+  `hirr` forbids outright. They also take `IsHardlyRamified`, whose
+  `isFlat` field is precisely the thing this leaf must refute. So the
+  fourth owner's computation (that the Steinberg configuration satisfies
+  the trace congruence) is not even reached — no instantiation of that
+  machinery exists at these hypotheses. Its Krull-intersection assembly
+  is nevertheless the right TEMPLATE for a future obstruction, and it is
+  where the "infinite tower ⇒ exact identity on inertia" step is already
+  proven.
+* Chebotarev density IS available on this pin, contrary to the note at
+  the head of the `Interface.lean` conductor section: `Chebotarev.lean`
+  proves `dense_conjClasses_globalFrob`, and this file already derives
+  `trace_eq_of_charFrob_eq` and `exists_linearEquiv_of_charFrob_eq` from
+  it. That is what made the `hdet` narrowing above possible, and it
+  marks the NEXT available narrowing: the classical argument's
+  identification step — "Chebotarev plus char-0 Brauer–Nesbitt identify
+  `τ` with `ρ_{g₀,λ}`, and `hirr` upgrades it to an isomorphism" — is
+  formalizable here through `exists_linearEquiv_of_charFrob_eq`, once
+  the attached representation is in hand from the existing sorried
+  attachment leaf `exists_galoisRep_charFrob_of_weightTwoNewform`. Doing
+  that would replace `τ, hτ, hirr` in this statement by the attached
+  representation itself, leaving the citation as the pure local
+  assertion about `ρ_{g₀,λ}|_{G_p}` — which is how Saito states it. It
+  needs no new faith, only the transport work.
+
+What no amount of such narrowing removes is the automorphic-to-Galois
+bridge itself (fourth owner's finding 2): every remaining step is a
+theorem about the étale cohomology of modular curves at `p`, absent
+from this pin and from `~/cs/FLT`.
 
 SOUNDNESS: inherited verbatim from the consumer's SOUNDNESS AUDIT
 (`p = 11`, `M = 11`, the weight-2 newform of level `11`), whose witness
@@ -26669,6 +26851,11 @@ theorem exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew
     (he : ∀ (γ : Field.absoluteGaloisGroup ℚ)
         (w : Fin 2 → AlgebraicClosure ℚ_[p]),
       e (τ γ w) = ρ.baseChange (AlgebraicClosure ℚ_[p]) γ (e w))
+    (hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]))
     (hpne : (p : R) ≠ 0) :
     ∃ k : ℕ,
       ¬ (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).HasFlatProlongationAt
@@ -26677,11 +26864,15 @@ theorem exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew
 
 include hpodd in
 /-- **The `p`-new exclusion over an INFINITE `p`-adic flat tower**
-(PROVEN 2026-07-25 by the TOWER CUT — a one-step assembly over the
+(PROVEN 2026-07-25 by the TOWER CUT — a two-step assembly over the
 finite-level literature leaf
 `exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew`
-above, whose docstring carries the cut's rationale and a fourth
-terminality audit; the citations and audits below are UNCHANGED and
+above, whose docstring carries the cut's rationale and two further
+terminality audits; the second step, added 2026-07-26, DISCHARGES the
+leaf's cyclotomic-determinant hypothesis `hdet` by Chebotarev density
+through `det_eq_cyclotomicCharacter_of_charFrob_coeff_zero`, so the
+weight-2 normalization is now a proof term rather than part of the
+citation; the citations and audits below are UNCHANGED and
 remain the authority on this node's literature content. This node WAS
 itself the single residual literature leaf of the at-`p` conductor cut,
 NARROWED 2026-07-25 by the derivable hypothesis `hpne : (p : R) ≠ 0` —
@@ -26834,11 +27025,23 @@ theorem not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero
     (hpne : (p : R) ≠ 0) :
     ¬ ρ.IsFlatAt
       (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat := by
+  -- the weight-2 determinant normalization, PROVEN from `hτ` by Chebotarev
+  -- density: away from `S_τ` the constant coefficient of the Frobenius
+  -- characteristic polynomial is `r`, which is the cyclotomic character
+  have hdet : ∀ γ : Field.absoluteGaloisGroup ℚ,
+      LinearMap.det (τ γ) =
+        algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
+            ℤ_[p]ˣ) : ℤ_[p]) := by
+    refine det_eq_cyclotomicCharacter_of_charFrob_coeff_zero
+      (Module.finrank_fin_fun (AlgebraicClosure ℚ_[p])) (S := S_τ)
+      fun r hr hrS => ?_
+    rw [hτ r hr hrS, coeff_zero_quadratic]
   -- the finite level supplied by Serre's level-by-level criterion …
   intro hflat
   obtain ⟨k, hk⟩ :=
     exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew hpodd
-      hM hpM hg hpnew κ hτ hirr e he hpne
+      hM hpM hg hpnew κ hτ hirr e he hdet hpne
   -- … is a genuine level of the flat tower, because `hpne` makes `𝔪 ^ k` open
   exact hk (hflat.cond _ (isOpen_maximalIdeal_pow_of_natCast_ne_zero hpne k))
 
