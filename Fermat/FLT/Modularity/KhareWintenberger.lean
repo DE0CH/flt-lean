@@ -8173,10 +8173,13 @@ TWO DIFFERENCES from the parent node, both deliberate:
 
 The hypothesis package is retained VERBATIM (`hℓ5`, `hZinj`, `hρ`,
 `hρbar`, `hirr`, `hπ`, and the group-theoretic data `hCD`, `hnormal`,
-`hp`, `hcard`), so route (ii) of the parent's soundness audit — collapse
-by unsatisfiability of the arithmetic package — remains available here
-exactly as it was there.  The sharpening is of the CONCLUSION only; no
-arithmetic hypothesis was weakened, and none was added.
+`hp`, `hcard`), so route (ii) of the parent's soundness audit — the
+observation that the arithmetic package is CLASSICALLY UNSATISFIABLE —
+remains available here exactly as it was there.  The sharpening is of the
+CONCLUSION only; no arithmetic hypothesis was weakened, and none was
+added.  Route (ii) is a SOUNDNESS justification (it is why the statement
+is true), NOT an available Lean discharge: see the ROUTE AUDIT below,
+which is the point on which this node is most easily misread.
 
 SOUNDNESS: the conclusion is a restriction of the parent's conclusion to
 a subset of the places, so this node is implied by the classical theorem
@@ -8186,7 +8189,132 @@ the Arthur–Clozel character identity), which do not distinguish the
 split and inert places.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`.
+
+────────────────────────────────────────────────────────────────────
+ROUTE AUDIT (2026-07-26, re-verified for THIS node, call site by call
+site rather than from docstrings).  COLLAPSE IS NOT AVAILABLE.
+
+Every link below is an actual application in a proof term in this
+module, not a docstring claim:
+
+  `not_isIrreducible_of_isHardlyRamified_of_five_le`
+    ← `exists_threeadic_compatible_member_of_five_le`   (pillar β)
+    ← `exists_heckeField_system_of_witness`
+    ← `exists_descended_heckeSystem_of_solvable`
+    ← `heckeSystemDescendsTo_of_cyclic_step`
+    ← `heckeSystemDescendsTo_of_prime_cyclic_step`
+    ← `exists_heckeTrace_of_prime_cyclic_step`
+    ← THIS NODE.
+
+So `absurd hirr (not_isIrreducible_of_isHardlyRamified_of_five_le …)` —
+the route ~40 leaves of this development legitimately take — is CIRCULAR
+here.  It is also mechanically impossible: the dichotomy is declared some
+5100 lines BELOW this node in the same module.  The two other copies of
+the dichotomy are excluded as well: `IsHardlyRamified.mod_three_reducible`
+is the `p = 3` half and says nothing at `ℓ ≥ 5`, and `Reducible.lean`'s B5
+routes through `Family.lean`, which the inherited circularity guard above
+forbids.  Anyone who "discharges" this node quickly has almost certainly
+re-derived one of those three and should re-read this paragraph.
+
+────────────────────────────────────────────────────────────────────
+PLACE-AXIS SHARPNESS (2026-07-26).  THE SPLIT/INERT CUT IS ALREADY
+SHARP: THE BASE FIELD `F` DISCHARGES NOTHING FURTHER.
+
+The obvious next sharpening is to peel off, in addition, every place `w`
+of `M` whose residue cardinality is realized by a good place of the base
+field `F` — using `Wit.modularF` in place of `hPL`, with the same
+residue-cardinality lemma `charFrob_baseChange_eq_of_absNorm_eq`.  That
+set is empty beyond what `hPL` already covers, so the sharpening is a
+no-op.  Proof: `F/ℚ` is Galois, so every place of `F` over `q` has the
+same residue degree `f_F = ord(Frob_q)`.  If some place `u` of `F` has
+`Nu = Nw = q^{f_M(w)}` then `f_M(w) = f_F`; picking any place `u'` of `F`
+ABOVE `w` gives `f_F = f(u'/w)·f_M(w) = f(u'/w)·f_F`, hence
+`f(u'/w) = 1`; hence the place `v' = u' ∩ L` has `f(v'/w) ∣ f(u'/w) = 1`,
+so `Nv' = Nw`.  Only finitely many places carry any one norm
+(`Ring.HasFiniteQuotients.finite_absNorm_heightOneSpectrum_le`), so
+`v' ∉ SL` as soon as `Nw > max {Nv : v ∈ SL}`, and `hPL` already answers
+at `w`.  Contrapositive, worth stating: this node's hypothesis
+(`Nw` not realized in `L`) already implies `Nw` is not realized in `F`.
+
+Related, and also verified: this node's hypothesis FORCES `w` to be
+unramified and inert in `L/M`.  The place `v` of `L` above `w` has
+`Nv = Nw^{f(v/w)}` with `e(v/w)·f(v/w) = p`; `f(v/w) = 1` would give
+`Nv = Nw`, excluded; so `f(v/w) = p` and `e(v/w) = 1`.  The node's name
+is therefore accurate and not merely suggestive.
+
+────────────────────────────────────────────────────────────────────
+WHAT IS FORMALLY DERIVABLE AT AN INERT PLACE, AND WHY THE REMAINDER IS
+ATOMIC (2026-07-26 — an independent re-derivation of the analysis that
+led the author of the cut to REJECT the three-leaf automorphic
+build-out; do not re-cut along that seam).
+
+Write `A = ρ|_{G_M}(Frob_w)`, `s = tr A`, and note `det A = Nw ∈ ℚ` by
+the PROVEN `charFrob_baseChange_coeff_zero_eq_absNorm`.  The unique place
+`v` of `L` over the (inert, by the previous paragraph) place `w` has
+`Nv = Nw^p` and `Frob_v = Frob_w^p`, so
+`(ρ|_{G_L}).charFrob v = charpoly(A^p) = X² − D_p(s, Nw)·X + Nw^p`,
+where `D_p` is the Dickson polynomial expressing `α^p + β^p` in the
+elementary symmetric functions `e₁ = s`, `e₂ = Nw`.  Hence `hPL` at `v`
+yields exactly
+
+    `D_p(s, Nw) ∈ Set.range ψℓ`   and   `Nw ∈ ℚ ⊆ Set.range ψℓ`,
+
+i.e. **`s` is a root of an explicit degree-`p` polynomial with
+coefficients in `E`** — and that is ALL that is formally derivable here.
+The `p` roots are `ζ^j α + ζ^{−j} β` (`ζ^p = 1`): precisely the fibre of
+cyclic base change, a torsor under the order-`p` character group of
+`Gal(L/M)`.  Selecting the `E`-rational root is the whole of the
+citation, and nothing in this module distinguishes it; any cut along that
+seam needs `μ_p ⊆ Set.range ψℓ`, which is FALSE for an abstract carrier
+(`E = ℚ`, `p = 5`) and whose own collapse route is circular by the ROUTE
+AUDIT above.  Such a leaf would have neither a classical nor a collapse
+route — strictly worse than this node.  The weakening that IS derivable,
+"`ιO (coeff 1)` is algebraic of degree `≤ p` over `Set.range ψℓ`", is not
+a shape the consumer `heckeSystemDescendsTo_of_prime_cyclic_step` can
+use.
+
+Two further cuts were examined and rejected on the same ground: an
+interface structure carrying `bad`/`a`/`ζ`/`carayol` fields (a rename
+with a one-line assembly, not a decomposition), and the `SL`-free
+restatement of the place hypothesis, `∀ v, Nv ≠ Nw` in place of
+`∀ v ∉ SL, Nv ≠ Nw`.  The latter LOOKS like a strengthening of the
+hypothesis but is interderivable with it — `S` is existentially
+quantified, and only finitely many places of `M` have norm at most
+`max {Nv : v ∈ SL}` — so it removes no burden and was deliberately not
+made.
+
+────────────────────────────────────────────────────────────────────
+WHERE THE RESIDUAL BURDEN REALLY SITS — A CARRIER-LEVEL OBLIGATION THAT
+`PotentialModularityWitness` DOES NOT RECORD (2026-07-26, reported
+upwards rather than repaired here).
+
+The fibre of cyclic base change is a torsor under the characters of
+`Gal(L/M)`, so `ρ|_{G_M}` is itself attached to a member `f'` of that
+fibre — there is no residual twist to control, and the traces asked for
+here are literally the Hecke eigenvalues of `f'`.  The whole content of
+this node is therefore the FIELD-THEORETIC normalization
+
+    Hecke field of the descended form `f'`  ↪  `E`,  compatibly with `ψℓ`.
+
+Classically the Hecke field can GROW on the way down: `E` is pinned by
+the structure only through `modularF`/`matchF₃`, i.e. as a field carrying
+the eigensystem over `F`, and the eigenvalues over `F` at a place `u` of
+residue degree `d` over `w` are `α^d + β^d`, which generate a subfield of
+`ℚ(α + β)` that is in general PROPER.  The statement of this node is
+nevertheless true — the package is classically unsatisfiable (route (ii))
+— but on the classical route (i) it is true only for a carrier whose `E`
+was chosen large enough for the entire descent, e.g. the compositum of
+the Hecke fields of all descended forms in the Brauer decomposition
+(a finite compositum, hence still a number field).  That is a legitimate
+choice and the producing leaf
+`exists_potentialModularityWitness_of_five_le` must be understood as
+making it, but `PotentialModularityWitness` records no such field and its
+docstring calls `E` simply "the Hecke field of the attached Hilbert
+newform" over `F`.  Whoever proves the witness-production leaf needs to
+know this; the repair (a descent-closure field on the carrier) is a
+cut-level change touching every consumer of the structure and is not made
+here. -/
 theorem exists_heckeTrace_of_prime_cyclic_step_of_inert
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
