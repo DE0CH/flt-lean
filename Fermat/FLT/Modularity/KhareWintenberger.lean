@@ -5723,7 +5723,62 @@ list with the machinery costs):
 for the generalised Jacobian to differ from the Jacobian). `hjcomm` is
 what makes `Ω_v ⊆ C(K_v)` a subset of `X̄(K_v)` compatibly with the base,
 so that the local conditions at `v` really are conditions on divisors of
-`X̄` avoiding `Z`. -/
+`X̄` avoiding `Z`.
+
+CUT AUDIT, AND THE `hdim` REPAIR (2026-07-26). As first stated this leaf
+carried NO hypothesis pinning `dim X̄ = 1`: `hXsmooth`, `hXproper` and
+`hXgi` describe a smooth proper geometrically irreducible `ℚ`-scheme of
+ANY dimension, and `hZ` only says the complement of `C` is nonempty. The
+statement was therefore Moret–Bailly's Théorème 1.3 in full generality —
+TRUE, but strictly stronger than the route documented above it, which is
+his §3 and treats CURVES only. A prover following §3.2–3.10 would have
+reached the end and found the curve hypothesis absent.
+
+`hdim : topologicalKrullDim ↥C ≤ 1` is that hypothesis, and it is the
+repair taken here rather than the alternative (a Bertini reduction as a
+sibling leaf, recovering the general case). The alternative buys
+generality that nothing in this tree consumes, at the price of a whole
+extra development; `hdim` is already in scope at the SOLE call site,
+`exists_totallySplitPoint_of_affine_curve`, verbatim in this form, so
+narrowing costs the consumer nothing.
+
+Why `dim C ≤ 1` is the right way to say "`X̄` is a curve", given the rest
+of the hypotheses — this is what a prover may rely on:
+
+* `X̄` is irreducible (`hXgi` gives geometric irreducibility), and `j` is
+  an open immersion, so `C` is an open subscheme of an irreducible space;
+  `C` is nonempty because `hreal` exhibits a point of it. A nonempty open
+  of an irreducible finite-type scheme is DENSE and has the same
+  dimension, so `dim X̄ = dim C ≤ 1`.
+* `dim X̄ ≥ 1`: were `dim X̄ ≤ 0`, then `X̄` — smooth, proper and
+  geometrically irreducible over `ℚ` — would be `Spec ℚ`, whose only
+  nonempty open subscheme is itself, contradicting `hZ`.
+
+So `hdim` together with `hZ` and `hreal` pins `dim X̄ = 1` exactly, which
+is the hypothesis §3.1's genus `g` and degree `z` are computed under and
+the one §3.5–3.6's Riemann–Roch needs. It is stated on `C` rather than on
+`X̄` purely so that the call site can discharge it by `exact`.
+
+WHAT THAT TRANSFER COSTS AT THIS PIN — checked 2026-07-26, do not assume
+it is free. The whole `topologicalKrullDim` API in mathlib is five
+declarations (`Mathlib/Topology/KrullDimension.lean`, plus
+`PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim`):
+`Topology.IsInducing.topologicalKrullDim_le`,
+`IsHomeomorph.topologicalKrullDim_eq`, `topologicalKrullDim_subspace_le`,
+`topologicalKrullDim_zero_of_discreteTopology`, and the `PrimeSpectrum`
+comparison. Every one of them gives the dimension of a SUBSPACE as `≤`
+that of the ambient space, so the pin supplies `dim C ≤ dim X̄` and NOT
+the direction the first bullet above needs, which is `dim X̄ ≤ dim C` for
+a dense open. There is no "a nonempty open of an irreducible finite-type
+scheme is dense and equidimensional" lemma at this pin.
+
+That is an obligation on whoever proves this leaf, not a defect in the
+statement: `hdim` is still the correct and cheapest hypothesis, because
+it is the one the call site already holds, and the transfer to `X̄` is a
+step INSIDE the §3 argument rather than something the consumer should be
+made to pay. A prover who wants `dim X̄ ≤ 1` as a usable fact must
+establish the dense-open equidimensionality himself. Recording it here so
+that the step is budgeted rather than discovered. -/
 theorem exists_totallySplitPoint_of_projectiveCompactification
     {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -5734,6 +5789,7 @@ theorem exists_totallySplitPoint_of_projectiveCompactification
     (hXproper : AlgebraicGeometry.IsProper fX)
     (hXgi : AlgebraicGeometry.GeometricallyIrreducible fX)
     (hZ : (Set.range j.base)ᶜ.Nonempty)
+    (hdim : topologicalKrullDim ↥C ≤ 1)
     (hreal : HasRationalPoint fC (ULift.{u} ℝ))
     (S : Finset ℕ) (hSprime : ∀ p ∈ S, p.Prime)
     (hSpt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S →
@@ -5870,7 +5926,10 @@ performed rather than promised:
   The §3.1 leaf receives `hpos : ¬ topologicalKrullDim C ≤ 0`, which is
   what forces the complement `Z = X̄ - C` to be nonempty (an affine proper
   scheme over a field has dimension `0`), and `z > 0` is used throughout
-  §3.5–3.9.
+  §3.5–3.9. BOTH curve-branch leaves also receive `hdim` itself: the
+  §3.2–3.10 leaf was corrected on 2026-07-26 to carry it, since without it
+  that leaf was Théorème 1.3 in every dimension while the §3 route
+  documented on it proves only the curve case. See its own CUT AUDIT.
 
 The costing of what each curve-branch leaf still needs from mathlib is in
 the section docstring "The curve branch: Moret–Bailly §3, cut at the
@@ -5901,7 +5960,7 @@ theorem exists_totallySplitPoint_of_affine_curve
   · obtain ⟨Xbar, fX, j, hjimm, hjcomm, hXsmooth, hXproper, hXgi, hZ⟩ :=
       exists_projectiveCompactification_of_affine_curve fC hsmooth hsep hft hqc hgi hdim hzero
     exact exists_totallySplitPoint_of_projectiveCompactification fC fX j hjimm hjcomm
-      hXsmooth hXproper hXgi hZ hreal S hSprime hSpt
+      hXsmooth hXproper hXgi hZ hdim hreal S hSprime hSpt
 
 /-- **The normal closure of a totally real, totally split number field is
 again totally real and totally split** (**PROVEN 2026-07-26** — pure algebraic
