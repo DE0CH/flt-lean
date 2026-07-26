@@ -55,7 +55,11 @@ justifies rather than exported as a standalone lemma:
 * the ring-action axioms of `Mult` are consumed by `Mult.module`, which
   *is* the statement that the geometric points form an `R`-module;
 * naturality of the multiplication is consumed by `Mult.torsion`, whose
-  value carries the proof that the `I`-torsion is Galois-stable.
+  value carries the proof that the `I`-torsion is Galois-stable;
+* the facts about the Galois action on roots of unity are consumed by
+  `galRootAction`, and the axioms of `DualStruct` / `PolarizationStruct`
+  by the `PolarizationStruct.pairing` lemmas, which *are* the classical
+  properties of the `𝒪_D`-Weil pairing (see the section docstring there).
 
 This is not decoration: a declaration in this project must lie in the
 transitive used-constant cone of the root theorem, and only the
@@ -75,6 +79,7 @@ public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.FieldTheory.AbsoluteGaloisGroup
 public import Mathlib.Algebra.Group.MinimalAxioms
 public import Mathlib.Algebra.Module.Torsion.Basic
+public import Mathlib.RingTheory.RootsOfUnity.Basic
 
 @[expose] public section
 
@@ -378,5 +383,305 @@ noncomputable def torsion {F : Type u} [Field F] (x : Spec (CommRingCat.of F) �
     exact (ab.geomFibreAction x).smul_zero σ⟩
 
 end Mult
+
+/-! ### The Galois action on roots of unity
+
+The Weil pairing below takes values in the roots of unity of `F̄`, and the
+whole arithmetic content of the pairing is that `Γ_F` acts on that target
+through the CYCLOTOMIC CHARACTER and on nothing else. So the target needs
+its Galois action before the pairing can be stated. -/
+
+/-- **The action of `σ ∈ Γ_F` on the `n`-th roots of unity of `F̄`.**
+`rootsOfUnity n M` is a subgroup of `Mˣ`, and `σ` is a ring automorphism
+of `F̄`, so it acts on units; it preserves the subgroup because it is
+multiplicative, which is the proof carried in the second component. -/
+noncomputable def galRoot {F : Type u} [Field F] {n : ℕ}
+    (σ : Field.absoluteGaloisGroup F) (ζ : rootsOfUnity n (AlgebraicClosure F)) :
+    rootsOfUnity n (AlgebraicClosure F) :=
+  ⟨Units.map ((σ : AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F).toAlgHom.toRingHom.toMonoidHom)
+      (ζ : (AlgebraicClosure F)ˣ), by
+    rw [mem_rootsOfUnity, ← map_pow, (mem_rootsOfUnity n _).mp ζ.2, map_one]⟩
+
+/-- `galRoot` is trivial at the identity of `Γ_F`. -/
+@[simp] theorem galRoot_one {F : Type u} [Field F] {n : ℕ}
+    (ζ : rootsOfUnity n (AlgebraicClosure F)) :
+    galRoot (1 : Field.absoluteGaloisGroup F) ζ = ζ := by
+  apply Subtype.ext; apply Units.ext; rfl
+
+/-- `galRoot` turns multiplication in `Γ_F` into composition. Unlike
+`specGal_mul` there is no reversal here: this is an action on ELEMENTS of
+`F̄`, not on `Spec F̄`, so the contravariance of `Spec` does not intervene. -/
+theorem galRoot_mul {F : Type u} [Field F] {n : ℕ}
+    (σ τ : Field.absoluteGaloisGroup F) (ζ : rootsOfUnity n (AlgebraicClosure F)) :
+    galRoot (σ * τ) ζ = galRoot σ (galRoot τ ζ) := by
+  apply Subtype.ext; apply Units.ext; rfl
+
+/-- Each `galRoot σ` is multiplicative. -/
+theorem galRoot_mul_apply {F : Type u} [Field F] {n : ℕ}
+    (σ : Field.absoluteGaloisGroup F) (ζ ξ : rootsOfUnity n (AlgebraicClosure F)) :
+    galRoot σ (ζ * ξ) = galRoot σ ζ * galRoot σ ξ := by
+  apply Subtype.ext; apply Units.ext
+  exact map_mul _ _ _
+
+/-- Each `galRoot σ` fixes `1`. -/
+@[simp] theorem galRoot_one_elt {F : Type u} [Field F] {n : ℕ}
+    (σ : Field.absoluteGaloisGroup F) :
+    galRoot σ (1 : rootsOfUnity n (AlgebraicClosure F)) = 1 := by
+  apply Subtype.ext; apply Units.ext
+  exact map_one _
+
+/-- **`Γ_F` acts on `μ_n(F̄)` by group automorphisms.** As elsewhere in
+this module the facts just proven are consumed by the definition they
+justify, rather than left as loose lemmas. -/
+@[reducible] noncomputable def galRootAction (F : Type u) [Field F] (n : ℕ) :
+    MulDistribMulAction (Field.absoluteGaloisGroup F) (rootsOfUnity n (AlgebraicClosure F)) where
+  smul := galRoot
+  one_smul := galRoot_one
+  mul_smul := galRoot_mul
+  smul_mul := galRoot_mul_apply
+  smul_one := galRoot_one_elt
+
+/-! ### The dual abelian scheme, polarizations and the `𝒪_D`-Weil pairing
+
+WHY THIS SECTION EXISTS (2026-07-26). Two independent notes in this
+development recorded the same absence and named the same repair:
+
+* `Modularity/TateModule.lean` (at `det_eq_cyclotomicCharacter_of_tateFrame`)
+  — "there is no dual abelian scheme, no polarization, no Cartier duality
+  and no Weil pairing over a general base … `AbelianSchemeStruct` carries
+  only `add`/`zero`/`neg` together with `proper`/`smooth`/`connected` — no
+  line bundles, so *polarization* is not even stateable yet";
+* the ATOMICITY AUDIT of
+  `exists_twistedHilbertBlumenthalModuliTwist_of_datum`
+  (`Modularity/KhareWintenberger.lean`) — "the prerequisite that would
+  unlock it is nameable: a POLARIZATION and `𝒪_D`-WEIL PAIRING datum on
+  `Fermat.AbelianSchemeStruct` / `Fermat.Mult` (an extension of
+  `Modularity/AbelianScheme.lean`)".
+
+This section is that extension.
+
+DESIGN: THE PAIRING LIVES ON TORSION, NOT ON LINE BUNDLES. Constructing
+`A^∨ = Pic⁰_{A/S}` as a scheme is Grothendieck's representability theorem
+for the Picard functor, which is far out of reach at this pin — and it is
+NOT what the consumers need. What they consume is the pairing on the
+`I`-torsion of a geometric fibre together with its `Γ_F`-equivariance. So
+the dual is presented here the way `AbelianSchemeStruct` itself is
+presented: as a BUNDLED DATUM — a second abelian scheme over the same
+base, carrying the transposed multiplication and a Weil pairing with its
+axioms — rather than constructed. That is the same modelling decision the
+rest of this module already makes, and it keeps the interface honest:
+nothing here claims that a dual EXISTS, only what it means to have one.
+
+Consequently `DualStruct` and `PolarizationStruct` are hypotheses, and
+everything proven from them (the whole `PolarizationStruct` namespace) is
+a genuine consequence of those hypotheses.
+
+WHY THE PAIRING TAKES RAW POINTS. The `I`-torsion is `Mult.torsion`, a
+`Set` carrying a Galois-stability proof; this module deliberately
+registers no global `AddCommGroup`/`Module` instances on relative points
+(they are `letI`-bound inside the definitions that need them, so that the
+cone stays clean). Rather than reintroduce that plumbing at every
+axiom, `weil` is a function on ALL geometric points whose axioms are
+asserted only for torsion arguments; its value off the torsion is
+unconstrained and no consumer may rely on it.
+
+NON-VACUITY. The content of the datum is carried by
+`DualStruct.weil_nondegenerate`: without it, `weil ≡ 1` would satisfy
+every other axiom. With it, the pairing cannot be trivial on a nonzero
+torsion point, which is exactly the property the level-structure
+condition of the Hilbert–Blumenthal moduli problem needs — the condition
+that cuts the split moduli space down to ONE geometric component instead
+of one per pairing value.
+
+CONE STATUS. These declarations are not yet in the used-constant cone of
+`fermat_last_theorem`: they are the named prerequisite of three leaves
+that are open at the time of writing —
+`exists_twistedHilbertBlumenthalModuliTwist_of_datum` and
+`exists_realAbelianSchemeWithRealMultiplication`
+(`Modularity/KhareWintenberger.lean`) and
+`det_eq_cyclotomicCharacter_of_tateFrame` (`Modularity/TateModule.lean`) —
+and they enter the cone as soon as any of those consumes them. They must
+NOT be swept as free-floating before then. -/
+
+/-- **A dual abelian scheme, presented together with its Weil pairing.**
+
+The data is a second abelian scheme `dualMap : dualScheme ⟶ S` over the
+same base, carrying the transposed `R`-multiplication, together with the
+canonical pairing
+
+  `A[I] × A^∨[I] ⟶ μ_n(F̄)`
+
+on the `I`-torsion of each geometric fibre, for every `n` killed by `I`.
+The axioms are bi-additivity, `Γ_F`-equivariance, `R`-adjointness and
+nondegeneracy — the classical properties of the Weil pairing.
+
+`weil_act` is the statement that the Rosati involution attached to the
+pairing restricts to the IDENTITY on `R`. For `R = 𝒪_D` with `D` totally
+real that is automatic classically (the Rosati involution is positive, and
+a totally real field admits no nontrivial positive involution), and it is
+what makes the induced pairing `𝒪_D`-bilinear rather than merely
+`ℤ`-bilinear. -/
+structure DualStruct {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
+    {R : Type u} [CommRing R] (m : Mult ab R) where
+  /-- the underlying scheme of the dual -/
+  dualScheme : Scheme.{u}
+  /-- the structure morphism of the dual -/
+  dualMap : dualScheme ⟶ S
+  /-- the dual is itself an abelian scheme over `S` -/
+  dualAb : AbelianSchemeStruct dualMap
+  /-- the transposed multiplication -/
+  dualMult : Mult dualAb R
+  /-- the Weil pairing on `I`-torsion of a geometric fibre -/
+  weil : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+      (I : Ideal R) (n : ℕ), (n : R) ∈ I →
+      GeomFibrePt f x → GeomFibrePt dualMap x → rootsOfUnity n (AlgebraicClosure F)
+  /-- additivity in the first variable -/
+  weil_add_left : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+      (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I)
+      (y y' : GeomFibrePt f x) (z : GeomFibrePt dualMap x),
+      y ∈ (m.torsion x I).1 → y' ∈ (m.torsion x I).1 → z ∈ (dualMult.torsion x I).1 →
+      weil x I n hn (ab.add y y') z = weil x I n hn y z * weil x I n hn y' z
+  /-- additivity in the second variable -/
+  weil_add_right : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+      (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I)
+      (y : GeomFibrePt f x) (z z' : GeomFibrePt dualMap x),
+      y ∈ (m.torsion x I).1 → z ∈ (dualMult.torsion x I).1 → z' ∈ (dualMult.torsion x I).1 →
+      weil x I n hn y (dualAb.add z z') = weil x I n hn y z * weil x I n hn y z'
+  /-- `Γ_F`-equivariance: the Galois group acts on the target through its
+  action on roots of unity, i.e. through the cyclotomic character -/
+  weil_gal : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+      (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (σ : Field.absoluteGaloisGroup F)
+      (y : GeomFibrePt f x) (z : GeomFibrePt dualMap x),
+      y ∈ (m.torsion x I).1 → z ∈ (dualMult.torsion x I).1 →
+      weil x I n hn (ab.galSMul x σ y) (dualAb.galSMul x σ z)
+        = galRoot σ (weil x I n hn y z)
+  /-- `R`-adjointness: the Rosati involution is trivial on `R` -/
+  weil_act : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+      (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (a : R)
+      (y : GeomFibrePt f x) (z : GeomFibrePt dualMap x),
+      y ∈ (m.torsion x I).1 → z ∈ (dualMult.torsion x I).1 →
+      weil x I n hn (m.act a y) z = weil x I n hn y (dualMult.act a z)
+  /-- nondegeneracy in the first variable — the axiom that carries the
+  content, and without which `weil ≡ 1` would satisfy all the others -/
+  weil_nondegenerate : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+      (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (y : GeomFibrePt f x),
+      y ∈ (m.torsion x I).1 →
+      (∀ z : GeomFibrePt dualMap x, z ∈ (dualMult.torsion x I).1 →
+        weil x I n hn y z = 1) →
+      y = ab.zero (specAlgClos F ≫ x)
+
+/-- **A polarization**: an `R`-linear symmetric isogeny `A ⟶ A^∨`.
+
+By Yoneda a homomorphism of abelian schemes is exactly a natural additive
+transformation of functors of points, which is what `hom`, `hom_add` and
+`pre_hom` say; `hom_act` says it commutes with the real multiplication,
+which is the `𝒪_D`-LINEARITY of the polarization; and `weil_self` says
+the induced pairing is alternating, which is the symmetry of the
+polarization read through the Weil pairing.
+
+Classically such a polarization exists on any abelian variety over a
+field (every abelian variety is projective, and the `𝒪_D`-average of a
+polarization is `𝒪_D`-linear because `D` is totally real). Existence is
+NOT asserted here — this is the datum, not a construction. -/
+structure PolarizationStruct {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {R : Type u} [CommRing R] {m : Mult ab R} (d : DualStruct ab m) where
+  /-- the polarization on relative points -/
+  hom : ∀ {T : Scheme.{u}} {g : T ⟶ S}, RelPoint f g → RelPoint d.dualMap g
+  /-- the polarization is additive -/
+  hom_add : ∀ {T : Scheme.{u}} {g : T ⟶ S} (y y' : RelPoint f g),
+    hom (ab.add y y') = d.dualAb.add (hom y) (hom y')
+  /-- naturality in the test object -/
+  pre_hom : ∀ {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (y : RelPoint f g),
+    RelPoint.pre h hg (hom y) = hom (RelPoint.pre h hg y)
+  /-- the polarization is `R`-linear -/
+  hom_act : ∀ {T : Scheme.{u}} {g : T ⟶ S} (a : R) (y : RelPoint f g),
+    hom (m.act a y) = d.dualMult.act a (hom y)
+  /-- the polarization carries `I`-torsion to `I`-torsion -/
+  hom_torsion : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal R) (y : GeomFibrePt f x),
+    y ∈ (m.torsion x I).1 → hom y ∈ (d.dualMult.torsion x I).1
+  /-- the induced pairing is alternating -/
+  weil_self : ∀ {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I) (y : GeomFibrePt f x),
+    y ∈ (m.torsion x I).1 → d.weil x I n hn y (hom y) = 1
+
+namespace PolarizationStruct
+
+variable {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+variable {R : Type u} [CommRing R] {m : Mult ab R} {d : DualStruct ab m}
+variable (p : PolarizationStruct d)
+variable {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+variable (I : Ideal R) (n : ℕ) (hn : (n : R) ∈ I)
+
+/-- **The `𝒪_D`-Weil pairing attached to a polarization**: the pairing
+`A[I] × A[I] ⟶ μ_n` obtained from the canonical pairing on `A × A^∨` by
+composing the second variable with the polarization.
+
+This is the object named in both absence notes, and the six lemmas below
+are its classical properties, each PROVEN from the axioms of
+`DualStruct` and `PolarizationStruct` rather than assumed. -/
+noncomputable def pairing (y z : GeomFibrePt f x) :
+    rootsOfUnity n (AlgebraicClosure F) :=
+  d.weil x I n hn y (p.hom z)
+
+/-- The pairing is the canonical one composed with the polarization. -/
+theorem pairing_def (y z : GeomFibrePt f x) :
+    p.pairing x I n hn y z = d.weil x I n hn y (p.hom z) := rfl
+
+/-- The pairing is multiplicative in the first variable. -/
+theorem pairing_add_left (y y' z : GeomFibrePt f x)
+    (hy : y ∈ (m.torsion x I).1) (hy' : y' ∈ (m.torsion x I).1)
+    (hz : z ∈ (m.torsion x I).1) :
+    p.pairing x I n hn (ab.add y y') z
+      = p.pairing x I n hn y z * p.pairing x I n hn y' z :=
+  d.weil_add_left x I n hn y y' (p.hom z) hy hy' (p.hom_torsion x I z hz)
+
+/-- The pairing is multiplicative in the second variable. -/
+theorem pairing_add_right (y z z' : GeomFibrePt f x)
+    (hy : y ∈ (m.torsion x I).1) (hz : z ∈ (m.torsion x I).1)
+    (hz' : z' ∈ (m.torsion x I).1) :
+    p.pairing x I n hn y (ab.add z z')
+      = p.pairing x I n hn y z * p.pairing x I n hn y z' := by
+  rw [pairing_def, p.hom_add]
+  exact d.weil_add_right x I n hn y (p.hom z) (p.hom z') hy
+    (p.hom_torsion x I z hz) (p.hom_torsion x I z' hz')
+
+/-- **The pairing is alternating.** -/
+theorem pairing_self (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x I).1) :
+    p.pairing x I n hn y y = 1 :=
+  p.weil_self x I n hn y hy
+
+/-- **The polarization commutes with the Galois action**: naturality read
+at the Galois automorphisms of `Spec F̄`, exactly as `Mult.galSMul_act`
+reads naturality of the multiplication. -/
+theorem galSMul_hom (σ : Field.absoluteGaloisGroup F) (y : GeomFibrePt f x) :
+    d.dualAb.galSMul x σ (p.hom y) = p.hom (ab.galSMul x σ y) :=
+  p.pre_hom (specGal σ) (specGal_comp_base x σ) y
+
+/-- **The pairing is `Γ_F`-equivariant**, the Galois group acting on the
+target through its action on roots of unity — i.e. through the cyclotomic
+character alone. This is the input to the classical identification
+`∧²_O T_I A ≅ O(1)`, and hence to
+`det_eq_cyclotomicCharacter_of_tateFrame`. -/
+theorem pairing_gal (σ : Field.absoluteGaloisGroup F) (y z : GeomFibrePt f x)
+    (hy : y ∈ (m.torsion x I).1) (hz : z ∈ (m.torsion x I).1) :
+    p.pairing x I n hn (ab.galSMul x σ y) (ab.galSMul x σ z)
+      = galRoot σ (p.pairing x I n hn y z) := by
+  rw [pairing_def, pairing_def, ← p.galSMul_hom x σ z]
+  exact d.weil_gal x I n hn σ y (p.hom z) hy (p.hom_torsion x I z hz)
+
+/-- **The pairing is `R`-bilinear**: a scalar may be moved across it.
+This combines the `R`-linearity of the polarization (`hom_act`) with the
+`R`-adjointness of the canonical pairing (`weil_act`), and it is the
+sense in which this is the `𝒪_D`-Weil pairing rather than merely the
+`ℤ`-valued one. -/
+theorem pairing_act (a : R) (y z : GeomFibrePt f x)
+    (hy : y ∈ (m.torsion x I).1) (hz : z ∈ (m.torsion x I).1) :
+    p.pairing x I n hn (m.act a y) z = p.pairing x I n hn y (m.act a z) := by
+  rw [pairing_def, pairing_def, p.hom_act]
+  exact d.weil_act x I n hn a y (p.hom z) hy (p.hom_torsion x I z hz)
+
+end PolarizationStruct
 
 end Fermat

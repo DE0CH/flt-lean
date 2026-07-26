@@ -8016,7 +8016,33 @@ POLARIZATION and `𝒪_D`-WEIL PAIRING datum on `Fermat.AbelianSchemeStruct`
 / `Fermat.Mult` (an extension of `Modularity/AbelianScheme.lean`, whose
 functor-of-points formulation already supports `I`-torsion at an arbitrary
 test object, not merely at field points). Until that exists this leaf is
-atomic, and a further cut attempt is wasted work. -/
+atomic, and a further cut attempt is wasted work.
+
+AUDIT UPDATE (2026-07-26) — THE PREREQUISITE NOW EXISTS, SO THE ATOMICITY
+CLAIM ABOVE IS SPENT. `Modularity/AbelianScheme.lean` now carries exactly
+the datum the paragraph above names: `Fermat.DualStruct` (a dual abelian
+scheme over the same base, with the transposed multiplication and the
+canonical Weil pairing on `I`-torsion of a geometric fibre — bi-additive,
+`Γ_F`-equivariant, `R`-adjoint and NONDEGENERATE) and
+`Fermat.PolarizationStruct` (an `𝒪_D`-linear symmetric isogeny `A ⟶ A^∨`),
+together with the induced `𝒪_D`-Weil pairing
+`Fermat.PolarizationStruct.pairing` and its properties, each PROVEN from
+those axioms: `pairing_add_left`, `pairing_add_right`, `pairing_self`
+(alternating), `pairing_gal` (`Γ_F`-equivariant through the cyclotomic
+character) and `pairing_act` (`𝒪_D`-bilinear).
+
+So the SPLIT/DESCENT cut — Rapoport §1 for the split fine moduli space
+`X₀` against Taylor Lemma 4.4 for the descent — is no longer blocked on
+vocabulary: the Weil-pairing condition on the level structure, which is
+what cuts `X₀` down to ONE geometric component instead of one per pairing
+value, is now stateable. What remains before that cut can be attempted is
+mathematics, not modelling, and it is NOT small: Rapoport's construction
+of `X₀` and its fineness, and the Galois descent along the cocycle.
+
+Note also that adding the pairing condition to the seam
+`IsTwistedHilbertBlumenthalModuli` is NOT the repair — see the FORM-cut
+docstring above, which records that the coupling belongs in
+`exists_totallyRealCoefficientDatum_of_residueField` instead. -/
 theorem exists_twistedHilbertBlumenthalModuliTwist_of_datum
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
