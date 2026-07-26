@@ -11550,9 +11550,17 @@ theorem WeierstrassCurve.jInvariant_mem_of_isogenyPrime_ge_eleven
   simp only [List.mem_cons, List.not_mem_nil, or_false] at key ⊢
   tauto
 
+-- The transparency setting the quotient-isogeny cluster carries throughout:
+-- without it the two identically-printing `CommRing (AlgebraicClosure ℚ)`
+-- instance paths (`AlgebraicClosure.instCommRing` from the `⁄`-notation binder
+-- versus the one mathlib's `[Field K]`-stated point API builds) refuse to
+-- unify, and `AddSubgroup.zmultiples h₁` reports `h₁` as having a type that
+-- pretty-prints as exactly the type it is expected to have.
+set_option backward.isDefEq.respectTransparency false in
 /-- **None of the eleven `j`-invariants is a vertex of degree `≥ 2` in the
-`p`-isogeny graph** (sorry node, introduced 2026-07-26 as the level-`p`
-half of `not_cyclicIsogeny_sq_of_jInvariant`): if `j(E)` is the
+`p`-isogeny graph** (PROVEN 2026-07-26 over the new modular-curve node
+`Fermat.y0HasNoRationalPoint_isogenyPrimeSq`; introduced the same day as
+the level-`p` half of `not_cyclicIsogeny_sq_of_jInvariant`): if `j(E)` is the
 `j`-invariant attached to `p` in the table of
 `jInvariant_mem_of_isogenyPrime_ge_eleven`, then `E` does not carry TWO
 DISTINCT Galois-stable cyclic subgroups of order `p`.
@@ -11636,6 +11644,24 @@ the third bullet above is real only in the sense that `j` is pinned at level
 `p`; it is NOT a weakening of the mathematics. Both are Kenku-level, and
 closing either closes both.
 
+**The cycle is avoided by going to the MODULAR CURVE instead of to the
+sibling leaf, and that is how this node is now discharged** (2026-07-26; see
+"THE PROOF" at the end of the ROUTE AUDIT below). The converse direction
+recorded just above is genuinely available — the paragraph is right that it
+exists and right that routing it into `not_cyclicIsogeny_sq_of_jInvariant`
+is circular. What is NOT circular is routing it into
+`Fermat.y0HasNoRationalPoint_isogenyPrimeSq`, a statement about `X_0(p²)`
+that is independent of both elliptic-curve leaves. Two refinements of the
+construction above are worth keeping:
+
+* **no dual isogeny is needed.** Instead of `φ̂⁻¹(B)`, take a `p`-division
+  point `Q` of the generator of `B` — `E(ℚ̄)` is divisible in characteristic
+  `0` — and push it forward: `φ Q` has order exactly `p²` because
+  `p • φ Q = φ h₂ ≠ 0`. This matters because the dual isogeny does not exist
+  in this development, while `TorsionCard.smul_surjective` does.
+* **the table is not needed either.** The argument uses `hj` only to learn
+  that `p` is prime and `p ≥ 11`, so the leaf is true for every such `p`.
+
 **Twist-blindness, worth knowing before attacking it.** The property is
 invariant under quadratic twist: twisting multiplies the mod-`p`
 representation by a quadratic character, which does not change
@@ -11687,14 +11713,46 @@ seven rows with `p ∈ {11, 17, 19, 37}` are not even reachable:
 `exists_isogenySignature` requires `19 < p`, and
 `not_isogenyCharacter_of_isogenySignature_ne_six` requires `p ≠ 37`.
 
-So the leaf really is Kenku-level, and the two honest routes remain the
-ones named above: CM theory for the nine CM rows (`p` ramifies in a
-class-number-one order, so the unique prime above `p` gives the unique
-cyclic `p`-subgroup), and the explicit curves for `p = 17` and `p = 37`.
-Equivalently — and this is the shortest description of what is missing —
-it is the assertion that `X_0(p²)(ℚ)` is cuspidal for `p ≥ 11`, which is
-Kenku's theorem and needs the modular curves this development does not
-have. -/
+So the leaf really is Kenku-level. Its shortest description — "`X_0(p²)(ℚ)`
+is cuspidal for `p ≥ 11`" — is now exactly how it is DISCHARGED, and the
+audit above survives as the record of why the isogeny-character route was
+abandoned in favour of it.
+
+**THE PROOF (2026-07-26): the level-`p` ⟶ level-`p²` direction of the
+dictionary, routed through the MODULAR CURVE and not through the sibling
+leaf.** `not_cyclicIsogeny_sq_of_jInvariant` below runs
+`p²-subgroup ⟹ two lines` and is proven FROM this leaf, so feeding it back
+here would be circular. The converse direction is independent of it:
+
+* `h₂ ∉ ⟨h₁⟩`, since two DISTINCT subgroups of the same prime order cannot
+  be nested; so the Vélu quotient `φ : E → E' = E/⟨h₁⟩` — available because
+  `⟨h₁⟩` has odd order `p ≥ 11` and is stable by `hst₁` — has `φ h₂ ≠ 0`.
+* `E(ℚ̄)` is DIVISIBLE in characteristic `0` (`TorsionCard.smul_surjective`),
+  so `h₂ = p • Q` for some `Q`. Then `p • φ Q = φ h₂ ≠ 0` while
+  `p² • φ Q = 0`, so `addOrderOf (φ Q) = p²` exactly. **No dual isogeny is
+  needed**, and that is what makes this route cheap — the obvious
+  construction `φ̂⁻¹(⟨h₂⟩)` would have required one.
+* `⟨φ Q⟩` is Galois-stable: `p • σQ = σ h₂ = k • h₂` puts `σQ − k • Q` in
+  `E[p]`, and `φ (E[p]) = ⟨φ h₂⟩ = ⟨p • φ Q⟩ ⊆ ⟨φ Q⟩` because `E[p]` has
+  order `p²` (`TorsionCard.card_torsionBy`) while `φ` kills exactly `⟨h₁⟩`
+  inside it, leaving an image of order `p`.
+* So `E'` carries a Galois-stable CYCLIC subgroup of order `p²`, and
+  `Fermat.false_of_stable_of_y0HasNoRationalPoint` applied against
+  `Fermat.y0HasNoRationalPoint_isogenyPrimeSq` closes the goal.
+
+The whole arithmetic content is thereby relocated onto ONE modular-curve
+node, `Fermat.cuspidal_x0_isogenyPrimeSq` — Kenku's theorem in the form he
+proves it, and uniform in `p` with no case analysis: for a prime `p ≥ 11`
+the level `p² ≥ 121` is a perfect square, and the only squares in the
+Mazur–Kenku list `1, …, 19, 21, 25, 27, 37, 43, 67, 163` are `1, 4, 9, 16`,
+all `< 121`.
+
+**`hj` is not used by the proof** beyond pinning `p` to the seven isogeny
+primes, from which it takes only "`p` is prime" and "`p ≥ 11`". That is a
+genuine strengthening hiding inside the leaf: the statement is true for
+EVERY prime `p ≥ 11`, table or no table. The hypothesis is left in the
+signature because the consumers already pass it and because dropping it is
+a cut-level change rather than this leaf's to make. -/
 theorem WeierstrassCurve.not_two_stable_lines_of_jInvariant
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ}
     (h₁ h₂ : (E⁄(AlgebraicClosure ℚ)).Point)
@@ -11716,8 +11774,197 @@ theorem WeierstrassCurve.not_two_stable_lines_of_jInvariant
         (37, -9317), (37, -162677523113838677),
         (43, -884736000), (67, -147197952000),
         (163, -262537412640768000)] : List (ℕ × ℚ))) :
-    False :=
-  sorry
+    False := by
+  classical
+  -- `hj` is used ONLY to pin `p` to the seven isogeny primes; the argument
+  -- below needs nothing about `j(E)` beyond `p` prime and `p ≥ 11`.
+  have hpair : p.Prime ∧ 11 ≤ p := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, Prod.mk.injEq] at hj
+    rcases hj with ⟨h, -⟩ | ⟨h, -⟩ | ⟨h, -⟩ | ⟨h, -⟩ | ⟨h, -⟩ | ⟨h, -⟩ | ⟨h, -⟩ |
+      ⟨h, -⟩ | ⟨h, -⟩ | ⟨h, -⟩ | ⟨h, -⟩ <;> subst h <;> exact ⟨by norm_num, by norm_num⟩
+  obtain ⟨hpp, hp11⟩ := hpair
+  haveI : Fact p.Prime := ⟨hpp⟩
+  have hp0 : p ≠ 0 := hpp.ne_zero
+  -- the two lines have cardinality `p`
+  have hA_card : Nat.card (AddSubgroup.zmultiples h₁) = p := by
+    rw [Nat.card_zmultiples, hh₁]
+  have hB_card : Nat.card (AddSubgroup.zmultiples h₂) = p := by
+    rw [Nat.card_zmultiples, hh₂]
+  haveI : Finite (AddSubgroup.zmultiples h₁) :=
+    Nat.finite_of_card_ne_zero (by rw [hA_card]; exact hp0)
+  haveI : Finite (AddSubgroup.zmultiples h₂) :=
+    Nat.finite_of_card_ne_zero (by rw [hB_card]; exact hp0)
+  -- `h₂` is off the first line: two distinct subgroups of the same prime
+  -- order cannot be nested.
+  have hh2not : h₂ ∉ AddSubgroup.zmultiples h₁ := by
+    intro hmem
+    have hle : AddSubgroup.zmultiples h₂ ≤ AddSubgroup.zmultiples h₁ :=
+      AddSubgroup.zmultiples_le.mpr hmem
+    refine hne (SetLike.coe_injective (Set.eq_of_subset_of_ncard_le
+      (fun x hx => hle hx) ?_ (Set.toFinite _))).symm
+    have e1 : (AddSubgroup.zmultiples h₂ :
+        Set ((E⁄(AlgebraicClosure ℚ)).Point)).ncard = p := hB_card
+    have e2 : (AddSubgroup.zmultiples h₁ :
+        Set ((E⁄(AlgebraicClosure ℚ)).Point)).ncard = p := hA_card
+    rw [e1, e2]
+  -- the quotient isogeny `φ : E → E' = E/⟨h₁⟩`, with kernel exactly `⟨h₁⟩`
+  obtain ⟨E', hE', φ, hφeq, hφker⟩ :=
+    E.exists_velu_quotient_isogeny (AddSubgroup.zmultiples h₁) (Set.toFinite _)
+      (by rw [hA_card]; exact hpp.odd_of_ne_two (by omega)) hst₁
+  haveI := hE'
+  have hφh₂ne : φ h₂ ≠ 0 := fun h0 => hh2not ((hφker h₂).mp h0)
+  -- the `p`-torsion of the geometric points, of cardinality `p²`
+  set ptors : AddSubgroup ((E⁄(AlgebraicClosure ℚ)).Point) :=
+    (Submodule.torsionBy ℤ ((E⁄(AlgebraicClosure ℚ)).Point) (p : ℤ)).toAddSubgroup
+  have hptors_mem : ∀ x : (E⁄(AlgebraicClosure ℚ)).Point,
+      x ∈ ptors ↔ (p : ℤ) • x = 0 := fun x =>
+    (Submodule.mem_toAddSubgroup _).trans (Submodule.mem_torsionBy_iff _ _)
+  have hptors_card : Nat.card ptors = p ^ 2 :=
+    TorsionCard.card_torsionBy (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) p
+      (Nat.cast_ne_zero.mpr hpp.ne_zero)
+  haveI : Finite ptors :=
+    Nat.finite_of_card_ne_zero (by rw [hptors_card]; exact pow_ne_zero 2 hp0)
+  have hh₁p : (p : ℕ) • h₁ = 0 := by rw [← hh₁]; exact addOrderOf_nsmul_eq_zero h₁
+  have hh₂p : (p : ℕ) • h₂ = 0 := by rw [← hh₂]; exact addOrderOf_nsmul_eq_zero h₂
+  have hh₁mem : h₁ ∈ ptors := (hptors_mem h₁).mpr (by rw [natCast_zsmul]; exact hh₁p)
+  have hh₂mem : h₂ ∈ ptors := (hptors_mem h₂).mpr (by rw [natCast_zsmul]; exact hh₂p)
+  -- `φ (E[p])` has order `p`: it is `E[p]` (order `p²`) modulo the kernel
+  -- `⟨h₁⟩`, and it is nontrivial because `φ h₂ ≠ 0`.
+  have hIm_card : Nat.card (AddSubgroup.map φ ptors) = p := by
+    have hdvd : Nat.card (AddSubgroup.map φ ptors) ∣ p ^ 2 :=
+      hptors_card ▸ AddSubgroup.card_map_dvd ptors φ
+    obtain ⟨k, hk2, hkeq⟩ := (Nat.dvd_prime_pow hpp).mp hdvd
+    haveI : Finite (AddSubgroup.map φ ptors) :=
+      Nat.finite_of_card_ne_zero (by rw [hkeq]; exact pow_ne_zero k hp0)
+    haveI : Fintype ptors := Fintype.ofFinite _
+    haveI : Fintype (AddSubgroup.map φ ptors) := Fintype.ofFinite _
+    have hlt : Nat.card (AddSubgroup.map φ ptors) < Nat.card ptors := by
+      have hsurj : Function.Surjective (fun x : ptors =>
+          (⟨φ x, AddSubgroup.mem_map_of_mem φ x.2⟩ : AddSubgroup.map φ ptors)) := by
+        rintro ⟨y, hy⟩
+        rw [AddSubgroup.mem_map] at hy
+        obtain ⟨x, hx, rfl⟩ := hy
+        exact ⟨⟨x, hx⟩, rfl⟩
+      have hnotinj : ¬ Function.Injective (fun x : ptors =>
+          (⟨φ x, AddSubgroup.mem_map_of_mem φ x.2⟩ : AddSubgroup.map φ ptors)) := by
+        intro hinj
+        have h0 : φ h₁ = 0 := (hφker h₁).mpr (AddSubgroup.mem_zmultiples h₁)
+        have heq : (⟨φ (⟨h₁, hh₁mem⟩ : ptors), AddSubgroup.mem_map_of_mem φ hh₁mem⟩ :
+            AddSubgroup.map φ ptors) =
+            ⟨φ ((0 : ptors) : (E⁄(AlgebraicClosure ℚ)).Point),
+              AddSubgroup.mem_map_of_mem φ (0 : ptors).2⟩ := by
+          apply Subtype.ext
+          show φ h₁ = φ ((0 : ptors) : (E⁄(AlgebraicClosure ℚ)).Point)
+          rw [h0, show ((0 : ptors) : (E⁄(AlgebraicClosure ℚ)).Point) = 0 from rfl,
+            map_zero]
+        have hh₁ne : (⟨h₁, hh₁mem⟩ : ptors) ≠ 0 := by
+          intro hcon
+          have hz : h₁ = 0 := congrArg Subtype.val hcon
+          rw [hz, addOrderOf_zero] at hh₁
+          omega
+        exact hh₁ne (hinj heq)
+      rw [Nat.card_eq_fintype_card, Nat.card_eq_fintype_card]
+      exact Fintype.card_lt_of_surjective_not_injective _ hsurj hnotinj
+    interval_cases k
+    · rw [pow_zero] at hkeq
+      have hbot : AddSubgroup.map φ ptors = ⊥ := AddSubgroup.eq_bot_of_card_eq _ hkeq
+      have hmem : φ h₂ ∈ AddSubgroup.map φ ptors := AddSubgroup.mem_map_of_mem φ hh₂mem
+      rw [hbot, AddSubgroup.mem_bot] at hmem
+      exact absurd hmem hφh₂ne
+    · rw [pow_one] at hkeq
+      exact hkeq
+    · rw [hkeq, hptors_card] at hlt
+      omega
+  have hφh₂ord : addOrderOf (φ h₂) = p := by
+    refine addOrderOf_eq_prime ?_ hφh₂ne
+    rw [← map_nsmul]
+    exact (congrArg φ hh₂p).trans (map_zero φ)
+  have hImeq : AddSubgroup.map φ ptors = AddSubgroup.zmultiples (φ h₂) := by
+    have hle : AddSubgroup.zmultiples (φ h₂) ≤ AddSubgroup.map φ ptors :=
+      AddSubgroup.zmultiples_le.mpr (AddSubgroup.mem_map_of_mem φ hh₂mem)
+    have hcard2 : Nat.card (AddSubgroup.zmultiples (φ h₂)) = p := by
+      rw [Nat.card_zmultiples, hφh₂ord]
+    haveI : Finite (AddSubgroup.map φ ptors) :=
+      Nat.finite_of_card_ne_zero (by rw [hIm_card]; exact hp0)
+    refine (SetLike.coe_injective (Set.eq_of_subset_of_ncard_le (fun x hx => hle hx) ?_
+      (Set.toFinite _))).symm
+    have e1 : (AddSubgroup.map φ ptors :
+        Set ((E'⁄(AlgebraicClosure ℚ)).Point)).ncard = p := hIm_card
+    have e2 : (AddSubgroup.zmultiples (φ h₂) :
+        Set ((E'⁄(AlgebraicClosure ℚ)).Point)).ncard = p := hcard2
+    rw [e1, e2]
+  -- a `p`-division point of `h₂`: `E(ℚ̄)` is divisible in characteristic `0`
+  -- the type ascription on `hsurj` is load-bearing: `smul_surjective` is stated
+  -- for `(E.map (algebraMap ℚ ℚ̄))⁄ℚ̄`, which is DEFEQ to `E⁄ℚ̄` but not
+  -- syntactically equal, and an unascribed `Q` then fails every later `HSub`.
+  have hsurj : Function.Surjective
+      (fun P : (E⁄(AlgebraicClosure ℚ)).Point => (p : ℤ) • P) :=
+    TorsionCard.smul_surjective (E.map (algebraMap ℚ (AlgebraicClosure ℚ))) (n := p)
+      (Nat.cast_ne_zero.mpr hp0)
+  obtain ⟨Q, hQ⟩ := hsurj h₂
+  have hQz : (p : ℤ) • Q = h₂ := hQ
+  have hQn : (p : ℕ) • Q = h₂ := by rw [← natCast_zsmul]; exact hQz
+  -- `φ Q` has order exactly `p²`
+  have hpQ : (p : ℕ) • φ Q = φ h₂ := by rw [← map_nsmul]; exact congrArg φ hQn
+  have hφQ_p2 : (p ^ 2) • φ Q = 0 := by
+    rw [pow_two, mul_smul, hpQ, ← map_nsmul]
+    exact (congrArg φ hh₂p).trans (map_zero φ)
+  have hordQ : addOrderOf (φ Q) = p ^ 2 := by
+    have hdvd : addOrderOf (φ Q) ∣ p ^ 2 := addOrderOf_dvd_of_nsmul_eq_zero hφQ_p2
+    have hnp : ¬ addOrderOf (φ Q) ∣ p := by
+      intro hd
+      exact hφh₂ne (by rw [← hpQ]; exact addOrderOf_dvd_iff_nsmul_eq_zero.mp hd)
+    obtain ⟨k, hk2, hkeq⟩ := (Nat.dvd_prime_pow hpp).mp hdvd
+    rw [hkeq] at hnp ⊢
+    interval_cases k
+    · rw [pow_zero] at hnp; exact absurd (one_dvd p) hnp
+    · rw [pow_one] at hnp; exact absurd dvd_rfl hnp
+    · rfl
+  -- and `⟨φ Q⟩` is Galois-stable: `σ Q − k • Q` lies in `E[p]`, whose image
+  -- under `φ` is `⟨φ h₂⟩ = ⟨p • φ Q⟩ ⊆ ⟨φ Q⟩`.
+  have hstQ : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples (φ Q),
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples (φ Q) := by
+    intro σ x hx
+    obtain ⟨m, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+    rw [map_zsmul]
+    refine AddSubgroup.zsmul_mem _ ?_ _
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
+      (hst₂ σ h₂ (AddSubgroup.mem_zmultiples h₂))
+    obtain ⟨σQ, hσQ⟩ : ∃ z : (E⁄(AlgebraicClosure ℚ)).Point, z = Affine.Point.map
+      (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Q := ⟨_, rfl⟩
+    have hdiff : σQ - k • Q ∈ ptors := by
+      rw [hptors_mem]
+      -- `smul_sub` does NOT apply here: it is keyed on
+      -- `DistribSMul.toSMulZeroClass.toSMul`, whereas `Point`'s `ℤ`-action is
+      -- `ZSMul.toSMul`. `zsmul_sub` is the lemma for that path.
+      rw [zsmul_sub]
+      have h1 : (p : ℤ) • σQ = Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom h₂ := by
+        rw [hσQ, ← map_zsmul]
+        exact congrArg _ hQz
+      have h2 : (p : ℤ) • (k • Q) = Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom h₂ := by
+        rw [smul_comm, hQz, hk]
+      rw [h1, h2, sub_self]
+    obtain ⟨n, hn⟩ := AddSubgroup.mem_zmultiples_iff.mp
+      (hImeq ▸ AddSubgroup.mem_map_of_mem φ hdiff)
+    have hgoal : Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Q)
+        = (k + n * p) • φ Q := by
+      have hsplit : φ σQ = k • φ Q + n • φ h₂ := by
+        have hsum : φ σQ = φ (k • Q) + φ (σQ - k • Q) := by
+          rw [← map_add]; congr 1; abel
+        rw [hsum, ← hn, map_zsmul]
+      rw [← hφeq σ Q, ← hσQ, hsplit, ← hpQ, ← natCast_zsmul, smul_smul, add_zsmul]
+    rw [hgoal]
+    exact AddSubgroup.zsmul_mem _ (AddSubgroup.mem_zmultiples _) _
+  -- Kenku: `Y_0(p²)(ℚ) = ∅` for every prime `p ≥ 11`
+  exact Fermat.false_of_stable_of_y0HasNoRationalPoint
+    (Fermat.y0HasNoRationalPoint_isogenyPrimeSq hpp hp11) E' (φ Q) hordQ hstQ
+    (pow_ne_zero 2 hp0)
 
 -- The same transparency setting the quotient-isogeny cluster carries below:
 -- without it the `Point` type of the Vélu quotient's hypotheses and the one

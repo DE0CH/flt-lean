@@ -2668,6 +2668,79 @@ theorem y0HasNoRationalPoint_prime {p : ℕ} (hp : p.Prime)
   obtain ⟨X, strX, ⟨hX⟩⟩ := exists_compactificationY0 hc
   exact y0HasNoRationalPoint_of_cuspidal hc hX (cuspidal_x0_prime hp hmem hc hX)
 
+/-- **Kenku's prime-square determination, on `X_0(p²)` for `p ≥ 11`**
+(sorry node, introduced 2026-07-26): every rational point of `X_0(p²)` is
+a cusp, for every prime `p ≥ 11`.
+
+TRUE, and it is Kenku's theorem.  The Mazur–Kenku list of levels `N` with
+`Y_0(N)(ℚ) ≠ ∅` is
+
+    1, …, 19, 21, 25, 27, 37, 43, 67, 163,
+
+whose largest element is `163`; and for a prime `p ≥ 11` the level `p²` is
+at least `121`, is a perfect square, and is therefore in the list only if
+it is one of `1, 4, 9, 16` — all of which are `< 121`.  So `p² ` is outside
+the list for EVERY prime `p ≥ 11`, uniformly, with no case analysis.
+
+**Why `11 ≤ p` and not merely `p` prime.**  The bound is sharp at both
+ends of the small range: `4`, `9` and `25` are all IN the Mazur–Kenku
+list, so the statement is FALSE at `p = 2, 3, 5`.  (`p = 7` gives `49`,
+which is outside the list, so the statement happens to be true there too —
+but `49` is the separate concern of `MazurLevelFortyNine` and is left to
+it rather than folded in here.)
+
+**Why this node exists.**  It is the modular-curve form of the missing
+half of the level-`p` ⟷ level-`p²` dictionary.
+`FreyCurve/MazurTorsion.lean` already carries that dictionary in ONE
+direction: `not_cyclicIsogeny_sq_of_jInvariant` builds two distinct
+Galois-stable lines of order `p` on a Vélu quotient out of a cyclic
+`p²`-subgroup, and so is proven FROM the level-`p` leaf
+`not_two_stable_lines_of_jInvariant`.  Feeding that implication back would
+be circular.  Routing the CONVERSE through this node instead is not: the
+statement below is about the modular curve, is independent of both
+elliptic-curve leaves, and is exactly the shape in which Kenku proves it.
+
+IRREDUCIBLE at this pin, for the same reason as every other level node
+here: `X_0(p²)` has genus `≥ 6` for `p ≥ 11` (already `X_0(121)` has genus
+`6`), so this is a determination of the rational points of a curve of high
+genus, and neither `J_0(N)`, nor its Mordell–Weil group, nor
+Chabauty–Coleman exists in this development.  Sources: Kenku, *The modular
+curves `X_0(65)` and `X_0(91)` and rational isogeny*, Math. Proc.
+Cambridge Philos. Soc. **87** (1980); *On the modular curves `X_0(125)`,
+`X_1(25)` and `X_1(49)`*, J. London Math. Soc. (2) **23** (1981);
+*The modular curve `X_0(169)` and rational isogeny*, J. London Math. Soc.
+(2) **22** (1980).
+
+Quantified over every model of `IsCompactificationY0`, so it is at least
+as strong as the `Y_0(p²)` statement it carries and cannot be discharged
+by a degenerate choice of `X`. -/
+theorem cuspidal_x0_isogenyPrimeSq {p : ℕ} (_hp : p.Prime) (_hp11 : 11 ≤ p)
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    (_hc : IsCoarseModuliY0 (p ^ 2) strY) (hX : IsCompactificationY0 strY strX)
+    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x :=
+  sorry
+
+/-- **`Y_0(p²)(ℚ) = ∅` for every prime `p ≥ 11`** (PROVEN 2026-07-26 over
+`cuspidal_x0_isogenyPrimeSq`, the same compactification route
+`y0HasNoRationalPoint_prime` takes).
+
+This is the node that closes
+`WeierstrassCurve.not_two_stable_lines_of_jInvariant` in
+`FreyCurve/MazurTorsion.lean`: two DISTINCT Galois-stable lines of order
+`p` on `E` produce, on the Vélu quotient `E/⟨h₁⟩`, a Galois-stable CYCLIC
+subgroup of order `p²`, which `false_of_stable_of_y0HasNoRationalPoint`
+then contradicts.  See that leaf for the construction.
+
+Note `y0HasNoRationalPoint_of_dvd` does NOT reach `p²`: its only proper
+divisor is `p`, and `Y_0(p)(ℚ) ≠ ∅` for `p ∈ {11, 17, 19, 37, 43, 67,
+163}` — which is precisely why the seven isogeny primes need Kenku and not
+merely Mazur. -/
+theorem y0HasNoRationalPoint_isogenyPrimeSq {p : ℕ} (hp : p.Prime) (hp11 : 11 ≤ p) :
+    Y0HasNoRationalPoint (p ^ 2) := by
+  obtain ⟨Y, strY, ⟨hc⟩⟩ := exists_coarseModuliY0 (p ^ 2)
+  obtain ⟨X, strX, ⟨hX⟩⟩ := exists_compactificationY0 hc
+  exact y0HasNoRationalPoint_of_cuspidal hc hX (cuspidal_x0_isogenyPrimeSq hp hp11 hc hX)
+
 /-- **Kenku's semiprime determination, on `X_0(pq)`** (sorry node): for
 distinct primes `p, q` both in `mazurIsogenyPrimes` with
 `p * q ∉ {6, 10, 14, 15, 21}`, every rational point of `X_0(pq)` is a
