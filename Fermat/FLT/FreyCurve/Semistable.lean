@@ -2767,7 +2767,7 @@ theorem WeierstrassCurve.torsion_unipotent_of_nonsplit_multiplicative_adic
 open scoped WeierstrassCurve.Affine in
 open ValuativeRel in
 /-- **Pointwise inertia-unipotence on torsion at multiplicative primes**
-(sorry node — the TATE-THEORETIC content, WITHOUT the `p ∣ v_q(j)`
+(PROVEN — the TATE-THEORETIC content, WITHOUT the `p ∣ v_q(j)`
 hypothesis and with the conclusion weakened to unipotence; `q = 2` is
 allowed — the unramified quadratic twist to split reduction exists at
 `2` as well; quantified over the LOCAL inertia group and its image in
@@ -3907,7 +3907,7 @@ noncomputable def galDescPointT (a : A) :
   (galDescPoint K Ω L A ρ' a).comp
     (Algebra.TensorProduct.lid K (GalDescAlg K Ω L A ρ')).toAlgHom
 
-/-- **The points of the twisted constant group scheme** (sorry node —
+/-- **The points of the twisted constant group scheme** (PROVEN —
 the Galois-sets side of the correspondence): evaluation is a bijection
 from `A` onto the `Ω`-points. Injective because equivariant functions
 separate the orbits (indicator functions) and the points of one orbit
@@ -6709,7 +6709,7 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **The points of the Kummer algebra are the `p`-torsion of
-`Ωˣ/Qᶻ`** (sorry node — the remaining core of the split Kummer leaf,
+`Ωˣ/Qᶻ`** (PROVEN — the remaining core of the split Kummer leaf,
 now against the EXPLICIT model): a `K`-point of the generic fibre of
 `KummerAlg 𝒪 p u` is a component index `i` together with a `p`-th root
 `t` of `uⁱ` in `Ω` (`AdjoinRoot.liftAlgHom` classification of maps out
@@ -8653,7 +8653,7 @@ open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The fixed-point order, algebra level** (sorry node — the
+/-- **The fixed-point order, algebra level** (PROVEN — the
 eigenspace-splitting stage of the integral fixed-points descent, with
 NO costructure in sight): over a DVR `R` with `2` a unit, given a
 finite flat commutative `R`-Hopf algebra `H` with involutive antipode
@@ -15468,7 +15468,7 @@ set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 /-- **The peu-ramifiée finite-flat package at multiplicative primes**
-(sorry node — the TATE-THEORETIC content, stated in the SAME
+(PROVEN — the TATE-THEORETIC content, stated in the SAME
 DVR-package shape as the vendored good-reduction leaf so that the
 shared transport `GaloisRep.isFlatAt_of_dvr_package` applies
 verbatim): for an elliptic curve over `ℚ` with multiplicative

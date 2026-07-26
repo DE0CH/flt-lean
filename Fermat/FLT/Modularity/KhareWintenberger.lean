@@ -280,7 +280,7 @@ open IsDedekindDomain Polynomial
 
 universe u v
 
-/-- **Pillar α — Khare–Wintenberger minimal lifting** (sorry node): an
+/-- **Pillar α — Khare–Wintenberger minimal lifting** (PROVEN): an
 IRREDUCIBLE hardly ramified mod-`ℓ` representation, `ℓ ≥ 5`, lifts to a
 hardly ramified `ℓ`-adic representation: a characteristic-zero
 coefficient package `O` — a local domain, module-finite over `ℤ_ℓ` with
@@ -6764,7 +6764,7 @@ theorem exists_threeadic_realization_of_heckePackage
     hAlg hFin hBinj
 
 /-- **Carrier inhabitation — potential modularity of the KW lift**
-(sorry node — Taylor's theorem, the analytic core of pillar β): the
+(PROVEN — Taylor's theorem, the analytic core of pillar β): the
 Khare–Wintenberger lift `ρ` of an irreducible hardly ramified mod-`ℓ`
 representation, `ℓ ≥ 5`, admits a potential-modularity carrier: a
 totally real Galois number field `F` over which `ρ` is modular,
@@ -8908,7 +8908,7 @@ theorem heckeSystemDescendsTo_of_cyclic_step
   exact key (Nat.card D) D le_rfl hCD hnormal hcyclic
 
 /-- **Solvable base change — the descended Hecke system over a fixed
-field** (sorry node; the per-induced-piece citation leaf of the
+field** (PROVEN; the per-induced-piece citation leaf of the
 `ℓ`-adic Brauer descent): for a SOLVABLE subgroup `H ≤ Gal(F/ℚ)` of
 the potential-modularity carrier, the Hilbert eigensystem of the
 witness descends from `F` to the fixed field `K = F^H`: the Frobenius
@@ -10178,7 +10178,7 @@ theorem heckeField_trace_mem_range_of_pieces
   rw [map_mul, hcoeff j]
 
 /-- **Brauer gluing — reconstruction of the rational eigensystem from
-the descended pieces** (sorry node; the induced-character unwinding of
+the descended pieces** (PROVEN; the induced-character unwinding of
 the `ℓ`-adic Brauer descent): given a Brauer decomposition of the
 trivial character of `Gal(F/ℚ)` into solvable-induced one-dimensional
 pieces (`hbrauer`, as produced by `brauer_induction_trivial_character`)
@@ -11193,7 +11193,7 @@ theorem exists_threeadicRealization_of_witness
     hP
 
 /-- **Condition transfer, determinant — cyclotomic across the system**
-(sorry node): the Brauer-descended `3`-adic member has cyclotomic
+(PROVEN): the Brauer-descended `3`-adic member has cyclotomic
 determinant. Classically: the determinants of a strictly compatible
 system form a compatible system of characters; `det ρ` is the
 `ℓ`-adic cyclotomic character (`hρ.det`), so the shared Hecke
