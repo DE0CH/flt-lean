@@ -148,6 +148,11 @@ import Fermat.FLT.EllipticCurve.TorsionCharP
 -- arithmetic input of the `X_1(2,10)` node
 -- (`MazurTwoTen.quartic_no_solution`).
 public import Fermat.FLT.FreyCurve.QuarticDescent
+-- The modular curve `Y_0(N)` as a coarse moduli space over `ℚ`
+-- (`Fermat.Y0HasNoRationalPoint`, `Fermat.false_of_stable_of_y0HasNoRationalPoint`):
+-- the twelve levels of Kenku's non-prime-power determination below are proven
+-- from the corresponding rational-point statements about that curve.
+public import Fermat.FLT.ModularCurve.X0
 
 @[expose] public section
 
@@ -6553,18 +6558,38 @@ Genera of the eleven concrete levels, computed from
 `X_0(20)`, `X_0(24)`, `X_0(36)` have genus `1`; `X_0(28)`, `X_0(50)` genus
 `2`; `X_0(30)`, `X_0(45)` genus `3`; `X_0(54)` genus `4`; `X_0(42)`,
 `X_0(63)`, `X_0(75)` genus `5`. Every one is therefore a Mordell–Weil or
-Chabauty computation on a curve of positive genus; none is elementary, and
-none is reachable at this mathlib pin. The genus-`1` levels are Ogg,
-"Rational points on certain elliptic modular curves", Proc. Sympos. Pure
-Math. 24 (1973); the higher ones run through Ogg, "Hyperelliptic modular
-curves", Bull. Soc. Math. France 102 (1974) and Kenku's series, and the
-classification is completed in Kenku, "On the number of `ℚ`-isomorphism
-classes of elliptic curves in each `ℚ`-isogeny class", J. Number Theory 15
-(1982).
+Chabauty computation on a curve of positive genus; none is elementary. The
+genus-`1` levels are Ogg, "Rational points on certain elliptic modular
+curves", Proc. Sympos. Pure Math. 24 (1973); the higher ones run through
+Ogg, "Hyperelliptic modular curves", Bull. Soc. Math. France 102 (1974)
+and Kenku's series, and the classification is completed in Kenku, "On the
+number of `ℚ`-isomorphism classes of elliptic curves in each `ℚ`-isogeny
+class", J. Number Theory 15 (1982).
+
+**ALL TWELVE ARE NOW PROVEN over the modular-curve layer (2026-07-26).**
+`ModularCurve/X0.lean` builds `Y_0(N)` as the coarse moduli space of the
+`Γ₀(N)`-moduli problem over `ℚ` — an elliptic scheme (an abelian scheme of
+relative dimension one, in the functor-of-points presentation of
+`Modularity/AbelianScheme.lean`) together with a finite closed cyclic
+subgroup scheme of order `N`, and a classifying map initial among all such
+— and restates each of the twelve levels there as the rational-point claim
+it actually is, `Y_0(N)(ℚ) = ∅`. The bodies below are then two lines each:
+`Fermat.false_of_stable_of_y0HasNoRationalPoint` sends the Galois-stable
+subgroup `⟨g⟩` to a rational point of `Y_0(N)` through the classifying map
+and contradicts emptiness.
+
+What that relocation does NOT do is remove the mathematics: the twelve
+`Fermat.y0HasNoRationalPoint_*` nodes are open, and so are the coarse-space
+existence theorem `Fermat.exists_coarseModuliY0` and the bridge
+`Fermat.nonempty_gamma0Datum_of_stable` (the projective Weierstrass model as
+an abelian scheme over `Spec ℚ`, plus Galois descent for the finite étale
+subgroup scheme). What it does is put each statement on the object the Ogg
+and Kenku arguments are about, so that `J_0(N)`, the Hecke algebra and the
+winding quotient have somewhere to attach.
 -/
 
 /-- **No rational cyclic `pq`-isogeny outside `{6, 10, 14, 15, 21}`**
-(sorry node — the uniform, squarefree part of Kenku's non-prime-power
+(the uniform, squarefree part of Kenku's non-prime-power
 determination): if `⟨g⟩` is a Galois-stable cyclic subgroup of order `p * q`
 for DISTINCT primes `p, q`, then `p * q ∈ {6, 10, 14, 15, 21}`.
 
@@ -6579,9 +6604,15 @@ both `p` and `q` lie in `{2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`, so
 and `X_0(39)` (Kenku, Math. Proc. Cambridge Philos. Soc. 85, 1979),
 `X_0(65)` and `X_0(91)` (ibid. 87, 1980).
 
-IRREDUCIBLE at this mathlib pin: each excluded pair is a determination of
-`X_0(pq)(ℚ)` at a level of genus `≥ 1` (already `X_0(22)` has genus `2`),
-and neither modular curves nor their Jacobians exist in this development. -/
+PROVEN 2026-07-26 over the modular-curve layer of `ModularCurve/X0.lean`:
+this is `Fermat.y0HasNoRationalPoint_prod_two_primes`, the assertion that
+`Y_0(pq)(ℚ) = ∅`, transported along
+`Fermat.false_of_stable_of_y0HasNoRationalPoint` — the classifying map of
+the `Γ₀(pq)`-moduli problem turns the Galois-stable subgroup `⟨g⟩` into a
+rational point of the coarse moduli space. Each excluded pair remains a
+determination of `X_0(pq)(ℚ)` at a level of genus `≥ 1` (already
+`X_0(22)` has genus `2`); what moved is only that the statement now lives
+on the curve rather than on the elliptic curve `E`. -/
 theorem WeierstrassCurve.not_cyclicIsogeny_prod_two_primes (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) {p q : ℕ}
     (hp : p.Prime) (hq : q.Prime) (hpq : p ≠ q) (hg : addOrderOf g = p * q)
@@ -6590,13 +6621,18 @@ theorem WeierstrassCurve.not_cyclicIsogeny_prod_two_primes (E : WeierstrassCurve
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
-    p * q ∈ ({6, 10, 14, 15, 21} : Finset ℕ) :=
-  sorry
+    p * q ∈ ({6, 10, 14, 15, 21} : Finset ℕ) := by
+  by_contra hmem
+  exact Fermat.false_of_stable_of_y0HasNoRationalPoint
+    (Fermat.y0HasNoRationalPoint_prod_two_primes hp hq hpq hmem) E g hg hstable
 
-/-- **No rational cyclic `20`-isogeny** (sorry node — the level `X_0(20)`,
-genus `1`). Minimal absent level: every proper divisor of `20`, namely
-`1, 2, 4, 5, 10`, lies in the Mazur–Kenku list. IRREDUCIBLE at this mathlib
-pin (Ogg 1973; no modular curve exists here). -/
+/-- **No rational cyclic `20`-isogeny** (PROVEN 2026-07-26 over the
+modular-curve layer of `ModularCurve/X0.lean` — the level `X_0(20)`, genus
+`1`). Minimal absent level: every proper divisor of `20`, namely
+`1, 2, 4, 5, 10`, lies in the Mazur–Kenku list. The content now sits in
+`Fermat.y0HasNoRationalPoint_twenty`, i.e. `Y_0(20)(ℚ) = ∅` (Ogg 1973:
+`X_0(20)` is an elliptic curve of Mordell–Weil rank `0` whose six rational
+points are its six cusps). -/
 theorem WeierstrassCurve.not_cyclicIsogeny_twenty (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 20)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -6605,12 +6641,15 @@ theorem WeierstrassCurve.not_cyclicIsogeny_twenty (E : WeierstrassCurve ℚ)
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     False :=
-  sorry
+  Fermat.false_of_stable_of_y0HasNoRationalPoint
+    Fermat.y0HasNoRationalPoint_twenty E g hg hstable
 
-/-- **No rational cyclic `24`-isogeny** (sorry node — the level `X_0(24)`,
-genus `1`). Minimal absent level: every proper divisor of `24`, namely
-`1, 2, 3, 4, 6, 8, 12`, lies in the Mazur–Kenku list. IRREDUCIBLE at this
-mathlib pin (Ogg 1973; no modular curve exists here). -/
+/-- **No rational cyclic `24`-isogeny** (PROVEN 2026-07-26 over the
+modular-curve layer — the level `X_0(24)`, genus `1`). Minimal absent
+level: every proper divisor of `24`, namely `1, 2, 3, 4, 6, 8, 12`, lies
+in the Mazur–Kenku list. The content now sits in
+`Fermat.y0HasNoRationalPoint_twentyFour`, i.e. `Y_0(24)(ℚ) = ∅` (Ogg
+1973). -/
 theorem WeierstrassCurve.not_cyclicIsogeny_twentyFour (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 24)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -6619,13 +6658,15 @@ theorem WeierstrassCurve.not_cyclicIsogeny_twentyFour (E : WeierstrassCurve ℚ)
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     False :=
-  sorry
+  Fermat.false_of_stable_of_y0HasNoRationalPoint
+    Fermat.y0HasNoRationalPoint_twentyFour E g hg hstable
 
-/-- **No rational cyclic `28`-isogeny** (sorry node — the level `X_0(28)`,
-genus `2`). Minimal absent level: every proper divisor of `28`, namely
-`1, 2, 4, 7, 14`, lies in the Mazur–Kenku list. IRREDUCIBLE at this mathlib
-pin: a genus-`2` Jacobian/Chabauty computation (Ogg 1974; Kenku 1979–1982),
-and nothing of the kind exists in this development. -/
+/-- **No rational cyclic `28`-isogeny** (PROVEN 2026-07-26 over the
+modular-curve layer — the level `X_0(28)`, genus `2`). Minimal absent
+level: every proper divisor of `28`, namely `1, 2, 4, 7, 14`, lies in the
+Mazur–Kenku list. The content now sits in
+`Fermat.y0HasNoRationalPoint_twentyEight`, i.e. `Y_0(28)(ℚ) = ∅` — a
+genus-`2` Jacobian/Chabauty computation (Ogg 1974; Kenku 1979–1982). -/
 theorem WeierstrassCurve.not_cyclicIsogeny_twentyEight (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 28)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -6634,15 +6675,18 @@ theorem WeierstrassCurve.not_cyclicIsogeny_twentyEight (E : WeierstrassCurve ℚ
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     False :=
-  sorry
+  Fermat.false_of_stable_of_y0HasNoRationalPoint
+    Fermat.y0HasNoRationalPoint_twentyEight E g hg hstable
 
-/-- **No rational cyclic `30`-isogeny** (sorry node — the level `X_0(30)`,
+/-- **No rational cyclic `30`-isogeny** (the level `X_0(30)`,
 genus `3`). This is the minimal level with THREE distinct prime factors:
 every proper divisor of `30`, namely `1, 2, 3, 5, 6, 10, 15`, lies in the
 Mazur–Kenku list. Together with `not_cyclicIsogeny_fortyTwo` it is what
 rules out three distinct primes altogether, once the pair node has confined
-the primes to `{2, 3, 5, 7}` and killed `{5, 7}`. IRREDUCIBLE at this
-mathlib pin: a genus-`3` Chabauty computation. -/
+the primes to `{2, 3, 5, 7}` and killed `{5, 7}`. PROVEN 2026-07-26 over
+the modular-curve layer: the content now sits in
+`Fermat.y0HasNoRationalPoint_thirty`, i.e. `Y_0(30)(ℚ) = ∅` — a genus-`3`
+Chabauty computation. -/
 theorem WeierstrassCurve.not_cyclicIsogeny_thirty (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 30)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -6651,12 +6695,15 @@ theorem WeierstrassCurve.not_cyclicIsogeny_thirty (E : WeierstrassCurve ℚ)
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     False :=
-  sorry
+  Fermat.false_of_stable_of_y0HasNoRationalPoint
+    Fermat.y0HasNoRationalPoint_thirty E g hg hstable
 
-/-- **No rational cyclic `36`-isogeny** (sorry node — the level `X_0(36)`,
-genus `1`). Minimal absent level: every proper divisor of `36`, namely
-`1, 2, 3, 4, 6, 9, 12, 18`, lies in the Mazur–Kenku list. IRREDUCIBLE at
-this mathlib pin (Ogg 1973; no modular curve exists here). -/
+/-- **No rational cyclic `36`-isogeny** (PROVEN 2026-07-26 over the
+modular-curve layer — the level `X_0(36)`, genus `1`). Minimal absent
+level: every proper divisor of `36`, namely `1, 2, 3, 4, 6, 9, 12, 18`,
+lies in the Mazur–Kenku list. The content now sits in
+`Fermat.y0HasNoRationalPoint_thirtySix`, i.e. `Y_0(36)(ℚ) = ∅` (Ogg
+1973). -/
 theorem WeierstrassCurve.not_cyclicIsogeny_thirtySix (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 36)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -6665,13 +6712,15 @@ theorem WeierstrassCurve.not_cyclicIsogeny_thirtySix (E : WeierstrassCurve ℚ)
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     False :=
-  sorry
+  Fermat.false_of_stable_of_y0HasNoRationalPoint
+    Fermat.y0HasNoRationalPoint_thirtySix E g hg hstable
 
-/-- **No rational cyclic `42`-isogeny** (sorry node — the level `X_0(42)`,
+/-- **No rational cyclic `42`-isogeny** (the level `X_0(42)`,
 genus `5`). The second minimal level with three distinct prime factors:
 every proper divisor of `42`, namely `1, 2, 3, 6, 7, 14, 21`, lies in the
-Mazur–Kenku list. IRREDUCIBLE at this mathlib pin: a genus-`5` Chabauty
-computation. -/
+Mazur–Kenku list. PROVEN 2026-07-26 over the modular-curve layer: the
+content now sits in `Fermat.y0HasNoRationalPoint_fortyTwo`, i.e.
+`Y_0(42)(ℚ) = ∅` — a genus-`5` Chabauty computation. -/
 theorem WeierstrassCurve.not_cyclicIsogeny_fortyTwo (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 42)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -6680,12 +6729,15 @@ theorem WeierstrassCurve.not_cyclicIsogeny_fortyTwo (E : WeierstrassCurve ℚ)
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     False :=
-  sorry
+  Fermat.false_of_stable_of_y0HasNoRationalPoint
+    Fermat.y0HasNoRationalPoint_fortyTwo E g hg hstable
 
-/-- **No rational cyclic `45`-isogeny** (sorry node — the level `X_0(45)`,
-genus `3`). Minimal absent level: every proper divisor of `45`, namely
-`1, 3, 5, 9, 15`, lies in the Mazur–Kenku list. IRREDUCIBLE at this mathlib
-pin: a genus-`3` Chabauty computation. -/
+/-- **No rational cyclic `45`-isogeny** (PROVEN 2026-07-26 over the
+modular-curve layer — the level `X_0(45)`, genus `3`). Minimal absent
+level: every proper divisor of `45`, namely `1, 3, 5, 9, 15`, lies in the
+Mazur–Kenku list. The content now sits in
+`Fermat.y0HasNoRationalPoint_fortyFive`, i.e. `Y_0(45)(ℚ) = ∅` — a
+genus-`3` Chabauty computation. -/
 theorem WeierstrassCurve.not_cyclicIsogeny_fortyFive (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 45)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -6694,12 +6746,15 @@ theorem WeierstrassCurve.not_cyclicIsogeny_fortyFive (E : WeierstrassCurve ℚ)
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     False :=
-  sorry
+  Fermat.false_of_stable_of_y0HasNoRationalPoint
+    Fermat.y0HasNoRationalPoint_fortyFive E g hg hstable
 
-/-- **No rational cyclic `50`-isogeny** (sorry node — the level `X_0(50)`,
-genus `2`). Minimal absent level: every proper divisor of `50`, namely
-`1, 2, 5, 10, 25`, lies in the Mazur–Kenku list. IRREDUCIBLE at this mathlib
-pin: a genus-`2` Jacobian/Chabauty computation (Ogg 1974). -/
+/-- **No rational cyclic `50`-isogeny** (PROVEN 2026-07-26 over the
+modular-curve layer — the level `X_0(50)`, genus `2`). Minimal absent
+level: every proper divisor of `50`, namely `1, 2, 5, 10, 25`, lies in the
+Mazur–Kenku list. The content now sits in
+`Fermat.y0HasNoRationalPoint_fifty`, i.e. `Y_0(50)(ℚ) = ∅` — a genus-`2`
+Jacobian/Chabauty computation (Ogg 1974). -/
 theorem WeierstrassCurve.not_cyclicIsogeny_fifty (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 50)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -6708,12 +6763,15 @@ theorem WeierstrassCurve.not_cyclicIsogeny_fifty (E : WeierstrassCurve ℚ)
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     False :=
-  sorry
+  Fermat.false_of_stable_of_y0HasNoRationalPoint
+    Fermat.y0HasNoRationalPoint_fifty E g hg hstable
 
-/-- **No rational cyclic `54`-isogeny** (sorry node — the level `X_0(54)`,
-genus `4`). Minimal absent level: every proper divisor of `54`, namely
-`1, 2, 3, 6, 9, 18, 27`, lies in the Mazur–Kenku list. IRREDUCIBLE at this
-mathlib pin: a genus-`4` Chabauty computation. -/
+/-- **No rational cyclic `54`-isogeny** (PROVEN 2026-07-26 over the
+modular-curve layer — the level `X_0(54)`, genus `4`). Minimal absent
+level: every proper divisor of `54`, namely `1, 2, 3, 6, 9, 18, 27`, lies
+in the Mazur–Kenku list. The content now sits in
+`Fermat.y0HasNoRationalPoint_fiftyFour`, i.e. `Y_0(54)(ℚ) = ∅` — a
+genus-`4` Chabauty computation. -/
 theorem WeierstrassCurve.not_cyclicIsogeny_fiftyFour (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 54)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -6722,12 +6780,15 @@ theorem WeierstrassCurve.not_cyclicIsogeny_fiftyFour (E : WeierstrassCurve ℚ)
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     False :=
-  sorry
+  Fermat.false_of_stable_of_y0HasNoRationalPoint
+    Fermat.y0HasNoRationalPoint_fiftyFour E g hg hstable
 
-/-- **No rational cyclic `63`-isogeny** (sorry node — the level `X_0(63)`,
-genus `5`). Minimal absent level: every proper divisor of `63`, namely
-`1, 3, 7, 9, 21`, lies in the Mazur–Kenku list. IRREDUCIBLE at this mathlib
-pin: a genus-`5` Chabauty computation. -/
+/-- **No rational cyclic `63`-isogeny** (PROVEN 2026-07-26 over the
+modular-curve layer — the level `X_0(63)`, genus `5`). Minimal absent
+level: every proper divisor of `63`, namely `1, 3, 7, 9, 21`, lies in the
+Mazur–Kenku list. The content now sits in
+`Fermat.y0HasNoRationalPoint_sixtyThree`, i.e. `Y_0(63)(ℚ) = ∅` — a
+genus-`5` Chabauty computation. -/
 theorem WeierstrassCurve.not_cyclicIsogeny_sixtyThree (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 63)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -6736,12 +6797,15 @@ theorem WeierstrassCurve.not_cyclicIsogeny_sixtyThree (E : WeierstrassCurve ℚ)
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     False :=
-  sorry
+  Fermat.false_of_stable_of_y0HasNoRationalPoint
+    Fermat.y0HasNoRationalPoint_sixtyThree E g hg hstable
 
-/-- **No rational cyclic `75`-isogeny** (sorry node — the level `X_0(75)`,
-genus `5`). Minimal absent level: every proper divisor of `75`, namely
-`1, 3, 5, 15, 25`, lies in the Mazur–Kenku list. IRREDUCIBLE at this mathlib
-pin: a genus-`5` Chabauty computation. -/
+/-- **No rational cyclic `75`-isogeny** (PROVEN 2026-07-26 over the
+modular-curve layer — the level `X_0(75)`, genus `5`). Minimal absent
+level: every proper divisor of `75`, namely `1, 3, 5, 15, 25`, lies in the
+Mazur–Kenku list. The content now sits in
+`Fermat.y0HasNoRationalPoint_seventyFive`, i.e. `Y_0(75)(ℚ) = ∅` — a
+genus-`5` Chabauty computation. -/
 theorem WeierstrassCurve.not_cyclicIsogeny_seventyFive (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 75)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -6750,7 +6814,8 @@ theorem WeierstrassCurve.not_cyclicIsogeny_seventyFive (E : WeierstrassCurve ℚ
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     False :=
-  sorry
+  Fermat.false_of_stable_of_y0HasNoRationalPoint
+    Fermat.y0HasNoRationalPoint_seventyFive E g hg hstable
 
 /-- **The arithmetic reassembly of Kenku's non-prime-power half** (PROVEN
 2026-07-25). This is a statement about natural numbers only: no elliptic
