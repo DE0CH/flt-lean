@@ -9066,7 +9066,7 @@ lemma one_tmul_injective_hilbert {A : Type*} [CommRing A] {B : Type*}
   exact hinj h3
 
 /-- **Raynaud closure for flat prolongations over a VARIABLE number field,
-in plain SUBOBJECT form** (LEAF — new 2026-07-26; the sub-object sibling of
+in plain SUBOBJECT form** (PROVEN 2026-07-26; the sub-object sibling of
 `hasFlatProlongationAt_of_pi_surjection_of_numberField` above, and the
 `K`-variable form of `Deformation.lean`'s PROVEN
 `hasFlatProlongationAt_of_injection`): if the local space of `ρ₂` at a
@@ -9081,21 +9081,34 @@ flat model is again finite flat over the DVR. The EXISTENCE direction needs
 no `e < ℓ − 1` bound; Raynaud's bound enters only for UNIQUENESS of the
 prolongation, which is not asserted.
 
-**WHY THIS IS OPEN HERE WHEN IT IS PROVEN AT `K = ℚ`, AND EXACTLY WHAT
-CLOSES IT.** Word for word the situation of the surjection sibling above,
-whose docstring carries the full analysis: at `K = ℚ` this is
-`Deformation.lean`'s two-line corollary of the leaf
-`hasFlatProlongationAt_of_prod_injection` (take the same object twice and
-kill the second coordinate: `x ↦ (j x, 0)` is injective and equivariant
-because `g • 0 = 0`), and that module lives DOWNSTREAM of this one. The
-honest fix is the same single edit: hoist
+**HOW IT WAS CLOSED, AND WHY IT WAS OPEN FOR A DAY.** Word for word the
+situation of the surjection sibling above, whose docstring carries the full
+analysis. The fix prescribed there — hoist
 `Deformations/RepresentationTheory/FlatPointsGroup.lean`'s
-`variable (v : HeightOneSpectrum (𝓞 ℚ))` to a general number field, after
-which BOTH `_of_numberField` leaves in this module close together with
-their `ℚ`-level originals. It is not done here because that is a
-cross-cutting edit to a file with concurrent owners, and because consuming
-`FlatPointsGroup.lean` from here would drag the Gelfand-duality machinery
-into this module's deliberately minimal import surface.
+`variable (v : HeightOneSpectrum (𝓞 ℚ))` to a general number field — HAS
+LANDED, and that file is now sorry-free at a variable `K`. So this is the
+same three-line assembly as its sibling, over the same three PROVEN
+ingredients: `hasFlatProlongationAt_iff_isFlatPointsGroupAt` to pass to the
+representation-free carrier, `IsFlatPointsGroupAt.of_injective` for the
+schematic closure of a `Γ K_w`-stable subgroup, and the `iff` again to come
+back. Note it does NOT route through `Deformation.lean`'s `ℚ`-level
+`hasFlatProlongationAt_of_prod_injection` corollary (which takes the same
+object twice and kills the second coordinate, `x ↦ (j x, 0)`); that module
+is DOWNSTREAM and unusable from here, and the direct subobject closure is
+shorter anyway.
+
+This leaf survived the hoist that was supposed to close it purely for a
+bookkeeping reason worth recording: the hoist task was pointed at
+`hasFlatProlongationAt_of_prod_injection_over_numberField`, **a name that
+exists nowhere in this file**, so its sibling closed and this one did not.
+A task aimed at a name that does not exist fails silently — it looks like a
+completed task, not a missed one.
+
+The import cost is nil: `FlatPointsGroup.lean` is already imported by this
+module for the surjection sibling, and its Gelfand-duality closure was
+audited there (38 `Fermat`-side modules, nothing from `HardlyRamified/`,
+`Family.lean`, `Lift.lean`, `Deformation.lean` or `Modularity/*`), so the
+circularity guard is intact.
 
 No finiteness hypothesis on `M₁` is needed: it is forced, `M₁` injecting
 into the finite `M₂`.
@@ -9121,8 +9134,13 @@ theorem hasFlatProlongationAt_of_injection_of_numberField
     (hinj : Function.Injective j)
     (hequiv : ∀ (g : Γ (w.adicCompletion K))
         (x : (ρ₁.toLocal w).Space), j (g • x) = g • j x) :
-    ρ₁.HasFlatProlongationAt w :=
-  sorry
+    ρ₁.HasFlatProlongationAt w := by
+  -- pass to the representation-free point-group carrier
+  have h₂ : Modularity.IsFlatPointsGroupAt w (ρ₂.toLocal w).Space :=
+    (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₂).mp h
+  -- subobjects: schematic closure over the DVR along the equivariant injection
+  exact (Modularity.GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt ρ₁).mpr
+    (h₂.of_injective j hinj hequiv)
 
 set_option backward.isDefEq.respectTransparency false in
 open scoped TensorProduct in
