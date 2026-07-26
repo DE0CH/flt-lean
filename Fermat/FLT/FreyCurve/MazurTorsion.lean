@@ -289,7 +289,33 @@ A formal proof of any one node needs `X_1(n)` as an arithmetic curve
 over `ℚ` together with a determination of its rational points: a
 rank-`0` Mordell–Weil computation for the genus-one levels `14, 15`,
 and Chabauty/Kenku-style arguments (or the Eisenstein-ideal descent)
-for the higher-genus levels. Genera, computed from the standard formula
+for the higher-genus levels.
+
+**REFINED 2026-07-26 — CHABAUTY IS NOT NEEDED, AND IT IS ONE THEORY
+FOR SEVEN LEVELS.** Magma (untrusted searcher, statement check only):
+every `ℚ`-simple factor of `J_1(N)` has `L(1) ≠ 0`, hence rank `0` by
+Kolyvagin–Logachev, for `N ∈ {11, 13, 16, 17, 18, 19, 21, 24, 25, 27}`;
+and `min_p #X_1(N)(𝔽_p) = φ(N)/2 = #(rational cusps)` for
+`N ∈ {11, 13, 17, 19, 21, 25, 27}`. So for those seven levels the whole
+argument is: embed `X_1(N)(ℚ) ↪ J_1(N)(ℚ)` at a rational cusp, note
+`J_1(N)(ℚ)` is finite, reduce at an odd prime of good reduction
+(injective on torsion), and count. No Chabauty, no Mordell–Weil sieve,
+no Eisenstein ideal. The single missing theory is therefore `X_1(N)/ℚ`
+with its cusps + `rank J_1(N)(ℚ) = 0` from `L(1) ≠ 0` + torsion
+injectivity under good reduction, and it discharges seven of this
+file's sorried nodes at once rather than one. The deep input is
+Kolyvagin–Logachev/Kato; nothing of it exists at this pin (`grep
+ModularCurve` over mathlib returns nothing, and `~/cs/FLT` takes the
+Mazur bound as a bare `axiom`). The route breaks at `37` in a
+precisely identifiable place — `J_1(37)` has a rank-`1` factor, the
+elliptic curve `37a` — so `37, 43, 67, 163` are the levels that
+genuinely need the winding/Eisenstein quotient of `J_1(N)` instead of
+`J_1(N)` itself. Full statement, evidence and cross-checks (including
+that the same pipeline reproduces Billing–Mahler at `11` and
+Mazur–Tate at `13`) are in the docstring of
+`tateNormalForm_origin_order_ne_25`.
+
+Genera, computed from the standard formula
 `g(X_1(N)) = 1 + (N²/24)∏_{p ∣ N}(1 − p⁻²) − ¼ Σ_{d ∣ N} φ(d)φ(N/d)`:
 `14 ↦ 1`, `15 ↦ 1`, `16 ↦ 2`, `18 ↦ 2`, `20 ↦ 3`, `21 ↦ 5`, `24 ↦ 5`,
 `25 ↦ 12`, `27 ↦ 13`, `35 ↦ 25`, `49 ↦ 69`.
@@ -2095,8 +2121,14 @@ The `X_0` shortcut is NOT available: `13` is in Kenku's list, and
 `X_0(13)` has genus `0`, so rational cyclic `13`-isogenies exist in
 abundance — `y² = x³ + 6x − 8`, of conductor `20736`, is one (PARI/GP
 `ellisomat`, untrusted searcher). A formal proof needs the rational
-points of a genus-`2` curve, i.e. Mordell–Weil on its Jacobian plus a
-Chabauty-style argument. 
+points of a genus-`2` curve — but NOT, correcting this line on
+2026-07-26, a Chabauty argument: `J_1(13)` has Mordell–Weil rank `0`
+(it is `ℚ`-simple of dimension `2` with `LRatio(1) = 1/361 ≠ 0`), and
+`#X_1(13)(𝔽_3) = 6 = φ(13)/2 = #(rational cusps)`, so reduction at `3`
+alone forces every rational point to be a cusp — which is Mazur–Tate's
+own argument. This level shares one missing theory with `11, 17, 19,
+21, 25, 27`; see `tateNormalForm_origin_order_ne_25` for the full
+statement of the route and its cross-checks.
 STATED IN TATE COORDINATES (2026-07-25). The general form of this
 level — no rational point of order `13` on ANY elliptic curve over
 `ℚ` — is `no_torsion_order_13` just below, and is PROVEN from this
@@ -2208,7 +2240,18 @@ The `X_0` shortcut is NOT available: `37` is in Kenku's list, and
 to have cyclic isogeny degrees exactly `{1, 37}` with PARI/GP
 `ellisomat`, untrusted searcher) and `j = −7 · 137³ · 2083³`. At this
 genus no explicit descent is available even in the literature: the
-level is settled by the Eisenstein-ideal argument itself. 
+level is settled by the Eisenstein-ideal argument itself. The precise
+reason the cheaper route fails here was identified 2026-07-26 (Magma,
+untrusted searcher): the rank-`0` point count that closes `11, 13, 17,
+19, 21, 25, 27` (see `tateNormalForm_origin_order_ne_25`) needs the
+WHOLE of `J_1(N)` to have rank `0`, and `J_1(37)` does not — its
+`ℚ`-simple factors have dimensions `1, 1, 2, 2, 4, 6, 6, 18` and the
+first has `LRatio(1) = 0`, being the rank-`1` elliptic curve `37a`.
+Hence `37, 43, 67, 163` genuinely need the winding/Eisenstein quotient,
+i.e. the rank-`0` quotient of `J_1(N)` rather than `J_1(N)` itself.
+Note the point count itself is still sharp: `#X_1(37)(𝔽_p) = 18 =
+φ(37)/2` for `p = 2, 3, 5, 7`, so only the Mordell–Weil input is
+missing.
 STATED IN TATE COORDINATES (2026-07-25). The general form of this
 level — no rational point of order `37` on ANY elliptic curve over
 `ℚ` — is `no_torsion_order_37` just below, and is PROVEN from this
@@ -4217,16 +4260,17 @@ theorem WeierstrassCurve.no_torsion_order_20 (E : WeierstrassCurve ℚ)
   simp only [Finset.mem_insert, Finset.mem_singleton] at h
   omega
 
-/-- **No rational point of order `21`** (sorry node — IRREDUCIBLE
-literature citation, audited 2026-07-25): `X_1(21)` has genus `5` and
+/-- **`X_1(21)` in Tate coordinates: the origin never has order `21`**
+(sorry node — literature citation; RESTATED in Tate coordinates and
+RE-AUDITED 2026-07-26, see the rank-`0` block below): `X_1(21)` has
+genus `5` and
 no non-cuspidal rational point (Kubert–Kenku–Ligozat; subsumed in
 Mazur 1977, Thm 8).
 
 By the criterion in the section note the `X_0` shortcut of
 `mem_cyclicIsogenyDegrees` is NOT available here — `21` is one of the
 three levels (`21, 25, 27`) that are in Kenku's list and have no
-level-structure sharpening either, so these are the only bare sorry
-nodes left among the eleven. `21` IS a
+level-structure sharpening either. `21` IS a
 rational cyclic isogeny degree, so a rational `21`-isogeny is no
 contradiction at all. `X_0(21)` is a genus-one curve of Mordell–Weil
 rank `0` with non-cuspidal rational points; an explicit witness curve
@@ -4249,11 +4293,63 @@ Other routes checked and rejected:
   `#Ẽ(𝔽_13) = 21` is Hasse-admissible (`a₁₃ = −7`, `|a₁₃| ≤ 2√13`).
   A lower bound on the conductor is never a contradiction.
 
-A formal proof needs `X_1(21)` as an arithmetic curve over `ℚ`
-together with a Chabauty-style determination of its rational points. -/
+**CORRECTION 2026-07-26: it does NOT need Chabauty.** `J_1(21)` has
+Mordell–Weil rank `0`, so the level closes by a point count, exactly as
+at level `25` (see `tateNormalForm_origin_order_ne_25`, whose docstring
+carries the full statement of the shared route and the evidence that
+the pipeline reproduces Billing–Mahler and Mazur–Tate). Magma —
+untrusted searcher, statement check only:
+
+* `J_1(21)` is `ℚ`-isogenous to `A₁ × A₂ × A₂` of dimensions `1, 2, 2`,
+  and `L(A, 1) ≠ 0` for all three (`LRatio(1) = 1/8, 1/169, 1/49`).
+  By Kolyvagin–Logachev the rank is `0`, so `J_1(21)(ℚ)` is finite.
+* `X_1(21)` has good reduction away from `21` and
+  `#X_1(21)(𝔽_5) = 5 + 1 − Tr(T_5 ∣ S_2(Γ_1(21))) = 6`.
+* `X_1(21)` has `24` cusps, of which exactly `φ(21)/2 = 6` are
+  rational: those on the Néron `21`-gon, where the point of order `21`
+  can be taken with trivial `μ`-part. The other three families are
+  irrational — the `1`-gon cusps need `ζ₂₁` (one orbit over
+  `ℚ(ζ₂₁)⁺`), the denominator-`3` cusps need `ζ₇`, and the
+  denominator-`7` cusps need `ζ₃`.
+* So `X_1(21)(ℚ) ↪ J_1(21)(ℚ)` at a rational cusp, reduced at the odd
+  good prime `5` (injective on torsion), gives
+  `#X_1(21)(ℚ) ≤ 6 = #(rational cusps)`: every rational point is a
+  cusp, which is this node.
+
+So levels `11, 13, 17, 19, 21, 25, 27` all fall to ONE theory —
+`X_1(N)/ℚ` with its cusps, `rank J_1(N)(ℚ) = 0` from `L(1) ≠ 0`, and
+injectivity of torsion under good reduction — and none of them needs
+Chabauty. The deep input is Kolyvagin–Logachev/Kato. It breaks at `37`,
+where `J_1(37)` has a rank-`1` factor (`37a`), so `37, 43, 67, 163`
+need the winding/Eisenstein quotient instead of the whole Jacobian.
+
+STATED IN TATE COORDINATES (2026-07-26), matching levels `11, 13, 17,
+19, 25, 37, 43, 67, 163`. The general form of this level — no rational
+point of order `21` on ANY elliptic curve over `ℚ` — is
+`no_torsion_order_21` just below, and is PROVEN from this node. Here
+the curve is the explicit two-parameter family `tateNormalForm b c` and
+the point is the origin, so this node IS the plane model of `X_1(21)`
+in the `(b, c)`-coordinates rather than a statement quantified over all
+curves. The passage between the two is the PROVEN
+`exists_tateNormalForm`; everything above about genus, witnesses and
+citation is unchanged by the restatement. -/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_21 (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 21 :=
+  sorry
+
+/-- **No rational point of order `21`** (PROVEN 2026-07-26 from the
+Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
+a point of order `21 ≥ 4` puts its curve in Tate normal form at the
+origin, so the general statement follows from the one about the
+explicit family. All the mathematical content is in the node above,
+whose docstring carries this level's citation and audit. -/
 theorem WeierstrassCurve.no_torsion_order_21 (E : WeierstrassCurve ℚ)
     [E.IsElliptic] (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ 21 :=
-  sorry
+  WeierstrassCurve.no_torsion_order_of_tateNormalForm (by norm_num)
+    (fun b c hell h00 =>
+      @WeierstrassCurve.tateNormalForm_origin_order_ne_21 b c hell h00) E Q
 
 /-- **No rational point of order `24`** (PROVEN 2026-07-25 from the
 `X_0` node `mem_cyclicIsogenyDegrees`): a rational point of order `24`
@@ -4319,8 +4415,10 @@ rejected:
   contradiction — curves of every such conductor exist.
 
 A formal proof needs `X_1(25)` as an arithmetic curve over `ℚ` together
-with a determination of its rational points (Chabauty/Kenku-style, or
-the Eisenstein-ideal descent). The one structural observation worth
+with a determination of its rational points — by the rank-`0` point
+count established in the REFUTED block below, NOT by Chabauty and NOT
+by the Eisenstein-ideal descent, both of which this line used to
+demand. The one structural observation worth
 recording for a future attack: if `P` has order `25` then
 `E' = E/⟨5P⟩` carries the rational point `φ(P)` of order `5` AND the
 rational subgroup `ker φ̂` of order `5`, and these are independent
