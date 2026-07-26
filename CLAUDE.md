@@ -475,6 +475,23 @@ mtimes in dependency order:
 A downstream olean older than an upstream one it really imports means the set is
 inconsistent and every diagnostic from it is untrustworthy.
 
+**A FULL-CONE BUILD IS NOT ENOUGH — MERGE `main` FIRST** (2026-07-26, and this
+corrects the rule immediately above). An agent applied exactly the test
+prescribed here — a complete `lake build` of the cone — the error survived it,
+and **the error was still not real**: its tree was ~250 commits stale and
+current `main` already carried the repair. A full build proves the tree it is
+given is broken; it says nothing about whether that tree is current. The two
+failure modes are different and the build only separates one of them:
+
+* *inconsistent oleans* → a full `lake build` clears it;
+* *stale sources* → only `git fetch && git merge main` clears it.
+
+So the triage order is **merge `main`, then full build, then believe it**. The
+same defect (`MazurTorsion.lean`'s `map_baseChange` rewrite) was diagnosed
+independently by at least seven agents and repaired on branches by six of them,
+every one of which was working from a base that predated the fix landing. That
+is not seven confirmations; it is one bug and seven stale checkouts.
+
 **There is NO Lean MCP of any kind (Deyao, 2026-07-25).** Both the
 `lean-lsp` MCP and the per-worktree `report-flt-lean-N` servers are gone;
 `.mcp.json` holds exactly one entry, `annas-mcp`, which is for downloading
