@@ -87,6 +87,13 @@ The chain, in the order the assembly uses it:
    `isHilbertBaseChangeClause`, `isHilbertFibreProductClause`,
    `isHilbertFiniteFramesClause`, `isHilbertProLimitClause` and the
    Brauer–Nesbitt clause `isHilbertResidualRigidityClause`.
+   `isHilbertFibreProductClause` is itself PROVEN (2026-07-26) over the two
+   arithmetic residues `isHilbertFlatAt_of_fibreProduct` and
+   `isHilbertTameAtTwo_of_fibreProduct`, and that repair added
+   `hℓ5 : 5 ≤ ℓ` to it and to
+   `exists_isWeaklyUniversal_hilbertDeformationDatum`: the tame-at-`2`
+   residue is FALSE at `ℓ = 3`, by the `ℚ`-level counterexample recorded in
+   `Deformation.lean`, which applies here verbatim at `F = ℚ`.
 4. `HilbertHeckeAlgebra` — `T_F`, carrying finiteness AND FREENESS of
    `T_F` over `ℤ_[ℓ]`, generation by Hecke operators, and the
    **Hecke-valued Galois representation** `ρT : G_F → GL₂(T_F)` reducing
@@ -157,6 +164,7 @@ public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
 public import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.GroupTheory.Index
 public import Mathlib.LinearAlgebra.Charpoly.Basic
+public import Mathlib.LinearAlgebra.Charpoly.BaseChange
 public import Mathlib.RingTheory.IntegralClosure.Algebra.Basic
 public import Mathlib.RingTheory.Adjoin.Basic
 public import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
@@ -974,6 +982,243 @@ noncomputable def framePushforward {F : Type u} [Field F] [NumberField F]
     (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
   (ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))
 
+/-! #### Bookkeeping for `framePushforward`
+
+The two lemmas below are the `F`-level copies of `Deformation.lean`'s
+`pushforwardFrame_apply_map` and `det_pushforwardFrame` — same statements
+and same proofs with the base field `ℚ` replaced by `F`, and, like
+`rank_finTwoPi` and `framePushforward` themselves, neither may be replaced
+by the other without moving a declaration across the import edge. Together
+they say that `framePushforward ψ` really is "apply `ψ` to the matrix
+entries": it acts entrywise on vectors already in the image of `ψ`, and its
+determinant is `ψ` of the determinant. That is exactly what a fibre-product
+argument needs, because it turns a statement over `B` into a pair of
+statements about VALUES in `A₁` and `A₂`, and values descend along the
+injection `b ↦ (p₁ b, p₂ b)`.
+
+**IF YOU ARE ANOTHER CLAUSE OWNER AND NEED THESE, USE THEM — DO NOT ADD A
+SECOND COPY.** `Deformation.lean` records what that costs: two concurrent
+owners each landed a byte-identical `det_pushforwardFrame`, git merged the
+disjoint regions cleanly, every source scan saw a clean file, and the
+module then failed to elaborate at all with "has already been declared",
+producing no `.olean` and silently blocking every downstream module. -/
+
+open scoped TensorProduct in
+/-- **`framePushforward` computed on the image of a `B`-vector** (PROVEN;
+the `F`-level copy of `Deformation.lean`'s `pushforwardFrame_apply_map`).
+
+`(1 : A) ⊗ₜ v` is a preimage of `ψ ∘ v` under
+`TensorProduct.piScalarRight`, so `LinearEquiv.conj_apply_apply` moves the
+conjugation out of the way and `GaloisRep.baseChange_tmul` finishes;
+nothing has to be said about `piScalarRight.symm` on a general element,
+which is a sum.
+
+This is the handle that lets a fibre-product argument compare `ρ g` with
+`1` ENTRYWISE, which is the shape the injectivity of `b ↦ (p₁ b, p₂ b)`
+can act on. -/
+lemma framePushforward_apply_map {F : Type u} [Field F] [NumberField F]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    (ψ : B →+* A) (hψ : Continuous ψ) (ρ : FramedGaloisRep F B (Fin 2))
+    (g : Γ F) (v : Fin 2 → B) (i : Fin 2) :
+    framePushforward ψ hψ ρ g (fun j => ψ (v j)) i = ψ (ρ g v i) := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  have hsmul : ∀ (b : B) (a : A), b • a = ψ b * a := fun _ _ => rfl
+  have h1 : (fun j => ψ (v j)) =
+      (TensorProduct.piScalarRight B A A (Fin 2)) ((1 : A) ⊗ₜ[B] v) := by
+    funext j
+    rw [TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
+    simp [hsmul]
+  show (((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g)
+      (fun j => ψ (v j)) i = _
+  rw [h1, GaloisRep.conj_apply, LinearEquiv.conj_apply_apply,
+    LinearEquiv.symm_apply_apply, GaloisRep.baseChange_tmul,
+    TensorProduct.piScalarRight_apply, TensorProduct.piScalarRightHom_tmul]
+  simp [hsmul]
+
+open scoped TensorProduct in
+/-- **`det` commutes with `framePushforward`** (PROVEN; the `F`-level copy
+of `Deformation.lean`'s `det_pushforwardFrame`).
+
+`LinearMap.det_conj` absorbs the framing identification and
+`LinearMap.det_baseChange` turns the base-changed determinant into
+`algebraMap B A` of the original, which is `ψ` by
+`RingHom.algebraMap_toAlgebra`. This is the direction that lets a
+determinant identity be REFLECTED BACK from the two projections to `B`. -/
+lemma det_framePushforward {F : Type u} [Field F] [NumberField F]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    (ψ : B →+* A) (hψ : Continuous ψ) (ρ : FramedGaloisRep F B (Fin 2))
+    (g : Γ F) :
+    (framePushforward ψ hψ ρ).det g = ψ (ρ.det g) := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  show LinearMap.det
+    ((((ρ.baseChange A).conj (TensorProduct.piScalarRight B A A (Fin 2))) g)) = _
+  rw [GaloisRep.conj_apply, LinearEquiv.conj_apply, LinearMap.comp_assoc,
+    LinearMap.det_conj]
+  show LinearMap.det (LinearMap.baseChange A (ρ g)) = _
+  rw [LinearMap.det_baseChange, RingHom.algebraMap_toAlgebra]
+  rfl
+
+/-! #### The two arithmetic residues of Schlessinger's H1/H2 over `F`
+
+`isHilbertFibreProductClause` below is PROVEN over exactly these two
+leaves; the determinant and unramifiedness clauses are formal and are
+discharged there. The split is `Deformation.lean`'s, one for one: over `ℚ`
+the same two residues are `isFlatAt_of_fibreProduct` and
+`isTameAtTwo_of_fibreProduct`, and everything else in
+`isHardlyRamified_of_fibreProduct` is bookkeeping.
+
+They are stated HERE rather than immediately above their consumer only to
+keep this file's concurrently-edited regions apart; nothing in them depends
+on the clause definitions below. -/
+
+/-- **Flatness at a place over `ℓ` glues along a fibre product** (LEAF;
+Ramakrishna and Raynaud — the first arithmetic residue of Schlessinger's
+H1/H2 over `F`, and the `F`-level twin of `Deformation.lean`'s
+`isFlatAt_of_fibreProduct`).
+
+`B` is the fibre product `A₁ ×_{A₀} A₂` of finite local `ℤ_ℓ`-algebras
+along a SURJECTION `f₂`, presented by its universal property rather than as
+a construction: `hcart` says every compatible pair comes from `B`, and
+`hemb` says `B` carries the induced topology and injects, so `B` really is
+the fibre product AS A TOPOLOGICAL RING.
+
+WHY IT IS NOT FORMAL, and where each hypothesis is spent.
+`GaloisRep.IsFlatAt w` quantifies over the OPEN IDEALS `I` of the
+coefficient ring and asks that `ρ ⊗ (B ⧸ I)` be the geometric points of a
+finite flat group scheme over `𝒪_{F_w}`. The open ideals of `B` are NOT in
+general pullbacks of open ideals of `A₁` and `A₂`, so `h₁` and `h₂` cannot
+simply be evaluated at the ideal one is handed: one first has to shrink `I`
+to an open ideal that IS a pullback, which is where finiteness of the rings
+and `hemb` enter (over `ℚ` this is exactly what
+`exists_isOpen_ideal_subset_of_finite` was cut out of
+`isFlatAt_of_fibreProduct` to do). The gluing of the two prolongations is
+then Raynaud's: over the complete DVR `𝒪_{F_w}` a finite flat group scheme
+with the given generic fibre is determined by its geometric points, and a
+fibre product of two such along a common quotient — this is where the
+surjectivity `hf₂` is used, so that the quotient really is common — is
+again finite and flat.
+
+`hw : ℓ ∈ w` is what makes the clause meaningful: at a place not over `ℓ`
+the flatness clause of `IsHilbertHardlyRamified` is not asserted at all.
+
+FAITHFULNESS: the statement asks for the EXISTENCE of a prolongation over
+`𝒪_{F_w}` produced from two given ones, not for a descent of existence from
+`𝒪^nr`, so the `𝒪ᵥ` descent rule does not bite. Nothing here needs `F`
+totally real or `F/ℚ` Galois.
+
+References: Raynaud, *Schémas en groupes de type `(p,…,p)`*, Bull. SMF 102
+(1974); Ramakrishna, Compositio 87 (1994), §1; Conrad–Diamond–Taylor, JAMS
+12 (1999), §2. -/
+theorem isHilbertFlatAt_of_fibreProduct (ℓ : ℕ) [Fact ℓ.Prime]
+    (F : Type u) [Field F] [NumberField F]
+    {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
+    {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+    [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
+    {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+    [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
+    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀) (hf₂ : Function.Surjective f₂)
+    (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁) (hp₂ : Continuous p₂)
+    (hcomm : f₁.comp p₁ = f₂.comp p₂)
+    (hemb : Topology.IsEmbedding fun b : B => (p₁ b, p₂ b))
+    (hcart : ∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂)
+    {ρ : FramedGaloisRep F B (Fin 2)}
+    (w : HeightOneSpectrum (𝓞 F)) (hw : ((ℓ : ℕ) : 𝓞 F) ∈ w.asIdeal)
+    (h₁ : (framePushforward p₁ hp₁ ρ).IsFlatAt w)
+    (h₂ : (framePushforward p₂ hp₂ ρ).IsFlatAt w) :
+    ρ.IsFlatAt w :=
+  sorry
+
+/-- **The tame quadratic quotient at a place over `2` glues along a fibre
+product** (LEAF; Conrad–Diamond–Taylor — the second arithmetic residue of
+Schlessinger's H1/H2 over `F`, and the `F`-level twin of
+`Deformation.lean`'s `isTameAtTwo_of_fibreProduct`).
+
+**THIS STATEMENT CARRIES `hℓ5 : 5 ≤ ℓ`, AND MUST — see the faithfulness
+note on `isHilbertFibreProductClause` below.** The `ℓ = 3` case is not
+merely open: the `ℚ`-level twin's `ℓ = 3` case was REFUTED on 2026-07-26
+with an explicit counterexample, recorded in full in the block comment
+above `isTameAtTwo_of_fibreProduct` in `Deformation.lean`, and that
+counterexample is a counterexample HERE TOO at `F = ℚ`, because
+`IsHilbertHardlyRamified ℓ ℚ` is the `ℚ`-level condition place by place.
+Do not drop `hℓ5`, and do not restate this leaf without it.
+
+WHY IT IS NOT FORMAL. The tame clause is an EXISTENTIAL — SOME surjection
+`p` and SOME unramified quadratic `δ`. So `h₁` and `h₂` hand you a line
+over `A₁` and a line over `A₂` with no compatibility whatever over `A₀`,
+while a line over the fibre product is exactly a compatible PAIR of lines.
+Everything turns on a uniqueness statement forcing the two given choices to
+agree over `A₀`, and that uniqueness is what `hdet` and `hℓ5` buy:
+
+* `χ_ℓ` is unramified on `G_{F_w}` with `χ_ℓ(Frob_w) = 2^{f(w|2)}`, because
+  `ℓ` is odd, so the residual representation restricted to `G_{F_w}` is
+  never scalar and its two Jordan–Hölder characters `χ̄δ̄` and `δ̄` differ by
+  `χ̄|_{G_w}`;
+* those two characters can COINCIDE as candidates for the clause only when
+  `χ̄²|_{G_w} = 1`, i.e. when `2^{2f} ≡ 1 mod ℓ`; at `ℓ = 3` that holds for
+  every `w | 2` and every `F`, which is exactly the degeneracy the `ℚ`-level
+  counterexample exploits, and at `ℓ ≥ 5` the argument of the `ℚ`-level
+  proof — the two surjections are unimodular rows that are left
+  eigenvectors of `ρ(Frob_w)`, and `det − d₁d₂` is a unit — forces them
+  proportional over `A₀`, after which `hf₂` rescales one of them and
+  `hcart` glues them entrywise.
+
+FAITHFULNESS: as over `ℚ`, the two nontrivial conditions on the glued `δ`
+are an inertia-only containment and an IDENTITY of values, both on the true
+side of the `𝒪ᵥ` descent rule; no element of `Γ` and no `Γ`-wide
+rationality is demanded.
+
+References: Conrad–Diamond–Taylor, JAMS 12 (1999), §2; Mazur, *Deforming
+Galois representations*, MSRI Publ. 16 (1989), §§18–23; Schlessinger,
+Trans. AMS 130 (1968), Thm. 2.11. -/
+theorem isHilbertTameAtTwo_of_fibreProduct (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
+    {A₀ : Type u} [CommRing A₀] [TopologicalSpace A₀] [IsTopologicalRing A₀]
+    [IsLocalRing A₀] [Algebra ℤ_[ℓ] A₀] [Finite A₀]
+    {A₁ : Type u} [CommRing A₁] [TopologicalSpace A₁] [IsTopologicalRing A₁]
+    [IsLocalRing A₁] [Algebra ℤ_[ℓ] A₁] [Finite A₁]
+    {A₂ : Type u} [CommRing A₂] [TopologicalSpace A₂] [IsTopologicalRing A₂]
+    [IsLocalRing A₂] [Algebra ℤ_[ℓ] A₂] [Finite A₂]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    [IsLocalRing B] [Algebra ℤ_[ℓ] B] [Finite B]
+    (f₁ : A₁ →+* A₀) (f₂ : A₂ →+* A₀) (hf₂ : Function.Surjective f₂)
+    (p₁ : B →+* A₁) (p₂ : B →+* A₂) (hp₁ : Continuous p₁) (hp₂ : Continuous p₂)
+    (hcomm : f₁.comp p₁ = f₂.comp p₂)
+    (hemb : Topology.IsEmbedding fun b : B => (p₁ b, p₂ b))
+    (hcart : ∀ (a₁ : A₁) (a₂ : A₂), f₁ a₁ = f₂ a₂ → ∃ b : B, p₁ b = a₁ ∧ p₂ b = a₂)
+    {ρ : FramedGaloisRep F B (Fin 2)}
+    (hdet : ∀ g : Γ F, ρ.det g = algebraMap ℤ_[ℓ] B
+      (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv))
+    (w : HeightOneSpectrum (𝓞 F)) (hw : ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal)
+    (h₁ : ∃ (p : (Fin 2 → A₁) →ₗ[A₁] A₁) (_ : Function.Surjective p)
+      (δ : GaloisRep (w.adicCompletion F) A₁ A₁),
+      (∀ g : Γ (w.adicCompletion F), ∀ v : Fin 2 → A₁,
+        p ((framePushforward p₁ hp₁ ρ).toLocal w g v) = δ g (p v)) ∧
+      localInertiaGroup w ≤ δ.ker ∧
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1)
+    (h₂ : ∃ (p : (Fin 2 → A₂) →ₗ[A₂] A₂) (_ : Function.Surjective p)
+      (δ : GaloisRep (w.adicCompletion F) A₂ A₂),
+      (∀ g : Γ (w.adicCompletion F), ∀ v : Fin 2 → A₂,
+        p ((framePushforward p₂ hp₂ ρ).toLocal w g v) = δ g (p v)) ∧
+      localInertiaGroup w ≤ δ.ker ∧
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1) :
+    ∃ (p : (Fin 2 → B) →ₗ[B] B) (_ : Function.Surjective p)
+      (δ : GaloisRep (w.adicCompletion F) B B),
+      (∀ g : Γ (w.adicCompletion F), ∀ v : Fin 2 → B,
+        p (ρ.toLocal w g v) = δ g (p v)) ∧
+      localInertiaGroup w ≤ δ.ker ∧
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 :=
+  sorry
+
 /-! #### The four deformation-condition clauses over `F`, and residual rigidity
 
 The cut of `exists_isWeaklyUniversal_hilbertDeformationDatum` below follows
@@ -1114,21 +1359,137 @@ theorem isHilbertBaseChangeClause (ℓ : ℕ) [Fact ℓ.Prime]
     IsHilbertBaseChangeClause ℓ F :=
   sorry
 
-/-- **Gluing along fibre products** (LEAF; Schlessinger's H1 and H2).
+/-- **Gluing along fibre products** (Schlessinger's H1 and H2; PROVEN
+2026-07-26 over the two arithmetic leaves `isHilbertFlatAt_of_fibreProduct`
+and `isHilbertTameAtTwo_of_fibreProduct` stated above — the determinant and
+unramifiedness clauses are formal and are proven here).
 
-Over `ℚ` this is `Deformation.lean`'s leaf `isHardlyRamified_of_fibreProduct`.
-The mathematical content is that each clause of the local condition is
-detected componentwise: a homomorphism into `GL₂` of a fibre product is
-exactly a compatible pair of homomorphisms, the determinant clause and the
-order-`2` clause are equations that hold iff they hold in both components,
-and the inertia-kernel clauses are intersections. Only the flatness clause
-at `w ∣ ℓ` needs an argument — the fibre product of two finite flat group
-schemes over `𝒪_{F_w}` along a common quotient is again one, which is where
-the surjectivity of `f₂` and the embedding hypothesis are used. -/
-theorem isHilbertFibreProductClause (ℓ : ℕ) [Fact ℓ.Prime]
+Over `ℚ` this is `Deformation.lean`'s `isHardlyRamified_of_fibreProduct`,
+and the cut here is that theorem's, one leaf for one leaf.
+
+**FAITHFULNESS REPAIR, 2026-07-26: THIS THEOREM NOW CARRIES
+`hℓ5 : 5 ≤ ℓ`, WHICH IT DID NOT WHEN IT WAS FIRST STATED.** The previous
+version's docstring asserted that "only the flatness clause at `w ∣ ℓ`
+needs an argument" and that the order-`2` clause is "an equation that holds
+iff it holds in both components". **Both halves of that are wrong**, and
+the second is wrong in the dangerous direction:
+
+* the tame clause is not an equation but an EXISTENTIAL — some rank-one
+  quotient, some unramified quadratic character — so `h₁` and `h₂` supply
+  two lines with no compatibility over `A₀`, and gluing them needs a
+  uniqueness argument, not a componentwise reading;
+* that uniqueness argument is FALSE at `ℓ = 3`. The `ℚ`-level twin's
+  `ℓ = 3` case was refuted on 2026-07-26 with an explicit counterexample
+  over `K = ℚ(∛2, μ₃)` — `A₀ = 𝔽₃`, `A₁ = 𝔽₃[ε₁]`, `A₂ = 𝔽₃[ε₂]`,
+  `B = 𝔽₃[ε₁,ε₂]/(ε₁,ε₂)²` and
+  `ρ(g) = !![1, ε₂c'(g); ε₁c(g), χ(g)]` for `c` the Kummer cocycle of `2`
+  and `c' = χc` — verified exhaustively over the 27-element ring `B`, and
+  recorded in the block comment above `isTameAtTwo_of_fibreProduct` in
+  `Deformation.lean`. That configuration is a counterexample to the
+  `F`-level statement TOO, at `F = ℚ`: `IsHilbertHardlyRamified ℓ ℚ` is the
+  `ℚ`-level condition read place by place, and `ℚ` is a number field, so
+  nothing in `IsHilbertFibreProductClause ℓ F` excludes it.
+* the degeneracy is uniform in `F`, not special to `ℚ`: at a place `w ∣ 2`
+  of residue degree `f` one has `χ̄(Frob_w) = 2^f`, and the two candidate
+  lines both satisfy the clause exactly when `2^{2f} ≡ 1 mod ℓ`, which at
+  `ℓ = 3` holds for every `f`.
+
+The repair is the `ℚ`-level one and is deliberately made in the THEOREM
+rather than in the `Prop`-valued definition `IsHilbertFibreProductClause`:
+the definition is left untouched (so the machine leaf
+`exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses`, which takes
+it as a hypothesis, is unchanged), and `5 ≤ ℓ` is threaded down from the
+consumer `exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified`,
+which already carries it, through
+`exists_isWeaklyUniversal_hilbertDeformationDatum`. `IsHilbertHardlyRamified`
+itself is unchanged.
+
+WHAT IS PROVEN HERE. `hemb` gives the injectivity of `b ↦ (p₁ b, p₂ b)`,
+and both formal clauses are statements about VALUES, which is exactly what
+descends along an injection:
+
+* *determinant*: `det` commutes with `framePushforward`
+  (`det_framePushforward`), so the identity `ρ.det g = χ_ℓ(g)` may be
+  checked after applying `p₁` and `p₂`, where it is `h₁.det`/`h₂.det`
+  transported by the `ℤ_ℓ`-compatibilities `halg₁`/`halg₂`;
+* *unramifiedness*: by `framePushforward_apply_map` an endomorphism of
+  `Fin 2 → B` whose two projections are the identity is the identity, entry
+  by entry, so inertia at `w` is killed by `ρ` as soon as it is killed by
+  both projections.
+
+The determinant identity is proven before the case split because the tame
+leaf consumes it as `hdet` — it is the uniqueness input that makes the
+gluing of the two lines possible at all.
+
+References: Schlessinger, *Functors of Artin rings*, Trans. AMS 130 (1968),
+Thm. 2.11 (H1, H2); Mazur, *Deforming Galois representations*, MSRI Publ.
+16 (1989), §§18–23; Ramakrishna, Compositio 87 (1994), §1;
+Conrad–Diamond–Taylor, JAMS 12 (1999), §2. -/
+theorem isHilbertFibreProductClause (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F] :
-    IsHilbertFibreProductClause ℓ F :=
-  sorry
+    IsHilbertFibreProductClause ℓ F := by
+  intro A₀ _ _ _ _ _ _ A₁ _ _ _ _ _ _ A₂ _ _ _ _ _ _ B _ _ _ _ _ _
+    f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ halg₁ halg₂ hcomm hemb hcart ρ h₁ h₂
+  -- An element of `B` is determined by its two projections: this is the
+  -- only consequence of `hemb` the two formal clauses need.
+  have hinj : ∀ b b' : B, p₁ b = p₁ b' → p₂ b = p₂ b' → b = b' := by
+    intro b b' hb₁ hb₂
+    exact hemb.injective (by simp only [Prod.mk.injEq]; exact ⟨hb₁, hb₂⟩)
+  -- The determinant identity, reflected back from the two projections.
+  -- Used twice: as the `det` clause, and as `hdet` for the tame leaf.
+  have hdet : ∀ g : Γ F, ρ.det g = algebraMap ℤ_[ℓ] B
+      (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+        (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv) := by
+    intro g
+    refine hinj _ _ ?_ ?_
+    · have hcompat : p₁ (algebraMap ℤ_[ℓ] B
+          (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv)) =
+          algebraMap ℤ_[ℓ] A₁
+            (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+              (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv) := by
+        rw [← halg₁]; rfl
+      rw [← det_framePushforward p₁ hp₁ ρ g, h₁.det g, hcompat]
+    · have hcompat : p₂ (algebraMap ℤ_[ℓ] B
+          (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+            (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv)) =
+          algebraMap ℤ_[ℓ] A₂
+            (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+              (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv) := by
+        rw [← halg₂]; rfl
+      rw [← det_framePushforward p₂ hp₂ ρ g, h₂.det g, hcompat]
+  refine ⟨hdet, ?_, ?_, ?_⟩
+  · -- UNRAMIFIEDNESS: formal. An endomorphism of `Fin 2 → B` killed by
+    -- both projections is the identity, entrywise.
+    intro w hw2 hwl
+    have key : ∀ g : Γ F, framePushforward p₁ hp₁ ρ g = 1 →
+        framePushforward p₂ hp₂ ρ g = 1 → ρ g = 1 := by
+      intro g hg₁ hg₂
+      refine LinearMap.ext fun v => funext fun i => ?_
+      refine hinj _ _ ?_ ?_
+      · have hv := framePushforward_apply_map p₁ hp₁ ρ g v i
+        rw [hg₁] at hv
+        simpa using hv.symm
+      · have hv := framePushforward_apply_map p₂ hp₂ ρ g v i
+        rw [hg₂] at hv
+        simpa using hv.symm
+    refine ⟨?_⟩
+    intro σ hσ
+    have e₁ : (framePushforward p₁ hp₁ ρ).toLocal w σ = 1 :=
+      (h₁.isUnramified w hw2 hwl).localInertiaGroup_le hσ
+    have e₂ : (framePushforward p₂ hp₂ ρ).toLocal w σ = 1 :=
+      (h₂.isUnramified w hw2 hwl).localInertiaGroup_le hσ
+    show ρ.toLocal w σ = 1
+    rw [GaloisRep.toLocal_apply] at e₁ e₂ ⊢
+    exact key _ e₁ e₂
+  · -- FLATNESS at `ℓ`: Ramakrishna/Raynaud, the first arithmetic leaf.
+    intro w hw
+    exact isHilbertFlatAt_of_fibreProduct ℓ F f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ hcomm hemb
+      hcart w hw (h₁.isFlat w hw) (h₂.isFlat w hw)
+  · -- TAMENESS at `2`: Conrad–Diamond–Taylor, the second arithmetic leaf.
+    intro w hw
+    exact isHilbertTameAtTwo_of_fibreProduct ℓ hℓ5 F f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ hcomm
+      hemb hcart hdet w hw (h₁.isTameAtTwo w hw) (h₂.isTameAtTwo w hw)
 
 /-- **Finiteness of the hardly ramified frames over a finite level** (LEAF;
 Schlessinger's H3).
@@ -1253,9 +1614,19 @@ The cut is the `ℚ`-level one: the Schlessinger machine
 (`exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses`, which
 contains no arithmetic) over the four clauses that make
 `IsHilbertHardlyRamified` a deformation condition, plus residual
-rigidity. -/
+rigidity.
+
+**`hℓ5 : 5 ≤ ℓ` (added 2026-07-26) IS LOAD-BEARING AND IS SPENT ON THE
+GLUING CLAUSE**, exactly as at the `ℚ` level. It reaches this assembly from
+`isHilbertFibreProductClause`, whose tame-at-`2` residue is FALSE at
+`ℓ = 3` — see the faithfulness repair recorded on that theorem, and the
+explicit counterexample it points at. Nothing else here needs it, and the
+consumer at the bottom of this module,
+`exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified`, already
+carried `5 ≤ ℓ`, so the hypothesis costs nothing downstream. -/
 theorem exists_isWeaklyUniversal_hilbertDeformationDatum
-    (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
@@ -1264,7 +1635,7 @@ theorem exists_isWeaklyUniversal_hilbertDeformationDatum
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) :
     ∃ 𝒟 : HilbertDeformationDatum ℓ F ρbar, 𝒟.IsWeaklyUniversal :=
   exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses ℓ F hirrF 𝒟₀
-    (isHilbertBaseChangeClause ℓ F) (isHilbertFibreProductClause ℓ F)
+    (isHilbertBaseChangeClause ℓ F) (isHilbertFibreProductClause ℓ hℓ5 F)
     (isHilbertFiniteFramesClause ℓ F) (isHilbertProLimitClause ℓ F)
     (isHilbertResidualRigidityClause F ρbar)
 
@@ -2292,7 +2663,7 @@ theorem exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified
   -- the weakly-universal datum it returns is then upgraded to a trace-generated
   -- one, which is what step (4) below needs.
   obtain ⟨𝒟₀, h𝒟₀⟩ :=
-    exists_isWeaklyUniversal_hilbertDeformationDatum ℓ P.F P.irreducibleF 𝒟'
+    exists_isWeaklyUniversal_hilbertDeformationDatum ℓ hℓ5 P.F P.irreducibleF 𝒟'
   obtain ⟨𝒟, h𝒟, ht𝒟⟩ :=
     exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum ℓ P.F
       P.irreducibleF 𝒟₀ h𝒟₀
