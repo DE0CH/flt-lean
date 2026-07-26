@@ -7959,6 +7959,81 @@ theorem hilbertFrameLevels_directed {ρbar : GaloisRep ℚ k V}
     hglue h1ker h1fin h1loc h1rep h2ker h2fin h2loc h2rep
   exact ⟨J₁ ⊓ J₂, ⟨le_trans inf_le_left h1ker, hfin, hloc, hrep⟩, le_refl _⟩
 
+/-- **CLASSIFICATION: EVERY CHARPOLY-IDENTIFIED FINITE DISCRETE TEST OBJECT
+RECEIVES A MAP FROM `P` KILLING A LEVEL** (OPEN; the three sibling leaves of
+this section were closed 2026-07-26, this one was not).
+
+**CUT AUDIT 2026-07-26 — THIS LEAF IS NOT A MECHANICAL PORT, and the
+dispatch that grouped it with its three siblings as one was wrong about
+it.** `hilbertFrameRing_rigid`, `hilbertFrameLevels_nonempty` and
+`hilbertFrameLevels_directed` really are transcriptions of their `ℚ`-level
+twins with `Γ ℚ ↝ Γ F`; this one is not, and the difference is in the
+STATEMENT, not in the proof. Read this before planning around
+`frameLevels_classification`.
+
+`Deformation.lean`'s `frameLevels_classification` takes its test object
+STRICTLY IDENTIFIED — its hypothesis is the matrix equation
+`pushforwardFrame πA hπA ρA = ρbar.conj e0` — and it is exactly that
+hypothesis that discharges the `X_{g,i,j}` half of the conclusion clause
+`πA.comp f = evbar`, entry by entry, through `entry_pushforwardFrame`.
+
+The `F`-level statement below is CHARPOLY-identified instead: its
+hypothesis is only `((ρA g).charpoly).map πA = ((ρbar|_{G_F}) g).charpoly`.
+That is deliberate and correct — the charpoly-only formulation is what
+makes `HilbertDeformationDatum.resid` and
+`IsHilbertWeaklyUniversalOnFiniteFrames` usable, and it is why the
+assembly `exists_hilbertLevelIdealSystem_of_clauses` can discharge its
+residual clause at all. But clause 2 of the conclusion,
+`πA.comp f = hilbertFrameEv`, is still a MATRIX equation. So equal
+charpolys must first be upgraded to equal matrices, and that step simply
+does not occur anywhere in the `ℚ`-level proof.
+
+**THE MISSING STEP, and it is genuine mathematics (de Smit-Lenstra Prop.
+2.3; Mazur, MSRI 16, section 1.2).** Reducing `ρA` along `πA` gives a
+framed `σ` over `k` with the charpolys of `ρbar|_{G_F}`; `hirrF` plus
+`hrig` (Brauer-Nesbitt) conjugate `σ` onto `ρbar|_{G_F}`, but only up to
+some `U ∈ GL₂(k)` — `σ` and the framed residual model `(ρbar|_{G_F}).conj
+e0` are conjugate, NOT equal. To build `f` one must therefore replace `ρA`
+by a conjugate whose reduction is the residual model on the nose, i.e.
+LIFT `U` to `GL₂(A)`. That lift exists: `πA` is surjective, so lift the
+entries; `A` is local and the determinant of the lift reduces to
+`det U ≠ 0`, hence is a unit, hence the lift is invertible. Conjugating is
+harmless for the rest of the statement precisely because clause 3 is
+charpoly-valued and charpolys are conjugation-invariant — which is the
+formulation paying for itself a second time.
+
+**DECOMPOSITION (the recommended cut; each item is independently
+dispatchable).**
+
+1. `exists_hilbertGLTwoLift_of_surjective` — a matrix over `k` that is
+   invertible lifts to an invertible matrix over the finite local `A`
+   along the surjection `πA`. Pure commutative algebra, no Galois theory.
+2. `exists_hilbertTeichmullerSection` — the `F`-level twin of
+   `exists_teichmuller_section`; a multiplicative set-theoretic section of
+   `πA` on Teichmueller roots. Verbatim from the `ℚ` level, and the
+   hoisted `teichmullerRootSet` block above already supplies its inputs.
+3. `hilbertFramePolyEval_comp_algebraMap` — six lines, the twin of
+   `framePolyEval_comp_algebraMap`, deliberately not ported earlier
+   because nothing consumed it; item 5 does.
+4. `isHilbertHardlyRamified_of_subring_entries` — the `F`-level twin of
+   `isHardlyRamified_of_subring_entries`. THIS IS THE EXPENSIVE ONE: about
+   340 lines at the `ℚ` level, and NOT a transcription, because
+   `IsHilbertHardlyRamified` has different fields from `IsHardlyRamified`
+   (determinant through `Field.absoluteGaloisGroup.map`, and local
+   conditions indexed by places `w` of `F` rather than by rational
+   primes). Budget it as a task of its own.
+5. `hilbertFrameLevels_repClause_ker` — the `F`-level twin of
+   `frameLevels_repClause_ker`, over items 3 and 4 plus the `F`-level
+   twins of `exists_framedGaloisRep_of_matrices` and
+   `exists_framedGaloisRep_transport`.
+
+With 1-5 in place this leaf is the `ℚ`-level assembly of
+`frameLevels_classification` (about 75 lines) with the conjugation lift of
+item 1 spliced in before `f` is built.
+
+Note finally that `hfin` and `hglue` are passed in but are used by NOTHING
+in the `ℚ`-level assembly; as there, the only place in this cut that could
+need them is the descent leaf, item 5. -/
 theorem hilbertFrameLevels_classification {ρbar : GaloisRep ℚ k V}
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
