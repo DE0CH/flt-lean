@@ -294,7 +294,9 @@ import Mathlib.RingTheory.Ideal.Quotient.Index
 import Mathlib.RingTheory.Frobenius
 import Mathlib.RingTheory.Invariant.Galois
 import Mathlib.NumberTheory.NumberField.Ideal.Basic
--- proof-only (2026-07-25, `exists_heckeField_mem_range_of_eigensystem`); note
+-- proof-only (2026-07-25, for the Carayol/Shimura sub-cut, RETIRED
+-- 2026-07-26 — kept because the `ULift`/`IntermediateField` material is
+-- cheap and other proofs in this module may reach for it); note
 -- `Mathlib.Algebra.Field.ULift` is already `public import`ed far above.
 import Mathlib.Algebra.Module.ULift
 import Mathlib.FieldTheory.IntermediateField.Adjoin.Basic
@@ -610,17 +612,19 @@ module of the Moret–Bailly Hilbert–Blumenthal abelian variety):
 VACUITY AUDIT (2026-07-25, cluster sweep — audit only, the structure
 was NOT changed).  Two findings, both about `hecke₀`/`modular₀`:
 
-* *The seed is currently INFORMATIONALLY DEAD.*  Repo-wide, this type
-  appears in exactly two hypothesis positions: `seed` in
-  `exists_heckePackage_of_seed`, which forwards it unchanged to
-  `exists_heckeEigensystem_of_congruentSeed`, where the binder is
-  `_seed` and is NOT CONSUMED.  Nothing else mentions it.  So dropping
-  the `Nonempty (MoretBaillySeed …)` conjunct from
-  `exists_moretBailly_seed_of_five_le`'s conclusion would break no
-  downstream proof (only `F`, `hFtr`, `hFgal`, `hirrF` are used), and
-  the whole automorphic joint below it —
-  `exists_heckeEigensystem_of_hilbertBlumenthalPoint` and its two
-  sorried sub-joints — would become free-floating.
+* *The seed WAS informationally dead, and is no longer* (updated
+  2026-07-26).  Repo-wide this type appears in exactly two hypothesis
+  positions: `seed` in `exists_heckePackage_of_seed`, which forwards it
+  unchanged to `exists_heckeEigensystem_of_congruentSeed`.  Until
+  2026-07-26 the binder there was `_seed` and was NOT CONSUMED, because
+  that node's conclusion was derivable from the shape of `charFrob`
+  alone.  The FAITHFULNESS REPAIR of that node made it a genuine
+  `R = 𝕋` citation whose classical discharge consumes the seed's
+  modularity essentially (it is the automorphic input of the patching
+  argument), so the binder is now `seed` and the audit finding below
+  no longer applies: dropping the `Nonempty (MoretBaillySeed …)`
+  conjunct from `exists_moretBailly_seed_of_five_le`'s conclusion would
+  now remove the modularity input of the whole cut.
 * *`modular₀` adds nothing to `matchℓ`.*  In the only inhabitation
   (`exists_moretBailly_seed_of_five_le`), `E₀`, `hecke₀`, `ψ₀` come
   from `exists_heckeEigensystem_of_hilbertBlumenthalPoint`, which is
@@ -4886,7 +4890,7 @@ joints are one fact stated twice: from `(pt.P w).coeff 0 = (Nw : pt.D)`,
 demands beyond `redΛ`-surjectivity onto the FINITE field `pt.kp`, itself
 free (any finite field is a residue field of a number field, so `E₁`,
 `Λ`, `jΛ` carry no algebraicity content here, unlike in the sibling
-`exists_heckeField_mem_range_of_eigensystem` where the target is
+`exists_heckeEigensystem_of_congruentSeed` where the target is
 `ℚ̄_ℓ`).  `pt.irreduciblep`, `pt.dihedralp` and `pt.L` are consumed by
 neither joint.
 
@@ -5096,7 +5100,7 @@ reducing onto `pt.kp`" — the clause whose intended reading was that the
 Hecke eigenvalues of the theta series are ALGEBRAIC — is available for
 EVERY finite field with no arithmetic input at all.  Algebraicity is a
 real constraint only against a characteristic-zero target such as `ℚ̄_ℓ`
-(as in `exists_heckeField_mem_range_of_eigensystem`), never against a
+(as in `exists_heckeEigensystem_of_congruentSeed`), never against a
 finite one. -/
 theorem exists_numberField_surjection_of_finite (k : Type u) [Field k]
     [Finite k] :
@@ -6186,15 +6190,43 @@ assembly over three sub-leaves cut at the literature joints:
   MLT, and it is pure Galois theory — Chebotarev over `ℚ`,
   Brauer–Nesbitt, and compatibility of `charFrob` with base change.
 * (a) `exists_heckeEigensystem_of_congruentSeed` — `R = 𝕋` over `F`
-  for the relevant deformation problem: the Taylor–Wiles/Kisin
-  patching argument over the totally real base, whose output is the
-  raw `ℓ`-adic Hecke eigensystem `(aF, dF)` of the Hilbert newform
-  attached to `ρ|_{G_F}`, together with the coefficient embedding
-  `ιO : O ↪ ℚ̄_ℓ`.
-* (b) `exists_heckeField_of_eigensystem` — Carayol local-global
-  normalization + Shimura rationality: the `ℚ̄_ℓ`-valued eigensystem
-  is defined over a NUMBER FIELD `E` (the Hecke field), through a
-  place `ψℓ` of `E` over `ℓ`.
+  for the relevant deformation problem, TOGETHER WITH the rationality
+  it delivers: the Taylor–Wiles/Kisin patching argument over the
+  totally real base identifies `ρ|_{G_F}` with a Hilbert newform, and
+  the Hecke algebra `𝕋` is generated over `ℤ` by the `T_w`, so the
+  eigensystem is automatically defined over a NUMBER FIELD `E` — the
+  Hecke field.  Its output is therefore `E`, an embedding
+  `ψℓ : E ↪ ℚ̄_ℓ`, a GENUINE level/bad set `badF` containing the
+  places over `ℓ`, and the `E`-valued eigenvalue function `a` with
+  `ιO(tr ρ(Frob_w)) = ψℓ (a w)` away from `badF`.
+* (b) `charFrob_map_eq_heckePolynomial_of_heckeTrace` — the
+  DETERMINANT half of Carayol's normalization, which is PROVEN and
+  carries no automorphic input at all: away from `ℓ` the cyclotomic
+  determinant clause of `hρ` forces the constant coefficient to be the
+  rational integer `Nw`
+  (`charFrob_baseChange_coeff_zero_eq_absNorm`), so the trace datum of
+  (a) already assembles the full Hecke polynomial
+  `X² − a_w·X + Nw` over `E`.
+
+RESTATEMENT OF (a) (2026-07-26 — a FAITHFULNESS REPAIR of the cut, not
+a new decomposition; see that node's docstring for the audit it
+replaces).  (a) used to output a RAW `ℚ̄_ℓ`-valued pair `(aF, dF)` with
+`badF` existentially quantified and no tie to any Hecke datum; it was
+consequently derivable from the shape of `charFrob` alone, and the
+proof took `badF := ∅`.  The rationality was then demanded back from a
+separate "Shimura rationality" citation downstream — which
+DOUBLE-COUNTED, since `R = 𝕋` already delivers it, and which handed
+that citation an instantiation at which it was classically FALSE (the
+traces at the ramified places are not Hecke eigenvalues).  The repair
+puts the rationality and the level where they belong, in (a); the
+five downstream nodes that existed only to manufacture them
+(`exists_heckeField_of_eigensystem`,
+`exists_heckeField_mem_range_of_eigensystem`,
+`exists_heckeSubfield_of_eigenvalues`,
+`exists_heckeSubfield_of_determinants`,
+`exists_heckeGenerators_of_eigenvalues`, `isIntegral_heckeEigenvalues`)
+were DELETED, two of them sorried leaves that no argument could have
+closed.
 
 PATCHING-GENERALIZATION AUDIT (2026-07-24, the question this cut was
 dispatched to answer).  Can (a) be discharged by generalizing
@@ -6647,10 +6679,13 @@ EXISTENTIALLY upstream be NARROWED by a hypothesis of the form
 `∀ w, (p : 𝓞 F) ∈ w.asIdeal → w ∈ badF`: the exceptional set of a matching
 clause can always be enlarged by the places over `p` for free, so demanding
 that it already contains them costs the consumer nothing while removing from
-the citation a claim it has no right to make.  Two nodes below are narrowed
-this way — `exists_heckeSubfield_of_determinants` (`hbadℓ`, the places over
-`ℓ`) and `exists_threeadic_realization_of_heckePackage` (`hbad2`, `hbad3`,
-`hbadℓ`, the places over `2`, `3` and `ℓ`).
+the citation a claim it has no right to make.  One node below is narrowed
+this way — `exists_threeadic_realization_of_heckePackage` (`hbad2`, `hbad3`,
+`hbadℓ`, the places over `2`, `3` and `ℓ`).  (A second, the deleted
+`exists_heckeSubfield_of_determinants`, was narrowed the same way at `ℓ`
+before the 2026-07-26 repair of `exists_heckeEigensystem_of_congruentSeed`
+made it redundant: that node now produces a `badF` already containing the
+places over `ℓ`.)
 
 RELOCATED 2026-07-26 from its original position further down this module:
 the `ℓ`-adic narrowing of the Carayol/Shimura sub-cut needs it well before
@@ -6673,11 +6708,10 @@ above a fixed nonzero integer** (PROVEN 2026-07-26; the discharge form of
 This is the whole cost of the `hbad2`/`hbad3`/`hbadℓ` narrowings below:
 because a matching clause `∀ w ∉ badF, …` only WEAKENS as `badF` grows, the
 consumer can always move to `badF'` and hand the citation the hypotheses it
-now demands. It is applied once inside `exists_heckePackage_of_seed` (at
-`ℓ`, for the determinant sub-leaf) and three times in a row at the
-`3`-adic call site, at `2`, `3` and `ℓ`; the earlier conclusions survive the
-later enlargements because each `badF'` contains its predecessor. Nothing
-downstream assumes more. -/
+now demands. It is applied three times in a row at the `3`-adic call site,
+at `2`, `3` and `ℓ`; the earlier conclusions survive the later enlargements
+because each `badF'` contains its predecessor. Nothing downstream assumes
+more. -/
 theorem exists_finset_superset_of_places_mem {F : Type*} [Field F]
     [NumberField F] (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
     (a : NumberField.RingOfIntegers F) (ha : a ≠ 0) :
@@ -6701,15 +6735,38 @@ characteristic polynomial is the Hecke polynomial
 `X² − a_w·X + Nw` of a Hilbert newform, read inside `ℚ̄_ℓ` through a
 coefficient embedding `ιO` of the lift's coefficient ring.
 
-The conclusion is deliberately stated in the RAW `ℚ̄_ℓ`-valued form —
-the eigenvalue function `aF` (classically `a_w`, the `T_w`-eigenvalue
-of the newform) and the constant-coefficient function `dF`
-(classically the absolute norm `Nw`, forced by the cyclotomic
-determinant of `hρ`) — with no claim that these values are ALGEBRAIC.
-The algebraicity is Shimura's rationality theorem and is the content
-of the next sub-leaf (`exists_heckeField_of_eigensystem`); keeping the
-two apart is what makes this leaf exactly the `R = 𝕋` statement and
-that one exactly the Carayol/Shimura normalization.
+RESTATED 2026-07-26 — READ THE FAITHFULNESS REPAIR AT THE END OF THIS
+DOCSTRING BEFORE COMPARING WITH ANY OLDER DESCRIPTION.  The conclusion
+now carries the three things `R = 𝕋` actually delivers and the old raw
+form did not:
+
+* a NUMBER FIELD `E` with an embedding `ψℓ : E ↪ ℚ̄_ℓ` — the Hecke
+  field of the attached newform, together with the place of `E` over
+  `ℓ` at which its `λ`-adic realization is `ρ|_{G_F}`.  Rationality is
+  not a theorem downstream of `R = 𝕋`; it is PART of what `R = 𝕋`
+  asserts, because `𝕋` is generated over `ℤ` by the `T_w` and the
+  point of `𝕋` cut out by `ρ|_{G_F}` therefore has values in a finite
+  extension of `ℚ`.
+* a GENUINE level/bad set: `badF` is required to contain every place
+  over `ℓ`.  At `w | ℓ` the representation is ramified and
+  `charFrob w` is the charpoly of an arbitrarily chosen Frobenius
+  LIFT, not a Hecke polynomial — the cyclotomic character is ramified
+  there and takes values in an open subgroup of `ℤ_[ℓ]ˣ`, almost all
+  of which are transcendental over `ℚ`.  Quantifying the conclusion
+  over those places would make it false for the intended objects.
+* the EIGENVALUE (trace) datum only.  The constant coefficient needs
+  no automorphic input whatever: away from `ℓ` the cyclotomic
+  determinant clause of `hρ` forces it to be the rational integer `Nw`
+  (`charFrob_baseChange_coeff_zero_eq_absNorm`), and the assembly
+  `charFrob_map_eq_heckePolynomial_of_heckeTrace` below reconstructs
+  the full Hecke polynomial `X² − a_w·X + Nw` from the trace.  So the
+  citation asks for exactly the automorphic content and nothing else.
+
+The coefficient embedding `ιO : O ↪ ℚ̄_ℓ` is now a HYPOTHESIS rather
+than part of the conclusion: it is generic commutative algebra
+(`exists_injective_ringHom_algebraicClosure_of_moduleFinite` above,
+applied by the consumer) and has no business inside a citation of
+Kisin–Taylor.
 
 Classically: the seed `σ` is modular (`seed.modular₀`) and residually
 `ρbar|_{G_F}` (`seed.residual₀`); by `hcong` the lift `ρ|_{G_F}` has
@@ -6765,860 +6822,171 @@ hypothesis set (an irreducible hardly ramified mod-`ℓ`
 representation, `ℓ ≥ 5`) is classically unsatisfiable (headline
 below), so the statement is classically true for every package.
 
-FORMAL-CONTENT AUDIT (2026-07-25 — READ THIS BEFORE BUILDING ON THIS
-NODE; it is the reason the node is PROVEN rather than sorried).  The
-statement as cut above does NOT formally capture `R = 𝕋`: its
-conclusion is derivable from the SHAPE of `charFrob` alone, with no
-arithmetic input at all, and the proof below does exactly that.  The
-reason is that the conclusion quantifies `aF`, `dF` and `badF`
-existentially with no tie to any Hecke datum, and
-`(ρ|_{G_F}).charFrob w` is by definition the characteristic polynomial
-of a Frobenius endomorphism of the free rank-`2` module `Fin 2 → O`,
-hence MONIC OF DEGREE `2`; so `aF w := −ιO((charFrob w).coeff 1)` and
-`dF w := ιO((charFrob w).coeff 0)` satisfy the required identity at
-EVERY place (`badF := ∅`), for any injective `ιO`, whatever `ρ` is.
-The only ingredient beyond that shape is the existence of an injective
-`ιO : O →+* ℚ̄_ℓ`, which is generic commutative algebra
-(`exists_injective_ringHom_algebraicClosure_of_moduleFinite` above) and
-consumes only module-finiteness of `O` over `ℤ_ℓ` and `hZinj`.
+FAITHFULNESS REPAIR (2026-07-26 — THIS IS WHAT THE PRESENT STATEMENT
+IS, AND WHY IT IS SORRIED WHERE THE OLD ONE WAS PROVEN).  The node used
+to conclude
 
-The binder names below make the gap MECHANICALLY visible: every
-hypothesis the proof does not consume is underscore-prefixed, and that
-list — `_hℓ5`, `_hρ`, `_hρbar`, `_hirr`, `_hπsurj`, `_hπ`, `_hFtr`,
-`_hFgal`, `_hirrF`, `_seed`, `_hcong` — is precisely the arithmetic
-input (`ℓ ≥ 5`, hard ramification, residual irreducibility, the
-Moret–Bailly seed and the residual congruence) that an honest `R = 𝕋`
-statement would have to consume and this one does not.
+    ∃ badF aF dF ιO (_ : Injective ιO), ∀ w ∉ badF,
+      (charFrob w).map ιO = X² − C (aF w)·X + C (dF w)
 
-Consequences, recorded for the cut's owner:
+with `aF`, `dF` and `badF` all existentially quantified and tied to no
+Hecke datum.  That conclusion is derivable from the SHAPE of `charFrob`
+alone: `(ρ|_{G_F}).charFrob w` is the characteristic polynomial of an
+endomorphism of the free rank-`2` module `Fin 2 → O`, hence monic of
+degree `2`, so `aF w := −ιO((charFrob w).coeff 1)`,
+`dF w := ιO((charFrob w).coeff 0)` and `badF := ∅` discharged it for
+ANY `ρ` whatsoever.  Nothing of Kisin/Taylor/Fujiwara was formalized by
+it; every arithmetic hypothesis was underscore-prefixed, unused.
 
-* nothing of Kisin/Taylor/Fujiwara is formalized by this node.  The
-  literature paragraphs above document what the node was INTENDED to
-  carry; they are now documentation of a gap that has moved, not of a
-  formalized theorem.
-* the entire arithmetic burden of the modularity-lifting cut now rests
-  on the sibling `exists_heckeField_of_eigensystem`, whose hypothesis
-  `hshape` is satisfiable by the junk eigensystem produced here — so
-  that node is no longer merely "Shimura rationality": it is
-  rationality PLUS the `R = 𝕋` content that this statement fails to
-  demand, and its own docstring's abstract-quantification caveat now
-  applies in full.
-* a restatement that would actually pin `R = 𝕋` must tie the
-  eigensystem to a Hecke datum rather than existentially quantifying
-  it — e.g. output a Hilbert-newform carrier (a structure with the
-  eigenvalue system, level and weight of an actual newform over `F`)
-  whose eigensystem is `aF`, or demand at minimum that `aF` be the
-  `ψ`-image of a NUMBER-FIELD-valued system and that `dF w = Nw`
-  (which is arithmetic: it needs the cyclotomic determinant of `hρ`
-  transported to `F`-places).  Both changes alter this node's
-  conclusion type, hence the `obtain` pattern in
-  `exists_heckePackage_of_seed` and the hypothesis list of
-  `exists_heckeField_of_eigensystem`, so they are a cut-level
-  restatement and were NOT performed unilaterally here.
+Two separate defects followed, and both are repaired here rather than
+downstream:
+
+1. *The rationality was DOUBLE-COUNTED.*  The raw form deferred
+   algebraicity of the eigenvalues to a separate "Shimura rationality"
+   citation, as if it were a theorem downstream of `R = 𝕋`.  It is not:
+   `𝕋` is generated over `ℤ` by the Hecke operators `T_w`, so a point
+   of `𝕋` has values in a finite extension of `ℚ` by construction, and
+   an honest `R = 𝕋` conclusion already carries the Hecke field.
+   Asking for it twice created a leaf nobody could close.
+2. *The bad set was `∅`.*  The downstream citations were therefore
+   instantiated at EVERY place of `F`, including the places over `2`
+   and `ℓ` where `charFrob` is the charpoly of an arbitrary Frobenius
+   LIFT of a ramified representation and is classically not algebraic.
+   At that instantiation those citations were FALSE for the intended
+   objects, and no appeal to Shimura could have discharged them.
+
+Five downstream declarations existed only to manufacture what (a) now
+supplies, and were DELETED as part of this repair:
+`exists_heckeField_of_eigensystem`,
+`exists_heckeField_mem_range_of_eigensystem`,
+`exists_heckeSubfield_of_eigenvalues`,
+`exists_heckeSubfield_of_determinants` (a vacuous node),
+`exists_heckeGenerators_of_eigenvalues` and `isIntegral_heckeEigenvalues`
+(both SORRIED leaves with no admissible discharge: the second, in
+particular, was asked to prove `IsIntegral ℚ (aF w)` from hypotheses
+that pin `aF w` inside `ιO O ⊆ ℚ̄_ℓ`, where integrality over `ℚ_[ℓ]` is
+orthogonal to integrality over `ℚ`).  Their disappearance is a fully
+successful outcome of the repair, not a loss: they were the symptom.
+
+FORMAL-CONTENT AUDIT of the NEW statement (2026-07-26).  It is NOT
+discharged by the shape of `charFrob`, and it has no junk witness:
+
+* `E` must be a `NumberField`, so `Set.range ψℓ` is countable and
+  algebraic over `ℚ`, while `ιO(tr ρ(Frob_w))` ranges over `ιO O`,
+  which is algebraic over `ℚ_[ℓ]` and generically transcendental over
+  `ℚ`.  No choice of `E`, `ψℓ`, `a` discharges the trace clause for an
+  arbitrary `ρ`.
+* `badF` is a `Finset`, so the clause cannot be evaded by declaring
+  every place bad; the assertion is genuinely about cofinitely many
+  places.
+* Consequently every hypothesis is retained WITHOUT an underscore, and
+  the classical content — modularity of the seed, the residual
+  congruence, the Taylor–Wiles conditions carried by `hρ`/`hirrF` — is
+  what a discharge must consume.  Route (ii) (collapse: the hypothesis
+  package is classically unsatisfiable at `ℓ ≥ 5`, this module's
+  headline) remains available as before.
+
+MISSING MACHINERY, in dependency order, for a discharge along route
+(i): (1) Hilbert modular forms of parallel weight `2` over a totally
+real field; (2) the Hecke operators `T_w` and the Hecke algebra of a
+given level, acting on a finite-dimensional space of cusp forms with a
+`ℚ`-rational structure — which is exactly what makes the eigensystem
+number-field-valued and is the reason `E` belongs in THIS conclusion;
+(3) Carayol/Taylor attachment of `λ`-adic representations with
+local-global compatibility; (4) the Taylor–Wiles–Kisin patching
+argument over `F`, i.e. `R = 𝕋` proper.  The mathlib pin has none of
+(1)–(4) (`grep Hilbert` over `Mathlib/NumberTheory/`: only Hilbert's
+theorem 90 and Hilbert basis), and `~/cs/FLT` has no vendorable
+substitute.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean` — respected: the proof below uses only
-this module's own helpers and mathlib. -/
+`Modularity/Interface.lean`. -/
 theorem exists_heckeEigensystem_of_congruentSeed
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (_hℓ5 : 5 ≤ ℓ)
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
     [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
     [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
     (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
     {ρ : GaloisRep ℚ O (Fin 2 → O)}
     (hrank : Module.rank O (Fin 2 → O) = 2)
-    (_hρ : IsHardlyRamified hℓodd hrank ρ)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
     [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (_hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (_hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (_hπsurj : Function.Surjective π)
-    (_hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
       (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
         ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
     (F : Type u) [Field F] [NumberField F]
-    (_hFtr : NumberField.IsTotallyReal F) (_hFgal : IsGalois ℚ F)
-    (_hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (_seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F)))
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F)))
     (badρ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
-    (_hcong : ∀ w ∉ badρ,
+    (hcong : ∀ w ∉ badρ,
       ((ρ.map (algebraMap ℚ F)).charFrob w).map π =
-        (ρbar.map (algebraMap ℚ F)).charFrob w) :
-    ∃ (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
-      (aF dF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
-        AlgebraicClosure ℚ_[ℓ])
-      (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (_ : Function.Injective ιO),
-      ∀ w ∉ badF,
-        ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-          X ^ 2 - C (aF w) * X + C (dF w) := by
-  classical
-  -- (i) the coefficient embedding `ιO : O ↪ ℚ̄_ℓ` (generic commutative
-  -- algebra: `O` is a `ℤ_ℓ`-finite domain receiving `ℤ_ℓ` injectively)
-  obtain ⟨ιO, hιO⟩ :=
-    exists_injective_ringHom_algebraicClosure_of_moduleFinite (ℓ := ℓ) O hZinj
-  -- (ii) the eigensystem, read off the Frobenius characteristic
-  -- polynomials themselves: they are monic of degree `2`, so their
-  -- `ιO`-images have the Hecke shape at EVERY place (see the
-  -- FORMAL-CONTENT AUDIT above — this is all the statement demands)
-  refine ⟨∅, fun w => -(ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1)),
-    fun w => ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 0), ιO, hιO,
-    fun w _ => ?_⟩
-  exact charFrob_map_eq_quadratic_of_rank_two w (ρ.map (algebraMap ℚ F))
-    hrank ιO
-
-/-! ### The Carayol/Shimura sub-cut (2026-07-25)
-
-Sub-leaf (b) of the modularity-lifting cut —
-`exists_heckeField_of_eigensystem` below — is now a PROVEN assembly over
-two sharply-stated inputs and one proven bridge, cut along the joint the
-classical literature itself uses:
-
-* `exists_heckeField_mem_range_of_eigensystem` — **Shimura rationality**
-  in its minimal form: the EIGENVALUE function `aF` takes its values in
-  a single number field, presented as membership in the range of one
-  embedding `ψℓ : E ↪ ℚ̄_ℓ`.  This is the only genuinely automorphic
-  input of sub-leaf (b): nothing else in the package forces a family of
-  `ℚ̄_ℓ`-values to be algebraic.
-* `cyclotomicCharacter_adicArithFrob_base_eq_absNorm` — the **place-wise
-  cyclotomic normalization over the base `F`**: at a place `w` of `F`
-  not over `ℓ`, the `ℓ`-adic cyclotomic character of `G_ℚ` takes the
-  value `Nw = ‖w‖` on the global image of the arithmetic Frobenius at
-  `w`.  This is pure algebraic number theory (unramifiedness of the
-  cyclotomic character away from `ℓ`, plus `Frob_w(ζ) = ζ^{Nw}`), and it
-  is the exact `F`-analogue of the PROVEN rational-prime lemma
-  `cyclotomicCharacter_adicArithFrob_eq_natCast` further down this
-  module.  **PROVEN 2026-07-25** by exactly that route — mirroring the
-  rational proof with the residue cardinality `Nw` in place of `q` —
-  over the new roots-of-unity brick
-  `adicArithFrob_rootsOfUnity_pow_base`.  So sub-leaf (b-ii) is CLOSED,
-  and sub-leaf (b) now rests on the single remaining citation
-  `exists_heckeField_mem_range_of_eigensystem`.
-* `charFrob_baseChange_coeff_zero_eq_absNorm` — PROVEN from the previous
-  item: the DETERMINANT coefficient of the base-changed Frobenius
-  charpoly is the rational integer `Nw`.  So the `d`-half of sub-leaf
-  (b) needs no automorphic input away from `ℓ`: it descends to `ℚ ⊆ E`
-  by the cyclotomic determinant clause of `hρ` alone.
-
-The residual asymmetry is honest: at the finitely many places `w | ℓ`
-the cyclotomic character IS ramified, so `dF w` (which the shape
-hypothesis pins to `det ρ(Frob_w)`) carries no rationality of its own,
-and the citation above must supply those values too — that is the
-second clause of `exists_heckeField_mem_range_of_eigensystem`.  In the
-intended instantiation the bad set `badF` produced by `R = 𝕋` already
-contains every place over `ℓ`, so that clause is vacuous there.
-
-REFINEMENT (2026-07-25, second pass): sub-leaf (b-i) itself has since
-been split along exactly that asymmetry and PROVEN as an assembly over
-its two halves, so the two clauses now have separate owners and, more
-importantly, separately recorded statuses:
-
-* `exists_heckeSubfield_of_eigenvalues` — the EIGENVALUE half, i.e.
-  Shimura rationality proper.  This is the one genuinely automorphic
-  citation of the whole modularity-lifting cut.
-* `exists_heckeSubfield_of_determinants` — the DETERMINANT half at the
-  places over `ℓ`.  This is NOT a classical theorem: its docstring
-  records that the clause is false for the intended objects whenever
-  `badF` omits a place over `ℓ`, and vacuous exactly when it does not.
-  **NARROWED AND CLOSED 2026-07-26**: the node now carries the
-  hypothesis `hbadℓ : ∀ w, (ℓ : 𝓞 F) ∈ w.asIdeal → w ∈ badF`, which
-  deletes exactly the false instances, and is proven vacuously with
-  `E := ⊥`.  The hypothesis is discharged for free at
-  `exists_heckePackage_of_seed`, which enlarges the existentially
-  chosen `badF` by the places over `ℓ`
-  (`exists_finset_superset_of_places_mem`) — the same repair
-  `exists_threeadic_realization_of_heckePackage` received for the
-  places over `3`.  So the whole modularity-lifting cut now rests on
-  the single citation `exists_heckeSubfield_of_eigenvalues`.
-
-Both are stated as membership in a single FINITE-DIMENSIONAL
-intermediate field of `ℚ/ℚ̄_ℓ` rather than as an abstract number field
-plus an embedding: the intermediate-field form is what Shimura's
-theorem literally says, and it removes the type-construction and
-universe packaging from the citation.  The packaging — compositum of
-the two intermediate fields, `ULift` into `Type u`, and the
-`NumberField` instance — is discharged formally in
-`exists_heckeField_mem_range_of_eigensystem` below.
-
-THIRD PASS (2026-07-26): sub-leaf (b-i-a) —
-`exists_heckeSubfield_of_eigenvalues`, Shimura rationality proper — is
-itself now a PROVEN assembly over the two independent classical inputs
-it had been bundling:
-
-* `exists_heckeGenerators_of_eigenvalues` (b-i-a-1) — FINITE
-  GENERATION: finitely many good places already generate the field of
-  eigenvalues (finite generation of the Hecke algebra of a fixed weight
-  and level; effectively the Sturm bound).
-* `isIntegral_heckeEigenvalues` (b-i-a-2) — ALGEBRAICITY: each single
-  eigenvalue `aF w` is an algebraic number (the `ℤ`-integral
-  characteristic polynomials of the Hecke operators on the `ℚ`-rational
-  space of cusp forms).
-
-Neither implies the other, and neither alone gives the parent —
-`√2, √3, √5, …` are all algebraic of degree `2` and lie in no finite
-extension of `ℚ`, while a one-element generating set with a
-transcendental value satisfies finite generation.  Together they give
-the parent by `IntermediateField.finiteDimensional_adjoin`.  This is a
-cut along the literature's own joint (Hecke integrality vs. finite
-generation of the Hecke algebra) and NOT a weakening: the conjunction
-of the two sub-leaves is strictly stronger than the parent, since it
-also names the generators.
--/
-
-/-- **Finite generation of the Hecke field of the Hilbert-newform
-eigensystem** (sorry node; sub-leaf (b-i-a-1) — the FINITENESS half of
-Shimura rationality): finitely many good places already generate the
-field of eigenvalues.  Concretely there is a finite set `s` of places
-of `F` disjoint from the bad set such that every `aF w` with `w ∉ badF`
-lies in the subfield of `ℚ̄_ℓ` generated over `ℚ` by the finitely many
-values `aF '' s`.
-
-Classically this is the finite generation of the Hecke algebra: the
-Hecke algebra `𝕋 = ℤ[T_w : w ∤ 𝔫]` of parallel weight `2` and fixed
-level `𝔫` over `F` acts faithfully on the FINITE-DIMENSIONAL space of
-Hilbert cusp forms of that weight and level, so it is a finitely
-generated `ℤ`-module and already finitely many `T_w` generate it — the
-effective form of this being that the Hecke operators below the Sturm
-bound suffice.  Applying the eigensystem character `λ` of the newform
-`f` attached to `ρ|_{G_F}` then gives
-`a_w = λ(T_w) ∈ ℚ(λ(T_{w₁}), …, λ(T_{wₙ}))` for every good `w`, which
-through Carayol's local-global compatibility (which identifies `aF w`
-with the image of `a_w` on the nose, place by place) is exactly the
-statement here.
-
-WHY THIS IS SPLIT OFF FROM THE PARENT (2026-07-26): see the section
-note above.  The parent bundled two independent classical inputs, and
-bundling them hid which half a would-be discharge actually needs.  This
-half is the one that says "ONE field", and it is the half that a
-finiteness theorem — not a rationality theorem — discharges.
-
-NOTE ON `s`: the generating set is demanded to consist of GOOD places
-(`∀ w ∈ s, w ∉ badF`).  Without that clause the leaf would be
-discharged by generators at which `hshape` says nothing, and the parent
-could not feed them to the algebraicity sub-leaf, which is stated only
-away from `badF`.  The clause costs the citation nothing — the
-classical generators are Hecke operators at good places by
-construction.
-
-PIN AUDIT (inherited from the parent, unchanged): the mathlib pin has
-no Hilbert modular forms and no Hecke algebras over a totally real
-base, so no part of this statement reduces to library material.
-
-SOUNDNESS AUDIT (inherited from the parent, unchanged): for the
-intended instantiation this is finite generation of the Hilbert Hecke
-algebra; for an abstract `(aF, dF)` merely satisfying `hshape` the
-abstract-quantification caveat applies IN FULL FORCE, and the statement
-survives only by the collapse route (the hypothesis package — an
-irreducible hardly ramified mod-`ℓ` representation with `ℓ ≥ 5` — is
-classically unsatisfiable, which is this module's headline).  The full
-hypothesis list is retained DELIBERATELY.
-
-INSTANTIATION DEFECT (inherited from the parent, unchanged): the only
-supplier, `exists_heckeEigensystem_of_congruentSeed`, is formally empty
-and hands `badF := ∅`.  The fix is upstream, not here.
-
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
-theorem exists_heckeGenerators_of_eigenvalues
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (F : Type u) [Field F] [NumberField F]
-    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
-    (aF dF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
-      AlgebraicClosure ℚ_[ℓ])
-    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
-    (hshape : ∀ w ∉ badF,
-      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-        X ^ 2 - C (aF w) * X + C (dF w)) :
-    ∃ s : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
-      (∀ w ∈ s, w ∉ badF) ∧
-      ∀ w ∉ badF, aF w ∈ IntermediateField.adjoin ℚ
-        (aF '' (s : Set (HeightOneSpectrum (NumberField.RingOfIntegers F)))) :=
-  sorry
-
-/-- **Algebraicity of the Hilbert-newform Hecke eigenvalues** (sorry
-node; sub-leaf (b-i-a-2) — the ALGEBRAICITY half of Shimura
-rationality): each single eigenvalue `aF w` of the modular lift
-`ρ|_{G_F}`, at a place `w` outside the bad set, is an algebraic number.
-
-Classically: `aF w` is the `T_w`-eigenvalue of the Hilbert newform `f`
-of parallel weight `2` over `F` attached to `ρ|_{G_F}`, and `T_w` acts
-on the `ℚ`-rational space of Hilbert cusp forms of `f`'s weight and
-level — a finite-dimensional `ℚ`-vector space — preserving a `ℤ`-lattice.
-So the characteristic polynomial of `T_w` on that space has `ℤ`
-coefficients, and `a_w`, being one of its roots, is an algebraic
-integer.  (This is a strictly per-place statement: it says nothing
-about the eigenvalues at different places lying in a COMMON field,
-which is the separate sub-leaf `exists_heckeGenerators_of_eigenvalues`
-above.)
-
-The conclusion is stated as `IsIntegral ℚ (aF w)` — over the field `ℚ`
-integrality and algebraicity coincide, and `IsIntegral ℚ` is the form
-`IntermediateField.finiteDimensional_adjoin` consumes in the parent's
-assembly.  The sharper classical fact `IsIntegral ℤ (aF w)` is TRUE and
-deliberately not demanded: the parent needs only algebraicity, and
-demanding `ℤ`-integrality would put the Ramanujan-normalization
-bookkeeping into a citation that does not use it.
-
-WHY THIS IS SPLIT OFF FROM THE PARENT (2026-07-26): see the section
-note above.  Algebraicity alone does NOT give the parent — the family
-`√2, √3, √5, …` is algebraic and lies in no finite extension of `ℚ` —
-and the parent's own docstring had recorded the two halves as one
-citation, which hid that a proof of algebraicity would leave the
-finiteness half entirely open.
-
-PIN AUDIT (inherited from the parent, unchanged): the mathlib pin has
-no Hilbert modular forms and no Hecke algebras over a totally real
-base, so no part of this statement reduces to library material.
-
-SOUNDNESS AUDIT (inherited from the parent, unchanged): for an abstract
-`(aF, dF)` merely satisfying `hshape` the abstract-quantification
-caveat applies IN FULL FORCE — `hshape` determines `aF w` as
-`-ιO (charFrob w).coeff 1`, an element of `ιO O`, which is algebraic
-over `ℚ_[ℓ]` and NOT over `ℚ` — so the statement survives only by the
-collapse route.  The full hypothesis list is retained DELIBERATELY.
-
-INSTANTIATION DEFECT (inherited from the parent, unchanged): the only
-supplier, `exists_heckeEigensystem_of_congruentSeed`, is formally empty
-and hands `badF := ∅`, so at the instantiation that actually reaches
-this node the statement asserts algebraicity of the Frobenius traces at
-EVERY place of `F`, including the ramified ones.  The fix is upstream,
-not here.
-
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
-theorem isIntegral_heckeEigenvalues
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (F : Type u) [Field F] [NumberField F]
-    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
-    (aF dF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
-      AlgebraicClosure ℚ_[ℓ])
-    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
-    (hshape : ∀ w ∉ badF,
-      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-        X ^ 2 - C (aF w) * X + C (dF w)) :
-    ∀ w ∉ badF, IsIntegral ℚ (aF w) :=
-  sorry
-
-/-- **Shimura rationality for the Hilbert-newform eigensystem,
-intermediate-field form** (PROVEN 2026-07-26 as an assembly over the
-two halves of sub-leaf (b-i-a) — the STATEMENT IS UNCHANGED, what moved
-is where the burden sits; sub-leaf (b-i-a) is the ONLY genuinely
-automorphic input of the whole modularity-lifting cut): the
-eigenvalue function `aF` of the modular lift `ρ|_{G_F}` takes all its
-values, away from the bad set, inside ONE finite extension of `ℚ`
-sitting in `ℚ̄_ℓ` — the Hecke field of the attached Hilbert newform.
-
-Classically: `aF w` is the `T_w`-eigenvalue of the Hilbert newform `f`
-of parallel weight `2` over `F` attached to `ρ|_{G_F}` by the `R = 𝕋`
-sub-leaf.  Shimura's rationality theorem — the Hecke eigenvalues of a
-Hilbert newform generate a NUMBER field `E = ℚ(a_w : w)`, because the
-Hecke operators act on a finite-dimensional `ℚ`-rational space of cusp
-forms with `ℤ`-integral characteristic polynomials, and Galois
-conjugation permutes newforms — gives `E`; the ambient embedding is the
-place `λ | ℓ` at which the `λ`-adic realization of `f` is `ρ|_{G_F}`,
-which is why the statement can be phrased inside `ℚ̄_ℓ` with no
-embedding data of its own; Carayol's local-global compatibility at the
-unramified places is what makes the identification of `charFrob` with
-the Hecke polynomial hold place by place rather than merely after
-semisimplification, and hence makes `aF w` (read off the shape
-hypothesis `hshape`) equal to the image of `a_w` on the nose.
-
-WHY THE INTERMEDIATE-FIELD FORM IS THE SHARP ONE: the conclusion
-"`aF w` lies in a fixed finite extension of `ℚ` inside `ℚ̄_ℓ`" is
-literally Shimura's assertion.  The number-field-plus-embedding form of
-the parent leaf is equivalent to it (take `Set.range ψℓ` one way, a
-`ULift` of the intermediate field the other), but carries in addition a
-type construction and a universe lift, which are formal packaging and
-are now discharged in the parent rather than demanded of the citation.
-
-PIN AUDIT (inherited, re-verified 2026-07-25): the mathlib pin has no
-Hilbert modular forms and no Hecke algebras over a totally real base
-(`grep Hilbert` over `Mathlib/NumberTheory/`: only Hilbert's theorem 90
-and Hilbert basis), so no part of this statement can be reduced to
-library material.  Its only sound discharge is the construction of
-Hilbert-modular Hecke theory: in dependency order, (1) Hilbert modular
-forms of parallel weight `2` over a totally real field, (2) the Hecke
-operators `T_w` and the Hecke algebra acting on the cusp forms of a
-given level, (3) the `ℚ`-rational structure on that space together with
-integrality of the Hecke characteristic polynomials, (4) Shimura
-rationality itself, (5) Carayol/Taylor attachment of `λ`-adic Galois
-representations with local-global compatibility, and (6) the `R = 𝕋`
-identification tying `ρ|_{G_F}` to a newform.  Note that (6) is NOT
-among this leaf's hypotheses — nothing here says `ρ` is modular — so
-even a complete formalization of (1)–(5) does not by itself discharge
-this node; it is a citation whose modularity input arrives only through
-the intended instantiation.
-
-SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the intended
-instantiation this is Shimura rationality plus Carayol verbatim; for an
-abstract `(aF, dF)` merely satisfying `hshape` the
-abstract-quantification caveat applies IN FULL FORCE, since `hshape`
-determines `aF w` as `-ιO (charFrob w).coeff 1`, an element of `ιO O`,
-which is algebraic over `ℚ_[ℓ]` and NOT over `ℚ`; (ii) collapse — the
-hypothesis set (an irreducible hardly ramified mod-`ℓ` representation,
-`ℓ ≥ 5`) is classically unsatisfiable (headline below), so the
-statement is classically true for every package.  The full hypothesis
-list is retained DELIBERATELY: dropping `hρbar`/`hirr`/`hshape` would
-leave a statement about arbitrary `ℚ̄_ℓ`-valued families, which is
-false.
-
-INSTANTIATION DEFECT (inherited from the parent, unchanged by the
-split): the only supplier, `exists_heckeEigensystem_of_congruentSeed`,
-is formally empty and hands `badF := ∅`, so at the instantiation that
-actually reaches this node the statement asserts algebraicity of the
-Frobenius traces at EVERY place of `F` — including the ramified ones,
-where `charFrob` is not a Hecke polynomial.  The fix is upstream (give
-that node a genuine level/bad set), not here.
-
-ASSEMBLY (2026-07-26, PROVEN — the STATEMENT IS UNCHANGED).  This node
-is no longer a citation.  Its two classical inputs, which it had been
-bundling into one appeal to "Shimura rationality", are now separate
-sorried leaves above:
-
-* `exists_heckeGenerators_of_eigenvalues` (b-i-a-1) — FINITE
-  GENERATION: a finite set `s` of good places with every `aF w`
-  (`w ∉ badF`) inside `ℚ(aF '' s)`.  Classically: the Hecke algebra of
-  a fixed weight and level is a finitely generated `ℤ`-module, so
-  finitely many `T_w` generate it (Sturm bound).
-* `isIntegral_heckeEigenvalues` (b-i-a-2) — ALGEBRAICITY:
-  `IsIntegral ℚ (aF w)` for `w ∉ badF`.  Classically: the `T_w` have
-  `ℤ`-integral characteristic polynomials on the `ℚ`-rational space of
-  cusp forms, so their eigenvalues are algebraic integers.
-
-`IntermediateField.adjoin ℚ (aF '' s)` is then finite-dimensional over
-`ℚ` by `IntermediateField.finiteDimensional_adjoin` (a finite set of
-integral elements), and it contains every `aF w` by the first leaf.
-
-WHY THIS IS THE RIGHT JOINT, and why it is not a relabeling.  Neither
-half implies the other and neither alone gives this node: `√2, √3, √5,
-…` are algebraic of degree `2` and lie in no finite extension of `ℚ`,
-while a singleton generating set with a transcendental value satisfies
-finite generation.  So the conjunction is strictly stronger than this
-node (it also names the generators), and each half is a recognizable
-classical theorem with its own literature — Hecke integrality on one
-side, finite generation of the Hecke algebra on the other — rather
-than a repackaging of the conclusion.  What the split does NOT do is
-supply the missing modularity hypothesis: see the SOUNDNESS AUDIT
-above, which is inherited verbatim by both halves.
-
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
-discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean` — respected: the proof below uses only the
-two sub-leaves above and mathlib. -/
-theorem exists_heckeSubfield_of_eigenvalues
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (F : Type u) [Field F] [NumberField F]
-    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
-    (aF dF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
-      AlgebraicClosure ℚ_[ℓ])
-    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
-    (hshape : ∀ w ∉ badF,
-      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-        X ^ 2 - C (aF w) * X + C (dF w)) :
-    ∃ E : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ]),
-      FiniteDimensional ℚ E ∧ ∀ w ∉ badF, aF w ∈ E := by
-  classical
-  -- (b-i-a-1) finitely many good places generate the field of eigenvalues
-  obtain ⟨s, hsgood, hgen⟩ :=
-    exists_heckeGenerators_of_eigenvalues hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr F hFtr hFgal hirrF badF aF dF ιO hιO hshape
-  -- (b-i-a-2) each single eigenvalue is an algebraic number
-  have hint := isIntegral_heckeEigenvalues hℓodd hℓ5 hZinj hrank hρ hW hρbar
-    hirr F hFtr hFgal hirrF badF aF dF ιO hιO hshape
-  haveI : Finite (aF ''
-      (s : Set (HeightOneSpectrum (NumberField.RingOfIntegers F)))) :=
-    (s.finite_toSet.image aF).to_subtype
-  refine ⟨IntermediateField.adjoin ℚ (aF ''
-    (s : Set (HeightOneSpectrum (NumberField.RingOfIntegers F)))), ?_, hgen⟩
-  refine IntermediateField.finiteDimensional_adjoin ?_
-  rintro x ⟨w, hw, rfl⟩
-  exact hint w (hsgood w hw)
-
-/-- **Rationality of the determinant function at the places over `ℓ`**
-(PROVEN 2026-07-26 by NARROWING — the statement was FALSE for the
-intended objects and is now VACUOUS; read the FAITHFULNESS REPAIR and
-VACUITY AUDIT below before building on it.  Sub-leaf (b-i-d) — the half
-of Shimura rationality that is NOT a classical theorem): the
-determinant function `dF` of the modular lift `ρ|_{G_F}` takes its
-values, at the places `w | ℓ` outside the bad set, inside ONE finite
-extension of `ℚ` sitting in `ℚ̄_ℓ`.
-
-WHY THIS IS SPLIT OFF FROM `exists_heckeSubfield_of_eigenvalues`: the
-two halves of the parent leaf have genuinely different statuses, and
-merging them hid the weaker one behind the stronger one's citation.
-
-* Away from `ℓ` the determinant half needs no automorphic input at all:
-  `hshape` pins `dF w` to the constant coefficient of the base-changed
-  Frobenius charpoly, which the cyclotomic determinant clause of `hρ`
-  makes equal to the rational integer `Nw`
-  (`charFrob_baseChange_coeff_zero_eq_absNorm`).  That is why this leaf
-  quantifies ONLY over `w | ℓ`; the parent consumes the away-from-`ℓ`
-  values through the proven bridge instead.
-* At `w | ℓ` the cyclotomic character IS ramified.  `hshape` together
-  with `IsHardlyRamified.det` pins `dF w` to
-  `ιO (algebraMap ℤ_[ℓ] O (χ_ℓ σ))` for `σ` the chosen arithmetic
-  Frobenius lift at `w`, and `χ_ℓ` restricted to a decomposition group
-  over `ℓ` is surjective onto an open subgroup of `ℤ_[ℓ]ˣ` by local
-  class field theory.  A general element of `ℤ_[ℓ]ˣ` is transcendental
-  over `ℚ`, so there is NO classical theorem asserting this clause: for
-  the intended objects it is FALSE at every place over `ℓ` at which the
-  chosen Frobenius lift has transcendental cyclotomic value.
-
-CONSEQUENCE, recorded plainly (2026-07-25).  As originally stated —
-without the hypothesis `hbadℓ` below — this node was true only by the
-collapse route (the hypothesis package, an irreducible hardly ramified
-mod-`ℓ` representation with `ℓ ≥ 5`, is classically unsatisfiable, which
-is the headline of this very module), or vacuously, when `badF` happens
-to contain every place over `ℓ`.  The supplier that actually reaches it,
-`exists_heckeEigensystem_of_congruentSeed`, hands `badF := ∅`, so at the
-instantiation that reaches this node the clause was FALSE for the
-intended objects.
-
-FAITHFULNESS REPAIR (2026-07-26 — this is what closed the node, and it
-is a repair, not a proof of the old statement).  The old statement was
-retired in favour of the narrowed one below, by adding the hypothesis
-
-    hbadℓ : ∀ w, (ℓ : 𝓞 F) ∈ w.asIdeal → w ∈ badF
-
-which deletes exactly the false instances and nothing else.  This is
-the same narrowing that `exists_threeadic_realization_of_heckePackage`
-received for the places over `3`, for the same reason and at the same
-cost — namely none:
-
-* `badF` is chosen EXISTENTIALLY upstream
-  (`exists_heckeEigensystem_of_congruentSeed`, whose conclusion
-  quantifies it), and a matching clause `∀ w ∉ badF, …` only WEAKENS as
-  `badF` grows.  So the consumer `exists_heckePackage_of_seed` simply
-  moves to `badF ∪ {w : w ∋ ℓ}` — a `Finset` by
-  `finite_heightOneSpectrum_mem_of_ne_zero` above — and hands down the
-  hypothesis for free (`exists_finset_superset_of_places_mem`).
-* Nothing downstream assumes less: `exists_heckePackage_of_seed`
-  existentially quantifies `badF` in its own conclusion, and
-  `exists_potentialModularityWitness_of_five_le` already enlarges it
-  again by the places over `3`.  The `PotentialModularityWitness`
-  docstring always said `badF` contains the places over `2`, `3` and
-  `ℓ`; the formal statement now agrees with the interface.
-
-Why the false instances were false, restated once for the record: at
-`w | ℓ` the cyclotomic character IS ramified.  `hshape` together with
-`IsHardlyRamified.det` pins `dF w` to
-`ιO (algebraMap ℤ_[ℓ] O (χ_ℓ σ))` for `σ` the chosen arithmetic
-Frobenius lift at `w` (`Field.AbsoluteGaloisGroup.adicArithFrob`, an
-ARBITRARY choice inside the decomposition group), and `χ_ℓ` restricted
-to a decomposition group over `ℓ` is surjective onto an open subgroup of
-`ℤ_[ℓ]ˣ` by local class field theory.  An open subgroup of `ℤ_[ℓ]ˣ` is
-uncountable and the algebraic numbers are countable, so almost every
-element of it is TRANSCENDENTAL over `ℚ` and lies in no finite extension
-of `ℚ` whatever.  There is therefore no classical theorem asserting the
-old clause, and no repair of it other than deleting the places over `ℓ`
-from its range of quantification.
-
-VACUITY AUDIT (2026-07-26, mandatory reading).  With `hbadℓ` in place
-this node is VACUOUS: the conclusion is discharged by `E := ⊥` and the
-observation that `w ∉ badF` and `ℓ ∈ w.asIdeal` are contradictory.  It
-carries NO arithmetic content, and the underscore-prefixed binders
-below make that mechanically visible — `_hℓ5`, `_hZinj`, `_hρ`,
-`_hρbar`, `_hirr`, `_hFtr`, `_hFgal`, `_hirrF`, `_hιO`, `_hshape` is
-the entire hypothesis package, and the proof consumes none of it.  The
-node is RETAINED rather than deleted for two reasons: it is the stated
-place where the absence of any `ℓ`-adic determinant rationality is
-recorded, and its consumer
-`exists_heckeField_mem_range_of_eigensystem` still routes its
-`w | ℓ` clause through it, so the audit cannot be lost by a later
-refactor without breaking a proof.  The eigenvalue half
-`exists_heckeSubfield_of_eigenvalues` is UNAFFECTED and remains the one
-genuinely automorphic citation of the cut.
-
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
-discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean` — respected: the proof below uses only
-mathlib's `Module.Finite ℚ ↥⊥`. -/
-theorem exists_heckeSubfield_of_determinants
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (_hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (_hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (_hρ : IsHardlyRamified hℓodd hrank ρ)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (_hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (_hirr : ρbar.IsIrreducible)
-    (F : Type u) [Field F] [NumberField F]
-    (_hFtr : NumberField.IsTotallyReal F) (_hFgal : IsGalois ℚ F)
-    (_hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
-    (aF dF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
-      AlgebraicClosure ℚ_[ℓ])
-    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (_hιO : Function.Injective ιO)
-    (_hshape : ∀ w ∉ badF,
-      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-        X ^ 2 - C (aF w) * X + C (dF w))
-    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
-    ∃ E : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ]),
-      FiniteDimensional ℚ E ∧
-      ∀ w ∉ badF, (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal →
-        dF w ∈ E :=
-  ⟨⊥, inferInstance, fun w hw hwℓ => absurd (hbadℓ w hwℓ) hw⟩
-
-/-- **Shimura rationality for the Hilbert-newform eigensystem, range
-form** (PROVEN 2026-07-25 as an assembly over the two halves of sub-leaf
-(b-i); sub-leaf (b-i) of the Carayol/Shimura sub-cut — its eigenvalue
-half is the ONLY automorphic input of sub-leaf (b)): the eigenvalue
-function `aF`
-of the modular lift `ρ|_{G_F}` takes its values in a single number
-field `E` — the Hecke field — presented through one embedding
-`ψℓ : E ↪ ℚ̄_ℓ` as range membership; and at the finitely many places
-over `ℓ`, where the cyclotomic determinant carries no rationality (see
-the section note above), so does the determinant function `dF`.
-
-Classically: `aF w` is the `T_w`-eigenvalue of the Hilbert newform `f`
-of parallel weight `2` over `F` attached to `ρ|_{G_F}` by the `R = 𝕋`
-sub-leaf.  Shimura's rationality theorem — the Hecke eigenvalues of a
-Hilbert newform generate a NUMBER field `E = ℚ(a_w : w)`, because the
-Hecke operators act on a finite-dimensional `ℚ`-rational space of cusp
-forms with `ℤ`-integral characteristic polynomials, and Galois
-conjugation permutes newforms — gives `E`; the embedding is the place
-`λ | ℓ` at which the `λ`-adic realization of `f` is `ρ|_{G_F}`, i.e.
-exactly `ψℓ`; Carayol's local-global compatibility at the unramified
-places is what makes the identification of `charFrob` with the Hecke
-polynomial hold place by place rather than merely after
-semisimplification, and hence makes `aF w` (read off the shape
-hypothesis `hshape`) equal to `ψℓ (a_w)` on the nose.  At `w | ℓ` the
-`λ`-adic realization is still defined over `E_λ`, so `dF w` — the
-determinant of a Frobenius lift — again lies in `ψℓ(E)`.
-
-RANGE FORM (why this is the sharp statement): stating the conclusion as
-`aF w ∈ Set.range ψℓ` rather than as the existence of a function
-`a : places → E` with `ψℓ ∘ a = aF` removes the choice-theoretic
-packaging from the citation — the packaging is discharged formally in
-`exists_heckeField_of_eigensystem` below — and leaves exactly the
-mathematical assertion "the eigenvalues are algebraic and generate one
-number field".
-
-Literature: Shimura, *The special values of the zeta functions
-associated with Hilbert modular forms*, Duke Math. J. 45 (1978), §2
-(rationality and the Hecke field of a Hilbert newform); Carayol, *Sur
-les représentations `ℓ`-adiques associées aux formes modulaires de
-Hilbert*, Ann. Sci. ÉNS 19 (1986) (local-global compatibility, the
-normalization used here); Taylor, *On Galois representations associated
-to Hilbert modular forms*, Invent. Math. 98 (1989) (the remaining
-even-degree cases); Ohta and Hida for the integral normalizations.
-
-PIN AUDIT (2026-07-24, re-verified 2026-07-25): the mathlib pin has no
-Hilbert modular forms and no Hecke algebras over a totally real base
-(`grep Hilbert` over `Mathlib/NumberTheory/`: only Hilbert's theorem 90
-and Hilbert basis), so no part of this statement can be reduced to
-library material; it is a citation node whose only sound discharge is
-the construction of Hilbert-modular Hecke theory.
-
-SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the intended
-instantiation (`(aF, dF)` produced by
-`exists_heckeEigensystem_of_congruentSeed`, hence the eigensystem of an
-actual Hilbert newform) this is Shimura rationality plus Carayol
-verbatim; for an abstract `(aF, dF)` merely satisfying `hshape` the
-abstract-quantification caveat applies IN FULL FORCE — nothing formal
-forces an abstract family of `ℚ̄_ℓ`-values to be algebraic, and the
-hypothesis that `aF` IS a newform eigensystem lives entirely in this
-citation; (ii) collapse — the hypothesis set (an irreducible hardly
-ramified mod-`ℓ` representation, `ℓ ≥ 5`) is classically unsatisfiable
-(headline below), so the statement is classically true for every
-package.  The full hypothesis list of the parent leaf is retained
-DELIBERATELY: dropping `hρbar`/`hirr`/`hshape` would leave a statement
-about arbitrary `ℚ̄_ℓ`-valued families, which is false.
-
-VACUITY AUDIT (2026-07-25, cluster sweep — audit only, the statement
-was NOT changed).  This node is NOT vacuous: `Set.range ψℓ` is
-algebraic over `ℚ` while `aF` is a family of `ℚ̄_ℓ`-values, so no junk
-witness exists — the algebraicity clause carries real content.  (Exactly
-the opposite of the cousin
-`exists_residualModularity_of_hilbertBlumenthalPoint`, whose "number
-field" clause IS free, because its target `pt.kp` is FINITE and every
-finite field is a residue field of a number field.  Algebraicity is a
-constraint only against a characteristic-zero target.)
-
-But the content is now the WRONG content, and the RECOMMENDED DISCHARGE
-DOES NOT WORK.  Its only supplier,
-`exists_heckeEigensystem_of_congruentSeed`, is formally empty (see that
-node's FORMAL-CONTENT AUDIT) and hands this node `badF := ∅` together
-with `aF w = −ιO (((ρ.map _).charFrob w).coeff 1)`.  At that
-instantiation this leaf asserts that the Frobenius traces of
-`ρ|_{G_F}` are algebraic at EVERY place of `F` — including the places
-over `2` and `ℓ` and the level, where `charFrob` is the charpoly of a
-lift of a RAMIFIED Frobenius, is not a Hecke polynomial, and is
-classically not algebraic.  So at the instantiation that actually
-reaches it the statement is classically FALSE for the intended objects
-and survives only by the collapse route (the hypothesis package is
-unsatisfiable at `ℓ ≥ 5`); no citation of Shimura rationality can
-discharge it.  The fix is upstream — restate
-`exists_heckeEigensystem_of_congruentSeed` so that `badF` is a genuine
-level/bad set rather than `∅`, as its own audit already recommends —
-not here.
-
-ASSEMBLY (2026-07-25, PROVEN — the STATEMENT IS UNCHANGED; what moved
-is where the burden sits).  This node is no longer a citation.  It is
-now a purely formal assembly over two sharply separated citations:
-
-* `exists_heckeSubfield_of_eigenvalues` (Shimura rationality proper)
-  gives a finite-dimensional `E₁ ≤ ℚ̄_ℓ` containing every `aF w`;
-* `exists_heckeSubfield_of_determinants` (the `ℓ`-adic determinant
-  clause, which is NOT a classical theorem — see its docstring) gives a
-  finite-dimensional `E₂ ≤ ℚ̄_ℓ` containing `dF w` for `w | ℓ`.
-  NARROWED 2026-07-26: that sub-leaf now demands
-  `hbadℓ : ∀ w, (ℓ : 𝓞 F) ∈ w.asIdeal → w ∈ badF` — the places over `ℓ`
-  are already bad — under which it is VACUOUS and proven with `E₂ := ⊥`.
-  This node therefore carries `hbadℓ` too and passes it down; the
-  `w | ℓ` clause of its own conclusion is consequently vacuous as well,
-  and is retained only because the consumer's `d`-function extraction
-  is written uniformly over `w ∉ badF`.  The hypothesis costs nothing:
-  `exists_heckePackage_of_seed` chooses `badF` existentially and simply
-  enlarges it (`exists_finset_superset_of_places_mem`).
-
-The compositum `E₁ ⊔ E₂` is finite-dimensional over `ℚ`
-(`IntermediateField.finiteDimensional_sup`), hence a number field once
-transported into `Type u` by `ULift`; `ψℓ` is the composite
-`ULift ↥(E₁ ⊔ E₂) ≃+* ↥(E₁ ⊔ E₂) ↪ ℚ̄_ℓ`, and range membership is
-`le_sup_left` / `le_sup_right`.  The `CharZero` and `FiniteDimensional`
-instances on the `ULift` are transported by `RingHom.charZero` along
-`ULift.ringEquiv` and by `Module.Finite.equiv` along
-`ULift.moduleEquiv`.
-
-So the whole content of this node — universe placement, the
-`NumberField` instance, the passage from "lies in a finite extension of
-`ℚ`" to "lies in the range of an embedding of a number field" — is
-formal, exactly as the RANGE FORM paragraph above claimed it should be;
-and the INSTANTIATION DEFECT recorded above is now recorded at the two
-sub-leaves, where it can be repaired independently.  Nothing about the
-defect is fixed by this assembly.
-
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
-discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean` — respected: the proof below uses only the
-two sub-leaves above and mathlib. -/
-theorem exists_heckeField_mem_range_of_eigensystem
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (F : Type u) [Field F] [NumberField F]
-    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
-    (aF dF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
-      AlgebraicClosure ℚ_[ℓ])
-    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
-    (hshape : ∀ w ∉ badF,
-      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-        X ^ 2 - C (aF w) * X + C (dF w))
-    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
+        (ρbar.map (algebraMap ℚ F)).charFrob w)
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO) :
     ∃ (E : Type u) (_ : Field E) (_ : NumberField E)
-      (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ]),
-      (∀ w ∉ badF, aF w ∈ Set.range ψℓ) ∧
-      ∀ w ∉ badF, (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal →
-        dF w ∈ Set.range ψℓ := by
-  classical
-  -- (b-i-a) Shimura rationality: the eigenvalues lie in one finite
-  -- extension `E₁` of `ℚ` inside `ℚ̄_ℓ`
-  obtain ⟨E₁, hE₁, ha⟩ :=
-    exists_heckeSubfield_of_eigenvalues hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr F hFtr hFgal hirrF badF aF dF ιO hιO hshape
-  -- (b-i-d) the determinant values at the places over `ℓ`, in a finite
-  -- extension `E₂`
-  obtain ⟨E₂, hE₂, hd⟩ :=
-    exists_heckeSubfield_of_determinants hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr F hFtr hFgal hirrF badF aF dF ιO hιO hshape hbadℓ
-  haveI := hE₁
-  haveI := hE₂
-  -- the compositum is again a finite extension of `ℚ`
-  haveI : FiniteDimensional ℚ
-      ((E₁ ⊔ E₂ : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ])) : Type _) :=
-    IntermediateField.finiteDimensional_sup E₁ E₂
-  -- transport it into `Type u`: `ULift` of a number field is a number field
-  haveI : CharZero (ULift.{u}
-      ((E₁ ⊔ E₂ : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ])) : Type _)) :=
-    (ULift.ringEquiv.toRingHom :
-      ULift.{u} ((E₁ ⊔ E₂ : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ])) : Type _)
-        →+* ((E₁ ⊔ E₂ : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ])) : Type _)).charZero
-  haveI : FiniteDimensional ℚ (ULift.{u}
-      ((E₁ ⊔ E₂ : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ])) : Type _)) :=
-    Module.Finite.equiv (ULift.moduleEquiv (R := ℚ)
-      (M := ((E₁ ⊔ E₂ : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ])) : Type _))).symm
-  refine ⟨ULift.{u} (E₁ ⊔ E₂ : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ])),
-    inferInstance, ⟨⟩,
-    ((E₁ ⊔ E₂ : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ])).subtype).comp
-      ULift.ringEquiv.toRingHom, ?_, ?_⟩
-  · exact fun w hw => ⟨ULift.up ⟨aF w, (le_sup_left : E₁ ≤ E₁ ⊔ E₂) (ha w hw)⟩, rfl⟩
-  · exact fun w hw hwℓ =>
-      ⟨ULift.up ⟨dF w, (le_sup_right : E₂ ≤ E₁ ⊔ E₂) (hd w hw hwℓ)⟩, rfl⟩
+      (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
+      (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+      (a : HeightOneSpectrum (NumberField.RingOfIntegers F) → E),
+      (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+          (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) ∧
+      ∀ w ∉ badF,
+        ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ψℓ (a w) :=
+  sorry
+
+/-! ### The Carayol/Shimura sub-cut — RETIRED 2026-07-26
+
+This section used to carry a five-node sub-cut of sub-leaf (b):
+`exists_heckeField_mem_range_of_eigensystem`,
+`exists_heckeSubfield_of_eigenvalues`,
+`exists_heckeSubfield_of_determinants`,
+`exists_heckeGenerators_of_eigenvalues` and `isIntegral_heckeEigenvalues`.
+All five have been DELETED, together with their parent
+`exists_heckeField_of_eigensystem`, and the reason is recorded in full in
+the FAITHFULNESS REPAIR paragraph of
+`exists_heckeEigensystem_of_congruentSeed` above.  In short: they existed
+to recover, downstream of `R = 𝕋`, the rationality that `R = 𝕋` already
+delivers — `𝕋` is generated over `ℤ` by the `T_w` — and they were being
+handed `badF := ∅`, i.e. an instantiation at which the ramified places
+were included and the statements were classically FALSE for the intended
+objects.  Two of them were sorried leaves with no admissible discharge.
+
+Do not re-cut along that seam.  Three separate owners worked the three
+downstream leaves and two independently reached the same diagnosis: the
+leaves are not hard, they are STARVED, and the repair belongs one node
+upstream.  In particular the (b-i-a) split recorded here as "strictly
+stronger than the parent, since it also names the generators" was NOT a
+strengthening: `𝔥.FG`, the conjunction of the two sub-leaves, and the
+parent's own conclusion are all three EQUIVALENT (the last direction via
+`IntermediateField.essFiniteType_iff`).  That claim appeared twice in this
+module's prose and both copies were wrong; both are removed with the
+nodes they described.
+
+What SURVIVES of the sub-cut, because it is genuine algebraic number
+theory and carries no automorphic input, is the DETERMINANT half:
+
+* `cyclotomicCharacter_adicArithFrob_base_eq_absNorm` — at a place `w ∤ ℓ`
+  of `F` the `ℓ`-adic cyclotomic character takes the value `Nw` on the
+  global image of the arithmetic Frobenius at `w` (PROVEN, over the
+  roots-of-unity brick `adicArithFrob_rootsOfUnity_pow_base` below);
+* `charFrob_baseChange_coeff_zero_eq_absNorm` — hence the constant
+  coefficient of the base-changed Frobenius charpoly is the rational
+  integer `Nw` (PROVEN);
+* `charFrob_map_eq_heckePolynomial_of_heckeTrace` — hence the full Hecke
+  polynomial `X² − a_w·X + Nw` over the Hecke field is reconstructed from
+  the TRACE datum alone (PROVEN).
+
+So the modularity-lifting cut now rests on exactly one citation,
+`exists_heckeEigensystem_of_congruentSeed`, which is the `R = 𝕋` theorem
+itself and nothing else.
+-/
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The arithmetic Frobenius at a place `w ∤ ℓ` of the base `F` raises
@@ -7899,159 +7267,74 @@ theorem charFrob_baseChange_coeff_zero_eq_absNorm {ℓ : ℕ}
         (Field.AbsoluteGaloisGroup.adicArithFrob w)).charpoly from rfl,
     ← hdet, hdetw]
 
-/-- **Carayol local-global normalization and Shimura rationality**
-(PROVEN 2026-07-25 as an assembly over the Carayol/Shimura sub-cut —
-see the section note above; sub-leaf (b) of the modularity-lifting
-cut — Shimura / Carayol 1986): the raw `ℚ̄_ℓ`-valued Hecke eigensystem
-`(aF, dF)` of
-the modular lift `ρ|_{G_F}` is DEFINED OVER A NUMBER FIELD: there is a
-number field `E` (the Hecke field of the attached Hilbert newform), a
-place `ψℓ : E → ℚ̄_ℓ` of `E` over `ℓ`, and functions `a, d` valued in
-`E` whose `ψℓ`-images are `aF` and `dF` away from the bad set.
+/-- **The Hecke polynomial from the Hecke trace** (PROVEN 2026-07-26;
+sub-leaf (b) of the modularity-lifting cut, and ALL that survives of the
+old Carayol/Shimura sub-cut — see the retired-section note above): given
+the `E`-valued eigenvalue (trace) datum that `R = 𝕋` supplies, together
+with the fact that the places over `ℓ` are bad, the Frobenius
+characteristic polynomial of `ρ|_{G_F}` at every good place IS the Hecke
+polynomial
 
-Classically: `aF w` is the `T_w`-eigenvalue of the Hilbert newform `f`
-of parallel weight `2` over `F` attached to `ρ|_{G_F}` by the
-`R = 𝕋` sub-leaf, and `dF w` is the absolute norm `Nw` (a rational
-integer, forced here by the cyclotomic determinant clause of `hρ`).
-Shimura's rationality theorem (the Hecke eigenvalues of a Hilbert
-newform generate a NUMBER field `E = ℚ(a_w : w)`, because the Hecke
-operators act on a finite-dimensional `ℚ`-rational space of cusp forms
-with `ℤ`-integral characteristic polynomials, and Galois conjugation
-permutes newforms) gives `E`; the chosen embedding of `E` into `ℚ̄_ℓ`
-is the place `λ | ℓ` at which the `λ`-adic realization is `ρ|_{G_F}`,
-i.e. exactly `ψℓ`; Carayol's local-global compatibility at the
-unramified places is what guarantees that the identification of
-`charFrob` with the Hecke polynomial holds place by place rather than
-merely after semisimplification.  The determinant function descends
-because `Nw` is already rational.
+    `X² − a_w·X + Nw`
 
-Literature: Shimura, *The special values of the zeta functions
-associated with Hilbert modular forms*, Duke Math. J. 45 (1978), §2
-(rationality and the Hecke field of a Hilbert newform); Carayol, *Sur
-les représentations `ℓ`-adiques associées aux formes modulaires de
-Hilbert*, Ann. Sci. ÉNS 19 (1986) (local-global compatibility, the
-normalization used here); Taylor, *On Galois representations
-associated to Hilbert modular forms*, Invent. Math. 98 (1989)
-(the remaining even-degree cases); Ohta and Hida for the integral
-normalizations.
+of a Hilbert newform, read inside `ℚ̄_ℓ` through `ιO` on the left and
+`ψℓ` on the right.
 
-PIN AUDIT (2026-07-24, unchanged 2026-07-25): the mathlib pin has no
-Hilbert modular forms and no Hecke algebras over a totally real base
-(`grep Hilbert` over `Mathlib/NumberTheory/`: only Hilbert's theorem 90
-and Hilbert basis), so the automorphic content of this statement cannot
-be reduced to library material.  What the 2026-07-25 sub-cut DOES
-achieve is to confine that content to the eigenvalue function: see
-`exists_heckeField_mem_range_of_eigensystem` (Shimura rationality, the
-only citation with automorphic content) and
-`cyclotomicCharacter_adicArithFrob_base_eq_absNorm` (pure algebraic
-number theory, true outright).
+This node carries NO automorphic input.  Everything it adds to the trace
+datum is algebraic number theory already proven in this module:
 
-ASSEMBLY (2026-07-25, PROVEN): Shimura rationality
-(`exists_heckeField_mem_range_of_eigensystem`) supplies the Hecke field
-`E`, the place `ψℓ`, and range membership of `aF` — from which the
-function `a` is extracted by choice, the packaging step that used to be
-part of the citation.  The determinant function is built place by
-place: away from `ℓ` the shape hypothesis `hshape` pins `dF w` to the
-constant coefficient of the base-changed Frobenius charpoly, which the
-cyclotomic determinant clause of `hρ` makes equal to the rational
-integer `Nw` (`charFrob_baseChange_coeff_zero_eq_absNorm`), so
-`d w := (Nw : E)` works with no automorphic input at all; at the
-finitely many places over `ℓ`, where the cyclotomic character is
-ramified, the citation's second clause supplies the value and `d w` is
-again extracted by choice.
+* `charFrob_map_eq_quadratic_of_rank_two` — `charFrob w` is the charpoly
+  of an endomorphism of the free rank-`2` module `Fin 2 → O`, hence monic
+  of degree `2`, so its `ιO`-image is
+  `X² − C(−ιO(coeff 1))·X + C(ιO(coeff 0))`;
+* `charFrob_baseChange_coeff_zero_eq_absNorm` — at `w ∤ ℓ` the cyclotomic
+  determinant clause of `hρ` forces `coeff 0 = Nw`, a RATIONAL INTEGER,
+  which therefore lies in `ψℓ(E)` for free.  This is where `hbadℓ` is
+  consumed, and it is the only place it is needed: at `w | ℓ` the
+  cyclotomic character is ramified and the constant coefficient is the
+  cyclotomic value of an arbitrarily chosen Frobenius lift — a generic
+  element of `ℤ_[ℓ]ˣ`, transcendental over `ℚ` and lying in no finite
+  extension of it.
 
-SOUNDNESS AUDIT (both ways, 2026-07-25): the depth now lives in the two
-sub-leaves, each audited in its own docstring; this assembly adds only
-formal steps (coefficient comparison, `Nat.cast` compatibility of the
-ring homomorphism `ψℓ`, and classical choice), so its soundness is
-exactly theirs.  For the record: (i) direct — for the intended
-instantiation (`(aF, dF)` produced by
-`exists_heckeEigensystem_of_congruentSeed`, hence the eigensystem of
-an actual Hilbert newform) this is Shimura rationality plus Carayol
-verbatim; for an abstract `(aF, dF)` merely satisfying `hshape` the
-abstract-quantification caveat applies to the eigenvalue half — nothing
-formal forces an abstract family of `ℚ̄_ℓ`-values to be algebraic, and
-the hypothesis that `aF` IS a newform eigensystem lives entirely in the
-Shimura citation (the same shape as the sibling leaf
-`exists_threeadic_realization_of_heckePackage`, whose `hmod`
-hypothesis carries the same unstated content); (ii) collapse — the
-hypothesis set (an irreducible hardly ramified mod-`ℓ`
-representation, `ℓ ≥ 5`) is classically unsatisfiable (headline
-below), so the statement is classically true for every package.
+WHY IT IS SPLIT OFF FROM THE CITATION.  The trace and the determinant of
+a rank-`2` Frobenius have completely different statuses: only the trace
+carries automorphic content.  Keeping them apart is what lets
+`exists_heckeEigensystem_of_congruentSeed` ask for exactly the Hecke
+eigenvalue and nothing else — the same trace/determinant split this
+module already makes at every stage of the solvable descent tower
+(`exists_heckeTrace_of_prime_cyclic_step`).
 
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
-discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`; it binds both sub-leaves. -/
-theorem exists_heckeField_of_eigensystem
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+REPLACES `exists_heckeField_of_eigensystem` (deleted 2026-07-26).  That
+node had to CONSTRUCT the Hecke field and the `E`-valued functions by
+choice out of a "Shimura rationality" citation, because the raw form of
+`R = 𝕋` above it produced neither.  Both are now produced upstream, where
+`R = 𝕋` produces them classically, so nothing here is existential and
+nothing here is a citation. -/
+theorem charFrob_map_eq_heckePolynomial_of_heckeTrace
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [Algebra ℤ_[ℓ] O]
     {ρ : GaloisRep ℚ O (Fin 2 → O)}
     (hrank : Module.rank O (Fin 2 → O) = 2)
     (hρ : IsHardlyRamified hℓodd hrank ρ)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
     (F : Type u) [Field F] [NumberField F]
-    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    {E : Type u} [Field E] (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
     (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
-    (aF dF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
-      AlgebraicClosure ℚ_[ℓ])
-    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
-    (hshape : ∀ w ∉ badF,
-      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-        X ^ 2 - C (aF w) * X + C (dF w))
+    (a : HeightOneSpectrum (NumberField.RingOfIntegers F) → E)
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ])
     (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
-    ∃ (E : Type u) (_ : Field E) (_ : NumberField E)
-      (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
-      (a d : HeightOneSpectrum (NumberField.RingOfIntegers F) → E),
-      (∀ w ∉ badF, ψℓ (a w) = aF w) ∧ ∀ w ∉ badF, ψℓ (d w) = dF w := by
-  classical
-  -- (b-i) Shimura rationality: the Hecke field `E`, the place `ψℓ`, and
-  -- range membership of the eigenvalues
-  obtain ⟨E, hE, hNE, ψℓ, ha, hdℓ⟩ :=
-    exists_heckeField_mem_range_of_eigensystem hℓodd hℓ5 hZinj hrank hρ hW
-      hρbar hirr F hFtr hFgal hirrF badF aF dF ιO hιO hshape hbadℓ
-  letI : Field E := hE
-  -- the eigenvalue function: the range membership in total form, ready
-  -- for `choose` (the packaging step the citation no longer carries)
-  have haex : ∀ w, ∃ x : E, w ∉ badF → ψℓ x = aF w := by
-    intro w
-    by_cases hw : w ∈ badF
-    · exact ⟨0, fun hc => absurd hw hc⟩
-    · obtain ⟨x, hx⟩ := ha w hw
-      exact ⟨x, fun _ => hx⟩
-  -- the determinant function: away from `ℓ` its value is the rational
-  -- integer `Nw`, forced by the cyclotomic determinant clause of `hρ`
-  -- with no automorphic input; at the places over `ℓ`, where the
-  -- cyclotomic character is ramified, it is supplied by the citation
-  have hdex : ∀ w, ∃ x : E, w ∉ badF → ψℓ x = dF w := by
-    intro w
-    by_cases hw : w ∈ badF
-    · exact ⟨0, fun hc => absurd hw hc⟩
-    by_cases hwℓ : (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal
-    · obtain ⟨x, hx⟩ := hdℓ w hw hwℓ
-      exact ⟨x, fun _ => hx⟩
-    · refine ⟨(Ideal.absNorm w.asIdeal : E), fun _ => ?_⟩
-      -- read the determinant coefficient off the shape hypothesis
-      have hRHS : (X ^ 2 - C (aF w) * X + C (dF w)).coeff 0 = dF w := by simp
-      have hc0 : ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 0) =
-          dF w := by
-        rw [← Polynomial.coeff_map, hshape w hw, hRHS]
-      rw [map_natCast, ← hc0,
-        charFrob_baseChange_coeff_zero_eq_absNorm hℓodd hrank hρ F w hwℓ,
-        map_natCast]
-  choose a hafun using haex
-  choose d hdfun using hdex
-  exact ⟨E, hE, hNE, ψℓ, a, d, fun w hw => hafun w hw, fun w hw => hdfun w hw⟩
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF)
+    (htr : ∀ w ∉ badF,
+      ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ψℓ (a w)) :
+    ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        (X ^ 2 - C (a w) * X + C ((Ideal.absNorm w.asIdeal : E))).map ψℓ := by
+  intro w hw
+  have hwℓ : (ℓ : NumberField.RingOfIntegers F) ∉ w.asIdeal := fun h => hw (hbadℓ w h)
+  rw [charFrob_map_eq_quadratic_of_rank_two w (ρ.map (algebraMap ℚ F)) hrank ιO,
+    htr w hw, charFrob_baseChange_coeff_zero_eq_absNorm hℓodd hrank hρ F w hwℓ]
+  simp [Polynomial.map_add, Polynomial.map_sub, Polynomial.map_mul,
+    Polynomial.map_pow, map_natCast]
 
 /-- **Modularity lifting over the totally real base** (PROVEN
 2026-07-24 as an assembly over the three sub-leaves of the
@@ -8059,7 +7342,7 @@ modularity-lifting cut — see the section note above and the ASSEMBLY
 paragraph at the end of this docstring; the depth now lives in
 `exists_residualCongruence_over_base`,
 `exists_heckeEigensystem_of_congruentSeed` and
-`exists_heckeField_of_eigensystem`): over the Moret–Bailly base
+`charFrob_map_eq_heckePolynomial_of_heckeTrace`): over the Moret–Bailly base
 `F`, the Khare–Wintenberger lift `ρ|_{G_F}` is itself modular — its
 Frobenius characteristic polynomials away from a finite bad set are
 the Hecke polynomials of a Hilbert newform, recorded through a number
@@ -8114,20 +7397,31 @@ Hilbert-modular Hecke input; and the natural consumer of any future
 general-base patching node is now the sub-leaf
 `exists_heckeEigensystem_of_congruentSeed`, not this assembly.
 
-ASSEMBLY (2026-07-24, PROVEN): the residual bridge over `F`
-(`exists_residualCongruence_over_base` — Chebotarev + Brauer–Nesbitt
-+ base change, producing the bad set `badρ` and the congruence
-`hcong` that identifies `ρ|_{G_F}` and the seed `σ` as lifts of one
-residual representation) feeds `R = 𝕋` over `F`
-(`exists_heckeEigensystem_of_congruentSeed` — Kisin/Taylor patching
-over the totally real base, producing the bad set `badF`, the raw
-`ℚ̄_ℓ`-valued eigensystem `(aF, dF)` and the coefficient embedding
-`ιO`), whose output feeds the Carayol/Shimura normalization
-(`exists_heckeField_of_eigensystem` — the Hecke field `E`, the place
-`ψℓ`, and the `E`-valued descents `(a, d)`).  The glue below sets
-`heckeF w := X² − a w · X + d w` and checks that its `ψℓ`-image is
-the shape produced by `R = 𝕋`, using only that `ψℓ` is a ring
-homomorphism.
+ASSEMBLY (2026-07-24, REBUILT 2026-07-26 over the repaired `R = 𝕋`
+node — PROVEN).  Three steps, of which only the second is a citation:
+
+* the residual bridge over `F` (`exists_residualCongruence_over_base` —
+  Chebotarev + Brauer–Nesbitt + base change) produces the bad set
+  `badρ` and the congruence `hcong` identifying `ρ|_{G_F}` and the seed
+  `σ` as lifts of one residual representation;
+* the coefficient embedding `ιO : O ↪ ℚ̄_ℓ` is produced HERE
+  (`exists_injective_ringHom_algebraicClosure_of_moduleFinite` — generic
+  commutative algebra over `hZinj` and module-finiteness), and handed
+  DOWN to the citation rather than demanded from it;
+* `R = 𝕋` over `F` (`exists_heckeEigensystem_of_congruentSeed` —
+  Kisin/Taylor patching over the totally real base) produces the Hecke
+  field `E`, the place `ψℓ`, a genuine level `badF` containing the
+  places over `ℓ`, and the `E`-valued eigenvalue function `a`;
+* `charFrob_map_eq_heckePolynomial_of_heckeTrace` (PROVEN, no
+  automorphic input) turns that trace datum into the full Hecke
+  polynomial, the determinant coefficient being the rational integer
+  `Nw` by the cyclotomic determinant clause of `hρ`.
+
+The glue below therefore sets `heckeF w := X² − a w · X + Nw` over `E`
+and is a single application of the last item.  The 2026-07-26 rebuild
+also removed the `badF`-enlargement step this proof used to perform at
+`ℓ`: the citation now returns a `badF` that already contains those
+places, which is what a level IS.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
@@ -8170,37 +7464,26 @@ theorem exists_heckePackage_of_seed
   obtain ⟨badρ, hcong⟩ :=
     exists_residualCongruence_over_base hℓodd hℓ5 hZinj hrank hρ hW hρbar
       hirr π hπsurj hπ F hFtr hFgal hirrF
-  -- (a) `R = 𝕋` over `F`: the raw `ℚ̄_ℓ`-valued Hecke eigensystem
-  obtain ⟨badF₀, aF, dF, ιO, hιO, hshape₀⟩ :=
+  -- the coefficient embedding `ιO : O ↪ ℚ̄_ℓ` (generic commutative algebra:
+  -- `O` is a `ℤ_ℓ`-finite domain receiving `ℤ_ℓ` injectively).  It is
+  -- produced HERE and handed down, rather than demanded from the citation.
+  obtain ⟨ιO, hιO⟩ :=
+    exists_injective_ringHom_algebraicClosure_of_moduleFinite (ℓ := ℓ) O hZinj
+  -- (a) `R = 𝕋` over `F`: the Hecke field `E`, the place `ψℓ`, a genuine
+  -- level `badF` containing the places over `ℓ`, and the `E`-valued
+  -- eigenvalue function `a`
+  obtain ⟨E, hE, hNE, ψℓ, badF, a, hbadℓ, htr⟩ :=
     exists_heckeEigensystem_of_congruentSeed hℓodd hℓ5 hZinj hrank hρ hW
-      hρbar hirr π hπsurj hπ F hFtr hFgal hirrF seed badρ hcong
-  -- (a') ENLARGE the exceptional set by the places of `F` over `ℓ`
-  -- (2026-07-26).  The shape clause only WEAKENS when its exceptional set
-  -- grows, so this is free; and it is what discharges the narrowed
-  -- determinant sub-leaf's `hbadℓ`, which exists because at `w | ℓ` the
-  -- cyclotomic character is RAMIFIED, so `dF w` is the cyclotomic value of
-  -- an arbitrarily chosen Frobenius lift — a generic element of `ℤ_[ℓ]ˣ`,
-  -- transcendental over `ℚ` and lying in no finite extension of it.  See
-  -- `exists_heckeSubfield_of_determinants` for the full audit.
-  have hℓne : (ℓ : NumberField.RingOfIntegers F) ≠ 0 :=
-    Nat.cast_ne_zero.mpr (Fact.out (p := ℓ.Prime)).ne_zero
-  obtain ⟨badF, hsub, hbadℓ⟩ :=
-    exists_finset_superset_of_places_mem badF₀
-      (ℓ : NumberField.RingOfIntegers F) hℓne
-  have hshape : ∀ w ∉ badF,
-      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-        X ^ 2 - C (aF w) * X + C (dF w) :=
-    fun w hw => hshape₀ w fun h => hw (hsub h)
-  -- (b) Carayol/Shimura: the eigensystem is defined over the Hecke field
-  obtain ⟨E, hE, hNE, ψℓ, a, d, ha, hd⟩ :=
-    exists_heckeField_of_eigensystem hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr
-      F hFtr hFgal hirrF badF aF dF ιO hιO hshape hbadℓ
-  -- glue: the Hecke polynomial `X² − a_w·X + Nw` over `E`
-  refine ⟨E, hE, hNE, badF, fun w => X ^ 2 - C (a w) * X + C (d w), ψℓ, ιO,
-    hιO, fun w hw => ?_⟩
-  rw [hshape w hw]
-  simp [Polynomial.map_add, Polynomial.map_sub, Polynomial.map_mul,
-    Polynomial.map_pow, ha w hw, hd w hw]
+      hρbar hirr π hπsurj hπ F hFtr hFgal hirrF seed badρ hcong ιO hιO
+  letI : Field E := hE
+  -- (b) the determinant half, PROVEN: the constant coefficient is the
+  -- rational integer `Nw` away from `ℓ`, so the trace datum already
+  -- assembles the Hecke polynomial `X² − a_w·X + Nw` over `E`
+  refine ⟨E, hE, hNE, badF,
+    fun w => X ^ 2 - C (a w) * X + C ((Ideal.absNorm w.asIdeal : E)), ψℓ, ιO,
+    hιO, ?_⟩
+  exact charFrob_map_eq_heckePolynomial_of_heckeTrace hℓodd hrank hρ F ψℓ badF
+    a ιO hbadℓ htr
 
 /-- **Free-lattice normalization over `ℤ_p`** (PROVEN, 2026-07-24; the
 formal half of the Hilbert-modular `3`-adic realization leaf below): a
@@ -11250,14 +10533,16 @@ proven earlier in this module over the pure algebraic-number-theory leaf
 `cyclotomicCharacter_adicArithFrob_base_eq_absNorm`).  Only the TRACE
 carries automorphic content, and only the trace is asked for here; the
 consumer `heckeSystemDescendsTo_of_prime_cyclic_step` below reassembles
-the polynomial formally.  This is the same trace/determinant split the
-Carayol/Shimura sub-cut of this module already makes at the base field
-`F` (`exists_heckeField_mem_range_of_eigensystem` +
+the polynomial formally.  This is the same trace/determinant split this
+module already makes at the base field `F`
+(`exists_heckeEigensystem_of_congruentSeed`, which asks for the TRACE
+datum only, +
+`charFrob_map_eq_heckePolynomial_of_heckeTrace` over
 `charFrob_baseChange_coeff_zero_eq_absNorm`), now made at every stage of
 the descent tower.
 
-RANGE FORM (why this is the sharp statement, mirroring
-`exists_heckeField_mem_range_of_eigensystem`): stating the conclusion as
+RANGE FORM (why this is the sharp statement, mirroring the base-field
+citation `exists_heckeEigensystem_of_congruentSeed`): stating the conclusion as
 `… ∈ Set.range Wit.ψℓ` rather than as the existence of a function
 `a : places → E` removes the choice-theoretic packaging from the citation
 — the packaging is discharged formally in the consumer — and leaves
@@ -11267,7 +10552,7 @@ algebraic and lie in the Hecke field `E`".
 VACUITY AUDIT (2026-07-25): this node is NOT vacuous.  `Set.range Wit.ψℓ`
 is algebraic over `ℚ` inside `ℚ̄_ℓ` while the trace is an a priori
 arbitrary `ℚ̄_ℓ`-value, so no junk witness discharges it — exactly as for
-its base-field cousin `exists_heckeField_mem_range_of_eigensystem`, and
+its base-field cousin `exists_heckeEigensystem_of_congruentSeed`, and
 exactly unlike a statement whose target is a finite field.
 
 WHY PRIME DEGREE IS THE SHARPEST JOINT (2026-07-25): the twisted trace
