@@ -5232,9 +5232,179 @@ theorem exists_finset_forall_natCast_notMem_asIdeal
   rw [Set.Finite.mem_toFinset]
   exact Ideal.dvd_iff_le.mpr (Ideal.span_le.mpr (Set.singleton_subset_iff.mpr hmem))
 
+/-- **The Frobenius characteristic polynomial of a hardly ramified `ρ`
+depends only on the RESIDUE CARDINALITY of the place** (sorry leaf, cut
+2026-07-26; PURE ALGEBRAIC NUMBER THEORY — no automorphic input
+whatsoever): for `ρ` hardly ramified, for ANY two number fields `M`, `L`
+and any places `w` of `M` and `v` of `L` of EQUAL absolute norm, with the
+residue characteristic of `w` different from `2` and `ℓ`, the Frobenius
+characteristic polynomials of the two base-changed representations
+coincide:
+
+  `(ρ|_{G_L}).charFrob v = (ρ|_{G_M}).charFrob w`  whenever `Nv = Nw`.
+
+Note that `v` is NOT required to lie over `w`, and `L` is not required to
+contain `M`: the statement is that `charFrob` of a representation of
+`G_ℚ` unramified at `q` is a function of the residue cardinality alone.
+
+Classical proof. By the two exposed `rfl`-lemmas `GaloisRep.toLocal_apply`
+and `GaloisRep.map_apply` — used the same way by the PROVEN determinant
+lemma `charFrob_baseChange_coeff_zero_eq_absNorm` above —
+`(ρ|_{G_M}).charFrob w` is the charpoly of `ρ` evaluated at the element
+`g_w ∈ G_ℚ` obtained by pushing the arithmetic Frobenius at `w` through
+`G_{M_w} → G_M → G_ℚ`.  That element is an arithmetic Frobenius at SOME
+place `P` of `ℚᵃˡᵍ` above the rational prime `q` under `w`: it acts on
+the residue field of `P` by `x ↦ x^{Nw}` (this is the content of the
+proven `cyclotomicCharacter_adicArithFrob_base_eq_absNorm`, whose
+roots-of-unity input `adicArithFrob_rootsOfUnity_pow_base` is exactly
+this action), and it is determined by that datum only modulo the inertia
+subgroup `I_P`.  Since `Nv = Nw`, the element `g_v` attached to `v` is an
+arithmetic Frobenius with the SAME exponent at some place `P'` of `ℚᵃˡᵍ`,
+necessarily above the same rational prime `q` (the absolute norm of a
+prime is a power of its residue characteristic).  All places of `ℚᵃˡᵍ`
+over `q` are `G_ℚ`-conjugate, so `g_v = σ g_w σ⁻¹ · ι` for some
+`σ ∈ G_ℚ` and some `ι ∈ I_{P'}`.  Now `q ≠ 2, ℓ` (that is what `hw2` and
+`hwℓ` say about `w`, and `hnorm` transports the residue characteristic to
+`v`), so `hρ.isUnramified` gives `ρ ι = 1`, and a characteristic
+polynomial is invariant under conjugation.  Hence the two charpolys are
+equal.
+
+WHY IT IS HERE (the SPLIT-PLACE half of the prime cyclic step).  This is
+the engine that discharges, with no automorphic input, every place of
+`M = F^D` that is SPLIT in `L/M`: if `w` has a place `v` of `L` above it
+with residue degree `1` then `Nv = Nw`, so this lemma identifies the two
+Frobenius characteristic polynomials and the descended system over `L`
+(the hypothesis `hC` of the prime cyclic step) already answers at `w`.
+The residual automorphic citation
+`exists_heckeTrace_of_prime_cyclic_step_of_inert` is thereby confined to
+the places of `M` whose residue cardinality is realized by NO good place
+of `L` — classically the INERT places.  It is the same style of
+sharpening as the trace/determinant split one level up: peel off the half
+that is pure algebraic number theory, leave the automorphic citation
+strictly smaller.
+
+FAITHFULNESS AUDIT (2026-07-26).  `hnorm` is load-bearing and the
+statement is FALSE without it (two places of different residue
+cardinality have different determinant coefficients `Nv ≠ Nw`, by the
+proven `charFrob_baseChange_coeff_zero_eq_absNorm`).  The hypotheses
+`hw2`, `hwℓ` are load-bearing too: at `q = 2` or `q = ℓ` the
+representation is ramified, the inertia ambiguity in `g_w` is not killed,
+and the charpoly genuinely depends on the choice of place of `ℚᵃˡᵍ` and
+of the lift.  NOT VACUOUS: the conclusion is an equality of two
+`Polynomial O`-valued invariants of an arbitrary hardly ramified `ρ`, and
+`Nv = Nw` happens for infinitely many pairs (all places of degree `1`
+over a fixed rational prime).
+
+NO CIRCULARITY: this leaf mentions neither the carrier `Wit` nor any
+automorphic datum, and its proof route (`toLocal_apply`/`map_apply`
++ the conjugacy of places of `ℚᵃˡᵍ` over `q` + `IsHardlyRamified.isUnramified`)
+runs entirely inside `GaloisRep.lean`/`AbsoluteGaloisGroup.lean` material
+already used by the proven lemmas of this section. -/
+theorem charFrob_baseChange_eq_of_absNorm_eq {ℓ : ℕ}
+    (hℓodd : Odd ℓ) [Fact ℓ.Prime]
+    {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsLocalRing O] [Algebra ℤ_[ℓ] O]
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    (M L : Type u) [Field M] [NumberField M] [Field L] [NumberField L]
+    (w : HeightOneSpectrum (NumberField.RingOfIntegers M))
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers L))
+    (hw2 : ((2 : ℕ) : NumberField.RingOfIntegers M) ∉ w.asIdeal)
+    (hwℓ : ((ℓ : ℕ) : NumberField.RingOfIntegers M) ∉ w.asIdeal)
+    (hnorm : Ideal.absNorm v.asIdeal = Ideal.absNorm w.asIdeal) :
+    (ρ.map (algebraMap ℚ L)).charFrob v =
+      (ρ.map (algebraMap ℚ M)).charFrob w :=
+  sorry
+
+/-- **The TRACE of one PRIME-degree cyclic step of solvable base change,
+at the NON-SPLIT places** (sorry node, cut 2026-07-26; THE terminal
+literature citation of the `ℓ`-adic solvable descent — Langlands 1980,
+Arthur–Clozel 1989): the statement of
+`exists_heckeTrace_of_prime_cyclic_step` (see that node's docstring for
+the classical three moves, the literature and the PIN, SOUNDNESS,
+VACUITY, ROUTE and CIRCULARITY audits, all of which apply verbatim),
+restricted to the places of `M = F^D` whose residue cardinality is
+realized by NO good place of `L = F^C`.
+
+TWO DIFFERENCES from the parent node, both deliberate:
+
+* the descended system over `L` is taken UNFOLDED — as the bad set `SL`,
+  the `E`-polynomials `PL` and the match `hPL`, rather than as
+  `HeckeSystemDescendsTo Wit C` — because that is what the citation
+  actually consumes: the Hilbert newform `f_L` over `L` whose eigensystem
+  those polynomials are;
+* the conclusion is asked only at places `w` with
+  `∀ v ∉ SL, Nv ≠ Nw`.  The complementary places are discharged
+  FORMALLY in the parent, with no automorphic input, by
+  `charFrob_baseChange_eq_of_absNorm_eq` (`charFrob` depends only on the
+  residue cardinality): if some good place `v` of `L` has `Nv = Nw` then
+  `(ρ|_{G_M}).charFrob w = (ρ|_{G_L}).charFrob v` and `hPL` already
+  answers.  In particular every place of `M` SPLIT in `L/M` (any place
+  above it in `L` has residue degree `1`, hence equal norm) is off this
+  node's plate, so what remains is the INERT half of the prime cyclic
+  step.
+
+The hypothesis package is retained VERBATIM (`hℓ5`, `hZinj`, `hρ`,
+`hρbar`, `hirr`, `hπ`, and the group-theoretic data `hCD`, `hnormal`,
+`hp`, `hcard`), so route (ii) of the parent's soundness audit — collapse
+by unsatisfiability of the arithmetic package — remains available here
+exactly as it was there.  The sharpening is of the CONCLUSION only; no
+arithmetic hypothesis was weakened, and none was added.
+
+SOUNDNESS: the conclusion is a restriction of the parent's conclusion to
+a subset of the places, so this node is implied by the classical theorem
+and is a strictly weaker statement; it is discharged classically by the
+same three moves (cyclic ascent, `Gal(L/M)`-invariance, cyclic descent by
+the Arthur–Clozel character identity), which do not distinguish the
+split and inert places.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_heckeTrace_of_prime_cyclic_step_of_inert
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (Wit : PotentialModularityWitness ℓ O ρ)
+    (C D : Subgroup (Wit.F ≃ₐ[ℚ] Wit.F)) (hCD : C ≤ D)
+    (hnormal : (C.subgroupOf D).Normal)
+    (p : ℕ) (hp : p.Prime)
+    (hcard : Nat.card (D ⧸ C.subgroupOf D) = p)
+    (SL : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C))))
+    (PL : HeightOneSpectrum (NumberField.RingOfIntegers
+      (IntermediateField.fixedField C)) → Polynomial Wit.E)
+    (hPL : ∀ v ∉ SL,
+      ((ρ.map (algebraMap ℚ (IntermediateField.fixedField C))).charFrob
+        v).map Wit.ιO = (PL v).map Wit.ψℓ) :
+    ∃ S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers
+        (IntermediateField.fixedField D))),
+      ∀ w ∉ S,
+        (∀ v ∉ SL, Ideal.absNorm v.asIdeal ≠ Ideal.absNorm w.asIdeal) →
+        Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
+          w).coeff 1) ∈ Set.range Wit.ψℓ :=
+  sorry
+
 /-- **The TRACE of one PRIME-degree cyclic step of solvable base change**
-(sorry node; THE terminal literature citation of the `ℓ`-adic solvable
-descent — Langlands 1980, Arthur–Clozel 1989): if the eigensystem of `ρ`
+(PROVEN 2026-07-26 over the split/inert cut below — was itself the
+terminal literature citation of the `ℓ`-adic solvable descent, Langlands
+1980, Arthur–Clozel 1989): if the eigensystem of `ρ`
 descends to the fixed field `L = F^C`, and `C ≤ D` is normal with
 quotient `D/C` of PRIME order `p` (equivalently: `L/M` is a cyclic Galois
 extension of degree `p`, where `M = F^D`), then away from a finite set of
@@ -5332,13 +5502,46 @@ weight*, Ann. of Math. 179 (2014), §5.3 (this descent per Brauer piece,
 verbatim); Khare–Wintenberger, *Serre's modularity conjecture (I)*,
 Invent. Math. 178 (2009), §5; Carayol, Ann. Sci. ÉNS 19 (1986).
 
+ASSEMBLY (2026-07-26) — THE SPLIT/INERT CUT.  This node is now PROVEN,
+over two leaves that divide the places of `M` by whether the descended
+system over `L` already answers at them:
+
+* `charFrob_baseChange_eq_of_absNorm_eq` (PURE ALGEBRAIC NUMBER THEORY,
+  no automorphic input): for a hardly ramified `ρ`, `charFrob` depends
+  only on the RESIDUE CARDINALITY of the place, away from `2` and `ℓ`.
+  So if some place `v` of `L` outside the `L`-system's bad set has
+  `Nv = Nw`, then `(ρ|_{G_M}).charFrob w = (ρ|_{G_L}).charFrob v`, and
+  the hypothesis `hC` — read coefficientwise in degree `1` through
+  `Polynomial.coeff_map` — puts the trace at `w` in `Set.range ψℓ` with
+  no automorphic input at all.  Every place of `M` SPLIT in `L/M` is of
+  this kind (a place of `L` above it has residue degree `1`, hence equal
+  norm), so the split half of the prime cyclic step is discharged
+  formally here.
+* `exists_heckeTrace_of_prime_cyclic_step_of_inert` (the residual
+  automorphic citation): the same statement at the remaining places —
+  those whose residue cardinality is realized by no good place of `L`,
+  classically the INERT ones.  Its hypothesis package is this node's,
+  verbatim, with `hC` unfolded into the `L`-system `(SL, PL, hPL)` that
+  the citation actually consumes.
+
+The finite bad set is the union of the citation's own set with the
+places over `2` and over `ℓ` (finite by
+`exists_finset_forall_natCast_notMem_asIdeal`), where the
+residue-cardinality lemma does not apply because `ρ` is ramified there.
+This is the same style of sharpening as the trace/determinant split
+recorded above — peel off the half that is pure algebraic number theory
+— applied now to the PLACES rather than to the coefficients.
+
 PIN AUDIT (2026-07-24/25): no automorphic-representation vocabulary
 exists on this pin, and the reference project's `cyclic_base_change`
 (`~/cs/FLT`, `FLT/GaloisRepresentation/Automorphic.lean`) is itself a
 sorried statement phrased through an `IsAutomorphic` predicate on
 quaternionic forms — vocabulary this project does not have (see the
 `HeckeSystemDescendsTo` docstring). Nothing is vendorable, on this pin
-or after a pin-drift audit.
+or after a pin-drift audit.  That is why the split/inert cut above is a
+cut of the CONCLUSION and not a reduction to library automorphic
+material: the automorphic content survives, undiminished, in the inert
+half.
 
 SOUNDNESS AUDIT (both ways, 2026-07-24/25): (i) direct — for the carrier
 produced by the inhabitation leaf and a system produced by the chain
@@ -5400,8 +5603,37 @@ theorem exists_heckeTrace_of_prime_cyclic_step
         (IntermediateField.fixedField D))),
       ∀ w ∉ S,
         Wit.ιO (((ρ.map (algebraMap ℚ (IntermediateField.fixedField D))).charFrob
-          w).coeff 1) ∈ Set.range Wit.ψℓ :=
-  sorry
+          w).coeff 1) ∈ Set.range Wit.ψℓ := by
+  classical
+  -- the descended system over `L = F^C`, unfolded
+  obtain ⟨SL, PL, hPL⟩ := hC
+  -- the automorphic citation, at the places of `M` no good place of `L` matches
+  obtain ⟨Sin, hSin⟩ := exists_heckeTrace_of_prime_cyclic_step_of_inert hℓodd hℓ5
+    hZinj hrank hρ hW hρbar hirr π hπsurj hπ Wit C D hCD hnormal p hp hcard SL PL hPL
+  -- the finitely many places of `M` over `2` and over `ℓ`, where `ρ` is ramified
+  -- and the residue-cardinality lemma does not apply
+  obtain ⟨S2, hS2⟩ := exists_finset_forall_natCast_notMem_asIdeal
+    (IntermediateField.fixedField D) 2 (by norm_num)
+  obtain ⟨Sℓ, hSℓ⟩ := exists_finset_forall_natCast_notMem_asIdeal
+    (IntermediateField.fixedField D) ℓ (Fact.out : ℓ.Prime).ne_zero
+  refine ⟨Sin ∪ S2 ∪ Sℓ, fun w hw => ?_⟩
+  simp only [Finset.mem_union, not_or] at hw
+  obtain ⟨⟨hwin, hw2⟩, hwℓ⟩ := hw
+  by_cases hsplit : ∃ vL ∉ SL, Ideal.absNorm vL.asIdeal = Ideal.absNorm w.asIdeal
+  · -- SPLIT half: a good place of `L` of the same residue cardinality answers,
+    -- with no automorphic input
+    obtain ⟨vL, hvS, hvnorm⟩ := hsplit
+    have heq := charFrob_baseChange_eq_of_absNorm_eq hℓodd hrank hρ
+      (IntermediateField.fixedField D) (IntermediateField.fixedField C) w vL
+      (hS2 w hw2) (hSℓ w hwℓ) hvnorm
+    have hmatch := hPL vL hvS
+    rw [heq] at hmatch
+    refine ⟨(PL vL).coeff 1, ?_⟩
+    have hcoeff := congrArg
+      (fun P : Polynomial (AlgebraicClosure ℚ_[ℓ]) => P.coeff 1) hmatch
+    simpa [Polynomial.coeff_map] using hcoeff.symm
+  · -- INERT half: the residual citation
+    exact hSin w hwin (fun vL hvL hne => hsplit ⟨vL, hvL, hne⟩)
 
 /-- **One PRIME-degree cyclic step of solvable base change** (PROVEN,
 2026-07-25, from the trace citation
