@@ -14071,15 +14071,21 @@ harvested from this note.**
   `X_0(3)` parameter `u` with `j(E)·u³ = (u + 27)(u + 243)³`, and the Fricke
   involution `w₃ : t = 729/u` converts that into the stated relation in one
   `field_simp`.
-* `exists_x0Seven_hauptmodul` is the one still open, and the first bullet
-  UNDERSTATES it. It is not of the same class as its level-`3` sibling: for
-  an order-`3` subgroup `C\{0} = {P, −P}` is a single `±`-pair, so `x(P)` is
-  Galois-fixed and hence rational, which is what makes the level-`3` Tate
-  normal form available. For order `7`, `C\{0}` is three `±`-pairs permuted
-  by `Gal` through `ℤ/3`, so `x(P)` generates a cubic field and only the
-  SYMMETRIC functions descend. A genuine `ℤ/3`-descent, not "explicit
-  polynomial algebra and Vélu", is what is missing. See that declaration for
-  the refutation of the claim that the `X_1(7)` sibling covers it.
+* `exists_x0Seven_hauptmodul` is **PROVEN** over the single new leaf
+  `WeierstrassCurve.exists_x0Seven_kernelInvariants`, but the first bullet
+  UNDERSTATED it and the correction is what determined the cut. It is not of
+  the same class as its level-`3` sibling: for an order-`3` subgroup
+  `C\{0} = {P, −P}` is a single `±`-pair, so `x(P)` is Galois-fixed and hence
+  rational, which is what makes the level-`3` Tate normal form available. For
+  order `7`, `C\{0}` is three `±`-pairs permuted by `Gal` through `ℤ/3`, so
+  `x(P)` generates a cyclic cubic field and only the SYMMETRIC functions
+  descend. A genuine `ℤ/3`-descent, not "explicit polynomial algebra and
+  Vélu", is what remains — and it is now ALL that remains, since the algebraic
+  half is the proven `MazurLevelSeven.hauptmodul_of_kernelRelations`, whose
+  content is the single rational function
+  `t = 49(s₁² − 3s₂)/(6A − 4s₁² + 18s₂)` in the kernel-polynomial
+  coefficients. See those declarations for the derivation and for the
+  refutation of the claim that the `X_1(7)` sibling covers this node.
 * `MazurLevel21.j_mem_of_hauptmodul_pair` is **PROVEN** over the single new
   leaf `MazurLevel21.rational_point_x0TwentyOne`, which is the pure
   plane-curve statement with `j` eliminated and the cusps excluded. The
@@ -14156,7 +14162,51 @@ open work, not a transcription. Contrast `MazurLevel27.rational_point_x0TwentySe
 which the section note offers as the precedent: that one is PROVEN because it
 turned out to be literally `fermatLastTheoremThree`, i.e. it had a
 ready-made proof in the tree — it is not evidence that a rank-`0`
-Mordell–Weil statement is cheap here. -/
+Mordell–Weil statement is cheap here.
+
+**INDEPENDENT RE-CONFIRMATION OF THE COST, AND ONE UNTRIED ROUTE (2026-07-26,
+second owner, Magma; untrusted searcher, never a prover).** Everything in the
+audit above reproduces: `Genus(C) = 1`; all four listed pairs lie on the curve;
+`EllipticCurve(C, (−18, −49/2))` returns `y² − 10xy = x³ − 27x² − 63x`, whose
+`MinimalModel` is `[1,0,0,−4,−1]` of conductor `21`, with
+`TorsionSubgroup ≅ ℤ/2 + ℤ/4`, `RankBounds = 0 0`, and the eight points
+`O, (−2,1), (−1,−1), (5,8), (2,−1), (−1/4,1/8), (−1,2), (5,−13)`.
+
+Note the distinction the earlier audit did not draw: **the CURVE is small, the
+MAP is not.** `DefiningEquations` of the birational map `C → E` print at
+`822`, `815` and `337` characters in the three coordinates, and `Inverse` of
+that map did **not complete in 8 minutes**. So item (iii) of the ingredient
+list is confirmed expensive from a second, independent direction, and in
+particular the `exists_…_point` framing does not rescue it: concluding still
+needs the inverse, to read `t₃` back off one of the eight points.
+
+**A structural fact worth having, and the deflation that goes with it.** All
+four solutions satisfy `t₃ ∈ −2·(ℚ*)²` and `t₇ ∈ −2·(ℚ*)²`:
+
+  `−18 = −2·3²`, `−81/2 = −2(9/2)²`, `−1152 = −2·24²`, `−81/128 = −2(9/16)²`;
+  `−49/2 = −2(7/2)²`, `−49/8 = −2(7/4)²`, `−2 = −2·1²`, `−8 = −2·2²`.
+
+This looks like four independent coincidences and is **one**: `w₃` is
+`t₃ ↦ 729/t₃` and `w₇` is `t₇ ↦ 49/t₇`, both of which preserve the square class
+(`729` and `49` are squares, and inversion preserves classes), and the
+Atkin–Lehner group acts simply transitively on the four points. So the common
+square class is forced by the orbit and carries no extra arithmetic. Do not
+build a descent on it expecting independent information.
+
+**The untried route, which is the one this owner would take next.** `a := t₃ +
+729/t₃` is invariant under `w₃`, so it is a function on `X_0(21)/w₃`, and
+`t₃` satisfies `t₃² − a·t₃ + 729 = 0`, i.e. `X_0(21) → X_0(21)/w₃` is the
+double cover `y² = a² − 2916`. If `X_0(21)/w₃` has genus `0` — it does whenever
+`w₃` has a fixed point, by Riemann–Hurwitz on a genus-`1` curve — then it is
+`ℙ¹` with some hauptmodul `s`, and the whole node becomes `y² = a(s)² − 2916`
+for an explicit rational function `a(s)`: a SMALL model, reached without the
+generic `EllipticCurve` algorithm that produces the `800`-character map.
+Symmetrically `b := t₇ + 49/t₇` gives `y² = b² − 196` over `X_0(21)/w₇`. This
+was not attempted here for want of time, and it is the cheapest thing left to
+try before accepting the `800`-character transcription. **It does not remove
+the Mordell–Weil citation** — it only makes item (iii) tractable; items (i) and
+(ii), and above all the absence of finite generation from this mathlib pin,
+are untouched by it. -/
 theorem rational_point_x0TwentyOne (t₃ t₇ : ℚ) (ht₃ : t₃ ≠ 0) (ht₇ : t₇ ≠ 0)
     (h : (t₃ + 27) * (t₃ + 3) ^ 3 * t₇ ^ 7
       = t₃ * ((t₇ ^ 2 + 13 * t₇ + 49) * (t₇ ^ 2 + 245 * t₇ + 2401) ^ 3)) :
@@ -14312,8 +14362,177 @@ theorem WeierstrassCurve.exists_x0Three_hauptmodul (E : WeierstrassCurve ℚ)
   field_simp
   linear_combination (729 : ℚ) * hEj
 
-/-- **The hauptmodul of `X_0(7)`** (sorry node — a GENUS-`0` moduli
-statement): if the cyclic subgroup `⟨g⟩` generated by a geometric point
+/-! #### The `X_0(7)` hauptmodul from the kernel polynomial
+
+The two declarations below cut `exists_x0Seven_hauptmodul` into its modular
+half and its algebraic half, along the line the old docstring identified but
+could not supply: *"(i) a moduli leaf producing, from the stable subgroup, the
+monic RATIONAL cubic `ψ_C(x) = ∏(x − x(iP))`, and (ii) an algebra leaf
+computing `t` from `(c₄, c₆, ψ_C)`; step (ii) is a classical but bulky explicit
+computation that has NOT been done here."*
+
+**Step (ii) is now done** (2026-07-26), and it is not bulky — it is a single
+rational function. Work in a short Weierstrass model `y² = x³ + Ax + B` and let
+
+  `ψ_C(x) = x³ − s₁x² + s₂x − s₃`
+
+be the kernel polynomial of the stable order-`7` subgroup `C`. Then the
+`X_0(7)` hauptmodul value of `(E, C)` is
+
+  `t = 49(s₁² − 3s₂) / (6A − 4s₁² + 18s₂)`.                              (★)
+
+**How (★) was found.** The universal curve over `X_0(7)` is
+`y² = x³ − 27c₄(t)x − 54c₆(t)` with
+
+  `c₄(t) = (t² + 13t + 49)(t² + 245t + 2401)`,
+  `c₆(t) = (t² + 13t + 49)(t⁴ − 490t³ − 21609t² − 235298t − 823543)`,
+  `Δ(t)  = t⁷(t² + 13t + 49)²`
+
+(the second factor of `c₆` is an exact square root of
+`(t² + 13t + 49)(t² + 245t + 2401)³ − 1728t⁷`, which is what makes the family
+exist). Factoring its `7`-division polynomial over `ℚ(t)` gives the degree-`3`
+kernel polynomial, whose first symmetric function is remarkably simple:
+
+  `s₁ = 63(t² + 13t + 49)`,   `s₂ = 27(t² + 13t + 49)(33t² + 637t + 2401)`.
+
+Since `t` is weight-`0` under `(A,B,x) ↦ (u⁴A, u⁶B, u²x)` it is a ratio of two
+isobaric weight-`4` forms in `A, s₁², s₂`, and solving that `3 + 3`-dimensional
+linear system over `ℚ(t)` returns a **two**-dimensional solution space. Both
+solutions are genuine, and the choice between them matters:
+
+* `t = 98(A + s₂)/(s₁² − 18A − 5s₂)` degenerates — numerator *and* denominator
+  vanish — exactly at `t = −49/4`, which is an honest rational point of
+  `X_0(7)` (`j = 351/4`), so this form is **unusable**;
+* (★) has denominator `6A − 4s₁² + 18s₂ = 1296·u⁴·t·(t² + 13t + 49)`, which
+  vanishes only at `t = 0`, i.e. only at a CUSP, where there is no elliptic
+  curve at all. So (★) is defined at every genuine `(E, C)`.
+
+Eliminating `t` between the two relations that (★) inverts,
+
+  `147·A·(t² + 13t + 49) = −s₁²·(t² + 245t + 2401)`,
+  `9261·B·(t² + 13t + 49)² = −2s₁³·(t⁴ − 490t³ − 21609t² − 235298t − 823543)`,
+
+by substituting `t = P/Q` with `P = 49(s₁² − 3s₂)`, `Q = 6A − 4s₁² + 18s₂` and
+clearing denominators gives the two `t`-FREE polynomial identities in
+`(A, B, s₁, s₂)` that `exists_x0Seven_kernelInvariants` below asserts. That is
+the whole point of the cut: the remaining leaf never mentions `t`, a
+hauptmodul, or a modular curve.
+
+**Checked with Magma (2026-07-26; untrusted searcher, never a prover).** Both
+identities hold on the nose, and `P/Q` returns the documented hauptmodul value
+with residual exactly `0`, for the four conductor-`162` curves
+(`t = −49/2, −49/8, −2, −8`), for `49a1 = [1,−1,2,−1,0]` (`t = −49/5`), and for
+the universal curve at `t = −49/2, −49/4, −2, 5, 1/3, −7, 7` — the `−49/4` case
+being precisely the one that refutes the other solution vector. -/
+theorem MazurLevelSeven.hauptmodul_of_kernelRelations (j A B s₁ P Q : ℚ)
+    (hQ : Q ≠ 0)
+    (hΔ : 4 * A ^ 3 + 27 * B ^ 2 ≠ 0)
+    (hj : j * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3)
+    (h1 : 147 * A * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2)
+            + s₁ ^ 2 * (P ^ 2 + 245 * P * Q + 2401 * Q ^ 2) = 0)
+    (h2 : 9261 * B * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2) ^ 2
+            + 2 * s₁ ^ 3 * (P ^ 4 - 490 * P ^ 3 * Q - 21609 * P ^ 2 * Q ^ 2
+              - 235298 * P * Q ^ 3 - 823543 * Q ^ 4) = 0) :
+    ∃ t : ℚ, j * t ^ 7 = (t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3 := by
+  obtain ⟨t, rfl⟩ : ∃ t : ℚ, P = t * Q := ⟨P / Q, by field_simp⟩
+  refine ⟨t, ?_⟩
+  -- `t² + 13t + 49 = ((2t + 13)² + 27)/4` is positive, hence nonzero, for every rational `t`;
+  -- this is what makes the cusp `t = 0` the only degeneration of the family.
+  have hwpos : (0 : ℚ) < t ^ 2 + 13 * t + 49 := by nlinarith [sq_nonneg (2 * t + 13)]
+  have hw : t ^ 2 + 13 * t + 49 ≠ 0 := ne_of_gt hwpos
+  -- The two `t`-free identities are exactly the `Q²`- and `Q⁴`-multiples of the
+  -- universal-family relations at the parameter `t`.
+  have H1 : 147 * A * (t ^ 2 + 13 * t + 49)
+      + s₁ ^ 2 * (t ^ 2 + 245 * t + 2401) = 0 := by
+    apply mul_left_cancel₀ (pow_ne_zero 2 hQ)
+    linear_combination h1
+  have H2 : 9261 * B * (t ^ 2 + 13 * t + 49) ^ 2
+      + 2 * s₁ ^ 3 * (t ^ 4 - 490 * t ^ 3 - 21609 * t ^ 2 - 235298 * t - 823543) = 0 := by
+    apply mul_left_cancel₀ (pow_ne_zero 4 hQ)
+    linear_combination h2
+  have hne : (147 : ℚ) ^ 3 * (t ^ 2 + 13 * t + 49) ^ 4 ≠ 0 :=
+    mul_ne_zero (by norm_num) (pow_ne_zero _ hw)
+  -- Writing `X = 147A(t²+13t+49)` and `Y = 9261B(t²+13t+49)²`, the `147³(t²+13t+49)⁴`-multiple
+  -- of the claim is `κX³ − wV³Y²` with `κ = 6912t⁷w − 4V³w²`, and `κ = −4w·sq²` is precisely
+  -- the family identity `wV³ − sq² = 1728t⁷`.  So `H1` divides the `X³` part through
+  -- `X³ + s₁⁶V³ = (X + s₁²V)(X² − s₁²VX + s₁⁴V²)` and `H2` the `Y²` part through
+  -- `Y² − 4s₁⁶sq² = (Y + 2s₁³sq)(Y − 2s₁³sq)`.
+  have key : 6912 * A ^ 3 * t ^ 7
+      = (t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3 * (4 * A ^ 3 + 27 * B ^ 2) := by
+    apply mul_left_cancel₀ hne
+    linear_combination
+      ((6912 * t ^ 7 * (t ^ 2 + 13 * t + 49)
+          - 4 * (t ^ 2 + 245 * t + 2401) ^ 3 * (t ^ 2 + 13 * t + 49) ^ 2)
+        * ((147 * A * (t ^ 2 + 13 * t + 49)) ^ 2
+            - s₁ ^ 2 * (t ^ 2 + 245 * t + 2401) * (147 * A * (t ^ 2 + 13 * t + 49))
+            + s₁ ^ 4 * (t ^ 2 + 245 * t + 2401) ^ 2)) * H1
+      + (-((t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3
+            * (9261 * B * (t ^ 2 + 13 * t + 49) ^ 2
+               - 2 * s₁ ^ 3
+                 * (t ^ 4 - 490 * t ^ 3 - 21609 * t ^ 2 - 235298 * t - 823543)))) * H2
+  apply mul_right_cancel₀ hΔ
+  linear_combination t ^ 7 * hj + key
+
+/-- **The kernel-polynomial invariants of a stable order-`7` subgroup** (sorry
+leaf, cut 2026-07-26 out of `exists_x0Seven_hauptmodul`): from a
+`Gal(ℚ̄/ℚ)`-stable cyclic subgroup `⟨g⟩` of order `7` on `E/ℚ`, produce a short
+Weierstrass model `y² = x³ + Ax + B` of `E` over `ℚ` together with the first two
+symmetric functions `s₁, s₂` of the `x`-coordinates of the three `±`-pairs in
+`⟨g⟩` — i.e. the coefficients of the KERNEL POLYNOMIAL
+`ψ_C(x) = x³ − s₁x² + s₂x − s₃` — and check the two explicit polynomial
+identities they satisfy.
+
+**This is the `ℤ/3`-descent, and nothing else.** For an order-`3` subgroup
+`C\{0} = {P, −P}` is a single `±`-pair, so `x(P)` is Galois-FIXED and hence
+rational, which is why `exists_x0Three_hauptmodul` fell out of machinery already
+in this file. For order `7`, `C\{0}` is three `±`-pairs permuted by `Gal(ℚ̄/ℚ)`
+through `(ℤ/7)ˣ/±1 ≅ ℤ/3`; each `x(iP)` generates a cyclic cubic field and only
+the SYMMETRIC functions descend to `ℚ`. Stability of `⟨g⟩` says exactly that
+`Gal` permutes the three roots, so `ψ_C ∈ ℚ[x]`, and `s₁, s₂ ∈ ℚ` is the entire
+modular content of the node. The two identities are then a division-polynomial
+computation over `ℚ` with no Galois action in it.
+
+**Worked instance of the obstruction, so nobody re-attempts a Tate normal
+form.** For `[1,−1,0,3,−1]` the `7`-division polynomial factors as
+`(degree 3)·(degree 21)` and the kernel polynomial is the IRREDUCIBLE cubic
+`ψ_C = x³ + 6x² + 3x − 1`, of discriminant `729 = 27²` — a square, so the cubic
+is CYCLIC, with splitting field the real cyclotomic field `ℚ(ζ₉)⁺`. Hence
+`x(P)` is a non-rational cubic irrationality for every `P ∈ C\{0}` and **no Tate
+normal form for `P` exists over `ℚ`**. The sibling `[1,−1,0,−42,−100]` behaves
+identically (`ψ_C = x³ + 6x² − 15x − 73`, discriminant `59049 = 243²`). By
+contrast `26b1`, which HAS a rational point of order `7`, has
+`ψ_C = (x−1)(x+1)(x−3)` split over `ℚ` — that is the sub-case, and the only one
+an `X_1(7)` route can reach, which is why `exists_levelSeven_jParam` does NOT
+cover this node.
+
+**Faithfulness of the two side conditions.** `Q = 6A − 4s₁² + 18s₂` equals
+`1296·u⁴·t·(t² + 13t + 49)` on the universal family, so it vanishes only at the
+cusp `t = 0`, where there is no elliptic curve; and `4A³ + 27B² ≠ 0` is just
+`Δ ≠ 0`. Both therefore hold at every genuine `(E, ⟨g⟩)`, and neither is a
+disguised extra hypothesis. See the section note above for the derivation of the
+identities and for the Magma verification data. -/
+theorem WeierstrassCurve.exists_x0Seven_kernelInvariants (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 7)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ A B s₁ s₂ P Q : ℚ,
+      P = 49 * (s₁ ^ 2 - 3 * s₂) ∧
+      Q = 6 * A - 4 * s₁ ^ 2 + 18 * s₂ ∧
+      Q ≠ 0 ∧
+      4 * A ^ 3 + 27 * B ^ 2 ≠ 0 ∧
+      E.j * (4 * A ^ 3 + 27 * B ^ 2) = 6912 * A ^ 3 ∧
+      147 * A * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2)
+        + s₁ ^ 2 * (P ^ 2 + 245 * P * Q + 2401 * Q ^ 2) = 0 ∧
+      9261 * B * (P ^ 2 + 13 * P * Q + 49 * Q ^ 2) ^ 2
+        + 2 * s₁ ^ 3 * (P ^ 4 - 490 * P ^ 3 * Q - 21609 * P ^ 2 * Q ^ 2
+          - 235298 * P * Q ^ 3 - 823543 * Q ^ 4) = 0 :=
+  sorry
+
+/-- **The hauptmodul of `X_0(7)`** (PROVEN 2026-07-26 over the single leaf
+`exists_x0Seven_kernelInvariants` — a GENUS-`0` moduli
 `g` of `E/ℚ` has exact order `7` and is `Gal(ℚ̄/ℚ)`-stable, then there is a
 rational hauptmodul value `t` with
 
@@ -14397,6 +14616,18 @@ order-`7` analogue of what `exists_tateInvariants_of_stableThreeSubgroup`
 does at order `3`; step (ii) is a classical but bulky explicit computation
 that has NOT been done here.
 
+**THAT CUT IS NOW MADE, and step (ii) turned out NOT to be bulky (2026-07-26).**
+Step (i) is the remaining leaf `exists_x0Seven_kernelInvariants`; step (ii) is
+the PROVEN lemma `MazurLevelSeven.hauptmodul_of_kernelRelations`, and the whole
+of it is the single rational function
+
+  `t = 49(s₁² − 3s₂) / (6A − 4s₁² + 18s₂)`
+
+in the coefficients of `ψ_C(x) = x³ − s₁x² + s₂x − s₃` over a short model
+`y² = x³ + Ax + B`. The paragraph "classical but bulky" is therefore RETIRED;
+see the section note above this pair of declarations for the derivation, for the
+second (unusable) solution of the same linear system, and for the Magma data.
+
 **THE CONTENT, IN ONE EQUATION — a sharp reformulation of step (ii), found
 and verified 2026-07-26.** Let `C` be the stable subgroup and `E' = E/C`
 Vélu's quotient, which is defined over `ℚ` and is what `Velu.lean` already
@@ -14460,8 +14691,10 @@ theorem WeierstrassCurve.exists_x0Seven_hauptmodul (E : WeierstrassCurve ℚ)
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     ∃ t : ℚ, E.j * t ^ 7 =
-      (t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3 :=
-  sorry
+      (t ^ 2 + 13 * t + 49) * (t ^ 2 + 245 * t + 2401) ^ 3 := by
+  obtain ⟨A, B, s₁, s₂, P, Q, rfl, rfl, hQ, hΔ, hj, h1, h2⟩ :=
+    E.exists_x0Seven_kernelInvariants g hg hstable
+  exact MazurLevelSeven.hauptmodul_of_kernelRelations E.j A B s₁ _ _ hQ hΔ hj h1 h2
 
 /-- **The `j`-invariants of the four curves with a rational cyclic
 `21`-isogeny** (PROVEN 2026-07-26 over the three leaves
