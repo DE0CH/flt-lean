@@ -2143,14 +2143,31 @@ transcribed verbatim except for the `linarith` step (`ha3ne`) and the
 Three changes of variables: translate `Q` to `(0,0)`, shear so that
 `a₄ = 0`, then scale so that `a₂ = a₃`. The scaling is legitimate exactly
 because `a₂ ≠ 0` after the shear, which is `order_three_of_a₂_eq_zero`
-together with `addOrderOf Q = 9 ∤ 3`. -/
+together with `addOrderOf Q = 9 ∤ 3`.
+
+CONCLUSION WIDENED 2026-07-26 to return the CHANGE OF VARIABLES itself,
+which is what closed `exists_tateParam`. The proof already built the
+composite internally (`C₁ = ⟨1, X, s₀, Y⟩` translating/shearing, then
+`C₂ = ⟨u, 0, 0, 0⟩` scaling) and discarded it, exposing only the induced
+group isomorphism `Ψ`; an abstract `≃+` carries no geometry, so the
+consumers that need the Tate normal form as a normal form could not use
+it. The returned `C` is `C₂ * C₁` — note `mul_smul` makes
+`(C₂ * C₁) • V = C₂ • (C₁ • V)`, so the factors compose in that order —
+and since `C₂.r = C₂.t = 0` and `C₁.u = 1` the composite has
+`C.r = X`, `C.t = Y`, i.e. `(C.r, C.t)` are literally the coordinates of
+`Q`. That is the extra conclusion `Q = some C.r C.t hrt`, and it is the
+form `IsTateParam` consumes. `Ψ` is retained unchanged, because it is
+still the cheapest way to transport `addOrderOf Q = 9` to the origin of
+the normal form. -/
 theorem exists_tateNF_of_order_nine {K : Type*} [Field K] [DecidableEq K]
     (V : WeierstrassCurve K) [V.IsElliptic] (Q : V.toAffine.Point) (hQ : addOrderOf Q = 9) :
-    ∃ (b c : K) (_hb : b ≠ 0)
+    ∃ (b c : K) (C : VariableChange K) (_hb : b ≠ 0)
       (_hΔ : (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve K).Δ ≠ 0)
+      (_hC : C • V = (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve K))
       (h00 : (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve K).toAffine.Nonsingular 0 0)
+      (hrt : V.toAffine.Nonsingular C.r C.t)
       (Ψ : V.toAffine.Point ≃+ (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve K).toAffine.Point),
-      Ψ Q = Affine.Point.some 0 0 h00 ∧
+      Ψ Q = Affine.Point.some 0 0 h00 ∧ Q = Affine.Point.some C.r C.t hrt ∧
         V.j * (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve K).Δ
           = (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve K).c₄ ^ 3 := by
   have hQ0 : Q ≠ 0 := by rintro rfl; simp at hQ
@@ -2239,9 +2256,13 @@ theorem exists_tateNF_of_order_nine {K : Type*} [Field K] [DecidableEq K]
   have hjmul : V.j * (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve K).Δ
       = (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve K).c₄ ^ 3 := by
     rw [hjW]; exact cFour_cube_eq _
-  refine ⟨b, c, hbne, hEq ▸ hΔ2, hEq ▸ h00'',
+  have hCr : (C₂ * C₁).r = X := by simp [VariableChange.mul_def, hC₁, hC₂]
+  have hCt : (C₂ * C₁).t = Y := by simp [VariableChange.mul_def, hC₁, hC₂]
+  have hrt : V.toAffine.Nonsingular (C₂ * C₁).r (C₂ * C₁).t := by rw [hCr, hCt]; exact hns
+  refine ⟨b, c, C₂ * C₁, hbne, hEq ▸ hΔ2, by rw [mul_smul]; exact hEq, hEq ▸ h00'', hrt,
     (Point.equivVariableChange V C₁).symm.trans
-      ((Point.equivVariableChange (C₁ • V) C₂).symm.trans (Point.equivOfEq hEq)), ?_, hjmul⟩
+      ((Point.equivVariableChange (C₁ • V) C₂).symm.trans (Point.equivOfEq hEq)), ?_,
+    by rw [hQxy]; exact Point.some_eq_some V hCr.symm hCt.symm, hjmul⟩
   have e1 : (Point.equivVariableChange V C₁).symm Q = Point.some 0 0 h00' := by
     rw [← hmap]; exact (Point.equivVariableChange V C₁).symm_apply_apply _
   have e2 : (Point.equivVariableChange (C₁ • V) C₂) (Point.some 0 0 h00'')
@@ -2323,14 +2344,14 @@ def IsTateParam (E : WeierstrassCurve ℚ) (P : (E⁄(AlgebraicClosure ℚ)).Poi
         P = Affine.Point.some C.r C.t h
 
 /-- **Tate normal form over `ℚ̄` at a geometric point of order `9`**
-(SORRY LEAF, re-opened at integration 2026-07-26 against the REPAIRED
-`IsTateParam`): an elliptic curve over `ℚ` whose geometric points contain
-a point `P` of order `9` acquires, over `ℚ̄`, a Kubert parameter `d` —
-nondegenerate, and computing `j(E)`.
+(PROVEN 2026-07-26 against the REPAIRED `IsTateParam`): an elliptic curve
+over `ℚ` whose geometric points contain a point `P` of order `9`
+acquires, over `ℚ̄`, a Kubert parameter `d` — nondegenerate, and
+computing `j(E)`.
 
-**WHY THIS IS OPEN AGAIN, AND WHAT IS LEFT.** This node HAD a complete
-proof, but of the WEAKER, superseded form of `IsTateParam`, which asked
-only for an abstract group isomorphism
+**HOW IT WAS CLOSED, which was exactly the bookkeeping predicted below.**
+This node HAD a complete proof, but of the WEAKER, superseded form of
+`IsTateParam`, which asked only for an abstract group isomorphism
 `Ψ : (E⁄ℚ̄).Point ≃+ (tateCurve d).Point` carrying `P` to `(0,0)`. That
 form is too weak to be the Tate normal form: it does not say the two
 curves are related by a CHANGE OF VARIABLES at all, so nothing about the
@@ -2341,17 +2362,28 @@ was accordingly repaired (same day) to carry the variable change itself,
 
 which is what `nondegenerate_of_isTateParam`, `isTateParam_unique`,
 `isTateParam_two_nsmul`, `isTateParam_galois` and hence
-`exists_rat_hauptmodul_of_stable` all consume. The old proof establishes
-the old statement and does NOT establish this one, so it was not carried
-over — see git history for it.
+`exists_rat_hauptmodul_of_stable` all consume.
 
-**The remaining work is small and is bookkeeping, not mathematics.**
-`exists_tateNF_of_order_nine` already CONSTRUCTS the required change of
-variables internally (`C₁ := ⟨1, X, s₀, Y⟩` and the two after it) and
-then discards it, exposing only the induced `Ψ`. Widening that lemma's
-conclusion to return the composite `C` — and `P = some C.r C.t _` in
-place of `Ψ P = some 0 0 _` — closes this leaf immediately, since every
-step of its proof already goes through `Point.equivVariableChange`.
+`exists_tateNF_of_order_nine` already CONSTRUCTED the required change of
+variables internally (`C₁ := ⟨1, X, s₀, Y⟩` and the scaling `C₂` after
+it) and then discarded it, exposing only the induced `Ψ`. Its conclusion
+was therefore WIDENED to return the composite `C = C₂ * C₁` together with
+`C • V = ⟨1 − c, −b, −b, 0, 0⟩` and `Q = some C.r C.t _`; see the note in
+its docstring. With that in hand this proof is four steps:
+
+1. transport `addOrderOf P = 9` along `Ψ` (`addOrderOf_injective`) to get
+   `9 • (0,0) = 0` on the normal form;
+2. `psi3_eq_zero` turns that into `ψ₃(c) = 0` (the four `aᵢ` hypotheses
+   are `rfl` for the literal curve `⟨1 − c, −b, −b, 0, 0⟩`);
+3. `c ≠ 0`, since `c = 0` collapses `ψ₃` to `−b³ = 0` against `b ≠ 0`;
+   then `exists_param` produces `d` with `c = d²(d − 1)`,
+   `b = c(d² − d + 1)`, whence `⟨1 − c, −b, −b, 0, 0⟩ = tateCurve d` by
+   `rfl` after substitution — which is precisely why `tateCurve` is
+   written out in `d` in these coordinates;
+4. the `j`-identity is `exists_tateNF_of_order_nine`'s own last
+   conclusion, moved across `E ⇝ E⁄ℚ̄` by `WeierstrassCurve.map_j`.
+
+Axioms: `[propext, Classical.choice, Quot.sound]`.
 
 **THE REST OF THIS NODE WAS A MECHANICAL GENERALISATION OF PROVEN CODE,
 NOT NEW MATHEMATICS**, and that is exactly how it was done.
@@ -2397,8 +2429,32 @@ argument rather than re-choosing it. -/
 theorem exists_tateParam (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 9) :
     ∃ d : AlgebraicClosure ℚ, IsTateParam E P d ∧ (tateCurve d).Δ ≠ 0 ∧
-      algebraMap ℚ (AlgebraicClosure ℚ) E.j * (tateCurve d).Δ = (tateCurve d).c₄ ^ 3 :=
-  sorry
+      algebraMap ℚ (AlgebraicClosure ℚ) E.j * (tateCurve d).Δ = (tateCurve d).c₄ ^ 3 := by
+  haveI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  obtain ⟨b, c, C, hbne, hΔW, hCV, h00, hrt, Ψ, hΨ, hPeq, hjmul⟩ :=
+    exists_tateNF_of_order_nine (E⁄(AlgebraicClosure ℚ)) P hP
+  -- 1. the origin of the Tate normal form has order `9`
+  have hord : addOrderOf (Affine.Point.some (0 : AlgebraicClosure ℚ) 0 h00) = 9 := by
+    rw [← hΨ, ← hP]
+    exact addOrderOf_injective Ψ.toAddMonoidHom Ψ.injective P
+  have h9 : (9 : ℕ) • (Affine.Point.some (0 : AlgebraicClosure ℚ) 0 h00) = 0 := by
+    rw [← hord]; exact addOrderOf_nsmul_eq_zero _
+  -- 2. hence `ψ₃(c) = 0`
+  have hpsi : c ^ 5 + c ^ 4 + (1 - b) * c ^ 3 - 3 * b * c ^ 2 + 3 * b ^ 2 * c - b ^ 3 = 0 :=
+    psi3_eq_zero (W := (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve (AlgebraicClosure ℚ)).toAffine)
+      rfl rfl rfl rfl hbne h00 h9
+  -- 3. `c ≠ 0`, so the Kubert parameter exists and identifies the curve with `tateCurve d`
+  have hcne : c ≠ 0 := by
+    rintro rfl
+    exact hbne ((pow_eq_zero_iff (n := 3) (by norm_num)).mp (by linear_combination -hpsi))
+  obtain ⟨d, hcd, hbd⟩ := exists_param hcne hpsi
+  have hWd : (⟨1 - c, -b, -b, 0, 0⟩ : WeierstrassCurve (AlgebraicClosure ℚ)) = tateCurve d := by
+    rw [hbd, hcd]; rfl
+  -- 4. assemble, moving `j` across `E ⇝ E⁄ℚ̄`
+  refine ⟨d, ⟨C, hWd ▸ hCV, hrt, hPeq⟩, hWd ▸ hΔW, ?_⟩
+  rw [← hWd, ← WeierstrassCurve.map_j]
+  exact hjmul
 
 /-- **A Kubert parameter is nondegenerate** (PROVEN 2026-07-26): if `d` is a
 Kubert parameter of `(E, P)` then `d ≠ 0` and `d³ − 6d² + 3d + 1 ≠ 0`.
@@ -2875,18 +2931,20 @@ note carries the geometry. The cut runs through the Kubert line of
 `X_1(9)`, NOT through Vélu: `X_0(9) = X_1(9)/⟨diamond⟩` with the diamond
 operator acting as the order-`3` Möbius map `γ(d) = (d − 1)/d`, and the
 Hauptmodul is the invariant `R(d) = 27d(d − 1)/(d³ − 6d² + 3d + 1)`. What
-is left open is exactly ONE thing (updated 2026-07-26, when
-`isTateParam_unique` and `isTateParam_two_nsmul` were both PROVEN; the list
-below keeps all three entries for orientation, the last two now closed):
+is left open beneath it is NOTHING (updated 2026-07-26 (later), when
+`exists_tateParam` was closed too; the list below keeps all three entries
+for orientation, all three now closed):
 
 * `MazurLevel9.exists_tateParam` — the Tate normal form over `ℚ̄`, a
   mechanical re-basing of the PROVEN
   `exists_tateNormalForm_jInvariant_of_order_nine`. It was briefly PROVEN
   against the pre-repair `IsTateParam`, which asked only for an abstract
   group isomorphism; against the repaired statement, which carries the
-  CHANGE OF VARIABLES, it is open again and needs only
-  `exists_tateNF_of_order_nine` to stop discarding the variable change it
-  already builds. See its docstring;
+  CHANGE OF VARIABLES, it was open again. **PROVEN 2026-07-26** by
+  widening `exists_tateNF_of_order_nine` to stop discarding the variable
+  change it already builds (it returns `C = C₂ * C₁` and
+  `Q = some C.r C.t _`), then reading off `ψ₃(c) = 0` and `exists_param`.
+  See its docstring;
 * `MazurLevel9.isTateParam_unique` — rigidity of the Tate normal form, i.e.
   that the Kubert parameter is a function of the pair `(E, P)`. **PROVEN
   2026-07-26**: `D := C' * C⁻¹` fixes the origin, so `a₄' = 0` kills the shear
@@ -13589,72 +13647,33 @@ theorem j_of_x0Three_cover (J h t : ℚ)
 
 end MazurLevel27
 
-/-- **The `3`-division kernel and the covering condition: the level-`9`
-moduli content with the `j`-invariant eliminated entirely** (sorry node,
-introduced 2026-07-26): if the geometric points of an elliptic curve
-over `ℚ` contain a point `g` of order `9` whose cyclic subgroup is
-`Gal(ℚ̄/ℚ)`-stable, then there are rationals `r` and `t` with
+/-! **`WeierstrassCurve.exists_x0Three_kernel_lift` was DELETED 2026-07-26**
+(introduced 15:52 the same day; deleted the same evening).  It stated
 
-  `3r⁴ + b₂r³ + 3b₄r² + 3b₆r + b₈ = 0`   (i.e. `ψ₃(r) = 0`)
+    ∃ r t : ℚ, 3r⁴ + b₂r³ + 3b₄r² + 3b₆r + b₈ = 0 ∧
+               729 B₄ (t² + 9t + 27) = t³ (B₂² − 27B₄)
 
-and, writing `B₂ = b₂ + 12r` and `B₄ = b₄ + rb₂ + 6r²` for the
-`b`-invariants after translating the abscissa `r` to `0`,
+and was cut as the level-`3` leaf under `exists_x0Nine_hauptmodul`, on the
+route that reaches the degree-`12` `X_0(9)` `j`-map through the `X_0(3)`
+`j`-line (`MazurLevel27.x0Three_jRelation`, `.j_of_x0Three_cover`, both
+still PROVEN and still present just above).  At integration that route
+LOST, and its one consumer edge with it: `exists_x0Nine_hauptmodul` on
+`main` is proven through the `MazurLevel9` Kubert line instead
+(`MazurLevel9.exists_tateParam` + `.exists_rat_hauptmodul_of_stable`), and
+does not mention this leaf.  A `grep` over the whole tree found the
+declaration exactly once — at its own definition — so it was a sorried,
+FREE-FLOATING node: nothing downstream could ever consume it, and no
+amount of work on it could reach the root.
 
-  `729 B₄ (t² + 9t + 27) = t³ (B₂² − 27B₄)`.
-
-**No `j`-invariant, no Hauptmodul, no modular function appears.** The
-first condition says only that the `3`-torsion subgroup `C₃ = 3⟨g⟩` has
-a rational abscissa — which it does, because a stable subgroup of order
-`3` is `{O, P, −P}` and `P`, `−P` share an abscissa, so the kernel
-polynomial at level `3` is *linear* and its root is Galois-fixed. The
-second says that the resulting `X_0(3)`-point, whose Hauptmodul value is
-`h = 729B₄/(B₂² − 27B₄)`, lifts to `X_0(9)` along the explicit
-degree-`3` cover `h = t³/(t² + 9t + 27)`.
-
-Everything else at this level is PROVEN:
-`MazurLevel27.x0Three_jRelation` turns `ψ₃(r) = 0` into the `X_0(3)`
-`j`-line, and `MazurLevel27.j_of_x0Three_cover` pushes that up to the
-degree-`12` `X_0(9)` map. So the whole modular-function computation has
-been discharged, and what is left is a statement about a root of the
-`3`-division polynomial and one covering equation.
-
-**Why the two conditions must be produced TOGETHER, and a warning.** It
-is tempting to split this into "`E` has a rational `X_0(3)`-parameter"
-and "every such parameter lifts". The second half is FALSE. `j₃` has
-degree `4`, so a curve can carry several rational `3`-isogenies with the
-same `j`, and only the one inside the given `9`-subgroup lifts. Explicit
-counterexample: in the conductor-`27` isogeny class the degree matrix is
-`[1,3,9,27; 3,1,3,9; 9,3,1,3; 27,9,3,1]`, a chain `E₀—E₁—E₂—E₃`; the
-curve `E₁` has a cyclic `9`-isogeny (to `E₃`) and TWO rational
-`3`-isogenies, and the one pointing back to `E₀` does not extend, since
-`E₀`'s only `3`-isogeny returns to `E₁`. So `r` must be the abscissa of
-the *specific* subgroup `3⟨g⟩`, which is why it is bound by the same
-existential as `t`.
-
-Degenerate case, which the statement covers for free: `B₂² − 27B₄ = 0`
-forces `B₂ = B₄ = 0` (anything else makes `Δ = 0`), hence `c₄ = 0` and
-`j = 0` — the curves `y² = x³ + a₆`, whose `3`-torsion at `x = 0` really
-is Galois-stable. There the displayed covering equation reads `0 = 0`
-and holds for every `t`; the consumer below supplies the witness
-`t = −9` itself.
-
-Worked example for the non-degenerate formula, checked by hand:
-`y² = x³ + x² + 2x + 1` has `r = 0`, `B₂ = B₄ = B₆ = 4`, `B₈ = 0`,
-`h = −729/23` and `j = 32000/23`, and `(h + 27)(h + 243)³/h³ = 32000/23`
-✓. -/
-theorem WeierstrassCurve.exists_x0Three_kernel_lift
-    (E : WeierstrassCurve ℚ) [E.IsElliptic]
-    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 9)
-    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      ∀ x ∈ AddSubgroup.zmultiples g,
-        Affine.Point.map
-          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
-          AddSubgroup.zmultiples g) :
-    ∃ r t : ℚ,
-      3 * r ^ 4 + E.b₂ * r ^ 3 + 3 * E.b₄ * r ^ 2 + 3 * E.b₆ * r + E.b₈ = 0 ∧
-      729 * (E.b₄ + r * E.b₂ + 6 * r ^ 2) * (t ^ 2 + 9 * t + 27)
-        = t ^ 3 * ((E.b₂ + 12 * r) ^ 2 - 27 * (E.b₄ + r * E.b₂ + 6 * r ^ 2)) :=
-  sorry
+It is deleted rather than left standing because a sorry leaf that no proof
+term can reach is pure phantom work for the next frontier scan; this is
+`CLAUDE.md`'s free-floating rule applied top-down.  The statement, its
+faithfulness discussion (the conductor-`27` chain `E₀—E₁—E₂—E₃`
+counterexample showing the two conditions may NOT be split into "`E` has a
+rational `X_0(3)`-parameter" + "every such parameter lifts"), and the
+worked example `y² = x³ + x² + 2x + 1` are preserved in the history:
+`git show 7868b4ba:Fermat/FLT/FreyCurve/MazurTorsion.lean` if the `X_0(3)`
+route is ever revived. -/
 
 /-- **No rational point of order `2` together with a rational point of
 order `9`** (PROVEN 2026-07-25; previously a bare sorry node): no
