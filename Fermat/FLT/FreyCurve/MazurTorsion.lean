@@ -8760,66 +8760,6 @@ theorem gcd_dvd_fifteen {S e A B : ℤ} (hcop : IsCoprime S e) (p q r s : ℤ)
     rw [hrw]; exact dvd_add (h2.mul_left u) (h1.mul_left v)
   exact_mod_cast hgd
 
-/-- **The `5`-twisted concordant system for `n = 16`** (sorry leaf, cut
-2026-07-26 out of `quartic_pos`/`quartic_neg`): for coprime `x`, `y`, if
-BOTH `x² + y²` and `x² + 16y²` are `5` times a square then `x² = 4y²`
-(equivalently `(|x|,|y|) = (2,1)`).
-
-This is the `2`-covering of `V² = X(X+1)(X+16)` twisted by the order-`4`
-point `(4, 20)`; the solution `(x,y) = (2,1)` (`5 = 5·1²`, `20 = 5·2²`) is
-the point itself, so again there is no congruence obstruction. Exhaustive
-search (`0 ≤ x,y ≤ 3000`, coprime) finds no further solution.
-
-**THE DESCENT, worked out 2026-07-26.** Use the two-squares identity
-`5(u² + v²) = (2u + v)² + (u − 2v)²`. Replacing `y` by `−y` if necessary
-(both hypotheses and the conclusion are even in `y`) one may assume
-`5 ∤ 2x + y`; put `X = 2x + y`, `Y = x − 2y`, so `gcd(X, Y) = 1` and
-
-    X² + Y² = (5b)²,        (2Y)² + (2X − 3Y)² = (5c)²
-
-(the second because `x + 8y = 2X − 3Y` and
-`5(x² + 16y²) = (2x − 4y)² + (x + 8y)²`). Parametrising both primitive
-triples and applying the four-way coprime split to `PQ = M² − N²` turns
-the compatibility condition into
-
-    (A² + D²)(B² − C²) = ±3ABCD,      A, B, C, D pairwise coprime,
-
-which splits (since `A² + D²` is prime to `AD` and `B² − C²` is prime to
-`BC`, and the two cofactors multiply to `3`) into exactly
-
-    A² + D² = 3BC  ∧  B² − C² = AD      or      A² + D² = BC  ∧  B² − C² = 3AD,
-
-with `A, B, C, D ≲ |x|^{1/4}`.
-
-**THE ONE TRAP — a route that looks like a proof and is EXACTLY CIRCULAR**
-(checked 2026-07-26; do not spend a cycle on it). Subtracting the two
-hypotheses gives `c² − b² = 3y²`, and `16·(h1) − (h2)` gives
-`16b² − c² = 3x²`; also `gcd(b, c) = 1`, since a common divisor divides
-both `3x²` and `3y²`, hence divides `3`, and `3 ∣ b` is impossible —
-it would give `x² + y² = 5b² ≡ 0 (mod 9)`, forcing `3 ∣ x` and `3 ∣ y`.
-So `(b, c)` satisfies
-
-    (3xy)² = (c² − b²)(16b² − c²) = −c⁴ + 17c²b² − 16b⁴,
-
-i.e. `quartic_neg` at `(S, e) = (c, b)` — which IS proven. Its three
-conclusions then give `c² = b²` (forces `x² = 5`, impossible),
-`c² = 16b²` (forces `y² = 5`, impossible) and `c² = 4b²`, which yields
-exactly `x² = 4y²`. That looks like a complete proof, and it is not one:
-`quartic_neg`'s descent `gcd` here is `gcd(3y², 3x²) = 3` exactly, so it
-enters its `G = 3` branch, which recovers `a' = ±y`, `b' = ±x` and calls
-`concordant_five` back **at the same `(x, y)`**. Zero descent — the loop
-is closed and the two statements are equivalent, not ordered. Any real
-proof must therefore descend inside `concordant_five` itself, e.g. along
-the route above.
-
-Note also that `concordant_one` (proven below) does NOT help: its own
-descent meets `K = 5` only in a branch it refutes outright, so it
-consumes `concordant_five` without ever supplying it. -/
-theorem concordant_five (x y b c : ℤ) (hcop : IsCoprime x y)
-    (h1 : x ^ 2 + y ^ 2 = 5 * b ^ 2) (h2 : x ^ 2 + 16 * y ^ 2 = 5 * c ^ 2) :
-    x ^ 2 = 4 * y ^ 2 :=
-  sorry
-
 theorem dvd_fifteen_of {a d K : ℤ} (hcop : IsCoprime a d)
     (h1 : K ∣ a ^ 2 + d ^ 2) (h2 : K ∣ 16 * a ^ 2 + d ^ 2) : K ∣ 15 := by
   obtain ⟨u, v, huv⟩ := hcop.pow (m := 2) (n := 2)
@@ -8976,151 +8916,676 @@ theorem descent_step' {M N P Q : ℤ} (hMN : IsCoprime M N) (hPQ : IsCoprime P Q
         (by linear_combination -heq) (by linear_combination hprod) Q₀ hQ₀
     exact ⟨a, d, B, C, k1, k2, k3, k4, by linarith, k6⟩
 
-/-! #### The strong induction -/
+/-! #### The descent machinery for `concordant_five` -/
 
-theorem concordant_aux : ∀ Nn : ℕ, ∀ x y B C : ℤ, (x ^ 2 + y ^ 2).toNat ≤ Nn →
-    IsCoprime x y → x ^ 2 + y ^ 2 = B ^ 2 → x ^ 2 + 16 * y ^ 2 = C ^ 2 →
-    x = 0 ∨ y = 0 := by
+/-- `a² + 16t² = 5C²` is impossible for odd `a` (a mod-`8` obstruction). -/
+theorem odd_sq_add_sixteen_sq_ne_five_sq {a t C : ℤ} (ha : a % 2 = 1)
+    (h : a ^ 2 + 16 * t ^ 2 = 5 * C ^ 2) : False := by
+  obtain ⟨s, rfl⟩ : ∃ s, a = 2 * s + 1 := ⟨a / 2, by omega⟩
+  have hC : C % 2 = 1 := by
+    rcases Int.emod_two_eq_zero_or_one C with hc | hc
+    · exfalso
+      obtain ⟨w, rfl⟩ : ∃ w, C = 2 * w := ⟨C / 2, by omega⟩
+      obtain ⟨S, T, W, hk⟩ : ∃ S T W : ℤ, 4 * S + 4 * s + 1 + 16 * T = 20 * W :=
+        ⟨s ^ 2, t ^ 2, w ^ 2, by linear_combination h⟩
+      omega
+    · exact hc
+  obtain ⟨w, rfl⟩ : ∃ w, C = 2 * w + 1 := ⟨C / 2, by omega⟩
+  obtain ⟨j, hj⟩ : ∃ j : ℤ, s ^ 2 + s = 2 * j := by
+    obtain ⟨kk, hkk⟩ := Int.even_mul_succ_self s
+    exact ⟨kk, by linear_combination hkk⟩
+  obtain ⟨i, hi⟩ : ∃ i : ℤ, w ^ 2 + w = 2 * i := by
+    obtain ⟨kk, hkk⟩ := Int.even_mul_succ_self w
+    exact ⟨kk, by linear_combination hkk⟩
+  obtain ⟨T, hT⟩ : ∃ T : ℤ, 8 * j + 1 + 16 * T = 40 * i + 5 :=
+    ⟨t ^ 2, by linear_combination h - 4 * hj + 20 * hi⟩
+  omega
+
+/-- `a² + d² = 5e²` is impossible for `a`, `d` both odd (mod `8`). -/
+theorem odd_odd_sq_add_sq_ne_five_sq {a d e : ℤ} (ha : a % 2 = 1) (hd : d % 2 = 1)
+    (h : a ^ 2 + d ^ 2 = 5 * e ^ 2) : False := by
+  obtain ⟨s, rfl⟩ : ∃ s, a = 2 * s + 1 := ⟨a / 2, by omega⟩
+  obtain ⟨t, rfl⟩ : ∃ t, d = 2 * t + 1 := ⟨d / 2, by omega⟩
+  obtain ⟨i, hi⟩ : ∃ i : ℤ, s ^ 2 + s = 2 * i := by
+    obtain ⟨kk, hkk⟩ := Int.even_mul_succ_self s
+    exact ⟨kk, by linear_combination hkk⟩
+  obtain ⟨j, hj⟩ : ∃ j : ℤ, t ^ 2 + t = 2 * j := by
+    obtain ⟨kk, hkk⟩ := Int.even_mul_succ_self t
+    exact ⟨kk, by linear_combination hkk⟩
+  rcases Int.emod_two_eq_zero_or_one e with he | he
+  · obtain ⟨w, rfl⟩ : ∃ w, e = 2 * w := ⟨e / 2, by omega⟩
+    obtain ⟨W, hW⟩ : ∃ W : ℤ, 8 * i + 8 * j + 2 = 20 * W :=
+      ⟨w ^ 2, by linear_combination h - 4 * hi - 4 * hj⟩
+    omega
+  · obtain ⟨w, rfl⟩ : ∃ w, e = 2 * w + 1 := ⟨e / 2, by omega⟩
+    obtain ⟨kk, hkk⟩ : ∃ kk : ℤ, w ^ 2 + w = 2 * kk := by
+      obtain ⟨z, hz⟩ := Int.even_mul_succ_self w
+      exact ⟨z, by linear_combination hz⟩
+    have hfin : 8 * i + 8 * j + 2 = 40 * kk + 5 := by
+      linear_combination h - 4 * hi - 4 * hj + 20 * hkk
+    omega
+
+/-- `4a² + d² = e²` is impossible for `a`, `d` both odd (mod `8`). -/
+theorem four_sq_add_sq_ne_sq_of_odd {a d e : ℤ} (ha : a % 2 = 1) (hd : d % 2 = 1)
+    (h : 4 * a ^ 2 + d ^ 2 = e ^ 2) : False := by
+  obtain ⟨s, rfl⟩ : ∃ s, a = 2 * s + 1 := ⟨a / 2, by omega⟩
+  obtain ⟨t, rfl⟩ : ∃ t, d = 2 * t + 1 := ⟨d / 2, by omega⟩
+  obtain ⟨i, hi⟩ : ∃ i : ℤ, s ^ 2 + s = 2 * i := by
+    obtain ⟨kk, hkk⟩ := Int.even_mul_succ_self s
+    exact ⟨kk, by linear_combination hkk⟩
+  obtain ⟨j, hj⟩ : ∃ j : ℤ, t ^ 2 + t = 2 * j := by
+    obtain ⟨kk, hkk⟩ := Int.even_mul_succ_self t
+    exact ⟨kk, by linear_combination hkk⟩
+  rcases Int.emod_two_eq_zero_or_one e with he | he
+  · obtain ⟨w, rfl⟩ : ∃ w, e = 2 * w := ⟨e / 2, by omega⟩
+    obtain ⟨W, hW⟩ : ∃ W : ℤ, 32 * i + 8 * j + 5 = 4 * W :=
+      ⟨w ^ 2, by linear_combination h - 16 * hi - 4 * hj⟩
+    omega
+  · obtain ⟨w, rfl⟩ : ∃ w, e = 2 * w + 1 := ⟨e / 2, by omega⟩
+    obtain ⟨kk, hkk⟩ : ∃ kk : ℤ, w ^ 2 + w = 2 * kk := by
+      obtain ⟨z, hz⟩ := Int.even_mul_succ_self w
+      exact ⟨z, by linear_combination hz⟩
+    have hfin : 32 * i + 8 * j + 5 = 8 * kk + 1 := by
+      linear_combination h - 16 * hi - 4 * hj + 4 * hkk
+    omega
+
+/-- **The descent step for the `5`-twisted concordant system** (the four-way
+coprime split). From `pq = mn` and `m² − n² − 3mn = p² − q²` with `m`, `n`
+coprime, the split `m = ab`, `n = cd`, `p = ac`, `q = bd` makes the second
+equation `(a² + d²)(b² − c²) = 3abcd`; since `3 ∤ a² + d²` the two cofactors
+are forced to be `±1` and `±3`, giving `(b² + c²)² = (4a² + d²)(a² + 4d²)`.
+That `gcd` divides `15` and is prime to `3`, so it is `1` — refuted by
+`hone`, the `d = 1` system at a smaller point — or `5`, which is this same
+system at `(a, d)`. -/
+theorem five_descent_step {m n p q : ℤ} (hmncop : IsCoprime m n)
+    (hm0 : m ≠ 0) (hn0 : n ≠ 0) (hp0 : p ≠ 0)
+    (hprod : p * q = m * n)
+    (heq : m ^ 2 - n ^ 2 - 3 * (m * n) = p ^ 2 - q ^ 2)
+    (hone : ∀ x y B C : ℤ, x ^ 2 + y ^ 2 ≤ p ^ 2 + q ^ 2 → IsCoprime x y →
+      x ^ 2 + y ^ 2 = B ^ 2 → x ^ 2 + 16 * y ^ 2 = C ^ 2 → x = 0 ∨ y = 0) :
+    ∃ a d a' b' : ℤ, IsCoprime a d ∧ a ^ 2 + d ^ 2 ≤ p ^ 2 + q ^ 2 ∧
+      4 * a ^ 2 + d ^ 2 = 5 * a' ^ 2 ∧ a ^ 2 + 4 * d ^ 2 = 5 * b' ^ 2 ∧
+      (a ^ 2 = d ^ 2 → m * n * (2 * (m ^ 2 - n ^ 2) - 3 * (m * n)) = 0) := by
+  obtain ⟨a, c, ham, hcn, hac⟩ :=
+    exists_dvd_and_dvd_of_dvd_mul (a := p) (b := m) (c := n) ⟨q, hprod.symm⟩
+  obtain ⟨b, hb⟩ := ham
+  obtain ⟨d, hd⟩ := hcn
+  have ha0 : a ≠ 0 := by rintro rfl; rw [zero_mul] at hb; exact hm0 hb
+  have hb0 : b ≠ 0 := by rintro rfl; rw [mul_zero] at hb; exact hm0 hb
+  have hc0 : c ≠ 0 := by rintro rfl; rw [zero_mul] at hd; exact hn0 hd
+  have hd0 : d ≠ 0 := by rintro rfl; rw [mul_zero] at hd; exact hn0 hd
+  have hqbd : q = b * d := by
+    refine mul_left_cancel₀ hp0 ?_
+    rw [hprod, hb, hd, hac]; ring
+  have hadcop : IsCoprime a d :=
+    (hmncop.of_isCoprime_of_dvd_left ⟨b, hb⟩).of_isCoprime_of_dvd_right ⟨c, by rw [hd]; ring⟩
+  have hbccop : IsCoprime b c :=
+    (hmncop.of_isCoprime_of_dvd_left ⟨a, by rw [hb]; ring⟩).of_isCoprime_of_dvd_right ⟨d, hd⟩
+  have hkey : (a ^ 2 + d ^ 2) * (b ^ 2 - c ^ 2) = 3 * (a * d * (b * c)) := by
+    rw [hb, hd, hac, hqbd] at heq
+    linear_combination heq
+  obtain ⟨k, hkdef⟩ : ∃ k : ℤ, k = a ^ 2 + d ^ 2 := ⟨_, rfl⟩
+  obtain ⟨l, hldef⟩ : ∃ l : ℤ, l = b ^ 2 - c ^ 2 := ⟨_, rfl⟩
+  have hkeykl : k * l = 3 * (a * d * (b * c)) := by rw [hkdef, hldef]; exact hkey
+  have h3k : ¬ ((3 : ℤ) ∣ k) := by
+    intro hdv
+    rw [hkdef] at hdv
+    obtain ⟨h3a, h3d⟩ := three_dvd_of_sq_add_sq hdv
+    have hu2 := hadcop.isUnit_of_dvd' h3a h3d
+    rw [Int.isUnit_iff] at hu2
+    omega
+  have hk3cop : IsCoprime k (3 : ℤ) := by
+    rcases (by omega : k % 3 = 1 ∨ k % 3 = 2) with h' | h'
+    · exact ⟨1, -(k / 3), by omega⟩
+    · exact ⟨-1, k / 3 + 1, by omega⟩
+  have hka : IsCoprime k a := by
+    obtain ⟨x, y, hxy⟩ := hadcop
+    exact ⟨y ^ 2, x ^ 2 * a + 2 * x * y * d - y ^ 2 * a, by
+      rw [hkdef]; linear_combination (x * a + y * d + 1) * hxy⟩
+  have hkd : IsCoprime k d := by
+    obtain ⟨x, y, hxy⟩ := hadcop
+    exact ⟨x ^ 2, y ^ 2 * d + 2 * x * y * a - x ^ 2 * d, by
+      rw [hkdef]; linear_combination (x * a + y * d + 1) * hxy⟩
+  have hlb : IsCoprime l b := by
+    obtain ⟨x, y, hxy⟩ := hbccop
+    exact ⟨-y ^ 2, x ^ 2 * b + 2 * x * y * c + y ^ 2 * b, by
+      rw [hldef]; linear_combination (x * b + y * c + 1) * hxy⟩
+  have hlc : IsCoprime l c := by
+    obtain ⟨x, y, hxy⟩ := hbccop
+    exact ⟨x ^ 2, 2 * x * y * b + y ^ 2 * c + x ^ 2 * c, by
+      rw [hldef]; linear_combination (x * b + y * c + 1) * hxy⟩
+  have hkdvd : k ∣ b * c := by
+    have hA : k ∣ a * d * (3 * (b * c)) := ⟨l, by linear_combination -hkeykl⟩
+    exact hk3cop.dvd_of_dvd_mul_left ((hka.mul_right hkd).dvd_of_dvd_mul_left hA)
+  have hldvd : l ∣ 3 * (a * d) := by
+    have hA : l ∣ b * c * (3 * (a * d)) := ⟨k, by linear_combination -hkeykl⟩
+    exact (hlb.mul_right hlc).dvd_of_dvd_mul_left hA
+  obtain ⟨k₁, hk₁⟩ := hkdvd
+  obtain ⟨l₁, hl₁⟩ := hldvd
+  have hkpos : 0 < k := by
+    have hA : (0 : ℤ) < a ^ 2 := (sq_nonneg a).lt_of_ne (Ne.symm (pow_ne_zero 2 ha0))
+    rw [hkdef]; linarith only [hA, sq_nonneg d]
+  have hl0 : l ≠ 0 := by
+    intro h'
+    rw [h', mul_zero] at hkeykl
+    have hz : a * d * (b * c) = 0 := by linarith only [hkeykl]
+    rcases mul_eq_zero.mp hz with h'' | h''
+    · rcases mul_eq_zero.mp h'' with h₃ | h₃
+      · exact ha0 h₃
+      · exact hd0 h₃
+    · rcases mul_eq_zero.mp h'' with h₃ | h₃
+      · exact hb0 h₃
+      · exact hc0 h₃
+  have hkl1 : k₁ * l₁ = 1 := by
+    refine mul_left_cancel₀ (mul_ne_zero hkpos.ne' hl0) ?_
+    rw [mul_one]
+    calc k * l * (k₁ * l₁) = l * l₁ * (k * k₁) := by ring
+      _ = 3 * (a * d) * (b * c) := by rw [← hl₁, ← hk₁]
+      _ = 3 * (a * d * (b * c)) := by ring
+      _ = k * l := hkeykl.symm
+  have hsign : (b * c = k ∧ l = 3 * (a * d)) ∨ (b * c = -k ∧ l = -(3 * (a * d))) := by
+    rcases Int.mul_eq_one_iff_eq_one_or_neg_one.mp hkl1 with ⟨e1, e2⟩ | ⟨e1, e2⟩
+    · exact Or.inl ⟨by rw [hk₁, e1, mul_one], by rw [e2, mul_one] at hl₁; exact hl₁.symm⟩
+    · exact Or.inr ⟨by rw [hk₁, e1]; ring, by rw [e2] at hl₁; linarith only [hl₁]⟩
+  have hsq1 : (b * c) ^ 2 = k ^ 2 := by
+    rcases hsign with ⟨h', -⟩ | ⟨h', -⟩
+    · rw [h']
+    · rw [h']; ring
+  have hsq2 : l ^ 2 = 9 * (a * d) ^ 2 := by
+    rcases hsign with ⟨-, h'⟩ | ⟨-, h'⟩ <;> (rw [h']; ring)
+  have hquart : (b ^ 2 + c ^ 2) ^ 2 = (4 * a ^ 2 + d ^ 2) * (a ^ 2 + 4 * d ^ 2) := by
+    have hbc : (b ^ 2 + c ^ 2) ^ 2 = l ^ 2 + 4 * (b * c) ^ 2 := by rw [hldef]; ring
+    rw [hbc, hsq2, hsq1, hkdef]; ring
+  have hb1 : (1 : ℤ) ≤ b ^ 2 := by
+    have hh : (0 : ℤ) < b ^ 2 := (sq_nonneg b).lt_of_ne (Ne.symm (pow_ne_zero 2 hb0))
+    linarith only [Int.lt_iff_add_one_le.mp hh]
+  have hc1 : (1 : ℤ) ≤ c ^ 2 := by
+    have hh : (0 : ℤ) < c ^ 2 := (sq_nonneg c).lt_of_ne (Ne.symm (pow_ne_zero 2 hc0))
+    linarith only [Int.lt_iff_add_one_le.mp hh]
+  have hle1 : a ^ 2 + d ^ 2 ≤ p ^ 2 + q ^ 2 := by
+    have e1 : a ^ 2 * 1 ≤ a ^ 2 * c ^ 2 := mul_le_mul_of_nonneg_left hc1 (sq_nonneg a)
+    have e2 : d ^ 2 * 1 ≤ d ^ 2 * b ^ 2 := mul_le_mul_of_nonneg_left hb1 (sq_nonneg d)
+    have e3 : p ^ 2 = a ^ 2 * c ^ 2 := by rw [hac]; ring
+    have e4 : q ^ 2 = d ^ 2 * b ^ 2 := by rw [hqbd]; ring
+    rw [e3, e4]; linarith only [e1, e2]
+  have hApos : (0 : ℤ) ≤ 4 * a ^ 2 + d ^ 2 := by positivity
+  have hBpos : (0 : ℤ) ≤ a ^ 2 + 4 * d ^ 2 := by positivity
+  have hA0' : 4 * a ^ 2 + d ^ 2 ≠ 0 := by
+    have hA : (0 : ℤ) < a ^ 2 := (sq_nonneg a).lt_of_ne (Ne.symm (pow_ne_zero 2 ha0))
+    intro h'; linarith only [hA, sq_nonneg d, h']
+  obtain ⟨a', b', hA', hB', -⟩ := split_gcd hquart.symm hApos hBpos hA0'
+  have hG15 : Int.gcd (4 * a ^ 2 + d ^ 2) (a ^ 2 + 4 * d ^ 2) ∣ 15 :=
+    gcd_dvd_fifteen hadcop (-1) 4 4 (-1) (by ring) (by ring)
+  have h3G : ¬ ((3 : ℕ) ∣ Int.gcd (4 * a ^ 2 + d ^ 2) (a ^ 2 + 4 * d ^ 2)) := by
+    intro hdv
+    have h3 : (3 : ℤ) ∣ ((Int.gcd (4 * a ^ 2 + d ^ 2) (a ^ 2 + 4 * d ^ 2) : ℕ) : ℤ) := by
+      exact_mod_cast Int.natCast_dvd_natCast.mpr hdv
+    obtain ⟨t, ht⟩ := h3.trans (Int.gcd_dvd_left _ _)
+    exact h3k ⟨t - a ^ 2, by rw [hkdef]; linarith only [ht]⟩
+  have hGcases : Int.gcd (4 * a ^ 2 + d ^ 2) (a ^ 2 + 4 * d ^ 2) = 1 ∨
+      Int.gcd (4 * a ^ 2 + d ^ 2) (a ^ 2 + 4 * d ^ 2) = 5 := by
+    rcases dvd_fifteen hG15 with h' | h' | h' | h'
+    · exact Or.inl h'
+    · exact absurd h' (by intro hh; exact h3G (by omega))
+    · exact Or.inr h'
+    · exact absurd h' (by intro hh; exact h3G (by omega))
+  rcases hGcases with hG | hG
+  · exfalso
+    have hA1 : 4 * a ^ 2 + d ^ 2 = a' ^ 2 := by rw [hA', hG]; norm_num
+    have hB1 : a ^ 2 + 4 * d ^ 2 = b' ^ 2 := by rw [hB', hG]; norm_num
+    have hnotbotheven : ¬ (a % 2 = 0 ∧ d % 2 = 0) := by
+      rintro ⟨h', h''⟩
+      obtain ⟨s, hs⟩ : ∃ s, a = 2 * s := ⟨a / 2, by omega⟩
+      obtain ⟨t, ht⟩ : ∃ t, d = 2 * t := ⟨d / 2, by omega⟩
+      have hu2 := hadcop.isUnit_of_dvd' (⟨s, hs⟩ : (2 : ℤ) ∣ a) (⟨t, ht⟩ : (2 : ℤ) ∣ d)
+      rw [Int.isUnit_iff] at hu2
+      omega
+    rcases Int.emod_two_eq_zero_or_one a with hap | hap
+    · have hdp : d % 2 = 1 := by
+        rcases Int.emod_two_eq_zero_or_one d with h' | h'
+        · exact absurd ⟨hap, h'⟩ hnotbotheven
+        · exact h'
+      obtain ⟨a₀, rfl⟩ : ∃ a₀, a = 2 * a₀ := ⟨a / 2, by omega⟩
+      have hb'even : (2 : ℤ) ∣ b' := by
+        have hsq : (2 : ℤ) ^ 2 ∣ b' ^ 2 := ⟨a₀ ^ 2 + d ^ 2, by linear_combination -hB1⟩
+        exact (Int.pow_dvd_pow_iff two_ne_zero).mp hsq
+      obtain ⟨b₀, rfl⟩ := hb'even
+      have hone1 : d ^ 2 + a₀ ^ 2 = b₀ ^ 2 := by linarith only [hB1]
+      have hone2 : d ^ 2 + 16 * a₀ ^ 2 = a' ^ 2 := by linear_combination hA1
+      have hsz : d ^ 2 + a₀ ^ 2 ≤ p ^ 2 + q ^ 2 := by linarith only [hle1, sq_nonneg a₀]
+      have hcopda : IsCoprime d a₀ := (hadcop.of_isCoprime_of_dvd_left ⟨2, by ring⟩).symm
+      rcases hone d a₀ b₀ a' hsz hcopda hone1 hone2 with h' | h'
+      · exact hd0 h'
+      · exact ha0 (by rw [h']; ring)
+    · have hdp : d % 2 = 0 := by
+        rcases Int.emod_two_eq_zero_or_one d with h' | h'
+        · exact h'
+        · exact (four_sq_add_sq_ne_sq_of_odd hap h' hA1).elim
+      obtain ⟨d₁, rfl⟩ : ∃ d₁, d = 2 * d₁ := ⟨d / 2, by omega⟩
+      have ha'even : (2 : ℤ) ∣ a' := by
+        have hsq : (2 : ℤ) ^ 2 ∣ a' ^ 2 := ⟨a ^ 2 + d₁ ^ 2, by linear_combination -hA1⟩
+        exact (Int.pow_dvd_pow_iff two_ne_zero).mp hsq
+      obtain ⟨a₁, rfl⟩ := ha'even
+      have hone1 : a ^ 2 + d₁ ^ 2 = a₁ ^ 2 := by linarith only [hA1]
+      have hone2 : a ^ 2 + 16 * d₁ ^ 2 = b' ^ 2 := by linear_combination hB1
+      have hsz : a ^ 2 + d₁ ^ 2 ≤ p ^ 2 + q ^ 2 := by linarith only [hle1, sq_nonneg d₁]
+      have hcopad1 : IsCoprime a d₁ := hadcop.of_isCoprime_of_dvd_right ⟨2, by ring⟩
+      rcases hone a d₁ a₁ b' hsz hcopad1 hone1 hone2 with h' | h'
+      · exact ha0 h'
+      · exact hd0 (by rw [h']; ring)
+  · have hA5 : 4 * a ^ 2 + d ^ 2 = 5 * a' ^ 2 := by rw [hA', hG]; norm_num
+    have hB5 : a ^ 2 + 4 * d ^ 2 = 5 * b' ^ 2 := by rw [hB', hG]; norm_num
+    refine ⟨a, d, a', b', hadcop, hle1, hA5, hB5, ?_⟩
+    intro had2
+    have ha2 : a ^ 2 = 1 := by
+      have hdvd : a ^ 2 ∣ d ^ 2 := ⟨1, by linarith only [had2]⟩
+      have hu2 := (hadcop.pow (m := 2) (n := 2)).isUnit_of_dvd' (dvd_refl (a ^ 2)) hdvd
+      rw [Int.isUnit_iff] at hu2
+      rcases hu2 with h' | h'
+      · exact h'
+      · linarith only [h', sq_nonneg a]
+    have hd2' : d ^ 2 = 1 := by linarith only [had2, ha2]
+    have hk2 : k = 2 := by rw [hkdef]; linarith only [ha2, hd2']
+    have hmn' : m * n = a * d * (b * c) := by rw [hb, hd]; ring
+    have hmm : m ^ 2 - n ^ 2 = b ^ 2 - c ^ 2 := by
+      rw [hb, hd]; linear_combination b ^ 2 * ha2 - c ^ 2 * hd2'
+    rw [hmn', hmm, ← hldef]
+    rcases hsign with ⟨hbc, hl⟩ | ⟨hbc, hl⟩
+    · rw [hl, hbc, hk2]; ring
+    · rw [hl, hbc, hk2]; ring
+
+/-- The `5`-twisted descent, in symmetric coordinates and under the
+normalisation `5 ∣ u − v`. -/
+theorem concordant_five_core (Nn : ℕ)
+    (ih1 : ∀ x y B C : ℤ, (x ^ 2 + y ^ 2).toNat ≤ Nn → IsCoprime x y →
+      x ^ 2 + y ^ 2 = B ^ 2 → x ^ 2 + 16 * y ^ 2 = C ^ 2 → x = 0 ∨ y = 0)
+    (ih5 : ∀ x y B C : ℤ, (x ^ 2 + y ^ 2).toNat ≤ Nn → IsCoprime x y →
+      x ^ 2 + y ^ 2 = 5 * B ^ 2 → x ^ 2 + 16 * y ^ 2 = 5 * C ^ 2 → x ^ 2 = 4 * y ^ 2) :
+    ∀ u v B C : ℤ, ((2 * u) ^ 2 + v ^ 2).toNat ≤ Nn + 1 → IsCoprime u v →
+      4 * u ^ 2 + v ^ 2 = 5 * B ^ 2 → u ^ 2 + 4 * v ^ 2 = 5 * C ^ 2 →
+      (5 : ℤ) ∣ u - v → u ^ 2 = v ^ 2 := by
+  intro u v B C hN hcop h1 h2 h5d
+  have hnotboth : ¬ (u % 2 = 0 ∧ v % 2 = 0) := by
+    rintro ⟨hu, hv⟩
+    obtain ⟨t, rfl⟩ : ∃ t, u = 2 * t := ⟨u / 2, by omega⟩
+    obtain ⟨r, rfl⟩ : ∃ r, v = 2 * r := ⟨v / 2, by omega⟩
+    have hu2 := hcop.isUnit_of_dvd' (⟨t, by ring⟩ : (2 : ℤ) ∣ 2 * t)
+      (⟨r, by ring⟩ : (2 : ℤ) ∣ 2 * r)
+    rw [Int.isUnit_iff] at hu2
+    omega
+  have huodd : u % 2 = 1 := by
+    rcases Int.emod_two_eq_zero_or_one u with hu | hu
+    · exfalso
+      have hv : v % 2 = 1 := by
+        rcases Int.emod_two_eq_zero_or_one v with h' | h'
+        · exact absurd ⟨hu, h'⟩ hnotboth
+        · exact h'
+      obtain ⟨t, ht⟩ : ∃ t, u = 2 * t := ⟨u / 2, by omega⟩
+      exact odd_sq_add_sixteen_sq_ne_five_sq (a := v) (t := t) (C := B) hv
+        (by rw [ht] at h1; linear_combination h1)
+    · exact hu
+  have hvodd : v % 2 = 1 := by
+    rcases Int.emod_two_eq_zero_or_one v with hv | hv
+    · exfalso
+      obtain ⟨t, ht⟩ : ∃ t, v = 2 * t := ⟨v / 2, by omega⟩
+      exact odd_sq_add_sixteen_sq_ne_five_sq (a := u) (t := t) (C := C) huodd
+        (by rw [ht] at h2; linear_combination h2)
+    · exact hv
+  obtain ⟨N, hNdef⟩ := h5d
+  obtain ⟨M, hMu⟩ : ∃ M : ℤ, u = M + N := ⟨u - N, by ring⟩
+  have hMv : v = M - 4 * N := by linarith only [hNdef, hMu]
+  subst hMu
+  subst hMv
+  have hB2 : B ^ 2 = M ^ 2 + 4 * N ^ 2 := by
+    have h5B : (5 : ℤ) * B ^ 2 = 5 * (M ^ 2 + 4 * N ^ 2) := by linear_combination -h1
+    linarith only [h5B]
+  have hC2 : C ^ 2 = (M - 3 * N) ^ 2 + 4 * N ^ 2 := by
+    have h5C : (5 : ℤ) * C ^ 2 = 5 * ((M - 3 * N) ^ 2 + 4 * N ^ 2) := by
+      linear_combination -h2
+    linarith only [h5C]
+  have hMN : IsCoprime M N := by
+    obtain ⟨x, y, hxy⟩ := hcop
+    exact ⟨x + y, x - 4 * y, by linear_combination hxy⟩
+  suffices hgoal : N * (2 * M - 3 * N) = 0 by linear_combination 5 * hgoal
+  by_cases hN0 : N = 0
+  · rw [hN0]; ring
+  have hNeven : N % 2 = 0 := by omega
+  have hModd : M % 2 = 1 := by omega
+  have hcop2N : IsCoprime M (2 * N) := by
+    obtain ⟨kk, hkk⟩ : ∃ kk : ℤ, M = 2 * kk + 1 := ⟨M / 2, by omega⟩
+    have hM2 : IsCoprime M (2 : ℤ) := ⟨1, -kk, by linear_combination hkk⟩
+    exact hM2.mul_right hMN
+  have hT1 : PythagoreanTriple M (2 * N) B := by
+    show M * M + 2 * N * (2 * N) = B * B
+    linear_combination -hB2
+  obtain ⟨m, n, hmn, -, hmncop, hmnpar⟩ :=
+    (PythagoreanTriple.coprime_classification (x := M) (y := 2 * N) (z := B)).mp
+      ⟨hT1, Int.isCoprime_iff_gcd_eq_one.mp hcop2N⟩
+  have hmncop' : IsCoprime m n := Int.isCoprime_iff_gcd_eq_one.mpr hmncop
+  obtain ⟨hM1, hN1⟩ : M = m ^ 2 - n ^ 2 ∧ N = m * n := by
+    rcases hmn with ⟨e1, e2⟩ | ⟨e1, e2⟩
+    · exact ⟨e1, by linarith only [e2]⟩
+    · exfalso
+      obtain ⟨kk, hkk⟩ := sq_sub_sq_odd hmnpar
+      rw [hkk] at e2; omega
+  have hcopMN2 : IsCoprime (M - 3 * N) (2 * N) := by
+    obtain ⟨kk, hkk⟩ : ∃ kk : ℤ, M - 3 * N = 2 * kk + 1 := ⟨(M - 3 * N) / 2, by omega⟩
+    have hM2 : IsCoprime (M - 3 * N) (2 : ℤ) := ⟨1, -kk, by linear_combination hkk⟩
+    obtain ⟨x, y, hxy⟩ := hMN
+    exact hM2.mul_right ⟨x, y + 3 * x, by linear_combination hxy⟩
+  have hT2 : PythagoreanTriple (M - 3 * N) (2 * N) C := by
+    show (M - 3 * N) * (M - 3 * N) + 2 * N * (2 * N) = C * C
+    linear_combination -hC2
+  obtain ⟨p, q, hpq, -, hpqcop, hpqpar⟩ :=
+    (PythagoreanTriple.coprime_classification (x := M - 3 * N) (y := 2 * N) (z := C)).mp
+      ⟨hT2, Int.isCoprime_iff_gcd_eq_one.mp hcopMN2⟩
+  obtain ⟨hM2', hN2'⟩ : M - 3 * N = p ^ 2 - q ^ 2 ∧ N = p * q := by
+    rcases hpq with ⟨e1, e2⟩ | ⟨e1, e2⟩
+    · exact ⟨e1, by linarith only [e2]⟩
+    · exfalso
+      obtain ⟨kk, hkk⟩ := sq_sub_sq_odd hpqpar
+      rw [hkk] at e2; omega
+  have hm0 : m ≠ 0 := by rintro rfl; exact hN0 (by rw [hN1]; ring)
+  have hn0 : n ≠ 0 := by rintro rfl; exact hN0 (by rw [hN1]; ring)
+  have hp0 : p ≠ 0 := by rintro rfl; exact hN0 (by rw [hN2']; ring)
+  -- size bookkeeping
+  have hNle : ((2 * (M + N)) ^ 2 + (M - 4 * N) ^ 2 : ℤ) ≤ (Nn : ℤ) + 1 := by
+    have hh := Int.toNat_le.mp hN
+    push_cast at hh
+    linarith only [hh]
+  have hsum : (M + N) ^ 2 + (M - 4 * N) ^ 2 = B ^ 2 + C ^ 2 := by linarith only [h1, h2]
+  have hCsq : C ^ 2 = (p ^ 2 + q ^ 2) ^ 2 := by
+    have hh := hC2
+    rw [hM2', hN2'] at hh
+    rw [hh]; ring
+  have hBsq : B ^ 2 = (m ^ 2 + n ^ 2) ^ 2 := by
+    have hh := hB2
+    rw [hM1, hN1] at hh
+    rw [hh]; ring
+  have hbig : (m ^ 2 + n ^ 2) ^ 2 + (p ^ 2 + q ^ 2) ^ 2 ≤
+      (2 * (M + N)) ^ 2 + (M - 4 * N) ^ 2 := by
+    linarith only [hsum, hBsq, hCsq, sq_nonneg (M + N)]
+  have hs1 : (1 : ℤ) ≤ p ^ 2 + q ^ 2 := by
+    have hh : (0 : ℤ) < p ^ 2 := (sq_nonneg p).lt_of_ne (Ne.symm (pow_ne_zero 2 hp0))
+    linarith only [sq_nonneg q, Int.lt_iff_add_one_le.mp hh]
+  have hNsq : (4 : ℤ) ≤ (m * n) ^ 2 := by
+    obtain ⟨N₁, hN₁⟩ : ∃ N₁ : ℤ, N = 2 * N₁ := ⟨N / 2, by omega⟩
+    have hN₁0 : N₁ ≠ 0 := by rintro rfl; rw [mul_zero] at hN₁; exact hN0 hN₁
+    have hpos : (0 : ℤ) < N₁ ^ 2 := (sq_nonneg N₁).lt_of_ne (Ne.symm (pow_ne_zero 2 hN₁0))
+    have hone' : (1 : ℤ) ≤ N₁ ^ 2 := by linarith only [Int.lt_iff_add_one_le.mp hpos]
+    have hNv : N ^ 2 = 4 * N₁ ^ 2 := by rw [hN₁]; ring
+    have hmnv : (m * n) ^ 2 = N ^ 2 := by rw [hN1]
+    linarith only [hone', hNv, hmnv]
+  have hT2sq : (16 : ℤ) ≤ (m ^ 2 + n ^ 2) ^ 2 := by
+    nlinarith only [hNsq, sq_nonneg (m ^ 2 - n ^ 2)]
+  have hss : p ^ 2 + q ^ 2 ≤ (p ^ 2 + q ^ 2) ^ 2 := by nlinarith only [hs1]
+  have hone : ∀ x y B' C' : ℤ, x ^ 2 + y ^ 2 ≤ p ^ 2 + q ^ 2 → IsCoprime x y →
+      x ^ 2 + y ^ 2 = B' ^ 2 → x ^ 2 + 16 * y ^ 2 = C' ^ 2 → x = 0 ∨ y = 0 := by
+    intro x y B' C' hsz hc he1 he2
+    refine ih1 x y B' C' ?_ hc he1 he2
+    have hxy0 : (0 : ℤ) ≤ x ^ 2 + y ^ 2 := by positivity
+    have hbnd : x ^ 2 + y ^ 2 ≤ (Nn : ℤ) := by
+      linarith only [hsz, hss, hT2sq, hbig, hNle]
+    have hcast : (((x ^ 2 + y ^ 2).toNat : ℕ) : ℤ) = x ^ 2 + y ^ 2 :=
+      Int.toNat_of_nonneg hxy0
+    have hfin : (((x ^ 2 + y ^ 2).toNat : ℕ) : ℤ) ≤ (Nn : ℤ) := by rw [hcast]; exact hbnd
+    exact_mod_cast hfin
+  obtain ⟨a, d, a', b', hadcop, hle1, hA5, hB5, hclimb⟩ :=
+    five_descent_step hmncop' hm0 hn0 hp0 (by rw [← hN1, ← hN2'])
+      (by rw [← hM1, ← hN1]; exact hM2') hone
+  have hdodd : d % 2 = 1 := by
+    rcases Int.emod_two_eq_zero_or_one d with h' | h'
+    · exfalso
+      obtain ⟨t, ht⟩ : ∃ t, d = 2 * t := ⟨d / 2, by omega⟩
+      have haodd : a % 2 = 1 := by
+        rcases Int.emod_two_eq_zero_or_one a with h'' | h''
+        · exfalso
+          obtain ⟨s, hs⟩ : ∃ s, a = 2 * s := ⟨a / 2, by omega⟩
+          have hu2 := hadcop.isUnit_of_dvd' (⟨s, hs⟩ : (2 : ℤ) ∣ a) (⟨t, ht⟩ : (2 : ℤ) ∣ d)
+          rw [Int.isUnit_iff] at hu2
+          omega
+        · exact h''
+      exact odd_sq_add_sixteen_sq_ne_five_sq (a := a) (t := t) (C := b') haodd
+        (by rw [ht] at hB5; linear_combination hB5)
+    · exact h'
+  have hcop2ad : IsCoprime (2 * a) d := by
+    obtain ⟨t, ht⟩ : ∃ t, d = 2 * t + 1 := ⟨d / 2, by omega⟩
+    have h2d : IsCoprime (2 : ℤ) d := ⟨-t, 1, by linear_combination ht⟩
+    exact h2d.mul_left hadcop
+  have hmeas : ((2 * a) ^ 2 + d ^ 2).toNat ≤ Nn := by
+    have hnn : (0 : ℤ) ≤ (2 * a) ^ 2 + d ^ 2 := by positivity
+    have hbnd : ((2 * a) ^ 2 + d ^ 2 : ℤ) ≤ (Nn : ℤ) := by
+      nlinarith only [hle1, hT2sq, hbig, hNle, sq_nonneg (p ^ 2 + q ^ 2 - 2), sq_nonneg d]
+    have hcast : ((((2 * a) ^ 2 + d ^ 2).toNat : ℕ) : ℤ) = (2 * a) ^ 2 + d ^ 2 :=
+      Int.toNat_of_nonneg hnn
+    have hfin : ((((2 * a) ^ 2 + d ^ 2).toNat : ℕ) : ℤ) ≤ (Nn : ℤ) := by
+      rw [hcast]; exact hbnd
+    exact_mod_cast hfin
+  have hres := ih5 (2 * a) d a' (2 * b') hmeas hcop2ad
+    (by linear_combination hA5) (by linear_combination 4 * hB5)
+  have had2 : a ^ 2 = d ^ 2 := by linarith only [hres]
+  have hfin := hclimb had2
+  rw [← hM1, ← hN1] at hfin
+  linarith only [hfin]
+
+/-- One step of the `5`-twisted descent, in the original coordinates. -/
+theorem concordant_five_step (Nn : ℕ)
+    (ih1 : ∀ x y B C : ℤ, (x ^ 2 + y ^ 2).toNat ≤ Nn → IsCoprime x y →
+      x ^ 2 + y ^ 2 = B ^ 2 → x ^ 2 + 16 * y ^ 2 = C ^ 2 → x = 0 ∨ y = 0)
+    (ih5 : ∀ x y B C : ℤ, (x ^ 2 + y ^ 2).toNat ≤ Nn → IsCoprime x y →
+      x ^ 2 + y ^ 2 = 5 * B ^ 2 → x ^ 2 + 16 * y ^ 2 = 5 * C ^ 2 → x ^ 2 = 4 * y ^ 2) :
+    ∀ x y B C : ℤ, (x ^ 2 + y ^ 2).toNat ≤ Nn + 1 → IsCoprime x y →
+      x ^ 2 + y ^ 2 = 5 * B ^ 2 → x ^ 2 + 16 * y ^ 2 = 5 * C ^ 2 → x ^ 2 = 4 * y ^ 2 := by
+  intro x y B C hN hcop h1 h2
+  have hxeven : x % 2 = 0 := by
+    rcases Int.emod_two_eq_zero_or_one x with hx | hx
+    · exact hx
+    · exfalso
+      rcases Int.emod_two_eq_zero_or_one y with hy | hy
+      · obtain ⟨t, ht⟩ : ∃ t, y = 2 * t := ⟨y / 2, by omega⟩
+        exact odd_sq_add_sixteen_sq_ne_five_sq (a := x) (t := 2 * t) (C := C) hx
+          (by rw [ht] at h2; linear_combination h2)
+      · exact odd_odd_sq_add_sq_ne_five_sq hx hy h1
+  have hyodd : y % 2 = 1 := by
+    rcases Int.emod_two_eq_zero_or_one y with hy | hy
+    · exfalso
+      obtain ⟨s, hs⟩ : ∃ s, x = 2 * s := ⟨x / 2, by omega⟩
+      obtain ⟨t, ht⟩ : ∃ t, y = 2 * t := ⟨y / 2, by omega⟩
+      have hu2 := hcop.isUnit_of_dvd' (⟨s, hs⟩ : (2 : ℤ) ∣ x) (⟨t, ht⟩ : (2 : ℤ) ∣ y)
+      rw [Int.isUnit_iff] at hu2
+      omega
+    · exact hy
+  obtain ⟨u, rfl⟩ : ∃ u, x = 2 * u := ⟨x / 2, by omega⟩
+  have hceven : (2 : ℤ) ∣ C := by
+    have h4 : (4 : ℤ) ∣ C ^ 2 := by
+      have hd1 : (4 : ℤ) ∣ 5 * C ^ 2 := ⟨u ^ 2 + 4 * y ^ 2, by linarith only [h2]⟩
+      have hd2 : (4 : ℤ) ∣ 4 * C ^ 2 := ⟨C ^ 2, by ring⟩
+      have hh := dvd_sub hd1 hd2
+      rwa [show (5 : ℤ) * C ^ 2 - 4 * C ^ 2 = C ^ 2 from by ring] at hh
+    have hsq : (2 : ℤ) ^ 2 ∣ C ^ 2 := by
+      rw [show ((2 : ℤ) ^ 2) = 4 from by norm_num]; exact h4
+    exact (Int.pow_dvd_pow_iff two_ne_zero).mp hsq
+  obtain ⟨C₁, rfl⟩ := hceven
+  have hcopuy : IsCoprime u y := hcop.of_isCoprime_of_dvd_left ⟨2, by ring⟩
+  have hh1 : 4 * u ^ 2 + y ^ 2 = 5 * B ^ 2 := by linear_combination h1
+  have hh2 : u ^ 2 + 4 * y ^ 2 = 5 * C₁ ^ 2 := by linarith only [h2]
+  have hdd : (5 : ℤ) ∣ (u - y) * (u + y) := ⟨u ^ 2 - B ^ 2, by linear_combination -hh1⟩
+  have hprime : Prime (5 : ℤ) := by norm_num
+  rcases hprime.2.2 _ _ hdd with h5 | h5
+  · have hres := concordant_five_core Nn ih1 ih5 u y B C₁ hN hcopuy hh1 hh2 h5
+    linear_combination 4 * hres
+  · have hres := concordant_five_core Nn ih1 ih5 u (-y) B C₁
+      (by rw [show ((-y) ^ 2 : ℤ) = y ^ 2 from by ring]; exact hN)
+      hcopuy.neg_right (by linear_combination hh1) (by linear_combination hh2)
+      (by rw [sub_neg_eq_add]; exact h5)
+    linear_combination 4 * hres
+
+/-! #### The joint strong induction -/
+
+/-- One step of the `d = 1` descent (the body of the former `concordant_aux`,
+whose two recursive calls are now supplied as the hypotheses `ih1` and `ih5`
+— the `K = 1` branch recurses into this same system, the `K = 5` branch into
+`concordant_five`, both at the strictly smaller point `(d, a)`). -/
+theorem concordant_one_step (Nn : ℕ)
+    (ih1 : ∀ x y B C : ℤ, (x ^ 2 + y ^ 2).toNat ≤ Nn → IsCoprime x y →
+      x ^ 2 + y ^ 2 = B ^ 2 → x ^ 2 + 16 * y ^ 2 = C ^ 2 → x = 0 ∨ y = 0)
+    (ih5 : ∀ x y B C : ℤ, (x ^ 2 + y ^ 2).toNat ≤ Nn → IsCoprime x y →
+      x ^ 2 + y ^ 2 = 5 * B ^ 2 → x ^ 2 + 16 * y ^ 2 = 5 * C ^ 2 → x ^ 2 = 4 * y ^ 2) :
+    ∀ x y B C : ℤ, (x ^ 2 + y ^ 2).toNat ≤ Nn + 1 → IsCoprime x y →
+      x ^ 2 + y ^ 2 = B ^ 2 → x ^ 2 + 16 * y ^ 2 = C ^ 2 → x = 0 ∨ y = 0 := by
+  intro x y B C hN hcop h1 h2
+  by_cases hy0 : y = 0
+  · exact Or.inr hy0
+  by_cases hx0 : x = 0
+  · exact Or.inl hx0
+  exfalso
+  have hgcd : Int.gcd x y = 1 := Int.isCoprime_iff_gcd_eq_one.mp hcop
+  have hT1 : PythagoreanTriple x y B := by
+    show x * x + y * y = B * B
+    linear_combination h1
+  obtain ⟨m, n, hmnxy, _, hmncop, hmnpar⟩ :=
+    (PythagoreanTriple.coprime_classification (x := x) (y := y) (z := B)).mp ⟨hT1, hgcd⟩
+  have hmncop' : IsCoprime m n := Int.isCoprime_iff_gcd_eq_one.mpr hmncop
+  have main : ∀ M N' P Q : ℤ, IsCoprime M N' → IsCoprime P Q → M ≠ 0 → N' ≠ 0 →
+      M ^ 2 - N' ^ 2 = P ^ 2 - Q ^ 2 → P * Q = 4 * (M * N') →
+      (M ^ 2 + N' ^ 2) ^ 2 ≤ x ^ 2 + y ^ 2 → False := by
+    intro M N' P Q hMN hPQ hM0 hN0 heq hprod hsz
+    obtain ⟨a, d, B', C', hadcop, ha0, hd0, hMNout, hle, hsys⟩ :=
+      descent_step' hMN hPQ hM0 hN0 heq hprod
+    have hM2 : (1 : ℤ) ≤ M ^ 2 := by
+      have hp := (sq_nonneg M).lt_of_ne (Ne.symm (pow_ne_zero 2 hM0))
+      linarith [Int.lt_iff_add_one_le.mp hp]
+    have hN2 : (1 : ℤ) ≤ N' ^ 2 := by
+      have hp := (sq_nonneg N').lt_of_ne (Ne.symm (pow_ne_zero 2 hN0))
+      linarith [Int.lt_iff_add_one_le.mp hp]
+    have hsq : M ^ 2 + N' ^ 2 < (M ^ 2 + N' ^ 2) ^ 2 := by nlinarith
+    have hlt : d ^ 2 + a ^ 2 < x ^ 2 + y ^ 2 := by linarith
+    have hadnn : (0 : ℤ) ≤ d ^ 2 + a ^ 2 := by positivity
+    have hxynn : (0 : ℤ) ≤ x ^ 2 + y ^ 2 := by positivity
+    have hmeas : (d ^ 2 + a ^ 2).toNat ≤ Nn := by
+      have hc1 : ((d ^ 2 + a ^ 2).toNat : ℤ) = d ^ 2 + a ^ 2 := Int.toNat_of_nonneg hadnn
+      have hc2 : ((x ^ 2 + y ^ 2).toNat : ℤ) = x ^ 2 + y ^ 2 := Int.toNat_of_nonneg hxynn
+      have hc3 : ((d ^ 2 + a ^ 2).toNat : ℤ) < ((x ^ 2 + y ^ 2).toNat : ℤ) := by
+        rw [hc1, hc2]; exact hlt
+      have hc4 : (d ^ 2 + a ^ 2).toNat < (x ^ 2 + y ^ 2).toNat := by exact_mod_cast hc3
+      omega
+    rcases hsys with ⟨e1, e2⟩ | ⟨e1, e2⟩
+    · rcases ih1 d a B' C' hmeas hadcop.symm (by linarith) (by linarith) with hz | hz
+      · exact hd0 hz
+      · exact ha0 hz
+    · have hkey := ih5 d a B' C' hmeas hadcop.symm (by linarith) (by linarith)
+      have ha2 : a ^ 2 = 1 := by
+        have hdvd : a ^ 2 ∣ d ^ 2 := ⟨4, by linarith⟩
+        have hu := (hadcop.pow (m := 2) (n := 2)).isUnit_of_dvd' (dvd_refl (a ^ 2)) hdvd
+        rw [Int.isUnit_iff] at hu
+        rcases hu with hh | hh
+        · exact hh
+        · nlinarith [sq_nonneg a]
+      have hd2 : d ^ 2 = 4 := by linarith
+      have hB2 : B' ^ 2 = 1 := by linarith
+      have hC2 : C' ^ 2 = 4 := by linarith
+      have hs1 : (a * C') ^ 2 = 4 := by
+        have hr : (a * C') ^ 2 = a ^ 2 * C' ^ 2 := by ring
+        rw [hr, ha2, hC2]; ring
+      have hs2 : (B' * d) ^ 2 = 4 := by
+        have hr : (B' * d) ^ 2 = B' ^ 2 * d ^ 2 := by ring
+        rw [hr, hB2, hd2]; ring
+      have hdv1 : (2 : ℤ) ∣ a * C' := by
+        have hz : (a * C' - 2) * (a * C' + 2) = 0 := by linear_combination hs1
+        rcases mul_eq_zero.mp hz with hh | hh
+        · exact ⟨1, by linarith⟩
+        · exact ⟨-1, by linarith⟩
+      have hdv2 : (2 : ℤ) ∣ B' * d := by
+        have hz : (B' * d - 2) * (B' * d + 2) = 0 := by linear_combination hs2
+        rcases mul_eq_zero.mp hz with hh | hh
+        · exact ⟨1, by linarith⟩
+        · exact ⟨-1, by linarith⟩
+      have hu := hMNout.isUnit_of_dvd' hdv1 hdv2
+      rw [Int.isUnit_iff] at hu
+      omega
+  rcases hmnxy with ⟨hxv, hyv⟩ | ⟨hxv, hyv⟩
+  · -- `x = m² − n²` odd, `y = 2mn`
+    have hm0 : m ≠ 0 := by rintro rfl; exact hy0 (by rw [hyv]; ring)
+    have hn0 : n ≠ 0 := by rintro rfl; exact hy0 (by rw [hyv]; ring)
+    obtain ⟨k, hk⟩ := sq_sub_sq_odd hmnpar
+    have hxodd : x = 2 * k + 1 := by rw [hxv]; exact hk
+    have hx4 : IsCoprime x (4 : ℤ) := isCoprime_four_of_odd hxodd
+    have hT2 : PythagoreanTriple x (4 * y) C := by
+      show x * x + (4 * y) * (4 * y) = C * C
+      linear_combination h2
+    have hgcd2 : Int.gcd x (4 * y) = 1 :=
+      Int.isCoprime_iff_gcd_eq_one.mp (hx4.mul_right hcop)
+    obtain ⟨p, q, hpqxy, _, hpqcop, _⟩ :=
+      (PythagoreanTriple.coprime_classification (x := x) (y := 4 * y) (z := C)).mp ⟨hT2, hgcd2⟩
+    have hpqcop' : IsCoprime p q := Int.isCoprime_iff_gcd_eq_one.mpr hpqcop
+    rcases hpqxy with ⟨hxv2, hyv2⟩ | ⟨hxv2, _⟩
+    · refine main m n p q hmncop' hpqcop' hm0 hn0 (by rw [← hxv]; exact hxv2) ?_ ?_
+      · have hh : 2 * (p * q) = 8 * (m * n) := by linear_combination 4 * hyv - hyv2
+        linarith
+      · have heqq : x ^ 2 + y ^ 2 = (m ^ 2 + n ^ 2) ^ 2 := by rw [hxv, hyv]; ring
+        linarith
+    · have h2x : (2 : ℤ) ∣ x := ⟨p * q, by rw [hxv2]; ring⟩
+      obtain ⟨t, ht⟩ := h2x
+      omega
+  · -- `x = 2mn` with `4 ∣ x`, `y = m² − n²` odd
+    have hm0 : m ≠ 0 := by rintro rfl; exact hx0 (by rw [hxv]; ring)
+    have hn0 : n ≠ 0 := by rintro rfl; exact hx0 (by rw [hxv]; ring)
+    obtain ⟨k, hk⟩ := sq_sub_sq_odd hmnpar
+    have hyodd : y = 2 * k + 1 := by rw [hyv]; exact hk
+    obtain ⟨X₀, hX₀⟩ := mul_even_of_par hmnpar
+    have hx4v : x = 4 * X₀ := by rw [hxv]; linear_combination 2 * hX₀
+    have hX00 : X₀ ≠ 0 := by intro h; rw [h, mul_zero] at hx4v; exact hx0 hx4v
+    have hC4 : (4 : ℤ) ∣ C := by
+      have hsq : (4 : ℤ) ^ 2 ∣ C ^ 2 := ⟨X₀ ^ 2 + y ^ 2, by rw [← h2, hx4v]; ring⟩
+      exact (Int.pow_dvd_pow_iff two_ne_zero).mp hsq
+    obtain ⟨C₀, hC₀⟩ := hC4
+    have hX0cop : IsCoprime X₀ y := by
+      rw [hyv]
+      exact (coprime_mul_sq_sub hmncop').of_isCoprime_of_dvd_left ⟨2, by linarith [hX₀]⟩
+    have hgcd3 : Int.gcd X₀ y = 1 := Int.isCoprime_iff_gcd_eq_one.mp hX0cop
+    have hT3 : PythagoreanTriple X₀ y C₀ := by
+      show X₀ * X₀ + y * y = C₀ * C₀
+      rw [hx4v, hC₀] at h2
+      have h16 : (16 : ℤ) * (X₀ * X₀ + y * y) = 16 * (C₀ * C₀) := by linear_combination h2
+      exact mul_left_cancel₀ (by norm_num : (16 : ℤ) ≠ 0) h16
+    obtain ⟨p, q, hpqxy, _, hpqcop, _⟩ :=
+      (PythagoreanTriple.coprime_classification (x := X₀) (y := y) (z := C₀)).mp ⟨hT3, hgcd3⟩
+    have hpqcop' : IsCoprime p q := Int.isCoprime_iff_gcd_eq_one.mpr hpqcop
+    rcases hpqxy with ⟨_, hyv2⟩ | ⟨hxv2, hyv2⟩
+    · have h2y : (2 : ℤ) ∣ y := ⟨p * q, by rw [hyv2]; ring⟩
+      obtain ⟨t, ht⟩ := h2y
+      omega
+    · have hp0 : p ≠ 0 := by rintro rfl; exact hX00 (by rw [hxv2]; ring)
+      have hq0 : q ≠ 0 := by rintro rfl; exact hX00 (by rw [hxv2]; ring)
+      refine main p q m n hpqcop' hmncop' hp0 hq0 (by rw [← hyv2]; exact hyv) ?_ ?_
+      · linear_combination hX₀ + 2 * hxv2
+      · have hxy : x ^ 2 + y ^ 2 = 64 * (p * q) ^ 2 + (p ^ 2 - q ^ 2) ^ 2 := by
+          rw [hx4v, hxv2, hyv2]; ring
+        nlinarith [sq_nonneg (p * q), hxy]
+
+/-- **The two conductor-`15` concordant systems, resolved together.** They are
+mutually recursive — the `d = 1` descent meets the `5`-twisted system in its
+`K = 5` branch, and the `5`-twisted descent meets the `d = 1` system in its
+`gcd = 1` branch — so a single strong induction on `x² + y²` carries both. -/
+theorem concordant_both_aux : ∀ Nn : ℕ,
+    (∀ x y B C : ℤ, (x ^ 2 + y ^ 2).toNat ≤ Nn → IsCoprime x y →
+      x ^ 2 + y ^ 2 = B ^ 2 → x ^ 2 + 16 * y ^ 2 = C ^ 2 → x = 0 ∨ y = 0) ∧
+    (∀ x y B C : ℤ, (x ^ 2 + y ^ 2).toNat ≤ Nn → IsCoprime x y →
+      x ^ 2 + y ^ 2 = 5 * B ^ 2 → x ^ 2 + 16 * y ^ 2 = 5 * C ^ 2 → x ^ 2 = 4 * y ^ 2) := by
   intro Nn
   induction Nn with
   | zero =>
-    intro x y B C hN _ _ _
-    left
-    have hx2 : (0 : ℤ) ≤ x ^ 2 := sq_nonneg x
-    have hy2 : (0 : ℤ) ≤ y ^ 2 := sq_nonneg y
-    have hle : x ^ 2 + y ^ 2 ≤ 0 := Int.toNat_eq_zero.mp (Nat.le_zero.mp hN)
-    have hz : x ^ 2 = 0 := by linarith
-    exact (pow_eq_zero_iff (n := 2) (by norm_num)).mp hz
+    constructor
+    · intro x y B C hN _ _ _
+      left
+      have hle : x ^ 2 + y ^ 2 ≤ 0 := Int.toNat_eq_zero.mp (Nat.le_zero.mp hN)
+      have hz : x ^ 2 = 0 := by linarith only [hle, sq_nonneg x, sq_nonneg y]
+      exact (pow_eq_zero_iff (n := 2) (by norm_num)).mp hz
+    · intro x y B C hN _ _ _
+      have hle : x ^ 2 + y ^ 2 ≤ 0 := Int.toNat_eq_zero.mp (Nat.le_zero.mp hN)
+      linarith only [hle, sq_nonneg x, sq_nonneg y]
   | succ Nn ih =>
-    intro x y B C hN hcop h1 h2
-    by_cases hy0 : y = 0
-    · exact Or.inr hy0
-    by_cases hx0 : x = 0
-    · exact Or.inl hx0
-    exfalso
-    have hgcd : Int.gcd x y = 1 := Int.isCoprime_iff_gcd_eq_one.mp hcop
-    have hT1 : PythagoreanTriple x y B := by
-      show x * x + y * y = B * B
-      linear_combination h1
-    obtain ⟨m, n, hmnxy, _, hmncop, hmnpar⟩ :=
-      (PythagoreanTriple.coprime_classification (x := x) (y := y) (z := B)).mp ⟨hT1, hgcd⟩
-    have hmncop' : IsCoprime m n := Int.isCoprime_iff_gcd_eq_one.mpr hmncop
-    have main : ∀ M N' P Q : ℤ, IsCoprime M N' → IsCoprime P Q → M ≠ 0 → N' ≠ 0 →
-        M ^ 2 - N' ^ 2 = P ^ 2 - Q ^ 2 → P * Q = 4 * (M * N') →
-        (M ^ 2 + N' ^ 2) ^ 2 ≤ x ^ 2 + y ^ 2 → False := by
-      intro M N' P Q hMN hPQ hM0 hN0 heq hprod hsz
-      obtain ⟨a, d, B', C', hadcop, ha0, hd0, hMNout, hle, hsys⟩ :=
-        descent_step' hMN hPQ hM0 hN0 heq hprod
-      have hM2 : (1 : ℤ) ≤ M ^ 2 := by
-        have hp := (sq_nonneg M).lt_of_ne (Ne.symm (pow_ne_zero 2 hM0))
-        linarith [Int.lt_iff_add_one_le.mp hp]
-      have hN2 : (1 : ℤ) ≤ N' ^ 2 := by
-        have hp := (sq_nonneg N').lt_of_ne (Ne.symm (pow_ne_zero 2 hN0))
-        linarith [Int.lt_iff_add_one_le.mp hp]
-      have hsq : M ^ 2 + N' ^ 2 < (M ^ 2 + N' ^ 2) ^ 2 := by nlinarith
-      have hlt : d ^ 2 + a ^ 2 < x ^ 2 + y ^ 2 := by linarith
-      have hadnn : (0 : ℤ) ≤ d ^ 2 + a ^ 2 := by positivity
-      have hxynn : (0 : ℤ) ≤ x ^ 2 + y ^ 2 := by positivity
-      have hmeas : (d ^ 2 + a ^ 2).toNat ≤ Nn := by
-        have hc1 : ((d ^ 2 + a ^ 2).toNat : ℤ) = d ^ 2 + a ^ 2 := Int.toNat_of_nonneg hadnn
-        have hc2 : ((x ^ 2 + y ^ 2).toNat : ℤ) = x ^ 2 + y ^ 2 := Int.toNat_of_nonneg hxynn
-        have hc3 : ((d ^ 2 + a ^ 2).toNat : ℤ) < ((x ^ 2 + y ^ 2).toNat : ℤ) := by
-          rw [hc1, hc2]; exact hlt
-        have hc4 : (d ^ 2 + a ^ 2).toNat < (x ^ 2 + y ^ 2).toNat := by exact_mod_cast hc3
-        omega
-      rcases hsys with ⟨e1, e2⟩ | ⟨e1, e2⟩
-      · rcases ih d a B' C' hmeas hadcop.symm (by linarith) (by linarith) with hz | hz
-        · exact hd0 hz
-        · exact ha0 hz
-      · have hkey := concordant_five d a B' C' hadcop.symm (by linarith) (by linarith)
-        have ha2 : a ^ 2 = 1 := by
-          have hdvd : a ^ 2 ∣ d ^ 2 := ⟨4, by linarith⟩
-          have hu := (hadcop.pow (m := 2) (n := 2)).isUnit_of_dvd' (dvd_refl (a ^ 2)) hdvd
-          rw [Int.isUnit_iff] at hu
-          rcases hu with hh | hh
-          · exact hh
-          · nlinarith [sq_nonneg a]
-        have hd2 : d ^ 2 = 4 := by linarith
-        have hB2 : B' ^ 2 = 1 := by linarith
-        have hC2 : C' ^ 2 = 4 := by linarith
-        have hs1 : (a * C') ^ 2 = 4 := by
-          have hr : (a * C') ^ 2 = a ^ 2 * C' ^ 2 := by ring
-          rw [hr, ha2, hC2]; ring
-        have hs2 : (B' * d) ^ 2 = 4 := by
-          have hr : (B' * d) ^ 2 = B' ^ 2 * d ^ 2 := by ring
-          rw [hr, hB2, hd2]; ring
-        have hdv1 : (2 : ℤ) ∣ a * C' := by
-          have hz : (a * C' - 2) * (a * C' + 2) = 0 := by linear_combination hs1
-          rcases mul_eq_zero.mp hz with hh | hh
-          · exact ⟨1, by linarith⟩
-          · exact ⟨-1, by linarith⟩
-        have hdv2 : (2 : ℤ) ∣ B' * d := by
-          have hz : (B' * d - 2) * (B' * d + 2) = 0 := by linear_combination hs2
-          rcases mul_eq_zero.mp hz with hh | hh
-          · exact ⟨1, by linarith⟩
-          · exact ⟨-1, by linarith⟩
-        have hu := hMNout.isUnit_of_dvd' hdv1 hdv2
-        rw [Int.isUnit_iff] at hu
-        omega
-    rcases hmnxy with ⟨hxv, hyv⟩ | ⟨hxv, hyv⟩
-    · -- `x = m² − n²` odd, `y = 2mn`
-      have hm0 : m ≠ 0 := by rintro rfl; exact hy0 (by rw [hyv]; ring)
-      have hn0 : n ≠ 0 := by rintro rfl; exact hy0 (by rw [hyv]; ring)
-      obtain ⟨k, hk⟩ := sq_sub_sq_odd hmnpar
-      have hxodd : x = 2 * k + 1 := by rw [hxv]; exact hk
-      have hx4 : IsCoprime x (4 : ℤ) := isCoprime_four_of_odd hxodd
-      have hT2 : PythagoreanTriple x (4 * y) C := by
-        show x * x + (4 * y) * (4 * y) = C * C
-        linear_combination h2
-      have hgcd2 : Int.gcd x (4 * y) = 1 :=
-        Int.isCoprime_iff_gcd_eq_one.mp (hx4.mul_right hcop)
-      obtain ⟨p, q, hpqxy, _, hpqcop, _⟩ :=
-        (PythagoreanTriple.coprime_classification (x := x) (y := 4 * y) (z := C)).mp ⟨hT2, hgcd2⟩
-      have hpqcop' : IsCoprime p q := Int.isCoprime_iff_gcd_eq_one.mpr hpqcop
-      rcases hpqxy with ⟨hxv2, hyv2⟩ | ⟨hxv2, _⟩
-      · refine main m n p q hmncop' hpqcop' hm0 hn0 (by rw [← hxv]; exact hxv2) ?_ ?_
-        · have hh : 2 * (p * q) = 8 * (m * n) := by linear_combination 4 * hyv - hyv2
-          linarith
-        · have heqq : x ^ 2 + y ^ 2 = (m ^ 2 + n ^ 2) ^ 2 := by rw [hxv, hyv]; ring
-          linarith
-      · have h2x : (2 : ℤ) ∣ x := ⟨p * q, by rw [hxv2]; ring⟩
-        obtain ⟨t, ht⟩ := h2x
-        omega
-    · -- `x = 2mn` with `4 ∣ x`, `y = m² − n²` odd
-      have hm0 : m ≠ 0 := by rintro rfl; exact hx0 (by rw [hxv]; ring)
-      have hn0 : n ≠ 0 := by rintro rfl; exact hx0 (by rw [hxv]; ring)
-      obtain ⟨k, hk⟩ := sq_sub_sq_odd hmnpar
-      have hyodd : y = 2 * k + 1 := by rw [hyv]; exact hk
-      obtain ⟨X₀, hX₀⟩ := mul_even_of_par hmnpar
-      have hx4v : x = 4 * X₀ := by rw [hxv]; linear_combination 2 * hX₀
-      have hX00 : X₀ ≠ 0 := by intro h; rw [h, mul_zero] at hx4v; exact hx0 hx4v
-      have hC4 : (4 : ℤ) ∣ C := by
-        have hsq : (4 : ℤ) ^ 2 ∣ C ^ 2 := ⟨X₀ ^ 2 + y ^ 2, by rw [← h2, hx4v]; ring⟩
-        exact (Int.pow_dvd_pow_iff two_ne_zero).mp hsq
-      obtain ⟨C₀, hC₀⟩ := hC4
-      have hX0cop : IsCoprime X₀ y := by
-        rw [hyv]
-        exact (coprime_mul_sq_sub hmncop').of_isCoprime_of_dvd_left ⟨2, by linarith [hX₀]⟩
-      have hgcd3 : Int.gcd X₀ y = 1 := Int.isCoprime_iff_gcd_eq_one.mp hX0cop
-      have hT3 : PythagoreanTriple X₀ y C₀ := by
-        show X₀ * X₀ + y * y = C₀ * C₀
-        rw [hx4v, hC₀] at h2
-        have h16 : (16 : ℤ) * (X₀ * X₀ + y * y) = 16 * (C₀ * C₀) := by linear_combination h2
-        exact mul_left_cancel₀ (by norm_num : (16 : ℤ) ≠ 0) h16
-      obtain ⟨p, q, hpqxy, _, hpqcop, _⟩ :=
-        (PythagoreanTriple.coprime_classification (x := X₀) (y := y) (z := C₀)).mp ⟨hT3, hgcd3⟩
-      have hpqcop' : IsCoprime p q := Int.isCoprime_iff_gcd_eq_one.mpr hpqcop
-      rcases hpqxy with ⟨_, hyv2⟩ | ⟨hxv2, hyv2⟩
-      · have h2y : (2 : ℤ) ∣ y := ⟨p * q, by rw [hyv2]; ring⟩
-        obtain ⟨t, ht⟩ := h2y
-        omega
-      · have hp0 : p ≠ 0 := by rintro rfl; exact hX00 (by rw [hxv2]; ring)
-        have hq0 : q ≠ 0 := by rintro rfl; exact hX00 (by rw [hxv2]; ring)
-        refine main p q m n hpqcop' hmncop' hp0 hq0 (by rw [← hyv2]; exact hyv) ?_ ?_
-        · linear_combination hX₀ + 2 * hxv2
-        · have hxy : x ^ 2 + y ^ 2 = 64 * (p * q) ^ 2 + (p ^ 2 - q ^ 2) ^ 2 := by
-            rw [hx4v, hxv2, hyv2]; ring
-          nlinarith [sq_nonneg (p * q), hxy]
+    exact ⟨concordant_one_step Nn ih.1 ih.2, concordant_five_step Nn ih.1 ih.2⟩
 
 /-- **The trivial concordant system for `n = 16`** (PROVEN 2026-07-26 by
 infinite descent, over `concordant_five`): for coprime `x`, `y`, if BOTH
@@ -9132,7 +9597,8 @@ other legs are `y` and `4y`. This is the `2`-covering of
 rational points `(x,y) = (0,±1)` and `(±1,0)`, so it is everywhere locally
 soluble and **cannot** be killed by a congruence.
 
-**The descent** (`concordant_aux`, by strong induction on `x² + y²`).
+**The descent** (`concordant_one_step`, by strong induction on `x² + y²`,
+run jointly with `concordant_five` inside `concordant_both_aux`).
 Write `x² + 16y² = x² + (4y)²`, so a solution gives two Pythagorean
 triples with common leg `x`. Exactly one of `x`, `y` is even.
 
@@ -9166,7 +9632,88 @@ system; `concordant_five` enters only to refute that branch. -/
 theorem concordant_one (x y b c : ℤ) (hcop : IsCoprime x y)
     (h1 : x ^ 2 + y ^ 2 = b ^ 2) (h2 : x ^ 2 + 16 * y ^ 2 = c ^ 2) :
     x = 0 ∨ y = 0 :=
-  concordant_aux (x ^ 2 + y ^ 2).toNat x y b c le_rfl hcop h1 h2
+  (concordant_both_aux (x ^ 2 + y ^ 2).toNat).1 x y b c le_rfl hcop h1 h2
+
+/-- **The `5`-twisted concordant system for `n = 16`** (PROVEN 2026-07-26 by
+infinite descent, jointly with `concordant_one`): for coprime `x`, `y`, if
+BOTH `x² + y²` and `x² + 16y²` are `5` times a square then `x² = 4y²`
+(equivalently `(|x|,|y|) = (2,1)`).
+
+This is the `2`-covering of `V² = X(X+1)(X+16)` twisted by the order-`4`
+point `(4, 20)`; the solution `(x,y) = (2,1)` (`5 = 5·1²`, `20 = 5·2²`) is
+the point itself, so there is no congruence obstruction. Exhaustive search
+(`0 ≤ x,y ≤ 3000`, coprime) finds no further solution.
+
+**THE DESCENT.** `x` is even and `y` odd (`x` odd is killed mod `8`, by
+`odd_odd_sq_add_sq_ne_five_sq` when `y` is odd and by
+`odd_sq_add_sixteen_sq_ne_five_sq` when `y` is even), and `c` is even, so
+with `x = 2u`, `c = 2c₁` the system becomes the **symmetric** one
+
+    4u² + v² = 5B²,   u² + 4v² = 5C²,    v = y,
+
+whose conclusion is `u² = v²`. Here `u`, `v` are both odd and `5 ∣ u ∓ v`;
+after replacing `v` by `−v` if necessary, put `N = (u−v)/5` and `M = u − N`,
+so `u = M + N`, `v = M − 4N` with `M` odd, `N` even, and
+
+    M² + (2N)² = B²,      (M − 3N)² + (2N)² = C² —
+
+two **primitive Pythagorean triples with the common leg `2N`**, and the goal
+`u² = v²` is exactly `N(2M − 3N) = 0`. Parametrising both gives
+`M = m² − n²`, `N = mn = pq` and `M − 3N = p² − q²`, i.e.
+
+    pq = mn   and   m² − n² − 3mn = p² − q².
+
+The four-way coprime split `m = ab`, `n = cd`, `p = ac`, `q = bd` (from
+`exists_dvd_and_dvd_of_dvd_mul`) turns the second equation into
+
+    (a² + d²)(b² − c²) = 3abcd,      a, b, c, d pairwise coprime.
+
+Since `a² + d²` is prime to `ad` and to `3`, and `b² − c²` is prime to `bc`,
+the two cofactors multiply to `3` and are forced to be `±1` and `±3`:
+`bc = ±(a² + d²)` and `b² − c² = ±3ad` with correlated signs. Hence
+
+    (b² + c²)² = (b² − c²)² + 4(bc)² = 9a²d² + 4(a² + d²)²
+               = (4a² + d²)(a² + 4d²),
+
+whose two factors have `gcd` dividing `15` and prime to `3`
+(`gcd_dvd_fifteen`, `three_dvd_of_sq_add_sq`), so the `gcd` is `1` or `5`:
+
+* `gcd = 1`: both factors are squares, which is the `d = 1` system
+  `concordant_one` at `(d, a₀)` or `(a, d₁)` — a **strictly smaller** point,
+  so `a = 0` or `d = 0`, contradicting `abcd ≠ 0`;
+* `gcd = 5`: this same system at `(2a, d)`, again strictly smaller, giving
+  `a² = d²`, whence `a² = d² = 1`, `bc = ±2`, `b² − c² = ±3ad`, and so
+  `N = mn = ±2ad`, `M = m² − n² = ±3ad` — that is `2M − 3N = 0`.
+
+The strict decrease is `a² + d² ≤ p² + q² ≤ C²` against
+`x² + y² ≥ u² + v² = B² + C²` with `B² = (m² + n²)² ≥ 16` (because `N = mn`
+is even and nonzero).
+
+**WHY THE TWO SYSTEMS ARE PROVEN TOGETHER.** They are **mutually recursive**,
+not ordered: `concordant_one`'s descent meets this system in its `K = 5`
+branch, and this descent meets `concordant_one` in its `gcd = 1` branch. Both
+calls are at strictly smaller points, so one strong induction on `x² + y²`
+carries both — that is `concordant_both_aux`.
+
+**THE TRAP — a route that looks like a proof and is EXACTLY CIRCULAR**
+(checked 2026-07-26; do not spend a cycle on it). Subtracting the two
+hypotheses gives `c² − b² = 3y²`, and `16·(h1) − (h2)` gives
+`16b² − c² = 3x²`; also `gcd(b, c) = 1`, since a common divisor divides both
+`3x²` and `3y²`, hence divides `3`, and `3 ∣ b` is impossible — it would
+give `x² + y² = 5b² ≡ 0 (mod 9)`, forcing `3 ∣ x` and `3 ∣ y`. So
+
+    (3xy)² = (c² − b²)(16b² − c²) = −c⁴ + 17c²b² − 16b⁴,
+
+i.e. `quartic_neg` at `(S, e) = (c, b)` — which IS proven, and its three
+conclusions do give `x² = 4y²`. It is not a proof: `quartic_neg`'s descent
+`gcd` here is `gcd(3y², 3x²) = 3` exactly, so it enters its `G = 3` branch,
+which recovers `a' = ±y`, `b' = ±x` and calls `concordant_five` back **at the
+same `(x, y)`**. Zero descent — the two statements are equivalent, not
+ordered. -/
+theorem concordant_five (x y b c : ℤ) (hcop : IsCoprime x y)
+    (h1 : x ^ 2 + y ^ 2 = 5 * b ^ 2) (h2 : x ^ 2 + 16 * y ^ 2 = 5 * c ^ 2) :
+    x ^ 2 = 4 * y ^ 2 :=
+  (concordant_both_aux (x ^ 2 + y ^ 2).toNat).2 x y b c le_rfl hcop h1 h2
 
 /-- **`d = 1`: the first `2`-isogeny homogeneous space of the
 conductor-`15` curve `V² = X(X+1)(X+16)`** (PROVEN 2026-07-26 over
