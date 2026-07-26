@@ -616,39 +616,116 @@ theorem exists_padicTwoEmbedding_of_mem
             (Γ ℚ_[2]) :=
   sorry
 
-/-- **Flatness descends to every place over a flat place** (LEAF — the
-flatness half of item 1/2 of the audit's list).
+universe u₁ u₂
 
-`GaloisRep.IsFlatAt v` asks that for every open ideal `I` of the coefficient
-ring the representation on `M/IM` be the geometric points of a finite flat
-group scheme over `𝒪_v` (`GaloisRep.HasFlatProlongationAt`). Finite flat
-group schemes base-change: if `G` is a finite flat `𝒪_v`-Hopf algebra with
-`G ⊗ K_v` étale and geometric points `M/IM`, then `𝒪_w ⊗_{𝒪_v} G` is a
-finite flat `𝒪_w`-Hopf algebra with the same geometric points read over
-`L_w`, because `𝒪_v → 𝒪_w` is a local map of complete DVRs and the geometric
-points are computed in a common algebraic closure.
+/-- **Base change of a SINGLE finite flat prolongation along `𝒪_v → 𝒪_w`**
+(LEAF — the geometric core of the flatness half of item 1/2 of the audit's
+list; split off 2026-07-26 from `isFlatAt_map_of_isFlatAt_under`, which is
+now PROVEN over it).
 
-WHAT IS MISSING: base change of `HopfAlgebra`/`Module.Flat`/`Module.Finite`
-along `𝒪_v → 𝒪_w`, together with the identification of
-`(K_w ⊗_{𝒪_w} (𝒪_w ⊗_{𝒪_v} G)) →ₐ[K_w] K_wᵃˡᵍ` with
-`(K_v ⊗_{𝒪_v} G) →ₐ[K_v] K_vᵃˡᵍ` as `Γ K_w`-sets, along the
-`Field.absoluteGaloisGroup.map` of the completion map — the same map
-`isUnramifiedAt_map_of_isUnramifiedAt_under` uses, with the same
-conjugation ambiguity, which `HasFlatProlongationAt.of_equiv` is already
-shaped to absorb.
+`ρ.HasFlatProlongationAt v` says that the `Γ K_v`-set underlying `M` is the
+set of `K_vᵃˡᵍ`-points of the generic fibre of a finite flat `𝒪_v`-Hopf
+algebra `G`. This leaf is the base-change of that ONE package along the
+local map `𝒪_v → 𝒪_w`; the quantifier over open ideals which distinguishes
+`IsFlatAt` from `HasFlatProlongationAt` has already been discharged by the
+consumer below, so nothing here is about the coefficient ring.
+
+THE ROUTE, in the vocabulary that exists in `CompletionTransport.lean` and
+`FlatProlongation.lean` (recorded because it was mapped out and only NOT
+executed for size — it is a second copy of the 300-line `dvrPointsEquiv`
+development, at a different pair of rings):
+
+* `HeightOneSpectrum.adicCompletionMap v w (algebraMap K L) hψ : K_v →+* L_w`
+  exists (the very map `isUnramifiedAt_map_of_isUnramifiedAt_under` builds,
+  from `valuation_map_le_of_le_one` + `WithVal.uniformContinuous_map_of_le`),
+  it is LOCAL (`adicCompletionMap_mem_integers`), and
+  `Field.absoluteGaloisGroup.intMap` restricts it to `𝒪_v →+* 𝒪_w`. That is
+  the `Algebra 𝒪_v 𝒪_w` used below, together with the induced
+  `Algebra 𝒪_v L_w`, `Algebra K_v L_w` and the two scalar towers;
+* the witness upstairs is `G' := 𝒪_w ⊗[𝒪_v] G`. `CommRing`, `HopfAlgebra 𝒪_w`
+  (mathlib's `TensorProduct` Hopf instance, `B := 𝒪_w`, `A := G`),
+  `Module.Flat 𝒪_w` and `Module.Finite 𝒪_w` are all instances;
+* étaleness of the generic fibre is `Algebra.Etale.baseChange` transported
+  across
+  `L_w ⊗[𝒪_w] (𝒪_w ⊗[𝒪_v] G) ≃ₐ L_w ⊗[𝒪_v] G ≃ₐ L_w ⊗[K_v] (K_v ⊗[𝒪_v] G)`
+  (`Algebra.TensorProduct.cancelBaseChange`, twice);
+* the points comparison is the exact analogue of `dvrPointsEquiv`:
+  `((L_w ⊗[𝒪_w] G') →ₐ[L_w] L_wᵃˡᵍ) ≃ ((K_v ⊗[𝒪_v] G) →ₐ[K_v] K_vᵃˡᵍ)`
+  by `AlgHom.liftEquiv` twice and then the finite-algebra points bijection
+  `algHomEquivOfFinite` (which is proven in `FlatProlongation.lean` for the
+  pair `K → K_v`, and whose proof — every `K_vᵃˡᵍ`-point of a FINITE
+  `K_v`-algebra has algebraic image, hence lands in the copy of `K_vᵃˡᵍ`
+  inside `L_wᵃˡᵍ` — is verbatim the argument needed here for `K_v → L_w`);
+  `liftEquiv_convOne`/`liftEquiv_convMul`/`liftEquiv_comp` already carry the
+  convolution-monoid bookkeeping through the `liftEquiv` layers;
+* the equivariance is where the CONJUGATOR enters, exactly as in the
+  tame-at-`2` clause of `isHilbertHardlyRamified_map_of_isHardlyRamified`:
+  the two routes `Γ L_w → Γ K`, one through `Γ L` and one through `Γ K_v`,
+  differ by one argument-independent `μ ∈ Γ K`
+  (`Field.absoluteGaloisGroup.exists_conj_map_comp'`, twice), and the fix is
+  to conjugate the COMPARISON MAP rather than the character: replacing the
+  bijection `f` of the package downstairs by `ρ μ ∘ f` turns
+  `f (ψ σ • φ) = ρ (ψ σ) (f φ)` into
+  `(ρ μ ∘ f) (σ • φ) = ρ (μ * ψ σ * μ⁻¹) ((ρ μ ∘ f) φ)`, which is the
+  `Γ L_w`-equivariance the package upstairs asks for, on the nose.
+
+FORMALIZATION NOTE ON THE UNIVERSES (why `L : Type (max u₁ u₂)` rather than
+`Type*`). `GaloisRep.HasFlatProlongationAt` quantifies its Hopf-algebra
+witness over `Type uK`, the universe of the BASE FIELD. So the conclusion
+demands `G' : Type uL` while the hypothesis supplies `G : Type uK`, and the
+base change `𝒪_w ⊗[𝒪_v] G` lives in `Type (max uK uL)`. Writing
+`L : Type (max u₁ u₂)` for `K : Type u₁` is exactly the constraint
+`uK ≤ uL`, under which that is `Type uL`. This is a formalization artifact,
+not a mathematical hypothesis: `G` is finite flat over the DVR `𝒪_v`, hence
+free of finite rank, so `𝒪_w ⊗[𝒪_v] G` is always `Small.{uL}` and the
+unrestricted statement would follow by transporting the Hopf structure
+along a `Shrink` equivalence — machinery mathlib does not have. Every
+consumer in this development instantiates at `K = ℚ : Type 0`, where the
+constraint is vacuous.
 
 FAITHFULNESS: a statement about the EXISTENCE of a prolongation upstairs
 given one downstairs, produced by base change — not a descent of existence
 from `𝒪^nr`, so the `𝒪ᵥ` rule does not bite. -/
+theorem hasFlatProlongationAt_map_of_hasFlatProlongationAt_under
+    {K : Type u₁} [Field K] [NumberField K]
+    {L : Type (max u₁ u₂)} [Field L] [NumberField L] [Algebra K L]
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    {M : Type*} [AddCommGroup M] [Module A M]
+    (ρ : GaloisRep K A M) (w : HeightOneSpectrum (𝓞 L))
+    (h : ρ.HasFlatProlongationAt (w.under (𝓞 K))) :
+    (ρ.map (algebraMap K L)).HasFlatProlongationAt w :=
+  sorry
+
+/-- **Flatness descends to every place over a flat place** (PROVEN,
+2026-07-26, over `hasFlatProlongationAt_map_of_hasFlatProlongationAt_under`).
+
+`GaloisRep.IsFlatAt v` asks that for every open ideal `I` of the coefficient
+ring the representation on `M/IM` be the geometric points of a finite flat
+group scheme over `𝒪_v` (`GaloisRep.HasFlatProlongationAt`). Two things
+separate that from the leaf above, and both are discharged here:
+
+* the quantifier over open ideals — the same `I` works upstairs and
+  downstairs, so it is transported unchanged;
+* the commutation `(ρ.map f).baseChange B = (ρ.baseChange B).map f`, which
+  holds definitionally: `map` precomposes with `Field.absoluteGaloisGroup.map
+  f` and `baseChange` postcomposes with `Module.End.baseChangeHom`, and the
+  two act on opposite sides of `ρ`.
+
+For the universe restriction on `L`, see the leaf's FORMALIZATION NOTE. -/
 theorem isFlatAt_map_of_isFlatAt_under
-    {K : Type*} [Field K] [NumberField K] {L : Type*} [Field L] [NumberField L]
-    [Algebra K L]
+    {K : Type u₁} [Field K] [NumberField K]
+    {L : Type (max u₁ u₂)} [Field L] [NumberField L] [Algebra K L]
     {A : Type*} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A] [IsLocalRing A]
     {M : Type*} [AddCommGroup M] [Module A M] [Module.Finite A M] [Module.Free A M]
     (ρ : GaloisRep K A M) (w : HeightOneSpectrum (𝓞 L))
     (h : ρ.IsFlatAt (w.under (𝓞 K))) :
-    (ρ.map (algebraMap K L)).IsFlatAt w :=
-  sorry
+    (ρ.map (algebraMap K L)).IsFlatAt w := by
+  refine ⟨fun I hI => ?_⟩
+  have heq : (ρ.map (algebraMap K L)).baseChange (A ⧸ I)
+      = (ρ.baseChange (A ⧸ I)).map (algebraMap K L) := GaloisRep.ext fun _ => rfl
+  rw [heq]
+  exact hasFlatProlongationAt_map_of_hasFlatProlongationAt_under
+    (ρ.baseChange (A ⧸ I)) w (h.cond I hI)
 
 /-- **Restriction of a hardly ramified representation is hardly ramified
 over `F`** (PROVEN, 2026-07-26, over the two local leaves above).
