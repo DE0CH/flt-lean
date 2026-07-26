@@ -175,58 +175,65 @@ def main() -> int:
     except Exception:
         return 0  # any liveness-check failure counts as LIVE (fail open)
 
-    # THE check: run the one-shot census (progress-tree.py --census →
-    # `lake lean ProgressCensus.lean`) for the compiler-verified list
-    # of sorried declarations and the root-cone status. Seconds on a
-    # warm tree; the census only runs when the fleet is idle, so the
-    # cost is irrelevant here. Graceful, not crash-loud: this is a
-    # harness-called hook (Deyao's caller-directed error policy).
+    # THE check: the DIRECT frontier, read from source by flt-frontier.py.
+    #
+    # WHY NOT THE CENSUS ANY MORE (2026-07-26). This block used to run
+    # `progress-tree.py --census`, i.e. `lake env lean ProgressCensus.lean`
+    # in THIS checkout. Under the release model the orchestrator's checkout
+    # is never built — the merger builds in `~/flt-staging` — so the census
+    # died on `object file '….olean' does not exist` at every single stop
+    # and the hook fell straight through its fail-open path. A check that
+    # can only fail open is not a check; the hook was silently disabled for
+    # as long as the release model has been in force.
+    #
+    # `flt-frontier.py` scans SOURCE (comment-stripped, sorries attributed
+    # backwards to their enclosing declaration header — see its docstring
+    # for the traps that shape encodes) and needs no oleans, no build, no
+    # server. ~5s. It is the same scan `flt-cycle.py preflight` and
+    # `flt-unowned.py` already run, so the hook now agrees with the rest of
+    # the fleet tooling by construction instead of by coincidence.
+    #
+    # WHAT IS LOST, deliberately: the census also reported the root-cone
+    # axiom status and the free-floating set, neither of which a source
+    # scan can see. Both are now the merger's business — it is the only
+    # party with a built tree, and the sorry gate in `Fermat.lean` is what
+    # actually enforces the root invariant at build time. The hook's job is
+    # narrower and honest: "is the frontier empty?".
     try:
         proc = subprocess.run(
-            [sys.executable, os.path.join(fermat, "progress-tree.py"),
-             "--census"],
+            [sys.executable, os.path.join(fermat, "flt-frontier.py"),
+             "--json"],
             cwd=fermat,
             capture_output=True,
             text=True,
-            timeout=3000,
+            timeout=600,
         )
         if proc.returncode != 0:
             raise RuntimeError(
                 (proc.stderr.strip() or proc.stdout.strip()
                  or f"exit {proc.returncode}")[-2000:])
-        resp = json.loads(proc.stdout)
-        if "error" in resp:
-            raise RuntimeError(resp["error"])
+        leaves = json.loads(proc.stdout)
     except Exception as exc:
-        # FAIL OPEN (Deyao, 2026-07-22): the hook is a nudge, not a
-        # safety net — a census hiccup (including an absent report
-        # server) must not block the stop. Deliberately terse: a hook
-        # message must not instruct anyone to start servers (Deyao,
-        # 2026-07-23); the generator route surfaces the full error.
+        # FAIL OPEN (Deyao, 2026-07-22): the hook is a nudge, not a safety
+        # net. Terse by design — a hook message must never instruct anyone
+        # to start servers or rebuild (Deyao, 2026-07-23).
         sys.stderr.write(
-            f"Stop hook: census unavailable or failed "
-            f"({type(exc).__name__}); allowing the stop (fail open).\n"
+            f"Stop hook: frontier scan unavailable or failed "
+            f"({type(exc).__name__}: {exc}); allowing the stop (fail open).\n"
         )
         return 0
 
     try:
-        sorries = [f"{s['name']} ({s['module']})" for s in resp["sorried"]]
-        root = resp["root"]
-        # short-circuit: a missing root carries no coneSorry/badAxioms
-        root_open = (root["missing"] or root["coneSorry"]
-                     or root["badAxioms"])
+        sorries = [f"{lf['name']} ({lf['module']})" for lf in leaves]
     except (KeyError, TypeError) as exc:
-        # never block (or allow the endgame) on a made-up reading of a
-        # malformed response — allow the stop with one informative line
         sys.stderr.write(
-            f"Stop hook: malformed census response ({exc!r}, keys "
-            f"{sorted(resp)}); allowing the stop.\n")
+            f"Stop hook: malformed frontier response ({exc!r}); "
+            "allowing the stop.\n")
         return 0
-    # absence of these keys is the census's real answer "none", not an
-    # error (they are only present when nonempty; the report-server
-    # census never emits them — kept for response-shape tolerance)
-    stale = resp.get("stale_sources", [])
-    unbuilt = resp.get("unbuilt_modules", [])
+    # The source scan cannot speak to the root cone or to build state; the
+    # sorry gate and the merger own those. Kept as constants so the
+    # reporting below stays structurally intact.
+    root, root_open, stale, unbuilt = {}, False, [], []
 
     if not sorries and not root_open:
         # Endgame (Deyao, 2026-07-22): NOTHING automatic runs `lake build`
@@ -299,14 +306,15 @@ def main() -> int:
             "counts reflect the built state)" if stale else ""
         )
         print(
-            f"Not done: the Lean compiler reports {len(sorries)} sorried "
-            f"declaration(s) in the FLT dependency tree{stale_note}. "
-            "Continue orchestrating: ensure every open node has an owner "
-            "(a running agent, or an explicit orchestrator decision to "
-            "defer); dispatch new agents for orphaned nodes; monitor "
-            "running agents; integrate, verify (lean-lsp MCP diagnostics "
-            "or module builds), and commit completed work; then re-check. "
-            "Next open nodes:",
+            f"Not done: {len(sorries)} DIRECT sorried declaration(s) remain "
+            f"in the FLT tree{stale_note}. Continue orchestrating the "
+            "release cycle: `python3 flt-cycle.py preflight` (every branch "
+            "an ancestor of main, every worker state consistent, every "
+            "sorry owned by a queued task or a live agent — queueing IS "
+            "ownership); queue tasks for anything `flt-unowned.py` reports; "
+            "`flt-cycle.py release` to hand the green main out; dispatch "
+            "the queue; `flt-cycle.py done <wt>` as agents report, and hand "
+            "the batch to the ONE merge worker. Next open nodes:",
             file=sys.stderr,
         )
         for entry in sorries[:5]:
@@ -320,22 +328,19 @@ def main() -> int:
             file=sys.stderr,
         )
 
-    # Deyao (2026-07-20, orchestrator framing 2026-07-22): the `wip`/`○`
-    # pointer in progress-entries.json is the live ownership map — one
-    # cluster of marks per running agent — updated at BOTH transition
-    # moments (dispatch and completion/integration), always via
-    # progress-entries.json + the snapshot pipeline, never by
-    # hand-editing PROGRESS.md.
+    # OWNERSHIP POINTER. The `wip`/`○` marks in progress-entries.json used
+    # to be the live ownership map, and this hook used to demand they be
+    # kept current at both transitions. Under the release model (Deyao,
+    # 2026-07-26) PROGRESS.md regeneration is DROPPED for speed, so that
+    # instruction is retired: ownership now lives in `~/.flt-task-queue`
+    # (queueing IS ownership) plus the live-agent set, and `flt-unowned.py`
+    # is what reconciles them.
     print(
-        "WORK-IN-PROGRESS POINTER: keep progress-entries.json's `wip` "
-        "flags current at BOTH transitions — AT DISPATCH: immediately set "
-        "`wip: true` on exactly the node(s) the dispatched (or "
-        "re-dispatched) agent owns; AT COMPLETION/INTEGRATION: clear "
-        "`wip` on nodes the agent no longer owns and set it on newly "
-        "created leaves that got new owners. Multiple concurrent `wip` "
-        "marks are EXPECTED (one cluster per running agent) — the flags "
-        "are the live ownership map; regenerate PROGRESS.md via the "
-        "snapshot pipeline after each such update.",
+        "OWNERSHIP: the loop invariant is that every direct sorry has an "
+        "owner at all times. Run `python3 flt-unowned.py --verbose`; for "
+        "each name it reports, append a task to `~/.flt-task-queue` with a "
+        "leading ``TARGET: `name` `` block (the ownership scan reads those "
+        "blocks, not the prose).",
         file=sys.stderr,
     )
     # Deyao (2026-07-18): the continuation must keep the user informed
