@@ -9994,8 +9994,137 @@ lemma residual_of_matching (J u v : ℚ)
   · exact absurd (by linarith : u * v = 49) hnb
   · linarith
 
+/-- No rational number squares to `21`.  Used through `disc21`. -/
+theorem sq_ne_21 (r : ℚ) : r ^ 2 ≠ 21 := by
+  intro hr
+  have hden1 : r.den = 1 := by
+    have h2 : (r ^ 2).den = 1 := by rw [hr]; exact Rat.den_intCast 21
+    rw [Rat.den_pow] at h2
+    exact (Nat.pow_eq_one.mp h2).resolve_right (by norm_num)
+  obtain ⟨w, hw⟩ : ∃ w : ℤ, r = (w : ℚ) := ⟨r.num, ((Rat.den_eq_one_iff _).mp hden1).symm⟩
+  have hwi : w ^ 2 = 21 := by
+    have : ((w : ℚ)) ^ 2 = ((21 : ℤ) : ℚ) := by rw [← hw, hr]; norm_num
+    exact_mod_cast this
+  have h1 : w ≤ 5 := by nlinarith [sq_nonneg (w - 5), sq_nonneg (w + 5)]
+  have h2 : -5 ≤ w := by nlinarith [sq_nonneg (w - 5), sq_nonneg (w + 5)]
+  interval_cases w <;> omega
+
+/-- `x² + 3x − 3` has no rational root: completing the square turns a root
+into a rational square root of the discriminant `21`.  This is what makes the
+`y`-coordinate of the reconstructed point of `49a1` well defined — the
+denominator `x² + 3x − 3` (equivalently `s² + 7s + 7`) can never vanish at a
+rational argument. -/
+theorem disc21 (x : ℚ) : x ^ 2 + 3 * x - 3 ≠ 0 := fun h =>
+  sq_ne_21 (2 * x + 3) (by linear_combination 4 * h)
+
+/-- **`q₄ = u⁴ + 14u³ + 63u² + 70u − 7` has no rational root.**  It is monic
+with integer coefficients — indeed Eisenstein at `7`, since `7` divides every
+lower coefficient and `49` does not divide the constant term — so a rational
+root is an integer dividing `7`, and none of `±1, ±7` is a root.
+
+`q₄` is the polynomial that controls the whole level-`49` inversion: it is the
+`u`-resultant of the two forms `A` and `B` below (`uA − 7B = v³·q₄`), it is
+the exact denominator of the square root `t` of `uv`, and its roots are among
+the `u`-coordinates of the singular points of the plane model `Φ₄₉ = 0`.  Its
+irrationality is therefore what makes the birational inverse total at every
+RATIONAL point of the residual curve. -/
+theorem q4_ne_zero (u : ℚ) : u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7 ≠ 0 := by
+  intro h
+  have hdenQ : ((u.den : ℚ)) ≠ 0 := by exact_mod_cast u.den_ne_zero
+  have hu : u * ((u.den : ℚ)) = (u.num : ℚ) :=
+    ((div_eq_iff hdenQ).mp (Rat.num_div_den u)).symm
+  have hd0 : (0 : ℤ) < (u.den : ℤ) := by exact_mod_cast u.pos
+  have key : u.num ^ 4 + 14 * u.num ^ 3 * (u.den : ℤ)
+      + 63 * u.num ^ 2 * (u.den : ℤ) ^ 2 + 70 * u.num * (u.den : ℤ) ^ 3
+      - 7 * (u.den : ℤ) ^ 4 = 0 := by
+    have hQ : (u.num : ℚ) ^ 4 + 14 * (u.num : ℚ) ^ 3 * ((u.den : ℚ))
+        + 63 * (u.num : ℚ) ^ 2 * ((u.den : ℚ)) ^ 2
+        + 70 * (u.num : ℚ) * ((u.den : ℚ)) ^ 3 - 7 * ((u.den : ℚ)) ^ 4 = 0 := by
+      rw [← hu]; linear_combination ((u.den : ℚ)) ^ 4 * h
+    exact_mod_cast hQ
+  have hdvd : (u.den : ℤ) ∣ u.num ^ 4 :=
+    ⟨-(14 * u.num ^ 3 + 63 * u.num ^ 2 * (u.den : ℤ) + 70 * u.num * (u.den : ℤ) ^ 2
+        - 7 * (u.den : ℤ) ^ 3), by linarith [key]⟩
+  have hcop : IsCoprime (u.num) ((u.den : ℤ)) := by
+    rw [Int.isCoprime_iff_gcd_eq_one]; simpa [Int.gcd] using u.reduced
+  have hd1 : (u.den : ℤ) = 1 := by
+    have hcp : IsCoprime (u.num ^ 4) ((u.den : ℤ)) := hcop.pow_left
+    have hu1 : IsUnit ((u.den : ℤ)) := by
+      obtain ⟨a, b, hab⟩ := hcp
+      obtain ⟨c, hc⟩ := hdvd
+      exact isUnit_of_dvd_one ⟨a * c + b, by rw [← hab, hc]; ring⟩
+    rcases Int.isUnit_iff.mp hu1 with h1 | h1
+    · exact h1
+    · omega
+  rw [hd1] at key
+  have hn7 : u.num ∣ 7 := ⟨u.num ^ 3 + 14 * u.num ^ 2 + 63 * u.num + 70, by linarith [key]⟩
+  have hub := Int.le_of_dvd (by norm_num : (0:ℤ) < 7) hn7
+  have hlb := Int.le_of_dvd (by norm_num : (0:ℤ) < 7) hn7.neg_left
+  have hlow : -7 ≤ u.num := by omega
+  interval_cases h' : u.num <;> norm_num at key
+
+/-- **The degeneracy locus of the level-`49` inversion is empty over `ℚ`**
+(sorry leaf, introduced 2026-07-27).  Writing `Ψ(u,v) = 49u(uv+5v+49)² −
+v(v−49u)²`, no rational point of the residual curve `Φ₄₉ = 0` with `u ≠ 0`
+lies on `Ψ = 0`.
+
+**What it is for.**  The inverse of the birational map `Φ₄₉ = 0 → 49a1` is
+built in two steps (see `x0FortyNine_point_of_residual`): first the square
+root `t` of `uv`, whose denominator `v³·q₄(u)` never vanishes rationally, and
+then `s = x − 2` as `s = −(P₂t + P₀)/(P₃t + P₁)`.  The second denominator is
+governed by the exact identity
+
+  `(P₃t + P₁)(P₃t − P₁) = P₃²t² − P₁² = −u·Ψ(u,v)`,
+
+so `Ψ ≠ 0` is precisely the statement that the second step is total.  This is
+the ONLY gap in the level-`49` inversion; everything else is proven.
+
+**Why it is true, and the certificate that proves it.**  `Ψ = 0` is a
+bidegree-`(3,3)` curve and `Φ₄₉ = 0` is bidegree `(7,7)`, so the intersection
+is finite, and eliminating `v` between them gives (computed with PARI/GP as an
+untrusted searcher, 2026-07-27)
+
+  `Res_v(Φ₄₉, Ψ) = u³ · (u² + 5u + 1)⁹ · (u⁶ + 23u⁵ + 214u⁴ + 939u³ + 1654u² − 73u + 1)`.
+
+Every factor is irreducible over `ℚ`: `u² + 5u + 1` has discriminant `21`
+(this is `disc21` again, up to the substitution `u ↦ u + 1`), and the sextic
+is irreducible with no rational root — its only candidates are `±1`, giving
+`2759` and `981`.  The remaining factor is `u³`, killed by `hu`.  So the
+system has no rational solution off `u = 0`.
+
+A Lean proof therefore needs the Bezout cofactors of that resultant:
+polynomials `a, b` with `a·Φ₄₉ + b·Ψ = Res_v(Φ₄₉, Ψ)`, where `a` has
+`v`-degree `≤ 2` and `b` has `v`-degree `≤ 6`, both of `u`-degree about `27`
+(the resultant has `u`-degree `3 + 18 + 6 = 27`).  That is roughly `280`
+terms, which is large for `linear_combination` but well within reach; the
+alternative is to run the elimination as a chain of small remainder steps.
+
+**Independent confirmation that the conclusion is right.**  The singular
+locus of the plane model `Φ₄₉ = 0` is `0`-dimensional of degree `22`, and its
+`u`-coordinates satisfy `u² + 5u + 1` or `q₄(u)` — both irreducible over `ℚ`.
+So every RATIONAL point of `Φ₄₉ = 0` is a smooth point, hence lifts to a
+rational point of the normalisation `49a1`, whose affine rational points are
+exactly `(2, −1)` by `rational_point_x0FortyNine`.  That is the conceptual
+reason the leaf below is true, and it independently predicts that the
+degeneracy locus carries no rational point. -/
+theorem psi_ne_zero (u v : ℚ) (hu : u ≠ 0) (_hnb : u * v ≠ 49)
+    (_hres : u ^ 7 * v ^ 6
+      + (28 * v ^ 6 + 49 * v ^ 5) * u ^ 6
+      + (322 * v ^ 6 + 1372 * v ^ 5 + 2401 * v ^ 4) * u ^ 5
+      + (1904 * v ^ 6 + 15778 * v ^ 5 + 67228 * v ^ 4 + 117649 * v ^ 3) * u ^ 4
+      + (5915 * v ^ 6 + 93296 * v ^ 5 + 773122 * v ^ 4 + 3294172 * v ^ 3
+          + 5764801 * v ^ 2) * u ^ 3
+      + (8624 * v ^ 6 + 289835 * v ^ 5 + 4571504 * v ^ 4 + 37882978 * v ^ 3
+          + 161414428 * v ^ 2 + 282475249 * v) * u ^ 2
+      + (4018 * v ^ 6 + 422576 * v ^ 5 + 14201915 * v ^ 4 + 224003696 * v ^ 3
+          + 1856265922 * v ^ 2 + 7909306972 * v + 13841287201) * u
+      = v ^ 7) :
+    49 * u * (u * v + 5 * v + 49) ^ 2 - v * (v - 49 * u) ^ 2 ≠ 0 :=
+  sorry
+
 /-- **From a rational point of the residual `X_0(49)` curve to a
-non-cuspidal rational point of `49a1`** (sorry leaf, introduced 2026-07-26):
+non-cuspidal rational point of `49a1`** (PROVEN 2026-07-27 over the single
+arithmetic leaf `psi_ne_zero`; introduced as a sorry leaf 2026-07-26):
 a rational pair `(u, v)` on `Φ₄₉ = 0` which is neither on the backtracking
 locus `uv = 49` nor over the cusp `u = 0` gives a rational point of
 `y² + xy = x³ − x² − 2x − 1` other than `(2, −1)`.
@@ -10018,7 +10147,64 @@ test — `u = 0, v = 0` satisfies `Φ₄₉ = 0` and `uv ≠ 49` but is excluded
 `rational_point_x0FortyNine`. Combined with that theorem this leaf is
 equivalent to "`Φ₄₉ = 0` has no rational point off `u = 0` and `uv = 49`",
 which is the true Mordell–Weil statement for `X_0(49)` and is what a proof
-must establish. -/
+must establish.
+
+**THE INVERSE, COMPUTED AND VERIFIED (2026-07-27).**  The forward map recorded
+in the section note simplifies drastically.  With `s = x − 2` and
+`D(x,y) = 4x³ + x²y − 2x² + 3xy − 5x − 3y − 7`, one has, identically in the
+function field of `49a1`,
+
+  `v = D(x, y)`  and  `u · v = (x − 2)⁴ = s⁴`.
+
+So `u = s⁴/v`, and the whole inversion is the extraction of `s` from `(u, v)`.
+
+*The residual relation is a NORM FORM.*  Put
+
+  `A = u³v³ + 14u²v³ + 49u²v² + 63uv³ + 686uv² + 2401uv + 70v³ + 3087v² + 33614v + 117649`,
+  `B = 7u³v² + 98u²v² + 343u²v + 441uv² + 4802uv + 16807u + v³`.
+
+Then `Φ₄₉ = u·A² − v·B²` EXACTLY, with cofactor `1`.  This single identity is
+what makes the proof below cheap: it is `linear_combination hres`.
+
+*The square root of `uv`.*  With `W = v²(u²+14u+63) + 49v(u+14) + 2401`,
+`q₃ = u³+14u²+63u+70` and `q₄ = u·q₃ − 7` one has `A = v³q₃ + 49W` and
+`B = 7uW + v³`, hence the small Bezout identity `u·A − 7·B = v³·q₄(u)`.
+Read as a QUADRATIC IN `W`, `Φ₄₉` has discriminant `196·u·v⁷·q₄²` — a perfect
+square times `uv`.  Setting `TN = 7u(49−uv)·W + uv³(7q₃ − v)` this yields two
+exact polynomial certificates,
+
+  `TN² = u·v⁷·q₄² + u(49 − uv)·Φ₄₉`,                (CERT1)
+  `TN·B + v³·q₄·(u·A) = u·Φ₄₉`,                     (CERT2)
+
+so on the residual curve `t := −TN/(v³·q₄)` satisfies `t² = uv` and
+`t·B = u·A`.  Its denominator never vanishes: `v ≠ 0` because setting `v = 0`
+in `Φ₄₉` leaves `7¹²·u = 0`, and `q₄` has no rational root (`q4_ne_zero`).
+This is the step that would otherwise have needed a case split on `B = 0`.
+
+*From `t = s²` to `s`.*  Reducing by `s⁴ = uv`, `s` satisfies the cubic
+`P₃s³ + P₂s² + P₁s + P₀ = 0` over `ℚ[u,v]`, where
+
+  `P₃ = v − 49u`,  `P₂ = −u(uv+7v+147)`,
+  `P₁ = −7u(uv+5v+49)`,  `P₀ = −7u(3uv+7v+49)`.
+
+Grouping it as `s·(P₃s² + P₁) + (P₂s² + P₀) = 0` and substituting `s² = t`
+gives `s = −(P₂t + P₀)/(P₃t + P₁)`.  The denominator is nonzero exactly by
+`psi_ne_zero`, through `(P₃t + P₁)(P₃t − P₁) = −u·Ψ(u,v)`.  Finally
+`x = s + 2` and `y = (v − (4s³ + 22s² + 35s + 7))/(s² + 7s + 7)`, the
+denominator being nonzero by `disc21`, and `x ≠ 2` because `s⁴ = uv ≠ 0`.
+
+*The elliptic model behind all of it* is `z² = 4s³ + 21s² + 28s`, on which
+
+  `v = [7s(s²+5s+7) + (s²+7s+7)·z] / 2`,
+  `u = s³[(s²+7s+7)·z − 7s(s²+5s+7)] / (2·G̃(s))`,
+  `G̃(s) = s⁶ + 7s⁵ + 21s⁴ + 49s³ + 147s² + 343s + 343`;
+
+`u·v = s⁴` and `Φ₄₉(u,v) = 0` were both checked to vanish identically there,
+and the inverse was cross-checked by exhaustive point counting over
+`𝔽_p` for `p = 101, 103, 1009, 2003, 5003, 10007` (every point of `49a1`
+with `v ≠ 0` maps into `Φ₄₉ = 0`, and the inverse recovers `x − 2` at every
+point where its denominator is nonzero).  PARI/GP and Singular were used as
+untrusted searchers only; every identity used below is re-proved by `ring`. -/
 theorem x0FortyNine_point_of_residual (u v : ℚ)
     (hu : u ≠ 0) (hnb : u * v ≠ 49)
     (hres : u ^ 7 * v ^ 6
@@ -10032,8 +10218,101 @@ theorem x0FortyNine_point_of_residual (u v : ℚ)
       + (4018 * v ^ 6 + 422576 * v ^ 5 + 14201915 * v ^ 4 + 224003696 * v ^ 3
           + 1856265922 * v ^ 2 + 7909306972 * v + 13841287201) * u
       = v ^ 7) :
-    ∃ x y : ℚ, y ^ 2 + x * y = x ^ 3 - x ^ 2 - 2 * x - 1 ∧ ¬ (x = 2 ∧ y = -1) :=
-  sorry
+    ∃ x y : ℚ, y ^ 2 + x * y = x ^ 3 - x ^ 2 - 2 * x - 1 ∧ ¬ (x = 2 ∧ y = -1) := by
+  -- `v ≠ 0`: setting `v = 0` in the residual relation leaves `7¹² · u = 0`
+  have hv : v ≠ 0 := by
+    rintro rfl
+    exact hu (by linarith [(by linear_combination hres : (13841287201 : ℚ) * u = 0)])
+  have hq4 : u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7 ≠ 0 := q4_ne_zero u
+  have hden : v ^ 3 * (u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7) ≠ 0 :=
+    mul_ne_zero (pow_ne_zero 3 hv) hq4
+  -- `t`, the square root of `u v`, from the quadratic-in-`W` form of `Φ₄₉`
+  obtain ⟨TN, hTN⟩ : ∃ TN : ℚ, TN =
+      7 * u * (49 - u * v) * (v ^ 2 * (u ^ 2 + 14 * u + 63) + 49 * v * (u + 14) + 2401)
+      + u * v ^ 3 * (7 * (u ^ 3 + 14 * u ^ 2 + 63 * u + 70) - v) := ⟨_, rfl⟩
+  obtain ⟨t, ht⟩ : ∃ t : ℚ,
+      t = -TN / (v ^ 3 * (u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7)) := ⟨_, rfl⟩
+  have hcert1 : TN ^ 2 = u * v ^ 7 * (u ^ 4 + 14 * u ^ 3 + 63 * u ^ 2 + 70 * u - 7) ^ 2 := by
+    rw [hTN]; linear_combination (u * (49 - u * v)) * hres
+  have ht2 : t ^ 2 = u * v := by
+    rw [ht, div_pow, div_eq_iff (pow_ne_zero 2 hden)]
+    linear_combination hcert1
+  have hcert2 : t * (7 * u ^ 3 * v ^ 2 + 98 * u ^ 2 * v ^ 2 + 343 * u ^ 2 * v + 441 * u * v ^ 2
+        + 4802 * u * v + 16807 * u + v ^ 3)
+      = u * (u ^ 3 * v ^ 3 + 14 * u ^ 2 * v ^ 3 + 49 * u ^ 2 * v ^ 2 + 63 * u * v ^ 3
+        + 686 * u * v ^ 2 + 2401 * u * v + 70 * v ^ 3 + 3087 * v ^ 2 + 33614 * v + 117649) := by
+    rw [ht, div_mul_eq_mul_div, div_eq_iff hden, hTN]
+    linear_combination (-u) * hres
+  -- the second denominator is nonzero, by the single remaining arithmetic leaf
+  have hpsi := psi_ne_zero u v hu hnb hres
+  have hne : (v - 49 * u) * t + -7 * u * (u * v + 5 * v + 49) ≠ 0 := by
+    intro hc
+    apply hpsi
+    have hprod : ((v - 49 * u) * t + -7 * u * (u * v + 5 * v + 49))
+        * ((v - 49 * u) * t - -7 * u * (u * v + 5 * v + 49))
+        = -(u * (49 * u * (u * v + 5 * v + 49) ^ 2 - v * (v - 49 * u) ^ 2)) := by
+      linear_combination ((v - 49 * u) ^ 2) * ht2
+    rw [hc, zero_mul] at hprod
+    rcases mul_eq_zero.mp (by linarith [hprod] :
+        u * (49 * u * (u * v + 5 * v + 49) ^ 2 - v * (v - 49 * u) ^ 2) = 0) with h | h
+    · exact absurd h hu
+    · exact h
+  -- `s = x − 2`
+  obtain ⟨s, hs⟩ : ∃ s : ℚ, s =
+      -(-u * (u * v + 7 * v + 147) * t + -7 * u * (3 * u * v + 7 * v + 49))
+      / ((v - 49 * u) * t + -7 * u * (u * v + 5 * v + 49)) := ⟨_, rfl⟩
+  have hsdef : s * ((v - 49 * u) * t + -7 * u * (u * v + 5 * v + 49))
+      = -(-u * (u * v + 7 * v + 147) * t + -7 * u * (3 * u * v + 7 * v + 49)) := by
+    rw [hs]; exact div_mul_cancel₀ _ hne
+  have hs2 : s ^ 2 = t := by
+    rw [hs, div_pow, div_eq_iff (pow_ne_zero 2 hne)]
+    linear_combination ((-u * (u * v + 7 * v + 147)) ^ 2 - (v - 49 * u) ^ 2 * t
+        - 2 * (v - 49 * u) * (-7 * u * (u * v + 5 * v + 49))) * ht2 - u * hcert2
+  have hs4 : s ^ 4 = u * v := by
+    have h4 : s ^ 4 = (s ^ 2) ^ 2 := by ring
+    rw [h4, hs2, ht2]
+  have hs0 : s ≠ 0 := by
+    intro hc
+    rw [hc] at hs4
+    rcases mul_eq_zero.mp (by linarith [hs4] : u * v = 0) with h | h
+    · exact hu h
+    · exact hv h
+  -- the cubic satisfied by `s`, then the plane relation of `49a1`
+  have hcubic : (v - 49 * u) * s ^ 3 + (-u * (u * v + 7 * v + 147)) * s ^ 2
+      + (-7 * u * (u * v + 5 * v + 49)) * s + (-7 * u * (3 * u * v + 7 * v + 49)) = 0 := by
+    linear_combination hsdef + ((v - 49 * u) * s + (-u * (u * v + 7 * v + 147))) * hs2
+  have hstar : v ^ 2 - 7 * s * (s ^ 2 + 5 * s + 7) * v
+      - s * (s ^ 6 + 7 * s ^ 5 + 21 * s ^ 4 + 49 * s ^ 3 + 147 * s ^ 2 + 343 * s + 343) = 0 := by
+    have hdag : s ^ 3 * v
+        - u * (s ^ 6 + 7 * s ^ 5 + 21 * s ^ 4 + 49 * s ^ 3 + 147 * s ^ 2 + 343 * s + 343)
+        - 7 * u * v * (s ^ 2 + 5 * s + 7) = 0 := by
+      linear_combination hcubic - u * (s ^ 2 + 7 * s + 21) * hs4
+    have h3 : s ^ 3 * (v ^ 2 - 7 * s * (s ^ 2 + 5 * s + 7) * v
+        - s * (s ^ 6 + 7 * s ^ 5 + 21 * s ^ 4 + 49 * s ^ 3 + 147 * s ^ 2
+          + 343 * s + 343)) = 0 := by
+      linear_combination v * hdag
+        - (7 * (s ^ 2 + 5 * s + 7) * v + (s ^ 6 + 7 * s ^ 5 + 21 * s ^ 4 + 49 * s ^ 3
+            + 147 * s ^ 2 + 343 * s + 343)) * hs4
+    rcases mul_eq_zero.mp h3 with h | h
+    · exact absurd (pow_eq_zero_iff (n := 3) (by norm_num) |>.mp h) hs0
+    · exact h
+  -- assemble the point of `49a1`
+  obtain ⟨w, hw⟩ : ∃ w : ℚ, w = s ^ 2 + 7 * s + 7 := ⟨_, rfl⟩
+  have hw0 : w ≠ 0 := by
+    rw [hw]; exact fun hc => disc21 (s + 2) (by linear_combination hc)
+  refine ⟨s + 2, (v - (4 * s ^ 3 + 22 * s ^ 2 + 35 * s + 7)) / w, ?_, ?_⟩
+  · have hy : (v - (4 * s ^ 3 + 22 * s ^ 2 + 35 * s + 7)) / w * w
+        = v - (4 * s ^ 3 + 22 * s ^ 2 + 35 * s + 7) := div_mul_cancel₀ _ hw0
+    have key : (v - (4 * s ^ 3 + 22 * s ^ 2 + 35 * s + 7)) ^ 2
+        + (s + 2) * w * (v - (4 * s ^ 3 + 22 * s ^ 2 + 35 * s + 7))
+        - ((s + 2) ^ 3 - (s + 2) ^ 2 - 2 * (s + 2) - 1) * w ^ 2 = 0 := by
+      rw [hw]; linear_combination hstar
+    refine mul_right_cancel₀ (pow_ne_zero 2 hw0) ?_
+    linear_combination key
+      + ((v - (4 * s ^ 3 + 22 * s ^ 2 + 35 * s + 7)) / w * w
+          + (v - (4 * s ^ 3 + 22 * s ^ 2 + 35 * s + 7)) + (s + 2) * w) * hy
+  · rintro ⟨hx2, -⟩
+    exact hs0 (by linarith [hx2])
 
 end MazurLevelFortyNine
 
