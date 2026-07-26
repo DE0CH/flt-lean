@@ -8170,9 +8170,153 @@ theorem WeierstrassCurve.no_torsion_order_19 (E : WeierstrassCurve ℚ)
     (fun b c hell h00 =>
       @WeierstrassCurve.tateNormalForm_origin_order_ne_19 b c hell h00) E Q
 
-/-- **No rational point of order `37`** (sorry node — IRREDUCIBLE
-literature citation, audited 2026-07-25): `X_1(37)` has genus `40` and
-no non-cuspidal rational point (Mazur 1977, Thm 7).
+/-!
+##### The four levels `37, 43, 67, 163`: routed through the `X_0` table (2026-07-26)
+
+Until 2026-07-26 the four levels `37, 43, 67, 163` were four INDEPENDENT bare
+`sorry`s, each citing Mazur's torsion theorem at its own level, i.e. the
+determination of the non-cuspidal rational points of `X_1(N)` at genus
+`40, 57, 155, 1027`. They are now PROVEN from ONE new leaf, so the four
+citations of `X_1` collapse to a single statement about five explicit
+`j`-invariants. Four open leaves become one.
+
+THE CUT, in three already-PROVEN steps plus one new leaf.
+
+1. A rational point `Q` of order `p` generates a subgroup of `E(ℚ̄)` all of
+   whose elements are base changes of rational points, hence pointwise
+   Galois-FIXED, hence Galois-stable: that is
+   `exists_stable_cyclic_subgroup_of_rational_point` (PROVEN above). So a
+   rational point of order `p` IS a rational cyclic `p`-isogeny.
+2. `jInvariant_mem_of_isogenyPrime_ge_eleven` (PROVEN above over its three
+   technique leaves) then pins `j(E)` to the eleven-entry `X_0` table. At
+   `p ∈ {37, 43, 67, 163}` the table has exactly five entries,
+
+       p = 37 : −7·11³ = −9317,  −7·137³·2083³ = −162677523113838677
+       p = 43 : −2¹⁸·3³·5³         = −884736000
+       p = 67 : −2¹⁵·3³·5³·11³     = −147197952000
+       p = 163: −2¹⁸·3³·5³·23³·29³ = −262537412640768000
+
+   three of which are the CM `j`-invariants of the class-number-one
+   discriminants `−43, −67, −163`.
+3. The new leaf `no_rational_point_of_isogenyPrime_jInvariant` says those
+   five curves carry no rational point of the matching order.
+4. `no_torsion_order_of_isogenyPrime_ge_thirtySeven` assembles 1–3, and each
+   of the four Tate-coordinate nodes below is one application of it (the
+   passage from `(tateNormalForm b c).toAffine.Point` to `(E⁄ℚ).Point` is by
+   definitional unfolding — `algebraMap ℚ ℚ` is the identity and structure
+   eta closes the gap; only the `IsElliptic` instance needs the explicit
+   `inferInstanceAs` hint, exactly as in `no_torsion_order_of_tateNormalForm`).
+
+WHY THIS IS REDUCTION AND NOT RELOCATION. The file's own standard for a split
+is recorded at `jInvariant_mem_of_isogenyPrime_genusOne`: a split that
+"replaces one open leaf by six, all six still irreducible at this pin" is
+relocation and was deliberately not done. This split runs the other way — it
+replaces FOUR open leaves by ONE — and the surviving leaf is strictly weaker
+than any of the four it replaces, because it is allowed to assume the `X_0`
+determination that the four could not. Concretely, the four nodes quantified
+over the whole two-parameter family `tateNormalForm b c`; the leaf quantifies
+over curves with one of five FIXED `j`-invariants.
+
+HOW TO ATTACK THE SURVIVING LEAF (route surveyed 2026-07-26, not carried out).
+With `j(E)` fixed and `≠ 0, 1728`, `E` is a QUADRATIC TWIST `E_d` of one fixed
+model `E_j`, and twisting acts on `x`-coordinates by `x ↦ d·x`. So `E_d` has a
+rational point of order `p` for SOME `d` exactly when the `p`-division
+polynomial of `E_j` has a rational root — the `y`-coordinate can always be
+repaired by the twist, since `d` may be chosen to be the value of the cubic at
+that root. Hence the leaf is equivalent to a RATIONAL-ROOT statement about
+five explicit polynomials, which is the shape
+`MazurLevel169.classPoly676_no_rat_root` already closes in this file
+(rational-root theorem to force an integral root, then one `decide`
+congruence). Two refinements make the degrees writable:
+
+* the full `p`-division polynomial has degree `(p²−1)/2` — `684, 924, 2244,
+  13284` — but a rational point of order `p` must lie in the UNIQUE rational
+  `p`-subgroup `C` (unique because `ellisomat` returns the degree matrix
+  `[1, p; p, 1]` at every one of the five, i.e. the `ℚ`-isogeny class is a
+  single EDGE), so its `x`-coordinate is a root of the degree-`(p−1)/2`
+  kernel factor instead: `18, 21, 33, 81`;
+* equivalently and conceptually, `E` has a rational point of order `p` iff the
+  isogeny character `χ_C` of that subgroup is TRIVIAL, and `χ_C · χ' = χ_cyc`
+  mod `p` forces `χ'` to have order `p − 1 ≥ 36`. The characters are already
+  manufactured in this file (`exists_isogenyCharacter`, `exists_subCharacter`,
+  `exists_quotCharacter`, `det_eq_subCharacter_mul_quotCharacter`), so this is
+  the route that avoids writing any degree-81 polynomial down.
+
+The genuinely missing input is the same one recorded throughout this section —
+the CM half, i.e. Olson's theorem (*Hasse invariants and anomalous primes for
+elliptic curves with complex multiplication*, J. Number Theory 8, 1976: the
+torsion of a CM elliptic curve over `ℚ` is one of `1, ℤ/2, ℤ/3, ℤ/4, ℤ/6,
+ℤ/2 × ℤ/2`) for `43, 67, 163`, and Mazur–Vélu's pair of curves for `37`.
+Olson PREDATES Mazur and is elementary, which is the point of routing through
+`X_0` rather than `X_1`: it exchanges a genus-`1027` citation for one that
+does not need modular curves at all.
+-/
+
+/-- **The five `j`-invariants at the four isogeny primes `≥ 37` carry no
+rational point of that order** (sorry leaf, introduced 2026-07-26 as the single
+replacement for the four independent `X_1(N)` citations at levels
+`37, 43, 67, 163`): if `E/ℚ` has a rational point of exact order `p` and the
+pair `(p, j(E))` is one of the five entries of the `X_0` table at
+`p ∈ {37, 43, 67, 163}`, then `False`.
+
+**NOT vacuous, and this is the delicate half of the statement.** The
+hypothesis on `j` alone IS satisfiable at every one of the four primes — each
+of the five values is realised by a curve carrying a rational `p`-ISOGENY,
+which is exactly what `jInvariant_mem_of_isogenyPrime_ge_eleven` asserts. What
+the leaf adds is that no curve with those `j`-invariants, and no quadratic
+twist of one, carries a rational `p`-TORSION POINT: the rational `p`-subgroup
+is there, but it is not pointwise rational. So the leaf is the passage from
+`X_0` to `X_1` at these four levels, and it carries real content rather than
+inheriting it.
+
+Three of the five values are the CM `j`-invariants of the class-number-one
+discriminants `−43, −67, −163`, where the statement is a special case of
+Olson's theorem on the torsion of CM elliptic curves over `ℚ`; the two
+level-`37` values are the non-CM Mazur–Vélu pair. The section note above
+records the full attack route (twist to a fixed model, then the degree-`(p−1)/2`
+isogeny-kernel factor, or equivalently the isogeny character), and why the
+split by technique into a CM half and a level-`37` half was left to whoever
+attacks it rather than being made here — it would raise the leaf count from
+one back to two for no immediate gain. -/
+theorem WeierstrassCurve.no_rational_point_of_isogenyPrime_jInvariant
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ}
+    (Q : (E⁄ℚ).Point) (hQ : addOrderOf Q = p)
+    (hj : (p, E.j) ∈ ([(37, -9317), (37, -162677523113838677),
+        (43, -884736000), (67, -147197952000),
+        (163, -262537412640768000)] : List (ℕ × ℚ))) :
+    False :=
+  sorry
+
+/-- **No rational point of order `p` for `p ∈ {37, 43, 67, 163}`** (PROVEN
+2026-07-26): assembly of the three steps in the section note above — the
+rational point generates a Galois-stable cyclic `p`-subgroup
+(`exists_stable_cyclic_subgroup_of_rational_point`), so `j(E)` lies in the
+`X_0` table (`jInvariant_mem_of_isogenyPrime_ge_eleven`), whose entries at
+these four primes are the five pairs excluded by
+`no_rational_point_of_isogenyPrime_jInvariant`.
+
+The middle step is the only place the eleven-entry table is narrowed to five:
+at `p = 37` the six entries paired with `11, 17, 19` are killed by the first
+coordinate, and symmetrically at the other three primes. -/
+theorem WeierstrassCurve.no_torsion_order_of_isogenyPrime_ge_thirtySeven
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ}
+    (hp : p ∈ ({37, 43, 67, 163} : Finset ℕ))
+    (Q : (E⁄ℚ).Point) : addOrderOf Q ≠ p := by
+  intro hQ
+  obtain ⟨g, hgord, hstable⟩ := E.exists_stable_cyclic_subgroup_of_rational_point Q hQ
+  have hp' : p ∈ ({11, 17, 19, 37, 43, 67, 163} : Finset ℕ) := by
+    simp only [Finset.mem_insert, Finset.mem_singleton] at hp ⊢
+    tauto
+  have hj := E.jInvariant_mem_of_isogenyPrime_ge_eleven g hp' hgord hstable
+  refine E.no_rational_point_of_isogenyPrime_jInvariant Q hQ ?_
+  simp only [Finset.mem_insert, Finset.mem_singleton] at hp
+  simp only [List.mem_cons, List.not_mem_nil, or_false, Prod.mk.injEq] at hj ⊢
+  rcases hp with rfl | rfl | rfl | rfl <;> norm_num at hj ⊢ <;> tauto
+
+/-- **No rational point of order `37`** (PROVEN 2026-07-26 over the `X_0`
+table and the single leaf `no_rational_point_of_isogenyPrime_jInvariant` —
+this was a bare `sorry` citing `X_1(37)`, genus `40`, Mazur 1977 Thm 7).
+`X_1(37)` has genus `40` and no non-cuspidal rational point.
 
 The `X_0` shortcut is NOT available: `37` is in Kenku's list, and
 `X_0(37)` has two non-cuspidal rational points, `j = −7 · 11³` (checked
@@ -8186,11 +8330,17 @@ untrusted searcher): the rank-`0` point count that closes `11, 13, 17,
 WHOLE of `J_1(N)` to have rank `0`, and `J_1(37)` does not — its
 `ℚ`-simple factors have dimensions `1, 1, 2, 2, 4, 6, 6, 18` and the
 first has `LRatio(1) = 0`, being the rank-`1` elliptic curve `37a`.
-Hence `37, 43, 67, 163` genuinely need the winding/Eisenstein quotient,
-i.e. the rank-`0` quotient of `J_1(N)` rather than `J_1(N)` itself.
-Note the point count itself is still sharp: `#X_1(37)(𝔽_p) = 18 =
-φ(37)/2` for `p = 2, 3, 5, 7`, so only the Mordell–Weil input is
-missing.
+Hence `37, 43, 67, 163` cannot be closed along `J_1(N)` without the
+winding/Eisenstein quotient, i.e. the rank-`0` quotient of `J_1(N)`
+rather than `J_1(N)` itself. Note the point count itself is still
+sharp: `#X_1(37)(𝔽_p) = 18 = φ(37)/2` for `p = 2, 3, 5, 7`, so only the
+Mordell–Weil input was missing. THAT ROUTE IS NOT THE ONE TAKEN: the
+proof below goes through `X_0` instead, where the level-`37` input is
+the already-existing leaf `jInvariant_mem_of_isogenyPrime_thirtySeven`
+pinning `j` to the Mazur–Vélu pair, and the residue is the shared leaf
+`no_rational_point_of_isogenyPrime_jInvariant`. See the section note
+above for the full cut.
+
 STATED IN TATE COORDINATES (2026-07-25). The general form of this
 level — no rational point of order `37` on ANY elliptic curve over
 `ℚ` — is `no_torsion_order_37` just below, and is PROVEN from this
@@ -8199,13 +8349,19 @@ node. Here the curve is the explicit two-parameter family
 plane model of `X_1(37)` in the `(b, c)`-coordinates rather than a
 statement quantified over all curves. The passage between the two is
 the PROVEN `exists_tateNormalForm`; everything above about genus,
-witnesses and citation is unchanged by the restatement.
+witnesses and citation is unchanged by the restatement. That plane
+model is NOT what the proof uses — measured `c`-degrees of `7, 10, 14,
+18, 22` at levels `11`–`19` are why expanding it was never a route
+here.
 -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_37 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
-    addOrderOf (Affine.Point.some 0 0 h00) ≠ 37 :=
-  sorry
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 37 := by
+  haveI : ((WeierstrassCurve.tateNormalForm b c)⁄ℚ).IsElliptic :=
+    inferInstanceAs (((WeierstrassCurve.tateNormalForm b c).map (algebraMap ℚ ℚ)).IsElliptic)
+  exact WeierstrassCurve.no_torsion_order_of_isogenyPrime_ge_thirtySeven
+    (WeierstrassCurve.tateNormalForm b c) (by decide) (Affine.Point.some 0 0 h00)
 
 /-- **No rational point of order `37`** (PROVEN 2026-07-25 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
@@ -8219,14 +8375,21 @@ theorem WeierstrassCurve.no_torsion_order_37 (E : WeierstrassCurve ℚ)
     (fun b c hell h00 =>
       @WeierstrassCurve.tateNormalForm_origin_order_ne_37 b c hell h00) E Q
 
-/-- **No rational point of order `43`** (sorry node — IRREDUCIBLE
-literature citation, audited 2026-07-25): `X_1(43)` has genus `57` and
-no non-cuspidal rational point (Mazur 1977, Thm 7).
+/-- **No rational point of order `43`** (PROVEN 2026-07-26 over the `X_0`
+table and the single leaf `no_rational_point_of_isogenyPrime_jInvariant` —
+this was a bare `sorry` citing `X_1(43)`, genus `57`, Mazur 1977 Thm 7).
+`X_1(43)` has genus `57` and no non-cuspidal rational point.
 
-The `X_0` shortcut is NOT available: `43` is in Kenku's list, the
+The CRUDE `X_0` shortcut is NOT available: `43` is in Kenku's list, the
 witness being the class-number-one CM curve of discriminant `−43`,
 `j = −884736000`, whose cyclic isogeny degrees are exactly `{1, 43}`
-(PARI/GP `ellisomat`, untrusted searcher). 
+(PARI/GP `ellisomat`, untrusted searcher). So `mem_cyclicIsogenyDegrees`
+alone is no contradiction. What IS available, and what this node now
+consumes, is the finer `X_0` statement
+`jInvariant_mem_of_isogenyPrime_classNumberOne`, which pins `j(E)` to
+that single CM value; the residue is the shared leaf
+`no_rational_point_of_isogenyPrime_jInvariant`, i.e. Olson's theorem at
+this discriminant. See the section note above for the full cut.
 STATED IN TATE COORDINATES (2026-07-25). The general form of this
 level — no rational point of order `43` on ANY elliptic curve over
 `ℚ` — is `no_torsion_order_43` just below, and is PROVEN from this
@@ -8240,8 +8403,11 @@ witnesses and citation is unchanged by the restatement.
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_43 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
-    addOrderOf (Affine.Point.some 0 0 h00) ≠ 43 :=
-  sorry
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 43 := by
+  haveI : ((WeierstrassCurve.tateNormalForm b c)⁄ℚ).IsElliptic :=
+    inferInstanceAs (((WeierstrassCurve.tateNormalForm b c).map (algebraMap ℚ ℚ)).IsElliptic)
+  exact WeierstrassCurve.no_torsion_order_of_isogenyPrime_ge_thirtySeven
+    (WeierstrassCurve.tateNormalForm b c) (by decide) (Affine.Point.some 0 0 h00)
 
 /-- **No rational point of order `43`** (PROVEN 2026-07-25 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
@@ -8255,14 +8421,21 @@ theorem WeierstrassCurve.no_torsion_order_43 (E : WeierstrassCurve ℚ)
     (fun b c hell h00 =>
       @WeierstrassCurve.tateNormalForm_origin_order_ne_43 b c hell h00) E Q
 
-/-- **No rational point of order `67`** (sorry node — IRREDUCIBLE
-literature citation, audited 2026-07-25): `X_1(67)` has genus `155` and
-no non-cuspidal rational point (Mazur 1977, Thm 7).
+/-- **No rational point of order `67`** (PROVEN 2026-07-26 over the `X_0`
+table and the single leaf `no_rational_point_of_isogenyPrime_jInvariant` —
+this was a bare `sorry` citing `X_1(67)`, genus `155`, Mazur 1977 Thm 7).
+`X_1(67)` has genus `155` and no non-cuspidal rational point.
 
-The `X_0` shortcut is NOT available: `67` is in Kenku's list, the
+The CRUDE `X_0` shortcut is NOT available: `67` is in Kenku's list, the
 witness being the class-number-one CM curve of discriminant `−67`,
 `j = −147197952000`, whose cyclic isogeny degrees are exactly `{1, 67}`
-(PARI/GP `ellisomat`, untrusted searcher). 
+(PARI/GP `ellisomat`, untrusted searcher). So `mem_cyclicIsogenyDegrees`
+alone is no contradiction. What IS available, and what this node now
+consumes, is the finer `X_0` statement
+`jInvariant_mem_of_isogenyPrime_classNumberOne`, which pins `j(E)` to
+that single CM value; the residue is the shared leaf
+`no_rational_point_of_isogenyPrime_jInvariant`, i.e. Olson's theorem at
+this discriminant. See the section note above for the full cut.
 STATED IN TATE COORDINATES (2026-07-25). The general form of this
 level — no rational point of order `67` on ANY elliptic curve over
 `ℚ` — is `no_torsion_order_67` just below, and is PROVEN from this
@@ -8276,8 +8449,11 @@ witnesses and citation is unchanged by the restatement.
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_67 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
-    addOrderOf (Affine.Point.some 0 0 h00) ≠ 67 :=
-  sorry
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 67 := by
+  haveI : ((WeierstrassCurve.tateNormalForm b c)⁄ℚ).IsElliptic :=
+    inferInstanceAs (((WeierstrassCurve.tateNormalForm b c).map (algebraMap ℚ ℚ)).IsElliptic)
+  exact WeierstrassCurve.no_torsion_order_of_isogenyPrime_ge_thirtySeven
+    (WeierstrassCurve.tateNormalForm b c) (by decide) (Affine.Point.some 0 0 h00)
 
 /-- **No rational point of order `67`** (PROVEN 2026-07-25 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
@@ -8291,16 +8467,23 @@ theorem WeierstrassCurve.no_torsion_order_67 (E : WeierstrassCurve ℚ)
     (fun b c hell h00 =>
       @WeierstrassCurve.tateNormalForm_origin_order_ne_67 b c hell h00) E Q
 
-/-- **No rational point of order `163`** (sorry node — IRREDUCIBLE
-literature citation, audited 2026-07-25): `X_1(163)` has genus `1027`
-and no non-cuspidal rational point (Mazur 1977, Thm 7).
+/-- **No rational point of order `163`** (PROVEN 2026-07-26 over the `X_0`
+table and the single leaf `no_rational_point_of_isogenyPrime_jInvariant` —
+this was a bare `sorry` citing `X_1(163)`, genus `1027`, Mazur 1977 Thm 7).
+`X_1(163)` has genus `1027` and no non-cuspidal rational point.
 
-The `X_0` shortcut is NOT available: `163` is in Kenku's list, the
+The CRUDE `X_0` shortcut is NOT available: `163` is in Kenku's list, the
 witness being the class-number-one CM curve of discriminant `−163`,
 `j = −262537412640768000`, whose cyclic isogeny degrees are exactly
 `{1, 163}` (PARI/GP `ellisomat`, untrusted searcher). This is the
 largest rational isogeny degree over `ℚ`, and the level where every
-explicit method is furthest out of reach. 
+explicit method on `X_1` is furthest out of reach — genus `1027`. That
+is precisely why the proof does not go through `X_1` at all: the finer
+`X_0` statement `jInvariant_mem_of_isogenyPrime_classNumberOne` pins
+`j(E)` to that single CM value, and the residue is the shared leaf
+`no_rational_point_of_isogenyPrime_jInvariant`, i.e. Olson's theorem at
+this discriminant, whose difficulty does NOT grow with the genus. See
+the section note above for the full cut.
 STATED IN TATE COORDINATES (2026-07-25). The general form of this
 level — no rational point of order `163` on ANY elliptic curve over
 `ℚ` — is `no_torsion_order_163` just below, and is PROVEN from this
@@ -8314,8 +8497,11 @@ witnesses and citation is unchanged by the restatement.
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_163 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
-    addOrderOf (Affine.Point.some 0 0 h00) ≠ 163 :=
-  sorry
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ 163 := by
+  haveI : ((WeierstrassCurve.tateNormalForm b c)⁄ℚ).IsElliptic :=
+    inferInstanceAs (((WeierstrassCurve.tateNormalForm b c).map (algebraMap ℚ ℚ)).IsElliptic)
+  exact WeierstrassCurve.no_torsion_order_of_isogenyPrime_ge_thirtySeven
+    (WeierstrassCurve.tateNormalForm b c) (by decide) (Affine.Point.some 0 0 h00)
 
 /-- **No rational point of order `163`** (PROVEN 2026-07-25 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
