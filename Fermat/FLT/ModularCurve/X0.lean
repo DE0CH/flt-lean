@@ -74,19 +74,25 @@ Three consequences shape everything below.
   which is what makes "initial among such" the coarse space of the
   moduli *stack* rather than of some rigidified variant.
 
-* **`Y_0(N)`, not `X_0(N)`.**  The affine coarse space suffices, so no
-  compactification, no cusps and no genus theory are needed here: the
-  statement "`X_0(N)(ℚ)` consists only of cusps" is literally
-  "`Y_0(N)(ℚ) = ∅`".  This is a deliberate scope cut — it removes an
-  entire missing theory (the smooth compactification of a coarse moduli
-  space, and the rationality of its cusps) from the critical path without
-  weakening any statement.
+* **`Y_0(N)`, not `X_0(N)`, in the STATEMENTS.**  The level statements
+  are about the affine coarse space: "`X_0(N)(ℚ)` consists only of
+  cusps" is literally "`Y_0(N)(ℚ) = ∅`", and phrasing them affinely
+  keeps the cusps out of the *interface* consumed by
+  `FreyCurve/MazurTorsion.lean`.
+
+  It does NOT keep them out of the *proofs*, and an earlier version of
+  this docstring claimed otherwise.  Rank `0` bounds `#X_0(N)(ℚ)`; only
+  the count of rational cusps turns that bound into emptiness of
+  `Y_0(N)(ℚ)`.  So the compactification is on the critical path after
+  all, and it is built below (`IsX0Compactification`, `IsJacobianOf`,
+  `card_le_of_rankZeroJacobian`) — used by the seven single-prime
+  levels, and stated so that the four sieve levels can reuse it.
 
 ## FAITHFULNESS AUDIT
 
-There are exactly three claim-shapes here, and each is true.  Shapes 1
-and 3 are single sorry nodes; shape 2 is now a proven bridge over two
-sorried inputs:
+There are four claim-shapes here, and each is true.  Shape 1 is a single
+sorry node; shape 2 is a proven bridge over two sorried inputs; shape 3
+is now proven at seven of its eleven named levels over shape 4:
 
 1. `exists_coarseModuliY0 N` — the `Γ₀(N)`-moduli problem over `ℚ` admits
    a coarse moduli space.  TRUE: this is the classical existence
@@ -116,6 +122,16 @@ sorried inputs:
    42, 45, 50, 54, 63, 75` — nor any product of two distinct primes
    outside `{6, 10, 14, 15, 21}` — lies in that list.
 
+4. The compactification layer: `X_0(N) ⊇ Y_0(N)` with its finite cusp
+   locus, `J_0(N)` by its Albanese universal property, the rank-`0`
+   input, the Eichler–Shimura counts, and the reduction bound.  TRUE —
+   each of its five leaves carries its own justification, and each is a
+   named classical theorem rather than a repackaging of its consumer.
+   The one hypothesis worth flagging is positivity of the genus, carried
+   inside `HasRankZeroJacobian`: without it the reduction bound is FALSE
+   at `N = 1`, where `X_0(1) = ℙ¹` has a trivial Jacobian and infinitely
+   many rational points.
+
 **Why the interface must pin `Y` down, and does.** A weaker interface —
 say, a smooth projective curve over `ℚ` with a bijection on `ℚ̄`-points
 — would be satisfied by `ℙ¹` for a cheap reason, and then
@@ -129,16 +145,28 @@ statement about the genuine `Y_0(N)`.
 
 ## What is NOT here, and is the next decomposition
 
-This module deliberately stops at the coarse moduli space.  It does not
-build, and the twelve level nodes still need:
+The compactification layer (`IsX0Compactification`, `IsJacobianOf`,
+`HasRankZeroJacobian`, `card_le_of_rankZeroJacobian`) is now written as
+an INTERFACE, and the seven single-prime levels are proven over it.
+What the interface's five leaves still need, and none of it exists at
+this pin:
 
-* `J_0(N)` and its Mordell–Weil group (`Y_0(N)(ℚ) = ∅` is proved by
-  bounding `J_0(N)(ℚ)`);
-* the Hecke algebra and the Eisenstein / winding quotient, which is what
-  supplies the rank-`0` input;
-* for the higher-genus levels, Chabauty–Coleman.
+* the smooth compactification of a coarse moduli space, and the cusps
+  of `X_0(N)` with their field of definition
+  (`exists_x0Compactification`, `exists_rationalCusps`);
+* `J_0(N)` as an actual abelian scheme, its Mordell–Weil group, and the
+  reduction map with its formal-group kernel
+  (`card_le_of_rankZeroJacobian`);
+* `S_2(Γ_0(N))`, the Hecke algebra, `L`-functions of modular abelian
+  varieties and Kolyvagin–Logachev, which supply the rank-`0` input
+  (`hasRankZeroJacobian_of_kenkuLevel`), and Eichler–Shimura, which
+  supplies the point counts (`exists_x0Compactification_mod_prime`).
 
-Those are three independent subtrees, none of which exists at this pin.
+Chabauty–Coleman is **not** on this list: the 2026-07-26 reconnaissance
+found `rank J_0(N)(ℚ) = 0` at all eleven named levels, so none of them
+needs it.  The four levels `45, 54, 63, 75` need a multi-prime
+Mordell–Weil sieve instead, which is a strengthening of
+`card_le_of_rankZeroJacobian` rather than a new theory.
 -/
 module
 
@@ -152,6 +180,8 @@ public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Fermat.FLT.EllipticCurve.Torsion
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Defs
+-- `ZMod ℓ` is the base ring of the reduction `X_0(N)_{𝔽_ℓ}`; see `SpecF`.
+public import Mathlib.Data.ZMod.Basic
 
 @[expose] public section
 
@@ -577,6 +607,361 @@ theorem false_of_stable_of_y0HasNoRationalPoint {N : ℕ}
   obtain ⟨d⟩ := nonempty_gamma0Datum_of_stable E g hg hstable
   exact (hY Y str M).elim (M.classify (𝟙 SpecQ) d)
 
+/-! ### The compactification `X_0(N)`, its cusps, and `J_0(N)`
+
+`Y_0(N)(ℚ) = ∅` cannot be proved on the affine curve alone.  The
+classical route bounds the rational points of the **compactification**:
+`rank J_0(N)(ℚ) = 0` makes `J_0(N)(ℚ)` finite, hence `X_0(N)(ℚ)` injects
+into `X_0(N)(𝔽_ℓ)` for a good odd prime `ℓ`; and `Y_0(N)(ℚ) = ∅` follows
+only when that count is already exhausted by points known to be rational
+— the **cusps**, which live in `X_0(N) ∖ Y_0(N)`.  So the step from
+*finite* to *empty* IS the cusp count, and any criterion phrased over
+`Y_0(N)` alone would have to assume it as a hypothesis equivalent to its
+own conclusion.
+
+This subsection therefore builds, in the order that observation forces:
+
+1. `IsX0Compactification` — `Y_0(N) ⊆ X_0(N)` as an open subscheme of a
+   smooth proper curve with finite complement;
+2. `IsJacobianOf` and `HasRankZeroJacobian` — `J_0(N)` by its Albanese
+   universal property, and the two arithmetic inputs;
+3. `card_le_of_rankZeroJacobian` — the reduction bound;
+4. `y0HasNoRationalPoint_of_witnessPrime` — the assembly, PROVEN, and
+   what the seven single-prime levels below call.
+
+The arithmetic that feeds it is the Magma reconnaissance recorded in the
+`#### Reconnaissance` block below. -/
+
+/-- **`Spec 𝔽_ℓ`**, the base over which a modular curve is reduced.
+
+`ℓ` is not asked to be prime here — primality is a hypothesis where it
+matters, in `card_le_of_rankZeroJacobian`. -/
+noncomputable abbrev SpecF (ℓ : ℕ) : Scheme.{0} := Spec (CommRingCat.of (ZMod ℓ))
+
+/-- **A section of `Y` pushed into `X`.**  If `j : Y ⟶ X` is a morphism
+over `S`, a section of `strY` composed with `j` is a section of `strX`.
+For `S = Spec ℚ` and `j` the open immersion `Y_0(N) ⊆ X_0(N)` this is
+the inclusion `Y_0(N)(ℚ) → X_0(N)(ℚ)`. -/
+def sectionAlong {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} (j : Y ⟶ X)
+    (hj : j ≫ strX = strY) (y : RelPoint strY (𝟙 S)) : RelPoint strX (𝟙 S) :=
+  ⟨y.1 ≫ j, by rw [Category.assoc, hj, y.2]⟩
+
+/-- **`Y_0(N)(ℚ) = ∅` may be checked on a SINGLE coarse moduli space.**
+
+`Y0HasNoRationalPoint N` quantifies over every coarse moduli space,
+which is what keeps it independent of the still-open existence
+statement — but it is no harder than the one-space version, because
+initiality transports rational points.  Given any other coarse space
+`str'`, `IsCoarseModuliY0.universal` applied to `str'` and the
+classifying map of `str` produces `u : Y' ⟶ Y` over `Spec ℚ`, and
+composing a section of `str'` with `u` gives a section of `str`.
+
+This is a use of the initiality clause of `IsCoarseModuliY0`, and it is
+what lets every construction below work with one chosen
+compactification. -/
+theorem y0HasNoRationalPoint_of_isEmpty {N : ℕ} {Y : Scheme.{0}} {str : Y ⟶ SpecQ}
+    (M : IsCoarseModuliY0 N str) (h : IsEmpty (RelPoint str (𝟙 SpecQ))) :
+    Y0HasNoRationalPoint N := by
+  intro Y' str' M'
+  refine ⟨fun p => ?_⟩
+  obtain ⟨u, ⟨hu, -⟩, -⟩ := M'.universal str (fun {T} g d => M.classify g d)
+    (fun {_ _} h {_ _} hg {_ _} hb => M.classify_natural h hg hb)
+  exact h.elim ⟨p.1 ≫ u, by rw [Category.assoc, hu, p.2]⟩
+
+/-- **The number of `ℚ`-rational cusps of `X_0(N)`.**
+
+The cusps of `X_0(N)` are indexed by pairs `(d, a)` with `d ∣ N` and
+`a ∈ (ℤ/gcd(d, N/d))ˣ`, and `Γ_ℚ` permutes the `φ(gcd(d, N/d))` cusps
+above a given `d` transitively, through the cyclotomic character of
+`ℚ(ζ_{gcd(d, N/d)})`.  So the cusps above `d` are rational exactly when
+`φ(gcd(d, N/d)) = 1`, and this is the number of such divisors.
+
+The TOTAL number of cusps is `∑_{d ∣ N} φ(gcd(d, N/d))`, which is
+strictly larger at two of the seven levels below — `12` against `6` at
+`N = 36`, and `12` against `4` at `N = 50`.  Counting against the total
+rather than against the rational count would make the level statements
+unprovable there, and is the trap this definition exists to avoid.
+
+Values consumed below, each by `decide`:
+`20 ↦ 6`, `24 ↦ 8`, `28 ↦ 6`, `30 ↦ 8`, `36 ↦ 6`, `42 ↦ 8`, `50 ↦ 4`. -/
+def numRationalCusps (N : ℕ) : ℕ :=
+  (N.divisors.filter fun d => Nat.totient (Nat.gcd d (N / d)) = 1).card
+
+/-- **`strX : X ⟶ S` is the smooth compactification of the coarse moduli
+space `strY : Y ⟶ S`, with `j : Y ⟶ X` the open immersion.**
+
+`X` is proper and smooth of relative dimension `1` over `S`,
+geometrically connected, and contains `Y` as an open subscheme with
+FINITE complement — that complement is the cusp locus.
+
+This pins `X` as the genuine `X_0(N)`: `Y` is pinned up to unique
+isomorphism by the initiality clause carried in the `coarse` field, a
+nonempty open of a connected curve is dense, and a smooth proper curve
+containing a given smooth curve as a dense open is its unique smooth
+compactification.  Dropping `finite_compl` would break exactly that —
+`X` could then be any curve receiving `Y`, with the cusp count
+meaningless.
+
+The base `S` is general on purpose: the same structure over `Spec 𝔽_ℓ`
+with `ℓ ∤ N` is the good reduction `X_0(N)_{𝔽_ℓ}`, and
+`card_le_of_rankZeroJacobian` relates the two. -/
+structure IsX0Compactification (N : ℕ) {X Y S : Scheme.{0}} (strX : X ⟶ S)
+    (strY : Y ⟶ S) (j : Y ⟶ X) where
+  /-- `j` is a morphism over the base -/
+  comm : j ≫ strX = strY
+  /-- `Y` is a coarse moduli space for the `Γ₀(N)`-problem -/
+  coarse : IsCoarseModuliY0 N strY
+  /-- `Y` is an open subscheme of `X` -/
+  isOpen : IsOpenImmersion j
+  /-- `X` is proper over the base -/
+  isProper : IsProper strX
+  /-- `X` is a smooth curve over the base -/
+  smooth : SmoothOfRelativeDimension 1 strX
+  /-- `X` is geometrically connected -/
+  connected : GeometricallyConnected strX
+  /-- the complement of `Y` in `X` — the cusp locus — is finite -/
+  finite_compl : (Set.range j.base)ᶜ.Finite
+
+/-- **`ab` is the Jacobian of the curve `strX`, based at `o`.**
+
+Stated by the Albanese universal property, in the same
+functor-of-points style as `IsCoarseModuliY0`: the Abel–Jacobi map
+`x ↦ [x] − [o]` is a natural transformation from the points of `X` to
+the points of an abelian scheme sending `o` to `0`, and it is INITIAL
+among all such.  For a smooth proper geometrically connected curve the
+Albanese variety with a base point is exactly the Jacobian, so this
+determines `(J, aj)` up to unique isomorphism — which is what makes
+`HasRankZeroJacobian` a statement about `J_0(N)` rather than about some
+arbitrary abelian scheme that happens to receive `X(ℚ)`.
+
+Note what is deliberately NOT a field here: injectivity of `aj` on
+points.  It holds exactly when the genus is positive — for genus `0` the
+Jacobian is trivial — so it is an independent condition, and it is
+carried explicitly by `HasRankZeroJacobian` instead. -/
+structure IsJacobianOf {X J S : Scheme.{0}} (strX : X ⟶ S) {jstr : J ⟶ S}
+    (ab : AbelianSchemeStruct jstr) (o : RelPoint strX (𝟙 S)) where
+  /-- the Abel–Jacobi map `x ↦ [x] − [o]` on relative points -/
+  aj : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint strX g → RelPoint jstr g
+  /-- the Abel–Jacobi map is natural -/
+  aj_pre : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (x : RelPoint strX g),
+    aj g' (RelPoint.pre h hg x) = RelPoint.pre h hg (aj g x)
+  /-- the base point is sent to the origin -/
+  aj_base : aj (𝟙 S) o = ab.zero (𝟙 S)
+  /-- `(J, aj)` is initial among abelian schemes under `X` -/
+  universal : ∀ {A : Scheme.{0}} {astr : A ⟶ S} (ab' : AbelianSchemeStruct astr)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint strX g → RelPoint astr g),
+    (∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') (x : RelPoint strX g),
+      c g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c g x)) →
+    c (𝟙 S) o = ab'.zero (𝟙 S) →
+    ∃! u : J ⟶ A, u ≫ astr = jstr ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S) (x : RelPoint strX g),
+        (c g x).1 = (aj g x).1 ≫ u
+
+/-- **`rank J_0(N)(ℚ) = 0`, together with `genus X_0(N) ≥ 1`.**
+
+The two arithmetic inputs of the reduction argument, packaged as one
+existential over the Jacobian because both are statements about it:
+
+* `J(ℚ)` is FINITE — for an abelian variety over a number field the
+  Mordell–Weil group is finitely generated, so finiteness is exactly
+  rank `0`;
+* the Abel–Jacobi map is INJECTIVE on rational points, which is
+  positivity of the genus.
+
+The second is not decoration.  Without it the reduction criterion below
+is FALSE: at `N = 1` the curve `X_0(1) = ℙ¹` has trivial Jacobian, hence
+finite `J(ℚ)`, and infinitely many rational points.
+
+Both hold at all eleven Kenku levels — see
+`hasRankZeroJacobian_of_kenkuLevel`. -/
+def HasRankZeroJacobian {X : Scheme.{0}} (strX : X ⟶ SpecQ) : Prop :=
+  ∃ (J : Scheme.{0}) (jstr : J ⟶ SpecQ) (ab : AbelianSchemeStruct jstr)
+    (o : RelPoint strX (𝟙 SpecQ)) (jac : IsJacobianOf strX ab o),
+    Finite (RelPoint jstr (𝟙 SpecQ)) ∧ Function.Injective (jac.aj (𝟙 SpecQ))
+
+/-- **The eleven levels of Kenku's non-prime-power determination**, i.e.
+the eleven named level nodes below.  All eleven have
+`rank J_0(N)(ℚ) = 0`; seven of them additionally have a single witness
+prime (`x0WitnessTable`), and the remaining four — `45, 54, 63, 75` —
+need a multi-prime Mordell–Weil sieve. -/
+def kenkuLevels : List ℕ := [20, 24, 28, 30, 36, 42, 45, 50, 54, 63, 75]
+
+/-- **The witness table `(N, ℓ, #X_0(N)(𝔽_ℓ))` for the seven levels that
+close on a single prime.**
+
+Computed with Magma from Eichler–Shimura,
+`#X_0(N)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(N)))`; see the
+`#### Reconnaissance` block below for the full table with genus and
+cusp data.  In every row the count EQUALS `numRationalCusps N`, which is
+precisely why these seven close on one prime.
+
+Two entries are traps for anyone regenerating this table.  `N = 30`
+needs `ℓ = 17`: the small primes `7, 11, 13` give `12, 20, 16`, all
+strictly larger than `8`.  And `N = 36`, `N = 50` must be counted
+against their RATIONAL cusps (`6` and `4`), not against their `12`
+cusps. -/
+def x0WitnessTable : List (ℕ × ℕ × ℕ) :=
+  [(20, 3, 6), (24, 5, 8), (28, 5, 6), (30, 17, 8), (36, 5, 6), (42, 11, 8), (50, 3, 4)]
+
+/-- **Existence of the compactified coarse moduli space `X_0(N)` over
+`ℚ`** (sorry node).
+
+TRUE and classical: `Y_0(N)` is a smooth affine curve over `ℚ` and every
+smooth curve over a field has a unique smooth projective
+compactification; for `Y_0(N)` it is the modular curve `X_0(N)` of
+Deligne–Rapoport, obtained directly as the coarse space of the moduli
+problem of GENERALISED elliptic curves with `Γ₀(N)`-structure, the added
+points being the cusps.
+
+This leaf SUBSUMES `exists_coarseModuliY0` — its `coarse` field is
+exactly that statement — so a successor closing that node has closed
+half of this one; what remains is the compactification proper.
+
+IRREDUCIBLE at this pin for the same reason as `exists_coarseModuliY0`:
+neither modular curves nor a smooth-compactification theorem for curves
+exists anywhere in `Mathlib`. -/
+theorem exists_x0Compactification (N : ℕ) (hN : 0 < N) :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecQ) (strY : Y ⟶ SpecQ) (j : Y ⟶ X),
+      Nonempty (IsX0Compactification N strX strY j) :=
+  sorry
+
+/-- **`X_0(N)` has `numRationalCusps N` rational cusps, and no cusp is
+the image of a rational point of `Y_0(N)`** (sorry node).
+
+TRUE and classical; see `numRationalCusps` for the divisor count and the
+Galois action on the cusps.  The second conjunct is immediate from the
+definition of a cusp — it lies in `X ∖ Y` — but it is exactly what the
+emptiness argument consumes, so it is stated rather than left implicit.
+
+Quantified over every compactification rather than over a chosen one:
+`IsX0Compactification` pins `(X, Y, j)` up to isomorphism so the
+statement is invariant, and `exists_x0Compactification` supplies an
+instance so it is not vacuous.
+
+IRREDUCIBLE at this pin: the cusps of `X_0(N)` do not exist here in any
+form. -/
+theorem exists_rationalCusps (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (h : IsX0Compactification N strX strY j) :
+    ∃ s : Finset (RelPoint strX (𝟙 SpecQ)), s.card = numRationalCusps N ∧
+      ∀ p ∈ s, ∀ y : RelPoint strY (𝟙 SpecQ), sectionAlong j h.comm y ≠ p :=
+  sorry
+
+/-- **`rank J_0(N)(ℚ) = 0` and `genus X_0(N) ≥ 1` at the eleven Kenku
+levels** (sorry node).
+
+TRUE, by the reconnaissance recorded below: decomposing the cuspidal
+subspace `S_2(Γ_0(N))` into newform factors and evaluating `L(A, 1)` on
+each, EVERY factor at EVERY one of the eleven levels has `L(A, 1) ≠ 0`;
+so `J_0(N)` has analytic rank `0`, hence Mordell–Weil rank `0` by
+Kolyvagin–Logachev, hence finite `J_0(N)(ℚ)`.  Positivity of the genus
+is classical and holds at all eleven — the genus values, in the order of
+`kenkuLevels`, are `1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`.
+
+IRREDUCIBLE at this pin, and the deepest of the five leaves here: it
+needs `S_2(Γ_0(N))`, the Hecke algebra, `L`-functions of modular abelian
+varieties and Gross–Zagier/Kolyvagin. -/
+theorem hasRankZeroJacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) : HasRankZeroJacobian strX :=
+  sorry
+
+/-- **The reduction `X_0(N)_{𝔽_ℓ}` and its Eichler–Shimura point count,
+at the seven witness primes** (sorry node).
+
+TRUE: for `ℓ ∤ N` the modular curve has good reduction at `ℓ` and its
+special fibre is the coarse space of the same `Γ₀(N)`-problem over
+`𝔽_ℓ`; being proper over a finite field it has finitely many rational
+points; and Eichler–Shimura evaluates the count as
+`ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(N)))`.  The seven rows of `x0WitnessTable` are
+that formula computed with Magma.
+
+IRREDUCIBLE at this pin: neither the integral model of `X_0(N)`, nor its
+reduction, nor the Hecke operators exist here. -/
+theorem exists_x0Compactification_mod_prime (N ℓ m : ℕ)
+    (h : (N, ℓ, m) ∈ x0WitnessTable) :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecF ℓ) (strY : Y ⟶ SpecF ℓ) (j : Y ⟶ X),
+      Nonempty (IsX0Compactification N strX strY j) ∧
+        Finite (RelPoint strX (𝟙 (SpecF ℓ))) ∧
+        Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m :=
+  sorry
+
+/-- **The rank-`0` reduction bound, `#X_0(N)(ℚ) ≤ #X_0(N)(𝔽_ℓ)`** (sorry
+node — this is the criterion).
+
+TRUE, and classical.  `hJ` makes `J_0(N)(ℚ)` finite, hence torsion; for
+`ℓ` an odd prime of good reduction the reduction map on torsion
+`J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)` is INJECTIVE, its kernel being the points of a
+formal group over `ℤ_ℓ`, which is torsion-free for `ℓ` odd; Abel–Jacobi
+based at a rational point embeds `X_0(N)(ℚ)` into `J_0(N)(ℚ)` and
+commutes with reduction; so `X_0(N)(ℚ)` injects into `X_0(N)(𝔽_ℓ)`.
+
+**Every hypothesis is load-bearing**, and the leaf is false without any
+one of them — which is why none is trimmed:
+
+* without finiteness in `hJ`, a positive-rank Jacobian gives infinitely
+  many rational points already in genus `1`;
+* without injectivity in `hJ`, `N = 1` refutes it: `X_0(1) = ℙ¹` has
+  trivial Jacobian and infinitely many rational points;
+* without `hℓ2` the formal-group argument fails at `ℓ = 2`, where
+  `2`-torsion can die under reduction;
+* without `hℓN` there is no good reduction at `ℓ` and the special fibre
+  is not a smooth curve.
+
+The conclusion bounds every `Finset` of rational points rather than
+`Nat.card`, because `Nat.card` of an infinite type is `0` and the bound
+would then hold vacuously; the `Finset` form also carries finiteness.
+
+IRREDUCIBLE at this pin: it needs the integral model of `X_0(N)`, the
+reduction map on the Jacobian, and the formal group of an abelian
+scheme. -/
+theorem card_le_of_rankZeroJacobian {N : ℕ} {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (hX : IsX0Compactification N strX strY j)
+    (hJ : HasRankZeroJacobian strX) {ℓ : ℕ} (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2)
+    (hℓN : ¬ ℓ ∣ N) {X' Y' : Scheme.{0}} {strX' : X' ⟶ SpecF ℓ}
+    {strY' : Y' ⟶ SpecF ℓ} {j' : Y' ⟶ X'}
+    (hX' : IsX0Compactification N strX' strY' j') (m : ℕ)
+    (hfin : Finite (RelPoint strX' (𝟙 (SpecF ℓ))))
+    (hm : Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) = m)
+    (s : Finset (RelPoint strX (𝟙 SpecQ))) : s.card ≤ m :=
+  sorry
+
+/-- **The single-prime criterion** (PROVEN): at a level whose Jacobian
+has rank `0`, and which has a witness prime whose point count equals the
+number of rational cusps, `Y_0(N)(ℚ) = ∅`.
+
+The argument is pure counting, and it is the reason the interface above
+is shaped as it is.  Take the compactification `Y ⊆ X` over `ℚ` and the
+reduction `X'` over `𝔽_ℓ`.  The `c = numRationalCusps N` rational cusps
+are `c` distinct rational points of `X`, none of them the image of a
+rational point of `Y`.  A rational point of `Y` would therefore push
+forward to a `(c+1)`-st one, giving a `Finset` of `X(ℚ)` of size
+`c + 1`; but the reduction bound caps every such `Finset` by
+`#X'(𝔽_ℓ) = c`.  So `Y(ℚ)` is empty — and
+`y0HasNoRationalPoint_of_isEmpty` propagates that to every coarse moduli
+space at once.
+
+This is exactly the step that cannot be taken on the affine curve: rank
+`0` bounds `#X_0(N)(ℚ)`, and only the cusp count turns that bound into
+emptiness of `Y_0(N)(ℚ)`. -/
+theorem y0HasNoRationalPoint_of_witnessPrime (N ℓ : ℕ) (hN : 0 < N)
+    (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2) (hℓN : ¬ ℓ ∣ N) (hlevel : N ∈ kenkuLevels)
+    (htable : (N, ℓ, numRationalCusps N) ∈ x0WitnessTable) :
+    Y0HasNoRationalPoint N := by
+  classical
+  obtain ⟨X, Y, strX, strY, j, ⟨hX⟩⟩ := exists_x0Compactification N hN
+  obtain ⟨X', Y', strX', strY', j', ⟨hX'⟩, hfin, hcard⟩ :=
+    exists_x0Compactification_mod_prime N ℓ (numRationalCusps N) htable
+  obtain ⟨s, hscard, hsnot⟩ := exists_rationalCusps N hX
+  refine y0HasNoRationalPoint_of_isEmpty hX.coarse ⟨fun y => ?_⟩
+  have hp : sectionAlong j hX.comm y ∉ s := fun hmem => hsnot _ hmem y rfl
+  have hle : (insert (sectionAlong j hX.comm y) s).card ≤ numRationalCusps N :=
+    card_le_of_rankZeroJacobian hX (hasRankZeroJacobian_of_kenkuLevel N hlevel hX)
+      hℓ hℓ2 hℓN hX' _ hfin hcard _
+  rw [Finset.card_insert_of_notMem hp, hscard] at hle
+  omega
+
 /-! ### The twelve levels of Kenku's non-prime-power determination
 
 Each statement below is the level `N` of the Mazur–Kenku classification,
@@ -669,14 +1054,23 @@ The `gcd` of `#J_0(N)(𝔽_ℓ)` over `3 ≤ ℓ < 60`, which bounds
 `#J_0(N)(ℚ)`, is `512`, `243`, `6144` and `2560` respectively — so the
 sieve has a genuinely finite search space, but one prime is not enough.
 
-**All eleven remain IRREDUCIBLE here for the same reason**, and it is
-not the arithmetic above: nothing in this development yet has `X_0(N)`
-as a scheme, its cusps, `J_0(N)`, Mordell–Weil, or reduction mod `ℓ`.
-The arithmetic is settled; the *interface* is what is missing.  See the
-sibling node `y0HasNoRationalPoint_prod_two_primes`, which owns that
-shared layer. -/
+**The interface that was missing here now exists** (2026-07-26), in the
+subsection above: `IsX0Compactification` (`X_0(N)` with its cusp locus),
+`IsJacobianOf` / `HasRankZeroJacobian` (`J_0(N)` and the rank-`0`
+input), and `card_le_of_rankZeroJacobian` (reduction mod `ℓ`).  The
+seven single-prime levels are PROVEN over it by
+`y0HasNoRationalPoint_of_witnessPrime`, and what remains open is that
+subsection's five leaves — none of them level-specific.
 
-/-- **`Y_0(20)(ℚ) = ∅`** (sorry node; `X_0(20)` has genus `1`).  Ogg,
+**The four sieve levels `45, 54, 63, 75` are still open**, and what they
+need is a multi-prime strengthening of `card_le_of_rankZeroJacobian`:
+the bound must intersect the images of `X_0(N)(𝔽_ℓ) → J_0(N)(𝔽_ℓ)` over
+several `ℓ` at once, rather than reduce at a single one.  That is a
+strengthening of one leaf, not a new theory, and it reuses every other
+piece unchanged. -/
+
+/-- **`Y_0(20)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(20)` has genus `1`).  Ogg,
 *Rational points on certain elliptic modular curves*, Proc. Sympos. Pure
 Math. 24 (1973): `X_0(20)` is an elliptic curve of Mordell–Weil rank `0`
 over `ℚ` whose six rational points are its six cusps.
@@ -685,18 +1079,22 @@ ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(20)(ℚ) = 0`,
 all six cusps are rational, and `#X_0(20)(𝔽_3) = 6`; so the six cusps
 exhaust `X_0(20)(ℚ)`.  (`ℓ = 7` also gives `6`.) -/
 theorem y0HasNoRationalPoint_twenty : Y0HasNoRationalPoint 20 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 20 3 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
-/-- **`Y_0(24)(ℚ) = ∅`** (sorry node; `X_0(24)` has genus `1`; Ogg
+/-- **`Y_0(24)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(24)` has genus `1`; Ogg
 1973).
 
 ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(24)(ℚ) = 0`,
 all eight cusps are rational, and `#X_0(24)(𝔽_5) = 8`; so the eight
 cusps exhaust `X_0(24)(ℚ)`.  (`ℓ = 7` and `ℓ = 11` also give `8`.) -/
 theorem y0HasNoRationalPoint_twentyFour : Y0HasNoRationalPoint 24 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 24 5 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
-/-- **`Y_0(28)(ℚ) = ∅`** (sorry node; `X_0(28)` has genus `2`; Ogg,
+/-- **`Y_0(28)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(28)` has genus `2`; Ogg,
 *Hyperelliptic modular curves*, Bull. Soc. Math. France 102 (1974)).
 
 ROUTE (rank-`0` reduction, closes on one prime).  **This level does NOT
@@ -706,9 +1104,11 @@ has `L(A, 1) ≠ 0`), hence Mordell–Weil rank `0`.  All six cusps are
 rational and `#X_0(28)(𝔽_5) = 6`, so the six cusps exhaust
 `X_0(28)(ℚ)`.  (`ℓ = 17` also gives `6`.) -/
 theorem y0HasNoRationalPoint_twentyEight : Y0HasNoRationalPoint 28 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 28 5 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
-/-- **`Y_0(30)(ℚ) = ∅`** (sorry node; `X_0(30)` has genus `3`).  This is
+/-- **`Y_0(30)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(30)` has genus `3`).  This is
 the minimal level with three distinct prime factors.
 
 ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(30)(ℚ) = 0`
@@ -717,9 +1117,11 @@ and `#X_0(30)(𝔽_17) = 8`; so the eight cusps exhaust `X_0(30)(ℚ)`.
 Note the small primes are *not* good enough here — `ℓ = 7, 11, 13` give
 `12, 20, 16` — so `ℓ = 17` is the witness to use. -/
 theorem y0HasNoRationalPoint_thirty : Y0HasNoRationalPoint 30 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 30 17 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
-/-- **`Y_0(36)(ℚ) = ∅`** (sorry node; `X_0(36)` has genus `1`; Ogg
+/-- **`Y_0(36)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(36)` has genus `1`; Ogg
 1973).
 
 ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(36)(ℚ) = 0`.
@@ -728,9 +1130,11 @@ ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(36)(ℚ) = 0`.
 over `ℚ(ζ_3)`), and `#X_0(36)(𝔽_5) = 6`; so the six rational cusps
 exhaust `X_0(36)(ℚ)`. -/
 theorem y0HasNoRationalPoint_thirtySix : Y0HasNoRationalPoint 36 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 36 5 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
-/-- **`Y_0(42)(ℚ) = ∅`** (sorry node; `X_0(42)` has genus `5`).  The
+/-- **`Y_0(42)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(42)` has genus `5`).  The
 second minimal level with three distinct prime factors.
 
 ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(42)(ℚ) = 0`
@@ -739,7 +1143,8 @@ rational, and `#X_0(42)(𝔽_11) = 8`; so the eight cusps exhaust
 `X_0(42)(ℚ)`.  Despite the genus being `5`, this is the cheapest kind of
 argument — no Chabauty–Coleman is involved. -/
 theorem y0HasNoRationalPoint_fortyTwo : Y0HasNoRationalPoint 42 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 42 11 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
 /-- **`Y_0(45)(ℚ) = ∅`** (sorry node; `X_0(45)` has genus `3`).
 
@@ -755,7 +1160,8 @@ intersecting the images of `X_0(45)(𝔽_ℓ) → J_0(45)(𝔽_ℓ)` over severa
 theorem y0HasNoRationalPoint_fortyFive : Y0HasNoRationalPoint 45 :=
   sorry
 
-/-- **`Y_0(50)(ℚ) = ∅`** (sorry node; `X_0(50)` has genus `2`; Ogg
+/-- **`Y_0(50)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(50)` has genus `2`; Ogg
 1974).
 
 ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(50)(ℚ) = 0`
@@ -765,7 +1171,8 @@ cusps exhaust `X_0(50)(ℚ)`.  This is the tightest of the seven
 single-prime levels — the count matches `c(N)` exactly at the smallest
 available prime. -/
 theorem y0HasNoRationalPoint_fifty : Y0HasNoRationalPoint 50 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 50 3 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
 /-- **`Y_0(54)(ℚ) = ∅`** (sorry node; `X_0(54)` has genus `4`).
 
