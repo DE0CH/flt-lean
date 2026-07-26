@@ -24026,6 +24026,40 @@ theorem degeneracyOp_injective {N M d : ℕ} (hd : 0 < d) (hdvd : d * N ∣ M) :
     Nat.mul_div_cancel_left m hd] at h1
   exact h1
 
+/-- **THE ELEMENTARY CONVERSE OF THE MAIN LEMMA** (PROVEN 2026-07-26): every
+form in the OLD subspace has vanishing `q`-expansion coefficients at all
+indices COPRIME to the level.
+
+`a_n(V_p u) = 0` unless `p ∣ n` (`qCoeff_degeneracyOp`), and an `n` coprime to
+`M` is divisible by NO prime factor `p` of `M`.  Vanishing at a fixed `n` is
+the kernel of the linear functional `qCoeffL M n`, hence a submodule, so it
+suffices to check it on each generating image — which is what makes this
+direction elementary while the converse
+(`mem_oldSubspace_of_qCoeff_coprime_eq_zero`) is genuine analysis.
+
+`0 < M` is retained for API uniformity with the siblings but is NOT used by
+the proof, hence the underscore: at `M = 0` the statement is vacuously fine
+because `Nat.primeFactors 0 = ∅` makes the old subspace `⊥`. -/
+theorem qCoeff_eq_zero_of_mem_oldSubspace {M : ℕ} (_hM : 0 < M)
+    {v : CuspForm (Gamma0GL M) 2}
+    (hv : v ∈ ⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p))
+    {n : ℕ} (hn : Nat.Coprime n M) : qCoeff M v n = 0 := by
+  have hle : (⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p))
+      ≤ LinearMap.ker (qCoeffL M n) := by
+    refine iSup₂_le fun p hp => ?_
+    rintro _ ⟨u, rfl⟩
+    have hpp : p.Prime := Nat.prime_of_mem_primeFactors hp
+    have hpd : p ∣ M := Nat.dvd_of_mem_primeFactors hp
+    have hdvd : p * (M / p) ∣ M := by rw [Nat.mul_div_cancel' hpd]
+    have hpn : ¬ p ∣ n := by
+      intro h
+      have hp1 : p ∣ 1 := hn ▸ Nat.dvd_gcd h hpd
+      exact hpp.one_lt.ne' (Nat.dvd_one.mp hp1)
+    rw [LinearMap.mem_ker, qCoeffL_apply, qCoeff_degeneracyOp hpp.pos hdvd,
+      if_neg hpn]
+  have := hle hv
+  rwa [LinearMap.mem_ker, qCoeffL_apply] at this
+
 end DegeneracyOperator
 
 /-- **SPECTRAL DESCENT THROUGH A SUM OF STABLE SUBSPACES** (PROVEN
@@ -24250,8 +24284,54 @@ theorem exists_weightTwoEigenform_of_heckeOp_eigen_of_level_dvd {N M : ℕ}
         ∀ q : ℕ, q.Prime → ¬ q ∣ M → qCoeff M' g' q = c q :=
   sorry
 
+/-- **THE NEW SUBSPACE DETECTS NO FORM WITH VANISHING GOOD COEFFICIENTS**
+(sorry leaf — cut 2026-07-26 out of
+`mem_oldSubspace_of_qCoeff_coprime_eq_zero`; Diamond–Shurman Theorem 5.7.1,
+Atkin–Lehner 1970 Lemma 18): the old subspace admits a COMPLEMENT `W` inside
+which the only form whose `q`-expansion coefficients all vanish at indices
+COPRIME to `M` is `0`.
+
+This is the whole ANALYTIC content of the Atkin–Lehner Main Lemma, and it is
+stated in the form the classical proof actually produces.  `W` is the *new*
+subspace: the orthogonal complement of the old subspace for the PETERSSON
+inner product
+
+  `⟨f, h⟩ = ∫_{Γ₀(M)\ℍ} f(τ) conj(h(τ)) dx dy`,
+
+which exists because `S₂(Γ₀(M))` is finite-dimensional
+(`cuspForm_finiteDimensional`, PROVEN) and the Petersson form is a
+positive-definite Hermitian form on it.  The vanishing statement is then
+D–S Thm 5.7.1 proper, whose proof runs through the Atkin–Lehner involutions
+`W_Q` and the Petersson adjointness of the degeneracy maps.
+
+WHY ONLY `⊔ = ⊤` IS DEMANDED, not `IsCompl`.  Directness is not needed by
+the consumer — only that every form splits — so the weaker requirement is
+stated, which is the easier obligation.  The leaf is NOT thereby weakened
+into vacuity: `W = ⊤` satisfies `⊔ = ⊤` but violates the second conjunct,
+since a nonzero old form has vanishing coefficients at every index coprime
+to `M` (`qCoeff_eq_zero_of_mem_oldSubspace`).  The two conjuncts together
+still force `W` to meet the old subspace trivially.
+
+WHAT THE PIN LACKS.  Nothing of the Petersson theory beyond the integrand
+`petersson` and its `SL(2,ℤ)`-invariance and exponential decay exists in
+`Mathlib.NumberTheory.ModularForms.Petersson`: the integral over a
+fundamental domain, positive-definiteness, the inner-product structure and
+the adjointness computation all have to be built, and there is no
+Atkin–Lehner material in mathlib or in `~/cs/FLT`.  This is shared with the
+sibling leaf `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`
+(good-prime semisimplicity), which needs the SAME inner product and
+self-adjointness of `T_q` — so whoever builds the Petersson product should
+expect to discharge both. -/
+theorem exists_oldSubspace_complement_vanishing (M : ℕ) (hM : 0 < M) :
+    ∃ W : Submodule ℂ (CuspForm (Gamma0GL M) 2),
+      (⨆ p ∈ M.primeFactors,
+        LinearMap.range (degeneracyOp (M / p) M p)) ⊔ W = ⊤ ∧
+      ∀ v ∈ W, (∀ n : ℕ, Nat.Coprime n M → qCoeff M v n = 0) → v = 0 :=
+  sorry
+
 /-- **ATKIN–LEHNER MAIN LEMMA: no coefficients away from the level forces a form
-into the OLD SUBSPACE** (sorry leaf — cut 2026-07-26 out of
+into the OLD SUBSPACE** (PROVEN 2026-07-26 over the single analytic leaf
+`exists_oldSubspace_complement_vanishing` above; cut 2026-07-26 out of
 `exists_weightTwoEigenform_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero`;
 Diamond–Shurman Theorem 5.7.1, Atkin–Lehner 1970 Lemma 18): if every
 `q`-expansion coefficient `a_n(w)` at an index `n` COPRIME to `M` vanishes, then
@@ -24263,22 +24343,42 @@ product and the Atkin–Lehner involutions `W_Q`, neither of which exists on thi
 pin.  Note it needs NO eigenvector hypothesis — it is a statement about a single
 cusp form, exactly as in Diamond–Shurman.
 
-The converse inclusion is elementary and true: `a_n(V_p u) = 0` unless `p ∣ n`
-(`qCoeff_degeneracyOp`), and an `n` coprime to `M` is not divisible by any
-`p ∣ M`.  So this leaf is the nontrivial direction of an equivalence.
+STATUS 2026-07-26.  The analysis is now isolated in ONE leaf,
+`exists_oldSubspace_complement_vanishing` above — the existence of a
+complement of the old subspace (the *new* subspace, Petersson-orthogonal) in
+which no nonzero form has vanishing coefficients at all indices coprime to
+`M`.  Given it, this node is a three-line splitting argument, because the
+CONVERSE inclusion is elementary and is now PROVEN and consumed here:
+`qCoeff_eq_zero_of_mem_oldSubspace` (`a_n(V_p u) = 0` unless `p ∣ n` by
+`qCoeff_degeneracyOp`, and an `n` coprime to `M` is divisible by no `p ∣ M`).
+Split `w = a + b` with `a` old and `b` in the complement; `a` has vanishing
+good coefficients by the converse, hence so does `b = w − a`, hence `b = 0`.
 
-DEPENDENCY NOTE.  `V_p` itself is now BUILT and sorry-free (`degeneracyOp`
-above, with `degeneracyOp_coe` and `qCoeff_degeneracyOp`), so what remains here
-is genuinely the analysis and nothing definitional.  Whoever attacks it needs:
-the Petersson inner product on `S₂(Γ₀(M))` (being built independently at
-`exists_peterssonProduct_selfAdjoint_heckeOp`, the sibling leaf of
-`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`), and the involutions
-`W_Q`. -/
+DEPENDENCY NOTE.  `V_p` itself is BUILT and sorry-free (`degeneracyOp` above,
+with `degeneracyOp_coe` and `qCoeff_degeneracyOp`), so nothing definitional
+remains anywhere in this cluster.  What the remaining leaf needs is the
+Petersson inner product on `S₂(Γ₀(M))` and the involutions `W_Q`; note that
+NO `exists_peterssonProduct_selfAdjoint_heckeOp` declaration exists in this
+tree as of 2026-07-26, contrary to an earlier note here, so the Petersson
+product is genuinely unbuilt and is shared with the sibling leaf
+`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`. -/
 theorem mem_oldSubspace_of_qCoeff_coprime_eq_zero {M : ℕ} (hM : 0 < M)
     {w : CuspForm (Gamma0GL M) 2}
     (hwc : ∀ n : ℕ, Nat.Coprime n M → qCoeff M w n = 0) :
-    w ∈ ⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p) :=
-  sorry
+    w ∈ ⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p) := by
+  obtain ⟨W, hsup, hW⟩ := exists_oldSubspace_complement_vanishing M hM
+  have hmem : w ∈ (⨆ p ∈ M.primeFactors,
+      LinearMap.range (degeneracyOp (M / p) M p)) ⊔ W := by
+    rw [hsup]; exact Submodule.mem_top
+  obtain ⟨a, ha, b, hb, hab⟩ := Submodule.mem_sup.mp hmem
+  have hb0 : b = 0 := by
+    refine hW b hb fun n hn => ?_
+    rw [eq_sub_of_add_eq' hab]
+    have hsub : qCoeff M (w - a) n = qCoeff M w n - qCoeff M a n := by
+      simpa using (qCoeffL M n).map_sub w a
+    rw [hsub, hwc n hn, qCoeff_eq_zero_of_mem_oldSubspace hM ha hn, sub_zero]
+  have haw : a = w := by rw [← hab, hb0, add_zero]
+  exact haw ▸ ha
 
 /-- **NEWFORM DECOMPOSITION: an eigenvector in the old subspace has its
 eigensystem realized at a PROPER divisor level** (sorry leaf — cut 2026-07-26
