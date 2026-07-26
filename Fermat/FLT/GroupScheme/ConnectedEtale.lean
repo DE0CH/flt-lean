@@ -3373,9 +3373,11 @@ split into its two classical halves:
   `e = 1 < p − 1`: `χ_φ` is either trivial or `χ_cyc`, as characters
   (PROVEN 2026-07-25 over the single valuation leaf
   `displacement_span_le_span_zeta_sub_one`, "the displacement's value
-  ideal is CONTAINED in `(ζ_p − 1)`", which is the one-dimensionality
-  half of Oort–Tate's `v(a) = 1` and is the only sorry left in this
-  file — the reverse inclusion, Raynaud's `k ≤ e`, is proven);
+  ideal is CONTAINED in `(ζ_p − 1)`", the one-dimensionality half of
+  Oort–Tate's `v(a) = 1`. That leaf was itself PROVEN 2026-07-26, by
+  the NORM of the displacement over the group of points, so this file
+  is now sorry-free; the reverse inclusion, Raynaud's `k ≤ e`, was
+  already proven as `span_zeta_sub_one_le_displacement_span`);
 * `not_inertia_character_trivial_of_connected` — CONNECTEDNESS kills
   the trivial alternative (itself proven from
   `point_sub_counit_mem_maximalIdeal`, "a connected point reduces to
