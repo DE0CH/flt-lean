@@ -2394,7 +2394,9 @@ derivation recorded in the section note before that leaf.  The hypothesis
 is stated over an ARBITRARY finite exceptional set `S`, which is the shape
 `exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint` delivers; the
 point's own compatibility data is only available off `pt.bad`, so the
-conclusion is stated off the union. -/
+conclusion needs both exclusions.  They are stated as two hypotheses
+rather than as `w ∉ S ∪ pt.bad` so that the statement needs no
+`DecidableEq` on the place set. -/
 theorem residual_charFrob_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint
     {ℓ : ℕ} [Fact ℓ.Prime] {F : Type u} [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k] [DiscreteTopology k]
@@ -2403,19 +2405,18 @@ theorem residual_charFrob_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint
     {ρbarF : GaloisRep F k W} (pt : HilbertBlumenthalPoint ℓ F ρbarF)
     (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
     (hP : ∀ w ∉ S, (pt.P w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.D)) :
-    ∀ w ∉ S ∪ pt.bad,
+    ∀ w, w ∉ S → w ∉ pt.bad →
       (pt.ρbarp.charFrob w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.kp) := by
   -- `pfact` is a field of the structure but is not registered globally as an
   -- instance, and `ℚ̄_p` cannot be named without it
   haveI : Fact (pt.p).Prime := pt.pfact
-  intro w hw
-  have hwbad : w ∉ pt.bad := fun h => hw (Finset.mem_union_right _ h)
+  intro w hwS hwbad
   have h1 : pt.ιC ((pt.τp.charFrob w).coeff 0)
       = pt.ψDp ((pt.P w).coeff 0) := by
     have h := congrArg (fun p : Polynomial (AlgebraicClosure ℚ_[pt.p]) =>
       p.coeff 0) (pt.matchp w hwbad)
     simpa using h
-  rw [hP w fun h => hw (Finset.mem_union_left _ h)] at h1
+  rw [hP w hwS] at h1
   have h2 : (pt.τp.charFrob w).coeff 0
       = ((Ideal.absNorm w.asIdeal : ℕ) : pt.C) := by
     refine pt.ιC_injective ?_
@@ -2689,7 +2690,10 @@ theorem exists_residualModularity_of_hilbertBlumenthalPoint
   choose a₁ ha₁ using hpre
   refine ⟨E₁, hE₁, hNE₁, Λ, hΛ, jΛ, hjΛ, redΛ, a₁, S₂ ∪ pt.bad, fun w hw => ?_⟩
   exact quadratic_map_eq_of_monic_natDegree_two (hquad w).1 (hquad w).2 redΛ
-    (a₁ w) _ (ha₁ w) (by rw [map_natCast]; exact (hnorm w hw).symm)
+    (a₁ w) _ (ha₁ w) (by
+      rw [map_natCast]
+      exact (hnorm w (fun h => hw (Finset.mem_union_left _ h))
+        (fun h => hw (Finset.mem_union_right _ h))).symm)
 
 -- `backward.isDefEq.respectTransparency false`: the two `show` steps in
 -- the proof below unfold `GaloisRep.charFrob` to the
