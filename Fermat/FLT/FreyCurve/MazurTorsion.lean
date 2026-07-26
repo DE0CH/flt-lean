@@ -10990,6 +10990,8 @@ theorem WeierstrassCurve.exists_tateNormalForm_of_order_nine
     exact Point.some_eq_some _ (by simp [hC₂]) (by simp [hC₂])
   simp only [AddEquiv.trans_apply, e1, ← e2, AddEquiv.symm_apply_apply, Point.equivOfEq_some]
 
+namespace MazurLevel27
+
 /-- **The `X_0(3)` `j`-line, as pure algebra** (PROVEN 2026-07-26): if a
 curve's `b`-invariants are normalised so that `b₈ = 0` — i.e. so that
 `x = 0` is the abscissa of a `3`-torsion point — then its `j`-invariant
