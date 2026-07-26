@@ -19547,15 +19547,18 @@ So: (a) is mathlib, (c)/(d)/(d′)/(e) are PROVEN, and (b) — the only
 genuinely missing mathematics — is now stated and isolated. As of
 2026-07-26 the frontier of this whole chain is exactly ONE leaf:
 
-* `span_gaussPowOfJacobiSums_eq_twistedProd` — Stickelberger's theorem
-  in its sharp Gauss-sum form, `(g(ψᵃ)^p) = ∏_w σ_{(−v)w⁻¹}(q)^{(aw).val}`,
-  which is exactly (b). Its statement mentions only `jacobiSum`
-  (mathlib) and objects of `𝓞 CF` — no compositum, no valuation,
-  nothing to define first — because `g(ψ)^p` is written without Gauss
-  sums as `gaussPowOfJacobiSums` (mathlib's
-  `gaussSum_pow_eq_prod_jacobiSum`).
-  `span_jacobiSum_le_twistedProd` is PROVEN from it (2026-07-26) via
-  the `p`-th power of the Gauss/Jacobi relation
+* `span_gaussPowOfJacobiSums_eq_twistedProd_one` — Stickelberger's
+  theorem in its sharp Gauss-sum form AT `a = 1`,
+  `(g(ψ)^p) = ∏_w σ_{(−v)w⁻¹}(q)^{w.val}`, which is exactly (b). Its
+  statement mentions only `jacobiSum` (mathlib) and objects of `𝓞 CF` —
+  no compositum, no valuation, nothing to define first — because
+  `g(ψ)^p` is written without Gauss sums as `gaussPowOfJacobiSums`
+  (mathlib's `gaussSum_pow_eq_prod_jacobiSum`).
+  The `a`-quantified form `span_gaussPowOfJacobiSums_eq_twistedProd` is
+  PROVEN from it (2026-07-26): the family is one Galois orbit, and
+  `Ideal.map σ_a` carries the `a = 1` identity to the `a`-th one.
+  `span_jacobiSum_le_twistedProd` is PROVEN from THAT via the `p`-th
+  power of the Gauss/Jacobi relation
   (`gaussPowOfJacobiSums_mul_jacobiSum_pow`) and cancellation in the
   Dedekind ideal monoid (`span_eq_twistedProd_of_gaussDivisors`), and
   the matching EQUALITY `span_jacobiSum_mul_stickelbergerProd` is
@@ -20563,8 +20566,181 @@ theorem gaussPowOfJacobiSums_mul_jacobiSum_pow {F : Type*} [Field F] [Fintype F]
     gaussPowOfJacobiSums_eq_gaussSum_pow _ η.char η.prim n (hordpow s hs1 (by omega)) hn2]
   exact hpow
 
-/-- **STICKELBERGER'S THEOREM, in the sharp Gauss-sum form** (SORRY
-LEAF, cut 2026-07-26; Stickelberger 1890; Washington, *Introduction to
+/-- **The cyclotomic Galois action on `p`-th roots of unity is `x ↦ xᵘ`**
+(PROVEN 2026-07-26; the single fact about `cycGalRingOfIntegersEquiv`
+that Stickelberger's theorem needs at the level of character VALUES).
+
+`cycGalRingOfIntegersEquiv CF u` is by definition the restriction to
+`𝓞 CF` of the automorphism `(galEquivZMod p CF).symm u` of `CF`, and
+mathlib's `IsCyclotomicExtension.Rat.galEquivZMod_apply_of_pow_eq` says
+exactly that such an automorphism raises every `p`-th root of unity to
+the power `(u : ZMod p).val`. Proof: inject into `CF` along
+`FaithfulSMul.algebraMap_injective`, apply that lemma, and collapse the
+round trip with `MulEquiv.apply_symm_apply`. -/
+theorem cycGalRingOfIntegersEquiv_apply_of_pow_eq (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (u : (ZMod p)ˣ) {x : 𝓞 CF} (hx : x ^ p = 1) :
+    ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) x = x ^ ((u : ZMod p)).val := by
+  apply FaithfulSMul.algebraMap_injective (𝓞 CF) CF
+  have hxC : (algebraMap (𝓞 CF) CF x) ^ p = 1 := by rw [← map_pow, hx, map_one]
+  rw [map_pow]
+  show ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) (algebraMap (𝓞 CF) CF x) = _
+  rw [IsCyclotomicExtension.Rat.galEquivZMod_apply_of_pow_eq p CF _ hxC,
+    MulEquiv.apply_symm_apply]
+
+/-- **`u ↦ cycGalRingOfIntegersEquiv CF u` is multiplicative** (PROVEN
+2026-07-26): `σ_u ∘ σ_{u'} = σ_{u·u'}`. Both `(galEquivZMod p CF).symm`
+and `RingOfIntegers.mapRingEquiv` are functorial, and the group law on
+`Gal(CF/ℚ)` is composition (`AlgEquiv.mul_apply`). Stated at the level
+of the underlying `RingHom`s because that is the form in which
+`Ideal.map_map` consumes it. -/
+theorem cycGalRingOfIntegersEquiv_comp (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF] (u u' : (ZMod p)ˣ) :
+    ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF).comp
+        (cycGalRingOfIntegersEquiv CF u' : 𝓞 CF →+* 𝓞 CF))
+      = (cycGalRingOfIntegersEquiv CF (u * u') : 𝓞 CF →+* 𝓞 CF) := by
+  refine RingHom.ext fun x => ?_
+  apply FaithfulSMul.algebraMap_injective (𝓞 CF) CF
+  show ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u)
+      (((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u') (algebraMap (𝓞 CF) CF x))
+    = ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm (u * u')) (algebraMap (𝓞 CF) CF x)
+  rw [map_mul, AlgEquiv.mul_apply]
+
+/-- **A `p`-torsion character is carried by `σ_u` to its `u`-th power**
+(PROVEN 2026-07-26): if `ψᵖ = 1` then
+
+`(ψᵃ).ringHomComp σ_u = ψ^{a · (u : ZMod p).val}`.
+
+Both sides are `MulChar`s, so it suffices to compare them on units
+(`MulChar.ext`); there the left side is
+`σ_u((ψ x)ᵃ) = ((ψ x)ᵃ)^{(u).val}` by
+`cycGalRingOfIntegersEquiv_apply_of_pow_eq`, since `ψ x` is a `p`-th
+root of unity. This is what turns the Galois orbit of `ψ` into the
+*powers* of `ψ`, and hence the Galois orbit of the Gauss sums
+`gaussPowOfJacobiSums p (ψᵃ)` into a single orbit indexed by `a`. -/
+theorem ringHomComp_cycGalRingOfIntegersEquiv {F : Type*} [CommRing F] (CF : Type) [Field CF]
+    [NumberField CF] [IsCyclotomicExtension {p} ℚ CF] (ψ : MulChar F (𝓞 CF))
+    (hψp : ψ ^ p = 1) (u : (ZMod p)ˣ) (a : ℕ) :
+    (ψ ^ a).ringHomComp (cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)
+      = ψ ^ (a * ((u : ZMod p)).val) := by
+  refine MulChar.ext fun y => ?_
+  have hy : (ψ y) ^ p = 1 := by
+    have := congrArg (fun χ : MulChar F (𝓞 CF) => χ y) hψp
+    simpa only [MulChar.pow_apply_coe, MulChar.one_apply_coe] using this
+  have hya : ((ψ y) ^ a) ^ p = 1 := by rw [← pow_mul, mul_comm, pow_mul, hy, one_pow]
+  rw [MulChar.ringHomComp_apply, MulChar.pow_apply_coe, MulChar.pow_apply_coe,
+    cycGalRingOfIntegersEquiv_apply_of_pow_eq CF u hya, ← pow_mul]
+
+/-- **STICKELBERGER'S THEOREM, in the sharp Gauss-sum form, AT `a = 1`**
+(SORRY LEAF, cut 2026-07-26; Stickelberger 1890; Washington,
+*Introduction to Cyclotomic Fields*, 2nd ed., §6.1–§6.2 — Lemmas 6.2,
+6.11–6.12, Prop. 6.13 (Stickelberger's congruence), Lemma 6.14,
+Thm. 6.10). **This is now the ONLY open node of the whole Stickelberger
+chain**, and it carries all of its remaining mathematical content.
+
+Let `q` be a nonzero prime of `𝓞 CF` prime to `p`, `Q := #(𝓞 CF ⧸ q)`,
+`d := (Q−1)/p`, and let `ψ` be the `p`-th power residue character at
+`q` in the normalisation `ψ(x) ≡ x^{v·d} (mod q)` for a unit
+`v ∈ (ℤ/p)ˣ`. Then
+
+`(g(ψ)^p) = ∏_w σ_{(−v)·w⁻¹}(q)^{w.val}`,
+
+the left side written WITHOUT Gauss sums as `gaussPowOfJacobiSums p ψ`,
+so that the statement is an identity of ideals of `𝓞 CF` even though
+`g(ψ)` itself lives only in the compositum `CF(ζ_ℓ)`.
+
+**Why the `a`-quantified form is NOT a separate leaf** (2026-07-26).
+The family of statements `S(a) : (g(ψᵃ)^p) = ∏_w σ_{(−v)w⁻¹}(q)^{(aw).val}`
+is a single GALOIS ORBIT: applying `σ_c` to `S(1)` yields exactly
+`S(c)`, because `σ_c` carries `gaussPowOfJacobiSums p ψ` to
+`gaussPowOfJacobiSums p (ψ^{c.val})`
+(`ringHomComp_cycGalRingOfIntegersEquiv`, `map_gaussPowOfJacobiSums`),
+carries `σ_{(−v)w⁻¹}(q)` to `σ_{c(−v)w⁻¹}(q)`
+(`cycGalRingOfIntegersEquiv_comp`, `Ideal.map_map`), and the
+substitution `w ↦ c·w` turns the resulting product back into the one
+`S(c)` asks for — the index `c(−v)(cw)⁻¹` being `(−v)w⁻¹` and the
+exponent `(cw).val` being `(c·w).val`. That deduction is PROVEN in
+`span_gaussPowOfJacobiSums_eq_twistedProd` below, so a prover of this
+leaf may work entirely at `a = 1`.
+
+**Faithfulness, checked numerically 2026-07-26 with PARI/GP** (a third
+independent computation, after the two that fixed the `χ` vs `χ⁻¹`
+normalisation on the Jacobi statement). The `a`-quantified identity was
+verified as an EQUALITY for EVERY `v ∈ (ℤ/p)ˣ` at
+`(p,ℓ) = (5,11), (5,19), (5,3), (7,29), (7,2), (11,3), (13,53)` — i.e.
+residue degrees `f = 1, 2, 3, 4, 5`, split, partially split and inert
+`q`, four different `p`. The companion run confirmed the consumer
+`span_jacobiSum_le_twistedProd` in the same range and for every
+`1 ≤ s < p−1`: 318 cases, no failures. Note the recorded trap:
+`(−v·a)⁻¹` and `(−v)·a⁻¹` differ unless `v = ±1`, and `f > 1` masks the
+difference; the index above is `(−v) · w⁻¹`.
+
+**What a prover must still build**, in dependency order — this is now
+exactly Washington §6.1–§6.2 and NOTHING else, since items 4 and 5 of
+the old list (the Gauss/Jacobi descent and the return to `𝓞 CF`) are
+discharged by `gaussPowOfJacobiSums_mul_jacobiSum_pow` and by the shape
+of this statement:
+
+1. the compositum `L := CF(ζ_ℓ)` for `ℓ` the rational prime under `q`,
+   its ring of integers, and a prime `𝒬 ∣ q` of `𝓞 L` (with
+   `e(𝒬/q) = ℓ−1`, `ℓ` being totally ramified in `ℚ(ζ_ℓ)` and `q`
+   unramified over `ℓ`);
+2. the Gauss sum `g(ψ) = ∑_x ψ(x) η(x) ∈ 𝓞 L` for a nontrivial
+   additive character `η : 𝓞 CF ⧸ q → μ_ℓ` — mathlib's `gaussSum`
+   takes exactly a `MulChar` and an `AddChar`, and
+   `AddChar.FiniteField.primitiveChar` produces `η`;
+3. **Stickelberger's congruence** (Washington Prop. 6.13 / Lemma 6.14):
+   `v_𝒬(g(ψ^{−h}))` is the `ℓ`-adic digit sum of `h`, equivalently
+   `(ℓ−1) ∑_{i<f} {ℓⁱ h/(Q−1)}` — the mathematical core, and what
+   produces the fractional parts defining `θ`. This is the ONLY deep
+   input left;
+4. reading the resulting valuations back as the ideal identity above,
+   which needs `v_{σ(q)}` on `𝓞 CF` versus `v_{σ(𝒬)}` on `𝓞 L` — a
+   ramification-index bookkeeping, `e(𝒬/q)` being independent of `σ`.
+
+**Nothing in items 1–3 exists on this pin** (surveyed 2026-07-26):
+mathlib's `Mathlib/NumberTheory/GaussSum.lean` has no norm, absolute
+value or valuation statement about `gaussSum` at all — only
+`gaussSum_mul_gaussSum_eq_card` and `gaussSum_sq` — and neither
+`Stickelberger` nor any `gaussSum` material appears anywhere in the
+reference project `~/cs/FLT`. What DOES exist and should be used:
+`IsCyclotomicExtension.Rat.ramificationIdx_span_zeta_sub_one'`
+(`= ℓ−1`) and `associated_zeta_sub_one_pow_prime` for item 1,
+`AddChar.FiniteField.primitiveChar` for item 2, and for item 4
+`Ideal.finprod_heightOneSpectrum_factorization`,
+`Associates.eq_of_eq_counts`,
+`IsDedekindDomain.HeightOneSpectrum.intValuation_le_pow_iff_dvd` and
+`multiplicity_map_eq` (valuations are invariant under `Ideal.map` along
+a ring equiv).
+
+An ELEMENTARY partial route (mapped 2026-07-26) disposes of the split
+case with no Gauss sums at all: reducing mod `q` and using
+`∑_{x ∈ 𝔽_Q} xⁿ = −1` iff `(Q−1) ∣ n` (`n > 0`) turns the Jacobi sum
+into a binomial coefficient,
+`J(χ^{−α}, χ^{−β}) ≡ (−1)^{αd+1} · C((p−β)d, αd) (mod q)` for
+`α + β < p`, and `≡ 0 (mod q)` for `α + β > p`. Since
+`α + (αs mod p) > p` is exactly the condition `E = 1`, this settles
+`f = 1` outright (there `d < ℓ`, so Kummer's theorem shows the binomial
+is prime to `ℓ`). For `f > 1` it only decides `v_q ≥ 1` versus `= 0`,
+because `v_q` is then the SUM of the `E`'s over the Frobenius orbit
+`⟨ℓ⟩·α` — which is precisely why item 3 is unavoidable. -/
+theorem span_gaussPowOfJacobiSums_eq_twistedProd_one
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q) (v : (ZMod p)ˣ)
+    (ψ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hψ1 : ψ ≠ 1)
+    (hψp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → ψ x ^ p = 1)
+    (hψcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (ψ x)
+        = x ^ ((v : ZMod p).val * ((Nat.card (𝓞 CF ⧸ q) - 1) / p))) :
+    Ideal.span {gaussPowOfJacobiSums p ψ}
+      = ∏ w : (ZMod p)ˣ,
+          Ideal.map ((cycGalRingOfIntegersEquiv CF ((-v) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q
+            ^ (((w : (ZMod p)ˣ) : ZMod p)).val :=
+  sorry
+
+/-- **STICKELBERGER'S THEOREM, in the sharp Gauss-sum form** (PROVEN
+2026-07-26 over `span_gaussPowOfJacobiSums_eq_twistedProd_one`, the
+`a = 1` case; Stickelberger 1890; Washington, *Introduction to
 Cyclotomic Fields*, 2nd ed., §6.1–§6.2 — Lemmas 6.2, 6.11–6.12,
 Prop. 6.13 (Stickelberger's congruence), Lemma 6.14, Thm. 6.10).
 
@@ -20600,40 +20776,28 @@ residue degrees `f = 1, 2, 3, 4, 5`, split, partially split and inert
 `(−v·a)⁻¹` and `(−v)·a⁻¹` differ unless `v = ±1`, and `f > 1` masks the
 difference; the index above is `(−v) · w⁻¹`.
 
-**What a prover must still build**, in dependency order — this is now
-exactly Washington §6.1–§6.2 and NOTHING else, since items 4 and 5 of
-the old list (the Gauss/Jacobi descent and the return to `𝓞 CF`) are
-discharged by `gaussPowOfJacobiSums_mul_jacobiSum_pow` and by the shape
-of this statement:
+**PROOF** (2026-07-26). The whole `a`-indexed family is a single GALOIS
+ORBIT, so only `a = 1` carries content; that case is the leaf
+`span_gaussPowOfJacobiSums_eq_twistedProd_one` above, whose docstring
+holds the Washington §6.1–§6.2 roadmap (Stickelberger's congruence,
+Prop. 6.13 / Lemma 6.14, being the only deep input) and the survey of
+what this pin does and does not already supply.
 
-1. the compositum `L := CF(ζ_ℓ)` for `ℓ` the rational prime under `q`,
-   its ring of integers, and a prime `𝒬 ∣ q` of `𝓞 L` (with
-   `e(𝒬/q) = ℓ−1`, `ℓ` being totally ramified in `ℚ(ζ_ℓ)` and `q`
-   unramified over `ℓ`);
-2. the Gauss sum `g(ψᵃ) = ∑_x ψᵃ(x) η(x) ∈ 𝓞 L` for a nontrivial
-   additive character `η : 𝓞 CF ⧸ q → μ_ℓ` — mathlib's `gaussSum`
-   takes exactly a `MulChar` and an `AddChar`, and
-   `AddChar.FiniteField.primitiveChar` produces `η`;
-3. **Stickelberger's congruence** (Washington Prop. 6.13 / Lemma 6.14):
-   `v_𝒬(g(ψ^{−h}))` is the `ℓ`-adic digit sum of `h`, equivalently
-   `(ℓ−1) ∑_{i<f} {ℓⁱ h/(Q−1)}` — the mathematical core, and what
-   produces the fractional parts defining `θ`. This is the ONLY deep
-   input left;
-4. reading the resulting valuations back as the ideal identity above,
-   which needs `v_{σ(q)}` on `𝓞 CF` versus `v_{σ(𝒬)}` on `𝓞 L` — a
-   ramification-index bookkeeping, `e(𝒬/q)` being independent of `σ`.
-
-An ELEMENTARY partial route (mapped 2026-07-26) disposes of the split
-case with no Gauss sums at all: reducing mod `q` and using
-`∑_{x ∈ 𝔽_Q} xⁿ = −1` iff `(Q−1) ∣ n` (`n > 0`) turns the Jacobi sum
-into a binomial coefficient,
-`J(χ^{−α}, χ^{−β}) ≡ (−1)^{αd+1} · C((p−β)d, αd) (mod q)` for
-`α + β < p`, and `≡ 0 (mod q)` for `α + β > p`. Since
-`α + (αs mod p) > p` is exactly the condition `E = 1`, this settles
-`f = 1` outright (there `d < ℓ`, so Kummer's theorem shows the binomial
-is prime to `ℓ`). For `f > 1` it only decides `v_q ≥ 1` versus `= 0`,
-because `v_q` is then the SUM of the `E`'s over the Frobenius orbit
-`⟨ℓ⟩·α` — which is precisely why item 3 is unavoidable. -/
+The deduction: let `c` be the unit of `ZMod p` represented by `a` — it
+is one because `1 ≤ a < p` and `p` is prime — and apply `Ideal.map σ_c`
+to the `a = 1` identity. The generator moves by
+`map_gaussPowOfJacobiSums` followed by
+`ringHomComp_cycGalRingOfIntegersEquiv`, which rewrites
+`ψ.ringHomComp σ_c` as `ψ^{(c : ZMod p).val} = ψᵃ` (here `ψᵖ = 1`,
+which is `hψp` read as an identity of characters). Each factor moves by
+`Ideal.map_pow` and `Ideal.map_map` followed by
+`cycGalRingOfIntegersEquiv_comp`, which rewrites `σ_c ∘ σ_{(−v)w⁻¹}` as
+`σ_{c(−v)w⁻¹}`; `Ideal.map` passes through the finite product because
+it is the underlying map of the ring hom `Ideal.mapHom σ_c`. Finally
+re-index by `w ↦ c·w` (`Equiv.prod_comp (Equiv.mulLeft c)`): the index
+returns to `(−v)w⁻¹`, since `c·((−v)·(c·w)⁻¹) = (−v)·w⁻¹` in the
+ABELIAN group `(ZMod p)ˣ`, and the exponent `w.val` becomes
+`(c·w).val = ((a : ZMod p)·w).val`, which is the claim. -/
 theorem span_gaussPowOfJacobiSums_eq_twistedProd
     (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
     {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
@@ -20647,8 +20811,56 @@ theorem span_gaussPowOfJacobiSums_eq_twistedProd
     Ideal.span {gaussPowOfJacobiSums p (ψ ^ a)}
       = ∏ w : (ZMod p)ˣ,
           Ideal.map ((cycGalRingOfIntegersEquiv CF ((-v) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q
-            ^ (((a : ZMod p) * ((w : (ZMod p)ˣ) : ZMod p)).val) :=
-  sorry
+            ^ (((a : ZMod p) * ((w : (ZMod p)ˣ) : ZMod p)).val) := by
+  -- `ψ ^ p = 1` as an identity of characters
+  have hψpow : ψ ^ p = 1 := by
+    refine MulChar.ext fun y => ?_
+    rw [MulChar.pow_apply_coe, MulChar.one_apply_coe]
+    exact hψp _ (Units.ne_zero y)
+  -- the unit `c` of `ZMod p` represented by `a`
+  have hane : ((a : ZMod p)) ≠ 0 := by
+    rw [Ne, ZMod.natCast_eq_zero_iff]
+    exact Nat.not_dvd_of_pos_of_lt (by omega) hap
+  obtain ⟨c, hcv⟩ : ∃ c : (ZMod p)ˣ, ((c : (ZMod p)ˣ) : ZMod p) = (a : ZMod p) :=
+    ⟨(isUnit_iff_ne_zero.mpr hane).unit, IsUnit.unit_spec _⟩
+  have hcval : (((c : (ZMod p)ˣ) : ZMod p)).val = a := by
+    rw [hcv, ZMod.val_natCast_of_lt hap]
+  -- apply `Ideal.map σ_c` to the `a = 1` case
+  have key := congrArg (Ideal.map ((cycGalRingOfIntegersEquiv CF c : 𝓞 CF →+* 𝓞 CF)))
+    (span_gaussPowOfJacobiSums_eq_twistedProd_one CF hq hq0 hpq v ψ hψ1 hψp hψcong)
+  rw [Ideal.map_span] at key
+  simp only [Set.image_singleton] at key
+  have hC := ringHomComp_cycGalRingOfIntegersEquiv CF ψ hψpow c 1
+  rw [pow_one, one_mul, hcval] at hC
+  rw [map_gaussPowOfJacobiSums, hC] at key
+  rw [key]
+  -- push `Ideal.map σ_c` through the product, then re-index by `w ↦ c · w`
+  rw [show (Ideal.map ((cycGalRingOfIntegersEquiv CF c : 𝓞 CF →+* 𝓞 CF))
+      (∏ w : (ZMod p)ˣ,
+        Ideal.map ((cycGalRingOfIntegersEquiv CF ((-v) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q
+          ^ (((w : (ZMod p)ˣ) : ZMod p)).val))
+    = ∏ w : (ZMod p)ˣ,
+        Ideal.map ((cycGalRingOfIntegersEquiv CF (c * ((-v) * w⁻¹)) : 𝓞 CF →+* 𝓞 CF)) q
+          ^ (((w : (ZMod p)ˣ) : ZMod p)).val from ?_]
+  · have hidx : ∀ w : (ZMod p)ˣ, c * ((-v) * (c * w)⁻¹) = (-v) * w⁻¹ := by
+      intro w
+      rw [mul_inv, ← mul_assoc, mul_comm c ((-v) : (ZMod p)ˣ), mul_assoc,
+        ← mul_assoc c c⁻¹ w⁻¹, mul_inv_cancel, one_mul]
+    rw [← Equiv.prod_comp (Equiv.mulLeft c)]
+    refine Finset.prod_congr rfl fun w _ => ?_
+    simp only [Equiv.coe_mulLeft, Units.val_mul, hcv]
+    rw [hidx w]
+  · have hmp : Ideal.map ((cycGalRingOfIntegersEquiv CF c : 𝓞 CF →+* 𝓞 CF))
+        (∏ w : (ZMod p)ˣ,
+          Ideal.map ((cycGalRingOfIntegersEquiv CF ((-v) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q
+            ^ (((w : (ZMod p)ˣ) : ZMod p)).val)
+      = ∏ w : (ZMod p)ˣ, Ideal.map ((cycGalRingOfIntegersEquiv CF c : 𝓞 CF →+* 𝓞 CF))
+          (Ideal.map ((cycGalRingOfIntegersEquiv CF ((-v) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q
+            ^ (((w : (ZMod p)ˣ) : ZMod p)).val) :=
+      map_prod (Ideal.mapHom _) _ _
+    rw [hmp]
+    refine Finset.prod_congr rfl fun w _ => ?_
+    rw [Ideal.map_pow, Ideal.map_map, cycGalRingOfIntegersEquiv_comp]
 
 /-- **THE GAUSS-SUM LEAF of the Stickelberger cut, in its DIVISIBILITY
 form: the ideal that DIVIDES one Jacobi sum** (PROVEN 2026-07-26 over
@@ -21088,15 +21300,20 @@ theorem as a hypothesis. Items 3–6, the Gauss-sum core, were a single
 opaque `sorry` here until 2026-07-26; they are now cut into TWO
 narrower leaves plus proven bookkeeping:
 
-* `span_gaussPowOfJacobiSums_eq_twistedProd` (SORRY LEAF, cut
-  2026-07-26) — Stickelberger's theorem in its sharp Gauss-sum form,
-  `(g(ψᵃ)^p) = ∏_w σ_{(−v)w⁻¹}(q)^{(aw).val}` for `1 ≤ a < p`, with
-  `g(ψᵃ)^p` written WITHOUT Gauss sums as `gaussPowOfJacobiSums`. What
-  is left in it is the compositum `CF(ζ_ℓ)` and Stickelberger's
-  congruence (Washington Prop. 6.13 / Lemma 6.14) — and nothing else:
-  the descent and the return to `𝓞 CF` are discharged by
-  `gaussPowOfJacobiSums_mul_jacobiSum_pow`. Its docstring itemises the
-  remainder and records the PARI/GP faithfulness check.
+* `span_gaussPowOfJacobiSums_eq_twistedProd_one` (SORRY LEAF, cut
+  2026-07-26) — Stickelberger's theorem in its sharp Gauss-sum form at
+  `a = 1`, `(g(ψ)^p) = ∏_w σ_{(−v)w⁻¹}(q)^{w.val}`, with `g(ψ)^p`
+  written WITHOUT Gauss sums as `gaussPowOfJacobiSums`. What is left in
+  it is the compositum `CF(ζ_ℓ)` and Stickelberger's congruence
+  (Washington Prop. 6.13 / Lemma 6.14) — and nothing else: the descent
+  and the return to `𝓞 CF` are discharged by
+  `gaussPowOfJacobiSums_mul_jacobiSum_pow`, and the `a`-quantifier by
+  the Galois-orbit argument below. Its docstring itemises the remainder,
+  records the PARI/GP faithfulness check, and surveys what this pin does
+  and does not already supply.
+* `span_gaussPowOfJacobiSums_eq_twistedProd` (PROVEN 2026-07-26 from the
+  leaf above) — the same identity for every `1 ≤ a < p`, obtained by
+  applying `Ideal.map σ_a` to the `a = 1` case.
 * `span_jacobiSum_le_twistedProd` (PROVEN 2026-07-26 from the leaf
   above) — that the Stickelberger divisor DIVIDES ONE Jacobi sum
   `J(ψ, ψˢ)`, for `1 ≤ s`, `s + 1 < p`. In fact an equality; the
@@ -29564,32 +29781,167 @@ leaf. The duplicate declaration that stood here was removed at
 integration (2026-07-26): the fact is proven once and consumed twice,
 here and in `exists_newformFactor_modularHeckeAlgebraQ`. -/
 
-/-- **The Weil bound for a weight-two newform** (sorry node, NINTH
-decomposition 2026-07-26 — cut out of `ModularTateGaloisData` below,
-where it was buried inside `irred_eigenspace`): the `q`-expansion
-coefficients of a normalized weight-two newform of level `M` satisfy
-`|a_q| ≤ 2√q` at every prime.
+/-- **The Weil bound at a GOOD prime** (sorry node, TENTH decomposition
+2026-07-26 — the deep third of `norm_qCoeff_le_two_mul_sqrt` below): at
+a prime `q ∤ M` the `q`-th coefficient of a normalized weight-two
+newform of level `M` splits as `a_q = α + β` with `|α| = |β| = √q`.
+
+Classical content, and the reason this is THE hard case. By
+Eichler–Shimura (Diamond–Shurman Theorem 8.7.2) `a_q` is the trace of
+`Frob_q` acting on the `ℓ`-adic Tate module of `J₀(M)`, and `α, β` are
+the two eigenvalues of `Frob_q` on the `g`-isotypic part — the roots of
+the Hecke polynomial `X² − a_q X + q`. That `|α| = |β| = √q` is the
+**Riemann hypothesis for curves over finite fields** (Weil), applied to
+the good reduction `X₀(M)/𝔽_q`; equivalently it is the Hasse–Weil bound
+`|#X₀(M)(𝔽_q) − q − 1| ≤ 2g√q`. For weight two this is a THEOREM, not
+the Ramanujan–Petersson conjecture — Deligne is needed only for `k > 2`.
+
+Stated as a splitting rather than as the inequality on purpose: the
+inequality is then one triangle-inequality step, and the arithmetic
+content (`αβ = q`, forced by `|α| = |β| = √q` together with the Hecke
+recursion) stays where it belongs. Note the roots are automatically
+complex conjugates here, since `a_q` is real; the statement does not
+need to say so.
+
+Missing from the pin: Weil RH for curves, the good reduction of `X₀(M)`
+at `q ∤ M` (Igusa), and the Eichler–Shimura relation. -/
+theorem exists_frobRoots_qCoeff_of_not_dvd {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) :
+    ∃ α β : ℂ, qCoeff M g q = α + β ∧
+      ‖α‖ = Real.sqrt q ∧ ‖β‖ = Real.sqrt q :=
+  sorry
+
+/-- **Atkin–Lehner at a prime EXACTLY dividing the level** (sorry node,
+TENTH decomposition 2026-07-26): for `q ‖ M` the `q`-th coefficient of a
+normalized weight-two newform has absolute value `1`.
+
+Classical content (Atkin–Lehner; Diamond–Shurman §5.8, Theorem 5.8.2
+together with the `U_q`-eigenvalue computation): at a prime exactly
+dividing the level of a newform of weight `k` and trivial nebentypus,
+`a_q = ±q^{k/2−1}`, so `|a_q| = q^{k/2−1}`. At **weight two** the
+exponent is `0` and the value is `±1` — NOT `√q`. The elliptic-curve
+shadow of this is the familiar `a_q = +1` at split and `−1` at
+nonsplit multiplicative reduction; `X₀(11)` with `a₁₁ = 1` is the
+smallest instance.
+
+This case involves **no Weil RH at all** — the eigenvalue is pinned by
+the Atkin–Lehner involution `W_q`, whose eigenvalue on a newform is
+`−a_q` at weight two — which is exactly why it is a leaf separate from
+`exists_frobRoots_qCoeff_of_not_dvd`.
+
+NUMERICAL CONFIRMATION (PARI/GP, 2026-07-26, as an untrusted searcher —
+not a proof, but enough to have caught the docstring error this cut
+repairs). All three cases of the trichotomy were checked against twelve
+weight-two newforms realized as elliptic curves of conductors
+`11, 14, 15, 20, 24, 27, 32, 36, 37, 49, 50, 1666`, at every prime
+`q ≤ 60`: zero violations of `a_q = 0` at `q² ∣ N`, of `|a_q| = 1` at
+`q ‖ N`, and of `|a_q| ≤ 2√q` at `q ∤ N`. The single datum
+`N = 11, q = 11, a₁₁ = 1` already refutes the `|a_q| = √q` that the
+ninth cut's docstring asserted here, since `√11 ≈ 3.317`.
+
+Missing from the pin: the `U_q` and `W_q` operators and Atkin–Lehner
+theory for the `q`-old/`q`-new decomposition. -/
+theorem norm_qCoeff_eq_one_of_exactly_dvd {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM : q ∣ M) (hqM2 : ¬ q ^ 2 ∣ M) :
+    ‖qCoeff M g q‖ = 1 :=
+  sorry
+
+/-- **Atkin–Lehner at a prime whose SQUARE divides the level** (sorry
+node, TENTH decomposition 2026-07-26): for `q² ∣ M` the `q`-th
+coefficient of a normalized weight-two newform vanishes.
+
+Classical content (Atkin–Lehner; Diamond–Shurman Theorem 5.8.2 and the
+local-representation description): when `q² ∣ M` the local component of
+the automorphic representation at `q` is supercuspidal or a ramified
+principal series, and the `U_q`-eigenvalue on the newvector is `0`. The
+elliptic-curve shadow is additive reduction, where `a_q = 0`.
+
+The cheapest of the three cases in the trichotomy, and the only one
+whose conclusion is an equation rather than an estimate; it discharges
+the bound trivially since `0 ≤ 2√q`.
+
+Missing from the pin: the same Atkin–Lehner theory as the previous
+leaf. -/
+theorem qCoeff_eq_zero_of_sq_dvd {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) (hqM2 : q ^ 2 ∣ M) :
+    qCoeff M g q = 0 :=
+  sorry
+
+/-- **The Weil bound for a weight-two newform** (PROVEN 2026-07-26 as
+the TENTH decomposition — an ASSEMBLY over the three prime cases above;
+it was a sorry node from the NINTH decomposition, which cut it out of
+`ModularTateGaloisData` below, where it was buried inside
+`irred_eigenspace`): the `q`-expansion coefficients of a normalized
+weight-two newform of level `M` satisfy `|a_q| ≤ 2√q` at every prime.
 
 Classical content (Diamond–Shurman Theorem 5.9.1; Eichler–Shimura,
 i.e. the Hasse–Weil bound for the abelian variety `J₀(M)` — for weight
 two this is a THEOREM, not the Ramanujan–Petersson conjecture): at a
 prime `q ∤ M` one writes `a_q = α + β` with `αβ = q` and
 `|α| = |β| = √q`, giving `|a_q| ≤ 2√q`; at `q ‖ M` one has
-`|a_q| = √q`, and at `q² ∣ M` one has `a_q = 0`. So the stated bound
+`|a_q| = 1`, and at `q² ∣ M` one has `a_q = 0`. So the stated bound
 holds at EVERY prime and no divisibility hypothesis is needed — which
 is why the leaf is stated without one.
+
+DOCSTRING CORRECTION (2026-07-26, TENTH cut). The ninth cut's version of
+this paragraph asserted `|a_q| = √q` at `q ‖ M`. **That is false.** The
+general Atkin–Lehner value at a prime exactly dividing the level is
+`|a_q| = q^{k/2−1}`, which at weight `k = 2` is `q⁰ = 1`, not `q^{1/2}`.
+The elliptic-curve case is the counterexample to keep in mind: `X₀(11)`
+has `a₁₁ = 1` while `√11 ≈ 3.317`, and generally a curve with
+multiplicative reduction at `q` has `a_q = ±1` (split / nonsplit). The
+LEAF STATEMENT was never affected — `1 ≤ 2√q` for every prime `q` — so
+only the justification was wrong; it is corrected here and split out as
+`norm_qCoeff_eq_one_of_exactly_dvd` below, where the correct value is
+now the statement a successor must prove.
 
 Missing from the pin: the Eichler–Shimura relation and the Riemann
 hypothesis for curves over finite fields. This is a purely ANALYTIC
 statement about `q`-expansions — no Galois representation and no
 modular-curve geometry appears in it — which is exactly why it is
 worth having as a leaf of its own rather than as a clause buried in
-the arithmetic leaf below. -/
+the arithmetic leaf below.
+
+THE TENTH CUT, EXECUTED HERE (2026-07-26). The bound is no longer a
+leaf: it is an ASSEMBLY over the three prime cases, which rest on
+GENUINELY DIFFERENT mathematics and are therefore independently
+dispatchable, exactly as the ninth cut separated this bound from Ribet
+irreducibility:
+
+* `q ∤ M` — `exists_frobRoots_qCoeff_of_not_dvd`, the deep case: the
+  Riemann hypothesis for curves over finite fields (Weil), reached
+  through the Eichler–Shimura relation;
+* `q ‖ M` — `norm_qCoeff_eq_one_of_exactly_dvd`: Atkin–Lehner theory
+  for the `U_q`-eigenvalue, no Weil RH involved;
+* `q² ∣ M` — `qCoeff_eq_zero_of_sq_dvd`: Atkin–Lehner again, and the
+  cheapest of the three.
+
+Only the last two touch the level, so the trichotomy is the natural
+partition and nothing is duplicated across it. The assembly below is
+PROVEN: the triangle inequality in the good case, and `1 ≤ 2√q` (from
+`q ≥ 2`) in the two bad ones. -/
 theorem norm_qCoeff_le_two_mul_sqrt {M : ℕ} (hM : 0 < M)
     (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
     {q : ℕ} (hq : q.Prime) :
-    ‖qCoeff M g q‖ ≤ 2 * Real.sqrt q :=
-  sorry
+    ‖qCoeff M g q‖ ≤ 2 * Real.sqrt q := by
+  have hq1 : (1 : ℝ) ≤ Real.sqrt q := by
+    have h1 : (1 : ℝ) ≤ (q : ℝ) := by exact_mod_cast hq.one_lt.le
+    calc (1 : ℝ) = Real.sqrt 1 := Real.sqrt_one.symm
+      _ ≤ Real.sqrt q := Real.sqrt_le_sqrt h1
+  by_cases hdvd : q ∣ M
+  · by_cases hsq : q ^ 2 ∣ M
+    · rw [qCoeff_eq_zero_of_sq_dvd hM g hg hq hsq, norm_zero]
+      linarith
+    · rw [norm_qCoeff_eq_one_of_exactly_dvd hM g hg hq hdvd hsq]
+      linarith
+  · obtain ⟨α, β, hsum, hα, hβ⟩ :=
+      exists_frobRoots_qCoeff_of_not_dvd hM g hg hq hdvd
+    rw [hsum]
+    calc ‖α + β‖ ≤ ‖α‖ + ‖β‖ := norm_add_le _ _
+      _ = 2 * Real.sqrt q := by rw [hα, hβ]; ring
 
 /-- **Ribet irreducibility, as a theorem about the frame** (sorry node,
 NINTH decomposition 2026-07-26): the `κ`-eigencomponent of the concrete
@@ -29632,9 +29984,10 @@ the weight-two trivial-nebentypus case; see also Ribet, *Invent. Math.*
    identifies `det ρ` with the `p`-adic cyclotomic character.
 5. `hcomm` is what makes `E` Galois-stable in the first place, so that
    `ρ` exists at all.
-6. Both `δᵢ` are unramified outside `S`, so by global class field
-   theory over `ℚ` each is a finite-order character times an integral
-   power of the cyclotomic character, and step 4 forces the two
+6. Both `δᵢ` are unramified outside `S`, and each is a finite-order
+   character times an integral power of the cyclotomic character — see
+   the STEP 6 CORRECTION below for what that actually requires, because
+   unramifiedness alone does NOT give it. Step 4 forces the two
    exponents to sum to one. Hence `κ(a_q) = δ₁(Frob_q) + δ₂(Frob_q)`
    is, up to roots of unity, of shape `1 + q`: an algebraic number
    whose archimedean absolute value grows like `q`. That contradicts
@@ -29643,15 +29996,61 @@ the weight-two trivial-nebentypus case; see also Ribet, *Invent. Math.*
    `Fermat/FLT/GaloisRepresentation/Chebotarev.lean`) supplies
    infinitely many such `q ∉ S`.
 
+STEP 6 CORRECTION (2026-07-26, TENTH cut — the previous version of this
+docstring stated step 6 as bare class field theory, and **as stated that
+is false**; a successor following it would have set out to prove a false
+lemma).
+
+The claim "a continuous character `δ : Γℚ → ℚ̄_pˣ` unramified outside a
+finite set `S` is a finite-order character times an integral power of
+`χ_cyc`" is FALSE. Explicit counterexample: `χ_cyc` is itself unramified
+outside `{p}` and lands in `ℤ_pˣ ≅ μ_{p−1} × (1 + pℤ_p) ≅ μ_{p−1} × ℤ_p`;
+composing it with any continuous `ℤ_p → ℚ̄_pˣ`, `x ↦ u^x = exp(x log u)`
+for `u` close enough to `1`, gives a continuous character unramified
+outside `{p}`. Taking `u = (1+p)^s` yields `⟨χ_cyc⟩^s` for arbitrary
+`s ∈ ℤ_p`, and for `s ∈ ℤ_p ∖ ℤ` this is neither of finite order nor an
+integral power of `χ_cyc` times one. The wildness sits entirely at `p`:
+away from `p` the argument really is CFT, since a continuous map from a
+pro-`ℓ` group to `ℚ̄_pˣ` with `ℓ ≠ p` has finite image.
+
+So the classification needs ONE further input beyond unramifiedness, and
+there are two standard ones:
+
+* **Algebraicity of the Frobenius values** (Serre, *Abelian ℓ-adic
+  Representations and Elliptic Curves*, Ch. III §§1–3): a character
+  unramified outside `S` whose Frobenius values are algebraic of bounded
+  height is locally algebraic, hence of type `A₀`. **This is the route
+  available HERE**, and it is why the leaf needs no new hypothesis:
+  `δ₁(Frob_q)` and `δ₂(Frob_q)` are the two roots of
+  `X² − κ(a_q)·X + q`, whose coefficients are images under `κ` of
+  elements of `heckeField M g` — a NUMBER FIELD, by
+  `heckeField_finiteDimensional`. The algebraicity is therefore already
+  in the hypotheses, carried by `κ`, and a successor should use it.
+* **Hodge–Tate-ness** (Tate): a Hodge–Tate character of `Γℚ` is
+  finite-order times `χ_cyc^n`. This is the route taken in Ribet's own
+  write-up, where `ρ` is the Tate module of an abelian variety and hence
+  de Rham. It is NOT available here: this leaf deliberately hypothesizes
+  only that `τJ` is a continuous `GaloisRep` with the congruence and
+  pairing properties, and says nothing about `p`-adic Hodge theory — by
+  design, since the whole point of the ninth cut was to keep the
+  geometry out.
+
+The correction does not weaken the leaf and does not make it false; it
+identifies which of two classical theorems a successor must formalize,
+and rules out the one that this statement's hypotheses cannot support.
+
 Missing from the pin, and the reason this is still a leaf: the Weil
-bound itself is the separate leaf `norm_qCoeff_le_two_mul_sqrt` above
-(so it enters here as the hypothesis `hweil`), and the classification
-of continuous `ℚ̄_pˣ`-valued characters of `Γℚ` unramified outside a
-finite set — global class field theory over `ℚ` — is not available
-either. Steps 1, 2, 4 and 5 are linear algebra over the frame and step
-3 is reachable from the pin today; step 6 is the genuinely missing
-half, and a successor should attack it there rather than at the whole
-statement.
+bound enters as the hypothesis `hweil`, supplied by
+`norm_qCoeff_le_two_mul_sqrt` above — which since the TENTH cut is
+itself PROVEN, as an assembly over the three prime cases
+`exists_frobRoots_qCoeff_of_not_dvd`, `norm_qCoeff_eq_one_of_exactly_dvd`
+and `qCoeff_eq_zero_of_sq_dvd`; and the classification of continuous
+`ℚ̄_pˣ`-valued characters of `Γℚ` unramified outside a finite set — in
+the corrected, locally-algebraic form above, NOT bare class field
+theory — is not available either. Steps 1, 2, 4 and 5 are linear
+algebra over the frame and step 3 is reachable from the pin today;
+step 6 is the genuinely missing half, and a successor should attack it
+there rather than at the whole statement.
 
 FAITHFULNESS: the conclusion is VERBATIM the `irred_eigenspace` field
 that stood in `ModularTateGaloisData` until this cut, with the
