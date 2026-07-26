@@ -2924,6 +2924,128 @@ theorem nonempty_ringHom_padic_of_isTotallySplitAt
     rw [IsTotallySplitAt] at hsplit; omega
   exact (Nat.card_ne_zero.mp hne).1
 
+/-- **Every ring map between `ℚ`-algebras that are fields is a `ℚ`-algebra map**
+(PROVEN glue). `ℚ →+* B` is a subsingleton (`Rat.subsingleton_ringHom`), so the
+compatibility square of a bare ring homomorphism with the two `ℚ`-structures
+commutes automatically and no hypothesis is needed. Used to view the lift of an
+embedding to `AlgebraicClosure F` as a `ℚ`-algebra map, which is the form in
+which `normalClosure_le_iff` consumes it. -/
+def ratAlgHomOfRingHom {A B : Type*} [Field A] [Field B] [Algebra ℚ A] [Algebra ℚ B]
+    (f : A →+* B) : A →ₐ[ℚ] B where
+  __ := f
+  commutes' r :=
+    RingHom.congr_fun (Subsingleton.elim (f.comp (algebraMap ℚ A)) (algebraMap ℚ B)) r
+
+/-- **An embedding all of whose values lie in the range of `ι` factors through `ι`**
+(PROVEN glue). `ι` is a map of fields, hence injective, so `ι` corestricts to a ring
+isomorphism onto its `fieldRange` (`RingHom.rangeRestrictFieldEquiv`); composing `θ`'s
+corestriction with the inverse produces the factor. This is the bridge from the
+"image lands in `ℚ_[p]`" form of complete splitting back to an actual element of
+`X →+* ℚ_[p]`, which is what `IsTotallySplitAt` counts. -/
+theorem exists_ringHom_comp_of_forall_exists {X R Ω : Type*} [Field X] [Field R] [Field Ω]
+    (ι : R →+* Ω) (θ : X →+* Ω) (h : ∀ x, ∃ r, ι r = θ x) :
+    ∃ φ : X →+* R, ι.comp φ = θ := by
+  have h' : ∀ x, θ x ∈ ι.fieldRange := fun x => h x
+  refine ⟨(ι.rangeRestrictFieldEquiv.symm : ι.fieldRange ≃+* R).toRingHom.comp
+    (θ.codRestrict _ h'), ?_⟩
+  ext x
+  simp
+
+/-- **The embedding-theoretic form of complete splitting** (PROVEN). `X` is totally
+split at `p` — i.e. `Nat.card (X →+* ℚ_[p]) = [X : ℚ]` — exactly when EVERY embedding
+of `X` into an algebraic closure `Ω` of `ℚ_[p]` already takes its values inside
+`ℚ_[p]`.
+
+WHY. `NumberField.Embeddings.card` gives `Nat.card (X →+* Ω) = [X : ℚ]` for any
+algebraically closed field `Ω` of characteristic zero (`X/ℚ` is finite separable, so
+it has exactly `[X : ℚ]` embeddings into an algebraically closed field, one for each
+root of a primitive element's minimal polynomial). Post-composition with
+`ℚ_[p] ↪ Ω` is an injection `(X →+* ℚ_[p]) ↪ (X →+* Ω)`, so the two cardinalities
+agree precisely when that injection is onto — which is the stated condition.
+
+This is the characterisation the Galois-closure step runs on: unlike
+`Nat.card`, "every embedding into `Ω` lands in `ℚ_[p]`" is manifestly stable under
+precomposition by a conjugation and under passing to a compositum. -/
+theorem isTotallySplitAt_iff_forall_exists_padic
+    (X : Type*) [Field X] [NumberField X] (p : ℕ) [Fact p.Prime] :
+    IsTotallySplitAt X p ↔ ∀ (θ : X →+* AlgebraicClosure ℚ_[p]) (x : X),
+      ∃ r : ℚ_[p], algebraMap ℚ_[p] (AlgebraicClosure ℚ_[p]) r = θ x := by
+  classical
+  set Ω := AlgebraicClosure ℚ_[p]
+  set ι : ℚ_[p] →+* Ω := algebraMap ℚ_[p] Ω
+  set Φ : (X →+* ℚ_[p]) → (X →+* Ω) := fun φ => ι.comp φ
+  haveI : CharZero Ω := inferInstance
+  have hΦ : Function.Injective Φ := by
+    intro a b hab
+    ext x
+    exact ι.injective (RingHom.congr_fun hab x)
+  haveI : Finite (X →+* ℚ_[p]) := Finite.of_injective Φ hΦ
+  have hcard : Nat.card (X →+* Ω) = Module.finrank ℚ X := by
+    rw [Nat.card_eq_fintype_card]
+    exact NumberField.Embeddings.card X Ω
+  constructor
+  · intro hs θ x
+    have hb : Function.Bijective Φ :=
+      (Nat.bijective_iff_injective_and_card Φ).2 ⟨hΦ, by rw [hcard, hs]⟩
+    obtain ⟨φ, hφ⟩ := hb.2 θ
+    exact ⟨φ x, by rw [← hφ]; rfl⟩
+  · intro hmem
+    have hsurj : Function.Surjective Φ :=
+      fun θ => exists_ringHom_comp_of_forall_exists ι θ (hmem θ)
+    have hbij := Nat.card_eq_of_bijective Φ ⟨hΦ, hsurj⟩
+    rw [IsTotallySplitAt, hbij, hcard]
+
+/-- **Conjugation- and compositum-stability of "the image lands in `R`", in one step**
+(PROVEN — this is the mathematical heart of the Galois-closure leaf below).
+
+Let `F` be a number field, `Ω` an algebraically closed `ℚ`-algebra and
+`R ⊆ Ω` an intermediate field. If EVERY embedding `F →+* Ω` takes its values in `R`,
+then so does every embedding of the normal closure `E` of `F` (taken inside
+`AlgebraicClosure F`).
+
+PROOF. Extend the given `ψ : E →+* Ω` to `ψ̂ : AlgebraicClosure F →ₐ[ℚ] Ω`, which is
+possible because `AlgebraicClosure F` is algebraic over `E` (it is algebraic over `ℚ`,
+`F/ℚ` being finite) and `Ω` is algebraically closed (`IsAlgClosed.lift`). By
+definition `E = ⨆ f : F →ₐ[ℚ] AlgebraicClosure F, f.fieldRange` is the SMALLEST
+intermediate field containing every conjugate of `F`, so by `normalClosure_le_iff`
+it suffices to see that each conjugate lands in the intermediate field
+`R.comap ψ̂` — and for `a : F` the value `ψ̂ (f a)` is the value at `a` of the
+embedding `ψ̂ ∘ f : F →+* Ω`, hence lies in `R` by hypothesis. The point is that the
+hypothesis is a statement about the ABSTRACT field `F`, so it applies verbatim to
+every conjugate; and that an intermediate field is closed under the field operations,
+so the compositum inherits it.
+
+Applied twice below: with `Ω = ℂ`, `R = ℝ` it propagates total reality, and with
+`Ω = AlgebraicClosure ℚ_[p]`, `R = ℚ_[p]` it propagates complete splitting. -/
+theorem mem_of_ringHom_normalClosure_of_forall (F : Type u) [Field F] [NumberField F]
+    {Ω : Type v} [Field Ω] [Algebra ℚ Ω] [IsAlgClosed Ω]
+    (R : IntermediateField ℚ Ω)
+    (hF : ∀ (θ : F →+* Ω) (x : F), θ x ∈ R)
+    (ψ : ↥(IntermediateField.normalClosure ℚ F (AlgebraicClosure F)) →+* Ω)
+    (y : ↥(IntermediateField.normalClosure ℚ F (AlgebraicClosure F))) :
+    ψ y ∈ R := by
+  classical
+  haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure F) :=
+    Algebra.IsAlgebraic.trans (R := ℚ) (S := F) (A := AlgebraicClosure F)
+  letI : Algebra ↥(IntermediateField.normalClosure ℚ F (AlgebraicClosure F)) Ω := ψ.toAlgebra
+  haveI : Algebra.IsAlgebraic
+      ↥(IntermediateField.normalClosure ℚ F (AlgebraicClosure F)) (AlgebraicClosure F) :=
+    Algebra.IsAlgebraic.tower_top (K := ℚ)
+      (L := ↥(IntermediateField.normalClosure ℚ F (AlgebraicClosure F)))
+      (A := AlgebraicClosure F)
+  let ψ' : AlgebraicClosure F →ₐ[↥(IntermediateField.normalClosure ℚ F (AlgebraicClosure F))] Ω :=
+    IsAlgClosed.lift
+  let ψhat : AlgebraicClosure F →ₐ[ℚ] Ω := ratAlgHomOfRingHom ψ'.toRingHom
+  have key : IntermediateField.normalClosure ℚ F (AlgebraicClosure F) ≤ R.comap ψhat := by
+    refine _root_.normalClosure_le_iff.2 fun f => ?_
+    rintro _ ⟨a, rfl⟩
+    exact hF ((ψhat.comp f) : F →+* Ω) a
+  have hy : ψhat (y : AlgebraicClosure F) ∈ R := key y.2
+  have hcoe : ψhat (y : AlgebraicClosure F) = ψ y := by
+    have hc := ψ'.commutes y
+    simpa [ψhat, ψ', ratAlgHomOfRingHom, RingHom.algebraMap_toAlgebra] using hc
+  rwa [hcoe] at hy
+
 open CategoryTheory AlgebraicGeometry in
 /-- **Rational points grow along a field extension** (PROVEN glue): a ring
 homomorphism `f : F →+* E` of number fields induces `Spec E ⟶ Spec F`, and
@@ -3081,8 +3203,8 @@ theorem exists_totallySplitPoint_of_affine_curve
   sorry
 
 /-- **The normal closure of a totally real, totally split number field is
-again totally real and totally split** (SORRY — pure algebraic number
-theory, no geometry). This is the step BLGGT Prop. 3.1.1 performs
+again totally real and totally split** (**PROVEN 2026-07-26** — pure algebraic
+number theory, no geometry). This is the step BLGGT Prop. 3.1.1 performs
 silently when it quotes Moret–Bailly as producing a *Galois* extension:
 Moret–Bailly's Remarque 1.5 produces an arbitrary finite `F/ℚ`, and one
 replaces it by its normal closure.
@@ -3115,18 +3237,76 @@ The hypothesis `NumberField.IsTotallyReal F` is likewise not weakenable to
 a single real embedding `F →+* ℝ`: the normal closure of a field with one
 real and two complex places (e.g. `ℚ(2 ^ (1/3))` again) is not real.
 
-WHAT A PROVER HAS AT THIS PIN: `IntermediateField.normalClosure` with its
-`Normal` and `IsGalois` instances, `NumberField.IsTotallyReal` and
-`NumberField.InfinitePlace`, and `IntermediateField.isAlgebraic_iff`.
-Nothing here needs geometry or the rest of this file. -/
+HOW IT IS PROVEN (2026-07-26). `E := IntermediateField.normalClosure ℚ F
+(AlgebraicClosure F)`, mathlib's `⨆ f : F →ₐ[ℚ] AlgebraicClosure F, f.fieldRange`.
+The four conclusions come from:
+
+* `NumberField E` — `normalClosure.is_finiteDimensional` (a finite sup of
+  finite-dimensional intermediate fields) plus `CharZero`;
+* `Normal ℚ E` — `normalClosure.normal`, which needs `Normal ℚ (AlgebraicClosure F)`;
+  that in turn is `Algebra.IsAlgebraic.trans` (ℚ → F → its algebraic closure)
+  together with the fact that everything splits in an algebraically closed field;
+* `F →+* E` — `algebraMap`, via `normalClosure.algebra`;
+* the two propagation statements — BOTH instances of
+  `mem_of_ringHom_normalClosure_of_forall`, applied with `(Ω, R) = (ℂ, ℝ)` and with
+  `(Ω, R) = (AlgebraicClosure ℚ_[p], ℚ_[p])`. That is the whole content: total
+  reality and complete splitting are the SAME kind of condition ("every embedding
+  into the local/archimedean algebraic closure lands in the completion"), and that
+  kind of condition is conjugation- and compositum-stable. Splitting is put into
+  and taken out of that form by `isTotallySplitAt_iff_forall_exists_padic`; reality
+  by `NumberField.IsTotallyReal.complexEmbedding_isReal` and
+  `NumberField.ComplexEmbedding.IsReal.embedding`, the latter producing the required
+  `E →+* ℝ` from the fact that the chosen `E →+* ℂ` is conjugation-fixed.
+
+Note the real embedding is obtained WITHOUT going through
+`NumberField.IsTotallyReal E`: the conclusion only asks for one ring map to `ℝ`, and
+the consumer `isTotallyReal_of_normal_of_realEmbedding` re-derives total reality
+downstream from that map together with `Normal ℚ E`. -/
 theorem exists_normalClosure_of_totallyReal_totallySplit
     (F : Type u) (_ : Field F) (_ : NumberField F)
     (_ : NumberField.IsTotallyReal F) (S : Finset ℕ)
     (hsplit : ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt F p) :
     ∃ (E : Type u) (_ : Field E) (_ : NumberField E) (_ : Normal ℚ E)
       (_ : E →+* ℝ) (_ : F →+* E),
-      ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt E p :=
-  sorry
+      ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt E p := by
+  classical
+  haveI : Algebra.IsAlgebraic ℚ (AlgebraicClosure F) :=
+    Algebra.IsAlgebraic.trans (R := ℚ) (S := F) (A := AlgebraicClosure F)
+  haveI : Normal ℚ (AlgebraicClosure F) := ⟨fun _ => IsAlgClosed.splits _⟩
+  haveI : NumberField ↥(IntermediateField.normalClosure ℚ F (AlgebraicClosure F)) := ⟨⟩
+  -- a complex embedding of the normal closure, and the fact that it is real
+  obtain ⟨ψ⟩ : Nonempty (↥(IntermediateField.normalClosure ℚ F (AlgebraicClosure F)) →+* ℂ) :=
+    inferInstance
+  have hreal : ∀ y : ↥(IntermediateField.normalClosure ℚ F (AlgebraicClosure F)),
+      ψ y ∈ (IsScalarTower.toAlgHom ℚ ℝ ℂ).fieldRange := by
+    refine mem_of_ringHom_normalClosure_of_forall F _ ?_ ψ
+    intro θ x
+    have hθ : NumberField.ComplexEmbedding.IsReal θ :=
+      NumberField.IsTotallyReal.complexEmbedding_isReal θ
+    exact ⟨hθ.embedding x, by simp⟩
+  have hψreal : NumberField.ComplexEmbedding.IsReal ψ := by
+    rw [NumberField.ComplexEmbedding.isReal_iff]
+    ext y
+    obtain ⟨r, hr⟩ := hreal y
+    simp only [NumberField.ComplexEmbedding.conjugate_coe_eq, ← hr]
+    simp
+  refine ⟨↥(IntermediateField.normalClosure ℚ F (AlgebraicClosure F)), inferInstance,
+    inferInstance, _root_.normalClosure.normal ℚ F (AlgebraicClosure F), hψreal.embedding,
+    algebraMap F ↥(IntermediateField.normalClosure ℚ F (AlgebraicClosure F)), ?_⟩
+  -- complete splitting at each `p ∈ S`, in its embedding-theoretic form
+  intro p _ hp
+  rw [isTotallySplitAt_iff_forall_exists_padic]
+  intro θ y
+  have hmem := (isTotallySplitAt_iff_forall_exists_padic F p).1 (hsplit p hp)
+  have hgoal : θ y ∈
+      (IsScalarTower.toAlgHom ℚ ℚ_[p] (AlgebraicClosure ℚ_[p])).fieldRange := by
+    refine mem_of_ringHom_normalClosure_of_forall F
+      (IsScalarTower.toAlgHom ℚ ℚ_[p] (AlgebraicClosure ℚ_[p])).fieldRange ?_ θ y
+    intro τ x
+    obtain ⟨r, hr⟩ := hmem τ x
+    exact ⟨r, hr⟩
+  obtain ⟨r, hr⟩ := hgoal
+  exact ⟨r, hr⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Steps (ii)+(iii) of Moret–Bailly's route: the CURVE case**
