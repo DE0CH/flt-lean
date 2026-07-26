@@ -9464,7 +9464,8 @@ theorem exists_frobenius_conj_localInertia_of_natCard_residue
 
 
 /-- **Frobenius conjugates the inertia at `p` by `p`-th powers, modulo
-wild inertia** (sorry node — leaf (i) of the two-leaf cut of the Serre
+wild inertia** (PROVEN — label corrected 2026-07-26, formerly a sorry
+node; leaf (i) of the two-leaf cut of the Serre
 §1.3 tame development): there is an element `φ` of the local Galois
 group at `p` — any lift of the residual Frobenius — such that for every
 `σ` in the local inertia, `φ σ φ⁻¹ = σ^p · w` with `w` again in the
@@ -21697,7 +21698,8 @@ theorem stickelberger_upperHalf_annihilates_omega_inv_eigenvector
   exact hann2
 
 /-- **Herbrand's theorem at `B₂`: the `ω^{−1}`-eigenspace of
-`Cl(ℚ(μ_p)) ⊗ 𝔽_p` vanishes** (E3c support leaf (iii); sorry node —
+`Cl(ℚ(μ_p)) ⊗ 𝔽_p` vanishes** (E3c support leaf (iii); PROVEN — label
+corrected 2026-07-26, formerly a sorry node;
 the citation-shaped arithmetic input of the Eisenstein cut;
 Herbrand 1932; Washington, *Introduction to Cyclotomic Fields*,
 Thm. 6.17): for `p ≥ 5` and an abstract `p`-th cyclotomic field `CF`,
@@ -26100,7 +26102,8 @@ theorem mem_oldSubspace_of_qCoeff_coprime_eq_zero {M : ℕ} (hM : 0 < M)
   exact haw ▸ ha
 
 /-- **NEWFORM DECOMPOSITION: an eigenvector in the old subspace has its
-eigensystem realized at a PROPER divisor level** (sorry leaf — cut 2026-07-26
+eigensystem realized at a PROPER divisor level** (PROVEN — label
+corrected 2026-07-26, formerly the sorry leaf cut 2026-07-26
 out of `exists_weightTwoEigenform_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero`;
 Diamond–Shurman Theorem 5.8.2 with Proposition 5.8.5): a NONZERO `w` in the old
 subspace which is an honest eigenvector of every GOOD Hecke operator `T_q`,
