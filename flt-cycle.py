@@ -178,11 +178,49 @@ def deleted_floating_names():
     names = set()
     for line in read_lines(MALFUNCTION_LOG):
         names.update(re.findall(r"`([A-Za-z_][A-Za-z0-9_.']*)`", line))
-        # tolerate unbackticked logs: take dotted/underscored identifiers
+        # Tolerate unbackticked logs -- but only for tokens that actually LOOK
+        # like Lean names. The old rule was "any identifier of 7+ chars", which
+        # on a freeform prose log harvested `because`, `consumer`, `already`,
+        # `deliberately` and sixty more English words as declaration names.
+        # Requiring a `_` or a `.` costs nothing (essentially every declaration
+        # in this tree has one) and removes the entire class.
         for tok in line.replace(",", " ").split():
-            if re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.']{6,}", tok) and "/" not in tok:
+            if (re.fullmatch(r"[A-Za-z_][A-Za-z0-9_.']{6,}", tok)
+                    and "/" not in tok and ("_" in tok or "." in tok)):
                 names.add(tok)
-    return names
+
+    # SURVIVOR FILTER (Deyao, 2026-07-26 -- caught by a --dry-run before it
+    # destroyed anything). The harvest above is deliberately greedy, and the log
+    # is freeform PROSE: it explains deletions, and explaining one names the
+    # declarations AROUND it. One entry reads "...because their sole consumer
+    # exists_tateParam was correctly re-sorried", and `exists_tateParam` is a
+    # LIVE sorried leaf on main -- so the greedy harvest marked it deleted and
+    # `prune_queue_for_floating` would have silently dropped its queued task,
+    # leaving the leaf unowned and failing a later preflight for no visible
+    # reason. Deleting queued work on a prose match is the worst kind of wrong:
+    # invisible, and it removes the record of what was lost.
+    #
+    # The check that cannot be fooled: a DELETED declaration is not in the
+    # source. Anything still declared in Fermat/ was not deleted, whatever the
+    # log says about it. One scan of the tree, matched against declaration
+    # headers only (not docstring prose, which is what caused the problem).
+    if not names:
+        return names
+    alive, decl = set(), re.compile(
+        r"^\s*(?:@\[[^\]]*\]\s*)?(?:private\s+|protected\s+|noncomputable\s+|"
+        r"public\s+|scoped\s+)*"
+        r"(?:theorem|lemma|def|abbrev|instance|structure|class|inductive|"
+        r"opaque|axiom)\s+([^\s({\[:]+)", re.M)
+    try:
+        for p in pathlib.Path(REPO, "Fermat").rglob("*.lean"):
+            for m in decl.finditer(p.read_text(encoding="utf-8")):
+                n = m.group(1)
+                alive.add(n)
+                alive.add(n.rsplit(".", 1)[-1])
+    except OSError:
+        return names          # cannot read the tree: keep the greedy answer
+    return {n for n in names
+            if n not in alive and n.rsplit(".", 1)[-1] not in alive}
 
 
 def prune_queue_for_floating(dry_run=False):
