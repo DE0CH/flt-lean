@@ -20363,48 +20363,43 @@ theorem heckeOp_mul_comm {M : ℕ} (hM : 0 < M) {q r : ℕ} (hq : q.Prime)
   simp only [Module.End.mul_apply]
   refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
   simp only [qCoeff_heckeOp hM hq, qCoeff_heckeOp hM hr, hrqx, hqrx]
+  have hrq : r * q = q * r := Nat.mul_comm r q
   by_cases hqM : q ∣ M
   · by_cases hrM : r ∣ M
-    · simp only [hqM, hrM, add_zero]
-      rw [show r * (q * m) = q * (r * m) by ring]
-      all_goals ring
+    · simp only [hqM, hrM, if_true]
+      all_goals ring_nf
     · by_cases hrm : r ∣ m
-      · simp only [hqM, hrM, hrm, add_zero]
-        rw [show r * (q * m) = q * (r * m) by ring, Nat.mul_div_assoc q hrm]
-        all_goals ring
-      · simp only [hqM, hrM, hrm, add_zero]
-        rw [show r * (q * m) = q * (r * m) by ring]
-        all_goals ring
+      · simp only [hqM, hrM, hrm, if_true, if_false,
+          Nat.mul_div_assoc q hrm]
+        all_goals ring_nf
+      · simp only [hqM, hrM, hrm, if_true, if_false]
+        all_goals ring_nf
   · by_cases hrM : r ∣ M
     · by_cases hqm : q ∣ m
-      · simp only [hqM, hrM, hqm, add_zero]
-        rw [show r * (q * m) = q * (r * m) by ring, Nat.mul_div_assoc r hqm]
-        all_goals ring
-      · simp only [hqM, hrM, hqm, add_zero]
-        rw [show r * (q * m) = q * (r * m) by ring]
-        all_goals ring
+      · simp only [hqM, hrM, hqm, if_true, if_false,
+          Nat.mul_div_assoc r hqm]
+        all_goals ring_nf
+      · simp only [hqM, hrM, hqm, if_true, if_false]
+        all_goals ring_nf
     · by_cases hqm : q ∣ m
       · by_cases hrm : r ∣ m
         · have h1 : r ∣ m / q := (hdivr m hqm).mpr hrm
           have h2 : q ∣ m / r := (hdivq m hrm).mpr hqm
-          simp only [hqM, hrM, hqm, hrm, h1, h2]
-          rw [show r * (q * m) = q * (r * m) by ring,
+          simp only [hqM, hrM, hqm, hrm, h1, h2, if_true, if_false,
             Nat.mul_div_assoc q hrm, Nat.mul_div_assoc r hqm,
-            Nat.div_div_eq_div_mul, Nat.div_div_eq_div_mul,
-            show q * r = r * q by ring]
-          all_goals ring
+            Nat.div_div_eq_div_mul, hrq]
+          all_goals ring_nf
         · have h1 : ¬ r ∣ m / q := fun h => hrm ((hdivr m hqm).mp h)
-          simp only [hqM, hrM, hqm, hrm, h1, add_zero]
-          rw [show r * (q * m) = q * (r * m) by ring, Nat.mul_div_assoc r hqm]
-          all_goals ring
+          simp only [hqM, hrM, hqm, hrm, h1, if_true, if_false,
+            Nat.mul_div_assoc r hqm]
+          all_goals ring_nf
       · by_cases hrm : r ∣ m
         · have h2 : ¬ q ∣ m / r := fun h => hqm ((hdivq m hrm).mp h)
-          simp only [hqM, hrM, hqm, hrm, h2, add_zero]
-          rw [show r * (q * m) = q * (r * m) by ring, Nat.mul_div_assoc q hrm]
-          all_goals ring
-        · simp only [hqM, hrM, hqm, hrm, add_zero]
-          rw [show r * (q * m) = q * (r * m) by ring]
-          all_goals ring
+          simp only [hqM, hrM, hqm, hrm, h2, if_true, if_false,
+            Nat.mul_div_assoc q hrm]
+          all_goals ring_nf
+        · simp only [hqM, hrM, hqm, hrm, if_false]
+          all_goals ring_nf
 
 /-- **Strong multiplicity one in `S₂(Γ₀(M))`, in GENERALIZED-EIGENVECTOR
 form** (sorry node — the CLASSICAL-ANALYTIC residue of the `ℂ → ℚ̄_p`

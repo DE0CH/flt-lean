@@ -23,7 +23,8 @@ had came from hand-run steps drifting from the intended order.
                                           claim   -> takes the whole batch
                                           ...merges, resolves, builds green...
                                           release <sha> -> moves main
-    release         -> advance all,
+    preflight       -> everything accounted for?
+    release         -> preflight, advance all,
                        seed the allocated,
                        print how many to
                        dispatch
@@ -204,6 +205,189 @@ def prune_queue_for_floating(dry_run=False):
 
 
 # --------------------------------------------------------------------------
+# preflight: is everything accounted for?
+# --------------------------------------------------------------------------
+def inflight_worktrees():
+    """Worktree names with a live dispatch record, from ~/.flt-inflight.jsonl."""
+    import json
+    names = set()
+    for ln in read_lines(os.path.expanduser("~/.flt-inflight.jsonl")):
+        try:
+            rec = json.loads(ln)
+        except Exception:
+            continue
+        wt = rec.get("worktree") or ""
+        if wt:
+            names.add(os.path.basename(wt.rstrip("/")))
+    return names
+
+
+def cmd_preflight(args):
+    """Refuse to start a cycle unless everything is accounted for.
+
+    Three ways a cycle can silently lose work, all of which have happened here
+    in one form or another. Each is cheap to detect and expensive to discover
+    later, which is exactly the shape that belongs in a gate rather than in a
+    habit:
+
+      A. UNMERGED WORK WITH NO ROUTE HOME. A worktree branch holding commits
+         that are not in `main`, not in the merge batch, and not held by a live
+         agent. `flt-cycle.py release` fast-forwards idle worktrees, and a
+         ff-only advance of a diverged branch FAILS -- so the work is not
+         destroyed, but it is stranded and invisible, and the next dispatch into
+         that slot hard-crashes the allocator. This is the check that would have
+         caught the level-21 work that survived only on its own branch.
+
+      B. STATE THAT DOES NOT MATCH REALITY. `claimed` with no inflight record
+         means an agent finished and was never written down -- its work will
+         never be batched. The converse, an inflight record on a `free`/`ready`
+         slot, means a finished agent's record was never cleared, so ownership
+         scans will keep crediting it with leaves nobody is working on.
+
+      C. AN UNOWNED SORRY. The loop invariant is that every sorry has an owner
+         at all times -- a live agent OR a queued task, since both mean it will
+         not be forgotten. Starting a cycle with an unowned leaf means spending
+         a whole release cycle without anyone on it.
+
+    Exit 1 if anything blocks. `release` runs this first and refuses without
+    --force, because a cycle started on bad accounting is a cycle spent.
+    """
+    blocking, warnings, fixups = [], [], []
+
+    run(["git", "-C", REPO, "fetch", "origin", "--quiet"])
+    with open(POOL) as fh:
+        entries = read_entries(fh)
+    batch = set(read_lines(BATCH)) | set(read_lines(INFLIGHT))
+    live = inflight_worktrees()
+
+    # ---- A. branch accounting -----------------------------------------------
+    stranded = []
+    for name, state, _ in entries:
+        wt = os.path.expanduser(f"~/{name}")
+        if not os.path.isdir(wt):
+            continue
+        exists = run(["git", "-C", REPO, "rev-parse", "--verify",
+                      "--quiet", name])
+        if exists.returncode != 0:
+            continue
+        anc = run(["git", "-C", REPO, "merge-base", "--is-ancestor",
+                   name, "main"])
+        if anc.returncode == 0:
+            continue                       # released: fully accounted for
+        if name in batch:
+            continue                       # queued for the merger
+        if state in ("claimed", "suspended") or name in live:
+            # An agent is still working, or was stopped mid-task. It missed the
+            # merge cutoff; its work goes into a later batch. Legitimate.
+            continue
+        n = run(["git", "-C", REPO, "rev-list", "--count",
+                 f"main..{name}"]).stdout.strip()
+        stranded.append((name, state, n))
+    if stranded:
+        blocking.append(
+            f"{len(stranded)} worktree(s) hold unmerged work with no route home "
+            "-- not in main, not batched, no live agent:")
+        for name, state, n in stranded:
+            blocking.append(f"    {name} [{state}] {n} commit(s) ahead of main"
+                            f"   -> python3 flt-cycle.py done {name}")
+
+    # ---- B. state consistency -----------------------------------------------
+    for name, state, extra in entries:
+        wt = os.path.expanduser(f"~/{name}")
+        if not os.path.isdir(wt):
+            continue
+        has_rec = name in live
+        # `reclaiming` is a claimed slot that retires when its agent finishes,
+        # so it carries a live agent exactly as `claimed` does -- and a missing
+        # record means the same defect. Excluding it would let a whole draining
+        # cohort finish unrecorded, which is 25 slots at present.
+        #
+        # But the severity splits on whether the work actually got out, and the
+        # two cases want opposite handling:
+        if state in ("claimed", "reclaiming") and not has_rec:
+            ahead = run(["git", "-C", REPO, "rev-list", "--count",
+                         f"main..{name}"]).stdout.strip() or "0"
+            if ahead == "0":
+                # Work is already in main and the tree is clean: nothing was
+                # lost, the slot is just still wearing a working state. That is
+                # bookkeeping, not an incident -- correct it and carry on rather
+                # than making a human clear it before every cycle. A gate that
+                # blocks on harmless drift gets --force'd habitually, and then
+                # it stops catching the real thing.
+                fixups.append((name, state))
+            else:
+                blocking.append(
+                    f"{name} is `{state}` with NO inflight record and {ahead} "
+                    "commit(s) NOT in main -- its agent finished and was never "
+                    "written down, so this work is invisible to the merger.  "
+                    f"-> python3 flt-cycle.py done {name}")
+        if state in ("free", "ready", "retired") and has_rec:
+            blocking.append(
+                f"{name} is `{state}` but still HAS an inflight record -- "
+                "ownership scans will keep crediting it with leaves nobody is "
+                "working on.  -> remove its line from ~/.flt-inflight.jsonl")
+        if state == "suspended" and not extra:
+            warnings.append(
+                f"{name} is `suspended` with no transcript id -- its work "
+                "cannot be resumed")
+        if state in ("free", "ready"):
+            dirty = run(["git", "-C", wt, "status", "--porcelain"])
+            if dirty.stdout.strip():
+                blocking.append(
+                    f"{name} is `{state}` but its worktree is DIRTY -- "
+                    "uncommitted work would be destroyed by the next dispatch")
+
+    # ---- C. sorry ownership -------------------------------------------------
+    r = run([sys.executable, os.path.join(REPO, "flt-unowned.py")], cwd=REPO)
+    if r.returncode != 0:
+        warnings.append(f"ownership scan failed: {r.stderr.strip()[:200]}")
+    else:
+        unowned = [n for n in r.stdout.split() if n.strip()]
+        if unowned:
+            blocking.append(
+                f"{len(unowned)} direct sorry(s) have NO owner -- neither a "
+                "live agent nor a queued task:")
+            for n in unowned:
+                blocking.append(f"    {n}")
+            blocking.append(
+                "    -> add a task to ~/.flt-task-queue for each "
+                "(queueing IS ownership)")
+
+    # ---- auto-correct harmless state drift ----------------------------------
+    if fixups:
+        fd = os.open(POOL, os.O_RDWR)
+        with os.fdopen(fd, "r+") as pf:
+            fcntl.flock(pf, fcntl.LOCK_EX)
+            cur = read_entries(pf)
+            byname = {n: s for n, s, _ in fixups and cur}
+            new_entries = []
+            for n, s, e in cur:
+                for fn, fs in fixups:
+                    if n == fn and s == fs:
+                        # `reclaiming` retires (the slot is draining and must not
+                        # come back); `claimed` returns to `free`.
+                        s = "retired" if fs == "reclaiming" else "free"
+                        print(f"FIXED {n}: {fs} -> {s} "
+                              "(agent finished, work already in main)")
+                        break
+                new_entries.append((n, s, e))
+            write_entries(pf, new_entries)
+
+    # ---- verdict ------------------------------------------------------------
+    for w in warnings:
+        print(f"WARN  {w}")
+    if blocking:
+        print("\nPREFLIGHT FAILED -- not everything is accounted for:\n")
+        for b in blocking:
+            print(("  " + b) if not b.startswith("    ") else b)
+        print("\nFix the above, or re-run `release --force` to proceed anyway.")
+        return 1
+    print("preflight OK: every branch accounted for, every state consistent, "
+          "every sorry owned.")
+    return 0
+
+
+# --------------------------------------------------------------------------
 # orchestrator: an agent finished
 # --------------------------------------------------------------------------
 def cmd_done(args):
@@ -309,6 +493,14 @@ def cmd_release(args):
       ready  -- at the release, artifacts seeded from the build that verified
                 it. The only state the dispatch hook allocates from.
     """
+    # Accounting BEFORE anything moves. A cycle started on bad accounting is a
+    # cycle spent: stranded work stays invisible for another few hours, and an
+    # unowned leaf goes a whole release with nobody on it.
+    if not args.force and not args.dry_run:
+        if cmd_preflight(args) != 0:
+            print("\nrelease ABORTED by preflight. Nothing was moved.")
+            return 1
+
     run(["git", "-C", REPO, "fetch", "origin", "--quiet"])
     head = run(["git", "-C", REPO, "rev-parse", "main"]).stdout.strip()
     prev = (read_lines(LAST_RELEASE) or [""])[0]
@@ -494,6 +686,10 @@ def main():
     p.add_argument("--force", action="store_true",
                    help="re-run even if main has not moved")
     p.set_defaults(fn=cmd_release)
+
+    p = sub.add_parser("preflight",
+                       help="is everything accounted for? (release runs this)")
+    p.set_defaults(fn=cmd_preflight)
 
     p = sub.add_parser("claim", help="MERGER: take the batch atomically")
     p.set_defaults(fn=cmd_claim)
