@@ -70,6 +70,7 @@ them without a human. Do not re-wrap it.
 - `residual_isIrreducible_of_isHardlyRamified`
 - `exists_conj_entries_mem_of_single_mem`
 - `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`
+- `exists_framedGaloisRep_baseChange_traceSubring`
 - `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
 
 Both former strata above them were narrowed on 2026-07-25 into those
