@@ -4182,7 +4182,7 @@ theorem inv_mem_subring_of_finite {F : Type*} [Field F] [Finite F] (E : Subring 
   classical
   haveI : Fintype F := Fintype.ofFinite F
   rcases eq_or_ne x 0 with rfl | hx0
-  · simpa using E.zero_mem
+  · simp
   · have hcard : 2 ≤ Fintype.card F := Fintype.one_lt_card
     have h1 : x ^ (Fintype.card F - 1) = 1 := FiniteField.pow_card_sub_one_eq_one x hx0
     have h2 : x * x ^ (Fintype.card F - 2) = 1 := by
@@ -4463,7 +4463,7 @@ theorem charP_of_padicIntAlgebra (ℓ : ℕ) [Fact ℓ.Prime] (k : Type*) [Field
   obtain ⟨a, b, hab, hne⟩ :
       ∃ a b : ℤ_[ℓ], algebraMap ℤ_[ℓ] k a = algebraMap ℤ_[ℓ] k b ∧ a ≠ b := by
     by_contra hc
-    push_neg at hc
+    push Not at hc
     exact hinj fun a b h => hc a b h
   have hx : a - b ≠ 0 := sub_ne_zero.mpr hne
   have hx0 : algebraMap ℤ_[ℓ] k (a - b) = 0 := by rw [map_sub, hab, sub_self]
