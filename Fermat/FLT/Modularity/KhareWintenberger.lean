@@ -1953,13 +1953,32 @@ adopted here is the MINIMAL one that stays inside this declaration:
 `exists_twistedHilbertBlumenthalModuli_of_five_le` already carries it
 verbatim and passes it straight through, so nothing downstream is
 weakened). With it, `#W = #k²` and `#A[λ] = #(𝒪_D/λ)²` force
-`k ≅ 𝒪_D/λ`, and the residual comparison goes through: the two
+`k ≅ 𝒪_D/λ`, and the residual comparison becomes a comparison of two
 `𝔽_q`-structures on `W` — the given one and the one transported from
-`A[λ]` — are two embeddings of `𝔽_q` into the commutant of the Galois
-image, conjugate up to an automorphism of `𝔽_q` by Wedderburn–Malcev,
-and that automorphism is absorbed into the choice of the reduction map
-`π₀`, which is why `exists_tateFrame_of_levelStructure` quantifies `ι₀`
-existentially rather than fixing it to be the residue map.
+`A[λ]` — i.e. of two embeddings of `𝔽_q` into the commutant of the
+Galois image; the automorphism relating them is absorbed into the
+choice of the reduction map `π₀`, which is why
+`exists_tateFrame_of_levelStructure` quantifies `ι₀` existentially
+rather than fixing it to be the residue map.
+
+CORRECTION (2026-07-26). The previous version of this paragraph
+justified that last step by "conjugate up to an automorphism of `𝔽_q` by
+Wedderburn–Malcev". **That justification is FALSE**, and with it the
+`hW`-only repair was insufficient: Wedderburn–Malcev and Noether–Skolem
+conjugate embeddings inside a SIMPLE algebra, whereas the commutant
+`End_{ℤ[Γ_F]}(A[λ])` need not be simple — for a split residual
+representation it is `𝔽_q × 𝔽_q`, which has no inner automorphisms at
+all, and the two embeddings are then genuinely inequivalent. An explicit
+counterexample (a Hilbert–Blumenthal surface with big image, base
+changed to the field cut out by the diagonal torus) is written out in
+the FAITHFULNESS AUDIT of `Fermat.exists_tateFrame_of_levelStructure`.
+The missing hypothesis is IRREDUCIBILITY of the residual representation,
+which is what makes the commutant simple; it is added there as `hirr`
+and here as `hirr : ρbar.IsIrreducible`, and it costs nothing, since
+`exists_twistedHilbertBlumenthalModuli_of_five_le` already carries it
+(it is transported to `Γ_F` along `hrestr` by
+`Fermat.isIrreducible_map_of_restrictionSurjective`), and at `𝔭` the
+seam already supplies `ρbarp.IsIrreducible`.
 
 REPORTED, not repaired here: strengthening the seam itself to demand a
 semilinear level structure is a cut-level change to a definition shared
@@ -2031,6 +2050,7 @@ theorem nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W] (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hirr : ρbar.IsIrreducible)
     {X : AlgebraicGeometry.Scheme.{u}}
     {fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ))}
     {A : AlgebraicGeometry.Scheme.{u}} {fA : A ⟶ X}
@@ -2055,16 +2075,23 @@ theorem nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli
       L, _, _, hLrank, hLred⟩ :=
     hcond F _hF _hNF _hFtr _hFgal hrestr x hx
   haveI : Fact p.Prime := ⟨hp⟩
-  -- the `λ`-adic member, framed on the Tate module `TatePt m x lam ϖℓ`
-  obtain ⟨ϖℓ, hϖℓ, hϖℓ2, O₀, _, _, _, _, _, _, _, _, σ, φ₀, ι₀,
-      hφ₀add, hφ₀bij, hφ₀eq, hres₀⟩ :=
+  -- the residual irreducibility hypothesis of the Tate-module leaf, transported
+  -- from `Γ_ℚ` to `Γ_F` along `hrestr` (see the FAITHFULNESS AUDIT of
+  -- `Fermat.exists_tateFrame_of_levelStructure`: without it that leaf is FALSE)
+  have hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible :=
+    Fermat.isIrreducible_map_of_restrictionSurjective ρbar (algebraMap ℚ F) hrestr hirr
+  -- the `λ`-adic member, framed on the Tate module `TatePt m x lam ϖℓ`;
+  -- `_jD₀`/`_hjD₀` are the real-multiplication clause of the frame, kept bound for
+  -- the compatible-system leaf, which does not yet take them
+  obtain ⟨ϖℓ, hϖℓ, hϖℓ2, O₀, _, _, _, _, _, _, _, _, σ, φ₀, ι₀, _jD₀,
+      hφ₀add, hφ₀bij, hφ₀eq, hres₀, _hjD₀⟩ :=
     Fermat.exists_tateFrame_of_levelStructure m x hdim ℓ lam hlam hℓlam hW
-      (ρbar.map (algebraMap ℚ F)) e headd heinj heequiv heimg
+      (ρbar.map (algebraMap ℚ F)) hirrF e headd heinj heequiv heimg
   -- the `𝔭`-adic member, framed on `TatePt m x frp ϖp`
-  obtain ⟨ϖp, hϖp, hϖp2, C, _, _, _, _, _, _, _, _, τp, φp, ιp,
-      hφpadd, hφpbij, hφpeq, hresp⟩ :=
+  obtain ⟨ϖp, hϖp, hϖp2, C, _, _, _, _, _, _, _, _, τp, φp, ιp, _jDp,
+      hφpadd, hφpbij, hφpeq, hresp, _hjDp⟩ :=
     Fermat.exists_tateFrame_of_levelStructure m x hdim p frp hfrp hpfrp
-      (by simp) ρbarp e' h'add h'inj h'equiv h'img
+      (by simp) ρbarp hirrp e' h'add h'inj h'equiv h'img
   -- ONE `D`-rational compatible system, read at both members through their frames;
   -- the two exceptional sets are produced separately (they contain the places over
   -- `ℓ` resp. `p`) and the point's `bad` is their union
@@ -2182,7 +2209,7 @@ theorem exists_twistedHilbertBlumenthalModuli_of_five_le
   -- (ii) the Tate-module construction at each `F`-point
   exact ⟨X, fX, hsm, hsep, hft, hqc, hgi, hreal,
     fun F hF hNF hFtr hFgal hrestr hpt =>
-      nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli hW hmod F hF hNF
+      nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli hW hirr hmod F hF hNF
         hFtr hFgal hrestr hpt⟩
 
 /-- **The kernel of a residual representation is open** (PROVEN): for a
