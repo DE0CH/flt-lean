@@ -30343,6 +30343,187 @@ theorem isOpen_maximalIdeal_pow_of_natCast_ne_zero
   haveI : T2Space R := homR.isEmbedding.t2Space
   exact IsLocalRing.isOpen_maximalIdeal_pow R k
 
+omit [IsDomain R] [TopologicalSpace R] [IsTopologicalRing R]
+  [IsModuleTopology ℤ_[p] R] in
+/-- **The coefficient ring has residue characteristic `p`** (PROVEN
+2026-07-26 — the first of the three coefficient-ring facts handed to the
+at-`p` flatness leaf below by the SIXTH-OWNER narrowing; see that leaf's
+`COEFFICIENT-RING NARROWING` paragraph): in the standard package — `R`
+local and module-finite over `ℤ_p` — the residue characteristic is
+FORCED to be `p`, i.e. `(p : R)` lies in the maximal ideal.
+
+Proof: Nakayama. If `p` were a unit of `R` then every `x : R` would be
+`p • (u⁻¹ * x)`, so the `ℤ_p`-module `R` would satisfy
+`⊤ ≤ 𝔪 ℤ_[p] • ⊤` with `⊤` finitely generated
+(`Module.Finite.fg_top`), and `Submodule.eq_bot_of_le_smul_of_le_jacobson_bot`
+would give `R = 0` — but `R` is local, hence nontrivial.
+
+Why it is stated: Raynaud's and Serre's criteria are stated for a
+coefficient ring which is an ORDER IN A `p`-ADIC FIELD, and "residue
+characteristic `p`" is the first half of that standing hypothesis. It is
+derivable here, so the leaf below receives it instead of assuming it. -/
+theorem natCast_prime_mem_maximalIdeal_of_moduleFinite :
+    (p : R) ∈ IsLocalRing.maximalIdeal R := by
+  by_contra hmem
+  obtain ⟨u, hu⟩ : IsUnit (p : R) := IsLocalRing.notMem_maximalIdeal.mp hmem
+  have hle : (⊤ : Submodule ℤ_[p] R) ≤
+      (IsLocalRing.maximalIdeal ℤ_[p]) • (⊤ : Submodule ℤ_[p] R) := by
+    intro x _
+    have hx : x = (p : ℤ_[p]) • ((↑u⁻¹ : R) * x) := by
+      rw [Algebra.smul_def, map_natCast, ← hu, ← mul_assoc, u.mul_inv, one_mul]
+    rw [hx]
+    refine Submodule.smul_mem_smul ?_ Submodule.mem_top
+    rw [PadicInt.maximalIdeal_eq_span_p]
+    exact Ideal.mem_span_singleton_self _
+  have htop : (⊤ : Submodule ℤ_[p] R) = ⊥ :=
+    Submodule.eq_bot_of_le_smul_of_le_jacobson_bot _ _ Module.Finite.fg_top hle
+      (by simpa using IsLocalRing.maximalIdeal_le_jacobson (⊥ : Ideal ℤ_[p]))
+  exact absurd htop top_ne_bot
+
+/-- **Every level of the flat tower is a FINITE ring** (PROVEN
+2026-07-26 — the NON-VACUITY certificate of the at-`p` flatness leaf
+below, and the second of the three coefficient-ring facts that leaf now
+receives): for a coefficient ring of the standard package in which `p`
+is not zero, each quotient `R ⧸ 𝔪 ^ k` is FINITE.
+
+This is not a technicality. `GaloisRep.HasFlatProlongationAt` asks for a
+bijection between the representation space and the `Kᵥᵃˡᵍ`-points of a
+finite étale `Kᵥ`-algebra, a set which is always FINITE; so if some
+`R ⧸ 𝔪 ^ k` were infinite the predicate would fail at that level for a
+purely cardinal reason and the leaf below would be TRIVIALLY TRUE,
+carrying none of the arithmetic it is cited for. The lemma rules that
+out: every level is a genuine finite coefficient ring, so each
+`HasFlatProlongationAt` in the tower is a real, satisfiable condition
+(it holds, for instance, for the good-reduction packages built in
+`Semistable.lean`).
+
+Proof: the compactness argument of
+`isOpen_maximalIdeal_pow_of_natCast_ne_zero` above — `(p : R) ≠ 0` makes
+`ℤ_p → R` injective, so `R` is torsion-free, hence free, hence
+`ℤ_p`-linearly homeomorphic to `ℤ_p ^ d` and therefore compact Hausdorff
+— feeds mathlib's `IsLocalRing.isOpen_iff_finite_quotient` at the open
+ideal `𝔪 ^ k`. -/
+theorem finite_quotient_maximalIdeal_pow_of_natCast_ne_zero
+    (hpne : (p : R) ≠ 0) (k : ℕ) :
+    Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)) := by
+  have hZinj : Function.Injective (algebraMap ℤ_[p] R) := by
+    rw [injective_iff_map_eq_zero]
+    intro z hz
+    by_contra hzne
+    obtain ⟨n, u, rfl⟩ :=
+      IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hzne
+        (PadicInt.irreducible_p (p := p))
+    rw [map_mul, map_pow, map_natCast] at hz
+    have hunit : IsUnit (algebraMap ℤ_[p] R (u : ℤ_[p])) := u.isUnit.map _
+    have hp0 : ((p : R)) ^ n = 0 := by
+      rcases mul_eq_zero.mp hz with h | h
+      · exact absurd h hunit.ne_zero
+      · exact h
+    refine hpne ?_
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · simp at hp0
+    · exact (pow_eq_zero_iff hn.ne').mp hp0
+  haveI : Module.IsTorsionFree ℤ_[p] R :=
+    Module.isTorsionFree_iff_algebraMap_injective.mpr hZinj
+  haveI : Module.Free ℤ_[p] R := Module.free_of_finite_type_torsion_free'
+  haveI : IsNoetherianRing R := IsNoetherianRing.of_finite ℤ_[p] R
+  let eR : R ≃ₗ[ℤ_[p]] (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    (Module.Free.chooseBasis ℤ_[p] R).equivFun
+  have hcontR₁ : Continuous eR :=
+    IsModuleTopology.continuous_of_linearMap eR.toLinearMap
+  have hcontR₂ : Continuous eR.symm :=
+    IsModuleTopology.continuous_of_linearMap eR.symm.toLinearMap
+  let homR : R ≃ₜ (Module.Free.ChooseBasisIndex ℤ_[p] R → ℤ_[p]) :=
+    { toEquiv := eR.toEquiv
+      continuous_toFun := hcontR₁
+      continuous_invFun := hcontR₂ }
+  haveI : CompactSpace R := homR.symm.compactSpace
+  haveI : T2Space R := homR.isEmbedding.t2Space
+  exact IsLocalRing.isOpen_iff_finite_quotient.mp
+    (IsLocalRing.isOpen_maximalIdeal_pow R k)
+
+omit [TopologicalSpace R] [IsTopologicalRing R] [IsLocalRing R]
+  [IsModuleTopology ℤ_[p] R] in
+/-- **The coefficient ring EMBEDS in `ℚ̄_p`: `ρ` really is a lattice
+model of `τ`** (PROVEN 2026-07-26 — the third of the three
+coefficient-ring facts handed to the at-`p` flatness leaf below): for `R`
+a DOMAIN module-finite over `ℤ_p` carrying an algebra map to
+`AlgebraicClosure ℚ_[p]`, that algebra map is INJECTIVE.
+
+Together with `natCast_prime_mem_maximalIdeal_of_moduleFinite` this says
+that the coefficient ring is an ORDER IN A `p`-ADIC FIELD with residue
+characteristic `p` — the standing hypothesis of the Raynaud/Serre
+criteria the leaf below cites — and it is what makes the phrase "`ρ` is
+an `R`-LATTICE model of `τ`" true rather than merely suggestive: without
+it the intertwining `e`, `he` would relate `τ` to a base change that
+forgets part of `ρ`. Note it is strictly stronger than the leaf's
+`hpne`, which it implies (`(p : R) = 0` would force
+`(p : ℚ̄_p) = 0` in a characteristic-zero field); `hpne` is nevertheless
+kept as a separate hypothesis because the tower bookkeeping above
+consumes exactly that form.
+
+Proof: `ℚ̄_p` has characteristic zero, so `ψ := (algebraMap R ℚ̄_p) ∘
+(algebraMap ℤ_[p] R)` does not kill `p` and is therefore injective (a
+nonzero element of the DVR `ℤ_p` is a unit times `p ^ n`). A nonzero `x`
+in the kernel of `algebraMap R ℚ̄_p` is integral over `ℤ_p`
+(module-finiteness) with `minpoly ℤ_[p] x` monic; its constant
+coefficient is nonzero, since `X ∣ minpoly` would give a monic factor of
+strictly smaller degree still annihilating `x` (using that `R` is a
+domain and `x ≠ 0`), contradicting `minpoly.min`. Evaluating the integral
+equation through `algebraMap R ℚ̄_p` at `x ↦ 0` leaves exactly
+`ψ (coeff 0) = 0`, hence `coeff 0 = 0` — a contradiction. -/
+theorem injective_algebraMap_algebraicClosure_of_moduleFinite
+    [Algebra R (AlgebraicClosure ℚ_[p])] :
+    Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p])) := by
+  haveI : CharZero (AlgebraicClosure ℚ_[p]) :=
+    charZero_of_injective_algebraMap
+      ((algebraMap ℚ_[p] (AlgebraicClosure ℚ_[p])).injective)
+  set φ := algebraMap R (AlgebraicClosure ℚ_[p]) with hφ
+  set ψ : ℤ_[p] →+* AlgebraicClosure ℚ_[p] := φ.comp (algebraMap ℤ_[p] R) with hψ
+  have hψp : ψ (p : ℤ_[p]) ≠ 0 := by
+    have hcast : ψ (p : ℤ_[p]) = ((p : ℕ) : AlgebraicClosure ℚ_[p]) := by
+      simp [hψ, map_natCast]
+    rw [hcast]
+    exact_mod_cast Nat.cast_ne_zero.mpr hp.out.ne_zero
+  have hψinj : Function.Injective ψ := by
+    rw [injective_iff_map_eq_zero]
+    intro z hz
+    by_contra hzne
+    obtain ⟨n, u, rfl⟩ :=
+      IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hzne
+        (PadicInt.irreducible_p (p := p))
+    rw [map_mul, map_pow] at hz
+    have hu : IsUnit (ψ (u : ℤ_[p])) := u.isUnit.map _
+    rcases mul_eq_zero.mp hz with h | h
+    · exact hu.ne_zero h
+    · exact hψp (pow_eq_zero_iff'.mp h).1
+  rw [injective_iff_map_eq_zero]
+  intro x hx
+  by_contra hx0
+  have hint : IsIntegral ℤ_[p] x := Algebra.IsIntegral.isIntegral x
+  have hmonic : (minpoly ℤ_[p] x).Monic := minpoly.monic hint
+  have haev : Polynomial.aeval x (minpoly ℤ_[p] x) = 0 := minpoly.aeval ℤ_[p] x
+  have hc0 : (minpoly ℤ_[p] x).coeff 0 ≠ 0 := by
+    intro h0
+    obtain ⟨g, hg⟩ := Polynomial.X_dvd_iff.mpr h0
+    have hgm : g.Monic :=
+      Polynomial.Monic.of_mul_monic_left Polynomial.monic_X (hg ▸ hmonic)
+    have hgne : g ≠ 0 := hgm.ne_zero
+    have hgaev : Polynomial.aeval x g = 0 := by
+      rw [hg, map_mul, Polynomial.aeval_X] at haev
+      rcases mul_eq_zero.mp haev with h | h
+      · exact absurd h hx0
+      · exact h
+    have hlt : g.degree < (minpoly ℤ_[p] x).degree := by
+      rw [hg, mul_comm]
+      exact Polynomial.degree_lt_degree_mul_X hgne
+    exact absurd (minpoly.min ℤ_[p] x hgm hgaev) (not_le.mpr hlt)
+  have hcoeff : ψ ((minpoly ℤ_[p] x).coeff 0) = 0 := by
+    have h1 : φ (Polynomial.aeval x (minpoly ℤ_[p] x)) = 0 := by rw [haev, map_zero]
+    rw [Polynomial.aeval_def, Polynomial.hom_eval₂, hx, ← hψ] at h1
+    simpa [Polynomial.eval₂_at_zero] using h1
+  exact hc0 (hψinj (by simpa using hcoeff))
+
 /-- **The cyclotomic determinant, by Chebotarev density** (PROVEN
 2026-07-26 — the determinant analogue of the trace-density half
 `trace_eq_of_charFrob_eq` above, and the CITATION-NARROWING step of the
@@ -30597,6 +30778,84 @@ bridge itself (fourth owner's finding 2): every remaining step is a
 theorem about the étale cohomology of modular curves at `p`, absent
 from this pin and from `~/cs/FLT`.
 
+COEFFICIENT-RING NARROWING (2026-07-26, SIXTH owner — the same shape of
+step as the fourth owner's `hpne` and the fifth's `hdet`: a hypothesis
+the cited theorems assume, moved out of the citation and into a proof
+term). Raynaud's and Serre's criteria are stated over a coefficient ring
+which is an ORDER IN A `p`-ADIC FIELD: local, of residue characteristic
+`p`, with finite quotients by the powers of its maximal ideal, and
+sitting inside the `p`-adic representation whose lattice it carries. All
+four of those are DERIVABLE from the standard package `[Algebra ℤ_[p] R]
+[IsDomain R] [Module.Finite ℤ_[p] R] [IsLocalRing R]`, and the leaf now
+RECEIVES them:
+
+* `hpmem : (p : R) ∈ 𝔪` — PROVEN by Nakayama in
+  `natCast_prime_mem_maximalIdeal_of_moduleFinite` above. If `p` were a
+  unit the finitely generated `ℤ_p`-module `R` would satisfy
+  `⊤ ≤ 𝔪 ℤ_[p] • ⊤`, hence vanish.
+* `hkfin : ∀ k, Finite (R ⧸ 𝔪 ^ k)` — PROVEN in
+  `finite_quotient_maximalIdeal_pow_of_natCast_ne_zero` above, from the
+  compactness of `R` (free over `ℤ_p` by torsion-freeness, hence
+  `ℤ_p`-linearly homeomorphic to `ℤ_p ^ d`) through mathlib's
+  `IsLocalRing.isOpen_iff_finite_quotient`.
+* `hlat : Function.Injective (algebraMap R ℚ̄_p)` — PROVEN in
+  `injective_algebraMap_algebraicClosure_of_moduleFinite` above, by the
+  minimal polynomial of a kernel element over `ℤ_p`. This is what makes
+  "`ρ` is an `R`-LATTICE model of `τ`" a theorem rather than a phrase.
+
+As with `hdet`, the statement is thereby strictly WEAKER than before and
+nothing downstream changes; what moves is the setup of the citation.
+
+NON-VACUITY AUDIT (2026-07-26, sixth owner — and `hkfin` is what
+discharges it). `GaloisRep.HasFlatProlongationAt` demands a bijection
+between the representation space and the `Kᵥᵃˡᵍ`-points of a FINITE
+étale `Kᵥ`-algebra, so it entails that the space is finite. Had some
+level `R ⧸ 𝔪 ^ k` been infinite, the leaf's conclusion would hold at
+that level for a purely CARDINAL reason and this leaf — and with it the
+whole at-`p` conductor cut — would be true while carrying none of the
+arithmetic it is cited for. `hkfin` shows that cannot happen: every
+level is a genuine finite coefficient ring, so every
+`HasFlatProlongationAt` in the tower is a real and satisfiable
+condition, satisfied for instance by the good-reduction packages of
+`Semistable.lean`. The leaf's content is arithmetic, not cardinal.
+
+TERMINALITY, SIXTH AUDIT (2026-07-26). The fifth owner's "NEXT available
+narrowing" — replacing `τ, hτ, hirr` by the attached representation
+`ρ_{g₀,λ}` through `exists_linearEquiv_of_charFrob_eq` — was examined
+and is CIRCULAR; it is recorded here so that a seventh owner does not
+spend the cycle on it. The attached representation is produced by
+`exists_irreducible_galoisRep_charFrob_of_weightTwoNewform`, whose
+CONCLUSION is precisely "an irreducible `GaloisRep` whose Frobenius
+characteristic polynomials are `g₀`'s Hecke polynomials away from a
+finite set" — that is, `hτ` and `hirr` verbatim. Restating the leaf for
+it would therefore prove `X` from `X`. The only content in the move is
+the change of carrier `g ↝ g₀` from eigenform to NEWFORM, and the ROUTE
+AUDIT of the consumer already rejects that as a verbatim restatement of
+the downstream PROVEN
+`weightTwoNewform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`.
+Confirmed independently: the carriers `EichlerShimuraPackage` and
+`ModularJacobianPackage` behind the attachment leaf carry NO local-`G_v`
+data (COORDINATION note of
+`exists_weightTwoEigenform_not_dvd_level_p_of_isFlatAt_of_isIrreducible`
+below), so the move would not hand a future prover the Deligne–Rapoport
+geometry either. The SPLIT AUDIT's recorded target — a
+crystalline/Barsotti–Tate predicate, or the Tate parameter with local
+class field theory and the Kummer sequence — remains the only route, and
+it is an infrastructure build, not a re-cut of this leaf.
+
+FAITHFULNESS RE-AUDIT (2026-07-26, sixth owner; the leaf stands as
+stated). The obvious degeneracy — a coefficient module `V` on which the
+level reductions vanish, e.g. `V` a `ℚ_p`-vector space over `R = ℤ_p`,
+which would make every `ρ.baseChange (R ⧸ 𝔪 ^ k)` subsingleton and hence
+flat by `hasFlatProlongationAt_of_subsingleton` — is IMPOSSIBLE here:
+`GaloisRep.baseChange` carries `[Module.Finite R V] [Module.Free R V]`
+in its own binders, so `V` is finite free and `e` pins its rank at `2`.
+The companion degeneracy on the ring side — `𝔪 ^ k` stationary, so that
+the tower has only finitely many distinct levels — is excluded by
+`hpne` together with `hpmem`: `p ∈ 𝔪` and `p ≠ 0` in the Noetherian
+local domain `R` make `⋂ 𝔪 ^ k = 0` by Krull, so the levels genuinely
+separate points.
+
 SOUNDNESS: inherited verbatim from the consumer's SOUNDNESS AUDIT
 (`p = 11`, `M = 11`, the weight-2 newform of level `11`), whose witness
 has `v_p(q_E) = 1`, not divisible by `11`, and therefore already fails
@@ -30630,7 +30889,10 @@ theorem exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew
         algebraMap ℤ_[p] (AlgebraicClosure ℚ_[p])
           ((cyclotomicCharacter (AlgebraicClosure ℚ) p γ.toRingEquiv :
             ℤ_[p]ˣ) : ℤ_[p]))
-    (hpne : (p : R) ≠ 0) :
+    (hpne : (p : R) ≠ 0)
+    (hpmem : (p : R) ∈ IsLocalRing.maximalIdeal R)
+    (hkfin : ∀ k : ℕ, Finite (R ⧸ (IsLocalRing.maximalIdeal R ^ k : Ideal R)))
+    (hlat : Function.Injective (algebraMap R (AlgebraicClosure ℚ_[p]))) :
     ∃ k : ℕ,
       ¬ (ρ.baseChange (R ⧸ (IsLocalRing.maximalIdeal R ^ k))).HasFlatProlongationAt
         (Fact.out : p.Prime).toHeightOneSpectrumRingOfIntegersRat :=
@@ -30646,7 +30908,17 @@ terminality audits; the second step, added 2026-07-26, DISCHARGES the
 leaf's cyclotomic-determinant hypothesis `hdet` by Chebotarev density
 through `det_eq_cyclotomicCharacter_of_charFrob_coeff_zero`, so the
 weight-2 normalization is now a proof term rather than part of the
-citation; the citations and audits below are UNCHANGED and
+citation; a THIRD step, added 2026-07-26, discharges the leaf's three
+coefficient-ring hypotheses `hpmem`, `hkfin`, `hlat` — residue
+characteristic `p`, finite level quotients and the lattice embedding
+`R ↪ ℚ̄_p` — through
+`natCast_prime_mem_maximalIdeal_of_moduleFinite`,
+`finite_quotient_maximalIdeal_pow_of_natCast_ne_zero` and
+`injective_algebraMap_algebraicClosure_of_moduleFinite` above, so that
+"the coefficient ring is an order in a `p`-adic field", the standing
+setup of the cited Raynaud/Serre criteria, is a proof term too, and the
+leaf's NON-VACUITY is certified rather than assumed; the citations and
+audits below are UNCHANGED and
 remain the authority on this node's literature content. This node WAS
 itself the single residual literature leaf of the at-`p` conductor cut,
 NARROWED 2026-07-25 by the derivable hypothesis `hpne : (p : R) ≠ 0` —
@@ -30816,6 +31088,9 @@ theorem not_isFlatAt_of_weightTwoEigenform_pNew_of_isIrreducible_of_pNeZero
   obtain ⟨k, hk⟩ :=
     exists_level_not_hasFlatProlongationAt_of_weightTwoEigenform_pNew hpodd
       hM hpM hg hpnew κ hτ hirr e he hdet hpne
+      natCast_prime_mem_maximalIdeal_of_moduleFinite
+      (finite_quotient_maximalIdeal_pow_of_natCast_ne_zero hpne)
+      injective_algebraMap_algebraicClosure_of_moduleFinite
   -- … is a genuine level of the flat tower, because `hpne` makes `𝔪 ^ k` open
   exact hk (hflat.cond _ (isOpen_maximalIdeal_pow_of_natCast_ne_zero hpne k))
 
