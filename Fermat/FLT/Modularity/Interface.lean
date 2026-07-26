@@ -150,6 +150,10 @@ import Mathlib.RingTheory.Algebraic.Integral
 import Mathlib.LinearAlgebra.LinearIndependent.BaseChange
 import Mathlib.LinearAlgebra.LinearIndependent.Lemmas
 import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+-- Simultaneous generalized eigenspaces for a commuting family, used by the
+-- spectral descent out of the old subspace
+-- (`exists_heckeOp_eigen_of_mem_oldSubspace`).
+import Mathlib.LinearAlgebra.Eigenspace.Pi
 -- Dual-space machinery for the rational-spanning descent
 -- (`cuspForm_mem_span_rational`): the Sturm coefficient functionals
 -- span the dual, a dual basis is extracted, and `Aut(ℂ)`-stability
@@ -25657,10 +25661,396 @@ theorem qCoeff_degeneracyOp {N M d : ℕ} (hd : 0 < d) (hdvd : d * N ∣ M)
       if d ∣ m then qCoeff N f (m / d) else 0 :=
   (((exists_degeneracyOpLinear_total N M d).choose_spec hd hdvd).2) f m
 
+/-! ### `V_d` against the good Hecke operators
+
+Built 2026-07-26.  Everything in this block is PROVEN, and it is the
+"pure coefficient computation" half of the Atkin–Lehner algebra: the
+degeneracy operator is INJECTIVE and COMMUTES with every Hecke operator
+`T_q` at a prime `q ∤ M`.  Both come straight out of
+`qCoeff_degeneracyOp` read against `qCoeff_heckeOp`. -/
+
+/-- **The arithmetic core of `T_q ∘ V_d = V_d ∘ T_q`.**  Purely a statement
+about `ℕ`-indexed coefficient families: substituting the degeneracy formula
+`a_n(V_d u) = 1_{d ∣ n}·a_{n/d}(u)` into the good-prime Hecke formula
+`a_m(T_q f) = a_{qm}(f) + 1_{q ∣ m}·q·a_{m/q}(f)` gives the same expression in
+either order, because `q ∤ d` makes `q` and `d` coprime and so lets every
+divisibility side-condition and every index be exchanged:
+`d ∣ qm ↔ d ∣ m`, `qm/d = q(m/d)`, and, given `d ∣ m`, `q ∣ m ↔ q ∣ m/d`
+with `m/q/d = m/d/q`. -/
+theorem degeneracy_hecke_coeff_identity {d q : ℕ} (hd : 0 < d) (hq : q.Prime)
+    (hqd : ¬ q ∣ d) (a : ℕ → ℂ) (m : ℕ) :
+    ((if d ∣ q * m then a (q * m / d) else 0)
+        + (if q ∣ m then (q : ℂ) * (if d ∣ m / q then a (m / q / d) else 0) else 0))
+      = if d ∣ m then
+          (a (q * (m / d)) + (if q ∣ m / d then (q : ℂ) * a (m / d / q) else 0))
+        else 0 := by
+  have hcopqd : Nat.Coprime q d := (Nat.Prime.coprime_iff_not_dvd hq).mpr hqd
+  have hcopdq : Nat.Coprime d q := hcopqd.symm
+  by_cases hdm : d ∣ m
+  · obtain ⟨t, rfl⟩ := hdm
+    have hdt : d * t / d = t := Nat.mul_div_cancel_left t hd
+    have h1 : d ∣ q * (d * t) := (dvd_mul_right d t).mul_left q
+    have h2 : q * (d * t) / d = q * t := by
+      rw [show q * (d * t) = d * (q * t) by ring, Nat.mul_div_cancel_left _ hd]
+    rw [if_pos h1, if_pos (dvd_mul_right d t), h2, hdt]
+    by_cases hqt : q ∣ t
+    · have hqm : q ∣ d * t := hqt.mul_left d
+      have hdiv : d * t / q = d * (t / q) := by
+        obtain ⟨s, rfl⟩ := hqt
+        rw [show d * (q * s) = q * (d * s) by ring, Nat.mul_div_cancel_left _ hq.pos,
+          Nat.mul_div_cancel_left _ hq.pos]
+      rw [if_pos hqm, if_pos hqt, hdiv, if_pos (dvd_mul_right d (t / q)),
+        Nat.mul_div_cancel_left _ hd]
+    · have hqm : ¬ q ∣ d * t := fun h => hqt (hcopqd.dvd_of_dvd_mul_left h)
+      rw [if_neg hqm, if_neg hqt]
+  · have h1 : ¬ d ∣ q * m := fun h => hdm (hcopdq.dvd_of_dvd_mul_left h)
+    rw [if_neg h1, if_neg hdm]
+    by_cases hqm : q ∣ m
+    · have h2 : ¬ d ∣ m / q := fun h => hdm (h.trans (Nat.div_dvd_of_dvd hqm))
+      rw [if_pos hqm, if_neg h2, mul_zero, zero_add]
+    · rw [if_neg hqm, zero_add]
+
+/-- **`V_d` COMMUTES with the good Hecke operators** (PROVEN 2026-07-26):
+for `d·N ∣ M` and a prime `q ∤ M`,
+`T_q^{(M)} ∘ V_d = V_d ∘ T_q^{(N)}`.
+
+Note `q ∤ M` forces `q ∤ d` and `q ∤ N` (both divide `M`), so `q` is a GOOD
+prime at BOTH levels and the two Hecke formulas carry the same `q·a_{m/q}`
+correction term; the identity is then `degeneracy_hecke_coeff_identity`
+coefficientwise, and a weight-2 cusp form is determined by its `q`-expansion. -/
+theorem heckeOp_degeneracyOp {N M d q : ℕ} (hN : 0 < N) (hM : 0 < M) (hd : 0 < d)
+    (hdvd : d * N ∣ M) (hq : q.Prime) (hqM : ¬ q ∣ M)
+    (u : CuspForm (Gamma0GL N) 2) :
+    heckeOp M q (degeneracyOp N M d u) = degeneracyOp N M d (heckeOp N q u) := by
+  have hNdvd : N ∣ M := (Dvd.intro_left d rfl).trans hdvd
+  have hddvd : d ∣ M := (Dvd.intro N rfl).trans hdvd
+  have hqN : ¬ q ∣ N := fun h => hqM (h.trans hNdvd)
+  have hqd : ¬ q ∣ d := fun h => hqM (h.trans hddvd)
+  refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+  rw [qCoeff_heckeOp hM hq (degeneracyOp N M d u) m, if_neg hqM,
+    qCoeff_degeneracyOp hd hdvd u (q * m), qCoeff_degeneracyOp hd hdvd u (m / q),
+    qCoeff_degeneracyOp hd hdvd (heckeOp N q u) m, qCoeff_heckeOp hN hq u (m / d),
+    if_neg hqN]
+  exact degeneracy_hecke_coeff_identity hd hq hqd (qCoeff N u) m
+
+/-- **`V_d` is INJECTIVE** (PROVEN 2026-07-26): immediate from
+`a_{d·m}(V_d u) = a_m(u)`, since a weight-2 cusp form is determined by its
+`q`-expansion. -/
+theorem degeneracyOp_injective {N M d : ℕ} (hd : 0 < d) (hdvd : d * N ∣ M) :
+    Function.Injective (degeneracyOp N M d) := by
+  intro u₁ u₂ h
+  refine cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+  have h1 := congrArg (fun F => qCoeff M F (d * m)) h
+  simp only [qCoeff_degeneracyOp hd hdvd, if_pos (dvd_mul_right d m),
+    Nat.mul_div_cancel_left m hd] at h1
+  exact h1
+
+/-- **THE ELEMENTARY CONVERSE OF THE MAIN LEMMA** (PROVEN 2026-07-26): every
+form in the OLD subspace has vanishing `q`-expansion coefficients at all
+indices COPRIME to the level.
+
+`a_n(V_p u) = 0` unless `p ∣ n` (`qCoeff_degeneracyOp`), and an `n` coprime to
+`M` is divisible by NO prime factor `p` of `M`.  Vanishing at a fixed `n` is
+the kernel of the linear functional `qCoeffL M n`, hence a submodule, so it
+suffices to check it on each generating image — which is what makes this
+direction elementary while the converse
+(`mem_oldSubspace_of_qCoeff_coprime_eq_zero`) is genuine analysis.
+
+`0 < M` is retained for API uniformity with the siblings but is NOT used by
+the proof, hence the underscore: at `M = 0` the statement is vacuously fine
+because `Nat.primeFactors 0 = ∅` makes the old subspace `⊥`. -/
+theorem qCoeff_eq_zero_of_mem_oldSubspace {M : ℕ} (_hM : 0 < M)
+    {v : CuspForm (Gamma0GL M) 2}
+    (hv : v ∈ ⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p))
+    {n : ℕ} (hn : Nat.Coprime n M) : qCoeff M v n = 0 := by
+  have hle : (⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p))
+      ≤ LinearMap.ker (qCoeffL M n) := by
+    refine iSup₂_le fun p hp => ?_
+    rintro _ ⟨u, rfl⟩
+    have hpp : p.Prime := Nat.prime_of_mem_primeFactors hp
+    have hpd : p ∣ M := Nat.dvd_of_mem_primeFactors hp
+    have hdvd : p * (M / p) ∣ M := by rw [Nat.mul_div_cancel' hpd]
+    have hpn : ¬ p ∣ n := by
+      intro h
+      have hp1 : p ∣ 1 := hn ▸ Nat.dvd_gcd h hpd
+      exact hpp.one_lt.ne' (Nat.dvd_one.mp hp1)
+    rw [LinearMap.mem_ker, qCoeffL_apply, qCoeff_degeneracyOp hpp.pos hdvd,
+      if_neg hpn]
+  have := hle hv
+  rwa [LinearMap.mem_ker, qCoeffL_apply] at this
+
 end DegeneracyOperator
 
+/-- **SPECTRAL DESCENT THROUGH A SUM OF STABLE SUBSPACES** (PROVEN
+2026-07-26, pure linear algebra over an algebraically closed field).
+
+Let a family `T i` of COMMUTING endomorphisms of a finite-dimensional space
+`V` preserve each member of a family `U k` of subspaces, and let `w ≠ 0` lie
+in `⨆ k, U k` and in the simultaneous generalized eigenspace at the character
+`χ`.  Then SOME single `U k` already contains a nonzero vector of that same
+simultaneous generalized eigenspace.
+
+This is what lets a joint Hecke eigenvector in the OLD subspace — which is a
+SUM of the images of the degeneracy maps `V_p`, and in general lies in no
+single one of them — be traced back to ONE prime `p`.
+
+PROOF.  Simultaneous triangularizability
+(`Module.End.iSup_iInf_maxGenEigenspace_eq_top_of_iSup_maxGenEigenspace_eq_top_of_commute`)
+applied to the operators RESTRICTED to `U k`, pushed forward along the
+inclusion via `Submodule.inf_iInf_maxGenEigenspace_of_forall_mapsTo`, writes
+each `U k` as `⨆ ψ, U k ⊓ E ψ` where `E ψ` is the simultaneous generalized
+eigenspace at `ψ`.  Hence `⨆ k, U k = ⨆ ψ, ⨆ k, (U k ⊓ E ψ)`.  Splitting that
+sup at `ψ = χ` and using INDEPENDENCE of the `E ψ`
+(`Module.End.independent_iInf_maxGenEigenspace_of_forall_mapsTo`) kills the
+`ψ ≠ χ` part of `w`, because `w` itself lies in `E χ`.  So
+`w ∈ ⨆ k, (U k ⊓ E χ)`, and `w ≠ 0` forces some summand to be nonzero. -/
+theorem exists_ne_zero_mem_inf_iInf_maxGenEigenspace
+    {K V ι κ : Type*} [Field K] [IsAlgClosed K] [AddCommGroup V] [Module K V]
+    [FiniteDimensional K V]
+    (U : κ → Submodule K V) (T : ι → Module.End K V)
+    (hcomm : ∀ i j, Commute (T i) (T j))
+    (hstab : ∀ i k, Set.MapsTo (T i) (U k) (U k))
+    (χ : ι → K) {w : V} (hw : w ≠ 0) (hwU : w ∈ ⨆ k, U k)
+    (hwχ : w ∈ ⨅ i, (T i).maxGenEigenspace (χ i)) :
+    ∃ k, ∃ v ∈ U k, v ≠ 0 ∧ v ∈ ⨅ i, (T i).maxGenEigenspace (χ i) := by
+  classical
+  set E : (ι → K) → Submodule K V :=
+    fun ψ => ⨅ i, (T i).maxGenEigenspace (ψ i) with hEdef
+  have hmaps : ∀ i j φ,
+      Set.MapsTo (T i) ((T j).maxGenEigenspace φ) ((T j).maxGenEigenspace φ) :=
+    fun i j φ => (T j).mapsTo_maxGenEigenspace_of_comm (hcomm i j).eq.symm φ
+  have hindep : iSupIndep E :=
+    Module.End.independent_iInf_maxGenEigenspace_of_forall_mapsTo T hmaps
+  -- Every stable subspace is the sum of its intersections with the joint
+  -- generalized eigenspaces.
+  have hUdecomp : ∀ k, U k = ⨆ ψ : ι → K, U k ⊓ E ψ := by
+    intro k
+    have hp : ∀ i, Set.MapsTo (T i) (U k) (U k) := fun i => hstab i k
+    have hcomm' : ∀ i j, Commute ((T i).restrict (hp i)) ((T j).restrict (hp j)) := by
+      intro i j
+      refine LinearMap.ext fun x => Subtype.ext ?_
+      have hx := LinearMap.congr_fun (hcomm i j).eq (x : V)
+      simpa [LinearMap.restrict_apply, Module.End.mul_apply] using hx
+    have htop : ⨆ ψ : ι → K,
+        ⨅ i, Module.End.maxGenEigenspace ((T i).restrict (hp i)) (ψ i) = ⊤ :=
+      Module.End.iSup_iInf_maxGenEigenspace_eq_top_of_iSup_maxGenEigenspace_eq_top_of_commute
+        _ (fun i j _ => hcomm' i j)
+        (fun i => Module.End.iSup_maxGenEigenspace_eq_top _)
+    have hmap := congrArg (Submodule.map (U k).subtype) htop
+    rw [Submodule.map_iSup, Submodule.map_top, Submodule.range_subtype] at hmap
+    simp only [← Submodule.inf_iInf_maxGenEigenspace_of_forall_mapsTo T (U k) hp] at hmap
+    exact hmap.symm
+  set F : (ι → K) → Submodule K V := fun ψ => ⨆ k, U k ⊓ E ψ with hFdef
+  have hFle : ∀ ψ, F ψ ≤ E ψ := fun ψ => iSup_le fun _ => inf_le_right
+  have hwF : w ∈ ⨆ ψ : ι → K, F ψ := by
+    have h1 : (⨆ k, U k) = ⨆ k, ⨆ ψ : ι → K, U k ⊓ E ψ := iSup_congr hUdecomp
+    have h2 : (⨆ ψ : ι → K, F ψ) = ⨆ k, ⨆ ψ : ι → K, U k ⊓ E ψ := iSup_comm
+    rw [h2, ← h1]
+    exact hwU
+  -- Split off the `χ`-component; independence kills the rest, since `w ∈ E χ`.
+  have hwFχ : w ∈ F χ := by
+    rw [iSup_split_single F χ] at hwF
+    obtain ⟨a, ha, b, hb, hab⟩ := Submodule.mem_sup.mp hwF
+    have hbE : b ∈ E χ := by
+      rw [eq_sub_of_add_eq' hab]
+      exact Submodule.sub_mem _ hwχ (hFle χ ha)
+    have hbrest : b ∈ ⨆ (ψ : ι → K) (_ : ψ ≠ χ), E ψ :=
+      (iSup₂_mono fun ψ _ => hFle ψ) hb
+    have hb0 : b = 0 := by
+      have hbot := (hindep χ).le_bot ⟨hbE, hbrest⟩
+      simpa using hbot
+    have haw : a = w := by rw [← hab, hb0, add_zero]
+    exact haw ▸ ha
+  -- A nonzero vector in a supremum forces one summand to be nonzero.
+  have hex : ∃ k, U k ⊓ E χ ≠ ⊥ := by
+    by_contra hcon
+    have hcon' : ∀ k, U k ⊓ E χ = ⊥ := fun k => by
+      by_contra hk
+      exact hcon ⟨k, hk⟩
+    have hbot : F χ = ⊥ := by simp [hFdef, hcon']
+    rw [hbot] at hwFχ
+    exact hw (Submodule.mem_bot K |>.mp hwFχ)
+  obtain ⟨k, hk⟩ := hex
+  obtain ⟨v, hv, hv0⟩ := (U k ⊓ E χ).ne_bot_iff.mp hk
+  obtain ⟨hvU, hvE⟩ := Submodule.mem_inf.mp hv
+  exact ⟨k, v, hvU, hv0, hvE⟩
+
+/-- **DESCENT OUT OF THE OLD SUBSPACE TO A SINGLE PRIME** (PROVEN
+2026-07-26): a NONZERO joint eigenvector `w` of the good Hecke operators
+lying in the old subspace `Σ_{p ∣ M} V_p S₂(Γ₀(M/p))` comes, for SOME prime
+`p ∣ M`, from a NONZERO joint eigenvector `u ∈ S₂(Γ₀(M/p))` with the SAME
+eigenvalues.
+
+This is the step that the file docstring's "pure coefficient computation"
+remark under-describes: `w` lies in a SUM of the images `V_p`, and those
+images are NOT independent (e.g. `V_{pq}f` lies in both `V_p` and `V_q`), so
+one cannot simply read off a component.  What makes it work is spectral, not
+coefficientwise — each `range V_p` is stable under the good `T_q`
+(`heckeOp_degeneracyOp`), so the simultaneous generalized eigenspace
+decomposition can be intersected with it
+(`exists_ne_zero_mem_inf_iInf_maxGenEigenspace`).
+
+The generalized eigenvector this produces is upgraded to an HONEST one by
+`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` (good-prime
+semisimplicity, the Petersson leaf), and then pushed down through the
+INJECTIVITY of `V_p`. -/
+theorem exists_heckeOp_eigen_of_mem_oldSubspace {M : ℕ} (hM : 0 < M) {c : ℕ → ℂ}
+    {w : CuspForm (Gamma0GL M) 2} (hw : w ≠ 0)
+    (hwe : ∀ q : ℕ, q.Prime → ¬ q ∣ M → heckeOp M q w = c q • w)
+    (hold : w ∈ ⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p)) :
+    ∃ p ∈ M.primeFactors, ∃ u : CuspForm (Gamma0GL (M / p)) 2, u ≠ 0 ∧
+      ∀ q : ℕ, q.Prime → ¬ q ∣ M → heckeOp (M / p) q u = c q • u := by
+  classical
+  haveI : FiniteDimensional ℂ (CuspForm (Gamma0GL M) 2) :=
+    cuspForm_finiteDimensional M hM
+  -- Basic facts about a prime factor `p` of `M`.
+  have hfac : ∀ p : ℕ, p ∈ M.primeFactors →
+      p.Prime ∧ 0 < M / p ∧ p * (M / p) ∣ M := by
+    intro p hp
+    have hpp : p.Prime := Nat.prime_of_mem_primeFactors hp
+    have hpd : p ∣ M := Nat.dvd_of_mem_primeFactors hp
+    refine ⟨hpp, Nat.div_pos (Nat.le_of_dvd hM hpd) hpp.pos, ?_⟩
+    rw [Nat.mul_div_cancel' hpd]
+  set T : {q : ℕ // q.Prime ∧ ¬ q ∣ M} → Module.End ℂ (CuspForm (Gamma0GL M) 2) :=
+    fun q => heckeOp M q.1 with hTdef
+  set U : {p : ℕ // p ∈ M.primeFactors} → Submodule ℂ (CuspForm (Gamma0GL M) 2) :=
+    fun p => LinearMap.range (degeneracyOp (M / p.1) M p.1) with hUdef
+  have hcomm : ∀ i j, Commute (T i) (T j) := fun i j =>
+    heckeOp_mul_comm hM i.2.1 j.2.1
+  have hstab : ∀ i k, Set.MapsTo (T i) (U k) (U k) := by
+    intro i k x hx
+    obtain ⟨u, rfl⟩ := hx
+    obtain ⟨hpp, hpos, hdvd⟩ := hfac k.1 k.2
+    exact ⟨heckeOp (M / k.1) i.1 u,
+      (heckeOp_degeneracyOp hpos hM hpp.pos hdvd i.2.1 i.2.2 u).symm⟩
+  have hwU : w ∈ ⨆ k, U k := by
+    have hle : (⨆ p ∈ M.primeFactors,
+        LinearMap.range (degeneracyOp (M / p) M p)) ≤ ⨆ k, U k :=
+      iSup₂_le fun p hp => le_iSup U ⟨p, hp⟩
+    exact hle hold
+  have hwχ : w ∈ ⨅ i, (T i).maxGenEigenspace ((fun q => c q.1) i) := by
+    rw [Module.End.mem_iInf_maxGenEigenspace_iff]
+    intro j
+    refine ⟨1, ?_⟩
+    have hj := hwe j.1 j.2.1 j.2.2
+    simp only [pow_one, LinearMap.sub_apply, hTdef]
+    rw [hj]
+    simp
+  obtain ⟨k, v, hvU, hv0, hvE⟩ :=
+    exists_ne_zero_mem_inf_iInf_maxGenEigenspace U T hcomm hstab
+      (fun q => c q.1) hw hwU hwχ
+  obtain ⟨hpp, hpos, hdvd⟩ := hfac k.1 k.2
+  obtain ⟨u, hu⟩ := hvU
+  refine ⟨k.1, k.2, u, ?_, ?_⟩
+  · intro hu0
+    exact hv0 (by rw [← hu, hu0, map_zero])
+  · intro q hq hqM
+    -- generalized eigenvector upstairs, made honest by semisimplicity
+    obtain ⟨n, hn⟩ :=
+      (Module.End.mem_iInf_maxGenEigenspace_iff T (fun q => c q.1) v).mp hvE
+        ⟨q, hq, hqM⟩
+    have hvsmul : heckeOp M q v = c q • v :=
+      heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level hM hq hqM (c q)
+        (n := n) (by simpa [hTdef] using hn)
+    -- push the identity down through the injective `V_p`
+    refine degeneracyOp_injective hpp.pos hdvd ?_
+    rw [← heckeOp_degeneracyOp hpos hM hpp.pos hdvd hq hqM u, hu, hvsmul, ← hu,
+      map_smul]
+
+/-- **EIGENSYSTEM REALIZATION AT A DIVISOR LEVEL** (sorry leaf — cut
+2026-07-26 out of `exists_weightTwoEigenform_of_mem_oldSubspace`;
+Diamond–Shurman Theorem 5.8.2 together with Proposition 5.8.5): a NONZERO
+`u ∈ S₂(Γ₀(N))`, with `N ∣ M`, which is an honest eigenvector of every Hecke
+operator `T_q` at a prime `q ∤ M`, with eigenvalues `c q`, has `c` realized on
+those primes by a normalized weight-2 eigenform of some level `M' ∣ N`.
+
+This is what is left of the ALGEBRAIC half of Atkin–Lehner once the spectral
+descent (`exists_heckeOp_eigen_of_mem_oldSubspace`, PROVEN above) and the
+degeneracy calculus (`heckeOp_degeneracyOp`, `degeneracyOp_injective`, both
+PROVEN above) are removed.  It is stated at a level `N` DIVIDING an ambient
+`M` because that is the shape descent produces and the shape induction needs:
+the hypothesis constrains `u` only at the primes `q ∤ M`, which is FEWER
+primes than the primes good for `N`, and any proof by induction on the level
+must carry that gap.
+
+CLASSICAL PROOF.  `S₂(Γ₀(N))` is the direct sum, over divisors `M' ∣ N` and
+newforms `f` of level `M'`, of the blocks `span{V_d f : d ∣ N/M'}`; every
+`T_q` with `q ∤ M` preserves each block and acts on it by the SCALAR `a_q(f)`
+(because `V_d` commutes with `T_q` for `q ∤ d`, which is
+`heckeOp_degeneracyOp` above).  So a nonzero joint eigenvector has a nonzero
+component in some block, and comparing eigenvalues there gives
+`a_q(f) = c q` for every `q ∤ M`.  A newform is in particular a normalized
+weight-2 eigenform (Prop. 5.8.5), i.e. an inhabitant of
+`IsWeightTwoEigenform M'`.
+
+WHAT IT STILL NEEDS, and why it is NOT elementary.  The block decomposition
+is the newform decomposition itself, and establishing it needs the Main
+Lemma `mem_oldSubspace_of_qCoeff_coprime_eq_zero` AT EVERY LEVEL DIVIDING
+`N` — not merely at the top level.  So this leaf is genuinely downstream of
+the analytic half; it is not dischargeable by coefficient bookkeeping alone.
+
+FAITHFULNESS.  `hu : u ≠ 0` is load-bearing: for `u = 0` the conclusion
+asserts an eigenform matching an unconstrained `c`, and at `N = 1` there is
+no eigenform at all (`S₂(Γ₀(1)) = 0`, `isWeightTwoEigenform_one_elim`).  The
+statement is NOT vacuous: `N = M'` with `u = f` a newform and `c q = a_q(f)`
+satisfies every hypothesis. -/
+theorem exists_weightTwoEigenform_of_heckeOp_eigen_of_level_dvd {N M : ℕ}
+    (hN : 0 < N) (hNM : N ∣ M) {c : ℕ → ℂ} {u : CuspForm (Gamma0GL N) 2}
+    (hu : u ≠ 0)
+    (hue : ∀ q : ℕ, q.Prime → ¬ q ∣ M → heckeOp N q u = c q • u) :
+    ∃ M' : ℕ, M' ∣ N ∧ ∃ g' : CuspForm (Gamma0GL M') 2,
+      IsWeightTwoEigenform M' g' ∧
+        ∀ q : ℕ, q.Prime → ¬ q ∣ M → qCoeff M' g' q = c q :=
+  sorry
+
+/-- **THE NEW SUBSPACE DETECTS NO FORM WITH VANISHING GOOD COEFFICIENTS**
+(sorry leaf — cut 2026-07-26 out of
+`mem_oldSubspace_of_qCoeff_coprime_eq_zero`; Diamond–Shurman Theorem 5.7.1,
+Atkin–Lehner 1970 Lemma 18): the old subspace admits a COMPLEMENT `W` inside
+which the only form whose `q`-expansion coefficients all vanish at indices
+COPRIME to `M` is `0`.
+
+This is the whole ANALYTIC content of the Atkin–Lehner Main Lemma, and it is
+stated in the form the classical proof actually produces.  `W` is the *new*
+subspace: the orthogonal complement of the old subspace for the PETERSSON
+inner product
+
+  `⟨f, h⟩ = ∫_{Γ₀(M)\ℍ} f(τ) conj(h(τ)) dx dy`,
+
+which exists because `S₂(Γ₀(M))` is finite-dimensional
+(`cuspForm_finiteDimensional`, PROVEN) and the Petersson form is a
+positive-definite Hermitian form on it.  The vanishing statement is then
+D–S Thm 5.7.1 proper, whose proof runs through the Atkin–Lehner involutions
+`W_Q` and the Petersson adjointness of the degeneracy maps.
+
+WHY ONLY `⊔ = ⊤` IS DEMANDED, not `IsCompl`.  Directness is not needed by
+the consumer — only that every form splits — so the weaker requirement is
+stated, which is the easier obligation.  The leaf is NOT thereby weakened
+into vacuity: `W = ⊤` satisfies `⊔ = ⊤` but violates the second conjunct,
+since a nonzero old form has vanishing coefficients at every index coprime
+to `M` (`qCoeff_eq_zero_of_mem_oldSubspace`).  The two conjuncts together
+still force `W` to meet the old subspace trivially.
+
+WHAT THE PIN LACKS.  Nothing of the Petersson theory beyond the integrand
+`petersson` and its `SL(2,ℤ)`-invariance and exponential decay exists in
+`Mathlib.NumberTheory.ModularForms.Petersson`: the integral over a
+fundamental domain, positive-definiteness, the inner-product structure and
+the adjointness computation all have to be built, and there is no
+Atkin–Lehner material in mathlib or in `~/cs/FLT`.  This is shared with the
+sibling leaf `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`
+(good-prime semisimplicity), which needs the SAME inner product and
+self-adjointness of `T_q` — so whoever builds the Petersson product should
+expect to discharge both. -/
+theorem exists_oldSubspace_complement_vanishing (M : ℕ) (hM : 0 < M) :
+    ∃ W : Submodule ℂ (CuspForm (Gamma0GL M) 2),
+      (⨆ p ∈ M.primeFactors,
+        LinearMap.range (degeneracyOp (M / p) M p)) ⊔ W = ⊤ ∧
+      ∀ v ∈ W, (∀ n : ℕ, Nat.Coprime n M → qCoeff M v n = 0) → v = 0 :=
+  sorry
+
 /-- **ATKIN–LEHNER MAIN LEMMA: no coefficients away from the level forces a form
-into the OLD SUBSPACE** (sorry leaf — cut 2026-07-26 out of
+into the OLD SUBSPACE** (PROVEN 2026-07-26 over the single analytic leaf
+`exists_oldSubspace_complement_vanishing` above; cut 2026-07-26 out of
 `exists_weightTwoEigenform_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero`;
 Diamond–Shurman Theorem 5.7.1, Atkin–Lehner 1970 Lemma 18): if every
 `q`-expansion coefficient `a_n(w)` at an index `n` COPRIME to `M` vanishes, then
@@ -25672,22 +26062,42 @@ product and the Atkin–Lehner involutions `W_Q`, neither of which exists on thi
 pin.  Note it needs NO eigenvector hypothesis — it is a statement about a single
 cusp form, exactly as in Diamond–Shurman.
 
-The converse inclusion is elementary and true: `a_n(V_p u) = 0` unless `p ∣ n`
-(`qCoeff_degeneracyOp`), and an `n` coprime to `M` is not divisible by any
-`p ∣ M`.  So this leaf is the nontrivial direction of an equivalence.
+STATUS 2026-07-26.  The analysis is now isolated in ONE leaf,
+`exists_oldSubspace_complement_vanishing` above — the existence of a
+complement of the old subspace (the *new* subspace, Petersson-orthogonal) in
+which no nonzero form has vanishing coefficients at all indices coprime to
+`M`.  Given it, this node is a three-line splitting argument, because the
+CONVERSE inclusion is elementary and is now PROVEN and consumed here:
+`qCoeff_eq_zero_of_mem_oldSubspace` (`a_n(V_p u) = 0` unless `p ∣ n` by
+`qCoeff_degeneracyOp`, and an `n` coprime to `M` is divisible by no `p ∣ M`).
+Split `w = a + b` with `a` old and `b` in the complement; `a` has vanishing
+good coefficients by the converse, hence so does `b = w − a`, hence `b = 0`.
 
-DEPENDENCY NOTE.  `V_p` itself is now BUILT and sorry-free (`degeneracyOp`
-above, with `degeneracyOp_coe` and `qCoeff_degeneracyOp`), so what remains here
-is genuinely the analysis and nothing definitional.  Whoever attacks it needs:
-the Petersson inner product on `S₂(Γ₀(M))` (being built independently at
-`exists_peterssonProduct_selfAdjoint_heckeOp`, the sibling leaf of
-`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`), and the involutions
-`W_Q`. -/
+DEPENDENCY NOTE.  `V_p` itself is BUILT and sorry-free (`degeneracyOp` above,
+with `degeneracyOp_coe` and `qCoeff_degeneracyOp`), so nothing definitional
+remains anywhere in this cluster.  What the remaining leaf needs is the
+Petersson inner product on `S₂(Γ₀(M))` and the involutions `W_Q`; note that
+NO `exists_peterssonProduct_selfAdjoint_heckeOp` declaration exists in this
+tree as of 2026-07-26, contrary to an earlier note here, so the Petersson
+product is genuinely unbuilt and is shared with the sibling leaf
+`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`. -/
 theorem mem_oldSubspace_of_qCoeff_coprime_eq_zero {M : ℕ} (hM : 0 < M)
     {w : CuspForm (Gamma0GL M) 2}
     (hwc : ∀ n : ℕ, Nat.Coprime n M → qCoeff M w n = 0) :
-    w ∈ ⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p) :=
-  sorry
+    w ∈ ⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p) := by
+  obtain ⟨W, hsup, hW⟩ := exists_oldSubspace_complement_vanishing M hM
+  have hmem : w ∈ (⨆ p ∈ M.primeFactors,
+      LinearMap.range (degeneracyOp (M / p) M p)) ⊔ W := by
+    rw [hsup]; exact Submodule.mem_top
+  obtain ⟨a, ha, b, hb, hab⟩ := Submodule.mem_sup.mp hmem
+  have hb0 : b = 0 := by
+    refine hW b hb fun n hn => ?_
+    rw [eq_sub_of_add_eq' hab]
+    have hsub : qCoeff M (w - a) n = qCoeff M w n - qCoeff M a n := by
+      simpa using (qCoeffL M n).map_sub w a
+    rw [hsub, hwc n hn, qCoeff_eq_zero_of_mem_oldSubspace hM ha hn, sub_zero]
+  have haw : a = w := by rw [← hab, hb0, add_zero]
+  exact haw ▸ ha
 
 /-- **NEWFORM DECOMPOSITION: an eigenvector in the old subspace has its
 eigensystem realized at a PROPER divisor level** (sorry leaf — cut 2026-07-26
@@ -25715,18 +26125,47 @@ since `eigensystem_minimal` forbids any proper divisor level from realizing its
 eigensystem; without `hwe` the eigensystem `c` is unconstrained by the hypotheses
 while the conclusion constrains it.
 
-WHAT IT MAY USE.  `degeneracyOp` is built and sorry-free, including the
-coefficient identity `qCoeff_degeneracyOp` — which in particular gives
-INJECTIVITY of `V_d` and its commutation with `T_q` at `q ∤ d` by a pure
-coefficient computation against `qCoeff_heckeOp`, with no further analysis. -/
+STATUS 2026-07-26: **PROVEN**, over the single leaf
+`exists_weightTwoEigenform_of_heckeOp_eigen_of_level_dvd` above.  The
+degeneracy calculus this node was expected to need is now all PROVEN and
+consumed here: `heckeOp_degeneracyOp` (commutation of `V_d` with the good
+`T_q`), `degeneracyOp_injective`, and the SPECTRAL DESCENT
+`exists_heckeOp_eigen_of_mem_oldSubspace`, which trades membership in the
+SUM `Σ_p V_p S₂(Γ₀(M/p))` for a nonzero joint eigenvector at ONE level
+`M/p`.  Given that, the remaining content is exactly "an eigensystem carried
+by a nonzero joint eigenvector at level `M/p` is realized by a normalized
+eigenform of a divisor level", which is the leaf.
+
+A CORRECTION to the earlier note here, worth recording because it drove the
+cut: descent out of the old subspace is NOT a pure coefficient computation.
+The images `range V_p` are not independent — `V_{pq}f` lies in `range V_p`
+and in `range V_q` — so a joint eigenvector in their SUM has no readable
+component.  The step is spectral: each image is `T_q`-stable, so the
+simultaneous generalized eigenspace decomposition of a commuting family can
+be intersected with it.  Injectivity and commutation ARE pure coefficient
+computations, and they are proven above; the descent is not, and it is
+proven above too.
+
+The level bound is arithmetic: `M' ∣ M/p` and `M/p < M` give `M' ≠ M`. -/
 theorem exists_weightTwoEigenform_of_mem_oldSubspace {M : ℕ} (hM : 0 < M)
     {c : ℕ → ℂ} {w : CuspForm (Gamma0GL M) 2} (hw : w ≠ 0)
     (hwe : ∀ q : ℕ, q.Prime → ¬ q ∣ M → heckeOp M q w = c q • w)
     (hold : w ∈ ⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p)) :
     ∃ M' : ℕ, M' ∣ M ∧ M' ≠ M ∧ ∃ g' : CuspForm (Gamma0GL M') 2,
       IsWeightTwoEigenform M' g' ∧
-        ∀ q : ℕ, q.Prime → ¬ q ∣ M → qCoeff M' g' q = c q :=
-  sorry
+        ∀ q : ℕ, q.Prime → ¬ q ∣ M → qCoeff M' g' q = c q := by
+  obtain ⟨p, hp, u, hu0, hue⟩ :=
+    exists_heckeOp_eigen_of_mem_oldSubspace hM hw hwe hold
+  have hpp : p.Prime := Nat.prime_of_mem_primeFactors hp
+  have hpd : p ∣ M := Nat.dvd_of_mem_primeFactors hp
+  have hpos : 0 < M / p := Nat.div_pos (Nat.le_of_dvd hM hpd) hpp.pos
+  have hdvdM : M / p ∣ M := Nat.div_dvd_of_dvd hpd
+  have hlt : M / p < M := Nat.div_lt_self hM hpp.one_lt
+  obtain ⟨M', hM'dvd, g', hg', hgc⟩ :=
+    exists_weightTwoEigenform_of_heckeOp_eigen_of_level_dvd hpos hdvdM hu0 hue
+  refine ⟨M', hM'dvd.trans hdvdM, ?_, g', hg', hgc⟩
+  have hle : M' ≤ M / p := Nat.le_of_dvd hpos hM'dvd
+  omega
 
 /-- **ATKIN–LEHNER: a good-prime joint eigenvector with no coefficients
 away from the level comes from a SMALLER level** (PROVEN 2026-07-26 over
