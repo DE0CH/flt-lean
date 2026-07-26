@@ -136,8 +136,25 @@ coordinates". The polynomial machinery written for that leaf
 `veluPX_degree_lt` in particular is a step towards
 `velu_theta_degree_lt`.
 
-These are the mathematical content of Vélu's theorem; none of it is in
-mathlib.
+These are the mathematical content of Vélu's theorem. NONE of it is in
+mathlib, and none of it is in the reference project `~/cs/FLT` either
+(both checked 2026-07-26): there is no isogeny, no quotient curve and no
+curve function field anywhere to build on.
+
+That does NOT make the remaining leaves a function-field project. All
+three rest on ONE elementary brick — Vélu's pair identity
+
+  `x(P+Q) + x(P−Q) = 2x_Q + t_Q/(x_P − x_Q) + u_Q/(x_P − x_Q)²`,
+
+with `t_Q = veluTTerm W Q` and `u_Q = veluWTerm W Q − x_Q · veluTTerm W Q`
+— which was COMPILED on 2026-07-26 (`field_simp`, then
+`linear_combination 2 * h₁ - 2 * hQ` from the two Weierstrass equations)
+and is reproduced in `velu_map_add_of_notMem`'s docstring, along
+with the reindexing that sums it over `S` with no choice of
+representatives. It is not committed only because nothing consumes it yet.
+(It was originally written for a leaf `velu_coord_ne_neg`, which was NOT
+integrated: `velu_coordX_twoTorsion_ne` is proven outright by the degree
+count above, so that leaf had no consumer and would have been floating.)
 -/
 module
 
@@ -2906,27 +2923,6 @@ lemma veluXNum_degree {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd 
   rw [veluXNum, Polynomial.degree_add_eq_left_of_degree_lt (velu_CPX_degree_lt hS hodd),
     velu_XH_degree hS]
 
-/-- **PROVEN.** `veluXNum S / veluH S` evaluated at `x_P` IS the Vélu `x`-coordinate of `P`,
-for `P ∉ S`. This is `veluPX_eval` plus `velu_coordX_eq`. -/
-lemma veluXNum_eval {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
-    {P : W.Point} (hP : P ∉ S) :
-    (veluXNum S).eval (veluPointX P)
-      = (veluH S).eval (veluPointX P) * W.veluCoordX S P := by
-  rw [veluXNum, velu_coordX_eq hS hP]
-  simp only [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_X, Polynomial.eval_C]
-  rw [veluPX_eval hS hodd hP]
-  ring
-
-/-- **PROVEN.** `veluXi S / (veluH S)²` evaluated at `x_P` is `1 − Σ veluPoleV`. -/
-lemma veluXi_eval {S : Finset W.Point} (hS : IsPointSubgroup S) (hodd : Odd S.card)
-    {P : W.Point} (hP : P ∉ S) :
-    (veluXi S).eval (veluPointX P)
-      = ((veluH S).eval (veluPointX P)) ^ 2 * (1 - ∑ Q ∈ S, veluPoleV W (veluPointX P) Q) := by
-  rw [veluXi]
-  simp only [Polynomial.eval_sub, Polynomial.eval_pow]
-  rw [veluPV_eval hS hodd hP]
-  ring
-
 /-- **PROVEN: `veluPV` is `−½` the derivative of Vélu's `x`-expansion, in cleared form.**
 
 `veluPX' · veluH − veluPX · veluH' = −2·veluPV`. The proof is TERMWISE: substituting
@@ -3466,23 +3462,25 @@ need not be rediscovered.** Writing `X = veluCoordX W S`, `Y = veluCoordY W S` a
 `V = W.veluCurve S`, the three `veluMap`s unfold by `veluMap_of_notMem` and the case split
 `by_cases hxy : X P = X Q ∧ Y P = V.negY (X Q) (Y Q)` leaves EXACTLY three goals:
 
-1. `hxy → False`. By `veluCoordX_neg` and `veluCoordY_neg` the hypothesis says precisely that
-   `P` and `−Q` have the same Vélu coordinate pair, while `P − (−Q) = P + Q ∉ S`; so this
-   goal is the coordinate form of "the fibres of the Vélu map are exactly the cosets of `S`",
-   i.e. injectivity modulo the kernel. It is the same fact that
-   `velu_coordX_twoTorsion_ne` needs for its distinctness clause.
+1. `hxy → False` — the degenerate branch: `X P = X Q` and `Y P = negY (X Q) (Y Q)` force
+   `P + Q ∈ S`, contradicting `_hPQ`. This is injectivity of the Vélu coordinate map modulo
+   the kernel. It is NOT separately stated in this file (a leaf `velu_coord_ne_neg` was
+   proposed for it and deliberately not integrated — `velu_coordX_twoTorsion_ne` is proven
+   outright by the degree count above, so such a leaf would have had no consumer).
 2. `X (P + Q) = V.addX (X P) (X Q) (V.slope (X P) (X Q) (Y P) (Y Q))`.
 3. `Y (P + Q) = V.addY (X P) (X Q) (Y P) (V.slope (X P) (X Q) (Y P) (Y Q))`.
 
 (The remaining glue is `Affine.Point.add_some hxy` and `velu_point_some_eq`.)
 
-That decomposition is deliberately NOT committed as three sorried leaves: goals 2 and 3
-commit the proof to the finite/rational-function route judged impractical above, and a
-function-field development would supply all three at once. Take it as a map, not as a cut.
+Goals 2 and 3 are deliberately NOT committed as sorried leaves: they commit the proof to the
+finite/rational-function route judged impractical above, whereas a function-field development
+supplies all three at once. Take them as a map, not as a cut.
 
-So this leaf and `velu_coordX_twoTorsion_ne` are two faces of one fact — that the Vélu map
-is a homomorphism with kernel exactly `S`, read on coordinates — and are worth attacking
-together, by one owner. -/
+This leaf and goal 1 above are two faces of one fact — that the Vélu map is a homomorphism
+with kernel exactly `S`, read on coordinates — and want ONE owner. The recommended route is
+ELEMENTARY, through Vélu's rational functions; its foundational pair identity has been
+compiled and is reproduced at the head of this module. Nothing here needs a function-field development, and nothing can be
+lifted from mathlib or `~/cs/FLT`, neither of which has any isogeny material at all. -/
 theorem velu_map_add_of_notMem (S : Finset W.Point) (hS : IsPointSubgroup S)
     (hodd : Odd S.card) {P Q : W.Point} (_hP : P ∉ S) (_hQ : Q ∉ S) (_hPQ : P + Q ∉ S) :
     W.veluMap S hS hodd (P + Q) = W.veluMap S hS hodd P + W.veluMap S hS hodd Q :=
