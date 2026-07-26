@@ -98,16 +98,23 @@ theorem moduleTopology_eq_bot (A : Type*) [Ring A] [TopologicalSpace A]
 
 /-- **The matrix entries of a framed representation over a discrete ring
 are continuous** — equivalently, such a representation is locally
-constant. -/
-theorem continuous_toMatrix' {A : Type*} [CommRing A] [TopologicalSpace A]
-    [DiscreteTopology A] (ρ : FramedGaloisRep ℚ A (Fin 2)) :
+constant.
+
+BASE FIELD GENERALIZED 2026-07-26 (flt-lean-163): the base was the literal
+`ℚ`; it is now an arbitrary number field `K`, because the `F`-level
+Schlessinger construction in `HilbertModularity.lean` needs exactly this
+statement over a totally real `F`. Every existing call site is at `ℚ` and
+is unaffected — `K` is determined by the type of `ρ`. -/
+theorem continuous_toMatrix' {K : Type*} [Field K]
+    {A : Type*} [CommRing A] [TopologicalSpace A]
+    [DiscreteTopology A] (ρ : FramedGaloisRep K A (Fin 2)) :
     Continuous (fun g => LinearMap.toMatrix' (ρ g)) := by
   letI : TopologicalSpace (Module.End A (Fin 2 → A)) :=
     moduleTopology A (Module.End A (Fin 2 → A))
   haveI : DiscreteTopology (Module.End A (Fin 2 → A)) :=
     ⟨moduleTopology_eq_bot A (Module.End A (Fin 2 → A))⟩
   have h : Continuous
-      (fun g : Field.absoluteGaloisGroup ℚ => (ρ g : Module.End A (Fin 2 → A))) :=
+      (fun g : Field.absoluteGaloisGroup K => (ρ g : Module.End A (Fin 2 → A))) :=
     ρ.continuous_toFun
   exact continuous_of_discreteTopology.comp h
 
@@ -396,6 +403,7 @@ end Topology
 
 section Framed
 
+variable {K : Type*} [Field K]
 variable {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
 
 /-- **A continuous multiplicative family of `2 × 2` matrices is a framed
@@ -411,9 +419,9 @@ carries the product topology, which is its module topology
 and `Matrix.toLin'` is `A`-linear, so
 `IsModuleTopology.continuous_of_linearMap` applies. -/
 noncomputable def framedOfMatrices
-    (mat : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) A)
+    (mat : Field.absoluteGaloisGroup K → Matrix (Fin 2) (Fin 2) A)
     (hone : mat 1 = 1) (hmul : ∀ g h, mat (g * h) = mat g * mat h)
-    (hcont : Continuous mat) : FramedGaloisRep ℚ A (Fin 2) :=
+    (hcont : Continuous mat) : FramedGaloisRep K A (Fin 2) :=
   letI : TopologicalSpace (Module.End A (Fin 2 → A)) :=
     moduleTopology A (Module.End A (Fin 2 → A))
   haveI : IsModuleTopology A (Module.End A (Fin 2 → A)) := ⟨rfl⟩
@@ -428,15 +436,15 @@ noncomputable def framedOfMatrices
       (Matrix.toLin' (R := A) (m := Fin 2) (n := Fin 2)).toLinearMap).comp hcont }
 
 @[simp] lemma framedOfMatrices_apply
-    (mat : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) A)
+    (mat : Field.absoluteGaloisGroup K → Matrix (Fin 2) (Fin 2) A)
     (hone : mat 1 = 1) (hmul : ∀ g h, mat (g * h) = mat g * mat h)
-    (hcont : Continuous mat) (g : Field.absoluteGaloisGroup ℚ) :
+    (hcont : Continuous mat) (g : Field.absoluteGaloisGroup K) :
     framedOfMatrices mat hone hmul hcont g = Matrix.toLin' (mat g) := rfl
 
 @[simp] lemma toMatrix'_framedOfMatrices
-    (mat : Field.absoluteGaloisGroup ℚ → Matrix (Fin 2) (Fin 2) A)
+    (mat : Field.absoluteGaloisGroup K → Matrix (Fin 2) (Fin 2) A)
     (hone : mat 1 = 1) (hmul : ∀ g h, mat (g * h) = mat g * mat h)
-    (hcont : Continuous mat) (g : Field.absoluteGaloisGroup ℚ) :
+    (hcont : Continuous mat) (g : Field.absoluteGaloisGroup K) :
     LinearMap.toMatrix' (framedOfMatrices mat hone hmul hcont g) = mat g := by
   rw [framedOfMatrices_apply, LinearMap.toMatrix'_toLin']
 
