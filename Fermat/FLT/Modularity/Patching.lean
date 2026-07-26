@@ -244,10 +244,23 @@ public import Mathlib.RingTheory.DedekindDomain.AdicValuation
 -- `IsDedekindDomain.HeightOneSpectrum.intValuation` and its
 -- `WithZero.exp`-valued API, the `Q`-adic order used in the wild
 -- different-exponent bound `differentIdeal_exponent_le_wild`
-public import Mathlib.RingTheory.RamificationInertia.Ramification
--- `Ideal.ramificationIdx'` and
--- `Ideal.IsDedekindDomain.ramificationIdx'_eq_normalizedFactors_count`,
--- consumed in the same bound
+public import Mathlib.NumberTheory.RamificationInertia.Basic
+-- `Ideal.ramificationIdx_le_finrank`, consumed by
+-- `exists_discr_factorization_le_of_finrank_le`.  Explicit and PUBLIC
+-- because as of 2026-07-26 it no longer arrives transitively as a
+-- public name: the module system re-exports only public imports, and
+-- the intermediate module that used to carry it now imports it
+-- privately, which made the constant unknown here.
+public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic
+public import Mathlib.RingTheory.LocalRing.ResidueField.Defs
+public import Mathlib.RingTheory.LocalRing.RingHom.Basic
+-- `IsLocalRing.maximalIdeal`, `IsLocalRing.ResidueField`,
+-- `IsLocalRing.jacobson_eq_maximalIdeal`,
+-- `IsLocalRing.map_maximalIdeal_of_surjective`,
+-- `IsLocalRing.local_hom_TFAE`: the `open IsLocalRing` of section
+-- `ProfinitePadicTower` below opens a namespace whose members were
+-- reaching this file only through private imports, so every use read
+-- as `Unknown identifier maximalIdeal`.  Same remedy as above.
 public import Mathlib.RingTheory.Ideal.Quotient.PowTransition
 -- `Ideal.Quotient.factorPow`: the transition maps `R ⧸ I ^ m → R ⧸ I ^ n`
 -- of the `p`-adic quotient tower in the pro-finite limit upgrade
@@ -1333,8 +1346,8 @@ theorem intValuation_natCast_eq_exp_ramificationIdx
       = WithZero.exp (-((Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal *
           m.factorization q : ℕ) : ℤ)) := by
   classical
-  set R := NumberField.RingOfIntegers K with hRdef
-  set Q := v.asIdeal with hQdef
+  set R := NumberField.RingOfIntegers K
+  set Q := v.asIdeal
   have hQ : Q.IsPrime := v.isPrime
   have hQ0 : Q ≠ ⊥ := v.ne_bot
   set e := Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q with hedef
@@ -1386,8 +1399,8 @@ theorem intValuation_natCast_eq_exp_ramificationIdx
     congr 2
     omega
   -- the `q`-free part has `Q`-order zero
-  set k := m.factorization q with hkdef
-  set m' := m / q ^ k with hm'def
+  set k := m.factorization q
+  set m' := m / q ^ k
   have hmfac : q ^ k * m' = m := Nat.ordProj_mul_ordCompl_eq_self m q
   have hnd : ¬ q ∣ m' := Nat.not_dvd_ordCompl hq hm
   have hm'mem : (m' : R) ∉ Q := by
@@ -1566,7 +1579,7 @@ theorem differentIdeal_exponent_le_wild (K : Type*) [Field K]
       Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q *
         (Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q).factorization q := by
   classical
-  set R := NumberField.RingOfIntegers K with hRdef
+  set R := NumberField.RingOfIntegers K
   have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
   have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
     simp only [Ne, Ideal.span_singleton_eq_bot]
@@ -1577,7 +1590,7 @@ theorem differentIdeal_exponent_le_wild (K : Type*) [Field K]
     Ideal.map_ne_bot_of_ne_bot hspan0
   have hQ0 : Q ≠ ⊥ := ne_bot_of_le_ne_bot hmap0
     (Ideal.map_le_of_le_comap (Q.over_def (Ideal.span {((q : ℕ) : ℤ)})).le)
-  set v : HeightOneSpectrum R := ⟨Q, hQ, hQ0⟩ with hvdef
+  set v : HeightOneSpectrum R := ⟨Q, hQ, hQ0⟩
   have hvQ : v.asIdeal = Q := rfl
   set e := Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q with hedef
   have he0 : e ≠ 0 :=
@@ -2745,6 +2758,16 @@ what the upgrade consumes, all of it pure commutative algebra:
 section ProfinitePadicTower
 
 open IsLocalRing
+open _root_.IsLocalRing
+-- `open _root_.IsLocalRing` is REQUIRED as well as the plain `open`
+-- (2026-07-26).  Since `KhareWintenberger.lean` gained
+-- `IsLocalRing.of_henselianRing_of_isDomain` INSIDE
+-- `namespace GaloisRepresentation.Modularity`, the namespace
+-- `GaloisRepresentation.Modularity.IsLocalRing` exists, and a bare
+-- `open IsLocalRing` inside that namespace resolves to it and to it
+-- ALONE — so `maximalIdeal`, `ResidueField`, `jacobson_eq_maximalIdeal`
+-- and every other root-level `IsLocalRing` name silently became
+-- `Unknown identifier` here, erroring out 100+ declarations.
 
 universe uTA uTR
 
@@ -4620,6 +4643,7 @@ parameters `(p, x₁, …, x_q)` spanning the maximal ideal
 section AuslanderBuchsbaum
 
 open RingTheory.Sequence IsLocalRing Pointwise CategoryTheory Abelian Limits
+open _root_.IsLocalRing  -- see the note in `section ProfinitePadicTower`
 
 /-- **Coset prime avoidance** (E. Davis; Kaplansky, *Commutative
 Rings*, Thm. 124; PROVEN): if none of the finitely many primes
@@ -6746,6 +6770,7 @@ theorem nonempty_patchedModule_of_patchingData.{v, w, s, uR, u}
 section PatchingInstantiation
 
 open IsLocalRing
+open _root_.IsLocalRing  -- see the note in `section ProfinitePadicTower`
 open scoped MvPowerSeries.WithPiTopology
 
 attribute [local instance] Module.quotientAnnihilator
