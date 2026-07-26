@@ -6530,7 +6530,8 @@ exactly the seam `Deformation.lean` uses at the `ℚ` level (its
 `exists_universalFrame_profinite_of_levelIdealSystem` pair) — ARITHMETIC on
 one side, pure algebra and topology on the other:
 
-* `exists_hilbertLevelIdealSystem_of_clauses` (LEAF) — all of the
+* `exists_hilbertLevelIdealSystem_of_clauses` (PROVEN 2026-07-26 as an
+  assembly over four sharp leaves; was a single opaque leaf) — all of the
   arithmetic. It produces one "tautological" coefficient ring `P`, a
   matrix-valued function `M : Γ F → M₂(P)` and a downward-directed family
   `𝒥` of ideals of `P` such that every `P ⧸ J` is a FINITE LOCAL level
@@ -6661,11 +6662,281 @@ lemma charpoly_eq_charpoly_toMatrix' {F : Type u} [Field F] [NumberField F]
     (ρ g).charpoly = (LinearMap.toMatrix' (ρ g)).charpoly := by
   rw [← Matrix.charpoly_toLin', Matrix.toLin'_toMatrix']
 
-/-- **A LEVEL SYSTEM for the `F`-level hardly ramified problem** (LEAF —
-the ARITHMETIC half of the 2026-07-26 construction cut; the `F`-level twin
-of `Deformation.lean`'s `exists_levelIdealSystem_of_deformationCondition`,
-with every matrix equation replaced by the corresponding CHARPOLY
-equation).
+/-! #### The `F`-level tautological frame ring (the CONSTRUCTION, 2026-07-26)
+
+The declarations in this section are the `F`-level copy of
+`Deformation.lean`'s `FrameRing` section. They may not be imported —
+`Deformation.lean` is DOWNSTREAM of this module (it `public import`s it) —
+so, as with the eight other helpers this module already re-derives for the
+same reason, they are re-derived rather than shared. The copy is
+mechanical: the construction is generic in the indexing GROUP, and the
+only change is `Γ ℚ ↝ Γ F` throughout, together with the residual model
+becoming `(ρbar.map (algebraMap ℚ F)).conj e0` rather than `ρbar.conj e0`.
+
+THE HONEST REPAIR, recorded so it is not lost: this construction depends
+on nothing about `ℚ` or `F` beyond the group, so the right fix is ONE
+group-generic development in a module upstream of both this file and
+`Deformation.lean`, consumed twice. That is a refactor of another owner's
+file and is not taken here.
+
+WHAT THIS BUYS. `exists_hilbertLevelIdealSystem_of_clauses` below was a
+single opaque leaf carrying the whole Schlessinger/de Smit–Lenstra
+construction. It is now an ASSEMBLY, proven outright, over exactly four
+sharp leaves — and EVERY ONE of the four has a PROVEN `ℚ`-level twin in
+`Deformation.lean`, so each is a mechanical port rather than new
+mathematics:
+
+| leaf here | proven `ℚ`-level twin |
+| --- | --- |
+| `hilbertFrameLevels_nonempty` | `frameLevels_nonempty` |
+| `hilbertFrameLevels_directed` | `frameLevels_directed` |
+| `hilbertFrameLevels_classification` | `frameLevels_classification` |
+| `hilbertFrameRing_rigid` | `frameRing_rigid` |
+
+Three of the eight conclusion clauses (`hker`, `hlev`, `hrep`) are
+DEFINITIONAL for `hilbertFrameLevels`, and the residual charpoly clause is
+`hilbertFrameMat_map_frameEv` followed by `LinearEquiv.charpoly_conj` —
+which is where the charpoly-only formulation of
+`IsHilbertWeaklyUniversalOnFiniteFrames` pays off, exactly as the section
+preamble above predicted. -/
+
+section HilbertFrameRing
+
+-- The tautological ring and its evaluation maps are PURE ALGEBRA: they need
+-- only the coefficient instances. The arithmetic instances (`NumberField F`,
+-- and the finiteness/topology on `k`) are introduced further down, at the
+-- first declaration that actually uses them, so that the unused-section-
+-- variable linter stays quiet.
+variable (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F]
+variable (k : Type u) [Field k] [Algebra ℤ_[ℓ] k]
+
+/-- Generator index of the `F`-level tautological frame ring. -/
+abbrev HilbertFrameGen : Type u := (Γ F × Fin 2 × Fin 2) ⊕ k
+
+/-- The free `F`-level tautological ring `ℤ_ℓ[X_{g,i,j}, T_x]`. -/
+abbrev hilbertFramePoly : Type u := MvPolynomial (HilbertFrameGen F k) ℤ_[ℓ]
+
+/-- The tautological matrix of `g` in the free ring. -/
+noncomputable def hilbertFramePolyMat (g : Γ F) :
+    Matrix (Fin 2) (Fin 2) (hilbertFramePoly ℓ F k) :=
+  Matrix.of fun i j => MvPolynomial.X (Sum.inl (g, i, j))
+
+/-- The tautological relations: Teichmüller multiplicativity and matrix
+multiplicativity. -/
+noncomputable def hilbertFrameRel : Ideal (hilbertFramePoly ℓ F k) :=
+  Ideal.span
+    ((Set.range fun q : k × k =>
+        MvPolynomial.X (Sum.inr q.1) * MvPolynomial.X (Sum.inr q.2) -
+          MvPolynomial.X (Sum.inr (q.1 * q.2))) ∪
+      {MvPolynomial.X (Sum.inr (0 : k))} ∪
+      {MvPolynomial.X (Sum.inr (1 : k)) - 1} ∪
+      (Set.range fun q : Γ F × Γ F × Fin 2 × Fin 2 =>
+        hilbertFramePolyMat ℓ F k (q.1 * q.2.1) q.2.2.1 q.2.2.2 -
+          (hilbertFramePolyMat ℓ F k q.1 * hilbertFramePolyMat ℓ F k q.2.1)
+            q.2.2.1 q.2.2.2) ∪
+      (Set.range fun q : Fin 2 × Fin 2 =>
+        hilbertFramePolyMat ℓ F k 1 q.1 q.2 -
+          (1 : Matrix (Fin 2) (Fin 2) (hilbertFramePoly ℓ F k)) q.1 q.2))
+
+/-- The `F`-level tautological frame ring `P`. -/
+abbrev hilbertFrameRing : Type u := hilbertFramePoly ℓ F k ⧸ hilbertFrameRel ℓ F k
+
+/-- Evaluation of the free tautological ring at a matrix family and a
+Teichmüller family. -/
+noncomputable def hilbertFramePolyEval {A : Type*} [CommRing A] [Algebra ℤ_[ℓ] A]
+    (N : Γ F → Matrix (Fin 2) (Fin 2) A) (t : k → A) :
+    hilbertFramePoly ℓ F k →+* A :=
+  MvPolynomial.eval₂Hom (algebraMap ℤ_[ℓ] A)
+    (Sum.elim (fun q : Γ F × Fin 2 × Fin 2 => N q.1 q.2.1 q.2.2) t)
+
+omit [Field k] [Algebra ℤ_[ℓ] k] in
+@[simp] lemma hilbertFramePolyEval_X_inl {A : Type*} [CommRing A] [Algebra ℤ_[ℓ] A]
+    (N : Γ F → Matrix (Fin 2) (Fin 2) A) (t : k → A) (g : Γ F) (i j : Fin 2) :
+    hilbertFramePolyEval ℓ F k N t (MvPolynomial.X (Sum.inl (g, i, j))) = N g i j := by
+  simp [hilbertFramePolyEval]
+
+omit [Field k] [Algebra ℤ_[ℓ] k] in
+@[simp] lemma hilbertFramePolyEval_X_inr {A : Type*} [CommRing A] [Algebra ℤ_[ℓ] A]
+    (N : Γ F → Matrix (Fin 2) (Fin 2) A) (t : k → A) (x : k) :
+    hilbertFramePolyEval ℓ F k N t (MvPolynomial.X (Sum.inr x)) = t x := by
+  simp [hilbertFramePolyEval]
+
+-- NOTE: the `ℚ`-level `framePolyEval_comp_algebraMap` has deliberately NOT
+-- been ported. Its only `ℚ`-level consumer is `frameEv_comp_algebraMap`, and
+-- the corresponding clause is ABSENT from this module's level system: `k` is
+-- FINITE here, so it receives exactly one ring map from `ℤ_ℓ`
+-- (`hilbertRingHom_padicInt_ext_finite`) and the compatibility is automatic.
+-- Porting it now would be free-floating code. `hilbertFrameLevels_classification`
+-- will need it when it is proven; it is six lines and is re-derived then.
+
+omit [Algebra ℤ_[ℓ] k] in
+/-- The relations are killed by any multiplicative pair `(N, t)`. -/
+lemma hilbertFrameRel_le_ker{A : Type*} [CommRing A] [Algebra ℤ_[ℓ] A]
+    (N : Γ F → Matrix (Fin 2) (Fin 2) A) (t : k → A)
+    (hNmul : ∀ g h, N (g * h) = N g * N h) (hN1 : N 1 = 1)
+    (htmul : ∀ x y : k, t x * t y = t (x * y)) (ht0 : t 0 = 0) (ht1 : t 1 = 1) :
+    hilbertFrameRel ℓ F k ≤ RingHom.ker (hilbertFramePolyEval ℓ F k N t) := by
+  rw [hilbertFrameRel, Ideal.span_le]
+  rintro q ((((⟨⟨x, y⟩, rfl⟩ | rfl) | rfl) | ⟨⟨g, h, i, j⟩, rfl⟩) | ⟨⟨i, j⟩, rfl⟩)
+  · simp [SetLike.mem_coe, RingHom.mem_ker, htmul]
+  · simp [SetLike.mem_coe, RingHom.mem_ker, ht0]
+  · simp [SetLike.mem_coe, RingHom.mem_ker, ht1]
+  · simp only [SetLike.mem_coe, RingHom.mem_ker, map_sub, hilbertFramePolyMat,
+      Matrix.of_apply, Matrix.mul_apply, map_sum, map_mul,
+      hilbertFramePolyEval_X_inl, hNmul, sub_eq_zero]
+  · simp only [SetLike.mem_coe, RingHom.mem_ker, map_sub, hilbertFramePolyMat,
+      Matrix.of_apply, hilbertFramePolyEval_X_inl, hN1, sub_eq_zero, Matrix.one_apply]
+    split <;> simp
+
+/-- The induced map on the tautological frame ring. -/
+noncomputable def hilbertFrameEval {A : Type*} [CommRing A] [Algebra ℤ_[ℓ] A]
+    (N : Γ F → Matrix (Fin 2) (Fin 2) A) (t : k → A)
+    (hrel : hilbertFrameRel ℓ F k ≤ RingHom.ker (hilbertFramePolyEval ℓ F k N t)) :
+    hilbertFrameRing ℓ F k →+* A :=
+  Ideal.Quotient.lift _ (hilbertFramePolyEval ℓ F k N t)
+    fun _ ha => RingHom.mem_ker.mp (hrel ha)
+
+omit [Algebra ℤ_[ℓ] k] in
+@[simp] lemma hilbertFrameEval_mk {A : Type*} [CommRing A] [Algebra ℤ_[ℓ] A]
+    {N : Γ F → Matrix (Fin 2) (Fin 2) A} {t : k → A}
+    (hrel : hilbertFrameRel ℓ F k ≤ RingHom.ker (hilbertFramePolyEval ℓ F k N t))
+    (x : hilbertFramePoly ℓ F k) :
+    hilbertFrameEval ℓ F k N t hrel (Ideal.Quotient.mk (hilbertFrameRel ℓ F k) x) =
+      hilbertFramePolyEval ℓ F k N t x :=
+  Ideal.Quotient.lift_mk _ _ _
+
+/-- The matrix family `M : Γ F → M₂(P)` of the level system. -/
+noncomputable def hilbertFrameMat (g : Γ F) :
+    Matrix (Fin 2) (Fin 2) (hilbertFrameRing ℓ F k) :=
+  (hilbertFramePolyMat ℓ F k g).map (Ideal.Quotient.mk (hilbertFrameRel ℓ F k))
+
+variable [NumberField F] [Finite k] [TopologicalSpace k] [DiscreteTopology k]
+variable {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V] [Module.Free k V]
+
+/-- The matrices of the framed residual model `(ρbar|_{G_F}).conj e0`. -/
+noncomputable def hilbertFrameResMat (ρbar : GaloisRep ℚ k V)
+    (e0 : V ≃ₗ[k] (Fin 2 → k)) : Γ F → Matrix (Fin 2) (Fin 2) k :=
+  fun g => LinearMap.toMatrix' (((ρbar.map (algebraMap ℚ F)).conj e0) g)
+
+omit [Finite k] [DiscreteTopology k] [Module.Finite k V] [Module.Free k V] in
+lemma hilbertFrameRel_le_ker_res (ρbar : GaloisRep ℚ k V)
+    (e0 : V ≃ₗ[k] (Fin 2 → k)) :
+    hilbertFrameRel ℓ F k ≤
+      RingHom.ker (hilbertFramePolyEval ℓ F k (hilbertFrameResMat F k ρbar e0) id) := by
+  refine hilbertFrameRel_le_ker ℓ F k _ _ ?_ ?_ (fun x y => rfl) rfl rfl
+  · intro g h
+    simp only [hilbertFrameResMat, map_mul, LinearMap.toMatrix'_mul]
+  · simp only [hilbertFrameResMat, map_one, LinearMap.toMatrix'_one]
+
+/-- The residue map `evbar : P → k`. -/
+noncomputable def hilbertFrameEv (ρbar : GaloisRep ℚ k V)
+    (e0 : V ≃ₗ[k] (Fin 2 → k)) : hilbertFrameRing ℓ F k →+* k :=
+  hilbertFrameEval ℓ F k (hilbertFrameResMat F k ρbar e0) id
+    (hilbertFrameRel_le_ker_res ℓ F k ρbar e0)
+
+omit [Finite k] [DiscreteTopology k] [Module.Finite k V] [Module.Free k V] in
+lemma hilbertFrameEv_surjective (ρbar : GaloisRep ℚ k V)
+    (e0 : V ≃ₗ[k] (Fin 2 → k)) :
+    Function.Surjective (hilbertFrameEv ℓ F k ρbar e0) :=
+  fun x => ⟨Ideal.Quotient.mk (hilbertFrameRel ℓ F k) (MvPolynomial.X (Sum.inr x)), by
+    simp [hilbertFrameEv]⟩
+
+omit [Finite k] [DiscreteTopology k] [Module.Finite k V] [Module.Free k V] in
+lemma hilbertFrameMat_map_frameEv (ρbar : GaloisRep ℚ k V)
+    (e0 : V ≃ₗ[k] (Fin 2 → k)) (g : Γ F) :
+    (hilbertFrameMat ℓ F k g).map ⇑(hilbertFrameEv ℓ F k ρbar e0) =
+      LinearMap.toMatrix' (((ρbar.map (algebraMap ℚ F)).conj e0) g) := by
+  ext i j
+  simp [hilbertFrameMat, hilbertFramePolyMat, hilbertFrameEv, hilbertFrameResMat]
+
+/-- The level ideals `𝒥` of the `F`-level tautological frame ring. -/
+def hilbertFrameLevels (ρbar : GaloisRep ℚ k V) (e0 : V ≃ₗ[k] (Fin 2 → k)) :
+    Set (Ideal (hilbertFrameRing ℓ F k)) :=
+  {J | J ≤ RingHom.ker (hilbertFrameEv ℓ F k ρbar e0) ∧
+    Finite (hilbertFrameRing ℓ F k ⧸ J) ∧ IsLocalRing (hilbertFrameRing ℓ F k ⧸ J) ∧
+    ∀ [Finite (hilbertFrameRing ℓ F k ⧸ J)] [IsLocalRing (hilbertFrameRing ℓ F k ⧸ J)]
+      [TopologicalSpace (hilbertFrameRing ℓ F k ⧸ J)]
+      [DiscreteTopology (hilbertFrameRing ℓ F k ⧸ J)]
+      [IsTopologicalRing (hilbertFrameRing ℓ F k ⧸ J)],
+      ∃ ρJ : FramedGaloisRep F (hilbertFrameRing ℓ F k ⧸ J) (Fin 2),
+        (∀ g : Γ F, LinearMap.toMatrix' (ρJ g) =
+          (hilbertFrameMat ℓ F k g).map ⇑(Ideal.Quotient.mk J)) ∧
+        IsHilbertHardlyRamified ℓ F (rank_finTwoPi (hilbertFrameRing ℓ F k ⧸ J)) ρJ}
+
+/-! ### The four leaves of the F-level construction -/
+
+theorem hilbertFrameLevels_nonempty {ρbar : GaloisRep ℚ k V}
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) (hbase : IsHilbertBaseChangeClause ℓ F)
+    (e0 : V ≃ₗ[k] (Fin 2 → k)) :
+    (hilbertFrameLevels ℓ F k ρbar e0).Nonempty :=
+  sorry
+
+theorem hilbertFrameLevels_directed {ρbar : GaloisRep ℚ k V}
+    (hglue : IsHilbertFibreProductClause ℓ F) (e0 : V ≃ₗ[k] (Fin 2 → k)) :
+    ∀ J₁ ∈ hilbertFrameLevels ℓ F k ρbar e0, ∀ J₂ ∈ hilbertFrameLevels ℓ F k ρbar e0,
+      ∃ J ∈ hilbertFrameLevels ℓ F k ρbar e0, J ≤ J₁ ⊓ J₂ :=
+  sorry
+
+theorem hilbertFrameLevels_classification {ρbar : GaloisRep ℚ k V}
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
+    (hbase : IsHilbertBaseChangeClause ℓ F) (hglue : IsHilbertFibreProductClause ℓ F)
+    (hfin : IsHilbertFiniteFramesClause ℓ F)
+    (hrig : IsHilbertResidualRigidityClause F ρbar)
+    (e0 : V ≃ₗ[k] (Fin 2 → k)) :
+    ∀ (A : Type u) [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+      [IsLocalRing A] [Algebra ℤ_[ℓ] A] [Finite A] [DiscreteTopology A]
+      (πA : A →+* k), Function.Surjective πA →
+      ∀ (ρA : FramedGaloisRep F A (Fin 2)),
+      IsHilbertHardlyRamified ℓ F (rank_finTwoPi A) ρA →
+      πA.comp (algebraMap ℤ_[ℓ] A) = algebraMap ℤ_[ℓ] k →
+      (∀ g : Γ F, ((ρA g).charpoly).map πA =
+        ((ρbar.map (algebraMap ℚ F)) g).charpoly) →
+      ∃ f : hilbertFrameRing ℓ F k →+* A,
+        f.comp (algebraMap ℤ_[ℓ] (hilbertFrameRing ℓ F k)) = algebraMap ℤ_[ℓ] A ∧
+        πA.comp f = hilbertFrameEv ℓ F k ρbar e0 ∧
+        (∀ g : Γ F, ((hilbertFrameMat ℓ F k g).map ⇑f).charpoly =
+          (LinearMap.toMatrix' (ρA g)).charpoly) ∧
+        ∃ J ∈ hilbertFrameLevels ℓ F k ρbar e0, J ≤ RingHom.ker f :=
+  sorry
+
+theorem hilbertFrameRing_rigid {ρbar : GaloisRep ℚ k V}
+    (e0 : V ≃ₗ[k] (Fin 2 → k))
+    (A : Type u) [CommRing A] [IsLocalRing A] [Finite A]
+    (πA : A →+* k) (f₁ f₂ : hilbertFrameRing ℓ F k →+* A)
+    (h₁ : πA.comp f₁ = hilbertFrameEv ℓ F k ρbar e0)
+    (h₂ : πA.comp f₂ = hilbertFrameEv ℓ F k ρbar e0)
+    (hM : ∀ g : Γ F, (hilbertFrameMat ℓ F k g).map ⇑f₁ =
+      (hilbertFrameMat ℓ F k g).map ⇑f₂) :
+    f₁ = f₂ :=
+  sorry
+
+end HilbertFrameRing
+
+/-- **A LEVEL SYSTEM for the `F`-level hardly ramified problem** (PROVEN
+2026-07-26 as an ASSEMBLY — it was a single opaque leaf until then; the
+`F`-level twin of `Deformation.lean`'s
+`exists_levelIdealSystem_of_deformationCondition`, with every matrix
+equation replaced by the corresponding CHARPOLY equation).
+
+**HOW IT IS NOW PROVEN, and what is left.** The witnesses are the
+`F`-level tautological frame ring and its level ideals, constructed in the
+`HilbertFrameRing` section immediately above:
+`P := hilbertFrameRing ℓ F k`, `evbar := hilbertFrameEv`,
+`M := hilbertFrameMat`, `𝒥 := hilbertFrameLevels`. Of the eight
+conclusion clauses, FOUR are discharged outright here — `hker`, `hlev`
+and `hrep` are definitional for `hilbertFrameLevels`, and the residual
+charpoly clause is `hilbertFrameMat_map_frameEv` followed by
+`LinearEquiv.charpoly_conj`. The remaining four are the four leaves of
+that section, each of which has a PROVEN `ℚ`-level twin in
+`Deformation.lean` and is therefore a mechanical port, not new
+mathematics: `hilbertFrameLevels_nonempty`, `hilbertFrameLevels_directed`,
+`hilbertFrameLevels_classification` and `hilbertFrameRing_rigid`.
+
+So the Schlessinger content has not been discharged — it has been
+LOCALISED. What was one leaf whose statement quantified over every test
+object is now four leaves with named `ℚ`-level models, and the plumbing
+between them is compiled rather than assumed.
 
 Everything Schlessinger's inductive small-extension argument produces,
 BEFORE any passage to a limit: a single coefficient ring `P`, a
@@ -6766,8 +7037,29 @@ theorem exists_hilbertLevelIdealSystem_of_clauses
         (πA : A →+* k) (f₁ f₂ : P →+* A),
         πA.comp f₁ = evbar → πA.comp f₂ = evbar →
         (∀ g : Γ F, (M g).map ⇑f₁ = (M g).map ⇑f₂) →
-        f₁ = f₂) :=
-  sorry
+        f₁ = f₂) := by
+  classical
+  have hrk : Module.rank k V = 2 := rank_eq_two_of_hilbertDeformationDatum 𝒟₀
+  have hfr : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hrk)
+  set e0 : V ≃ₗ[k] (Fin 2 → k) :=
+    (Module.finBasisOfFinrankEq k V hfr).equivFun with he0
+  refine ⟨hilbertFrameRing ℓ F k, inferInstance, inferInstance,
+    hilbertFrameEv ℓ F k ρbar e0, hilbertFrameEv_surjective ℓ F k ρbar e0,
+    hilbertFrameMat ℓ F k, hilbertFrameLevels ℓ F k ρbar e0,
+    hilbertFrameLevels_nonempty ℓ F k 𝒟₀ hbase e0,
+    hilbertFrameLevels_directed ℓ F k hglue e0,
+    fun J hJ => hJ.1, fun J hJ => ⟨hJ.2.1, hJ.2.2.1⟩,
+    ?_,
+    fun J hJ _ _ _ _ _ => hJ.2.2.2,
+    hilbertFrameLevels_classification ℓ F k hirrF 𝒟₀ hbase hglue hfin hrig e0,
+    fun A _ _ _ πA f₁ f₂ h₁ h₂ hM =>
+      hilbertFrameRing_rigid ℓ F k e0 A πA f₁ f₂ h₁ h₂ hM⟩
+  intro g
+  rw [hilbertFrameMat_map_frameEv ℓ F k ρbar e0 g,
+    ← charpoly_eq_charpoly_toMatrix' ((ρbar.map (algebraMap ℚ F)).conj e0) g,
+    GaloisRep.conj_apply, LinearEquiv.charpoly_conj]
+
 
 open scoped TensorProduct in
 /-- **The profinite limit of a level system is the universal frame**
