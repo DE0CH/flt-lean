@@ -85,8 +85,8 @@ Three consequences shape everything below.
 ## FAITHFULNESS AUDIT
 
 There are exactly three claim-shapes here, and each is true.  Shapes 1
-and 3 are single sorry nodes; shape 2 is now a proven bridge over two
-sorried inputs:
+and 2 are now proven, each over strictly fewer sorried inputs than the
+node it replaced; shape 3 is the twelve remaining sorry nodes:
 
 1. `exists_coarseModuliY0 N` — the `Γ₀(N)`-moduli problem over `ℚ` admits
    a coarse moduli space.  TRUE: this is the classical existence
@@ -95,8 +95,9 @@ sorried inputs:
    split of the level: `exists_coarseModuliY0_of_pos` (`N ≥ 1`) carries
    the citation — Katz–Mazur Theorem 6.6.1 and (8.1.1) — and
    `exists_coarseModuliY0_zero` disposes of `N = 0`, which lies outside
-   their theorem, from the elementary leaf
-   `isEmpty_of_gamma0Datum_zero`.
+   their theorem, from `isEmpty_of_gamma0Datum_zero` — itself PROVEN
+   2026-07-26, so the `N = 0` half of this shape is now sorry-free
+   outright and the citation at `_of_pos` is the only remaining input.
 
    The audit at `exists_coarseModuliY0_of_pos` used to record one place
    where this module's level structure was *weaker* than Katz–Mazur's,
@@ -166,6 +167,17 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 -- `CyclicSubgroupOfOrder` and the faithfulness audit of
 -- `exists_coarseModuliY0_of_pos`.
 public import Mathlib.AlgebraicGeometry.Morphisms.Flat
+-- The finiteness of the `K`-points of a finite scheme over a geometric
+-- point, which is what makes `isEmpty_of_gamma0Datum_zero` reachable:
+-- `LocallyQuasiFinite` and `IsLocallyArtinian.of_locallyQuasiFinite`,
+-- `IsArtinianScheme.finite`, and `pointEquivClosedPoint`.
+public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
+public import Mathlib.AlgebraicGeometry.Artinian
+public import Mathlib.AlgebraicGeometry.AlgClosed.Basic
+-- `Scheme.residueField` / `Scheme.fromSpecResidueField`, used to produce a
+-- geometric point above an arbitrary point of the base.
+public import Mathlib.AlgebraicGeometry.ResidueField
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 -- The group law on `(E⁄K).Point` needs `DecidableEq K`, and the classical
 -- instance for `AlgebraicClosure ℚ` — the one every torsion statement in
@@ -423,8 +435,11 @@ def Y0HasNoRationalPoint (N : ℕ) : Prop :=
 
 /-! ### The existence of `Y_0(N)`, and the bridge from Weierstrass curves -/
 
-/-- **The `Γ₀(0)`-moduli problem is supported on the empty scheme** (sorry
-leaf).
+/-! ### The degenerate level `N = 0`
+
+**The `Γ₀(0)`-moduli problem is supported on the empty scheme** — PROVEN
+2026-07-26; this subsection was a single sorry leaf until then, and the
+argument recorded here by its finder is the one that was carried out.
 
 TRUE, and *elementary* — no modular-curve theory enters.  Suppose
 `d : Gamma0Datum 0 T` and `T` had a point `x`.  Embedding the residue field
@@ -448,10 +463,113 @@ REACHABLE.  Formalising the argument needs exactly three things, all
 present: stability of `IsFinite` under base change
 (`AlgebraicGeometry.IsFinite` is an `IsStableUnderBaseChange` morphism
 property), affineness of a scheme finite over a field, and the finiteness of
-the set of `K`-algebra maps out of an Artinian `K`-algebra. -/
+the set of `K`-algebra maps out of an Artinian `K`-algebra.
+
+PROVEN 2026-07-26, along exactly those lines, from the two helper lemmas
+`finite_sections_of_isFinite` and `infinite_zmultiples_of_addOrderOf_eq_zero`
+below. -/
+
+/-- **The sections of a finite morphism over a fixed geometric point are
+finite in number.**
+
+For `g : C ⟶ T` finite and `t : Spec K ⟶ T` a geometric point (`K`
+algebraically closed), the `K`-points of `C` lying over `t` form a finite
+set.
+
+The proof is the classical one, and every step is mathlib API: `IsFinite`
+is stable under base change, so `C ×_T Spec K` is finite over `Spec K`; a
+quasi-finite quasi-compact scheme over an artinian one is artinian
+(`IsLocallyArtinian.of_locallyQuasiFinite`), and an artinian scheme has a
+finite underlying space (`IsArtinianScheme.finite`); and
+`AlgebraicGeometry.pointEquivClosedPoint` identifies the sections of a
+morphism of locally finite type to `Spec K` with the closed points of its
+source.  A `K`-point of `C` over `t` induces such a section by the
+universal property of the pullback, injectively. -/
+theorem finite_sections_of_isFinite {C T : Scheme.{u}} (g : C ⟶ T) [IsFinite g]
+    {K : Type u} [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T) :
+    Finite {w : Spec (CommRingCat.of K) ⟶ C // w ≫ g = t} := by
+  classical
+  let P : Scheme.{u} := Limits.pullback g t
+  let π : P ⟶ Spec (CommRingCat.of K) := Limits.pullback.snd g t
+  -- `IsFinite` is stable under base change, so the fibre is finite over `Spec K`.
+  haveI : IsFinite π := inferInstanceAs (IsFinite (Limits.pullback.snd g t))
+  -- A quasi-finite, quasi-compact scheme over an artinian one is artinian,
+  -- hence has a finite underlying space.
+  haveI : IsLocallyArtinian P := IsLocallyArtinian.of_locallyQuasiFinite π
+  haveI : CompactSpace P := QuasiCompact.compactSpace_of_compactSpace π
+  haveI : IsArtinianScheme P := ⟨⟩
+  haveI : Finite P := IsArtinianScheme.finite
+  -- A section of `π` is determined by the closed point of `P` it hits, and a
+  -- `K`-point of `C` over `t` induces such a section.
+  refine Finite.of_injective
+    (fun w => (pointEquivClosedPoint π)
+      ⟨Limits.pullback.lift w.1 (𝟙 _) (by rw [Category.id_comp]; exact w.2),
+        Limits.pullback.lift_snd _ _ _⟩) ?_
+  intro w₁ w₂ h
+  have h2 := congrArg Subtype.val ((pointEquivClosedPoint π).injective h)
+  refine Subtype.ext ?_
+  have h3 := congrArg (· ≫ Limits.pullback.fst g t) h2
+  simp only [Limits.pullback.lift_fst] at h3
+  exact h3
+
+/-- **An element of infinite additive order generates an infinite
+subgroup.** `Nat.card` of `zmultiples y` is `addOrderOf y`, and a `Nat.card`
+of `0` on a nonempty type means infinite. -/
+theorem infinite_zmultiples_of_addOrderOf_eq_zero {G : Type u} [AddCommGroup G]
+    (y : G) (h : addOrderOf y = 0) : Infinite (AddSubgroup.zmultiples y) := by
+  have hc := Nat.card_zmultiples y
+  rw [h] at hc
+  exact (Nat.card_eq_zero.mp hc).resolve_left (not_isEmpty_iff.mpr ⟨0⟩)
+
+/-- **The `Γ₀(0)`-moduli problem is supported on the empty scheme**
+(PROVEN 2026-07-26; formerly a sorry leaf).
+
+`[Γ₀(N)]` is a moduli problem only for `N ≥ 1`, so this degenerate level
+lies outside the Katz–Mazur theorem cited at
+`exists_coarseModuliY0_of_pos`; separating it off is what makes that
+citation honest.  See the section comment above for the full argument and
+for why the split exists. -/
 theorem isEmpty_of_gamma0Datum_zero {T : Scheme.{0}} (d : Gamma0Datum 0 T) :
-    IsEmpty T :=
-  sorry
+    IsEmpty T := by
+  classical
+  by_contra hne
+  rw [not_isEmpty_iff] at hne
+  obtain ⟨x⟩ := hne
+  -- A geometric point of `T` above `x`: the algebraic closure of the residue
+  -- field at `x`.
+  let K := AlgebraicClosure (T.residueField x)
+  let t : Spec (CommRingCat.of K) ⟶ T :=
+    Spec.map (CommRingCat.ofHom (algebraMap (T.residueField x) K)) ≫
+      T.fromSpecResidueField x
+  -- `geom_cyclic` states its conclusion under `ab.addCommGroup t`; bring that
+  -- instance into the context so `addOrderOf` and `zmultiples` elaborate here.
+  letI := d.ab.addCommGroup t
+  obtain ⟨y, -, hyord, hyall⟩ := d.cyc.geom_cyclic K t
+  -- The level structure has infinite order at this geometric point …
+  haveI : Infinite (AddSubgroup.zmultiples y) :=
+    infinite_zmultiples_of_addOrderOf_eq_zero y hyord
+  -- … yet every element of `⟨y⟩` gives a distinct `K`-point of `d.cyc.C`
+  -- over `t`, and those are finite in number because `d.cyc.ι ≫ d.f` is
+  -- a finite morphism.
+  haveI := d.cyc.isFinite
+  haveI : Finite {w : Spec (CommRingCat.of K) ⟶ d.cyc.C //
+      w ≫ (d.cyc.ι ≫ d.f) = t} := finite_sections_of_isFinite _ t
+  have hex : ∀ z : AddSubgroup.zmultiples y,
+      ∃ w : Spec (CommRingCat.of K) ⟶ d.cyc.C, w ≫ d.cyc.ι = (z.1 : _ ⟶ d.E) :=
+    fun z => (hyall z.1).mpr z.2
+  choose w hw using hex
+  have hspec : ∀ z : AddSubgroup.zmultiples y, w z ≫ (d.cyc.ι ≫ d.f) = t := by
+    intro z
+    rw [← Category.assoc, hw z]
+    exact z.1.2
+  haveI : Finite (AddSubgroup.zmultiples y) := by
+    refine Finite.of_injective (fun z => (⟨w z, hspec z⟩ :
+      {w : Spec (CommRingCat.of K) ⟶ d.cyc.C // w ≫ (d.cyc.ι ≫ d.f) = t})) ?_
+    intro z₁ z₂ hz
+    have h1 : w z₁ = w z₂ := congrArg Subtype.val hz
+    refine Subtype.ext (Subtype.ext ?_)
+    rw [← hw z₁, ← hw z₂, h1]
+  exact not_finite (AddSubgroup.zmultiples y)
 
 /-- **Existence of the coarse moduli space, degenerate level `N = 0`**
 (PROVEN, from `isEmpty_of_gamma0Datum_zero`).
