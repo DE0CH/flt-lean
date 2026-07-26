@@ -4254,7 +4254,114 @@ It stays a sorried `have` rather than a new top-level leaf for the reason the pr
 gave: a function-field development would supply it along with everything else, and an owner
 who later proves this by any route simply replaces the body, leaving no orphaned declaration
 behind. Nothing here can be lifted from mathlib or `~/cs/FLT`, neither of which has any
-isogeny material at all. -/
+isogeny material at all.
+
+## ROUTE MAP (2026-07-26, second owner): what is missing, and TWO ROUTES THAT DO NOT WORK
+
+Everything below was either derived here or machine-checked in PARI/GP over **295**
+`(A, B)` configurations — `y² = x³ + a₄x + a₆` over `𝔽_p` for `11 ≤ p < 40`,
+`0 ≤ a₄, a₆ ≤ 3`, kernels of every odd order dividing a generator's order — with **zero**
+failures. That sweep re-confirms the leaf itself is faithful, independently of the earlier
+one recorded at the end of this section.
+
+**What is missing is the PUSHFORWARD of divisors, not the pullback.** Write `ψ = veluMap`
+and `V = veluCurve W S`. The one-line proof of this leaf is: take `h` on `W` with
+`div h = [A] + [B] − [A+B] − [0]`; then `div (N_{F(W)/F(V)} h) = ψ_*(div h) =
+[ψA] + [ψB] − [ψ(A+B)] − [0]`, which is principal, hence sums to `0` — and that IS the leaf.
+So the missing ingredient is the norm map for `F(W) / F(W)^S` together with
+`F(W)^S = F(X, Y)`, i.e. the invariant-function statement. Nothing weaker suffices:
+
+**REFUTED ROUTE 1 — mathlib's `toClass` / `ClassGroup` CANNOT close this leaf.** It is the
+obvious thing to reach for, because it is how mathlib proves the group law associative:
+`WeierstrassCurve.Affine.Point.toClass : W.Point →+ Additive (ClassGroup W.CoordinateRing)`
+is Abel–Jacobi and `toClass_injective` is proven (`Affine/Point.lean:713, 758`;
+`W.FunctionField` is there too, line 95). What it yields is "the affine zeros of a function
+sum to `0` in `W.Point`".
+
+Apply that to the best function available — the pullback along `ψ` of the line through `ψA`
+and `ψB`. Its divisor is `Σ_{Q∈S} ([A+Q] + [B+Q] + [D+Q]) − 3 Σ_{Q∈S} [Q]`, where `D` is the
+point with `ψD = −(ψA + ψB)`, and `Σ_{Q∈S} Q = 0` because `S` has odd order and pairs under
+`±`. Summing gives **exactly `n · (A + B + D) = 0`**, while the leaf is `A + B + D ∈ S`.
+Over `F̄` one has `S ⊆ W[n]` of INDEX `n`, so the deduction falls short by precisely a factor
+of `n`. This is not an artefact of the choice of function: every relation obtainable this way
+is a PULLBACK `ψ*`, which on divisor classes is the dual isogeny and therefore factors
+through `[n]`. Do not spend a cycle on `toClass`.
+
+**REFUTED RESTATEMENT — do NOT weaken this leaf to collinearity of the three images.** The
+tempting symmetric restatement is: for `A + B + C = 0` with `A, B, C ∉ S`, the three points
+`(X T, Y T)` are collinear on `V`, i.e. the `3 × 3` determinant with rows `(X T, Y T, 1)`
+vanishes. It looks attractive because the two constants `Σ_{Q∈S} x_Q` and `Σ_{Q∈S} y_Q` in
+`veluCoordX`/`veluCoordY` genuinely do drop out of that determinant (they are column
+operations against the all-ones column). **It is strictly weaker, and VACUOUS on a real
+subcase.** Take `B = −2A + s` with `s ∈ S` and `A, 2A ∉ S`: then `A, B, A + B ∉ S` all hold,
+`C = A − s`, hence `ψC = ψA`, two rows COINCIDE and the determinant vanishes for free —
+while the actual content there, `ψB = −2ψA`, is untouched. The `x`-coordinate form kept below
+has no such hole, which is why it is the right statement.
+
+**THE CRUX, ISOLATED (machine-checked, unproven).** Let `A + B + C = 0` on `W` with
+`A, B, C ∉ S`, let `y = ℓx + m` be the line through them, and set
+`N(P) := ∏_{Q∈S} (y(P+Q) − ℓ·x(P+Q) − m)` and `κ := H(x_A)·H(x_B)·H(x_C)`, where
+`H = veluH S = ∏_{Q ∈ S∖0} (T − x_Q)`. Then
+
+  **(HNORM)  ∃ λ μ c,  c² = κ  and  N(P) = c·(Y P − λ·X P − μ)  for every `P ∉ S`.**
+
+That is "the norm of the line function is again a line function", i.e. the norm map lands in
+`F(V)` — the invariant-function statement in its most concrete form. Verified in the sweep
+above, `c² = κ` included.
+
+**THE COMPUTABLE HALF IS ALREADY IN REACH HERE, AND IT IS SIGN-BLIND.** The companion
+
+  **(STAR)  N(P)·N(−P) = −κ · (X P − X A)(X P − X B)(X P − X C)   for `P ∉ S`**
+
+needs NO new theory. Both ingredients exist. The second,
+
+  `∏_{Q∈S} (c − x(P+Q)) = (veluXNum S).eval c − (W.veluCoordX S P) · (veluH S).eval c`,
+
+is `velu_xNum_sub_eq_prod` evaluated at `c`, and was COMPILE-CHECKED here on 2026-07-26 in a
+scratch module — it is four lines (`congrArg (Polynomial.eval c)`, then `simp only` with
+`eval_sub`, `eval_mul`, `eval_C`, `eval_prod`, `eval_X`). The first,
+`F(R)·F(−R) = −(x_R − x_A)(x_R − x_B)(x_R − x_C)` with `F(R) = y_R − ℓx_R − m`, is mathlib's
+`Affine.addPolynomial_slope` (`Affine/Formula.lean:264`, factoring the substituted cubic as
+`−((X − C x₁)(X − C x₂)(X − C (addX …)))`): expanding `F(R)·F(−R)` with `negY` and applying
+the Weierstrass equation at `R` gives exactly `(W.addPolynomial x_A y_A ℓ).eval x_R`, and
+`addX x_A x_B ℓ = x_{A+B} = x_C`. Assembling the two over `S` (reindexing
+`∏_{Q} F(−(P+Q)) = N(−P)` by `Q ↦ −Q`, and using `veluXNum_eval` to turn
+`XNum(x_T)` into `H(x_T)·X T`) gives STAR; all the sign powers of `(−1)^n` cancel. Estimated
+80–120 lines. STAR was verified in the same PARI sweep.
+
+The reason to record STAR is what it shows: it pins `N` only up to SIGN, and **the missing
+sign is exactly the content of this leaf**. The norm of a VERTICAL line is computable from
+the fibre polynomial; the norm of a SLANTED line is not.
+
+**How STAR + HNORM would close it, and the two gaps any such decomposition must handle.**
+Substituting HNORM into STAR and using `velu_equation` on `V` gives
+`c² · q(X P) = κ · ∏_T (X P − X T)`, where `q(ξ) = ξ³ + (a₂ − λ² − a₁λ)ξ² + …` is the cubic
+cut out on `V` by `η = λξ + μ`; with `c² = κ` the `ξ²` coefficients give
+`X A + X B + X C = λ² + a₁λ − a₂`, which is this leaf.
+
+The remaining gap is ONE degenerate subcase, and it is worth stating precisely because the
+generic case needs nothing extra. Dividing by `c² = κ ≠ 0` and using `velu_equation` on `V`,
+STAR + HNORM give the POINTWISE identity `q(X P) = ∏_T (X P − X T)` for every `P ∉ S`. Both
+`q` and `∏_T (ξ − X T)` are MONIC cubics, so their difference has degree `≤ 2`; and
+`P = A, B, C` are themselves admissible, each making both sides vanish. **So as soon as
+`X A, X B, X C` are pairwise distinct, a degree-`≤ 2` polynomial with three distinct roots is
+zero and the leaf follows with no base change and no extra points.** Only the collision cases
+need more: `X A = X B ⟺ A − B ∈ S`, `X A = X C ⟺ 2A + B ∈ S`, `X B = X C ⟺ A + 2B ∈ S`
+(in each, `⟹` goes through the fibre structure `X R = X R' ⟹ R ≡ ±R' mod S`, and it is
+`A + B ∉ S` that kills the other sign). There a third distinct evaluation
+point is needed, which over a small `F` may not exist in `W(F)` — base change to `F̄` is the
+fix, legitimate here because `CharZero F` makes `W(F̄)` infinite and `velu_baseChange_curve` /
+`veluBaseChangePoint` / `velu_baseChange_isPointSubgroup` are already in this file (a
+base-change lemma for `veluCoordX` itself would have to be added). That subcase is real, not
+hypothetical, and a decomposition that skipped it would be unfaithful.
+
+**Absence re-checked 2026-07-26.** `grep -ril 'isogeny\|RiemannRoch'` over
+`Mathlib/AlgebraicGeometry` and `Mathlib/NumberTheory` returns NOTHING, and the same over
+`~/cs/FLT` returns nothing. `Mathlib/AlgebraicGeometry/EllipticCurve/` holds only
+`Affine/{AddSubMap,Basic,Formula,Point}`, `DivisionPolynomial`, `Jacobian`, `Projective`,
+`IsomOfJ`, `LFunction`, `ModelsWithJ`, `NormalForms`, `Reduction`, `VariableChange`,
+`Weierstrass`. So the norm/pushforward has to be built here; the Abel–Jacobi half
+(`toClass`, `FunctionField`, `CoordinateRing`) is the part mathlib does supply. -/
 theorem velu_map_add_of_notMem (S : Finset W.Point) (hS : IsPointSubgroup S)
     (hodd : Odd S.card) {P Q : W.Point} (hP : P ∉ S) (hQ : Q ∉ S) (hPQ : P + Q ∉ S) :
     W.veluMap S hS hodd (P + Q) = W.veluMap S hS hodd P + W.veluMap S hS hodd Q := by
