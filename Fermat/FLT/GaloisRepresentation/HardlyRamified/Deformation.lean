@@ -67,7 +67,7 @@ them without a human. Do not re-wrap it.
 - `hasFlatProlongationAt_of_prod_injection`
 - `exists_cyclotomicCharacter_padicTwo_eq_two`
 - `exists_ringHom_matrix_quotient_of_finite`
-- `exists_residual_basis_toMatrix'`
+- `residual_isIrreducible_of_isHardlyRamified`
 - `exists_conj_entries_mem_of_single_mem`
 - `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`
 - `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
@@ -245,11 +245,14 @@ the surjectivity and minimality strata of the minimal presentation,
   a Galois basis of `M₂(D.R)` with nondegenerate trace form) and
   `exists_conj_entries_mem_of_basis_repr_mem` (the pure algebra —
   splitting the resulting `R'`-order). Both of THOSE were then PROVEN in
-  turn (2026-07-26): the first over the single residual leaf
-  `exists_residual_basis_toMatrix'` (Burnside density plus the residual
-  identification), adding the Nakayama lift and the trace-form
-  nondegeneracy (`trace_single_mul`, `det_traceGram_ne_zero`) as proven
-  glue; the second over the single leaf
+  turn (2026-07-26): the first over `exists_residual_basis_toMatrix'`,
+  itself then PROVEN over the single leaf
+  `residual_isIrreducible_of_isHardlyRamified` (absolute irreducibility of
+  the residual representation — the arithmetic input) with BURNSIDE's
+  theorem `span_range_eq_top_of_irreducible_of_commutant`, the basis
+  extraction `exists_basis_of_span_range_eq_top`, the Nakayama lift and
+  the trace-form nondegeneracy (`trace_single_mul`,
+  `det_traceGram_ne_zero`) all proven; the second over the single leaf
   `exists_conj_entries_mem_of_single_mem` (the Peirce/grading core), with
   the `𝔪`-adic Newton iteration `exists_isIdempotentElem_mem_of_sq_sub_mem`
   and the idempotent conjugation `exists_conj_eq_single_of_mul_self` both
@@ -8756,41 +8759,248 @@ theorem stdBasis_repr_apply {R : Type*} [CommRing R] {m n : Type*} [Fintype m]
     (Matrix.stdBasis R m n).repr M p = M p.1 p.2 := by
   simp [Matrix.stdBasis]
 
+/-- **BURNSIDE'S THEOREM** (PROVEN 2026-07-26, in any dimension and any
+characteristic): if a monoid acts on a finite-dimensional `K`-vector space
+`W` with no proper nonzero stable subspace, and the commutant of the image
+is exactly the scalars, then the `K`-SPAN of the image is ALL of
+`End_K W`.
+
+Route: Jacobson density (mathlib's `jacobson_density`), applied over the
+`K`-subalgebra `A = K⟨τ(G)⟩` of `End_K W`, which acts on `W` by
+`Module.compHom` along `A.val`. Three things have to be checked and all
+three are exactly the hypotheses:
+
+* `W` is a SIMPLE `A`-module, because an `A`-submodule is in particular a
+  `K`-submodule (`K` acts through `c • 1 ∈ A`) stable under every `τ g`,
+  so `hirr` applies; the two lattices have literally the same carriers,
+  which is why the transfer is a `SetLike.ext`.
+* Every `φ ∈ End_A W` is `K`-linear (same reason) and commutes with every
+  `τ g` (that is `A`-linearity at the element `τ g ∈ A`), hence is a
+  scalar `c` by `hcomm`; so any `f ∈ End_K W` commutes with every
+  `φ ∈ End_A W`, which is precisely the hypothesis Jacobson density needs.
+* Density then gives, for a finite `K`-generating set `s` of `W`, an
+  element `b ∈ A` with `f = b` on `s`; both sides being `K`-linear, they
+  agree everywhere (`Submodule.span_induction`), so `f = b ∈ A`.
+
+Finally `A = ⊤` and `Algebra.adjoin K (range τ) = span K (range τ)`
+because `range τ` is already a SUBMONOID (`Submonoid.closure_eq` at
+`MonoidHom.mrange τ`), which is where the multiplicativity of `τ` is used
+and the only place it is used.
+
+Reference: Curtis–Reiner, *Methods of Representation Theory* §3.3
+(Burnside); Lam, *A First Course in Noncommutative Rings* §11. -/
+theorem span_range_eq_top_of_irreducible_of_commutant
+    {K : Type*} [Field K] {W : Type*} [AddCommGroup W] [Module K W]
+    [Module.Finite K W] [Nontrivial W]
+    {G : Type*} [Monoid G] (τ : G →* Module.End K W)
+    (hirr : ∀ p : Submodule K W, (∀ g : G, ∀ w ∈ p, τ g w ∈ p) → p = ⊥ ∨ p = ⊤)
+    (hcomm : ∀ f : Module.End K W, (∀ g : G, f * τ g = τ g * f) →
+      ∃ c : K, f = c • 1) :
+    Submodule.span K (Set.range (τ : G → Module.End K W)) = ⊤ := by
+  classical
+  set A : Subalgebra K (Module.End K W) :=
+    Algebra.adjoin K (Set.range (τ : G → Module.End K W)) with hAdef
+  letI : Module A W := Module.compHom W (A.val : A →+* Module.End K W)
+  have hsmul : ∀ (a : A) (w : W), a • w = (a : Module.End K W) w := fun a w => rfl
+  have hone : ∀ (c : K) (w : W), (c • (1 : A)) • w = c • w := by
+    intro c w
+    rw [hsmul]
+    simp
+  have hτmem : ∀ g : G, (τ g : Module.End K W) ∈ A := fun g =>
+    Algebra.subset_adjoin ⟨g, rfl⟩
+  -- `A`-submodules are exactly the `τ`-stable `K`-submodules, so `W` is `A`-simple
+  haveI hnt : Nontrivial (Submodule A W) := by
+    refine ⟨⊥, ⊤, ?_⟩
+    intro hcon
+    obtain ⟨w, hw⟩ := exists_ne (0 : W)
+    have hmem : w ∈ (⊥ : Submodule A W) := by rw [hcon]; trivial
+    exact hw (by simpa using hmem)
+  haveI hso : IsSimpleOrder (Submodule A W) := by
+    refine { eq_bot_or_eq_top := fun p => ?_ }
+    set q : Submodule K W :=
+      { carrier := (p : Set W)
+        add_mem' := fun {a b} ha hb => p.add_mem ha hb
+        zero_mem' := p.zero_mem
+        smul_mem' := fun c w hw => by
+          have h1 : (c • (1 : A)) • w ∈ p := p.smul_mem _ hw
+          rwa [hone] at h1 } with hq
+    have hmemq : ∀ w : W, w ∈ q ↔ w ∈ p := fun w => Iff.rfl
+    have hstab : ∀ g : G, ∀ w ∈ q, τ g w ∈ q := by
+      intro g w hw
+      have h1 : (⟨τ g, hτmem g⟩ : A) • w ∈ p := p.smul_mem _ ((hmemq w).mp hw)
+      exact (hmemq _).mpr h1
+    rcases hirr q hstab with h | h
+    · left
+      refine SetLike.ext fun w => ?_
+      constructor
+      · intro hw
+        have h2 : w ∈ q := (hmemq w).mpr hw
+        rw [h] at h2
+        simpa using h2
+      · intro hw
+        simp only [Submodule.mem_bot] at hw
+        rw [hw]; exact p.zero_mem
+    · right
+      refine SetLike.ext fun w => ?_
+      simp only [Submodule.mem_top, iff_true]
+      have h2 : w ∈ q := by rw [h]; trivial
+      exact (hmemq w).mp h2
+  haveI hsimple : IsSimpleModule A W := ⟨⟩
+  -- every `K`-endomorphism is realized by an element of `A` (Jacobson density)
+  have hsurj : ∀ f : Module.End K W, f ∈ A := by
+    intro f
+    have hf : ∀ (φ : Module.End A W) (x : W), f (φ x) = φ (f x) := by
+      intro φ x
+      have hK : ∀ (c : K) (y : W), φ (c • y) = c • φ y := by
+        intro c y
+        have h2 : φ ((c • (1 : A)) • y) = (c • (1 : A)) • φ y := map_smul φ _ _
+        rw [hone] at h2
+        rw [h2, hone]
+      set ψ : Module.End K W :=
+        { toFun := fun y => φ y
+          map_add' := fun y z => map_add φ y z
+          map_smul' := fun c y => by simpa using hK c y } with hψ
+      have hψcomm : ∀ g : G, ψ * τ g = τ g * ψ := by
+        intro g
+        refine LinearMap.ext fun y => ?_
+        show φ ((τ g : Module.End K W) y) = (τ g : Module.End K W) (φ y)
+        exact map_smul φ (⟨τ g, hτmem g⟩ : A) y
+      obtain ⟨c, hc⟩ := hcomm ψ hψcomm
+      have hφc : ∀ y, φ y = c • y := by
+        intro y
+        have h4 := congrArg (fun m : Module.End K W => m y) hc
+        simpa [hψ] using h4
+      rw [hφc x, hφc (f x), map_smul f c x]
+    set F : Module.End (Module.End A W) W :=
+      { toFun := fun y => f y
+        map_add' := fun y z => map_add f y z
+        map_smul' := fun φ y => by simpa [Module.End.smul_def] using hf φ y } with hF
+    obtain ⟨s, hs⟩ := Module.Finite.fg_top (R := K) (M := W)
+    obtain ⟨b, hb⟩ := jacobson_density (R := A) (M := W) F s
+    have hall : ∀ w : W, f w = (b : Module.End K W) w := by
+      intro w
+      have hw : w ∈ Submodule.span K (s : Set W) := by rw [hs]; trivial
+      induction hw using Submodule.span_induction with
+      | mem m hm => exact hb m hm
+      | zero => simp
+      | add u v _ _ hu hv => rw [map_add, map_add, hu, hv]
+      | smul c u _ hu => rw [map_smul, map_smul, hu]
+    have hfb : f = (b : Module.End K W) := LinearMap.ext hall
+    rw [hfb]
+    exact b.2
+  have hclosure : ((Submonoid.closure (Set.range (τ : G → Module.End K W)) :
+      Submonoid (Module.End K W)) : Set (Module.End K W))
+      = Set.range (τ : G → Module.End K W) := by
+    rw [show Set.range (τ : G → Module.End K W)
+        = ((MonoidHom.mrange τ : Submonoid (Module.End K W)) :
+          Set (Module.End K W)) from rfl]
+    rw [Submonoid.closure_eq]
+  refine eq_top_iff.mpr fun f _ => ?_
+  have hf : f ∈ A := hsurj f
+  rw [← Subalgebra.mem_toSubmodule, hAdef, Algebra.adjoin_eq_span, hclosure] at hf
+  exact hf
+
+/-- **A spanning family of a finite-dimensional space contains a basis,
+indexed by any type of the right cardinality** (PROVEN 2026-07-26): pure
+linear algebra over `exists_linearIndependent`, `Module.Basis.mk` and
+`Fintype.equivOfCardEq`. Stated in the "reindexed and pulled back to the
+index set" form the Burnside consumer below needs: it returns the
+selection function `w : κ → ι` as well as the basis. -/
+theorem exists_basis_of_span_range_eq_top
+    {K : Type*} [Field K] {W : Type*} [AddCommGroup W] [Module K W]
+    [Module.Finite K W] {ι : Type*} {κ : Type*} [Fintype κ]
+    (hcard : Module.finrank K W = Fintype.card κ)
+    (v : ι → W) (hv : Submodule.span K (Set.range v) = ⊤) :
+    ∃ w : κ → ι, ∃ c : Module.Basis κ K W, ∀ i, c i = v (w i) := by
+  classical
+  obtain ⟨t, hts, hspan, hli⟩ := exists_linearIndependent K (Set.range v)
+  have hsp : ⊤ ≤ Submodule.span K (Set.range (Subtype.val : t → W)) := by
+    rw [Subtype.range_val, hspan, hv]
+  set bt : Module.Basis t K W := Module.Basis.mk hli hsp with hbt
+  haveI hfin : Finite t := Module.Finite.finite_basis bt
+  haveI : Fintype t := Fintype.ofFinite _
+  have hct : Fintype.card t = Fintype.card κ := by
+    rw [← Module.finrank_eq_card_basis bt, hcard]
+  set e : κ ≃ t := (Fintype.equivOfCardEq hct).symm with he
+  choose w hw using fun i : κ => hts (e i).2
+  refine ⟨w, bt.reindex e.symm, fun i => ?_⟩
+  rw [Module.Basis.reindex_apply, Equiv.symm_symm, hbt, Module.Basis.mk_apply]
+  exact (hw i).symm
+
+/-- **The residual representation is ABSOLUTELY IRREDUCIBLE** (sorry leaf,
+cut 2026-07-26 out of `exists_residual_basis_toMatrix'`, which is PROVEN
+over it and Burnside below): the matrix representation
+`g ↦ D.ρ(g) mod 𝔪` on `k²` has no proper nonzero stable subspace, and its
+commutant in `End_k(k²)` is the scalars.
+
+This is all that is left of the representation theory of Carayol's
+Théorème 1 — the density argument is now the PROVEN
+`span_range_eq_top_of_irreducible_of_commutant` above, and the extraction
+of a basis from a spanning family is the PROVEN
+`exists_basis_of_span_range_eq_top`.
+
+Route. `ρbar` is absolutely irreducible: irreducible by `hirr`, and its
+commutant is `k` by the PROVEN
+`exists_smul_eq_of_commute_of_isIrreducible` (oddness plus irreducibility
+in dimension two over a finite field of odd characteristic). The
+reduction of `D.ρ` has the same Frobenius characteristic polynomials as
+`ρbar` (`D.charFrob_compat` through `LinearMap.charpoly_baseChange`),
+hence is CONJUGATE to `ρbar` by the PROVEN Chebotarev–Brauer–Nesbitt node
+`exists_conj_of_charFrob_eq` — see the proven `exists_isWeaklyUniversal`
+for exactly this computation, which produces the conjugation for
+`D.ρ.baseChange k` on `k ⊗_{D.R} D.R²`. Both conclusions asserted here are
+invariant under conjugation by a linear isomorphism, so they transfer;
+the only work is identifying `k ⊗_{D.R} D.R²` with `k²` compatibly, i.e.
+matching `LinearMap.baseChange` with the entrywise `Matrix.map D.π`.
+
+FAITHFULNESS NOTE. Both clauses are about the RESIDUAL representation, not
+about `D.ρ` itself: `D.ρ` over the local ring `D.R` has plenty of stable
+`D.R`-submodules (e.g. `𝔪 · D.R²`), and the statement would be false if
+read there. The reduction is what makes the commutant a field. -/
+theorem residual_isIrreducible_of_isHardlyRamified (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar) :
+    letI := D.commRing; letI := D.topologicalSpace
+    letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+    (∀ p : Submodule k (Fin 2 → k),
+        (∀ g : Field.absoluteGaloisGroup ℚ, ∀ w ∈ p,
+          Matrix.toLin' ((LinearMap.toMatrix' (D.ρ g)).map ⇑D.π) w ∈ p) →
+        p = ⊥ ∨ p = ⊤) ∧
+    (∀ f : Module.End k (Fin 2 → k),
+        (∀ g : Field.absoluteGaloisGroup ℚ,
+          f * Matrix.toLin' ((LinearMap.toMatrix' (D.ρ g)).map ⇑D.π)
+            = Matrix.toLin' ((LinearMap.toMatrix' (D.ρ g)).map ⇑D.π) * f) →
+        ∃ c : k, f = c • 1) :=
+  sorry
+
 open scoped Matrix in
 /-- **Carayol's Théorème 1, step 1a: four Galois elements whose RESIDUAL
-matrices are a `k`-basis of `M₂(k)`** (sorry leaf, cut 2026-07-26 out of
+matrices are a `k`-basis of `M₂(k)`** (PROVEN 2026-07-26 over the single
+leaf `residual_isIrreducible_of_isHardlyRamified`; cut the same day out of
 `exists_basis_toMatrix'_isUnit_traceGram`, whose remaining content —
 Nakayama and the nondegeneracy of the trace form — is PROVEN over this
-leaf below).
+node below).
 
 This is the BURNSIDE/JACOBSON-DENSITY half of Carayol's Théorème 1, and
 nothing else: neither the coefficient ring `D.R`, nor the trace subring,
 nor the trace form occurs in the statement, only the reduction
 `g ↦ D.ρ(g) mod 𝔪` into `M₂(k)`.
 
-Mathematical content.
+What the proof does, all of it verified. The reduction is packaged as a
+monoid hom `σ : Γ →* End_k(k²)`, `σ g = toLin' ((toMatrix' (D.ρ g)).map π)`
+(multiplicativity is `LinearMap.toMatrix'_mul` plus `Matrix.map_mul` plus
+`Matrix.toLin'_mul`). Absolute irreducibility of `σ` is the leaf; the
+PROVEN Burnside node `span_range_eq_top_of_irreducible_of_commutant` then
+gives `span_k (range σ) = ⊤`; the span is transported to matrices along
+the `k`-linear equivalence `toMatrix'` (`Submodule.map_span`,
+`Submodule.map_top`, `LinearMap.toMatrix'_toLin'`); and the PROVEN
+`exists_basis_of_span_range_eq_top` extracts a basis indexed by
+`Fin 2 × Fin 2`, whose cardinality matches
+`finrank_k M₂(k) = 4` through `Matrix.stdBasis`.
 
-* `ρbar` is ABSOLUTELY irreducible: that is the PROVEN
-  `exists_smul_eq_of_commute_of_isIrreducible` (oddness plus
-  irreducibility in dimension two over a field of odd characteristic
-  forces the commutant to be `k`).
-* The reduction of `D.ρ` modulo `𝔪` has the same Frobenius
-  characteristic polynomials as `ρbar` (`D.charFrob_compat`), hence is
-  conjugate to `ρbar` by the PROVEN Chebotarev–Brauer–Nesbitt node
-  `exists_conj_of_charFrob_eq`; so it is absolutely irreducible too. This
-  is the plumbing half of the leaf: it is `D.ρ.baseChange k` that
-  `exists_conj_of_charFrob_eq` accepts (see the proven
-  `exists_isWeaklyUniversal` for the pattern), and the residual MATRICES
-  are obtained from it through the standard basis of `k ⊗_{D.R} D.R²`.
-* Burnside/Jacobson density: the `k`-span of the image of an absolutely
-  irreducible two-dimensional representation is ALL of `M₂(k)` — the span
-  of a group image is a subalgebra, and by Jacobson density
-  (`jacobson_density`, mathlib; used in the same way by
-  `BrauerNesbittConjugacy.lean`'s `exists_toModuleEnd_eq_of_forall_comm`)
-  a subalgebra acting simply with commutant `k` is everything. Four group
-  elements can then be chosen with the residual `ρbar(gᵢ)` a `k`-basis;
-  extracting a basis from a spanning family indexed by `Γ` is the last,
-  purely linear-algebraic, step.
+So what remains open is exactly the ARITHMETIC input — that the residual
+representation is absolutely irreducible — and none of the algebra.
 
 CIRCULARITY GUARD (inherited): the hypothesis package is the one
 `not_isIrreducible_of_isHardlyRamified_of_five_le` refutes, and that
@@ -8808,8 +9018,54 @@ theorem exists_residual_basis_toMatrix' (hℓ5 : 5 ≤ ℓ)
     letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
     ∃ g : Fin 2 × Fin 2 → Field.absoluteGaloisGroup ℚ,
       ∃ c : Module.Basis (Fin 2 × Fin 2) k (Matrix (Fin 2) (Fin 2) k),
-        ∀ i, c i = (LinearMap.toMatrix' (D.ρ (g i))).map ⇑D.π :=
-  sorry
+        ∀ i, c i = (LinearMap.toMatrix' (D.ρ (g i))).map ⇑D.π := by
+  classical
+  letI := D.commRing; letI := D.topologicalSpace
+  letI := D.isTopologicalRing; letI := D.isLocalRing; letI := D.algebra
+  obtain ⟨hstab, hcomm⟩ :=
+    residual_isIrreducible_of_isHardlyRamified hℓOdd hdim hℓ5 h hirr D
+  -- the residual representation, as a monoid hom into `End k (k²)`
+  set σ : Field.absoluteGaloisGroup ℚ →* Module.End k (Fin 2 → k) :=
+    { toFun := fun g => Matrix.toLin' ((LinearMap.toMatrix' (D.ρ g)).map ⇑D.π)
+      map_one' := by
+        show Matrix.toLin' ((LinearMap.toMatrix' (D.ρ 1)).map ⇑D.π) = 1
+        rw [show (D.ρ 1) = 1 from map_one D.ρ, LinearMap.toMatrix'_one,
+          Matrix.map_one _ (map_zero D.π) (map_one D.π), Matrix.toLin'_one]
+        rfl
+      map_mul' := fun g g' => by
+        show Matrix.toLin' ((LinearMap.toMatrix' (D.ρ (g * g'))).map ⇑D.π)
+          = Matrix.toLin' ((LinearMap.toMatrix' (D.ρ g)).map ⇑D.π)
+            * Matrix.toLin' ((LinearMap.toMatrix' (D.ρ g')).map ⇑D.π)
+        rw [show (D.ρ (g * g')) = D.ρ g * D.ρ g' from map_mul D.ρ g g',
+          LinearMap.toMatrix'_mul, Matrix.map_mul, Matrix.toLin'_mul]
+        rfl } with hσ
+  -- Burnside
+  have hspanEnd : Submodule.span k
+      (Set.range (σ : Field.absoluteGaloisGroup ℚ → Module.End k (Fin 2 → k))) = ⊤ :=
+    span_range_eq_top_of_irreducible_of_commutant σ hstab hcomm
+  -- transport the span along `toMatrix'`
+  set Θ : Module.End k (Fin 2 → k) ≃ₗ[k] Matrix (Fin 2) (Fin 2) k :=
+    LinearMap.toMatrix' with hΘ
+  have hcomp : (fun g : Field.absoluteGaloisGroup ℚ =>
+      (LinearMap.toMatrix' (D.ρ g)).map ⇑D.π) = fun g => Θ (σ g) := by
+    funext g
+    exact (LinearMap.toMatrix'_toLin' _).symm
+  have hspanMat : Submodule.span k
+      (Set.range (fun g : Field.absoluteGaloisGroup ℚ =>
+        (LinearMap.toMatrix' (D.ρ g)).map ⇑D.π)) = ⊤ := by
+    rw [hcomp]
+    have hmap := congrArg (Submodule.map Θ.toLinearMap) hspanEnd
+    rw [Submodule.map_span, Submodule.map_top,
+      LinearMap.range_eq_top.mpr Θ.surjective] at hmap
+    rw [← hmap, ← Set.range_comp]
+    rfl
+  -- and extract a basis from the spanning family
+  have hcard : Module.finrank k (Matrix (Fin 2) (Fin 2) k)
+      = Fintype.card (Fin 2 × Fin 2) :=
+    Module.finrank_eq_card_basis (Matrix.stdBasis k (Fin 2) (Fin 2))
+  obtain ⟨g, c, hc⟩ := exists_basis_of_span_range_eq_top (κ := Fin 2 × Fin 2)
+    hcard _ hspanMat
+  exact ⟨g, c, hc⟩
 
 open scoped Matrix in
 /-- **Carayol's Théorème 1, step 1: a Galois basis of `M₂(D.R)` whose
