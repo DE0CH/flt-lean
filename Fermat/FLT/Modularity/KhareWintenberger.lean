@@ -166,6 +166,13 @@ public import Mathlib.AlgebraicGeometry.Pullbacks
 public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.RingTheory.Flat.Basic
 public import Mathlib.RingTheory.TensorProduct.Basic
+public import Mathlib.RingTheory.TensorProduct.Maps
+public import Mathlib.RingTheory.TensorProduct.Quotient
+public import Mathlib.RingTheory.Etale.Field
+public import Mathlib.RingTheory.Unramified.Field
+public import Mathlib.RingTheory.Jacobson.Ring
+public import Mathlib.RingTheory.Artinian.Ring
+public import Mathlib.FieldTheory.Perfect
 public import Mathlib.RingTheory.Ideal.Maximal
 -- Bertini cut (2026-07-26): `exists_dimensionDrop_of_affine_geometricallyIrreducible`
 -- is PROVEN over `exists_bertiniHyperplane_of_affine_geometricallyIrreducible`, and
@@ -3128,16 +3135,237 @@ extension `κ/ℚ` would make `C ×_ℚ Spec κ` disconnected. So `C = Spec ℚ`
 `F = ℚ` is totally real and totally split at every prime, and the
 conclusion is discharged.
 
-Everything in that paragraph is proven below except one geometric fact:
-the leaf `exists_residueField_tensorSelf_irreducible`, which produces the
-residue field `κ` of the unique point together with the irreducibility and
-reducedness of `κ ⊗_ℚ κ`. The collapse `κ = ℚ` itself is PROVEN, as
-`finrank_eq_one_of_irreducible_tensorSelf`. -/
+**Everything in that paragraph is now PROVEN (2026-07-26); the `dim ≤ 0`
+branch has no leaves left.** `exists_residueField_tensorSelf_irreducible`
+produces the residue field `κ` of the unique point together with the
+irreducibility and reducedness of `κ ⊗_ℚ κ`, over the scheme-free
+`exists_residueField_tensorSelf_irreducible_algebra`; the collapse
+`κ = ℚ` is `finrank_eq_one_of_irreducible_tensorSelf`. -/
+
+open TensorProduct in
+/-- **Base change of a tensor product along a ring isomorphism of the base**
+(PROVEN glue, 2026-07-26). If `R ≃+* R'` and `S`, `T` carry algebra
+structures over both bases that agree through the isomorphism, then
+`S ⊗[R] T ≃+* S ⊗[R'] T`.
+
+WHY THIS EXISTS. The base of this file's schemes is `Spec (ULift.{u} ℚ)`
+(the `Type u` copy of `ℚ`; see `specRatMap`), so `pullbackSpecIso` delivers
+`Spec (A ⊗[ULift.{u} ℚ] κ)`, whereas the statements downstream are about
+`⊗[ℚ]`. The two are canonically isomorphic and this is that isomorphism.
+
+WHY IT IS STATED FOR A VARIABLE BASE PAIR rather than directly for
+`ULift.{u} ℚ` and `ℚ`. At the concrete pair there are TWO competing
+`Module (ULift.{u} ℚ) S` instances — `ULift.module`, derived from
+`Module ℚ S`, and `Algebra.toModule` of the composite algebra structure.
+They are definitionally equal but never syntactically equal, so
+`SMulCommClass`/`CompatibleSMul`/`IsScalarTower` goals stated one way do
+not discharge obligations phrased the other way, and instance search picks
+`ULift.module` while `pullbackSpecIso` bakes in `Algebra.toModule`. Over an
+abstract base pair `ULift.module` does not apply at all, the ambiguity
+disappears, and the proof goes through in a dozen lines. Instantiating
+afterwards is harmless because the instantiated STATEMENT mentions only
+`Algebra.toModule`. -/
+theorem nonempty_ringEquiv_tensor_of_ringEquiv
+    {R R' : Type*} [CommRing R] [CommRing R'] (e : R ≃+* R')
+    (S T : Type*) [CommRing S] [CommRing T]
+    [Algebra R S] [Algebra R T] [Algebra R' S] [Algebra R' T]
+    (hS : ∀ r : R, algebraMap R S r = algebraMap R' S (e r))
+    (hT : ∀ r : R, algebraMap R T r = algebraMap R' T (e r)) :
+    Nonempty (S ⊗[R] T ≃+* S ⊗[R'] T) := by
+  have hS' : ∀ r' : R', algebraMap R' S r' = algebraMap R S (e.symm r') := by
+    intro r'; rw [hS (e.symm r'), RingEquiv.apply_symm_apply]
+  have hT' : ∀ r' : R', algebraMap R' T r' = algebraMap R T (e.symm r') := by
+    intro r'; rw [hT (e.symm r'), RingEquiv.apply_symm_apply]
+  have smS : ∀ (r : R') (m : S), r • m = (e.symm r) • m := by
+    intro r m; rw [Algebra.smul_def, Algebra.smul_def, hS']
+  have smT : ∀ (r : R') (m : T), r • m = (e.symm r) • m := by
+    intro r m; rw [Algebra.smul_def, Algebra.smul_def, hT']
+  have smS2 : ∀ (r : R) (m : S), r • m = (e r) • m := by
+    intro r m; rw [Algebra.smul_def, Algebra.smul_def, hS]
+  have smT2 : ∀ (r : R) (m : T), r • m = (e r) • m := by
+    intro r m; rw [Algebra.smul_def, Algebra.smul_def, hT]
+  haveI : SMulCommClass R R' S := ⟨fun a b s => by rw [smS, smS, smul_comm]⟩
+  haveI : SMulCommClass R' R S := ⟨fun a b s => by rw [smS, smS, smul_comm]⟩
+  haveI : TensorProduct.CompatibleSMul R R' S T :=
+    ⟨fun r m n => by rw [smS, smT]; exact TensorProduct.smul_tmul _ _ _⟩
+  haveI : TensorProduct.CompatibleSMul R' R S T :=
+    ⟨fun r m n => by rw [smS2, smT2]; exact TensorProduct.smul_tmul _ _ _⟩
+  exact ⟨(Algebra.TensorProduct.equivOfCompatibleSMul R R' R S T).symm.toRingEquiv⟩
+
+/-- **A surjection whose kernel consists of nilpotents preserves
+irreducibility of the spectrum** (PROVEN glue, 2026-07-26). Irreducibility
+of `Spec R` is primality of `nilradical R`
+(`PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical`), and for such a
+surjection `Ideal.map f (nilradical R) = nilradical S`, so
+`Ideal.map_isPrime_of_surjective` transports it. -/
+theorem irrSpec_of_surj {R S : Type*} [CommRing R] [CommRing S] (f : R →+* S)
+    (hsurj : Function.Surjective f) (hker : RingHom.ker f ≤ nilradical R)
+    (h : IrreducibleSpace (PrimeSpectrum R)) : IrreducibleSpace (PrimeSpectrum S) := by
+  rw [PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical] at h ⊢
+  have hmap : Ideal.map f (nilradical R) = nilradical S := by
+    refine le_antisymm ?_ ?_
+    · rw [Ideal.map_le_iff_le_comap]
+      intro x hx
+      exact mem_nilradical.2 (((mem_nilradical.1 hx)).map f)
+    · intro y hy
+      obtain ⟨x, rfl⟩ := hsurj y
+      obtain ⟨n, hn⟩ := mem_nilradical.1 hy
+      have hxn : x ^ n ∈ RingHom.ker f := by
+        simpa [RingHom.mem_ker, map_pow] using hn
+      obtain ⟨m, hm⟩ := mem_nilradical.1 (hker hxn)
+      refine Ideal.mem_map_of_mem _ (mem_nilradical.2 ⟨n * m, ?_⟩)
+      rw [pow_mul]; exact hm
+  rw [← hmap]
+  exact Ideal.map_isPrime_of_surjective hsurj hker
+
+/-- **Irreducibility of the spectrum transports along a ring isomorphism**
+(PROVEN glue): a `RingEquiv` is surjective with zero kernel. -/
+theorem irrSpec_of_ringEquiv {R S : Type*} [CommRing R] [CommRing S] (e : R ≃+* S)
+    (h : IrreducibleSpace (PrimeSpectrum R)) : IrreducibleSpace (PrimeSpectrum S) := by
+  refine irrSpec_of_surj (e : R →+* S) e.surjective (fun x hx => ?_) h
+  have hx0 : x = 0 := by
+    have : e x = 0 := hx
+    simpa using congrArg e.symm this
+  exact hx0 ▸ mem_nilradical.2 IsNilpotent.zero
+
+open TensorProduct in
+/-- **The tensor square of a number field is reduced** (PROVEN, 2026-07-26).
+`ℚ` is perfect, so a finite extension `κ/ℚ` is separable
+(`Algebra.IsAlgebraic.isSeparable_of_perfectField`), hence formally
+unramified (`Algebra.FormallyUnramified.of_isSeparable`) and — being also
+of finite type — unramified. Unramifiedness base-changes
+(`Algebra.Unramified.baseChange`) to `κ ⊗[ℚ] κ` over `κ`, and an
+unramified algebra over a FIELD is reduced
+(`Algebra.FormallyUnramified.isReduced_of_field`). -/
+theorem isReduced_tensorSelf (κ : Type u) [Field κ] [Algebra ℚ κ] [FiniteDimensional ℚ κ] :
+    IsReduced (κ ⊗[ℚ] κ) := by
+  haveI : Algebra.FormallyUnramified ℚ κ := Algebra.FormallyUnramified.of_isSeparable ℚ κ
+  haveI : Algebra.Unramified ℚ κ := ⟨inferInstance, inferInstance⟩
+  haveI : Algebra.Unramified κ (κ ⊗[ℚ] κ) := Algebra.Unramified.baseChange ℚ κ κ
+  exact Algebra.FormallyUnramified.isReduced_of_field κ (κ ⊗[ℚ] κ)
+
+set_option maxSynthPendingDepth 4 in
+open CategoryTheory AlgebraicGeometry TensorProduct in
+/-- **The residue field of a zero-dimensional geometrically irreducible
+affine `ℚ`-algebra, with its base change** (PROVEN 2026-07-26 — the
+SCHEME layer removed, exactly as
+`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible` does for its
+sibling: the affine coordinate ring `A` replaces `C`, and `IrreducibleSpace
+↥C` becomes `IrreducibleSpace (PrimeSpectrum A)`).
+
+THE PROOF, in five steps.
+
+1. `IrreducibleSpace (PrimeSpectrum A)` says `nilradical A` is PRIME
+   (`PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical`); `A` being
+   Artinian, every prime is maximal, so `κ := A ⧸ nilradical A` is a FIELD
+   and `A ↠ κ` supplies the `Nonempty (A →+* κ)` clause.
+2. `LocallyOfFiniteType (specRatMap A)` is, at the affine level,
+   `RingHom.FiniteType (algebraMap (ULift.{u} ℚ) A)`
+   (`HasRingHomProperty.Spec_iff`); descending the base along
+   `ULift.{u} ℚ ≃+* ℚ` and quotienting makes `κ` a finite-type `ℚ`-algebra
+   which is a field, so ZARISKI'S LEMMA
+   (`finite_of_finite_type_of_isJacobsonRing`, stacks 0CY7) gives
+   `FiniteDimensional ℚ κ`.
+3. Reducedness of `κ ⊗[ℚ] κ` is `isReduced_tensorSelf` above (separability,
+   `ℚ` being perfect).
+4. Geometric irreducibility, read at the field `K = κ`
+   (`geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms`), says the
+   pullback `Spec A ×_{Spec (ULift.{u} ℚ)} Spec κ` is irreducible;
+   `pullbackSpecIso` identifies it with `Spec (A ⊗[ULift.{u} ℚ] κ)`, and
+   `nonempty_ringEquiv_tensor_of_ringEquiv` moves the base to `ℚ`.
+5. `Algebra.TensorProduct.quotientTensorEquiv` presents `κ ⊗[ℚ] κ` as
+   `(A ⊗[ℚ] κ) ⧸ (nilradical A)ᵉ`, an extension by an ideal generated by
+   NILPOTENTS, so `irrSpec_of_surj` carries irreducibility across it.
+
+NOTE THAT SMOOTHNESS IS NOT NEEDED and is absent from this signature.
+Smoothness would make `A` reduced, hence `A = κ` outright, shortening step
+5 away; the nilpotent-quotient step replaces it, so the leaf is proven
+under strictly weaker hypotheses than it was stated with. -/
+theorem exists_residueField_tensorSelf_irreducible_algebra
+    (A : Type u) [CommRing A] [Algebra ℚ A]
+    (hft : AlgebraicGeometry.LocallyOfFiniteType (specRatMap A))
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible (specRatMap A))
+    (hart : IsArtinianRing A) (hirr : IrreducibleSpace (PrimeSpectrum A)) :
+    ∃ (κ : Type u) (_ : Field κ) (_ : Algebra ℚ κ) (_ : FiniteDimensional ℚ κ)
+      (_ : IsReduced (κ ⊗[ℚ] κ)),
+      IrreducibleSpace (PrimeSpectrum (κ ⊗[ℚ] κ)) ∧ Nonempty (A →+* κ) := by
+  classical
+  haveI := hart
+  -- STEP 1. `nilradical A` is prime (irreducibility) hence maximal (Artinian).
+  haveI hnp : (nilradical A).IsPrime :=
+    PrimeSpectrum.irreducibleSpace_iff_isPrime_nilradical.1 hirr
+  haveI hmax : (nilradical A).IsMaximal := IsArtinianRing.isMaximal_of_isPrime (nilradical A)
+  letI hfield : Field (A ⧸ nilradical A) := Ideal.Quotient.field (nilradical A)
+  -- STEP 2. `ULift ℚ`-algebra structures matching `specRatMap`.
+  letI algQU : Algebra (ULift.{u} ℚ) ℚ :=
+    (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom.toAlgebra
+  letI algA : Algebra (ULift.{u} ℚ) A :=
+    ((algebraMap ℚ A).comp (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom).toAlgebra
+  letI algK : Algebra (ULift.{u} ℚ) (A ⧸ nilradical A) :=
+    ((algebraMap ℚ (A ⧸ nilradical A)).comp
+      (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom).toAlgebra
+  -- `ULift.module` competes with `Algebra.toModule` for `Module (ULift ℚ) ·`; the two are
+  -- defeq but not syntactically equal, and `pullbackSpecIso` uses the algebra-derived one.
+  letI modA : Module (ULift.{u} ℚ) A := Algebra.toModule
+  letI modK : Module (ULift.{u} ℚ) (A ⧸ nilradical A) := Algebra.toModule
+  haveI tower := IsScalarTower.of_algebraMap_eq (R := ULift.{u} ℚ) (S := ℚ) (A := A)
+    (fun _ => rfl)
+  have hspecA : specRatMap A = Spec.map (CommRingCat.ofHom (algebraMap (ULift.{u} ℚ) A)) := rfl
+  -- STEP 3. Finite dimensionality of the residue field (Zariski's lemma).
+  have hftr : RingHom.FiniteType (algebraMap (ULift.{u} ℚ) A) := by
+    rw [hspecA] at hft
+    exact (AlgebraicGeometry.HasRingHomProperty.Spec_iff
+      (P := @AlgebraicGeometry.LocallyOfFiniteType)).1 hft
+  haveI : Algebra.FiniteType (ULift.{u} ℚ) A := hftr
+  haveI : Algebra.FiniteType ℚ A :=
+    Algebra.FiniteType.of_restrictScalars_finiteType (ULift.{u} ℚ) ℚ A
+  haveI : Algebra.FiniteType ℚ (A ⧸ nilradical A) :=
+    Algebra.FiniteType.of_surjective (Ideal.Quotient.mkₐ ℚ (nilradical A))
+      Ideal.Quotient.mk_surjective
+  haveI hfin : Module.Finite ℚ (A ⧸ nilradical A) :=
+    finite_of_finite_type_of_isJacobsonRing ℚ (A ⧸ nilradical A)
+  -- STEP 4. Reducedness of the tensor square.
+  haveI hred : IsReduced ((A ⧸ nilradical A) ⊗[ℚ] (A ⧸ nilradical A)) :=
+    isReduced_tensorSelf (A ⧸ nilradical A)
+  -- STEP 5. Irreducibility, from geometric irreducibility at `K = κ`.
+  have hgeo : geometrically (fun X => IrreducibleSpace ↥X)
+      (Spec.map (CommRingCat.ofHom (algebraMap (ULift.{u} ℚ) A))) := by
+    rw [← hspecA]; exact GeometricallyIrreducible.eq_geometrically ▸ hgi
+  have hpb := (geometrically_iff_of_commRing_of_isClosedUnderIsomorphisms
+      (P := fun X => IrreducibleSpace ↥X) (R := ULift.{u} ℚ)).mp hgeo (A ⧸ nilradical A)
+  have h1 := ObjectProperty.prop_of_iso (P := (fun X : Scheme.{u} => IrreducibleSpace ↥X))
+      (pullbackSpecIso (ULift.{u} ℚ) A (A ⧸ nilradical A)) hpb
+  have h2 : IrreducibleSpace (PrimeSpectrum (A ⊗[ULift.{u} ℚ] (A ⧸ nilradical A))) := h1
+  -- STEP 5b. Bridge `⊗[ULift ℚ]` to `⊗[ℚ]` along the ring isomorphism `ULift ℚ ≃+* ℚ`.
+  obtain ⟨ering⟩ := nonempty_ringEquiv_tensor_of_ringEquiv
+    (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ) A (A ⧸ nilradical A)
+    (fun _ => rfl) (fun _ => rfl)
+  have h3 : IrreducibleSpace (PrimeSpectrum (A ⊗[ℚ] (A ⧸ nilradical A))) :=
+    irrSpec_of_ringEquiv ering h2
+  -- STEP 5c. Quotient by the extended nilradical.
+  have hJ : Ideal.map (algebraMap A (A ⊗[ℚ] (A ⧸ nilradical A))) (nilradical A) ≤
+      nilradical (A ⊗[ℚ] (A ⧸ nilradical A)) := by
+    rw [Ideal.map_le_iff_le_comap]
+    intro x hx
+    exact mem_nilradical.2 ((mem_nilradical.1 hx).map
+      (algebraMap A (A ⊗[ℚ] (A ⧸ nilradical A))))
+  have h4 : IrreducibleSpace (PrimeSpectrum ((A ⊗[ℚ] (A ⧸ nilradical A)) ⧸
+      Ideal.map (algebraMap A (A ⊗[ℚ] (A ⧸ nilradical A))) (nilradical A))) := by
+    refine irrSpec_of_surj (Ideal.Quotient.mk _) Ideal.Quotient.mk_surjective ?_ h3
+    rw [Ideal.mk_ker]; exact hJ
+  have h5 : IrreducibleSpace
+      (PrimeSpectrum ((A ⧸ nilradical A) ⊗[ℚ] (A ⧸ nilradical A))) :=
+    irrSpec_of_ringEquiv
+      (Algebra.TensorProduct.quotientTensorEquiv (R := ℚ) ℚ (A ⧸ nilradical A) A
+        (nilradical A)).symm.toRingEquiv h4
+  exact ⟨A ⧸ nilradical A, hfield, inferInstance, hfin, hred, h5,
+    ⟨(Ideal.Quotient.mk (nilradical A) : A →+* A ⧸ nilradical A)⟩⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **The residue field of a zero-dimensional geometrically irreducible
-affine `ℚ`-scheme, with its base change** (SORRY — the geometric content
-of the degenerate branch; the ARITHMETIC content is proven below).
+affine `ℚ`-scheme, with its base change** (**PROVEN 2026-07-26** over
+`exists_residueField_tensorSelf_irreducible_algebra`, which is this
+statement with the scheme layer removed).
 
 At this point `C` is a ONE-POINT affine scheme (`hirr` plus the discrete
 topology of an Artinian scheme), so `A := Γ(C, ⊤)` is a local Artinian
@@ -3161,41 +3389,77 @@ reducible when `[κ : ℚ] = n ≥ 2`. In characteristic zero `κ = ℚ(α)` wit
 separability, whence `κ[X]/(f) ≅ κ × κ[X]/(h)` is a nontrivial product and
 its spectrum is disconnected — contradiction.
 
-MISSING MACHINERY, honestly (2026-07-26): the identification
-`C ×_{Spec ℚ} Spec κ ≅ Spec (A ⊗_ℚ κ)` (available as
-`AlgebraicGeometry.pullbackSpecIso`, but it must be transported across
-`C.isoSpec`); Zariski's lemma for `κ/ℚ`; and reducedness of `κ ⊗_ℚ κ`,
-for which the route at this pin is
-`Algebra.FormallyEtale.of_isSeparable` (characteristic zero, so `κ/ℚ` is
-separable) followed by `Algebra.FormallyEtale.iff_exists_algEquiv_prod`,
-which presents an étale algebra over a field as a finite PRODUCT of finite
-separable field extensions — a product of fields is reduced. The
-alternative entry point is `Algebra.IsGeometricallyReduced`
-(`Mathlib/RingTheory/Nilpotent/GeometricallyReduced.lean`), whose instance
-`[Algebra.IsAlgebraic k K] [IsGeometricallyReduced k A] : IsReduced (K ⊗[k] A)`
-is exactly the shape needed; what is absent there is the instance
-"over a perfect field, reduced implies geometrically reduced"
-(stacks 030V).
+HOW IT WAS PROVEN (2026-07-26). This declaration is now pure TRANSPORT:
+`C` is affine, so `C.isoSpec : C ≅ Spec Γ(C, ⊤)` turns `fC` into
+`specRatMap Γ(C, ⊤)` (the same `key`/`key2` manoeuvre that
+`exists_bound_forall_padicPoint_of_geometricallyIrreducible` performs a
+thousand lines above), `LocallyOfFiniteType` and
+`GeometricallyIrreducible` transport across that isomorphism, and
+`IrreducibleSpace ↥C` becomes `IrreducibleSpace (PrimeSpectrum Γ(C, ⊤))`
+because `IrreducibleSpace` is closed under isomorphisms of schemes. The
+mathematics then lives entirely in
+`exists_residueField_tensorSelf_irreducible_algebra` above, whose
+docstring gives the five steps.
 
-Everything DOWNSTREAM of this leaf is proven: see
+The earlier note that reducedness of `κ ⊗_ℚ κ` needed the missing
+"perfect base ⟹ geometrically reduced" instance (stacks 030V) is
+RETRACTED: `Algebra.Unramified.baseChange` plus
+`Algebra.FormallyUnramified.isReduced_of_field` already give it at this
+pin, and that is what `isReduced_tensorSelf` uses. Nor was the
+minimal-polynomial argument sketched above needed — the nilpotent
+quotient is handled by `Algebra.TensorProduct.quotientTensorEquiv` and
+`irrSpec_of_surj`, and the collapse `n² = n` was already proven in
+`finrank_eq_one_of_irreducible_tensorSelf`.
+
+Everything DOWNSTREAM of this node is likewise proven: see
 `finrank_eq_one_of_irreducible_tensorSelf` just below, which is the actual
 mathematics (`n² = n`), and `nonempty_ringHom_uliftRat_of_finrank_eq_one`.
 
-`hsmooth` is carried but unused by the argument sketched above —
-smoothness is what makes `A` REDUCED, hence `A = κ` outright, which
-shortens the argument but is not needed for the conclusion. -/
+`hsmooth` is genuinely UNUSED and is underscore-prefixed for that reason.
+Smoothness would make `A` reduced, hence `A = κ` outright, which removes
+the nilpotent-quotient step; that step is proven instead, so the node
+holds without any smoothness hypothesis. It is kept in the signature
+because the parent assembly passes it positionally. -/
 theorem exists_residueField_tensorSelf_irreducible
     {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
-    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (_hsmooth : AlgebraicGeometry.Smooth fC)
     (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
     (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
     (hart : IsArtinianRing Γ(C, ⊤)) (hirr : IrreducibleSpace ↥C) :
     ∃ (κ : Type u) (_ : Field κ) (_ : Algebra ℚ κ) (_ : FiniteDimensional ℚ κ)
       (_ : IsReduced (TensorProduct ℚ κ κ)),
       IrreducibleSpace (PrimeSpectrum (TensorProduct ℚ κ κ)) ∧
-        Nonempty (Γ(C, ⊤) →+* κ) :=
-  sorry
+        Nonempty (Γ(C, ⊤) →+* κ) := by
+  classical
+  -- `A := Γ(C, ⊤)`, a `ℚ`-algebra through the structure morphism `fC`.
+  letI : Algebra ℚ Γ(C, ⊤) :=
+    RingHom.toAlgebra
+      ((((Scheme.ΓSpecIso (CommRingCat.of (ULift.{u} ℚ))).inv ≫ fC.appTop).hom).comp
+        (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.toRingHom)
+  -- `fC` factors as `C ≅ Spec A` followed by the structure map of `Spec A`.
+  have key : C.isoSpec.hom ≫ specRatMap (Γ(C, ⊤)) = fC := by
+    have h1 : specRatMap (Γ(C, ⊤)) =
+        Spec.map ((Scheme.ΓSpecIso (CommRingCat.of (ULift.{u} ℚ))).inv ≫ fC.appTop) := by
+      unfold specRatMap
+      congr 1
+    rw [h1, Spec.map_comp, ← Category.assoc, Scheme.isoSpec_hom_naturality fC]
+    simp [Scheme.isoSpec]
+  have key2 : specRatMap (Γ(C, ⊤)) = C.isoSpec.inv ≫ fC := by
+    rw [← key, ← Category.assoc, Iso.inv_hom_id, Category.id_comp]
+  -- Transport the two used hypotheses across that isomorphism.
+  haveI : AlgebraicGeometry.LocallyOfFiniteType fC := hft
+  have hft' : AlgebraicGeometry.LocallyOfFiniteType (specRatMap (Γ(C, ⊤))) := by
+    rw [key2]; infer_instance
+  have hgi' : AlgebraicGeometry.GeometricallyIrreducible (specRatMap (Γ(C, ⊤))) := by
+    rw [key2]
+    exact (MorphismProperty.cancel_left_of_respectsIso
+      @AlgebraicGeometry.GeometricallyIrreducible C.isoSpec.inv fC).mpr hgi
+  -- `IrreducibleSpace` is closed under isomorphisms of schemes.
+  have hirr' : IrreducibleSpace (PrimeSpectrum Γ(C, ⊤)) :=
+    CategoryTheory.ObjectProperty.prop_of_iso
+      (P := (fun X : AlgebraicGeometry.Scheme.{u} => IrreducibleSpace ↥X)) C.isoSpec hirr
+  exact exists_residueField_tensorSelf_irreducible_algebra (Γ(C, ⊤)) hft' hgi' hart hirr'
 
 open TensorProduct AlgebraicGeometry in
 /-- **A number field that is geometrically irreducible over `ℚ` IS `ℚ`**
