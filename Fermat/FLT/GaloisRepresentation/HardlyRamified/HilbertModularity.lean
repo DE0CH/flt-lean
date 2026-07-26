@@ -72,14 +72,16 @@ The chain, in the order the assembly uses it:
 2. `IsHilbertHardlyRamified` — the `F`-level local deformation condition,
    and `isHilbertHardlyRamified_map_of_isHardlyRamified`: the restriction
    of a hardly ramified representation satisfies it. PROVEN (2026-07-26)
-   over ONE remaining local leaf,
-   `map_mem_inertia_Z2bar_of_mem_localInertiaGroup` — the agreement of the
-   `IntegralClosure 𝒪_v` and `Z2bar` spellings of local inertia at `2`.
-   Its determinant and unramifiedness clauses are PROVEN glue; BOTH of the
-   two sharper local halves it was cut over are now closed (2026-07-26):
+   with NO remaining local leaf. Its determinant and unramifiedness clauses
+   are PROVEN glue; BOTH of the two sharper local halves it was cut over
+   are now closed (2026-07-26):
 
-   * the tame-at-`2` half `exists_padicTwoEmbedding_of_mem` is PROVEN over
-     that single remaining leaf; and
+   * the tame-at-`2` half `exists_padicTwoEmbedding_of_mem` is PROVEN, and
+     its last leaf `map_mem_inertia_Z2bar_of_mem_localInertiaGroup` — the
+     agreement of the `IntegralClosure 𝒪_v` and `Z2bar` spellings of local
+     inertia at `2` — is PROVEN too (2026-07-26), over
+     `isIntegral_padicInt_of_norm_le_one` (`Z2bar` IS the integral closure
+     of `ℤ_[2]`) and the transport hom `z2barMap`; and
    * the flatness half `isFlatAt_map_of_isFlatAt_under` is PROVEN through
      the base-change core
      `hasFlatProlongationAt_map_of_hasFlatProlongationAt_under`, over the
@@ -714,9 +716,9 @@ theorem isUnramifiedAt_map_of_isUnramifiedAt_under
 
 /-! ##### The local embedding at `2`
 
-The route mapped out by this leaf's previous owner is now EXECUTED, and
-what remains is exactly the one identification that owner flagged as
-"genuinely missing". Four things happen below:
+The route mapped out by this leaf's previous owner is now EXECUTED IN FULL,
+including the one identification that owner flagged as "genuinely missing";
+nothing in this subsection is open. Four things happen below:
 
 1. `symm_primesEquiv_of_natCast_mem` — the place of `ℚ` containing the
    prime `p` IS `Rat.HeightOneSpectrum.primesEquiv.symm p`;
@@ -728,8 +730,11 @@ what remains is exactly the one identification that owner flagged as
 3. `conj_mem_inertia_Z2bar` — the `Z2bar` spelling of inertia is NORMAL in
    `Γ ℚ_[2]`, which is what absorbs the conjugation ambiguity of
    `Field.absoluteGaloisGroup.map`;
-4. `map_mem_inertia_Z2bar_of_mem_localInertiaGroup` (LEAF) — the two
-   spellings of local inertia at `2` agree across that identification.
+4. `map_mem_inertia_Z2bar_of_mem_localInertiaGroup` (PROVEN) — the two
+   spellings of local inertia at `2` agree across that identification, over
+   `isIntegral_padicInt_of_norm_le_one` / `isIntegral_padicInt_of_mem_Z2bar`
+   (`Z2bar` IS the integral closure of `ℤ_[2]`), `padicIntMap`,
+   `isIntegral_map_of_mem_Z2bar` and the transport hom `z2barMap`.
 
 `exists_padicTwoEmbedding_of_mem` is then PROVEN glue over 4.
 -/
@@ -828,11 +833,109 @@ lemma conj_mem_inertia_Z2bar (σ : Γ ℚ_[2]) {ι : Γ ℚ_[2]}
   rw [smul_sub_Z2bar, smul_smul, smul_smul, smul_inv_smul] at key
   exact key
 
-/-- **The two spellings of local inertia at `2` agree** (LEAF — this is
-precisely the identification that the previous owner of
+/-- **`Z2bar` is the integral closure of `ℤ_[2]` in `ℚ_[2]ᵃˡᵍ`, elementwise**
+(PROVEN), stated at a general prime: an element of the algebraic closure of
+`ℚ_[p]` of norm `≤ 1` is integral over `ℤ_[p]`.
+
+THIS IS THE STEP THAT DEFEATED THE PREVIOUS OWNER OF
+`map_mem_inertia_Z2bar_of_mem_localInertiaGroup`, and the escape is worth
+recording because it is *neither* of the two escapes that owner mapped out.
+
+`AbsoluteGaloisGroup.lean`'s `isIntegral_of_spectralNorm_le_one` is stated
+under `attribute [local instance] Valued.toNormedField`, so at `K := ℚ_[2]`
+its `spectralNorm` is taken with respect to a `NormedField ℚ_[2]` different
+from `Padic.instNormedField` (the one `Z2bar` and `PadicAlgCl` use). The two
+are propositionally but not definitionally equal and unification between
+them DIVERGES — a `whnf` timeout that survives `maxHeartbeats 2000000`,
+i.e. a defeq problem, not a resource problem.
+
+The escape is not to repair that lemma's instance mismatch but to bypass
+the lemma: its mathematical content at a base field that already IS a
+`NormedField` is just mathlib's `spectralValue_le_one_iff`, which lives in a
+plain `[NormedDivisionRing R]` section and therefore never mentions
+`Valued` at all. Unfolded:
+
+* `‖z‖ = spectralNorm ℚ_[p] (ℚ_[p]ᵃˡᵍ) z = spectralValue (minpoly ℚ_[p] z)`
+  by `rfl` (`PadicAlgCl.normedField` IS `spectralNorm.normedField`), so
+  `hz` is *literally* the hypothesis of `spectralValue_le_one_iff`;
+* that lemma turns `‖z‖ ≤ 1` into "every coefficient of `minpoly ℚ_[p] z`
+  has norm `≤ 1`", i.e. lies in `ℤ_[p]` — which is by definition the
+  subtype of `ℚ_[p]` cut out by `‖·‖ ≤ 1`, so the range condition of
+  `Polynomial.lifts_iff_coeff_lifts` is discharged by `⟨⟨_, h⟩, rfl⟩`;
+* `Polynomial.lifts_and_degree_eq_and_monic` produces the monic
+  `P : ℤ_[p][X]` witnessing integrality.
+
+No `Valued ℚ_[p] ℝ≥0` instance, no `RankOne`, no heartbeat bump: the whole
+lemma elaborates in seconds. -/
+theorem isIntegral_padicInt_of_norm_le_one {p : ℕ} [Fact p.Prime]
+    {z : ℚ_[p]ᵃˡᵍ} (hz : ‖z‖ ≤ 1) : IsIntegral ℤ_[p] z := by
+  have halg : IsIntegral ℚ_[p] z := Algebra.IsIntegral.isIntegral z
+  have hmonic : (minpoly ℚ_[p] z).Monic := minpoly.monic halg
+  have hsv : spectralValue (minpoly ℚ_[p] z) ≤ 1 := hz
+  have hcoeff := (spectralValue_le_one_iff hmonic).mp hsv
+  have hlift : minpoly ℚ_[p] z ∈ Polynomial.lifts (algebraMap ℤ_[p] ℚ_[p]) := by
+    refine (Polynomial.lifts_iff_coeff_lifts _).mpr fun i => ?_
+    exact ⟨⟨(minpoly ℚ_[p] z).coeff i, hcoeff i⟩, rfl⟩
+  obtain ⟨P, hP, _, hPmonic⟩ := Polynomial.lifts_and_degree_eq_and_monic hlift hmonic
+  refine ⟨P, hPmonic, ?_⟩
+  rw [← Polynomial.aeval_def, ← Polynomial.aeval_map_algebraMap ℚ_[p], hP, minpoly.aeval]
+
+/-- **Every element of `Z2bar` is integral over `ℤ_[2]`** (PROVEN):
+membership in `Z2bar = Valued.v.valuationSubring` is `Valued.v z ≤ 1`, which
+for `PadicAlgCl 2` is `‖z‖₊ ≤ 1` by `rfl`. -/
+theorem isIntegral_padicInt_of_mem_Z2bar (z : Z2bar) : IsIntegral ℤ_[2] (z : ℚ_[2]ᵃˡᵍ) := by
+  apply isIntegral_padicInt_of_norm_le_one
+  have hz := z.2
+  rw [Valuation.mem_valuationSubring_iff] at hz
+  exact_mod_cast hz
+
+/-- **`e` restricted to the rings of integers**, `ℤ_[2] →+* 𝒪_v` (PROVEN):
+this is exactly what the hypothesis `he` of
+`map_mem_inertia_Z2bar_of_mem_localInertiaGroup` says, packaged as a ring
+hom. The analogue of `CompletionTransport.lean`'s `intMap`. -/
+noncomputable def padicIntMap (v : HeightOneSpectrum (𝓞 ℚ)) (e : ℚ_[2] ≃+* v.adicCompletion ℚ)
+    (he : ∀ x : ℤ_[2], e (x : ℚ_[2]) ∈ v.adicCompletionIntegers ℚ) :
+    ℤ_[2] →+* ↥(v.adicCompletionIntegers ℚ) :=
+  (e.toRingHom.comp (algebraMap ℤ_[2] ℚ_[2])).codRestrict
+    (v.adicCompletionIntegers ℚ).toSubring he
+
+/-- **The image of `Z2bar` under `AlgebraicClosure.map e` is integral over
+`𝒪_v`** (PROVEN): an element of `Z2bar` is integral over `ℤ_[2]`, `e` carries
+`ℤ_[2]` into `𝒪_v`, and `IsIntegral.map_of_comp_eq` transports integrality
+along the square. The analogue of `CompletionTransport.lean`'s
+`isIntegral_algebraicClosureMap`, with `Z2bar` in the source slot. -/
+theorem isIntegral_map_of_mem_Z2bar (v : HeightOneSpectrum (𝓞 ℚ))
+    (e : ℚ_[2] ≃+* v.adicCompletion ℚ)
+    (he : ∀ x : ℤ_[2], e (x : ℚ_[2]) ∈ v.adicCompletionIntegers ℚ) (z : Z2bar) :
+    IsIntegral ↥(v.adicCompletionIntegers ℚ)
+      (AlgebraicClosure.map e.toRingHom (z : ℚ_[2]ᵃˡᵍ)) := by
+  refine IsIntegral.map_of_comp_eq (padicIntMap v e he) (AlgebraicClosure.map e.toRingHom) ?_
+    (isIntegral_padicInt_of_mem_Z2bar z)
+  ext y
+  show algebraMap ↥(v.adicCompletionIntegers ℚ) ((v.adicCompletion ℚ)ᵃˡᵍ) (padicIntMap v e he y)
+      = AlgebraicClosure.map e.toRingHom (algebraMap ℤ_[2] (ℚ_[2]ᵃˡᵍ) y)
+  rw [IsScalarTower.algebraMap_apply ℤ_[2] ℚ_[2] (ℚ_[2]ᵃˡᵍ), AlgebraicClosure.map_algebraMap,
+    IsScalarTower.algebraMap_apply ↥(v.adicCompletionIntegers ℚ) (v.adicCompletion ℚ)
+      ((v.adicCompletion ℚ)ᵃˡᵍ)]
+  rfl
+
+/-- **`AlgebraicClosure.map e` as a ring hom of integer rings**
+`Z2bar →+* IntegralClosure 𝒪_v ((v.adicCompletion ℚ)ᵃˡᵍ)` (PROVEN). The
+analogue of `CompletionTransport.lean`'s `icMap`, with `Z2bar` in the source
+slot instead of an `IntegralClosure`. -/
+noncomputable def z2barMap (v : HeightOneSpectrum (𝓞 ℚ)) (e : ℚ_[2] ≃+* v.adicCompletion ℚ)
+    (he : ∀ x : ℤ_[2], e (x : ℚ_[2]) ∈ v.adicCompletionIntegers ℚ) :
+    Z2bar →+* IntegralClosure ↥(v.adicCompletionIntegers ℚ) ((v.adicCompletion ℚ)ᵃˡᵍ) where
+  toFun z := ⟨AlgebraicClosure.map e.toRingHom (z : ℚ_[2]ᵃˡᵍ), isIntegral_map_of_mem_Z2bar v e he z⟩
+  map_one' := Subtype.ext (map_one _)
+  map_mul' _ _ := Subtype.ext (map_mul _ _ _)
+  map_zero' := Subtype.ext (map_zero _)
+  map_add' _ _ := Subtype.ext (map_add _ _ _)
+
+/-- **The two spellings of local inertia at `2` agree** (PROVEN, 2026-07-26 —
+this was the identification that the previous owner of
 `exists_padicTwoEmbedding_of_mem` flagged as "WHAT IS GENUINELY MISSING",
-and it is now all that is missing: everything else on that route is PROVEN
-above and below).
+and it was the last open piece of that route).
 
 `localInertiaGroup v` (`AbsoluteGaloisGroup.lean`) is the inertia of
 `IsLocalRing.maximalIdeal (IntegralClosure 𝒪_v ((v.adicCompletion ℚ)ᵃˡᵍ))`,
@@ -842,61 +945,29 @@ while `IsHardlyRamified.isTameAtTwo` (`Defs.lean`) uses the inertia of
 topological isomorphism `e : ℚ_[2] ≅ ℚ_v` of the previous lemma carries the
 one to the other.
 
-THE ROUTE, in the vocabulary that exists here — it is the template of
+THE ROUTE, now EXECUTED — it is the template of
 `CompletionTransport.lean`'s `icMap` / `map_mem_localInertiaGroup`, run
 with `Z2bar` in the source slot instead of an `IntegralClosure`:
 
-* `Z2bar` IS the integral closure of `ℤ_[2]` in `ℚ_[2]ᵃˡᵍ`: membership in
-  `Z2bar` is `spectralNorm ℚ_[2] (ℚ_[2]ᵃˡᵍ) z ≤ 1`, and
-  `AbsoluteGaloisGroup.lean`'s `isIntegral_of_spectralNorm_le_one` turns
-  that into `IsIntegral (Valued.v).integer z` — which needs a
-  `Valued ℚ_[2] ℝ≥0` (`NormedField.toValued`) together with its `RankOne`,
-  neither of which mathlib provides for `ℚ_[2]` (it provides both for
-  `PadicAlgCl 2`);
-
-  **A MEASURED WARNING ON THAT STEP, so the next owner does not lose the
-  cycle this one lost.** Building those two instances is easy — `RankOne`
-  copies `PadicAlgCl`'s (`hom' := MonoidWithZeroHom.ValueGroup₀.embedding`,
-  `strictMono' := embedding_strictMono`, nontriviality witnessed by `2`,
-  whose norm is `1/2` by `Padic.norm_p`) and both elaborate in seconds. The
-  step that does NOT work is then applying
-  `isIntegral_of_spectralNorm_le_one` at `K := ℚ_[2]`: that lemma is stated
-  under `attribute [local instance] Valued.toNormedField`, so the
-  `spectralNorm ℚ_[2] _` in ITS hypothesis is taken with respect to
-  `Valued.toNormedField (NormedField.toValued)` — whose norm is
-  `RankOne.hom (Valued.v.restrict x)` — while `Z2bar` and `PadicAlgCl`'s
-  own `spectralNorm` are taken with respect to `Padic.instNormedField`.
-  The two `NormedField ℚ_[2]` structures are propositionally but not
-  definitionally equal, and unification between them **diverges**: the
-  application times out at `whnf` even at `maxHeartbeats 2000000`, so it is
-  not a resource-limit problem and a bump will not fix it. (This is the
-  same class of trap as the two `Algebra ℚ (v.adicCompletion ℚ)` instances
-  handled by the `letI` in `exists_ringEquiv_padicTwo_adicCompletion`,
-  which is why that `letI` is there.)
-
-  Two ways round it, neither attempted here. (a) Prove the roundtrip
-  `Valued.v.norm = (‖·‖)` on `ℚ_[2]` — mathlib does exactly this for
-  `ℂ_[p]` in `PadicComplex.norm_eq_norm'`, and
-  `Valued.toNormedField.norm_le_one_iff` already gives the `≤ 1` half,
-  which may be all that is needed since `spectralValue p ≤ 1` depends only
-  on which coefficients have norm `≤ 1`. (b) Avoid `ℚ_[2]` on the
-  integrality side altogether: apply `isIntegral_of_spectralNorm_le_one` at
-  `K := v.adicCompletion ℚ`, where the adic `Valued` instance is the only
-  one in play and no competing `NormedField` exists — for which one needs
-  `e` to compare spectral norms, and mathlib's
-  `Rat.HeightOneSpectrum.adicCompletion.padicEquiv_bijOn` (`e` carries
-  `𝒪_v` BIJECTIVELY onto the norm-`≤ 1` subring of `ℚ_[2]`) is the
-  quantitative input that direction wants;
+* `Z2bar` IS the integral closure of `ℤ_[2]` in `ℚ_[2]ᵃˡᵍ`
+  (`isIntegral_padicInt_of_mem_Z2bar`, above); the previous owner's
+  measured obstruction on that step — `isIntegral_of_spectralNorm_le_one`
+  diverging at `K := ℚ_[2]` on two non-defeq `NormedField ℚ_[2]` instances —
+  is recorded in that lemma's docstring together with the escape actually
+  taken, which is to use mathlib's `spectralValue_le_one_iff` (a
+  `NormedDivisionRing`-only lemma that never mentions `Valued`) instead of
+  repairing the instance mismatch;
 * `he` says `e` carries `ℤ_[2]` into `𝒪_v`, so
   `IsIntegral.map_of_comp_eq` along `AlgebraicClosure.map e` turns that
-  into `IsIntegral 𝒪_v (AlgebraicClosure.map e z)`, i.e. gives a ring hom
-  `Z2bar →+* IntegralClosure 𝒪_v ((v.adicCompletion ℚ)ᵃˡᵍ)`, exactly as
-  `isIntegral_algebraicClosureMap` / `icMap` do downstream of a map of
-  completions;
+  into `IsIntegral 𝒪_v (AlgebraicClosure.map e z)`
+  (`isIntegral_map_of_mem_Z2bar`), i.e. gives the ring hom
+  `z2barMap : Z2bar →+* IntegralClosure 𝒪_v ((v.adicCompletion ℚ)ᵃˡᵍ)`,
+  exactly as `isIntegral_algebraicClosureMap` / `icMap` do downstream of a
+  map of completions;
 * `Field.absoluteGaloisGroup.lift_map` makes that hom equivariant for
   `Field.absoluteGaloisGroup.map e` upstairs and `κ` downstairs, so `hκ`
   applies to the image;
-* the reflection `mem_maximalIdeal_of_icMap` — a ring hom of LOCAL rings
+* the reflection of `mem_maximalIdeal_of_icMap` — a ring hom of LOCAL rings
   sends units to units, so a preimage of a non-unit is a non-unit — brings
   the conclusion back to `IsLocalRing.maximalIdeal Z2bar`.
 
@@ -904,19 +975,37 @@ FAITHFULNESS: the conclusion is an inertia-only containment about a VALUE
 (`e`, pinned by `he` and the two continuity clauses), never an existence of
 a coordinate and never a `Γ`-wide rationality claim, so it is on the true
 side of this development's `𝒪ᵥ` descent rule. `_hcont` / `_hcont'` are
-underscored only because the route above does not consume them — they are
-kept because without SOME pinning of `e` beyond `he` the statement would
-quantify over arbitrary abstract embeddings, and the automatic continuity
-that would justify that is itself a theorem nobody here has. -/
+underscored because the executed route does not consume them: only the
+INCLUSION `e (ℤ_[2]) ⊆ 𝒪_v` is needed, never the reverse inclusion (which
+IS where continuity would be required — it forces `v ∣ 2`, since `2^n → 0`
+in `ℚ_[2]` must go to `0` in `ℚ_v`). They are kept because without SOME
+pinning of `e` beyond `he` the statement would quantify over arbitrary
+abstract embeddings, and the automatic continuity that would justify that is
+itself a theorem nobody here has. -/
 theorem map_mem_inertia_Z2bar_of_mem_localInertiaGroup
     (v : HeightOneSpectrum (𝓞 ℚ)) (e : ℚ_[2] ≃+* v.adicCompletion ℚ)
-    (_he : ∀ x : ℤ_[2], e (x : ℚ_[2]) ∈ v.adicCompletionIntegers ℚ)
+    (he : ∀ x : ℤ_[2], e (x : ℚ_[2]) ∈ v.adicCompletionIntegers ℚ)
     (_hcont : Continuous e) (_hcont' : Continuous e.symm)
-    {κ : Γ (v.adicCompletion ℚ)} (_hκ : κ ∈ localInertiaGroup v) :
+    {κ : Γ (v.adicCompletion ℚ)} (hκ : κ ∈ localInertiaGroup v) :
     Field.absoluteGaloisGroup.map e.toRingHom κ ∈
       AddSubgroup.inertia
-        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar) (Γ ℚ_[2]) :=
-  sorry
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar) (Γ ℚ_[2]) := by
+  intro z
+  have hkey : z2barMap v e he (Field.absoluteGaloisGroup.map e.toRingHom κ • z - z)
+      ∈ IsLocalRing.maximalIdeal
+        (IntegralClosure ↥(v.adicCompletionIntegers ℚ) ((v.adicCompletion ℚ)ᵃˡᵍ)) := by
+    have h1 : z2barMap v e he (Field.absoluteGaloisGroup.map e.toRingHom κ • z - z)
+        = κ • z2barMap v e he z - z2barMap v e he z := by
+      rw [map_sub]
+      congr 1
+      apply Subtype.ext
+      exact Field.absoluteGaloisGroup.lift_map e.toRingHom κ (z : ℚ_[2]ᵃˡᵍ)
+    rw [h1]
+    exact hκ (z2barMap v e he z)
+  rw [IsLocalRing.mem_maximalIdeal] at hkey
+  show Field.absoluteGaloisGroup.map e.toRingHom κ • z - z ∈ IsLocalRing.maximalIdeal Z2bar
+  rw [IsLocalRing.mem_maximalIdeal]
+  exact fun hu => hkey (hu.map (z2barMap v e he))
 
 /-- **The local embedding `ℚ_2 ↪ F_w` at a place over `2`, and inertia**
 (PROVEN, 2026-07-26, over the single leaf
