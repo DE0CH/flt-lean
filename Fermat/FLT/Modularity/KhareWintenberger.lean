@@ -1240,6 +1240,16 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    Jacobian and `HasStrictFDerivAt.implicitFunction` are all struck out, and a
    single chart of `X(ℝ)` discharges the item. Independent of items 1–5 and
    startable on its own; it is real analysis, not arithmetic and not Bertini.
+   **SHRUNK AGAIN, 2026-07-26**: the arc itself is now PROVEN and the item is
+   owned by `exists_realPointChart_of_affine_geometricallyIrreducible` — "one
+   nonempty open `U ⊆ ℝ^d`, `d ≥ 1`, mapping continuously and INJECTIVELY into
+   `X(ℝ)`", with the coordinates, `hx` and the arc all discharged by
+   `realPoint_ext_of_coords`, `exists_bounded_reparam` and
+   `exists_continuousLine_of_isOpen`. Two claims recorded here are also
+   CORRECTED at that leaf: smooth ⟹ locally standard smooth **is** in mathlib
+   (`Algebra.IsSmoothAt.exists_notMem_isStandardSmooth`), and so is the
+   implicit function theorem in exactly the form wanted, so what is missing is
+   assembly of existing parts rather than new theory.
 4. **Picard schemes / Jacobians as schemes**, with the torsor formalism
    and the "incompressible neighbourhood" existence statement — step (ii),
    and by far the largest of the four. Owned by
@@ -1260,17 +1270,25 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    only Lang–Weil and the spreading-out limit argument are genuinely missing.
 
 Each is an independently ownable subproject; 1, 3, 5 and 6 are the ones that
-can be started without the others, and items 3 (Bertini), 5 (Lang–Weil +
-spreading out) and 6 (real points as a manifold) are now leaves of their own --
+can be started without the others, and items 3 (Bertini) and 5 (Lang–Weil +
+spreading out) are now leaves of their own --
 `exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible` /
 `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` /
-`geometricallyIrreducible_of_smooth_of_geometricallyConnected`,
+`geometricallyIrreducible_of_smooth_of_geometricallyConnected` (item 3 --
+their consumer `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible`
+is PROVEN over them), and
 `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` together with
-`exists_bound_forall_formallySmooth_integralSystemModel`,
-`exists_realArc_of_affine_geometricallyIrreducible`,
-`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible` and
-`exists_realArc_of_affine_geometricallyIrreducible` -- so each
-can be attacked without any of the others. The elementary
+`exists_bound_forall_formallySmooth_integralSystemModel` (item 5) -- so each
+can be attacked without any of the others.
+
+ITEM 6 IS NOW CLOSED (2026-07-26): `exists_realArc_of_affine_geometricallyIrreducible`
+is PROVEN over one Euclidean chart, and so is its consumer
+`exists_realApproximationBall_of_affine_geometricallyIrreducible`. It is
+listed here no longer as a leaf but as a completed subproject; the two
+`exists_bound_forall_padicAlgHom` / `_padicPoint` statements are likewise
+PROVEN and are not leaves either.
+
+The elementary
 `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` was a fourth
 such starting point and is PROVEN (2026-07-26); it needed no missing-machinery
 item at all, and in particular not "smooth over a field implies reduced" --
@@ -2265,10 +2283,168 @@ theorem exists_bertiniGenericLocus_of_affine_geometricallyIrreducible
   exact ⟨hsm, geometricallyIrreducible_of_smooth_of_geometricallyConnected _ hsm hcn⟩
 
 open CategoryTheory AlgebraicGeometry in
-/-- **A NONCONSTANT CONTINUOUS ARC OF REAL POINTS** (sorry node, 2026-07-26 —
-the ENTIRE scheme-to-real-topology content of the real-approximation leaf
-below, isolated; it is item 6 of the module's missing-machinery list in its
-minimal useful form).
+/-- **The coordinates separate real points** (PROVEN, 2026-07-26). Two ring
+maps `A →+* ℝ` agreeing on the coordinates `xᵢ` are EQUAL: they automatically
+agree on the image of the base map as well, because a ring map out of
+`ULift ℚ` is unique (`ringHom_uliftRat_ext`), and `hx` says those two families
+generate `A` as a ring. This is the only place `hx` is used in the arc leaf
+below, and it is exactly what turns "nonconstant as a family of ring maps"
+into "nonconstant IN A COORDINATE". -/
+theorem realPoint_ext_of_coords {A : CommRingCat.{u}}
+    (pre : CommRingCat.of (ULift.{u} ℚ) ⟶ A)
+    {n : ℕ} (x : Fin n → A)
+    (hx : Subring.closure (Set.range pre.hom ∪ Set.range x) = ⊤)
+    {φ ψ : A →+* ℝ} (h : ∀ i, φ (x i) = ψ (x i)) : φ = ψ := by
+  refine RingHom.eq_of_eqOn_set_dense hx ?_
+  rintro a (⟨q, rfl⟩ | ⟨i, rfl⟩)
+  · exact RingHom.congr_fun (ringHom_uliftRat_ext (φ.comp pre.hom) (ψ.comp pre.hom)) q
+  · exact h i
+
+/-- **A bounded reparametrisation of the whole real line** (PROVEN,
+2026-07-26): `t ↦ (r/2)·t/(1+|t|)` is continuous on all of `ℝ`, never exceeds
+`r/2` in absolute value, vanishes at `0` and is nonzero at `1`. It is what
+lets a LOCAL chart produce an arc defined on ALL of `ℝ`, which is the shape
+the arc leaf's consumer wants. -/
+theorem exists_bounded_reparam {r : ℝ} (hr : 0 < r) :
+    ∃ s : ℝ → ℝ, Continuous s ∧ (∀ t, |s t| ≤ r / 2) ∧ s 0 = 0 ∧ s 1 ≠ 0 := by
+  have hden : ∀ t : ℝ, (0:ℝ) < 1 + |t| := fun t => by positivity
+  refine ⟨fun t => (r / 2) * (t / (1 + |t|)), ?_, ?_, by norm_num, ?_⟩
+  · exact continuous_const.mul (continuous_id.div (by fun_prop) fun t => (hden t).ne')
+  · intro t
+    have key : |t / (1 + |t|)| ≤ 1 := by
+      rw [abs_div, abs_of_pos (hden t), div_le_one (hden t)]
+      linarith [abs_nonneg t]
+    calc |(r / 2) * (t / (1 + |t|))| = |r / 2| * |t / (1 + |t|)| := abs_mul _ _
+      _ ≤ |r / 2| * 1 := mul_le_mul_of_nonneg_left key (abs_nonneg _)
+      _ = r / 2 := by rw [mul_one, abs_of_pos (by linarith : (0:ℝ) < r / 2)]
+  · have h1 : |(1:ℝ)| = 1 := abs_one
+    simp only [h1]
+    positivity
+
+/-- **A nonempty open subset of a POSITIVE-dimensional Euclidean space carries a
+nonconstant continuous line defined on all of `ℝ`** (PROVEN, 2026-07-26).
+
+Push `exists_bounded_reparam` along one coordinate direction out of `z₀`: the
+displacement has norm at most `r/2`, so the whole line stays inside
+`Metric.ball z₀ r ⊆ U`, and it is nonconstant because the reparametrisation
+separates `0` from `1`. `0 < d` is LOAD-BEARING — in `ℝ⁰` every map is
+constant. -/
+theorem exists_continuousLine_of_isOpen {d : ℕ} (hd : 0 < d) (U : Set (Fin d → ℝ))
+    (hU : IsOpen U) (z₀ : Fin d → ℝ) (hz₀ : z₀ ∈ U) :
+    ∃ ζ : ℝ → (Fin d → ℝ), Continuous ζ ∧ (∀ t, ζ t ∈ U) ∧ ζ 0 ≠ ζ 1 := by
+  obtain ⟨r, hr, hball⟩ := Metric.isOpen_iff.mp hU z₀ hz₀
+  obtain ⟨s, hscont, hsabs, hs0, hs1⟩ := exists_bounded_reparam hr
+  set j₀ : Fin d := ⟨0, hd⟩ with hj₀
+  set e : Fin d → ℝ := fun j => if j = j₀ then 1 else 0 with he
+  have hnorme : ‖e‖ ≤ 1 :=
+    (pi_norm_le_iff_of_nonneg zero_le_one).mpr fun j => by
+      rw [he]; by_cases h : j = j₀ <;> simp [h]
+  refine ⟨fun t => z₀ + s t • e, by fun_prop, ?_, ?_⟩
+  · intro t
+    apply hball
+    rw [Metric.mem_ball, dist_eq_norm, show z₀ + s t • e - z₀ = s t • e from by abel,
+      norm_smul, Real.norm_eq_abs]
+    calc |s t| * ‖e‖ ≤ (r / 2) * 1 :=
+          mul_le_mul (hsabs t) hnorme (norm_nonneg _) (by linarith)
+      _ < r := by linarith
+  · intro hcon
+    have hco := congrFun hcon j₀
+    simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, he, hs0, add_zero,
+      if_true, mul_one] at hco
+    exact hs1 (by linarith)
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A EUCLIDEAN CHART ON `X(ℝ)`** (sorry node, 2026-07-26 — the residual
+scheme-to-real-topology content of item 6, after the coordinate bookkeeping
+and the arc construction below it have been discharged).
+
+For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` of
+dimension `> 1` WITH A REAL POINT, there is a positive `d`, a nonempty open
+`U ⊆ ℝ^d` and a map `Φ : ℝ^d → (A →+* ℝ)` which is CONTINUOUS in every
+regular function (`z ↦ Φ z a` is continuous on `U`, for every `a : A`) and
+INJECTIVE on `U`. In words: `X(ℝ)` contains a topologically embedded
+`d`-dimensional Euclidean patch, `d ≥ 1`.
+
+WHY IT IS TRUE. `A →+* ℝ` *is* `X(ℝ)` — no compatibility over `ℚ` has to be
+imposed, since a ring map out of `ℚ` is unique (`ringHom_uliftRat_ext`).
+`hreal` says `X(ℝ) ≠ ∅`; `hsmooth` makes `X(ℝ)` a real-analytic manifold near
+any of its points, of dimension `dim X`; `hgi` and `hdim` make that dimension
+at least `1`. A single chart of that manifold is the required `(U, Φ)`.
+
+**NOTE WHAT THIS CUT BUYS, AND WHAT IT DOES NOT.** It buys everything that is
+not manifold theory: no coordinates `x`, no `hx`, no nonconstancy, no arc.
+Those are discharged by `realPoint_ext_of_coords`,
+`exists_bounded_reparam` and `exists_continuousLine_of_isOpen`, all PROVEN
+here, and `exists_realArc_of_affine_geometricallyIrreducible` is PROVEN below
+from this leaf alone. What it does NOT buy is the manifold structure itself,
+which is the genuine missing machinery.
+
+EVERY HYPOTHESIS IS LOAD-BEARING, and the third is the one worth recording:
+
+* `hreal` — without a real point `A →+* ℝ` is EMPTY, so no total `Φ` exists at
+  all (`Spec ℚ[t]/(t²+1)`).
+* `hdim` — at `dim X = 0` the set `X(ℝ)` is finite, so nothing injects an open
+  `U ⊆ ℝ^d`, `d ≥ 1`, into it.
+* `hsmooth` — **it is not implied by `hgi` and `hdim`.** The affine cone
+  `x² + y² + z² = 0` over `ℚ` is geometrically irreducible of dimension `2`,
+  yet its real points are the single point `(0,0,0)`; it fails only smoothness,
+  at the origin. So a singular geometrically irreducible surface can have a
+  ZERO-dimensional real locus, and smoothness is exactly what excludes that.
+* `hft` is implied by `hsmooth` (smooth ⟹ locally of finite presentation) and
+  is carried only to keep the hypothesis list parallel with the sibling
+  Bertini leaves.
+
+THE ATTACK PATH, since the survey behind this cut found that far more of it is
+already in mathlib than the module's missing-machinery list claims:
+
+1. `AlgebraicGeometry.Smooth` is `HasRingHomProperty @Smooth RingHom.Smooth`
+   (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:73`), so on affines
+   `hsmooth` gives `RingHom.Smooth (Spec.preimage g).hom`, i.e. `A` is a
+   smooth `ℚ`-algebra.
+2. Base change to `ℝ` and localise at the real point. **Smooth ⟹ LOCALLY
+   STANDARD SMOOTH IS IN MATHLIB** — `Algebra.IsSmoothAt.exists_notMem_isStandardSmooth`
+   and `Algebra.Smooth.exists_span_eq_top_isStandardSmooth`
+   (`Mathlib/RingTheory/Smooth/StandardSmoothOfFree.lean:102,153`), plus
+   `RingHom.smooth_iff_locally_isStandardSmooth`
+   (`Mathlib/RingTheory/RingHom/LocallyStandardSmooth.lean:45`). This is the
+   ingredient the module's item 6 assumed was missing; it is not.
+3. A `SubmersivePresentation` (`Mathlib/RingTheory/Extension/Presentation/Submersive.lean`)
+   is literally a polynomial system with an INVERTIBLE JACOBIAN, so it hands
+   over `P : Fin c → MvPolynomial (Fin m) ℝ` with `c < m` and a surjective
+   differential at the real point.
+4. Evaluation of a multivariate polynomial is analytic — hence strictly
+   differentiable — by `AnalyticOnNhd.eval_continuousLinearMap`
+   (`Mathlib/Analysis/Analytic/Polynomial.lean:73`), with
+   `MvPolynomial.continuous_eval` for the continuity.
+5. Then the IMPLICIT FUNCTION THEOREM applies verbatim:
+   `HasStrictFDerivAt.implicitFunction` with `hf' : f'.range = ⊤`
+   (`Mathlib/Analysis/Calculus/Implicit.lean:474`), whose
+   `implicitToOpenPartialHomeomorph` (`:467`) supplies both the CONTINUITY
+   (`tendsto_implicitFunction`, `:508`) and the INJECTIVITY
+   (`OpenPartialHomeomorph.injOn` on its open `source`) demanded here, and
+   whose parameter space is `f'.ker`, of dimension `m - c ≥ 1`.
+
+What remains genuinely missing is only the bookkeeping that glues 1–5
+together: mathlib has no functor from schemes to real manifolds, so the
+identification of `X(ℝ)` with the zero locus in `ℝ^m` has to be written by
+hand. That is a real subproject, but it is assembly of existing parts, not new
+theory — which is a strictly better position than the one item 6 records. -/
+theorem exists_realPointChart_of_affine_geometricallyIrreducible
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hreal : HasRationalPoint g (ULift.{u} ℝ))
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A)) :
+    ∃ (d : ℕ) (U : Set (Fin d → ℝ)) (z₀ : Fin d → ℝ) (Φ : (Fin d → ℝ) → (A →+* ℝ)),
+      0 < d ∧ IsOpen U ∧ z₀ ∈ U ∧
+      (∀ a : A, ContinuousOn (fun z => Φ z a) U) ∧ Set.InjOn Φ U :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A NONCONSTANT CONTINUOUS ARC OF REAL POINTS** (**PROVEN 2026-07-26**
+over the single leaf `exists_realPointChart_of_affine_geometricallyIrreducible`
+— all of this node except the Euclidean chart on `X(ℝ)` itself is now
+discharged).
 
 For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` of
 dimension `> 1` with a real point, presented in coordinates `x : Fin n → A`,
@@ -2288,16 +2464,25 @@ to all of `ℝ` by being constant outside a compact interval. Nonconstancy in
 `X(ℝ)` is nonconstancy in some COORDINATE because the `xᵢ` generate `A` over
 the base and so separate real points — that is what `hx` is for.
 
-MACHINERY MISSING AT THIS PIN: mathlib has no functor from schemes to real
-manifolds, so `X(ℝ) ⊆ ℝⁿ` must be identified as a submanifold before any of
-this can be said. **NOTE WHAT THE CUT BUYS.** Only the EXISTENCE OF ONE
-NONCONSTANT ARC is needed — not the implicit function theorem, not the
-tangent space, not the Jacobian. Its consumer replaces the implicit function
-theorem with the INTERMEDIATE VALUE THEOREM along the arc, which is why the
-whole of the surrounding real-approximation statement is PROVEN below from
-this alone. So a prover needs the manifold structure only far enough to
-produce a single nonconstant path — one chart suffices — or indeed any other
-route to a positive-dimensional connected piece of `X(ℝ)`.
+**THE PROOF BELOW REDUCES ALL OF THAT TO ONE CHART** (2026-07-26), namely to
+`exists_realPointChart_of_affine_geometricallyIrreducible`, and everything
+else here is now PROVEN:
+
+* `exists_bounded_reparam` and `exists_continuousLine_of_isOpen` turn the
+  chart's open set into a nonconstant continuous line defined on ALL of `ℝ` —
+  a bounded reparametrisation `t ↦ (r/2)·t/(1+|t|)` pushed along one
+  coordinate direction, which is cheaper than the "constant outside a compact
+  interval" extension this docstring used to propose, and manifestly
+  continuous;
+* `realPoint_ext_of_coords` turns the chart's INJECTIVITY into nonconstancy IN
+  A COORDINATE, which is the only place `hx` is used.
+
+So the surviving gap is exactly the Euclidean patch on `X(ℝ)`, with no
+coordinates and no arcs left in it. Only the EXISTENCE OF ONE NONCONSTANT ARC
+is needed here — not the tangent space, not the Jacobian — because this node's
+consumer replaces the implicit function theorem with the INTERMEDIATE VALUE
+THEOREM along the arc; the implicit function theorem reappears one level down,
+inside the chart leaf, where mathlib already supplies it.
 
 EVERY HYPOTHESIS IS LOAD-BEARING: `hreal` supplies a point to start from (and
 without it the statement is FALSE — `Spec ℚ[t]/(t²+1)` has no real point at
@@ -2317,8 +2502,16 @@ theorem exists_realArc_of_affine_geometricallyIrreducible
       Set.range x) = ⊤) :
     ∃ γ : ℝ → (A →+* ℝ),
       (∀ i : Fin n, Continuous fun t => γ t (x i)) ∧
-      ∃ (i : Fin n) (t₁ t₂ : ℝ), γ t₁ (x i) ≠ γ t₂ (x i) :=
-  sorry
+      ∃ (i : Fin n) (t₁ t₂ : ℝ), γ t₁ (x i) ≠ γ t₂ (x i) := by
+  obtain ⟨d, U, z₀, Φ, hd, hU, hz₀, hΦcont, hΦinj⟩ :=
+    exists_realPointChart_of_affine_geometricallyIrreducible g hsmooth hft hgi hreal hdim
+  obtain ⟨ζ, hζcont, hζU, hζne⟩ := exists_continuousLine_of_isOpen hd U hU z₀ hz₀
+  refine ⟨fun t => Φ (ζ t), fun i => (hΦcont (x i)).comp_continuous hζcont hζU, ?_⟩
+  by_contra hcon
+  push Not at hcon
+  exact hζne (hΦinj (hζU 0) (hζU 1)
+    (realPoint_ext_of_coords (AlgebraicGeometry.Spec.preimage g) x hx
+      (fun i => hcon i 0 1)))
 
 open CategoryTheory AlgebraicGeometry in
 /-- **THE REAL APPROXIMATION: a whole BOX of parameters keeps a real point**
