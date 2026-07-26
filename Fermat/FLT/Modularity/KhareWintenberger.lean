@@ -156,6 +156,13 @@ public import Mathlib.AlgebraicGeometry.Morphisms.QuasiCompact
 -- through `IsLocallyArtinian.of_topologicalKrullDim_le_zero`.
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 public import Mathlib.AlgebraicGeometry.Artinian
+-- The connected ⟹ irreducible upgrade of the Bertini cut (2026-07-26) states
+-- `IsLocallyNoetherian` in the signature of
+-- `exists_isOpen_isIrreducible_of_isDomain_stalk`, and its topological half
+-- `irreducibleSpace_of_connectedSpace_of_locallyIrreducible` is proven with
+-- `IsClopen.eq_univ`; both must therefore be re-exported, not merely reachable.
+public import Mathlib.AlgebraicGeometry.Noetherian
+public import Mathlib.Topology.Connected.Clopen
 -- Base change of schemes: `IsFormOver` (the twisted-moduli form cut,
 -- 2026-07-25) is stated with `Limits.pullback`, so the `HasPullbacks`
 -- instance for `Scheme` must be re-exported, not merely available.
@@ -2003,10 +2010,177 @@ theorem exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible
           (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) :=
   sorry
 
+/-- **CONNECTED + LOCALLY IRREDUCIBLE ⟹ IRREDUCIBLE** (**PROVEN 2026-07-26** —
+pure point-set topology, no scheme theory and no noetherian hypothesis).
+
+If every point of a connected space has an irreducible OPEN neighbourhood then
+the whole space is irreducible.
+
+THE PROOF, and why the hypothesis has to be an OPEN neighbourhood. Fix `x₀`
+and let `Z = irreducibleComponent x₀`. For `y ∈ Z` pick an irreducible open
+`U ∋ y`. Then `U ∩ Z ≠ ∅`, and `Z` is irreducible, so no open set can separate
+`U` from `Z`: `Z ⊆ closure U`. Since `closure U` is irreducible and `Z` is a
+MAXIMAL irreducible set, `closure U = Z`, whence `U ⊆ Z`. So `Z` is a union of
+open sets, i.e. open; it is also closed (components are), and nonempty; a
+connected space has no proper nonempty clopen subset, so `Z = univ` and the
+space is irreducible.
+
+The openness is load-bearing and the statement is FALSE with "irreducible
+neighbourhood" weakened to "irreducible subset containing the point": two
+lines crossing at the origin form a connected space in which every point lies
+on an irreducible subset (one of the lines) but which is reducible. What fails
+there is exactly the step above — the origin has no irreducible *open*
+neighbourhood, since every open neighbourhood meets both lines.
+
+Cut out of `geometricallyIrreducible_of_smooth_of_geometricallyConnected` on
+2026-07-26: it is the half of "smooth + connected ⟹ irreducible" that carries
+no geometry, and separating it leaves the geometric content in exactly one
+place, `isDomain_stalk_of_smooth_over_field`. -/
+theorem irreducibleSpace_of_connectedSpace_of_locallyIrreducible
+    {X : Type*} [TopologicalSpace X] [ConnectedSpace X]
+    (hloc : ∀ x : X, ∃ U : Set X, IsOpen U ∧ x ∈ U ∧ IsIrreducible U) :
+    IrreducibleSpace X := by
+  obtain ⟨x₀⟩ := (inferInstance : Nonempty X)
+  have key : ∀ y ∈ irreducibleComponent x₀,
+      ∃ U : Set X, IsOpen U ∧ y ∈ U ∧ U ⊆ irreducibleComponent x₀ := by
+    intro y hy
+    obtain ⟨U, hUo, hyU, hUirr⟩ := hloc y
+    refine ⟨U, hUo, hyU, ?_⟩
+    have hZsub : irreducibleComponent x₀ ⊆ _root_.closure U := by
+      intro z hz
+      by_contra hzn
+      obtain ⟨w, -, hwU, hwc⟩ :=
+        (isIrreducible_irreducibleComponent (x := x₀)).2 U (_root_.closure U)ᶜ hUo
+          isClosed_closure.isOpen_compl ⟨y, hy, hyU⟩ ⟨z, hz, hzn⟩
+      exact hwc (subset_closure hwU)
+    have heq : _root_.closure U = irreducibleComponent x₀ :=
+      eq_irreducibleComponent (hUirr.isPreirreducible.closure) hZsub
+    exact heq ▸ subset_closure
+  have hZopen : IsOpen (irreducibleComponent x₀) := by
+    rw [isOpen_iff_forall_mem_open]
+    intro y hy
+    obtain ⟨U, hUo, hyU, hUZ⟩ := key y hy
+    exact ⟨U, hUZ, hUo, hyU⟩
+  have hZuniv : irreducibleComponent x₀ = Set.univ :=
+    IsClopen.eq_univ ⟨isClosed_irreducibleComponent, hZopen⟩ ⟨x₀, mem_irreducibleComponent⟩
+  rw [irreducibleSpace_def, Set.top_eq_univ, ← hZuniv]
+  exact isIrreducible_irreducibleComponent
+
 open CategoryTheory AlgebraicGeometry in
-/-- **SMOOTH + GEOMETRICALLY CONNECTED ⟹ GEOMETRICALLY IRREDUCIBLE** (sorry
-node, 2026-07-26 — the formal half of Bertini irreducibility, isolated so
-that the Lefschetz content lives alone in
+/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE DOMAINS** (sorry node, 2026-07-26 —
+the ONLY genuinely geometric ingredient left in the connected ⟹ irreducible
+upgrade, and a pure mathlib gap).
+
+For `Z` smooth over `Spec K` with `K` any field, every local ring `𝒪_{Z,z}` is
+an integral domain.
+
+THE CLASSICAL ARGUMENT, and the two mathlib gaps it names. A smooth morphism
+has geometrically regular fibres (EGA IV 17.5.1), so `Z` is a regular scheme
+over any field; and a regular local ring is an integral domain. Neither half
+exists at this pin, and the second is a well-known gap:
+
+* **smooth over a field ⟹ the local rings are REGULAR.** Mathlib's
+  `AlgebraicGeometry/Morphisms/Smooth.lean` never mentions regularity (a
+  2026-07-26 sweep of the pin found ZERO cross-references between the
+  `Algebra.Smooth`/`RingHom.Smooth`/`AlgebraicGeometry.Smooth` hierarchy and
+  `IsRegularLocalRing`/`IsRegularRing`). The classical route is Cohen's
+  structure theorem: formal smoothness makes the completion `𝒪̂_{Z,z}` a
+  power-series ring over the residue field, and a local ring whose completion
+  is regular is regular.
+* **regular local ⟹ IsDomain.** Also absent — `Mathlib/RingTheory/`
+  `RegularLocalRing/Defs.lean` has only `IsRegularLocalRing` and
+  `IsRegularRing` with a handful of instances (PIDs, Dedekind domains,
+  polynomial rings over a regular base), and its own docstring records even
+  "regular local ⟹ regular" as an open TODO. The classical route is the
+  associated graded ring: for a regular local ring `gr_𝔪(R)` is a polynomial
+  ring over `R/𝔪`, hence a domain, and a filtered ring with domain associated
+  graded and `⋂ 𝔪ⁿ = 0` (Krull) is a domain.
+
+Both are general, reusable, and would be genuine mathlib contributions; the
+second in particular is consumed by every "regular ⟹ normal ⟹ irreducible"
+argument in algebraic geometry. Note this SUBSUMES the weaker "smooth over a
+field ⟹ reduced": the sibling
+`exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` was proven on
+2026-07-26 by a different route (associated primes) and no longer needs it,
+but any future consumer of reducedness can take it from here.
+
+Stated with `hf` an explicit hypothesis rather than an instance because the
+call site has `Smooth` as a hypothesis of a theorem, not in the instance
+cache. -/
+theorem isDomain_stalk_of_smooth_over_field {K : Type u} [Field K]
+    {Z : AlgebraicGeometry.Scheme.{u}}
+    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
+    (hf : AlgebraicGeometry.Smooth f) (z : Z) :
+    IsDomain (Z.presheaf.stalk z) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A POINT WITH DOMAIN STALK ON A LOCALLY NOETHERIAN SCHEME HAS AN
+IRREDUCIBLE OPEN NEIGHBOURHOOD** (sorry node, 2026-07-26 — elementary, and
+entirely independent of smoothness).
+
+THE ARGUMENT, in full, since it is short and uses only commutative algebra
+that IS at this pin. Choose an affine open `V ∋ z` with
+`A := Γ(Z, V)` noetherian (`exists_isAffineOpen_mem_and_subset` plus
+`IsLocallyNoetherian.component_noetherian`), and let `p := hV.primeIdealOf z`
+be the prime of `A` corresponding to `z`, so that
+`𝒪_{Z,z} = A_p` (`IsAffineOpen.isLocalization_stalk`).
+
+* `A_p` is a domain, so `minimalPrimes A_p = {⊥}`
+  (`IsDomain.minimalPrimes_eq_singleton_bot`); transporting along the order
+  isomorphism `IsLocalization.AtPrime.orderIsoOfPrime` between the primes of
+  `A_p` and the primes of `A` contained in `p`, there is EXACTLY ONE minimal
+  prime `q` of `A` with `q ≤ p`.
+* `A` is noetherian, so `minimalPrimes A` is finite
+  (`minimalPrimes.finite_of_isNoetherianRing`). Put
+  `W := Spec A ∖ ⋃ {V(q') : q' ∈ minimalPrimes A, q' ≠ q}`, a finite union of
+  closed sets removed, hence open. `p ∈ W` by the uniqueness just proved, and
+  every prime of `W` contains some minimal prime, hence contains `q`, so
+  `W ⊆ V(q)`.
+* `V(q)` is irreducible because `q` is prime
+  (`PrimeSpectrum.isIrreducible_zeroLocus_iff`), and `W` is a nonempty open
+  subset of it, hence irreducible (`IsPreirreducible.subset_irreducible`).
+
+Finally push `W` out of the open subscheme `V` into `Z`: `Subtype.val` on an
+open set is an open embedding (`TopologicalSpace.Opens.isOpenEmbedding'`), so
+the image is open (`IsOpenMap`) and still irreducible (`IsIrreducible.image`).
+
+So this leaf is pure plumbing — affine-open charts, the stalk/localization
+dictionary and the minimal-prime bookkeeping — with no missing mathematics.
+It was left sorried on 2026-07-26 only because the plumbing is long, not
+because anything it needs is absent. -/
+theorem exists_isOpen_isIrreducible_of_isDomain_stalk {Z : AlgebraicGeometry.Scheme.{u}}
+    [AlgebraicGeometry.IsLocallyNoetherian Z] (z : Z)
+    (hz : IsDomain (Z.presheaf.stalk z)) :
+    ∃ U : Set Z, IsOpen U ∧ z ∈ U ∧ IsIrreducible U :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **SMOOTH OVER A FIELD ⟹ LOCALLY IRREDUCIBLE** (**PROVEN 2026-07-26** over
+the two leaves above).
+
+Smoothness enters twice and in two different ways, which is exactly why the
+two leaves are separate: it supplies the domain stalks
+(`isDomain_stalk_of_smooth_over_field`, the geometric content), and — through
+`Smooth ⟹ LocallyOfFinitePresentation ⟹ LocallyOfFiniteType` and
+`LocallyOfFiniteType.isLocallyNoetherian` over the noetherian base `Spec K` —
+the local noetherianity that
+`exists_isOpen_isIrreducible_of_isDomain_stalk` needs. -/
+theorem exists_isOpen_isIrreducible_of_smooth_over_field {K : Type u} [Field K]
+    {Z : AlgebraicGeometry.Scheme.{u}}
+    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
+    (hf : AlgebraicGeometry.Smooth f) (z : Z) :
+    ∃ U : Set Z, IsOpen U ∧ z ∈ U ∧ IsIrreducible U := by
+  have : AlgebraicGeometry.Smooth f := hf
+  have : AlgebraicGeometry.IsLocallyNoetherian Z :=
+    AlgebraicGeometry.LocallyOfFiniteType.isLocallyNoetherian f
+  exact exists_isOpen_isIrreducible_of_isDomain_stalk z
+    (isDomain_stalk_of_smooth_over_field f hf z)
+
+open CategoryTheory AlgebraicGeometry in
+/-- **SMOOTH + GEOMETRICALLY CONNECTED ⟹ GEOMETRICALLY IRREDUCIBLE**
+(**PROVEN 2026-07-26** over the four names above — the formal half of Bertini
+irreducibility, isolated so that the Lefschetz content lives alone in
 `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`).
 
 A scheme smooth over `ℚ` whose geometric fibres are connected has
@@ -2027,26 +2201,30 @@ parameter space occur here: it is the standard chain
 extends `Nonempty`), which is what `IrreducibleSpace` also demands, so no
 extra hypothesis is needed.
 
-MACHINERY MISSING AT THIS PIN: "smooth over a field ⟹ regular" is not stated
-in mathlib's `AlgebraicGeometry/Morphisms/Smooth.lean` at this pin (it only
-ever TAKES regularity/reducedness as a hypothesis), and neither is "connected
-+ normal ⟹ irreducible" for schemes. Both are small, general and reusable —
-this leaf is the natural place to add them. Note that the sibling
-`exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` needs the
-same missing ingredient in its weaker form "smooth over a field ⟹ reduced",
-so a prover who builds it here discharges part of that leaf too.
-
 Stated for a general scheme `X` over `Spec (ULift ℚ)` rather than for the
 hyperplane sections alone, both because it is true at that generality and
 because the concrete base `ULift ℚ` is what every statement in this file
-uses, so the call site matches syntactically. -/
+uses, so the call site matches syntactically.
+
+**PROVEN 2026-07-26** over the four names immediately above it — the
+topological lemma `irreducibleSpace_of_connectedSpace_of_locallyIrreducible`
+(PROVEN), the two sorried leaves `isDomain_stalk_of_smooth_over_field` and
+`exists_isOpen_isIrreducible_of_isDomain_stalk`, and their assembly
+`exists_isOpen_isIrreducible_of_smooth_over_field` (PROVEN). See the cut note
+on the topological lemma for why that is the right three-way split. -/
 theorem geometricallyIrreducible_of_smooth_of_geometricallyConnected
     {X : AlgebraicGeometry.Scheme.{u}}
     (h : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (hsm : AlgebraicGeometry.Smooth h)
     (hconn : AlgebraicGeometry.GeometricallyConnected h) :
-    AlgebraicGeometry.GeometricallyIrreducible h :=
-  sorry
+    AlgebraicGeometry.GeometricallyIrreducible h := by
+  have : AlgebraicGeometry.Smooth h := hsm
+  refine ⟨AlgebraicGeometry.geometrically_iff_of_isClosedUnderIsomorphisms.mpr fun K _ y ↦ ?_⟩
+  have : ConnectedSpace ↥(Limits.pullback h y) :=
+    AlgebraicGeometry.pullback_of_geometrically hconn.geometrically_connectedSpace K y
+  exact irreducibleSpace_of_connectedSpace_of_locallyIrreducible
+    (fun z ↦ exists_isOpen_isIrreducible_of_smooth_over_field
+      (Limits.pullback.snd h y) inferInstance z)
 
 open CategoryTheory AlgebraicGeometry in
 /-- **BERTINI in characteristic zero: the generic hyperplane section is
