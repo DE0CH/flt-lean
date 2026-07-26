@@ -68,8 +68,37 @@ def owned_names():
         names.add(n)
         names.add(n.rsplit(".", 1)[-1])
 
+    # SOURCE 1 -- transcripts, RESTRICTED TO WORKTREES WHOSE AGENT IS STILL LIVE.
+    #
+    # The restriction is the whole correctness of this source (2026-07-26).
+    # Transcripts persist forever, so `flt-owner.load()` keeps crediting an agent
+    # with the leaves its prompt named LONG AFTER IT FINISHED -- and this scan's
+    # only job is to answer "is anyone working on this right now?". Unrestricted,
+    # it answers "did anyone ever" and reports a leaf as owned when nobody holds
+    # it. That is the DANGEROUS direction: an unowned leaf that reads as covered
+    # sits untouched for a whole release cycle with nobody dispatched at it.
+    #
+    # Found the hard way: with three agents freshly finished, this scan reported
+    # ZERO unowned while `threeadicRealization_hasFlatProlongationAt_threePow`
+    # had no owner in any source and two more were credited to agents that had
+    # already reported completion.
+    #
+    # Liveness = the pool says an agent occupies the worktree. `batched` is
+    # deliberately NOT live: the agent is gone and its work is with the merger,
+    # so its leaves are up for grabs again.
+    live = set()
+    try:
+        for ln in (pathlib.Path.home() / ".flt-worktree-pool").read_text().splitlines():
+            f = ln.split()
+            if len(f) >= 2 and f[1] in ("claimed", "reclaiming", "suspended"):
+                live.add(f[0])
+    except OSError:
+        live = None                      # cannot tell: fall back to trusting all
+
     fo = _mod("flt_owner", "flt-owner.py")
-    for rec in fo.load().values():          # `names` is a SET -- union, never dumps
+    for wt, rec in fo.load().items():        # `names` is a SET -- union, never dumps
+        if live is not None and wt not in live:
+            continue
         for n in rec.get("names") or ():
             add(n)
 
@@ -92,14 +121,82 @@ def owned_names():
     return names
 
 
+def _proven_in_batch(cands):
+    """Of `cands` (name -> repo-relative path), those already PROVEN on a branch
+    sitting in the merge batch.
+
+    A fourth thing that counts as "not up for grabs" (2026-07-26), and it is not
+    optional. Under the release model a finished agent's proof lives on its
+    branch until the merger cuts a release, so on `main` the leaf still reads as
+    a direct sorry while its agent is gone -- which makes it look UNOWNED when it
+    is in fact DONE. Dispatching there re-proves work already waiting to land,
+    and re-proving finished work is the commonest way this fleet wastes a worker.
+
+    Scans each (branch, file) ONCE and caches. The naive shape -- rescan per
+    (leaf, branch) -- re-parses multi-thousand-line files up to a hundred times
+    and takes minutes, which matters because this runs on a ten-minute cron.
+    """
+    import subprocess, tempfile, os as _os
+    batch = []
+    for f in (".flt-merge-batch", ".flt-merge-batch.inflight"):
+        fp = pathlib.Path.home() / f
+        if fp.exists():
+            batch += [l.strip() for l in fp.read_text().splitlines() if l.strip()]
+    if not batch:
+        return set()
+    fr = _mod("flt_frontier", "flt-frontier.py")
+
+    cache = {}                      # (branch, rel) -> set of names still sorried
+    def open_on(br, rel):
+        key = (br, rel)
+        if key in cache:
+            return cache[key]
+        r = subprocess.run(["git", "-C", str(ROOT), "show", f"{br}:{rel}"],
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            cache[key] = None       # file absent on that branch: says nothing
+            return None
+        with tempfile.NamedTemporaryFile("w", suffix=".lean", delete=False) as fh:
+            fh.write(r.stdout)
+            tmp = fh.name
+        try:
+            cache[key] = {n for n, _ in fr.scan(pathlib.Path(tmp))}
+        finally:
+            _os.unlink(tmp)
+        return cache[key]
+
+    done = set()
+    for name, rel in cands.items():
+        for br in batch:
+            names = open_on(br, rel)
+            if names is None:
+                continue
+            if name not in names:
+                # present on that branch's tree and no longer sorried there
+                done.add(name)
+                break
+    return done
+
+
 def main():
     verbose = "--verbose" in sys.argv[1:]
     fr = _mod("flt_frontier", "flt-frontier.py")
-    leaves = [n for p in sorted((ROOT / "Fermat").rglob("*.lean"))
-              for n, _ in fr.scan(p)]
+    leaves, where = [], {}
+    for p in sorted((ROOT / "Fermat").rglob("*.lean")):
+        rel = str(p.relative_to(ROOT))
+        for n, _ in fr.scan(p):
+            leaves.append(n)
+            where.setdefault(n, rel)
     owned = owned_names()
     unowned = [l for l in leaves
                if l not in owned and l.rsplit(".", 1)[-1] not in owned]
+    if unowned:
+        landed = _proven_in_batch({n: where[n] for n in unowned})
+        if landed and verbose:
+            print(f"proven on a batched branch, awaiting release: {len(landed)}")
+            for n in sorted(landed):
+                print(f"  (landed) {n}")
+        unowned = [l for l in unowned if l not in landed]
     if verbose:
         print(f"direct sorries: {len(leaves)}   names claimed by some source: "
               f"{len(owned)}   UNOWNED: {len(unowned)}")
