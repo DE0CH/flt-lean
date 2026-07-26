@@ -3589,27 +3589,52 @@ need not be rediscovered.** Writing `X = veluCoordX W S`, `Y = veluCoordY W S` a
 `V = W.veluCurve S`, the three `veluMap`s unfold by `veluMap_of_notMem` and the case split
 `by_cases hxy : X P = X Q ∧ Y P = V.negY (X Q) (Y Q)` leaves EXACTLY three goals:
 
-1. `hxy → False` — this is EXACTLY the leaf `velu_coord_ne_neg` above, already stated and
-   already consumed elsewhere in this file, so nothing new is needed for it here.
+1. `hxy → False` — **DISCHARGED 2026-07-26**: this is EXACTLY `velu_coord_ne_neg` above,
+   which is now PROVEN. It is applied as `hxy` in the skeleton below.
 2. `X (P + Q) = V.addX (X P) (X Q) (V.slope (X P) (X Q) (Y P) (Y Q))`.
 3. `Y (P + Q) = V.addY (X P) (X Q) (Y P) (V.slope (X P) (X Q) (Y P) (Y Q))`.
 
-(The remaining glue is `Affine.Point.add_some hxy` and `velu_point_some_eq`.)
+(The remaining glue is `Affine.Point.add_some hxy` and `velu_point_some_eq`, and it is
+written out and compiling below.)
 
-Goals 2 and 3 are deliberately NOT committed as sorried leaves: they commit the proof to the
-finite/rational-function route judged impractical above, whereas a function-field development
-supplies all three at once. Take them as a map, not as a cut.
+**Why goals 2 and 3 are sorried `have`s INSIDE this proof and not two new top-level leaves.**
+The previous owner declined to cut them at all, on the ground that they commit the proof to
+the coordinate route whereas a function-field development would supply all three at once.
+That reasoning is weakened but not destroyed by the closure of goal 1 — which was carried out
+by elementary polynomial algebra, with no function field anywhere (see
+`velu_xNum_sub_eq_prod`), so "all three need a function field" is now known to be false. The
+compromise kept here: the assembly is written and compiles, and each remaining `sorry` stands
+against a fully stated proposition (as the glue-first rule requires), but nothing new is
+declared at top level, so an owner who later proves this by any other route simply replaces
+the body and leaves no orphaned declarations behind.
 
-So this leaf and `velu_coord_ne_neg` are two faces of one fact — that the Vélu map is a
-homomorphism with kernel exactly `S`, read on coordinates — and want ONE owner. See
-`velu_coord_ne_neg`'s docstring for the recommended route: an ELEMENTARY one through Vélu's
-rational functions, whose foundational pair identity has been compiled and is reproduced
-there ready to paste. Nothing here needs a function-field development, and nothing can be
-lifted from mathlib or `~/cs/FLT`, neither of which has any isogeny material at all. -/
+What is left is therefore exactly the two addition-law identities in Vélu coordinates. They
+are TRUE independently of route — they just say the Vélu image of `P + Q` is the secant-line
+sum of the images — so they are safe to build against. Nothing here can be lifted from mathlib
+or `~/cs/FLT`, neither of which has any isogeny material at all. -/
 theorem velu_map_add_of_notMem (S : Finset W.Point) (hS : IsPointSubgroup S)
-    (hodd : Odd S.card) {P Q : W.Point} (_hP : P ∉ S) (_hQ : Q ∉ S) (_hPQ : P + Q ∉ S) :
-    W.veluMap S hS hodd (P + Q) = W.veluMap S hS hodd P + W.veluMap S hS hodd Q :=
-  sorry
+    (hodd : Odd S.card) {P Q : W.Point} (hP : P ∉ S) (hQ : Q ∉ S) (hPQ : P + Q ∉ S) :
+    W.veluMap S hS hodd (P + Q) = W.veluMap S hS hodd P + W.veluMap S hS hodd Q := by
+  haveI : (W.veluCurve S).IsElliptic := W.velu_isElliptic S hS hodd
+  -- Goal (1): PROVEN, and the only reason the three images are in the generic branch.
+  have hxy : ¬(W.veluCoordX S P = W.veluCoordX S Q ∧
+      W.veluCoordY S P = (W.veluCurve S).negY (W.veluCoordX S Q) (W.veluCoordY S Q)) :=
+    W.velu_coord_ne_neg S hS hodd hP hQ hPQ
+  -- Goal (2): the Vélu `x`-coordinate follows the secant formula of the quotient curve.
+  have hX : W.veluCoordX S (P + Q)
+      = (W.veluCurve S).addX (W.veluCoordX S P) (W.veluCoordX S Q)
+          ((W.veluCurve S).slope (W.veluCoordX S P) (W.veluCoordX S Q)
+            (W.veluCoordY S P) (W.veluCoordY S Q)) := by
+    sorry
+  -- Goal (3): likewise for the `y`-coordinate.
+  have hY : W.veluCoordY S (P + Q)
+      = (W.veluCurve S).addY (W.veluCoordX S P) (W.veluCoordX S Q) (W.veluCoordY S P)
+          ((W.veluCurve S).slope (W.veluCoordX S P) (W.veluCoordX S Q)
+            (W.veluCoordY S P) (W.veluCoordY S Q)) := by
+    sorry
+  rw [W.veluMap_of_notMem hS hodd hPQ, W.veluMap_of_notMem hS hodd hP,
+    W.veluMap_of_notMem hS hodd hQ, Affine.Point.add_some hxy]
+  exact velu_point_some_eq hX hY
 
 /-- **Vélu's theorem, part 3: the map is additive** (PROVEN 2026-07-26 outside the generic
 case, which is the leaf `velu_map_add_of_notMem`).
