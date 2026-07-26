@@ -4526,7 +4526,8 @@ forces `O ⊕ O ≅ T ≅ ℤ_q^{2d}` as abelian groups, and every additive
 endomorphism of `ℤ_q^n` is `ℤ_q`-linear, since divisibility by `q^n` is
 preserved. So the exotic frames below really are the general shape.)
 
-### Counterexample 1 — `Function.Injective ι` fails
+### Counterexample 1 — `Function.Injective ι` fails, and it survives
+### EVERY clause the sibling leaf produces
 
 `D = ℚ(√5)` (totally real, `finrank ℚ D = 2`), `F` any number field,
 `E/F` any elliptic curve, `A = E × E` over `S = Spec F`, `x = 𝟙`. Then
@@ -4543,16 +4544,33 @@ Take `q = 13`, which is INERT in `ℚ(√5)` (`kronecker(5,13) = −1`), so
 Now put `O := ℤ₁₃[N] ≅ ℤ₁₃[ε]/(ε²)`, `N = [[0,1],[0,0]] ∈ End(W)`. It is
 a commutative topological ring; `W` is free of rank `1` over it
 (`W = O·e₂`), so `T ≅ O ⊗_{ℤ₁₃} T₁₃E ≅ O²`; and `Γ_F`, acting only on
-the `T₁₃E` factor, is `O`-linear. So `(O, τ, φ)` is a legal frame — and
-note it even satisfies everything the sibling leaf produces (`O` is
-LOCAL, finite free over `ℤ₁₃`, with its module topology). But `O` has a
-nonzero nilpotent, so **there is no injective ring homomorphism
-`O →+* AlgebraicClosure ℚ₁₃` at all**, and the conclusion fails outright.
+the `T₁₃E` factor, is `O`-linear. So `(O, τ, φ)` is a legal frame. But
+`O` has a nonzero nilpotent, so **there is no injective ring
+homomorphism `O →+* AlgebraicClosure ℚ₁₃` at all**, and the conclusion
+fails outright.
+
+This frame satisfies **every** clause of the sibling leaf's conclusion,
+which is what makes it decisive: `O` is LOCAL, an `ℤ₁₃`-algebra, finite
+free over `ℤ₁₃`, carries its module topology — and it even meets the
+residual clause. Indeed `τ.charFrob w = X² − a_w X + N(w) ∈ ℤ₁₃[X]`
+(`a_w` the trace of `Frob_w` on `T₁₃E`), while `A[I] = A[13]` is
+`𝔽₁₆₉ ⊗_{𝔽₁₃} E[13]` with `ρ'.charFrob w = X² − ā_w X + N̄(w)` over
+`k' = 𝔽₁₆₉`; so `ι₀ : ℤ₁₃[ε] →+* 𝔽₁₆₉`, `ε ↦ 0`, discharges
+`(τ.charFrob w).map ι₀ = ρ'.charFrob w` at every `w`. **Hence adding to
+this leaf every hypothesis the consumer could actually supply from the
+sibling still leaves it false.** That is why the repair has to reach the
+real multiplication rather than the shape of `O`.
 
 ### Counterexample 2 — the charpoly equation itself fails
 
-This one is the serious one: it survives any strengthening of `O` short
-of tying the frame to `𝒪_D`, and it shows the defect is not about `ι`.
+Its role is different from Counterexample 1's, and the difference
+matters when choosing a repair. This frame is NOT local and does NOT
+satisfy the sibling's residual clause, so it is not a counterexample to
+the strengthened statements — but it refutes the CHARPOLY EQUATION
+itself, not merely the injectivity of `ι`. **So "just delete
+`Function.Injective ι`" is not a repair either**: what is broken is the
+identification of `τ.charFrob` with a member of the system, and the
+injectivity failure of Counterexample 1 is a symptom of the same cause.
 
 Same `D = ℚ(√5)` and `q = 13`, but take `F = ℚ(i)` and `E : y² = x³ − x`
 (conductor `32`), which has CM by `ℤ[i] ⊆ F`; `A = E × E` as before.
@@ -4592,6 +4610,39 @@ arithmetic slip: the `ℤ₁₃`-characteristic polynomial of `Frob_w` on `T`
 must be the norm of the `O`-one, and indeed
 `(X−χ)²(X−χ̄)² = N_{O/ℤ₁₃}((X−c_w)²)` agrees with the value computed
 from the standard frame.)
+
+### What does NOT repair it
+
+Three cheaper patches suggest themselves; all three fail, and the reason
+each fails is worth recording so that nobody spends a cycle on it.
+
+* *Add the sibling's `O`-conditions* (`Algebra ℤ_[q] O`, `IsLocalRing O`,
+  `Module.Finite`/`Module.Free ℤ_[q] O`, `IsModuleTopology ℤ_[q] O`) —
+  the only strengthening the consumer could actually supply, since the
+  sibling produces exactly these. It excludes Counterexample 2 (that `O`
+  is not local) but NOT Counterexample 1, which satisfies all of them.
+* *Delete `Function.Injective ι`.* Counterexample 2 refutes the charpoly
+  equation on its own, so the statement stays false; and the consumer
+  needs the injectivity anyway — it is the `HilbertBlumenthalPoint`
+  fields `ιO₀_injective`/`ιC_injective`, used again downstream at
+  `KhareWintenberger.lean:3309`. Deleting it breaks the assembly without
+  buying truth.
+* *Add `IsDomain O`.* This does kill Counterexample 1, but it is an
+  ad-hoc symptom patch — it asserts the conclusion one wanted about `O`
+  instead of deriving it — and the consumer cannot supply it: the
+  sibling's `O` is only known to be LOCAL, and `ℤ₁₃[ε]` is a local ring
+  that is not a domain. So it is neither structural nor available.
+
+Corroboration that `IsDomain` is precisely what is missing: the tree's
+own PROVEN helper for producing such an embedding,
+`exists_injective_ringHom_algebraicClosure_of_moduleFinite`
+(`Modularity/KhareWintenberger.lean`), takes `[IsDomain O]`,
+`[Algebra ℤ_[ℓ] O]`, `[Module.Finite ℤ_[ℓ] O]` and injectivity of
+`algebraMap ℤ_[ℓ] O` as hypotheses — it factors through
+`FractionRing O` and `IsAlgClosed.lift`, and there is no such
+factorization without the domain hypothesis. This leaf ASSERTS the
+existence of that embedding for an `O` about which it hypothesises
+strictly less, which is how the clause got in.
 
 ### The repair (REPORTED, not made here)
 
