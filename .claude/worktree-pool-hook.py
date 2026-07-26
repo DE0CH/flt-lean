@@ -331,8 +331,18 @@ def _capacity(hosts):
     try:
         with open(CAPACITY_FILE, encoding="utf-8") as fh:
             blob = json.load(fh)
-        if now - blob.get("ts", 0) < CAPACITY_TTL and blob.get("hosts"):
-            return blob["hosts"]
+        cached = blob.get("hosts") or {}
+        # Fresh AND covering every host we were asked about. The coverage test
+        # is not pedantry (Deyao, 2026-07-26): a host absent from `cap` is
+        # treated by `rank` as unreachable and VETOED outright, so a cache
+        # populated from one call's host set silently excluded every machine not
+        # in it for the whole TTL -- and since a vetoed host is never allocated,
+        # it stays absent from later host sets too. `vanisher` and
+        # `nightcrawler` were missing from the live cache for exactly this
+        # reason. Missing measurements must force a re-measure, never a veto.
+        if (now - blob.get("ts", 0) < CAPACITY_TTL
+                and cached and all(h in cached for h in hosts)):
+            return cached
     except (OSError, ValueError):
         pass
     hosts_cap = _measure(hosts)
@@ -422,28 +432,57 @@ def pick_free(entries, candidate_state="ready"):
     if not cap:
         return free[0]
 
-    claimed = {}
+    # OUR footprint on each host. Counts every state that occupies a slot, not
+    # just `claimed`: `reclaiming` is a claimed slot that retires later and is
+    # running an agent right now, and `ready` is seeded and about to be
+    # dispatched into. Counting only `claimed` under-reports our usage and was
+    # part of why whole machines sat idle.
+    ours = {}
     for name, status, _ in entries:
-        if status == "claimed":
+        if status in ("claimed", "reclaiming", "ready"):
             h = _host_of(name)
             if h:
-                claimed[h] = claimed.get(h, 0) + 1
+                ours[h] = ours.get(h, 0) + 1
 
     def rank(name):
+        """Our REMAINING QUOTA on this host: `(25% - our usage) x cores`.
+
+        (Deyao, 2026-07-26 — this replaces `min(free_cpu, quarter)`, which was
+        broken in a way that idled seven machines.)
+
+        The old weight ranked a host holding 23 of our workers exactly equal to
+        one holding none, because `quarter` is a constant per host and
+        `free_cpu` sat far above it almost everywhere. So every host with any
+        headroom tied at exactly `quarter`; `max()` is stable on ties, so the
+        first in pool order won EVERY dispatch. `_spend` was supposed to break
+        that up, but it charges `free_cpu`, and while `free_cpu > quarter` the
+        `min` clamps it away — charging a core changed the weight by nothing.
+        The result was a few machines saturated and seven at zero utilisation.
+
+        Ranking by REMAINING QUOTA fixes it structurally rather than by
+        tie-breaking: placing a worker on a host lowers that host's weight by
+        exactly one, so the next pick naturally goes elsewhere, and allocation
+        self-levels toward equal fractions of each machine's quarter.
+
+        `free_cpu` stays as a CAP, not the weight: we never want to pile onto a
+        machine other tenants are already hammering, even if our own quota there
+        is untouched. These are shared departmental boxes.
+        """
         h = _host_of(name)
         c = cap.get(h) if h else None
         if not c or c["free_ram_g"] < RAM_PER_WORKER_G:
             return None                       # unreachable, unrouted, or RAM veto
         quarter = OUR_SHARE * c.get("total_cpu", 0)
-        if claimed.get(h, 0) >= quarter:
+        headroom = quarter - ours.get(h, 0)
+        if headroom <= 0:
             return None                       # our share of this machine is spent
-        return min(c["free_cpu"], quarter)
+        return min(c["free_cpu"], headroom)
 
     viable = [(rank(n), n) for n in free]
     viable = [(r, n) for r, n in viable if r is not None]
     if not viable:
         return None                           # every host vetoed: queue instead
-    # max() is stable on ties, so equal free CPU keeps the original pool order.
+    # max() is stable on ties, so equal weight keeps the original pool order.
     best = max(viable, key=lambda rn: rn[0])[1]
     _spend(_host_of(best))
     return best
