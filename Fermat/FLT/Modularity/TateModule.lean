@@ -126,6 +126,11 @@ public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
 -- `NumberField.IsTotallyReal`: the real-multiplication field of a
 -- Hilbert–Blumenthal family is totally real, in both leaf STATEMENTS
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
+-- `basisOfTopLeSpanOfCardEqFinrank`: two spanning vectors in a rank-two
+-- space are a basis — the step that turns the `ι₀`-semilinearity of the
+-- comparison map into the frame `E` of
+-- `exists_residualEmbedding_of_scalarCommutant`
+public import Mathlib.LinearAlgebra.Dimension.OrzechProperty
 
 @[expose] public section
 
@@ -377,7 +382,14 @@ scheme, no `Mult` and no `TatePt` in sight.
   space `I / I ^ 2`). **PROVEN** — it needed no new input beyond the
   hypotheses it was cut with.
 * `exists_residualEmbedding_of_residualComparison` — the Noether–Skolem
-  step, over an abstract comparison map.
+  step, over an abstract comparison map. **PROVEN 2026-07-26** by the
+  commutant dichotomy, over `exists_residualEmbedding_of_scalarCommutant`
+  (the absolutely irreducible case; PROVEN, and it needs neither `hirr`
+  nor any simplicity theorem) and
+  `exists_residualEmbedding_of_nonScalarCommutant` (the remaining case;
+  open — the only place Wedderburn and Noether–Skolem are still needed).
+  Both halves are stated for an abstract monoid and mathlib's
+  `Representation`, so the surviving leaf is Galois-free pure algebra.
 
 Together the first two say `T / π T ≅ A[I]` as `Γ_F`-modules, which
 composed with the level structure `e` is exactly the hypothesis of the
@@ -530,9 +542,301 @@ theorem exists_tatePt_act_eq_of_val_one_eq_zero
   rw [h1, h2]
   exact add_zero _
 
+/-! ### The two halves of the Noether–Skolem step
+
+`exists_residualEmbedding_of_residualComparison` (below) is cut here, on
+2026-07-26, into the two cases of the commutant dichotomy, both stated for
+an ABSTRACT MONOID `G` and mathlib's `Representation` rather than for
+`Γ_F` and `GaloisRep`. Two things are gained by that:
+
+* the hard half becomes a statement of pure module theory that can be
+  developed against mathlib alone, in a small scratch module;
+* `GaloisRep`'s `FunLike` hides a `moduleTopology A (Module.End A M)`,
+  which at a CONCRETE module (`Fin 2 → O`, and a two-dimensional `V`) is
+  measured at 20–90 s per elaboration step. None of that is paid here.
+
+The dichotomy is on the commutant `C := End_{ℤ[G]}(V)`:
+
+* `exists_residualEmbedding_of_scalarCommutant` — the case `C = k'`
+  (equivalently, `ρ'` is ABSOLUTELY irreducible). **PROVEN.**
+* `exists_residualEmbedding_of_nonScalarCommutant` — the case `C ⊋ k'`
+  (`ρ'` irreducible but not absolutely irreducible). Open.
+
+The split is genuine, not bookkeeping: in the first case the two
+coefficient rings are forced to *coincide*, `ψ` itself is the required
+change of basis, and no simplicity theorem is needed at all — which is
+why that case is proven here in a few hundred lines while the other one
+still needs the Wedderburn/Noether–Skolem apparatus. -/
+
+/-- **The residual comparison when the commutant is just the scalars**
+(PROVEN 2026-07-26). This is the ABSOLUTELY IRREDUCIBLE case of
+`exists_residualEmbedding_of_residualComparison`, stated over an abstract
+monoid `G`.
+
+Statement. Let `V` be a two-dimensional `k'`-vector space carrying a
+representation `ρ'` of `G`, let `τ` be a rank-two representation of `G`
+over a commutative ring `O`, and let `ψ : O² → V` be additive, surjective
+and `G`-equivariant with kernel `ϖ · O²`. If EVERY additive endomorphism
+of `V` commuting with `ρ'(G)` is multiplication by a scalar of `k'`, then
+there is a ring map `ι₀ : O →+* k'` and a `k'`-basis of `V` in which `ρ'`
+IS the `ι₀`-reduction of `τ`.
+
+THE PROOF, and why this case needs no simplicity theorem. Transport the
+`O`-action along `ψ`: for `a : O` the assignment `ψ u ↦ ψ (a • u)` is
+well defined (the kernel `ϖ · O²` is an `O`-submodule), additive, and
+commutes with `G` (because each `τ g` is `O`-linear). The commutant
+hypothesis therefore hands us, for each `a`, a SCALAR `ι₀ a ∈ k'` with
+`ψ (a • u) = ι₀ a • ψ u`; the ring axioms for `ι₀` are read off from that
+identity at one nonzero vector. So `ψ` is `ι₀`-semilinear, and the two
+values `ψ e₀`, `ψ e₁` span `V` over `k'` — two spanning vectors in rank
+two, hence a basis. In that basis the matrix of `ρ' g` is the
+`ι₀`-image of the matrix of `τ g`, because `ψ` carries `τ g eⱼ` to
+`ρ' g (ψ eⱼ)` and is `ι₀`-semilinear coordinatewise.
+
+WHAT IS *NOT* USED, and this is the point of the cut: irreducibility of
+`ρ'` never appears, no ring is shown to be simple, and `O` is not assumed
+local. The whole force of the absolutely irreducible case sits in `hC`,
+which already says that the commutant is as small as possible; the two
+coefficient rings then do not merely become conjugate, they become EQUAL.
+
+Faithfulness of the hypothesis `hC`. For `V` irreducible over `k'[G]`,
+`hC` holds exactly when `ρ'` is absolutely irreducible: the image of
+`k'[G]` is then all of `End_{k'}(V)` (Burnside), whose centraliser inside
+`End_{𝔽_p}(V)` is `k'` by the double-centraliser theorem. When `ρ'` is
+irreducible but not absolutely irreducible the commutant is
+`End_{L₀}(V)` for `L₀ = 𝔽_p[ρ'(G)] ∩ Z`, strictly larger than `k'` — that
+is the complementary leaf. -/
+theorem exists_residualEmbedding_of_scalarCommutant
+    {G : Type*} [Monoid G]
+    {O : Type*} [CommRing O] (ϖ : O)
+    (τ : Representation O G (Fin 2 → O))
+    {k' : Type*} [Field k']
+    {V : Type*} [AddCommGroup V] [Module k' V] [Module.Finite k' V] [Module.Free k' V]
+    (hV : Module.rank k' V = 2)
+    (ρ' : Representation k' G V)
+    (hC : ∀ c : V →+ V, (∀ (g : G) (v : V), c (ρ' g v) = ρ' g (c v)) →
+      ∃ a : k', ∀ v, c v = a • v)
+    (ψ : (Fin 2 → O) → V)
+    (hψadd : ∀ u u' : Fin 2 → O, ψ (u + u') = ψ u + ψ u')
+    (hψsurj : Function.Surjective ψ)
+    (hψker : ∀ u : Fin 2 → O, ψ u = 0 ↔ ∀ i, u i ∈ Ideal.span {ϖ})
+    (hψequiv : ∀ (g : G) (u : Fin 2 → O), ψ (τ g u) = ρ' g (ψ u)) :
+    ∃ (ι₀ : O →+* k') (E : (Fin 2 → k') ≃ₗ[k'] V),
+      ∀ g : G, ρ' g = E.conj (Matrix.toLin' ((LinearMap.toMatrix' (τ g)).map ι₀)) := by
+  classical
+  -- `ψ` as an additive homomorphism, so that `map_sub` is available.
+  set Ψ : (Fin 2 → O) →+ V := AddMonoidHom.mk' ψ hψadd
+  have hΨa : ∀ u, Ψ u = ψ u := fun _ => rfl
+  -- The rank is two, so `V` is nontrivial and carries a two-element basis.
+  have hfr : Module.finrank k' V = 2 := Module.finrank_eq_of_rank_eq (by exact_mod_cast hV)
+  have hVnt : Nontrivial V := Module.nontrivial_of_finrank_pos (R := k') (by omega)
+  obtain ⟨v₀, hv₀⟩ := exists_ne (0 : V)
+  -- Scalar multiples of a fixed nonzero vector determine the scalar.
+  have huniq : ∀ c c' : k', c • v₀ = c' • v₀ → c = c' := by
+    intro c c' h
+    have h0 : (c - c') • v₀ = 0 := by rw [sub_smul, h, sub_self]
+    rcases smul_eq_zero.mp h0 with h1 | h1
+    · exact sub_eq_zero.mp h1
+    · exact absurd h1 hv₀
+  -- Multiplication by `a : O` descends along `ψ`: the kernel is an `O`-submodule.
+  have hwd : ∀ (a : O) (u u' : Fin 2 → O), ψ u = ψ u' → ψ (a • u) = ψ (a • u') := by
+    intro a u u' h
+    have h0 : ψ (u - u') = 0 := by
+      rw [← hΨa, map_sub, hΨa, hΨa, h, sub_self]
+    have h1 : ∀ i, (u - u') i ∈ Ideal.span {ϖ} := (hψker _).mp h0
+    have h2 : ψ (a • (u - u')) = 0 := by
+      refine (hψker _).mpr fun i => ?_
+      simpa using Ideal.mul_mem_left _ a (h1 i)
+    rw [smul_sub, ← hΨa, map_sub, hΨa, hΨa] at h2
+    exact sub_eq_zero.mp h2
+  -- A set-theoretic section of `ψ`.
+  choose sec hsec using hψsurj
+  -- The transported `O`-action, as additive endomorphisms of `V`.
+  set T : O → (V →+ V) := fun a => AddMonoidHom.mk' (fun v => ψ (a • sec v)) (by
+    intro v w
+    have hvw : ψ (sec (v + w)) = ψ (sec v + sec w) := by
+      rw [hsec, hψadd, hsec, hsec]
+    rw [hwd a _ _ hvw, smul_add, hψadd])
+  have hTapp : ∀ (a : O) (u : Fin 2 → O), T a (ψ u) = ψ (a • u) :=
+    fun a u => hwd a _ _ (hsec (ψ u))
+  have hTcomm : ∀ (a : O) (g : G) (v : V), T a (ρ' g v) = ρ' g (T a v) := by
+    intro a g v
+    obtain ⟨u, rfl⟩ : ∃ u, ψ u = v := ⟨sec v, hsec v⟩
+    rw [← hψequiv, hTapp, hTapp, ← hψequiv]
+    congr 1
+    exact ((τ g).map_smul a u).symm
+  -- The commutant hypothesis turns each of them into a `k'`-scalar.
+  choose f hf using fun a : O => hC (T a) (hTcomm a)
+  have hsemi : ∀ (a : O) (u : Fin 2 → O), ψ (a • u) = f a • ψ u := by
+    intro a u
+    rw [← hTapp]
+    exact hf a (ψ u)
+  -- `f` is a ring map, read off at the nonzero vector `v₀`.
+  obtain ⟨u₀, hu₀⟩ : ∃ u, ψ u = v₀ := ⟨sec v₀, hsec v₀⟩
+  have hone : f 1 = 1 := by
+    refine huniq _ _ ?_
+    have := hsemi 1 u₀
+    rw [one_smul, hu₀] at this
+    rw [← this, one_smul]
+  have hmul : ∀ a b : O, f (a * b) = f a * f b := by
+    intro a b
+    refine huniq _ _ ?_
+    have h1 := hsemi (a * b) u₀
+    have h2 := hsemi a (b • u₀)
+    have h3 := hsemi b u₀
+    rw [mul_smul, h2, h3, hu₀, smul_smul] at h1
+    exact h1.symm
+  have hadd : ∀ a b : O, f (a + b) = f a + f b := by
+    intro a b
+    refine huniq _ _ ?_
+    have h1 := hsemi (a + b) u₀
+    have h2 := hsemi a u₀
+    have h3 := hsemi b u₀
+    rw [add_smul, hψadd, h2, h3, hu₀, ← add_smul] at h1
+    exact h1.symm
+  have hzero : f 0 = 0 := by
+    have := hadd 0 0
+    simpa using this
+  set ι₀ : O →+* k' :=
+    { toFun := f, map_one' := hone, map_mul' := hmul, map_zero' := hzero,
+      map_add' := hadd }
+  have hι₀a : ∀ a, ι₀ a = f a := fun _ => rfl
+  -- The two images `ψ e₀`, `ψ e₁` span `V`, hence form a basis.
+  set b : Fin 2 → V := fun i => ψ (Pi.single i 1) with hb
+  have hcoord : ∀ u : Fin 2 → O, ψ u = ι₀ (u 0) • b 0 + ι₀ (u 1) • b 1 := by
+    intro u
+    have hu : u = u 0 • Pi.single (0 : Fin 2) (1 : O) + u 1 • Pi.single (1 : Fin 2) (1 : O) := by
+      ext i; fin_cases i <;> simp
+    calc ψ u = ψ (u 0 • Pi.single (0 : Fin 2) (1 : O) + u 1 • Pi.single (1 : Fin 2) (1 : O)) := by
+              rw [← hu]
+      _ = ψ (u 0 • Pi.single (0 : Fin 2) (1 : O)) + ψ (u 1 • Pi.single (1 : Fin 2) (1 : O)) :=
+              hψadd _ _
+      _ = ι₀ (u 0) • b 0 + ι₀ (u 1) • b 1 := by rw [hsemi, hsemi, hι₀a, hι₀a, hb]
+  have hspan : ⊤ ≤ Submodule.span k' (Set.range b) := by
+    rintro v -
+    obtain ⟨u, rfl⟩ : ∃ u, ψ u = v := ⟨sec v, hsec v⟩
+    rw [hcoord u]
+    exact Submodule.add_mem _
+      (Submodule.smul_mem _ _ (Submodule.subset_span ⟨0, rfl⟩))
+      (Submodule.smul_mem _ _ (Submodule.subset_span ⟨1, rfl⟩))
+  have hcard : Fintype.card (Fin 2) = Module.finrank k' V := by simp [hfr]
+  set bb : Module.Basis (Fin 2) k' V := basisOfTopLeSpanOfCardEqFinrank b hspan hcard
+  have hbbv : ∀ i, bb i = b i := fun i =>
+    congrFun (coe_basisOfTopLeSpanOfCardEqFinrank b hspan hcard) i
+  refine ⟨ι₀, bb.equivFun.symm, fun g => ?_⟩
+  apply bb.ext
+  intro j
+  have hEsymm : bb.equivFun.symm (Pi.single j (1 : k')) = bb j := by
+    rw [Module.Basis.equivFun_symm_apply]
+    simp
+  have hkey : (LinearEquiv.conj bb.equivFun.symm
+      (Matrix.toLin' ((LinearMap.toMatrix' (τ g)).map ι₀))) (bb j) = ρ' g (bb j) := by
+    rw [LinearEquiv.conj_apply_apply]
+    have h1 : bb.equivFun.symm.symm (bb j) = Pi.single j (1 : k') := by
+      rw [← hEsymm]; exact (bb.equivFun.symm).symm_apply_apply _
+    rw [h1]
+    have h2 : (Matrix.toLin' ((LinearMap.toMatrix' (τ g)).map ι₀)) (Pi.single j (1 : k')) =
+        fun i => ι₀ (τ g (Pi.single j (1 : O)) i) := by
+      ext i
+      simp [Matrix.toLin'_apply, Matrix.map_apply, LinearMap.toMatrix'_apply]
+    rw [h2, Module.Basis.equivFun_symm_apply]
+    rw [Fin.sum_univ_two, hbbv, hbbv]
+    rw [← hcoord (τ g (Pi.single j (1 : O))), hψequiv, hbbv, hb]
+  exact hkey.symm
+
+/-- **The residual comparison when the commutant is bigger than the
+scalars** (sorry node — the Wedderburn/Noether–Skolem half). This is the
+complement of `exists_residualEmbedding_of_scalarCommutant`: the case in
+which `ρ'` is irreducible but NOT absolutely irreducible, stated over an
+abstract monoid `G` so that it can be attacked with mathlib alone.
+
+Statement. Same data as in the scalar-commutant case — a two-dimensional
+`k'`-representation `ρ'` of `G`, a rank-two `O`-representation `τ`, and
+an additive, surjective, `G`-equivariant `ψ : O² → V` with kernel
+`ϖ · O²` — but now `ρ'` is assumed IRREDUCIBLE and the commutant
+`C := End_{ℤ[G]}(V)` is assumed to contain a non-scalar. The conclusion
+is unchanged: `ρ'` is the `ι₀`-reduction of `τ` in some `k'`-basis.
+
+TRUTH AUDIT (2026-07-26, by the agent that cut this leaf; the parent was
+refuted once already, so this was checked rather than assumed). The
+statement is TRUE, and the following is a complete sketch, worked through
+in every case that the hypotheses permit.
+
+Write `Ō := O ⧸ (ϖ)` and transport the `O`-action along `ψ` as in the
+scalar case, giving an INJECTIVE ring map `T : Ō ↪ C`; the `k'`-scalars
+give a second embedding `κ : k' ↪ C`. Additively `V ≅ Ō²`, so
+`#Ō² = #V = #k'²`, hence `#Ō = #k'`; and `V` is a `k'`-vector space, so
+`p · V = 0` and `Ō` has characteristic `p`. Its residue field `𝔽` then
+satisfies `#Ō = #𝔽 ^ ℓ` (filter `Ō` by the powers of its maximal ideal —
+each graded piece is an `𝔽`-vector space), so `#𝔽 ∣ #k'` as prime powers
+and `𝔽 ↪ k'` ALWAYS. Moreover every ring map `O →+* k'` automatically
+kills the maximal ideal, because `k'` is finite: the image is a finite
+domain, hence a field, so the kernel is maximal. So the only candidates
+for `ι₀` are the embeddings `𝔽 ↪ k'`, and they form one orbit under
+`Aut(k')` — that Galois ambiguity is exactly what the existential
+quantifier on `ι₀` absorbs.
+
+Now `ρ'` irreducible makes `V` an ISOTYPIC `𝔽_p[G]`-module (`V` is
+`𝔽_p[G]`-semisimple because `k'/𝔽_p` is separable, and every isotypic
+component is stable under everything commuting with `G`, in particular
+under the `k'`-scalars; two components would split `V` into two nonzero
+`k'`-stable subrepresentations). Hence `C ≅ M_r(E)` for a finite field
+`E` (Wedderburn, plus `LittleWedderburn` for "finite division ring is a
+field"), and `V ≅ S^{⊕m}` for the simple `C`-module `S`, with
+`S|_Ō ≅ Ō^s`, `S|_{k'} ≅ k'^{s'}` and `s·m = s'·m = 2` by
+Krull–Schmidt over the local ring `Ō`. Two cases:
+
+* `m = 2`, `s = s' = 1`. Then `E ↪ k'` and `E ↪ Ō` (both act
+  `E`-linearly on a free rank-one module), `V ≅ S ⊗_E E²` with `G`
+  acting through the second factor, so `τ ≡ ρ_W ⊗_E Ō` and
+  `ρ' ≅ ρ_W ⊗_E k'`. Since `E ⊆ 𝔽 ⊆ Ō` and `#Ō = #k'` forces
+  `[𝔽:E] ∣ [k':E]`, an `E`-embedding `ι₀ : 𝔽 ↪ k'` exists, and
+  `ρ̄ ⊗_{𝔽,ι₀} k' = ρ_W ⊗_E k' ≅ ρ'`.
+* `m = 1`, `V ≅ S`. Then `G` acts on `V` through `E^×` by a character
+  `χ`, `L₀ := 𝔽_p[χ(G)]` is a field, and irreducibility of `ρ'` says
+  exactly that `L₀ ⊄ k'`, so `L := k'L₀` is quadratic over `k'` and
+  `V ≅ L`. The reduction `ρ̄` is then IRREDUCIBLE too: `ρ̄` reducible
+  would mean `L₀ ↪ 𝔽`, and `𝔽 ↪ k'` would give `L₀ ↪ k'`. Finally
+  `k' ⊗_{𝔽} 𝔽L₀` is a FIELD (if it were split, `[𝔽L₀ : 𝔽] = 2` would
+  divide `[k':𝔽]`, putting `L₀` inside `k'` again), so `ρ̄ ⊗_{𝔽,ι₀} k'`
+  is the unique one-dimensional `L`-module, i.e. `ρ'`.
+
+The `𝔽_p[ε]/(ε²)` phenomenon flagged on the parent is real and is
+covered: `Ō` is NOT assumed to be a field anywhere above — only `Ō`
+LOCAL is used, through Krull–Schmidt and through `T`'s image killing no
+nilpotent in `k'`.
+
+MACHINERY STATUS. mathlib has `RingTheory/SimpleModule/WedderburnArtin`
+and `RingTheory/LittleWedderburn`, but no Noether–Skolem and no isotypic
+decomposition; both must be built (Lam, *A First Course in
+Noncommutative Rings*, §3 and §13; Curtis–Reiner §3). The prover should
+develop against a scratch module importing mathlib only — none of `G`,
+`O`, `k'`, `V` here touches the Galois or scheme cones. -/
+theorem exists_residualEmbedding_of_nonScalarCommutant
+    {G : Type*} [Monoid G]
+    {O : Type*} [CommRing O] [IsLocalRing O] (ϖ : O) (hϖ : ¬ IsUnit ϖ)
+    (τ : Representation O G (Fin 2 → O))
+    {k' : Type*} [Field k'] [Finite k']
+    {V : Type*} [AddCommGroup V] [Module k' V] [Module.Finite k' V] [Module.Free k' V]
+    (hV : Module.rank k' V = 2)
+    (ρ' : Representation k' G V) (hirr : ρ'.IsIrreducible)
+    (hC : ¬ ∀ c : V →+ V, (∀ (g : G) (v : V), c (ρ' g v) = ρ' g (c v)) →
+      ∃ a : k', ∀ v, c v = a • v)
+    (ψ : (Fin 2 → O) → V)
+    (hψadd : ∀ u u' : Fin 2 → O, ψ (u + u') = ψ u + ψ u')
+    (hψsurj : Function.Surjective ψ)
+    (hψker : ∀ u : Fin 2 → O, ψ u = 0 ↔ ∀ i, u i ∈ Ideal.span {ϖ})
+    (hψequiv : ∀ (g : G) (u : Fin 2 → O), ψ (τ g u) = ρ' g (ψ u)) :
+    ∃ (ι₀ : O →+* k') (E : (Fin 2 → k') ≃ₗ[k'] V),
+      ∀ g : G, ρ' g = E.conj (Matrix.toLin' ((LinearMap.toMatrix' (τ g)).map ι₀)) :=
+  sorry
+
 /-- **Two rank-two structures on one irreducible residual representation
-differ by a ring map** (sorry node — representation theory: Schur,
-Wedderburn and Noether–Skolem; this is the leaf carrying `hirr`).
+differ by a ring map** (PROVEN 2026-07-26 by the commutant dichotomy over
+`exists_residualEmbedding_of_scalarCommutant` — proven — and
+`exists_residualEmbedding_of_nonScalarCommutant` — open; representation
+theory: Schur, Wedderburn and Noether–Skolem; this is the leaf carrying
+`hirr`).
 
 Statement. Let `τ` be a rank-two representation of `Γ_F` over a local
 ring `O`, let `ρ'` be a two-dimensional representation over a finite
@@ -585,7 +889,25 @@ irreducible and every hypothesis holds). The conclusion survives, because
 `O` local artinian forces every ring map `O →+* k'` to kill the whole
 maximal ideal, and the resulting reduction is again a two-dimensional
 `k'`-representation of the right size; but a proof that silently assumes
-`Ō` is a field is proving something weaker than the statement. -/
+`Ō` is a field is proving something weaker than the statement.
+
+HOW THE PROOF BELOW SPLITS THAT (2026-07-26). The dichotomy is decided by
+`Classical.em` on the single proposition "every additive endomorphism of
+`V` commuting with `ρ'(Γ_F)` is a `k'`-scalar" — i.e. on whether the
+commutant `C` is as small as it can be. On the affirmative side the two
+coefficient rings are forced to COINCIDE, `ψ` itself is the change of
+basis, and `exists_residualEmbedding_of_scalarCommutant` closes the case
+outright, with `hirr` never used. Only the negative side — `ρ'`
+irreducible but not absolutely irreducible — needs the simplicity
+apparatus, and it is isolated in
+`exists_residualEmbedding_of_nonScalarCommutant`, whose docstring carries
+the full case analysis and a truth audit of the remaining statement.
+
+Both halves are stated for an ABSTRACT MONOID and mathlib's
+`Representation`, deliberately: `GaloisRep`'s `FunLike` hides a
+`moduleTopology A (Module.End A M)` whose elaboration at a concrete
+two-dimensional module is measured in tens of seconds per step, and none
+of the remaining mathematics has anything to do with Galois theory. -/
 theorem exists_residualEmbedding_of_residualComparison
     {F : Type u} [Field F] [NumberField F]
     {O : Type u} [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
@@ -603,8 +925,16 @@ theorem exists_residualEmbedding_of_residualComparison
       ψ (τ σ u) = ρ' σ (ψ u)) :
     ∃ (ι₀ : O →+* k') (E : (Fin 2 → k') ≃ₗ[k'] V),
       ∀ σ : Field.absoluteGaloisGroup F,
-        ρ' σ = E.conj (Matrix.toLin' ((LinearMap.toMatrix' (τ σ)).map ι₀)) :=
-  sorry
+        ρ' σ = E.conj (Matrix.toLin' ((LinearMap.toMatrix' (τ σ)).map ι₀)) := by
+  classical
+  by_cases hC : ∀ c : V →+ V,
+      (∀ (σ : Field.absoluteGaloisGroup F) (v : V),
+        c (ρ'.toRepresentation σ v) = ρ'.toRepresentation σ (c v)) →
+      ∃ a : k', ∀ v, c v = a • v
+  · exact exists_residualEmbedding_of_scalarCommutant ϖ τ.toRepresentation hV
+      ρ'.toRepresentation hC ψ hψadd hψsurj hψker hψequiv
+  · exact exists_residualEmbedding_of_nonScalarCommutant ϖ hϖ τ.toRepresentation hV
+      ρ'.toRepresentation hirr hC ψ hψadd hψsurj hψker hψequiv
 
 /-- **The reduction of a Tate frame matches the level structure, up to an
 automorphism of the residue field** (PROVEN 2026-07-26 by assembly over
