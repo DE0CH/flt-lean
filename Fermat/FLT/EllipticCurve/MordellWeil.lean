@@ -67,6 +67,34 @@ development forbids free-floating code:
 
 Both are recoverable from git history at this file's parent commit.
 
+## SECOND RESTRUCTURE, 2026-07-26 — level `14` collapses the same way, and
+## the Mordell–Weil leaf for `14a4` is GONE
+
+`14a4` arrived carrying three leaves — `curve14a4_isTorsion` (rank `0`),
+`curve14a4_fg` (Mordell–Weil for this one curve) and `curve14a4_points` (the
+enumeration, *given* finiteness). Two of them are now closed, and the third
+was not restated but simply became unnecessary.
+
+The observation, which is the `11a3` collapse run through reduction instead of
+through an unconditional restatement: **torsion injects into the reduction at a
+good odd prime**. `Δ(14a4) = −28`, so `3` is a prime of good reduction, and
+`#14a4(𝔽₃) = 6` by exhaustive check over nine pairs. Hence rank `0` alone —
+"`14a4(ℚ)` is torsion" — gives both that `14a4(ℚ)` is FINITE and that it has at
+most `6` elements. Six are exhibited, so the enumeration follows.
+
+So `curve14a4_fg` was DELETED (recoverable from this file's parent commit):
+finite generation was only ever the route from rank `0` to finiteness, and
+reduction supplies that route without it. `curve14a4_finite`,
+`curve14a4_natCard_le` and `curve14a4_points` are PROVEN, and
+`curve14a4_isTorsion` is the single surviving leaf at level `14` — exactly
+parallel to `curve11a3_rational_points` at level `11`.
+
+The brick itself lives in `Fermat/FLT/EllipticCurve/TorsionReduction.lean` as
+`WeierstrassCurve.exists_injective_torsion_toReduction`, and is shared with
+`MazurTorsion.lean`'s `no_rational_point_of_isogenyPrime_jInvariant`; see that
+module's docstring for why one auxiliary prime settles the whole `X₀` table at
+`p ∈ {37, 43, 67, 163}` and supersedes Olson's theorem.
+
 ## What is PROVEN here and what is left
 
 PROVEN:
@@ -81,9 +109,15 @@ PROVEN:
   hypothesis is retained (and supplied there by `curve11a3_finite`) so that
   the consumer's call site does not have to change.
 
-THE ONE LEAF:
+* `WeierstrassCurve.curve14a4Int` and the reduction data at `3`
+  (`curve14a4Int_Δ = −28`, `curve14a4_reduction_natCard = 6`), then
+  `curve14a4_finite`, `curve14a4_natCard_le` and `curve14a4_points` — see the
+  SECOND RESTRUCTURE note above.
+
+THE TWO LEAVES, one per level, each exactly "rank `0` for one explicit curve":
 * `WeierstrassCurve.curve11a3_rational_points` — the four affine rational
   points of `y² + y = x³ − x²`, unconditionally.
+* `WeierstrassCurve.curve14a4_isTorsion` — `14a4(ℚ)` is torsion.
 
 The `X_1(11)` plane model itself — the birational passage between
 `tateNormalForm b c` with an order-`11` origin and a rational point of
@@ -100,6 +134,7 @@ module reachable from the root theorem.
 
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 public import Mathlib.GroupTheory.FiniteAbelian.Basic
+public import Fermat.FLT.EllipticCurve.TorsionReduction
 
 @[expose] public section
 
@@ -281,55 +316,144 @@ descent is also available): both descent images are trivial, so the rank is
 searcher). Kubert, "Universal bounds on the torsion of elliptic curves" (Proc.
 LMS 33, 1976); Ligozat; subsumed in Mazur 1977, Thm 8.
 
-Stated as `AddMonoid.IsTorsion` rather than as `rank = 0` for the same reason
-as `curve11a3_isTorsion`: there is no rank function here to state the latter
-against, and this form is exactly what `curve14a4_finite` consumes. -/
+Stated as `AddMonoid.IsTorsion` rather than as `rank = 0` because there is no
+rank function here to state the latter against, and this form is exactly what
+the reduction brick consumes.
+
+**THIS IS NOW THE ONLY LEAF AT LEVEL `14`** (2026-07-26). It used to sit beside
+`curve14a4_fg` (Mordell–Weil for this curve) and `curve14a4_points` (the
+enumeration, given finiteness); both are gone, because reduction at the good
+prime `3` embeds the torsion of `14a4(ℚ)` into the six-element group
+`14a4(𝔽₃)`. Rank `0` therefore yields finiteness AND the enumeration at once,
+with no Mordell–Weil input at all — the `11a3`-shaped collapse that
+`curve14a4_fg`'s own docstring asked for, carried out through
+`Fermat/FLT/EllipticCurve/TorsionReduction.lean` rather than through an
+unconditional restatement. See `curve14a4_natCard_le` below. -/
 theorem curve14a4_isTorsion : AddMonoid.IsTorsion curve14a4.toAffine.Point :=
   sorry
 
-/-- **`14a4(ℚ)` is finitely generated** (sorry leaf, opened at integration
-2026-07-26): the Mordell–Weil theorem for this ONE curve.
+/-- The integral model of `14a4`, i.e. the same Weierstrass equation with its
+coefficients read in `ℤ`. Reduction is coefficientwise from here, so the
+brick's hypotheses are checked on this model and not on `curve14a4`. -/
+def curve14a4Int : WeierstrassCurve ℤ := ⟨1, 0, 1, -1, 0⟩
 
-It exists because two branches merged cleanly into a tree that did not
-build. `flt-lean-154` deleted the general leaf `mordellWeil`
-(`AddGroup.FG E.toAffine.Point` for every `[E.IsElliptic]`), correctly, on
-the ground that `curve11a3_finite` no longer needed it — that curve's
-finiteness is now proven outright from the unconditional enumeration
-`curve11a3_rational_points`. Concurrently `flt-lean-139` added `14a4` as a
-NEW consumer of `mordellWeil`, having been written against a tree where it
-still existed.
+/-- `curve14a4` is the base change to `ℚ` of its integral model. -/
+theorem curve14a4Int_map_rat : curve14a4Int.map (Int.castRingHom ℚ) = curve14a4 := by
+  simp only [curve14a4Int, curve14a4, WeierstrassCurve.map]
+  norm_num
 
-Stated for the single curve rather than reinstating the general theorem,
-because that is all `14a4` needs and the general statement is an enormous
-citation to carry for one use. The `11a3`-shaped repair — an UNCONDITIONAL
-enumeration of `14a4(ℚ)`, from which finiteness follows with no
-Mordell–Weil input at all — would remove this leaf entirely, and is the
-right thing for an owner of this file to do. It is deliberately not done
-here: `curve14a4_points` below states its enumeration WITH `Finite` as a
-hypothesis, so it cannot supply finiteness without being restated, and
-restating another owner's leaf is not a merge resolution. -/
-theorem curve14a4_fg : AddGroup.FG curve14a4.toAffine.Point :=
-  sorry
+/-- `Δ(14a4) = −28` over `ℤ`, computed rather than asserted; in particular
+`3 ∤ Δ`, so `14a4` has good reduction at `3`. -/
+theorem curve14a4Int_Δ : curve14a4Int.Δ = -28 := by
+  simp only [curve14a4Int, WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+  norm_num
 
-/-- **`14a4(ℚ)` is finite** (PROVEN 2026-07-26 from the two leaves above).
+/-- The reduction of `14a4` mod `3` is the same tuple read in `ZMod 3`. -/
+theorem curve14a4Int_map_zmod3 :
+    curve14a4Int.map (Int.castRingHom (ZMod 3)) = ⟨1, 0, 1, -1, 0⟩ := by
+  simp only [curve14a4Int, WeierstrassCurve.map]
+  norm_num
 
-Same shape as `curve11a3_finite`: finitely generated (Mordell–Weil) plus
-torsion (rank `0`) gives finite, and neither leaf gives finiteness alone. -/
+/-- The five affine points of `14a4` over `𝔽₃`, by exhaustive check: the curve
+`y² + xy + y = x³ − x` over `𝔽₃` meets `x = 0` in `y ∈ {0, 2}`, `x = 1` in
+`y ∈ {0, 1}` and `x = 2` in `y = 0`. -/
+theorem curve14a4_reduction_nonsingular_iff (x y : ZMod 3) :
+    (⟨1, 0, 1, -1, 0⟩ : WeierstrassCurve (ZMod 3)).toAffine.Nonsingular x y ↔
+      (x, y) ∈ ({(0, 0), (0, 2), (1, 0), (1, 1), (2, 0)} : Finset (ZMod 3 × ZMod 3)) := by
+  rw [WeierstrassCurve.Affine.nonsingular_iff, WeierstrassCurve.Affine.equation_iff]
+  revert x y
+  decide
+
+/-- **`#14a4(𝔽₃) = 6`** — five affine points and the point at infinity. This is
+the number that bounds `14a4(ℚ)`, and it is exactly `#(ℤ/6)`. -/
+theorem curve14a4_reduction_natCard :
+    Nat.card (⟨1, 0, 1, -1, 0⟩ : WeierstrassCurve (ZMod 3)).toAffine.Point = 6 := by
+  rw [WeierstrassCurve.natCard_affine_point_eq _
+    (WeierstrassCurve.finite_affine_point_of_finite _)]
+  have h : Nat.card {xy : ZMod 3 × ZMod 3 //
+      (⟨1, 0, 1, -1, 0⟩ : WeierstrassCurve (ZMod 3)).toAffine.Nonsingular xy.fst xy.snd} = 5 := by
+    have e : {xy : ZMod 3 × ZMod 3 //
+        (⟨1, 0, 1, -1, 0⟩ : WeierstrassCurve (ZMod 3)).toAffine.Nonsingular xy.fst xy.snd} ≃
+        {xy : ZMod 3 × ZMod 3 //
+          xy ∈ ({(0, 0), (0, 2), (1, 0), (1, 1), (2, 0)} : Finset (ZMod 3 × ZMod 3))} :=
+      Equiv.subtypeEquivRight fun xy => curve14a4_reduction_nonsingular_iff xy.1 xy.2
+    rw [Nat.card_congr e]
+    simp
+    decide
+  rw [h]
+
+/-- **Rank `0` bounds `14a4(ℚ)` by `#14a4(𝔽₃) = 6`** (PROVEN 2026-07-26 over
+`WeierstrassCurve.exists_injective_torsion_toReduction`).
+
+Stated for a variable `W` with `hW` pinning it to the integral model's base
+change, so that `subst` — rather than a rewrite under a binder whose motive
+mentions the `AddCommGroup` instance — carries the identification. That is the
+standard remedy in this tree for an instance path that prints identically and
+refuses to unify. -/
+theorem curve14a4_finite_and_natCard_le {W : WeierstrassCurve ℚ}
+    (hW : W = curve14a4Int.map (Int.castRingHom ℚ))
+    (htor : AddMonoid.IsTorsion W.toAffine.Point) :
+    Finite W.toAffine.Point ∧ Nat.card W.toAffine.Point ≤ 6 := by
+  subst hW
+  haveI : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+  obtain ⟨g, hg⟩ := WeierstrassCurve.exists_injective_torsion_toReduction
+    (ℓ := 3) (by norm_num) curve14a4Int (by rw [curve14a4Int_Δ]; decide)
+  haveI : Finite (curve14a4Int.map (Int.castRingHom (ZMod 3))).toAffine.Point :=
+    WeierstrassCurve.finite_affine_point_of_finite _
+  have hcard : Nat.card (curve14a4Int.map (Int.castRingHom (ZMod 3))).toAffine.Point = 6 := by
+    rw [curve14a4Int_map_zmod3]
+    exact curve14a4_reduction_natCard
+  have hf : Function.Injective
+      (fun P : (curve14a4Int.map (Int.castRingHom ℚ)).toAffine.Point => g ⟨P, htor P⟩) :=
+    fun _ _ hab => congrArg Subtype.val (hg hab)
+  exact ⟨Finite.of_injective _ hf,
+    le_trans (Nat.card_le_card_of_injective _ hf) hcard.le⟩
+
+/-- **`14a4(ℚ)` is finite** (PROVEN 2026-07-26 from rank `0` alone).
+
+No Mordell–Weil input: the torsion of `14a4(ℚ)` injects into `14a4(𝔽₃)` at the
+good prime `3`, and `14a4(ℚ)` is all torsion, so it embeds in a six-element
+group. The leaf `curve14a4_fg` that used to supply finite generation here was
+DELETED — it is recoverable from this file's parent commit. -/
 theorem curve14a4_finite : Finite curve14a4.toAffine.Point :=
-  haveI : AddGroup.FG curve14a4.toAffine.Point := curve14a4_fg
-  AddCommGroup.finite_of_fg_torsion _ curve14a4_isTorsion
+  (curve14a4_finite_and_natCard_le curve14a4Int_map_rat.symm curve14a4_isTorsion).1
 
-/-- **The five affine rational points of `14a4`** (sorry leaf, 2026-07-26):
-given that `14a4(ℚ)` is finite, its affine rational points are exactly
-`(1,−2)`, `(0,−1)`, `(−1,0)`, `(0,0)`, `(1,0)`. Together with the point at
-infinity these are the six elements of `14a4(ℚ) ≅ ℤ/6`.
+/-- **`#14a4(ℚ) ≤ 6`** (PROVEN 2026-07-26): the count that makes the
+enumeration below complete. -/
+theorem curve14a4_natCard_le : Nat.card curve14a4.toAffine.Point ≤ 6 :=
+  (curve14a4_finite_and_natCard_le curve14a4Int_map_rat.symm curve14a4_isTorsion).2
 
-The finiteness hypothesis is what makes this a finite computation rather than
-a Diophantine problem, and it is supplied by `curve14a4_finite` — so the
-Mordell–Weil leaf is load-bearing here and not decorative. With finiteness in
-hand the group is its own torsion subgroup, which injects into `14a4(𝔽_p)` for
-any prime `p ∤ 14` of good reduction; the five points listed are visibly on the
-curve and distinct.
+/-- The five listed pairs really are nonsingular points of `14a4`. -/
+theorem curve14a4_nonsingular_of_mem (x y : ℚ)
+    (hx : (x, y) = ((1 : ℚ), (-2 : ℚ)) ∨ (x, y) = ((0 : ℚ), (-1 : ℚ)) ∨
+      (x, y) = ((-1 : ℚ), (0 : ℚ)) ∨ (x, y) = ((0 : ℚ), (0 : ℚ)) ∨
+      (x, y) = ((1 : ℚ), (0 : ℚ))) :
+    curve14a4.toAffine.Nonsingular x y := by
+  rw [WeierstrassCurve.Affine.nonsingular_iff, WeierstrassCurve.Affine.equation_iff]
+  simp only [curve14a4]
+  rcases hx with h | h | h | h | h <;>
+    (rw [Prod.mk.injEq] at h; obtain ⟨rfl, rfl⟩ := h) <;> norm_num
+
+/-- **The five affine rational points of `14a4`** (PROVEN 2026-07-26 from rank
+`0` and reduction at `3`): the affine rational points of `y² + xy + y = x³ − x`
+are exactly `(1,−2)`, `(0,−1)`, `(−1,0)`, `(0,0)`, `(1,0)`. Together with the
+point at infinity these are the six elements of `14a4(ℚ) ≅ ℤ/6`.
+
+THE PROOF, which is the argument the old docstring described as available and
+which is now carried out. `14a4(ℚ)` is torsion (`curve14a4_isTorsion`, the one
+remaining leaf at this level); torsion injects into `14a4(𝔽₃)` at the good
+prime `3` (`WeierstrassCurve.exists_injective_torsion_toReduction`, with
+`Δ = −28` and `3 ∤ 28`); and `#14a4(𝔽₃) = 6` by exhaustive check
+(`curve14a4_reduction_natCard`). So `#14a4(ℚ) ≤ 6`. The five pairs listed are
+nonsingular points and pairwise distinct, so with the point at infinity they
+already exhaust the group — a sixth affine point would make seven.
+
+The `Finite` hypothesis is retained in the signature, now genuinely unused
+(`_hfin`), so that the call site `x1_fourteen_no_rational_point` in
+`Fermat/FLT/FreyCurve/TateNormalForm.lean` does not have to change; that is
+also what keeps `curve14a4_finite` consumed rather than free-floating. A future
+owner is free to drop it and adjust the one call site.
 
 `MordellWeilGroup` returns `ℤ/6` and lists exactly these five affine points
 plus `(0 : 1 : 0)` (Magma 2026-07-26, untrusted searcher). Note the
@@ -343,10 +467,43 @@ input to `x1_fourteen_no_rational_point` in
 map from the plane sextic and checks that each of the three `x`-values pulls
 back to `d ∈ {0, 1}` — the two excluded degenerate loci. -/
 theorem curve14a4_points (_hfin : Finite curve14a4.toAffine.Point) (x y : ℚ)
-    (_h : curve14a4.toAffine.Nonsingular x y) :
+    (h : curve14a4.toAffine.Nonsingular x y) :
     (x, y) = ((1 : ℚ), (-2 : ℚ)) ∨ (x, y) = ((0 : ℚ), (-1 : ℚ)) ∨
       (x, y) = ((-1 : ℚ), (0 : ℚ)) ∨ (x, y) = ((0 : ℚ), (0 : ℚ)) ∨
-      (x, y) = ((1 : ℚ), (0 : ℚ)) :=
-  sorry
+      (x, y) = ((1 : ℚ), (0 : ℚ)) := by
+  classical
+  by_contra hcon
+  simp only [not_or] at hcon
+  obtain ⟨n1, n2, n3, n4, n5⟩ := hcon
+  haveI := curve14a4_finite
+  haveI := curve14a4.finite_nonsingular_subtype_of_finite_point curve14a4_finite
+  haveI : Fintype {xy : ℚ × ℚ // curve14a4.toAffine.Nonsingular xy.fst xy.snd} :=
+    Fintype.ofFinite _
+  have hsub : Nat.card {xy : ℚ × ℚ // curve14a4.toAffine.Nonsingular xy.fst xy.snd} + 1 ≤ 6 := by
+    rw [← WeierstrassCurve.natCard_affine_point_eq _ curve14a4_finite]
+    exact curve14a4_natCard_le
+  have h1 := curve14a4_nonsingular_of_mem 1 (-2) (by tauto)
+  have h2 := curve14a4_nonsingular_of_mem 0 (-1) (by tauto)
+  have h3 := curve14a4_nonsingular_of_mem (-1) 0 (by tauto)
+  have h4 := curve14a4_nonsingular_of_mem 0 0 (by tauto)
+  have h5 := curve14a4_nonsingular_of_mem 1 0 (by tauto)
+  have hnd : ([⟨(1, -2), h1⟩, ⟨(0, -1), h2⟩, ⟨(-1, 0), h3⟩, ⟨(0, 0), h4⟩, ⟨(1, 0), h5⟩,
+      ⟨(x, y), h⟩] :
+      List {xy : ℚ × ℚ // curve14a4.toAffine.Nonsingular xy.fst xy.snd}).Nodup := by
+    refine List.Nodup.of_map Subtype.val ?_
+    simp only [List.map_cons, List.map_nil, List.nodup_cons, List.mem_cons, List.not_mem_nil,
+      or_false, List.nodup_nil, and_true, not_or, not_false_eq_true]
+    refine ⟨⟨?_, ?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_, ?_⟩, ⟨?_, ?_, ?_⟩, ⟨?_, ?_⟩, ?_⟩ <;>
+      first
+        | exact Ne.symm n1
+        | exact Ne.symm n2
+        | exact Ne.symm n3
+        | exact Ne.symm n4
+        | exact Ne.symm n5
+        | norm_num
+  have hle := hnd.length_le_card
+  rw [← Nat.card_eq_fintype_card] at hle
+  simp only [List.length_cons, List.length_nil] at hle
+  omega
 
 end WeierstrassCurve

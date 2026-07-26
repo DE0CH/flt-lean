@@ -10149,14 +10149,25 @@ congruence). Two refinements make the degrees writable:
   `exists_quotCharacter`, `det_eq_subCharacter_mul_quotCharacter`), so this is
   the route that avoids writing any degree-81 polynomial down.
 
-The genuinely missing input is the same one recorded throughout this section —
-the CM half, i.e. Olson's theorem (*Hasse invariants and anomalous primes for
-elliptic curves with complex multiplication*, J. Number Theory 8, 1976: the
-torsion of a CM elliptic curve over `ℚ` is one of `1, ℤ/2, ℤ/3, ℤ/4, ℤ/6,
-ℤ/2 × ℤ/2`) for `43, 67, 163`, and Mazur–Vélu's pair of curves for `37`.
-Olson PREDATES Mazur and is elementary, which is the point of routing through
-`X_0` rather than `X_1`: it exchanges a genus-`1027` citation for one that
-does not need modular curves at all.
+RESOLVED 2026-07-26, AND BOTH ROUTES ABOVE ARE SUPERSEDED. The input recorded
+throughout this section as missing was the CM half — Olson's theorem (*Hasse
+invariants and anomalous primes for elliptic curves with complex
+multiplication*, J. Number Theory 8, 1976: the torsion of a CM elliptic curve
+over `ℚ` is one of `1, ℤ/2, ℤ/3, ℤ/4, ℤ/6, ℤ/2 × ℤ/2`) for `43, 67, 163`, plus
+Mazur–Vélu's pair of curves for `37`. **None of that is needed.** All five
+entries fall to one auxiliary prime, with no CM/non-CM case split, no `a_ℓ`,
+and no polynomial of any degree: every one of the five `j`-values is an
+INTEGER, hence `5`-integral, hence `E` has potentially good reduction at `5`;
+a rational point of order `p` then survives reduction into some elliptic curve
+over `𝔽₅`; and no curve over `𝔽₅` has as many as `37` points, since its affine
+points sit inside `𝔽₅ × 𝔽₅` and `5·5 + 1 = 26`. The `X_0` table is still what
+makes the argument possible — `ℓ`-integrality of `j` is exactly what it
+supplies, and without it the statement would be the false "no curve over `ℚ`
+has a point of order `37`" — so routing through `X_0` rather than `X_1` was the
+right cut; it just turns out to exchange the genus-`1027` citation for
+reduction theory rather than for Olson. The brick is
+`WeierstrassCurve.exists_reduction_dvd_addOrderOf_of_jIntegral` in
+`Fermat/FLT/EllipticCurve/TorsionReduction.lean`, shared with level `14`.
 -/
 
 /-- **The five `j`-invariants at the four isogeny primes `≥ 37` carry no
@@ -10177,22 +10188,58 @@ is there, but it is not pointwise rational. So the leaf is the passage from
 inheriting it.
 
 Three of the five values are the CM `j`-invariants of the class-number-one
-discriminants `−43, −67, −163`, where the statement is a special case of
-Olson's theorem on the torsion of CM elliptic curves over `ℚ`; the two
-level-`37` values are the non-CM Mazur–Vélu pair. The section note above
-records the full attack route (twist to a fixed model, then the degree-`(p−1)/2`
-isogeny-kernel factor, or equivalently the isogeny character), and why the
-split by technique into a CM half and a level-`37` half was left to whoever
-attacks it rather than being made here — it would raise the leaf count from
-one back to two for no immediate gain. -/
+discriminants `−43, −67, −163`, where the statement used to be cited as a
+special case of Olson's theorem on the torsion of CM elliptic curves over `ℚ`;
+the two level-`37` values are the non-CM Mazur–Vélu pair.
+
+**PROVEN 2026-07-26, AND NEITHER OLSON NOR THE DEGREE-`81` KERNEL FACTOR IS
+NEEDED.** The section note above records two attack routes — twist to a fixed
+model and hunt for a rational root of the degree-`(p−1)/2` isogeny-kernel
+factor, or run the isogeny character — and both are superseded. The single
+input that settles all five entries at once is REDUCTION, at one auxiliary
+prime, with no case split between the CM and the non-CM entries and no
+computation of any `a_ℓ`:
+
+1. Every one of the five `j`-values is an INTEGER, so `v₅(j) ≥ 0` and `E` has
+   potentially good reduction at `5` — whatever quadratic twist `E` happens to
+   be, and whether or not `5` divides its conductor.
+2. A rational point of order `p` therefore survives reduction into an elliptic
+   curve over `𝔽₅` (`WeierstrassCurve.exists_reduction_dvd_addOrderOf_of_jIntegral`,
+   in `Fermat/FLT/EllipticCurve/TorsionReduction.lean`): the kernel of
+   reduction is pro-`5`, and `p ≠ 5`. So `p ∣ #W(𝔽₅)` for some `W/𝔽₅`.
+3. But `#W(𝔽₅) ≤ 5·5 + 1 = 26` for *every* Weierstrass curve over `𝔽₅` — the
+   affine points sit inside `𝔽₅ × 𝔽₅` — and `#W(𝔽₅) ≥ 1`. So `p ≤ 26`, against
+   `p ≥ 37`.
+
+Step 3 is the crude bound, not Hasse's; Hasse would give `≤ 11` and is not in
+mathlib. Nothing here is special to `5` beyond `(#𝔽_ℓ)² + 1 < 37`, and nothing
+is special to the five `j`-values beyond their being `ℓ`-integral — which is
+the one place the `X₀` table is used, and the reason this proof needs the table
+at all rather than proving the false statement "no curve over `ℚ` has a point
+of order `37`". -/
 theorem WeierstrassCurve.no_rational_point_of_isogenyPrime_jInvariant
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ}
     (Q : (E⁄ℚ).Point) (hQ : addOrderOf Q = p)
     (hj : (p, E.j) ∈ ([(37, -9317), (37, -162677523113838677),
         (43, -884736000), (67, -147197952000),
         (163, -262537412640768000)] : List (ℕ × ℚ))) :
-    False :=
-  sorry
+    False := by
+  haveI : Fact (Nat.Prime 5) := ⟨by norm_num⟩
+  have key : p.Prime ∧ 37 ≤ p ∧ E.j.den = 1 := by
+    simp only [List.mem_cons, List.not_mem_nil, or_false, Prod.mk.injEq] at hj
+    rcases hj with ⟨hp, hjv⟩ | ⟨hp, hjv⟩ | ⟨hp, hjv⟩ | ⟨hp, hjv⟩ | ⟨hp, hjv⟩ <;> subst hp <;>
+      exact ⟨by norm_num, by norm_num, by rw [hjv]; norm_num⟩
+  obtain ⟨hp, h37, hden⟩ := key
+  have hjd : ¬ ((5 : ℕ) ∣ E.j.den) := by rw [hden]; decide
+  have hne5 : p ≠ 5 := by omega
+  obtain ⟨W, -, hdvd⟩ := WeierstrassCurve.exists_reduction_dvd_addOrderOf_of_jIntegral
+    E (ℓ := 5) (by norm_num) hp hne5 hjd Q hQ
+  have hle : Nat.card W.toAffine.Point ≤ 5 * 5 + 1 := by
+    have h := W.natCard_affine_point_le
+    rwa [Nat.card_eq_fintype_card (α := ZMod 5), ZMod.card] at h
+  have hpos : 0 < Nat.card W.toAffine.Point := W.natCard_affine_point_pos
+  have := Nat.le_of_dvd hpos hdvd
+  omega
 
 /-- **No rational point of order `p` for `p ∈ {37, 43, 67, 163}`** (PROVEN
 2026-07-26): assembly of the three steps in the section note above — the
@@ -10221,7 +10268,8 @@ theorem WeierstrassCurve.no_torsion_order_of_isogenyPrime_ge_thirtySeven
   rcases hp with rfl | rfl | rfl | rfl <;> norm_num at hj ⊢ <;> tauto
 
 /-- **No rational point of order `37`** (PROVEN 2026-07-26 over the `X_0`
-table and the single leaf `no_rational_point_of_isogenyPrime_jInvariant` —
+table and the single shared node `no_rational_point_of_isogenyPrime_jInvariant`
+(PROVEN 2026-07-26) —
 this was a bare `sorry` citing `X_1(37)`, genus `40`, Mazur 1977 Thm 7).
 `X_1(37)` has genus `40` and no non-cuspidal rational point.
 
@@ -10303,7 +10351,8 @@ theorem WeierstrassCurve.no_torsion_order_37 (E : WeierstrassCurve ℚ)
       @WeierstrassCurve.tateNormalForm_origin_order_ne_37 b c hell h00) E Q
 
 /-- **No rational point of order `43`** (PROVEN 2026-07-26 over the `X_0`
-table and the single leaf `no_rational_point_of_isogenyPrime_jInvariant` —
+table and the single shared node `no_rational_point_of_isogenyPrime_jInvariant`
+(PROVEN 2026-07-26) —
 this was a bare `sorry` citing `X_1(43)`, genus `57`, Mazur 1977 Thm 7).
 `X_1(43)` has genus `57` and no non-cuspidal rational point.
 
@@ -10315,8 +10364,8 @@ alone is no contradiction. What IS available, and what this node now
 consumes, is the finer `X_0` statement
 `jInvariant_mem_of_isogenyPrime_classNumberOne`, which pins `j(E)` to
 that single CM value; the residue is the shared leaf
-`no_rational_point_of_isogenyPrime_jInvariant`, i.e. Olson's theorem at
-this discriminant. See the section note above for the full cut.
+`no_rational_point_of_isogenyPrime_jInvariant`, PROVEN 2026-07-26 by
+reduction at `5` rather than by Olson's theorem at this discriminant. See the section note above for the full cut.
 STATED IN TATE COORDINATES (2026-07-25). The general form of this
 level — no rational point of order `43` on ANY elliptic curve over
 `ℚ` — is `no_torsion_order_43` just below, and is PROVEN from this
@@ -10349,7 +10398,8 @@ theorem WeierstrassCurve.no_torsion_order_43 (E : WeierstrassCurve ℚ)
       @WeierstrassCurve.tateNormalForm_origin_order_ne_43 b c hell h00) E Q
 
 /-- **No rational point of order `67`** (PROVEN 2026-07-26 over the `X_0`
-table and the single leaf `no_rational_point_of_isogenyPrime_jInvariant` —
+table and the single shared node `no_rational_point_of_isogenyPrime_jInvariant`
+(PROVEN 2026-07-26) —
 this was a bare `sorry` citing `X_1(67)`, genus `155`, Mazur 1977 Thm 7).
 `X_1(67)` has genus `155` and no non-cuspidal rational point.
 
@@ -10361,8 +10411,8 @@ alone is no contradiction. What IS available, and what this node now
 consumes, is the finer `X_0` statement
 `jInvariant_mem_of_isogenyPrime_classNumberOne`, which pins `j(E)` to
 that single CM value; the residue is the shared leaf
-`no_rational_point_of_isogenyPrime_jInvariant`, i.e. Olson's theorem at
-this discriminant. See the section note above for the full cut.
+`no_rational_point_of_isogenyPrime_jInvariant`, PROVEN 2026-07-26 by
+reduction at `5` rather than by Olson's theorem at this discriminant. See the section note above for the full cut.
 STATED IN TATE COORDINATES (2026-07-25). The general form of this
 level — no rational point of order `67` on ANY elliptic curve over
 `ℚ` — is `no_torsion_order_67` just below, and is PROVEN from this
@@ -10395,7 +10445,8 @@ theorem WeierstrassCurve.no_torsion_order_67 (E : WeierstrassCurve ℚ)
       @WeierstrassCurve.tateNormalForm_origin_order_ne_67 b c hell h00) E Q
 
 /-- **No rational point of order `163`** (PROVEN 2026-07-26 over the `X_0`
-table and the single leaf `no_rational_point_of_isogenyPrime_jInvariant` —
+table and the single shared node `no_rational_point_of_isogenyPrime_jInvariant`
+(PROVEN 2026-07-26) —
 this was a bare `sorry` citing `X_1(163)`, genus `1027`, Mazur 1977 Thm 7).
 `X_1(163)` has genus `1027` and no non-cuspidal rational point.
 
