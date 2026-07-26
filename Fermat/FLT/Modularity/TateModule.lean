@@ -1052,12 +1052,20 @@ Step 3 is where `hπ2` is used, and it is the only place: it is what
 makes `π` a UNIFORMIZER at `I` rather than merely an element of `I`.
 The hypothesis is not decorative — for `π ∈ I²` the statement is FALSE
 already at `n = 1`, since then `π·z = 0` for every `z ∈ A[I²]` while
-`A[I] ≠ 0` on any abelian variety. -/
+`A[I] ≠ 0` on any abelian variety.
+
+(2026-07-26: the base field `F` carried an unused `[NumberField F]`
+instance binder, which has been dropped — nothing in the four steps
+above looks at `F` beyond `Field F`, and `exists_nsmul_eq_geomFibrePt`
+itself is stated for a bare field. The generalization is what lets
+`exists_tatePt_val_one_eq`, whose `F` is only a field, consume this
+lemma instead of duplicating its proof. Instance binders are inferred,
+so no call site changes.) -/
 theorem exists_mem_torsion_act_uniformizer_eq
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D]
     (m : Mult ab (NumberField.RingOfIntegers D))
-    {F : Type u} [Field F] [NumberField F]
+    {F : Type u} [Field F]
     (x : Spec (CommRingCat.of F) ⟶ S)
     (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
     (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
@@ -2390,9 +2398,13 @@ two geometric leaves, and the Noether–Skolem step — the one that needs
 statement about a Galois representation and a comparison map, with no
 scheme, no `Mult` and no `TatePt` in sight.
 
-* `exists_tatePt_val_one_eq` — the reduction `T ↠ A[I]` is SURJECTIVE
-  (divisibility of the group of geometric points of an abelian variety
-  over an algebraically closed field of characteristic zero).
+* `exists_tatePt_val_one_eq` — the reduction `T ↠ A[I]` is SURJECTIVE.
+  **PROVEN** (2026-07-26) by countable dependent choice up the tower over
+  `exists_mem_torsion_act_uniformizer_eq`, which is itself proven over the
+  single geometric leaf `exists_nsmul_eq_geomFibrePt` (divisibility of the
+  group of geometric points of an abelian variety). It needed no new
+  geometric input: the divisibility this cut was expected to introduce was
+  already present in the file, as the input to the levelwise tower.
 * `exists_tatePt_act_eq_of_val_one_eq_zero` — its KERNEL is `π · T`
   (a shift of the inverse system, plus `I ^ n = (π ^ n) + I ^ (n+1)`,
   which holds because `π` generates the one-dimensional `𝒪_D/I`-vector
@@ -2406,24 +2418,41 @@ composed with the level structure `e` is exactly the hypothesis of the
 third. -/
 
 /-- **Every `I`-torsion point of the geometric fibre lifts to the Tate
-module** (sorry node — abelian varieties: divisibility of `A(F̄)`;
-Mumford *Abelian Varieties* §6, Silverman *AEC* III.4/III.7).
+module** (PROVEN 2026-07-26 — a countable dependent choice up the tower,
+over the already-proven `exists_mem_torsion_act_uniformizer_eq`; no new
+geometric input).
 
-Multiplication by a nonzero `π ∈ 𝒪_D` is an isogeny of the geometric
-fibre `A_x`, hence surjective on `F̄`-points (`F̄` is algebraically closed
-of characteristic zero), so the inverse system
+The inverse system
 
   `⋯ --·π--> A[I³] --·π--> A[I²] --·π--> A[I]`
 
-has surjective transition maps and its limit `TatePt m x I π` surjects
-onto its first stage `A[I]`. This is the ONLY place where surjectivity
-of the reduction is used; the hypotheses `hI`, `hπ`, `hπ2` are what make
-`π` a genuine uniformizer at `I` (with `π = 0` the limit is zero and the
-statement is false), and `hπ2` is what makes the `n`-th stage of the
-lifting stay inside `A[I ^ n]`.
+has SURJECTIVE transition maps — that is exactly
+`exists_mem_torsion_act_uniformizer_eq`, which in turn rests on the one
+geometric leaf `exists_nsmul_eq_geomFibrePt` (divisibility of `A(F̄)`,
+Mumford *Abelian Varieties* §6, Silverman *AEC* III.4/III.7) — so its
+limit `TatePt m x I π` surjects onto its first stage `A[I]`. This is the
+ONLY place where surjectivity of the reduction is used.
 
-Note the indexing convention of `TatePt`: `t.1 0 = 0` and `t.1 1 ∈ A[I]`,
-so `t.1 1` is the reduction. -/
+THE ARGUMENT. Choice on the transition surjectivity gives a step
+function `step n : A[Iⁿ⁺¹] → A[Iⁿ⁺²]` with `π · step n w = w`, on the
+SUBTYPES rather than on `GeomFibrePt` — carrying the torsion condition
+in the type is what makes the recursion dependent-typed and removes any
+need to re-establish membership afterwards. Iterating `step` from the
+given `y ∈ A[I] = A[I¹]` by `Nat.rec` produces `u : (n : ℕ) → A[Iⁿ⁺¹]`
+with `u 0 = y` and `π · u (n+1) = u n`; the point of `TatePt` is then
+`u` shifted up by one with `0` inserted at index `0`.
+
+The two defining conditions of `TatePt` hold degenerately at `0` and by
+construction above it. At index `0`: `A[I⁰] = A[⊤] = 0` contains `0`,
+and the relation `π · t.1 1 = t.1 0` reads `π · y = 0`, which is just
+`hπ : π ∈ I` against `hy : y ∈ A[I]`. Note the indexing convention of
+`TatePt`: `t.1 0 = 0` and `t.1 1 ∈ A[I]`, so `t.1 1` is the reduction.
+
+The hypotheses `hI`, `hπ`, `hπ2` are consumed entirely inside
+`exists_mem_torsion_act_uniformizer_eq`, where they are what make `π` a
+genuine uniformizer at `I`; `hπ2` in particular is what makes the `n`-th
+stage of the lifting stay inside `A[Iⁿ]`, and with `π = 0` (which `hπ2`
+forbids) the limit is zero and the statement is false. -/
 theorem exists_tatePt_val_one_eq
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D]
@@ -2433,8 +2462,46 @@ theorem exists_tatePt_val_one_eq
     (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
     (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
     (y : GeomFibrePt f x) (hy : y ∈ (m.torsion x I).1) :
-    ∃ t : TatePt m x I π, t.1 1 = y :=
-  sorry
+    ∃ t : TatePt m x I π, t.1 1 = y := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+  letI : Module (NumberField.RingOfIntegers D) (GeomFibrePt f x) :=
+    m.module (specAlgClos F ≫ x)
+  have hy1 : y ∈ (m.torsion x (I ^ 1)).1 := by rw [pow_one]; exact hy
+  -- ### One step of the tower, as a choosable relation on the torsion stages
+  have key : ∀ (n : ℕ) (w : {w : GeomFibrePt f x // w ∈ (m.torsion x (I ^ (n + 1))).1}),
+      ∃ z : {w : GeomFibrePt f x // w ∈ (m.torsion x (I ^ (n + 1 + 1))).1},
+        m.act π z.1 = w.1 := by
+    intro n w
+    obtain ⟨z, hz, hzeq⟩ :=
+      exists_mem_torsion_act_uniformizer_eq m x I hI π hπ hπ2 (n + 1) w.1 w.2
+    exact ⟨⟨z, hz⟩, hzeq⟩
+  choose step hstep using key
+  -- ### The tower itself, by dependent recursion from `y` at level `1`
+  obtain ⟨u, hu0, hurec⟩ :
+      ∃ u : (n : ℕ) → {w : GeomFibrePt f x // w ∈ (m.torsion x (I ^ (n + 1))).1},
+        (u 0).1 = y ∧ ∀ n, m.act π (u (n + 1)).1 = (u n).1 :=
+    ⟨fun n => Nat.rec
+      (motive := fun n => {w : GeomFibrePt f x // w ∈ (m.torsion x (I ^ (n + 1))).1})
+      ⟨y, hy1⟩ step n, rfl, fun n => hstep n _⟩
+  -- ### Shift up by one, inserting `0` at index `0`
+  refine ⟨⟨fun n => Nat.casesOn (motive := fun _ => GeomFibrePt f x) n
+      (ab.zero (specAlgClos F ≫ x)) (fun k => (u k).1), ?_, ?_⟩, hu0⟩
+  · intro n
+    cases n with
+    | zero =>
+      refine (mem_torsion_iff m x (I ^ 0) _).mpr ?_
+      intro c _
+      show m.act c (ab.zero (specAlgClos F ≫ x)) = ab.zero (specAlgClos F ≫ x)
+      exact smul_zero c
+    | succ k => exact (u k).2
+  · intro n
+    cases n with
+    | zero =>
+      show m.act π (u 0).1 = ab.zero (specAlgClos F ≫ x)
+      rw [hu0]
+      exact (mem_torsion_iff m x I y).mp hy π hπ
+    | succ k => exact hurec k
 
 /-- **The kernel of the reduction of the Tate module is `π · T`**
 (PROVEN 2026-07-26 — the inverse-limit computation, plus one
