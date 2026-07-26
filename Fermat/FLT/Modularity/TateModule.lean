@@ -133,6 +133,7 @@ nothing else.
 module
 
 public import Fermat.FLT.Modularity.AbelianScheme
+public import Fermat.FLT.Modularity.AbelianSchemeIsogeny
 -- `AlgebraicGeometry.IsFinite`, `LocallyQuasiFinite` and
 -- `IsFinite.of_isProper_of_locallyQuasiFinite` (Zariski's main theorem):
 -- the multiplication-by-`n` morphism of an abelian scheme and the
@@ -1128,16 +1129,21 @@ and is what the parent consumes — and only the first is a textbook fact
 about abelian varieties.
 
 **Both single-level statements are now PROVEN** (2026-07-26), and so is
-the lifting step. The geometry still open beneath the levelwise frame is
-exactly TWO statements, both about abelian varieties and nothing else:
+the lifting step. The geometry beneath the levelwise frame is these two
+statements, both about abelian varieties and nothing else:
 
 * `exists_nsmul_eq_geomFibrePt` — DIVISIBILITY. It is what discharges
   `exists_mem_torsion_act_uniformizer_eq` (`·π` carries `A[Iⁿ⁺¹]` onto
   `A[Iⁿ]`), which in turn feeds both `exists_levelTateFrame_succ` and
-  `exists_levelTateFrame`. No rank, no `hdim`.
+  `exists_levelTateFrame`. No rank, no `hdim`. **PROVEN 2026-07-26** —
+  it is NOT a leaf any more, so do not dispatch a prover at it. Its
+  geometry was moved to `Modularity/AbelianSchemeIsogeny.lean` and now
+  rests on the single leaf
+  `flat_locallyOfFinitePresentation_mulByNat` there (`[N]` is flat and
+  of finite presentation — the theorem of the cube).
 * `card_torsion_of_isMaximal` — the RANK COUNT, in its residual form:
   `#A[I] = (#𝒪_D/I)²`, the degree formula for the isogeny `I`.
-  **This is the only consumer of `hdim`.**
+  **This is the only consumer of `hdim`**, and it is still open.
 
 Everything between those two and `exists_levelwiseTateFrame` is
 commutative algebra proven here — the tower recursion below, and the
@@ -1194,9 +1200,11 @@ theorem mem_torsion_iff {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStru
     exact (Submodule.mem_torsionBySet_iff _ _).mpr fun a => h a a.2
 
 /-- **An abelian variety is a divisible group: `[N]` is surjective on the
-geometric points of a fibre** (sorry node — abelian varieties; Mumford
-*Abelian Varieties* §6 (Application 2 of the theorem of the cube),
-Silverman *AEC* III.4.2 and III.6.4).
+geometric points of a fibre** (PROVEN 2026-07-26 over the single
+abelian-variety leaf `flat_locallyOfFinitePresentation_mulByNat` in
+`Modularity/AbelianSchemeIsogeny.lean`; Mumford *Abelian Varieties* §6
+(Application 2 of the theorem of the cube), Silverman *AEC* III.4.2 and
+III.6.4).
 
 For `N ≠ 0` multiplication by `N` on an abelian scheme is an isogeny —
 finite, flat and surjective — so over the ALGEBRAICALLY CLOSED field `F̄`
@@ -1228,34 +1236,31 @@ to hunt for.  Three checks:
   absence of any characteristic hypothesis is correct and not an
   oversight.  If the fibre is empty the statement is vacuously true.
 
-## IRREDUCIBLE AT THIS PIN, and why it is not worth decomposing yet
+## WHERE THE GEOMETRY NOW SITS (2026-07-26 — this node HAS been decomposed)
 
-Surveyed 2026-07-26: there is **no abelian-variety theory anywhere**.
-`grep AbelianVariety` over the whole of `Mathlib` returns nothing,
-`Mathlib/AlgebraicGeometry/` has no theorem of the cube, no isogeny, no
-degree and no fibre-dimension theory in a usable form, and `~/cs/FLT`
-has none either.
+An earlier revision of this docstring argued the node was irreducible at
+this pin, on the grounds that cutting it would require `[N]` as a
+morphism of schemes, then kernels as subgroup schemes, then dimension
+theory.  The first of those turned out to be cheap and the last two turned
+out to be unnecessary: the cut below goes through FLATNESS rather than
+through a kernel dimension count, so the dimension argument lives inside
+the leaf's proof and never has to be stated.  The surviving true part of
+the old note is that properness is genuinely unavoidable — for a connected
+commutative algebraic group that is *not* proper the statement is FALSE
+(`𝔾_a` in characteristic `p` with `N = p` has `[p] = 0`) — which is why
+the one remaining leaf is a theorem-of-the-cube input and not something
+weaker.
 
-The classical proof is a three-step chain — (a) `[N]` has FINITE kernel
-(theorem of the cube, via `[N]^* L ≅ L^{N²}` for a symmetric ample `L`);
-(b) a proper morphism with finite fibres between irreducible varieties of
-equal dimension is surjective; (c) surjective over an algebraically
-closed field gives surjectivity on points — and step (a) is genuinely
-unavoidable: for a connected commutative algebraic group that is *not*
-proper the statement is FALSE (`𝔾_a` in characteristic `p` with `N = p`
-has `[p] = 0`), so no argument can avoid using properness through
-something of the cube's strength.
-
-Writing (a)–(c) as Lean leaves is therefore **not** a decomposition into
-shallower nodes: it would require first introducing `[N]` as a morphism
-of schemes (this module has the group law only on the functor of points,
-so that needs representability of the fibre), then kernels as subgroup
-schemes, then dimension.  That is a large speculative interface whose
-leaves would be no closer to `Mathlib` than this one, and the risk of
-manufacturing a false or vacuous statement in it is high — this
-development has lost more to that than to open sorries.  So the node is
-deliberately left as ONE honest leaf.  The right next step is a general
-abelian-variety subtree, not a cut here. -/
+**The proof, and where the geometry now sits.** By Yoneda
+(`exists_nsmul_of_exists_comp`) solving `N • w = y` is exactly factoring
+the morphism `y.1 : Spec F̄ ⟶ A` through `[N] : A ⟶ A`, and that
+factorization is `exists_comp_mulByNat_eq`. Everything between the two —
+that `[N]` is universally open, hence (with properness, which is free)
+has clopen image, hence by connectedness of the fibres of `f` is
+surjective, and that an `F̄`-point then lifts because the base-changed
+fibre is a nonempty Jacobson space over an algebraically closed field —
+is PROVEN in `Modularity/AbelianSchemeIsogeny.lean`. What is left open
+there is only the flatness of `[N]`, which is the theorem of the cube. -/
 theorem exists_nsmul_eq_geomFibrePt
     {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
     {F : Type u} [Field F]
@@ -1264,7 +1269,7 @@ theorem exists_nsmul_eq_geomFibrePt
     ∃ w : GeomFibrePt f x,
       letI := ab.addCommGroup (specAlgClos F ≫ x)
       N • w = y :=
-  sorry
+  ab.exists_nsmul_of_exists_comp N y (exists_comp_mulByNat_eq ab N hN y.1)
 
 open _root_.NumberField in
 /-- **Multiplication by `π` carries `A[Iⁿ⁺¹]` ONTO `A[Iⁿ]`** (PROVEN
@@ -2244,91 +2249,18 @@ section MulByNat
 
 variable {A S : Scheme.{u}} {f : A ⟶ S}
 
-/-- **The tautological relative point** of `f : A ⟶ S`: the identity of
-`A`, read as an `A`-point of `A` over the base point `f` itself. It is
-the universal element of the functor of points, and it is what makes
-`AbelianSchemeStruct.mulByNat` below constructible without any Yoneda
-apparatus. -/
-def RelPoint.self (f : A ⟶ S) : RelPoint f f := ⟨𝟙 A, Category.id_comp f⟩
+/-! The Yoneda layer of this section — `RelPoint.self`, `RelPoint.pre_self`,
+`AbelianSchemeStruct.pre_nsmul`, `mulByNat`, `nsmul_val`, `zeroSection`,
+`zero_val`, `mulByNat_comp` and `isProper_mulByNat` — now lives in
+`Modularity/AbelianSchemeIsogeny.lean`, VERBATIM and under the same names,
+and reaches this file through the `public import` at the top.
 
-/-- **Every relative point is the tautological one, pulled back along
-itself.** This is the Yoneda lemma for `RelPoint`, in the only form
-needed here. -/
-theorem RelPoint.pre_self {T : Scheme.{u}} {g : T ⟶ S} (y : RelPoint f g) :
-    RelPoint.pre y.1 y.2 (RelPoint.self f) = y :=
-  Subtype.ext (Category.comp_id _)
-
-namespace AbelianSchemeStruct
-
-variable (ab : AbelianSchemeStruct f)
-
-/-- **Pullback of relative points commutes with `n`-fold addition.**
-This is `pre_add` and `pre_zero` — the naturality axioms of the group
-structure — read at the `ℕ`-action of the resulting `AddCommGroup`. -/
-theorem pre_nsmul {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
-    (hg : h ≫ g = g') (n : ℕ) (y : RelPoint f g) :
-    letI := ab.addCommGroup g
-    letI := ab.addCommGroup g'
-    RelPoint.pre h hg (n • y) = n • RelPoint.pre h hg y := by
-  letI := ab.addCommGroup g
-  letI := ab.addCommGroup g'
-  induction n with
-  | zero =>
-      show RelPoint.pre h hg (0 • y) = 0 • RelPoint.pre h hg y
-      rw [zero_nsmul, zero_nsmul]
-      exact ab.pre_zero h hg
-  | succ n ih =>
-      rw [succ_nsmul, succ_nsmul]
-      show RelPoint.pre h hg (ab.add (n • y) y)
-          = ab.add (n • RelPoint.pre h hg y) (RelPoint.pre h hg y)
-      rw [ab.pre_add h hg, ih]
-
-/-- **Multiplication by `n`, as a MORPHISM of schemes `A ⟶ A`**: the
-underlying morphism of the `n`-fold sum of the tautological relative
-point `RelPoint.self f`.
-
-By `nsmul_val` this really is `[n]`: precomposition with it computes
-`n • y` on every relative point, so it is the Yoneda realization of the
-endomorphism `y ↦ n • y` of the functor of points. No fibre products
-and no chosen pullbacks are needed to write it down. -/
-noncomputable def mulByNat (n : ℕ) : A ⟶ A :=
-  letI := ab.addCommGroup f
-  (n • RelPoint.self f).1
-
-/-- **`n`-fold addition of relative points IS precomposition with
-`mulByNat n`.** -/
-theorem nsmul_val {T : Scheme.{u}} {g : T ⟶ S} (n : ℕ) (y : RelPoint f g) :
-    letI := ab.addCommGroup g
-    (n • y).1 = y.1 ≫ ab.mulByNat n := by
-  letI := ab.addCommGroup g
-  letI := ab.addCommGroup f
-  conv_lhs => rw [← RelPoint.pre_self y]
-  rw [← ab.pre_nsmul y.1 y.2 n (RelPoint.self f)]
-  rfl
-
-/-- **The zero section** `S ⟶ A`, i.e. the unit of the group scheme. -/
-noncomputable def zeroSection : S ⟶ A := (ab.zero (𝟙 S)).1
-
-/-- **Every zero relative point is the zero section, precomposed.** -/
-theorem zero_val {T : Scheme.{u}} (g : T ⟶ S) :
-    (ab.zero g).1 = g ≫ ab.zeroSection :=
-  congrArg Subtype.val (ab.pre_zero (h := g) (g := 𝟙 S) (g' := g) (Category.comp_id g)).symm
-
-/-- **`mulByNat n` is a morphism over `S`.** -/
-theorem mulByNat_comp (n : ℕ) : ab.mulByNat n ≫ f = f :=
-  letI := ab.addCommGroup f
-  (n • RelPoint.self f).2
-
-/-- **`mulByNat n` is PROPER**, for free: it commutes with the structure
-morphism `f`, which is proper by `ab.proper`, and a morphism whose
-composite with a SEPARATED morphism is proper is itself proper
-(`IsProper.of_comp`). No abelian-variety input whatsoever. -/
-theorem isProper_mulByNat (n : ℕ) : IsProper (ab.mulByNat n) := by
-  haveI := ab.proper
-  haveI : IsProper (ab.mulByNat n ≫ f) := by rw [ab.mulByNat_comp]; exact ab.proper
-  exact IsProper.of_comp _ f
-
-end AbelianSchemeStruct
+It had to move upstream because `exists_nsmul_eq_geomFibrePt`, far above,
+is proven from it, and Lean's declaration order forbids a use before the
+definition; reordering a file whose other leaves have their own owners
+would have been the larger disturbance. Nothing in this section changed
+otherwise: `locallyQuasiFinite_mulByNat` and everything derived from it
+stay here. -/
 
 open _root_.CategoryTheory.Limits in
 /-- **A finite scheme over a field has finitely many sections** (PROVEN
