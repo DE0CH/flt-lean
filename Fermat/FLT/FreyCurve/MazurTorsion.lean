@@ -731,7 +731,98 @@ theorem WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter
     ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j :=
   sorry
 
-/-- **The isogeny signature** (sorry leaf — Serre's local theory at `N`
+/-- **The admissible signatures, enumerated** (PROVEN 2026-07-26): if
+`e ∈ {1, 2, 3, 4, 6}` is the ramification index over which `E` acquires
+good reduction at `N`, `r` is Raynaud's exponent with `0 ≤ r ≤ e` and `r`
+even whenever `e` is, and `s` is defined by `s·e = 12·r`, then
+`s ∈ {0, 4, 6, 8, 12}`, and `s = 6` occurs for the single pair
+`(e, r) = (4, 2)`.
+
+This is the combinatorial half of `exists_isogenySignature`, separated
+out so that the Serre–Raynaud local theory — the actual mathematical
+input — is the only thing left sorried. The enumeration in full:
+
+| `e` | admissible `r`  | `s = 12r/e`     |
+|-----|-----------------|-----------------|
+| `1` | `0, 1`          | `0, 12`         |
+| `2` | `0, 2`          | `0, 12`         |
+| `3` | `0, 1, 2, 3`    | `0, 4, 8, 12`   |
+| `4` | `0, 2, 4`       | `0, 6, 12`      |
+| `6` | `0, 2, 4, 6`    | `0, 4, 8, 12`   |
+
+so `6` really does arise only at `(4, 2)` — which is what makes the
+implication `s = 6 → N ≡ 3 (mod 4)` a statement about ONE local
+situation rather than a case analysis. The parity constraint is what
+does the work: without it `e = 4, r = 1` would give `s = 3` and `e = 2,
+r = 1` would give `s = 6` from a second pair. -/
+theorem mazurIsogeny_signatureEnumeration {e r s : ℕ}
+    (he : e = 1 ∨ e = 2 ∨ e = 3 ∨ e = 4 ∨ e = 6) (hre : r ≤ e)
+    (hpar : e % 2 = 0 → r % 2 = 0) (hs : s * e = 12 * r) :
+    (s = 0 ∨ s = 4 ∨ s = 6 ∨ s = 8 ∨ s = 12) ∧ (s = 6 → e = 4 ∧ r = 2) := by
+  rcases he with rfl | rfl | rfl | rfl | rfl <;> interval_cases r <;> omega
+
+/-- **Serre–Raynaud local data at `N`** (sorry leaf — the local theory at
+`N` alone; Serre, Invent. Math. 15 (1972), Prop. 5 and §5.4, and Raynaud,
+Bull. SMF 102 (1974), Cor. 3.4.4): the isogeny character satisfies
+`λ¹² = χ_N^s` globally, where `s` comes from a ramification index
+`e ∈ {1,2,3,4,6}` and a Raynaud exponent `r ≤ e` — even when `e` is —
+through `s·e = 12r`; and the single pair `(e, r) = (4, 2)` forces
+`N ≡ 3 (mod 4)`.
+
+This is `exists_isogenySignature` with its combinatorial half removed:
+`mazurIsogeny_signatureEnumeration` above turns the `(e, r)` data into
+`s ∈ {0, 4, 6, 8, 12}` and `s = 6 → N ≡ 3 (mod 4)` with no further input.
+What is left here is exactly the mathematics.
+
+Proof (not formalised), in two halves.
+
+*At `N`.* If `E` has potentially multiplicative reduction at `N` it is a
+Tate curve or a quadratic twist of one, so `λ²|_{I_N}` is `1` or
+`χ²|_{I_N}`; take sixth powers and read off `(e, r) = (1, 0)` or
+`(1, 1)`. Otherwise `E` acquires good reduction over `K/ℚ_N` with
+`e = e(K/ℚ_N) ∈ {1,2,3,4,6}` (the possible ramification indices of the
+field of definition of the `ℓ`-torsion at a potentially good prime);
+tame-inertia theory gives `λ|_{I_N} = χ^a|_{I_N}`, Raynaud's
+classification of finite flat group schemes over a base of absolute
+ramification `e < p − 1` gives `λ^e|_{I'_N} = χ^r|_{I'_N}` with
+`0 ≤ r ≤ e` and `r` even when `e` is even, whence `ae ≡ r (mod N−1)` and
+`s = 12r/e`. At `(e, r) = (4, 2)` the quartic ramified extension is
+`ℚ_N(⁴√N)`-like and its existence forces `N ≡ 3 (mod 4)`.
+
+*Away from `N`.* `λ¹²` is unramified at every `q ≠ N`, in BOTH reduction
+types, so `λ¹²χ_N^{-s}` is unramified everywhere (including at `∞`, since
+`s` is even) and therefore trivial by class field theory — `ℚ` has no
+nontrivial everywhere-unramified abelian extension.
+
+MACHINERY AUDIT (2026-07-26). Missing here: tame-inertia theory at `N`,
+Raynaud's classification, the Tate-curve description of the character at
+potentially multiplicative reduction, and the class-field-theoretic
+triviality of an everywhere-unramified abelian character of `ℚ`. None of
+these is modular and none touches the Eisenstein ideal; the last is the
+only one for which mathlib is likely to have usable pieces.
+
+This leaf is INDEPENDENT of the formal-immersion leaf: nothing here uses
+potentially good reduction away from `N`. -/
+theorem WeierstrassCurve.exists_isogenyRamificationData
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN19 : 19 < N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g) :
+    ∃ e r s : ℕ, (e = 1 ∨ e = 2 ∨ e = 3 ∨ e = 4 ∨ e = 6) ∧ r ≤ e ∧
+      (e % 2 = 0 → r % 2 = 0) ∧ s * e = 12 * r ∧
+      (∀ σ : Field.absoluteGaloisGroup ℚ,
+        lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ s) ∧
+      (e = 4 → r = 2 → N % 4 = 3) :=
+  sorry
+
+/-- **The isogeny signature** (PROVEN 2026-07-26 from
+`exists_isogenyRamificationData` and `mazurIsogeny_signatureEnumeration`
+— Serre's local theory at `N`
 together with Raynaud's classification; Serre, Invent. Math. 15 (1972),
 Prop. 5 and §5.4, and Raynaud, Bull. SMF 102 (1974), Cor. 3.4.4): for a
 rational cyclic subgroup of prime order `N > 19` with isogeny character
@@ -771,8 +862,15 @@ theorem WeierstrassCurve.exists_isogenySignature
     ∃ s : ℕ, s ∈ ({0, 4, 6, 8, 12} : Finset ℕ) ∧
       (∀ σ : Field.absoluteGaloisGroup ℚ,
         lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ s) ∧
-      (s = 6 → N % 4 = 3) :=
-  sorry
+      (s = 6 → N % 4 = 3) := by
+  obtain ⟨e, r, s, he, hre, hpar, hs, hsig, hmod⟩ :=
+    E.exists_isogenyRamificationData g hN hN19 hg lam hlam
+  obtain ⟨hsmem, h6⟩ := mazurIsogeny_signatureEnumeration he hre hpar hs
+  refine ⟨s, ?_, hsig, fun h => ?_⟩
+  · simp only [Finset.mem_insert, Finset.mem_singleton]
+    exact hsmem
+  · obtain ⟨he4, hr2⟩ := h6 h
+    exact hmod he4 hr2
 
 /-!
 ##### The resultant elimination, in kernel-checked arithmetic form
