@@ -38087,6 +38087,29 @@ The three families that bracket the criterion:
 * `ℚ_p(u^{1/p})` for a unit `u` (PEU RAMIFIÉE): `v₃(disc(x³−2)) = 3`,
   degree `3`, so `v₃(𝔡) = 1`.
 
+CONFIRMED IN UPPER NUMBERING, AND THE MARGIN IS EXACTLY ZERO (third
+owner, 2026-07-26). The audit above reasons with DIFFERENTS, but
+Fontaine's theorem is really about the upper-numbering ramification
+groups (`G^{(u)} = 1` for `u > n − 1 + 1/(p−1)` when `e = 1`), which is
+SHARPER — so it had to be rechecked there rather than assumed. Both
+`S₃` fields were recomputed independently in PARI/GP; each has degree
+`6` with `e = 6`, `f = 1`, so `v₃(disc) = f·d = d`:
+
+* peu ramifiée `ℚ₃(μ₃, 2^{1/3})`: `v₃(disc) = 7`, so `d = 7 = 5 + 2·1`,
+  lower breaks `0, 1`, upper break `φ(1) = 1/2`;
+* très ramifiée `ℚ₃(μ₃, 3^{1/3})`: `v₃(disc) = 11`, so `d = 11 = 5 + 2·3`,
+  lower breaks `0, 3`, upper break `φ(3) = 3/2`.
+
+(Here `d = Σ_i (|G_i| − 1) = 5 + 2t` because `G₀ = S₃` is all of the
+inertia and `G₁ = ⋯ = G_t = C₃` is its wild part; `φ` has slope
+`1/[G₀ : G_t] = 1/2` beyond `0`.) So at `n = 1` the threshold `1/2` is
+SHARP IN BOTH DIRECTIONS — peu ramifiée sits exactly at it, très
+ramifiée exactly above. At `n = 2` the threshold is `3/2`, EQUAL to the
+très ramifiée break, so the `s = 1` case is not excluded by a margin of
+exactly ZERO — not the comfortable margin the different form suggests.
+The verdict below is unchanged; the honest gap is merely much narrower
+than differents make it look.
+
 WHAT FONTAINE'S BOUND DOES GIVE, AND WHERE `hpodd` ENTERS. At `n = 1`
 the bound is SHARP and closes the leaf: `1 + 1 − 1/p ≥ 1 + 1/(p−1)`
 iff `(p−1)² ≥ p` iff `p ≥ 3`, so the très ramifiée radical is excluded
@@ -38193,6 +38216,71 @@ prolongation introduced only to be contradicted. So the Proposition
 above, which covers the Tate case the geometry actually produces, does
 NOT discharge the consumer, and restricting the leaf to Tate-curve
 prolongations would break it.
+
+SECOND FAMILY RULED OUT AT `n = 2`: THE HEIGHT-2 FORMAL GROUPS (third
+owner, 2026-07-26; new, and the family Fontaine's bound comes CLOSEST to
+allowing). The Tate family is ordinary/toric; the natural next candidate
+is the supersingular one, where the whole `pⁿ`-torsion is connected. Let
+`F` be the Lubin–Tate formal group over `ℤ_3` with `[3](X) = 3X + X⁹`
+(height 2, dimension 1), so `F[9]` IS a finite flat group scheme over
+`ℤ_3` killed by `9`, of exactly the kind this leaf quantifies over. Take
+the `s = 1` shape the audit below shows ramification cannot exclude:
+`q = 27`, `r = 3^{1/3}`, `r⁹ = 27`, `9 ∤ v₃(27) = 3`. Then
+`3^{1/3} ∉ ℚ_3(x)` for `x` a primitive `9`-torsion point of `F`:
+
+* `F[3] \ {0}` is cut out by `3 + X⁸`, so `K₁ = ℚ_3(π)`, `π⁸ = −3`,
+  Eisenstein — totally TAMELY ramified of degree `8`.
+* `[3](x) = π` reads `x⁹ + 3x = π`; eliminating `π` gives the Eisenstein
+  `h(X) = (X⁹ + 3X)⁸ + 3` of degree `72`, so `K₂ = ℚ_3(x)` is totally
+  ramified of degree `72` and `v(x) = 1/72` (normalising `v(3) = 1`).
+* `h(x) = 0` rearranges to `x⁷² = −3w` with `w = (1 + 3x⁻⁸)⁻⁸`, and
+  `v_{K₂}(3x⁻⁸) = 72 − 8 = 64`, so `v_{K₂}(w − 1) = 64` EXACTLY (the
+  linear term `−8·3x⁻⁸` dominates, `8` being a unit).
+* Any `y ∈ K₂` with `y³ = 3` has `v_{K₂}(y) = 24`, hence `y = x²⁴c` with
+  `c` a unit and `c³ = −w⁻¹`; `−1 = (−1)³` is a cube, so this needs `w`
+  to be a cube. On principal units of `K₂` (where `e = 72` and
+  `e/(p−1) = 36`) cubing carries `U^{(m)}` onto `U^{(3m)}` for `m < 36`
+  and onto `U^{(m+72)}` for `m > 36`; so a principal unit that is a cube
+  and is `≢ 1 mod 𝔪^{108}` has `v(· − 1)` DIVISIBLE BY 3. Since `3 ∤ 64`
+  and `64 < 108`, `w` is not a cube.
+
+Cross-checked in Magma: over the degree-`72` field defined by `h`,
+`Factorization(Y³ − 3)` returns one irreducible factor of degree `3`.
+
+THE CHECK THAT WOULD REFUTE THIS SECOND ITEM, stated because a bare
+"family ruled out" is not refutable: the computation above covers
+`ℚ_3(x)` for ONE primitive `9`-torsion point, not the full
+`ℚ_3(F[9])`, which is its Galois closure and has degree up to
+`|GL₂(ℤ/9)| = 3888`. A Magma `SplittingField` of `[9](X)/X` did not
+finish in 9 minutes and was abandoned; whether `3^{1/3} ∈ ℚ_3(F[9])`
+is therefore still OPEN, and a positive answer would REFUTE this leaf.
+That is the single cheapest experiment a next owner can run.
+
+WHY NO SHARPENING OF FONTAINE'S CONSTANT CAN CLOSE THE `s ≥ 1` CASE
+(third owner, 2026-07-26 — the structural form of the numerical gap the
+audit below reports). Write `p^s ‖ v_p(q)` and `t := n − s`. Put
+`π₀ := r^{p^t}`; then `v_p(π₀) = v_p(q)/p^s` is PRIME TO `p` and
+`r = π₀^{1/p^t}`. So the radical that `hfix` places inside `ℚ_p(G)` is
+très ramifiée AT LEVEL `p^t`, not at level `pⁿ`. Its top upper break is
+`1 + 1/(p−1) = 3/2` at `t = 1`, `p = 3` (PARI-confirmed below), while
+Fontaine's threshold `n − 1 + 1/(p−1)` grows with `n`. The two meet
+exactly when `t = n`, i.e. `s = 0`. The deficit is therefore the LINEAR
+gap `t` versus `n`, not a constant, so improving Fontaine's `1/(p−1)`
+changes nothing. This is the precise sense of "ramification alone yields
+`p ∣ v_p(q)` and never more", and it is why the residual input must be
+Raynaud/fppf rather than a better ramification estimate.
+
+FAITHFULNESS RE-CHECK OF THE HYPOTHESIS (third owner, 2026-07-26).
+`GaloisRep.HasFlatProlongationAt` was re-read at its definition
+(`Fermat/FLT/Deformations/RepresentationTheory/GaloisRep.lean`) to rule
+out the possibility that this leaf is hard only because the predicate is
+loose: it demands a Hopf algebra `G` over `𝒪ᵥ` that is `Module.Flat` AND
+`Module.Finite`, with étale generic fibre, together with a
+`Γ Kᵥ`-equivariant BIJECTION onto `(ρ.toLocal v).Space`. So `hflat` says
+exactly "the local module is the group of geometric points of a finite
+flat group scheme over `ℤ_p`", and `hkill` transports to the scheme by
+flatness. The leaf is a genuine Raynaud/Fontaine assertion; it is not
+weakened, and it is not vacuous.
 
 THE PROOF ROUTE, AND THE MACHINERY IT NEEDS. Serre's own argument for
 §2.8 Prop. 4 is the fppf Kummer sequence over `Spec ℤ_p`:
