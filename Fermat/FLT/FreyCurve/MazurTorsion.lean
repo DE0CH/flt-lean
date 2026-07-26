@@ -5991,12 +5991,260 @@ theorem eightNsmul_galois_fixed (E : WeierstrassCurve ℚ) [E.IsElliptic]
   rw [ZMod.natCast_val, ZMod.cast_id]
   exact hunit (lam σ)
 
+/-! #### The `X_0(8)` normal form `y² = x(x² + (γ² − 2δ²)x + δ⁴)`
+
+(Introduced 2026-07-26, cutting `exists_univCurveV_param_of_ratTwoTorsion`
+into steps 2–3 and step 4 of the four-step route.  The scaling identity
+that glues the two halves back together is PROVEN, and it is the only
+part of the route that was algebra rather than moduli.)
+
+The `v`-coordinate section note above derives the chain normal form in two
+stages, and the natural place to cut is between them:
+
+* **steps 2–3** (`exists_chainModel_of_ratTwoTorsion`) take the rational
+  `2`-torsion point to the origin, giving `y² = x(x² + a x + b)`, and then
+  use stability of `C[4]` and `C[8]` to force `b = δ⁴` and `a + 2δ² = γ²`.
+  The output is the curve `chainModel γ δ` below together with the
+  `16`-chain transported onto it;
+* **step 4** (`exists_sq_of_chainModel_stable`) is the single genuinely
+  modular condition, that the `X_0(8)` Hauptmodul `r = γ/δ` is twice a
+  square.  Stated sign-free as `γ² = 4v⁴δ²`, which is exactly `r = ±2v²`;
+  the two signs are the two sheets of `X_0(16) → X_0(8)` and `chainModel`
+  does not see the difference, since `γ` and `δ` enter it only through
+  `γ²` and `δ²`.
+
+**HOW THE TWO HALVES ARE TIED TO EACH OTHER, and why the tie is not
+optional.**  A bare "`chainModel γ δ` has a Galois-stable cyclic
+`16`-subgroup" would NOT force `γ² = 4v⁴δ²`: a curve can carry several
+`X_0(8)`-structures, and nothing would say that the one displayed by the
+coordinates `γ, δ` is the one sitting under the `16`-chain.  So step 4 is
+handed the chain generator `h` together with `HasXCoord ((4 : ℕ) • h) δ²`,
+which pins the `X_0(4)`-structure to the coordinates.
+
+One condition suffices, because `8 • h` is then forced as well: on
+`y² = x(x² + a x + b)` the duplication formula is
+`x(2P) = ((x² − b)/(2y))²`, and at `x = δ²`, `b = δ⁴` the numerator
+`x² − b` vanishes identically, so `x(8 • h) = 0`, i.e. `8 • h` is the
+origin `(0, 0)` — which is `C[2]`, as it must be.  (That `(δ², δ²γ)` is
+on the curve at all is the computation
+`δ²(δ⁴ + (γ² − 2δ²)δ² + δ⁴) = δ⁴γ²`.)
+-/
+
+/-- **The `X_0(8)` normal form of the `2`-isogeny chain**:
+`y² = x(x² + (γ² − 2δ²)x + δ⁴)`, i.e. `⟨0, γ² − 2δ², 0, δ⁴, 0⟩`.
+
+This is the model displayed in the `v`-coordinate section note above,
+with `β = δ²` the `x`-coordinate of the rational `4`-torsion point and
+`a + 2β = γ²`.  Its rational `2`-torsion point is `(0, 0)` (`C[2]`) and
+`(δ², δ²γ)` is a rational point of order `4` doubling to it (`C[4]`).
+Scaling `δ` to `1`, which is free because `j` is weight `0`, and writing
+`γ = 2v²` turns it into `univCurveV v`; that scaling is
+`exists_univCurveV_param_of_chainModel` below.
+
+Stated over an arbitrary commutative ring for the same reason as
+`univCurve` and `univCurveV`: the moduli argument runs over `ℚ̄`. -/
+def chainModel {K : Type*} [CommRing K] (γ δ : K) : WeierstrassCurve K :=
+  ⟨0, γ ^ 2 - 2 * δ ^ 2, 0, δ ^ 4, 0⟩
+
+/-- **`c₄` of the `X_0(8)` normal form** (PROVEN 2026-07-26):
+`c₄ = 16(γ⁴ − 4γ²δ² + δ⁴)`.  For `⟨0, a, 0, b, 0⟩` one has `b₂ = 4a`,
+`b₄ = 2b`, hence `c₄ = 16(a² − 3b)`; here `a = γ² − 2δ²`, `b = δ⁴`. -/
+lemma chainModel_c₄ {K : Type*} [CommRing K] (γ δ : K) :
+    (chainModel γ δ).c₄ = 16 * (γ ^ 4 - 4 * γ ^ 2 * δ ^ 2 + δ ^ 4) := by
+  simp only [chainModel, WeierstrassCurve.c₄, WeierstrassCurve.b₂, WeierstrassCurve.b₄]
+  ring
+
+/-- **The discriminant of the `X_0(8)` normal form** (PROVEN 2026-07-26):
+`Δ = 16 δ⁸ γ²(γ − 2δ)(γ + 2δ)`.  For `⟨0, a, 0, b, 0⟩` one has
+`Δ = 16b²(a² − 4b)`, and `(γ² − 2δ²)² − 4δ⁴ = γ²(γ² − 4δ²)`.  The three
+factors `γ`, `γ − 2δ`, `γ + 2δ` are the three cusps of `X_0(8)` other
+than `∞`, and `δ = 0` is the degenerate scaling. -/
+lemma chainModel_Δ {K : Type*} [CommRing K] (γ δ : K) :
+    (chainModel γ δ).Δ = 16 * δ ^ 8 * γ ^ 2 * (γ - 2 * δ) * (γ + 2 * δ) := by
+  simp only [chainModel, WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+  ring
+
+/-- **`P` is an affine point with `x`-coordinate `x₀`.**
+
+Stated as a universally quantified implication over the constructor so
+that it needs no `Nonsingular` witness at the use site: an existential
+handing out a point cannot conveniently hand out a proof that a
+particular pair of coordinates lies on the curve, and every consumer
+here only ever wants to READ the `x`-coordinate off a point it already
+has.
+
+Note it is vacuously true of the point at infinity.  That is harmless in
+both uses below, where the point in question has order `4` and so is not
+`0`. -/
+def HasXCoord {W : WeierstrassCurve ℚ}
+    (P : (W⁄(AlgebraicClosure ℚ)).Point) (x₀ : AlgebraicClosure ℚ) : Prop :=
+  ∀ x y (hxy : (W⁄(AlgebraicClosure ℚ)).Nonsingular x y),
+    P = Affine.Point.some x y hxy → x = x₀
+
+/-- **Steps 2–3 of the `X_0(16)` route: the `X_0(8)` normal form** (SORRY
+LEAF, cut 2026-07-26 out of `exists_univCurveV_param_of_ratTwoTorsion`
+below, which is now PROVEN over this leaf together with
+`exists_sq_of_chainModel_stable`).
+
+Given the rational `2`-torsion point `Q = 8 • g` produced by step 1, move
+it to the origin and run the `X_0(4)` and `X_0(8)` halvings: the outcome
+is a pair of rationals `γ, δ` with `δ ≠ 0` such that `E` has the same
+`j`-invariant as `chainModel γ δ` — written denominator-free — together
+with the whole `16`-chain transported onto that model.
+
+**WHAT HAS TO BE PROVED.**
+
+1. *Step 2, elementary.*  `Q` is rational of order `2`, so `E` is
+   `ℚ`-isomorphic to some `⟨0, a, 0, b, 0⟩`: kill `a₁, a₃` by
+   `WeierstrassCurve.toCharNeTwoNF` (available in the pin, char `ℚ ≠ 2`),
+   then translate `x` by `x(Q)` to move `Q` to the origin, which kills
+   `a₆`.  `j` is invariant under all of this by
+   `WeierstrassCurve.variableChange_j`.
+2. *Step 3, the `X_0(4)` and `X_0(8)` halvings.*  `4 • g` has order `4`
+   and doubles to `8 • g`, and `λ(σ) ≡ ±1 (mod 4)` for the character of
+   `exists_isogenyCharacter`, so `4 • g` is fixed up to sign and its
+   `x`-coordinate is Galois-fixed, hence rational: that is `β`, and
+   halving `(0,0)` needs `β² = b`.  Stability of `C[8]` then forces `β`
+   itself to be a square `δ²` — the quartic halving `(β, βγ)` splits into
+   the two rational quadratics `x² − 2δ(δ ∓ γ)x + δ⁴` exactly when
+   `δ = √β` is rational, and `C[8]` is one of the two — and `a + 2β = γ²`
+   is the remaining halving condition.  Substituting `b = δ⁴` and
+   `a = γ² − 2δ²` gives `chainModel γ δ`.
+
+**THE MISSING MACHINERY, named so the next owner does not have to find
+it.**  The pin has `WeierstrassCurve.VariableChange`, `variableChange_j`,
+`variableChange_c₄`, `variableChange_Δ` and the `IsCharNeTwoNF` normal
+form, but it has **no transport of `Affine.Point` along a
+`VariableChange`** — checked 2026-07-26 by grep over
+`Mathlib/AlgebraicGeometry/EllipticCurve/`, which has `Point.map` along a
+ring hom and `Point.pointEquiv`, and nothing along a variable change.
+That transport is what carries `g` from `E` to `chainModel γ δ`, so it is
+the one genuinely new piece of infrastructure this leaf needs, and it is
+reusable well beyond here.
+
+**WHY THE TIE `HasXCoord ((4 : ℕ) • h) δ²` IS PART OF THE CONCLUSION.**
+See the section note just above: without it the consumer
+`exists_sq_of_chainModel_stable` is false, because a curve can carry more
+than one `X_0(8)`-structure and nothing would say that the one displayed
+by `γ, δ` is the one under the `16`-chain.  It is not an extra burden —
+it is exactly what step 3 constructs, since `δ²` is by definition the
+`x`-coordinate of the rational `4`-torsion point `4 • g`. -/
+theorem exists_chainModel_of_ratTwoTorsion (E : WeierstrassCurve ℚ)
+    [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 16)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g)
+    (Q : (E⁄ℚ).Point) (hQ2 : addOrderOf Q = 2)
+    (hQg : Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q = (8 : ℕ) • g) :
+    ∃ γ δ : ℚ, δ ≠ 0 ∧
+      E.j * (chainModel γ δ).Δ = (chainModel γ δ).c₄ ^ 3 ∧
+      ∃ h : ((chainModel γ δ)⁄(AlgebraicClosure ℚ)).Point,
+        addOrderOf h = 16 ∧
+        (∀ σ : Field.absoluteGaloisGroup ℚ,
+          ∀ x ∈ AddSubgroup.zmultiples h,
+            Affine.Point.map
+              (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+              AddSubgroup.zmultiples h) ∧
+        HasXCoord ((4 : ℕ) • h)
+          (algebraMap ℚ (AlgebraicClosure ℚ) (δ ^ 2)) :=
+  sorry
+
+/-- **Step 4 of the `X_0(16)` route: the `X_0(8)` Hauptmodul is twice a
+square** (SORRY LEAF, cut 2026-07-26 out of
+`exists_univCurveV_param_of_ratTwoTorsion` below).  This is the ONLY
+genuinely modular step of the route; steps 1–3 are Galois arithmetic in
+`ZMod 16` and coordinate normalisation.
+
+If the `X_0(8)` normal form `chainModel γ δ` carries a `Gal(ℚ̄/ℚ)`-stable
+cyclic `16`-subgroup `⟨h⟩` whose `X_0(4)`-part is the one displayed by
+the coordinates — that is the hypothesis `hx`, saying the `x`-coordinate
+of `4 • h` is `δ²` — then the `X_0(8)` Hauptmodul `r = γ/δ` satisfies
+`r = ±2v²` for some rational `v`.
+
+**STATED SIGN-FREE, AND THAT IS NOT A WEAKENING.**  The conclusion is
+`γ² = 4v⁴δ²`, i.e. `γ = ±2v²δ`.  Both signs are genuinely possible and
+both are equally good for the consumer: `chainModel` depends on `γ` and
+`δ` only through `γ²` and `δ²`, so `chainModel γ δ = chainModel γ (−δ)`
+and the sign is absorbed by replacing `δ` with `−δ`.  Geometrically the
+two signs are the two sheets of the degree-`2` cover
+`X_0(16) → X_0(8)`, which is the deck involution `v ↦ −v` of the
+`v`-coordinate section note; both sheets are Galois-stable when one is,
+which is the "exactly two rational roots" of the database sweep recorded
+there.
+
+**WHY `hx` CANNOT BE DROPPED.**  Without it the statement is FALSE, not
+merely weaker: a curve may carry several `X_0(8)`-structures, and the
+conclusion is about the specific one displayed by `γ, δ`.  `hx` is what
+says the `16`-chain sits over that one.  See the section note above,
+where it is also shown that `hx` forces `8 • h = (0, 0)` on its own, so
+no second tie is needed.
+
+**WHAT AN ATTACK LOOKS LIKE.**  This is where `X_0(16) → X_0(8)` being a
+degree-`2` cover has to be used.  Concretely: the two cyclic
+`8`-subgroups of `chainModel γ δ` above `⟨4 • h⟩` are cut out by the
+quadratics `x² − 2δ(δ − γ)x + δ⁴` and `x² − 2δ(δ + γ)x + δ⁴`, and the
+further halving that produces `C = ⟨h⟩` from `C[8]` is solvable over `ℚ`
+exactly when `γ/(2δ)` is a square.  `WeierstrassCurve.exists_quotient_isogeny`
+(PROVEN, later in this file) is the tool if an attack prefers to run the
+chain through the isogenous curves rather than through coordinates. -/
+theorem exists_sq_of_chainModel_stable (γ δ : ℚ) (hδ : δ ≠ 0)
+    (h : ((chainModel γ δ)⁄(AlgebraicClosure ℚ)).Point)
+    (hh : addOrderOf h = 16)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h)
+    (hx : HasXCoord ((4 : ℕ) • h)
+      (algebraMap ℚ (AlgebraicClosure ℚ) (δ ^ 2))) :
+    ∃ v : ℚ, γ ^ 2 = 4 * v ^ 4 * δ ^ 2 :=
+  sorry
+
+/-- **Scaling the `X_0(8)` normal form down to `univCurveV`** (PROVEN
+2026-07-26 — the algebraic glue between steps 2–3 and step 4, and the
+only part of the four-step route that is not moduli).
+
+If `J` is the `j`-invariant of `chainModel γ δ` (denominator-free) and
+the `X_0(8)` Hauptmodul is twice a square, `γ² = 4v⁴δ²`, then `J` is the
+`j`-invariant of `univCurveV v`.
+
+The computation is that `δ` scales out with weight `4` on `c₄` and
+weight `12` on `Δ`, which is exactly what makes `j` weight `0`:
+substituting `γ² = 4v⁴δ²` gives
+`c₄(chainModel γ δ) = δ⁴ · c₄(univCurveV v)` and
+`Δ(chainModel γ δ) = δ¹² · Δ(univCurveV v)`, so the hypothesis is
+`δ¹²` times the conclusion and `δ ≠ 0` cancels it.  The two signs of
+`γ = ±2v²δ` are handled by the two branches, and give the same `v`
+because `univCurveV` is a function of `v⁴`. -/
+theorem exists_univCurveV_param_of_chainModel (J γ δ v : ℚ) (hδ : δ ≠ 0)
+    (hv : γ ^ 2 = 4 * v ^ 4 * δ ^ 2)
+    (hj : J * (chainModel γ δ).Δ = (chainModel γ δ).c₄ ^ 3) :
+    J * (univCurveV v).Δ = (univCurveV v).c₄ ^ 3 := by
+  rw [chainModel_Δ, chainModel_c₄] at hj
+  rw [univCurveV_Δ, univCurveV_c₄]
+  refine mul_left_cancel₀ (pow_ne_zero 12 hδ) ?_
+  have hfac : (γ - 2 * v ^ 2 * δ) * (γ + 2 * v ^ 2 * δ) = 0 := by linear_combination hv
+  rcases mul_eq_zero.mp hfac with h1 | h1
+  · have hγ : γ = 2 * v ^ 2 * δ := by linarith
+    subst hγ
+    linear_combination hj
+  · have hγ : γ = -(2 * v ^ 2 * δ) := by linarith
+    subst hγ
+    linear_combination hj
+
 /-- **`X_0(16)` moduli in the chain coordinate, GIVEN the rational
-`2`-torsion point** (SORRY LEAF, cut 2026-07-26 out of
-`exists_univCurveV_param_of_stable` just below, which is now PROVEN over
-it): same conclusion as that statement, but the caller has already
-supplied the rational point `Q` of order `2` together with the identity
-`Q ⊗ ℚ̄ = 8 • g` tying it to the `16`-chain.
+`2`-torsion point** (PROVEN 2026-07-26 over the two leaves
+`exists_chainModel_of_ratTwoTorsion` (steps 2–3) and
+`exists_sq_of_chainModel_stable` (step 4), by supplying the scaling
+`exists_univCurveV_param_of_chainModel`; was itself a sorry leaf, cut the
+same day out of `exists_univCurveV_param_of_stable` just below, which is
+PROVEN over it): same conclusion as that statement, but the caller has
+already supplied the rational point `Q` of order `2` together with the
+identity `Q ⊗ ℚ̄ = 8 • g` tying it to the `16`-chain.
 
 **WHAT THIS CUT BUYS, and it is exactly step 1 of the four-step route.**
 `Q` is not new information — it is manufactured from `hg` and `hstable`
@@ -6021,13 +6269,16 @@ makes the model `y² = x(x² + ax + b)` obtained in step 2 the one in which
 Hauptmoduls.  Dropping `hQg` would make this leaf FALSE, not merely
 weaker.
 
-**WHAT REMAINS IS STEPS 2–4** of the route in the consumer's docstring
-below: the coordinate normalisation (step 2, elementary), the rationality
-of `β = x(4 • g)` and of `γ` with `a + 2β = γ²` (step 3, the `X_0(8)`
-half), and the genuinely modular step 4, that `γ/(2δ)` is a square.
-Step 4 is where `X_0(16) → X_0(8)` being a degree-`2` cover with both
-sheets Galois-stable has to be used, and it is the only part that is not
-coordinate work.
+**WHAT REMAINS, AND WHERE IT NOW LIVES** (updated 2026-07-26).  Steps 2–4
+are no longer inside this statement: it is PROVEN, over the two leaves
+just above.  Step 2 (coordinate normalisation) and step 3 (rationality of
+`β = x(4 • g)` and of `γ` with `a + 2β = γ²`, the `X_0(8)` half) are
+`exists_chainModel_of_ratTwoTorsion`; the genuinely modular step 4, that
+`γ/(2δ)` is a square, is `exists_sq_of_chainModel_stable`, and it is where
+`X_0(16) → X_0(8)` being a degree-`2` cover with both sheets
+Galois-stable has to be used.  What the cut actually discharged is the
+scaling that glues them, `exists_univCurveV_param_of_chainModel`, which
+is the only part of the route that was algebra rather than moduli.
 
 **Self-policing and FAITHFULNESS are inherited verbatim** from the
 consumer's docstring below: `Δ(univCurveV v) = 256v⁴(v⁴ − 1)` vanishes
@@ -6046,8 +6297,11 @@ theorem exists_univCurveV_param_of_ratTwoTorsion (E : WeierstrassCurve ℚ)
           AddSubgroup.zmultiples g)
     (Q : (E⁄ℚ).Point) (hQ2 : addOrderOf Q = 2)
     (hQg : Affine.Point.baseChange ℚ (AlgebraicClosure ℚ) Q = (8 : ℕ) • g) :
-    ∃ v : ℚ, E.j * (univCurveV v).Δ = (univCurveV v).c₄ ^ 3 :=
-  sorry
+    ∃ v : ℚ, E.j * (univCurveV v).Δ = (univCurveV v).c₄ ^ 3 := by
+  obtain ⟨γ, δ, hδ, hj, h, hh16, hhstable, hx⟩ :=
+    exists_chainModel_of_ratTwoTorsion E g hg hstable Q hQ2 hQg
+  obtain ⟨v, hv⟩ := exists_sq_of_chainModel_stable γ δ hδ h hh16 hhstable hx
+  exact ⟨v, exists_univCurveV_param_of_chainModel E.j γ δ v hδ hv hj⟩
 
 /-- **`X_0(16)` moduli in the chain coordinate** (PROVEN 2026-07-26 over
 the single leaf `exists_univCurveV_param_of_ratTwoTorsion` just above, by
