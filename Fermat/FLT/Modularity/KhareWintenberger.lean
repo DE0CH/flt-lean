@@ -1949,7 +1949,28 @@ the openness of the smooth locus of a family (mathlib has the ABSOLUTE
 statement `Algebra.isOpen_smoothLocus` for a single algebra, not the relative
 one for the fibres of a morphism). A prover should expect to build the
 incidence variety `Z` and generic smoothness (the algebraic Sard theorem) —
-both reusable well beyond this leaf. -/
+both reusable well beyond this leaf.
+
+ABSENCE AUDIT 2026-07-26 (measured on this pin, not inherited — CLAUDE.md's
+"absent from the pin is often wrong" rule says to check before building, so
+this records the check rather than the belief). `Scheme.Hom.smoothLocus` and
+`Scheme.Hom.isOpen_smoothLocus`
+(`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:293,302`) are about the
+locus in the SOURCE where one fixed morphism is smooth; there is no statement
+anywhere about the locus in the BASE over which the fibres of a family are
+smooth, which is what this leaf needs. There is no `Bertini` anywhere in
+mathlib, and none in `~/cs/FLT` either (zero hits for `bertini` across its
+`FLT/` tree). So both halves must genuinely be built.
+
+FAITHFULNESS AUDIT 2026-07-26: the statement was re-derived and stands,
+including at the two degenerate dimensions that `hdim`'s absence admits. At
+`dim = 0`, smooth + geometrically irreducible over `ℚ` forces `A ≅ ℚ`, a
+generic `ℓ_v` is a nonzero constant, and `A ⧸ (ℓ_v)` is the ZERO ring, whose
+`Spec` is the empty scheme — smooth over `ℚ` vacuously. At `dim = 1` a
+generic line meets the curve transversally, so `A ⧸ (ℓ_v)` is a finite
+REDUCED `ℚ`-algebra, and in characteristic zero finite reduced is étale hence
+smooth. Neither degenerate case needs an exception, which is why omitting
+`hdim` here is a genuine strengthening and not an oversight. -/
 theorem exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible
     (hsmooth : AlgebraicGeometry.Smooth g)
     (hft : AlgebraicGeometry.LocallyOfFiniteType g)
@@ -2011,7 +2032,30 @@ the descent to a basic open `D(F)` are as in the smoothness leaf.
 MACHINERY MISSING AT THIS PIN: the projective closure of an affine scheme,
 the connectedness theorem, and openness of the geometrically-connected locus
 of a family (EGA IV 9.7.7). This is the deepest of the surviving geometric
-leaves. -/
+leaves.
+
+ABSENCE AUDIT 2026-07-26 (measured on this pin). `GeometricallyConnected`
+exists (`Mathlib/AlgebraicGeometry/Geometrically/Connected.lean`) and is
+stable under base change, but nothing there or anywhere else states that the
+locus in the BASE over which the fibres of a family are geometrically
+connected is open — the file's results all run the other way, deducing
+`ConnectedSpace` of a total space from connectedness of the base. There is no
+`Bertini` and no Enriques–Severi–Zariski statement in mathlib, and none in
+`~/cs/FLT`. All three ingredients must be built.
+
+FAITHFULNESS AUDIT 2026-07-26: statement re-derived and confirmed, including
+the two points where it is delicate. (a) `hdim` is load-bearing exactly as
+the counterexample above says: `A = ℚ[s,t]/(s²+t²−1)` is smooth,
+geometrically irreducible (`s²+t²−1` is irreducible over `ℚ̄`) and of
+dimension `1`, and a general rational line meets the conic in two distinct
+geometric points, so the section is nonempty but DISCONNECTED — every
+hypothesis of the leaf except `hdim` holds while the conclusion fails. (b)
+Nonemptiness, which `GeometricallyConnected` demands through
+`ConnectedSpace`'s `Nonempty`, does follow from `hdim` and not merely from
+irreducibility: `X̄ ∩ H` has dimension `dim X − 1`, strictly larger than
+`dim (X̄ ∩ H ∩ H_∞) = dim X − 2`, so `X̄ ∩ H ⊄ H_∞` and the affine part is
+nonempty — an inequality that degenerates at `dim X = 1` and is a second,
+independent reason the `dim = 1` case fails. -/
 theorem exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible
     (hsmooth : AlgebraicGeometry.Smooth g)
     (hft : AlgebraicGeometry.LocallyOfFiniteType g)
