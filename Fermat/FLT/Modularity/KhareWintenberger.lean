@@ -12447,30 +12447,109 @@ repeat it). Statement: `Γ F` compact, `τ : Γ F → GL_2(L)` continuous,
 `L/ℚ_3` finite ⟹ a `Γ F`-stable `O_L`-lattice exists (take the
 `O_L`-span of `τ(g_i)·O_L²` over coset representatives of the open
 subgroup stabilizing one lattice). Where each ingredient stands:
-* compactness of the absolute Galois group — mathlib has
-  `instance [IsGalois k K] : CompactSpace Gal(K/k)`
-  (`Mathlib/FieldTheory/Galois/Profinite.lean`), and `Γ F` is
-  `Gal(F̄/F)` with `IsGalois F F̄` in characteristic zero;
+* compactness of the absolute Galois group — AVAILABLE, but NOT by
+  `inferInstance`: the tree's own
+  `instance [Algebra.IsAlgebraic K L] : CompactSpace (L ≃ₐ[K] L)`
+  (`Fermat/FLT/Mathlib/FieldTheory/Galois/Infinite.lean:93`) is
+  strictly better than mathlib's `IsGalois`-based one (algebraicity
+  only, no separability), but `Field.absoluteGaloisGroup` is a `def`,
+  so it must be summoned as
+  `inferInstanceAs (CompactSpace (AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F))`
+  — the idiom already used at `ModThree.lean:37174`;
 * `O_L` module-finite over `ℤ_3` — `IsIntegralClosure.finite`
-  (`Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean`): `ℤ_3` is
-  a Noetherian integrally closed domain and `L/ℚ_3` is finite
-  separable;
+  (`Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean:174`): `ℤ_3`
+  is a Noetherian integrally closed domain (both free from
+  `IsDiscreteValuationRing ℤ_[p]`, `PadicIntegers.lean:521`) and
+  `L/ℚ_3` is finite separable;
 * the lattice is FREE of rank `2` — `O_L` is Dedekind and local
   (`isLocalRing_of_finite_padicInt`, in this file), hence a DVR, hence
-  a PID;
-* `O_L` OPEN in `L` and the lattice stabilizer OPEN in
-  `Module.End L (Fin 2 → L)` — via `IsModuleTopology.instPi` /
-  `IsModuleTopology.iso`; no direct pin support, this is where the work
-  starts;
-* an open subgroup of a compact group has finite index — not found in
-  mathlib under an obvious name; a short covering argument;
+  a PID; alternatively `IsIntegralClosure.module_free`
+  (`IntegralClosure.lean:182`) gives `Module.Free ℤ_3 O_L` outright;
+* `O_L` OPEN in `L` — **CORRECTED 2026-07-26 (round 5): the "no direct
+  pin support, this is where the work starts" verdict was WRONG.** The
+  technique is in-tree and worked out:
+  `isOpen_span_natCast_pow` and `isOpen_pow_of_natCast_mem`
+  (`Fermat/FLT/Modularity/TateModule.lean:2752`, `:2793`) prove exactly
+  "a lattice is open" for a ring carrying the `ℤ_q`-module topology, by
+  transporting through `Module.Free.chooseBasis`'s `equivFun` +
+  `IsModuleTopology.continuous_of_linearMap` + `isOpen_set_pi` +
+  `IsLocalRing.isOpen_maximalIdeal_pow ℤ_[q] n`. The same file supplies
+  `compactSpace_of_isModuleTopology_padicInt` (`:2725`),
+  `t2Space_of_isModuleTopology_padicInt` (`:2736`) and
+  `exists_pow_subset_of_mem_nhds` (`:2812`);
+* an open subgroup of a compact group has finite index — **CORRECTED
+  2026-07-26 (round 5): no covering argument is owed.** It is
+  `Subgroup.quotient_finite_of_isOpen`
+  (`Mathlib/Topology/Algebra/OpenSubgroup.lean:287`) composed with
+  `Subgroup.finiteIndex_of_finite_quotient`
+  (`Mathlib/GroupTheory/Index.lean:719`); mathlib has no single bundled
+  name, which is why the earlier grep missed it, and the tree already
+  open-codes the composition at `ModThree.lean:37176`;
 * transporting `τ` to a `GaloisRep F O_L (Fin 2 → O_L)` is the
   EXPENSIVE half, not the lattice: it needs `moduleTopology ℤ_3 O_L` to
   agree with the subspace topology from `L`, and the doctrine warning
   about concrete modules inside topology-carrying steps applies in
-  full. This is a self-contained development, not a lemma — and it may
+  full. Round 5 confirms this is where ALL the remaining work is, and
+  that it is a genuine hole rather than a lookup: a repo-wide sweep of
+  BOTH trees found **no** `GaloisRep` descent to a subring of any kind
+  — no `GaloisRep.restrictScalars`, no Galois-stable-lattice
+  development, and `GaloisRep.baseChange`
+  (`GaloisRep.lean:161`) goes only UP, along an `Algebra A B`. The
+  `p`-adic ring-of-integers hull
+  (`exists_padicIntegers_dvr_hull_of_continuousSMul`,
+  `PadicIntegralClosure.lean:320`) does NOT close it either: it starts
+  from an `R` that is already `Module.Finite ℤ_[p]`, so it presupposes
+  the integrality this step is trying to produce. (The reverse half is
+  in-tree and cheap — `finiteDimensional_padic_fractionRing`,
+  `PadicIntegralClosure.lean:136` — which is the Old ⟹ New direction.)
+  This is a self-contained development, not a lemma — and it may
   not be sorried in passing, since a sorried lattice step IS the "one
   citation for two" the ROUTE AUDIT rejects.
+
+WORK PLAN for that development (round 5, so the next owner starts at
+step 4 rather than at a blank page). Steps 1–3 are now lookups, step 5
+is standard, and essentially all of the cost is in step 6:
+
+1. `CompactSpace (Γ F)` — the `inferInstanceAs` idiom above.
+2. `U := {g | τ g '' Λ₀ ⊆ Λ₀ ∧ τ g⁻¹ '' Λ₀ ⊆ Λ₀}` is a SUBGROUP (the
+   two-sided form is what makes it one; the naive preimage of the
+   integral matrices is only a submonoid) and is OPEN, because
+   `Mat₂(O_L)` is open in `Mat₂(L) ≅ End_L(L²)`. That reduces to
+   `O_L` open in `L`, i.e. a full `ℤ_3`-lattice in a finite-dimensional
+   `ℚ_3`-space is open — the `TateModule.lean:2752` technique verbatim,
+   with `chooseBasis` + `isOpen_set_pi` and `ℤ_3` open in `ℚ_3`.
+3. `U` has finite index — the two-lemma composition above.
+4. `Λ := ⨆ i, τ (gᵢ) '' Λ₀` over coset representatives is `Γ F`-stable:
+   for `g` and each `i`, `g * gᵢ = gⱼ * u` with `u ∈ U`, so
+   `τ(g * gᵢ) '' Λ₀ = τ(gⱼ) '' Λ₀`. The Lean cost here is the `Finset`
+   bookkeeping over `Quotient (QuotientGroup.leftRel U)`, not the
+   mathematics.
+5. `Λ` is f.g. and torsion-free over the DVR `O_L`, hence free, and it
+   spans `L²`, hence of rank `2` — giving `e : Λ ≃ₗ[O_L] (Fin 2 → O_L)`.
+6. CONTINUITY of `g ↦ e.conj (τ g |_Λ)` into
+   `moduleTopology O_L (End_{O_L} (Fin 2 → O_L))`. The route that
+   avoids the concrete-module blowup the doctrine warns about is to
+   go through `ℤ_3` rather than `O_L`: the module topology over `O_L`
+   agrees with the one over `ℤ_3` because `O_L` is module-finite over
+   `ℤ_3`, `End_{O_L}(O_L²)` is then finite free over `ℤ_3`, and
+   continuity into a finite free `ℤ_3`-module is continuity of
+   coordinates, each of which factors through the already-continuous
+   `τ` and the topological embedding `ℤ_3 ↪ ℚ_3`.
+
+   **The one pin gap this exposes**: the transitivity lemma that step 6
+   opens with — for `S` an `R`-algebra with `[Module.Finite R S]` and
+   `[IsModuleTopology R S]`, the `S`-module topology on an `S`-module
+   `M` COINCIDES with the `R`-module topology (an equality of
+   topologies, and correspondingly `IsModuleTopology R M ↔
+   IsModuleTopology S M`) — is NOT in our mathlib pin. It IS in the
+   reference project as `moduleTopology.trans` / `IsModuleTopology.trans`
+   (`~/cs/FLT/FLT/Mathlib/Topology/Algebra/Module/ModuleTopology.lean`,
+   `:169` and `:194` respectively, alongside
+   `of_continuous_isOpenMap_algebraMap` at `:212`, which is the natural
+   tool for "`O_L` carries the `ℤ_3`-module topology"). That project's
+   pin has drifted, so these need a signature audit rather than a
+   verbatim copy. Vendoring the three is the recommended first commit
+   of the development.
 
 (2) FIXING THE CARRIER — returning the representation over the
 integers of `ℚ_3(ψ₃ E)`, i.e. over `O_{E_λ}` — REJECTED. It does make
@@ -12563,6 +12642,60 @@ instances the literature DOES cover.)
 (6) TOTAL ODDNESS of `ρ|_{G_F}` — REJECTED as REDUNDANT, same source:
 `IsHardlyRamified.det` fixes the determinant outright, so oddness is
 already a consequence of `hρ` and no instance is deleted.
+
+ROUND-5 AUDIT (2026-07-26). Round 5 asked the one question rounds 2–4
+left open: is the exclusion set `{w | w ∣ 2} ∪ {w ∣ 3} ∪ {w ∣ ℓ}`
+COMPLETE — i.e. can the `3`-adic member still ramify at some
+`w ∉ badF`, so that a FIFTH `hbad` is owed? Answer: NO, the set is
+complete, and the proof is recorded here because the missing fifth
+hypothesis is otherwise an entirely reasonable thing for the next
+auditor to propose (it does delete instances, so the sharp test does
+not by itself dispose of it).
+
+(7) EXCLUDING THE LEVEL — adding `hbadlevel`, i.e. demanding that
+`badF` also contain the places where the Hilbert newform underlying
+`heckeF` is ramified — REJECTED as REDUNDANT. The hypotheses already
+force that level to be supported over `2` and `ℓ`:
+
+* `hirrF` gives `ρbar|_{G_F}` irreducible, hence `ρ|_{G_F}`
+  irreducible (a reducible representation has reducible reduction);
+* let `{σ_λ}` be the compatible system of the cuspidal `π` underlying
+  `heckeF`. Both `σ_ℓ` and `ρ|_{G_F}` are unramified outside a finite
+  set, so both factor through `Γ_{F,S}` for one finite `S`, and `hmod`
+  says their Frobenius characteristic polynomials agree at every
+  `w ∉ badF` — a set of density `1`. Chebotarev plus Brauer–Nesbitt
+  therefore give `σ_ℓ^{ss} ≅ (ρ|_{G_F})^{ss}`;
+* by irreducibility that is an isomorphism `σ_ℓ ≅ ρ|_{G_F}` on the
+  nose, and `ρ` is hardly ramified, so `σ_ℓ` is unramified outside the
+  places over `2` and `ℓ`. Local–global compatibility at `w ∤ ℓ` then
+  says `π_w` is unramified there, so the level of `π` is supported
+  over `2` and `ℓ`, and `σ_3` is unramified outside the places over
+  `2`, `3` and `ℓ` — exactly the set already excluded by `hbad2`,
+  `hbad3`, `hbadℓ`. No instance is deleted.
+
+THE INTERLOCK, which is the load-bearing part and was not visible
+before round 4: **rounds 3 and 4 are NOT independent narrowings —
+`hirrF` is what makes `hbad2`/`hbad3`/`hbadℓ` SUFFICIENT.** Drop
+`hirrF` from the argument above and it stops at
+`σ_ℓ^{ss} ≅ (ρ|_{G_F})^{ss}`, which does not bound the ramification of
+`σ_ℓ` itself: a `σ_ℓ` that is STEINBERG at some `w₀ ∤ 2·3·ℓ` — a
+nonsplit extension of characters, with unipotent nontrivial inertia at
+`w₀` — has unramified semisimplification, satisfies `hmod` at `w₀`,
+and yet its `3`-adic partner `σ_3` is ramified at `w₀`, where
+`charFrob` is not choice-independent. So without `hirrF` a genuine
+fifth exclusion IS owed. Do not remove or weaken `hirrF` on the
+grounds that it "only" handles Eisenstein systems; it is also the
+reason the ramification exclusion is closed.
+
+Recorded for the same reason, as a correction to the round-4 note's
+"NOT implied by `hirr`": the CONVERSE does hold. `Γ F → Γ ℚ` is
+injective with image the subgroup fixing `F`, so `ρbar.map` is a
+restriction, and an invariant subspace for `Γ ℚ` is one for `Γ F` —
+hence `hirrF ⟹ hirr`, and `hirr` is now a formally redundant
+hypothesis of this statement. It is deliberately LEFT IN PLACE:
+removing it deletes no instance, changes the signature of two proven
+assemblies and their call site, and would cost the integrator a
+conflict for nothing.
 
 RESIDUAL FAITHFULNESS GAP, NAMED (2026-07-26, round 4; flagged, NOT
 repaired here — it is a cut-level change). Even with `hirrF`, the true
