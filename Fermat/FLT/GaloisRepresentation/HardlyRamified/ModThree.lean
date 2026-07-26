@@ -5924,6 +5924,461 @@ theorem span_three_eq_maximalIdeal_pow_card_inertia
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **Restriction of a substitution of `L` to a normal subextension
+`M ≤ L`** (created 2026-07-26 — the plumbing of the `φ`-free Herbrand
+cut of leaf (ii-a′)).  Both `M` and `L` are subextensions of
+`ℚ₃ᵥᵃˡᵍ/ℚ₃ᵥ`, so `M` reifies as an intermediate field of `↥L`
+(`reifySubextension`, i.e. `IntermediateField.comap L.val M`), normal
+over `ℚ₃ᵥ` as soon as `M` is (`normal_reifySubextension`); restrict
+`σ` there with `AlgEquiv.restrictNormalHom` and transport the result
+back to an honest automorphism of `M` along `reifyEquiv` with
+`AlgEquiv.autCongr`.  This is the same three-step passage as
+`restrict_mem_inertia_of_le` of `LocalInertiaFixedField`, but starting
+from an automorphism of the FINITE level `L` rather than from the
+absolute group `Γ ℚ₃ᵥ`. -/
+noncomputable def restrictToLE
+    (M L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hML : M ≤ L)
+    [IsGalois ℚ₃ᵥ M] (σ : L ≃ₐ[ℚ₃ᵥ] L) : M ≃ₐ[ℚ₃ᵥ] M :=
+  letI : Normal ℚ₃ᵥ ↥(reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) :=
+    normal_reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML
+  AlgEquiv.autCongr
+    (reifyEquiv Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML)
+    (AlgEquiv.restrictNormalHom
+      (reifySubextension
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) σ)
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **A substitution whose restriction to `M` is trivial fixes every
+element of `M`** (PROVEN 2026-07-26 — the consumption side of
+`restrictToLE`): `AlgEquiv.restrictNormal_commutes` says the restricted
+automorphism computes the same value in `↥L` as `σ` itself, so once the
+restriction is the identity every `y : ↥L` whose ambient value lies in
+`M` is fixed outright.  `AlgEquiv.autCongr` is a `MulEquiv`, hence
+injective, which is how `restrictToLE σ = 1` is turned back into
+`AlgEquiv.restrictNormalHom (reify M L) σ = 1`. -/
+theorem apply_eq_of_restrictToLE_eq_one
+    (M L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (hML : M ≤ L)
+    [IsGalois ℚ₃ᵥ M] (σ : L ≃ₐ[ℚ₃ᵥ] L)
+    (h1 : restrictToLE M L hML σ = 1)
+    (y : ↥L) (hy : (y : ℚ₃ᵥᵃˡᵍ) ∈ M) : σ y = y := by
+  letI : Normal ℚ₃ᵥ ↥(reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) :=
+    normal_reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML
+  -- STEP 1: strip the `autCongr` transport, which is a `MulEquiv`
+  have h2 : AlgEquiv.restrictNormalHom
+      (reifySubextension
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) σ = 1 := by
+    apply (AlgEquiv.autCongr (reifyEquiv
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L hML)).injective
+    rw [map_one]
+    exact h1
+  -- STEP 2: `y` lies in the reification of `M` inside `↥L`
+  have hyE : y ∈ reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L := hy
+  -- STEP 3: the restricted automorphism computes the same value in `↥L`
+  have h3 := AlgEquiv.restrictNormal_commutes σ
+    (reifySubextension
+      Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) ⟨y, hyE⟩
+  have h4 : σ.restrictNormal
+      (reifySubextension
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L)
+      ⟨y, hyE⟩ = ⟨y, hyE⟩ := by
+    show (AlgEquiv.restrictNormalHom
+      (reifySubextension
+        Nat.prime_three.toHeightOneSpectrumRingOfIntegersRat M L) σ)
+      ⟨y, hyE⟩ = _
+    rw [h2]
+    rfl
+  rw [h4] at h3
+  exact h3.symm
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **The substitutions of `L` fixing every integral point of `A`**
+(PROVEN 2026-07-26 — the subgroup whose fixed field is the points field
+of leaf (ii-a′-1)): `{τ ∈ Gal(L/ℚ₃ᵥ) | τ (χ b) = χ b for every integral
+point `χ : A →ₐ[𝒪₃ᵥ] 𝒪_L` and every `b : A`}`.  Closure under
+inversion is `AlgEquiv.symm_apply_eq` (`g⁻¹` IS `g.symm` for
+`AlgEquiv.aut`, and `(g * n) x = g (n x)`). -/
+def pointFixingSubgroup (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A]
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) : Subgroup (L ≃ₐ[ℚ₃ᵥ] L) where
+  carrier := {τ | ∀ (χ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ L) (b : A),
+    τ ((χ b).1 : L) = ((χ b).1 : L)}
+  one_mem' := by intro χ b; rfl
+  mul_mem' := by
+    intro x y hx hy χ b
+    show x (y ((χ b).1 : L)) = ((χ b).1 : L)
+    rw [hy χ b, hx χ b]
+  inv_mem' := by
+    intro x hx χ b
+    show x.symm ((χ b).1 : L) = ((χ b).1 : L)
+    rw [AlgEquiv.symm_apply_eq]
+    exact (hx χ b).symm
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- Membership in `pointFixingSubgroup` is definitionally the pointwise
+fixing condition. -/
+theorem mem_pointFixingSubgroup_iff (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A]
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) (τ : L ≃ₐ[ℚ₃ᵥ] L) :
+    τ ∈ pointFixingSubgroup A L ↔
+      ∀ (χ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ L) (b : A),
+        τ ((χ b).1 : L) = ((χ b).1 : L) := Iff.rfl
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **`pointFixingSubgroup` is NORMAL** (PROVEN 2026-07-26): `Gal(L/ℚ₃ᵥ)`
+PERMUTES the integral points, because a substitution restricts to an
+`𝒪₃ᵥ`-algebra automorphism of `𝒪_L = IntegralClosure 𝒪₃ᵥ L`
+(`MulSemiringAction.toAlgHom`, the same idiom as
+`forall_point_apply_eq_of_lt_two_mul_sum_card_inertia`), so
+`g n g⁻¹ (χ b) = g (n ((g⁻¹ ∘ χ) b)) = g ((g⁻¹ ∘ χ) b) = χ b`. -/
+instance pointFixingSubgroup_normal (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A]
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) : (pointFixingSubgroup A L).Normal where
+  conj_mem := by
+    intro n hn g χ b
+    have key := hn
+      ((MulSemiringAction.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥L) g⁻¹).comp χ) b
+    show g (n (g⁻¹ ((χ b).1 : ↥L))) = ((χ b).1 : ↥L)
+    have hcoe : ((((MulSemiringAction.toAlgHom 𝒪₃ᵥ
+        (IntegralClosure 𝒪₃ᵥ ↥L) g⁻¹).comp χ) b).1 : ↥L) =
+        g⁻¹ ((χ b).1 : ↥L) := rfl
+    rw [hcoe] at key
+    rw [key]
+    exact g.apply_symm_apply _
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **The points field of `A` inside `L`** (PROVEN 2026-07-26 —
+leaf (ii-a′-1) of the Fontaine decomposition, PURE finite
+Galois theory with no arithmetic and no ramification vocabulary at
+all): for a finite Galois `L/ℚ₃ᵥ` and ANY `𝒪₃ᵥ`-algebra `A`, the
+subextension of `L` generated by the values of all integral points
+`χ : A →ₐ[𝒪₃ᵥ] 𝒪_L` is itself Galois over `ℚ₃ᵥ`, contains every such
+value, and carries a FAITHFUL action of its Galois group on the points
+of `A` in ITS ring of integers.
+THE PROOF, in five steps (elementary; the model to copy is the pair
+`isGalois_hopfPointsField` / `eq_one_of_forall_point_apply_eq` proven
+above for the ambient points-compositum field, but everything here
+happens at a FINITE level and is correspondingly easier).  Take
+`H = {τ : L ≃ₐ[ℚ₃ᵥ] L | ∀ χ b, τ (χ b) = χ b}`, a subgroup of
+`Gal(L/ℚ₃ᵥ)`, and `M = IntermediateField.lift (fixedField H)`.
+(1) `M ≤ L` is `IntermediateField.lift_le`.
+(2) `FiniteDimensional ℚ₃ᵥ M` follows from `M ≤ L`.
+(3) EVERY point value lies in `M`: by the very definition of `H`,
+every `τ ∈ H` fixes `χ b`, so `χ b ∈ fixedField H`.
+(4) `H` is NORMAL in `Gal(L/ℚ₃ᵥ)`, because `Gal(L/ℚ₃ᵥ)` PERMUTES the
+points: `ρ ∘ χ` is again an `𝒪₃ᵥ`-algebra map `A → 𝒪_L` (an element of
+`Gal(L/ℚ₃ᵥ)` restricts to an `𝒪₃ᵥ`-algebra automorphism of
+`𝒪_L = IntegralClosure 𝒪₃ᵥ L`, cf. `mulSemiringActionIntegralClosure`),
+so `ρτρ⁻¹ (χ b) = ρ (τ ((ρ⁻¹ ∘ χ) b)) = ρ ((ρ⁻¹ ∘ χ) b) = χ b`.  A
+normal subgroup has a normal fixed field, hence `IsGalois ℚ₃ᵥ M`
+(separability is free in characteristic zero, as in
+`isGalois_hopfPointsField`).
+(5) FAITHFULNESS: given `τ : M ≃ₐ[ℚ₃ᵥ] M` fixing every point of `A`
+in `𝒪_M`, lift it to `τ̃ : L ≃ₐ[ℚ₃ᵥ] L` with `restrictToLE M L _ τ̃ = τ`
+(`AlgEquiv.restrictNormalHom_surjective`); every `χ : A →ₐ[𝒪₃ᵥ] 𝒪_L`
+corestricts to `A →ₐ[𝒪₃ᵥ] 𝒪_M` by (3), so `τ̃` fixes every `χ b`, i.e.
+`τ̃ ∈ H`, so `τ̃` acts trivially on `fixedField H = M`
+(`IntermediateField.mem_fixedField_iff`) and `τ = 1`.
+THE EXACT `mathlib` ROUTE, as used in the proof below:
+`H` as a `Subgroup (↥L ≃ₐ[ℚ₃ᵥ] ↥L)` with
+`carrier := {τ | ∀ χ b, τ ((χ b).1 : ↥L) = ((χ b).1 : ↥L)}`; its
+`inv_mem'` is `AlgEquiv.symm_apply_eq` (note `g⁻¹` IS `g.symm` and
+`(g * n) x = g (n x)` for `AlgEquiv.aut`); its `Normal` instance uses
+`(MulSemiringAction.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥L) g⁻¹).comp χ`
+as the conjugated point, exactly as in
+`forall_point_apply_eq_of_lt_two_mul_sum_card_inertia` above.  Then
+`M := IntermediateField.lift (IntermediateField.fixedField H)`,
+`IntermediateField.lift_le`, `IntermediateField.mem_lift`,
+`IntermediateField.liftAlgEquiv` (an `↥(fixedField H) ≃ₐ[ℚ₃ᵥ] ↥M`),
+`IsGalois.of_fixedField_normal_subgroup` (an INSTANCE, fires from
+`H.Normal` and `IsGalois ℚ₃ᵥ ↥L`) and `IsGalois.of_algEquiv` /
+`LinearEquiv.finiteDimensional` to transport along it.  For (5), the
+corestriction `A →ₐ[𝒪₃ᵥ] ↥M` is
+`AlgHom.codRestrict … (M.toSubalgebra.restrictScalars 𝒪₃ᵥ) …`, the same
+idiom as `eq_one_of_forall_point_apply_eq` below; the integrality
+needed to land in `IntegralClosure 𝒪₃ᵥ ↥M` is best obtained by
+`isIntegral_algHom_iff` applied to the injective
+`M.val.restrictScalars 𝒪₃ᵥ`, since `A` is NOT assumed module-finite
+here and the integrality must come from `χ b` already lying in
+`IntegralClosure 𝒪₃ᵥ ↥L`.
+WHY IT IS THE RIGHT CUT: this is the ONLY place in the (ii-a′)
+decomposition where the algebra `A` and the field `L` interact, and it
+carries no arithmetic — the ramification content is entirely in the two
+leaves below.  Note in particular that the points field of `A` in
+`ℚ₃ᵥᵃˡᵍ` (`hopfPointsField A`, already available with its finiteness
+and normality PROVEN) is NOT usable here: it need not be contained in
+`L`, and Herbrand transport needs a subextension. -/
+theorem exists_pointsField_le
+    (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A]
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L] :
+    ∃ M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ, M ≤ L ∧ FiniteDimensional ℚ₃ᵥ M ∧
+      IsGalois ℚ₃ᵥ M ∧
+      (∀ (χ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ L) (b : A),
+        (((χ b).1 : ↥L) : ℚ₃ᵥᵃˡᵍ) ∈ M) ∧
+      (∀ τ : M ≃ₐ[ℚ₃ᵥ] M,
+        (∀ (ψ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ M) (b : A), τ • ψ b = ψ b) →
+          τ = 1) := by
+  classical
+  -- STEP 3: every point value is fixed by the whole subgroup, hence
+  -- lies in its fixed field
+  have hmemN : ∀ (χ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ ↥L) (b : A),
+      ((χ b).1 : ↥L) ∈ IntermediateField.fixedField (pointFixingSubgroup A L) := by
+    intro χ b
+    rw [IntermediateField.mem_fixedField_iff]
+    intro f hf
+    exact (mem_pointFixingSubgroup_iff A L f).mp hf χ b
+  refine ⟨IntermediateField.lift
+      (IntermediateField.fixedField (pointFixingSubgroup A L)),
+    IntermediateField.lift_le _, ?_, ?_, ?_, ?_⟩
+  · -- STEP 2: finiteness, transported along the lift
+    exact (IntermediateField.liftAlgEquiv
+      (IntermediateField.fixedField
+        (pointFixingSubgroup A L))).toLinearEquiv.finiteDimensional
+  · -- STEP 4: normality of the subgroup gives a Galois fixed field
+    exact IsGalois.of_algEquiv (IntermediateField.liftAlgEquiv
+      (IntermediateField.fixedField (pointFixingSubgroup A L)))
+  · intro χ b
+    exact (IntermediateField.mem_lift ((χ b).1 : ↥L)).mpr (hmemN χ b)
+  · -- STEP 5: faithfulness
+    intro τ hτ
+    haveI : IsGalois ℚ₃ᵥ
+        ↥(IntermediateField.fixedField (pointFixingSubgroup A L)) := inferInstance
+    -- lift the transported automorphism back to `L`
+    obtain ⟨g, hg⟩ := AlgEquiv.restrictNormalHom_surjective
+      (K₁ := ↥(IntermediateField.fixedField (pointFixingSubgroup A L))) (↥L)
+      ((AlgEquiv.autCongr (IntermediateField.liftAlgEquiv
+        (IntermediateField.fixedField (pointFixingSubgroup A L)))).symm τ)
+    -- `g` fixes every integral point of `A`
+    have hgH : g ∈ pointFixingSubgroup A L := by
+      rw [mem_pointFixingSubgroup_iff]
+      intro χ b
+      -- the point, corestricted to the points field and transported
+      let ψM : A →ₐ[𝒪₃ᵥ]
+          ↥(IntermediateField.lift
+            (IntermediateField.fixedField (pointFixingSubgroup A L))) :=
+        ((IntermediateField.liftAlgEquiv (IntermediateField.fixedField
+            (pointFixingSubgroup A L))).toAlgHom.restrictScalars 𝒪₃ᵥ).comp
+          (AlgHom.codRestrict
+            ((IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥L) ↥L).comp χ)
+            ((IntermediateField.fixedField
+              (pointFixingSubgroup A L)).toSubalgebra.restrictScalars 𝒪₃ᵥ)
+            (fun c => hmemN χ c))
+      have hint : ∀ c : A, IsIntegral 𝒪₃ᵥ (ψM c) := by
+        intro c
+        refine (isIntegral_algHom_iff
+          ((IntermediateField.lift (IntermediateField.fixedField
+            (pointFixingSubgroup A L))).val.restrictScalars 𝒪₃ᵥ)
+          (fun x y h => Subtype.ext h)).mp ?_
+        exact (Algebra.IsIntegral.isIntegral (R := 𝒪₃ᵥ) (χ c)).map
+          ((L.val.restrictScalars 𝒪₃ᵥ).comp
+            (IsScalarTower.toAlgHom 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ ↥L) ↥L))
+      let ψ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ
+          ↥(IntermediateField.lift
+            (IntermediateField.fixedField (pointFixingSubgroup A L))) :=
+        { toFun := fun c => ⟨ψM c, hint c⟩
+          map_one' := Subtype.ext (map_one ψM)
+          map_mul' := fun x y => Subtype.ext (map_mul ψM x y)
+          map_zero' := Subtype.ext (map_zero ψM)
+          map_add' := fun x y => Subtype.ext (map_add ψM x y)
+          commutes' := fun r => Subtype.ext (ψM.commutes r) }
+      -- `τ` fixes the transported point
+      have hfix := hτ ψ b
+      have hτjz : τ ((IntermediateField.liftAlgEquiv (IntermediateField.fixedField
+          (pointFixingSubgroup A L))) ⟨((χ b).1 : ↥L), hmemN χ b⟩) =
+          (IntermediateField.liftAlgEquiv (IntermediateField.fixedField
+            (pointFixingSubgroup A L))) ⟨((χ b).1 : ↥L), hmemN χ b⟩ := by
+        have h1 := congrArg Subtype.val hfix
+        rw [IntegralClosure.coe_smul] at h1
+        exact h1
+      -- undo the `autCongr` transport
+      have hback : AlgEquiv.autCongr (IntermediateField.liftAlgEquiv
+          (IntermediateField.fixedField (pointFixingSubgroup A L)))
+          ((AlgEquiv.autCongr (IntermediateField.liftAlgEquiv
+            (IntermediateField.fixedField (pointFixingSubgroup A L)))).symm τ) = τ :=
+        (AlgEquiv.autCongr _).apply_symm_apply τ
+      have h3 : ((AlgEquiv.autCongr (IntermediateField.liftAlgEquiv
+          (IntermediateField.fixedField (pointFixingSubgroup A L)))).symm τ)
+          ⟨((χ b).1 : ↥L), hmemN χ b⟩ = ⟨((χ b).1 : ↥L), hmemN χ b⟩ := by
+        refine (IntermediateField.liftAlgEquiv (IntermediateField.fixedField
+          (pointFixingSubgroup A L))).injective ?_
+        rw [← hback] at hτjz
+        exact hτjz
+      -- transport back to `L`
+      have h4 := AlgEquiv.restrictNormal_commutes g
+        (IntermediateField.fixedField (pointFixingSubgroup A L))
+        ⟨((χ b).1 : ↥L), hmemN χ b⟩
+      rw [show g.restrictNormal
+          (IntermediateField.fixedField (pointFixingSubgroup A L)) =
+          AlgEquiv.restrictNormalHom
+            ↥(IntermediateField.fixedField (pointFixingSubgroup A L)) g from rfl,
+        hg, h3] at h4
+      exact h4.symm
+    -- hence `g` restricts to the identity, so `τ = 1`
+    have hg1 : AlgEquiv.restrictNormalHom
+        ↥(IntermediateField.fixedField (pointFixingSubgroup A L)) g = 1 := by
+      refine AlgEquiv.ext fun z => ?_
+      apply Subtype.ext
+      have h5 := AlgEquiv.restrictNormal_commutes g
+        (IntermediateField.fixedField (pointFixingSubgroup A L)) z
+      rw [show g.restrictNormal
+          (IntermediateField.fixedField (pointFixingSubgroup A L)) =
+          AlgEquiv.restrictNormalHom
+            ↥(IntermediateField.fixedField (pointFixingSubgroup A L)) g from rfl] at h5
+      show (algebraMap ↥(IntermediateField.fixedField (pointFixingSubgroup A L)) ↥L)
+          (((AlgEquiv.restrictNormalHom
+            ↥(IntermediateField.fixedField (pointFixingSubgroup A L))) g) z) = _
+      rw [h5]
+      exact (IntermediateField.mem_fixedField_iff _ _).mp z.2 g hgH
+    rw [hg] at hg1
+    have hback : AlgEquiv.autCongr (IntermediateField.liftAlgEquiv
+        (IntermediateField.fixedField (pointFixingSubgroup A L)))
+        ((AlgEquiv.autCongr (IntermediateField.liftAlgEquiv
+          (IntermediateField.fixedField (pointFixingSubgroup A L)))).symm τ) = τ :=
+      (AlgEquiv.autCongr _).apply_symm_apply τ
+    rw [← hback, hg1, map_one]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **Herbrand transport of the ramification hypothesis to a
+subextension, in an integer, `φ`-FREE form** (sorry node, created
+2026-07-26 — leaf (ii-a′-2) of the Fontaine decomposition, PURE local
+ramification theory; Serre, *Corps Locaux* IV §3 Lemma 5 together with
+the transitivity `φ_{L/K} = φ_{M/K} ∘ φ_{L/M}` of IV §3 Prop. 15):
+let `M ≤ L` be finite Galois subextensions of `ℚ₃ᵥᵃˡᵍ/ℚ₃ᵥ`, with
+lower-numbering filtrations `G_i = inertia(𝔪_L^(i+1))` and
+`Ḡ_i = inertia(𝔪_M^(i+1))`.  If `σ ∈ G_{m+1}` sits at a level whose
+Herbrand value exceeds `1/2` — i.e. `#G_0 < 2·Σ_{i=1}^{m+1} #G_i`,
+which is exactly `φ_{L/ℚ₃ᵥ}(m+1) > 1/2` — then its restriction to `M`
+sits at a level of `M`'s OWN filtration whose Herbrand value ALSO
+exceeds `1/2`: there is an `m'` with `res_M σ ∈ Ḡ_{m'+1}` and
+`#Ḡ_0 < 2·Σ_{i=1}^{m'+1} #Ḡ_i`.
+WHY THIS IS THE RECOMMENDED CUT: stated this way the whole of leaf
+(ii-a′) is discharged WITHOUT ever defining Herbrand's `φ`, without
+the upper numbering, and without Herbrand's theorem as a named object
+— none of which exist at this mathlib pin, where `Ideal.inertia` is the
+only ramification-group notion available.
+INTENDED PROOF: Herbrand's theorem (Serre IV §3 Lemma 5) says
+`Ḡ_{φ_{L/M}(u)} = G_u H / H` for `H = Gal(L/M)`, so
+`res_M σ ∈ Ḡ_w` for `w = φ_{L/M}(m+1)`, which is `> 0` since `m+1 ≥ 1`
+and `φ_{L/M}` is a strictly increasing piecewise-linear bijection of
+`[0,∞)` fixing `0`.  Take `m' + 1 = ⌈w⌉ ≥ 1`: the filtration is
+constant on `(j−1, j]`, so `Ḡ_{⌈w⌉} = Ḡ_w ∋ res_M σ`; and
+`φ_{M/ℚ₃ᵥ}` is increasing with
+`φ_{M/ℚ₃ᵥ}(⌈w⌉) ≥ φ_{M/ℚ₃ᵥ}(w) = φ_{L/ℚ₃ᵥ}(m+1) > 1/2`, which is the
+second conjunct after clearing the denominator `#Ḡ_0` (Serre IV §3
+Prop. 15 for the composition, and
+`φ_{M/ℚ₃ᵥ}(j) = (1/#Ḡ_0)·Σ_{i=1}^{j} #Ḡ_i` at integer arguments).
+DEGENERATE CASE, worth checking first: at `M = L` the statement holds
+with `m' = m` and `res_M σ = σ`, so the leaf is certainly not vacuous
+in the trivial direction; the content is entirely in the level shift. -/
+theorem exists_restrictToLE_mem_inertia_of_lt_two_mul_sum_card_inertia
+    (M L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ)
+    [FiniteDimensional ℚ₃ᵥ M] [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ M] [IsGalois ℚ₃ᵥ L] (hML : M ≤ L)
+    (m : ℕ)
+    (hlt : Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) <
+      2 * ∑ i ∈ Finset.range (m + 1),
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L)))
+    (σ : L ≃ₐ[ℚ₃ᵥ] L)
+    (hσ : σ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L) ^ (m + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) :
+    ∃ m' : ℕ,
+      restrictToLE M L hML σ ∈ (IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ M) ^ (m' + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M) ∧
+      Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) <
+        2 * ∑ i ∈ Finset.range (m' + 1),
+          Nat.card ((IsLocalRing.maximalIdeal
+            (IntegralClosure 𝒪₃ᵥ M) ^ (i + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **Fontaine's Théorème A at `3`, for a field on which the Galois
+group acts faithfully on the points** (sorry node, created 2026-07-26 —
+leaf (ii-a′-3) of the Fontaine decomposition, and THE arithmetic core
+of the whole argument): let `A` be a finite flat `𝒪₃ᵥ ≅ ℤ₃`-algebra
+with `Ω[A⁄𝒪₃ᵥ]` killed by `3`, and let `M/ℚ₃ᵥ` be finite Galois such
+that the only substitution of `M` fixing every point
+`ψ : A →ₐ[𝒪₃ᵥ] 𝒪_M` is the identity (`hfaith` — i.e. `M` is generated
+by the coordinates of the points of `A`).  Then the ramification of
+`Gal(M/ℚ₃ᵥ)` vanishes strictly above Herbrand value `1/2`: any
+`τ ∈ Ḡ_{m'+1}` with `#Ḡ_0 < 2·Σ_{i=1}^{m'+1} #Ḡ_i` is trivial.
+This is Fontaine, *Il n'y a pas de variété abélienne sur ℤ*,
+Invent. Math. 81 (1985), §1, Théorème A at `K = ℚ₃`, `e = 1`, `n = 1`,
+`p = 3`, where the break bound `e(n + 1/(p−1)) − 1` is `1/2`; the
+hypothesis `hfaith` is what makes `M` a subfield of the field
+generated by ALL points of `A`, to which Théorème A applies, and the
+upper numbering is compatible with quotients so the bound descends.
+INGREDIENTS, IN DEPENDENCY ORDER (none in mathlib at this pin):
+(a) Fontaine's LIFTING estimate — an `𝒪_K`-algebra map `A → 𝒪_E/𝔞^m`
+with `m > e(n + 1/(p−1))` lifts to `A → 𝒪_E`; this is where the
+`1/(p−1)` enters;
+(b) Krasner's lemma and the implication `(P_m) ⟹ ramification bound`
+(Fontaine Prop. 1.5; sharpened to `m_{L/K} = u_{L/K}` by M. Yoshida,
+*Ramification of local fields and Fontaine's property `(P_m)`*,
+arXiv:0905.1171, Prop. 2.1 and §3).
+SHARPNESS, and a check that the statement is not vacuous the wrong
+way: at the peu-ramifié `M = ℚ₃(ζ₃, u^{1/3})` (the points field of the
+`3`-torsion of a peu-ramifié Tate curve) one has `#Ḡ_0 = 6`,
+`#Ḡ_1 = 3`, `Ḡ_2 = ⊥`; the numerical hypothesis FAILS at `m' = 0`
+(`6 < 2·3` is false — the break is exactly `1/2`) and holds at
+`m' = 1` (`6 < 2(3+1) = 8`), where `Ḡ_2 = ⊥` makes the conclusion
+`τ = 1` true.  At the très-ramifié `ℚ₃(ζ₃, q^{1/3})` with
+`#Ḡ_1 = #Ḡ_2 = #Ḡ_3 = 3` the hypothesis holds at `m' = 1` with
+`Ḡ_2 ≠ ⊥`, so the leaf then asserts genuine arithmetic — and it is
+exactly the assertion that no such `A` has its points generating that
+field.
+A ROUTE THAT IS REFUTED — do not retry it: the different/discriminant
+bound `v_M(𝔡) ≤ v_M(3)` extracted from `3·Ω = 0` would force, through
+Hilbert's different formula, `Σ_{i≥1}(#Ḡ_i − 1) ≤ 1`, hence — `Ḡ_1`
+being a `3`-group — TAMENESS of `M/ℚ₃`, which is false for the
+peu-ramifié field above.  Fontaine's true bound `2Σ_{i≥1}#Ḡ_i ≤ #Ḡ_0`
+is strictly weaker than tameness, so no discriminant estimate can
+prove this leaf. -/
+theorem eq_one_of_mem_inertia_of_faithful_of_lt_two_mul_sum_card_inertia
+    (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
+    [Module.Finite 𝒪₃ᵥ A]
+    (hΩ : ∀ ω : Ω[A⁄𝒪₃ᵥ], (3 : ℕ) • ω = 0)
+    (M : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ M]
+    [IsGalois ℚ₃ᵥ M]
+    (hfaith : ∀ τ : M ≃ₐ[ℚ₃ᵥ] M,
+      (∀ (ψ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ M) (b : A), τ • ψ b = ψ b) →
+        τ = 1)
+    (m' : ℕ)
+    (hlt : Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ M)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) <
+      2 * ∑ i ∈ Finset.range (m' + 1),
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ M) ^ (i + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M)))
+    (τ : M ≃ₐ[ℚ₃ᵥ] M)
+    (hτ : τ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ M) ^ (m' + 2)).inertia (M ≃ₐ[ℚ₃ᵥ] M)) :
+    τ = 1 := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **Fontaine's ramification estimate at `3`, DEEP REGIME** (sorry
 node, created 2026-07-25 by narrowing leaf (ii-a′)
@@ -6012,7 +6467,22 @@ intact, apply (3) to `M` to get `res_M σ = 1`, conclude `σ ∈ H`, hence
 `σ • χ a − χ a = 0` — which is STRONGER than the stated
 `∈ (3)·𝔪_L`, as the consumer's use of
 `algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal` already
-anticipates. -/
+anticipates.
+DECOMPOSED 2026-07-26 ALONG EXACTLY THAT ROUTE — the assembly below is
+now PROVEN and this declaration is no longer a leaf.  The `φ`-free
+Herbrand cut recommended above was taken verbatim; of the three
+resulting nodes the points field `exists_pointsField_le` (pure finite
+Galois theory) is itself PROVEN, and the two remaining sorry leaves are
+`exists_restrictToLE_mem_inertia_of_lt_two_mul_sum_card_inertia`
+(Herbrand transport, stated in the integer `φ`-free form so that
+neither `φ` nor the upper numbering ever has to be defined), and
+`eq_one_of_mem_inertia_of_faithful_of_lt_two_mul_sum_card_inertia`
+(Fontaine's Théorème A for a points-generated field).  The plumbing
+`restrictToLE` / `apply_eq_of_restrictToLE_eq_one` is PROVEN.  Note
+that the assembly delivers the STRONGER conclusion `σ • χ a = χ a`, so
+it consumes NEITHER of the two narrowings `hdeep`, `hone` that the
+consumer discharges for free — they are retained (underscored) only
+because the consumer's case split supplies them. -/
 theorem sub_mem_span_three_mul_maximalIdeal_of_add_two_le_card_inertia
     (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
     [Module.Finite 𝒪₃ᵥ A]
@@ -6028,13 +6498,34 @@ theorem sub_mem_span_three_mul_maximalIdeal_of_add_two_le_card_inertia
     (σ : L ≃ₐ[ℚ₃ᵥ] L)
     (hσ : σ ∈ (IsLocalRing.maximalIdeal
       (IntegralClosure 𝒪₃ᵥ L) ^ (m + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L))
-    (hdeep : m + 2 ≤ Nat.card ((IsLocalRing.maximalIdeal
+    (_hdeep : m + 2 ≤ Nat.card ((IsLocalRing.maximalIdeal
       (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)))
-    (hone : σ ≠ 1)
+    (_hone : σ ≠ 1)
     (χ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ L) (a : A) :
     σ • χ a - χ a ∈ Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ L)} *
       IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) := by
-  sorry
+  -- STEP 1: the points field `M ≤ L` of `A`
+  obtain ⟨M, hML, hMfin, hMgal, hpoints, hfaith⟩ := exists_pointsField_le A L
+  haveI := hMfin
+  haveI := hMgal
+  -- STEP 2: Herbrand transport of the deep-level hypothesis down to `M`
+  obtain ⟨m', hτ, hlt'⟩ :=
+    exists_restrictToLE_mem_inertia_of_lt_two_mul_sum_card_inertia
+      M L hML m hlt σ hσ
+  -- STEP 3: Fontaine's Théorème A on `M`, where the action is faithful
+  have h1 : restrictToLE M L hML σ = 1 :=
+    eq_one_of_mem_inertia_of_faithful_of_lt_two_mul_sum_card_inertia
+      A hΩ M hfaith m' hlt' _ hτ
+  -- STEP 4: so `σ` fixes `M` pointwise, and the points live in `M`
+  have hfix : σ ((χ a).1 : ↥L) = ((χ a).1 : ↥L) :=
+    apply_eq_of_restrictToLE_eq_one M L hML σ h1 _ (hpoints χ a)
+  have hzero : σ • χ a - χ a = 0 := by
+    rw [sub_eq_zero]
+    refine Subtype.ext ?_
+    rw [IntegralClosure.coe_smul]
+    exact hfix
+  rw [hzero]
+  exact Submodule.zero_mem _
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
