@@ -118,16 +118,19 @@ def ContinuousAlgEquiv.ofIsModuleTopology {R A B : Type*} [CommSemiring R] [Semi
 
 
 
-open NumberField in
-instance {G K : Type*} [Field K] [Monoid G] [MulSemiringAction G K] :
-    MulSemiringAction G (𝓞 K) where
-  smul σ x := ⟨σ • x, x.2.map (MulSemiringAction.toAlgHom ℤ K σ)⟩
-  one_smul _ := Subtype.ext (one_smul _ _)
-  mul_smul _ _ _ := Subtype.ext (mul_smul _ _ _)
-  smul_zero _ := Subtype.ext (smul_zero _)
-  smul_add _ _ _ := Subtype.ext (smul_add _ _ _)
-  smul_one _ := Subtype.ext (smul_one _)
-  smul_mul _ _ _ := Subtype.ext (MulSemiringAction.smul_mul _ _ _)
+-- VENDORING CHANGE (2026-07-26): the vendored `MulSemiringAction G (𝓞 K)`
+-- instance that used to live here has been DELETED. Mathlib now supplies it
+-- (`NumberField.RingOfIntegers.instMulSemiringAction`, in
+-- `Mathlib/NumberTheory/NumberField/Basic.lean`, as
+-- `inferInstanceAs (MulSemiringAction G (integralClosure ℤ K))`), with a
+-- definitionally identical `smul`. The vendored copy won instance search, and
+-- because it was a different TERM it desynchronised mathlib's companion
+-- `SMulDistribClass G (𝓞 K) K` instance — which is stated against mathlib's
+-- action — making `IsGaloisGroup Gal(L/ℚ) ℤ (𝓞 L)` unsynthesizable and taking
+-- mathlib's whole ramification-theory API out of reach in every file importing
+-- this one. The only thing lost by the deletion is generality: mathlib's
+-- instance requires `[Group G]` where this one asked only `[Monoid G]`. No use
+-- in this tree needs the monoid case.
 
 lemma Subring.algebraMap_def {R : Type*} [CommRing R] (S : Subring R) :
     algebraMap S R = S.subtype := rfl
