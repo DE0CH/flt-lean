@@ -18533,24 +18533,33 @@ folded into the same `sorry`: this theorem and the isogeny theorem
 always shared their citation, and the section note records why using
 one for the other is a reduction and not a circle.
 
-TWO ROUTES EXIST AT LEVELS `11, 13, 17, 19`, and this file keeps the
-PLANE-MODEL one (integration decision, 2026-07-26). Each of those four
-levels is proven where it is declared far above, from its own explicit
-plane model and its own leaf — `MazurLevel11.cremona_11a3_abscissa` and
-the three `MazurLevel13/17/19.no_rational_point`. `flt-lean-29` proposed
-replacing all four by one-line instantiations of
-`tateNormalForm_origin_order_ne_of_cuspidalRankZero` (declared above),
-which would have forced them to move below that node. That was NOT taken:
-it would have orphaned the four plane-model leaves, and by the branch's
-own axiom audit it would NOT have made the levels axiom-clean — the
-uniform node proves its seven levels in ONE term under a single `rcases`,
-so every instantiation carries the sibling branches' open leaves
-(`x1Seventeen_preΨ'_ne_zero`, `x1Nineteen_preΨ'_ne_zero`,
-`x1TwentyFive_plane_eq_line`) into its own cone. The uniform node is kept
-and is still what levels `21, 25, 27` are cut against. Making `11, 13,
-21, 27` axiom-clean needs the node's `key`/`back` helpers hoisted into
-standalone lemmas so each level gets its own proof term; that is a
-cut-level decision and is deliberately still open. Only `37, 43, 67, 163` are still
+ROUTE HISTORY AT LEVELS `11, 13, 17, 19`, corrected 2026-07-26. This
+supersedes an earlier note here that read "TWO ROUTES EXIST … and this
+file keeps the PLANE-MODEL one"; the reason it gave has since been
+removed, and half of what it described is deleted. Each of these four
+levels is now proven from its own single leaf in its own proof term:
+`curve11a3_rational_points` (`11`, through `x1Eleven_plane_ne_zero`, and
+decomposed further in `EllipticCurve/MordellWeil.lean`),
+`x1Thirteen_kubert_ne_zero` (`13`, through `x1Thirteen_plane_ne_zero`),
+and `MazurLevel17`/`MazurLevel19`'s `no_rational_point` (`17`, `19`).
+
+`flt-lean-29` had proposed replacing all four by one-line instantiations
+of the uniform node `tateNormalForm_origin_order_ne_of_cuspidalRankZero`,
+and that was refused for a reason that measurement confirms: the node
+proved its seven levels in ONE term under a single `rcases`, so every
+instantiation carried the sibling branches' open leaves — TEN of them,
+against one per level. The node has since lost its last consumer (level
+`25` was decoupled from it) and has been DELETED, together with the
+three-level `tateNormalForm_origin_preΨ'_residual` and the `preΨ'`-form
+restatements `x1Seventeen_preΨ'_ne_zero` / `x1Nineteen_preΨ'_ne_zero`,
+which existed only to feed it — and which could never have served as
+levels `17`/`19`'s route in any case, being proven FROM
+`tateNormalForm_origin_order_ne_17`/`_19`. The `key`/`back` helpers that
+the old note asked for are hoisted, as
+`tateNormalForm_origin_preΨ'_eval_eq_zero` and
+`tateNormalForm_origin_addOrderOf_le`; that is what lets every level
+carry its own proof term, and that cut-level decision is now CLOSED. The
+retirement note further above has the full account. Only `37, 43, 67, 163` are still
 IRREDUCIBLE at this pin — the rank-`0` point count that closes the small
 levels needs the WHOLE of `J_1(N)` to have rank `0`, and `J_1(37)` does
 not (its first `ℚ`-simple factor is the rank-`1` curve `37a`), so those
