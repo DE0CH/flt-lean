@@ -206,6 +206,15 @@ public import Mathlib.AlgebraicGeometry.Properties
 public import Mathlib.RingTheory.KrullDimension.NonZeroDivisors
 public import Mathlib.RingTheory.KrullDimension.Polynomial
 public import Mathlib.RingTheory.KrullDimension.Field
+-- `isDomain_of_isRegularLocalRing` (PROVEN 2026-07-26, the commutative-algebra
+-- half of `isDomain_stalk_of_smooth_over_field`).  `IsRegularLocalRing` occurs
+-- in the SIGNATURE of `isRegularLocalRing_stalk_of_smooth_over_field`, so its
+-- defining module must be a `public import` and not a bare one.
+public import Mathlib.RingTheory.RegularLocalRing.Defs
+public import Mathlib.RingTheory.Nakayama
+public import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
+public import Mathlib.RingTheory.LocalRing.RingHom.Basic
+public import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 public import Mathlib.RingTheory.FiniteType
 public import Mathlib.RingTheory.Spectrum.Prime.Topology
 -- `exists_isOpen_isIrreducible_primeSpectrum` (PROVEN 2026-07-26, the affine
@@ -400,6 +409,26 @@ import Mathlib.RingTheory.DedekindDomain.Factorization
 -- prime (`RingHom.ker_isPrime`).
 import Mathlib.LinearAlgebra.TensorProduct.Basis
 import Mathlib.RingTheory.Ideal.Maps
+-- SIGNATURE-BEARING (2026-07-26, the Euclidean chart on `X(ℝ)`): the implicit
+-- function theorem in the form that returns an `OpenPartialHomeomorph`
+-- (`HasStrictFDerivAt.implicitToOpenPartialHomeomorph`), which is what supplies
+-- BOTH the continuity and the injectivity of the chart; the formal partial
+-- derivatives `MvPolynomial.pderiv` in which the Jacobian hypothesis of
+-- `exists_realPolynomialModel_of_affine_geometricallyIrreducible` is stated;
+-- continuity of multivariate polynomial evaluation; and the finite-dimensional
+-- transfer `LinearEquiv.toContinuousLinearEquiv` that moves the chart off
+-- `ker` of the differential onto `Fin (m - c) → ℝ`. These are PUBLIC because
+-- the statements of `mvPolynomialGradient`, `hasStrictFDerivAt_mvPolynomial_eval`
+-- and `exists_euclideanPatch_of_polynomialSystem` mention them.
+public import Mathlib.Analysis.Calculus.Implicit
+public import Mathlib.Algebra.MvPolynomial.PDeriv
+public import Mathlib.Topology.Algebra.MvPolynomial
+public import Mathlib.Analysis.Normed.Module.FiniteDimension
+-- `SubmersivePresentation` / `IsStandardSmooth` / `Localization.Away` occur in the
+-- SIGNATURES of the real-polynomial-model helpers below, so these must be `public`.
+public import Mathlib.RingTheory.Smooth.StandardSmoothOfFree
+public import Mathlib.RingTheory.Extension.Presentation.Submersive
+public import Mathlib.RingTheory.Localization.Away.Basic
 
 @[expose] public section
 
@@ -1190,9 +1219,9 @@ names),
 2026-07-26** — no longer a leaf: the presentation, the clearing of
 denominators, the Hensel lift and the descent back to a `ℚ`-algebra map are
 all discharged; what is left is exactly the two arithmetic leaves
-`exists_bound_forall_formallySmooth_integralSystemModel` (**PROVEN 2026-07-26**
-over the residue `exists_inverted_formallySmooth_integralSystemModel` — SORRY,
-spreading out over `ℤ[1/N]`) and
+`exists_bound_forall_formallySmooth_integralSystemModel` (**PROVEN 2026-07-26**,
+and its residue `exists_inverted_formallySmooth_integralSystemModel` — spreading
+out over `ℤ[1/N]` — is **PROVEN 2026-07-26** too, so this branch is CLOSED) and
 `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible`
 (SORRY — Lang–Weil, nonemptiness form only)),
 `exists_primes_forall_sup_eq_top_of_isOpen` (**PROVEN 2026-07-26** — no
@@ -1280,6 +1309,23 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    (`Algebra.IsSmoothAt.exists_notMem_isStandardSmooth`), and so is the
    implicit function theorem in exactly the form wanted, so what is missing is
    assembly of existing parts rather than new theory.
+   **SHRUNK A THIRD TIME, 2026-07-26, and the REAL ANALYSIS IS NOW GONE
+   FROM IT.** The chart leaf is PROVEN over
+   `exists_realPolynomialModel_of_affine_geometricallyIrreducible`, which is
+   **itself PROVEN as of 2026-07-26** over the single leaf
+   `not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
+   — so all that survives of this item is a DIMENSION COUNT in commutative
+   algebra, with no scheme-to-manifold content left at all. The implicit function theorem has been
+   APPLIED, not merely located: `exists_euclideanPatch_of_polynomialSystem`
+   (PROVEN) is the classical submersion theorem — the real zero locus of a
+   polynomial system with surjective Jacobian contains a Euclidean patch of
+   dimension `m − c` — and it rests on `hasStrictFDerivAt_mvPolynomial_eval`
+   (PROVEN), the `MvPolynomial.pderiv`-to-`fderiv` bridge, which really IS
+   absent from mathlib at this pin (`Mathlib/Analysis/` mentions `pderiv`
+   nowhere). So the residue of item 6 is **pure scheme theory**: base change
+   of `A` to `ℝ`, a standard smooth presentation at the real point, and the
+   dimension count `c < m` from `hgi` + `hdim`. It is no longer real analysis
+   at all, and it is no longer a manifold-theory item.
 4. **Picard schemes / Jacobians as schemes**, with the torsor formalism
    and the "incompressible neighbourhood" existence statement — step (ii),
    and by far the largest of the four. Owned by
@@ -1300,23 +1346,31 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    only Lang–Weil and the spreading-out limit argument are genuinely missing.
 
 Each is an independently ownable subproject; 1, 3, 5 and 6 are the ones that
-can be started without the others, and items 3 (Bertini) and 5 (Lang–Weil +
-spreading out) are now leaves of their own --
+can be started without the others, and items 3 (Bertini), 5 (Lang–Weil +
+spreading out) and 6 (the real polynomial model — SCHEME THEORY, not analysis)
+are now leaves of their own --
 `exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible` /
 `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` /
 `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (item 3 --
 their consumer `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible`
 is PROVEN over them), and
 `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` together with
-`exists_bound_forall_formallySmooth_integralSystemModel` (item 5) -- so each
-can be attacked without any of the others.
+`exists_bound_forall_formallySmooth_integralSystemModel` (item 5), and
+`not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
+(item 6) -- so each can be attacked without any of the others.
 
-ITEM 6 IS NOW CLOSED (2026-07-26): `exists_realArc_of_affine_geometricallyIrreducible`
-is PROVEN over one Euclidean chart, and so is its consumer
-`exists_realApproximationBall_of_affine_geometricallyIrreducible`. It is
-listed here no longer as a leaf but as a completed subproject; the two
-`exists_bound_forall_padicAlgHom` / `_padicPoint` statements are likewise
-PROVEN and are not leaves either.
+ITEM 6'S ANALYTIC HALF IS CLOSED (2026-07-26):
+`exists_realArc_of_affine_geometricallyIrreducible` is PROVEN over one
+Euclidean chart, and so is its consumer
+`exists_realApproximationBall_of_affine_geometricallyIrreducible`; the chart
+itself, `exists_realPointChart_of_affine_geometricallyIrreducible`, is PROVEN
+over `exists_euclideanPatch_of_polynomialSystem` (the submersion theorem, also
+PROVEN) and `exists_realPolynomialModel_of_affine_geometricallyIrreducible`,
+which is PROVEN too since 2026-07-26. The one remaining leaf of the whole item
+is `not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
+-- a DIMENSION COUNT in commutative algebra, carrying no scheme-to-manifold
+content. The two `exists_bound_forall_padicAlgHom` / `_padicPoint`
+statements are likewise PROVEN and are not leaves either.
 
 The elementary
 `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` was a fourth
@@ -2274,40 +2328,681 @@ theorem irreducibleSpace_of_connectedSpace_of_locallyIrreducible
   rw [irreducibleSpace_def, Set.top_eq_univ, ← hZuniv]
   exact isIrreducible_irreducibleComponent
 
+/-- **EXCHANGE STEP: AN ELEMENT OF `𝔪 ∖ 𝔪²` LIES IN A MINIMAL GENERATING SET**
+(**PROVEN 2026-07-26**, the combinatorial half of `isDomain_of_isRegularLocalRing`).
+
+For `R` noetherian local with `(maximalIdeal R).spanFinrank = n + 1` and
+`x ∈ 𝔪 ∖ 𝔪²`, there is a finset `T` of `n` elements with
+`span (insert x T) = 𝔪`.
+
+THE PROOF is Steinitz exchange done by hand, which is what lets the whole
+`regular ⟹ domain` development avoid the cotangent space entirely. Take a
+generating finset `G` of `𝔪` with `#G = n + 1` and write `x = ∑_{g ∈ G} a_g g`.
+Not every `a_g` lies in `𝔪`, since otherwise `x ∈ 𝔪 · 𝔪 = 𝔪²`; pick `g₀` with
+`a_{g₀} ∉ 𝔪`, hence a UNIT because `R` is local. Then
+`g₀ = a_{g₀}⁻¹ (x − ∑_{g ≠ g₀} a_g g)`, so `G ⊆ span (insert x (G.erase g₀))`
+and `T := G.erase g₀` works. -/
+theorem exists_finset_card_span_insert_eq_maximalIdeal
+    {R : Type u} [CommRing R] [IsLocalRing R] [IsNoetherianRing R]
+    {x : R} (hx : x ∈ IsLocalRing.maximalIdeal R)
+    (hx2 : x ∉ (IsLocalRing.maximalIdeal R) ^ 2)
+    {n : ℕ} (hn : (IsLocalRing.maximalIdeal R).spanFinrank = n + 1) :
+    ∃ T : Finset R, T.card = n ∧
+      Ideal.span (insert x (T : Set R)) = IsLocalRing.maximalIdeal R := by
+  classical
+  obtain ⟨G, hGcard, hGspan⟩ :=
+    (IsNoetherian.noetherian (IsLocalRing.maximalIdeal R)).exists_span_finset_card_eq_spanFinrank
+  rw [hn] at hGcard
+  have hxG : x ∈ Submodule.span R (G : Set R) := by rw [hGspan]; exact hx
+  obtain ⟨a, -, ha⟩ := Submodule.mem_span_finset.1 hxG
+  have hsome : ∃ g ∈ G, a g ∉ IsLocalRing.maximalIdeal R := by
+    by_contra hcon
+    simp only [not_exists, not_and, not_not] at hcon
+    refine hx2 ?_
+    rw [pow_two, ← ha]
+    refine Ideal.sum_mem _ fun g hg => ?_
+    rw [smul_eq_mul]
+    exact Ideal.mul_mem_mul (hcon g hg) (by rw [← hGspan]; exact Submodule.subset_span hg)
+  obtain ⟨g₀, hg₀G, hg₀u⟩ := hsome
+  refine ⟨G.erase g₀, by rw [Finset.card_erase_of_mem hg₀G, hGcard]; rfl, ?_⟩
+  apply le_antisymm
+  · rw [Ideal.span_le]
+    rintro y hy
+    rcases hy with rfl | hy
+    · exact hx
+    · rw [← hGspan]
+      exact Submodule.subset_span (Finset.mem_of_mem_erase (by exact_mod_cast hy))
+  · rw [← hGspan, Ideal.span_le]
+    intro g hg
+    by_cases hgg : g = g₀
+    · subst hgg
+      have hsplit : ∑ h ∈ G, a h • h = a g • g + ∑ h ∈ G.erase g, a h • h :=
+        (Finset.add_sum_erase _ _ hg).symm
+      have hag : a g * g = x - ∑ h ∈ G.erase g, a h • h := by
+        rw [← smul_eq_mul, ← ha, hsplit]; ring
+      have hkey : a g * g ∈ Ideal.span (insert x ((G.erase g : Finset R) : Set R)) := by
+        rw [hag]
+        refine Ideal.sub_mem _ (Ideal.subset_span (Set.mem_insert _ _)) ?_
+        refine Ideal.sum_mem _ fun h hh => ?_
+        rw [smul_eq_mul]
+        exact Ideal.mul_mem_left _ _
+          (Ideal.subset_span (Set.mem_insert_of_mem _ (by exact_mod_cast hh)))
+      obtain ⟨u, hu⟩ := IsLocalRing.notMem_maximalIdeal.1 hg₀u
+      have hmul := Ideal.mul_mem_left
+        (Ideal.span (insert x ((G.erase g : Finset R) : Set R))) ((↑u⁻¹ : R)) hkey
+      rwa [← mul_assoc, ← hu, Units.inv_mul, one_mul] at hmul
+    · exact Ideal.subset_span
+        (Set.mem_insert_of_mem _ (by exact_mod_cast Finset.mem_erase.2 ⟨hgg, hg⟩))
+
+/-- **REGULAR LOCAL ⟹ DOMAIN, BY INDUCTION ON THE EMBEDDING DIMENSION**
+(**PROVEN 2026-07-26** — this is mathlib's own open TODO, closed here).
+
+The induction hypothesis has to quantify over the RING as well as the
+dimension, because the inductive step passes to `R ⧸ (x)`; hence the
+`∀ (R : Type u) [CommRing R] [IsRegularLocalRing R]` shape rather than a
+statement about one fixed `R`.
+
+THE PROOF (Atiyah–Macdonald 11.23 / Matsumura 14.3), by strong induction on
+`d = (maximalIdeal R).spanFinrank`, which regularity identifies with
+`ringKrullDim R`.
+
+* `d = 0`: `spanFinrank 𝔪 = 0` forces `𝔪 = ⊥`, so `R` is a field.
+* `d = m + 1`: `𝔪 ⊄ 𝔪²` (else Nakayama gives `𝔪 = ⊥` and `d = 0`) and `𝔪` is
+  not a minimal prime (else `𝔪.height = 0 = ringKrullDim R`, contradicting
+  `d = m + 1`). Since `R` is noetherian, `minimalPrimes R` is FINITE, so prime
+  avoidance applies to the finite family `{𝔪²} ∪ minimalPrimes R` — with `𝔪²`
+  in one of the two exceptional slots of `Ideal.subset_union_prime`, which is
+  exactly why that non-prime member is allowed. It yields
+  `x ∈ 𝔪`, `x ∉ 𝔪²`, `x` in no minimal prime.
+* `R' = R ⧸ (x)` is regular local of embedding dimension `m`: the exchange
+  lemma above gives `spanFinrank (𝔪 R') ≤ m`, and Krull's height theorem in the
+  form `ringKrullDim_le_ringKrullDim_quotient_add_encard` gives the reverse
+  dimension bound `ringKrullDim R ≤ ringKrullDim R' + 1`. Cancelling the `+ 1`
+  in `WithBot ℕ∞` is `ENat.WithBot.add_le_add_one_right_iff`.
+* By induction `R'` is a domain, i.e. `(x)` is PRIME. Some minimal prime
+  `q ≤ (x)`; for `y ∈ q` write `y = c x`, and `x ∉ q` with `q` prime forces
+  `c ∈ q`, so `q ≤ (x) · q` and Nakayama gives `q = ⊥`. So `⊥` is prime.
+
+Both halves of Krull's height theorem are already in mathlib
+(`Mathlib/RingTheory/Ideal/KrullsHeightTheorem.lean`); what was missing was
+only this induction, and it is what the `RegularLocalRing/Defs.lean` docstring
+records as an open TODO. -/
+theorem isDomain_of_isRegularLocalRing_aux (n : ℕ) :
+    ∀ (R : Type u) [CommRing R] [IsRegularLocalRing R],
+      (IsLocalRing.maximalIdeal R).spanFinrank = n → IsDomain R := by
+  classical
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro R _ _ hn
+    match n, hn, ih with
+    | 0, hn, _ =>
+      have hbot : IsLocalRing.maximalIdeal R = ⊥ :=
+        (Submodule.spanFinrank_eq_zero_iff_eq_bot (IsNoetherian.noetherian _)).1 hn
+      have hfield : IsField R := IsLocalRing.isField_iff_maximalIdeal_eq.2 hbot
+      letI := hfield.toField
+      infer_instance
+    | (m + 1), hn, ih =>
+      have hdim : ringKrullDim R = ((m + 1 : ℕ) : WithBot ℕ∞) := by
+        rw [← IsRegularLocalRing.spanFinrank_maximalIdeal (R := R), hn]
+      have hm2 : ¬ (IsLocalRing.maximalIdeal R ≤ (IsLocalRing.maximalIdeal R) ^ 2) := by
+        intro hle
+        have hb : IsLocalRing.maximalIdeal R = ⊥ := by
+          refine Submodule.eq_bot_of_le_smul_of_le_jacobson_bot (IsLocalRing.maximalIdeal R) _
+            (IsNoetherian.noetherian _) ?_ ?_
+          · rwa [smul_eq_mul, ← pow_two]
+          · rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top]
+        rw [hb] at hn
+        simp at hn
+      have hmp : ∀ p ∈ minimalPrimes R, ¬ (IsLocalRing.maximalIdeal R ≤ p) := by
+        intro p hp hle
+        haveI := IsMinimalPrime.isPrime hp
+        have hpm : p = IsLocalRing.maximalIdeal R :=
+          le_antisymm (IsLocalRing.le_maximalIdeal Ideal.IsPrime.ne_top') hle
+        have h0 : (IsLocalRing.maximalIdeal R).height = 0 := Ideal.height_eq_zero_iff.2 (hpm ▸ hp)
+        rw [← IsLocalRing.maximalIdeal_height_eq_ringKrullDim, h0] at hdim
+        have hz : ((0 : ℕ) : WithBot ℕ∞) = ((m + 1 : ℕ) : WithBot ℕ∞) := by simpa using hdim
+        have h2 : (0 : ℕ) = m + 1 := by exact_mod_cast hz
+        omega
+      have hfin : (minimalPrimes R).Finite := minimalPrimes.finite_of_isNoetherianRing R
+      set s : Finset (Ideal R) := insert ((IsLocalRing.maximalIdeal R) ^ 2) hfin.toFinset with hs
+      have hnotsub :
+          ¬ ((IsLocalRing.maximalIdeal R : Set R) ⊆ ⋃ i ∈ (↑s : Set (Ideal R)), (i : Set R)) := by
+        intro hsub
+        obtain ⟨i, his, hle⟩ :=
+          (Ideal.subset_union_prime (s := s) (f := fun i => i)
+            ((IsLocalRing.maximalIdeal R) ^ 2) ((IsLocalRing.maximalIdeal R) ^ 2)
+            (fun i hi _ hne => by
+              rw [hs, Finset.mem_insert] at hi
+              rcases hi with rfl | hi
+              · exact absurd rfl hne
+              · exact IsMinimalPrime.isPrime (hfin.mem_toFinset.1 hi))).1 hsub
+        rw [hs, Finset.mem_insert] at his
+        rcases his with rfl | his
+        · exact hm2 hle
+        · exact hmp i (hfin.mem_toFinset.1 his) hle
+      obtain ⟨x, hxm, hxni⟩ := Set.not_subset.1 hnotsub
+      simp only [Set.mem_iUnion, not_exists] at hxni
+      have hx2 : x ∉ (IsLocalRing.maximalIdeal R) ^ 2 := fun h =>
+        hxni _ (by rw [hs, Finset.coe_insert]; exact Set.mem_insert _ _) h
+      have hxmin : ∀ p ∈ minimalPrimes R, x ∉ p := fun p hp h =>
+        hxni p (by
+          rw [hs, Finset.coe_insert]
+          exact Set.mem_insert_of_mem _ (Finset.mem_coe.2 (hfin.mem_toFinset.2 hp))) h
+      obtain ⟨T, hTcard, hTspan⟩ :=
+        exists_finset_card_span_insert_eq_maximalIdeal hxm hx2 hn
+      set I : Ideal R := Ideal.span {x} with hI
+      have hIm : I ≤ IsLocalRing.maximalIdeal R := by rw [hI, Ideal.span_le]; simpa using hxm
+      have hInt : I ≠ ⊤ := fun h =>
+        (IsLocalRing.maximalIdeal.isMaximal R).ne_top (top_le_iff.mp (h ▸ hIm))
+      haveI : Nontrivial (R ⧸ I) := Ideal.Quotient.nontrivial_iff.mpr hInt
+      haveI : IsLocalRing (R ⧸ I) :=
+        IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+      have hmapmax : (IsLocalRing.maximalIdeal R).map (Ideal.Quotient.mk I)
+          = IsLocalRing.maximalIdeal (R ⧸ I) :=
+        IsLocalRing.map_maximalIdeal_of_surjective _ Ideal.Quotient.mk_surjective
+      have hsr : (IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank ≤ m := by
+        have himg : IsLocalRing.maximalIdeal (R ⧸ I)
+            = Ideal.span ((Ideal.Quotient.mk I) '' (T : Set R)) := by
+          rw [← hmapmax, ← hTspan, Ideal.map_span, Set.image_insert_eq]
+          have hx0 : (Ideal.Quotient.mk I) x = 0 := by
+            rw [Ideal.Quotient.eq_zero_iff_mem, hI]
+            exact Ideal.subset_span rfl
+          rw [hx0, Ideal.span_insert_zero]
+        rw [himg]
+        refine le_trans (Submodule.spanFinrank_span_le_ncard_of_finite
+          ((T : Set R).toFinite.image _)) ?_
+        exact le_trans (Set.ncard_image_le (T : Set R).toFinite) (by simp [hTcard])
+      have hjac : ({x} : Set R) ⊆ Ring.jacobson R := by
+        intro y hy
+        rw [Set.mem_singleton_iff] at hy
+        subst hy
+        show y ∈ Ring.jacobson R
+        rw [IsLocalRing.ringJacobson_eq_maximalIdeal]
+        exact hxm
+      have hkey : ringKrullDim R ≤ ringKrullDim (R ⧸ I) + 1 := by
+        have h := ringKrullDim_le_ringKrullDim_quotient_add_encard ({x} : Set R) hjac
+        simpa [hI] using h
+      have hdimq : ((m : ℕ) : WithBot ℕ∞) ≤ ringKrullDim (R ⧸ I) := by
+        rw [hdim] at hkey
+        push_cast at hkey
+        exact ENat.WithBot.add_le_add_one_right_iff.mp hkey
+      have hreg : IsRegularLocalRing (R ⧸ I) :=
+        IsRegularLocalRing.of_spanFinrank_maximalIdeal_le _
+          (le_trans (by exact_mod_cast hsr) hdimq)
+      have hsrq : (IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank = m := by
+        refine le_antisymm hsr ?_
+        have hfr := hreg.spanFinrank_maximalIdeal
+        have h2 : ((m : ℕ) : WithBot ℕ∞)
+            ≤ (((IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank : ℕ) : WithBot ℕ∞) := by
+          rw [hfr]; exact hdimq
+        exact_mod_cast h2
+      haveI : IsDomain (R ⧸ I) := ih m (Nat.lt_succ_self m) (R ⧸ I) hsrq
+      haveI hIprime : I.IsPrime := (Ideal.Quotient.isDomain_iff_prime I).1 inferInstance
+      obtain ⟨q, hq, hqI⟩ := Ideal.exists_minimalPrimes_le (I := (⊥ : Ideal R)) (J := I) bot_le
+      haveI hqp : q.IsPrime := IsMinimalPrime.isPrime hq
+      have hxq : x ∉ q := hxmin q hq
+      have hqq : q ≤ I • q := by
+        intro y hy
+        obtain ⟨c, hc⟩ := Ideal.mem_span_singleton'.1 (hqI hy)
+        have hcq : c ∈ q := by
+          rcases hqp.mem_or_mem (show c * x ∈ q from hc ▸ hy) with h | h
+          · exact h
+          · exact absurd h hxq
+        rw [← hc, smul_eq_mul, mul_comm]
+        exact Ideal.mul_mem_mul hcq (Ideal.subset_span rfl)
+      have hqbot : q = ⊥ := by
+        refine Submodule.eq_bot_of_le_smul_of_le_jacobson_bot I q
+          (IsNoetherian.noetherian _) hqq ?_
+        rw [IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top]
+        exact hIm
+      have hbp : (⊥ : Ideal R).IsPrime := hqbot ▸ hqp
+      haveI : NoZeroDivisors R := ⟨fun {a b} h => by
+        have hm := hbp.mem_or_mem (show a * b ∈ (⊥ : Ideal R) by simpa using h)
+        simpa using hm⟩
+      exact NoZeroDivisors.to_isDomain R
+
+/-- **REGULAR LOCAL RINGS ARE INTEGRAL DOMAINS** (**PROVEN 2026-07-26**).
+
+This is the second of the two mathlib gaps named in the docstring of
+`isDomain_stalk_of_smooth_over_field`, and it is no longer a gap: mathlib's
+`Mathlib/RingTheory/RegularLocalRing/Defs.lean` records only
+`IsRegularLocalRing`/`IsRegularRing` with a handful of instances, and its own
+"TODO" is precisely this direction. The proof is
+`isDomain_of_isRegularLocalRing_aux` instantiated at `n = spanFinrank 𝔪`.
+
+Note the route taken is NOT the associated-graded one the earlier docstring
+sketched — no `gr_𝔪(R)`, no filtered ring, no Krull intersection theorem. The
+induction above uses only Nakayama, prime avoidance over the finitely many
+minimal primes of a noetherian ring, and Krull's height theorem, all of which
+mathlib already had. This is general, reusable, and a genuine mathlib
+contribution. -/
+theorem isDomain_of_isRegularLocalRing (R : Type u) [CommRing R] [IsRegularLocalRing R] :
+    IsDomain R :=
+  isDomain_of_isRegularLocalRing_aux _ R rfl
+
+/-- **REGULAR LOCAL MOD ONE ELEMENT OF `𝔪 ∖ 𝔪²` IS REGULAR LOCAL**
+(**PROVEN 2026-07-26**).
+
+For `R` regular local and `x ∈ 𝔪 ∖ 𝔪²`, the quotient `R ⧸ (x)` is again a
+regular local ring — of embedding dimension and Krull dimension one less.
+
+This is the single-element case of "a quotient by part of a regular system of
+parameters is regular", and mathlib has NO form of it: `RegularLocalRing/`
+consists of exactly two files (`Defs.lean`, `Polynomial.lean`) and neither
+mentions quotients. It is a general, reusable statement and a genuine mathlib
+contribution, on a par with `isDomain_of_isRegularLocalRing` above.
+
+THE PROOF is the two halves of Krull's height theorem squeezing `dim R ⧸ (x)`
+against the embedding dimension, exactly as in the inductive step of
+`isDomain_of_isRegularLocalRing_aux`:
+
+* `𝔪 ⊄ 𝔪²` gives `spanFinrank 𝔪 = m + 1`, hence `ringKrullDim R = m + 1` by
+  regularity;
+* the exchange lemma `exists_finset_card_span_insert_eq_maximalIdeal` (PROVEN
+  above) produces `T` with `#T = m` and `span (insert x T) = 𝔪`; since `x ↦ 0`
+  the image of `T` alone generates `𝔪 (R ⧸ (x))`, so
+  `spanFinrank 𝔪 (R ⧸ (x)) ≤ m`;
+* `ringKrullDim_le_ringKrullDim_quotient_add_encard` gives
+  `ringKrullDim R ≤ ringKrullDim (R ⧸ (x)) + 1`, and cancelling the `+ 1` in
+  `WithBot ℕ∞` (`ENat.WithBot.add_le_add_one_right_iff`) gives
+  `m ≤ ringKrullDim (R ⧸ (x))`.
+
+`IsRegularLocalRing.of_spanFinrank_maximalIdeal_le` closes it: the reverse
+inequality `ringKrullDim ≤ spanFinrank 𝔪` is free.
+
+NOTE this is deliberately a SEPARATE declaration rather than a refactoring of
+`isDomain_of_isRegularLocalRing_aux`, whose inductive step contains the same
+argument inline. That file region has another owner and concurrent worktrees
+are editing it; duplicating twenty lines is cheaper than the merge conflict. -/
+theorem isRegularLocalRing_quotient_span_singleton
+    {R : Type u} [CommRing R] [IsRegularLocalRing R] {x : R}
+    (hxm : x ∈ IsLocalRing.maximalIdeal R)
+    (hx2 : x ∉ (IsLocalRing.maximalIdeal R) ^ 2) :
+    IsRegularLocalRing (R ⧸ Ideal.span {x}) := by
+  classical
+  -- the embedding dimension is a successor, since `x ∈ 𝔪 ∖ 𝔪²`
+  obtain ⟨m, hn⟩ : ∃ m, (IsLocalRing.maximalIdeal R).spanFinrank = m + 1 := by
+    rcases Nat.eq_zero_or_pos (IsLocalRing.maximalIdeal R).spanFinrank with h | h
+    · exfalso
+      have hbot : IsLocalRing.maximalIdeal R = ⊥ :=
+        (Submodule.spanFinrank_eq_zero_iff_eq_bot (IsNoetherian.noetherian _)).1 h
+      rw [hbot] at hxm
+      simp only [Ideal.mem_bot] at hxm
+      exact hx2 (hxm ▸ Ideal.zero_mem _)
+    · exact ⟨_, (Nat.succ_pred_eq_of_pos h).symm⟩
+  have hdim : ringKrullDim R = ((m + 1 : ℕ) : WithBot ℕ∞) := by
+    rw [← IsRegularLocalRing.spanFinrank_maximalIdeal (R := R), hn]
+  obtain ⟨T, hTcard, hTspan⟩ := exists_finset_card_span_insert_eq_maximalIdeal hxm hx2 hn
+  set I : Ideal R := Ideal.span {x} with hI
+  have hIm : I ≤ IsLocalRing.maximalIdeal R := by rw [hI, Ideal.span_le]; simpa using hxm
+  have hInt : I ≠ ⊤ := fun h =>
+    (IsLocalRing.maximalIdeal.isMaximal R).ne_top (top_le_iff.mp (h ▸ hIm))
+  haveI : Nontrivial (R ⧸ I) := Ideal.Quotient.nontrivial_iff.mpr hInt
+  haveI : IsLocalRing (R ⧸ I) := IsLocalRing.of_surjective' _ Ideal.Quotient.mk_surjective
+  have hmapmax : (IsLocalRing.maximalIdeal R).map (Ideal.Quotient.mk I)
+      = IsLocalRing.maximalIdeal (R ⧸ I) :=
+    IsLocalRing.map_maximalIdeal_of_surjective _ Ideal.Quotient.mk_surjective
+  have hsr : (IsLocalRing.maximalIdeal (R ⧸ I)).spanFinrank ≤ m := by
+    have himg : IsLocalRing.maximalIdeal (R ⧸ I)
+        = Ideal.span ((Ideal.Quotient.mk I) '' (T : Set R)) := by
+      rw [← hmapmax, ← hTspan, Ideal.map_span, Set.image_insert_eq]
+      have hx0 : (Ideal.Quotient.mk I) x = 0 := by
+        rw [Ideal.Quotient.eq_zero_iff_mem, hI]; exact Ideal.subset_span rfl
+      rw [hx0, Ideal.span_insert_zero]
+    rw [himg]
+    refine le_trans (Submodule.spanFinrank_span_le_ncard_of_finite
+      ((T : Set R).toFinite.image _)) ?_
+    exact le_trans (Set.ncard_image_le (T : Set R).toFinite) (by simp [hTcard])
+  have hjac : ({x} : Set R) ⊆ Ring.jacobson R := by
+    intro y hy
+    rw [Set.mem_singleton_iff] at hy
+    subst hy
+    show y ∈ Ring.jacobson R
+    rw [IsLocalRing.ringJacobson_eq_maximalIdeal]
+    exact hxm
+  have hkey : ringKrullDim R ≤ ringKrullDim (R ⧸ I) + 1 := by
+    have h := ringKrullDim_le_ringKrullDim_quotient_add_encard ({x} : Set R) hjac
+    simpa [hI] using h
+  have hdimq : ((m : ℕ) : WithBot ℕ∞) ≤ ringKrullDim (R ⧸ I) := by
+    rw [hdim] at hkey
+    push_cast at hkey
+    exact ENat.WithBot.add_le_add_one_right_iff.mp hkey
+  exact IsRegularLocalRing.of_spanFinrank_maximalIdeal_le _
+    (le_trans (by exact_mod_cast hsr) hdimq)
+
+/-- **REGULAR LOCAL MOD A LIST INDEPENDENT MOD `𝔪²` IS REGULAR LOCAL**
+(**PROVEN 2026-07-26** — the commutative-algebra ENGINE under
+`isRegularLocalRing_stalk_of_smooth_over_field`).
+
+For `R` regular local and `l = [f₀, …, f_{c-1}]` a list in `𝔪` satisfying the
+ITERATED INDEPENDENCE condition
+
+    ∀ n < c,  f_n ∉ 𝔪² ⊔ (f₀, …, f_{n-1}),
+
+the quotient `R ⧸ (f₀, …, f_{c-1})` is again a regular local ring (of dimension
+`dim R − c`). This is "a quotient by part of a regular system of parameters is
+regular" in the generality the smooth case needs.
+
+WHY THE HYPOTHESIS IS IN THIS FORM. The mathematically natural hypothesis is
+that the images of the `f_i` be LINEARLY INDEPENDENT in the cotangent space
+`𝔪/𝔪²` over the residue field. That is equivalent to the displayed condition —
+a family in a vector space is independent iff no member lies in the span of its
+predecessors — but the displayed form is what the induction consumes directly,
+with no linear algebra and no residue-field bookkeeping at all. A future
+consumer holding the linear-independence form should convert to this one; the
+conversion is pure linear algebra over `IsLocalRing.CotangentSpace`.
+
+THE PROOF is induction on `c`, quantified over the RING as well (as in
+`isDomain_of_isRegularLocalRing_aux`, and for the same reason: the step passes
+to `R ⧸ (f₀)`). At `c = 0` the ideal is `⊥` and `RingEquiv.quotientBot`
+finishes. At `c = m + 1`:
+
+* `n = 0` of the hypothesis says `f₀ ∈ 𝔪 ∖ 𝔪²`, so
+  `isRegularLocalRing_quotient_span_singleton` makes `R' := R ⧸ (f₀)` regular
+  local;
+* the hypothesis TRANSPORTS to the mapped tail `t.map (mk (f₀))` in `R'`
+  verbatim: `𝔪'² ⊔ (t.take n)` is the image of `𝔪² ⊔ (f₀ :: t.take n)`, and
+  since that ideal contains `ker (mk (f₀)) = (f₀)`, `Ideal.comap_map_of_surjective`
+  turns membership upstairs into membership downstairs with no loss. This is
+  precisely why the condition is stated with the PREFIX `(f₀, …, f_{n-1})`
+  rather than merely `f_n ∉ 𝔪²`: the prefix is what absorbs the kernel;
+* the induction hypothesis applies to the tail, and
+  `DoubleQuot.quotQuotEquivQuotSup` reassembles
+  `(R ⧸ (f₀)) ⧸ (t) ≃+* R ⧸ ((f₀) ⊔ (t)) = R ⧸ (f₀ :: t)`.
+
+Indices are by POSITION (`l[n]`, `l.take n`) rather than by splitting `l` into
+`t ++ x :: s`: the mapped-list lemmas `List.getElem_map` and `List.map_take`
+exist at this pin and make the transport a two-line rewrite, whereas the
+split form needs `List.map_eq_append_iff`, which does NOT exist here. -/
+theorem isRegularLocalRing_quotient_span_list_aux (c : ℕ) :
+    ∀ (R : Type u) [CommRing R] [IsRegularLocalRing R] (l : List R),
+      l.length = c →
+      (∀ (n : ℕ) (hn : n < l.length),
+        l[n] ∈ IsLocalRing.maximalIdeal R ∧
+          l[n] ∉ (IsLocalRing.maximalIdeal R) ^ 2 ⊔ Ideal.span {y | y ∈ l.take n}) →
+      IsRegularLocalRing (R ⧸ Ideal.span {y | y ∈ l}) := by
+  classical
+  induction c with
+  | zero =>
+    intro R _ _ l hlen _
+    have hl : l = [] := List.eq_nil_of_length_eq_zero hlen
+    subst hl
+    have hbot : Ideal.span {y : R | y ∈ ([] : List R)} = ⊥ := by simp
+    rw [hbot]
+    exact IsRegularLocalRing.of_ringEquiv (RingEquiv.quotientBot R).symm
+  | succ m ih =>
+    intro R _ _ l hlen hind
+    obtain ⟨x, t, rfl⟩ : ∃ x t, l = x :: t := by
+      cases l with
+      | nil => simp at hlen
+      | cons a s => exact ⟨a, s, rfl⟩
+    have htlen : t.length = m := by simpa using hlen
+    -- the head lies in `𝔪 ∖ 𝔪²`
+    obtain ⟨hxm, hx2'⟩ := hind 0 (by simp)
+    simp only [List.getElem_cons_zero, List.take_zero] at hxm hx2'
+    have hx2 : x ∉ (IsLocalRing.maximalIdeal R) ^ 2 := fun h => hx2' (Ideal.mem_sup_left h)
+    set I : Ideal R := Ideal.span {x} with hI
+    set f := Ideal.Quotient.mk I with hf
+    haveI : IsRegularLocalRing (R ⧸ I) := isRegularLocalRing_quotient_span_singleton hxm hx2
+    have hfx : f x = 0 := by
+      rw [hf, Ideal.Quotient.eq_zero_iff_mem, hI]; exact Ideal.subset_span rfl
+    have hker : Ideal.comap f (⊥ : Ideal (R ⧸ I)) = I := Ideal.mk_ker
+    -- membership in the image of an ideal CONTAINING `ker f = (x)` loses nothing
+    have hmem : ∀ (J : Ideal R), I ≤ J → ∀ y : R, f y ∈ J.map f ↔ y ∈ J := by
+      intro J hJ y
+      rw [← Ideal.mem_comap, Ideal.comap_map_of_surjective f Ideal.Quotient.mk_surjective,
+        hker, sup_eq_left.mpr hJ]
+    have hmaxq : IsLocalRing.maximalIdeal (R ⧸ I) = (IsLocalRing.maximalIdeal R).map f :=
+      (IsLocalRing.map_maximalIdeal_of_surjective _ Ideal.Quotient.mk_surjective).symm
+    -- transport the independence hypothesis to the quotient
+    have hind' : ∀ (n : ℕ) (hn : n < (t.map f).length),
+        (t.map f)[n] ∈ IsLocalRing.maximalIdeal (R ⧸ I) ∧
+          (t.map f)[n] ∉ (IsLocalRing.maximalIdeal (R ⧸ I)) ^ 2 ⊔
+            Ideal.span {y | y ∈ (t.map f).take n} := by
+      intro n hn
+      have hn' : n < t.length := by simpa using hn
+      obtain ⟨h1, h2⟩ := hind (n + 1) (by simp [hn'])
+      simp only [List.getElem_cons_succ, List.take_succ_cons] at h1 h2
+      have hget : (t.map f)[n] = f t[n] := by simp
+      constructor
+      · rw [hget, hmaxq]; exact Ideal.mem_map_of_mem _ h1
+      · rw [hget]
+        intro hcon
+        refine h2 ?_
+        have hspanmap : (Ideal.span {y : R | y ∈ x :: t.take n}).map f
+            = Ideal.span {y | y ∈ (t.map f).take n} := by
+          have e1 : {y : R | y ∈ x :: t.take n} = insert x {y : R | y ∈ t.take n} := by
+            ext y; simp
+          have e2 : {y | y ∈ (t.map f).take n} = f '' {y : R | y ∈ t.take n} := by
+            ext y; simp [← List.map_take, List.mem_map]
+          rw [Ideal.map_span, e1, Set.image_insert_eq, hfx, e2, Ideal.span_insert_zero]
+        have hJ : ((IsLocalRing.maximalIdeal R) ^ 2 ⊔ Ideal.span {y | y ∈ x :: t.take n}).map f
+            = (IsLocalRing.maximalIdeal (R ⧸ I)) ^ 2 ⊔
+              Ideal.span {y | y ∈ (t.map f).take n} := by
+          rw [Ideal.map_sup, hmaxq, ← Ideal.map_pow, hspanmap]
+        rw [← hmem _ ?_ t[n], hJ]
+        · exact hcon
+        · rw [hI, Ideal.span_le]
+          intro z hz
+          rw [Set.mem_singleton_iff] at hz
+          subst hz
+          exact Ideal.mem_sup_right (Ideal.subset_span (by simp))
+    haveI := ih (R ⧸ I) (t.map f) (by simpa using htlen) hind'
+    -- reassemble `(R ⧸ (x)) ⧸ (t) ≃+* R ⧸ (x :: t)`
+    have hspan : Ideal.span {y | y ∈ (t.map f)} = (Ideal.span {y | y ∈ t}).map f := by
+      rw [Ideal.map_span]
+      congr 1
+      ext y
+      simp [List.mem_map]
+    rw [hspan] at this
+    have hsup : I ⊔ Ideal.span {y | y ∈ t} = Ideal.span {y : R | y ∈ x :: t} := by
+      rw [hI, ← Ideal.span_union]
+      congr 1
+      ext y
+      simp
+    exact IsRegularLocalRing.of_ringEquiv
+      ((DoubleQuot.quotQuotEquivQuotSup I (Ideal.span {y | y ∈ t})).trans
+        (Ideal.quotEquivOfEq hsup))
+
 open CategoryTheory AlgebraicGeometry in
-/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE DOMAINS** (sorry node, 2026-07-26 —
-the ONLY genuinely geometric ingredient left in the connected ⟹ irreducible
-upgrade, and a pure mathlib gap).
+/-- **THE STALK OF A SMOOTH `K`-SCHEME IS A REGULAR LOCAL RING MODULO AN
+INDEPENDENT LIST** (sorry node, cut 2026-07-26 out of
+`isRegularLocalRing_stalk_of_smooth_over_field`; it is now the ONLY open leaf
+below that node, and carries all of its remaining GEOMETRIC content).
+
+For `Z` smooth over `Spec K` and `z : Z`, the stalk `𝒪_{Z,z}` is
+`B ⧸ (f₀, …, f_{c-1})` for some REGULAR LOCAL `B` and some list satisfying the
+iterated independence condition of `isRegularLocalRing_quotient_span_list_aux`.
+
+WHAT IS LEFT TO DO, and it is a presentation-plus-Jacobian argument over
+machinery that already exists at this pin:
+
+1. `AlgebraicGeometry.Smooth.exists_isStandardSmooth` (mathlib) gives affine
+   opens `U ∋ f.base z` in `Spec K` and `V ∋ z` in `Z` with
+   `(f.appLE U V e).hom.IsStandardSmooth`. `Spec K` is a one-point space, so
+   `U = ⊤` and `Γ(Spec K, U) ≅ K` by `Scheme.ΓSpecIso`; put `A := Γ(Z, V)`, so
+   `A` is a standard smooth `K`-algebra and
+   `𝒪_{Z,z} ≅ A_p` by `IsAffineOpen.isLocalization_stalk`.
+2. `Algebra.IsStandardSmooth K A` unpacks to a `SubmersivePresentation`:
+   `A = P ⧸ (r_σ)` with `P = MvPolynomial ι K`, `ι` and `σ` finite, and the
+   Jacobian a unit. Take `q` the preimage of `p` in `P` and put `B := P_q`.
+3. `B` IS REGULAR LOCAL FOR FREE: `MvPolynomial.isRegularRing_of_isRegularRing`
+   (`Mathlib/RingTheory/RegularLocalRing/Polynomial.lean`) gives
+   `IsRegularRing (MvPolynomial ι K)`, whose `isRegularLocalRing_localization`
+   field is exactly `IsRegularLocalRing (Localization.AtPrime q)`. Nothing has
+   to be proven here — it is `infer_instance`.
+4. `A_p ≅ B ⧸ (r_σ)B` is the commutation of localization with the quotient.
+5. THE ONLY REAL CONTENT: the images of the `r_σ` in `𝔪_B/𝔪_B²` are linearly
+   independent. This is the Jacobian criterion, and mathlib supplies it in
+   cotangent-complex form: `SubmersivePresentation.cotangentComplex_injective`
+   says `I/I² → S ⊗_P Ω_{P/K}` is INJECTIVE, and `sectionCotangent_comp`
+   exhibits a RETRACTION of it — so the injection is SPLIT and therefore stays
+   injective after base change to the residue field `κ(p)`. Since the composite
+   `J/𝔪J → 𝔪_B/𝔪_B² → κ ⊗_P Ω_{P/K}` is injective, its FIRST factor is, which
+   is the required independence. Then convert independence to the iterated
+   prefix form the engine consumes.
+
+WHY THIS IS THE RIGHT PLACE TO CUT. Everything downstream of the independence
+statement is now PROVEN: `isRegularLocalRing_quotient_span_singleton` and
+`isRegularLocalRing_quotient_span_list_aux` (both above) are a complete,
+general "quotient by part of a regular system of parameters is regular", which
+mathlib does not have in any form — `RegularLocalRing/` is two files and
+neither mentions quotients. So the remaining gap is no longer commutative
+algebra at all; it is the presentation bookkeeping of items 1–4 plus the
+cotangent-complex translation of item 5.
+
+TWO ROUTES EXPLICITLY REJECTED, both recorded so nobody re-walks them:
+
+* the **Kähler-differential / transcendence-degree** route needs the dimension
+  formula `dim A_p + trdeg κ(p) = dim A`, and dimension theory over a field is
+  barely present at this pin — even `dim k[x₁..xₙ] = n` is still a
+  `proof_wanted` (`MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing`,
+  `Mathlib/RingTheory/KrullDimension/Basic.lean:94`), and there is NO
+  transcendence-degree material under `KrullDimension/` at all;
+* the **Cohen structure theorem** route needs both Cohen and a
+  "completion regular ⟹ regular" transfer, neither of which exists here.
+
+The route above needs NEITHER: the polynomial base is regular by an existing
+instance, and the dimension drop is Krull's height theorem, which the engine
+lemmas already consume. -/
+theorem exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field
+    {K : Type u} [Field K] {Z : AlgebraicGeometry.Scheme.{u}}
+    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
+    (hf : AlgebraicGeometry.Smooth f) (z : Z) :
+    ∃ (B : Type u) (_ : CommRing B) (_ : IsRegularLocalRing B) (l : List B),
+      (∀ (n : ℕ) (hn : n < l.length),
+        l[n] ∈ IsLocalRing.maximalIdeal B ∧
+          l[n] ∉ (IsLocalRing.maximalIdeal B) ^ 2 ⊔ Ideal.span {y | y ∈ l.take n}) ∧
+      Nonempty ((Z.presheaf.stalk z : Type u) ≃+* (B ⧸ Ideal.span {y | y ∈ l})) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE REGULAR LOCAL RINGS**
+(**PROVEN 2026-07-26** over the single leaf
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` and the
+commutative-algebra engine `isRegularLocalRing_quotient_span_list_aux`).
+
+For `Z` smooth over `Spec K` with `K` any field, every local ring `𝒪_{Z,z}` is
+a REGULAR local ring. Combined with `isDomain_of_isRegularLocalRing` (PROVEN
+above) this gives the domain property, so this leaf is exactly the first of the
+two gaps the parent's docstring named — and the second of them is closed.
+
+WHY THIS IS THE HARD HALF. A smooth morphism has geometrically regular fibres
+(EGA IV 17.5.1), so `Z` is a regular scheme over any field. Mathlib's
+`AlgebraicGeometry/Morphisms/Smooth.lean` never mentions regularity: a
+2026-07-26 sweep of pin `a3364fa` found ZERO cross-references between the
+`Algebra.Smooth`/`RingHom.Smooth`/`AlgebraicGeometry.Smooth` hierarchy and
+`IsRegularLocalRing`/`IsRegularRing`, and there is no `Geometrically/Regular.lean`.
+The sweep was re-run when this leaf was cut and the result is unchanged.
+
+THE TWO CLASSICAL ROUTES, and what each needs that the pin lacks.
+
+* **Cohen structure theorem.** Formal smoothness makes the completion
+  `𝒪̂_{Z,z}` a power-series ring over the residue field, and a local ring whose
+  completion is regular is regular. Mathlib has `Algebra.FormallySmooth` and
+  `Mathlib/RingTheory/Smooth/AdicCompletion.lean`, but no Cohen structure
+  theorem and no "completion regular ⟹ regular" transfer.
+* **Kähler differentials and the second fundamental exact sequence.** For
+  `R = 𝒪_{Z,z}` with residue field `κ`, formal smoothness splits
+  `0 → 𝔪/𝔪² → Ω_{A/K} ⊗_A κ → Ω_{κ/K} → 0`, whence
+  `dim_κ 𝔪/𝔪² = rank Ω − trdeg(κ/K) = dim R`, which is regularity. Mathlib has
+  `Mathlib/RingTheory/Smooth/Kaehler.lean`, so the exact sequence is the
+  reachable part; what is missing is the dimension formula
+  `dim A_p + trdeg κ(p) = dim A` for a finite-type domain over a field. Do NOT
+  start there: dimension theory over a field is barely present at this pin —
+  even `dim k[x₁..xₙ] = n` is still a `proof_wanted`
+  (`MvPolynomial.fin_ringKrullDim_eq_add_of_isNoetherianRing`,
+  `Mathlib/RingTheory/KrullDimension/Basic.lean:94`), and there is no
+  transcendence-degree/dimension material anywhere under `KrullDimension/`.
+
+* **THE THIRD ROUTE, AND THE ONE TO TAKE — smooth ASCENT of regularity from a
+  base mathlib already knows is regular** (measured 2026-07-26, and it
+  corrects the pessimistic reading above). The pin is much better supplied
+  than the "nothing exists" sweep suggests: `IsRegularRing k` for a field,
+  `IsRegularRing (MvPolynomial (Fin n) k)` and hence
+  `IsRegularLocalRing (Localization.AtPrime p)` for every prime `p` of a
+  polynomial ring over a field ALL discharge by `infer_instance`, out of
+  `Mathlib/RingTheory/RegularLocalRing/Polynomial.lean`
+  (`MvPolynomial.isRegularRing_of_isRegularRing`). `Noether normalization` is
+  also present (`Mathlib/RingTheory/NoetherNormalization.lean`), and
+  `Mathlib/RingTheory/KrullDimension/Regular.lean` carries the regular-sequence
+  dimension drop (`ringKrullDim_quotient_span_singleton_succ_eq_ringKrullDim_of_mem_nonZeroDivisors`
+  and `ringKrullDim_add_length_eq_ringKrullDim_of_isRegular`).
+
+  So the affine polynomial base is DONE, and the single genuinely missing
+  statement is that regularity ASCENDS along a smooth ring map — concretely,
+  via `Algebra.IsStandardSmooth`, that
+  `k[x₁..xₙ] ⧸ (f₁, …, f_c)` localized at a prime is regular when the Jacobian
+  is invertible there, i.e. that the `f_i` form a regular sequence whose images
+  are linearly independent in `𝔪/𝔪²`. That is one theorem over machinery that
+  exists, not a dimension theory built from scratch. Anyone taking this leaf
+  should start by reading `Mathlib/RingTheory/Smooth/StandardSmooth.lean` and
+  `StandardSmoothCotangent.lean`, NOT by formalizing Cohen or Noether–trdeg.
+
+A FIRST CUT THAT WOULD HELP whoever takes this: reduce to the AFFINE statement
+"`A` a smooth `K`-algebra, `p` prime ⟹ `IsRegularLocalRing (Localization.AtPrime p)`"
+by transporting through an affine chart, exactly as
+`exists_isOpen_isIrreducible_of_isDomain_stalk` (PROVEN, above) transports the
+domain property: `Scheme.exists_Spec_apply_eq` gives an open immersion
+`g : Spec R ⟶ Z` hitting `z`, `Spec.stalkIso` identifies the stalk with
+`Localization.AtPrime y.asIdeal`, and `Smooth` is stable under composition with
+the open immersion `g`, so `R` is a smooth `K`-algebra through
+`HasRingHomProperty @Smooth RingHom.Smooth`. That reduction was NOT carried out
+here — it is scheme-theoretic bookkeeping with no mathematical content, and it
+is folded into the single remaining leaf above, whose docstring writes the
+recipe out in five steps.
+
+**STATUS 2026-07-26.** This node is now PROVEN, in three lines, over
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` (SORRY —
+present the stalk as regular-local-modulo-an-independent-list) and
+`isRegularLocalRing_quotient_span_list_aux` (PROVEN — that such a quotient is
+regular local). The whole COMMUTATIVE-ALGEBRA half is therefore closed, and
+what remains is presentation bookkeeping plus the cotangent-complex form of
+the Jacobian criterion. -/
+theorem isRegularLocalRing_stalk_of_smooth_over_field {K : Type u} [Field K]
+    {Z : AlgebraicGeometry.Scheme.{u}}
+    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
+    (hf : AlgebraicGeometry.Smooth f) (z : Z) :
+    IsRegularLocalRing (Z.presheaf.stalk z) := by
+  obtain ⟨B, _, _, l, hindep, ⟨e⟩⟩ :=
+    exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field f hf z
+  haveI : IsRegularLocalRing (B ⧸ Ideal.span {y | y ∈ l}) :=
+    isRegularLocalRing_quotient_span_list_aux l.length B l rfl hindep
+  exact IsRegularLocalRing.of_ringEquiv e.symm
+
+open CategoryTheory AlgebraicGeometry in
+/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE DOMAINS** (**PROVEN 2026-07-26** over
+`isRegularLocalRing_stalk_of_smooth_over_field` (**PROVEN 2026-07-26**, over one
+remaining geometric leaf) and `isDomain_of_isRegularLocalRing` (PROVEN)).
 
 For `Z` smooth over `Spec K` with `K` any field, every local ring `𝒪_{Z,z}` is
 an integral domain.
 
-THE CLASSICAL ARGUMENT, and the two mathlib gaps it names. A smooth morphism
-has geometrically regular fibres (EGA IV 17.5.1), so `Z` is a regular scheme
-over any field; and a regular local ring is an integral domain. Neither half
-exists at this pin, and the second is a well-known gap:
+THE CLASSICAL ARGUMENT named TWO mathlib gaps. A smooth morphism has
+geometrically regular fibres (EGA IV 17.5.1), so `Z` is a regular scheme over
+any field; and a regular local ring is an integral domain.
 
-* **smooth over a field ⟹ the local rings are REGULAR.** Mathlib's
-  `AlgebraicGeometry/Morphisms/Smooth.lean` never mentions regularity (a
-  2026-07-26 sweep of the pin found ZERO cross-references between the
-  `Algebra.Smooth`/`RingHom.Smooth`/`AlgebraicGeometry.Smooth` hierarchy and
-  `IsRegularLocalRing`/`IsRegularRing`). The classical route is Cohen's
-  structure theorem: formal smoothness makes the completion `𝒪̂_{Z,z}` a
-  power-series ring over the residue field, and a local ring whose completion
-  is regular is regular.
-* **regular local ⟹ IsDomain.** Also absent — `Mathlib/RingTheory/`
-  `RegularLocalRing/Defs.lean` has only `IsRegularLocalRing` and
-  `IsRegularRing` with a handful of instances (PIDs, Dedekind domains,
-  polynomial rings over a regular base), and its own docstring records even
-  "regular local ⟹ regular" as an open TODO. The classical route is the
-  associated graded ring: for a regular local ring `gr_𝔪(R)` is a polynomial
-  ring over `R/𝔪`, hence a domain, and a filtered ring with domain associated
-  graded and `⋂ 𝔪ⁿ = 0` (Krull) is a domain.
+**ONE OF THE TWO IS NOW CLOSED (2026-07-26).** `regular local ⟹ IsDomain` is
+PROVEN here as `isDomain_of_isRegularLocalRing`, over the exchange lemma
+`exists_finset_card_span_insert_eq_maximalIdeal` and the induction
+`isDomain_of_isRegularLocalRing_aux`. It is mathlib's own recorded TODO in
+`Mathlib/RingTheory/RegularLocalRing/Defs.lean`, and the proof needed nothing
+beyond Nakayama, prime avoidance and the two halves of Krull's height theorem
+that the pin already carries — in particular NOT the associated graded ring
+that the earlier version of this docstring proposed. It is a general, reusable
+statement and a genuine mathlib contribution.
 
-Both are general, reusable, and would be genuine mathlib contributions; the
-second in particular is consumed by every "regular ⟹ normal ⟹ irreducible"
-argument in algebraic geometry. Note this SUBSUMES the weaker "smooth over a
-field ⟹ reduced": the sibling
+**AND SO IS THE OTHER, DOWN TO ONE GEOMETRIC LEAF (2026-07-26).**
+`isRegularLocalRing_stalk_of_smooth_over_field` (stated immediately above) is
+now PROVEN over `isRegularLocalRing_quotient_span_list_aux` (PROVEN — a general
+"quotient by part of a regular system of parameters is regular", which mathlib
+lacks entirely) and the single remaining leaf
+`exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field` (SORRY),
+which asks only that the stalk BE presented as a regular local ring modulo a
+list independent mod `𝔪²`. So no commutative algebra is left below this node —
+only presentation bookkeeping and the Jacobian criterion.
+
+Note this SUBSUMES the weaker "smooth over a field ⟹ reduced": the sibling
 `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` was proven on
 2026-07-26 by a different route (associated primes) and no longer needs it,
 but any future consumer of reducedness can take it from here.
@@ -2320,7 +3015,8 @@ theorem isDomain_stalk_of_smooth_over_field {K : Type u} [Field K]
     (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
     (hf : AlgebraicGeometry.Smooth f) (z : Z) :
     IsDomain (Z.presheaf.stalk z) :=
-  sorry
+  haveI := isRegularLocalRing_stalk_of_smooth_over_field f hf z
+  isDomain_of_isRegularLocalRing _
 
 /-- **A PRIME WITH DOMAIN LOCALIZATION HAS AN IRREDUCIBLE OPEN NEIGHBOURHOOD
 IN `Spec R`** (**PROVEN 2026-07-26** — the affine heart of the
@@ -2681,8 +3377,586 @@ theorem exists_continuousLine_of_isOpen {d : ℕ} (hd : 0 < d) (U : Set (Fin d �
       if_true, mul_one] at hco
     exact hs1 (by linarith)
 
+/-- **The gradient of a multivariate polynomial, as a continuous linear
+functional** (PROVEN, 2026-07-26): the row `(∂p/∂X₀, …, ∂p/∂X_{m−1})` evaluated
+at `z₀`. It is the building block of the JACOBIAN of a polynomial system, and
+`hasStrictFDerivAt_mvPolynomial_eval` below identifies it with the analytic
+derivative of `z ↦ p(z)` — which is the bridge mathlib does not have, and
+without which the formal `MvPolynomial.pderiv` and the analytic `fderiv` cannot
+be compared at all. -/
+noncomputable def mvPolynomialGradient {m : ℕ} (p : MvPolynomial (Fin m) ℝ)
+    (z₀ : Fin m → ℝ) : (Fin m → ℝ) →L[ℝ] ℝ :=
+  ∑ i : Fin m, (MvPolynomial.eval z₀ (MvPolynomial.pderiv i p)) •
+    (ContinuousLinearMap.proj i : (Fin m → ℝ) →L[ℝ] ℝ)
+
+/-- `mvPolynomialGradient` in coordinates (PROVEN, 2026-07-26). -/
+theorem mvPolynomialGradient_apply {m : ℕ} (p : MvPolynomial (Fin m) ℝ)
+    (z₀ v : Fin m → ℝ) :
+    mvPolynomialGradient p z₀ v =
+      ∑ i : Fin m, MvPolynomial.eval z₀ (MvPolynomial.pderiv i p) * v i := by
+  simp only [mvPolynomialGradient, FunLike.coe_sum, Finset.sum_apply,
+    FunLike.coe_smul, Pi.smul_apply, ContinuousLinearMap.proj_apply, smul_eq_mul]
+
+/-- **THE FORMAL DERIVATIVE IS THE ANALYTIC ONE, for multivariate polynomials**
+(PROVEN, 2026-07-26 — this bridge is genuinely absent from mathlib at this pin:
+`Mathlib/Analysis/` mentions `pderiv` nowhere, and `Mathlib/Analysis/Analytic/
+Polynomial.lean` gets as far as `AnalyticOnNhd.eval_mvPolynomial` without ever
+computing the derivative).
+
+Evaluation of `p : ℝ[X₀,…,X_{m−1}]` is STRICTLY differentiable at every point,
+with derivative the gradient assembled from the formal partial derivatives.
+Strictness — not mere differentiability — is what the implicit function theorem
+requires, and it is free here because the proof goes by
+`MvPolynomial.induction_on` through `HasStrictFDerivAt.add` and
+`HasStrictFDerivAt.mul`, both of which are strict.
+
+The three cases are exactly the three constructors: a constant has zero
+gradient (`pderiv_C`), the gradient is additive (`pderiv` is a derivation), and
+the `mul_X` step is the Leibniz rule `pderiv_mul` matched against the product
+rule for `HasStrictFDerivAt`, the two `if`-branches of `pderiv_X` collapsing
+under `Finset.sum_ite_eq'`. -/
+theorem hasStrictFDerivAt_mvPolynomial_eval {m : ℕ} (p : MvPolynomial (Fin m) ℝ)
+    (z₀ : Fin m → ℝ) :
+    HasStrictFDerivAt (fun z : Fin m → ℝ => MvPolynomial.eval z p)
+      (mvPolynomialGradient p z₀) z₀ := by
+  classical
+  induction p using MvPolynomial.induction_on with
+  | C a =>
+      have h1 : (fun z : Fin m → ℝ =>
+          MvPolynomial.eval z (MvPolynomial.C a : MvPolynomial (Fin m) ℝ)) = fun _ => a :=
+        funext fun _ => MvPolynomial.eval_C a
+      have h2 : mvPolynomialGradient (MvPolynomial.C a : MvPolynomial (Fin m) ℝ) z₀ = 0 := by
+        simp only [mvPolynomialGradient, MvPolynomial.pderiv_C, map_zero, zero_smul,
+          Finset.sum_const_zero]
+      rw [h1, h2]
+      exact hasStrictFDerivAt_const a z₀
+  | add p q hp hq =>
+      have h1 : (fun z : Fin m → ℝ => MvPolynomial.eval z (p + q))
+          = fun z => MvPolynomial.eval z p + MvPolynomial.eval z q :=
+        funext fun _ => by rw [map_add]
+      have h2 : mvPolynomialGradient (p + q) z₀
+          = mvPolynomialGradient p z₀ + mvPolynomialGradient q z₀ := by
+        simp only [mvPolynomialGradient, map_add, add_smul, Finset.sum_add_distrib]
+      rw [h1, h2]
+      exact hp.add hq
+  | mul_X p i hp =>
+      have hX : HasStrictFDerivAt (fun z : Fin m → ℝ => z i)
+          (ContinuousLinearMap.proj i : (Fin m → ℝ) →L[ℝ] ℝ) z₀ :=
+        hasStrictFDerivAt_apply i z₀
+      have h1 : (fun z : Fin m → ℝ => MvPolynomial.eval z (p * MvPolynomial.X i))
+          = fun z => MvPolynomial.eval z p * z i := by
+        funext z; rw [map_mul, MvPolynomial.eval_X]
+      have h2 : mvPolynomialGradient (p * MvPolynomial.X i) z₀
+          = (MvPolynomial.eval z₀ p) • (ContinuousLinearMap.proj i : (Fin m → ℝ) →L[ℝ] ℝ)
+            + (z₀ i) • mvPolynomialGradient p z₀ := by
+        ext v
+        have key : ∀ j : Fin m,
+            MvPolynomial.eval z₀ (MvPolynomial.pderiv j (p * MvPolynomial.X i)) * v j
+              = (if j = i then MvPolynomial.eval z₀ p * v i else 0)
+                + z₀ i * (MvPolynomial.eval z₀ (MvPolynomial.pderiv j p) * v j) := by
+          intro j
+          by_cases hji : j = i
+          · subst hji
+            rw [MvPolynomial.pderiv_mul, map_add, map_mul, map_mul, MvPolynomial.eval_X,
+              MvPolynomial.pderiv_X_self, map_one, if_pos (rfl : j = j)]
+            ring
+          · rw [MvPolynomial.pderiv_mul, map_add, map_mul, map_mul, MvPolynomial.eval_X,
+              MvPolynomial.pderiv_X_of_ne (Ne.symm hji), map_zero, if_neg hji]
+            ring
+        rw [mvPolynomialGradient_apply, Finset.sum_congr rfl (fun j _ => key j),
+          Finset.sum_add_distrib,
+          Finset.sum_ite_eq' Finset.univ i (fun _ => MvPolynomial.eval z₀ p * v i),
+          if_pos (Finset.mem_univ i)]
+        simp only [add_apply, smul_apply, ContinuousLinearMap.proj_apply, smul_eq_mul,
+          mvPolynomialGradient_apply, Finset.mul_sum]
+      rw [h1, h2]
+      exact hp.mul hX
+
+/-- **THE REAL ZERO LOCUS OF A SMOOTH POLYNOMIAL SYSTEM CONTAINS A EUCLIDEAN
+PATCH OF DIMENSION `m − c`** (PROVEN, 2026-07-26 — the whole real-analytic
+half of the Euclidean-chart leaf, with no scheme theory left in it).
+
+Given `c` real polynomials `P₁,…,P_c` in `m` variables, a common real zero
+`z₀`, and a SURJECTIVE Jacobian at `z₀`, there is an open `U ⊆ ℝ^{m−c}` around
+a point and a continuous injection `σ : U → ℝ^m` landing entirely in the common
+zero locus.
+
+HOW IT IS PROVEN. `hasStrictFDerivAt_mvPolynomial_eval` makes
+`f := z ↦ (P₁(z),…,P_c(z))` strictly differentiable with derivative the
+Jacobian `f'`, and the surjectivity hypothesis is exactly `f'.range = ⊤`. Then
+`HasStrictFDerivAt.implicitToOpenPartialHomeomorph` gives an
+`OpenPartialHomeomorph h : ℝ^m ≃ ℝ^c × ker f'` defined near `z₀` whose FIRST
+component is `f` itself (`implicitToOpenPartialHomeomorph_fst`). So the slice
+
+    U' := {u ∈ ker f' | (f z₀, u) ∈ h.target},   σ' := u ↦ h.symm (f z₀, u)
+
+is an open subset of `ker f'` on which `f ∘ σ' ≡ f z₀ = 0`, and `σ'` is
+continuous and injective because `h.symm` is a homeomorphism on `h.target`.
+Continuity and injectivity therefore come from the SAME object, which is why
+this is one application of the theorem rather than two.
+
+Finally `ker f'` is transported to `Fin (m − c) → ℝ`: rank–nullity
+(`LinearMap.finrank_range_add_finrank_ker` with `range = ⊤`) gives
+`finrank (ker f') = m − c`, and `LinearEquiv.toContinuousLinearEquiv` upgrades
+the abstract `LinearEquiv.ofFinrankEq` to a homeomorphism, which preserves
+openness, continuity and injectivity.
+
+NOTE `0 < m − c` is NOT asserted here and is not needed: the statement is true
+(if vacuous-looking) when `c ≥ m`, and positivity of the dimension is the
+CALLER's obligation, discharged from `c < m` in
+`exists_realPolynomialModel_of_affine_geometricallyIrreducible`. Keeping it out
+means this lemma is exactly the classical submersion theorem and nothing
+more. -/
+theorem exists_euclideanPatch_of_polynomialSystem {m c : ℕ}
+    (P : Fin c → MvPolynomial (Fin m) ℝ) (z₀ : Fin m → ℝ)
+    (hz₀ : ∀ j, MvPolynomial.eval z₀ (P j) = 0)
+    (hsurj : Function.Surjective (fun v : Fin m → ℝ => fun j : Fin c =>
+      ∑ i : Fin m, MvPolynomial.eval z₀ (MvPolynomial.pderiv i (P j)) * v i)) :
+    ∃ (U : Set (Fin (m - c) → ℝ)) (w₀ : Fin (m - c) → ℝ)
+      (σ : (Fin (m - c) → ℝ) → (Fin m → ℝ)),
+      IsOpen U ∧ w₀ ∈ U ∧ ContinuousOn σ U ∧ Set.InjOn σ U ∧
+      ∀ w ∈ U, ∀ j, MvPolynomial.eval (σ w) (P j) = 0 := by
+  classical
+  set f : (Fin m → ℝ) → (Fin c → ℝ) := fun z j => MvPolynomial.eval z (P j)
+  set f' : (Fin m → ℝ) →L[ℝ] (Fin c → ℝ) :=
+    ContinuousLinearMap.pi (fun j => mvPolynomialGradient (P j) z₀) with hf'def
+  have hf : HasStrictFDerivAt f f' z₀ :=
+    hasStrictFDerivAt_pi.mpr (fun j => hasStrictFDerivAt_mvPolynomial_eval (P j) z₀)
+  have hf'apply : ∀ (v : Fin m → ℝ) (j : Fin c),
+      f' v j = ∑ i : Fin m, MvPolynomial.eval z₀ (MvPolynomial.pderiv i (P j)) * v i := by
+    intro v j
+    rw [hf'def, ContinuousLinearMap.pi_apply, mvPolynomialGradient_apply]
+  have hf'top : f'.range = ⊤ := by
+    rw [LinearMap.range_eq_top]
+    intro y
+    obtain ⟨v, hv⟩ := hsurj y
+    exact ⟨v, funext fun j => by
+      rw [ContinuousLinearMap.coe_coe, hf'apply v j]; exact congrFun hv j⟩
+  set h := hf.implicitToOpenPartialHomeomorph f f' hf'top
+  set V : Set (f'.ker) := {u | (f z₀, u) ∈ h.target}
+  have hVopen : IsOpen V := h.open_target.preimage (by fun_prop)
+  have hV0 : (0 : f'.ker) ∈ V := hf.mem_implicitToOpenPartialHomeomorph_target hf'top
+  set τ : f'.ker → (Fin m → ℝ) := fun u => h.symm (f z₀, u)
+  have hτcont : ContinuousOn τ V :=
+    h.continuousOn_symm.comp (by fun_prop) (fun _ hu => hu)
+  have hτinj : Set.InjOn τ V := by
+    intro u₁ h₁ u₂ h₂ he
+    have hkey : (f z₀, u₁) = (f z₀, u₂) := by
+      rw [← h.right_inv h₁, ← h.right_inv h₂]
+      exact congrArg (⇑h) he
+    exact congrArg Prod.snd hkey
+  have hτzero : ∀ u ∈ V, ∀ j, MvPolynomial.eval (τ u) (P j) = 0 := by
+    intro u hu j
+    have e1 : h (τ u) = (f z₀, u) := h.right_inv hu
+    have e2 : (h (τ u)).fst = f (τ u) :=
+      hf.implicitToOpenPartialHomeomorph_fst hf'top (τ u)
+    have hff : f (τ u) = f z₀ := by rw [← e2, e1]
+    exact (congrFun hff j).trans (hz₀ j)
+  have hrank : Module.finrank ℝ (f'.ker : Submodule ℝ (Fin m → ℝ)) = m - c := by
+    have hadd := LinearMap.finrank_range_add_finrank_ker (f' : (Fin m → ℝ) →ₗ[ℝ] (Fin c → ℝ))
+    rw [hf'top, finrank_top] at hadd
+    rw [Module.finrank_fin_fun, Module.finrank_fin_fun] at hadd
+    omega
+  have hle : Module.finrank ℝ (Fin (m - c) → ℝ)
+      = Module.finrank ℝ (f'.ker : Submodule ℝ (Fin m → ℝ)) := by
+    rw [Module.finrank_fin_fun, hrank]
+  let e : (Fin (m - c) → ℝ) ≃L[ℝ] (f'.ker : Submodule ℝ (Fin m → ℝ)) :=
+    (LinearEquiv.ofFinrankEq _ _ hle).toContinuousLinearEquiv
+  refine ⟨e ⁻¹' V, e.symm 0, fun w => τ (e w), hVopen.preimage e.continuous, ?_, ?_, ?_, ?_⟩
+  · show e (e.symm 0) ∈ V
+    rw [e.apply_symm_apply]
+    exact hV0
+  · exact hτcont.comp e.continuous.continuousOn (fun _ hw => hw)
+  · intro w₁ h₁ w₂ h₂ he
+    exact e.injective (hτinj h₁ h₂ he)
+  · intro w hw j
+    exact hτzero (e w) hw j
+
+section RealPolynomialModel
+
+open _root_.MvPolynomial
+
+/-- Evaluating a `ℚ→ℝ`-mapped polynomial at the coordinates of a real point of `T`
+is the same as applying that real point to the `T`-valued `aeval`.
+
+The only input is that a ring hom out of `ℚ` is unique, so no compatibility between
+`φ` and the `ℚ`-algebra structures has to be assumed. -/
+theorem realModel_eval_map_eq {T : Type u} [CommRing T] [Algebra ℚ T] {ι : Type*}
+    (φ : T →+* ℝ) (val : ι → T) (p : MvPolynomial ι ℚ) :
+    eval (fun i => φ (val i)) (MvPolynomial.map (algebraMap ℚ ℝ) p) = φ (aeval val p) := by
+  rw [MvPolynomial.eval_map, MvPolynomial.aeval_def, MvPolynomial.hom_eval₂,
+    show φ.comp (algebraMap ℚ T) = algebraMap ℚ ℝ from Subsingleton.elim _ _]
+
+/-- The real polynomials cut out by a submersive presentation: its relations,
+pushed along `ℚ → ℝ`. -/
+noncomputable abbrev realModelRel {T : Type u} [CommRing T] [Algebra ℚ T] {m c : ℕ}
+    (P : Algebra.SubmersivePresentation ℚ T (Fin m) (Fin c)) (j : Fin c) :
+    MvPolynomial (Fin m) ℝ :=
+  MvPolynomial.map (algebraMap ℚ ℝ) (P.relation j)
+
+section Presentation
+
+variable {T : Type u} [CommRing T] [Algebra ℚ T] {m c : ℕ}
+  (P : Algebra.SubmersivePresentation ℚ T (Fin m) (Fin c))
+
+/-- A real point of `T` whose coordinates are `z` evaluates the image of a polynomial
+by `eval z` on the mapped polynomial. -/
+theorem realModel_hom_algebraMap_eq (ψ : T →+* ℝ) (z : Fin m → ℝ)
+    (hz : ∀ i, ψ (P.val i) = z i) (p : MvPolynomial (Fin m) ℚ) :
+    ψ (algebraMap P.Ring T p) = eval z (MvPolynomial.map (algebraMap ℚ ℝ) p) := by
+  have hzf : (fun i => ψ (P.val i)) = z := funext hz
+  rw [P.algebraMap_apply, ← realModel_eval_map_eq ψ P.val p, hzf]
+
+/-- **A real zero of the relations IS a real point of `T`.** This is the surjectivity
+half of "real points of `ℝ[X]/(P)` are exactly the real zeros of `P`": the evaluation
+map kills the relations, hence kills the whole kernel, hence factors through `T`. -/
+theorem realModel_exists_hom_of_zero (z : Fin m → ℝ)
+    (hz : ∀ j, eval z (realModelRel P j) = 0) :
+    ∃ ψ : T →+* ℝ, ∀ i, ψ (P.val i) = z i := by
+  set ev : P.Ring →+* ℝ := eval₂Hom (algebraMap ℚ ℝ) z with hev
+  have hker : P.ker ≤ RingHom.ker ev := by
+    rw [← P.span_range_relation_eq_ker, Ideal.span_le]
+    rintro _ ⟨j, rfl⟩
+    have hj := hz j
+    rw [realModelRel, MvPolynomial.eval_map] at hj
+    simpa [hev, RingHom.mem_ker, SetLike.mem_coe] using hj
+  refine ⟨(Ideal.Quotient.lift P.ker ev hker).comp P.quotientEquiv.symm.toRingHom, fun i => ?_⟩
+  have hval : P.val i = algebraMap P.Ring T (X i) := by simp [P.algebraMap_apply]
+  rw [hval]
+  have key : P.quotientEquiv.symm.toRingEquiv.toRingHom (algebraMap P.Ring T (X i))
+      = (Ideal.Quotient.mk P.ker (X i) : P.Quotient) := by
+    show P.quotientEquiv.symm (algebraMap P.Ring T (X i)) = _
+    rw [← P.quotientEquiv_mk (X i)]
+    exact P.quotientEquiv.symm_apply_apply _
+  rw [RingHom.comp_apply, key, Ideal.Quotient.lift_mk, hev]
+  simp
+
+/-- The formal partial derivatives of the mapped relations, at a real point. -/
+theorem realModel_eval_pderiv (ψ : T →+* ℝ) (z : Fin m → ℝ) (hz : ∀ i, ψ (P.val i) = z i)
+    (i : Fin m) (j : Fin c) :
+    eval z (pderiv i (realModelRel P j)) = ψ (aeval P.val (pderiv i (P.relation j))) := by
+  have hzf : (fun i => ψ (P.val i)) = z := funext hz
+  rw [realModelRel, pderiv_map, ← hzf, realModel_eval_map_eq ψ P.val]
+
+/-- **THE JACOBIAN OF A SUBMERSIVE PRESENTATION IS SURJECTIVE AT ANY REAL POINT.**
+
+The `c × c` minor indexed by `P.map` has determinant `ψ (P.jacobian)`, and `P.jacobian`
+is a UNIT in `T`, so its image in the field `ℝ` is nonzero. Solving in that minor and
+padding with zeros off the range of `P.map` produces a preimage of any `w`. -/
+theorem realModel_jacobian_surjective (ψ : T →+* ℝ) (z : Fin m → ℝ)
+    (hz : ∀ i, ψ (P.val i) = z i) :
+    Function.Surjective (fun v : Fin m → ℝ => fun j : Fin c =>
+      ∑ i : Fin m, eval z (pderiv i (realModelRel P j)) * v i) := by
+  classical
+  set D : Fin c → Fin m → ℝ := fun j i => eval z (pderiv i (realModelRel P j)) with hD
+  set N : Matrix (Fin c) (Fin c) ℝ := fun j k => D j (P.map k) with hN
+  have hMN : N = Matrix.transpose ((ψ.comp (algebraMap P.Ring T)).mapMatrix P.jacobiMatrix) := by
+    ext j k
+    rw [hN]
+    simp only [Matrix.transpose_apply, RingHom.mapMatrix_apply, Matrix.map_apply,
+      RingHom.comp_apply, P.jacobiMatrix_apply, hD]
+    rw [realModel_eval_pderiv P ψ z hz, P.algebraMap_apply]
+  have hdet : N.det ≠ 0 := by
+    rw [hMN, Matrix.det_transpose, ← RingHom.map_det, RingHom.comp_apply,
+      ← P.jacobian_eq_jacobiMatrix_det]
+    exact isUnit_iff_ne_zero.mp (P.jacobian_isUnit.map ψ)
+  intro w
+  refine ⟨fun i => ∑ k : Fin c, if P.map k = i then (Matrix.mulVec N⁻¹ w) k else 0, ?_⟩
+  funext j
+  show ∑ i : Fin m, D j i * _ = w j
+  have hsum : ∀ u : Fin c → ℝ,
+      ∑ i : Fin m, D j i * (∑ k : Fin c, if P.map k = i then u k else 0)
+        = ∑ k : Fin c, D j (P.map k) * u k := by
+    intro u
+    simp_rw [Finset.mul_sum, mul_ite, mul_zero]
+    rw [Finset.sum_comm]
+    exact Finset.sum_congr rfl fun k _ => by rw [Finset.sum_ite_eq]; simp
+  rw [hsum]
+  have hvec : ∑ k : Fin c, D j (P.map k) * (Matrix.mulVec N⁻¹ w) k
+      = Matrix.mulVec N (Matrix.mulVec N⁻¹ w) j := rfl
+  rw [hvec, Matrix.mulVec_mulVec, Matrix.mul_nonsing_inv N (isUnit_iff_ne_zero.mpr hdet),
+    Matrix.one_mulVec]
+
+end Presentation
+
+/-- **A STANDARD-SMOOTH BASIC OPEN THROUGH A GIVEN REAL POINT.**
+
+`Algebra.Smooth.exists_span_eq_top_isStandardSmooth` covers `Spec R` by basic opens on
+which `R` is standard smooth. The `f`s span the unit ideal, so they cannot all lie in
+the (proper) kernel of a real point `ρ`; any one of them that does not is a basic open
+containing `ρ`. -/
+theorem exists_standardSmoothAway_of_realPoint {R : Type u} [CommRing R] [Algebra ℚ R]
+    [Algebra.Smooth ℚ R] (ρ : R →+* ℝ) :
+    ∃ f : R, ρ f ≠ 0 ∧ Algebra.IsStandardSmooth ℚ (Localization.Away f) := by
+  obtain ⟨s, hs, hstd⟩ := Algebra.Smooth.exists_span_eq_top_isStandardSmooth ℚ R
+  by_cases hex : ∃ x ∈ s, ρ x ≠ 0
+  · obtain ⟨x, hx, hxne⟩ := hex
+    exact ⟨x, hxne, hstd x hx⟩
+  exfalso
+  have hsub : s ⊆ (RingHom.ker ρ : Ideal R) := by
+    intro x hx
+    have hzero : ρ x = 0 := by
+      by_contra hne
+      exact hex ⟨x, hx, hne⟩
+    simpa [RingHom.mem_ker] using hzero
+  have hle : (⊤ : Ideal R) ≤ RingHom.ker ρ := by
+    rw [← hs]; exact Ideal.span_le.mpr hsub
+  have hne : (RingHom.ker ρ) ≠ ⊤ := by
+    intro h
+    have h1 : (1 : R) ∈ RingHom.ker ρ := h ▸ Submodule.mem_top
+    rw [RingHom.mem_ker, map_one] at h1
+    exact one_ne_zero h1
+  exact hne (top_le_iff.mp hle)
+
+/-- **THE REAL POLYNOMIAL MODEL, PURELY ALGEBRAIC FORM** (**PROVEN 2026-07-26** —
+this is steps 4 and 5 of `exists_realPolynomialModel_of_affine_geometricallyIrreducible`'s
+attack path, and it is the bulk of that node).
+
+Given a basic open `D(f)` of `Spec R` on which `R` is STANDARD SMOOTH over `ℚ`, together
+with a real point `ρ` of `R` not killing `f`, the submersive presentation of
+`R[1/f]` is literally a polynomial system: its relations pushed along `ℚ → ℝ` cut out
+`D(f)(ℝ)` inside `ℝ^m`, the Jacobian is surjective at the point `ρ` determines, every
+element of `R` is a polynomial in the coordinates, and distinct real zeros give distinct
+real points.
+
+NOTE the last conjunct, which is what step 6 consumes: if the codimension is MAXIMAL
+(`c = m`) then the presentation has relative dimension `0`, i.e. `R[1/f]` is étale
+over `ℚ`. That is the only thing the dimension count needs to know about the model,
+which is why the two halves can be separated without exporting the whole interface. -/
+theorem exists_realPolynomialModel_of_isStandardSmooth {R : Type u} [CommRing R]
+    [Algebra ℚ R] (f : R) (hstd : Algebra.IsStandardSmooth ℚ (Localization.Away f))
+    (ρ : R →+* ℝ) (hf : ρ f ≠ 0) :
+    ∃ (m c : ℕ) (Pol : Fin c → MvPolynomial (Fin m) ℝ) (z₀ : Fin m → ℝ)
+      (Φ : (Fin m → ℝ) → (R →+* ℝ)),
+      c ≤ m ∧
+      (∀ j, eval z₀ (Pol j) = 0) ∧
+      Function.Surjective (fun v : Fin m → ℝ => fun j : Fin c =>
+        ∑ i : Fin m, eval z₀ (pderiv i (Pol j)) * v i) ∧
+      (∀ a : R, ∃ Q : MvPolynomial (Fin m) ℝ, ∀ z : Fin m → ℝ,
+        (∀ j, eval z (Pol j) = 0) → Φ z a = eval z Q) ∧
+      (∀ z w : Fin m → ℝ, (∀ j, eval z (Pol j) = 0) → (∀ j, eval w (Pol j) = 0) →
+        Φ z = Φ w → z = w) ∧
+      (c = m → Algebra.IsStandardSmoothOfRelativeDimension 0 ℚ (Localization.Away f)) := by
+  classical
+  obtain ⟨ι, σ, _, hι, ⟨P0⟩⟩ := hstd.out
+  cases nonempty_fintype ι
+  cases nonempty_fintype σ
+  refine ⟨Fintype.card ι, Fintype.card σ, ?_⟩
+  set P := P0.reindex (Fintype.equivFin ι).symm (Fintype.equivFin σ).symm with hP
+  set ρ' : Localization.Away f →+* ℝ :=
+    IsLocalization.Away.lift f (isUnit_iff_ne_zero.mpr hf) with hρ'
+  set z₀ : Fin (Fintype.card ι) → ℝ := fun i => ρ' (P.val i) with hz₀
+  set Φ : (Fin (Fintype.card ι) → ℝ) → (R →+* ℝ) := fun z =>
+    if h : ∃ ψ : Localization.Away f →+* ℝ, ∀ i, ψ (P.val i) = z i then
+      h.choose.comp (algebraMap R (Localization.Away f)) else ρ with hΦ
+  have hzero : ∀ j, eval z₀ (realModelRel P j) = 0 := fun j => by
+    rw [hz₀, realModel_eval_map_eq ρ' P.val, P.aeval_val_relation, map_zero]
+  refine ⟨realModelRel P, z₀, Φ, ?_, hzero, ?_, ?_, ?_, ?_⟩
+  · have hcard := P.card_relations_le_card_vars_of_isFinite
+    simpa using hcard
+  · exact realModel_jacobian_surjective P ρ' z₀ (fun i => rfl)
+  · intro a
+    refine ⟨MvPolynomial.map (algebraMap ℚ ℝ)
+      (P.σ (algebraMap R (Localization.Away f) a)), fun z hz => ?_⟩
+    have hex : ∃ ψ : Localization.Away f →+* ℝ, ∀ i, ψ (P.val i) = z i :=
+      realModel_exists_hom_of_zero P z hz
+    rw [hΦ]
+    simp only [dif_pos hex, RingHom.comp_apply]
+    have hval : algebraMap R (Localization.Away f) a
+        = algebraMap P.Ring (Localization.Away f)
+            (P.σ (algebraMap R (Localization.Away f) a)) := by
+      rw [P.algebraMap_apply, P.aeval_val_σ]
+    conv_lhs => rw [hval]
+    rw [realModel_hom_algebraMap_eq P hex.choose z hex.choose_spec]
+  · intro z w hz hw hzw
+    have hez : ∃ ψ : Localization.Away f →+* ℝ, ∀ i, ψ (P.val i) = z i :=
+      realModel_exists_hom_of_zero P z hz
+    have hew : ∃ ψ : Localization.Away f →+* ℝ, ∀ i, ψ (P.val i) = w i :=
+      realModel_exists_hom_of_zero P w hw
+    rw [hΦ] at hzw
+    simp only [dif_pos hez, dif_pos hew] at hzw
+    have hchoose : hez.choose = hew.choose :=
+      IsLocalization.ringHom_ext (Submonoid.powers f) hzw
+    funext i
+    rw [← hez.choose_spec i, ← hew.choose_spec i, hchoose]
+  · intro hcm
+    exact P.isStandardSmoothOfRelativeDimension (by
+      simp [Algebra.Presentation.dimension, hcm])
+
+end RealPolynomialModel
+
 open CategoryTheory AlgebraicGeometry in
-/-- **A EUCLIDEAN CHART ON `X(ℝ)`** (sorry node, 2026-07-26 — the residual
+/-- **THE COORDINATE RING OF A SMOOTH AFFINE `ℚ`-SCHEME IS A SMOOTH `ℚ`-ALGEBRA**
+(**PROVEN 2026-07-26** — step 1 of the attack path below).
+
+`AlgebraicGeometry.Smooth` is `HasRingHomProperty @Smooth RingHom.Smooth`, so on affines
+it says exactly that `ULift ℚ → A` is a smooth ring map; composing with the (bijective,
+hence smooth) `ℚ ≃+* ULift ℚ` descends the base to `ℚ` itself.
+
+The `ℚ`-algebra structure is EXISTENTIALLY bound rather than assumed, because the one
+that `g` induces is the only one that can be meant: a ring hom out of `ℚ` is unique. -/
+theorem exists_ratAlgebra_smooth_of_smooth (hsmooth : AlgebraicGeometry.Smooth g) :
+    ∃ inst : Algebra ℚ A, @Algebra.Smooth ℚ _ ↑A _ inst := by
+  have h1 : RingHom.Smooth (AlgebraicGeometry.Spec.preimage g).hom := by
+    have hmap : AlgebraicGeometry.Smooth (Spec.map (Spec.preimage g)) := by
+      rw [Spec.map_preimage]; exact hsmooth
+    exact AlgebraicGeometry.HasRingHomProperty.Spec_iff.mp hmap
+  have h2 : RingHom.Smooth ((ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.toRingHom) :=
+    RingHom.Smooth.of_bijective (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.bijective
+  exact ⟨_, (h2.comp h1).toAlgebra⟩
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A NONEMPTY BASIC OPEN OF A `≥ 2`-DIMENSIONAL IRREDUCIBLE VARIETY IS NOT ÉTALE**
+(sorry leaf, 2026-07-26 — step 6 of the attack path below, and the ONLY part of
+`exists_realPolynomialModel_of_affine_geometricallyIrreducible` that is not proven).
+
+If `R[1/f]` were standard smooth of relative dimension `0` over `ℚ` it would be étale,
+hence a finite product of finite separable field extensions of `ℚ`
+(`Algebra.Etale.iff_isStandardSmoothOfRelativeDimension_zero` at this pin turns the
+hypothesis into `Algebra.Etale ℚ (Localization.Away f)`), hence Artinian, hence
+`ringKrullDim (Localization.Away f) ≤ 0`.
+
+But `D(f)` is a NONEMPTY open of `Spec A` — nonempty because the real point `ρ` does not
+kill `f` — and `hgi` makes `Spec A` irreducible, so `D(f)` is DENSE. For a finite-type
+algebra over a field, a dense open has the SAME Krull dimension as the whole
+(both compute the transcendence degree of the function field), so
+`1 < topologicalKrullDim (Spec A) = ringKrullDim (Localization.Away f) ≤ 0`, absurd.
+
+WHERE EACH HYPOTHESIS ENTERS. `hgi` gives irreducibility, hence density of `D(f)`; `hft`
+gives finite type over `ℚ`, without which "dense open has the same dimension" is FALSE
+(a dense open of a valuation ring's spectrum can drop dimension); `hdim` supplies the
+`1 <`; `ρ`/`hf` supply nonemptiness. Dropping any one of them makes the statement false.
+
+WHAT IS MISSING AT THIS PIN: mathlib has `PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim`
+and the Artinian side, but not "a dense open of an irreducible finite-type `k`-scheme has
+the ambient dimension". That is the genuine content and it is an independently ownable
+piece of dimension theory, involving no polynomial-model interface whatsoever. -/
+theorem not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible
+    [inst : Algebra ℚ A]
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
+    (f : A) (ρ : A →+* ℝ) (hf : ρ f ≠ 0) :
+    ¬ Algebra.IsStandardSmoothOfRelativeDimension 0 ℚ (Localization.Away f) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A SMOOTH POLYNOMIAL MODEL OF `X(ℝ)`** (**PROVEN 2026-07-26** over the single leaf
+`not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
+— steps 1–5 below are now discharged, and only the DIMENSION COUNT of step 6 remains.
+This node was the residual scheme-theoretic content of the Euclidean-chart leaf below,
+whose real-analytic half was discharged by `exists_euclideanPatch_of_polynomialSystem`).
+
+For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` of
+dimension `> 1` with a real point, there are `c < m` and real polynomials
+`P₁,…,P_c ∈ ℝ[X₀,…,X_{m−1}]` with a common zero `z₀` at which the Jacobian is
+SURJECTIVE, together with a map `Φ` from `ℝ^m` to `A →+* ℝ` such that, on the
+common zero locus,
+
+* every regular function `a : A` is a POLYNOMIAL in the coordinates —
+  `Φ z a = Q_a(z)` for a fixed `Q_a` independent of `z`; and
+* `Φ` is INJECTIVE.
+
+In words: an open piece of `X(ℝ)` is cut out in `ℝ^m` by a smooth system of `c`
+equations, functorially and injectively, and the codimension `c` is strictly
+less than `m`.
+
+WHY IT IS TRUE, and where each hypothesis enters.
+
+1. `AlgebraicGeometry.Smooth` is `HasRingHomProperty @Smooth RingHom.Smooth`
+   (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:73`), so on affines
+   `hsmooth` says exactly that `A` is a smooth `ℚ`-algebra.
+2. Base change to `ℝ`: `A_ℝ := ℝ ⊗[ℚ] A` is a smooth `ℝ`-algebra, and
+   `hreal` — through `hasRationalPoint_iff_exists_ringHom` — gives an
+   `ℝ`-point `ψ₀ : A_ℝ →ₐ[ℝ] ℝ`. Note no compatibility over `ℚ` has to be
+   imposed anywhere: a ring map out of `ℚ` is unique
+   (`ringHom_uliftRat_ext`), so `A →+* ℝ` already IS `X(ℝ)`.
+3. **SMOOTH ⟹ LOCALLY STANDARD SMOOTH IS IN MATHLIB** — this is the
+   ingredient the module's MISSING MACHINERY item 6 wrongly recorded as
+   absent. `Algebra.IsSmoothAt.exists_notMem_isStandardSmooth` and
+   `Algebra.Smooth.exists_span_eq_top_isStandardSmooth`
+   (`Mathlib/RingTheory/Smooth/StandardSmoothOfFree.lean:102,153`), plus
+   `RingHom.smooth_iff_locally_isStandardSmooth`
+   (`Mathlib/RingTheory/RingHom/LocallyStandardSmooth.lean:45`), give an
+   `f ∉ ker ψ₀` with `(A_ℝ)_f` standard smooth over `ℝ`.
+4. A `SubmersivePresentation`
+   (`Mathlib/RingTheory/Extension/Presentation/Submersive.lean`) IS a
+   polynomial system with an invertible Jacobian minor, so it hands over the
+   `P j`, the point `z₀` (the image of `ψ₀`), the surjectivity of the
+   differential, and — because the presentation is an ISOMORPHISM
+   `ℝ[X₀,…,X_{m−1}]/(P) ≅ (A_ℝ)_f` — the polynomial representatives `Q_a`.
+5. INJECTIVITY of `Φ` on the zero locus is formal once (4) is in place: real
+   points of `ℝ[X]/(P)` are exactly the real zeros of `P`, and two
+   `ℝ`-algebra maps out of the LOCALIZATION `(A_ℝ)_f` that agree on `A_ℝ` are
+   equal, so distinct zeros give distinct elements of `A →+* ℝ`.
+6. `c < m` is where `hdim` and `hgi` enter, and it is the one genuinely
+   separate half. If `c = m` then `(A_ℝ)_f` is étale over `ℝ`, hence a finite
+   product of copies of `ℝ` and `ℂ`, so the basic open `D(f)` of `Spec A_ℝ`
+   is zero-dimensional; `hgi` makes `Spec A` irreducible, so a nonempty open
+   is dense and carries the full dimension, contradicting `hdim`. (`c > m` is
+   impossible for a submersive presentation, since its Jacobian is
+   surjective.)
+
+EVERY HYPOTHESIS IS LOAD-BEARING, and the third is the one worth recording:
+
+* `hreal` — without a real point `A →+* ℝ` is EMPTY, so no total `Φ` exists at
+  all (`Spec ℚ[t]/(t²+1)`).
+* `hdim` — at `dim X = 0` the set `X(ℝ)` is finite, and `c = m`; this is the
+  sole consumer of `hdim`, through step 6.
+* `hsmooth` — **it is not implied by `hgi` and `hdim`.** The affine cone
+  `x² + y² + z² = 0` over `ℚ` is geometrically irreducible of dimension `2`,
+  yet its real points are the single point `(0,0,0)`; it fails only
+  smoothness, at the origin. So a singular geometrically irreducible surface
+  can have a ZERO-dimensional real locus, and smoothness is exactly what
+  excludes that — no Jacobian is surjective there.
+* `hft` is implied by `hsmooth` (smooth ⟹ locally of finite presentation) and
+  is carried only to keep the hypothesis list parallel with the sibling
+  Bertini leaves.
+
+WHAT IS GENUINELY MISSING, after the survey behind this cut: mathlib has no
+functor from schemes to real manifolds, so the identification of `X(ℝ)` with
+the real zero locus in `ℝ^m` — steps 2, 4 and 5 above — has to be written by
+hand. That is a real subproject, but it is ASSEMBLY OF EXISTING PARTS, not new
+theory, and steps 3 and the whole of the analysis are already done. -/
+theorem exists_realPolynomialModel_of_affine_geometricallyIrreducible
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hreal : HasRationalPoint g (ULift.{u} ℝ))
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A)) :
+    ∃ (m c : ℕ) (P : Fin c → MvPolynomial (Fin m) ℝ) (z₀ : Fin m → ℝ)
+      (Φ : (Fin m → ℝ) → (A →+* ℝ)),
+      c < m ∧
+      (∀ j, MvPolynomial.eval z₀ (P j) = 0) ∧
+      Function.Surjective (fun v : Fin m → ℝ => fun j : Fin c =>
+        ∑ i : Fin m, MvPolynomial.eval z₀ (MvPolynomial.pderiv i (P j)) * v i) ∧
+      (∀ a : A, ∃ Q : MvPolynomial (Fin m) ℝ, ∀ z : Fin m → ℝ,
+        (∀ j, MvPolynomial.eval z (P j) = 0) → Φ z a = MvPolynomial.eval z Q) ∧
+      (∀ z w : Fin m → ℝ, (∀ j, MvPolynomial.eval z (P j) = 0) →
+        (∀ j, MvPolynomial.eval w (P j) = 0) → Φ z = Φ w → z = w) := by
+  classical
+  -- steps 1–2: `A` is a smooth `ℚ`-algebra, and `hreal` is a ring hom to `ℝ`
+  obtain ⟨instQ, hsm⟩ := exists_ratAlgebra_smooth_of_smooth g hsmooth
+  letI := instQ
+  haveI : Algebra.Smooth ℚ A := hsm
+  obtain ⟨ψ, -⟩ := (hasRationalPoint_iff_exists_ringHom g (ULift.{u} ℝ)).mp hreal
+  set ρ : A →+* ℝ := (ULift.ringEquiv : ULift.{u} ℝ ≃+* ℝ).toRingHom.comp ψ.hom
+  -- step 3: a standard-smooth basic open through that real point
+  obtain ⟨f, hf, hstd⟩ := exists_standardSmoothAway_of_realPoint ρ
+  -- steps 4–5: the submersive presentation IS the polynomial model
+  obtain ⟨m, c, Pol, z₀, Φ, hcm, hz, hjac, hpoly, hinj, hdeg⟩ :=
+    exists_realPolynomialModel_of_isStandardSmooth f hstd ρ hf
+  refine ⟨m, c, Pol, z₀, Φ, ?_, hz, hjac, hpoly, hinj⟩
+  -- step 6: the codimension is not maximal, else `D(f)` would be étale
+  rcases lt_or_eq_of_le hcm with hlt | heq
+  · exact hlt
+  · exact absurd (hdeg heq)
+      (not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible
+        g hft hgi hdim f ρ hf)
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A EUCLIDEAN CHART ON `X(ℝ)`** (**PROVEN 2026-07-26** over the single leaf
+`exists_realPolynomialModel_of_affine_geometricallyIrreducible` — the residual
 scheme-to-real-topology content of item 6, after the coordinate bookkeeping
 and the arc construction below it have been discharged).
 
@@ -2704,8 +3978,33 @@ not manifold theory: no coordinates `x`, no `hx`, no nonconstancy, no arc.
 Those are discharged by `realPoint_ext_of_coords`,
 `exists_bounded_reparam` and `exists_continuousLine_of_isOpen`, all PROVEN
 here, and `exists_realArc_of_affine_geometricallyIrreducible` is PROVEN below
-from this leaf alone. What it does NOT buy is the manifold structure itself,
-which is the genuine missing machinery.
+from this leaf alone.
+
+**AND SINCE 2026-07-26 IT ALSO BUYS THE MANIFOLD THEORY.** The proof below
+factors this node through exactly two statements, and the real analysis is no
+longer part of the gap:
+
+* `exists_realPolynomialModel_of_affine_geometricallyIrreducible`
+  (**PROVEN 2026-07-26**) — an open piece of `X(ℝ)` is the real zero locus of a
+  smooth polynomial system of codimension `c < m` in `ℝ^m`, functorially and
+  injectively. It carries every hypothesis. Its own residue is the single leaf
+  `not_isStandardSmoothOfRelativeDimension_zero_of_affine_geometricallyIrreducible`
+  (SORRY) — the DIMENSION COUNT: a nonempty basic open of a `≥ 2`-dimensional
+  irreducible finite-type `ℚ`-variety is not étale. No base change to `ℝ` is
+  involved anywhere: the presentation is taken over `ℚ` and its relations are
+  pushed along `ℚ → ℝ`, which is why that step disappeared from the gap.
+* `exists_euclideanPatch_of_polynomialSystem` (**PROVEN**) — the classical
+  submersion theorem: such a zero locus contains a Euclidean patch of
+  dimension `m − c`. This is the whole of the real analysis, and it rests on
+  `hasStrictFDerivAt_mvPolynomial_eval` (**PROVEN**), the `pderiv`-to-`fderiv`
+  bridge that mathlib does not have.
+
+So what remains open here is scheme theory only. In particular the implicit
+function theorem, which the earlier version of this docstring listed as step 5
+of an attack path, has been APPLIED and is no longer pending — see
+`exists_euclideanPatch_of_polynomialSystem` for how its
+`OpenPartialHomeomorph` form supplies the continuity and the injectivity from
+one object.
 
 EVERY HYPOTHESIS IS LOAD-BEARING, and the third is the one worth recording:
 
@@ -2722,41 +4021,15 @@ EVERY HYPOTHESIS IS LOAD-BEARING, and the third is the one worth recording:
   is carried only to keep the hypothesis list parallel with the sibling
   Bertini leaves.
 
-THE ATTACK PATH, since the survey behind this cut found that far more of it is
-already in mathlib than the module's missing-machinery list claims:
-
-1. `AlgebraicGeometry.Smooth` is `HasRingHomProperty @Smooth RingHom.Smooth`
-   (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:73`), so on affines
-   `hsmooth` gives `RingHom.Smooth (Spec.preimage g).hom`, i.e. `A` is a
-   smooth `ℚ`-algebra.
-2. Base change to `ℝ` and localise at the real point. **Smooth ⟹ LOCALLY
-   STANDARD SMOOTH IS IN MATHLIB** — `Algebra.IsSmoothAt.exists_notMem_isStandardSmooth`
-   and `Algebra.Smooth.exists_span_eq_top_isStandardSmooth`
-   (`Mathlib/RingTheory/Smooth/StandardSmoothOfFree.lean:102,153`), plus
-   `RingHom.smooth_iff_locally_isStandardSmooth`
-   (`Mathlib/RingTheory/RingHom/LocallyStandardSmooth.lean:45`). This is the
-   ingredient the module's item 6 assumed was missing; it is not.
-3. A `SubmersivePresentation` (`Mathlib/RingTheory/Extension/Presentation/Submersive.lean`)
-   is literally a polynomial system with an INVERTIBLE JACOBIAN, so it hands
-   over `P : Fin c → MvPolynomial (Fin m) ℝ` with `c < m` and a surjective
-   differential at the real point.
-4. Evaluation of a multivariate polynomial is analytic — hence strictly
-   differentiable — by `AnalyticOnNhd.eval_continuousLinearMap`
-   (`Mathlib/Analysis/Analytic/Polynomial.lean:73`), with
-   `MvPolynomial.continuous_eval` for the continuity.
-5. Then the IMPLICIT FUNCTION THEOREM applies verbatim:
-   `HasStrictFDerivAt.implicitFunction` with `hf' : f'.range = ⊤`
-   (`Mathlib/Analysis/Calculus/Implicit.lean:474`), whose
-   `implicitToOpenPartialHomeomorph` (`:467`) supplies both the CONTINUITY
-   (`tendsto_implicitFunction`, `:508`) and the INJECTIVITY
-   (`OpenPartialHomeomorph.injOn` on its open `source`) demanded here, and
-   whose parameter space is `f'.ker`, of dimension `m - c ≥ 1`.
-
-What remains genuinely missing is only the bookkeeping that glues 1–5
-together: mathlib has no functor from schemes to real manifolds, so the
-identification of `X(ℝ)` with the zero locus in `ℝ^m` has to be written by
-hand. That is a real subproject, but it is assembly of existing parts, not new
-theory — which is a strictly better position than the one item 6 records. -/
+HOW THE TWO HALVES MEET, which is the only content of the proof below. The
+model leaf gives `m`, `c < m`, the system `P`, the base point `z₀` and the
+parametrisation `Φ`; the submersion theorem turns `(P, z₀)` into an open
+`U ⊆ ℝ^{m−c}` and a continuous injection `σ : U → ℝ^m` landing in the zero
+locus; and `Φ ∘ σ` is the chart. Continuity in each `a : A` is continuity of
+`z ↦ Q_a(z)` (`MvPolynomial.continuous_eval`) transported along `σ`, and
+injectivity is the composite of `σ`'s injectivity with `Φ`'s. `d := m − c` is
+positive because `c < m`, which is the sole place the model's dimension claim
+is used. -/
 theorem exists_realPointChart_of_affine_geometricallyIrreducible
     (hsmooth : AlgebraicGeometry.Smooth g)
     (hft : AlgebraicGeometry.LocallyOfFiniteType g)
@@ -2765,8 +4038,20 @@ theorem exists_realPointChart_of_affine_geometricallyIrreducible
     (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A)) :
     ∃ (d : ℕ) (U : Set (Fin d → ℝ)) (z₀ : Fin d → ℝ) (Φ : (Fin d → ℝ) → (A →+* ℝ)),
       0 < d ∧ IsOpen U ∧ z₀ ∈ U ∧
-      (∀ a : A, ContinuousOn (fun z => Φ z a) U) ∧ Set.InjOn Φ U :=
-  sorry
+      (∀ a : A, ContinuousOn (fun z => Φ z a) U) ∧ Set.InjOn Φ U := by
+  obtain ⟨m, c, P, z₀, Φ, hcm, hz₀, hjac, hpoly, hinj⟩ :=
+    exists_realPolynomialModel_of_affine_geometricallyIrreducible g hsmooth hft hgi hreal hdim
+  obtain ⟨U, w₀, σ, hUopen, hw₀, hσcont, hσinj, hσzero⟩ :=
+    exists_euclideanPatch_of_polynomialSystem P z₀ hz₀ hjac
+  refine ⟨m - c, U, w₀, fun w => Φ (σ w), by omega, hUopen, hw₀, ?_, ?_⟩
+  · intro a
+    obtain ⟨Q, hQ⟩ := hpoly a
+    refine ContinuousOn.congr
+      ((MvPolynomial.continuous_eval Q).comp_continuousOn hσcont) ?_
+    intro w hw
+    exact hQ (σ w) (hσzero w hw)
+  · intro w₁ hw₁ w₂ hw₂ hEq
+    exact hσinj hw₁ hw₂ (hinj (σ w₁) (σ w₂) (hσzero w₁ hw₁) (hσzero w₂ hw₂) hEq)
 
 open CategoryTheory AlgebraicGeometry in
 /-- **A NONCONSTANT CONTINUOUS ARC OF REAL POINTS** (**PROVEN 2026-07-26**
@@ -3736,6 +5021,55 @@ theorem formallySmooth_integralSystemModel_baseChange
   refine Algebra.FormallySmooth.of_equiv (A := R' ⊗[R] IntegralSystemModel f R) ?_
   exact integralSystemModelBaseChange f R R'
 
+/-- **The comparison map of models** (PROVEN): the base-change map
+`P_R/I_R → P_{R'}/I_{R'}` obtained by descending
+`integralSystemBaseChangeFwdAux` through the quotient. It is the ring map along
+which the `R'`-model is a LOCALISATION of the `R`-model whenever `R'` is a
+localisation of `R` (`isLocalization_integralSystemModel` below). -/
+noncomputable def integralSystemModelMap :
+    IntegralSystemModel f R →ₐ[R] IntegralSystemModel f R' :=
+  Ideal.Quotient.liftₐ (integralSystemIdeal f R) (integralSystemBaseChangeFwdAux f R R')
+    (fun _ ha => integralSystemIdeal_le_ker_fwdAux f R R' ha)
+
+/-- **The model is finitely presented over its base** (PROVEN): it is a quotient
+of a polynomial ring in finitely many variables by an ideal generated by the `m`
+polynomials `f i`. This is the hypothesis every lemma in
+`Mathlib/RingTheory/Smooth/Locus.lean` requires. -/
+theorem finitePresentation_integralSystemModel :
+    Algebra.FinitePresentation R (IntegralSystemModel f R) :=
+  Algebra.FinitePresentation.quotient (Submodule.fg_span (Set.finite_range _))
+
+attribute [local instance] Algebra.TensorProduct.rightAlgebra in
+/-- **The model over a localised base is a localisation of the model** (PROVEN):
+if `R'` is the localisation of `R` at `M`, then `P_{R'}/I_{R'}` is the
+localisation of `P_R/I_R` at the image of `M`.
+
+This is the lemma that makes "spread out over `Spec ℤ`" usable at all: it is
+applied twice below, once at `M = ℤ ∖ {0}` (identifying the `ℚ`-model as the
+generic fibre of the `ℤ`-model) and once at `M = ⟨N⟩` (identifying the
+`ℤ[1/N]`-model with the basic open `D(N)` of the `ℤ`-model).
+
+The proof is `IsLocalization.tensorRight` transported along
+`integralSystemModelBaseChange`; the algebra structure is passed as a hypothesis
+`halg` rather than declared as an instance, since a global
+`Algebra (IntegralSystemModel f R) (IntegralSystemModel f R')` instance would be
+keyed on a bare `Ideal.Quotient` and would fire far too often. -/
+theorem isLocalization_integralSystemModel (M : Submonoid R) [IsLocalization M R']
+    [Algebra (IntegralSystemModel f R) (IntegralSystemModel f R')]
+    (halg : algebraMap (IntegralSystemModel f R) (IntegralSystemModel f R') =
+      (integralSystemModelMap f R R').toRingHom) :
+    IsLocalization (Algebra.algebraMapSubmonoid (IntegralSystemModel f R) M)
+      (IntegralSystemModel f R') := by
+  have hloc : IsLocalization (Algebra.algebraMapSubmonoid (IntegralSystemModel f R) M)
+      (R' ⊗[R] IntegralSystemModel f R) := IsLocalization.tensorRight R' M
+  refine IsLocalization.isLocalization_of_algEquiv
+    (S := R' ⊗[R] IntegralSystemModel f R) _
+    (AlgEquiv.ofRingEquiv (f := (integralSystemModelBaseChange f R R').toRingEquiv) ?_)
+  intro x
+  show integralSystemModelBaseChangeFwd f R R' (1 ⊗ₜ[R] x) = _
+  rw [halg]
+  simp [integralSystemModelBaseChangeFwd, integralSystemModelMap]
+
 end IntegralSystemBaseChange
 
 open CategoryTheory AlgebraicGeometry in
@@ -3788,8 +5122,168 @@ theorem formallySmooth_integralSystemModel_rat
     ((Ideal.quotientKerAlgEquivOfSurjective hπ).symm.trans
       (Ideal.quotientEquivAlgOfEq ℚ hker))
 
-/-- **Spreading out of smoothness, ONE INVERTED INTEGER** (SORRY LEAF —
-2026-07-26, the residue of `exists_bound_forall_formallySmooth_integralSystemModel`
+/-- **The generic fibre is contained in the smooth locus** (PROVEN): every prime
+of the `ℤ`-model that meets no nonzero integer is a smooth point of the
+`ℤ`-model over `ℤ`.
+
+This is the step the leaf's docstring flagged as "the one genuinely fiddly
+step": compatibility of the two smooth loci under localisation of the BASE.
+It is discharged without any such compatibility lemma, by moving to LOCAL RINGS,
+where the two loci are computed by literally the same ring:
+
+* a prime `q` of `S₀ = P_ℤ/I_ℤ` disjoint from `ℤ ∖ {0}` corresponds, under
+  `IsLocalization.orderIsoOfPrime`, to a prime `P` of the `ℚ`-model — this uses
+  `isLocalization_integralSystemModel` at `M = ℤ ∖ {0}`;
+* `hQ` and `Algebra.smoothLocus_eq_univ_iff` make `(Q₀)_P` formally smooth over
+  `ℚ`, hence over `ℤ` (composing with `ℤ → ℚ`, itself formally smooth as a
+  localisation);
+* `IsLocalization.isLocalization_isLocalization_atPrime_isLocalization` says
+  `(Q₀)_P` is ALSO a localisation of `S₀` at `q`, so it is `(S₀)_q` up to a
+  canonical `S₀`-algebra isomorphism, and formal smoothness over `ℤ` transports.
+
+So no statement relating `smoothLocus ℤ S₀` to `smoothLocus ℚ Q₀` as SETS is
+ever needed — only the pointwise identification of local rings. -/
+theorem mem_smoothLocus_of_disjoint_nonZeroDivisors
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hQ : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ))
+    (q : PrimeSpectrum (IntegralSystemModel f ℤ))
+    (hq : Disjoint
+        ((Algebra.algebraMapSubmonoid (IntegralSystemModel f ℤ) (nonZeroDivisors ℤ) :
+            Submonoid (IntegralSystemModel f ℤ)) : Set (IntegralSystemModel f ℤ))
+        (q.asIdeal : Set (IntegralSystemModel f ℤ))) :
+    q ∈ Algebra.smoothLocus ℤ (IntegralSystemModel f ℤ) := by
+  classical
+  haveI : Algebra.FinitePresentation ℚ (IntegralSystemModel f ℚ) :=
+    finitePresentation_integralSystemModel f ℚ
+  letI : Algebra (IntegralSystemModel f ℤ) (IntegralSystemModel f ℚ) :=
+    (integralSystemModelMap f ℤ ℚ).toRingHom.toAlgebra
+  haveI hloc : IsLocalization
+      (Algebra.algebraMapSubmonoid (IntegralSystemModel f ℤ) (nonZeroDivisors ℤ))
+      (IntegralSystemModel f ℚ) :=
+    isLocalization_integralSystemModel f ℤ ℚ (nonZeroDivisors ℤ) rfl
+  -- The prime of the `ℚ`-model lying over `q`.
+  set Pe := (IsLocalization.orderIsoOfPrime
+      (Algebra.algebraMapSubmonoid (IntegralSystemModel f ℤ) (nonZeroDivisors ℤ))
+      (IntegralSystemModel f ℚ)).symm ⟨q.asIdeal, q.isPrime, hq⟩ with hPedef
+  haveI hPeprime : (Pe : Ideal (IntegralSystemModel f ℚ)).IsPrime := Pe.2
+  have hPe : Ideal.comap (algebraMap (IntegralSystemModel f ℤ) (IntegralSystemModel f ℚ))
+      (Pe : Ideal (IntegralSystemModel f ℚ)) = q.asIdeal := by
+    have h1 := IsLocalization.orderIsoOfPrime_apply_coe
+      (Algebra.algebraMapSubmonoid (IntegralSystemModel f ℤ) (nonZeroDivisors ℤ))
+      (IntegralSystemModel f ℚ) Pe
+    rw [hPedef, OrderIso.apply_symm_apply] at h1
+    exact h1.symm
+  -- The `ℚ`-model is formally smooth, hence so are all of its local rings.
+  have hsmQ : Algebra.FormallySmooth ℚ
+      (Localization.AtPrime (Pe : Ideal (IntegralSystemModel f ℚ))) := by
+    have huniv : Algebra.smoothLocus ℚ (IntegralSystemModel f ℚ) = Set.univ :=
+      Algebra.smoothLocus_eq_univ_iff.mpr hQ
+    have : (⟨(Pe : Ideal (IntegralSystemModel f ℚ)), hPeprime⟩ :
+        PrimeSpectrum (IntegralSystemModel f ℚ)) ∈
+        Algebra.smoothLocus ℚ (IntegralSystemModel f ℚ) := by rw [huniv]; trivial
+    exact this
+  -- That same local ring is a localisation of the `ℤ`-model at `q`.
+  haveI hatp : IsLocalization.AtPrime
+      (Localization.AtPrime (Pe : Ideal (IntegralSystemModel f ℚ))) q.asIdeal := by
+    have h2 := IsLocalization.isLocalization_isLocalization_atPrime_isLocalization
+      (Algebra.algebraMapSubmonoid (IntegralSystemModel f ℤ) (nonZeroDivisors ℤ))
+      (Localization.AtPrime (Pe : Ideal (IntegralSystemModel f ℚ)))
+      (Pe : Ideal (IntegralSystemModel f ℚ))
+    have hcompl : (Ideal.comap (algebraMap (IntegralSystemModel f ℤ) (IntegralSystemModel f ℚ))
+        (Pe : Ideal (IntegralSystemModel f ℚ))).primeCompl = q.asIdeal.primeCompl := by
+      ext x
+      simp only [Ideal.primeCompl, Submonoid.mem_mk, Subsemigroup.mem_mk, Set.mem_compl_iff,
+        SetLike.mem_coe, hPe]
+    have h3 : IsLocalization
+        (Ideal.comap (algebraMap (IntegralSystemModel f ℤ) (IntegralSystemModel f ℚ))
+          (Pe : Ideal (IntegralSystemModel f ℚ))).primeCompl
+        (Localization.AtPrime (Pe : Ideal (IntegralSystemModel f ℚ))) := h2
+    rw [hcompl] at h3
+    exact h3
+  -- Formal smoothness over `ℤ`, then transport back along the comparison equivalence.
+  haveI : Algebra.FormallySmooth ℤ ℚ :=
+    Algebra.FormallySmooth.of_isLocalization (nonZeroDivisors ℤ)
+  haveI : Algebra.FormallySmooth ℤ
+      (Localization.AtPrime (Pe : Ideal (IntegralSystemModel f ℚ))) :=
+    Algebra.FormallySmooth.comp ℤ ℚ _
+  have e : Localization.AtPrime q.asIdeal ≃ₐ[IntegralSystemModel f ℤ]
+      Localization.AtPrime (Pe : Ideal (IntegralSystemModel f ℚ)) :=
+    IsLocalization.algEquiv q.asIdeal.primeCompl _ _
+  show Algebra.FormallySmooth ℤ (Localization.AtPrime q.asIdeal)
+  exact Algebra.FormallySmooth.of_equiv
+    (A := Localization.AtPrime (Pe : Ideal (IntegralSystemModel f ℚ)))
+    (B := Localization.AtPrime q.asIdeal)
+    (AlgEquiv.restrictScalars ℤ e.symm)
+
+/-- **Extraction of the integer** (PROVEN): some nonzero integer `N` already cuts
+the non-smooth locus out of the `ℤ`-model, i.e. `D(N) ⊆ smoothLocus ℤ S₀`.
+
+This is the ideal-theoretic half of the spreading-out argument, and it needs no
+Chevalley. `smoothLocus ℤ S₀` is open, so its complement `Z` is closed and equals
+`V(J)` for `J` its vanishing ideal. If NO nonzero integer lay in `J`, then `J`
+would be disjoint from the multiplicative set `ℤ ∖ {0}` (mapped into `S₀`), and
+`Ideal.exists_le_prime_disjoint` would produce a prime `p ⊇ J` still disjoint
+from it — a point of `Z` on the generic fibre, contradicting
+`mem_smoothLocus_of_disjoint_nonZeroDivisors`. So some `N ≠ 0` lies in `J`, and
+then `V(J) ⊆ V(N)`, i.e. `D(N)` is inside the smooth locus. Replacing `N` by
+`|N|` makes it a positive natural number. -/
+theorem exists_pos_basicOpen_subset_smoothLocus
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (hQ : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ)) :
+    ∃ N : ℕ, 0 < N ∧
+      ↑(PrimeSpectrum.basicOpen (algebraMap ℤ (IntegralSystemModel f ℤ) (N : ℤ))) ⊆
+        Algebra.smoothLocus ℤ (IntegralSystemModel f ℤ) := by
+  classical
+  haveI hfp : Algebra.FinitePresentation ℤ (IntegralSystemModel f ℤ) :=
+    finitePresentation_integralSystemModel f ℤ
+  have hUopen : IsOpen (Algebra.smoothLocus ℤ (IntegralSystemModel f ℤ)) :=
+    Algebra.isOpen_smoothLocus
+  have hZ : PrimeSpectrum.zeroLocus
+      ((PrimeSpectrum.vanishingIdeal (Algebra.smoothLocus ℤ (IntegralSystemModel f ℤ))ᶜ :
+        Ideal (IntegralSystemModel f ℤ)) : Set (IntegralSystemModel f ℤ)) =
+      (Algebra.smoothLocus ℤ (IntegralSystemModel f ℤ))ᶜ := by
+    rw [PrimeSpectrum.zeroLocus_vanishingIdeal_eq_closure,
+      IsClosed.closure_eq hUopen.isClosed_compl]
+  -- Some nonzero integer lies in the vanishing ideal of the non-smooth locus.
+  have hex : ∃ N : ℤ, N ≠ 0 ∧ algebraMap ℤ (IntegralSystemModel f ℤ) N ∈
+      PrimeSpectrum.vanishingIdeal (Algebra.smoothLocus ℤ (IntegralSystemModel f ℤ))ᶜ := by
+    by_contra hcon
+    push Not at hcon
+    have hdisj : Disjoint
+        ((PrimeSpectrum.vanishingIdeal (Algebra.smoothLocus ℤ (IntegralSystemModel f ℤ))ᶜ :
+          Ideal (IntegralSystemModel f ℤ)) : Set (IntegralSystemModel f ℤ))
+        ((Algebra.algebraMapSubmonoid (IntegralSystemModel f ℤ) (nonZeroDivisors ℤ) :
+          Submonoid (IntegralSystemModel f ℤ)) : Set (IntegralSystemModel f ℤ)) := by
+      refine Set.disjoint_left.mpr fun x hxJ hxM => ?_
+      simp only [Algebra.algebraMapSubmonoid, SetLike.mem_coe, Submonoid.mem_map] at hxM
+      obtain ⟨t, ht, rfl⟩ := hxM
+      exact hcon t (mem_nonZeroDivisors_iff_ne_zero.mp ht) hxJ
+    obtain ⟨p, hp, hJp, hpdisj⟩ := Ideal.exists_le_prime_disjoint _ _ hdisj
+    have h1 : (⟨p, hp⟩ : PrimeSpectrum (IntegralSystemModel f ℤ)) ∈
+        (Algebra.smoothLocus ℤ (IntegralSystemModel f ℤ))ᶜ := by
+      rw [← hZ]
+      exact (PrimeSpectrum.mem_zeroLocus _ _).mpr hJp
+    exact h1 (mem_smoothLocus_of_disjoint_nonZeroDivisors f hQ ⟨p, hp⟩ hpdisj.symm)
+  obtain ⟨N, hN0, hNJ⟩ := hex
+  refine ⟨N.natAbs, Int.natAbs_pos.mpr hN0, ?_⟩
+  have hNJ' : algebraMap ℤ (IntegralSystemModel f ℤ) ((N.natAbs : ℤ)) ∈
+      PrimeSpectrum.vanishingIdeal (Algebra.smoothLocus ℤ (IntegralSystemModel f ℤ))ᶜ := by
+    rcases Int.natAbs_eq N with h | h
+    · rw [← h]; exact hNJ
+    · have hcast : ((N.natAbs : ℤ)) = -N := by omega
+      rw [hcast, map_neg]
+      exact Submodule.neg_mem _ hNJ
+  intro x hx
+  by_contra hxU
+  have hxZ : x ∈ PrimeSpectrum.zeroLocus
+      ((PrimeSpectrum.vanishingIdeal (Algebra.smoothLocus ℤ (IntegralSystemModel f ℤ))ᶜ :
+        Ideal (IntegralSystemModel f ℤ)) : Set (IntegralSystemModel f ℤ)) := by
+    rw [hZ]; exact hxU
+  exact (PrimeSpectrum.mem_basicOpen _ _).mp hx
+    ((PrimeSpectrum.mem_zeroLocus _ _).mp hxZ hNJ')
+
+/-- **Spreading out of smoothness, ONE INVERTED INTEGER** (**PROVEN 2026-07-26**,
+the residue of `exists_bound_forall_formallySmooth_integralSystemModel`
 below after the scheme layer, the universe gap, the `p`-adic specialisation and
 the quantifier over `p` were all discharged).
 
@@ -3842,10 +5336,25 @@ ideal of `Z`, the ring `S₀ ⧸ J` has NO prime over `(0)`, i.e.
 directly; the ideal-theoretic extraction above avoids needing constructibility
 at all, and is probably the cheaper of the two.)
 
-The one genuinely fiddly step is the middle one — identifying the primes of
-`S₀` over `(0)` with the primes of the `ℚ`-model COMPATIBLY with the two smooth
-loci, which is a statement about `Algebra.FormallySmooth` under localisation of
-the BASE and has no single lemma covering it at this pin.
+HOW THE "ONE GENUINELY FIDDLY STEP" WAS DISCHARGED. That step — identifying the
+primes of `S₀` over `(0)` with the primes of the `ℚ`-model COMPATIBLY with the
+two smooth loci — was expected to need a statement about
+`Algebra.FormallySmooth` under localisation of the BASE, which indeed has no
+single lemma at this pin. It turns out **no such statement is needed**: the
+smooth locus is defined POINTWISE, by formal smoothness of a LOCAL RING, and at
+a prime `q` of `S₀` over `(0)` the two local rings are literally the same ring.
+`IsLocalization.isLocalization_isLocalization_atPrime_isLocalization` says the
+localisation of `Q₀` at the corresponding prime `P` is also a localisation of
+`S₀` at `q`; formal smoothness over `ℚ` becomes formal smoothness over `ℤ` by
+composing with the formally smooth `ℤ → ℚ`; and `IsLocalization.algEquiv`
+transports it to `(S₀)_q`. See `mem_smoothLocus_of_disjoint_nonZeroDivisors`.
+
+So the proof needs no comparison of smooth loci as SETS, and no Chevalley: the
+two lemmas above (`mem_smoothLocus_of_disjoint_nonZeroDivisors` for the generic
+fibre, `exists_pos_basicOpen_subset_smoothLocus` for the extraction of `N`)
+reduce this leaf to three applications —
+`Algebra.basicOpen_subset_smoothLocus_iff`, `isLocalization_integralSystemModel`
+at the submonoid `⟨N⟩`, and `Algebra.FormallySmooth.localization_base`.
 
 CIRCULARITY GUARD: inherited from the parent — no route through `Family.lean`,
 `Lift.lean` or `Modularity/Interface.lean`; this is pure commutative algebra. -/
@@ -3854,15 +5363,45 @@ theorem exists_inverted_formallySmooth_integralSystemModel
     (hQ : Algebra.FormallySmooth ℚ (IntegralSystemModel f ℚ)) :
     ∃ N : ℕ, 0 < N ∧
       Algebra.FormallySmooth (Localization.Away (N : ℤ))
-        (IntegralSystemModel f (Localization.Away (N : ℤ))) :=
-  sorry
+        (IntegralSystemModel f (Localization.Away (N : ℤ))) := by
+  classical
+  haveI hfp : Algebra.FinitePresentation ℤ (IntegralSystemModel f ℤ) :=
+    finitePresentation_integralSystemModel f ℤ
+  obtain ⟨N, hN0, hsub⟩ := exists_pos_basicOpen_subset_smoothLocus f hQ
+  refine ⟨N, hN0, ?_⟩
+  -- `D(N)` inside the smooth locus means `S₀[1/N]` is smooth over `ℤ`.
+  haveI hsmZ : Algebra.FormallySmooth ℤ
+      (Localization.Away (algebraMap ℤ (IntegralSystemModel f ℤ) (N : ℤ))) :=
+    Algebra.basicOpen_subset_smoothLocus_iff.mp hsub
+  -- and `S₀[1/N]` IS the `ℤ[1/N]`-model.
+  letI : Algebra (IntegralSystemModel f ℤ)
+      (IntegralSystemModel f (Localization.Away (N : ℤ))) :=
+    (integralSystemModelMap f ℤ (Localization.Away (N : ℤ))).toRingHom.toAlgebra
+  haveI hlocN : IsLocalization
+      (Submonoid.powers (algebraMap ℤ (IntegralSystemModel f ℤ) (N : ℤ)))
+      (IntegralSystemModel f (Localization.Away (N : ℤ))) := by
+    have h := isLocalization_integralSystemModel f ℤ (Localization.Away (N : ℤ))
+      (Submonoid.powers ((N : ℤ))) rfl
+    rwa [Algebra.algebraMapSubmonoid, Submonoid.map_powers] at h
+  have e2 : Localization.Away (algebraMap ℤ (IntegralSystemModel f ℤ) (N : ℤ))
+      ≃ₐ[IntegralSystemModel f ℤ] IntegralSystemModel f (Localization.Away (N : ℤ)) :=
+    IsLocalization.algEquiv
+      (Submonoid.powers (algebraMap ℤ (IntegralSystemModel f ℤ) (N : ℤ))) _ _
+  haveI : Algebra.FormallySmooth ℤ (IntegralSystemModel f (Localization.Away (N : ℤ))) :=
+    Algebra.FormallySmooth.of_equiv
+      (A := Localization.Away (algebraMap ℤ (IntegralSystemModel f ℤ) (N : ℤ)))
+      (B := IntegralSystemModel f (Localization.Away (N : ℤ)))
+      (AlgEquiv.restrictScalars ℤ e2)
+  -- finally, descend the base from `ℤ` to `ℤ[1/N]`.
+  exact Algebra.FormallySmooth.localization_base (Submonoid.powers ((N : ℤ)))
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Spreading out of smoothness** (**PROVEN 2026-07-26** over the single
 commutative-algebra leaf `exists_inverted_formallySmooth_integralSystemModel`
-immediately above — it was itself a sorry leaf until then, and was believed to
-need machinery absent from this pin; that belief is corrected in the new leaf's
-MATHLIB INVENTORY, which names the four lemmas that do exist).
+immediately above, which is **itself PROVEN as of 2026-07-26** — so this whole
+branch is closed. It was believed to need machinery absent from this pin; that
+belief is corrected in that leaf's MATHLIB INVENTORY, which names the four
+lemmas that do exist).
 
 WHAT WAS DISCHARGED HERE, and why the residue is strictly shallower: the scheme
 layer and the universe gap (`formallySmooth_integralSystemModel_rat`), the
@@ -3960,6 +5499,29 @@ Both the classical proof (Lang–Weil 1954: Bertini-slice down to a curve and
 invoke the Weil bound, i.e. the Riemann hypothesis for curves over finite
 fields) and the cohomological one (Grothendieck–Lefschetz) are large missing
 theories; this leaf is the natural place to build the first of them.
+
+ROUTE NOTE (2026-07-26). Of the three available proofs of the Weil bound that
+the classical route needs, the cheapest to formalize at this pin is
+**Stepanov–Bombieri**: it is elementary, needing neither ℓ-adic cohomology nor
+the Jacobian nor Riemann–Roch, only an auxiliary-polynomial construction and a
+multiplicity count. Weil's own proof needs the Jacobian and the index theorem
+on a surface; Grothendieck–Lefschetz needs étale cohomology. None of the three
+exists in mathlib or in `~/cs/FLT`.
+
+NO DENSITY WEAKENING IS AVAILABLE (audited 2026-07-26 against the consumer).
+It is tempting to hope this leaf could be weakened from "all `p > B`" to
+"infinitely many `p`" or "a positive-density set of `p`", which would be
+reachable from Chebotarev alone: pick a closed point of `Spec A`, i.e. a point
+over some number field `L`, and reduce it modulo the degree-one primes of `L`,
+of which Chebotarev supplies a positive density. **That weakening does not
+work here.** The sole consumer,
+`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible`, concludes
+`∃ B, ∀ p, B < p → Nonempty (A →ₐ[ℚ] ULift ℚ_[p])`, and it obtains that `B` as
+`max B₁ B₂` of the bounds from this leaf and its formal-smoothness sibling; a
+density statement produces no `B` at all. Geometric irreducibility is exactly
+the hypothesis that upgrades "positive density of `p`" to "all large `p`", and
+Lang–Weil is exactly the theorem that performs that upgrade — so the cost is
+irreducible, not an artefact of how the leaf is phrased.
 
 The `A`, `π`, `hker` packaging is as in the previous leaf and for the same
 universe reason.
@@ -5638,8 +7200,139 @@ no symmetric powers of a scheme, no Hilbert scheme, no effective Cartier
 divisors, no Lang–Weil, no strong approximation. -/
 
 open CategoryTheory AlgebraicGeometry in
-/-- **Moret–Bailly §3.1: the compactification datum** (SORRY — the smooth
-projective model of a smooth affine curve).
+/-- **A scheme that is both affine and proper over `ℚ` has dimension `≤ 0`**
+(PROVEN — EGA III 4.4.2 plus Artinian dimension theory, entirely out of
+mathlib).
+
+This is the arithmetic content of "the complement of an affine curve in its
+compactification is nonempty", isolated so that the compactification leaf
+below no longer has to carry it.
+
+THE CHAIN, each step a named mathlib result at this pin:
+
+* `C` and `Spec (ULift ℚ)` are both affine, so `fC` is an affine morphism
+  (`AlgebraicGeometry.isAffineHom_of_isAffine`);
+* proper + affine = finite is EGA III 4.4.2, in mathlib as
+  `AlgebraicGeometry.IsFinite.iff_isProper_and_isAffineHom`;
+* over an affine target a finite morphism is exactly `RingHom.Finite` on
+  global sections (`HasAffineProperty.iff_of_isAffine`), so `Γ(C, ⊤)` is a
+  finite module over `Γ(Spec (ULift ℚ), ⊤) ≅ ULift ℚ`;
+* a ring finite over an Artinian ring is Artinian
+  (`IsArtinianRing.of_finite`), and a field is Artinian;
+* an affine scheme with Artinian global sections is an Artinian scheme
+  (`Scheme.isLocallyArtinianScheme_Spec` transported along
+  `Scheme.isoSpec`, which is an immersion), hence DISCRETE
+  (`IsLocallyArtinian.discreteTopology`), hence of dimension `≤ 0`
+  (`topologicalKrullDim_zero_of_discreteTopology`). -/
+theorem topologicalKrullDim_le_zero_of_isProper_of_isAffine
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hproper : AlgebraicGeometry.IsProper fC) :
+    topologicalKrullDim ↥C ≤ 0 := by
+  haveI hfin : AlgebraicGeometry.IsFinite fC :=
+    AlgebraicGeometry.IsFinite.iff_isProper_and_isAffineHom.mpr ⟨hproper, inferInstance⟩
+  obtain ⟨-, hfinite⟩ :=
+    (AlgebraicGeometry.HasAffineProperty.iff_of_isAffine
+      (P := @AlgebraicGeometry.IsFinite)).mp hfin
+  letI := (fC.appTop).hom.toAlgebra
+  haveI : Module.Finite
+      ↑Γ(AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)), ⊤) ↑Γ(C, ⊤) := hfinite
+  haveI : IsArtinianRing ↑Γ(AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)), ⊤) :=
+    (AlgebraicGeometry.Scheme.ΓSpecIso
+      (CommRingCat.of (ULift.{u} ℚ))).commRingCatIsoToRingEquiv.symm.isArtinianRing
+  haveI : IsArtinianRing ↑Γ(C, ⊤) :=
+    IsArtinianRing.of_finite
+      ↑Γ(AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)), ⊤) ↑Γ(C, ⊤)
+  haveI : AlgebraicGeometry.IsLocallyArtinian (AlgebraicGeometry.Spec Γ(C, ⊤)) :=
+    AlgebraicGeometry.Scheme.isLocallyArtinianScheme_Spec.mpr ‹_›
+  haveI : AlgebraicGeometry.IsLocallyArtinian C :=
+    AlgebraicGeometry.IsLocallyArtinian.of_isImmersion C.isoSpec.hom
+  exact topologicalKrullDim_zero_of_discreteTopology ↥C
+
+open CategoryTheory AlgebraicGeometry in
+/-- **The complement of a positive-dimensional affine open in a proper model
+is nonempty** (PROVEN): if `j : C ↪ X̄` is an open immersion over `Spec ℚ`
+with `C` affine and `X̄` proper, and `dim C > 0`, then `j` is not surjective.
+
+This is exactly Moret–Bailly's `Z = X̄ - X ≠ ∅`, and it is the reason `hpos`
+appears in the §3.1 datum. Were `j` surjective it would be an isomorphism
+(`isIso_of_isOpenImmersion_of_opensRange_eq_top`), so `fC = j ≫ fX` would be
+proper; but `C` is affine, so `topologicalKrullDim_le_zero_of_isProper_of_isAffine`
+would force `dim C ≤ 0`, contradicting `hpos`.
+
+Note this needs NOTHING about curves — no smoothness, no irreducibility, no
+dimension bound above. It is pure "affine ∧ proper ⟹ dimension `0`". -/
+theorem nonempty_compl_range_of_isProper_of_isAffine
+    {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (j : C ⟶ Xbar) (hjimm : AlgebraicGeometry.IsOpenImmersion j)
+    (hjcomm : j ≫ fX = fC)
+    (hXproper : AlgebraicGeometry.IsProper fX)
+    (hpos : ¬ topologicalKrullDim ↥C ≤ 0) :
+    (Set.range j.base)ᶜ.Nonempty := by
+  haveI : AlgebraicGeometry.IsOpenImmersion j := hjimm
+  haveI : AlgebraicGeometry.IsProper fX := hXproper
+  rw [Set.nonempty_compl]
+  intro hr
+  haveI : IsIso j :=
+    AlgebraicGeometry.isIso_of_isOpenImmersion_of_opensRange_eq_top j
+      (TopologicalSpace.Opens.ext (by simpa using hr))
+  have hprC : AlgebraicGeometry.IsProper fC :=
+    hjcomm ▸ (inferInstance : AlgebraicGeometry.IsProper (j ≫ fX))
+  exact hpos (topologicalKrullDim_le_zero_of_isProper_of_isAffine fC hprC)
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly §3.1, the geometric half: the smooth proper model**
+(SORRY LEAF — this is the chapter-sized part, and after the cut below it is
+ALL that is left of §3.1).
+
+A smooth, geometrically irreducible affine curve over `ℚ` is a dense open
+subscheme of a smooth proper geometrically irreducible curve over `ℚ`.
+
+WHAT CHANGED (2026-07-26). This leaf used to also assert that the complement
+`Z = X̄ - X` is nonempty. That half is arithmetic rather than geometric — it
+is "affine ∧ proper ⟹ dimension `0`" — and it is now PROVEN, in
+`nonempty_compl_range_of_isProper_of_isAffine` above, out of mathlib alone.
+Consequently `hpos` is NOT a hypothesis here: the smooth proper model exists
+in dimension `0` too (there `C = Spec ℚ` is already proper and `j = 𝟙`), and
+positivity of the dimension is needed only to know the complement is
+nonempty. Keeping `hpos` out is what makes that separation honest.
+
+WHAT IS MISSING AT THIS PIN. Mathlib has `IsProper`, `Smooth`,
+`GeometricallyIrreducible` and `AlgebraicGeometry.Normalization`, so the
+statement type-checks, but nothing CONSTRUCTS the model: there is no
+projective-closure construction, no regular proper model of a function field
+of transcendence degree `1`, and no genus. The classical route is Hartshorne
+I.6 — the equivalence between smooth projective curves and function fields of
+transcendence degree `1` — with `Mathlib/AlgebraicGeometry/FunctionField.lean`
+and `Mathlib/AlgebraicGeometry/Normalization.lean` as the footholds that do
+exist.
+
+`hsep` and `hqc` are recorded because Moret–Bailly's datum carries them; both
+are in fact automatic here, `C` and the base being affine. -/
+theorem exists_smoothProperModel_of_affine_curve
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hsep : AlgebraicGeometry.IsSeparated fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hqc : AlgebraicGeometry.QuasiCompact fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hdim : topologicalKrullDim ↥C ≤ 1) :
+    ∃ (Xbar : AlgebraicGeometry.Scheme.{u})
+      (fX : Xbar ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+      (j : C ⟶ Xbar) (_ : AlgebraicGeometry.IsOpenImmersion j),
+      j ≫ fX = fC ∧ AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsProper fX ∧
+        AlgebraicGeometry.GeometricallyIrreducible fX :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly §3.1: the compactification datum** (**PROVEN 2026-07-26**
+as an ASSEMBLY: the geometric half is the leaf
+`exists_smoothProperModel_of_affine_curve` above, the arithmetic half —
+nonemptiness of the complement — is `nonempty_compl_range_of_isProper_of_isAffine`,
+which is proven outright).
 
 Moret–Bailly, *Groupes de Picard et problèmes de Skolem II*, §3.1: one
 chooses a dense open immersion `j : X ↪ X̄` with `X̄ → B` projective and
@@ -5653,13 +7346,17 @@ The complement is nonempty because `C` is AFFINE of positive dimension: a
 proper scheme over a field that is also affine is finite, hence
 `dim ≤ 0`, contradicting `hpos`. That is why `hpos` appears — it is not
 decoration, it is what makes `Z ≠ ∅`, and `z = deg Z_K > 0` is used
-throughout §3.5–3.9.
+throughout §3.5–3.9. **That argument is now formalized** — see
+`topologicalKrullDim_le_zero_of_isProper_of_isAffine` and
+`nonempty_compl_range_of_isProper_of_isAffine` above — so `hpos` is consumed
+HERE and does not appear in the residual geometric leaf at all.
 
-WHAT IS MISSING AT THIS PIN: see the section docstring's costing. Mathlib
-has `IsProper`, `Smooth`, `GeometricallyIrreducible` and
-`AlgebraicGeometry.Normalization`, so this statement type-checks, but the
-construction (projective closure, then normalization, then regularity in
-dimension one) is not available and is a chapter-sized job. -/
+WHAT IS MISSING AT THIS PIN: only the smooth proper model, i.e. exactly
+`exists_smoothProperModel_of_affine_curve`. Mathlib has `IsProper`, `Smooth`,
+`GeometricallyIrreducible` and `AlgebraicGeometry.Normalization`, so the
+statement type-checks, but the construction (projective closure, then
+normalization, then regularity in dimension one) is not available and is a
+chapter-sized job. -/
 theorem exists_projectiveCompactification_of_affine_curve
     {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -5675,8 +7372,11 @@ theorem exists_projectiveCompactification_of_affine_curve
       (j : C ⟶ Xbar) (_ : AlgebraicGeometry.IsOpenImmersion j),
       j ≫ fX = fC ∧ AlgebraicGeometry.Smooth fX ∧ AlgebraicGeometry.IsProper fX ∧
         AlgebraicGeometry.GeometricallyIrreducible fX ∧
-        (Set.range j.base)ᶜ.Nonempty :=
-  sorry
+        (Set.range j.base)ᶜ.Nonempty := by
+  obtain ⟨Xbar, fX, j, hjimm, hjcomm, hXsm, hXpr, hXgi⟩ :=
+    exists_smoothProperModel_of_affine_curve fC hsmooth hsep hft hqc hgi hdim
+  exact ⟨Xbar, fX, j, hjimm, hjcomm, hXsm, hXpr, hXgi,
+    nonempty_compl_range_of_isProper_of_isAffine fC fX j hjimm hjcomm hXpr hpos⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly §3.2–3.10: the arithmetic core, on the
@@ -5778,7 +7478,23 @@ it is the one the call site already holds, and the transfer to `X̄` is a
 step INSIDE the §3 argument rather than something the consumer should be
 made to pay. A prover who wants `dim X̄ ≤ 1` as a usable fact must
 establish the dense-open equidimensionality himself. Recording it here so
-that the step is budgeted rather than discovered. -/
+that the step is budgeted rather than discovered.
+
+PROVENANCE. This repair CLOSES the "SCOPE NOTE — the statement is strictly
+more general than the route documented above" audit of 2026-07-26, which
+identified the gap and deliberately left the cut-level choice unmade. Of the
+two repairs it offered — add `hdim`, or keep the general statement and add a
+Bertini reduction as an explicit sibling leaf — the FIRST was taken, for the
+reason given above: the second buys generality that nothing in this tree
+consumes, at the price of a whole extra development. The audit's own
+observation that `hdim` "IS in scope at the one call site, so the consumer is
+unaffected" was re-verified against the source before the change, and the call
+site now passes it.
+
+Note also, from the same audit and still true: §3.1 is no longer part of this
+leaf's burden in any case. `exists_projectiveCompactification_of_affine_curve`
+is now an assembly, and its complement-nonemptiness half — `hZ`, which this
+leaf consumes — is PROVEN. -/
 theorem exists_totallySplitPoint_of_projectiveCompactification
     {C Xbar : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
@@ -11896,6 +13612,194 @@ theorem exists_finset_superset_of_places_mem {F : Type*} [Field F]
   intro w hw
   exact Finset.mem_union_right _ (by simpa using hw)
 
+/-- **A ring that is module-finite over `ℤ` has number-field-valued
+images in `ℚ̄_ℓ`** (PROVEN 2026-07-26; pure commutative algebra, no
+arithmetic input).
+
+Given any commutative ring `T` with `Module.Finite ℤ T` and any ring
+homomorphism `ιT : T → ℚ̄_ℓ`, there is a NUMBER FIELD `E`, an embedding
+`ψ : E ↪ ℚ̄_ℓ`, and a function `g : T → E` with `ψ ∘ g = ιT`.  Equivalently:
+the image of `ιT` lies inside a number subfield of `ℚ̄_ℓ`.
+
+PROOF.  `T` is spanned over `ℤ` by a finite set `S`, so every `t : T` is
+integral over `ℤ` (`IsIntegral.of_finite`) and `ιT t` is integral over `ℤ`,
+hence over `ℚ`.  Put `E₀ := ℚ(ιT '' S) ⊆ ℚ̄_ℓ`, which is finite-dimensional
+over `ℚ` because `S` is finite and each generator is integral
+(`IntermediateField.finiteDimensional_adjoin`), so `E₀` is a number field.
+Every `ιT t` lies in `E₀`: `t` is a `ℤ`-combination of `S`, and `E₀` is
+closed under addition and under multiplication by `Int.cast`
+(`Submodule.span_induction`).  Finally `E₀ : Type 0`, so it is transported
+to `Type u` along `ULift.ringEquiv` / `ULift.algEquiv`, exactly as
+`exists_numberField_surjection_of_finite` above does.
+
+WHY THIS IS NOT THE DELETED `isIntegral_heckeEigenvalues` (2026-07-26 — read
+this before concluding the retired Carayol/Shimura sub-cut has been
+resurrected).  That node was asked to prove `IsIntegral ℚ (aF w)` from
+hypotheses that pinned `aF w` only inside `ιO O ⊆ ℚ̄_ℓ`, where `O` is
+module-finite over `ℤ_[ℓ]`; integrality over `ℤ_[ℓ]` is orthogonal to
+integrality over `ℤ`, so it had no admissible discharge and was correctly
+deleted.  The hypothesis HERE is module-finiteness over `ℤ`, not over
+`ℤ_[ℓ]`, and that single change makes the statement not merely provable but
+easy.  It is also the mechanism the FAITHFULNESS REPAIR of
+`exists_heckeEigensystem_of_congruentSeed` below already names in prose —
+"`𝕋` is generated over `ℤ` by the Hecke operators `T_w`, so a point of `𝕋`
+has values in a finite extension of `ℚ` by construction" — and all that is
+done here is to make that sentence mechanical, so that the citation below
+need not also assert it. -/
+theorem exists_numberField_ringHom_of_moduleFinite_int
+    {ℓ : ℕ} [Fact ℓ.Prime]
+    (T : Type u) [CommRing T] [Module.Finite ℤ T]
+    (ιT : T →+* AlgebraicClosure ℚ_[ℓ]) :
+    ∃ (E : Type u) (_ : Field E) (_ : NumberField E)
+      (ψ : E →+* AlgebraicClosure ℚ_[ℓ]) (g : T → E),
+      ∀ t : T, ψ (g t) = ιT t := by
+  classical
+  obtain ⟨S, hS⟩ : (⊤ : Submodule ℤ T).FG := Module.finite_def.mp inferInstance
+  have hint : ∀ t : T, IsIntegral ℚ (ιT t) := fun t =>
+    ((IsIntegral.of_finite ℤ t).map ιT.toIntAlgHom).tower_top
+  set E₀ : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ]) :=
+    IntermediateField.adjoin ℚ (ιT '' (S : Set T))
+  haveI : FiniteDimensional ℚ E₀ :=
+    IntermediateField.finiteDimensional_adjoin (fun x hx => by
+      obtain ⟨t, _, rfl⟩ := hx
+      exact hint t)
+  haveI : NumberField E₀ := {}
+  have hmem : ∀ t : T, ιT t ∈ E₀ := by
+    intro t
+    have ht : t ∈ Submodule.span ℤ (S : Set T) := by rw [hS]; trivial
+    induction ht using Submodule.span_induction with
+    | mem x hx => exact IntermediateField.subset_adjoin _ _ ⟨x, hx, rfl⟩
+    | zero => simp
+    | add x y _ _ hx hy => simpa [map_add] using E₀.add_mem hx hy
+    | smul c x _ hx =>
+        have hc : ιT (c • x) = (c : AlgebraicClosure ℚ_[ℓ]) * ιT x := by
+          simp [zsmul_eq_mul, map_mul, map_intCast]
+        rw [hc]
+        exact E₀.mul_mem (E₀.intCast_mem c) hx
+  haveI : CharZero (ULift.{u} E₀) := (ULift.ringEquiv (R := E₀)).toRingHom.charZero
+  haveI : FiniteDimensional ℚ (ULift.{u} E₀) :=
+    LinearEquiv.finiteDimensional (ULift.algEquiv (R := ℚ) (A := E₀)).toLinearEquiv.symm
+  haveI : NumberField (ULift.{u} E₀) := {}
+  exact ⟨ULift.{u} E₀, inferInstance, inferInstance,
+    E₀.subtype.comp (ULift.ringEquiv (R := E₀)).toRingHom,
+    fun t => ULift.up ⟨ιT t, hmem t⟩, fun t => rfl⟩
+
+/-- **`R = 𝕋` over the totally real base, in Hecke-algebra form** (SORRY
+node, cut 2026-07-26 out of `exists_heckeEigensystem_of_congruentSeed`
+below — it carries ALL of that node's automorphic content and none of its
+commutative algebra).
+
+Same hypotheses as `exists_heckeEigensystem_of_congruentSeed`; the
+conclusion produces, instead of a number field and an `E`-valued
+eigensystem, the object the Taylor–Wiles–Kisin argument actually
+constructs: a HECKE ALGEBRA `T` that is **module-finite over `ℤ`**, an
+embedding `ιT : T → ℚ̄_ℓ`, a genuine level `badF` containing the places
+over `ℓ`, and Hecke operators `t w ∈ T` whose images are the Frobenius
+traces of `ρ|_{G_F}` away from `badF`.
+
+WHY THIS IS THE RIGHT PLACE TO CUT (2026-07-26).  The FAITHFULNESS REPAIR
+recorded on the node below observes, correctly, that rationality is not a
+theorem downstream of `R = 𝕋` but part of what `R = 𝕋` asserts — because
+`𝕋` is generated over `ℤ` by the Hecke operators, so a point of `𝕋` has
+values in a finite extension of `ℚ` "by construction".  That last phrase
+was doing real work in PROSE and none in Lean.  Splitting it off turns it
+into `exists_numberField_ringHom_of_moduleFinite_int` above (PROVEN, three
+lines of commutative algebra), and leaves here exactly the automorphic
+assertion.  Nothing is duplicated and nothing is deferred twice: the node
+below is now an assembly of these two.
+
+NON-VACUITY.  The `ℤ`-module-finiteness of `T` is what carries the whole
+statement, and it is not satisfiable by the objects already in scope:
+`T := O` fails because `O` is module-finite over `ℤ_[ℓ]`, which contains
+an uncountable copy of `ℤ_[ℓ]` and is not a finite `ℤ`-module (this is
+precisely the distinction on which the deleted `isIntegral_heckeEigenvalues`
+foundered); `T := ℤ` fails because it would force every Frobenius trace to
+be a rational integer.  `badF` is a `Finset` over the infinite place set of
+`F`, so the clause is a genuine statement about cofinitely many places, and
+the required `badF ⊇ {w ∣ ℓ}` only weakens it (enlarging `badF` is free —
+`exists_finset_superset_of_places_mem` above).
+
+RELATION TO `HardlyRamified/HilbertModularity.lean` — READ THIS BEFORE
+ATTACKING (2026-07-26; this module's MISSING MACHINERY list was STALE).
+That file, which is in this module's import cone through
+`HardlyRamified/Deformation.lean`, already carries an `R_F = T_F`
+development over a totally real base:
+
+* `HilbertHeckeAlgebra ℓ F ρbar` — an abstract Hecke algebra `T` with
+  `heckeT : places → T`, `charFrobT` (`(ρT.charFrob w).coeff 1 = -heckeT w`,
+  literally the shape of the conclusion here) and residual modularity;
+* `exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal` — `R_F ≃ₐ[ℤ_[ℓ]] T`,
+  PROVEN over its own leaves, i.e. Taylor–Wiles–Kisin patching over `F`;
+* `nonempty_potentialHeckeDatum_of_five_le` — the potential-modularity
+  production leaf.
+
+So item (4) of the missing-machinery list below EXISTS IN THIS TREE, and
+item (2) exists in abstract form.  What is genuinely missing, and is the
+whole remaining gap of THIS leaf, is narrower than that list suggests:
+
+1. `HilbertHeckeAlgebra.T` is module-finite over **`ℤ_[ℓ]`**, not over `ℤ`.
+   The `ℚ`-rational structure of the Hecke algebra — that it is the
+   `ℤ_[ℓ]`-completion of a `ℤ`-finite algebra of Hecke operators acting on a
+   `ℚ`-rational space of cusp forms, i.e. Shimura rationality — is recorded
+   nowhere.  This is the ONLY reason the development there yields
+   `IsIntegral ℤ_[ℓ]` (`exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified`)
+   and cannot yield a number field.
+2. The base fields do not match.  That development PRODUCES its own totally
+   real `F` (inside `PotentialHeckeDatum`) and needs it to satisfy
+   `residueCardTwo`; this leaf is handed `F` and a `MoretBaillySeed` by its
+   consumer, and a seed is strictly weaker than a `HilbertHeckeAlgebra` —
+   as `PotentialHeckeDatum`'s own docstring says, "a single modular lift
+   does not make the whole universal family Hecke".
+
+Consequently a discharge along the in-tree route is a CUT-LEVEL repair, not
+a proof to be written here: it would add the `ℚ`-rational structure to
+`HilbertHeckeAlgebra` and re-plumb this leaf's consumer chain so that `F`
+comes from `PotentialHeckeDatum` rather than from `MoretBaillySeed`.  That
+spans `MoretBaillySeed`, `exists_moretBailly_seed_of_five_le`,
+`exists_heckePackage_of_seed` and this node, and belongs to whoever owns
+that cut.  It is recorded here so it is not rediscovered a fourth time.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+theorem exists_heckeTraceAlgebra_of_congruentSeed
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k) (hπsurj : Function.Surjective π)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+    (F : Type u) [Field F] [NumberField F]
+    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
+    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (seed : MoretBaillySeed ℓ F (ρbar.map (algebraMap ℚ F)))
+    (badρ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (hcong : ∀ w ∉ badρ,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map π =
+        (ρbar.map (algebraMap ℚ F)).charFrob w)
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO) :
+    ∃ (T : Type u) (_ : CommRing T) (_ : Module.Finite ℤ T)
+      (ιT : T →+* AlgebraicClosure ℚ_[ℓ])
+      (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+      (t : HeightOneSpectrum (NumberField.RingOfIntegers F) → T),
+      (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+          (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) ∧
+      ∀ w ∉ badF,
+        ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ιT (t w) :=
+  sorry
+
 /-- **`R = 𝕋` over the totally real base** (sub-leaf (a) of
 the modularity-lifting cut — Kisin 2009 / Taylor 2006, the
 Taylor–Wiles patching argument over `F`): given the modular seed `σ`
@@ -12058,18 +13962,47 @@ discharged by the shape of `charFrob`, and it has no junk witness:
   package is classically unsatisfiable at `ℓ ≥ 5`, this module's
   headline) remains available as before.
 
+ASSEMBLY (2026-07-26 — THIS NODE IS NO LONGER A SORRY NODE).  It is now
+a two-line assembly over the cut immediately above:
+
+* `exists_heckeTraceAlgebra_of_congruentSeed` (SORRY — the citation)
+  produces the Hecke algebra `T`, **module-finite over `ℤ`**, its
+  embedding `ιT : T ↪ ℚ̄_ℓ`, the level `badF ⊇ {w ∣ ℓ}`, and the Hecke
+  operators whose images are the Frobenius traces;
+* `exists_numberField_ringHom_of_moduleFinite_int` (PROVEN) turns
+  `ℤ`-module-finiteness into a number field `E`, the place `ψℓ`, and the
+  `E`-valued `a`.
+
+The split is exactly the sentence of the FAITHFULNESS REPAIR above —
+"`𝕋` is generated over `ℤ` by the Hecke operators, so a point of `𝕋` has
+values in a finite extension of `ℚ` by construction" — made mechanical.
+Note it is NOT a revival of the deleted Carayol/Shimura sub-cut: see the
+paragraph WHY THIS IS NOT THE DELETED `isIntegral_heckeEigenvalues` on
+the brick, whose hypothesis is finiteness over `ℤ` where the deleted node
+had only finiteness over `ℤ_[ℓ]`.
+
 MISSING MACHINERY, in dependency order, for a discharge along route
-(i): (1) Hilbert modular forms of parallel weight `2` over a totally
-real field; (2) the Hecke operators `T_w` and the Hecke algebra of a
-given level, acting on a finite-dimensional space of cusp forms with a
-`ℚ`-rational structure — which is exactly what makes the eigensystem
-number-field-valued and is the reason `E` belongs in THIS conclusion;
-(3) Carayol/Taylor attachment of `λ`-adic representations with
-local-global compatibility; (4) the Taylor–Wiles–Kisin patching
-argument over `F`, i.e. `R = 𝕋` proper.  The mathlib pin has none of
-(1)–(4) (`grep Hilbert` over `Mathlib/NumberTheory/`: only Hilbert's
-theorem 90 and Hilbert basis), and `~/cs/FLT` has no vendorable
-substitute.
+(i) — PARTIALLY STALE AS WRITTEN, CORRECTED 2026-07-26: (1) Hilbert
+modular forms of parallel weight `2` over a totally real field; (2) the
+Hecke operators `T_w` and the Hecke algebra of a given level, acting on a
+finite-dimensional space of cusp forms with a `ℚ`-rational structure —
+which is exactly what makes the eigensystem number-field-valued and is
+the reason `E` belongs in THIS conclusion; (3) Carayol/Taylor attachment
+of `λ`-adic representations with local-global compatibility; (4) the
+Taylor–Wiles–Kisin patching argument over `F`, i.e. `R = 𝕋` proper.
+
+The claim that the tree has none of (1)–(4) is true of the MATHLIB PIN
+(`grep Hilbert` over `Mathlib/NumberTheory/`: only Hilbert's theorem 90
+and Hilbert basis) and of `~/cs/FLT`, but it is FALSE of this project:
+`HardlyRamified/HilbertModularity.lean` — in this module's import cone
+through `HardlyRamified/Deformation.lean` — carries (4) as
+`exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal` (PROVEN over its own
+leaves) and (2) in abstract `ℤ_[ℓ]` form as `HilbertHeckeAlgebra`.  The
+two obstructions that remain — the absent `ℚ`-rational structure, and the
+base-field mismatch between `PotentialHeckeDatum` and `MoretBaillySeed` —
+are stated precisely on `exists_heckeTraceAlgebra_of_congruentSeed` above,
+which is where the remaining sorry now lives.  Anyone attacking this
+cluster should read that paragraph FIRST.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
@@ -12110,8 +14043,18 @@ theorem exists_heckeEigensystem_of_congruentSeed
       (∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
           (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) ∧
       ∀ w ∉ badF,
-        ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ψℓ (a w) :=
-  sorry
+        ιO (((ρ.map (algebraMap ℚ F)).charFrob w).coeff 1) = -ψℓ (a w) := by
+  -- the automorphic half: the Hecke algebra, module-finite over `ℤ`
+  obtain ⟨T, iT, hTfin, ιT, badF, t, hbadℓ, htr⟩ :=
+    exists_heckeTraceAlgebra_of_congruentSeed hℓodd hℓ5 hZinj hrank hρ hW hρbar
+      hirr π hπsurj hπ F hFtr hFgal hirrF seed badρ hcong ιO hιO
+  letI : CommRing T := iT
+  haveI : Module.Finite ℤ T := hTfin
+  -- the commutative-algebra half: its image lies in a number field
+  obtain ⟨E, iE, hNE, ψℓ, g, hg⟩ :=
+    exists_numberField_ringHom_of_moduleFinite_int (ℓ := ℓ) T ιT
+  refine ⟨E, iE, hNE, ψℓ, badF, fun w => g (t w), hbadℓ, fun w hw => ?_⟩
+  rw [htr w hw, hg (t w)]
 
 /-! ### The Carayol/Shimura sub-cut — RETIRED 2026-07-26
 
@@ -13629,6 +15572,24 @@ is standard, and essentially all of the cost is in step 6:
    pin has drifted, so these need a signature audit rather than a
    verbatim copy. Vendoring the three is the recommended first commit
    of the development.
+
+   **PIN GAP RE-VERIFIED (2026-07-26, a later owner.)** Both halves of
+   that claim were re-checked mechanically rather than taken on trust,
+   and both hold: `IsModuleTopology.trans` / `moduleTopology.trans` are
+   absent from OUR pin (no match anywhere in `Mathlib/`), and present in
+   the reference project — `lemma trans` at
+   `~/cs/FLT/FLT/Mathlib/Topology/Algebra/Module/ModuleTopology.lean:194`
+   with `of_continuous_isOpenMap_algebraMap` at `:212`, as recorded. So
+   the vendoring step is real work and not a lookup.
+
+   **A WARNING FOR WHOEVER TAKES IT, and the reason this development has
+   not been started piecemeal:** the three vendored lemmas would be
+   FREE-FLOATING until step 6 consumes them, and free-floating code is
+   barred by the project's own check. This development therefore cannot
+   be landed as its "recommended first commit" alone — steps 1–6 have to
+   arrive together, or at least far enough for the topology lemmas to
+   have a written consumer. Budget it as ONE whole task, not as an
+   incremental series.
 
 (2) FIXING THE CARRIER — returning the representation over the
 integers of `ℚ_3(ψ₃ E)`, i.e. over `O_{E_λ}` — REJECTED. It does make
@@ -18982,6 +20943,15 @@ owner would be dispatched at):
 Item 4 composed with items 3–1 IS clause (2); there is no intermediate
 at which that sorry can honestly be split.
 
+RE-VERIFIED MECHANICALLY 2026-07-26 (a later owner): item 3's "deepest
+missing prerequisite", the period ring `B_cris`, is still absent —
+`BCris|B_cris|crystallineRep|HodgeTate` matches NO file in `Mathlib/`,
+and `RingTheory/Perfectoid/` still contains exactly `BDeRham.lean`,
+`FontaineTheta.lean` and `Untilt.lean`. Nor is there any Hilbert
+modular form or Shimura curve development to state item 4 over. So the
+"no intermediate" verdict above is not merely inherited; it has been
+re-checked against the pin as it stands today.
+
 Literature for (2): Fontaine–Laffaille, *Construction de représentations
 p-adiques*, Ann. Sci. ÉNS 15 (1982); Raynaud, *Schémas en groupes de
 type (p, …, p)*, Bull. SMF 102 (1974); Carayol, Ann. Sci. ÉNS 19 (1986)
@@ -19995,6 +21965,45 @@ higher ramification groups → tame quotient → tame character → local
 monodromy → Weil group → Weil–Deligne representations. That is a
 multi-agent theory-building programme, not a leaf.
 
+MACHINERY AUDIT RE-VERIFIED MECHANICALLY (2026-07-26, a later owner;
+recorded so the sweep is not run a third time). Every absence claim of
+the MACHINERY AUDIT above was re-run against the CURRENT pin rather
+than taken on trust, and all of them still hold:
+
+* `WeilDeligne|weilGroup|WeilGroup` — no file matches, in `Mathlib/` OR
+  in `~/cs/FLT/FLT`. Confirmed empty in both trees;
+* `Mathlib/RingTheory/Valuation/RamificationGroup.lean` is still
+  **exactly 54 lines**, with the `TODO: Define higher ramification
+  groups in lower numbering` on line 16 and `decompositionSubgroup` /
+  `inertiaSubgroup` its only content;
+* `SmoothRep|AdmissibleRep|LocalLanglands` — no matches in `Mathlib/`;
+* `BCris|B_cris|crystallineRep|HodgeTate` — no matches in `Mathlib/`;
+  `RingTheory/Perfectoid/` still contains exactly `BDeRham.lean`,
+  `FontaineTheta.lean`, `Untilt.lean` and nothing else;
+* Hilbert modular forms / Shimura curves — no matches (the single
+  `shimura` hit anywhere in `Mathlib/` is a prose mention inside
+  `NumberTheory/HeckeRing/Defs.lean`, not a development).
+
+THE "ONE MISSING LEMMA" IS STILL MISSING — re-checked directly, because
+it is the one claim above that an in-tree lemma could plausibly have
+falsified since it was written. Every declaration in the tree mentioning
+`localInertiaGroup` was enumerated and classified; none supplies the ONTO
+half. The two that come closest, and why neither is it:
+
+* `exists_mem_localInertiaGroup_restrictNormalHom_eq`
+  (`LocalInertiaFixedField.lean:1450`) lifts an inertia element from a
+  finite Galois LEVEL `N` to the full local inertia group **at the same
+  place `v`** (the profinite half of Neukirch II.9.11). That is a
+  VERTICAL lift inside one completion, not the HORIZONTAL `w → v` lift
+  between two different fields' completions that is wanted here;
+* `Field.absoluteGaloisGroup.exists_finset_conj_localInertiaGroup_le`
+  (`GaloisRepTransport.lean:611`) is the push-down direction again —
+  `I_w` lands in a CONJUGATE of `I_v`, for all but finitely many `w`.
+
+So the audit's verdict stands verbatim and the gap is real. Also note
+`restrictNormalHom_mem_inertia_of_mem_localInertiaGroup` has drifted to
+`Threeadic.lean:5212` (cited as `:4598` above); locate it by name.
+
 ROUTE AUDIT, THIRD CLOSURE (2026-07-26, 07:53 — **SUPERSEDED AT 09:17
 THE SAME DAY; READ THE REFUTATION ABOVE BEFORE ACTING ON ANY OF THIS**):
 the `τF`-FREE variant of the relocation is closed too — and by a
@@ -20297,6 +22306,14 @@ restating this
 leaf over `WD_p(−)` is not a shortcut but a multi-agent theory-building
 programme; it is NOT single-agent-sized, and this leaf should not be
 re-scoped as though it were.
+
+RE-VERIFIED MECHANICALLY 2026-07-26 (a later owner): every absence claim
+of that search was re-run against the CURRENT pin and all still hold —
+see the `MACHINERY AUDIT RE-VERIFIED MECHANICALLY` block in the sibling
+for the exact results. Relevant to THIS leaf in particular: the `I_p =
+I_w` identification that the second closure's `τF` revival needs is
+still not available in either direction that would help, and the ONTO
+half of the inertia lift is still absent from the tree.
 
 MACHINERY BUILT (2026-07-26 — a POSITIVE note, so it is not looked for
 again). The RIGIDITY step that `hirr` exists to buy — Frobenius data
