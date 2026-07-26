@@ -161,6 +161,23 @@ The chain, in the order the assembly uses it:
    twin assumes throughout and which the consumer of this module already
    supplies. See the repair paragraph on the machine node.
 
+
+   **SECOND FAITHFULNESS REPAIR, 2026-07-26**: `hℓ5` alone is NOT enough
+   over a general `F` — `isHilbertTameAtTwo_of_fibreProduct` with `hℓ5` and
+   nothing else was REFUTED at `ℓ = 5`, `F = ℚ(μ₅)` (machine-verified
+   counterexample in the block comment above that theorem). The sharp
+   hypothesis is `ℓ ∤ N(w)² − 1` at each `w ∣ 2`; it propagates through
+   `isHilbertFibreProductClause`,
+   `exists_isWeaklyUniversal_hilbertDeformationDatum`,
+   `exists_heckeDatum_isWeaklyUniversal_isTraceGenerated`,
+   `exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal` and
+   `moduleFinite_hilbertDeformation_of_isWeaklyUniversal`, and is DISCHARGED
+   at the top by the new field `PotentialHeckeDatum.residueCardTwo`
+   (`N(w) = 2` for every `w ∣ 2`), which is free in Taylor's argument.
+   `isHilbertTameAtTwo_of_fibreProduct` is now PROVEN, over the single new
+   arithmetic leaf `exists_cyclotomicCharacter_adicCompletion_eq_residueCard`
+   (`χ_ℓ(Frob_w) = N(w)`) and the linear-algebra brick
+   `exists_unit_smul_of_vecMul_eq_row`.
 4. `HilbertHeckeAlgebra` — `T_F`, carrying finiteness AND FREENESS of
    `T_F` over `ℤ_[ℓ]`, generation by Hecke operators, and the
    **Hecke-valued Galois representation** `ρT : G_F → GL₂(T_F)` reducing
@@ -2056,39 +2073,262 @@ NOTE (2026-07-26): only the TAME residue is still stated here.
 `hasFlatProlongationAt_of_pi_surjection_of_numberField`, which is declared
 below this point; see the section note there. -/
 
-/-- **The tame quadratic quotient at a place over `2` glues along a fibre
-product** (LEAF; Conrad–Diamond–Taylor — the second arithmetic residue of
-Schlessinger's H1/H2 over `F`, and the `F`-level twin of
-`Deformation.lean`'s `isTameAtTwo_of_fibreProduct`).
+/-- **Two unimodular left eigenvectors of a `2 × 2` matrix over a local ring
+are proportional as soon as `det m − d d'` is a unit** (PROVEN; pure
+commutative algebra, the uniqueness engine of
+`isHilbertTameAtTwo_of_fibreProduct` below).
 
-**THIS STATEMENT CARRIES `hℓ5 : 5 ≤ ℓ`, AND MUST — see the faithfulness
-note on `isHilbertFibreProductClause` below.** The `ℓ = 3` case is not
-merely open: the `ℚ`-level twin's `ℓ = 3` case was REFUTED on 2026-07-26
-with an explicit counterexample, recorded in full in the block comment
-above `isTameAtTwo_of_fibreProduct` in `Deformation.lean`, and that
-counterexample is a counterexample HERE TOO at `F = ℚ`, because
-`IsHilbertHardlyRamified ℓ ℚ` is the `ℚ`-level condition place by place.
-Do not drop `hℓ5`, and do not restate this leaf without it.
+This is a VERBATIM re-proof of `Deformation.lean`'s
+`exists_unit_smul_of_vecMul_eq`, under a different name. The duplication is
+forced by this module's CIRCULARITY GUARD: `Deformation.lean` imports this
+file, so nothing there is reachable from here, and a same-named declaration
+in the shared `GaloisRepresentation` namespace would collide at that
+import. Do NOT "deduplicate" by importing `Deformation.lean`.
+
+`r` and `r'` are rows with `r m = d r` and `r' m = d' r'`, each UNIMODULAR
+(`hx`, `hx'`: some `A`-combination of the entries is `1`, i.e. each is the
+coordinate vector of a SURJECTIVE functional). The `2 × 2` identity
+
+  `(r₀ r'₁ − r₁ r'₀) · (det m − d d') = 0`
+
+— a `linear_combination` of the four eigen-equations — says that if the two
+rows were independent then `m` would be diagonalised by them and `det m`
+would be `d d'`. With `det m − d d'` a unit the cross determinant vanishes,
+and over a LOCAL ring unimodularity makes one entry of `r` invertible,
+which turns the vanishing into `r' = u · r` with `u` a unit. -/
+theorem exists_unit_smul_of_vecMul_eq_row {A : Type*} [CommRing A]
+    [IsLocalRing A]
+    (m : Matrix (Fin 2) (Fin 2) A) (r r' : Fin 2 → A) (d d' : A)
+    (hr : ∀ j, ∑ i, r i * m i j = d * r j)
+    (hr' : ∀ j, ∑ i, r' i * m i j = d' * r' j)
+    (hx : ∃ x : Fin 2 → A, ∑ i, r i * x i = 1)
+    (hx' : ∃ x : Fin 2 → A, ∑ i, r' i * x i = 1)
+    (hunit : IsUnit (m.det - d * d')) :
+    ∃ u : A, IsUnit u ∧ ∀ i, r' i = u * r i := by
+  obtain ⟨x, hx⟩ := hx
+  obtain ⟨x', hx'⟩ := hx'
+  have e00 := hr 0
+  have e01 := hr 1
+  have e10 := hr' 0
+  have e11 := hr' 1
+  rw [Fin.sum_univ_two] at e00 e01 e10 e11 hx hx'
+  rw [Matrix.det_fin_two] at hunit
+  have hcross : (r 0 * r' 1 - r 1 * r' 0) *
+      (m 0 0 * m 1 1 - m 0 1 * m 1 0 - d * d') = 0 := by
+    linear_combination (r' 0 * m 0 1 + r' 1 * m 1 1) * e00 -
+      (r' 0 * m 0 0 + r' 1 * m 1 0) * e01 - (d * r 1) * e10 + (d * r 0) * e11
+  have hzero : r 0 * r' 1 - r 1 * r' 0 = 0 := by
+    obtain ⟨v, hv⟩ := hunit
+    have h1 : (r 0 * r' 1 - r 1 * r' 0) * ((v : A) * ((v⁻¹ : Aˣ) : A)) = 0 := by
+      rw [hv, ← mul_assoc, hcross, zero_mul]
+    simpa using h1
+  have hcases : IsUnit (r 0) ∨ IsUnit (r 1) := by
+    have h1 : IsUnit (r 0 * x 0 + r 1 * x 1) := by rw [hx]; exact isUnit_one
+    exact (IsLocalRing.isUnit_or_isUnit_of_isUnit_add h1).imp
+      isUnit_of_mul_isUnit_left isUnit_of_mul_isUnit_left
+  rcases hcases with h | h
+  · obtain ⟨s, hs⟩ := h.exists_right_inv
+    have key0 : r' 0 = r' 0 * s * r 0 := by linear_combination (-(r' 0)) * hs
+    have key1 : r' 1 = r' 0 * s * r 1 := by
+      linear_combination (-(r' 1)) * hs + s * hzero
+    have key : ∀ i, r' i = r' 0 * s * r i := by
+      intro i; fin_cases i
+      · exact key0
+      · exact key1
+    refine ⟨r' 0 * s, IsUnit.of_mul_eq_one (r 0 * x' 0 + r 1 * x' 1) ?_, key⟩
+    rw [show r' 0 * s * (r 0 * x' 0 + r 1 * x' 1) =
+      r' 0 * s * r 0 * x' 0 + r' 0 * s * r 1 * x' 1 by ring, ← key0, ← key1]
+    exact hx'
+  · obtain ⟨s, hs⟩ := h.exists_right_inv
+    have key1 : r' 1 = r' 1 * s * r 1 := by linear_combination (-(r' 1)) * hs
+    have key0 : r' 0 = r' 1 * s * r 0 := by
+      linear_combination (-(r' 0)) * hs - s * hzero
+    have key : ∀ i, r' i = r' 1 * s * r i := by
+      intro i; fin_cases i
+      · exact key0
+      · exact key1
+    refine ⟨r' 1 * s, IsUnit.of_mul_eq_one (r 0 * x' 0 + r 1 * x' 1) ?_, key⟩
+    rw [show r' 1 * s * (r 0 * x' 0 + r 1 * x' 1) =
+      r' 1 * s * r 0 * x' 0 + r' 1 * s * r 1 * x' 1 by ring, ← key0, ← key1]
+    exact hx'
+
+/-- **A Frobenius at `w` inside `Γ F_w`, with cyclotomic value `N(w)`**
+(LEAF; the `F`-level twin of `Deformation.lean`'s PROVEN
+`exists_cyclotomicCharacter_padicTwo_eq_two`, and the ARITHMETIC input of
+the gluing argument below).
+
+For `w ∤ ℓ` the tower `F_w(μ_{ℓⁿ})/F_w` is UNRAMIFIED and its Frobenius
+acts on `ℓⁿ`-th roots of unity by `ζ ↦ ζ^{N(w)}`, where
+`N(w) = #(𝒪_F/w)`. So the `ℓ`-adic cyclotomic character of `Γ ℚ` — which
+is what `IsHilbertHardlyRamified.det` pins the determinant to, read through
+`Γ F_w → Γ F → Γ ℚ` — takes the value `N(w)` on the image of a Frobenius
+at `w`. `hw` is load-bearing exactly as `hodd` is over `ℚ`: at `w ∣ ℓ` the
+character is ramified and the statement is false, since `N(w)` is then a
+power of `ℓ` and hence not a unit of `ℤ_ℓ`.
+
+Over `ℚ` at `w = (2)` this is `χ_ℓ(Frob_2) = 2`, which is the `ℚ`-level
+leaf; the route taken there — `Chebotarev.lean`'s
+`cyclotomicCharacter_globalFrob` plus a transport from the adic completion
+to mathlib's `Padic` — is not available here, because `Chebotarev.lean`
+lies outside this module's deliberately minimal import surface and states
+its Frobenius over `ℚ` only. What is needed here is the same statement for
+a general number field: the unramifiedness of `F_w(μ_{ℓⁿ})/F_w` and the
+value of the arithmetic Frobenius on roots of unity.
+
+References: Neukirch, *Algebraic Number Theory*, Ch. II §7 and Ch. V;
+Serre, *Abelian ℓ-adic representations*, Ch. I §1.2. -/
+theorem exists_cyclotomicCharacter_adicCompletion_eq_residueCard (ℓ : ℕ)
+    [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
+    (w : HeightOneSpectrum (𝓞 F)) (hw : ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal) :
+    ∃ g : Γ (w.adicCompletion F),
+      ((cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+            (Field.absoluteGaloisGroup.map
+              (algebraMap F (w.adicCompletion F)) g)).toRingEquiv : ℤ_[ℓ]ˣ) :
+        ℤ_[ℓ]) = ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℕ) : ℤ_[ℓ]) :=
+  sorry
+
+/-
+**REFUTED AS FIRST STATED, 2026-07-26: `isHilbertTameAtTwo_of_fibreProduct`
+WITH `hℓ5 : 5 ≤ ℓ` ALONE.**
+
+The statement below stood here in a form whose only arithmetic hypothesis
+was `5 ≤ ℓ`, on the reasoning — inherited from the `ℚ`-level twin, where it
+is correct — that `ℓ ≥ 5` makes the determinant test element
+`N(w) − (±1)` a unit. **Over a general number field that inference is
+false**, because `N(w) = 2^{f(w|2)}` is not `2`, and the counterexample
+below is machine-verified.
+
+THE COUNTEREXAMPLE (verified exhaustively over the 125-element ring `B`).
+
+Take `ℓ = 5` and `F = ℚ(μ₅)`. Then:
+
+* `2` is INERT in `F` (`ord₅(2) = 4 = [F : ℚ]`), so `F` has a single place
+  `w ∣ 2`, with `N(w) = 16 ≡ 1 (mod 5)`. In particular `χ̄_ℓ|_{Γ F} = 1`
+  identically, since `F ⊇ μ_ℓ` — the degeneracy `N(w)² ≡ 1 (mod ℓ)` holds
+  in its most extreme form.
+* `ord₂₅(2) = 20 = φ(25)`, so `2` is inert in `ℚ(μ₂₅)` too, i.e. `w` is
+  inert in the degree-`5` extension `ℚ(μ₂₅)/F`. Hence the homomorphism
+  `c : Γ F → 𝔽₅` defined by `χ_{25}(g) = 1 + 5·c(g)` is CONTINUOUS,
+  nontrivial, and — this is the point — `c|_{G_w} ≠ 0`.
+
+Now take the square-zero extensions
+
+  `A₀ = 𝔽₅`,  `A₁ = 𝔽₅[ε₁]`,  `A₂ = 𝔽₅[ε₂]`,
+  `B  = 𝔽₅[ε₁, ε₂]/(ε₁, ε₂)²`,
+
+all discrete, so that `B = A₁ ×_{A₀} A₂` with `p₁` killing `ε₂` and `p₂`
+killing `ε₁`; `f₂` is surjective, `hemb` and `hcart` are immediate. Let
+
+  `ρ(g) = !![1, ε₂·c(g); ε₁·c(g), 1]`.
+
+Every hypothesis of the statement as first written holds:
+
+* `ρ` is a homomorphism (`c` is additive and `ε₁ε₂ = 0`) and continuous
+  (`c` factors through a finite quotient, `B` is discrete);
+* `hdet` holds: `det ρ(g) = 1 − ε₁ε₂c(g)² = 1`, and `χ̄_ℓ|_{Γ F} = 1`;
+* `h₁` holds: over `A₁` the row `(1, 0)` is a left eigenvector with
+  eigenvalue `1`, so `δ₁ = 1` — unramified and quadratic;
+* `h₂` holds: over `A₂` the row `(0, 1)` is a left eigenvector with
+  eigenvalue `1`, so `δ₂ = 1` — unramified and quadratic;
+* `5 ≤ ℓ` holds.
+
+**The conclusion FAILS: over `B` there is no unimodular `ρ|_{G_w}`-stable
+row at all.** By hand: a unimodular row may be normalised to `(1, r₁)` or
+to `(r₀, 1)` with `r₀` nilpotent. In the first case the eigen-equations
+force `ε₂c(g) = b₀²·ε₁c(g)` where `b₀` is the residue of `r₁`, impossible
+for `g` with `c(g) ≠ 0` since `ε₁` and `ε₂` are `𝔽₅`-independent; in the
+second they force `ε₁c(g) = 0`, i.e. `c|_{G_w} = 0`. Machine check
+(2026-07-26): an exhaustive search over all `125² = 15625` pairs
+`(r₀, r₁) ∈ B²` found `2500` unimodular stable rows over each of `A₁` and
+`A₂`, and **`0`** over `B`.
+
+WHY `hℓ5` CANNOT SEE THIS. `hℓ5` is the `ℚ`-level shadow of the real
+condition. Uniqueness of the line fails exactly when the two Jordan–Hölder
+characters `δ̄` and `χ̄δ̄` of `ρ̄|_{G_w}` are BOTH unramified quadratic, i.e.
+exactly when `χ̄²|_{G_w} = 1`, i.e. exactly when
+
+  `N(w)² ≡ 1 (mod ℓ)`.
+
+Over `ℚ` the only place over `2` has `N(w) = 2`, so this reads `ℓ ∣ 3`,
+i.e. `ℓ = 3`, and `5 ≤ ℓ` is an exact restatement of its negation. Over a
+general `F` it reads `ℓ ∣ 2^{2f(w|2)} − 1`, which `5 ≤ ℓ` does not exclude
+— `ℓ = 5` and `f = 2` already violate it, and `F = ℚ(μ₅)` above realises
+that.
+
+THE REPAIR, PERFORMED 2026-07-26. The hypothesis `hqw` below is the sharp
+condition just derived, and it SUBSUMES the `ℚ`-level `hℓ5` (at `F = ℚ`,
+`N(w) = 2` and `hqw` says `ℓ ∤ 3`). `hℓ5` is nevertheless kept, because the
+`2` in `hu2` — used to split `e² = 1` into `e = ±1` over the local ring
+`A₀` — needs `ℓ` odd, and because every consumer already carries it.
+
+CONSEQUENCE FOR THE CUT, WHICH IS NOT REPAIRED HERE AND MUST NOT BE
+FORGOTTEN. `hqw` propagates: `isHilbertFibreProductClause` now carries it
+for every `w ∣ 2`, and so does `exists_isWeaklyUniversal_hilbertDeformationDatum`.
+At the top of the module the field `F` is not free — it is the totally real
+field PRODUCED by potential modularity — so the condition has to be
+IMPOSED THERE, and it is: `PotentialHeckeDatum.residueCardTwo` asks that
+every place of `F` over `2` have residue field `𝔽₂`. That is free in
+Taylor's argument (Moret–Bailly's theorem lets one prescribe the local
+behaviour of `F` at any finite set of places, in particular demand that `2`
+split completely), and it makes `N(w)² − 1 = 3`, so `hqw` follows from
+`5 ≤ ℓ` again. Anyone weakening `PotentialHeckeDatum.residueCardTwo` must
+re-derive `hqw` some other way, or this leaf becomes false again.
+-/
+
+/-- **The tame quadratic quotient at a place over `2` glues along a fibre
+product** (PROVEN 2026-07-26 over the arithmetic leaf
+`exists_cyclotomicCharacter_adicCompletion_eq_residueCard` and the
+linear-algebra brick `exists_unit_smul_of_vecMul_eq_row` above;
+Conrad–Diamond–Taylor — the second arithmetic residue of Schlessinger's
+H1/H2 over `F`, and the `F`-level twin of `Deformation.lean`'s
+`isTameAtTwo_of_fibreProduct`).
+
+**THIS STATEMENT CARRIES `hqw`, AND MUST.** `hqw` says `ℓ ∤ N(w)² − 1`,
+i.e. `χ̄_ℓ²|_{G_w} ≠ 1`. Without it the statement is FALSE — refuted
+2026-07-26 at `ℓ = 5`, `F = ℚ(μ₅)`, with a machine-verified counterexample
+recorded in the block comment immediately above. `hℓ5 : 5 ≤ ℓ` alone does
+NOT suffice over a general number field, however it may look next to the
+`ℚ`-level twin: there `N(w) = 2` and `hqw` degenerates to `ℓ ≠ 3`.
 
 WHY IT IS NOT FORMAL. The tame clause is an EXISTENTIAL — SOME surjection
 `p` and SOME unramified quadratic `δ`. So `h₁` and `h₂` hand you a line
 over `A₁` and a line over `A₂` with no compatibility whatever over `A₀`,
 while a line over the fibre product is exactly a compatible PAIR of lines.
 Everything turns on a uniqueness statement forcing the two given choices to
-agree over `A₀`, and that uniqueness is what `hdet` and `hℓ5` buy:
+agree over `A₀`, and that uniqueness is what `hdet` and `hqw` buy:
 
-* `χ_ℓ` is unramified on `G_{F_w}` with `χ_ℓ(Frob_w) = 2^{f(w|2)}`, because
-  `ℓ` is odd, so the residual representation restricted to `G_{F_w}` is
-  never scalar and its two Jordan–Hölder characters `χ̄δ̄` and `δ̄` differ by
-  `χ̄|_{G_w}`;
+* `χ_ℓ` is unramified on `G_{F_w}` with `χ_ℓ(Frob_w) = N(w) = 2^{f(w|2)}`,
+  because `w ∤ ℓ`; so the two Jordan–Hölder characters of `ρ̄|_{G_w}`,
+  namely `χ̄δ̄` and `δ̄`, differ by `χ̄|_{G_w}`;
 * those two characters can COINCIDE as candidates for the clause only when
-  `χ̄²|_{G_w} = 1`, i.e. when `2^{2f} ≡ 1 mod ℓ`; at `ℓ = 3` that holds for
-  every `w | 2` and every `F`, which is exactly the degeneracy the `ℚ`-level
-  counterexample exploits, and at `ℓ ≥ 5` the argument of the `ℚ`-level
-  proof — the two surjections are unimodular rows that are left
-  eigenvectors of `ρ(Frob_w)`, and `det − d₁d₂` is a unit — forces them
-  proportional over `A₀`, after which `hf₂` rescales one of them and
-  `hcart` glues them entrywise.
+  `χ̄²|_{G_w} = 1`, i.e. when `N(w)² ≡ 1 mod ℓ`, which `hqw` excludes;
+* with `hqw` the test element `det ρ(Frob_w) − δ₁(Frob_w)δ₂(Frob_w)`,
+  which is `N(w) ∓ 1`, is a unit of `A₀`, and
+  `exists_unit_smul_of_vecMul_eq_row` forces the two rows proportional over
+  `A₀`; then `hf₂` rescales one of them and `hcart` glues them entrywise.
+
+HOW IT IS PROVEN HERE, following the `ℚ`-level proof step for step, at the
+level of ROWS rather than of Jordan–Hölder factors so that no
+semisimplification or residual reduction is needed.
+
+1. `hqw` makes `N(w) − 1` and `N(w) + 1` units in the local `ℤ_ℓ`-algebra
+   `A₀`; `hℓ5` makes `2` one.
+2. Each of `h₁`, `h₂` is a SURJECTIVE functional, i.e. a UNIMODULAR row
+   `rᵢ = (πᵢ e₀, πᵢ e₁)`, and the equivariance clause says exactly that
+   this row is a LEFT EIGENVECTOR of the matrix of `ρ(g₀)` with eigenvalue
+   `δᵢ(g₀)`, for `g₀` the Frobenius at `w` supplied by the arithmetic leaf.
+3. `hdet` at `g₀` gives `det ρ(g₀) = N(w)`, and the quadratic clause gives
+   `δ₁(g₀)δ₂(g₀) = ±1`, so the test element is `N(w) − 1` or `N(w) + 1`
+   — a unit by (1).
+4. Lifting the resulting unit through the SURJECTION `f₂` and rescaling
+   `π₂` by its inverse makes the two rows literally EQUAL over `A₀`, so
+   `hcart` glues them entrywise into a row over `B`; the glued functional
+   is surjective because `p₁` is a surjection of local rings.
+5. The character is then `ε g := π (ρ(g) x₀)` for any `π x₀ = 1`: it is
+   multiplicative, unramified and quadratic because `hemb` makes `B` inject
+   into `A₁ × A₂` and each of those statements is an identity of VALUES,
+   which descends along an injection.
 
 FAITHFULNESS: as over `ℚ`, the two nontrivial conditions on the glued `δ`
 are an inertia-only containment and an IDENTITY of values, both on the true
@@ -2118,6 +2358,7 @@ theorem isHilbertTameAtTwo_of_fibreProduct (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 :
       (cyclotomicCharacter (ℚ ᵃˡᵍ) ℓ
         (Field.absoluteGaloisGroup.map (algebraMap ℚ F) g).toRingEquiv))
     (w : HeightOneSpectrum (𝓞 F)) (hw : ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal)
+    (hqw : ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)))
     (h₁ : ∃ (p : (Fin 2 → A₁) →ₗ[A₁] A₁) (_ : Function.Surjective p)
       (δ : GaloisRep (w.adicCompletion F) A₁ A₁),
       (∀ g : Γ (w.adicCompletion F), ∀ v : Fin 2 → A₁,
@@ -2135,8 +2376,346 @@ theorem isHilbertTameAtTwo_of_fibreProduct (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 :
       (∀ g : Γ (w.adicCompletion F), ∀ v : Fin 2 → B,
         p (ρ.toLocal w g v) = δ g (p v)) ∧
       localInertiaGroup w ≤ δ.ker ∧
-      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 :=
-  sorry
+      ∀ g : Γ (w.adicCompletion F), δ g * δ g = 1 := by
+  classical
+  set q : ℕ := Nat.card (𝓞 F ⧸ w.asIdeal) with hqdef
+  -- STEP 1. `N(w) ∓ 1` and `2` are units in `A₀`.
+  have hunitZ : ∀ m : ℤ, ¬ ((ℓ : ℤ) ∣ m) → IsUnit ((m : A₀)) := by
+    intro m hm
+    have h : IsUnit ((m : ℤ_[ℓ])) := by
+      by_contra hcon
+      rw [PadicInt.not_isUnit_iff, PadicInt.norm_intCast_lt_one_iff] at hcon
+      exact hm hcon
+    have h2 := h.map (algebraMap ℤ_[ℓ] A₀)
+    rwa [map_intCast] at h2
+  have hfacq : ((q : ℤ) ^ 2 - 1) = ((q : ℤ) - 1) * ((q : ℤ) + 1) := by ring
+  have hqm : IsUnit (((q : ℤ) - 1 : ℤ) : A₀) :=
+    hunitZ _ fun h => hqw (by rw [hfacq]; exact h.mul_right _)
+  have hqp : IsUnit (((q : ℤ) + 1 : ℤ) : A₀) :=
+    hunitZ _ fun h => hqw (by rw [hfacq]; exact h.mul_left _)
+  have hu2 : IsUnit ((2 : ℕ) : A₀) := by
+    have hp : ℓ.Prime := Fact.out
+    have h : IsUnit ((2 : ℕ) : ℤ_[ℓ]) := PadicInt.isUnit_iff.mpr
+      (PadicInt.norm_natCast_eq_one_iff.mpr
+        ((Nat.coprime_primes hp Nat.prime_two).mpr (by omega)))
+    have h2 := h.map (algebraMap ℤ_[ℓ] A₀)
+    rwa [map_natCast] at h2
+  -- STEP 2. `w` does not lie over `ℓ`, so the arithmetic leaf applies.
+  have hwl : ((ℓ : ℕ) : 𝓞 F) ∉ w.asIdeal := by
+    intro hmem
+    have hp : ℓ.Prime := Fact.out
+    have hgcd : Int.gcd 2 (ℓ : ℤ) = 1 := by
+      have : Nat.Coprime 2 ℓ := (Nat.coprime_primes Nat.prime_two hp).mpr (by omega)
+      simpa [Int.gcd] using this
+    obtain ⟨a, b, hab⟩ := Int.isCoprime_iff_gcd_eq_one.mpr hgcd
+    have hone : (1 : 𝓞 F) ∈ w.asIdeal := by
+      have hsum := w.asIdeal.add_mem (w.asIdeal.mul_mem_left ((a : ℤ) : 𝓞 F) hw)
+        (w.asIdeal.mul_mem_left ((b : ℤ) : 𝓞 F) hmem)
+      have hcast : ((a : 𝓞 F) * ((2 : ℕ) : 𝓞 F) + (b : 𝓞 F) * ((ℓ : ℕ) : 𝓞 F))
+          = 1 := by
+        have := congrArg (fun z : ℤ => (z : 𝓞 F)) hab
+        push_cast at this ⊢
+        exact this
+      rwa [hcast] at hsum
+    exact w.isPrime.ne_top (Ideal.eq_top_iff_one _ |>.mpr hone)
+  obtain ⟨g₀, hg₀⟩ :=
+    exists_cyclotomicCharacter_adicCompletion_eq_residueCard ℓ F w hwl
+  -- STEP 3. Unpack the two given lines and put them in row form.
+  obtain ⟨π₁, hπ₁surj, δ₁, hδ₁eq, hδ₁ker, hδ₁sq⟩ := h₁
+  obtain ⟨π₂, hπ₂surj, δ₂, hδ₂eq, hδ₂ker, hδ₂sq⟩ := h₂
+  have hinj : ∀ b b' : B, p₁ b = p₁ b' → p₂ b = p₂ b' → b = b' := by
+    intro b b' hb₁ hb₂
+    exact hemb.injective (by simp only [Prod.mk.injEq]; exact ⟨hb₁, hb₂⟩)
+  have hπ₁val : ∀ v : Fin 2 → A₁, π₁ v = ∑ i, π₁ (Pi.single i 1) * v i := by
+    intro v
+    conv_lhs => rw [pi_eq_sum_univ' v]
+    rw [map_sum]
+    exact Finset.sum_congr rfl fun i _ => by rw [map_smul, smul_eq_mul, mul_comm]
+  have hπ₂val : ∀ v : Fin 2 → A₂, π₂ v = ∑ i, π₂ (Pi.single i 1) * v i := by
+    intro v
+    conv_lhs => rw [pi_eq_sum_univ' v]
+    rw [map_sum]
+    exact Finset.sum_congr rfl fun i _ => by rw [map_smul, smul_eq_mul, mul_comm]
+  have hδ₁val : ∀ (g : Γ (w.adicCompletion F)) (x : A₁), δ₁ g x = δ₁ g 1 * x := by
+    intro g x
+    conv_lhs => rw [show x = x • (1 : A₁) by rw [smul_eq_mul, mul_one]]
+    rw [map_smul, smul_eq_mul, mul_comm]
+  have hδ₂val : ∀ (g : Γ (w.adicCompletion F)) (x : A₂), δ₂ g x = δ₂ g 1 * x := by
+    intro g x
+    conv_lhs => rw [show x = x • (1 : A₂) by rw [smul_eq_mul, mul_one]]
+    rw [map_smul, smul_eq_mul, mul_comm]
+  have htr₁ : ∀ (g : Γ (w.adicCompletion F)) (v : Fin 2 → B),
+      (fun i => p₁ (ρ.toLocal w g v i)) =
+      (framePushforward p₁ hp₁ ρ).toLocal w g (fun i => p₁ (v i)) := by
+    intro g v
+    funext i
+    rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+    exact (framePushforward_apply_map p₁ hp₁ ρ _ v i).symm
+  have htr₂ : ∀ (g : Γ (w.adicCompletion F)) (v : Fin 2 → B),
+      (fun i => p₂ (ρ.toLocal w g v i)) =
+      (framePushforward p₂ hp₂ ρ).toLocal w g (fun i => p₂ (v i)) := by
+    intro g v
+    funext i
+    rw [GaloisRep.toLocal_apply, GaloisRep.toLocal_apply]
+    exact (framePushforward_apply_map p₂ hp₂ ρ _ v i).symm
+  have hrel₁ : ∀ (g : Γ (w.adicCompletion F)) (v : Fin 2 → B),
+      π₁ (fun i => p₁ (ρ.toLocal w g v i)) = δ₁ g 1 * π₁ (fun i => p₁ (v i)) := by
+    intro g v
+    rw [htr₁ g v, hδ₁eq g (fun i => p₁ (v i)), hδ₁val]
+  have hrel₂ : ∀ (g : Γ (w.adicCompletion F)) (v : Fin 2 → B),
+      π₂ (fun i => p₂ (ρ.toLocal w g v i)) = δ₂ g 1 * π₂ (fun i => p₂ (v i)) := by
+    intro g v
+    rw [htr₂ g v, hδ₂eq g (fun i => p₂ (v i)), hδ₂val]
+  have hsq₁ : ∀ g, δ₁ g 1 * δ₁ g 1 = 1 := by
+    intro g
+    have h := hδ₁sq g
+    have h2 : (δ₁ g * δ₁ g) (1 : A₁) = (1 : Module.End A₁ A₁) 1 := by rw [h]
+    rwa [Module.End.mul_apply, Module.End.one_apply, hδ₁val] at h2
+  have hsq₂ : ∀ g, δ₂ g 1 * δ₂ g 1 = 1 := by
+    intro g
+    have h := hδ₂sq g
+    have h2 : (δ₂ g * δ₂ g) (1 : A₂) = (1 : Module.End A₂ A₂) 1 := by rw [h]
+    rwa [Module.End.mul_apply, Module.End.one_apply, hδ₂val] at h2
+  -- STEP 4. The matrix of `ρ` at the Frobenius, and its determinant.
+  set φ₀ : B →+* A₀ := f₁.comp p₁ with hφ₀def
+  have hφ₀' : ∀ b : B, φ₀ b = f₂ (p₂ b) := by
+    intro b
+    rw [hφ₀def]
+    exact congrArg (fun G : B →+* A₀ => G b) hcomm
+  set M : Matrix (Fin 2) (Fin 2) B :=
+    LinearMap.toMatrix' (ρ.toLocal w g₀) with hMdef
+  have hdetM : M.det = ((q : ℕ) : B) := by
+    rw [hMdef, LinearMap.det_toMatrix', GaloisRep.toLocal_apply,
+      ← GaloisRep.det_apply, hdet, hg₀, map_natCast]
+  have hsingle₁ : ∀ j : Fin 2,
+      (fun i => p₁ ((Pi.single j (1 : B) : Fin 2 → B) i)) =
+      (Pi.single j (1 : A₁) : Fin 2 → A₁) := by
+    intro j
+    funext i
+    by_cases hij : i = j <;> simp [hij]
+  have hsingle₂ : ∀ j : Fin 2,
+      (fun i => p₂ ((Pi.single j (1 : B) : Fin 2 → B) i)) =
+      (Pi.single j (1 : A₂) : Fin 2 → A₂) := by
+    intro j
+    funext i
+    by_cases hij : i = j <;> simp [hij]
+  have hrow₁ : ∀ j, ∑ i, f₁ (π₁ (Pi.single i 1)) * (M.map φ₀) i j =
+      f₁ (δ₁ g₀ 1) * f₁ (π₁ (Pi.single j 1)) := by
+    intro j
+    have h := hrel₁ g₀ (Pi.single j 1)
+    rw [hsingle₁ j] at h
+    rw [hπ₁val] at h
+    have h2 := congrArg f₁ h
+    simp only [map_sum, map_mul] at h2
+    exact h2
+  have hrow₂ : ∀ j, ∑ i, f₂ (π₂ (Pi.single i 1)) * (M.map φ₀) i j =
+      f₂ (δ₂ g₀ 1) * f₂ (π₂ (Pi.single j 1)) := by
+    intro j
+    have h := hrel₂ g₀ (Pi.single j 1)
+    rw [hsingle₂ j] at h
+    rw [hπ₂val] at h
+    have h2 := congrArg f₂ h
+    simp only [map_sum, map_mul] at h2
+    simp only [Matrix.map_apply, hφ₀']
+    exact h2
+  obtain ⟨w₁, hw₁⟩ := hπ₁surj 1
+  obtain ⟨w₂, hw₂⟩ := hπ₂surj 1
+  have huni₁ : ∑ i, f₁ (π₁ (Pi.single i 1)) * f₁ (w₁ i) = 1 := by
+    have h := congrArg f₁ (hπ₁val w₁)
+    rw [hw₁, map_one] at h
+    simp only [map_sum, map_mul] at h
+    exact h.symm
+  have huni₂ : ∑ i, f₂ (π₂ (Pi.single i 1)) * f₂ (w₂ i) = 1 := by
+    have h := congrArg f₂ (hπ₂val w₂)
+    rw [hw₂, map_one] at h
+    simp only [map_sum, map_mul] at h
+    exact h.symm
+  -- STEP 5. The eigenvalue product is `±1`, so the test element is a unit.
+  have hprod : (f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1)) * (f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1)) = 1 := by
+    have e1 := congrArg f₁ (hsq₁ g₀)
+    have e2 := congrArg f₂ (hsq₂ g₀)
+    rw [map_mul, map_one f₁] at e1
+    rw [map_mul, map_one f₂] at e2
+    calc (f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1)) * (f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1))
+        = (f₁ (δ₁ g₀ 1) * f₁ (δ₁ g₀ 1)) * (f₂ (δ₂ g₀ 1) * f₂ (δ₂ g₀ 1)) := by ring
+      _ = 1 := by rw [e1, e2, one_mul]
+  have hpm : f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1) = 1 ∨ f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1) = -1 := by
+    set e := f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1) with hedef
+    have hfac : (e - 1) * (e + 1) = 0 := by linear_combination hprod
+    have hsum : IsUnit ((1 + e) + (1 - e)) := by
+      have h : (1 + e) + (1 - e) = ((2 : ℕ) : A₀) := by push_cast; ring
+      rw [h]; exact hu2
+    rcases IsLocalRing.isUnit_or_isUnit_of_isUnit_add hsum with h | h
+    · left
+      obtain ⟨t, ht⟩ := h.exists_right_inv
+      have h0 : e - 1 = 0 := by
+        have h1 : (e - 1) * ((1 + e) * t) = 0 := by
+          rw [show (e - 1) * ((1 + e) * t) = ((e - 1) * (e + 1)) * t by ring,
+            hfac, zero_mul]
+        rwa [ht, mul_one] at h1
+      exact sub_eq_zero.mp h0
+    · right
+      obtain ⟨t, ht⟩ := h.exists_right_inv
+      have h0 : e + 1 = 0 := by
+        have h1 : (e + 1) * ((1 - e) * t) = 0 := by
+          rw [show (e + 1) * ((1 - e) * t) = (-((e - 1) * (e + 1))) * t by ring,
+            hfac, neg_zero, zero_mul]
+        rwa [ht, mul_one] at h1
+      exact eq_neg_of_add_eq_zero_left h0
+  have hunitdet : IsUnit ((M.map φ₀).det - f₁ (δ₁ g₀ 1) * f₂ (δ₂ g₀ 1)) := by
+    have hdet0 : (M.map φ₀).det = ((q : ℕ) : A₀) := by
+      show (φ₀.mapMatrix M).det = _
+      rw [← RingHom.map_det, hdetM, map_natCast]
+    rw [hdet0]
+    rcases hpm with h | h
+    · rw [h, show ((q : ℕ) : A₀) - 1 = (((q : ℤ) - 1 : ℤ) : A₀) by push_cast; ring]
+      exact hqm
+    · rw [h, show ((q : ℕ) : A₀) - (-1) = (((q : ℤ) + 1 : ℤ) : A₀) by push_cast; ring]
+      exact hqp
+  -- STEP 6. The two rows agree over `A₀` after rescaling, and glue over `B`.
+  obtain ⟨u, huunit, hu⟩ := exists_unit_smul_of_vecMul_eq_row (M.map φ₀)
+    (fun i => f₁ (π₁ (Pi.single i 1))) (fun i => f₂ (π₂ (Pi.single i 1)))
+    (f₁ (δ₁ g₀ 1)) (f₂ (δ₂ g₀ 1)) hrow₁ hrow₂ ⟨_, huni₁⟩ ⟨_, huni₂⟩ hunitdet
+  obtain ⟨ū, hū⟩ := hf₂ u
+  haveI : IsLocalHom f₂ := IsLocalHom.of_surjective f₂ hf₂
+  have hūunit : IsUnit ū := IsLocalHom.map_nonunit ū (by rw [hū]; exact huunit)
+  obtain ⟨s, hs⟩ := hūunit.exists_right_inv
+  have hfs : f₂ s * u = 1 := by
+    have h := congrArg f₂ hs
+    rw [map_mul, map_one, hū] at h
+    rw [mul_comm]; exact h
+  have hcompat : ∀ i, f₁ (π₁ (Pi.single i 1)) = f₂ (s * π₂ (Pi.single i 1)) := by
+    intro i
+    rw [map_mul, hu i, ← mul_assoc, hfs, one_mul]
+  choose rB hrB₁ hrB₂ using fun i =>
+    hcart (π₁ (Pi.single i 1)) (s * π₂ (Pi.single i 1)) (hcompat i)
+  set π : (Fin 2 → B) →ₗ[B] B :=
+    ∑ i, (rB i) • (LinearMap.proj i : (Fin 2 → B) →ₗ[B] B) with hπdef
+  have hπval : ∀ v : Fin 2 → B, π v = ∑ i, rB i * v i := by
+    intro v
+    rw [hπdef]
+    simp [smul_eq_mul]
+  have hpush₁ : ∀ v : Fin 2 → B, p₁ (π v) = π₁ (fun i => p₁ (v i)) := by
+    intro v
+    rw [hπval, hπ₁val, map_sum]
+    exact Finset.sum_congr rfl fun i _ => by rw [map_mul, hrB₁]
+  have hpush₂ : ∀ v : Fin 2 → B, p₂ (π v) = s * π₂ (fun i => p₂ (v i)) := by
+    intro v
+    rw [hπval, hπ₂val, map_sum, Finset.mul_sum]
+    exact Finset.sum_congr rfl fun i _ => by rw [map_mul, hrB₂, mul_assoc]
+  have hp₁surj : Function.Surjective p₁ := by
+    intro a₁
+    obtain ⟨a₂, ha₂⟩ := hf₂ (f₁ a₁)
+    obtain ⟨b, hb₁, _⟩ := hcart a₁ a₂ ha₂.symm
+    exact ⟨b, hb₁⟩
+  haveI : IsLocalHom p₁ := IsLocalHom.of_surjective p₁ hp₁surj
+  have hrBunit : ∃ i, IsUnit (rB i) := by
+    have h1 : IsUnit (π₁ (Pi.single 0 1) * w₁ 0 + π₁ (Pi.single 1 1) * w₁ 1) := by
+      have h := hπ₁val w₁
+      rw [hw₁, Fin.sum_univ_two] at h
+      rw [← h]; exact isUnit_one
+    rcases IsLocalRing.isUnit_or_isUnit_of_isUnit_add h1 with h | h
+    · exact ⟨0, IsLocalHom.map_nonunit (f := p₁) _
+        (by rw [hrB₁]; exact isUnit_of_mul_isUnit_left h)⟩
+    · exact ⟨1, IsLocalHom.map_nonunit (f := p₁) _
+        (by rw [hrB₁]; exact isUnit_of_mul_isUnit_left h)⟩
+  obtain ⟨i₀, hi₀⟩ := hrBunit
+  obtain ⟨t₀, ht₀⟩ := hi₀.exists_right_inv
+  have hπsurj : Function.Surjective π := by
+    intro c
+    refine ⟨Pi.single i₀ (t₀ * c), ?_⟩
+    rw [hπval, Finset.sum_eq_single i₀]
+    · rw [Pi.single_eq_same, ← mul_assoc, ht₀, one_mul]
+    · intro j _ hj; rw [Pi.single_eq_of_ne hj, mul_zero]
+    · intro h; exact absurd (Finset.mem_univ i₀) h
+  obtain ⟨x₀, hx₀⟩ := hπsurj 1
+  -- STEP 7. The glued character.
+  set ε : Γ (w.adicCompletion F) → B := fun g => π (ρ.toLocal w g x₀) with hεdef
+  have hone₁ : π₁ (fun i => p₁ (x₀ i)) = 1 := by
+    rw [← hpush₁, hx₀, map_one]
+  have hone₂ : s * π₂ (fun i => p₂ (x₀ i)) = 1 := by
+    rw [← hpush₂, hx₀, map_one]
+  have hp₁ε : ∀ g, p₁ (ε g) = δ₁ g 1 := by
+    intro g
+    rw [hεdef]
+    show p₁ (π (ρ.toLocal w g x₀)) = δ₁ g 1
+    rw [hpush₁, hrel₁ g x₀, hone₁, mul_one]
+  have hp₂ε : ∀ g, p₂ (ε g) = δ₂ g 1 := by
+    intro g
+    rw [hεdef]
+    show p₂ (π (ρ.toLocal w g x₀)) = δ₂ g 1
+    rw [hpush₂, hrel₂ g x₀, show s * (δ₂ g 1 * π₂ (fun i => p₂ (x₀ i))) =
+      δ₂ g 1 * (s * π₂ (fun i => p₂ (x₀ i))) by ring, hone₂, mul_one]
+  have hequiv : ∀ (g : Γ (w.adicCompletion F)) (v : Fin 2 → B),
+      π (ρ.toLocal w g v) = ε g * π v := by
+    intro g v
+    refine hinj _ _ ?_ ?_
+    · rw [hpush₁, hrel₁ g v, map_mul, hp₁ε, hpush₁]
+    · rw [hpush₂, hrel₂ g v, map_mul, hp₂ε, hpush₂]; ring
+  have hεone : ε 1 = 1 := by
+    rw [hεdef]
+    show π (ρ.toLocal w 1 x₀) = 1
+    rw [map_one]
+    exact hx₀
+  have hεmul : ∀ g h, ε (g * h) = ε g * ε h := by
+    intro g h
+    have hcomp : (ρ.toLocal w) (g * h) x₀ =
+        (ρ.toLocal w) g ((ρ.toLocal w) h x₀) := by
+      rw [map_mul]; rfl
+    rw [hεdef]
+    show π ((ρ.toLocal w) (g * h) x₀) =
+      π ((ρ.toLocal w) g x₀) * π ((ρ.toLocal w) h x₀)
+    rw [hcomp, hequiv g _]
+  letI := moduleTopology B (Module.End B (Fin 2 → B))
+  letI := moduleTopology B (Module.End B B)
+  haveI : ContinuousAdd (Module.End B B) := ModuleTopology.continuousAdd B _
+  haveI : ContinuousSMul B (Module.End B B) := ModuleTopology.continuousSMul B _
+  have hεcont : Continuous ε := by
+    have h1 : ε = fun g => (π ∘ₗ (LinearMap.applyₗ x₀ :
+        Module.End B (Fin 2 → B) →ₗ[B] (Fin 2 → B)))
+        ((ρ.toLocal w) g) := rfl
+    rw [h1]
+    exact (IsModuleTopology.continuous_of_linearMap _).comp
+      (ρ.toLocal w).continuous_toFun
+  set δ : GaloisRep (w.adicCompletion F) B B :=
+    { toFun := fun g => ε g • (1 : Module.End B B)
+      map_one' := by rw [hεone, one_smul]
+      map_mul' := fun g h => by
+        refine LinearMap.ext fun c => ?_
+        simp only [hεmul, LinearMap.smul_apply, Module.End.one_apply,
+          Module.End.mul_apply, smul_eq_mul]
+        ring
+      continuous_toFun := hεcont.smul continuous_const } with hδdef
+  have hδapp : ∀ (g : Γ (w.adicCompletion F)) (c : B), δ g c = ε g * c := by
+    intro g c
+    show (ε g • (1 : Module.End B B)) c = ε g * c
+    rw [LinearMap.smul_apply, Module.End.one_apply, smul_eq_mul]
+  refine ⟨π, hπsurj, δ, ?_, ?_, ?_⟩
+  · intro g v
+    rw [hequiv g v, hδapp]
+  · intro σ hσ
+    have h1 : δ₁ σ 1 = 1 := by
+      have h2 : δ₁ σ = 1 := hδ₁ker hσ
+      rw [h2]; rfl
+    have h2 : δ₂ σ 1 = 1 := by
+      have h3 : δ₂ σ = 1 := hδ₂ker hσ
+      rw [h3]; rfl
+    have hε1 : ε σ = 1 := by
+      refine hinj _ _ ?_ ?_
+      · rw [hp₁ε, h1, map_one]
+      · rw [hp₂ε, h2, map_one]
+    show δ σ = 1
+    rw [hδdef]
+    show ε σ • (1 : Module.End B B) = 1
+    rw [hε1, one_smul]
+  · intro g'
+    have hεsq : ε g' * ε g' = 1 := by
+      refine hinj _ _ ?_ ?_
+      · rw [map_mul, hp₁ε, hsq₁, map_one]
+      · rw [map_mul, hp₂ε, hsq₂, map_one]
+    refine LinearMap.ext fun c => ?_
+    show (δ g') ((δ g') c) = c
+    rw [hδapp, hδapp, ← mul_assoc, hεsq, one_mul]
 
 /-! #### The four deformation-condition clauses over `F`, and residual rigidity
 
@@ -3226,7 +3805,9 @@ Thm. 2.11 (H1, H2); Mazur, *Deforming Galois representations*, MSRI Publ.
 16 (1989), §§18–23; Ramakrishna, Compositio 87 (1994), §1;
 Conrad–Diamond–Taylor, JAMS 12 (1999), §2. -/
 theorem isHilbertFibreProductClause (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    (F : Type u) [Field F] [NumberField F] :
+    (F : Type u) [Field F] [NumberField F]
+    (hw2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+      ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℤ) ^ 2 - 1))) :
     IsHilbertFibreProductClause ℓ F := by
   intro A₀ _ _ _ _ _ _ A₁ _ _ _ _ _ _ A₂ _ _ _ _ _ _ B _ _ _ _ _ _
     f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ halg₁ halg₂ hcomm hemb hcart ρ h₁ h₂
@@ -3289,7 +3870,7 @@ theorem isHilbertFibreProductClause (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ 
   · -- TAMENESS at `2`: Conrad–Diamond–Taylor, the second arithmetic leaf.
     intro w hw
     exact isHilbertTameAtTwo_of_fibreProduct ℓ hℓ5 F f₁ f₂ hf₂ p₁ p₂ hp₁ hp₂ hcomm
-      hemb hcart hdet w hw (h₁.isTameAtTwo w hw) (h₂.isTameAtTwo w hw)
+      hemb hcart hdet w hw (hw2 w hw) (h₁.isTameAtTwo w hw) (h₂.isTameAtTwo w hw)
 
 /-! #### Hermite–Minkowski over `F` — the cut of Schlessinger's H3
 
@@ -6547,6 +7128,8 @@ carried `5 ≤ ℓ`, so the hypothesis costs nothing downstream. -/
 theorem exists_isWeaklyUniversal_hilbertDeformationDatum
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
+    (hw2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+      ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)))
     {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     [DiscreteTopology k] [Algebra ℤ_[ℓ] k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
@@ -6556,7 +7139,7 @@ theorem exists_isWeaklyUniversal_hilbertDeformationDatum
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar) :
     ∃ 𝒟 : HilbertDeformationDatum ℓ F ρbar, 𝒟.IsWeaklyUniversal :=
   exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses ℓ F hirrF 𝒟₀
-    (isHilbertBaseChangeClause ℓ F) (isHilbertFibreProductClause ℓ hℓ5 F)
+    (isHilbertBaseChangeClause ℓ F) (isHilbertFibreProductClause ℓ hℓ5 F hw2)
     (isHilbertFiniteFramesClause ℓ F)
     (isHilbertProLimitClause ℓ ((Fact.out : ℓ.Prime).odd_of_ne_two (by omega)) F)
     (isHilbertResidualRigidityClause F ρbar)
@@ -6893,6 +7476,23 @@ structure PotentialHeckeDatum (ℓ : ℕ) [Fact ℓ.Prime]
   galoisF : IsGalois ℚ F
   /-- Restriction preserves irreducibility (linear disjointness). -/
   irreducibleF : (ρbar.map (algebraMap ℚ F)).IsIrreducible
+  /-- **Every place of `F` over `2` has residue field `𝔽₂`** — i.e. `2`
+  has residue degree `1` in `F` at every place above it.
+
+  ADDED 2026-07-26, AND LOAD-BEARING. This is what makes the tame-at-`2`
+  gluing clause of the `F`-level deformation problem TRUE: that clause
+  needs `ℓ ∤ N(w)² − 1` at every `w ∣ 2` (see the refutation block above
+  `isHilbertTameAtTwo_of_fibreProduct`, where a machine-verified
+  counterexample at `ℓ = 5`, `F = ℚ(μ₅)`, `N(w) = 16` is recorded), and
+  `N(w) = 2` turns that into `ℓ ∤ 3`, which is `5 ≤ ℓ`.
+
+  It costs nothing in Taylor's argument: Moret–Bailly's theorem lets one
+  prescribe the behaviour of `F` at any finite set of places, and demanding
+  that `2` split completely in `F` is the standard way to keep the local
+  condition at `2` rigid. Note that it does NOT ask `F/ℚ` to be unramified
+  at `2` — only that the residue extension be trivial. -/
+  residueCardTwo : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+    Nat.card (𝓞 F ⧸ w.asIdeal) = 2
   /-- The Hecke algebra of the attached Hilbert newform over `F`. -/
   hecke : HilbertHeckeAlgebra ℓ F ρbar
 
@@ -9848,6 +10448,8 @@ theorem exists_heckeDatum_isWeaklyUniversal_isTraceGenerated
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
     (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hw2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+      ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)))
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
     (T₀ : HilbertHeckeAlgebra ℓ F ρbar) :
@@ -9857,7 +10459,7 @@ theorem exists_heckeDatum_isWeaklyUniversal_isTraceGenerated
   -- (1) the `F`-level universal ring, made trace-generated. Both steps are
   -- already cut leaves of this module; `𝒟₀` is what makes the first one apply.
   obtain ⟨𝒟₁, h𝒟₁⟩ :=
-    exists_isWeaklyUniversal_hilbertDeformationDatum ℓ hℓ5 F hirrF 𝒟₀
+    exists_isWeaklyUniversal_hilbertDeformationDatum ℓ hℓ5 F hw2 hirrF 𝒟₀
   obtain ⟨𝒟, h𝒟w, h𝒟t⟩ :=
     exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum ℓ hℓ5 F
       (natCast_eq_zero_of_finite_algebra ℓ k) hirrF 𝒟₁ h𝒟₁
@@ -9944,14 +10546,16 @@ theorem exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V} (hlk : ((ℓ : ℕ) : k) = 0)
     (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hw2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+      ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)))
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar) (h𝒟 : 𝒟.IsWeaklyUniversal)
     (ht𝒟 : 𝒟.IsTraceGenerated)
     (T₀ : HilbertHeckeAlgebra ℓ F ρbar) :
     ∃ T : HilbertHeckeAlgebra ℓ F ρbar, Nonempty (𝒟.R ≃ₐ[ℤ_[ℓ]] T.T) := by
   obtain ⟨T, 𝒟T, hwT, htT, ⟨e⟩⟩ :=
-    exists_heckeDatum_isWeaklyUniversal_isTraceGenerated ℓ hℓ5 F htr hgal hirrF
-      𝒟 T₀
+    exists_heckeDatum_isWeaklyUniversal_isTraceGenerated ℓ hℓ5 F htr hgal hw2
+      hirrF 𝒟 T₀
   obtain ⟨φ, hφ⟩ :=
     HilbertDeformationDatum.exists_ringEquiv_of_isUniversal 𝒟 𝒟T
       (HilbertDeformationDatum.isUniversal_of_isWeaklyUniversal_isTraceGenerated
@@ -9984,14 +10588,16 @@ theorem moduleFinite_hilbertDeformation_of_isWeaklyUniversal
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V} (hlk : ((ℓ : ℕ) : k) = 0)
     (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
+    (hw2 : ∀ w : HeightOneSpectrum (𝓞 F), ((2 : ℕ) : 𝓞 F) ∈ w.asIdeal →
+      ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)))
     (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar) (h𝒟 : 𝒟.IsWeaklyUniversal)
     (ht𝒟 : 𝒟.IsTraceGenerated)
     (T₀ : HilbertHeckeAlgebra ℓ F ρbar) :
     Module.Finite ℤ_[ℓ] 𝒟.R := by
   obtain ⟨T, ⟨e⟩⟩ :=
-    exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal ℓ hℓ5 F hlk htr hgal hirrF
-      𝒟 h𝒟 ht𝒟 T₀
+    exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal ℓ hℓ5 F hlk htr hgal hw2
+      hirrF 𝒟 h𝒟 ht𝒟 T₀
   exact Module.Finite.equiv e.symm.toLinearEquiv
 
 /-! ### The assembly: integrality of the traces on a finite-index subgroup -/
@@ -10075,8 +10681,19 @@ theorem exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified
   -- `𝒟'` is passed as the nonemptiness witness the repaired leaf requires, and
   -- the weakly-universal datum it returns is then upgraded to a trace-generated
   -- one, which is what step (4) below needs.
+  -- The tame-at-`2` gluing clause needs `ℓ ∤ N(w)² − 1` at every `w ∣ 2` — the
+  -- sharp hypothesis of the repaired `isHilbertTameAtTwo_of_fibreProduct`. It is
+  -- exactly what `PotentialHeckeDatum.residueCardTwo` is for: `N(w) = 2` makes
+  -- the test element `3`, and `5 ≤ ℓ` finishes.
+  have hw2 : ∀ w : HeightOneSpectrum (𝓞 P.F), ((2 : ℕ) : 𝓞 P.F) ∈ w.asIdeal →
+      ¬ ((ℓ : ℤ) ∣ ((Nat.card (𝓞 P.F ⧸ w.asIdeal) : ℤ) ^ 2 - 1)) := by
+    intro w hw hdvd
+    rw [P.residueCardTwo w hw] at hdvd
+    have h3 : (ℓ : ℤ) ∣ 3 := by norm_num at hdvd; exact hdvd
+    have hle : (ℓ : ℤ) ≤ 3 := Int.le_of_dvd (by norm_num) h3
+    omega
   obtain ⟨𝒟₀, h𝒟₀⟩ :=
-    exists_isWeaklyUniversal_hilbertDeformationDatum ℓ hℓ5 P.F P.irreducibleF 𝒟'
+    exists_isWeaklyUniversal_hilbertDeformationDatum ℓ hℓ5 P.F hw2 P.irreducibleF 𝒟'
   obtain ⟨𝒟, h𝒟, ht𝒟⟩ :=
     exists_isWeaklyUniversal_isTraceGenerated_hilbertDeformationDatum ℓ hℓ5 P.F
       (natCast_eq_zero_of_finite_algebra ℓ k) P.irreducibleF 𝒟₀ h𝒟₀
@@ -10084,7 +10701,7 @@ theorem exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified
   -- (4) `R_F` is module-finite over `ℤ_ℓ`, by `R_F = T_F`
   haveI : Module.Finite ℤ_[ℓ] 𝒟.R :=
     moduleFinite_hilbertDeformation_of_isWeaklyUniversal ℓ hℓ5 P.F
-      (natCast_eq_zero_of_finite_algebra ℓ k) P.totallyReal P.galoisF
+      (natCast_eq_zero_of_finite_algebra ℓ k) P.totallyReal P.galoisF hw2
       P.irreducibleF 𝒟 h𝒟 ht𝒟 P.hecke
   -- (5) `H = G_F`
   refine ⟨galoisSubgroup P.F, finiteIndex_galoisSubgroup P.F, ?_⟩
