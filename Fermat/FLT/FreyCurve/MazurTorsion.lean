@@ -4625,9 +4625,19 @@ this point later on 2026-07-26, so the level-`81` cut described under "WHY NO
 CUT WAS MADE" below has now been performed —
 `not_cyclicIsogeny_eightyOne` is PROVEN over the single-`j` leaf
 `not_cyclicIsogeny_eightyOne_of_j`. Level `125` remains a terminal citation.
-Everything else in this note (genus, cusp, isogeny-class and Jacobian data,
-and the costed dependency list) stands as written and still describes what
-the residual level-`81` leaf and the level-`125` node need.
+
+**SUPERSEDED IN FULL FOR LEVEL `81`, later the same day**:
+`not_cyclicIsogeny_eightyOne_of_j` is PROVEN too, so LEVEL `81` IS CLOSED
+and nothing below is a live description of it. In particular the costed
+dependency list's item `3` — "needs the modular polynomial `Φ_3` or complex
+multiplication, and mathlib has `0` files of either" — turned out NOT to be
+required: the `X_0(3)` hauptmodul machinery built for level `27` already
+suffices, because a curve with `j = −12288000` has `X_0(3)`-parameter
+`u = −3` and hence a `3`-isogenous partner of `j = 0`, so the level-`27`
+theorem applied to `E/⟨27g⟩` contradicts itself. See that leaf's docstring
+for the Bézout certificate. Everything below (genus, cusp, isogeny-class and
+Jacobian data, and the costed dependency list) stands as written for LEVEL
+`125` only.
 
 **FAITHFULNESS AUDIT — both leaves are TRUE AS STATED.** `addOrderOf g = N`
 together with `Gal(ℚ̄/ℚ)`-stability of `AddSubgroup.zmultiples g` says
@@ -4779,10 +4789,11 @@ Kenku's five papers are NOT in `SOURCES.md`: searched on Anna's Archive
 -/
 
 /-- **No rational cyclic `81`-isogeny on the CM `j`-line `j = −12288000`**
-(sorry node — the residue of `not_cyclicIsogeny_eightyOne` after the
-degree-`3` degeneracy map `X_0(81) → X_0(27)`, introduced 2026-07-26): an
-elliptic curve over `ℚ` with `j = −12288000` carries no Galois-stable
-cyclic subgroup of order `81`.
+(PROVEN 2026-07-26 over the already-present `X_0(3)` machinery — the
+residue of `not_cyclicIsogeny_eightyOne` after the degree-`3` degeneracy
+map `X_0(81) → X_0(27)`, introduced 2026-07-26): an elliptic curve over
+`ℚ` with `j = −12288000` carries no Galois-stable cyclic subgroup of
+order `81`.
 
 **This is the whole of level `81`, and it is strictly shallower than the
 statement it serves**: instead of the rational points of the genus-`4`
@@ -4808,29 +4819,60 @@ cyclic `81`-isogeny would need a chain of `5`. Quadratic twisting permutes
 an isogeny class without changing its shape, so this covers every curve over
 `ℚ` with this `j`, not merely the minimal model.
 
-**Intended proof.** `E[3^∞]` for a CM curve is governed by the order
-`ℤ[(1+3√−3)/2]` of discriminant `−27`: a stable cyclic subgroup of order
-`3^k` corresponds to a proper cyclic ideal of `3`-power norm, and the ideal
-`(√−3)` is ramified with `(√−3)³` already non-proper for the order of
-conductor `3`. Concretely, and closer to what this development can state:
-a stable cyclic `81`-subgroup would produce a stable cyclic `27`-subgroup
-of `E/⟨27 • g⟩`, another curve of `j`-invariant in the class above, whose
-`27`-isogeny partner would extend the ladder past its length `4`.
+**PROVEN 2026-07-26, and NEITHER `Φ_3` NOR COMPLEX MULTIPLICATION IS
+NEEDED.** The earlier assessment recorded here — "it needs either the
+modular polynomial `Φ_3` or complex multiplication, and mathlib has
+neither" — was too pessimistic, and is corrected. The CM statement it
+appealed to (`a² + 3ab + 9b² = 3` has no integer solution, so `E` has no
+degree-`3` endomorphism) is true, but it is not the only way in: the whole
+argument runs inside the `X_0(3)` hauptmodul machinery that the level-`27`
+cluster already put in place a few hundred lines above, and it is a
+two-equation elimination in ONE rational unknown.
 
-**The argument that closes this statement**, spelled out
-(recorded 2026-07-26). Suppose `E` has `j(E) = −12288000` and a stable cyclic
-`C₈₁`. Then `C₈₁/C₃ ⊆ E/C₃` is stable cyclic of order `27`, so
-`j(E/C₃) = −12288000` as well by the same level-`27` theorem; hence `E` and
-`E/C₃` are `3`-isogenous with equal `j`, therefore `ℚ̄`-isomorphic, and the
-composite is an endomorphism of `E` of degree `3`. But `j = −12288000` is CM
-by the order of discriminant `−27` (conductor `3` in `ℚ(√−3)`), whose norm
-form is `N(a + 3bω) = a² + 3ab + 9b²` with `ω = (1 + √−3)/2`; `a² + 3ab + 9b² = 3`
-has no integer solution (`b = 0` needs `a² = 3`; `b = ±1` needs
-`a² ± 3a + 6 = 0`, discriminant `−15`). So there is no endomorphism of degree
-`3` and the fibre is empty. **This does NOT make the residual leaf cheap**:
-it needs either the modular polynomial `Φ_3` or complex multiplication, and
-mathlib has neither (`Isogeny`, `ModularPolynomial`: `0` files — item `3` of
-the costed list above).
+**The proof, in four steps.**
+
+1. *One step down the chain.* `⟨27 • g⟩` is `Gal(ℚ̄/ℚ)`-stable of order `3`
+   (`stable_zmultiples_nsmul`, `addOrderOf_nsmul'`), so
+   `exists_x0Three_param_of_stableThreeSubgroup` produces the quotient
+   isogeny `φ : E → E₁ = E/⟨27 • g⟩`, its `X_0(3)` hauptmodul parameter
+   `u ∈ ℚ`, and BOTH `j`-maps at once:
+   `j(E)·u³ = (u+27)(u+243)³` and `j(E₁)·u = (u+27)(u+3)³`.
+2. *The quotient still carries a cyclic `27`.* `φ(g)` has order exactly
+   `27`: `27 • φ(g) = φ(27 • g) = 0` because `27 • g ∈ ker φ`, while
+   `9 • φ(g) ≠ 0` because `9 • g ∈ ⟨27 • g⟩` would give `81 ∣ 27k − 9`,
+   which already fails modulo `27`. (This is exactly where CYCLICITY of
+   `⟨g⟩` is spent, in the same shape as `X0Three.map_three_ne_zero` one
+   level down.) Stability transports along `φ` by `X0Three.stable_map`.
+3. *The level-`27` theorem applies to `E₁`.*
+   `j_of_stable_cyclic_subgroup_order_27` therefore gives
+   `j(E₁) = −12288000` — the SAME CM value as `j(E)`.
+4. *Two quartics with no common root.* Substituting both `j`-values into
+   step `1` leaves a single rational `u` satisfying
+   `A(u) = (u+27)(u+243)³ + 12288000·u³ = 0` and
+   `B(u) = (u+27)(u+3)³ + 12288000·u = 0`. These are coprime in `ℚ[u]`:
+   the extended Euclidean algorithm gives the explicit Bézout certificate
+   `α·A + β·B = 941872427591257187942400000` with
+   `α = 197835380791u³ + 7122080232783u² + 53415924150861u + 2431144492328134893`,
+   `β = −197835380791u³ − 2431150722714210303u² − 39020113754346861u
+        − 3786633971990070813`,
+   so the two hypotheses force `941872427591257187942400000 = 0`. One
+   `linear_combination`, no case split, no rational-root argument.
+
+**What step `4` says geometrically**, and why it is the right shape. The
+fibre of the SOURCE `j`-map of `X_0(3)` over `−12288000` is `u = −3`
+together with the roots of `u³ + 12288753u² − 36669429u + 129140163`, which
+is irreducible over `ℚ` (its Newton polygon at `3` — the exponents
+`(3k, 8+2k, 13+k, 17)` never attain their minimum twice — kills every
+candidate root `±3^k`, and the constant term is `3¹⁷`). The fibre of the
+QUOTIENT `j`-map over `−12288000` is the Fricke image `u = −243` and the
+conjugate cubic. So a curve of `j = −12288000` has `u = −3`, whence
+`j(E₁)·(−3) = 24·0 = 0`: **its unique rational `3`-isogeny lands on `j = 0`,
+never back on `j = −12288000`.** That is precisely the Magma datum
+`IsogenousCurves(EllipticCurveWithjInvariant(-12288000))` = four curves, two
+of `j = −12288000` at the two ENDS of the `27`-chain and two of `j = 0` in
+the middle: the chain has `4` vertices, a cyclic `81`-isogeny would need
+`5`, and the obstruction is visible one step from the end. The Bézout
+certificate is just that observation with the case split eliminated.
 
 (Kenku's series, 1979–1982.) -/
 theorem WeierstrassCurve.not_cyclicIsogeny_eightyOne_of_j (E : WeierstrassCurve ℚ)
@@ -4841,8 +4883,65 @@ theorem WeierstrassCurve.not_cyclicIsogeny_eightyOne_of_j (E : WeierstrassCurve 
         Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
-    False :=
-  sorry
+    False := by
+  classical
+  -- STEP 1 : `⟨27g⟩` is a stable subgroup of order `3`, and its quotient
+  -- isogeny carries the two `X_0(3)` `j`-maps.
+  have hst27 := E.stable_zmultiples_nsmul g 27 hstable
+  have hord27 : addOrderOf ((27 : ℕ) • g) = 3 := by
+    rw [addOrderOf_nsmul' g (by norm_num), hg]
+    norm_num
+  obtain ⟨u, E₁, hE₁, φ, hφgal, hφker, -, hj1, hj1'⟩ :=
+    E.exists_x0Three_param_of_stableThreeSubgroup ((27 : ℕ) • g) hord27 hst27
+  haveI := hE₁
+  -- STEP 2 : `φ g` has order exactly `27`, and `⟨φ g⟩` is stable.
+  have h27φ : (27 : ℕ) • φ g = 0 := by
+    rw [← map_nsmul]
+    exact (hφker _).mpr (AddSubgroup.mem_zmultiples _)
+  have h9φ : (9 : ℕ) • φ g ≠ 0 := by
+    intro hc
+    rw [← map_nsmul] at hc
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp ((hφker _).mp hc)
+    have hz : ((27 * k - 9 : ℤ)) • g = 0 := by
+      have h27 : (27 * k : ℤ) • g = (9 : ℤ) • g := by
+        calc (27 * k : ℤ) • g = k • ((27 : ℤ) • g) := by rw [smul_smul, mul_comm]
+          _ = k • ((27 : ℕ) • g) := by norm_cast
+          _ = (9 : ℕ) • g := hk
+          _ = (9 : ℤ) • g := by norm_cast
+      rw [sub_smul, h27, sub_self]
+    have hdvd : ((81 : ℤ)) ∣ (27 * k - 9) := by
+      have := addOrderOf_dvd_iff_zsmul_eq_zero.mpr hz
+      rw [hg] at this
+      exact_mod_cast this
+    omega
+  have hordφ : addOrderOf (φ g) = 27 := by
+    have hd : addOrderOf (φ g) ∣ 27 := addOrderOf_dvd_of_nsmul_eq_zero h27φ
+    have hnd : ¬ (addOrderOf (φ g) ∣ 9) := fun h =>
+      h9φ (addOrderOf_dvd_iff_nsmul_eq_zero.mp h)
+    obtain ⟨n, hn⟩ : ∃ n, addOrderOf (φ g) = n := ⟨_, rfl⟩
+    rw [hn] at hd hnd ⊢
+    have hle : n ≤ 27 := Nat.le_of_dvd (by norm_num) hd
+    interval_cases n <;> revert hd hnd <;> decide
+  have hstφ := X0Three.stable_map
+    (fun σ : Field.absoluteGaloisGroup ℚ =>
+      Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)
+    (fun σ : Field.absoluteGaloisGroup ℚ =>
+      Affine.Point.map (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom)
+    φ hφgal g hstable
+  -- STEP 3 : the level-`27` theorem pins the quotient's `j` to the same
+  -- CM value as `E`'s.
+  have hjE₁ : E₁.j = -12288000 :=
+    E₁.j_of_stable_cyclic_subgroup_order_27 (φ g) hordφ hstφ
+  rw [hj] at hj1
+  rw [hjE₁] at hj1'
+  -- STEP 4 : the two `X_0(3)` `j`-map fibres over `−12288000` are disjoint.
+  have key : (941872427591257187942400000 : ℚ) = 0 := by
+    linear_combination
+      (-(197835380791 * u ^ 3 + 7122080232783 * u ^ 2 + 53415924150861 * u
+          + 2431144492328134893) : ℚ) * hj1
+      + (197835380791 * u ^ 3 + 2431150722714210303 * u ^ 2
+          + 39020113754346861 * u + 3786633971990070813 : ℚ) * hj1'
+  norm_num at key
 
 /-- **No rational cyclic `81`-isogeny** (PROVEN 2026-07-26 over the single
 `j`-line leaf `not_cyclicIsogeny_eightyOne_of_j`, replacing the former
