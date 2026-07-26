@@ -8637,10 +8637,13 @@ statements:
     concordant_one  :  x² + y² = □   and  x² + 16y² = □     ⟹  xy = 0
     concordant_five :  x² + y² = 5□  and  x² + 16y² = 5□    ⟹  x² = 4y²
 
-`concordant_one` is PROVEN below by an infinite descent that reproduces
-these same two systems at strictly smaller parameters, so
-**`concordant_five` is the single remaining leaf of the whole
-conductor-`15` cluster**.
+Each is PROVEN below by an infinite descent that reproduces these same two
+systems at strictly smaller parameters — and since each descent lands in
+the OTHER system (`concordant_one`'s `K = 5` branch, `concordant_five`'s
+`gcd = 1` branch), the two are **mutually recursive, not ordered**: neither
+can be proven first. They are therefore carried together by a single strong
+induction on `x² + y²`, `concordant_both_aux`, of which they are the two
+projections. **The conductor-`15` cluster is closed.**
 
 These are the classical "concordant forms" problem for `n = 16`, and they
 carry ALL the remaining rank-`0` content of the conductor-`15` curve
