@@ -84,21 +84,31 @@ Three consequences shape everything below.
 
 ## FAITHFULNESS AUDIT
 
-There are exactly three sorried claim-shapes here, and each is true:
+There are exactly three claim-shapes here, and each is true.  Shapes 1
+and 3 are single sorry nodes; shape 2 is now a proven bridge over two
+sorried inputs:
 
 1. `exists_coarseModuliY0 N` — the `Γ₀(N)`-moduli problem over `ℚ` admits
    a coarse moduli space.  TRUE: this is the classical existence
    statement for `Y_0(N)` (Deligne–Rapoport, Katz–Mazur; or classically
    via the `j`-line and the modular polynomial).
 
-2. `nonempty_gamma0Datum_of_stable` — an elliptic curve over `ℚ` with a
-   Galois-stable cyclic subgroup of order `N` in `E(ℚ̄)` gives a
-   `Γ₀(N)`-datum over `Spec ℚ`.  TRUE, and this is where two further
-   missing theories are folded together and left for a successor: the
-   projective Weierstrass model of `E` as an abelian scheme over
-   `Spec ℚ`, and the finite étale closed subgroup scheme attached to a
-   Galois-stable finite subgroup of `E(ℚ̄)` (char `0`, so Galois descent
-   for finite étale schemes is the whole content).
+2. The bridge from the Weierstrass phrasing to the moduli problem.  This
+   was one node, `nonempty_gamma0Datum_of_stable`; it is now PROVEN
+   (2026-07-26) from the two independent missing theories it had folded
+   together, which are the sorry nodes in its place:
+
+   * `exists_ellipticScheme_of_weierstrass` — the projective Weierstrass
+     model of `E` as an elliptic scheme over `Spec ℚ`, together with the
+     `Γ_ℚ`-equivariant additive identification of its geometric fibre
+     with `E(ℚ̄)`.  TRUE: the smooth plane cubic with the chord–tangent
+     law.  The larger of the two.
+   * `exists_cyclicSubgroupOfOrder_of_galoisStable` — a Galois-stable
+     cyclic subgroup of the geometric points of *any* abelian scheme
+     over `Spec ℚ` is cut out by a closed cyclic subgroup scheme.  TRUE:
+     in characteristic `0` this is Galois descent for finite étale
+     schemes, i.e. the reduced induced structure on a finite
+     `Γ_ℚ`-stable set of closed points.
 
 3. `Y0HasNoRationalPoint N` at the twelve levels.  TRUE: the levels `N`
    with `Y_0(N)(ℚ) ≠ ∅` are exactly `{1, …, 19, 21, 25, 27, 37, 43, 67,
@@ -362,24 +372,154 @@ theorem exists_coarseModuliY0 (N : ℕ) :
     ∃ (Y : Scheme.{0}) (str : Y ⟶ SpecQ), Nonempty (IsCoarseModuliY0 N str) :=
   sorry
 
+/-! ### The two missing theories behind the bridge
+
+`nonempty_gamma0Datum_of_stable` was originally left as a single sorry
+node folding together two *independent* missing theories.  It is now
+DERIVED (2026-07-26) from the two leaves of this subsection, which are
+exactly those two theories, cut apart:
+
+* `exists_ellipticScheme_of_weierstrass` — the geometry: the projective
+  Weierstrass model of `E/ℚ` as an elliptic scheme over `Spec ℚ`;
+* `exists_cyclicSubgroupOfOrder_of_galoisStable` — the arithmetic:
+  Galois descent turning a Galois-stable finite subgroup of the geometric
+  points into a closed subgroup scheme over `ℚ`.
+
+The cut is at the *geometric fibre*: leaf (a) hands over an equivariant
+additive identification of `E(ℚ̄)` with the geometric points of the
+elliptic scheme, and leaf (b) consumes nothing about `E` at all — it is
+stated for an arbitrary abelian scheme over `Spec ℚ`.  So neither leaf
+mentions the other's subject matter, and the assembly below is pure
+transport along that identification. -/
+
+/-- **The projective Weierstrass model of `E/ℚ` as an elliptic scheme
+over `Spec ℚ`** (sorry node — theory (a) of the bridge).
+
+TRUE, and classical: a Weierstrass equation with invertible discriminant
+over `ℚ` cuts out a smooth projective plane curve `A ⊆ ℙ²_ℚ` of relative
+dimension `1` with a rational point at infinity, the chord–tangent law
+makes its functor of points a commutative group functor, and properness,
+smoothness and geometric connectedness of the fibre are the standard
+facts about a smooth plane cubic.  The last conjunct says that the
+resulting group of geometric points is `E(ℚ̄)` with its usual group law
+and its usual Galois action — i.e. that the scheme really is *this*
+curve and not merely some elliptic scheme.
+
+**Why the equivariant identification is part of the statement, and not a
+separate leaf.**  Without it the leaf would be satisfiable by any
+elliptic curve over `ℚ` whatsoever, and the bridge below would then
+manufacture a `Γ₀(N)`-datum out of the wrong curve — the level structure
+transported from `E` would have nothing to attach to.  Pinning the
+geometric fibre as a `Γ_ℚ`-module is exactly what rules that out, and it
+is also precisely what the descent leaf needs as input, so the two fit
+without an intermediate interface.
+
+IRREDUCIBLE at this mathlib pin: `Mathlib` has `WeierstrassCurve`,
+`IsElliptic`, `WeierstrassCurve.Projective` and the group law on
+`(E⁄K).Point` for a field `K`, but the elliptic curve as a *group
+scheme* — the functor of points of the projective model, with the group
+law as a natural transformation — does not exist anywhere in
+`Mathlib`, and `~/cs/FLT` has no abelian schemes either (surveyed
+2026-07-26).  This is the larger of the two theories. -/
+theorem exists_ellipticScheme_of_weierstrass (E : WeierstrassCurve ℚ) [E.IsElliptic] :
+    ∃ (A : Scheme.{0}) (f : A ⟶ SpecQ) (ab : AbelianSchemeStruct f),
+      SmoothOfRelativeDimension 1 f ∧
+        (letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+         ∃ e : (E⁄(AlgebraicClosure ℚ)).Point ≃+ GeomFibrePt f (𝟙 SpecQ),
+           ∀ (σ : Field.absoluteGaloisGroup ℚ) (x : (E⁄(AlgebraicClosure ℚ)).Point),
+             e (WeierstrassCurve.Affine.Point.map
+                 (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x)
+               = ab.galSMul (𝟙 SpecQ) σ (e x)) :=
+  sorry
+
+/-- **Galois descent: a Galois-stable cyclic subgroup of the geometric
+points of an abelian scheme over `ℚ` is cut out by a closed cyclic
+subgroup scheme** (sorry node — theory (b) of the bridge).
+
+TRUE, and this is the whole content of Galois descent for finite étale
+schemes in characteristic `0`.  The argument: `⟨y⟩ ⊆ A(ℚ̄)` is a finite
+`Γ_ℚ`-stable set, so its image in the topological space of `A` is a
+finite set of closed points, stable under `Γ_ℚ`; give it the *reduced*
+induced closed subscheme structure `C`.  Reduced and finite type over a
+field of characteristic `0` is finite étale, `C(ℚ̄) = ⟨y⟩` because each
+`Γ_ℚ`-orbit contributes one closed point whose residue field is the
+field of definition of that orbit, and `C` is a subgroup scheme because
+`C ×_ℚ C` is again reduced, so the two morphisms
+`C ×_ℚ C ⇉ A` given by `ι ∘ pr₁ + ι ∘ pr₂` and its factorisation agree
+once they agree on geometric points, `A` being separated.
+
+Note the hypothesis is stated on the **generator only**: `galSMul σ` is
+additive (it is the scalar action of `geomFibreAction`), so stability of
+`y` up to `zmultiples` already gives stability of the whole subgroup.
+That is the weakest honest form, and it is what the bridge below can
+supply from the elementary hypothesis of the twelve level nodes.
+
+`geom_cyclic` in the conclusion quantifies over *every* algebraically
+closed `K` and every `K`-point of the base, not only over `ℚ̄`.  That is
+not an extra assumption smuggled in: `ℚ` is initial among rings, so such
+a base point is unique, and the algebraic closure of `ℚ` inside `K` is a
+copy of `ℚ̄`, over which `C` is already split — so `C(K)` is again
+`⟨y⟩`, with the same order `N`.
+
+**PIN SURVEY, 2026-07-26 — do not repeat it, and note it is more
+favourable than "nothing exists".**  What is PRESENT:
+
+* `CommAlgCat.FiniteEtale R` (`Mathlib/RingTheory/Etale/Finite.lean`,
+  new): the category of finite étale `R`-algebras, with the fiber
+  functor `FiniteEtale.fiber R Ω : S ↦ (S →ₐ[R] Ω)`, base change, and
+  `FiniteEtale.equivOfIsSepClosed` — but the equivalence is proven ONLY
+  over a separably closed base, which is the split case and carries no
+  descent.
+* `Mathlib/CategoryTheory/Galois/`: Galois categories in the abstract,
+  including `EssSurj` and `Prorepresentability`.
+* `AlgebraicGeometry.ext_of_isDominant_of_isSeparated`
+  (`Morphisms/Separated.lean`): two morphisms out of a reduced scheme
+  into a separated one agree as soon as they agree on a dominant
+  subscheme.  This is exactly the rigidity step the subgroup axioms
+  need, and it means `add_liesIn`/`neg_liesIn` at an ARBITRARY base
+  `T'` should reduce to the geometric-point statement rather than
+  needing a separate argument.
+* `Scheme.IdealSheafData.subscheme` / `subschemeι`
+  (`AlgebraicGeometry/IdealSheaf/Subscheme.lean`): closed subschemes cut
+  out by an ideal sheaf, with the closed-immersion API.
+
+What is ABSENT, and is the actual content of this leaf:
+
+* no `PreGaloisCategory` instance anywhere except `Action FintypeCat G`,
+  so `FiniteEtale k` is NOT known to be a Galois category and the
+  correspondence with finite continuous `Γ_k`-sets — the descent
+  direction, over a NON-closed base — does not exist;
+* no construction of the reduced induced closed subscheme structure on a
+  closed subset of a scheme (`grep` over `AlgebraicGeometry/` finds no
+  `reducedSubscheme` of any spelling).
+
+So the honest cut for a successor is: build the reduced induced
+structure, or go through `CommAlgCat.FiniteEtale` on affines and glue.
+The algebra-side scaffolding is fresher than the module docstring's
+"no modular curves anywhere" survey would suggest. -/
+theorem exists_cyclicSubgroupOfOrder_of_galoisStable {A : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (N : ℕ) (y : GeomFibrePt f (𝟙 SpecQ))
+    (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          addOrderOf y = N)
+    (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+          ∀ σ : Field.absoluteGaloisGroup ℚ,
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y) :
+    Nonempty (CyclicSubgroupOfOrder ab N) :=
+  sorry
+
 /-- **A Galois-stable cyclic subgroup of order `N` of `E(ℚ̄)` is a
-`Γ₀(N)`-structure over `Spec ℚ`** (sorry node).
+`Γ₀(N)`-structure over `Spec ℚ`** (PROVEN 2026-07-26 from the two leaves
+above; formerly itself a sorry node).
 
 This is the bridge between the elementary phrasing used in
 `FreyCurve/MazurTorsion.lean` — a Weierstrass curve over `ℚ` and a point
 of order `N` over `ℚ̄` generating a Galois-stable subgroup — and the
-moduli problem.  TRUE, and it folds together two independent missing
-theories:
-
-* the projective Weierstrass model of `E` as an abelian scheme over
-  `Spec ℚ`: `Mathlib` has `WeierstrassCurve`, `IsElliptic`, and the group
-  law on the points over a field, but not the elliptic curve as a *group
-  scheme*, so `AbelianSchemeStruct` for it must be constructed;
-* Galois descent for the finite subgroup: `⟨g⟩ ⊆ E(ℚ̄)` is finite and
-  Galois-stable, and in characteristic `0` such a subgroup is exactly the
-  set of geometric points of a unique finite étale closed subgroup scheme
-  `C ⊆ E` over `ℚ` — this is the equivalence between finite étale
-  `ℚ`-schemes and finite `Γ_ℚ`-sets.
+moduli problem.  All of its mathematical content now sits in
+`exists_ellipticScheme_of_weierstrass` (the elliptic curve as a group
+scheme) and `exists_cyclicSubgroupOfOrder_of_galoisStable` (Galois
+descent for the level structure); what is left here, and proven, is the
+transport of the order and of the stability hypothesis along the
+equivariant identification of `E(ℚ̄)` with the geometric fibre.
 
 `hstable` is verbatim the stability hypothesis carried by the twelve
 level nodes, so no reformulation happens at the boundary. -/
@@ -390,8 +530,27 @@ theorem nonempty_gamma0Datum_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
-    Nonempty (Gamma0Datum N SpecQ) :=
-  sorry
+    Nonempty (Gamma0Datum N SpecQ) := by
+  obtain ⟨A, f, ab, hdim, e, he⟩ := exists_ellipticScheme_of_weierstrass E
+  letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+  -- The order of the generator transports along the additive equivalence.
+  have hord : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+      addOrderOf (e g) = N := by
+    rw [AddEquiv.addOrderOf_eq]
+    exact hg
+  -- So does its Galois stability: `galSMul σ (e g) = e (σ • g)`, and `σ • g`
+  -- is an integer multiple of `g` by hypothesis, hence `galSMul σ (e g)` is
+  -- the same integer multiple of `e g`.
+  have hst : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
+      ∀ σ : Field.absoluteGaloisGroup ℚ,
+        ab.galSMul (𝟙 SpecQ) σ (e g) ∈ AddSubgroup.zmultiples (e g) := by
+    intro σ
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp
+      (hstable σ g (AddSubgroup.mem_zmultiples g))
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k, ?_⟩
+    rw [← he σ g, ← hk, map_zsmul]
+  obtain ⟨cyc⟩ := exists_cyclicSubgroupOfOrder_of_galoisStable ab N (e g) hord hst
+  exact ⟨{ E := A, f := f, ab := ab, relativeDimensionOne := hdim, cyc := cyc }⟩
 
 /-- **The consumption rule of this module.**
 
