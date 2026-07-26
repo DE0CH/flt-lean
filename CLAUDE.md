@@ -431,6 +431,50 @@ why the scratch-module rule below matters more than ever.
 The standing agent-facing version of this lives in
 `/home/chend/.flt-agent-doctrine.md`, which every task prompt points at.
 
+**`lake env lean` DOES NOT REBUILD IMPORTS — a partially refreshed `.lake`
+manufactures phantom hard errors** (2026-07-26; cost at least four agents a
+cycle each and produced a top-priority "defect repair" dispatch against a file
+that was never broken).
+
+`lake env lean <file>` sets environment variables and runs `lean`; it consumes
+whatever `.olean`s happen to be on disk. `lake build <Module>` is the only
+command that brings the import cone up to date. So after the worktree pointer
+moves — which it does at every dispatch — **`lake build <Module>` FIRST, and
+only then iterate with `lake env lean`.** An inconsistent olean set is the
+default state of a freshly repointed worktree, not an exception.
+
+Why an inconsistent set is worse than a stale one: **olean loading does not
+typecheck.** A statement stored in an olean is deserialised verbatim, so an
+olean compiled against an OLD signature keeps its old application arity, and the
+mismatch surfaces only when a consumer uses the term — as a type mismatch, a
+"rewrite failed, pattern not found", a "function expected", or a `(kernel)
+application type mismatch`. All four shapes were observed from ONE cause. A
+kernel error normally means "this proof is not accepted", and here it meant
+"your `.lake` is inconsistent" — the most misleading possible signal.
+
+The concrete instance: `38e8531` moved `Field.absoluteGaloisGroup.map` (and
+`mapAux`, `lift_map`) above `variable [NumberField K]`, dropping an instance
+argument. That is source-compatible — there is no `@`-application of it in the
+tree — but NOT olean-compatible: oleans built before it store
+`@Field.absoluteGaloisGroup.map ℚ Kᵥ Rat.instField _ Rat.numberField (algebraMap …)`
+with `Rat.numberField` sitting in the `f` slot. Three worktrees whose
+`AbsoluteGaloisGroup.olean` had been refreshed while `Semistable`/`Torsion`/
+`WeilPairing` had not each reported the same four "hard errors" in
+`MazurTorsion.lean`. A full `lake build` there produced `EXIT=0`, zero errors.
+
+**Corollary for triage: "three agents confirmed it independently" is NOT
+independent confirmation** when all three verified the same way in worktrees
+sharing the same defect. Before treating a hard error as a source defect,
+confirm it survives a complete `lake build` of the module, and check the olean
+mtimes in dependency order:
+
+    d=/scratch/chend-flt/flt-lean-N/.lake/build/lib/lean/Fermat/FLT
+    stat -c '%y %n' $d/Deformations/RepresentationTheory/AbsoluteGaloisGroup.olean \
+                    $d/FreyCurve/Semistable.olean $d/EllipticCurve/WeilPairing.olean
+
+A downstream olean older than an upstream one it really imports means the set is
+inconsistent and every diagnostic from it is untrustworthy.
+
 **There is NO Lean MCP of any kind (Deyao, 2026-07-25).** Both the
 `lean-lsp` MCP and the per-worktree `report-flt-lean-N` servers are gone;
 `.mcp.json` holds exactly one entry, `annas-mcp`, which is for downloading
