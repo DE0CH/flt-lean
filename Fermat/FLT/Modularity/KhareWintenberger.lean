@@ -185,6 +185,27 @@ public import Mathlib.Algebra.Algebra.Rat
 -- the density lemma reconciling the Zariski and real topologies, and
 -- `Set.Ioo_infinite` supplies the infinite sides.
 public import Mathlib.Algebra.MvPolynomial.Funext
+-- ARCHIMEDEAN cut (2026-07-26, `exists_realHilbertBlumenthalObject_of_odd`):
+-- the two conjugacy classes of complex conjugation on `H₁(E(ℂ), ℤ) = ℤ²` are
+-- written as explicit `2 × 2` matrices (`realConjMatrix`), so the matrix
+-- notation `!![a, b; c, d]`, `Matrix.toLin'` and `Matrix.det_fin_two_of` occur
+-- in the STATEMENTS of the archimedean leaves; `basisOfLinearIndependentOfCardEqFinrank`
+-- turns a pair of eigenvectors into a basis in the classification of odd
+-- involutions; `Ideal.Quotient.maximal_of_isField` and `MulEquiv.isField` turn
+-- the residue-field hypotheses `hres`/`hresp` into maximality of the two primes;
+-- and `Real.nonempty_algEquiv_or` together with
+-- `Complex.real_algHom_eq_id_or_conj` is Artin–Schreier for `ℝ`, which is what
+-- proves that `Γ_ℝ` has exactly two elements.
+public import Mathlib.Algebra.Ring.ULift
+public import Mathlib.Data.Real.Basic
+public import Mathlib.Analysis.Complex.Polynomial.Basic
+public import Mathlib.LinearAlgebra.Complex.Module
+public import Mathlib.LinearAlgebra.Matrix.Notation
+public import Mathlib.LinearAlgebra.Matrix.ToLin
+public import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+public import Mathlib.LinearAlgebra.FiniteDimensional.Basic
+public import Mathlib.RingTheory.Ideal.Quotient.Basic
+public import Mathlib.Algebra.Field.Equiv
 public import Mathlib.Order.Interval.Set.Infinite
 -- (`Mathlib.RingTheory.Ideal.Norm.AbsNorm` is imported once, above:
 -- `Ideal.absNorm` is the residue cardinality `Nw` of a place of the
@@ -4589,12 +4610,562 @@ theorem cyclotomicCharacter_absoluteGaloisGroupMap_real
   refine Units.ext ?_
   simpa using hval.resolve_left hne
 
+/-- **The two conjugacy classes of complex conjugation on the homology of a
+real elliptic curve**, as explicit `2 × 2` matrices over a commutative ring:
+`realConjMatrix R false = diag(1, -1)` and `realConjMatrix R true = [[1,1],[0,-1]]`.
+
+Over `ℤ` these are exactly the two conjugacy classes of an involution of
+`H₁(E(ℂ), ℤ) = ℤ²` of determinant `-1` — the rectangular lattice
+(`Δ(E) > 0`) and the regular representation of `ℤ/2` (`Δ(E) < 0`) — and both
+are realized by a real elliptic curve. Their reductions are what complex
+conjugation does on `E[m]`, hence (after `⊗ 𝒪_D/I`) on the `I`-torsion of
+`E ⊗_ℤ 𝒪_D`.
+
+In ODD residue characteristic the two are CONJUGATE
+(`exists_realConj_swap`); in characteristic two they are the identity and a
+transvection, and are NOT. That dichotomy is the whole content of the
+hypothesis `hk2` of `exists_realHilbertBlumenthalObject_of_odd`. -/
+def realConjMatrix (R : Type*) [CommRing R] (ε : Bool) : Matrix (Fin 2) (Fin 2) R :=
+  !![1, if ε then 1 else 0; 0, -1]
+
+/-- **The involution of `R²` attached to `realConjMatrix`** — the form in
+which the archimedean level structures below are stated. -/
+def realConj (R : Type*) [CommRing R] (ε : Bool) : Module.End R (Fin 2 → R) :=
+  Matrix.toLin' (realConjMatrix R ε)
+
+theorem realConj_apply (R : Type*) [CommRing R] (ε : Bool) (v : Fin 2 → R) :
+    realConj R ε v = ![v 0 + (if ε then v 1 else 0), -v 1] := by
+  cases ε <;> funext i <;> fin_cases i <;>
+    simp [realConj, realConjMatrix, Matrix.toLin'_apply, Matrix.mulVec, dotProduct,
+      Fin.sum_univ_two]
+
+theorem realConjMatrix_det (R : Type*) [CommRing R] (ε : Bool) :
+    (realConjMatrix R ε).det = -1 := by
+  simp [realConjMatrix, Matrix.det_fin_two_of]
+
+theorem realConjMatrix_sq (R : Type*) [CommRing R] (ε : Bool) :
+    realConjMatrix R ε * realConjMatrix R ε = 1 := by
+  simp [realConjMatrix]
+  split_ifs <;> ext i j <;> fin_cases i <;> fin_cases j <;> simp
+
+theorem realConj_sq (R : Type*) [CommRing R] (ε : Bool) :
+    realConj R ε * realConj R ε = 1 := by
+  rw [realConj, Module.End.mul_eq_comp, ← Matrix.toLin'_mul, realConjMatrix_sq,
+    Matrix.toLin'_one, Module.End.one_eq_id]
+
+theorem realConj_det (R : Type*) [Field R] (ε : Bool) :
+    LinearMap.det (realConj R ε) = -1 := by
+  rw [realConj, LinearMap.det_toLin', realConjMatrix_det]
+
+/-- **Transport of `realConj` along a ring isomorphism.** The matrix entries
+are `0`, `1`, `-1`, so any ring isomorphism intertwines the two copies; this
+is what lets a level structure stated over the residue ring `𝒪_D/I` be read
+as one over an abstractly given residue field `k`. -/
+theorem realConj_ringEquiv {S R : Type*} [CommRing S] [CommRing R] (q : S ≃+* R)
+    (ε : Bool) (v : Fin 2 → R) :
+    (fun i => q.symm (realConj R ε v i)) = realConj S ε (fun i => q.symm (v i)) := by
+  funext i
+  rw [realConj_apply, realConj_apply]
+  fin_cases i <;> cases ε <;> simp
+
+/-! ### Artin–Schreier for `ℝ`: `Γ_ℝ` has exactly two elements -/
+
+/-- **`Γ_ℝ` is `ℤ/2`** (PROVEN 2026-07-26): the absolute Galois group of
+`ULift ℝ` has a unique element `≠ 1`.
+
+This is Artin–Schreier for the real field, in the only form the archimedean
+argument needs: it supplies both the INVOLUTIVITY of any monoid homomorphism
+out of `Γ_ℝ` (`c * c = 1`, since `c * c ≠ 1` would force `c * c = c`) and the
+fact that a single conjugacy class of complex conjugation is pinned by
+`σ ≠ 1` — so a level structure equivariant at ONE nontrivial `σ` is
+equivariant at ALL of them.
+
+PROOF. `AlgebraicClosure (ULift ℝ)` is algebraic over `ℝ` (the base change
+`ℝ ≃ ULift ℝ` is an isomorphism, so `Algebra.IsAlgebraic.trans` applies), so
+`Real.nonempty_algEquiv_or` makes it `ℝ`-isomorphic to `ℝ` or to `ℂ`. The
+first is impossible: an algebraically closed field has a square root of `-1`,
+and its image in `ℝ` would square to `-1`. So it is `ℂ`, and
+`Complex.real_algHom_eq_id_or_conj` says `Aut_ℝ(ℂ) = {1, conj}`. The passage
+between `ULift ℝ`-automorphisms and `ℝ`-automorphisms is the identity on
+underlying maps, because `algebraMap (ULift ℝ) L x = algebraMap ℝ L x.down`. -/
+theorem exists_unique_ne_one_absoluteGaloisGroup_uliftReal :
+    ∃ c : Field.absoluteGaloisGroup (ULift.{u} ℝ), c ≠ 1 ∧
+      ∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 → σ = c := by
+  classical
+  have halgR : ∀ y : ℝ,
+      algebraMap ℝ (AlgebraicClosure (ULift.{u} ℝ)) y =
+        algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) (ULift.up y) := by
+    intro y
+    rw [IsScalarTower.algebraMap_apply ℝ (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ))]
+    simp [ULift.algebraMap_eq]
+  haveI : Algebra.IsAlgebraic ℝ (ULift.{u} ℝ) := by
+    refine ⟨fun x => ⟨Polynomial.X - Polynomial.C x.down, ?_, ?_⟩⟩
+    · exact Polynomial.X_sub_C_ne_zero _
+    · simp [ULift.algebraMap_eq]
+  haveI : Algebra.IsAlgebraic ℝ (AlgebraicClosure (ULift.{u} ℝ)) :=
+    Algebra.IsAlgebraic.trans ℝ (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ))
+  -- the algebraic closure of `ULift ℝ` is `ℂ`
+  rcases Real.nonempty_algEquiv_or (AlgebraicClosure (ULift.{u} ℝ)) with hcase | hcase
+  · exfalso
+    obtain ⟨e⟩ := hcase
+    obtain ⟨z, hz⟩ := IsAlgClosed.exists_pow_nat_eq
+      (-1 : AlgebraicClosure (ULift.{u} ℝ)) (n := 2) two_pos
+    have hez : (e z) ^ 2 = -1 := by rw [← map_pow, hz, map_neg, map_one]
+    nlinarith [sq_nonneg (e z)]
+  · obtain ⟨e⟩ := hcase
+    -- transport between `ULift ℝ`-automorphisms and `ℝ`-automorphisms
+    have toRcomm : ∀ (σ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ]
+          AlgebraicClosure (ULift.{u} ℝ)) (y : ℝ),
+        σ (algebraMap ℝ (AlgebraicClosure (ULift.{u} ℝ)) y) =
+          algebraMap ℝ (AlgebraicClosure (ULift.{u} ℝ)) y := by
+      intro σ y
+      rw [halgR y]
+      exact σ.commutes _
+    have toKcomm : ∀ (ψ : AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ℝ] AlgebraicClosure (ULift.{u} ℝ))
+        (x : ULift.{u} ℝ),
+        ψ (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) x) =
+          algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) x := by
+      intro ψ x
+      have hx : algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) x =
+          algebraMap ℝ (AlgebraicClosure (ULift.{u} ℝ)) x.down := by
+        rw [halgR]
+      rw [hx]
+      exact ψ.commutes _
+    let toR : (AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ] AlgebraicClosure (ULift.{u} ℝ)) →
+        (AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ℝ] AlgebraicClosure (ULift.{u} ℝ)) := fun σ =>
+      { σ.toRingEquiv with commutes' := toRcomm σ }
+    let toK : (AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ℝ] AlgebraicClosure (ULift.{u} ℝ)) →
+        (AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ] AlgebraicClosure (ULift.{u} ℝ)) :=
+      fun ψ => { ψ.toRingEquiv with commutes' := toKcomm ψ }
+    let coeG : Field.absoluteGaloisGroup (ULift.{u} ℝ) →
+        (AlgebraicClosure (ULift.{u} ℝ) ≃ₐ[ULift.{u} ℝ] AlgebraicClosure (ULift.{u} ℝ)) := id
+    have hext : ∀ σ τ : Field.absoluteGaloisGroup (ULift.{u} ℝ),
+        (∀ y, coeG σ y = coeG τ y) → σ = τ := fun _ _ h => AlgEquiv.ext h
+    let cc : Field.absoluteGaloisGroup (ULift.{u} ℝ) :=
+      toK (e.trans (Complex.conjAe.trans e.symm))
+    have hccval : ∀ y, coeG cc y = e.symm (starRingEnd ℂ (e y)) := fun _ => rfl
+    refine ⟨cc, ?_, ?_⟩
+    · intro hc
+      have hfun : ∀ x, e.symm (starRingEnd ℂ (e x)) = x := by
+        intro x
+        rw [← hccval x]
+        exact congrArg (fun g => coeG g x) hc
+      have hI := hfun (e.symm Complex.I)
+      rw [e.apply_symm_apply] at hI
+      have hI' : starRingEnd ℂ Complex.I = Complex.I := e.symm.injective hI
+      rw [Complex.conj_I] at hI'
+      exact Complex.I_ne_zero (by linear_combination -hI' / 2)
+    · intro σ hσ
+      rcases Complex.real_algHom_eq_id_or_conj
+        ((e.symm.trans (toR (coeG σ))).trans e).toAlgHom with hid | hconj
+      · exfalso
+        apply hσ
+        refine hext σ 1 fun y => ?_
+        have h1 : e (coeG σ (e.symm (e y))) = e y :=
+          congrFun (congrArg (fun f : ℂ →ₐ[ℝ] ℂ => ⇑f) hid) (e y)
+        rw [e.symm_apply_apply] at h1
+        rw [e.injective h1]
+        rfl
+      · refine hext σ cc fun y => ?_
+        have h1 : e (coeG σ (e.symm (e y))) = starRingEnd ℂ (e y) :=
+          congrFun (congrArg (fun f : ℂ →ₐ[ℝ] ℂ => ⇑f) hconj) (e y)
+        rw [e.symm_apply_apply] at h1
+        rw [hccval y, ← h1, e.symm_apply_apply]
+
+
+/-- **A basis adapted to `realConj` gives the intertwining coordinate
+isomorphism** (PROVEN 2026-07-26): if `M` fixes `b 0` and sends `b 1` to
+`ε · b 0 - b 1`, then `b.equivFun` conjugates `M` into `realConj F ε`. -/
+theorem exists_realConj_equiv_of_basis
+    {F : Type*} [Field F] {V : Type*} [AddCommGroup V] [Module F V]
+    (M : Module.End F V) (ε : Bool) (b : Module.Basis (Fin 2) F V)
+    (h0 : M (b 0) = b 0) (h1 : M (b 1) = (if ε then b 0 else 0) - b 1) :
+    ∃ φ : V ≃ₗ[F] (Fin 2 → F), ∀ v, φ (M v) = realConj F ε (φ v) := by
+  classical
+  refine ⟨b.equivFun, fun v => ?_⟩
+  have key : (b.equivFun.toLinearMap).comp M
+      = (realConj F ε).comp (b.equivFun.toLinearMap) := by
+    apply b.ext
+    intro j
+    fin_cases j <;> simp only [LinearMap.comp_apply, LinearEquiv.coe_coe]
+    · show b.equivFun (M (b 0)) = realConj F ε (b.equivFun (b 0))
+      rw [h0]
+      funext i
+      fin_cases i <;> cases ε <;> simp [realConj_apply]
+    · show b.equivFun (M (b 1)) = realConj F ε (b.equivFun (b 1))
+      rw [h1]
+      funext i
+      fin_cases i <;> cases ε <;> simp [realConj_apply]
+  exact LinearMap.congr_fun key v
+
+/-- **Classification of odd involutions of a rank-two space** (PROVEN
+2026-07-26): over ANY field, an involution `M` of determinant `-1` on a
+rank-two space is conjugate to `realConj F ε` for one of the two values of
+`ε`.
+
+This is the representation theory of `Γ_ℝ = ℤ/2` in dimension two, and it is
+what the archimedean argument really consumes. Two cases:
+
+* `char F ≠ 2`: `M` is diagonalizable with eigenvalues `1` and `-1`. Neither
+  eigenspace is zero — if `ker(M - 1) = 0` then `v + M v` is a fixed vector
+  for every `v`, hence `0`, so `M = -1` and `det M = 1 ≠ -1`; symmetrically
+  for `ker(M + 1)`. Two eigenvectors for distinct eigenvalues are
+  independent, and `finrank = 2` makes them a basis: `ε = false`.
+* `char F = 2`: `det M = -1 = 1` is automatic, and `(M - 1)² = 0`. Either
+  `M = 1`, and ANY basis works with `ε = false` (in characteristic two
+  `diag(1,-1)` IS the identity); or `(M - 1) w ≠ 0` for some `w`, and
+  `(M w - w, w)` is a basis in which `M` is the transvection: `ε = true`. -/
+theorem exists_realConj_equiv_of_involution
+    {F : Type*} [Field F] {V : Type*} [AddCommGroup V] [Module F V]
+    [Module.Finite F V] [Module.Free F V] (hV : Module.rank F V = 2)
+    (M : Module.End F V) (hM : M * M = 1) (hdet : LinearMap.det M = -1) :
+    ∃ (ε : Bool) (φ : V ≃ₗ[F] (Fin 2 → F)), ∀ v, φ (M v) = realConj F ε (φ v) := by
+  classical
+  have hfr : Module.finrank F V = 2 := Module.finrank_eq_of_rank_eq hV
+  have hcard : Fintype.card (Fin 2) = Module.finrank F V := by simp [hfr]
+  have hMM : ∀ v : V, M (M v) = v := by
+    intro v
+    have h := congrArg (fun f : Module.End F V => f v) hM
+    simpa using h
+  by_cases h2 : (2 : F) = 0
+  · -- residue characteristic two: the two classes are the identity and a transvection
+    have hww : ∀ v : V, v + v = 0 := by
+      intro v
+      have h : (2 : F) • v = 0 := by rw [h2, zero_smul]
+      rwa [two_smul] at h
+    have hneg : ∀ v : V, -v = v := by
+      intro v
+      calc -v = -v + (v + v) := by rw [hww, add_zero]
+        _ = v := by abel
+    by_cases hM1 : ∀ v : V, M v = v
+    · refine ⟨false, exists_realConj_equiv_of_basis M false
+        (Module.finBasisOfFinrankEq F V hfr) (hM1 _) ?_⟩
+      rw [hM1]
+      simp [hneg]
+    · push Not at hM1
+      obtain ⟨w, hw⟩ := hM1
+      obtain ⟨u, hu⟩ : ∃ u : V, M w = u := ⟨M w, rfl⟩
+      rw [hu] at hw
+      have hMu : M u = w := by rw [← hu, hMM]
+      have he₀ne : u - w ≠ 0 := sub_ne_zero_of_ne hw
+      have hMe₀ : M (u - w) = u - w := by
+        rw [map_sub, hMu, hu]
+        have h' : w - u = -(u - w) := by abel
+        rw [h', hneg]
+      have hMw : M w = (u - w) - w := by
+        rw [hu, sub_sub, hww, sub_zero]
+      have hli : LinearIndependent F ![u - w, w] := by
+        rw [LinearIndependent.pair_iff]
+        intro s t hst
+        have h' := congrArg M hst
+        rw [map_add, map_smul, map_smul, hMe₀, hu, map_zero] at h'
+        have key : t • (u - w) = (s • (u - w) + t • u) - (s • (u - w) + t • w) := by
+          rw [smul_sub]; abel
+        rw [h', hst, sub_zero] at key
+        have ht0 : t = 0 := by
+          rcases smul_eq_zero.mp key with h | h
+          · exact h
+          · exact absurd h he₀ne
+        subst ht0
+        rw [zero_smul, add_zero] at hst
+        rcases smul_eq_zero.mp hst with h | h
+        · exact ⟨h, rfl⟩
+        · exact absurd h he₀ne
+      have hb0 : (basisOfLinearIndependentOfCardEqFinrank hli hcard) 0 = u - w := by simp
+      have hb1 : (basisOfLinearIndependentOfCardEqFinrank hli hcard) 1 = w := by simp
+      refine ⟨true, exists_realConj_equiv_of_basis M true
+        (basisOfLinearIndependentOfCardEqFinrank hli hcard) ?_ ?_⟩
+      · rw [hb0]; exact hMe₀
+      · rw [hb0, hb1]; simpa using hMw
+  · -- residue characteristic not two: the odd involution is diagonalizable
+    have hex1 : ∃ x : V, x ≠ 0 ∧ M x = x := by
+      by_contra hcon
+      push Not at hcon
+      have hMneg : ∀ v : V, M v = -v := by
+        intro v
+        have hfix : M (v + M v) = v + M v := by
+          rw [map_add, hMM]; abel
+        by_cases hz : v + M v = 0
+        · rw [eq_neg_iff_add_eq_zero, add_comm]; exact hz
+        · exact absurd hfix (hcon _ hz)
+      have hMeq : M = (-1 : F) • LinearMap.id := by
+        ext v; simp [hMneg v]
+      rw [hMeq, LinearMap.det_smul, hfr, LinearMap.det_id, mul_one] at hdet
+      apply h2
+      have hsq : ((-1 : F)) ^ 2 = 1 := by ring
+      rw [hsq] at hdet
+      linear_combination hdet
+    have hex2 : ∃ x : V, x ≠ 0 ∧ M x = -x := by
+      by_contra hcon
+      push Not at hcon
+      have hMid : ∀ v : V, M v = v := by
+        intro v
+        have hfix : M (v - M v) = -(v - M v) := by
+          rw [map_sub, hMM]; abel
+        by_cases hz : v - M v = 0
+        · exact (sub_eq_zero.mp hz).symm
+        · exact absurd hfix (hcon _ hz)
+      have hMeq : M = LinearMap.id := by ext v; simp [hMid v]
+      rw [hMeq, LinearMap.det_id] at hdet
+      apply h2
+      linear_combination hdet
+    obtain ⟨e₀, he₀ne, hMe₀⟩ := hex1
+    obtain ⟨e₁, he₁ne, hMe₁⟩ := hex2
+    have hli : LinearIndependent F ![e₀, e₁] := by
+      rw [LinearIndependent.pair_iff]
+      intro s t hst
+      have h' := congrArg M hst
+      rw [map_add, map_smul, map_smul, hMe₀, hMe₁, map_zero] at h'
+      have key : (2 : F) • (s • e₀) = (s • e₀ + t • e₁) + (s • e₀ + t • (-e₁)) := by
+        rw [two_smul, smul_neg]; abel
+      rw [hst, h', add_zero] at key
+      have hs0 : s = 0 := by
+        rcases smul_eq_zero.mp key with h | h
+        · exact absurd h h2
+        · rcases smul_eq_zero.mp h with h' | h'
+          · exact h'
+          · exact absurd h' he₀ne
+      subst hs0
+      rw [zero_smul, zero_add] at hst
+      refine ⟨rfl, ?_⟩
+      rcases smul_eq_zero.mp hst with h | h
+      · exact h
+      · exact absurd h he₁ne
+    have hb0 : (basisOfLinearIndependentOfCardEqFinrank hli hcard) 0 = e₀ := by simp
+    have hb1 : (basisOfLinearIndependentOfCardEqFinrank hli hcard) 1 = e₁ := by simp
+    refine ⟨false, exists_realConj_equiv_of_basis M false
+      (basisOfLinearIndependentOfCardEqFinrank hli hcard) ?_ ?_⟩
+    · rw [hb0]; exact hMe₀
+    · rw [hb1]; simpa using hMe₁
+
+
+open CategoryTheory in
+/-- **One real elliptic curve, tensored with `𝒪_D`** (sorry leaf, cut
+2026-07-26 out of `exists_realHilbertBlumenthalObject_of_odd`): the ENTIRE
+remaining geometric content of the archimedean half of Taylor §4, with every
+representation-theoretic and Galois-theoretic ingredient already discharged.
+
+For a totally real number field `D` and a SIGN `ε` there is an abelian scheme
+`B/ℝ` of relative dimension `[D:ℚ]` with multiplication by `𝒪_D` such that
+for EVERY maximal ideal `I` of `𝒪_D` the `I`-torsion of `B` is a free
+rank-two `𝒪_D/I`-module on which complex conjugation acts by the STANDARD
+involution `realConj (𝒪_D/I) ε`.
+
+CLASSICALLY: `B = E ⊗_ℤ 𝒪_D` for a real elliptic curve `E`. Then
+`B[I] ≅ E[m] ⊗_{𝔽_m} 𝒪_D/I` for `I ∋ m` — true even when `I` is RAMIFIED
+over `m`, since the `I`-torsion of `𝒪_D/m` is `I^{e-1}/I^e ≅ 𝒪_D/I`, one
+dimensional over the residue field. Complex conjugation acts on
+`H₁(E(ℂ), ℤ) = ℤ²` by an involution `C ∈ GL₂(ℤ)` of determinant `-1`, hence
+on every `E[m] = H₁/m` by `C mod m`, hence on `B[I]` by `C ⊗ 1`. There are
+exactly TWO conjugacy classes of such `C` over `ℤ` — `diag(1,-1)`, realized
+by `Δ(E) > 0`, and `[[1,1],[0,-1]]`, realized by `Δ(E) < 0` — and choosing
+`E` with the right sign of the discriminant realizes the prescribed `ε`.
+
+WHY ONE `E` SERVES EVERY `I` AT ONCE, which is the strength of the statement
+and the reason the consumer needs no compatibility hypothesis between its two
+primes: the class of `C` is a property of `E` ALONE, fixed once a `ℤ`-basis
+of `H₁` adapted to `C` is chosen, and the action on `B[I]` is its reduction.
+
+MISSING MACHINERY, in dependency order (all archimedean and elementary, and
+none of it present at this pin — a 2026-07-25 survey of
+`.lake/packages/mathlib` found no `AbelianVariety`, no `AbelianScheme` and no
+scheme model of an elliptic curve, and `~/cs/FLT` has none either):
+1. *Elliptic curves as abelian schemes in the `Fermat.AbelianSchemeStruct`
+   presentation* — mathlib has `WeierstrassCurve` and the group law on its
+   point SETS, and `Proj` of a graded ring, but no functorial group structure
+   on `Hom_S(T, E)`, no properness and no geometric connectedness. This is
+   the bulk of the work.
+2. *The tensor construction* `E ⊗_ℤ 𝒪_D` with its `Fermat.Mult` by `𝒪_D`,
+   and `SmoothOfRelativeDimension [D:ℚ]` for it.
+3. *The action of complex conjugation on `E[m]`*, and the identification
+   `B[I] ≅ E[m] ⊗ 𝒪_D/I` of `Fermat.Mult.torsion` values.
+
+NOT NEEDED, and recorded here because an earlier plan said otherwise:
+complex multiplication, Shimura theory, and the moduli space `X_Dih` play no
+part. Taylor's `Y = X_Dih` and its CM point were only ever a device for
+producing a REAL point; a real elliptic curve produces one directly.
+
+FAITHFULNESS: `[D:ℚ] ≥ 1`, so the conclusion cannot be met by a point — the
+level structures are injective on a set of size `|𝒪_D/I|²`, so the scheme
+must be a genuine abelian variety.
+
+CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be discharged
+by the independent construction — never through `Family.lean`, `Lift.lean`,
+or `Modularity/Interface.lean`. -/
+theorem exists_realAbelianSchemeWithRealMultiplication
+    (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D] (ε : Bool) :
+    ∃ (B : AlgebraicGeometry.Scheme.{u})
+      (fB : B ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))
+      (abB : Fermat.AbelianSchemeStruct fB)
+      (m : Fermat.Mult abB (NumberField.RingOfIntegers D)),
+      AlgebraicGeometry.SmoothOfRelativeDimension (Module.finrank ℚ D) fB ∧
+      ∀ I : Ideal (NumberField.RingOfIntegers D), I.IsMaximal →
+        ∃ e : (Fin 2 → (NumberField.RingOfIntegers D ⧸ I)) →
+            Fermat.GeomFibrePt fB (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))),
+          (∀ v w, e (v + w) = abB.add (e v) (e w)) ∧
+          Function.Injective e ∧
+          (∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ))
+              (v : Fin 2 → (NumberField.RingOfIntegers D ⧸ I)), σ ≠ 1 →
+            e (realConj _ ε v) =
+              abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (e v)) ∧
+          (∀ y, y ∈ (m.torsion
+            (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) I).1 ↔ ∃ v, e v = y) :=
+  sorry
+
+/-! ### In odd characteristic the two classes coincide -/
+
+/-- **A conjugating matrix transports `realConj F ε₀` to `realConj F ε`.** -/
+theorem realConj_swap_aux {F : Type*} [Field F] (P Q : Matrix (Fin 2) (Fin 2) F) (ε₀ ε : Bool)
+    (hPQ : P * Q = 1) (hQP : Q * P = 1)
+    (hcomm : realConjMatrix F ε * P = P * realConjMatrix F ε₀) :
+    ∃ ψ : (Fin 2 → F) ≃ₗ[F] (Fin 2 → F), ∀ v, ψ (realConj F ε₀ v) = realConj F ε (ψ v) := by
+  refine ⟨LinearEquiv.ofLinear (Matrix.toLin' P) (Matrix.toLin' Q) ?_ ?_, ?_⟩
+  · rw [← Matrix.toLin'_mul, hPQ, Matrix.toLin'_one]
+  · rw [← Matrix.toLin'_mul, hQP, Matrix.toLin'_one]
+  · intro v
+    simp only [LinearEquiv.ofLinear_apply, realConj]
+    have h := congrArg Matrix.toLin' hcomm
+    rw [Matrix.toLin'_mul, Matrix.toLin'_mul] at h
+    exact (LinearMap.congr_fun h v).symm
+
+/-- **`realConj F false` and `realConj F true` are conjugate when `2 ≠ 0`**
+(PROVEN 2026-07-26), by the explicit matrix `!![1, 1; 0, -2]` and its inverse
+`!![1, 2⁻¹; 0, -2⁻¹]`, whose determinant `-2` is a unit exactly then. In
+characteristic two they are the identity and a transvection and this FAILS —
+which is why `hk2` is the discriminating hypothesis of the archimedean
+node. -/
+theorem exists_realConj_swap {F : Type*} [Field F] (h2 : (2 : F) ≠ 0) (ε₀ ε : Bool) :
+    ∃ ψ : (Fin 2 → F) ≃ₗ[F] (Fin 2 → F), ∀ v, ψ (realConj F ε₀ v) = realConj F ε (ψ v) := by
+  rcases Bool.eq_or_eq_not ε₀ ε with rfl | hne
+  · exact realConj_swap_aux 1 1 ε₀ ε₀ (by simp) (by simp) (by simp)
+  · have hswap : ∀ ε₁ ε₂ : Bool, ε₁ = !ε₂ →
+        ∃ ψ : (Fin 2 → F) ≃ₗ[F] (Fin 2 → F),
+          ∀ v, ψ (realConj F ε₁ v) = realConj F ε₂ (ψ v) := by
+      intro ε₁ ε₂ h
+      cases ε₂ <;> simp at h <;> subst h
+      · refine realConj_swap_aux !![1, 2⁻¹; 0, -2⁻¹] !![1, 1; 0, -2] true false ?_ ?_ ?_
+        all_goals ext i j
+        all_goals fin_cases i <;> fin_cases j
+        all_goals simp [realConjMatrix, Matrix.mul_apply, Fin.sum_univ_two]
+        all_goals (try field_simp)
+        all_goals (try ring)
+      · refine realConj_swap_aux !![1, 1; 0, -2] !![1, 2⁻¹; 0, -2⁻¹] false true ?_ ?_ ?_
+        all_goals ext i j
+        all_goals fin_cases i <;> fin_cases j
+        all_goals simp [realConjMatrix, Matrix.mul_apply, Fin.sum_univ_two]
+        all_goals (try field_simp)
+        all_goals (try ring)
+    exact hswap ε₀ ε hne
+
+/-- **In characteristic `≠ 2` an odd involution is conjugate to `realConj F ε`
+for BOTH values of `ε`** (PROVEN 2026-07-26 from
+`exists_realConj_equiv_of_involution` and `exists_realConj_swap`). This is
+what lets the `λ`-side accept whatever sign the `𝔭`-side demanded. -/
+theorem exists_realConj_equiv_of_involution_of_two_ne_zero
+    {F : Type*} [Field F] (h2 : (2 : F) ≠ 0) {V : Type*} [AddCommGroup V] [Module F V]
+    [Module.Finite F V] [Module.Free F V] (hV : Module.rank F V = 2)
+    (M : Module.End F V) (hM : M * M = 1) (hdet : LinearMap.det M = -1) (ε : Bool) :
+    ∃ φ : V ≃ₗ[F] (Fin 2 → F), ∀ v, φ (M v) = realConj F ε (φ v) := by
+  obtain ⟨ε₀, φ₀, hφ₀⟩ := exists_realConj_equiv_of_involution hV M hM hdet
+  obtain ⟨ψ, hψ⟩ := exists_realConj_swap h2 ε₀ ε
+  refine ⟨φ₀.trans ψ, fun v => ?_⟩
+  simp only [LinearEquiv.trans_apply, hφ₀ v, hψ]
+
+/-! ### Transport of a level structure along a residue-field identification -/
+
+open CategoryTheory in
+/-- **Re-indexing an `𝒪_D/I`-level structure by an abstract residue field and
+an abstract Galois module** (PROVEN 2026-07-26).
+
+Given a level structure `e` on the `I`-torsion of a real abelian scheme,
+equivariant for the STANDARD involution `realConj (𝒪_D/I) ε`, a residue-field
+identification `q : 𝒪_D/I ≃+* κ`, and a coordinate isomorphism `φ` carrying a
+`Γ_ℝ`-representation `R` on `V` to that same standard involution, the
+composite `e ∘ q⁻¹ ∘ φ` is a level structure on `V`. Injectivity, additivity
+and the identification of the image with the `I`-torsion all transport
+because `q` and `φ` are bijections; equivariance uses
+`exists_unique_ne_one_absoluteGaloisGroup_uliftReal` to know that a single
+nontrivial `σ` exhausts `Γ_ℝ ∖ {1}`, and `galSMul 1 = id` for `σ = 1`. -/
+theorem exists_levelStructure_transport
+    {B : AlgebraicGeometry.Scheme.{u}}
+    {fB : B ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))}
+    {abB : Fermat.AbelianSchemeStruct fB}
+    {S : Type u} [CommRing S] {κ : Type u} [Field κ] (q : S ≃+* κ)
+    {V : Type*} [AddCommGroup V] [Module κ V]
+    (ε : Bool) (c : Field.absoluteGaloisGroup (ULift.{u} ℝ))
+    (hcuniq : ∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 → σ = c)
+    (R : Field.absoluteGaloisGroup (ULift.{u} ℝ) →* Module.End κ V)
+    (φ : V ≃ₗ[κ] (Fin 2 → κ)) (hφ : ∀ v, φ (R c v) = realConj κ ε (φ v))
+    (T : Set (Fermat.GeomFibrePt fB
+      (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ))))))
+    (e : (Fin 2 → S) → Fermat.GeomFibrePt fB
+      (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))))
+    (eadd : ∀ v w, e (v + w) = abB.add (e v) (e w))
+    (einj : Function.Injective e)
+    (eequiv : ∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (v : Fin 2 → S), σ ≠ 1 →
+      e (realConj S ε v) =
+        abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (e v))
+    (eimg : ∀ y, y ∈ T ↔ ∃ v, e v = y) :
+    ∃ e' : V → Fermat.GeomFibrePt fB
+        (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))),
+      (∀ w w', e' (w + w') = abB.add (e' w) (e' w')) ∧
+      Function.Injective e' ∧
+      (∀ (σ : Field.absoluteGaloisGroup (ULift.{u} ℝ)) (w : V),
+        e' (R σ w) =
+          abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (e' w)) ∧
+      (∀ y, y ∈ T ↔ ∃ w, e' w = y) := by
+  have hgal1 : ∀ y : Fermat.GeomFibrePt fB
+      (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))),
+      abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) 1 y = y := by
+    intro y
+    rw [Fermat.AbelianSchemeStruct.galSMul_def]
+    apply Subtype.ext
+    show Fermat.specGal (1 : Field.absoluteGaloisGroup (ULift.{u} ℝ)) ≫ y.1 = y.1
+    have h1 : Fermat.specGal (1 : Field.absoluteGaloisGroup (ULift.{u} ℝ)) = 𝟙 _ :=
+      _root_.Fermat.specGal_one _
+    rw [h1, Category.id_comp]
+  refine ⟨fun w => e (fun i => q.symm (φ w i)), ?_, ?_, ?_, ?_⟩
+  · intro w w'
+    dsimp only
+    have hsum : (fun i => q.symm (φ (w + w') i)) =
+        (fun i => q.symm (φ w i)) + (fun i => q.symm (φ w' i)) := by
+      funext i; simp
+    rw [hsum, eadd]
+  · intro w w' h
+    have h1 := einj h
+    have h2 : φ w = φ w' := by
+      funext i
+      exact q.symm.injective (congrFun h1 i)
+    exact φ.injective h2
+  · intro σ w
+    dsimp only
+    rcases eq_or_ne σ 1 with rfl | hσ
+    · simp only [map_one, Module.End.one_apply]
+      exact (hgal1 _).symm
+    · have hσc := hcuniq σ hσ
+      subst hσc
+      have hkey : (fun i => q.symm (φ (R σ w) i)) =
+          realConj S ε (fun i => q.symm (φ w i)) := by
+        rw [hφ w]; exact realConj_ringEquiv q ε (φ w)
+      rw [hkey, eequiv σ _ hσ]
+  · intro y
+    rw [eimg y]
+    constructor
+    · rintro ⟨v, rfl⟩
+      refine ⟨φ.symm (fun i => q (v i)), ?_⟩
+      dsimp only
+      have hv : (fun i => q.symm (φ (φ.symm (fun i => q (v i))) i)) = v := by
+        funext i; simp
+      rw [hv]
+    · rintro ⟨w, rfl⟩
+      exact ⟨_, rfl⟩
+
 open CategoryTheory in
 /-- **The real Hilbert–Blumenthal object exists for any pair of ODD
-archimedean characters** (sorry leaf, cut 2026-07-26 out of
-`hasRealHilbertBlumenthalObject_of_isHardlyRamified`): the whole
-GEOMETRIC content of the archimedean half of Taylor §4, with the
-Galois-representation packaging stripped off.
+archimedean characters** (PROVEN 2026-07-26 over the SIGN cut; formerly the
+sorry leaf cut out of `hasRealHilbertBlumenthalObject_of_isHardlyRamified` —
+the whole GEOMETRIC content of the archimedean half of Taylor §4, with the
+Galois-representation packaging stripped off).
 
 The two level structures are prescribed by plain MONOID HOMOMORPHISMS
 `r : Γ_ℝ → End_k(W)` and `rp : Γ_ℝ → End_kp(kp²)` rather than by
@@ -4612,58 +5183,59 @@ homomorphism out of `Γ_ℝ`, and `Γ_ℝ` has order two, so `(r σ)² = r (σ²
 for ALL `σ` rather than for a distinguished complex conjugation: the
 `σ = 1` case is `r 1 = 1` against `galSMul 1 = id`.
 
-INTENDED DISCHARGE (unchanged from the parent, and it is ELEMENTARY —
-no moduli space, no complex multiplication, no Shimura theory). Take
-`B = E ⊗_ℤ 𝒪_D` for a real elliptic curve `E`, an abelian variety over
-`ℝ` of dimension `[D:ℚ]` with real multiplication by `𝒪_D`. Then
-`B[I] ≅ E[m] ⊗_{𝔽_m} 𝒪_D/I` for any maximal `I ∋ m` — true even when `I`
-is RAMIFIED over `m`, since the `I`-torsion of `𝒪_D/m` is
-`I^{e-1}/I^e ≅ 𝒪_D/I`, one-dimensional over the residue field. Complex
-conjugation acts on `H₁(E(ℂ), ℤ) = ℤ²` by an involution `C ∈ GL₂(ℤ)` of
-determinant `-1`, hence on every `E[m] = H₁/m` by `C mod m`; there are
-exactly TWO conjugacy classes of such `C` over `ℤ` — `diag(1,-1)`, the
-rectangular lattice, realized by `Δ(E) > 0`, and the regular
-representation `[[1,1],[0,-1]]`, realized by `Δ(E) < 0` — and both are
-realized by a real elliptic curve.
+`hk2` IS THE DISCRIMINATING HYPOTHESIS, not a convenience. At `λ` the
+residue characteristic is odd, and in odd characteristic BOTH classes of
+complex conjugation reduce to an involution of determinant `-1`, all of
+which are conjugate; so any real elliptic curve realizes `r`, whatever `r`
+is. At `𝔭` the residue characteristic may be `2`, where `hrp` is vacuous
+and there are two possible involutions of `kp²` — the identity and a
+transvection — distinguished by the SIGN of `Δ(E)`; choosing that sign
+realizes `rp`. If `char k = 2` as well, both `hr` and `hrp` go vacuous
+while a single `E` still reduces the SAME involution at both primes, so an
+ill-matched pair could not be realized and the statement would be FALSE.
 
-WHY ONE `E` SUFFICES FOR BOTH PRIMES, i.e. why `hk2` is exactly the
-right hypothesis and is not cosmetic. At `λ` the residue characteristic
-is odd (`hk2`), and in odd characteristic BOTH classes of `C` reduce to
-an involution of determinant `-1`, which is conjugate to `diag(1,-1)`;
-so any `E` realizes `r`, whatever `r` is. At `𝔭` the residue
-characteristic may be `2`, where `hrp` is vacuous and there are two
-possible involutions of `kp²` — the identity and a transvection —
-distinguished by `C mod 2`, i.e. by the SIGN of `Δ(E)`; choosing that
-sign realizes `rp`. The two demands never collide because `λ` and `𝔭`
-cannot both have residue characteristic `2`.
+PROOF (2026-07-26 — the SIGN cut; this node is no longer a sorry node).
+Everything except the construction of one abelian variety is discharged
+here, in four steps:
 
-WITHOUT `hk2` THE STATEMENT IS FALSE. If `char k = 2` as well, then
-`hr` and `hrp` are both vacuous and `r`, `rp` may independently be the
-identity and a transvection; but a single `E` reduces the SAME `C mod 2`
-at both primes, so no `B` can realize an ill-matched pair. This is not a
-convenience hypothesis — it is the discriminating condition, and it is
-available at the call site because `k` is the residue field at `λ`,
-whose characteristic is the odd prime `ℓ`.
+1. `hres`/`hresp` make `𝒪_D/λ` and `𝒪_D/𝔭` FIELDS, hence `λ` and `𝔭`
+   maximal (`Ideal.Quotient.maximal_of_isField` over `MulEquiv.isField`) —
+   which is what lets the geometric leaf be quantified over maximal ideals
+   rather than over these two primes by name.
+2. `exists_unique_ne_one_absoluteGaloisGroup_uliftReal` (Artin–Schreier for
+   `ℝ`, PROVEN here) produces the unique `c ≠ 1` in `Γ_ℝ`. It gives
+   `c * c = 1`, hence `r c` and `rp c` are INVOLUTIONS of determinant `-1`,
+   and it collapses "equivariant at one nontrivial `σ`" to "equivariant at
+   every `σ`".
+3. `exists_realConj_equiv_of_involution` (the classification of odd
+   involutions in dimension two, PROVEN here) puts `rp c` into one of the
+   two standard forms `realConj kp ε`; that choice of `ε` is the SIGN of
+   the discriminant of the elliptic curve. Then
+   `exists_realConj_equiv_of_involution_of_two_ne_zero` — which is exactly
+   where `hk2` is consumed — puts `r c` into the SAME form `realConj k ε`,
+   possible because in odd characteristic the two forms are conjugate.
+4. `exists_realAbelianSchemeWithRealMultiplication D ε` supplies the
+   abelian scheme and its two standard level structures, and
+   `exists_levelStructure_transport` re-indexes them along the residue-field
+   identifications and the coordinate isomorphisms of step 3.
 
-MISSING MACHINERY, in dependency order (all of it archimedean and
-elementary, and none of it present at this pin):
-1. *Elliptic curves as abelian schemes in the `Fermat.AbelianSchemeStruct`
-   presentation* — mathlib has `WeierstrassCurve` and the group law on
-   its point sets, but no `Scheme` model, no properness, and no
-   functor-of-points group structure. This is the bulk of the work.
-2. *The tensor construction* `E ⊗_ℤ 𝒪_D` with its `Fermat.Mult` by
-   `𝒪_D`, and `SmoothOfRelativeDimension [D:ℚ]` for it.
-3. *The action of complex conjugation on `E[m]`*, and the identification
-   `B[I] ≅ E[m] ⊗ 𝒪_D/I` of `Fermat.Mult.torsion` values.
-4. *`Γ_ℝ` has order two* (Artin–Schreier for `ULift ℝ`), used both for
-   involutivity and to know that `σ ≠ 1` pins a single conjugacy class.
+`_hne` IS UNUSED, and the statement is nonetheless true without it: the
+geometric leaf produces a level structure at EVERY maximal ideal
+independently, so `λ = 𝔭` would merely force `k ≃ kp`, which `hres` and
+`hresp` already do. The hypothesis is kept in the signature because the
+consumer supplies it and because it is part of the admissibility package.
+
+MISSING MACHINERY: all of it moved onto the single geometric leaf
+`exists_realAbelianSchemeWithRealMultiplication` — elliptic curves as
+abelian schemes, the tensor construction `E ⊗_ℤ 𝒪_D`, and the action of
+complex conjugation on `E[m]`. Nothing representation-theoretic remains.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): must be
 discharged by the independent construction — never through
 `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
 theorem exists_realHilbertBlumenthalObject_of_odd
     (D : Type u) [Field D] [NumberField D] [NumberField.IsTotallyReal D]
-    (lam frp : Ideal (NumberField.RingOfIntegers D)) (hne : lam ≠ frp)
+    (lam frp : Ideal (NumberField.RingOfIntegers D)) (_hne : lam ≠ frp)
     {k : Type u} [Field k] [Finite k] (hk2 : (2 : k) ≠ 0)
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W] [Module.Free k W]
     (hW : Module.rank k W = 2)
@@ -4698,8 +5270,33 @@ theorem exists_realHilbertBlumenthalObject_of_odd
           e (rp σ w) =
             abB.galSMul (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) σ (e w)) ∧
         (∀ y, y ∈ (m.torsion
-          (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) frp).1 ↔ ∃ w, e w = y)) :=
-  sorry
+          (𝟙 (AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℝ)))) frp).1 ↔ ∃ w, e w = y)) := by
+  classical
+  obtain ⟨q⟩ := hres
+  obtain ⟨qp⟩ := hresp
+  haveI hlamMax : lam.IsMaximal :=
+    Ideal.Quotient.maximal_of_isField _ (q.toMulEquiv.isField (Field.toIsField k))
+  haveI hfrpMax : frp.IsMaximal :=
+    Ideal.Quotient.maximal_of_isField _ (qp.toMulEquiv.isField (Field.toIsField kp))
+  obtain ⟨c, hc1, hcuniq⟩ := exists_unique_ne_one_absoluteGaloisGroup_uliftReal.{u}
+  have hcc : c * c = 1 := by
+    by_contra h
+    exact hc1 (mul_right_cancel ((hcuniq _ h).trans (one_mul c).symm))
+  have hrpc : rp c * rp c = 1 := by rw [← map_mul, hcc, map_one]
+  have hrankp : Module.rank kp (Fin 2 → kp) = 2 := by simp
+  obtain ⟨ε, φp, hφp⟩ :=
+    exists_realConj_equiv_of_involution hrankp (rp c) hrpc (hrp c hc1)
+  have hrc : r c * r c = 1 := by rw [← map_mul, hcc, map_one]
+  obtain ⟨φ, hφ⟩ :=
+    exists_realConj_equiv_of_involution_of_two_ne_zero hk2 hW (r c) hrc (hr c hc1) ε
+  obtain ⟨B, fB, abB, m, hsm, htor⟩ :=
+    exists_realAbelianSchemeWithRealMultiplication D ε
+  obtain ⟨eL, eLadd, eLinj, eLequiv, eLimg⟩ := htor lam hlamMax
+  obtain ⟨ep, epadd, epinj, epequiv, epimg⟩ := htor frp hfrpMax
+  exact ⟨B, fB, abB, m, hsm,
+    exists_levelStructure_transport q ε c hcuniq r φ hφ _ eL eLadd eLinj eLequiv eLimg,
+    exists_levelStructure_transport qp ε c hcuniq rp φp hφp _ ep epadd epinj epequiv epimg⟩
+
 
 /-- **The twisted moduli problem is solvable over `ℝ`** (PROVEN
 2026-07-26 as an assembly over the ODDNESS cut; formerly the sorry node
