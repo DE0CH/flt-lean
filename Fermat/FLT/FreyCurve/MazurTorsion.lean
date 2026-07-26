@@ -9660,12 +9660,136 @@ theorem newtonPolygon_single_segment_root {L : Type*} [Field L] {f : L → ℝ}
     rw [hsum0, htermN] at hkey
     exact absurd hkey.symm (ne_of_gt (lt_trans zero_lt_one hgt))
 
+section SupersingularDivisionPolynomial
+
+variable {p : ℕ} (hp : p.Prime)
+
+local notation "Rp" =>
+  Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal
+local notation "Kp" =>
+  IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+    hp.toHeightOneSpectrumRingOfIntegersRat
+local notation "Lp" =>
+  AlgebraicClosure (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+    hp.toHeightOneSpectrumRingOfIntegersRat)
+local notation "kbar" =>
+  AlgebraicClosure (IsLocalRing.ResidueField
+    (Localization.AtPrime hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal))
+
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+/-- **At a good SUPERSINGULAR prime the reduced `p`-division polynomial is a
+CONSTANT** (PROVEN 2026-07-26). This is the whole geometric content of
+supersingularity as it enters the Newton-polygon leaf below: if the reduced
+curve `Ẽ/𝔽̄_p` has no nonzero geometric `p`-torsion then `Ψ²_p(Ẽ)` has
+degree `0`.
+
+Proof: `Ψ²_p(Ẽ) ≠ 0` by the characteristic-free `ΨSq_ne_zero_of_isElliptic`
+(proven above in this file — mathlib's `ΨSq_ne_zero` needs `(n : R) ≠ 0`,
+which is exactly what fails here since the residue characteristic IS `p`).
+If it had positive degree it would have a root `x₀` over the algebraically
+closed `𝔽̄_p`; the `y`-quadratic `TorsionCard.yQuad` at `x₀` has degree `2`,
+so it too has a root `y₀`, and `equation_iff_nonsingular` (the reduced curve
+is elliptic, `hasGoodReduction_iff_isElliptic_reduction`) makes `(x₀, y₀)` a
+point. `TorsionCard.smul_some_eq_zero_iff` then makes it a `p`-torsion point,
+nonzero because it is a `Point.some` — contradicting `hss`. -/
+theorem natDegree_reduction_ΨSq_eq_zero_of_supersingular
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] [E.HasGoodReduction Rp]
+    (hss : ∀ P : ((E.reduction Rp)⁄kbar).Point, ((p : ℕ) : ℤ) • P = 0 → P = 0) :
+    ((E.reduction Rp).ΨSq ((p : ℕ) : ℤ)).natDegree = 0 := by
+  classical
+  haveI hell : (E.reduction Rp).IsElliptic :=
+    (WeierstrassCurve.hasGoodReduction_iff_isElliptic_reduction Rp).mp inferInstance
+  have hpZ : ((p : ℕ) : ℤ) ≠ 0 := by exact_mod_cast hp.ne_zero
+  by_contra hdeg
+  have hΨne : (E.reduction Rp).ΨSq ((p : ℕ) : ℤ) ≠ 0 :=
+    WeierstrassCurve.ΨSq_ne_zero_of_isElliptic _ hpZ
+  have hmapΨ : ((E.reduction Rp)⁄kbar).ΨSq ((p : ℕ) : ℤ) =
+      ((E.reduction Rp).ΨSq ((p : ℕ) : ℤ)).map (algebraMap _ kbar) :=
+    WeierstrassCurve.map_ΨSq _ _ _
+  have hne' : ((E.reduction Rp)⁄kbar).ΨSq ((p : ℕ) : ℤ) ≠ 0 := by
+    rw [hmapΨ]
+    exact fun h0 => hΨne ((Polynomial.map_eq_zero_iff
+      (algebraMap (IsLocalRing.ResidueField Rp) kbar).injective).mp h0)
+  have hdeg' : (((E.reduction Rp)⁄kbar).ΨSq ((p : ℕ) : ℤ)).degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree hne', hmapΨ, Polynomial.natDegree_map]
+    exact_mod_cast hdeg
+  obtain ⟨x₀, hx₀⟩ := IsAlgClosed.exists_root _ hdeg'
+  -- the `y`-quadratic has a root, giving a point of the curve
+  have hyd : (TorsionCard.yQuad ((E.reduction Rp)⁄kbar) x₀).degree ≠ 0 := by
+    rw [Polynomial.degree_eq_natDegree (TorsionCard.yQuad_ne_zero _ x₀),
+      TorsionCard.yQuad_natDegree]
+    norm_num
+  obtain ⟨y₀, hy₀⟩ := IsAlgClosed.exists_root _ hyd
+  have hns : ((((E.reduction Rp)⁄kbar))⁄kbar).toAffine.Nonsingular x₀ y₀ :=
+    WeierstrassCurve.Affine.equation_iff_nonsingular.mp
+      ((TorsionCard.eval_yQuad_eq_zero_iff_equation _ x₀ y₀).mp hy₀)
+  have hzero : ((p : ℕ) : ℤ) • (WeierstrassCurve.Affine.Point.some x₀ y₀ hns :
+      ((((E.reduction Rp)⁄kbar))⁄kbar).Point) = 0 :=
+    (TorsionCard.smul_some_eq_zero_iff _ hpZ hns).mpr hx₀
+  exact WeierstrassCurve.Affine.Point.some_ne_zero hns (hss _ hzero)
+
+open scoped WeierstrassCurve.Affine in
+set_option backward.isDefEq.respectTransparency false in
+/-- **From a CONSTANT reduced division polynomial to the single-segment
+Newton polygon over `ℚ̄_p`** (sorry node, cut 2026-07-26 — this is what
+remains of `spectralNorm_coeff_ΨSq_of_good_of_supersingular` once
+`natDegree_reduction_ΨSq_eq_zero_of_supersingular` above has consumed the
+geometry): the constant coefficient of `Ψ²_p` is a UNIT and every
+coefficient satisfies `|aᵢ| ^ (p² − 1) ≤ (|p| ²) ^ i`.
+
+TWO SEPARABLE PIECES, and the second is the only real mathematics left:
+
+* *Transport.* `hconst` says the reduction of `Ψ²_p` of the INTEGRAL MODEL
+  is a nonzero constant (nonzero by `ΨSq_ne_zero_of_isElliptic`), i.e. its
+  coefficient `c₀` is a unit of `R = ℤ_(p)` and `cᵢ ∈ 𝔪_R = (p)` for
+  `i ≥ 1`. The coefficients over `ℚ̄_p` are the images of the `cᵢ` — the
+  dictionary is the `hmap`/`map_ΨSq`/`coeff_map` chain already used in
+  `coeff_Φ_mem_and_isUnit_coeff_ΨSq_of_hasGoodReduction` above — so
+  `|a₀| = 1` and `|aᵢ| ≤ |p|`. The one mathlib gap here is *`x` integral
+  over `𝒪ᵥ` implies `spectralNorm x ≤ 1`*: the repo has only the converse
+  (`isIntegral_of_spectralNorm_le_one`, `AbsoluteGaloisGroup.lean`). It is
+  the usual ultrametric argument on a monic equation (if `|x| > 1` then
+  `|xⁿ|` strictly dominates every lower term), or `spectralValue_le_one_iff`
+  plus "the minimal polynomial of an integral element over an integrally
+  closed ring has integral coefficients".
+
+* *The second-order vanishing.* `|aᵢ| ≤ |p|` gives the required bound only
+  for `i ≤ (p² − 1)/2`; for larger `i` one needs `|aᵢ| ≤ |p| ²`, i.e.
+  `cᵢ ∈ 𝔪_R ²`. For ODD `p` this is formal: `Ψ²_p = (preΨ'_p) ²` by
+  `ΨSq_ofNat`, the polygon of `preΨ'_p` is the segment
+  `(0,0)–((p²−1)/2, 1)` (which IS what `hconst` gives, since a coefficient
+  of `preΨ'_p` of index `≥ 1` reduces to `0`), and a coefficient of the
+  SQUARE of index `i > (p²−1)/2 = deg preΨ'_p` is a sum of products
+  `b_j b_{i−j}` with BOTH indices `≥ 1`, hence lies in `𝔪_R ²`. For `p = 2`,
+  `Ψ²_2 = Ψ₂Sq = 4x³ + b₂x² + 2b₄x + b₆` and the statement is `v(b₂) ≥ 2`,
+  which holds because supersingularity at `2` forces `a₁ ∈ 𝔪_R` and
+  `b₂ = a₁² + 4a₂`.
+
+So the honest shape of the remainder is one general polynomial lemma (the
+Newton polygon of a square is twice the Newton polygon of the root) plus a
+two-line characteristic-`2` computation. -/
+theorem spectralNorm_coeff_ΨSq_of_natDegree_reduction_eq_zero
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] [E.HasGoodReduction Rp]
+    (hconst : ((E.reduction Rp).ΨSq ((p : ℕ) : ℤ)).natDegree = 0) :
+    spectralNorm Kp Lp ((((E.map (algebraMap ℚ Kp))⁄Lp).ΨSq ((p : ℕ) : ℤ)).coeff 0) = 1 ∧
+    ∀ i : ℕ, spectralNorm Kp Lp
+        ((((E.map (algebraMap ℚ Kp))⁄Lp).ΨSq ((p : ℕ) : ℤ)).coeff i) ^ (p ^ 2 - 1) ≤
+      (spectralNorm Kp Lp ((p : ℕ) : Lp) ^ 2) ^ i :=
+  sorry
+
+end SupersingularDivisionPolynomial
+
 open IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 /-- **The Newton polygon of the `p`-division polynomial at a good
 SUPERSINGULAR prime is the single segment from `(0, 0)` to `(p² − 1, 2)`**
-(sorry node, cut 2026-07-26 out of
+(DERIVED 2026-07-26 from the PROVEN
+`natDegree_reduction_ΨSq_eq_zero_of_supersingular` — which is where
+supersingularity is consumed — and the remaining sorry node
+`spectralNorm_coeff_ΨSq_of_natDegree_reduction_eq_zero`, both just above;
+originally cut 2026-07-26 out of
 `spectralNorm_torsion_abscissa_of_good_of_supersingular` below, which is now
 DERIVED from it and from the purely ultrametric
 `newtonPolygon_single_segment_root` above): the `p`-division polynomial
@@ -9751,7 +9875,8 @@ theorem WeierstrassCurve.spectralNorm_coeff_ΨSq_of_good_of_supersingular
         hp.toHeightOneSpectrumRingOfIntegersRat))
       ((p : ℕ) : AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ
         hp.toHeightOneSpectrumRingOfIntegersRat)) ^ 2) ^ i :=
-  sorry
+  spectralNorm_coeff_ΨSq_of_natDegree_reduction_eq_zero hp E
+    (natDegree_reduction_ΨSq_eq_zero_of_supersingular hp E hss)
 
 open IsDedekindDomain in
 open scoped WeierstrassCurve.Affine in
