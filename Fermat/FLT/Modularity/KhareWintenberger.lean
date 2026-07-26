@@ -887,8 +887,17 @@ next two names),
 `isTotallyReal_of_normal_of_realEmbedding` (PROVEN glue, added 2026-07-26),
 `exists_affineCurve_of_affine_geometricallyIrreducible` (SORRY — Bertini
 in characteristic zero, step (i) of Moret–Bailly's route),
-`exists_normalRealPoint_of_affine_curve` (SORRY — Moret–Bailly 1989
-Thm 1.3 on a CURVE, steps (ii)+(iii); the arithmetic heart), and
+`exists_normalRealPoint_of_affine_curve` (**PROVEN 2026-07-26** — no longer
+a leaf: it is now BLGGT Prop. 3.1.1's own assembly over the next three
+names),
+`exists_bound_forall_padicPoint_of_geometricallyIrreducible` (SORRY — Weil
+bounds + Hensel: good local solvability at all but finitely many primes),
+`exists_primes_forall_sup_eq_top_of_isOpen` (SORRY — Chebotarev: the
+auxiliary primes at which complete splitting buys the avoidance/linear
+disjointness conjunct),
+`exists_normalSplitPoint_of_affine_curve` (SORRY — Moret–Bailly 1989
+Thm 1.3 on a CURVE, steps (ii)+(iii) WITHOUT the avoidance datum; the
+arithmetic heart), and
 `exists_twistedHilbertBlumenthalModuli_of_five_le` (SORRY — Taylor
 2002 §2). `exists_hilbertBlumenthalPoint_of_five_le` itself is now
 PROVEN and is no longer a leaf.
@@ -910,7 +919,12 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    `ℚ^tr`-point has a Zariski-dense set of them. This is the modern
    packaging of Moret–Bailly's conclusion, and is what makes step 3's
    local–global principle usable. Owned by
-   `exists_normalRealPoint_of_affine_curve`.
+   `exists_normalSplitPoint_of_affine_curve` (2026-07-26: the avoidance
+   datum was moved off that leaf onto `exists_primes_forall_sup_eq_top_of_isOpen`,
+   which needs only Chebotarev — already PROVEN in this project's
+   `GaloisRepresentation/Chebotarev.lean` — and the decomposition-group
+   description of complete splitting; so items 2 and 4 no longer carry the
+   linear-disjointness burden).
 3. **Bertini over a field of characteristic zero**: a smooth
    geometrically irreducible quasi-projective variety of dimension `> 1`
    has a smooth geometrically irreducible hyperplane section, plus a
@@ -920,11 +934,18 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
 4. **Picard schemes / Jacobians as schemes**, with the torsor formalism
    and the "incompressible neighbourhood" existence statement — step (ii),
    and by far the largest of the four. Owned by
-   `exists_normalRealPoint_of_affine_curve`.
+   `exists_normalSplitPoint_of_affine_curve`.
+5. **Lang–Weil / the Weil bounds, plus Hensel lifting**, giving a
+   `ℚ_[p]`-point of a smooth geometrically irreducible `ℚ`-variety for all
+   but finitely many `p`. Added 2026-07-26; owned by
+   `exists_bound_forall_padicPoint_of_geometricallyIrreducible`. Independent
+   of items 1–4 and startable on its own.
 
-Each is an independently ownable subproject; 1 and 3 are the ones that can
-be started without the other two, and item 3 (Bertini) is now a leaf of its
-own -- `exists_affineCurve_of_affine_geometricallyIrreducible` -- so it can
+Each is an independently ownable subproject; 1, 3 and 5 are the ones that
+can be started without the others, and items 3 (Bertini) and 5 (Lang–Weil +
+Hensel) are now leaves of their own --
+`exists_affineCurve_of_affine_geometricallyIrreducible` and
+`exists_bound_forall_padicPoint_of_geometricallyIrreducible` -- so each can
 be attacked without any of the others.
 
 Leaf list under the moduli cut, as of the FORM recut (2026-07-25):
@@ -1126,8 +1147,11 @@ and Pop's theorem that `ℚ^tr` is a large/ample field. The argument is:
 (iii) conclude by the local–global principle over `ℚ^tr`.
 
 **Step (i) is `exists_affineCurve_of_affine_geometricallyIrreducible`
-(SORRY) and steps (ii)+(iii) are
-`exists_normalRealPoint_of_affine_curve` (SORRY).** The cut point is
+(SORRY) and steps (ii)+(iii) are `exists_normalRealPoint_of_affine_curve`
+(PROVEN 2026-07-26 over `exists_normalSplitPoint_of_affine_curve`, which is
+Moret–Bailly's theorem proper, plus the two arithmetic leaves that buy the
+avoidance datum — see "The avoidance cut" section docstring below).** The
+cut point is
 exactly the classical one, so neither leaf is an artefact of the
 formalization. Note that (i) is genuinely arithmetic and not a formality:
 a `ℚ`-rational hyperplane through a given REAL point need not exist, so
@@ -1260,35 +1284,246 @@ theorem exists_affineCurve_of_affine_geometricallyIrreducible
       topologicalKrullDim C ≤ 1 :=
   sorry
 
+/-! #### The avoidance cut: how "normal AND linearly disjoint" is obtained
+
+(2026-07-26.) Everything from here to `exists_normalRealPoint_of_affine_curve`
+implements the proof of BLGGT, *Potential automorphy and change of weight*,
+**Proposition 3.1.1** — which is the form in which the potential-modularity
+literature actually cites Moret–Bailly. That proposition asks for a finite
+**Galois** extension `L/K`, linearly disjoint from a prescribed `K^avoid/K`,
+totally split at a prescribed finite set of places, carrying a point of `T`;
+Moret–Bailly's Théorème 1.3 itself delivers only the totally-split point.
+BLGGT's proof of the gap is three sentences long and is exactly the cut made
+here:
+
+> Let `K₁^avoid, …, K_r^avoid` denote the intermediate fields between
+> `K^avoid` and `K` with `K_i^avoid/K` Galois with simple Galois group.
+> Combining Hensel's lemma with the Weil bounds we see that `T` has a
+> `K_v`-rational point for all but finitely many primes `v` of `K`. Thus
+> enlarging `S` we may assume that for each `i = 1, …, r` there is `v ∈ S^K`
+> with `L'_v = K_v` and `v` not split completely in `K_i^avoid`. Then we may
+> suppress the second condition on `L`.
+
+So the disjointness conjunct is NOT produced by the geometry at all: it is
+bought with auxiliary primes, at which the point is demanded to be totally
+split, chosen by Chebotarev so that complete splitting at them is
+incompatible with meeting the avoidance field. This matters because the
+parent docstring's two counterexamples (a Galois closure destroys
+disjointness; a field with one real embedding need not be totally real)
+show that no purely formal manipulation can produce it — and yet the
+geometric core, Moret–Bailly's theorem proper, genuinely does not carry it.
+
+WHY THE SPLITTING CONDITION IS WRITTEN `Nonempty (F →+* ℚ_[p])`. For a
+number field `F` NORMAL over `ℚ`, a ring map `F →+* ℚ_[p]` exists iff `p`
+splits completely in `F`: such a map makes some completion `F_w` a subfield
+of `ℚ_[p]` containing it, hence equal to it, so `w` has `e = f = 1`, and
+normality makes all primes above `p` conjugate hence all of degree one;
+conversely a degree-one prime `w` gives `F ↪ F_w = ℚ_[p]`. Written this way
+the condition needs no ramification/inertia API, and it is the exact
+`p`-adic analogue of the `F →+* ℝ` in which the archimedean condition (total
+reality, by `isTotallyReal_of_normal_of_realEmbedding`) is already written.
+Normality is used TWICE and is not a convenience: it is also what makes the
+subgroup `Γ F ≤ Γ ℚ` — the range appearing in the disjointness conjunct —
+independent of the embedding of algebraic closures implicit in
+`Field.absoluteGaloisGroup.map`. -/
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Good local solvability at all but finitely many primes** (sorry node —
+the Weil bounds plus Hensel's lemma; BLGGT Prop. 3.1.1, proof, sentence 2:
+"Combining Hensel's lemma with the Weil bounds we see that `T` has a
+`K_v`-rational point for all but finitely many primes `v` of `K`").
+
+For `C` smooth, separated, of finite type, quasi-compact and geometrically
+irreducible over `ℚ`, there is a bound `B` such that `C` has a `ℚ_[p]`-point
+for every prime `p > B`.
+
+WHY IT IS TRUE. Spread `C` out to a smooth model `𝒞 → Spec ℤ[1/M]` with
+geometrically irreducible fibres (possible for some `M`, by the standard
+limit arguments: smoothness, finite type and geometric irreducibility all
+spread out). For `p ∤ M` the fibre `𝒞_{𝔽_p}` is then a smooth geometrically
+irreducible `𝔽_p`-variety, so the Lang–Weil estimate — the Weil bounds
+themselves in the case `dim = 1` that this file needs — gives
+`#𝒞(𝔽_p) = p^d + O(p^{d - 1/2})`, which is positive once `p` exceeds a bound
+depending only on the degree and dimension of the model. Hensel's lemma
+lifts a smooth `𝔽_p`-point to a `ℤ_p`-point, hence to a `ℚ_[p]`-point.
+
+NO NONEMPTINESS HYPOTHESIS IS NEEDED: mathlib's `IrreducibleSpace` includes
+`Nonempty`, so `GeometricallyIrreducible fC` already forces `C ≠ ∅`.
+
+NOT A CURVE STATEMENT: no dimension hypothesis appears, because Lang–Weil is
+uniform in the dimension. It is stated in that generality deliberately — the
+consumer is a curve, but the theorem is the general one and is reusable.
+
+CIRCULARITY GUARD: inherited from the parent — no route through
+`Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
+theorem exists_bound_forall_padicPoint_of_geometricallyIrreducible
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hsep : AlgebraicGeometry.IsSeparated fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hqc : AlgebraicGeometry.QuasiCompact fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC) :
+    ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
+      HasRationalPoint fC (ULift.{u} ℚ_[p]) :=
+  sorry
+
+/-- **The avoidance primes** (sorry node — Chebotarev density plus the
+decomposition-group dictionary; BLGGT Prop. 3.1.1, proof, sentences 1 and 3).
+
+Given an OPEN subgroup `N ≤ Γ ℚ` — the avoidance datum — and any bound `B`,
+there is a finite set `S` of primes, all larger than `B`, such that EVERY
+number field `F` normal over `ℚ` in which every `p ∈ S` splits completely
+(written `Nonempty (F →+* ℚ_[p])`, see the section docstring) satisfies the
+disjointness conclusion `N ⊔ Γ F = ⊤`.
+
+WHY IT IS TRUE. Let `M` be the normal core of `N`; it is open and normal, so
+its fixed field `L` is a finite Galois extension of `ℚ` with group
+`G = Γ ℚ / M`, and `N ⊇ M`, so it suffices to get `Γ F ⊔ M = ⊤`. Let
+`H₁, …, H_r` be the maximal normal subgroups of `G`, i.e. `L_i := L^{H_i}`
+are the minimal nontrivial Galois subextensions of `L/ℚ` (BLGGT's
+`K_i^avoid`, characterised there by having simple Galois group). For each `i`
+pick `g ∉ H_i` and, by Chebotarev density, a prime `p_i > B`, unramified in
+`L`, whose Frobenius class meets `g M`; then `p_i` does NOT split completely
+in `L_i`. Put `S = {p₁, …, p_r}`.
+
+Now let `F` be normal with all `p ∈ S` split completely. `Γ F` is normal
+(normality of `F`), so `Γ F · M` is a subgroup, corresponding to the Galois
+subextension `E = F ∩ L`. If `E ≠ ℚ` then `Gal(L/E)` is a proper normal
+subgroup of `G`, hence contained in some maximal normal `H_i`, so
+`E ⊇ L^{H_i} = L_i`; but `p_i` splits completely in `F`, hence in the
+subfield `E`, hence in `L_i` — contradicting the choice of `p_i`. So
+`E = ℚ`, i.e. `Γ F · M = Γ ℚ`, and a fortiori `N ⊔ Γ F = ⊤`.
+
+WHAT IS AVAILABLE HERE. `Fermat/FLT/GaloisRepresentation/Chebotarev.lean`
+already PROVES Chebotarev density in exactly the shape this argument wants
+(`dense_conjClasses_globalFrob`: for any finite set of finite places, the
+union of the conjugacy classes of `globalFrob v` over the remaining places
+is dense in `Γ ℚ`), and defines `globalFrob v : Γ ℚ` as the image of the
+local Frobenius. Density against the open set `gM` gives the prime, and
+excluding a finite set of places is how `p > B` is arranged. The piece that
+is NOT yet available is the dictionary between `Nonempty (F →+* ℚ_[p])` and
+`globalFrob p ∈ Γ F`, i.e. the decomposition-group description of complete
+splitting; that is where a prover should expect to spend the effort, and it
+is the natural place for a further cut.
+
+EDGE CASE, and why the statement is not vacuous in the degenerate direction:
+if `N = ⊤` then `r = 0` and `S = ∅`, and the conclusion holds trivially — as
+it must. The content is entirely in the case of a small `N`.
+
+CIRCULARITY GUARD: a statement of Galois theory and analytic number theory
+with no geometry and no representation `ρbar` in it, so no route through
+`Family.lean`, `Lift.lean` or `Modularity/Interface.lean` is relevant. -/
+theorem exists_primes_forall_sup_eq_top_of_isOpen
+    (N : Subgroup (Field.absoluteGaloisGroup ℚ))
+    (hNopen : IsOpen (N : Set (Field.absoluteGaloisGroup ℚ))) (B : ℕ) :
+    ∃ S : Finset ℕ, (∀ p ∈ S, p.Prime ∧ B < p) ∧
+      ∀ (F : Type u) (_ : Field F) (_ : NumberField F) (_ : Normal ℚ F),
+        (∀ (p : ℕ) [Fact p.Prime], p ∈ S → Nonempty (F →+* ℚ_[p])) →
+        N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ :=
+  sorry
+
 open CategoryTheory AlgebraicGeometry in
 /-- **Steps (ii)+(iii) of Moret–Bailly's route: the CURVE case** (sorry
 node — the arithmetic heart: Jacobians as schemes, an incompressible
 neighbourhood in the Picard scheme, and the local–global principle over
-`ℚ^tr`).
+`ℚ^tr`). This is Moret–Bailly, *Groupes de Picard et problèmes de Skolem
+II*, Ann. Sci. ÉNS 22 (1989), **Théorème 1.3**, §3 (the curve case; §2 is
+the hyperplane-section reduction, which is this file's Bertini sibling), in
+the form in which BLGGT Prop. 3.1.1 cites it:
+
+> Then Theorem 1.3 of [MB89] tells us that we can find a finite Galois
+> extension `K'/K` and a point `P ∈ T(K')` such that every place `v` of
+> `S^K` splits completely in `K'`.
 
 Exactly the affine statement, with `X` further required to be a CURVE
 (`topologicalKrullDim C ≤ 1`), and with the conclusion in its "raw"
 geometric form: the field produced is only asked to be a NUMBER FIELD that
-is NORMAL over `ℚ` and admits a ring map to `ℝ`. That is what the classical
+is NORMAL over `ℚ`, admits a ring map to `ℝ`, and splits every prime of a
+prescribed finite set `S` completely. That is what the classical
 construction delivers — `F` is built inside the field `ℚ^tr` of totally
 real algebraic numbers, hence inside `ℝ`, and is replaced by its Galois
-closure there — and `isTotallyReal_of_normal_of_realEmbedding` upgrades it
-to `NumberField.IsTotallyReal F` and `IsGalois ℚ F` for free.
+closure there, which preserves both total reality and complete splitting
+(both are compositum- and conjugation-stable) — and
+`isTotallyReal_of_normal_of_realEmbedding` upgrades it to
+`NumberField.IsTotallyReal F` and `IsGalois ℚ F` for free.
 
-The disjointness conjunct `N ⊔ Γ F = ⊤` is NOT free and is stated here
-unchanged: as the parent records, a Galois closure can destroy it, so it
-must be produced by the construction itself, at the same time as the field.
-This is Moret–Bailly's avoidance datum and it is what makes the theorem
-more than a "large field" statement.
+THE AVOIDANCE DATUM `N` IS GONE FROM THIS LEAF (2026-07-26). It is bought
+instead with the auxiliary primes `S`, by
+`exists_primes_forall_sup_eq_top_of_isOpen`; see the section docstring above
+for why that is the honest place for it and why the parent's two
+counterexamples do not obstruct it. What is left here is precisely the
+theorem Moret–Bailly proves.
+
+HOW `S` ENTERS MORET–BAILLY'S FRAMEWORK, since his hypotheses are subtle
+(recorded so that a prover does not have to rediscover it). His datum is a
+scheme over `Spec R` for `R` a ring of `S₀`-integers, together with a finite
+set `Σ` of places DISJOINT from `Max(R)`, and his theorem applies only to an
+INCOMPLETE datum — one for which `Σ ∪ Max(R)` is not all places of `K`. So
+one takes a model of `C` over `ℤ[1/M]` for a suitable `M`, inverts in
+addition every `p ∈ S` and ONE further prime `q ∉ S ∪ {∞}`, and sets
+`Σ = {∞} ∪ S` with `L_v = K_v` and `Ω_v = C(K_v)` (nonempty by the `hreal`
+and `hSpt` hypotheses, open and consisting of smooth points because `C` is
+smooth). The datum is then incomplete precisely because `q` was inverted,
+and Moret–Bailly's "point entier" is a closed point of the model finite over
+the base, whose residue field is the required `F` (his Remarque 1.5). The
+one further inverted prime is the whole reason the leaf is stated with a
+`ℚ`-point rather than an integral point.
 
 WHAT THE MISSING MACHINERY LIST BUYS. Of the four items recorded in the
 section docstring, this leaf needs (2) largeness/ampleness of `ℚ^tr` (Pop)
 and (4) Picard schemes/Jacobians with the incompressible-neighbourhood
-statement; item (1), the field `ℚ^tr` itself, is a prerequisite for those
-but does NOT appear in this statement, because "normal, with a ring map to
-`ℝ`" already captures everything a subfield of `ℚ^tr` contributes to the
-conclusion. Item (3), Bertini, has been moved off this leaf onto
-`exists_affineCurve_of_affine_geometricallyIrreducible`.
+statement — in Moret–Bailly's own §3 the compactness of the idele class
+group and of the Jacobian are what drive the proof; item (1), the field
+`ℚ^tr` itself, is a prerequisite for those but does NOT appear in this
+statement, because "normal, with a ring map to `ℝ`" already captures
+everything a subfield of `ℚ^tr` contributes to the conclusion. Item (3),
+Bertini, is `exists_affineCurve_of_affine_geometricallyIrreducible`.
+
+CIRCULARITY GUARD: inherited from the parent — no route through
+`Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
+theorem exists_normalSplitPoint_of_affine_curve
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hsep : AlgebraicGeometry.IsSeparated fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hqc : AlgebraicGeometry.QuasiCompact fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hreal : HasRationalPoint fC (ULift.{u} ℝ))
+    (hdim : topologicalKrullDim C ≤ 1)
+    (S : Finset ℕ) (hSprime : ∀ p ∈ S, p.Prime)
+    (hSpt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S →
+      HasRationalPoint fC (ULift.{u} ℚ_[p])) :
+    ∃ (F : Type u) (_ : Field F) (_ : NumberField F) (_ : Normal ℚ F)
+      (_ : F →+* ℝ),
+      (∀ (p : ℕ) [Fact p.Prime], p ∈ S → Nonempty (F →+* ℚ_[p])) ∧
+      HasRationalPoint fC F :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Steps (ii)+(iii) of Moret–Bailly's route: the CURVE case with the
+avoidance datum** (PROVEN 2026-07-26 as the assembly of the three leaves
+above, which is BLGGT Prop. 3.1.1's own proof; see the section docstring
+"The avoidance cut" for the mathematics).
+
+ASSEMBLY. `exists_bound_forall_padicPoint_of_geometricallyIrreducible`
+(Weil + Hensel) gives a bound `B` beyond which every prime is a place of
+good local solvability for `C`;
+`exists_primes_forall_sup_eq_top_of_isOpen` (Chebotarev) chooses the
+auxiliary primes `S` above that bound, so that complete splitting at `S`
+forces the disjointness conjunct for ANY normal `F`;
+`exists_normalSplitPoint_of_affine_curve` (Moret–Bailly Thm 1.3) produces
+the normal `F` with a real embedding, split at `S`, carrying an `F`-point of
+`C`. The two are then combined: the disjointness is read off `S`, not off
+the geometry.
+
+FAITHFULNESS. The statement is unchanged from the 2026-07-26 cut; only its
+proof is new. Its truth is not in doubt — it is BLGGT Prop. 3.1.1
+specialised to `K₀ = K = ℚ`, `S = {∞}` and `L'_∞ = ℝ` (so "totally split at
+`S`" reads "totally real"), with `K^avoid` the fixed field of the normal
+core of `N` — and the potential-modularity literature uses exactly this
+specialisation.
 
 CIRCULARITY GUARD: inherited from the parent — no route through
 `Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
@@ -1307,8 +1542,19 @@ theorem exists_normalRealPoint_of_affine_curve
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F) (_ : Normal ℚ F)
       (_ : F →+* ℝ),
       N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ ∧
-      HasRationalPoint fC F :=
-  sorry
+      HasRationalPoint fC F := by
+  classical
+  -- Weil bounds + Hensel: every prime beyond `B` is a place of good local solvability
+  obtain ⟨B, hB⟩ :=
+    exists_bound_forall_padicPoint_of_geometricallyIrreducible fC hsmooth hsep hft hqc hgi
+  -- Chebotarev: auxiliary primes beyond `B` at which complete splitting forces disjointness
+  obtain ⟨S, hS, hSsup⟩ := exists_primes_forall_sup_eq_top_of_isOpen.{u} N hNopen B
+  -- Moret–Bailly on the curve: a normal `F` inside `ℝ`, split at `S`, with an `F`-point
+  obtain ⟨F, hF, hNF, hnorm, ι, hsplit, hpt⟩ :=
+    exists_normalSplitPoint_of_affine_curve fC hsmooth hsep hft hqc hgi hreal hdim S
+      (fun p hp => (hS p hp).1)
+      (by intro p _ hp; exact hB p (hS p hp).2)
+  exact ⟨F, hF, hNF, hnorm, ι, hSsup F hF hNF hnorm hsplit, hpt⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Moret–Bailly's existence theorem, AFFINE CASE** (PROVEN 2026-07-26
