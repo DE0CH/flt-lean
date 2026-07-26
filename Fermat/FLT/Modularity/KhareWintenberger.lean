@@ -11479,6 +11479,109 @@ theorem charpoly_baseChange_apply {A : Type*} [CommRing A]
   rw [show (ρ.baseChange B) σ = LinearMap.baseChange B (ρ σ) from rfl,
     LinearMap.charpoly_baseChange]
 
+/-- **The residual congruence holds at EVERY element of `G_ℚ`, not only at
+the Frobenius elements** (PROVEN 2026-07-26 — hoisted verbatim out of the
+proof of `exists_residualCongruence_over_base` below, which had derived it
+internally as `hall` and then thrown it away).
+
+If the reduction of a rank-`2` lift `ρ` agrees with an IRREDUCIBLE rank-`2`
+residual `ρbar` on the Frobenius characteristic polynomials at every rational
+prime `q ∉ {2, ℓ}`, then `((ρ σ).charpoly).map π = (ρbar σ).charpoly` for
+EVERY `σ ∈ G_ℚ`.
+
+PROOF (unchanged, and it is Chebotarev + Brauer–Nesbitt): `π` is
+automatically continuous, `O` carrying the `ℤ_ℓ`-module topology and `k`
+being finite discrete, so `τ := ρ.baseChange k` is a genuine `k`-valued
+representation whose charpoly at `σ` is `((ρ σ).charpoly).map π`
+(`charpoly_baseChange_apply`).  `hπ` says `τ` and `ρbar` have the same
+Frobenius charpolys away from `{2, ℓ}`, so
+`GaloisRepresentation.exists_conj_of_charFrob_eq_away` — Chebotarev density
+plus Brauer–Nesbitt for the irreducible `ρbar` — produces a CONJUGATING
+isomorphism `e`, and conjugation leaves characteristic polynomials
+unchanged.
+
+WHY IT IS WORTH A NAME (2026-07-26).  Every route that presents `ρ|_{G_F}`
+as an object of the `F`-level Hilbert deformation category of
+`HardlyRamified/HilbertModularity.lean` needs exactly this: the field
+`HilbertDeformationDatum.resid` is quantified over ALL of `Γ F`, while the
+Frobenius-only form produced by `exists_residualCongruence_over_base` is
+strictly weaker and cannot build a datum.  The `∀ σ` form was already
+available inside that proof; not exporting it made the in-tree
+modularity-lifting route look blocked when it was not.  See the ROUTE AUDIT
+on `exists_heckeTraceAlgebra_of_congruentSeed` below, where this is
+recorded as one of the four blockers and is the first of them to be
+removed.
+
+The hypothesis set is deliberately SMALLER than
+`exists_residualCongruence_over_base`'s: neither `hℓodd`, `hℓ5`, `hZinj`,
+`hρ`, `hρbar`, `hπsurj` nor the base field `F` and its properties play any
+part in the argument, and dropping them makes the brick reusable at any
+lift/residual pair with matching Frobenius data. -/
+theorem forall_charpoly_map_eq_of_charFrob_map_eq
+    {ℓ : ℕ} [Fact ℓ.Prime]
+    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
+    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
+    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
+    {ρ : GaloisRep ℚ O (Fin 2 → O)}
+    (hrank : Module.rank O (Fin 2 → O) = 2)
+    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
+    [TopologicalSpace k] [DiscreteTopology k]
+    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
+    [Module.Free k W]
+    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
+    (hirr : ρbar.IsIrreducible)
+    (π : O →+* k)
+    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
+      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat) :
+    ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ((ρ σ).charpoly).map π = (ρbar σ).charpoly := by
+  classical
+  -- the reduction map `π` is automatically continuous: `O` carries the
+  -- `ℤ_[ℓ]`-module topology and `π ∘ algebraMap` lands in a finite discrete
+  -- field
+  have hcontπ : Continuous π :=
+    IsModuleTopology.continuous_of_ringHom (R := ℤ_[ℓ]) π
+      (continuous_ringHom_padicInt_of_finite (π.comp (algebraMap ℤ_[ℓ] O)))
+  letI : Algebra O k := π.toAlgebra
+  haveI : ContinuousSMul O k := continuousSMul_of_algebraMap O k
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hcontπ)
+  -- the reduction `τ := ρ.baseChange k` of the lift, and its charpoly
+  -- bookkeeping: at every Galois element its charpoly is the `π`-image
+  have hbc : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ((ρ.baseChange k) σ).charpoly = ((ρ σ).charpoly).map π := by
+    intro σ
+    rw [charpoly_baseChange_apply ρ σ, RingHom.algebraMap_toAlgebra]
+  have hrankτ : Module.rank k (TensorProduct O k (Fin 2 → O)) = 2 := by
+    rw [Module.rank_baseChange, hrank]
+    simp
+  -- `hπ` is exactly the Frobenius charpoly matching of `τ` with `ρbar`
+  -- away from the two rational primes `2` and `ℓ`
+  have hcf : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉
+        ({Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+          (Fact.out : Nat.Prime ℓ).toHeightOneSpectrumRingOfIntegersRat} :
+            Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) →
+      (ρ.baseChange k).charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
+        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat := by
+    intro q hq hqS
+    have hq2 : q ≠ 2 := by
+      rintro rfl
+      exact hqS (Finset.mem_insert_self _ _)
+    have hqℓ : q ≠ ℓ := by
+      rintro rfl
+      exact hqS (Finset.mem_insert_of_mem (Finset.mem_singleton_self _))
+    rw [GaloisRep.charFrob_eq_charpoly_globalFrob, hbc,
+      ← GaloisRep.charFrob_eq_charpoly_globalFrob]
+    exact hπ q hq hq2 hqℓ
+  -- Chebotarev + Brauer–Nesbitt: the reduction IS `ρbar`, up to conjugation
+  obtain ⟨e, he⟩ := GaloisRepresentation.exists_conj_of_charFrob_eq_away hW
+    hirr hrankτ (ρ.baseChange k) _ hcf
+  -- hence the charpoly congruence holds at EVERY element of `G_ℚ`,
+  -- conjugation leaving characteristic polynomials unchanged
+  intro σ
+  rw [← hbc σ, ← he, GaloisRep.conj_apply, LinearEquiv.charpoly_conj]
+
 set_option linter.unusedVariables false in
 /-- **The residual bridge over the Moret–Bailly base** (PROVEN
 2026-07-25; sub-leaf (c) of the modularity-lifting cut — Chebotarev +
@@ -11607,52 +11710,13 @@ theorem exists_residualCongruence_over_base
         ((ρ.map (algebraMap ℚ F)).charFrob w).map π =
           (ρbar.map (algebraMap ℚ F)).charFrob w := by
   classical
-  -- the reduction map `π` is automatically continuous: `O` carries the
-  -- `ℤ_[ℓ]`-module topology and `π ∘ algebraMap` lands in a finite discrete
-  -- field
-  have hcontπ : Continuous π :=
-    IsModuleTopology.continuous_of_ringHom (R := ℤ_[ℓ]) π
-      (continuous_ringHom_padicInt_of_finite (π.comp (algebraMap ℤ_[ℓ] O)))
-  letI : Algebra O k := π.toAlgebra
-  haveI : ContinuousSMul O k := continuousSMul_of_algebraMap O k
-    (by rw [RingHom.algebraMap_toAlgebra]; exact hcontπ)
-  -- the reduction `τ := ρ.baseChange k` of the lift, and its charpoly
-  -- bookkeeping: at every Galois element its charpoly is the `π`-image
-  have hbc : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      ((ρ.baseChange k) σ).charpoly = ((ρ σ).charpoly).map π := by
-    intro σ
-    rw [charpoly_baseChange_apply ρ σ, RingHom.algebraMap_toAlgebra]
-  have hrankτ : Module.rank k (TensorProduct O k (Fin 2 → O)) = 2 := by
-    rw [Module.rank_baseChange, hrank]
-    simp
-  -- `hπ` is exactly the Frobenius charpoly matching of `τ` with `ρbar`
-  -- away from the two rational primes `2` and `ℓ`
-  have hcf : ∀ (q : ℕ) (hq : q.Prime),
-      hq.toHeightOneSpectrumRingOfIntegersRat ∉
-        ({Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
-          (Fact.out : Nat.Prime ℓ).toHeightOneSpectrumRingOfIntegersRat} :
-            Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ))) →
-      (ρ.baseChange k).charFrob hq.toHeightOneSpectrumRingOfIntegersRat =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat := by
-    intro q hq hqS
-    have hq2 : q ≠ 2 := by
-      rintro rfl
-      exact hqS (Finset.mem_insert_self _ _)
-    have hqℓ : q ≠ ℓ := by
-      rintro rfl
-      exact hqS (Finset.mem_insert_of_mem (Finset.mem_singleton_self _))
-    rw [GaloisRep.charFrob_eq_charpoly_globalFrob, hbc,
-      ← GaloisRep.charFrob_eq_charpoly_globalFrob]
-    exact hπ q hq hq2 hqℓ
-  -- Chebotarev + Brauer–Nesbitt: the reduction IS `ρbar`, up to conjugation
-  obtain ⟨e, he⟩ := GaloisRepresentation.exists_conj_of_charFrob_eq_away hW
-    hirr hrankτ (ρ.baseChange k) _ hcf
-  -- hence the charpoly congruence holds at EVERY element of `G_ℚ`,
-  -- conjugation leaving characteristic polynomials unchanged
+  -- REFACTORED 2026-07-26: the Chebotarev + Brauer–Nesbitt argument that used
+  -- to be inlined here is now the brick `forall_charpoly_map_eq_of_charFrob_map_eq`
+  -- above, which states its `∀ σ : Γ ℚ` conclusion rather than discarding it.
+  -- Nothing about this statement or its mathematics changed.
   have hall : ∀ σ : Field.absoluteGaloisGroup ℚ,
-      ((ρ σ).charpoly).map π = (ρbar σ).charpoly := by
-    intro σ
-    rw [← hbc σ, ← he, GaloisRep.conj_apply, LinearEquiv.charpoly_conj]
+      ((ρ σ).charpoly).map π = (ρbar σ).charpoly :=
+    forall_charpoly_map_eq_of_charFrob_map_eq hrank hW hirr π hπ
   -- in particular at the Frobenius elements of the places of `F`, which are
   -- the images in `G_ℚ` of the global Frobenii of `F`: the bad set is EMPTY
   refine ⟨∅, fun w _ => ?_⟩
@@ -11959,30 +12023,136 @@ development over a totally real base:
   production leaf.
 
 So item (4) of the missing-machinery list below EXISTS IN THIS TREE, and
-item (2) exists in abstract form.  What is genuinely missing, and is the
-whole remaining gap of THIS leaf, is narrower than that list suggests:
+item (2) exists in abstract form.
 
-1. `HilbertHeckeAlgebra.T` is module-finite over **`ℤ_[ℓ]`**, not over `ℤ`.
-   The `ℚ`-rational structure of the Hecke algebra — that it is the
-   `ℤ_[ℓ]`-completion of a `ℤ`-finite algebra of Hecke operators acting on a
-   `ℚ`-rational space of cusp forms, i.e. Shimura rationality — is recorded
-   nowhere.  This is the ONLY reason the development there yields
-   `IsIntegral ℤ_[ℓ]` (`exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified`)
-   and cannot yield a number field.
-2. The base fields do not match.  That development PRODUCES its own totally
-   real `F` (inside `PotentialHeckeDatum`) and needs it to satisfy
-   `residueCardTwo`; this leaf is handed `F` and a `MoretBaillySeed` by its
-   consumer, and a seed is strictly weaker than a `HilbertHeckeAlgebra` —
-   as `PotentialHeckeDatum`'s own docstring says, "a single modular lift
-   does not make the whole universal family Hecke".
+## ROUTE AUDIT, 2026-07-26 (SECOND PASS — it CORRECTS the first pass, which
+named the wrong repair).  State the check that refutes each item, per the
+standing rule; every claim below was re-run against the tree on that date.
 
-Consequently a discharge along the in-tree route is a CUT-LEVEL repair, not
-a proof to be written here: it would add the `ℚ`-rational structure to
-`HilbertHeckeAlgebra` and re-plumb this leaf's consumer chain so that `F`
-comes from `PotentialHeckeDatum` rather than from `MoretBaillySeed`.  That
-spans `MoretBaillySeed`, `exists_moretBailly_seed_of_five_le`,
-`exists_heckePackage_of_seed` and this node, and belongs to whoever owns
-that cut.  It is recorded here so it is not rediscovered a fourth time.
+The in-tree assembly that WOULD close this leaf is completely explicit, and
+it is worth writing down because three of its four ingredients are already
+present.  Take `𝒟'` the `F`-level datum of `ρ|_{G_F}` (coefficients `O`),
+`𝒟` a weakly universal trace-generated datum, `𝒟T` the datum of the Hecke
+algebra.  Then `𝒟.IsWeaklyUniversal` supplies BOTH classifying maps —
+`f : 𝒟.R → O` and `ψ : 𝒟.R → 𝒟T.R` — each carrying
+`∀ g, ((𝒟.ρ g).charpoly).map · = (·.ρ g).charpoly`; `ψ` is bijective by
+`surjective_classifyingMap_hilbertHeckeDatum` and
+`injective_classifyingMap_hilbertHeckeDatum` (both EXPORTED, both taking the
+classifying map explicitly, so the ρ-compatibility that
+`exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal` discards is recoverable
+without touching that file); and
+`exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` is PROVEN with
+`𝒟T.ρ = T.ρT` on the nose.  So `ιT := ιO ∘ f ∘ ψ⁻¹` and `t w := heckeT w`
+give the conclusion verbatim, `charFrobT` supplying the sign.
+
+WARNING ON THE INJECTIVITY HALF (2026-07-27, from the owner of the
+Taylor–Wiles-prime cluster; recorded here because this audit RECOMMENDS that
+route).  `injective_classifyingMap_hilbertHeckeDatum` is the Taylor–Wiles
+patching half, and in THIS tree it rests on the open leaves
+`exists_hilbertTaylorWilesPrimeSet` and `exists_hilbertPatchedModule`.  On
+branch `flt-lean-59` those have been decomposed further, and that
+DECOMPOSITION contains a FALSE leaf:
+`exists_hilbertFixing_rootsOfUnity_discrim_isSquare` is refuted by ℓ = 7,
+curve 54b1, `F = F₀·M` with `F₀ ⊂ ℚ(E[7])` the fixed field of `ρ̄⁻¹(H)`,
+`H = N(T_ns) ∩ SL₂(𝔽₇)` of order 16 — every element of `H` has
+`tr² − 4·det ∈ {0, 3, 5}` and `3`, `5` are non-squares mod `7`, so the
+conclusion already fails at `n = 0`.  (Re-verified independently here by
+direct enumeration of `SL₂(𝔽₇)`: `|N(T_ns)| = 16` and the discriminant set
+is exactly `{0, 3, 5}` against squares `{0, 1, 2, 4}`.)
+
+Nothing in THIS module is tainted — none of those declarations exists in
+this tree, and the two bricks above are axiom-clean
+`[propext, Classical.choice, Quot.sound]`, hence consume no sorried leaf at
+all.  What the refutation costs is the SHAPE of the patching input: the
+falsity is manufactured by quantifying over arbitrary number fields `F`
+while demanding eigenvalues in a FIXED residual field `k`, and the repair is
+to thread the quadratic enlargement of `k` through `IsTaylorWilesPrimeSet`.
+So a future owner closing this leaf along the route above should expect the
+injectivity half to arrive with an ENLARGED `k`, and should check that
+`HilbertHeckeAlgebra.πT`'s target survives that enlargement before building
+on it.
+
+FOUR blockers stood in the way.  TWO ARE NOW GONE:
+
+1. *(REMOVED 2026-07-26.)* `HilbertDeformationDatum.resid` is quantified over
+   ALL of `Γ F`, while this leaf is handed only the Frobenius-level `hcong`.
+   The `∀ σ` form was already derived inside the proof of
+   `exists_residualCongruence_over_base` and thrown away; it is now exported
+   as `forall_charpoly_map_eq_of_charFrob_map_eq` above.  Refuting check:
+   grep that name.
+2. *(REMOVED, modulo one commutative-algebra brick.)* Building `𝒟'` needs
+   `IsNoetherianRing O`, `IsAdic (maximalIdeal O)` and `IsAdicComplete`.
+   `IsNoetherianRing.of_finite ℤ_[ℓ] O` gives the first; the other two follow
+   from `[Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]` via
+   `ProfiniteLocalNoetherian.isAdic_isAdicComplete_of_isOpen_of_fg`, whose
+   `hopen` is mathlib's `IsLocalRing.isOpen_maximalIdeal`
+   (`Mathlib/Topology/Algebra/Ring/Compact.lean`, which also has
+   `isOpen_maximalIdeal_pow`) and whose compact-Hausdorff input is the basis
+   homeomorphism `O ≃ₜ (ι → ℤ_[ℓ])` used verbatim at `Threeadic.lean`'s
+   `exists_residue_package` (`O` is `ℤ_[ℓ]`-FREE because it is a domain with
+   `hZinj`, hence torsion-free over a PID —
+   `Module.free_of_finite_type_torsion_free'`).  Only the `hbasis` clause —
+   that `nhds 0` has a basis of open IDEALS — still has to be written out;
+   the intended witnesses are the ideals
+   `Ideal.map (algebraMap ℤ_[ℓ] O) ((maximalIdeal ℤ_[ℓ]) ^ n)`, which the
+   basis homeomorphism carries to `Set.pi univ (fun _ => ℓ ^ n • ℤ_[ℓ])`.
+   Refuting check: read `Threeadic.lean:135-150`.
+
+TWO REMAIN, and only the second is deep:
+
+3. `HilbertHeckeAlgebra.T` is module-finite over **`ℤ_[ℓ]`**, not over `ℤ`.
+   The `ℚ`-rational structure — that `T` is the `ℤ_[ℓ]`-completion of a
+   `ℤ`-finite algebra of Hecke operators acting on a `ℚ`-rational space of
+   cusp forms, i.e. Shimura rationality — is recorded nowhere.  This is the
+   ONLY reason that development yields `IsIntegral ℤ_[ℓ]`
+   (`exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified`) and
+   cannot yield a number field.  Cost: a `Tℤ`/`jℤ`/`tℤ` package on
+   `HilbertHeckeAlgebra` (or on `MoretBaillySeed`), plus a producing leaf.
+   Refuting check: `grep 'Module.Finite ℤ ' HilbertModularity.lean`.
+
+4. **THE REAL BLOCKER, AND IT IS NOT THE ONE THIS DOCSTRING USED TO NAME.**
+   The first pass said the repair was to "re-plumb this leaf's consumer chain
+   so that `F` comes from `PotentialHeckeDatum` rather than from
+   `MoretBaillySeed`".  That is NOT possible and NOT the repair: this leaf's
+   conclusion is about the places of the `F` it is HANDED, so a `F` produced
+   elsewhere cannot be substituted.  What `PotentialHeckeDatum` really
+   contributes is one FIELD, `residueCardTwo` — every `w ∣ 2` has residue
+   field `𝔽₂` — and the `F`-level deformation category genuinely needs it:
+   `exists_isWeaklyUniversal_hilbertDeformationDatum` demands
+   `ℓ ∤ N(w)² − 1` at every `w ∣ 2`, and the refutation block above
+   `isHilbertTameAtTwo_of_fibreProduct` records a machine-checked
+   counterexample (`ℓ = 5`, `F = ℚ(μ₅)`, `N(w) = 16`) without it.
+
+   `residueCardTwo` CANNOT be added as a hypothesis or a leaf about a GIVEN
+   `F` — that would be a FALSE leaf, since a general totally real Galois `F`
+   has `2` inert (`ℚ(√5)`).  It has to be arranged where `F` is BORN, and in
+   this module `F` is born in the geometric chain
+   `exists_moretBailly_seed_of_five_le` → `exists_hilbertBlumenthalPoint_of_five_le`
+   → `exists_totallyReal_point_of_geometricallyIrreducible` →
+   `exists_totallyReal_point_of_affine_geometricallyIrreducible` →
+   `exists_normalRealPoint_of_affine_curve` → `exists_normalSplitPoint_of_affine_curve`.
+
+   That chain ALREADY produces an `F` split completely at a prescribed finite
+   set `S` of primes — so the mechanism exists.  What blocks `2 ∈ S` is that
+   `S` is chosen by `exists_primes_forall_sup_eq_top_of_isOpen` ABOVE the
+   Weil–Hensel bound `B` of
+   `exists_bound_forall_padicPoint_of_geometricallyIrreducible`, precisely so
+   that local solvability is free.  `2` is below that bound, so demanding
+   `2 ∈ S` costs a genuine `X(ℚ₂)`-point of the twisted Hilbert–Blumenthal
+   variety — exactly the `Ω_2 ⊆ X(ℚ_2)` that
+   `PotentialHeckeDatum.residueCardTwo`'s own docstring says the citation
+   pays for — and, because the chain passes through a BERTINI cut to an
+   affine curve, that `ℚ₂`-point must additionally be arranged to lie on the
+   curve.  Refuting check: read `exists_normalRealPoint_of_affine_curve` and
+   see whether its `S` is still constrained to lie above `B`.
+
+Consequently the cut-level repair is NOT on `MoretBaillySeed`'s side at all:
+it is (3) on the Hecke algebra, and (4) on the MORET–BAILLY GEOMETRIC CHAIN,
+whose Moret–Bailly statement is currently specialized to `S = {∞}` and must
+gain finite-place local conditions (BLGGT Prop. 3.1.1 has the general `S`;
+Taylor 2002 uses it with `2 ∈ S`).  Anyone attacking this leaf should start
+at (4), because (1)–(3) are cheap and (4) is what actually decides whether
+the in-tree route exists.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
 through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
@@ -12223,11 +12393,16 @@ and Hilbert basis) and of `~/cs/FLT`, but it is FALSE of this project:
 through `HardlyRamified/Deformation.lean` — carries (4) as
 `exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal` (PROVEN over its own
 leaves) and (2) in abstract `ℤ_[ℓ]` form as `HilbertHeckeAlgebra`.  The
-two obstructions that remain — the absent `ℚ`-rational structure, and the
-base-field mismatch between `PotentialHeckeDatum` and `MoretBaillySeed` —
-are stated precisely on `exists_heckeTraceAlgebra_of_congruentSeed` above,
-which is where the remaining sorry now lives.  Anyone attacking this
-cluster should read that paragraph FIRST.
+two obstructions that remain — the absent `ℚ`-rational structure of the
+Hecke algebra, and the SPLITTING CONDITION AT `2` that the `F`-level
+deformation category needs and the Moret–Bailly geometric chain does not
+produce — are stated precisely in the ROUTE AUDIT on
+`exists_heckeTraceAlgebra_of_congruentSeed` above, which is where the
+remaining sorry now lives.  Anyone attacking this cluster should read that
+audit FIRST; note in particular that its 2026-07-26 SECOND PASS retracts
+the earlier "re-plumb `F` from `PotentialHeckeDatum`" diagnosis, which is
+not possible (this leaf's conclusion is about the places of the `F` it is
+handed) and was not the repair.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
