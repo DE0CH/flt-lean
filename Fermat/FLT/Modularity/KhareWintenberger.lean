@@ -1021,8 +1021,14 @@ a scheme-to-real-manifold bridge, which mathlib lacks entirely),
 `exists_normalRealPoint_of_affine_curve` (**PROVEN 2026-07-26** — no longer
 a leaf: it is now BLGGT Prop. 3.1.1's own assembly over the next three
 names),
-`exists_bound_forall_padicPoint_of_geometricallyIrreducible` (SORRY — Weil
-bounds + Hensel: good local solvability at all but finitely many primes),
+`exists_bound_forall_padicPoint_of_geometricallyIrreducible` (**PROVEN
+2026-07-26** — no longer a leaf: the affine coordinate ring `Γ(C, ⊤)` and the
+`Γ`–`Spec` unit turn it into the next name, with no arithmetic used),
+`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible` (SORRY — Weil
+bounds + Hensel: good local solvability at all but finitely many primes,
+ALGEBRAIC form; a `ℚ`-algebra `A` in place of the scheme, a `ℚ`-algebra map
+`A →ₐ[ℚ] ℚ_[p]` in place of the point. Step 3 of its route, the Hensel lift,
+is already in mathlib — see its docstring),
 `exists_primes_forall_sup_eq_top_of_isOpen` (**PROVEN 2026-07-26** — no
 longer a leaf: Chebotarev plus the decomposition-group dictionary, over the
 four new helper names `exists_conj_absoluteGaloisGroup_map_comp`,
@@ -1088,17 +1094,21 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    and the "incompressible neighbourhood" existence statement — step (ii),
    and by far the largest of the four. Owned by
    `exists_normalSplitPoint_of_affine_curve`.
-5. **Lang–Weil / the Weil bounds, plus Hensel lifting**, giving a
+5. **Lang–Weil / the Weil bounds, plus spreading out over `ℤ[1/M]`**, giving a
    `ℚ_[p]`-point of a smooth geometrically irreducible `ℚ`-variety for all
-   but finitely many `p`. Added 2026-07-26; owned by
-   `exists_bound_forall_padicPoint_of_geometricallyIrreducible`. Independent
-   of items 1–4 and startable on its own.
+   but finitely many `p`. Added 2026-07-26; owned since the same day by
+   `exists_bound_forall_padicAlgHom_of_geometricallyIrreducible` (the scheme
+   layer above it is discharged). Independent of items 1–4 and startable on
+   its own. NOTE the Hensel half of this item was struck out on 2026-07-26:
+   `Algebra.FormallySmooth.exists_mkₐ_comp_eq_of_isAdicComplete` plus
+   `IsAdicComplete (maximalIdeal ℤ_[p]) ℤ_[p]` are both already in mathlib, so
+   only Lang–Weil and the spreading-out limit argument are genuinely missing.
 
 Each is an independently ownable subproject; 1, 3, 5 and 6 are the ones that
 can be started without the others, and items 3 (Bertini), 5 (Lang–Weil +
-Hensel) and 6 (real points as a manifold) are now leaves of their own --
+spreading out) and 6 (real points as a manifold) are now leaves of their own --
 `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible`,
-`exists_bound_forall_padicPoint_of_geometricallyIrreducible` and
+`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible` and
 `exists_realApproximationBall_of_affine_geometricallyIrreducible` -- so each
 can be attacked without any of the others. The elementary
 `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` is a fourth
@@ -2163,8 +2173,113 @@ independent of the embedding of algebraic closures implicit in
 `Field.absoluteGaloisGroup.map`. -/
 
 open CategoryTheory AlgebraicGeometry in
-/-- **Good local solvability at all but finitely many primes** (sorry node —
-the Weil bounds plus Hensel's lemma; BLGGT Prop. 3.1.1, proof, sentence 2:
+/-- **Good local solvability, ALGEBRAIC FORM** (sorry node — Lang–Weil plus
+Hensel; the whole arithmetic content of BLGGT Prop. 3.1.1's sentence 2, with
+the scheme layer stripped off).
+
+For a `ℚ`-algebra `A` whose spectrum is smooth, of finite type and
+geometrically irreducible over `ℚ`, there is a bound `B` such that for every
+prime `p > B` there is a `ℚ`-algebra map `A →ₐ[ℚ] ℚ_[p]`.
+
+WHY THIS IS THE RIGHT CUT. The consumer
+`exists_bound_forall_padicPoint_of_geometricallyIrreducible` is stated for a
+general affine scheme `C` over `Spec ℚ`; but `C` affine means `C ≅ Spec Γ(C, ⊤)`
+and a `ℚ_[p]`-point of `C` is then exactly a `ℚ`-algebra map out of the
+coordinate ring. So NOTHING geometric survives on this side of the cut except
+the three hypotheses, and a prover here works with a ring and polynomial
+equations, which is where Lang–Weil and Hensel are classically stated.
+
+The hypotheses are deliberately left in morphism form (`Smooth (specRatMap A)`
+rather than `Algebra.Smooth ℚ A`) because that is exactly what the consumer can
+hand over with no instance juggling, and because mathlib converts them itself
+when wanted: `HasRingHomProperty @Smooth RingHom.Smooth` together with
+`HasRingHomProperty.iff_of_isAffine` turns `Smooth (Spec.map φ)` into
+`RingHom.Smooth φ`, and likewise `LocallyOfFiniteType` into
+`RingHom.FiniteType`. Doing that conversion HERE would force the `ℚ` versus
+`ULift ℚ` instance path into the statement, which this development has been
+burned by before; doing it inside the proof is free.
+
+`IsSeparated` and `QuasiCompact` do NOT appear: `Spec A ⟶ Spec (ULift ℚ)` is an
+affine morphism, hence separated and quasi-compact for free. Dropping them
+makes the leaf strictly more usable and costs the consumer nothing.
+
+WHY IT IS TRUE (BLGGT Prop. 3.1.1, and the classical route behind it):
+
+1. **Spread out.** `A` is a finitely generated `ℚ`-algebra, so it is
+   `A₁ ⊗_{ℤ[1/M]} ℚ` for some `M > 0` and some finitely generated
+   `ℤ[1/M]`-algebra `A₁`; enlarging `M` makes `A₁` smooth over `ℤ[1/M]` with
+   geometrically irreducible fibres, since smoothness, finite type and
+   geometric irreducibility all spread out (EGA IV 8–9, Stacks 01ZM, 0559,
+   0BUK). This is the step that manufactures the finite exceptional set: the
+   bound is `B = M`, or any bound past the Lang–Weil threshold below.
+2. **Count points mod `p`.** For `p ∤ M` the fibre `A₁ ⊗ 𝔽_p` is a smooth
+   geometrically irreducible `𝔽_p`-variety of some dimension `d`, so
+   Lang–Weil gives `#(A₁ ⊗ 𝔽_p)(𝔽_p) = p^d + O(p^{d - 1/2})` with an implied
+   constant depending only on the degree and dimension of a fixed projective
+   presentation — uniform in `p`, which is exactly why one bound `B` works for
+   all `p` at once. In particular the count is positive for `p > B`, i.e.
+   there is an `𝔽_p`-point, and smoothness makes it a SMOOTH point.
+3. **Lift by Hensel.** Base change to `ℤ_[p]`: `A₀ := A₁ ⊗_{ℤ[1/M]} ℤ_[p]` is
+   smooth, hence formally smooth, over `ℤ_[p]`, and the `𝔽_p`-point is an
+   algebra map `A₀ →ₐ[ℤ_[p]] ℤ_[p] ⧸ maximalIdeal`. Inverting `p` and
+   composing gives `A →ₐ[ℚ] ℚ_[p]`.
+
+MATHLIB INVENTORY FOR A PROVER (audited 2026-07-26 at this pin — read this
+before starting, it decides how the work splits):
+
+* Step 3 is **already in mathlib and is essentially free**:
+  `Algebra.FormallySmooth.exists_mkₐ_comp_eq_of_isAdicComplete`
+  (`Mathlib/RingTheory/Smooth/AdicCompletion.lean`) says that for
+  `[Algebra.FormallySmooth R A]` and `[IsAdicComplete I S]` every
+  `A →ₐ[R] S ⧸ I` lifts to `A →ₐ[R] S`; and
+  `instance : IsAdicComplete (IsLocalRing.maximalIdeal ℤ_[p]) ℤ_[p]`
+  (`Mathlib/NumberTheory/Padics/PadicIntegers.lean`) supplies the hypothesis
+  at `S = R = ℤ_[p]`. So multivariate Hensel need NOT be redeveloped: what is
+  left of step 3 is only the base change and the inversion of `p`.
+* Step 2, **Lang–Weil, does not exist in mathlib and does not exist in
+  `~/cs/FLT`.** It is the genuinely missing theory, and it is worth building
+  properly: it is reusable far beyond this leaf. Note that only the crudest
+  consequence is needed here — NONEMPTINESS of `X(𝔽_p)` for large `p`, not
+  the error term — so a proof route that gets `#X(𝔽_q) > 0` for
+  `q` past an explicit threshold is enough.
+* Step 1, **spreading out**, also does not exist. `Mathlib/AlgebraicGeometry/
+  AffineTransitionLimit.lean` has the limit formalism that such an argument is
+  usually built on.
+
+FAITHFULNESS NOTE. The bound `B` is chosen AFTER `A`, so the exceptional set
+is allowed to depend on the variety — which is what "all but finitely many"
+must mean here, and is what BLGGT use (they then enlarge `S` by finitely many
+primes). A `B` independent of `A` would be FALSE, and here is the witness: fix
+an odd prime `p` and a rational integer `u` that is a non-square unit mod `p`,
+and take the affine conic `A = ℚ[x, y] / (x² - u y² - p)`. It is smooth
+(the Jacobian `(2x, -2u y)` vanishes only at the origin, which is not on the
+curve) and geometrically irreducible (over `ℚ̄` it is the hyperbola `st = p`),
+yet it has NO `ℚ_[p]`-point: `x² - u y²` is the norm form of the UNRAMIFIED
+quadratic extension `ℚ_[p](√u)`, whose norm group is exactly the elements of
+even valuation, while `v_p(p) = 1`. Since `p` here is arbitrary, no single
+bound serves every variety — the quantifier order in the statement is
+load-bearing and must not be exchanged.
+
+`IrreducibleSpace` includes `Nonempty`, so `GeometricallyIrreducible` already
+forces `Spec A ≠ ∅`, i.e. `A ≠ 0`; no separate nonemptiness hypothesis is
+needed and none may be added.
+
+CIRCULARITY GUARD: inherited from the parent — no route through
+`Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. This leaf is pure
+arithmetic geometry over `ℚ` and mentions no Galois representation at all. -/
+theorem exists_bound_forall_padicAlgHom_of_geometricallyIrreducible
+    (A : Type u) [CommRing A] [Algebra ℚ A]
+    (hsmooth : AlgebraicGeometry.Smooth (specRatMap A))
+    (hft : AlgebraicGeometry.LocallyOfFiniteType (specRatMap A))
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible (specRatMap A)) :
+    ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
+      Nonempty (A →ₐ[ℚ] ULift.{u} ℚ_[p]) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Good local solvability at all but finitely many primes** (PROVEN
+2026-07-26 over the algebraic leaf above — the Weil bounds plus Hensel's
+lemma; BLGGT Prop. 3.1.1, proof, sentence 2:
 "Combining Hensel's lemma with the Weil bounds we see that `T` has a
 `K_v`-rational point for all but finitely many primes `v` of `K`").
 
@@ -2190,18 +2305,69 @@ uniform in the dimension. It is stated in that generality deliberately — the
 consumer is a curve, but the theorem is the general one and is reusable.
 
 CIRCULARITY GUARD: inherited from the parent — no route through
-`Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
+`Family.lean`, `Lift.lean` or `Modularity/Interface.lean`.
+
+PROVEN 2026-07-26 over ONE leaf,
+`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible`, which is the
+same statement with the SCHEME layer removed: the affine coordinate ring
+`A = Γ(C, ⊤)` replaces `C`, and a `ℚ_[p]`-point becomes a plain `ℚ`-algebra
+map `A →ₐ[ℚ] ℚ_[p]`. See that declaration's docstring for the route and for
+the mathlib inventory.
+
+`hsep` and `hqc` are unused and are underscore-prefixed for that reason:
+they are REDUNDANT, not vacuous. An affine morphism is separated and
+quasi-compact, so `IsAffine C` already supplies both; they are kept in the
+signature because the parent assembly passes them positionally and because
+the theorem is the general one. -/
 theorem exists_bound_forall_padicPoint_of_geometricallyIrreducible
     {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
     (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (hsmooth : AlgebraicGeometry.Smooth fC)
-    (hsep : AlgebraicGeometry.IsSeparated fC)
+    (_hsep : AlgebraicGeometry.IsSeparated fC)
     (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
-    (hqc : AlgebraicGeometry.QuasiCompact fC)
+    (_hqc : AlgebraicGeometry.QuasiCompact fC)
     (hgi : AlgebraicGeometry.GeometricallyIrreducible fC) :
     ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
-      HasRationalPoint fC (ULift.{u} ℚ_[p]) :=
-  sorry
+      HasRationalPoint fC (ULift.{u} ℚ_[p]) := by
+  -- `A := Γ(C, ⊤)`, a `ℚ`-algebra through the structure morphism `fC`.
+  letI : Algebra ℚ Γ(C, ⊤) :=
+    RingHom.toAlgebra
+      ((((Scheme.ΓSpecIso (CommRingCat.of (ULift.{u} ℚ))).inv ≫ fC.appTop).hom).comp
+        (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.toRingHom)
+  -- STEP 1. `C` is affine, so `fC` factors as `C ≅ Spec A` followed by the
+  -- structure map of `Spec A`; this is the `Γ`–`Spec` unit naturality square.
+  have key : C.isoSpec.hom ≫ specRatMap (Γ(C, ⊤)) = fC := by
+    have h1 : specRatMap (Γ(C, ⊤)) =
+        Spec.map ((Scheme.ΓSpecIso (CommRingCat.of (ULift.{u} ℚ))).inv ≫ fC.appTop) := by
+      unfold specRatMap
+      congr 1
+    rw [h1, Spec.map_comp, ← Category.assoc, Scheme.isoSpec_hom_naturality fC]
+    simp [Scheme.isoSpec]
+  have key2 : specRatMap (Γ(C, ⊤)) = C.isoSpec.inv ≫ fC := by
+    rw [← key, ← Category.assoc, Iso.inv_hom_id, Category.id_comp]
+  -- STEP 2. Transport the three used hypotheses across that isomorphism.
+  haveI : AlgebraicGeometry.Smooth fC := hsmooth
+  haveI : AlgebraicGeometry.LocallyOfFiniteType fC := hft
+  have hsm' : AlgebraicGeometry.Smooth (specRatMap (Γ(C, ⊤))) := by
+    rw [key2]; infer_instance
+  have hft' : AlgebraicGeometry.LocallyOfFiniteType (specRatMap (Γ(C, ⊤))) := by
+    rw [key2]; infer_instance
+  have hgi' : AlgebraicGeometry.GeometricallyIrreducible (specRatMap (Γ(C, ⊤))) := by
+    rw [key2]
+    exact (MorphismProperty.cancel_left_of_respectsIso
+      @AlgebraicGeometry.GeometricallyIrreducible C.isoSpec.inv fC).mpr hgi
+  -- STEP 3. Apply the algebraic leaf and transport the point back to `C`.
+  obtain ⟨B, hB⟩ :=
+    exists_bound_forall_padicAlgHom_of_geometricallyIrreducible (Γ(C, ⊤)) hsm' hft' hgi'
+  refine ⟨B, fun p _ hp => ?_⟩
+  obtain ⟨φ⟩ := hB p hp
+  refine ⟨Spec.map (CommRingCat.ofHom φ.toRingHom) ≫ C.isoSpec.inv, ?_⟩
+  rw [Category.assoc, ← key2]
+  unfold specRatMap
+  rw [← Spec.map_comp]
+  congr 1
+  ext x
+  simp
 
 /-! #### The avoidance primes: `exists_primes_forall_sup_eq_top_of_isOpen`
 
