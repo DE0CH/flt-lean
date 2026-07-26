@@ -2028,6 +2028,88 @@ hypothesis package (an irreducible hardly ramified mod-`ℓ`
 representation with `ℓ ≥ 5`) is classically unsatisfiable (headline
 below), so the statement is classically true for every package.
 
+SKELETON (2026-07-26 — glue first).  The bare `sorry` has been replaced
+by the full assembly, PROVEN, over ONE sorried `have` carrying the
+entire mathematical content: the WEIL-PAIRING DETERMINANT of the point's
+`ℓ`-adic member,
+
+  `∀ w ∉ pt.bad, LinearMap.det (pt.σ.toLocal w Frob_w) = (Nw : pt.O₀)`.
+
+Everything around it is now compiler-checked rather than asserted: the
+constant coefficient of a rank-`2` charpoly is the determinant
+(`LinearMap.det_eq_sign_charpoly_coeff` together with
+`Module.finrank_fin_fun`), `pt.matchℓ` transports the identity into
+`ℚ̄_ℓ`, ring homomorphisms preserve `Nat.cast`, and `pt.ψDℓ` — a
+homomorphism out of a field — is injective, so the identity descends to
+`pt.D`.  The `have` is stated in exactly the form a FIELD of
+`HilbertBlumenthalPoint` would take, and is deliberately NOT split off
+as a named theorem: by the refutation below it is not dispatchable work,
+so a separate node would only manufacture a phantom leaf for the fleet
+to send an agent at.
+
+NO PROOF OF THAT `have` CAN EXIST FROM THE INTERFACE — an explicit
+refutation RELATIVE TO the interface (2026-07-26).  The audit above says
+the interface "records no determinant condition"; that is sharper than
+it sounds, because the conclusion is actually REFUTABLE for the points
+the interface admits, existential `S₂` and all.  Let `pt` be any point
+and let `χ : Γ_F → μ_ℓ` be a character of order `ℓ`, unramified outside
+a finite set.  Twist:
+
+* `D' := D(ζ_ℓ)` and `P' w := X² − χ(w)·a_w·X + χ(w)²·Nw`;
+* `O₀' := O₀[ζ_ℓ]` (still local, finite free over `ℤ_ℓ`),
+  `σ' := σ ⊗ χ`, with `ψDℓ'`, `ιO₀'` the evident extensions — `matchℓ`
+  holds;
+* `residualℓ` SURVIVES the twist: `ζ_ℓ ≡ 1` modulo the maximal ideal of
+  `ℤ_ℓ[ζ_ℓ]` (where `ζ_ℓ − 1` is the uniformizer), so `χ` reduces to the
+  trivial character and the mod-`ℓ` charpolys are unchanged;
+* `C' := C[ζ_ℓ]`, `τp' := τp ⊗ χ` — `matchp` holds; `residualp` is
+  restored by replacing the DATUM `ρbarp` with `ρbarp ⊗ χ̄`, and
+  `irreduciblep`/`dihedralp` are invariant under twisting by a
+  character.
+
+The result satisfies every field of `HilbertBlumenthalPoint` over the
+SAME `ρbarF`, yet `(P' w).coeff 0 = χ(w)²·Nw`, which differs from `Nw`
+on a set of places of positive density (`χ²` is nontrivial because `ℓ`
+is odd), hence on an INFINITE set — so no finite `S₂` repairs it.  The
+conclusion is therefore not merely underdetermined by the interface: it
+is FALSE for points the interface admits.
+
+What keeps this declaration true is only the outer hypothesis package
+(`hirr`, `hρbar`, `hℓ5`: an irreducible hardly ramified mod-`ℓ`
+representation at `ℓ ≥ 5`), which is classically unsatisfiable — and
+that discharge is exactly the one the ROUTE AUDIT of the section
+docstring forbids here, in both of its forms (import cycle through
+`Modularity/Interface.lean`, declaration cycle through this module's own
+headline, whose assembly consumes pillar β hence this leaf).  So the
+outer hypotheses are load-bearing for TRUTH while being unusable in any
+PROOF, which is why the proof below consumes none of them.
+
+CONSEQUENCE — THE ONLY DISCHARGE IS A FIELD OF THE STRUCTURE
+(cut-level, NOT performed here; reported 2026-07-26).
+`HilbertBlumenthalPoint` must carry
+
+  `detσ : ∀ w ∉ bad, LinearMap.det (σ.toLocal w Frob_w) = (Nw : O₀)`
+
+(equivalently the `τp` form, which `matchp` and `ιC_injective` make
+interchangeable with it), supplied by the geometric joint
+`exists_hilbertBlumenthalPoint_of_five_le` — the only node that can see
+the abelian variety's Weil pairing.  Note that even a complete
+Weil-pairing theory in the tree could not discharge this leaf as stated:
+`HilbertBlumenthalPoint` carries no abelian scheme at all, and
+`Modularity/AbelianScheme.lean` (sorry-free) has geometric points and
+Galois-stable torsion but no Tate module, no Weil pairing and no
+Frobenius charpoly — so there would be nothing here to apply it TO.
+
+FAITHFULNESS (2026-07-26): `S₂` is EXISTENTIALLY quantified, so the
+question "must `S₂` exclude the places above `p` as well as the ramified
+ones?" is moot — the prover chooses `S₂`, and the proof below chooses
+`pt.bad`, which by the interface's own documentation already contains
+the conductor together with the places over `2`, `p` and `ℓ`.
+Classically the identity holds at EVERY place of good reduction,
+including `w ∣ p` (the constant coefficient of the compatible system's
+polynomial is computed by any realization `λ ∤ w`), so no widening is
+needed.  The statement is faithful.
+
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
 `Modularity/Interface.lean`. -/
@@ -2055,8 +2137,37 @@ theorem exists_coeff_zero_eq_absNorm_of_hilbertBlumenthalPoint
     (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
     (pt : HilbertBlumenthalPoint ℓ F (ρbar.map (algebraMap ℚ F))) :
     ∃ S₂ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
-      ∀ w ∉ S₂, (pt.P w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.D) :=
-  sorry
+      ∀ w ∉ S₂, (pt.P w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.D) := by
+  -- THE ONE OPEN STEP — the Weil pairing on the Hilbert–Blumenthal
+  -- abelian variety: the determinant of Frobenius on the `λ`-adic Tate
+  -- module is the cyclotomic value `Nw`.  Not derivable from the
+  -- interface, and refutable relative to it (twisting argument in the
+  -- docstring); this is the proposition that must become a FIELD of
+  -- `HilbertBlumenthalPoint`, supplied by the geometric joint.
+  have hweil : ∀ w ∉ pt.bad,
+      LinearMap.det (pt.σ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)) =
+        (Ideal.absNorm w.asIdeal : pt.O₀) := by
+    sorry
+  -- the constant coefficient of a rank-`2` charpoly is the determinant
+  have hcoeff : ∀ w ∉ pt.bad,
+      (pt.σ.charFrob w).coeff 0 = (Ideal.absNorm w.asIdeal : pt.O₀) := by
+    intro w hw
+    have hfr : Module.finrank pt.O₀ (Fin 2 → pt.O₀) = 2 :=
+      Module.finrank_fin_fun pt.O₀
+    have hdet := LinearMap.det_eq_sign_charpoly_coeff
+      (pt.σ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w))
+    rw [hfr, neg_one_sq, one_mul] at hdet
+    rw [show pt.σ.charFrob w =
+        (pt.σ.toLocal w (Field.AbsoluteGaloisGroup.adicArithFrob w)).charpoly from rfl,
+      ← hdet, hweil w hw]
+  -- transport into `ℚ̄_ℓ` along the point's own compatibility datum,
+  -- then descend to `D` by injectivity of the place `ψDℓ`
+  refine ⟨pt.bad, fun w hw => ?_⟩
+  have hc := congrArg (fun q : Polynomial (AlgebraicClosure ℚ_[ℓ]) => q.coeff 0)
+    (pt.matchℓ w hw)
+  simp only [Polynomial.coeff_map] at hc
+  rw [hcoeff w hw, map_natCast] at hc
+  exact pt.ψDℓ.injective (by rw [map_natCast]; exact hc.symm)
 
 -- `backward.isDefEq.respectTransparency false`: the two `show` steps in
 -- the proof below unfold `GaloisRep.charFrob` to the
