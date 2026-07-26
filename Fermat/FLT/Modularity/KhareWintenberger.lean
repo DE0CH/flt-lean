@@ -6912,6 +6912,42 @@ because `char kp` is odd. But it is NO LONGER the only thing this leaf
 needs to know about `kp` — `hcard` is now the substantive hypothesis, and
 `h3` alone is provably insufficient.
 
+MISSING MACHINERY (surveyed 2026-07-26 — read this BEFORE dispatching at
+this leaf; it is not a one-cycle job and the survey is what says so).
+Four things the intended discharge needs, none of which exists here:
+
+1. *An induced representation as a `GaloisRep`.* Mathlib's
+   `Mathlib/RepresentationTheory/Induced.lean` induces along a group hom of
+   ABSTRACT groups; nothing produces a CONTINUOUS `GaloisRep ℚ kp (Fin 2 → kp)`
+   from an open index-`2` subgroup `Γ_M ≤ Γ_ℚ` and a character `Γ_M → kpˣ`.
+   The continuity, the rank-`2` framing and the identification of the induced
+   module with `Fin 2 → kp` all have to be built. `Ind` occurs in this tree
+   only inside docstrings.
+2. *Class field theory.* There is no Artin map in the tree, so a class (or
+   ray class) character of `M` cannot be turned into a character of `Γ_M` at
+   all. This is the single largest missing block.
+3. *The transfer.* `det (Ind χ) = ε_{M/ℚ} · (χ ∘ Ver)` needs the
+   Verlagerung `Ver : Γ_ℚ^{ab} → Γ_M^{ab}` and its value `Ver(c) = c² = 1`.
+   Mathlib has `MonoidHom.transfer`; the determinant identity for an induced
+   representation is not there.
+4. *The existence of `M`.* As written, the "concrete `χ`" paragraph above
+   demands an imaginary quadratic `M` whose CLASS GROUP has an element of
+   order `m = q − 1`, citing Nakagawa–Horie / Yamamoto. That is a
+   research-level theorem on the infinitude of imaginary quadratic fields
+   with class number divisible by `m`, and formalizing it is out of
+   proportion to what the leaf needs.
+
+A CHEAPER SUBSTITUTE FOR ITEM 4, which the next owner should take. Nothing
+in the argument requires the character to be UNRAMIFIED — only that
+`ψ = χ/χ^c` have order `≥ 3`. So fix ONE imaginary quadratic `M` and use RAY
+class characters: the ray class group of `M` of conductor `𝔣` has order
+growing with `N(𝔣)`, so it admits cyclic quotients of any prescribed order,
+and no theorem about class NUMBERS is needed. That removes the deepest
+input from the plan and leaves items 1–3, which are ordinary (if large)
+formalization work rather than research mathematics. Item 2 remains the
+gate: until class field theory reaches this tree, this leaf cannot be
+closed by the induced-representation route at all.
+
 FAITHFULNESS: the conclusion is a statement about `Γ_ℚ`-representations
 alone and mentions no space, so it cannot be discharged vacuously by a
 degenerate geometric object; and it is not vacuous in `F` either, since
