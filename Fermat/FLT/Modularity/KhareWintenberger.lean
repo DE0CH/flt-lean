@@ -6634,6 +6634,63 @@ theorem exists_injective_ringHom_algebraicClosure_of_moduleFinite {ℓ : ℕ}
     (IsAlgClosed.lift (R := ℤ_[ℓ]) (S := FractionRing O)
       (M := AlgebraicClosure ℚ_[ℓ])).toRingHom hxy
 
+/-- **Only finitely many places of a number field contain a fixed nonzero
+integer** (PROVEN 2026-07-26; pure Dedekind-domain theory — the brick that
+makes "the places of `F` over a rational prime" a `Finset`).
+
+`w ∋ a` is `w.asIdeal ∣ (a)` (`Ideal.dvd_span_singleton`), and only finitely
+many height-one primes divide a fixed nonzero ideal
+(`Ideal.finite_factors`).
+
+This is what lets a citation whose exceptional set `badF` is chosen
+EXISTENTIALLY upstream be NARROWED by a hypothesis of the form
+`∀ w, (p : 𝓞 F) ∈ w.asIdeal → w ∈ badF`: the exceptional set of a matching
+clause can always be enlarged by the places over `p` for free, so demanding
+that it already contains them costs the consumer nothing while removing from
+the citation a claim it has no right to make.  Two nodes below are narrowed
+this way — `exists_heckeSubfield_of_determinants` (`hbadℓ`, the places over
+`ℓ`) and `exists_threeadic_realization_of_heckePackage` (`hbad2`, `hbad3`,
+`hbadℓ`, the places over `2`, `3` and `ℓ`).
+
+RELOCATED 2026-07-26 from its original position further down this module:
+the `ℓ`-adic narrowing of the Carayol/Shimura sub-cut needs it well before
+the `3`-adic realization node does. -/
+theorem finite_heightOneSpectrum_mem_of_ne_zero {F : Type*} [Field F]
+    [NumberField F] (a : NumberField.RingOfIntegers F) (ha : a ≠ 0) :
+    {w : HeightOneSpectrum (NumberField.RingOfIntegers F) | a ∈ w.asIdeal}.Finite := by
+  have h : {w : HeightOneSpectrum (NumberField.RingOfIntegers F) | a ∈ w.asIdeal}
+      = {w : HeightOneSpectrum (NumberField.RingOfIntegers F) |
+          w.asIdeal ∣ Ideal.span {a}} := by
+    ext w
+    simp [Ideal.dvd_span_singleton]
+  rw [h]
+  exact Ideal.finite_factors (by simpa using ha)
+
+/-- **Any finite set of places can be enlarged to contain all the places
+above a fixed nonzero integer** (PROVEN 2026-07-26; the discharge form of
+`finite_heightOneSpectrum_mem_of_ne_zero`).
+
+This is the whole cost of the `hbad2`/`hbad3`/`hbadℓ` narrowings below:
+because a matching clause `∀ w ∉ badF, …` only WEAKENS as `badF` grows, the
+consumer can always move to `badF'` and hand the citation the hypotheses it
+now demands. It is applied once inside `exists_heckePackage_of_seed` (at
+`ℓ`, for the determinant sub-leaf) and three times in a row at the
+`3`-adic call site, at `2`, `3` and `ℓ`; the earlier conclusions survive the
+later enlargements because each `badF'` contains its predecessor. Nothing
+downstream assumes more. -/
+theorem exists_finset_superset_of_places_mem {F : Type*} [Field F]
+    [NumberField F] (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (a : NumberField.RingOfIntegers F) (ha : a ≠ 0) :
+    ∃ badF' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      badF ⊆ badF' ∧
+      ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+        a ∈ w.asIdeal → w ∈ badF' := by
+  classical
+  refine ⟨badF ∪ (finite_heightOneSpectrum_mem_of_ne_zero a ha).toFinset,
+    Finset.subset_union_left, ?_⟩
+  intro w hw
+  exact Finset.mem_union_right _ (by simpa using hw)
+
 /-- **`R = 𝕋` over the totally real base** (sub-leaf (a) of
 the modularity-lifting cut — Kisin 2009 / Taylor 2006, the
 Taylor–Wiles patching argument over `F`): given the modular seed `σ`
@@ -6863,10 +6920,19 @@ importantly, separately recorded statuses:
   Shimura rationality proper.  This is the one genuinely automorphic
   citation of the whole modularity-lifting cut.
 * `exists_heckeSubfield_of_determinants` — the DETERMINANT half at the
-  places over `ℓ`.  This is NOT a classical theorem: see its docstring,
-  which records that the clause is false for the intended objects
-  whenever `badF` omits a place over `ℓ`, and vacuous exactly when it
-  does not.
+  places over `ℓ`.  This is NOT a classical theorem: its docstring
+  records that the clause is false for the intended objects whenever
+  `badF` omits a place over `ℓ`, and vacuous exactly when it does not.
+  **NARROWED AND CLOSED 2026-07-26**: the node now carries the
+  hypothesis `hbadℓ : ∀ w, (ℓ : 𝓞 F) ∈ w.asIdeal → w ∈ badF`, which
+  deletes exactly the false instances, and is proven vacuously with
+  `E := ⊥`.  The hypothesis is discharged for free at
+  `exists_heckePackage_of_seed`, which enlarges the existentially
+  chosen `badF` by the places over `ℓ`
+  (`exists_finset_superset_of_places_mem`) — the same repair
+  `exists_threeadic_realization_of_heckePackage` received for the
+  places over `3`.  So the whole modularity-lifting cut now rests on
+  the single citation `exists_heckeSubfield_of_eigenvalues`.
 
 Both are stated as membership in a single FINITE-DIMENSIONAL
 intermediate field of `ℚ/ℚ̄_ℓ` rather than as an abstract number field
@@ -7220,10 +7286,13 @@ theorem exists_heckeSubfield_of_eigenvalues
   exact hint w (hsgood w hw)
 
 /-- **Rationality of the determinant function at the places over `ℓ`**
-(sorry node; sub-leaf (b-i-d) — the half of Shimura rationality that is
-NOT a classical theorem): the determinant function `dF` of the modular
-lift `ρ|_{G_F}` takes its values, at the places `w | ℓ` outside the bad
-set, inside ONE finite extension of `ℚ` sitting in `ℚ̄_ℓ`.
+(PROVEN 2026-07-26 by NARROWING — the statement was FALSE for the
+intended objects and is now VACUOUS; read the FAITHFULNESS REPAIR and
+VACUITY AUDIT below before building on it.  Sub-leaf (b-i-d) — the half
+of Shimura rationality that is NOT a classical theorem): the
+determinant function `dF` of the modular lift `ρ|_{G_F}` takes its
+values, at the places `w | ℓ` outside the bad set, inside ONE finite
+extension of `ℚ` sitting in `ℚ̄_ℓ`.
 
 WHY THIS IS SPLIT OFF FROM `exists_heckeSubfield_of_eigenvalues`: the
 two halves of the parent leaf have genuinely different statuses, and
@@ -7246,56 +7315,108 @@ merging them hid the weaker one behind the stronger one's citation.
   the intended objects it is FALSE at every place over `ℓ` at which the
   chosen Frobenius lift has transcendental cyclotomic value.
 
-CONSEQUENCE, recorded plainly.  This node is true only by the collapse
-route — the hypothesis package (an irreducible hardly ramified mod-`ℓ`
-representation with `ℓ ≥ 5`) is classically unsatisfiable, which is the
-headline of this very module — or vacuously, when `badF` happens to
-contain every place over `ℓ`.  The intended instantiation is the
-vacuous one: the bad set produced by `R = 𝕋` contains the places over
-`ℓ`.  The supplier that actually reaches it,
-`exists_heckeEigensystem_of_congruentSeed`, does NOT: it hands
-`badF := ∅`, and at that instantiation this clause is false for the
-intended objects.  So this leaf should not be attacked as a theorem;
-it should be discharged by an upstream restatement giving
-`exists_heckeEigensystem_of_congruentSeed` a genuine level/bad set
-containing the places over `ℓ`, after which this node becomes vacuous
-and provable outright with `E := ⊥`.  That restatement changes a
-sibling's conclusion type and was NOT performed here.
+CONSEQUENCE, recorded plainly (2026-07-25).  As originally stated —
+without the hypothesis `hbadℓ` below — this node was true only by the
+collapse route (the hypothesis package, an irreducible hardly ramified
+mod-`ℓ` representation with `ℓ ≥ 5`, is classically unsatisfiable, which
+is the headline of this very module), or vacuously, when `badF` happens
+to contain every place over `ℓ`.  The supplier that actually reaches it,
+`exists_heckeEigensystem_of_congruentSeed`, hands `badF := ∅`, so at the
+instantiation that reaches this node the clause was FALSE for the
+intended objects.
+
+FAITHFULNESS REPAIR (2026-07-26 — this is what closed the node, and it
+is a repair, not a proof of the old statement).  The old statement was
+retired in favour of the narrowed one below, by adding the hypothesis
+
+    hbadℓ : ∀ w, (ℓ : 𝓞 F) ∈ w.asIdeal → w ∈ badF
+
+which deletes exactly the false instances and nothing else.  This is
+the same narrowing that `exists_threeadic_realization_of_heckePackage`
+received for the places over `3`, for the same reason and at the same
+cost — namely none:
+
+* `badF` is chosen EXISTENTIALLY upstream
+  (`exists_heckeEigensystem_of_congruentSeed`, whose conclusion
+  quantifies it), and a matching clause `∀ w ∉ badF, …` only WEAKENS as
+  `badF` grows.  So the consumer `exists_heckePackage_of_seed` simply
+  moves to `badF ∪ {w : w ∋ ℓ}` — a `Finset` by
+  `finite_heightOneSpectrum_mem_of_ne_zero` above — and hands down the
+  hypothesis for free (`exists_finset_superset_of_places_mem`).
+* Nothing downstream assumes less: `exists_heckePackage_of_seed`
+  existentially quantifies `badF` in its own conclusion, and
+  `exists_potentialModularityWitness_of_five_le` already enlarges it
+  again by the places over `3`.  The `PotentialModularityWitness`
+  docstring always said `badF` contains the places over `2`, `3` and
+  `ℓ`; the formal statement now agrees with the interface.
+
+Why the false instances were false, restated once for the record: at
+`w | ℓ` the cyclotomic character IS ramified.  `hshape` together with
+`IsHardlyRamified.det` pins `dF w` to
+`ιO (algebraMap ℤ_[ℓ] O (χ_ℓ σ))` for `σ` the chosen arithmetic
+Frobenius lift at `w` (`Field.AbsoluteGaloisGroup.adicArithFrob`, an
+ARBITRARY choice inside the decomposition group), and `χ_ℓ` restricted
+to a decomposition group over `ℓ` is surjective onto an open subgroup of
+`ℤ_[ℓ]ˣ` by local class field theory.  An open subgroup of `ℤ_[ℓ]ˣ` is
+uncountable and the algebraic numbers are countable, so almost every
+element of it is TRANSCENDENTAL over `ℚ` and lies in no finite extension
+of `ℚ` whatever.  There is therefore no classical theorem asserting the
+old clause, and no repair of it other than deleting the places over `ℓ`
+from its range of quantification.
+
+VACUITY AUDIT (2026-07-26, mandatory reading).  With `hbadℓ` in place
+this node is VACUOUS: the conclusion is discharged by `E := ⊥` and the
+observation that `w ∉ badF` and `ℓ ∈ w.asIdeal` are contradictory.  It
+carries NO arithmetic content, and the underscore-prefixed binders
+below make that mechanically visible — `_hℓ5`, `_hZinj`, `_hρ`,
+`_hρbar`, `_hirr`, `_hFtr`, `_hFgal`, `_hirrF`, `_hιO`, `_hshape` is
+the entire hypothesis package, and the proof consumes none of it.  The
+node is RETAINED rather than deleted for two reasons: it is the stated
+place where the absence of any `ℓ`-adic determinant rationality is
+recorded, and its consumer
+`exists_heckeField_mem_range_of_eigensystem` still routes its
+`w | ℓ` clause through it, so the audit cannot be lost by a later
+refactor without breaking a proof.  The eigenvalue half
+`exists_heckeSubfield_of_eigenvalues` is UNAFFECTED and remains the one
+genuinely automorphic citation of the cut.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no
 discharge through `Family.lean`, `Lift.lean`, or
-`Modularity/Interface.lean`. -/
+`Modularity/Interface.lean` — respected: the proof below uses only
+mathlib's `Module.Finite ℚ ↥⊥`. -/
 theorem exists_heckeSubfield_of_determinants
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (_hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
     [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
     [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
+    (_hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
     {ρ : GaloisRep ℚ O (Fin 2 → O)}
     (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
+    (_hρ : IsHardlyRamified hℓodd hrank ρ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
     [TopologicalSpace k] [DiscreteTopology k]
     {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
     [Module.Free k W]
     (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
+    (_hρbar : IsHardlyRamified hℓodd hW ρbar)
+    (_hirr : ρbar.IsIrreducible)
     (F : Type u) [Field F] [NumberField F]
-    (hFtr : NumberField.IsTotallyReal F) (hFgal : IsGalois ℚ F)
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (_hFtr : NumberField.IsTotallyReal F) (_hFgal : IsGalois ℚ F)
+    (_hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
     (aF dF : HeightOneSpectrum (NumberField.RingOfIntegers F) →
       AlgebraicClosure ℚ_[ℓ])
-    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
-    (hshape : ∀ w ∉ badF,
+    (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (_hιO : Function.Injective ιO)
+    (_hshape : ∀ w ∉ badF,
       ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-        X ^ 2 - C (aF w) * X + C (dF w)) :
+        X ^ 2 - C (aF w) * X + C (dF w))
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
     ∃ E : IntermediateField ℚ (AlgebraicClosure ℚ_[ℓ]),
       FiniteDimensional ℚ E ∧
       ∀ w ∉ badF, (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal →
         dF w ∈ E :=
-  sorry
+  ⟨⊥, inferInstance, fun w hw hwℓ => absurd (hbadℓ w hwℓ) hw⟩
 
 /-- **Shimura rationality for the Hilbert-newform eigensystem, range
 form** (PROVEN 2026-07-25 as an assembly over the two halves of sub-leaf
@@ -7400,6 +7521,15 @@ now a purely formal assembly over two sharply separated citations:
 * `exists_heckeSubfield_of_determinants` (the `ℓ`-adic determinant
   clause, which is NOT a classical theorem — see its docstring) gives a
   finite-dimensional `E₂ ≤ ℚ̄_ℓ` containing `dF w` for `w | ℓ`.
+  NARROWED 2026-07-26: that sub-leaf now demands
+  `hbadℓ : ∀ w, (ℓ : 𝓞 F) ∈ w.asIdeal → w ∈ badF` — the places over `ℓ`
+  are already bad — under which it is VACUOUS and proven with `E₂ := ⊥`.
+  This node therefore carries `hbadℓ` too and passes it down; the
+  `w | ℓ` clause of its own conclusion is consequently vacuous as well,
+  and is retained only because the consumer's `d`-function extraction
+  is written uniformly over `w ∉ badF`.  The hypothesis costs nothing:
+  `exists_heckePackage_of_seed` chooses `badF` existentially and simply
+  enlarges it (`exists_finset_superset_of_places_mem`).
 
 The compositum `E₁ ⊔ E₂` is finite-dimensional over `ℚ`
 (`IntermediateField.finiteDimensional_sup`), hence a number field once
@@ -7447,7 +7577,9 @@ theorem exists_heckeField_mem_range_of_eigensystem
     (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
     (hshape : ∀ w ∉ badF,
       ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-        X ^ 2 - C (aF w) * X + C (dF w)) :
+        X ^ 2 - C (aF w) * X + C (dF w))
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
     ∃ (E : Type u) (_ : Field E) (_ : NumberField E)
       (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ]),
       (∀ w ∉ badF, aF w ∈ Set.range ψℓ) ∧
@@ -7463,7 +7595,7 @@ theorem exists_heckeField_mem_range_of_eigensystem
   -- extension `E₂`
   obtain ⟨E₂, hE₂, hd⟩ :=
     exists_heckeSubfield_of_determinants hℓodd hℓ5 hZinj hrank hρ hW hρbar
-      hirr F hFtr hFgal hirrF badF aF dF ιO hιO hshape
+      hirr F hFtr hFgal hirrF badF aF dF ιO hιO hshape hbadℓ
   haveI := hE₁
   haveI := hE₂
   -- the compositum is again a finite extension of `ℚ`
@@ -7875,7 +8007,9 @@ theorem exists_heckeField_of_eigensystem
     (ιO : O →+* AlgebraicClosure ℚ_[ℓ]) (hιO : Function.Injective ιO)
     (hshape : ∀ w ∉ badF,
       ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
-        X ^ 2 - C (aF w) * X + C (dF w)) :
+        X ^ 2 - C (aF w) * X + C (dF w))
+    (hbadℓ : ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (ℓ : NumberField.RingOfIntegers F) ∈ w.asIdeal → w ∈ badF) :
     ∃ (E : Type u) (_ : Field E) (_ : NumberField E)
       (ψℓ : E →+* AlgebraicClosure ℚ_[ℓ])
       (a d : HeightOneSpectrum (NumberField.RingOfIntegers F) → E),
@@ -7885,7 +8019,7 @@ theorem exists_heckeField_of_eigensystem
   -- range membership of the eigenvalues
   obtain ⟨E, hE, hNE, ψℓ, ha, hdℓ⟩ :=
     exists_heckeField_mem_range_of_eigensystem hℓodd hℓ5 hZinj hrank hρ hW
-      hρbar hirr F hFtr hFgal hirrF badF aF dF ιO hιO hshape
+      hρbar hirr F hFtr hFgal hirrF badF aF dF ιO hιO hshape hbadℓ
   letI : Field E := hE
   -- the eigenvalue function: the range membership in total form, ready
   -- for `choose` (the packaging step the citation no longer carries)
@@ -8037,13 +8171,30 @@ theorem exists_heckePackage_of_seed
     exists_residualCongruence_over_base hℓodd hℓ5 hZinj hrank hρ hW hρbar
       hirr π hπsurj hπ F hFtr hFgal hirrF
   -- (a) `R = 𝕋` over `F`: the raw `ℚ̄_ℓ`-valued Hecke eigensystem
-  obtain ⟨badF, aF, dF, ιO, hιO, hshape⟩ :=
+  obtain ⟨badF₀, aF, dF, ιO, hιO, hshape₀⟩ :=
     exists_heckeEigensystem_of_congruentSeed hℓodd hℓ5 hZinj hrank hρ hW
       hρbar hirr π hπsurj hπ F hFtr hFgal hirrF seed badρ hcong
+  -- (a') ENLARGE the exceptional set by the places of `F` over `ℓ`
+  -- (2026-07-26).  The shape clause only WEAKENS when its exceptional set
+  -- grows, so this is free; and it is what discharges the narrowed
+  -- determinant sub-leaf's `hbadℓ`, which exists because at `w | ℓ` the
+  -- cyclotomic character is RAMIFIED, so `dF w` is the cyclotomic value of
+  -- an arbitrarily chosen Frobenius lift — a generic element of `ℤ_[ℓ]ˣ`,
+  -- transcendental over `ℚ` and lying in no finite extension of it.  See
+  -- `exists_heckeSubfield_of_determinants` for the full audit.
+  have hℓne : (ℓ : NumberField.RingOfIntegers F) ≠ 0 :=
+    Nat.cast_ne_zero.mpr (Fact.out (p := ℓ.Prime)).ne_zero
+  obtain ⟨badF, hsub, hbadℓ⟩ :=
+    exists_finset_superset_of_places_mem badF₀
+      (ℓ : NumberField.RingOfIntegers F) hℓne
+  have hshape : ∀ w ∉ badF,
+      ((ρ.map (algebraMap ℚ F)).charFrob w).map ιO =
+        X ^ 2 - C (aF w) * X + C (dF w) :=
+    fun w hw => hshape₀ w fun h => hw (hsub h)
   -- (b) Carayol/Shimura: the eigensystem is defined over the Hecke field
   obtain ⟨E, hE, hNE, ψℓ, a, d, ha, hd⟩ :=
     exists_heckeField_of_eigensystem hℓodd hℓ5 hZinj hrank hρ hW hρbar hirr
-      F hFtr hFgal hirrF badF aF dF ιO hιO hshape
+      F hFtr hFgal hirrF badF aF dF ιO hιO hshape hbadℓ
   -- glue: the Hecke polynomial `X² − a_w·X + Nw` over `E`
   refine ⟨E, hE, hNE, badF, fun w => X ^ 2 - C (a w) * X + C (d w), ψℓ, ιO,
     hιO, fun w hw => ?_⟩
@@ -8642,55 +8793,6 @@ theorem exists_domain_coefficientRing_of_ringHom {p : ℕ} [Fact p.Prime]
     fun w => ?_⟩
   rw [hτ', Polynomial.map_map]
   congr 1
-
-/-- **Only finitely many places of a number field contain a fixed nonzero
-integer** (PROVEN 2026-07-26; pure Dedekind-domain theory — the brick that
-makes "the places of `F` over `3`" a `Finset`).
-
-`w ∋ a` is `w.asIdeal ∣ (a)` (`Ideal.dvd_span_singleton`), and only finitely
-many height-one primes divide a fixed nonzero ideal
-(`Ideal.finite_factors`).
-
-This is what lets the Carayol/Taylor citation below be NARROWED by the
-hypotheses `hbad2`, `hbad3`, `hbadℓ` (see its docstring): the exceptional
-set of the matching clause can always be enlarged by the places over `2`,
-`3` and `ℓ` for free, so demanding that it already contains them costs the
-consumer nothing while removing from the citation a claim it has no right to
-make. -/
-theorem finite_heightOneSpectrum_mem_of_ne_zero {F : Type*} [Field F]
-    [NumberField F] (a : NumberField.RingOfIntegers F) (ha : a ≠ 0) :
-    {w : HeightOneSpectrum (NumberField.RingOfIntegers F) | a ∈ w.asIdeal}.Finite := by
-  have h : {w : HeightOneSpectrum (NumberField.RingOfIntegers F) | a ∈ w.asIdeal}
-      = {w : HeightOneSpectrum (NumberField.RingOfIntegers F) |
-          w.asIdeal ∣ Ideal.span {a}} := by
-    ext w
-    simp [Ideal.dvd_span_singleton]
-  rw [h]
-  exact Ideal.finite_factors (by simpa using ha)
-
-/-- **Any finite set of places can be enlarged to contain all the places
-above a fixed nonzero integer** (PROVEN 2026-07-26; the discharge form of
-`finite_heightOneSpectrum_mem_of_ne_zero`).
-
-This is the whole cost of the `hbad2`/`hbad3`/`hbadℓ` narrowing of the
-Carayol/Taylor citation below: because a matching clause `∀ w ∉ badF, …`
-only WEAKENS as `badF` grows, the consumer can always move to `badF'` and
-hand the citation the hypotheses it now demands. It is applied three times
-in a row at the call site, at `2`, `3` and `ℓ`; the earlier conclusions
-survive the later enlargements because each `badF'` contains its
-predecessor. Nothing downstream assumes more. -/
-theorem exists_finset_superset_of_places_mem {F : Type*} [Field F]
-    [NumberField F] (badF : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
-    (a : NumberField.RingOfIntegers F) (ha : a ≠ 0) :
-    ∃ badF' : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
-      badF ⊆ badF' ∧
-      ∀ w : HeightOneSpectrum (NumberField.RingOfIntegers F),
-        a ∈ w.asIdeal → w ∈ badF' := by
-  classical
-  refine ⟨badF ∪ (finite_heightOneSpectrum_mem_of_ne_zero a ha).toFinset,
-    Finset.subset_union_left, ?_⟩
-  intro w hw
-  exact Finset.mem_union_right _ (by simpa using hw)
 
 /-- **The Hilbert-modular `3`-adic realization, geometric core**
 (sorry node — Carayol 1986, Théorème (A)/(B) / Taylor 1989; THE
