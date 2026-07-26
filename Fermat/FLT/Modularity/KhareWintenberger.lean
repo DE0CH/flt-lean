@@ -1120,10 +1120,23 @@ two BERTINI theorems in characteristic zero, smoothness and irreducibility of
 the generic hyperplane section, stated over the parameter space; this is the
 whole of item 3 of the missing-machinery list and by far the largest of the
 three),
-`exists_realApproximationBall_of_affine_geometricallyIrreducible` (SORRY —
-the `ℝ`-topology half: a whole BOX of parameters keeps a real point on the
-section, by the implicit function theorem on the real manifold `X(ℝ)`; needs
-a scheme-to-real-manifold bridge, which mathlib lacks entirely),
+`exists_realApproximationBall_of_affine_geometricallyIrreducible` (**PROVEN
+2026-07-26** — no longer a leaf: the `ℝ`-topology half, a whole BOX of
+parameters keeping a real point on the section, is discharged over the single
+name below plus the ring-map dictionary `ringHom_uliftRat_ext`,
+`ratStructHom`, `specRatMap_eq_specMap`,
+`hasRationalPoint_iff_exists_ringHom` and
+`hasRationalPoint_specQuotSpanSingleton_of_ringHom`, all PROVEN. The
+IMPLICIT FUNCTION THEOREM is NOT used: a sign change along an arc plus
+`intermediate_value_uIcc` produces the zero, which is all the statement
+asks for),
+`exists_realArc_of_affine_geometricallyIrreducible` (SORRY — what is left of
+the scheme-to-real-manifold bridge after that reduction: a smooth
+geometrically irreducible affine `ℚ`-variety of dimension `> 1` with a real
+point carries a NONCONSTANT CONTINUOUS ARC of real points `γ : ℝ → (A →+* ℝ)`.
+Item 6 of the missing-machinery list, in its minimal useful form — one chart
+of `X(ℝ)` suffices; no tangent space, no Jacobian, no implicit function
+theorem),
 `exists_normalRealPoint_of_affine_curve` (**PROVEN 2026-07-26** — no longer
 a leaf: it is now BLGGT Prop. 3.1.1's own assembly over the next three
 names),
@@ -1193,11 +1206,15 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible`.
 6. **Real points of a smooth `ℚ`-variety as a real manifold**: mathlib has no
    functor from schemes to real manifolds, so `X(ℝ) ⊆ ℝⁿ` must be identified
-   as a submanifold with tangent space the kernel of the Jacobian before
-   `HasStrictFDerivAt.implicitFunction` can be applied. Added 2026-07-26;
-   owned by `exists_realApproximationBall_of_affine_geometricallyIrreducible`.
-   Independent of items 1–5 and startable on its own; it is real analysis,
-   not arithmetic and not Bertini.
+   as a submanifold. Added 2026-07-26; **SHRUNK the same day** — it is now
+   owned by `exists_realArc_of_affine_geometricallyIrreducible`, and its
+   consumer `exists_realApproximationBall_of_affine_geometricallyIrreducible`
+   is PROVEN. What survives is only "there is a NONCONSTANT CONTINUOUS ARC of
+   real points", because the implicit function theorem was replaced by the
+   intermediate value theorem along that arc; so the tangent space, the
+   Jacobian and `HasStrictFDerivAt.implicitFunction` are all struck out, and a
+   single chart of `X(ℝ)` discharges the item. Independent of items 1–5 and
+   startable on its own; it is real analysis, not arithmetic and not Bertini.
 4. **Picard schemes / Jacobians as schemes**, with the torsor formalism
    and the "incompressible neighbourhood" existence statement — step (ii),
    and by far the largest of the four. Owned by
@@ -1223,7 +1240,9 @@ spreading out) and 6 (real points as a manifold) are now leaves of their own --
 `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible`,
 `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` together with
 `exists_bound_forall_formallySmooth_integralSystemModel`, and
-`exists_realApproximationBall_of_affine_geometricallyIrreducible` -- so each
+`exists_realArc_of_affine_geometricallyIrreducible` (whose consumer
+`exists_realApproximationBall_of_affine_geometricallyIrreducible` is PROVEN
+over it) -- so each
 can be attacked without any of the others. The elementary
 `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` was a fourth
 such starting point and is PROVEN (2026-07-26); it needed no missing-machinery
@@ -1454,9 +1473,11 @@ and Pop's theorem that `ℚ^tr` is a large/ample field. The argument is:
 **Step (i) is `exists_affineCurve_of_affine_geometricallyIrreducible`
 (PROVEN 2026-07-26 over `exists_dimensionDrop_of_affine_geometricallyIrreducible`,
 itself PROVEN over `exists_bertiniHyperplane_of_affine_geometricallyIrreducible`,
-itself PROVEN over the hyperplane PARAMETER SPACE and its three leaves
-`exists_nonZeroDivisorLocus_...`, `exists_bertiniGenericLocus_...` and
-`exists_realApproximationBall_of_affine_geometricallyIrreducible`, all SORRY)
+itself PROVEN over the hyperplane PARAMETER SPACE and its three branches
+`exists_nonZeroDivisorLocus_...` (SORRY), `exists_bertiniGenericLocus_...`
+(SORRY) and `exists_realApproximationBall_of_affine_geometricallyIrreducible`
+(PROVEN 2026-07-26 over the single leaf
+`exists_realArc_of_affine_geometricallyIrreducible`, SORRY))
 and steps (ii)+(iii) are `exists_normalRealPoint_of_affine_curve`
 (PROVEN 2026-07-26 over `exists_normalSplitPoint_of_affine_curve`, which is
 Moret–Bailly's theorem proper, plus the two arithmetic leaves that buy the
@@ -1681,6 +1702,101 @@ theorem exists_rat_mem_box_eval_ne_zero {m : ℕ} {F : MvPolynomial (Fin m) ℚ}
   intro y hy
   rw [map_zero]
   exact hcon y (fun i => hy i (Set.mem_univ i))
+
+/-! ### `ℝ`-points of an AFFINE `ℚ`-scheme, as ring maps (2026-07-26)
+
+The real-approximation leaf below is a statement about the REAL topology, and
+its proof has to move a real point continuously. Both its hypothesis and its
+conclusion are phrased with `HasRationalPoint`, i.e. with morphisms of
+schemes; the four declarations here are the (purely formal) dictionary that
+turns those into ring maps `A →+* ℝ`, where "moves continuously" can be said
+at all.
+
+The one arithmetic fact used, and it is why the dictionary is this short:
+**a ring map out of `ℚ` is unique**, so an `R`-valued point of an affine
+`ℚ`-scheme carries NO compatibility condition over the base
+(`ringHom_uliftRat_ext`) — every ring map `A →+* ℝ` is automatically a point
+over `Spec ℚ`. -/
+
+/-- **Any two ring maps out of `ULift ℚ` agree** (PROVEN, 2026-07-26):
+`RingHom.ext_rat` transported across `ULift.ringEquiv`. The consequence used
+below is that base compatibility over `Spec ℚ` is automatic for points valued
+in ANY semiring, so it need never be carried as a hypothesis. -/
+theorem ringHom_uliftRat_ext {R : Type*} [Semiring R] (f g : ULift.{u} ℚ →+* R) :
+    f = g := by
+  have h := RingHom.ext_rat
+    (f.comp (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.toRingHom)
+    (g.comp (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).symm.toRingHom)
+  ext q
+  exact RingHom.congr_fun h (ULift.ringEquiv q)
+
+open CategoryTheory AlgebraicGeometry in
+/-- **The structure map of a `ℚ`-algebra, as a morphism out of `ULift ℚ`**
+(2026-07-26). `specRatMap F` is `Spec` of exactly this map, so this is the
+ring-level shadow of the base morphism against which `HasRationalPoint` is
+stated. -/
+noncomputable def ratStructHom (F : Type u) [CommRing F] [Algebra ℚ F] :
+    CommRingCat.of (ULift.{u} ℚ) ⟶ CommRingCat.of F :=
+  CommRingCat.ofHom
+    ((algebraMap ℚ F).comp (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom)
+
+open CategoryTheory AlgebraicGeometry in
+/-- `specRatMap` is `Spec` of `ratStructHom`, by definition. -/
+theorem specRatMap_eq_specMap (F : Type u) [CommRing F] [Algebra ℚ F] :
+    specRatMap F = AlgebraicGeometry.Spec.map (ratStructHom F) := rfl
+
+open CategoryTheory AlgebraicGeometry in
+/-- **`F`-points of an AFFINE scheme ARE ring maps** (PROVEN, 2026-07-26).
+`Spec` is fully faithful, so a section of `g` along `Spec F ⟶ Spec ℚ` is the
+same datum as a ring map `A ⟶ F` under `ULift ℚ`. This is the dictionary in
+which the real-approximation leaf's real analysis is carried out. -/
+theorem hasRationalPoint_iff_exists_ringHom {A : CommRingCat.{u}}
+    (g : AlgebraicGeometry.Spec A ⟶
+      AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (F : Type u) [CommRing F] [Algebra ℚ F] :
+    HasRationalPoint g F ↔
+      ∃ ψ : A ⟶ CommRingCat.of F,
+        AlgebraicGeometry.Spec.preimage g ≫ ψ = ratStructHom F := by
+  constructor
+  · rintro ⟨p, hp⟩
+    refine ⟨Spec.preimage p, Spec.map_injective ?_⟩
+    simp only [Spec.map_comp, Spec.map_preimage]
+    exact hp
+  · rintro ⟨ψ, hψ⟩
+    refine ⟨Spec.map ψ, ?_⟩
+    rw [specRatMap_eq_specMap, ← hψ, Spec.map_comp, Spec.map_preimage]
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A ring map killing `ℓ` is a point of the hyperplane section** (PROVEN,
+2026-07-26): the concrete form of `HasRationalPoint` for the closed subscheme
+`Spec (A ⧸ (ℓ))` cut out by a single global function, obtained from
+`hasRationalPoint_iff_exists_ringHom` and the universal property of the
+quotient. -/
+theorem hasRationalPoint_specQuotSpanSingleton_of_ringHom {A : CommRingCat.{u}}
+    (g : AlgebraicGeometry.Spec A ⟶
+      AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    {F : Type u} [CommRing F] [Algebra ℚ F] (ψ : A ⟶ CommRingCat.of F)
+    (hψ : AlgebraicGeometry.Spec.preimage g ≫ ψ = ratStructHom F)
+    (ℓ : A) (hℓ : ψ.hom ℓ = 0) :
+    HasRationalPoint (specQuotSpanSingleton ℓ ≫ g) F := by
+  have hker : ∀ a ∈ Ideal.span ({ℓ} : Set A), ψ.hom a = 0 := by
+    have hle : Ideal.span ({ℓ} : Set A) ≤ RingHom.ker ψ.hom := by
+      rw [Ideal.span_le, Set.singleton_subset_iff, SetLike.mem_coe]
+      exact RingHom.mem_ker.mpr hℓ
+    exact fun a ha => RingHom.mem_ker.mp (hle ha)
+  refine (hasRationalPoint_iff_exists_ringHom _ F).mpr
+    ⟨CommRingCat.ofHom (Ideal.Quotient.lift _ ψ.hom hker), ?_⟩
+  have hpre : Spec.preimage (specQuotSpanSingleton ℓ ≫ g)
+      = Spec.preimage g ≫
+        CommRingCat.ofHom (Ideal.Quotient.mk (Ideal.span {ℓ})) := by
+    rw [show specQuotSpanSingleton ℓ ≫ g =
+        Spec.map (Spec.preimage g ≫
+          CommRingCat.ofHom (Ideal.Quotient.mk (Ideal.span {ℓ}))) from by
+        rw [Spec.map_comp, Spec.map_preimage]; rfl, Spec.preimage_map]
+  have hfac : CommRingCat.ofHom (Ideal.Quotient.mk (Ideal.span {ℓ})) ≫
+      CommRingCat.ofHom (Ideal.Quotient.lift _ ψ.hom hker) = ψ :=
+    CommRingCat.hom_ext (RingHom.ext fun a => by simp)
+  rw [hpre, Category.assoc, hfac, hψ]
 
 section BertiniLeaves
 
@@ -1915,9 +2031,66 @@ theorem exists_bertiniGenericLocus_of_affine_geometricallyIrreducible
   sorry
 
 open CategoryTheory AlgebraicGeometry in
+/-- **A NONCONSTANT CONTINUOUS ARC OF REAL POINTS** (sorry node, 2026-07-26 —
+the ENTIRE scheme-to-real-topology content of the real-approximation leaf
+below, isolated; it is item 6 of the module's missing-machinery list in its
+minimal useful form).
+
+For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` of
+dimension `> 1` with a real point, presented in coordinates `x : Fin n → A`,
+there is a one-parameter family `γ : ℝ → (A →+* ℝ)` of real points which is
+
+* CONTINUOUS — each coordinate `t ↦ γ t (xᵢ)` is a continuous real function,
+* NONCONSTANT — some coordinate takes two different values along it.
+
+WHY IT IS TRUE. `A →+* ℝ` *is* the set `X(ℝ)` of real points: no
+compatibility over `ℚ` has to be imposed, because a ring map out of `ℚ` is
+unique (`ringHom_uliftRat_ext`). The coordinates `xᵢ` embed `X(ℝ)` in `ℝⁿ` as
+a closed subset. Smoothness of `X` over `ℚ` makes `X(ℝ)` near the real point
+supplied by `hreal` a real-analytic manifold of dimension `dim X ≥ 2 ≥ 1`; a
+chart around that point is homeomorphic to an open ball of positive
+dimension, which contains a nonconstant continuous arc, and the arc extends
+to all of `ℝ` by being constant outside a compact interval. Nonconstancy in
+`X(ℝ)` is nonconstancy in some COORDINATE because the `xᵢ` generate `A` over
+the base and so separate real points — that is what `hx` is for.
+
+MACHINERY MISSING AT THIS PIN: mathlib has no functor from schemes to real
+manifolds, so `X(ℝ) ⊆ ℝⁿ` must be identified as a submanifold before any of
+this can be said. **NOTE WHAT THE CUT BUYS.** Only the EXISTENCE OF ONE
+NONCONSTANT ARC is needed — not the implicit function theorem, not the
+tangent space, not the Jacobian. Its consumer replaces the implicit function
+theorem with the INTERMEDIATE VALUE THEOREM along the arc, which is why the
+whole of the surrounding real-approximation statement is PROVEN below from
+this alone. So a prover needs the manifold structure only far enough to
+produce a single nonconstant path — one chart suffices — or indeed any other
+route to a positive-dimensional connected piece of `X(ℝ)`.
+
+EVERY HYPOTHESIS IS LOAD-BEARING: `hreal` supplies a point to start from (and
+without it the statement is FALSE — `Spec ℚ[t]/(t²+1)` has no real point at
+all, so no `γ` exists), `hsmooth` the manifold structure, `hgi` and `hdim`
+its positive dimension (`hdim` only through `dim X ≥ 1`; at `dim X = 0` a
+real point is isolated and every arc is constant), and `hx` is what forces
+the nonconstancy to be visible IN A COORDINATE — without it `n` could be `0`
+and no index `i` would exist. -/
+theorem exists_realArc_of_affine_geometricallyIrreducible
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hreal : HasRationalPoint g (ULift.{u} ℝ))
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A))
+    {n : ℕ} (x : Fin n → A)
+    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+      Set.range x) = ⊤) :
+    ∃ γ : ℝ → (A →+* ℝ),
+      (∀ i : Fin n, Continuous fun t => γ t (x i)) ∧
+      ∃ (i : Fin n) (t₁ t₂ : ℝ), γ t₁ (x i) ≠ γ t₂ (x i) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
 /-- **THE REAL APPROXIMATION: a whole BOX of parameters keeps a real point**
-(sorry node, 2026-07-26 — the `ℝ`-topology half of step (i), with Bertini
-entirely removed).
+(**PROVEN 2026-07-26** over the single leaf
+`exists_realArc_of_affine_geometricallyIrreducible` — the `ℝ`-topology half
+of step (i), with Bertini entirely removed).
 
 For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` of
 dimension `> 1` WITH A REAL POINT, presented in coordinates `x : Fin n → A`,
@@ -1947,17 +2120,42 @@ with the Zariski-generic locus of the Bertini leaf**; that intersection is
 nonempty by `exists_rat_mem_box_eval_ne_zero`, and it is what makes the two
 halves separable at all.
 
-MACHINERY MISSING AT THIS PIN: the real-analytic structure on the real points
-of a smooth `ℚ`-variety — mathlib has NO functor from schemes to real
-manifolds, so the identification of `X(ℝ)` with a submanifold of `ℝⁿ` and its
-tangent space with the kernel of the Jacobian must be built. The analytic
-input itself is present: `HasStrictFDerivAt.implicitFunction` /
-`ImplicitFunctionData`. This leaf is real analysis plus scheme-to-manifold
-bookkeeping; it contains no Bertini theorem and no arithmetic.
+**THE PROOF GIVEN BELOW REPLACES THE IMPLICIT FUNCTION THEOREM BY THE
+INTERMEDIATE VALUE THEOREM** (2026-07-26), and that is what reduces the
+scheme-to-real-manifold gap to the single leaf
+`exists_realArc_of_affine_geometricallyIrreducible`. One does not need the
+zero set of `ℓ_v` to be a manifold, nor a smooth solution `q(v)`; one only
+needs A ZERO, and a zero of a continuous function is produced by a SIGN
+CHANGE. So:
 
-`hdim` is used only through `dim X ≥ 1`, which is what makes the tangent
-space at `p` nonzero; `1 < dim` is carried to keep the hypotheses parallel
-with the sibling leaf. -/
+* take a nonconstant continuous arc `γ : ℝ → X(ℝ)` (the leaf) and two
+  parameters `s₁, s₂` with `γ(s₁)(x_{i₀}) < γ(s₂)(x_{i₀})` for some
+  coordinate `i₀`;
+* let `v₀ := (e_{i₀}, b₀)` with `b₀` the MIDPOINT of those two values, so
+  that `ℓ_{v₀}` — evaluated along the arc — is `−δ` at `s₁` and `+δ` at
+  `s₂`, where `2δ` is the gap;
+* the `n+1` coefficients enter `t ↦ ℓ_v(γ t)` linearly with coefficients
+  bounded by `M := 1 + ∑ᵢ|γ(s₁)(xᵢ)| + ∑ᵢ|γ(s₂)(xᵢ)|` at those two
+  parameters, so `ε := δ/(2M)` keeps the sign change: `ℓ_v(γ s₁) ≤ −δ/2 < 0`
+  and `ℓ_v(γ s₂) ≥ δ/2 > 0` for every `v` in the box;
+* `intermediate_value_uIcc` then gives `tz` with `ℓ_v(γ tz) = 0`, and
+  `γ tz` factors through `A ⧸ (ℓ_v)` — a real point of the section.
+
+Two formal simplifications make this work with no `ℚ`-bookkeeping at all: a
+real point of an affine `ℚ`-scheme is just a ring map `A →+* ℝ`
+(`hasRationalPoint_iff_exists_ringHom`), and it is automatically defined over
+the base because a ring map out of `ℚ` is unique (`ringHom_uliftRat_ext`).
+
+MACHINERY MISSING AT THIS PIN is therefore confined to the arc leaf: the
+real-analytic structure on the real points of a smooth `ℚ`-variety, mathlib
+having NO functor from schemes to real manifolds. What is NOT needed, against
+the previous plan recorded here: the identification of the tangent space with
+the kernel of the Jacobian, and `HasStrictFDerivAt.implicitFunction` /
+`ImplicitFunctionData`.
+
+`hdim` and the other geometric hypotheses are consumed only by the arc leaf;
+`hdim` is used there only through `dim X ≥ 1`, `1 < dim` being carried to
+keep the hypotheses parallel with the sibling leaf. -/
 theorem exists_realApproximationBall_of_affine_geometricallyIrreducible
     (hsmooth : AlgebraicGeometry.Smooth g)
     (hft : AlgebraicGeometry.LocallyOfFiniteType g)
@@ -1970,8 +2168,123 @@ theorem exists_realApproximationBall_of_affine_geometricallyIrreducible
     ∃ (v₀ : Fin (n + 1) → ℝ) (ε : ℝ), 0 < ε ∧
       ∀ v : Fin (n + 1) → ℚ, (∀ i, |(v i : ℝ) - v₀ i| < ε) →
         HasRationalPoint (specQuotSpanSingleton
-          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) (ULift.{u} ℝ) :=
-  sorry
+          (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) (ULift.{u} ℝ) := by
+  classical
+  obtain ⟨γ, hcont, i₀, t₁, t₂, hne⟩ :=
+    exists_realArc_of_affine_geometricallyIrreducible g hsmooth hft hgi hreal hdim x hx
+  -- a real point of a `ℚ`-scheme is automatically a point over the base
+  have hbase : ∀ (t : ℝ) (q : ℚ),
+      γ t ((AlgebraicGeometry.Spec.preimage g).hom (ULift.up q)) = (q : ℝ) := by
+    intro t q
+    have h := ringHom_uliftRat_ext
+      ((γ t).comp (AlgebraicGeometry.Spec.preimage g).hom)
+      ((Rat.castHom ℝ).comp (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom)
+    exact RingHom.congr_fun h (ULift.up q)
+  -- the value of the hyperplane function along the arc
+  have hval : ∀ (t : ℝ) (v : Fin (n + 1) → ℚ),
+      γ t (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v)
+        = (∑ i, (v i.castSucc : ℝ) * γ t (x i)) - (v (Fin.last n) : ℝ) := by
+    intro t v
+    simp only [affineLinearForm, map_sub, map_sum, map_mul, hbase]
+  -- orient the arc so that the `i₀`-th coordinate increases
+  obtain ⟨s₁, s₂, hlt⟩ : ∃ s₁ s₂ : ℝ, γ s₁ (x i₀) < γ s₂ (x i₀) :=
+    (lt_or_gt_of_ne hne).elim (fun h => ⟨t₁, t₂, h⟩) fun h => ⟨t₂, t₁, h⟩
+  set δ : ℝ := (γ s₂ (x i₀) - γ s₁ (x i₀)) / 2 with hδdef
+  have hδ : 0 < δ := by rw [hδdef]; linarith
+  have hS₁ : (0 : ℝ) ≤ ∑ i, |γ s₁ (x i)| := Finset.sum_nonneg fun i _ => abs_nonneg _
+  have hS₂ : (0 : ℝ) ≤ ∑ i, |γ s₂ (x i)| := Finset.sum_nonneg fun i _ => abs_nonneg _
+  set M : ℝ := 1 + ((∑ i, |γ s₁ (x i)|) + (∑ i, |γ s₂ (x i)|)) with hMdef
+  have hM : 0 < M := by rw [hMdef]; linarith
+  have hM0 : M ≠ 0 := ne_of_gt hM
+  set v₀ : Fin (n + 1) → ℝ :=
+    Fin.snoc (fun i => if i = i₀ then (1 : ℝ) else 0)
+      ((γ s₁ (x i₀) + γ s₂ (x i₀)) / 2) with hv₀def
+  set ε : ℝ := δ / (2 * M) with hεdef
+  have hε : 0 < ε := by rw [hεdef]; positivity
+  refine ⟨v₀, ε, hε, ?_⟩
+  intro v hv
+  -- the reference parameter picks out the `i₀`-th coordinate
+  have hv₀cast : ∀ i : Fin n, v₀ i.castSucc = if i = i₀ then (1 : ℝ) else 0 := by
+    intro i; rw [hv₀def]; simp
+  have hv₀last : v₀ (Fin.last n) = (γ s₁ (x i₀) + γ s₂ (x i₀)) / 2 := by
+    rw [hv₀def]; simp
+  have hsum₀ : ∀ t : ℝ, (∑ i, v₀ i.castSucc * γ t (x i)) = γ t (x i₀) := by
+    intro t
+    have h : (∑ i, v₀ i.castSucc * γ t (x i)) = v₀ i₀.castSucc * γ t (x i₀) :=
+      Finset.sum_eq_single i₀ (fun i _ hi => by rw [hv₀cast, if_neg hi, zero_mul])
+        (fun h => absurd (Finset.mem_univ i₀) h)
+    rw [h, hv₀cast, if_pos rfl, one_mul]
+  -- the hyperplane function along the arc, as a continuous real function
+  set F : ℝ → ℝ :=
+    fun t => (∑ i, (v i.castSucc : ℝ) * γ t (x i)) - (v (Fin.last n) : ℝ) with hFdef
+  have hFcont : Continuous F := by
+    rw [hFdef]
+    exact (continuous_finsetSum _ fun i _ => continuous_const.mul (hcont i)).sub
+      continuous_const
+  -- the box keeps `F` within `ε * (∑ |γ t xᵢ|) + ε` of its value at `v₀`
+  have hest : ∀ t : ℝ,
+      |F t - ((∑ i, v₀ i.castSucc * γ t (x i)) - v₀ (Fin.last n))|
+        ≤ ε * (∑ i, |γ t (x i)|) + ε := by
+    intro t
+    have hrw : F t - ((∑ i, v₀ i.castSucc * γ t (x i)) - v₀ (Fin.last n))
+        = (∑ i, ((v i.castSucc : ℝ) - v₀ i.castSucc) * γ t (x i))
+          + -((v (Fin.last n) : ℝ) - v₀ (Fin.last n)) := by
+      rw [hFdef]
+      simp only [sub_mul]
+      rw [Finset.sum_sub_distrib]
+      ring
+    rw [hrw]
+    refine (abs_add_le _ _).trans ?_
+    have h1 : |∑ i, ((v i.castSucc : ℝ) - v₀ i.castSucc) * γ t (x i)|
+        ≤ ε * ∑ i, |γ t (x i)| := by
+      refine (Finset.abs_sum_le_sum_abs _ _).trans ?_
+      rw [Finset.mul_sum]
+      refine Finset.sum_le_sum fun i _ => ?_
+      rw [abs_mul]
+      exact mul_le_mul_of_nonneg_right (hv i.castSucc).le (abs_nonneg _)
+    have h2 : |-((v (Fin.last n) : ℝ) - v₀ (Fin.last n))| ≤ ε := by
+      rw [abs_neg]; exact (hv (Fin.last n)).le
+    linarith
+  have hεM : ∀ S : ℝ, 0 ≤ S → S + 1 ≤ M → ε * S + ε ≤ δ / 2 := by
+    intro S _ hSM
+    have hcalc : ε * S + ε = ε * (S + 1) := by ring
+    rw [hcalc, hεdef]
+    have h1 : δ / (2 * M) * (S + 1) ≤ δ / (2 * M) * M :=
+      mul_le_mul_of_nonneg_left hSM (by positivity)
+    have h2 : δ / (2 * M) * M = δ / 2 := by field_simp
+    linarith
+  -- the sign change survives the whole box
+  have hFs₁ : F s₁ < 0 := by
+    have h0 : (∑ i, v₀ i.castSucc * γ s₁ (x i)) - v₀ (Fin.last n) = -δ := by
+      rw [hsum₀, hv₀last, hδdef]; ring
+    have hb := hest s₁
+    rw [h0] at hb
+    have hle := hεM (∑ i, |γ s₁ (x i)|) hS₁ (by rw [hMdef]; linarith)
+    have habs := abs_le.mp (hb.trans hle)
+    linarith [habs.2]
+  have hFs₂ : 0 < F s₂ := by
+    have h0 : (∑ i, v₀ i.castSucc * γ s₂ (x i)) - v₀ (Fin.last n) = δ := by
+      rw [hsum₀, hv₀last, hδdef]; ring
+    have hb := hest s₂
+    rw [h0] at hb
+    have hle := hεM (∑ i, |γ s₂ (x i)|) hS₂ (by rw [hMdef]; linarith)
+    have habs := abs_le.mp (hb.trans hle)
+    linarith [habs.1]
+  -- INTERMEDIATE VALUE THEOREM, in place of the implicit function theorem
+  obtain ⟨tz, -, htz⟩ : ∃ t ∈ Set.uIcc s₁ s₂, F t = 0 := by
+    have hsub := intermediate_value_uIcc (f := F) (a := s₁) (b := s₂) hFcont.continuousOn
+    have h0 : (0 : ℝ) ∈ Set.uIcc (F s₁) (F s₂) := by
+      rw [Set.mem_uIcc]; exact Or.inl ⟨hFs₁.le, hFs₂.le⟩
+    obtain ⟨t, ht, hteq⟩ := hsub h0
+    exact ⟨t, ht, hteq⟩
+  have hzero : γ tz (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) = 0 := by
+    rw [hval tz v]
+    simpa [hFdef] using htz
+  refine hasRationalPoint_specQuotSpanSingleton_of_ringHom g
+    (CommRingCat.ofHom
+      ((ULift.ringEquiv : ULift.{u} ℝ ≃+* ℝ).symm.toRingHom.comp (γ tz)))
+    (CommRingCat.hom_ext (ringHom_uliftRat_ext _ _)) _ ?_
+  simp [hzero]
 
 end BertiniLeaves
 
@@ -1999,9 +2312,12 @@ short. So this is now proven over:
 * `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` (SORRY —
   the two Bertini theorems) — off a proper `ℚ`-rational closed subset, the
   section is smooth and geometrically irreducible;
-* `exists_realApproximationBall_of_affine_geometricallyIrreducible` (SORRY —
-  the `ℝ`-topology and the implicit function theorem) — every rational
-  parameter in a nonempty real BOX gives a section with a real point;
+* `exists_realApproximationBall_of_affine_geometricallyIrreducible` (**PROVEN
+  2026-07-26** over the single leaf
+  `exists_realArc_of_affine_geometricallyIrreducible`, SORRY — a nonconstant
+  continuous arc of real points; the `ℝ`-topology step needs the INTERMEDIATE
+  VALUE THEOREM along that arc, not the implicit function theorem) — every
+  rational parameter in a nonempty real BOX gives a section with a real point;
 * `exists_rat_mem_box_eval_ne_zero` (PROVEN) — the reconciliation: a nonzero
   rational polynomial has a rational non-root in every real box, so the
   Zariski-generic locus meets the real box.
