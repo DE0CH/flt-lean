@@ -2144,10 +2144,176 @@ theorem cuspForm_finiteDimensional (N : ℕ) (hN : 0 < N) :
   refine hB f fun m hm => ?_
   simpa [LinearMap.pi_apply] using congrFun hf ⟨m, hm⟩
 
+/-! #### The integral structure `S₂(Γ₀(N); ℤ)`
+
+Introduced 2026-07-26 as the carrier of the arithmetic input behind
+`exists_heckeStable_lattice`. The submodule itself, its FINITE
+GENERATION (from the Sturm bound) and its HECKE STABILITY (from the
+coefficient formula `qCoeff_heckeEndo`, below) are all PROVEN here; the
+single unproven statement about it is that it `ℂ`-spans, which is the
+`q`-expansion principle on the integral model. -/
+
+/-- **`S₂(Γ₀(N); ℤ)`**: the weight-2 level-`N` cusp forms all of whose
+`q`-expansion coefficients are rational integers, as a `ℤ`-submodule of
+`S₂(Γ₀(N))`. The `ℤ`-module structure is the ambient additive one, so
+this is a subgroup of the underlying additive group; the submodule
+axioms are the `ℂ`-linearity of the coefficient functionals
+(`qCoeffL`) specialized to integer scalars. -/
+noncomputable def integralCuspForms (N : ℕ) :
+    Submodule ℤ (CuspForm (Gamma0GL N) 2) where
+  carrier := {f | ∀ m : ℕ, ∃ z : ℤ, qCoeff N f m = (z : ℂ)}
+  add_mem' := by
+    rintro f g hf hg m
+    obtain ⟨x, hx⟩ := hf m
+    obtain ⟨y, hy⟩ := hg m
+    refine ⟨x + y, ?_⟩
+    rw [← qCoeffL_apply, map_add, qCoeffL_apply, qCoeffL_apply, hx, hy]
+    push_cast
+    ring
+  zero_mem' := by
+    intro m
+    exact ⟨0, by rw [qCoeff_zero_cuspForm]; norm_num⟩
+  smul_mem' := by
+    rintro c f hf m
+    obtain ⟨x, hx⟩ := hf m
+    refine ⟨c * x, ?_⟩
+    rw [← qCoeffL_apply, map_zsmul, qCoeffL_apply, hx, zsmul_eq_mul]
+    push_cast
+    ring
+
+/-- The integer `m`-th coefficient of a member of `S₂(Γ₀(N); ℤ)`. -/
+noncomputable def integralQCoeff {N : ℕ} (f : integralCuspForms N) (m : ℕ) : ℤ :=
+  (f.2 m).choose
+
+theorem integralQCoeff_spec {N : ℕ} (f : integralCuspForms N) (m : ℕ) :
+    qCoeff N (f : CuspForm (Gamma0GL N) 2) m = ((integralQCoeff f m : ℤ) : ℂ) :=
+  (f.2 m).choose_spec
+
+/-- **`S₂(Γ₀(N); ℤ)` is finitely generated** (PROVEN, 2026-07-26): the
+Sturm bound `exists_cuspForm_sturm_bound` makes the first `B` integer
+coefficients a `ℤ`-linear INJECTION of `S₂(Γ₀(N); ℤ)` into `ℤ^B`, and
+`ℤ` is noetherian. No arithmetic input is used — only the vanishing
+criterion. -/
+theorem integralCuspForms_fg {N : ℕ} (hN : 0 < N) : (integralCuspForms N).FG := by
+  classical
+  obtain ⟨B, hB⟩ := exists_cuspForm_sturm_bound N hN
+  let ψ : (integralCuspForms N) →ₗ[ℤ] (Fin B → ℤ) :=
+    { toFun := fun f i => integralQCoeff f i
+      map_add' := by
+        intro f g
+        funext i
+        have hcoe : ((f + g : integralCuspForms N) : CuspForm (Gamma0GL N) 2)
+            = (f : CuspForm (Gamma0GL N) 2) + (g : CuspForm (Gamma0GL N) 2) := rfl
+        have h : ((integralQCoeff (f + g) i : ℤ) : ℂ)
+            = ((integralQCoeff f i + integralQCoeff g i : ℤ) : ℂ) := by
+          rw [← integralQCoeff_spec (f + g) i, hcoe, ← qCoeffL_apply, map_add,
+            qCoeffL_apply, qCoeffL_apply, integralQCoeff_spec f i,
+            integralQCoeff_spec g i]
+          push_cast
+          ring
+        exact_mod_cast h
+      map_smul' := by
+        intro c f
+        funext i
+        have hcoe : ((c • f : integralCuspForms N) : CuspForm (Gamma0GL N) 2)
+            = c • (f : CuspForm (Gamma0GL N) 2) := rfl
+        have h : ((integralQCoeff (c • f) i : ℤ) : ℂ)
+            = ((c * integralQCoeff f i : ℤ) : ℂ) := by
+          rw [← integralQCoeff_spec (c • f) i, hcoe, ← qCoeffL_apply, map_zsmul,
+            qCoeffL_apply, integralQCoeff_spec f i, zsmul_eq_mul]
+          push_cast
+          ring
+        exact_mod_cast h }
+  have hinj : Function.Injective ψ := by
+    intro f g h
+    refine Subtype.ext (sub_eq_zero.mp (hB _ fun m hm => ?_))
+    have hval : integralQCoeff f m = integralQCoeff g m := congrFun h ⟨m, hm⟩
+    rw [← qCoeffL_apply, map_sub, qCoeffL_apply, qCoeffL_apply,
+      integralQCoeff_spec f m, integralQCoeff_spec g m, hval, sub_self]
+  haveI := isNoetherian_of_injective ψ hinj
+  exact Module.Finite.iff_fg.mp inferInstance
+
+/-- **The `q`-expansion principle over `ℤ`** (sorry node — THE
+arithmetic citation behind the integral structure of `S₂(Γ₀(N))`,
+isolated 2026-07-26 as the residue of `exists_heckeStable_lattice`
+after finite generation and Hecke stability were proven): the cusp
+forms with integral `q`-expansion span the whole complex cusp space,
+i.e. `S₂(Γ₀(N); ℤ)` is a lattice of FULL RANK.
+
+This is the `ℤ`-form of the `q`-expansion principle of Katz and
+Deligne–Rapoport on the INTEGRAL model `X₀(N)/ℤ` (Diamond–Shurman
+§6.5 and Exercise 6.5.4; Diamond–Im §12.3; Darmon–Diamond–Taylor §1.6;
+Katz, *p-adic properties of modular schemes and modular forms* §1.6):
+weight-2 cusp forms are global sections of a line bundle on a scheme
+that is proper and flat over `ℤ`, the cusp `∞` and its uniformizer `q`
+are `ℤ`-rational, so expansion is defined over `ℤ`, and cohomological
+flatness gives `H⁰(X₀(N)_ℤ, Ω) ⊗_ℤ ℂ = H⁰(X₀(N)_ℂ, Ω)`. Equivalently
+the lattice may be taken to be `H¹(X₀(N), ℤ)` transported through
+Eichler–Shimura. Neither integral models nor Eichler–Shimura exist on
+this pin, hence the interface shape.
+
+WHY THIS IS THE MINIMAL RESIDUE. `exists_heckeStable_lattice` below
+asks for a finitely generated, Hecke-stable, `ℂ`-spanning
+`ℤ`-submodule. For the canonical candidate `L = S₂(Γ₀(N); ℤ)` the first
+two conjuncts are THEOREMS on this pin and are proven here —
+`integralCuspForms_fg` (Sturm bound) and
+`heckeEndo_mem_integralCuspForms` (the coefficient formula
+`qCoeff_heckeEndo`) — so the entire arithmetic content of that node is
+the single statement below.
+
+NOT CIRCULAR, and the direction of every implication in the cluster is
+recorded here because the cluster is a closed equivalence and exactly
+one member must remain a citation. This node is the citation. It sits
+ABOVE everything in the cluster, and Lean's declaration order therefore
+makes any attempt to close it from below a hard error rather than a
+silent cycle. Downstream (all PROVEN from it, in this order):
+`exists_heckeStable_lattice` → `heckeSubring_moduleFinite` →
+`exists_qExpansion_denominator` → `exists_integral_qExpansion_spanning`
+(the last also using `exists_rational_qExpansion_spanning`). So NONE of
+those four may be used here; in particular
+`exists_integral_qExpansion_spanning` is a repackaging of this very
+statement and is the trap to avoid.
+
+THIS NODE ALSO DISCHARGES THE `ℚ`-LEAF (done 2026-07-26). The former
+citation `exists_qCoeff_rational_relations` immediately below is now
+PROVEN from this one, entirely non-circularly since it is stated above
+it, by the following linear algebra: fix a `ℂ`-basis `e₁,…,e_D`
+of `S₂(Γ₀(N))` drawn from `S₂(Γ₀(N); ℤ)` (possible by this node), so
+that every `a_m` has INTEGER coordinates `(a_m(e_j))_j ∈ ℤ^D`; extract
+from `{(a_m(e_j))_j : m ∈ ℕ} ⊆ ℚ^D` a maximal `ℚ`-independent
+subfamily, indexed by `n₁,…,n_d`; it has `d ≤ D` by independence and
+`d ≥ D` because its `ℂ`-span contains every `(a_m(e_j))_j` and those
+`ℂ`-span `ℂ^D` (the coefficient functionals span the dual, by
+`cuspForm_eq_of_forall_qCoeff_eq`); so `d = D`, and the resulting
+`ℚ`-relations between coordinate vectors are relations between the
+functionals because they agree on a basis. That makes this node the
+SINGLE citation of the whole `q`-expansion cluster.
+
+TRADE-OFF THIS CREATES, recorded so it can be undone deliberately.
+Classically, rationality (Shimura Thm 3.52) needs only the `ℚ`-model of
+`X₀(N)`, while bounded denominators needs the INTEGRAL model — the
+literature keeps them apart, and the 2026-07-25 cut did too. Routing
+the `ℚ`-statement through this node cites the STRONGER of the two for
+both. That is a strict reduction in the number of open leaves and no
+loss in practice on a pin that has neither model; but an owner who
+later proves rationality from the `ℚ`-model alone should restore
+`exists_qCoeff_rational_relations` to a citation and delete the
+derivation, which is self-contained and touches nothing else.
+
+SOUNDNESS: `0 < N` is required only because the Sturm bound and the
+Hecke operators are junk at `N = 0`; at genus-zero levels
+`S₂(Γ₀(N)) = 0` and the statement reads `⊥ = ⊤` in the zero space,
+which holds. -/
+theorem integralCuspForms_span_eq_top {N : ℕ} (hN : 0 < N) :
+    Submodule.span ℂ ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤ :=
+  sorry
+
 /-- **The `ℚ`-structure of the `q`-expansion coefficient functionals**
-(sorry node — the ARITHMETIC RESIDUE of Shimura's rationality theorem,
-isolated 2026-07-25 by this node's owner as the single input of the
-now-PROVEN assembly `exists_rational_qExpansion_spanning` below):
+(PROVEN, 2026-07-26, over the single `q`-expansion-principle citation
+`integralCuspForms_span_eq_top` above — formerly itself a citation, the
+ARITHMETIC RESIDUE of Shimura's rationality theorem isolated 2026-07-25
+as the single input of the assembly `exists_rational_qExpansion_spanning`
+below):
 writing `D = dim_ℂ S₂(Γ₀(N))` (finite by `cuspForm_finiteDimensional`),
 there are `D` indices `n 0, …, n (D−1)` such that EVERY coefficient
 functional `a_m` is a `ℚ`-linear combination of
@@ -2191,7 +2357,25 @@ the `ℚ`-span of `{a_1, a_2}` while no cusp form has rational
 exactly what rules this out, and it is also what the classical proof
 gives — `dim_ℚ W = D` is the `ℚ`-form statement.
 
-WHAT A PROOF NEEDS. The classical input is the integral/rational model
+ASSEMBLY (2026-07-26). The arithmetic is now supplied entirely by
+`integralCuspForms_span_eq_top` — `S₂(Γ₀(N); ℤ)` has full rank — and
+the rest is linear algebra over `ℚ ⊆ ℂ`, with no modular-curve input:
+(i) extract from the integral lattice a `ℂ`-basis `e₁,…,e_D` of
+`S₂(Γ₀(N))`, so that the coordinate vector `v_m = (a_m(e_j))_j` of
+every coefficient functional lies in `ℤ^D ⊆ ℚ^D`; (ii) the `v_m` span
+`ℚ^D` over `ℚ` — otherwise a nonzero `u ∈ ℚ^D` kills all of them, and
+then `∑_j u_j e_j` is killed by every `a_m`, hence is `0` by the
+`q`-expansion principle `cuspForm_eq_of_forall_qCoeff_eq`,
+contradicting independence of the `e_j`; (iii) so `D` of the `v_m`,
+say at indices `n₁,…,n_D`, form a `ℚ`-basis of `ℚ^D`, and the
+`ℚ`-coordinates of `v_m` in it are the required `c`; (iv) the identity
+`a_m = ∑ᵢ cᵢ · a_{nᵢ}` then holds on the basis `e`, hence as
+functionals. Note where the cardinality `D` comes from: it is forced,
+being simultaneously `dim_ℚ ℚ^D` and `dim_ℂ S₂(Γ₀(N))`.
+
+WHAT A CITATION-FREE PROOF WOULD NEED (superseded above, kept because
+it explains why the `ℚ`-model alone is the classical route). The
+classical input is the integral/rational model
 of `X₀(N)`: cusp forms of weight 2 are global differentials, `X₀(N)`
 and its cusp `∞` are defined over `ℚ`, the uniformizer `q` is
 `ℚ`-rational, and flat base change gives
@@ -2216,8 +2400,135 @@ theorem exists_qCoeff_rational_relations {N : ℕ} (hN : 0 < N) :
       ∀ m : ℕ,
         ∃ c : Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2)) → ℚ,
           ∀ f : CuspForm (Gamma0GL N) 2,
-            qCoeff N f m = ∑ i, (c i : ℂ) * qCoeff N f (n i) :=
-  sorry
+            qCoeff N f m = ∑ i, (c i : ℂ) * qCoeff N f (n i) := by
+  classical
+  haveI := cuspForm_finiteDimensional N hN
+  set D := Module.finrank ℂ (CuspForm (Gamma0GL N) 2)
+  have hsep : ∀ f : CuspForm (Gamma0GL N) 2, (∀ m, qCoeffL N m f = 0) → f = 0 := by
+    intro f hf
+    refine cuspForm_eq_of_forall_qCoeff_eq (g := 0) fun m => ?_
+    rw [qCoeff_zero_cuspForm]
+    exact hf m
+  -- (1) a `ℂ`-basis of `S₂(Γ₀(N))` drawn from the integral lattice
+  obtain ⟨b, hbsub, hbspan, hbli⟩ :=
+    exists_linearIndependent ℂ
+      ((integralCuspForms N : Set (CuspForm (Gamma0GL N) 2)))
+  rw [integralCuspForms_span_eq_top hN] at hbspan
+  let B0 : Module.Basis b ℂ (CuspForm (Gamma0GL N) 2) :=
+    Module.Basis.mk hbli (by rw [Subtype.range_coe, hbspan])
+  haveI : Fintype b := FiniteDimensional.fintypeBasisIndex B0
+  have hcard : Fintype.card b = D := (Module.finrank_eq_card_basis B0).symm
+  let e : Module.Basis (Fin D) ℂ (CuspForm (Gamma0GL N) 2) :=
+    B0.reindex (Fintype.equivFinOfCardEq hcard)
+  have hein : ∀ i : Fin D, e i ∈ integralCuspForms N := by
+    intro i
+    have hval : e i
+        = (((Fintype.equivFinOfCardEq hcard).symm i : b) : CuspForm (Gamma0GL N) 2) := by
+      simp [e, Module.Basis.reindex_apply, B0, Module.Basis.mk_apply]
+    rw [hval]
+    exact hbsub ((Fintype.equivFinOfCardEq hcard).symm i).2
+  -- (2) the coefficient functionals have INTEGER coordinates in that basis
+  have hval : ∀ (m : ℕ) (j : Fin D), ∃ z : ℤ, qCoeffL N m (e j) = (z : ℂ) :=
+    fun m j => hein j m
+  choose z hz using hval
+  set v : ℕ → (Fin D → ℚ) := fun m j => ((z m j : ℤ) : ℚ) with hv
+  have hvC : ∀ (m : ℕ) (j : Fin D), ((v m j : ℚ) : ℂ) = qCoeffL N m (e j) := by
+    intro m j
+    rw [hv, hz m j]
+    push_cast
+    ring
+  -- (3) those rational coordinate vectors span `ℚ^D`
+  have hvspan : Submodule.span ℚ (Set.range v) = ⊤ := by
+    by_contra hne
+    obtain ⟨φ, hφ0, hφ⟩ :=
+      Submodule.exists_dual_map_eq_bot_of_lt_top
+        (lt_top_iff_ne_top.mpr hne) inferInstance
+    set u : Fin D → ℚ := fun j => φ (Pi.single j 1) with hu
+    have hsingle : ∀ (x : Fin D → ℚ) (j : Fin D),
+        Pi.single j (x j) = (x j) • (Pi.single j (1 : ℚ)) := by
+      intro x j
+      funext k
+      by_cases h : k = j <;> simp [h]
+    have hφx : ∀ x : Fin D → ℚ, φ x = ∑ j, x j * u j := by
+      intro x
+      have hx : x = ∑ j, Pi.single j (x j) := by
+        funext k
+        simp [Finset.sum_apply, Pi.single_apply]
+      calc φ x = φ (∑ j, Pi.single j (x j)) := by rw [← hx]
+        _ = ∑ j, φ (Pi.single j (x j)) := by rw [map_sum]
+        _ = ∑ j, x j * u j := by
+            refine Finset.sum_congr rfl fun j _ => ?_
+            rw [hsingle x j, map_smul, hu, smul_eq_mul]
+    have hkill : ∀ m : ℕ, ∑ j, v m j * u j = 0 := by
+      intro m
+      have hmem : v m ∈ Submodule.span ℚ (Set.range v) :=
+        Submodule.subset_span ⟨m, rfl⟩
+      have hzz : φ (v m) ∈ (Submodule.span ℚ (Set.range v)).map φ :=
+        Submodule.mem_map_of_mem hmem
+      rw [hφ, Submodule.mem_bot] at hzz
+      rw [← hφx (v m)]
+      exact hzz
+    have hzero : (∑ j, (u j : ℂ) • e j) = 0 := by
+      refine hsep _ fun m => ?_
+      rw [map_sum]
+      have hterm : ∀ j : Fin D,
+          qCoeffL N m ((u j : ℂ) • e j) = ((v m j * u j : ℚ) : ℂ) := by
+        intro j
+        rw [map_smul, smul_eq_mul, ← hvC m j]
+        push_cast
+        ring
+      rw [Finset.sum_congr rfl fun j _ => hterm j, ← Rat.cast_sum, hkill m]
+      norm_num
+    have hu0 : ∀ j, u j = 0 := by
+      intro j
+      have hj := Fintype.linearIndependent_iff.mp e.linearIndependent
+        (fun j => (u j : ℂ)) hzero j
+      exact_mod_cast hj
+    exact hφ0 (LinearMap.ext fun x => by rw [hφx x]; simp [hu0])
+  -- (4) a `ℚ`-basis of `ℚ^D` drawn from the coordinate vectors themselves
+  obtain ⟨bq, hbqsub, hbqspan, hbqli⟩ := exists_linearIndependent ℚ (Set.range v)
+  rw [hvspan] at hbqspan
+  let Bq : Module.Basis bq ℚ (Fin D → ℚ) :=
+    Module.Basis.mk hbqli (by rw [Subtype.range_coe, hbqspan])
+  haveI : Fintype bq := FiniteDimensional.fintypeBasisIndex Bq
+  have hcardq : Fintype.card bq = D := by
+    have h := Module.finrank_eq_card_basis Bq
+    rw [Module.finrank_fin_fun] at h
+    exact h.symm
+  let w : Module.Basis (Fin D) ℚ (Fin D → ℚ) :=
+    Bq.reindex (Fintype.equivFinOfCardEq hcardq)
+  have hwmem : ∀ i : Fin D, w i ∈ Set.range v := by
+    intro i
+    have hval2 : w i = (((Fintype.equivFinOfCardEq hcardq).symm i : bq) : Fin D → ℚ) := by
+      simp [w, Module.Basis.reindex_apply, Bq, Module.Basis.mk_apply]
+    rw [hval2]
+    exact hbqsub ((Fintype.equivFinOfCardEq hcardq).symm i).2
+  choose n hn using hwmem
+  -- (5) read the `ℚ`-coordinates back as relations between the functionals
+  refine ⟨n, fun m => ⟨fun i => w.repr (v m) i, fun f => ?_⟩⟩
+  set c : Fin D → ℚ := fun i => w.repr (v m) i
+  have hrow : ∀ j : Fin D, v m j = ∑ i, c i * v (n i) j := by
+    intro j
+    have hsum : (∑ i, c i • w i) = v m := w.sum_repr (v m)
+    have hj := congrFun hsum j
+    rw [Finset.sum_apply] at hj
+    rw [← hj]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    rw [← hn i]
+    simp [Pi.smul_apply, smul_eq_mul]
+  have hfun : qCoeffL N m = ∑ i, (c i : ℂ) • qCoeffL N (n i) := by
+    refine e.ext fun j => ?_
+    rw [LinearMap.sum_apply]
+    have hL : ∀ i : Fin D,
+        ((c i : ℂ) • qCoeffL N (n i)) (e j) = ((c i * v (n i) j : ℚ) : ℂ) := by
+      intro i
+      rw [LinearMap.smul_apply, smul_eq_mul, ← hvC (n i) j]
+      push_cast
+      ring
+    rw [Finset.sum_congr rfl fun i _ => hL i, ← Rat.cast_sum, ← hrow j, hvC m j]
+  have happ := congrArg (fun L : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] ℂ => L f) hfun
+  simpa only [LinearMap.sum_apply, LinearMap.smul_apply, smul_eq_mul,
+    qCoeffL_apply] using happ
 
 /-- **The rational structure of `S₂(Γ₀(N))`** (PROVEN assembly,
 2026-07-25, over the coordinate leaf `exists_qCoeff_rational_relations`
@@ -2422,6 +2733,22 @@ theorem qCoeff_heckeEndo {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime)
   rw [← coe_heckeEndo hN hq f] at h
   exact h
 
+/-- **`S₂(Γ₀(N); ℤ)` is Hecke stable** (PROVEN, 2026-07-26): the
+coefficient formula `qCoeff_heckeEndo` writes each coefficient of
+`T_q f` as the `ℤ`-combination `a_{qm}(f) + 1_{q∤N}·1_{q∣m}·q·a_{m/q}(f)`
+of coefficients of `f`, so integrality of the expansion is preserved.
+No arithmetic input; this is the second of the two conjuncts of
+`exists_heckeStable_lattice` that are theorems rather than citations. -/
+theorem heckeEndo_mem_integralCuspForms {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime)
+    {f : CuspForm (Gamma0GL N) 2} (hf : f ∈ integralCuspForms N) :
+    heckeEndo N q f ∈ integralCuspForms N := by
+  intro m
+  obtain ⟨x, hx⟩ := hf (q * m)
+  obtain ⟨y, hy⟩ := hf (m / q)
+  refine ⟨x + (if q ∣ N then 0 else if q ∣ m then (q : ℤ) * y else 0), ?_⟩
+  rw [qCoeff_heckeEndo hN hq f m, hx, hy]
+  split_ifs <;> push_cast <;> ring
+
 /-- **The Hecke algebra `𝕋 ⊆ End_ℂ(S₂(Γ₀(N)))`**: the subring generated
 by the operators `T_q` at ALL primes (so the `U_q` at the bad primes
 too) — the image in `End_ℂ(S₂)` of the classical full Hecke algebra of
@@ -2437,27 +2764,42 @@ theorem heckeEndo_mem_heckeSubring (N : ℕ) {q : ℕ} (hq : q.Prime) :
     heckeEndo N q ∈ heckeSubring N :=
   Subring.subset_closure ⟨q, hq, rfl⟩
 
-/-- **A Hecke-stable `ℤ`-lattice of full rank** (sorry node — THE
-arithmetic input behind the integral structure of `S₂(Γ₀(N))`, isolated
-2026-07-26 as the residue of `heckeSubring_moduleFinite` after all of
-the module theory in that node was discharged): there is a finitely
-generated `ℤ`-submodule `L ⊆ S₂(Γ₀(N))` which is stable under every
-Hecke operator `T_q` and which spans `S₂(Γ₀(N))` over `ℂ`.
+/-- **A Hecke-stable `ℤ`-lattice of full rank** (PROVEN, 2026-07-26,
+over the single `q`-expansion-principle citation
+`integralCuspForms_span_eq_top` far above; formerly itself the
+citation, isolated 2026-07-26 as the residue of
+`heckeSubring_moduleFinite`): there is a finitely generated
+`ℤ`-submodule `L ⊆ S₂(Γ₀(N))` which is stable under every Hecke
+operator `T_q` and which spans `S₂(Γ₀(N))` over `ℂ`.
 
 This is the classical "`𝕋`-stable `ℤ`-lattice of full rank" — the
 object every textbook proof of the finiteness of the Hecke algebra
 actually constructs (Diamond–Shurman §6.5 and Exercise 6.5.4; Ribet,
 *Mod p Hecke operators and congruences* §2; Darmon–Diamond–Taylor §1.6).
-Two standard constructions, both unavailable on this pin:
+Of the two standard constructions,
 
 * `L = S₂(Γ₀(N); ℤ)`, the forms with `ℤ`-coefficient `q`-expansion,
   through the `q`-expansion principle of Katz and Deligne–Rapoport on
   the INTEGRAL model `X₀(N)/ℤ`;
-* `L` the preimage of `H¹(X₀(N), ℤ)` under Eichler–Shimura.
+* `L` the preimage of `H¹(X₀(N), ℤ)` under Eichler–Shimura,
 
-WHAT IS ALREADY PROVEN HERE, so that a prover of this leaf need not
-redo it (see `heckeSubring_moduleFinite` below): given `L`, the whole
-passage to `Module.Finite ℤ 𝕋` is formal — `𝕋` preserves `L` because
+the FIRST is what is taken here, in the form `integralCuspForms N`, and
+TWO of its three required properties are theorems on this pin rather
+than citations, so only the third is cited:
+
+* `L.FG` is `integralCuspForms_fg` — the Sturm bound
+  `exists_cuspForm_sturm_bound` injects `S₂(Γ₀(N); ℤ)` into `ℤ^B` and
+  `ℤ` is noetherian;
+* Hecke stability is `heckeEndo_mem_integralCuspForms` — the
+  coefficient formula `qCoeff_heckeEndo` writes each coefficient of
+  `T_q f` as a `ℤ`-combination of coefficients of `f`;
+* the `ℂ`-spanning is `integralCuspForms_span_eq_top`, the sole
+  remaining citation, and is exactly the `q`-expansion principle on the
+  integral model. See its docstring for the cluster's circularity map.
+
+WHAT IS PROVEN DOWNSTREAM, recorded here so nobody redoes it (see
+`heckeSubring_moduleFinite` below): given `L`, the whole passage to
+`Module.Finite ℤ 𝕋` is formal — `𝕋` preserves `L` because
 `{T | T '' L ⊆ L}` is a subring containing the generators, restriction
 to a finite generating set of `L` embeds `𝕋` into a finite product of
 copies of `L`, and that embedding is injective because a `ℂ`-linear
@@ -2469,25 +2811,22 @@ WHICH CONJUNCTS ARE LOAD-BEARING, and how much slack there is.
   generation the target is false for `L = ⊤`-like choices, and without
   full rank the restriction map has a kernel.
 * The consuming proof uses `Submodule.span ℂ ↑L = ⊤` ONLY to get
-  FAITHFULNESS of the `𝕋`-action on `L`, so the leaf could be weakened
-  to `∀ T ∈ heckeSubring N, (∀ f ∈ L, T f = 0) → T = 0`. Spanning is
-  stated instead because it is what every classical construction
-  produces, it is the recognizable form of the citation, and it is
-  strictly easier to supply.
+  FAITHFULNESS of the `𝕋`-action on `L`, so the statement could be
+  weakened to `∀ T ∈ heckeSubring N, (∀ f ∈ L, T f = 0) → T = 0`.
+  Spanning is stated instead because it is what every classical
+  construction produces, it is the recognizable form of the citation,
+  and it is strictly easier to supply. The weakening was NOT taken
+  (2026-07-26): with `L = S₂(Γ₀(N); ℤ)` it buys nothing, since the only
+  way to see that `𝕋` acts faithfully on the integral forms is to know
+  that they span.
 * Hecke stability is stated only at the GENERATORS `T_q`; stability
   under all of `𝕋` is derived below, not assumed.
 
 NOT CIRCULAR with the integral-structure theorems downstream. Both
 `exists_qExpansion_denominator` and `exists_integral_qExpansion_spanning`
-are CONSUMERS of `heckeSubring_moduleFinite`, hence of this leaf, so
-neither may be used to discharge it; the citation must come from the
-integral model directly. The shortest concrete route on top of what
-this file already proves is `L = S₂(Γ₀(N); ℤ)`: that submodule is
-automatically `T_q`-stable by the coefficient formula `qCoeff_heckeEndo`
-(a `ℤ`-combination of coefficients of `f`), and automatically finitely
-generated because the Sturm bound `exists_cuspForm_sturm_bound` embeds
-it into `ℤ^B`. So for that choice of `L` the ONLY unproven conjunct is
-the `ℂ`-spanning, i.e. exactly the `q`-expansion principle.
+are CONSUMERS of `heckeSubring_moduleFinite`, hence of this theorem, so
+neither may be used in the proof of `integralCuspForms_span_eq_top`;
+the citation must come from the integral model directly.
 
 SOUNDNESS: the hypothesis `0 < N` is required and is not cosmetic — it
 is what makes `heckeEndo` the genuine slash-sum rather than its junk
@@ -2499,11 +2838,14 @@ theorem exists_heckeStable_lattice {N : ℕ} (hN : 0 < N) :
       L.FG ∧
       (∀ q : ℕ, q.Prime → ∀ f ∈ L, heckeEndo N q f ∈ L) ∧
       Submodule.span ℂ (L : Set (CuspForm (Gamma0GL N) 2)) = ⊤ :=
-  sorry
+  ⟨integralCuspForms N, integralCuspForms_fg hN,
+    fun _ hq _ hf => heckeEndo_mem_integralCuspForms hN hq hf,
+    integralCuspForms_span_eq_top hN⟩
 
 /-- **The Hecke algebra is a finite `ℤ`-module** (PROVEN assembly,
-2026-07-26, over the single arithmetic leaf `exists_heckeStable_lattice`
-above; formerly itself THE citation, isolated 2026-07-25 as the carrier
+2026-07-26, over the now-PROVEN `exists_heckeStable_lattice`
+above, hence over the single citation `integralCuspForms_span_eq_top`;
+formerly itself THE citation, isolated 2026-07-25 as the carrier
 of bounded denominators): `𝕋 = ℤ[T_q : q prime] ⊆ End_ℂ(S₂(Γ₀(N)))` is
 finitely generated as a `ℤ`-module.
 
@@ -2518,7 +2860,9 @@ through the `q`-expansion principle on the integral model `X₀(N)/ℤ`
 Neither integral models nor Eichler–Shimura exist on this pin — but
 that is now needed ONLY for the lattice itself: the passage from the
 lattice to this statement is the formal argument written out below,
-and the lattice is the leaf `exists_heckeStable_lattice`.
+the lattice is `exists_heckeStable_lattice` (PROVEN 2026-07-26, taking
+`L = integralCuspForms N`), and the residual citation is that `L` has
+FULL RANK, `integralCuspForms_span_eq_top`.
 
 ASSEMBLY (2026-07-26, this node's owner). Level `0` first: there
 `heckeEndo 0 q` is the junk value `0` for every `q`, so `𝕋 = ⊥` is the
