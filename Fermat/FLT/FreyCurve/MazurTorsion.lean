@@ -81,6 +81,12 @@ public import Fermat.FLT.EllipticCurve.PhiPsiCoprime
 -- Galois-stable subgroup of odd order (`exists_velu_quotient_isogeny`), which
 -- discharges `exists_quotient_isogeny_of_odd_prime_card` below.
 public import Fermat.FLT.EllipticCurve.Velu
+-- Isogeny-as-morphism: `WeierstrassCurve.End` and its `IsRationalMap`
+-- faithfulness certificate, which is what lets the Atkin-Lehner conditions
+-- `ψ² = [-125]` / `ψ² = [-169]` be STATED at all (see the level-125 and
+-- level-169 descent leaves below). `public` because `End` occurs in signature
+-- position there.
+public import Fermat.FLT.EllipticCurve.Isogeny
 -- `cyclotomicCharacterModL` and the stable-line extraction, used in the
 -- character bookkeeping of the Serre §4.1 dichotomy.
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
@@ -6015,6 +6021,88 @@ theorem classPoly500_no_rat_root (x : ℚ)
 
 end MazurLevel125
 
+/-- **The Atkin-Lehner descent at level `125`, in isogeny vocabulary** (LEAF,
+2026-07-26; the half of Kenku's argument that could not previously be STATED).
+
+`X_0(125)` has genus `8`, `rank J_0(125)(ℚ)` is carried entirely by the
+`w_125 = +1` part, and the `w_125 = -1` part has rank `0`. So a rational point
+of `X_0(125)` is either one of the two rational cusps — excluded here, because
+`E` is an honest elliptic curve with a subgroup of order exactly `125` — or is
+fixed by the Atkin-Lehner involution `w_125`.
+
+A `w_125`-fixed non-cuspidal point says `E ≅ E/C`. Composing the quotient
+isogeny `E → E/C` with that isomorphism gives an ENDOMORPHISM `ψ` of `E` whose
+kernel is `C` and whose degree is `125`; since `End(E) ⊗ ℚ` is an imaginary
+quadratic field, `ψ² = [-125]`.
+
+**This is the statement that the previous vocabulary could not express, and the
+reason this leaf is a genuine reduction rather than a renaming.** Before
+`Fermat/FLT/EllipticCurve/Isogeny.lean` the development had only additive
+Galois-equivariant maps on `ℚ̄`-points, and for those `ψ² = [-125]` with cyclic
+kernel of order `125` is satisfied by EVERY elliptic curve over every field —
+take `[[0, -125], [1, 0]]` in `End((ℚ/ℤ)²) = M₂(Ẑ)`. Here `ψ` ranges over
+`WeierstrassCurve.End`, whose members carry an `IsRationalMap` certificate, so
+no such matrix qualifies.
+
+Reference: Kenku, "On the modular curves `X_0(125)`, `X_1(25)` and `X_1(49)`",
+J. London Math. Soc. (2) 23 (1981), 415-427. -/
+theorem WeierstrassCurve.exists_endSq_neg125_of_stable_cyclic_subgroup_order_125
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine,
+      ψ * ψ = (-125 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) ∧
+        AddMonoidHom.ker
+            ((ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
+              (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+          = AddSubgroup.zmultiples g :=
+  sorry
+
+/-- **The complex-multiplication half at level `125`** (LEAF, 2026-07-26).
+
+An endomorphism `ψ` of `E` with `ψ² = [-125]` forces `End(E) ≠ ℤ`, so `E` has
+complex multiplication by an order `O` in `K = ℚ(√-5)`, and `O ⊇ ℤ[ψ] = ℤ[√-125]`,
+the order of conductor `5` and discriminant `-500`.
+
+**The cyclicity hypothesis is what pins the conductor, and it is not
+decoration.** The only other candidate for `O` is the maximal order
+`ℤ[√-5]`, whose elements of square `-125` are exactly `±5√-5`; those are
+divisible by `5`, so their kernel contains `E[5] ≅ (ℤ/5)²` and is NOT cyclic.
+`hker` together with `hg` says `ker ψ` is cyclic of order `125`, which therefore
+rules the maximal order out and leaves `O = ℤ[√-125]`, of discriminant `-500`.
+
+Hence `j(E)` is a root of the Hilbert class polynomial `H_{-500}`, which is the
+degree-`10` literal below (PARI/GP `polclass(-500)`, cross-checked against Magma's
+`HilbertClassPolynomial(-500)` on every coefficient). -/
+theorem WeierstrassCurve.classPoly500_of_endSq_neg125
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+    (hsq : ψ * ψ = (-125 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine))
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
+    (hker :
+      AddMonoidHom.ker
+          ((ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
+            (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+        = AddSubgroup.zmultiples g) :
+    E.j ^ 10
+      - 3223908749006824266704683757440 * E.j ^ 9
+      - 5788655235893465137488657517731653977535262720 * E.j ^ 8
+      - 85513345743278838162291325580790125628876982826827776000 * E.j ^ 7
+      - 1263255684065627337408638443352833529354350351162180211933446144000 * E.j ^ 6
+      + 200050352444241778217084607085539849216954485891061015890608338763776000 * E.j ^ 5
+      - 25167927250522335028015421713735943766651382344880916018374545607890042880000 * E.j ^ 4
+      + 778178490640825346779670618315835464511684096015509575297442424938919142359040000 * E.j ^ 3
+      - 13889504758243071457243957312605709795978620655662039570875090923855697559735500800000 * E.j ^ 2
+      + 60874009901409915234577944006025873946343138332896192966988043974221344967016788787200000 * E.j
+      - 97064073967839061742571922471570867312906354784609767212665048296086545175195813173788672000
+      = 0 :=
+  sorry
+
+
 /-- **Kenku's Atkin–Lehner descent at level `125`** (sorry node,
 introduced 2026-07-26 by the cut of
 `not_cyclicIsogeny_oneHundredTwentyFive` along the class number of
@@ -6174,8 +6262,10 @@ theorem WeierstrassCurve.classPoly500_of_stable_cyclic_subgroup_order_125
       - 13889504758243071457243957312605709795978620655662039570875090923855697559735500800000 * E.j ^ 2
       + 60874009901409915234577944006025873946343138332896192966988043974221344967016788787200000 * E.j
       - 97064073967839061742571922471570867312906354784609767212665048296086545175195813173788672000
-      = 0 :=
-  sorry
+      = 0 := by
+  obtain ⟨ψ, hsq, hker⟩ :=
+    E.exists_endSq_neg125_of_stable_cyclic_subgroup_order_125 g hg hstable
+  exact E.classPoly500_of_endSq_neg125 ψ hsq g hg hker
 
 /-- **No rational cyclic `125`-isogeny** (PROVEN 2026-07-26 over the two
 leaves above — the level `X_0(125)` of Kenku's prime-power determination):
@@ -6836,6 +6926,83 @@ theorem classPoly676_no_rat_root (x : ℚ)
 
 end MazurLevel169
 
+/-- **The Atkin-Lehner descent at level `169`, in isogeny vocabulary** (LEAF,
+2026-07-26; the half of Kenku's argument that could not previously be STATED).
+
+`X_0(169)` has genus `8`, `rank J_0(169)(ℚ)` is carried entirely by the
+`w_169 = +1` part, and the `w_169 = -1` part has rank `0`. So a rational point
+of `X_0(169)` is either one of the two rational cusps — excluded here, because
+`E` is an honest elliptic curve with a subgroup of order exactly `169` — or is
+fixed by the Atkin-Lehner involution `w_169`.
+
+A `w_169`-fixed non-cuspidal point says `E ≅ E/C`. Composing the quotient
+isogeny `E → E/C` with that isomorphism gives an ENDOMORPHISM `ψ` of `E` whose
+kernel is `C` and whose degree is `169`; since `End(E) ⊗ ℚ` is an imaginary
+quadratic field, `ψ² = [-169]`.
+
+**This is the statement that the previous vocabulary could not express, and the
+reason this leaf is a genuine reduction rather than a renaming.** Before
+`Fermat/FLT/EllipticCurve/Isogeny.lean` the development had only additive
+Galois-equivariant maps on `ℚ̄`-points, and for those `ψ² = [-169]` with cyclic
+kernel of order `169` is satisfied by EVERY elliptic curve over every field —
+take `[[0, -169], [1, 0]]` in `End((ℚ/ℤ)²) = M₂(Ẑ)`. Here `ψ` ranges over
+`WeierstrassCurve.End`, whose members carry an `IsRationalMap` certificate, so
+no such matrix qualifies.
+
+Reference: Kenku, "On the modular curves `X_0(125)`, `X_1(25)` and `X_1(49)`",
+J. London Math. Soc. (2) 23 (1981), 415-427. -/
+theorem WeierstrassCurve.exists_endSq_neg169_of_stable_cyclic_subgroup_order_169
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 169)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine,
+      ψ * ψ = (-169 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine) ∧
+        AddMonoidHom.ker
+            ((ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
+              (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+          = AddSubgroup.zmultiples g :=
+  sorry
+
+/-- **The complex-multiplication half at level `169`** (LEAF, 2026-07-26).
+
+An endomorphism `ψ` of `E` with `ψ² = [-169]` forces `End(E) ≠ ℤ`, so `E` has
+complex multiplication by an order `O` in `K = ℚ(√-13)`, and `O ⊇ ℤ[ψ] = ℤ[√-169]`,
+the order of conductor `13` and discriminant `-676`.
+
+**The cyclicity hypothesis is what pins the conductor, and it is not
+decoration.** The only other candidate for `O` is the maximal order
+`ℤ[√-13]`, whose elements of square `-169` are exactly `±13√-13`; those are
+divisible by `13`, so their kernel contains `E[13] ≅ (ℤ/13)²` and is NOT cyclic.
+`hker` together with `hg` says `ker ψ` is cyclic of order `169`, which therefore
+rules the maximal order out and leaves `O = ℤ[√-169]`, of discriminant `-676`.
+
+Hence `j(E)` is a root of the Hilbert class polynomial `H_{-676}`, which is the
+degree-`6` literal below (PARI/GP `polclass(-676)`, cross-checked against Magma's
+`HilbertClassPolynomial(-676)` on every coefficient). -/
+theorem WeierstrassCurve.classPoly676_of_endSq_neg169
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine)
+    (hsq : ψ * ψ = (-169 : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine))
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 169)
+    (hker :
+      AddMonoidHom.ker
+          ((ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
+            (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+        = AddSubgroup.zmultiples g) :
+    E.j ^ 6
+      - 297704363274819300973648925452724352 * E.j ^ 5
+      - 162434321923500244963691319577164899941782327177547776 * E.j ^ 4
+      + 1250093798808181921331239024003439064057314451090248756625408 * E.j ^ 3
+      - 25139996004850385022058823419251332525548857652725838427880085782528 * E.j ^ 2
+      + 183121307244468811013362819441915945367491906284343782971561865394520064 * E.j
+      - 437940714559143999422451459680237045189874838812636812209273628143801860096 = 0 :=
+  sorry
+
+
 /-- **Kenku's Atkin–Lehner descent at level `169`** (sorry node,
 introduced 2026-07-26 by the cut of `not_cyclicIsogeny_oneHundredSixtyNine`
 along the class number of `−676`): if `E/ℚ` carries a Galois-stable cyclic
@@ -6895,8 +7062,10 @@ theorem WeierstrassCurve.classPoly676_of_stable_cyclic_subgroup_order_169
       + 1250093798808181921331239024003439064057314451090248756625408 * E.j ^ 3
       - 25139996004850385022058823419251332525548857652725838427880085782528 * E.j ^ 2
       + 183121307244468811013362819441915945367491906284343782971561865394520064 * E.j
-      - 437940714559143999422451459680237045189874838812636812209273628143801860096 = 0 :=
-  sorry
+      - 437940714559143999422451459680237045189874838812636812209273628143801860096 = 0 := by
+  obtain ⟨ψ, hsq, hker⟩ :=
+    E.exists_endSq_neg169_of_stable_cyclic_subgroup_order_169 g hg hstable
+  exact E.classPoly676_of_endSq_neg169 ψ hsq g hg hker
 
 /-- **No rational cyclic `169`-isogeny** (PROVEN 2026-07-26 over the two
 leaves above — level `X_0(169)`, introduced by the split of
