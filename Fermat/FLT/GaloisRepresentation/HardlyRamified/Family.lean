@@ -90,7 +90,7 @@ import Mathlib.Topology.Algebra.Ring.Compact
 -- (`exists_grouplike_family_generating_corner`): it is what turns the Hopf
 -- order's geometric fibre into the function algebra of its point GROUP.
 -- Public: it appears in the statements of the general point-set lemmas below.
-public import Mathlib.RingTheory.Etale.Field
+-- (The import itself is above, with the étale-descent group.)
 -- `IsSepClosed.hasEnoughRootsOfUnity`: a separably closed field of residue
 -- characteristic prime to `n` has enough `n`-th roots of unity — the input to
 -- "characters of a finite abelian group span its function algebra", the second
