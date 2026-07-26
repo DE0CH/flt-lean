@@ -4,15 +4,17 @@ FLT project).
 
 Decomposition of `FreyCurve.torsion_isUnramified_of_good` (unramifiedness
 of the mod-`p` Frey torsion representation at good primes) into two
-faithful nodes:
+faithful nodes.  LABEL AUDIT (bookkeeping, 2026-07-25): both are now
+PROVEN — this module emits no `declaration uses 'sorry'` warning at all —
+so the "(sorry node)" labels below were stale and are corrected here.
 
-* `FreyPackage.freyCurve_hasGoodReduction_of_not_dvd` (sorry node): the
+* `FreyPackage.freyCurve_hasGoodReduction_of_not_dvd` (PROVEN): the
   **arithmetic** — at an odd prime `q ∤ abc` the Frey curve has good
   reduction over the localization `ℤ_(q)` (its equation is `q`-integral
   and its discriminant `(abc)^{2p}/2⁸` is a `q`-adic unit, so the
   equation is already minimal at `q` with unit discriminant).
 
-* `WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction` (sorry node):
+* `WeierstrassCurve.isUnramifiedAt_of_hasGoodReduction` (PROVEN):
   the **local-global glue** — for any elliptic curve over `ℚ` with good
   reduction at the place `q ≠ p`, the mod-`p` torsion representation is
   unramified at `q` in the `GaloisRep.IsUnramifiedAt` sense. This node
@@ -9504,10 +9506,35 @@ theorem exists_fixedPointHopfMaps_of_algebraOrder
 end FixedPointHopfDescent
 
 open TensorProduct in
+/-- **The mixed tensor product of two base changes**: for commutative
+`R`-algebras `A`, `B` and a commutative `R`-algebra `S`, the `S`-tensor
+product of `S ⊗ A` and `S ⊗ B` is the base change of `A ⊗ B`
+(`cancelBaseChange` followed by associativity), as `S`-algebras. The
+`A = B` case is `baseChangeTensorSquare`; the mixed form is what builds
+the two CUBE comparisons used in the coassociativity transport of
+`exists_fixedPointHopfOrder_of_corestrictedMaps`. -/
+noncomputable def baseChangeTensorMixed (R S A B : Type) [CommRing R] [CommRing S]
+    [CommRing A] [CommRing B] [Algebra R S] [Algebra R A] [Algebra R B] :
+    ((S ⊗[R] A) ⊗[S] (S ⊗[R] B)) ≃ₐ[S] S ⊗[R] (A ⊗[R] B) :=
+  (Algebra.TensorProduct.cancelBaseChange R S S (S ⊗[R] A) B).trans
+    (Algebra.TensorProduct.assoc R R S S A B)
+
+open TensorProduct in
+theorem baseChangeTensorMixed_symm_tmul (R S A B : Type) [CommRing R] [CommRing S]
+    [CommRing A] [CommRing B] [Algebra R S] [Algebra R A] [Algebra R B]
+    (r : S) (a : A) (b : B) :
+    (baseChangeTensorMixed R S A B).symm (r ⊗ₜ[R] (a ⊗ₜ[R] b)) =
+      (r ⊗ₜ[R] a) ⊗ₜ[S] ((1 : S) ⊗ₜ[R] b) := by
+  rw [baseChangeTensorMixed, AlgEquiv.symm_trans_apply,
+    show (Algebra.TensorProduct.assoc R R S S A B).symm (r ⊗ₜ[R] (a ⊗ₜ[R] b)) =
+      (r ⊗ₜ[R] a) ⊗ₜ[R] b from rfl,
+    Algebra.TensorProduct.cancelBaseChange_symm_tmul]
+
+open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
-/-- **The fixed-point order, structure transport** (sorry node — the
+/-- **The fixed-point order, structure transport** (PROVEN 2026-07-25 — the
 AXIOM-TRANSPORT stage of the integral fixed-points descent, all the
 DESCENT content having been discharged by
 `exists_fixedPointHopfMaps_of_algebraOrder`): given the corestricted
@@ -9516,7 +9543,7 @@ changes agree with the comultiplication, counit and antipode of
 `R_L ⊗ H` through `Φ` — assemble them into a Hopf `R`-algebra structure
 on `H'` for which `Φ` is an `R_L`-bialgebra identification.
 
-Intended route (nothing left here is descent; it is all diagram
+Route taken (nothing left here is descent; it is all diagram
 transport along the free base change `R_L/R`): the coalgebra axioms of
 `(Δ₀, ε₀)` and the two Hopf axioms of `S₀` are equalities of `R`-algebra
 maps out of `H'` into `H'`, `H' ⊗ H'` and `H' ⊗ H' ⊗ H'`; each becomes
@@ -9538,15 +9565,24 @@ comultiplication clauses are `hε₀` and `hΔ₀` read on the generators
 `r ⊗ x` of `R_L ⊗ H'` (`Algebra.TensorProduct.ext_ring`, the base-change
 formulas `baseChange_counit_tmul` and `baseChangeTensorSquare_comul_tmul`
 being available); the conjugation-intertwining clause is `hΦ` unchanged,
-since `e` and `Φ` have the same underlying map. -/
+since `e` and `Φ` have the same underlying map.
+
+Note on the hypotheses: `_h2`, `_hdisc`, `_hS2` and `_hScomul` are NOT used
+by this stage — they are exactly the DESCENT inputs, already consumed by
+`exists_fixedPointAlgebraOrder_of_descentData` and
+`exists_fixedPointHopfMaps_of_algebraOrder` in producing `Φ` and the
+corestricted `Δ₀`, `ε₀`, `S₀`. Nothing beyond `hΔ₀`, `hε₀`, `hS₀` and `hΦ`
+is needed to transport the axioms, so they are kept (underscored) only to
+hold the signature its consumer
+`exists_fixedPointHopfOrder_of_algebraOrder` passes. -/
 theorem exists_fixedPointHopfOrder_of_corestrictedMaps
     (R : Type) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
-    (h2 : IsUnit (2 : R)) (t n : R) (hdisc : IsUnit (t * t - 4 * n))
+    (_h2 : IsUnit (2 : R)) (t n : R) (_hdisc : IsUnit (t * t - 4 * n))
     (H : Type) [CommRing H] [HopfAlgebra R H] [Module.Finite R H]
     [Module.Flat R H]
-    (hS2 : (HopfAlgebra.antipodeAlgHom R H).comp
+    (_hS2 : (HopfAlgebra.antipodeAlgHom R H).comp
       (HopfAlgebra.antipodeAlgHom R H) = AlgHom.id R H)
-    (hScomul : (Bialgebra.comulAlgHom R H).comp
+    (_hScomul : (Bialgebra.comulAlgHom R H).comp
       (HopfAlgebra.antipodeAlgHom R H) =
       (Algebra.TensorProduct.map (HopfAlgebra.antipodeAlgHom R H)
         (HopfAlgebra.antipodeAlgHom R H)).comp
@@ -9590,7 +9626,342 @@ theorem exists_fixedPointHopfOrder_of_corestrictedMaps
           (quadraticOrderConj R t n : quadraticOrder R t n →ₐ[R]
             quadraticOrder R t n) (HopfAlgebra.antipodeAlgHom R H)
           (e x) := by
-  sorry
+  classical
+  set RL := quadraticOrder R t n
+  -- the three injective comparison maps `H'^{⊗k} → (R_L ⊗ H)^{⊗_{R_L} k}`
+  set J₁ : H' →ₐ[R] (RL ⊗[R] H) :=
+    (Φ.toAlgHom.restrictScalars R).comp
+      (Algebra.TensorProduct.includeRight : H' →ₐ[R] RL ⊗[R] H')
+  have hJ₁app : ∀ x : H', J₁ x = Φ ((1 : RL) ⊗ₜ[R] x) := fun _ => rfl
+  have hJ₁inj : Function.Injective J₁ := by
+    intro x y hxy
+    exact quadraticOrder_one_tmul_injective R t n H' (Φ.injective hxy)
+  set J₂ : (H' ⊗[R] H') →ₐ[R] ((RL ⊗[R] H) ⊗[RL] (RL ⊗[R] H)) :=
+    ((Algebra.TensorProduct.congr Φ Φ).toAlgHom.restrictScalars R).comp
+      (((baseChangeTensorSquare R RL H').symm.toAlgHom.restrictScalars R).comp
+        (Algebra.TensorProduct.includeRight :
+          (H' ⊗[R] H') →ₐ[R] RL ⊗[R] (H' ⊗[R] H')))
+  have hJ₂app : ∀ w : H' ⊗[R] H', J₂ w =
+      Algebra.TensorProduct.congr Φ Φ
+        ((baseChangeTensorSquare R RL H').symm ((1 : RL) ⊗ₜ[R] w)) :=
+    fun _ => rfl
+  have hJ₂tmul : ∀ a b : H', J₂ (a ⊗ₜ[R] b) = J₁ a ⊗ₜ[RL] J₁ b := by
+    intro a b
+    rw [hJ₂app, baseChangeTensorSquare_symm_tmul]
+    rfl
+  -- the right-associated cube comparison
+  set A3 : ((RL ⊗[R] H') ⊗[RL] ((RL ⊗[R] H') ⊗[RL] (RL ⊗[R] H'))) ≃ₐ[RL]
+      RL ⊗[R] (H' ⊗[R] (H' ⊗[R] H')) :=
+    (Algebra.TensorProduct.congr
+      (AlgEquiv.refl : (RL ⊗[R] H') ≃ₐ[RL] (RL ⊗[R] H'))
+      (baseChangeTensorSquare R RL H')).trans
+      (baseChangeTensorMixed R RL H' (H' ⊗[R] H')) with hA3
+  set J₃ : (H' ⊗[R] (H' ⊗[R] H')) →ₐ[R]
+      ((RL ⊗[R] H) ⊗[RL] ((RL ⊗[R] H) ⊗[RL] (RL ⊗[R] H))) :=
+    ((Algebra.TensorProduct.congr Φ
+      (Algebra.TensorProduct.congr Φ Φ)).toAlgHom.restrictScalars R).comp
+      ((A3.symm.toAlgHom.restrictScalars R).comp
+        (Algebra.TensorProduct.includeRight :
+          (H' ⊗[R] (H' ⊗[R] H')) →ₐ[R] RL ⊗[R] (H' ⊗[R] (H' ⊗[R] H'))))
+  have hJ₃app : ∀ u : H' ⊗[R] (H' ⊗[R] H'), J₃ u =
+      Algebra.TensorProduct.congr Φ (Algebra.TensorProduct.congr Φ Φ)
+        (A3.symm ((1 : RL) ⊗ₜ[R] u)) := fun _ => rfl
+  have hJ₃inj : Function.Injective J₃ := by
+    intro u₁ u₂ hu
+    rw [hJ₃app, hJ₃app] at hu
+    exact quadraticOrder_one_tmul_injective R t n (H' ⊗[R] (H' ⊗[R] H'))
+      (A3.symm.injective
+        ((Algebra.TensorProduct.congr Φ
+          (Algebra.TensorProduct.congr Φ Φ)).injective hu))
+  have hJ₃mix : ∀ (a : H') (v : H' ⊗[R] H'),
+      J₃ (a ⊗ₜ[R] v) = J₁ a ⊗ₜ[RL] J₂ v := by
+    intro a v
+    induction v with
+    | zero => simp
+    | tmul b c =>
+      rw [hJ₃app, hA3, AlgEquiv.symm_trans_apply,
+        baseChangeTensorMixed_symm_tmul]
+      rw [show (Algebra.TensorProduct.congr
+          (AlgEquiv.refl : (RL ⊗[R] H') ≃ₐ[RL] (RL ⊗[R] H'))
+          (baseChangeTensorSquare R RL H')).symm
+            (((1 : RL) ⊗ₜ[R] a) ⊗ₜ[RL] ((1 : RL) ⊗ₜ[R] (b ⊗ₜ[R] c))) =
+          ((1 : RL) ⊗ₜ[R] a) ⊗ₜ[RL]
+            ((baseChangeTensorSquare R RL H').symm
+              ((1 : RL) ⊗ₜ[R] (b ⊗ₜ[R] c))) from rfl,
+        baseChangeTensorSquare_symm_tmul, hJ₂tmul]
+      rfl
+    | add v₁ v₂ h₁ h₂ =>
+      rw [TensorProduct.tmul_add, map_add, h₁, h₂, map_add,
+        TensorProduct.tmul_add]
+  -- the left-associated cube comparison
+  set A3L : (((RL ⊗[R] H') ⊗[RL] (RL ⊗[R] H')) ⊗[RL] (RL ⊗[R] H')) ≃ₐ[RL]
+      RL ⊗[R] ((H' ⊗[R] H') ⊗[R] H') :=
+    (Algebra.TensorProduct.congr (baseChangeTensorSquare R RL H')
+      (AlgEquiv.refl : (RL ⊗[R] H') ≃ₐ[RL] (RL ⊗[R] H'))).trans
+      (baseChangeTensorMixed R RL (H' ⊗[R] H') H') with hA3L
+  set J₃L : ((H' ⊗[R] H') ⊗[R] H') →ₐ[R]
+      (((RL ⊗[R] H) ⊗[RL] (RL ⊗[R] H)) ⊗[RL] (RL ⊗[R] H)) :=
+    ((Algebra.TensorProduct.congr (Algebra.TensorProduct.congr Φ Φ)
+      Φ).toAlgHom.restrictScalars R).comp
+      ((A3L.symm.toAlgHom.restrictScalars R).comp
+        (Algebra.TensorProduct.includeRight :
+          ((H' ⊗[R] H') ⊗[R] H') →ₐ[R] RL ⊗[R] ((H' ⊗[R] H') ⊗[R] H')))
+  have hJ₃Lapp : ∀ u : (H' ⊗[R] H') ⊗[R] H', J₃L u =
+      Algebra.TensorProduct.congr (Algebra.TensorProduct.congr Φ Φ) Φ
+        (A3L.symm ((1 : RL) ⊗ₜ[R] u)) := fun _ => rfl
+  have hJ₃Lmix : ∀ (v : H' ⊗[R] H') (c : H'),
+      J₃L (v ⊗ₜ[R] c) = J₂ v ⊗ₜ[RL] J₁ c := by
+    intro v c
+    induction v with
+    | zero => simp
+    | tmul a b =>
+      rw [hJ₃Lapp, hA3L, AlgEquiv.symm_trans_apply,
+        baseChangeTensorMixed_symm_tmul]
+      rw [show (Algebra.TensorProduct.congr (baseChangeTensorSquare R RL H')
+          (AlgEquiv.refl : (RL ⊗[R] H') ≃ₐ[RL] (RL ⊗[R] H'))).symm
+            (((1 : RL) ⊗ₜ[R] (a ⊗ₜ[R] b)) ⊗ₜ[RL] ((1 : RL) ⊗ₜ[R] c)) =
+          ((baseChangeTensorSquare R RL H').symm
+            ((1 : RL) ⊗ₜ[R] (a ⊗ₜ[R] b))) ⊗ₜ[RL]
+            ((1 : RL) ⊗ₜ[R] c) from rfl,
+        baseChangeTensorSquare_symm_tmul, hJ₂tmul]
+      rfl
+    | add v₁ v₂ h₁ h₂ =>
+      rw [TensorProduct.add_tmul, map_add, h₁, h₂, map_add,
+        TensorProduct.add_tmul]
+  -- the corestriction compatibilities, read through the comparisons
+  have hJ₂Δ : ∀ x : H', J₂ (Δ₀ x) =
+      Coalgebra.comul (R := RL) (A := RL ⊗[R] H) (J₁ x) := by
+    intro x
+    rw [hJ₂app, hΔ₀ x]
+    rfl
+  have hJ₁ε : ∀ x : H', algebraMap R RL (ε₀ x) =
+      Coalgebra.counit (R := RL) (A := RL ⊗[R] H) (J₁ x) := by
+    intro x
+    rw [hε₀ x]
+    rfl
+  have hJ₁S : ∀ x : H', J₁ (S₀ x) =
+      HopfAlgebra.antipode RL (J₁ x) := by
+    intro x
+    rw [hJ₁app, hS₀ x]
+    rfl
+  -- COASSOCIATIVITY
+  have h_coassoc : (Algebra.TensorProduct.assoc R R R H' H' H').toAlgHom.comp
+      ((Algebra.TensorProduct.map Δ₀ (AlgHom.id R H')).comp Δ₀) =
+      (Algebra.TensorProduct.map (AlgHom.id R H') Δ₀).comp Δ₀ := by
+    apply AlgHom.ext
+    intro x
+    apply hJ₃inj
+    -- the right-hand side intertwines with `lTensor comul`
+    have hA : ∀ w : H' ⊗[R] H',
+        J₃ ((Algebra.TensorProduct.map (AlgHom.id R H') Δ₀) w) =
+        LinearMap.lTensor (RL ⊗[R] H)
+          (Coalgebra.comul (R := RL) (A := RL ⊗[R] H)) (J₂ w) := by
+      intro w
+      induction w with
+      | zero => simp
+      | tmul a b =>
+        rw [Algebra.TensorProduct.map_tmul, AlgHom.id_apply, hJ₃mix, hJ₂Δ,
+          hJ₂tmul, LinearMap.lTensor_tmul]
+      | add w₁ w₂ h₁ h₂ => simp only [map_add, h₁, h₂]
+    -- the left-hand side intertwines with `rTensor comul`
+    have hC : ∀ w : H' ⊗[R] H',
+        J₃L ((Algebra.TensorProduct.map Δ₀ (AlgHom.id R H')) w) =
+        LinearMap.rTensor (RL ⊗[R] H)
+          (Coalgebra.comul (R := RL) (A := RL ⊗[R] H)) (J₂ w) := by
+      intro w
+      induction w with
+      | zero => simp
+      | tmul a b =>
+        rw [Algebra.TensorProduct.map_tmul, AlgHom.id_apply, hJ₃Lmix, hJ₂Δ,
+          hJ₂tmul, LinearMap.rTensor_tmul]
+      | add w₁ w₂ h₁ h₂ => simp only [map_add, h₁, h₂]
+    -- the associator intertwines the two cube comparisons
+    have hB : ∀ s : (H' ⊗[R] H') ⊗[R] H',
+        J₃ ((Algebra.TensorProduct.assoc R R R H' H' H') s) =
+        (TensorProduct.assoc RL (RL ⊗[R] H) (RL ⊗[R] H) (RL ⊗[R] H))
+          (J₃L s) := by
+      intro s
+      induction s with
+      | zero => simp
+      | tmul v c =>
+        rw [hJ₃Lmix]
+        induction v with
+        | zero => simp [TensorProduct.zero_tmul]
+        | tmul a b =>
+          rw [Algebra.TensorProduct.assoc_tmul, hJ₃mix, hJ₂tmul, hJ₂tmul,
+            TensorProduct.assoc_tmul]
+        | add v₁ v₂ h₁ h₂ =>
+          simp only [TensorProduct.add_tmul, map_add]
+          rw [h₁, h₂]
+      | add s₁ s₂ h₁ h₂ => simp only [map_add, h₁, h₂]
+    simp only [AlgHom.comp_apply, AlgEquiv.coe_toAlgHom]
+    rw [hB ((Algebra.TensorProduct.map Δ₀ (AlgHom.id R H')) (Δ₀ x)),
+      hC (Δ₀ x), hA (Δ₀ x), hJ₂Δ x]
+    exact Coalgebra.coassoc_apply (J₁ x)
+  -- COUNIT, RIGHT
+  have h_rTensor : (Algebra.TensorProduct.map ε₀ (AlgHom.id R H')).comp Δ₀ =
+      (Algebra.TensorProduct.lid R H').symm := by
+    apply AlgHom.ext
+    intro x
+    apply (Algebra.TensorProduct.lid R H').injective
+    simp only [AlgEquiv.coe_toAlgHom, AlgEquiv.apply_symm_apply]
+    apply hJ₁inj
+    have key : ∀ w : H' ⊗[R] H',
+        J₁ ((Algebra.TensorProduct.lid R H')
+          ((Algebra.TensorProduct.map ε₀ (AlgHom.id R H')) w)) =
+        (TensorProduct.lid RL (RL ⊗[R] H))
+          ((Coalgebra.counit (R := RL) (A := RL ⊗[R] H)).rTensor
+            (RL ⊗[R] H) (J₂ w)) := by
+      intro w
+      induction w with
+      | zero => simp
+      | tmul a b =>
+        rw [Algebra.TensorProduct.map_tmul, AlgHom.id_apply,
+          Algebra.TensorProduct.lid_tmul, hJ₂tmul, LinearMap.rTensor_tmul,
+          TensorProduct.lid_tmul, ← hJ₁ε a, map_smul, algebraMap_smul]
+      | add w₁ w₂ h₁ h₂ => simp only [map_add, h₁, h₂]
+    show J₁ ((Algebra.TensorProduct.lid R H')
+      ((Algebra.TensorProduct.map ε₀ (AlgHom.id R H')) (Δ₀ x))) = J₁ x
+    rw [key (Δ₀ x), hJ₂Δ x,
+      Coalgebra.rTensor_counit_comul, TensorProduct.lid_tmul, one_smul]
+  -- COUNIT, LEFT
+  have h_lTensor : (Algebra.TensorProduct.map (AlgHom.id R H') ε₀).comp Δ₀ =
+      (Algebra.TensorProduct.rid R R H').symm := by
+    apply AlgHom.ext
+    intro x
+    apply (Algebra.TensorProduct.rid R R H').injective
+    simp only [AlgEquiv.coe_toAlgHom, AlgEquiv.apply_symm_apply]
+    apply hJ₁inj
+    have key : ∀ w : H' ⊗[R] H',
+        J₁ ((Algebra.TensorProduct.rid R R H')
+          ((Algebra.TensorProduct.map (AlgHom.id R H') ε₀) w)) =
+        (TensorProduct.rid RL (RL ⊗[R] H))
+          ((Coalgebra.counit (R := RL) (A := RL ⊗[R] H)).lTensor
+            (RL ⊗[R] H) (J₂ w)) := by
+      intro w
+      induction w with
+      | zero => simp
+      | tmul a b =>
+        rw [Algebra.TensorProduct.map_tmul, AlgHom.id_apply,
+          Algebra.TensorProduct.rid_tmul, hJ₂tmul, LinearMap.lTensor_tmul,
+          TensorProduct.rid_tmul, ← hJ₁ε b, map_smul, algebraMap_smul]
+      | add w₁ w₂ h₁ h₂ => simp only [map_add, h₁, h₂]
+    show J₁ ((Algebra.TensorProduct.rid R R H')
+      ((Algebra.TensorProduct.map (AlgHom.id R H') ε₀) (Δ₀ x))) = J₁ x
+    rw [key (Δ₀ x), hJ₂Δ x,
+      Coalgebra.lTensor_counit_comul, TensorProduct.rid_tmul, one_smul]
+  -- the bialgebra structure on `H'`
+  letI instBi : Bialgebra R H' :=
+    Bialgebra.ofAlgHom Δ₀ ε₀ h_coassoc h_rTensor h_lTensor
+  have hcomul_new : Bialgebra.comulAlgHom R H' = Δ₀ :=
+    AlgHom.toLinearMap_injective rfl
+  have hcounit_new : Bialgebra.counitAlgHom R H' = ε₀ :=
+    AlgHom.toLinearMap_injective rfl
+  -- ANTIPODE, RIGHT
+  have h_anti_r : ((Algebra.TensorProduct.lift S₀ (AlgHom.id R H')
+        fun _ _ => Commute.all _ _).comp (Bialgebra.comulAlgHom R H')) =
+      (Algebra.ofId R H').comp (Bialgebra.counitAlgHom R H') := by
+    rw [hcomul_new, hcounit_new]
+    apply AlgHom.ext
+    intro x
+    apply hJ₁inj
+    have key : ∀ w : H' ⊗[R] H',
+        J₁ ((Algebra.TensorProduct.lift S₀ (AlgHom.id R H')
+          fun _ _ => Commute.all _ _) w) =
+        (LinearMap.mul' RL (RL ⊗[R] H))
+          ((HopfAlgebra.antipode RL (A := RL ⊗[R] H)).rTensor
+            (RL ⊗[R] H) (J₂ w)) := by
+      intro w
+      induction w with
+      | zero => simp
+      | tmul a b =>
+        rw [Algebra.TensorProduct.lift_tmul, AlgHom.id_apply, map_mul,
+          hJ₁S a, hJ₂tmul, LinearMap.rTensor_tmul, LinearMap.mul'_apply]
+      | add w₁ w₂ h₁ h₂ => simp only [map_add, h₁, h₂]
+    show J₁ ((Algebra.TensorProduct.lift S₀ (AlgHom.id R H')
+        fun _ _ => Commute.all _ _) (Δ₀ x)) =
+      J₁ ((Algebra.ofId R H') (ε₀ x))
+    rw [key (Δ₀ x), hJ₂Δ x,
+      HopfAlgebra.mul_antipode_rTensor_comul_apply, ← hJ₁ε x,
+      Algebra.ofId_apply,
+      ← IsScalarTower.algebraMap_apply R RL (RL ⊗[R] H)]
+    exact (J₁.commutes (ε₀ x)).symm
+  -- ANTIPODE, LEFT
+  have h_anti_l : ((Algebra.TensorProduct.lift (AlgHom.id R H') S₀
+        fun _ _ => Commute.all _ _).comp (Bialgebra.comulAlgHom R H')) =
+      (Algebra.ofId R H').comp (Bialgebra.counitAlgHom R H') := by
+    rw [hcomul_new, hcounit_new]
+    apply AlgHom.ext
+    intro x
+    apply hJ₁inj
+    have key : ∀ w : H' ⊗[R] H',
+        J₁ ((Algebra.TensorProduct.lift (AlgHom.id R H') S₀
+          fun _ _ => Commute.all _ _) w) =
+        (LinearMap.mul' RL (RL ⊗[R] H))
+          ((HopfAlgebra.antipode RL (A := RL ⊗[R] H)).lTensor
+            (RL ⊗[R] H) (J₂ w)) := by
+      intro w
+      induction w with
+      | zero => simp
+      | tmul a b =>
+        rw [Algebra.TensorProduct.lift_tmul, AlgHom.id_apply, map_mul,
+          hJ₁S b, hJ₂tmul, LinearMap.lTensor_tmul, LinearMap.mul'_apply]
+      | add w₁ w₂ h₁ h₂ => simp only [map_add, h₁, h₂]
+    show J₁ ((Algebra.TensorProduct.lift (AlgHom.id R H') S₀
+        fun _ _ => Commute.all _ _) (Δ₀ x)) =
+      J₁ ((Algebra.ofId R H') (ε₀ x))
+    rw [key (Δ₀ x), hJ₂Δ x,
+      HopfAlgebra.mul_antipode_lTensor_comul_apply, ← hJ₁ε x,
+      Algebra.ofId_apply,
+      ← IsScalarTower.algebraMap_apply R RL (RL ⊗[R] H)]
+    exact (J₁.commutes (ε₀ x)).symm
+  letI instHopf : HopfAlgebra R H' := HopfAlgebra.ofAlgHom S₀ h_anti_r h_anti_l
+  -- `Φ` upgrades to an `R_L`-bialgebra identification
+  have hcounit_comp : (Bialgebra.counitAlgHom RL (RL ⊗[R] H)).comp
+      (Φ : (RL ⊗[R] H') →ₐ[RL] (RL ⊗[R] H)) =
+      Bialgebra.counitAlgHom RL (RL ⊗[R] H') := by
+    apply Algebra.TensorProduct.ext'
+    intro r x
+    have hL : Bialgebra.counitAlgHom RL (RL ⊗[R] H) (Φ (r ⊗ₜ[R] x)) =
+        r * algebraMap R RL (ε₀ x) := by
+      rw [show (r : RL) ⊗ₜ[R] x = r • ((1 : RL) ⊗ₜ[R] x) from by
+          rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one],
+        map_smul, ← hJ₁app, map_smul, smul_eq_mul,
+        Bialgebra.counitAlgHom_apply, ← hJ₁ε x]
+    have hR : Bialgebra.counitAlgHom RL (RL ⊗[R] H') (r ⊗ₜ[R] x) =
+        r * algebraMap R RL (ε₀ x) := by
+      rw [baseChange_counit_tmul, hcounit_new, mul_comm]
+    show Bialgebra.counitAlgHom RL (RL ⊗[R] H) (Φ (r ⊗ₜ[R] x)) = _
+    rw [hL, hR]
+  have hcomul_comp : (Algebra.TensorProduct.map
+        (Φ : (RL ⊗[R] H') →ₐ[RL] (RL ⊗[R] H))
+        (Φ : (RL ⊗[R] H') →ₐ[RL] (RL ⊗[R] H))).comp
+        (Bialgebra.comulAlgHom RL (RL ⊗[R] H')) =
+      (Bialgebra.comulAlgHom RL (RL ⊗[R] H)).comp
+        (Φ : (RL ⊗[R] H') →ₐ[RL] (RL ⊗[R] H)) := by
+    apply Algebra.TensorProduct.ext'
+    intro r x
+    have hcomul_tmul : Bialgebra.comulAlgHom RL (RL ⊗[R] H') (r ⊗ₜ[R] x) =
+        (baseChangeTensorSquare R RL H').symm (r ⊗ₜ[R] Δ₀ x) := by
+      rw [← hcomul_new, ← baseChangeTensorSquare_comul_tmul R RL H' r x,
+        AlgEquiv.symm_apply_apply]
+    show (Algebra.TensorProduct.map
+      (Φ : (RL ⊗[R] H') →ₐ[RL] (RL ⊗[R] H))
+      (Φ : (RL ⊗[R] H') →ₐ[RL] (RL ⊗[R] H)))
+      (Bialgebra.comulAlgHom RL (RL ⊗[R] H') (r ⊗ₜ[R] x)) =
+      Bialgebra.comulAlgHom RL (RL ⊗[R] H) (Φ (r ⊗ₜ[R] x))
+    rw [hcomul_tmul,
+      show (r : RL) ⊗ₜ[R] Δ₀ x = r • ((1 : RL) ⊗ₜ[R] Δ₀ x) from by
+        rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one],
+      show (r : RL) ⊗ₜ[R] x = r • ((1 : RL) ⊗ₜ[R] x) from by
+        rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]]
+    simp only [map_smul]
+    congr 1
+    exact hΔ₀ x
+  refine ⟨H', inferInstance, instHopf, inferInstance, inferInstance,
+    BialgEquiv.ofAlgEquiv Φ hcounit_comp hcomul_comp, ?_⟩
+  intro x
+  exact hΦ x
 
 open TensorProduct in
 set_option backward.isDefEq.respectTransparency false in
@@ -9599,10 +9970,10 @@ set_option maxHeartbeats 2000000 in
 /-- **The fixed-point order, Hopf upgrade** (DECOMPOSED 2026-07-25 — the
 DESCENT content is PROVEN in `exists_fixedPointHopfMaps_of_algebraOrder`
 above, which corestricts the comultiplication, counit and antipode of
-`R_L ⊗ H` along `Φ` to `R`-algebra maps of `H'`; what remains is the
-sorried leaf `exists_fixedPointHopfOrder_of_corestrictedMaps`, the
-transport of the coalgebra and Hopf AXIOMS along the injective unit base
-change; PROVEN here is the glue chaining them):
+`R_L ⊗ H` along `Φ` to `R`-algebra maps of `H'`; the AXIOM-TRANSPORT
+stage is PROVEN in `exists_fixedPointHopfOrder_of_corestrictedMaps`
+(2026-07-25), the transport of the coalgebra and Hopf AXIOMS along the
+injective unit base change; PROVEN here is the glue chaining them):
 given the algebra-level fixed-point identification `Φ` of
 `exists_fixedPointAlgebraOrder_of_descentData` — an `R_L`-algebra
 identification `R_L ⊗ H' ≅ R_L ⊗ H` intertwining `τ ⊗ id` with
@@ -9670,9 +10041,9 @@ set_option maxHeartbeats 2000000 in
 eigenspace splitting producing the algebra-level order and its
 equivariant base-change identification is the sorried leaf
 `exists_fixedPointAlgebraOrder_of_descentData`; the corestriction of
-the costructure upgrading it to a Hopf order is the sorried leaf
-`exists_fixedPointHopfOrder_of_algebraOrder`; PROVEN here is the glue
-chaining them): over a DVR `R` with `2` a unit, given a finite flat
+the costructure upgrading it to a Hopf order is now fully PROVEN in
+`exists_fixedPointHopfOrder_of_algebraOrder` (2026-07-25); PROVEN here
+is the glue chaining them): over a DVR `R` with `2` a unit, given a finite flat
 commutative `R`-Hopf algebra `H` whose antipode is an involution
 (`hS2`) commuting with the comultiplication without the swap
 (`hScomul`), and a monic quadratic `X² − tX + n` with UNIT
@@ -15187,7 +15558,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
           WeierstrassCurve.Affine.Point.map σ.toAlgHom
             (f (Additive.ofMul (WithConv.toConv φ))) := by
   classical
-  -- LOCAL leaf (sorry node): the peu-ramifiée package over the
+  -- LOCAL leaf (PROVEN): the peu-ramifiée package over the
   -- COMPLETED integers — the pure Tate/Kummer content
   have hloc : WeierstrassCurve.TorsionFlatPackage
       𝒪[HeightOneSpectrum.adicCompletion ℚ
@@ -15212,7 +15583,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
           (E.map (algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ
             hp'.toHeightOneSpectrumRingOfIntegersRat))) (p := p)
           (WeierstrassCurve.map_j _ _) hj
-      -- SPLIT KUMMER leaf (sorry node): with the Tate parameter
+      -- SPLIT KUMMER leaf (PROVEN): with the Tate parameter
       -- recentred to a unit `u = q_E·w'⁻ᵖ` of the completed integers,
       -- the uniformization `exists_tateEquivSepClosure` presents
       -- `E[p] ⊂ Ω̂ˣ/q_Eᶻ` as `⟨ζ_p, w'·u^{1/p}⟩`, a *peu-ramifiée*
@@ -15245,7 +15616,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
               hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
         exact WeierstrassCurve.torsionFlatPackage_of_split_adic E hp' hp2
       exact hsplitpkg w hmemw hunitw
-    · -- NONSPLIT TWIST leaf (sorry node): the quadratic unramified
+    · -- NONSPLIT TWIST leaf (PROVEN): the quadratic unramified
       -- twist to split reduction
       -- (`exists_quadraticTwist_hasSplitMultiplicativeReduction`, as in
       -- `tate_inertia_unipotent_of_nonsplit` above) has the same
@@ -15271,7 +15642,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
               hp'.toHeightOneSpectrumRingOfIntegersRat)) := by
         exact WeierstrassCurve.torsionFlatPackage_of_nonsplit_adic E hp' hp2 hj
       exact hnonsplitpkg hsp
-  -- DESCENT leaf (sorry node): the completed-integers package descends
+  -- DESCENT leaf (PROVEN): the completed-integers package descends
   -- to `ℤ_(p)` with globally equivariant points
   have hdesc : WeierstrassCurve.TorsionFlatPackage
       𝒪[HeightOneSpectrum.adicCompletion ℚ
@@ -15304,7 +15675,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
             WeierstrassCurve.Affine.Point.map σ.toAlgHom
               (f (Additive.ofMul (WithConv.toConv φ))) := by
     intro hl
-    -- GLOBAL GENERIC-FIBRE leaf (sorry node): the package over `ℚ`
+    -- GLOBAL GENERIC-FIBRE leaf (PROVEN): the package over `ℚ`
     -- itself (`R = K = ℚ`, flatness trivial) — the étale `ℚ`-Hopf
     -- algebra of Galois-equivariant functions on the finite Galois set
     -- `E[p](ℚ̄)` (Galois descent of the split algebra
@@ -15313,7 +15684,7 @@ theorem WeierstrassCurve.torsion_flat_of_multiplicative_reduction
     have hglobal : WeierstrassCurve.TorsionFlatPackage ℚ ℚ E p
         (AlgebraicClosure ℚ) := by
       exact WeierstrassCurve.torsionFlatPackage_global E p
-    -- LATTICE-INTERSECTION leaf (sorry node): a global generic-fibre
+    -- LATTICE-INTERSECTION leaf (PROVEN): a global generic-fibre
     -- package and a local completed-integers package glue to a package
     -- over `ℤ_(p) = ℚ ∩ ℤ_p`: the model is the intersection of the
     -- global algebra with the local Hopf model inside its completed

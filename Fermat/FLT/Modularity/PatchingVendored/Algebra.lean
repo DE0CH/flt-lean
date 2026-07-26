@@ -11,16 +11,20 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Andrew Yang, Kevin Buzzard, Yaël Dillies
 -/
 
-import Fermat.FLT.Modularity.PatchingVendored.AdicTopology
-import Fermat.FLT.Modularity.PatchingVendored.Ultraproduct
+module
+
+public import Fermat.FLT.Modularity.PatchingVendored.AdicTopology
+public import Fermat.FLT.Modularity.PatchingVendored.Ultraproduct
 -- VENDOR-NOTE: the FLT original imports `FLT.Deformations.Lemmas`; only the
 -- handful of declarations used here are vendored, inline, below.
-import Mathlib.Topology.Algebra.LinearTopology
-import Mathlib.CategoryTheory.Types.Basic
-import Mathlib.RingTheory.Filtration
-import Fermat.FLT.Modularity.PatchingVendored.InverseLimit
-import Mathlib.Topology.Algebra.Ring.Compact
-import Mathlib.Topology.Connected.Separation
+public import Mathlib.Topology.Algebra.LinearTopology
+public import Mathlib.CategoryTheory.Types.Basic
+public import Mathlib.RingTheory.Filtration
+public import Fermat.FLT.Modularity.PatchingVendored.InverseLimit
+public import Mathlib.Topology.Algebra.Ring.Compact
+public import Mathlib.Topology.Connected.Separation
+
+@[expose] public section
 
 set_option autoImplicit false
 set_option relaxedAutoImplicit false
