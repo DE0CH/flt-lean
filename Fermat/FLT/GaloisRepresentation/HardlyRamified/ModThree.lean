@@ -8499,7 +8499,9 @@ typecheck against the new one.  What changed, and what did not:
   Prop. 1.7 (ii) needs and the old sibling docstring omitted — that
   `ker(𝒪_N → 𝒪_E/𝔪_E^(k−e))` is itself a divided-power ideal `𝔪_N^j`
   with `2j > e_N` — is the new sorry node
-  `exists_lt_two_mul_and_ker_le_maximalIdeal_pow`. -/
+  `exists_lt_two_mul_and_ker_factor_le_maximalIdeal_pow` (created as a
+  one-level statement, refuted, restated with the two levels split, and
+  then PROVEN elementarily, all on 2026-07-26). -/
 theorem existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow
     (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
     [Module.Finite 𝒪₃ᵥ A]
@@ -8572,65 +8574,210 @@ theorem algHom_eq_of_comp_mkₐ_maximalIdeal_pow_eq
     exact h.symm)
   rw [hc₁, hc₂]
 
+/-- **THE TWO-LEVEL DIVIDED-POWER ESTIMATE, over abstract discrete
+valuation rings** (PROVEN 2026-07-26 — this is the entire arithmetic
+content of `exists_lt_two_mul_and_ker_factor_le_maximalIdeal_pow` below,
+isolated over abstract DVRs both because nothing else is used and because
+at the concrete `IntegralClosure 𝒪₃ᵥ N` the duplicate-instance paths of
+this development make the same steps expensive).
+
+Let `R` and `S` be discrete valuation rings in which `3` spans `𝔪_R^eR`
+and `𝔪_S^e` respectively, let `3e < 2k`, and let `η : R → S ⧸ 𝔪_S^k` be
+any ring map.  If `x ∈ R` dies in the COARSER quotient `S ⧸ 𝔪_S^(k − e)`,
+then `2·v_R(x) > eR`; concretely `x ∈ 𝔪_R^(eR/2 + 1)`.
+
+THE ARGUMENT, which is elementary and needs no ramification theory —
+Newton polygons, Eisenstein estimates and Fontaine's Prop. 1.4 are all
+avoidable here, contrary to what the earlier decomposition of this
+cluster assumed.  Suppose `2·v_R(x) ≤ eR = v_R(3)`.  Then `x²` DIVIDES
+`3` in the DVR `R`, say `3 = x²·d`.  Apply `η`: a lift `a` of `η x` lies
+in `𝔪_S^(k − e)`, precisely because `x` dies in the COARSE quotient, so
+`a²` lies in `𝔪_S^(2(k − e))` and `3 ≡ a²·b` modulo `𝔪_S^k` for `b` a
+lift of `η d`.  Both exponents exceed `e`: `2(k − e) > e` is EXACTLY the
+hypothesis `3e < 2k`, and `k > e` follows from it.  So `3 ∈ 𝔪_S^(e+1)`,
+i.e. `𝔪_S^e ≤ 𝔪_S^(e+1)`, which `maximalIdeal_pow_le_pow_iff` refutes.
+
+WHY SQUARING IS THE WHOLE POINT, and why the statement below must name
+BOTH truncation levels.  Applying `η` to `x` alone says nothing useful:
+the kernel at the coarse level is genuinely bigger than the preimage of
+`𝔪_S^k`.  It is the PRODUCT of two coarse-kernel elements that lands at
+depth `2(k − e) > e`, and `x² ∣ 3` is available exactly when the
+conclusion fails.  A one-level version of the statement below — `η` into
+`S ⧸ 𝔪_S^m` with its own kernel taken there, under `e < 2m` — is FALSE,
+and this is the reason: the squaring step has nothing to bite on.  See
+the FALSITY AUDIT on that statement. -/
+theorem mem_maximalIdeal_pow_of_factor_eq_zero
+    (R : Type*) [CommRing R] [IsDomain R] [IsDiscreteValuationRing R]
+    (S : Type*) [CommRing S] [IsDomain S] [IsDiscreteValuationRing S]
+    (eR e k : ℕ)
+    (heR : Ideal.span {(3 : R)} = IsLocalRing.maximalIdeal R ^ eR)
+    (heS : Ideal.span {(3 : S)} = IsLocalRing.maximalIdeal S ^ e)
+    (hk : 3 * e < 2 * k)
+    (η : R →+* S ⧸ IsLocalRing.maximalIdeal S ^ k)
+    (x : R)
+    (hx : Ideal.Quotient.factor
+      (Ideal.pow_le_pow_right (I := IsLocalRing.maximalIdeal S)
+        (Nat.sub_le k e)) (η x) = 0) :
+    x ∈ IsLocalRing.maximalIdeal R ^ (eR / 2 + 1) := by
+  by_contra hxnot
+  have hx0 : x ≠ 0 := by
+    rintro rfl
+    exact hxnot (Submodule.zero_mem _)
+  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible R
+  have hmR : IsLocalRing.maximalIdeal R = Ideal.span {ϖ} :=
+    (IsDiscreteValuationRing.irreducible_iff_uniformizer ϖ).mp hϖ
+  obtain ⟨c, u, hu⟩ := IsDiscreteValuationRing.eq_unit_mul_pow_irreducible hx0 hϖ
+  -- the depth `c` of `x` satisfies `2 * c ≤ eR`, else `x` already lies in `𝔪_R^(eR/2+1)`
+  have hc : 2 * c ≤ eR := by
+    by_contra hcon
+    refine hxnot ?_
+    rw [hmR, Ideal.span_singleton_pow, Ideal.mem_span_singleton, hu]
+    exact Dvd.dvd.mul_left (pow_dvd_pow ϖ (by omega)) _
+  -- hence `x ^ 2` divides `3` in `R`
+  have hspan : Ideal.span ({x} : Set R) = IsLocalRing.maximalIdeal R ^ c := by
+    rw [hmR, Ideal.span_singleton_pow, hu]
+    exact Ideal.span_singleton_mul_left_unit u.isUnit _
+  have h3mem : (3 : R) ∈ Ideal.span ({x} : Set R) ^ 2 := by
+    rw [hspan, ← pow_mul]
+    refine Ideal.pow_le_pow_right (show c * 2 ≤ eR by omega) ?_
+    rw [← heR]
+    exact Ideal.subset_span rfl
+  rw [Ideal.span_singleton_pow, Ideal.mem_span_singleton] at h3mem
+  obtain ⟨d, hd⟩ := h3mem
+  -- the `S`-side: a lift of `η x` lies in `𝔪_S^(k−e)`, so `3` lands in `𝔪_S^(e+1)`
+  obtain ⟨a, ha⟩ := Ideal.Quotient.mk_surjective (η x)
+  obtain ⟨b, hb⟩ := Ideal.Quotient.mk_surjective (η d)
+  have hamem : a ∈ IsLocalRing.maximalIdeal S ^ (k - e) := by
+    rw [← ha, Ideal.Quotient.factor_mk, Ideal.Quotient.eq_zero_iff_mem] at hx
+    exact hx
+  have hsub : (3 : S) - a ^ 2 * b ∈ IsLocalRing.maximalIdeal S ^ k := by
+    rw [← Ideal.Quotient.mk_eq_mk_iff_sub_mem]
+    calc (Ideal.Quotient.mk (IsLocalRing.maximalIdeal S ^ k)) (3 : S)
+        = (3 : S ⧸ IsLocalRing.maximalIdeal S ^ k) := map_ofNat _ 3
+      _ = η (3 : R) := (map_ofNat η 3).symm
+      _ = η (x ^ 2 * d) := by rw [← hd]
+      _ = (η x) ^ 2 * η d := by rw [map_mul, map_pow]
+      _ = ((Ideal.Quotient.mk (IsLocalRing.maximalIdeal S ^ k)) a) ^ 2 *
+            (Ideal.Quotient.mk (IsLocalRing.maximalIdeal S ^ k)) b := by rw [ha, hb]
+      _ = (Ideal.Quotient.mk (IsLocalRing.maximalIdeal S ^ k)) (a ^ 2 * b) := by
+            rw [map_mul, map_pow]
+  have ha2b : a ^ 2 * b ∈ IsLocalRing.maximalIdeal S ^ (2 * (k - e)) := by
+    refine Ideal.mul_mem_right _ _ ?_
+    rw [two_mul, pow_add, sq]
+    exact Ideal.mul_mem_mul hamem hamem
+  have h3S : (3 : S) ∈ IsLocalRing.maximalIdeal S ^ (e + 1) := by
+    have h1 : (3 : S) = ((3 : S) - a ^ 2 * b) + a ^ 2 * b := by ring
+    rw [h1]
+    exact Ideal.add_mem _ (Ideal.pow_le_pow_right (by omega) hsub)
+      (Ideal.pow_le_pow_right (by omega) ha2b)
+  have hle : IsLocalRing.maximalIdeal S ^ e ≤ IsLocalRing.maximalIdeal S ^ (e + 1) := by
+    rw [← heS, Ideal.span_le, Set.singleton_subset_iff]
+    exact h3S
+  have hcontra := (maximalIdeal_pow_le_pow_iff S e (e + 1)).mp hle
+  omega
+
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **The kernel of a truncated points map is a divided-power ideal**
-(sorry node, created 2026-07-26 — the step of Fontaine's proof of
-Prop. 1.7 (ii) (*Il n'y a pas de variété abélienne sur ℤ*,
-Invent. Math. 81 (1985), pp. 523–524) that the earlier decomposition of
-this cluster omitted, and without which the counting bridge below can
-only be run at `k > 2e` instead of Fontaine's `2k > 3e`): let `N` and
-`E` be finite extensions of `ℚ₃ᵥ` with `v_N(3) = eN` and `v_E(3) = e`,
-and let `η : 𝒪_N → 𝒪_E/𝔪_E^m` be any `𝒪₃ᵥ`-algebra map into a
-truncation whose level satisfies `v_K(𝔪_E^m) = m/e > 1/2`, i.e.
-`hm : e < 2 * m`.  Then `ker η` is again an ideal of divided-power
-level: there is a `jN` with `v_K(𝔪_N^jN) = jN/eN > 1/2`, i.e.
-`eN < 2 * jN`, and `ker η ⊆ 𝔪_N^jN`.
-WHY IT IS TRUE (Fontaine's Eisenstein estimate, and why the naive
-argument is NOT enough).  The cheap argument — if `x ∉ 𝔪_N^j` then
-`x ∣ y` for every `y ∈ 𝔪_N^j`, so `𝔪_N^j ⊆ ker η`, so some power of `3`
-dies in `𝒪_E/𝔪_E^m` — only yields `ker η ⊆ (3)·𝔪_N` under `e < m`, i.e.
-`k > 2e` at the consumer, which is STRICTLY STRONGER than `hk` and is
-exactly the gap the false version of the lifting leaf was hiding.  What
-Fontaine proves instead is that `η` PRESERVES NORMALISED VALUATIONS up
-to the truncation level, so that `ker η = {x ∈ 𝒪_N | v_K(x) ≥ m/e}`
-exactly, i.e. `𝔪_N^⌈m·eN/e⌉`; and `⌈m·eN/e⌉ ≥ m·eN/e > eN/2` gives the
-conclusion with `jN := ⌈m·eN/e⌉` and no slack at all.
-INTENDED PROOF: `η` induces an embedding of residue fields, so the
-maximal unramified subextension `K'` of `N/ℚ₃ᵥ` embeds into `E` over
-`ℚ₃ᵥ` compatibly with `η`, and `η` becomes an `𝒪_{K'}`-algebra map.
-Let `α` be a uniformiser of `𝒪_N`, `P` its (Eisenstein) minimal
-polynomial over `𝒪_{K'}`, and `β ∈ 𝒪_E` any lift of `η α`.  Then
-`v_K(P(β)) ≥ m/e > 1/2 ≥ ` the value that the Newton polygon of the
-Eisenstein polynomial `P` permits for a `β` with
-`v_K(β) ≠ v_K(α) = 1/e_N`, so `v_K(β) = v_K(α)`; multiplicativity then
-gives `v_K(η x) = v_K(x)` for every `x` with `v_K(x) < m/e`, which is
-the valuation preservation, and the kernel description follows.
-SANITY CHECKS.  (i) `N = E = ℚ₃ᵥ`, `eN = e = 1`, `η` the projection:
-`ker η = 𝔪^m` and `jN = m > 1/2` ✓.  (ii) `N = ℚ₃ᵥ`, `E = ℚ₃(ζ₃)`,
-`e = 2`, `m = 5`: `η x = 0` iff `2·v_N(x) ≥ 5` iff `v_N(x) ≥ 3`, and
-`⌈5·1/2⌉ = 3` ✓.  (iii) NOT VACUOUS in the bad direction: for
-`N = ℚ₃(ζ₃)` (`eN = 2`) and `E = ℚ₃ᵥ` (`e = 1`) there is NO such `η`
-for `m ≥ 2`, precisely because the Eisenstein relation
-`β² + 3β + 3 = 0` has no solution in `ℤ₃/3^m` — the statement is then
-vacuously true, and that vacuity is itself the Eisenstein estimate. -/
-theorem exists_lt_two_mul_and_ker_le_maximalIdeal_pow
+(created 2026-07-26 as the step of Fontaine's proof of Prop. 1.7 (ii)
+(*Il n'y a pas de variété abélienne sur ℤ*, Invent. Math. 81 (1985),
+pp. 523–524) that the earlier decomposition of this cluster omitted, and
+without which the counting bridge below can only be run at `k > 2e`
+instead of Fontaine's `2k > 3e`.  REFUTED, RESTATED AND **PROVEN** the
+same day by a fourth owner; the FALSITY AUDIT and the repair are at the
+end, and the statement below is already the REPAIRED one.)
+
+Let `N` and `E` be finite extensions of `ℚ₃ᵥ` with `v_N(3) = eN` and
+`v_E(3) = e`, let `3e < 2k`, and let `η : 𝒪_N → 𝒪_E/𝔪_E^k` be any
+`𝒪₃ᵥ`-algebra map into the FINE truncation.  Then the kernel of `η`
+FOLLOWED BY THE PROJECTION onto the COARSE truncation `𝒪_E/𝔪_E^(k−e)`
+is an ideal of divided-power level: there is a `jN` with
+`v_K(𝔪_N^jN) = jN/eN > 1/2`, i.e. `eN < 2·jN`, containing it.
+
+**FALSITY AUDIT (2026-07-26, fourth owner — THE ORIGINAL ONE-LEVEL SHAPE
+WAS FALSE).**  As first written this leaf took a SINGLE level `m`, with
+`η : 𝒪_N → 𝒪_E/𝔪_E^m`, hypothesis `hm : e < 2*m`, and the conclusion
+about `ker η` at that same level `m`.  A counterexample, at the smallest
+admissible parameters:
+
+* `N := ℚ₃ᵥ(√3)` (equally `ℚ₃ᵥ(ζ₃)`), totally ramified of degree `2`, so
+  `𝒪_N = ℤ₃[√3]`, `𝔪_N = (√3)` and `span {3} = 𝔪_N²`, i.e. `eN = 2`;
+* `E := ℚ₃ᵥ` itself, so `𝒪_E = ℤ₃`, `𝔪_E = (3)` and `e = 1`;
+* `m := 1`, which satisfies `hm : 1 < 2` — this is the ONLY place the old
+  hypothesis was weaker than the repaired one, and it is fatal;
+* `η :=` the residue map `𝒪_N ↠ 𝒪_N/𝔪_N ≅ 𝔽₃ = 𝒪_E/𝔪_E`, which is a
+  perfectly good `𝒪₃ᵥ`-algebra map because `N/ℚ₃ᵥ` is TOTALLY ramified,
+  so the residue field is `𝔽₃`.
+
+Then `ker η = 𝔪_N`, so the conclusion would demand a `jN ≥ 2` with
+`𝔪_N ⊆ 𝔪_N^jN`, which fails in the DVR `𝒪_N`.  ∎
+
+WHERE THE INTENDED PROOF BROKE, since the numerology was otherwise
+right.  It claimed that `η` preserves normalised valuations because a
+lift `β ∈ 𝒪_E` of `η(α)` (`α` a uniformiser of `𝒪_N`, `P` its Eisenstein
+minimal polynomial) satisfies `v_K(P(β)) ≥ m/e > 1/2` and that this
+forces `v_K(β) = v_K(α)`.  It does not: for `P` Eisenstein of degree `n`
+one has `v_K(P(β)) = min(n·v_K(β), 1)`, so `v_K(P(β)) ≥ 1` forces only
+`v_K(β) ≥ 1/n`, never equality, and `v_K(P(β)) > 1` is IMPOSSIBLE.  In
+the counterexample `P = X² − 3` and `β = 0`: `v_K(P(0)) = 1 ≥ m/e = 1`,
+yet `v_K(β) = ∞ ≠ 1/2 = v_K(α)`.  A threshold `m/e > 1` would exclude
+that particular `β`, but `m/e > 1` is `e < m`, which at the consumer
+reads `k > 2e` — STRICTLY STRONGER than `hk : 3e < 2k`, and therefore
+exactly the gap this leaf was created to close.  So the one-level shape
+cannot be rescued by strengthening `hm`; the levels must be SPLIT.
+
+THE REPAIR, and why it is faithful to Fontaine.  Fontaine's argument
+takes `β` modulo the FINE level `𝔪_E^k`, where `k/e > 3/2 > 1` holds by
+`hk`, and computes the kernel at the COARSE level `𝔪_E^(k−e)` — the same
+one-factor-of-`a` offset that the lifting leaf
+`existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow` above carries.
+Collapsing the two levels into one is what made the statement false.  The
+consumer `nonempty_algHom_of_algHom_quotient` was already applying the
+leaf to `(factorₐ hπ).comp η`, i.e. to the coarsened map — so it always
+had the fine-level `η` in hand, and the repair costs it nothing: it now
+passes `η` and `hk` directly instead of the composite and `by omega`.
+
+PROOF (elementary; see `mem_maximalIdeal_pow_of_factor_eq_zero` above,
+which carries it over abstract DVRs).  Fontaine's Prop. 1.4, Newton
+polygons and Krasner are ALL avoidable here, contrary to what the
+original decomposition assumed.  If `2·v_N(x) ≤ eN = v_N(3)` then `x²`
+divides `3`; a lift of `η x` lies in `𝔪_E^(k−e)` since `x` dies at the
+COARSE level, so its square lies in `𝔪_E^(2(k−e))`, whence
+`3 ∈ 𝔪_E^(e+1)` because `2(k−e) > e` IS `hk` and `k > e` follows — and
+that contradicts `span {3} = 𝔪_E^e`.  So every `x` in the kernel has
+`2·v_N(x) > eN`, and `jN := eN/2 + 1` works.  The squaring is the whole
+argument, and it is available only because the input level `k` and the
+kernel level `k − e` are different.
+
+SANITY CHECKS ON THE REPAIRED STATEMENT.  (i) `N = E`, `eN = e`, `η` the
+projection to level `k`: the coarse kernel is `𝔪^(k−e)` and
+`jN = k − e > e/2` ✓ by `hk`.  (ii) `N = ℚ₃ᵥ(√3)`, `E = ℚ₃ᵥ`, `e = 1`,
+`k = 2`: no `η` exists at all (`β² ≡ 3 mod 9` is unsolvable in `ℤ₃`), so
+the statement is vacuously true there — and the refuting `m = 1` is no
+longer admissible, since `3·1 < 2·1` is false. -/
+theorem exists_lt_two_mul_and_ker_factor_le_maximalIdeal_pow
     (N E : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ)
     [FiniteDimensional ℚ₃ᵥ N] [FiniteDimensional ℚ₃ᵥ E]
-    (eN e m : ℕ)
+    (eN e k : ℕ)
     (heN : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ N)} =
       IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^ eN)
     (he : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ E)} =
       IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ e)
-    (hm : e < 2 * m)
+    (hk : 3 * e < 2 * k)
     (η : IntegralClosure 𝒪₃ᵥ N →ₐ[𝒪₃ᵥ]
       (IntegralClosure 𝒪₃ᵥ E ⧸
-        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ m)) :
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k)) :
     ∃ jN : ℕ, eN < 2 * jN ∧
-      ∀ x : IntegralClosure 𝒪₃ᵥ N, η x = 0 →
+      ∀ x : IntegralClosure 𝒪₃ᵥ N,
+        ((Ideal.Quotient.factorₐ 𝒪₃ᵥ (Ideal.pow_le_pow_right
+            (I := IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E))
+            (Nat.sub_le k e))).comp η) x = 0 →
         x ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ N) ^ jN := by
-  sorry
+  refine ⟨eN / 2 + 1, by omega, fun x hx => ?_⟩
+  exact mem_maximalIdeal_pow_of_factor_eq_zero (IntegralClosure 𝒪₃ᵥ N)
+    (IntegralClosure 𝒪₃ᵥ E) eN e k heN he hk
+    (η : IntegralClosure 𝒪₃ᵥ N →+* _) x hx
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -8707,7 +8854,10 @@ the COARSER level `k − e` that argument needs `e < k − e`, i.e.
 cheap route is unavailable here, and the proof uses Fontaine 1.7 (i)(b)
 instead — `algHom_eq_of_comp_mkₐ_maximalIdeal_pow_eq`, injective
 already at `v_K > 1/2` — applied at `N` to the divided-power ideal
-`𝔪_N^jN` supplied by `exists_lt_two_mul_and_ker_le_maximalIdeal_pow`.
+`𝔪_N^jN` supplied by the now-PROVEN
+`exists_lt_two_mul_and_ker_factor_le_maximalIdeal_pow`, which is fed the
+FINE-level `η` and `hk` directly (its earlier one-level shape, fed the
+coarsened composite, was false).
 CONSEQUENCE, replacing the old note that said the opposite: this
 theorem DOES now consume Fontaine's threshold `3/2`, twice — once
 through the lifting leaf and once through the kernel leaf — and it
@@ -8738,10 +8888,9 @@ theorem nonempty_algHom_of_algHom_quotient
   have hπ : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ k ≤
       IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ E) ^ (k - e) :=
     Ideal.pow_le_pow_right (Nat.sub_le k e)
-  obtain ⟨jN, hjN, hkerN⟩ := exists_lt_two_mul_and_ker_le_maximalIdeal_pow
-    (hopfPointsField A) E _ e (k - e)
-    (span_three_eq_maximalIdeal_pow_card_inertia (hopfPointsField A)) he (by omega)
-    ((Ideal.Quotient.factorₐ 𝒪₃ᵥ hπ).comp η)
+  obtain ⟨jN, hjN, hkerN⟩ := exists_lt_two_mul_and_ker_factor_le_maximalIdeal_pow
+    (hopfPointsField A) E _ e k
+    (span_three_eq_maximalIdeal_pow_card_inertia (hopfPointsField A)) he hk η
   -- STEP 2: the ambient-value map of the integral closure of a
   -- subextension — injective, with values in that subextension.
   have hgen : ∀ F : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ,
@@ -10375,11 +10524,17 @@ along Fontaine's own argument:
   was false (`μ₃` over `ℤ₃` at `e = 1`, `k = 2`); it now asserts a
   UNIQUE lift agreeing modulo `𝔪_E^(k−e)`, and carries Fontaine's two
   hypotheses as `hfon : IsFontaineAlgebra A`;
-* `exists_lt_two_mul_and_ker_le_maximalIdeal_pow` — the Eisenstein
-  step of Fontaine's Prop. 1.7 (ii), the SECOND entry point of
-  `1/(p−1)`: the kernel of a truncated points map is itself a
-  divided-power ideal.  It replaces the cheap `ValuationRing.dvd_total`
-  bound, which is only available at `k > 2e`;
+* `exists_lt_two_mul_and_ker_factor_le_maximalIdeal_pow` — the step of
+  Fontaine's Prop. 1.7 (ii) that says the kernel of a truncated points
+  map is itself a divided-power ideal.  It replaces the cheap
+  `ValuationRing.dvd_total` bound, which is only available at `k > 2e`.
+  REFUTED AND REPAIRED 2026-07-26: the first version collapsed the input
+  level and the kernel level into a single `m` under `e < 2m`, which is
+  false already at `N = ℚ₃ᵥ(√3)`, `E = ℚ₃ᵥ`, `m = 1` (residue map).  In
+  its repaired TWO-LEVEL form — `η` at the fine level `k` with
+  `3e < 2k`, kernel taken at the coarse level `k − e` — it is now
+  **PROVEN**, elementarily and with no Eisenstein estimate at all: see
+  `mem_maximalIdeal_pow_of_factor_eq_zero`;
 * `nonempty_algHom_of_algHom_quotient` — PROVEN 2026-07-26 and
   REPROVED the same day against the repaired leaves: the
   points-COUNTING bridge, which turns the lifting estimate into
@@ -10535,8 +10690,9 @@ neither `φ` nor the upper numbering ever has to be defined), and
 along Fontaine's own argument into
 `existsUnique_algHom_of_algHom_quotient_maximalIdeal_pow` (lifting
 estimate; REFUTED as first stated and repaired 2026-07-26, together
-with the new Eisenstein node
-`exists_lt_two_mul_and_ker_le_maximalIdeal_pow`),
+with the kernel node
+`exists_lt_two_mul_and_ker_factor_le_maximalIdeal_pow`, itself refuted,
+restated in two-level form and then PROVEN the same day),
 `nonempty_algHom_of_algHom_quotient` (points counting,
 i.e. property `(P_m)`) and
 `eq_one_of_mem_inertia_of_le_of_forall_nonempty_algHom` (`(P_m)` ⟹
