@@ -12201,8 +12201,13 @@ UPDATE 2026-07-26: level `11` is no longer a leaf. `F₁₁` is birationally
 (`x1Eleven_plane_ne_zero`), and the resulting point count
 (`x1Eleven_11a3_x_eq_zero_or_one`) is proven from
 `Fermat/FLT/EllipticCurve/MordellWeil.lean`. The whole level therefore
-rests on that module's three leaves — `mordellWeil`,
-`curve11a3_isTorsion`, `curve11a3_points` — and on nothing in this file.
+rests on that module and on nothing in this file. UPDATED 2026-07-26:
+that module now has exactly ONE leaf, `curve11a3_rational_points` (the
+four affine rational points of `11a3`, unconditionally). Its former
+leaves `mordellWeil` and `curve11a3_isTorsion` were deleted, not proven:
+stating the enumeration without its already-unused finiteness hypothesis
+makes finiteness and torsion-ness corollaries, so the general
+Mordell–Weil theorem is no longer in front of level `11`.
 Level `13` is still open in plane form; the same reduction is available
 there in principle (`X_1(13)` has genus `2`, so its target is a Jacobian,
 not an elliptic curve). -/
@@ -12354,9 +12359,12 @@ and the `b ≠ 0` chart of the Tate family misses all of them — which is
 exactly what the reduction below exploits.
 
 WHAT REMAINS OPEN, and it is upstream in `Fermat/FLT/EllipticCurve/
-MordellWeil.lean` rather than here: `WeierstrassCurve.mordellWeil` (the
-Mordell–Weil theorem itself, absent from mathlib), `curve11a3_isTorsion`
-(rank `0` for `11a3`) and `curve11a3_points`. The curve has conductor
+MordellWeil.lean` rather than here: as of 2026-07-26, the single leaf
+`WeierstrassCurve.curve11a3_rational_points` — the unconditional
+enumeration of the four affine rational points of `11a3`, equivalent to
+rank `0` for that curve. `curve11a3_points` and `curve11a3_finite` are
+now PROVEN from it, and `mordellWeil` (the general Mordell–Weil theorem)
+and `curve11a3_isTorsion` were deleted as unnecessary. The curve has conductor
 `11`, discriminant `−11`, `L(E, 1) = 0.2538… ≠ 0` (analytic rank `0`),
 `Ш = 1`, and torsion `ℤ/5`. Rank `0` is provable by a complete
 `2`-descent — the `2`-Selmer group is trivial — but that descent runs
