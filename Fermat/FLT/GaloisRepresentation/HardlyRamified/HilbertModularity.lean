@@ -930,7 +930,7 @@ theorem hasFlatProlongationAt_map_of_hasFlatProlongationAt_under
     (h : ρ.HasFlatProlongationAt (w.under (𝓞 K))) :
     (ρ.map (algebraMap K L)).HasFlatProlongationAt w := by
   classical
-  set v : HeightOneSpectrum (𝓞 K) := w.under (𝓞 K) with hvdef
+  set v : HeightOneSpectrum (𝓞 K) := w.under (𝓞 K)
   have hcomm : ∀ a : 𝓞 K,
       (algebraMap K L) (algebraMap (𝓞 K) K a)
         = algebraMap (𝓞 L) L (algebraMap (𝓞 K) (𝓞 L) a) := fun a => by
