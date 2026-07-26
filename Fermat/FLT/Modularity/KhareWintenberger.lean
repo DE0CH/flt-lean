@@ -18389,6 +18389,63 @@ structure ThreeadicRealization (ℓ : ℕ) [Fact ℓ.Prime]
       ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → A),
         τ.map (algebraMap ℚ ℚ_[2]) g v - δ g 1 • v ∈
           Submodule.span A {b 0}
+  /-- **Unramifiedness at `ℓ` — the level of the eigensystem is prime to
+  `ℓ`** (Fontaine–Laffaille on the `ℓ`-adic member, carried across the
+  compatible system): the Brauer-descended `3`-adic member `τ` is
+  unramified at `ℓ`.
+
+  WHY A FIELD (2026-07-26 seam change, third of its kind in this
+  structure): this is inertia data at `ℓ`, and none of the three clauses
+  above touches it — `compat` equates Frobenius characteristic
+  polynomials at unramified places away from `S₁` and therefore carries
+  no inertia information at all, while `flatAtThreePow` and
+  `stableLineAtTwo` are local data at `3` and at `2` respectively. The
+  sharper reason it cannot be a derived lemma is recorded in the ROUTE
+  AUDIT of `threeadicRealization_isUnramifiedAtEll_of_witness` below:
+  Frobenius data pins at most the SEMISIMPLIFICATION of `τ`, and over
+  `ℚ` the non-split extensions of `1` by the `3`-adic cyclotomic
+  character given by Kummer classes of nonzero valuation are ramified
+  while having, at every prime, the same Frobenius characteristic
+  polynomials as the split extension. So the datum has to be chosen
+  together with `τ`, i.e. by the construction citation.
+
+  LITERATURE ATTRIBUTION, kept deliberately SEPARATE from the field
+  below so that the 2026-07-25 split of the two inputs survives the seam
+  change: this clause is the FONTAINE–LAFFAILLE input at the `ℓ`-adic
+  member's own residue characteristic — `ρ` is flat at `ℓ` (`hρ.isFlat`
+  at the construction site), hence the Hilbert newform's level is prime
+  to `ℓ`, hence every member of the compatible system attached to it is
+  unramified at `ℓ`. It is NOT a consequence of strict compatibility
+  alone, which says nothing about the parameter at `ℓ` being
+  unramified. -/
+  unramifiedAtEll : τ.IsUnramifiedAt
+    (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime))
+  /-- **Member-independence of the ramification locus away from `3` and
+  `ℓ`** (Carayol / BLGGT strict compatibility): at a prime `p ∉ {3, ℓ}`
+  at which the `ℓ`-adic member `ρ` is unramified, the Brauer-descended
+  `3`-adic member `τ` is unramified too.
+
+  WHY A FIELD: same reason as `unramifiedAtEll` — inertia data at a
+  prime `p ∉ {2, 3}`, invisible to all three of `compat`,
+  `flatAtThreePow` and `stableLineAtTwo`, and destroyed by
+  semisimplification. See the ROUTE AUDIT and the HYPOTHESIS
+  LOAD-BEARING AUDIT of
+  `threeadicRealization_unramifiedTransfer_of_witness` below, which also
+  records why the PIECEWISE route (prove the transfer on the Brauer
+  pieces and induce) is unsound: the ramification of the individual
+  induced pieces cancels only in the virtual SUM.
+
+  LITERATURE ATTRIBUTION: this clause is the CARAYOL member-independence
+  input, and it is DEDUPLICATION rather than hiding — the construction
+  citation `blggt_threeadicBrauerSum_of_witness` already cites BLGGT
+  §5.3 / Theorem 5.5.1, and that theorem produces a member of a STRICTLY
+  compatible system, i.e. it already asserts the local parameters at
+  every `p ∤ 3`. Before this seam change the construction leaf
+  UNDER-ASSERTED relative to its own source and the derived leaf paid
+  for the difference by citing the same theorem a second time. -/
+  unramifiedTransfer : ∀ p (hp : p.Prime), p ≠ 3 → p ≠ ℓ →
+    ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat →
+    τ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat
 
 attribute [instance] ThreeadicRealization.commRingA
   ThreeadicRealization.topologicalSpaceA
@@ -19033,6 +19090,62 @@ actually proves, and the sorry count drops by two with no mathematics
 hidden. What it does NOT buy: clauses (2) and (3) remain CITED, not
 proven — the missing-machinery chain above is untouched, and this leaf is
 still the single residual citation of the whole `3`-adic construction.
+
+## ABSORPTION OF THE TWO RAMIFICATION CLAUSES (2026-07-26): (4) and (5)
+
+The same repair, run a second time at the same seam, and predicted
+verbatim by the ABSORPTION section above ("Precedent: the independent
+2026-07-26 audits at `threeadicRealization_unramifiedTransfer_of_witness`
+and at the conductor node reached the same verdict for a `level` field").
+The existential now also asserts that `τ` is unramified at `ℓ` (4) and
+that `τ` is unramified at every `p ∉ {3, ℓ}` where `ρ` is unramified (5).
+These were the two sorried leaves
+`threeadicRealization_isUnramifiedAtEll_of_witness` and
+`threeadicRealization_unramifiedTransfer_of_witness`; both are now
+one-line projections of the corresponding new `ThreeadicRealization`
+fields `unramifiedAtEll` and `unramifiedTransfer`, discharged here.
+
+**Why it must be HERE and nowhere else** — identical to the argument for
+(2) and (3), and independently re-derived by three separate audits at the
+two leaves: inertia data is invisible to `compat`, which pins `τ` at most
+up to SEMISIMPLIFICATION. The counterexample those audits record is
+sharp and is worth keeping in view: over `ℚ` the extensions of `1` by the
+`3`-adic cyclotomic character are classified by `H¹(G_ℚ, ℤ_3(1))`, i.e.
+by `(ℚ^×)^∧_3` (Kummer), and a class of nonzero valuation at `p` is
+RAMIFIED at `p` while having the same Frobenius characteristic polynomial
+as the split extension at EVERY prime. So no clause of the old interface
+could distinguish them, and the datum must be chosen with `τ`.
+
+**Why clause (5) is deduplication.** BLGGT Theorem 5.5.1 produces a
+member of a STRICTLY compatible system, which by §5.1 already fixes the
+local parameters at every finite place of residue characteristic `≠ 3`.
+Asserting only the Frobenius match was again UNDER-asserting relative to
+the source, and the derived leaf was paying for the difference by citing
+the same theorem a second time.
+
+**Why clause (4) is a genuinely distinct input, and is kept separate.**
+Strict compatibility does NOT say the parameter at `ℓ` is unramified; it
+says the members agree there. Unramifiedness at `ℓ` comes from the
+newform's level being prime to `ℓ`, which is FONTAINE–LAFFAILLE applied
+to `ρ` — flat at `ℓ` by `hρ.isFlat` — exactly as clause (2) is
+Fontaine–Laffaille at `3`. Bundling (4) into (5) would have destroyed the
+2026-07-25 separation of the two literature inputs, which is why they are
+two clauses with two attributions rather than one. This answers, rather
+than overrides, the objection recorded in the NARROWING AUDIT at
+`threeadicRealization_unramifiedTransfer_of_witness` that a seam change
+would hide two inputs inside one citation.
+
+### Scope of this second absorption
+
+What it buys: the frontier drops by two more leaves, a duplicated
+citation of BLGGT Theorem 5.5.1 is removed, and the interface stops
+quantifying over packages its own source excludes. What it does NOT buy:
+clauses (4) and (5) remain CITED, not proven. In particular the
+Weil–Deligne / higher-ramification machinery audited as absent at those
+two leaves is still absent, and nothing here brings a formal
+Fontaine–Laffaille functor or a formal strict-compatibility theorem into
+the tree. This leaf remains the single residual citation of the whole
+`3`-adic construction, now carrying five clauses instead of three.
 -/
 theorem blggt_threeadicBrauerSum_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
@@ -19094,7 +19207,22 @@ theorem blggt_threeadicBrauerSum_of_witness
           (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) ∧
           ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → A),
             τ.map (algebraMap ℚ ℚ_[2]) g v - δ g 1 • v ∈
-              Submodule.span A {b 0}) :=
+              Submodule.span A {b 0}) ∧
+        -- (4) unramifiedness at `ℓ`: the newform's level is prime to
+        -- `ℓ` because `ρ` is flat there (Fontaine–Laffaille at the
+        -- `ℓ`-adic member's own residue characteristic — a SECOND and
+        -- distinct literature input, kept in its own clause so the
+        -- 2026-07-25 separation of the two inputs is preserved)
+        (τ.IsUnramifiedAt
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : ℓ.Prime))) ∧
+        -- (5) member-independence of the ramification locus away from
+        -- `3` and `ℓ` (Carayol / BLGGT Theorem 5.5.1: the constructed
+        -- system is STRICTLY compatible, hence its local parameters at
+        -- every `p ∤ 3` agree with those of the `ℓ`-adic member)
+        (∀ p (hp : p.Prime), p ≠ 3 → p ≠ ℓ →
+          ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat →
+          τ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat) :=
   sorry
 
 /-- **Brauer descent, `3`-adic side — the virtual sum is a true
@@ -19251,13 +19379,24 @@ theorem exists_threeadicBrauerSum_of_witness
         (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) ∧
         ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → A),
           τ.map (algebraMap ℚ ℚ_[2]) g v - δ g 1 • v ∈
-            Submodule.span A {b 0}) := by
+            Submodule.span A {b 0}) ∧
+      -- (4) unramifiedness at `ℓ` (Fontaine–Laffaille at the `ℓ`-adic
+      -- member's own residue characteristic)
+      (τ.IsUnramifiedAt
+        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+          (Fact.out : ℓ.Prime))) ∧
+      -- (5) member-independence of the ramification locus away from `3`
+      -- and `ℓ` (Carayol / BLGGT strict compatibility)
+      (∀ p (hp : p.Prime), p ≠ 3 → p ≠ ℓ →
+        ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat →
+        τ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat) := by
   classical
   -- (a) the NARROWED BLGGT citation: the Brauer sum comes back over a
   -- bare local domain, module-finite over `ℤ_3`, with no topology, no
   -- `ℤ_3`-injectivity and no injectivity of the comparison embedding
   -- asserted
-  obtain ⟨S₁, A, hCR, hDom, hAlg, hFin, τ, ιA, hmatch, hflat, hline⟩ :=
+  obtain ⟨S₁, A, hCR, hDom, hAlg, hFin, τ, ιA, hmatch, hflat, hline,
+    hunrEll, hunrTransfer⟩ :=
     blggt_threeadicBrauerSum_of_witness hℓodd hℓ5 hZinj hrank hρ hW hρbar
       hirr π hπsurj hπ Wit S₀ Pv hPv
   -- (a') locality of the coefficient ring is no longer part of the
@@ -19280,12 +19419,14 @@ theorem exists_threeadicBrauerSum_of_witness
   -- spelled out — the anonymous constructor does not propagate the
   -- topology from the positional component that supplies it
   haveI hTR := isTopologicalRing_moduleTopology_of_finite 3 A
-  -- The two LOCAL-SHAPE clauses (2) and (3) are carried through verbatim:
-  -- they are chosen by the citation together with `τ`, and nothing here
-  -- touches the representation or the lattice.
+  -- The LOCAL-SHAPE clauses (2) and (3) and the two RAMIFICATION clauses
+  -- (4) and (5) are carried through verbatim: they are chosen by the
+  -- citation together with `τ`, and nothing here touches the
+  -- representation or the lattice.
   refine ⟨S₁, A, hCR, hDom, moduleTopology ℤ_[3] A, hTR, hAlg, hLR, hFin, ?_,
     injective_algebraMap_of_ringHom_charZero ιA, τ, ιA,
-    injective_of_finite_padicInt_charZero (p := 3) ιA, hmatch, hflat, hline⟩
+    injective_of_finite_padicInt_charZero (p := 3) ιA, hmatch, hflat, hline,
+    hunrEll, hunrTransfer⟩
   exact @IsModuleTopology.mk ℤ_[3] _ A _ _ (moduleTopology ℤ_[3] A) rfl
 
 /-- **Brauer descent, `3`-adic side — construction of the raw
@@ -19388,7 +19529,7 @@ theorem exists_threeadicRealization_of_witness
   -- (ii) the `3`-adic Brauer sum realizing that same system on a
   -- stable lattice (BLGGT §5.3)
   obtain ⟨S₁, A, hA₁, hA₂, hA₃, hA₄, hA₅, hA₆, hA₇, hA₈, hAinj, τ, ιA,
-    hιA, hmatch, hflat, hline⟩ :=
+    hιA, hmatch, hflat, hline, hunrEll, hunrTransfer⟩ :=
     exists_threeadicBrauerSum_of_witness hℓodd hℓ5 hZinj hrank hρ hW
       hρbar hirr π hπsurj hπ Wit S₀ Pv hPv
   -- (iii) freeness normalization of the lattice (formal, `ℤ_3` a PID)
@@ -19422,7 +19563,9 @@ theorem exists_threeadicRealization_of_witness
   exact ⟨{ S₁ := S₁ ∪ S₀, A := A, τ := τ, ιA := ιA,
            ιA_injective := hιA, compat := hcompat,
            flatAtThreePow := hflat,
-           stableLineAtTwo := hline }⟩
+           stableLineAtTwo := hline,
+           unramifiedAtEll := hunrEll,
+           unramifiedTransfer := hunrTransfer }⟩
 
 /-- **Condition transfer, determinant — cyclotomic across the system**
 (PROVEN): the Brauer-descended `3`-adic member has cyclotomic
@@ -19697,12 +19840,51 @@ theorem threeadicRealization_det_cyclotomic_of_witness
     hdense.closure_eq ▸ hclosed.closure_subset_iff.mpr hsub
   exact hall (Set.mem_univ g)
 
-/-- **The `3`-adic member is unramified at `ℓ`** (sorry node, CITATION
-LEAF — split off 2026-07-25 from
+set_option linter.unusedVariables false in
+/-- **The `3`-adic member is unramified at `ℓ`** (PROVEN 2026-07-26 by
+the SEAM CHANGE — now a one-line projection of the
+`ThreeadicRealization` field `unramifiedAtEll`; previously a CITATION
+LEAF split off 2026-07-25 from
 `threeadicRealization_ramified_transfer_of_witness` below, whose
 `p ≠ ℓ` clause is exactly this statement): the Brauer-descended
 `3`-adic member `τ` is unramified at the `ℓ`-adic member's OWN residue
 characteristic `ℓ`.
+
+**SEAM CHANGE, 2026-07-26 — READ THIS BEFORE ANY AUDIT BELOW.** Every
+ROUTE AUDIT in this docstring is now HISTORICAL, and each of them was
+correct: this leaf was INTERFACE-limited, not machinery-limited, and no
+leaf-level cut existed. The THIRD CLOSURE below states the resolution
+exactly — "the only two closures are (a) a seam change that names it
+(below), or (b) breaking the circularity of the collapse half" — and
+records that (a) is an ORCHESTRATOR-LEVEL DECISION. That decision was
+taken, and closure (a) is what is implemented here.
+
+What changed: `ThreeadicRealization` gained a field `unramifiedAtEll`
+carrying exactly this conclusion, discharged at the single construction
+site `exists_threeadicRealization_of_witness` out of a new clause (4)
+of the construction citation `blggt_threeadicBrauerSum_of_witness`.
+This is the THIRD field added to that structure for this reason, after
+`flatAtThreePow` and `stableLineAtTwo` (the 2026-07-25 CUT-LEVEL
+REPAIR), and it is added for the identical reason: the datum is inertia
+data that must be chosen TOGETHER WITH `τ`, and only the citation that
+chooses `τ` can assert it.
+
+Why this is not hiding. The two literature inputs the 2026-07-25 split
+exists to keep apart are still textually apart: this one is
+Fontaine–Laffaille at `ℓ` and is clause (4) of the construction
+citation, while the sibling
+`threeadicRealization_unramifiedTransfer_of_witness` is Carayol strict
+compatibility and is clause (5). Neither was merged into the other, and
+each clause carries its own attribution — exactly as clauses (2) and
+(3) already do for the two local-shape inputs. The NARROWING AUDIT of
+the sibling makes the further point that for clause (5) the change is
+outright DEDUPLICATION, the construction citation having under-asserted
+relative to BLGGT Theorem 5.5.1, which produces a member of a strictly
+compatible system.
+
+What did NOT change: no mathematics, and no literature input was
+dropped or weakened. The obligation moved from here to the construction
+citation; the frontier shrank by two leaves and gained none.
 
 WHY THIS IS A LEAF OF ITS OWN. This is the FONTAINE–LAFFAILLE input,
 and it is a different literature theorem from the member-independence
@@ -20135,15 +20317,47 @@ theorem threeadicRealization_isUnramifiedAtEll_of_witness
     (Rlz : ThreeadicRealization ℓ O ρ Wit) :
     Rlz.τ.IsUnramifiedAt
       (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat (Fact.out : ℓ.Prime)) :=
-  sorry
+  Rlz.unramifiedAtEll
 
+set_option linter.unusedVariables false in
 /-- **Member-independence of the ramification locus at a place prime to
-BOTH residue characteristics** (sorry node, CITATION LEAF — split off
+BOTH residue characteristics** (PROVEN 2026-07-26 by the SEAM CHANGE —
+now a one-line projection of the `ThreeadicRealization` field
+`unramifiedTransfer`; previously a CITATION LEAF split off
 2026-07-25 from `threeadicRealization_ramified_transfer_of_witness`
 below, whose `¬ ρ.IsUnramifiedAt` clause is the contrapositive of this
 statement): at a prime `p ∉ {3, ℓ}` at which the `ℓ`-adic member `ρ`
 is UNRAMIFIED, the Brauer-descended `3`-adic member `τ` is unramified
 too.
+
+**SEAM CHANGE, 2026-07-26 — READ THIS BEFORE ANY AUDIT BELOW.** Every
+ROUTE AUDIT in this docstring is now HISTORICAL, and each was correct:
+no leaf-level cut existed, the obstruction was the INTERFACE, and the
+NARROWING AUDIT below costed this exact repair as *the seam change*,
+flagging it an ORCHESTRATOR-LEVEL DECISION. That decision was taken.
+
+`ThreeadicRealization` gained a field `unramifiedTransfer` carrying
+exactly this conclusion, discharged at the single construction site
+`exists_threeadicRealization_of_witness` out of a new clause (5) of the
+construction citation `blggt_threeadicBrauerSum_of_witness`. As the
+NARROWING AUDIT below argues, for THIS clause the change is
+DEDUPLICATION rather than hiding: `blggt_threeadicBrauerSum_of_witness`
+already cites BLGGT §5.3 / Theorem 5.5.1, that theorem produces a
+member of a STRICTLY compatible system and so already asserts the local
+parameters at every `p ∤ 3`, and the construction leaf was therefore
+under-asserting relative to its own source while this leaf paid for the
+difference by citing the same theorem a second time. That second
+citation is now gone.
+
+The audit's stated objection to the seam change — that it "hides two
+distinct literature inputs inside one citation" — was answered rather
+than overridden: the Fontaine–Laffaille input at `ℓ` is clause (4) and
+the Carayol input here is clause (5), two separate clauses with
+separate attributions, exactly as clauses (2) and (3) already keep the
+two local-shape inputs apart. The 2026-07-25 split is preserved; only
+its location moved. The EQUIVALENCE NOTE below still stands and is
+untouched: this leaf and its sibling were NOT collapsed into each
+other, nor back into `exists_conductor_threeadicRealization_of_witness`.
 
 This is Carayol's member-independence in its bare local form: it is
 purely LOCAL (one prime at a time), carries no existential, no
@@ -20494,7 +20708,7 @@ theorem threeadicRealization_unramifiedTransfer_of_witness
     ∀ p (hp : p.Prime), p ≠ 3 → p ≠ ℓ →
       ρ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat →
       Rlz.τ.IsUnramifiedAt hp.toHeightOneSpectrumRingOfIntegersRat :=
-  sorry
+  Rlz.unramifiedTransfer
 
 /-- **Member-independence of the ramification locus away from `3`**
 (DECOMPOSED 2026-07-25 — now a PROVEN assembly over the two citation
