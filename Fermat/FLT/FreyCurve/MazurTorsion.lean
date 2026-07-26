@@ -865,8 +865,8 @@ and that is a stronger and more actionable fact than "this is hard".
 Mazur's Cor 4.4 rests on five inputs. Sorted by what this tree has:
 
 1. *A mod-`q` reduction of `X_0(N)` and of `J_0(N)`, with reduction
-   injective on a rank-`0` `J_0(N)(ℚ)`.* PRESENT BUT UNRELEASED: on
-   `merger` (not on `main` as of this writing) `X0.lean` carries
+   injective on a rank-`0` `J_0(N)(ℚ)`.* PRESENT AND RELEASED — it landed
+   on `main` while this audit was being written. `X0.lean` carries
    `SpecF ℓ := Spec (ZMod ℓ)` and a structure `IsX0ReductionAt` with
    fields `redX`, `redJ`, `redJ_add`, `redJ_inj` and `red_aj`. Owned by
    the `exists_x0Sieve` dispatch. Do NOT build a second one.
@@ -879,10 +879,11 @@ Mazur's Cor 4.4 rests on five inputs. Sorted by what this tree has:
 4. *`f = π ∘ aj_∞` is a formal immersion at `∞` in characteristic
    `q ≠ 2`* — the `a₁ ≠ 0` computation. ABSENT; needs (1) and (3).
 5. *Reduction is injective on the torsion of an abelian variety with good
-   reduction at odd `q`.* SUPPLIED by `IsX0ReductionAt.redJ_inj` once (1)
-   is released.
+   reduction at odd `q`.* SUPPLIED, released, by
+   `IsX0ReductionAt.redJ_inj`.
 
-So (5) is already done and (3), (4) become STATABLE the moment (1) lands:
+So (1) and (5) are in the released tree TODAY, and (3), (4) are therefore
+statable today:
 `redX` and `redJ` are maps out of `RelPoint … (𝟙 SpecQ)`, so the formal
 immersion at the cusp `o` can be written without any `ℤ_q`-points at all,
 as `∀ x, redX x = redX o → f x = f o → x = o` — Mazur's method needs the
