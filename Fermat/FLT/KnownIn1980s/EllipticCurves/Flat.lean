@@ -14060,37 +14060,25 @@ theorem WeierstrassCurve.exists_torsionPairLaw_formalRescaledChord
     exact div_self (pow_ne_zero _ hne₁)
 
 
-/-! ### The formal-group chart — 2026-07-25
-
-Sections of `M` take integral values (`torsionPairSpan_val_mem`), so at a pair
-whose sum is affine with `v(x₃) > 1` the law identity `A = x₃·C²` FORBIDS
-`v(C) = 1`: the unit must be `A`, and then `v(C)² = v(x₃)^{-1}` is HALF-integral
-in `v(x₁)`.  The denominator section must therefore be the section-algebra
-avatar of the formal parameter `s = x/y`, whose value on the formal locus has
-valuation `v(x)^{-1/2}`.  Writing `w := x^d/h` and `g_{a,b} := x^a y^b/h`, that
-avatar is
+set_option linter.unusedSectionVars false in
+/-- **The formal-group chart denominator** `C` (2026-07-25), the
+section-algebra avatar of the formal parameter `s₃ = s₁ + s₂ + …`:
 
   `C := g_{d−2,1} ⊗ w + w ⊗ g_{d−2,1} + a₁·g_{d−1,0} ⊗ w + a₃·g_{d−2,0} ⊗ w`
 
-(`torsionPairFormalDen`), of value `x₁^{d−2}x₂^{d−2}·G/(h₁h₂)` on an affine
-pair, where
+for `w = g_{d,0} = x^d/h` and `g_{a,b} = x^a y^b/h`.  Its origin orders are
+`(1,0)` and `(0,1)`, so — unlike the rescaled-chord denominator of
+`exists_torsionPairLaw_formalRescaledChord`, which vanishes on the whole origin
+COLUMN — it survives on both origin lines, which is exactly what the
+formal-group branch needs.
 
-  `G := y₁x₂² + x₁²y₂ + a₁x₁x₂² + a₃x₂² = x₂²·D₂ + (x₁ − x₂)·u`,
-  `D₂ := y₁ + y₂ + a₁x₂ + a₃`,   `u := (x₁ + x₂)y₂ + a₁x₂²`.
-
-Being a combination `x₂²·D₂ + δ·u` of the two law denominators, `G` vanishes on
-the zero-sum locus — the bare two-term `g_{d−2,1} ⊗ w + w ⊗ g_{d−2,1}` does NOT
-(at `Q = ⊖P` its value is `−x^{2d−2}(a₁x + a₃)/h²`) — while the origin orders
-`(1,0)` and `(0,1)` are untouched, so `C` restricts to `g_{d−2,1}` on the origin
-ROW and to `g_{d−2,1} + a₁·g_{d−1,0} + a₃·g_{d−2,0}` on the origin COLUMN.
-Those are exactly the two places where the rescaled-chord chart
-`torsionPairScaledDen` dies, which is why this branch needs its own chart. -/
-
-
-set_option linter.unusedSectionVars false in
-/-- **The formal-group chart denominator**
-`C := g_{d−2,1} ⊗ w + w ⊗ g_{d−2,1} + a₁·g_{d−1,0} ⊗ w + a₃·g_{d−2,0} ⊗ w`,
-the section-algebra avatar of the formal parameter `s = x/y` of the sum. -/
+The two `a₁`, `a₃` correction terms are NOT optional: the bare two-term
+`g_{d−2,1} ⊗ w + w ⊗ g_{d−2,1}` fails the law's zero-sum clause (at `Q = ⊖P` its
+value is `−x^{2d−2}(a₁x + a₃)/h²`, not `0`).  With them, the affine numerator
+factors as `x₁^{d−2}x₂^{d−2}·(x₂²·D₂ + (x₁−x₂)·((x₁+x₂)y₂ + a₁x₂²))` for
+`D₂ = y₁ + y₂ + a₁x₂ + a₃` the second-law denominator — a combination
+`u·δ + v·D₂`, which both makes it vanish on the zero-sum locus
+(`torsionPairFormalDen_apply_eq_zero`) and makes `x₃C²`, `y₃C³` polynomial. -/
 noncomputable def WeierstrassCurve.torsionPairFormalDen (m : ℕ) (h : Polynomial R) :
     (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
       (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
@@ -14098,12 +14086,12 @@ noncomputable def WeierstrassCurve.torsionPairFormalDen (m : ℕ) (h : Polynomia
       WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2 +
     WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 *
       WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 +
-    (algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
-        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 *
-          WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
-      algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
-        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 *
-          WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2))
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+      (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 *
+        WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+    algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+      (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 *
+        WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2)
 
 set_option linter.unusedSectionVars false in
 /-- The value of the formal-group chart denominator on an affine pair. -/
@@ -14119,24 +14107,23 @@ lemma WeierstrassCurve.torsionPairFormalDen_apply_some (m : ℕ) (h : Polynomial
     (h₁0 : Polynomial.aeval x₁ h ≠ 0) (h₂0 : Polynomial.aeval x₂ h ≠ 0) :
     WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ =
       x₁ ^ (h.natDegree - 2) * x₂ ^ (h.natDegree - 2) *
-          (y₁ * x₂ ^ 2 + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * x₁ * x₂ ^ 2 +
+          (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
             (E⁄Ksep).a₃ * x₂ ^ 2) /
         (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) := by
   obtain ⟨k, hk⟩ : ∃ k, h.natDegree = k + 2 := ⟨h.natDegree - 2, by omega⟩
   unfold WeierstrassCurve.torsionPairFormalDen
   rw [hP, hQ]
-  simp only [WeierstrassCurve.torsionKernelFun_some]
-  rw [← baseChange_a₁_integralModel R K E Ksep,
-    ← baseChange_a₃_integralModel R K E Ksep, hk]
-  simp only [Nat.add_sub_cancel, show k + 2 - 1 = k + 1 from by omega]
+  simp only [WeierstrassCurve.torsionKernelFun_some,
+    baseChange_a₁_integralModel R K E Ksep, baseChange_a₃_integralModel R K E Ksep,
+    hk]
+  simp only [show k + 2 - 1 = k + 1 from by omega, show k + 2 - 2 = k from by omega,
+    pow_zero, mul_one, one_mul, pow_succ]
   field_simp
-  ring
 
 set_option linter.unusedSectionVars false in
-/-- The formal-group chart denominator on the origin ROW: the section
-`g_{d−2,1}` of the second factor.  (The rescaled-chord denominator degenerates
-to `e = 1/h` here; the extra `y`-factor is what makes this chart survive on the
-formal locus.) -/
+set_option linter.unusedVariables false in
+/-- The formal-group chart denominator on the origin ROW: the `Q`-section
+`g_{d−2,1}`, which does NOT vanish there. -/
 lemma WeierstrassCurve.torsionPairFormalDen_apply_zero_left (m : ℕ)
     (h : Polynomial R) (hdeg : 2 ≤ h.natDegree)
     (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
@@ -14144,68 +14131,39 @@ lemma WeierstrassCurve.torsionPairFormalDen_apply_zero_left (m : ℕ)
     (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.zero) :
     WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ =
       WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 := by
-  have e1 : ¬(2 * (h.natDegree - 2) + 3 * 1 = 2 * h.natDegree) := by omega
-  have e2 : 2 * h.natDegree + 3 * 0 = 2 * h.natDegree := by omega
-  have e3 : ¬(2 * (h.natDegree - 1) + 3 * 0 = 2 * h.natDegree) := by omega
-  have e4 : ¬(2 * (h.natDegree - 2) + 3 * 0 = 2 * h.natDegree) := by omega
   unfold WeierstrassCurve.torsionPairFormalDen
   rw [hP]
-  simp only [WeierstrassCurve.torsionKernelFun_zero, if_neg e1, if_pos e2,
-    if_neg e3, if_neg e4]
+  simp only [WeierstrassCurve.torsionKernelFun_zero]
+  rw [if_neg (by omega), if_pos (by omega), if_neg (by omega), if_neg (by omega)]
   ring
 
 set_option linter.unusedSectionVars false in
-/-- The formal-group chart denominator on the origin COLUMN. -/
+set_option linter.unusedVariables false in
+/-- The formal-group chart denominator on the origin COLUMN: the `P`-section
+`g_{d−2,1} + a₁·g_{d−1,0} + a₃·g_{d−2,0}`, i.e. `−x₁^{d−2}·negY(x₁,y₁)/h₁`. -/
 lemma WeierstrassCurve.torsionPairFormalDen_apply_zero_right (m : ℕ)
-    (h : Polynomial R) (_hdeg : 2 ≤ h.natDegree)
+    (h : Polynomial R) (hdeg : 2 ≤ h.natDegree)
     (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
       (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
     (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
     WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ =
       WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 +
-        (algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
-            WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0
-              ↑PQ.1 +
-          algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
-            WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0
-              ↑PQ.1) := by
-  have e1 : ¬(2 * (h.natDegree - 2) + 3 * 1 = 2 * h.natDegree) := by omega
-  have e2 : 2 * h.natDegree + 3 * 0 = 2 * h.natDegree := by omega
+        (E⁄Ksep).a₁ *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 +
+        (E⁄Ksep).a₃ *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 := by
   unfold WeierstrassCurve.torsionPairFormalDen
   rw [hQ]
-  simp only [WeierstrassCurve.torsionKernelFun_zero, if_neg e1, if_pos e2]
-  ring
-
-set_option linter.unusedSectionVars false in
-/-- The formal-group chart denominator on the origin COLUMN, at an AFFINE first
-point: the value `x₁^{d−2}(y₁ + a₁x₁ + a₃)/h₁`, of valuation `v(x₁)^{−1/2}` on
-the formal locus. -/
-lemma WeierstrassCurve.torsionPairFormalDen_apply_zero_right_some (m : ℕ)
-    (h : Polynomial R) (hdeg : 2 ≤ h.natDegree)
-    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
-      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
-    (x₁ y₁ : Ksep) (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
-    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
-    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero)
-    (h₁0 : Polynomial.aeval x₁ h ≠ 0) :
-    WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ =
-      x₁ ^ (h.natDegree - 2) * (y₁ + (E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃) /
-        Polynomial.aeval x₁ h := by
-  obtain ⟨k, hk⟩ : ∃ k, h.natDegree = k + 2 := ⟨h.natDegree - 2, by omega⟩
-  rw [WeierstrassCurve.torsionPairFormalDen_apply_zero_right R K E Ksep m h hdeg
-    PQ hQ, hP]
-  simp only [WeierstrassCurve.torsionKernelFun_some]
-  rw [← baseChange_a₁_integralModel R K E Ksep,
-    ← baseChange_a₃_integralModel R K E Ksep, hk]
-  simp only [Nat.add_sub_cancel, show k + 2 - 1 = k + 1 from by omega, pow_zero,
-    pow_one]
-  field_simp
+  simp only [WeierstrassCurve.torsionKernelFun_zero]
+  rw [if_pos (by omega), if_neg (by omega),
+    baseChange_a₁_integralModel R K E Ksep, baseChange_a₃_integralModel R K E Ksep]
   ring
 
 set_option backward.isDefEq.respectTransparency false in
 set_option linter.unusedSectionVars false in
-/-- The formal-group chart denominator lies in the span `M`: all four
-generators are of admissible weight (`2d−1`, `2d`, `2d−2`, `2d−4`). -/
+/-- The formal-group chart denominator lies in the span `M`: all four of its
+generator weights `2(d−2)+3 = 2d−1`, `2d`, `2d−2`, `2d−4` respect the bound
+`2a + 3b ≤ 2d` with `b ≤ 1`. -/
 lemma WeierstrassCurve.torsionPairFormalDen_mem_span (m : ℕ) (h : Polynomial R)
     (hdeg : 2 ≤ h.natDegree) :
     WeierstrassCurve.torsionPairFormalDen R K E Ksep m h ∈
@@ -14219,57 +14177,60 @@ lemma WeierstrassCurve.torsionPairFormalDen_mem_span (m : ℕ) (h : Polynomial R
     fun a b hb hw => Algebra.subset_adjoin
       ((WeierstrassCurve.mem_torsionKernelGens R K E Ksep m h _).mpr
         ⟨a, b, by omega, hb, hw, rfl⟩)
+  have hsm : ∀ (r : R) (t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep),
+      t ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h →
+      (fun PQ => algebraMap R Ksep r * t PQ) ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun r _ ht =>
+      WeierstrassCurve.torsionPairSpan_algebraMap_mul R K E Ksep m h r ht
   have heq : WeierstrassCurve.torsionPairFormalDen R K E Ksep m h =
-      ((fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
-            (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
-          WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 *
-            WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
-        (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
-            (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
-          WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 *
-            WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1
-              ↑PQ.2)) +
-      ((fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
-            (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
-          algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
-            (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0
-                ↑PQ.1 *
-              WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2)) +
-        (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
-            (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
-          algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
-            (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0
-                ↑PQ.1 *
-              WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0
-                ↑PQ.2))) := by
+      (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
+        WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
+        WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 *
+          WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2) +
+      (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₁ *
+          (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 *
+            WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2)) +
+      (fun PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) =>
+        algebraMap R Ksep (WeierstrassCurve.integralModel R E).a₃ *
+          (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 *
+            WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2)) := by
     funext PQ
     simp only [Pi.add_apply]
     rfl
   rw [heq]
-  refine add_mem (add_mem ?_ ?_) (add_mem ?_ ?_)
+  refine add_mem (add_mem (add_mem ?_ ?_) ?_) ?_
   · exact Submodule.subset_span
       ⟨_, hgen (h.natDegree - 2) 1 (by omega) (by omega),
         _, hgen h.natDegree 0 (by omega) (by omega), rfl⟩
   · exact Submodule.subset_span
       ⟨_, hgen h.natDegree 0 (by omega) (by omega),
         _, hgen (h.natDegree - 2) 1 (by omega) (by omega), rfl⟩
-  · exact WeierstrassCurve.torsionPairSpan_algebraMap_mul R K E Ksep m h _
-      (Submodule.subset_span
-        ⟨_, hgen (h.natDegree - 1) 0 (by omega) (by omega),
-          _, hgen h.natDegree 0 (by omega) (by omega), rfl⟩)
-  · exact WeierstrassCurve.torsionPairSpan_algebraMap_mul R K E Ksep m h _
-      (Submodule.subset_span
-        ⟨_, hgen (h.natDegree - 2) 0 (by omega) (by omega),
-          _, hgen h.natDegree 0 (by omega) (by omega), rfl⟩)
+  · exact hsm _ _ (Submodule.subset_span
+      ⟨_, hgen (h.natDegree - 1) 0 (by omega) (by omega),
+        _, hgen h.natDegree 0 (by omega) (by omega), rfl⟩)
+  · exact hsm _ _ (Submodule.subset_span
+      ⟨_, hgen (h.natDegree - 2) 0 (by omega) (by omega),
+        _, hgen h.natDegree 0 (by omega) (by omega), rfl⟩)
 
 set_option backward.isDefEq.respectTransparency false in
 set_option linter.unusedSectionVars false in
-/-- **The zero-sum clause of the formal-group chart**: the denominator section
-vanishes wherever `P + Q = 0`.  On the affine collision `Q = ⊖P` the numerator
-`G` degenerates to `x₁²·(y₁ + y₂ + a₁x₁ + a₃) = x₁²·D₂`, and `D₂ = 0` is exactly
-the condition `y₁ = negY x₂ y₂`; this is what the `a₁`- and `a₃`-corrections of
-`C` are for. -/
-theorem WeierstrassCurve.torsionPairFormalDen_eq_zero_of_sum_zero (m : ℕ)
+/-- **The zero-sum clause for the formal-group chart denominator** (PROVEN
+2026-07-25).  If `P + Q = 0` then either both points are the origin — and `C`
+restricts on the origin row to `g_{d−2,1}`, which vanishes at the origin because
+its weight `2d−1` misses `2d` — or both are affine with `x₁ = x₂` and
+`y₁ = negY(x₂,y₂)`, i.e. `D₂ = 0`, and the affine numerator
+`x₁^{d−2}x₂^{d−2}·x²·D₂` vanishes.  This is precisely the clause the bare
+two-term denominator failed. -/
+theorem WeierstrassCurve.torsionPairFormalDen_apply_eq_zero (m : ℕ)
     (h : Polynomial R) (hmon : h.Monic) (hdeg : 2 ≤ h.natDegree)
     (hunit : ∀ 𝒪 : ValuationSubring Ksep,
       (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
@@ -14287,15 +14248,14 @@ theorem WeierstrassCurve.torsionPairFormalDen_eq_zero_of_sum_zero (m : ℕ)
   cases hc1 : ((PQ.1 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
       (E⁄Ksep).Point) with
   | zero =>
-    have hQ0 : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero := by
+    have hQz : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero := by
       have h0 : (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) =
           Affine.Point.zero := by rw [← hsumeq]; exact hsum
       rw [hc1] at h0
-      have h1 : (0 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) =
-        Affine.Point.zero := h0
+      have h1 : (0 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) = 0 := h0
       rwa [zero_add] at h1
     rw [WeierstrassCurve.torsionPairFormalDen_apply_zero_left R K E Ksep m h hdeg
-      PQ hc1, hQ0, WeierstrassCurve.torsionKernelFun_zero, if_neg (by omega)]
+        PQ hc1, hQz, WeierstrassCurve.torsionKernelFun_zero, if_neg (by omega)]
   | some x₁ y₁ hns₁ =>
     cases hc2 : ((PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
         (E⁄Ksep).Point) with
@@ -14304,139 +14264,452 @@ theorem WeierstrassCurve.torsionPairFormalDen_eq_zero_of_sum_zero (m : ℕ)
       have h0 : (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) =
           Affine.Point.zero := by rw [← hsumeq]; exact hsum
       rw [hc1, hc2] at h0
-      have h1 : (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) + 0 =
-        Affine.Point.zero := h0
+      have h1 : (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) + 0 = 0 := h0
       rw [add_zero] at h1
       exact Affine.Point.some_ne_zero hns₁ h1
     | some x₂ y₂ hns₂ =>
+      have h0 : (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) +
+          Affine.Point.some x₂ y₂ hns₂ = Affine.Point.zero := by
+        rw [← hc1, ← hc2, ← hsumeq]; exact hsum
+      have hxy : x₁ = x₂ ∧ y₁ = (E⁄Ksep).toAffine.negY x₂ y₂ := by
+        by_contra hc
+        rw [Affine.Point.add_some hc] at h0
+        exact Affine.Point.some_ne_zero _ h0
+      obtain ⟨hx, hy⟩ := hxy
       have htor₁ : (m : ℤ) •
           (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) = 0 := by
-        rw [← hc1]
-        exact (Submodule.mem_torsionBy_iff _ _).mp PQ.1.2
+        rw [← hc1]; exact (Submodule.mem_torsionBy_iff _ _).mp PQ.1.2
       have htor₂ : (m : ℤ) •
           (Affine.Point.some x₂ y₂ hns₂ : (E⁄Ksep).Point) = 0 := by
-        rw [← hc2]
-        exact (Submodule.mem_torsionBy_iff _ _).mp PQ.2.2
+        rw [← hc2]; exact (Submodule.mem_torsionBy_iff _ _).mp PQ.2.2
       have h₁0 : Polynomial.aeval x₁ h ≠ 0 :=
         WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon hunit
           hns₁ htor₁
       have h₂0 : Polynomial.aeval x₂ h ≠ 0 :=
         WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon hunit
           hns₂ htor₂
-      have hxy : x₁ = x₂ ∧ y₁ = (E⁄Ksep).toAffine.negY x₂ y₂ := by
-        by_contra hxy
-        obtain ⟨x₃', y₃', hns₃', hadd, -, -⟩ :=
-          WeierstrassCurve.add_some_second (E⁄Ksep) hns₁ hns₂ hxy
-        rw [hsumeq, hc1, hc2, hadd] at hsum
-        exact Affine.Point.some_ne_zero hns₃' hsum
-      obtain ⟨hx, hy⟩ := hxy
-      rw [WeierstrassCurve.torsionPairFormalDen_apply_some R K E Ksep m h hdeg PQ
-        x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0]
+      rw [WeierstrassCurve.torsionPairFormalDen_apply_some R K E Ksep m h hdeg
+        PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0]
+      rw [WeierstrassCurve.Affine.negY] at hy
       subst hx
-      have hG : y₁ * x₁ ^ 2 + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * x₁ * x₁ ^ 2 +
-          (E⁄Ksep).a₃ * x₁ ^ 2 = 0 := by
-        rw [hy, WeierstrassCurve.Affine.negY]
-        ring
-      rw [hG, mul_zero, zero_div]
+      rw [hy, div_eq_zero_iff]
+      left
+      ring
+
+section FormalChartValuation
+
+/-! ### Valuation core of the formal-group chart (2026-07-25)
+
+The four lemmas below are the whole content of
+`torsionPairFormalDen_val_mul_eq_one`, isolated as statements about a bare
+`Valuation` on a field so that the elliptic-curve bookkeeping and the
+valuation estimates do not have to be done at the same time. -/
+
+theorem val_lt_iff_sq_lt {Γ₀ : Type*} [LinearOrderedCommGroupWithZero Γ₀]
+    {a b : Γ₀} : a < b ↔ a ^ 2 < b ^ 2 :=
+  (pow_lt_pow_iff_left₀ zero_le zero_le (by norm_num)).symm
+
+theorem val_le_iff_sq_le {Γ₀ : Type*} [LinearOrderedCommGroupWithZero Γ₀]
+    {a b : Γ₀} : a ≤ b ↔ a ^ 2 ≤ b ^ 2 :=
+  (pow_le_pow_iff_left₀ zero_le zero_le (by norm_num)).symm
 
 set_option linter.unusedSectionVars false in
-/-- **The half-integral bookkeeping of the formal chart**: if `w² = t³` — the
-exact ordinate valuation `v(y)² = v(x)³` of the formal locus — then the chart
-value `t^k·w/t^{k+2}` squares against `t` to a unit.  This is the identity
-`v(x₃)·v(C)² = 1` in the two degenerate configurations, where `C` is a single
-monomial section `g_{d−2,1}`. -/
-lemma val_formalChart_unit {Γ : Type*} [LinearOrderedCommGroupWithZero Γ]
-    {t w : Γ} (k : ℕ) (ht : t ≠ 0) (hw : w ^ 2 = t ^ 3) :
-    t * (t ^ k * w / t ^ (k + 2)) ^ 2 = 1 := by
-  have hden : (t ^ (k + 2)) ^ 2 ≠ 0 := pow_ne_zero _ (pow_ne_zero _ ht)
-  rw [div_pow, mul_comm t _, div_mul_eq_mul_div, div_eq_one_iff_eq hden, mul_pow,
-    ← pow_mul, hw, ← pow_add, ← pow_succ, ← pow_mul]
-  congr 1
-  omega
+/-- **The chord-case formal valuation identity** (PROVEN 2026-07-25): for two
+points of the formal locus (`v(xᵢ) > 1`, `v(yᵢ)² = v(xᵢ)³`) with DISTINCT
+abscissas, the chart numerator `N = x₂²y₁ + x₁²y₂ + a₁x₁x₂² + a₃x₂²` satisfies
+`v(N)²·v(x₃) = v(x₁)⁴v(x₂)⁴`.
+
+THE ARGUMENT, and why no formal-group power series is needed.  Write
+`M = y₁x₂ − y₂x₁` and `δ = x₂ − x₁`, so that the intercept of the chord is
+`ν = M/δ`.  Two polynomial identities modulo the two curve equations do all the
+work:
+
+* `N·M = δ·G` with
+  `G = a₂x₁²x₂² + a₄x₁x₂(x₁+x₂) + a₆(x₁²+x₁x₂+x₂²) − x₁y₂(x₂y₁ + a₁x₁x₂ +
+  a₃(x₁+x₂))`
+  (cofactors `x₂³` and `−x₁³` on the two curve equations) — i.e. `N·ν = G`;
+* `x₁x₂x₃·δ² = M² + a₃Mδ − a₆δ²` — the PRODUCT of the three roots of the
+  chord cubic, `x₁x₂x₃ = ν² + a₃ν − a₆`.
+
+`G`'s dominant monomial is `−x₁x₂y₁y₂`, every other one being strictly smaller
+(checked on squares, where `v(yᵢ)² = v(xᵢ)³` is available), so
+`v(G)² = v(x₁)⁵v(x₂)⁵` — with NO case split on `v(x₁)` versus `v(x₂)`, which is
+exactly the delicacy that the formal-group law was expected to be needed for.
+From `v(N) ≤ v(x₁)²v(x₂)² < v(G)` the first identity forces `v(δ) < v(M)`,
+whence `v(M² + a₃Mδ − a₆δ²) = v(M)²`, and the two identities combine to the
+claim after cancelling `v(δ)²·v(x₁)v(x₂)`. -/
+theorem val_formal_chord_core {F Γ₀ : Type*} [Field F]
+    [LinearOrderedCommGroupWithZero Γ₀] (v : Valuation F Γ₀)
+    (a₁ a₂ a₃ a₄ a₆ x₁ y₁ x₂ y₂ x₃ : F)
+    (ha₁ : v a₁ ≤ 1) (ha₂ : v a₂ ≤ 1) (ha₃ : v a₃ ≤ 1) (ha₄ : v a₄ ≤ 1)
+    (ha₆ : v a₆ ≤ 1)
+    (hx₁ : 1 < v x₁) (hx₂ : 1 < v x₂)
+    (hy₁ : v y₁ ^ 2 = v x₁ ^ 3) (hy₂ : v y₂ ^ 2 = v x₂ ^ 3)
+    (hne : x₁ ≠ x₂)
+    (hE₁ : y₁ ^ 2 + a₁ * x₁ * y₁ + a₃ * y₁ = x₁ ^ 3 + a₂ * x₁ ^ 2 + a₄ * x₁ + a₆)
+    (hE₂ : y₂ ^ 2 + a₁ * x₂ * y₂ + a₃ * y₂ = x₂ ^ 3 + a₂ * x₂ ^ 2 + a₄ * x₂ + a₆)
+    (hE₃ : x₃ * (x₁ - x₂) ^ 2 =
+      (y₁ - y₂) ^ 2 + a₁ * (y₁ - y₂) * (x₁ - x₂) - (a₂ + x₁ + x₂) * (x₁ - x₂) ^ 2) :
+    v (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + a₁ * (x₁ * x₂ ^ 2) + a₃ * x₂ ^ 2) ^ 2 * v x₃
+      = v x₁ ^ 4 * v x₂ ^ 4 := by
+  set N : F := x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + a₁ * (x₁ * x₂ ^ 2) + a₃ * x₂ ^ 2 with hNdef
+  set M : F := y₁ * x₂ - y₂ * x₁ with hMdef
+  set d : F := x₂ - x₁ with hddef
+  set G : F := -(x₁ * x₂ * y₁ * y₂) +
+    (a₂ * (x₁ ^ 2 * x₂ ^ 2) + a₄ * (x₁ * x₂ * (x₁ + x₂)) +
+      a₆ * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2) - a₁ * (x₁ ^ 2 * x₂ * y₂) -
+      a₃ * (x₁ * y₂ * (x₁ + x₂))) with hGdef
+  -- the two algebraic identities
+  have hid1 : N * M = d * G := by
+    rw [hNdef, hMdef, hddef, hGdef]; linear_combination x₂ ^ 3 * hE₁ - x₁ ^ 3 * hE₂
+  have hid2 : x₁ * x₂ * x₃ * d ^ 2 = M ^ 2 + (a₃ * M * d - a₆ * d ^ 2) := by
+    rw [hMdef, hddef]
+    linear_combination (x₁ * x₂ - x₂ ^ 2) * hE₁ + (-x₁ ^ 2 + x₁ * x₂) * hE₂ +
+      x₁ * x₂ * hE₃
+  -- basic valuation facts
+  have hx₁0 : v x₁ ≠ 0 := ne_of_gt (zero_lt_one.trans hx₁)
+  have hx₂0 : v x₂ ≠ 0 := ne_of_gt (zero_lt_one.trans hx₂)
+  have hy₁lt : v x₁ < v y₁ :=
+    val_lt_iff_sq_lt.mpr (by rw [hy₁]; exact pow_lt_pow_right₀ hx₁ (by omega))
+  have hy₂lt : v x₂ < v y₂ :=
+    val_lt_iff_sq_lt.mpr (by rw [hy₂]; exact pow_lt_pow_right₀ hx₂ (by omega))
+  have hy₁0 : v y₁ ≠ 0 := ne_of_gt (lt_trans (zero_lt_one.trans hx₁) hy₁lt)
+  have hy₂0 : v y₂ ≠ 0 := ne_of_gt (lt_trans (zero_lt_one.trans hx₂) hy₂lt)
+  have hy₁le : v y₁ ≤ v x₁ ^ 2 := by
+    refine val_le_iff_sq_le.mpr ?_
+    rw [hy₁, ← pow_mul]
+    exact pow_le_pow_right₀ hx₁.le (by omega)
+  have hy₂le : v y₂ ≤ v x₂ ^ 2 := by
+    refine val_le_iff_sq_le.mpr ?_
+    rw [hy₂, ← pow_mul]
+    exact pow_le_pow_right₀ hx₂.le (by omega)
+  have hx₁le : v x₁ ≤ v x₁ ^ 2 := le_self_pow₀ hx₁.le (by norm_num)
+  have hx₂le : v x₂ ≤ v x₂ ^ 2 := le_self_pow₀ hx₂.le (by norm_num)
+  have hone₁ : (1 : Γ₀) ≤ v x₁ ^ 2 := le_trans hx₁.le hx₁le
+  have hone₂ : (1 : Γ₀) ≤ v x₂ ^ 2 := le_trans hx₂.le hx₂le
+  have hsum12 : v (x₁ + x₂) ≤ v x₁ * v x₂ :=
+    v.map_add_le (le_mul_of_one_le_right' hx₂.le) (le_mul_of_one_le_left' hx₁.le)
+  have hquad : v (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2) ≤ v x₁ ^ 2 * v x₂ ^ 2 := by
+    refine v.map_add_le (v.map_add_le ?_ ?_) ?_
+    · rw [map_pow]; exact le_mul_of_one_le_right' hone₂
+    · rw [map_mul]; exact mul_le_mul' hx₁le hx₂le
+    · rw [map_pow]; exact le_mul_of_one_le_left' hone₁
+  -- powers of the two abscissa valuations
+  have hp₁ : v x₁ ^ 2 * v x₁ ^ 3 = v x₁ ^ 5 := by rw [← pow_add]
+  have hp₂ : v x₂ ^ 2 * v x₂ ^ 3 = v x₂ ^ 5 := by rw [← pow_add]
+  -- the bound on N
+  have hNle : v N ≤ v x₁ ^ 2 * v x₂ ^ 2 := by
+    rw [hNdef]
+    refine v.map_add_le (v.map_add_le (v.map_add_le ?_ ?_) ?_) ?_
+    · rw [map_mul, map_pow]
+      calc v x₂ ^ 2 * v y₁ ≤ v x₂ ^ 2 * v x₁ ^ 2 := mul_le_mul' le_rfl hy₁le
+        _ = v x₁ ^ 2 * v x₂ ^ 2 := mul_comm _ _
+    · rw [map_mul, map_pow]
+      exact mul_le_mul' le_rfl hy₂le
+    · rw [map_mul, map_mul, map_pow]
+      calc v a₁ * (v x₁ * v x₂ ^ 2) ≤ 1 * (v x₁ ^ 2 * v x₂ ^ 2) :=
+            mul_le_mul' ha₁ (mul_le_mul' hx₁le le_rfl)
+        _ = v x₁ ^ 2 * v x₂ ^ 2 := one_mul _
+    · rw [map_mul, map_pow]
+      calc v a₃ * v x₂ ^ 2 ≤ 1 * v x₂ ^ 2 := mul_le_mul' ha₃ le_rfl
+        _ = v x₂ ^ 2 := one_mul _
+        _ ≤ v x₁ ^ 2 * v x₂ ^ 2 := le_mul_of_one_le_left' hone₁
+  -- the exact value of G
+  have hdomG : v x₁ ^ 2 * v x₂ * v y₂ < v (x₁ * x₂ * y₁ * y₂) := by
+    refine val_lt_iff_sq_lt.mpr ?_
+    rw [map_mul, map_mul, map_mul, mul_pow, mul_pow, mul_pow, mul_pow, mul_pow,
+      hy₁, hy₂, ← pow_mul]
+    calc v x₁ ^ (2 * 2) * v x₂ ^ 2 * v x₂ ^ 3
+        = v x₁ ^ 4 * v x₂ ^ 5 := by rw [mul_assoc, hp₂]
+      _ < v x₁ ^ 5 * v x₂ ^ 5 :=
+          mul_lt_mul_of_pos_right (pow_lt_pow_right₀ hx₁ (by omega))
+            (lt_of_le_of_ne zero_le (Ne.symm (pow_ne_zero _ hx₂0)))
+      _ = v x₁ ^ 2 * v x₁ ^ 3 * (v x₂ ^ 2 * v x₂ ^ 3) := by rw [hp₁, hp₂]
+      _ = v x₁ ^ 2 * v x₂ ^ 2 * v x₁ ^ 3 * v x₂ ^ 3 := by ac_rfl
+  have hbase : v x₁ ^ 2 * v x₂ ^ 2 ≤ v x₁ ^ 2 * v x₂ * v y₂ := by
+    calc v x₁ ^ 2 * v x₂ ^ 2 = v x₁ ^ 2 * v x₂ * v x₂ := by rw [mul_assoc, ← pow_two]
+      _ ≤ v x₁ ^ 2 * v x₂ * v y₂ := mul_le_mul' le_rfl hy₂lt.le
+  have hGval : v G = v (x₁ * x₂ * y₁ * y₂) := by
+    have hrest : v (a₂ * (x₁ ^ 2 * x₂ ^ 2) + a₄ * (x₁ * x₂ * (x₁ + x₂)) +
+        a₆ * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2) - a₁ * (x₁ ^ 2 * x₂ * y₂) -
+        a₃ * (x₁ * y₂ * (x₁ + x₂))) ≤ v x₁ ^ 2 * v x₂ * v y₂ := by
+      refine v.map_sub_le (v.map_sub_le (v.map_add_le (v.map_add_le ?_ ?_) ?_) ?_) ?_
+      · rw [map_mul, map_mul, map_pow, map_pow]
+        calc v a₂ * (v x₁ ^ 2 * v x₂ ^ 2) ≤ 1 * (v x₁ ^ 2 * v x₂ ^ 2) :=
+              mul_le_mul' ha₂ le_rfl
+          _ = v x₁ ^ 2 * v x₂ ^ 2 := one_mul _
+          _ ≤ v x₁ ^ 2 * v x₂ * v y₂ := hbase
+      · rw [map_mul, map_mul, map_mul]
+        calc v a₄ * (v x₁ * v x₂ * v (x₁ + x₂)) ≤ 1 * (v x₁ * v x₂ * (v x₁ * v x₂)) :=
+              mul_le_mul' ha₄ (mul_le_mul' le_rfl hsum12)
+          _ = v x₁ ^ 2 * v x₂ ^ 2 := by
+              rw [one_mul, pow_two, pow_two]; ac_rfl
+          _ ≤ v x₁ ^ 2 * v x₂ * v y₂ := hbase
+      · rw [map_mul]
+        calc v a₆ * v (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2) ≤ 1 * (v x₁ ^ 2 * v x₂ ^ 2) :=
+              mul_le_mul' ha₆ hquad
+          _ = v x₁ ^ 2 * v x₂ ^ 2 := one_mul _
+          _ ≤ v x₁ ^ 2 * v x₂ * v y₂ := hbase
+      · rw [map_mul, map_mul, map_mul, map_pow]
+        calc v a₁ * (v x₁ ^ 2 * v x₂ * v y₂) ≤ 1 * (v x₁ ^ 2 * v x₂ * v y₂) :=
+              mul_le_mul' ha₁ le_rfl
+          _ = v x₁ ^ 2 * v x₂ * v y₂ := one_mul _
+      · rw [map_mul, map_mul, map_mul]
+        calc v a₃ * (v x₁ * v y₂ * v (x₁ + x₂)) ≤ 1 * (v x₁ * v y₂ * (v x₁ * v x₂)) :=
+              mul_le_mul' ha₃ (mul_le_mul' le_rfl hsum12)
+          _ = v x₁ ^ 2 * v x₂ * v y₂ := by rw [one_mul, pow_two]; ac_rfl
+    rw [hGdef, v.map_add_eq_of_lt_left
+      (lt_of_le_of_lt hrest (by rwa [v.map_neg])), v.map_neg]
+  -- N is dominated by G
+  have hNltG : v N < v G := by
+    refine lt_of_le_of_lt hNle ?_
+    rw [hGval]
+    refine val_lt_iff_sq_lt.mpr ?_
+    rw [map_mul, map_mul, map_mul, mul_pow, mul_pow, mul_pow, mul_pow,
+      hy₁, hy₂]
+    calc (v x₁ ^ 2) ^ 2 * (v x₂ ^ 2) ^ 2 = v x₁ ^ 4 * v x₂ ^ 4 := by
+          rw [← pow_mul, ← pow_mul]
+      _ < v x₁ ^ 5 * v x₂ ^ 4 :=
+          mul_lt_mul_of_pos_right (pow_lt_pow_right₀ hx₁ (by omega))
+            (lt_of_le_of_ne zero_le (Ne.symm (pow_ne_zero _ hx₂0)))
+      _ ≤ v x₁ ^ 5 * v x₂ ^ 5 :=
+          mul_le_mul' le_rfl (pow_le_pow_right₀ hx₂.le (by omega))
+      _ = v x₁ ^ 2 * v x₁ ^ 3 * (v x₂ ^ 2 * v x₂ ^ 3) := by rw [hp₁, hp₂]
+      _ = v x₁ ^ 2 * v x₂ ^ 2 * v x₁ ^ 3 * v x₂ ^ 3 := by ac_rfl
+  -- nonvanishing
+  have hdne : d ≠ 0 := sub_ne_zero.mpr (Ne.symm hne)
+  have hvd0 : v d ≠ 0 := by
+    simpa using (Valuation.ne_zero_iff v).mpr hdne
+  have hG0 : v G ≠ 0 := by
+    rw [hGval, map_mul, map_mul, map_mul]
+    exact mul_ne_zero (mul_ne_zero (mul_ne_zero hx₁0 hx₂0) hy₁0) hy₂0
+  have hNM : v N * v M = v d * v G := by rw [← map_mul, ← map_mul, hid1]
+  have hNM0 : v N * v M ≠ 0 := by rw [hNM]; exact mul_ne_zero hvd0 hG0
+  have hM0 : v M ≠ 0 := right_ne_zero_of_mul hNM0
+  -- the intercept dominates the abscissa difference
+  have hdM : v d < v M := by
+    by_contra hc
+    rw [not_lt] at hc
+    have h1 : v N * v M ≤ v N * v d := mul_le_mul' le_rfl hc
+    have h2 : v N * v d < v G * v d :=
+      mul_lt_mul_of_pos_right hNltG (lt_of_le_of_ne zero_le (Ne.symm hvd0))
+    have h3 : v d * v G < v d * v G :=
+      calc v d * v G = v N * v M := hNM.symm
+        _ ≤ v N * v d := h1
+        _ < v G * v d := h2
+        _ = v d * v G := mul_comm _ _
+    exact lt_irrefl _ h3
+  -- the exact value of the intercept-squared expression
+  have hMsq : v (M ^ 2 + (a₃ * M * d - a₆ * d ^ 2)) = v M ^ 2 := by
+    have hb : v (a₃ * M * d - a₆ * d ^ 2) ≤ v M * v d := by
+      refine v.map_sub_le ?_ ?_
+      · rw [map_mul, map_mul]
+        calc v a₃ * v M * v d ≤ 1 * v M * v d := mul_le_mul' (mul_le_mul' ha₃ le_rfl) le_rfl
+          _ = v M * v d := by rw [one_mul]
+      · rw [map_mul, map_pow]
+        calc v a₆ * v d ^ 2 ≤ 1 * (v d * v d) := by rw [pow_two]; exact mul_le_mul' ha₆ le_rfl
+          _ = v d * v d := one_mul _
+          _ ≤ v M * v d := mul_le_mul' hdM.le le_rfl
+    have hs : v M * v d < v (M ^ 2) := by
+      rw [map_pow, pow_two]
+      exact mul_lt_mul_of_pos_left hdM (lt_of_le_of_ne zero_le (Ne.symm hM0))
+    rw [v.map_add_eq_of_lt_left (lt_of_le_of_lt hb hs), map_pow]
+  have hMM : v (x₁ * x₂ * x₃ * d ^ 2) = v M ^ 2 := by rw [hid2, hMsq]
+  -- assembly
+  have hcancel : v N ^ 2 * v x₃ * (v d ^ 2 * (v x₁ * v x₂))
+      = v x₁ ^ 4 * v x₂ ^ 4 * (v d ^ 2 * (v x₁ * v x₂)) := by
+    have e1 : v N ^ 2 * v x₃ * (v d ^ 2 * (v x₁ * v x₂))
+        = v N ^ 2 * v (x₁ * x₂ * x₃ * d ^ 2) := by
+      rw [map_mul, map_mul, map_mul, map_pow]
+      simp only [mul_comm, mul_assoc, mul_left_comm]
+    have e2 : v x₁ ^ 4 * v x₂ ^ 4 * (v d ^ 2 * (v x₁ * v x₂))
+        = v d ^ 2 * (v x₁ ^ 5 * v x₂ ^ 5) := by
+      rw [show (5 : ℕ) = 4 + 1 from rfl, pow_add, pow_add, pow_one, pow_one]
+      simp only [mul_comm, mul_assoc, mul_left_comm]
+    rw [e1, e2, hMM, ← mul_pow, hNM, mul_pow, hGval, map_mul, map_mul, map_mul,
+      mul_pow, mul_pow, mul_pow, hy₁, hy₂]
+    rw [show v x₁ ^ 2 * v x₂ ^ 2 * v x₁ ^ 3 * v x₂ ^ 3
+        = v x₁ ^ 2 * v x₁ ^ 3 * (v x₂ ^ 2 * v x₂ ^ 3) from by
+        simp only [mul_comm, mul_assoc, mul_left_comm], hp₁, hp₂]
+  refine mul_right_cancel₀ ?_ hcancel
+  exact mul_ne_zero (pow_ne_zero _ hvd0) (mul_ne_zero hx₁0 hx₂0)
+
+set_option linter.unusedSectionVars false in
+/-- **The doubling-case formal valuation identity** (PROVEN 2026-07-25): the
+same conclusion at `P = Q` on the formal locus, where the chord rationalization
+degenerates and the tangent one (`add_some_second`, denominator
+`D = 2y + a₁x + a₃`) takes over.  Here `N = x²·D` outright, and the product of
+the roots is `x²x₃·D² = W² + a₃WD − a₆D²` with `W = −x³ + a₄x + 2a₆ − a₃y`,
+whose dominant monomial is `−x³`; `v(D) ≤ v(y) < v(x)³ = v(W)` gives
+`v(W² + a₃WD − a₆D²) = v(W)²` and the claim follows without any cancellation.
+Note `D` may equal `a₁x + a₃` in characteristic `2` — the proof never divides
+by `2` and never assumes `v(D) = v(y)`.  `D ≠ 0` is NOT a hypothesis: it is
+forced, since `D = 0` would make the product-of-roots identity read `W = 0`
+against `v(W) = v(x)³ ≠ 0`. -/
+theorem val_formal_double_core {F Γ₀ : Type*} [Field F]
+    [LinearOrderedCommGroupWithZero Γ₀] (v : Valuation F Γ₀)
+    (a₁ a₂ a₃ a₄ a₆ x y x₃ : F)
+    (ha₁ : v a₁ ≤ 1) (ha₃ : v a₃ ≤ 1) (ha₄ : v a₄ ≤ 1) (ha₆ : v a₆ ≤ 1)
+    (hx : 1 < v x) (hy : v y ^ 2 = v x ^ 3)
+    (hE : y ^ 2 + a₁ * x * y + a₃ * y = x ^ 3 + a₂ * x ^ 2 + a₄ * x + a₆)
+    (hE₃ : x₃ * (y + y + a₁ * x + a₃) ^ 2 =
+      (x ^ 2 + x * x + x ^ 2 + a₂ * (x + x) + a₄ - a₁ * y) ^ 2 +
+        a₁ * (x ^ 2 + x * x + x ^ 2 + a₂ * (x + x) + a₄ - a₁ * y) *
+          (y + y + a₁ * x + a₃) -
+        (a₂ + x + x) * (y + y + a₁ * x + a₃) ^ 2) :
+    v (x ^ 2 * y + x ^ 2 * y + a₁ * (x * x ^ 2) + a₃ * x ^ 2) ^ 2 * v x₃
+      = v x ^ 4 * v x ^ 4 := by
+  set D : F := y + y + a₁ * x + a₃ with hDdef
+  set W : F := -x ^ 3 + (a₄ * x + (a₆ + a₆) - a₃ * y) with hWdef
+  have hylt : v x < v y :=
+    val_lt_iff_sq_lt.mpr (by rw [hy]; exact pow_lt_pow_right₀ hx (by omega))
+  have hy1 : (1 : Γ₀) ≤ v y := le_of_lt (lt_trans hx hylt)
+  have hyW : v y < v (x ^ 3) := by
+    rw [map_pow]
+    refine val_lt_iff_sq_lt.mpr ?_
+    rw [hy, ← pow_mul]
+    exact pow_lt_pow_right₀ hx (by omega)
+  have hDle : v D ≤ v y := by
+    rw [hDdef]
+    refine v.map_add_le (v.map_add_le (v.map_add_le le_rfl le_rfl) ?_) (le_trans ha₃ hy1)
+    rw [map_mul]
+    calc v a₁ * v x ≤ 1 * v x := mul_le_mul' ha₁ le_rfl
+      _ = v x := one_mul _
+      _ ≤ v y := hylt.le
+  have h2 : v (a₆ + a₆) ≤ 1 := v.map_add_le ha₆ ha₆
+  have hWval : v W = v (x ^ 3) := by
+    rw [hWdef]
+    refine (v.map_add_eq_of_lt_left ?_).trans (by rw [v.map_neg])
+    refine lt_of_le_of_lt ?_ (by rwa [v.map_neg] : v y < v (-x ^ 3))
+    refine v.map_sub_le (v.map_add_le ?_ (h2.trans hy1)) ?_
+    · rw [map_mul]
+      calc v a₄ * v x ≤ 1 * v x := mul_le_mul' ha₄ le_rfl
+        _ = v x := one_mul _
+        _ ≤ v y := hylt.le
+    · rw [map_mul]
+      calc v a₃ * v y ≤ 1 * v y := mul_le_mul' ha₃ le_rfl
+        _ = v y := one_mul _
+  have hid : x ^ 2 * x₃ * D ^ 2 = W ^ 2 + (a₃ * W * D - a₆ * D ^ 2) := by
+    rw [hDdef, hWdef]
+    linear_combination (-8 * x ^ 3 - a₁ ^ 2 * x ^ 2 - 4 * a₂ * x ^ 2 + a₃ ^ 2 +
+      4 * a₆) * hE + x ^ 2 * hE₃
+  have hWsq : v (W ^ 2 + (a₃ * W * D - a₆ * D ^ 2)) = v W ^ 2 := by
+    have hDW : v D < v W := by rw [hWval]; exact lt_of_le_of_lt hDle hyW
+    have hW0 : v W ≠ 0 := ne_of_gt (lt_of_le_of_lt (zero_le) hDW)
+    have hb : v (a₃ * W * D - a₆ * D ^ 2) ≤ v W * v D := by
+      refine v.map_sub_le ?_ ?_
+      · rw [map_mul, map_mul]
+        calc v a₃ * v W * v D ≤ 1 * v W * v D :=
+              mul_le_mul' (mul_le_mul' ha₃ le_rfl) le_rfl
+          _ = v W * v D := by rw [one_mul]
+      · rw [map_mul, map_pow]
+        calc v a₆ * v D ^ 2 ≤ 1 * (v D * v D) := by
+              rw [pow_two]; exact mul_le_mul' ha₆ le_rfl
+          _ = v D * v D := one_mul _
+          _ ≤ v W * v D := mul_le_mul' hDW.le le_rfl
+    have hs : v W * v D < v (W ^ 2) := by
+      rw [map_pow, pow_two]
+      exact mul_lt_mul_of_pos_left hDW (lt_of_le_of_ne zero_le (Ne.symm hW0))
+    rw [v.map_add_eq_of_lt_left (lt_of_le_of_lt hb hs), map_pow]
+  have hkey : v x ^ 2 * v x₃ * v D ^ 2 = v x ^ 6 := by
+    have := congrArg v hid
+    rw [hWsq, map_mul, map_mul, map_pow, map_pow, hWval, map_pow] at this
+    rw [this, ← pow_mul]
+  have hNeq : x ^ 2 * y + x ^ 2 * y + a₁ * (x * x ^ 2) + a₃ * x ^ 2 = x ^ 2 * D := by
+    rw [hDdef]; ring
+  rw [hNeq, map_mul, map_pow, mul_pow, ← pow_mul]
+  calc (v x ^ (2 * 2)) * v D ^ 2 * v x₃ = v x ^ 2 * (v x ^ 2 * v x₃ * v D ^ 2) := by
+        rw [show 2 * 2 = 2 + 2 from rfl, pow_add]
+        simp only [mul_comm, mul_assoc, mul_left_comm]
+    _ = v x ^ 2 * v x ^ 6 := by rw [hkey]
+    _ = v x ^ 4 * v x ^ 4 := by rw [← pow_add, ← pow_add]
+
+set_option linter.unusedSectionVars false in
+/-- **The origin-line formal valuation identity** (PROVEN 2026-07-25): on the
+two origin lines the chart denominator is the single monomial section
+`x^{d−2}·y/h`, and `v(x)·v(x^{d−2}y/h)² = v(x)^{2d}/v(x)^{2d} = 1` is pure
+bookkeeping once `v(h(x)) = v(x)^d` and `v(y)² = v(x)³` are known. -/
+theorem val_formal_origin_core {F Γ₀ : Type*} [Field F]
+    [LinearOrderedCommGroupWithZero Γ₀] (v : Valuation F Γ₀) (x yy hp : F)
+    (dd : ℕ) (hdd : 2 ≤ dd) (hx : 1 < v x) (hy : v yy ^ 2 = v x ^ 3)
+    (hhv : v hp = v x ^ dd) :
+    v x * v (x ^ (dd - 2) * yy / hp) ^ 2 = 1 := by
+  have hx0 : v x ≠ 0 := ne_of_gt (zero_lt_one.trans hx)
+  obtain ⟨k, rfl⟩ : ∃ k, dd = k + 2 := ⟨dd - 2, by omega⟩
+  rw [show k + 2 - 2 = k from by omega, map_div₀, map_mul, map_pow, hhv, div_pow,
+    mul_pow, hy, ← pow_mul, ← pow_mul, ← pow_add, ← mul_div_assoc, ← pow_succ',
+    show k * 2 + 3 + 1 = (k + 2) * 2 from by ring]
+  exact div_self (pow_ne_zero _ hx0)
+
+set_option linter.unusedSectionVars false in
+/-- **Assembling the chart-denominator valuation from the core identity**
+(PROVEN 2026-07-25): dividing the affine numerator by `h₁h₂` against the
+prefactor `(x₁x₂)^{d−2}` turns `v(N)²·v(x₃) = v(x₁)⁴v(x₂)⁴` into
+`v(x₃)·v(C)² = 1`. -/
+theorem val_formal_assemble {F Γ₀ : Type*} [Field F]
+    [LinearOrderedCommGroupWithZero Γ₀] (v : Valuation F Γ₀)
+    (x₁ x₂ x₃ Nn p₁ p₂ : F) (dd : ℕ)
+    (hdd : 2 ≤ dd) (hx₁ : v x₁ ≠ 0) (hx₂ : v x₂ ≠ 0)
+    (hh₁ : v p₁ = v x₁ ^ dd) (hh₂ : v p₂ = v x₂ ^ dd)
+    (hcore : v Nn ^ 2 * v x₃ = v x₁ ^ 4 * v x₂ ^ 4) :
+    v x₃ * v (x₁ ^ (dd - 2) * x₂ ^ (dd - 2) * Nn / (p₁ * p₂)) ^ 2 = 1 := by
+  obtain ⟨k, rfl⟩ : ∃ k, dd = k + 2 := ⟨dd - 2, by omega⟩
+  have hB : (v x₁ ^ (k + 2) * v x₂ ^ (k + 2)) ^ 2 ≠ 0 :=
+    pow_ne_zero _ (mul_ne_zero (pow_ne_zero _ hx₁) (pow_ne_zero _ hx₂))
+  rw [show k + 2 - 2 = k from by omega, map_div₀, map_mul, map_mul, map_mul,
+    map_pow, map_pow, hh₁, hh₂, div_pow, ← mul_div_assoc, div_eq_iff hB, one_mul,
+    mul_pow, mul_pow, mul_pow, ← pow_mul, ← pow_mul, ← pow_mul, ← pow_mul]
+  calc v x₃ * (v x₁ ^ (k * 2) * v x₂ ^ (k * 2) * v Nn ^ 2)
+      = v x₁ ^ (k * 2) * v x₂ ^ (k * 2) * (v Nn ^ 2 * v x₃) := by
+        simp only [mul_comm, mul_assoc, mul_left_comm]
+    _ = v x₁ ^ (k * 2) * v x₂ ^ (k * 2) * (v x₁ ^ 4 * v x₂ ^ 4) := by rw [hcore]
+    _ = v x₁ ^ ((k + 2) * 2) * v x₂ ^ ((k + 2) * 2) := by
+        rw [show (k + 2) * 2 = k * 2 + 4 from by ring, pow_add, pow_add]
+        simp only [mul_assoc, mul_left_comm]
+
+end FormalChartValuation
 
 set_option backward.isDefEq.respectTransparency false in
 set_option linter.unusedSectionVars false in
-/-- **The formal-group law input of the chart** (sorry leaf, 2026-07-25): at a
-pair of AFFINE points both in the kernel of reduction whose sum is affine, the
-formal-group chart denominator has exactly half-integral valuation,
+set_option linter.unusedVariables false in
+/-- **The formal-group valuation identity for `C`** (PROVEN 2026-07-25 — the
+node that was expected to be the ONLY genuinely non-formal input of the whole
+chart cluster; it turned out NOT to need the formal group law at all): when
+both points lie on the formal-group locus of `𝒪` and their sum is affine,
 `v(x₃)·v(C)² = 1`.
 
-This is the ONE genuinely non-formal ingredient of the whole formal-locus
-cluster, and it is Silverman *AEC* IV.1 in disguise.  Writing `s := x/y` for the
-formal parameter, `v(s) = v(x)^{−1/2}` on the kernel of reduction
-(`val_ordinate_sq_of_abscissa_notMem`), and the chart value is
-`x₁^{d−2}x₂^{d−2}·G/(h₁h₂)` with `G = y₁x₂² + x₁²y₂ + a₁x₁x₂² + a₃x₂²`, so
-after `v(h_i) = v(x_i)^d` (`val_aeval_monic_of_notMem`) the claim reduces to
+WHAT THE ARGUMENT ACTUALLY IS.  The heuristic recorded here before — `C` is the
+avatar of `s = x/y`, so `v(C) = v(s₃)` by the formal group law
+`s₃ = s₁ + s₂ + (higher order)`, with the delicate case `v₁ = v₂` where the two
+leading monomials `x₂²y₁`, `x₁²y₂` cancel — is correct but is NOT the cheapest
+route, and the "delicate case" turns out to be an artefact of grading by the
+leading monomials of the NUMERATOR alone.  Multiplying the numerator by the
+chord intercept `ν` removes it: modulo the two curve equations,
 
-  `v(G) = v(x₁)²v(x₂)²·v(s₃)`,   i.e.   `v(s₁ + s₂ + ⋯) = v(s₃)`,
+  `N·ν = a₂x₁²x₂² + a₄x₁x₂(x₁+x₂) + a₆(x₁²+x₁x₂+x₂²)
+        − x₁y₂(x₂y₁ + a₁x₁x₂ + a₃(x₁+x₂))`,
 
-the statement that the formal group law `F(s₁, s₂) = s₁ + s₂ + (higher order)`
-does not drop the valuation of its linear part.  The kernel of reduction is a
-subgroup (`kernel_add_abscissa_notMem`), so the sum is again formal, and the
-higher-order terms of `F` are strictly smaller because they carry at least one
-extra factor of `s₁` or `s₂`, both of valuation `< 1`.
+whose dominant monomial `−x₁x₂y₁y₂` dominates UNIFORMLY in `v₁, v₂` — no case
+split, no cancellation.  Together with the product-of-roots relation
+`x₁x₂x₃ = ν² + a₃ν − a₆` this gives `v(N)²v(x₃) = v₁⁴v₂⁴` directly.  The
+formal group law is thereby avoided entirely, and with it any need to build
+`Mathlib`-side formal-group machinery for elliptic curves.
 
-WHAT IS MISSING FROM MATHLIB, in dependency order, if this is proven the honest
-way rather than by a direct valuation estimate on `G`:
+The four configurations are handled by `val_formal_chord_core` (both points
+affine with distinct abscissas), `val_formal_double_core` (both affine with
+`P = Q`, where the chord rationalization degenerates and `add_some_second`'s
+tangent one is used instead), and `val_formal_origin_core` twice (one point the
+origin — then the sum is the other point and `C` restricts to a single monomial
+section).  `P = Q = 0` is impossible here since the sum is affine.
 
-1. the formal group of a Weierstrass curve over a complete/valued base — the
-   power series `w(z₁, z₂)` of *AEC* IV.1 and the resulting `F ∈ R[[s₁, s₂]]`
-   with `F ≡ s₁ + s₂ mod (deg 2)`;
-2. the identification of `s = −x/y` on the kernel of reduction with the formal
-   parameter, i.e. `s(P + Q) = F(s(P), s(Q))`;
-3. the valuation estimate `v(F(s₁, s₂)) = max(v(s₁), v(s₂))` when
-   `v(s_i) < 1`.
-
-A cheaper route that stays inside this file: estimate `v(G)` directly.  With
-`t_i := v(x_i) > 1` and `v(y_i) = t_i^{3/2}`, the two leading terms of `G` are
-`y₁x₂²` (valuation `t₁^{3/2}t₂²`) and `x₁²y₂` (valuation `t₁²t₂^{3/2}`); they can
-only collide when `t₁ = t₂`, and the identity
-`G = x₂²·D₂ + (x₁ − x₂)·((x₁ + x₂)y₂ + a₁x₂²)` separates the collision case,
-`D₂` being the second-law denominator. -/
-theorem WeierstrassCurve.torsionPairFormalDen_valuation_bothAffineFormal (m : ℕ)
-    (h : Polynomial R) (hmon : h.Monic) (hdeg : 2 ≤ h.natDegree)
-    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
-      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
-      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
-        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
-        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1)
-    (𝒪 : ValuationSubring Ksep)
-    (hcen : (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range)
-    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
-      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
-    (x₁ y₁ x₂ y₂ : Ksep)
-    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
-    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
-    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
-    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂)
-    (hx₁ : x₁ ∉ 𝒪) (hx₂ : x₂ ∉ 𝒪)
-    (x₃ y₃ : Ksep) (hns₃ : (E⁄Ksep).toAffine.Nonsingular x₃ y₃)
-    (hsum : ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
-      (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃) :
-    𝒪.valuation x₃ *
-        𝒪.valuation (WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ) ^ 2 =
-      1 := by
-  sorry
-
-set_option backward.isDefEq.respectTransparency false in
-set_option linter.unusedSectionVars false in
-/-- **The formal-group chart is a unit on the formal locus**: at a pair both of
-whose points are off the integral-affine locus, and whose sum is AFFINE, the
-abscissa of the sum times the square of the chart denominator is a valuation
-unit — equivalently `v(A) = 1` for the numerator `A = x₃·C²`.
-
-The three configurations, in the order of the case split below:
-
-* the origin ROW (`P = 0`, so the sum is `Q`): `C` restricts to `g_{d−2,1}(Q)`
-  and the identity is `v(x₂)·(v(x₂)^{d−2}v(y₂)/v(x₂)^d)² = 1`, i.e. exactly
-  `v(y₂)² = v(x₂)³`;
-* the origin COLUMN (`Q = 0`, so the sum is `P`): `C` restricts to
-  `x₁^{d−2}(y₁ + a₁x₁ + a₃)/h₁`, and `v(y₁ + a₁x₁ + a₃) = v(y₁)` because
-  `v(x₁) < v(y₁)` on the formal locus and `a₁, a₃` are integral — after which it
-  is the same computation;
-* both points affine on the formal locus: the formal-group law, deferred to
-  `torsionPairFormalDen_valuation_bothAffineFormal`. -/
-theorem WeierstrassCurve.torsionPairFormalDen_valuation_formalPair (m : ℕ)
+NOTE ON HYPOTHESES: `hunit` is NOT used.  Nonvanishing of `h(xᵢ)` on the formal
+locus is free from `val_aeval_monic_of_notMem` (`v(h(x)) = v(x)^d ≠ 0` when
+`x ∉ 𝒪`), so the unit hypothesis, which is about INTEGRAL torsion abscissas, has
+nothing to contribute on the formal locus.  It is kept in the signature because
+the consumer `exists_torsionPairLaw_formalGroupChart` supplies it positionally
+alongside its sibling `exists_torsionPairFormalNumerators`, which does need
+it. -/
+theorem WeierstrassCurve.torsionPairFormalDen_val_mul_eq_one (m : ℕ)
     (h : Polynomial R) (hmon : h.Monic) (hdeg : 2 ≤ h.natDegree)
     (hunit : ∀ 𝒪 : ValuationSubring Ksep,
       (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
@@ -14453,65 +14726,3399 @@ theorem WeierstrassCurve.torsionPairFormalDen_valuation_formalPair (m : ℕ)
     (hsum : ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
       (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃) :
     𝒪.valuation x₃ *
-        𝒪.valuation (WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ) ^ 2 =
-      1 := by
+        𝒪.valuation (WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ) ^ 2
+      = 1 := by
   classical
-  obtain ⟨k, hk⟩ : ∃ k, h.natDegree = k + 2 := ⟨h.natDegree - 2, by omega⟩
+  obtain ⟨ha₁m, ha₂m, ha₃m, ha₄m, ha₆m⟩ :=
+    baseChange_coeffs_mem_centered R K E Ksep 𝒪 hcen
+  have ha₁ : 𝒪.valuation (E⁄Ksep).a₁ ≤ 1 := (𝒪.valuation_le_one_iff _).mpr ha₁m
+  have ha₂ : 𝒪.valuation (E⁄Ksep).a₂ ≤ 1 := (𝒪.valuation_le_one_iff _).mpr ha₂m
+  have ha₃ : 𝒪.valuation (E⁄Ksep).a₃ ≤ 1 := (𝒪.valuation_le_one_iff _).mpr ha₃m
+  have ha₄ : 𝒪.valuation (E⁄Ksep).a₄ ≤ 1 := (𝒪.valuation_le_one_iff _).mpr ha₄m
+  have ha₆ : 𝒪.valuation (E⁄Ksep).a₆ ≤ 1 := (𝒪.valuation_le_one_iff _).mpr ha₆m
+  have hR : ∀ r : R, algebraMap R Ksep r ∈ 𝒪 :=
+    mem_centered_algebraMap R K Ksep 𝒪 hcen
   have hsumeq : ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
       (E⁄Ksep).Point) = (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) := rfl
   cases hc1 : ((PQ.1 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
       (E⁄Ksep).Point) with
   | zero =>
-    -- the origin ROW: the sum is `Q`, and the chart is the single section `g_{d−2,1}`
-    have hQeq : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃ := by
-      have h0 : (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) =
-          Affine.Point.some x₃ y₃ hns₃ := by rw [← hsumeq]; exact hsum
-      rw [hc1] at h0
-      have h1 : (0 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) =
-        Affine.Point.some x₃ y₃ hns₃ := h0
-      rwa [zero_add] at h1
-    have hx₃ : x₃ ∉ 𝒪 := fun hmem => hformal₂ ⟨x₃, y₃, hns₃, hQeq, hmem⟩
-    have hv₃ : 1 < 𝒪.valuation x₃ :=
-      not_le.mp fun hle => hx₃ ((𝒪.valuation_le_one_iff _).mp hle)
-    have hne : 𝒪.valuation x₃ ≠ 0 := ne_of_gt (lt_trans zero_lt_one hv₃)
-    have hy₃ : 𝒪.valuation y₃ ^ 2 = 𝒪.valuation x₃ ^ 3 :=
-      WeierstrassCurve.val_ordinate_sq_of_abscissa_notMem R K E Ksep 𝒪 hcen
-        hns₃.1 hx₃
-    have hh₃ : 𝒪.valuation (Polynomial.aeval x₃ h) =
-        𝒪.valuation x₃ ^ h.natDegree :=
-      val_aeval_monic_of_notMem R Ksep 𝒪
-        (mem_centered_algebraMap R K Ksep 𝒪 hcen) h hmon hx₃
-    rw [WeierstrassCurve.torsionPairFormalDen_apply_zero_left R K E Ksep m h hdeg
-        PQ hc1, hQeq, WeierstrassCurve.torsionKernelFun_some, pow_one, map_div₀,
-      map_mul, map_pow, hh₃, hk]
-    simp only [Nat.add_sub_cancel]
-    exact val_formalChart_unit k hne hy₃
-  | some x₁ y₁ hns₁ =>
-    have hx₁ : x₁ ∉ 𝒪 := fun hmem => hformal₁ ⟨x₁, y₁, hns₁, hc1, hmem⟩
     cases hc2 : ((PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
         (E⁄Ksep).Point) with
     | zero =>
-      -- the origin COLUMN: the sum is `P`, and the chart is `x₁^{d−2}(y₁+a₁x₁+a₃)/h₁`
-      have hPeq : (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) =
-          Affine.Point.some x₃ y₃ hns₃ := by
-        have h0 : (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) =
-            Affine.Point.some x₃ y₃ hns₃ := by rw [← hsumeq]; exact hsum
-        rw [hc1, hc2] at h0
-        have h1 : (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) + 0 =
-          Affine.Point.some x₃ y₃ hns₃ := h0
-        rwa [add_zero] at h1
-      have hX : x₃ = x₁ := by injection hPeq with hX _hY; exact hX.symm
-      rw [hX]
-      have hv₁ : 1 < 𝒪.valuation x₁ :=
-        not_le.mp fun hle => hx₁ ((𝒪.valuation_le_one_iff _).mp hle)
-      have hne : 𝒪.valuation x₁ ≠ 0 := ne_of_gt (lt_trans zero_lt_one hv₁)
-      have hy₁ : 𝒪.valuation y₁ ^ 2 = 𝒪.valuation x₁ ^ 3 :=
+      exfalso
+      have h0 : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+          Affine.Point.zero := by
+        rw [← hsum, hsumeq, hc1, hc2]
+        exact add_zero _
+      exact Affine.Point.some_ne_zero hns₃ h0
+    | some x₂ y₂ hns₂ =>
+      have hx₂ : x₂ ∉ 𝒪 := fun hm => hformal₂ ⟨x₂, y₂, hns₂, hc2, hm⟩
+      have hvx₂ : 1 < 𝒪.valuation x₂ := by
+        rwa [← 𝒪.valuation_le_one_iff, not_le] at hx₂
+      have hy₂ : 𝒪.valuation y₂ ^ 2 = 𝒪.valuation x₂ ^ 3 :=
         WeierstrassCurve.val_ordinate_sq_of_abscissa_notMem R K E Ksep 𝒪 hcen
-          hns₁.1 hx₁
-      have hh₁ : 𝒪.valuation (Polynomial.aeval x₁ h) =
-          𝒪.valuation x₁ ^ h.natDegree :=
-        val_aeval_monic_of_notMem R Ksep 𝒪
-          (mem_centered_algebraMap R K Ksep 𝒪 hcen) h hmon hx₁
+          hns₂.1 hx₂
+      have hh₂ : 𝒪.valuation (Polynomial.aeval x₂ h)
+          = 𝒪.valuation x₂ ^ h.natDegree :=
+        val_aeval_monic_of_notMem R Ksep 𝒪 hR h hmon hx₂
+      have heq : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+          Affine.Point.some x₂ y₂ hns₂ := by
+        rw [← hsum, hsumeq, hc1, hc2]
+        exact zero_add _
+      injection heq with hX hY
+      subst hX
+      subst hY
+      rw [WeierstrassCurve.torsionPairFormalDen_apply_zero_left R K E Ksep m h
+        hdeg PQ hc1, hc2, WeierstrassCurve.torsionKernelFun_some, pow_one]
+      exact val_formal_origin_core 𝒪.valuation x₃ y₃ (Polynomial.aeval x₃ h)
+        h.natDegree hdeg hvx₂ hy₂ hh₂
+  | some x₁ y₁ hns₁ =>
+    have hx₁ : x₁ ∉ 𝒪 := fun hm => hformal₁ ⟨x₁, y₁, hns₁, hc1, hm⟩
+    have hvx₁ : 1 < 𝒪.valuation x₁ := by
+      rwa [← 𝒪.valuation_le_one_iff, not_le] at hx₁
+    have hy₁ : 𝒪.valuation y₁ ^ 2 = 𝒪.valuation x₁ ^ 3 :=
+      WeierstrassCurve.val_ordinate_sq_of_abscissa_notMem R K E Ksep 𝒪 hcen
+        hns₁.1 hx₁
+    have hh₁ : 𝒪.valuation (Polynomial.aeval x₁ h)
+        = 𝒪.valuation x₁ ^ h.natDegree :=
+      val_aeval_monic_of_notMem R Ksep 𝒪 hR h hmon hx₁
+    have hx₁0 : 𝒪.valuation x₁ ≠ 0 := ne_of_gt (zero_lt_one.trans hvx₁)
+    have h₁0 : Polynomial.aeval x₁ h ≠ 0 := by
+      intro h0
+      rw [h0, map_zero] at hh₁
+      exact pow_ne_zero _ hx₁0 hh₁.symm
+    have hy₁lt : 𝒪.valuation x₁ < 𝒪.valuation y₁ :=
+      val_lt_iff_sq_lt.mpr (by rw [hy₁]; exact pow_lt_pow_right₀ hvx₁ (by omega))
+    cases hc2 : ((PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
+        (E⁄Ksep).Point) with
+    | zero =>
+      have heq : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+          Affine.Point.some x₁ y₁ hns₁ := by
+        rw [← hsum, hsumeq, hc1, hc2]
+        exact add_zero _
+      injection heq with hX hY
+      subst hX
+      subst hY
+      have hyhat : 𝒪.valuation (y₃ + (E⁄Ksep).a₁ * x₃ + (E⁄Ksep).a₃)
+          = 𝒪.valuation y₃ := by
+        have hb1 : 𝒪.valuation ((E⁄Ksep).a₁ * x₃) < 𝒪.valuation y₃ := by
+          rw [map_mul]
+          calc 𝒪.valuation (E⁄Ksep).a₁ * 𝒪.valuation x₃
+              ≤ 1 * 𝒪.valuation x₃ := mul_le_mul' ha₁ le_rfl
+            _ = 𝒪.valuation x₃ := one_mul _
+            _ < 𝒪.valuation y₃ := hy₁lt
+        have hstep : 𝒪.valuation (y₃ + (E⁄Ksep).a₁ * x₃) = 𝒪.valuation y₃ :=
+          𝒪.valuation.map_add_eq_of_lt_left hb1
+        have hb2 : 𝒪.valuation (E⁄Ksep).a₃
+            < 𝒪.valuation (y₃ + (E⁄Ksep).a₁ * x₃) := by
+          rw [hstep]
+          exact lt_of_le_of_lt ha₃ (lt_trans hvx₁ hy₁lt)
+        rw [𝒪.valuation.map_add_eq_of_lt_left hb2, hstep]
+      have hC : WeierstrassCurve.torsionKernelFun R K E Ksep h
+              (h.natDegree - 2) 1 ↑PQ.1 +
+            (E⁄Ksep).a₁ * WeierstrassCurve.torsionKernelFun R K E Ksep h
+              (h.natDegree - 1) 0 ↑PQ.1 +
+            (E⁄Ksep).a₃ * WeierstrassCurve.torsionKernelFun R K E Ksep h
+              (h.natDegree - 2) 0 ↑PQ.1
+          = x₃ ^ (h.natDegree - 2) * (y₃ + (E⁄Ksep).a₁ * x₃ + (E⁄Ksep).a₃) /
+              Polynomial.aeval x₃ h := by
+        obtain ⟨k, hk⟩ : ∃ k, h.natDegree = k + 2 := ⟨h.natDegree - 2, by omega⟩
+        rw [hc1, WeierstrassCurve.torsionKernelFun_some,
+          WeierstrassCurve.torsionKernelFun_some,
+          WeierstrassCurve.torsionKernelFun_some, hk]
+        simp only [show k + 2 - 1 = k + 1 from by omega,
+          show k + 2 - 2 = k from by omega, pow_one, pow_zero, mul_one]
+        field_simp
+        ring
+      rw [WeierstrassCurve.torsionPairFormalDen_apply_zero_right R K E Ksep m h
+        hdeg PQ hc2, hC]
+      exact val_formal_origin_core 𝒪.valuation x₃
+        (y₃ + (E⁄Ksep).a₁ * x₃ + (E⁄Ksep).a₃) (Polynomial.aeval x₃ h)
+        h.natDegree hdeg hvx₁ (by rw [hyhat]; exact hy₁) hh₁
+    | some x₂ y₂ hns₂ =>
+      have hx₂ : x₂ ∉ 𝒪 := fun hm => hformal₂ ⟨x₂, y₂, hns₂, hc2, hm⟩
+      have hvx₂ : 1 < 𝒪.valuation x₂ := by
+        rwa [← 𝒪.valuation_le_one_iff, not_le] at hx₂
+      have hy₂ : 𝒪.valuation y₂ ^ 2 = 𝒪.valuation x₂ ^ 3 :=
+        WeierstrassCurve.val_ordinate_sq_of_abscissa_notMem R K E Ksep 𝒪 hcen
+          hns₂.1 hx₂
+      have hh₂ : 𝒪.valuation (Polynomial.aeval x₂ h)
+          = 𝒪.valuation x₂ ^ h.natDegree :=
+        val_aeval_monic_of_notMem R Ksep 𝒪 hR h hmon hx₂
+      have hx₂0 : 𝒪.valuation x₂ ≠ 0 := ne_of_gt (zero_lt_one.trans hvx₂)
+      have h₂0 : Polynomial.aeval x₂ h ≠ 0 := by
+        intro h0
+        rw [h0, map_zero] at hh₂
+        exact pow_ne_zero _ hx₂0 hh₂.symm
+      have hE₁ := (WeierstrassCurve.Affine.equation_iff x₁ y₁).mp hns₁.1
+      have hE₂ := (WeierstrassCurve.Affine.equation_iff x₂ y₂).mp hns₂.1
+      have hxy : ¬(x₁ = x₂ ∧ y₁ = (E⁄Ksep).toAffine.negY x₂ y₂) := by
+        rintro ⟨hxe, hye⟩
+        have h0 : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+            Affine.Point.zero := by
+          rw [← hsum, hsumeq, hc1, hc2]
+          exact Affine.Point.add_of_Y_eq hxe hye
+        exact Affine.Point.some_ne_zero hns₃ h0
+      rw [WeierstrassCurve.torsionPairFormalDen_apply_some R K E Ksep m h hdeg PQ
+        x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0]
+      refine val_formal_assemble 𝒪.valuation x₁ x₂ x₃ _ (Polynomial.aeval x₁ h)
+        (Polynomial.aeval x₂ h) h.natDegree hdeg hx₁0 hx₂0 hh₁ hh₂ ?_
+      by_cases hxe : x₁ = x₂
+      · subst hxe
+        have hye : y₁ = y₂ :=
+          WeierstrassCurve.Affine.Y_eq_of_Y_ne hns₁.1 hns₂.1 rfl
+            (fun hh => hxy ⟨rfl, hh⟩)
+        subst hye
+        obtain ⟨x₃', y₃', hns₃', hadd, hX₃, -⟩ :=
+          WeierstrassCurve.add_some_second (E⁄Ksep) hns₁ hns₂ hxy
+        have heq : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+            Affine.Point.some x₃' y₃' hns₃' := by
+          rw [← hsum, hsumeq, hc1, hc2]
+          exact hadd
+        injection heq with hX hY
+        subst hX
+        subst hY
+        exact val_formal_double_core 𝒪.valuation (E⁄Ksep).a₁ (E⁄Ksep).a₂
+          (E⁄Ksep).a₃ (E⁄Ksep).a₄ (E⁄Ksep).a₆ x₁ y₁ x₃ ha₁ ha₃ ha₄ ha₆ hvx₁ hy₁
+          hE₁ hX₃
+      · obtain ⟨x₃', y₃', hns₃', hadd, hX₃, -⟩ :=
+          WeierstrassCurve.add_some_ordinate (K := K) (E := E) (Ksep := Ksep)
+            hns₁ hns₂ hxe
+        have heq : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+            Affine.Point.some x₃' y₃' hns₃' := by
+          rw [← hsum, hsumeq, hc1, hc2]
+          exact hadd
+        injection heq with hX hY
+        subst hX
+        subst hY
+        exact val_formal_chord_core 𝒪.valuation (E⁄Ksep).a₁ (E⁄Ksep).a₂
+          (E⁄Ksep).a₃ (E⁄Ksep).a₄ (E⁄Ksep).a₆ x₁ y₁ x₂ y₂ x₃ ha₁ ha₂ ha₃ ha₄ ha₆
+          hvx₁ hvx₂ hy₁ hy₂ hxe hE₁ hE₂ hX₃
+
+
+set_option linter.unusedSectionVars false in
+/-- A level-two split monomial section restricts on the origin COLUMN to its
+`P`-factor when both `Q`-factors are of maximal weight (the mirror of
+`torsionPairQuad_apply_zero_left_top`). -/
+lemma WeierstrassCurve.torsionPairQuad_apply_zero_right_top (m : ℕ)
+    (h : Polynomial R) (a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ : ℕ)
+    (hw₃ : 2 * a₃ + 3 * b₃ = 2 * h.natDegree)
+    (hw₄ : 2 * a₄ + 3 * b₄ = 2 * h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairQuad R K E Ksep m h a₁ b₁ a₂ b₂ a₃ b₃ a₄ b₄ PQ =
+      WeierstrassCurve.torsionKernelFun R K E Ksep h a₁ b₁ ↑PQ.1 *
+        WeierstrassCurve.torsionKernelFun R K E Ksep h a₂ b₂ ↑PQ.1 := by
+  unfold WeierstrassCurve.torsionPairQuad
+  rw [hQ, WeierstrassCurve.torsionKernelFun_zero,
+    WeierstrassCurve.torsionKernelFun_zero, if_pos hw₃, if_pos hw₄]
+  ring
+
+set_option linter.unusedSectionVars false in
+/-- A level-three split monomial section restricts on the origin COLUMN to its
+`P`-factor when all three `Q`-factors are of maximal weight. -/
+lemma WeierstrassCurve.torsionPairSext_apply_zero_right_top (m : ℕ)
+    (h : Polynomial R) (a₁ b₁ a₂ b₂ a₃ b₃ c₁ d₁ c₂ d₂ c₃ d₃ : ℕ)
+    (hv₁ : 2 * c₁ + 3 * d₁ = 2 * h.natDegree)
+    (hv₂ : 2 * c₂ + 3 * d₂ = 2 * h.natDegree)
+    (hv₃ : 2 * c₃ + 3 * d₃ = 2 * h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairSext R K E Ksep m h
+        a₁ b₁ a₂ b₂ a₃ b₃ c₁ d₁ c₂ d₂ c₃ d₃ PQ =
+      WeierstrassCurve.torsionKernelFun R K E Ksep h a₁ b₁ ↑PQ.1 *
+        WeierstrassCurve.torsionKernelFun R K E Ksep h a₂ b₂ ↑PQ.1 *
+        WeierstrassCurve.torsionKernelFun R K E Ksep h a₃ b₃ ↑PQ.1 := by
+  unfold WeierstrassCurve.torsionPairSext
+  rw [hQ]
+  simp only [WeierstrassCurve.torsionKernelFun_zero]
+  rw [if_pos hv₁, if_pos hv₂, if_pos hv₃]
+  ring
+
+set_option maxHeartbeats 2000000 in
+set_option linter.unusedSectionVars false in
+/-- **The formal-group chart abscissa numerator** `A = x₃·C²` (2026-07-25),
+the level-two split-product expansion of `x₁^{2d−4}x₂^{2d−4}·(Z² + a₁ZW −
+(a₂+x₁+x₂)W²)/(h₁h₂)²`, where `W = x₂²y₁ + x₁²y₂ + a₁x₁x₂² + a₃x₂²` is the
+affine numerator of `torsionPairFormalDen` and `Z = λ·W = x₂²N₂ + (y₁−y₂)U`
+its slope multiple (`N₂` the second-law numerator, `U = (x₁+x₂)y₂ + a₁x₂²`).
+Both curve equations are used to reduce the ordinate degrees to `≤ 1`, which
+is exactly what brings every `P`- and `Q`-monomial inside the weight bound
+`4d`. -/
+noncomputable def WeierstrassCurve.torsionPairFormalAbs (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-6 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((5 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-4 : R) * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((5 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-4 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₂ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₁) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₃ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₁) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₂) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((1 : R)) *
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- The value of `torsionPairFormalAbs` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairFormalAbs_apply_some (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂)
+    (h₁0 : Polynomial.aeval x₁ h ≠ 0) (h₂0 : Polynomial.aeval x₂ h ≠ 0) :
+    WeierstrassCurve.torsionPairFormalAbs R K E Ksep m h PQ =
+      x₁ ^ (2 * h.natDegree - 4) * x₂ ^ (2 * h.natDegree - 4) *
+        ((((2 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₂ ^ 2) +
+           ((-3 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 3) * (x₂ ^ 2 * y₂) +
+           ((E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₂ ^ 3) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 2) +
+           ((-2 : Ksep) * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 2) * (y₁ * x₂ ^ 2 * y₂) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 3) +
+           ((4 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ * x₂) +
+           ((-6 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₃ ^ 3) * (x₁ * x₂ * y₂) +
+           ((5 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 2) +
+           ((-3 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ * x₂ ^ 2 * y₂)) +
+          (((E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 3) +
+           ((E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2) * (x₁ * x₂ ^ 4) +
+           ((2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂) +
+           ((-4 : Ksep) * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₃ ^ 2) * (x₁ * y₁ * x₂ * y₂) +
+           ((2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) * (x₁ * y₁ * x₂ ^ 2) +
+           ((-2 : Ksep) * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) * (x₁ * y₁ * x₂ ^ 2 * y₂) +
+           ((2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ * y₁ * x₂ ^ 3) +
+           ((E⁄Ksep).a₃) * (x₁ * y₁ * x₂ ^ 4) +
+           ((2 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 2) +
+           ((-3 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 2 * y₂)) +
+          (((5 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂) +
+           ((-4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * x₂ * y₂) +
+           ((3 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) * (x₁ ^ 2 * x₂ ^ 2) +
+           ((-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) * (x₁ ^ 2 * x₂ ^ 2 * y₂) +
+           ((-1 : Ksep) * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 2 * x₂ ^ 3) +
+           ((E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) * (x₁ ^ 2 * x₂ ^ 4) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 2 * y₁) +
+           ((-2 : Ksep) * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * y₁ * y₂) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₆) * (x₁ ^ 2 * y₁ * x₂) +
+           ((-2 : Ksep) * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) * (x₁ ^ 2 * y₁ * x₂ * y₂)) +
+          (((E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ * (E⁄Ksep).a₄) * (x₁ ^ 2 * y₁ * x₂ ^ 2) +
+           ((-2 : Ksep) * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 2 * y₁ * x₂ ^ 2 * y₂) +
+           ((E⁄Ksep).a₃ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂) * (x₁ ^ 2 * y₁ * x₂ ^ 3) +
+           ((E⁄Ksep).a₁) * (x₁ ^ 2 * y₁ * x₂ ^ 4) +
+           ((E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 3) +
+           ((-1 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * y₂) +
+           ((E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 3 * x₂) +
+           ((-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) * (x₁ ^ 3 * x₂ * y₂) +
+           ((-1 : Ksep) * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 3 * x₂ ^ 2) +
+           ((-1 : Ksep) * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3) * (x₁ ^ 3 * x₂ ^ 2 * y₂)) +
+          (((2 : Ksep) * (E⁄Ksep).a₂ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂) * (x₁ ^ 3 * x₂ ^ 3) +
+           ((E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 3 * x₂ ^ 4) +
+           ((E⁄Ksep).a₆) * (x₁ ^ 4 * x₂) +
+           ((-1 : Ksep) * (E⁄Ksep).a₃) * (x₁ ^ 4 * x₂ * y₂) +
+           ((E⁄Ksep).a₄) * (x₁ ^ 4 * x₂ ^ 2) +
+           ((-1 : Ksep) * (E⁄Ksep).a₁) * (x₁ ^ 4 * x₂ ^ 2 * y₂) +
+           ((E⁄Ksep).a₂) * (x₁ ^ 4 * x₂ ^ 3) +
+           ((1 : Ksep)) * (x₁ ^ 4 * x₂ ^ 4))) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 2 := by
+  obtain ⟨k, hk⟩ : ∃ k, h.natDegree = k + 2 := ⟨h.natDegree - 2, by omega⟩
+  unfold WeierstrassCurve.torsionPairFormalAbs
+  rw [WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairQuad_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ]
+  rw [baseChange_a₁_integralModel R K E Ksep,
+    baseChange_a₂_integralModel R K E Ksep,
+    baseChange_a₃_integralModel R K E Ksep,
+    baseChange_a₄_integralModel R K E Ksep,
+    baseChange_a₆_integralModel R K E Ksep]
+  simp only [map_add, map_neg, map_mul, map_pow, map_one, map_ofNat]
+  rw [hk]
+  simp only [show k + 2 - 1 = k + 1 from by omega,
+    show k + 2 - 2 = k from by omega,
+    show 2 * (k + 2) - 4 = 2 * k from by omega,
+    Nat.add_zero, pow_zero, pow_one, one_mul, mul_one]
+  field_simp
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalAbs` lies in the span `M`. -/
+lemma WeierstrassCurve.torsionPairFormalAbs_mem_span (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) :
+    WeierstrassCurve.torsionPairFormalAbs R K E Ksep m h ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  classical
+  have hq : ∀ e0 e1 e2 e3 e4 e5 e6 e7 : ℕ, e1 ≤ 1 → 2 * e0 + 3 * e1 ≤ 2 * h.natDegree → e3 ≤ 1 → 2 * e2 + 3 * e3 ≤ 2 * h.natDegree → e5 ≤ 1 → 2 * e4 + 3 * e5 ≤ 2 * h.natDegree → e7 ≤ 1 → 2 * e6 + 3 * e7 ≤ 2 * h.natDegree →
+      WeierstrassCurve.torsionPairQuad R K E Ksep m h e0 e1 e2 e3 e4 e5 e6 e7 ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun _ _ _ _ _ _ _ _ hb0 hw0 hb1 hw1 hb2 hw2 hb3 hw3 =>
+      WeierstrassCurve.torsionPairQuad_mem_span_of_weight R K E Ksep m h _ _ _ _ _ _ _ _
+        hb0 hw0 hb1 hw1 hb2 hw2 hb3 hw3
+  have hsm : ∀ (r : R) (t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep),
+      t ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h →
+      (fun PQ => algebraMap R Ksep r * t PQ) ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun r _ ht =>
+      WeierstrassCurve.torsionPairSpan_algebraMap_mul R K E Ksep m h r ht
+  have heq : WeierstrassCurve.torsionPairFormalAbs R K E Ksep m h =
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-6 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((5 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-4 : R) * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((5 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-4 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₂ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₁) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₃ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₁) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₂) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((1 : R)) *
+        WeierstrassCurve.torsionPairQuad R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) := by
+    funext PQ
+    simp only [Pi.add_apply]
+    rfl
+  rw [heq]
+  repeat'
+    first
+      | exact hsm _ _ (hq _ _ _ _ _ _ _ _
+          (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega))
+      | apply add_mem
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalAbs` on the origin row. -/
+lemma WeierstrassCurve.torsionPairFormalAbs_apply_zero_left (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalAbs R K E Ksep m h PQ =
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.2) +
+      algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₃) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.2) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₁) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₂) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((1 : R)) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) := by
+  unfold WeierstrassCurve.torsionPairFormalAbs
+  rw [WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairQuad_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) PQ hP]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalAbs` on the origin column. -/
+lemma WeierstrassCurve.torsionPairFormalAbs_apply_zero_right (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalAbs R K E Ksep m h PQ =
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₁) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((1 : R)) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) := by
+  unfold WeierstrassCurve.torsionPairFormalAbs
+  rw [WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairQuad_apply_zero_right_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) PQ hQ]
+  ring
+
+set_option maxHeartbeats 1000000 in
+set_option linter.unusedSectionVars false in
+/-- Part 1 of `torsionPairFormalOrd` (the definition is split into 4 blocks purely so that each elaborates in one reasonable unit). -/
+noncomputable def WeierstrassCurve.torsionPairFormalOrdPart1 (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 3 + (5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-8 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-6 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 5) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₄ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-4 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((12 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 3 + (15 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-24 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-18 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 5) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((18 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (20 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-20 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-8 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-16 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (8 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (14 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-4 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (12 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((12 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-12 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-15 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((16 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-10 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-7 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-8 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (11 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((9 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((12 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 3 + (15 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-24 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-18 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 5) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- The value of `torsionPairFormalOrdPart1` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart1_apply_some (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂)
+    (h₁0 : Polynomial.aeval x₁ h ≠ 0) (h₂0 : Polynomial.aeval x₂ h ≠ 0) :
+    WeierstrassCurve.torsionPairFormalOrdPart1 R K E Ksep m h PQ =
+      x₁ ^ (3 * h.natDegree - 6) * x₂ ^ (3 * h.natDegree - 6) *
+        ((((4 : Ksep) * (E⁄Ksep).a₆ ^ 3 + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₆) * (x₂ ^ 3) +
+           ((-8 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 5) * (x₂ ^ 3 * y₂) +
+           ((3 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₂ ^ 4) +
+           ((-2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₂ ^ 4 * y₂) +
+           ((2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 4 + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₂ ^ 5) +
+           ((E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₂ ^ 6) +
+           ((4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 3) +
+           ((-4 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 4) * (y₁ * x₂ ^ 3 * y₂) +
+           ((4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 4) +
+           ((-1 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 4 * y₂)) +
+          (((3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 5) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 6) +
+           ((12 : Ksep) * (E⁄Ksep).a₆ ^ 3 + (15 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 2) +
+           ((-24 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-18 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 5) * (x₁ * x₂ ^ 2 * y₂) +
+           ((18 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (20 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 3) +
+           ((-20 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-8 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-16 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 4) * (x₁ * x₂ ^ 3 * y₂) +
+           ((6 : Ksep) * (E⁄Ksep).a₄ ^ 2 * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (8 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (14 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 4 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 4) +
+           ((-2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (-4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 4 * y₂) +
+           ((6 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (12 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 5) +
+           ((2 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 6)) +
+          (((12 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 2) +
+           ((-12 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 4) * (x₁ * y₁ * x₂ ^ 2 * y₂) +
+           ((16 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 3) +
+           ((-10 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-7 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3) * (x₁ * y₁ * x₂ ^ 3 * y₂) +
+           ((4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (11 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 4) +
+           ((-1 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 4 * y₂) +
+           ((9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 5) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 6) +
+           ((12 : Ksep) * (E⁄Ksep).a₆ ^ 3 + (15 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂) +
+           ((-24 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-18 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 5) * (x₁ ^ 2 * x₂ * y₂))) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 3 := by
+  obtain ⟨k, hk⟩ : ∃ k, h.natDegree = k + 2 := ⟨h.natDegree - 2, by omega⟩
+  unfold WeierstrassCurve.torsionPairFormalOrdPart1
+  rw [WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ]
+  rw [baseChange_a₁_integralModel R K E Ksep,
+    baseChange_a₂_integralModel R K E Ksep,
+    baseChange_a₃_integralModel R K E Ksep,
+    baseChange_a₄_integralModel R K E Ksep,
+    baseChange_a₆_integralModel R K E Ksep]
+  simp only [map_add, map_neg, map_mul, map_pow, map_one, map_ofNat]
+  rw [hk]
+  simp only [show k + 2 - 1 = k + 1 from by omega,
+    show k + 2 - 2 = k from by omega,
+    show 3 * (k + 2) - 6 = 3 * k from by omega,
+    Nat.add_zero, pow_zero, pow_one, mul_one]
+  field_simp
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrdPart1` lies in the span `M`. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart1_mem_span (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) :
+    WeierstrassCurve.torsionPairFormalOrdPart1 R K E Ksep m h ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  classical
+  have hq : ∀ e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11 : ℕ, e1 ≤ 1 → 2 * e0 + 3 * e1 ≤ 2 * h.natDegree → e3 ≤ 1 → 2 * e2 + 3 * e3 ≤ 2 * h.natDegree → e5 ≤ 1 → 2 * e4 + 3 * e5 ≤ 2 * h.natDegree → e7 ≤ 1 → 2 * e6 + 3 * e7 ≤ 2 * h.natDegree → e9 ≤ 1 → 2 * e8 + 3 * e9 ≤ 2 * h.natDegree → e11 ≤ 1 → 2 * e10 + 3 * e11 ≤ 2 * h.natDegree →
+      WeierstrassCurve.torsionPairSext R K E Ksep m h e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11 ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun _ _ _ _ _ _ _ _ _ _ _ _ hb0 hw0 hb1 hw1 hb2 hw2 hb3 hw3 hb4 hw4 hb5 hw5 =>
+      WeierstrassCurve.torsionPairSext_mem_span_of_weight R K E Ksep m h _ _ _ _ _ _ _ _ _ _ _ _
+        hb0 hw0 hb1 hw1 hb2 hw2 hb3 hw3 hb4 hw4 hb5 hw5
+  have hsm : ∀ (r : R) (t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep),
+      t ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h →
+      (fun PQ => algebraMap R Ksep r * t PQ) ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun r _ ht =>
+      WeierstrassCurve.torsionPairSpan_algebraMap_mul R K E Ksep m h r ht
+  have heq : WeierstrassCurve.torsionPairFormalOrdPart1 R K E Ksep m h =
+      (fun PQ => algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 3 + (5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-8 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-6 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 5) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₄ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-4 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((12 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 3 + (15 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-24 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-18 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 5) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((18 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (20 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-20 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-8 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-16 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (8 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (14 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-4 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (12 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((12 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-12 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-15 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((16 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-10 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-7 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-8 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (11 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((9 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((12 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 3 + (15 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-24 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-18 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 5) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) := by
+    funext PQ
+    simp only [Pi.add_apply]
+    rfl
+  rw [heq]
+  repeat'
+    first
+      | exact hsm _ _ (hq _ _ _ _ _ _ _ _ _ _ _ _
+          (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega))
+      | apply add_mem
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrdPart1` on the origin row. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart1_apply_zero_left (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalOrdPart1 R K E Ksep m h PQ =
+      0 := by
+  unfold WeierstrassCurve.torsionPairFormalOrdPart1
+  rw [WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrdPart1` on the origin column. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart1_apply_zero_right (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalOrdPart1 R K E Ksep m h PQ =
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1) := by
+  unfold WeierstrassCurve.torsionPairFormalOrdPart1
+  rw [WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ]
+  ring
+
+set_option maxHeartbeats 1000000 in
+set_option linter.unusedSectionVars false in
+/-- Part 2 of `torsionPairFormalOrd` (the definition is split into 4 blocks purely so that each elaborates in one reasonable unit). -/
+noncomputable def WeierstrassCurve.torsionPairFormalOrdPart2 (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  algebraMap R Ksep ((30 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (27 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₄ + (21 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-39 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-15 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-18 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-42 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-12 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((21 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (12 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (14 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (19 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (25 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-12 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-15 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-7 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-16 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-22 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-14 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-10 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 3 + (12 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (19 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (16 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (19 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((9 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (9 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (21 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 4 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((12 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-12 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-15 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((21 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-18 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-12 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-21 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((9 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (15 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-6 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-12 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((9 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (12 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 3 + (5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((-8 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-6 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 5) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((18 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (14 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₄ + (20 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (8 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-26 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-10 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-14 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-32 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((21 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (9 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (14 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (13 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (37 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (8 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-15 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-21 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-27 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-33 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-30 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-18 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((7 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 3 + (7 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (28 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (17 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (17 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (24 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (8 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (10 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-19 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-10 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-11 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-19 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-20 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-10 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (11 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (11 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (8 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (16 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (8 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (21 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (10 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-5 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-8 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (13 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (11 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (10 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- The value of `torsionPairFormalOrdPart2` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart2_apply_some (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂)
+    (h₁0 : Polynomial.aeval x₁ h ≠ 0) (h₂0 : Polynomial.aeval x₂ h ≠ 0) :
+    WeierstrassCurve.torsionPairFormalOrdPart2 R K E Ksep m h PQ =
+      x₁ ^ (3 * h.natDegree - 6) * x₂ ^ (3 * h.natDegree - 6) *
+        ((((30 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (27 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₄ + (21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 2) +
+           ((-39 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-15 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-18 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-42 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 2 * x₂ ^ 2 * y₂) +
+           ((21 : Ksep) * (E⁄Ksep).a₄ ^ 2 * (E⁄Ksep).a₆ + (12 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (14 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (19 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 4 + (25 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 3) +
+           ((-12 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-16 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-22 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-14 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 2 * x₂ ^ 3 * y₂) +
+           ((3 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₄ ^ 3 + (12 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 + (19 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (16 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (19 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 4) +
+           ((-3 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 4 * y₂) +
+           ((9 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₆ + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 5) +
+           ((E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 6) +
+           ((12 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 2 * y₁ * x₂) +
+           ((-12 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 2 * y₁ * x₂ * y₂)) +
+          (((21 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 2 * y₁ * x₂ ^ 2) +
+           ((-18 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-12 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 2 * y₁ * x₂ ^ 2 * y₂) +
+           ((9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (15 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 2 * y₁ * x₂ ^ 3) +
+           ((-6 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * y₁ * x₂ ^ 3 * y₂) +
+           ((9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (12 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * y₁ * x₂ ^ 4) +
+           ((-3 : Ksep) * (E⁄Ksep).a₃ ^ 2 + (-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 2 * y₁ * x₂ ^ 4 * y₂) +
+           ((6 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (3 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * y₁ * x₂ ^ 5) +
+           ((E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ * (E⁄Ksep).a₄) * (x₁ ^ 2 * y₁ * x₂ ^ 6) +
+           ((4 : Ksep) * (E⁄Ksep).a₆ ^ 3 + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₆) * (x₁ ^ 3) +
+           ((-8 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 5) * (x₁ ^ 3 * y₂)) +
+          (((18 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (14 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₄ + (20 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 3 * x₂) +
+           ((-26 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-10 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-14 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-32 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 3 * x₂ * y₂) +
+           ((21 : Ksep) * (E⁄Ksep).a₄ ^ 2 * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (14 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (13 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 4 + (37 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 3 * x₂ ^ 2) +
+           ((-15 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (-21 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-27 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-33 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-30 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-18 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 3 * x₂ ^ 2 * y₂) +
+           ((7 : Ksep) * (E⁄Ksep).a₄ ^ 3 + (7 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 4 + (28 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (17 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (17 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (24 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 3 * x₂ ^ 3) +
+           ((-1 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (-19 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-10 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (-11 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-19 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-20 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆ + (-10 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * x₂ ^ 3 * y₂) +
+           ((6 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (11 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (11 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (16 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 + (21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * x₂ ^ 4) +
+           ((-5 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 3 * x₂ ^ 4 * y₂) +
+           ((3 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (10 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₄ + (13 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (11 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * x₂ ^ 5) +
+           ((2 : Ksep) * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 3 * x₂ ^ 6))) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 3 := by
+  obtain ⟨k, hk⟩ : ∃ k, h.natDegree = k + 2 := ⟨h.natDegree - 2, by omega⟩
+  unfold WeierstrassCurve.torsionPairFormalOrdPart2
+  rw [WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ]
+  rw [baseChange_a₁_integralModel R K E Ksep,
+    baseChange_a₂_integralModel R K E Ksep,
+    baseChange_a₃_integralModel R K E Ksep,
+    baseChange_a₄_integralModel R K E Ksep,
+    baseChange_a₆_integralModel R K E Ksep]
+  simp only [map_add, map_neg, map_mul, map_pow, map_one, map_ofNat]
+  rw [hk]
+  simp only [show k + 2 - 1 = k + 1 from by omega,
+    show k + 2 - 2 = k from by omega,
+    show 3 * (k + 2) - 6 = 3 * k from by omega,
+    Nat.add_zero, pow_zero, pow_one, mul_one]
+  field_simp
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrdPart2` lies in the span `M`. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart2_mem_span (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) :
+    WeierstrassCurve.torsionPairFormalOrdPart2 R K E Ksep m h ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  classical
+  have hq : ∀ e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11 : ℕ, e1 ≤ 1 → 2 * e0 + 3 * e1 ≤ 2 * h.natDegree → e3 ≤ 1 → 2 * e2 + 3 * e3 ≤ 2 * h.natDegree → e5 ≤ 1 → 2 * e4 + 3 * e5 ≤ 2 * h.natDegree → e7 ≤ 1 → 2 * e6 + 3 * e7 ≤ 2 * h.natDegree → e9 ≤ 1 → 2 * e8 + 3 * e9 ≤ 2 * h.natDegree → e11 ≤ 1 → 2 * e10 + 3 * e11 ≤ 2 * h.natDegree →
+      WeierstrassCurve.torsionPairSext R K E Ksep m h e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11 ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun _ _ _ _ _ _ _ _ _ _ _ _ hb0 hw0 hb1 hw1 hb2 hw2 hb3 hw3 hb4 hw4 hb5 hw5 =>
+      WeierstrassCurve.torsionPairSext_mem_span_of_weight R K E Ksep m h _ _ _ _ _ _ _ _ _ _ _ _
+        hb0 hw0 hb1 hw1 hb2 hw2 hb3 hw3 hb4 hw4 hb5 hw5
+  have hsm : ∀ (r : R) (t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep),
+      t ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h →
+      (fun PQ => algebraMap R Ksep r * t PQ) ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun r _ ht =>
+      WeierstrassCurve.torsionPairSpan_algebraMap_mul R K E Ksep m h r ht
+  have heq : WeierstrassCurve.torsionPairFormalOrdPart2 R K E Ksep m h =
+      (fun PQ => algebraMap R Ksep ((30 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (27 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₄ + (21 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-39 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-15 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-18 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-42 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-12 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((21 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (12 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (14 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (19 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (25 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-12 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-15 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-7 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-16 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-22 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-14 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-10 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 3 + (12 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (19 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (16 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (19 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((9 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (9 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (21 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 4 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((12 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-12 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-15 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((21 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-18 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-12 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-21 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((9 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (15 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-6 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-12 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((9 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (12 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (3 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 3 + (5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-8 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-6 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 5) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((18 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (14 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 4 * (WeierstrassCurve.integralModel R E).a₄ + (20 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (8 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-26 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-10 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-14 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-32 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((21 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (9 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (14 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (13 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (37 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (8 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-15 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-21 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-27 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-33 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-30 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-18 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((7 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 3 + (7 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 4 + (28 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (17 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (17 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (24 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (8 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (10 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-19 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-10 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-11 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-19 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-20 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-10 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (11 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (11 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (8 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (16 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (8 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (21 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (10 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-5 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-8 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (13 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (11 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (10 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) := by
+    funext PQ
+    simp only [Pi.add_apply]
+    rfl
+  rw [heq]
+  repeat'
+    first
+      | exact hsm _ _ (hq _ _ _ _ _ _ _ _ _ _ _ _
+          (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega))
+      | apply add_mem
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrdPart2` on the origin row. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart2_apply_zero_left (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalOrdPart2 R K E Ksep m h PQ =
+      0 := by
+  unfold WeierstrassCurve.torsionPairFormalOrdPart2
+  rw [WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrdPart2` on the origin column. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart2_apply_zero_right (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalOrdPart2 R K E Ksep m h PQ =
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) := by
+  unfold WeierstrassCurve.torsionPairFormalOrdPart2
+  rw [WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hQ]
+  ring
+
+set_option maxHeartbeats 1000000 in
+set_option linter.unusedSectionVars false in
+/-- Part 3 of `torsionPairFormalOrd` (the definition is split into 4 blocks purely so that each elaborates in one reasonable unit). -/
+noncomputable def WeierstrassCurve.torsionPairFormalOrdPart3 (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((-4 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((10 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-10 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-7 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-14 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (9 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (11 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-6 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-15 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((5 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (11 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-8 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (-10 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((7 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (5 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((-5 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-7 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (8 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (15 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-5 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-13 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-12 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-14 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-16 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 3 + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (19 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (7 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (10 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (16 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (12 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-9 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-15 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-12 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-18 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-21 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-12 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (11 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (21 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-8 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-7 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-7 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-15 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (-17 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 4 * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (8 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (12 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (11 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-7 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (-7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₂) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 3 + (13 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- The value of `torsionPairFormalOrdPart3` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart3_apply_some (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂)
+    (h₁0 : Polynomial.aeval x₁ h ≠ 0) (h₂0 : Polynomial.aeval x₂ h ≠ 0) :
+    WeierstrassCurve.torsionPairFormalOrdPart3 R K E Ksep m h PQ =
+      x₁ ^ (3 * h.natDegree - 6) * x₂ ^ (3 * h.natDegree - 6) *
+        ((((4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 3 * y₁) +
+           ((-4 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 3 * y₁ * y₂) +
+           ((10 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 3 * y₁ * x₂) +
+           ((-10 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-7 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-14 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 3 * y₁ * x₂ * y₂) +
+           ((6 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (9 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (11 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 3 * y₁ * x₂ ^ 2) +
+           ((-6 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * y₁ * x₂ ^ 2 * y₂) +
+           ((5 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 3 + (11 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) * (x₁ ^ 3 * y₁ * x₂ ^ 3) +
+           ((4 : Ksep) * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₃ ^ 2 + (-8 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-10 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-5 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃) * (x₁ ^ 3 * y₁ * x₂ ^ 3 * y₂) +
+           ((7 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (5 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 3 * y₁ * x₂ ^ 4) +
+           ((-1 : Ksep) * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₂ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂) * (x₁ ^ 3 * y₁ * x₂ ^ 4 * y₂)) +
+          (((6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) * (x₁ ^ 3 * y₁ * x₂ ^ 5) +
+           ((E⁄Ksep).a₃ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂) * (x₁ ^ 3 * y₁ * x₂ ^ 6) +
+           ((3 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 4) +
+           ((-5 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 4 * y₂) +
+           ((6 : Ksep) * (E⁄Ksep).a₄ ^ 2 * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (8 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (15 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 4 * x₂) +
+           ((-5 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (-13 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-5 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-14 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-16 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 4 * x₂ * y₂) +
+           ((3 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₄ ^ 3 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (19 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (10 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (16 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (12 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 4 * x₂ ^ 2) +
+           ((-9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (-15 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (-12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-18 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-21 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-6 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆ + (-12 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 4 * x₂ ^ 2 * y₂) +
+           ((6 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (11 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 + (21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) * (x₁ ^ 4 * x₂ ^ 3) +
+           ((-8 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-7 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-17 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-6 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₄ + (-5 : Ksep) * (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₃) * (x₁ ^ 4 * x₂ ^ 3 * y₂)) +
+          (((3 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₄ + (12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (11 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 4 * x₂ ^ 4) +
+           ((-7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 + (-7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂) * (x₁ ^ 4 * x₂ ^ 4 * y₂) +
+           ((6 : Ksep) * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ ^ 3 + (13 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃) * (x₁ ^ 4 * x₂ ^ 5) +
+           ((2 : Ksep) * (E⁄Ksep).a₄ + (E⁄Ksep).a₂ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂) * (x₁ ^ 4 * x₂ ^ 6) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 4 * y₁) +
+           ((-1 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 4 * y₁ * y₂) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 4 * y₁ * x₂) +
+           ((-1 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 4 * y₁ * x₂ * y₂) +
+           ((3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 4 * y₁ * x₂ ^ 2) +
+           ((-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃) * (x₁ ^ 4 * y₁ * x₂ ^ 2 * y₂))) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 3 := by
+  obtain ⟨k, hk⟩ : ∃ k, h.natDegree = k + 2 := ⟨h.natDegree - 2, by omega⟩
+  unfold WeierstrassCurve.torsionPairFormalOrdPart3
+  rw [WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ]
+  rw [baseChange_a₁_integralModel R K E Ksep,
+    baseChange_a₂_integralModel R K E Ksep,
+    baseChange_a₃_integralModel R K E Ksep,
+    baseChange_a₄_integralModel R K E Ksep,
+    baseChange_a₆_integralModel R K E Ksep]
+  simp only [map_add, map_neg, map_mul, map_pow, map_one, map_ofNat]
+  rw [hk]
+  simp only [show k + 2 - 1 = k + 1 from by omega,
+    show k + 2 - 2 = k from by omega,
+    show 3 * (k + 2) - 6 = 3 * k from by omega,
+    Nat.add_zero, pow_zero, pow_one, mul_one]
+  field_simp
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrdPart3` lies in the span `M`. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart3_mem_span (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) :
+    WeierstrassCurve.torsionPairFormalOrdPart3 R K E Ksep m h ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  classical
+  have hq : ∀ e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11 : ℕ, e1 ≤ 1 → 2 * e0 + 3 * e1 ≤ 2 * h.natDegree → e3 ≤ 1 → 2 * e2 + 3 * e3 ≤ 2 * h.natDegree → e5 ≤ 1 → 2 * e4 + 3 * e5 ≤ 2 * h.natDegree → e7 ≤ 1 → 2 * e6 + 3 * e7 ≤ 2 * h.natDegree → e9 ≤ 1 → 2 * e8 + 3 * e9 ≤ 2 * h.natDegree → e11 ≤ 1 → 2 * e10 + 3 * e11 ≤ 2 * h.natDegree →
+      WeierstrassCurve.torsionPairSext R K E Ksep m h e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11 ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun _ _ _ _ _ _ _ _ _ _ _ _ hb0 hw0 hb1 hw1 hb2 hw2 hb3 hw3 hb4 hw4 hb5 hw5 =>
+      WeierstrassCurve.torsionPairSext_mem_span_of_weight R K E Ksep m h _ _ _ _ _ _ _ _ _ _ _ _
+        hb0 hw0 hb1 hw1 hb2 hw2 hb3 hw3 hb4 hw4 hb5 hw5
+  have hsm : ∀ (r : R) (t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep),
+      t ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h →
+      (fun PQ => algebraMap R Ksep r * t PQ) ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun r _ ht =>
+      WeierstrassCurve.torsionPairSpan_algebraMap_mul R K E Ksep m h r ht
+  have heq : WeierstrassCurve.torsionPairFormalOrdPart3 R K E Ksep m h =
+      (fun PQ => algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-4 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((10 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-10 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-7 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-14 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (9 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (11 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-6 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-15 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((5 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (11 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-8 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (-10 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((7 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (5 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-5 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (-7 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 4) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (8 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (15 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-5 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-13 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-12 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-14 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-16 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 3 + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (19 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (7 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (10 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (16 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (12 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-9 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-15 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-12 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-18 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-21 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-12 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (11 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (21 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-8 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-7 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-7 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-15 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (-17 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 4 * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (8 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (12 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (11 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-7 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (-7 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₂) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 3 + (13 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ) := by
+    funext PQ
+    simp only [Pi.add_apply]
+    rfl
+  rw [heq]
+  repeat'
+    first
+      | exact hsm _ _ (hq _ _ _ _ _ _ _ _ _ _ _ _
+          (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega))
+      | apply add_mem
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrdPart3` on the origin row. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart3_apply_zero_left (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalOrdPart3 R K E Ksep m h PQ =
+      0 := by
+  unfold WeierstrassCurve.torsionPairFormalOrdPart3
+  rw [WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrdPart3` on the origin column. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart3_apply_zero_right (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalOrdPart3 R K E Ksep m h PQ =
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) := by
+  unfold WeierstrassCurve.torsionPairFormalOrdPart3
+  rw [WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ]
+  ring
+
+set_option maxHeartbeats 1000000 in
+set_option linter.unusedSectionVars false in
+/-- Part 4 of `torsionPairFormalOrd` (the definition is split into 4 blocks purely so that each elaborates in one reasonable unit). -/
+noncomputable def WeierstrassCurve.torsionPairFormalOrdPart4 (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 4) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₂) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₂ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 3) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₁) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-9 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((9 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 4 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-6 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 4 * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 4 * (WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₂ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 5) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 3 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 4 * (WeierstrassCurve.integralModel R E).a₂) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₃ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 4) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ +
+  algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₁) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ +
+  algebraMap R Ksep ((1 : R)) *
+      WeierstrassCurve.torsionPairSext R K E Ksep m h
+        h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- The value of `torsionPairFormalOrdPart4` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart4_apply_some (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂)
+    (h₁0 : Polynomial.aeval x₁ h ≠ 0) (h₂0 : Polynomial.aeval x₂ h ≠ 0) :
+    WeierstrassCurve.torsionPairFormalOrdPart4 R K E Ksep m h PQ =
+      x₁ ^ (3 * h.natDegree - 6) * x₂ ^ (3 * h.natDegree - 6) *
+        ((((E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₄) * (x₁ ^ 4 * y₁ * x₂ ^ 3) +
+           ((-1 : Ksep) * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₂ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 4) * (x₁ ^ 4 * y₁ * x₂ ^ 3 * y₂) +
+           ((2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂) * (x₁ ^ 4 * y₁ * x₂ ^ 4) +
+           ((-2 : Ksep) * (E⁄Ksep).a₂ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 4 * y₁ * x₂ ^ 4 * y₂) +
+           ((4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 3) * (x₁ ^ 4 * y₁ * x₂ ^ 5) +
+           ((E⁄Ksep).a₁) * (x₁ ^ 4 * y₁ * x₂ ^ 6) +
+           ((2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 5) +
+           ((-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 5 * y₂) +
+           ((6 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 5 * x₂) +
+           ((-9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 5 * x₂ * y₂)) +
+          (((9 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₆) * (x₁ ^ 5 * x₂ ^ 2) +
+           ((-6 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-9 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₃) * (x₁ ^ 5 * x₂ ^ 2 * y₂) +
+           ((3 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₄) * (x₁ ^ 5 * x₂ ^ 3) +
+           ((-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ + (-5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 5) * (x₁ ^ 5 * x₂ ^ 3 * y₂) +
+           ((6 : Ksep) * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ ^ 3 + (7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₂) * (x₁ ^ 5 * x₂ ^ 4) +
+           ((-3 : Ksep) * (E⁄Ksep).a₃ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 3) * (x₁ ^ 5 * x₂ ^ 4 * y₂) +
+           ((3 : Ksep) * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (5 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 4) * (x₁ ^ 5 * x₂ ^ 5) +
+           ((2 : Ksep) * (E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 5 * x₂ ^ 6) +
+           ((E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 6) +
+           ((-2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 6 * y₂)) +
+          (((2 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 6 * x₂) +
+           ((-2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 6 * x₂ * y₂) +
+           ((E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 6 * x₂ ^ 2) +
+           ((-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) * (x₁ ^ 6 * x₂ ^ 2 * y₂) +
+           ((2 : Ksep) * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 6 * x₂ ^ 3) +
+           ((-2 : Ksep) * (E⁄Ksep).a₃ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3) * (x₁ ^ 6 * x₂ ^ 3 * y₂) +
+           ((2 : Ksep) * (E⁄Ksep).a₄ + (E⁄Ksep).a₂ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂) * (x₁ ^ 6 * x₂ ^ 4) +
+           ((-2 : Ksep) * (E⁄Ksep).a₁) * (x₁ ^ 6 * x₂ ^ 4 * y₂) +
+           ((2 : Ksep) * (E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 6 * x₂ ^ 5) +
+           ((1 : Ksep)) * (x₁ ^ 6 * x₂ ^ 6))) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 3 := by
+  obtain ⟨k, hk⟩ : ∃ k, h.natDegree = k + 2 := ⟨h.natDegree - 2, by omega⟩
+  unfold WeierstrassCurve.torsionPairFormalOrdPart4
+  rw [WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ,
+    WeierstrassCurve.torsionPairSext_apply_some R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hP hQ]
+  rw [baseChange_a₁_integralModel R K E Ksep,
+    baseChange_a₂_integralModel R K E Ksep,
+    baseChange_a₃_integralModel R K E Ksep,
+    baseChange_a₄_integralModel R K E Ksep,
+    baseChange_a₆_integralModel R K E Ksep]
+  simp only [map_add, map_neg, map_mul, map_pow, map_one, map_ofNat]
+  rw [hk]
+  simp only [show k + 2 - 1 = k + 1 from by omega,
+    show k + 2 - 2 = k from by omega,
+    show 3 * (k + 2) - 6 = 3 * k from by omega,
+    Nat.add_zero, pow_zero, pow_one, mul_one]
+  field_simp
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrdPart4` lies in the span `M`. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart4_mem_span (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) :
+    WeierstrassCurve.torsionPairFormalOrdPart4 R K E Ksep m h ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  classical
+  have hq : ∀ e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11 : ℕ, e1 ≤ 1 → 2 * e0 + 3 * e1 ≤ 2 * h.natDegree → e3 ≤ 1 → 2 * e2 + 3 * e3 ≤ 2 * h.natDegree → e5 ≤ 1 → 2 * e4 + 3 * e5 ≤ 2 * h.natDegree → e7 ≤ 1 → 2 * e6 + 3 * e7 ≤ 2 * h.natDegree → e9 ≤ 1 → 2 * e8 + 3 * e9 ≤ 2 * h.natDegree → e11 ≤ 1 → 2 * e10 + 3 * e11 ≤ 2 * h.natDegree →
+      WeierstrassCurve.torsionPairSext R K E Ksep m h e0 e1 e2 e3 e4 e5 e6 e7 e8 e9 e10 e11 ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun _ _ _ _ _ _ _ _ _ _ _ _ hb0 hw0 hb1 hw1 hb2 hw2 hb3 hw3 hb4 hw4 hb5 hw5 =>
+      WeierstrassCurve.torsionPairSext_mem_span_of_weight R K E Ksep m h _ _ _ _ _ _ _ _ _ _ _ _
+        hb0 hw0 hb1 hw1 hb2 hw2 hb3 hw3 hb4 hw4 hb5 hw5
+  have hsm : ∀ (r : R) (t : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep),
+      t ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h →
+      (fun PQ => algebraMap R Ksep r * t PQ) ∈
+        WeierstrassCurve.torsionPairSpan R K E Ksep m h :=
+    fun r _ ht =>
+      WeierstrassCurve.torsionPairSpan_algebraMap_mul R K E Ksep m h r ht
+  have heq : WeierstrassCurve.torsionPairFormalOrdPart4 R K E Ksep m h =
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-1 : R) * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 4) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₂) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₂ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 3) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₁) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₆ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-9 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3 + (-3 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((9 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 4 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-6 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (-6 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (-9 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 4 * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ ^ 2 + (10 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (6 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 4 * (WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-6 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-4 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₂ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 5) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((6 : R) * (WeierstrassCurve.integralModel R E).a₆ + (3 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (7 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 3 + (7 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3 * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 4 * (WeierstrassCurve.integralModel R E).a₂) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-3 : R) * (WeierstrassCurve.integralModel R E).a₃ + (-5 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((3 : R) * (WeierstrassCurve.integralModel R E).a₄ + (4 : R) * (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (5 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 4) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₁) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 PQ) +
+      (fun PQ => algebraMap R Ksep ((1 : R)) *
+        WeierstrassCurve.torsionPairSext R K E Ksep m h
+          h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 PQ) := by
+    funext PQ
+    simp only [Pi.add_apply]
+    rfl
+  rw [heq]
+  repeat'
+    first
+      | exact hsm _ _ (hq _ _ _ _ _ _ _ _ _ _ _ _
+          (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega))
+      | apply add_mem
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrdPart4` on the origin row. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart4_apply_zero_left (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalOrdPart4 R K E Ksep m h PQ =
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2) +
+      algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.2) +
+      algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.2) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₁) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((1 : R)) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) := by
+  unfold WeierstrassCurve.torsionPairFormalOrdPart4
+  rw [WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (Or.inl (by omega)) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hP,
+    WeierstrassCurve.torsionPairSext_apply_zero_left_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hP]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrdPart4` on the origin column. -/
+lemma WeierstrassCurve.torsionPairFormalOrdPart4_apply_zero_right (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalOrdPart4 R K E Ksep m h PQ =
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₁) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((1 : R)) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) := by
+  unfold WeierstrassCurve.torsionPairFormalOrdPart4
+  rw [WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_top R K E Ksep m h
+      (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 (h.natDegree - 1) 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 2) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 (h.natDegree - 1) 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 2) 1 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_of_ne R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 (h.natDegree - 1) 0 h.natDegree 0 h.natDegree 0 (by omega) PQ hQ,
+    WeierstrassCurve.torsionPairSext_apply_zero_right_top R K E Ksep m h
+      h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 h.natDegree 0 (by omega) (by omega) (by omega) PQ hQ]
+  ring
+
+set_option linter.unusedSectionVars false in
+/-- **The formal-group chart ordinate numerator** `B = y₃·C³` (2026-07-25),
+the level-three split-product expansion of `x₁^{3d−6}x₂^{3d−6}·(−Z·A_W +
+x₁ZW² − y₁W³ − a₁A_W·W − a₃W³)/(h₁h₂)³` for `A_W = Z² + a₁ZW −
+(a₂+x₁+x₂)W²` the abscissa numerator of `torsionPairFormalAbs`; again the two
+curve equations are used, which is what keeps every monomial inside `6d`. -/
+noncomputable def WeierstrassCurve.torsionPairFormalOrd (m : ℕ) (h : Polynomial R) :
+    (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep := fun PQ =>
+  WeierstrassCurve.torsionPairFormalOrdPart1 R K E Ksep m h PQ +
+  WeierstrassCurve.torsionPairFormalOrdPart2 R K E Ksep m h PQ +
+  WeierstrassCurve.torsionPairFormalOrdPart3 R K E Ksep m h PQ +
+  WeierstrassCurve.torsionPairFormalOrdPart4 R K E Ksep m h PQ
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 40000000 in
+-- the statement below literally contains the 620-monomial numerator, so
+-- the elaborator recurses over a term of a few thousand nodes; this is
+-- term SIZE, not a proof inefficiency
+set_option maxRecDepth 8000 in
+set_option linter.unusedSectionVars false in
+/-- The value of `torsionPairFormalOrd` on an affine pair. -/
+lemma WeierstrassCurve.torsionPairFormalOrd_apply_some (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (x₁ y₁ x₂ y₂ : Ksep)
+    (hns₁ : (E⁄Ksep).toAffine.Nonsingular x₁ y₁)
+    (hns₂ : (E⁄Ksep).toAffine.Nonsingular x₂ y₂)
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₁ y₁ hns₁)
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₂ y₂ hns₂)
+    (h₁0 : Polynomial.aeval x₁ h ≠ 0) (h₂0 : Polynomial.aeval x₂ h ≠ 0) :
+    WeierstrassCurve.torsionPairFormalOrd R K E Ksep m h PQ =
+      x₁ ^ (3 * h.natDegree - 6) * x₂ ^ (3 * h.natDegree - 6) *
+        (((((4 : Ksep) * (E⁄Ksep).a₆ ^ 3 + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₆) * (x₂ ^ 3) +
+            ((-8 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 5) * (x₂ ^ 3 * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₂ ^ 4) +
+            ((-2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₂ ^ 4 * y₂) +
+            ((2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 4 + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₂ ^ 5) +
+            ((E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₂ ^ 6) +
+            ((4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 3) +
+            ((-4 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 4) * (y₁ * x₂ ^ 3 * y₂) +
+            ((4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 4) +
+            ((-1 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 4 * y₂)) +
+           (((3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 5) +
+            ((E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 6) +
+            ((12 : Ksep) * (E⁄Ksep).a₆ ^ 3 + (15 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 2) +
+            ((-24 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-18 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 5) * (x₁ * x₂ ^ 2 * y₂) +
+            ((18 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (20 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 3) +
+            ((-20 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-8 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-16 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 4) * (x₁ * x₂ ^ 3 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₄ ^ 2 * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (8 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (14 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 4 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 4) +
+            ((-2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (-4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 4 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (12 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 5) +
+            ((2 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 6)) +
+           (((12 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 2) +
+            ((-12 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 4) * (x₁ * y₁ * x₂ ^ 2 * y₂) +
+            ((16 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 3) +
+            ((-10 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-7 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3) * (x₁ * y₁ * x₂ ^ 3 * y₂) +
+            ((4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (11 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 4) +
+            ((-1 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 4 * y₂) +
+            ((9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 5) +
+            ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 6) +
+            ((12 : Ksep) * (E⁄Ksep).a₆ ^ 3 + (15 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂) +
+            ((-24 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-18 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 5) * (x₁ ^ 2 * x₂ * y₂))) +
+          ((((30 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (27 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₄ + (21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 2) +
+            ((-39 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-15 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-18 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-42 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 2 * x₂ ^ 2 * y₂) +
+            ((21 : Ksep) * (E⁄Ksep).a₄ ^ 2 * (E⁄Ksep).a₆ + (12 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (14 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (19 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 4 + (25 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 3) +
+            ((-12 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-16 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-22 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-14 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 2 * x₂ ^ 3 * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₄ ^ 3 + (12 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 + (19 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (16 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (19 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 4) +
+            ((-3 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 4 * y₂) +
+            ((9 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₆ + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 5) +
+            ((E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 6) +
+            ((12 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 2 * y₁ * x₂) +
+            ((-12 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 2 * y₁ * x₂ * y₂)) +
+           (((21 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 2 * y₁ * x₂ ^ 2) +
+            ((-18 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-12 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 2 * y₁ * x₂ ^ 2 * y₂) +
+            ((9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (15 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 2 * y₁ * x₂ ^ 3) +
+            ((-6 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * y₁ * x₂ ^ 3 * y₂) +
+            ((9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (12 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * y₁ * x₂ ^ 4) +
+            ((-3 : Ksep) * (E⁄Ksep).a₃ ^ 2 + (-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 2 * y₁ * x₂ ^ 4 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (3 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * y₁ * x₂ ^ 5) +
+            ((E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ * (E⁄Ksep).a₄) * (x₁ ^ 2 * y₁ * x₂ ^ 6) +
+            ((4 : Ksep) * (E⁄Ksep).a₆ ^ 3 + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₆) * (x₁ ^ 3) +
+            ((-8 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 5) * (x₁ ^ 3 * y₂)) +
+           (((18 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (14 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₄ + (20 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 3 * x₂) +
+            ((-26 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-10 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-14 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-32 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 3 * x₂ * y₂) +
+            ((21 : Ksep) * (E⁄Ksep).a₄ ^ 2 * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (14 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (13 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 4 + (37 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 3 * x₂ ^ 2) +
+            ((-15 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (-21 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-27 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-33 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-30 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-18 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 3 * x₂ ^ 2 * y₂) +
+            ((7 : Ksep) * (E⁄Ksep).a₄ ^ 3 + (7 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 4 + (28 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (17 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (17 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (24 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 3 * x₂ ^ 3) +
+            ((-1 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (-19 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-10 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (-11 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-19 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-20 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆ + (-10 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * x₂ ^ 3 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (11 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (11 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (16 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 + (21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * x₂ ^ 4) +
+            ((-5 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 3 * x₂ ^ 4 * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (10 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₄ + (13 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (11 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * x₂ ^ 5) +
+            ((2 : Ksep) * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 3 * x₂ ^ 6))) +
+          ((((4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 3 * y₁) +
+            ((-4 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 3 * y₁ * y₂) +
+            ((10 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 3 * y₁ * x₂) +
+            ((-10 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-7 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-14 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 3 * y₁ * x₂ * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (9 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (11 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 3 * y₁ * x₂ ^ 2) +
+            ((-6 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * y₁ * x₂ ^ 2 * y₂) +
+            ((5 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 3 + (11 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) * (x₁ ^ 3 * y₁ * x₂ ^ 3) +
+            ((4 : Ksep) * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₃ ^ 2 + (-8 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-10 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-5 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃) * (x₁ ^ 3 * y₁ * x₂ ^ 3 * y₂) +
+            ((7 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (5 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 3 * y₁ * x₂ ^ 4) +
+            ((-1 : Ksep) * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₂ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂) * (x₁ ^ 3 * y₁ * x₂ ^ 4 * y₂)) +
+           (((6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) * (x₁ ^ 3 * y₁ * x₂ ^ 5) +
+            ((E⁄Ksep).a₃ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂) * (x₁ ^ 3 * y₁ * x₂ ^ 6) +
+            ((3 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 4) +
+            ((-5 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 4 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₄ ^ 2 * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (8 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (15 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 4 * x₂) +
+            ((-5 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (-13 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-5 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-14 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-16 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 4 * x₂ * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₄ ^ 3 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (19 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (10 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (16 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (12 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 4 * x₂ ^ 2) +
+            ((-9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (-15 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (-12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-18 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-21 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-6 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆ + (-12 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 4 * x₂ ^ 2 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (11 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 + (21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) * (x₁ ^ 4 * x₂ ^ 3) +
+            ((-8 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-7 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-17 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-6 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₄ + (-5 : Ksep) * (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₃) * (x₁ ^ 4 * x₂ ^ 3 * y₂)) +
+           (((3 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₄ + (12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (11 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 4 * x₂ ^ 4) +
+            ((-7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 + (-7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂) * (x₁ ^ 4 * x₂ ^ 4 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ ^ 3 + (13 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃) * (x₁ ^ 4 * x₂ ^ 5) +
+            ((2 : Ksep) * (E⁄Ksep).a₄ + (E⁄Ksep).a₂ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂) * (x₁ ^ 4 * x₂ ^ 6) +
+            ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 4 * y₁) +
+            ((-1 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 4 * y₁ * y₂) +
+            ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 4 * y₁ * x₂) +
+            ((-1 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 4 * y₁ * x₂ * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 4 * y₁ * x₂ ^ 2) +
+            ((-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃) * (x₁ ^ 4 * y₁ * x₂ ^ 2 * y₂))) +
+          ((((E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₄) * (x₁ ^ 4 * y₁ * x₂ ^ 3) +
+            ((-1 : Ksep) * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₂ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 4) * (x₁ ^ 4 * y₁ * x₂ ^ 3 * y₂) +
+            ((2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂) * (x₁ ^ 4 * y₁ * x₂ ^ 4) +
+            ((-2 : Ksep) * (E⁄Ksep).a₂ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 4 * y₁ * x₂ ^ 4 * y₂) +
+            ((4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 3) * (x₁ ^ 4 * y₁ * x₂ ^ 5) +
+            ((E⁄Ksep).a₁) * (x₁ ^ 4 * y₁ * x₂ ^ 6) +
+            ((2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 5) +
+            ((-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 5 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 5 * x₂) +
+            ((-9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 5 * x₂ * y₂)) +
+           (((9 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₆) * (x₁ ^ 5 * x₂ ^ 2) +
+            ((-6 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-9 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₃) * (x₁ ^ 5 * x₂ ^ 2 * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₄) * (x₁ ^ 5 * x₂ ^ 3) +
+            ((-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ + (-5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 5) * (x₁ ^ 5 * x₂ ^ 3 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ ^ 3 + (7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₂) * (x₁ ^ 5 * x₂ ^ 4) +
+            ((-3 : Ksep) * (E⁄Ksep).a₃ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 3) * (x₁ ^ 5 * x₂ ^ 4 * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (5 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 4) * (x₁ ^ 5 * x₂ ^ 5) +
+            ((2 : Ksep) * (E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 5 * x₂ ^ 6) +
+            ((E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 6) +
+            ((-2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 6 * y₂)) +
+           (((2 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 6 * x₂) +
+            ((-2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 6 * x₂ * y₂) +
+            ((E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 6 * x₂ ^ 2) +
+            ((-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) * (x₁ ^ 6 * x₂ ^ 2 * y₂) +
+            ((2 : Ksep) * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 6 * x₂ ^ 3) +
+            ((-2 : Ksep) * (E⁄Ksep).a₃ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3) * (x₁ ^ 6 * x₂ ^ 3 * y₂) +
+            ((2 : Ksep) * (E⁄Ksep).a₄ + (E⁄Ksep).a₂ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂) * (x₁ ^ 6 * x₂ ^ 4) +
+            ((-2 : Ksep) * (E⁄Ksep).a₁) * (x₁ ^ 6 * x₂ ^ 4 * y₂) +
+            ((2 : Ksep) * (E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 6 * x₂ ^ 5) +
+            ((1 : Ksep)) * (x₁ ^ 6 * x₂ ^ 6)))) /
+        (Polynomial.aeval x₁ h * Polynomial.aeval x₂ h) ^ 3 := by
+  unfold WeierstrassCurve.torsionPairFormalOrd
+  rw [WeierstrassCurve.torsionPairFormalOrdPart1_apply_some R K E Ksep m h hdeg PQ x₁ y₁ x₂ y₂
+      hns₁ hns₂ hP hQ h₁0 h₂0,
+    WeierstrassCurve.torsionPairFormalOrdPart2_apply_some R K E Ksep m h hdeg PQ x₁ y₁ x₂ y₂
+      hns₁ hns₂ hP hQ h₁0 h₂0,
+    WeierstrassCurve.torsionPairFormalOrdPart3_apply_some R K E Ksep m h hdeg PQ x₁ y₁ x₂ y₂
+      hns₁ hns₂ hP hQ h₁0 h₂0,
+    WeierstrassCurve.torsionPairFormalOrdPart4_apply_some R K E Ksep m h hdeg PQ x₁ y₁ x₂ y₂
+      hns₁ hns₂ hP hQ h₁0 h₂0,
+    ← add_div,
+    ← add_div,
+    ← add_div,
+    ← mul_add,
+    ← mul_add,
+    ← mul_add]
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrd` lies in the span `M`. -/
+lemma WeierstrassCurve.torsionPairFormalOrd_mem_span (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree) :
+    WeierstrassCurve.torsionPairFormalOrd R K E Ksep m h ∈
+      WeierstrassCurve.torsionPairSpan R K E Ksep m h := by
+  have heq : WeierstrassCurve.torsionPairFormalOrd R K E Ksep m h =
+      WeierstrassCurve.torsionPairFormalOrdPart1 R K E Ksep m h +
+      WeierstrassCurve.torsionPairFormalOrdPart2 R K E Ksep m h +
+      WeierstrassCurve.torsionPairFormalOrdPart3 R K E Ksep m h +
+      WeierstrassCurve.torsionPairFormalOrdPart4 R K E Ksep m h := by
+    funext PQ
+    simp only [Pi.add_apply]
+    rfl
+  rw [heq]
+  repeat'
+    first
+      | exact WeierstrassCurve.torsionPairFormalOrdPart1_mem_span R K E Ksep m h hdeg
+      | exact WeierstrassCurve.torsionPairFormalOrdPart2_mem_span R K E Ksep m h hdeg
+      | exact WeierstrassCurve.torsionPairFormalOrdPart3_mem_span R K E Ksep m h hdeg
+      | exact WeierstrassCurve.torsionPairFormalOrdPart4_mem_span R K E Ksep m h hdeg
+      | apply add_mem
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrd` on the origin row. -/
+lemma WeierstrassCurve.torsionPairFormalOrd_apply_zero_left (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hP : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalOrd R K E Ksep m h PQ =
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2) +
+      algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₃ ^ 3) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.2) +
+      algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ ^ 2) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.2) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄ + (-3 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₃) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₃ + (-2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ + (-1 : R) * (WeierstrassCurve.integralModel R E).a₁ ^ 3) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((-2 : R) * (WeierstrassCurve.integralModel R E).a₁) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) +
+      algebraMap R Ksep ((1 : R)) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.2) := by
+  unfold WeierstrassCurve.torsionPairFormalOrd
+  rw [WeierstrassCurve.torsionPairFormalOrdPart1_apply_zero_left R K E Ksep m h hdeg PQ hP,
+    WeierstrassCurve.torsionPairFormalOrdPart2_apply_zero_left R K E Ksep m h hdeg PQ hP,
+    WeierstrassCurve.torsionPairFormalOrdPart3_apply_zero_left R K E Ksep m h hdeg PQ hP,
+    WeierstrassCurve.torsionPairFormalOrdPart4_apply_zero_left R K E Ksep m h hdeg PQ hP]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 4000000 in
+set_option linter.unusedSectionVars false in
+/-- `torsionPairFormalOrd` on the origin column. -/
+lemma WeierstrassCurve.torsionPairFormalOrd_apply_zero_right (m : ℕ) (h : Polynomial R)
+    (hdeg : 2 ≤ h.natDegree)
+    (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+    (hQ : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero) :
+    WeierstrassCurve.torsionPairFormalOrd R K E Ksep m h PQ =
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₆ ^ 2 + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₄ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₆) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₄) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₆ + (WeierstrassCurve.integralModel R E).a₃ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₄ + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₄) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₂) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₄ + (WeierstrassCurve.integralModel R E).a₂ ^ 2 + (2 : R) * (WeierstrassCurve.integralModel R E).a₁ * (WeierstrassCurve.integralModel R E).a₃ + (WeierstrassCurve.integralModel R E).a₁ ^ 2 * (WeierstrassCurve.integralModel R E).a₂) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((WeierstrassCurve.integralModel R E).a₁) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 2) 1 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((2 : R) * (WeierstrassCurve.integralModel R E).a₂ + (WeierstrassCurve.integralModel R E).a₁ ^ 2) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h (h.natDegree - 1) 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) +
+      algebraMap R Ksep ((1 : R)) *
+        (WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1 * WeierstrassCurve.torsionKernelFun R K E Ksep h h.natDegree 0 ↑PQ.1) := by
+  unfold WeierstrassCurve.torsionPairFormalOrd
+  rw [WeierstrassCurve.torsionPairFormalOrdPart1_apply_zero_right R K E Ksep m h hdeg PQ hQ,
+    WeierstrassCurve.torsionPairFormalOrdPart2_apply_zero_right R K E Ksep m h hdeg PQ hQ,
+    WeierstrassCurve.torsionPairFormalOrdPart3_apply_zero_right R K E Ksep m h hdeg PQ hQ,
+    WeierstrassCurve.torsionPairFormalOrdPart4_apply_zero_right R K E Ksep m h hdeg PQ hQ]
+  ring
+
+set_option backward.isDefEq.respectTransparency false in
+set_option maxHeartbeats 8000000 in
+-- the two `hkey` steps below state the 104- and 620-monomial
+-- reduced numerators literally, so the elaborator recurses over a
+-- term of a few thousand nodes: this is term SIZE, not slack
+set_option maxRecDepth 8000 in
+set_option linter.unusedSectionVars false in
+set_option linter.unusedVariables false in
+/-- **The formal-group chart numerators** (PROVEN 2026-07-25): the level-two
+and level-three split-product sections `A`, `B` realizing `A = x₃·C²` and
+`B = y₃·C³` for the denominator `torsionPairFormalDen`, together with the
+residual unit clause on the ZERO-SUM locus — the one place where the law says
+nothing about `A`, so that its value must be pinned by the construction.
+
+CONSTRUCTION (realized as `torsionPairFormalAbs`, `torsionPairFormalOrd`).
+The key to a small closed form is the SLOPE MULTIPLE, not the three polynomial
+cofactors of the plan recorded below.  Write `W` for the affine numerator of
+`C` (`torsionPairFormalDen_apply_some`), `λ` for the slope, and
+`D₂ = y₁+y₂+a₁x₂+a₃`, `N₂ = x₁²+x₁x₂+x₂²+a₂(x₁+x₂)+a₄−a₁y₁`,
+`U = (x₁+x₂)y₂+a₁x₂²`.  From `W = x₂²D₂ + (x₁−x₂)U` together with `λD₂ = N₂`
+(`slope_mul_secondDen`, which covers the CHORD AND THE TANGENT alike) and
+`λ(x₁−x₂) = y₁−y₂`,
+
+  `Z := λ·W = x₂²N₂ + (y₁−y₂)U`   is a POLYNOMIAL,
+
+whence, from `x₃ = λ² + a₁λ − a₂ − x₁ − x₂` and
+`y₃ = −(λ(x₃−x₁) + y₁) − a₁x₃ − a₃`,
+
+  `x₃W² = Z² + a₁ZW − (a₂+x₁+x₂)W²`,
+  `y₃W³ = −Z·(x₃W²) + x₁ZW² − y₁W³ − a₁(x₃W²)W − a₃W³`.
+
+Both are polynomial and uniform across the chord/tangent split, so no separate
+doubling branch is needed — which the three-cofactor plan below would have
+required, since `x₃(x₁−x₂)²` and `x₃(x₁−x₂)D₂` degenerate on the diagonal.
+Reducing them modulo the two Weierstrass equations to ordinate degree `≤ 1`
+brings every `P`- and `Q`-monomial inside the weight bounds `4d` and `6d`: 48
+level-two split products for `A`, 120 level-three ones for `B`.  (The naive
+expansion IS NOT weight-admissible — `x₂⁸` appears; the slope-multiple form is
+what removes it, the cancellation being exactly `λ² − x₁ ↦ finite`.)
+
+THE ZERO-SUM CLAUSE.  On `P = Q = 0` the construction gives `A = 1`: the
+coefficient of `x₁^{2d}x₂^{2d}`, the only monomial all four of whose generator
+factors have maximal weight.  On the anti-diagonal (`x₁ = x₂ =: x`,
+`y₂ = negY(x,y₁)`, both formal) the numerator collapses to a perfect square,
+`A = x^{4d−8}·S²/h(x)⁴` with
+
+  `S = −x⁴ − (a₁²+2a₂)x³ − 3(a₄+a₁a₃)x² − (2a₃²+4a₆)x − a₁x²y − 2a₃xy`,
+
+the reduction of `x²N₂ + U(y₁−y₂)` there.  Since `v(y)² = v(x)³` on the formal
+locus, every trailing monomial is strictly dominated and `v(S) = v(x)⁴` — the
+leading coefficient being `−1`, in EVERY characteristic — whence
+`v(A) = v(x)^{4d−8}·v(x)⁸/v(x)^{4d} = 1`.
+
+`hm` is not used: the construction never divides by `m`. -/
+theorem WeierstrassCurve.exists_torsionPairFormalNumerators (m : ℕ)
+    (hm : (m : K) ≠ 0) (h : Polynomial R) (hmon : h.Monic)
+    (hdeg : 2 ≤ h.natDegree)
+    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
+      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
+        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
+        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1) :
+    ∃ A B : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+        (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep,
+      A ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      B ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
+      (∀ (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
+        (x₃ y₃ : Ksep) (hns₃ : (E⁄Ksep).toAffine.Nonsingular x₃ y₃),
+        ((PQ.1 + PQ.2 : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))) :
+            (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃ →
+        A PQ = x₃ * WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ ^ 2 ∧
+          B PQ =
+            y₃ * WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ ^ 3) ∧
+      (∀ 𝒪 : ValuationSubring Ksep,
+        (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
+        ∀ PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+          ¬WeierstrassCurve.IsIntegralAffine K E Ksep 𝒪 ↑PQ.1 →
+          ¬WeierstrassCurve.IsIntegralAffine K E Ksep 𝒪 ↑PQ.2 →
+          ((PQ.1 + PQ.2 : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))) :
+            (E⁄Ksep).Point) = Affine.Point.zero →
+          𝒪.valuation (A PQ) = 1) := by
+  classical
+  obtain ⟨k, hk⟩ : ∃ k, h.natDegree = k + 2 := ⟨h.natDegree - 2, by omega⟩
+  have hsumeq : ∀ PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
+      (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
+      ((PQ.1 + PQ.2 : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))) :
+        (E⁄Ksep).Point) = (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) :=
+    fun _ => rfl
+  refine ⟨WeierstrassCurve.torsionPairFormalAbs R K E Ksep m h,
+    WeierstrassCurve.torsionPairFormalOrd R K E Ksep m h,
+    WeierstrassCurve.torsionPairFormalAbs_mem_span R K E Ksep m h hdeg,
+    WeierstrassCurve.torsionPairFormalOrd_mem_span R K E Ksep m h hdeg,
+    ?_, ?_⟩
+  · -- ***** the law on the affine-sum locus *****
+    intro PQ x₃ y₃ hns₃ hsum
+    have he₃ := (WeierstrassCurve.Affine.equation_iff x₃ y₃).mp hns₃.1
+    cases hc1 : ((PQ.1 : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))) :
+        (E⁄Ksep).Point) with
+    | zero =>
+      -- `P` is the origin: the sum is `Q`, and every chart degenerates to the
+      -- `Q`-column, where the curve equation of `Q = (x₃, y₃)` is the identity
+      have hQeq : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃ := by
+        have h0 : (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) =
+            Affine.Point.some x₃ y₃ hns₃ := by rw [← hsumeq PQ]; exact hsum
+        rw [hc1] at h0
+        have h1 : (0 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) =
+          Affine.Point.some x₃ y₃ hns₃ := h0
+        rwa [zero_add] at h1
+      have htor₃ : (m : ℤ) •
+          (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) = 0 := by
+        rw [← hQeq]
+        exact (Submodule.mem_torsionBy_iff _ _).mp PQ.2.2
+      have h₃0 : Polynomial.aeval x₃ h ≠ 0 :=
+        WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon hunit
+          hns₃ htor₃
+      rw [WeierstrassCurve.torsionPairFormalAbs_apply_zero_left R K E Ksep m h
+          hdeg PQ hc1,
+        WeierstrassCurve.torsionPairFormalOrd_apply_zero_left R K E Ksep m h
+          hdeg PQ hc1,
+        WeierstrassCurve.torsionPairFormalDen_apply_zero_left R K E Ksep m h
+          hdeg PQ hc1, hQeq]
+      simp only [WeierstrassCurve.torsionKernelFun_some, map_add,
+        map_neg, map_mul, map_pow, map_one, map_ofNat,
+        ← baseChange_a₁_integralModel R K E Ksep,
+        ← baseChange_a₂_integralModel R K E Ksep,
+        ← baseChange_a₃_integralModel R K E Ksep,
+        ← baseChange_a₄_integralModel R K E Ksep,
+        ← baseChange_a₆_integralModel R K E Ksep]
+      rw [hk]
+      simp only [show k + 2 - 1 = k + 1 from by omega,
+        show k + 2 - 2 = k from by omega, pow_zero, pow_one, one_mul, mul_one]
+      refine ⟨?_, ?_⟩
+      · field_simp
+        linear_combination (-(x₃ ^ (2 * k) * x₃)) * he₃
+      · field_simp
+        linear_combination (-(x₃ ^ (3 * k) * ((E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * y₃ * (E⁄Ksep).a₃ + y₃ ^ 2 +
+            x₃ * (E⁄Ksep).a₄ + (2 : Ksep) * x₃ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+            (-1 : Ksep) * x₃ * y₃ * (E⁄Ksep).a₁ + x₃ ^ 2 * (E⁄Ksep).a₂ +
+            x₃ ^ 2 * (E⁄Ksep).a₁ ^ 2 + x₃ ^ 3))) * he₃
+    | some x₁ y₁ hns₁ =>
       have htor₁ : (m : ℤ) •
           (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) = 0 := by
         rw [← hc1]
@@ -14519,191 +18126,1024 @@ theorem WeierstrassCurve.torsionPairFormalDen_valuation_formalPair (m : ℕ)
       have h₁0 : Polynomial.aeval x₁ h ≠ 0 :=
         WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon hunit
           hns₁ htor₁
-      obtain ⟨ha₁, ha₂, ha₃, ha₄, ha₆⟩ :=
-        baseChange_coeffs_mem_centered R K E Ksep 𝒪 hcen
-      have hlt : 𝒪.valuation x₁ < 𝒪.valuation y₁ :=
-        WeierstrassCurve.val_abscissa_lt_val_ordinate 𝒪 (E⁄Ksep) ha₁ ha₂ ha₃ ha₄
-          ha₆ hns₁.1 hx₁
-      have hcoef : 𝒪.valuation ((E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃) <
-          𝒪.valuation y₁ := by
-        refine lt_of_le_of_lt (le_trans (𝒪.valuation.map_add _ _) ?_) hlt
-        refine max_le ?_ ?_
-        · rw [map_mul]
-          calc 𝒪.valuation (E⁄Ksep).a₁ * 𝒪.valuation x₁
-              ≤ 1 * 𝒪.valuation x₁ :=
-                mul_le_mul_left ((𝒪.valuation_le_one_iff _).mpr ha₁) _
-            _ = 𝒪.valuation x₁ := one_mul _
-        · exact le_trans ((𝒪.valuation_le_one_iff _).mpr ha₃) (le_of_lt hv₁)
-      have hval : 𝒪.valuation (y₁ + ((E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃)) =
-          𝒪.valuation y₁ := 𝒪.valuation.map_add_eq_of_lt_left hcoef
-      rw [WeierstrassCurve.torsionPairFormalDen_apply_zero_right_some R K E Ksep m
-          h hdeg PQ x₁ y₁ hns₁ hc1 hc2 h₁0,
-        show y₁ + (E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃ =
-          y₁ + ((E⁄Ksep).a₁ * x₁ + (E⁄Ksep).a₃) from by ring,
-        map_div₀, map_mul, map_pow, hval, hh₁, hk]
-      simp only [Nat.add_sub_cancel]
-      exact val_formalChart_unit k hne hy₁
-    | some x₂ y₂ hns₂ =>
-      have hx₂ : x₂ ∉ 𝒪 := fun hmem => hformal₂ ⟨x₂, y₂, hns₂, hc2, hmem⟩
-      exact WeierstrassCurve.torsionPairFormalDen_valuation_bothAffineFormal R K E
-        Ksep m h hmon hdeg hunit 𝒪 hcen PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 hx₁ hx₂
-        x₃ y₃ hns₃ hsum
+      have he₁ := (WeierstrassCurve.Affine.equation_iff x₁ y₁).mp hns₁.1
+      cases hc2 : ((PQ.2 : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))) :
+          (E⁄Ksep).Point) with
+      | zero =>
+        -- `Q` is the origin: the sum is `P`, and the charts degenerate to the
+        -- `P`-row, whose denominator is `x₁^{d−2}·(y₁ + a₁x₁ + a₃) = −x₁^{d−2}·negY`
+        have hPeq : (PQ.1 : (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃ := by
+          have h0 : (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) =
+              Affine.Point.some x₃ y₃ hns₃ := by rw [← hsumeq PQ]; exact hsum
+          rw [hc2] at h0
+          have h1 : (PQ.1 : (E⁄Ksep).Point) + 0 =
+            Affine.Point.some x₃ y₃ hns₃ := h0
+          rwa [add_zero] at h1
+        have htor₃ : (m : ℤ) •
+            (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) = 0 := by
+          rw [← hPeq]
+          exact (Submodule.mem_torsionBy_iff _ _).mp PQ.1.2
+        have h₃0 : Polynomial.aeval x₃ h ≠ 0 :=
+          WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon hunit
+            hns₃ htor₃
+        rw [WeierstrassCurve.torsionPairFormalAbs_apply_zero_right R K E Ksep m h
+            hdeg PQ hc2,
+          WeierstrassCurve.torsionPairFormalOrd_apply_zero_right R K E Ksep m h
+            hdeg PQ hc2,
+          WeierstrassCurve.torsionPairFormalDen_apply_zero_right R K E Ksep m h
+            hdeg PQ hc2, hPeq]
+        simp only [WeierstrassCurve.torsionKernelFun_some, map_add,
+          map_mul, map_pow, map_one, map_ofNat,
+          ← baseChange_a₁_integralModel R K E Ksep,
+          ← baseChange_a₂_integralModel R K E Ksep,
+          ← baseChange_a₃_integralModel R K E Ksep,
+          ← baseChange_a₄_integralModel R K E Ksep,
+          ← baseChange_a₆_integralModel R K E Ksep]
+        rw [hk]
+        simp only [show k + 2 - 1 = k + 1 from by omega,
+          show k + 2 - 2 = k from by omega, pow_zero, pow_one, one_mul, mul_one]
+        refine ⟨?_, ?_⟩
+        · field_simp
+          linear_combination (-(x₃ ^ (2 * k) * (x₃))) * he₃
+        · field_simp
+          linear_combination (-(x₃ ^ (3 * k) * ((E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * y₃ * (E⁄Ksep).a₃ + y₃ ^ 2 +
+            x₃ * (E⁄Ksep).a₄ + (2 : Ksep) * x₃ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+            (2 : Ksep) * x₃ * y₃ * (E⁄Ksep).a₁ + x₃ ^ 2 * (E⁄Ksep).a₂ +
+            x₃ ^ 2 * (E⁄Ksep).a₁ ^ 2 + x₃ ^ 3))) * he₃
+      | some x₂ y₂ hns₂ =>
+        -- both points affine: the second (rationalized-slope) law, valid for the
+        -- chord and the tangent alike
+        have htor₂ : (m : ℤ) •
+            (Affine.Point.some x₂ y₂ hns₂ : (E⁄Ksep).Point) = 0 := by
+          rw [← hc2]
+          exact (Submodule.mem_torsionBy_iff _ _).mp PQ.2.2
+        have h₂0 : Polynomial.aeval x₂ h ≠ 0 :=
+          WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon hunit
+            hns₂ htor₂
+        have he₂ := (WeierstrassCurve.Affine.equation_iff x₂ y₂).mp hns₂.1
+        have hadd : (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) +
+            Affine.Point.some x₂ y₂ hns₂ = Affine.Point.some x₃ y₃ hns₃ := by
+          rw [← hc1, ← hc2, ← hsumeq PQ]; exact hsum
+        have hxy : ¬(x₁ = x₂ ∧ y₁ = (E⁄Ksep).toAffine.negY x₂ y₂) := by
+          rintro ⟨hxx, hyy⟩
+          rw [WeierstrassCurve.Affine.Point.add_of_Y_eq hxx hyy] at hadd
+          exact WeierstrassCurve.Affine.Point.some_ne_zero hns₃ hadd.symm
+        have hpt : (Affine.Point.some x₃ y₃ hns₃ : (E⁄Ksep).Point) =
+            Affine.Point.some
+              ((E⁄Ksep).toAffine.addX x₁ x₂
+                ((E⁄Ksep).toAffine.slope x₁ x₂ y₁ y₂))
+              ((E⁄Ksep).toAffine.addY x₁ x₂ y₁
+                ((E⁄Ksep).toAffine.slope x₁ x₂ y₁ y₂))
+              (WeierstrassCurve.Affine.nonsingular_add hns₁ hns₂ hxy) := by
+          rw [← hadd, WeierstrassCurve.Affine.Point.add_some hxy]
+        injection hpt with hXe hYe
+        have hX3 : x₃ = (E⁄Ksep).toAffine.slope x₁ x₂ y₁ y₂ ^ 2 +
+            (E⁄Ksep).a₁ * (E⁄Ksep).toAffine.slope x₁ x₂ y₁ y₂ - (E⁄Ksep).a₂ -
+            x₁ - x₂ := by
+          rw [hXe]
+          simp only [WeierstrassCurve.Affine.addX]
+        have hY3 : y₃ = -((E⁄Ksep).toAffine.slope x₁ x₂ y₁ y₂ * (x₃ - x₁) + y₁) -
+            (E⁄Ksep).a₁ * x₃ - (E⁄Ksep).a₃ := by
+          rw [hYe, hX3]
+          simp only [WeierstrassCurve.Affine.addY, WeierstrassCurve.Affine.negY,
+            WeierstrassCurve.Affine.negAddY, WeierstrassCurve.Affine.addX]
+        have hslope := WeierstrassCurve.slope_mul_secondDen (E⁄Ksep) hns₁.1
+          hns₂.1 hxy
+        have hdel : (E⁄Ksep).toAffine.slope x₁ x₂ y₁ y₂ * (x₁ - x₂) = y₁ - y₂ := by
+          by_cases hx : x₁ = x₂
+          · have hyy : y₁ = y₂ :=
+              WeierstrassCurve.Affine.Y_eq_of_Y_ne hns₁.1 hns₂.1 hx
+                (fun hh => hxy ⟨hx, hh⟩)
+            rw [hx, hyy]; ring
+          · rw [WeierstrassCurve.Affine.slope_of_X_ne hx,
+              div_mul_cancel₀ _ (sub_ne_zero.mpr hx)]
+        have hW : (E⁄Ksep).toAffine.slope x₁ x₂ y₁ y₂ *
+            (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) = (x₂ ^ 2 * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+          (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) + (y₁ - y₂) *
+        ((x₁ + x₂) * y₂ + (E⁄Ksep).a₁ * x₂ ^ 2)) := by
+          linear_combination x₂ ^ 2 * hslope + ((x₁ + x₂) * y₂ + (E⁄Ksep).a₁ * x₂ ^ 2) * hdel
+        have hAW : x₃ * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) ^ 2 =
+            ((x₂ ^ 2 * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+          (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) + (y₁ - y₂) *
+        ((x₁ + x₂) * y₂ + (E⁄Ksep).a₁ * x₂ ^ 2)) ^ 2 + (E⁄Ksep).a₁ * (x₂ ^ 2 * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+          (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) + (y₁ - y₂) *
+        ((x₁ + x₂) * y₂ + (E⁄Ksep).a₁ * x₂ ^ 2)) * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) -
+        ((E⁄Ksep).a₂ + x₁ + x₂) * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) ^ 2) := by
+          linear_combination
+            ((E⁄Ksep).toAffine.slope x₁ x₂ y₁ y₂ * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) +
+              (x₂ ^ 2 * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+          (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) + (y₁ - y₂) *
+        ((x₁ + x₂) * y₂ + (E⁄Ksep).a₁ * x₂ ^ 2)) + (E⁄Ksep).a₁ * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2)) * hW +
+              (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) ^ 2 * hX3
+        have hkeyA :
+            (((2 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₂ ^ 2) +
+           ((-3 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 3) * (x₂ ^ 2 * y₂) +
+           ((E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₂ ^ 3) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 2) +
+           ((-2 : Ksep) * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 2) * (y₁ * x₂ ^ 2 * y₂) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 3) +
+           ((4 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ * x₂) +
+           ((-6 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₃ ^ 3) * (x₁ * x₂ * y₂) +
+           ((5 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 2) +
+           ((-3 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ * x₂ ^ 2 * y₂)) +
+          (((E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 3) +
+           ((E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2) * (x₁ * x₂ ^ 4) +
+           ((2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂) +
+           ((-4 : Ksep) * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₃ ^ 2) * (x₁ * y₁ * x₂ * y₂) +
+           ((2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) * (x₁ * y₁ * x₂ ^ 2) +
+           ((-2 : Ksep) * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) * (x₁ * y₁ * x₂ ^ 2 * y₂) +
+           ((2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ * y₁ * x₂ ^ 3) +
+           ((E⁄Ksep).a₃) * (x₁ * y₁ * x₂ ^ 4) +
+           ((2 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 2) +
+           ((-3 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 2 * y₂)) +
+          (((5 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂) +
+           ((-4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * x₂ * y₂) +
+           ((3 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) * (x₁ ^ 2 * x₂ ^ 2) +
+           ((-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) * (x₁ ^ 2 * x₂ ^ 2 * y₂) +
+           ((-1 : Ksep) * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 2 * x₂ ^ 3) +
+           ((E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) * (x₁ ^ 2 * x₂ ^ 4) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 2 * y₁) +
+           ((-2 : Ksep) * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * y₁ * y₂) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₆) * (x₁ ^ 2 * y₁ * x₂) +
+           ((-2 : Ksep) * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) * (x₁ ^ 2 * y₁ * x₂ * y₂)) +
+          (((E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ * (E⁄Ksep).a₄) * (x₁ ^ 2 * y₁ * x₂ ^ 2) +
+           ((-2 : Ksep) * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 2 * y₁ * x₂ ^ 2 * y₂) +
+           ((E⁄Ksep).a₃ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂) * (x₁ ^ 2 * y₁ * x₂ ^ 3) +
+           ((E⁄Ksep).a₁) * (x₁ ^ 2 * y₁ * x₂ ^ 4) +
+           ((E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 3) +
+           ((-1 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * y₂) +
+           ((E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 3 * x₂) +
+           ((-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) * (x₁ ^ 3 * x₂ * y₂) +
+           ((-1 : Ksep) * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 3 * x₂ ^ 2) +
+           ((-1 : Ksep) * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3) * (x₁ ^ 3 * x₂ ^ 2 * y₂)) +
+          (((2 : Ksep) * (E⁄Ksep).a₂ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂) * (x₁ ^ 3 * x₂ ^ 3) +
+           ((E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 3 * x₂ ^ 4) +
+           ((E⁄Ksep).a₆) * (x₁ ^ 4 * x₂) +
+           ((-1 : Ksep) * (E⁄Ksep).a₃) * (x₁ ^ 4 * x₂ * y₂) +
+           ((E⁄Ksep).a₄) * (x₁ ^ 4 * x₂ ^ 2) +
+           ((-1 : Ksep) * (E⁄Ksep).a₁) * (x₁ ^ 4 * x₂ ^ 2 * y₂) +
+           ((E⁄Ksep).a₂) * (x₁ ^ 4 * x₂ ^ 3) +
+           ((1 : Ksep)) * (x₁ ^ 4 * x₂ ^ 4)) =
+              x₃ * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) ^ 2 := by
+          linear_combination
+            (-(x₂ ^ 2 * y₂ ^ 2 + x₂ ^ 3 * y₂ * (E⁄Ksep).a₁ +
+          (-1 : Ksep) * x₂ ^ 4 * (E⁄Ksep).a₂ + (-1 : Ksep) * x₂ ^ 5 +
+          (2 : Ksep) * x₁ * x₂ * y₂ ^ 2 + x₁ * x₂ ^ 2 * y₂ * (E⁄Ksep).a₁ +
+          (-1 : Ksep) * x₁ * x₂ ^ 4 + x₁ ^ 2 * y₂ ^ 2)) * he₁ +
+            (-(((2 : Ksep) * x₂ ^ 2 * (E⁄Ksep).a₆ + x₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 +
+           (-1 : Ksep) * x₂ ^ 2 * y₂ * (E⁄Ksep).a₃ + x₂ ^ 2 * y₂ ^ 2 +
+           (-1 : Ksep) * x₂ ^ 3 * (E⁄Ksep).a₄ +
+           (-1 : Ksep) * x₂ ^ 3 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + x₂ ^ 3 * y₂ * (E⁄Ksep).a₁ +
+           (-1 : Ksep) * x₂ ^ 4 * (E⁄Ksep).a₂ + (-1 : Ksep) * x₂ ^ 5 +
+           y₁ * x₂ ^ 2 * (E⁄Ksep).a₃ + (-2 : Ksep) * y₁ * x₂ ^ 2 * y₂ +
+           (-1 : Ksep) * y₁ * x₂ ^ 3 * (E⁄Ksep).a₁ + (4 : Ksep) * x₁ * x₂ * (E⁄Ksep).a₆ +
+           (2 : Ksep) * x₁ * x₂ * (E⁄Ksep).a₃ ^ 2) +
+          ((-2 : Ksep) * x₁ * x₂ * y₂ * (E⁄Ksep).a₃ + (2 : Ksep) * x₁ * x₂ * y₂ ^ 2 +
+           x₁ * x₂ ^ 2 * (E⁄Ksep).a₄ + x₁ * x₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           (-2 : Ksep) * x₁ * x₂ ^ 3 * (E⁄Ksep).a₂ +
+           (-1 : Ksep) * x₁ * x₂ ^ 3 * (E⁄Ksep).a₁ ^ 2 + (-2 : Ksep) * x₁ * x₂ ^ 4 +
+           (2 : Ksep) * x₁ * y₁ * x₂ * (E⁄Ksep).a₃ + (-4 : Ksep) * x₁ * y₁ * x₂ * y₂ +
+           (2 : Ksep) * x₁ ^ 2 * (E⁄Ksep).a₆ + x₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 +
+           (-1 : Ksep) * x₁ ^ 2 * y₂ * (E⁄Ksep).a₃ + x₁ ^ 2 * y₂ ^ 2 +
+           (3 : Ksep) * x₁ ^ 2 * x₂ * (E⁄Ksep).a₄) +
+          ((3 : Ksep) * x₁ ^ 2 * x₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           (-2 : Ksep) * x₁ ^ 2 * x₂ * y₂ * (E⁄Ksep).a₁ + (-3 : Ksep) * x₁ ^ 2 * x₂ ^ 3 +
+           x₁ ^ 2 * y₁ * (E⁄Ksep).a₃ + (-2 : Ksep) * x₁ ^ 2 * y₁ * y₂ +
+           x₁ ^ 2 * y₁ * x₂ * (E⁄Ksep).a₁ + x₁ ^ 3 * (E⁄Ksep).a₄ +
+           x₁ ^ 3 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (-1 : Ksep) * x₁ ^ 3 * y₂ * (E⁄Ksep).a₁ +
+           (2 : Ksep) * x₁ ^ 3 * x₂ * (E⁄Ksep).a₂ + x₁ ^ 3 * x₂ * (E⁄Ksep).a₁ ^ 2 +
+           (-1 : Ksep) * x₁ ^ 3 * x₂ ^ 2 + x₁ ^ 4 * x₂))) * he₂ - hAW
+        have hBW : y₃ * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) ^ 3 =
+            (-((x₂ ^ 2 * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+          (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) + (y₁ - y₂) *
+        ((x₁ + x₂) * y₂ + (E⁄Ksep).a₁ * x₂ ^ 2)) * ((x₂ ^ 2 * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+          (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) + (y₁ - y₂) *
+        ((x₁ + x₂) * y₂ + (E⁄Ksep).a₁ * x₂ ^ 2)) ^ 2 + (E⁄Ksep).a₁ * (x₂ ^ 2 * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+          (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) + (y₁ - y₂) *
+        ((x₁ + x₂) * y₂ + (E⁄Ksep).a₁ * x₂ ^ 2)) * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) -
+        ((E⁄Ksep).a₂ + x₁ + x₂) * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) ^ 2)) + x₁ * (x₂ ^ 2 * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+          (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) + (y₁ - y₂) *
+        ((x₁ + x₂) * y₂ + (E⁄Ksep).a₁ * x₂ ^ 2)) * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) ^ 2 -
+        y₁ * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) ^ 3 - (E⁄Ksep).a₁ * ((x₂ ^ 2 * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+          (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) + (y₁ - y₂) *
+        ((x₁ + x₂) * y₂ + (E⁄Ksep).a₁ * x₂ ^ 2)) ^ 2 + (E⁄Ksep).a₁ * (x₂ ^ 2 * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+          (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) + (y₁ - y₂) *
+        ((x₁ + x₂) * y₂ + (E⁄Ksep).a₁ * x₂ ^ 2)) * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) -
+        ((E⁄Ksep).a₂ + x₁ + x₂) * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) ^ 2) * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) -
+        (E⁄Ksep).a₃ * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) ^ 3) := by
+          linear_combination (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) ^ 3 * hY3 +
+            (-((x₃ - x₁) * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) ^ 2)) * hW +
+            (-((E⁄Ksep).a₁ * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) + (x₂ ^ 2 * (x₁ ^ 2 + x₁ * x₂ + x₂ ^ 2 + (E⁄Ksep).a₂ * (x₁ + x₂) +
+          (E⁄Ksep).a₄ - (E⁄Ksep).a₁ * y₁) + (y₁ - y₂) *
+        ((x₁ + x₂) * y₂ + (E⁄Ksep).a₁ * x₂ ^ 2)))) * hAW
+        have hkeyB :
+            ((((4 : Ksep) * (E⁄Ksep).a₆ ^ 3 + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₆) * (x₂ ^ 3) +
+            ((-8 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 5) * (x₂ ^ 3 * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₂ ^ 4) +
+            ((-2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₂ ^ 4 * y₂) +
+            ((2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 4 + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₂ ^ 5) +
+            ((E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₂ ^ 6) +
+            ((4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 3) +
+            ((-4 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 4) * (y₁ * x₂ ^ 3 * y₂) +
+            ((4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 4) +
+            ((-1 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 4 * y₂)) +
+           (((3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 5) +
+            ((E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 6) +
+            ((12 : Ksep) * (E⁄Ksep).a₆ ^ 3 + (15 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 2) +
+            ((-24 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-18 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 5) * (x₁ * x₂ ^ 2 * y₂) +
+            ((18 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (20 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 3) +
+            ((-20 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-8 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-16 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 4) * (x₁ * x₂ ^ 3 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₄ ^ 2 * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (8 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (14 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 4 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 4) +
+            ((-2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (-4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 4 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (12 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 5) +
+            ((2 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 6)) +
+           (((12 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 2) +
+            ((-12 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 4) * (x₁ * y₁ * x₂ ^ 2 * y₂) +
+            ((16 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 3) +
+            ((-10 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-7 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3) * (x₁ * y₁ * x₂ ^ 3 * y₂) +
+            ((4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (11 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 4) +
+            ((-1 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 4 * y₂) +
+            ((9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 5) +
+            ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂ ^ 6) +
+            ((12 : Ksep) * (E⁄Ksep).a₆ ^ 3 + (15 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂) +
+            ((-24 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-18 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 5) * (x₁ ^ 2 * x₂ * y₂))) +
+          ((((30 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (27 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₄ + (21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 2) +
+            ((-39 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-15 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-18 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-42 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 2 * x₂ ^ 2 * y₂) +
+            ((21 : Ksep) * (E⁄Ksep).a₄ ^ 2 * (E⁄Ksep).a₆ + (12 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (14 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (19 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 4 + (25 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 3) +
+            ((-12 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-16 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-22 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-14 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 2 * x₂ ^ 3 * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₄ ^ 3 + (12 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 4 + (19 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (16 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (19 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 4) +
+            ((-3 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 4 * y₂) +
+            ((9 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₆ + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 5) +
+            ((E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂ ^ 6) +
+            ((12 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 2 * y₁ * x₂) +
+            ((-12 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 2 * y₁ * x₂ * y₂)) +
+           (((21 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 2 * y₁ * x₂ ^ 2) +
+            ((-18 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-12 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 2 * y₁ * x₂ ^ 2 * y₂) +
+            ((9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (15 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 2 * y₁ * x₂ ^ 3) +
+            ((-6 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * y₁ * x₂ ^ 3 * y₂) +
+            ((9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (12 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * y₁ * x₂ ^ 4) +
+            ((-3 : Ksep) * (E⁄Ksep).a₃ ^ 2 + (-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 2 * y₁ * x₂ ^ 4 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (3 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * y₁ * x₂ ^ 5) +
+            ((E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ * (E⁄Ksep).a₄) * (x₁ ^ 2 * y₁ * x₂ ^ 6) +
+            ((4 : Ksep) * (E⁄Ksep).a₆ ^ 3 + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₆) * (x₁ ^ 3) +
+            ((-8 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 5) * (x₁ ^ 3 * y₂)) +
+           (((18 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (14 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 4 * (E⁄Ksep).a₄ + (20 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 3 * x₂) +
+            ((-26 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-10 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-14 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-32 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 3 * x₂ * y₂) +
+            ((21 : Ksep) * (E⁄Ksep).a₄ ^ 2 * (E⁄Ksep).a₆ + (9 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (14 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (13 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 4 + (37 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 3 * x₂ ^ 2) +
+            ((-15 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (-21 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-27 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-33 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-30 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-18 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 3 * x₂ ^ 2 * y₂) +
+            ((7 : Ksep) * (E⁄Ksep).a₄ ^ 3 + (7 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 4 + (28 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (17 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (17 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (24 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 3 * x₂ ^ 3) +
+            ((-1 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (-19 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-10 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (-11 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-19 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-20 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆ + (-10 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * x₂ ^ 3 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (11 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (11 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (16 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 + (21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * x₂ ^ 4) +
+            ((-5 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-8 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 3 * x₂ ^ 4 * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (10 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₄ + (13 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (11 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (10 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * x₂ ^ 5) +
+            ((2 : Ksep) * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 3 * x₂ ^ 6))) +
+          ((((4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 3 * y₁) +
+            ((-4 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 3 * y₁ * y₂) +
+            ((10 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 3 * y₁ * x₂) +
+            ((-10 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-7 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-14 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 3 * y₁ * x₂ * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (9 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (11 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 3 * y₁ * x₂ ^ 2) +
+            ((-6 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * y₁ * x₂ ^ 2 * y₂) +
+            ((5 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 3 + (11 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) * (x₁ ^ 3 * y₁ * x₂ ^ 3) +
+            ((4 : Ksep) * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₃ ^ 2 + (-8 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-10 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-5 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃) * (x₁ ^ 3 * y₁ * x₂ ^ 3 * y₂) +
+            ((7 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (5 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 3 * y₁ * x₂ ^ 4) +
+            ((-1 : Ksep) * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₂ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂) * (x₁ ^ 3 * y₁ * x₂ ^ 4 * y₂)) +
+           (((6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) * (x₁ ^ 3 * y₁ * x₂ ^ 5) +
+            ((E⁄Ksep).a₃ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂) * (x₁ ^ 3 * y₁ * x₂ ^ 6) +
+            ((3 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 4) +
+            ((-5 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (-7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 4) * (x₁ ^ 4 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₄ ^ 2 * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (8 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (15 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 4 * x₂) +
+            ((-5 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (-13 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-5 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-14 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-16 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-9 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 4 * x₂ * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₄ ^ 3 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (19 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (10 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (16 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (12 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 4 * x₂ ^ 2) +
+            ((-9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (-15 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-9 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (-12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-18 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-21 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-6 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆ + (-12 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 4 * x₂ ^ 2 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (11 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 + (21 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) * (x₁ ^ 4 * x₂ ^ 3) +
+            ((-8 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-7 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (-15 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-17 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-6 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₄ + (-5 : Ksep) * (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₃) * (x₁ ^ 4 * x₂ ^ 3 * y₂)) +
+           (((3 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (8 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₄ + (12 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (11 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 4 * x₂ ^ 4) +
+            ((-7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 + (-7 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂) * (x₁ ^ 4 * x₂ ^ 4 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ ^ 3 + (13 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃) * (x₁ ^ 4 * x₂ ^ 5) +
+            ((2 : Ksep) * (E⁄Ksep).a₄ + (E⁄Ksep).a₂ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂) * (x₁ ^ 4 * x₂ ^ 6) +
+            ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 4 * y₁) +
+            ((-1 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 4 * y₁ * y₂) +
+            ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 4 * y₁ * x₂) +
+            ((-1 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 4 * y₁ * x₂ * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆) * (x₁ ^ 4 * y₁ * x₂ ^ 2) +
+            ((-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃) * (x₁ ^ 4 * y₁ * x₂ ^ 2 * y₂))) +
+          ((((E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₄) * (x₁ ^ 4 * y₁ * x₂ ^ 3) +
+            ((-1 : Ksep) * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₂ ^ 2 + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 4) * (x₁ ^ 4 * y₁ * x₂ ^ 3 * y₂) +
+            ((2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂) * (x₁ ^ 4 * y₁ * x₂ ^ 4) +
+            ((-2 : Ksep) * (E⁄Ksep).a₂ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 4 * y₁ * x₂ ^ 4 * y₂) +
+            ((4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 3) * (x₁ ^ 4 * y₁ * x₂ ^ 5) +
+            ((E⁄Ksep).a₁) * (x₁ ^ 4 * y₁ * x₂ ^ 6) +
+            ((2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 5) +
+            ((-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 3 + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 5 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 5 * x₂) +
+            ((-9 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₃ ^ 3 + (-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (-4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 5 * x₂ * y₂)) +
+           (((9 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ ^ 2 + (5 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₆) * (x₁ ^ 5 * x₂ ^ 2) +
+            ((-6 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 + (-6 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (-9 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₃) * (x₁ ^ 5 * x₂ ^ 2 * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (10 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (4 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 * (E⁄Ksep).a₃ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 + (6 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₄) * (x₁ ^ 5 * x₂ ^ 3) +
+            ((-6 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ ^ 2 + (-5 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ + (-5 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 5) * (x₁ ^ 5 * x₂ ^ 3 * y₂) +
+            ((6 : Ksep) * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₃ ^ 2 + (7 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₂ ^ 3 + (7 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 4 * (E⁄Ksep).a₂) * (x₁ ^ 5 * x₂ ^ 4) +
+            ((-3 : Ksep) * (E⁄Ksep).a₃ + (-5 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 3) * (x₁ ^ 5 * x₂ ^ 4 * y₂) +
+            ((3 : Ksep) * (E⁄Ksep).a₄ + (4 : Ksep) * (E⁄Ksep).a₂ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (5 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 4) * (x₁ ^ 5 * x₂ ^ 5) +
+            ((2 : Ksep) * (E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 5 * x₂ ^ 6) +
+            ((E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 6) +
+            ((-2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 6 * y₂)) +
+           (((2 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 6 * x₂) +
+            ((-2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 6 * x₂ * y₂) +
+            ((E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 6 * x₂ ^ 2) +
+            ((-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) * (x₁ ^ 6 * x₂ ^ 2 * y₂) +
+            ((2 : Ksep) * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 6 * x₂ ^ 3) +
+            ((-2 : Ksep) * (E⁄Ksep).a₃ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3) * (x₁ ^ 6 * x₂ ^ 3 * y₂) +
+            ((2 : Ksep) * (E⁄Ksep).a₄ + (E⁄Ksep).a₂ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂) * (x₁ ^ 6 * x₂ ^ 4) +
+            ((-2 : Ksep) * (E⁄Ksep).a₁) * (x₁ ^ 6 * x₂ ^ 4 * y₂) +
+            ((2 : Ksep) * (E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 6 * x₂ ^ 5) +
+            ((1 : Ksep)) * (x₁ ^ 6 * x₂ ^ 6))) =
+              y₃ * (x₂ ^ 2 * y₁ + x₁ ^ 2 * y₂ + (E⁄Ksep).a₁ * (x₁ * x₂ ^ 2) +
+        (E⁄Ksep).a₃ * x₂ ^ 2) ^ 3 := by
+          linear_combination
+            (-((x₂ ^ 3 * y₂ ^ 3 * (E⁄Ksep).a₃ + (3 : Ksep) * x₂ ^ 3 * y₂ ^ 4 +
+           (-3 : Ksep) * x₂ ^ 4 * y₂ ^ 2 * (E⁄Ksep).a₄ +
+           (7 : Ksep) * x₂ ^ 4 * y₂ ^ 3 * (E⁄Ksep).a₁ +
+           x₂ ^ 5 * y₂ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (-4 : Ksep) * x₂ ^ 5 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ +
+           (-1 : Ksep) * x₂ ^ 5 * y₂ * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ +
+           (-4 : Ksep) * x₂ ^ 5 * y₂ ^ 2 * (E⁄Ksep).a₂ +
+           (5 : Ksep) * x₂ ^ 5 * y₂ ^ 2 * (E⁄Ksep).a₁ ^ 2) +
+          ((-1 : Ksep) * x₂ ^ 6 * (E⁄Ksep).a₆ + (-3 : Ksep) * x₂ ^ 6 * (E⁄Ksep).a₃ ^ 2 +
+           x₂ ^ 6 * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ +
+           (2 : Ksep) * x₂ ^ 6 * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (-1 : Ksep) * x₂ ^ 6 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ +
+           x₂ ^ 6 * y₂ * (E⁄Ksep).a₃ +
+           (-5 : Ksep) * x₂ ^ 6 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ +
+           x₂ ^ 6 * y₂ * (E⁄Ksep).a₁ ^ 3 + (-4 : Ksep) * x₂ ^ 6 * y₂ ^ 2 +
+           x₂ ^ 7 * (E⁄Ksep).a₄ + x₂ ^ 7 * (E⁄Ksep).a₂ ^ 2) +
+          ((2 : Ksep) * x₂ ^ 7 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           (-1 : Ksep) * x₂ ^ 7 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ +
+           (-5 : Ksep) * x₂ ^ 7 * y₂ * (E⁄Ksep).a₁ + (2 : Ksep) * x₂ ^ 8 * (E⁄Ksep).a₂ +
+           (-1 : Ksep) * x₂ ^ 8 * (E⁄Ksep).a₁ ^ 2 + x₂ ^ 9 +
+           (-1 : Ksep) * y₁ * x₂ ^ 3 * y₂ ^ 3 +
+           (-2 : Ksep) * y₁ * x₂ ^ 4 * y₂ ^ 2 * (E⁄Ksep).a₁ +
+           y₁ * x₂ ^ 5 * y₂ * (E⁄Ksep).a₂ +
+           (-1 : Ksep) * y₁ * x₂ ^ 5 * y₂ * (E⁄Ksep).a₁ ^ 2) +
+          ((-3 : Ksep) * y₁ * x₂ ^ 6 * (E⁄Ksep).a₃ +
+           y₁ * x₂ ^ 6 * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ + y₁ * x₂ ^ 6 * y₂ +
+           y₁ * x₂ ^ 7 * (E⁄Ksep).a₁ + (-1 : Ksep) * y₁ ^ 2 * x₂ ^ 6 +
+           (3 : Ksep) * x₁ * x₂ ^ 2 * y₂ ^ 3 * (E⁄Ksep).a₃ +
+           (9 : Ksep) * x₁ * x₂ ^ 2 * y₂ ^ 4 +
+           (-6 : Ksep) * x₁ * x₂ ^ 3 * y₂ ^ 2 * (E⁄Ksep).a₄ +
+           (15 : Ksep) * x₁ * x₂ ^ 3 * y₂ ^ 3 * (E⁄Ksep).a₁ +
+           x₁ * x₂ ^ 4 * y₂ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) +
+          ((-4 : Ksep) * x₁ * x₂ ^ 4 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ +
+           (-1 : Ksep) * x₁ * x₂ ^ 4 * y₂ * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ +
+           (-10 : Ksep) * x₁ * x₂ ^ 4 * y₂ ^ 2 * (E⁄Ksep).a₂ +
+           (5 : Ksep) * x₁ * x₂ ^ 4 * y₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 +
+           (3 : Ksep) * x₁ * x₂ ^ 5 * y₂ * (E⁄Ksep).a₃ +
+           (-7 : Ksep) * x₁ * x₂ ^ 5 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ +
+           (-1 : Ksep) * x₁ * x₂ ^ 5 * y₂ * (E⁄Ksep).a₁ ^ 3 +
+           (-12 : Ksep) * x₁ * x₂ ^ 5 * y₂ ^ 2 + x₁ * x₂ ^ 6 * (E⁄Ksep).a₄) +
+          (x₁ * x₂ ^ 6 * (E⁄Ksep).a₂ ^ 2 +
+           (-2 : Ksep) * x₁ * x₂ ^ 6 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           x₁ * x₂ ^ 6 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ +
+           (-9 : Ksep) * x₁ * x₂ ^ 6 * y₂ * (E⁄Ksep).a₁ +
+           (4 : Ksep) * x₁ * x₂ ^ 7 * (E⁄Ksep).a₂ + x₁ * x₂ ^ 7 * (E⁄Ksep).a₁ ^ 2 +
+           (3 : Ksep) * x₁ * x₂ ^ 8 + (-3 : Ksep) * x₁ * y₁ * x₂ ^ 2 * y₂ ^ 3 +
+           (-4 : Ksep) * x₁ * y₁ * x₂ ^ 3 * y₂ ^ 2 * (E⁄Ksep).a₁ +
+           x₁ * y₁ * x₂ ^ 4 * y₂ * (E⁄Ksep).a₂) +
+          ((-1 : Ksep) * x₁ * y₁ * x₂ ^ 4 * y₂ * (E⁄Ksep).a₁ ^ 2 +
+           (3 : Ksep) * x₁ * y₁ * x₂ ^ 5 * y₂ +
+           (-1 : Ksep) * x₁ * y₁ * x₂ ^ 6 * (E⁄Ksep).a₁ +
+           (3 : Ksep) * x₁ ^ 2 * x₂ * y₂ ^ 3 * (E⁄Ksep).a₃ +
+           (9 : Ksep) * x₁ ^ 2 * x₂ * y₂ ^ 4 +
+           (-3 : Ksep) * x₁ ^ 2 * x₂ ^ 2 * y₂ ^ 2 * (E⁄Ksep).a₄ +
+           (8 : Ksep) * x₁ ^ 2 * x₂ ^ 2 * y₂ ^ 3 * (E⁄Ksep).a₁ +
+           (-7 : Ksep) * x₁ ^ 2 * x₂ ^ 3 * y₂ ^ 2 * (E⁄Ksep).a₂) +
+          ((-2 : Ksep) * x₁ ^ 2 * x₂ ^ 3 * y₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 +
+           (-4 : Ksep) * x₁ ^ 2 * x₂ ^ 4 * y₂ * (E⁄Ksep).a₃ +
+           (-1 : Ksep) * x₁ ^ 2 * x₂ ^ 4 * y₂ * (E⁄Ksep).a₁ ^ 3 +
+           (-12 : Ksep) * x₁ ^ 2 * x₂ ^ 4 * y₂ ^ 2 +
+           (-2 : Ksep) * x₁ ^ 2 * x₂ ^ 5 * y₂ * (E⁄Ksep).a₁ +
+           (2 : Ksep) * x₁ ^ 2 * x₂ ^ 6 * (E⁄Ksep).a₂ + (3 : Ksep) * x₁ ^ 2 * x₂ ^ 7 +
+           (-3 : Ksep) * x₁ ^ 2 * y₁ * x₂ * y₂ ^ 3 +
+           (-2 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 2 * y₂ ^ 2 * (E⁄Ksep).a₁) +
+          ((-1 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 4 * y₂ + x₁ ^ 3 * y₂ ^ 3 * (E⁄Ksep).a₃ +
+           (3 : Ksep) * x₁ ^ 3 * y₂ ^ 4 +
+           (-1 : Ksep) * x₁ ^ 3 * x₂ * y₂ ^ 3 * (E⁄Ksep).a₁ +
+           (-1 : Ksep) * x₁ ^ 3 * x₂ ^ 2 * y₂ ^ 2 * (E⁄Ksep).a₂ +
+           (-2 : Ksep) * x₁ ^ 3 * x₂ ^ 2 * y₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 +
+           (-3 : Ksep) * x₁ ^ 3 * x₂ ^ 3 * y₂ ^ 2 +
+           (-2 : Ksep) * x₁ ^ 3 * x₂ ^ 4 * y₂ * (E⁄Ksep).a₁ + x₁ ^ 3 * x₂ ^ 6 +
+           (-1 : Ksep) * x₁ ^ 3 * y₁ * y₂ ^ 3) +
+          ((-1 : Ksep) * x₁ ^ 4 * y₂ ^ 3 * (E⁄Ksep).a₁ +
+           (-2 : Ksep) * x₁ ^ 4 * x₂ ^ 2 * y₂ ^ 2))) * he₁ +
+            (-(((4 : Ksep) * x₂ ^ 3 * (E⁄Ksep).a₆ ^ 2 +
+           (5 : Ksep) * x₂ ^ 3 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + x₂ ^ 3 * (E⁄Ksep).a₃ ^ 4 +
+           (-4 : Ksep) * x₂ ^ 3 * y₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ +
+           (-1 : Ksep) * x₂ ^ 3 * y₂ * (E⁄Ksep).a₃ ^ 3 +
+           (4 : Ksep) * x₂ ^ 3 * y₂ ^ 2 * (E⁄Ksep).a₆ + x₂ ^ 3 * y₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 +
+           (-1 : Ksep) * x₂ ^ 3 * y₂ ^ 3 * (E⁄Ksep).a₃ + x₂ ^ 3 * y₂ ^ 4 +
+           (-1 : Ksep) * x₂ ^ 4 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ +
+           (-4 : Ksep) * x₂ ^ 4 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) +
+          ((-1 : Ksep) * x₂ ^ 4 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 +
+           x₂ ^ 4 * y₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ +
+           (5 : Ksep) * x₂ ^ 4 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ +
+           (2 : Ksep) * x₂ ^ 4 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 +
+           (-2 : Ksep) * x₂ ^ 4 * y₂ ^ 2 * (E⁄Ksep).a₄ +
+           (-3 : Ksep) * x₂ ^ 4 * y₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           (2 : Ksep) * x₂ ^ 4 * y₂ ^ 3 * (E⁄Ksep).a₁ + x₂ ^ 5 * (E⁄Ksep).a₄ ^ 2 +
+           (-2 : Ksep) * x₂ ^ 5 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆) +
+          ((-1 : Ksep) * x₂ ^ 5 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 +
+           (2 : Ksep) * x₂ ^ 5 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ +
+           x₂ ^ 5 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ +
+           x₂ ^ 5 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 +
+           x₂ ^ 5 * y₂ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (-2 : Ksep) * x₂ ^ 5 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ +
+           (-2 : Ksep) * x₂ ^ 5 * y₂ * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ +
+           (-2 : Ksep) * x₂ ^ 5 * y₂ ^ 2 * (E⁄Ksep).a₂) +
+          (x₂ ^ 5 * y₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 + (-2 : Ksep) * x₂ ^ 6 * (E⁄Ksep).a₆ +
+           (-1 : Ksep) * x₂ ^ 6 * (E⁄Ksep).a₃ ^ 2 +
+           (2 : Ksep) * x₂ ^ 6 * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ +
+           (2 : Ksep) * x₂ ^ 6 * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           x₂ ^ 6 * y₂ * (E⁄Ksep).a₃ +
+           (-2 : Ksep) * x₂ ^ 6 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ +
+           (-2 : Ksep) * x₂ ^ 6 * y₂ ^ 2 + (2 : Ksep) * x₂ ^ 7 * (E⁄Ksep).a₄ +
+           x₂ ^ 7 * (E⁄Ksep).a₂ ^ 2 + (2 : Ksep) * x₂ ^ 7 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) +
+          ((-2 : Ksep) * x₂ ^ 7 * y₂ * (E⁄Ksep).a₁ + (2 : Ksep) * x₂ ^ 8 * (E⁄Ksep).a₂ +
+           x₂ ^ 9 + (4 : Ksep) * y₁ * x₂ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ +
+           y₁ * x₂ ^ 3 * (E⁄Ksep).a₃ ^ 3 + (-4 : Ksep) * y₁ * x₂ ^ 3 * y₂ * (E⁄Ksep).a₆ +
+           (-1 : Ksep) * y₁ * x₂ ^ 3 * y₂ * (E⁄Ksep).a₃ ^ 2 +
+           (-3 : Ksep) * y₁ * x₂ ^ 3 * y₂ ^ 3 +
+           (-3 : Ksep) * y₁ * x₂ ^ 4 * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ +
+           (-1 : Ksep) * y₁ * x₂ ^ 4 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 +
+           (3 : Ksep) * y₁ * x₂ ^ 4 * y₂ * (E⁄Ksep).a₄) +
+          ((2 : Ksep) * y₁ * x₂ ^ 4 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           (-5 : Ksep) * y₁ * x₂ ^ 4 * y₂ ^ 2 * (E⁄Ksep).a₁ +
+           (-1 : Ksep) * y₁ * x₂ ^ 5 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (2 : Ksep) * y₁ * x₂ ^ 5 * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ +
+           y₁ * x₂ ^ 5 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ +
+           (3 : Ksep) * y₁ * x₂ ^ 5 * y₂ * (E⁄Ksep).a₂ +
+           (-2 : Ksep) * y₁ * x₂ ^ 5 * y₂ * (E⁄Ksep).a₁ ^ 2 +
+           (-1 : Ksep) * y₁ * x₂ ^ 6 * (E⁄Ksep).a₃) +
+          ((2 : Ksep) * y₁ * x₂ ^ 6 * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ +
+           (3 : Ksep) * y₁ * x₂ ^ 6 * y₂ + (2 : Ksep) * y₁ * x₂ ^ 7 * (E⁄Ksep).a₁ +
+           (12 : Ksep) * x₁ * x₂ ^ 2 * (E⁄Ksep).a₆ ^ 2 +
+           (15 : Ksep) * x₁ * x₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ +
+           (3 : Ksep) * x₁ * x₂ ^ 2 * (E⁄Ksep).a₃ ^ 4 +
+           (-12 : Ksep) * x₁ * x₂ ^ 2 * y₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ +
+           (-3 : Ksep) * x₁ * x₂ ^ 2 * y₂ * (E⁄Ksep).a₃ ^ 3 +
+           (12 : Ksep) * x₁ * x₂ ^ 2 * y₂ ^ 2 * (E⁄Ksep).a₆) +
+          ((3 : Ksep) * x₁ * x₂ ^ 2 * y₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 +
+           (-3 : Ksep) * x₁ * x₂ ^ 2 * y₂ ^ 3 * (E⁄Ksep).a₃ +
+           (3 : Ksep) * x₁ * x₂ ^ 2 * y₂ ^ 4 +
+           (6 : Ksep) * x₁ * x₂ ^ 3 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ +
+           (5 : Ksep) * x₁ * x₂ ^ 3 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ +
+           (2 : Ksep) * x₁ * x₂ ^ 3 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ +
+           (2 : Ksep) * x₁ * x₂ ^ 3 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 +
+           (-2 : Ksep) * x₁ * x₂ ^ 3 * y₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) +
+          ((6 : Ksep) * x₁ * x₂ ^ 3 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ +
+           x₁ * x₂ ^ 3 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 +
+           (-4 : Ksep) * x₁ * x₂ ^ 3 * y₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           (3 : Ksep) * x₁ * x₂ ^ 3 * y₂ ^ 3 * (E⁄Ksep).a₁ +
+           (-4 : Ksep) * x₁ * x₂ ^ 4 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ +
+           (-1 : Ksep) * x₁ * x₂ ^ 4 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 +
+           (-2 : Ksep) * x₁ * x₂ ^ 4 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ +
+           (-3 : Ksep) * x₁ * x₂ ^ 4 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) +
+          ((-2 : Ksep) * x₁ * x₂ ^ 4 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 +
+           (3 : Ksep) * x₁ * x₂ ^ 4 * y₂ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (4 : Ksep) * x₁ * x₂ ^ 4 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ +
+           (2 : Ksep) * x₁ * x₂ ^ 4 * y₂ * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ +
+           (-6 : Ksep) * x₁ * x₂ ^ 4 * y₂ ^ 2 * (E⁄Ksep).a₂ +
+           (-2 : Ksep) * x₁ * x₂ ^ 4 * y₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 +
+           (-6 : Ksep) * x₁ * x₂ ^ 5 * (E⁄Ksep).a₆ +
+           (-3 : Ksep) * x₁ * x₂ ^ 5 * (E⁄Ksep).a₃ ^ 2) +
+          ((2 : Ksep) * x₁ * x₂ ^ 5 * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ +
+           (2 : Ksep) * x₁ * x₂ ^ 5 * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (3 : Ksep) * x₁ * x₂ ^ 5 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ +
+           (2 : Ksep) * x₁ * x₂ ^ 5 * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ +
+           (3 : Ksep) * x₁ * x₂ ^ 5 * y₂ * (E⁄Ksep).a₃ +
+           (-3 : Ksep) * x₁ * x₂ ^ 5 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ +
+           (-2 : Ksep) * x₁ * x₂ ^ 5 * y₂ * (E⁄Ksep).a₁ ^ 3 +
+           (-6 : Ksep) * x₁ * x₂ ^ 5 * y₂ ^ 2 + (2 : Ksep) * x₁ * x₂ ^ 6 * (E⁄Ksep).a₄) +
+          ((3 : Ksep) * x₁ * x₂ ^ 6 * (E⁄Ksep).a₂ ^ 2 +
+           (2 : Ksep) * x₁ * x₂ ^ 6 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           (2 : Ksep) * x₁ * x₂ ^ 6 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ +
+           (-3 : Ksep) * x₁ * x₂ ^ 6 * y₂ * (E⁄Ksep).a₁ +
+           (6 : Ksep) * x₁ * x₂ ^ 7 * (E⁄Ksep).a₂ +
+           (2 : Ksep) * x₁ * x₂ ^ 7 * (E⁄Ksep).a₁ ^ 2 + (3 : Ksep) * x₁ * x₂ ^ 8 +
+           (12 : Ksep) * x₁ * y₁ * x₂ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ +
+           (3 : Ksep) * x₁ * y₁ * x₂ ^ 2 * (E⁄Ksep).a₃ ^ 3) +
+          ((-12 : Ksep) * x₁ * y₁ * x₂ ^ 2 * y₂ * (E⁄Ksep).a₆ +
+           (-3 : Ksep) * x₁ * y₁ * x₂ ^ 2 * y₂ * (E⁄Ksep).a₃ ^ 2 +
+           (-9 : Ksep) * x₁ * y₁ * x₂ ^ 2 * y₂ ^ 3 +
+           (4 : Ksep) * x₁ * y₁ * x₂ ^ 3 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ +
+           (-2 : Ksep) * x₁ * y₁ * x₂ ^ 3 * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ +
+           x₁ * y₁ * x₂ ^ 3 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 +
+           (2 : Ksep) * x₁ * y₁ * x₂ ^ 3 * y₂ * (E⁄Ksep).a₄ +
+           (2 : Ksep) * x₁ * y₁ * x₂ ^ 3 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) +
+          ((-10 : Ksep) * x₁ * y₁ * x₂ ^ 3 * y₂ ^ 2 * (E⁄Ksep).a₁ +
+           (-1 : Ksep) * x₁ * y₁ * x₂ ^ 4 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (-1 : Ksep) * x₁ * y₁ * x₂ ^ 4 * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ +
+           (-1 : Ksep) * x₁ * y₁ * x₂ ^ 4 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ +
+           (9 : Ksep) * x₁ * y₁ * x₂ ^ 4 * y₂ * (E⁄Ksep).a₂ +
+           (-3 : Ksep) * x₁ * y₁ * x₂ ^ 5 * (E⁄Ksep).a₃ +
+           (3 : Ksep) * x₁ * y₁ * x₂ ^ 5 * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ +
+           x₁ * y₁ * x₂ ^ 5 * (E⁄Ksep).a₁ ^ 3 + (9 : Ksep) * x₁ * y₁ * x₂ ^ 5 * y₂) +
+          ((3 : Ksep) * x₁ * y₁ * x₂ ^ 6 * (E⁄Ksep).a₁ +
+           (12 : Ksep) * x₁ ^ 2 * x₂ * (E⁄Ksep).a₆ ^ 2 +
+           (15 : Ksep) * x₁ ^ 2 * x₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ +
+           (3 : Ksep) * x₁ ^ 2 * x₂ * (E⁄Ksep).a₃ ^ 4 +
+           (-12 : Ksep) * x₁ ^ 2 * x₂ * y₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ +
+           (-3 : Ksep) * x₁ ^ 2 * x₂ * y₂ * (E⁄Ksep).a₃ ^ 3 +
+           (12 : Ksep) * x₁ ^ 2 * x₂ * y₂ ^ 2 * (E⁄Ksep).a₆ +
+           (3 : Ksep) * x₁ ^ 2 * x₂ * y₂ ^ 2 * (E⁄Ksep).a₃ ^ 2) +
+          ((-3 : Ksep) * x₁ ^ 2 * x₂ * y₂ ^ 3 * (E⁄Ksep).a₃ +
+           (3 : Ksep) * x₁ ^ 2 * x₂ * y₂ ^ 4 +
+           (18 : Ksep) * x₁ ^ 2 * x₂ ^ 2 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ +
+           (12 : Ksep) * x₁ ^ 2 * x₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ +
+           (21 : Ksep) * x₁ ^ 2 * x₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ +
+           (9 : Ksep) * x₁ ^ 2 * x₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 +
+           (-9 : Ksep) * x₁ ^ 2 * x₂ ^ 2 * y₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ +
+           (-6 : Ksep) * x₁ ^ 2 * x₂ ^ 2 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₆) +
+          ((-6 : Ksep) * x₁ ^ 2 * x₂ ^ 2 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 +
+           (9 : Ksep) * x₁ ^ 2 * x₂ ^ 2 * y₂ ^ 2 * (E⁄Ksep).a₄ +
+           (3 : Ksep) * x₁ ^ 2 * x₂ ^ 2 * y₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           (-2 : Ksep) * x₁ ^ 2 * x₂ ^ 2 * y₂ ^ 3 * (E⁄Ksep).a₁ +
+           (3 : Ksep) * x₁ ^ 2 * x₂ ^ 3 * (E⁄Ksep).a₄ ^ 2 +
+           (2 : Ksep) * x₁ ^ 2 * x₂ ^ 3 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ +
+           (4 : Ksep) * x₁ ^ 2 * x₂ ^ 3 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 +
+           (4 : Ksep) * x₁ ^ 2 * x₂ ^ 3 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) +
+          ((-2 : Ksep) * x₁ ^ 2 * x₂ ^ 3 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ +
+           x₁ ^ 2 * x₂ ^ 3 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 +
+           (-1 : Ksep) * x₁ ^ 2 * x₂ ^ 3 * y₂ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (8 : Ksep) * x₁ ^ 2 * x₂ ^ 3 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ +
+           (5 : Ksep) * x₁ ^ 2 * x₂ ^ 3 * y₂ * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ +
+           (-3 : Ksep) * x₁ ^ 2 * x₂ ^ 3 * y₂ ^ 2 * (E⁄Ksep).a₂ +
+           (-6 : Ksep) * x₁ ^ 2 * x₂ ^ 3 * y₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 +
+           (-9 : Ksep) * x₁ ^ 2 * x₂ ^ 4 * (E⁄Ksep).a₆) +
+          ((-3 : Ksep) * x₁ ^ 2 * x₂ ^ 4 * (E⁄Ksep).a₃ ^ 2 +
+           (-1 : Ksep) * x₁ ^ 2 * x₂ ^ 4 * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ +
+           (-2 : Ksep) * x₁ ^ 2 * x₂ ^ 4 * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (-1 : Ksep) * x₁ ^ 2 * x₂ ^ 4 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ +
+           (-1 : Ksep) * x₁ ^ 2 * x₂ ^ 4 * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ +
+           (4 : Ksep) * x₁ ^ 2 * x₂ ^ 4 * y₂ * (E⁄Ksep).a₃ +
+           (6 : Ksep) * x₁ ^ 2 * x₂ ^ 4 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ +
+           (-9 : Ksep) * x₁ ^ 2 * x₂ ^ 4 * y₂ ^ 2) +
+          ((2 : Ksep) * x₁ ^ 2 * x₂ ^ 5 * (E⁄Ksep).a₂ ^ 2 +
+           (4 : Ksep) * x₁ ^ 2 * x₂ ^ 5 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ +
+           x₁ ^ 2 * x₂ ^ 5 * (E⁄Ksep).a₁ ^ 4 +
+           (-1 : Ksep) * x₁ ^ 2 * x₂ ^ 5 * y₂ * (E⁄Ksep).a₁ +
+           (8 : Ksep) * x₁ ^ 2 * x₂ ^ 6 * (E⁄Ksep).a₂ +
+           (3 : Ksep) * x₁ ^ 2 * x₂ ^ 6 * (E⁄Ksep).a₁ ^ 2 + (6 : Ksep) * x₁ ^ 2 * x₂ ^ 7 +
+           (12 : Ksep) * x₁ ^ 2 * y₁ * x₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ +
+           (3 : Ksep) * x₁ ^ 2 * y₁ * x₂ * (E⁄Ksep).a₃ ^ 3) +
+          ((-12 : Ksep) * x₁ ^ 2 * y₁ * x₂ * y₂ * (E⁄Ksep).a₆ +
+           (-3 : Ksep) * x₁ ^ 2 * y₁ * x₂ * y₂ * (E⁄Ksep).a₃ ^ 2 +
+           (-9 : Ksep) * x₁ ^ 2 * y₁ * x₂ * y₂ ^ 3 +
+           (9 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 2 * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ +
+           (6 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ +
+           (6 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 +
+           (-6 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 2 * y₂ * (E⁄Ksep).a₄ +
+           (-3 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 2 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) +
+          ((-4 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 2 * y₂ ^ 2 * (E⁄Ksep).a₁ +
+           (3 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 3 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (6 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 3 * y₂ * (E⁄Ksep).a₂ +
+           (3 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 3 * y₂ * (E⁄Ksep).a₁ ^ 2 +
+           (-3 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 4 * (E⁄Ksep).a₃ +
+           (13 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 4 * y₂ +
+           (3 : Ksep) * x₁ ^ 2 * y₁ * x₂ ^ 5 * (E⁄Ksep).a₁ +
+           (4 : Ksep) * x₁ ^ 3 * (E⁄Ksep).a₆ ^ 2) +
+          ((5 : Ksep) * x₁ ^ 3 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆ + x₁ ^ 3 * (E⁄Ksep).a₃ ^ 4 +
+           (-4 : Ksep) * x₁ ^ 3 * y₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ +
+           (-1 : Ksep) * x₁ ^ 3 * y₂ * (E⁄Ksep).a₃ ^ 3 +
+           (4 : Ksep) * x₁ ^ 3 * y₂ ^ 2 * (E⁄Ksep).a₆ + x₁ ^ 3 * y₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 +
+           (-1 : Ksep) * x₁ ^ 3 * y₂ ^ 3 * (E⁄Ksep).a₃ + x₁ ^ 3 * y₂ ^ 4 +
+           (14 : Ksep) * x₁ ^ 3 * x₂ * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ +
+           (9 : Ksep) * x₁ ^ 3 * x₂ * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ +
+           (20 : Ksep) * x₁ ^ 3 * x₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) +
+          ((8 : Ksep) * x₁ ^ 3 * x₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 +
+           (-8 : Ksep) * x₁ ^ 3 * x₂ * y₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ +
+           (-10 : Ksep) * x₁ ^ 3 * x₂ * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ +
+           (-7 : Ksep) * x₁ ^ 3 * x₂ * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 +
+           (10 : Ksep) * x₁ ^ 3 * x₂ * y₂ ^ 2 * (E⁄Ksep).a₄ +
+           (6 : Ksep) * x₁ ^ 3 * x₂ * y₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           (-5 : Ksep) * x₁ ^ 3 * x₂ * y₂ ^ 3 * (E⁄Ksep).a₁ +
+           (7 : Ksep) * x₁ ^ 3 * x₂ ^ 2 * (E⁄Ksep).a₄ ^ 2) +
+          ((10 : Ksep) * x₁ ^ 3 * x₂ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ +
+           (8 : Ksep) * x₁ ^ 3 * x₂ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 +
+           (17 : Ksep) * x₁ ^ 3 * x₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ +
+           (7 : Ksep) * x₁ ^ 3 * x₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ +
+           (10 : Ksep) * x₁ ^ 3 * x₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 +
+           (-7 : Ksep) * x₁ ^ 3 * x₂ ^ 2 * y₂ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (-3 : Ksep) * x₁ ^ 3 * x₂ ^ 2 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ +
+           (-3 : Ksep) * x₁ ^ 3 * x₂ ^ 2 * y₂ * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) +
+          ((7 : Ksep) * x₁ ^ 3 * x₂ ^ 2 * y₂ ^ 2 * (E⁄Ksep).a₂ +
+           (-1 : Ksep) * x₁ ^ 3 * x₂ ^ 2 * y₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 +
+           (-4 : Ksep) * x₁ ^ 3 * x₂ ^ 3 * (E⁄Ksep).a₆ +
+           (2 : Ksep) * x₁ ^ 3 * x₂ ^ 3 * (E⁄Ksep).a₃ ^ 2 +
+           (4 : Ksep) * x₁ ^ 3 * x₂ ^ 3 * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ +
+           (4 : Ksep) * x₁ ^ 3 * x₂ ^ 3 * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (-1 : Ksep) * x₁ ^ 3 * x₂ ^ 3 * y₂ * (E⁄Ksep).a₃ +
+           (9 : Ksep) * x₁ ^ 3 * x₂ ^ 3 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₂) +
+          ((3 : Ksep) * x₁ ^ 3 * x₂ ^ 3 * y₂ * (E⁄Ksep).a₁ ^ 3 +
+           (-5 : Ksep) * x₁ ^ 3 * x₂ ^ 3 * y₂ ^ 2 +
+           (-4 : Ksep) * x₁ ^ 3 * x₂ ^ 4 * (E⁄Ksep).a₄ +
+           (-4 : Ksep) * x₁ ^ 3 * x₂ ^ 4 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           (7 : Ksep) * x₁ ^ 3 * x₂ ^ 4 * y₂ * (E⁄Ksep).a₁ +
+           (4 : Ksep) * x₁ ^ 3 * x₂ ^ 5 * (E⁄Ksep).a₂ +
+           (4 : Ksep) * x₁ ^ 3 * x₂ ^ 5 * (E⁄Ksep).a₁ ^ 2 + (6 : Ksep) * x₁ ^ 3 * x₂ ^ 6 +
+           (4 : Ksep) * x₁ ^ 3 * y₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) +
+          (x₁ ^ 3 * y₁ * (E⁄Ksep).a₃ ^ 3 + (-4 : Ksep) * x₁ ^ 3 * y₁ * y₂ * (E⁄Ksep).a₆ +
+           (-1 : Ksep) * x₁ ^ 3 * y₁ * y₂ * (E⁄Ksep).a₃ ^ 2 +
+           (-3 : Ksep) * x₁ ^ 3 * y₁ * y₂ ^ 3 +
+           (6 : Ksep) * x₁ ^ 3 * y₁ * x₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ +
+           (6 : Ksep) * x₁ ^ 3 * y₁ * x₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ +
+           (5 : Ksep) * x₁ ^ 3 * y₁ * x₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 +
+           (-6 : Ksep) * x₁ ^ 3 * y₁ * x₂ * y₂ * (E⁄Ksep).a₄ +
+           (-4 : Ksep) * x₁ ^ 3 * y₁ * x₂ * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) +
+          ((2 : Ksep) * x₁ ^ 3 * y₁ * x₂ * y₂ ^ 2 * (E⁄Ksep).a₁ +
+           (5 : Ksep) * x₁ ^ 3 * y₁ * x₂ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (5 : Ksep) * x₁ ^ 3 * y₁ * x₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ +
+           (4 : Ksep) * x₁ ^ 3 * y₁ * x₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ +
+           (-2 : Ksep) * x₁ ^ 3 * y₁ * x₂ ^ 2 * y₂ * (E⁄Ksep).a₂ +
+           x₁ ^ 3 * y₁ * x₂ ^ 3 * (E⁄Ksep).a₃ +
+           x₁ ^ 3 * y₁ * x₂ ^ 3 * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ +
+           (8 : Ksep) * x₁ ^ 3 * y₁ * x₂ ^ 3 * y₂) +
+          ((3 : Ksep) * x₁ ^ 4 * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ +
+           (2 : Ksep) * x₁ ^ 4 * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ +
+           (5 : Ksep) * x₁ ^ 4 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ +
+           (2 : Ksep) * x₁ ^ 4 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 3 +
+           (-2 : Ksep) * x₁ ^ 4 * y₂ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ +
+           (-3 : Ksep) * x₁ ^ 4 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ +
+           (-2 : Ksep) * x₁ ^ 4 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 +
+           (3 : Ksep) * x₁ ^ 4 * y₂ ^ 2 * (E⁄Ksep).a₄) +
+          ((2 : Ksep) * x₁ ^ 4 * y₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           (-2 : Ksep) * x₁ ^ 4 * y₂ ^ 3 * (E⁄Ksep).a₁ +
+           (3 : Ksep) * x₁ ^ 4 * x₂ * (E⁄Ksep).a₄ ^ 2 +
+           (8 : Ksep) * x₁ ^ 4 * x₂ * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ +
+           (5 : Ksep) * x₁ ^ 4 * x₂ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 +
+           (10 : Ksep) * x₁ ^ 4 * x₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ +
+           (6 : Ksep) * x₁ ^ 4 * x₂ * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ +
+           (7 : Ksep) * x₁ ^ 4 * x₂ * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2) +
+          ((-5 : Ksep) * x₁ ^ 4 * x₂ * y₂ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (-6 : Ksep) * x₁ ^ 4 * x₂ * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ +
+           (-5 : Ksep) * x₁ ^ 4 * x₂ * y₂ * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ +
+           (8 : Ksep) * x₁ ^ 4 * x₂ * y₂ ^ 2 * (E⁄Ksep).a₂ +
+           (3 : Ksep) * x₁ ^ 4 * x₂ * y₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 +
+           (3 : Ksep) * x₁ ^ 4 * x₂ ^ 2 * (E⁄Ksep).a₆ +
+           (3 : Ksep) * x₁ ^ 4 * x₂ ^ 2 * (E⁄Ksep).a₃ ^ 2 +
+           (8 : Ksep) * x₁ ^ 4 * x₂ ^ 2 * (E⁄Ksep).a₂ * (E⁄Ksep).a₄) +
+          ((11 : Ksep) * x₁ ^ 4 * x₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (6 : Ksep) * x₁ ^ 4 * x₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ +
+           (5 : Ksep) * x₁ ^ 4 * x₂ ^ 2 * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ +
+           (-6 : Ksep) * x₁ ^ 4 * x₂ ^ 2 * y₂ * (E⁄Ksep).a₃ +
+           (-1 : Ksep) * x₁ ^ 4 * x₂ ^ 2 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ +
+           (5 : Ksep) * x₁ ^ 4 * x₂ ^ 2 * y₂ ^ 2 +
+           (2 : Ksep) * x₁ ^ 4 * x₂ ^ 3 * (E⁄Ksep).a₂ ^ 2 +
+           (2 : Ksep) * x₁ ^ 4 * x₂ ^ 3 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) +
+          (x₁ ^ 4 * x₂ ^ 3 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ +
+           (9 : Ksep) * x₁ ^ 4 * x₂ ^ 3 * y₂ * (E⁄Ksep).a₁ +
+           (-1 : Ksep) * x₁ ^ 4 * x₂ ^ 4 * (E⁄Ksep).a₂ + (3 : Ksep) * x₁ ^ 4 * x₂ ^ 5 +
+           x₁ ^ 4 * y₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ +
+           x₁ ^ 4 * y₁ * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ +
+           x₁ ^ 4 * y₁ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2 +
+           (-1 : Ksep) * x₁ ^ 4 * y₁ * y₂ * (E⁄Ksep).a₄ +
+           (-1 : Ksep) * x₁ ^ 4 * y₁ * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) +
+          (x₁ ^ 4 * y₁ * y₂ ^ 2 * (E⁄Ksep).a₁ +
+           (2 : Ksep) * x₁ ^ 4 * y₁ * x₂ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (2 : Ksep) * x₁ ^ 4 * y₁ * x₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ +
+           (2 : Ksep) * x₁ ^ 4 * y₁ * x₂ * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ +
+           (-2 : Ksep) * x₁ ^ 4 * y₁ * x₂ * y₂ * (E⁄Ksep).a₂ +
+           (-1 : Ksep) * x₁ ^ 4 * y₁ * x₂ * y₂ * (E⁄Ksep).a₁ ^ 2 +
+           (3 : Ksep) * x₁ ^ 4 * y₁ * x₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ +
+           x₁ ^ 4 * y₁ * x₂ ^ 2 * (E⁄Ksep).a₁ ^ 3 + x₁ ^ 4 * y₁ * x₂ ^ 3 * (E⁄Ksep).a₁) +
+          ((2 : Ksep) * x₁ ^ 5 * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ +
+           x₁ ^ 5 * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 +
+           x₁ ^ 5 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ +
+           x₁ ^ 5 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆ +
+           x₁ ^ 5 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃ ^ 2 +
+           (-1 : Ksep) * x₁ ^ 5 * y₂ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (-1 : Ksep) * x₁ ^ 5 * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ +
+           (-1 : Ksep) * x₁ ^ 5 * y₂ * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) +
+          ((2 : Ksep) * x₁ ^ 5 * y₂ ^ 2 * (E⁄Ksep).a₂ + x₁ ^ 5 * y₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 +
+           (6 : Ksep) * x₁ ^ 5 * x₂ * (E⁄Ksep).a₆ +
+           (3 : Ksep) * x₁ ^ 5 * x₂ * (E⁄Ksep).a₃ ^ 2 +
+           (2 : Ksep) * x₁ ^ 5 * x₂ * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ +
+           (4 : Ksep) * x₁ ^ 5 * x₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ +
+           (2 : Ksep) * x₁ ^ 5 * x₂ * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄ +
+           (2 : Ksep) * x₁ ^ 5 * x₂ * (E⁄Ksep).a₁ ^ 3 * (E⁄Ksep).a₃ +
+           (-3 : Ksep) * x₁ ^ 5 * x₂ * y₂ * (E⁄Ksep).a₃) +
+          ((-3 : Ksep) * x₁ ^ 5 * x₂ * y₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ +
+           (-1 : Ksep) * x₁ ^ 5 * x₂ * y₂ * (E⁄Ksep).a₁ ^ 3 +
+           (6 : Ksep) * x₁ ^ 5 * x₂ * y₂ ^ 2 + (3 : Ksep) * x₁ ^ 5 * x₂ ^ 2 * (E⁄Ksep).a₄ +
+           (2 : Ksep) * x₁ ^ 5 * x₂ ^ 2 * (E⁄Ksep).a₂ ^ 2 +
+           (3 : Ksep) * x₁ ^ 5 * x₂ ^ 2 * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           (4 : Ksep) * x₁ ^ 5 * x₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂ +
+           x₁ ^ 5 * x₂ ^ 2 * (E⁄Ksep).a₁ ^ 4 + (2 : Ksep) * x₁ ^ 5 * x₂ ^ 3 * (E⁄Ksep).a₂ +
+           x₁ ^ 5 * x₂ ^ 3 * (E⁄Ksep).a₁ ^ 2 + x₁ ^ 6 * (E⁄Ksep).a₆) +
+          (x₁ ^ 6 * (E⁄Ksep).a₃ ^ 2 + (-1 : Ksep) * x₁ ^ 6 * y₂ * (E⁄Ksep).a₃ +
+           x₁ ^ 6 * y₂ ^ 2 + x₁ ^ 6 * x₂ * (E⁄Ksep).a₄ +
+           (2 : Ksep) * x₁ ^ 6 * x₂ * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ +
+           (-1 : Ksep) * x₁ ^ 6 * x₂ * y₂ * (E⁄Ksep).a₁ + x₁ ^ 6 * x₂ ^ 2 * (E⁄Ksep).a₂ +
+           x₁ ^ 6 * x₂ ^ 2 * (E⁄Ksep).a₁ ^ 2 + x₁ ^ 6 * x₂ ^ 3))) * he₂ - hBW
+        rw [WeierstrassCurve.torsionPairFormalAbs_apply_some R K E Ksep m h hdeg
+            PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0,
+          WeierstrassCurve.torsionPairFormalOrd_apply_some R K E Ksep m h hdeg
+            PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0,
+          WeierstrassCurve.torsionPairFormalDen_apply_some R K E Ksep m h hdeg
+            PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0,
+          hkeyA, hkeyB, hk]
+        simp only [show k + 2 - 2 = k from by omega,
+          show 2 * (k + 2) - 4 = 2 * k from by omega,
+          show 3 * (k + 2) - 6 = 3 * k from by omega]
+        refine ⟨?_, ?_⟩
+        · field_simp
+          ring
+        · field_simp
+          ring
+  · -- ***** the zero-sum unit clause *****
+    intro 𝒪 hcen PQ hformal₁ hformal₂ hsum
+    cases hc1 : ((PQ.1 : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))) :
+        (E⁄Ksep).Point) with
+    | zero =>
+      -- both points are the origin: `A` restricts to the coefficient of
+      -- `x₁^{2d}x₂^{2d}`, which is `1`
+      have hQz : (PQ.2 : (E⁄Ksep).Point) = Affine.Point.zero := by
+        have h0 : (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) =
+            Affine.Point.zero := by rw [← hsumeq PQ]; exact hsum
+        rw [hc1] at h0
+        have h1 : (0 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) = 0 := h0
+        rwa [zero_add] at h1
+      rw [WeierstrassCurve.torsionPairFormalAbs_apply_zero_left R K E Ksep m h
+          hdeg PQ hc1, hQz]
+      simp only [WeierstrassCurve.torsionKernelFun_zero]
+      rw [if_pos (show 2 * h.natDegree + 3 * 0 = 2 * h.natDegree from by omega),
+        if_neg (show ¬(2 * (h.natDegree - 1) + 3 * 0 = 2 * h.natDegree) from
+          by omega),
+        if_neg (show ¬(2 * (h.natDegree - 2) + 3 * 0 = 2 * h.natDegree) from
+          by omega),
+        if_neg (show ¬(2 * (h.natDegree - 2) + 3 * 1 = 2 * h.natDegree) from
+          by omega)]
+      simp
+    | some x₁ y₁ hns₁ =>
+      cases hc2 : ((PQ.2 : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ))) :
+          (E⁄Ksep).Point) with
+      | zero =>
+        exfalso
+        have h0 : (PQ.1 : (E⁄Ksep).Point) + (PQ.2 : (E⁄Ksep).Point) =
+            Affine.Point.zero := by rw [← hsumeq PQ]; exact hsum
+        rw [hc1, hc2] at h0
+        have h1 : (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) + 0 = 0 := h0
+        rw [add_zero] at h1
+        exact WeierstrassCurve.Affine.Point.some_ne_zero hns₁ h1
+      | some x₂ y₂ hns₂ =>
+        -- the anti-diagonal: `x₁ = x₂`, `y₂ = negY(x₁,y₁)`, both formal
+        have h0 : (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) +
+            Affine.Point.some x₂ y₂ hns₂ = Affine.Point.zero := by
+          rw [← hc1, ← hc2, ← hsumeq PQ]; exact hsum
+        have hxy : x₁ = x₂ ∧ y₁ = (E⁄Ksep).toAffine.negY x₂ y₂ := by
+          by_contra hc
+          rw [WeierstrassCurve.Affine.Point.add_some hc] at h0
+          exact WeierstrassCurve.Affine.Point.some_ne_zero _ h0
+        obtain ⟨hx, hy⟩ := hxy
+        have htor₁ : (m : ℤ) •
+            (Affine.Point.some x₁ y₁ hns₁ : (E⁄Ksep).Point) = 0 := by
+          rw [← hc1]
+          exact (Submodule.mem_torsionBy_iff _ _).mp PQ.1.2
+        have htor₂ : (m : ℤ) •
+            (Affine.Point.some x₂ y₂ hns₂ : (E⁄Ksep).Point) = 0 := by
+          rw [← hc2]
+          exact (Submodule.mem_torsionBy_iff _ _).mp PQ.2.2
+        have h₁0 : Polynomial.aeval x₁ h ≠ 0 :=
+          WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon hunit
+            hns₁ htor₁
+        have h₂0 : Polynomial.aeval x₂ h ≠ 0 :=
+          WeierstrassCurve.torsionKernel_aeval_ne_zero R K E Ksep m h hmon hunit
+            hns₂ htor₂
+        have he₁ := (WeierstrassCurve.Affine.equation_iff x₁ y₁).mp hns₁.1
+        have hx₁ : x₁ ∉ 𝒪 := fun hmem => hformal₁ ⟨x₁, y₁, hns₁, hc1, hmem⟩
+        have hv₁ : 1 < 𝒪.valuation x₁ :=
+          not_le.mp fun hle => hx₁ ((𝒪.valuation_le_one_iff _).mp hle)
+        have hne : 𝒪.valuation x₁ ≠ 0 := ne_of_gt (lt_trans zero_lt_one hv₁)
+        have hysq : 𝒪.valuation y₁ ^ 2 = 𝒪.valuation x₁ ^ 3 :=
+          WeierstrassCurve.val_ordinate_sq_of_abscissa_notMem R K E Ksep 𝒪 hcen
+            hns₁.1 hx₁
+        have hh₁ : 𝒪.valuation (Polynomial.aeval x₁ h) =
+            𝒪.valuation x₁ ^ h.natDegree :=
+          val_aeval_monic_of_notMem R Ksep 𝒪
+            (mem_centered_algebraMap R K Ksep 𝒪 hcen) h hmon hx₁
+        obtain ⟨ha₁, ha₂, ha₃, ha₄, ha₆⟩ :=
+          baseChange_coeffs_mem_centered R K E Ksep 𝒪 hcen
+        have hone : ∀ z : Ksep, z ∈ 𝒪 → 𝒪.valuation z ≤ 1 :=
+          fun z hz => (𝒪.valuation_le_one_iff z).mpr hz
+        have hnat : ∀ n : ℕ, 𝒪.valuation (n : Ksep) ≤ 1 := by
+          intro n
+          rw [show ((n : Ksep)) = algebraMap R Ksep (n : R) from
+            (map_natCast (algebraMap R Ksep) n).symm]
+          exact hone _ (mem_centered_algebraMap R K Ksep 𝒪 hcen _)
+        have hvy : 𝒪.valuation y₁ < 𝒪.valuation x₁ ^ 2 := by
+          refine lt_of_pow_lt_pow_left₀ 2 zero_le ?_
+          rw [hysq, ← pow_mul]
+          exact pow_lt_pow_right₀ hv₁ (by omega)
+        have hA := WeierstrassCurve.torsionPairFormalAbs_apply_some R K E Ksep m h
+          hdeg PQ x₁ y₁ x₂ y₂ hns₁ hns₂ hc1 hc2 h₁0 h₂0
+        rw [WeierstrassCurve.Affine.negY] at hy
+        have hy2 : y₂ = -y₁ - (E⁄Ksep).a₁ * x₁ - (E⁄Ksep).a₃ := by
+          linear_combination hy + (E⁄Ksep).a₁ * hx
+        have hAnti :
+            (((2 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₂ ^ 2) +
+           ((-3 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 3) * (x₂ ^ 2 * y₂) +
+           ((E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₂ ^ 3) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 2) +
+           ((-2 : Ksep) * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 2) * (y₁ * x₂ ^ 2 * y₂) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆) * (y₁ * x₂ ^ 3) +
+           ((4 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ * x₂) +
+           ((-6 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₃ ^ 3) * (x₁ * x₂ * y₂) +
+           ((5 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 2) +
+           ((-3 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ * x₂ ^ 2 * y₂)) +
+          (((E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ * x₂ ^ 3) +
+           ((E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2) * (x₁ * x₂ ^ 4) +
+           ((2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ * y₁ * x₂) +
+           ((-4 : Ksep) * (E⁄Ksep).a₆ + (-2 : Ksep) * (E⁄Ksep).a₃ ^ 2) * (x₁ * y₁ * x₂ * y₂) +
+           ((2 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) * (x₁ * y₁ * x₂ ^ 2) +
+           ((-2 : Ksep) * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) * (x₁ * y₁ * x₂ ^ 2 * y₂) +
+           ((2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ * y₁ * x₂ ^ 3) +
+           ((E⁄Ksep).a₃) * (x₁ * y₁ * x₂ ^ 4) +
+           ((2 : Ksep) * (E⁄Ksep).a₆ ^ 2 + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 2) +
+           ((-3 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 3) * (x₁ ^ 2 * y₂)) +
+          (((5 : Ksep) * (E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 * (E⁄Ksep).a₄ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 2 * x₂) +
+           ((-4 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-4 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * x₂ * y₂) +
+           ((3 : Ksep) * (E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₂ * (E⁄Ksep).a₃ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄) * (x₁ ^ 2 * x₂ ^ 2) +
+           ((-3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-3 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) * (x₁ ^ 2 * x₂ ^ 2 * y₂) +
+           ((-1 : Ksep) * (E⁄Ksep).a₆ + (E⁄Ksep).a₃ ^ 2 + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃) * (x₁ ^ 2 * x₂ ^ 3) +
+           ((E⁄Ksep).a₄ + (2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) * (x₁ ^ 2 * x₂ ^ 4) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 2 * y₁) +
+           ((-2 : Ksep) * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 2 * y₁ * y₂) +
+           ((E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₆) * (x₁ ^ 2 * y₁ * x₂) +
+           ((-2 : Ksep) * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃) * (x₁ ^ 2 * y₁ * x₂ * y₂)) +
+          (((E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ * (E⁄Ksep).a₄) * (x₁ ^ 2 * y₁ * x₂ ^ 2) +
+           ((-2 : Ksep) * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 2 * y₁ * x₂ ^ 2 * y₂) +
+           ((E⁄Ksep).a₃ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂) * (x₁ ^ 2 * y₁ * x₂ ^ 3) +
+           ((E⁄Ksep).a₁) * (x₁ ^ 2 * y₁ * x₂ ^ 4) +
+           ((E⁄Ksep).a₄ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₆) * (x₁ ^ 3) +
+           ((-1 : Ksep) * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₆ + (-1 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₃ ^ 2) * (x₁ ^ 3 * y₂) +
+           ((E⁄Ksep).a₄ ^ 2 + (2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₆ + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₆) * (x₁ ^ 3 * x₂) +
+           ((-2 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (-2 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₄ + (-2 : Ksep) * (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₃) * (x₁ ^ 3 * x₂ * y₂) +
+           ((-1 : Ksep) * (E⁄Ksep).a₆ + (3 : Ksep) * (E⁄Ksep).a₂ * (E⁄Ksep).a₄ + (E⁄Ksep).a₁ * (E⁄Ksep).a₂ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₄) * (x₁ ^ 3 * x₂ ^ 2) +
+           ((-1 : Ksep) * (E⁄Ksep).a₃ + (-3 : Ksep) * (E⁄Ksep).a₁ * (E⁄Ksep).a₂ + (-1 : Ksep) * (E⁄Ksep).a₁ ^ 3) * (x₁ ^ 3 * x₂ ^ 2 * y₂)) +
+          (((2 : Ksep) * (E⁄Ksep).a₂ ^ 2 + (E⁄Ksep).a₁ * (E⁄Ksep).a₃ + (E⁄Ksep).a₁ ^ 2 * (E⁄Ksep).a₂) * (x₁ ^ 3 * x₂ ^ 3) +
+           ((E⁄Ksep).a₂ + (E⁄Ksep).a₁ ^ 2) * (x₁ ^ 3 * x₂ ^ 4) +
+           ((E⁄Ksep).a₆) * (x₁ ^ 4 * x₂) +
+           ((-1 : Ksep) * (E⁄Ksep).a₃) * (x₁ ^ 4 * x₂ * y₂) +
+           ((E⁄Ksep).a₄) * (x₁ ^ 4 * x₂ ^ 2) +
+           ((-1 : Ksep) * (E⁄Ksep).a₁) * (x₁ ^ 4 * x₂ ^ 2 * y₂) +
+           ((E⁄Ksep).a₂) * (x₁ ^ 4 * x₂ ^ 3) +
+           ((1 : Ksep)) * (x₁ ^ 4 * x₂ ^ 4)) =
+              (-(x₁ ^ 4 + ((E⁄Ksep).a₁ ^ 2 * x₁ ^ 3 + (2 * (E⁄Ksep).a₂ * x₁ ^ 3 +
+          (3 * (E⁄Ksep).a₄ * x₁ ^ 2 + (3 * ((E⁄Ksep).a₁ * (E⁄Ksep).a₃) * x₁ ^ 2 +
+          (2 * (E⁄Ksep).a₃ ^ 2 * x₁ + (4 * (E⁄Ksep).a₆ * x₁ +
+          ((E⁄Ksep).a₁ * (x₁ ^ 2 * y₁) + 2 * (E⁄Ksep).a₃ * (x₁ * y₁)))))))))) ^ 2 := by
+          rw [hy2, ← hx]
+          linear_combination ((8 : Ksep) * x₁ ^ 2 * (E⁄Ksep).a₆ + (4 : Ksep) * x₁ ^ 3 * (E⁄Ksep).a₄ +
+          (2 : Ksep) * x₁ ^ 4 * (E⁄Ksep).a₂) * he₁
+        have hS : 𝒪.valuation (-(x₁ ^ 4 + ((E⁄Ksep).a₁ ^ 2 * x₁ ^ 3 + (2 * (E⁄Ksep).a₂ * x₁ ^ 3 +
+          (3 * (E⁄Ksep).a₄ * x₁ ^ 2 + (3 * ((E⁄Ksep).a₁ * (E⁄Ksep).a₃) * x₁ ^ 2 +
+          (2 * (E⁄Ksep).a₃ ^ 2 * x₁ + (4 * (E⁄Ksep).a₆ * x₁ +
+          ((E⁄Ksep).a₁ * (x₁ ^ 2 * y₁) + 2 * (E⁄Ksep).a₃ * (x₁ * y₁)))))))))) =
+            𝒪.valuation x₁ ^ 4 := by
+          rw [Valuation.map_neg]
+          have hrest : 𝒪.valuation (((E⁄Ksep).a₁ ^ 2 * x₁ ^ 3 + (2 * (E⁄Ksep).a₂ * x₁ ^ 3 +
+          (3 * (E⁄Ksep).a₄ * x₁ ^ 2 + (3 * ((E⁄Ksep).a₁ * (E⁄Ksep).a₃) * x₁ ^ 2 +
+          (2 * (E⁄Ksep).a₃ ^ 2 * x₁ + (4 * (E⁄Ksep).a₆ * x₁ +
+          ((E⁄Ksep).a₁ * (x₁ ^ 2 * y₁) + 2 * (E⁄Ksep).a₃ * (x₁ * y₁))))))))) <
+              𝒪.valuation (x₁ ^ 4) := by
+            rw [map_pow]
+            refine 𝒪.valuation.map_add_lt ?_ (𝒪.valuation.map_add_lt ?_
+              (𝒪.valuation.map_add_lt ?_ (𝒪.valuation.map_add_lt ?_
+                (𝒪.valuation.map_add_lt ?_ (𝒪.valuation.map_add_lt ?_
+                  (𝒪.valuation.map_add_lt ?_ ?_))))))
+            · calc 𝒪.valuation ((E⁄Ksep).a₁ ^ 2 * x₁ ^ 3)
+                  = 𝒪.valuation (E⁄Ksep).a₁ ^ 2 * 𝒪.valuation x₁ ^ 3 := by
+                    rw [map_mul, map_pow, map_pow]
+                _ ≤ 1 * 𝒪.valuation x₁ ^ 3 :=
+                    mul_le_mul_left (pow_le_one₀ zero_le (hone _ ha₁)) _
+                _ = 𝒪.valuation x₁ ^ 3 := one_mul _
+                _ < 𝒪.valuation x₁ ^ 4 := pow_lt_pow_right₀ hv₁ (by omega)
+            · calc 𝒪.valuation (2 * (E⁄Ksep).a₂ * x₁ ^ 3)
+                  = 𝒪.valuation ((2 : Ksep) * (E⁄Ksep).a₂) *
+                      𝒪.valuation x₁ ^ 3 := by rw [map_mul, map_pow]
+                _ ≤ 1 * 𝒪.valuation x₁ ^ 3 := by
+                    refine mul_le_mul_left ?_ _
+                    rw [map_mul]
+                    exact mul_le_one₀ (by exact_mod_cast hnat 2) zero_le
+                      (hone _ ha₂)
+                _ = 𝒪.valuation x₁ ^ 3 := one_mul _
+                _ < 𝒪.valuation x₁ ^ 4 := pow_lt_pow_right₀ hv₁ (by omega)
+            · calc 𝒪.valuation (3 * (E⁄Ksep).a₄ * x₁ ^ 2)
+                  = 𝒪.valuation ((3 : Ksep) * (E⁄Ksep).a₄) *
+                      𝒪.valuation x₁ ^ 2 := by rw [map_mul, map_pow]
+                _ ≤ 1 * 𝒪.valuation x₁ ^ 2 := by
+                    refine mul_le_mul_left ?_ _
+                    rw [map_mul]
+                    exact mul_le_one₀ (by exact_mod_cast hnat 3) zero_le
+                      (hone _ ha₄)
+                _ = 𝒪.valuation x₁ ^ 2 := one_mul _
+                _ < 𝒪.valuation x₁ ^ 4 := pow_lt_pow_right₀ hv₁ (by omega)
+            · calc 𝒪.valuation (3 * ((E⁄Ksep).a₁ * (E⁄Ksep).a₃) * x₁ ^ 2)
+                  = 𝒪.valuation ((3 : Ksep) * ((E⁄Ksep).a₁ * (E⁄Ksep).a₃)) *
+                      𝒪.valuation x₁ ^ 2 := by rw [map_mul, map_pow]
+                _ ≤ 1 * 𝒪.valuation x₁ ^ 2 := by
+                    refine mul_le_mul_left ?_ _
+                    rw [map_mul, map_mul]
+                    exact mul_le_one₀ (by exact_mod_cast hnat 3) zero_le
+                      (mul_le_one₀ (hone _ ha₁) zero_le (hone _ ha₃))
+                _ = 𝒪.valuation x₁ ^ 2 := one_mul _
+                _ < 𝒪.valuation x₁ ^ 4 := pow_lt_pow_right₀ hv₁ (by omega)
+            · calc 𝒪.valuation (2 * (E⁄Ksep).a₃ ^ 2 * x₁)
+                  = 𝒪.valuation ((2 : Ksep) * (E⁄Ksep).a₃ ^ 2) *
+                      𝒪.valuation x₁ := by rw [map_mul]
+                _ ≤ 1 * 𝒪.valuation x₁ := by
+                    refine mul_le_mul_left ?_ _
+                    rw [map_mul, map_pow]
+                    exact mul_le_one₀ (by exact_mod_cast hnat 2) zero_le
+                      (pow_le_one₀ zero_le (hone _ ha₃))
+                _ = 𝒪.valuation x₁ ^ 1 := by rw [one_mul, pow_one]
+                _ < 𝒪.valuation x₁ ^ 4 := pow_lt_pow_right₀ hv₁ (by omega)
+            · calc 𝒪.valuation (4 * (E⁄Ksep).a₆ * x₁)
+                  = 𝒪.valuation ((4 : Ksep) * (E⁄Ksep).a₆) *
+                      𝒪.valuation x₁ := by rw [map_mul]
+                _ ≤ 1 * 𝒪.valuation x₁ := by
+                    refine mul_le_mul_left ?_ _
+                    rw [map_mul]
+                    exact mul_le_one₀ (by exact_mod_cast hnat 4) zero_le
+                      (hone _ ha₆)
+                _ = 𝒪.valuation x₁ ^ 1 := by rw [one_mul, pow_one]
+                _ < 𝒪.valuation x₁ ^ 4 := pow_lt_pow_right₀ hv₁ (by omega)
+            · calc 𝒪.valuation ((E⁄Ksep).a₁ * (x₁ ^ 2 * y₁))
+                  = 𝒪.valuation (E⁄Ksep).a₁ *
+                      (𝒪.valuation x₁ ^ 2 * 𝒪.valuation y₁) := by
+                    rw [map_mul, map_mul, map_pow]
+                _ ≤ 1 * (𝒪.valuation x₁ ^ 2 * 𝒪.valuation y₁) :=
+                    mul_le_mul_left (hone _ ha₁) _
+                _ = 𝒪.valuation x₁ ^ 2 * 𝒪.valuation y₁ := one_mul _
+                _ < 𝒪.valuation x₁ ^ 2 * 𝒪.valuation x₁ ^ 2 :=
+                    mul_lt_mul_of_pos_left hvy
+                      (pow_pos (lt_trans zero_lt_one hv₁) 2)
+                _ = 𝒪.valuation x₁ ^ 4 := by rw [← pow_add]
+            · calc 𝒪.valuation (2 * (E⁄Ksep).a₃ * (x₁ * y₁))
+                  = 𝒪.valuation ((2 : Ksep) * (E⁄Ksep).a₃) *
+                      (𝒪.valuation x₁ * 𝒪.valuation y₁) := by
+                    simp only [map_mul]
+                _ ≤ 1 * (𝒪.valuation x₁ * 𝒪.valuation y₁) := by
+                    refine mul_le_mul_left ?_ _
+                    rw [map_mul]
+                    exact mul_le_one₀ (by exact_mod_cast hnat 2) zero_le
+                      (hone _ ha₃)
+                _ = 𝒪.valuation x₁ * 𝒪.valuation y₁ := one_mul _
+                _ < 𝒪.valuation x₁ * 𝒪.valuation x₁ ^ 2 :=
+                    mul_lt_mul_of_pos_left hvy (lt_trans zero_lt_one hv₁)
+                _ = 𝒪.valuation x₁ ^ 3 := by rw [← pow_succ']
+                _ < 𝒪.valuation x₁ ^ 4 := pow_lt_pow_right₀ hv₁ (by omega)
+          rw [𝒪.valuation.map_add_eq_of_lt_left hrest, map_pow]
+        have hval : 𝒪.valuation x₁ ^ (2 * k) * 𝒪.valuation x₁ ^ (2 * k) *
+            (𝒪.valuation x₁ ^ 4) ^ 2 =
+            (𝒪.valuation x₁ ^ (k + 2) * 𝒪.valuation x₁ ^ (k + 2)) ^ 2 := by
+          simp only [← pow_add, ← pow_mul]
+          congr 1
+          omega
+        rw [hA, hAnti, ← hx, map_div₀]
+        simp only [map_mul, map_pow, hS, hh₁, hk,
+          show 2 * (k + 2) - 4 = 2 * k from by omega]
+        rw [hval]
+        exact div_self (pow_ne_zero _
+          (mul_ne_zero (pow_ne_zero _ hne) (pow_ne_zero _ hne)))
 
-set_option backward.isDefEq.respectTransparency false in
-set_option linter.unusedSectionVars false in
-/-- **The formal-group chart ABSCISSA numerator** (sorry leaf, 2026-07-25): the
-section `A = x₃·C²` of the formal-group chart lies in `M`, and is a valuation
-UNIT on the whole zero-sum locus of the formal pairs.  (The companion ordinate
-section is `torsionPairFormalOrd_spec`, an independent leaf.)
-
-RECIPE, computed and verified admissible by exact rational arithmetic over
-`ℤ[x₁, y₁, x₂, y₂, a₁, a₂, a₃, a₄, a₆]` (2026-07-25).  Write
-
-  `δ := x₁ − x₂`,  `D₂ := y₁ + y₂ + a₁x₂ + a₃`,
-  `W := x₁² + x₁x₂ + x₂² + a₂(x₁+x₂) + a₄ − a₁y₁`,  `S := a₂ + x₁ + x₂`,
-  `u := (x₁+x₂)y₂ + a₁x₂²`,   `G := x₂²·D₂ + δ·u`
-
-(so `G = y₁x₂² + x₁²y₂ + a₁x₁x₂² + a₃x₂²` is the numerator of `C`), and let
-
-  `Cx := (y₁−y₂)² + a₁(y₁−y₂)δ − S·δ²`                    `( = x₃·δ² )`
-  `Sx := W² + a₁·W·D₂ − S·D₂²`                            `( = x₃·D₂² )`
-  `Mx := (y₁−y₂)W + a₁(y₁−y₂)D₂ − S·δ·D₂`                 `( = x₃·δ·D₂ )`
-
-the first from `add_some_ordinate`, the second from `add_some_second`, the third
-from the equality of the two slope expressions `(y₁−y₂)/δ = W/D₂`.  Then
-
-  `x₃·G² = x₂⁴·Sx + 2x₂²·u·Mx + u²·Cx`,
-  `y₃·G³ = x₂⁶·(y₃D₂³) + 3x₂⁴u·(y₃D₂²δ) + 3x₂²u²·(y₃D₂δ²) + u³·(y₃δ³)`,
-
-each of the four `y₃`-brackets being polynomial by the same two laws.  The
-sections are
-
-  `A := (x₃G²)·x₁^{2d−4}x₂^{2d−4}/(h₁h₂)²`,
-  `B := (y₃G³)·x₁^{3d−6}x₂^{3d−6}/(h₁h₂)³`,
-
-expanded into `torsionPairQuad` resp. `torsionPairSext` split products AFTER the
-two Weierstrass equations have been used to eliminate `y₁²` and `y₂²`.
-
-VERIFIED FACTS about those normal forms, which is what makes the expansion legal
-(each was computed exactly, not estimated):
-
-* `x₃G²` reduces to 48 distinct `(x₁,y₁,x₂,y₂)`-monomials, every one of
-  `P`-weight `≤ 8` and `Q`-weight `≤ 8`; so `A`'s monomials stay inside `4d`
-  on both sides, and each splits into two admissible generators.  (The naive
-  unreduced form is NOT admissible — `x₂⁸` appears — so the `y²`-elimination is
-  not an optimization but a requirement.)
-* `y₃G³` reduces to 120 monomials, all of `P`- and `Q`-weight `≤ 12`, so `B`
-  stays inside `6d`.
-* in BOTH normal forms every monomial has `y`-degree `≤ 1` on each side (never
-  `2`), and the `x`-exponents are `≤ 4` for `x₃G²` and `≤ 6` for `y₃G³`.  This
-  is the splittability certificate: a `P`-monomial `x₁^{i+2d−4}y₁^j` with
-  `j = 0` splits as `(a', 0) + (a'', 0)` with `a', a'' ≤ d`, and with `j = 1`
-  the weight bound forces `i ≤ 2` (resp. `i ≤ 4`), so `(d−2, 1)` absorbs the
-  `y` and the rest fits.  Note `y`-degree `2` at top weight would be FATAL:
-  `x₁^{2d−3}y₁²` has weight exactly `4d` but no admissible split, since
-  `2a + 3 ≤ 2d` forces `a ≤ d−2` on both factors.
-* the top-weight `(8,8)` part of `x₃G²` is exactly `x₁⁴x₂⁴` with coefficient
-  `1`, and the `(12,12)` part of `y₃G³` is exactly `x₁⁶x₂⁶` with coefficient
-  `1`.  Hence `A` and `B` take the value `1` at the origin pair — which is
-  forced, since there the sum is the origin, `C = 0`, and the weighted
-  projective chart `(A : B : C) = (t² : t³ : 0)` demands a unit `A`.
-* on the ROW `P = 0` the coefficient of `x₁⁴` in `x₃G²` is `x₂y₂²` and that of
-  `x₁⁶` in `y₃G³` is `y₂⁴`; on the COLUMN `Q = 0` they are
-  `x₁(y₁+a₁x₁+a₃)²` and `y₁(y₁+a₁x₁+a₃)³`.  These are precisely the values the
-  law demands from `torsionPairFormalDen_apply_zero_left/right_some`, so the
-  degenerate rows of the law hold by the same expansion.
-* restricted to the zero-sum locus `x₂ = x₁, y₂ = negY x₁ y₁`, the normal form
-  of `x₃G²` is the perfect square `(x₁²W + u(y₁−y₂))²` with leading term `x₁⁸`
-  of coefficient `1`; this is what gives the last clause below at an affine
-  zero-sum formal pair, in every characteristic. -/
-theorem WeierstrassCurve.torsionPairFormalAbs_spec (m : ℕ) (h : Polynomial R)
-    (hmon : h.Monic) (hdeg : 2 ≤ h.natDegree)
-    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
-      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
-      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
-        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
-        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1) :
-    ∃ A : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
-        (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep,
-      A ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
-      (∀ (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
-          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
-        (x₃ y₃ : Ksep) (hns₃ : (E⁄Ksep).toAffine.Nonsingular x₃ y₃),
-        ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
-            (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃ →
-        A PQ =
-          x₃ * WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ ^ 2) ∧
-      (∀ 𝒪 : ValuationSubring Ksep,
-        (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
-        ∀ PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
-          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)),
-          ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
-            (E⁄Ksep).Point) = Affine.Point.zero →
-          ¬WeierstrassCurve.IsIntegralAffine K E Ksep 𝒪 ↑PQ.1 →
-          ¬WeierstrassCurve.IsIntegralAffine K E Ksep 𝒪 ↑PQ.2 →
-          𝒪.valuation (A PQ) = 1) := by
-  sorry
-
-set_option backward.isDefEq.respectTransparency false in
-set_option linter.unusedSectionVars false in
-/-- **The formal-group chart ORDINATE numerator** (sorry leaf, 2026-07-25): the
-section `B = y₃·C³` lies in `M`.  The recipe, and the exact-arithmetic
-verification that its 120-monomial normal form is weight-admissible with leading
-term `x₁⁶x₂⁶`, are recorded in `torsionPairFormalAbs_spec`; the only difference
-is that `B` is a level-THREE expansion (`torsionPairSext`, weight bound `6d`)
-built from
-
-  `y₃·G³ = x₂⁶·(y₃D₂³) + 3x₂⁴u·(y₃D₂²δ) + 3x₂²u²·(y₃D₂δ²) + u³·(y₃δ³)`.
-
-This leaf is independent of `torsionPairFormalAbs_spec`: the unit clause of the
-chart never touches `B`, which is needed only to make the law statement of
-`exists_torsionPairLaw_formalGroupChart` complete. -/
-theorem WeierstrassCurve.torsionPairFormalOrd_spec (m : ℕ) (h : Polynomial R)
-    (hmon : h.Monic) (hdeg : 2 ≤ h.natDegree)
-    (hunit : ∀ 𝒪 : ValuationSubring Ksep,
-      (𝒪.comap (algebraMap K Ksep)).toSubring = (algebraMap R K).range →
-      ∀ (x y : Ksep) (hns : (E⁄Ksep).toAffine.Nonsingular x y),
-        (m : ℤ) • (Affine.Point.some x y hns : (E⁄Ksep).Point) = 0 →
-        x ∈ 𝒪 → 𝒪.valuation (Polynomial.aeval x h) = 1) :
-    ∃ B : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
-        (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) → Ksep,
-      B ∈ WeierstrassCurve.torsionPairSpan R K E Ksep m h ∧
-      (∀ (PQ : (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) ×
-          (AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)))
-        (x₃ y₃ : Ksep) (hns₃ : (E⁄Ksep).toAffine.Nonsingular x₃ y₃),
-        ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
-            (E⁄Ksep).Point) = Affine.Point.some x₃ y₃ hns₃ →
-        B PQ =
-          y₃ * WeierstrassCurve.torsionPairFormalDen R K E Ksep m h PQ ^ 3) := by
-  sorry
 
 set_option backward.isDefEq.respectTransparency false in
 set_option linter.unusedVariables false in
 /-- **The formal-locus chart leaf, FORMAL-GROUP branch** (DECOMPOSED and
-ASSEMBLED 2026-07-25 — the residue of `exists_torsionPairLaw_formalMixed` and
-all of `exists_torsionPairLaw_formalBoth`): BOTH points are on the formal-group
-locus of `𝒪`, i.e. each is either the origin or affine with non-integral
-abscissa.
-
-STATUS.  The chart is now built and the assembly is proven here.  The
-denominator section is `torsionPairFormalDen`, with its value on affine pairs,
-on both origin rows, its membership in `M` and the zero-sum clause all PROVEN
-(`torsionPairFormalDen_apply_some`, `_apply_zero_left`, `_apply_zero_right`,
-`_apply_zero_right_some`, `_mem_span`, `_eq_zero_of_sum_zero`).  The unit clause
-is discharged through `torsionPairFormalDen_valuation_formalPair`, whose two
-origin configurations are PROVEN.  Exactly three leaves remain, mutually
-independent, each stated with a full construction recipe in its docstring:
-
-* `torsionPairFormalAbs_spec` — the abscissa section `A = x₃C²` as a level-two
-  split-product expansion in `M`, plus `v(A) = 1` on the zero-sum locus;
-* `torsionPairFormalOrd_spec` — the ordinate section `B = y₃C³`, level three.
-  Both recipes are completely determined and were verified admissible by exact
-  computation (48 and 120 monomials, weights `≤ 8`/`≤ 12`, leading coefficient
-  `1`); what remains is transcription and a `linear_combination` identity each.
-* `torsionPairFormalDen_valuation_bothAffineFormal` — the formal-group law, the
-  single genuinely non-formal input of the cluster.
-
-The analysis below is the original design note and is unchanged.
+ASSEMBLED 2026-07-25 over `torsionPairFormalDen` and the two leaves
+`torsionPairFormalDen_val_mul_eq_one` / `exists_torsionPairFormalNumerators`
+— the residue of `exists_torsionPairLaw_formalMixed` and all of
+`exists_torsionPairLaw_formalBoth`): BOTH points are on the formal-group locus
+of `𝒪`, i.e. each is either the origin or affine with non-integral abscissa.
 
 WHY THIS BRANCH NEEDS ITS OWN CHART, and what it must be (analysis of
 2026-07-25).  Sections of `M` are integral (`torsionPairSpan_val_mem`), so at a
@@ -14787,29 +19227,24 @@ theorem WeierstrassCurve.exists_torsionPairLaw_formalGroupChart
           (E⁄Ksep).Point) = Affine.Point.zero → C PQ' = 0) ∧
       (𝒪.valuation (A PQ) = 1 ∨ 𝒪.valuation (C PQ) = 1) := by
   classical
-  obtain ⟨A, hAmem, hAlaw, hAzero⟩ :=
-    WeierstrassCurve.torsionPairFormalAbs_spec R K E Ksep m h hmon hdeg hunit
-  obtain ⟨B, hBmem, hBlaw⟩ :=
-    WeierstrassCurve.torsionPairFormalOrd_spec R K E Ksep m h hmon hdeg hunit
-  refine ⟨A, B, WeierstrassCurve.torsionPairFormalDen R K E Ksep m h, hAmem,
-    hBmem, WeierstrassCurve.torsionPairFormalDen_mem_span R K E Ksep m h hdeg,
-    fun PQ' x₃ y₃ hns₃ hs =>
-      ⟨hAlaw PQ' x₃ y₃ hns₃ hs, hBlaw PQ' x₃ y₃ hns₃ hs⟩,
-    fun PQ' hPQ' => WeierstrassCurve.torsionPairFormalDen_eq_zero_of_sum_zero
-      R K E Ksep m h hmon hdeg hunit PQ' hPQ',
+  obtain ⟨A, B, hA, hB, hlaw, hzeroval⟩ :=
+    WeierstrassCurve.exists_torsionPairFormalNumerators R K E Ksep m hm h hmon hdeg
+      hunit
+  refine ⟨A, B, WeierstrassCurve.torsionPairFormalDen R K E Ksep m h, hA, hB,
+    WeierstrassCurve.torsionPairFormalDen_mem_span R K E Ksep m h hdeg, hlaw,
+    WeierstrassCurve.torsionPairFormalDen_apply_eq_zero R K E Ksep m h hmon hdeg
+      hunit,
     Or.inl ?_⟩
-  -- the unit is always the NUMERATOR here: on the formal locus `v(C)` is
-  -- half-integral in `v(x₁)`, never `1`
+  -- the unit is always `A`; which fact supplies it depends on whether the sum
+  -- at `PQ` is affine (the law plus the formal-group valuation identity) or the
+  -- origin (the numerators' own zero-sum clause)
   cases hs : ((PQ.1 + PQ.2 : AddSubgroup.torsionBy (E⁄Ksep).Point (m : ℤ)) :
       (E⁄Ksep).Point) with
-  | zero =>
-    -- `P + Q = 0`: `C` vanishes, and `A` is the unit `1` at the origin pair and
-    -- a perfect square of leading term `x₁⁸` at an affine zero-sum formal pair
-    exact hAzero 𝒪 hcen PQ hs hformal₁ hformal₂
+  | zero => exact hzeroval 𝒪 hcen PQ hformal₁ hformal₂ hs
   | some x₃ y₃ hns₃ =>
-    rw [hAlaw PQ x₃ y₃ hns₃ hs, map_mul, map_pow]
-    exact WeierstrassCurve.torsionPairFormalDen_valuation_formalPair R K E Ksep m
-      h hmon hdeg hunit 𝒪 hcen PQ hformal₁ hformal₂ x₃ y₃ hns₃ hs
+    rw [(hlaw PQ x₃ y₃ hns₃ hs).1, map_mul, map_pow]
+    exact WeierstrassCurve.torsionPairFormalDen_val_mul_eq_one R K E Ksep m h hmon
+      hdeg hunit 𝒪 hcen PQ hformal₁ hformal₂ x₃ y₃ hns₃ hs
 
 
 set_option backward.isDefEq.respectTransparency false in

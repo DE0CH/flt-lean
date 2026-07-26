@@ -1,10 +1,18 @@
 ---
 name: kill-recovery-just-resume
 description: "Deyao 2026-07-23 — when agents are killed (usage limit, crash), JUST RESUME them (SendMessage). No salvage: no reverting uncommitted worktree state, no pre-merging branches. The transcript is the agent's state; the worktree is its scratch — both survive the kill untouched."
-metadata:
+metadata: 
   node_type: memory
   type: feedback
+  originSessionId: eda93c26-088c-4639-b0f3-bf5ee7a16ed8
+  modified: 2026-07-25T19:01:30.203Z
 ---
+
+**This is now a skill: `/fleet-resume`** (`.claude/skills/fleet-resume/`, added
+2026-07-25 because I ignored this memory again during the session-limit kill and
+started inventorying dirty worktrees and unmerged branches before Deyao stopped
+me). Invoke the skill rather than working from recollection. Its sibling is
+`/fleet-restart` ([[flt-self-restart-by-forking]]).
 
 Deyao (2026-07-23), after I ran a "salvage-and-resume" procedure for the
 third usage-limit fleet kill (revert uncommitted edits, merge committed
