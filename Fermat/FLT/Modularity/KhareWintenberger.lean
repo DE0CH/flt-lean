@@ -186,6 +186,20 @@ public import Mathlib.Algebra.Algebra.Rat
 -- `Set.Ioo_infinite` supplies the infinite sides.
 public import Mathlib.Algebra.MvPolynomial.Funext
 public import Mathlib.Order.Interval.Set.Infinite
+-- The Lang-Weil/Hensel cut of
+-- `exists_bound_forall_padicAlgHom_of_geometricallyIrreducible`:
+-- `Algebra.FormallySmooth.exists_mkₐ_comp_eq_of_isAdicComplete` (in
+-- `RingTheory.Smooth.AdicCompletion`) IS the multivariate Hensel step and is why
+-- no lifting lemma has to be written here; `Algebra.FinitePresentation` supplies
+-- the polynomial presentation of a finite-type `ℚ`-algebra; `RingHom.FiniteType`
+-- descends `LocallyOfFiniteType (specRatMap A)` to `Algebra.FiniteType ℚ A`
+-- across the `ULift ℚ` base; and `RingHom.toRatAlgHom` upgrades the resulting
+-- plain ring map to a `ℚ`-algebra map for free (a ring map between `ℚ`-algebras
+-- is automatically `ℚ`-linear).
+public import Mathlib.RingTheory.Smooth.AdicCompletion
+public import Mathlib.RingTheory.FinitePresentation
+public import Mathlib.RingTheory.RingHom.FiniteType
+public import Mathlib.Algebra.Algebra.Hom.Rat
 -- (`Mathlib.RingTheory.Ideal.Norm.AbsNorm` is imported once, above:
 -- `Ideal.absNorm` is the residue cardinality `Nw` of a place of the
 -- Moret–Bailly base `F`, and appears in the STATEMENTS both of the two
@@ -1036,11 +1050,13 @@ names),
 `exists_bound_forall_padicPoint_of_geometricallyIrreducible` (**PROVEN
 2026-07-26** — no longer a leaf: the affine coordinate ring `Γ(C, ⊤)` and the
 `Γ`–`Spec` unit turn it into the next name, with no arithmetic used),
-`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible` (SORRY — Weil
-bounds + Hensel: good local solvability at all but finitely many primes,
-ALGEBRAIC form; a `ℚ`-algebra `A` in place of the scheme, a `ℚ`-algebra map
-`A →ₐ[ℚ] ℚ_[p]` in place of the point. Step 3 of its route, the Hensel lift,
-is already in mathlib — see its docstring),
+`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible` (**PROVEN
+2026-07-26** — no longer a leaf: the presentation, the clearing of
+denominators, the Hensel lift and the descent back to a `ℚ`-algebra map are
+all discharged; what is left is exactly the two arithmetic leaves
+`exists_bound_forall_formallySmooth_integralSystemModel` (SORRY — spreading
+out) and `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible`
+(SORRY — Lang–Weil, nonemptiness form only)),
 `exists_primes_forall_sup_eq_top_of_isOpen` (**PROVEN 2026-07-26** — no
 longer a leaf: Chebotarev plus the decomposition-group dictionary, over the
 four new helper names `exists_conj_absoluteGaloisGroup_map_comp`,
@@ -1108,10 +1124,15 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    `exists_normalSplitPoint_of_affine_curve`.
 5. **Lang–Weil / the Weil bounds, plus spreading out over `ℤ[1/M]`**, giving a
    `ℚ_[p]`-point of a smooth geometrically irreducible `ℚ`-variety for all
-   but finitely many `p`. Added 2026-07-26; owned since the same day by
-   `exists_bound_forall_padicAlgHom_of_geometricallyIrreducible` (the scheme
-   layer above it is discharged). Independent of items 1–4 and startable on
-   its own. NOTE the Hensel half of this item was struck out on 2026-07-26:
+   but finitely many `p`. Added 2026-07-26; since the same day the scheme
+   layer AND the Hensel layer above it are both discharged, and the item is
+   owned by exactly two leaves stated over an INTEGRAL polynomial system `f`:
+   `exists_bound_forall_formallySmooth_integralSystemModel` (spreading out of
+   smoothness to `ℤ_[p]`) and
+   `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` (Lang–Weil,
+   NONEMPTINESS form only — the error term is never needed). Independent of
+   items 1–4 and startable on its own. NOTE the Hensel half of this item was
+   struck out on 2026-07-26 and is now WRITTEN, not merely available:
    `Algebra.FormallySmooth.exists_mkₐ_comp_eq_of_isAdicComplete` plus
    `IsAdicComplete (maximalIdeal ℤ_[p]) ℤ_[p]` are both already in mathlib, so
    only Lang–Weil and the spreading-out limit argument are genuinely missing.
@@ -1120,7 +1141,8 @@ Each is an independently ownable subproject; 1, 3, 5 and 6 are the ones that
 can be started without the others, and items 3 (Bertini), 5 (Lang–Weil +
 spreading out) and 6 (real points as a manifold) are now leaves of their own --
 `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible`,
-`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible` and
+`exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` together with
+`exists_bound_forall_formallySmooth_integralSystemModel`, and
 `exists_realApproximationBall_of_affine_geometricallyIrreducible` -- so each
 can be attacked without any of the others. The elementary
 `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` is a fourth
@@ -2184,10 +2206,216 @@ subgroup `Γ F ≤ Γ ℚ` — the range appearing in the disjointness conjunct 
 independent of the embedding of algebraic closures implicit in
 `Field.absoluteGaloisGroup.map`. -/
 
+/-! #### The integral model: coordinates for the Lang–Weil / Hensel cut
+
+Everything below serves
+`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible`. The point of the
+cut is that the two genuinely missing theorems — **spreading out** and
+**Lang–Weil** — are stated about a FIXED system of polynomials with INTEGER
+coefficients, so that the same system defines a model over every base at once
+(`ℚ`, `ℤ_[p]`, `ZMod p`) and the bound `B` may legitimately depend on it. The
+third step, Hensel, is already in mathlib
+(`Algebra.FormallySmooth.exists_mkₐ_comp_eq_of_isAdicComplete`) and is carried
+out in full below; no lifting lemma is left open. -/
+
+/-- The ideal cut out in `MvPolynomial (Fin n) R` by an integral polynomial
+system `f`, i.e. the base change of `f` to `R`. -/
+noncomputable def integralSystemIdeal {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (R : Type v) [CommRing R] : Ideal (MvPolynomial (Fin n) R) :=
+  Ideal.span (Set.range fun i => MvPolynomial.map (Int.castRingHom R) (f i))
+
+/-- The affine model over `R` cut out by an integral polynomial system. -/
+abbrev IntegralSystemModel {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (R : Type v) [CommRing R] : Type v :=
+  MvPolynomial (Fin n) R ⧸ integralSystemIdeal f R
+
+/-- The integral system `f` has a solution with coordinates in `R` — i.e. the
+model `IntegralSystemModel f R` has an `R`-point. -/
+def IntegralSystemSolvable {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (R : Type v) [CommRing R] : Prop :=
+  ∃ a : Fin n → R, ∀ i, MvPolynomial.eval₂ (Int.castRingHom R) a (f i) = 0
+
+/-- **Clearing denominators** (PROVEN): every rational polynomial has a nonzero
+rational multiple with integer coefficients. `D` is the product of the
+denominators of the (finitely many) nonzero coefficients. -/
+theorem exists_integralMultiple {n : ℕ} (g : MvPolynomial (Fin n) ℚ) :
+    ∃ (f : MvPolynomial (Fin n) ℤ) (c : ℚ), c ≠ 0 ∧
+      MvPolynomial.map (Int.castRingHom ℚ) f = c • g := by
+  classical
+  set D : ℕ := ∏ d ∈ g.support, (MvPolynomial.coeff d g).den with hD
+  have hDne : D ≠ 0 := by
+    rw [hD, Finset.prod_ne_zero_iff]
+    exact fun d _ => (MvPolynomial.coeff d g).den_ne_zero
+  set h : MvPolynomial (Fin n) ℚ := (D : ℚ) • g with hh
+  have hint : ∀ d, ((MvPolynomial.coeff d h).num : ℚ) = MvPolynomial.coeff d h := by
+    intro d
+    by_cases hd : MvPolynomial.coeff d g = 0
+    · simp [hh, MvPolynomial.coeff_smul, hd]
+    · have hmem : d ∈ g.support := MvPolynomial.mem_support_iff.mpr hd
+      obtain ⟨j, hj⟩ :=
+        Finset.dvd_prod_of_mem (fun d => (MvPolynomial.coeff d g).den) hmem
+      have hden : ((MvPolynomial.coeff d g).den : ℚ) ≠ 0 := by
+        exact_mod_cast (MvPolynomial.coeff d g).den_ne_zero
+      have hnd := Rat.num_div_den (MvPolynomial.coeff d g)
+      rw [div_eq_iff hden] at hnd
+      have hval : MvPolynomial.coeff d h = ((j * (MvPolynomial.coeff d g).num : ℤ) : ℚ) := by
+        rw [hh, MvPolynomial.coeff_smul, smul_eq_mul, hD, hj]
+        push_cast
+        rw [hnd]
+        ring
+      rw [hval]
+      simp only [Rat.num_intCast]
+  refine ⟨∑ d ∈ h.support, MvPolynomial.monomial d (MvPolynomial.coeff d h).num,
+    (D : ℚ), Nat.cast_ne_zero.mpr hDne, ?_⟩
+  rw [map_sum]
+  have hterm : ∀ d ∈ h.support, MvPolynomial.map (Int.castRingHom ℚ)
+      (MvPolynomial.monomial d (MvPolynomial.coeff d h).num)
+      = MvPolynomial.monomial d (MvPolynomial.coeff d h) := by
+    intro d _
+    rw [MvPolynomial.map_monomial]
+    congr 1
+    simpa using hint d
+  rw [Finset.sum_congr rfl hterm, MvPolynomial.support_sum_monomial_coeff, hh]
+
+/-- **Integral generators** (PROVEN): a finitely generated ideal of
+`MvPolynomial (Fin n) ℚ` is generated by (the base change of) a finite system of
+polynomials with INTEGER coefficients. Rescaling a generator by a nonzero
+rational does not change the ideal it generates. -/
+theorem exists_integralGenerators {n : ℕ} {I : Ideal (MvPolynomial (Fin n) ℚ)} (hI : I.FG) :
+    ∃ (m : ℕ) (f : Fin m → MvPolynomial (Fin n) ℤ), integralSystemIdeal f ℚ = I := by
+  classical
+  obtain ⟨s, hs⟩ := hI
+  set e := Fintype.equivFin ({x // x ∈ s}) with he
+  set g : Fin (Fintype.card {x // x ∈ s}) → MvPolynomial (Fin n) ℚ :=
+    fun i => ((e.symm i : {x // x ∈ s}) : MvPolynomial (Fin n) ℚ) with hg
+  have hrange : Set.range g = (↑s : Set (MvPolynomial (Fin n) ℚ)) := by
+    ext x
+    constructor
+    · rintro ⟨i, rfl⟩; exact (e.symm i).2
+    · intro hx; exact ⟨e ⟨x, hx⟩, by simp [hg]⟩
+  choose F c hc0 hc using fun i => exists_integralMultiple (g i)
+  refine ⟨Fintype.card {x // x ∈ s}, F, ?_⟩
+  rw [← hs, ← hrange, integralSystemIdeal]
+  apply le_antisymm
+  · rw [Ideal.span_le]
+    rintro y ⟨i, rfl⟩
+    show MvPolynomial.map (Int.castRingHom ℚ) (F i) ∈ Ideal.span (Set.range g)
+    rw [hc i, Algebra.smul_def]
+    exact Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨i, rfl⟩)
+  · rw [Ideal.span_le]
+    rintro y ⟨i, rfl⟩
+    have hgi : g i = (c i)⁻¹ • (MvPolynomial.map (Int.castRingHom ℚ) (F i)) := by
+      rw [hc i, smul_smul, inv_mul_cancel₀ (hc0 i), one_smul]
+    show g i ∈ Ideal.span (Set.range fun i => MvPolynomial.map (Int.castRingHom ℚ) (F i))
+    rw [hgi, Algebra.smul_def]
+    exact Ideal.mul_mem_left _ _ (Ideal.subset_span ⟨i, rfl⟩)
+
 open CategoryTheory AlgebraicGeometry in
-/-- **Good local solvability, ALGEBRAIC FORM** (sorry node — Lang–Weil plus
-Hensel; the whole arithmetic content of BLGGT Prop. 3.1.1's sentence 2, with
-the scheme layer stripped off).
+/-- **Spreading out of smoothness** (SORRY LEAF — the first of the two
+genuinely missing theorems behind
+`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible`).
+
+Let `f` be a system of polynomials with integer coefficients whose `ℚ`-model
+`MvPolynomial (Fin n) ℚ ⧸ (f)` is (isomorphic to) a SMOOTH `ℚ`-algebra `A`.
+Then for all but finitely many primes `p` the `ℤ_[p]`-model of the SAME system
+is formally smooth over `ℤ_[p]`.
+
+WHY IT IS TRUE (EGA IV 8.8.2/17.7.8, or Poonen, *Rational Points on Varieties*,
+§3.2). `ℤ[x_1..x_n] ⧸ (f)` is a finitely presented `ℤ`-algebra, so the locus in
+`Spec (ℤ[x] ⧸ (f))` where the structure morphism to `Spec ℤ` is smooth is OPEN.
+Its complement `Z` is closed, and the smoothness hypothesis says `Z` misses the
+whole generic fibre. `Z` is of finite type over `ℤ`, so by Chevalley its image
+in `Spec ℤ` is CONSTRUCTIBLE; a constructible subset of `Spec ℤ` that omits the
+generic point contains no nonempty open, hence is FINITE. Let `N` be the product
+of the primes in that image: then `ℤ[1/N][x] ⧸ (f)` is smooth over `ℤ[1/N]`, and
+for `p ∤ N` the base change `ℤ_[p][x] ⧸ (f)` is smooth over `ℤ_[p]` because
+smoothness — hence formal smoothness — is stable under base change.
+
+WHY THE HYPOTHESES ARE IN THIS SHAPE. `A`, `π` and `hker` are carried rather
+than replaced by the model itself because the consumer's `A` lives in `Type u`
+while the model lives in `Type 0`: `AlgebraicGeometry.Smooth` is a property of a
+morphism of `Scheme.{u}`, so it cannot be transported across universes, whereas
+a surjection with a named kernel crosses universes freely. A prover may convert
+`hsmooth` into `Algebra.Smooth ℚ A` (via `HasRingHomProperty.Spec_iff` and
+`RingHom.smooth_algebraMap`) and then transport along
+`RingHom.quotientKerEquivOfSurjective hπ`.
+
+NOTE the bound may depend on `f` — that is exactly why the statement fixes `f`
+first and quantifies over `p` afterwards.
+
+CIRCULARITY GUARD: inherited from the parent — no route through `Family.lean`,
+`Lift.lean` or `Modularity/Interface.lean`; this is pure commutative algebra. -/
+theorem exists_bound_forall_formallySmooth_integralSystemModel
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (A : Type u) [CommRing A] [Algebra ℚ A]
+    (π : MvPolynomial (Fin n) ℚ →ₐ[ℚ] A) (hπ : Function.Surjective π)
+    (hker : RingHom.ker π.toRingHom = integralSystemIdeal f ℚ)
+    (hsmooth : AlgebraicGeometry.Smooth (specRatMap A)) :
+    ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
+      Algebra.FormallySmooth ℤ_[p] (IntegralSystemModel f ℤ_[p]) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Lang–Weil, NONEMPTINESS FORM** (SORRY LEAF — the second and by far the
+deeper of the two genuinely missing theorems behind
+`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible`; it does not exist
+in mathlib and does not exist in `~/cs/FLT`).
+
+Let `f` be a system of polynomials with integer coefficients whose `ℚ`-model is
+(isomorphic to) a smooth, geometrically irreducible `ℚ`-algebra `A`. Then for
+all but finitely many primes `p` the system has a solution mod `p`.
+
+ONLY NONEMPTINESS IS ASKED FOR, deliberately. The full Lang–Weil estimate
+`| #X(𝔽_q) − q^d | ≤ C q^{d − 1/2}` is not needed anywhere in this development,
+and a route that merely produces `#X(𝔽_p) > 0` past an explicit threshold is
+enough — which is a materially cheaper theorem than the estimate.
+
+WHY IT IS TRUE. Spread `f` out as in
+`exists_bound_forall_formallySmooth_integralSystemModel`: for `p` outside a
+finite set the fibre `𝔽_p[x] ⧸ (f)` is smooth and GEOMETRICALLY IRREDUCIBLE of
+some fixed dimension `d` (geometric irreducibility spreads out too — the
+Stein-factorisation/limit argument, Poonen §3.2 and EGA IV 9.7.7). Lang–Weil
+then gives `#X(𝔽_p) = p^d + O(p^{d−1/2})` with the implied constant depending
+only on `n` and the degrees of `f`, which are FIXED here; so the count is
+positive once `p` exceeds a bound depending only on `f`.
+
+Both the classical proof (Lang–Weil 1954: Bertini-slice down to a curve and
+invoke the Weil bound, i.e. the Riemann hypothesis for curves over finite
+fields) and the cohomological one (Grothendieck–Lefschetz) are large missing
+theories; this leaf is the natural place to build the first of them.
+
+The `A`, `π`, `hker` packaging is as in the previous leaf and for the same
+universe reason.
+
+CIRCULARITY GUARD: inherited from the parent — no route through `Family.lean`,
+`Lift.lean` or `Modularity/Interface.lean`; this is pure arithmetic geometry and
+mentions no Galois representation at all. -/
+theorem exists_bound_forall_zmodSolvable_of_geometricallyIrreducible
+    {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (A : Type u) [CommRing A] [Algebra ℚ A]
+    (π : MvPolynomial (Fin n) ℚ →ₐ[ℚ] A) (hπ : Function.Surjective π)
+    (hker : RingHom.ker π.toRingHom = integralSystemIdeal f ℚ)
+    (hsmooth : AlgebraicGeometry.Smooth (specRatMap A))
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible (specRatMap A)) :
+    ∃ B : ℕ, ∀ (p : ℕ), p.Prime → B < p → IntegralSystemSolvable f (ZMod p) :=
+  sorry
+
+/-- **`ZMod p` is the residue field of `ℤ_[p]`** (PROVEN): the reduction map
+`PadicInt.toZMod` is surjective with kernel the maximal ideal. This is the
+adaptor that lets a mod-`p` solution be read as a point of `ℤ_[p] ⧸ 𝔪`, which
+is the shape mathlib's Hensel lemma
+(`Algebra.FormallySmooth.exists_mkₐ_comp_eq_of_isAdicComplete`) consumes. -/
+noncomputable def zmodEquivResidue (p : ℕ) [Fact p.Prime] :
+    ZMod p ≃+* ℤ_[p] ⧸ IsLocalRing.maximalIdeal ℤ_[p] := by
+  have hsurj : Function.Surjective (PadicInt.toZMod (p := p)) := fun x =>
+    ⟨(x.val : ℤ_[p]), by simp [ZMod.natCast_val]⟩
+  exact ((Ideal.quotEquivOfEq (PadicInt.ker_toZMod (p := p)).symm).trans
+    (RingHom.quotientKerEquivOfSurjective hsurj)).symm
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Good local solvability, ALGEBRAIC FORM** (PROVEN 2026-07-26 over two
+arithmetic leaves — Lang–Weil and spreading out; the whole arithmetic content of
+BLGGT Prop. 3.1.1's sentence 2, with the scheme layer stripped off).
 
 For a `ℚ`-algebra `A` whose spectrum is smooth, of finite type and
 geometrically irreducible over `ℚ`, there is a bound `B` such that for every
@@ -2235,6 +2463,22 @@ WHY IT IS TRUE (BLGGT Prop. 3.1.1, and the classical route behind it):
    smooth, hence formally smooth, over `ℤ_[p]`, and the `𝔽_p`-point is an
    algebra map `A₀ →ₐ[ℤ_[p]] ℤ_[p] ⧸ maximalIdeal`. Inverting `p` and
    composing gives `A →ₐ[ℚ] ℚ_[p]`.
+
+WHAT IS PROVEN HERE, AND WHAT IS LEFT (2026-07-26). Steps 1 and 2 are the two
+open leaves; step 3 and ALL the glue are done in the proof below. Concretely:
+
+* the presentation is extracted (`Algebra.FinitePresentation`, which `hft` gives
+  because `ℚ` is Noetherian) and its generators are cleared of denominators
+  (`exists_integralGenerators`), producing an INTEGRAL system `f` — this is what
+  makes one bound serve every `p` at once, and it is proven, not assumed;
+* `exists_bound_forall_formallySmooth_integralSystemModel` is step 1 (SORRY);
+* `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` is step 2
+  (SORRY) — Lang–Weil, in nonemptiness form only;
+* step 3 is discharged in full below with mathlib's
+  `Algebra.FormallySmooth.exists_mkₐ_comp_eq_of_isAdicComplete`, together with
+  the residue-field adaptor `zmodEquivResidue` and the final descent of the
+  `ℤ_[p]`-point to a `ℚ`-algebra map (`RingHom.toRatAlgHom`: a ring map between
+  `ℚ`-algebras is automatically `ℚ`-linear, so no compatibility is checked).
 
 MATHLIB INVENTORY FOR A PROVER (audited 2026-07-26 at this pin — read this
 before starting, it decides how the work splits):
@@ -2285,8 +2529,123 @@ theorem exists_bound_forall_padicAlgHom_of_geometricallyIrreducible
     (hft : AlgebraicGeometry.LocallyOfFiniteType (specRatMap A))
     (hgi : AlgebraicGeometry.GeometricallyIrreducible (specRatMap A)) :
     ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
-      Nonempty (A →ₐ[ℚ] ULift.{u} ℚ_[p]) :=
-  sorry
+      Nonempty (A →ₐ[ℚ] ULift.{u} ℚ_[p]) := by
+  -- STEP 1. `A` is of finite presentation over `ℚ`. `LocallyOfFiniteType` is a
+  -- ring-hom property, so it says `RingHom.FiniteType` of `ULift ℚ → A`;
+  -- cancelling the iso `ULift ℚ ≃+* ℚ` gives `Algebra.FiniteType ℚ A`, and `ℚ`
+  -- is Noetherian, so finite type upgrades to finite presentation.
+  have hFT : Algebra.FiniteType ℚ A := by
+    have h1 : RingHom.FiniteType ((algebraMap ℚ A).comp
+        (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom) := by
+      have h := (AlgebraicGeometry.HasRingHomProperty.Spec_iff
+        (P := @AlgebraicGeometry.LocallyOfFiniteType)
+        (Q := @RingHom.FiniteType)
+        (φ := CommRingCat.ofHom ((algebraMap ℚ A).comp
+          (ULift.ringEquiv : ULift.{u} ℚ ≃+* ℚ).toRingHom))).mp hft
+      simpa using h
+    exact RingHom.finiteType_algebraMap.mp h1.of_comp_finiteType
+  haveI : Algebra.FinitePresentation ℚ A := Algebra.FinitePresentation.of_finiteType.mp hFT
+  obtain ⟨n, π, hπsurj, hfg⟩ := Algebra.FinitePresentation.out (R := ℚ) (A := A)
+  -- STEP 2. Clear denominators: the kernel is generated by a system of
+  -- polynomials with INTEGER coefficients, which is the integral model.
+  obtain ⟨m, f, hf⟩ := exists_integralGenerators hfg
+  -- STEP 3. The two arithmetic leaves, at the SAME integral model.
+  obtain ⟨B₁, hB₁⟩ :=
+    exists_bound_forall_formallySmooth_integralSystemModel f A π hπsurj hf.symm hsmooth
+  obtain ⟨B₂, hB₂⟩ :=
+    exists_bound_forall_zmodSolvable_of_geometricallyIrreducible f A π hπsurj hf.symm
+      hsmooth hgi
+  refine ⟨max B₁ B₂, fun p _ hp => ?_⟩
+  haveI : Algebra.FormallySmooth ℤ_[p] (IntegralSystemModel f ℤ_[p]) :=
+    hB₁ p (lt_of_le_of_lt (le_max_left _ _) hp)
+  obtain ⟨a₀, ha₀⟩ := hB₂ p Fact.out (lt_of_le_of_lt (le_max_right _ _) hp)
+  -- STEP 4. HENSEL. The mod-`p` solution is a point of `ℤ_[p] ⧸ 𝔪`; formal
+  -- smoothness over the `𝔪`-adically complete ring `ℤ_[p]` lifts it to a
+  -- `ℤ_[p]`-point. This is mathlib's
+  -- `Algebra.FormallySmooth.exists_mkₐ_comp_eq_of_isAdicComplete`; only the
+  -- existence of the lift is used, not the commutation it also provides.
+  set Q := ℤ_[p] ⧸ IsLocalRing.maximalIdeal ℤ_[p] with hQ
+  set ιh : ZMod p →+* Q := (zmodEquivResidue p).toRingHom with hιh
+  have hEq1 : ιh.comp (Int.castRingHom (ZMod p)) = Int.castRingHom Q := Subsingleton.elim _ _
+  have hzero : ∀ i, MvPolynomial.eval₂ (Int.castRingHom Q)
+      (fun j => ιh (a₀ j)) (f i) = 0 := by
+    intro i
+    have h := congrArg (fun (g : MvPolynomial (Fin n) ℤ →+* Q) => g (f i))
+      (MvPolynomial.comp_eval₂Hom (Int.castRingHom (ZMod p)) a₀ ιh)
+    simp only [RingHom.coe_comp, Function.comp_apply, MvPolynomial.coe_eval₂Hom] at h
+    rw [hEq1] at h
+    rw [← h, ha₀ i, map_zero]
+  have hEq2 : (algebraMap ℤ_[p] Q).comp (Int.castRingHom ℤ_[p]) = Int.castRingHom Q :=
+    Subsingleton.elim _ _
+  have hmem : ∀ x ∈ integralSystemIdeal f ℤ_[p],
+      MvPolynomial.aeval (R := ℤ_[p]) (fun j => ιh (a₀ j)) x = 0 := by
+    intro x hx
+    refine Submodule.span_induction ?_ ?_ ?_ ?_ hx
+    · rintro y ⟨i, rfl⟩
+      rw [MvPolynomial.aeval_def, MvPolynomial.eval₂_map, hEq2]
+      exact hzero i
+    · simp
+    · intro y z _ _ hy hz; simp [hy, hz]
+    · intro c y _ hy; simp [hy]
+  let ψ₀ : IntegralSystemModel f ℤ_[p] →ₐ[ℤ_[p]] Q :=
+    Ideal.Quotient.liftₐ _ (MvPolynomial.aeval (fun j => ιh (a₀ j))) hmem
+  obtain ⟨ψ, -⟩ :=
+    Algebra.FormallySmooth.exists_mkₐ_comp_eq_of_isAdicComplete
+      (R := ℤ_[p]) (A := IntegralSystemModel f ℤ_[p]) (S := ℤ_[p])
+      (I := IsLocalRing.maximalIdeal ℤ_[p]) ψ₀
+  set b : Fin n → ℤ_[p] := fun i => ψ (Ideal.Quotient.mk _ (MvPolynomial.X i)) with hb
+  have hcomp : ∀ P : MvPolynomial (Fin n) ℤ_[p],
+      ψ (Ideal.Quotient.mk (integralSystemIdeal f ℤ_[p]) P) = MvPolynomial.aeval b P := by
+    intro P
+    have hfun : (ψ.toRingHom.comp (Ideal.Quotient.mk (integralSystemIdeal f ℤ_[p])))
+        = (MvPolynomial.aeval b : MvPolynomial (Fin n) ℤ_[p] →ₐ[ℤ_[p]] ℤ_[p]).toRingHom := by
+      apply MvPolynomial.ringHom_ext
+      · intro r
+        show ψ (Ideal.Quotient.mk _ (MvPolynomial.C r)) = _
+        have hCr : (Ideal.Quotient.mk (integralSystemIdeal f ℤ_[p])) (MvPolynomial.C r)
+            = algebraMap ℤ_[p] (IntegralSystemModel f ℤ_[p]) r := rfl
+        rw [hCr, AlgHom.commutes]
+        simp
+      · intro j
+        show ψ (Ideal.Quotient.mk _ (MvPolynomial.X j)) = _
+        simp [hb]
+    exact congrArg (fun (g : MvPolynomial (Fin n) ℤ_[p] →+* ℤ_[p]) => g P) hfun
+  have hEq3 : (algebraMap ℤ_[p] ℤ_[p]).comp (Int.castRingHom ℤ_[p])
+      = Int.castRingHom ℤ_[p] := Subsingleton.elim _ _
+  have hbsol : ∀ i, MvPolynomial.eval₂ (Int.castRingHom ℤ_[p]) b (f i) = 0 := by
+    intro i
+    have hmk : (Ideal.Quotient.mk (integralSystemIdeal f ℤ_[p]))
+        (MvPolynomial.map (Int.castRingHom ℤ_[p]) (f i)) = 0 :=
+      Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.subset_span ⟨i, rfl⟩)
+    have h2 := hcomp (MvPolynomial.map (Int.castRingHom ℤ_[p]) (f i))
+    rw [hmk, map_zero, MvPolynomial.aeval_def, MvPolynomial.eval₂_map, hEq3] at h2
+    exact h2.symm
+  -- STEP 5. Push the `ℤ_[p]`-point into `ℚ_[p]` and read it as a `ℚ`-algebra
+  -- map out of `A`: evaluation at the point kills the kernel of `π`, so it
+  -- factors through `A`, and a ring map between `ℚ`-algebras is `ℚ`-linear.
+  set χ : ℤ_[p] →+* ULift.{u} ℚ_[p] :=
+    (ULift.ringEquiv : ULift.{u} ℚ_[p] ≃+* ℚ_[p]).symm.toRingHom.comp
+      (PadicInt.Coe.ringHom (p := p)) with hχ
+  set c : Fin n → ULift.{u} ℚ_[p] := fun j => χ (b j) with hc
+  set φ : ℚ →+* ULift.{u} ℚ_[p] :=
+    (ULift.ringEquiv : ULift.{u} ℚ_[p] ≃+* ℚ_[p]).symm.toRingHom.comp (Rat.castHom ℚ_[p]) with hφ
+  set Θ : MvPolynomial (Fin n) ℚ →+* ULift.{u} ℚ_[p] := MvPolynomial.eval₂Hom φ c with hΘ
+  have hEq4 : φ.comp (Int.castRingHom ℚ) = Int.castRingHom (ULift.{u} ℚ_[p]) :=
+    Subsingleton.elim _ _
+  have hEq5 : χ.comp (Int.castRingHom ℤ_[p]) = Int.castRingHom (ULift.{u} ℚ_[p]) :=
+    Subsingleton.elim _ _
+  have hΘker : RingHom.ker π.toRingHom ≤ RingHom.ker Θ := by
+    rw [← hf, integralSystemIdeal, Ideal.span_le]
+    rintro y ⟨i, rfl⟩
+    simp only [SetLike.mem_coe, RingHom.mem_ker, hΘ, MvPolynomial.coe_eval₂Hom]
+    rw [MvPolynomial.eval₂_map, hEq4]
+    have h := congrArg (fun (g : MvPolynomial (Fin n) ℤ →+* ULift.{u} ℚ_[p]) => g (f i))
+      (MvPolynomial.comp_eval₂Hom (Int.castRingHom ℤ_[p]) b χ)
+    simp only [RingHom.coe_comp, Function.comp_apply, MvPolynomial.coe_eval₂Hom] at h
+    rw [hEq5] at h
+    rw [← h, hbsol i, map_zero]
+  exact ⟨((Ideal.Quotient.lift _ Θ (fun x hx => hΘker hx)).comp
+    (RingHom.quotientKerEquivOfSurjective hπsurj).symm.toRingHom).toRatAlgHom⟩
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Good local solvability at all but finitely many primes** (PROVEN
