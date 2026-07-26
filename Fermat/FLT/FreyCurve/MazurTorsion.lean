@@ -215,8 +215,12 @@ genuinely modular-curve-theoretic inputs:
     Mordell–Weil half is gone entirely, being
     `MazurLevel27.rational_point_x0TwentySeven`, PROVEN from mathlib's
     `fermatLastTheoremThree` because `X_0(27)` IS the Fermat cubic.
-    So the two surviving leaves at this level are pure moduli
-    statements, with no arithmetic left in them.
+    `exists_x0TwentySeven_point` is in turn PROVEN (2026-07-26) over the
+    single moduli leaf `exists_x0TwentySeven_moduliPoint`, the remaining
+    arithmetic — that the `j₉`-fibre over `−12288000` has the one
+    rational point `t = −3` — being `MazurLevel27.x0Nine_fibre_over_CM`.
+    So the surviving leaves at this level are pure moduli statements,
+    with no arithmetic left in them.
   The two levels `21, 25` are in Kenku's list and have no sharpening
   yet, so they are the only bare sorry nodes left among the eleven.
 * `torsion_finite_rat` (DERIVED from `mazur_point_order`): the
@@ -389,7 +393,8 @@ consequently PROVEN from two nodes,
   Galois-stable cyclic subgroup of order `27` forces
   `j(E) = −12288000`, the CM value of discriminant `−27`; PROVEN
   2026-07-26 over two moduli leaves (`exists_x0Nine_hauptmodul`,
-  `exists_x0TwentySeven_point`) plus the Mordell–Weil half
+  `exists_x0TwentySeven_point`, the latter PROVEN 2026-07-26 in turn
+  over `exists_x0TwentySeven_moduliPoint`) plus the Mordell–Weil half
   `MazurLevel27.rational_point_x0TwentySeven`, which is mathlib's
   `fermatLastTheoremThree` because `X_0(27)` IS the Fermat cubic;
 * `no_torsion_order_27_of_j` — stated as Olson's theorem that a CM
@@ -5341,36 +5346,224 @@ theorem WeierstrassCurve.exists_x0Nine_hauptmodul
       = (t + 9) ^ 3 * (t ^ 3 + 243 * t ^ 2 + 2187 * t + 6561) ^ 3 :=
   sorry
 
+namespace MazurLevel27
+
+/-! ### Sharpness of the `X_0(9)` fibre over the CM point `j = −12288000`
+
+The level-`27` hypothesis "`t` lies over `j(E)` under the degree-`12`
+map `j₉`" only pins `t` down because the fibre of `j₉` over the CM value
+`j = −12288000` contains a **single** rational point. The three lemmas
+below prove exactly that, so it is no longer a PARI/GP claim in a
+docstring but a theorem: the degree-`12` numerator
+
+  `P(s) = (s + 9)³(s³ + 243s² + 2187s + 6561)³ + 12288000·s⁹(s² + 9s + 27)`
+
+factors over `ℤ` as `(s + 3)(s² + 27)·Q(s)` with `Q` monic of degree `9`
+and constant term `3²⁶` — an identity checked by `ring` in
+`x0Nine_fibre_over_CM` — and `Q` has no rational root. The rational-root
+step is a congruence rather than a divisor search: homogenising
+`s = N/D` with `gcd(N, D) = 1`, `Q(N, D) mod 7` is
+
+  `N⁹ + N⁸D + 3N⁷D² + N⁶D³ + 4N⁵D⁴ + 6N⁴D⁵ + 2N³D⁶ + 4N²D⁷ + 2ND⁸ + 2D⁹`,
+
+which is nonzero at all `48` nonzero residue pairs — `p = 7` is the
+smallest prime with that property (`p = 2, 3, 5` all fail; note `Q ≡ s⁹`
+mod `3`). This is the same shape of argument as `jEquation_zmodTwo`
+above, one level up. -/
+
+/-- **The `mod 7` obstruction on the degree-`9` factor** (PROVEN by
+`decide`): the homogenised degree-`9` cofactor `Q(N, D)` of the
+`j₉`-fibre polynomial over `−12288000` is nonzero at every pair of
+residues mod `7` other than `(0, 0)`. -/
+lemma x0NineFibre_zmodSeven : ∀ n e : ZMod 7, ¬ (n = 0 ∧ e = 0) →
+    (n ^ 9 + 12288753 * n ^ 8 * e + 73929348 * n ^ 7 * e ^ 2
+        - 199113228 * n ^ 6 * e ^ 3 - 1463588514 * n ^ 5 * e ^ 4
+        + 24020070318 * n ^ 4 * e ^ 5 + 255697522740 * n ^ 3 * e ^ 6
+        + 1129718145924 * n ^ 2 * e ^ 7 + 2541865828329 * n * e ^ 8
+        + 2541865828329 * e ^ 9) ≠ 0 := by
+  decide
+
+/-- **The degree-`9` cofactor has no primitive integral zero** (PROVEN):
+immediate from `x0NineFibre_zmodSeven` by reduction modulo `7`. -/
+lemma x0NineFibre_int (N D : ℤ) (h7 : ¬ ((7 : ℤ) ∣ N ∧ (7 : ℤ) ∣ D)) :
+    (N ^ 9 + 12288753 * N ^ 8 * D + 73929348 * N ^ 7 * D ^ 2
+        - 199113228 * N ^ 6 * D ^ 3 - 1463588514 * N ^ 5 * D ^ 4
+        + 24020070318 * N ^ 4 * D ^ 5 + 255697522740 * N ^ 3 * D ^ 6
+        + 1129718145924 * N ^ 2 * D ^ 7 + 2541865828329 * N * D ^ 8
+        + 2541865828329 * D ^ 9 : ℤ) ≠ 0 := by
+  intro hz
+  refine x0NineFibre_zmodSeven (N : ZMod 7) (D : ZMod 7) ?_ ?_
+  · rintro ⟨hn, hd⟩
+    exact h7 ⟨(ZMod.intCast_zmod_eq_zero_iff_dvd N 7).mp hn,
+      (ZMod.intCast_zmod_eq_zero_iff_dvd D 7).mp hd⟩
+  · have := congrArg (fun z : ℤ => (z : ZMod 7)) hz
+    push_cast at this
+    exact this
+
+/-- **The `j₉`-fibre over the CM value `−12288000` has the single
+rational point `t = −3`** (PROVEN 2026-07-26): if a rational `t`
+satisfies the denominator-free `X_0(9)` relation
+`−12288000 · t⁹(t² + 9t + 27) = (t + 9)³(t³ + 243t² + 2187t + 6561)³`,
+then `t = −3`.
+
+This is the *sharpness* half of the level-`27` node: it is what makes
+"`t` lies over `j(E)`" as strong as "`t` is **the** `X_0(9)`-parameter
+of `E`", so that the level-`27` leaf below is not weakened by the way
+its hypothesis is phrased. The proof clears denominators against
+`t = t.num / t.den`, factors the resulting degree-`12` integral form as
+`(N + 3D)(N² + 27D²)·Q(N, D)` — a `ring` identity, verified here — and
+kills the two non-linear factors: `N² + 27D² > 0` because `D ≥ 1`, and
+`Q(N, D) ≠ 0` by `x0NineFibre_int`. What survives is `N + 3D = 0`,
+i.e. `t = −3`. -/
+theorem x0Nine_fibre_over_CM (t : ℚ)
+    (h : (-12288000 : ℚ) * (t ^ 9 * (t ^ 2 + 9 * t + 27))
+      = (t + 9) ^ 3 * (t ^ 3 + 243 * t ^ 2 + 2187 * t + 6561) ^ 3) :
+    t = -3 := by
+  have hd0 : ((t.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr t.den_nz
+  have hNq : ((t.num : ℚ)) = t * ((t.den : ℚ)) := (div_eq_iff hd0).mp (Rat.num_div_den t)
+  have h7 : ¬ ((7 : ℤ) ∣ t.num ∧ (7 : ℤ) ∣ (t.den : ℤ)) := by
+    rintro ⟨h1, h2⟩
+    have h1' : 7 ∣ t.num.natAbs := by simpa using Int.natAbs_dvd_natAbs.mpr h1
+    have h2' : 7 ∣ t.den := by exact_mod_cast h2
+    have := Nat.dvd_gcd h1' h2'
+    rw [t.reduced] at this
+    omega
+  have key : ((t.num + 3 * (t.den : ℤ)) * (t.num ^ 2 + 27 * (t.den : ℤ) ^ 2)
+      * (t.num ^ 9 + 12288753 * t.num ^ 8 * (t.den : ℤ)
+          + 73929348 * t.num ^ 7 * (t.den : ℤ) ^ 2
+          - 199113228 * t.num ^ 6 * (t.den : ℤ) ^ 3
+          - 1463588514 * t.num ^ 5 * (t.den : ℤ) ^ 4
+          + 24020070318 * t.num ^ 4 * (t.den : ℤ) ^ 5
+          + 255697522740 * t.num ^ 3 * (t.den : ℤ) ^ 6
+          + 1129718145924 * t.num ^ 2 * (t.den : ℤ) ^ 7
+          + 2541865828329 * t.num * (t.den : ℤ) ^ 8
+          + 2541865828329 * (t.den : ℤ) ^ 9) : ℤ) = 0 := by
+    have hq : (((t.num + 3 * (t.den : ℤ)) * (t.num ^ 2 + 27 * (t.den : ℤ) ^ 2)
+        * (t.num ^ 9 + 12288753 * t.num ^ 8 * (t.den : ℤ)
+            + 73929348 * t.num ^ 7 * (t.den : ℤ) ^ 2
+            - 199113228 * t.num ^ 6 * (t.den : ℤ) ^ 3
+            - 1463588514 * t.num ^ 5 * (t.den : ℤ) ^ 4
+            + 24020070318 * t.num ^ 4 * (t.den : ℤ) ^ 5
+            + 255697522740 * t.num ^ 3 * (t.den : ℤ) ^ 6
+            + 1129718145924 * t.num ^ 2 * (t.den : ℤ) ^ 7
+            + 2541865828329 * t.num * (t.den : ℤ) ^ 8
+            + 2541865828329 * (t.den : ℤ) ^ 9) : ℤ) : ℚ) = 0 := by
+      push_cast
+      rw [hNq]
+      linear_combination (-((t.den : ℚ) ^ 12)) * h
+    exact_mod_cast hq
+  rcases mul_eq_zero.mp key with hfac | hQ
+  · rcases mul_eq_zero.mp hfac with hlin | hquad
+    · have hnum : ((t.num : ℚ)) = -3 * ((t.den : ℚ)) := by
+        have : ((t.num + 3 * (t.den : ℤ) : ℤ) : ℚ) = 0 := by exact_mod_cast hlin
+        push_cast at this
+        linarith
+      rw [hNq] at hnum
+      have : (t + 3) * ((t.den : ℚ)) = 0 := by linarith
+      rcases mul_eq_zero.mp this with h1 | h1
+      · linarith
+      · exact absurd h1 hd0
+    · exfalso
+      have hdpos : (0 : ℤ) < (t.den : ℤ) := by exact_mod_cast Rat.den_pos t
+      nlinarith [sq_nonneg t.num, mul_pos hdpos hdpos]
+  · exact absurd hQ (x0NineFibre_int t.num (t.den : ℤ) h7)
+
+end MazurLevel27
+
+/-- **`X_0(27)`: a rational cyclic `27`-subgroup IS a rational point of
+`27a1`, lying over an `X_0(9)`-parameter of `E`** (sorry node — the
+level-`27` moduli content, introduced 2026-07-26, restated 2026-07-26):
+if `E` carries a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup `C` of order `27`,
+then there are rationals `x, y, s` with
+
+* `y² + y = x³ − 7` — a rational point of the model `27a1` of `X_0(27)`;
+* `s · x = 4 − 3x − y` — its image under the degree-`3` degeneracy map
+  `π₁ : X_0(27) → X_0(9)`, `(x, y) ↦ (4 − 3x − y)/x`, in denominator-free
+  form;
+* `j(E) · s⁹(s² + 9s + 27) = (s + 9)³(s³ + 243s² + 2187s + 6561)³` —
+  compatibility of `π₁` with the two `j`-maps: `s` is an
+  `X_0(9)`-parameter of `E`, because `π₁(E, C) = (E, C[9])`.
+
+This is **the moduli dictionary and nothing else**: the pair `(E, C)`
+is a non-cuspidal rational point of `X_0(27)`, `27a1 : y² + y = x³ − 7`
+is a model of that curve, `π₁` is the degeneracy map in those
+coordinates, and its `X_0(9)`-image carries `(E, C[9])`. No Diophantine
+input is left in the statement — the Mordell–Weil half is
+`MazurLevel27.rational_point_x0TwentySeven` (PROVEN from
+`fermatLastTheoremThree`), the fibre-sharpness half is
+`MazurLevel27.x0Nine_fibre_over_CM` (PROVEN above), and the two are
+assembled in `exists_x0TwentySeven_point` below.
+
+The intended proof is genuinely the moduli one — a model of `X_0(27)`
+as a coarse moduli space of pairs `(E, C₂₇)`, the identification of that
+model with `27a1`, and the degeneracy map — for which nothing exists in
+this development yet. Concretely it needs: `X_0(N)` as a curve over `ℚ`
+with its moduli interpretation, the two degeneracy maps
+`π₁, π₃ : X_0(27) ⇉ X_0(9)` induced by `(E, C) ↦ (E, C[9])` and
+`(E, C) ↦ (E/C[3], C/C[3])`, and the explicit `q`-expansion
+identification of the Hauptmodul `t = (η(τ)/η(9τ))³` of `X_0(9)` with
+`(4 − 3x − y)/x` on `27a1` (verified here against `elltaniyama(27a1)` to
+`O(q⁵⁸)`, untrusted searcher). Diamond–Shurman ch. 7 and
+Cornell–Silverman–Stevens are the references.
+
+**Cut note for the fleet.** Given this leaf, `exists_x0Nine_hauptmodul`
+is logically redundant in the level-`27` chain: this leaf already
+produces its own `X_0(9)`-parameter `s`, and everything downstream is
+proven arithmetic. The level-`9`/level-`27` split was therefore never a
+real split of the moduli content — it is all in this one node — and a
+re-cut, if one is wanted, has to be a decomposition of the moduli
+dictionary itself (universal families, Vélu quotients, `q`-expansions),
+not a further split along levels. -/
+theorem WeierstrassCurve.exists_x0TwentySeven_moduliPoint
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 27)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ x y s : ℚ, y ^ 2 + y = x ^ 3 - 7 ∧ s * x = 4 - 3 * x - y ∧
+      E.j * (s ^ 9 * (s ^ 2 + 9 * s + 27))
+        = (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3 :=
+  sorry
+
 /-- **`X_0(27) → X_0(9)`: an `X_0(9)`-parameter of a curve with a
-rational cyclic `27`-subgroup lifts to `27a1`** (sorry node — the
-level-`27` moduli content, introduced 2026-07-26): if `E` carries a
-`Gal(ℚ̄/ℚ)`-stable cyclic subgroup of order `27`, and `t` is a rational
-number lying over `j(E)` under the `X_0(9)` `j`-map, then `t` is the
-image of a rational point of `X_0(27) : y² + y = x³ − 7` under the
-explicit degeneracy map `π₁ : (x, y) ↦ (4 − 3x − y)/x` — written
+rational cyclic `27`-subgroup lifts to `27a1`** (PROVEN 2026-07-26 over
+the single moduli leaf `exists_x0TwentySeven_moduliPoint`): if `E`
+carries a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup of order `27`, and `t` is a
+rational number lying over `j(E)` under the `X_0(9)` `j`-map, then `t`
+is the image of a rational point of `X_0(27) : y² + y = x³ − 7` under
+the explicit degeneracy map `π₁ : (x, y) ↦ (4 − 3x − y)/x` — written
 denominator-free as `t · x = 4 − 3x − y`.
 
 The hypothesis on `t` is how "`t` is an `X_0(9)`-parameter of `E`" is
 said without naming the moduli map: `t` ranges over the fibre of the
-degree-`12` map `j₉` above `j(E)`. The statement is nevertheless
-sharp rather than weakened, because that fibre has a *unique* rational
-point here: `(s + 9)³(s³ + 243s² + 2187s + 6561)³ + 12288000 s⁹(s² + 9s
-+ 27)` factors over `ℚ` as `(s + 3)(s² + 27)` times an irreducible
-degree-`9` polynomial (PARI/GP `factor`, 2026-07-26, untrusted
-searcher), so the only rational `t` admitted by the hypothesis is
-`t = −3`, and the conclusion is witnessed there by the non-cuspidal
-point `(x, y) = (3, 4)`.
+degree-`12` map `j₉` above `j(E)`. **That phrasing is sharp, not
+weakened, and this is now a theorem rather than a docstring claim**:
+`MazurLevel27.x0Nine_fibre_over_CM` proves that the only rational point
+of the fibre of `j₉` over `−12288000` is `t = −3`, by factoring the
+degree-`12` numerator as `(s + 3)(s² + 27)·Q(s)` and killing the
+degree-`9` cofactor `Q` with a congruence modulo `7` on its homogenised
+form.
 
-This is the node that carries the modular-curve content proper: the
-degeneracy map `π₁ : X_0(27) → X_0(9)` of degree `3` and the model
-`27a1` of `X_0(27)`. Its intended proof is the moduli dictionary —
-the pair `(E, C)` with `C` cyclic of order `27` gives a rational point
-of `X_0(27)` whose image in `X_0(9)` is `(E, 3C)` — for which nothing
-exists in this development yet.
+Assembly (this proof), all three steps now proven or reduced to the one
+moduli leaf:
 
-Note that no rank or Mordell–Weil computation is left in this node:
-that half is `MazurLevel27.rational_point_x0TwentySeven`, PROVEN above
-from `fermatLastTheoremThree`. -/
+1. `exists_x0TwentySeven_moduliPoint` turns the stable cyclic
+   `27`-subgroup into a rational point `(x₀, y₀)` of `27a1` together
+   with its `π₁`-image `s`, an `X_0(9)`-parameter of `E`.
+2. `MazurLevel27.j_eq_of_x0TwentySeven_point` — Fermat's Last Theorem
+   for exponent `3`, plus the two evaluations `j₉(0) = ∞` (the rational
+   cusp, excluded by the relation itself) and `j₉(−3) = −12288000` —
+   reads off `j(E) = −12288000` from that point.
+3. `MazurLevel27.x0Nine_fibre_over_CM` then forces the *given* `t` to be
+   `−3` as well, where the non-cuspidal point `(x, y) = (3, 4)` of
+   `27a1` witnesses the conclusion: `4² + 4 = 3³ − 7` and
+   `(−3)·3 = 4 − 3·3 − 4`.
+
+Note that no rank or Mordell–Weil computation is left in this node
+either: that half is `MazurLevel27.rational_point_x0TwentySeven`, PROVEN
+above from `fermatLastTheoremThree`. -/
 theorem WeierstrassCurve.exists_x0TwentySeven_point
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 27)
@@ -5382,8 +5575,15 @@ theorem WeierstrassCurve.exists_x0TwentySeven_point
     (t : ℚ)
     (ht : E.j * (t ^ 9 * (t ^ 2 + 9 * t + 27))
       = (t + 9) ^ 3 * (t ^ 3 + 243 * t ^ 2 + 2187 * t + 6561) ^ 3) :
-    ∃ x y : ℚ, y ^ 2 + y = x ^ 3 - 7 ∧ t * x = 4 - 3 * x - y :=
-  sorry
+    ∃ x y : ℚ, y ^ 2 + y = x ^ 3 - 7 ∧ t * x = 4 - 3 * x - y := by
+  obtain ⟨x₀, y₀, s, hxy₀, hs, hjs⟩ := E.exists_x0TwentySeven_moduliPoint g hg hstable
+  have hjval : E.j = -12288000 :=
+    MazurLevel27.j_eq_of_x0TwentySeven_point E.j x₀ y₀ s hxy₀ hs hjs
+  have htv : t = -3 := by
+    refine MazurLevel27.x0Nine_fibre_over_CM t ?_
+    rw [← hjval]
+    exact ht
+  exact ⟨3, 4, by norm_num, by rw [htv]; norm_num⟩
 
 /-- **`X_0(27)`: a rational cyclic `27`-subgroup forces
 `j = −12288000`** (PROVEN 2026-07-26 over the two moduli leaves
