@@ -7694,7 +7694,24 @@ EVERY place, so `residualℓ` and `residualp` need no bad set; the second
 leaf gives ONE `D`-rational system `P` serving both residue
 characteristics, and then, once per member through the frame just
 produced, an exceptional set and the embeddings realizing `matchℓ` and
-`matchp`. The point's `bad` is the union of those two exceptional sets
+`matchp`.
+
+THE REAL-MULTIPLICATION TIE IS THREADED (2026-07-26; before this the
+assembly was building `HilbertBlumenthalPoint`s off a FALSE leaf). Each
+frame also comes with `jD₀` / `jDp : 𝒪_D →+* O` and the clause saying
+that the coefficient action transported along `φ` extends `m.act`, and
+BOTH are now passed to `Fermat.exists_weilFrobeniusSystem_of_mult`. That
+leaf is false without them: additivity and `Γ_F`-equivariance alone leave
+`O` free to be any commutative subring of `End_{Γ_F}(T)` of the right
+`ℤ_q`-rank over which `T` is free of rank two, and such rings exist and
+are not `𝒪_{D,I}` whenever `A_x` has endomorphisms beyond `𝒪_D` — one has
+a nonzero nilpotent (so `ιO₀_injective` / `ιC_injective` fail outright),
+another is `ℤ_q × ℤ_q` (so `matchℓ` / `matchp` fail, since a ring map out
+of a product kills an idempotent and forces the Frobenius polynomial to
+be a square). Two explicit counterexamples are in the FAITHFULNESS AUDIT
+of `Fermat.exists_weilFrobeniusSystem_of_mult`. With `j`/`hj` the image
+of `𝒪_D ⊗ ℤ_q` lies in `O`, and with the rank count and integral
+closedness `O = 𝒪_{D,I}`, which is what makes those four fields true. The point's `bad` is the union of those two exceptional sets
 (each contains the places over its own residue characteristic, where the
 member is ramified — which is why the second leaf cannot quantify one
 `bad` before `q`) TOGETHER WITH the exceptional set of the `ℓ`-adic
@@ -7751,19 +7768,21 @@ theorem nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli
   have hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible :=
     Fermat.isIrreducible_map_of_restrictionSurjective ρbar (algebraMap ℚ F) hrestr hirr
   -- the `λ`-adic member, framed on the Tate module `TatePt m x lam ϖℓ`;
-  -- `_jD₀`/`_hjD₀` are the real-multiplication clause of the frame, kept bound for
-  -- the compatible-system leaf, which does not yet take them.  `baddet`/`hdet₀`
-  -- are the determinant (Weil-pairing) clause, consumed by the field
-  -- `HilbertBlumenthalPoint.detσ` below.
-  obtain ⟨ϖℓ, hϖℓ, hϖℓ2, O₀, _, _, _, _, _, _, _, _, σ, φ₀, ι₀, _jD₀, baddet,
-      hφ₀add, hφ₀bij, hφ₀eq, hres₀, _hjD₀, hdet₀⟩ :=
+  -- `jD₀`/`hjD₀` are the real-multiplication clause of the frame — that the
+  -- `O₀`-action transported along `φ₀` extends `m.act` — and they are now passed
+  -- to the compatible-system leaf, which is FALSE without them (see the
+  -- FAITHFULNESS AUDIT of `Fermat.exists_weilFrobeniusSystem_of_mult`).
+  -- `baddet`/`hdet₀` are the determinant (Weil-pairing) clause, consumed by the
+  -- field `HilbertBlumenthalPoint.detσ` below.
+  obtain ⟨ϖℓ, hϖℓ, hϖℓ2, O₀, _, _, _, _, _, _, _, _, σ, φ₀, ι₀, jD₀, baddet,
+      hφ₀add, hφ₀bij, hφ₀eq, hres₀, hjD₀, hdet₀⟩ :=
     Fermat.exists_tateFrame_of_levelStructure m x hdim ℓ lam hlam hℓlam hW
       (ρbar.map (algebraMap ℚ F)) hirrF e headd heinj heequiv heimg
   -- the `𝔭`-adic member, framed on `TatePt m x frp ϖp`; its own
   -- determinant clause is not needed — the point records the `ℓ`-adic
   -- one, and `matchp`/`ιC_injective` recover the `p`-adic one from it
-  obtain ⟨ϖp, hϖp, hϖp2, C, _, _, _, _, _, _, _, _, τp, φp, ιp, _jDp, _,
-      hφpadd, hφpbij, hφpeq, hresp, _hjDp, _⟩ :=
+  obtain ⟨ϖp, hϖp, hϖp2, C, _, _, _, _, _, _, _, _, τp, φp, ιp, jDp, _,
+      hφpadd, hφpbij, hφpeq, hresp, hjDp, _⟩ :=
     Fermat.exists_tateFrame_of_levelStructure m x hdim p frp hfrp hpfrp
       (by simp) ρbarp hirrp e' h'add h'inj h'equiv h'img
   -- ONE `D`-rational compatible system, read at both members through their frames;
@@ -7772,10 +7791,10 @@ theorem nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli
   obtain ⟨P, hP⟩ := Fermat.exists_weilFrobeniusSystem_of_mult m x hdim
   obtain ⟨badℓ, ψℓ, ιℓ, hιℓinj, hmatchℓ⟩ :=
     hP ℓ inferInstance lam hlam hℓlam ϖℓ hϖℓ hϖℓ2 O₀ inferInstance inferInstance
-      inferInstance σ φ₀ hφ₀add hφ₀bij hφ₀eq
+      inferInstance σ φ₀ jD₀ hφ₀add hφ₀bij hφ₀eq hjD₀
   obtain ⟨badp, ψp, ιC, hιCinj, hmatchp⟩ :=
     hP p inferInstance frp hfrp hpfrp ϖp hϖp hϖp2 C inferInstance inferInstance
-      inferInstance τp φp hφpadd hφpbij hφpeq
+      inferInstance τp φp jDp hφpadd hφpbij hφpeq hjDp
   exact ⟨{ bad := badℓ ∪ badp ∪ baddet, D := D, P := P, O₀ := O₀, σ := σ,
            ψDℓ := ψℓ, ιO₀ := ιℓ,
            ιO₀_injective := hιℓinj,
