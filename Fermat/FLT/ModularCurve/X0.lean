@@ -884,6 +884,166 @@ theorem exists_ellipticScheme_of_weierstrass (E : WeierstrassCurve ℚ) [E.IsEll
                = ab.galSMul (𝟙 SpecQ) σ (e x)) :=
   sorry
 
+/-! ### The group law of an abelian scheme as a MORPHISM (Yoneda)
+
+`AbelianSchemeStruct` presents the group law only through the functor of
+points: `ab.add` is a family of operations on `RelPoint f g`, natural in
+the test object.  The subgroup-scheme conditions of
+`CyclicSubgroupOfOrder` are stated at EVERY base `T'`, including
+non-reduced ones, so they cannot be checked pointwise — the rigidity
+argument ("two morphisms out of a reduced scheme into a separated one
+agreeing on geometric points are equal") is simply false at a non-reduced
+`T'`.
+
+The fix is Yoneda, and it is carried out here rather than left to the
+leaves: apply `ab.add` to the two projections of `A ×_ℚ A` to get an
+honest morphism `addHom ab : A ×_ℚ A ⟶ A`, and `ab.neg` to the identity
+point to get `negHom ab : A ⟶ A`.  Naturality then makes `ab.add x z` and
+`ab.neg x` COMPOSITES with those fixed morphisms, at every base at once
+(`add_eq_addHom`, `neg_eq_negHom`).
+
+Consequence, and this is the point: the subgroup conditions at all bases
+follow from a SINGLE factorisation of each morphism through the closed
+immersion (`add_liesIn_of_factor`, `neg_liesIn_of_factor`).  The rigidity
+input is then used exactly once, at `C ×_ℚ C` and at `C` — schemes that
+really are reduced — which is the only place it is valid. -/
+
+namespace AbelianSchemeStruct
+
+/-- **Naturality of inversion.**  This is NOT an axiom of
+`AbelianSchemeStruct` — the structure carries `pre_add` and `pre_zero`
+only — but it follows from them by cancellation, `neg x` being the unique
+solution of `add · x = zero`. -/
+theorem pre_neg {A S : Scheme.{u}} {f : A ⟶ S} (ab : AbelianSchemeStruct f)
+    {T' T : Scheme.{u}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (x : RelPoint f g) :
+    RelPoint.pre h hg (ab.neg x) = ab.neg (RelPoint.pre h hg x) := by
+  letI := ab.addCommGroup g'
+  have h1 : ab.add (RelPoint.pre h hg (ab.neg x)) (RelPoint.pre h hg x) = ab.zero g' := by
+    rw [← ab.pre_add h hg, ab.neg_add, ab.pre_zero]
+  have h2 : ab.add (ab.neg (RelPoint.pre h hg x)) (RelPoint.pre h hg x) = ab.zero g' :=
+    ab.neg_add _
+  exact add_right_cancel (a := RelPoint.pre h hg (ab.neg x))
+    (b := RelPoint.pre h hg x) (c := ab.neg (RelPoint.pre h hg x)) (h1.trans h2.symm)
+
+end AbelianSchemeStruct
+
+/-- The structure morphism of the fibre square `A ×_ℚ A`. -/
+noncomputable abbrev sqBase {A : Scheme.{0}} (f : A ⟶ SpecQ) :
+    Limits.pullback f f ⟶ SpecQ :=
+  Limits.pullback.fst f f ≫ f
+
+/-- The first projection, as a relative point of `A ×_ℚ A`. -/
+noncomputable def sqFst {A : Scheme.{0}} (f : A ⟶ SpecQ) : RelPoint f (sqBase f) :=
+  ⟨Limits.pullback.fst f f, rfl⟩
+
+/-- The second projection, as a relative point of `A ×_ℚ A`. -/
+noncomputable def sqSnd {A : Scheme.{0}} (f : A ⟶ SpecQ) : RelPoint f (sqBase f) :=
+  ⟨Limits.pullback.snd f f, Limits.pullback.condition.symm⟩
+
+/-- **The group law of an abelian scheme as a morphism `A ×_ℚ A ⟶ A`**,
+obtained by Yoneda: it is `ab.add` applied to the two projections. -/
+noncomputable def addHom {A : Scheme.{0}} {f : A ⟶ SpecQ} (ab : AbelianSchemeStruct f) :
+    Limits.pullback f f ⟶ A :=
+  (ab.add (sqFst f) (sqSnd f)).1
+
+/-- **Inversion as a morphism `A ⟶ A`**, obtained by Yoneda: it is
+`ab.neg` applied to the identity point. -/
+noncomputable def negHom {A : Scheme.{0}} {f : A ⟶ SpecQ} (ab : AbelianSchemeStruct f) :
+    A ⟶ A :=
+  (ab.neg (⟨𝟙 A, Category.id_comp f⟩ : RelPoint f f)).1
+
+/-- **`ab.add` IS composition with `addHom ab`, at every base** (PROVEN):
+naturality `pre_add` read at the map into `A ×_ℚ A` determined by the two
+points. -/
+theorem add_eq_addHom {A : Scheme.{0}} {f : A ⟶ SpecQ} (ab : AbelianSchemeStruct f)
+    {T' : Scheme.{0}} {g : T' ⟶ SpecQ} (x z : RelPoint f g) :
+    (ab.add x z).1 =
+      Limits.pullback.lift x.1 z.1 (by rw [x.2, z.2]) ≫ addHom ab := by
+  set u : T' ⟶ Limits.pullback f f :=
+    Limits.pullback.lift x.1 z.1 (by rw [x.2, z.2]) with hu
+  have hg : u ≫ sqBase f = g := by
+    show u ≫ Limits.pullback.fst f f ≫ f = g
+    rw [← Category.assoc, hu, Limits.pullback.lift_fst, x.2]
+  have h := ab.pre_add u hg (sqFst f) (sqSnd f)
+  have h1 : RelPoint.pre u hg (sqFst f) = x := by
+    apply Subtype.ext
+    show u ≫ Limits.pullback.fst f f = x.1
+    rw [hu, Limits.pullback.lift_fst]
+  have h2 : RelPoint.pre u hg (sqSnd f) = z := by
+    apply Subtype.ext
+    show u ≫ Limits.pullback.snd f f = z.1
+    rw [hu, Limits.pullback.lift_snd]
+  rw [h1, h2] at h
+  exact (congrArg Subtype.val h).symm
+
+/-- **`ab.neg` IS composition with `negHom ab`, at every base** (PROVEN):
+`pre_neg` read at the point itself. -/
+theorem neg_eq_negHom {A : Scheme.{0}} {f : A ⟶ SpecQ} (ab : AbelianSchemeStruct f)
+    {T' : Scheme.{0}} {g : T' ⟶ SpecQ} (x : RelPoint f g) :
+    (ab.neg x).1 = x.1 ≫ negHom ab := by
+  have h := ab.pre_neg x.1 (g := f) (g' := g) x.2
+    (⟨𝟙 A, Category.id_comp f⟩ : RelPoint f f)
+  have hx : RelPoint.pre x.1 (g := f) (g' := g) x.2
+      (⟨𝟙 A, Category.id_comp f⟩ : RelPoint f f) = x := by
+    apply Subtype.ext
+    show x.1 ≫ 𝟙 A = x.1
+    rw [Category.comp_id]
+  rw [hx] at h
+  exact (congrArg Subtype.val h).symm
+
+/-- **`C ×_ℚ C ⟶ A ×_ℚ A`** induced by a subscheme inclusion `ι : C ⟶ A`. -/
+noncomputable def sqMap {A C : Scheme.{0}} {f : A ⟶ SpecQ} (ι : C ⟶ A) :
+    Limits.pullback (ι ≫ f) (ι ≫ f) ⟶ Limits.pullback f f :=
+  Limits.pullback.map (ι ≫ f) (ι ≫ f) f f ι ι (𝟙 SpecQ) (by simp) (by simp)
+
+@[simp] theorem sqMap_fst {A C : Scheme.{0}} {f : A ⟶ SpecQ} (ι : C ⟶ A) :
+    sqMap ι ≫ Limits.pullback.fst f f = Limits.pullback.fst (ι ≫ f) (ι ≫ f) ≫ ι :=
+  Limits.pullback.lift_fst _ _ _
+
+@[simp] theorem sqMap_snd {A C : Scheme.{0}} {f : A ⟶ SpecQ} (ι : C ⟶ A) :
+    sqMap ι ≫ Limits.pullback.snd f f = Limits.pullback.snd (ι ≫ f) (ι ≫ f) ≫ ι :=
+  Limits.pullback.lift_snd _ _ _
+
+/-- **ONE factorisation at `C ×_ℚ C` gives closure under the group law at
+EVERY base** (PROVEN).
+
+This is what makes the `add_liesIn` field reachable: the field quantifies
+over all test schemes `T'`, but by `add_eq_addHom` every instance of it is
+a composite with the single morphism `addHom ab`, so a single factorisation
+`μ` of `sqMap ι ≫ addHom ab` through `ι` discharges all of them. -/
+theorem add_liesIn_of_factor {A C : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (ι : C ⟶ A)
+    (μ : Limits.pullback (ι ≫ f) (ι ≫ f) ⟶ C) (hμ : μ ≫ ι = sqMap ι ≫ addHom ab)
+    {T' : Scheme.{0}} {g : T' ⟶ SpecQ} {x z : RelPoint f g}
+    (hx : RelPoint.LiesIn ι x) (hz : RelPoint.LiesIn ι z) :
+    RelPoint.LiesIn ι (ab.add x z) := by
+  obtain ⟨a, ha⟩ := hx
+  obtain ⟨b, hb⟩ := hz
+  have hab : a ≫ (ι ≫ f) = b ≫ (ι ≫ f) := by
+    rw [← Category.assoc, ← Category.assoc, ha, hb, x.2, z.2]
+  refine ⟨Limits.pullback.lift a b hab ≫ μ, ?_⟩
+  rw [Category.assoc, hμ, add_eq_addHom ab x z, ← Category.assoc]
+  congr 1
+  refine Limits.pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, sqMap_fst, ← Category.assoc, Limits.pullback.lift_fst, ha,
+      Limits.pullback.lift_fst]
+  · rw [Category.assoc, sqMap_snd, ← Category.assoc, Limits.pullback.lift_snd, hb,
+      Limits.pullback.lift_snd]
+
+/-- **ONE factorisation at `C` gives closure under inversion at EVERY
+base** (PROVEN).  Same mechanism as `add_liesIn_of_factor`, via
+`neg_eq_negHom`. -/
+theorem neg_liesIn_of_factor {A C : Scheme.{0}} {f : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct f) (ι : C ⟶ A)
+    (ν : C ⟶ C) (hν : ν ≫ ι = ι ≫ negHom ab)
+    {T' : Scheme.{0}} {g : T' ⟶ SpecQ} {x : RelPoint f g}
+    (hx : RelPoint.LiesIn ι x) :
+    RelPoint.LiesIn ι (ab.neg x) := by
+  obtain ⟨a, ha⟩ := hx
+  refine ⟨a ≫ ν, ?_⟩
+  rw [Category.assoc, hν, ← Category.assoc, ha, neg_eq_negHom ab x]
+
 /-! ### The span of a finite family of geometric points
 
 **Added 2026-07-26, and it is what turns the descent leaf below from an
@@ -1072,65 +1232,63 @@ theorem zero_liesIn_of_ratPoint {A : Scheme.{0}} {f : A ⟶ SpecQ}
   have h := ab.pre_zero g (g := 𝟙 SpecQ) (g' := g) (Category.comp_id g)
   exact congrArg Subtype.val h
 
-/-- **The span of `⟨y⟩` is closed under the group law, at every base**
-(sorry leaf (iii) of the descent decomposition).
+/-- **The group law of `A` restricts to the span: the factorisation at
+`C ×_ℚ C`** (sorry leaf (iii) of the descent decomposition).
 
 TRUE, and this is the rigidity half of "`C` is a subgroup SCHEME rather
 than merely a subgroup of geometric points".
 
-THE ARGUMENT, and note it does NOT proceed base by base — `T'` ranges over
-non-reduced schemes too, where agreeing on geometric points proves
-nothing.  Instead one produces the multiplication morphism once:
+NOTE THE SHAPE.  This leaf asks for ONE morphism, with no quantification
+over test schemes.  That is deliberate, and it is the whole reason the
+Yoneda subsection above exists: the `add_liesIn` field quantifies over
+every base `T'`, including non-reduced ones where rigidity is FALSE, so it
+cannot be attacked base by base.  `add_eq_addHom` turns every instance of
+the field into a composite with the single morphism `addHom ab`, and
+`add_liesIn_of_factor` then derives the whole field from the factorisation
+asked for here.  So the successor closing this leaf never has to think
+about a general `T'`.
 
-1. By Yoneda, `ab.add` at the base point `A ×_ℚ A ⟶ Spec ℚ` applied to the
-   two projections gives a morphism `m : A ×_ℚ A ⟶ A` representing the
-   group law, and naturality (`pre_add`) makes `ab.add x z` equal to
-   `⟨x, z⟩ ≫ m` for relative points at ANY base.
-2. `C ×_ℚ C` is reduced (over `ℚ`, `C` is finite étale, and a product of
-   étale `ℚ`-schemes is étale hence reduced), and `A` is separated (it is
-   proper over `ℚ`).  The composite `C ×_ℚ C ⟶ A ×_ℚ A ⟶ A` agrees on
-   geometric points with a morphism landing in `C`, because `⟨y⟩` is a
-   subgroup of `A(ℚ̄)`; so by
-   `AlgebraicGeometry.ext_of_isDominant_of_isSeparated` it factors through
-   the closed immersion `ι`, giving `μ : C ×_ℚ C ⟶ C` with
-   `μ ≫ ι = m ∘ (ι × ι)`.
-3. Then for arbitrary `T'` and `x = a ≫ ι`, `z = b ≫ ι`, the point
-   `ab.add x z = ⟨a, b⟩ ≫ μ ≫ ι` lies in `C`.
+THE ARGUMENT.  `C ×_ℚ C` is reduced — over `ℚ`, `C` is finite étale, and a
+product of étale `ℚ`-schemes is étale hence reduced — and `A` is separated,
+being proper over `ℚ`.  The composite `C ×_ℚ C ⟶ A ×_ℚ A ⟶ A` agrees on
+geometric points with a morphism landing in `C`, because `⟨y⟩` is a
+subgroup of `A(ℚ̄)`.  So by
+`AlgebraicGeometry.ext_of_isDominant_of_isSeparated` it factors through the
+closed immersion `ι`.
 
-So the rigidity input is used exactly ONCE, at `C ×_ℚ C`, which is the
-only place it is valid.  `hstable` enters through step 2: it is what makes
-`⟨y⟩` a `Γ_ℚ`-submodule and hence `C` defined over `ℚ` at all. -/
-theorem add_liesIn_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
+`hstable` enters exactly here: it is what makes `⟨y⟩` a `Γ_ℚ`-submodule,
+hence `C` defined over `ℚ` at all. -/
+theorem exists_addHom_factor_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
           addOrderOf y = N)
     (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
           ∀ σ : Field.absoluteGaloisGroup ℚ,
-            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y)
-    {T' : Scheme.{0}} {g : T' ⟶ SpecQ} {x z : RelPoint f g}
-    (hx : RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) x)
-    (hz : RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) z) :
-    RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) (ab.add x z) :=
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y) :
+    ∃ μ : Limits.pullback (spanSchemeι (zmulPts ab N y) ≫ f)
+            (spanSchemeι (zmulPts ab N y) ≫ f) ⟶ spanScheme (zmulPts ab N y),
+      μ ≫ spanSchemeι (zmulPts ab N y)
+        = sqMap (spanSchemeι (zmulPts ab N y)) ≫ addHom ab :=
   sorry
 
-/-- **The span of `⟨y⟩` is closed under inversion, at every base** (sorry
+/-- **Inversion restricts to the span: the factorisation at `C`** (sorry
 leaf (iv) of the descent decomposition).
 
-Same argument as `add_liesIn_zmulPts`, one step shorter: the inversion
-morphism `n : A ⟶ A` is `ab.neg` applied by Yoneda to the identity point,
-`C` is reduced, `A` is separated, and `n ∘ ι` agrees with a morphism into
-`C` on geometric points because `⟨y⟩` is closed under negation.  The
-rigidity step happens at `C` itself rather than at `C ×_ℚ C`. -/
-theorem neg_liesIn_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
+Same mechanism as `exists_addHom_factor_zmulPts`, one step shorter: the
+rigidity step happens at `C` itself rather than at `C ×_ℚ C`, because
+`negHom ab ∘ ι` agrees on geometric points with a morphism into `C`
+(`⟨y⟩` is closed under negation).  `neg_liesIn_of_factor` derives the
+`neg_liesIn` field at every base from this one factorisation. -/
+theorem exists_negHom_factor_zmulPts {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
           addOrderOf y = N)
     (hstable : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
           ∀ σ : Field.absoluteGaloisGroup ℚ,
-            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y)
-    {T' : Scheme.{0}} {g : T' ⟶ SpecQ} {x : RelPoint f g}
-    (hx : RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) x) :
-    RelPoint.LiesIn (spanSchemeι (zmulPts ab N y)) (ab.neg x) :=
+            ab.galSMul (𝟙 SpecQ) σ y ∈ AddSubgroup.zmultiples y) :
+    ∃ ν : spanScheme (zmulPts ab N y) ⟶ spanScheme (zmulPts ab N y),
+      ν ≫ spanSchemeι (zmulPts ab N y)
+        = spanSchemeι (zmulPts ab N y) ≫ negHom ab :=
   sorry
 
 /-- **The geometric fibres of the span are cyclic of order exactly `N`**
@@ -1311,8 +1469,8 @@ are discharged here and five became named leaves:
 | `flat` | PROVEN — base is a one-point integral scheme |
 | `zero_liesIn` | PROVEN from leaf (ii), via `zero_liesIn_of_ratPoint` |
 | `isFinite` | leaf (i) `isFinite_spanSchemeι` |
-| `add_liesIn` | leaf (iii) `add_liesIn_zmulPts` |
-| `neg_liesIn` | leaf (iv) `neg_liesIn_zmulPts` |
+| `add_liesIn` | PROVEN from leaf (iii), via `add_liesIn_of_factor` |
+| `neg_liesIn` | PROVEN from leaf (iv), via `neg_liesIn_of_factor` |
 | `geom_cyclic` | leaf (v) `geom_cyclic_zmulPts` — the crux |
 
 The five are genuinely independent classical facts, not a chain of
@@ -1320,7 +1478,18 @@ The five are genuinely independent classical facts, not a chain of
 affine"; (ii) is fpqc descent of a point along `ℚ̄/ℚ`; (iii) and (iv) are
 the rigidity of morphisms out of a reduced scheme into a separated one;
 (v) is the split finite-étale computation of `C(K)`.  Each carries its own
-route in its docstring. -/
+route in its docstring.
+
+**NONE OF THE FIVE QUANTIFIES OVER A TEST SCHEME**, and that is the single
+most useful thing the decomposition does.  Three of the eight fields
+(`zero_liesIn`, `add_liesIn`, `neg_liesIn`) are stated at EVERY base `T'`,
+including non-reduced ones where the rigidity argument that proves them is
+outright false.  The Yoneda subsection above (`addHom`, `negHom`,
+`add_eq_addHom`, `neg_eq_negHom`) collapses each of those fields to a
+single morphism-level factorisation — leaves (ii), (iii), (iv) — so a
+successor works with reduced schemes only, where the argument is valid.
+Getting this wrong is the obvious way to attack the node and it does not
+work. -/
 theorem exists_cyclicSubgroupOfOrder_of_galoisStable {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (hN : N ≠ 0) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -1343,14 +1512,16 @@ theorem exists_cyclicSubgroupOfOrder_of_galoisStable {A : Scheme.{0}} {f : A ⟶
     exact congrArg Subtype.val h.symm
   obtain ⟨w₀, hw₀⟩ := ratPoint_liesIn_spanScheme ab (zmulPts ab N y)
     (ab.zero (𝟙 SpecQ)).1 (ab.zero (𝟙 SpecQ)).2 ⟨_, hzero⟩
+  obtain ⟨μ, hμ⟩ := exists_addHom_factor_zmulPts ab N hN y hy hstable
+  obtain ⟨ν, hν⟩ := exists_negHom_factor_zmulPts ab N hN y hy hstable
   exact ⟨{ C := spanScheme (zmulPts ab N y)
            ι := spanSchemeι (zmulPts ab N y)
            isClosedImmersion := inferInstance
            isFinite := isFinite_spanSchemeι ab (zmulPts ab N y) (zmulPts_comp ab N y)
            flat := inferInstance
            zero_liesIn := fun g => zero_liesIn_of_ratPoint ab _ w₀ hw₀ g
-           add_liesIn := fun hx hz => add_liesIn_zmulPts ab N hN y hy hstable hx hz
-           neg_liesIn := fun hx => neg_liesIn_zmulPts ab N hN y hy hstable hx
+           add_liesIn := fun hx hz => add_liesIn_of_factor ab _ μ hμ hx hz
+           neg_liesIn := fun hx => neg_liesIn_of_factor ab _ ν hν hx
            geom_cyclic := fun K _ _ t => geom_cyclic_zmulPts ab N hN y hy hstable K t }⟩
 
 /-- **Existence of the coarse moduli space `Y_0(N)`** (PROVEN, as the split
