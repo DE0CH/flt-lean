@@ -35595,10 +35595,140 @@ theorem tameExponent_two_le_one_of_inertia_sq_eq_zero
   rw [Module.finrank_fin_fun] at hfin
   omega
 
+/-- **The spelling bridge for the at-`2` square-zero-unipotent
+hypothesis** (PROVEN, extracted 2026-07-26): the hypothesis `hsq`,
+stated over `Γ ℚ_[2]` because that is the spelling the at-`2` consumers
+use, transports to the PLACE-spelled inertia `localInertiaGroup v₂`.
+
+Squaring to zero is CONJUGATION-INVARIANT, which is what lets the
+per-element conjugacy of `localInertia_two_eq_map_padic` be absorbed
+here: the two local worlds pick different embeddings of `ℚᵃˡᵍ`, so the
+bridge only identifies the inertia images up to conjugacy, and a
+conjugation-invariant hypothesis is exactly what survives that. The two
+worlds also name different `Algebra ℚ (adicCompletion ℚ v₂)` instances
+(`DivisionRing.toRatAlgebra` vs
+`IsDedekindDomain.HeightOneSpectrum.instAlgebraAdicCompletion`,
+propositionally equal by `algebraRat.subsingleton` but not
+syntactically), and `hmapeq` closes that gap at the RING-HOM level —
+rewriting `toLocal`, whose ring hom is an EXPLICIT argument of
+`GaloisRep.map`, rather than the applied term.
+
+This is the same computation as STEP 1 of the tame sibling
+`tameExponent_two_le_one_of_inertia_sq_eq_zero` above, extracted so that
+the WILD half can consume it too. The sibling's inline copy is
+deliberately left untouched: it belongs to another owner and rewriting a
+green proof to share a lemma buys nothing but a merge conflict. -/
+theorem localInertia_two_sq_eq_zero_of_padic_inertia_sq_eq_zero
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    (hsq : ∀ σ ∈ AddSubgroup.inertia
+        ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup : AddSubgroup Z2bar)
+        (Field.absoluteGaloisGroup ℚ_[2]),
+      (τ.map (algebraMap ℚ ℚ_[2]) σ - 1) ^ 2 = 0) :
+    ∀ σ ∈ localInertiaGroup
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      (τ.toLocal Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat σ - 1) ^ 2
+        = 0 := by
+  intro σ hσ
+  obtain ⟨ω, hω, c, hconj⟩ := IsHardlyRamified.localInertia_two_eq_map_padic hσ
+  have hmapeq : τ.toLocal Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat
+      = τ.map (algebraMap ℚ (IsDedekindDomain.HeightOneSpectrum.adicCompletion ℚ
+          Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat)) := by
+    show GaloisRep.map τ _ = GaloisRep.map τ _
+    congr 1
+    exact Subsingleton.elim _ _
+  have hN : (τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω) - 1) ^ 2
+      = 0 := hsq ω hω
+  have ha : τ c * τ c⁻¹ = 1 := by rw [← map_mul, mul_inv_cancel, map_one]
+  have ha' : τ c⁻¹ * τ c = 1 := by rw [← map_mul, inv_mul_cancel, map_one]
+  rw [hmapeq, GaloisRep.map_apply, hconj, map_mul, map_mul]
+  have hfac : τ c * τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω)
+        * τ c⁻¹ - 1 =
+      τ c * (τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω) - 1)
+        * τ c⁻¹ := by
+    rw [mul_sub, mul_one, sub_mul, ha]
+  rw [hfac, pow_two]
+  have h1 : τ c * (τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω) - 1)
+        * τ c⁻¹ *
+        (τ c * (τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω) - 1)
+          * τ c⁻¹) =
+      τ c * ((τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω) - 1)
+        * (τ c⁻¹ * τ c) *
+        (τ (Field.absoluteGaloisGroup.map (algebraMap ℚ ℚ_[2]) ω) - 1))
+        * τ c⁻¹ := by
+    simp only [mul_assoc]
+  rw [h1, ha', mul_one, ← pow_two, hN, mul_zero, zero_mul]
+
+include hpodd in
+/-- **A square-zero-unipotent inertia action at `2` is TAMELY RAMIFIED
+when `p` is odd** (sorry leaf, 2026-07-26 — Serre, *Local Fields* IV §2;
+this is the residual local content of the at-`2` wild half, and the
+ONLY thing that still stands between `hsq` and `Sw₂(τ) = 0`).
+
+`GaloisRep.IsTamelyRamifiedAt τ v₂` says the WILD inertia
+`P₂ = Gal(ℚ₂ᵃˡᵍ / ℚ₂ᵗᵃᵐᵉ)` acts trivially on `V` — see
+`wildInertiaGroup` in `ArtinConductor.lean` for the definition, which
+goes through the generators `x` with `xⁿ ∈ 𝒪ᵥ`, `2 ∤ n`, of the maximal
+tame extension and so needs no ramification filtration.
+
+THE ARGUMENT, and why each step is where it is. With `(τσ − 1)² = 0` for
+every `σ ∈ I₂` (this is `hloc`):
+
+1. *Kolchin in dimension `2`* gives a COMMON nonzero fixed vector `w₀`
+   for `τ(I₂)` — `BrauerNesbitt.exists_fixed_of_unipotent`, exactly as in
+   the tame sibling. So `L := ℚ̄_p·w₀` is a common fixed line and every
+   `N(σ) := τσ − 1` kills `L` and lands in `L` (in dimension `2`, a
+   nonzero square-zero endomorphism has `im N = ker N`, a line, and `w₀`
+   lies in `ker N`).
+2. *Hence `σ ↦ N(σ)` is ADDITIVE*: `N(στ) = N(σ) + N(τ)` reduces to
+   `N(σ)N(τ) = 0`, which holds because `im N(τ) ⊆ L ⊆ ker N(σ)`. This is
+   a homomorphism `I₂ → Hom(V/L, L) ≅ (ℚ̄_p, +)`, and it is one
+   *precisely because* the elements are square-zero — that is why the
+   hypothesis has this shape.
+3. *`P₂` is pro-`2`*, so for every `n` prime to `2` the `n`-th power map
+   is a bijection on it; in particular every `σ ∈ P₂` is a `p`-th power
+   in `P₂` (here `p` is ODD — this is the ONLY use of `hpodd`).
+   Iterating, `N(σ) ∈ pᵏ · N(P₂)` for every `k`.
+4. *`N(P₂)` is BOUNDED*, being the continuous image of the compact `P₂`
+   in `(ℚ̄_p, +)`. Bounded and infinitely `p`-divisible forces
+   `N(σ) = 0`, i.e. `τσ = 1`.
+
+Step 4 is where the topology is genuinely load-bearing and cannot be
+dropped: ABSTRACTLY there are nonzero homomorphisms `ℤ₂ → ℚ_p` (`ℤ₂ ⊗ ℚ`
+is a huge `ℚ`-vector space), so a version of this leaf without
+continuity would be FALSE. `GaloisRep` is by definition continuous and
+`Γ ℚ_[2]` is compact, so the hypothesis is present; formalizing step 4
+means putting a norm on `AlgebraicClosure ℚ_[p]` (`spectralNorm`, which
+`AbsoluteGaloisGroup.lean` already uses) and running the two-line
+`‖N(σ)‖ = pᵏ‖N(σ)/pᵏ‖ → ∞` argument.
+
+SOUNDNESS AUDIT (2026-07-26): non-vacuously satisfiable and NOT
+vacuously true. `τ` unramified at `2` satisfies `hloc` and is tamely
+ramified (`GaloisRep.isTamelyRamifiedAt_of_isUnramifiedAt`); the
+load-bearing case is `τ` RAMIFIED at `2` with inertia acting by a
+nontrivial transvection — the Steinberg configuration, e.g. `V₅(E)` for
+`E/ℚ` of conductor `14` — where `τ(I₂)` is infinite, `τ(P₂) = 1` is a
+genuine assertion, and it is exactly what the conclusion delivers. The
+`hpodd` hypothesis is REQUIRED and not decorative: for `p = 2` the
+statement is false, since the `2`-adic Tate module of a Tate curve at
+`2` has `τ(P₂) ≠ 1`. -/
+theorem isTamelyRamifiedAt_two_of_inertia_sq_eq_zero
+    {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
+      (Fin 2 → AlgebraicClosure ℚ_[p])}
+    (hloc : ∀ σ ∈ localInertiaGroup
+        Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat,
+      (τ.toLocal Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat σ - 1) ^ 2
+        = 0) :
+    τ.IsTamelyRamifiedAt
+      Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat :=
+  sorry
+
 include hpodd in
 /-- **THE WILD HALF of the at-`2` conductor bound: the Swan conductor at
 `2` of a square-zero-unipotent inertia action vanishes in ODD residue
-characteristic** (sorry node — Serre, *Local Fields* IV §2; cut out
+characteristic** (PROVEN 2026-07-26 from
+`isTamelyRamifiedAt_two_of_inertia_sq_eq_zero`; Serre, *Local Fields*
+IV §2; cut out
 2026-07-26 from the refuted leaf
 `hasConductorExponentAt_two_le_one_of_inertia_sq_eq_zero`, whose full
 falsity audit is in the docstring of the tame sibling
@@ -35619,34 +35749,56 @@ statement `Sw₂(τ) = 0` that the previous existential packaging of the
 conductor exponent could not even express (which is why the at-`2` leaf
 was false as stated rather than merely open).
 
-WHY IT IS NOT PROVABLE AT THIS PIN, and what a prover would need first:
-`GaloisRep.swanExponent` is built on the `opaque`
-`GaloisRep.swanExponentAux`, deliberately so, because the Swan conductor
-needs the higher ramification filtration in the UPPER numbering —
-absent from mathlib, and not replaceable by the lower numbering over
-`ℚ₂ᵃˡᵍ`, whose value group is divisible (see `ArtinConductor.lean`).
-Until that filtration exists, NOTHING about `swanExponentAux` is
-provable, so this leaf is terminal by construction. Its soundness is
-checked against the intended interpretation `swanExponentAux ρ v :=
-Sw_v(V)`, under which it is exactly the cited theorem.
+RETRACTED 2026-07-26: "WHY IT IS NOT PROVABLE AT THIS PIN". The
+paragraph that stood here said `GaloisRep.swanExponent` is built on the
+`opaque` `GaloisRep.swanExponentAux`, that closing this leaf therefore
+requires the higher ramification filtration in the UPPER numbering, and
+that the leaf is consequently "terminal by construction". The diagnosis
+was CORRECT about the code as it then stood and WRONG about what the
+mathematics requires, and the difference is worth recording because the
+same mistake is available at every opaque invariant:
 
-CONFIRMED TERMINAL 2026-07-26, and DO NOT re-derive it from the
-Oort–Tate side. This leaf's tame sibling
-`tameExponent_two_le_one_of_inertia_sq_eq_zero` was proven the same day,
-so this is now the ONLY open node of the at-`2` cut, which makes it an
-attractive and repeatedly mis-dispatched target. Two dead ends, both
-checked rather than assumed:
+**The obstruction was in the BRANCH CONDITION, not in the opaque
+constant.** `swanExponent ρ v` was `if ρ.IsUnramifiedAt v then 0 else
+swanExponentAux ρ v`, so the only route to `= 0` ran through
+unramifiedness at `2` — which this leaf's own soundness audit refutes
+(conductor `14` at `p = 5`). Under that definition the leaf really was
+unprovable, definitionally and not for want of theory.
+
+But the number `Sw_v(V)` and the CRITERION `Sw_v(V) = 0` are different
+objects, and only the number needs Herbrand's `ψ`. The criterion is
+classical and elementary to state: `Sw_v(V) = 0` **iff the wild inertia
+`P_v` acts trivially** (Serre, *Local Fields* VI §2 — the Swan conductor
+is a sum over the wild ramification breaks). And `P_v` itself needs no
+filtration: it is `Gal(Kᵥᵃˡᵍ / Kᵥᵗᵃᵐᵉ)`, and `Kᵥᵗᵃᵐᵉ` is generated by
+the `x` with `xⁿ ∈ 𝒪ᵥ` for `n` prime to the residue characteristic. So
+the divisible-value-group obstruction, which is real, obstructs only the
+number.
+
+`ArtinConductor.lean` now carries `wildInertiaGroup` and
+`GaloisRep.IsTamelyRamifiedAt`, and `swanExponent` branches on tameness
+instead of unramifiedness — a change that is conservative in exactly the
+sense the old branch was (the true Swan conductor does vanish on a
+tamely ramified representation, so `swanExponent = Sw_v` still holds on
+the nose under `swanExponentAux := Sw_v`). This leaf is proven from that
+criterion, and the residual local content is isolated as the sibling
+`isTamelyRamifiedAt_two_of_inertia_sq_eq_zero` above.
+
+The two dead ends the retracted paragraph recorded remain accurate as
+statements about the UPPER NUMBERING, and are kept because a future
+attempt at the Swan conductor as a NUMBER will meet them:
 
 * The higher-ramification machinery on branch `flt-lean-2`
-  (`exists_generator_pow_inertia_invariant`) does NOT unblock this. That
+  (`exists_generator_pow_inertia_invariant`) does NOT supply it. That
   declaration reached no release, and the node it was cut for,
   `OortTate.displacement_span_le_span_zeta_sub_one`
   (`GroupScheme/ConnectedEtale.lean`), is already proven sorry-free on
   `main` by a norm/valuation route that builds no filtration at all — so
   there is no upper-numbering theory arriving from that direction.
-* Nothing else in the tree currently constructs the upper-numbering
-  filtration. Closing this leaf means BUILDING that theory as a genuine
-  subtree; it is not a matter of locating an existing lemma.
+* Nothing else in the tree constructs the upper-numbering filtration.
+  Computing `Sw_v(V)` means BUILDING that theory as a genuine subtree.
+  Deciding whether it VANISHES does not, and that is all this cut ever
+  needed.
 
 PROVENANCE OF THE HYPOTHESIS SHAPE: `hsq` is stated over `Γ ℚ_[2]` (via
 `Z2bar`) because that is the spelling the at-`2` consumers already use,
@@ -35661,8 +35813,11 @@ vacuously true — `τ` unramified at `2` satisfies `hsq` and has
 `GaloisRep.swanExponent_eq_zero_of_isUnramifiedAt`; the load-bearing
 case is the Steinberg configuration (`τ` RAMIFIED at `2`, inertia acting
 by a nontrivial transvection, e.g. `V₅(E)` for `E/ℚ` of conductor `14`),
-where `swanExponent` reduces to the opaque `swanExponentAux` and the
-statement has genuine content. -/
+where `τ` is genuinely ramified at `2` — so the vanishing is NOT read
+off the unramified branch, and `swanExponent` would reduce to the opaque
+`swanExponentAux` were the wild inertia not shown to act trivially. That
+is exactly the content the proof supplies, and it is why the statement
+is not vacuous. -/
 theorem swanExponent_two_eq_zero_of_inertia_sq_eq_zero
     {τ : GaloisRep ℚ (AlgebraicClosure ℚ_[p])
       (Fin 2 → AlgebraicClosure ℚ_[p])}
@@ -35671,7 +35826,9 @@ theorem swanExponent_two_eq_zero_of_inertia_sq_eq_zero
         (Field.absoluteGaloisGroup ℚ_[2]),
       (τ.map (algebraMap ℚ ℚ_[2]) σ - 1) ^ 2 = 0) :
     τ.swanExponent Nat.prime_two.toHeightOneSpectrumRingOfIntegersRat = 0 :=
-  sorry
+  GaloisRep.swanExponent_eq_zero_of_isTamelyRamifiedAt τ _
+    (isTamelyRamifiedAt_two_of_inertia_sq_eq_zero hpodd
+      (localInertia_two_sq_eq_zero_of_padic_inertia_sq_eq_zero hsq))
 
 include hpodd in
 /-- **The Artin conductor exponent at `2` of a square-zero-unipotent
