@@ -1581,32 +1581,372 @@ theorem exists_intCoeff_eisenstein_approx {R : Type*} [CommRing R] [IsDedekindDo
               simpa using hcyv
           _ = WithZero.exp (-((M : ℤ) + 1)) := by rw [← WithZero.exp_add]; congr 1; ring
 
-/-- **A global generator of `K/ℚ` that is a uniformizer at `Q`** (sorry
-leaf, 2026-07-26 — step 1 of the elementary global route recorded on
+/-- **A uniformizer at `Q` that is a unit at every other prime above
+`q`** (PROVEN 2026-07-26 — step 1a of the elementary global route
+recorded on `differentIdeal_exponent_le_wild_of_residueDegreeOne`).
+
+No approximation theorem is needed: mathlib's coprime splitting
+`Ideal.eq_prime_pow_mul_coprime` writes `q·𝓞_K = Q^n · J` with
+`Q ⊔ J = ⊤`, and `J` is contained in every prime `P ∣ q` other than `Q`
+(a prime containing `Q^n·J` contains `Q^n` — hence `Q`, hence equals `Q`
+by maximality — or contains `J`).  Picking `i ∈ Q²`, `j ∈ J` with
+`i + j = 1` and a uniformizer `π`, the element `x₀ = π·j + i` has
+`ord_Q x₀ = 1` (because `ord_Q(π j) = 1 < 2 ≤ ord_Q i`, by the ultrametric
+equality for distinct valuations) and is `≡ 1` modulo every other prime
+above `q`, since `j` lies in all of them.
+-/
+theorem exists_uniformizer_avoiding_other_primes
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K)) :
+    ∃ x₀ : NumberField.RingOfIntegers K, v.intValuation x₀ = WithZero.exp (-1 : ℤ) ∧
+      ∀ P : Ideal (NumberField.RingOfIntegers K), P.IsPrime → P ≠ v.asIdeal →
+        (q : NumberField.RingOfIntegers K) ∈ P → x₀ ∉ P := by
+  classical
+  obtain ⟨π, hπ⟩ := v.intValuation_exists_uniformizer
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  have hmap0 : (Ideal.span {((q : ℕ) : ℤ)}).map
+      (algebraMap ℤ (NumberField.RingOfIntegers K)) ≠ ⊥ := Ideal.map_ne_bot_of_ne_bot hspan0
+  obtain ⟨J, hsup, hfac⟩ := Ideal.eq_prime_pow_mul_coprime hmap0 v.asIdeal
+  obtain ⟨n, hfac⟩ : ∃ n : ℕ, (Ideal.span {((q : ℕ) : ℤ)}).map
+      (algebraMap ℤ (NumberField.RingOfIntegers K)) = v.asIdeal ^ n * J := ⟨_, hfac⟩
+  have hspanq : Ideal.span {(q : NumberField.RingOfIntegers K)}
+      = (Ideal.span {((q : ℕ) : ℤ)}).map (algebraMap ℤ (NumberField.RingOfIntegers K)) := by
+    rw [Ideal.map_span]
+    congr 1
+    simp
+  have hcop : IsCoprime (v.asIdeal ^ 2) J :=
+    (Ideal.isCoprime_iff_sup_eq.mpr hsup).pow_left
+  obtain ⟨i, hi, j, hj, hij⟩ := Ideal.isCoprime_iff_exists.mp hcop
+  have hjnot : j ∉ v.asIdeal := by
+    intro hjm
+    have h1 : (1 : NumberField.RingOfIntegers K) ∈ v.asIdeal := by
+      rw [← hij]
+      exact Ideal.add_mem _ (Ideal.pow_le_self (by norm_num) hi) hjm
+    exact v.isPrime.ne_top (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+  have hvπj : v.intValuation (π * j) = WithZero.exp (-1 : ℤ) := by
+    rw [map_mul, hπ, HeightOneSpectrum.intValuation_eq_one_iff.mpr hjnot, mul_one]
+  have hvi : v.intValuation i ≤ WithZero.exp (-((2 : ℕ) : ℤ)) :=
+    (v.intValuation_le_pow_iff_mem i 2).mpr hi
+  have hlt : v.intValuation i < v.intValuation (π * j) := by
+    rw [hvπj]
+    refine lt_of_le_of_lt hvi ?_
+    rw [WithZero.exp_lt_exp]
+    norm_num
+  refine ⟨π * j + i, by rw [v.intValuation.map_add_eq_of_lt_left hlt, hvπj], ?_⟩
+  intro P hP hPne hqP hmemP
+  haveI : P.IsPrime := hP
+  -- `J ≤ P`
+  have hJP : J ≤ P := by
+    have hle : v.asIdeal ^ n * J ≤ P := by
+      rw [← hfac, ← hspanq, Ideal.span_le, Set.singleton_subset_iff]
+      exact hqP
+    rcases hP.mul_le.mp hle with hpow | hJ
+    · exfalso
+      rcases Nat.eq_zero_or_pos n with h0 | hpos
+      · rw [h0, pow_zero, Ideal.one_eq_top] at hpow
+        exact hP.ne_top (top_le_iff.mp hpow)
+      · have hQP : v.asIdeal ≤ P :=
+          (Ideal.IsPrime.pow_le_iff (I := v.asIdeal) (P := P) hpos.ne').mp hpow
+        exact hPne (((v.isPrime.isMaximal v.ne_bot).eq_of_le hP.ne_top hQP)).symm
+    · exact hJ
+  have hjP : j ∈ P := hJP hj
+  have h1 : (1 : NumberField.RingOfIntegers K) ∈ P := by
+    have : (1 : NumberField.RingOfIntegers K) = (π * j + i) - π * j + (1 - i) := by ring
+    rw [this]
+    refine Ideal.add_mem _ (Ideal.sub_mem _ hmemP (Ideal.mul_mem_left _ _ hjP)) ?_
+    have : (1 : NumberField.RingOfIntegers K) - i = j := by rw [← hij]; ring
+    rw [this]; exact hjP
+  exact hP.ne_top (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+
+/-- **Adjusting an element by a multiple of `q²` to make it a
+generator of `K/ℚ`** (PROVEN 2026-07-26 — step 1b of the same route).
+
+Fix a primitive element `θ ∈ 𝓞_K` (obtained from
+`Field.exists_primitive_element` over `ℚ` and cleared of denominators by
+`IsAlgebraic.exists_integral_multiple`, which applies to `ℤ` through
+`IsFractionRing.isAlgebraic_iff`).  The elements
+`x_N = x₀ + m^{N+2}·θ`, `N : ℕ`, all differ from `x₀` by an element of
+`(m²)`; since `K/ℚ` is finite separable there are only finitely many
+intermediate fields (`Field.finite_intermediateField_of_exists_primitive_element`),
+so two of the fields `ℚ(x_{N₁})`, `ℚ(x_{N₂})` coincide.  Their common
+value `F` then contains `(m^{N₁+2} − m^{N₂+2})·θ` with a nonzero
+*rational* scalar, hence contains `θ`, hence is all of `K` — so
+`ℚ(x_{N₁}) = K` and `x_{N₁}` is the required generator.  (Note the
+scalar must be rational for this step, which is why the increment is a
+power of a natural number rather than of an arbitrary ring element.)
+-/
+theorem exists_generator_sub_mem_span_sq
+    (K : Type*) [Field K] [NumberField K]
+    (x₀ : NumberField.RingOfIntegers K) (m : ℕ) (hm : 1 < m) :
+    ∃ x : NumberField.RingOfIntegers K,
+      x - x₀ ∈ Ideal.span {((m : NumberField.RingOfIntegers K)) ^ 2} ∧
+      Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤ := by
+  classical
+  -- a primitive element of `K/ℚ` lying in `𝓞 K`
+  obtain ⟨α, hα⟩ := _root_.Field.exists_primitive_element ℚ K
+  have halgZ : IsAlgebraic ℤ α :=
+    (IsFractionRing.isAlgebraic_iff ℤ ℚ K).mpr (Algebra.IsAlgebraic.isAlgebraic α)
+  obtain ⟨d, hd0, hdint⟩ := halgZ.exists_integral_multiple
+  set θ' : K := (d : K) * α with hθ'def
+  have hθ'int : IsIntegral ℤ θ' := by simpa [hθ'def, zsmul_eq_mul] using hdint
+  have hcast : algebraMap ℚ K ((d : ℚ)) = (d : K) := map_intCast _ d
+  have h3 : (algebraMap ℚ K (((d : ℚ))⁻¹)) * θ' = α := by
+    rw [hθ'def, ← mul_assoc, ← hcast, ← map_mul,
+      inv_mul_cancel₀ (by exact_mod_cast hd0 : ((d : ℚ)) ≠ 0), map_one, one_mul]
+  have hθ'top : IntermediateField.adjoin ℚ {θ'} = ⊤ := by
+    refine top_le_iff.mp ?_
+    rw [← hα]
+    refine IntermediateField.adjoin_simple_le_iff.mpr ?_
+    rw [← h3]
+    exact mul_mem (IntermediateField.algebraMap_mem _ _)
+      (IntermediateField.mem_adjoin_simple_self ℚ θ')
+  obtain ⟨θ, hθ⟩ : ∃ θ : NumberField.RingOfIntegers K,
+      algebraMap (NumberField.RingOfIntegers K) K θ = θ' :=
+    ⟨⟨θ', hθ'int⟩, rfl⟩
+  -- pigeonhole over the finitely many intermediate fields
+  haveI : Finite (IntermediateField ℚ K) :=
+    _root_.Field.finite_intermediateField_of_exists_primitive_element ℚ K ⟨α, hα⟩
+  set f : ℕ → IntermediateField ℚ K := fun N =>
+    IntermediateField.adjoin ℚ
+      {algebraMap (NumberField.RingOfIntegers K) K (x₀ + (m : NumberField.RingOfIntegers K) ^ (N + 2) * θ)}
+    with hfdef
+  obtain ⟨N₁, N₂, hne, heq⟩ := Finite.exists_ne_map_eq_of_infinite f
+  refine ⟨x₀ + (m : NumberField.RingOfIntegers K) ^ (N₁ + 2) * θ, ?_, ?_⟩
+  · refine Ideal.mem_span_singleton'.mpr ⟨(m : NumberField.RingOfIntegers K) ^ N₁ * θ, ?_⟩
+    ring
+  · -- the adjoined field is everything
+    have hmem₁ : algebraMap (NumberField.RingOfIntegers K) K
+        (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₁ + 2) * θ) ∈ f N₁ :=
+      IntermediateField.mem_adjoin_simple_self _ _
+    have hmem₂ : algebraMap (NumberField.RingOfIntegers K) K
+        (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₂ + 2) * θ) ∈ f N₁ := by
+      rw [heq]; exact IntermediateField.mem_adjoin_simple_self _ _
+    set c : ℚ := (m : ℚ) ^ (N₁ + 2) - (m : ℚ) ^ (N₂ + 2) with hcdef
+    have hcne : c ≠ 0 := by
+      rw [hcdef, sub_ne_zero]
+      intro hcon
+      have hpow : (m : ℕ) ^ (N₁ + 2) = (m : ℕ) ^ (N₂ + 2) := by exact_mod_cast hcon
+      exact hne (Nat.add_right_cancel (Nat.pow_right_injective hm hpow))
+    have hdiff : algebraMap ℚ K c * θ' =
+        algebraMap (NumberField.RingOfIntegers K) K
+          (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₁ + 2) * θ) -
+        algebraMap (NumberField.RingOfIntegers K) K
+          (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₂ + 2) * θ) := by
+      rw [hcdef, ← hθ]
+      push_cast
+      ring
+    have hθmem : θ' ∈ f N₁ := by
+      have : θ' = algebraMap ℚ K c⁻¹ * (algebraMap ℚ K c * θ') := by
+        rw [← mul_assoc, ← map_mul, inv_mul_cancel₀ hcne, map_one, one_mul]
+      rw [this, hdiff]
+      exact mul_mem (IntermediateField.algebraMap_mem _ _) (sub_mem hmem₁ hmem₂)
+    have htop : f N₁ = ⊤ := by
+      refine top_le_iff.mp ?_
+      rw [← hθ'top]
+      exact IntermediateField.adjoin_simple_le_iff.mpr hθmem
+    have hint : IsAlgebraic ℚ (algebraMap (NumberField.RingOfIntegers K) K
+        (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₁ + 2) * θ)) :=
+      Algebra.IsAlgebraic.isAlgebraic _
+    have hsub := congrArg IntermediateField.toSubalgebra htop
+    rwa [hfdef, IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic hint] at hsub
+
+/-- **The constant coefficient of the minimal polynomial has `Q`-order
+exactly `e`** (PROVEN 2026-07-26 — step 1c of the same route).
+
+Let `x` generate `K/ℚ`, be a uniformizer at `Q`, and be a unit at every
+other prime above `q`.  Then `ord_Q((minpoly ℤ x).coeff 0) = e`.
+
+Proof.  The residue-degree-one hypothesis `hres` makes `𝓞_K ⧸ Q` a
+quotient of `Fin q`, so `absNorm Q ≤ q`; and `absNorm Q` is a power of a
+rational prime lying in `Q`, which must be `q` by Bézout — so
+`absNorm Q = q`.  Writing `(x) = Q·I`, multiplicativity of `absNorm`
+gives `absNorm (x) = q · absNorm I`, and `q ∤ absNorm I`: otherwise
+`Ideal.exists_isMaximal_dvd_of_dvd_absNorm'` produces a maximal `P ∣ I`
+above `q`, which is either `Q` (forcing `Q² ∣ (x)`, contradicting
+`ord_Q x = 1`) or another prime above `q` containing `x`, contradicting
+`hother`.  So `v_q(absNorm (x)) = 1`.  Finally the constant coefficient
+of `minpoly ℤ x` is `± N_{K/ℚ}(x)` — transport the power basis
+`ℚ⟮x⟯ ≃ₐ[ℚ] K` and apply `PowerBasis.norm_gen_eq_coeff_zero_minpoly`,
+together with `Algebra.coe_norm_int` and
+`minpoly.isIntegrallyClosed_eq_field_fractions` — so its absolute value
+is `absNorm (x)`, and `intValuation_natCast_eq_exp_ramificationIdx`
+converts `v_q = 1` into `ord_Q = e`.
+-/
+theorem intValuation_coeff_zero_minpoly
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hres : ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (x : NumberField.RingOfIntegers K)
+    (hgen : Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤)
+    (hx : v.intValuation x = WithZero.exp (-1 : ℤ))
+    (hother : ∀ P : Ideal (NumberField.RingOfIntegers K), P.IsPrime → P ≠ v.asIdeal →
+      (q : NumberField.RingOfIntegers K) ∈ P → x ∉ P) :
+    v.intValuation (((minpoly ℤ x).coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+      = WithZero.exp (-((Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal : ℕ) : ℤ)) := by
+  classical
+  haveI hQmax : v.asIdeal.IsMaximal := v.isPrime.isMaximal v.ne_bot
+  -- (C1) the residue degree is one, so `absNorm Q = q`
+  obtain ⟨p, n, hn, hpQ, hp, hPnorm⟩ := Ideal.exists_prime_and_absNorm_eq_pow v.asIdeal
+  have hpq : p = q := by
+    by_contra hcon
+    have hgcd : Nat.gcd p q = 1 := (Nat.coprime_primes hp hq).mpr hcon
+    have hcop : IsCoprime (p : ℤ) (q : ℤ) :=
+      Int.isCoprime_iff_gcd_eq_one.mpr (by simpa using hgcd)
+    obtain ⟨a, b, hab⟩ := hcop
+    have h1 : (1 : NumberField.RingOfIntegers K) ∈ v.asIdeal := by
+      have h2 : ((a : NumberField.RingOfIntegers K)) * ((p : ℕ) : NumberField.RingOfIntegers K)
+          + ((b : NumberField.RingOfIntegers K)) * ((q : ℕ) : NumberField.RingOfIntegers K)
+          = 1 := by
+        have h3 := congrArg (fun t : ℤ => ((t : NumberField.RingOfIntegers K))) hab
+        push_cast at h3
+        simpa using h3
+      rw [← h2]
+      exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hpQ) (Ideal.mul_mem_left _ _ hmem)
+    exact v.isPrime.ne_top (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+  have hsurj : Function.Surjective
+      (fun i : Fin q => Ideal.Quotient.mk v.asIdeal ((i : ℕ) : NumberField.RingOfIntegers K)) := by
+    intro z
+    obtain ⟨y0, rfl⟩ := Ideal.Quotient.mk_surjective z
+    obtain ⟨c, hc⟩ := hres y0
+    have hq0 : (0 : ℤ) < (q : ℤ) := by exact_mod_cast hq.pos
+    have hnn : (0 : ℤ) ≤ c % (q : ℤ) := Int.emod_nonneg c (by exact_mod_cast hq.ne_zero)
+    have hlt : (c % (q : ℤ)).toNat < q := by
+      have h1 : c % (q : ℤ) < (q : ℤ) := Int.emod_lt_of_pos c hq0
+      omega
+    refine ⟨⟨(c % (q : ℤ)).toNat, hlt⟩, ?_⟩
+    refine Ideal.Quotient.eq.mpr ?_
+    have hcast : ((((c % (q : ℤ)).toNat : ℕ)) : NumberField.RingOfIntegers K)
+        = ((c % (q : ℤ) : ℤ) : NumberField.RingOfIntegers K) := by
+      rw [← Int.cast_natCast, Int.toNat_of_nonneg hnn]
+    have hmoddef : c % (q : ℤ) = c - (q : ℤ) * (c / (q : ℤ)) := Int.emod_def c (q : ℤ)
+    have hdecomp : ((c % (q : ℤ) : ℤ) : NumberField.RingOfIntegers K)
+        = (c : NumberField.RingOfIntegers K)
+          - (q : NumberField.RingOfIntegers K) * ((c / (q : ℤ) : ℤ) : NumberField.RingOfIntegers K) := by
+      rw [hmoddef, Int.cast_sub, Int.cast_mul, Int.cast_natCast]
+    show ((((c % (q : ℤ)).toNat : ℕ)) : NumberField.RingOfIntegers K) - y0 ∈ v.asIdeal
+    rw [hcast, hdecomp]
+    have hrw : (c : NumberField.RingOfIntegers K)
+          - (q : NumberField.RingOfIntegers K) * ((c / (q : ℤ) : ℤ) : NumberField.RingOfIntegers K)
+          - y0
+        = -(y0 - (c : NumberField.RingOfIntegers K))
+          - (q : NumberField.RingOfIntegers K)
+            * ((c / (q : ℤ) : ℤ) : NumberField.RingOfIntegers K) := by ring
+    rw [hrw]
+    exact Ideal.sub_mem _ (neg_mem hc) (Ideal.mul_mem_right _ _ hmem)
+  have hfin : Ideal.absNorm v.asIdeal ≤ q := by
+    have hcard : Nat.card (NumberField.RingOfIntegers K ⧸ v.asIdeal) ≤ Nat.card (Fin q) :=
+      Nat.card_le_card_of_surjective _ hsurj
+    simpa [Ideal.absNorm_apply, Submodule.cardQuot_apply] using hcard
+  rw [hpq] at hPnorm
+  have hn1 : n = 1 := by
+    have hle : q ^ n ≤ q ^ 1 := by rw [pow_one, ← hPnorm]; exact hfin
+    have hnn := (Nat.pow_le_pow_iff_right hq.one_lt).mp hle
+    omega
+  have habsQ : Ideal.absNorm v.asIdeal = q := by rw [hPnorm, hn1, pow_one]
+  -- (C2) the `q`-part of the absolute norm of `x` is exactly one
+  have hx0 : x ≠ 0 := by
+    rintro rfl
+    simp [WithZero.exp_ne_zero.symm] at hx
+  have hQdvd : v.asIdeal ∣ Ideal.span {x} := by
+    have hd := (v.intValuation_le_pow_iff_dvd x 1).mp (by rw [hx]; norm_num)
+    rwa [pow_one] at hd
+  obtain ⟨I, hI⟩ := hQdvd
+  have hIbot : I ≠ ⊥ := by
+    intro h
+    rw [h, Ideal.mul_bot] at hI
+    exact hx0 (by simpa [Ideal.span_singleton_eq_bot] using hI)
+  have hIabs0 : Ideal.absNorm I ≠ 0 := fun h => hIbot (Ideal.absNorm_eq_zero_iff.mp h)
+  have habsx : (Ideal.span {x}).absNorm = q * Ideal.absNorm I := by
+    rw [hI, _root_.map_mul, habsQ]
+  have hnd : ¬ (q ∣ Ideal.absNorm I) := by
+    intro hdvd
+    obtain ⟨P, hPmax, hPunder, hPdvd⟩ := Ideal.exists_isMaximal_dvd_of_dvd_absNorm' hq I hdvd
+    have hqP : (q : NumberField.RingOfIntegers K) ∈ P := by
+      have h0 : ((q : ℤ)) ∈ P.under ℤ := by rw [hPunder]; exact Ideal.mem_span_singleton_self _
+      rw [Ideal.mem_under] at h0
+      simpa using h0
+    have hxP : x ∈ P := by
+      have hdvdx : P ∣ Ideal.span {x} := by rw [hI]; exact hPdvd.mul_left _
+      exact Ideal.le_of_dvd hdvdx (Ideal.mem_span_singleton_self x)
+    by_cases hPQ : P = v.asIdeal
+    · rw [hPQ] at hPdvd
+      have h2 : v.asIdeal ^ 2 ∣ Ideal.span {x} := by
+        rw [hI, sq]; exact mul_dvd_mul_left _ hPdvd
+      have hle2 := (v.intValuation_le_pow_iff_dvd x 2).mpr h2
+      rw [hx, WithZero.exp_le_exp] at hle2
+      norm_num at hle2
+    · exact hother P hPmax.isPrime hPQ hqP hxP
+  -- (C3) the constant coefficient of the minimal polynomial is, up to sign, the norm
+  set y : K := algebraMap (NumberField.RingOfIntegers K) K x with hydef
+  have hyint : IsIntegral ℚ y := Algebra.IsIntegral.isIntegral y
+  have htopIF : IntermediateField.adjoin ℚ {y} = ⊤ := by
+    refine IntermediateField.toSubalgebra_injective ?_
+    rw [IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic hyint.isAlgebraic, hgen]
+    rfl
+  have hpbgen : ((IntermediateField.adjoin.powerBasis hyint).map
+      ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv)).gen = y := rfl
+  have hnormQ : Algebra.norm ℚ y = (-1) ^ ((IntermediateField.adjoin.powerBasis hyint).map
+      ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv)).dim *
+      (minpoly ℚ y).coeff 0 := by
+    have hpb := Algebra.PowerBasis.norm_gen_eq_coeff_zero_minpoly
+      ((IntermediateField.adjoin.powerBasis hyint).map
+        ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv))
+    rwa [hpbgen] at hpb
+  have hminpoly : minpoly ℚ y = (minpoly ℤ x).map (algebraMap ℤ ℚ) :=
+    minpoly.isIntegrallyClosed_eq_field_fractions ℚ K (Algebra.IsIntegral.isIntegral x)
+  have hcoeffQ : (minpoly ℚ y).coeff 0 = (((minpoly ℤ x).coeff 0 : ℤ) : ℚ) := by
+    rw [hminpoly, Polynomial.coeff_map]
+    simp
+  have hnormcoe : ((Algebra.norm ℤ x : ℤ) : ℚ) = Algebra.norm ℚ y := Algebra.coe_norm_int x
+  have hnormZ : Algebra.norm ℤ x = (-1) ^ ((IntermediateField.adjoin.powerBasis hyint).map
+      ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv)).dim *
+      (minpoly ℤ x).coeff 0 := by
+    have hQeq : ((Algebra.norm ℤ x : ℤ) : ℚ)
+        = ((((-1) ^ ((IntermediateField.adjoin.powerBasis hyint).map
+            ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv)).dim *
+            (minpoly ℤ x).coeff 0 : ℤ)) : ℚ) := by
+      rw [hnormcoe, hnormQ, hcoeffQ]
+      push_cast
+      ring
+    exact_mod_cast hQeq
+  have hcoeffabs : ((minpoly ℤ x).coeff 0).natAbs = (Ideal.span {x}).absNorm := by
+    rw [Ideal.absNorm_span_singleton, hnormZ, Int.natAbs_mul]
+    simp
+  -- assembly
+  have hne0 : ((minpoly ℤ x).coeff 0).natAbs ≠ 0 := by
+    rw [hcoeffabs, habsx]
+    exact Nat.mul_ne_zero hq.ne_zero hIabs0
+  have hfact : (((minpoly ℤ x).coeff 0).natAbs).factorization q = 1 := by
+    rw [hcoeffabs, habsx, Nat.factorization_mul hq.ne_zero hIabs0]
+    simp [hq.factorization_self, Nat.factorization_eq_zero_of_not_dvd hnd]
+  have hhelp := intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem _ hne0
+  rw [hfact, mul_one] at hhelp
+  rcases Int.natAbs_eq ((minpoly ℤ x).coeff 0) with heq | heq
+  · rw [heq, Int.cast_natCast]
+    exact hhelp
+  · rw [heq, Int.cast_neg, Int.cast_natCast, Valuation.map_neg]
+    exact hhelp
+
+/-- **A global generator of `K/ℚ` that is a uniformizer at `Q`**
+(PROVEN 2026-07-26 — step 1 of the elementary global route recorded on
 `differentIdeal_exponent_le_wild_of_residueDegreeOne`; standard
 algebraic number theory, no local fields).
 
-Asks for `x ∈ 𝓞_K` with `ℚ(x) = K`, `ord_Q x = 1`, and — this is the
-only nonformal clause — the constant coefficient of its minimal
-polynomial of `Q`-order exactly `e`.
+Produces `x ∈ 𝓞_K` with `ℚ(x) = K`, `ord_Q x = 1`, and the constant
+coefficient of its minimal polynomial of `Q`-order exactly `e`.
 
-Route.  By approximation (CRT over the finitely many primes above `q`)
-choose `x₀` with `ord_Q x₀ = 1` and `x₀ ∉ Q'` for every other prime `Q'`
-above `q`.  Then `N_{K/ℚ}(x₀)` has `q`-adic valuation
-`∑_{Q'∣q} f_{Q'}·ord_{Q'}(x₀) = f(Q∣q) = 1` (using `hres`), via
-`Ideal.absNorm_span_singleton` and multiplicativity of `absNorm`; and
-for a generator the constant coefficient of `minpoly ℤ x` is `± N(x)`
-(`PowerBasis.norm_gen_eq_coeff_zero_minpoly`), so its `Q`-order is
-`e·1 = e`.
-
-To make `x₀` a generator, replace it by `x₀ + q^N·θ` for a primitive
-`θ ∈ 𝓞_K`: the valuation conditions survive for every `N ≥ 1`, because
-`ord_Q (q^N θ) ≥ N·e ≥ 2 > 1 = ord_Q x₀` (note `e ≥ q ≥ 2` in the wild
-case) and `ord_{Q'} (q^N θ) ≥ 1 > 0 = ord_{Q'} x₀`.  Some `N` works by
-pigeonhole: `K/ℚ` is finite separable, so `Finite (IntermediateField ℚ K)`
-(mathlib, from `Field.exists_primitive_element`), and if two different
-`N₁, N₂` gave elements of the same proper subfield `F`, then
-`(q^{N₁} − q^{N₂})·θ ∈ F`, hence `θ ∈ F` and `F = K`, a contradiction. -/
+Assembled from the three steps above: `exists_uniformizer_avoiding_other_primes`
+supplies `x₀` with `ord_Q x₀ = 1` that is a unit at the other primes over
+`q`; `exists_generator_sub_mem_span_sq` moves it by an element of `(q²)`
+to make it a generator, which changes neither the `Q`-order (the
+increment has `Q`-order `≥ 2`) nor the behaviour at the other primes
+above `q` (the increment lies in each of them); and
+`intValuation_coeff_zero_minpoly` computes the constant coefficient.
+-/
 theorem exists_generator_uniformizer_at (K : Type*) [Field K] [NumberField K]
     (q : ℕ) (hq : q.Prime)
     (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
@@ -1618,8 +1958,37 @@ theorem exists_generator_uniformizer_at (K : Type*) [Field K] [NumberField K]
       Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤ ∧
       v.intValuation x = WithZero.exp (-1 : ℤ) ∧
       v.intValuation (((minpoly ℤ x).coeff 0 : ℤ) : NumberField.RingOfIntegers K)
-        = WithZero.exp (-(e : ℤ)) :=
-  sorry
+        = WithZero.exp (-(e : ℤ)) := by
+  obtain ⟨x₀, hx₀, hother₀⟩ := exists_uniformizer_avoiding_other_primes K q hq v
+  obtain ⟨x, hsub, hgen⟩ := exists_generator_sub_mem_span_sq K x₀ q hq.one_lt
+  obtain ⟨w, hw⟩ := Ideal.mem_span_singleton'.mp hsub
+  have hz : x = x₀ + w * (q : NumberField.RingOfIntegers K) ^ 2 := by rw [hw]; ring
+  have hmem2 : w * (q : NumberField.RingOfIntegers K) ^ 2 ∈ v.asIdeal ^ 2 :=
+    Ideal.mul_mem_left _ _ (Ideal.pow_mem_pow hmem 2)
+  have hvz : v.intValuation (w * (q : NumberField.RingOfIntegers K) ^ 2)
+      ≤ WithZero.exp (-((2 : ℕ) : ℤ)) :=
+    (v.intValuation_le_pow_iff_mem _ 2).mpr hmem2
+  have hlt : v.intValuation (w * (q : NumberField.RingOfIntegers K) ^ 2)
+      < v.intValuation x₀ := by
+    rw [hx₀]
+    refine lt_of_le_of_lt hvz ?_
+    rw [WithZero.exp_lt_exp]
+    norm_num
+  have hx : v.intValuation x = WithZero.exp (-1 : ℤ) := by
+    rw [hz, v.intValuation.map_add_eq_of_lt_left hlt, hx₀]
+  have hother : ∀ P : Ideal (NumberField.RingOfIntegers K), P.IsPrime → P ≠ v.asIdeal →
+      (q : NumberField.RingOfIntegers K) ∈ P → x ∉ P := by
+    intro P hP hPne hqP hxP
+    have hzP : w * (q : NumberField.RingOfIntegers K) ^ 2 ∈ P :=
+      Ideal.mul_mem_left _ _ (Ideal.pow_mem_of_mem P hqP 2 (by norm_num))
+    have hx₀P : x₀ ∈ P := by
+      have hx₀eq : x₀ = x - w * (q : NumberField.RingOfIntegers K) ^ 2 := by rw [hz]; ring
+      rw [hx₀eq]
+      exact Ideal.sub_mem _ hxP hzP
+    exact hother₀ P hP hPne hqP hx₀P
+  refine ⟨x, hgen, hx, ?_⟩
+  rw [he]
+  exact intValuation_coeff_zero_minpoly K q hq v hmem hres x hgen hx hother
 
 /-- **From an integer Eisenstein approximation to Serre's bound** (sorry
 leaf, 2026-07-26 — steps 3–6 of the elementary global route recorded on
@@ -1672,10 +2041,13 @@ theorem differentIdeal_exponent_le_of_intEisenstein_approx
   sorry
 
 /-- **The wild different bound when the residue degree is one** (PROVEN
-2026-07-26 over `exists_generator_uniformizer_at` and
-`differentIdeal_exponent_le_of_intEisenstein_approx`, the two remaining
-leaves of the elementary global route; the digit expansion itself,
-`exists_intCoeff_eisenstein_approx`, is proven above).
+2026-07-26 over `differentIdeal_exponent_le_of_intEisenstein_approx`,
+now the only remaining leaf of the elementary global route;
+`exists_generator_uniformizer_at` was PROVEN 2026-07-26 over the three
+steps `exists_uniformizer_avoiding_other_primes`,
+`exists_generator_sub_mem_span_sq` and `intValuation_coeff_zero_minpoly`,
+and the digit expansion `exists_intCoeff_eisenstein_approx` is proven
+above).
 
 Hypothesis `hres` says that every element of `𝓞_K` is congruent mod `Q`
 to a rational integer, i.e. `𝓞_K/Q = 𝔽_q`, i.e. the residue degree
