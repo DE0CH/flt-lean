@@ -29520,11 +29520,16 @@ fixed line is exactly what the tame dictionary consumes
 (`GaloisRep.tameExponent_add_one_le_finrank_of_fixed`).
 
 WHY THIS SHAPE RATHER THAN UNIPOTENCE. The classical statement is
-stronger — `(τσ − 1)² = 0` for every `σ ∈ I_q` — and deriving a COMMON
-fixed line from it needs Kolchin's theorem in dimension 2, absent from
-this pin. Assuming the stronger unipotence and proving Kolchin would
+stronger — `(τσ − 1)² = 0` for every `σ ∈ I_q` — and assuming it would
 make the development's faith LARGER, not smaller, so the pin is placed
-at the weakest form that the consumer actually needs.
+at the weakest form that the consumer actually needs. (An earlier
+version of this paragraph justified the choice by Kolchin's theorem in
+dimension `2` being absent from the pin. That premise is FALSE — see
+the KOLCHIN IS NOT ABSENT paragraph at the end of this docstring — but
+the conclusion is unaffected: pointwise unipotence on `I_q` is formally
+stronger than a common fixed line, they agree only modulo
+`det τ|_{I_q} = 1`, and that determinant fact is not available here as a
+proven lemma. Kolchin's absence was never the load-bearing reason.)
 
 `q ≠ p` is load-bearing: at `q = p` with `p ∥ M₀` the local
 representation is still special, but `ρ|_{I_p}` is not unipotent (the
