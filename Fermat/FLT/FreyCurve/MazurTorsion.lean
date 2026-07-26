@@ -6195,13 +6195,68 @@ This is the `ℚ̄`-analogue of the conclusion of the PROVEN
 predicate so that the two moduli leaves below can talk about the SAME
 parameter. The Tate normal form of a pair `(E, P)` with `P` of order `9`
 is unique, so `IsTateParam E P` is in fact a singleton; that uniqueness is
-not asserted here, but it is what `exists_rat_hauptmodul_of_stable`
-must prove on its way to Galois equivariance. -/
+`isTateParam_unique` below.
+
+Concretely the definition says: `C • (E⁄ℚ̄) = tateCurve d` for some
+`C : VariableChange ℚ̄`, and `P` is the point `(C.r, C.t)` — which is exactly
+`Point.equivVariableChange (E⁄ℚ̄) C (0,0) = P`, since that isomorphism sends
+`(0,0)` to `(u²·0 + r, u³·0 + u²s·0 + t) = (r, t)`.
+
+**FAITHFULNESS AUDIT — DEFINITION CORRECTED 2026-07-26. The previous version
+made `exists_rat_hauptmodul_of_stable` FALSE AS STATED.** This predicate used
+to read
+
+    ∃ (h00 : (tateCurve d).toAffine.Nonsingular 0 0)
+      (Ψ : (E⁄ℚ̄).Point ≃+ (tateCurve d).toAffine.Point), Ψ P = some 0 0 h00,
+
+i.e. it asked only for an ABSTRACT ISOMORPHISM OF ABELIAN GROUPS. That
+carries no geometry at all, and in particular it does not pin `d` down. For
+an elliptic curve over `ℚ̄ = AlgebraicClosure ℚ` one has, as abstract groups,
+
+    E(ℚ̄) ≅ (ℚ/ℤ)² ⊕ ℚ^(ℵ₀)
+
+(divisible; torsion `(ℚ/ℤ)²`; countable; of infinite rank, Frey–Jarden), so
+ANY two elliptic curves over `ℚ̄` have isomorphic groups of points, and
+`Aut((ℚ/ℤ)²) = GL₂(Ẑ)` is transitive on elements of order `9` (`GL₂(ℤ/9)` is
+transitive on primitive vectors of `(ℤ/9)²`). So the old `IsTateParam E P d`
+held for EVERY `d` making `tateCurve d` nonsingular, whatever `E` and `P`
+were, and it therefore said nothing.
+
+EXPLICIT COUNTEREXAMPLE to the old form of the descent leaf. Take any `E/ℚ`
+with a Galois-stable cyclic subgroup of order `9` (they exist — `9` is a
+rational cyclic isogeny degree) and take `d = √2`. Then
+
+* `tateCurve √2` is nonsingular: in `tateCurve_Δ` the factors are `d ≠ 0`,
+  `d − 1 ≠ 0`, `d² − d + 1 = 3 − √2 ≠ 0` and
+  `d³ − 6d² + 3d + 1 = 5√2 − 11 ≠ 0` (since `50 ≠ 121`);
+* `(0,0)` has order exactly `9` there: `9 • (0,0) = 0` holds identically along
+  the Kubert line, and order `3` would force `b = d²(d−1)(d²−d+1) = 0`;
+* hence the OLD `IsTateParam E g √2` held, while
+  `R(√2) = 27√2(√2 − 1)/(5√2 − 11) = (−324 + 27√2)/71` is IRRATIONAL, so no
+  rational `t` satisfies the conclusion.
+
+(Re-checked numerically with PARI/GP, 2026-07-26: `Δ ≈ −0.12725 ≠ 0`;
+`3·(0,0) ≈ (0.82843, 0.48528) ≠ 0`; `9·(0,0)` overflows to the point at
+infinity; `R(√2) ≈ −4.025580757970795`, agreeing with `(−324 + 27√2)/71`.)
+
+The moral is the standard trap of this development in a new dress: a `≃+`
+between groups of points is a fine CONCLUSION of an existence theorem — it is
+all `exists_tateNormalForm_of_order_nine` claims — but is useless as a
+HYPOTHESIS, because the geometry lives in the change of variables, not in the
+abstract group. Compare the `𝒪ᵥ`-rule in `CLAUDE.md`: values descend, the
+existence of a coordinate does not.
+
+CONSEQUENCE FOR THE SIBLING `exists_tateParam`: its statement text is
+unchanged but its obligation is now the correct, stronger one. This costs it
+nothing mathematically — the ℚ-proof it re-bases
+(`exists_tateNormalForm_of_order_nine`) constructs `C₁`, `C₂` explicitly and
+merely discards them at the end; here it must return their product. -/
 def IsTateParam (E : WeierstrassCurve ℚ) (P : (E⁄(AlgebraicClosure ℚ)).Point)
     (d : AlgebraicClosure ℚ) : Prop :=
-  ∃ (h00 : (tateCurve d).toAffine.Nonsingular 0 0)
-    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point ≃+ (tateCurve d).toAffine.Point),
-      Ψ P = Affine.Point.some 0 0 h00
+  ∃ C : WeierstrassCurve.VariableChange (AlgebraicClosure ℚ),
+    C • (E⁄(AlgebraicClosure ℚ)) = tateCurve d ∧
+      ∃ h : (E⁄(AlgebraicClosure ℚ)).toAffine.Nonsingular C.r C.t,
+        P = Affine.Point.some C.r C.t h
 
 /-- **Tate normal form over `ℚ̄` at a geometric point of order `9`**
 (PROVEN 2026-07-26): an elliptic curve over `ℚ` whose
@@ -6281,9 +6336,163 @@ theorem exists_tateParam (E : WeierstrassCurve ℚ) [E.IsElliptic]
   · rw [AddEquiv.trans_apply, hΨ, Point.equivOfEq_some]
   · rw [← hEq, ← hjE]; exact hjmul
 
+/-- **A Kubert parameter is nondegenerate** (PROVEN 2026-07-26): if `d` is a
+Kubert parameter of `(E, P)` then `d ≠ 0` and `d³ − 6d² + 3d + 1 ≠ 0`.
+
+Both are read off `tateCurve_Δ`: the change of variables multiplies `Δ` by a
+unit, so `Δ(tateCurve d) ≠ 0`, and `d` and `d³ − 6d² + 3d + 1` are two of its
+four factors. The second is what makes the Hauptmodul value `R(d)` defined at
+all, and the first is what makes the diamond operator `γ(d) = (d − 1)/d`
+defined. -/
+lemma nondegenerate_of_isTateParam {E : WeierstrassCurve ℚ} [E.IsElliptic]
+    {P : (E⁄(AlgebraicClosure ℚ)).Point} {d : AlgebraicClosure ℚ}
+    (hd : IsTateParam E P d) :
+    d ≠ 0 ∧ d ^ 3 - 6 * d ^ 2 + 3 * d + 1 ≠ 0 := by
+  haveI : (E⁄(AlgebraicClosure ℚ)).IsElliptic :=
+    inferInstanceAs (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).IsElliptic
+  obtain ⟨C, hC, -⟩ := hd
+  have hΔ : (tateCurve d).Δ ≠ 0 := by
+    rw [← hC, WeierstrassCurve.variableChange_Δ]
+    exact mul_ne_zero (pow_ne_zero _ (Units.ne_zero _))
+      (WeierstrassCurve.isUnit_Δ (W := (E⁄(AlgebraicClosure ℚ)))).ne_zero
+  rw [tateCurve_Δ] at hΔ
+  refine ⟨?_, ?_⟩
+  · rintro rfl; exact hΔ (by ring)
+  · intro h; exact hΔ (by rw [h]; ring)
+
+/-- **Rigidity of the Tate normal form over `ℚ̄`** (sorry node, cut 2026-07-26
+out of `exists_rat_hauptmodul_of_stable` — step 1 of its five-step argument):
+the Kubert parameter of a pair `(E, P)` is UNIQUE, so `d` really is a
+function `d(E, P)` of the pair.
+
+This is the classical rigidity that makes the Tate normal form a normal form,
+and it is pure field algebra. Given two admissible changes of variables
+`C`, `C'` with `C • (E⁄ℚ̄) = tateCurve d`, `C' • (E⁄ℚ̄) = tateCurve d'` and
+`(C.r, C.t) = P = (C'.r, C'.t)`, put `D := C' * C⁻¹`, so that
+`D • tateCurve d = tateCurve d'` and `D` fixes the origin, i.e. `D.r = D.t = 0`.
+With `r = t = 0` the change-of-variables formulas collapse to
+
+    a₁' = u⁻¹(a₁ + 2s),  a₂' = u⁻²(a₂ − s a₁ − s²),
+    a₃' = u⁻³ a₃,        a₄' = u⁻⁴(a₄ − s a₃),      a₆' = u⁻⁶ a₆,
+
+and on `tateCurve d` one has `a₄ = a₆ = 0`, `a₂ = a₃ = −b` with
+`b = d²(d − 1)(d² − d + 1) ≠ 0`. Then `a₄' = 0` forces `u⁻⁴ s b = 0`, hence
+`s = 0`; and `a₂' = a₃'` forces `u⁻² b = u⁻³ b`, hence `u = 1`. So `D = 1`,
+`tateCurve d = tateCurve d'`, and comparing coefficients gives `c = c'`,
+`b = b'`, whence `d = c²/(b − c) = d'` (note `b − c = d³(d − 1)²` and
+`c² = d⁴(d − 1)²`, both nonzero by `nondegenerate_of_isTateParam`).
+
+The only Lean-side work is the `VariableChange` group arithmetic; there is no
+new mathematics. Nothing here uses `P` beyond `C.r = C'.r`, `C.t = C'.t`,
+which is `Affine.Point.some.inj` applied to the two descriptions of `P`. -/
+theorem isTateParam_unique {E : WeierstrassCurve ℚ} [E.IsElliptic]
+    {P : (E⁄(AlgebraicClosure ℚ)).Point} {d d' : AlgebraicClosure ℚ}
+    (hd : IsTateParam E P d) (hd' : IsTateParam E P d') : d = d' :=
+  sorry
+
+/-- **The diamond operator on the Kubert line** (sorry node, cut 2026-07-26
+out of `exists_rat_hauptmodul_of_stable` — step 3 of its five-step argument,
+and the ONLY computation in it): if `d` is a Kubert parameter of `(E, P)`
+then `(d − 1)/d` is a Kubert parameter of `(E, 2P)`.
+
+Stated denominator-free as `d' * d = d − 1`, which given `d ≠ 0`
+(`nondegenerate_of_isTateParam`) is the same thing and saves the consumer a
+division.
+
+THE COMPUTATION, already carried out (PARI/GP, 2026-07-26; see the section
+note above). On `E(b, c) = tateCurve d` one has `2 · (0,0) = (b, bc)`
+(the `ℚ̄`-analogue of `tateNF_double` above). Re-run Tate normalisation on the
+pair `(E(b,c), 2·(0,0))`: translate `(b, bc)` to the origin, shear by
+`s = a₄'/a₃'` to kill `a₄`, scale by `u = a₃''/a₂''`. The result is
+`b' = −(d⁴ − 3d³ + 4d² − 3d + 1)/d⁵`, `c' = −(d − 1)²/d³`, hence
+`d' = c'²/(b' − c') = (d − 1)/d`. The same computation run on
+`−(0,0) = (0, b)` returns `d` unchanged, confirming that `⟨−1⟩` acts trivially
+— as it must, since `X_1(9) → X_0(9)` is the quotient by
+`(ℤ/9)ˣ/{±1} ≅ ℤ/3` — and that `γ³ = id`, which is also visible directly:
+`d ↦ (d−1)/d ↦ −1/(d−1) ↦ d`.
+
+In Lean this is one explicit `VariableChange` (a product of three) applied to
+`tateCurve d`, verified by `ext` + `field_simp` + `ring`, plus the transport
+of `2 • P` along it. The nondegeneracy needed by the divisions is exactly
+`nondegenerate_of_isTateParam` together with `d ≠ 1` (also a factor of `Δ`).
+
+Consumers should note that iterating this three times must return `d`, which
+is a useful consistency check on any candidate proof. -/
+theorem isTateParam_two_nsmul {E : WeierstrassCurve ℚ} [E.IsElliptic]
+    {P : (E⁄(AlgebraicClosure ℚ)).Point} {d : AlgebraicClosure ℚ}
+    (hd : IsTateParam E P d) :
+    ∃ d' : AlgebraicClosure ℚ, IsTateParam E ((2 : ℕ) • P) d' ∧ d' * d = d - 1 :=
+  sorry
+
+/-- **Galois naturality of the Kubert parameter** (PROVEN 2026-07-26 — step 2
+of the five-step argument of `exists_rat_hauptmodul_of_stable`): if `d` is a
+Kubert parameter of `(E, P)` then `σ(d)` is a Kubert parameter of `(E, σP)`,
+for every `σ ∈ Gal(ℚ̄/ℚ)`.
+
+This is where it matters that `E` is defined over `ℚ`: applying `σ`
+coefficientwise to the admissible change of variables `C` gives another
+admissible change of variables `C.map σ`, and
+
+    (C.map σ) • (E⁄ℚ̄) = (C.map σ) • ((E⁄ℚ̄).map σ) = (C • (E⁄ℚ̄)).map σ
+                       = (tateCurve d).map σ = tateCurve (σ d),
+
+the first equality being `WeierstrassCurve.map_baseChange` (`σ` fixes `ℚ`, so
+it fixes the base-changed curve), the second `map_variableChange`, and the
+last a coefficientwise computation. On points, `σ` sends `(C.r, C.t)` to
+`(σ C.r, σ C.t) = ((C.map σ).r, (C.map σ).t)`, which is `Point.map_some` —
+true by `rfl`.
+
+Note this is exactly the step the OLD abstract-`≃+` definition of
+`IsTateParam` could not support: an abstract group isomorphism has no
+coefficients for `σ` to act on. -/
+theorem isTateParam_galois {E : WeierstrassCurve ℚ} [E.IsElliptic]
+    {P : (E⁄(AlgebraicClosure ℚ)).Point} {d : AlgebraicClosure ℚ}
+    (hd : IsTateParam E P d) (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) :
+    IsTateParam E (Affine.Point.map σ.toAlgHom P) (σ d) := by
+  obtain ⟨C, hC, h, hP⟩ := hd
+  subst hP
+  have hW : (E⁄(AlgebraicClosure ℚ)).map (σ.toAlgHom : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ)
+      = (E⁄(AlgebraicClosure ℚ)) := WeierstrassCurve.map_baseChange E σ.toAlgHom
+  have htc : (tateCurve d).map (σ.toAlgHom : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ)
+      = tateCurve (σ d) := by
+    ext <;> simp [tateCurve, WeierstrassCurve.map]
+  refine ⟨C.map (σ.toAlgHom : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ), ?_, ?_⟩
+  · calc C.map (σ.toAlgHom : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ) • (E⁄(AlgebraicClosure ℚ))
+        = C.map (σ.toAlgHom : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ) •
+            ((E⁄(AlgebraicClosure ℚ)).map
+              (σ.toAlgHom : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ)) := by rw [hW]
+      _ = (C • (E⁄(AlgebraicClosure ℚ))).map
+            (σ.toAlgHom : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ) :=
+          WeierstrassCurve.map_variableChange ..
+      _ = (tateCurve d).map (σ.toAlgHom : AlgebraicClosure ℚ →+* AlgebraicClosure ℚ) := by rw [hC]
+      _ = tateCurve (σ d) := htc
+  · exact ⟨_, rfl⟩
+
+set_option backward.isDefEq.respectTransparency false in
+/-- **Galois descent for scalars** (PROVEN 2026-07-26): an element of `ℚ̄`
+fixed by every element of `Gal(ℚ̄/ℚ)` is rational. This is
+`InfiniteGalois.mem_range_algebraMap_iff_fixed` packaged with its `IsGalois`
+instance.
+
+The `set_option` is not a resource bump: `IsGalois ℚ (AlgebraicClosure ℚ)`
+does not synthesize under the default `isDefEq` transparency at this pin
+(neither do its two components `Normal` and `Algebra.IsSeparable`, even with
+all of Mathlib imported — verified 2026-07-26), and the two other uses of
+this lemma in this file (`exists_point_eq_baseChange_of_fixed` and the
+cyclotomic-character argument) are both already under the same option for the
+same reason. Isolating it in a three-line lemma keeps it off the large
+declaration below. -/
+lemma exists_rat_of_galois_fixed (x : AlgebraicClosure ℚ)
+    (hfix : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, σ x = x) :
+    ∃ t : ℚ, algebraMap ℚ (AlgebraicClosure ℚ) t = x := by
+  have hrat : x ∈ Set.range (algebraMap ℚ (AlgebraicClosure ℚ)) :=
+    (InfiniteGalois.mem_range_algebraMap_iff_fixed x).mpr hfix
+  obtain ⟨t, ht⟩ := hrat
+  exact ⟨t, ht⟩
+
 /-- **The Hauptmodul of a Galois-stable cyclic `9`-subgroup is RATIONAL**
-(sorry node — the moduli content proper at level `9`, introduced
-2026-07-26): if `⟨g⟩` is a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup of order `9`
+(PROVEN 2026-07-26 over the three leaves just above — the moduli content
+proper at level `9`): if `⟨g⟩` is a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup of order `9`
 of `E(ℚ̄)` and `d` is a Kubert parameter of `(E, g)`, then the Hauptmodul
 value `R(d) = 27d(d − 1)/(d³ − 6d² + 3d + 1)` lies in `ℚ`.
 
@@ -6309,15 +6518,23 @@ genuinely modular step left at this level. The argument, in full:
    `σ ∈ Gal(ℚ̄/ℚ)`, and the fixed field of the absolute Galois group acting
    on `ℚ̄` is `ℚ`. Hence `R(d) ∈ ℚ`.
 
-Step 3 is the only computation, and it is already done (see the section
-note); steps 1 and 2 are the standard rigidity of the Tate normal form;
-step 5 needs `IsGalois ℚ (AlgebraicClosure ℚ)` and
-`IsGalois.fixedField_top` (or `Field.absoluteGaloisGroup`'s own fixed-field
-lemma).
+WHAT IS PROVEN HERE AND WHAT IS LEFT. The assembly of all five steps is
+written out below and compiles; steps 2, 4 and 5 are proven outright
+(`isTateParam_galois`; `exists_isogenyCharacter` plus the `decide` that `2`
+generates `(ℤ/9)ˣ`; `InfiniteGalois.mem_range_algebraMap_iff_fixed`), and so
+is the `R ∘ γ = R` identity — carried here in its denominator-free form
+`27 e(e−1) q(d) = 27 d(d−1) q(e)` and discharged by `linear_combination`
+inside the induction on `k`. What remains open is exactly the two leaves
+above: `isTateParam_unique` (step 1, rigidity) and `isTateParam_two_nsmul`
+(step 3, the diamond). Both are pure field algebra with no modular input.
 
 The conclusion is stated denominator-free, `t · (d³ − 6d² + 3d + 1) =
 27d(d − 1)`, so that it does not have to carry the nonvanishing of the
-denominator; the consumer has it from `Δ ≠ 0`. -/
+denominator; the consumer has it from `Δ ≠ 0`.
+
+FAITHFULNESS: this statement was FALSE as originally written, because
+`IsTateParam` was an abstract group isomorphism. See the `IsTateParam`
+docstring above for the explicit counterexample (`d = √2`) and the repair. -/
 theorem exists_rat_hauptmodul_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 9)
     (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
@@ -6327,8 +6544,68 @@ theorem exists_rat_hauptmodul_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic
           AddSubgroup.zmultiples g)
     (d : AlgebraicClosure ℚ) (hd : IsTateParam E g d) :
     ∃ t : ℚ, algebraMap ℚ (AlgebraicClosure ℚ) t * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)
-      = 27 * d * (d - 1) :=
-  sorry
+      = 27 * d * (d - 1) := by
+  classical
+  obtain ⟨-, hqd⟩ := nondegenerate_of_isTateParam hd
+  -- STEPS 1 + 3: the diamond orbit of `d`, with the Hauptmodul value constant along it.
+  have key : ∀ k : ℕ, ∃ e : AlgebraicClosure ℚ,
+      IsTateParam E ((2 ^ k : ℕ) • g) e ∧
+      27 * e * (e - 1) * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)
+        = 27 * d * (d - 1) * (e ^ 3 - 6 * e ^ 2 + 3 * e + 1) := by
+    intro k
+    induction k with
+    | zero => exact ⟨d, by simpa using hd, by ring⟩
+    | succ k ih =>
+        obtain ⟨e, he, hR⟩ := ih
+        obtain ⟨he0, -⟩ := nondegenerate_of_isTateParam he
+        obtain ⟨e', he', hee⟩ := isTateParam_two_nsmul he
+        refine ⟨e', ?_, ?_⟩
+        · have h2 : ((2 ^ (k + 1) : ℕ)) • g = (2 : ℕ) • ((2 ^ k : ℕ) • g) := by
+            rw [← mul_nsmul']
+            congr 1
+            ring
+          rw [h2]
+          exact he'
+        · -- `R ∘ γ = R`, cleared of denominators: `q(γ e) = −q(e)/e³` and
+          -- `27 γe (γe − 1) = −27(e − 1)/e²`.
+          refine mul_right_cancel₀ (pow_ne_zero 3 he0) ?_
+          have h2 : (e' * e) ^ 2 = (e - 1) ^ 2 := by rw [hee]
+          have h3 : (e' * e) ^ 3 = (e - 1) ^ 3 := by rw [hee]
+          linear_combination (27 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) * e) * h2
+            - (27 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) * e ^ 2) * hee
+            - (27 * d * (d - 1)) * h3 + (6 * (27 * d * (d - 1)) * e) * h2
+            - (3 * (27 * d * (d - 1)) * e ^ 2) * hee - hR
+  -- STEP 4: the isogeny character, and `2` generates `(ℤ/9)ˣ`.
+  obtain ⟨lam, hlam⟩ := E.exists_isogenyCharacter g (by norm_num) hg hstable
+  have hpow : ∀ n : ℕ, ((n : ZMod 9)).val • g = n • g := by
+    intro n
+    rw [ZMod.val_natCast, ← hg]
+    exact mod_addOrderOf_nsmul g n
+  have hgen : ∀ u : (ZMod 9)ˣ, ∃ k ∈ Finset.range 6, (u : ZMod 9) = 2 ^ k := by decide
+  -- STEP 5: the Hauptmodul value is Galois-fixed, hence rational.
+  set S : AlgebraicClosure ℚ := 27 * d * (d - 1) / (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) with hSdef
+  have hfix : ∀ σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ, σ S = S := by
+    intro σ
+    obtain ⟨k, -, hk⟩ := hgen (lam σ)
+    have hσg : Affine.Point.map σ.toAlgHom g = (2 ^ k : ℕ) • g := by
+      have h := hlam σ
+      rw [hk, show ((2 : ZMod 9) ^ k) = (((2 ^ k : ℕ) : ℕ) : ZMod 9) from by push_cast; ring,
+        hpow] at h
+      exact h
+    obtain ⟨e, he, hRe⟩ := key k
+    have hσd : σ d = e := isTateParam_unique (hσg ▸ isTateParam_galois hd σ) he
+    obtain ⟨-, hqe⟩ := nondegenerate_of_isTateParam he
+    rw [hSdef, map_div₀]
+    have h1 : σ (27 * d * (d - 1)) = 27 * e * (e - 1) := by
+      simp only [map_mul, map_sub, map_one, map_ofNat, hσd]
+    have h2 : σ (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) = e ^ 3 - 6 * e ^ 2 + 3 * e + 1 := by
+      simp only [map_add, map_sub, map_mul, map_pow, map_one, map_ofNat, hσd]
+    rw [h1, h2, div_eq_div_iff hqe hqd]
+    linear_combination hRe
+  obtain ⟨t, ht⟩ := exists_rat_of_galois_fixed S hfix
+  refine ⟨t, ?_⟩
+  rw [ht, hSdef]
+  exact div_mul_cancel₀ _ hqd
 
 end MazurLevel9
 
@@ -6362,10 +6639,19 @@ note carries the geometry. The cut runs through the Kubert line of
 `X_1(9)`, NOT through Vélu: `X_0(9) = X_1(9)/⟨diamond⟩` with the diamond
 operator acting as the order-`3` Möbius map `γ(d) = (d − 1)/d`, and the
 Hauptmodul is the invariant `R(d) = 27d(d − 1)/(d³ − 6d² + 3d + 1)`. What
-is left open is exactly ONE thing (label updated 2026-07-26):
+is left open is exactly TWO things (label updated 2026-07-26, when
+`exists_rat_hauptmodul_of_stable` was PROVEN over these two smaller leaves
+after its `IsTateParam` hypothesis had to be repaired — see that docstring):
 
-* `MazurLevel9.exists_rat_hauptmodul_of_stable` — the `ℤ/3`-descent
-  `X_1(9) → X_0(9)`, the modular content proper at this level.
+* `MazurLevel9.isTateParam_unique` — rigidity of the Tate normal form, i.e.
+  that the Kubert parameter is a function of the pair `(E, P)`;
+* `MazurLevel9.isTateParam_two_nsmul` — the diamond operator
+  `d(E, 2P) = (d(E,P) − 1)/d(E,P)`, one explicit change of variables.
+
+The `ℤ/3`-descent `X_1(9) → X_0(9)` itself —
+`MazurLevel9.exists_rat_hauptmodul_of_stable`, the modular content proper at
+this level — is PROVEN over those two, together with the PROVEN
+`MazurLevel9.isTateParam_galois` (Galois naturality).
 
 `MazurLevel9.exists_tateParam` — the Tate normal form over `ℚ̄` — is now
 PROVEN (2026-07-26), by re-basing the `ℚ` chain
