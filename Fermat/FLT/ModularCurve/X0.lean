@@ -2129,11 +2129,34 @@ cut out by membership in `Set.range red.redJ` rather than by a divisibility
 condition on their order.  That is deliberate and it is the *stronger*
 formulation: `Set.range red.redJ` is an isomorphic copy of `J_0(N)(ℚ)`
 itself, so it already encodes everything that any number of auxiliary
-primes could contribute, and no bound `D` has to be carried around and
-justified separately.  `N = 75` is the row that shows why this matters —
-its best counting prime `ℓ₁ = 7` gives `#J_0(75)(𝔽_7) = 11 · 2560`, so
-even the *order* of the rational Jacobian is not pinned there without a
-second prime.
+primes could contribute *to the group*, and no bound `D` has to be
+carried around and justified separately.  `N = 75` is the row that shows
+why this matters — its best counting prime `ℓ₁ = 7` gives
+`#J_0(75)(𝔽_7) = 11 · 2560`, so even the *order* of the rational Jacobian
+is not pinned there without a second prime.
+
+**Correction, 2026-07-26: that argument is sound but it does NOT by
+itself justify the single prime, and the reason the single prime is
+nevertheless right is a different one.**  Pinning the group is not what
+the multi-prime sieve does.  The classical sieve intersects, over several
+`ℓ`, the conditions `red_ℓ(x) ∈ (aj'_ℓ)⁻¹(red_ℓ J_0(N)(ℚ))`; a point of
+`X_0(N)(𝔽_{ℓ₁})` that survives at `ℓ₁` may be killed only by a *different*
+prime, and no amount of information about `Set.range red.redJ` at `ℓ₁`
+sees that.  So "the range encodes what the auxiliary primes say" answers
+a question about `#J_0(N)(ℚ)` and leaves the sieve question open.
+
+What actually makes the one-prime formulation true is that `ℓ` is
+**existentially quantified over all of `ℕ`**: the leaf has only to find
+ONE prime at which the single-prime cut is already sharp, and for a curve
+of genus `g ≥ 2` that is what happens at every sufficiently large `ℓ`.
+There `#X_0(N)(𝔽_ℓ)` grows like `ℓ + 1` while `#J_0(N)(𝔽_ℓ)` grows like
+`ℓ^g`, so the FIXED finite subgroup `red_ℓ J_0(N)(ℚ)` — of order at most
+`512, 243, 6144, 2560` — meets the `ℓ + 1` Abel–Jacobi classes only in
+the ones it is forced to contain, namely the reductions of `X_0(N)(ℚ)`.
+All four sieve levels have `g ≥ 3`.  The existential is therefore not a
+hedge against a numerical accident at a small prime; it is the load-
+bearing part of the statement, and the small primes of the table are the
+*hard* case rather than the easy one.
 
 The leaf is restricted to `x0SieveLevels` on purpose.  Stated for all of
 `kenkuLevels` it would subsume `exists_x0Compactification_mod_prime` and
@@ -2226,7 +2249,93 @@ the sieve is the intended route; see the subsection docstring.
 IRREDUCIBLE at this pin, and strictly beyond the five leaves above: on
 top of the integral model, the reduction map and Eichler–Shimura it needs
 the Abel–Jacobi image of `X_0(N)(𝔽_ℓ)` inside `J_0(N)(𝔽_ℓ)` as an
-explicitly computable finite object. -/
+explicitly computable finite object.
+
+## FORMAL-CONTENT AUDIT (2026-07-26)
+
+Two things about this statement are easy to misread, and one of them
+looks at first like a way to discharge it cheaply.  Both were checked.
+
+**The reduced side is NOT pinned to be a reduction of `X_0(N)`.**  Unlike
+`card_le_of_rankZeroJacobian`, which takes `IsX0Compactification N strX'
+strY' j'` as a hypothesis, this leaf quantifies `X'`, `J'`, `ab'`, `o'`,
+`jac'` and `red` existentially and asks only for `IsJacobianOf` and
+`IsX0ReductionAt`.  So a prover may supply ANY curve-and-Jacobian pair
+over ANY `SpecF ℓ` — `ℓ` is not even required to be prime.  The leaf is
+therefore strictly WEAKER than the classical single-prime sieve, which is
+what makes it the right thing to ask for; but it also means the obvious
+first question is whether some junk witness discharges it.
+
+**NON-VACUITY: no junk witness can.**  The `red_aj` field forces
+`jac'.aj (redX x) = redJ (jac.aj x)` for EVERY rational point `x` of `X`.
+So every element of `jac.aj '' X_0(N)(ℚ)` produces, through `redX`, a
+point of `X'` that satisfies the survival condition and hence lies in
+`s`; and `redJ` is injective, so distinct Abel–Jacobi classes give
+distinct survivors.  Therefore any witness whatsoever already implies
+
+  `#(jac.aj '' X_0(N)(ℚ)) ≤ s.card = numRationalCusps N = 4`,
+
+which — once `aj` is injective, as `HasRankZeroJacobian` provides — is
+Kenku's determination at `N`.  That implication is not an informal remark:
+it is exactly the proof of `card_le_of_sieve` immediately below, so the
+compiler already certifies that this leaf is at least as hard as the
+theorem it is standing in for.  In particular the freedom in the previous
+paragraph buys a prover latitude in CONSTRUCTING a witness and no
+latitude at all in the arithmetic it has to know.
+
+**A cheap refutation test for any PROPOSED witness prime.**  Suppose the
+datum is the genuine one, `X' = X_0(N)_{𝔽_ℓ}` and `J' = J_0(N)_{𝔽_ℓ}`.
+Then `J'` has finitely many `𝔽_ℓ`-points, so an injective `redJ` out of a
+group of the SAME order is surjective, every point of `X_0(N)(𝔽_ℓ)`
+survives, and `s.card = numRationalCusps N` is impossible as soon as
+`#X_0(N)(𝔽_ℓ) > numRationalCusps N`.  Hence:
+
+  *if `#J_0(N)(ℚ) = #J_0(N)(𝔽_ℓ)` then `ℓ` is not a witness prime for the
+  genuine datum* — not merely unlucky, impossible.
+
+This is worth running before recording any witness, because the four
+recommended ones came within one arithmetic coincidence of failing it.
+The table above bounds `#J_0(45)(ℚ)` only by `512`, and `512` is exactly
+`#J_0(45)(𝔽_7)` at the recommended witness `ℓ = 7`; had the rational
+Jacobian attained its recorded bound, `ℓ = 7` would have been refuted.
+
+**The bounds are far from attained, and the recommended witnesses
+survive** (Magma, 2026-07-26, `RationalCuspidalSubgroup(JZero(N))`).  The
+rational cuspidal subgroup is a LOWER bound for `#J_0(N)(ℚ)`, and the
+`gcd` of the Eichler–Shimura counts is an UPPER bound:
+
+| `N` | `dim J_0(N)` | rational cuspidal subgroup | `#J_0(N)(ℚ)` divides | witness `ℓ` | `#J_0(N)(𝔽_ℓ)` | index |
+|-----|--------------|----------------------------|----------------------|-------------|-----------------|-------|
+| 45 | 3 | `32 = [4, 8]`      | `512`  | 7 | `512`   | ≥ 16  |
+| 54 | 4 | `81 = [3, 3, 9]`   | `243`  | 5 | `972`   | ≥ 12  |
+| 63 | 5 | `96 = [2, 48]`     | `6144` | 5 | `6144`  | ≥ 64  |
+| 75 | 5 | `80 = [2, 40]`     | `2560` | 7 | `28160` | ≥ 352 |
+
+Every one of the four lower bounds divides its upper bound, so the two
+computations are consistent; and at each recommended `ℓ` the reduction
+`J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)` has index at least `12`, so the refutation test
+is nowhere near triggered and the recorded witnesses stand.  Under the
+generalized Ogg conjecture — known for many `N` — the rational torsion
+IS the rational cuspidal subgroup, and the left column is the exact
+order; nothing here depends on that.
+
+**The upper bounds are SATURATED, and that settles the design question
+above.**  Recomputing the `gcd` of `#J_0(N)(𝔽_ℓ)` over *every* odd good
+`ℓ < 300` — five times the range of the table above — returns `512, 243,
+6144, 2560` unchanged, and the individual counts reproduce the recorded
+table exactly (a third independent confirmation of the banked
+arithmetic).  So no number of auxiliary primes will ever bring the upper
+bound for `#J_0(45)(ℚ)` below `512 = #J_0(45)(𝔽_7)`: the multi-prime
+"pin the group" argument, run to exhaustion, *cannot on its own rule out*
+the case in which `ℓ = 7` is refuted.  The gap between `32` and `512` is
+closed from the cuspidal side, not by more primes.
+
+This is the concrete form of the correction recorded in the subsection
+docstring.  Auxiliary primes bound the ORDER of the rational Jacobian and
+saturate quickly; what the sieve needs is a prime at which the surviving
+Abel–Jacobi classes are only the forced ones, and that is a different
+question, answered here by the existential quantifier over `ℓ` rather
+than by the table. -/
 theorem exists_x0Sieve (N : ℕ) (_hlevel : N ∈ x0SieveLevels)
     {X Y J : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
     {jstr : J ⟶ SpecQ} {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
