@@ -62,7 +62,11 @@ The chain, in the order the assembly uses it:
 
 1. `galoisSubgroup F` — `G_F ≤ G_ℚ` as the range of the functorial map
    `Γ F → Γ ℚ`; `finiteIndex_galoisSubgroup` is item 1 of the audit's
-   missing-machinery list (LEAF).
+   missing-machinery list (PROVEN 2026-07-26, over the general
+   `finiteIndex_range_absoluteGaloisGroupMap`: the chosen embedding
+   `Kᵃˡᵍ → Fᵃˡᵍ` is an isomorphism, so `G_F` lands on a subgroup
+   containing the fixing subgroup of a finite intermediate field, which
+   is open in the Krull topology of the COMPACT group `Γ K`).
 2. `IsHilbertHardlyRamified` — the `F`-level local deformation condition,
    and `isHilbertHardlyRamified_map_of_isHardlyRamified`: the restriction
    of a hardly ramified representation satisfies it (LEAF).
@@ -180,30 +184,113 @@ lemma exists_map_eq_of_mem_galoisSubgroup (F : Type u) [Field F] [NumberField F]
   obtain ⟨σ, hσ⟩ := MonoidHom.mem_range.mp hg
   exact ⟨σ, hσ⟩
 
-/-- **`[G_ℚ : G_F] = [F : ℚ] < ∞`** (LEAF — item 1 of the audit's
-missing-machinery list).
+/-- **The range of `Γ F → Γ K` has finite index, for `F/K` finite**
+(PROVEN; item 1 of the audit's missing-machinery list, in the general
+form the ℚ-level statement below is an instance of).
 
-The classical content: `Field.absoluteGaloisGroup.map (algebraMap ℚ F)`
-is injective (source and target algebraic closures are identified by the
-chosen embedding, and an automorphism of `Fᵃˡᵍ` fixing `F` is determined
-by its restriction to `ℚᵃˡᵍ = Fᵃˡᵍ`), with image the fixing subgroup of
-the image of `F` in `ℚᵃˡᵍ`; the orbit–stabiliser bijection
-`G_ℚ / G_F ≃ Hom_ℚ(F, ℚᵃˡᵍ)` then has `[F : ℚ]` elements, finite because
-`F` is a number field.
+The argument, in four steps, is the classical one and uses no counting:
 
-Nothing in mathlib packages this: `InfiniteGalois` gives the
-Krull-topological correspondence between intermediate fields and closed
-subgroups, but the finite-index statement for a FINITE intermediate
-extension has to be assembled from the count of `ℚ`-algebra maps
-`F → ℚᵃˡᵍ` (`IntermediateField.card_algHom_eq_finrank` and friends) and
-the coset bijection.
+1. The chosen embedding `ι := AlgebraicClosure.map (algebraMap K F)` of
+   `Kᵃˡᵍ` into `Fᵃˡᵍ` is BIJECTIVE. It is injective as a map of fields;
+   it is surjective because `Fᵃˡᵍ` is algebraic over `K`, hence integral
+   over the image of the algebraically closed `Kᵃˡᵍ`, and an
+   algebraically closed field admits no proper integral extension
+   (`IsAlgClosed.ringHom_bijective_of_isIntegral`).
+2. Transporting `F` back along `ι⁻¹` gives a `K`-algebra embedding
+   `g : F →ₐ[K] Kᵃˡᵍ`, whose `fieldRange` is an intermediate field
+   `E` of `Kᵃˡᵍ/K` with `E ≃ₐ[K] F`, hence `FiniteDimensional K E`.
+3. `E.fixingSubgroup ≤ range`: an element `τ` of `Γ K` fixing `E`
+   pointwise is transported by `ι` to a ring automorphism `ι τ ι⁻¹` of
+   `Fᵃˡᵍ` which fixes `F` pointwise — i.e. an element of `Γ F` — and
+   `Field.absoluteGaloisGroup.lift_map` plus injectivity of `ι` identify
+   its image in `Γ K` with `τ`.
+4. `E.fixingSubgroup` is OPEN in the Krull topology because `E/K` is
+   finite (`IntermediateField.fixingSubgroup_isOpen`), and `Γ K` is
+   COMPACT, so the quotient is discrete and compact, hence finite; a
+   subgroup containing a finite-index subgroup has finite index.
+
+Only the inclusion of step 3 is proven, not the reverse one: the
+reverse inclusion (the range really IS `E.fixingSubgroup`, so the index
+is exactly `[F : K]`) is true but is not needed by any consumer, and
+`Subgroup.finiteIndex_of_le` goes the way that needs only one half.
+
+Stated over a VARIABLE base field `K` and instantiated at `ℚ` below,
+deliberately: at the literal `ℚ`, `Algebra ℚ (AlgebraicClosure F)` is
+found as `DivisionRing.toRatAlgebra` rather than through the tower
+`ℚ → F → Fᵃˡᵍ`, and `AlgebraicClosure.map_algebraMap` then fails to
+rewrite against a goal that pretty-prints as exactly its pattern. -/
+theorem finiteIndex_range_absoluteGaloisGroupMap (K : Type*) [Field K]
+    (F : Type*) [Field F] [Algebra K F] [FiniteDimensional K F]
+    [CompactSpace (Γ K)] :
+    ((Field.absoluteGaloisGroup.map (algebraMap K F)).toMonoidHom.range).FiniteIndex := by
+  classical
+  -- STEP 1: the chosen embedding `Kᵃˡᵍ → Fᵃˡᵍ` is bijective.
+  have key : ∀ j : AlgebraicClosure K →+* AlgebraicClosure F,
+      (∀ y : K, j (algebraMap K (AlgebraicClosure K) y)
+        = algebraMap K (AlgebraicClosure F) y) → Function.Bijective j := by
+    intro j hj
+    refine IsAlgClosed.ringHom_bijective_of_isIntegral j fun x => ?_
+    refine ⟨(minpoly K x).map (algebraMap K (AlgebraicClosure K)),
+      (minpoly.monic (Algebra.IsIntegral.isIntegral x)).map _, ?_⟩
+    have hcomp : j.comp (algebraMap K (AlgebraicClosure K))
+        = algebraMap K (AlgebraicClosure F) := RingHom.ext hj
+    rw [Polynomial.eval₂_map, hcomp, ← Polynomial.aeval_def, minpoly.aeval]
+  have hcommutes : ∀ y : K, AlgebraicClosure.map (algebraMap K F)
+      (algebraMap K (AlgebraicClosure K) y) = algebraMap K (AlgebraicClosure F) y := fun y => by
+    rw [AlgebraicClosure.map_algebraMap, ← IsScalarTower.algebraMap_apply]
+  have hbij : Function.Bijective (AlgebraicClosure.map (algebraMap K F)) := key _ hcommutes
+  let e : AlgebraicClosure K ≃+* AlgebraicClosure F := RingEquiv.ofBijective _ hbij
+  have he : ∀ x, e x = AlgebraicClosure.map (algebraMap K F) x := fun _ => rfl
+  -- STEP 2: `E ≤ Kᵃˡᵍ`, the copy of `F` inside `Kᵃˡᵍ` along `e⁻¹`.
+  let g : F →ₐ[K] AlgebraicClosure K :=
+    { (e.symm : AlgebraicClosure F ≃+* AlgebraicClosure K).toRingHom.comp
+        (algebraMap F (AlgebraicClosure F)) with
+      commutes' := fun y => by
+        show e.symm (algebraMap F (AlgebraicClosure F) (algebraMap K F y)) = _
+        rw [← IsScalarTower.algebraMap_apply, ← hcommutes y, ← he]
+        exact e.symm_apply_apply _ }
+  have hg : ∀ y : F, e (g y) = algebraMap F (AlgebraicClosure F) y := fun y =>
+    e.apply_symm_apply _
+  let E : IntermediateField K (AlgebraicClosure K) := g.fieldRange
+  haveI : FiniteDimensional K E :=
+    (show F ≃ₐ[K] E from AlgEquiv.ofInjectiveField g).toLinearEquiv.finiteDimensional
+  -- STEP 3: `E.fixingSubgroup ≤ range`.
+  have hle : E.fixingSubgroup ≤
+      (Field.absoluteGaloisGroup.map (algebraMap K F)).toMonoidHom.range := by
+    intro τ hτ
+    have hτ' : ∀ x ∈ E, τ x = x := (IntermediateField.mem_fixingSubgroup_iff E τ).mp hτ
+    have hfix : ∀ y : F, ((e.symm.trans τ.toRingEquiv).trans e)
+        (algebraMap F (AlgebraicClosure F) y) = algebraMap F (AlgebraicClosure F) y := by
+      intro y
+      have hmem : g y ∈ E := (AlgHom.mem_fieldRange (f := g)).mpr ⟨y, rfl⟩
+      have hsy : e.symm (algebraMap F (AlgebraicClosure F) y) = g y := by
+        rw [← hg y, e.symm_apply_apply]
+      show e (τ (e.symm (algebraMap F (AlgebraicClosure F) y))) = _
+      rw [hsy, hτ' (g y) hmem, hg]
+    refine ⟨AlgEquiv.ofRingEquiv (f := (e.symm.trans τ.toRingEquiv).trans e) hfix, ?_⟩
+    refine AlgEquiv.ext fun x => hbij.injective ?_
+    refine (Field.absoluteGaloisGroup.lift_map (algebraMap K F)
+      (AlgEquiv.ofRingEquiv (f := (e.symm.trans τ.toRingEquiv).trans e) hfix) x).trans ?_
+    show e (τ (e.symm (e x))) = e (τ x)
+    rw [e.symm_apply_apply]
+  -- STEP 4: an open subgroup of the compact group `Γ K` has finite index.
+  haveI : Finite ((Γ K) ⧸ E.fixingSubgroup) :=
+    Subgroup.quotient_finite_of_isOpen _ (IntermediateField.fixingSubgroup_isOpen E)
+  haveI : (E.fixingSubgroup : Subgroup (Γ K)).FiniteIndex := Subgroup.finiteIndex_of_finite_quotient
+  exact Subgroup.finiteIndex_of_le hle
+
+/-- **`[G_ℚ : G_F] < ∞`** (PROVEN — item 1 of the audit's
+missing-machinery list; the `ℚ`-level instance of
+`finiteIndex_range_absoluteGaloisGroupMap`, whose docstring carries the
+argument).
 
 Formalization note: `Subgroup.FiniteIndex` only asks that the index be
 nonzero, so the sharp value `[F : ℚ]` is deliberately NOT part of the
-statement — no consumer here needs it. -/
+statement — no consumer here needs it, and proving it would additionally
+need the reverse inclusion of step 3 there. -/
 theorem finiteIndex_galoisSubgroup (F : Type u) [Field F] [NumberField F] :
     (galoisSubgroup F).FiniteIndex :=
-  sorry
+  finiteIndex_range_absoluteGaloisGroupMap ℚ F
 
 /-! ### Item 2a — the `F`-level local deformation condition -/
 
