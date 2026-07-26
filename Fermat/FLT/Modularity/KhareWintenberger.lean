@@ -229,6 +229,16 @@ public import Mathlib.RingTheory.Smooth.AdicCompletion
 public import Mathlib.RingTheory.FinitePresentation
 public import Mathlib.RingTheory.RingHom.FiniteType
 public import Mathlib.Algebra.Algebra.Hom.Rat
+-- The nonzerodivisor leaf of the same Bertini decomposition is proven over
+-- ASSOCIATED PRIMES rather than over "smooth ⟹ reduced": in a Noetherian ring
+-- the zerodivisors are exactly the union of the FINITELY many associated
+-- primes (`biUnion_associatedPrimes_eq_compl_nonZeroDivisors`,
+-- `associatedPrimes.finite`), and each of them is dodged by one linear form
+-- produced by `Submodule.exists_dual_map_eq_bot_of_notMem`
+-- (`LinearAlgebra/Dual/Lemmas`, already imported below) applied to the
+-- `ℚ`-linear parameterization `v ↦ ℓ_v` of `Mathlib.LinearAlgebra.Pi`.
+public import Mathlib.RingTheory.Ideal.AssociatedPrime.Finiteness
+public import Mathlib.LinearAlgebra.Pi
 -- (`Mathlib.RingTheory.Ideal.Norm.AbsNorm` is imported once, above:
 -- `Ideal.absNorm` is the residue cardinality `Nw` of a place of the
 -- Moret–Bailly base `F`, and appears in the STATEMENTS both of the two
@@ -1099,10 +1109,12 @@ saying a nonzero rational polynomial has a rational non-root in every real
 box; `affineLinearForm` and
 `exists_affineCoordinates_of_locallyOfFiniteType` (PROVEN) supply the
 parameterization),
-`exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` (SORRY —
-elementary: `A` is a domain and `v ↦ ℓ_v` is a `ℚ`-linear map with proper
-kernel, so a single LINEAR `F` works; the only missing mathlib ingredient is
-"smooth over a field ⟹ reduced"),
+`exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` (**PROVEN
+2026-07-26** — elementary, and "smooth over a field ⟹ reduced" turned out NOT
+to be needed: in the Noetherian ring `A` the zerodivisors are the union of the
+FINITELY many associated primes, and each is dodged by one linear form
+obtained from the proper kernel of the `ℚ`-linear map `v ↦ ℓ_v`, so `F` is a
+product of finitely many LINEAR forms),
 `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` (SORRY — the
 two BERTINI theorems in characteristic zero, smoothness and irreducibility of
 the generic hyperplane section, stated over the parameter space; this is the
@@ -1213,9 +1225,10 @@ spreading out) and 6 (real points as a manifold) are now leaves of their own --
 `exists_bound_forall_formallySmooth_integralSystemModel`, and
 `exists_realApproximationBall_of_affine_geometricallyIrreducible` -- so each
 can be attacked without any of the others. The elementary
-`exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` is a fourth
-such starting point and needs no missing-machinery item at all beyond
-"smooth over a field implies reduced".
+`exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` was a fourth
+such starting point and is PROVEN (2026-07-26); it needed no missing-machinery
+item at all, and in particular not "smooth over a field implies reduced" --
+associated primes in the Noetherian ring `A` replace the domain property.
 
 Leaf list under the moduli cut, as of the DATUM recut (2026-07-26):
 `nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`
@@ -1676,8 +1689,8 @@ variable {A : CommRingCat.{u}}
       AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
 
 open CategoryTheory AlgebraicGeometry in
-/-- **A generic hyperplane function is a NONZERODIVISOR** (sorry node,
-2026-07-26 — the elementary third of the Bertini cut; no Bertini theorem is
+/-- **A generic hyperplane function is a NONZERODIVISOR** (**PROVEN
+2026-07-26** — the elementary third of the Bertini cut; no Bertini theorem is
 involved and it is independent of the other two leaves).
 
 For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` presented
@@ -1685,39 +1698,162 @@ in coordinates `x : Fin n → A`, there is a nonzero `F ∈ ℚ[X₀,…,X_n]` s
 that every rational parameter `v` off `F = 0` gives an affine-linear form
 `ℓ_v = ∑ vᵢ xᵢ − v_last` that is a nonzerodivisor in `A`.
 
-WHY IT IS TRUE, and what a prover has to build:
+HOW IT IS PROVEN — over ASSOCIATED PRIMES, not over "smooth ⟹ reduced".
 
-* `A` IS A DOMAIN. Geometric irreducibility gives `IrreducibleSpace (Spec A)`
-  — mathlib has `GeometricallyIrreducible → Surjective` and, for a
-  universally open morphism onto an irreducible base, `IrreducibleSpace X`;
-  the base `Spec (ULift ℚ)` is a point, so this is available — and
-  `PrimeSpectrum.irreducibleSpace_iff` turns it into "the nilradical is
-  prime". Smoothness over a field gives geometric reducedness, hence
-  `IsReduced A`, so the nilradical is `⊥` and `A` is a domain. **The one
-  genuinely missing mathlib ingredient is "smooth over a field ⟹ reduced"**
-  (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` at this pin only ever
-  takes `[IsReduced X]` as a hypothesis, never concludes it). In a domain
-  `mem_nonZeroDivisors_of_ne_zero` reduces everything to `ℓ_v ≠ 0`.
-* `ℓ_v ≠ 0` GENERICALLY, and the witness `F` is LINEAR. The map
-  `v ↦ ℓ_v` is `ℚ`-linear from `ℚ^{n+1}` to `A`; its kernel `K` is a proper
-  subspace because the parameter `v = e_last` gives `ℓ_v = −1 ≠ 0` in the
-  nontrivial ring `A`. A proper subspace of a finite-dimensional space is
-  contained in the kernel of a nonzero linear functional `λ`, and
-  `F := ∑ λᵢ Xᵢ` then works: `F(v) ≠ 0` forces `v ∉ K`, i.e. `ℓ_v ≠ 0`.
+An earlier version of this docstring routed the proof through "`A` is a
+DOMAIN": geometric irreducibility makes the nilradical prime, smoothness over
+a field makes `A` reduced, so the nilradical is `⊥`, and in a domain the
+nonzerodivisors are the nonzero elements. That route needs "smooth over a
+field ⟹ reduced", which mathlib does NOT have at this pin
+(`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean` only ever takes
+`[IsReduced X]` as a hypothesis, never concludes it), so it would have meant
+building that theory first.
+
+It is unnecessary, because the ONLY thing the domain hypothesis was buying is
+"the zerodivisors are cut out by finitely many primes", and a Noetherian ring
+gives that outright:
+
+* `A` IS NOETHERIAN. `hft` makes `A` a finite-type `ULift ℚ`-algebra
+  (`HasRingHomProperty.Spec_iff`, exactly as in
+  `exists_affineCoordinates_of_locallyOfFiniteType`), and
+  `Algebra.FiniteType.isNoetherianRing` is the Hilbert basis theorem.
+* ZERODIVISORS = UNION OF THE ASSOCIATED PRIMES, and there are FINITELY many:
+  `biUnion_associatedPrimes_eq_compl_nonZeroDivisors` and
+  `associatedPrimes.finite`. So `ℓ_v ∈ nonZeroDivisors A` is exactly
+  `∀ P ∈ associatedPrimes A A, ℓ_v ∉ P` — a FINITE conjunction of conditions,
+  each of which is the previous argument's "`ℓ_v ≠ 0`" with `⊥` replaced
+  by `P`.
+* EACH CONDITION IS DODGED BY ONE LINEAR FORM. The map `v ↦ ℓ_v` is
+  `ℚ`-linear from `ℚ^{n+1}` to `A` (`A` is a `ℚ`-algebra through
+  `Spec.preimage g` and `ULift.ringEquiv`), so `K_P := {v | ℓ_v ∈ P}` is a
+  `ℚ`-subspace, and it is PROPER because the parameter `v = e_last` gives
+  `ℓ_v = −1`, which lies in no prime. `Submodule.exists_dual_map_eq_bot_of_notMem`
+  applied at `e_last` produces `λ_P : (ℚ^{n+1})ˣ*` vanishing on `K_P` with
+  `λ_P(e_last) ≠ 0`, and `F_P := ∑ᵢ λ_P(eᵢ) Xᵢ` satisfies
+  `eval v F_P = λ_P(v)` (`LinearMap.pi_apply_eq_sum_univ`). It is nonzero
+  because its value at `e_last` is `λ_P(e_last) ≠ 0`.
+* `F := ∏_P F_P` over the finite set of associated primes; `MvPolynomial`
+  over `ℚ` is a domain, so `F ≠ 0`, and `eval v F ≠ 0` forces every factor
+  nonzero, i.e. `v ∉ K_P` for every associated prime.
+
+SCOPE AUDIT — `hsmooth`, `hgi` and `hx` are UNUSED, and are underscored so
+that this is mechanically visible. What is actually proven is strictly
+stronger than the statement asked for: for ANY morphism `g` locally of finite
+type to `Spec (ULift ℚ)`, and ANY family `x` (generating or not), the generic
+affine-linear form in the `x`-coordinates is a nonzerodivisor. Smoothness and
+geometric irreducibility are not needed once associated primes replace the
+domain property, and `x` never has to generate because the conclusion is about
+the `ℚ`-span of `x` only. The hypotheses are RETAINED in the statement so that
+the consumer
+`exists_bertiniHyperplane_of_affine_geometricallyIrreducible` keeps calling
+all three Bertini leaves with the same argument list; nothing downstream is
+weakened by their presence.
 
 NOTE. `hdim` is deliberately NOT a hypothesis here: unlike the Bertini
 genericity leaf, this statement is true in every dimension. -/
 theorem exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible
-    (hsmooth : AlgebraicGeometry.Smooth g)
+    (_hsmooth : AlgebraicGeometry.Smooth g)
     (hft : AlgebraicGeometry.LocallyOfFiniteType g)
-    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (_hgi : AlgebraicGeometry.GeometricallyIrreducible g)
     {n : ℕ} (x : Fin n → A)
-    (hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
+    (_hx : Subring.closure (Set.range (AlgebraicGeometry.Spec.preimage g).hom ∪
       Set.range x) = ⊤) :
     ∃ F : MvPolynomial (Fin (n + 1)) ℚ, F ≠ 0 ∧
       ∀ v : Fin (n + 1) → ℚ, MvPolynomial.eval v F ≠ 0 →
-        affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v ∈ nonZeroDivisors A :=
-  sorry
+        affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v ∈ nonZeroDivisors A := by
+  classical
+  set ψ := AlgebraicGeometry.Spec.preimage g with hψ
+  -- `A` is Noetherian, being of finite type over the field `ULift ℚ`.
+  letI : Algebra (ULift.{u} ℚ) A := ψ.hom.toAlgebra
+  haveI hFT : Algebra.FiniteType (ULift.{u} ℚ) A := by
+    have h : AlgebraicGeometry.LocallyOfFiniteType (Spec.map ψ) := by
+      rw [hψ, Spec.map_preimage]; exact hft
+    exact HasRingHomProperty.Spec_iff.mp h
+  haveI : IsNoetherianRing A := Algebra.FiniteType.isNoetherianRing (ULift.{u} ℚ) A
+  -- the `ℚ`-algebra structure on `A` and the linear parameterisation `v ↦ ℓ_v`
+  letI : Algebra ℚ A := (ψ.hom.comp (ULift.ringEquiv (R := ℚ)).symm.toRingHom).toAlgebra
+  have hmap : ∀ q : ℚ, algebraMap ℚ A q = ψ.hom (ULift.up q) := fun q => rfl
+  have hform : ∀ v : Fin (n + 1) → ℚ, affineLinearForm ψ x v
+      = (∑ i : Fin n, algebraMap ℚ A (v i.castSucc) * x i)
+        - algebraMap ℚ A (v (Fin.last n)) := by
+    intro v; simp only [affineLinearForm, hmap]
+  let ℓ : (Fin (n + 1) → ℚ) →ₗ[ℚ] A :=
+    { toFun := fun v => affineLinearForm ψ x v
+      map_add' := by
+        intro v w
+        simp only [hform, Pi.add_apply, map_add, add_mul, Finset.sum_add_distrib]
+        ring
+      map_smul' := by
+        intro q v
+        simp only [RingHom.id_apply, hform, Pi.smul_apply, smul_eq_mul, map_mul]
+        rw [Algebra.smul_def, mul_sub, Finset.mul_sum]
+        simp only [mul_assoc] }
+  have hℓ : ∀ v, ℓ v = affineLinearForm ψ x v := fun _ => rfl
+  -- for each associated prime `P` there is a nonzero LINEAR `G` dodging it
+  have key : ∀ P : Ideal A, P ∈ associatedPrimes A A →
+      ∃ G : MvPolynomial (Fin (n + 1)) ℚ, G ≠ 0 ∧
+        ∀ v : Fin (n + 1) → ℚ, MvPolynomial.eval v G ≠ 0 →
+          affineLinearForm ψ x v ∉ P := by
+    intro P hP
+    have hPp : P.IsPrime := hP.1
+    set K : Submodule ℚ (Fin (n + 1) → ℚ) := (P.restrictScalars ℚ).comap ℓ with hK
+    have hlast : ℓ (fun j => if Fin.last n = j then (1 : ℚ) else 0) = -1 := by
+      rw [hℓ, hform]
+      have h0 : ∀ i : Fin n, (if Fin.last n = i.castSucc then (1 : ℚ) else 0) = 0 := by
+        intro i
+        rw [if_neg]
+        exact fun h => (Fin.castSucc_lt_last i).ne h.symm
+      simp [h0]
+    have hnot : (fun j => if Fin.last n = j then (1 : ℚ) else 0) ∉ K := by
+      intro h
+      have hmem : (-1 : A) ∈ P := by
+        have h' := Submodule.mem_comap.mp h
+        rwa [Submodule.restrictScalars_mem, hlast] at h'
+      exact hPp.ne_top (P.eq_top_iff_one.mpr (by simpa using neg_mem hmem))
+    obtain ⟨f, hf1, hf2⟩ := K.exists_dual_map_eq_bot_of_notMem hnot inferInstance
+    have hfzero : ∀ w ∈ K, f w = 0 := by
+      intro w hw
+      have hw' : f w ∈ K.map f := Submodule.mem_map_of_mem hw
+      rw [hf2] at hw'
+      exact (Submodule.mem_bot ℚ).mp hw'
+    refine ⟨∑ i : Fin (n + 1),
+      MvPolynomial.C (f (fun j => if i = j then (1 : ℚ) else 0)) * MvPolynomial.X i, ?_, ?_⟩
+    · intro hzero
+      apply hf1
+      have h := congrArg
+        (MvPolynomial.eval (fun j => if Fin.last n = j then (1 : ℚ) else 0)) hzero
+      simp only [map_sum, map_mul, MvPolynomial.eval_C, MvPolynomial.eval_X, map_zero] at h
+      rw [Finset.sum_eq_single (Fin.last n)] at h
+      · simpa using h
+      · intro b _ hb
+        rw [if_neg (Ne.symm hb), mul_zero]
+      · intro hb
+        exact absurd (Finset.mem_univ (Fin.last n)) hb
+    · intro v hv hmem
+      have hvK : v ∈ K := by
+        rw [hK, Submodule.mem_comap, Submodule.restrictScalars_mem, hℓ]
+        exact hmem
+      have hsum : ∑ i : Fin (n + 1), v i • f (fun j => if i = j then (1 : ℚ) else 0) = 0 := by
+        rw [← LinearMap.pi_apply_eq_sum_univ f v]
+        exact hfzero v hvK
+      apply hv
+      simp only [map_sum, map_mul, MvPolynomial.eval_C, MvPolynomial.eval_X]
+      refine Eq.trans (Finset.sum_congr rfl fun i _ => ?_) hsum
+      rw [smul_eq_mul, mul_comm]
+  choose! G hG0 hGv using key
+  have hfin : (associatedPrimes A A).Finite := associatedPrimes.finite A A
+  refine ⟨∏ P ∈ hfin.toFinset, G P, ?_, ?_⟩
+  · exact Finset.prod_ne_zero_iff.mpr fun P hP => hG0 P (hfin.mem_toFinset.mp hP)
+  · intro v hv
+    rw [map_prod] at hv
+    have hne : ∀ P ∈ hfin.toFinset, MvPolynomial.eval v (G P) ≠ 0 :=
+      Finset.prod_ne_zero_iff.mp hv
+    have hout : affineLinearForm ψ x v ∉ ⋃ p ∈ associatedPrimes A A, (p : Set A) := by
+      simp only [Set.mem_iUnion, not_exists]
+      intro P hP
+      exact hGv P hP v (hne P (hfin.mem_toFinset.mpr hP))
+    rw [biUnion_associatedPrimes_eq_compl_nonZeroDivisors A] at hout
+    simpa using hout
 
 open CategoryTheory AlgebraicGeometry in
 /-- **BERTINI in characteristic zero: the generic hyperplane section is
@@ -1857,9 +1993,9 @@ short. So this is now proven over:
   embedding `Spec A ↪ 𝔸ⁿ_ℚ`, i.e. ring generators `x : Fin n → A`, over which
   the hyperplane family `ℓ_v = ∑ vᵢ xᵢ − v_last` (`affineLinearForm`) is
   parameterized by `v : Fin (n+1) → ℚ`;
-* `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` (SORRY,
-  elementary) — off a proper `ℚ`-rational closed subset of the parameter
-  space, `ℓ_v` is a nonzerodivisor;
+* `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` (PROVEN
+  2026-07-26, over associated primes) — off a proper `ℚ`-rational closed
+  subset of the parameter space, `ℓ_v` is a nonzerodivisor;
 * `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` (SORRY —
   the two Bertini theorems) — off a proper `ℚ`-rational closed subset, the
   section is smooth and geometrically irreducible;
