@@ -38729,9 +38729,108 @@ theorem exists_totallyPositive_sub_mem_ray_class
   · exact ⟨x + (N : NumberField.RingOfIntegers F) * r ^ 2, hmem N, h0, hpos N le_rfl⟩
 
 set_option maxHeartbeats 1000000 in
-/-- **The CRT core of the gcd-closure of the narrow rays** (sorry node,
+/-- **THE `nn`-PART OF `(γ)`, AND THE THREE FACTS IT SUPPLIES** (sorry
+node, created 2026-07-26 as sub-leaf (B1a-i-1-b-1) of
+`exists_denominatorIdeal_ray_factorization_ray_class` just below, which
+is now PROVEN as glue over this leaf and the archimedean adjustment
+`exists_totallyPositive_sub_mem_ray_class` just above): there is a
+nonzero ideal `g` dividing `(γ)` — the intended witness is the `nn`-PART
+of `(γ)`, `g = ∏_{v ∣ nn} v^{v(γ)}` — such that
+
+* `γ - 1 ∈ mm ⊔ (nn * g)`: the CRT compatibility condition for the pair
+  of congruences `u ≡ 1 (mod mm)`, `u ≡ γ (mod nn * g)`;
+* for every nonzero `u` with `γ - u ∈ nn * g`,
+  `(u) ⊓ (nn * g) ≤ (u) * nn`;
+* and for every such `u` there is a nonzero `dd` COPRIME to `nn` with
+  `(γ) * dd ≤ (u)`.
+
+**This leaf is exactly the valuation-theoretic content of the CRT core,
+and nothing else.** Everything the consumer does with it — solving the
+two congruences (a two-line splitting of `γ - 1 = a + b`, no quotient
+rings needed), moving `u` to a totally positive nonzero representative,
+extracting `β'` from `u ∣ γ β`, and cancelling `u` — is elementary and is
+PROVEN below. What is left here is the statement that the exponents work
+out, which is a statement about `v(γ)`, `v(u)` and `v(nn)` at the
+height-one primes `v` of `𝓞 F`, and that is the one thing this file has
+no vocabulary for yet.
+
+**Route.** Write `v(·)` for the exponent at a height-one prime `v`.
+
+*The witness.* Take `N = Multiset.card (normalizedFactors (γ))` and
+`g = (γ) ⊔ nn ^ N`. Then `(γ) ≤ g` HOLDS BY CONSTRUCTION — no valuation
+argument is needed for the second clause, which is why `g` is stated as a
+sup rather than as a product over the primes dividing `nn`. And
+`v(g) = min(v(γ), N · v(nn))`, so `v(g) = v(γ)` whenever `v ∣ nn`
+(because `v(nn) ≥ 1` there and `v(γ) ≤ N` always), while `v(g) = 0`
+whenever `v ∤ nn`. Those two identities are what the three clauses need.
+
+*Clause 1 (CRT compatibility)*: at every `v`, `min(v(mm), v(nn) + v(g))`
+must be `≤ v(γ - 1)`. If `v ∤ nn` then `v(g) = 0` and the bound is
+`min(v(mm), 0) = 0`. If `v ∣ nn` and `v(γ) = 0` then `v(g) = 0` and the
+bound is `min(v(mm), v(nn))`, which is the hypothesis `hγmem`. If
+`v ∣ nn` and `v(γ) > 0` then `v(γ - 1) = 0`, but `hγmem` with
+`v(nn) > 0` already forces `v(mm) = 0`, so the bound is `0` too.
+
+*The exponent of `u`.* From `γ - u ∈ nn * g` we get
+`v(γ - u) ≥ v(nn) + v(g) = v(nn) + v(γ) > v(γ)` at every `v ∣ nn`, hence
+`v(u) = v(γ)` there. This is the single fact both remaining clauses rest
+on, and it is why the congruence is taken modulo `nn * g` and NOT modulo
+`nn * (γ)` — see the refutation recorded on the consumer.
+
+*Clause 2*: `v((u) ⊓ nn*g) = max(v(u), v(nn) + v(g))` must be
+`≥ v(u) + v(nn)`. At `v ∤ nn` this reads `max(v(u), v(g)) ≥ v(u)`, true
+with no hypothesis at all. At `v ∣ nn` the second entry is
+`v(nn) + v(γ) = v(nn) + v(u)`, so the max already dominates.
+
+*Clause 3*: take `dd = ((u) : (γ))`, the ideal quotient, whose exponents
+are `v(dd) = max(0, v(u) - v(γ))`. Then `(γ) * dd ≤ (u)` by the defining
+property of the quotient, `dd ≠ ⊥` because `u ∈ dd`, and `v(dd) = 0` at
+every `v ∣ nn` by the displayed identity `v(u) = v(γ)` — which is
+precisely `dd ⊔ nn = ⊤`.
+
+**Mathlib route.** `IsDedekindDomain.HeightOneSpectrum` together with
+`UniqueFactorizationMonoid.normalizedFactors` and
+`Ideal.count_normalizedFactors_*`; `Ideal.dvd_iff_le` to move between the
+divisibility and containment orders; `Ideal.sup_mul_eq_...`/`Ideal.isCoprime_iff_sup_eq`
+for the final coprimality. `Mathlib/RingTheory/DedekindDomain/Factorization.lean`
+(`Ideal.factorization`, `Ideal.finprod_heightOneSpectrum_factorization`) is
+already in this file's import cone through
+`Mathlib.NumberTheory.NumberField.Discriminant.Different`.
+
+**FAITHFULNESS (audited 2026-07-26): TRUE as stated, and non-vacuous.**
+True by the route above. Non-vacuous: `g = ⊤` (the naive "no `nn`-part"
+choice) satisfies the first two clauses but makes the third demand
+`v(u) = v(γ)` at `v ∣ nn` for a `u` that is only congruent to `γ` modulo
+`nn`, which fails as soon as `v(γ) ≥ v(nn)` — take `mm = (4)`, `nn = (9)`,
+`γ = 6` over `ℚ`, the consumer's own worked example, where the honest
+witness is `g = (3)` and `u = 33`. `hγ0` is load-bearing (at `γ = 0` the
+third clause forces `(0) * dd ≤ (u)`, fine, but the first forces
+`-1 ∈ mm ⊔ nn * g`, i.e. `mm ⊔ nn * g = ⊤`, which then fails clause 2
+unless `nn = ⊤`). `hnn` is load-bearing: at `nn = ⊥` the second clause
+reads `(u) ⊓ ⊥ ≤ ⊥`, true, but the third demands `dd ⊔ ⊥ = ⊤`, i.e.
+`dd = ⊤`, forcing `(γ) ≤ (u)`, false in general. -/
+theorem exists_nnPart_ray_factorization_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (mm nn : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥) (hnn : nn ≠ ⊥)
+    (γ : NumberField.RingOfIntegers F) (hγ0 : γ ≠ 0)
+    (hγmem : γ - 1 ∈ mm ⊔ nn) :
+    ∃ g : Ideal (NumberField.RingOfIntegers F), g ≠ ⊥ ∧
+      Ideal.span {γ} ≤ g ∧
+      γ - 1 ∈ mm ⊔ (nn * g) ∧
+      ∀ u : NumberField.RingOfIntegers F, u ≠ 0 → γ - u ∈ nn * g →
+        Ideal.span {u} ⊓ (nn * g) ≤ Ideal.span {u} * nn ∧
+        ∃ dd : Ideal (NumberField.RingOfIntegers F), dd ≠ ⊥ ∧ dd ⊔ nn = ⊤ ∧
+          Ideal.span {γ} * dd ≤ Ideal.span {u} :=
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **The CRT core of the gcd-closure of the narrow rays**
+(**PROVEN 2026-07-26** as glue over its single new sub-leaf
+(B1a-i-1-b-1) `exists_nnPart_ray_factorization_ray_class` just above and
+the archimedean adjustment `exists_totallyPositive_sub_mem_ray_class`
+above that — see the DECOMPOSED note at the end of this docstring;
 created 2026-07-26 as sub-leaf (B1a-i-1-b) of
-`exists_ray_factorization_sup_ray_class` just below, which is now PROVEN
+`exists_ray_factorization_sup_ray_class` just below, which is PROVEN
 as glue over this leaf and the archimedean adjustment
 `exists_totallyPositive_sub_mem_ray_class` just above): there are a
 totally positive `u` congruent to `1` modulo `mm`, and a nonzero ideal
@@ -38782,7 +38881,42 @@ denominator ideal of `w`, which is therefore coprime to `nn`; for `β` in
 worked example). `hγ0` is needed: at `γ = 0` the clause forces `β' = 0`,
 contradicting `β' ≡ 1 (mod nn)` for proper `nn`. `hγpos` is deliberately
 ABSENT — total positivity of `γ` is consumed only in the assembly below,
-where it gives positivity of `β'` from `u β' = γ β`. -/
+where it gives positivity of `β'` from `u β' = γ β`.
+
+**DECOMPOSED AND PROVEN 2026-07-26.** The cut isolates the one thing this
+file has no vocabulary for — the exponents of `γ`, `u` and `nn` at the
+height-one primes — into the single new leaf
+`exists_nnPart_ray_factorization_ray_class` above, and everything else is
+discharged here:
+
+* **the CRT itself is a two-line splitting, not a quotient-ring
+  argument.** Solving `u ≡ 1 (mod mm)` and `u ≡ γ (mod nn * g)` from
+  `γ - 1 ∈ mm ⊔ (nn * g)` is just `γ - 1 = a + b` with `a ∈ mm`,
+  `b ∈ nn * g` and `u₀ := 1 + a`; then `u₀ - 1 = a` and `γ - u₀ = b`. No
+  comaximality, no `Ideal.quotientInfRingEquivPiQuotient`;
+* **the archimedean adjustment is applied at `mm * (nn * g)`**, which is
+  contained in both `mm` and `nn * g`, so moving `u₀` to a nonzero
+  totally positive representative disturbs neither congruence. Its
+  nonvanishing comes from `Ideal.mul_eq_bot` and the three nonvanishing
+  hypotheses;
+* **`β'` is extracted from `u ∣ γ β`** — clause 3 of the sub-leaf gives
+  `(γ) * dd ≤ (u)` and `β ∈ dd`, so `γ β ∈ (u)`;
+* **`β' ≡ 1 (mod nn)` is the only step with content, and it is the one
+  place where the two halves of the sub-leaf meet.** Write
+  `u (β' - 1) = γ β - u = γ (β - 1) + (γ - u)`. The first summand lies in
+  `(γ) * nn ≤ g * nn`, the second in `nn * g` by hypothesis, so the whole
+  lies in `nn * g`; it also lies in `(u)`, since both `γ β` and `u` do.
+  Clause 2 of the sub-leaf, `(u) ⊓ (nn * g) ≤ (u) * nn`, then puts it in
+  `(u) * nn`, and `Ideal.mem_span_singleton_mul` plus cancellation by the
+  nonzero `u` in the domain `𝓞 F` gives `β' - 1 ∈ nn`.
+
+Note that the termwise split does NOT work on its own: at a prime `v`
+NOT dividing `nn` the summand `γ (β - 1)` has no reason to lie in
+`(u) * nn` (in the worked example `γ = 6`, `u = 33`, `nn = (9)`,
+`β = 55`, one has `γ (β - 1) = 324` and `γ - u = -27`, neither of which
+is divisible by `u · nn = 297`, while their sum `297` is). That is
+exactly why clause 2 is stated as an intersection with `(u)` rather than
+as two separate containments. -/
 theorem exists_denominatorIdeal_ray_factorization_ray_class
     (F : Type*) [Field F] [NumberField F]
     (mm nn : Ideal (NumberField.RingOfIntegers F)) (hmm : mm ≠ ⊥) (hnn : nn ≠ ⊥)
@@ -38793,8 +38927,54 @@ theorem exists_denominatorIdeal_ray_factorization_ray_class
         0 < φ (algebraMap (NumberField.RingOfIntegers F) F u)) ∧
       u - 1 ∈ mm ∧ dd ≠ ⊥ ∧ dd ⊔ nn = ⊤ ∧
       ∀ β ∈ dd, β - 1 ∈ nn →
-        ∃ β' : NumberField.RingOfIntegers F, u * β' = γ * β ∧ β' - 1 ∈ nn :=
-  sorry
+        ∃ β' : NumberField.RingOfIntegers F, u * β' = γ * β ∧ β' - 1 ∈ nn := by
+  obtain ⟨g, hg0, hgγ, hcrt, hkey⟩ :=
+    exists_nnPart_ray_factorization_ray_class F mm nn hmm hnn γ hγ0 hγmem
+  -- **CRT**: `u₀ = 1 + a` solves `u₀ ≡ 1 (mod mm)` and `u₀ ≡ γ (mod nn * g)`
+  obtain ⟨a, ha, b, hb, hab⟩ := Submodule.mem_sup.mp hcrt
+  have hu₀mm : (1 + a) - 1 ∈ mm := by simpa using ha
+  have hu₀nn : γ - (1 + a) ∈ nn * g := by
+    have e : γ - (1 + a) = b := by
+      have h : γ - 1 = a + b := hab.symm
+      linear_combination h
+    rw [e]; exact hb
+  -- **archimedean adjustment** at `mm * (nn * g)`, which disturbs neither congruence
+  have hng : nn * g ≠ ⊥ := fun h => (Ideal.mul_eq_bot.mp h).elim hnn hg0
+  have hne : mm * (nn * g) ≠ ⊥ := fun h => (Ideal.mul_eq_bot.mp h).elim hmm hng
+  obtain ⟨u, hsub, hu0, hupos⟩ :=
+    exists_totallyPositive_sub_mem_ray_class F (mm * (nn * g)) hne (1 + a)
+  have hsubmm : u - (1 + a) ∈ mm := Ideal.mul_le_right hsub
+  have hsubnn : u - (1 + a) ∈ nn * g := Ideal.mul_le_left hsub
+  have humm : u - 1 ∈ mm := by
+    have e : u - 1 = (u - (1 + a)) + ((1 + a) - 1) := by ring
+    rw [e]; exact add_mem hsubmm hu₀mm
+  have hγu : γ - u ∈ nn * g := by
+    have e : γ - u = (γ - (1 + a)) - (u - (1 + a)) := by ring
+    rw [e]; exact sub_mem hu₀nn hsubnn
+  obtain ⟨hcap, dd, hdd0, hddnn, hgd⟩ := hkey u hu0 hγu
+  refine ⟨u, dd, hu0, hupos, humm, hdd0, hddnn, ?_⟩
+  intro β hβdd hβnn
+  -- `u ∣ γ β`, because `β ∈ dd` and `(γ) dd ≤ (u)`
+  have h1 : γ * β ∈ Ideal.span {u} :=
+    hgd (Ideal.mul_mem_mul (Ideal.mem_span_singleton_self γ) hβdd)
+  obtain ⟨β', hβ'⟩ := Ideal.mem_span_singleton.mp h1
+  refine ⟨β', hβ'.symm, ?_⟩
+  -- `γ β - u` lies in `(u)` and in `nn * g`; clause 2 puts it in `(u) * nn`
+  have h2 : γ * β - u ∈ Ideal.span {u} := sub_mem h1 (Ideal.mem_span_singleton_self u)
+  have h3 : γ * β - u ∈ nn * g := by
+    have e : γ * β - u = γ * (β - 1) + (γ - u) := by ring
+    rw [e]
+    refine add_mem ?_ hγu
+    have hmem : γ * (β - 1) ∈ g * nn :=
+      Ideal.mul_mem_mul (hgγ (Ideal.mem_span_singleton_self γ)) hβnn
+    rwa [mul_comm] at hmem
+  have h4 : γ * β - u ∈ Ideal.span {u} * nn := hcap ⟨h2, h3⟩
+  have h5 : u * (β' - 1) ∈ Ideal.span {u} * nn := by
+    have e : u * (β' - 1) = γ * β - u := by rw [hβ']; ring
+    rw [e]; exact h4
+  obtain ⟨z, hz, hzu⟩ := Ideal.mem_span_singleton_mul.mp h5
+  have hbz : β' - 1 = z := mul_left_cancel₀ hu0 hzu.symm
+  rw [hbz]; exact hz
 
 set_option maxHeartbeats 1000000 in
 /-- **The two narrow rays GENERATE the narrow ray at their gcd** (PROVEN
@@ -39116,9 +39296,119 @@ theorem isAdmissibleModulus_sup_ray_class
         hnnadm.2 β' hβ'0 hβ'pos hβ'mem, mul_one]
     rw [← hleft, hideal, hright]
 
+/-- **A height-one prime divides a finite product of height-one primes
+exactly when it is one of them** (PROVEN 2026-07-26; created the same day
+as the ideal-arithmetic half of `exists_radical_isRamifiedChar_ray_class`
+below, where it turns a FINITE SET of ramified primes into an IDEAL whose
+prime divisors are exactly that set).
+
+Both directions are one step. `←` is `Finset.dvd_prod_of_mem`. For `→`,
+`w.asIdeal` is prime (nonzero prime, via `Ideal.prime_iff_isPrime` and
+`w.ne_bot`), so `Prime.exists_mem_finset_dvd` produces an `x ∈ s` with
+`w.asIdeal ∣ x.asIdeal`; in a Dedekind domain `x.asIdeal` is MAXIMAL
+(`Ideal.IsPrime.isMaximal` at `x.ne_bot`) and `w.asIdeal ≠ ⊤`, so the
+containment `x.asIdeal ≤ w.asIdeal` forces equality, and
+`IsDedekindDomain.HeightOneSpectrum.ext` upgrades that to `w = x`.
+
+The empty-product case needs no separate treatment: `∏_{x ∈ ∅} = ⊤`, and
+`Prime.exists_mem_finset_dvd` already refutes `w.asIdeal ∣ 1` because a
+prime is not a unit. That is what makes the consumer's `↔` correct even
+when `χ` is unramified everywhere. -/
+theorem heightOneSpectrum_dvd_finset_prod_iff_ray_class
+    {R : Type*} [CommRing R] [IsDedekindDomain R]
+    (s : Finset (IsDedekindDomain.HeightOneSpectrum R))
+    (w : IsDedekindDomain.HeightOneSpectrum R) :
+    w.asIdeal ∣ (∏ x ∈ s, x.asIdeal) ↔ w ∈ s := by
+  constructor
+  · intro h
+    have hp : Prime w.asIdeal := (Ideal.prime_iff_isPrime w.ne_bot).mpr w.isPrime
+    obtain ⟨x, hx, hdvd⟩ := hp.exists_mem_finset_dvd h
+    have hxmax : x.asIdeal.IsMaximal := x.isPrime.isMaximal x.ne_bot
+    have hle : x.asIdeal ≤ w.asIdeal := Ideal.le_of_dvd hdvd
+    have heq : w.asIdeal = x.asIdeal := (hxmax.eq_of_le w.isPrime.ne_top hle).symm
+    have hwx : w = x := IsDedekindDomain.HeightOneSpectrum.ext heq
+    rwa [hwx]
+  · intro h; exact Finset.dvd_prod_of_mem _ h
+
+/-- **A finite product of height-one primes is nonzero** (PROVEN
+2026-07-26; the companion of
+`heightOneSpectrum_dvd_finset_prod_iff_ray_class` just above, supplying
+the `rr ≠ ⊥` half of `exists_radical_isRamifiedChar_ray_class` below).
+Ideals of a Dedekind domain form a cancellative commutative monoid with
+zero, so `Finset.prod_ne_zero_iff` reduces this to `w.ne_bot`. -/
+theorem heightOneSpectrum_finset_prod_ne_bot_ray_class
+    {R : Type*} [CommRing R] [IsDedekindDomain R]
+    (s : Finset (IsDedekindDomain.HeightOneSpectrum R)) :
+    (∏ x ∈ s, x.asIdeal) ≠ ⊥ :=
+  Finset.prod_ne_zero_iff.mpr fun x _ => x.ne_bot
+
+set_option maxHeartbeats 1000000 in
+/-- **FINITENESS OF RAMIFICATION for a character trivial on an open
+subgroup** (sorry node, created 2026-07-26 as the single sub-leaf
+(B1a-ii-1-a) of `exists_radical_isRamifiedChar_ray_class` just below,
+which is now PROVEN as ideal arithmetic over this leaf and the two
+height-one-prime lemmas above): the set of finite places at which `χ` is
+ramified is FINITE.
+
+**This is the whole mathematical content of the radical leaf.** Packaging
+it as a `Set.Finite` rather than as an ideal is what separates the
+number theory from the bookkeeping: converting a finite set of primes
+into an ideal with exactly that prime support is
+`heightOneSpectrum_dvd_finset_prod_iff_ray_class` above, and it is
+PROVEN.
+
+**Route, and it is BOUNDED — no class field theory.** `χ` is
+multiplicative into the commutative monoid `Dickson.K 3` and `hVker`
+makes it trivial on the open subgroup `V`; since `V` is a subgroup it
+contains `1`, so `χ 1 = 1`, and therefore
+`χ (a σ a⁻¹) = χ a · χ σ · χ a⁻¹ = χ σ` because the target is
+COMMUTATIVE and `χ a · χ a⁻¹ = χ 1 = 1`. So `IsRamifiedCharRayClass F χ w`
+is equivalent to the conjugation-free `∃ σ ∈ localInertiaGroup w`,
+`χ (map σ) ≠ 1` — the conjugator quantifier in the definition is inert,
+which is the observation the finiteness argument starts from.
+
+Now `ker χ` is a subgroup of `Γ F` containing the open `V`, hence itself
+OPEN, hence of finite index (`Γ F` is compact). Its fixed field `M` is
+therefore a FINITE extension of `F`, and `w` is ramified for `χ` exactly
+when `w` ramifies in `M/F`. A prime ramifies in a finite extension of
+number fields iff it divides the (nonzero) relative different, and a
+nonzero ideal has only finitely many prime divisors.
+
+**Mathlib route: this one IS supported by the pin, and the imports are
+already present.** `Mathlib/RingTheory/DedekindDomain/Different.lean`
+(`differentIdeal`) and
+`Mathlib/NumberTheory/NumberField/Discriminant/Different.lean` — the
+latter is a `public import` of this file already — give the different and
+the "ramified iff divides the different" criterion;
+`UniqueFactorizationMonoid.normalizedFactors` gives finiteness of the
+prime support of a nonzero ideal; and the fixed field of an open subgroup
+of the absolute Galois group is already used in this development (see
+`Field.absoluteGaloisGroup` and the openness bookkeeping that `hVopen`
+feeds). No ray class group, no Artin map, no reciprocity.
+
+**FAITHFULNESS (audited 2026-07-26): TRUE as stated, and non-vacuous.**
+True by the paragraph above. Non-vacuous because the conclusion is a
+finiteness assertion about a set that genuinely can be infinite for a
+character NOT trivial on any open subgroup — `hVopen` is exactly the
+hypothesis that rules that out, and `hVker` is what connects `V` to `χ`.
+`hmul` is load-bearing twice over: it makes `ker χ` a subgroup at all,
+and it is what kills the conjugation in `IsRamifiedCharRayClass`. -/
+theorem finite_isRamifiedChar_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1) :
+    {w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F) |
+      IsRamifiedCharRayClass F χ w}.Finite :=
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **THE RAMIFIED RADICAL: only finitely many primes are ramified for
-`χ`** (sorry node, created 2026-07-26 as sub-leaf (B1a-ii-1) of
+`χ`** (**PROVEN 2026-07-26** as ideal arithmetic over its single new
+sub-leaf (B1a-ii-1-a) `finite_isRamifiedChar_ray_class` and the two
+height-one-prime lemmas just above — see the DECOMPOSED note at the end
+of this docstring; created 2026-07-26 as sub-leaf (B1a-ii-1) of
 `exists_isAdmissibleModulus_isRamifiedChar_ray_class` just below, which
 is now PROVEN as ideal arithmetic over this leaf and (B1a-ii-2)
 `exists_pow_isAdmissibleModulus_of_isRamifiedChar_dvd_ray_class`): there
@@ -39164,7 +39454,19 @@ divides) and any `rr` padded with unramified primes, while the `←`
 direction forbids `rr = ⊤` unless `χ` really is everywhere unramified.
 `hmul` and `hVker` are load-bearing (they are what makes `ker χ` a
 subgroup and an open one); `hVopen` is load-bearing (it is the finiteness
-input). -/
+input).
+
+**DECOMPOSED AND PROVEN 2026-07-26.** The cut is exactly along the seam
+the docstring above already describes: the finiteness of the ramified set
+is the mathematics and is now the single leaf
+`finite_isRamifiedChar_ray_class`; turning a finite SET of primes into an
+IDEAL with that prime support is bookkeeping and is discharged here as
+`rr := ∏_{w ramified} w.asIdeal` over the two lemmas above. Note that the
+degenerate case needs no special handling — for an everywhere-unramified
+`χ` the product is empty, `rr = ⊤`, and the `↔` is the true statement
+that no height-one prime divides `⊤`, which is exactly what
+`heightOneSpectrum_dvd_finset_prod_iff_ray_class` delivers via
+"a prime is not a unit". -/
 theorem exists_radical_isRamifiedChar_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -39173,8 +39475,13 @@ theorem exists_radical_isRamifiedChar_ray_class
     (hVker : ∀ a ∈ V, χ a = 1) :
     ∃ rr : Ideal (NumberField.RingOfIntegers F), rr ≠ ⊥ ∧
       ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
-        w.asIdeal ∣ rr ↔ IsRamifiedCharRayClass F χ w :=
-  sorry
+        w.asIdeal ∣ rr ↔ IsRamifiedCharRayClass F χ w := by
+  classical
+  have hfin := finite_isRamifiedChar_ray_class F χ hmul V hVopen hVker
+  refine ⟨∏ x ∈ hfin.toFinset, x.asIdeal,
+    heightOneSpectrum_finset_prod_ne_bot_ray_class _, fun w => ?_⟩
+  rw [heightOneSpectrum_dvd_finset_prod_iff_ray_class, Set.Finite.mem_toFinset]
+  exact Iff.rfl
 
 set_option maxHeartbeats 1000000 in
 /-- **SOME POWER of a ramified-supported ideal is an admissible modulus**
