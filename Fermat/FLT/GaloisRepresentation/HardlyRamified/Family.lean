@@ -40,6 +40,23 @@ public import Mathlib.RingTheory.HopfAlgebra.Convolution
 -- `hasFlatProlongationAt_trivialQuotChar_of_base` is proved in this module and
 -- consumes it, so the import is public.
 public import Fermat.FLT.Mathlib.RingTheory.HopfAlgebra.GroupFunctions
+-- the `μ`-typed factor of the Eisenstein member: the group-algebra Hopf
+-- structure `MonoidAlgebra.instHopfAlgebra` (the diagonalizable group scheme
+-- `Spec 𝒪ᵥ[D]`), its base change `MonoidAlgebra.scalarTensorEquiv`, and
+-- character biduality `CommGroup.monoidHomMonoidHomEquiv`. All three appear in
+-- STATEMENTS of the block below (`etale_monoidAlgebra_of_charZero`,
+-- `etale_adicGenericFibre_monoidAlgebra`, `muTypePointsEquiv`), hence public.
+public import Mathlib.RingTheory.HopfAlgebra.MonoidAlgebra
+public import Mathlib.RingTheory.TensorProduct.MonoidAlgebra
+public import Mathlib.GroupTheory.FiniteAbelian.Duality
+-- étaleness of the generic fibre `Kᵥ[D]` of that group scheme, via the Fourier
+-- isomorphism `Ω[D] ≃ₐ (D̂ → Ω)` (linear independence of characters + a
+-- dimension count) and faithfully flat descent along `Kᵥ → Kᵥᵃˡᵍ`
+public import Mathlib.RingTheory.Etale.Field
+public import Mathlib.RingTheory.Etale.Descent
+public import Mathlib.LinearAlgebra.LinearIndependent.Basic
+public import Mathlib.LinearAlgebra.Dimension.Constructions
+public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 -- `isIntegral_padicInt_of_spectralNorm_le_one`, consumed by the
 -- `ValuationRing` instance of the concrete coefficient ring below. It used to
 -- be declared in this file; it moved upstream (2026-07-25) so that the
@@ -5194,10 +5211,12 @@ raising roots of unity to the power `χ_cyc(σ)` — the second diagonal
 entry.
 
 The layer below cuts the leaf along exactly that decomposition, into
-three group-scheme leaves — a PRODUCT transport
-(`hasFlatProlongationAt_of_prod`), the CONSTANT factor
-(`hasFlatProlongationAt_trivialQuotChar`) and the `μ`-FACTOR
-(`hasFlatProlongationAt_cycScalarRep`). Everything else is PROVEN
+three group-scheme nodes — a PRODUCT transport
+(`hasFlatProlongationAt_of_prod`, sorry leaf), the CONSTANT factor
+(`hasFlatProlongationAt_trivialQuotChar`, sorry leaf) and the `μ`-FACTOR
+(`hasFlatProlongationAt_cycScalarRep`, PROVEN 2026-07-26, sorry-free —
+the missing étaleness of group algebras is proven here too, as
+`etale_monoidAlgebra_of_charZero`). Everything else is PROVEN
 here: finiteness of the open quotients
 (`finite_quotient_of_isOpen_integralClosure`, over compactness of the
 concrete ring of integers), the identification of the base change with
@@ -5734,30 +5753,514 @@ theorem hasFlatProlongationAt_trivialQuotChar
     (trivialQuotChar ℚ B).HasFlatProlongationAt v :=
   hasFlatProlongationAt_trivialQuotChar_of_base v ℤ B
 
-/-- **The DIAGONALIZABLE (`μ`-typed) group scheme** (sorry leaf): the
-rank-one cyclotomic member over a FINITE coefficient ring has a flat
-prolongation at every place. The witness is `Spec 𝒪ᵥ[D]`, the group
-algebra (mathlib's `MonoidAlgebra.instHopfAlgebra`) of the character
-group `D = (Multiplicative B →* (ℚ̄)ˣ)`: it is finite free over `𝒪ᵥ`,
+section MuTypeFactor
+
+/-! #### The `μ`-typed factor: the diagonalizable group scheme `Spec 𝒪ᵥ[D]`
+
+The witness for `hasFlatProlongationAt_cycScalarRep` below is built
+here, sorry-free.
+The construction is: `D := Hom(Multiplicative B, (Kᵥᵃˡᵍ)ˣ)`, the
+character group, and `G := 𝒪ᵥ[D]`, mathlib's `MonoidAlgebra` with its
+group-algebra Hopf structure `MonoidAlgebra.instHopfAlgebra` (finite
+free over `𝒪ᵥ` because `D` is finite, hence flat). Its
+`Kᵥᵃˡᵍ`-points are `D →* Kᵥᵃˡᵍ` by the base-change adjunction
+`AlgHom.liftEquiv` followed by `MonoidAlgebra.lift`, and character
+BIDUALITY (`CommGroup.monoidHomMonoidHomEquiv`) identifies those with
+`Multiplicative B`. The convolution product on points goes over to the
+POINTWISE product of characters because `single χ 1` is group-like
+(`MonoidAlgebra.comul_single`), and the `Γ Kᵥ`-action goes over to
+`ζ ↦ ζ ^ χ_cyc(σ̃)` because every value `χ b` is an `ℓ^k`-th root of
+unity — this is where the cyclotomic character enters, through the
+generalized bridge `galoisApply_eq_pow_of_cyclotomicCharacter_sub_mem`.
+
+FAITHFULNESS NOTE (the `𝒪ᵥ`-rational trap of this cluster). This leaf
+asks us to EXHIBIT a finite flat Hopf order, which we construct
+ourselves; it does NOT ask us to extract a `μ_p`-coordinate from an
+abstract group scheme, which is the false shape that killed
+`exists_muType_closure`. Nothing here is a normal-form or
+coordinate-existence claim over `𝒪ᵥ`, so the leaf is on the true side
+of that line. -/
+
+set_option maxHeartbeats 1000000 in
+/-- **The cyclotomic root-of-unity bridge over an arbitrary base**
+(PROVEN): the general-base port of
+`absoluteGalois_apply_eq_pow_of_cyclotomicCharacter_sub_mem` above,
+whose statement is pinned to the place of `p`. Every element `τ` of the
+absolute Galois group of a `ℚ`-algebra field `F` moves an `ℓ^k`-th root
+of unity `z` of `Fᵃˡᵍ` to `z ^ n`, for any natural `n` congruent to
+`χ_cyc(τ̃)` modulo `ℓ^k` (`τ̃` the image of `τ` in `Γ ℚ`). No inertia
+hypothesis: this is the defining property of the cyclotomic character,
+transported along the chosen embedding of algebraic closures. The proof
+is verbatim that of the pinned version — nothing in it uses that `F` is
+the completion at `p`. -/
+theorem galoisApply_eq_pow_of_cyclotomicCharacter_sub_mem {ℓ : ℕ} [hl : Fact ℓ.Prime]
+    {F : Type*} [Field F] [Algebra ℚ F]
+    (τ : Field.absoluteGaloisGroup F) (k n : ℕ) (c : ℤ_[ℓ])
+    (hc : c = ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) τ).toRingEquiv) : ℤ_[ℓ]ˣ) : ℤ_[ℓ]))
+    (hn : c - (n : ℤ_[ℓ]) ∈ Ideal.span {(ℓ : ℤ_[ℓ]) ^ k})
+    (z : AlgebraicClosure F) (hz : z ^ (ℓ ^ k) = 1) :
+    τ z = z ^ n := by
+  classical
+  haveI : NeZero (ℓ ^ k) := ⟨pow_ne_zero k hl.out.ne_zero⟩
+  -- the `ℓ ^ k`-th roots of unity of `Fᵃˡᵍ` come from `AlgebraicClosure ℚ`
+  obtain ⟨ζ, hζ⟩ := HasEnoughRootsOfUnity.exists_primitiveRoot
+    (AlgebraicClosure ℚ) (ℓ ^ k)
+  have hζ' : IsPrimitiveRoot
+      (AlgebraicClosure.map (algebraMap ℚ F) ζ) (ℓ ^ k) :=
+    hζ.map_of_injective (AlgebraicClosure.map (algebraMap ℚ F)).injective
+  obtain ⟨j, -, hjz⟩ := hζ'.eq_pow_of_pow_eq_one hz
+  have hwz : AlgebraicClosure.map (algebraMap ℚ F) (ζ ^ j) = z := by
+    rw [map_pow, hjz]
+  have hwpow : (ζ ^ j) ^ (ℓ ^ k) = 1 := by
+    rw [← pow_mul, mul_comm j (ℓ ^ k), pow_mul, hζ.pow_eq_one, one_pow]
+  -- the cyclotomic character reads the action downstairs
+  have hspec : (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+      τ).toRingEquiv (ζ ^ j) = (ζ ^ j) ^ (PadicInt.toZModPow k c).val := by
+    rw [hc]
+    exact cyclotomicCharacter.spec ℓ _ _ hwpow
+  -- the truncation of `χ_cyc(τ̃)` agrees with `n` modulo `ℓ ^ k`
+  have hcv : (((PadicInt.toZModPow k c).val : ℕ) : ZMod (ℓ ^ k)) =
+      (n : ZMod (ℓ ^ k)) := by
+    rw [ZMod.natCast_val, ZMod.cast_id]
+    have h1 := hn
+    rw [← PadicInt.ker_toZModPow k, RingHom.mem_ker, map_sub, map_natCast,
+      sub_eq_zero] at h1
+    exact h1
+  -- an `ℓ ^ k`-th root of unity only sees its exponent modulo `ℓ ^ k`
+  have hexp : (ζ ^ j) ^ (PadicInt.toZModPow k c).val = (ζ ^ j) ^ n := by
+    have hmn : (PadicInt.toZModPow k c).val ≡ n [MOD ℓ ^ k] :=
+      (ZMod.natCast_eq_natCast_iff _ _ _).mp hcv
+    rcases Nat.le_total (PadicInt.toZModPow k c).val n with hle | hle
+    · obtain ⟨d, hd⟩ := (Nat.modEq_iff_dvd' hle).mp hmn
+      have hn' : n = (PadicInt.toZModPow k c).val + ℓ ^ k * d := by
+        rw [← hd]
+        exact (Nat.add_sub_cancel' hle).symm
+      rw [hn', pow_add, pow_mul, hwpow, one_pow, mul_one]
+    · obtain ⟨d, hd⟩ := (Nat.modEq_iff_dvd' hle).mp hmn.symm
+      have hq' : (PadicInt.toZModPow k c).val = n + ℓ ^ k * d := by
+        rw [← hd]
+        exact (Nat.add_sub_cancel' hle).symm
+      rw [hq', pow_add, pow_mul, hwpow, one_pow, mul_one]
+  -- transport the downstairs identity along the embedding
+  have hup := Field.absoluteGaloisGroup.lift_map (algebraMap ℚ F) τ (ζ ^ j)
+  rw [hwz, show (Field.absoluteGaloisGroup.map (algebraMap ℚ F) τ) (ζ ^ j) =
+      (Field.absoluteGaloisGroup.map (algebraMap ℚ F) τ).toRingEquiv (ζ ^ j)
+      from rfl, hspec, hexp, map_pow, hwz] at hup
+  exact hup.symm
+
+/-- **A FINITE `ℤ_ℓ`-algebra is killed by a power of `ℓ`** (PROVEN):
+the kernel of `algebraMap ℤ_[ℓ] B` contains the (nonzero) cardinality of
+the additive group of `B`, hence is a nonzero ideal of the DVR `ℤ_[ℓ]`,
+hence is `(ℓ ^ k)` for some `k` (`PadicInt.ideal_eq_span_pow_p`). This
+is what makes `HasEnoughRootsOfUnity Kᵥᵃˡᵍ (exponent B)` available for
+character biduality below. -/
+theorem exists_natCast_pow_eq_zero_of_finite_padicAlgebra {ℓ : ℕ} [Fact ℓ.Prime]
+    (B : Type*) [CommRing B] [Finite B] [Algebra ℤ_[ℓ] B] :
+    ∃ k : ℕ, ((ℓ ^ k : ℕ) : B) = 0 := by
+  classical
+  have hm0 : Nat.card B ≠ 0 := Nat.card_ne_zero.mpr ⟨⟨0⟩, inferInstance⟩
+  have hmB : ((Nat.card B : ℕ) : B) = 0 := by
+    simpa using card_nsmul_eq_zero' (G := B) (x := (1 : B))
+  have hker : RingHom.ker (algebraMap ℤ_[ℓ] B) ≠ ⊥ := by
+    intro hbot
+    have hmem : ((Nat.card B : ℕ) : ℤ_[ℓ]) ∈ RingHom.ker (algebraMap ℤ_[ℓ] B) := by
+      rw [RingHom.mem_ker, map_natCast]
+      exact hmB
+    rw [hbot, Ideal.mem_bot] at hmem
+    exact hm0 (by exact_mod_cast hmem)
+  obtain ⟨k, hk⟩ := PadicInt.ideal_eq_span_pow_p hker
+  refine ⟨k, ?_⟩
+  have hmem : ((ℓ : ℤ_[ℓ]) ^ k) ∈ RingHom.ker (algebraMap ℤ_[ℓ] B) := by
+    rw [hk]
+    exact Ideal.mem_span_singleton_self _
+  rw [RingHom.mem_ker] at hmem
+  rw [Nat.cast_pow,
+    show ((ℓ : B)) = algebraMap ℤ_[ℓ] B (ℓ : ℤ_[ℓ]) by rw [map_natCast], ← map_pow]
+  exact hmem
+
+section MuFourier
+
+variable {Ω : Type} [Field Ω] {D : Type} [CommGroup D] [Finite D]
+variable [HasEnoughRootsOfUnity Ω (Monoid.exponent D)]
+
+variable (Ω D) in
+/-- **The Fourier character evaluation** (PROVEN construction): the
+multiplicative map `D → (D̂ → Ω)`, `d ↦ (χ ↦ χ d)`, sending a group
+element to its evaluation function on the character group. -/
+def muCharEval : D →* ((D →* Ωˣ) → Ω) where
+  toFun d := fun χ => ((χ d : Ωˣ) : Ω)
+  map_one' := by funext χ; simp
+  map_mul' d d' := by funext χ; simp
+
+/-- **Linear independence of characters** (PROVEN): the evaluation
+functions `{d ↦ (χ ↦ χ d)}` are `Ω`-linearly independent in `D̂ → Ω`.
+This is Dedekind's independence of characters
+(`linearIndependent_monoidHom` for the group `D̂`) precomposed with the
+BIDUALITY embedding `D ↪ Hom(D̂, Ωˣ)`, which is injective exactly
+because characters separate the points of `D`
+(`CommGroup.forall_apply_eq_apply_iff`). -/
+lemma muCharEval_linearIndependent :
+    LinearIndependent Ω (fun d : D => (muCharEval Ω D d : (D →* Ωˣ) → Ω)) := by
+  classical
+  have hbase := linearIndependent_monoidHom (D →* Ωˣ) Ω
+  have hinj : Function.Injective (fun d : D =>
+      (Units.coeHom Ω).comp ((CommGroup.monoidHomMonoidHomEquiv D Ω).symm d)) := by
+    intro d d' h
+    rw [← CommGroup.forall_apply_eq_apply_iff (G := D) (M := Ω)]
+    intro χ
+    have h2 := congrArg (fun (f : (D →* Ωˣ) →* Ω) => f χ) h
+    simp only [MonoidHom.coe_comp, Function.comp_apply, Units.coeHom_apply,
+      CommGroup.monoidHomMonoidHomEquiv_symm_apply_apply] at h2
+    exact Units.ext h2
+  have heq : (fun d : D => (muCharEval Ω D d : (D →* Ωˣ) → Ω)) =
+      ((fun f : (D →* Ωˣ) →* Ω => (f : (D →* Ωˣ) → Ω)) ∘
+        fun d : D => (Units.coeHom Ω).comp
+          ((CommGroup.monoidHomMonoidHomEquiv D Ω).symm d)) := by
+    funext d χ
+    simp [muCharEval, CommGroup.monoidHomMonoidHomEquiv_symm_apply_apply]
+  rw [heq]
+  exact hbase.comp _ hinj
+
+variable (Ω D) in
+/-- **The Fourier transform of the group algebra** (PROVEN
+construction): the `Ω`-algebra map `Ω[D] → (D̂ → Ω)` extending
+`muCharEval` through the universal property `MonoidAlgebra.lift`. -/
+noncomputable def muFourierAlg : MonoidAlgebra Ω D →ₐ[Ω] ((D →* Ωˣ) → Ω) :=
+  MonoidAlgebra.lift Ω _ D (muCharEval Ω D)
+
+/-- The Fourier transform is INJECTIVE (PROVEN): a kernel element is a
+vanishing `Ω`-linear combination of the evaluation functions, which are
+linearly independent. -/
+lemma muFourierAlg_injective : Function.Injective (muFourierAlg Ω D) := by
+  classical
+  rw [injective_iff_map_eq_zero]
+  intro f hf
+  have hlin : Finsupp.linearCombination Ω
+      (fun d : D => (muCharEval Ω D d : (D →* Ωˣ) → Ω)) (MonoidAlgebra.coeff f) = 0 := by
+    rw [Finsupp.linearCombination_apply]
+    have h := hf
+    rw [muFourierAlg, MonoidAlgebra.lift_apply] at h
+    exact h
+  have hli := (muCharEval_linearIndependent (Ω := Ω) (D := D))
+  rw [linearIndependent_iff] at hli
+  have h2 := hli _ hlin
+  exact MonoidAlgebra.coeff_injective (by simpa using h2)
+
+/-- The Fourier transform is BIJECTIVE (PROVEN): injective, and both
+sides have `Ω`-dimension `#D`, the right-hand side because
+`#D̂ = #D` (`CommGroup.card_monoidHom_of_hasEnoughRootsOfUnity`). -/
+lemma muFourierAlg_bijective : Function.Bijective (muFourierAlg Ω D) := by
+  classical
+  haveI : Fintype D := Fintype.ofFinite D
+  haveI : Fintype (D →* Ωˣ) := Fintype.ofFinite _
+  have hcard : Fintype.card (D →* Ωˣ) = Fintype.card D := by
+    have h := CommGroup.card_monoidHom_of_hasEnoughRootsOfUnity D Ω
+    simpa [Nat.card_eq_fintype_card] using h
+  have hdim : Module.finrank Ω (MonoidAlgebra Ω D) =
+      Module.finrank Ω ((D →* Ωˣ) → Ω) := by
+    rw [Module.finrank_pi, hcard,
+      (MonoidAlgebra.coeffLinearEquiv (R := Ω)).finrank_eq, Module.finrank_finsupp_self]
+  haveI : FiniteDimensional Ω (MonoidAlgebra Ω D) :=
+    Module.Finite.equiv (MonoidAlgebra.coeffLinearEquiv (R := Ω)).symm
+  refine ⟨muFourierAlg_injective, ?_⟩
+  exact (LinearMap.injective_iff_surjective_of_finrank_eq_finrank
+    (f := (muFourierAlg Ω D).toLinearMap) hdim).mp muFourierAlg_injective
+
+/-- **The group algebra of a finite abelian group over a field with
+enough roots of unity is ÉTALE** (PROVEN): the Fourier transform is an
+algebra ISOMORPHISM onto the finite product `D̂ → Ω` of copies of `Ω`,
+which is étale over `Ω` by the `Π`-instance of
+`Mathlib/RingTheory/Etale/Pi.lean`; étaleness transports along the
+isomorphism (`Algebra.Etale.of_equiv`). -/
+theorem etale_monoidAlgebra_of_hasEnoughRootsOfUnity :
+    Algebra.Etale Ω (MonoidAlgebra Ω D) :=
+  Algebra.Etale.of_equiv
+    (AlgEquiv.ofBijective (muFourierAlg Ω D) muFourierAlg_bijective).symm
+
+end MuFourier
+
+/-- **The group algebra of a finite abelian group over a
+characteristic-zero field is ÉTALE** (PROVEN): base change to an
+algebraic closure `Ω = AlgebraicClosure F`, where the previous theorem
+applies (characteristic zero gives `Ω` enough `exponent D`-th roots of
+unity), identify `Ω ⊗[F] F[D] ≃ₐ[Ω] Ω[D]`
+(`MonoidAlgebra.scalarTensorEquiv`), and descend along the faithfully
+flat `F → Ω` (`Algebra.Etale.of_etale_tensorProduct_of_faithfullyFlat`).
+Characteristic zero is used only for the roots of unity; the statement
+is true whenever `#D` is invertible in `F`. -/
+theorem etale_monoidAlgebra_of_charZero {F : Type} [Field F] [CharZero F]
+    {D : Type} [CommGroup D] [Finite D] :
+    Algebra.Etale F (MonoidAlgebra F D) := by
+  haveI hne : NeZero ((Monoid.exponent D : ℕ) : F) := by
+    refine ⟨?_⟩
+    have h0 : Monoid.exponent D ≠ 0 := Monoid.exponent_ne_zero_of_finite
+    exact_mod_cast fun h => h0 (by exact_mod_cast h)
+  haveI : Algebra.Etale (AlgebraicClosure F) (MonoidAlgebra (AlgebraicClosure F) D) :=
+    etale_monoidAlgebra_of_hasEnoughRootsOfUnity
+  haveI : Algebra.Etale (AlgebraicClosure F)
+      ((AlgebraicClosure F) ⊗[F] MonoidAlgebra F D) :=
+    Algebra.Etale.of_equiv (MonoidAlgebra.scalarTensorEquiv F (AlgebraicClosure F)).symm
+  exact Algebra.Etale.of_etale_tensorProduct_of_faithfullyFlat (AlgebraicClosure F)
+
+/-- **The generic fibre of `Spec 𝒪ᵥ[D]` is étale over `Kᵥ`** (PROVEN
+from the leaf above): the base change `Kᵥ ⊗[𝒪ᵥ] 𝒪ᵥ[D]` is `Kᵥ[D]`
+(`MonoidAlgebra.scalarTensorEquiv`), and `Kᵥ` has characteristic
+zero. -/
+theorem etale_adicGenericFibre_monoidAlgebra
+    {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+    {D : Type} [CommGroup D] [Finite D] :
+    Algebra.Etale (HeightOneSpectrum.adicCompletion ℚ v)
+      ((HeightOneSpectrum.adicCompletion ℚ v) ⊗[HeightOneSpectrum.adicCompletionIntegers ℚ v]
+        (MonoidAlgebra (HeightOneSpectrum.adicCompletionIntegers ℚ v) D)) := by
+  haveI : Algebra.Etale (HeightOneSpectrum.adicCompletion ℚ v)
+      (MonoidAlgebra (HeightOneSpectrum.adicCompletion ℚ v) D) := etale_monoidAlgebra_of_charZero
+  exact Algebra.Etale.of_equiv
+    (MonoidAlgebra.scalarTensorEquiv (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+      (HeightOneSpectrum.adicCompletion ℚ v)).symm
+
+section MuPoints
+
+variable (R₀ : Type) [CommRing R₀] (S₀ : Type) [Field S₀] [Algebra R₀ S₀]
+variable (L₀ : Type) [Field L₀] [Algebra S₀ L₀] [Algebra R₀ L₀] [IsScalarTower R₀ S₀ L₀]
+variable (Gm : Type) [CommGroup Gm] [Finite Gm]
+variable [HasEnoughRootsOfUnity L₀ (Monoid.exponent Gm)]
+
+set_option maxSynthPendingDepth 4 in
+/-- **The geometric points of the diagonalizable group scheme**
+(PROVEN): the `L₀`-points of the generic fibre `S₀ ⊗[R₀] R₀[D]` of
+`Spec R₀[D]`, `D = Hom(Gm, L₀ˣ)`, are `Gm` itself. Three composed
+equivalences: the base-change adjunction `AlgHom.liftEquiv`, the
+universal property `MonoidAlgebra.lift` of the group algebra, and
+character BIDUALITY `CommGroup.monoidHomMonoidHomEquiv` (through
+`MonoidHom.toHomUnitsMulEquiv`, since homomorphisms out of a group land
+in the units). -/
+noncomputable def muTypePointsEquiv :
+    (S₀ ⊗[R₀] MonoidAlgebra R₀ (Gm →* L₀ˣ) →ₐ[S₀] L₀) ≃ Gm :=
+  (AlgHom.liftEquiv R₀ S₀ (MonoidAlgebra R₀ (Gm →* L₀ˣ)) L₀).symm.trans
+    ((MonoidAlgebra.lift R₀ L₀ (Gm →* L₀ˣ)).symm.trans
+      ((MonoidHom.toHomUnitsMulEquiv (G := Gm →* L₀ˣ) (M := L₀)).toEquiv.trans
+        (CommGroup.monoidHomMonoidHomEquiv Gm L₀).toEquiv))
+
+variable {R₀ S₀ L₀ Gm}
+
+set_option maxSynthPendingDepth 4 in
+/-- The defining formula of `muTypePointsEquiv` (PROVEN): the character
+`χ` evaluated at the point of `Gm` attached to `φ` is the value of `φ`
+on the group-like `1 ⊗ₜ single χ 1`. Everything below is derived from
+this one identity together with
+`CommGroup.forall_apply_eq_apply_iff` (characters separate points). -/
+lemma muTypePointsEquiv_apply
+    (φ : S₀ ⊗[R₀] MonoidAlgebra R₀ (Gm →* L₀ˣ) →ₐ[S₀] L₀) (χ : Gm →* L₀ˣ) :
+    ((χ (muTypePointsEquiv R₀ S₀ L₀ Gm φ) : L₀ˣ) : L₀) =
+      φ (1 ⊗ₜ[R₀] MonoidAlgebra.single χ (1 : R₀)) := by
+  have h : muTypePointsEquiv R₀ S₀ L₀ Gm φ =
+      (CommGroup.monoidHomMonoidHomEquiv Gm L₀)
+        (MonoidHom.toHomUnits ((MonoidAlgebra.lift R₀ L₀ (Gm →* L₀ˣ)).symm
+          ((AlgHom.liftEquiv R₀ S₀ (MonoidAlgebra R₀ (Gm →* L₀ˣ)) L₀).symm φ))) := rfl
+  rw [h, CommGroup.apply_monoidHomMonoidHomEquiv]
+  rfl
+
+end MuPoints
+
+section MuMain
+
+variable {ℓ : ℕ} [Fact ℓ.Prime]
+variable {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
+variable {B : Type} [CommRing B] [TopologicalSpace B] [Algebra ℤ_[ℓ] B] [Finite B]
+
+local notation "Kv" => HeightOneSpectrum.adicCompletion ℚ v
+local notation "Ov" => HeightOneSpectrum.adicCompletionIntegers ℚ v
+local notation "Om" => AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)
+local notation "Dl" => Multiplicative B →*
+  (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))ˣ
+local notation "Hh" => MonoidAlgebra (HeightOneSpectrum.adicCompletionIntegers ℚ v)
+  (Multiplicative B →* (AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v))ˣ)
+
+set_option maxSynthPendingDepth 4 in
+set_option maxHeartbeats 1000000 in
+/-- **Any rank-one representation acting by the cyclotomic character on
+a FINITE coefficient ring has a flat prolongation at every place**
+(PROVEN 2026-07-26, sorry-free):
+the witness is `Spec 𝒪ᵥ[D]`, `D = Hom(Multiplicative B, (Kᵥᵃˡᵍ)ˣ)`.
+
+The three clauses of `HasFlatProlongationAt` are discharged as follows.
+*Finite flat Hopf order*: `MonoidAlgebra.instHopfAlgebra` over the
+finite group `D` (finite because `Kᵥᵃˡᵍ` has enough roots of unity for
+the exponent of `B`, which is an `ℓ`-power by
+`exists_natCast_pow_eq_zero_of_finite_padicAlgebra`), free of rank `#D`
+over `𝒪ᵥ`. *Étale generic fibre*: `etale_adicGenericFibre_monoidAlgebra`.
+*Points*: `muTypePointsEquiv`, whose defining formula turns each of the
+three required compatibilities into a statement about the VALUES
+`φ (1 ⊗ₜ single χ 1)`, since characters separate points of a finite
+abelian group. Multiplicativity is the convolution product evaluated on
+the group-like `single χ 1` (`MonoidAlgebra.comul_single` plus the
+proven base-change bridges `liftEquiv_symm_convMul` /
+`liftEquiv_symm_convOne`), and equivariance is
+`galoisApply_eq_pow_of_cyclotomicCharacter_sub_mem`: each value is an
+`ℓ^k`-th root of unity, so `σ` raises it to the power `n ≡ χ_cyc(σ̃)`,
+which under biduality is multiplication by `n = χ_cyc(σ̃)` on `B`. -/
+theorem hasFlatProlongationAt_of_cycUnitChar
+    (ρ₀ : GaloisRep ℚ B B)
+    (hρ₀ : ∀ (g : Field.absoluteGaloisGroup ℚ) (x : B), ρ₀ g x =
+      algebraMap ℤ_[ℓ] B
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ g.toRingEquiv : ℤ_[ℓ]ˣ) : ℤ_[ℓ]) * x) :
+    ρ₀.HasFlatProlongationAt v := by
+  classical
+  obtain ⟨k, hk⟩ := exists_natCast_pow_eq_zero_of_finite_padicAlgebra (ℓ := ℓ) B
+  -- `ℓ ^ k` kills the additive group of `B`
+  have hpow : ∀ b : Multiplicative B, b ^ (ℓ ^ k) = 1 := by
+    intro b
+    have hz : (ℓ ^ k) • (Multiplicative.toAdd b) = (0 : B) := by
+      rw [← Nat.cast_smul_eq_nsmul B, hk, zero_smul]
+    have h2 := congrArg (Multiplicative.ofAdd (α := B)) hz
+    rwa [ofAdd_nsmul, ofAdd_zero, ofAdd_toAdd] at h2
+  haveI hne : NeZero ((Monoid.exponent (Multiplicative B) : ℕ) : Kv) := by
+    refine ⟨?_⟩
+    have h0 : Monoid.exponent (Multiplicative B) ≠ 0 := Monoid.exponent_ne_zero_of_finite
+    exact_mod_cast fun h => h0 (by exact_mod_cast h)
+  -- the geometric points of the generic fibre are `Multiplicative B`
+  have hEval := muTypePointsEquiv_apply (R₀ := Ov) (S₀ := Kv) (L₀ := Om) (Gm := Multiplicative B)
+  set E := muTypePointsEquiv Ov Kv Om (Multiplicative B)
+  -- the convolution product evaluates by the ordinary product on the
+  -- group-like `single χ 1`
+  have hconv : ∀ (φ ψ : Kv ⊗[Ov] Hh →ₐ[Kv] Om) (χ : Dl),
+      (φ * ψ) ((1 : Kv) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov)) =
+        φ (1 ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov)) *
+          ψ (1 ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov)) := by
+    intro φ ψ χ
+    have hcs : Coalgebra.comul (R := Ov) (MonoidAlgebra.single χ (1 : Ov)) =
+        MonoidAlgebra.single χ (1 : Ov) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov) := by
+      simp [MonoidAlgebra.comul_single]
+    have h2 := liftEquiv_symm_convMul (R := Ov) (S := Kv) (H₀ := Hh) (B₀ := Om)
+      (toConv φ) (toConv ψ)
+    rw [WithConv.ofConv_toConv, WithConv.ofConv_toConv, ← vendored_mul_eq_convMul] at h2
+    have h3 := congrArg (fun f : Hh →ₐ[Ov] Om => f (MonoidAlgebra.single χ (1 : Ov))) h2
+    simp only at h3
+    have hgoal : (φ * ψ) ((1 : Kv) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov)) =
+        ((AlgHom.liftEquiv Ov Kv Hh Om).symm (φ * ψ)) (MonoidAlgebra.single χ (1 : Ov)) := rfl
+    rw [hgoal, h3]
+    have h4 : (toConv ((AlgHom.liftEquiv Ov Kv Hh Om).symm φ) *
+        toConv ((AlgHom.liftEquiv Ov Kv Hh Om).symm ψ)).ofConv
+          (MonoidAlgebra.single χ (1 : Ov)) =
+        Algebra.TensorProduct.lift ((AlgHom.liftEquiv Ov Kv Hh Om).symm φ)
+          ((AlgHom.liftEquiv Ov Kv Hh Om).symm ψ) (fun _ _ => Commute.all _ _)
+          (Coalgebra.comul (R := Ov) (MonoidAlgebra.single χ (1 : Ov))) :=
+      AlgHom.convMul_apply _ _ _
+    rw [h4, hcs, Algebra.TensorProduct.lift_tmul]
+    rfl
+  -- the convolution unit takes the value `1` on the group-like
+  have hcone : ∀ (χ : Dl),
+      (1 : Kv ⊗[Ov] Hh →ₐ[Kv] Om) ((1 : Kv) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov)) = 1 := by
+    intro χ
+    have h2 := liftEquiv_symm_convOne (R := Ov) (S := Kv) (H₀ := Hh) (B₀ := Om)
+    rw [← vendored_one_eq_convOne] at h2
+    have h3 := congrArg (fun f : Hh →ₐ[Ov] Om => f (MonoidAlgebra.single χ (1 : Ov))) h2
+    have hgoal : (1 : Kv ⊗[Ov] Hh →ₐ[Kv] Om)
+          ((1 : Kv) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov)) =
+        ((AlgHom.liftEquiv Ov Kv Hh Om).symm (1 : Kv ⊗[Ov] Hh →ₐ[Kv] Om))
+          (MonoidAlgebra.single χ (1 : Ov)) := rfl
+    rw [hgoal, h3]
+    show algebraMap Ov Om (Coalgebra.counit (R := Ov)
+      (MonoidAlgebra.single χ (1 : Ov))) = 1
+    rw [MonoidAlgebra.counit_single, CommSemiring.counit_apply, map_one]
+  -- the three transport facts for the points identification
+  have hmulE : ∀ (φ ψ : Kv ⊗[Ov] Hh →ₐ[Kv] Om), E (φ * ψ) = E φ * E ψ := by
+    intro φ ψ
+    rw [← CommGroup.forall_apply_eq_apply_iff (G := Multiplicative B) (M := Om)]
+    intro χ
+    apply Units.ext
+    rw [map_mul χ, Units.val_mul, hEval, hEval, hEval]
+    exact hconv φ ψ χ
+  have honeE : E (1 : Kv ⊗[Ov] Hh →ₐ[Kv] Om) = 1 := by
+    rw [← CommGroup.forall_apply_eq_apply_iff (G := Multiplicative B) (M := Om)]
+    intro χ
+    apply Units.ext
+    rw [map_one χ, Units.val_one, hEval]
+    exact hcone χ
+  have hrootE : ∀ (φ : Kv ⊗[Ov] Hh →ₐ[Kv] Om) (χ : Dl),
+      (φ ((1 : Kv) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov))) ^ (ℓ ^ k) = 1 := by
+    intro φ χ
+    rw [← hEval, ← Units.val_pow_eq_pow_val, ← map_pow, hpow, map_one, Units.val_one]
+  refine ⟨Hh, inferInstance,
+    MonoidAlgebra.instHopfAlgebra (R := Ov) (A := Ov) (G := Dl),
+    inferInstance, inferInstance, etale_adicGenericFibre_monoidAlgebra,
+    { toFun := fun x => Multiplicative.toAdd (E x.toMul)
+      map_smul' := ?_
+      map_zero' := ?_
+      map_add' := ?_ }, ?_⟩
+  · intro σ x
+    show Multiplicative.toAdd (E ((σ • x).toMul)) =
+      σ • (Multiplicative.toAdd (E x.toMul) : (ρ₀.toLocal v).Space)
+    set c : ℤ_[ℓ] := ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+      ((Field.absoluteGaloisGroup.map (algebraMap ℚ Kv) σ).toRingEquiv) : ℤ_[ℓ]ˣ) : ℤ_[ℓ])
+      with hcdef
+    obtain ⟨n, hn⟩ : ∃ n : ℕ, c - (n : ℤ_[ℓ]) ∈ Ideal.span {(ℓ : ℤ_[ℓ]) ^ k} := by
+      refine ⟨(PadicInt.toZModPow k c).val, ?_⟩
+      rw [← PadicInt.ker_toZModPow k, RingHom.mem_ker, map_sub, map_natCast,
+        ZMod.natCast_val, ZMod.cast_id, sub_self]
+    have hEn : E ((σ • x).toMul) = (E x.toMul) ^ n := by
+      rw [← CommGroup.forall_apply_eq_apply_iff (G := Multiplicative B) (M := Om)]
+      intro χ
+      apply Units.ext
+      rw [hEval, map_pow χ, Units.val_pow_eq_pow_val, hEval]
+      show σ (x.toMul ((1 : Kv) ⊗ₜ[Ov] MonoidAlgebra.single χ (1 : Ov))) = _
+      exact galoisApply_eq_pow_of_cyclotomicCharacter_sub_mem σ k n c hcdef hn _
+        (hrootE x.toMul χ)
+    have hcn : ((n : ℕ) : B) = algebraMap ℤ_[ℓ] B c := by
+      obtain ⟨d, hd⟩ := Ideal.mem_span_singleton.mp hn
+      have h1 : algebraMap ℤ_[ℓ] B (c - (n : ℤ_[ℓ])) = 0 := by
+        rw [hd, map_mul, map_pow,
+          show algebraMap ℤ_[ℓ] B (ℓ : ℤ_[ℓ]) = ((ℓ : ℕ) : B) by rw [map_natCast],
+          ← Nat.cast_pow, hk, zero_mul]
+      rw [map_sub, map_natCast, sub_eq_zero] at h1
+      exact h1.symm
+    rw [hEn, toAdd_pow]
+    show ((n : ℕ) • (Multiplicative.toAdd (E x.toMul)) : B) =
+      (ρ₀.toLocal v) σ (Multiplicative.toAdd (E x.toMul))
+    rw [GaloisRep.toLocal_apply, hρ₀, ← Nat.cast_smul_eq_nsmul B, smul_eq_mul, hcn, hcdef]
+    exact congrArg (fun (h : ℚ →+* HeightOneSpectrum.adicCompletion ℚ v) =>
+      algebraMap ℤ_[ℓ] B ((cyclotomicCharacter (AlgebraicClosure ℚ) ℓ
+        ((Field.absoluteGaloisGroup.map h σ).toRingEquiv) : ℤ_[ℓ]ˣ) : ℤ_[ℓ]) *
+        Multiplicative.toAdd (E x.toMul)) (Subsingleton.elim _ _)
+  · show Multiplicative.toAdd (E (1 : Kv ⊗[Ov] Hh →ₐ[Kv] Om)) = 0
+    rw [honeE]
+    rfl
+  · intro x y
+    show Multiplicative.toAdd (E (x.toMul * y.toMul)) = _
+    rw [hmulE]
+    rfl
+  · show Function.Bijective (fun x : Additive (Kv ⊗[Ov] Hh →ₐ[Kv] Om) =>
+      Multiplicative.toAdd (E x.toMul))
+    exact Multiplicative.toAdd.bijective.comp (E.bijective.comp Additive.toMul.bijective)
+
+end MuMain
+
+end MuTypeFactor
+
+/-- **The DIAGONALIZABLE (`μ`-typed) group scheme** (PROVEN 2026-07-26
+by `hasFlatProlongationAt_of_cycUnitChar` in the block above, sorry-free): the rank-one
+cyclotomic member over a FINITE coefficient ring has a flat prolongation
+at every place. The witness is `Spec 𝒪ᵥ[D]`, the group algebra
+(mathlib's `MonoidAlgebra.instHopfAlgebra`) of the character group
+`D = (Multiplicative B →* (Kᵥᵃˡᵍ)ˣ)`: it is finite free over `𝒪ᵥ`,
 its generic fibre `Kᵥ[D]` is étale over `Kᵥ` in characteristic zero,
 and its `Kᵥᵃˡᵍ`-points are `D →* (Kᵥᵃˡᵍ)ˣ` (`MonoidAlgebra.lift`),
 which character BIDUALITY identifies with `B` itself
 (`CommGroup.monoidHomMonoidHomEquiv`, applicable because a finite ring
 `B` admitting a ring map from `ℤ_ℓ` is killed by a power of `ℓ` — the
 kernel of `ℤ_ℓ → B` is a nonzero ideal `ℓ^k ℤ_ℓ` — so its exponent is
-an `ℓ`-power and `ℚ̄` has enough roots of unity for it). Under that
+an `ℓ`-power and `Kᵥᵃˡᵍ` has enough roots of unity for it). Under that
 identification `σ` acts by `ζ ↦ ζ ^ χ_cyc(σ)` on the values, which is
-exactly multiplication by `cycUnitChar ℓ B σ` on `B`: that is the
-defining property of the cyclotomic character
-(`cyclotomicCharacter.toZModPow` + `modularCyclotomicCharacter.unique`,
-the same route as `adicArithFrob_rootsOfUnity_pow_of_ne` above). -/
+exactly multiplication by `cycUnitChar ℓ B σ` on `B`. -/
 theorem hasFlatProlongationAt_cycScalarRep {ℓ : ℕ} [Fact ℓ.Prime]
     {v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ)}
     {B : Type} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
     [Algebra ℤ_[ℓ] B] [Finite B]
     (hcont : Continuous (algebraMap ℤ_[ℓ] B)) :
     (cycScalarRep hcont).HasFlatProlongationAt v :=
-  sorry
+  hasFlatProlongationAt_of_cycUnitChar (cycScalarRep hcont) (fun g x => by
+    rw [cycScalarRep_apply, smul_eq_mul, cycUnitChar])
 
 /-- **The Eisenstein member over a FINITE coefficient ring has a flat
 prolongation at every place** (PROVEN from the three group-scheme

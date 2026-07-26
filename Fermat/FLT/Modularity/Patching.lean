@@ -120,6 +120,22 @@ a future de-duplication can identify the two developments.
 module
 
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.Defs
+-- BUILD REPAIR (2026-07-26). This module was a HARD ERROR — 101 errors, the
+-- `maxErrors` cap — which made every consumer of `Modularity/Interface.lean`
+-- unbuildable, and which no sorry scan can see. Two independent causes:
+-- (1) `Ideal.ramificationIdx_le_finrank`, used by the discriminant bound of
+--     `exists_discr_factorization_le_of_finrank_le`, was not imported;
+-- (2) the three `open IsLocalRing` below sit inside
+--     `namespace GaloisRepresentation.Modularity`, and
+--     `PatchingVendored/AdicTopology.lean` declares a namespace `IsLocalRing`
+--     INSIDE that same namespace — so `open IsLocalRing` opened
+--     `GaloisRepresentation.Modularity.IsLocalRing` and SHADOWED the root
+--     one, making `maximalIdeal`, `ResidueField`, `local_hom_TFAE`,
+--     `jacobson_eq_maximalIdeal`, … all unknown. They are now
+--     `open _root_.IsLocalRing`.
+public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Defs
+public import Mathlib.NumberTheory.Padics.PadicIntegers
+public import Mathlib.NumberTheory.RamificationInertia.Basic
 public import Mathlib.Topology.Algebra.Nonarchimedean.AdicTopology
 public import Mathlib.RingTheory.AdicCompletion.Basic
 public import Mathlib.RingTheory.Noetherian.Basic
@@ -2785,8 +2801,6 @@ what the upgrade consumes, all of it pure commutative algebra:
 
 section ProfinitePadicTower
 
--- `_root_` is REQUIRED: inside `namespace GaloisRepresentation.Modularity`
--- a bare `open IsLocalRing` does not bring `maximalIdeal` into scope here.
 open _root_.IsLocalRing
 
 universe uTA uTR
