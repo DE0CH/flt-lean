@@ -37414,8 +37414,151 @@ theorem globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class
   unfold globalFrob
   exact hι.trans hact
 
+set_option maxHeartbeats 400000 in
+/-- **Total positivity forces a POSITIVE field norm** (PROVEN 2026-07-26;
+step (4a) of `artinSymbol_span_eq_one_of_cyclotomic_ray_class` just
+below, and the precise place where total positivity is load-bearing in
+the narrow-ray reciprocity cluster): if every REAL embedding
+`φ : F →+* ℝ` sends `δ ∈ 𝓞_F` to a positive real, then
+`Algebra.norm ℤ δ > 0` — not merely nonzero.
+
+Without it `Algebra.norm ℤ δ` can be negative, `Ideal.absNorm` picks up
+the absolute value, and `N ((δ)) ≡ −1 (mod m)` rather than `≡ 1`; the
+cyclotomic character need not be trivial on `−1`, so the base case would
+be FALSE for the ordinary (as opposed to narrow) ray. This is the
+archimedean factor `sgn(a)` of the product formula (Neukirch *ANT* VI
+(5.3)).
+
+Proof. `Algebra.norm ℚ δ` is the product `∏_{φ : F →+* ℂ} φ δ`
+(`Algebra.norm_eq_prod_embeddings` transported along
+`RingHom.equivRatAlgHom`). Group the embeddings by INFINITE PLACE
+(`Finset.prod_fiberwise` along `NumberField.InfinitePlace.mk`): the
+fibre of `w` is `{embedding w, conjugate (embedding w)}`
+(`InfinitePlace.mk_eq_iff`), which collapses to a singleton exactly when
+`w` is real. At a real `w` the factor is
+`embedding_of_isReal w δ > 0`, which is the hypothesis; at a complex `w`
+the factor is `z * conj z = ‖z‖²` with `z = embedding w δ ≠ 0`, hence
+positive. So the whole product is a product of positive reals. Note the
+complex places contribute positively for FREE — total positivity is a
+condition at the real places only, and that is exactly the content of
+"narrow". -/
+theorem norm_pos_of_forall_realEmbedding_pos_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (δ : NumberField.RingOfIntegers F) (hδ0 : δ ≠ 0)
+    (hδpos : ∀ φ : F →+* ℝ,
+      0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) :
+    0 < Algebra.norm ℤ δ := by
+  classical
+  set x : F := algebraMap (NumberField.RingOfIntegers F) F δ with hxdef
+  have hx0 : x ≠ 0 := by
+    rw [hxdef, Ne, map_eq_zero_iff _ (IsFractionRing.injective _ F)]
+    exact hδ0
+  -- the norm is the product over all complex embeddings
+  have hprod : (algebraMap ℚ ℂ) (Algebra.norm ℚ x) = ∏ φ : F →+* ℂ, φ x := by
+    rw [Algebra.norm_eq_prod_embeddings ℚ ℂ x]
+    exact (Fintype.prod_equiv RingHom.equivRatAlgHom (fun f => f x) (fun σ => σ x)
+      (fun f => by simp [RingHom.equivRatAlgHom_apply])).symm
+  -- group the embeddings by infinite place
+  rw [← Finset.prod_fiberwise Finset.univ NumberField.InfinitePlace.mk (fun φ : F →+* ℂ => φ x)]
+    at hprod
+  have hpos : ∀ w : NumberField.InfinitePlace F, ∃ r : ℝ, 0 < r ∧
+      (∏ φ ∈ Finset.univ.filter (fun φ : F →+* ℂ => NumberField.InfinitePlace.mk φ = w), φ x)
+        = (r : ℂ) := by
+    intro w
+    have hfib : (Finset.univ.filter (fun φ : F →+* ℂ => NumberField.InfinitePlace.mk φ = w))
+        = ({w.embedding} : Finset (F →+* ℂ)) ∪
+            {NumberField.ComplexEmbedding.conjugate w.embedding} := by
+      ext φ
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_union,
+        Finset.mem_singleton]
+      constructor
+      · intro h
+        have h2 : NumberField.InfinitePlace.mk φ =
+            NumberField.InfinitePlace.mk w.embedding := by
+          rw [NumberField.InfinitePlace.mk_embedding]; exact h
+        rcases NumberField.InfinitePlace.mk_eq_iff.mp h2 with h3 | h3
+        · exact Or.inl h3
+        · right
+          rw [← h3]
+          exact (star_star φ).symm
+      · rintro (h | h)
+        · rw [h, NumberField.InfinitePlace.mk_embedding]
+        · rw [h, NumberField.InfinitePlace.mk_conjugate_eq,
+            NumberField.InfinitePlace.mk_embedding]
+    by_cases hw : w.IsReal
+    · refine ⟨NumberField.InfinitePlace.embedding_of_isReal hw x, hδpos _, ?_⟩
+      rw [hfib, NumberField.InfinitePlace.conjugate_embedding_eq_of_isReal hw,
+        Finset.union_idempotent, Finset.prod_singleton,
+        NumberField.InfinitePlace.embedding_of_isReal_apply hw]
+    · refine ⟨Complex.normSq (w.embedding x), ?_, ?_⟩
+      · refine Complex.normSq_pos.mpr (fun h => hx0 ?_)
+        exact w.embedding.injective (by rw [h, map_zero])
+      · have hne : w.embedding ≠ NumberField.ComplexEmbedding.conjugate w.embedding := by
+          intro h
+          exact hw (NumberField.InfinitePlace.isReal_iff.mpr
+            (NumberField.ComplexEmbedding.isReal_iff.mpr h.symm))
+        rw [hfib, Finset.singleton_union, Finset.prod_pair hne,
+          NumberField.ComplexEmbedding.conjugate_coe_eq, Complex.mul_conj]
+  choose r hr hrEq using hpos
+  have hcast : (algebraMap ℚ ℂ) (Algebra.norm ℚ x) = ((∏ w, r w : ℝ) : ℂ) := by
+    rw [hprod]
+    push_cast
+    exact Finset.prod_congr rfl (fun w _ => hrEq w)
+  have hQreal : ((Algebra.norm ℚ x : ℝ)) = ∏ w, r w := by
+    have h2 : (((Algebra.norm ℚ x : ℝ)) : ℂ) = ((∏ w, r w : ℝ) : ℂ) := by
+      rw [← hcast]
+      simp
+    exact_mod_cast h2
+  have hQ : 0 < Algebra.norm ℚ x := by
+    have hprodpos : 0 < ∏ w, r w := Finset.prod_pos (fun w _ => hr w)
+    have h3 : (0 : ℝ) < ((Algebra.norm ℚ x : ℝ)) := by rw [hQreal]; exact hprodpos
+    exact_mod_cast h3
+  have hint : ((Algebra.norm ℤ δ : ℤ) : ℚ) = Algebra.norm ℚ x := Algebra.coe_norm_int δ
+  rw [← hint] at hQ
+  exact_mod_cast hQ
+
+set_option maxHeartbeats 400000 in
+/-- **`δ ≡ 1 (mod m 𝓞_F)` forces `N δ ≡ 1 (mod m)`** (PROVEN 2026-07-26;
+step (4b) of `artinSymbol_span_eq_one_of_cyclotomic_ray_class` just
+below): the field norm `Algebra.norm ℤ : 𝓞_F → ℤ` is not additive, so
+this is not formal — but it IS elementary, and the determinant is what
+supplies it.
+
+Proof. Fix a `ℤ`-basis `b` of `𝓞_F` (`NumberField.RingOfIntegers.basis`);
+then `Algebra.norm ℤ δ = det (Algebra.leftMulMatrix b δ)`
+(`Algebra.norm_eq_matrix_det`). Reduce mod `m` through the ring
+homomorphism `g : 𝓞_F →+* Matrix ι ι (ZMod m)` obtained by composing
+`Algebra.leftMulMatrix b` with entrywise reduction. Writing
+`δ = 1 + γ · m`, `g δ = 1 + g γ · (m : Matrix …) = 1` because
+`(m : ZMod m) = 0`. Determinants commute with ring maps
+(`RingHom.map_det`), so `(N δ : ZMod m) = det (g δ) = det 1 = 1`. -/
+theorem natCast_dvd_norm_sub_one_ray_class
+    (F : Type*) [Field F] [NumberField F] (m : ℕ)
+    (δ : NumberField.RingOfIntegers F)
+    (hδcong : δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers F)}) :
+    (m : ℤ) ∣ Algebra.norm ℤ δ - 1 := by
+  classical
+  obtain ⟨γ, hγ⟩ := Ideal.mem_span_singleton'.mp hδcong
+  have hδeq : δ = 1 + γ * (m : NumberField.RingOfIntegers F) := by rw [hγ]; ring
+  have hzero : ((m : ℕ) : Matrix (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers F))
+      (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers F)) (ZMod m)) = 0 := by
+    rw [← map_natCast (algebraMap (ZMod m)
+      (Matrix (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers F))
+        (Module.Free.ChooseBasisIndex ℤ (NumberField.RingOfIntegers F)) (ZMod m))) m,
+      ZMod.natCast_self, map_zero]
+  have hgδ : ((Int.castRingHom (ZMod m)).mapMatrix).comp
+      (Algebra.leftMulMatrix (NumberField.RingOfIntegers.basis F)).toRingHom δ = 1 := by
+    rw [hδeq, map_add, map_one, map_mul, map_natCast, hzero, mul_zero, add_zero]
+  have hdet : ((Algebra.norm ℤ δ : ℤ) : ZMod m) = 1 := by
+    have h4 := congrArg Matrix.det hgδ
+    rw [Matrix.det_one] at h4
+    rw [Algebra.norm_eq_matrix_det (NumberField.RingOfIntegers.basis F) δ, ← h4]
+    exact RingHom.map_det (Int.castRingHom (ZMod m)) _
+  have hz : (((Algebra.norm ℤ δ - 1 : ℤ)) : ZMod m) = 0 := by push_cast [hdet]; ring
+  exact (ZMod.intCast_zmod_eq_zero_iff_dvd _ m).mp hz
+
 /-- **Artin reciprocity in the CYCLOTOMIC case — Childress's base case**
-(sorry node, created 2026-07-26 as sub-leaf (A2) of
+(PROVEN 2026-07-26; created 2026-07-26 as sub-leaf (A2) of
 `exists_conductor_artinSymbol_span_eq_one_ray_class` below, consumed
 through the descent leaf
 `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class` just
@@ -37433,41 +37576,66 @@ of Artin reciprocity that is proven directly rather than by descent, and
 it is BOUNDED: no class field theory, no index inequality, no Artin
 Lemma.
 
-**Route, and it is complete** (all four steps are elementary given the
-sub-leaf `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class`,
-supplied here as the hypothesis `hfrob`):
+**Nothing here is outstanding.** The Frobenius input
+`globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class` — sub-leaf
+(A1), taken here as the hypothesis `hfrob` — was itself **PROVEN on
+2026-07-26** (branch `flt-lean-150`, commit `3006ac87`), and the
+assembly in `exists_conductor_artinSymbol_span_eq_one_ray_class` below
+already discharges `hfrob` with it. So the hypothesis form is a
+CONVENIENCE, not a debt: keeping `hfrob` abstract is what lets this
+theorem be applied at every auxiliary base field `E` of Artin's descent
+without re-deriving the Frobenius action there. Any docstring in this
+cluster still calling (A1) a sorried sub-leaf is stale.
 
-1. *`χ` is a character of `(ℤ/mℤ)ˣ` through the cyclotomic character.*
-   By `hcyc`, `χ σ` depends only on the action of `σ` on `μ_m`, which is
-   `ζ ↦ ζ ^ t(σ)` for a unique `t(σ) ∈ (ℤ/mℤ)ˣ`; multiplicativity of
-   `χ` (`hmul`) makes `ψ : t ↦ χ σ` well defined and multiplicative.
-2. *`c` is the norm residue character on ideals prime to `m`.* By
-   `hfrob` and `hcfrob`, `c (v.asIdeal) = χ (globalFrob v) = ψ (N v)`
-   for every `v ∤ (m)`; by `hcmul` and unique factorization of ideals
-   (the same induction as `eq_of_forall_asIdeal_eq_ray_class` above, run
-   under the side condition "coprime to `(m)`", which is preserved by
-   the factorization), `c I = ψ (N I)` for every nonzero `I` coprime to
-   `(m)`.
+**Route as implemented** (all steps elementary given `hfrob`):
+
+1. *No `ψ` is ever built.* The textbook route factors `χ` through a
+   character `ψ` of `(ℤ/mℤ)ˣ` and shows `c I = ψ (N I)`. That is
+   awkward in Lean, because the cyclotomic character `Γ F → (ℤ/mℤ)ˣ`
+   is NOT surjective when `F` already contains roots of unity, so `ψ`
+   is only defined on the image and well-definedness has to be carried
+   around. The implemented statement instead keeps the Galois element:
+   **for every nonzero `I` coprime to `(m)` there EXISTS `σ ∈ Γ F` with
+   `σ ζ = ζ ^ (N I)` for all `ζ ∈ μ_m`, and `c I = χ σ`.** This is
+   strictly what the argument needs, and it is closed under products,
+   which is what makes the induction go through.
+2. *The induction.* `UniqueFactorizationMonoid.induction_on_prime` on
+   the ideal monoid of the Dedekind domain `𝓞_F` (the same induction as
+   `eq_of_forall_asIdeal_eq_ray_class` above), run under the side
+   condition "no prime factor contains `m`", which is inherited by both
+   factors since `p * a ≤ p` and `p * a ≤ a`. Unit case: `I = ⊤`,
+   `N ⊤ = 1`, `σ = 1`, and `c ⊤ = 1` by
+   `eq_one_top_of_forall_asIdeal_ne_zero_ray_class` (`χ` is nowhere
+   zero because `hcyc` gives `χ 1 = 1`, so `χ a · χ a⁻¹ = 1`). Prime
+   step: take `σ = globalFrob v_p · σ_a`; it acts by
+   `ζ ↦ ζ ^ (N a · N p) = ζ ^ (N (p a))` by `hfrob` at `v_p` applied to
+   the `m`-th root of unity `ζ ^ (N a)`, and `c (p a) = c p · c a`
+   matches `χ` of the product by `hcmul`, `hcfrob`, `hmul`.
 3. *`(δ)` IS coprime to `(m)`.* If a prime `v` contained both `δ` and
-   `m` then, `δ - 1 ∈ (m) ⊆ v` giving `1 = δ - (δ - 1) ∈ v`, a
+   `m` then `δ - 1 ∈ (m) ⊆ v` gives `1 = δ - (δ - 1) ∈ v`, a
    contradiction. So step 2 applies to `I = (δ)`.
 4. *The norm of `δ` is `≡ 1 (mod m)` and POSITIVE.* `Ideal.absNorm
    (span {δ}) = |Algebra.norm ℤ δ|` (`Ideal.absNorm_span_singleton`);
-   `δ ≡ 1 (mod m)` forces `Algebra.norm ℤ δ ≡ 1 (mod m)` (the
-   multiplication matrix of `δ` in an integral basis is congruent to the
-   identity mod `m`, so its determinant is `≡ 1`); and total positivity
-   forces `Algebra.norm ℤ δ > 0`, since the norm is the product of the
-   real embeddings times the product of `|φ|²` over the pairs of
-   conjugate complex embeddings (`NumberField.InfinitePlace.prod_eq_abs_norm`).
-   Hence `N ((δ)) ≡ 1 (mod m)` as an element of `(ℤ/mℤ)ˣ`, and
-   `c ((δ)) = ψ (1) = 1`.
+   `natCast_dvd_norm_sub_one_ray_class` (just above) gives
+   `Algebra.norm ℤ δ ≡ 1 (mod m)` and
+   `norm_pos_of_forall_realEmbedding_pos_ray_class` (just above) gives
+   `Algebra.norm ℤ δ > 0`. Hence `N ((δ)) = 1 + m k` for a NATURAL `k`,
+   so the `σ` of step 1 satisfies `σ ζ = ζ ^ (1 + m k) = ζ` on `μ_m`,
+   and `hcyc` closes the goal with `c ((δ)) = χ σ = 1`.
 
 **Total positivity is load-bearing precisely at step 4** and nowhere
 else: without it `Algebra.norm ℤ δ` may be negative, `absNorm` picks up
-the absolute value, and `N ((δ)) ≡ −1 (mod m)` — for which `ψ` need not
+the absolute value, and `N ((δ)) ≡ −1 (mod m)` — for which `χ` need not
 be trivial. This is the archimedean factor `sgn(a)` of the product
 formula (Neukirch *ANT* VI (5.3)), and it is why the narrow ray, not the
-ray, appears throughout this cluster. -/
+ray, appears throughout this cluster. Verified numerically at
+`F = ℚ(√3)`: all totally positive principal generators lie in the
+trivial narrow ray class, while `(√3)` — principal but not totally
+positive — does not.
+
+Note that `hm : 0 < m` is genuinely used (at step 4, to force `k ≥ 0`);
+`hfrob` is used only at primes not dividing `(m)`, which is all step 2
+ever needs. -/
 theorem artinSymbol_span_eq_one_of_cyclotomic_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -37489,7 +37657,97 @@ theorem artinSymbol_span_eq_one_of_cyclotomic_ray_class
       0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ))
     (hδcong : δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers F)}) :
     c (Ideal.span {δ}) = 1 := by
-  sorry
+  classical
+  have honeapp : ∀ ζ : AlgebraicClosure F, (1 : Γ F) ζ = ζ := fun _ => rfl
+  have hmulapp : ∀ (s t : Γ F) (ζ : AlgebraicClosure F), (s * t) ζ = s (t ζ) :=
+    fun _ _ _ => rfl
+  have hχone : χ 1 = 1 := hcyc 1 (fun ζ _ => honeapp ζ)
+  have hχne : ∀ a : Γ F, χ a ≠ 0 := by
+    intro a ha
+    have h1 : χ a * χ a⁻¹ = 1 := by rw [← hmul, mul_inv_cancel, hχone]
+    rw [ha, zero_mul] at h1
+    exact zero_ne_one h1
+  have hctop : c ⊤ = 1 :=
+    eq_one_top_of_forall_asIdeal_ne_zero_ray_class F (Dickson.K 3) c hcmul
+      (fun v => by rw [hcfrob v]; exact hχne _)
+  -- **Step 1–2**: on ideals coprime to `(m)`, `c I = χ σ` for some `σ`
+  -- acting on `μ_m` by the `N I`-th power.
+  have key : ∀ I : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ →
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+        I ≤ v.asIdeal → (m : NumberField.RingOfIntegers F) ∉ v.asIdeal) →
+      ∃ σ : Γ F, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → σ ζ = ζ ^ Ideal.absNorm I) ∧
+        c I = χ σ := by
+    intro I
+    refine UniqueFactorizationMonoid.induction_on_prime
+      (P := fun J => J ≠ ⊥ →
+        (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+          J ≤ v.asIdeal → (m : NumberField.RingOfIntegers F) ∉ v.asIdeal) →
+        ∃ σ : Γ F, (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → σ ζ = ζ ^ Ideal.absNorm J) ∧
+          c J = χ σ) I ?_ ?_ ?_
+    · intro h
+      exact absurd Ideal.zero_eq_bot h
+    · intro y hy _ _
+      rw [Ideal.isUnit_iff.mp hy]
+      refine ⟨1, ?_, ?_⟩
+      · intro ζ _
+        rw [Ideal.absNorm_top, pow_one]
+        exact honeapp ζ
+      · rw [hctop, hχone]
+    · intro a p ha hp ih _ hcop
+      have ha' : a ≠ ⊥ := fun h => ha (by rw [Ideal.zero_eq_bot]; exact h)
+      have hp0 : p ≠ ⊥ := fun h => hp.ne_zero (by rw [Ideal.zero_eq_bot]; exact h)
+      have hpp : p.IsPrime := Ideal.isPrime_of_prime hp
+      have hcopa : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+          a ≤ v.asIdeal → (m : NumberField.RingOfIntegers F) ∉ v.asIdeal :=
+        fun v hv => hcop v (le_trans Ideal.mul_le_left hv)
+      have hmp : (m : NumberField.RingOfIntegers F) ∉ p :=
+        hcop ⟨p, hpp, hp0⟩ Ideal.mul_le_right
+      obtain ⟨σa, hσa, hca⟩ := ih ha' hcopa
+      refine ⟨globalFrob ⟨p, hpp, hp0⟩ * σa, ?_, ?_⟩
+      · intro ζ hζ
+        have hζa : (ζ ^ Ideal.absNorm a) ^ m = 1 := by
+          rw [← pow_mul, mul_comm, pow_mul, hζ, one_pow]
+        rw [hmulapp, hσa ζ hζ, hfrob ⟨p, hpp, hp0⟩ hmp _ hζa, ← pow_mul,
+          map_mul Ideal.absNorm, mul_comm]
+      · rw [hcmul p a hp0 ha', hcfrob ⟨p, hpp, hp0⟩, hca, hmul]
+  -- **Step 3**: `(δ)` is coprime to `(m)`
+  have hspan0 : Ideal.span {δ} ≠ ⊥ := by
+    simpa [Ideal.span_singleton_eq_bot] using hδ0
+  have hcopδ : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      Ideal.span {δ} ≤ v.asIdeal → (m : NumberField.RingOfIntegers F) ∉ v.asIdeal := by
+    intro v hv hm'
+    have hδv : δ ∈ v.asIdeal := hv (Ideal.mem_span_singleton_self δ)
+    have hmv : Ideal.span {(m : NumberField.RingOfIntegers F)} ≤ v.asIdeal :=
+      (Ideal.span_singleton_le_iff_mem _).mpr hm'
+    have h1 : (1 : NumberField.RingOfIntegers F) ∈ v.asIdeal := by
+      have h2 := sub_mem hδv (hmv hδcong)
+      simpa using h2
+    exact v.isPrime.ne_top (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+  -- **Step 4**: `N ((δ)) = 1 + m k`
+  have hnormpos : 0 < Algebra.norm ℤ δ :=
+    norm_pos_of_forall_realEmbedding_pos_ray_class F δ hδ0 hδpos
+  have hnormcong : (m : ℤ) ∣ Algebra.norm ℤ δ - 1 :=
+    natCast_dvd_norm_sub_one_ray_class F m δ hδcong
+  obtain ⟨k, hk⟩ : ∃ k : ℕ, Ideal.absNorm (Ideal.span {δ}) = 1 + m * k := by
+    obtain ⟨K, hK⟩ := hnormcong
+    have hmpos : (0 : ℤ) < (m : ℤ) := by exact_mod_cast hm
+    have hK0 : 0 ≤ K := by
+      by_contra hlt
+      have h : K < 0 := not_le.mp hlt
+      have hneg : (m : ℤ) * K < 0 := mul_neg_of_pos_of_neg hmpos h
+      have h2 : Algebra.norm ℤ δ - 1 < 0 := by rw [hK]; exact hneg
+      omega
+    obtain ⟨k, rfl⟩ := Int.eq_ofNat_of_zero_le hK0
+    refine ⟨k, ?_⟩
+    rw [Ideal.absNorm_span_singleton]
+    have hval : Algebra.norm ℤ δ = ((1 + m * k : ℕ) : ℤ) := by push_cast; linarith
+    rw [hval, Int.natAbs_natCast]
+  -- **Step 5**: assemble
+  obtain ⟨σ, hσ, hcσ⟩ := key (Ideal.span {δ}) hspan0 hcopδ
+  rw [hcσ]
+  refine hcyc σ ?_
+  intro ζ hζ
+  rw [hσ ζ hζ, hk, pow_add, pow_one, pow_mul, hζ, one_pow, mul_one]
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin's DESCENT: reciprocity from the cyclotomic base case**
