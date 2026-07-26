@@ -4922,11 +4922,199 @@ lemma fricke_clear (s J : ℚ) (hs : s ≠ 0)
   field_simp at h
   linear_combination h / 27 ^ 10
 
+/-- **The Fricke involution `w₉ : s ↦ 27/s`, in the OTHER direction** (PROVEN
+2026-07-26): the exact converse of `fricke_clear` just above — from the
+CLEARED relation at `s` one recovers the `27/s` form.  Same identity, same
+constant `27¹⁰ = 729 · 6561³`, read right to left; `w₉` is an involution, so
+one direction is not formally weaker than the other, but Lean needs both
+written out.
+
+This is what lets a proof produce the geometrically meaningful, cleared
+statement `j(E/C) · s(s² + 9s + 27) = (s + 3)³(s³ + 9s² + 27s + 3)³` — the
+form in which `j(E/C)` is a rational function of the Hauptmodul with no
+division — and still discharge the `27/s` form that
+`exists_x0Nine_frickePair_of_cyclicNineChain` states. -/
+lemma fricke_clear_inv (s J : ℚ) (hs : s ≠ 0)
+    (h : J * (s * (s ^ 2 + 9 * s + 27))
+      = (s + 3) ^ 3 * (s ^ 3 + 9 * s ^ 2 + 27 * s + 3) ^ 3) :
+    J * ((27 / s) ^ 9 * ((27 / s) ^ 2 + 9 * (27 / s) + 27))
+      = ((27 / s) + 9) ^ 3
+        * ((27 / s) ^ 3 + 243 * (27 / s) ^ 2 + 2187 * (27 / s) + 6561) ^ 3 := by
+  field_simp
+  linear_combination (27 : ℚ) ^ 10 * h
+
+section Groups
+
+variable {G H I : Type*} [AddCommGroup G] [AddCommGroup H] [AddCommGroup I]
+
+/-- **`9h = 0` and `3h ≠ 0` pin the order at `9`** (PROVEN): the order divides
+`9`, and the only divisor of `9` that does not divide `3` is `9` itself.  This
+is the bridge from the `(h9, h3)` form in which cyclicity of a `9`-chain is
+hypothesised to the `addOrderOf h = 9` form that the whole `MazurLevel9` block
+consumes. -/
+lemma addOrderOf_eq_nine (h : G) (h9 : (9 : ℕ) • h = 0) (h3 : (3 : ℕ) • h ≠ 0) :
+    addOrderOf h = 9 := by
+  have hdvd : addOrderOf h ∣ 9 := addOrderOf_dvd_of_nsmul_eq_zero h9
+  have h3' : ¬ addOrderOf h ∣ 3 := fun hc => h3 (addOrderOf_dvd_iff_nsmul_eq_zero.mp hc)
+  have hub : addOrderOf h < 10 := Nat.lt_succ_of_le (Nat.le_of_dvd (by norm_num) hdvd)
+  have key : ∀ n < 10, n ∣ 9 → ¬ n ∣ 3 → n = 9 := by decide
+  exact key _ hub hdvd h3'
+
+/-- **The composite of a cyclic `9`-chain kills exactly `⟨h⟩`** (PROVEN): if
+`ker φ = ⟨3h⟩` and `ker ψ = ⟨φ h⟩` then `ker (ψ ∘ φ) = ⟨h⟩`.
+
+Pure group theory, and it is what collapses the three-curve chain
+`E --φ--> E' --ψ--> E''` of the leaf below into the single datum "a
+`Gal`-stable cyclic subgroup of order `9` and a quotient by it".  Forward:
+`ψ(φP) = 0` gives `φP = k·φh = φ(kh)`, so `P − kh ∈ ker φ = ⟨3h⟩`, whence
+`P ∈ ⟨h⟩`.  Backward: `φ` carries `⟨h⟩` into `⟨φ h⟩ = ker ψ`. -/
+lemma ker_comp_eq (φ : G →+ H) (ψ : H →+ I) (h : G)
+    (hφker : ∀ P : G, φ P = 0 ↔ P ∈ AddSubgroup.zmultiples ((3 : ℕ) • h))
+    (hψker : ∀ Q : H, ψ Q = 0 ↔ Q ∈ AddSubgroup.zmultiples (φ h)) :
+    ∀ P : G, (ψ.comp φ) P = 0 ↔ P ∈ AddSubgroup.zmultiples h := by
+  have h3z : ((3 : ℕ) • h) = ((3 : ℤ) • h) := by
+    simp [← Nat.cast_smul_eq_nsmul ℤ]
+  intro P
+  simp only [AddMonoidHom.comp_apply]
+  constructor
+  · intro hP
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp ((hψker _).mp hP)
+    have hd : φ (P - k • h) = 0 := by
+      rw [map_sub, map_zsmul, hk, sub_self]
+    obtain ⟨m, hm⟩ := AddSubgroup.mem_zmultiples_iff.mp ((hφker _).mp hd)
+    rw [h3z, smul_smul] at hm
+    refine AddSubgroup.mem_zmultiples_iff.mpr ⟨k + m * 3, ?_⟩
+    rw [add_zsmul, hm]
+    abel
+  · intro hP
+    obtain ⟨k, hk⟩ := AddSubgroup.mem_zmultiples_iff.mp hP
+    rw [← hk, map_zsmul, map_zsmul]
+    have hz : ψ (φ h) = 0 := (hψker _).mpr (AddSubgroup.mem_zmultiples _)
+    rw [hz, smul_zero]
+
+end Groups
+
 end X0Nine
 
-/-- **`X_0(9)` moduli for a cyclic `9`-chain, in FRICKE-PAIR form** (SORRY
-LEAF, cut 2026-07-26 out of `exists_x0Nine_param_of_cyclicNineChain`, which
-is now PROVEN over it): for a chain `E --φ--> E' --ψ--> E''` of two rational
+namespace MazurLevel9
+
+/-- **The Fricke involution computes the `j`-invariant of the quotient**
+(SORRY LEAF, cut 2026-07-26 out of
+`exists_x0Nine_frickePair_of_cyclicNineChain`, which is now PROVEN over it
+together with `exists_tateParam`, `exists_rat_hauptmodul_of_stable` and
+`j9_of_tateParam`, all three already PROVEN): let `E/ℚ` carry a geometric
+point `h` of order `9` whose subgroup `⟨h⟩` is `Gal(ℚ̄/ℚ)`-stable, let `d` be
+a Kubert parameter of `(E, h)` and `s = R(d) = 27d(d−1)/(d³−6d²+3d+1)` the
+associated rational `X_0(9)` Hauptmodul value.  Then for ANY `E''/ℚ`
+receiving a `Gal`-equivariant homomorphism from `E(ℚ̄)` with kernel exactly
+`⟨h⟩`,
+
+  `j(E'') · s(s² + 9s + 27) = (s + 3)³(s³ + 9s² + 27s + 3)³`,
+
+i.e. `j(E'') = j₉(w₉ s) = j₉(27/s)`.
+
+**WHY THIS IS THE RIGHT CUT, and how it differs from the two REFUTED ones.**
+The leaf it replaces asked for BOTH `X_0(9)` conjuncts at a common `s`.  Its
+first conjunct is now discharged outright (`j9_of_tateParam` at the Kubert
+parameter), so only the Fricke half survives; and — this is the point — `s`
+is no longer existentially quantified but **pinned by `d`**, hence by the
+pair `(E, ⟨h⟩)` itself.
+
+* Refuted cut 1 tried to obtain the two conjuncts from two separate
+  applications of `exists_x0Nine_hauptmodul`, one to `E` and one to `E''`.
+  That fails because the second application returns a parameter of its own
+  and nothing identifies it with `27/s`.
+* Refuted cut 2 split off conjunct 1 and left conjunct 2 "for any `s`
+  satisfying conjunct 1".  That is genuinely WRONG — `j₉` has degree `12`,
+  so conjunct 1 constrains `s` only through `j(E)` and names some cyclic
+  `9`-subgroup, not `⟨h⟩` — and it manufactures a probably-false leaf.
+
+Neither objection touches the statement here: `s` is determined by `d` up to
+nothing at all (the three Kubert parameters `d`, `(d−1)/d`, `−1/(d−1)` of the
+diamond orbit all give the SAME `R(d)`, which is exactly what
+`exists_rat_hauptmodul_of_stable` proves), and `d` is determined by `(E, h)`.
+So the underdetermination that killed both earlier cuts is absent by
+construction.
+
+**THE CHAIN HAS BEEN ELIMINATED.**  The middle curve `E'` and the two
+`3`-isogenies do not appear.  `X0Nine.ker_comp_eq` (PROVEN above) shows
+`ker(ψ ∘ φ) = ⟨h⟩` from `ker φ = ⟨3h⟩` and `ker ψ = ⟨φ h⟩`, so the whole
+three-curve hypothesis package of the consumer collapses to "a stable cyclic
+`9`-subgroup and a quotient by it".  That is a real simplification: nothing
+of level `3` is left in the level-`9` frontier.
+
+**WHAT A SUCCESSOR HAS TO DO — a computation, not a theory.**  Over `ℚ̄`,
+`E ≅ tateCurve d` with `h ↦ (0,0)` (that is exactly what `IsTateParam`
+carries — a VARIABLE CHANGE, not merely an abstract group isomorphism).  So
+the content is the single explicit statement
+
+    `j((tateCurve d)/⟨(0,0)⟩) = j₉(q/(d² − d))`,   `q = d³ − 6d² + 3d + 1`,
+
+(note `27/R(d) = q/(d(d−1))`, so the Fricke image of the Hauptmodul is that
+rational function of `d`).  `Fermat/FLT/EllipticCurve/Velu.lean` supplies the
+quotient: `exists_velu_quotient_isogeny_model` produces, for a `Gal`-stable
+odd-order subgroup, RATIONAL Vélu coefficients `t, w` with
+`algebraMap ℚ ℚ̄ t = veluT …` and the quotient curve `E.veluModel t w`.  The
+four pairs `±(0,0), ±2(0,0), ±3(0,0), ±4(0,0)` have explicit coordinates in
+`d`, so `veluT` and `veluW` are explicit rational functions of `d`, and the
+target identity is then a `ring`/`linear_combination` check of the same shape
+as `j9_of_tateParam` — which is the proven precedent for exactly this kind of
+degree-`90`-looking identity collapsing once the factorisations are supplied.
+Find the formulae with PARI/GP as an untrusted searcher, as `j9_of_tateParam`
+and `tateCurve_c₄` were found, and let `ring` certify them.
+
+**THE ONE PLACE WHERE THIS IS STILL MORE THAN A COMPUTATION, and it is a
+statement-level issue a reviewer should weigh.**  `π` is hypothesised only as
+an abstract `Gal`-equivariant `AddMonoidHom` with kernel `⟨h⟩`, not as a
+morphism of curves.  Such a `π` restricts to an isomorphism of torsion
+`Gal`-modules `E(ℚ̄)_tors/⟨h⟩ ≅ E''(ℚ̄)_tors` (the image is divisible, hence a
+direct summand, hence everything), so `T_ℓ(E'') ≅ T_ℓ(E/⟨h⟩)` for every `ℓ` —
+which does force `j(E'') = j(E/⟨h⟩)`, but through Faltings' isogeny theorem,
+not through anything available here.  The statement is therefore TRUE and its
+hypotheses are, strictly, weaker than any proof in this development can use.
+The honest repair, if a successor hits that wall, is to strengthen `π` to a
+Vélu quotient — which is what every call site actually supplies, since the
+consumer's chain is built by `exists_x0Three_param_of_stableThreeSubgroup`
+— rather than to import Faltings.  This affects `exists_x0Three_chainParameters`'s
+whole design, not just this leaf, so it is reported rather than silently
+patched.
+
+**NUMERICAL ANCHOR** (class `27a`, PARI/GP `ellisomat`, untrusted searcher):
+`E = 27a1`, `j = −12288000`, `s = −3`.  Then `(s+3)³ = 0` and
+`s(s²+9s+27) = −27`, so the statement reads `−27 · j(E'') = 0`, i.e.
+`j(E'') = 0` — and the quotient of `27a1` by its cyclic `9`-subgroup is
+`27a3`, which indeed has `j = 0`.  Non-vacuous, and it agrees with the anchor
+recorded in `exists_x0Nine_param_of_cyclicNineChain` below. -/
+theorem jQuotient_of_tateParam
+    (E E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E''.IsElliptic]
+    (h : (E⁄(AlgebraicClosure ℚ)).Point) (hord : addOrderOf h = 9)
+    (hhstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h)
+    (π : (E⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
+    (hπgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        π (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (π Pt))
+    (hπker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      π Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples h)
+    (d : AlgebraicClosure ℚ) (hd : IsTateParam E h d)
+    (s : ℚ) (hs : algebraMap ℚ (AlgebraicClosure ℚ) s * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)
+      = 27 * d * (d - 1)) :
+    E''.j * (s * (s ^ 2 + 9 * s + 27))
+      = (s + 3) ^ 3 * (s ^ 3 + 9 * s ^ 2 + 27 * s + 3) ^ 3 :=
+  sorry
+
+end MazurLevel9
+
+/-- **`X_0(9)` moduli for a cyclic `9`-chain, in FRICKE-PAIR form** (PROVEN
+2026-07-26 over the single new leaf `MazurLevel9.jQuotient_of_tateParam`
+just above; cut 2026-07-26 out of `exists_x0Nine_param_of_cyclicNineChain`,
+which is PROVEN over it): for a chain `E --φ--> E' --ψ--> E''` of two rational
 `3`-isogenies whose composite has cyclic kernel `⟨h⟩` of order `9`, there is
 a rational `s` at which BOTH curves satisfy the SAME degree-`12` `X_0(9)`
 `j`-relation — `E` at `s`, and `E''` at the Fricke image `27/s`.
@@ -4948,75 +5136,52 @@ statement:
   conjunct (`X0Nine.param_ne_zero`), because `s = 0` is a cusp where the
   relation is self-policing.
 
-**WHAT IS STILL MISSING IS EXACTLY WHAT WAS MISSING BEFORE**, and the two
-warnings in the consumer's docstring still apply verbatim — the generator's
-`x`-coordinate can generate a cubic field, so the level-`3` Tate-normal-form
-trick does not transpose; and the content is "a `Gal`-stable pair `(E, C)`
-is a non-cuspidal rational point of `X_0(9) ≅ P¹`". So does the offered
-cheaper cut: prove it only for curves carrying a stable cyclic `27`-subgroup,
-the only case `exists_x0Three_chainParameters` ever applies it to.
+**HOW IT IS NOW PROVEN, and what remains open.** The proof does NOT go
+through `exists_x0Nine_hauptmodul` — it re-runs that node's three-line proof
+inline, because the Hauptmodul value `s` must be produced TOGETHER WITH the
+Kubert parameter `d` that pins it, and `exists_x0Nine_hauptmodul` discards
+`d` behind its existential. The five steps:
 
-**WHAT IS NEWLY AVAILABLE, and it is half of this leaf.**
-`WeierstrassCurve.exists_x0Nine_hauptmodul` became FULLY PROVEN on
-2026-07-26 (its last leaf, `MazurLevel9.exists_tateParam`, was closed;
-`#print axioms` is clean). It says precisely: a curve whose geometric points
-contain a point of order `9` generating a `Gal`-stable cyclic subgroup
-admits a rational `s` with the FIRST conjunct here. `h` satisfies its
-hypotheses (`addOrderOf h = 9` follows from `h9`, `h3`), so the first
-conjunct is now free.
+1. `addOrderOf h = 9` from `h9`, `h3` (`X0Nine.addOrderOf_eq_nine`);
+2. `ker (ψ ∘ φ) = ⟨h⟩` from the two kernel hypotheses
+   (`X0Nine.ker_comp_eq`) — this is where the CHAIN disappears, `E'` and the
+   two `3`-isogenies playing no further role;
+3. `d` and the `j`-identity from `MazurLevel9.exists_tateParam`, and the
+   rational `s = R(d)` from `MazurLevel9.exists_rat_hauptmodul_of_stable`;
+4. conjunct 1 is `MazurLevel9.j9_of_tateParam` at that `(d, s)`, pushed down
+   from `ℚ̄` to `ℚ` by injectivity of `algebraMap`;
+5. conjunct 2 is the single remaining leaf
+   `MazurLevel9.jQuotient_of_tateParam` above, converted from the cleared
+   form to the `27/s` form by `X0Nine.fricke_clear_inv` (PROVEN), whose
+   side condition `s ≠ 0` is `X0Nine.param_ne_zero` applied to conjunct 1.
 
-What is NOT free, and is the whole remaining content, is that the SAME `s`
-works for `E''` at `27/s`. That cannot be obtained by applying
-`exists_x0Nine_hauptmodul` a second time to `E''`: the `j`-relation has
-degree `12` in `s`, so it does not pin the parameter down, and an
-independently produced parameter for `E''` need not be the Fricke image of
-the one produced for `E`. A successor needs the moduli statement itself —
-that the hauptmodul is a bijection `X_0(9)(ℚ) → P¹(ℚ)` — or the cheaper
-level-`27` cut above. Do not attempt to assemble the two conjuncts from two
-separate applications of the hauptmodul node; that route is a dead end and
-this paragraph exists to say so.
+So the frontier here is now ONE conjunct instead of two, with `s` pinned by
+`d` rather than existentially quantified — which is precisely what defeated
+the two earlier cuts; see that leaf's docstring for why neither refutation
+applies to it, and for the Vélu-on-`tateCurve d` route that closes it by
+computation rather than by a moduli dictionary.
 
-**A SECOND TEMPTING CUT, AND IT MUST NOT BE MADE** (recorded 2026-07-26 by
-an agent who tried it first): do NOT split this leaf into "conjunct 1,
-which is free from `exists_x0Nine_hauptmodul`" plus a residual leaf
-"conjunct 2, GIVEN any rational `s` satisfying conjunct 1".  That cut
-moves the difficulty in the WRONG direction and very likely produces a
-FALSE residual leaf.
-
-The reason is the degree-`12` fact above, read the other way round.
-Conjunct 1 constrains `s` only through `j(E)`, so a rational `s`
-satisfying it names SOME cyclic `9`-subgroup of a curve with that
-`j`-invariant — not necessarily `⟨h⟩`.  But `E''` is `E/⟨h⟩`
-specifically.  A successor handed an arbitrary such `s` therefore has
-strictly LESS information than one handed the chain, and conjunct 2 need
-not hold for it.  So handing over the "free" conjunct discharges
-NOTHING: the entire content of this leaf is the pinning of `s` to `⟨h⟩`,
-and none of it is conjunct 1.  Contrast the level-`16` cut
-`exists_univCurveV_param_of_ratTwoTorsion`, where the free half really
-was a proof (step 1) and really was discharged; here there is no such
-half.
-
-WHAT A PARI SWEEP SAYS ABOUT THE PINNING (2026-07-26; `gp` is an
-untrusted searcher, so this is reconnaissance, NOT proof).  For each of
-`376` rational `s₀` — integers `±1 … ±60` and fractions `±a/b` with
-`a ≤ 15`, `b ≤ 15` — the degree-`12` polynomial
-`numerator(j₉(x) − j₉(s₀))` was factored over `ℚ`, and in EVERY case `s₀`
-was the ONLY rational root.  Two things follow, and they point the same
-way:
-
-* the pinning is not obstructed by any easy rational ambiguity, so the
-  moduli route — the hauptmodul is injective on `X_0(9)(ℚ)`, and `w₉`
-  acts on it as `s ↦ 27/s` — is the right one and is not doomed;
-* but "a singleton in `376` sampled fibres" is evidence, not a theorem,
-  and that uniqueness statement IS precisely the missing moduli input.
-  It is what a successor has to build or vendor; it will not fall out of
-  the algebra already present in this block.
-
-The same run independently re-checked the PROVEN `X0Nine.fricke_clear`
-numerically, verifying `j₉(27/s) =` the conjunct-2 expression at
-`s = 7, 5/3, −4`; all three agree, which is a small extra guard on the
-cusp normalisation that the docstring of that lemma explains is
-load-bearing. -/
+**A STRUCTURAL FINDING worth recording, since it should redirect effort.**
+This leaf and `x0Three_param_mul_ne_729` below are, modulo PROVEN algebra,
+the SAME node. One direction is already written: that theorem derives
+`uv ≠ 729` from this one via `X0Nine.selfDual_ne`. The converse also holds
+and every ingredient for it is already proven — under
+`u = s³/(s²+9s+27)`, `v = s(s²+9s+27)` one has `u + 27 = (s+9)³/(s²+9s+27)`,
+`u + 243 = (s³+243s²+2187s+6561)/(s²+9s+27)`, `v + 27 = (s+3)³` and
+`v + 3 = s³+9s²+27s+3`, so the two `X_0(9)` conjuncts here are LITERALLY the
+two `X_0(3)` relations `j(E)u³ = (u+27)(u+243)³` and
+`j(E'')v = (v+27)(v+3)³` after clearing `(s²+9s+27)`; and
+`X0Three.residual_of_matching` followed by
+`X0Three.exists_x0Nine_param_of_x0Three_pair` recovers `s` from `(u, v)`
+explicitly once `uv ≠ 729`. Note `uv = s⁴`, so `uv = 729` would force
+`s² = ±27`, which `X0Nine.sq_sub_27_ne_zero` already excludes over `ℚ` —
+the two nodes obstruct on exactly the same locus. Consequence: do not
+dispatch separate agents at both, and consider attacking the level-`3`
+side (injectivity of the `X_0(3)` Hauptmodul on the fibre over `E'`, whose
+universal family is the elementary Tate normal form `y² + a₁xy + a₃y = x³`)
+instead of a level-`9` moduli dictionary. The exceptional cases there are
+`j(E') ∈ {0, 1728}`, where `Aut` is bigger than `{±1}` and can move one
+order-`3` subgroup to another with the same parameter. -/
 theorem WeierstrassCurve.exists_x0Nine_frickePair_of_cyclicNineChain
     (E E' E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E'.IsElliptic] [E''.IsElliptic]
     (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
@@ -5049,8 +5214,36 @@ theorem WeierstrassCurve.exists_x0Nine_frickePair_of_cyclicNineChain
         (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3 ∧
       E''.j * ((27 / s) ^ 9 * ((27 / s) ^ 2 + 9 * (27 / s) + 27)) =
         ((27 / s) + 9) ^ 3
-          * ((27 / s) ^ 3 + 243 * (27 / s) ^ 2 + 2187 * (27 / s) + 6561) ^ 3 :=
-  sorry
+          * ((27 / s) ^ 3 + 243 * (27 / s) ^ 2 + 2187 * (27 / s) + 6561) ^ 3 := by
+  -- 1. the composite kernel is `⟨h⟩`, so the chain collapses to one quotient
+  have hord : addOrderOf h = 9 := X0Nine.addOrderOf_eq_nine h h9 h3
+  have hπker := X0Nine.ker_comp_eq φ ψ h hφker hψker
+  have hπgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+      (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+      (ψ.comp φ) (Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom ((ψ.comp φ) Pt) := by
+    intro σ Pt
+    simp only [AddMonoidHom.comp_apply]
+    rw [hφgal, hψgal]
+  -- 2. the Kubert parameter and the rational Hauptmodul value it pins
+  obtain ⟨d, hd, hΔ, hj⟩ := MazurLevel9.exists_tateParam E h hord
+  obtain ⟨s, hs⟩ := MazurLevel9.exists_rat_hauptmodul_of_stable E h hord hhstable d hd
+  have hq : d ^ 3 - 6 * d ^ 2 + 3 * d + 1 ≠ 0 := by
+    intro hc
+    exact hΔ (by rw [MazurLevel9.tateCurve_Δ, hc]; ring)
+  -- 3. conjunct 1 : the `X_0(9)` `j`-map at the source
+  have h1 : E.j * (s ^ 9 * (s ^ 2 + 9 * s + 27))
+      = (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3 := by
+    have key := MazurLevel9.j9_of_tateParam d (algebraMap ℚ (AlgebraicClosure ℚ) E.j)
+      (algebraMap ℚ (AlgebraicClosure ℚ) s) hq hj hs
+    refine (algebraMap ℚ (AlgebraicClosure ℚ)).injective ?_
+    simpa only [map_mul, map_pow, map_add, map_ofNat] using key
+  -- 4. conjunct 2 : the Fricke image, from the single remaining leaf
+  have h2 := MazurLevel9.jQuotient_of_tateParam E E'' h hord hhstable (ψ.comp φ)
+    hπgal hπker d hd s hs
+  exact ⟨s, h1, X0Nine.fricke_clear_inv s E''.j (X0Nine.param_ne_zero s E.j h1) h2⟩
 
 
 /-- **`X_0(9)`: the hauptmodul parameter of a rational cyclic `9`-isogeny**
