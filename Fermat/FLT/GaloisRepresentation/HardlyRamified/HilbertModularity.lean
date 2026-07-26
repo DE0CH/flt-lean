@@ -172,14 +172,13 @@ The chain, in the order the assembly uses it:
    PROVEN here. `exists_heckeDatum_isWeaklyUniversal_isTraceGenerated` was
    itself REFUTED, REPAIRED and DECOMPOSED on 2026-07-26 (second pass) into
    THREE leaves, following `Modularity/Patching.lean`'s `ℚ`-level cut:
-   `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` (a Hilbert Hecke
-   algebra read as an object of the deformation category — PROVEN
-   2026-07-26 as glue, after its FORMAL-CONTENT AUDIT found that it carries
-   no level lowering: `HilbertHeckeAlgebra.isHilbertHardlyRamified` pins the
-   minimal level by fiat, so that burden is in
-   `nonempty_potentialHeckeDatum_of_five_le`, and the only genuine gap — the
-   topology — was an interface defect repaired at the structure),
-   `surjective_classifyingMap_hilbertHeckeDatum` (Carayol generation) and
+   `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` (the Hecke algebra of
+   the matching level as an object of the deformation category — level
+   lowering over totally real fields),
+   `surjective_classifyingMap_hilbertHeckeDatum` (Carayol generation —
+   PROVEN 2026-07-26 after a fifth faithfulness repair: the isomorphism `e`
+   carried no link to `T.ρT`, so `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra`
+   now produces it with a charpoly compatibility) and
    `injective_classifyingMap_hilbertHeckeDatum` (Taylor–Wiles patching).
    The refutation is recorded in the FAITHFULNESS AUDIT of
    `HilbertHeckeAlgebra` and in the leaf's own docstring: as stated it
@@ -274,6 +273,12 @@ public import Mathlib.LinearAlgebra.TensorProduct.Pi
 public import Mathlib.LinearAlgebra.Dimension.Constructions
 public import Mathlib.Topology.Algebra.Algebra
 public import Mathlib.NumberTheory.Padics.HeightOneSpectrum
+-- `Submodule.isCompact_of_fg`, `Submodule.eq_bot_of_le_smul_of_le_jacobson_bot`
+-- and `PadicInt.compactSpace`: the closed-image half of
+-- `surjective_classifyingMap_hilbertHeckeDatum` below
+public import Mathlib.Topology.Algebra.Module.Compact
+public import Mathlib.RingTheory.Nakayama
+public import Mathlib.NumberTheory.Padics.ProperSpace
 -- proof-only: the abstract dimension-`2` Brauer–Nesbitt core
 -- `exists_linearEquiv_of_charpoly_eq`, which discharges
 -- `isHilbertResidualRigidityClause` below. `BrauerNesbittConjugacy.lean` sits
@@ -5413,6 +5418,29 @@ or follows from one in a line:
 | `ρ`, `isHilbertHardlyRamified` | `ρT`, `isHilbertHardlyRamified` |
 | `π`, `π_surjective`, `resid` | `πT`, `πT_surjective`, `residT` |
 
+CONCLUSION STRENGTHENED 2026-07-26 (`Nonempty (𝒟T.R ≃ₐ T.T)` ⇝ an
+isomorphism CARRYING THE CHARPOLY COMPATIBILITY). A bare algebra isomorphism
+does not say that the datum's representation is the Hecke one, and the
+consumer `surjective_classifyingMap_hilbertHeckeDatum` is UNPROVABLE without
+that link — see the faithfulness repair in its docstring. Nothing arithmetic
+is added: the datum this leaf produces IS `(T.T, ρT, πT)` with its adic
+topology supplied, so `e` is the identity up to transport and the extra
+clause is `rfl` on the nose for any honest construction. The clause is
+written with `charpoly` at every `g ∈ G_F` to match `resid`, `residT` and the
+`IsWeaklyUniversal` compatibilities, which are all stated that way.
+
+References: Carayol, *Sur les représentations `ℓ`-adiques associées aux formes
+modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986); Taylor, *On Galois
+representations associated to Hilbert modular forms*, Invent. Math. 98 (1989);
+Fujiwara, *Deformation rings and Hecke algebras in the totally real case*;
+Jarvis, *Level lowering for modular mod `ℓ` representations over totally real
+fields*, Math. Ann. 313 (1999); Rajaei, *On the levels of mod `ℓ` Hilbert
+modular forms*, J. reine angew. Math. 537 (2001). -/
+
+FORMAL-CONTENT AUDIT retained from the concurrent owner whose vacuous
+proof this strengthening replaced -- it is the reason the strengthening
+was needed, and it must not be lost with the proof:
+
 **The previous docstring's headline claim — that the passage from `T₀` to `T`
 is level lowering (Fujiwara, Jarvis, Rajaei) — is FALSE about the formal
 statement, and was already contradicted inside that same docstring** ("so
@@ -5471,24 +5499,208 @@ theorem exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra
     (_hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (_𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
     (T₀ : HilbertHeckeAlgebra ℓ F ρbar) :
-    ∃ (T : HilbertHeckeAlgebra ℓ F ρbar) (𝒟T : HilbertDeformationDatum ℓ F ρbar),
-      Nonempty (𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T) :=
-  ⟨T₀,
-    { R := T₀.T
-      isNoetherianRing := IsNoetherianRing.of_finite ℤ_[ℓ] T₀.T
-      isAdic := T₀.isAdic
-      isAdicComplete := T₀.isAdicComplete
-      ρ := T₀.ρT
-      isHilbertHardlyRamified := T₀.isHilbertHardlyRamified
-      π := T₀.πT
-      π_surjective := T₀.πT_surjective
-      resid := T₀.residT },
-    ⟨AlgEquiv.refl⟩⟩
+    ∃ (T : HilbertHeckeAlgebra ℓ F ρbar) (𝒟T : HilbertDeformationDatum ℓ F ρbar)
+      (e : 𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T), ∀ g : Γ F,
+        ((𝒟T.ρ g).charpoly).map e.toAlgHom.toRingHom = (T.ρT g).charpoly :=
+  sorry
 
-/-- **`R_F ↠ T_F`: the classifying map is SURJECTIVE** (LEAF — new
-2026-07-26; the `F`-level twin of `Modularity/Patching.lean`'s
-`surjective_ringHom_of_charFrob_eq`, which is PROVEN there over one
-arithmetic leaf).
+/-! #### Teichmüller lifting into a closed subring
+
+The three ring-theoretic lemmas below and the Hensel argument they feed are
+step 3 of `surjective_classifyingMap_hilbertHeckeDatum`: the image of the
+classifying map, being closed and having full residue field, already contains
+every Teichmüller root of the target. They are stated for an abstract adic
+local ring rather than for `𝒟T.R` because nothing in them is deformation
+theory. -/
+
+/-- `a ≡ b` modulo an ideal is preserved by taking `t`-th powers:
+`a ^ t − b ^ t = (∑ a^i b^{t−1−i}) · (a − b)`. -/
+lemma pow_sub_pow_mem_of_sub_mem {R : Type*} [CommRing R] {J : Ideal R} {a b : R}
+    (t : ℕ) (hab : a - b ∈ J) : a ^ t - b ^ t ∈ J := by
+  rw [← geom_sum₂_mul a b t]
+  exact Ideal.mul_mem_left _ _ hab
+
+/-- **The `ℓ`-th power map contracts congruences by one step of the
+`I`-adic filtration**, whenever `ℓ ∈ I`: if `a − b ∈ I ^ m` with `m ≥ 1`
+then `a ^ ℓ − b ^ ℓ ∈ I ^ (m + 1)`.
+
+`a ^ ℓ − b ^ ℓ = S · (a − b)` with `S = ∑_{i < ℓ} a^i b^{ℓ−1−i}`, and modulo
+`I` every summand is `b ^ (ℓ − 1)`, so `S ≡ ℓ · b ^ (ℓ − 1) ≡ 0`. -/
+lemma pow_sub_pow_mem_pow_succ_of_natCast_mem {R : Type*} [CommRing R]
+    {I : Ideal R} {ℓ : ℕ} (hl : ((ℓ : ℕ) : R) ∈ I) {a b : R} {m : ℕ}
+    (hm : 1 ≤ m) (hab : a - b ∈ I ^ m) : a ^ ℓ - b ^ ℓ ∈ I ^ (m + 1) := by
+  have hab' : Ideal.Quotient.mk I a = Ideal.Quotient.mk I b := by
+    rw [← sub_eq_zero, ← map_sub, Ideal.Quotient.eq_zero_iff_mem]
+    exact Ideal.pow_le_self (by omega) hab
+  have hS : (∑ i ∈ Finset.range ℓ, a ^ i * b ^ (ℓ - 1 - i)) ∈ I := by
+    rw [← Ideal.Quotient.eq_zero_iff_mem, map_sum]
+    have hterm : ∀ i ∈ Finset.range ℓ,
+        Ideal.Quotient.mk I (a ^ i * b ^ (ℓ - 1 - i))
+          = Ideal.Quotient.mk I b ^ (ℓ - 1) := by
+      intro i hi
+      rw [map_mul, map_pow, map_pow, hab', ← pow_add]
+      congr 1
+      simp only [Finset.mem_range] at hi
+      omega
+    rw [Finset.sum_congr rfl hterm, Finset.sum_const, Finset.card_range, nsmul_eq_mul]
+    have hlz : ((ℓ : ℕ) : R ⧸ I) = 0 := by
+      rw [← map_natCast (Ideal.Quotient.mk I) ℓ, Ideal.Quotient.eq_zero_iff_mem]
+      exact hl
+    rw [hlz, zero_mul]
+  rw [← geom_sum₂_mul a b ℓ, pow_succ']
+  exact Ideal.mul_mem_mul hS hab
+
+/-- The `ℓ ^ n`-th power version of the previous lemma, for `n ≥ 1`: raise to
+the `ℓ ^ (n − 1)` (which preserves the congruence) and then to the `ℓ`. -/
+lemma pow_pow_sub_pow_pow_mem_pow_succ_of_natCast_mem {R : Type*} [CommRing R]
+    {I : Ideal R} {ℓ : ℕ} (hl : ((ℓ : ℕ) : R) ∈ I) {a b : R} {m n : ℕ}
+    (hm : 1 ≤ m) (hn : 1 ≤ n) (hab : a - b ∈ I ^ m) :
+    a ^ ℓ ^ n - b ^ ℓ ^ n ∈ I ^ (m + 1) := by
+  obtain ⟨n', rfl⟩ : ∃ n', n = n' + 1 := ⟨n - 1, by omega⟩
+  have h1 : a ^ ℓ ^ n' - b ^ ℓ ^ n' ∈ I ^ m := pow_sub_pow_mem_of_sub_mem _ hab
+  have h2 := pow_sub_pow_mem_pow_succ_of_natCast_mem hl hm h1
+  rwa [← pow_mul, ← pow_mul, ← pow_succ] at h2
+
+/-- **Teichmüller roots lie in every closed subring with full residue field**
+(PROVEN 2026-07-26; step 3 of `surjective_classifyingMap_hilbertHeckeDatum`
+below, and the reason the strengthened `adjoin_heckeT` is usable at all).
+
+`R` is local, carries its maximal-adic topology, is complete and separated
+for it, has `ℓ` in its maximal ideal, and `π` presents `k` as its residue
+field. If a CLOSED subring `C ⊆ R` already surjects onto `k` then `C`
+contains every `ℓ`-power Teichmüller root of `R`.
+
+ROUTE (elementary Hensel). Let `y ^ ℓ ^ n = y` with `n > 0` and choose
+`x ∈ C` with `π x = π y`. Then `π (x ^ ℓ ^ n) = (π y) ^ ℓ ^ n = π y = π x`,
+so `x ^ ℓ ^ n − x ∈ ker π = 𝔪`; and since `ℓ ∈ 𝔪` the `ℓ ^ n`-th power map
+contracts the `𝔪`-adic filtration by one step
+(`pow_pow_sub_pow_pow_mem_pow_succ_of_natCast_mem`), so `j ↦ x ^ (ℓ ^ n) ^ j`
+is Cauchy. `IsAdicComplete` produces a limit `L`, which lies in `C` because
+`C` is closed, satisfies `L ^ ℓ ^ n = L` because the `ℓ ^ n`-th power map is
+continuous and shifts the sequence, and has `π L = π y`. So `L` and `y` are
+Teichmüller roots with the same residue, and
+`eq_of_mem_teichmullerRootSet` identifies them. -/
+lemma teichmullerRootSet_subset_of_isClosed {ℓ : ℕ} [Fact ℓ.Prime]
+    {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+    [IsLocalRing R] (hadic : IsAdic (IsLocalRing.maximalIdeal R))
+    [IsAdicComplete (IsLocalRing.maximalIdeal R) R]
+    {k : Type*} [Field k] (π : R →+* k)
+    (hlR : ((ℓ : ℕ) : R) ∈ IsLocalRing.maximalIdeal R)
+    (C : Subring R) (hCclosed : IsClosed (C : Set R))
+    (hCπ : ∀ c : k, ∃ x ∈ C, π x = c) :
+    teichmullerRootSet ℓ R ⊆ (C : Set R) := by
+  classical
+  set I : Ideal R := IsLocalRing.maximalIdeal R with hIdef
+  have hπsurj : Function.Surjective π := fun c => by
+    obtain ⟨x, _, hx⟩ := hCπ c
+    exact ⟨x, hx⟩
+  have hker : RingHom.ker π = I := IsLocalRing.ker_eq_maximalIdeal π hπsurj
+  haveI : T2Space R := t2Space_of_isAdic_of_isHausdorff hadic
+  intro y hyT
+  obtain ⟨n, hn, hy⟩ := hyT
+  obtain ⟨x, hxC, hx⟩ := hCπ (π y)
+  set f : ℕ → R := fun j => x ^ (ℓ ^ n) ^ j with hfdef
+  have hfe : ∀ i : ℕ, f (i + 1) = f i ^ ℓ ^ n := by
+    intro i
+    show x ^ (ℓ ^ n) ^ (i + 1) = (x ^ (ℓ ^ n) ^ i) ^ ℓ ^ n
+    rw [pow_succ (ℓ ^ n) i, pow_mul]
+  have hπf : π (f 1) = π y := by
+    have h1 : π (f 1) = π y ^ ℓ ^ n := by
+      simp only [hfdef, pow_one, map_pow, hx]
+    rw [h1, ← map_pow, hy]
+  have hπf0 : π (f 0) = π y := by
+    simp only [hfdef, pow_zero, pow_one, hx]
+  -- the sequence is Cauchy for the `I`-adic filtration
+  have hstep : ∀ j : ℕ, f j - f (j + 1) ∈ I ^ (j + 1) := by
+    intro j
+    induction j with
+    | zero =>
+      rw [pow_one, ← hker, RingHom.mem_ker, map_sub, hπf, hπf0, sub_self]
+    | succ j ih =>
+      have h2 := pow_pow_sub_pow_pow_mem_pow_succ_of_natCast_mem (I := I) hlR
+        (m := j + 1) (n := n) (by omega) hn ih
+      rwa [← hfe, ← hfe] at h2
+  have hmono : ∀ m j : ℕ, m ≤ j → f m - f j ∈ I ^ m := by
+    intro m j hmj
+    induction j, hmj using Nat.le_induction with
+    | base => simp
+    | succ j hj ih =>
+      have h1 : f m - f (j + 1) = (f m - f j) + (f j - f (j + 1)) := by ring
+      rw [h1]
+      exact Ideal.add_mem _ ih (Ideal.pow_le_pow_right (by omega) (hstep j))
+  obtain ⟨L, hL⟩ := IsPrecomplete.prec (inferInstance : IsPrecomplete I R) (f := f)
+    (fun {m j} hmj => by
+      rw [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top]
+      exact hmono m j hmj)
+  have hLmem : ∀ j : ℕ, f j - L ∈ I ^ j := by
+    intro j
+    have h := hL j
+    rwa [SModEq.sub_mem, smul_eq_mul, Ideal.mul_top] at h
+  -- the limit lies in `C`, is a Teichmüller root, and has the residue of `y`
+  have h0 : Filter.Tendsto (fun j => f j - L) Filter.atTop (nhds 0) := by
+    rw [hadic.hasBasis_nhds_zero.tendsto_right_iff]
+    intro m _
+    filter_upwards [Filter.eventually_ge_atTop m] with j hj
+    exact Ideal.pow_le_pow_right hj (hLmem j)
+  have htend : Filter.Tendsto f Filter.atTop (nhds L) := by
+    have hc : Filter.Tendsto (fun _ : ℕ => L) Filter.atTop (nhds L) := tendsto_const_nhds
+    have h := h0.add hc
+    simpa using h
+  have hLC : L ∈ C :=
+    hCclosed.mem_of_tendsto htend
+      (Filter.Eventually.of_forall fun j => C.pow_mem hxC _)
+  have hLpow : L ^ ℓ ^ n = L := by
+    have h1 : Filter.Tendsto (fun j => f (j + 1)) Filter.atTop (nhds L) :=
+      htend.comp (Filter.tendsto_add_atTop_nat 1)
+    have h2 : Filter.Tendsto (fun j => f j ^ ℓ ^ n) Filter.atTop (nhds (L ^ ℓ ^ n)) :=
+      htend.pow _
+    have h3 : (fun j => f (j + 1)) = fun j => f j ^ ℓ ^ n := funext hfe
+    rw [h3] at h1
+    exact tendsto_nhds_unique h2 h1
+  have hπL : π L = π y := by
+    have h1 : f 1 - L ∈ I := by simpa using hLmem 1
+    have h2 : π (f 1) - π L = 0 := by
+      rw [← map_sub, ← RingHom.mem_ker, hker]
+      exact h1
+    rw [sub_eq_zero] at h2
+    rw [← h2, hπf]
+  have hyL : y - L ∈ I := by
+    rw [← hker, RingHom.mem_ker, map_sub, hπL, sub_self]
+  have hyeq : y = L :=
+    eq_of_mem_teichmullerRootSet hlR ⟨n, hn, hy⟩ ⟨n, hn, hLpow⟩ hyL
+  rw [hyeq]
+  exact hLC
+
+/-- **`R_F ↠ T_F`: the classifying map is SURJECTIVE** (PROVEN 2026-07-26
+after the FAITHFULNESS REPAIR recorded below; the `F`-level twin of
+`Modularity/Patching.lean`'s `surjective_ringHom_of_charFrob_eq`, which is
+PROVEN there over one arithmetic leaf).
+
+## THE 2026-07-26 FAITHFULNESS REPAIR: `e` HAD NO LINK TO `T.ρT`
+
+As first written this statement was **not provable**, for the fifth instance
+of this module's recurring defect — a hypothesis the argument needs and the
+statement omits. `e : 𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T` was a BARE algebra isomorphism.
+Everything the conclusion can possibly use about `T` enters through
+`adjoin_heckeT`, whose generating set is `T.heckeT`, i.e. the Frobenius
+traces of `T.ρT`; and the only fact the hypotheses record about the target's
+representation is `hψρ`, about `𝒟T.ρ`. With `e` unconstrained, the two
+representations are unrelated, so no argument can carry a Hecke operator into
+the image of `ψ`: the Teichmüller half of the generating set is reachable
+(step 3 below needs only that `ψ` is local and its image closed) and the
+Hecke half is not. Concretely, replacing `𝒟T.ρ` by any representation with
+the same charpolys and `e` by `e` composed with a `ℤ_[ℓ]`-algebra
+automorphism of `T.T` leaves every hypothesis intact and moves the generating
+set; nothing pins them together.
+
+The repair is the one the module already uses three times over (`resid`,
+`residT`, `hψρ`): a charpoly compatibility, here `he`, saying that `e`
+identifies `𝒟T.ρ` with `T.ρT`. It costs the consumer nothing — it is exactly
+what `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` manufactures, since
+the datum it produces IS the Hecke datum `(T.T, ρT, πT)` transported, and
+that leaf's conclusion was strengthened to record it (its `sorry` is
+unchanged and its arithmetic content — level lowering, the topology gap — is
+untouched).
 
 THE ARGUMENT, which is formal once the two generation statements are lined up
 — and they now are, clause for clause, by the 2026-07-26 repair of
@@ -5497,29 +5709,30 @@ THE ARGUMENT, which is formal once the two generation statements are lined up
 1. `Set.range ψ` is a `ℤ_[ℓ]`-subalgebra of `𝒟T.R` (by `hψalg`), and `𝒟T.R`
    is `ℤ_[ℓ]`-module-finite because it is `T.T` (transport along `e`), so the
    range is a finitely generated `ℤ_[ℓ]`-submodule of it, hence compact
-   (`Submodule.isCompact_of_fg`, `CompactSpace ℤ_[ℓ]`) and therefore CLOSED —
-   `𝒟T.R` is Hausdorff by `t2Space_of_isAdic_of_isHausdorff`. This is
-   `Patching.lean`'s argument verbatim.
+   (`Submodule.isCompact_of_fg`, `PadicInt.compactSpace`) and therefore
+   CLOSED — `𝒟T.R` is Hausdorff by `t2Space_of_isAdic_of_isHausdorff`. This
+   is `Patching.lean`'s argument verbatim, except that the `ContinuousSMul`
+   it gets free from `IsModuleTopology` has to be produced here from the
+   continuity of `algebraMap ℤ_[ℓ] 𝒟T.R`, which is proven from the adic
+   topology and `ℓ ∈ 𝔪`; and `ℓ ∈ 𝔪` is itself Nakayama, since a module-finite
+   `ℤ_[ℓ]`-algebra in which `ℓ` is invertible vanishes.
 2. The range contains every `charpoly` coefficient of `𝒟T.ρ`, by `hψρ`; in
-   particular it contains the Hecke operators, since
-   `T.heckeT w = -(T.ρT.charFrob w).coeff 1` (`charFrobT`) and `charFrob` is a
-   `charpoly` at a Frobenius element.
-3. The range contains every Teichmüller root of `𝒟T.R`. This is the step that
+   particular `e` carries it onto the Hecke operators, since
+   `T.heckeT w = -(T.ρT.charFrob w).coeff 1` (`charFrobT`), `charFrob` is a
+   `charpoly` at a Frobenius element, and `he` identifies the two charpolys.
+3. The range contains every Teichmüller root of `𝒟T.R`
+   (`teichmullerRootSet_subset_of_isClosed` above). This is the step that
    the old `adjoin_heckeT` did not need and could not have: `ψ` is LOCAL
    (`hψπ` makes `𝒟T.π ∘ ψ = 𝒟.π`, which is surjective), so the range is a
-   closed local subring with residue field all of `k`; a Teichmüller root
-   `y ∈ 𝒟T.R` has `y ^ ℓ ^ n = y`, so its residue `c` satisfies
-   `c ^ ℓ ^ n = c`, and lifting `c` to `x ∈ Set.range ψ` the sequence
-   `x ^ ℓ ^ (n * j)` converges in the complete `𝒟T.R` to a Teichmüller root
-   lying in the CLOSED range and reducing to `c`; by
-   `eq_of_mem_teichmullerRootSet` that root is `y`.
-4. So the closed range contains the whole generating set of `adjoin_heckeT`
-   transported along `e`, hence contains its topological closure, which is
-   `⊤`.
+   closed local subring with residue field all of `k`.
+4. So the closed range contains, after transport along `e`, the whole
+   generating set of `adjoin_heckeT` — and that adjoin is already `⊤` with no
+   closure taken, so `e '' (range ψ) = ⊤` and `ψ` is surjective.
 
-`h𝒟t` (trace generation of the SOURCE) is not used by this route and is
-carried only so that the two halves have the same interface; `hirrF` is what
-makes the Carayol picture in step 3 the right one. -/
+`h𝒟t` (trace generation of the SOURCE), `h𝒟w` and `hirrF` are not used by
+this route and are carried, underscore-prefixed, only so that the two halves
+of `R_F = T_F` present the same interface to their common consumer. -/
+
 theorem surjective_classifyingMap_hilbertHeckeDatum
     (ℓ : ℕ) [Fact ℓ.Prime]
     (F : Type u) [Field F] [NumberField F]
@@ -5527,16 +5740,116 @@ theorem surjective_classifyingMap_hilbertHeckeDatum
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (_hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
     (𝒟 𝒟T : HilbertDeformationDatum ℓ F ρbar)
     (T : HilbertHeckeAlgebra ℓ F ρbar) (e : 𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T)
-    (h𝒟w : 𝒟.IsWeaklyUniversal) (h𝒟t : 𝒟.IsTraceGenerated)
+    (he : ∀ g : Γ F,
+      ((𝒟T.ρ g).charpoly).map e.toAlgHom.toRingHom = (T.ρT g).charpoly)
+    (_h𝒟w : 𝒟.IsWeaklyUniversal) (_h𝒟t : 𝒟.IsTraceGenerated)
     (ψ : 𝒟.R →+* 𝒟T.R)
     (hψalg : ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) = algebraMap ℤ_[ℓ] 𝒟T.R)
     (hψπ : 𝒟T.π.comp ψ = 𝒟.π)
     (hψρ : ∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ = (𝒟T.ρ g).charpoly) :
-    Function.Surjective ψ :=
-  sorry
+    Function.Surjective ψ := by
+  classical
+  -- `ψ` as a `ℤ_[ℓ]`-algebra homomorphism
+  let ψa : 𝒟.R →ₐ[ℤ_[ℓ]] 𝒟T.R :=
+    { toRingHom := ψ, commutes' := fun c => RingHom.congr_fun hψalg c }
+  -- (0) `𝒟T.R` is `ℤ_[ℓ]`-module-finite, transported from `T.T` along `e`
+  haveI hfin : Module.Finite ℤ_[ℓ] 𝒟T.R := Module.Finite.equiv e.symm.toLinearEquiv
+  -- (1) `ℓ` is a nonunit of `𝒟T.R`: were it a unit, Nakayama would collapse
+  -- the module-finite `𝒟T.R` to `0`, and a local ring is nontrivial.
+  have hlR : ((ℓ : ℕ) : 𝒟T.R) ∈ IsLocalRing.maximalIdeal 𝒟T.R := by
+    rw [IsLocalRing.mem_maximalIdeal, mem_nonunits_iff]
+    intro hu
+    obtain ⟨v, hv⟩ := hu.exists_right_inv
+    have hle : (⊤ : Submodule ℤ_[ℓ] 𝒟T.R) ≤
+        (IsLocalRing.maximalIdeal ℤ_[ℓ]) • (⊤ : Submodule ℤ_[ℓ] 𝒟T.R) := by
+      intro x _
+      have hx : x = ((ℓ : ℕ) : ℤ_[ℓ]) • (v * x) := by
+        rw [Algebra.smul_def, map_natCast, ← mul_assoc, hv, one_mul]
+      rw [hx]
+      refine Submodule.smul_mem_smul ?_ Submodule.mem_top
+      rw [PadicInt.maximalIdeal_eq_span_p, Ideal.mem_span_singleton]
+    have htop : (⊤ : Submodule ℤ_[ℓ] 𝒟T.R) = ⊥ :=
+      Submodule.eq_bot_of_le_smul_of_le_jacobson_bot _ _ (Module.Finite.fg_top) hle
+        (le_of_eq (IsLocalRing.jacobson_eq_maximalIdeal ⊥ bot_ne_top).symm)
+    have h1 : (1 : 𝒟T.R) ∈ (⊥ : Submodule ℤ_[ℓ] 𝒟T.R) := htop ▸ Submodule.mem_top
+    rw [Submodule.mem_bot] at h1
+    exact one_ne_zero h1
+  -- (2) the structure map is continuous for the maximal-adic topology of `𝒟T.R`
+  have hcont : Continuous (algebraMap ℤ_[ℓ] 𝒟T.R) := by
+    apply continuous_of_continuousAt_zero
+    unfold ContinuousAt
+    rw [map_zero, 𝒟T.isAdic.hasBasis_nhds_zero.tendsto_right_iff]
+    intro n _
+    have hpos : (0 : ℝ) < (ℓ : ℝ) ^ (-(n : ℤ)) :=
+      zpow_pos (by exact_mod_cast (Fact.out : ℓ.Prime).pos) _
+    filter_upwards [Metric.closedBall_mem_nhds (0 : ℤ_[ℓ]) hpos] with x hx
+    have hx' : x ∈ Ideal.span {(ℓ : ℤ_[ℓ]) ^ n} := by
+      rw [← PadicInt.norm_le_pow_iff_mem_span_pow]
+      simpa [Metric.mem_closedBall, dist_zero_right] using hx
+    obtain ⟨y, rfl⟩ := Ideal.mem_span_singleton'.mp hx'
+    have hsplit : algebraMap ℤ_[ℓ] 𝒟T.R (y * (ℓ : ℤ_[ℓ]) ^ n) =
+        algebraMap ℤ_[ℓ] 𝒟T.R y * ((ℓ : ℕ) : 𝒟T.R) ^ n := by
+      rw [map_mul, map_pow, map_natCast]
+    rw [SetLike.mem_coe, hsplit]
+    exact Ideal.mul_mem_left _ _ (Ideal.pow_mem_pow hlR n)
+  haveI : ContinuousSMul ℤ_[ℓ] 𝒟T.R := continuousSMul_of_algebraMap ℤ_[ℓ] 𝒟T.R hcont
+  -- (3) `𝒟T.R` is Hausdorff
+  haveI : IsAdicComplete (IsLocalRing.maximalIdeal 𝒟T.R) 𝒟T.R := 𝒟T.isAdicComplete
+  haveI : T2Space 𝒟T.R := t2Space_of_isAdic_of_isHausdorff 𝒟T.isAdic
+  -- (4) the range of `ψ` is closed: finitely generated over `ℤ_[ℓ]`, hence compact
+  have hCclosed : IsClosed ((ψa.range : Subalgebra ℤ_[ℓ] 𝒟T.R) : Set 𝒟T.R) := by
+    have hc := (Submodule.isCompact_of_fg
+      (IsNoetherian.noetherian (Subalgebra.toSubmodule ψa.range))).isClosed
+    simpa using hc
+  -- (5) the range contains every Teichmüller root, since it is closed and
+  -- surjects onto `k` (`hψπ` and `𝒟.π_surjective`)
+  have hteich : teichmullerRootSet ℓ 𝒟T.R ⊆ (ψa.range.toSubring : Set 𝒟T.R) := by
+    refine teichmullerRootSet_subset_of_isClosed 𝒟T.isAdic 𝒟T.π hlR
+      ψa.range.toSubring (by simpa using hCclosed) ?_
+    intro c
+    obtain ⟨r, hr⟩ := 𝒟.π_surjective c
+    refine ⟨ψ r, ⟨r, rfl⟩, ?_⟩
+    rw [← hr, ← hψπ]
+    rfl
+  -- (6) transport the range to `T.T`; it contains `adjoin_heckeT`'s generators
+  set D : Subalgebra ℤ_[ℓ] T.T := ψa.range.map e.toAlgHom with hD
+  have hgen : ({x : T.T | ∃ n : ℕ, 0 < n ∧ x ^ ℓ ^ n = x} ∪
+      T.heckeT '' {w | w ∉ T.bad}) ⊆ (D : Set T.T) := by
+    rintro x (hx | ⟨w, hw, rfl⟩)
+    · have hy : e.symm x ∈ teichmullerRootSet ℓ 𝒟T.R :=
+        map_mem_teichmullerRootSet e.symm.toAlgHom.toRingHom hx
+      refine ⟨e.symm x, hteich hy, ?_⟩
+      simp
+    · -- the Hecke operator at a good place is a Frobenius trace of `𝒟T.ρ`
+      set gw : Γ F := Field.absoluteGaloisGroup.map (algebraMap F (w.adicCompletion F))
+        (Field.AbsoluteGaloisGroup.adicArithFrob w) with hgw
+      have hcf : ((𝒟T.ρ gw).charpoly).map e.toAlgHom.toRingHom = T.ρT.charFrob w := he gw
+      have hcoeff : e ((𝒟T.ρ gw).charpoly.coeff 1) = (T.ρT.charFrob w).coeff 1 := by
+        rw [← hcf, Polynomial.coeff_map]
+        rfl
+      have hψc : (𝒟T.ρ gw).charpoly.coeff 1 = ψ ((𝒟.ρ gw).charpoly.coeff 1) := by
+        rw [← hψρ gw, Polynomial.coeff_map]
+      refine ⟨ψ (-((𝒟.ρ gw).charpoly.coeff 1)), ⟨-((𝒟.ρ gw).charpoly.coeff 1), rfl⟩, ?_⟩
+      have hneg : e (ψ ((𝒟.ρ gw).charpoly.coeff 1)) = -T.heckeT w := by
+        rw [← hψc, hcoeff, T.charFrobT w hw]
+      show e (ψ (-((𝒟.ρ gw).charpoly.coeff 1))) = T.heckeT w
+      rw [map_neg, map_neg, hneg, neg_neg]
+  -- (7) `adjoin_heckeT` is an honest `Algebra.adjoin`, so no closure is needed
+  have hDtop : D = ⊤ := by
+    refine top_le_iff.mp ?_
+    rw [← T.adjoin_heckeT]
+    exact Algebra.adjoin_le hgen
+  intro y
+  have hy : e y ∈ D := hDtop ▸ Algebra.mem_top
+  rw [hD] at hy
+  obtain ⟨z, hz, hez⟩ := hy
+  obtain ⟨r, hr⟩ := hz
+  refine ⟨r, ?_⟩
+  have hey : e (ψ r) = e y := by rw [hr]; exact hez
+  exact e.injective hey
 
 /-- **Taylor–Wiles primes of a totally real field `F`** — the `F`-level twin of
 `Modularity/Patching.lean`'s `IsTaylorWilesPrimeSet`, with rational primes
@@ -5900,13 +6213,13 @@ theorem exists_heckeDatum_isWeaklyUniversal_isTraceGenerated
       (natCast_eq_zero_of_finite_algebra ℓ k) hirrF 𝒟₁ h𝒟₁
   -- (2) the Hecke algebra of the matching level, AS AN OBJECT of the `F`-level
   -- deformation category (automorphic leaf).
-  obtain ⟨T, 𝒟T, ⟨e⟩⟩ :=
+  obtain ⟨T, 𝒟T, e, he⟩ :=
     exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra ℓ hℓ5 F htr hgal hirrF 𝒟₀ T₀
   -- (3) the classifying map `R_F → T_F`, from weak universality of `𝒟`.
   obtain ⟨ψ, hψalg, hψπ, hψρ⟩ := h𝒟w 𝒟T
   -- (4) it is bijective — the two halves of `R = T`.
   have hsurj : Function.Surjective ψ :=
-    surjective_classifyingMap_hilbertHeckeDatum ℓ F hirrF 𝒟 𝒟T T e h𝒟w h𝒟t ψ
+    surjective_classifyingMap_hilbertHeckeDatum ℓ F hirrF 𝒟 𝒟T T e he h𝒟w h𝒟t ψ
       hψalg hψπ hψρ
   have hinj : Function.Injective ψ :=
     injective_classifyingMap_hilbertHeckeDatum ℓ hℓ5 F htr hgal hirrF 𝒟 𝒟T T e
