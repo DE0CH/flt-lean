@@ -417,10 +417,42 @@ Field provenance:
   each `F^{Hᵢ}`) is deliberately NOT a field — it lives inside the
   sorried descent leaves, which cite it (BLGGT §5.3).
 * `E`, `badF`, `heckeF` — the Hilbert newform `f` of parallel weight
-  `2` over `F` attached to `ρ|_{G_F}`: `E` is its Hecke field (a
-  number field, by Shimura's rationality), `heckeF w` its Hecke
-  polynomial `X² − a_w·X + Nw` away from the finite bad set `badF`
-  (the level of `f` and the places over `2`, `3` and `ℓ`).
+  `2` over `F` attached to `ρ|_{G_F}`: `E` is a number field carrying
+  its Hecke field (see the DESCENT-CLOSURE note below for why it is
+  not merely the Hecke field), `heckeF w` its Hecke polynomial
+  `X² − a_w·X + Nw` away from the finite bad set `badF` (the level of
+  `f` and the places over `2`, `3` and `ℓ`).
+
+DESCENT-CLOSURE OF `E` (recorded 2026-07-26, from an obligation
+reported upward by the owner of
+`exists_heckeTrace_of_prime_cyclic_step_of_inert`; NO formal change
+was needed, only this correction of the record). `E` must NOT be read
+as "the Hecke field of `f`" on the nose. The solvable-descent leaves
+below (`exists_descended_heckeSystem_of_solvable` and the cyclic /
+prime-cyclic steps under it) conclude that the Hecke eigenvalues of
+the forms obtained by DESCENDING `f` down the Brauer tower again lie
+in `E`, read through `ψℓ`; and classically the Hecke field GROWS on
+the way down — at a place `u` of `F` of residue degree `d` over a
+place `w` of an intermediate field the eigenvalue is `α^d + β^d`,
+which generates a subfield of `ℚ(α + β)` that is in general PROPER.
+So `E` is to be understood as a number field chosen large enough for
+the whole descent — e.g. the compositum of the Hecke fields of all
+forms arising in the Brauer decomposition, a FINITE compositum and
+hence still a number field.
+
+Nothing in this structure has to change for that reading, which is why
+the repair is a docstring correction rather than a new field: no field
+asserts that `heckeF` GENERATES `E`. If `(E, heckeF, ψℓ, ψ₃)` inhabits
+the structure and `E ↪ E'` is a finite extension, then
+`(E', heckeF ∘ map, ψℓ', ψ₃')` inhabits it too — `ψℓ`, `ψ₃` extend to
+`E'` because `ℚ̄_ℓ`, `ℚ̄_3` are algebraically closed of characteristic
+zero and `E'/E` is algebraic, and `modularF`, `matchF₃` are preserved
+because `Polynomial.map` is functorial. So the producing leaf
+`exists_potentialModularityWitness_of_five_le` is entitled to make the
+enlarged choice, and MUST be understood as making it. Enlarging `E`
+only weakens the `… ∈ Set.range ψℓ` conclusions of the descent leaves,
+never strengthens them, and every downstream consumer of `E` uses only
+that it is a NUMBER FIELD, so the enlargement is free.
 * `ψℓ`, `ιO`, `ιO_injective`, `modularF` — modularity of `ρ|_{G_F}`
   (FLT blueprint ch. 4): the residual representation over `F` is
   modular (dihedral seed via converse theorems + Jacquet–Langlands,
@@ -456,7 +488,10 @@ structure PotentialModularityWitness (ℓ : ℕ) [Fact ℓ.Prime]
   /-- `F/ℚ` is Galois — the enabling hypothesis of Brauer induction on
   `Gal(F/ℚ)` in the descent leaves. -/
   galoisF : IsGalois ℚ F
-  /-- The Hecke field of the attached Hilbert newform. -/
+  /-- A number field carrying the Hecke field of the attached Hilbert
+  newform — chosen large enough to be closed under the solvable
+  descent (see the DESCENT-CLOSURE note in the structure docstring; it
+  is NOT the Hecke field on the nose). -/
   E : Type u
   [fieldE : Field E]
   [numberFieldE : NumberField E]
@@ -7796,7 +7831,23 @@ narrowed Carayol citation's `hbad3`, i.e. what stops that citation
 claiming Hecke matching at the places where the `3`-adic member of the
 compatible system ramifies. The `PotentialModularityWitness` docstring
 already specified `badF` to contain the places over `2`, `3` and `ℓ`;
-this makes it formally so. -/
+this makes it formally so.
+
+DESCENT-CLOSURE OF `E` — AN OBLIGATION ON THIS NODE'S HECKE BLOCK
+(2026-07-26; the corresponding obligation was reported upward by the
+owner of `exists_heckeTrace_of_prime_cyclic_step_of_inert` and is now
+recorded on the carrier). The coefficient field `E` this node hands to
+the carrier must be closed under the SOLVABLE DESCENT, not merely the
+Hecke field of the newform over `F`: the descent leaves conclude that
+the eigenvalues of the descended forms lie in `E` too, and classically
+the Hecke field grows on the way down. See the DESCENT-CLOSURE note in
+the `PotentialModularityWitness` docstring for why this costs nothing
+formally — no field of the structure asserts that `heckeF` generates
+`E`, and `E` may be replaced by any finite extension — and for the
+canonical choice (the compositum of the Hecke fields of the forms in
+the Brauer decomposition, a number field). Whoever discharges
+`exists_heckePackage_of_seed` should make that enlargement there, or
+enlarge here in the same style as the bad-set enlargement above. -/
 theorem exists_potentialModularityWitness_of_five_le
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -9311,6 +9362,72 @@ quantified, and only finitely many places of `M` have norm at most
 made.
 
 ────────────────────────────────────────────────────────────────────
+INFORMATION AUDIT (2026-07-26, SECOND OWNER — an independent
+re-derivation which CLOSES THE `F`-AXIS COMPLETELY and thereby makes
+the atomicity claim above airtight rather than merely argued).
+
+RESULT: `D_p(s, Nw) ∈ Set.range ψℓ` together with `Nw ∈ ℚ` is not just
+what one derivation happens to yield — it is the ENTIRE information
+about `s = tr ρ|_{G_M}(Frob_w)` contained in the hypothesis package.
+Three axes, all now closed:
+
+* *The `L`-axis.*  By the PROVEN
+  `charFrob_baseChange_eq_of_absNorm_eq`, `charFrob` depends only on
+  the residue cardinality, so a place `v' ∉ SL` of `L` constrains `s`
+  only through `Nv'`.  This node's hypothesis kills `Nv' = Nw`; the
+  place `v` above `w` has `Nv = Nw^p` and yields `D_p(s, Nw)`; any
+  other `v'` with `Nv' = Nw^p` yields the SAME polynomial.  Every
+  remaining `v'` speaks about a different residue cardinality, hence
+  about a different Frobenius, hence not about `s` at all.
+
+* *The `F`-axis, sharper than the previous section.*  PLACE-AXIS
+  SHARPNESS above showed only that the `Nu = Nw` sharpening is a no-op.
+  In fact `Wit.modularF` contributes NOTHING WHATEVER at the places of
+  `F` above `w`, and the reason is a divisibility rather than a
+  finiteness estimate.  `M ⊆ L ⊆ F`, so every place `u` of `F` above
+  `w` lies above the place `v` of `L` above `w`, whence
+  `f(u/w) = f(u/v)·f(v/w) = f(u/v)·p`.  Writing `d = f(u/w) = p·e`,
+  `N = Nw` and `α, β` for the eigenvalues,
+
+      `α^d + β^d = (α^p)^e + (β^p)^e = D_e(α^p + β^p, N^p)
+                 = D_e(D_p(s, N), N^p)`,
+
+  a polynomial with RATIONAL coefficients in the datum `hPL` already
+  supplies.  So `modularF` at `u` is a formal consequence of the
+  `L`-axis datum, not an independent constraint — for EVERY place of
+  `F` above `w`, not merely for those of equal norm.
+
+* *Why that divisibility is the whole story.*  The one shape that WOULD
+  close this node is a second Dickson relation of degree COPRIME to
+  `p`: if `D_d(s, N) ∈ E` and `D_p(s, N) ∈ E` with `gcd(d, p) = 1`,
+  then the base-change torsor selects the `E`-rational root, because a
+  `σ` moving `s` multiplies `α` by a primitive `p`-th root of unity `ζ`
+  and then `D_d` moves by `ζ^d ≠ 1`.  The bullet above says such a `d`
+  NEVER ARISES in this tower: `p ∣ f(u/w)` at every place above `w`.
+
+  Coprimality is moreover genuinely load-bearing and not merely
+  convenient — the two Dickson relations ALONE, without the torsor, do
+  not suffice.  Explicit counterexample (verified numerically), with
+  `E = ℚ`, `p = 3`, `d = 2`, `N = 5`: take `α = √5·ζ₁₂` and
+  `β = √5·ζ₁₂⁻¹`, so `αβ = 5` and `s = α + β = √15 ∉ ℚ`, while
+  `α² + β² = 5·(ζ₁₂² + ζ₁₂⁻²) = 5 ∈ ℚ` and
+  `α³ + β³ = 5^{3/2}·(ζ₁₂³ + ζ₁₂⁻³) = 0 ∈ ℚ`.  Determinant rational,
+  both Dickson values rational, `gcd(2,3) = 1`, trace irrational — so
+  there is NO purely algebraic implication
+  `(D_d(s,N), D_p(s,N), N ∈ E) ⟹ s ∈ E`.  What fails is exactly the
+  torsor hypothesis: the `σ` with `√15 ↦ −√15` sends `α ↦ −β`, i.e. it
+  twists by a SECOND root of unity, which is not a shape cyclic base
+  change of degree `3` can produce.  Anyone who tries to close this node
+  by assembling Dickson relations should read this paragraph first.
+
+Conclusion: the residual content is precisely the selection of the
+`E`-rational root of `D_p(X, Nw) − c`, and that selection IS the
+Arthur–Clozel character identity.  The two cuts the author of the cut
+rejected on grounds of taste (an information-carrying interface, and a
+place-axis refinement) are now excluded on grounds of information: there
+is nothing left in the package to cut along.
+
+────────────────────────────────────────────────────────────────────
 WHERE THE RESIDUAL BURDEN REALLY SITS — A CARRIER-LEVEL OBLIGATION THAT
 `PotentialModularityWitness` DOES NOT RECORD (2026-07-26, reported
 upwards rather than repaired here).
@@ -9338,9 +9455,20 @@ choice and the producing leaf
 making it, but `PotentialModularityWitness` records no such field and its
 docstring calls `E` simply "the Hecke field of the attached Hilbert
 newform" over `F`.  Whoever proves the witness-production leaf needs to
-know this; the repair (a descent-closure field on the carrier) is a
-cut-level change touching every consumer of the structure and is not made
-here. -/
+know this.
+
+REPAIRED 2026-07-26 (second owner), and it turned out NOT to be a
+cut-level change: the structure never asserted that `heckeF` GENERATES
+`E`, so `E` may be replaced by any finite extension without touching a
+single consumer — `ψℓ` and `ψ₃` extend because `ℚ̄_ℓ` and `ℚ̄_3` are
+algebraically closed of characteristic zero, and `modularF`/`matchF₃`
+are preserved by functoriality of `Polynomial.map`.  The obligation was
+therefore a MISDESCRIPTION rather than a missing field, and the repair
+is the DESCENT-CLOSURE note now carried by the
+`PotentialModularityWitness` docstring, by its `E` field, and by
+`exists_potentialModularityWitness_of_five_le`.  Route (i) is thereby
+available at this node for the intended carrier, and route (ii) remains
+available for every carrier; the citation's own content is unchanged. -/
 theorem exists_heckeTrace_of_prime_cyclic_step_of_inert
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
