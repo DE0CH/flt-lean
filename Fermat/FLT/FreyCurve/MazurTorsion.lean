@@ -5457,7 +5457,37 @@ group of `ℤ`; an ordinary `2`-descent instead needs the cubic field
 
 Numerical check of the STATEMENT (PARI/GP, untrusted searcher, no part
 of any proof): `ellrank([0,-1,1,0,0])` returns rank `0` with a proven
-upper bound, and `elltors` returns `ℤ/5`. -/
+upper bound, and `elltors` returns `ℤ/5`. 
+RELATION TO `WeierstrassCurve.x1Eleven_plane_ne_zero` (landed on main
+2026-07-26, far below in this file). **These are not two independent
+open problems — do not attack them separately.** That node asserts
+`F₁₁(b, c) ≠ 0` for `b ≠ 0`, and `F₁₁` is literally `MazurLevel11.x1Poly`:
+the two were checked equal coefficient by coefficient, main deriving it
+inside Lean from the `normEDS`/`preΨ'` recursion and `x1_11_equation`
+above deriving it from the group law. Two fully independent derivations
+of the same degree-`8` curve, which is good evidence for both.
+
+The bridge between that node and THIS one is the PROVEN
+`cremona_point_of_x1Poly` just below: a zero of `F₁₁` with `c ≠ 0` and
+`b ≠ c² + c` maps to a rational point of `11a3` with abscissa
+`(c² + c − b)/c²`. So `x1Eleven_plane_ne_zero` reduces to this leaf in
+one `linear_combination`, and whoever proves this one gets that one for
+free.
+
+
+DECLARATION-ORDER NOTE (2026-07-26, and it is why this leaf exists at
+all rather than main's). Main's uniform node
+`tateNormalForm_origin_order_ne_of_cuspidalRankZero`, which covers
+`N = 11, 13, 17, 19, 21, 25, 27`, is declared roughly `2700` lines BELOW
+the eight `tateNormalForm_origin_order_ne_N` nodes, together with all of
+`MazurX1Plane` and the plane leaves. So none of those eight nodes can
+cite it, and on main all eight are still `sorry`. Level `25` escapes
+only because its node was moved down below the machinery — that move is
+the precedent for the repair. Until the same move is made for
+`11, 13, 17, 19` (their `no_torsion_order_N` wrappers and
+`no_prime_torsion_ge_eleven` have to travel with them), a leaf declared
+locally, like this one, is the only way to close those nodes in place.
+-/
 theorem cremona_11a3_abscissa (x y : ℚ) (h : y ^ 2 + y = x ^ 3 - x ^ 2) :
     x = 0 ∨ x = 1 :=
   sorry
@@ -5744,7 +5774,18 @@ MISSING MACHINERY, in dependency order — mathlib has NONE of it:
    plus an Abel–Jacobi embedding to transfer finiteness back to the
    curve. Level `13` is the ONE higher-genus level where rank `0` makes
    Chabauty avoidable, which is why it is the natural next target after
-   `11`. -/
+   `11`. 
+DUPLICATE-BY-CONSTRUCTION with `WeierstrassCurve.x1Thirteen_plane_ne_zero`
+(landed on main 2026-07-26, far below in this file): the two polynomials
+were checked equal coefficient by coefficient — `x1Poly13` here and
+`F₁₃` there, one derived from the group law and one from the
+`normEDS`/`preΨ'` recursion. The only difference is packaging: this node
+carries `Δ ≠ 0`, `c ≠ 0` and the two `X_1`-locus exclusions explicitly,
+that one folds them into `IsElliptic` and `b ≠ 0`. Proving either proves
+the other; they should be unified once the declaration-order problem
+noted below is fixed.
+
+-/
 theorem no_rational_point (b c : ℚ)
     (hΔ : (WeierstrassCurve.tateNormalForm b c).Δ ≠ 0) (hc : c ≠ 0)
     (hb6 : b - c ^ 2 - c ≠ 0) (hb7 : c ^ 3 + b * c - b ^ 2 ≠ 0) :
@@ -6041,7 +6082,18 @@ level `17` needs strictly more than level `13`:
 3. at genus `5` the rank of `J_1(17)(ℚ)` is `1`, NOT `0`, so the cheap
    route that exists at level `13` (a finite Mordell–Weil group plus
    Abel–Jacobi) is unavailable here: this level needs Chabauty–Coleman
-   proper, or Mazur's Eisenstein-ideal argument. -/
+   proper, or Mazur's Eisenstein-ideal argument. 
+RELATION TO `WeierstrassCurve.tateNormalForm_origin_preΨ'_residual`
+(landed on main 2026-07-26, far below in this file): that node covers
+levels `17, 19, 25, 27` uniformly in `preΨ'` form, and its docstring
+explicitly declines to expand `F₁₇` and `F₁₉` because they are "`~60`
+and `~90` terms". `x1Poly17` and `x1Poly19` ARE those expansions. Their
+bidegrees, `(12, 18)` and `(15, 22)`, match the bidegrees main states
+for `F₁₇` and `F₁₉` exactly, from a completely independent derivation
+(group law plus `linear_combination`, versus the `normEDS` recursion) —
+a cross-check on both routes.
+
+-/
 theorem no_rational_point (b c : ℚ)
     (hΔ : (WeierstrassCurve.tateNormalForm b c).Δ ≠ 0) (hc : c ≠ 0) (hbc : b - c ≠ 0)
     (h8 : (b - 1) * c ^ 2 + 3 * b * c - 2 * b ^ 2 ≠ 0)
@@ -6340,7 +6392,18 @@ genus `7` this is the hardest of the three plane-model leaves:
 2. Mordell–Weil for abelian varieties;
 3. Chabauty–Coleman, or Mazur's Eisenstein-ideal argument. As at level
    `17` the rank is positive, so the finite-Mordell–Weil shortcut that
-   exists at level `13` is unavailable. -/
+   exists at level `13` is unavailable. 
+RELATION TO `WeierstrassCurve.tateNormalForm_origin_preΨ'_residual`
+(landed on main 2026-07-26, far below in this file): that node covers
+levels `17, 19, 25, 27` uniformly in `preΨ'` form, and its docstring
+explicitly declines to expand `F₁₇` and `F₁₉` because they are "`~60`
+and `~90` terms". `x1Poly17` and `x1Poly19` ARE those expansions. Their
+bidegrees, `(12, 18)` and `(15, 22)`, match the bidegrees main states
+for `F₁₇` and `F₁₉` exactly, from a completely independent derivation
+(group law plus `linear_combination`, versus the `normEDS` recursion) —
+a cross-check on both routes.
+
+-/
 theorem no_rational_point (b c : ℚ)
     (hΔ : (WeierstrassCurve.tateNormalForm b c).Δ ≠ 0) (hc : c ≠ 0) (hbc : b - c ≠ 0)
     (h9 : c ^ 5 + c ^ 4 + (1 - b) * c ^ 3 - 3 * b * c ^ 2 + 3 * b ^ 2 * c - b ^ 3 ≠ 0)
