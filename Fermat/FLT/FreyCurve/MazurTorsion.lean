@@ -198,11 +198,19 @@ genuinely modular-curve-theoretic inputs:
   `≥ 4` into the shape `y² + (1 − c)xy − by = x³ − bx²` with the point
   at the origin. So the content that remains sits in the eight
   Tate-coordinate nodes `tateNormalForm_origin_order_ne_11`, …,
-  `_163` — plane models of `X_1(ℓ)` in the `(b, c)`-coordinates — all
-  IRREDUCIBLE at this mathlib pin: all eight `ℓ` ARE rational isogeny
-  degrees, so the `X_0` shortcut provably stops there and only
-  `X_1(ℓ)` excludes the point. See the section notes before them for
-  the witnesses, the genera and the missing-machinery list.
+  `_163` — plane models of `X_1(ℓ)` in the `(b, c)`-coordinates. All
+  eight `ℓ` ARE rational isogeny degrees, so the `X_0` shortcut
+  provably stops there and only `X_1(ℓ)` excludes the point. See the
+  section notes before them for the witnesses, the genera and the
+  missing-machinery list. **Updated 2026-07-26**: the first four
+  (`11, 13, 17, 19`) are no longer sorry nodes — they were RELOCATED
+  below `tateNormalForm_origin_order_ne_of_cuspidalRankZero` and are
+  now one-line instantiations of it, level `11`'s own argument being
+  complete (they still report `sorryAx`, because that node proves all
+  seven of its levels in ONE term; see its axiom audit). Only
+  `37, 43, 67, 163` are still IRREDUCIBLE at this pin, and the reason
+  is identified: `J_1(37)` has a rank-`1` factor, so those four need
+  the winding/Eisenstein quotient rather than the whole Jacobian.
 * `no_composite_torsion_order` (PROVEN 2026-07-25 as the eleven-way
   case split over its `Finset` hypothesis): no rational point of
   order `n ∈ {14, 15, 16, 18, 20, 21, 24, 25, 27, 35, 49}` — the
@@ -10248,10 +10256,30 @@ node. Here the curve is the explicit two-parameter family
 plane model of `X_1(37)` in the `(b, c)`-coordinates rather than a
 statement quantified over all curves. The passage between the two is
 the PROVEN `exists_tateNormalForm`; everything above about genus,
-witnesses and citation is unchanged by the restatement. That plane
-model is NOT what the proof uses — measured `c`-degrees of `7, 10, 14,
-18, 22` at levels `11`–`19` are why expanding it was never a route
-here.
+witnesses and citation is unchanged by the restatement.
+
+WHY THE PLANE-MODEL METHOD DOES NOT REACH THIS CLUSTER, and the route
+that might (recorded 2026-07-26 while relocating `11, 13, 17, 19` below
+`tateNormalForm_origin_order_ne_of_cuspidalRankZero`; NOT attempted).
+`37, 43, 67, 163` lie OUTSIDE that uniform node — its level list stops
+at `27` — and they are out of reach of the explicit `(b, c)`-plane
+curves too. The measured `c`-degrees of `Fₙ` at levels `11, 13, 15, 17,
+19` are `7, 10, 14, 18, 22`; level `27` already runs to several hundred
+terms, so writing out a plane model at `37` and above is hopeless, quite
+apart from the rank obstruction recorded above.
+
+The promising route here is CM, not modular: a rational point of order
+`N` gives a rational cyclic `N`-isogeny, class number `1` pins the curve
+to ONE explicit CM `j`-invariant (`j = −7 · 11³` at `37`; `−884736000`,
+`−147197952000`, `−262537412640768000` at `43, 67, 163` — the
+class-number-one discriminants recorded in the sibling nodes), and then
+reduction at a good prime with the Hasse bound kills a point of that
+order outright, since `N` exceeds `p + 1 + 2√p` for a small good `p`.
+The input it needs is "`X_0(N)(ℚ)` is two cusps plus one CM point" —
+strictly STRONGER than Kenku's list, which only says `N` IS an isogeny
+degree, but unlike the winding quotient it is finite, explicit and
+citable. That trade — a stronger citation for a finite computation — is
+the thing to weigh before anyone builds the Eisenstein quotient.
 -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_37 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
@@ -10431,41 +10459,6 @@ lemma MazurPrimeLevel.mem_of_prime_ge_eleven {ℓ : ℕ} (hℓ : ℓ.Prime) (h11
     first
       | omega
       | exact absurd hℓ (by decide)
-
-/-- **Mazur: no rational torsion point of prime order `≥ 11`** (PROVEN
-2026-07-25 as the eight-way case split over the primes that survive the
-`X_0` cut): no elliptic curve over `ℚ` has a rational point of order `ℓ`
-for a prime `ℓ ≥ 11`. Mazur, "Modular curves and the Eisenstein ideal"
-(Publ. Math. IHÉS 47, 1977), Thm 7.
-
-The proof is the reduction described in the section note above and
-nothing more. A point of order `ℓ` generates a rational cyclic
-`ℓ`-isogeny (`mem_cyclicIsogenyDegrees_of_addOrderOf`), so `ℓ` lies in
-Kenku's list; being prime and `≥ 11` it is one of the eight levels
-`11, 13, 17, 19, 37, 43, 67, 163` (`MazurPrimeLevel.mem_of_prime_ge_eleven`),
-each of which is a separate node above. Every prime `ℓ ≥ 11` outside
-those eight — infinitely many — is discharged outright by Mazur's
-isogeny theorem.
-
-The mathematical content that remains is entirely in the eight nodes,
-all IRREDUCIBLE at this mathlib pin, and in the `X_0` node
-`prime_mem_cyclicIsogenyDegrees` they are cut against. The dependence on
-that node is now explicit in the tree instead of being folded into the
-same `sorry`: this theorem and the isogeny theorem always shared their
-citation, and the section note records why using one for the other is a
-reduction and not a circle. -/
-theorem WeierstrassCurve.no_prime_torsion_ge_eleven (E : WeierstrassCurve ℚ)
-    [E.IsElliptic] {ℓ : ℕ} (hℓ : ℓ.Prime) (h11 : 11 ≤ ℓ) (Q : (E⁄ℚ).Point) :
-    addOrderOf Q ≠ ℓ := by
-  intro hQ
-  have h := MazurPrimeLevel.mem_of_prime_ge_eleven hℓ h11
-    (E.mem_cyclicIsogenyDegrees_of_addOrderOf Q (by omega) hQ)
-  simp only [Finset.mem_insert, Finset.mem_singleton] at h
-  rcases h with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-  exacts [E.no_torsion_order_11 Q hQ, E.no_torsion_order_13 Q hQ,
-    E.no_torsion_order_17 Q hQ, E.no_torsion_order_19 Q hQ,
-    E.no_torsion_order_37 Q hQ, E.no_torsion_order_43 Q hQ,
-    E.no_torsion_order_67 Q hQ, E.no_torsion_order_163 Q hQ]
 
 /-- **No rational point of order `2` together with a rational point of
 order `7`** (DERIVED 2026-07-25 from the Tate-normal-form decomposition —
@@ -17418,6 +17411,64 @@ theorem WeierstrassCurve.no_torsion_order_25 (E : WeierstrassCurve ℚ)
   WeierstrassCurve.no_torsion_order_of_tateNormalForm (by norm_num)
     (fun b c hell h00 =>
       @WeierstrassCurve.tateNormalForm_origin_order_ne_25 b c hell h00) E Q
+
+/-- **Mazur: no rational torsion point of prime order `≥ 11`** (PROVEN
+2026-07-25 as the eight-way case split over the primes that survive the
+`X_0` cut): no elliptic curve over `ℚ` has a rational point of order `ℓ`
+for a prime `ℓ ≥ 11`. Mazur, "Modular curves and the Eisenstein ideal"
+(Publ. Math. IHÉS 47, 1977), Thm 7.
+
+The proof is the reduction described in the section note above and
+nothing more. A point of order `ℓ` generates a rational cyclic
+`ℓ`-isogeny (`mem_cyclicIsogenyDegrees_of_addOrderOf`), so `ℓ` lies in
+Kenku's list; being prime and `≥ 11` it is one of the eight levels
+`11, 13, 17, 19, 37, 43, 67, 163` (`MazurPrimeLevel.mem_of_prime_ge_eleven`),
+each of which is a separate node above. Every prime `ℓ ≥ 11` outside
+those eight — infinitely many — is discharged outright by Mazur's
+isogeny theorem.
+
+The mathematical content that remains is in the eight nodes and in the
+`X_0` node `prime_mem_cyclicIsogenyDegrees` they are cut against. The
+dependence on that node is now explicit in the tree instead of being
+folded into the same `sorry`: this theorem and the isogeny theorem
+always shared their citation, and the section note records why using
+one for the other is a reduction and not a circle.
+
+TWO ROUTES EXIST AT LEVELS `11, 13, 17, 19`, and this file keeps the
+PLANE-MODEL one (integration decision, 2026-07-26). Each of those four
+levels is proven where it is declared far above, from its own explicit
+plane model and its own leaf — `MazurLevel11.cremona_11a3_abscissa` and
+the three `MazurLevel13/17/19.no_rational_point`. `flt-lean-29` proposed
+replacing all four by one-line instantiations of
+`tateNormalForm_origin_order_ne_of_cuspidalRankZero` (declared above),
+which would have forced them to move below that node. That was NOT taken:
+it would have orphaned the four plane-model leaves, and by the branch's
+own axiom audit it would NOT have made the levels axiom-clean — the
+uniform node proves its seven levels in ONE term under a single `rcases`,
+so every instantiation carries the sibling branches' open leaves
+(`x1Seventeen_preΨ'_ne_zero`, `x1Nineteen_preΨ'_ne_zero`,
+`x1TwentyFive_plane_eq_line`) into its own cone. The uniform node is kept
+and is still what levels `21, 25, 27` are cut against. Making `11, 13,
+21, 27` axiom-clean needs the node's `key`/`back` helpers hoisted into
+standalone lemmas so each level gets its own proof term; that is a
+cut-level decision and is deliberately still open. Only `37, 43, 67, 163` are still
+IRREDUCIBLE at this pin — the rank-`0` point count that closes the small
+levels needs the WHOLE of `J_1(N)` to have rank `0`, and `J_1(37)` does
+not (its first `ℚ`-simple factor is the rank-`1` curve `37a`), so those
+four need the winding/Eisenstein quotient. This theorem's own proof is
+unchanged; only its position in the file is. -/
+theorem WeierstrassCurve.no_prime_torsion_ge_eleven (E : WeierstrassCurve ℚ)
+    [E.IsElliptic] {ℓ : ℕ} (hℓ : ℓ.Prime) (h11 : 11 ≤ ℓ) (Q : (E⁄ℚ).Point) :
+    addOrderOf Q ≠ ℓ := by
+  intro hQ
+  have h := MazurPrimeLevel.mem_of_prime_ge_eleven hℓ h11
+    (E.mem_cyclicIsogenyDegrees_of_addOrderOf Q (by omega) hQ)
+  simp only [Finset.mem_insert, Finset.mem_singleton] at h
+  rcases h with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  exacts [E.no_torsion_order_11 Q hQ, E.no_torsion_order_13 Q hQ,
+    E.no_torsion_order_17 Q hQ, E.no_torsion_order_19 Q hQ,
+    E.no_torsion_order_37 Q hQ, E.no_torsion_order_43 Q hQ,
+    E.no_torsion_order_67 Q hQ, E.no_torsion_order_163 Q hQ]
 
 /-- **No rational point of order `35`** (PROVEN 2026-07-25 along the
 route recorded for this level, from the `X_0` node
