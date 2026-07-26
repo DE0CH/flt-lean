@@ -4121,19 +4121,27 @@ theorem isUnramifiedAt_of_hilbertInertiaTrivialAt
     Algebra.IsUnramifiedAt (𝓞 F) P :=
   sorry
 
-/-- **Ramification in the tower `ℚ ⊆ F ⊆ K`** (LEAF — new 2026-07-26,
-half (2) of the cut of `not_dvd_discr_of_hilbertInertiaTrivialAt` below;
+/-- **Ramification in the tower `ℚ ⊆ F ⊆ K`** (PROVEN 2026-07-26; it was
+half (2) of the cut of `not_dvd_discr_of_hilbertInertiaTrivialAt` below,
 the routine half): a rational prime `q` with `q ∤ d_F` is unramified in
 `F`, so a prime `P` of `𝓞 K` over `q` that is unramified over `𝓞 F` is
 unramified over `ℤ`.
 
-Route: `q ∤ d_F` gives `Algebra.IsUnramifiedAt ℤ (P ∩ 𝓞 F)` through
-mathlib's `NumberField.not_dvd_discr_iff_forall_mem` applied to `F`;
-composing with the hypothesis `Algebra.IsUnramifiedAt (𝓞 F) P` is
-multiplicativity of the ramification index in a tower, which in the
-different language is mathlib's
-`differentIdeal_eq_differentIdeal_mul_differentIdeal` together with
-`not_dvd_differentIdeal_iff`.
+ROUTE AS EXECUTED, which is shorter than the different-ideal route this
+docstring originally recorded. `q ∤ d_F` gives
+`Algebra.IsUnramifiedAt ℤ (P.under (𝓞 F))` through mathlib's
+`NumberField.not_dvd_discr_iff_forall_mem` applied to `F` — the
+membership `(q : 𝓞 F) ∈ P.under (𝓞 F)` is `hmem` transported along
+`map_natCast`. Composing with the hypothesis
+`Algebra.IsUnramifiedAt (𝓞 F) P` is then mathlib's
+`Algebra.IsUnramifiedAt.comp`, which is transitivity of
+`Algebra.FormallyUnramified` at the localizations and needs no
+different-ideal bookkeeping at all; the tower instance
+`IsScalarTower ℤ (𝓞 F) (𝓞 K)` and `P.LiesOver (P.under (𝓞 F))` are both
+found by synthesis. (`differentIdeal_eq_differentIdeal_mul_differentIdeal`
+together with `not_dvd_differentIdeal_iff` is a second, longer route: it
+would additionally require the separability side conditions of the
+different, which `IsUnramifiedAt.comp` does not.)
 
 FAITHFULNESS. `hqF` (`q ∤ d_F`) is LOAD-BEARING and must not be dropped:
 `d_K` is divisible by `d_F ^ [K : F]` by the discriminant tower formula,
@@ -4148,8 +4156,23 @@ theorem isUnramifiedAt_int_of_isUnramifiedAt_of_not_dvd_discr
     (P : Ideal (𝓞 ↥K)) [P.IsPrime]
     (hmem : (q : 𝓞 ↥K) ∈ P)
     (hur : Algebra.IsUnramifiedAt (𝓞 F) P) :
-    Algebra.IsUnramifiedAt ℤ P :=
-  sorry
+    Algebra.IsUnramifiedAt ℤ P := by
+  haveI := hur
+  -- The place `w` of `F` below `P`.
+  set w : Ideal (𝓞 F) := P.under (𝓞 F) with hw
+  haveI : w.IsPrime := Ideal.IsPrime.under (𝓞 F) P
+  haveI : P.LiesOver w := ⟨rfl⟩
+  -- `q ∈ w`, because `q` is a rational integer lying in `P`.
+  have hqw : ((q : ℤ) : 𝓞 F) ∈ w := by
+    rw [hw, Ideal.under, Ideal.mem_comap]
+    push_cast
+    simpa using hmem
+  -- `q ∤ d_F` makes `w` unramified over `ℤ`.
+  haveI : Algebra.IsUnramifiedAt ℤ w :=
+    (NumberField.not_dvd_discr_iff_forall_mem F (𝓞 F)
+      (Nat.prime_iff_prime_int.mp hq)).mp hqF w inferInstance hqw
+  -- Unramifiedness composes along the tower `ℤ ⊆ 𝓞 F ⊆ 𝓞 K`.
+  exact Algebra.IsUnramifiedAt.comp (R := ℤ) (A := 𝓞 F) (B := 𝓞 ↥K) w P
 
 /-- **Inertia-trivial extensions of `F` have discriminant supported over
 `2ℓd_F`** (PROVEN 2026-07-26 over the two leaves immediately above — it
