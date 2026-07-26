@@ -87,6 +87,7 @@ public import Fermat.FLT.EllipticCurve.Velu
 -- level-169 descent leaves below). `public` because `End` occurs in signature
 -- position there.
 public import Fermat.FLT.EllipticCurve.Isogeny
+public import Fermat.FLT.EllipticCurve.IsogenyTrace
 -- `cyclotomicCharacterModL` and the stable-line extraction, used in the
 -- character bookkeeping of the Serre §4.1 dichotomy.
 public import Fermat.FLT.GaloisRepresentation.Chebotarev
@@ -7847,6 +7848,63 @@ theorem classPoly500_no_rat_root (x : ℚ)
 
 end MazurLevel125
 
+/-- **Atkin-Lehner fixedness at level `125`, in isogeny vocabulary** (LEAF, cut
+2026-07-26 off `exists_endSq_neg125_of_stable_cyclic_subgroup_order_125`).
+
+This is the MODULAR half of Kenku's argument at level `125`, and after this cut
+it is all that is left of it: a Galois-stable cyclic subgroup `C = ⟨g⟩` of order
+`125` gives a rational point of `X_0(125)`, which is not one of the two rational
+cusps (`E` is an honest elliptic curve), hence is FIXED by the Atkin-Lehner
+involution `w_125` because `rank J_0(125)^-(ℚ) = 0`. See the section note above
+for the Magma rank table and the two independent fixed-point counts.
+
+**What `w_125`-fixedness says here, and why it is stated this way.** A fixed
+point means `(E, C) ≅ (E/C, E[125]/C)` AS PAIRS. Writing `φ : E → E/C` for the
+quotient isogeny and `ι : E/C ≅ E` for the isomorphism, `ψ := ι ∘ φ` is an
+endomorphism of `E` with
+
+* `ker ψ = C` — the first conjunct; and
+* `ψ (E[125]) = ι (E[125]/C) = C` — the second conjunct.
+
+The second conjunct is the whole Atkin-Lehner content and it is NOT decoration.
+The cut-obstruction audit below refuted the weaker cut that keeps only
+`E ≅ E/C`, i.e. `j(E) = j(E/C)`, by the explicit curve `j = 1728`, `α = 11 + 2i`
+of norm `125`: there `C := ker α` is cyclic of order `125` with `E/C ≅ E`, and
+yet `α² = 117 + 44i ≠ -125`. That curve fails the second conjunct — `α(E[125])`
+is `ker ᾱ`, not `ker α`, because `5` splits in `ℤ[i]` — so this leaf excludes it,
+as it must. The audit's objection is therefore respected rather than evaded.
+
+**This leaf is still vacuously true** (no elliptic curve over `ℚ` has a rational
+cyclic `125`-isogeny), exactly like its parent and every other level node in this
+file. What makes the cut a REDUCTION rather than a renaming is that the passage
+from these two conjuncts to `ψ² = [-125]` is now PROVEN, in
+`WeierstrassCurve.End.sq_eq_neg_natCast_of_atkinLehner`: the CM/trace algebra has
+left this leaf, so whoever attacks it needs only `X_0(125)`, `J_0(125)`, the
+Atkin-Lehner involution and the rank input, and no longer also the theory of
+complex multiplication.
+
+Missing machinery for THIS leaf is items (1)-(4) of the parent's list; item (5),
+CM theory, is no longer needed here and is replaced by the single leaf
+`WeierstrassCurve.End.exists_charPoly` (the characteristic polynomial and Hasse
+bound for an endomorphism), which is shared with level `169`. -/
+theorem WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine,
+      AddMonoidHom.ker
+          ((ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
+            (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+        = AddSubgroup.zmultiples g ∧
+      (fun P => (ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) P) ''
+          {P : (E⁄(AlgebraicClosure ℚ)).Point | (125 : ℕ) • P = 0}
+        = (AddSubgroup.zmultiples g : Set (E⁄(AlgebraicClosure ℚ)).Point) :=
+  sorry
+
 /-- **A subgroup containing the full `p`-torsion is not cyclic of order `n`**
 (PROVEN 2026-07-26). Here `p > 1` is invertible in the base and `p ∣ n`.
 
@@ -7988,8 +8046,8 @@ theorem WeierstrassCurve.not_exists_natCast_mul_of_ker_zmultiples
   show p • ((φ : AddMonoid.End E.toAffine.Point) P) = 0
   rw [hcomm, hPn, map_zero]
 
-/-- **The Atkin-Lehner descent at level `125`, in isogeny vocabulary** (LEAF,
-2026-07-26; the half of Kenku's argument that could not previously be STATED).
+/-- **The Atkin-Lehner descent at level `125`, in isogeny vocabulary** (PROVEN
+2026-07-26 over the cut above; formerly a LEAF).
 
 `X_0(125)` has genus `8`, `rank J_0(125)(ℚ)` is carried entirely by the
 `w_125 = +1` part, and the `w_125 = -1` part has rank `0`. So a rational point
@@ -8012,7 +8070,17 @@ take `[[0, -125], [1, 0]]` in `End((ℚ/ℤ)²) = M₂(Ẑ)`. Here `ψ` ranges o
 no such matrix qualifies.
 
 Reference: Kenku, "On the modular curves `X_0(125)`, `X_1(25)` and `X_1(49)`",
-J. London Math. Soc. (2) 23 (1981), 415-427. -/
+J. London Math. Soc. (2) 23 (1981), 415-427.
+
+**CUT 2026-07-26: the CM algebra is now factored out.** This node used to be an
+atom, on the ground recorded in the `CUT-OBSTRUCTION AUDIT` below that "there is
+no degree, no dual isogeny, no composition and no endomorphism ring anywhere in
+the tree". `Fermat/FLT/EllipticCurve/Isogeny.lean` has since supplied all four,
+so that ground is gone and the node splits. What remains here is the modular
+half only — see `exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125`
+below — with the passage from Atkin-Lehner fixedness to `ψ² = [-125]` discharged
+by `WeierstrassCurve.End.sq_eq_neg_natCast_of_atkinLehner` (PROVEN, in
+`Fermat/FLT/EllipticCurve/IsogenyTrace.lean`). -/
 theorem WeierstrassCurve.exists_endSq_neg125_of_stable_cyclic_subgroup_order_125
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 125)
@@ -8026,8 +8094,13 @@ theorem WeierstrassCurve.exists_endSq_neg125_of_stable_cyclic_subgroup_order_125
         AddMonoidHom.ker
             ((ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
               (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
-          = AddSubgroup.zmultiples g :=
-  sorry
+          = AddSubgroup.zmultiples g := by
+  obtain ⟨ψ, hker, himg⟩ :=
+    E.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125 g hg hstable
+  refine ⟨ψ, ?_, hker⟩
+  have h := WeierstrassCurve.End.sq_eq_neg_natCast_of_atkinLehner
+    ψ 125 (by norm_num) g hg hker himg
+  simpa using h
 
 /-- **Cyclicity at level `125`, in the form the CM leaf consumes** (PROVEN
 2026-07-26): an endomorphism whose kernel is cyclic of order `125` is not `5`
@@ -10825,8 +10898,47 @@ theorem classPoly676_no_rat_root (x : ℚ)
 
 end MazurLevel169
 
-/-- **The Atkin-Lehner descent at level `169`, in isogeny vocabulary** (LEAF,
-2026-07-26; the half of Kenku's argument that could not previously be STATED).
+/-- **Atkin-Lehner fixedness at level `169`, in isogeny vocabulary** (LEAF, cut
+2026-07-26 off `exists_endSq_neg169_of_stable_cyclic_subgroup_order_169`).
+
+The exact analogue of
+`exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_125` one level cluster
+above, and the two share both their consumer lemma
+(`WeierstrassCurve.End.sq_eq_neg_natCast_of_atkinLehner`, PROVEN) and the single
+leaf that lemma rests on (`WeierstrassCurve.End.exists_charPoly`). Read the
+`125` docstring for the geometry; only the numbers change.
+
+Here `C = ⟨g⟩` is cyclic of order `169 = 13²`, the relevant discriminant is
+`-4·169 = -676`, and the rank input is `rank J_0(169)^-(ℚ) = 0`. The two
+conjuncts again say that `(E, C)` is a FIXED POINT of `w_169` as a PAIR — `ψ`
+has kernel exactly `C`, and carries the full `169`-torsion onto `C` — which is
+strictly stronger than `E ≅ E/C` and is what makes `ψ² = [-169]` follow.
+
+**Vacuously true**, like its parent: no elliptic curve over `ℚ` has a rational
+cyclic `169`-isogeny. The cut is a reduction rather than a renaming for the same
+reason as at `125`: the CM/trace algebra is now discharged elsewhere, so this
+leaf carries only the modular content. -/
+theorem WeierstrassCurve.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_169
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 169)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ ψ : WeierstrassCurve.End (E⁄(AlgebraicClosure ℚ)).toAffine,
+      AddMonoidHom.ker
+          ((ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
+            (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
+        = AddSubgroup.zmultiples g ∧
+      (fun P => (ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) P) ''
+          {P : (E⁄(AlgebraicClosure ℚ)).Point | (169 : ℕ) • P = 0}
+        = (AddSubgroup.zmultiples g : Set (E⁄(AlgebraicClosure ℚ)).Point) :=
+  sorry
+
+/-- **The Atkin-Lehner descent at level `169`, in isogeny vocabulary** (PROVEN
+2026-07-26 over the cut just above; formerly a LEAF, and the half of Kenku's
+argument that could not previously be STATED).
 
 `X_0(169)` has genus `8`, `rank J_0(169)(ℚ)` is carried entirely by the
 `w_169 = +1` part, and the `w_169 = -1` part has rank `0`. So a rational point
@@ -10863,8 +10975,13 @@ theorem WeierstrassCurve.exists_endSq_neg169_of_stable_cyclic_subgroup_order_169
         AddMonoidHom.ker
             ((ψ : AddMonoid.End (E⁄(AlgebraicClosure ℚ)).toAffine.Point) :
               (E⁄(AlgebraicClosure ℚ)).Point →+ (E⁄(AlgebraicClosure ℚ)).Point)
-          = AddSubgroup.zmultiples g :=
-  sorry
+          = AddSubgroup.zmultiples g := by
+  obtain ⟨ψ, hker, himg⟩ :=
+    E.exists_atkinLehnerEnd_of_stable_cyclic_subgroup_order_169 g hg hstable
+  refine ⟨ψ, ?_, hker⟩
+  have h := WeierstrassCurve.End.sq_eq_neg_natCast_of_atkinLehner
+    ψ 169 (by norm_num) g hg hker himg
+  simpa using h
 
 /-- **Cyclicity at level `169`, in the form the CM leaf consumes** (PROVEN
 2026-07-26): an endomorphism whose kernel is cyclic of order `169` is not `13`
