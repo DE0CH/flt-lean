@@ -11655,7 +11655,51 @@ open work, not a transcription. Contrast `MazurLevel27.rational_point_x0TwentySe
 which the section note offers as the precedent: that one is PROVEN because it
 turned out to be literally `fermatLastTheoremThree`, i.e. it had a
 ready-made proof in the tree — it is not evidence that a rank-`0`
-Mordell–Weil statement is cheap here. -/
+Mordell–Weil statement is cheap here.
+
+**INDEPENDENT RE-CONFIRMATION OF THE COST, AND ONE UNTRIED ROUTE (2026-07-26,
+second owner, Magma; untrusted searcher, never a prover).** Everything in the
+audit above reproduces: `Genus(C) = 1`; all four listed pairs lie on the curve;
+`EllipticCurve(C, (−18, −49/2))` returns `y² − 10xy = x³ − 27x² − 63x`, whose
+`MinimalModel` is `[1,0,0,−4,−1]` of conductor `21`, with
+`TorsionSubgroup ≅ ℤ/2 + ℤ/4`, `RankBounds = 0 0`, and the eight points
+`O, (−2,1), (−1,−1), (5,8), (2,−1), (−1/4,1/8), (−1,2), (5,−13)`.
+
+Note the distinction the earlier audit did not draw: **the CURVE is small, the
+MAP is not.** `DefiningEquations` of the birational map `C → E` print at
+`822`, `815` and `337` characters in the three coordinates, and `Inverse` of
+that map did **not complete in 8 minutes**. So item (iii) of the ingredient
+list is confirmed expensive from a second, independent direction, and in
+particular the `exists_…_point` framing does not rescue it: concluding still
+needs the inverse, to read `t₃` back off one of the eight points.
+
+**A structural fact worth having, and the deflation that goes with it.** All
+four solutions satisfy `t₃ ∈ −2·(ℚ*)²` and `t₇ ∈ −2·(ℚ*)²`:
+
+  `−18 = −2·3²`, `−81/2 = −2(9/2)²`, `−1152 = −2·24²`, `−81/128 = −2(9/16)²`;
+  `−49/2 = −2(7/2)²`, `−49/8 = −2(7/4)²`, `−2 = −2·1²`, `−8 = −2·2²`.
+
+This looks like four independent coincidences and is **one**: `w₃` is
+`t₃ ↦ 729/t₃` and `w₇` is `t₇ ↦ 49/t₇`, both of which preserve the square class
+(`729` and `49` are squares, and inversion preserves classes), and the
+Atkin–Lehner group acts simply transitively on the four points. So the common
+square class is forced by the orbit and carries no extra arithmetic. Do not
+build a descent on it expecting independent information.
+
+**The untried route, which is the one this owner would take next.** `a := t₃ +
+729/t₃` is invariant under `w₃`, so it is a function on `X_0(21)/w₃`, and
+`t₃` satisfies `t₃² − a·t₃ + 729 = 0`, i.e. `X_0(21) → X_0(21)/w₃` is the
+double cover `y² = a² − 2916`. If `X_0(21)/w₃` has genus `0` — it does whenever
+`w₃` has a fixed point, by Riemann–Hurwitz on a genus-`1` curve — then it is
+`ℙ¹` with some hauptmodul `s`, and the whole node becomes `y² = a(s)² − 2916`
+for an explicit rational function `a(s)`: a SMALL model, reached without the
+generic `EllipticCurve` algorithm that produces the `800`-character map.
+Symmetrically `b := t₇ + 49/t₇` gives `y² = b² − 196` over `X_0(21)/w₇`. This
+was not attempted here for want of time, and it is the cheapest thing left to
+try before accepting the `800`-character transcription. **It does not remove
+the Mordell–Weil citation** — it only makes item (iii) tractable; items (i) and
+(ii), and above all the absence of finite generation from this mathlib pin,
+are untouched by it. -/
 theorem rational_point_x0TwentyOne (t₃ t₇ : ℚ) (ht₃ : t₃ ≠ 0) (ht₇ : t₇ ≠ 0)
     (h : (t₃ + 27) * (t₃ + 3) ^ 3 * t₇ ^ 7
       = t₃ * ((t₇ ^ 2 + 13 * t₇ + 49) * (t₇ ^ 2 + 245 * t₇ + 2401) ^ 3)) :
