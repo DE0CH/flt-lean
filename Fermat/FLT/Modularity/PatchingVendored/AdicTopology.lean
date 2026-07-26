@@ -89,15 +89,15 @@ instance (priority := 100) [IsArtinianRing R] : DiscreteTopology R := by
   rw [← jacobson_eq_maximalIdeal _ bot_ne_top, hn]
   rfl
 
--- `_root_.` IS LOAD-BEARING (2026-07-26). This section sits inside
--- `namespace IsLocalRing`, so a bare `lemma Submodule.isCompact_of_fg` declares
--- `IsLocalRing.Submodule.isCompact_of_fg` and thereby CREATES a nested
--- `IsLocalRing.Submodule` namespace. Every `open IsLocalRing` elsewhere then
--- binds `Submodule` to that nearly-empty nested namespace instead of the root
--- one, and even a fully qualified `Submodule.foo` dies as an unknown constant.
--- `Patching.lean` opens `IsLocalRing` at three places and took ~99 errors from
--- this, none of them anywhere near the cause. Same for `Ideal` just below.
-lemma _root_.Submodule.isCompact_of_fg {R M : Type*} [CommRing R] [TopologicalSpace R]
+-- NOTE (2026-07-26): these two DELIBERATELY keep their nested names
+-- `IsLocalRing.Submodule.isCompact_of_fg` / `IsLocalRing.Ideal.isCompact_of_fg`.
+-- `_root_.` was tried at integration and is WRONG: mathlib defines both names at
+-- the root (`Mathlib/Topology/Algebra/Module/Compact.lean`), so hoisting these
+-- out produces `has already been declared`. They are not duplicates of the
+-- mathlib lemmas — mathlib's take `[ContinuousAdd M] [ContinuousSMul R M]`,
+-- whereas these derive both from `[IsModuleTopology R M]`, which is what the
+-- call sites in this development actually have.
+lemma Submodule.isCompact_of_fg {R M : Type*} [CommRing R] [TopologicalSpace R]
     [AddCommGroup M]
     [Module R M]
     [TopologicalSpace M] [IsModuleTopology R M] [CompactSpace R] {N : Submodule R M} (hN : N.FG) :
@@ -112,8 +112,7 @@ lemma _root_.Submodule.isCompact_of_fg {R M : Type*} [CommRing R] [TopologicalSp
     AddHom.coe_mk]
   continuity
 
-lemma _root_.Ideal.isCompact_of_fg {R : Type*} [CommRing R] [TopologicalSpace R]
-    [IsTopologicalRing R]
+lemma Ideal.isCompact_of_fg {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
     [CompactSpace R] {I : Ideal R} (hI : I.FG) : IsCompact (X := R) I :=
   Submodule.isCompact_of_fg hI
 
