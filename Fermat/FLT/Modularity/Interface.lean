@@ -13520,8 +13520,8 @@ theorem exists_flatIsogenousLattice_of_equivariantCover
         (((ρT.baseChange (ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})).toLocal 𝔭ᵥ).Space) :=
       { toFun := fun x =>
           (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k}) ⊗ₜ[ℤ_[p]] (ψlin x)
-        map_zero' := by rw [map_zero, TensorProduct.tmul_zero] <;> rfl
-        map_add' := fun x y => by rw [map_add, TensorProduct.tmul_add] <;> rfl }
+        map_zero' := by rw [map_zero, TensorProduct.tmul_zero]; rfl
+        map_add' := fun x y => by rw [map_add, TensorProduct.tmul_add]; rfl }
     refine isFlatPointsGroupAt_of_subquotient act hact1 hactmul hpi F ?_ π ?_ ?_ ?_
     · intro σ x
       funext i
@@ -13545,7 +13545,7 @@ theorem exists_flatIsogenousLattice_of_equivariantCover
       | add a b ha hb =>
         obtain ⟨x, hx⟩ := ha
         obtain ⟨y, hy⟩ := hb
-        exact ⟨x + y, by rw [map_add, hx, hy] <;> rfl⟩
+        exact ⟨x + y, by rw [map_add, hx, hy]; rfl⟩
       | tmul cc t =>
         obtain ⟨cc', rfl⟩ := Ideal.Quotient.mk_surjective cc
         obtain ⟨z0, hz0⟩ := hψlinsurj t
@@ -13573,7 +13573,7 @@ theorem exists_flatIsogenousLattice_of_equivariantCover
         TensorProduct.tmul_smul, TensorProduct.smul_tmul']
       have hz : ((p : ℤ_[p]) ^ k • (1 : ℤ_[p] ⧸ Ideal.span {(p : ℤ_[p]) ^ k})) = 0 := by
         rw [Algebra.smul_def]; simp
-      rw [hz, TensorProduct.zero_tmul] <;> rfl
+      rw [hz, TensorProduct.zero_tmul]
   refine ⟨Tsub, inferInstance, inferInstance, hfinT, hfreeT, ρT, c, f0, g0, hflatT, ?_, ?_⟩
   · intro σ x
     refine Subtype.ext ?_
@@ -21246,7 +21246,14 @@ theorem heckeOp_coe {M : ℕ} (hM : 0 < M) {q : ℕ} (hq : q.Prime)
 functional `qCoeffL`). -/
 theorem qCoeff_smul {N : ℕ} (c : ℂ) (f : CuspForm (Gamma0GL N) 2) (m : ℕ) :
     qCoeff N (c • f) m = c * qCoeff N f m := by
-  simpa using (qCoeffL N m).map_smul c f
+  -- (2026-07-26) was `simpa using (qCoeffL N m).map_smul c f`, which broke:
+  -- `simp` now closes the supplied term's type to `True` (it pushes the
+  -- scalar through `qCoeffL` on both sides) while the GOAL has no simp
+  -- lemma pushing `•` inside `qCoeff`, so the two no longer meet. Rewriting
+  -- explicitly is stable.
+  have h := (qCoeffL N m).map_smul c f
+  rw [qCoeffL_apply, qCoeffL_apply, smul_eq_mul] at h
+  exact h
 
 /-- **A normalized weight-2 eigenform is an eigenvector of the Hecke
 operator** (PROVEN — the eigenform carrier `IsWeightTwoEigenform`,
