@@ -449,57 +449,189 @@ theorem y0HasNoRationalPoint_prod_two_primes {p q : ℕ} (hp : p.Prime)
     Y0HasNoRationalPoint (p * q) :=
   sorry
 
+/-! #### Reconnaissance for the eleven named levels (2026-07-26)
+
+The arithmetic data deciding the route for each of the eleven levels
+below was computed with Magma and is recorded here so that no later
+owner has to recompute it.  Two facts hold **uniformly** across all
+eleven, and together they fix the shape of every proof:
+
+* **`rank J_0(N)(ℚ) = 0` for all eleven.**  Decomposing the cuspidal
+  subspace of `S_2(Γ_0(N))` into newform factors and evaluating
+  `L(A, 1)` on each, *every* factor at *every* one of the eleven levels
+  has `L(A, 1) ≠ 0`; so `J_0(N)` has analytic rank `0`, and hence
+  Mordell–Weil rank `0` by Kolyvagin–Logachev.  **No level below needs
+  Chabauty–Coleman.**  (This corrects the guess recorded in the `N = 28`
+  docstring before this pass, which called it "a Jacobian/Chabauty
+  computation".)
+* Consequently `J_0(N)(ℚ)` is finite, reduction `J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)`
+  is injective for every odd prime `ℓ ∤ N` of good reduction, and — using
+  a rational cusp as base point for Abel–Jacobi — `X_0(N)(ℚ)` injects
+  into `X_0(N)(𝔽_ℓ)`.  So `#X_0(N)(ℚ) ≤ #X_0(N)(𝔽_ℓ)`.
+
+The counts come from Eichler–Shimura,
+`#X_0(N)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(N)))`.  Writing `c(N)` for the
+number of **`ℚ`-rational** cusps — the divisors `d ∣ N` with
+`φ(gcd(d, N/d)) = 1` — the table is:
+
+| `N` | genus | cusps | `c(N)` | best `ℓ` | `#X_0(N)(𝔽_ℓ)` | route |
+|-----|-------|-------|--------|----------|------------------|-------|
+| 20  | 1 | 6  | 6 | 3  | 6 | closes |
+| 24  | 1 | 8  | 8 | 5  | 8 | closes |
+| 28  | 2 | 6  | 6 | 5  | 6 | closes |
+| 30  | 3 | 8  | 8 | 17 | 8 | closes |
+| 36  | 1 | 12 | 6 | 5  | 6 | closes |
+| 42  | 5 | 8  | 8 | 11 | 8 | closes |
+| 45  | 3 | 8  | 4 | 7  | 8 | sieve |
+| 50  | 2 | 12 | 4 | 3  | 4 | closes |
+| 54  | 4 | 12 | 4 | 5  | 6 | sieve |
+| 63  | 5 | 8  | 4 | 5  | 8 | sieve |
+| 75  | 5 | 12 | 4 | 7  | 8 | sieve |
+
+**Seven levels — `20, 24, 28, 30, 36, 42, 50` — close on a single
+prime**: at the `ℓ` listed, `#X_0(N)(𝔽_ℓ) = c(N)`, and the `c(N)`
+rational cusps already realise that many rational points, so
+`X_0(N)(ℚ)` consists exactly of the rational cusps and `Y_0(N)(ℚ) = ∅`.
+
+**Four levels — `45, 54, 63, 75` — do not.**  For these the single-prime
+bound is strictly weaker than `c(N)`: no prime `ℓ < 100` with `ℓ ∤ N`
+attains `#X_0(N)(𝔽_ℓ) = c(N)`, the minima over `3 ≤ ℓ < 60` being `8`
+at `ℓ = 7` (`N = 45`), `6` at `ℓ = 5` (`N = 54`), `8` at `ℓ = 5`
+(`N = 63`) and `8` at `ℓ = 7` (`N = 75`), against `c(N) = 4` in each
+case.  They need a **multi-prime Mordell–Weil sieve**: the image of
+`X_0(N)(ℚ)` in the finite group `J_0(N)(ℚ)` must be simultaneously
+compatible with `X_0(N)(𝔽_ℓ) → J_0(N)(𝔽_ℓ)` for several `ℓ` at once.
+The `gcd` of `#J_0(N)(𝔽_ℓ)` over `3 ≤ ℓ < 60`, which bounds
+`#J_0(N)(ℚ)`, is `512`, `243`, `6144` and `2560` respectively — so the
+sieve has a genuinely finite search space, but one prime is not enough.
+
+**All eleven remain IRREDUCIBLE here for the same reason**, and it is
+not the arithmetic above: nothing in this development yet has `X_0(N)`
+as a scheme, its cusps, `J_0(N)`, Mordell–Weil, or reduction mod `ℓ`.
+The arithmetic is settled; the *interface* is what is missing.  See the
+sibling node `y0HasNoRationalPoint_prod_two_primes`, which owns that
+shared layer. -/
+
 /-- **`Y_0(20)(ℚ) = ∅`** (sorry node; `X_0(20)` has genus `1`).  Ogg,
 *Rational points on certain elliptic modular curves*, Proc. Sympos. Pure
 Math. 24 (1973): `X_0(20)` is an elliptic curve of Mordell–Weil rank `0`
-over `ℚ` whose six rational points are its six cusps. -/
+over `ℚ` whose six rational points are its six cusps.
+
+ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(20)(ℚ) = 0`,
+all six cusps are rational, and `#X_0(20)(𝔽_3) = 6`; so the six cusps
+exhaust `X_0(20)(ℚ)`.  (`ℓ = 7` also gives `6`.) -/
 theorem y0HasNoRationalPoint_twenty : Y0HasNoRationalPoint 20 :=
   sorry
 
 /-- **`Y_0(24)(ℚ) = ∅`** (sorry node; `X_0(24)` has genus `1`; Ogg
-1973). -/
+1973).
+
+ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(24)(ℚ) = 0`,
+all eight cusps are rational, and `#X_0(24)(𝔽_5) = 8`; so the eight
+cusps exhaust `X_0(24)(ℚ)`.  (`ℓ = 7` and `ℓ = 11` also give `8`.) -/
 theorem y0HasNoRationalPoint_twentyFour : Y0HasNoRationalPoint 24 :=
   sorry
 
-/-- **`Y_0(28)(ℚ) = ∅`** (sorry node; `X_0(28)` has genus `2`, so this is
-a Jacobian/Chabauty computation; Ogg, *Hyperelliptic modular curves*,
-Bull. Soc. Math. France 102 (1974)). -/
+/-- **`Y_0(28)(ℚ) = ∅`** (sorry node; `X_0(28)` has genus `2`; Ogg,
+*Hyperelliptic modular curves*, Bull. Soc. Math. France 102 (1974)).
+
+ROUTE (rank-`0` reduction, closes on one prime).  **This level does NOT
+need Chabauty–Coleman**, contrary to what this docstring asserted before
+2026-07-26: `J_0(28)` has analytic rank `0` (its single newform factor
+has `L(A, 1) ≠ 0`), hence Mordell–Weil rank `0`.  All six cusps are
+rational and `#X_0(28)(𝔽_5) = 6`, so the six cusps exhaust
+`X_0(28)(ℚ)`.  (`ℓ = 17` also gives `6`.) -/
 theorem y0HasNoRationalPoint_twentyEight : Y0HasNoRationalPoint 28 :=
   sorry
 
 /-- **`Y_0(30)(ℚ) = ∅`** (sorry node; `X_0(30)` has genus `3`).  This is
-the minimal level with three distinct prime factors. -/
+the minimal level with three distinct prime factors.
+
+ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(30)(ℚ) = 0`
+(both newform factors have `L(A, 1) ≠ 0`), all eight cusps are rational,
+and `#X_0(30)(𝔽_17) = 8`; so the eight cusps exhaust `X_0(30)(ℚ)`.
+Note the small primes are *not* good enough here — `ℓ = 7, 11, 13` give
+`12, 20, 16` — so `ℓ = 17` is the witness to use. -/
 theorem y0HasNoRationalPoint_thirty : Y0HasNoRationalPoint 30 :=
   sorry
 
 /-- **`Y_0(36)(ℚ) = ∅`** (sorry node; `X_0(36)` has genus `1`; Ogg
-1973). -/
+1973).
+
+ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(36)(ℚ) = 0`.
+`X_0(36)` has `12` cusps but only `6` rational ones (the divisors
+`d ∈ {1, 2, 4, 9, 18, 36}`; the pairs over `d = 3, 6, 12` are conjugate
+over `ℚ(ζ_3)`), and `#X_0(36)(𝔽_5) = 6`; so the six rational cusps
+exhaust `X_0(36)(ℚ)`. -/
 theorem y0HasNoRationalPoint_thirtySix : Y0HasNoRationalPoint 36 :=
   sorry
 
 /-- **`Y_0(42)(ℚ) = ∅`** (sorry node; `X_0(42)` has genus `5`).  The
-second minimal level with three distinct prime factors. -/
+second minimal level with three distinct prime factors.
+
+ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(42)(ℚ) = 0`
+(all three newform factors have `L(A, 1) ≠ 0`), all eight cusps are
+rational, and `#X_0(42)(𝔽_11) = 8`; so the eight cusps exhaust
+`X_0(42)(ℚ)`.  Despite the genus being `5`, this is the cheapest kind of
+argument — no Chabauty–Coleman is involved. -/
 theorem y0HasNoRationalPoint_fortyTwo : Y0HasNoRationalPoint 42 :=
   sorry
 
-/-- **`Y_0(45)(ℚ) = ∅`** (sorry node; `X_0(45)` has genus `3`). -/
+/-- **`Y_0(45)(ℚ) = ∅`** (sorry node; `X_0(45)` has genus `3`).
+
+ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
+`rank J_0(45)(ℚ) = 0` (both newform factors have `L(A, 1) ≠ 0`), so
+`X_0(45)(ℚ)` is finite and injects into `X_0(45)(𝔽_ℓ)` for every odd
+`ℓ ∤ 45`.  But `X_0(45)` has `8` cusps of which only `4` are rational,
+and **no** prime `ℓ < 100` attains `#X_0(45)(𝔽_ℓ) = 4`: the minimum over
+`3 ≤ ℓ < 60` is `8`, at `ℓ = 7`.  So a single reduction leaves a factor
+of `2` unaccounted for, and the four rational points must be pinned by
+intersecting the images of `X_0(45)(𝔽_ℓ) → J_0(45)(𝔽_ℓ)` over several
+`ℓ` simultaneously.  `#J_0(45)(ℚ)` divides `512`. -/
 theorem y0HasNoRationalPoint_fortyFive : Y0HasNoRationalPoint 45 :=
   sorry
 
 /-- **`Y_0(50)(ℚ) = ∅`** (sorry node; `X_0(50)` has genus `2`; Ogg
-1974). -/
+1974).
+
+ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(50)(ℚ) = 0`
+(both newform factors have `L(A, 1) ≠ 0`).  `X_0(50)` has `12` cusps but
+only `4` rational ones, and `#X_0(50)(𝔽_3) = 4`; so the four rational
+cusps exhaust `X_0(50)(ℚ)`.  This is the tightest of the seven
+single-prime levels — the count matches `c(N)` exactly at the smallest
+available prime. -/
 theorem y0HasNoRationalPoint_fifty : Y0HasNoRationalPoint 50 :=
   sorry
 
-/-- **`Y_0(54)(ℚ) = ∅`** (sorry node; `X_0(54)` has genus `4`). -/
+/-- **`Y_0(54)(ℚ) = ∅`** (sorry node; `X_0(54)` has genus `4`).
+
+ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
+`rank J_0(54)(ℚ) = 0` (all three newform factors have `L(A, 1) ≠ 0`).
+`X_0(54)` has `12` cusps of which `4` are rational, and no prime
+`ℓ < 100` attains `#X_0(54)(𝔽_ℓ) = 4`: the minimum over `3 ≤ ℓ < 60` is
+`6`, at `ℓ = 5`.  This is the *closest* of the four sieve levels — the
+single-prime bound overshoots by only `2` — so it is the natural one to
+attempt first.  `#J_0(54)(ℚ)` divides `243`. -/
 theorem y0HasNoRationalPoint_fiftyFour : Y0HasNoRationalPoint 54 :=
   sorry
 
-/-- **`Y_0(63)(ℚ) = ∅`** (sorry node; `X_0(63)` has genus `5`). -/
+/-- **`Y_0(63)(ℚ) = ∅`** (sorry node; `X_0(63)` has genus `5`).
+
+ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
+`rank J_0(63)(ℚ) = 0` (all three newform factors have `L(A, 1) ≠ 0`).
+`X_0(63)` has `8` cusps of which `4` are rational, and no prime
+`ℓ < 100` attains `#X_0(63)(𝔽_ℓ) = 4`: the minimum over `3 ≤ ℓ < 60` is
+`8`, at `ℓ = 5`.  `#J_0(63)(ℚ)` divides `6144`. -/
 theorem y0HasNoRationalPoint_sixtyThree : Y0HasNoRationalPoint 63 :=
   sorry
 
-/-- **`Y_0(75)(ℚ) = ∅`** (sorry node; `X_0(75)` has genus `5`). -/
+/-- **`Y_0(75)(ℚ) = ∅`** (sorry node; `X_0(75)` has genus `5`).
+
+ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
+`rank J_0(75)(ℚ) = 0` (all four newform factors have `L(A, 1) ≠ 0`).
+`X_0(75)` has `12` cusps of which `4` are rational, and no prime
+`ℓ < 100` attains `#X_0(75)(𝔽_ℓ) = 4`: the minimum over `3 ≤ ℓ < 60` is
+`8`, at `ℓ = 7`.  `#J_0(75)(ℚ)` divides `2560`. -/
 theorem y0HasNoRationalPoint_seventyFive : Y0HasNoRationalPoint 75 :=
   sorry
 
