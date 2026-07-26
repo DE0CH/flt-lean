@@ -28861,13 +28861,172 @@ theorem heckeSubalgebra_modularTatePadic (M : ℕ) :
   rw [h1]
   exact adjoin_frameAction_eq_range _ (adjoin_modularTateGen_eq_top M)
 
+/-! `𝕋_ℚ` is a finite-dimensional `ℚ`-algebra — the one genuinely
+ANALYTIC input to the geometric side, entering below as the
+`moduleFinite` field (`Vp = (𝕋_ℚ ⊗ ℚ̄_p)²` is a finite-dimensional
+`ℚ̄_p`-space exactly when `𝕋_ℚ` is a finite-dimensional `ℚ`-space).
+
+It was a sorry node when the EIGHTH cut was written; it is now PROVEN,
+as `finiteDimensional_modularHeckeAlgebraQ` far above, over
+`heckeSubring_moduleFinite` — the Sturm bound enters only through that
+leaf. The duplicate declaration that stood here was removed at
+integration (2026-07-26): the fact is proven once and consumed twice,
+here and in `exists_newformFactor_modularHeckeAlgebraQ`. -/
+
+/-- **The Weil bound for a weight-two newform** (sorry node, NINTH
+decomposition 2026-07-26 — cut out of `ModularTateGaloisData` below,
+where it was buried inside `irred_eigenspace`): the `q`-expansion
+coefficients of a normalized weight-two newform of level `M` satisfy
+`|a_q| ≤ 2√q` at every prime.
+
+Classical content (Diamond–Shurman Theorem 5.9.1; Eichler–Shimura,
+i.e. the Hasse–Weil bound for the abelian variety `J₀(M)` — for weight
+two this is a THEOREM, not the Ramanujan–Petersson conjecture): at a
+prime `q ∤ M` one writes `a_q = α + β` with `αβ = q` and
+`|α| = |β| = √q`, giving `|a_q| ≤ 2√q`; at `q ‖ M` one has
+`|a_q| = √q`, and at `q² ∣ M` one has `a_q = 0`. So the stated bound
+holds at EVERY prime and no divisibility hypothesis is needed — which
+is why the leaf is stated without one.
+
+Missing from the pin: the Eichler–Shimura relation and the Riemann
+hypothesis for curves over finite fields. This is a purely ANALYTIC
+statement about `q`-expansions — no Galois representation and no
+modular-curve geometry appears in it — which is exactly why it is
+worth having as a leaf of its own rather than as a clause buried in
+the arithmetic leaf below. -/
+theorem norm_qCoeff_le_two_mul_sqrt {M : ℕ} (hM : 0 < M)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    {q : ℕ} (hq : q.Prime) :
+    ‖qCoeff M g q‖ ≤ 2 * Real.sqrt q :=
+  sorry
+
+/-- **Ribet irreducibility, as a theorem about the frame** (sorry node,
+NINTH decomposition 2026-07-26): the `κ`-eigencomponent of the concrete
+Tate space `(𝕋_ℚ ⊗ ℚ̄_p)²` attached to a weight-two newform `g` has NO
+proper nonzero Galois-stable submodule — and this follows from the
+Eichler–Shimura congruence, the twisted Weil pairing and the Weil bound
+ALONE, with no further input from the geometry of `X₀(M)`.
+
+THE CUT EXECUTED HERE. Until the eighth decomposition named `Vp` as the
+frame `modularTateSpace`, this statement could not be separated from
+the rest of the geometric package: its hypotheses would have had to
+quantify over an EXISTENTIALLY produced carrier, and a leaf conditioned
+on such a carrier is false about legitimate inhabitants of it (the
+junk-carrier counterexample in the seventh-decomposition note above).
+With `Vp`, `padic` and `Tgen` all concrete definitions, the hypotheses
+below name ONE object and the separation is sound. What is left in
+`ModularTateGaloisData` is then pure modular-curve geometry, and the
+Galois-theoretic argument lives here.
+
+Classical content (Ribet, *Galois representations attached to
+eigenforms with Nebentypus*, Springer LNM 601 (1977), Thm. (2.3), in
+the weight-two trivial-nebentypus case; see also Ribet, *Invent. Math.*
+100 (1990), §2). Write `E` for the eigenspace and `ρ` for the action of
+`Γℚ` on it.
+
+1. `E` is 2-dimensional over `ℚ̄_p`. The frame is free of rank two over
+   `𝕋_ℚ ⊗ ℚ̄_p`, and the `κ`-eigencomponent of `𝕋_ℚ ⊗ ℚ̄_p` is a LINE
+   because `𝕋_ℚ` is étale at the maximal ideal of a newform of exact
+   level `M` — which is `exists_newformFactor_modularHeckeAlgebraQ`,
+   PROVEN above.
+2. So a proper nonzero stable `U` would be a LINE, and `ρ` would be
+   reducible: `ρ ≅ (δ₁ ∗ ; 0 δ₂)` with `δ₁, δ₂ : Γℚ → ℚ̄_pˣ` continuous.
+3. `hcong` pins the characteristic polynomial of `ρ(Frob_q)` at every
+   `q ∉ S` as `X² − κ(a_q)·X + q` (Cayley–Hamilton against the
+   congruence, exactly as in the PROVEN
+   `exists_galoisRep_charFrob_of_weightTwoNewform` above), so
+   `δ₁(Frob_q) + δ₂(Frob_q) = κ(a_q)` and `δ₁(Frob_q)·δ₂(Frob_q) = q`.
+4. `hpairfrob`, with nondegeneracy and `hpairhecke` — the latter being
+   what makes the twisted pairing restrict NONDEGENERATELY to `E` —
+   identifies `det ρ` with the `p`-adic cyclotomic character.
+5. `hcomm` is what makes `E` Galois-stable in the first place, so that
+   `ρ` exists at all.
+6. Both `δᵢ` are unramified outside `S`, so by global class field
+   theory over `ℚ` each is a finite-order character times an integral
+   power of the cyclotomic character, and step 4 forces the two
+   exponents to sum to one. Hence `κ(a_q) = δ₁(Frob_q) + δ₂(Frob_q)`
+   is, up to roots of unity, of shape `1 + q`: an algebraic number
+   whose archimedean absolute value grows like `q`. That contradicts
+   `hweil`, `|a_q| ≤ 2√q`, for all large `q` — and Chebotarev
+   (`GaloisRepresentation.dense_conjClasses_globalFrob`, PROVEN in
+   `Fermat/FLT/GaloisRepresentation/Chebotarev.lean`) supplies
+   infinitely many such `q ∉ S`.
+
+Missing from the pin, and the reason this is still a leaf: the Weil
+bound itself is the separate leaf `norm_qCoeff_le_two_mul_sqrt` above
+(so it enters here as the hypothesis `hweil`), and the classification
+of continuous `ℚ̄_pˣ`-valued characters of `Γℚ` unramified outside a
+finite set — global class field theory over `ℚ` — is not available
+either. Steps 1, 2, 4 and 5 are linear algebra over the frame and step
+3 is reachable from the pin today; step 6 is the genuinely missing
+half, and a successor should attack it there rather than at the whole
+statement.
+
+FAITHFULNESS: the conclusion is VERBATIM the `irred_eigenspace` field
+that stood in `ModularTateGaloisData` until this cut, with the
+remaining fields of that structure passed as hypotheses and nothing
+else added beyond `hweil`. So this leaf is no stronger than the field
+it replaces, and `ModularTateGaloisData` is strictly weaker than it
+was — the assembly `nonempty_modularTateModuleData` below rebuilds the
+old conclusion, so nothing is lost. -/
+theorem irred_eigenspace_modularTateSpace {M : ℕ} (hM : 0 < M)
+    (τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M))
+    (S : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
+    (hcomm : ∀ (m : ℕ) (γ : Field.absoluteGaloisGroup ℚ),
+      modularTatePadic (p := p) M (modularTateGen M m) * τJ γ =
+        τJ γ * modularTatePadic (p := p) M (modularTateGen M m))
+    (hcong : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) ^ 2
+        - modularTatePadic (p := p) M (modularTateGen M q) *
+          τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat)
+        + (q : AlgebraicClosure ℚ_[p]) • 1 = 0)
+    (pair : modularTateSpace (p := p) M →ₗ[AlgebraicClosure ℚ_[p]]
+      modularTateSpace (p := p) M →ₗ[AlgebraicClosure ℚ_[p]]
+        AlgebraicClosure ℚ_[p])
+    (hpairself : ∀ x : modularTateSpace (p := p) M, pair x x = 0)
+    (hpairnondeg : ∀ x : modularTateSpace (p := p) M,
+      (∀ y : modularTateSpace (p := p) M, pair x y = 0) → x = 0)
+    (hpairhecke : ∀ (q : ℕ), q.Prime →
+      ∀ x y : modularTateSpace (p := p) M,
+        pair (modularTatePadic (p := p) M (modularTateGen M q) x) y =
+          pair x (modularTatePadic (p := p) M (modularTateGen M q) y))
+    (hpairfrob : ∀ (q : ℕ) (hq : q.Prime),
+      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S →
+      ∀ x y : modularTateSpace (p := p) M,
+        pair (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
+            (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
+          (q : AlgebraicClosure ℚ_[p]) * pair x y)
+    (hweil : ∀ (g : CuspForm (Gamma0GL M) 2), IsWeightTwoNewform M g →
+      ∀ q : ℕ, q.Prime → ‖qCoeff M g q‖ ≤ 2 * Real.sqrt q)
+    (g : CuspForm (Gamma0GL M) 2) (hg : IsWeightTwoNewform M g)
+    (κ : heckeField M g →+* AlgebraicClosure ℚ_[p])
+    (U : Submodule (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M))
+    (hU : U ≤ heckeEigenspace
+            (fun m => modularTatePadic (p := p) M (modularTateGen M m))
+            (fun m => κ (heckeCoeff M g m)))
+    (hUstable : ∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ U, τJ γ x ∈ U) :
+    U = ⊥ ∨ U = heckeEigenspace
+          (fun m => modularTatePadic (p := p) M (modularTateGen M m))
+          (fun m => κ (heckeCoeff M g m)) :=
+  sorry
+
 /-- **The residual ARITHMETIC of the geometric leaf** (2026-07-26,
-eighth decomposition): the Galois action on the concrete Tate space
+eighth decomposition; NINTH decomposition the same day removed its
+`irred_eigenspace` field, see below): the Galois action on the concrete
+Tate space
 `(𝕋_ℚ ⊗ ℚ̄_p)²`, the exceptional set, and the twisted Weil pairing,
-with the four properties that are genuinely about the arithmetic of
+with the three properties that are genuinely about the GEOMETRY of
 `J₀(M)` — commutation with the Hecke correspondences, the
-Eichler–Shimura congruence, the Weil-pairing multiplier at good
-Frobenii, and Ribet irreducibility.
+Eichler–Shimura congruence, and the Weil-pairing multiplier at good
+Frobenii.
+
+Ribet irreducibility is no longer among them: it left this structure in
+the NINTH decomposition and is now the standalone leaf
+`irred_eigenspace_modularTateSpace` above, which derives it from the
+fields kept here plus the Weil bound. So this structure is strictly
+weaker than it was, and every remaining field is modular-curve
+geometry with no Galois-theoretic argument left in it.
 
 Everything else in `ModularTateModuleData` — the operators, the
 carrier, the realization, its faithfulness after base change, and
@@ -28894,10 +29053,21 @@ unchanged, and in dependency order:
    Ribet §2), which is what licenses the identification of the carrier
    with the frame.
 
-The one cut that is now available and was not before: `irred_eigenspace`
-can be restated as a THEOREM about the frame taking `congruence`,
-`pair_frob` and the Weil bound `|a_q| ≤ 2√q` as hypotheses. It is not
-done here because the Weil bound is itself absent from the pin. -/
+THE NINTH CUT, EXECUTED (2026-07-26). The cut this structure's own
+docstring identified as newly available — restate `irred_eigenspace` as
+a THEOREM about the frame taking `congruence`, `pair_frob` and the Weil
+bound `|a_q| ≤ 2√q` as hypotheses — has been taken above. It splits
+into two leaves that share nothing:
+
+* `norm_qCoeff_le_two_mul_sqrt`, the Weil bound: PURELY ANALYTIC, a
+  statement about `q`-expansions with no Galois representation in it;
+* `irred_eigenspace_modularTateSpace`, Ribet irreducibility: PURELY
+  GALOIS-THEORETIC, needing class field theory over `ℚ` and no
+  modular-curve geometry.
+
+Neither needs anything from the list above, which is why the split is
+worth its extra leaf: the three theories now block on three disjoint
+bodies of mathematics instead of on one entangled node. -/
 structure ModularTateGaloisData (M : ℕ) where
   /-- The continuous Galois action on the concrete Tate space. -/
   τJ : GaloisRep ℚ (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M)
@@ -28934,23 +29104,12 @@ structure ModularTateGaloisData (M : ℕ) where
       pair (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) x)
           (τJ (globalFrob hq.toHeightOneSpectrumRingOfIntegersRat) y) =
         (q : AlgebraicClosure ℚ_[p]) * pair x y
-  /-- Ribet irreducibility. -/
-  irred_eigenspace : ∀ (g : CuspForm (Gamma0GL M) 2),
-    IsWeightTwoNewform M g →
-    ∀ (κ : heckeField M g →+* AlgebraicClosure ℚ_[p]),
-    ∀ U : Submodule (AlgebraicClosure ℚ_[p]) (modularTateSpace (p := p) M),
-      U ≤ heckeEigenspace
-            (fun m => modularTatePadic (p := p) M (modularTateGen M m))
-            (fun m => κ (heckeCoeff M g m)) →
-      (∀ γ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ U, τJ γ x ∈ U) →
-      U = ⊥ ∨ U = heckeEigenspace
-            (fun m => modularTatePadic (p := p) M (modularTateGen M m))
-            (fun m => κ (heckeCoeff M g m))
 
 /-- **Inhabitation of the residual arithmetic** (sorry node — THE
 residual modular-curve leaf of the whole modularity subtree, over a
-CONCRETE Tate space). See `ModularTateGaloisData` for the missing
-theories and for the further cut this one makes available. -/
+CONCRETE Tate space, and after the NINTH cut carrying GEOMETRY only:
+Ribet irreducibility is no longer one of its fields). See
+`ModularTateGaloisData` for the missing theories. -/
 theorem nonempty_modularTateGaloisData {M : ℕ} (hM : 0 < M) :
     Nonempty (ModularTateGaloisData (p := p) M) :=
   sorry
@@ -28972,8 +29131,11 @@ and `Tgen` is the analytic Hecke operator at each prime, so:
   and `frame_span` / `frame_indep`, using
   `heckeSubalgebra_modularTatePadic` to identify the operator algebra
   with the multiplication algebra of `𝕋_ℚ ⊗ ℚ̄_p`;
+* `irred_eigenspace` is `irred_eigenspace_modularTateSpace` fed with
+  the geometric fields of `nonempty_modularTateGaloisData` and the Weil
+  bound `norm_qCoeff_le_two_mul_sqrt` — the NINTH cut;
 * every remaining field is the corresponding field of
-  `nonempty_modularTateGaloisData`, the ARITHMETIC leaf. -/
+  `nonempty_modularTateGaloisData`, the GEOMETRIC leaf. -/
 theorem nonempty_modularTateModuleData {M : ℕ} (hM : 0 < M) :
     Nonempty (ModularTateModuleData (p := p) M) := by
   classical
@@ -29001,7 +29163,12 @@ theorem nonempty_modularTateModuleData {M : ℕ} (hM : 0 < M) :
             pair_nondeg := G.pair_nondeg
             pair_hecke := G.pair_hecke
             pair_frob := G.pair_frob
-            irred_eigenspace := G.irred_eigenspace }⟩
+            irred_eigenspace := fun g hg κ U hU hUstab =>
+              irred_eigenspace_modularTateSpace hM G.τJ G.S G.hecke_comm
+                G.congruence G.pair G.pair_self G.pair_nondeg G.pair_hecke
+                G.pair_frob
+                (fun g' hg' q hq => norm_qCoeff_le_two_mul_sqrt hM g' hg' hq)
+                g hg κ U hU hUstab }⟩
   · -- `span_free`: the frame spans, over the multiplication algebra.
     intro x
     refine ⟨frameMul (k := ℚ) (F := AlgebraicClosure ℚ_[p]) (x 0), ?_,
