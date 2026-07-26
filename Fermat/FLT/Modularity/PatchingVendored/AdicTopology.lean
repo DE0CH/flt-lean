@@ -89,7 +89,16 @@ instance (priority := 100) [IsArtinianRing R] : DiscreteTopology R := by
   rw [← jacobson_eq_maximalIdeal _ bot_ne_top, hn]
   rfl
 
-lemma Submodule.isCompact_of_fg {R M : Type*} [CommRing R] [TopologicalSpace R] [AddCommGroup M]
+-- `_root_.` IS LOAD-BEARING (2026-07-26). This section sits inside
+-- `namespace IsLocalRing`, so a bare `lemma Submodule.isCompact_of_fg` declares
+-- `IsLocalRing.Submodule.isCompact_of_fg` and thereby CREATES a nested
+-- `IsLocalRing.Submodule` namespace. Every `open IsLocalRing` elsewhere then
+-- binds `Submodule` to that nearly-empty nested namespace instead of the root
+-- one, and even a fully qualified `Submodule.foo` dies as an unknown constant.
+-- `Patching.lean` opens `IsLocalRing` at three places and took ~99 errors from
+-- this, none of them anywhere near the cause. Same for `Ideal` just below.
+lemma _root_.Submodule.isCompact_of_fg {R M : Type*} [CommRing R] [TopologicalSpace R]
+    [AddCommGroup M]
     [Module R M]
     [TopologicalSpace M] [IsModuleTopology R M] [CompactSpace R] {N : Submodule R M} (hN : N.FG) :
     IsCompact (X := M) N := by
@@ -103,7 +112,8 @@ lemma Submodule.isCompact_of_fg {R M : Type*} [CommRing R] [TopologicalSpace R] 
     AddHom.coe_mk]
   continuity
 
-lemma Ideal.isCompact_of_fg {R : Type*} [CommRing R] [TopologicalSpace R] [IsTopologicalRing R]
+lemma _root_.Ideal.isCompact_of_fg {R : Type*} [CommRing R] [TopologicalSpace R]
+    [IsTopologicalRing R]
     [CompactSpace R] {I : Ideal R} (hI : I.FG) : IsCompact (X := R) I :=
   Submodule.isCompact_of_fg hI
 
