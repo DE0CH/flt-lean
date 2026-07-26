@@ -153,7 +153,8 @@ The chain, in the order the assembly uses it:
    (LEAF), the upstream FINITENESS criterion
    `ProfiniteLocalNoetherian.isNoetherianRing_isAdic_of_profinite_of_finite_ringHom`
    (PROVEN, Mazur's `Φ_ℓ`), and the LIMIT passage
-   `HilbertDeformationDatum.isWeaklyUniversal_of_finiteFrames` (LEAF).
+   `HilbertDeformationDatum.isWeaklyUniversal_of_finiteFrames` (PROVEN
+   2026-07-26), leaving the CONSTRUCTION as the cut's only open node.
    That proof also carried a SECOND FAITHFULNESS REPAIR: the residual
    field `k` of both nodes now carries `[Finite k]`,
    `[DiscreteTopology k]` and `[Algebra ℤ_[ℓ] k]`, which the `ℚ`-level
@@ -310,6 +311,14 @@ public import Mathlib.RingTheory.Nakayama
 public import Mathlib.NumberTheory.Padics.ProperSpace
 public import Mathlib.NumberTheory.Padics.RingHoms
 public import Fermat.FLT.GaloisRepresentation.HardlyRamified.LevelLimit
+-- the limit passage `HilbertDeformationDatum.isWeaklyUniversal_of_finiteFrames`:
+-- Kőnig's lemma (`nonempty_sections_of_finite_inverse_system`), the transition
+-- maps `R ⧸ Iᵐ →+* R ⧸ Iⁿ` (`Ideal.Quotient.factorPow`), and the universal
+-- property of adic completeness for ring maps (`IsAdicComplete.liftRingHom`).
+public import Mathlib.CategoryTheory.CofilteredSystem
+public import Mathlib.RingTheory.Ideal.Quotient.PowTransition
+public import Mathlib.RingTheory.Ideal.Quotient.Index
+public import Mathlib.RingTheory.AdicCompletion.RingHom
 -- proof-only: the abstract dimension-`2` Brauer–Nesbitt core
 -- `exists_linearEquiv_of_charpoly_eq`, which discharges
 -- `isHilbertResidualRigidityClause` below. `BrauerNesbittConjugacy.lean` sits
@@ -5114,10 +5123,10 @@ declaration for declaration:
   commutative algebra: a profinite local ring with finitely many
   `π`-compatible continuous points in every finite discrete local test ring
   is Noetherian, maximal-adic and maximal-adically complete.
-* `HilbertDeformationDatum.isWeaklyUniversal_of_finiteFrames` (LEAF) — the
-  LIMIT passage, from the finite discrete test objects the construction
-  classifies to the whole of Mazur's category. The `ℚ`-level twin is
-  `isWeaklyUniversalOnIdentifiedFrames_of_finite`.
+* `HilbertDeformationDatum.isWeaklyUniversal_of_finiteFrames` (PROVEN
+  2026-07-26) — the LIMIT passage, from the finite discrete test objects
+  the construction classifies to the whole of Mazur's category. The
+  `ℚ`-level twin is `isWeaklyUniversalOnIdentifiedFrames_of_finite`.
 
 and the assembly below is where `hfin` and `hlim` are actually spent:
 `hfin` bounds the hardly ramified frames over each finite discrete test
@@ -5911,10 +5920,137 @@ theorem exists_universalFrame_profinite_hilbert_of_clauses
   exact exists_universalFrame_profinite_hilbert_of_levelIdealSystem ℓ F hbase
     evbar hevsurj M 𝒥 hne hdir hker hlev hres hrep hclass hsep
 
+/-! #### The three helpers of the limit passage
+
+All three are local to this module and DELIBERATELY NAMED APART from the
+`ℚ`-level originals they transcribe: `Deformation.lean` is DOWNSTREAM of
+this file and reopens the same `GaloisRepresentation` namespace, so a
+name collision here silently rebinds the name there (that is how a
+duplicated `det_pushforwardFrame` once broke that module). -/
+
+open scoped TensorProduct in
+/-- **Characteristic polynomials push forward by coefficient extension**
+(PROVEN; the `F`-level twin of `Deformation.lean`'s
+`charpoly_pushforwardFrame`, and the exact charpoly analogue of
+`det_framePushforward` above).
+
+`LinearEquiv.charpoly_conj` absorbs the framing identification and
+`LinearMap.charpoly_baseChange` turns the base-changed characteristic
+polynomial into the `algebraMap B A`-image of the original, which is `ψ`
+by `RingHom.algebraMap_toAlgebra`.
+
+This is what lets the limit passage feed a datum's FINITE LEVELS to a
+charpoly-only universality hypothesis and read the answer back over the
+original ring. -/
+lemma charpoly_framePushforward {F : Type u} [Field F] [NumberField F]
+    {B : Type u} [CommRing B] [TopologicalSpace B] [IsTopologicalRing B]
+    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
+    (ψ : B →+* A) (hψ : Continuous ψ) (ρ : FramedGaloisRep F B (Fin 2))
+    (g : Γ F) :
+    ((framePushforward ψ hψ ρ) g).charpoly = ((ρ g).charpoly).map ψ := by
+  letI : Algebra B A := ψ.toAlgebra
+  letI : ContinuousSMul B A := continuousSMul_of_algebraMap B A
+    (by rw [RingHom.algebraMap_toAlgebra]; exact hψ)
+  show ((((ρ.baseChange A).conj
+    (TensorProduct.piScalarRight B A A (Fin 2))) g)).charpoly = _
+  rw [GaloisRep.conj_apply, LinearEquiv.charpoly_conj]
+  show ((Module.End.baseChangeHom B A (Fin 2 → B)) (ρ g)).charpoly = _
+  rw [show (Module.End.baseChangeHom B A (Fin 2 → B)) (ρ g) =
+    LinearMap.baseChange A (ρ g) from rfl, LinearMap.charpoly_baseChange,
+    RingHom.algebraMap_toAlgebra]
+
+/-- **Finiteness from `𝔪`-primarity** (PROVEN, pure commutative algebra —
+no arithmetic content; the local twin of `Deformation.lean`'s
+`finite_quotient_of_maximalIdeal_pow_le`, which lives downstream): a
+Noetherian local ring `R` with FINITE residue field `k` has finite
+quotient by any ideal `I` containing a power of the maximal ideal.
+
+`ker π` is the maximal ideal (`π` is a surjection onto a field), so
+`R ⧸ 𝔪 ≃ k` is finite; `𝔪` is finitely generated, so `R ⧸ 𝔪 ^ n` is
+finite by the successive-quotients dévissage `Ideal.finite_quotient_pow`;
+and `R ⧸ I` is a quotient of `R ⧸ 𝔪 ^ n` once `𝔪 ^ n ≤ I`. -/
+lemma finite_quotient_of_pow_maximalIdeal_le {R : Type*} [CommRing R]
+    [IsLocalRing R] [IsNoetherianRing R] {k : Type*} [Field k] [Finite k]
+    {I : Ideal R} (π : R →+* k) (hπsurj : Function.Surjective π)
+    (hn : ∃ n : ℕ, IsLocalRing.maximalIdeal R ^ n ≤ I) :
+    Finite (R ⧸ I) := by
+  obtain ⟨n, hnle⟩ := hn
+  have hker : RingHom.ker π = IsLocalRing.maximalIdeal R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective π hπsurj)
+  haveI : Finite (R ⧸ IsLocalRing.maximalIdeal R) := by
+    rw [← hker]
+    exact Finite.of_equiv k
+      (RingHom.quotientKerEquivOfSurjective hπsurj).symm.toEquiv
+  haveI : Finite (R ⧸ IsLocalRing.maximalIdeal R ^ n) :=
+    Ideal.finite_quotient_pow (IsNoetherian.noetherian _) n
+  exact Finite.of_surjective (Ideal.Quotient.factor hnle)
+    (Ideal.Quotient.factor_surjective hnle)
+
+open CategoryTheory in
+/-- **Kőnig's lemma plus adic assembly, for RING MAPS** (PROVEN, pure
+commutative algebra): let `A` be `I`-adically complete and separated and
+let `X n` be, for each `n`, a NONEMPTY FINITE set of ring homomorphisms
+`R →+* A ⧸ Iⁿ` STABLE under the transition maps `A ⧸ Iᵐ →+* A ⧸ Iⁿ`
+(`n ≤ m`) by postcomposition. Then a single `ψ : R →+* A` has all of its
+level-`n` reductions in `X n`.
+
+This is the ring-map-only shadow of `Deformation.lean`'s
+`exists_ringHom_matrix_of_forall_quotient_mem`, and it is all that is
+needed here: this module's `IsWeaklyUniversal` is CHARPOLY-ONLY, so the
+classifying datum at level `n` is a bare ring homomorphism — an element
+of a type that does not depend on anything — rather than the `ℚ`-level
+Σ-type of a map together with a conjugation. That is exactly why no
+matrix avatar has to be introduced.
+
+Proof: the `X n` with the postcomposition transitions form an inverse
+system of nonempty finite sets over `ℕᵒᵖ` (functoriality is
+`Ideal.Quotient.factor_mk` twice over), so Kőnig's lemma
+(`nonempty_sections_of_finite_inverse_system`) gives a compatible tower
+`(ψₙ)`, and `IsAdicComplete.liftRingHom` — the universal property of
+adic completeness for ring maps — assembles it. -/
+lemma exists_ringHom_of_forall_quotientPow_mem
+    {A : Type*} [CommRing A] (I : Ideal A) [IsAdicComplete I A]
+    {R : Type*} [CommRing R]
+    (X : ∀ n : ℕ, Set (R →+* A ⧸ I ^ n))
+    (hfin : ∀ n : ℕ, (X n).Finite) (hne : ∀ n : ℕ, (X n).Nonempty)
+    (hstab : ∀ (m n : ℕ) (hmn : n ≤ m) (p : R →+* A ⧸ I ^ m), p ∈ X m →
+      (Ideal.Quotient.factorPow I hmn).comp p ∈ X n) :
+    ∃ ψ : R →+* A, ∀ n : ℕ, (Ideal.Quotient.mk (I ^ n)).comp ψ ∈ X n := by
+  classical
+  -- functoriality of the transition maps
+  have hfacComp : ∀ {a b c : ℕ} (h1 : a ≤ b) (h2 : b ≤ c) (y : A ⧸ I ^ c),
+      Ideal.Quotient.factorPow I h1 (Ideal.Quotient.factorPow I h2 y) =
+        Ideal.Quotient.factorPow I (h1.trans h2) y := by
+    intro a b c h1 h2 y
+    obtain ⟨x, rfl⟩ := Ideal.Quotient.mk_surjective y
+    rw [Ideal.Quotient.factor_mk, Ideal.Quotient.factor_mk,
+      Ideal.Quotient.factor_mk]
+  -- the inverse system of nonempty finite sets of classifying maps
+  let Fsys : ℕᵒᵖ ⥤ Type _ :=
+    { obj := fun j => ↥(X j.unop)
+      map := fun {j j'} f =>
+        ↾(fun p : ↥(X j.unop) =>
+          (⟨(Ideal.Quotient.factorPow I (leOfHom f.unop)).comp p.1,
+            hstab j.unop j'.unop (leOfHom f.unop) p.1 p.2⟩ : ↥(X j'.unop)))
+      map_id := fun j => by ext p; simp
+      map_comp := fun {j₁ j₂ j₃} f g => by ext p; simp [hfacComp] }
+  haveI : ∀ j : ℕᵒᵖ, Finite (Fsys.obj j) := fun j => (hfin j.unop).to_subtype
+  haveI : ∀ j : ℕᵒᵖ, Nonempty (Fsys.obj j) := fun j => (hne j.unop).to_subtype
+  obtain ⟨s, hs⟩ := nonempty_sections_of_finite_inverse_system Fsys
+  set f : ∀ n : ℕ, R →+* A ⧸ I ^ n := fun n => (s (Opposite.op n)).1 with hf
+  have hcompat : ∀ {m n : ℕ} (hle : m ≤ n),
+      (Ideal.Quotient.factorPow I hle).comp (f n) = f m := by
+    intro m n hle
+    exact congrArg Subtype.val (hs (homOfLE hle).op)
+  refine ⟨IsAdicComplete.liftRingHom I f hcompat, fun n => ?_⟩
+  rw [IsAdicComplete.mk_comp_liftRingHom I f hcompat n, hf]
+  exact (s (Opposite.op n)).2
+
 /-- **From the finite discrete levels to the whole of Mazur's category**
-(LEAF — the LIMIT half of the 2026-07-26 cut; the `F`-level twin of
-`Deformation.lean`'s `isWeaklyUniversalOnIdentifiedFrames_of_finite`): a
-datum that classifies every FINITE DISCRETE framed test object classifies
+(PROVEN 2026-07-26 — the LIMIT half of the 2026-07-26 cut; the `F`-level
+twin of `Deformation.lean`'s `isWeaklyUniversalOnIdentifiedFrames_of_finite`):
+a datum that classifies every FINITE DISCRETE framed test object classifies
 every datum.
 
 THE ARGUMENT, which is the one that file's docstring lays out, simplified
@@ -5923,16 +6059,17 @@ datum and `J = 𝔪_{𝒟'.R}`.
 
 1. Each level `𝒟'.R ⧸ Jⁿ` is FINITE — `𝒟'.π` is a surjection onto the
    finite `k` with kernel `J`, so `natCast`-counting gives `|𝒟'.R ⧸ Jⁿ| ≤
-   |k|ⁿ` (`finite_quotient_of_maximalIdeal_pow_le`) — and DISCRETE,
+   |k|ⁿ` (`finite_quotient_of_pow_maximalIdeal_le` above) — and DISCRETE,
    because `𝒟'.isAdic` makes `Jⁿ` open and the quotient map is open. It is
    local, a `ℤ_ℓ`-algebra, and it carries the pushforward of `𝒟'.ρ`, which
-   is hardly ramified by the functoriality clause and reduces to
-   `ρbar|_{G_F}` because `𝒟'.resid` does.
+   is hardly ramified by the functoriality clause `hbase` and reduces to
+   `ρbar|_{G_F}` because `𝒟'.resid` does (transported by
+   `charpoly_framePushforward` above).
 2. So the hypothesis produces, for each `n`, a nonempty FINITE set of
-   classifying maps `ψ : 𝒟.R →+* 𝒟'.R ⧸ Jⁿ` (finiteness: a compatible `ψ`
-   is determined by its values, and `Patching.lean`'s
-   `finite_setOf_ringHom_comp_eq` over `Ideal.finite_quotient_pow` bounds
-   them).
+   classifying maps `ψ : 𝒟.R →+* 𝒟'.R ⧸ Jⁿ`. Finiteness: a `ψ` compatible
+   with the reductions is LOCAL, so it kills `𝔪_{𝒟.R}ⁿ` (the maximal ideal
+   of `𝒟'.R ⧸ Jⁿ` has vanishing `n`-th power) and therefore factors through
+   the finite ring `𝒟.R ⧸ 𝔪ⁿ`.
 3. The truncations `𝒟'.R ⧸ J^{n+1} ↠ 𝒟'.R ⧸ Jⁿ` make those sets an
    inverse system of nonempty finite sets, so Kőnig's lemma
    (`nonempty_sections_of_finite_inverse_system`) gives a COMPATIBLE tower
@@ -5945,6 +6082,19 @@ datum and `J = 𝔪_{𝒟'.R}`.
    level-wise statements by adic separatedness of `𝒟'.R`
    (`IsHausdorff.haus`), the charpoly clause coefficient by coefficient.
 
+Steps 3 and 4 are packaged as `exists_ringHom_of_forall_quotientPow_mem`
+above, the ring-map-only shadow of `Deformation.lean`'s
+`exists_ringHom_matrix_of_forall_quotient_mem`. NO matrix avatar and no
+`framePushforward`-transport lemma is needed here, which is exactly the
+simplification the charpoly-only `IsWeaklyUniversal` buys.
+
+WHAT IS AND IS NOT SPENT. `hbase` is the ONLY clause consumed, and it is
+consumed once, at step 1, to know that the finite levels of an arbitrary
+datum are hardly ramified. Nothing else about `IsHilbertHardlyRamified` is
+touched: the rest is pure commutative algebra plus the charpoly dictionary.
+No continuity of the assembled `f` is asserted or needed —
+`HilbertDeformationDatum.IsWeaklyUniversal` is a bare ring-map statement.
+
 CIRCULARITY GUARD (inherited): as for the construction leaf. -/
 theorem HilbertDeformationDatum.isWeaklyUniversal_of_finiteFrames
     {ℓ : ℕ} [Fact ℓ.Prime] {F : Type u} [Field F] [NumberField F]
@@ -5956,8 +6106,245 @@ theorem HilbertDeformationDatum.isWeaklyUniversal_of_finiteFrames
     (hbase : IsHilbertBaseChangeClause ℓ F)
     (𝒟 : HilbertDeformationDatum ℓ F ρbar)
     (h𝒟 : IsHilbertWeaklyUniversalOnFiniteFrames ℓ F ρbar 𝒟.ρ 𝒟.π) :
-    𝒟.IsWeaklyUniversal :=
-  sorry
+    𝒟.IsWeaklyUniversal := by
+  classical
+  intro 𝒟'
+  -- the maximal-adic tower of the coefficient ring of `𝒟'`
+  set J : Ideal 𝒟'.R := IsLocalRing.maximalIdeal 𝒟'.R with hJ
+  haveI : IsAdicComplete J 𝒟'.R := 𝒟'.isAdicComplete
+  have hkerπ : RingHom.ker 𝒟'.π = J :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective 𝒟'.π 𝒟'.π_surjective)
+  have hkerD : RingHom.ker 𝒟.π = IsLocalRing.maximalIdeal 𝒟.R :=
+    IsLocalRing.eq_maximalIdeal
+      (RingHom.ker_isMaximal_of_surjective 𝒟.π 𝒟.π_surjective)
+  have hJne : J ≠ ⊤ := (IsLocalRing.maximalIdeal.isMaximal 𝒟'.R).ne_top
+  have hJpowne : ∀ n : ℕ, n ≠ 0 → J ^ n ≠ ⊤ := by
+    intro n hn htop
+    exact hJne (top_le_iff.mp (htop ▸ Ideal.pow_le_self hn))
+  have hπpow : ∀ (n : ℕ), n ≠ 0 → ∀ a ∈ J ^ n, 𝒟'.π a = 0 := by
+    intro n hn a ha
+    have hmem : a ∈ RingHom.ker 𝒟'.π := by
+      rw [hkerπ]
+      exact Ideal.pow_le_self hn ha
+    exact hmem
+  -- step 1a: every level is FINITE (`𝒟'.π` is onto the finite `k`, with
+  -- kernel `J`, so `|𝒟'.R ⧸ Jⁿ| ≤ |k|ⁿ`)
+  have hfinlev : ∀ n : ℕ, Finite (𝒟'.R ⧸ J ^ n) := fun n =>
+    finite_quotient_of_pow_maximalIdeal_le 𝒟'.π 𝒟'.π_surjective ⟨n, le_rfl⟩
+  -- step 1b: every level is DISCRETE (`Jⁿ` is open by `𝒟'.isAdic`, and the
+  -- quotient map is an open map)
+  have hJopen : ∀ n : ℕ, IsOpen ((J ^ n : Ideal 𝒟'.R) : Set 𝒟'.R) := fun n =>
+    (isAdic_iff.mp 𝒟'.isAdic).1 n
+  have hmkcont : ∀ n : ℕ, Continuous (Ideal.Quotient.mk (J ^ n)) := fun n =>
+    (QuotientRing.isOpenQuotientMap_mk (J ^ n)).continuous
+  have hdisc : ∀ n : ℕ, DiscreteTopology (𝒟'.R ⧸ J ^ n) := by
+    intro n
+    rw [discreteTopology_iff_isOpen_singleton_zero]
+    have himg : (Ideal.Quotient.mk (J ^ n)) ''
+        ((J ^ n : Ideal 𝒟'.R) : Set 𝒟'.R) = {0} := by
+      ext x
+      constructor
+      · rintro ⟨y, hy, rfl⟩
+        exact Ideal.Quotient.eq_zero_iff_mem.mpr hy
+      · rintro rfl
+        exact ⟨0, (J ^ n).zero_mem, map_zero _⟩
+    rw [← himg]
+    exact (QuotientRing.isOpenQuotientMap_mk (J ^ n)).isOpenMap _ (hJopen n)
+  -- adic separatedness of `𝒟'.R`: an element is pinned by its reductions
+  have hsep : ∀ x : 𝒟'.R, (∀ n : ℕ, x ∈ J ^ n) → x = 0 := by
+    intro x hx
+    refine IsHausdorff.haus (I := J) (M := 𝒟'.R) inferInstance x fun n => ?_
+    rw [SModEq.sub_mem, sub_zero]
+    have hsm : (J ^ n : Ideal 𝒟'.R) ≤ (J ^ n) • (⊤ : Submodule 𝒟'.R 𝒟'.R) := by
+      intro r hr
+      have hmem : r • (1 : 𝒟'.R) ∈ (J ^ n) • (⊤ : Submodule 𝒟'.R 𝒟'.R) :=
+        Submodule.smul_mem_smul hr Submodule.mem_top
+      simpa using hmem
+    exact hsm (hx n)
+  have heq : ∀ a b : 𝒟'.R,
+      (∀ n : ℕ, Ideal.Quotient.mk (J ^ n) a = Ideal.Quotient.mk (J ^ n) b) →
+      a = b := by
+    intro a b hab
+    have h0 : a - b = 0 := hsep _ fun n => Ideal.Quotient.eq.mp (hab n)
+    exact sub_eq_zero.mp h0
+  -- step 2, finiteness half: an admissible `ψ` is local, hence kills
+  -- `𝔪_{𝒟.R}ⁿ`, hence factors through the FINITE ring `𝒟.R ⧸ 𝔪ⁿ`
+  have hfinhom : ∀ (n : ℕ) (hn : n ≠ 0),
+      {ψ : 𝒟.R →+* 𝒟'.R ⧸ J ^ n |
+        (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn)).comp ψ = 𝒟.π}.Finite := by
+    intro n hn
+    set Jq : Ideal (𝒟'.R ⧸ J ^ n) := J.map (Ideal.Quotient.mk (J ^ n)) with hJq
+    have hkerlift : ∀ y : 𝒟'.R ⧸ J ^ n,
+        (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn)) y = 0 → y ∈ Jq := by
+      intro y hy
+      obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective y
+      rw [Ideal.Quotient.lift_mk] at hy
+      exact Ideal.mem_map_of_mem _ (by rw [← hkerπ]; exact hy)
+    have hJqpow : Jq ^ n = ⊥ := by
+      rw [hJq, ← Ideal.map_pow, Ideal.map_quotient_self]
+    have hkill : ∀ ψ : 𝒟.R →+* 𝒟'.R ⧸ J ^ n,
+        (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn)).comp ψ = 𝒟.π →
+        ∀ x ∈ (IsLocalRing.maximalIdeal 𝒟.R) ^ n, ψ x = 0 := by
+      intro ψ hψ x hx
+      have hmR : IsLocalRing.maximalIdeal 𝒟.R ≤ Ideal.comap ψ Jq := by
+        intro y hy
+        refine hkerlift _ ?_
+        rw [← RingHom.comp_apply, hψ]
+        rw [← hkerD] at hy
+        exact hy
+      have hpow : ∀ j : ℕ,
+          (IsLocalRing.maximalIdeal 𝒟.R) ^ j ≤ Ideal.comap ψ (Jq ^ j) := by
+        intro j
+        induction j with
+        | zero => simp
+        | succ j ih =>
+          rw [pow_succ, pow_succ]
+          refine le_trans (Ideal.mul_mono ih hmR) ?_
+          rw [Ideal.mul_le]
+          intro r hr s hs
+          have hr' : ψ r ∈ Jq ^ j := hr
+          have hs' : ψ s ∈ Jq := hs
+          show ψ (r * s) ∈ Jq ^ j * Jq
+          rw [map_mul]
+          exact Ideal.mul_mem_mul hr' hs'
+      have hmem : ψ x ∈ Jq ^ n := hpow n hx
+      rw [hJqpow] at hmem
+      exact hmem
+    haveI : Finite (𝒟.R ⧸ (IsLocalRing.maximalIdeal 𝒟.R) ^ n) :=
+      finite_quotient_of_pow_maximalIdeal_le 𝒟.π 𝒟.π_surjective ⟨n, le_rfl⟩
+    haveI := hfinlev n
+    haveI : Finite ((𝒟.R ⧸ (IsLocalRing.maximalIdeal 𝒟.R) ^ n) →+*
+        𝒟'.R ⧸ J ^ n) :=
+      Finite.of_injective
+        (fun g : (𝒟.R ⧸ (IsLocalRing.maximalIdeal 𝒟.R) ^ n) →+* 𝒟'.R ⧸ J ^ n =>
+          (g : (𝒟.R ⧸ (IsLocalRing.maximalIdeal 𝒟.R) ^ n) → 𝒟'.R ⧸ J ^ n))
+        DFunLike.coe_injective
+    refine Set.Finite.subset (Set.finite_range
+      (fun g : (𝒟.R ⧸ (IsLocalRing.maximalIdeal 𝒟.R) ^ n) →+* 𝒟'.R ⧸ J ^ n =>
+        g.comp (Ideal.Quotient.mk ((IsLocalRing.maximalIdeal 𝒟.R) ^ n)))) ?_
+    intro ψ hψ
+    exact ⟨Ideal.Quotient.lift _ ψ (hkill ψ hψ), RingHom.ext fun _ => rfl⟩
+  -- the level-`n` sets of classifying maps: a BARE ring homomorphism, subject
+  -- to the `ℤ_ℓ`-clause, the reduction clause and the charpoly clause
+  set X : ∀ n : ℕ, Set (𝒟.R →+* 𝒟'.R ⧸ J ^ n) := fun n =>
+    {ψ | (ψ.comp (algebraMap ℤ_[ℓ] 𝒟.R) =
+            (Ideal.Quotient.mk (J ^ n)).comp (algebraMap ℤ_[ℓ] 𝒟'.R)) ∧
+         (∀ hn : n ≠ 0,
+            (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn)).comp ψ = 𝒟.π) ∧
+         (∀ g : Γ F, ((𝒟.ρ g).charpoly).map ψ =
+            ((𝒟'.ρ g).charpoly).map (Ideal.Quotient.mk (J ^ n)))}
+    with hX
+  -- the transition maps of the tower
+  have hfacmk : ∀ (m n : ℕ) (hmn : n ≤ m) (a : 𝒟'.R),
+      Ideal.Quotient.factorPow J hmn (Ideal.Quotient.mk (J ^ m) a) =
+        Ideal.Quotient.mk (J ^ n) a := fun _ _ _ a =>
+    Ideal.Quotient.factor_mk _ a
+  have hliftfac : ∀ (m n : ℕ) (hmn : n ≤ m) (hn : n ≠ 0) (hm : m ≠ 0)
+      (y : 𝒟'.R ⧸ J ^ m),
+      (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn))
+          (Ideal.Quotient.factorPow J hmn y) =
+        (Ideal.Quotient.lift (J ^ m) 𝒟'.π (hπpow m hm)) y := by
+    intro m n hmn _ _ y
+    obtain ⟨a, rfl⟩ := Ideal.Quotient.mk_surjective y
+    rw [hfacmk m n hmn a, Ideal.Quotient.lift_mk, Ideal.Quotient.lift_mk]
+  -- step 3, stability half
+  have hXstab : ∀ (m n : ℕ) (hmn : n ≤ m) (p : 𝒟.R →+* 𝒟'.R ⧸ J ^ m),
+      p ∈ X m → (Ideal.Quotient.factorPow J hmn).comp p ∈ X n := by
+    intro m n hmn p hp
+    simp only [hX, Set.mem_setOf_eq] at hp ⊢
+    obtain ⟨h1, h2, h3⟩ := hp
+    refine ⟨?_, ?_, ?_⟩
+    · refine RingHom.ext fun x => ?_
+      have h1x := RingHom.congr_fun h1 x
+      simp only [RingHom.comp_apply] at h1x ⊢
+      rw [h1x, hfacmk m n hmn]
+    · intro hn
+      have hm : m ≠ 0 := by omega
+      refine RingHom.ext fun r => ?_
+      have h2x := RingHom.congr_fun (h2 hm) r
+      simp only [RingHom.comp_apply] at h2x ⊢
+      rw [hliftfac m n hmn hn hm, h2x]
+    · intro g
+      rw [← Polynomial.map_map, h3 g, Polynomial.map_map,
+        Ideal.Quotient.factor_comp_mk]
+  -- step 1: the positive levels are nonempty. `𝒟'.R ⧸ Jⁿ` is a FINITE
+  -- DISCRETE local `ℤ_ℓ`-algebra carrying a hardly ramified frame (by the
+  -- functoriality clause `hbase`) that reduces to `ρbar|_{G_F}` (because
+  -- `𝒟'.resid` does), so the hypothesis classifies it.
+  have hXne_pos : ∀ n : ℕ, n ≠ 0 → (X n).Nonempty := by
+    intro n hn
+    haveI : Nontrivial (𝒟'.R ⧸ J ^ n) := by
+      rw [← not_subsingleton_iff_nontrivial, Ideal.Quotient.subsingleton_iff]
+      exact hJpowne n hn
+    haveI : IsLocalRing (𝒟'.R ⧸ J ^ n) :=
+      IsLocalRing.of_surjective' (Ideal.Quotient.mk (J ^ n))
+        Ideal.Quotient.mk_surjective
+    haveI := hfinlev n
+    haveI := hdisc n
+    have halgQ : (Ideal.Quotient.mk (J ^ n)).comp (algebraMap ℤ_[ℓ] 𝒟'.R) =
+        algebraMap ℤ_[ℓ] (𝒟'.R ⧸ J ^ n) := rfl
+    have hπQmk : (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn)).comp
+        (Ideal.Quotient.mk (J ^ n)) = 𝒟'.π := rfl
+    have hHR : IsHilbertHardlyRamified ℓ F (rank_finTwoPi (𝒟'.R ⧸ J ^ n))
+        (framePushforward (Ideal.Quotient.mk (J ^ n)) (hmkcont n) 𝒟'.ρ) :=
+      hbase (Ideal.Quotient.mk (J ^ n)) (hmkcont n) halgQ
+        𝒟'.isHilbertHardlyRamified
+    have hπQsurj :
+        Function.Surjective (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn)) := by
+      intro y
+      obtain ⟨x, hx⟩ := 𝒟'.π_surjective y
+      exact ⟨Ideal.Quotient.mk (J ^ n) x, hx⟩
+    have hresQ : ∀ g : Γ F,
+        (((framePushforward (Ideal.Quotient.mk (J ^ n)) (hmkcont n) 𝒟'.ρ) g).charpoly).map
+            (Ideal.Quotient.lift (J ^ n) 𝒟'.π (hπpow n hn)) =
+          ((ρbar.map (algebraMap ℚ F)) g).charpoly := by
+      intro g
+      rw [charpoly_framePushforward, Polynomial.map_map, hπQmk]
+      exact 𝒟'.resid g
+    obtain ⟨ψ, _hcont, halg, hπ, hcp⟩ :=
+      h𝒟 (𝒟'.R ⧸ J ^ n) _ hHR _ hπQsurj hresQ
+    refine ⟨ψ, ?_, ?_, ?_⟩
+    · rw [halg, ← halgQ]
+    · exact fun _ => hπ
+    · intro g
+      rw [hcp g, charpoly_framePushforward]
+  have hXne : ∀ n : ℕ, (X n).Nonempty := by
+    intro n
+    rcases eq_or_ne n 0 with rfl | hn
+    · obtain ⟨p, hp⟩ := hXne_pos 1 one_ne_zero
+      exact ⟨_, hXstab 1 0 (Nat.zero_le 1) p hp⟩
+    · exact hXne_pos n hn
+  have hXfin : ∀ n : ℕ, (X n).Finite := by
+    intro n
+    rcases eq_or_ne n 0 with rfl | hn
+    · haveI : Subsingleton (𝒟'.R ⧸ J ^ 0) := by
+        rw [Ideal.Quotient.subsingleton_iff, pow_zero, Ideal.one_eq_top]
+      exact Set.Subsingleton.finite fun a _ b _ =>
+        RingHom.ext fun _ => Subsingleton.elim _ _
+    · exact (hfinhom n hn).subset fun ψ hψ => hψ.2.1 hn
+  -- steps 3 and 4: Kőnig, then adic assembly
+  obtain ⟨f, hf⟩ :=
+    exists_ringHom_of_forall_quotientPow_mem J X hXfin hXne hXstab
+  simp only [hX, Set.mem_setOf_eq] at hf
+  refine ⟨f, ?_, ?_, ?_⟩
+  -- the `ℤ_ℓ`-clause holds modulo every level, hence holds by separatedness
+  · refine RingHom.ext fun x => ?_
+    refine heq _ _ fun n => ?_
+    have hn := RingHom.congr_fun (hf n).1 x
+    simpa using hn
+  -- the reduction clause is already visible at the first level
+  · refine RingHom.ext fun r => ?_
+    have h1 := RingHom.congr_fun ((hf 1).2.1 one_ne_zero) r
+    simpa using h1
+  -- the charpoly clause holds modulo every level, coefficient by coefficient
+  · intro g
+    refine Polynomial.ext fun i => ?_
+    rw [Polynomial.coeff_map]
+    refine heq _ _ fun n => ?_
+    have hn := congrArg
+      (fun q : Polynomial (𝒟'.R ⧸ J ^ n) => q.coeff i) ((hf n).2.2 g)
+    simpa [Polynomial.coeff_map] using hn
 
 /-- **Existence of the `F`-level universal deformation ring `R_F`, over the
 deformation-condition package** (item 2 of the audit's missing-machinery
