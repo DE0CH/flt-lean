@@ -27661,14 +27661,21 @@ level `M'·q²`, so `h(q·) ∈ S₂(Γ₀(M))`, and `U_q ∘ V_q = id` gives
 good-prime hypothesis is not decoration; the same phenomenon is exactly
 what makes the consumer node's own counterexample work.
 
-DEPENDENCY NOTE (updated 2026-07-26).
-`exists_peterssonProduct_selfAdjoint_heckeOp` is itself now PROVEN, over
-the single remaining leaf `exists_peterssonDomain`, whose docstring carries
-the full map of what this mathlib pin does and does not provide (invariant
-measure and the `petersson` transformation law: yes; any measure-theoretic
-fundamental domain for a modular group, or any computation of `volume 𝒟`:
-no).  So the analysis under this node is now exactly: a `Γ₀(M)`-fundamental
-domain of finite volume, plus the double-coset unfolding. -/
+DEPENDENCY NOTE (updated 2026-07-27 — SUPERSEDES the 2026-07-26 version,
+which said the analysis under this node was "a `Γ₀(M)`-fundamental domain of
+finite volume, plus the double-coset unfolding", and that the pin had no
+computation of `volume 𝒟`).  BOTH halves of that are now out of date.
+`exists_peterssonProduct_selfAdjoint_heckeOp` is PROVEN over
+`exists_peterssonDomain`, which is itself now PROVEN over TWO leaves, the
+domain having been constructed (`gamma0Domain`, the union of the
+`[SL(2,ℤ) : Γ₀(M)]` translates of `𝒟`) with its FINITE VOLUME
+(`volume_gamma0Domain_ne_top`, over the new `volume_modularFd_ne_top` —
+`volume 𝒟 ≠ ⊤` is no longer missing from this development), its INTERIOR and
+its `Γ₀(M)`-COVERING property all proven.  So the analysis remaining under
+this node is exactly: `volume (𝒟 \ 𝒟ᵒ) = 0` — the boundary of the modular
+domain is null, which is all that
+`volume_smul_inter_gamma0Domain_eq_zero` still needs — plus the double-coset
+unfolding `peterssonSelfAdjoint_of_gamma0FundamentalDomain`. -/
 theorem heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level {M : ℕ} (hM : 0 < M)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (c : ℂ)
     {v : CuspForm (Gamma0GL M) 2} {n : ℕ}
@@ -28366,7 +28373,11 @@ self-adjointness of `T_q` — so whoever builds the Petersson product should
 expect to discharge both.  As of 2026-07-26 that shared prerequisite is
 CUT DOWN to the single leaf `exists_peterssonDomain` above: the Petersson
 product itself (`exists_peterssonProduct_selfAdjoint_heckeOp`) is PROVEN
-over it, definiteness included.
+over it, definiteness included.  (2026-07-27: `exists_peterssonDomain` is
+now PROVEN in turn, over the two leaves
+`volume_smul_inter_gamma0Domain_eq_zero` and
+`peterssonSelfAdjoint_of_gamma0FundamentalDomain`, with the domain itself
+constructed and its finite volume, interior and covering property proven.)
 
 AUDIT 2026-07-26 — THIS CUT IS A RESTATEMENT, NOT A REDUCTION.  Write
 `K := {v | ∀ n, n.Coprime M → qCoeff M v n = 0}`, a submodule (an
@@ -28430,10 +28441,15 @@ sorry-free (`degeneracyOp` above, with `degeneracyOp_coe` and
 cluster.  What the remaining leaf needs is the Petersson inner product on
 `S₂(Γ₀(M))` and the involutions `W_Q`.  Contrary to the note that stood
 here, `exists_peterssonProduct_selfAdjoint_heckeOp` DOES exist in this tree
-and is PROVEN, over the single leaf `exists_peterssonDomain`; so the
-Petersson product is available as a definite conjugate-symmetric form as
-soon as that domain leaf is discharged, and the domain leaf is SHARED with
-the sibling `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`. -/
+and is PROVEN, over `exists_peterssonDomain` — which as of 2026-07-27 is
+itself PROVEN, over the two leaves
+`volume_smul_inter_gamma0Domain_eq_zero` (a.e.-disjointness, reduced to
+`volume (𝒟 \ 𝒟ᵒ) = 0`) and
+`peterssonSelfAdjoint_of_gamma0FundamentalDomain` (the double-coset
+unfolding).  So the Petersson product is available as a definite
+conjugate-symmetric form as soon as those two are discharged, and they are
+SHARED with the sibling
+`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`. -/
 theorem mem_oldSubspace_of_qCoeff_coprime_eq_zero {M : ℕ} (hM : 0 < M)
     {w : CuspForm (Gamma0GL M) 2}
     (hwc : ∀ n : ℕ, Nat.Coprime n M → qCoeff M w n = 0) :
