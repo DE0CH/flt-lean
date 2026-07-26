@@ -81,9 +81,31 @@ PROVEN:
   hypothesis is retained (and supplied there by `curve11a3_finite`) so that
   the consumer's call site does not have to change.
 
-THE ONE LEAF:
+THE TWO LEAVES — one unconditional plane-Diophantine statement per level,
+and nothing else. `mordellWeil` (the general Mordell–Weil theorem) and
+`curve11a3_isTorsion` are GONE: they were deleted, not proven, because
+neither level consumes them any longer.
+
 * `WeierstrassCurve.curve11a3_rational_points` — the four affine rational
   points of `y² + y = x³ − x²`, unconditionally.
+* `WeierstrassCurve.curve14a4_rational_T` — the descent model
+  `W² = T³ − 11T² + 32T` has `T ∈ {0, 4, 8}`.
+
+UPDATE 2026-07-26 (level `14`, merged from `flt-lean-162`): level `14` no
+longer consumes `mordellWeil` at all. Its three former leaves
+(`curve14a4_isTorsion`, `curve14a4_fg`, `curve14a4_points`) were replaced by
+the single plane-Diophantine leaf `curve14a4_rational_T`, from which rank
+`0`, finiteness AND the point enumeration all follow — they are not
+independent facts, and none of the three implied the others. In particular
+this removes `curve14a4_fg`, the single-curve Mordell–Weil leaf that was
+opened at integration only to repair a clean merge between a branch deleting
+`mordellWeil` and a branch adding a new consumer of it; that scar is now
+closed rather than carried.
+
+The same restructuring had already been carried out at `11a3` on main, so
+both levels now have the same shape: an unconditional enumeration is the
+leaf, and finiteness is DERIVED from it rather than assumed for it. That is
+what breaks the circle at each level.
 
 The `X_1(11)` plane model itself — the birational passage between
 `tateNormalForm b c` with an order-`11` origin and a rational point of
@@ -270,83 +292,205 @@ instance instIsEllipticCurve14a4 : curve14a4.IsElliptic := by
     WeierstrassCurve.b₆, WeierstrassCurve.b₈]
   norm_num
 
-/-- **Rank `0` for `14a4`** (sorry leaf, 2026-07-26), in the concrete form that
-carries the content: every rational point of `y² + xy + y = x³ − x` is a
-torsion point.
+/-- **The rational points of the descent model of `14a4`** (sorry leaf,
+2026-07-26 — the SINGLE replacement for what were the two leaves
+`curve14a4_isTorsion` and `curve14a4_points`): the only rational points of
 
-Classically this is a descent by the rational `2`-isogeny that `14a4` admits
-(the isogeny class `14a` is `2`- and `3`-isogeny connected, so a `6`-isogeny
-descent is also available): both descent images are trivial, so the rank is
-`0`. `RankBound(E) = 0` with proof flag `true` (Magma 2026-07-26, untrusted
-searcher). Kubert, "Universal bounds on the torsion of elliptic curves" (Proc.
-LMS 33, 1976); Ligozat; subsumed in Mazur 1977, Thm 8.
+    W² = T³ − 11T² + 32T
 
-Stated as `AddMonoid.IsTorsion` rather than as `rank = 0` for the same reason
-as `curve11a3_isTorsion`: there is no rank function here to state the latter
-against, and this form is exactly what `curve14a4_finite` consumes. -/
-theorem curve14a4_isTorsion : AddMonoid.IsTorsion curve14a4.toAffine.Point :=
+have `T ∈ {0, 4, 8}`.
+
+THE MODEL. Completing the square in `14a4 : y² + xy + y = x³ − x` gives
+`(2y + x + 1)² = 4x³ + x² − 2x + 1`, and scaling by `T = 4(x + 1)`,
+`W = 4(2y + x + 1)` clears the leading `4` and moves the rational `2`-torsion
+point to the origin:
+
+    T = 4x + 4,   W = 8y + 4x + 4,   W² = T³ − 11T² + 32T,
+
+an isomorphism of `14a4` onto `[0, −11, 0, 32, 0]` (`Δ = −114688`, conductor
+`14`, torsion `ℤ/6`, rank `0` — PARI 2026-07-26, untrusted searcher). The six
+rational points are `∞` and `T ∈ {0, 4, 8}` with `W ∈ {0}, {±4}, {±8}`; they
+pull back to the point at infinity and the five affine points listed in
+`curve14a4_points`.
+
+WHY THIS IS THE RIGHT LEAF, AND WHY IT IS ONE RATHER THAN TWO. Rank `0` and
+the torsion enumeration are not independent facts about `14a4`: the single
+Diophantine statement above yields both, and neither of the two former leaves
+yields the other. `curve14a4_points` follows by the birational map plus solving
+the quadratic in `y` at each of `x ∈ {−1, 0, 1}`; `curve14a4_finite` follows by
+exhibiting the point set as a subset of a five-element set; and
+`curve14a4_isTorsion` is then just "a finite group is torsion". All three are
+now PROVEN below, and `mordellWeil` is no longer needed at `14a4` at all.
+
+HOW TO ATTACK IT — the shape is exactly `MazurLevel15.rank_zero_x` in
+`Fermat/FLT/FreyCurve/MazurTorsion.lean`, whose whole elementary-descent chain
+(`sq_or_two_sq`, `quartic_*`, `concordant_*`) is the template. Reconnaissance
+carried out 2026-07-26 and recorded here so it need not be redone:
+
+* Write `T = p/q` in lowest terms. `q` is coprime to `p(p² − 11pq + 32q²)`, so
+  `q = e²`; then `gcd(p, p² − 11pe² + 32e⁴) = gcd(p, 32e⁴)` divides `32`, so
+  `p = dS²` with `d ∈ {1, −1, 2, −2}` squarefree.
+* `d < 0` dies by POSITIVITY, with no congruence needed: the quadratic
+  `T² − 11T + 32` has discriminant `121 − 128 = −7 < 0`, hence is positive
+  everywhere, so `W² = T(T² − 11T + 32) ≥ 0` forces `T ≥ 0`.
+* `d = 1` gives the quartic `c² = S⁴ − 11S²e² + 32e⁴` (whose only coprime
+  solution up to `300` is `(S, e) = (2, 1)`, i.e. `T = 4`), and `d = 2` gives
+  `c² = 2S⁴ − 11S²e² + 16e⁴` (only `(0, 1)` and `(2, 1)`, i.e. `T = 0` and
+  `T = 8`) — PARI 2026-07-26, untrusted searcher.
+* Neither quartic is congruence-obstructed — each HAS a rational point — so
+  they must be SOLVED, not excluded, and a genuine SECOND descent is needed,
+  exactly as at level `15`. Completing the square turns them into
+  `4c² = N² + 7e⁴` with `N = 2S² − 11e²` and `8c² = M² + 7e⁴` with
+  `M = 4S² − 11e²`, i.e. into the `2`-isogenous curve `Y² = X³ + 22X² − 7X`
+  (`b′ = a² − 4b = 121 − 128 = −7`).
+
+THE SECOND DESCENT, mapped out 2026-07-26. Factor `A² − N² = 7e⁴` as
+`(A − N)(A + N) = 7e⁴` with `A = 2c`. The gcd of the two factors divides `7`,
+and `7` itself is impossible (it forces `7 ∣ S` and `7 ∣ e`), so the factors are
+coprime; writing `e = mn` the coprime split into fourth powers gives exactly two
+branches, and the even-`e` case of quartic A and both cases of quartic B run
+into the SAME two branches after dividing out powers of `2`:
+
+* **Branch (i)** yields `X² = −m⁴ + 22m²n² + 7n⁴` — the `d′ = −1` homogeneous
+  space of the isogenous curve. **This branch is DEAD by a pure congruence**,
+  and it is the one genuinely new ingredient: for coprime `m`, `n`, split on
+  parity — `m`, `n` both odd gives `X² ≡ 12 (mod 16)`, impossible; `m` odd,
+  `n` even gives `X² ≡ 3 (mod 4)`, impossible; `m` even, `n` odd gives
+  `X² ≡ 7 (mod 8)`, impossible. (No coprime solution with `|m|, |n| ≤ 400`,
+  PARI 2026-07-26 — consistent, as it must be.)
+* **Branch (ii)** yields `X² = n⁴ + 22m²n² − 7m⁴`, whose ONLY coprime solutions
+  up to `400` are `(m, n) = (0, 1)` and `(1, 1)` (PARI 2026-07-26) — i.e. it
+  must be shown that `m = 0 ∨ m² = n²`. This is the surviving hard branch and it
+  is where the infinite descent lives: completing the square gives
+  `(n² + 11m²)² − X² = 128m⁴`, and stripping the powers of `2` leads to
+  `n² = 8a⁴ − 11a²b² + 4b⁴` with `ab = m`, a strictly smaller instance. That is
+  precisely the shape of `MazurLevel15.concordant_aux`, whose well-founded
+  recursion on `x² + y²` is the template to copy.
+
+So the remaining work is: the level-`15` integral bookkeeping transported
+(`sq_or_two_sq` with `32` in place of `16`, and `split_gcd`), the mod-`16`
+congruence above, and ONE well-founded descent on branch (ii). Note those
+helpers currently live in `Fermat/FLT/FreyCurve/MazurTorsion.lean`, which is
+DOWNSTREAM of this file, so they have to be restated here (or hoisted) rather
+than imported. -/
+theorem curve14a4_rational_T (T W : ℚ) (h : W ^ 2 = T ^ 3 - 11 * T ^ 2 + 32 * T) :
+    T = 0 ∨ T = 4 ∨ T = 8 :=
   sorry
 
-/-- **`14a4(ℚ)` is finitely generated** (sorry leaf, opened at integration
-2026-07-26): the Mordell–Weil theorem for this ONE curve.
+/-- **The five affine rational points of `14a4`, UNCONDITIONALLY** (PROVEN
+2026-07-26 over `curve14a4_rational_T`): the affine rational points of
+`y² + xy + y = x³ − x` are exactly `(1,−2)`, `(0,−1)`, `(−1,0)`, `(0,0)`,
+`(1,0)`. Together with the point at infinity these are the six elements of
+`14a4(ℚ) ≅ ℤ/6`.
 
-It exists because two branches merged cleanly into a tree that did not
-build. `flt-lean-154` deleted the general leaf `mordellWeil`
-(`AddGroup.FG E.toAffine.Point` for every `[E.IsElliptic]`), correctly, on
-the ground that `curve11a3_finite` no longer needed it — that curve's
-finiteness is now proven outright from the unconditional enumeration
-`curve11a3_rational_points`. Concurrently `flt-lean-139` added `14a4` as a
-NEW consumer of `mordellWeil`, having been written against a tree where it
-still existed.
+This is the hypothesis-free form, and it is what `curve14a4_finite` consumes —
+`curve14a4_points` below is the same statement with the (now unused) finiteness
+hypothesis its consumer supplies positionally. Splitting the two is what breaks
+the circle: finiteness is DERIVED from this enumeration rather than assumed for
+it.
 
-Stated for the single curve rather than reinstating the general theorem,
-because that is all `14a4` needs and the general statement is an enormous
-citation to carry for one use. The `11a3`-shaped repair — an UNCONDITIONAL
-enumeration of `14a4(ℚ)`, from which finiteness follows with no
-Mordell–Weil input at all — would remove this leaf entirely, and is the
-right thing for an owner of this file to do. It is deliberately not done
-here: `curve14a4_points` below states its enumeration WITH `Finite` as a
-hypothesis, so it cannot supply finiteness without being restated, and
-restating another owner's leaf is not a merge resolution. -/
-theorem curve14a4_fg : AddGroup.FG curve14a4.toAffine.Point :=
-  sorry
-
-/-- **`14a4(ℚ)` is finite** (PROVEN 2026-07-26 from the two leaves above).
-
-Same shape as `curve11a3_finite`: finitely generated (Mordell–Weil) plus
-torsion (rank `0`) gives finite, and neither leaf gives finiteness alone. -/
-theorem curve14a4_finite : Finite curve14a4.toAffine.Point :=
-  haveI : AddGroup.FG curve14a4.toAffine.Point := curve14a4_fg
-  AddCommGroup.finite_of_fg_torsion _ curve14a4_isTorsion
-
-/-- **The five affine rational points of `14a4`** (sorry leaf, 2026-07-26):
-given that `14a4(ℚ)` is finite, its affine rational points are exactly
-`(1,−2)`, `(0,−1)`, `(−1,0)`, `(0,0)`, `(1,0)`. Together with the point at
-infinity these are the six elements of `14a4(ℚ) ≅ ℤ/6`.
-
-The finiteness hypothesis is what makes this a finite computation rather than
-a Diophantine problem, and it is supplied by `curve14a4_finite` — so the
-Mordell–Weil leaf is load-bearing here and not decorative. With finiteness in
-hand the group is its own torsion subgroup, which injects into `14a4(𝔽_p)` for
-any prime `p ∤ 14` of good reduction; the five points listed are visibly on the
-curve and distinct.
-
-`MordellWeilGroup` returns `ℤ/6` and lists exactly these five affine points
-plus `(0 : 1 : 0)` (Magma 2026-07-26, untrusted searcher). Note the
-`x`-coordinates take only THREE values, `0`, `1`, `−1`, and that is the form in
-which the consumer uses this leaf.
+THE PROOF. `Nonsingular` gives `Equation`, i.e. `y² + xy + y = x³ − x`; the
+scaled coordinates `T = 4x + 4`, `W = 8y + 4x + 4` satisfy
+`W² = T³ − 11T² + 32T` (the identity is `64 ×` the curve equation), so
+`curve14a4_rational_T` pins `x ∈ {−1, 0, 1}`. At each the equation becomes a
+quadratic in `y` that factors over `ℚ`: `y² = 0`, `y(y + 1) = 0`,
+`y(y + 2) = 0`. Note the `x`-coordinates take only THREE values, and that is
+the form in which the consumer uses this lemma.
 
 All six points are CUSPS of `X_1(14)` (`φ(14)/2 = 3` rational cusps, plus the
 three conjugate ones that happen to be rational on this model). That is the
-input to `x1_fourteen_no_rational_point` in
-`Fermat/FLT/FreyCurve/TateNormalForm.lean`, whose proof exhibits the birational
+input to `x1_fourteen_no_rational_point`, whose proof exhibits the birational
 map from the plane sextic and checks that each of the three `x`-values pulls
 back to `d ∈ {0, 1}` — the two excluded degenerate loci. -/
+theorem curve14a4_affine_points (x y : ℚ)
+    (h : curve14a4.toAffine.Nonsingular x y) :
+    (x, y) = ((1 : ℚ), (-2 : ℚ)) ∨ (x, y) = ((0 : ℚ), (-1 : ℚ)) ∨
+      (x, y) = ((-1 : ℚ), (0 : ℚ)) ∨ (x, y) = ((0 : ℚ), (0 : ℚ)) ∨
+      (x, y) = ((1 : ℚ), (0 : ℚ)) := by
+  have heq : curve14a4.toAffine.Equation x y := h.1
+  rw [WeierstrassCurve.Affine.equation_iff] at heq
+  simp only [curve14a4] at heq
+  have key : (8 * y + 4 * x + 4) ^ 2
+      = (4 * x + 4) ^ 3 - 11 * (4 * x + 4) ^ 2 + 32 * (4 * x + 4) := by
+    linear_combination 64 * heq
+  rcases curve14a4_rational_T _ _ key with hT | hT | hT
+  · have hx : x = -1 := by linarith
+    subst hx
+    have hy : y ^ 2 = 0 := by linarith [heq]
+    have hy0 : y = 0 := pow_eq_zero_iff (n := 2) (a := y) (by norm_num) |>.mp hy
+    subst hy0; simp
+  · have hx : x = 0 := by linarith
+    subst hx
+    have hy : y * (y + 1) = 0 := by linarith [heq]
+    rcases mul_eq_zero.mp hy with h0 | h0
+    · subst h0; simp
+    · have hy1 : y = -1 := by linarith
+      subst hy1; simp
+  · have hx : x = 1 := by linarith
+    subst hx
+    have hy : y * (y + 2) = 0 := by linarith [heq]
+    rcases mul_eq_zero.mp hy with h0 | h0
+    · subst h0; simp
+    · have hy2 : y = -2 := by linarith
+      subst hy2; simp
+
+/-- **The five affine rational points of `14a4`** (PROVEN 2026-07-26 over
+`curve14a4_rational_T`; was a sorry leaf) — the form the consumer calls, with
+the finiteness hypothesis it supplies.
+
+**The finiteness hypothesis is now UNUSED** (hence `_hfin`), and that is a
+strengthening rather than a gap: the enumeration is no longer conditional on a
+Mordell–Weil input. It is kept in the signature only because
+`x1_fourteen_no_rational_point` in `Fermat/FLT/FreyCurve/TateNormalForm.lean`
+passes `curve14a4_finite` positionally. All content is in
+`curve14a4_affine_points`. -/
 theorem curve14a4_points (_hfin : Finite curve14a4.toAffine.Point) (x y : ℚ)
-    (_h : curve14a4.toAffine.Nonsingular x y) :
+    (h : curve14a4.toAffine.Nonsingular x y) :
     (x, y) = ((1 : ℚ), (-2 : ℚ)) ∨ (x, y) = ((0 : ℚ), (-1 : ℚ)) ∨
       (x, y) = ((-1 : ℚ), (0 : ℚ)) ∨ (x, y) = ((0 : ℚ), (0 : ℚ)) ∨
       (x, y) = ((1 : ℚ), (0 : ℚ)) :=
-  sorry
+  curve14a4_affine_points x y h
+
+/-- **`14a4(ℚ)` is finite** (PROVEN 2026-07-26 over `curve14a4_affine_points`, hence
+over `curve14a4_rational_T` alone).
+
+This USED to be the descent conclusion "finitely generated (Mordell–Weil) plus
+torsion (rank `0`) gives finite", and it no longer is: with the five affine
+points enumerated outright, finiteness is immediate from mathlib's
+`nonsingularPointEquiv`, which identifies `E(ℚ)` with `WithZero` of the set of
+nonsingular affine pairs. **So `mordellWeil` is NOT consumed at `14a4`** —
+contrary to what this file's earlier docstrings claimed, it is not load-bearing
+here. It remains load-bearing at `11a3`, where the enumeration is still a leaf.
+-/
+theorem curve14a4_finite : Finite curve14a4.toAffine.Point := by
+  have hsub : {xy : ℚ × ℚ | curve14a4.toAffine.Nonsingular xy.1 xy.2} ⊆
+      ({((1 : ℚ), (-2 : ℚ)), (0, -1), (-1, 0), (0, 0), (1, 0)} : Set (ℚ × ℚ)) := by
+    rintro ⟨x, y⟩ hxy
+    have hx := curve14a4_affine_points x y hxy
+    simp only [Set.mem_insert_iff, Set.mem_singleton_iff]
+    tauto
+  have hfin : {xy : ℚ × ℚ | curve14a4.toAffine.Nonsingular xy.1 xy.2}.Finite :=
+    Set.Finite.subset (Set.toFinite _) hsub
+  haveI : Finite {xy : ℚ × ℚ // curve14a4.toAffine.Nonsingular xy.1 xy.2} := hfin
+  haveI : Finite (WithZero {xy : ℚ × ℚ // curve14a4.toAffine.Nonsingular xy.1 xy.2}) :=
+    inferInstanceAs (Finite (Option _))
+  exact Finite.of_equiv _ curve14a4.toAffine.nonsingularPointEquiv.symm
+
+/-- **Rank `0` for `14a4`** (PROVEN 2026-07-26 over `curve14a4_finite`; was a
+sorry leaf), in the concrete form that carries the content: every rational
+point of `y² + xy + y = x³ − x` is a torsion point.
+
+Classically this is a descent by the rational `2`-isogeny that `14a4` admits;
+here it is a corollary of the full enumeration instead, since a finite group is
+a torsion group. `RankBound(E) = 0` with proof flag `true` (Magma 2026-07-26,
+untrusted searcher). Kubert, "Universal bounds on the torsion of elliptic
+curves" (Proc. LMS 33, 1976); Ligozat; subsumed in Mazur 1977, Thm 8.
+
+Stated as `AddMonoid.IsTorsion` rather than as `rank = 0` for the same reason
+as `curve11a3_isTorsion`: there is no rank function here to state the latter
+against. -/
+theorem curve14a4_isTorsion : AddMonoid.IsTorsion curve14a4.toAffine.Point :=
+  haveI := curve14a4_finite
+  fun g => isOfFinAddOrder_of_finite g
 
 end WeierstrassCurve
