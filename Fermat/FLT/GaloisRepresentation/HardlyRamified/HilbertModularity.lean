@@ -102,6 +102,10 @@ The chain, in the order the assembly uses it:
    added `πT_surjective`, so that `T_F` is the Hecke algebra over `W(k)`
    rather than over `ℤ_[ℓ]` and its residue field is `k`; without it the
    `R_F = T_F` leaf was FALSE. See the FAITHFULNESS AUDIT in its docstring.
+   A THIRD repair, 2026-07-26, PINS THE TOPOLOGY: `isAdic` and
+   `isAdicComplete` are now fields, because `IsHilbertHardlyRamified` is a
+   continuity condition and the deformation category demands the
+   maximal-adic topology. See the INTERFACE REPAIR section of its docstring.
 5. `exists_heckeAlgebra_algEquiv_of_isWeaklyUniversal` — **`R_F = T_F`**,
    item 4. DECOMPOSED 2026-07-26 and now PROVEN over
    `exists_heckeDatum_isWeaklyUniversal_isTraceGenerated` ("the `F`-level
@@ -112,9 +116,13 @@ The chain, in the order the assembly uses it:
    PROVEN here. `exists_heckeDatum_isWeaklyUniversal_isTraceGenerated` was
    itself REFUTED, REPAIRED and DECOMPOSED on 2026-07-26 (second pass) into
    THREE leaves, following `Modularity/Patching.lean`'s `ℚ`-level cut:
-   `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` (the Hecke algebra of
-   the matching level as an object of the deformation category — level
-   lowering over totally real fields),
+   `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` (a Hilbert Hecke
+   algebra read as an object of the deformation category — PROVEN
+   2026-07-26 as glue, after its FORMAL-CONTENT AUDIT found that it carries
+   no level lowering: `HilbertHeckeAlgebra.isHilbertHardlyRamified` pins the
+   minimal level by fiat, so that burden is in
+   `nonempty_potentialHeckeDatum_of_five_le`, and the only genuine gap — the
+   topology — was an interface defect repaired at the structure),
    `surjective_classifyingMap_hilbertHeckeDatum` (Carayol generation) and
    `injective_classifyingMap_hilbertHeckeDatum` (Taylor–Wiles patching).
    The refutation is recorded in the FAITHFULNESS AUDIT of
@@ -1444,7 +1452,37 @@ costs is that `adjoin_heckeT` no longer pins `T` down to the trace algebra
 over `ℤ_[ℓ]`; what it buys is that `T` may be the trace algebra over `W(k)`,
 which is the object that is actually isomorphic to `R_F`. The production
 leaf `nonempty_potentialHeckeDatum_of_five_le` remains classically TRUE
-under both changes, and its statement is again unchanged. -/
+under both changes, and its statement is again unchanged.
+
+## INTERFACE REPAIR (2026-07-26, third pass) — the topology of `T` is now PINNED
+
+The two fields `isAdic` and `isAdicComplete` were added on 2026-07-26 by the
+owner of `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra`, which is the leaf
+that has to present a `HilbertHeckeAlgebra` as an object of the `F`-level
+deformation CATEGORY. That leaf's own docstring had already diagnosed the
+defect and prescribed exactly this repair ("the honest fix, if this leaf is
+ever attacked, is to pin the topology in `HilbertHeckeAlgebra`, as
+`Modularity/Patching.lean` does with `[IsModuleTopology ℤ_[p] T]`, and
+re-derive `isHilbertHardlyRamified`"); here is why nothing weaker works.
+
+`GaloisRep K A M` is a CONTINUOUS monoid hom into `Module.End A M` carrying
+`moduleTopology A (Module.End A M)`, so the type of `ρT` — and the meaning of
+every clause of `IsHilbertHardlyRamified`, `IsUnramifiedAt` and `IsFlatAt`
+included — depends on the topology `T` carries. `HilbertDeformationDatum`
+demands `IsAdic (maximalIdeal R)` and `IsAdicComplete`. Two topologies on one
+carrier therefore give two DIFFERENT and incomparable continuity conditions:
+retopologizing `T` adically does not transport `isHilbertHardlyRamified`, and
+no arithmetic input can bridge the gap, because the gap is not arithmetic.
+Pinning the topology here makes the two interfaces agree on the nose, and
+`isHilbertHardlyRamified` is then literally the deformation category's own
+local condition rather than a homonym of it.
+
+`IsNoetherianRing T`, the third thing a datum wants, is NOT added as a field:
+it follows from `moduleFinite` by `IsNoetherianRing.of_finite ℤ_[ℓ] T`.
+
+Cost to the production leaf `nonempty_potentialHeckeDatum_of_five_le`: none
+mathematically — see the two docstrings there — and its statement is once
+again unchanged. -/
 structure HilbertHeckeAlgebra (ℓ : ℕ) [Fact ℓ.Prime]
     (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k]
@@ -1463,6 +1501,23 @@ structure HilbertHeckeAlgebra (ℓ : ℕ) [Fact ℓ.Prime]
   Hecke algebra to be of characteristic zero, and is what no residual junk
   witness can satisfy. -/
   [moduleFree : Module.Free ℤ_[ℓ] T]
+  /-- **The topology of `T` is the maximal-adic one.** Added 2026-07-26 by
+  the INTERFACE REPAIR below: without it the topology `T` carries is
+  arbitrary, `isHilbertHardlyRamified` (which is a statement about
+  continuity for THAT topology) says nothing about the adic one, and
+  `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` — which has to hand `T`
+  to `HilbertDeformationDatum`, where `IsAdic` is demanded — is not provable
+  from any amount of arithmetic. Classically this is no constraint at all:
+  the localized Hecke algebra is finite free over `ℤ_[ℓ]` and carries the
+  `ℓ`-adic topology, which is its maximal-adic topology because `T/ℓT` is
+  Artinian local. -/
+  isAdic : IsAdic (IsLocalRing.maximalIdeal T)
+  /-- **`T` is maximal-adically complete and separated.** Added 2026-07-26
+  with `isAdic`, and for the same reason. Classically automatic from
+  `moduleFinite` + `moduleFree`: `T ≅ ℤ_[ℓ] ^ n` as a `ℤ_[ℓ]`-module is
+  `ℓ`-adically complete, and the `ℓ`-adic and maximal-adic filtrations are
+  cofinal in each other. -/
+  isAdicComplete : IsAdicComplete (IsLocalRing.maximalIdeal T) T
   /-- The finite bad set: the level of the newform and the places over
   `2` and `ℓ`. -/
   bad : Finset (HeightOneSpectrum (𝓞 F))
@@ -1664,6 +1719,23 @@ that the literature proves together:
   not decoration either — `HilbertHeckeAlgebra`'s own docstring records
   that without it `R_F` is of unbounded level, not module-finite, and
   `R_F = T_F` is false.
+
+  **This bullet is where the level lowering of the whole cluster lives, and
+  it is the ONLY place it lives** (audit 2026-07-26, by the owner of
+  `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra`). That leaf's docstring
+  used to advertise itself as the level-lowering step; it is not, because
+  `HilbertHeckeAlgebra` pins the minimal level by fiat and there is
+  therefore no non-minimal Hecke algebra for it to lower. See the
+  FORMAL-CONTENT AUDIT there.
+* **The topology of `T`** — `isAdic` and `isAdicComplete`, added to
+  `HilbertHeckeAlgebra` on 2026-07-26 by the same audit. Classically these
+  cost this leaf NOTHING: the localized Hecke algebra of a fixed weight and
+  level is finite free over `ℤ_[ℓ]` and carries the `ℓ`-adic topology, which
+  is its maximal-adic topology (`T/ℓT` is Artinian local) and for which it is
+  complete and separated (`T ≅ ℤ_[ℓ] ^ n` as a module). They are stated
+  because `IsHilbertHardlyRamified` is a continuity condition and so depends
+  on which topology `T` carries; producing `ρT` continuous for an
+  unspecified topology would have recorded nothing.
 
 Neither is reachable at this mathlib pin. A survey by the owner of the
 neighbouring `PotentialModularityWitness` interface established that there
@@ -2151,11 +2223,19 @@ Here a third piece is needed first, and it is the one the `ℚ`-level module
 does not have to state: over `ℚ` the Hecke packet arrives from `Interface.lean`
 already carrying its topology (`IsModuleTopology ℤ_[p] T`), its
 `IsHardlyRamified` representation and its reduction map, whereas here the
-Hecke input is a `HilbertHeckeAlgebra`, which pins no topology, and the target
-of the classifying map must be an object of the `F`-level deformation
-CATEGORY. Manufacturing that object out of the automorphic input is
-`exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra`, and it is where level
-lowering over totally real fields sits.
+Hecke input is a `HilbertHeckeAlgebra` and the target of the classifying map
+must be an object of the `F`-level deformation CATEGORY. Presenting the one as
+the other is `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra`.
+
+That piece is now PROVEN, and the FORMAL-CONTENT AUDIT in its docstring is the
+thing to read before reasoning about where the automorphic burden of this
+module sits: it is NOT there. `HilbertHeckeAlgebra` carries
+`isHilbertHardlyRamified` for its own `ρT`, i.e. a Hilbert Hecke algebra is of
+the minimal level BY FIAT, so level lowering over totally real fields is part
+of PRODUCING one — `nonempty_potentialHeckeDatum_of_five_le`, whose docstring
+records it — and not of presenting one. What was genuinely missing there was
+the topology, and that was an interface defect, repaired in
+`HilbertHeckeAlgebra` rather than proven.
 
 Why the classifying map is not left implicit: `IsWeaklyUniversal` produces it
 with its three compatibilities, and those three are exactly the hypotheses the
@@ -2163,71 +2243,103 @@ two halves consume, so passing `ψ` explicitly keeps each half a statement
 about a MAP rather than about an existential, which is what makes them
 independently attackable and independently auditable. -/
 
-/-- **The Hecke algebra of the matching level is an object of the `F`-level
-deformation category** (LEAF — new 2026-07-26; the automorphic half of
-`R_F = T_F`, and the piece with no `ℚ`-level counterpart).
+/-- **A Hilbert Hecke algebra IS an object of the `F`-level deformation
+category** (PROVEN 2026-07-26, after the INTERFACE REPAIR of
+`HilbertHeckeAlgebra` recorded in that structure's docstring and audited
+below; formerly a leaf advertised as "level lowering over totally real
+fields", which it is not).
 
 Given the residual-modularity input `T₀`, produce a Hilbert Hecke algebra `T`
-— of the level and weight matching the deformation condition, which need not
-be `T₀`'s — together with a `HilbertDeformationDatum` whose coefficient ring
-IS `T.T`.
+together with a `HilbertDeformationDatum` whose coefficient ring IS `T.T`.
+The witness is `T := T₀` and `𝒟T := T₀` read as a datum, field for field,
+with `AlgEquiv.refl` for the isomorphism.
 
-WHAT THIS ASKS FOR, and why each part is genuine arithmetic:
+## FORMAL-CONTENT AUDIT (2026-07-26) — this statement carries NO arithmetic
 
-* **Level lowering over `F`** (Fujiwara, Jarvis, Rajaei). `T₀` is the Hecke
-  algebra of the newform Taylor's potential-modularity theorem produces, which
-  is of SOME level; `HilbertDeformationDatum` requires
-  `IsHilbertHardlyRamified`, i.e. the MINIMAL level — unramified outside the
-  places over `2ℓ`, flat over `ℓ`, tame with square-trivial unramified
-  quotient character over `2`. Passing from `T₀` to the minimal-level `T` is
-  level lowering. `HilbertHeckeAlgebra` already carries
-  `isHilbertHardlyRamified` for its own `ρT`, so formally this clause is
-  inherited; what is NOT inherited is everything in the next two items, and
-  the classical content of producing such a `T` at all is level lowering.
-* **The adic topology and completeness.** `HilbertHeckeAlgebra` fixes only
-  `IsTopologicalRing T`; `HilbertDeformationDatum` demands
-  `IsAdic (maximalIdeal R)`, `IsAdicComplete` and `IsNoetherianRing`. For a
-  local `T` that is module-finite over `ℤ_[ℓ]` all three hold classically —
-  `T` is Noetherian because `ℤ_[ℓ]` is and `T` is a finite algebra over it,
-  and the maximal-adic topology agrees with the `ℓ`-adic one because `T/ℓT`
-  is Artinian local — but the topology `T` CARRIES is not thereby the adic
-  one, and `ρT`'s continuity is asserted for the topology it carries. This is
-  a genuine gap in the interface and it is recorded here rather than papered
-  over; the honest fix, if this leaf is ever attacked, is to pin the topology
-  in `HilbertHeckeAlgebra` (as `Modularity/Patching.lean` does with
-  `[IsModuleTopology ℤ_[p] T]`) and re-derive `isHilbertHardlyRamified`.
-* **The residual frame.** A datum needs `π` SURJECTIVE onto `k` and `resid` at
-  every `g ∈ G_F`; `HilbertHeckeAlgebra` supplies `πT_surjective` and `residT`
-  since the 2026-07-26 repair, so this part is now inherited rather than
-  assumed. Before that repair this leaf would have been FALSE — see the
-  FAITHFULNESS AUDIT in `HilbertHeckeAlgebra`'s docstring.
+Read this before using the statement, and before reasoning about where the
+automorphic burden of the `R_F = T_F` cluster sits. Every clause a
+`HilbertDeformationDatum` demands is ALREADY a field of `HilbertHeckeAlgebra`,
+or follows from one in a line:
 
-`𝒟₀` is passed because the produced datum must live in a category this leaf
-is entitled to assume nonempty; `hℓ5`, `htr` and `hgal` because the newform
-whose Hecke algebra `T` is exists only for `ℓ ≥ 5` over a totally real `F`
-Galois over `ℚ`.
+| datum field | supplied by |
+| --- | --- |
+| `commRing`, `topologicalSpace`, `isTopologicalRing`, `isLocalRing`, `algebra` | the same instance fields of `HilbertHeckeAlgebra` |
+| `isNoetherianRing` | `IsNoetherianRing.of_finite ℤ_[ℓ] T₀.T` from `moduleFinite` |
+| `isAdic`, `isAdicComplete` | the fields of the same names, added by the interface repair |
+| `ρ`, `isHilbertHardlyRamified` | `ρT`, `isHilbertHardlyRamified` |
+| `π`, `π_surjective`, `resid` | `πT`, `πT_surjective`, `residT` |
 
-References: Carayol, *Sur les représentations `ℓ`-adiques associées aux formes
-modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986); Taylor, *On Galois
-representations associated to Hilbert modular forms*, Invent. Math. 98 (1989);
-Fujiwara, *Deformation rings and Hecke algebras in the totally real case*;
-Jarvis, *Level lowering for modular mod `ℓ` representations over totally real
-fields*, Math. Ann. 313 (1999); Rajaei, *On the levels of mod `ℓ` Hilbert
-modular forms*, J. reine angew. Math. 537 (2001). -/
+**The previous docstring's headline claim — that the passage from `T₀` to `T`
+is level lowering (Fujiwara, Jarvis, Rajaei) — is FALSE about the formal
+statement, and was already contradicted inside that same docstring** ("so
+formally this clause is inherited"). `HilbertHeckeAlgebra.isHilbertHardlyRamified`
+says that `ρT` is unramified outside the places over `2ℓ`, flat over `ℓ`, and
+tame with square-trivial unramified quotient character over `2` — i.e. **a
+Hilbert Hecke algebra is of the minimal level BY FIAT**. There is no
+non-minimal `T₀` to lower. Level lowering is therefore part of the cost of
+PRODUCING a `HilbertHeckeAlgebra` at all, which is
+`nonempty_potentialHeckeDatum_of_five_le`; that leaf's docstring has recorded
+it correctly all along ("this last part silently contains level lowering over
+totally real fields (Fujiwara, Jarvis, Rajaei)"). Nothing is lost by this
+audit: the burden was never in two places, and it is not moved, only stated
+once instead of twice.
+
+**What WAS genuinely missing was the topology, and it was an interface defect
+rather than a theorem.** `GaloisRep` is a CONTINUOUS homomorphism, so the type
+of `ρT` and the meaning of `IsHilbertHardlyRamified` both depend on the
+topology `T` carries; the datum demands the maximal-adic topology and
+completeness, and the structure used to fix only `IsTopologicalRing`. No
+arithmetic input can bridge that — retopologizing a ring does not transport a
+continuity hypothesis, and the two conditions are incomparable. The previous
+docstring diagnosed this exactly and prescribed the fix ("the honest fix, if
+this leaf is ever attacked, is to pin the topology in `HilbertHeckeAlgebra`");
+this owner carried the prescription out. See the INTERFACE REPAIR section of
+`HilbertHeckeAlgebra`.
+
+**Unused hypotheses are underscore-prefixed** so that the emptiness is
+mechanically visible and not merely asserted: `_hℓ5`, `_htr`, `_hgal`,
+`_hirrF` and `_𝒟₀` play no part. `_𝒟₀` in particular was added by an earlier
+faithfulness repair to make the deformation category nonempty; `T₀` now makes
+it nonempty on its own, which is precisely the content of this lemma. The
+signature is nevertheless kept as it was, so that the consumer
+`exists_heckeDatum_isWeaklyUniversal_isTraceGenerated` is untouched and so
+that a future owner who reinstates a genuinely level-lowering form of the
+statement — one taking a Hecke algebra whose `ρT` is NOT assumed hardly
+ramified — inherits the binders it will need.
+
+References, for the arithmetic that is NOT here but is in
+`nonempty_potentialHeckeDatum_of_five_le`: Carayol, *Sur les représentations
+`ℓ`-adiques associées aux formes modulaires de Hilbert*, Ann. Sci. ÉNS 19
+(1986); Taylor, *On Galois representations associated to Hilbert modular
+forms*, Invent. Math. 98 (1989); Fujiwara, *Deformation rings and Hecke
+algebras in the totally real case*; Jarvis, *Level lowering for modular mod
+`ℓ` representations over totally real fields*, Math. Ann. 313 (1999); Rajaei,
+*On the levels of mod `ℓ` Hilbert modular forms*, J. reine angew. Math. 537
+(2001). -/
 theorem exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra
-    (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
+    (ℓ : ℕ) [Fact ℓ.Prime] (_hℓ5 : 5 ≤ ℓ)
     (F : Type u) [Field F] [NumberField F]
     {k : Type u} [Field k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
-    (htr : NumberField.IsTotallyReal F) (hgal : IsGalois ℚ F)
-    (hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
-    (𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
+    (_htr : NumberField.IsTotallyReal F) (_hgal : IsGalois ℚ F)
+    (_hirrF : (ρbar.map (algebraMap ℚ F)).IsIrreducible)
+    (_𝒟₀ : HilbertDeformationDatum ℓ F ρbar)
     (T₀ : HilbertHeckeAlgebra ℓ F ρbar) :
     ∃ (T : HilbertHeckeAlgebra ℓ F ρbar) (𝒟T : HilbertDeformationDatum ℓ F ρbar),
       Nonempty (𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T) :=
-  sorry
+  ⟨T₀,
+    { R := T₀.T
+      isNoetherianRing := IsNoetherianRing.of_finite ℤ_[ℓ] T₀.T
+      isAdic := T₀.isAdic
+      isAdicComplete := T₀.isAdicComplete
+      ρ := T₀.ρT
+      isHilbertHardlyRamified := T₀.isHilbertHardlyRamified
+      π := T₀.πT
+      π_surjective := T₀.πT_surjective
+      resid := T₀.residT },
+    ⟨AlgEquiv.refl⟩⟩
 
 /-- **`R_F ↠ T_F`: the classifying map is SURJECTIVE** (LEAF — new
 2026-07-26; the `F`-level twin of `Modularity/Patching.lean`'s
@@ -2395,7 +2507,7 @@ this module and not inherited here.
 1. **The deformation category may be EMPTY.** The conclusion produces a
    `𝒟T : HilbertDeformationDatum ℓ F ρbar`, so it asserts in particular that
    the category is inhabited; nothing in the old hypotheses made it so. The
-   Hecke input `T₀` does not: `HilbertHeckeAlgebra` pins no topology on `T`
+   Hecke input `T₀` did not: `HilbertHeckeAlgebra` pinned no topology on `T`
    beyond `IsTopologicalRing`, whereas `HilbertDeformationDatum` demands the
    MAXIMAL-ADIC one together with `IsAdicComplete`, and continuity of `ρT` for
    a coarser topology says nothing about continuity for the adic one. This is
@@ -2403,6 +2515,13 @@ this module and not inherited here.
    was repaired for on the same day, and the repair is the same: a hypothesis
    `𝒟₀ : HilbertDeformationDatum ℓ F ρbar`. It costs the consumer below
    NOTHING — that consumer already has such a datum in hand as its own `𝒟`.
+
+   SUPERSEDED IN ITS REASON, NOT IN ITS EFFECT (2026-07-26, third pass):
+   `HilbertHeckeAlgebra` now carries `isAdic` and `isAdicComplete`, so `T₀`
+   DOES make the deformation category nonempty — that is exactly what
+   `exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra` proves — and `𝒟₀` is
+   consequently redundant here. It is kept because removing it would change
+   the signature for no gain; both consumers discharge it for free.
 
 2. **The residue fields need not match.** See the FAITHFULNESS AUDIT in the
    docstring of `HilbertHeckeAlgebra`: `𝒟T.R` has residue field exactly `k`,
