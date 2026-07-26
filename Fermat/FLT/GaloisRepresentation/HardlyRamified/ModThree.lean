@@ -32208,9 +32208,100 @@ theorem exists_conductor_artinSymbol_span_eq_one_ray_class
   sorry
 
 set_option maxHeartbeats 1000000 in
+/-- **One unramified prime may be struck off the modulus** (sorry node,
+created 2026-07-26 as the single sub-leaf (B1) of the conductor leaf (B)
+`artinSymbol_span_eq_one_of_pos_of_conductor_ray_class` just below, which
+is now PROVEN as a descending induction over this step): if the Artin
+symbol `c` of `χ` kills the ray `P⁺_{F, v·mm'}` (`hray`) and `χ` is
+unramified at the finite place `v` (`hunrv`), then `c` already kills the
+larger ray `P⁺_{F, mm'}`.
+
+**This is the whole local content of Childress, *Class Field Theory*
+(Universitext, 2009), Theorem 5.2.1(ii)**, isolated at ONE prime: "the
+ideal `m` can be chosen so that it is divisible only by the ramified
+primes". Everything global in (B) — the descent from an arbitrary
+modulus down to `(1)` — is the induction in the consumer; what is left
+here is the single-prime statement, and it is genuinely LOCAL.
+
+**Route.** Let `M/F` be the finite abelian extension cut out by
+`ker χ` (finite because `χ` is trivial on the open subgroup `V`, whose
+index in the profinite group `Γ F` is finite), `G = Gal(M/F)`, and
+`A : I_F → G` the Artin map, so `c = ι ∘ A`. `hray` says
+`P⁺_{F, v·mm'} ⊆ ker A`, i.e. `v·mm'` is an ADMISSIBLE modulus for
+`M/F`; hence the conductor `𝔣(M/F)` — the gcd of the admissible moduli,
+which is itself admissible — divides `v·mm'`. The conductor theorem
+says `𝔣` is divisible exactly by the primes RAMIFIED in `M/F`
+(Childress ch. 5 §1, p. 107): a modulus `m` is admissible exactly when
+`E⁺_{F,m} ⊆ N_{M/F} E_M`, and
+
+    N_{M/F} E_M = ∏_{v fin unram} U_v × ∏_{v fin ram} ∏_{w|v}
+                    N_{M_w/F_v} U_w × ∏_{v infinite} ∏_{w|v} N M_w^×,
+
+so a positive `ord_v m` is needed only where `N_{M_w/F_v} U_w ≠ U_v`,
+which CANNOT happen at an unramified `v` — **the local norm is
+surjective on units for an unramified local extension** (Serre, *Corps
+Locaux* V §2; Neukirch *ANT* V (1.2): surjectivity of the norm on the
+residue fields plus successive approximation in the unit filtration).
+By `hunrv`, `v` is unramified in `M/F` — inertia at `v` lies in
+`ker χ` — so `ord_v 𝔣 = 0`, whence `𝔣 ∣ mm'` (comparing valuations
+prime by prime: `ord_v 𝔣 = 0 ≤ ord_v mm'`, and `ord_p 𝔣 ≤ ord_p (v·mm')
+= ord_p mm'` for `p ≠ v`). Therefore
+`P⁺_{F, mm'} ⊆ P⁺_{F, 𝔣} ⊆ ker A = ker c`.
+
+**Only `v`'s unramifiedness is assumed, not `χ`'s everywhere.** The
+consumer has the everywhere-unramified hypothesis and instantiates it at
+`v`; stating the leaf at a single place is what makes its locality
+mechanically visible, and it is the granularity at which the literature
+proves it.
+
+**`ℓ`, `hℓ`, `hℓ3`, `k`, `hord` are carried for uniformity with the
+sibling leaf (A) and are NOT needed by this argument** — the conductor
+theorem is insensitive to the order of `χ`. `hmul`, `V`, `hVopen`,
+`hVker`, `hcmul`, `hcfrob` all ARE needed: the first four to produce the
+finite abelian `M/F`, the last two to know that `c` is the Artin symbol
+of `χ` and not a junk function on ideals.
+
+**Mathlib survey (2026-07-26): nothing to build on.** Conductors of
+abelian extensions, ray class groups, the Artin map and local class
+field theory are all absent from the pin, and `~/cs/FLT` has no class
+field theory either. The bounded missing piece a fleet should build
+first is the local one named above — surjectivity of `N : U_w → U_v` for
+`M_w/F_v` unramified — since it is what the conductor theorem consumes
+at `v` and it needs no global input. -/
+theorem artinSymbol_ray_class_descend_unramified_prime
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hunrv : ∀ a : Γ F, ∀ σ ∈ localInertiaGroup v,
+      χ (a * Field.absoluteGaloisGroup.map
+        (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F v)) σ * a⁻¹) = 1)
+    (mm' : Ideal (NumberField.RingOfIntegers F)) (hmm' : mm' ≠ ⊥)
+    (hray : ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      (∀ φ : F →+* ℝ,
+        0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
+      δ - 1 ∈ v.asIdeal * mm' → c (Ideal.span {δ}) = 1) :
+    ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+      (∀ φ : F →+* ℝ,
+        0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
+      δ - 1 ∈ mm' → c (Ideal.span {δ}) = 1 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
 /-- **The conductor of an everywhere-unramified character is trivial at
-the finite places — the modulus may be improved to `(1)`** (sorry node,
-created 2026-07-26 as sub-leaf (B) of
+the finite places — the modulus may be improved to `(1)`** (PROVEN
+2026-07-26 as a descending induction over the single new leaf (B1)
+`artinSymbol_ray_class_descend_unramified_prime` just above; created
+2026-07-26 as sub-leaf (B) of
 `artinSymbol_span_eq_one_of_pos_primePow_ray_class` below, which is
 PROVEN as glue over this leaf and the reciprocity leaf (A)
 `exists_conductor_artinSymbol_span_eq_one_ray_class` just above):
@@ -32252,7 +32343,38 @@ filtration). Neither is in the mathlib pin.
 
 `mm ≠ ⊥` matters here too: with `mm = ⊥`, `hray` says only
 `c ((1)) = 1` and the leaf would be false-as-usable — it would assert
-full reciprocity from nothing. -/
+full reciprocity from nothing.
+
+**DECOMPOSED and PROVEN AS A DESCENDING INDUCTION 2026-07-26** over the
+single new leaf (B1) `artinSymbol_ray_class_descend_unramified_prime`
+stated immediately above, which strikes ONE unramified prime off the
+modulus. The global half — "get all the way down to `(1)`" — is the
+induction implemented here and needs no arithmetic:
+
+* if `nn = ⊤` the ray hypothesis IS the goal, since `δ - 1 ∈ ⊤` always;
+* otherwise `nn` lies in a maximal ideal `w`, which in a Dedekind domain
+  means `w ∣ nn`, say `nn = w · nn'`; `w ≠ ⊥` because `nn ≠ ⊥`, and
+  `nn' ≠ ⊥` for the same reason;
+* `Ideal.absNorm` is multiplicative and `absNorm w ≥ 2` (it is neither
+  `0`, as `w ≠ ⊥`, nor `1`, as `w ≠ ⊤`), so `absNorm nn' < absNorm nn`
+  and the recursion is well-founded on `absNorm`;
+* (B1) at `w`, fed the ray hypothesis at `nn = w · nn'`, returns the ray
+  hypothesis at `nn'`, and the induction hypothesis finishes.
+
+So the ONLY arithmetic left in the conductor half is (B1)'s one-prime
+step, and the total positivity of `δ` is carried untouched through the
+whole descent — the archimedean part of the modulus is never removed,
+which is exactly right (see the `ℚ(√3)` witness above).
+
+FAITHFULNESS (audited 2026-07-26, statement UNCHANGED): the leaf is TRUE
+as stated. `hray` is genuinely used — the descent starts from it — and
+`hmm : mm ≠ ⊥` is what makes the induction's measure `absNorm mm`
+finite, so the degenerate `mm = ⊥` reading is excluded at the top as
+well as at every step. Note that (B) does NOT need `hray` for its
+mathematical truth (the conclusion follows from `hunr` alone, by the
+full reciprocity theorem for the narrow Hilbert class field); assuming
+it is what keeps this half separable from (A), and every honest proof of
+(B) will consume it, as this one does. -/
 theorem artinSymbol_span_eq_one_of_pos_of_conductor_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -32279,7 +32401,55 @@ theorem artinSymbol_span_eq_one_of_pos_of_conductor_ray_class
     (hγpos : ∀ φ : F →+* ℝ,
       0 < φ (algebraMap (NumberField.RingOfIntegers F) F γ)) :
     c (Ideal.span {γ}) = 1 := by
-  sorry
+  -- Descend on the absolute norm of the modulus, striking off one prime at a
+  -- time with the local leaf (B1), until the modulus is `⊤ = (1)`.
+  suffices h : ∀ N : ℕ, ∀ nn : Ideal (NumberField.RingOfIntegers F), nn ≠ ⊥ →
+      Ideal.absNorm nn ≤ N →
+      (∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+        (∀ φ : F →+* ℝ,
+          0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
+        δ - 1 ∈ nn → c (Ideal.span {δ}) = 1) →
+      ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+        (∀ φ : F →+* ℝ,
+          0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
+        c (Ideal.span {δ}) = 1 by
+    exact h (Ideal.absNorm mm) mm hmm le_rfl hray γ hγ0 hγpos
+  intro N
+  induction N with
+  | zero =>
+      -- `absNorm nn ≤ 0` forces `nn = ⊥`, excluded
+      intro nn hnn hle _ _ _ _
+      exact absurd (Ideal.absNorm_eq_zero_iff.mp (Nat.le_zero.mp hle)) hnn
+  | succ N ih =>
+      intro nn hnn hle hnnray δ hδ0 hδpos
+      by_cases htop : nn = ⊤
+      · -- the modulus is already `(1)`: `δ - 1 ∈ ⊤` is free
+        exact hnnray δ hδ0 hδpos (by rw [htop]; exact Submodule.mem_top)
+      · -- otherwise peel off a maximal ideal `w ∣ nn`
+        obtain ⟨w, hwmax, hwle⟩ := Ideal.exists_le_maximal nn htop
+        have hw0 : w ≠ ⊥ := fun hb => hnn (le_bot_iff.mp (hb ▸ hwle))
+        obtain ⟨nn', hnn'eq⟩ := Ideal.dvd_iff_le.mpr hwle
+        have hnn'0 : nn' ≠ ⊥ := fun hb => hnn (by rw [hnn'eq, hb, Ideal.mul_bot])
+        have hnorm : Ideal.absNorm nn = Ideal.absNorm w * Ideal.absNorm nn' := by
+          rw [hnn'eq, map_mul]
+        have hw2 : 2 ≤ Ideal.absNorm w := by
+          have h1 : Ideal.absNorm w ≠ 0 := fun hb => hw0 (Ideal.absNorm_eq_zero_iff.mp hb)
+          have h2 : Ideal.absNorm w ≠ 1 := fun hb =>
+            hwmax.ne_top (Ideal.absNorm_eq_one_iff.mp hb)
+          omega
+        have hle' : Ideal.absNorm nn' ≤ N := by
+          have h2a : 2 * Ideal.absNorm nn' ≤ Ideal.absNorm w * Ideal.absNorm nn' :=
+            Nat.mul_le_mul hw2 (le_refl _)
+          rw [← hnorm] at h2a
+          have ha1 : 1 ≤ Ideal.absNorm nn' :=
+            Nat.one_le_iff_ne_zero.mpr fun hb => hnn'0 (Ideal.absNorm_eq_zero_iff.mp hb)
+          omega
+        refine ih nn' hnn'0 hle' ?_ δ hδ0 hδpos
+        -- (B1) at the unramified prime `w`, applied to the ray at `nn = w · nn'`
+        exact artinSymbol_ray_class_descend_unramified_prime F χ hmul V hVopen hVker
+          ℓ hℓ hℓ3 k hord c hcmul hcfrob ⟨w, hwmax.isPrime, hw0⟩
+          (hunr ⟨w, hwmax.isPrime, hw0⟩) nn' hnn'0
+          (fun η hη0 hηpos hηmem => hnnray η hη0 hηpos (by rw [hnn'eq]; exact hηmem))
 
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for the narrow Hilbert class field, for a
@@ -32367,7 +32537,11 @@ makes (Childress, *Class Field Theory* (Universitext, 2009), Theorem
   conductor step: an everywhere-finite-unramified `χ` has conductor
   supported on the archimedean places only, so the modulus improves to
   `(1)` and the ray becomes the full narrow ray `P⁺`. Local, and
-  independent of (A).
+  independent of (A). **PROVEN 2026-07-26** as a descending induction on
+  `Ideal.absNorm` of the modulus over its own single sub-leaf (B1)
+  `artinSymbol_ray_class_descend_unramified_prime`, which strikes ONE
+  unramified prime off the modulus and is where all of (B)'s arithmetic
+  now sits.
 
 Neither leaf implies the target on its own — (A) is the target with the
 modulus weakened, (B) is the target with `hray` assumed — and together
@@ -32502,8 +32676,11 @@ just above:
   `ℓ^k`, `ℓ ≠ 3` prime; itself decomposed into the reciprocity leaf
   `exists_conductor_artinSymbol_span_eq_one_ray_class` (SORRY — Artin
   reciprocity for SOME modulus) and the conductor leaf
-  `artinSymbol_span_eq_one_of_pos_of_conductor_ray_class` (SORRY — an
-  everywhere-finite-unramified character has conductor `(1)`).
+  `artinSymbol_span_eq_one_of_pos_of_conductor_ray_class` (PROVEN
+  2026-07-26 — an everywhere-finite-unramified character has conductor
+  `(1)` — by a descending induction on the modulus over its own single
+  sub-leaf `artinSymbol_ray_class_descend_unramified_prime` (SORRY —
+  one unramified prime comes off the modulus; purely local)).
 
 The reduction of the general case to the prime-power case, proven here,
 is the standard first step of Artin's proof and runs as follows. By (i),
