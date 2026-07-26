@@ -8047,6 +8047,29 @@ plane model of `X_1(37)` in the `(b, c)`-coordinates rather than a
 statement quantified over all curves. The passage between the two is
 the PROVEN `exists_tateNormalForm`; everything above about genus,
 witnesses and citation is unchanged by the restatement.
+
+WHY THE PLANE-MODEL METHOD DOES NOT REACH THIS CLUSTER, and the route
+that might (recorded 2026-07-26 while relocating `11, 13, 17, 19` below
+`tateNormalForm_origin_order_ne_of_cuspidalRankZero`; NOT attempted).
+`37, 43, 67, 163` lie OUTSIDE that uniform node — its level list stops
+at `27` — and they are out of reach of the explicit `(b, c)`-plane
+curves too. The measured `c`-degrees of `Fₙ` at levels `11, 13, 15, 17,
+19` are `7, 10, 14, 18, 22`; level `27` already runs to several hundred
+terms, so writing out a plane model at `37` and above is hopeless, quite
+apart from the rank obstruction recorded above.
+
+The promising route here is CM, not modular: a rational point of order
+`N` gives a rational cyclic `N`-isogeny, class number `1` pins the curve
+to ONE explicit CM `j`-invariant (`j = −7 · 11³` at `37`; `−884736000`,
+`−147197952000`, `−262537412640768000` at `43, 67, 163` — the
+class-number-one discriminants recorded in the sibling nodes), and then
+reduction at a good prime with the Hasse bound kills a point of that
+order outright, since `N` exceeds `p + 1 + 2√p` for a small good `p`.
+The input it needs is "`X_0(N)(ℚ)` is two cusps plus one CM point" —
+strictly STRONGER than Kenku's list, which only says `N` IS an isogeny
+degree, but unlike the winding quotient it is finite, explicit and
+citable. That trade — a stronger citation for a finite computation — is
+the thing to weigh before anyone builds the Eisenstein quotient.
 -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_37 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
