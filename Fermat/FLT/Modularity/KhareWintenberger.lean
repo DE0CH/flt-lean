@@ -1197,14 +1197,14 @@ Leaf list under the moduli cut, as of the DATUM recut (2026-07-26):
 archimedean place, where the ODDNESS of `ρbar` is consumed; its intended
 discharge is one real elliptic curve, `B = E ⊗_ℤ 𝒪_D`, and it needs no
 moduli theory at all), and the three leaves of the DATUM cut:
-`exists_totallyRealCoefficientDatum_of_residueField` (PROVEN 2026-07-26 —
-a totally real field with a prescribed residue field at `ℓ` and a second
-prime over `3`; pure number theory, discharged by the maximal real
-subfield of `ℚ(ζ_{ℓ^f−1})`),
+`exists_totallyRealCoefficientDatum_of_residueField` (SORRY — a totally
+real field with a prescribed residue field at `ℓ` and a second prime over
+`3` OF RESIDUE DEGREE `≥ 2`; pure number theory),
 `exists_dihedralOddGaloisRep_of_charThree` (SORRY — an odd dihedral
-`ρbarp` in residue characteristic three, intended discharge
-`Ind_{Γ_M}^{Γ_ℚ} χ` for an imaginary quadratic `M`; pure representation
-theory) and
+`ρbarp` over a residue field of characteristic three with MORE THAN THREE
+ELEMENTS, intended discharge `Ind_{Γ_M}^{Γ_ℚ} χ` for an imaginary
+quadratic `M`; pure representation theory — REFUTED as originally stated
+and repaired 2026-07-26, the cardinality bound is the repair) and
 `exists_twistedHilbertBlumenthalModuliTwist_of_datum` (SORRY — the
 geometry: Rapoport's split moduli space, its fineness, and Galois descent
 along the cocycle, all of it now with the arithmetic choices moved into
@@ -4053,10 +4053,22 @@ nothing more. Two constraints then pick `3` out:
   rather than collapsing.
 
 `(3 : kp) = 0` is carried as a conjunct of the arithmetic leaf rather
-than derived at the seam: it is the only thing the second arithmetic leaf
-needs to know about `kp`, and the residue-field isomorphism that would
+than derived at the seam: the residue-field isomorphism that would
 otherwise have to transport it is stated up to `≃+*`, where numerals cost
 a transport lemma for no gain.
+
+CORRECTION (2026-07-26, from the owner of
+`exists_dihedralOddGaloisRep_of_charThree`; this paragraph used to claim
+that `(3 : kp) = 0` was the ONLY thing the second arithmetic leaf needed
+to know about `kp`, and that claim was FALSE). The dihedral condition is
+UNSATISFIABLE over `𝔽₃`, for exactly the reason the bullet above gives
+for `𝔽₂`: `𝔽₃ˣ` has order `2`, and an irreducible normal closure of
+complex conjugation needs a diagonal character ratio of order at least
+`3`. So the excluded residue fields at `𝔭` are `𝔽₂` AND `𝔽₃`, and `𝔭`
+must be taken of residue DEGREE at least `2`. Both arithmetic leaves now
+carry `3 < Nat.card kp`; the refutation, the sharpness, and the choice of
+`D` that supplies the extra conjunct are written out in the FALSITY AUDIT
+on `exists_dihedralOddGaloisRep_of_charThree` below.
 
 WHAT IS NOT CUT HERE, and why. The vacuity objection recorded in the
 ARCHIMEDEAN section docstring above still applies verbatim to the
@@ -4563,7 +4575,36 @@ the `𝔭` conjunct is written as the `ℕ`-CAST `((3 : ℕ) : 𝒪_D)` rather t
 as the numeral `(3 : 𝒪_D)` so that it matches the `(↑p : 𝒪_D) ∈ 𝔭` of
 `exists_twistedHilbertBlumenthalModuliTwist_of_datum` at `p = 3` on the
 nose; the two are only propositionally equal (`Nat.cast_ofNat`), and the
-consumer would otherwise pay a cast lemma for nothing. -/
+consumer would otherwise pay a cast lemma for nothing.
+
+**RE-SORRIED AT INTEGRATION, 2026-07-26 — and the remaining obligation is
+exactly ONE CLAUSE.** Two owners worked this node concurrently. One PROVED
+the statement as it then stood (conclusion ending `(3 : kp) = 0`); the
+other REFUTED the sibling `exists_dihedralOddGaloisRep_of_charThree` as
+stated and repaired it by demanding a residue field of characteristic `3`
+with MORE THAN THREE elements, which forces this node to deliver
+`3 < Nat.card kp` as well. The repair wins — the sibling is false without
+it — so the strengthened conclusion is what stands here, and the proof of
+the weaker form does not establish it.
+
+**Almost all of that proof survives and is still in this file.** Everything
+except the new clause is `exists_totallyRealCoefficientDatum_core` above
+(PROVEN, with its helper stack `subfield_eq_top_of_natCard_eq`,
+`subfield_eq_top_of_mem_add_inv`, `isIntegral_subfield_mk`,
+`inv_mem_subring_of_finite`, `isPrimitiveRoot_map_of_natCast_ne_zero`,
+`orderOf_natCast_zmod_pow_sub_one`, `charP_of_padicIntAlgebra` — all
+proven, and free-floating only until this node consumes them again). The
+discharge that was in place instantiated `_core` at
+`K = ULift (CyclotomicField (ℓ^f − 1) ℚ)` with `f` the degree of `k` over
+`𝔽_ℓ`; recover it verbatim from the merge parent of this file's
+`flt-lean-145` merge.
+
+So the residual mathematics is only: **the residue degree of `3` in the
+maximal real subfield `K⁺` of `ℚ(ζ_{ℓ^f−1})` is at least `2`**, i.e.
+`𝒪_{K⁺}/𝔭 ≠ 𝔽_3`. That is a statement about the order of `3` mod
+`ℓ^f − 1` modulo the `±1` identification defining `K⁺`, and it is NOT
+supplied by `_core`, whose conclusion stops at `(3 : kp) = 0`. Whoever
+closes this should strengthen `_core` rather than rebuild it. -/
 theorem exists_totallyRealCoefficientDatum_of_residueField
     (ℓ : ℕ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     (k : Type u) [Field k] [Finite k] [Algebra ℤ_[ℓ] k] :
@@ -4577,37 +4618,15 @@ theorem exists_totallyRealCoefficientDatum_of_residueField
       ((3 : ℕ) : NumberField.RingOfIntegers D) ∈ frp ∧
       Nonempty ((NumberField.RingOfIntegers D ⧸ lam) ≃+* k) ∧
       Nonempty ((NumberField.RingOfIntegers D ⧸ frp) ≃+* kp) ∧
-      (3 : kp) = 0 := by
-  classical
-  haveI : CharP k ℓ := charP_of_padicIntAlgebra ℓ k
-  haveI : Fintype k := Fintype.ofFinite k
-  obtain ⟨fp, -, hcardk⟩ := FiniteField.card k ℓ
-  have hfpos : 0 < (fp : ℕ) := fp.2
-  have hcardk' : Nat.card k = ℓ ^ (fp : ℕ) := by rw [Nat.card_eq_fintype_card, hcardk]
-  haveI : CharZero (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) :=
-    (ULift.ringEquiv (R := CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)).toRingHom.charZero
-  let e : ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)
-      ≃ₐ[ℚ] CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ :=
-    { ULift.ringEquiv (R := CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ) with
-      commutes' := fun r => by simp }
-  haveI : FiniteDimensional ℚ (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) :=
-    LinearEquiv.finiteDimensional e.toLinearEquiv.symm
-  haveI : NumberField (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) := ⟨⟩
-  haveI : IsCyclotomicExtension {ℓ ^ (fp : ℕ) - 1} ℚ
-      (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ) :=
-    CyclotomicField.instIsCyclotomicExtensionSingletonNatSetOfCharZero _ ℚ
-  haveI : IsCyclotomicExtension {ℓ ^ (fp : ℕ) - 1} ℚ
-      (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) :=
-    IsCyclotomicExtension.equiv {ℓ ^ (fp : ℕ) - 1} ℚ
-      (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ) e.symm
-  exact exists_totallyRealCoefficientDatum_core ℓ (fp : ℕ) hℓ5 hfpos
-    (ULift.{u} (CyclotomicField (ℓ ^ (fp : ℕ) - 1) ℚ)) k hcardk'
+      (3 : kp) = 0 ∧ 3 < Nat.card kp :=
+  sorry
 
 /-- **An odd dihedral auxiliary level representation** (sorry node, cut
 2026-07-26 — the second ARITHMETIC leaf of the representability half; no
-algebraic geometry appears in it): over a finite field `kp` of
-characteristic `3` there is a two-dimensional representation `ρbarp` of
-`Γ_ℚ` which is
+algebraic geometry appears in it; REFUTED AS ORIGINALLY STATED and
+REPAIRED 2026-07-26, see the FALSITY AUDIT below): over a finite field
+`kp` of characteristic `3` with MORE THAN THREE ELEMENTS there is a
+two-dimensional representation `ρbarp` of `Γ_ℚ` which is
 
 * ODD — complex conjugation has determinant `-1` — and
 * DIHEDRAL over every totally real base: for every totally real number
@@ -4616,24 +4635,119 @@ characteristic `3` there is a two-dimensional representation `ρbarp` of
 
 INTENDED DISCHARGE (see the section docstring above for why this shape is
 forced by the seam): let `M` be an IMAGINARY quadratic field and `χ` a
-character `Γ_M → kpˣ` with `χ ≠ χ^c`, and put
-`ρbarp = Ind_{Γ_M}^{Γ_ℚ} χ`. Then
+continuous character `Γ_M → kpˣ` such that `ψ := χ/χ^c` has ORDER AT
+LEAST `3`, and put `ρbarp = Ind_{Γ_M}^{Γ_ℚ} χ`. Then
 
 * `det ρbarp = ε_{M/ℚ} · (χ ∘ Ver)`, and `ε_{M/ℚ}(c) = -1` because `M` is
   imaginary while `Ver(c) = c² = 1`, so `det ρbarp (c) = -1`, which is a
   genuine condition because `char kp = 3` is odd;
 * no totally real `F` contains `M`, so `FM/F` is quadratic for every such
-  `F`, `ρbarp|_{Γ_F} = Ind_{Γ_{FM}}^{Γ_F}(χ|)` is irreducible (the two
-  conjugates `χ|` and `χ^c|` are still distinct, `F` being linearly
-  disjoint from the field cut out by `χ/χ^c` in the intended choice), and
-  `ρbarp|_{Γ_{FM}} = χ| ⊕ χ^c|` is reducible with `L = FM`.
+  `F`, `ρbarp|_{Γ_F} = Ind_{Γ_{FM}}^{Γ_F}(χ|)`, and
+  `ρbarp|_{Γ_{FM}} = χ| ⊕ χ^c|` is reducible, so `L = FM` discharges the
+  second conjunct unconditionally;
+* the first conjunct — irreducibility over EVERY totally real `F` — is
+  exactly `N ⊄ FM` for every totally real `F`, where `N` is the fixed
+  field of `ker ψ`, and that is where `ord ψ ≥ 3` is consumed (proof in
+  the FALSITY AUDIT below).
 
-Such a `χ` exists for every finite `kp` with more than two elements —
-`kpˣ` is then nontrivial and the ray class groups of `M` surject onto
-arbitrarily large cyclic quotients — and `char kp = 3` gives
-`|kp| ≥ 3 > 2`. That is the ONLY use of `h3` here; it is stated as
-`(3 : kp) = 0` rather than as a cardinality bound because that is the
-form the arithmetic leaf above hands over.
+A concrete such `χ` when `3 < |kp|`: `q − 1 = |kpˣ| ≥ 8` for
+`q = |kp| = 3^f`, `f ≥ 2`; take `M` imaginary quadratic whose class group
+has an element of order `m := q − 1` (Nakagawa–Horie / Yamamoto give
+infinitely many such `M` for every `m`), let `χ` be a class character of
+`M` of order `m` composed with an embedding of `ℤ/m` into `kpˣ`, and note
+that complex conjugation inverts `Cl(M)`, so `χ^c = χ^{-1}` and
+`ψ = χ²` has order `m/gcd(2,m) = (q−1)/2 ≥ 4 ≥ 3`.
+
+FALSITY AUDIT (2026-07-26, first owner — **THE ORIGINAL STATEMENT, WHICH
+HYPOTHESISED ONLY `(3 : kp) = 0`, IS FALSE**; the counterexample is
+`kp = 𝔽₃`, and the repair — the added `hcard` — is cut-level and is
+spelled out at the end of this audit).
+
+The paragraph that used to stand here claimed that a suitable `χ` exists
+"for every finite `kp` with more than two elements". That is wrong: what
+the construction needs is not a nontrivial `χ` but a `ψ = χ/χ^c` of order
+`≥ 3`, and `ψ` takes values in `kpˣ`. For `kp = 𝔽₃` we have `|𝔽₃ˣ| = 2`,
+so no such `ψ` exists — and the failure is not an artefact of the
+induced-representation route. **No `ρbarp` over `𝔽₃` whatsoever satisfies
+the conclusion**, by the following argument, which is the `𝔽₂` argument
+of the section docstring run one step further.
+
+Let `ρ : Γ_ℚ → GL(V)`, `V = kp²`, be continuous with `kp` finite
+discrete; then `ker ρ` is open, so the image `G` is finite and
+`G = Gal(K/ℚ)` for the finite Galois `K = (ℚ̄)^{ker ρ}`. Write `c ∈ G`
+for the image of complex conjugation (well defined up to conjugacy, and
+`Γ_ℝ ≅ ℤ/2` so the oddness conjunct says exactly `det c = -1`; in
+particular `c ≠ 1` and `c² = 1`).
+
+1. *The image of `Γ_F` for a totally real `F` is a subgroup CONTAINING*
+   `H := ncl_G(c)`, *the normal closure of `c`.* Indeed that image is
+   `Gal(K/K ∩ F)`, and `K ∩ F` is totally real hence contained in the
+   maximal totally real subfield `K⁺`, whose Galois group
+   `Gal(K/K⁺)` is generated by all the complex conjugations of `K`, i.e.
+   by the `G`-conjugacy class of `c`. Conversely `F := K⁺` is itself a
+   totally real number field and REALIZES `H`. So the first conjunct,
+   quantified over all totally real `F`, is EQUIVALENT to: `H` acts
+   irreducibly on `V`.
+2. *Taking `F = ℚ` in the second conjunct forces an index-`2` subgroup of
+   `G` to act reducibly.* (A quadratic `L/ℚ` linearly disjoint from `K`
+   gives the same image `G`, which is irreducible by 1; so the `L` that
+   works satisfies `L ⊆ K` and its image is of index `2`.)
+3. *`G` irreducible with a reducible index-`2` subgroup `G'` forces `G`
+   to be MONOMIAL.* `G'` fixes a line `ℓ`; for `g ∈ G \ G'` the line `gℓ`
+   is again `G'`-stable, and `gℓ = ℓ` for all such `g` would make `ℓ`
+   `G`-stable. So `G'` stabilizes two distinct lines, hence lies in the
+   split torus `T ≅ kpˣ × kpˣ` of the decomposition `ℓ ⊕ gℓ`; and `g`
+   swaps `ℓ` and `gℓ` (because `g² ∈ G'` fixes `ℓ`), so `g` normalizes
+   `T` and `G ⊆ N(T)`.
+4. *Now compute `H = ncl_G(c)` in coordinates.* Write elements of `T` as
+   pairs `(a,b)` and `G = G' ⊔ G'g` with `g` the swap. If `c ∈ G' ⊆ T`
+   then every `G`-conjugate of `c` lies in `T` (conjugating by `T` is
+   trivial and by `g` is the swap), so `H ⊆ T` is REDUCIBLE, contradicting
+   1. So `c = (a,b)g`. Put `D := {xy^{-1} : (x,y) ∈ G'} ≤ kpˣ`, the image
+   of the character ratio — for the induced picture, `D = im(χ/χ^c)`.
+   Conjugating `c` by `(x,y) ∈ G'` gives `(a·d, b·d^{-1})g` with
+   `d = xy^{-1}` running over `D`, and the product of two such conjugates
+   is `(d/d', d'/d) ∈ T`. Hence
+   `H = {(e,e^{-1}) : e ∈ D} ⊔ {(a d, b d^{-1})g : d ∈ D}`, and `H` acts
+   irreducibly **iff** the two diagonal characters `e ↦ e` and
+   `e ↦ e^{-1}` differ on `D`, i.e. **iff `D` contains an element of
+   order `≥ 3`** (otherwise `D ⊆ {±1}`, the diagonal part of `H` is
+   scalar, and `H = ⟨scalars, c⟩` is reducible since `c` is a
+   diagonalizable involution in odd characteristic).
+5. *Conclusion.* `D ≤ kpˣ`, so the conclusion of this leaf FORCES
+   `|kpˣ| ≥ 3`, i.e. `3 < |kp|`. For `kp = 𝔽₃`, `|kpˣ| = 2` and there is
+   no such `ρ`. (Cross-checked exhaustively by machine: over all `55`
+   subgroups of `GL₂(𝔽₃)`, no pair `(G, c)` with `c² = 1`, `det c = -1`,
+   `G` irreducible, `G` and `ncl_G(c)` both possessing reducible
+   index-`2` subgroups, and `ncl_G(c)` irreducible, exists. The same
+   search over the monomial group `T ⋊ ⟨w⟩ ⊆ GL₂(𝔽₉)` with `c = w`
+   returns `|ncl(c)| = 16` irreducible with a reducible index-`2`
+   subgroup, so the bound is SHARP.)
+
+Note the counterexample field `𝔽₃` is not exotic: it is exactly what the
+sibling leaf `exists_totallyRealCoefficientDatum_of_residueField` used to
+be free to hand over, since any `𝔭 ∣ 3` of residue degree `1` has residue
+field `𝔽₃`.
+
+REPAIR, and where it goes. The missing constraint is `3 < Nat.card kp`,
+added here as `hcard` and added as a further conjunct to the conclusion
+of `exists_totallyRealCoefficientDatum_of_residueField` — i.e. `𝔭` must
+be taken of residue DEGREE at least `2`. That is a genuine but cheap
+extra demand on the choice of `D`, and it does not disturb the `λ`
+conjunct: pick a real quadratic `ℚ(√d)` in which `3` is INERT and `ℓ`
+SPLITS (a Chebotarev/CRT condition on `d`; e.g. `d = 2` works whenever
+`ℓ ≡ ±1 mod 8`), and replace `D` by `D·ℚ(√d)`. Every prime of the
+compositum above `3` then has residue degree divisible by `2`, so
+`|kp| ≥ 9`, while `ℓ` splitting in `ℚ(√d)` keeps a prime above `ℓ` with
+residue field exactly `k`. The auxiliary prime stays `p = 3`, so nothing
+in `exists_twistedHilbertBlumenthalModuliTwist_of_datum` or in the
+fineness argument changes.
+
+`h3` is retained: it is the form in which the sibling leaf hands the
+characteristic over, and the oddness conjunct is a genuine condition only
+because `char kp` is odd. But it is NO LONGER the only thing this leaf
+needs to know about `kp` — `hcard` is now the substantive hypothesis, and
+`h3` alone is provably insufficient.
 
 FAITHFULNESS: the conclusion is a statement about `Γ_ℚ`-representations
 alone and mentions no space, so it cannot be discharged vacuously by a
@@ -4642,7 +4756,7 @@ degenerate geometric object; and it is not vacuous in `F` either, since
 already forces `ρbarp` to be irreducible. -/
 theorem exists_dihedralOddGaloisRep_of_charThree
     (kp : Type u) [Field kp] [Finite kp] [TopologicalSpace kp]
-    [DiscreteTopology kp] (h3 : (3 : kp) = 0) :
+    [DiscreteTopology kp] (h3 : (3 : kp) = 0) (hcard : 3 < Nat.card kp) :
     ∃ ρbarp : GaloisRep ℚ kp (Fin 2 → kp),
       (∀ σ : Field.absoluteGaloisGroup (ULift.{u} ℝ), σ ≠ 1 →
         ρbarp.det (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) σ) = -1) ∧
@@ -4899,9 +5013,9 @@ theorem exists_twistedHilbertBlumenthalModuliTwist_of_five_le
         (HasRealHilbertBlumenthalObject ρbar D lam frp ρbarp →
           HasRationalPoint fX (ULift.{u} ℝ))) := by
   obtain ⟨D, iDfield, iDnf, iDtr, lam, frp, kp, ikpfield, ikpfin, ikptop, ikpdisc,
-    hlam, hfrp, hne, hlamℓ, hfrp3, hres, hresp, h3⟩ :=
+    hlam, hfrp, hne, hlamℓ, hfrp3, hres, hresp, h3, hcard3⟩ :=
     exists_totallyRealCoefficientDatum_of_residueField ℓ hℓ5 k
-  obtain ⟨ρbarp, hoddp, hdih⟩ := exists_dihedralOddGaloisRep_of_charThree kp h3
+  obtain ⟨ρbarp, hoddp, hdih⟩ := exists_dihedralOddGaloisRep_of_charThree kp h3 hcard3
   obtain ⟨X, fX, A, fA, ab, hsm, hsep, hft, hqc, hmod, hform₀, himp⟩ :=
     exists_twistedHilbertBlumenthalModuliTwist_of_datum hℓodd hℓ5 hW hρbar hirr
       D 3 Nat.prime_three (by omega) lam frp hlam hfrp hlamℓ hfrp3 hne hres ρbarp
