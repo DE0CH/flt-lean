@@ -811,7 +811,32 @@ reduction on torsion gives `f(x) = f(∞)`; `f` is a formal immersion at
 
 This is the leaf that genuinely needs `X_0(N)`, `J_0(N)`, the Hecke
 algebra and the Eisenstein ideal — none of which exist in this
-development. Note that NONE of them appear in the statement. -/
+development. Note that NONE of them appear in the statement.
+
+**FAITHFULNESS AUDIT (2026-07-26).** The statement is true and the bound
+`19 < N` is SHARP at `N = 17`: the two `17`-isogeny `j`-invariants are
+`−297756989/2` and `−882216989/131072 = −882216989/2¹⁷`, both with
+`v₂(j) < 0` — which is simultaneously why `hN19` cannot be relaxed to
+`17 ≤ N` and why `q ≠ 2` cannot be dropped. For `N > 19` the only `N` that
+occur are `37, 43, 67, 163`, and all eight of their `j`-invariants are
+rational INTEGERS (see the table in
+`jInvariant_mem_of_isogenyPrime_ge_eleven`), so the conclusion holds with
+room to spare; the content of the leaf is that no OTHER pair `(E, N)`
+exists.
+
+**ROUTE AUDIT (2026-07-26): the purely LOCAL argument at `q` provably does
+not suffice, so do not attempt it.** Over `ℚ_q` with potentially
+multiplicative reduction `E` is a quadratic twist of a Tate curve, so
+`ρ_{E,N}|_{D_q}` has the shape `(χψ ∗ ; 0 ψ)` with `ψ` unramified
+quadratic — and then a Galois-stable line always EXISTS (the `μ_N` line),
+so no local contradiction is available at all. The most one extracts is
+`λ(σ_q) ∈ {±1, ±q}`, which against `λ¹² = χ^s` yields `q^s ≡ 1` or
+`q^{12−s} ≡ 1 (mod N)`; the first is vacuous at `s = 0` and the second at
+`s = 12`, so the two surviving signatures are exactly the two the sibling
+resultant computation also cannot dispose of without `q = 5`. That is
+precisely why Mazur's argument is global, and why this leaf — alone among
+the four — needs `X_0(N)`, `J_0(N)` and the Eisenstein ideal rather than
+local theory that this development could plausibly build. -/
 theorem WeierstrassCurve.potentiallyGoodReduction_of_isogenyCharacter
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
@@ -1325,31 +1350,167 @@ theorem WeierstrassCurve.not_isogenyCharacter_of_isogenySignature_ne_six
     (by norm_num at ha5; linarith) hx3 hx5 (hpow 3 hq3 (by omega)) (hpow 5 hq5 (by omega))
   simpa only [Finset.mem_insert, Finset.mem_singleton] using hs
 
-/-- **Signature `6` forces class number one** (sorry leaf — the
+/-- **The trace relation at a non-inert prime is impossible** (PROVEN
+2026-07-26 — the elementary core of [Michaud-Jacobs, Prop. 4.4], isolated
+from every elliptic curve so that it can be kernel-checked on its own): if
+`q` is prime, `4q < N`, and some integer `a` with `a² ≤ 4q` satisfies
+`N ∣ a² − q` or `N ∣ a² − 4q`, then `False`.
+
+Proof. In the first case `−q ≤ a² − q ≤ 3q`, so `|a² − q| < N` and the
+divisibility forces `a² = q` (`Int.eq_zero_of_abs_lt_dvd`); in the second
+`−4q ≤ a² − 4q ≤ 0`, so `|a² − 4q| < N` and `a² = 4q`, whence `a` is even,
+`a = 2b`, and `b² = q`. Either way a prime is a perfect square, which
+`Prime.not_isSquare` refutes.
+
+This is exactly the step "`|Tr| ≤ 2√q` together with `4q < N` is
+incompatible with `N ∣ Tr² − rq` for `r ∈ {1, 4}`". Note `N` is NOT assumed
+prime: only `4q < N` is used, so the lemma is reusable at any modulus. -/
+theorem mazurIsogeny_traceRelation_impossible {N q : ℕ} (hq : q.Prime)
+    (hqN : 4 * q < N) {a : ℤ} (ha : a ^ 2 ≤ 4 * (q : ℤ))
+    (hdvd : (N : ℤ) ∣ a ^ 2 - (q : ℤ) ∨ (N : ℤ) ∣ a ^ 2 - 4 * (q : ℤ)) : False := by
+  have hq0 : (0 : ℤ) < (q : ℤ) := by exact_mod_cast hq.pos
+  have hsq0 : (0 : ℤ) ≤ a ^ 2 := sq_nonneg a
+  have hN4q : (4 : ℤ) * (q : ℤ) < (N : ℤ) := by exact_mod_cast hqN
+  have hqprime : Prime (q : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hnsq : ∀ b : ℤ, b ^ 2 ≠ (q : ℤ) := fun b hb =>
+    hqprime.not_isSquare ⟨b, by rw [← hb]; ring⟩
+  rcases hdvd with h | h
+  · have hlt : |a ^ 2 - (q : ℤ)| < (N : ℤ) := by
+      rw [abs_lt]; constructor <;> linarith
+    exact hnsq a (by have := Int.eq_zero_of_abs_lt_dvd h hlt; linarith)
+  · have hlt : |a ^ 2 - 4 * (q : ℤ)| < (N : ℤ) := by
+      rw [abs_lt]; constructor <;> linarith
+    have h4 : a ^ 2 = 4 * (q : ℤ) := by
+      have := Int.eq_zero_of_abs_lt_dvd h hlt; linarith
+    have heven : Even a := by
+      have h2 : Even (a ^ 2) := ⟨2 * (q : ℤ), by rw [h4]; ring⟩
+      exact (Int.even_pow.mp h2).1
+    obtain ⟨b, rfl⟩ := heven
+    exact hnsq b (by nlinarith)
+
+/-- **The Frobenius trace relation at a non-inert prime** (sorry leaf,
+introduced 2026-07-26 as the elliptic-curve half of
+`mem_classNumberOnePrimes_of_isogenySignature_six`; [Michaud-Jacobs,
+Prop. 4.4]): under isogeny signature `6` and `N ≡ 3 (mod 4)`, if `2 < q` is
+a prime with `4q < N` which is NOT inert in `ℚ(√−N)` — equivalently `−N` is
+a square mod `q` — then there is a RATIONAL integer `a` with `a² ≤ 4q` and
+`N ∣ a² − q` or `N ∣ a² − 4q`.
+
+Proof (not formalised). `N ≡ 3 (mod 4)` makes `(N+1)/4` an integer, and
+`ψ := λ·χ^{−(N+1)/4}` satisfies `ψ¹² = λ¹²·χ^{−6} = 1` by `hsig` while
+`ψ^{N−1} = 1`; since `gcd(12, N−1) = 6` for `N ≡ 3 (mod 4)`, `ψ⁶ = 1`, i.e.
+`λ = ψ·χ^{(N+1)/4}` with `ψ` of order dividing `6`. Let `σ_q` be a
+Frobenius at `q`. Potential good reduction at `q` — which is `hpg`, i.e.
+Mazur's formal-immersion theorem, and is the only reason this leaf carries
+it — makes `Tr ρ_{E,N}(σ_q)` the reduction of a rational integer `a` with
+`a² ≤ 4q` (Serre–Tate Thm 3, then Hasse–Weil), and `λ(σ_q)` is an
+eigenvalue of `ρ_{E,N}(σ_q)`, whose determinant is `χ(σ_q) = q`. So
+`a ≡ λ(σ_q) + q·λ(σ_q)^{−1} (mod N)`. If `q` is not inert in `ℚ(√−N)` then
+`(−N/q) = 1`, hence by quadratic reciprocity `(q/N) = 1` and
+`q^{(N−1)/2} ≡ 1`, so `q^{(N+1)/2} ≡ q (mod N)`. Squaring the expression
+for `a` and substituting gives `a² − 2q ≡ q·(ψ²(σ_q) + ψ^{−2}(σ_q))`, and
+`ψ²(σ_q)` is a cube root of unity, so the bracket is `2` or `−1`. That is
+`a² ≡ 4q` or `a² ≡ q (mod N)`, which is the conclusion.
+
+MACHINERY AUDIT (2026-07-26). What is missing here is exactly what the
+sibling `exists_frobeniusTrace_of_potentiallyGoodReduction` is missing —
+Serre–Tate integrality of the trace plus the Hasse–Weil bound — together
+with the character bookkeeping above (order of `ψ`, quadratic reciprocity,
+cube roots of unity in `ZMod N`). Nothing modular, no Eisenstein ideal, and
+NO class field theory: the class-number-one input has been moved out
+entirely, into `mazurIsogeny_classNumberOne_of_inert`. -/
+theorem WeierstrassCurve.exists_frobeniusTraceRelation_of_isogenySignature_six
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
+    (hN : N.Prime) (hN23 : 23 ≤ N)
+    (hg : addOrderOf g = N)
+    (lam : Field.absoluteGaloisGroup ℚ →* (ZMod N)ˣ)
+    (hlam : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      Affine.Point.map
+        (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g =
+        ((lam σ : ZMod N).val) • g)
+    (hpg : ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j)
+    (hsig : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ 6)
+    (hmod : N % 4 = 3)
+    {q : ℕ} (hq : q.Prime) (hq2 : 2 < q) (hq4 : 4 * q < N)
+    (hsplit : IsSquare ((-(N : ℤ) : ZMod q))) :
+    ∃ a : ℤ, a ^ 2 ≤ 4 * (q : ℤ) ∧
+      ((N : ℤ) ∣ a ^ 2 - (q : ℤ) ∨ (N : ℤ) ∣ a ^ 2 - 4 * (q : ℤ)) :=
+  sorry
+
+/-- **Class number one, in purely elementary form** (sorry leaf,
+introduced 2026-07-26 — this leaf IS Baker–Heegner–Stark and nothing else):
+if `N ≥ 23` is a prime with `N ≡ 3 (mod 4)` such that every odd prime
+`q < N/4` is INERT in `ℚ(√−N)` — equivalently `−N` is a non-square mod `q`
+— then `N ∈ {43, 67, 163}`.
+
+WHY THIS SHAPE. The old single sorry mixed three different things: the
+Hasse–Weil trace estimate, an elementary incompatibility of inequalities,
+and the class-number-one theorem. Only the last is deep, and stating it
+like this removes elliptic curves, ideal classes, Minkowski bounds and
+number fields from it altogether: it is a statement about Legendre symbols
+of `N`, and a future prover needs no algebraic-number-theory interface to
+attack it. The classical route back is unchanged — the hypothesis says every
+rational prime below the Minkowski bound `2√N/π` (which is `< N/4` for
+`N > 19`) is inert, hence every ideal of small norm is the principal ideal
+generated by a rational prime, hence `h(−N) = 1`, hence by
+Baker–Heegner–Stark `N ∈ {3, 7, 11, 19, 43, 67, 163}`, and `N ≥ 23` leaves
+three.
+
+FAITHFULNESS AUDIT (2026-07-26, PARI/GP as an untrusted searcher; the
+statement remains to be proven in-kernel). Every hypothesis is
+load-bearing, and the audit pins exactly which one excludes what. Running
+the inert condition over ALL `N ∈ [23, 3·10⁵]` with no primality and no
+congruence filter, the survivors are
+
+  `{28, 37, 43, 58, 67, 163}`
+
+so: `hN` (primality) is what kills `28` and `58`; `hmod` is what kills the
+PRIME `37` (`37 ≡ 1 (mod 4)`); `hN23` is what kills `3, 7, 11, 19`. Nothing
+else survives. Rerunning with the primality and congruence filters in place
+over `N ∈ [23, 2·10⁶]` leaves exactly `{43, 67, 163}`.
+
+Note the pleasing symmetry with the sibling branch: `37` is excluded from
+the signature-`≠ 6` branch by `hN37` and from THIS branch by `hmod`, which
+is why the assembled theorem's exceptional set is `{37, 43, 67, 163}`. -/
+theorem mazurIsogeny_classNumberOne_of_inert {N : ℕ} (hN : N.Prime) (hN23 : 23 ≤ N)
+    (hmod : N % 4 = 3)
+    (hinert : ∀ q : ℕ, q.Prime → 2 < q → 4 * q < N →
+      ¬ IsSquare ((-(N : ℤ) : ZMod q))) :
+    N ∈ ({43, 67, 163} : Finset ℕ) :=
+  sorry
+
+/-- **Signature `6` forces class number one** (PROVEN 2026-07-26 over the
+three declarations above, replacing the former bare sorry — the
 imaginary-quadratic branch; [Michaud-Jacobs, Prop. 4.4], and then
 Baker–Heegner–Stark): if the signature is `6` and `N ≥ 23`, then
 `N ∈ {43, 67, 163}`. These three are exactly the CM primes: a
 class-number-one curve with CM by the order of discriminant `−N` has a
 rational `N`-isogeny, since `N` ramifies.
 
-Proof (not formalised). Since `N ≡ 3 (mod 4)`, `ψ := λ·χ^{-(N+1)/4}`
-satisfies `ψ¹² = λ¹²/χ^6 = 1` and `ψ^{N-1} = 1`, so `ψ⁶ = 1` and
-`λ = ψ·χ^{(N+1)/4}`. Suppose `2 < q < N/4` is not inert in `ℚ(√−N)`;
-then `q^{(N+1)/2} ≡ q (mod N)`, and adding the resulting expressions for
-`λ²(σ_q)` and `(χλ^{-1})²(σ_q)` gives
-`Tr ρ(σ_q)² − 2q = q(ψ²(σ_q) + ψ^{-2}(σ_q))`, whose right side is `2q` or
-`−q` because `ψ²(σ_q)` is a cube root of unity. So
-`N ∣ Tr ρ(σ_q)² − rq` with `r ∈ {1, 4}`, contradicting `|Tr| ≤ 2√q` and
-`4q < N`. Hence every odd-norm prime ideal of norm in `(2, N/4)` is
-principal, and an explicit element of norm `2(1+2t)` handles the primes
-above `2`. The Minkowski bound `2√N/π` is `< N/4` for `N > 19`, so
-`ℚ(√−N)` has class number `1`; the Baker–Heegner–Stark classification and
-`N ≡ 3 (mod 4)` then give `N ∈ {3,7,11,19,43,67,163}`, and `N ≥ 23`
-leaves `{43,67,163}`.
+THE CUT. The proof below is the whole of [MJ, Prop. 4.4] except for two
+inputs, which are now separate leaves resting on disjoint mathematics:
 
-The class-number-one theorem is a deep input, but it is a DIFFERENT deep
-input from the Eisenstein ideal, and it is the one that produces three of
-the four exceptional primes. -/
+* `exists_frobeniusTraceRelation_of_isogenySignature_six` — Serre–Tate and
+  Hasse–Weil at a non-inert `q`, plus the `ψ⁶ = 1` character bookkeeping.
+  This is where potential good reduction (`hpg`), and hence Mazur's
+  formal-immersion theorem, is consumed;
+* `mazurIsogeny_classNumberOne_of_inert` — Baker–Heegner–Stark, stated as a
+  condition on Legendre symbols with no number field in sight.
+
+Everything between them is `mazurIsogeny_traceRelation_impossible`, which is
+PROVEN: `a² ≤ 4q` and `4q < N` force `a² = q` or `a² = 4q`, and a prime is
+not a square. So the assembly is: for each odd prime `q < N/4`, a failure of
+inertness would produce that impossible relation, so every such `q` IS
+inert, and the class-number-one leaf reads off `{43, 67, 163}`.
+
+What this buys over the old single sorry: the class-number-one theorem is a
+DIFFERENT deep input from the Eisenstein ideal — it is the one that produces
+three of the four exceptional primes — and it is now stated in a vocabulary
+(Legendre symbols of a rational prime) that needs no ideal-class machinery
+to attack, rather than being welded to a Frobenius-trace argument about
+elliptic curves. -/
 theorem WeierstrassCurve.mem_classNumberOnePrimes_of_isogenySignature_six
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) {N : ℕ}
@@ -1365,7 +1526,10 @@ theorem WeierstrassCurve.mem_classNumberOnePrimes_of_isogenySignature_six
       lam σ ^ 12 = (@GaloisRepresentation.cyclotomicCharacterModL N ⟨hN⟩ σ) ^ 6)
     (hmod : N % 4 = 3) :
     N ∈ ({43, 67, 163} : Finset ℕ) :=
-  sorry
+  mazurIsogeny_classNumberOne_of_inert hN hN23 hmod fun q hq hq2 hq4 hsplit => by
+    obtain ⟨a, ha, hdvd⟩ := E.exists_frobeniusTraceRelation_of_isogenySignature_six g hN
+      hN23 hg lam hlam hpg hsig hmod hq hq2 hq4 hsplit
+    exact mazurIsogeny_traceRelation_impossible hq hq4 ha hdvd
 
 /-- **Mazur's rational isogenies of prime degree** (PROVEN 2026-07-26 as
 an assembly over the four leaves above — the
@@ -7221,7 +7385,48 @@ provable by exhibiting a witness. The non-vacuous content of the seven-prime
 regime lives in the sibling `jInvariant_mem_of_isogenyPrime_ge_eleven`.
 
 The table is a `List (ℕ × ℚ)` and NOT a `Finset`, deliberately: `fin_cases`
-and `decide` both get stuck on a `Finset` literal over `ℚ`. -/
+and `decide` both get stuck on a `Finset` literal over `ℚ`.
+
+**CERTIFICATE RE-VERIFIED (2026-07-26, PARI/GP as an untrusted searcher).**
+`ellisomat (ellinit (ellfromj j))` on all ELEVEN rows returns isogeny-class
+size `2` with degree row `[1, p]` in every single case. So each of the
+eleven curves has EXACTLY ONE rational `p`-isogeny, and this leaf is TRUE
+on its own terms — not merely true-because-its-hypotheses-are-unsatisfiable.
+The same run also confirms the sibling
+`jInvariant_mem_of_isogenyPrime_ge_eleven`'s table from the other side:
+every listed `j` really does carry a rational `p`-isogeny for its listed
+`p`, so no row is spurious.
+
+**ROUTE AUDIT (2026-07-26): the isogeny-character machinery in THIS file
+does not reach this leaf. The check is recorded so that nobody repeats
+it.** The paragraph above suggests attacking the diagonal representation
+with `exists_isogenySignature` and its consumers. Carried out, that route
+is EMPTY. Two distinct stable lines give `E[p] = A ⊕ B` with characters
+`λ, λ'` satisfying `λλ' = χ` (Weil pairing). For the four rows with
+`p ≥ 23` both characters have signatures, `λ¹² = χ^s` and `λ'¹² = χ^{s'}`
+with `s, s' ∈ {0, 4, 6, 8, 12}`; since `χ` has exact order `p − 1 ≥ 36`
+while `|s + s' − 12| ≤ 12`, the relation `χ¹² = χ^{s+s'}` forces
+`s + s' = 12` exactly. Then
+`not_isogenyCharacter_of_isogenySignature_ne_six` disposes of every `s ≠ 6`
+for `p ∈ {43, 67, 163}` — and there the machinery STOPS. Writing
+`ψ = λ·χ^{−(p+1)/4}` and `ψ' = λ'·χ^{−(p+1)/4}`, both with sixth power `1`,
+the Weil relation becomes `ψψ' = χ^{1−(p+1)/2}`, and raising to the sixth
+power gives `χ^{6−3(p+1)} = χ^{−3(p−1)} = 1`, which holds IDENTICALLY for
+every `p`. No contradiction is available. (A first sketch of this audit
+claimed the relation killed `67` and `163`; that was an arithmetic slip —
+`6(1 − (p+1)/2) = −3(p−1)` is a multiple of `p − 1` for every `p`.) The
+seven rows with `p ∈ {11, 17, 19, 37}` are not even reachable:
+`exists_isogenySignature` requires `19 < p`, and
+`not_isogenyCharacter_of_isogenySignature_ne_six` requires `p ≠ 37`.
+
+So the leaf really is Kenku-level, and the two honest routes remain the
+ones named above: CM theory for the nine CM rows (`p` ramifies in a
+class-number-one order, so the unique prime above `p` gives the unique
+cyclic `p`-subgroup), and the explicit curves for `p = 17` and `p = 37`.
+Equivalently — and this is the shortest description of what is missing —
+it is the assertion that `X_0(p²)(ℚ)` is cuspidal for `p ≥ 11`, which is
+Kenku's theorem and needs the modular curves this development does not
+have. -/
 theorem WeierstrassCurve.not_two_stable_lines_of_jInvariant
     (E : WeierstrassCurve ℚ) [E.IsElliptic] {p : ℕ}
     (h₁ h₂ : (E⁄(AlgebraicClosure ℚ)).Point)
