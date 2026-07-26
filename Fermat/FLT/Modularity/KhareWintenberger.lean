@@ -218,7 +218,7 @@ import Mathlib.Algebra.Polynomial.Lifts
 import Mathlib.RingTheory.Polynomial.GaussLemma
 import Mathlib.RingTheory.AdjoinRoot
 import Mathlib.FieldTheory.Finite.Basic
-import Mathlib.Algebra.Field.ULift
+-- (`Mathlib.Algebra.Field.ULift` is already `public import`ed above)
 public import Fermat.FLT.Modularity.AbelianScheme
 -- `Fermat.TatePt` and the two leaves of the Tate-module construction
 -- (`exists_tateFrame_of_levelStructure`, `exists_weilFrobeniusSystem_of_mult`),
