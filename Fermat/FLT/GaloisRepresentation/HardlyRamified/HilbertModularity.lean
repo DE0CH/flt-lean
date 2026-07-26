@@ -326,6 +326,28 @@ public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
 -- `public`)
 public import Mathlib.NumberTheory.NumberField.Discriminant.Basic
 public import Mathlib.NumberTheory.NumberField.Discriminant.Different
+-- `differentIdeal_exponent_le` (the Serre bound `d_Q ≤ e − 1 + e·v_q(e)`) and,
+-- re-exported through it, `ModThree.lean`'s tame-plus-wild assembly
+-- `IsHardlyRamified.discr_factorization_le_of_forall_differentIdeal_pow_dvd`.
+-- Together these PROVE `discr_factorization_le_of_finrank_le` below, which was
+-- a leaf until 2026-07-26; both are stated over an abstract
+-- `(K : Type*) [Field K] [NumberField K]`, so the base-free statement needs no
+-- generalization work, only the import.
+--
+-- CIRCULARITY GUARD (verified 2026-07-26 by import-closure computation, not by
+-- inspection): `HermiteMinkowski.lean`'s 118-module project closure does NOT
+-- contain this module, so the import is acyclic. Its own guard already
+-- establishes that its closure avoids `Deformation.lean`, `Lift.lean`,
+-- `Family.lean` and `Modularity/*`, i.e. it cannot close the forbidden
+-- Khare–Wintenberger cycle.
+--
+-- CONE-GROWTH AUDIT (same date, and it is why the previous ROUTE AUDIT's
+-- objection does not apply): this module has exactly TWO project consumers,
+-- `Deformation.lean` and `Modularity/Patching.lean`, and BOTH already import
+-- `HermiteMinkowski.lean` directly. So this import adds ZERO modules to any
+-- downstream consumer's cone; it only makes THIS module rebuild when the
+-- Hermite–Minkowski cluster moves.
+public import Fermat.FLT.GaloisRepresentation.HardlyRamified.HermiteMinkowski
 public import Mathlib.FieldTheory.Galois.Basic
 public import Mathlib.GroupTheory.Index
 public import Mathlib.LinearAlgebra.Charpoly.Basic
@@ -4049,47 +4071,62 @@ exponent of `q` in `|d_L|` is at most `(n + 1)·n`.
 
 Stated BASE-FREE — over an abstract number field `L`, with no ambient
 algebraic closure and with a bound uniform in `q` — because that is the
-form the eventual module split needs. `Modularity/Patching.lean`'s
+form the eventual module split needs.
+`HardlyRamified/HermiteMinkowski.lean`'s
 `exists_discr_factorization_le_of_finrank_le` is the SAME statement with
 the ambient pinned to `IntermediateField ℚ ℚᵃˡᵍ` and the (identical)
 bound `(n + 1)·n` hidden behind an existential; nothing in its proof uses
-the ambient.
+the ambient. (It lived in `Modularity/Patching.lean` when this docstring
+was first written; the hoist is what made the proof below available.)
 
-**ROUTE AUDIT 2026-07-26 — "this is a mechanical hoist" IS WRONG, and the
-previous version of this docstring said so. Read this before being
-dispatched here.** The MATHEMATICS is indeed ambient-free, but the route
-is not available from this module, for three independent reasons:
+**ROUTE AUDIT SUPERSEDED 2026-07-26 — THE HOIST HAS HAPPENED AND THIS IS
+NOW PROVEN.** The previous version of this docstring recorded the route as
+unavailable, for three reasons that were all correct WHEN WRITTEN and are
+all now stale. What changed: `differentIdeal_exponent_le` and its wild
+chain no longer live in `Modularity/Patching.lean` at all. They were
+hoisted into `HardlyRamified/HermiteMinkowski.lean`, a module that is
+upstream of both `Patching.lean` and this one — which is exactly the
+repair the old audit named as "the hoist that WOULD retire this leaf
+properly". Point by point:
 
-* `Modularity/Patching.lean` is **circular** relative to this module — it
-  transitively imports `HilbertModularity.lean` (verified by import-cone
-  computation, not by reading the guard note). So nothing there can be
-  imported, only copied.
-* The proof does not stand alone. It runs over `differentIdeal_exponent_le`
-  (`Patching.lean`), the Serre bound `d_Q ≤ e − 1 + e·v_q(e)`, which is
-  itself proven over `differentIdeal_exponent_le_wild` and the local
-  Eisenstein leaf `exists_eisensteinDerivative_dvd_of_wild` — about 1100
-  lines of `Patching.lean`, not a lemma. **Mathlib has no upper bound on
-  the different exponent at all** (only `pow_sub_one_dvd_differentIdeal`,
-  which is the LOWER bound, and `not_dvd_differentIdeal_iff`), so there
-  is no cheap substitute.
-* The remaining input, `ModThree.lean`'s PROVEN
-  `discr_factorization_le_of_forall_differentIdeal_pow_dvd`, IS
-  importable without a cycle — but importing `ModThree.lean` grows this
-  module's import cone from 32 Fermat modules to 113, and this module is
-  re-exported by `Deformation.lean`, so the whole downstream tree would
-  rebuild on every `ModThree` merge. That is a fleet-wide throughput cost
-  paid to retire one leaf.
+* **The circularity objection is void.** The route no longer goes through
+  `Modularity/Patching.lean`. `HermiteMinkowski.lean`'s 118-module project
+  closure does not contain this module (verified by closure computation),
+  so the import is acyclic.
+* **The "does not stand alone" objection is void.** Both inputs are
+  imported, not copied: `differentIdeal_exponent_le` (the Serre bound
+  `d_Q ≤ e − 1 + e·v_q(e)`) from `HermiteMinkowski.lean`, and
+  `ModThree.lean`'s tame-plus-wild assembly
+  `IsHardlyRamified.discr_factorization_le_of_forall_differentIdeal_pow_dvd`
+  re-exported through it. Nothing is duplicated here.
+* **The cone-growth objection is void, and this is the load-bearing
+  correction.** It assumed the growth would be paid by the downstream
+  tree. It is not: this module has exactly TWO project consumers,
+  `Deformation.lean` and `Modularity/Patching.lean`, and BOTH already
+  import `HermiteMinkowski.lean` directly. The import therefore adds ZERO
+  modules to any consumer's cone. Only this module's own rebuild trigger
+  widens.
 
-The hoist that WOULD retire this leaf properly is: move
-`differentIdeal_exponent_le` and its wild chain out of `Patching.lean`
-into a module upstream of both `Patching.lean` and this one. That was
-checked against `~/.flt-inflight.jsonl` on 2026-07-26 and is **NOT safe
-to do now** — `Patching.lean` had five concurrent owners and
-`ModThree.lean` six, and one of them was working `differentIdeal_exponent_le`'s
-own wild chain (`exists_generator_minpolyDerivative_le_of_wild`). Do the
-hoist when those are quiet; do NOT duplicate the chain here in the
-meantime, and do NOT import `ModThree.lean` for it without deciding the
-cone-growth question deliberately.
+**Both inputs are already stated base-free**, over an abstract
+`(K : Type*) [Field K] [NumberField K]` — so the old docstring's claim
+that "nothing in its proof uses the ambient" is literally true of the
+Lean statements, and the port below is the `IntermediateField ℚ ℚᵃˡᵍ`
+proof of `HermiteMinkowski.lean`'s `exists_discr_factorization_le_of_finrank_le`
+with the ambient binder deleted and the `hq : q.Prime` hypothesis moved
+inside as a case split (for non-prime `q` the left-hand side is `0`,
+since `Nat.factorization` is supported on primes).
+
+**AXIOM STATUS, stated precisely because it is not a clean close.** This
+declaration is no longer a DIRECT sorry, but it is still TRANSITIVELY
+sorried: `#print axioms` reports `sorryAx`. The taint has exactly one
+source, traced by auditing each input separately —
+`differentIdeal_exponent_le_wild_of_residueDegreeGtOne`
+(`HermiteMinkowski.lean`, the single open leaf of that cluster).
+`ModThree.lean`'s assembly is CLEAN
+(`[propext, Classical.choice, Quot.sound]`). So what this change buys is
+not a closed cone but the removal of a DUPLICATED ~1100-line obligation:
+the bound is now charged once, to the sharp local leaf that already owns
+it, instead of twice.
 
 MATHEMATICAL CONTENT (Serre, *Corps Locaux* III §6 Prop. 13, and the norm
 bookkeeping). For a prime `Q` of `𝓞 L` over `q` with ramification index
@@ -4111,8 +4148,49 @@ unsatisfiable, but for every `n ≥ 1` there are number fields meeting it
 and the inequality is the real content. NOT vacuous. -/
 theorem discr_factorization_le_of_finrank_le (n : ℕ) (L : Type*) [Field L]
     [NumberField L] (hrank : Module.finrank ℚ L ≤ n) (q : ℕ) :
-    (NumberField.discr L).natAbs.factorization q ≤ (n + 1) * n :=
-  sorry
+    (NumberField.discr L).natAbs.factorization q ≤ (n + 1) * n := by
+  by_cases hq : q.Prime
+  · have hqZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+    have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+      simp only [Ne, Ideal.span_singleton_eq_bot]
+      exact_mod_cast hq.ne_zero
+    haveI hspanMax : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ).IsMaximal :=
+      (((Ideal.span_singleton_prime (by exact_mod_cast hq.ne_zero)).mpr
+        hqZ).isMaximal hspan0)
+    -- the uniform per-prime different-exponent bound `d_Q ≤ (n + 1)·e_Q`
+    have key : ∀ Q : Ideal (NumberField.RingOfIntegers L), Q.IsPrime →
+        ((q : NumberField.RingOfIntegers L) ∈ Q) → ∀ d : ℕ,
+        Q ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers L) →
+        1 * d ≤ (n + 1) * Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q := by
+      intro Q hQ hmem d hd
+      haveI := hQ
+      haveI hlies : Q.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+        (Ideal.liesOver_span_iff hQ.ne_top hqZ).mpr (by exact_mod_cast hmem)
+      have he0 : Ideal.ramificationIdx' (Ideal.span {((q : ℕ) : ℤ)}) Q ≠ 0 :=
+        Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver Q hspan0
+      have hen : Ideal.ramificationIdx' (Ideal.span {((q : ℕ) : ℤ)}) Q ≤ n :=
+        le_trans (Ideal.ramificationIdx_le_finrank
+          (S := NumberField.RingOfIntegers L) (K := ℚ) (L := L) Q) hrank
+      have hv : (Ideal.ramificationIdx' (Ideal.span {((q : ℕ) : ℤ)}) Q).factorization q
+          ≤ n := le_of_lt (lt_of_lt_of_le (Nat.factorization_lt q he0) hen)
+      have hser := differentIdeal_exponent_le L q hq Q hQ hmem d hd
+      calc 1 * d = d := one_mul d
+        _ ≤ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q - 1 +
+            Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q *
+              (Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q).factorization q := hser
+        _ ≤ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q +
+            Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q * n :=
+          Nat.add_le_add (Nat.sub_le _ _) (Nat.mul_le_mul_left _ hv)
+        _ = (n + 1) * Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) Q := by ring
+    have hmain := IsHardlyRamified.discr_factorization_le_of_forall_differentIdeal_pow_dvd
+      L q hq 1 (n + 1) key
+    calc (NumberField.discr L).natAbs.factorization q
+        = 1 * (NumberField.discr L).natAbs.factorization q := (one_mul _).symm
+      _ ≤ (n + 1) * Module.finrank ℚ L := hmain
+      _ ≤ (n + 1) * n := Nat.mul_le_mul_left _ hrank
+  · -- `Nat.factorization` is supported on primes, so the bound is trivial
+    rw [Nat.factorization_eq_zero_of_not_prime _ hq]
+    exact Nat.zero_le _
 
 /-- **The embedding prime over `w` has trivial ideal-inertia** (PROVEN
 2026-07-26; step (a) of the two-step proof of
@@ -4718,23 +4796,28 @@ MATHEMATICAL CONTENT of the two leaves: such a `K` is unramified over
 rational primes dividing `2·ℓ·d_F`, with different exponents bounded in
 terms of the degree alone (Serre, *Corps Locaux* III §6 Prop. 13).
 
-THE DEDUPE THIS CUT IS DESIGNED FOR. Three copies of Hermite–Minkowski
-exist in the tree: `Modularity/Patching.lean`'s
-`finite_setOf_intermediateField_inertiaAt_le` (over `ℚ`, place-indexed
-by rational primes, PROVEN over the same two ingredients),
+THE DEDUPE THIS CUT IS DESIGNED FOR — HALF OF IT IS NOW DONE (update
+2026-07-26). Three copies of Hermite–Minkowski existed in the tree:
+`finite_setOf_intermediateField_inertiaAt_le` (over `ℚ`, place-indexed by
+rational primes, PROVEN over the same two ingredients),
 `Deformation.lean`'s `finite_setOf_isHardlyRamified_frames` (the `ℚ`
 consumer), and this one. The honest discharge is the module split
 recorded in `~/.flt-design-deformation-patching-dedup.md` — hoist the
 Hermite–Minkowski block into a module upstream of all three and
 generalize it from `ℚ`/`{2, p}` to a variable base number field and a
-finite set of places. It was NOT taken on 2026-07-26 only because
-`Patching.lean` and `Deformation.lean` had a dozen concurrent owners; the
-cut above is the hoist's target API stated in advance, so that the split,
-when it happens, has only to move `Patching.lean`'s proof of
-`exists_discr_factorization_le_of_finrank_le` onto
-`discr_factorization_le_of_finrank_le` (a signature change, no
-mathematics) and generalize `MazurTorsion.lean`'s inertia dictionary from
-`ℚ` to `F` (the one genuinely new argument).
+finite set of places.
+
+**The hoist has since happened**: the block now lives in
+`HardlyRamified/HermiteMinkowski.lean` (which is where
+`finite_setOf_intermediateField_inertiaAt_le` and the different-exponent
+chain moved to, out of `Modularity/Patching.lean`), upstream of all three
+consumers. The half of this docstring's plan that was "a signature
+change, no mathematics" is therefore DISCHARGED:
+`discr_factorization_le_of_finrank_le` above is now PROVEN by importing
+that module and deleting the ambient binder from its proof. What remains
+of the plan is the genuinely new argument it also named — generalizing
+`MazurTorsion.lean`'s inertia dictionary from `ℚ` to `F`, which is what
+`not_dvd_discr_of_hilbertInertiaTrivialAt` still carries.
 
 BOTH-WAYS AUDIT. A plain classical finiteness statement about
 extensions of a number field: true outright as cited, with no
