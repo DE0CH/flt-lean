@@ -2623,86 +2623,334 @@ theorem henselianLocalRing_integralClosure_algebraicClosure :
     HenselianLocalRing (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) :=
   henselianLocalRing_integralClosure_of_isAlgClosed
 
+section AbstractSeparable
+
+theorem eval_mem_of_forall_coeff_mem {R : Type*} [CommRing R] {I : Ideal R}
+    {w : Polynomial R} (hw : ∀ n, w.coeff n ∈ I) (α : R) : Polynomial.eval α w ∈ I := by
+  rw [Polynomial.eval_eq_sum_range]
+  exact Ideal.sum_mem _ fun i _ => Ideal.mul_mem_right _ _ (hw i)
+
+theorem isUnit_of_sub_mem_maximalIdeal {R : Type*} [CommRing R] [IsLocalRing R]
+    {u v : R} (huv : u - v ∈ IsLocalRing.maximalIdeal R) (hv : IsUnit v) : IsUnit u := by
+  by_contra h
+  have hu : u ∈ IsLocalRing.maximalIdeal R := (IsLocalRing.mem_maximalIdeal _).mpr h
+  have hvm : v ∈ IsLocalRing.maximalIdeal R := by
+    have hd := Ideal.sub_mem _ hu huv
+    simpa using hd
+  exact ((IsLocalRing.mem_maximalIdeal _).mp hvm) hv
+
+/-- **A separable residual polynomial has unit derivative at any root of a lift**
+(PROVEN): lift the Bézout identity `u ḡ + v ḡ' = 1` witnessing separability to
+`A`, so that `U f + V f' - 1` has every coefficient in `𝔪_A`; push it along a
+local hom `φ` and evaluate at the root `α`, where `f.map φ` vanishes. What
+survives is `V(α) · (f.map φ)'(α) - 1 ∈ 𝔪_B`, so the product — and hence the
+derivative value — is a unit. -/
+theorem isUnit_eval_derivative_map_of_separable
+    {A B : Type*} [CommRing A] [IsLocalRing A] [CommRing B] [IsLocalRing B]
+    (φ : A →+* B)
+    (hφ : ∀ c : A, c ∈ IsLocalRing.maximalIdeal A → φ c ∈ IsLocalRing.maximalIdeal B)
+    {f : Polynomial A} (hsep : (f.map (IsLocalRing.residue A)).Separable)
+    {α : B} (hα : Polynomial.eval α (f.map φ) = 0) :
+    IsUnit (Polynomial.eval α (Polynomial.derivative (f.map φ))) := by
+  have hsurj : Function.Surjective (IsLocalRing.residue A) := Ideal.Quotient.mk_surjective
+  obtain ⟨u, v, huv⟩ := hsep
+  obtain ⟨U, hU⟩ := (Polynomial.lifts_iff_coeff_lifts u).mpr fun n => hsurj (u.coeff n)
+  obtain ⟨V, hV⟩ := (Polynomial.lifts_iff_coeff_lifts v).mpr fun n => hsurj (v.coeff n)
+  simp only [Polynomial.coe_mapRingHom] at hU hV
+  set W : Polynomial A := U * f + V * Polynomial.derivative f - 1 with hWdef
+  have hWmap : W.map (IsLocalRing.residue A) = 0 := by
+    rw [hWdef]
+    simp only [Polynomial.map_sub, Polynomial.map_add, Polynomial.map_mul,
+      Polynomial.map_one, ← Polynomial.derivative_map, hU, hV]
+    rw [huv, sub_self]
+  have hWcoeff : ∀ n, W.coeff n ∈ IsLocalRing.maximalIdeal A := by
+    intro n
+    have hz : IsLocalRing.residue A (W.coeff n) = 0 := by
+      rw [← Polynomial.coeff_map, hWmap, Polynomial.coeff_zero]
+    exact Ideal.Quotient.eq_zero_iff_mem.mp hz
+  have hevalW : Polynomial.eval α (W.map φ) ∈ IsLocalRing.maximalIdeal B :=
+    eval_mem_of_forall_coeff_mem (fun n => by
+      rw [Polynomial.coeff_map]; exact hφ _ (hWcoeff n)) α
+  have hexpand : Polynomial.eval α (W.map φ) =
+      Polynomial.eval α (V.map φ) *
+        Polynomial.eval α (Polynomial.derivative (f.map φ)) - 1 := by
+    rw [hWdef]
+    simp only [Polynomial.map_sub, Polynomial.map_add, Polynomial.map_mul,
+      Polynomial.map_one, ← Polynomial.derivative_map, Polynomial.eval_sub,
+      Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_one]
+    rw [hα]
+    ring
+  have hprod : IsUnit (Polynomial.eval α (V.map φ) *
+      Polynomial.eval α (Polynomial.derivative (f.map φ))) := by
+    refine isUnit_of_sub_mem_maximalIdeal ?_ isUnit_one
+    rw [← hexpand]
+    exact hevalW
+  exact isUnit_of_mul_isUnit_right hprod
+
+end AbstractSeparable
+
 set_option synthInstance.maxHeartbeats 1000000 in
-/-- **The strict henselisation is Henselian** (SORRY LEAF, introduced
-2026-07-26; pure local algebra, NO Raynaud).
+/-- The bridge from the strict henselisation into the big integral closure. -/
+noncomputable def toBig : unramifiedIntegers p →+* IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ where
+  toFun a := ⟨algebraMap ↥(unramifiedSubfield p) ℚᵖᵥᵃˡᵍ a.1,
+    a.2.map (IsScalarTower.toAlgHom 𝒪ᵖᵥ ↥(unramifiedSubfield p) ℚᵖᵥᵃˡᵍ)⟩
+  map_one' := Subtype.ext (map_one _)
+  map_mul' a b := Subtype.ext (map_mul _ _ _)
+  map_zero' := Subtype.ext (map_zero _)
+  map_add' a b := Subtype.ext (map_add _ _ _)
 
-INTENDED PROOF, worked out in full when this leaf was cut — it is short and
-needs nothing that is not already in this file:
+set_option synthInstance.maxHeartbeats 1000000 in
+theorem toBig_val (a : unramifiedIntegers p) :
+    (toBig a).1 = algebraMap ↥(unramifiedSubfield p) ℚᵖᵥᵃˡᵍ a.1 := rfl
 
-Write `A = 𝒪ᵖᵥˢʰ` and `B = IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ`, and `ι : A →+* B`
-for the evident map (an element of `A` is an element of `ℚᵖᵥᵘⁿʳ ⊆ ℚᵖᵥᵃˡᵍ`
-integral over `𝒪ᵖᵥ`).
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- THE BRIDGING STEP: `σ` fixes the value of anything coming from the strict
+henselisation, spelled as the `smul` on the big integral closure. -/
+theorem smul_toBig (a : unramifiedIntegers p)
+    (σ : Field.absoluteGaloisGroup ℚᵖᵥ)
+    (hσ : σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat) :
+    (σ • toBig a : IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) = toBig a := by
+  have hmem : algebraMap ↥(unramifiedSubfield p) ℚᵖᵥᵃˡᵍ a.1 ∈ unramifiedSubfield p := a.1.2
+  have hfix := (IntermediateField.mem_fixedField_iff _ _).mp hmem σ hσ
+  apply Subtype.ext
+  rw [IntegralClosure.coe_smul σ (toBig a), toBig_val]
+  exact hfix
 
-1. `ι` is a LOCAL homomorphism, and that step needs no inertia: if `ι a` is
-   a unit of `B` then the inverse of `a`'s value lies in the FIELD `ℚᵖᵥᵘⁿʳ`
-   and is integral over `𝒪ᵖᵥ`, hence lies in `A`. So `𝔪_A = ι⁻¹ 𝔪_B`.
+set_option synthInstance.maxHeartbeats 1000000 in
+theorem toBig_injective : Function.Injective (toBig (p := p)) := by
+  intro a b hab
+  apply Subtype.ext
+  have h : (toBig a).1 = (toBig b).1 := by rw [hab]
+  rw [toBig_val, toBig_val] at h
+  exact (algebraMap ↥(unramifiedSubfield p) ℚᵖᵥᵃˡᵍ).injective h
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- `toBig` is a LOCAL homomorphism, and no inertia is needed: the inverse of a
+value lies in the FIELD `ℚᵖᵥᵘⁿʳ`, and it is integral because it is integral in
+`ℚᵖᵥᵃˡᵍ`. -/
+theorem isUnit_toBig_iff (a : unramifiedIntegers p) :
+    IsUnit a ↔ IsUnit (toBig a) := by
+  refine ⟨fun h => h.map toBig, fun h => ?_⟩
+  obtain ⟨y, hy⟩ := h.exists_right_inv
+  have hval : algebraMap ↥(unramifiedSubfield p) ℚᵖᵥᵃˡᵍ a.1 * y.1 = 1 :=
+    congrArg Subtype.val hy
+  have ha0 : a.1 ≠ 0 := by
+    intro h0
+    rw [h0, map_zero, zero_mul] at hval
+    exact zero_ne_one hval
+  have hinv : algebraMap ↥(unramifiedSubfield p) ℚᵖᵥᵃˡᵍ a.1⁻¹ = y.1 := by
+    rw [map_inv₀]
+    exact inv_eq_of_mul_eq_one_right hval
+  have hint : IsIntegral 𝒪ᵖᵥ a.1⁻¹ := by
+    rw [← isIntegral_algebraMap_iff
+      (algebraMap ↥(unramifiedSubfield p) ℚᵖᵥᵃˡᵍ).injective, hinv]
+    exact y.2
+  refine isUnit_iff_exists_inv.mpr ⟨⟨a.1⁻¹, hint⟩, Subtype.ext ?_⟩
+  show a.1 * a.1⁻¹ = 1
+  exact mul_inv_cancel₀ ha0
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- An inertia-invariant element of the big integral closure comes from the
+strict henselisation. -/
+theorem exists_toBig_eq_of_smul_eq (b : IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ)
+    (hb : ∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
+      (σ • b : IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) = b) :
+    ∃ a : unramifiedIntegers p, toBig a = b := by
+  have hmem : b.1 ∈ unramifiedSubfield p := by
+    rw [IntermediateField.mem_fixedField_iff]
+    intro σ hσ
+    have h := congrArg Subtype.val (hb σ hσ)
+    rw [IntegralClosure.coe_smul σ b] at h
+    exact h
+  have hint : IsIntegral 𝒪ᵖᵥ (⟨b.1, hmem⟩ : ↥(unramifiedSubfield p)) := by
+    rw [← isIntegral_algebraMap_iff
+      (algebraMap ↥(unramifiedSubfield p) ℚᵖᵥᵃˡᵍ).injective]
+    exact b.2
+  exact ⟨⟨⟨b.1, hmem⟩, hint⟩, Subtype.ext rfl⟩
+
+set_option synthInstance.maxHeartbeats 1000000 in
+theorem mem_maximalIdeal_toBig_iff (c : unramifiedIntegers p) :
+    c ∈ IsLocalRing.maximalIdeal (unramifiedIntegers p) ↔
+      toBig c ∈ IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) := by
+  rw [IsLocalRing.mem_maximalIdeal, IsLocalRing.mem_maximalIdeal, mem_nonunits_iff,
+    mem_nonunits_iff, isUnit_toBig_iff]
+
+set_option synthInstance.maxHeartbeats 1000000 in
+theorem eval_map_toBig (g : Polynomial (unramifiedIntegers p))
+    (c : unramifiedIntegers p) :
+    Polynomial.eval (toBig c) (g.map toBig) = toBig (Polynomial.eval c g) := by
+  rw [Polynomial.eval_map, Polynomial.eval₂_at_apply]
+
+set_option synthInstance.maxHeartbeats 1000000 in
+/-- The comparison ring hom is fixed by local inertia, as a hom. -/
+theorem comp_toBig_eq (σ : Field.absoluteGaloisGroup ℚᵖᵥ)
+    (hσ : σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat) :
+    (MulSemiringAction.toRingHom (Field.absoluteGaloisGroup ℚᵖᵥ)
+      (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) σ).comp (toBig (p := p)) = toBig := by
+  ext a
+  exact smul_toBig a σ hσ
+
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 800000 in
+/-- **Inertia fixes the simple Hensel lift** — the shared step of the two
+structural leaves. -/
+theorem smul_eq_of_isRoot_of_isUnit_derivative
+    {F : Polynomial (unramifiedIntegers p)} {α : IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ}
+    (hroot : Polynomial.eval α (F.map (toBig (p := p))) = 0)
+    (hder : IsUnit (Polynomial.eval α (Polynomial.derivative (F.map (toBig (p := p))))))
+    (σ : Field.absoluteGaloisGroup ℚᵖᵥ)
+    (hσ : σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat) :
+    (σ • α : IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) = α := by
+  set τ := MulSemiringAction.toRingHom (Field.absoluteGaloisGroup ℚᵖᵥ)
+    (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) σ with hτ
+  have hroot' : Polynomial.eval (σ • α) (F.map (toBig (p := p))) = 0 := by
+    have h := congrArg τ hroot
+    rw [map_zero, Polynomial.eval_map, Polynomial.hom_eval₂ F (toBig (p := p)) τ α,
+      comp_toBig_eq σ hσ] at h
+    rw [Polynomial.eval_map]
+    exact h
+  have hsub : (σ • α : IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) - α ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) := by
+    have hin := AddSubgroup.mem_inertia.mp hσ α
+    rwa [Submodule.mem_toAddSubgroup] at hin
+  have hnot : ¬ IsUnit (α - (σ • α : IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ)) := by
+    refine (IsLocalRing.mem_maximalIdeal _).mp ?_
+    have hneg : -((σ • α : IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) - α) ∈
+        IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) := neg_mem hsub
+    simpa using hneg
+  exact (IsLocalRing.eq_of_eval_eq_zero_of_not_isUnit_sub hroot hroot' hnot hder).symm
+
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 800000 in
+/-- **The strict henselisation is Henselian** (PROVEN 2026-07-26; pure local
+algebra, NO Raynaud).
+
+PROOF. Write `A = 𝒪ᵖᵥˢʰ` and `B = IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ`, and `toBig`
+for the evident map `A →+* B` (an element of `A` is an element of
+`ℚᵖᵥᵘⁿʳ ⊆ ℚᵖᵥᵃˡᵍ` integral over `𝒪ᵖᵥ`).
+
+1. `toBig` is a LOCAL homomorphism, and that step needs NO inertia
+   (`isUnit_toBig_iff`): if `toBig a` is a unit of `B` then the inverse of
+   `a`'s value lies in the FIELD `ℚᵖᵥᵘⁿʳ`, and it is integral because it is
+   integral in `ℚᵖᵥᵃˡᵍ`. So `𝔪_A` is the preimage of `𝔪_B`.
 2. Given `f` monic over `A` with a simple root `a₀` mod `𝔪_A`, the
-   hypothesis `_hB` lifts it to a root `b ∈ B` with `b - ι a₀ ∈ 𝔪_B`.
-3. `b` is INERTIA-INVARIANT, hence comes from `A`. For `σ ∈ I_p`: the
-   coefficients of `f.map ι` have values in `ℚᵖᵥᵘⁿʳ`, which `σ` fixes
-   pointwise BY DEFINITION of `unramifiedSubfield` as `fixedField I_p`, so
-   `σ • b` is again a root of `f.map ι`; and `σ • b ≡ b mod 𝔪_B` because
-   `σ • b - b ∈ 𝔪_B` is the DEFINING property of `localInertiaGroup` (it is
-   the inertia of `𝔪 B`, see `AbsoluteGaloisGroup.localInertiaGroup`).
-   Mathlib's `IsLocalRing.eq_of_eval_eq_zero_of_not_isUnit_sub` — uniqueness
-   of a simple Hensel lift — then forces `σ • b = b`. The derivative stays a
-   unit along the way by `Polynomial.sub_dvd_eval_sub` plus
-   `b - ι a₀ ∈ 𝔪_B`.
+   hypothesis `hB` lifts it to a root `b ∈ B` with `b - toBig a₀ ∈ 𝔪_B`;
+   the derivative stays a unit at `b` by `Polynomial.sub_dvd_eval_sub`.
+3. `b` is INERTIA-INVARIANT, hence comes from `A`
+   (`smul_eq_of_isRoot_of_isUnit_derivative`, then
+   `exists_toBig_eq_of_smul_eq`). For `σ ∈ I_p`: the coefficients of
+   `f.map toBig` have values in `ℚᵖᵥᵘⁿʳ`, which `σ` fixes pointwise BY
+   DEFINITION of `unramifiedSubfield` as `fixedField I_p`, so `σ • b` is
+   again a root; and `σ • b ≡ b mod 𝔪_B` because `σ • b - b ∈ 𝔪_B` is the
+   DEFINING property of `localInertiaGroup`, the inertia of `𝔪 B`. Mathlib's
+   `IsLocalRing.eq_of_eval_eq_zero_of_not_isUnit_sub` — uniqueness of a
+   simple Hensel lift — then forces `σ • b = b`.
 
-The hypothesis `_hB` is supplied at the call site by the PROVEN
+`hB` is supplied at the call site by the PROVEN
 `henselianLocalRing_integralClosure_algebraicClosure`; it is taken as a
-hypothesis rather than as an instance so that the input this leaf really
-spends is visible in its statement.
-
-FAITHFULNESS: this is a true statement about a concrete ring, not a
-disguised citation — the henselisation of a complete DVR along an
-unramified extension is standard (Serre, *Corps Locaux*, III §5; Stacks
-04GG). It is NOT vacuous: `𝒪ᵖᵥˢʰ` is nontrivial, being an integral domain
-containing `𝒪ᵖᵥ`. -/
+hypothesis rather than as an instance so that the input this proof really
+spends is visible in its statement. -/
 theorem henselianLocalRing_unramifiedIntegers
-    (_hB : HenselianLocalRing (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ)) :
-    HenselianLocalRing (unramifiedIntegers p) :=
-  sorry
+    (hB : HenselianLocalRing (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ)) :
+    HenselianLocalRing (unramifiedIntegers p) := by
+  haveI := hB
+  constructor
+  intro f hf a₀ h₁ h₂
+  have hfB : (f.map (toBig (p := p))).Monic := hf.map _
+  have h₁B : Polynomial.eval (toBig a₀) (f.map toBig) ∈
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) := by
+    rw [eval_map_toBig]
+    exact (mem_maximalIdeal_toBig_iff _).mp h₁
+  have h₂B : IsUnit (Polynomial.eval (toBig a₀)
+      (Polynomial.derivative (f.map toBig))) := by
+    rw [Polynomial.derivative_map, eval_map_toBig]
+    exact h₂.map toBig
+  obtain ⟨b, hbroot, hba⟩ :=
+    HenselianLocalRing.is_henselian (f.map (toBig (p := p))) hfB (toBig a₀) h₁B h₂B
+  -- the derivative stays a unit at `b`
+  have hder : IsUnit (Polynomial.eval b (Polynomial.derivative (f.map (toBig (p := p))))) := by
+    refine isUnit_of_sub_mem_maximalIdeal ?_ h₂B
+    obtain ⟨c, hc⟩ := Polynomial.sub_dvd_eval_sub b (toBig a₀)
+      (Polynomial.derivative (f.map (toBig (p := p))))
+    rw [hc]
+    exact Ideal.mul_mem_right _ _ hba
+  -- `b` is inertia invariant
+  have hbfix : ∀ σ ∈ localInertiaGroup hp.out.toHeightOneSpectrumRingOfIntegersRat,
+      (σ • b : IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ) = b :=
+    fun σ hσ => smul_eq_of_isRoot_of_isUnit_derivative hbroot hder σ hσ
+  -- hence it comes from the strict henselisation
+  obtain ⟨a, ha⟩ := exists_toBig_eq_of_smul_eq b hbfix
+  refine ⟨a, ?_, ?_⟩
+  · apply toBig_injective
+    rw [map_zero, ← eval_map_toBig, ha]
+    exact hbroot
+  · rw [mem_maximalIdeal_toBig_iff, map_sub, ha]
+    exact hba
 
 set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 800000 in
 /-- **The residue field of the strict henselisation is separably closed**
-(SORRY LEAF, introduced 2026-07-26; pure local algebra, NO Raynaud).
+(PROVEN 2026-07-26; pure local algebra, NO Raynaud).
 
-INTENDED PROOF, worked out in full when this leaf was cut. Note it does NOT
-need the residue field of `𝒪ᵖᵥ` to be perfect or finite, and it does not
-need surjectivity of `A → ResidueField B` — both of which earlier sketches
-of this step went through and both of which are extra work.
-
-By `IsSepClosed.of_exists_root` it suffices to give a root of every monic
-irreducible SEPARABLE `ḡ` over `k_A = ResidueField 𝒪ᵖᵥˢʰ`.
+PROOF. By `IsSepClosed.of_exists_root` it suffices to give a root of every
+monic irreducible SEPARABLE `ḡ` over `k_A = ResidueField 𝒪ᵖᵥˢʰ`.
 
 1. Lift `ḡ` to a monic `f` over `A` (`Polynomial.lifts_and_degree_eq_and_monic`,
-   the residue map being surjective), and push it to `B` along `ι` of the
-   previous leaf. `ḡ` is monic irreducible so `0 < deg`, and `_hroot` gives
-   a root `α ∈ B` of `f.map ι`.
-2. `ᾱ ∈ k_B` is a root of `ḡ`, and a SIMPLE one: separability is
-   `IsCoprime ḡ ḡ'`, so `a ḡ + b ḡ' = 1` evaluates at `ᾱ` to
-   `b(ᾱ) ḡ'(ᾱ) = 1`. Hence `(f.map ι).derivative.eval α` is a unit of `B`.
-3. `α` is INERTIA-INVARIANT by exactly the argument of the previous leaf —
-   `σ • α` is a root with the same residue, and
-   `IsLocalRing.eq_of_eval_eq_zero_of_not_isUnit_sub` forces `σ • α = α`.
-   So `α` comes from `A`, and its residue in `k_A` is a root of `ḡ`.
-4. `ḡ` irreducible with a root in `k_A` therefore has degree `1`.
+   the residue map being surjective) and push it to `B`. `ḡ` is monic
+   irreducible so `0 < deg`, and `hroot` gives a root `α ∈ B`.
+2. The derivative of `f.map toBig` is a UNIT at `α`
+   (`isUnit_eval_derivative_map_of_separable`): lift the Bézout identity
+   `u ḡ + v ḡ' = 1` witnessing separability to `A`, so that
+   `U f + V f' - 1` has every coefficient in `𝔪_A`; push it along the local
+   hom and evaluate at `α`, where `f.map toBig` vanishes. What survives is
+   `V(α)·(f.map toBig)'(α) - 1 ∈ 𝔪_B`, so the derivative value is a unit.
+3. `α` is INERTIA-INVARIANT by exactly the argument of the previous leaf,
+   hence comes from `A`; and then `f.eval a = 0` on the nose, so the residue
+   of `a` is a root of `ḡ`.
 
-The hypothesis `_hroot` is supplied at the call site by the PROVEN
+Note what this route does NOT need, both of which earlier sketches went
+through: perfectness (or finiteness) of the residue field of `𝒪ᵖᵥ`, and
+surjectivity of `A → ResidueField B`.
+
+`hroot` is supplied at the call site by the PROVEN
 `exists_isRoot_of_monic_integralClosure`.
 
 FAITHFULNESS: separably closed is the correct and honest strength. The
-residue field of `ℚᵖᵥᵘⁿʳ` is `𝔽̄_p`, and asking for `IsAlgClosed` instead
-would be true as well but would need perfectness of `𝔽_p` on top, which no
-consumer wants: (R4) consumes exactly `IsSepClosed`, through
+residue field of `ℚᵖᵥᵘⁿʳ` is `𝔽̄_p`, and `IsAlgClosed` would be true too but
+needs perfectness of `𝔽_p` on top, which no consumer wants: (R4) consumes
+exactly `IsSepClosed`, through
 `Algebra.FormallyEtale.equivPiOfIsSepClosed`. -/
 theorem isSepClosed_residueField_unramifiedIntegers
-    (_hroot : ∀ f : Polynomial (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ), f.Monic → 0 < f.natDegree →
+    (hroot : ∀ f : Polynomial (IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ), f.Monic → 0 < f.natDegree →
       ∃ b, f.IsRoot b) :
-    IsSepClosed (IsLocalRing.ResidueField (unramifiedIntegers p)) :=
-  sorry
+    IsSepClosed (IsLocalRing.ResidueField (unramifiedIntegers p)) := by
+  refine IsSepClosed.of_exists_root _ ?_
+  intro g hgm hgirr hgsep
+  have hsurj : Function.Surjective (IsLocalRing.residue (unramifiedIntegers p)) :=
+    Ideal.Quotient.mk_surjective
+  have hglifts : g ∈ Polynomial.lifts (IsLocalRing.residue (unramifiedIntegers p)) :=
+    (Polynomial.lifts_iff_coeff_lifts g).mpr fun n => hsurj (g.coeff n)
+  obtain ⟨f, hfmap, _hfdeg, hfm⟩ := Polynomial.lifts_and_degree_eq_and_monic hglifts hgm
+  have hpos : 0 < f.natDegree := by
+    rcases Nat.eq_zero_or_pos f.natDegree with h0 | h
+    · rw [Polynomial.eq_one_of_monic_natDegree_zero hfm h0, Polynomial.map_one] at hfmap
+      exact absurd (hfmap ▸ hgirr) not_irreducible_one
+    · exact h
+  have hfB : (f.map (toBig (p := p))).Monic := hfm.map _
+  have hposB : 0 < (f.map (toBig (p := p))).natDegree := by rwa [hfm.natDegree_map]
+  obtain ⟨α, hα⟩ := hroot _ hfB hposB
+  have hsep : (f.map (IsLocalRing.residue (unramifiedIntegers p))).Separable := by
+    rw [hfmap]; exact hgsep
+  have hder := isUnit_eval_derivative_map_of_separable (toBig (p := p))
+    (fun c hc => (mem_maximalIdeal_toBig_iff c).mp hc) hsep (Polynomial.IsRoot.def.mp hα)
+  obtain ⟨a, ha⟩ := exists_toBig_eq_of_smul_eq α
+    fun σ hσ => smul_eq_of_isRoot_of_isUnit_derivative (Polynomial.IsRoot.def.mp hα) hder σ hσ
+  have hfa : Polynomial.eval a f = 0 := by
+    apply toBig_injective
+    rw [map_zero, ← eval_map_toBig, ha]
+    exact Polynomial.IsRoot.def.mp hα
+  refine ⟨IsLocalRing.residue (unramifiedIntegers p) a, ?_⟩
+  rw [← hfmap, Polynomial.eval_map, Polynomial.eval₂_at_apply, hfa, map_zero]
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
@@ -2872,9 +3120,11 @@ status:
      structure free, its henselianity and its separably closed residue
      field isolated as the two pure-local-algebra leaves
      `henselianLocalRing_unramifiedIntegers` and
-     `isSepClosed_residueField_unramifiedIntegers`, and both of those
-     are available as HYPOTHESES of this statement (`hhens`, `hsep`).
-     So what remains at (R1) is the dévissage ARGUMENT alone.
+     `isSepClosed_residueField_unramifiedIntegers` — **both of which are
+     PROVEN** — and both are available as HYPOTHESES of this statement
+     (`hhens`, `hsep`). So what remains at (R1) is the dévissage ARGUMENT
+     alone: the base it runs over now exists and is verified strictly
+     henselian.
 (R2) *the order-`p` dichotomy*: each level-one graded piece has
      `v(δ) ∈ {0, 1}`, hence is étale or of `μ`-type. THIS STEP IS
      ALREADY FORMALIZED AND SORRY-FREE in `GroupScheme/ConnectedEtale.lean`
@@ -2911,11 +3161,15 @@ pointer below was checked against OUR pin.
   field `unramifiedTensorSubmodule` above is already stated over. What
   must be PROVEN of it is that it is local with separably closed residue
   field; nothing must be invented.
-  **DONE 2026-07-26**: that is exactly `unramifiedIntegers p` above.
-  Locality (indeed `ValuationRing`, `IsDomain`, `Algebra.IsIntegral`) came
-  for free from `AbsoluteGaloisGroup.valuationRing_integralClosure`; the
-  two remaining properties are the leaves cited in (R1)/(R4), each with a
-  complete proof recipe recorded in its own docstring.
+  **DONE 2026-07-26**: that is exactly `unramifiedIntegers p` above, and
+  it is now fully verified. Locality (indeed `ValuationRing`, `IsDomain`,
+  `Algebra.IsIntegral`) came for free from
+  `AbsoluteGaloisGroup.valuationRing_integralClosure`; henselianity and
+  separably closed residue field are PROVEN above, both by the same
+  mechanism — a simple Hensel lift in `IntegralClosure 𝒪ᵖᵥ ℚᵖᵥᵃˡᵍ` is
+  UNIQUE, and inertia moves it to another lift with the same residue, so
+  inertia fixes it and it descends. Nothing about strict henselisation
+  remains to be invented or cited.
 * (R4)'s pointer is live: `Algebra.FormallyEtale.equivPiOfIsSepClosed`
   is at `Mathlib/RingTheory/Etale/Field.lean:217`.
 * `~/cs/FLT` does NOT supply the group-scheme side: its
@@ -3029,15 +3283,16 @@ henselian base — now have that object: `unramifiedIntegers p`, the integral
 closure of `𝒪ᵖᵥ` in `ℚᵖᵥᵘⁿʳ`, built above. Its two structural properties
 are supplied here:
 
-* Henselian, by `henselianLocalRing_unramifiedIntegers` applied to the
-  PROVEN `henselianLocalRing_integralClosure_algebraicClosure`;
+* Henselian, by `henselianLocalRing_unramifiedIntegers` applied to
+  `henselianLocalRing_integralClosure_algebraicClosure`;
 * separably closed residue field, by
-  `isSepClosed_residueField_unramifiedIntegers` applied to the PROVEN
+  `isSepClosed_residueField_unramifiedIntegers` applied to
   `exists_isRoot_of_monic_integralClosure`.
 
-Both of those are ordinary local algebra with the proof written out in
-their docstrings, and neither is Raynaud; the group-scheme citation is
-confined to the leaf above. -/
+**All four of those are PROVEN** (2026-07-26) — they are ordinary local
+algebra, and none of them is Raynaud. So the group-scheme citation is now
+confined to the single leaf above, and the base it needs is not merely
+stated but constructed and verified. -/
 theorem grouplike_corner_mem_unramifiedTensorSubmodule
     [Algebra R (AlgebraicClosure ℚ_[p])]
     [ContinuousSMul R (AlgebraicClosure ℚ_[p])]
