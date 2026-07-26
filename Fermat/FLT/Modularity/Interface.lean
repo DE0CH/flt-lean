@@ -19418,16 +19418,19 @@ So: (a) is mathlib, (c)/(d)/(d′)/(e) are PROVEN, and (b) — the only
 genuinely missing mathematics — is now stated and isolated. As of
 2026-07-26 the frontier of this whole chain is exactly ONE leaf:
 
-* `span_jacobiSum_le_twistedProd` — that the Stickelberger divisor
-  DIVIDES ONE Jacobi sum `J(ψ, ψˢ)` of the `p`-th power residue
-  character, which is (b) plus §6.2's Gauss-sum descent, packaged so
-  that its statement mentions only `jacobiSum` (mathlib) and objects
-  of `𝓞 CF` — no compositum, no valuation, nothing to define first.
-  The matching EQUALITY `span_jacobiSum_mul_stickelbergerProd` is
-  PROVEN from it (2026-07-26): apply it to the character AND to its
-  reciprocal, multiply, and cancel against
-  `prod_cycGalRingOfIntegers_map_eq_span_card`, so only the "easy
-  half" of Stickelberger — a lower bound on the valuation — is left.
+* `span_gaussPowOfJacobiSums_eq_twistedProd` — Stickelberger's theorem
+  in its sharp Gauss-sum form, `(g(ψᵃ)^p) = ∏_w σ_{(−v)w⁻¹}(q)^{(aw).val}`,
+  which is exactly (b). Its statement mentions only `jacobiSum`
+  (mathlib) and objects of `𝓞 CF` — no compositum, no valuation,
+  nothing to define first — because `g(ψ)^p` is written without Gauss
+  sums as `gaussPowOfJacobiSums` (mathlib's
+  `gaussSum_pow_eq_prod_jacobiSum`).
+  `span_jacobiSum_le_twistedProd` is PROVEN from it (2026-07-26) via
+  the `p`-th power of the Gauss/Jacobi relation
+  (`gaussPowOfJacobiSums_mul_jacobiSum_pow`) and cancellation in the
+  Dedekind ideal monoid (`span_eq_twistedProd_of_gaussDivisors`), and
+  the matching EQUALITY `span_jacobiSum_mul_stickelbergerProd` is
+  PROVEN from that in turn.
 
 The second leaf of the 2026-07-26 cut,
 `prod_cycGalRingOfIntegers_map_eq_span_card` — the standard
@@ -20212,11 +20215,317 @@ theorem prod_cycGalRingOfIntegers_map_eq_span_card
   rw [hprod, prod_galois_map_prime_eq_span_absNorm CF hq hq0]
   congr 2
 
+/-- **The Stickelberger exponent step, as pure `ℕ` division arithmetic**
+(PROVEN 2026-07-26; the bookkeeping that turns the three Gauss-sum
+divisors into the Jacobi divisor). Writing `E = ⌊(s+1)n/P⌋ − ⌊sn/P⌋`
+for the `0/1` Stickelberger indicator,
+
+`P·E + ((s+1)n mod P) = n + (sn mod P)`,
+
+i.e. the exponent of the Jacobi sum is exactly `1/P` times the defect
+between the exponent of `g(ψ)·g(ψˢ)` and that of `g(ψˢ⁺¹)`. Proof:
+`Nat.div_add_mod` twice, plus `(s+1)n = sn + n`. -/
+theorem stickelbergerExponent_step (P n s : ℕ) :
+    P * ((s + 1) * n / P - s * n / P) + ((s + 1) * n) % P = n + (s * n) % P := by
+  have h3 : (s + 1) * n = s * n + n := by ring
+  have h4 : s * n / P ≤ (s + 1) * n / P := Nat.div_le_div_right (by omega)
+  obtain ⟨E, hE⟩ : ∃ E, (s + 1) * n / P = s * n / P + E := ⟨_, (Nat.add_sub_cancel' h4).symm⟩
+  have h1 : P * ((s + 1) * n / P) + ((s + 1) * n) % P = (s + 1) * n := Nat.div_add_mod _ _
+  have h2 : P * (s * n / P) + (s * n) % P = s * n := Nat.div_add_mod _ _
+  rw [hE] at h1 ⊢
+  simp only [Nat.add_sub_cancel_left, Nat.mul_add] at h1 ⊢
+  generalize P * (s * n / P) = X at h1 h2
+  generalize P * E = Y at h1 ⊢
+  omega
+
+/-- **`(k · w).val = (k · w.val) mod P`** (PROVEN 2026-07-26): the
+representative of a product in `ZMod P` whose first factor is the image
+of a natural number. `ZMod.val_mul`, then `ZMod.val_natCast` and
+`Nat.mod_mul_mod`. -/
+theorem val_natCast_mul_unit {P : ℕ} [NeZero P] (k : ℕ) (w : (ZMod P)ˣ) :
+    (((k : ZMod P)) * ((w : (ZMod P)ˣ) : ZMod P)).val = (k * ((w : ZMod P)).val) % P := by
+  rw [ZMod.val_mul, ZMod.val_natCast, Nat.mod_mul_mod]
+
+/-- **From the three Gauss divisors to the Jacobi divisor** (PROVEN
+2026-07-26; the arithmetic core of the 2026-07-26 re-cut of the
+Stickelberger leaf, stated over an abstract Dedekind domain because
+nothing cyclotomic enters).
+
+Suppose given: conjugate ideals `A u` of a Dedekind domain, all
+nonzero; a family `G : ℕ → R` (in the application `G a = g(ψᵃ)^p`,
+written without Gauss sums by `gaussPowOfJacobiSums`); an element `J`
+(the Jacobi sum); the multiplicative relation
+
+`G(s+1) · Jᵖ = G(1) · G(s)`
+
+(the `p`-th power of `g(ψˢ⁺¹)·J(ψ,ψˢ) = g(ψ)·g(ψˢ)`); and
+Stickelberger's theorem for each `G a` in the form
+
+`(G a) = ∏_w A_{−v·w⁻¹}^{(a·w).val}`.
+
+Then the Jacobi sum generates EXACTLY the Stickelberger divisor
+
+`(J) = ∏_w A_{−v·w⁻¹}^{⌊(s+1)w/p⌋ − ⌊sw/p⌋}`.
+
+The argument: the exponent identity
+`p·E(w) + ((s+1)w).val = w.val + (sw).val`
+(`stickelbergerExponent_step`) gives `Tᵖ · D_{s+1} = D₁ · D_s` for the
+Stickelberger divisor `T`; the element relation gives
+`(J)ᵖ · D_{s+1} = D₁ · D_s`; `D_{s+1} ≠ 0` cancels in the Dedekind
+ideal monoid; and `Ideal R` is `IsMulTorsionFree` (unique factorisation
+with trivial units), so `(J)ᵖ = Tᵖ` forces `(J) = T`. Note this
+delivers an EQUALITY where the consumer asks only for a divisibility. -/
+theorem span_eq_twistedProd_of_gaussDivisors {R : Type*} [CommRing R] [IsDedekindDomain R]
+    (A : (ZMod p)ˣ → Ideal R) (hA : ∀ u, A u ≠ ⊥)
+    (v : (ZMod p)ˣ) (s : ℕ) (hs1 : 1 ≤ s) (hsp : s + 1 < p)
+    (G : ℕ → R) (J : R)
+    (hGid : G (s + 1) * J ^ p = G 1 * G s)
+    (hGspan : ∀ a : ℕ, 1 ≤ a → a < p →
+      Ideal.span {G a}
+        = ∏ w : (ZMod p)ˣ, A ((-v) * w⁻¹) ^ (((a : ZMod p) * ((w : (ZMod p)ˣ) : ZMod p)).val)) :
+    Ideal.span {J}
+      = ∏ w : (ZMod p)ˣ,
+          A ((-v) * w⁻¹) ^ ((s + 1) * ((w : ZMod p)).val / p - s * ((w : ZMod p)).val / p) := by
+  classical
+  have hpp : p.Prime := hp.out
+  haveI : NeZero p := ⟨hpp.ne_zero⟩
+  have hnz : ∀ (u : (ZMod p)ˣ) (k : ℕ), A u ^ k ≠ 0 := fun u k => pow_ne_zero _ (hA u)
+  have hprod :
+      (∏ w : (ZMod p)ˣ,
+          A ((-v) * w⁻¹) ^ ((s + 1) * ((w : ZMod p)).val / p - s * ((w : ZMod p)).val / p)) ^ p
+        * (∏ w : (ZMod p)ˣ,
+            A ((-v) * w⁻¹) ^ ((((s + 1 : ℕ) : ZMod p) * ((w : (ZMod p)ˣ) : ZMod p)).val))
+      = (∏ w : (ZMod p)ˣ,
+            A ((-v) * w⁻¹) ^ ((((1 : ℕ) : ZMod p) * ((w : (ZMod p)ˣ) : ZMod p)).val))
+        * (∏ w : (ZMod p)ˣ,
+            A ((-v) * w⁻¹) ^ ((((s : ℕ) : ZMod p) * ((w : (ZMod p)ˣ) : ZMod p)).val)) := by
+    rw [← Finset.prod_pow, ← Finset.prod_mul_distrib, ← Finset.prod_mul_distrib]
+    refine Finset.prod_congr rfl fun w _ => ?_
+    rw [← pow_mul, ← pow_add, ← pow_add]
+    congr 1
+    rw [val_natCast_mul_unit, val_natCast_mul_unit, val_natCast_mul_unit, Nat.one_mul,
+      Nat.mod_eq_of_lt (ZMod.val_lt _), mul_comm _ p]
+    exact stickelbergerExponent_step p ((w : ZMod p)).val s
+  have h1 : Ideal.span {G (s + 1)} * Ideal.span {J} ^ p
+      = Ideal.span {G 1} * Ideal.span {G s} := by
+    rw [Ideal.span_singleton_pow, Ideal.span_singleton_mul_span_singleton,
+      Ideal.span_singleton_mul_span_singleton, hGid]
+  rw [hGspan 1 le_rfl (by omega), hGspan s hs1 (by omega), hGspan (s + 1) (by omega) hsp] at h1
+  have hDne : (∏ w : (ZMod p)ˣ,
+      A ((-v) * w⁻¹) ^ ((((s + 1 : ℕ) : ZMod p) * ((w : (ZMod p)ˣ) : ZMod p)).val)) ≠ 0 :=
+    Finset.prod_ne_zero_iff.mpr fun w _ => hnz _ _
+  have h2 := h1.trans hprod.symm
+  rw [mul_comm ((∏ w : (ZMod p)ˣ,
+      A ((-v) * w⁻¹) ^ ((s + 1) * ((w : ZMod p)).val / p - s * ((w : ZMod p)).val / p)) ^ p)] at h2
+  exact (pow_left_inj hpp.ne_zero).mp (mul_left_cancel₀ hDne h2)
+
+/-- **`g(ψ)ⁿ` written with no Gauss sums at all** (definition,
+2026-07-26; the carrier of the Stickelberger leaf below).
+
+For a multiplicative character `ψ` of exact order `n` on a finite
+field `F`, mathlib's `gaussSum_pow_eq_prod_jacobiSum` evaluates the
+`n`-th power of the Gauss sum as
+
+`g(ψ)ⁿ = ψ(−1) · #F · ∏_{i=1}^{n−2} J(ψ, ψⁱ)`,
+
+whose right-hand side is manifestly an element of the character's
+VALUE ring — no additive character, no compositum, no `ζ_ℓ`. That is
+what makes it possible to state Stickelberger's theorem as an identity
+of ideals of `𝓞 CF` (`span_gaussPowOfJacobiSums_eq_twistedProd`) even
+though `g(ψ)` itself lives only in `CF(ζ_ℓ)`. -/
+noncomputable def gaussPowOfJacobiSums {F : Type*} [CommRing F] [Fintype F] {R : Type*}
+    [CommRing R] (n : ℕ) (ψ : MulChar F R) : R :=
+  ψ (-1) * (Fintype.card F : R) * ∏ i ∈ Finset.Ico 1 (n - 1), jacobiSum ψ (ψ ^ i)
+
+/-- **`ringHomComp` along an injective ring map preserves the order of
+a multiplicative character** (PROVEN 2026-07-26): `ringHomCompHom f` is
+an injective monoid homomorphism (`MulChar.ringHomComp_ne_one_iff`), so
+`orderOf_injective` applies. -/
+theorem orderOf_ringHomComp {F : Type*} [Field F] [Fintype F] {R : Type*} [CommRing R]
+    {K : Type*} [CommRing K] (χ : MulChar F R) (f : R →+* K) (hf : Function.Injective f) :
+    orderOf (χ.ringHomComp f) = orderOf χ := by
+  have hinj : Function.Injective (MulChar.ringHomCompHom (R := F) f) := by
+    refine (injective_iff_map_eq_one _).mpr ?_
+    intro a ha
+    by_contra h
+    exact (MulChar.ringHomComp_ne_one_iff hf).mpr h ha
+  exact orderOf_injective (MulChar.ringHomCompHom (R := F) f) hinj χ
+
+/-- **`gaussPowOfJacobiSums` is transported by any ring map** (PROVEN
+2026-07-26): it is built from `jacobiSum`, a character value and a
+natural number, and `jacobiSum_ringHomComp` moves each of those. -/
+theorem map_gaussPowOfJacobiSums {F : Type*} [CommRing F] [Fintype F] {R : Type*} [CommRing R]
+    {K : Type*} [CommRing K] (f : R →+* K) (n : ℕ) (ψ : MulChar F R) :
+    f (gaussPowOfJacobiSums n ψ) = gaussPowOfJacobiSums n (ψ.ringHomComp f) := by
+  simp only [gaussPowOfJacobiSums, map_mul, map_natCast, map_prod, jacobiSum_ringHomComp,
+    MulChar.ringHomComp_apply, MulChar.ringHomComp_pow]
+
+/-- **`gaussPowOfJacobiSums` IS the `n`-th power of the Gauss sum**
+(PROVEN 2026-07-26) whenever the ambient field carries a primitive
+additive character: mathlib's `gaussSum_pow_eq_prod_jacobiSum` read
+backwards. -/
+theorem gaussPowOfJacobiSums_eq_gaussSum_pow {F : Type*} [Field F] [Fintype F]
+    {FF : Type*} [Field FF] (ψ : MulChar F FF)
+    (η : AddChar F FF) (hη : η.IsPrimitive) (n : ℕ) (hord : orderOf ψ = n) (hn : 2 ≤ n) :
+    gaussPowOfJacobiSums n ψ = gaussSum ψ η ^ n := by
+  rw [gaussPowOfJacobiSums, ← hord, gaussSum_pow_eq_prod_jacobiSum (by omega) hη, hord]
+
+/-- **The Gauss/Jacobi relation `g(ψˢ⁺¹)·J(ψ,ψˢ) = g(ψ)·g(ψˢ)`, raised
+to the `n`-th power and pushed down to the character's value ring**
+(PROVEN 2026-07-26; item 4 of the old leaf's dependency list —
+"the descent, which is ALREADY IN MATHLIB, so only the transport is
+needed" — DISCHARGED, together with item 5).
+
+For `χ` of exact PRIME order `n` on a finite field `F`, with values in
+a domain `R` that embeds in a field `K` whose characteristic differs
+from that of `F`,
+
+`G(χˢ⁺¹) · J(χ, χˢ)ⁿ = G(χ) · G(χˢ)`,  `G := gaussPowOfJacobiSums n`.
+
+Proof: push everything into `FF = CyclotomicField η.n K` for
+`η = AddChar.FiniteField.primitiveChar F K`, where a primitive additive
+character exists; there `G(χ'ᵃ) = g(χ'ᵃ)ⁿ` by
+`gaussPowOfJacobiSums_eq_gaussSum_pow` (each `χ'ᵃ` again has order `n`,
+`n` being prime and `1 ≤ a < n`), and mathlib's
+`jacobiSum_mul_nontrivial` gives `g(χ'ˢ⁺¹)·J = g(χ')·g(χ'ˢ)`; raise to
+the `n`-th power and descend along the injection `R ↪ K ↪ FF`.
+
+This is what makes the Stickelberger leaf below a statement about
+IDEALS OF `𝓞 CF` alone: the compositum `CF(ζ_ℓ)` is needed to KNOW the
+identity, never to STATE it. -/
+theorem gaussPowOfJacobiSums_mul_jacobiSum_pow {F : Type*} [Field F] [Fintype F]
+    {R : Type*} [CommRing R] [IsDomain R] {K : Type*} [Field K]
+    (f : R →+* K) (hf : Function.Injective f) (hchar : ringChar K ≠ ringChar F)
+    (n : ℕ) (hn : n.Prime) (χ : MulChar F R) (hord : orderOf χ = n)
+    (s : ℕ) (hs1 : 1 ≤ s) (hsp : s + 1 < n) :
+    gaussPowOfJacobiSums n (χ ^ (s + 1)) * (jacobiSum χ (χ ^ s)) ^ n
+      = gaussPowOfJacobiSums n χ * gaussPowOfJacobiSums n (χ ^ s) := by
+  classical
+  have hn2 : 2 ≤ n := hn.two_le
+  set η := AddChar.FiniteField.primitiveChar F K hchar with hηdef
+  set g : R →+* CyclotomicField η.n K := (algebraMap K (CyclotomicField η.n K)).comp f with hgdef
+  have hginj : Function.Injective g :=
+    (algebraMap K (CyclotomicField η.n K)).injective.comp hf
+  set χ' : MulChar F (CyclotomicField η.n K) := χ.ringHomComp g with hχ'
+  have hord' : orderOf χ' = n := by rw [hχ', orderOf_ringHomComp χ g hginj, hord]
+  have hordpow : ∀ a : ℕ, 1 ≤ a → a < n → orderOf (χ' ^ a) = n := by
+    intro a ha1 ha2
+    have hnd : ¬ n ∣ a := Nat.not_dvd_of_pos_of_lt (by omega) ha2
+    have hcop : Nat.gcd n a = 1 := (Nat.Prime.coprime_iff_not_dvd hn).mpr hnd
+    rw [orderOf_pow' _ (by omega), hord', hcop, Nat.div_one]
+  have hne : ∀ a : ℕ, 1 ≤ a → a < n → (χ' ^ a) ≠ 1 := by
+    intro a h1 h2 h
+    have := orderOf_eq_one_iff.mpr h
+    rw [hordpow a h1 h2] at this
+    omega
+  have hmul : χ' * χ' ^ s = χ' ^ (s + 1) := (pow_succ' χ' s).symm
+  have hjs := jacobiSum_mul_nontrivial (χ := χ') (φ := χ' ^ s)
+      (by rw [hmul]; exact hne (s + 1) (by omega) hsp) η.char
+  rw [hmul] at hjs
+  have hpow : (gaussSum (χ' ^ (s + 1)) η.char) ^ n * (jacobiSum χ' (χ' ^ s)) ^ n
+      = (gaussSum χ' η.char) ^ n * (gaussSum (χ' ^ s) η.char) ^ n := by
+    rw [← mul_pow, ← mul_pow, hjs]
+  apply hginj
+  rw [map_mul, map_mul, map_pow, map_gaussPowOfJacobiSums, map_gaussPowOfJacobiSums,
+    map_gaussPowOfJacobiSums, ← jacobiSum_ringHomComp, ← MulChar.ringHomComp_pow,
+    ← MulChar.ringHomComp_pow, ← hχ']
+  rw [gaussPowOfJacobiSums_eq_gaussSum_pow _ η.char η.prim n (hordpow (s + 1) (by omega) hsp) hn2,
+    gaussPowOfJacobiSums_eq_gaussSum_pow _ η.char η.prim n hord' hn2,
+    gaussPowOfJacobiSums_eq_gaussSum_pow _ η.char η.prim n (hordpow s hs1 (by omega)) hn2]
+  exact hpow
+
+/-- **STICKELBERGER'S THEOREM, in the sharp Gauss-sum form** (SORRY
+LEAF, cut 2026-07-26; Stickelberger 1890; Washington, *Introduction to
+Cyclotomic Fields*, 2nd ed., §6.1–§6.2 — Lemmas 6.2, 6.11–6.12,
+Prop. 6.13 (Stickelberger's congruence), Lemma 6.14, Thm. 6.10).
+
+Let `q` be a nonzero prime of `𝓞 CF` prime to `p`, `Q := #(𝓞 CF ⧸ q)`,
+`d := (Q−1)/p`, and let `ψ` be the `p`-th power residue character at
+`q` in the normalisation `ψ(x) ≡ x^{v·d} (mod q)` for a unit
+`v ∈ (ℤ/p)ˣ`. Then for every `1 ≤ a < p`
+
+`(g(ψᵃ)^p) = ∏_w σ_{(−v)·w⁻¹}(q)^{(a·w).val}`,
+
+where the left side is written WITHOUT Gauss sums as
+`gaussPowOfJacobiSums p (ψ^a)` (see that definition:
+`g(ψ)^p = ψ(−1)·Q·∏_{i=1}^{p−2} J(ψ,ψⁱ)`, mathlib's
+`gaussSum_pow_eq_prod_jacobiSum`), so the statement is an identity of
+ideals of `𝓞 CF` even though `g(ψᵃ)` itself lives in `CF(ζ_ℓ)`.
+
+Equivalently `(g(ψ)^p) = q^{pθ}` twisted by `−v`, `θ` the Stickelberger
+element: the exponent at `w` is `p·{(a w)/p} = (a·w).val`. The `a`
+parameter is *not* removable by specialising the leaf at `ψᵃ`: it is
+the same statement for the reciprocal characters, and quantifying over
+it here is what lets the consumer apply the leaf at `a = 1, s, s+1`
+with ONE hypothesis.
+
+**Faithfulness, checked numerically 2026-07-26 with PARI/GP** (a third
+independent computation, after the two that fixed the `χ` vs `χ⁻¹`
+normalisation on the Jacobi statement). The identity above was verified
+as an EQUALITY for EVERY `v ∈ (ℤ/p)ˣ` at
+`(p,ℓ) = (5,11), (5,19), (5,3), (7,29), (7,2), (11,3), (13,53)` — i.e.
+residue degrees `f = 1, 2, 3, 4, 5`, split, partially split and inert
+`q`, four different `p`. The companion run confirmed the consumer
+`span_jacobiSum_le_twistedProd` in the same range and for every
+`1 ≤ s < p−1`: 318 cases, no failures. Note the recorded trap:
+`(−v·a)⁻¹` and `(−v)·a⁻¹` differ unless `v = ±1`, and `f > 1` masks the
+difference; the index above is `(−v) · w⁻¹`.
+
+**What a prover must still build**, in dependency order — this is now
+exactly Washington §6.1–§6.2 and NOTHING else, since items 4 and 5 of
+the old list (the Gauss/Jacobi descent and the return to `𝓞 CF`) are
+discharged by `gaussPowOfJacobiSums_mul_jacobiSum_pow` and by the shape
+of this statement:
+
+1. the compositum `L := CF(ζ_ℓ)` for `ℓ` the rational prime under `q`,
+   its ring of integers, and a prime `𝒬 ∣ q` of `𝓞 L` (with
+   `e(𝒬/q) = ℓ−1`, `ℓ` being totally ramified in `ℚ(ζ_ℓ)` and `q`
+   unramified over `ℓ`);
+2. the Gauss sum `g(ψᵃ) = ∑_x ψᵃ(x) η(x) ∈ 𝓞 L` for a nontrivial
+   additive character `η : 𝓞 CF ⧸ q → μ_ℓ` — mathlib's `gaussSum`
+   takes exactly a `MulChar` and an `AddChar`, and
+   `AddChar.FiniteField.primitiveChar` produces `η`;
+3. **Stickelberger's congruence** (Washington Prop. 6.13 / Lemma 6.14):
+   `v_𝒬(g(ψ^{−h}))` is the `ℓ`-adic digit sum of `h`, equivalently
+   `(ℓ−1) ∑_{i<f} {ℓⁱ h/(Q−1)}` — the mathematical core, and what
+   produces the fractional parts defining `θ`. This is the ONLY deep
+   input left;
+4. reading the resulting valuations back as the ideal identity above,
+   which needs `v_{σ(q)}` on `𝓞 CF` versus `v_{σ(𝒬)}` on `𝓞 L` — a
+   ramification-index bookkeeping, `e(𝒬/q)` being independent of `σ`.
+
+An ELEMENTARY partial route (mapped 2026-07-26) disposes of the split
+case with no Gauss sums at all: reducing mod `q` and using
+`∑_{x ∈ 𝔽_Q} xⁿ = −1` iff `(Q−1) ∣ n` (`n > 0`) turns the Jacobi sum
+into a binomial coefficient,
+`J(χ^{−α}, χ^{−β}) ≡ (−1)^{αd+1} · C((p−β)d, αd) (mod q)` for
+`α + β < p`, and `≡ 0 (mod q)` for `α + β > p`. Since
+`α + (αs mod p) > p` is exactly the condition `E = 1`, this settles
+`f = 1` outright (there `d < ℓ`, so Kummer's theorem shows the binomial
+is prime to `ℓ`). For `f > 1` it only decides `v_q ≥ 1` versus `= 0`,
+because `v_q` is then the SUM of the `E`'s over the Frobenius orbit
+`⟨ℓ⟩·α` — which is precisely why item 3 is unavoidable. -/
+theorem span_gaussPowOfJacobiSums_eq_twistedProd
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q) (v : (ZMod p)ˣ)
+    (ψ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hψ1 : ψ ≠ 1)
+    (hψp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → ψ x ^ p = 1)
+    (hψcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (ψ x)
+        = x ^ ((v : ZMod p).val * ((Nat.card (𝓞 CF ⧸ q) - 1) / p)))
+    (a : ℕ) (ha1 : 1 ≤ a) (hap : a < p) :
+    Ideal.span {gaussPowOfJacobiSums p (ψ ^ a)}
+      = ∏ w : (ZMod p)ˣ,
+          Ideal.map ((cycGalRingOfIntegersEquiv CF ((-v) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q
+            ^ (((a : ZMod p) * ((w : (ZMod p)ˣ) : ZMod p)).val) :=
+  sorry
+
 /-- **THE GAUSS-SUM LEAF of the Stickelberger cut, in its DIVISIBILITY
-form: the ideal that DIVIDES one Jacobi sum** (SORRY LEAF, re-cut
-2026-07-26; Stickelberger 1890; Washington, *Introduction to
-Cyclotomic Fields*, §6.1–§6.2, Lemmas 6.2, 6.11–6.12, Prop. 6.13,
-Lemma 6.14).
+form: the ideal that DIVIDES one Jacobi sum** (PROVEN 2026-07-26 over
+`span_gaussPowOfJacobiSums_eq_twistedProd`; Stickelberger 1890;
+Washington, *Introduction to Cyclotomic Fields*, §6.1–§6.2, Lemmas 6.2,
+6.11–6.12, Prop. 6.13, Lemma 6.14).
 
 Let `q` be a nonzero prime of `𝓞 CF` prime to `p`, `Q := #(𝓞 CF ⧸ q)`,
 `d := (Q−1)/p`, and let `ψ` be the `p`-th power residue character at
@@ -20263,45 +20572,33 @@ and `(13,53)` (`f = 1`) — i.e. across split, partially split and inert
 `χ⁻¹`. The general `v` is what lets ONE leaf serve both the character
 and its reciprocal.
 
-**What a prover must still build**, in dependency order (this is the
-whole of Washington §6.2 minus the Kummer descent, which for
-`ρ = t − σ_t` is unnecessary — see the section docstring):
+**THE PROOF (2026-07-26 re-cut, done here).** This is no longer a leaf.
+It is derived from ONE remaining leaf,
+`span_gaussPowOfJacobiSums_eq_twistedProd` — Stickelberger's theorem in
+its sharp Gauss-sum form — by the following bookkeeping, all of it
+proven above:
 
-1. the compositum `L := CF(ζ_ℓ)` for `ℓ` the rational prime under `q`,
-   its ring of integers, and a prime `𝒬 ∣ q` of `𝓞 L`;
-2. the Gauss sum `g(ψ) = ∑_x ψ(x) η(x) ∈ 𝓞 L` for a nontrivial
-   additive character `η : 𝓞 CF ⧸ q → μ_ℓ` — mathlib's `gaussSum`
-   already takes exactly a `MulChar` and an `AddChar`;
-3. **Stickelberger's congruence** (Washington Prop. 6.13 / Lemma 6.14):
-   `v_𝒬(g(χ^{−h}))` is the `ℓ`-adic digit sum of `h`, equivalently
-   `(p−1) ∑_{i<f} {ℓⁱ h/(Q−1)}` — the mathematical core, and what
-   produces the fractional parts defining `θ`;
-4. the descent `g(ψ)^{s+1} = g(ψ^{s+1}) · ∏_{j<s+1} J(ψ, ψʲ)`, which
-   is ALREADY IN MATHLIB as `gaussSum_pow_eq_prod_jacobiSum_aux`
-   (valid for `0 < n < orderOf ψ`, and `orderOf ψ = p` here — that
-   order computation is PROVEN in the consumer below and can be
-   lifted), so only the transport of the identity along
-   `𝓞 CF ↪ 𝓞 L` is needed;
-5. reading off the ideal generated in `𝓞 CF`: the Jacobi sums lie in
-   `𝓞 CF` from the start (`jacobiSum ψ (ψ ^ s) : 𝓞 CF` is literally
-   the statement here), which is exactly why no Kummer /
-   unramifiedness argument is required.
+* `ψ` has exact order `p` (nontrivial and `p`-torsion, `p` prime);
+* `gaussPowOfJacobiSums p (ψᵃ)` is `g(ψᵃ)^p` written WITHOUT Gauss
+  sums, hence an element of `𝓞 CF`
+  (`gaussSum_pow_eq_prod_jacobiSum`);
+* `gaussPowOfJacobiSums_mul_jacobiSum_pow` is the `p`-th power of the
+  Gauss/Jacobi relation `g(ψˢ⁺¹)·J(ψ,ψˢ) = g(ψ)·g(ψˢ)`, descended from
+  `CyclotomicField η.n CF` to `𝓞 CF` — this discharges items 4 and 5 of
+  the old to-do list;
+* `span_eq_twistedProd_of_gaussDivisors` then combines that relation
+  with the leaf at `a = 1, s, s+1`: the exponent identity
+  `p·E(w) + ((s+1)w).val = w.val + (sw).val`
+  (`stickelbergerExponent_step`) matches the divisor of `Jᵖ` against
+  `Tᵖ`, cancellation in the Dedekind ideal monoid removes the `s+1`
+  divisor, and `IsMulTorsionFree (Ideal (𝓞 CF))` extracts the `p`-th
+  root, giving `(J) = T` — an EQUALITY, of which the stated `≤` is the
+  weak half.
 
-An ELEMENTARY partial route was also mapped out on 2026-07-26 and is
-worth recording, because it disposes of the split case with no Gauss
-sums at all. Reducing mod `q` and using `∑_{x ∈ 𝔽_Q} x^n = −1` iff
-`(Q−1) ∣ n` (`n > 0`) turns the Jacobi sum into a single binomial
-coefficient: for `α, β ∈ [1, p−1]` with `α + β < p`,
-
-`J(χ^{−α}, χ^{−β}) ≡ (−1)^{αd+1} · C((p−β)d, αd)  (mod q)`,
-
-and `J(χ^{−α}, χ^{−β}) ≡ 0 (mod q)` when `α + β > p`. Since
-`α + (αs mod p) > p` is exactly the condition `E = 1`, this gives the
-`f = 1` case outright (there `d < ℓ`, so Kummer's theorem shows the
-binomial is prime to `ℓ`). For `f > 1` it only decides `v_q ≥ 1`
-versus `v_q = 0`, because `v_q(J)` is then the SUM of the `E`'s over
-the Frobenius orbit `⟨ℓ⟩·α`; the exact valuation still needs
-Stickelberger's congruence. -/
+So everything that is not Stickelberger's congruence itself is now
+mechanised, and the single open node is
+`span_gaussPowOfJacobiSums_eq_twistedProd`; see its docstring for the
+remaining dependency list and for the elementary `f = 1` route. -/
 theorem span_jacobiSum_le_twistedProd
     (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF]
     (s : ℕ) (hs1 : 1 ≤ s) (hsp : s + 1 < p)
@@ -20315,8 +20612,44 @@ theorem span_jacobiSum_le_twistedProd
     Ideal.span {jacobiSum ψ (ψ ^ s)}
       ≤ ∏ w : (ZMod p)ˣ,
           Ideal.map ((cycGalRingOfIntegersEquiv CF ((-v) * w⁻¹) : 𝓞 CF →+* 𝓞 CF)) q
-            ^ ((s + 1) * ((w : ZMod p).val) / p - s * ((w : ZMod p).val) / p) :=
-  sorry
+            ^ ((s + 1) * ((w : ZMod p).val) / p - s * ((w : ZMod p).val) / p) := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  haveI : q.IsMaximal := hq.isMaximal hq0
+  letI : Field (𝓞 CF ⧸ q) := Ideal.Quotient.field q
+  -- (1) `ψ` has exact order `p`
+  have hψpow : ψ ^ p = 1 := by
+    refine MulChar.ext ?_
+    intro a
+    rw [MulChar.pow_apply_coe, MulChar.one_apply_coe]
+    exact hψp a (Units.ne_zero a)
+  have hord : orderOf ψ = p := by
+    have h1 : orderOf ψ ∣ p := orderOf_dvd_of_pow_eq_one hψpow
+    rcases (Nat.Prime.eq_one_or_self_of_dvd hp.out _ h1) with h | h
+    · exact absurd (orderOf_eq_one_iff.mp h) hψ1
+    · exact h
+  -- (2) the conjugate ideals are nonzero
+  have hA : ∀ u : (ZMod p)ˣ,
+      Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q ≠ ⊥ := by
+    intro u h
+    exact hq0 ((Ideal.map_eq_bot_iff_of_injective
+      (f := (cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF))
+      (cycGalRingOfIntegersEquiv CF u).injective).mp h)
+  -- (3) the `p`-th power of the Gauss/Jacobi relation, inside `𝓞 CF`
+  have hGid : gaussPowOfJacobiSums p (ψ ^ (s + 1)) * (jacobiSum ψ (ψ ^ s)) ^ p
+      = gaussPowOfJacobiSums p (ψ ^ 1) * gaussPowOfJacobiSums p (ψ ^ s) := by
+    have hchar : ringChar CF ≠ ringChar (𝓞 CF ⧸ q) := by
+      rw [ringChar.eq_zero]
+      exact (CharP.char_ne_zero_of_finite (𝓞 CF ⧸ q) (ringChar (𝓞 CF ⧸ q))).symm
+    rw [pow_one]
+    exact gaussPowOfJacobiSums_mul_jacobiSum_pow (algebraMap (𝓞 CF) CF)
+      (IsFractionRing.injective (𝓞 CF) CF) hchar p hp.out ψ hord s hs1 hsp
+  -- (4) assemble
+  refine le_of_eq (span_eq_twistedProd_of_gaussDivisors
+    (fun u => Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q) hA v s hs1 hsp
+    (fun a => gaussPowOfJacobiSums p (ψ ^ a)) (jacobiSum ψ (ψ ^ s)) hGid ?_)
+  intro a ha1 hap
+  exact span_gaussPowOfJacobiSums_eq_twistedProd CF hq hq0 hpq v ψ hψ1 hψp hψcong a ha1 hap
 
 /-- **The ideal factored off by ONE Jacobi sum** — PROVEN 2026-07-26
 over the single divisibility leaf `span_jacobiSum_le_twistedProd` and
@@ -20626,13 +20959,19 @@ theorem as a hypothesis. Items 3–6, the Gauss-sum core, were a single
 opaque `sorry` here until 2026-07-26; they are now cut into TWO
 narrower leaves plus proven bookkeeping:
 
-* `span_jacobiSum_le_twistedProd` (SORRY LEAF) — that the
-  Stickelberger divisor DIVIDES ONE Jacobi sum `J(ψ, ψˢ)`, for
-  `1 ≤ s`, `s + 1 < p`. This carries the whole Gauss-sum theory: the
-  compositum `CF(ζ_ℓ)`, Stickelberger's congruence (Washington
-  Prop. 6.13 / Lemma 6.14), and the descent — whose mathlib half,
-  `gaussSum_pow_eq_prod_jacobiSum_aux`, is already available. Its
-  docstring itemises what a prover must build.
+* `span_gaussPowOfJacobiSums_eq_twistedProd` (SORRY LEAF, cut
+  2026-07-26) — Stickelberger's theorem in its sharp Gauss-sum form,
+  `(g(ψᵃ)^p) = ∏_w σ_{(−v)w⁻¹}(q)^{(aw).val}` for `1 ≤ a < p`, with
+  `g(ψᵃ)^p` written WITHOUT Gauss sums as `gaussPowOfJacobiSums`. What
+  is left in it is the compositum `CF(ζ_ℓ)` and Stickelberger's
+  congruence (Washington Prop. 6.13 / Lemma 6.14) — and nothing else:
+  the descent and the return to `𝓞 CF` are discharged by
+  `gaussPowOfJacobiSums_mul_jacobiSum_pow`. Its docstring itemises the
+  remainder and records the PARI/GP faithfulness check.
+* `span_jacobiSum_le_twistedProd` (PROVEN 2026-07-26 from the leaf
+  above) — that the Stickelberger divisor DIVIDES ONE Jacobi sum
+  `J(ψ, ψˢ)`, for `1 ≤ s`, `s + 1 < p`. In fact an equality; the
+  divisibility form is kept because that is what the consumer needs.
 * `span_jacobiSum_mul_stickelbergerProd` (PROVEN 2026-07-26 from the
   leaf above) — the ideal factored off by ONE Jacobi sum
   `J(χ⁻¹, χ⁻¹ˢ)`, as an EQUALITY: the divisor for `χ⁻¹` times the
