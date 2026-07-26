@@ -2295,7 +2295,38 @@ and **no** prime `ℓ < 100` attains `#X_0(45)(𝔽_ℓ) = 4`: the minimum over
 `3 ≤ ℓ < 60` is `8`, at `ℓ = 7`.  So a single reduction leaves a factor
 of `2` unaccounted for, and the four rational points must be pinned by
 intersecting the images of `X_0(45)(𝔽_ℓ) → J_0(45)(𝔽_ℓ)` over several
-`ℓ` simultaneously.  `#J_0(45)(ℚ)` divides `512`. -/
+`ℓ` simultaneously.  `#J_0(45)(ℚ)` divides `512`.
+
+SIEVE DATA (recomputed from scratch with Magma on 2026-07-26 by a second
+owner, *independently* of the pass that produced the table above; every
+entry of that table for all eleven levels — genus, cusps, `c(N)`, best
+`ℓ`, `#X_0(N)(𝔽_ℓ)` — was reproduced exactly, so the reconnaissance is
+confirmed rather than merely inherited).  `#X_0(45)(𝔽_ℓ)` over
+`3 ≤ ℓ < 60`: `7 ↦ 8`, `11 ↦ 16`, `13 ↦ 20`, `17 ↦ 16`, `19 ↦ 8`,
+`23 ↦ 24`, `29 ↦ 32`, `31 ↦ 32`, `37 ↦ 68`, `41 ↦ 32`, `43 ↦ 32`,
+`47 ↦ 40`, `53 ↦ 64`, `59 ↦ 64`.  So `ℓ = 19` is a *second* witness for
+the minimum `8`, which the table above does not record.  The Jacobian
+orders `#J_0(45)(𝔽_ℓ) = det(ℓ + 1 − T_ℓ ∣ S_2(Γ_0(45)))` are `512, 2048,
+4096, 5120, 4096, 13824, 28672, 32768, 110592, 53248, 64000, 89600,
+180224, 229376` at those same `ℓ`; their `gcd` is `512`, attained already
+at `ℓ = 7`.  Hence `#J_0(45)(ℚ) ∣ 512` and `J_0(45)(ℚ)` is a `2`-group.
+
+**WHY THIS LEAF IS NOT HARDER THAN ITS SEVEN SINGLE-PRIME SIBLINGS
+*HERE*** (2026-07-26; this note is shared by all four sieve levels and is
+written out only at this one).  The split "seven close on one prime, four
+need a sieve" is a fact about the CLASSICAL arguments.  It is **not** a
+difficulty ordering for this development, and reading it as one produces
+phantom work.  All eleven levels are blocked on exactly the same absent
+object — `X_0(N)` as a scheme, its cusps, `J_0(N)`, Mordell–Weil, and
+reduction mod `ℓ` — none of which exists in `Mathlib` or in `~/cs/FLT`
+(re-surveyed 2026-07-26: `Mathlib/AlgebraicGeometry/` contains no abelian
+variety and no modular curve of any kind).  Once that layer exists, a
+sieve level costs one extra *finite* computation over a single-prime
+level, and the arithmetic for it is fully recorded above.  Until it
+exists, neither kind can be advanced by any amount of effort spent at
+the level nodes themselves.  The shared layer is owned by the sibling
+node `y0HasNoRationalPoint_prod_two_primes`; that is where work on these
+eleven has to go first. -/
 theorem y0HasNoRationalPoint_fortyFive : Y0HasNoRationalPoint 45 :=
   sorry
 
@@ -2321,7 +2352,23 @@ ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `ℓ < 100` attains `#X_0(54)(𝔽_ℓ) = 4`: the minimum over `3 ≤ ℓ < 60` is
 `6`, at `ℓ = 5`.  This is the *closest* of the four sieve levels — the
 single-prime bound overshoots by only `2` — so it is the natural one to
-attempt first.  `#J_0(54)(ℚ)` divides `243`. -/
+attempt first.  `#J_0(54)(ℚ)` divides `243`.
+
+SIEVE DATA (independently recomputed with Magma 2026-07-26; see the
+`N = 45` docstring for the provenance note and for the shared warning
+that these four are *not* harder than the seven single-prime levels at
+this pin).  `#X_0(54)(𝔽_ℓ)` over `3 ≤ ℓ < 60`: `5 ↦ 6`, `7 ↦ 12`,
+`11 ↦ 12`, `13 ↦ 12`, `17 ↦ 18`, `19 ↦ 30`, `23 ↦ 24`, `29 ↦ 30`,
+`31 ↦ 30`, `37 ↦ 12`, `41 ↦ 42`, `43 ↦ 48`, `47 ↦ 48`, `53 ↦ 54`,
+`59 ↦ 60`.  The minimum `6` at `ℓ = 5` is attained ONCE — no second
+witness — which is why this level, despite overshooting by only `2`, has
+no cheap second prime to pair with.  Jacobian orders
+`#J_0(54)(𝔽_ℓ) = det(ℓ + 1 − T_ℓ ∣ S_2(Γ_0(54)))`: `972` at `ℓ = 5`,
+`6561` at `7`, `19440` at `11`, `26244` at `13`, then `104976, 236196,
+311040, 777600, 944784, 944784, 3048192, 3779136, 5225472, 8266860,
+12441600`.  Their `gcd` is `243 = 3⁵`, so `#J_0(54)(ℚ) ∣ 3⁵` and
+`J_0(54)(ℚ)` is a `3`-group — note `#J(𝔽_7) = 3⁸` is already a pure
+power of `3`, so the prime `7` alone forces the `3`-group conclusion. -/
 theorem y0HasNoRationalPoint_fiftyFour : Y0HasNoRationalPoint 54 :=
   sorry
 
@@ -2331,7 +2378,20 @@ ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `rank J_0(63)(ℚ) = 0` (all three newform factors have `L(A, 1) ≠ 0`).
 `X_0(63)` has `8` cusps of which `4` are rational, and no prime
 `ℓ < 100` attains `#X_0(63)(𝔽_ℓ) = 4`: the minimum over `3 ≤ ℓ < 60` is
-`8`, at `ℓ = 5`.  `#J_0(63)(ℚ)` divides `6144`. -/
+`8`, at `ℓ = 5`.  `#J_0(63)(ℚ)` divides `6144`.
+
+SIEVE DATA (independently recomputed with Magma 2026-07-26; see the
+`N = 45` docstring for provenance and for the shared warning that these
+four are *not* harder than the seven single-prime levels at this pin).
+`#X_0(63)(𝔽_ℓ)` over `3 ≤ ℓ < 60`: `5 ↦ 8`, `11 ↦ 8`, `13 ↦ 16`,
+`17 ↦ 24`, `19 ↦ 16`, `23 ↦ 24`, `29 ↦ 32`, `31 ↦ 40`, `37 ↦ 16`,
+`41 ↦ 40`, `43 ↦ 64`, `47 ↦ 48`, `53 ↦ 48`, `59 ↦ 48`.  So `ℓ = 11` is a
+*second* witness for the minimum `8`, which the table above does not
+record.  Jacobian orders
+`#J_0(63)(𝔽_ℓ) = det(ℓ + 1 − T_ℓ ∣ S_2(Γ_0(63)))`: `6144` at `ℓ = 5`,
+then `135168, 589824, 2156544, 2359296, 7796736, 25804800, 42467328,
+42467328, 116582400, 254803968, 249495552, 396472320, 589234176`.  Their
+`gcd` is `6144 = 2¹¹·3`, attained already at `ℓ = 5`. -/
 theorem y0HasNoRationalPoint_sixtyThree : Y0HasNoRationalPoint 63 :=
   sorry
 
@@ -2341,7 +2401,22 @@ ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `rank J_0(75)(ℚ) = 0` (all four newform factors have `L(A, 1) ≠ 0`).
 `X_0(75)` has `12` cusps of which `4` are rational, and no prime
 `ℓ < 100` attains `#X_0(75)(𝔽_ℓ) = 4`: the minimum over `3 ≤ ℓ < 60` is
-`8`, at `ℓ = 7`.  `#J_0(75)(ℚ)` divides `2560`. -/
+`8`, at `ℓ = 7`.  `#J_0(75)(ℚ)` divides `2560`.
+
+SIEVE DATA (independently recomputed with Magma 2026-07-26; see the
+`N = 45` docstring for provenance and for the shared warning that these
+four are *not* harder than the seven single-prime levels at this pin).
+`#X_0(75)(𝔽_ℓ)` over `3 ≤ ℓ < 60`: `7 ↦ 8`, `11 ↦ 20`, `13 ↦ 16`,
+`17 ↦ 16`, `19 ↦ 18`, `23 ↦ 24`, `29 ↦ 16`, `31 ↦ 38`, `37 ↦ 48`,
+`41 ↦ 28`, `43 ↦ 40`, `47 ↦ 40`, `53 ↦ 64`, `59 ↦ 92`.  The minimum `8`
+at `ℓ = 7` is attained ONCE.  Jacobian orders
+`#J_0(75)(𝔽_ℓ) = det(ℓ + 1 − T_ℓ ∣ S_2(Γ_0(75)))`: `28160` at `ℓ = 7`,
+then `409600, 599040, 1638400, 2560000, 7464960, 13107200, 40140800,
+92897280, 81920000, 148608000, 206080000, 522649600, 1284505600`.  Their
+`gcd` is `2560 = 2⁹·5`.  Unlike the other three sieve levels the bound is
+NOT attained at the best counting prime — `#J(𝔽_7) = 11·2560` — so at
+least two primes are needed here even to pin the order of `J_0(75)(ℚ)`,
+before any question about which torsion points are cuspidal arises. -/
 theorem y0HasNoRationalPoint_seventyFive : Y0HasNoRationalPoint 75 :=
   sorry
 

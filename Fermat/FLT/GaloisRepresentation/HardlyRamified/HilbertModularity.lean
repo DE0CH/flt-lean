@@ -11189,8 +11189,32 @@ theorem exists_hilbertHeckeDatum_of_hilbertHeckeAlgebra
     (T₀ : HilbertHeckeAlgebra ℓ F ρbar) :
     ∃ (T : HilbertHeckeAlgebra ℓ F ρbar) (𝒟T : HilbertDeformationDatum ℓ F ρbar)
       (e : 𝒟T.R ≃ₐ[ℤ_[ℓ]] T.T), ∀ g : Γ F,
-        ((𝒟T.ρ g).charpoly).map e.toAlgHom.toRingHom = (T.ρT g).charpoly :=
-  sorry
+        ((𝒟T.ρ g).charpoly).map e.toAlgHom.toRingHom = (T.ρT g).charpoly := by
+  -- The only field a `HilbertDeformationDatum` demands that a
+  -- `HilbertHeckeAlgebra` does not carry verbatim; everything else is
+  -- transported field for field.
+  haveI hnoeth : IsNoetherianRing T₀.T := IsNoetherianRing.of_finite ℤ_[ℓ] T₀.T
+  refine ⟨T₀,
+    { R := T₀.T
+      isNoetherianRing := hnoeth
+      isAdic := T₀.isAdic
+      isAdicComplete := T₀.isAdicComplete
+      ρ := T₀.ρT
+      isHilbertHardlyRamified := T₀.isHilbertHardlyRamified
+      π := T₀.πT
+      π_surjective := T₀.πT_surjective
+      resid := T₀.residT },
+    AlgEquiv.refl, fun g => ?_⟩
+  -- `e = AlgEquiv.refl`, so the transport is `Polynomial.map (RingHom.id _)`.
+  -- Stated as an explicit rewrite rather than by `simp`: the project simp set
+  -- contains sorried lemmas, and using it here would taint this proof term
+  -- with `sorryAx` for no mathematical reason.
+  show ((T₀.ρT g).charpoly).map
+      (AlgEquiv.refl (R := ℤ_[ℓ]) (A₁ := T₀.T)).toAlgHom.toRingHom
+    = (T₀.ρT g).charpoly
+  rw [show (AlgEquiv.refl (R := ℤ_[ℓ]) (A₁ := T₀.T)).toAlgHom.toRingHom
+      = RingHom.id T₀.T from rfl]
+  exact Polynomial.map_id
 
 /-! #### Teichmüller lifting into a closed subring
 
