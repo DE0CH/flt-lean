@@ -11905,11 +11905,347 @@ theorem exists_ribet_walk_swap_order
   | add x₁ x₂ h₁ h₂ => simp only [map_add, h₁, h₂]
 
 set_option linter.unusedVariables false in
+/-- **One step of Ribet's lattice descent** (Ribet cut E2a-ii-walk,
+item (c1); SORRY LEAF, carved out of
+`exists_stable_line_of_ribet_walk_split` 2026-07-25): a GOOD stable
+lattice — one whose reduction carries a Galois-FIXED nonzero vector
+`v'` — that SPLITS, i.e. whose reduction also carries a `ψ`-eigenvector
+`w` outside `kk' ∙ v'`, has a distinguished stable sublattice of
+colength ONE which is again good, namely the preimage `N` of `kk' ∙ w`
+under the reduction `Λ ↠ Λ/𝔪Λ = kk' ⊗ Λ`. It is returned in FRAME
+form: a representation `ρ''` on the standard frame `Fin 2 → O`
+together with the inclusion `f` of `N` into the ambient frame
+(`LinearMap.range f = N`), intertwining `ρ''` into `ρ'`.
+
+Classical source: Ribet, *A modular construction of unramified
+`p`-extensions of `ℚ(μ_p)`*, Invent. Math. 34 (1976), Prop. 2.1;
+Bellaïche–Chenevier, Astérisque 324 (2009), ch. 1.
+
+WHY EACH CONJUNCT OF THE CONCLUSION IS THERE — all of them are
+load-bearing for the inverse limit `exists_stable_line_of_ribet_descent`,
+and the first three were MISSING from this cut as it was originally
+recorded (see the faithfulness note on that leaf):
+* `Ideal.span {det f} = 𝔪` says the step crosses exactly ONE edge of
+  the Bruhat–Tits tree of `O`-lattices: `length (Λ/N) = v (det f) = 1`.
+  The weaker `det f ∈ 𝔪` is satisfied by the HOMOTHETY `f = π • id`,
+  whose "descent" is `Λ ↦ 𝔪Λ`; an infinite walk of those has
+  intersection `0` and produces no line at all.
+* `v' ∉ range (f ⊗ kk')` is NON-BACKTRACKING. The residual image of
+  `N` is the line `kk' ∙ w`, while the direction back towards the
+  PREVIOUS lattice is, seen inside `Λ'`, exactly the fixed line
+  `kk' ∙ v'` (the sub-character of a good lattice is trivial, and
+  `𝔪Λ_prev/𝔪Λ' ≅ Λ_prev/Λ'` is the trivial character). Without this
+  clause the walk may oscillate, `Λ ⊃ Λ₁ ⊃ 𝔪Λ ⊃ 𝔪Λ₁ ⊃ ⋯`, again with
+  intersection `0`.
+* the biconditional `(1 ⊗ f x = 0) ↔ (1 ⊗ x ∈ kk' ∙ v'')` identifies,
+  INSIDE THE CHILD'S FRAME, the sublattice `f⁻¹(𝔪Λ')` — which is where
+  the parent's homothety `𝔪Λ'` sits — with the preimage of the child's
+  own fixed line. It is what lets the NEXT step's non-backtracking
+  clause be read as "the grandchild is not `𝔪 ·` the parent".
+* `v'' ≠ 0`, fixed, with `ψ` on the quotient: the child is again GOOD,
+  so the walk continues. Concretely `v''` is the reduction of the `z`
+  with `f z = π • λ`, where `λ` reduces to `v'`: the sub-character of
+  `N` is `𝔪Λ'/𝔪N ≅ Λ'/N`, trivial, and the quotient is
+  `N/𝔪Λ' = kk' ∙ w`, on which `ρ'` acts by `ψ`.
+
+ROUTE (worked out 2026-07-25 for whoever owns this leaf).
+1. `N := red⁻¹(kk' ∙ w)` is `ρ'`-stable because `w` is a
+   `ψ`-eigenvector, contains `𝔪Λ` because `algebraMap` kills `𝔪`
+   (`hker'`), and is `≠ ⊤` because `red` is onto (`hsurj'`) while
+   `kk' ∙ w ≠ ⊤` by `finrank kk' (kk' ⊗ O²) = 2`.
+2. FRAME BRICK — the only genuinely infrastructural step. `N` is free
+   of rank `2` over the DVR `O` (`Submodule.smithNormalForm`), so a
+   basis of `N` gives `f : O² ↪ O²` with `range f = N`, and `ρ''` is
+   `ρ'` conjugated through `f`. CONTINUITY of `g ↦ ρ'' g` is the only
+   nontrivial point, `f` not being invertible; it follows from the
+   identity `det f • ρ'' g = adj f ∘ ρ' g ∘ f`, whose right-hand side
+   is a continuous `O`-LINEAR image of `ρ' g`, once one knows that
+   `(det f) • ·` is a topological embedding of `End_O (O²)`. That is
+   `Continuous.isClosedEmbedding` for a continuous injection from a
+   COMPACT to a HAUSDORFF space, and `CompactSpace O` / `T2Space O`
+   hold because `O` is free of finite rank over `ℤ_p` carrying the
+   module topology — the `Module.Free.chooseBasis` homeomorphism
+   already used elsewhere in this file. Freeness is
+   `Module.free_of_finite_type_torsion_free'`, its torsion-freeness
+   coming from `IsDomain O` plus injectivity of `ℤ_p → O`: a
+   `ℤ_p`-module-finite domain killed by `p` would be a finite domain,
+   hence a field, and `O` is not a field (`IsDiscreteValuationRing`).
+3. `Ideal.span {det f} = 𝔪` is `length (Λ/N) = 1`. This pin has no
+   `det`-versus-colength lemma; the practical route is to take `f`
+   FROM `Submodule.smithNormalForm`, where `det f` is a unit times the
+   product `a₁a₂` of the elementary divisors and `Λ/N ≅ O/a₁ ⊕ O/a₂`
+   is `1`-dimensional over `kk'` by step 1.
+4. The residual data. Pick `λ` with `red λ = v'` and `z` with
+   `f z = π • λ` (possible since `π • λ ∈ 𝔪Λ ⊆ N`); put `v'' := red z`.
+   Then `ker (f ⊗ kk') = kk' ∙ v''` and `range (f ⊗ kk') = kk' ∙ w`,
+   from which the fixed-vector and `ψ`-quotient clauses are formal:
+   `(f ⊗ kk') ∘ (ρ'' ⊗ kk') g = (ρ' ⊗ kk') g ∘ (f ⊗ kk')` and `ρ'`
+   acts by `ψ` on `kk' ∙ w`. -/
+theorem exists_ribet_walk_descent_step
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    [Algebra O kk'] [ContinuousSMul O kk']
+    (hsurj' : Function.Surjective (algebraMap O kk'))
+    (hopen' : IsOpen ((IsLocalRing.maximalIdeal O : Ideal O) : Set O))
+    (hker' : RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O)
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk')
+    (ρ' : GaloisRep ℚ O (Fin 2 → O))
+    (v' w : kk' ⊗[O] (Fin 2 → O))
+    (hv' : v' ≠ 0)
+    (hfix' : ∀ g, (ρ'.baseChange kk') g v' = v')
+    (hw : w ∉ Submodule.span kk' {v'})
+    (hweig : ∀ g, (ρ'.baseChange kk') g w = ψ g • w) :
+    ∃ (ρ'' : GaloisRep ℚ O (Fin 2 → O))
+      (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O))
+      (v'' : kk' ⊗[O] (Fin 2 → O)),
+      LinearMap.det f ≠ 0 ∧
+      Ideal.span {LinearMap.det f} = IsLocalRing.maximalIdeal O ∧
+      (∀ g x, f (ρ'' g x) = ρ' g (f x)) ∧
+      v' ∉ LinearMap.range (LinearMap.baseChange kk' f) ∧
+      (∀ x : Fin 2 → O, (1 : kk') ⊗ₜ[O] (f x) = 0 ↔
+        (1 : kk') ⊗ₜ[O] x ∈ Submodule.span kk' {v''}) ∧
+      v'' ≠ 0 ∧
+      (∀ g, (ρ''.baseChange kk') g v'' = v'') ∧
+      (∀ g x, ∃ c : kk', (ρ''.baseChange kk') g x - ψ g • x = c • v'') := by
+  classical
+  -- the reduction map `Λ ↠ Λ/𝔪Λ = kk' ⊗ Λ`
+  obtain ⟨red, hred⟩ : ∃ red : (Fin 2 → O) →ₗ[O] (kk' ⊗[O] (Fin 2 → O)),
+      ∀ x, red x = (1 : kk') ⊗ₜ[O] x :=
+    ⟨TensorProduct.mk O kk' (Fin 2 → O) 1, fun _ => rfl⟩
+  have hredequiv : ∀ (g : Field.absoluteGaloisGroup ℚ) (x : Fin 2 → O),
+      red (ρ' g x) = (ρ'.baseChange kk') g (red x) := by
+    intro g x
+    rw [hred, hred]
+    exact (GaloisRep.baseChange_tmul ρ' g 1 x).symm
+  have hredsurj : Function.Surjective red := by
+    intro y
+    induction y using TensorProduct.induction_on with
+    | zero => exact ⟨0, by rw [hred]; simp⟩
+    | tmul c x =>
+        obtain ⟨a, ha⟩ := hsurj' c
+        refine ⟨a • x, ?_⟩
+        rw [hred, ← TensorProduct.smul_tmul, Algebra.smul_def, mul_one, ha]
+    | add y₁ y₂ h₁ h₂ =>
+        obtain ⟨x₁, hx₁⟩ := h₁
+        obtain ⟨x₂, hx₂⟩ := h₂
+        exact ⟨x₁ + x₂, by rw [map_add, hx₁, hx₂]⟩
+  -- `v'` and `w` are independent, so `v' ∉ kk' ∙ w` as well
+  have hvw : v' ∉ Submodule.span kk' {w} := by
+    intro hmem
+    obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp hmem
+    have hc0 : c ≠ 0 := by
+      intro h
+      rw [h, zero_smul] at hc
+      exact hv' hc.symm
+    exact hw (Submodule.mem_span_singleton.mpr
+      ⟨c⁻¹, by rw [← hc, smul_smul, inv_mul_cancel₀ hc0, one_smul]⟩)
+  -- the walked lattice `N = red⁻¹(kk' ∙ w)`
+  obtain ⟨N, hN⟩ : ∃ N : Submodule O (Fin 2 → O),
+      ∀ x, x ∈ N ↔ red x ∈ Submodule.span kk' {w} :=
+    ⟨Submodule.comap red ((Submodule.span kk' {w}).restrictScalars O),
+      fun _ => Iff.rfl⟩
+  have hNstable : ∀ g x, x ∈ N → ρ' g x ∈ N := by
+    intro g x hx
+    rw [hN] at hx ⊢
+    obtain ⟨s, hs⟩ := Submodule.mem_span_singleton.mp hx
+    rw [hredequiv, ← hs, map_smul, hweig g, smul_smul]
+    exact Submodule.smul_mem _ _ (Submodule.mem_span_singleton_self w)
+  have hNtop : N ≠ ⊤ := by
+    intro htop
+    have hspanall : Submodule.span kk' {w} = ⊤ := by
+      refine eq_top_iff.mpr fun y _ => ?_
+      obtain ⟨x, rfl⟩ := hredsurj y
+      exact (hN x).mp (by rw [htop]; exact Submodule.mem_top)
+    exact hvw (by rw [hspanall]; exact Submodule.mem_top)
+  have hNmax : ∀ m ∈ IsLocalRing.maximalIdeal O, ∀ x : Fin 2 → O, m • x ∈ N := by
+    intro m hm x
+    rw [hN, hred]
+    have hm0 : algebraMap O kk' m = 0 := by
+      rw [← RingHom.mem_ker, hker']; exact hm
+    have h2 : (1 : kk') ⊗ₜ[O] (m • x) = (algebraMap O kk' m) ⊗ₜ[O] x := by
+      rw [← TensorProduct.smul_tmul, Algebra.smul_def, mul_one]
+    rw [h2, hm0, TensorProduct.zero_tmul]
+    exact Submodule.zero_mem _
+  -- FRAME BRICK (steps 2 and 3 of the ROUTE above): present the stable
+  -- sublattice `N` on the standard frame `Fin 2 → O`
+  have hframe : (∀ g x, x ∈ N → ρ' g x ∈ N) → N ≠ ⊤ →
+      (∀ m ∈ IsLocalRing.maximalIdeal O, ∀ x : Fin 2 → O, m • x ∈ N) →
+      ∃ (ρ'' : GaloisRep ℚ O (Fin 2 → O))
+        (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O)),
+        LinearMap.range f = N ∧
+        Ideal.span {LinearMap.det f} = IsLocalRing.maximalIdeal O ∧
+        (∀ g x, f (ρ'' g x) = ρ' g (f x)) := by
+    sorry
+  obtain ⟨ρ'', f, hfrange, hfdet, hfequiv⟩ := hframe hNstable hNtop hNmax
+  have hdet0 : LinearMap.det f ≠ 0 := by
+    intro h
+    refine IsDiscreteValuationRing.not_a_field O ?_
+    rw [← hfdet, h]
+    exact Ideal.span_singleton_eq_bot.mpr rfl
+  -- the residual image of `N` is the line `kk' ∙ w`, which misses `v'`
+  have hrangesub : ∀ y : kk' ⊗[O] (Fin 2 → O),
+      LinearMap.baseChange kk' f y ∈ Submodule.span kk' {w} := by
+    intro y
+    induction y using TensorProduct.induction_on with
+    | zero => simp
+    | tmul c x =>
+        have hx : red (f x) ∈ Submodule.span kk' {w} :=
+          (hN (f x)).mp (hfrange ▸ LinearMap.mem_range_self f x)
+        have hcx : c ⊗ₜ[O] f x = c • ((1 : kk') ⊗ₜ[O] (f x)) := by
+          rw [TensorProduct.smul_tmul', smul_eq_mul, mul_one]
+        rw [LinearMap.baseChange_tmul, hcx, ← hred]
+        exact Submodule.smul_mem _ _ hx
+    | add y₁ y₂ h₁ h₂ => simpa using Submodule.add_mem _ h₁ h₂
+  have hv'notrange : v' ∉ LinearMap.range (LinearMap.baseChange kk' f) := by
+    intro hmem
+    obtain ⟨y, hy⟩ := hmem
+    exact hvw (hy ▸ hrangesub y)
+  -- the child's fixed vector: `f z = ϖ • lam` with `lam` reducing to `v'`
+  obtain ⟨ϖ, hϖirr⟩ := IsDiscreteValuationRing.exists_irreducible O
+  have hϖmem : ϖ ∈ IsLocalRing.maximalIdeal O := by
+    rw [hϖirr.maximalIdeal_eq]
+    exact Ideal.mem_span_singleton_self ϖ
+  obtain ⟨lam, hlam⟩ := hredsurj v'
+  obtain ⟨z, hz⟩ : ∃ z, f z = ϖ • lam := by
+    rw [← LinearMap.mem_range, hfrange]
+    exact hNmax ϖ hϖmem lam
+  -- the residual package of the child (step 4 of the ROUTE above)
+  have hres : f z = ϖ • lam → red lam = v' →
+      (∀ x : Fin 2 → O, (1 : kk') ⊗ₜ[O] (f x) = 0 ↔
+        (1 : kk') ⊗ₜ[O] x ∈ Submodule.span kk' {red z}) ∧
+      red z ≠ 0 ∧
+      (∀ g, (ρ''.baseChange kk') g (red z) = red z) ∧
+      (∀ g (x : kk' ⊗[O] (Fin 2 → O)), ∃ c : kk',
+        (ρ''.baseChange kk') g x - ψ g • x = c • red z) := by
+    sorry
+  obtain ⟨hkerf, hz0, hfixz, hquoz⟩ := hres hz hlam
+  exact ⟨ρ'', f, red z, hdet0, hfdet, hfequiv, hv'notrange,
+    hkerf, hz0, hfixz, hquoz⟩
+
+set_option linter.unusedVariables false in
+/-- **The inverse limit of Ribet's descent** (Ribet cut E2a-ii-walk,
+item (c2); SORRY LEAF, carved out of
+`exists_stable_line_of_ribet_walk_split` 2026-07-25): an infinite
+non-backtracking chain of single-edge stable sublattices, each again
+good, converges to a `ρO`-stable LINE of the generic fibre
+`ℚ̄_p ⊗_O O²`. The step is exposed as a ∀-oracle rather than applied
+once because the RECURSION lives here.
+
+FAITHFULNESS — WHY THE ORACLE CARRIES THE THREE PROPERNESS CLAUSES
+(found and repaired 2026-07-25). This leaf was first recorded, as a
+sorried `have` inside `exists_stable_line_of_ribet_walk_split`, with an
+oracle whose only properness clauses were `det f ≠ 0` and
+`det f ∈ 𝔪`. That oracle is satisfied, for EVERY good lattice
+whatsoever, by the homothety
+`ρ'' := ρ'`, `f := π • LinearMap.id`, `v'' := v'`
+(`det (π • id) = π² ≠ 0` and `π² ∈ 𝔪`, the intertwining is
+`π • ρ' g x = ρ' g (π • x)`, and the residual data is unchanged). So as
+a TOP-LEVEL statement that cut is FALSE: take any irreducible `ρO`
+admitting a good lattice — Ribet's own `X₀(11)` at `p = 5`, residually
+`1 ⊕ ω` — and the conclusion asserts a stable line, i.e. reducibility.
+As a `have` it was not false, because `hsplit` was still in scope and
+could be used to prove the parent outright; but it was a VOID cut,
+since nothing weaker than the parent theorem could be derived from that
+oracle. The clauses now demanded — uniformiser determinant,
+non-backtracking, and the identification of `f⁻¹(𝔪Λ')` — are exactly
+the geodesic conditions in the Bruhat–Tits tree, and each is produced
+by the honest construction in `exists_ribet_walk_descent_step`.
+
+ROUTE (worked out 2026-07-25 for whoever owns this leaf).
+* RECURSION. Feed `hstep` the datum `(ρ₁, e₁, v₁)` and, at each stage,
+  the child together with the generic identification
+  `eₙ₊₁ := eₙ ∘ (fₙ ⊗ ℚ̄_p)`, which is a `LinearEquiv` because
+  `det (fₙ ⊗ ℚ̄_p) = algebraMap (det fₙ) ≠ 0` by `hOinj`. This produces
+  `ρₙ, fₙ, vₙ` for all `n` (`Nat.rec` plus choice).
+* THE CHAIN. `Fₙ := f₀ ∘ ⋯ ∘ fₙ₋₁`, `Λₙ := range Fₙ ⊆ O²`. Each `Λₙ`
+  is `ρ₁`-stable (`Fₙ` intertwines `ρₙ` into `ρ₁`), `Λₙ₊₁ ⊆ Λₙ`, and
+  `length (Λₙ/Λₙ₊₁) = 1`, hence `𝔪Λₙ ⊆ Λₙ₊₁`.
+* NO BACKTRACKING. `Fₙ₊₁⁻¹(𝔪Λₙ) = fₙ⁻¹(𝔪Λ)`, which by the step's
+  biconditional is the preimage of `kk' ∙ vₙ₊₁`; the step's
+  non-backtracking clause at stage `n+1` then says
+  `range fₙ₊₁ ⊄ fₙ⁻¹(𝔪Λ)`, i.e. `Λₙ₊₂ ≠ 𝔪Λₙ`.
+* THE LIMIT. A single-edge non-backtracking ray is a GEODESIC ray, so
+  `d(Λ₀, Λₙ) = n` and the elementary divisors of `Λₙ ⊆ Λ₀` are
+  `(1, πⁿ)`: every `Λₙ` contains a vector PRIMITIVE in `Λ₀`. `Λ₀ ≅ O²`
+  is COMPACT (`O` is free of finite rank over `ℤ_p` with the module
+  topology) and each `Λₙ` is closed, so a cluster point `z` of a
+  sequence of primitive `zₙ ∈ Λₙ` lies in every `Λₘ` and is primitive,
+  in particular `z ≠ 0`. `T := ⋂ Λₙ` is `ρ₁`-stable of rank `≤ 1` (a
+  rank-`2` submodule would contain some `𝔪ᵐΛ₀`, whose colength `2m`
+  bounds every `length (Λ₀/Λₙ) = n`), so `ρ₁ g z ∈ Frac O ∙ z`; then
+  `e₁ (1 ⊗ z)` is the required line of `ℚ̄_p ⊗ O²`, `hOinj` turning
+  `b • ρ₁ g z = a • z` into a scalar relation over `ℚ̄_p`.
+
+MISSING FROM MATHLIB, in dependency order, for whoever takes this:
+1. `CompactSpace` and `T2Space` for a module-finite `ℤ_p`-algebra
+   carrying the module topology (a few lines from
+   `Module.Free.chooseBasis`; the pattern is already in this file).
+2. `length (Λ / f Λ) = v (det f)` for an injective endomorphism of a
+   free rank-`n` module over a DVR. This pin has
+   `Submodule.smithNormalForm` but no link from it to `LinearMap.det`.
+3. The tree lemma "locally geodesic ⇒ globally geodesic", in the
+   concrete form `aₙ = 0` for the elementary divisors `(π^aₙ, π^bₙ)`
+   of `Λₙ ⊆ Λ₀`. -/
+theorem exists_stable_line_of_ribet_descent
+    {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
+    [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
+    [IsModuleTopology ℤ_[p] O] [IsDiscreteValuationRing O]
+    [Algebra O (AlgebraicClosure ℚ_[p])]
+    [ContinuousSMul O (AlgebraicClosure ℚ_[p])]
+    (hOinj : Function.Injective (algebraMap O (AlgebraicClosure ℚ_[p])))
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk']
+    [TopologicalSpace kk'] [DiscreteTopology kk'] [IsTopologicalRing kk']
+    [Algebra O kk'] [ContinuousSMul O kk']
+    (hsurj' : Function.Surjective (algebraMap O kk'))
+    (hker' : RingHom.ker (algebraMap O kk') = IsLocalRing.maximalIdeal O)
+    (ψ : Field.absoluteGaloisGroup ℚ →* kk')
+    {ρO : GaloisRep ℚ O (Fin 2 → O)}
+    (ρ₁ : GaloisRep ℚ O (Fin 2 → O))
+    (e₁ : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+      ≃ₗ[AlgebraicClosure ℚ_[p]]
+        ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+    (v₁ : kk' ⊗[O] (Fin 2 → O))
+    (he₁ : ∀ g x, e₁ ((ρ₁.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+      (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e₁ x))
+    (hv₁ : v₁ ≠ 0)
+    (hfix₁ : ∀ g, (ρ₁.baseChange kk') g v₁ = v₁)
+    (hquo₁ : ∀ g x, ∃ c : kk', (ρ₁.baseChange kk') g x - ψ g • x = c • v₁)
+    (hstep : ∀ (ρ' : GaloisRep ℚ O (Fin 2 → O))
+      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
+        ≃ₗ[AlgebraicClosure ℚ_[p]]
+          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
+      (v' : kk' ⊗[O] (Fin 2 → O)),
+      (∀ g x, e' ((ρ'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
+        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) →
+      v' ≠ 0 →
+      (∀ g, (ρ'.baseChange kk') g v' = v') →
+      (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - ψ g • x = c • v') →
+      ∃ (ρ'' : GaloisRep ℚ O (Fin 2 → O))
+        (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O))
+        (v'' : kk' ⊗[O] (Fin 2 → O)),
+        LinearMap.det f ≠ 0 ∧
+        Ideal.span {LinearMap.det f} = IsLocalRing.maximalIdeal O ∧
+        (∀ g x, f (ρ'' g x) = ρ' g (f x)) ∧
+        v' ∉ LinearMap.range (LinearMap.baseChange kk' f) ∧
+        (∀ x : Fin 2 → O, (1 : kk') ⊗ₜ[O] (f x) = 0 ↔
+          (1 : kk') ⊗ₜ[O] x ∈ Submodule.span kk' {v''}) ∧
+        v'' ≠ 0 ∧
+        (∀ g, (ρ''.baseChange kk') g v'' = v'') ∧
+        (∀ g x, ∃ c : kk', (ρ''.baseChange kk') g x - ψ g • x = c • v'')) :
+    ∃ z : (AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O), z ≠ 0 ∧
+      ∀ g, (ρO.baseChange (AlgebraicClosure ℚ_[p])) g z ∈
+        Submodule.span (AlgebraicClosure ℚ_[p]) {z} := by
+  sorry
+
+set_option linter.unusedVariables false in
 set_option backward.isDefEq.respectTransparency false in
 /-- **Split everywhere forces a stable line in the generic fibre**
-(Ribet cut E2a-ii-walk, item (c); PARTIALLY PROVEN — the passage from
-a stable generic LINE to the conclusion is proven, two sorried `have`s
-(`hstep`, `hlimit`) remain; carved out 2026-07-25
+(Ribet cut E2a-ii-walk, item (c); PROVEN 2026-07-25 as the assembly of
+the two carved-out leaves `exists_ribet_walk_descent_step` and
+`exists_stable_line_of_ribet_descent`; itself carved out 2026-07-25
 from `exists_ribet_walk_stable_line`): if EVERY stable lattice whose
 reduction has the trivial sub-character splits — carries a
 `ψ`-eigenvector outside the fixed line — then the generic fibre
@@ -11942,29 +12278,42 @@ a `2`-dimensional space is neither `⊥` nor `⊤`. Hypothesis-honest:
 `htr`/`hdet` are what make every lattice of the walk a GOOD lattice,
 i.e. re-feedable to `hsplit`.
 
-DECOMPOSITION (2026-07-25): the assembly below is PROVEN and the leaf
-is now the two sorried `have`s `hstep` and `hlimit`, cut exactly along
-the seam of Ribet's Prop. 2.1:
-* `hstep` — ONE step of the descent. From a good lattice it produces
-  the next one together with the inclusion in frame form: an `O`-linear
-  `f` with `det f ≠ 0` (so the generic fibres agree) and
-  `det f ∈ 𝔪` (so the step is PROPER — this is the discreteness of the
-  valuation entering, and it is what forbids stabilisation). It is the
-  same construction as `exists_ribet_walk_swap_order`'s `hwalk`, run
-  at the `ψ`-eigenvector supplied by `hsplit` instead of at the
-  residual `ψ`-line, and it is the only consumer of `hsplit`/`htr`/`hdet`.
-* `hlimit` — the INVERSE LIMIT. Given the step as an oracle and the
-  starting good lattice `(ρ₁, e₁, v₁)`, it iterates and assembles the
-  successive `ψ`-eigenlines into a single `ρO`-stable `ℚ̄_p`-LINE of
-  the generic fibre (`O` is complete, being module-finite over `ℤ_p`
-  in the module topology, and `Λ₁` is compact). The recursion lives
-  here, which is why the step is exposed as a ∀-statement rather than
-  applied once.
-What is PROVEN in the assembly is the passage from that stable line to
-the conclusion: `U := ℚ̄_p ∙ z` is `≠ ⊥` because `z ≠ 0`, `≠ ⊤` because
+DECOMPOSITION (2026-07-25, RE-CUT the same day; the sorried `have`s
+`hstep`/`hlimit` recorded here earlier are now the top-level leaves
+`exists_ribet_walk_descent_step` and
+`exists_stable_line_of_ribet_descent`, and the cut between them has
+been REPAIRED — see the faithfulness note on the second):
+* the STEP takes a good lattice and the `ψ`-eigenvector that `hsplit`
+  supplies for it, and returns the next good lattice together with the
+  inclusion in frame form: an `O`-linear `f` whose determinant
+  GENERATES `𝔪` (one edge of the Bruhat–Tits tree), which does not
+  point back at the previous lattice, and which locates the parent's
+  homothety `𝔪Λ'` inside the child's frame. The earlier version of
+  this cut asked only for `det f ∈ 𝔪`, which the homothety
+  `f = π • id` satisfies; that made the limit half of the cut void
+  (as a top-level statement, outright false).
+* the LIMIT takes the step as a ∀-oracle together with the starting
+  good lattice `(ρ₁, e₁, v₁)` and assembles the geodesic ray of
+  lattices into a single `ρO`-stable `ℚ̄_p`-LINE of the generic fibre
+  (`O` is compact, being module-finite over `ℤ_p` in the module
+  topology). The recursion lives there, which is why the step is
+  exposed as a ∀-statement rather than applied once.
+What is PROVEN in the assembly below is (i) the application of
+`hsplit` that turns the ∀-oracle of the limit leaf into the step leaf,
+and (ii) the passage from a stable line to the conclusion:
+`U := ℚ̄_p ∙ z` is `≠ ⊥` because `z ≠ 0`, `≠ ⊤` because
 `finrank (ℚ̄_p ∙ z) = 1 < 2 = finrank (ℚ̄_p ⊗_O O²)`
 (`Algebra.TensorProduct.basis` on `Pi.basisFun`), and stable because a
-span of a single stable vector is. -/
+span of a single stable vector is.
+
+HYPOTHESES NOT USED BY THIS ASSEMBLY (2026-07-25): `hψ`, `htr` and
+`hdet`. They are what pin the residual characters to `{1, ψ}`, and
+after the re-cut that content is carried entirely by `hfix₁`/`hquo₁`
+(goodness of the starting lattice) and propagated by the step, so
+neither leaf needs them. They are kept in the signature because the
+consumer `exists_ribet_walk_stable_line` supplies them positionally and
+because they are what makes the hypothesis set inhabited; nothing about
+the statement is weakened by their being unused here. -/
 theorem exists_stable_line_of_ribet_walk_split
     {O : Type u} [CommRing O] [Algebra ℤ_[p] O] [IsDomain O]
     [Module.Finite ℤ_[p] O] [TopologicalSpace O] [IsTopologicalRing O]
@@ -12018,61 +12367,15 @@ theorem exists_stable_line_of_ribet_walk_split
     rw [Module.finrank_eq_card_basis (Algebra.TensorProduct.basis
       (AlgebraicClosure ℚ_[p]) (Pi.basisFun O (Fin 2)))]
     simp
-  -- ONE step of Ribet's descent: a good lattice yields a strictly smaller
-  -- good lattice, the inclusion being an `O`-linear map of nonzero,
-  -- NON-UNIT determinant
-  have hstep : ∀ (ρ' : GaloisRep ℚ O (Fin 2 → O))
-      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
-        ≃ₗ[AlgebraicClosure ℚ_[p]]
-          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
-      (v' : kk' ⊗[O] (Fin 2 → O)),
-      (∀ g x, e' ((ρ'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
-        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) →
-      v' ≠ 0 →
-      (∀ g, (ρ'.baseChange kk') g v' = v') →
-      (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - ψ g • x = c • v') →
-      ∃ (ρ'' : GaloisRep ℚ O (Fin 2 → O))
-        (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O))
-        (v'' : kk' ⊗[O] (Fin 2 → O)),
-        LinearMap.det f ≠ 0 ∧
-        LinearMap.det f ∈ IsLocalRing.maximalIdeal O ∧
-        (∀ g x, f (ρ'' g x) = ρ' g (f x)) ∧
-        v'' ≠ 0 ∧
-        (∀ g, (ρ''.baseChange kk') g v'' = v'') ∧
-        (∀ g x, ∃ c : kk',
-          (ρ''.baseChange kk') g x - ψ g • x = c • v'') := by
-    sorry
-  -- the inverse limit of the descent is a `ρO`-stable line of the generic fibre
-  have hlimit : (∀ (ρ' : GaloisRep ℚ O (Fin 2 → O))
-      (e' : ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O))
-        ≃ₗ[AlgebraicClosure ℚ_[p]]
-          ((AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O)))
-      (v' : kk' ⊗[O] (Fin 2 → O)),
-      (∀ g x, e' ((ρ'.baseChange (AlgebraicClosure ℚ_[p])) g x) =
-        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e' x)) →
-      v' ≠ 0 →
-      (∀ g, (ρ'.baseChange kk') g v' = v') →
-      (∀ g x, ∃ c : kk', (ρ'.baseChange kk') g x - ψ g • x = c • v') →
-      ∃ (ρ'' : GaloisRep ℚ O (Fin 2 → O))
-        (f : (Fin 2 → O) →ₗ[O] (Fin 2 → O))
-        (v'' : kk' ⊗[O] (Fin 2 → O)),
-        LinearMap.det f ≠ 0 ∧
-        LinearMap.det f ∈ IsLocalRing.maximalIdeal O ∧
-        (∀ g x, f (ρ'' g x) = ρ' g (f x)) ∧
-        v'' ≠ 0 ∧
-        (∀ g, (ρ''.baseChange kk') g v'' = v'') ∧
-        (∀ g x, ∃ c : kk',
-          (ρ''.baseChange kk') g x - ψ g • x = c • v'')) →
-      (∀ g x, e₁ ((ρ₁.baseChange (AlgebraicClosure ℚ_[p])) g x) =
-        (ρO.baseChange (AlgebraicClosure ℚ_[p])) g (e₁ x)) →
-      v₁ ≠ 0 →
-      (∀ g, (ρ₁.baseChange kk') g v₁ = v₁) →
-      (∀ g x, ∃ c : kk', (ρ₁.baseChange kk') g x - ψ g • x = c • v₁) →
-      ∃ z : (AlgebraicClosure ℚ_[p]) ⊗[O] (Fin 2 → O), z ≠ 0 ∧
-        ∀ g, (ρO.baseChange (AlgebraicClosure ℚ_[p])) g z ∈
-          Submodule.span (AlgebraicClosure ℚ_[p]) {z} := by
-    sorry
-  obtain ⟨z, hz, hline⟩ := hlimit hstep he₁ hv₁ hfix₁ hquo₁
+  -- the descent, iterated: `hsplit` turns the limit leaf's ∀-oracle into
+  -- the step leaf, and the limit assembles the ray into a stable line
+  obtain ⟨z, hz, hline⟩ :=
+    exists_stable_line_of_ribet_descent hOinj hsurj' hker' ψ ρ₁ e₁ v₁
+      he₁ hv₁ hfix₁ hquo₁
+      (fun ρ' e' v' he' hv'0 hfix hquo => by
+        obtain ⟨w, hwmem, hweig⟩ := hsplit ρ' e' v' he' hv'0 hfix hquo
+        exact exists_ribet_walk_descent_step (p := p) hsurj' hopen' hker' ψ ρ' v' w
+          hv'0 hfix hwmem hweig)
   refine ⟨Submodule.span (AlgebraicClosure ℚ_[p]) {z}, ?_, ?_, ?_⟩
   · simpa [Submodule.span_singleton_eq_bot] using hz
   · intro htop
