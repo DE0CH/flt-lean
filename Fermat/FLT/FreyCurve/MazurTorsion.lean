@@ -4975,9 +4975,56 @@ theorem WeierstrassCurve.no_torsion_order_24 (E : WeierstrassCurve ℚ)
   simp only [Finset.mem_insert, Finset.mem_singleton] at h
   omega
 
-/-- **`X_1(25)` in Tate coordinates: the origin never has order `25`**
-(sorry node — literature citation; RESTATED in Tate coordinates and
-RE-AUDITED 2026-07-26, see the REFUTED block below): `X_1(25)` has genus
+/-- **`X_1(N)(ℚ)` is cuspidal at the seven rank-zero levels: in Tate
+coordinates the origin never has order `N`, for
+`N ∈ {11, 13, 17, 19, 21, 25, 27}`** (sorry node — ONE literature
+citation for SEVEN levels; GENERALISED from the level-`25` node
+2026-07-26, whose audit this docstring is and remains).
+
+WHY THESE SEVEN AND NOT OTHERS. The proof is the same theorem at each,
+and it is the one described in the REFUTED block below: `X_1(N)/ℚ` with
+its rational cusps, `rank J_1(N)(ℚ) = 0` (from `L(A, 1) ≠ 0` for every
+`ℚ`-simple factor `A`, via Kolyvagin–Logachev or Kato), and injectivity
+of torsion under reduction at a good odd prime. It applies exactly when
+BOTH inputs hold, and both were re-verified independently with Magma on
+2026-07-26 (untrusted searcher; statement check only, never a proof):
+
+* every `ℚ`-simple factor of `J_1(N)` has `LRatio(A, 1) ≠ 0` for
+  `N ∈ {11, 13, 17, 19, 21, 25, 27}` — the factor dimensions and ratios
+  are `11`: `(1, 1/25)`; `13`: `(2, 1/361)`; `17`: `(1, 1/16), (4,
+  1/21316)`; `19`: `(1, 1/9), (6, 1/2134521)`; `21`: `(1, 1/8), (2,
+  1/169), (2, 1/49)`; `25`: `(4, 1/5041), (8, 1/10272025)`; `27`:
+  `(1, 1/9), (12, 1/8267805027)`;
+* `min_p #X_1(N)(𝔽_p) = φ(N)/2 = #(rational cusps)` at each, with
+  `#X_1(N)(𝔽_p) = p + 1 − Tr(T_p ∣ S_2(Γ_1(N)))`: the minima are
+  `5, 6, 8, 9, 6, 10, 9` and the genera `1, 2, 5, 7, 5, 12, 13`.
+
+Embedding `X_1(N)(ℚ) ↪ J_1(N)(ℚ)` at a rational cusp and reducing at a
+good odd prime realising the minimum is then injective on the finite
+group `J_1(N)(ℚ)`, so `#X_1(N)(ℚ) ≤ φ(N)/2`, which the rational cusps
+already exhaust. Hence every rational point is a cusp — which IS this
+node.
+
+**IT BREAKS AT `37`, AND EXACTLY THERE.** `J_1(37)` has a factor of
+dimension `1` with `LRatio(1) = 0` (the elliptic curve `37a`, of rank
+`1`), alongside seven factors with `LRatio ≠ 0`. So the whole-Jacobian
+argument fails and levels `37, 43, 67, 163` need the winding /
+Eisenstein quotient instead — they are deliberately NOT in the
+hypothesis of this node. Levels `16, 18, 24` satisfy the `L(1) ≠ 0`
+half but not the point-count half, and are anyway already closed
+elementarily elsewhere in this file.
+
+Of the seven, `21` and `27` are at present closed in this file by other
+routes (`no_torsion_order_21`'s structural argument and
+`no_torsion_order_27_of_j`, Olson's CM theorem), so the levels this node
+is *currently* wired to serve are `11, 13, 17, 19, 25` — but the
+statement is proved for all seven at once, and the two extra levels cost
+nothing.
+
+Everything below is the level-`25` audit, kept verbatim because it is
+the instance where the seven-level structure was found.
+
+`X_1(25)` has genus
 `12` and no non-cuspidal
 rational point (subsumed in Mazur 1977, Thm 8). The `X_0` shortcut is
 NOT available at this level: a rational cyclic `25`-isogeny does exist
@@ -5130,12 +5177,32 @@ the point is the origin, so this node IS the plane model of `X_1(25)`
 in the `(b, c)`-coordinates rather than a statement quantified over all
 curves. The passage between the two is the PROVEN
 `exists_tateNormalForm`; everything above about genus, witnesses and
-citation is unchanged by the restatement. -/
+citation is unchanged by the restatement.
+
+GENERALISED 2026-07-26. The whole of the above is now a corollary of the
+single node `tateNormalForm_origin_order_ne_of_cuspidalRankZero`
+immediately below, which states it uniformly for the SEVEN levels whose
+proof is the same theorem. That node, not this one, is where the work
+is; this one is PROVEN from it by instantiating `N := 25`. -/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero
+    (N : ℕ)
+    (hN : N = 11 ∨ N = 13 ∨ N = 17 ∨ N = 19 ∨ N = 21 ∨ N = 25 ∨ N = 27)
+    (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ N :=
+  sorry
+
+/-- **No rational point of order `25`** (PROVEN 2026-07-26 by
+instantiating the seven-level node above at `N = 25`). All the
+mathematical content, the citation and the audit are in that node's
+docstring and in this one; nothing is specific to `25` any more. -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_25 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
     addOrderOf (Affine.Point.some 0 0 h00) ≠ 25 :=
-  sorry
+  WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero 25
+    (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))) b c h00
 
 /-- **No rational point of order `25`** (PROVEN 2026-07-26 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
@@ -5302,8 +5369,274 @@ theorem j_eq_of_x0TwentySeven_point (J x y t : ℚ)
 
 end MazurLevel27
 
+/-! ### `X_1(9) → X_0(9)`: the Kubert line, the diamond operator, and the
+Hauptmodul
+
+This block cuts `exists_x0Nine_hauptmodul` (below) into ONE proven
+rational-function identity and TWO moduli leaves. All the explicit
+formulae were found with PARI/GP (untrusted searcher, 2026-07-26) and
+are re-verified here by `ring`.
+
+THE GEOMETRY. `X_1(9)` and `X_0(9)` are both genus `0`. On `X_1(9)` the
+Hauptmodul is the classical Kubert parameter `d` of the Tate normal form
+`E(b, c) : y² + (1 − c)xy − by = x³ − bx²` with `(0,0)` of order `9`,
+namely `c = d²(d − 1)`, `b = c(d² − d + 1)` (`MazurLevel18.exists_param`).
+The covering `X_1(9) → X_0(9)` is the quotient by the diamond operators,
+a cyclic group of order `3` — `(ℤ/9)ˣ/{±1} ≅ ℤ/3` — so it is a
+`ℤ/3`-cover, and this is exactly why the Kubert parameter of a curve
+with a rational cyclic `9`-SUBGROUP need not be rational: only the
+subgroup, not a generator, is defined over `ℚ`.
+
+THE DIAMOND OPERATOR IS `d ↦ (d − 1)/d`. Computed here (2026-07-26) by
+running the Tate-normalisation algorithm on `(E(b,c), 2·(0,0))`: with
+`2·(0,0) = (b, bc)`, translating that point to the origin, shearing by
+`s = a₄'/a₃'` to kill `a₄`, and scaling by `u = a₃''/a₂''` gives
+`b' = −(d⁴ − 3d³ + 4d² − 3d + 1)/d⁵`, `c' = −(d − 1)²/d³`, hence
+`d' = c'²/(b' − c') = (d − 1)/d`. This Möbius map has order `3`
+(`d ↦ (d−1)/d ↦ −1/(d−1) ↦ d`), matching `⟨2⟩` of order `6` in `(ℤ/9)ˣ`
+acting through `(ℤ/9)ˣ/{±1}`; the same computation run on `−(0,0) = (0,b)`
+returns `d` unchanged, confirming that `⟨−1⟩` acts trivially, as it must.
+
+THE HAUPTMODUL. The invariants of `d ↦ (d − 1)/d` are generated by the
+orbit sum `d + (d−1)/d − 1/(d−1) = (d³ − 3d + 1)/(d² − d)`, and the
+normalisation that matches the `η`-quotient Hauptmodul
+`t = (η(τ)/η(9τ))³` of `X_0(9)` is
+
+    t = R(d) := 27 d(d − 1) / (d³ − 6d² + 3d + 1),
+
+pinned by the cusps: `R` kills the orbit `{0, 1, ∞}` (the three cusps of
+`X_1(9)` above the width-`9` cusp `t = 0`) and blows up exactly on
+`d³ − 6d² + 3d + 1`, the orbit above `t = ∞`; the constant `27` is fixed
+by `j₉(t) ~ 3²⁷/t⁹` against `j ~ −1/d⁹` at `d → 0`. `R ∘ γ = R` is a
+two-line `ring` check: with `γ(d) = (d−1)/d`, the denominator satisfies
+`γ*(d³ − 6d² + 3d + 1) = −(d³ − 6d² + 3d + 1)/d³` and the numerator
+`γ*(27d(d−1)) = −27(d−1)/d²`.
+
+WHY THE FINAL IDENTITY IS CHEAP. Writing `q = d³ − 6d² + 3d + 1`,
+`m = 27d(d − 1)`, `e = d² − d + 1`, the three polynomials occurring in
+`j₉` factor completely along the Kubert line:
+
+    m + 9q                        = 9 (d³ − 3d² + 1)
+    m³ + 243m²q + 2187mq² + 6561q³ = 6561 (d⁹ − 9d⁸ + 27d⁷ − 48d⁶ + 54d⁵
+                                            − 45d⁴ + 27d³ − 9d² + 1)
+    m² + 9mq + 27q²               = 27 e³
+
+and `c₄(E(b,c))` factors as the PRODUCT of the first two cofactors,
+`c₄ = (d³ − 3d² + 1)(d⁹ − 9d⁸ + 27d⁷ − 48d⁶ + 54d⁵ − 45d⁴ + 27d³ −
+9d² + 1)` (`tateCurve_c₄`), while
+`Δ(E(b,c)) = d⁹(d − 1)⁹e³q` (`tateCurve_Δ`, the `K`-generic form of
+`MazurLevel18.delta_param`). Multiplying the target by `q¹²` therefore
+turns it into `27¹⁰ · (j · Δ) = 3³⁰ · c₄³`, i.e. into `hj` itself. The
+`q`-expansion cross-check of the whole `j`-map,
+`j = (t+9)³(t³+243t²+2187t+6561)³ / (t⁹(t²+9t+27))` with
+`t = (η(τ)/η(9τ))³`, was re-run here to `O(q⁵⁹)`.
+-/
+
+namespace MazurLevel9
+
+/-- **The Tate normal form curve at Kubert parameter `d`**:
+`E(b, c) : y² + (1 − c)xy − by = x³ − bx²` with `c = d²(d − 1)` and
+`b = c(d² − d + 1)`. This is the universal elliptic curve over the
+`X_1(9)` line, in the coordinates of `MazurLevel18.exists_param`, stated
+over an arbitrary field so that it can be used over `ℚ̄`. -/
+def tateCurve {K : Type*} [Field K] (d : K) : WeierstrassCurve K :=
+  ⟨1 - d ^ 2 * (d - 1), -(d ^ 2 * (d - 1) * (d ^ 2 - d + 1)),
+    -(d ^ 2 * (d - 1) * (d ^ 2 - d + 1)), 0, 0⟩
+
+/-- **The discriminant along the `X_1(9)` line** (PROVEN): the `K`-generic
+form of `MazurLevel18.delta_param`,
+`Δ = d⁹(d − 1)⁹(d² − d + 1)³(d³ − 6d² + 3d + 1)`. The four factors are the
+four cusp orbits: `d ∈ {0, 1}` and `d = ∞` lie over the width-`9` cusp
+`t = 0`, the two roots of `d² − d + 1` are the fixed points of the diamond
+operator and lie over the two conjugate cusps `t² + 9t + 27 = 0`, and the
+three roots of `d³ − 6d² + 3d + 1` lie over `t = ∞`. -/
+lemma tateCurve_Δ {K : Type*} [Field K] (d : K) :
+    (tateCurve d).Δ
+      = d ^ 9 * (d - 1) ^ 9 * (d ^ 2 - d + 1) ^ 3 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) := by
+  simp only [tateCurve, WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+  ring
+
+/-- **`c₄` along the `X_1(9)` line, FACTORED** (PROVEN):
+`c₄ = (d³ − 3d² + 1)(d⁹ − 9d⁸ + 27d⁷ − 48d⁶ + 54d⁵ − 45d⁴ + 27d³ − 9d² + 1)`.
+The factorisation is what makes `j9_of_tateParam` a `ring` identity rather
+than a degree-`90` elimination: the two factors are exactly the cofactors of
+`(t + 9)` and of `(t³ + 243t² + 2187t + 6561)` after clearing `q`. -/
+lemma tateCurve_c₄ {K : Type*} [Field K] (d : K) :
+    (tateCurve d).c₄
+      = (d ^ 3 - 3 * d ^ 2 + 1) * (d ^ 9 - 9 * d ^ 8 + 27 * d ^ 7 - 48 * d ^ 6 + 54 * d ^ 5
+          - 45 * d ^ 4 + 27 * d ^ 3 - 9 * d ^ 2 + 1) := by
+  simp only [tateCurve, WeierstrassCurve.c₄, WeierstrassCurve.b₂, WeierstrassCurve.b₄]
+  ring
+
+/-- **The `X_0(9)` `j`-map, pulled back to the Kubert line** (PROVEN
+2026-07-26 — the whole algebraic content of `exists_x0Nine_hauptmodul`):
+if `J` is the `j`-invariant of the Tate curve at Kubert parameter `d`
+(written denominator-free as `J · Δ = c₄³`) and `t` is the Hauptmodul
+value `R(d) = 27d(d − 1)/(d³ − 6d² + 3d + 1)` (written denominator-free as
+`t · (d³ − 6d² + 3d + 1) = 27d(d − 1)`), then `J = j₉(t)` in the
+denominator-free form
+`J · t⁹(t² + 9t + 27) = (t + 9)³(t³ + 243t² + 2187t + 6561)³`.
+
+Note that no nondegeneracy beyond `d³ − 6d² + 3d + 1 ≠ 0` is needed: that
+one hypothesis is what makes `t` well defined, and everything else is the
+`ring` identity `27¹⁰ c₄³ = 3³⁰ (d³ − 3d² + 1)³(d⁹ − ⋯ + 1)³`.
+
+Stated over an arbitrary field because the consumer applies it over `ℚ̄`,
+where the Kubert parameter of a curve with a rational cyclic `9`-subgroup
+lives; the conclusion descends to `ℚ` because `t` does. -/
+lemma j9_of_tateParam {K : Type*} [Field K] (d J t : K)
+    (hq : d ^ 3 - 6 * d ^ 2 + 3 * d + 1 ≠ 0)
+    (hj : J * (tateCurve d).Δ = (tateCurve d).c₄ ^ 3)
+    (ht : t * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) = 27 * d * (d - 1)) :
+    J * (t ^ 9 * (t ^ 2 + 9 * t + 27))
+      = (t + 9) ^ 3 * (t ^ 3 + 243 * t ^ 2 + 2187 * t + 6561) ^ 3 := by
+  rw [tateCurve_Δ, tateCurve_c₄] at hj
+  refine mul_right_cancel₀ (pow_ne_zero 12 hq) ?_
+  have hA : t ^ 9 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 9 = 27 ^ 9 * (d ^ 9 * (d - 1) ^ 9) := by
+    rw [← mul_pow, ht]; ring
+  have hB : (t ^ 2 + 9 * t + 27) * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 2
+      = 27 * (d ^ 2 - d + 1) ^ 3 := by
+    linear_combination (t * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) + 27 * d * (d - 1)
+      + 9 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)) * ht
+  have hC : (t + 9) * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) = 9 * (d ^ 3 - 3 * d ^ 2 + 1) := by
+    linear_combination ht
+  have hD : (t ^ 3 + 243 * t ^ 2 + 2187 * t + 6561) * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 3
+      = 6561 * (d ^ 9 - 9 * d ^ 8 + 27 * d ^ 7 - 48 * d ^ 6 + 54 * d ^ 5 - 45 * d ^ 4
+          + 27 * d ^ 3 - 9 * d ^ 2 + 1) := by
+    linear_combination ((t * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)) ^ 2
+      + t * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) * (27 * d * (d - 1)) + (27 * d * (d - 1)) ^ 2
+      + 243 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)
+        * (t * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) + 27 * d * (d - 1))
+      + 2187 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 2) * ht
+  have hLid : J * (t ^ 9 * (t ^ 2 + 9 * t + 27)) * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 12
+      = J * (t ^ 9 * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 9)
+          * ((t ^ 2 + 9 * t + 27) * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 2)
+          * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) := by ring
+  have hRid : (t + 9) ^ 3 * (t ^ 3 + 243 * t ^ 2 + 2187 * t + 6561) ^ 3
+        * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 12
+      = ((t + 9) * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)) ^ 3
+          * ((t ^ 3 + 243 * t ^ 2 + 2187 * t + 6561)
+              * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1) ^ 3) ^ 3 := by ring
+  rw [hLid, hRid, hA, hB, hC, hD]
+  linear_combination (27 : K) ^ 10 * hj
+
+/-- **`d` is a Kubert parameter of the pair `(E, P)`**: the base change of
+`E` to `ℚ̄` is isomorphic, as a group of points, to the Tate curve at `d`
+by an isomorphism carrying `P` to `(0,0)`.
+
+This is the `ℚ̄`-analogue of the conclusion of the PROVEN
+`WeierstrassCurve.exists_tateNormalForm_of_order_nine`, packaged as a
+predicate so that the two moduli leaves below can talk about the SAME
+parameter. The Tate normal form of a pair `(E, P)` with `P` of order `9`
+is unique, so `IsTateParam E P` is in fact a singleton; that uniqueness is
+not asserted here, but it is what `exists_rat_hauptmodul_of_stable`
+must prove on its way to Galois equivariance. -/
+def IsTateParam (E : WeierstrassCurve ℚ) (P : (E⁄(AlgebraicClosure ℚ)).Point)
+    (d : AlgebraicClosure ℚ) : Prop :=
+  ∃ (h00 : (tateCurve d).toAffine.Nonsingular 0 0)
+    (Ψ : (E⁄(AlgebraicClosure ℚ)).Point ≃+ (tateCurve d).toAffine.Point),
+      Ψ P = Affine.Point.some 0 0 h00
+
+/-- **Tate normal form over `ℚ̄` at a geometric point of order `9`**
+(sorry node, introduced 2026-07-26): an elliptic curve over `ℚ` whose
+geometric points contain a point `P` of order `9` acquires, over `ℚ̄`, a
+Kubert parameter `d` — nondegenerate, and computing `j(E)`.
+
+**THIS LEAF IS A MECHANICAL GENERALISATION OF PROVEN CODE, NOT NEW
+MATHEMATICS.** `WeierstrassCurve.exists_tateNormalForm_jInvariant_of_order_nine`
+proves exactly this over `ℚ`, and `MazurLevel18.exists_param` turns its
+`(b, c)` into the Kubert `d`; both proofs are pure field algebra — three
+changes of variables (`Point.equivVariableChange`) plus one
+`field_simp`/`linear_combination`. What has to change is only the base,
+`(E⁄ℚ)` ⇝ `(E⁄ℚ̄)`. The exact re-basing list, all of it currently written
+against `ℚ` and none of it using anything but field algebra:
+
+* `MazurLevel18.order_three_of_a₂_eq_zero`, `.tate_triple`,
+  `.psi3_eq_zero`, `.exists_param` — the `(b,c)`-to-`d` chain, stated for
+  `W : WeierstrassCurve.Affine ℚ`; make the field a variable;
+* `MazurLevel27.cFour_cube_eq` (base-agnostic as written) and
+  `MazurLevel27.jInvariant_of_variableChange` (which additionally needs
+  `WeierstrassCurve.map_j` to relate `E.j` to `(E⁄ℚ̄).j`, whence the
+  `algebraMap` in the conclusion here);
+* the `linarith` steps — `ha3ne` in
+  `exists_tateNormalForm_jInvariant_of_order_nine` and `hy0` in
+  `order_three_of_a₂_eq_zero` — merely rearrange a linear equation and
+  must become `linear_combination`, since `ℚ̄` is not an ordered field.
+
+`exists_param`'s excluded case `c = 0` is handled the same way it is over
+`ℚ`: `c = 0` forces `Δ = 0`.
+
+The `(b, c)` of the normal form and the `d` of `tateCurve` are related by
+`c = d²(d − 1)`, `b = c(d² − d + 1)`, so the curve
+`⟨1 − c, −b, −b, 0, 0⟩` produced there is definitionally `tateCurve d`
+once `d` is substituted; `tateCurve` is written out in `d` precisely so
+that the two leaves here can share one object.
+
+The parameter is NOT unique as stated — the three Kubert parameters
+`d`, `(d−1)/d`, `−1/(d−1)` of the pairs `(E, P)`, `(E, 2P)`, `(E, 4P)` all
+occur — which is precisely why the descent leaf below takes `d` as an
+argument rather than re-choosing it. -/
+theorem exists_tateParam (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (P : (E⁄(AlgebraicClosure ℚ)).Point) (hP : addOrderOf P = 9) :
+    ∃ d : AlgebraicClosure ℚ, IsTateParam E P d ∧ (tateCurve d).Δ ≠ 0 ∧
+      algebraMap ℚ (AlgebraicClosure ℚ) E.j * (tateCurve d).Δ = (tateCurve d).c₄ ^ 3 :=
+  sorry
+
+/-- **The Hauptmodul of a Galois-stable cyclic `9`-subgroup is RATIONAL**
+(sorry node — the moduli content proper at level `9`, introduced
+2026-07-26): if `⟨g⟩` is a `Gal(ℚ̄/ℚ)`-stable cyclic subgroup of order `9`
+of `E(ℚ̄)` and `d` is a Kubert parameter of `(E, g)`, then the Hauptmodul
+value `R(d) = 27d(d − 1)/(d³ − 6d² + 3d + 1)` lies in `ℚ`.
+
+THIS IS THE `ℤ/3`-DESCENT ALONG `X_1(9) → X_0(9)`, and it is the only
+genuinely modular step left at this level. The argument, in full:
+
+1. *Uniqueness.* The Tate normal form of `(E, P)` at a point of order `9`
+   is unique: `a₆ = 0` fixes the translation, `a₄ = 0` fixes the shear,
+   and `a₂ = a₃` fixes the scaling `u` (up to nothing, since `u = a₃'/a₂'`
+   is determined). Hence `b`, `c`, and therefore `d = c²/(b − c)`, are
+   FUNCTIONS of the isomorphism class of `(E, P)`. Write `d(E, P)`.
+2. *Galois naturality.* `E` is defined over `ℚ`, so `σ` carries the normal
+   form of `(E, P)` to the normal form of `(E, σP)`, whence
+   `σ(d(E, P)) = d(E, σP)`.
+3. *Diamond equivariance.* `d(E, 2P) = (d(E, P) − 1)/d(E, P)` — the
+   computation recorded in the section note above, valid identically on
+   the universal family, hence for every `(E, P)`.
+4. *The character.* Stability of `⟨g⟩` gives
+   `σ(g) = λ(σ) • g` with `λ(σ) ∈ (ℤ/9)ˣ` (`exists_isogenyCharacter`, PROVEN
+   above); `(ℤ/9)ˣ = ⟨2⟩`, so `σ(g) = 2ᵏ • g` and, by 2–3,
+   `σ(d) = γᵏ(d)` with `γ(d) = (d − 1)/d`.
+5. *Invariance.* `R ∘ γ = R` (`ring`), so `σ(R(d)) = R(d)` for every
+   `σ ∈ Gal(ℚ̄/ℚ)`, and the fixed field of the absolute Galois group acting
+   on `ℚ̄` is `ℚ`. Hence `R(d) ∈ ℚ`.
+
+Step 3 is the only computation, and it is already done (see the section
+note); steps 1 and 2 are the standard rigidity of the Tate normal form;
+step 5 needs `IsGalois ℚ (AlgebraicClosure ℚ)` and
+`IsGalois.fixedField_top` (or `Field.absoluteGaloisGroup`'s own fixed-field
+lemma).
+
+The conclusion is stated denominator-free, `t · (d³ − 6d² + 3d + 1) =
+27d(d − 1)`, so that it does not have to carry the nonvanishing of the
+denominator; the consumer has it from `Δ ≠ 0`. -/
+theorem exists_rat_hauptmodul_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 9)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g)
+    (d : AlgebraicClosure ℚ) (hd : IsTateParam E g d) :
+    ∃ t : ℚ, algebraMap ℚ (AlgebraicClosure ℚ) t * (d ^ 3 - 6 * d ^ 2 + 3 * d + 1)
+      = 27 * d * (d - 1) :=
+  sorry
+
+end MazurLevel9
+
 /-- **`X_0(9)`, the genus-`0` level: a rational cyclic `9`-subgroup puts
-`j` on the explicit degree-`12` Hauptmodul curve** (sorry node — the
+`j` on the explicit degree-`12` Hauptmodul curve** (PROVEN 2026-07-26 over
+the two `MazurLevel9` moduli leaves — the
 moduli content at level `9`, introduced 2026-07-26): if the geometric
 points of an elliptic curve over `ℚ` contain a point `g` of order `9`
 whose cyclic subgroup is `Gal(ℚ̄/ℚ)`-stable, then there is a rational
@@ -5326,14 +5659,23 @@ for each of `t = 1, …, 5` the curve `ellfromj(j₉(t))` has cyclic
 isogeny degrees `{1, 3, 9}`, and `j₉(−3) = −12288000`, whose curve has
 degrees `{1, 3, 9, 27}`.
 
-**This node is genuinely shallower than the level-`27` one and is the
-natural next target.** Its intended proof is elementary and does not
-need a modular curve as a scheme: exhibit the universal family over the
-`t`-line (equivalently, the Tate normal form of a curve with a rational
-`3`-isogeny together with Vélu's formulae for the two `3`-isogenies in
-the chain `E → E/C₃ → E/C₉`) and compute its `j`-invariant. Compare
-`MazurLevel18.exists_param`, which does exactly this for the *`X_1(9)`*
-line. -/
+**PROVEN 2026-07-26 over the `MazurLevel9` block above**, whose section
+note carries the geometry. The cut runs through the Kubert line of
+`X_1(9)`, NOT through Vélu: `X_0(9) = X_1(9)/⟨diamond⟩` with the diamond
+operator acting as the order-`3` Möbius map `γ(d) = (d − 1)/d`, and the
+Hauptmodul is the invariant `R(d) = 27d(d − 1)/(d³ − 6d² + 3d + 1)`. What
+is left open is exactly two things:
+
+* `MazurLevel9.exists_tateParam` — the Tate normal form over `ℚ̄`, a
+  mechanical re-basing of the PROVEN
+  `exists_tateNormalForm_jInvariant_of_order_nine`;
+* `MazurLevel9.exists_rat_hauptmodul_of_stable` — the `ℤ/3`-descent
+  `X_1(9) → X_0(9)`, the modular content proper at this level.
+
+The `j`-map identity itself, which was the reason to fear this node, is
+PROVEN: `MazurLevel9.j9_of_tateParam`. Compare `MazurLevel18.exists_param`,
+which is the `X_1(9)` half of the same picture and is what
+`exists_tateParam` has to re-run over `ℚ̄`. -/
 theorem WeierstrassCurve.exists_x0Nine_hauptmodul
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 9)
@@ -5343,8 +5685,17 @@ theorem WeierstrassCurve.exists_x0Nine_hauptmodul
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     ∃ t : ℚ, E.j * (t ^ 9 * (t ^ 2 + 9 * t + 27))
-      = (t + 9) ^ 3 * (t ^ 3 + 243 * t ^ 2 + 2187 * t + 6561) ^ 3 :=
-  sorry
+      = (t + 9) ^ 3 * (t ^ 3 + 243 * t ^ 2 + 2187 * t + 6561) ^ 3 := by
+  obtain ⟨d, hd, hΔ, hj⟩ := MazurLevel9.exists_tateParam E g hg
+  obtain ⟨t, ht⟩ := MazurLevel9.exists_rat_hauptmodul_of_stable E g hg hstable d hd
+  refine ⟨t, ?_⟩
+  have hq : d ^ 3 - 6 * d ^ 2 + 3 * d + 1 ≠ 0 := by
+    intro h
+    exact hΔ (by rw [MazurLevel9.tateCurve_Δ, h]; ring)
+  have key := MazurLevel9.j9_of_tateParam d (algebraMap ℚ (AlgebraicClosure ℚ) E.j)
+    (algebraMap ℚ (AlgebraicClosure ℚ) t) hq hj ht
+  refine (algebraMap ℚ (AlgebraicClosure ℚ)).injective ?_
+  simpa only [map_mul, map_pow, map_add, map_ofNat] using key
 
 namespace MazurLevel27
 

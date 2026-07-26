@@ -1476,9 +1476,342 @@ theorem intValuation_natCast_eq_exp_ramificationIdx
   push_cast
   ring
 
+/-- **The value group of an adic valuation is discrete** (PROVEN
+2026-07-26): a value strictly below `exp (-M)` is at most
+`exp (-(M+1))`.  Used to turn the strict approximation supplied by
+mathlib's `exists_intValuation_mul_sub_lt` into a gain of one full unit
+of `Q`-order at each step of the digit expansion below. -/
+theorem le_exp_neg_succ_of_lt_exp_neg {u : WithZero (Multiplicative ℤ)} {M : ℤ}
+    (h : u < WithZero.exp (-M)) : u ≤ WithZero.exp (-(M + 1)) := by
+  rcases eq_or_ne u 0 with rfl | hu
+  · simp
+  · lift u to ℤ using hu with a
+    rw [WithZero.exp_lt_exp] at h
+    rw [WithZero.exp_le_exp]
+    omega
+
+/-- **The integer Eisenstein digit expansion at a prime of residue
+degree one** (PROVEN 2026-07-26 — step 2 of the elementary global route
+recorded on `differentIdeal_exponent_le_wild_of_residueDegreeOne`).
+
+Let `Q = v` be a height-one prime of a Dedekind domain `R`, let `x` be a
+uniformizer at `Q` (`ord_Q x = 1`), let `P` be a *rational integer* with
+`ord_Q P = e`, and suppose every element of `R` is congruent mod `Q` to
+a rational integer (`hres`; for `R = 𝓞_K` and `P = q` this says exactly
+that the residue degree `f(Q∣q)` is `1`).  Then for every precision `M`
+there are integers `c 0, …, c (e−1)` with
+
+  `ord_Q (x ^ e − ∑_{i < e} c i · x ^ i) ≥ M`.
+
+Proof: the ordinary digit expansion in the discrete valuation `ord_Q`.
+At precision `M` write `M = e·k + r` with `r < e`; then `P^k · x^r` has
+`Q`-order exactly `M`, so mathlib's `exists_intValuation_mul_sub_lt`
+produces `y ∈ R` with `ord_Q (z − y·P^k·x^r) > M`, and `hres` replaces
+`y` by a rational integer `c` at the cost of a term of order `≥ M + 1`.
+The digit `c·P^k` is again a rational integer, so the accumulated
+coefficients stay in `ℤ` — which is the whole point, and is exactly
+what fails when the residue degree exceeds one. -/
+theorem exists_intCoeff_eisenstein_approx {R : Type*} [CommRing R] [IsDedekindDomain R]
+    (v : HeightOneSpectrum R) {e : ℕ} (he : 0 < e) {x : R} {P : ℤ}
+    (hx : v.intValuation x = WithZero.exp (-1 : ℤ))
+    (hp : v.intValuation ((P : ℤ) : R) = WithZero.exp (-(e : ℤ)))
+    (hres : ∀ y : R, ∃ c : ℤ, y - (c : R) ∈ v.asIdeal) (M : ℕ) :
+    ∃ c : ℕ → ℤ, v.intValuation (x ^ e - ∑ i ∈ Finset.range e, ((c i : ℤ) : R) * x ^ i)
+      ≤ WithZero.exp (-(M : ℤ)) := by
+  classical
+  induction M with
+  | zero =>
+      refine ⟨fun _ => 0, ?_⟩
+      simp only [Int.cast_zero, zero_mul, Finset.sum_const_zero, sub_zero, Nat.cast_zero,
+        neg_zero, WithZero.exp_zero]
+      exact v.intValuation_le_one _
+  | succ M ih =>
+      obtain ⟨c, hz⟩ := ih
+      have hr : M % e < e := Nat.mod_lt _ he
+      have hkr : e * (M / e) + M % e = M := Nat.div_add_mod M e
+      have hvw : v.intValuation (((P ^ (M / e) : ℤ) : R) * x ^ (M % e))
+          = WithZero.exp (-(M : ℤ)) := by
+        have hkrZ : (e : ℤ) * ((M / e : ℕ) : ℤ) + ((M % e : ℕ) : ℤ) = (M : ℤ) := by
+          exact_mod_cast hkr
+        rw [Int.cast_pow, map_mul, map_pow, map_pow, hx, hp, ← WithZero.exp_nsmul,
+          ← WithZero.exp_nsmul, ← WithZero.exp_add]
+        congr 1
+        simp only [nsmul_eq_mul]
+        linear_combination -hkrZ
+      have hle : v.intValuation (x ^ e - ∑ i ∈ Finset.range e, ((c i : ℤ) : R) * x ^ i)
+          ≤ v.intValuation (((P ^ (M / e) : ℤ) : R) * x ^ (M % e)) := by rw [hvw]; exact hz
+      obtain ⟨y, hy⟩ := v.exists_intValuation_mul_sub_lt hle (Multiplicative.ofAdd (-(M : ℤ)))
+      have hy' : v.intValuation ((x ^ e - ∑ i ∈ Finset.range e, ((c i : ℤ) : R) * x ^ i)
+          - y * (((P ^ (M / e) : ℤ) : R) * x ^ (M % e)))
+          ≤ WithZero.exp (-((M : ℤ) + 1)) := by
+        refine le_exp_neg_succ_of_lt_exp_neg ?_
+        simpa [WithZero.exp] using hy
+      obtain ⟨cy, hcy⟩ := hres y
+      have hcyv : v.intValuation (y - (cy : R)) ≤ WithZero.exp (-(1 : ℕ) : ℤ) := by
+        rw [v.intValuation_le_pow_iff_mem]
+        simpa using hcy
+      refine ⟨Function.update c (M % e) (c (M % e) + cy * P ^ (M / e)), ?_⟩
+      have hsum : ∑ i ∈ Finset.range e,
+          ((Function.update c (M % e) (c (M % e) + cy * P ^ (M / e)) i : ℤ) : R) * x ^ i
+          = (∑ i ∈ Finset.range e, ((c i : ℤ) : R) * x ^ i)
+              + (cy : R) * (((P ^ (M / e) : ℤ) : R) * x ^ (M % e)) := by
+        rw [Finset.sum_congr rfl (g := fun i => ((c i : ℤ) : R) * x ^ i
+          + (if i = M % e then ((cy * P ^ (M / e) : ℤ) : R) * x ^ i else 0)) ?_]
+        · rw [Finset.sum_add_distrib, Finset.sum_ite_eq' (Finset.range e) (M % e)]
+          simp only [Finset.mem_range, hr, if_true]
+          push_cast
+          ring
+        · intro i _
+          by_cases hir : i = M % e
+          · subst hir; rw [Function.update_self, if_pos rfl]; push_cast; ring
+          · rw [Function.update_of_ne hir, if_neg hir]; ring
+      rw [hsum]
+      have hsplit : x ^ e - ((∑ i ∈ Finset.range e, ((c i : ℤ) : R) * x ^ i)
+            + (cy : R) * (((P ^ (M / e) : ℤ) : R) * x ^ (M % e)))
+          = ((x ^ e - ∑ i ∈ Finset.range e, ((c i : ℤ) : R) * x ^ i)
+              - y * (((P ^ (M / e) : ℤ) : R) * x ^ (M % e)))
+            + (y - (cy : R)) * (((P ^ (M / e) : ℤ) : R) * x ^ (M % e)) := by ring
+      rw [hsplit]
+      refine le_trans (v.intValuation.map_add _ _) (max_le ?_ ?_)
+      · exact_mod_cast hy'
+      · rw [map_mul, hvw]
+        calc v.intValuation (y - (cy : R)) * WithZero.exp (-(M : ℤ))
+            ≤ WithZero.exp (-(1 : ℤ)) * WithZero.exp (-(M : ℤ)) := by
+              gcongr
+              simpa using hcyv
+          _ = WithZero.exp (-((M : ℤ) + 1)) := by rw [← WithZero.exp_add]; congr 1; ring
+
+/-- **A global generator of `K/ℚ` that is a uniformizer at `Q`** (sorry
+leaf, 2026-07-26 — step 1 of the elementary global route recorded on
+`differentIdeal_exponent_le_wild_of_residueDegreeOne`; standard
+algebraic number theory, no local fields).
+
+Asks for `x ∈ 𝓞_K` with `ℚ(x) = K`, `ord_Q x = 1`, and — this is the
+only nonformal clause — the constant coefficient of its minimal
+polynomial of `Q`-order exactly `e`.
+
+Route.  By approximation (CRT over the finitely many primes above `q`)
+choose `x₀` with `ord_Q x₀ = 1` and `x₀ ∉ Q'` for every other prime `Q'`
+above `q`.  Then `N_{K/ℚ}(x₀)` has `q`-adic valuation
+`∑_{Q'∣q} f_{Q'}·ord_{Q'}(x₀) = f(Q∣q) = 1` (using `hres`), via
+`Ideal.absNorm_span_singleton` and multiplicativity of `absNorm`; and
+for a generator the constant coefficient of `minpoly ℤ x` is `± N(x)`
+(`PowerBasis.norm_gen_eq_coeff_zero_minpoly`), so its `Q`-order is
+`e·1 = e`.
+
+To make `x₀` a generator, replace it by `x₀ + q^N·θ` for a primitive
+`θ ∈ 𝓞_K`: the valuation conditions survive for every `N ≥ 1`, because
+`ord_Q (q^N θ) ≥ N·e ≥ 2 > 1 = ord_Q x₀` (note `e ≥ q ≥ 2` in the wild
+case) and `ord_{Q'} (q^N θ) ≥ 1 > 0 = ord_{Q'} x₀`.  Some `N` works by
+pigeonhole: `K/ℚ` is finite separable, so `Finite (IntermediateField ℚ K)`
+(mathlib, from `Field.exists_primitive_element`), and if two different
+`N₁, N₂` gave elements of the same proper subfield `F`, then
+`(q^{N₁} − q^{N₂})·θ ∈ F`, hence `θ ∈ F` and `F = K`, a contradiction. -/
+theorem exists_generator_uniformizer_at (K : Type*) [Field K] [NumberField K]
+    (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hres : ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal) :
+    ∃ x : NumberField.RingOfIntegers K,
+      Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤ ∧
+      v.intValuation x = WithZero.exp (-1 : ℤ) ∧
+      v.intValuation (((minpoly ℤ x).coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+        = WithZero.exp (-(e : ℤ)) :=
+  sorry
+
+/-- **From an integer Eisenstein approximation to Serre's bound** (sorry
+leaf, 2026-07-26 — steps 3–6 of the elementary global route recorded on
+`differentIdeal_exponent_le_wild_of_residueDegreeOne`; polynomial
+division and valuation bookkeeping only, no local fields).
+
+Given the good generator `x` of `exists_generator_uniformizer_at` and an
+integer-coefficient approximate Eisenstein relation
+`ord_Q (x^e − ∑_{i<e} c_i x^i) ≥ M` from
+`exists_intCoeff_eisenstein_approx`, with `M` large compared with `d`
+and `e`, Serre's bound follows.
+
+Route, writing `F = minpoly ℤ x` and `g = X^e − ∑_{i<e} C (c i) · X^i`:
+
+* `aeval_derivative_mem_differentIdeal` (mathlib) gives
+  `𝔡_{𝓞_K/ℤ} ∣ (F'(x))`, hence `d ≤ ord_Q (F'(x))`.
+* Divide: `F = g·H + Rm` in `ℤ[X]` with `deg Rm < e` (`g` is monic).
+  From `F(x) = 0` we get `ord_Q (Rm(x)) ≥ M`; since `Rm` has integer
+  coefficients and degree `< e`, the terms `Rm_i · x^i` have `Q`-orders
+  `e·v_q(Rm_i) + i` that are pairwise distinct mod `e`, so
+  `valuation_term_le_valuation_sum` forces `ord_Q (Rm_i) ≥ M − i` for
+  every `i`, whence `ord_Q (Rm'(x)) ≥ M − e`.
+* The same distinct-residues argument applied to
+  `ord_Q (∑_{i<e} c_i x^i) = ord_Q (x^e) = e` forces `v_q(c_0) = 1` and
+  `v_q(c_i) ≥ 1` for `0 < i < e`: `g` is genuinely Eisenstein, and
+  `ord_Q (g(0)) = e`.
+* Hence `ord_Q (H(0)) = 0` from `hc0` and `F(0) = g(0)H(0) + Rm(0)`,
+  and then `ord_Q (H(x)) = 0` because `H(x) − H(0) ∈ Q`.
+* Finally `F'(x) = g'(x)H(x) + g(x)H'(x) + Rm'(x)` with the last two
+  terms of order `≥ M − e ≥ d`, so `ord_Q (g'(x)) ≥ d`; and
+  `ord_Q (g'(x)) ≤ e·v_q(e) + e − 1` by `valuation_term_le_valuation_sum`
+  and `intValuation_natCast_eq_exp_ramificationIdx`, exactly as in
+  `differentIdeal_exponent_le_wild` below. -/
+theorem differentIdeal_exponent_le_of_intEisenstein_approx
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (x : NumberField.RingOfIntegers K)
+    (hgen : Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤)
+    (hx : v.intValuation x = WithZero.exp (-1 : ℤ))
+    (hc0 : v.intValuation (((minpoly ℤ x).coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+      = WithZero.exp (-(e : ℤ)))
+    (c : ℕ → ℤ) (M : ℕ)
+    (happrox : v.intValuation (x ^ e - ∑ i ∈ Finset.range e,
+      ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i) ≤ WithZero.exp (-(M : ℤ)))
+    (d : ℕ) (hdM : d + 2 * e + 2 ≤ M)
+    (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    d ≤ e - 1 + e * e.factorization q :=
+  sorry
+
+/-- **The wild different bound when the residue degree is one** (PROVEN
+2026-07-26 over `exists_generator_uniformizer_at` and
+`differentIdeal_exponent_le_of_intEisenstein_approx`, the two remaining
+leaves of the elementary global route; the digit expansion itself,
+`exists_intCoeff_eisenstein_approx`, is proven above).
+
+Hypothesis `hres` says that every element of `𝓞_K` is congruent mod `Q`
+to a rational integer, i.e. `𝓞_K/Q = 𝔽_q`, i.e. the residue degree
+`f(Q∣q)` is `1`.  Conclusion: Serre's bound `d ≤ e − 1 + e·v_q(e)`.
+
+**This case admits a completely ELEMENTARY GLOBAL proof — no local
+fields, no completions, no `differentIdeal` localization theory.**  The
+route was worked out and checked mathematically on 2026-07-26; it
+eliminates (M1), (M2) and (M3) outright for `f = 1`, and it is the
+recommended attack:
+
+1. *Choose the generator.*  By approximation in `𝓞_K` pick `x` with
+   `ord_Q x = 1` and `x ∉ Q'` for every other prime `Q'` above `q`;
+   then correct it to a generator of `K/ℚ` by replacing `x` with
+   `x + q^N·θ` for a primitive `θ` — the valuation conditions survive
+   because `ord_Q (q^N θ) ≥ Ne ≥ 2 > 1` (note `e ≥ q ≥ 2` in the wild
+   case) and `ord_{Q'} (q^N θ) ≥ 1 > 0`.  Some `N` works by pigeonhole:
+   `K/ℚ` is finite separable, so `Finite (IntermediateField ℚ K)`
+   (mathlib, `IntermediateField.finite_of_exists_primitive_element`),
+   and if `x + q^{N₁}θ` and `x + q^{N₂}θ` lie in the SAME proper
+   subfield `F` then `(q^{N₁} − q^{N₂})θ ∈ F`, so `θ ∈ F` and `F = K`.
+2. *Eisenstein relation with INTEGER coefficients.*  Because `f = 1`,
+   the digit expansion of `x^e` in the discrete valuation `ord_Q` can
+   be taken with digits in `ℤ`: given `z` with `ord_Q z = k·e + r`
+   (`r < e`), the element `q^k x^r` has the same order, so
+   `z/(q^k x^r)` is a unit whose residue lies in `𝔽_q = ℤ/q`, and
+   subtracting `c·q^k·x^r` for an integer `c` raises the order.  This
+   yields, for every precision `M`, integers `c_0,…,c_{e−1}` with
+   `ord_Q (x^e − ∑_{i<e} c_i x^i) ≥ M`; and `g := X^e − ∑ c_i X^i` is
+   automatically *Eisenstein*, since `ord_Q (c_i x^i) = e·v_q(c_i) + i`
+   are pairwise distinct mod `e`, so their minimum `e` is attained
+   uniquely, forcing `v_q(c_0) = 1` and `v_q(c_i) ≥ 1`.
+3. *mathlib supplies the different.*  `aeval_derivative_mem_differentIdeal`
+   gives `𝔡_{𝓞_K/ℤ} ∣ (F'(x))` for `F = minpoly ℤ x` (no conductor
+   hypothesis needed in this direction), hence `d ≤ ord_Q (F'(x))`.
+4. *Divide.*  `F = g·H + R` in `ℤ[X]` (`g` monic).  From `F(x) = 0` and
+   `ord_Q (g(x)) ≥ M` one gets `ord_Q (R(x)) ≥ M`; `R` has degree `< e`
+   and integer coefficients, so the same distinct-residues argument
+   forces `q^{⌈(M−e+1)/e⌉} ∣ R`.
+5. *The other factor is a `Q`-unit.*  `F ≡ X^e·H̄ (mod q)` and
+   `x ≡ 0 (mod Q)`, so `ord_Q H(x) = 0` iff `q ∤ H(0)`; and
+   `v_q(F(0)) = v_q(N_{K/ℚ}(x)) = ∑_{Q'∣q} f_{Q'}·ord_{Q'}(x) = 1` by
+   step 1 and `f = 1` (`Ideal.absNorm_span_singleton` plus
+   multiplicativity of `absNorm`), while `v_q(g(0)) = 1`, so
+   `v_q(H(0)) = 0`.
+6. *Conclude.*  `F'(x) = g'(x)H(x) + g(x)H'(x) + R'(x)`; the last two
+   terms have order `≥ M − e`, and `ord_Q (g'(x)) ≤ e·v_q(e) + e − 1`
+   by `valuation_term_le_valuation_sum` exactly as in
+   `differentIdeal_exponent_le_wild`.  Taking `M` large gives
+   `d ≤ ord_Q (F'(x)) = ord_Q (g'(x)) ≤ e − 1 + e·v_q(e)`.
+
+Both-ways audit: an inequality between natural numbers, the `f = 1`
+instance of a classical theorem; no vacuity concerns (the hypothesis
+`hres` is satisfied by e.g. `K = ℚ(√2)`, `q = 2`, where the bound is
+sharp: `e = 2`, `v_2(2) = 1`, `d = 3 = 1 + 2`). -/
+theorem differentIdeal_exponent_le_wild_of_residueDegreeOne
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hres : ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (d : ℕ) (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    d ≤ e - 1 + e * e.factorization q := by
+  classical
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : v.asIdeal.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff v.isPrime.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have he0 : 0 < e := by
+    rw [he]
+    exact Nat.pos_of_ne_zero
+      (Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver v.asIdeal hspan0)
+  obtain ⟨x, hgen, hx, hc0⟩ := exists_generator_uniformizer_at K q hq v hmem hres e he
+  have hp : v.intValuation (((q : ℤ) : NumberField.RingOfIntegers K))
+      = WithZero.exp (-(e : ℤ)) := by
+    have h1 := intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem q hq.ne_zero
+    rw [hq.factorization_self, mul_one, ← he] at h1
+    rw [show (((q : ℤ) : NumberField.RingOfIntegers K))
+      = ((q : ℕ) : NumberField.RingOfIntegers K) by push_cast; ring]
+    exact h1
+  obtain ⟨c, hc⟩ := exists_intCoeff_eisenstein_approx v he0 hx hp hres (d + 2 * e + 2)
+  exact differentIdeal_exponent_le_of_intEisenstein_approx K q hq v hmem e he x hgen hx hc0 c
+    (d + 2 * e + 2) hc d le_rfl hd
+
+/-- **The local Eisenstein presentation of the different at a wild
+prime of residue degree `> 1`** (sorry leaf, 2026-07-26 — the *second*
+of the two leaves into which `exists_eisensteinDerivative_dvd_of_wild`
+is split below).  Statement identical to that leaf, with the extra
+hypothesis `hres` that `𝓞_K/Q ≠ 𝔽_q`, i.e. `f(Q∣q) > 1`.
+
+This is where the genuinely missing theory lives.  The elementary
+global route recorded on
+`differentIdeal_exponent_le_wild_of_residueDegreeOne` breaks here at
+exactly one point, and it is worth being precise about which:
+
+* Step 2 of that route (the integer-coefficient digit expansion) uses
+  `𝓞_K/Q = 𝔽_q` to pick each digit in `ℤ`.  For `f > 1` the digits must
+  instead be taken in the **maximal unramified subring** `𝓞_{L₀}` of
+  `𝓞_{K_Q}`, which has no global avatar — this is (M2), and it is not
+  optional (see the refutation recorded on
+  `exists_eisensteinDerivative_dvd_of_wild`).
+* Everything else in that route is insensitive to `f`.
+
+So the two classical routes remain: (M1)+(M2)+(M3) as recorded on
+`exists_eisensteinDerivative_dvd_of_wild`, or a global reduction to the
+`f = 1` case by base change to a number field `F` in which `q` is
+unramified with residue degree `f` (e.g. `F = ℚ(ζ_{q^f−1})`), using
+mathlib's tower formula
+`differentIdeal_eq_differentIdeal_mul_differentIdeal` — which needs
+`F_𝔓 ⊆ K_Q` locally and is therefore not obviously cheaper. -/
+theorem exists_eisensteinDerivative_dvd_of_wild_of_residueDegreeGtOne
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (hres : ¬ ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (d : ℕ) (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    ∃ π : NumberField.RingOfIntegers K, ∃ a : ℕ → NumberField.RingOfIntegers K,
+      v.intValuation π = WithZero.exp (-1 : ℤ) ∧
+      a e = 1 ∧
+      (∀ i, 0 < i → i < e → v.intValuation (a i) = 0 ∨
+        ∃ c : ℕ, v.intValuation (a i) = WithZero.exp (-((e * c : ℕ) : ℤ))) ∧
+      v.asIdeal ^ d ∣ Ideal.span {∑ j ∈ Finset.range e,
+        ((j + 1 : ℕ) : NumberField.RingOfIntegers K) * a (j + 1) * π ^ j} :=
+  sorry
+
 /-- **(M1)+(M2)+(M3) The local Eisenstein presentation of the different
-at a wild prime** (sorry leaf — after the recut of 2026-07-26 the
-*single* arithmetic leaf under `differentIdeal_exponent_le_wild`, hence
+at a wild prime** (PROVEN 2026-07-26 over the two residue-degree cases
+`differentIdeal_exponent_le_wild_of_residueDegreeOne` and
+`exists_eisensteinDerivative_dvd_of_wild_of_residueDegreeGtOne` above;
+it inherits its position under `differentIdeal_exponent_le_wild`, hence
 under the whole Hermite–Minkowski cut of
 `finite_setOf_isHardlyRamified`).
 
@@ -1524,7 +1857,36 @@ joint, because everything downstream of it (the three lines of
 valuation arithmetic) is proven in
 `differentIdeal_exponent_le_wild` below.  It is not vacuous: `a e = 1`
 pins the extremal term to `e·π^{e−1}`, whose `Q`-order is exactly
-`e·v_q(e) + e − 1`, so no junk witness can satisfy the last clause. -/
+`e·v_q(e) + e − 1`, so no junk witness can satisfy the last clause.
+
+**REFUTED ATTACK — READ THIS BEFORE TRYING THE OBVIOUS ONE
+(2026-07-26).**  The natural attempt is to build `π` and the `a_i` by a
+`Q`-adic *digit expansion*: pick a uniformizer `π`, and peel digits off
+`π^e` using mathlib's `exists_intValuation_mul_sub_lt`, recording each
+digit as `y·q^k` (so its order `e·k` automatically lies in `e·ℤ`, which
+is all the third clause above asks for).  That construction is easy —
+it was written and machine-checked — and it **does not prove this
+leaf**: the coefficients it produces satisfy every stated clause but
+can violate the last one.
+
+Explicit counterexample (verified in PARI/GP).  `K = ℚ(√2)`, `q = 2`,
+`Q = (√2)`, `e = 2`, `f = 1`; the different is `Q^3`, so `d = 3` is
+admissible.  Take `π = √2`, `a₂ = 1`, `a₁ = 2`, `a₀ = −2 − 2√2`.  Then
+`ord_Q a₁ = ord_Q a₀ = 2 ∈ 2ℤ`, `ord_Q π = 1`, and the associated
+`g = X² + 2X − 2 − 2√2` even satisfies `g(π) = 0` **exactly** — so this
+is a perfect Eisenstein-shaped relation by every criterion in the
+statement — yet `g'(π) = 2 + 2√2` has `ord_Q = 2 < 3 = d`, so
+`Q^d ∤ (g'(π))`.  The good witness is `a₀ = −2, a₁ = 0`, giving
+`g = X² − 2` and `ord_Q g'(π) = 3`.
+
+Moral: "coefficients of `Q`-order in `e·ℤ`" is strictly weaker than
+"coefficients in the maximal unramified subring", and only the latter
+makes `ord_Q g'(π)` equal to the different exponent.  (M2) is therefore
+not a convenience — it is the whole content, and any route that skips
+it is wrong rather than merely incomplete.  The `f = 1` case escapes
+because there the unramified subring is `ℤ_q`, whose global avatar `ℤ`
+does exist; see
+`differentIdeal_exponent_le_wild_of_residueDegreeOne`. -/
 theorem exists_eisensteinDerivative_dvd_of_wild
     (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
     (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
@@ -1538,8 +1900,64 @@ theorem exists_eisensteinDerivative_dvd_of_wild
       (∀ i, 0 < i → i < e → v.intValuation (a i) = 0 ∨
         ∃ c : ℕ, v.intValuation (a i) = WithZero.exp (-((e * c : ℕ) : ℤ))) ∧
       v.asIdeal ^ d ∣ Ideal.span {∑ j ∈ Finset.range e,
-        ((j + 1 : ℕ) : NumberField.RingOfIntegers K) * a (j + 1) * π ^ j} :=
-  sorry
+        ((j + 1 : ℕ) : NumberField.RingOfIntegers K) * a (j + 1) * π ^ j} := by
+  classical
+  by_cases hres : ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal
+  swap
+  · exact exists_eisensteinDerivative_dvd_of_wild_of_residueDegreeGtOne
+      K q hq v hmem hwild hres e he d hd
+  -- Residue degree one.  The bound holds, so the *trivial* witness
+  -- `a = (0, …, 0, 1)` works: the sum collapses to `e·π^{e−1}`, whose
+  -- `Q`-order is exactly `e·v_q(e) + e − 1 ≥ d`.
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : v.asIdeal.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff v.isPrime.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have he0 : 0 < e := by
+    rw [he]
+    exact Nat.pos_of_ne_zero
+      (Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver v.asIdeal hspan0)
+  have hbound :=
+    differentIdeal_exponent_le_wild_of_residueDegreeOne K q hq v hmem hres e he d hd
+  obtain ⟨π, hπ⟩ := v.intValuation_exists_uniformizer
+  refine ⟨π, Function.update (fun _ : ℕ => (0 : NumberField.RingOfIntegers K)) e 1, hπ,
+    Function.update_self _ _ _, ?_, ?_⟩
+  · intro i _ hie
+    left
+    rw [Function.update_of_ne (by omega)]
+    simp
+  · have hsum : ∑ j ∈ Finset.range e,
+        ((j + 1 : ℕ) : NumberField.RingOfIntegers K)
+          * Function.update (fun _ : ℕ => (0 : NumberField.RingOfIntegers K)) e 1 (j + 1)
+          * π ^ j
+        = ((e : ℕ) : NumberField.RingOfIntegers K) * π ^ (e - 1) := by
+      rw [Finset.sum_eq_single (e - 1)]
+      · rw [Nat.sub_add_cancel he0, Function.update_self, mul_one]
+      · intro b hb hbne
+        rw [Finset.mem_range] at hb
+        rw [Function.update_of_ne (by omega)]
+        simp
+      · intro hcon
+        exact absurd (Finset.mem_range.mpr (by omega)) hcon
+    rw [hsum, ← v.intValuation_le_pow_iff_dvd]
+    have hve : v.intValuation ((e : ℕ) : NumberField.RingOfIntegers K)
+        = WithZero.exp (-((e * e.factorization q : ℕ) : ℤ)) := by
+      rw [intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem e (by omega), ← he]
+    rw [map_mul, map_pow, hve, hπ, ← WithZero.exp_nsmul, ← WithZero.exp_add,
+      WithZero.exp_le_exp]
+    have hcast : ((e - 1 : ℕ) : ℤ) = (e : ℤ) - 1 := by
+      have h1 : 1 ≤ e := he0
+      push_cast [Nat.cast_sub h1]
+      ring
+    have hd' : (d : ℤ) ≤ ((e - 1 : ℕ) : ℤ) + (e : ℤ) * (e.factorization q : ℤ) := by
+      exact_mod_cast hbound
+    rw [hcast] at hd'
+    rw [nsmul_eq_mul, hcast]
+    push_cast
+    linarith
 
 /-- **The WILD different-exponent bound at a prime** (PROVEN 2026-07-26
 over the single leaf `exists_eisensteinDerivative_dvd_of_wild`, which
