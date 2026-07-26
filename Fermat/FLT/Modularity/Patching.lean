@@ -252,6 +252,16 @@ public import Mathlib.CategoryTheory.CofilteredSystem
 -- compactness step assembling a compatible system of level-`n`
 -- classifying maps
 public import Fermat.FLT.Modularity.PatchingVendored.System
+-- `IsLocalRing.maximalIdeal` / `IsLocalRing.ResidueField` and the local-hom
+-- API, and `Ideal.ramificationIdx_le_finrank`. Both were reaching this file
+-- only through the pre-module-system import leak of `PatchingVendored/`;
+-- once that cluster became `module`s, names used in the bodies of this
+-- file's `@[expose] public section` declarations must come from a PUBLIC
+-- import here. Named explicitly (2026-07-26).
+public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic
+public import Mathlib.RingTheory.LocalRing.ResidueField.Defs
+public import Mathlib.RingTheory.LocalRing.RingHom.Basic
+public import Mathlib.NumberTheory.RamificationInertia.Basic
 -- the vendored FLT abstract patching development (`PatchingAlgebra`,
 -- `PatchingModule`, `quotientToOver`, `quotientEquivOver`, `smulData`,
 -- `smul_lemma`), instantiated by `exists_patchedModule_of_fields` below
@@ -2306,7 +2316,7 @@ what the upgrade consumes, all of it pure commutative algebra:
 
 section ProfinitePadicTower
 
-open IsLocalRing
+open _root_.IsLocalRing
 
 universe uTA uTR
 
@@ -4181,7 +4191,7 @@ parameters `(p, x₁, …, x_q)` spanning the maximal ideal
 
 section AuslanderBuchsbaum
 
-open RingTheory.Sequence IsLocalRing Pointwise CategoryTheory Abelian Limits
+open RingTheory.Sequence _root_.IsLocalRing Pointwise CategoryTheory Abelian Limits
 
 /-- **Coset prime avoidance** (E. Davis; Kaplansky, *Commutative
 Rings*, Thm. 124; PROVEN): if none of the finitely many primes
@@ -6219,7 +6229,7 @@ theorem nonempty_patchedModule_of_patchingData.{v, w, s, uR, u}
 
 section PatchingInstantiation
 
-open IsLocalRing
+open _root_.IsLocalRing
 open scoped MvPowerSeries.WithPiTopology
 
 attribute [local instance] Module.quotientAnnihilator
