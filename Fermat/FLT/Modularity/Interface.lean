@@ -161,6 +161,12 @@ import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 -- spectral descent out of the old subspace
 -- (`exists_heckeOp_eigen_of_mem_oldSubspace`).
 import Mathlib.LinearAlgebra.Eigenspace.Pi
+-- `Submodule.exists_isCompl`: every subspace of a vector space has a
+-- complement. Used by `exists_oldSubspace_complement_vanishing` to produce the
+-- complement of the old subspace. Already in this file's transitive cone
+-- through `Mathlib.LinearAlgebra.Dual.Lemmas`, named here so the use does not
+-- depend on that route staying public.
+import Mathlib.LinearAlgebra.Projection
 -- Dual-space machinery for the rational-spanning descent
 -- (`cuspForm_mem_span_rational`): the Sturm coefficient functionals
 -- span the dual, a dual basis is extracted, and `Aut(ℂ)`-stability
@@ -28013,77 +28019,260 @@ theorem exists_weightTwoEigenform_of_heckeOp_eigen_of_level_dvd {N M : ℕ}
         ∀ q : ℕ, q.Prime → ¬ q ∣ M → qCoeff M' g' q = c q :=
   sorry
 
+/-- **A STABLE SUBSPACE IS THE SUM OF ITS SIMULTANEOUS GENERALIZED
+EIGENCOMPONENTS** (PROVEN 2026-07-26, pure linear algebra over an
+algebraically closed field): if a family `T i` of COMMUTING endomorphisms of a
+finite-dimensional space `V` preserves a submodule `U`, then `U` is the
+supremum of its intersections with the simultaneous maximal generalized
+eigenspaces of the family.
+
+This is the companion of `exists_ne_zero_mem_inf_iInf_maxGenEigenspace` above,
+and it is what lets a CONTAINMENT between two Hecke-stable subspaces be checked
+on joint EIGENVECTORS alone: both sides decompose, so the containment holds iff
+it holds in each joint generalized eigenspace.
+
+PROOF.  Simultaneous triangularizability
+(`Module.End.iSup_iInf_maxGenEigenspace_eq_top_of_iSup_maxGenEigenspace_eq_top_of_commute`)
+applied to the operators RESTRICTED to `U` writes the top of `U` as a supremum
+of joint generalized eigenspaces of the restrictions; pushing that forward along
+the inclusion `U.subtype` with
+`Submodule.inf_iInf_maxGenEigenspace_of_forall_mapsTo` turns each summand into
+`U ⊓ E ψ`. -/
+theorem eq_iSup_inf_iInf_maxGenEigenspace_of_mapsTo
+    {K V ι : Type*} [Field K] [IsAlgClosed K] [AddCommGroup V] [Module K V]
+    [FiniteDimensional K V] (T : ι → Module.End K V)
+    (hcomm : ∀ i j, Commute (T i) (T j)) (U : Submodule K V)
+    (hp : ∀ i, Set.MapsTo (T i) U U) :
+    U = ⨆ ψ : ι → K, U ⊓ ⨅ i, (T i).maxGenEigenspace (ψ i) := by
+  have hcomm' : ∀ i j, Commute ((T i).restrict (hp i)) ((T j).restrict (hp j)) := by
+    intro i j
+    refine LinearMap.ext fun x => Subtype.ext ?_
+    have hx := LinearMap.congr_fun (hcomm i j).eq (x : V)
+    simpa [LinearMap.restrict_apply, Module.End.mul_apply] using hx
+  have htop : ⨆ ψ : ι → K,
+      ⨅ i, Module.End.maxGenEigenspace ((T i).restrict (hp i)) (ψ i) = ⊤ :=
+    Module.End.iSup_iInf_maxGenEigenspace_eq_top_of_iSup_maxGenEigenspace_eq_top_of_commute
+      _ (fun i j _ => hcomm' i j)
+      (fun i => Module.End.iSup_maxGenEigenspace_eq_top _)
+  have hmap := congrArg (Submodule.map U.subtype) htop
+  rw [Submodule.map_iSup, Submodule.map_top, Submodule.range_subtype] at hmap
+  simp only [← Submodule.inf_iInf_maxGenEigenspace_of_forall_mapsTo T U hp] at hmap
+  exact hmap.symm
+
+/-- **THE ATKIN–LEHNER MAIN LEMMA FOR A JOINT GOOD-HECKE EIGENVECTOR** (sorry
+leaf — cut 2026-07-26 out of `exists_oldSubspace_complement_vanishing` below;
+Diamond–Shurman Theorem 5.7.1 read through Corollary 5.6.3 and §5.8,
+Atkin–Lehner 1970 Lemma 18): a cusp form `v ∈ S₂(Γ₀(M))` that is an HONEST
+eigenvector of every GOOD Hecke operator `T_q`, `q ∤ M`, and whose
+`q`-expansion coefficients vanish at every index COPRIME to `M`, lies in the
+old subspace `Σ_{p ∣ M} V_p S₂(Γ₀(M/p))`.
+
+WHY THIS IS A REDUCTION AND NOT A RESTATEMENT — read this before "simplifying"
+the cut, because the OBVIOUS cut here is a restatement and was correctly
+refused by the previous owner.  The consumer
+`exists_oldSubspace_complement_vanishing` quantifies over ALL cusp forms; this
+leaf quantifies only over JOINT EIGENVECTORS of the good Hecke algebra.  The
+passage between the two is not bookkeeping: it is the spectral decomposition of
+`S₂(Γ₀(M))` under the commuting family `{T_q : q ∤ M}`, and it consumes
+
+* commutativity, `heckeOp_mul_comm` (PROVEN);
+* SEMISIMPLICITY at the good primes,
+  `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` (PROVEN over
+  `exists_peterssonProduct_selfAdjoint_heckeOp`, itself PROVEN over the single
+  domain leaf `exists_peterssonDomain`) — this is what turns the generalized
+  eigenvectors the decomposition produces into honest ones, and it is FALSE at
+  the bad primes, where `U_q` has genuine Jordan blocks;
+* finite-dimensionality, `cuspForm_finiteDimensional` (PROVEN);
+* stability of BOTH subspaces: the old subspace by `heckeOp_degeneracyOp`, and
+  the vanishing-coefficient submodule because `a_n(T_q v) = a_{qn}(v) +
+  q·a_{n/q}(v)` and `n` coprime to `M` forces `qn` and `n/q` coprime to `M`
+  as well (this is where `q ∤ M` is used a second time).
+
+So the analytic input this cut needs was ALREADY isolated in the tree, in
+`exists_peterssonProduct_selfAdjoint_heckeOp`; the cut adds no new analytic
+obligation and strictly shrinks the quantifier.  (The docstring of
+`exists_oldSubspace_complement_vanishing` previously asserted that no
+`exists_peterssonProduct_selfAdjoint_heckeOp` declaration exists in this tree.
+That was already false when written — it is declared above in this same file —
+and the claim is corrected here.)
+
+WHAT REMAINS, and it is genuine Atkin–Lehner theory.  Classically this is the
+newform decomposition: `S₂(Γ₀(M)) = ⊕_{M' ∣ M} ⊕_{f newform of level M'}
+span{V_d f : d ∣ M/M'}`, each block stable under every `T_q`, `q ∤ M`, and
+acted on by the SCALAR `a_q(f)` there (`heckeOp_degeneracyOp`).  A joint
+good-eigenvector therefore lives in the span of the blocks with a fixed
+eigensystem; writing `v = Σ_{d} c_d V_d f`, the hypothesis `a_n(v) = 0` at the
+indices coprime to `M` forces `c_1 = 0` (it forces `a_1(v) = 0`, and `a_1` is
+nonzero only on the `d = 1` component, where the newform is normalized), so `v`
+is supported on the `d > 1` components, and each `V_d f` with `d > 1` factors
+as `V_p (V_{d/p} f)` for any prime `p ∣ d`, with `V_{d/p} f` of level
+`M'·(d/p) ∣ M/p`.  That is exactly membership in the old subspace.
+
+WHY THE OBVIOUS FURTHER CUT DOES NOT WORK.  Diamond–Shurman's own proof of
+Theorem 5.7.1 (due to Carlton) does not run at `Γ₀` at all: it uses the
+projections `π_d f = (1/d)·Σ_{b<d} f|[1, bN/d; 0, 1]`, which sieve the
+`q`-expansion down to the indices divisible by `d`.  Those do NOT preserve
+`S₂(Γ₀(M))` — for a newform `f` of level `M` with `p ∣ M`, `π_p f = a_p(f)·f(pτ)`
+has level `Mp` and `a_p(f) ≠ 0` when `p ‖ M` — which is why D–S first conjugates
+to `Γ¹(N)` and then descends to `Γ(N)`, where the argument becomes the
+representation theory of `SL₂(ℤ/Nℤ)` (D–S Prop. 5.7.7) and the group-theoretic
+Lemma 5.7.6.  Reproducing that route needs cusp forms for `Γ(N)`, which this
+file's `Gamma0GL`-only vocabulary cannot express; the eigenvector route above
+(D–S §5.8) is the one that fits the machinery this file already has.
+
+FAITHFULNESS.  No `v ≠ 0` hypothesis is needed or wanted: at `v = 0` the
+conclusion is trivially true, so adding it would only weaken the leaf.  The
+statement is NOT vacuous — its hypotheses are satisfiable by a nonzero form,
+e.g. `v = V_p g` for any nonzero `g ∈ S₂(Γ₀(M/p))` that is a good-prime
+eigenvector, whose coprime-index coefficients vanish by
+`qCoeff_eq_zero_of_mem_oldSubspace` and which is a good-prime eigenvector at
+level `M` by `heckeOp_degeneracyOp`. -/
+theorem mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero {M : ℕ}
+    (hM : 0 < M) {c : ℕ → ℂ} {v : CuspForm (Gamma0GL M) 2}
+    (hve : ∀ q : ℕ, q.Prime → ¬ q ∣ M → heckeOp M q v = c q • v)
+    (hvc : ∀ n : ℕ, Nat.Coprime n M → qCoeff M v n = 0) :
+    v ∈ ⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p) :=
+  sorry
+
 /-- **THE NEW SUBSPACE DETECTS NO FORM WITH VANISHING GOOD COEFFICIENTS**
-(sorry leaf — cut 2026-07-26 out of
-`mem_oldSubspace_of_qCoeff_coprime_eq_zero`; Diamond–Shurman Theorem 5.7.1,
-Atkin–Lehner 1970 Lemma 18): the old subspace admits a COMPLEMENT `W` inside
-which the only form whose `q`-expansion coefficients all vanish at indices
+(PROVEN 2026-07-26 over the single leaf
+`mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero` above; Diamond–Shurman
+Theorem 5.7.1, Atkin–Lehner 1970 Lemma 18): the old subspace admits a COMPLEMENT `W`
+inside which the only form whose `q`-expansion coefficients all vanish at indices
 COPRIME to `M` is `0`.
 
-This is the whole ANALYTIC content of the Atkin–Lehner Main Lemma, and it is
-stated in the form the classical proof actually produces.  `W` is the *new*
-subspace: the orthogonal complement of the old subspace for the PETERSSON
-inner product
+AUDIT CORRECTION, 2026-07-26.  This node was previously a sorry leaf carrying
+the whole analytic content, with `W` intended to be the *new* subspace — the
+PETERSSON-orthogonal complement of the old subspace — and its docstring
+recorded that "no `exists_peterssonProduct_selfAdjoint_heckeOp` declaration
+exists in this tree".  That claim was FALSE at the time it was written: the
+Petersson leaf is declared above in this very file, and the good-prime
+semisimplicity it feeds (`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`)
+is PROVEN over it.  With that in hand the node is no longer analytic at all.
 
-  `⟨f, h⟩ = ∫_{Γ₀(M)\ℍ} f(τ) conj(h(τ)) dx dy`,
+The previous owner's audit was nevertheless correct on its own terms and is
+worth preserving, because it rules out the obvious cut: this statement is
+LOGICALLY EQUIVALENT to its own consumer
+`mem_oldSubspace_of_qCoeff_coprime_eq_zero`, and no cleverness in choosing `W`
+can help, because if the vanishing-coefficient submodule strictly contained the
+old subspace then EVERY complement would fail by a dimension count.  So the
+reduction cannot come from the choice of `W`; it has to come from shrinking the
+QUANTIFIER, which is what is done here.
 
-which exists because `S₂(Γ₀(M))` is finite-dimensional
-(`cuspForm_finiteDimensional`, PROVEN) and the Petersson form is a
-positive-definite Hermitian form on it.  The vanishing statement is then
-D–S Thm 5.7.1 proper, whose proof runs through the Atkin–Lehner involutions
-`W_Q` and the Petersson adjointness of the degeneracy maps.
+PROOF.  Let `Kv = ⋂_{(n,M)=1} ker a_n` be the vanishing-coefficient submodule.
+
+* `Kv` is stable under every good Hecke operator `T_q`, `q ∤ M`: by
+  `qCoeff_heckeOp`, `a_n(T_q v) = a_{qn}(v) + q·a_{n/q}(v)`, and for `n` coprime
+  to `M` both `qn` and `n/q` are again coprime to `M` — the first because
+  `q ∤ M` makes `q` coprime to `M`, the second because `n/q ∣ n`.
+* The good `T_q` commute (`heckeOp_mul_comm`) and `S₂(Γ₀(M))` is
+  finite-dimensional (`cuspForm_finiteDimensional`), so
+  `eq_iSup_inf_iInf_maxGenEigenspace_of_mapsTo` writes `Kv` as the supremum of
+  its intersections with the simultaneous maximal generalized eigenspaces.
+* Each such intersection consists of GENERALIZED joint eigenvectors, which
+  good-prime semisimplicity
+  (`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`, PROVEN over the
+  Petersson leaf) upgrades to HONEST joint eigenvectors; the single remaining
+  leaf `mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero` then puts
+  them in the old subspace.  Hence `Kv ≤ old`.
+* Finally take for `W` ANY vector-space complement of the old subspace
+  (`Submodule.exists_isCompl`).  The first conjunct is `IsCompl.sup_eq_top`;
+  for the second, a `v ∈ W` with vanishing coprime coefficients lies in `Kv`,
+  hence in the old subspace, hence in `old ⊓ W = ⊥`.
 
 WHY ONLY `⊔ = ⊤` IS DEMANDED, not `IsCompl`.  Directness is not needed by
 the consumer — only that every form splits — so the weaker requirement is
-stated, which is the easier obligation.  The leaf is NOT thereby weakened
-into vacuity: `W = ⊤` satisfies `⊔ = ⊤` but violates the second conjunct,
-since a nonzero old form has vanishing coefficients at every index coprime
-to `M` (`qCoeff_eq_zero_of_mem_oldSubspace`).  The two conjuncts together
-still force `W` to meet the old subspace trivially.
+stated.  The statement is NOT thereby vacuous: `W = ⊤` satisfies `⊔ = ⊤` but
+violates the second conjunct, since a nonzero old form has vanishing
+coefficients at every index coprime to `M`
+(`qCoeff_eq_zero_of_mem_oldSubspace`).  The two conjuncts together still force
+`W` to meet the old subspace trivially.
 
-WHAT THE PIN LACKS.  Nothing of the Petersson theory beyond the integrand
-`petersson` and its `SL(2,ℤ)`-invariance and exponential decay exists in
-`Mathlib.NumberTheory.ModularForms.Petersson`: the integral over a
-fundamental domain, positive-definiteness, the inner-product structure and
-the adjointness computation all have to be built, and there is no
-Atkin–Lehner material in mathlib or in `~/cs/FLT`.  This is shared with the
-sibling leaf `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`
-(good-prime semisimplicity), which needs the SAME inner product and
-self-adjointness of `T_q` — so whoever builds the Petersson product should
-expect to discharge both.  As of 2026-07-26 that shared prerequisite is
-CUT DOWN to the single leaf `exists_peterssonDomain` above: the Petersson
-product itself (`exists_peterssonProduct_selfAdjoint_heckeOp`) is PROVEN
-over it, definiteness included.
+THE PRIOR AUDIT, AND EXACTLY WHICH HALF OF IT SURVIVES.  A "THIS CUT IS A
+RESTATEMENT, NOT A REDUCTION" audit stood here, and it was right about the
+statement and wrong only about what follows from that.  Its content, preserved
+because it still rules out the obvious attack: writing
+`K := {v | ∀ n, n.Coprime M → qCoeff M v n = 0}` (a submodule, an intersection
+of kernels of the functionals `qCoeffL M n`), the consumer
+`mem_oldSubspace_of_qCoeff_coprime_eq_zero` below is exactly `K ≤ old`, the
+converse `old ≤ K` is PROVEN (`qCoeff_eq_zero_of_mem_oldSubspace`), and this
+node and that consumer are LOGICALLY EQUIVALENT — `(consumer ⇒ node)` by taking
+any complement, `(node ⇒ consumer)` by the splitting argument below.  Hence
+nothing whatever is gained by choosing `W` cleverly: if `K ⊋ old` then EVERY
+complement of `old` fails the second conjunct, by the dimension count
+`dim (W ⊓ K) ≥ dim W + dim K − dim S₂ = dim K − dim old > 0`.
 
-AUDIT 2026-07-26 — THIS CUT IS A RESTATEMENT, NOT A REDUCTION.  Write
-`K := {v | ∀ n, n.Coprime M → qCoeff M v n = 0}`, a submodule (an
-intersection of kernels of the functionals `qCoeffL M n`).  The consumer
-`mem_oldSubspace_of_qCoeff_coprime_eq_zero` below is exactly `K ≤ old`, and
-the converse `old ≤ K` is already PROVEN
-(`qCoeff_eq_zero_of_mem_oldSubspace`).  Then THIS LEAF AND THAT CONSUMER
-ARE LOGICALLY EQUIVALENT:
-
-* (leaf ⇒ consumer) is the three-line splitting argument written out below;
-* (consumer ⇒ leaf) take `W` to be ANY complement of `old`, which exists in
-  any vector space (`Submodule.exists_isCompl`); then `old ⊔ W = ⊤` by
-  construction, and `v ∈ W` with vanishing good coefficients means `v ∈ K ≤
-  old`, so `v ∈ W ⊓ old = ⊥`.
-
-Two consequences worth knowing before anyone is dispatched here.  First,
-there is NO cheaper attack hiding in the shape of the statement: nothing is
-gained by choosing `W` cleverly, because if `K ⊋ old` then EVERY complement
-of `old` fails the second conjunct (a dimension count: `dim (W ⊓ K) ≥ dim W
-+ dim K − dim S₂ = dim K − dim old > 0`).  Second, the leaf is therefore
-neither vacuous nor weakened — it carries the full strength of
-Diamond–Shurman 5.7.1, and that is the theorem a prover must actually
-produce, via the Petersson-orthogonal complement and the Atkin–Lehner
-involutions `W_Q`. -/
+What the audit then inferred — that a prover "must actually produce"
+Diamond–Shurman 5.7.1 in full, via the Petersson-orthogonal complement and the
+Atkin–Lehner involutions `W_Q` — does NOT follow, and is what the proof below
+refutes.  Equivalence with the consumer blocks a reduction that comes from the
+SHAPE of the statement; it says nothing about one that comes from shrinking the
+QUANTIFIER.  Both this node and the consumer quantify over all cusp forms, and
+the spectral decomposition of `S₂(Γ₀(M))` under the good Hecke algebra reduces
+both to JOINT EIGENVECTORS — a strictly smaller class — at the cost of no new
+analytic obligation.  The involutions `W_Q` are not used anywhere below. -/
 theorem exists_oldSubspace_complement_vanishing (M : ℕ) (hM : 0 < M) :
     ∃ W : Submodule ℂ (CuspForm (Gamma0GL M) 2),
       (⨆ p ∈ M.primeFactors,
         LinearMap.range (degeneracyOp (M / p) M p)) ⊔ W = ⊤ ∧
-      ∀ v ∈ W, (∀ n : ℕ, Nat.Coprime n M → qCoeff M v n = 0) → v = 0 :=
-  sorry
+      ∀ v ∈ W, (∀ n : ℕ, Nat.Coprime n M → qCoeff M v n = 0) → v = 0 := by
+  classical
+  haveI : FiniteDimensional ℂ (CuspForm (Gamma0GL M) 2) :=
+    cuspForm_finiteDimensional M hM
+  -- The submodule cut out by vanishing of every coefficient at an index
+  -- coprime to `M`.
+  set Kv : Submodule ℂ (CuspForm (Gamma0GL M) 2) :=
+    ⨅ n : {n : ℕ // Nat.Coprime n M}, LinearMap.ker (qCoeffL M n.1) with hKvdef
+  have hmemKv : ∀ v : CuspForm (Gamma0GL M) 2,
+      v ∈ Kv ↔ ∀ n : ℕ, Nat.Coprime n M → qCoeff M v n = 0 := by
+    intro v
+    simp only [hKvdef, Submodule.mem_iInf, LinearMap.mem_ker, qCoeffL_apply,
+      Subtype.forall]
+  -- The good Hecke operators commute and preserve `Kv`.
+  have hcomm : ∀ i j : {q : ℕ // q.Prime ∧ ¬ q ∣ M},
+      Commute (heckeOp M i.1) (heckeOp M j.1) := fun i j =>
+    heckeOp_mul_comm hM i.2.1 j.2.1
+  have hst : ∀ i : {q : ℕ // q.Prime ∧ ¬ q ∣ M},
+      Set.MapsTo (heckeOp M i.1) Kv Kv := by
+    intro i x hx
+    have hx' : ∀ n : ℕ, Nat.Coprime n M → qCoeff M x n = 0 := (hmemKv x).mp hx
+    refine (hmemKv _).mpr fun n hn => ?_
+    have hqc : Nat.Coprime i.1 M := (Nat.Prime.coprime_iff_not_dvd i.2.1).mpr i.2.2
+    have h1 : qCoeff M x (i.1 * n) = 0 :=
+      hx' _ (Nat.coprime_mul_iff_left.mpr ⟨hqc, hn⟩)
+    rw [qCoeff_heckeOp hM i.2.1 x n, h1, if_neg i.2.2]
+    by_cases hdvd : i.1 ∣ n
+    · have h2 : qCoeff M x (n / i.1) = 0 :=
+        hx' _ (Nat.Coprime.coprime_dvd_left (Nat.div_dvd_of_dvd hdvd) hn)
+      rw [if_pos hdvd, h2]
+      ring
+    · rw [if_neg hdvd]
+      ring
+  -- Every form with vanishing coprime coefficients is old: decompose `Kv` along
+  -- the joint generalized eigenspaces of the good Hecke operators, upgrade each
+  -- generalized eigenvector to an honest one by good-prime semisimplicity, and
+  -- apply the eigenvector case.
+  have hKO : Kv ≤ ⨆ p ∈ M.primeFactors,
+      LinearMap.range (degeneracyOp (M / p) M p) := by
+    refine le_trans (le_of_eq (eq_iSup_inf_iInf_maxGenEigenspace_of_mapsTo
+      (fun q : {q : ℕ // q.Prime ∧ ¬ q ∣ M} => heckeOp M q.1) hcomm Kv hst)) ?_
+    refine iSup_le fun ψ => ?_
+    intro v hv
+    obtain ⟨hvK, hvE⟩ := Submodule.mem_inf.mp hv
+    refine mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero hM
+      (c := fun q => if h : q.Prime ∧ ¬ q ∣ M then ψ ⟨q, h⟩ else 0)
+      (fun q hq hqM => ?_) ((hmemKv v).mp hvK)
+    obtain ⟨k, hk⟩ := (Module.End.mem_iInf_maxGenEigenspace_iff
+      (fun q : {q : ℕ // q.Prime ∧ ¬ q ∣ M} => heckeOp M q.1) ψ v).mp hvE
+        ⟨q, hq, hqM⟩
+    rw [dif_pos (show q.Prime ∧ ¬ q ∣ M from ⟨hq, hqM⟩)]
+    exact heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level hM hq hqM _
+      (n := k) (by simpa using hk)
+  obtain ⟨W, hW⟩ := Submodule.exists_isCompl
+    (⨆ p ∈ M.primeFactors, LinearMap.range (degeneracyOp (M / p) M p))
+  refine ⟨W, hW.sup_eq_top, fun v hvW hvc => ?_⟩
+  simpa using hW.disjoint.le_bot
+    (Submodule.mem_inf.mpr ⟨hKO ((hmemKv v).mpr hvc), hvW⟩)
 
 /-- **ATKIN–LEHNER MAIN LEMMA: no coefficients away from the level forces a form
 into the OLD SUBSPACE** (PROVEN 2026-07-26 over the single analytic leaf
@@ -28099,28 +28288,33 @@ product and the Atkin–Lehner involutions `W_Q`, neither of which exists on thi
 pin.  Note it needs NO eigenvector hypothesis — it is a statement about a single
 cusp form, exactly as in Diamond–Shurman.
 
-STATUS 2026-07-26.  The analysis is now isolated in ONE leaf,
-`exists_oldSubspace_complement_vanishing` above — the existence of a
-complement of the old subspace (the *new* subspace, Petersson-orthogonal) in
-which no nonzero form has vanishing coefficients at all indices coprime to
-`M`.  Given it, this node is a three-line splitting argument, because the
-CONVERSE inclusion is elementary and is now PROVEN and consumed here:
-`qCoeff_eq_zero_of_mem_oldSubspace` (`a_n(V_p u) = 0` unless `p ∣ n` by
-`qCoeff_degeneracyOp`, and an `n` coprime to `M` is divisible by no `p ∣ M`).
-Split `w = a + b` with `a` old and `b` in the complement; `a` has vanishing
-good coefficients by the converse, hence so does `b = w − a`, hence `b = 0`.
+STATUS 2026-07-26 (SUPERSEDES the paragraph this replaces).  This node is still
+a three-line splitting argument over `exists_oldSubspace_complement_vanishing`
+above — `w = a + b` with `a` old and `b` in the complement; `a` has vanishing
+good coefficients by the elementary converse
+`qCoeff_eq_zero_of_mem_oldSubspace`, hence so does `b = w − a`, hence `b = 0` —
+but that node is now itself PROVEN, so the whole cluster rests on the single
+leaf `mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero`: the same
+statement restricted to JOINT EIGENVECTORS of the good Hecke operators.
 
-DEPENDENCY NOTE (corrected 2026-07-26 — the previous version of this
-paragraph was STALE and said the opposite).  `V_p` itself is BUILT and
-sorry-free (`degeneracyOp` above, with `degeneracyOp_coe` and
-`qCoeff_degeneracyOp`), so nothing definitional remains anywhere in this
-cluster.  What the remaining leaf needs is the Petersson inner product on
-`S₂(Γ₀(M))` and the involutions `W_Q`.  Contrary to the note that stood
-here, `exists_peterssonProduct_selfAdjoint_heckeOp` DOES exist in this tree
-and is PROVEN, over the single leaf `exists_peterssonDomain`; so the
-Petersson product is available as a definite conjugate-symmetric form as
-soon as that domain leaf is discharged, and the domain leaf is SHARED with
-the sibling `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`. -/
+DEPENDENCY NOTE (corrected 2026-07-26 — the previous version of this paragraph
+was STALE and said the opposite; two owners caught it independently).  `V_p`
+itself is BUILT and sorry-free (`degeneracyOp` above, with `degeneracyOp_coe`
+and `qCoeff_degeneracyOp`), so nothing definitional remains anywhere in this
+cluster.  Contrary to the note that stood here,
+`exists_peterssonProduct_selfAdjoint_heckeOp` DOES exist in this tree and is
+PROVEN, over the single leaf `exists_peterssonDomain`; so the Petersson product
+is available as a definite conjugate-symmetric form as soon as that domain leaf
+is discharged, and that domain leaf is SHARED with the sibling
+`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level` (good-prime
+semisimplicity).
+
+Consequently the passage from "all cusp forms" to "joint good-Hecke
+eigenvectors" is available and has been taken in
+`exists_oldSubspace_complement_vanishing` above.  What remains under this
+cluster is therefore NOT the Petersson product and NOT the involutions `W_Q` —
+neither is used in the eigenvector case — but the newform decomposition itself,
+isolated in `mem_oldSubspace_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero`. -/
 theorem mem_oldSubspace_of_qCoeff_coprime_eq_zero {M : ℕ} (hM : 0 < M)
     {w : CuspForm (Gamma0GL M) 2}
     (hwc : ∀ n : ℕ, Nat.Coprime n M → qCoeff M w n = 0) :
