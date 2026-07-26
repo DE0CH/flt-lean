@@ -4478,29 +4478,38 @@ Four points are load-bearing in the way this is stated.
   bijection, and characteristic polynomials are invariant under
   conjugation, so — the original claim continued — no compatibility
   beyond additivity and Galois equivariance is required of `φ`. **That
-  last clause is exactly the falsity refuted below.**
+  last clause was FALSE and has been repaired**: the frame must also
+  remember the real multiplication, which is the hypothesis pair
+  `j` / `hj` below. See the audit.
 * The embeddings `ψ` of `D` and `ι` of `O` into `ℚ̄_q` are likewise
   produced per `I` (they are the place of `D` over `q` determined by
   `I`, and the structural embedding of the completion), whereas `P` is
   not; `ι` is required injective, which is the statement that `O` is a
   domain of characteristic zero — the Carayol normalization of the
-  coefficients. **`O` being a domain is not a consequence of any
-  hypothesis here**; see the audit.
+  coefficients. That `O` is such a domain is NOT a consequence of the
+  frame axioms alone — it is a consequence of `j`/`hj`, which force
+  `O = 𝒪_{D,I}`; see the audit.
 
-## FAITHFULNESS AUDIT (2026-07-26) — THIS LEAF IS FALSE AS STATED
+## FAITHFULNESS AUDIT (2026-07-26) — THE LEAF WAS FALSE AS STATED, AND IS REPAIRED HERE
 
-Two independent explicit counterexamples are given below. **Do not
-dispatch a prover at this statement**: it cannot be proven, and anything
-derived from it is worthless. The repair is a CUT-LEVEL change spanning
-three declarations with three different owners and is described at the
-end; it is REPORTED, not made here, because the frame is produced by the
-sibling `exists_tateFrame_of_levelStructure` (another owner, working
-concurrently) and consumed by the PROVEN assembly
+Two independent explicit counterexamples to the PREVIOUS statement are
+given below; they are retained because they are what pins the two
+hypotheses `j` and `hj` down, and because any future weakening of those
+hypotheses reinstates them.
+
+**The repair is now MADE, in the three coordinated edits described at the
+end** (2026-07-26, later the same day). When the counterexamples were
+first written the repair could only be REPORTED: the frame is produced by
+the sibling `exists_tateFrame_of_levelStructure` (a different owner,
+working concurrently) and consumed by the PROVEN assembly
 `nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`
-(`Modularity/KhareWintenberger.lean`), whose `HilbertBlumenthalPoint`
-fields `ιO₀_injective` / `ιC_injective` and `matchℓ` / `matchp` are
-exactly the two clauses refuted. Changing this statement in isolation
-turns a false leaf into a hard build error, which is worse.
+(`Modularity/KhareWintenberger.lean`), so changing this statement in
+isolation would have turned a false leaf into a hard build error, which
+is worse. The sibling now PRODUCES `j` and `hj`, so all three edits land
+together and the seam typechecks.
+
+Everything below describing the defect refers to the statement WITHOUT
+`j`/`hj`. With them, the leaf is open but faithful.
 
 **The quantifier repair recorded in the second bullet DID hold up.**
 `bad`, `ψ` and `ι` are all produced after `q`, `I`, `π` and the frame;
@@ -4593,16 +4602,17 @@ must be the norm of the `O`-one, and indeed
 `(X−χ)²(X−χ̄)² = N_{O/ℤ₁₃}((X−c_w)²)` agrees with the value computed
 from the standard frame.)
 
-### The repair (REPORTED, not made here)
+### The repair (MADE — this is what `j` and `hj` are)
 
-Pin the frame to the real multiplication. Concretely, add to THIS leaf a
-ring homomorphism together with the intertwining it must satisfy,
+Pin the frame to the real multiplication. Concretely, THIS leaf now takes
+a ring homomorphism together with the intertwining it must satisfy,
 
     (j : NumberField.RingOfIntegers D →+* O)
     (hj : ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
             (φ (j a • u)).1 n = m.act a ((φ u).1 n))
 
-as further hypotheses of the innermost `∀`. This is exactly the
+as further hypotheses of the innermost `∀` (`j` sits after `φ` in the
+binder chain, `hj` after the equivariance arrow). This is exactly the
 statement that `φ` is a frame of the Tate module AS AN `𝒪_D`-MODULE,
 and it repairs both counterexamples at once: `j` forces `O` to contain
 the image of `𝒪_D ⊗ ℤ_q` acting on `T`, which is `𝒪_{D,I}`, and the
@@ -4619,22 +4629,33 @@ because `j((1+√5)/2)` would have to act on `W` as the companion matrix
 `ℤ₁₃ × ℤ₁₃` admits none either, because `𝒪_D` acts through the
 `W`-factor and is therefore not scalar on either `e_iT`.
 
-The seam therefore needs three coordinated edits, none of which is this
-declaration's owner's to make alone:
+The seam needed three coordinated edits, none of which was this
+declaration's owner's to make alone. **All three are now in place:**
 
-1. `exists_tateFrame_of_levelStructure` must additionally PRODUCE `j`
-   and `hj`. This is free for its author: it constructs
-   `O = 𝒪_{D,I}` and `φ` from the `I`-adic Tate module, so `j` is the
-   structural map.
+1. `exists_tateFrame_of_levelStructure` additionally PRODUCES `j` and
+   `hj`. This was free for its author: it constructs `O = 𝒪_{D,I}` and
+   `φ` from the `I`-adic Tate module, so `j` is the structural map of
+   `exists_adicCoefficientRing` and `hj` is `hφj`, which is how the
+   action was built in `exists_tateFrame_of_adicCoefficientRing`.
 2. This leaf takes `j`, `hj` as hypotheses (as displayed above).
 3. `nonempty_hilbertBlumenthalPoint_of_isTwistedHilbertBlumenthalModuli`
-   threads them through its two `obtain`s.
+   threads them through its two `obtain`s — the bindings that were
+   parked there as `_jD₀`/`_hjD₀` and `_jDp`/`_hjDp` precisely against
+   this day are now consumed, and the `HilbertBlumenthalPoint` fields
+   `ιO₀_injective` / `ιC_injective` and `matchℓ` / `matchp` are supplied
+   from the repaired leaf rather than from the refuted one.
 
-Until (1) lands, adding (2) alone would break (3), so the statement is
-left untouched and the falsity is recorded here instead. The sibling
-`exists_tateFrame_of_levelStructure` is NOT itself false — the honest
-`I`-adic Tate module does frame it — it is merely too weak, and that
-weakness is what this leaf inherited. -/
+**Consequence for the eventual prover of this leaf**: `Function.Injective ι`
+is no longer an assumption smuggled into the conclusion. Discharge it by
+first proving `O = 𝒪_{D,I}` from `j`, `hj`, the `ℤ_q`-rank count and
+integral closedness — do NOT look for a hypothesis that hands it to you,
+and do NOT reintroduce `IsDomain O` as a hypothesis (that is the ad-hoc
+patch the audit rejects: it kills counterexample 1 and leaves
+counterexample 2 standing).
+
+The sibling `exists_tateFrame_of_levelStructure` was NOT itself false —
+the honest `I`-adic Tate module does frame it — it was merely too weak,
+and that weakness is what this leaf inherited. -/
 theorem exists_weilFrobeniusSystem_of_mult
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -4648,12 +4669,15 @@ theorem exists_weilFrobeniusSystem_of_mult
         (_ : (q : NumberField.RingOfIntegers D) ∈ I)
         (π : NumberField.RingOfIntegers D) (_ : π ∈ I) (_ : π ∉ I ^ 2)
         (O : Type u) (_ : CommRing O) (_ : TopologicalSpace O) (_ : IsTopologicalRing O)
-        (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π),
+        (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+        (j : NumberField.RingOfIntegers D →+* O),
         (∀ (u u' : Fin 2 → O) (n : ℕ),
           (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n)) →
         Function.Bijective φ →
         (∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
           (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n)) →
+        (∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+          (φ (j a • u)).1 n = m.act a ((φ u).1 n)) →
         ∃ (bad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
           (ψ : D →+* AlgebraicClosure ℚ_[q]) (ι : O →+* AlgebraicClosure ℚ_[q]),
           Function.Injective ι ∧
