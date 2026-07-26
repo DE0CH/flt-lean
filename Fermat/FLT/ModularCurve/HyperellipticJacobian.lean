@@ -435,6 +435,125 @@ theorem no_noncuspidal_point (x y : ℚ) (hx0 : x ≠ 0) (hx1 : x ≠ 1)
 
 end X18
 
+namespace X13
+
+local instance factThree : Fact (Nat.Prime 3) := ⟨by norm_num⟩
+
+/-- The `X_1(13)` sextic in the coefficient form used by this module.
+
+This is Sutherland's optimal model of `X_1(13)`, the genus-`2` curve of
+conductor `169`: completing the square in `y² + (x³ + x² + 1)y = x² + x`
+gives `(2y + x³ + x² + 1)² = x⁶ + 2x⁵ + x⁴ + 2x³ + 6x² + 4x + 1`. -/
+theorem sext13 {R : Type*} [CommRing R] (x : R) :
+    sext 1 4 6 2 1 2 x
+      = x ^ 6 + 2 * x ^ 5 + x ^ 4 + 2 * x ^ 3 + 6 * x ^ 2 + 4 * x + 1 := by
+  simp only [sext]
+  push_cast
+  ring
+
+/-- **`#X(𝔽₃) = 6`** (PROVEN BY `decide`).
+
+Modulo `3` the sextic is `x⁶ + 2x⁵ + x⁴ + 2x³ + x + 1`, whose values at
+`x = 0, 1, 2` are `1, 2, 1`.  Squares in `𝔽₃` are `{0, 1}`, so `x = 0` and
+`x = 2` each give two affine points and `x = 1` gives none: `4` affine
+points, plus the `2` points at infinity, is `6`.  This is the point count
+the whole rank-`0` argument turns on, and the kernel verifies it.
+
+`3` is a prime of good reduction: the sextic has discriminant `−2¹²·13²`
+(PARI, untrusted), and `J_1(13)` has conductor `169 = 13²`.  It also
+satisfies the formal-group hypothesis `p > e + 1 = 2` that
+`red_ker_torsionFree` needs. -/
+theorem card_X13_F3 : Fintype.card (Pt 1 4 6 2 1 2 (ZMod 3)) = 6 := by decide
+
+/-- **THE REMAINING LEAF: the Jacobian of `X_1(13)` exists with rank `0`.**
+
+Exactly the shape of `X18.exists_jacobianPackage`, and deliberately so: one
+future development of genus-`2` Jacobians discharges both at once.  The four
+parts are those recorded in this module's docstring:
+
+1. `Pic⁰` of a genus-`2` hyperelliptic curve, with the Mumford representation
+   and Cantor's group law — supplying `J`, `addCommGroup`, `J'`;
+2. Abel–Jacobi from a rational base point, injective for genus `≥ 1` —
+   supplying `aj`, `aj_injective`, `aj'`;
+3. good reduction at `3` (the sextic's discriminant is `−2¹²·13²`, and the
+   conductor of `J_1(13)` is `169`), the reduction homomorphism, its
+   compatibility with `redPt`, and torsion-freeness of its kernel — the kernel
+   is the formal group over `ℤ₃`, torsion-free since `3 > e + 1 = 2`;
+4. `rank J(ℚ) = 0`, giving `fin`.  Externally (untrusted searchers): `J_1(13)`
+   is `ℚ`-simple of dimension `2` with `J(ℚ)_tors ≅ ℤ/19`, and a `2`-descent
+   gives `rank J(ℚ) = 0`, so `J(ℚ) ≅ ℤ/19`; equivalently `LRatio(J, 1) =
+   1/361 ≠ 0`.  Only FINITENESS is used here.
+
+This is Mazur–Tate, *Points of order 13 on elliptic curves*, Invent. Math. 22
+(1973); subsumed in Mazur, IHÉS 47 (1977), Thm 7.
+
+**Not vacuous**: `aj_injective` and `fin` together force `X(ℚ)` to be finite,
+so no trivial group discharges it.  **Not overstated**: the honest
+`Pic⁰(X/ℚ)` satisfies every field. -/
+theorem exists_jacobianPackage :
+    Nonempty (JacobianPackage 1 4 6 2 1 2 3) := sorry
+
+/-- The six cusps of `X_1(13)` — `(0, ±1)`, `(−1, ±1)` and the two points at
+infinity — together with a putative seventh point of abscissa `u`.
+
+`φ(13)/2 = 6`, so these six are all of them; the sextic takes the value `1` at
+both `0` and `−1`, which is what makes the four affine cusps rational. -/
+noncomputable def sevenPts (u v : ℚ) (h : v ^ 2 = sext 1 4 6 2 1 2 u) :
+    Fin 7 → Pt 1 4 6 2 1 2 ℚ :=
+  ![Sum.inl ⟨(u, v), h⟩,
+    Sum.inl ⟨(0, 1), by rw [sext13]; norm_num⟩,
+    Sum.inl ⟨(0, -1), by rw [sext13]; norm_num⟩,
+    Sum.inl ⟨(-1, 1), by rw [sext13]; norm_num⟩,
+    Sum.inl ⟨(-1, -1), by rw [sext13]; norm_num⟩,
+    Sum.inr true,
+    Sum.inr false]
+
+/-- **The seven points are pairwise distinct** (PROVEN) as soon as
+`u ∉ {0, −1}`.
+
+As at level `18`, the argument is carried out after forgetting the defining
+equations — on the underlying data in `(ℚ × ℚ) ⊕ Bool` — because the curve
+equation, kept in context, is a rewrite rule that `simp_all` orients as
+`1 ↦ sext …` and loops on. -/
+lemma sevenPts_injective (u v : ℚ) (h : v ^ 2 = sext 1 4 6 2 1 2 u)
+    (hx0 : u ≠ 0) (hx1 : u ≠ -1) : Function.Injective (sevenPts u v h) := by
+  have hdata : Function.Injective (![Sum.inl (u, v), Sum.inl (0, 1), Sum.inl (0, -1),
+      Sum.inl (-1, 1), Sum.inl (-1, -1), Sum.inr true, Sum.inr false] :
+      Fin 7 → (ℚ × ℚ) ⊕ Bool) := by
+    intro i j hij
+    fin_cases i <;> fin_cases j <;>
+      (try rfl) <;> (try exfalso) <;> (try norm_num at hij) <;> (try tauto)
+  have hmap : ∀ i, Sum.map Subtype.val id (sevenPts u v h i)
+      = (![Sum.inl (u, v), Sum.inl (0, 1), Sum.inl (0, -1),
+          Sum.inl (-1, 1), Sum.inl (-1, -1), Sum.inr true, Sum.inr false] :
+          Fin 7 → (ℚ × ℚ) ⊕ Bool) i := by
+    intro i; fin_cases i <;> rfl
+  intro a b hab
+  refine hdata ?_
+  rw [← hmap a, ← hmap b]
+  exact congrArg _ hab
+
+/-- **`X_1(13)` has no non-cuspidal rational point on its smooth model**
+(PROVEN modulo `exists_jacobianPackage`).
+
+`X(ℚ) ↪ X(𝔽₃)` by `redPt_injective`, and `#X(𝔽₃) = 6`; but a rational point
+with `x ∉ {0, −1}` would be a seventh point of `X(ℚ)` alongside the six cusps.
+`7 ≤ 6` is the contradiction.  No Chabauty and no Mordell–Weil sieve: only
+rank `0` and one point count. -/
+theorem no_noncuspidal_point (x y : ℚ) (hx0 : x ≠ 0) (hx1 : x ≠ -1)
+    (hxy : y ^ 2 = x ^ 6 + 2 * x ^ 5 + x ^ 4 + 2 * x ^ 3 + 6 * x ^ 2 + 4 * x + 1) :
+    False := by
+  obtain ⟨D⟩ := exists_jacobianPackage
+  have hq : y ^ 2 = sext 1 4 6 2 1 2 x := by rw [sext13]; exact hxy
+  have hcard : Fintype.card (Fin 7)
+      ≤ Fintype.card (Pt 1 4 6 2 1 2 (ZMod 3)) :=
+    Fintype.card_le_of_injective _
+      ((redPt_injective D).comp (sevenPts_injective x y hq hx0 hx1))
+  rw [Fintype.card_fin, card_X13_F3] at hcard
+  omega
+
+end X13
+
 end Hyperelliptic
 
 end Fermat
