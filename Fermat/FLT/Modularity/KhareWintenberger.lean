@@ -1610,11 +1610,284 @@ theorem exists_primes_forall_sup_eq_top_of_isOpen
         N ⊔ (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).toMonoidHom.range = ⊤ :=
   sorry
 
+/-! #### Moret–Bailly's curve case, cut at the Galois closure
+
+(2026-07-26.) `exists_normalSplitPoint_of_affine_curve` asks for a field
+that is simultaneously (a) produced by Moret–Bailly's construction and
+(b) NORMAL over `ℚ`. Moret–Bailly's Théorème 1.3 does **not** produce a
+normal field: by his Remarque 1.5 the "point entier" `Y ⊆ X` has generic
+fibre `Spec K'` for an arbitrary finite extension `K'/ℚ`, and the local
+conditions say exactly that `K'` is *totally split* at every place of `Σ`
+— that is all. BLGGT Prop. 3.1.1 quotes it as producing a *Galois* `K'`
+because one silently replaces `K'` by its Galois closure afterwards.
+
+Those two steps are independent and are separated here:
+
+* `exists_totallySplitPoint_of_affine_curve` — Moret–Bailly Thm 1.3
+  itself, §3 of the paper. Produces a totally real number field, totally
+  split at every `p ∈ S`, carrying a point of `C`. **Not normal.**
+* `exists_normalClosure_of_totallyReal_totallySplit` — pure algebraic
+  number theory: the normal closure of a totally real, totally-split-at-`S`
+  number field is again totally real and totally split at `S`.
+
+WHY THE INTERMEDIATE FIELD'S SPLITTING MUST BE STATED AS `IsTotallySplitAt`
+AND NOT AS `Nonempty (F →+* ℚ_[p])` (this is the whole reason a new
+predicate appears here). For a NORMAL field the two agree, which is why
+the sibling `exists_primes_forall_sup_eq_top_of_isOpen` may use the cheap
+`Nonempty` form: all primes above `p` are conjugate, so one of local
+degree `1` forces all of them. For a general `F` they do **not** agree, and
+the difference is fatal to this cut: `F = ℚ(2 ^ (1/3))` and `p ≡ 2 mod 3`
+gives `Nonempty (F →+* ℚ_[p])` — `X ^ 3 - 2` has exactly one root in
+`ℚ_[p]` — while the normal closure `ℚ(2 ^ (1/3), ζ₃)` is *not* split at
+`p`, since `ζ₃ ∉ ℚ_[p]`. So a cut whose intermediate leaf only claimed
+`Nonempty (F →+* ℚ_[p])` would have an unprovable closure step. -/
+
+/-- **`p` splits completely in the number field `F`.** Stated as a count of
+ring homomorphisms: `Hom_ℚ(F, ℚ̄_p)` has exactly `[F : ℚ]` elements and is
+partitioned by the primes `v ∣ p` into blocks of size `[F_v : ℚ_p]`, of
+which the homomorphisms landing in `ℚ_[p]` itself are precisely the blocks
+with `F_v = ℚ_p`. So `Nat.card (F →+* ℚ_[p]) = [F : ℚ]` says exactly that
+every prime above `p` has local degree `1`, i.e. `p` is totally split.
+
+(Ring homomorphisms rather than `ℚ`-algebra homomorphisms: between fields
+of characteristic zero every ring homomorphism is automatically a
+`ℚ`-algebra homomorphism, and the file's existing statements are phrased
+with `→+*`.)
+
+`Nat.card` is used rather than `Fintype.card` so that no `Fintype`
+instance has to be produced at the statement; finiteness of `F →+* ℚ_[p]`
+is a consequence, not a hypothesis, and is recovered where needed through
+`Nat.card_ne_zero`. -/
+def IsTotallySplitAt (F : Type*) [Field F] [NumberField F] (p : ℕ) [Fact p.Prime] :
+    Prop :=
+  Nat.card (F →+* ℚ_[p]) = Module.finrank ℚ F
+
+/-- **Complete splitting gives a `ℚ_[p]`-embedding** (PROVEN glue): the
+degree `[F : ℚ]` of a number field is positive, so a field totally split
+at `p` has at least one — indeed exactly `[F : ℚ]` — ring homomorphisms to
+`ℚ_[p]`. This is the bridge from `IsTotallySplitAt` to the `Nonempty
+(F →+* ℚ_[p])` form in which the Chebotarev sibling
+`exists_primes_forall_sup_eq_top_of_isOpen` consumes complete splitting. -/
+theorem nonempty_ringHom_padic_of_isTotallySplitAt
+    (F : Type u) (_ : Field F) (_ : NumberField F) (p : ℕ) [Fact p.Prime]
+    (hsplit : IsTotallySplitAt F p) : Nonempty (F →+* ℚ_[p]) := by
+  have hpos : 0 < Module.finrank ℚ F := Module.finrank_pos
+  have hne : Nat.card (F →+* ℚ_[p]) ≠ 0 := by
+    rw [IsTotallySplitAt] at hsplit; omega
+  exact (Nat.card_ne_zero.mp hne).1
+
 open CategoryTheory AlgebraicGeometry in
-/-- **Steps (ii)+(iii) of Moret–Bailly's route: the CURVE case** (sorry
-node — the arithmetic heart: Jacobians as schemes, an incompressible
-neighbourhood in the Picard scheme, and the local–global principle over
-`ℚ^tr`). This is Moret–Bailly, *Groupes de Picard et problèmes de Skolem
+/-- **Rational points grow along a field extension** (PROVEN glue): a ring
+homomorphism `f : F →+* E` of number fields induces `Spec E ⟶ Spec F`, and
+composing an `F`-point of `X` with it gives an `E`-point. The square over
+`Spec ℚ` commutes because `ℚ →+* E` is a subsingleton, so
+`f ∘ (algebraMap ℚ F) = algebraMap ℚ E` automatically — no compatibility
+hypothesis on `f` is needed.
+
+(The `NumberField` hypotheses are carried only to pin the `Algebra ℚ ·`
+instance: `Field F` alone does not synthesize it at this pin — the
+instance is `algebraRat`, which wants `CharZero`. Nothing in the proof
+uses finiteness.)
+
+This is what lets Moret–Bailly's field be enlarged to its Galois closure
+without losing the point. -/
+theorem HasRationalPoint.of_ringHom {X : AlgebraicGeometry.Scheme.{u}}
+    (fX : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (F E : Type u) (_ : Field F) (_ : NumberField F) (_ : Field E) (_ : NumberField E)
+    (f : F →+* E) (h : HasRationalPoint fX F) : HasRationalPoint fX E := by
+  obtain ⟨x, hx⟩ := h
+  refine ⟨AlgebraicGeometry.Spec.map (CommRingCat.ofHom f) ≫ x, ?_⟩
+  rw [Category.assoc, hx]
+  show AlgebraicGeometry.Spec.map (CommRingCat.ofHom f) ≫ specRatMap F = specRatMap E
+  rw [specRatMap, specRatMap, ← AlgebraicGeometry.Spec.map_comp]
+  congr 1
+  ext z
+  -- pointwise: `f ((q : F)) = (q : E)` for the rational `q = ULift.ringEquiv z`
+  simp
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Moret–Bailly's Théorème 1.3 on the curve, in its own form** (SORRY —
+the arithmetic heart of the whole cluster). Moret–Bailly, *Groupes de
+Picard et problèmes de Skolem II*, Ann. Sci. ÉNS **22** (1989), 181–194,
+**Théorème 1.3** together with his Remarque 1.5, specialised to the Skolem
+datum described below. The field produced is **not** normal — that is
+supplied afterwards by
+`exists_normalClosure_of_totallyReal_totallySplit`.
+
+THE SKOLEM DATUM (Moret–Bailly 1.1–1.2), and how the hypotheses here
+produce it. A *donnée de Skolem* is `(f : X → B, Σ, {L_v}, {Ω_v})` where
+`B = Spec R` for `R` a ring of `S₀`-integers of a number field `K`, `f` is
+separated of finite type and surjective with `X` irreducible and `X_K`
+geometrically irreducible, `Σ` is a finite set of places of `K` DISJOINT
+from `Max R`, `L_v/K_v` is finite Galois, and `Ω_v ⊆ X(L_v)` is a nonempty
+`Gal(L_v/K_v)`-stable open consisting of smooth points. It is *incomplete*
+when `Σ ∪ Max R` is not all places of `K`. Here:
+
+* `K = ℚ`; take a model of `C` over `ℤ[1/M]` for a suitable `M` (finite
+  type over `ℚ` spreads out), invert in addition every `p ∈ S` and ONE
+  further prime `q ∉ S ∪ {∞}`, and let `R = ℤ[1/(M · q · ∏ S)]`;
+* `Σ = {∞} ∪ S`, with `L_v = K_v` for every `v ∈ Σ` (so `Gal(L_v/K_v)` is
+  trivial and the stability condition is vacuous);
+* `Ω_∞ = C(ℝ)`, nonempty by `hreal`; `Ω_p = C(ℚ_[p])`, nonempty by `hSpt`.
+  Both are open and consist of smooth points because `hsmooth` makes all
+  of `C` smooth over `ℚ`.
+
+Incompleteness holds precisely because `q` was inverted: `q ∉ Σ` and
+`q ∉ Max R`. **The one further inverted prime is why this leaf asks for a
+`ℚ`-point of `C` and not an integral point.**
+
+WHAT THE CONCLUSION IS, VERBATIM FROM REMARQUE 1.5. A *point entier* is an
+irreducible closed `Y ⊆ X`, finite and surjective over `B`, with
+`Y ⊗ L_v` being `L_v`-split and contained in `Ω_v` for every `v ∈ Σ`. Its
+generic fibre is `Spec F` for a finite extension `F/ℚ`, giving `x ∈ X(F)`;
+and "`Y ⊗ L_v` is `L_v`-split" says exactly that `F ⊗_ℚ K_v` is a product
+of copies of `K_v`, i.e. that `v` splits completely in `F`. At `v = ∞`
+that reads `F ⊗_ℚ ℝ ≅ ℝ ^ [F : ℚ]`, i.e. `NumberField.IsTotallyReal F`;
+at `v = p ∈ S` it reads `IsTotallySplitAt F p`. Hence the conclusion
+below, and hence also why total reality is the archimedean member of the
+same family of conditions rather than a separate hypothesis.
+
+MORET–BAILLY'S PROOF OF §3, AS A ROADMAP FOR A PROVER (the paper's own
+numbering; §2 — the reduction to relative dimension `1` — is this file's
+Bertini sibling `exists_affineCurve_of_affine_geometricallyIrreducible`,
+which is why this leaf may assume `topologicalKrullDim C ≤ 1`):
+
+* **3.1** Compactify: `j : X ↪ X̄` a dense open immersion with `X̄ → B`
+  projective and `X̄` normal; put `Z = X̄ - X` with its reduced structure,
+  `g = ` genus of `X̄_K`, `z = deg_K Z_K` (arrange `z > 0`). After
+  shrinking `B` and enlarging `Σ` (his 1.9, 1.10) one may assume `X̄`
+  regular, the fibres of `X̄ → B` geometrically integral, and `Z → B`
+  finite flat surjective, so `Z` is a Cartier divisor.
+* **3.2** The `d`-th symmetric power `X̄^(d)`, whose `S`-points are the
+  effective Cartier divisors on `X̄_S` finite flat of degree `d` over `S`
+  and disjoint from `Z`; `U_d ⊆ X̄^(d)` the étale locus; `Ω_v^[d]` the
+  divisors that are étale, `L_v`-split and inside `Ω_v`.
+* **3.3** `Ω_v^[d]` is open in `U_d(K_v)`, and nonempty when
+  `[L_v : K_v] ∣ d`.
+* **3.4** The generalised Picard functor `PG(X̄, Z)` — pairs (invertible
+  sheaf, trivialisation along `Z`) — sits in
+  `1 → 𝔾_m,B → (π_Z)_* 𝔾_m,Z → PG(X̄,Z) → Pic_{X̄/B} → 1`, hence is a
+  smooth separated `B`-group scheme, with neutral component `PG₀(X̄,Z)`
+  the generalised Jacobian of Serre, *Groupes algébriques et corps de
+  classes*, ch. V.
+* **3.5–3.6** `φ_d : X̄^(d) → PG_d(X̄,Z)`, `D ↦ cl_Z(D)`, is a Zariski-locally
+  trivial fibration in affine spaces of dimension `d + 1 - g - z` once
+  `d ≥ 2g + z - 1` (Riemann–Roch plus vanishing of `R¹`).
+* **3.7.2** `W_v^d := φ_d(Ω_v^[d])` is open in `P_d(K_v)`, nonempty when
+  `[L_v : K_v] ∣ d`, and `W_v^d · W_v^{d'} ⊆ W_v^{d + d'}` for `d ≥ 2g + z`.
+* **3.8** If `(ℒ, α)` over `R` has `d ≥ 2g + z - 1` and its image in each
+  `P_d(K_v)` lies in `W_v^d`, then STRONG APPROXIMATION in the affine
+  `R`-space `Γ(X̄, ℒ, α)` — available because the datum is incomplete —
+  produces a global section whose divisor is a point entier.
+* **3.9** Such an `(ℒ, α)` exists: take `ℒ₀` ample, and use that
+  `G = P₀(K_Σ) / im Γ(Z, 𝒪_Z^×)` is QUASI-COMPACT, so `g^n → 1` along a
+  subsequence for every `g ∈ G`, to move a power of `ℒ₀` into the open
+  `W^d · (W^d)⁻¹`.
+* **3.9.2–3.10** Quasi-compactness of `G` is the arithmetic core, and it
+  is where the Picard groups of the title enter: `G` is an extension of an
+  open subgroup of `∏_{v ∈ Σ} Pic⁰_{X̄_K/K}(K_v)` by
+  `(R' ⊗_R K_Σ)^× / (R'^× · K_Σ^×)`. The first factor is compact by **3.10.2**
+  (Raynaud: `J(F)` is compact for `J` the Jacobian of a curve over a local
+  field `F`, since `J` is open in the proper Altman–Kleiman compactified
+  Picard scheme); the second by **3.10.3/3.10.4**, i.e. quasi-compactness
+  of `K_Σ^× / R^×`, which is Dirichlet's unit theorem plus the
+  INCOMPLETENESS of the datum (the sum-of-coordinates map
+  `ℝ^{S - Σ} → ℝ` is surjective exactly because `Σ ⊊ S`).
+
+WHAT IS MISSING AT THIS PIN, honestly: mathlib has no Picard scheme, no
+symmetric power of a scheme, no generalised Jacobian, no strong
+approximation for affine spaces over rings of `S`-integers, and no smooth
+compactification of a curve. Items (2) and (4) of the section docstring's
+machinery list are exactly 3.9.2–3.10 above. `ℚ^tr` does **not** appear in
+this statement: "totally real, totally split at `S`" is everything a
+subfield of `ℚ^tr` contributes here, so building `ℚ^tr` speculatively
+would be free-floating.
+
+FAITHFULNESS. The degenerate directions are covered rather than assumed
+away: `GeometricallyIrreducible fC` forces `C ≠ ∅`, and if
+`topologicalKrullDim C ≤ 0` then `C` is `Spec` of a geometrically
+irreducible smooth finite `ℚ`-algebra, i.e. `Spec ℚ`, and `F = ℚ` — which
+is totally real, totally split at every prime, and carries the point —
+discharges the conclusion. So `hdim` may be used as "`dim = 1` after the
+`dim = 0` case is dispatched", which is how Moret–Bailly's §3 reads it.
+
+CIRCULARITY GUARD: inherited from the parent — no route through
+`Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
+theorem exists_totallySplitPoint_of_affine_curve
+    {C : AlgebraicGeometry.Scheme.{u}} [AlgebraicGeometry.IsAffine C]
+    (fC : C ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth fC)
+    (hsep : AlgebraicGeometry.IsSeparated fC)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType fC)
+    (hqc : AlgebraicGeometry.QuasiCompact fC)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible fC)
+    (hreal : HasRationalPoint fC (ULift.{u} ℝ))
+    (hdim : topologicalKrullDim C ≤ 1)
+    (S : Finset ℕ) (hSprime : ∀ p ∈ S, p.Prime)
+    (hSpt : ∀ (p : ℕ) [Fact p.Prime], p ∈ S →
+      HasRationalPoint fC (ULift.{u} ℚ_[p])) :
+    ∃ (F : Type u) (_ : Field F) (_ : NumberField F)
+      (_ : NumberField.IsTotallyReal F),
+      (∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt F p) ∧
+      HasRationalPoint fC F :=
+  sorry
+
+/-- **The normal closure of a totally real, totally split number field is
+again totally real and totally split** (SORRY — pure algebraic number
+theory, no geometry). This is the step BLGGT Prop. 3.1.1 performs
+silently when it quotes Moret–Bailly as producing a *Galois* extension:
+Moret–Bailly's Remarque 1.5 produces an arbitrary finite `F/ℚ`, and one
+replaces it by its normal closure.
+
+WHY IT IS TRUE. Let `E` be the normal closure of `F` in an algebraic
+closure; it is the compositum of the finitely many conjugates `σ F`.
+
+* `NumberField E`: a compositum of finitely many number fields is one.
+* `Normal ℚ E`: that is what the normal closure is (and in characteristic
+  zero it is automatically Galois, which is how the parent's consumer
+  `exists_totallyReal_point_of_affine_geometricallyIrreducible` upgrades
+  it).
+* `E →+* ℝ`, indeed `E ⊆ ℝ`: each `σ F` is totally real, since being
+  totally real is a property of the abstract field `F` and `σ F ≅ F`; a
+  compositum of totally real fields is totally real; and a totally real
+  field has a real embedding.
+* Total splitting at `p` is preserved. Use the characterisation: a
+  subfield `F ⊆ ℚ̄` is totally split at `p` iff for EVERY embedding
+  `ℚ̄ ↪ ℚ̄_p` the image of `F` lies in `ℚ_[p]`. That property is stable
+  under conjugation (it is intrinsic to `F`) and under compositum (an
+  embedding of `F₁ F₂` restricts to embeddings of `F₁` and of `F₂`, both
+  landing in `ℚ_[p]`, and `ℚ_[p]` is a field). Hence it holds for `E`.
+
+WHY THE HYPOTHESIS CANNOT BE WEAKENED to `Nonempty (F →+* ℚ_[p])`: see
+the section docstring above — `F = ℚ(2 ^ (1/3))`, `p ≡ 2 mod 3` is a
+counterexample, its normal closure `ℚ(2 ^ (1/3), ζ₃)` not being split at
+`p`. This is the reason `IsTotallySplitAt` exists.
+
+The hypothesis `NumberField.IsTotallyReal F` is likewise not weakenable to
+a single real embedding `F →+* ℝ`: the normal closure of a field with one
+real and two complex places (e.g. `ℚ(2 ^ (1/3))` again) is not real.
+
+WHAT A PROVER HAS AT THIS PIN: `IntermediateField.normalClosure` with its
+`Normal` and `IsGalois` instances, `NumberField.IsTotallyReal` and
+`NumberField.InfinitePlace`, and `IntermediateField.isAlgebraic_iff`.
+Nothing here needs geometry or the rest of this file. -/
+theorem exists_normalClosure_of_totallyReal_totallySplit
+    (F : Type u) (_ : Field F) (_ : NumberField F)
+    (_ : NumberField.IsTotallyReal F) (S : Finset ℕ)
+    (hsplit : ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt F p) :
+    ∃ (E : Type u) (_ : Field E) (_ : NumberField E) (_ : Normal ℚ E)
+      (_ : E →+* ℝ) (_ : F →+* E),
+      ∀ (p : ℕ) [Fact p.Prime], p ∈ S → IsTotallySplitAt E p :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **Steps (ii)+(iii) of Moret–Bailly's route: the CURVE case**
+(**PROVEN 2026-07-26** over the two leaves above — Moret–Bailly's theorem
+proper and the Galois-closure step, which BLGGT Prop. 3.1.1 performs
+silently; see the section docstring "Moret–Bailly's curve case, cut at the
+Galois closure" for why the intermediate splitting condition must be
+`IsTotallySplitAt` and not `Nonempty (F →+* ℚ_[p])`).
+This is Moret–Bailly, *Groupes de Picard et problèmes de Skolem
 II*, Ann. Sci. ÉNS 22 (1989), **Théorème 1.3**, §3 (the curve case; §2 is
 the hyperplane-section reduction, which is this file's Bertini sibling), in
 the form in which BLGGT Prop. 3.1.1 cites it:
@@ -1627,45 +1900,41 @@ Exactly the affine statement, with `X` further required to be a CURVE
 (`topologicalKrullDim C ≤ 1`), and with the conclusion in its "raw"
 geometric form: the field produced is only asked to be a NUMBER FIELD that
 is NORMAL over `ℚ`, admits a ring map to `ℝ`, and splits every prime of a
-prescribed finite set `S` completely. That is what the classical
-construction delivers — `F` is built inside the field `ℚ^tr` of totally
-real algebraic numbers, hence inside `ℝ`, and is replaced by its Galois
-closure there, which preserves both total reality and complete splitting
-(both are compositum- and conjugation-stable) — and
-`isTotallyReal_of_normal_of_realEmbedding` upgrades it to
-`NumberField.IsTotallyReal F` and `IsGalois ℚ F` for free.
+prescribed finite set `S` completely.
+
+ASSEMBLY (2026-07-26). `exists_totallySplitPoint_of_affine_curve` is
+Moret–Bailly's theorem itself: it delivers a totally real `F`, totally
+split at every `p ∈ S`, with an `F`-point of `C` — but NOT normal, because
+his Remarque 1.5 produces the residue field of a closed point and nothing
+makes that field normal. `exists_normalClosure_of_totallyReal_totallySplit`
+then replaces `F` by its normal closure `E`, which is still totally real
+(hence `E →+* ℝ`) and still totally split at `S` — both properties being
+conjugation- and compositum-stable — and `HasRationalPoint.of_ringHom`
+transports the point along `F →+* E`. Finally
+`nonempty_ringHom_padic_of_isTotallySplitAt` converts complete splitting
+into the `Nonempty (F →+* ℚ_[p])` form in which the Chebotarev sibling
+`exists_primes_forall_sup_eq_top_of_isOpen` consumes it. Downstream,
+`isTotallyReal_of_normal_of_realEmbedding` re-derives
+`NumberField.IsTotallyReal` and `IsGalois ℚ E` from `Normal ℚ E` and the
+real embedding, so nothing is lost by weakening the conclusion to those.
 
 THE AVOIDANCE DATUM `N` IS GONE FROM THIS LEAF (2026-07-26). It is bought
 instead with the auxiliary primes `S`, by
 `exists_primes_forall_sup_eq_top_of_isOpen`; see the section docstring above
 for why that is the honest place for it and why the parent's two
-counterexamples do not obstruct it. What is left here is precisely the
-theorem Moret–Bailly proves.
+counterexamples do not obstruct it.
 
-HOW `S` ENTERS MORET–BAILLY'S FRAMEWORK, since his hypotheses are subtle
-(recorded so that a prover does not have to rediscover it). His datum is a
-scheme over `Spec R` for `R` a ring of `S₀`-integers, together with a finite
-set `Σ` of places DISJOINT from `Max(R)`, and his theorem applies only to an
-INCOMPLETE datum — one for which `Σ ∪ Max(R)` is not all places of `K`. So
-one takes a model of `C` over `ℤ[1/M]` for a suitable `M`, inverts in
-addition every `p ∈ S` and ONE further prime `q ∉ S ∪ {∞}`, and sets
-`Σ = {∞} ∪ S` with `L_v = K_v` and `Ω_v = C(K_v)` (nonempty by the `hreal`
-and `hSpt` hypotheses, open and consisting of smooth points because `C` is
-smooth). The datum is then incomplete precisely because `q` was inverted,
-and Moret–Bailly's "point entier" is a closed point of the model finite over
-the base, whose residue field is the required `F` (his Remarque 1.5). The
-one further inverted prime is the whole reason the leaf is stated with a
-`ℚ`-point rather than an integral point.
-
-WHAT THE MISSING MACHINERY LIST BUYS. Of the four items recorded in the
-section docstring, this leaf needs (2) largeness/ampleness of `ℚ^tr` (Pop)
-and (4) Picard schemes/Jacobians with the incompressible-neighbourhood
-statement — in Moret–Bailly's own §3 the compactness of the idele class
-group and of the Jacobian are what drive the proof; item (1), the field
-`ℚ^tr` itself, is a prerequisite for those but does NOT appear in this
-statement, because "normal, with a ring map to `ℝ`" already captures
-everything a subfield of `ℚ^tr` contributes to the conclusion. Item (3),
-Bertini, is `exists_affineCurve_of_affine_geometricallyIrreducible`.
+FAITHFULNESS (re-audited 2026-07-26 against Moret–Bailly's own text, not
+reconstructed). The statement is TRUE: it is Théorème 1.3 applied to the
+Skolem datum spelled out in `exists_totallySplitPoint_of_affine_curve`'s
+docstring — `R = ℤ[1/(M · q · ∏ S)]`, `Σ = {∞} ∪ S`, `L_v = K_v`,
+`Ω_∞ = C(ℝ)`, `Ω_p = C(ℚ_[p])` — which is INCOMPLETE because of the extra
+inverted prime `q`, plus the Galois closure. Note that the `Nonempty
+(F →+* ℚ_[p])` in the conclusion is complete splitting only BECAUSE `F` is
+normal here (all primes above `p` are then conjugate, so one of local
+degree `1` forces all); that is exactly what the sibling consumes, and it
+is why the cut below carries the stronger `IsTotallySplitAt` through the
+non-normal intermediate stage.
 
 CIRCULARITY GUARD: inherited from the parent — no route through
 `Family.lean`, `Lift.lean` or `Modularity/Interface.lean`. -/
@@ -1685,8 +1954,19 @@ theorem exists_normalSplitPoint_of_affine_curve
     ∃ (F : Type u) (_ : Field F) (_ : NumberField F) (_ : Normal ℚ F)
       (_ : F →+* ℝ),
       (∀ (p : ℕ) [Fact p.Prime], p ∈ S → Nonempty (F →+* ℚ_[p])) ∧
-      HasRationalPoint fC F :=
-  sorry
+      HasRationalPoint fC F := by
+  classical
+  -- Moret–Bailly Thm 1.3: a totally real `F`, totally split at `S`, with an `F`-point
+  obtain ⟨F, hF, hNF, hFtr, hFsplit, hFpt⟩ :=
+    exists_totallySplitPoint_of_affine_curve fC hsmooth hsep hft hqc hgi hreal hdim S
+      hSprime hSpt
+  -- the Galois closure: still totally real, still totally split, and `F` embeds in it
+  obtain ⟨E, hE, hNE, hEnorm, ιE, fFE, hEsplit⟩ :=
+    exists_normalClosure_of_totallyReal_totallySplit F hF hNF hFtr S hFsplit
+  refine ⟨E, hE, hNE, hEnorm, ιE, ?_,
+    HasRationalPoint.of_ringHom fC F E hF hNF hE hNE fFE hFpt⟩
+  intro p _ hp
+  exact nonempty_ringHom_padic_of_isTotallySplitAt E hE hNE p (hEsplit p hp)
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Steps (ii)+(iii) of Moret–Bailly's route: the CURVE case with the
