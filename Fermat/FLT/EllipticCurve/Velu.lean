@@ -1597,7 +1597,8 @@ Over any field `L` receiving `W.CoordinateRing`, the generic point `(X, Y)` and 
 by `-Q` have the same Vélu image, so their `veluTheta` values agree up to the fourth power of
 `veluH`.  Clearing the denominator `(X - x_Q)^2` of the translate's `x`-coordinate turns that
 into an identity of elements of the coordinate ring. -/
-lemma velu_theta_key_over (L : Type*) [Field L] [DecidableEq L] [CharZero L] [Algebra F L] [Algebra W.CoordinateRing L]
+lemma velu_theta_key_over (L : Type*) [Field L] [DecidableEq L] [CharZero L] [Algebra F L]
+    [Algebra W.CoordinateRing L]
     (htower : algebraMap F L
       = (algebraMap W.CoordinateRing L).comp (algebraMap F W.CoordinateRing))
     (hinj : Function.Injective (algebraMap W.CoordinateRing L))
