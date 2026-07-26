@@ -5843,6 +5843,194 @@ theorem algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 1000000 in
+/-- **`v_L(3)` IS `#G_0`: the arithmetic bridge of the Fontaine
+estimate** (PROVEN 2026-07-25 — the first brick of the lower-numbering
+ramification theory that leaf (ii-a′) needs, and the reason that leaf's
+hypothesis and its conclusion are commensurable at all): for a finite
+Galois `L/ℚ₃ᵥ`, the ideal `(3)` of `𝒪_L = IntegralClosure 𝒪₃ᵥ L` is
+exactly `𝔪_L^(#G_0)`, where `G_0 = inertia(𝔪_L) ≤ Gal(L/ℚ₃ᵥ)`.
+ASSEMBLY: `3` generates the maximal ideal of `𝒪₃ᵥ ≅ ℤ₃`
+(`maximalIdeal_adicCompletionIntegers_eq_span`), so `(3)` IS the
+extended ideal `𝔪ᵥ·𝒪_L`; `𝒪_L` is a DVR
+(`isDiscreteValuationRing_integralClosure`), so that extended ideal is
+`𝔪_L^k` for a unique `k` (`eq_unit_mul_pow_irreducible`, uniqueness
+via `coheight_pow_maximalIdeal`); `Ideal.ramificationIdx'_spec`
+identifies `k` with `e(L/ℚ₃ᵥ)`; and Hilbert's `|I| = e`
+(`card_inertia_finite_level`) identifies `e` with `#G_0`.
+WHY IT MATTERS: it rewrites `(3)·𝔪_L` as `𝔪_L^(#G_0 + 1)`, so the
+conclusion of
+`sub_mem_span_three_mul_maximalIdeal_of_lt_two_mul_sum_card_inertia`
+reads `v_L(σχa − χa) > #G_0` — measured by the SAME integer `#G_0`
+that its hypothesis `hlt` compares against.  That comparison is what
+splits the estimate into a shallow regime discharged by `hσ` alone and
+a deep regime carrying all of Fontaine's content. -/
+theorem span_three_eq_maximalIdeal_pow_card_inertia
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L] :
+    Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ L)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) := by
+  classical
+  haveI : CharZero ℚ₃ᵥ :=
+    charZero_of_injective_algebraMap (algebraMap ℚ ℚ₃ᵥ).injective
+  haveI : CharZero L :=
+    charZero_of_injective_algebraMap (algebraMap ℚ₃ᵥ L).injective
+  have h3 : (3 : IntegralClosure 𝒪₃ᵥ L) ≠ 0 := by
+    intro h0
+    have h2 := congrArg (algebraMap (IntegralClosure 𝒪₃ᵥ L) L) h0
+    rw [map_ofNat, map_zero] at h2
+    exact (by norm_num : (3 : L) ≠ 0) h2
+  -- STEP 1: `(3)` is the ideal of `𝒪_L` extended from `𝔪ᵥ`
+  have hmap : Ideal.map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ L))
+      (IsLocalRing.maximalIdeal 𝒪₃ᵥ) =
+      Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ L)} := by
+    rw [maximalIdeal_adicCompletionIntegers_eq_span Nat.prime_three, Ideal.map_span,
+      Set.image_singleton, map_natCast]
+    norm_num
+  -- STEP 2: in the DVR `𝒪_L`, `(3)` is a power of the maximal ideal
+  obtain ⟨ϖ, hϖ⟩ := IsDiscreteValuationRing.exists_irreducible (IntegralClosure 𝒪₃ᵥ L)
+  obtain ⟨k, u, hu⟩ := IsDiscreteValuationRing.eq_unit_mul_pow_irreducible h3 hϖ
+  have hk' : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ L)} =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ k := by
+    rw [hu, hϖ.maximalIdeal_eq, Ideal.span_singleton_pow]
+    exact Ideal.span_singleton_mul_left_unit u.isUnit _
+  -- STEP 3: that exponent IS the ramification index
+  have hmapk : Ideal.map (algebraMap 𝒪₃ᵥ (IntegralClosure 𝒪₃ᵥ L))
+      (IsLocalRing.maximalIdeal 𝒪₃ᵥ) =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ k := hmap.trans hk'
+  have he : Ideal.ramificationIdx' (IsLocalRing.maximalIdeal 𝒪₃ᵥ)
+      (IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L)) = k := by
+    refine Ideal.ramificationIdx'_spec hmapk.le ?_
+    · intro hle
+      rw [hmapk] at hle
+      have heq : IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ k =
+          IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^ (k + 1) :=
+        le_antisymm hle (Ideal.pow_le_pow_right (Nat.le_succ k))
+      have hco := congrArg Order.coheight heq
+      rw [IsDiscreteValuationRing.coheight_pow_maximalIdeal,
+        IsDiscreteValuationRing.coheight_pow_maximalIdeal] at hco
+      exact absurd (Nat.cast_injective hco) (by omega)
+  -- STEP 4: Hilbert's `|I| = e`
+  rw [card_inertia_finite_level _ (↥L), he, hk']
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
+set_option maxHeartbeats 4000000 in
+/-- **Fontaine's ramification estimate at `3`, DEEP REGIME** (sorry
+node, created 2026-07-25 by narrowing leaf (ii-a′)
+`sub_mem_span_three_mul_maximalIdeal_of_lt_two_mul_sum_card_inertia`;
+this leaf now carries the ENTIRE residual content of Fontaine's
+argument): the hypotheses of (ii-a′) — `A` finite flat over
+`𝒪₃ᵥ ≅ ℤ₃` with `Ω[A⁄𝒪₃ᵥ]` killed by `3`, `L/ℚ₃ᵥ` finite Galois with
+lower-numbering filtration `G_i = inertia(𝔪_L^(i+1))`, `σ ∈ G_{m+1}`,
+and the Herbrand condition `hlt : #G_0 < 2·Σ_{i=1}^{m+1} #G_i` — plus
+the two NARROWINGS that the consumer discharges for free,
+`hdeep : m + 2 ≤ #G_0` and `hone : σ ≠ 1`.
+WHY THE TWO NARROWINGS ARE FREE, and why what is left is exactly the
+hard part.  By `span_three_eq_maximalIdeal_pow_card_inertia`,
+`v_L(3) = #G_0`, so the conclusion says `v_L(σχa − χa) ≥ #G_0 + 1`
+while `hσ` already delivers `v_L(σx − x) ≥ m + 2` for EVERY `x ∈ 𝒪_L`,
+points included.  So whenever `m + 1 ≥ #G_0` the estimate is a
+triviality about the filtration, consuming `hlt` not at all; the only
+surviving case is `m + 2 ≤ #G_0`, i.e. `σ` sits at a depth still
+SHALLOWER than `v_L(3)` — precisely the configuration in which the
+difference ideal `𝔞 = (σχa − χa)` is NOT forced to be small by the
+filtration alone.  `σ = 1` is trivial for the same reason.
+NOT VACUOUS — explicit witness of the surviving regime: for the
+très-ramifié `L = ℚ₃(ζ₃, q^{1/3})` with `v₃(q) ≢ 0 mod 3` one has
+`#G_0 = 6`, `#G_1 = #G_2 = #G_3 = 3`, `G_4 = ⊥`; at `m = 1`, `hlt`
+reads `6 < 2(3 + 3) = 12` ✓ and `hdeep` reads `3 ≤ 6` ✓, with `G_2`
+nontrivial.  There the statement asserts genuine arithmetic, and it is
+true only because Fontaine's theorem forbids such an `A` from having
+points that generate that field.
+TWO REFUTED ROUTES (do not retry).
+(a) The derivation relation `3·𝔞 ⊆ 𝔞²` of
+`algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal` ALONE cannot do
+it: it yields only `v_L(𝔞) ≤ v_L(3) = #G_0`, compatible with every
+configuration `hdeep` leaves open (the ramified cyclic cubic subfield
+`M ⊂ ℚ₃(ζ₉)` has `#G_0 = #G_1 = 3`, `G_2 = ⊥`, so `hlt` holds at
+`m = 0` while `m + 2 = 2 ≤ 3`).
+(b) The "different bound from the annihilator of `Ω`" route is refuted
+at the level of its CONCLUSION, not merely of its hypotheses — a
+sharpening recorded 2026-07-25, because the earlier note blamed
+non-monogenicity of the image order and so suggested the route might
+be repairable.  It is not.  Suppose one had `𝔡_{M/ℚ₃} ⊇ (3)` for the
+points field `M`, i.e. `v_M(𝔡) ≤ v_M(3) = #Ḡ_0`.  Hilbert's different
+formula `v_M(𝔡) = Σ_{i≥0}(#Ḡ_i − 1)` (Serre, *Corps Locaux* IV §1
+Prop. 4) turns that into `Σ_{i≥1}(#Ḡ_i − 1) ≤ 1`; since `Ḡ_1` is a
+`3`-group, a nontrivial `Ḡ_1` contributes at least `2`.  So the route
+CONCLUDES that `M/ℚ₃` is TAMELY ramified — which is false: the
+peu-ramifié `M = ℚ₃(ζ₃, u^{1/3})` (the points field of the `3`-torsion
+of a peu-ramifié Tate curve, `#Ḡ_0 = 6`, `#Ḡ_1 = 3`, `Ḡ_2 = ⊥`) is
+wildly ramified and does carry such an `A`.  Fontaine's true bound
+reads `2·Σ_{i≥1} #Ḡ_i ≤ #Ḡ_0` instead — `2·3 = 6 ≤ 6` there, exactly
+on the boundary — and is strictly WEAKER than tameness, which is why
+no different/discriminant estimate can prove this leaf.
+INTENDED PROOF, and the machinery it needs, IN DEPENDENCY ORDER (none
+of it in mathlib at this pin: `Ideal.inertia` is the only
+ramification-group notion mathlib has, and it has no `φ`, no upper
+numbering and no Herbrand theorem anywhere):
+(1) THE POINTS FIELD `M ≤ L` — the subextension generated by the
+images of all `χ : A →ₐ[𝒪₃ᵥ] 𝒪_L`, equivalently the fixed field of the
+normal subgroup `H = {τ | ∀ χ a, τ • χ a = χ a}` — with its normality
+over `ℚ₃ᵥ` and the fact that every point of `A` in `𝒪_L` already lands
+in `𝒪_M`.  (The intermediate-field inertia plumbing needed for this is
+already available: `reifySubextension`, `restrict_mem_inertia_of_le`,
+`card_inertia_intermediate` in `LocalInertiaFixedField`.)
+(2) HERBRAND TRANSPORT, in an integer, `φ`-FREE form: for `M ≤ L` both
+Galois over `ℚ₃ᵥ`, if `σ ∈ G_{m+1}` and `#G_0 < 2Σ_{i=1}^{m+1}#G_i`,
+then there is an `m'` with `res_M σ ∈ Ḡ_{m'+1}` and
+`#Ḡ_0 < 2Σ_{i=1}^{m'+1}#Ḡ_i`.  (Mathematically this is
+`φ_{L/K} = φ_{M/K} ∘ φ_{L/M}` together with `Ḡ_{φ_{L/M}(u)} = G_uH/H`,
+Serre IV §3 Lemma 5, at `m' + 1 = ⌈φ_{L/M}(m+1)⌉`; stating it this way
+is what lets the whole leaf be discharged WITHOUT ever defining `φ`,
+and is the recommended cut.)
+(3) FONTAINE'S BOUND for a points-GENERATED field: with the extra
+hypothesis that no nontrivial substitution fixes every point, the same
+numerical hypothesis forces `σ = 1`.  This is Fontaine's Théorème A
+(*Il n'y a pas de variété abélienne sur ℤ*, Invent. Math. 81 (1985),
+§1) at `K = ℚ₃`, `e = 1`, `n = 1`, `p = 3`, where the break bound is
+`e(n + 1/(p−1)) − 1 = 1/2`.  Its own ingredients are (3a) Fontaine's
+LIFTING estimate — an `𝒪_K`-algebra map `A → 𝒪_E/𝔞^m` with
+`m > e(n + 1/(p−1))` lifts to `A → 𝒪_E`, which is where the `1/(p−1)`
+enters — and (3b) Krasner's lemma with the implication
+`(P_m) ⟹ ramification bound` (Fontaine Prop. 1.5; sharpened to
+`m_{L/K} = u_{L/K}` by M. Yoshida, *Ramification of local fields and
+Fontaine's property* `(P_m)`, arXiv:0905.1171, Prop. 2.1 and §3).
+GIVEN (1)–(3) THE ASSEMBLY IS SHORT: take `M` = points field, apply
+(2) to place `res_M σ` deep in `Ḡ` with the numerical hypothesis
+intact, apply (3) to `M` to get `res_M σ = 1`, conclude `σ ∈ H`, hence
+`σ • χ a − χ a = 0` — which is STRONGER than the stated
+`∈ (3)·𝔪_L`, as the consumer's use of
+`algHom_eq_of_forall_sub_mem_span_mul_maximalIdeal` already
+anticipates. -/
+theorem sub_mem_span_three_mul_maximalIdeal_of_add_two_le_card_inertia
+    (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
+    [Module.Finite 𝒪₃ᵥ A]
+    (hΩ : ∀ ω : Ω[A⁄𝒪₃ᵥ], (3 : ℕ) • ω = 0)
+    (L : IntermediateField ℚ₃ᵥ ℚ₃ᵥᵃˡᵍ) [FiniteDimensional ℚ₃ᵥ L]
+    [IsGalois ℚ₃ᵥ L]
+    (m : ℕ)
+    (hlt : Nat.card ((IsLocalRing.maximalIdeal
+        (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) <
+      2 * ∑ i ∈ Finset.range (m + 1),
+        Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L) ^ (i + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L)))
+    (σ : L ≃ₐ[ℚ₃ᵥ] L)
+    (hσ : σ ∈ (IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L) ^ (m + 2)).inertia (L ≃ₐ[ℚ₃ᵥ] L))
+    (hdeep : m + 2 ≤ Nat.card ((IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)))
+    (hone : σ ≠ 1)
+    (χ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ L) (a : A) :
+    σ • χ a - χ a ∈ Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ L)} *
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) := by
+  sorry
+
+set_option backward.isDefEq.respectTransparency false in
+set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 4000000 in
 /-- **Fontaine's ramification estimate at `3`: deep substitutions move
 integral points by more than `v(3)`** (sorry node, created 2026-07-25 —
@@ -5907,7 +6095,20 @@ against `Σ_{σ≠1} i_G(σ) = v_L(𝔡_{L/ℚ₃}) = Σ_{i≥0}(#G_i − 1)`, w
 the factor `2` of `hlt` comes from the square in the discriminant and
 the stabilizers of the individual points must be tracked (see
 Moon–Taguchi, Doc. Math. Extra Vol. Kato (2003), §2, "Refinement of
-Tate's discriminant bound"). -/
+Tate's discriminant bound").
+DECOMPOSED 2026-07-25 — the assembly below is now PROVEN and this
+declaration is no longer a leaf.  The arithmetic bridge
+`span_three_eq_maximalIdeal_pow_card_inertia` (`v_L(3) = #G_0`,
+PROVEN above) rewrites the conclusion as `v_L(σχa − χa) > #G_0`,
+measured by the very integer `hlt` compares against; the two regimes
+in which the statement then has NO content are discharged here —
+`σ = 1`, and the SHALLOW regime `m + 1 ≥ #G_0`, where `hσ` alone gives
+the conclusion and `hlt` is not consumed at all.  What survives is
+`sub_mem_span_three_mul_maximalIdeal_of_add_two_le_card_inertia`, with
+the extra hypotheses `m + 2 ≤ #G_0` and `σ ≠ 1`, where the whole of
+Fontaine's argument now lives; that leaf's docstring carries the
+witness showing the regime is non-empty, the two refuted routes, and
+the missing machinery in dependency order. -/
 theorem sub_mem_span_three_mul_maximalIdeal_of_lt_two_mul_sum_card_inertia
     (A : Type) [CommRing A] [Algebra 𝒪₃ᵥ A] [Module.Flat 𝒪₃ᵥ A]
     [Module.Finite 𝒪₃ᵥ A]
@@ -5926,7 +6127,32 @@ theorem sub_mem_span_three_mul_maximalIdeal_of_lt_two_mul_sum_card_inertia
     (χ : A →ₐ[𝒪₃ᵥ] IntegralClosure 𝒪₃ᵥ L) (a : A) :
     σ • χ a - χ a ∈ Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ L)} *
       IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) := by
-  sorry
+  -- the identity substitution moves nothing at all
+  by_cases hone : σ = 1
+  · subst hone
+    have hz : (1 : L ≃ₐ[ℚ₃ᵥ] L) • χ a - χ a = 0 := by rw [one_smul, sub_self]
+    rw [hz]
+    exact Submodule.zero_mem _
+  -- `(3)·𝔪_L = 𝔪_L^(#G_0 + 1)`, by the arithmetic bridge
+  have h3 : Ideal.span {(3 : IntegralClosure 𝒪₃ᵥ L)} *
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) =
+      IsLocalRing.maximalIdeal (IntegralClosure 𝒪₃ᵥ L) ^
+        (Nat.card ((IsLocalRing.maximalIdeal
+          (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) + 1) := by
+    rw [span_three_eq_maximalIdeal_pow_card_inertia L, ← pow_succ]
+  by_cases hshallow : Nat.card ((IsLocalRing.maximalIdeal
+      (IntegralClosure 𝒪₃ᵥ L)).inertia (L ≃ₐ[ℚ₃ᵥ] L)) ≤ m + 1
+  · -- SHALLOW REGIME: `σ` already sits deeper than `v_L(3)`, so the
+    -- filtration hypothesis `hσ` alone gives the estimate and `hlt`
+    -- is not consumed
+    rw [h3]
+    rw [AddSubgroup.mem_inertia] at hσ
+    have hmem := hσ (χ a)
+    rw [Submodule.mem_toAddSubgroup] at hmem
+    exact Ideal.pow_le_pow_right (by omega) hmem
+  · -- DEEP REGIME: all of Fontaine's content
+    exact sub_mem_span_three_mul_maximalIdeal_of_add_two_le_card_inertia
+      A hΩ L m hlt σ hσ (by omega) hone χ a
 
 set_option backward.isDefEq.respectTransparency false in
 set_option synthInstance.maxHeartbeats 1000000 in
