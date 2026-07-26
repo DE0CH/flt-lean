@@ -41,10 +41,13 @@ because *any* elliptic curve over `𝔽₅` has fewer than `37` points.
 `exists_injective_torsion_toReduction` (good reduction) and
 `exists_reduction_dvd_addOrderOf_of_jIntegral` (potentially good reduction) are
 the two open leaves of this module. Both are Silverman *AEC* VII; see their
-docstrings for the precise citation and the proof route, and for what already
-exists in this tree towards them (a great deal: `PointReduction.lean` has the
-reduction homomorphism on points, sorry-free, and `GoodReduction.lean` has the
-Lutz–Nagell integrality of torsion coordinates).
+docstrings for the precise citation, the proof route, and an AUDIT of what this
+tree already has towards them. In short: `PointReduction.lean` has the
+reduction homomorphism on points and its kernel, sorry-free, and
+`GoodReduction.lean` has the Lutz–Nagell integrality of torsion coordinates —
+but the latter assumes `ℓ ∤ n`, so the `ℓ`-primary half of the injection (the
+formal-group content, `e < ℓ − 1`) is present in neither this tree nor mathlib.
+Do not start these expecting a short composition.
 
 ## What is PROVEN here
 
@@ -172,13 +175,42 @@ the abscissa is not integral. `Fermat/FLT/KnownIn1980s/EllipticCurves/GoodReduct
 statement: `WeierstrassCurve.torsion_abscissa_mem` and `torsion_ordinate_mem`
 show, by Cassels' division-polynomial argument, that a torsion point of order
 `n` with `n` a unit in the residue field has *integral* coordinates. Those two
-compose directly to injectivity on prime-to-`ℓ` torsion — a torsion point in
-the kernel has non-integral abscissa and integral abscissa at once, so it is
-`0`. What is left is bookkeeping, not mathematics: presenting `ℤ_(ℓ) ⊂ ℚ` as
-the valuation subring, matching `redHom`'s target against the coefficientwise
-reduction `W.map (Int.castRingHom (ZMod ℓ))`, and passing from injectivity to
-`Nat.card`. That is why this is stated as one leaf rather than several: the
-mathematics beneath it is already proven in this repository. -/
+compose to injectivity — a torsion point in the kernel would have non-integral
+abscissa and integral abscissa at once, so it is `0`.
+
+**BUT THAT COMPOSITION IS NOT THE WHOLE PROOF, AND THE GAP IS REAL** (audited
+2026-07-26, correcting an earlier and over-optimistic version of this note that
+called the remainder "bookkeeping"). Three obstacles, in increasing order of
+seriousness:
+
+1. `redHom` wants `A : ValuationSubring ℚ` at `ℓ` together with a local ring
+   hom `A →+* ZMod ℓ`, and `IsReductionAlong A ρ (W⁄ℚ) (W.map (Int.castRingHom
+   (ZMod ℓ)))`. Nothing in the tree builds the `ℓ`-adic valuation subring of
+   `ℚ` in that form; `MazurTorsion.lean`'s good-reduction reductions go through
+   `AlgebraicClosure (adicCompletion ℚ v)` and land in `𝔽̄_ℓ`, whose infinite
+   residue field is useless for a cardinality bound. This part really is
+   bookkeeping, but it is a few hundred lines of it.
+2. `torsion_abscissa_mem` is stated over a SEPARABLE CLOSURE (`[IsSepClosure k
+   ksep]`, with `𝒪 : ValuationSubring ksep` and a compatibility hypothesis
+   `h𝒪`) and assumes mathlib's `[E.HasGoodReduction R]` for a DVR `R` with
+   `Frac R = k`. That class extends `IsMinimal`, and deriving it from the
+   elementary `ℓ ∤ Δ` of an integral model is itself unproven here.
+3. **The decisive one.** `torsion_abscissa_mem` carries `[NeZero (n :
+   ResidueField R)]`, i.e. `ℓ ∤ n`. So it yields injectivity only on the
+   **prime-to-`ℓ`** torsion, and the `ℓ`-primary part — exactly where the
+   hypothesis `ℓ ≠ 2` does its work, via `e < ℓ − 1` — is NOT covered by
+   anything in this repository. That is the genuine formal-group content of
+   Silverman VII.3.4 and it is missing from mathlib too (the only
+   `FormalGroup` file, `Mathlib/RingTheory/FormalGroup/Basic.lean`, has no
+   `neg`, no elliptic-curve attachment and no torsion-freeness).
+
+Obstacle 3 is not academic for the consumer: `14a4(ℚ) ≅ ℤ/6` really does have
+`3`-torsion, and the injection is applied there at `ℓ = 3`. A prime-to-`ℓ`
+version of this leaf would therefore NOT close `curve14a4_points` at a single
+prime; it would need a two-prime argument (`#14a4(𝔽₃) = #14a4(𝔽₅) = 6`) whose
+group theory is messier than the statement above. The leaf is stated in the
+full-torsion form because that is the standard theorem and the clean consumer
+interface — not because the remainder is short. -/
 theorem exists_injective_torsion_toReduction
     {ℓ : ℕ} [Fact ℓ.Prime] (hℓ2 : ℓ ≠ 2) (W : WeierstrassCurve ℤ)
     (hΔ : ¬ ((ℓ : ℤ) ∣ W.Δ)) :
