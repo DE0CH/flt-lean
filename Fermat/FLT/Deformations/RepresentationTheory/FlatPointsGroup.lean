@@ -232,14 +232,25 @@ end BasePointsGlue
 
 section RaynaudClosure
 
-variable (v : HeightOneSpectrum (NumberField.RingOfIntegers ℚ))
+-- HOISTED 2026-07-26 from `ℚ` to a VARIABLE number field `K`. Nothing in
+-- this section's mathematics was ever about `ℚ`: every argument below is
+-- about the local field `Kᵥ` and the complete DVR `𝒪ᵥ`, and `ℚ` occurred
+-- only in this `variable` line, in the four notations derived from it and
+-- in one `CharZero` step. The `ℚ`-level consumers
+-- (`Deformation.hasFlatProlongationAt_of_pi_surjection`) are unchanged —
+-- they are now instances of the general statements — and the leaf
+-- `hasFlatProlongationAt_of_pi_surjection_of_numberField` in
+-- `HardlyRamified/HilbertModularity.lean` closes over the same
+-- declarations. So the COPY COUNT IS DOWN, not up.
+variable {K : Type u} [Field K] [NumberField K]
+variable (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
 
-local notation "Kᵥ" => HeightOneSpectrum.adicCompletion ℚ v
-local notation "𝒪ᵥ" => HeightOneSpectrum.adicCompletionIntegers ℚ v
+local notation "Kᵥ" => HeightOneSpectrum.adicCompletion K v
+local notation "𝒪ᵥ" => HeightOneSpectrum.adicCompletionIntegers K v
 local notation "Γᵥ" =>
-  Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion ℚ v)
+  Field.absoluteGaloisGroup (HeightOneSpectrum.adicCompletion K v)
 local notation "Ωᵥ" =>
-  AlgebraicClosure (HeightOneSpectrum.adicCompletion ℚ v)
+  AlgebraicClosure (HeightOneSpectrum.adicCompletion K v)
 
 set_option backward.isDefEq.respectTransparency false in
 /-- **The flat point-group carrier at `v`**: the additive group `X`
@@ -256,7 +267,7 @@ schemes over the DVR `𝒪ᵥ` become closure properties of this
 predicate (`prod`, `of_injective` below). -/
 def IsFlatPointsGroupAt (X : Type*) [AddCommGroup X]
     [DistribMulAction Γᵥ X] : Prop :=
-  ∃ (G : Type) (_ : CommRing G) (_ : HopfAlgebra 𝒪ᵥ G)
+  ∃ (G : Type u) (_ : CommRing G) (_ : HopfAlgebra 𝒪ᵥ G)
     (_ : Module.Flat 𝒪ᵥ G) (_ : Module.Finite 𝒪ᵥ G)
     (_ : Algebra.Etale Kᵥ (Kᵥ ⊗[𝒪ᵥ] G))
     (f : Additive (Kᵥ ⊗[𝒪ᵥ] G →ₐ[Kᵥ] Ωᵥ) →+ X),
@@ -274,7 +285,7 @@ carried (`DistribMulActionHom` versus `AddMonoidHom` + equivariance
 clause). -/
 theorem GaloisRep.hasFlatProlongationAt_iff_isFlatPointsGroupAt
     {A : Type*} [CommRing A] [TopologicalSpace A]
-    {M : Type*} [AddCommGroup M] [Module A M] (ρ : GaloisRep ℚ A M) :
+    {M : Type*} [AddCommGroup M] [Module A M] (ρ : GaloisRep K A M) :
     ρ.HasFlatProlongationAt v ↔ IsFlatPointsGroupAt v (ρ.toLocal v).Space := by
   constructor
   · rintro ⟨G, i1, i2, i3, i4, i5, f, hbij⟩
@@ -664,7 +675,7 @@ the Galois action is postcomposition, which commutes with
 precomposition. -/
 theorem isFlatPointsGroupAt_of_hopfOrder {X : Type*} [AddCommGroup X]
     [DistribMulAction Γᵥ X]
-    (H : Type) [CommRing H] [HopfAlgebra Kᵥ H] [Module.Finite Kᵥ H]
+    (H : Type u) [CommRing H] [HopfAlgebra Kᵥ H] [Module.Finite Kᵥ H]
     [Algebra.Etale Kᵥ H] [Algebra 𝒪ᵥ H] [IsScalarTower 𝒪ᵥ Kᵥ H]
     (H₀ : Subalgebra 𝒪ᵥ H)
     (hfg : (Subalgebra.toSubmodule H₀).FG)
@@ -762,12 +773,12 @@ PROVEN Gelfand-duality machinery of
   the bare-hom `AddMonoidHom` demanded here.
 Unconditionally TRUE; no hypothesis package. -/
 theorem exists_etaleHopfAlgebra_of_points_embedding
-    (Q : Type) [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
+    (Q : Type u) [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
     [Algebra.Etale Kᵥ Q]
     {Y : Type*} [AddCommGroup Y] [DistribMulAction Γᵥ Y]
     (j : Y →+ Additive (Q →ₐ[Kᵥ] Ωᵥ)) (hj : Function.Injective j)
     (hje : ∀ (g : Γᵥ) (y : Y), j (g • y) = g • j y) :
-    ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra Kᵥ H) (_ : Module.Finite Kᵥ H)
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra Kᵥ H) (_ : Module.Finite Kᵥ H)
       (_ : Algebra.Etale Kᵥ H) (e : Additive (H →ₐ[Kᵥ] Ωᵥ) →+ Y),
       Function.Bijective e ∧
         ∀ (g : Γᵥ) (y : Additive (H →ₐ[Kᵥ] Ωᵥ)), e (g • y) = g • e y := by
@@ -840,7 +851,7 @@ theorem exists_etaleHopfAlgebra_of_points_embedding
       exact hagree _ _ h1 z
   -- Grothendieck's construction: `Y` is the point group of a finite étale Hopf algebra
   obtain ⟨HK, iCR, iHopf, iFin, iEt, f, hf⟩ :
-      ∃ (HK : Type) (_ : CommRing HK) (_ : HopfAlgebra Kᵥ HK)
+      ∃ (HK : Type u) (_ : CommRing HK) (_ : HopfAlgebra Kᵥ HK)
         (_ : Module.Finite Kᵥ HK) (_ : Algebra.Etale Kᵥ HK)
         (f : Additive (WithConv (HK →ₐ[Kᵥ] Ωᵥ)) ≃+ Y),
         ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : HK →ₐ[Kᵥ] Ωᵥ),
@@ -925,9 +936,9 @@ The bridge between the bare-hom convolution monoid on
 which is what lets the three `Flat.lean` ingredients apply.
 Unconditionally TRUE; no hypothesis package. -/
 theorem exists_surjective_bialgHom_of_points_injection
-    (Q : Type) [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
+    (Q : Type u) [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
     [Algebra.Etale Kᵥ Q]
-    (H : Type) [CommRing H] [HopfAlgebra Kᵥ H] [Module.Finite Kᵥ H]
+    (H : Type u) [CommRing H] [HopfAlgebra Kᵥ H] [Module.Finite Kᵥ H]
     [Algebra.Etale Kᵥ H]
     (t : (H →ₐ[Kᵥ] Ωᵥ) → (Q →ₐ[Kᵥ] Ωᵥ))
     (htinj : Function.Injective t)
@@ -1238,13 +1249,13 @@ five steps:
 Unconditionally TRUE; no hypothesis package (for `p` bijective one may
 take `H = Q` and `ι = id`). -/
 theorem exists_etale_subBialgebra_of_points_surjective
-    {Q : Type} [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
+    {Q : Type u} [CommRing Q] [HopfAlgebra Kᵥ Q] [Module.Finite Kᵥ Q]
     [Algebra.Etale Kᵥ Q]
     {Y : Type*} [AddCommGroup Y] [DistribMulAction Γᵥ Y]
     (p : Additive (Q →ₐ[Kᵥ] Ωᵥ) →+ Y)
     (hp : Function.Surjective p)
     (hpe : ∀ (g : Γᵥ) (x : Additive (Q →ₐ[Kᵥ] Ωᵥ)), p (g • x) = g • p x) :
-    ∃ (H : Type) (_ : CommRing H) (_ : HopfAlgebra Kᵥ H) (_ : Module.Finite Kᵥ H)
+    ∃ (H : Type u) (_ : CommRing H) (_ : HopfAlgebra Kᵥ H) (_ : Module.Finite Kᵥ H)
       (_ : Algebra.Etale Kᵥ H) (ι : H →ₐc[Kᵥ] Q)
       (_ : Function.Injective (ι : H →ₐ[Kᵥ] Q))
       (e : Additive (H →ₐ[Kᵥ] Ωᵥ) ≃+ Y),
@@ -1252,9 +1263,9 @@ theorem exists_etale_subBialgebra_of_points_surjective
         e (Additive.ofMul (φ.comp (ι : H →ₐ[Kᵥ] Q))) = p (Additive.ofMul φ) := by
   classical
   -- ### instances: `Ωᵥ` is a separable closure of `Kᵥ`, and the points are finite
-  haveI : CharZero (HeightOneSpectrum.adicCompletion ℚ v) :=
+  haveI : CharZero (HeightOneSpectrum.adicCompletion K v) :=
     charZero_of_injective_algebraMap
-      ((algebraMap ℚ (HeightOneSpectrum.adicCompletion ℚ v)).injective)
+      ((algebraMap K (HeightOneSpectrum.adicCompletion K v)).injective)
   haveI hsepcl : IsSepClosure Kᵥ Ωᵥ := ⟨inferInstance, inferInstance⟩
   haveI hQpts : Finite (Q →ₐ[Kᵥ] Ωᵥ) := Finite.algHom Kᵥ Q Ωᵥ
   haveI hYfin : Finite Y := Finite.of_surjective p hp
@@ -1349,7 +1360,7 @@ theorem exists_etale_subBialgebra_of_points_surjective
     rw [hc, hr]
   -- ### (2) the finite étale Hopf algebra with point group `Y`
   obtain ⟨H, hCR, hHopf, hFin, hEt, f, hf⟩ :
-      ∃ (HK : Type) (_ : CommRing HK) (_ : HopfAlgebra Kᵥ HK)
+      ∃ (HK : Type u) (_ : CommRing HK) (_ : HopfAlgebra Kᵥ HK)
         (_ : Module.Finite Kᵥ HK) (_ : Algebra.Etale Kᵥ HK)
         (f : Additive (WithConv (HK →ₐ[Kᵥ] Ωᵥ)) ≃+ Y),
         ∀ (σ : Ωᵥ ≃ₐ[Kᵥ] Ωᵥ) (φ : HK →ₐ[Kᵥ] Ωᵥ),
@@ -1550,12 +1561,12 @@ EXISTENCE of the order needs no `e < p − 1` bound — Raynaud's bound
 enters only for uniqueness/full-faithfulness statements.
 Unconditionally TRUE; no hypothesis package. -/
 theorem exists_hopfOrder_of_subBialgebra
-    {G : Type} [CommRing G] [HopfAlgebra 𝒪ᵥ G] [Module.Flat 𝒪ᵥ G]
+    {G : Type u} [CommRing G] [HopfAlgebra 𝒪ᵥ G] [Module.Flat 𝒪ᵥ G]
     [Module.Finite 𝒪ᵥ G]
-    {H : Type} [CommRing H] [HopfAlgebra Kᵥ H] [Module.Finite Kᵥ H]
+    {H : Type u} [CommRing H] [HopfAlgebra Kᵥ H] [Module.Finite Kᵥ H]
     (ι : H →ₐc[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))
     (hι : Function.Injective (ι : H →ₐ[Kᵥ] (Kᵥ ⊗[𝒪ᵥ] G))) :
-    ∃ (G' : Type) (_ : CommRing G') (_ : HopfAlgebra 𝒪ᵥ G') (_ : Module.Flat 𝒪ᵥ G')
+    ∃ (G' : Type u) (_ : CommRing G') (_ : HopfAlgebra 𝒪ᵥ G') (_ : Module.Flat 𝒪ᵥ G')
       (_ : Module.Finite 𝒪ᵥ G'), Nonempty ((Kᵥ ⊗[𝒪ᵥ] G') ≃ₐc[Kᵥ] H) := by
   classical
   -- `H` becomes an `𝒪ᵥ`-algebra through `Kᵥ`
@@ -1869,7 +1880,7 @@ theorem IsFlatPointsGroupAt.of_surjective {X Y : Type*}
   letI := jFin
   letI := jEt
   -- postcomposition by a Galois element commutes with precomposition
-  have hsmulcomp : ∀ {B C : Type} [CommRing B] [Algebra Kᵥ B] [CommRing C]
+  have hsmulcomp : ∀ {B C : Type u} [CommRing B] [Algebra Kᵥ B] [CommRing C]
       [Algebra Kᵥ C] (g : Γᵥ) (χ : B →ₐ[Kᵥ] C) (ψ : C →ₐ[Kᵥ] Ωᵥ),
       (g • ψ).comp χ = g • (ψ.comp χ) := fun g χ ψ => AlgHom.ext fun _ => rfl
   -- the identification of the points of `H` with `Y` is equivariant:
@@ -1914,7 +1925,7 @@ theorem IsFlatPointsGroupAt.of_surjective {X Y : Type*}
   -- the bare-hom convolution monoid on `B →ₐ[Kᵥ] Ωᵥ` (the one baked into
   -- `IsFlatPointsGroupAt`) has the same product as mathlib's `WithConv`:
   -- both are `lift φ ψ ∘ comul`
-  have hbridge : ∀ {B : Type} [CommRing B] [Bialgebra Kᵥ B] (φ ψ : B →ₐ[Kᵥ] Ωᵥ),
+  have hbridge : ∀ {B : Type u} [CommRing B] [Bialgebra Kᵥ B] (φ ψ : B →ₐ[Kᵥ] Ωᵥ),
       φ * ψ = (WithConv.toConv φ * WithConv.toConv ψ).ofConv :=
     fun {_} _ _ φ ψ => AlgHom.ext fun x => by
       rw [AlgHom.convMul_apply]
