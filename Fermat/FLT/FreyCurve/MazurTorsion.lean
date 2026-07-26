@@ -871,7 +871,12 @@ into the two leaves consumed below:
   and is elementary in principle (the universal curve with a cyclic
   `16`-isogeny over the `s`-line, i.e. an iterated Vélu `2`-isogeny chain).
   **Its hypothesis is satisfiable** — `16`-isogenies exist — so this leaf
-  carries genuine content.
+  carries genuine content. **PROVEN 2026-07-26** over the single moduli leaf
+  `MazurLevel16.exists_univCurve_param_of_stable`: the degree-`24` rational
+  function is no longer a formula out of a table but the `j`-invariant of an
+  explicit universal Weierstrass curve over the `s`-line, and the passage
+  from that curve to the displayed identity is the `ring` identity
+  `MazurLevel16.j16_of_param`. See the `MazurLevel16` section note below.
 * `exists_x0ThirtyTwo_point` — level `32`: such an `s` is the image of a
   rational point of `y² = x³ + 4x` under the degeneracy map
   `π : (x, y) ↦ y/(x² + 4)`. **VACUITY AUDIT: this leaf's hypothesis is
@@ -894,9 +899,183 @@ for `s = 1, …, 5, 1/3, 1/4, 1/5` the curve `ellfromj(j₁₆(s))` has cyclic
 isogeny degrees exactly `{1, 2, 4, 8, 16}`.
 -/
 
+namespace MazurLevel16
+
+/-! ### The universal curve over the `X_0(16)` `s`-line
+
+This block cuts `exists_x0Sixteen_hauptmodul` (below) into ONE proven
+rational-function identity and ONE moduli leaf, on the pattern of the
+`MazurLevel9` block far below. The point of the cut is that the
+degree-`24` rational function `j₁₆` stops being a formula copied out of a
+table: it becomes the `j`-invariant of an EXPLICIT Weierstrass curve over
+the `s`-line, and the displayed identity of the target is then a `ring`
+computation.
+
+THE MODEL. Write
+
+    N(s) = 16s⁴ + 96s³ + 24s² + 24s + 1,
+    M(s) = 256s⁸ + 15360s⁷ + 34560s⁶ + 26880s⁵ + 17504s⁴ + 6720s³
+             + 2160s² + 240s + 1,
+    D(s) = s (1 − 2s)¹⁶ (1 + 2s)⁴ (1 + 4s²).
+
+The universal curve is `univCurve s : y² = x³ + 2N(s) x² + (1 − 2s)⁸ x`,
+i.e. `⟨0, 2N, 0, (1 − 2s)⁸, 0⟩`, and everything follows from the two
+polynomial identities
+
+    N² − (1 − 2s)⁸ = 64 s (1 + 2s)⁴ (1 + 4s²),          (A)
+    M = 4N² − 3(1 − 2s)⁸,                               (B)
+
+both `ring`. Indeed `b₂ = 8N`, `b₄ = 2(1 − 2s)⁸`, `b₆ = 0`,
+`b₈ = −(1 − 2s)¹⁶`, so
+
+    c₄ = b₂² − 24b₄ = 64N² − 48(1 − 2s)⁸ = 16 M           (by (B))
+    Δ  = 64 (1 − 2s)¹⁶ (N² − (1 − 2s)⁸)   = 4096 D        (by (A))
+
+and hence `j = c₄³/Δ = 16³M³/(4096 D) = M³/D`, the SAME constant `4096`
+cancelling on both sides — which is what makes `j16_of_param` a one-line
+`linear_combination`.
+
+HOW THE MODEL WAS FOUND (untrusted searchers, 2026-07-26; every identity
+they suggested is re-derived here by `ring`). Starting from the `(c₄, Δ)`
+pair `(M, D)` read off the section note above, PARI/GP factored
+
+    M³ − 1728 D = [ N · (256s⁸ − 33792s⁷ − 63744s⁶ − 59136s⁵ − 31648s⁴
+                          − 14784s³ − 3984s² − 528s + 1) ]²,
+
+a PERFECT SQUARE — so `(M, D)` really is the `(c₄, Δ)` of an elliptic
+surface, with `c₆` the displayed degree-`12` product; note the first factor
+of `c₆` is exactly `N`. That already pins the family. Magma then factored
+the `2`-division polynomial of `y² = x³ − 27M x − 54C` over `ℚ(s)`,
+producing the rational `2`-torsion point `x = 6N`; translating it to the
+origin and scaling by `3` gives the clean model above, whose `a₄`
+degenerates to the perfect eighth power `(1 − 2s)⁸`.
+
+THE STATEMENT IS FAITHFUL AND NON-VACUOUS — checked both ways
+(2026-07-26, Magma, untrusted searcher):
+
+* *forwards*: for `s = 1, 2, 3, 5, 1/3, 1/4, 1/5, −1` the curve
+  `univCurve s` has a rational cyclic `16`-isogeny (computed as the depth
+  of a non-backtracking path in its `2`-isogeny graph), and its
+  `j`-invariant agrees with `M(s)³/D(s)` on the nose;
+* *backwards*: sweeping every curve of conductor `≤ 300` in Magma's
+  database, exactly `28` carry a cyclic `16`-isogeny (isogeny classes
+  `15a, 45a, 75b, 195a, 210e, 225c, 240d`), and EVERY one of them yields
+  exactly TWO rational roots `s` of `j·D(s) = M(s)³` — an Atkin–Lehner
+  pair `{s, 1/(4s)}`, as it must be, since `w₁₆` acts on the `s`-line by
+  `s ↦ 1/(4s)` and the two roots are the two cyclic `16`-subgroups;
+* *negative control*: `15a1`, with `j = 111284641/50625`, has cyclic
+  `2`-power isogenies only up to `4`, and the degree-`24` polynomial
+  `j·D(s) − M(s)³` correctly has NO rational root for it.
+
+WHAT IS LEFT. `exists_univCurve_param_of_stable` — the moduli half proper:
+a curve with a `Gal(ℚ̄/ℚ)`-stable cyclic `16`-subgroup has the same
+`j`-invariant as `univCurve s` for some RATIONAL `s`. The route, for
+whoever takes it, is the `MazurLevel9` one transposed: `X_1(16)` has genus
+`2`, so there is no Kubert line to descend from, and the parameter must be
+built on `X_0(16)` directly — define `IsX0SixteenParam E C σ` by a change
+of variables over `ℚ̄` carrying `(E, C)` to `(univCurve σ, C₁₆(σ))`, prove
+RIGIDITY (`σ` is a function of the pair, which is what `X_0` — as opposed
+to `X_1` — buys) and Galois naturality, and `σ` is then Galois-fixed hence
+rational, exactly as in `MazurLevel9.exists_rat_hauptmodul_of_stable`. The
+first step of that route is already elementary here: `8 • g` is
+Galois-FIXED, because `σ(g) = λ(σ) • g` with `λ(σ) ∈ (ℤ/16)ˣ` odd
+(`exists_isogenyCharacter`), so `E` has a rational point of order `2` and
+may be put in the form `y² = x(x² + ax + b)` that `univCurve` already has.
+-/
+
+/-- **The universal elliptic curve over the `X_0(16)` `s`-line**:
+`y² = x³ + 2N(s) x² + (1 − 2s)⁸ x` with
+`N(s) = 16s⁴ + 96s³ + 24s² + 24s + 1`.
+
+Its `j`-invariant is the degree-`24` Hauptmodul map `j₁₆` of the section
+note above (`univCurve_c₄`, `univCurve_Δ`), and it carries the rational
+`2`-torsion point `(0, 0)` that a cyclic `16`-isogeny forces. Stated over
+an arbitrary commutative ring so that it can also be used over `ℚ̄`, where
+the moduli argument lives. -/
+def univCurve {K : Type*} [CommRing K] (s : K) : WeierstrassCurve K :=
+  ⟨0, 2 * (16 * s ^ 4 + 96 * s ^ 3 + 24 * s ^ 2 + 24 * s + 1), 0, (1 - 2 * s) ^ 8, 0⟩
+
+/-- **`c₄` along the `X_0(16)` line** (PROVEN): `c₄ = 16 M(s)`, the
+numerator of `j₁₆` up to the cube root of `4096`. This is identity (B) of
+the section note, `M = 4N² − 3(1 − 2s)⁸`, in disguise. -/
+lemma univCurve_c₄ {K : Type*} [CommRing K] (s : K) :
+    (univCurve s).c₄ = 16 * (256 * s ^ 8 + 15360 * s ^ 7 + 34560 * s ^ 6 + 26880 * s ^ 5
+      + 17504 * s ^ 4 + 6720 * s ^ 3 + 2160 * s ^ 2 + 240 * s + 1) := by
+  simp only [univCurve, WeierstrassCurve.c₄, WeierstrassCurve.b₂, WeierstrassCurve.b₄]
+  ring
+
+/-- **The discriminant along the `X_0(16)` line** (PROVEN):
+`Δ = 4096 · s(1 − 2s)¹⁶(1 + 2s)⁴(1 + 4s²)`, whose four factors are the four
+`ℚ`-cusp orbits of `X_0(16)` with their widths — `s = 0` (width `1`, the
+cusp `1/8`), `s = 1/2` (width `16`, the cusp `0`), `s = −1/2` (width `4`,
+the cusp `1/2`), and the conjugate pair `s = ∓i/2` (width `1` each, the two
+cusps `1/4` defined over `ℚ(i)`). The remaining cusp is `s = ∞`, whence the
+pole orders `1 + 16 + 4 + 1 + 1 + 1 = 24 = [SL₂(ℤ) : Γ₀(16)]`. This is
+identity (A) of the section note. -/
+lemma univCurve_Δ {K : Type*} [CommRing K] (s : K) :
+    (univCurve s).Δ
+      = 4096 * (s * (1 - 2 * s) ^ 16 * (1 + 2 * s) ^ 4 * (1 + 4 * s ^ 2)) := by
+  simp only [univCurve, WeierstrassCurve.Δ, WeierstrassCurve.b₂, WeierstrassCurve.b₄,
+    WeierstrassCurve.b₆, WeierstrassCurve.b₈]
+  ring
+
+/-- **The `X_0(16)` `j`-map, in denominator-free form** (PROVEN 2026-07-26 —
+the whole algebraic content of `exists_x0Sixteen_hauptmodul`): if `J` is the
+`j`-invariant of `univCurve s` (written denominator-free as
+`J · Δ = c₄³`), then `J` satisfies the degree-`24` Hauptmodul identity
+
+  `J · s(1 − 2s)¹⁶(1 + 2s)⁴(1 + 4s²) = M(s)³`.
+
+No nondegeneracy hypothesis is needed: `c₄ = 16M` and `Δ = 4096 D` make the
+hypothesis literally `4096 · (J · D) = 4096 · M³`, and `4096 ≠ 0` in `ℚ`. -/
+lemma j16_of_param (s J : ℚ)
+    (hj : J * (univCurve s).Δ = (univCurve s).c₄ ^ 3) :
+    J * (s * (1 - 2 * s) ^ 16 * (1 + 2 * s) ^ 4 * (1 + 4 * s ^ 2))
+      = (256 * s ^ 8 + 15360 * s ^ 7 + 34560 * s ^ 6 + 26880 * s ^ 5 + 17504 * s ^ 4
+          + 6720 * s ^ 3 + 2160 * s ^ 2 + 240 * s + 1) ^ 3 := by
+  rw [univCurve_Δ, univCurve_c₄] at hj
+  refine mul_left_cancel₀ (a := (4096 : ℚ)) (by norm_num) ?_
+  linear_combination hj
+
+/-- **`X_0(16)` moduli, in universal-family form** (sorry leaf — the whole
+remaining content of `exists_x0Sixteen_hauptmodul`, introduced 2026-07-26):
+if the geometric points of an elliptic curve over `ℚ` contain a point `g` of
+order `16` whose cyclic subgroup is `Gal(ℚ̄/ℚ)`-stable, then `E` has the same
+`j`-invariant as `univCurve s` for some RATIONAL `s` — written
+denominator-free as `j(E) · Δ(univCurve s) = c₄(univCurve s)³`.
+
+That denominator-free form is self-policing, so no `Δ ≠ 0` hypothesis is
+needed and none is hidden: at the three rational cusps `s = 0, 1/2, −1/2`
+the left-hand side vanishes while `c₄ = 16M` does not (`M(0) = 1`,
+`M(1/2) = 4096`, `M(−1/2) = 256`), so any `s` satisfying the conclusion is
+automatically non-cuspidal.
+
+**FAITHFULNESS: satisfiable and non-vacuous**, unlike its level-`32`
+sibling — curves with rational cyclic `16`-isogenies exist, and the two-way
+Magma check in the section note above exhibits `28` of them below conductor
+`300`, each with exactly two rational `s`. This leaf is therefore genuine
+mathematics and not a vacuous placeholder.
+
+Its intended proof is the `X_0(16)` analogue of
+`MazurLevel9.exists_rat_hauptmodul_of_stable`; see the section note above
+for the route and for the elementary first step (`8 • g` is Galois-fixed,
+so `E` has a rational point of order `2`). -/
+theorem exists_univCurve_param_of_stable (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 16)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    ∃ s : ℚ, E.j * (univCurve s).Δ = (univCurve s).c₄ ^ 3 :=
+  sorry
+
+end MazurLevel16
+
 /-- **`X_0(16)`, the genus-`0` level: a rational cyclic `16`-subgroup puts
-`j` on the explicit degree-`24` Hauptmodul curve** (sorry node — the moduli
-content at level `16`, introduced 2026-07-26): if the geometric points of an
+`j` on the explicit degree-`24` Hauptmodul curve** (PROVEN 2026-07-26 over
+the single moduli leaf `MazurLevel16.exists_univCurve_param_of_stable`; was
+a sorry node, introduced the same day): if the geometric points of an
 elliptic curve over `ℚ` contain a point `g` of order `16` whose cyclic
 subgroup is `Gal(ℚ̄/ℚ)`-stable, then there is a rational number `s` with
 
@@ -914,12 +1093,16 @@ displayed identity itself excludes the remaining cusps `s = 0, 1/2, −1/2`
 because `M` does not vanish there (`M(0) = 1`, `M(1/2) = 4096`,
 `M(−1/2) = 256`).
 
-Its intended proof is elementary and needs no modular curve as a scheme:
-exhibit the universal family over the `s`-line — a curve with a rational
-point of order `2` together with Vélu's formulae for the four `2`-isogenies
-in the chain `E → E/C₂ → E/C₄ → E/C₈ → E/C₁₆` — and compute its
-`j`-invariant. Compare `exists_x0Nine_hauptmodul`, which is the same
-statement one level down the `3`-power tower. -/
+**The universal family is now written down and its `j`-invariant computed**
+(`MazurLevel16.univCurve`, `.univCurve_c₄`, `.univCurve_Δ`,
+`.j16_of_param`, all PROVEN 2026-07-26): the curve is
+`y² = x³ + 2N(s)x² + (1 − 2s)⁸x` with `N(s) = 16s⁴ + 96s³ + 24s² + 24s + 1`,
+whose `c₄` is `16 M(s)` and whose `Δ` is `4096 · s(1−2s)¹⁶(1+2s)⁴(1+4s²)`.
+So the displayed identity is a `ring` consequence, and what remains is
+exactly the moduli statement `(E, ⟨g⟩) ↦ s ∈ ℚ`, isolated as
+`MazurLevel16.exists_univCurve_param_of_stable`. Compare
+`exists_x0Nine_hauptmodul`, which is the same statement one level down the
+`3`-power tower and is cut the same way. -/
 theorem WeierstrassCurve.exists_x0Sixteen_hauptmodul
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 16)
@@ -930,8 +1113,9 @@ theorem WeierstrassCurve.exists_x0Sixteen_hauptmodul
           AddSubgroup.zmultiples g) :
     ∃ s : ℚ, E.j * (s * (1 - 2 * s) ^ 16 * (1 + 2 * s) ^ 4 * (1 + 4 * s ^ 2))
       = (256 * s ^ 8 + 15360 * s ^ 7 + 34560 * s ^ 6 + 26880 * s ^ 5 + 17504 * s ^ 4
-          + 6720 * s ^ 3 + 2160 * s ^ 2 + 240 * s + 1) ^ 3 :=
-  sorry
+          + 6720 * s ^ 3 + 2160 * s ^ 2 + 240 * s + 1) ^ 3 := by
+  obtain ⟨s, hs⟩ := MazurLevel16.exists_univCurve_param_of_stable E g hg hstable
+  exact ⟨s, MazurLevel16.j16_of_param s E.j hs⟩
 
 /-- **`X_0(32) → X_0(16)`: an `X_0(16)`-parameter of a curve with a rational
 cyclic `32`-subgroup lifts to `y² = x³ + 4x`** (sorry node — the level-`32`
