@@ -159,6 +159,24 @@ public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Mathlib.RingTheory.Flat.Basic
 public import Mathlib.RingTheory.TensorProduct.Basic
 public import Mathlib.RingTheory.Ideal.Maximal
+-- Bertini cut (2026-07-26): `exists_dimensionDrop_of_affine_geometricallyIrreducible`
+-- is PROVEN over `exists_bertiniHyperplane_of_affine_geometricallyIrreducible`, and
+-- the reduction needs the affine dictionary (`IsAffineHom`, `Scheme.isoSpec`,
+-- `Scheme.ΓSpecIso`) together with the Krull-dimension bookkeeping that turns
+-- "quotient by a nonzerodivisor" into a STRICT dimension drop
+-- (`ringKrullDim_quotient_succ_le_of_nonZeroDivisor`, plus finite-dimensionality
+-- of a finitely generated algebra over a field via
+-- `MvPolynomial.ringKrullDim_of_isNoetherianRing`). `nonZeroDivisors`,
+-- `Ideal.span` and `ringKrullDim` occur in the new leaf's STATEMENT, so these
+-- are `public import`s.
+public import Mathlib.AlgebraicGeometry.Morphisms.Affine
+public import Mathlib.AlgebraicGeometry.Properties
+public import Mathlib.RingTheory.KrullDimension.NonZeroDivisors
+public import Mathlib.RingTheory.KrullDimension.Polynomial
+public import Mathlib.RingTheory.KrullDimension.Field
+public import Mathlib.RingTheory.FiniteType
+public import Mathlib.RingTheory.Spectrum.Prime.Topology
+public import Mathlib.Algebra.Algebra.Rat
 -- (`Mathlib.RingTheory.Ideal.Norm.AbsNorm` is imported once, above:
 -- `Ideal.absNorm` is the residue cardinality `Nw` of a place of the
 -- Moret–Bailly base `F`, and appears in the STATEMENTS both of the two
@@ -950,11 +968,18 @@ next two names),
 2026-07-26** — no longer a leaf: the "iterate Bertini until the dimension is
 one" loop is discharged by well-founded induction on `topologicalKrullDim`
 over the next name),
-`exists_dimensionDrop_of_affine_geometricallyIrreducible` (SORRY — ONE
-Bertini step in characteristic zero: a smooth geometrically irreducible
-affine `ℚ`-variety of dimension `> 1` with a real point admits a
-`ℚ`-morphism from one of strictly smaller dimension with the same six
-properties, real point included; step (i) of Moret–Bailly's route),
+`exists_dimensionDrop_of_affine_geometricallyIrreducible` (**PROVEN
+2026-07-26** — no longer a leaf: the transport to `Spec Γ(X, ⊤)`, the
+affine/separated/quasi-compact/finite-type inheritance and the STRICT
+Krull-dimension drop, including the finite-dimensionality of a finitely
+generated `ℚ`-algebra that the drop needs, are all discharged over the next
+name),
+`exists_bertiniHyperplane_of_affine_geometricallyIrreducible` (SORRY — ONE
+good hyperplane FUNCTION in characteristic zero: on a smooth geometrically
+irreducible affine `ℚ`-variety of dimension `> 1` with a real point there is
+a nonzerodivisor `ℓ` whose vanishing locus is again smooth, geometrically
+irreducible and has a real point; step (i) of Moret–Bailly's route, reduced
+to its geometry),
 `exists_normalRealPoint_of_affine_curve` (**PROVEN 2026-07-26** — no longer
 a leaf: it is now BLGGT Prop. 3.1.1's own assembly over the next three
 names),
@@ -998,10 +1023,12 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    has a smooth geometrically irreducible hyperplane section, plus a
    real-topology approximation step to keep a real point. This is step (i)
    of the classical route and is now the whole content of
-   `exists_dimensionDrop_of_affine_geometricallyIrreducible` — a SINGLE
-   step, the iteration having been discharged (2026-07-26) by well-founded
-   induction inside
-   `exists_affineCurve_of_affine_geometricallyIrreducible`.
+   `exists_bertiniHyperplane_of_affine_geometricallyIrreducible` — a SINGLE
+   hyperplane function, the iteration having been discharged (2026-07-26) by
+   well-founded induction inside
+   `exists_affineCurve_of_affine_geometricallyIrreducible` and all the
+   scheme-theoretic and dimension-theoretic bookkeeping by
+   `exists_dimensionDrop_of_affine_geometricallyIrreducible`.
 4. **Picard schemes / Jacobians as schemes**, with the torsor formalism
    and the "incompressible neighbourhood" existence statement — step (ii),
    and by far the largest of the four. Owned by
@@ -1015,7 +1042,9 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
 Each is an independently ownable subproject; 1, 3 and 5 are the ones that
 can be started without the others, and items 3 (Bertini) and 5 (Lang–Weil +
 Hensel) are now leaves of their own --
-`exists_dimensionDrop_of_affine_geometricallyIrreducible` and
+`exists_bertiniHyperplane_of_affine_geometricallyIrreducible` (the Bertini
+geometry, all that is left of item 3 now that the dimension bookkeeping is
+discharged) and
 `exists_bound_forall_padicPoint_of_geometricallyIrreducible` -- so each can
 be attacked without any of the others.
 
@@ -1221,8 +1250,9 @@ and Pop's theorem that `ℚ^tr` is a large/ample field. The argument is:
 (iii) conclude by the local–global principle over `ℚ^tr`.
 
 **Step (i) is `exists_affineCurve_of_affine_geometricallyIrreducible`
-(PROVEN 2026-07-26 over the single-Bertini-step leaf
-`exists_dimensionDrop_of_affine_geometricallyIrreducible`, SORRY) and
+(PROVEN 2026-07-26 over `exists_dimensionDrop_of_affine_geometricallyIrreducible`,
+itself PROVEN 2026-07-26 over the single hyperplane-function leaf
+`exists_bertiniHyperplane_of_affine_geometricallyIrreducible`, SORRY) and
 steps (ii)+(iii) are `exists_normalRealPoint_of_affine_curve`
 (PROVEN 2026-07-26 over `exists_normalSplitPoint_of_affine_curve`, which is
 Moret–Bailly's theorem proper, plus the two arithmetic leaves that buy the
@@ -1303,10 +1333,124 @@ theorem isTotallyReal_of_normal_of_realEmbedding
   simp
 
 open CategoryTheory AlgebraicGeometry in
-/-- **ONE BERTINI CUT: a single dimension-lowering step** (sorry node — the
-whole geometric content of step (i) of Moret–Bailly's route; cut out of
-`exists_affineCurve_of_affine_geometricallyIrreducible` on 2026-07-26, which
-is now PROVEN over it by well-founded induction on the dimension).
+/-- **The closed immersion `Spec (A/(ℓ)) ⟶ Spec A` cut out by one function.**
+
+This is the affine hyperplane section in its coordinate-free form: for an
+affine `ℚ`-variety `Spec A` and a global function `ℓ ∈ A`, the classical
+"intersect with the hyperplane `ℓ = 0`" is `Spec` of the quotient
+`A ⧸ (ℓ)`. Naming it once keeps the Bertini leaf below and its consumer
+readable; both mention it, so it is in the cone of the root theorem. -/
+noncomputable def specQuotSpanSingleton {A : CommRingCat.{u}} (ℓ : A) :
+    AlgebraicGeometry.Spec (CommRingCat.of (A ⧸ Ideal.span {ℓ})) ⟶
+      AlgebraicGeometry.Spec A :=
+  AlgebraicGeometry.Spec.map (CommRingCat.ofHom (Ideal.Quotient.mk (Ideal.span {ℓ})))
+
+open CategoryTheory AlgebraicGeometry in
+/-- **BERTINI + REAL APPROXIMATION: ONE good hyperplane function** (sorry
+node — the whole geometric content of step (i) of Moret–Bailly's route; cut
+out of `exists_dimensionDrop_of_affine_geometricallyIrreducible` on
+2026-07-26, which is now PROVEN over it).
+
+Given an affine `ℚ`-variety `Spec A` which is smooth, separated, of finite
+type, quasi-compact and geometrically irreducible over `ℚ`, has a REAL
+point, and has dimension `> 1`, there is a global function `ℓ ∈ A` which is
+a NONZERODIVISOR and whose vanishing locus `Spec (A ⧸ (ℓ))` is again
+smooth and geometrically irreducible over `ℚ` and again has a real point.
+
+WHY THIS IS THE RIGHT CUT. Everything else in the parent is bookkeeping and
+is discharged there: `Spec (A ⧸ (ℓ)) ⟶ Spec A` is an affine morphism, hence
+automatically separated and quasi-compact, and a surjection of rings is of
+finite type, so those three of the six properties are free; and the STRICT
+DIMENSION DROP is the elementary fact that quotienting a finite-dimensional
+ring by a nonzerodivisor drops the Krull dimension by at least one
+(`ringKrullDim_quotient_succ_le_of_nonZeroDivisor`), the finite-dimensionality
+coming from `A` being a finitely generated algebra over a field. What is left
+here is exactly the geometry.
+
+WHY THIS IS TRUE. `A` is a finitely generated `ℚ`-algebra, so `Spec A` is a
+closed subscheme of some `𝔸ⁿ_ℚ` (in particular quasi-affine, hence
+quasi-projective — which is exactly the discharge of the parent's
+quasi-projectivity caveat, so Bertini applies here as classically stated).
+Take `ℓ` to be the restriction to `Spec A` of an affine-linear form
+`Σ aᵢ xᵢ − b` with `aᵢ, b ∈ ℚ`, i.e. a `ℚ`-rational hyperplane. For a
+suitable such hyperplane the section is:
+
+* NONZERO, hence a NONZERODIVISOR — `Spec A` is geometrically integral
+  (smooth over a field gives geometrically reduced, and geometric
+  irreducibility is hypothesised), so `A` is a domain, and a hyperplane not
+  containing `Spec A` restricts to a nonzero function; such a hyperplane
+  exists because `dim Spec A ≥ 1`;
+* SMOOTH over `ℚ` — Bertini's smoothness theorem in characteristic zero
+  (the general member of a base-point-free linear system on a smooth
+  variety is smooth; Hartshorne, *Algebraic Geometry*, II.8.18 and III.7,
+  or Jouanolou, *Théorèmes de Bertini et applications*, Ch. I);
+* GEOMETRICALLY IRREDUCIBLE — Bertini's irreducibility theorem, which needs
+  exactly the hypothesis `dim Spec A ≥ 2` imposed here (Jouanolou, Ch. I,
+  Thm 6.3; the dimension-`1` case is false, a general hyperplane section of
+  a curve being a finite set of points).
+
+THE REAL POINT IS THE DELICATE PART, and it is why the conclusion asks only
+for SOME real point of the section. A hyperplane defined over `ℚ` through a
+prescribed `ℝ`-point generally does not exist: the incidence conditions are
+`ℝ`-linear conditions on `ℚ`-coefficients, and their solution set is a
+proper `ℝ`-subspace which typically meets `ℚⁿ` only in `0`. Moret–Bailly's
+argument instead uses the `ℝ`-topology: let `p` be a real point and choose a
+real affine hyperplane `H₀` through `p` transverse to `Spec A` at `p`; the
+`ℚ`-points are dense in the (real) parameter space of hyperplanes, and the
+Bertini-good hyperplanes form a Zariski-dense open subset of it, whose real
+points therefore meet every nonempty real ball (a proper closed subvariety
+of the parameter space has empty interior in the real topology). So there is
+a `ℚ`-hyperplane `H` both Bertini-good and `ℝ`-close to `H₀`; transversality
+is an open condition, so the implicit function theorem on the real manifold
+of real points produces a real point of the section near `p`. **The two
+ingredients are inseparable in the argument: ONE hyperplane must be
+simultaneously Bertini-generic and real-close, which is why this is one leaf
+and not two.**
+
+MACHINERY MISSING AT THIS PIN (2026-07-26 audit): Bertini's theorems in
+either form; the real-analytic structure on the real points of a smooth
+`ℚ`-variety (mathlib has no functor from schemes to real manifolds at all);
+and the density statement for `ℚ`-points of the parameter space. All three
+are buildable and none is arithmetic — this leaf is pure algebraic geometry
+plus one appeal to the implicit function theorem, which mathlib does have
+(`ImplicitFunctionData`, `HasStrictFDerivAt.implicitFunction`).
+
+NOTE ON THE HYPOTHESES. `hsep` and `hqc` are automatic here — every
+morphism of affine schemes is separated and quasi-compact — and are carried
+only to keep the statement parallel with its consumer; a prover may ignore
+them. `hdim` is genuinely load-bearing: it is the `dim ≥ 2` that Bertini
+irreducibility requires, and without it the statement is FALSE.
+
+NOT VACUOUS: `ℓ` a nonzerodivisor in a nontrivial ring forces `ℓ ≠ 0`, and
+`GeometricallyIrreducible` forces the section to be NONEMPTY, so the unit
+`ℓ = 1` (whose quotient is the zero ring) is excluded too.
+
+CIRCULARITY GUARD: a statement of algebraic geometry with no
+Galois-representation hypotheses, so no route through `Family.lean`,
+`Lift.lean` or `Modularity/Interface.lean` is even relevant. -/
+theorem exists_bertiniHyperplane_of_affine_geometricallyIrreducible
+    {A : CommRingCat.{u}}
+    (g : AlgebraicGeometry.Spec A ⟶
+      AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hsep : AlgebraicGeometry.IsSeparated g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hqc : AlgebraicGeometry.QuasiCompact g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hreal : HasRationalPoint g (ULift.{u} ℝ))
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A)) :
+    ∃ ℓ : A, ℓ ∈ nonZeroDivisors A ∧
+      AlgebraicGeometry.Smooth (specQuotSpanSingleton ℓ ≫ g) ∧
+      AlgebraicGeometry.GeometricallyIrreducible (specQuotSpanSingleton ℓ ≫ g) ∧
+      HasRationalPoint (specQuotSpanSingleton ℓ ≫ g) (ULift.{u} ℝ) :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **ONE BERTINI CUT: a single dimension-lowering step** (**PROVEN
+2026-07-26** over the single hyperplane-function leaf
+`exists_bertiniHyperplane_of_affine_geometricallyIrreducible`; what remains
+open is the geometry of choosing the hyperplane, not any of the bookkeeping
+around it).
 
 Given `X` affine, smooth, separated, of finite type, quasi-compact and
 geometrically irreducible over `ℚ`, with a REAL point, and of dimension
@@ -1314,61 +1458,46 @@ geometrically irreducible over `ℚ`, with a REAL point, and of dimension
 ALL SIX of the same properties over `ℚ` — including a real point — and with
 `topologicalKrullDim X' < topologicalKrullDim X`.
 
-WHY THIS IS TRUE. Take the hyperplane section. `X` affine of finite type
-over `ℚ` is a closed subscheme of some `𝔸ⁿ_ℚ` (in particular quasi-affine,
-hence quasi-projective — which is exactly the discharge of the parent's
-quasi-projectivity caveat, so Bertini applies here as classically stated).
-For a suitable `ℚ`-rational affine hyperplane `H ⊆ 𝔸ⁿ`, the section
-`X' := X ∩ H` is:
+THE PROOF, AND WHY THE CUT IS AT THE HYPERPLANE FUNCTION. `X` is affine, so
+`X ≅ Spec Γ(X, ⊤)` (`Scheme.isoSpec`) and the whole statement transports to
+that spectrum: all five morphism properties `Smooth`, `IsSeparated`,
+`LocallyOfFiniteType`, `QuasiCompact` and `GeometricallyIrreducible` respect
+isomorphisms (each is stable under base change, hence `RespectsIso`), and a
+real point transports by composing with the isomorphism. The leaf then
+supplies a NONZERODIVISOR `ℓ ∈ Γ(X, ⊤)` whose vanishing locus
+`X' := Spec (Γ(X, ⊤) ⧸ (ℓ))` is smooth, geometrically irreducible and has a
+real point, and `h := specQuotSpanSingleton ℓ ≫ X.isoSpec.inv` is the
+morphism wanted. What is proven HERE is everything else:
 
-* AFFINE, SEPARATED, of FINITE TYPE and QUASI-COMPACT — a closed subscheme
-  of an affine scheme is affine, and all three properties are inherited by
-  a closed immersion composed with `fX`;
-* SMOOTH over `ℚ` — Bertini's smoothness theorem in characteristic zero
-  (the general member of a base-point-free linear system on a smooth
-  variety is smooth; Hartshorne, *Algebraic Geometry*, II.8.18 and III.7,
-  or Jouanolou, *Théorèmes de Bertini et applications*, Ch. I);
-* GEOMETRICALLY IRREDUCIBLE — Bertini's irreducibility theorem, which needs
-  exactly the hypothesis `dim X ≥ 2` imposed here (Jouanolou, Ch. I,
-  Thm 6.3; the dimension-`1` case is false, a general hyperplane section of
-  a curve being a finite set of points);
-* of dimension `dim X − 1`, hence STRICTLY smaller. Note this is where the
-  hypothesis bites: `1 < topologicalKrullDim X` says `dim X ≥ 2`, so the
-  section is nonempty of dimension `≥ 1` and the drop is genuine. (The value
-  `topologicalKrullDim X = ⊤` is not actually reachable under these
-  hypotheses — an affine scheme, quasi-compact and locally of finite type
-  over a field, has `Γ(X, ⊤)` a finitely generated `ℚ`-algebra, so
-  `ringKrullDim Γ(X, ⊤) ≤ n` for any number `n` of algebra generators via
-  `ringKrullDim_le_of_surjective` and
-  `MvPolynomial.ringKrullDim_of_isNoetherianRing` — so a prover may assume
-  finite dimension, at the cost of proving that.)
+* AFFINE, SEPARATED and QUASI-COMPACT — `Spec` of a ring is affine, and a
+  morphism between affine schemes is an affine morphism
+  (`isAffineHom_of_isAffine`), hence separated (`IsSeparated.of_isAffineHom`)
+  and quasi-compact; both properties are stable under composition, so they
+  pass to `h ≫ fX`;
+* of FINITE TYPE — `Ideal.Quotient.mk` is surjective, hence of finite type
+  (`RingHom.FiniteType.of_surjective`), and `HasRingHomProperty.Spec_iff`
+  turns that into `LocallyOfFiniteType (specQuotSpanSingleton ℓ)`;
+* of STRICTLY SMALLER DIMENSION — this is the one genuinely mathematical
+  step proven here. `topologicalKrullDim` of a spectrum is `ringKrullDim`
+  (`PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim`), and quotienting by
+  a nonzerodivisor drops it by at least one
+  (`ringKrullDim_quotient_succ_le_of_nonZeroDivisor`). Turning `d + 1 ≤ D`
+  into `d < D` in `WithBot ℕ∞` needs `d ≠ ⊤`, i.e. FINITE-DIMENSIONALITY,
+  which is proven here rather than assumed: `LocallyOfFiniteType fX` between
+  affines gives `RingHom.FiniteType fX.appTop.hom`
+  (`HasRingHomProperty.iff_of_isAffine`), so `Γ(X, ⊤)` is a quotient of
+  `MvPolynomial (Fin n)` over `Γ(Spec ℚ, ⊤) ≅ ULift ℚ`, a field; hence
+  `ringKrullDim Γ(X, ⊤) ≤ n` by `ringKrullDim_le_of_surjective` and
+  `MvPolynomial.ringKrullDim_of_isNoetherianRing`. The remaining `⊥` case
+  (`ℓ` a unit, so the section is empty) is settled by `1 < dim X`, which
+  gives `dim X ≠ ⊥`. **So the docstring's old caveat "a prover may assume
+  finite dimension, at the cost of proving that" is discharged.**
 
-THE REAL POINT IS THE DELICATE PART, and it is why the conclusion asks only
-for SOME real point of `X'` and SOME morphism `X' ⟶ X`, rather than for a
-hyperplane section THROUGH the given real point. A hyperplane defined over
-`ℚ` through a prescribed `ℝ`-point generally does not exist: the incidence
-conditions are `ℝ`-linear conditions on `ℚ`-coefficients, and their solution
-set is a proper `ℝ`-subspace which typically meets `ℚⁿ` only in `0`.
-Moret–Bailly's argument instead uses the `ℝ`-topology: let `p ∈ X(ℝ)` and
-choose a real affine hyperplane `H₀` through `p` transverse to `X` at `p`;
-the `ℚ`-points are dense in the (real) parameter space of hyperplanes, and
-the Bertini-good hyperplanes form a Zariski-dense open subset of it, whose
-real points therefore have dense complement-free intersection with any
-nonempty real ball (a proper closed subvariety of the parameter space has
-empty interior in the real topology). So there is a `ℚ`-hyperplane `H` both
-Bertini-good and `ℝ`-close to `H₀`; transversality is an open condition, so
-the implicit function theorem on the real manifold `X(ℝ)` produces a point
-of `X'(ℝ)` near `p`. **The two ingredients are inseparable in the argument:
-ONE hyperplane must be simultaneously Bertini-generic and real-close, which
-is why this is one leaf and not two.**
-
-MACHINERY MISSING AT THIS PIN (2026-07-26 audit): Bertini's theorems in
-either form; the real-analytic structure on `X(ℝ)` for a smooth `ℚ`-variety
-`X` (mathlib has no functor from schemes to real manifolds at all); and the
-density statement for `ℚ`-points of the parameter space. All three are
-buildable and none is arithmetic — this leaf is pure algebraic geometry plus
-one appeal to the implicit function theorem, which mathlib does have
-(`ImplicitFunctionData`, `HasStrictFDerivAt.implicitFunction`).
+The geometry — Bertini smoothness, Bertini irreducibility, and the
+`ℝ`-topology approximation that keeps a real point on the section — is
+exactly what the leaf still asks for; see its docstring, where the argument,
+the literature (Jouanolou Ch. I Thm 6.3; Hartshorne II.8.18, III.7) and the
+missing mathlib machinery are recorded in full.
 
 NOT VACUOUS: the hypothesis `1 < topologicalKrullDim X` blocks the trivial
 witness `X' := X`, and the conclusion asserts a strict dimension drop.
@@ -1393,8 +1522,88 @@ theorem exists_dimensionDrop_of_affine_geometricallyIrreducible
       AlgebraicGeometry.QuasiCompact (h ≫ fX) ∧
       AlgebraicGeometry.GeometricallyIrreducible (h ≫ fX) ∧
       HasRationalPoint (h ≫ fX) (ULift.{u} ℝ) ∧
-      topologicalKrullDim X' < topologicalKrullDim X :=
-  sorry
+      topologicalKrullDim X' < topologicalKrullDim X := by
+  classical
+  haveI := hsmooth; haveI := hsep; haveI := hft; haveI := hqc; haveI := hgi
+  -- `X` is homeomorphic to the spectrum of its ring of global sections
+  have hdimX : topologicalKrullDim X = topologicalKrullDim (Spec Γ(X, ⊤)) :=
+    IsHomeomorph.topologicalKrullDim_eq _ X.isoSpec.hom.homeomorph.isHomeomorph
+  -- every morphism property in play respects isomorphisms, so all five
+  -- transport from `fX` to the base morphism of `Spec Γ(X, ⊤)`
+  have htrans : ∀ (P : MorphismProperty Scheme.{u}) [P.RespectsIso], P fX →
+      P (X.isoSpec.inv ≫ fX) := by
+    intro P _ h
+    exact (P.cancel_left_of_respectsIso _ _).mpr h
+  have hrealg : HasRationalPoint (X.isoSpec.inv ≫ fX) (ULift.{u} ℝ) := by
+    obtain ⟨x, hx⟩ := hreal
+    refine ⟨x ≫ X.isoSpec.hom, ?_⟩
+    rw [Category.assoc, ← Category.assoc X.isoSpec.hom, Iso.hom_inv_id,
+      Category.id_comp, hx]
+  obtain ⟨ℓ, hℓ, hℓsm, hℓgi, hℓreal⟩ :=
+    exists_bertiniHyperplane_of_affine_geometricallyIrreducible
+      (X.isoSpec.inv ≫ fX) (htrans _ hsmooth) (htrans _ hsep) (htrans _ hft)
+      (htrans _ hqc) (htrans _ hgi) hrealg (hdimX ▸ hdim)
+  refine ⟨Spec (CommRingCat.of (Γ(X, ⊤) ⧸ Ideal.span {ℓ})), inferInstance,
+    specQuotSpanSingleton ℓ ≫ X.isoSpec.inv, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · rw [Category.assoc]; exact hℓsm
+  · rw [Category.assoc]
+    haveI : IsSeparated (X.isoSpec.inv ≫ fX) := htrans _ hsep
+    haveI : IsSeparated (specQuotSpanSingleton ℓ) := IsSeparated.of_isAffineHom _
+    infer_instance
+  · rw [Category.assoc]
+    haveI : LocallyOfFiniteType (X.isoSpec.inv ≫ fX) := htrans _ hft
+    haveI : LocallyOfFiniteType (specQuotSpanSingleton ℓ) :=
+      HasRingHomProperty.Spec_iff.mpr
+        (RingHom.FiniteType.of_surjective _ Ideal.Quotient.mk_surjective)
+    infer_instance
+  · rw [Category.assoc]
+    haveI : QuasiCompact (X.isoSpec.inv ≫ fX) := htrans _ hqc
+    infer_instance
+  · rw [Category.assoc]; exact hℓgi
+  · rw [Category.assoc]; exact hℓreal
+  · -- the STRICT dimension drop
+    rw [hdimX]
+    have hA : topologicalKrullDim (Spec Γ(X, ⊤)) = ringKrullDim Γ(X, ⊤) :=
+      PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim _
+    have hA' : topologicalKrullDim (Spec (CommRingCat.of (Γ(X, ⊤) ⧸ Ideal.span {ℓ})))
+        = ringKrullDim (Γ(X, ⊤) ⧸ Ideal.span {ℓ}) :=
+      PrimeSpectrum.topologicalKrullDim_eq_ringKrullDim _
+    rw [hA, hA']
+    -- `Γ(X, ⊤)` is a finitely generated algebra over a field, hence
+    -- finite-dimensional: this is what makes the drop STRICT
+    have hfin : ∃ n : ℕ, ringKrullDim Γ(X, ⊤) ≤ (n : WithBot ℕ∞) := by
+      have hFT : RingHom.FiniteType (fX.appTop).hom :=
+        HasRingHomProperty.iff_of_isAffine.mp hft
+      set B := Γ(Spec (CommRingCat.of (ULift.{u} ℚ)), ⊤) with hB
+      have hBe : (B : Type u) ≃+* ULift.{u} ℚ :=
+        (Scheme.ΓSpecIso (CommRingCat.of (ULift.{u} ℚ))).commRingCatIsoToRingEquiv
+      haveI : IsNoetherianRing (B : Type u) := isNoetherianRing_of_ringEquiv _ hBe.symm
+      have hBdim : ringKrullDim (B : Type u) = 0 :=
+        (ringKrullDim_eq_of_ringEquiv hBe).trans (ringKrullDim_eq_zero_of_field _)
+      letI : Algebra (B : Type u) (Γ(X, ⊤) : Type u) := (fX.appTop).hom.toAlgebra
+      haveI : Algebra.FiniteType (B : Type u) (Γ(X, ⊤) : Type u) := hFT
+      obtain ⟨n, f, hf⟩ := Algebra.FiniteType.iff_quotient_mvPolynomial''.mp ‹_›
+      refine ⟨n, ?_⟩
+      have := ringKrullDim_le_of_surjective f.toRingHom hf
+      rw [MvPolynomial.ringKrullDim_of_isNoetherianRing, hBdim] at this
+      simpa using this
+    obtain ⟨n, hn⟩ := hfin
+    have hquot : ringKrullDim (Γ(X, ⊤) ⧸ Ideal.span {ℓ}) + 1 ≤ ringKrullDim Γ(X, ⊤) :=
+      ringKrullDim_quotient_succ_le_of_nonZeroDivisor hℓ
+    have hDbot : (⊥ : WithBot ℕ∞) < ringKrullDim Γ(X, ⊤) :=
+      lt_of_le_of_lt bot_le (hA ▸ hdimX ▸ hdim)
+    have hdn : ringKrullDim (Γ(X, ⊤) ⧸ Ideal.span {ℓ}) < (n : WithBot ℕ∞) :=
+      ENat.WithBot.add_one_le_natCast_iff.mp (hquot.trans hn)
+    rcases eq_or_ne (ringKrullDim (Γ(X, ⊤) ⧸ Ideal.span {ℓ})) ⊥ with hd | hd
+    · rw [hd]; exact hDbot
+    · have hdtop : ringKrullDim (Γ(X, ⊤) ⧸ Ideal.span {ℓ}) ≠ ⊤ := by
+        intro h; rw [h] at hdn; simp at hdn
+      refine lt_of_lt_of_le ?_ hquot
+      obtain ⟨k, hk⟩ := WithBot.ne_bot_iff_exists.mp hd
+      rw [← hk] at hdtop ⊢
+      have hk' : k ≠ ⊤ := fun h => hdtop (by rw [h]; rfl)
+      rw [← WithBot.coe_one, ← WithBot.coe_add, WithBot.coe_lt_coe]
+      exact (ENat.lt_add_one_iff hk').mpr le_rfl
 
 open CategoryTheory AlgebraicGeometry in
 /-- **Step (i) of Moret–Bailly's route: BERTINI, cutting down to a curve**
