@@ -23632,8 +23632,167 @@ theorem heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level {M : ℕ} (hM : 0 <
     heckeOp M q v = c • v :=
   sorry
 
+/-- **MULTIPLICITY ONE AT THE INDICES COPRIME TO THE LEVEL** (PROVEN
+2026-07-26): if `v ∈ S₂(Γ₀(M))` is an honest eigenvector of every GOOD
+Hecke operator `T_q`, `q ∤ M`, at a normalized weight-2 eigenform `g`'s
+eigenvalue `a_q(g)`, then `a_n(v) = a_1(v)·a_n(g)` for every `n` COPRIME
+to `M`.
+
+This is the good-prime analogue of
+`qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen` above, and it is EXACTLY what
+the Hecke recursion alone can deliver once the bad primes are dropped
+from the hypothesis: `qCoeff_heckeOp` computes `a_{qm}` from `a_m` and
+`a_{m/q}` only at primes `q` where the eigen-equation is available, so
+the indices reachable from `a_1` are precisely the `n` with
+`gcd(n, M) = 1`. Everything past that — the coefficients at the bad
+primes, and with them the conclusion `v ∈ ℂ·g` — is genuine Atkin–Lehner
+theory, and is isolated in
+`exists_weightTwoEigenform_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero`
+below.
+
+PROOF: strong induction on `n`, in the same shape as
+`qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen` but carrying coprimality
+along. A prime `q ∣ n` is automatically GOOD (it divides an `n` coprime
+to `M`), so the eigen-equation is available at it, and the two smaller
+indices `n/q` and `n/q²` are again coprime to `M`. -/
+theorem qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen_of_coprime {M : ℕ}
+    (hM : 0 < M) {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g)
+    {v : CuspForm (Gamma0GL M) 2}
+    (hv : ∀ q : ℕ, q.Prime → ¬ q ∣ M → heckeOp M q v = qCoeff M g q • v) :
+    ∀ n : ℕ, Nat.Coprime n M → qCoeff M v n = qCoeff M v 1 * qCoeff M g n := by
+  intro n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    intro hcop
+    rcases eq_or_ne n 0 with rfl | hn0
+    · rw [qCoeff_zero, qCoeff_zero]; ring
+    rcases eq_or_ne n 1 with rfl | hn1
+    · rw [hg.qCoeff_one]; ring
+    obtain ⟨q, hq, hqn⟩ := Nat.exists_prime_and_dvd hn1
+    obtain ⟨m', rfl⟩ := hqn
+    have hq2 : 2 ≤ q := hq.two_le
+    have hm'pos : 0 < m' := by
+      rcases Nat.eq_zero_or_pos m' with rfl | h
+      · exact absurd (by ring) hn0
+      · exact h
+    have hm'lt : m' < q * m' := by
+      have h2 : 2 * m' ≤ q * m' := Nat.mul_le_mul_right m' hq2
+      omega
+    have hdivlt : m' / q < q * m' := lt_of_le_of_lt (Nat.div_le_self _ _) hm'lt
+    -- a prime factor of an index coprime to `M` is a GOOD prime
+    have hqM : ¬ q ∣ M := by
+      intro hd
+      have h1 : q ∣ Nat.gcd (q * m') M := Nat.dvd_gcd (dvd_mul_right q m') hd
+      rw [Nat.Coprime] at hcop
+      rw [hcop] at h1
+      exact hq.one_lt.ne' (Nat.dvd_one.mp h1)
+    have hcm' : Nat.Coprime m' M :=
+      Nat.Coprime.coprime_dvd_left (dvd_mul_left m' q) hcop
+    have hvq : qCoeff M (heckeOp M q v) m' = qCoeff M (qCoeff M g q • v) m' := by
+      rw [hv q hq hqM]
+    rw [qCoeff_heckeOp hM hq v m', qCoeff_smul] at hvq
+    have hgq := hecke_eigen_coeff_identity hg hq m'
+    have e1 := ih m' hm'lt hcm'
+    rw [if_neg hqM] at hvq hgq
+    by_cases hqmm : q ∣ m'
+    · rw [if_pos hqmm] at hvq hgq
+      have hcd : Nat.Coprime (m' / q) M :=
+        Nat.Coprime.coprime_dvd_left
+          ((Nat.div_dvd_of_dvd hqmm).trans (dvd_mul_left m' q)) hcop
+      have e2 := ih (m' / q) hdivlt hcd
+      linear_combination hvq - qCoeff M v 1 * hgq + qCoeff M g q * e1
+        - (q : ℂ) * e2
+    · rw [if_neg hqmm] at hvq hgq
+      linear_combination hvq - qCoeff M v 1 * hgq + qCoeff M g q * e1
+
+/-- **ATKIN–LEHNER: a good-prime joint eigenvector with no coefficients
+away from the level comes from a SMALLER level** (sorry leaf — cut
+2026-07-26 out of `exists_smul_of_heckeOp_eq_smul_of_not_dvd_level`;
+Atkin–Lehner 1970, Diamond–Shurman Theorem 5.7.1 — the *Main Lemma* —
+together with Theorem 5.8.2, the newform decomposition): a NONZERO
+`w ∈ S₂(Γ₀(M))` which is an honest eigenvector of every GOOD Hecke
+operator `T_q`, `q ∤ M`, with eigenvalues `c q`, and ALL of whose
+`q`-expansion coefficients `a_n(w)` at indices `n` COPRIME to `M`
+vanish, forces the eigensystem `c` to be realized by a normalized
+weight-2 eigenform of a PROPER divisor level `M' ∣ M`, `M' ≠ M`.
+
+This is the entire Atkin–Lehner content of strong multiplicity one, and
+it is deliberately stated with NO reference to newforms, to `g`, or to
+minimality: it is a statement about the OLD subspace alone. Its single
+consumer `exists_smul_of_heckeOp_eq_smul_of_not_dvd_level` supplies the
+newform and reads the conclusion straight into
+`IsWeightTwoNewform.eigensystem_minimal`.
+
+CLASSICAL PROOF, and the DECOMPOSITION POINTER for whoever attacks it.
+Two classical theorems, in this order.
+
+* (Main Lemma; D–S Thm 5.7.1, Atkin–Lehner 1970 Lemma 18) `a_n(w) = 0`
+  for every `n` coprime to `M` forces `w` into the OLD subspace
+  `Σ_{p ∣ M} V_p S₂(Γ₀(M/p))`, where `(V_p f)(z) = f(pz)`. This is the
+  analytic half; it goes through the Petersson product and the
+  Atkin–Lehner involutions `W_Q`, and has no elementary substitute on a
+  coefficient-only pin.
+* (newform decomposition; D–S Thm 5.8.2 with Prop. 5.8.5) `S₂(Γ₀(M))` is
+  the direct sum, over divisors `M' ∣ M` and newforms `f` of level `M'`,
+  of the blocks `span{V_d f : d ∣ M/M'}`; each block is stable under
+  every `T_q` with `q ∤ M` and that operator acts on it by the SCALAR
+  `a_q(f)` (because `V_d` commutes with `T_q` for `q ∤ d`, and `d ∣ M`).
+  The old subspace is exactly the sum of the blocks with `M' ≠ M`. So a
+  nonzero joint good-prime eigenvector lying in it has a nonzero
+  component in some block with `M' ≠ M`, and comparing eigenvalues gives
+  `a_q(f) = c q` for every `q ∤ M`; a newform of level `M'` is in
+  particular a normalized weight-2 eigenform (Prop. 5.8.5), i.e. an
+  inhabitant of `IsWeightTwoEigenform M'`.
+
+WHAT THE PIN LACKS, precisely (audited 2026-07-26 against mathlib
+`Mathlib/NumberTheory/ModularForms/` and against `~/cs/FLT`, BOTH of
+which have zero newform, oldform or Atkin–Lehner material): the
+degeneracy operator `V_d : S₂(Γ₀(M')) → S₂(Γ₀(M))`, `f ↦ (z ↦ f(dz))`
+— equivalently the weight-2 slash by `[[d,0],[0,1]]` — which is the one
+new DEFINITION both halves need; the oldform subspace; the Petersson
+product; the involutions `W_Q`. Building `V_d` together with its
+coefficient identity `a_n(V_d f) = a_{n/d}(f)` (and `0` when `d ∤ n`) is
+the first step of any attack, and it is SHARED with the Petersson route
+of the sibling leaf
+`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`.
+
+FAITHFULNESS AUDIT (2026-07-26). Every hypothesis is load-bearing.
+
+* `hw : w ≠ 0` — for `w = 0` the conclusion is outright FALSE at `M = 1`
+  (no `M' ∣ 1` has `M' ≠ 1`), and at any `M` it asserts an eigenform
+  matching an unconstrained `c`.
+* the vanishing hypothesis `hwc` — without it, `w = g` for a level-`M`
+  newform `g` is a counterexample: it is a good-prime eigenvector at its
+  own eigensystem, and `eigensystem_minimal` says outright that no
+  proper divisor level realizes that eigensystem.
+* the eigenvector hypothesis `hwe` — without it `w` may be an arbitrary
+  element of the old subspace, and `c` is then unconstrained by the
+  hypotheses while the conclusion constrains it.
+
+NON-VACUITY. The hypotheses are jointly satisfiable, so this is not a
+leaf that can be discharged by refuting its premises. Take `f` a newform
+of level `M'`, `q ∤ M'` prime, `M = M'·q³`, and
+`w(z) = f(qz) − a_q(f)·f(q²z) + q·f(q³z)` — the image under `V_q` of the
+`q`-depleted form of `f`. Then `w ≠ 0`; every `T_r` with `r ∤ M` acts on
+the whole block `span{f(qⁱz) : i ≤ 3}` by the scalar `a_r(f)`, so `w` is
+a good-prime eigenvector at `c r = a_r(f)`; and the coefficients of `w`
+are supported on multiples of `q`, hence vanish at every index coprime
+to `M`. The conclusion is witnessed by `M' ∣ M`, `M' ≠ M` and `f`
+itself. -/
+theorem exists_weightTwoEigenform_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero
+    {M : ℕ} (hM : 0 < M) {c : ℕ → ℂ} {w : CuspForm (Gamma0GL M) 2}
+    (hw : w ≠ 0)
+    (hwe : ∀ q : ℕ, q.Prime → ¬ q ∣ M → heckeOp M q w = c q • w)
+    (hwc : ∀ n : ℕ, Nat.Coprime n M → qCoeff M w n = 0) :
+    ∃ M' : ℕ, M' ∣ M ∧ M' ≠ M ∧ ∃ g' : CuspForm (Gamma0GL M') 2,
+      IsWeightTwoEigenform M' g' ∧
+        ∀ q : ℕ, q.Prime → ¬ q ∣ M → qCoeff M' g' q = c q :=
+  sorry
+
 /-- **STRONG MULTIPLICITY ONE for the AWAY-FROM-`M` eigensystem of a
-newform** (sorry leaf — cut 2026-07-26 out of
+newform** (PROVEN 2026-07-26 over the single Atkin–Lehner leaf
+`exists_weightTwoEigenform_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero`;
+itself cut 2026-07-26 out of
 `heckeOp_apply_eq_smul_of_generalizedEigen_of_newform`; Atkin–Lehner
 1970, Diamond–Shurman Theorem 5.8.3 with §5.8): if `g` is a weight-2
 level-`M` NEWFORM and `v ∈ S₂(Γ₀(M))` is an honest eigenvector of every
@@ -23667,13 +23826,63 @@ old block `span{f(qⁱz) : i ≤ 3}` by the scalar `a_r(f) = a_r(g)`, so the
 joint good-prime eigenspace at `g`'s eigensystem is 4-dimensional while
 `ℂ·g` is a line. `g` is of course not a newform of level `M`: its
 away-from-`M` eigensystem is `f`'s, realized at the proper divisor level
-`M'`, which is exactly what `eigensystem_minimal` excludes. -/
+`M'`, which is exactly what `eigensystem_minimal` excludes.
+
+ASSEMBLY (2026-07-26 — this node is now PROVEN; the classical residue it
+carried has been isolated, and the elementary half of it discharged).
+The scalar is `a_1(v)`, as it must be, and the proof is a contradiction
+argument on the difference `w = v − a_1(v)·g`:
+
+* `w` is again an honest eigenvector of every GOOD `T_q` at `a_q(g)` —
+  `v` is by hypothesis and `g` is at EVERY prime by
+  `heckeOp_apply_eq_smul_of_isWeightTwoEigenform`, and the two complex
+  scalars commute;
+* `w` has NO coefficients away from the level: `a_n(w) = 0` for every
+  `n` coprime to `M`. That is the PROVEN
+  `qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen_of_coprime` above, which is
+  exactly as far as the bare Hecke recursion reaches when the bad primes
+  are dropped from the hypothesis;
+* so if `w ≠ 0`, the Atkin–Lehner leaf
+  `exists_weightTwoEigenform_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero`
+  produces a normalized weight-2 eigenform of a PROPER divisor level
+  `M' ∣ M` realizing `g`'s away-from-`M` eigensystem — which is verbatim
+  what `hg.eigensystem_minimal` forbids. Hence `w = 0`.
+
+So `eigensystem_minimal` is consumed here, in the GLUE, and the leaf
+below it knows nothing about newforms: the split is exactly along the
+line between the analytic Atkin–Lehner theory (which the pin lacks
+entirely) and the minimality bookkeeping (which is pure carrier
+arithmetic). -/
 theorem exists_smul_of_heckeOp_eq_smul_of_not_dvd_level {M : ℕ} (hM : 0 < M)
     {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
     {v : CuspForm (Gamma0GL M) 2}
     (hv : ∀ q : ℕ, q.Prime → ¬ q ∣ M → heckeOp M q v = qCoeff M g q • v) :
-    ∃ c : ℂ, v = c • g :=
-  sorry
+    ∃ c : ℂ, v = c • g := by
+  refine ⟨qCoeff M v 1, sub_eq_zero.mp ?_⟩
+  by_contra hne
+  -- the difference is again a good-prime eigenvector at `g`'s eigensystem
+  have hwe : ∀ q : ℕ, q.Prime → ¬ q ∣ M →
+      heckeOp M q (v - qCoeff M v 1 • g) =
+        qCoeff M g q • (v - qCoeff M v 1 • g) := by
+    intro q hq hqM
+    rw [map_sub, map_smul, hv q hq hqM,
+      heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM
+        hg.toIsWeightTwoEigenform hq,
+      smul_sub, smul_comm (qCoeff M g q) (qCoeff M v 1) g]
+  -- and it has no coefficients at the indices coprime to the level
+  have hwc : ∀ n : ℕ, Nat.Coprime n M →
+      qCoeff M (v - qCoeff M v 1 • g) n = 0 := by
+    intro n hn
+    have h := (qCoeffL M n).map_sub v (qCoeff M v 1 • g)
+    simp only [qCoeffL_apply] at h
+    rw [h, qCoeff_smul,
+      qCoeff_eq_qCoeff_one_mul_of_heckeOp_eigen_of_coprime hM
+        hg.toIsWeightTwoEigenform hv n hn, sub_self]
+  -- Atkin–Lehner then contradicts the newform's minimality
+  obtain ⟨M', hM'dvd, hM'ne, g', hg', hg'c⟩ :=
+    exists_weightTwoEigenform_of_heckeOp_eigen_of_qCoeff_coprime_eq_zero
+      (c := fun q => qCoeff M g q) hM hne hwe hwc
+  exact hg.eigensystem_minimal M' hM'dvd hM'ne g' hg' hg'c
 
 /-- **REDUCEDNESS of the newform's local factor of the complex Hecke
 algebra** (PROVEN 2026-07-26 over the two classical leaves
