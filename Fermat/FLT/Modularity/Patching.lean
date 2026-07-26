@@ -1581,32 +1581,372 @@ theorem exists_intCoeff_eisenstein_approx {R : Type*} [CommRing R] [IsDedekindDo
               simpa using hcyv
           _ = WithZero.exp (-((M : ℤ) + 1)) := by rw [← WithZero.exp_add]; congr 1; ring
 
-/-- **A global generator of `K/ℚ` that is a uniformizer at `Q`** (sorry
-leaf, 2026-07-26 — step 1 of the elementary global route recorded on
+/-- **A uniformizer at `Q` that is a unit at every other prime above
+`q`** (PROVEN 2026-07-26 — step 1a of the elementary global route
+recorded on `differentIdeal_exponent_le_wild_of_residueDegreeOne`).
+
+No approximation theorem is needed: mathlib's coprime splitting
+`Ideal.eq_prime_pow_mul_coprime` writes `q·𝓞_K = Q^n · J` with
+`Q ⊔ J = ⊤`, and `J` is contained in every prime `P ∣ q` other than `Q`
+(a prime containing `Q^n·J` contains `Q^n` — hence `Q`, hence equals `Q`
+by maximality — or contains `J`).  Picking `i ∈ Q²`, `j ∈ J` with
+`i + j = 1` and a uniformizer `π`, the element `x₀ = π·j + i` has
+`ord_Q x₀ = 1` (because `ord_Q(π j) = 1 < 2 ≤ ord_Q i`, by the ultrametric
+equality for distinct valuations) and is `≡ 1` modulo every other prime
+above `q`, since `j` lies in all of them.
+-/
+theorem exists_uniformizer_avoiding_other_primes
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K)) :
+    ∃ x₀ : NumberField.RingOfIntegers K, v.intValuation x₀ = WithZero.exp (-1 : ℤ) ∧
+      ∀ P : Ideal (NumberField.RingOfIntegers K), P.IsPrime → P ≠ v.asIdeal →
+        (q : NumberField.RingOfIntegers K) ∈ P → x₀ ∉ P := by
+  classical
+  obtain ⟨π, hπ⟩ := v.intValuation_exists_uniformizer
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  have hmap0 : (Ideal.span {((q : ℕ) : ℤ)}).map
+      (algebraMap ℤ (NumberField.RingOfIntegers K)) ≠ ⊥ := Ideal.map_ne_bot_of_ne_bot hspan0
+  obtain ⟨J, hsup, hfac⟩ := Ideal.eq_prime_pow_mul_coprime hmap0 v.asIdeal
+  obtain ⟨n, hfac⟩ : ∃ n : ℕ, (Ideal.span {((q : ℕ) : ℤ)}).map
+      (algebraMap ℤ (NumberField.RingOfIntegers K)) = v.asIdeal ^ n * J := ⟨_, hfac⟩
+  have hspanq : Ideal.span {(q : NumberField.RingOfIntegers K)}
+      = (Ideal.span {((q : ℕ) : ℤ)}).map (algebraMap ℤ (NumberField.RingOfIntegers K)) := by
+    rw [Ideal.map_span]
+    congr 1
+    simp
+  have hcop : IsCoprime (v.asIdeal ^ 2) J :=
+    (Ideal.isCoprime_iff_sup_eq.mpr hsup).pow_left
+  obtain ⟨i, hi, j, hj, hij⟩ := Ideal.isCoprime_iff_exists.mp hcop
+  have hjnot : j ∉ v.asIdeal := by
+    intro hjm
+    have h1 : (1 : NumberField.RingOfIntegers K) ∈ v.asIdeal := by
+      rw [← hij]
+      exact Ideal.add_mem _ (Ideal.pow_le_self (by norm_num) hi) hjm
+    exact v.isPrime.ne_top (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+  have hvπj : v.intValuation (π * j) = WithZero.exp (-1 : ℤ) := by
+    rw [map_mul, hπ, HeightOneSpectrum.intValuation_eq_one_iff.mpr hjnot, mul_one]
+  have hvi : v.intValuation i ≤ WithZero.exp (-((2 : ℕ) : ℤ)) :=
+    (v.intValuation_le_pow_iff_mem i 2).mpr hi
+  have hlt : v.intValuation i < v.intValuation (π * j) := by
+    rw [hvπj]
+    refine lt_of_le_of_lt hvi ?_
+    rw [WithZero.exp_lt_exp]
+    norm_num
+  refine ⟨π * j + i, by rw [v.intValuation.map_add_eq_of_lt_left hlt, hvπj], ?_⟩
+  intro P hP hPne hqP hmemP
+  haveI : P.IsPrime := hP
+  -- `J ≤ P`
+  have hJP : J ≤ P := by
+    have hle : v.asIdeal ^ n * J ≤ P := by
+      rw [← hfac, ← hspanq, Ideal.span_le, Set.singleton_subset_iff]
+      exact hqP
+    rcases hP.mul_le.mp hle with hpow | hJ
+    · exfalso
+      rcases Nat.eq_zero_or_pos n with h0 | hpos
+      · rw [h0, pow_zero, Ideal.one_eq_top] at hpow
+        exact hP.ne_top (top_le_iff.mp hpow)
+      · have hQP : v.asIdeal ≤ P :=
+          (Ideal.IsPrime.pow_le_iff (I := v.asIdeal) (P := P) hpos.ne').mp hpow
+        exact hPne (((v.isPrime.isMaximal v.ne_bot).eq_of_le hP.ne_top hQP)).symm
+    · exact hJ
+  have hjP : j ∈ P := hJP hj
+  have h1 : (1 : NumberField.RingOfIntegers K) ∈ P := by
+    have : (1 : NumberField.RingOfIntegers K) = (π * j + i) - π * j + (1 - i) := by ring
+    rw [this]
+    refine Ideal.add_mem _ (Ideal.sub_mem _ hmemP (Ideal.mul_mem_left _ _ hjP)) ?_
+    have : (1 : NumberField.RingOfIntegers K) - i = j := by rw [← hij]; ring
+    rw [this]; exact hjP
+  exact hP.ne_top (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+
+/-- **Adjusting an element by a multiple of `q²` to make it a
+generator of `K/ℚ`** (PROVEN 2026-07-26 — step 1b of the same route).
+
+Fix a primitive element `θ ∈ 𝓞_K` (obtained from
+`Field.exists_primitive_element` over `ℚ` and cleared of denominators by
+`IsAlgebraic.exists_integral_multiple`, which applies to `ℤ` through
+`IsFractionRing.isAlgebraic_iff`).  The elements
+`x_N = x₀ + m^{N+2}·θ`, `N : ℕ`, all differ from `x₀` by an element of
+`(m²)`; since `K/ℚ` is finite separable there are only finitely many
+intermediate fields (`Field.finite_intermediateField_of_exists_primitive_element`),
+so two of the fields `ℚ(x_{N₁})`, `ℚ(x_{N₂})` coincide.  Their common
+value `F` then contains `(m^{N₁+2} − m^{N₂+2})·θ` with a nonzero
+*rational* scalar, hence contains `θ`, hence is all of `K` — so
+`ℚ(x_{N₁}) = K` and `x_{N₁}` is the required generator.  (Note the
+scalar must be rational for this step, which is why the increment is a
+power of a natural number rather than of an arbitrary ring element.)
+-/
+theorem exists_generator_sub_mem_span_sq
+    (K : Type*) [Field K] [NumberField K]
+    (x₀ : NumberField.RingOfIntegers K) (m : ℕ) (hm : 1 < m) :
+    ∃ x : NumberField.RingOfIntegers K,
+      x - x₀ ∈ Ideal.span {((m : NumberField.RingOfIntegers K)) ^ 2} ∧
+      Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤ := by
+  classical
+  -- a primitive element of `K/ℚ` lying in `𝓞 K`
+  obtain ⟨α, hα⟩ := _root_.Field.exists_primitive_element ℚ K
+  have halgZ : IsAlgebraic ℤ α :=
+    (IsFractionRing.isAlgebraic_iff ℤ ℚ K).mpr (Algebra.IsAlgebraic.isAlgebraic α)
+  obtain ⟨d, hd0, hdint⟩ := halgZ.exists_integral_multiple
+  set θ' : K := (d : K) * α with hθ'def
+  have hθ'int : IsIntegral ℤ θ' := by simpa [hθ'def, zsmul_eq_mul] using hdint
+  have hcast : algebraMap ℚ K ((d : ℚ)) = (d : K) := map_intCast _ d
+  have h3 : (algebraMap ℚ K (((d : ℚ))⁻¹)) * θ' = α := by
+    rw [hθ'def, ← mul_assoc, ← hcast, ← map_mul,
+      inv_mul_cancel₀ (by exact_mod_cast hd0 : ((d : ℚ)) ≠ 0), map_one, one_mul]
+  have hθ'top : IntermediateField.adjoin ℚ {θ'} = ⊤ := by
+    refine top_le_iff.mp ?_
+    rw [← hα]
+    refine IntermediateField.adjoin_simple_le_iff.mpr ?_
+    rw [← h3]
+    exact mul_mem (IntermediateField.algebraMap_mem _ _)
+      (IntermediateField.mem_adjoin_simple_self ℚ θ')
+  obtain ⟨θ, hθ⟩ : ∃ θ : NumberField.RingOfIntegers K,
+      algebraMap (NumberField.RingOfIntegers K) K θ = θ' :=
+    ⟨⟨θ', hθ'int⟩, rfl⟩
+  -- pigeonhole over the finitely many intermediate fields
+  haveI : Finite (IntermediateField ℚ K) :=
+    _root_.Field.finite_intermediateField_of_exists_primitive_element ℚ K ⟨α, hα⟩
+  set f : ℕ → IntermediateField ℚ K := fun N =>
+    IntermediateField.adjoin ℚ
+      {algebraMap (NumberField.RingOfIntegers K) K (x₀ + (m : NumberField.RingOfIntegers K) ^ (N + 2) * θ)}
+    with hfdef
+  obtain ⟨N₁, N₂, hne, heq⟩ := Finite.exists_ne_map_eq_of_infinite f
+  refine ⟨x₀ + (m : NumberField.RingOfIntegers K) ^ (N₁ + 2) * θ, ?_, ?_⟩
+  · refine Ideal.mem_span_singleton'.mpr ⟨(m : NumberField.RingOfIntegers K) ^ N₁ * θ, ?_⟩
+    ring
+  · -- the adjoined field is everything
+    have hmem₁ : algebraMap (NumberField.RingOfIntegers K) K
+        (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₁ + 2) * θ) ∈ f N₁ :=
+      IntermediateField.mem_adjoin_simple_self _ _
+    have hmem₂ : algebraMap (NumberField.RingOfIntegers K) K
+        (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₂ + 2) * θ) ∈ f N₁ := by
+      rw [heq]; exact IntermediateField.mem_adjoin_simple_self _ _
+    set c : ℚ := (m : ℚ) ^ (N₁ + 2) - (m : ℚ) ^ (N₂ + 2) with hcdef
+    have hcne : c ≠ 0 := by
+      rw [hcdef, sub_ne_zero]
+      intro hcon
+      have hpow : (m : ℕ) ^ (N₁ + 2) = (m : ℕ) ^ (N₂ + 2) := by exact_mod_cast hcon
+      exact hne (Nat.add_right_cancel (Nat.pow_right_injective hm hpow))
+    have hdiff : algebraMap ℚ K c * θ' =
+        algebraMap (NumberField.RingOfIntegers K) K
+          (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₁ + 2) * θ) -
+        algebraMap (NumberField.RingOfIntegers K) K
+          (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₂ + 2) * θ) := by
+      rw [hcdef, ← hθ]
+      push_cast
+      ring
+    have hθmem : θ' ∈ f N₁ := by
+      have : θ' = algebraMap ℚ K c⁻¹ * (algebraMap ℚ K c * θ') := by
+        rw [← mul_assoc, ← map_mul, inv_mul_cancel₀ hcne, map_one, one_mul]
+      rw [this, hdiff]
+      exact mul_mem (IntermediateField.algebraMap_mem _ _) (sub_mem hmem₁ hmem₂)
+    have htop : f N₁ = ⊤ := by
+      refine top_le_iff.mp ?_
+      rw [← hθ'top]
+      exact IntermediateField.adjoin_simple_le_iff.mpr hθmem
+    have hint : IsAlgebraic ℚ (algebraMap (NumberField.RingOfIntegers K) K
+        (x₀ + (m : NumberField.RingOfIntegers K) ^ (N₁ + 2) * θ)) :=
+      Algebra.IsAlgebraic.isAlgebraic _
+    have hsub := congrArg IntermediateField.toSubalgebra htop
+    rwa [hfdef, IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic hint] at hsub
+
+/-- **The constant coefficient of the minimal polynomial has `Q`-order
+exactly `e`** (PROVEN 2026-07-26 — step 1c of the same route).
+
+Let `x` generate `K/ℚ`, be a uniformizer at `Q`, and be a unit at every
+other prime above `q`.  Then `ord_Q((minpoly ℤ x).coeff 0) = e`.
+
+Proof.  The residue-degree-one hypothesis `hres` makes `𝓞_K ⧸ Q` a
+quotient of `Fin q`, so `absNorm Q ≤ q`; and `absNorm Q` is a power of a
+rational prime lying in `Q`, which must be `q` by Bézout — so
+`absNorm Q = q`.  Writing `(x) = Q·I`, multiplicativity of `absNorm`
+gives `absNorm (x) = q · absNorm I`, and `q ∤ absNorm I`: otherwise
+`Ideal.exists_isMaximal_dvd_of_dvd_absNorm'` produces a maximal `P ∣ I`
+above `q`, which is either `Q` (forcing `Q² ∣ (x)`, contradicting
+`ord_Q x = 1`) or another prime above `q` containing `x`, contradicting
+`hother`.  So `v_q(absNorm (x)) = 1`.  Finally the constant coefficient
+of `minpoly ℤ x` is `± N_{K/ℚ}(x)` — transport the power basis
+`ℚ⟮x⟯ ≃ₐ[ℚ] K` and apply `PowerBasis.norm_gen_eq_coeff_zero_minpoly`,
+together with `Algebra.coe_norm_int` and
+`minpoly.isIntegrallyClosed_eq_field_fractions` — so its absolute value
+is `absNorm (x)`, and `intValuation_natCast_eq_exp_ramificationIdx`
+converts `v_q = 1` into `ord_Q = e`.
+-/
+theorem intValuation_coeff_zero_minpoly
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hres : ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (x : NumberField.RingOfIntegers K)
+    (hgen : Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤)
+    (hx : v.intValuation x = WithZero.exp (-1 : ℤ))
+    (hother : ∀ P : Ideal (NumberField.RingOfIntegers K), P.IsPrime → P ≠ v.asIdeal →
+      (q : NumberField.RingOfIntegers K) ∈ P → x ∉ P) :
+    v.intValuation (((minpoly ℤ x).coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+      = WithZero.exp (-((Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal : ℕ) : ℤ)) := by
+  classical
+  haveI hQmax : v.asIdeal.IsMaximal := v.isPrime.isMaximal v.ne_bot
+  -- (C1) the residue degree is one, so `absNorm Q = q`
+  obtain ⟨p, n, hn, hpQ, hp, hPnorm⟩ := Ideal.exists_prime_and_absNorm_eq_pow v.asIdeal
+  have hpq : p = q := by
+    by_contra hcon
+    have hgcd : Nat.gcd p q = 1 := (Nat.coprime_primes hp hq).mpr hcon
+    have hcop : IsCoprime (p : ℤ) (q : ℤ) :=
+      Int.isCoprime_iff_gcd_eq_one.mpr (by simpa using hgcd)
+    obtain ⟨a, b, hab⟩ := hcop
+    have h1 : (1 : NumberField.RingOfIntegers K) ∈ v.asIdeal := by
+      have h2 : ((a : NumberField.RingOfIntegers K)) * ((p : ℕ) : NumberField.RingOfIntegers K)
+          + ((b : NumberField.RingOfIntegers K)) * ((q : ℕ) : NumberField.RingOfIntegers K)
+          = 1 := by
+        have h3 := congrArg (fun t : ℤ => ((t : NumberField.RingOfIntegers K))) hab
+        push_cast at h3
+        simpa using h3
+      rw [← h2]
+      exact Ideal.add_mem _ (Ideal.mul_mem_left _ _ hpQ) (Ideal.mul_mem_left _ _ hmem)
+    exact v.isPrime.ne_top (Ideal.eq_top_of_isUnit_mem _ h1 isUnit_one)
+  have hsurj : Function.Surjective
+      (fun i : Fin q => Ideal.Quotient.mk v.asIdeal ((i : ℕ) : NumberField.RingOfIntegers K)) := by
+    intro z
+    obtain ⟨y0, rfl⟩ := Ideal.Quotient.mk_surjective z
+    obtain ⟨c, hc⟩ := hres y0
+    have hq0 : (0 : ℤ) < (q : ℤ) := by exact_mod_cast hq.pos
+    have hnn : (0 : ℤ) ≤ c % (q : ℤ) := Int.emod_nonneg c (by exact_mod_cast hq.ne_zero)
+    have hlt : (c % (q : ℤ)).toNat < q := by
+      have h1 : c % (q : ℤ) < (q : ℤ) := Int.emod_lt_of_pos c hq0
+      omega
+    refine ⟨⟨(c % (q : ℤ)).toNat, hlt⟩, ?_⟩
+    refine Ideal.Quotient.eq.mpr ?_
+    have hcast : ((((c % (q : ℤ)).toNat : ℕ)) : NumberField.RingOfIntegers K)
+        = ((c % (q : ℤ) : ℤ) : NumberField.RingOfIntegers K) := by
+      rw [← Int.cast_natCast, Int.toNat_of_nonneg hnn]
+    have hmoddef : c % (q : ℤ) = c - (q : ℤ) * (c / (q : ℤ)) := Int.emod_def c (q : ℤ)
+    have hdecomp : ((c % (q : ℤ) : ℤ) : NumberField.RingOfIntegers K)
+        = (c : NumberField.RingOfIntegers K)
+          - (q : NumberField.RingOfIntegers K) * ((c / (q : ℤ) : ℤ) : NumberField.RingOfIntegers K) := by
+      rw [hmoddef, Int.cast_sub, Int.cast_mul, Int.cast_natCast]
+    show ((((c % (q : ℤ)).toNat : ℕ)) : NumberField.RingOfIntegers K) - y0 ∈ v.asIdeal
+    rw [hcast, hdecomp]
+    have hrw : (c : NumberField.RingOfIntegers K)
+          - (q : NumberField.RingOfIntegers K) * ((c / (q : ℤ) : ℤ) : NumberField.RingOfIntegers K)
+          - y0
+        = -(y0 - (c : NumberField.RingOfIntegers K))
+          - (q : NumberField.RingOfIntegers K)
+            * ((c / (q : ℤ) : ℤ) : NumberField.RingOfIntegers K) := by ring
+    rw [hrw]
+    exact Ideal.sub_mem _ (neg_mem hc) (Ideal.mul_mem_right _ _ hmem)
+  have hfin : Ideal.absNorm v.asIdeal ≤ q := by
+    have hcard : Nat.card (NumberField.RingOfIntegers K ⧸ v.asIdeal) ≤ Nat.card (Fin q) :=
+      Nat.card_le_card_of_surjective _ hsurj
+    simpa [Ideal.absNorm_apply, Submodule.cardQuot_apply] using hcard
+  rw [hpq] at hPnorm
+  have hn1 : n = 1 := by
+    have hle : q ^ n ≤ q ^ 1 := by rw [pow_one, ← hPnorm]; exact hfin
+    have hnn := (Nat.pow_le_pow_iff_right hq.one_lt).mp hle
+    omega
+  have habsQ : Ideal.absNorm v.asIdeal = q := by rw [hPnorm, hn1, pow_one]
+  -- (C2) the `q`-part of the absolute norm of `x` is exactly one
+  have hx0 : x ≠ 0 := by
+    rintro rfl
+    simp [WithZero.exp_ne_zero.symm] at hx
+  have hQdvd : v.asIdeal ∣ Ideal.span {x} := by
+    have hd := (v.intValuation_le_pow_iff_dvd x 1).mp (by rw [hx]; norm_num)
+    rwa [pow_one] at hd
+  obtain ⟨I, hI⟩ := hQdvd
+  have hIbot : I ≠ ⊥ := by
+    intro h
+    rw [h, Ideal.mul_bot] at hI
+    exact hx0 (by simpa [Ideal.span_singleton_eq_bot] using hI)
+  have hIabs0 : Ideal.absNorm I ≠ 0 := fun h => hIbot (Ideal.absNorm_eq_zero_iff.mp h)
+  have habsx : (Ideal.span {x}).absNorm = q * Ideal.absNorm I := by
+    rw [hI, _root_.map_mul, habsQ]
+  have hnd : ¬ (q ∣ Ideal.absNorm I) := by
+    intro hdvd
+    obtain ⟨P, hPmax, hPunder, hPdvd⟩ := Ideal.exists_isMaximal_dvd_of_dvd_absNorm' hq I hdvd
+    have hqP : (q : NumberField.RingOfIntegers K) ∈ P := by
+      have h0 : ((q : ℤ)) ∈ P.under ℤ := by rw [hPunder]; exact Ideal.mem_span_singleton_self _
+      rw [Ideal.mem_under] at h0
+      simpa using h0
+    have hxP : x ∈ P := by
+      have hdvdx : P ∣ Ideal.span {x} := by rw [hI]; exact hPdvd.mul_left _
+      exact Ideal.le_of_dvd hdvdx (Ideal.mem_span_singleton_self x)
+    by_cases hPQ : P = v.asIdeal
+    · rw [hPQ] at hPdvd
+      have h2 : v.asIdeal ^ 2 ∣ Ideal.span {x} := by
+        rw [hI, sq]; exact mul_dvd_mul_left _ hPdvd
+      have hle2 := (v.intValuation_le_pow_iff_dvd x 2).mpr h2
+      rw [hx, WithZero.exp_le_exp] at hle2
+      norm_num at hle2
+    · exact hother P hPmax.isPrime hPQ hqP hxP
+  -- (C3) the constant coefficient of the minimal polynomial is, up to sign, the norm
+  set y : K := algebraMap (NumberField.RingOfIntegers K) K x with hydef
+  have hyint : IsIntegral ℚ y := Algebra.IsIntegral.isIntegral y
+  have htopIF : IntermediateField.adjoin ℚ {y} = ⊤ := by
+    refine IntermediateField.toSubalgebra_injective ?_
+    rw [IntermediateField.adjoin_simple_toSubalgebra_of_isAlgebraic hyint.isAlgebraic, hgen]
+    rfl
+  have hpbgen : ((IntermediateField.adjoin.powerBasis hyint).map
+      ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv)).gen = y := rfl
+  have hnormQ : Algebra.norm ℚ y = (-1) ^ ((IntermediateField.adjoin.powerBasis hyint).map
+      ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv)).dim *
+      (minpoly ℚ y).coeff 0 := by
+    have hpb := Algebra.PowerBasis.norm_gen_eq_coeff_zero_minpoly
+      ((IntermediateField.adjoin.powerBasis hyint).map
+        ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv))
+    rwa [hpbgen] at hpb
+  have hminpoly : minpoly ℚ y = (minpoly ℤ x).map (algebraMap ℤ ℚ) :=
+    minpoly.isIntegrallyClosed_eq_field_fractions ℚ K (Algebra.IsIntegral.isIntegral x)
+  have hcoeffQ : (minpoly ℚ y).coeff 0 = (((minpoly ℤ x).coeff 0 : ℤ) : ℚ) := by
+    rw [hminpoly, Polynomial.coeff_map]
+    simp
+  have hnormcoe : ((Algebra.norm ℤ x : ℤ) : ℚ) = Algebra.norm ℚ y := Algebra.coe_norm_int x
+  have hnormZ : Algebra.norm ℤ x = (-1) ^ ((IntermediateField.adjoin.powerBasis hyint).map
+      ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv)).dim *
+      (minpoly ℤ x).coeff 0 := by
+    have hQeq : ((Algebra.norm ℤ x : ℤ) : ℚ)
+        = ((((-1) ^ ((IntermediateField.adjoin.powerBasis hyint).map
+            ((IntermediateField.equivOfEq htopIF).trans IntermediateField.topEquiv)).dim *
+            (minpoly ℤ x).coeff 0 : ℤ)) : ℚ) := by
+      rw [hnormcoe, hnormQ, hcoeffQ]
+      push_cast
+      ring
+    exact_mod_cast hQeq
+  have hcoeffabs : ((minpoly ℤ x).coeff 0).natAbs = (Ideal.span {x}).absNorm := by
+    rw [Ideal.absNorm_span_singleton, hnormZ, Int.natAbs_mul]
+    simp
+  -- assembly
+  have hne0 : ((minpoly ℤ x).coeff 0).natAbs ≠ 0 := by
+    rw [hcoeffabs, habsx]
+    exact Nat.mul_ne_zero hq.ne_zero hIabs0
+  have hfact : (((minpoly ℤ x).coeff 0).natAbs).factorization q = 1 := by
+    rw [hcoeffabs, habsx, Nat.factorization_mul hq.ne_zero hIabs0]
+    simp [hq.factorization_self, Nat.factorization_eq_zero_of_not_dvd hnd]
+  have hhelp := intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem _ hne0
+  rw [hfact, mul_one] at hhelp
+  rcases Int.natAbs_eq ((minpoly ℤ x).coeff 0) with heq | heq
+  · rw [heq, Int.cast_natCast]
+    exact hhelp
+  · rw [heq, Int.cast_neg, Int.cast_natCast, Valuation.map_neg]
+    exact hhelp
+
+/-- **A global generator of `K/ℚ` that is a uniformizer at `Q`**
+(PROVEN 2026-07-26 — step 1 of the elementary global route recorded on
 `differentIdeal_exponent_le_wild_of_residueDegreeOne`; standard
 algebraic number theory, no local fields).
 
-Asks for `x ∈ 𝓞_K` with `ℚ(x) = K`, `ord_Q x = 1`, and — this is the
-only nonformal clause — the constant coefficient of its minimal
-polynomial of `Q`-order exactly `e`.
+Produces `x ∈ 𝓞_K` with `ℚ(x) = K`, `ord_Q x = 1`, and the constant
+coefficient of its minimal polynomial of `Q`-order exactly `e`.
 
-Route.  By approximation (CRT over the finitely many primes above `q`)
-choose `x₀` with `ord_Q x₀ = 1` and `x₀ ∉ Q'` for every other prime `Q'`
-above `q`.  Then `N_{K/ℚ}(x₀)` has `q`-adic valuation
-`∑_{Q'∣q} f_{Q'}·ord_{Q'}(x₀) = f(Q∣q) = 1` (using `hres`), via
-`Ideal.absNorm_span_singleton` and multiplicativity of `absNorm`; and
-for a generator the constant coefficient of `minpoly ℤ x` is `± N(x)`
-(`PowerBasis.norm_gen_eq_coeff_zero_minpoly`), so its `Q`-order is
-`e·1 = e`.
-
-To make `x₀` a generator, replace it by `x₀ + q^N·θ` for a primitive
-`θ ∈ 𝓞_K`: the valuation conditions survive for every `N ≥ 1`, because
-`ord_Q (q^N θ) ≥ N·e ≥ 2 > 1 = ord_Q x₀` (note `e ≥ q ≥ 2` in the wild
-case) and `ord_{Q'} (q^N θ) ≥ 1 > 0 = ord_{Q'} x₀`.  Some `N` works by
-pigeonhole: `K/ℚ` is finite separable, so `Finite (IntermediateField ℚ K)`
-(mathlib, from `Field.exists_primitive_element`), and if two different
-`N₁, N₂` gave elements of the same proper subfield `F`, then
-`(q^{N₁} − q^{N₂})·θ ∈ F`, hence `θ ∈ F` and `F = K`, a contradiction. -/
+Assembled from the three steps above: `exists_uniformizer_avoiding_other_primes`
+supplies `x₀` with `ord_Q x₀ = 1` that is a unit at the other primes over
+`q`; `exists_generator_sub_mem_span_sq` moves it by an element of `(q²)`
+to make it a generator, which changes neither the `Q`-order (the
+increment has `Q`-order `≥ 2`) nor the behaviour at the other primes
+above `q` (the increment lies in each of them); and
+`intValuation_coeff_zero_minpoly` computes the constant coefficient.
+-/
 theorem exists_generator_uniformizer_at (K : Type*) [Field K] [NumberField K]
     (q : ℕ) (hq : q.Prime)
     (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
@@ -1618,11 +1958,41 @@ theorem exists_generator_uniformizer_at (K : Type*) [Field K] [NumberField K]
       Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤ ∧
       v.intValuation x = WithZero.exp (-1 : ℤ) ∧
       v.intValuation (((minpoly ℤ x).coeff 0 : ℤ) : NumberField.RingOfIntegers K)
-        = WithZero.exp (-(e : ℤ)) :=
-  sorry
+        = WithZero.exp (-(e : ℤ)) := by
+  obtain ⟨x₀, hx₀, hother₀⟩ := exists_uniformizer_avoiding_other_primes K q hq v
+  obtain ⟨x, hsub, hgen⟩ := exists_generator_sub_mem_span_sq K x₀ q hq.one_lt
+  obtain ⟨w, hw⟩ := Ideal.mem_span_singleton'.mp hsub
+  have hz : x = x₀ + w * (q : NumberField.RingOfIntegers K) ^ 2 := by rw [hw]; ring
+  have hmem2 : w * (q : NumberField.RingOfIntegers K) ^ 2 ∈ v.asIdeal ^ 2 :=
+    Ideal.mul_mem_left _ _ (Ideal.pow_mem_pow hmem 2)
+  have hvz : v.intValuation (w * (q : NumberField.RingOfIntegers K) ^ 2)
+      ≤ WithZero.exp (-((2 : ℕ) : ℤ)) :=
+    (v.intValuation_le_pow_iff_mem _ 2).mpr hmem2
+  have hlt : v.intValuation (w * (q : NumberField.RingOfIntegers K) ^ 2)
+      < v.intValuation x₀ := by
+    rw [hx₀]
+    refine lt_of_le_of_lt hvz ?_
+    rw [WithZero.exp_lt_exp]
+    norm_num
+  have hx : v.intValuation x = WithZero.exp (-1 : ℤ) := by
+    rw [hz, v.intValuation.map_add_eq_of_lt_left hlt, hx₀]
+  have hother : ∀ P : Ideal (NumberField.RingOfIntegers K), P.IsPrime → P ≠ v.asIdeal →
+      (q : NumberField.RingOfIntegers K) ∈ P → x ∉ P := by
+    intro P hP hPne hqP hxP
+    have hzP : w * (q : NumberField.RingOfIntegers K) ^ 2 ∈ P :=
+      Ideal.mul_mem_left _ _ (Ideal.pow_mem_of_mem P hqP 2 (by norm_num))
+    have hx₀P : x₀ ∈ P := by
+      have hx₀eq : x₀ = x - w * (q : NumberField.RingOfIntegers K) ^ 2 := by rw [hz]; ring
+      rw [hx₀eq]
+      exact Ideal.sub_mem _ hxP hzP
+    exact hother₀ P hP hPne hqP hx₀P
+  refine ⟨x, hgen, hx, ?_⟩
+  rw [he]
+  exact intValuation_coeff_zero_minpoly K q hq v hmem hres x hgen hx hother
 
-/-- **From an integer Eisenstein approximation to Serre's bound** (sorry
-leaf, 2026-07-26 — steps 3–6 of the elementary global route recorded on
+open _root_.Polynomial in
+/-- **From an integer Eisenstein approximation to Serre's bound**
+(PROVEN 2026-07-26 — steps 3–6 of the elementary global route recorded on
 `differentIdeal_exponent_le_wild_of_residueDegreeOne`; polynomial
 division and valuation bookkeeping only, no local fields).
 
@@ -1632,27 +2002,38 @@ integer-coefficient approximate Eisenstein relation
 `exists_intCoeff_eisenstein_approx`, with `M` large compared with `d`
 and `e`, Serre's bound follows.
 
-Route, writing `F = minpoly ℤ x` and `g = X^e − ∑_{i<e} C (c i) · X^i`:
+Route as carried out, writing `F = minpoly ℤ x`,
+`g = X^e − ∑_{i<e} C (c i)·X^i` (monic of degree `e`), `H = F /ₘ g` and
+`Rm = F %ₘ g` (degree `< e`):
 
+* *The rigidity input.*  `ord_Q (a) ∈ e·ℤ` for every RATIONAL INTEGER
+  `a ≠ 0` (`intValuation_natCast_eq_exp_ramificationIdx`), so the terms
+  `a_i·x^i` of a sum with integer coefficients and `i < e` have
+  `Q`-orders `e·v_q(a_i) + i` that are PAIRWISE DISTINCT — they have
+  distinct residues mod `e`.  This is the whole content of the leaf: it
+  is what "the digits are rational integers" buys, and it is exactly
+  what fails for digits merely of order in `e·ℤ` (see the refutation
+  recorded on `exists_generator_uniformizer_at`'s sibling).
+  `valuation_term_le_valuation_sum` then bounds every single term by the
+  sum.
 * `aeval_derivative_mem_differentIdeal` (mathlib) gives
-  `𝔡_{𝓞_K/ℤ} ∣ (F'(x))`, hence `d ≤ ord_Q (F'(x))`.
-* Divide: `F = g·H + Rm` in `ℤ[X]` with `deg Rm < e` (`g` is monic).
-  From `F(x) = 0` we get `ord_Q (Rm(x)) ≥ M`; since `Rm` has integer
-  coefficients and degree `< e`, the terms `Rm_i · x^i` have `Q`-orders
-  `e·v_q(Rm_i) + i` that are pairwise distinct mod `e`, so
-  `valuation_term_le_valuation_sum` forces `ord_Q (Rm_i) ≥ M − i` for
-  every `i`, whence `ord_Q (Rm'(x)) ≥ M − e`.
-* The same distinct-residues argument applied to
-  `ord_Q (∑_{i<e} c_i x^i) = ord_Q (x^e) = e` forces `v_q(c_0) = 1` and
-  `v_q(c_i) ≥ 1` for `0 < i < e`: `g` is genuinely Eisenstein, and
-  `ord_Q (g(0)) = e`.
-* Hence `ord_Q (H(0)) = 0` from `hc0` and `F(0) = g(0)H(0) + Rm(0)`,
-  and then `ord_Q (H(x)) = 0` because `H(x) − H(0) ∈ Q`.
-* Finally `F'(x) = g'(x)H(x) + g(x)H'(x) + Rm'(x)` with the last two
-  terms of order `≥ M − e ≥ d`, so `ord_Q (g'(x)) ≥ d`; and
-  `ord_Q (g'(x)) ≤ e·v_q(e) + e − 1` by `valuation_term_le_valuation_sum`
-  and `intValuation_natCast_eq_exp_ramificationIdx`, exactly as in
-  `differentIdeal_exponent_le_wild` below. -/
+  `𝔡_{𝓞_K/ℤ} ∣ (F'(x))`, hence `d ≤ ord_Q (F'(x))` from `hd`.
+* `F(x) = 0` and `ord_Q (g(x)) ≥ M` give `ord_Q (Rm(x)) ≥ M`; the
+  rigidity input forces `ord_Q (Rm_i·x^i) ≥ M` for every `i < e`,
+  whence `ord_Q (Rm_i·x^{i−1}) ≥ M − 1` and `ord_Q (Rm'(x)) ≥ M − 1`.
+* *The cofactor is a `Q`-unit.*  `x ∈ Q` and `ord_Q (x^e − ∑ c_i x^i) > 0`
+  give `∑ c_i x^i ∈ Q`, and all terms with `i ≥ 1` are in `Q`, so the
+  rational integer `c_0` lies in `Q`; being a rational integer its order
+  is then `≥ e`, i.e. `ord_Q (g(0)) ≥ e`.  Comparing with
+  `F(0) = g(0)·H(0) + Rm(0)`, where `ord_Q (F(0)) = e` (`hc0`) and
+  `ord_Q (Rm(0)) ≥ M > e`, gives `ord_Q (g(0)·H(0)) = e` and hence
+  `ord_Q (H(0)) = 0`; then `ord_Q (H(x)) = 0` because `H(x) − H(0) ∈ (x) ⊆ Q`.
+* *Conclusion.*  `F' = Rm' + g'H + gH'`, and the three terms other than
+  `g'(x)H(x)` have order `≥ min (d, M−1, M) = d`, so `ord_Q (g'(x)) ≥ d`.
+  Finally the same distinct-residues argument applied to
+  `g'(x) = ∑_{i<e} (i+1)·g_{i+1}·x^i`, whose `i = e−1` term is
+  `e·x^{e−1}`, gives `ord_Q (g'(x)) ≤ e·v_q(e) + e − 1`.  Hence
+  `d ≤ e − 1 + e·v_q(e)`. -/
 theorem differentIdeal_exponent_le_of_intEisenstein_approx
     (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
     (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
@@ -1668,14 +2049,368 @@ theorem differentIdeal_exponent_le_of_intEisenstein_approx
       ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i) ≤ WithZero.exp (-(M : ℤ)))
     (d : ℕ) (hdM : d + 2 * e + 2 ≤ M)
     (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
-    d ≤ e - 1 + e * e.factorization q :=
-  sorry
+    d ≤ e - 1 + e * e.factorization q := by
+  classical
+  -- ## 0. Preliminaries
+  have hker : ∀ y, v.intValuation y = 0 → y = 0 := by
+    intro y hy
+    by_contra hy0
+    exact v.intValuation_ne_zero y hy0 hy
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : v.asIdeal.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff v.isPrime.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have he0 : 0 < e := by
+    rw [he]
+    exact Nat.pos_of_ne_zero
+      (Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver v.asIdeal hspan0)
+  -- ## 1. valuations of rational integers lie in `e·ℤ`
+  have hnat : ∀ m : ℕ, m ≠ 0 →
+      v.intValuation (m : NumberField.RingOfIntegers K)
+        = WithZero.exp (-((e * m.factorization q : ℕ) : ℤ)) := by
+    intro m hm
+    rw [he]
+    exact intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem m hm
+  have hZval : ∀ a : ℤ, a ≠ 0 → ∃ k : ℕ,
+      v.intValuation (a : NumberField.RingOfIntegers K)
+        = WithZero.exp (-((e * k : ℕ) : ℤ)) := by
+    intro a ha
+    obtain ⟨n, hn⟩ : ∃ n : ℕ, a = (n : ℤ) ∨ a = -(n : ℤ) := ⟨a.natAbs, Int.natAbs_eq a⟩
+    rcases hn with rfl | rfl
+    · exact ⟨n.factorization q, by push_cast; exact hnat n (by exact_mod_cast ha)⟩
+    · refine ⟨n.factorization q, ?_⟩
+      have hcast : ((-(n : ℤ) : ℤ) : NumberField.RingOfIntegers K)
+          = -((n : ℕ) : NumberField.RingOfIntegers K) := by push_cast; ring
+      rw [hcast, Valuation.map_neg]
+      exact hnat n (by simpa using ha)
+  have hxpow : ∀ i : ℕ, v.intValuation (x ^ i) = WithZero.exp (-(i : ℤ)) := by
+    intro i
+    rw [map_pow, hx, ← WithZero.exp_nsmul]
+    congr 1
+    simp
+  have hterm : ∀ (a : ℤ) (i : ℕ), a ≠ 0 → ∃ k : ℕ,
+      v.intValuation ((a : NumberField.RingOfIntegers K) * x ^ i)
+        = WithZero.exp (-((e * k : ℕ) : ℤ) - (i : ℤ)) := by
+    intro a i ha
+    obtain ⟨k, hk⟩ := hZval a ha
+    refine ⟨k, ?_⟩
+    rw [map_mul, hk, hxpow, ← WithZero.exp_add]
+    exact congrArg WithZero.exp (by ring)
+  have hmodkey : ∀ (k₁ k₂ i j : ℕ), i < e → j < e →
+      -((e * k₁ : ℕ) : ℤ) - (i : ℤ) = -((e * k₂ : ℕ) : ℤ) - (j : ℤ) → i = j := by
+    intro k₁ k₂ i j hi hj h
+    have h' : e * k₁ + i = e * k₂ + j := by
+      have h2 : ((e * k₁ + i : ℕ) : ℤ) = ((e * k₂ + j : ℕ) : ℤ) := by push_cast at h ⊢; linarith
+      exact_mod_cast h2
+    rcases le_total k₁ k₂ with hk | hk
+    · obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hk
+      rw [Nat.mul_add] at h'
+      rcases Nat.eq_zero_or_pos m with rfl | hm
+      · simp only [Nat.mul_zero, Nat.add_zero] at h'; omega
+      · exfalso
+        have hle : e ≤ e * m := Nat.le_mul_of_pos_right e hm
+        omega
+    · obtain ⟨m, rfl⟩ := Nat.exists_eq_add_of_le hk
+      rw [Nat.mul_add] at h'
+      rcases Nat.eq_zero_or_pos m with rfl | hm
+      · simp only [Nat.mul_zero, Nat.add_zero] at h'; omega
+      · exfalso
+        have hle : e ≤ e * m := Nat.le_mul_of_pos_right e hm
+        omega
+  have hpairwise : ∀ (b : ℕ → ℤ),
+      ∀ i ∈ Finset.range e, ∀ j ∈ Finset.range e, i ≠ j →
+        v.intValuation ((b i : NumberField.RingOfIntegers K) * x ^ i) ≠ 0 →
+        v.intValuation ((b j : NumberField.RingOfIntegers K) * x ^ j) ≠ 0 →
+        v.intValuation ((b i : NumberField.RingOfIntegers K) * x ^ i)
+          ≠ v.intValuation ((b j : NumberField.RingOfIntegers K) * x ^ j) := by
+    intro b i hi j hj hij hn1 hn2 heq
+    have hbi : b i ≠ 0 := by intro h0; rw [h0] at hn1; simp at hn1
+    have hbj : b j ≠ 0 := by intro h0; rw [h0] at hn2; simp at hn2
+    obtain ⟨k₁, hk₁⟩ := hterm (b i) i hbi
+    obtain ⟨k₂, hk₂⟩ := hterm (b j) j hbj
+    rw [hk₁, hk₂, WithZero.exp_inj] at heq
+    exact hij (hmodkey k₁ k₂ i j (Finset.mem_range.mp hi) (Finset.mem_range.mp hj) heq)
+  -- ## 2. the approximating Eisenstein polynomial `g`
+  set p : Polynomial ℤ := ∑ i ∈ Finset.range e, C (c i) * X ^ i with hp
+  have hpdeg : p.degree < (e : ℕ) := by
+    refine lt_of_le_of_lt (degree_sum_le _ _) ?_
+    refine (Finset.sup_lt_iff (by exact_mod_cast WithBot.bot_lt_coe e)).mpr ?_
+    intro i hi
+    exact lt_of_le_of_lt (degree_C_mul_X_pow_le i (c i))
+      (by exact_mod_cast Finset.mem_range.mp hi)
+  have hpcoeff : ∀ n : ℕ, e ≤ n → p.coeff n = 0 := by
+    intro n hn
+    rw [hp, finsetSum_coeff]
+    refine Finset.sum_eq_zero ?_
+    intro i hi
+    rw [coeff_C_mul, coeff_X_pow, if_neg (by have := Finset.mem_range.mp hi; omega), mul_zero]
+  have hpcoeff0 : p.coeff 0 = c 0 := by
+    rw [hp, finsetSum_coeff, Finset.sum_eq_single 0]
+    · simp
+    · intro i _ hne
+      rw [coeff_C_mul, coeff_X_pow, if_neg (Ne.symm hne), mul_zero]
+    · intro h; exact absurd (Finset.mem_range.mpr he0) h
+  set g : Polynomial ℤ := X ^ e - p with hgdef
+  have hgdeg : g.degree = (e : ℕ) := by
+    rw [hgdef, degree_sub_eq_left_of_degree_lt (by rwa [degree_X_pow]), degree_X_pow]
+  have hgnd : g.natDegree = e := natDegree_eq_of_degree_eq_some hgdeg
+  have hgcoeff : g.coeff e = 1 := by
+    rw [hgdef, coeff_sub, coeff_X_pow, if_pos rfl, hpcoeff e le_rfl, sub_zero]
+  have hgmonic : g.Monic := by
+    have hlc : g.leadingCoeff = 1 := by rw [Polynomial.leadingCoeff, hgnd, hgcoeff]
+    exact hlc
+  have hgcoeff0 : g.coeff 0 = -c 0 := by
+    rw [hgdef, coeff_sub, coeff_X_pow, if_neg (by omega), hpcoeff0, zero_sub]
+  have hgaeval : aeval x g = x ^ e - ∑ i ∈ Finset.range e,
+      ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i := by
+    rw [hgdef, hp]
+    simp
+  have hgx : v.intValuation (aeval x g) ≤ WithZero.exp (-(M : ℤ)) := by
+    rw [hgaeval]; exact happrox
+  -- ## 3. division of the minimal polynomial by `g`
+  set F : Polynomial ℤ := minpoly ℤ x with hFdef
+  set H : Polynomial ℤ := F /ₘ g with hHdef
+  set Rm : Polynomial ℤ := F %ₘ g with hRmdef
+  have hdivide : Rm + g * H = F := modByMonic_add_div F g
+  have hRmdeg : Rm.natDegree < e := by
+    rcases eq_or_ne Rm 0 with h0 | h0
+    · simp [h0, he0]
+    · have h1 : Rm.degree < g.degree := degree_modByMonic_lt F hgmonic
+      rw [hgdeg] at h1
+      exact (natDegree_lt_iff_degree_lt h0).mpr h1
+  have hFx : aeval x F = 0 := minpoly.aeval ℤ x
+  have hRmx : v.intValuation (aeval x Rm) ≤ WithZero.exp (-(M : ℤ)) := by
+    have h2 := congrArg (Polynomial.aeval x) hdivide
+    rw [map_add, map_mul] at h2
+    have h1 : aeval x Rm + aeval x g * aeval x H = 0 := h2.trans hFx
+    have h3 : aeval x Rm = -(aeval x g * aeval x H) := by linear_combination h1
+    rw [h3, Valuation.map_neg, map_mul]
+    refine le_trans (mul_le_mul' hgx (v.intValuation_le_one _)) ?_
+    rw [mul_one]
+  have hRmsum : aeval x Rm = ∑ i ∈ Finset.range e,
+      ((Rm.coeff i : ℤ) : NumberField.RingOfIntegers K) * x ^ i := by
+    rw [aeval_eq_sum_range' hRmdeg]
+    exact Finset.sum_congr rfl fun i _ => by rw [zsmul_eq_mul]
+  have hRmcoeff : ∀ i, i < e →
+      v.intValuation ((Rm.coeff i : NumberField.RingOfIntegers K) * x ^ i)
+        ≤ WithZero.exp (-(M : ℤ)) := by
+    intro i hi
+    have h1 := valuation_term_le_valuation_sum v.intValuation hker
+      (fun j => ((Rm.coeff j : ℤ) : NumberField.RingOfIntegers K) * x ^ j)
+      (Finset.mem_range.mpr hi) (hpairwise (fun j => Rm.coeff j))
+    rw [← hRmsum] at h1
+    exact h1.trans hRmx
+  -- ## 4. the shifted bound on the remainder's derivative
+  have hshift : ∀ j : ℕ, j + 1 ≤ e →
+      v.intValuation ((Rm.coeff (j + 1) : NumberField.RingOfIntegers K) * x ^ j)
+        ≤ WithZero.exp (-(M : ℤ) + 1) := by
+    intro j hj
+    rcases eq_or_lt_of_le hj with hje | hje
+    · have hzero : Rm.coeff (j + 1) = 0 :=
+        coeff_eq_zero_of_natDegree_lt (by omega)
+      rw [hzero]
+      simp
+    · have hkey : v.intValuation ((Rm.coeff (j + 1) : NumberField.RingOfIntegers K) * x ^ j)
+          * WithZero.exp (-1 : ℤ) ≤ WithZero.exp (-(M : ℤ)) := by
+        have h4 := hRmcoeff (j + 1) hje
+        rw [pow_succ, ← mul_assoc, map_mul, hx] at h4
+        exact h4
+      have h5 := mul_le_mul_left hkey (WithZero.exp (1 : ℤ))
+      rwa [mul_assoc, ← WithZero.exp_add, neg_add_cancel, WithZero.exp_zero, mul_one,
+        ← WithZero.exp_add] at h5
+  have hRmderiv : v.intValuation (aeval x (derivative Rm)) ≤ WithZero.exp (-(M : ℤ) + 1) := by
+    have hdnd : (derivative Rm).natDegree < e :=
+      lt_of_le_of_lt (natDegree_derivative_le Rm) (by omega)
+    rw [aeval_eq_sum_range' hdnd]
+    refine Valuation.map_sum_le _ ?_
+    intro i hi
+    have hi' : i < e := Finset.mem_range.mp hi
+    rw [zsmul_eq_mul, coeff_derivative]
+    have hrw : (((Rm.coeff (i + 1) * ((i : ℤ) + 1) : ℤ)) : NumberField.RingOfIntegers K) * x ^ i
+        = (((i : ℤ) + 1 : ℤ) : NumberField.RingOfIntegers K)
+          * ((Rm.coeff (i + 1) : NumberField.RingOfIntegers K) * x ^ i) := by
+      push_cast; ring
+    rw [hrw, map_mul]
+    refine le_trans (mul_le_mul' (v.intValuation_le_one _) (hshift i (by omega))) ?_
+    rw [one_mul]
+  -- ## 5. the extremal term of `g'(x)`
+  have hgdnd : (derivative g).natDegree < e := by
+    have h1 := natDegree_derivative_le g
+    rw [hgnd] at h1
+    omega
+  have hgderivsum : aeval x (derivative g) = ∑ i ∈ Finset.range e,
+      (((derivative g).coeff i : ℤ) : NumberField.RingOfIntegers K) * x ^ i := by
+    rw [aeval_eq_sum_range' hgdnd]
+    exact Finset.sum_congr rfl fun i _ => by rw [zsmul_eq_mul]
+  have hlead : (derivative g).coeff (e - 1) = (e : ℤ) := by
+    rw [coeff_derivative, show e - 1 + 1 = e from by omega, hgcoeff, one_mul]
+    have hc : ((e - 1 : ℕ) : ℤ) = (e : ℤ) - 1 := by omega
+    rw [hc]; ring
+  have hextremal : WithZero.exp (-((e * e.factorization q : ℕ) : ℤ) - ((e : ℤ) - 1))
+      ≤ v.intValuation (aeval x (derivative g)) := by
+    have h1 := valuation_term_le_valuation_sum v.intValuation hker
+      (fun i => (((derivative g).coeff i : ℤ) : NumberField.RingOfIntegers K) * x ^ i)
+      (Finset.mem_range.mpr (show e - 1 < e by omega))
+      (hpairwise (fun i => (derivative g).coeff i))
+    rw [← hgderivsum] at h1
+    refine le_trans (le_of_eq ?_) h1
+    have hEcast : (((e : ℤ)) : NumberField.RingOfIntegers K)
+        = ((e : ℕ) : NumberField.RingOfIntegers K) := by push_cast; ring
+    rw [hlead, map_mul, hEcast, hnat e (by omega), hxpow, ← WithZero.exp_add]
+    congr 1
+    have hc : ((e - 1 : ℕ) : ℤ) = (e : ℤ) - 1 := by omega
+    rw [hc]; ring
+  -- ## 6. the cofactor `H` is a `Q`-unit
+  have hxQ : x ∈ v.asIdeal := by
+    have h1 := (v.intValuation_le_pow_iff_mem x 1).mp (by rw [hx]; simp)
+    simpa using h1
+  have hsumQ : (∑ i ∈ Finset.range e,
+      ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i) ∈ v.asIdeal := by
+    have h1 : x ^ e - ∑ i ∈ Finset.range e,
+        ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i ∈ v.asIdeal := by
+      have h2 := (v.intValuation_le_pow_iff_mem _ 1).mp
+        (le_trans happrox (by rw [WithZero.exp_le_exp]; push_cast; omega))
+      simpa using h2
+    have h3 : x ^ e ∈ v.asIdeal := v.asIdeal.pow_mem_of_mem hxQ e he0
+    have h4 := Ideal.sub_mem _ h3 h1
+    simpa using h4
+  have hc0Q : ((c 0 : ℤ) : NumberField.RingOfIntegers K) ∈ v.asIdeal := by
+    have hsplit : ∑ i ∈ Finset.range e, ((c i : ℤ) : NumberField.RingOfIntegers K) * x ^ i
+        = (∑ i ∈ Finset.range (e - 1),
+            ((c (i + 1) : ℤ) : NumberField.RingOfIntegers K) * x ^ (i + 1))
+          + ((c 0 : ℤ) : NumberField.RingOfIntegers K) := by
+      conv_lhs => rw [show e = (e - 1) + 1 from by omega]
+      rw [Finset.sum_range_succ']
+      simp
+    have hQsum : (∑ i ∈ Finset.range (e - 1),
+        ((c (i + 1) : ℤ) : NumberField.RingOfIntegers K) * x ^ (i + 1)) ∈ v.asIdeal :=
+      Ideal.sum_mem _ fun i _ =>
+        Ideal.mul_mem_left _ _ (v.asIdeal.pow_mem_of_mem hxQ _ (by omega))
+    have h5 := Ideal.sub_mem _ hsumQ hQsum
+    rw [hsplit] at h5
+    simpa using h5
+  have hgc0val : v.intValuation ((c 0 : NumberField.RingOfIntegers K))
+      ≤ WithZero.exp (-(e : ℤ)) := by
+    rcases eq_or_ne (c 0) 0 with h0 | h0
+    · rw [h0]; simp
+    · obtain ⟨k, hk⟩ := hZval (c 0) h0
+      rw [hk, WithZero.exp_le_exp]
+      have hk1 : 1 ≤ k := by
+        by_contra hcon
+        have hk0 : k = 0 := by omega
+        subst hk0
+        rw [Nat.mul_zero] at hk
+        simp only [Nat.cast_zero, neg_zero, WithZero.exp_zero] at hk
+        exact (IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff.mp hk) hc0Q
+      have h2 : e ≤ e * k := by
+        calc e = e * 1 := (mul_one e).symm
+          _ ≤ e * k := Nat.mul_le_mul_left e hk1
+      exact neg_le_neg (by exact_mod_cast h2)
+  have hRm0 : v.intValuation ((Rm.coeff 0 : NumberField.RingOfIntegers K))
+      ≤ WithZero.exp (-(M : ℤ)) := by
+    have h1 := hRmcoeff 0 he0
+    simpa using h1
+  have hcoeff0 : F.coeff 0 = Rm.coeff 0 + g.coeff 0 * H.coeff 0 := by
+    conv_lhs => rw [← hdivide]
+    rw [coeff_add, mul_coeff_zero]
+  have hgH0 : v.intValuation (((g.coeff 0 * H.coeff 0 : ℤ) : NumberField.RingOfIntegers K))
+      = WithZero.exp (-(e : ℤ)) := by
+    have h1 : ((g.coeff 0 * H.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+        = ((F.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+          - ((Rm.coeff 0 : ℤ) : NumberField.RingOfIntegers K) := by
+      rw [hcoeff0]; push_cast; ring
+    have hlt : v.intValuation ((Rm.coeff 0 : NumberField.RingOfIntegers K))
+        < v.intValuation ((F.coeff 0 : NumberField.RingOfIntegers K)) := by
+      rw [hc0]
+      exact lt_of_le_of_lt hRm0 (by rw [WithZero.exp_lt_exp]; omega)
+    rw [h1, Valuation.map_sub_eq_of_lt_left _ hlt, hc0]
+  have hH0 : v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K)) = 1 := by
+    have hmul : ((g.coeff 0 * H.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+        = ((g.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+          * ((H.coeff 0 : ℤ) : NumberField.RingOfIntegers K) := by push_cast; ring
+    rw [hmul, map_mul] at hgH0
+    have hg0le : v.intValuation ((g.coeff 0 : NumberField.RingOfIntegers K))
+        ≤ WithZero.exp (-(e : ℤ)) := by
+      rw [hgcoeff0, show (((-c 0 : ℤ)) : NumberField.RingOfIntegers K)
+        = -((c 0 : ℤ) : NumberField.RingOfIntegers K) by push_cast; ring, Valuation.map_neg]
+      exact hgc0val
+    have h1 : WithZero.exp (-(e : ℤ))
+        ≤ WithZero.exp (-(e : ℤ)) * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K)) := by
+      calc WithZero.exp (-(e : ℤ))
+            = v.intValuation ((g.coeff 0 : NumberField.RingOfIntegers K))
+              * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K)) := hgH0.symm
+        _ ≤ WithZero.exp (-(e : ℤ))
+              * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K)) :=
+            mul_le_mul_left hg0le _
+    have h2 : WithZero.exp (-(e : ℤ))
+        * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K))
+        ≤ WithZero.exp (-(e : ℤ)) := by
+      calc WithZero.exp (-(e : ℤ))
+            * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K))
+          ≤ WithZero.exp (-(e : ℤ)) * 1 := mul_le_mul_right (v.intValuation_le_one _) _
+        _ = WithZero.exp (-(e : ℤ)) := mul_one _
+    have h3 : WithZero.exp (-(e : ℤ))
+        * v.intValuation ((H.coeff 0 : NumberField.RingOfIntegers K))
+        = WithZero.exp (-(e : ℤ)) * 1 := by rw [mul_one]; exact le_antisymm h2 h1
+    exact mul_left_cancel₀ (by simp) h3
+  have hHx : v.intValuation (aeval x H) = 1 := by
+    rw [IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff]
+    intro hcon
+    have h4 : ((H.coeff 0 : ℤ) : NumberField.RingOfIntegers K)
+        = aeval x H - x * aeval x H.divX := by
+      have h2 := congrArg (Polynomial.aeval x) (X_mul_divX_add H)
+      rw [map_add, map_mul, aeval_X, aeval_C] at h2
+      rw [← h2]
+      simp [algebraMap_int_eq]
+    have h3 : ((H.coeff 0 : ℤ) : NumberField.RingOfIntegers K) ∈ v.asIdeal := by
+      rw [h4]
+      exact Ideal.sub_mem _ hcon (Ideal.mul_mem_right _ _ hxQ)
+    exact (IsDedekindDomain.HeightOneSpectrum.intValuation_eq_one_iff.mp hH0) h3
+  -- ## 7. mathlib's different bound, and the assembly
+  have hdiffbound : v.intValuation (aeval x (derivative F)) ≤ WithZero.exp (-(d : ℤ)) := by
+    rw [v.intValuation_le_pow_iff_mem]
+    refine Ideal.le_of_dvd hd ?_
+    rw [hFdef]
+    exact aeval_derivative_mem_differentIdeal ℤ ℚ K x hgen
+  have hFderiv : derivative F = derivative Rm + (derivative g * H + g * derivative H) := by
+    conv_lhs => rw [← hdivide]
+    rw [derivative_add, derivative_mul]
+  have hgderivH : v.intValuation (aeval x (derivative g) * aeval x H)
+      ≤ WithZero.exp (-(d : ℤ)) := by
+    have h2 := congrArg (Polynomial.aeval x) hFderiv
+    rw [map_add, map_add, map_mul, map_mul] at h2
+    have hsplit : aeval x (derivative g) * aeval x H
+        = aeval x (derivative F) - aeval x (derivative Rm)
+          - aeval x g * aeval x (derivative H) := by rw [h2]; ring
+    rw [hsplit]
+    have hb1 : v.intValuation (aeval x (derivative Rm)) ≤ WithZero.exp (-(d : ℤ)) :=
+      hRmderiv.trans (by rw [WithZero.exp_le_exp]; omega)
+    have hb2 : v.intValuation (aeval x g * aeval x (derivative H))
+        ≤ WithZero.exp (-(d : ℤ)) := by
+      rw [map_mul]
+      refine le_trans (mul_le_mul' hgx (v.intValuation_le_one _)) ?_
+      rw [mul_one, WithZero.exp_le_exp]
+      omega
+    exact Valuation.map_sub_le _ (Valuation.map_sub_le _ hdiffbound hb1) hb2
+  have hgderivbound : v.intValuation (aeval x (derivative g)) ≤ WithZero.exp (-(d : ℤ)) := by
+    rw [map_mul, hHx, mul_one] at hgderivH
+    exact hgderivH
+  have hfinal := le_trans hextremal hgderivbound
+  rw [WithZero.exp_le_exp] at hfinal
+  obtain ⟨A, hA⟩ : ∃ A, e * e.factorization q = A := ⟨_, rfl⟩
+  rw [hA] at hfinal ⊢
+  omega
 
 /-- **The wild different bound when the residue degree is one** (PROVEN
-2026-07-26 over `exists_generator_uniformizer_at` and
-`differentIdeal_exponent_le_of_intEisenstein_approx`, the two remaining
-leaves of the elementary global route; the digit expansion itself,
-`exists_intCoeff_eisenstein_approx`, is proven above).
+2026-07-26 over `differentIdeal_exponent_le_of_intEisenstein_approx`,
+now the only remaining leaf of the elementary global route;
+`exists_generator_uniformizer_at` was PROVEN 2026-07-26 over the three
+steps `exists_uniformizer_avoiding_other_primes`,
+`exists_generator_sub_mem_span_sq` and `intValuation_coeff_zero_minpoly`,
+and the digit expansion `exists_intCoeff_eisenstein_approx` is proven
+above).
 
 Hypothesis `hres` says that every element of `𝓞_K` is congruent mod `Q`
 to a rational integer, i.e. `𝓞_K/Q = 𝔽_q`, i.e. the residue degree
@@ -1763,32 +2498,200 @@ theorem differentIdeal_exponent_le_wild_of_residueDegreeOne
   exact differentIdeal_exponent_le_of_intEisenstein_approx K q hq v hmem e he x hgen hx hc0 c
     (d + 2 * e + 2) hc d le_rfl hd
 
+/-- **A global generator whose minimal-polynomial derivative has small
+`Q`-order** (sorry leaf, 2026-07-26 — the SINGLE remaining leaf of the
+wild different bound at a prime of residue degree `> 1`; it replaces
+the Eisenstein-presentation cut recorded on
+`exists_eisensteinDerivative_dvd_of_wild`).
+
+Asks for one element: an `x ∈ 𝓞_K` with `ℚ(x) = K` such that, writing
+`F = minpoly ℤ x`,
+
+  `ord_Q (F'(x)) ≤ e − 1 + e·v_q(e)`.
+
+That is all.  Everything else in the wild bound is proven below:
+mathlib's `aeval_derivative_mem_differentIdeal` gives
+`𝔡_{𝓞_K/ℤ} ∣ (F'(x))` for any generator `x`, hence
+`d ≤ ord_Q (F'(x))`, so
+`differentIdeal_exponent_le_wild_of_residueDegreeGtOne` below gets the
+bound, and
+`exists_eisensteinDerivative_dvd_of_wild_of_residueDegreeGtOne` then
+discharges the Eisenstein leaf with the trivial witness
+`a = (0,…,0,1)`, exactly as the `f = 1` branch already does.
+
+**WHAT THIS CUT BUYS: (M1) IS GONE.**  The previous cut asked for an
+Eisenstein presentation of the different *at `Q`*, whose first
+requirement was (M1) — `differentIdeal` under localization/completion,
+described there as "the gate on everything else and the first thing to
+build", and absent from mathlib.  The present statement never mentions
+the different at all: the localization work is done once and for all
+by mathlib's GLOBAL lemma `𝔡 ∣ (F'(x))`.  What remains is (M2)+(M3) —
+producing one good generator — and that is a statement about a minimal
+polynomial, not about ideals.
+
+**Why it is TRUE.**  Classically one takes `x` whose image in the
+completion `K_Q` generates `𝓞_{K_Q}` over `ℤ_q` (a complete DVR
+extension with separable — here finite — residue extension is
+monogenic: Serre, *Corps Locaux* I §6), and which is `≡ 0` modulo every
+other prime `Q' ∣ q` while remaining a `Q`-unit; then
+`conductor_mul_differentIdeal` gives `ord_Q 𝔠(x) = 0` and
+`ord_Q (F'(x)) = d ≤ e − 1 + e·v_q(e)`.  Generation of `K/ℚ` is
+arranged by the same pigeonhole correction `x ↦ x + q^N·θ` used in
+`exists_generator_uniformizer_at`.
+
+Numerically corroborated in the wild `f > 1` case (PARI/GP,
+2026-07-26): `K = ℚ(√2,√5)` has a single prime `Q` over `q = 2` with
+`e = 2`, `f = 2`, and different `Q³·(prime over 5)`, so `d = 3` and the
+bound `e − 1 + e·v_2(e) = 3` is SHARP; a search over the box `[−3,3]⁴`
+of integral-basis coordinates finds generators attaining
+`ord_Q (F'(x)) = 3` and none below it.
+
+**A FULLY GLOBAL ATTACK — no completions, no local fields** (worked out
+2026-07-26; this is the recommended route, and the reason the cut was
+made here).  The `f = 1` route
+(`differentIdeal_exponent_le_wild_of_residueDegreeOne`) breaks at
+exactly one point: its digits are taken in `ℤ` because `𝓞_K/Q = 𝔽_q`.
+Replace `ℤ` by the subring `A := ℤ[u] ⊆ 𝓞_K` for a global
+**approximate Teichmüller lift** `u`:
+
+* Fix a precision `N`.  `𝓞_K/Q^N` is a FINITE ring and `X^{q^f} − X`
+  has derivative `−1`, a unit; so Newton iteration *inside that finite
+  quotient* lifts a generator `ū` of `𝓞_K/Q ≅ 𝔽_{q^f}` to an exact
+  root of `X^{q^f} − X` there, and surjectivity of `𝓞_K ↠ 𝓞_K/Q^N`
+  pulls it back to `u ∈ 𝓞_K` with `u^{q^f} ≡ u (mod Q^N)`.  This is
+  Hensel's lemma performed in a finite quotient — elementary, and
+  entirely global.
+* `A = ℤ[u]` then has the two properties that `ℤ` had when `f = 1`:
+  (i) **every `y ∈ 𝓞_K` is congruent mod `Q` to an element of `A`**,
+  because `𝔽_q[ū] = 𝔽_{q^f}`; and (ii) **`ord_Q` takes values in
+  `e·ℤ` on `A`, up to precision `N`**, because `u` agrees to precision
+  `N` with the true Teichmüller lift `ω ∈ 𝓞_{L₀}`, on which `ord_Q` is
+  `e·ord_{L₀}`.  Property (ii) is precisely what the refuted attack was
+  missing: "order in `e·ℤ`" imposed by fiat is not the same as
+  "coefficient in the unramified subring" — but a `Q^N`-approximate
+  Teichmüller lift really does carve an approximate copy of `𝓞_{L₀}`
+  out of `𝓞_K`.
+* With `A` in place, `exists_intCoeff_eisenstein_approx` above
+  generalizes verbatim (it is already stated for an abstract Dedekind
+  `R`, and uses only `hres` and `ord_Q P = e`; take `P = q ∈ A`), and
+  steps 3–6 of the `f = 1` route go through with `ℤ` replaced by `A`.
+  The extra work is the passage from the minimal polynomial of `π` over
+  `A` to `F = minpoly ℤ x` for `x = u + π`.
+
+**A second global alternative — base change to `ℚ(ζ_{q^f−1})`.**  Let
+`F₀ = ℚ(ζ_m)`, `m = q^f − 1`, in which `q` is unramified with residue
+degree `f`; let `E = K·F₀`, let `Q̃` be a prime of `E` over `Q` and
+`𝔓 = Q̃ ∩ 𝓞_{F₀}`.  Then `E/K` is unramified at `Q̃` (it is generated
+by a root of unity of order prime to `q`) and
+`k(Q̃) = k(Q)(ζ̄_m) = k(Q)` because `𝔽_{q^f}^×` already has order `m`;
+so `e(Q̃∣Q) = f(Q̃∣Q) = 1`, whence `e(Q̃∣𝔓) = e` and `f(Q̃∣𝔓) = 1`.
+Two applications of mathlib's tower formula
+`differentIdeal_eq_differentIdeal_mul_differentIdeal`, with
+`not_dvd_differentIdeal_iff` killing the two unramified factors, give
+`ord_{Q̃} 𝔡_{E/F₀} = ord_Q 𝔡_{K/ℚ} = d`, and the `f = 1` case applied
+to `E/F₀` yields the bound.  The price is generalizing the whole
+`f = 1` chain from base `ℤ` to base `𝓞_{F₀}` (where `𝔓` need not be
+principal) and constructing the compositum; the
+approximate-Teichmüller route above avoids both.
+
+**Do NOT retry the digit-expansion attack** refuted on
+`exists_eisensteinDerivative_dvd_of_wild` (`K = ℚ(√2)`, `q = 2`,
+`π = √2`, `a₁ = 2`, `a₀ = −2−2√2`): coefficients of `Q`-order in `e·ℤ`
+are strictly weaker than coefficients in the maximal unramified
+subring.  In the present statement that trap is closed by
+construction — there are no free coefficients to choose, only a single
+generator `x`, and the quantity bounded is the honest
+`ord_Q ((minpoly ℤ x)'(x))`.
+
+Both-ways audit: an existence statement about one algebraic integer,
+implied by the classical theorem (Serre III §6 Prop. 13) and checked
+numerically above; not vacuous — `Algebra.adjoin ℚ {x} = ⊤` forces `x`
+to be a genuine generator of `K/ℚ`, and the bound is attained (not
+merely satisfied) in the worked example, so no junk witness discharges
+it. -/
+theorem exists_generator_minpolyDerivative_le_of_wild
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (hres : ¬ ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal) :
+    ∃ x : NumberField.RingOfIntegers K,
+      Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤ ∧
+      WithZero.exp (-((e - 1 + e * e.factorization q : ℕ) : ℤ)) ≤
+        v.intValuation (Polynomial.aeval x
+          (Polynomial.derivative (minpoly ℤ x))) :=
+  sorry
+
+/-- **The wild different-exponent bound at a prime of residue degree
+`> 1`** (PROVEN 2026-07-26 over the single leaf
+`exists_generator_minpolyDerivative_le_of_wild` above).  This is the
+mirror of `differentIdeal_exponent_le_wild_of_residueDegreeOne`, which
+handles `f = 1` by a completely elementary global route.
+
+`Q^d ∣ 𝔡_{K/ℚ}` implies Serre's bound `d ≤ e − 1 + e·v_q(e)`.
+
+Proof: take the generator `x` supplied by the leaf; mathlib's
+`aeval_derivative_mem_differentIdeal` puts `F'(x)` into `𝔡_{K/ℚ}`, so
+`Q^d ∣ (F'(x))`, i.e. `ord_Q (F'(x)) ≥ d`; and the leaf says
+`ord_Q (F'(x)) ≤ e − 1 + e·v_q(e)`.
+
+The hypotheses `hq`, `hwild` and `hres` are passed straight to the
+leaf and are used nowhere in this glue; `hres` in particular is carried
+only so that this theorem is no stronger than the `f > 1` half it is
+meant to supply (the `f = 1` half being
+`differentIdeal_exponent_le_wild_of_residueDegreeOne` above). -/
+theorem differentIdeal_exponent_le_wild_of_residueDegreeGtOne
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (hres : ¬ ∀ y : NumberField.RingOfIntegers K,
+      ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (d : ℕ) (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    d ≤ e - 1 + e * e.factorization q := by
+  obtain ⟨x, hgen, hle⟩ :=
+    exists_generator_minpolyDerivative_le_of_wild K q hq v hmem hwild hres e he
+  have hmem' : Polynomial.aeval x (Polynomial.derivative (minpoly ℤ x)) ∈
+      differentIdeal ℤ (NumberField.RingOfIntegers K) :=
+    aeval_derivative_mem_differentIdeal ℤ ℚ K x hgen
+  have hdvd : v.asIdeal ^ d ∣
+      Ideal.span {Polynomial.aeval x (Polynomial.derivative (minpoly ℤ x))} :=
+    hd.trans (Ideal.dvd_iff_le.mpr ((Ideal.span_singleton_le_iff_mem _).mpr hmem'))
+  rw [← v.intValuation_le_pow_iff_dvd] at hdvd
+  have hchain := le_trans hle hdvd
+  rw [WithZero.exp_le_exp] at hchain
+  omega
+
 /-- **The local Eisenstein presentation of the different at a wild
-prime of residue degree `> 1`** (sorry leaf, 2026-07-26 — the *second*
-of the two leaves into which `exists_eisensteinDerivative_dvd_of_wild`
-is split below).  Statement identical to that leaf, with the extra
-hypothesis `hres` that `𝓞_K/Q ≠ 𝔽_q`, i.e. `f(Q∣q) > 1`.
+prime of residue degree `> 1`** (PROVEN 2026-07-26 over
+`differentIdeal_exponent_le_wild_of_residueDegreeGtOne` above, whose
+own single leaf is `exists_generator_minpolyDerivative_le_of_wild`).
+Statement identical to `exists_eisensteinDerivative_dvd_of_wild` below,
+with the extra hypothesis `hres` that `𝓞_K/Q ≠ 𝔽_q`, i.e.
+`f(Q∣q) > 1`.
 
-This is where the genuinely missing theory lives.  The elementary
-global route recorded on
-`differentIdeal_exponent_le_wild_of_residueDegreeOne` breaks here at
-exactly one point, and it is worth being precise about which:
+The proof is the observation — already used by the `f = 1` branch of
+`exists_eisensteinDerivative_dvd_of_wild` — that this statement is
+EQUIVALENT to the numerical bound `d ≤ e − 1 + e·v_q(e)`: given the
+bound, the trivial witness (`π` any uniformizer, `a = (0,…,0,1)`)
+collapses the sum to `e·π^{e−1}`, whose `Q`-order is exactly
+`e·v_q(e) + e − 1 ≥ d`.  So the Eisenstein packaging carries no content
+beyond the inequality, and the cut of 2026-07-26 moves the node onto
+the inequality, where the missing mathematics actually lives.  (This is
+also why the digit-expansion attack refuted on
+`exists_eisensteinDerivative_dvd_of_wild` could satisfy every clause of
+this statement and still fail: the clauses are not the content.)
 
-* Step 2 of that route (the integer-coefficient digit expansion) uses
-  `𝓞_K/Q = 𝔽_q` to pick each digit in `ℤ`.  For `f > 1` the digits must
-  instead be taken in the **maximal unramified subring** `𝓞_{L₀}` of
-  `𝓞_{K_Q}`, which has no global avatar — this is (M2), and it is not
-  optional (see the refutation recorded on
-  `exists_eisensteinDerivative_dvd_of_wild`).
-* Everything else in that route is insensitive to `f`.
-
-So the two classical routes remain: (M1)+(M2)+(M3) as recorded on
-`exists_eisensteinDerivative_dvd_of_wild`, or a global reduction to the
-`f = 1` case by base change to a number field `F` in which `q` is
-unramified with residue degree `f` (e.g. `F = ℚ(ζ_{q^f−1})`), using
-mathlib's tower formula
-`differentIdeal_eq_differentIdeal_mul_differentIdeal` — which needs
-`F_𝔓 ⊆ K_Q` locally and is therefore not obviously cheaper. -/
+Where the `f = 1` route breaks, for the record: step 2 of
+`differentIdeal_exponent_le_wild_of_residueDegreeOne` (the
+integer-coefficient digit expansion) uses `𝓞_K/Q = 𝔽_q` to pick each
+digit in `ℤ`; for `f > 1` the digits must come from the maximal
+unramified subring `𝓞_{L₀}`, which has no *exact* global avatar — but
+does have an approximate one, and that is the route now recorded on
+`exists_generator_minpolyDerivative_le_of_wild`. -/
 theorem exists_eisensteinDerivative_dvd_of_wild_of_residueDegreeGtOne
     (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
     (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
@@ -1804,8 +2707,58 @@ theorem exists_eisensteinDerivative_dvd_of_wild_of_residueDegreeGtOne
       (∀ i, 0 < i → i < e → v.intValuation (a i) = 0 ∨
         ∃ c : ℕ, v.intValuation (a i) = WithZero.exp (-((e * c : ℕ) : ℤ))) ∧
       v.asIdeal ^ d ∣ Ideal.span {∑ j ∈ Finset.range e,
-        ((j + 1 : ℕ) : NumberField.RingOfIntegers K) * a (j + 1) * π ^ j} :=
-  sorry
+        ((j + 1 : ℕ) : NumberField.RingOfIntegers K) * a (j + 1) * π ^ j} := by
+  classical
+  have hpZ : Prime ((q : ℕ) : ℤ) := Nat.prime_iff_prime_int.mp hq
+  have hspan0 : (Ideal.span {((q : ℕ) : ℤ)} : Ideal ℤ) ≠ ⊥ := by
+    simp only [Ne, Ideal.span_singleton_eq_bot]
+    exact_mod_cast hq.ne_zero
+  haveI hlies : v.asIdeal.LiesOver (Ideal.span {((q : ℕ) : ℤ)}) :=
+    (Ideal.liesOver_span_iff v.isPrime.ne_top hpZ).mpr (by exact_mod_cast hmem)
+  have he0 : 0 < e := by
+    rw [he]
+    exact Nat.pos_of_ne_zero
+      (Ideal.IsDedekindDomain.ramificationIdx'_ne_zero_of_liesOver v.asIdeal hspan0)
+  have hbound :=
+    differentIdeal_exponent_le_wild_of_residueDegreeGtOne K q hq v hmem hwild hres e he d hd
+  -- The bound is all there is: the trivial witness `a = (0, …, 0, 1)`
+  -- collapses the sum to `e·π^{e−1}`, of `Q`-order `e·v_q(e) + e − 1`.
+  obtain ⟨π, hπ⟩ := v.intValuation_exists_uniformizer
+  refine ⟨π, Function.update (fun _ : ℕ => (0 : NumberField.RingOfIntegers K)) e 1, hπ,
+    Function.update_self _ _ _, ?_, ?_⟩
+  · intro i _ hie
+    left
+    rw [Function.update_of_ne (by omega)]
+    simp
+  · have hsum : ∑ j ∈ Finset.range e,
+        ((j + 1 : ℕ) : NumberField.RingOfIntegers K)
+          * Function.update (fun _ : ℕ => (0 : NumberField.RingOfIntegers K)) e 1 (j + 1)
+          * π ^ j
+        = ((e : ℕ) : NumberField.RingOfIntegers K) * π ^ (e - 1) := by
+      rw [Finset.sum_eq_single (e - 1)]
+      · rw [Nat.sub_add_cancel he0, Function.update_self, mul_one]
+      · intro b hb hbne
+        rw [Finset.mem_range] at hb
+        rw [Function.update_of_ne (by omega)]
+        simp
+      · intro hcon
+        exact absurd (Finset.mem_range.mpr (by omega)) hcon
+    rw [hsum, ← v.intValuation_le_pow_iff_dvd]
+    have hve : v.intValuation ((e : ℕ) : NumberField.RingOfIntegers K)
+        = WithZero.exp (-((e * e.factorization q : ℕ) : ℤ)) := by
+      rw [intValuation_natCast_eq_exp_ramificationIdx K q hq v hmem e (by omega), ← he]
+    rw [map_mul, map_pow, hve, hπ, ← WithZero.exp_nsmul, ← WithZero.exp_add,
+      WithZero.exp_le_exp]
+    have hcast : ((e - 1 : ℕ) : ℤ) = (e : ℤ) - 1 := by
+      have h1 : 1 ≤ e := he0
+      push_cast [Nat.cast_sub h1]
+      ring
+    have hd' : (d : ℤ) ≤ ((e - 1 : ℕ) : ℤ) + (e : ℤ) * (e.factorization q : ℤ) := by
+      exact_mod_cast hbound
+    rw [hcast] at hd'
+    rw [nsmul_eq_mul, hcast]
+    push_cast
+    linarith
 
 /-- **(M1)+(M2)+(M3) The local Eisenstein presentation of the different
 at a wild prime** (PROVEN 2026-07-26 over the two residue-degree cases
@@ -5119,6 +6072,80 @@ theorem exists_taylorWilesPrimeSet.{uK, uW}
       · exact ⟨hq, hqmod, α, β, hαβ, hqpoly⟩
       · exact hQ q' hmem
 
+/-- **The coefficient ring of the Taylor–Wiles presentation** (added
+2026-07-26 as the repair of the residual-field obstruction; see the
+`REPAIR` block of `exists_taylorWilesBottomLevel` below for the full
+derivation and the decision record).
+
+Classically the auxiliary deformation rings `R_{Q_n}` of the
+Taylor–Wiles method are quotients of `𝒪[[x₁, …, x_q]]` for
+`𝒪 = W(k)`, the Witt vectors of the residual field — NOT of
+`ℤ_p[[x₁, …, x_q]]`.  Hardcoding `ℤ_[p]` in the presentation role is
+correct exactly when `k = 𝔽_p`, and in general it makes the interface
+UNSATISFIABLE: a surjection `ℤ_p[[x]] ↠ R ↠ R_univ ↠ k` forces
+`k ≃+* ZMod p` (the maximal ideal of a power series ring over a local
+ring is the preimage of the base's maximal ideal, so the composite
+already factors through `ℤ_[p] ↠ k`).
+
+This bundles the coefficient ring together with exactly the properties
+the PROVEN half of the patching stack consumes, so that the sorried
+arithmetic leaves may CHOOSE it (classically `WittVector p k`) instead
+of being handed `ℤ_[p]`.  Bundling rather than ten separate binders is
+deliberate: `TaylorWilesLevel`/`TaylorWilesLevelRaw` take it as a
+single parameter, and the two arithmetic leaves produce a single
+existential witness.
+
+The carrier is a `Type` (universe `0`) for the same reason the tower's
+other data is: every intended object is a countable pro-finitely
+presented `ℤ_p`-algebra — `W(k)` for finite `k` is countable — so a
+universe-`0` copy always exists, and this keeps the whole patching
+stack universe-monomorphic in the coefficient argument.
+
+Where each field is consumed: `isLocalRing`/`isNoetherianRing` and
+`exists_isRegular_maximalIdeal` feed the Auslander–Buchsbaum endgame
+(`free_of_isRegular_mvPowerSeries`, through
+`exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries` — the last
+field says exactly that `𝒪` is a DVR, i.e. that `𝒪[[x₁, …, x_q]]` is
+regular of dimension `q + 1`); `finite_residueField`,
+`compactSpace` and `topologicallyFG` feed the vendored patching
+construction (`PatchingAlgebra.lift` and the uniform-rank bounds) at
+the presentation ring.  All hold for `W(k)` with `k` a finite
+field. -/
+structure TaylorWilesCoefficients where
+  /-- The underlying ring `𝒪`. -/
+  carrier : Type
+  [commRing : CommRing carrier]
+  [topologicalSpace : TopologicalSpace carrier]
+  [isTopologicalRing : IsTopologicalRing carrier]
+  [compactSpace : CompactSpace carrier]
+  [t2Space : T2Space carrier]
+  [totallyDisconnectedSpace : TotallyDisconnectedSpace carrier]
+  [isLocalRing : IsLocalRing carrier]
+  [isNoetherianRing : IsNoetherianRing carrier]
+  /-- The residue field of `𝒪` is finite (classically it is `k`). -/
+  finite_residueField : Finite (carrier ⧸ IsLocalRing.maximalIdeal carrier)
+  /-- `𝒪` is topologically finitely generated over `ℤ` (classically
+  `W(k) = ℤ_p[ζ]` is the closure of `ℤ[ζ]`). -/
+  topologicallyFG : Algebra.TopologicallyFG ℤ carrier
+  /-- `𝔪_𝒪` is generated by a single `𝒪`-regular element — `𝒪` is a
+  discrete valuation ring.  This is what makes `𝒪[[x₁, …, x_q]]`
+  regular local of dimension `q + 1`, the input to the
+  Auslander–Buchsbaum step. -/
+  exists_isRegular_maximalIdeal : ∃ ts : List carrier, ts.length = 0 + 1 ∧
+    RingTheory.Sequence.IsRegular carrier ts ∧
+    Ideal.ofList ts = IsLocalRing.maximalIdeal carrier
+
+attribute [instance] TaylorWilesCoefficients.commRing
+  TaylorWilesCoefficients.topologicalSpace
+  TaylorWilesCoefficients.isTopologicalRing
+  TaylorWilesCoefficients.compactSpace
+  TaylorWilesCoefficients.t2Space
+  TaylorWilesCoefficients.totallyDisconnectedSpace
+  TaylorWilesCoefficients.isLocalRing
+  TaylorWilesCoefficients.isNoetherianRing
+  TaylorWilesCoefficients.finite_residueField
+  TaylorWilesCoefficients.topologicallyFG
+
 set_option linter.checkUnivs false in
 /-- **The patched module** — the limit object of the Taylor–Wiles
 patching process, recorded with exactly the properties the injectivity
@@ -5181,23 +6208,28 @@ structure PatchedModule.{v, w, s, uR} (p : ℕ) [Fact p.Prime]
   /-- The number of Taylor–Wiles primes at each level (equivalently,
   power-series variables of `R_∞`). -/
   q : ℕ
+  /-- The coefficient ring `𝒪` of the presentation `R_∞ = 𝒪[[x₁, …, x_q]]`
+  (classically `W(k)`; see `TaylorWilesCoefficients`).  Hardcoding
+  `ℤ_[p]` here was the residual-field obstruction repaired
+  2026-07-26. -/
+  coeff : TaylorWilesCoefficients
   /-- The patched module `M_∞`. -/
   Minf : Type v
   [addCommGroupMinf : AddCommGroup Minf]
-  [moduleMinf : Module (MvPowerSeries (Fin q) ℤ_[p]) Minf]
+  [moduleMinf : Module (MvPowerSeries (Fin q) coeff.carrier) Minf]
   /-- `M_∞` is finite over `R_∞` (patched from module-finiteness at
   every level). -/
-  finiteMinf : Module.Finite (MvPowerSeries (Fin q) ℤ_[p]) Minf
+  finiteMinf : Module.Finite (MvPowerSeries (Fin q) coeff.carrier) Minf
   /-- The Taylor–Wiles depth input: an `M_∞`-regular sequence of
   length `q + 1` inside the maximal ideal of `R_∞` (the image of the
   maximal regular sequence of `Λ_∞ = ℤ_p[[S₁, …, S_q]]`, over which
   `M_∞` is finite free by the Taylor–Wiles freeness lemma). -/
-  exists_isRegular : ∃ rs : List (MvPowerSeries (Fin q) ℤ_[p]),
+  exists_isRegular : ∃ rs : List (MvPowerSeries (Fin q) coeff.carrier),
     rs.length = q + 1 ∧
-    (∀ x ∈ rs, x ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p])) ∧
+    (∀ x ∈ rs, x ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) coeff.carrier)) ∧
     RingTheory.Sequence.IsRegular Minf rs
   /-- The patching surjection `R_∞ ↠ R_univ`. -/
-  toRuniv : MvPowerSeries (Fin q) ℤ_[p] →+* Runiv
+  toRuniv : MvPowerSeries (Fin q) coeff.carrier →+* Runiv
   toRuniv_surjective : Function.Surjective toRuniv
   /-- The bottom Hecke module (classically `H¹(X₀(N), ℤ_p)_𝔪`). -/
   M0 : Type w
@@ -5209,14 +6241,14 @@ structure PatchedModule.{v, w, s, uR} (p : ℕ) [Fact p.Prime]
   proj_surjective : Function.Surjective proj
   /-- Action compatibility: the `R_∞`-action on `M_∞` descends through
   `toRuniv` and `ψ` to the `T`-action on `M₀`. -/
-  proj_smul : ∀ (x : MvPowerSeries (Fin q) ℤ_[p]) (m : Minf),
+  proj_smul : ∀ (x : MvPowerSeries (Fin q) coeff.carrier) (m : Minf),
     proj (x • m) = ψ (toRuniv x) • proj m
   /-- The kernel of the bottom identification is exactly the
   augmentation submodule `𝔞·M_∞`, `𝔞 = ker(R_∞ ↠ R_univ)` (this
   inclusion; the reverse follows from `proj_smul`). -/
   mem_smul_top_of_proj_eq_zero : ∀ m : Minf, proj m = 0 →
     m ∈ RingHom.ker toRuniv •
-      (⊤ : Submodule (MvPowerSeries (Fin q) ℤ_[p]) Minf)
+      (⊤ : Submodule (MvPowerSeries (Fin q) coeff.carrier) Minf)
 
 /-! #### The Auslander–Buchsbaum machinery behind patching leaf 3
 
@@ -5865,11 +6897,21 @@ theorem isNoetherianRing_mvPowerSeries.{uA} (n : ℕ) {A : Type uA} [CommRing A]
       (((MvPowerSeries.renameEquiv A (finSuccEquiv n)).toRingEquiv.trans
         (optionCurryEquiv (Fin n) A)).symm)
 
-/-- **The regular system of parameters of `ℤ_p[[x₁, …, x_q]]`**
-(power-series leaf; PROVEN 2026-07-24): the maximal ideal of
-`R_∞ = ℤ_p[[x₁, …, x_q]]` is spanned by a regular sequence of length
-`q + 1` — concretely the image of `(x_q, …, x_1, p)` under the
-currying isomorphisms.  Unconditionally true, zero arithmetic content.
+/-- **The regular system of parameters of `𝒪[[x₁, …, x_q]]`**
+(power-series leaf; PROVEN 2026-07-24, GENERALIZED to an arbitrary
+coefficient ring 2026-07-26): if the maximal ideal of the local ring
+`𝒪` is spanned by a length-one regular sequence — i.e. `𝒪` is a DVR,
+the hypothesis `hO`, satisfied by `ℤ_[p]` through
+`exists_isRegular_ofList_eq_maximalIdeal_padicInt` and by
+`𝒪 = W(k)` — then the maximal ideal of `R_∞ = 𝒪[[x₁, …, x_q]]` is
+spanned by a regular sequence of length `q + 1`, concretely the image
+of `(x_q, …, x_1, ϖ)` under the currying isomorphisms.
+
+The coefficient ring is a parameter rather than `ℤ_[p]` because of the
+INTERFACE OBSTRUCTION recorded at `exists_taylorWilesBottomLevel`
+below: presenting the Taylor–Wiles deformation rings over `ℤ_[p]`
+silently forces the residual field to be `𝔽_p`.  Unconditionally true,
+zero arithmetic content.
 Proven by induction on the number of variables from the one-variable
 step `exists_isRegular_ofList_eq_maximalIdeal_powerSeries` (prepending
 `X` to a regular system of parameters of the local base `B` gives one
@@ -5879,25 +6921,30 @@ of `B⟦X⟧`: `X` is a nonzerodivisor, `B⟦X⟧/(X) ≃ B`, and
 and transported at each step along
 `MvPowerSeries (Fin (q+1)) ℤ_p ≃+* (MvPowerSeries (Fin q) ℤ_p)⟦X⟧`.
 Consumed by `free_of_isRegular_mvPowerSeries`. -/
-theorem exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries (p : ℕ) [Fact p.Prime]
+theorem exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries {O : Type}
+    [CommRing O] [IsLocalRing O]
+    (hO : ∃ ts : List O, ts.length = 0 + 1 ∧ RingTheory.Sequence.IsRegular O ts ∧
+      Ideal.ofList ts = maximalIdeal O)
     (q : ℕ) :
-    ∃ ts : List (MvPowerSeries (Fin q) ℤ_[p]), ts.length = q + 1 ∧
-      RingTheory.Sequence.IsRegular (MvPowerSeries (Fin q) ℤ_[p]) ts ∧
-      Ideal.ofList ts = maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) := by
+    ∃ ts : List (MvPowerSeries (Fin q) O), ts.length = q + 1 ∧
+      RingTheory.Sequence.IsRegular (MvPowerSeries (Fin q) O) ts ∧
+      Ideal.ofList ts = maximalIdeal (MvPowerSeries (Fin q) O) := by
   induction q with
   | zero =>
     exact exists_isRegular_ofList_eq_maximalIdeal_of_ringEquiv
-      (mvPowerSeriesIsEmptyRingEquiv (Fin 0) ℤ_[p])
-      (exists_isRegular_ofList_eq_maximalIdeal_padicInt p)
+      (mvPowerSeriesIsEmptyRingEquiv (Fin 0) O) hO
   | succ q ih =>
     exact exists_isRegular_ofList_eq_maximalIdeal_of_ringEquiv
-      (((MvPowerSeries.renameEquiv ℤ_[p] (finSuccEquiv q)).toRingEquiv.trans
-        (optionCurryEquiv (Fin q) ℤ_[p])).symm)
+      (((MvPowerSeries.renameEquiv O (finSuccEquiv q)).toRingEquiv.trans
+        (optionCurryEquiv (Fin q) O)).symm)
       (exists_isRegular_ofList_eq_maximalIdeal_powerSeries _ (q + 1) ih)
 
 /-- **The commutative-algebra endgame** (patching leaf 3; PROVEN
-2026-07-24): a finite module over the regular local ring
-`R_∞ = ℤ_p[[x₁, …, x_q]]` carrying a regular sequence of length
+2026-07-24, GENERALIZED to an arbitrary DVR coefficient ring `𝒪`
+2026-07-26 — see `exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`
+above and the INTERFACE OBSTRUCTION at `exists_taylorWilesBottomLevel`
+below): a finite module over the regular local ring
+`R_∞ = 𝒪[[x₁, …, x_q]]` carrying a regular sequence of length
 `q + 1 = dim R_∞` inside the maximal ideal — i.e. of depth at least
 `dim R_∞` — is FREE.  This is the Auslander–Buchsbaum step of the
 patching argument (Diamond, *The Taylor–Wiles construction and
@@ -5911,24 +6958,58 @@ dimension induction `free_of_isRegular_of_ofList_eq_maximalIdeal`
 header above) at the two concrete power-series leaves
 `isNoetherianRing_mvPowerSeries` and
 `exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`. -/
-theorem free_of_isRegular_mvPowerSeries.{v} {p : ℕ} [Fact p.Prime] {q : ℕ}
+theorem free_of_isRegular_mvPowerSeries.{v} {O : Type} [CommRing O]
+    [IsLocalRing O] [IsNoetherianRing O] {q : ℕ}
+    (hO : ∃ ts : List O, ts.length = 0 + 1 ∧ RingTheory.Sequence.IsRegular O ts ∧
+      Ideal.ofList ts = maximalIdeal O)
     {M : Type v} [AddCommGroup M]
-    [Module (MvPowerSeries (Fin q) ℤ_[p]) M]
-    (hfin : Module.Finite (MvPowerSeries (Fin q) ℤ_[p]) M)
-    {rs : List (MvPowerSeries (Fin q) ℤ_[p])} (hlen : rs.length = q + 1)
+    [Module (MvPowerSeries (Fin q) O) M]
+    (hfin : Module.Finite (MvPowerSeries (Fin q) O) M)
+    {rs : List (MvPowerSeries (Fin q) O)} (hlen : rs.length = q + 1)
     (hmem : ∀ x ∈ rs, x ∈ IsLocalRing.maximalIdeal
-      (MvPowerSeries (Fin q) ℤ_[p]))
+      (MvPowerSeries (Fin q) O))
     (hreg : RingTheory.Sequence.IsRegular M rs) :
-    Module.Free (MvPowerSeries (Fin q) ℤ_[p]) M := by
+    Module.Free (MvPowerSeries (Fin q) O) M := by
   haveI := hfin
-  haveI : IsNoetherianRing (MvPowerSeries (Fin q) ℤ_[p]) :=
+  haveI : IsNoetherianRing (MvPowerSeries (Fin q) O) :=
     isNoetherianRing_mvPowerSeries q
   obtain ⟨ts, htslen, hts, htsspan⟩ :=
-    exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries p q
+    exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries hO q
   exact free_of_isRegular_of_ofList_eq_maximalIdeal (q + 1) ts hts htslen htsspan
     rs hreg hlen hmem
 
 end AuslanderBuchsbaum
+
+/-- **`ℤ_[p]` is a Taylor–Wiles coefficient ring** (PROVEN 2026-07-26)
+— the classical instance at residual field `𝔽_p`, and the witness every
+`ℤ_[p]`-shaped call site of the patching stack now supplies
+explicitly.  Local Noetherian complete DVR with residue field `ZMod p`
+(`PadicInt.residueField`), compact, and topologically generated over
+`ℤ` by the empty set since `ℤ` is dense in `ℤ_[p]`
+(`PadicInt.denseRange_intCast`); its maximal ideal is `(p)` with `p` a
+nonzerodivisor
+(`exists_isRegular_ofList_eq_maximalIdeal_padicInt`). -/
+theorem finite_residueField_padicInt (p : ℕ) [Fact p.Prime] :
+    Finite (ℤ_[p] ⧸ IsLocalRing.maximalIdeal ℤ_[p]) :=
+  Finite.of_equiv (ZMod p) (PadicInt.residueField (p := p)).symm.toEquiv
+
+/-- `ℤ` is dense in `ℤ_[p]`, so `ℤ_[p]` is topologically generated over
+`ℤ` by the EMPTY set (`PadicInt.denseRange_intCast`). -/
+theorem topologicallyFG_int_padicInt (p : ℕ) [Fact p.Prime] :
+    Algebra.TopologicallyFG ℤ ℤ_[p] := by
+  refine ⟨⟨∅, ?_⟩⟩
+  have he : ((Algebra.adjoin ℤ ((∅ : Finset ℤ_[p]) : Set ℤ_[p]) : Subalgebra ℤ ℤ_[p]) :
+      Set ℤ_[p]) = Set.range (algebraMap ℤ ℤ_[p]) := by
+    simp [Algebra.adjoin_empty, Algebra.coe_bot]
+  rw [he]
+  exact PadicInt.denseRange_intCast
+
+noncomputable def TaylorWilesCoefficients.padicInt (p : ℕ) [Fact p.Prime] :
+    TaylorWilesCoefficients where
+  carrier := ℤ_[p]
+  finite_residueField := finite_residueField_padicInt p
+  topologicallyFG := topologicallyFG_int_padicInt p
+  exists_isRegular_maximalIdeal := exists_isRegular_ofList_eq_maximalIdeal_padicInt p
 
 /-- **The patched faithfulness assembly** (PROVEN): a `PatchedModule`
 for `ψ` forces `ψ` to be injective.  This is the classical endgame of
@@ -5955,19 +7036,20 @@ theorem PatchedModule.injective.{v, w, s, uR} {p : ℕ} [Fact p.Prime]
   haveI : Nontrivial P.M0 := P.nontrivialM0
   haveI : Nontrivial P.Minf := P.proj_surjective.nontrivial
   obtain ⟨rs, hlen, hmem, hreg⟩ := P.exists_isRegular
-  haveI : Module.Free (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf :=
-    free_of_isRegular_mvPowerSeries P.finiteMinf hlen hmem hreg
+  haveI : Module.Free (MvPowerSeries (Fin P.q) P.coeff.carrier) P.Minf :=
+    free_of_isRegular_mvPowerSeries
+      P.coeff.exists_isRegular_maximalIdeal P.finiteMinf hlen hmem hreg
   rw [injective_iff_map_eq_zero]
   intro r hr
   obtain ⟨x, rfl⟩ := P.toRuniv_surjective r
-  let b := Module.Free.chooseBasis (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf
+  let b := Module.Free.chooseBasis (MvPowerSeries (Fin P.q) P.coeff.carrier) P.Minf
   obtain ⟨i⟩ := b.index_nonempty
   have hproj0 : P.proj (x • b i) = 0 := by
     rw [P.proj_smul, hr, zero_smul]
   have hmem2 := P.mem_smul_top_of_proj_eq_zero _ hproj0
   have hle : Submodule.map (b.coord i)
       (RingHom.ker P.toRuniv •
-        (⊤ : Submodule (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf)) ≤
+        (⊤ : Submodule (MvPowerSeries (Fin P.q) P.coeff.carrier) P.Minf)) ≤
       RingHom.ker P.toRuniv := by
     rw [Submodule.map_smul'']
     exact Submodule.smul_le.mpr fun a ha y _ => by
@@ -6055,12 +7137,20 @@ structure TaylorWilesSystem.{a, b, c, s, uR} (p : ℕ) [Fact p.Prime]
   /-- The common `Λ/𝔟_n`-rank of the auxiliary Hecke modules
   (classically the `ℤ_p`-rank of the bottom module `M₀`). -/
   d : ℕ
+  /-- The coefficient ring `𝒪` of the PRESENTATION role (classically
+  `W(k)`); see `TaylorWilesCoefficients` and the `REPAIR` block of
+  `exists_taylorWilesBottomLevel`.  The DIAMOND role keeps `ℤ_[p]`:
+  `M n` is free over `ℤ_p[Δ_{Q_n}] = Λ/𝔟_n` (of rank `d = [k:𝔽_p]·d_𝒪`)
+  because it is free over `𝒪[Δ_{Q_n}]` and `𝒪` is finite free over
+  `ℤ_[p]`, and both power-series rings have dimension `q + 1`, which is
+  all the patching endgame consumes. -/
+  coeff : TaylorWilesCoefficients
   /-- The auxiliary deformation ring `R_{Q_n}` at level `n`. -/
   R : ℕ → Type a
   [commRingR : ∀ n, CommRing (R n)]
-  /-- The `q`-generator power-series presentation of `R n` (the
-  tangent-space bound). -/
-  pres : ∀ n, MvPowerSeries (Fin q) ℤ_[p] →+* R n
+  /-- The `q`-generator power-series presentation of `R n` over `𝒪`
+  (the tangent-space bound). -/
+  pres : ∀ n, MvPowerSeries (Fin q) coeff.carrier →+* R n
   pres_surjective : ∀ n, Function.Surjective (pres n)
   /-- The diamond-operator structure map `Λ → R n`. -/
   diamond : ∀ n, MvPowerSeries (Fin q) ℤ_[p] →+* R n
@@ -6190,12 +7280,15 @@ pillar roster. -/
 structure TaylorWilesLevel.{a, b, c, s, uR} (p : ℕ) [Fact p.Prime]
     {Runiv : Type uR} [CommRing Runiv]
     {T : Type s} [CommRing T] (ψ : Runiv →+* T) (q d n : ℕ)
+    (coeff : TaylorWilesCoefficients)
     (M0 : Type c) [AddCommGroup M0] [Module T M0] where
   /-- The auxiliary deformation ring `R_{Q_n}`. -/
   R : Type a
   [commRingR : CommRing R]
-  /-- The `q`-generator power-series presentation (tangent bound). -/
-  pres : MvPowerSeries (Fin q) ℤ_[p] →+* R
+  /-- The `q`-generator power-series presentation over `𝒪` (tangent
+  bound); see `TaylorWilesSystem.coeff` for why the presentation role
+  carries `𝒪` and the diamond role keeps `ℤ_[p]`. -/
+  pres : MvPowerSeries (Fin q) coeff.carrier →+* R
   pres_surjective : Function.Surjective pres
   /-- The diamond-operator structure map `Λ → R`. -/
   diamond : MvPowerSeries (Fin q) ℤ_[p] →+* R
@@ -6217,6 +7310,14 @@ structure TaylorWilesLevel.{a, b, c, s, uR} (p : ℕ) [Fact p.Prime]
   /-- The levels shrink: `𝔟_n ⊆ 𝔪_Λ^n`. -/
   bIdeal_le : bIdeal ≤
     IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) ^ n
+  /-- **The level ideal lies in the augmentation ideal**: `𝔟_n ⊆ 𝔫`
+  (added 2026-07-26, see `TaylorWilesLevelRaw.bIdeal_le_aug` for the
+  audit that forced it).  Classically immediate — `𝔟_n` is the kernel
+  of `Λ ↠ ℤ_p[Δ_{Q_n}]`, `𝔫` the kernel of the composite of that with
+  the group-ring augmentation `ℤ_p[Δ_{Q_n}] ↠ ℤ_p` — and it is the
+  invariant that makes `M₀ ≅ ℤ_p^d` rather than `(ℤ_p/p^a)^d`.  Unlike
+  `bIdeal_le` it is NOT vacuous at `n = 0`. -/
+  bIdeal_le_aug : bIdeal ≤ taylorWilesAug p q
   /-- `𝔟_n` is a proper ideal: `ℤ_p[Δ_{Q_n}] ≠ 0`. -/
   nontrivialQuot : Nontrivial (MvPowerSeries (Fin q) ℤ_[p] ⧸ bIdeal)
   [moduleQuotM : Module (MvPowerSeries (Fin q) ℤ_[p] ⧸ bIdeal) M]
@@ -6265,13 +7366,16 @@ structure TaylorWilesTower.{a, b, c, s, uR} (p : ℕ) [Fact p.Prime]
   q : ℕ
   /-- The common `Λ/𝔟_n`-rank of the auxiliary Hecke modules. -/
   d : ℕ
+  /-- The shared coefficient ring `𝒪` of the presentation role
+  (classically `W(k)`); see `TaylorWilesSystem.coeff`. -/
+  coeff : TaylorWilesCoefficients
   /-- The bottom Hecke module. -/
   M0 : Type c
   [addCommGroupM0 : AddCommGroup M0]
   [moduleM0 : Module T M0]
   nontrivialM0 : Nontrivial M0
   /-- The level-`n` datum, for every `n`. -/
-  level : ∀ n, TaylorWilesLevel.{a, b, c, s, uR} p ψ q d n M0
+  level : ∀ n, TaylorWilesLevel.{a, b, c, s, uR} p ψ q d n coeff M0
 
 set_option linter.checkUnivs false in
 /-- **A Taylor–Wiles level in RAW form** (2026-07-25) — the same
@@ -6308,12 +7412,14 @@ asserted only by the two arithmetic leaves below. -/
 structure TaylorWilesLevelRaw.{a, b, c, s, uR} (p : ℕ) [Fact p.Prime]
     {Runiv : Type uR} [CommRing Runiv]
     {T : Type s} [CommRing T] (ψ : Runiv →+* T) (q d n : ℕ)
+    (coeff : TaylorWilesCoefficients)
     (M0 : Type c) [AddCommGroup M0] [Module T M0] where
   /-- The auxiliary deformation ring `R_{Q_n}`. -/
   R : Type a
   [commRingR : CommRing R]
-  /-- The `q`-generator power-series presentation (tangent bound). -/
-  pres : MvPowerSeries (Fin q) ℤ_[p] →+* R
+  /-- The `q`-generator power-series presentation over `𝒪` (tangent
+  bound); see `TaylorWilesSystem.coeff`. -/
+  pres : MvPowerSeries (Fin q) coeff.carrier →+* R
   pres_surjective : Function.Surjective pres
   /-- The diamond-operator structure map `Λ → R`. -/
   diamond : MvPowerSeries (Fin q) ℤ_[p] →+* R
@@ -6335,6 +7441,23 @@ structure TaylorWilesLevelRaw.{a, b, c, s, uR} (p : ℕ) [Fact p.Prime]
   /-- The levels shrink: `𝔟_n ⊆ 𝔪_Λ^n`. -/
   bIdeal_le : bIdeal ≤
     IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) ^ n
+  /-- **The level ideal lies in the augmentation ideal**: `𝔟_n ⊆ 𝔫`.
+
+  ADDED 2026-07-26 as the repair of the second defect recorded in the
+  FORMAL-CONTENT AUDIT of `exists_taylorWilesLevelRaw` below.  Without
+  it the level-wise cut is not merely weak but UNSOUND: `bIdeal_le` is
+  vacuous at `n = 0` (`𝔪^0 = ⊤`), so a bottom datum was free to have
+  `Λ/(𝔫 + 𝔟_0) = ℤ_p/p^{a}` with `a` finite — i.e. a finite `p`-power
+  torsion `M₀` — and for such a bottom datum NO raw level exists at any
+  `n > a`, making `exists_taylorWilesLevelRaw` false as stated.
+
+  Classically immediate: `𝔟_n = ker(Λ ↠ ℤ_p[Δ_{Q_n}])` and
+  `𝔫 = ker(Λ ↠ ℤ_p[Δ_{Q_n}] ↠ ℤ_p)`, the second map being the
+  group-ring augmentation.  Equivalently: `Λ/𝔟_n = ℤ_p[Δ_{Q_n}]` is
+  `ℤ_p`-free, so `M₀ ≅ (Λ/(𝔫 + 𝔟_n))^d = ℤ_p^d` — which is what
+  `M₀ = H¹(X₀(N), ℤ_p)_𝔪` actually is.  Unlike `bIdeal_le` this field
+  has content at EVERY level including the bottom one. -/
+  bIdeal_le_aug : bIdeal ≤ taylorWilesAug p q
   /-- **The Taylor–Wiles freeness certificate in coordinate form**
   (Diamond 1997, Thm. 2.1): a `Λ`-linear identification of `M` with
   `(Λ/𝔟_n)^d = ℤ_p[Δ_{Q_n}]^d`. -/
@@ -6383,9 +7506,10 @@ theorem nonempty_taylorWilesLevel_of_raw.{a, b, c, s, uR}
     {p : ℕ} [Fact p.Prime]
     {Runiv : Type uR} [CommRing Runiv]
     {T : Type s} [CommRing T] {ψ : Runiv →+* T} {q d n : ℕ}
+    {coeff : TaylorWilesCoefficients}
     {M0 : Type c} [AddCommGroup M0] [Module T M0] (hM0 : Nontrivial M0)
-    (L : TaylorWilesLevelRaw.{a, b, c, s, uR} p ψ q d n M0) :
-    Nonempty (TaylorWilesLevel.{a, 0, c, s, uR} p ψ q d n M0) := by
+    (L : TaylorWilesLevelRaw.{a, b, c, s, uR} p ψ q d n coeff M0) :
+    Nonempty (TaylorWilesLevel.{a, 0, c, s, uR} p ψ q d n coeff M0) := by
   classical
   letI := L.commRingR
   letI := L.addCommGroupM
@@ -6433,6 +7557,7 @@ theorem nonempty_taylorWilesLevel_of_raw.{a, b, c, s, uR}
             diamond_smul := ?_
             bIdeal := L.bIdeal
             bIdeal_le := L.bIdeal_le
+            bIdeal_le_aug := L.bIdeal_le_aug
             nontrivialQuot := hQnt
             moduleQuotM := inferInstance
             isScalarTowerM := inferInstance
@@ -6556,24 +7681,109 @@ the deformation-ring presentation ring `R_∞`.  Classically both are
 `𝒪[[·]]` for the coefficient ring `𝒪 = W(k)`; the `ℤ_p` form is
 correct exactly when `k = 𝔽_p`.
 
-REPAIR, cut-level, not made here (two options, in increasing cost):
+REPAIR — DECIDED 2026-07-26, ROUTE (b): GENERALIZE THE COEFFICIENT
+RING.  The two candidates were:
+
 (a) pin the residual field: add `(hk : Nat.card k = p)` — equivalently
     `Nonempty (k ≃+* ZMod p)` — to this leaf and to
     `exists_taylorWilesLevelRaw`, and thread it through
     `exists_taylorWilesTower`, `exists_taylorWilesSystem`,
     `exists_patchedModule`, `injective_ringHom_of_isWeaklyUniversal`
-    and the two `Interface.lean` call sites.  This is honest for FLT:
-    the Frey-curve residual representation lives on `E[p]` over
-    `ZMod p`, so the hypothesis is dischargeable at the root.
-(b) generalize the coefficient ring of the whole patching interface
-    from `ℤ_[p]` to a coefficient ring `𝒪` (complete DVR, finite free
-    over `ℤ_[p]`, residue field `k` — classically `WittVector p k`),
-    which also means regeneralizing
-    `exists_isRegular_ofList_eq_maximalIdeal_padicInt`,
-    `exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries`,
-    `free_of_isRegular_mvPowerSeries` and the `PatchingVendored`
-    ultraproduct/extraction chain.  This keeps the interface faithful
-    for arbitrary residual fields and does not touch `Interface.lean`.
+    and the two `Interface.lean` call sites.
+(b) generalize the coefficient ring of the patching interface from
+    `ℤ_[p]` to a coefficient ring `𝒪` (complete DVR with residue field
+    `k` — classically `WittVector p k`), which does not touch
+    `Interface.lean`.
+
+**(a) was rejected because its call sites cannot supply the
+hypothesis.**  This is not a matter of cost: `hk` speaks about `k`,
+and at BOTH `Interface.lean` call sites
+(`exists_ringHom_charFrob_eq_of_heckeDeformation`,
+`exists_weightTwoEigenform_of_heckeDeformation_order_point`) the
+residual field is an abstract variable, so `hk` can only be threaded
+further up.  Following it up: those two feed
+`exists_weightTwoEigenform_trace_eq_of_matchesResidualTraces`, which
+feeds `exists_weightTwoEigenform_trace_eq_of_isIrreducible`, where the
+residual field is no longer even a variable — it is produced
+EXISTENTIALLY by `exists_residual_isHardlyRamified_odd` as the residue
+field of the abstract coefficient ring `R`.  So `hk` would have to be
+restated there as a restriction on `R` ("`R` has residue field of
+order `p`") and pushed on into `Family.lean`'s
+`exists_finiteDimensional_trace_field_of_isIrreducible`, i.e. into the
+automorphy core itself.  Route (a) therefore does not repair the
+defect, it RELOCATES it — as a permanent narrowing of the modularity
+statement, in files owned by other cuts.  (It would be dischargeable
+at the FLT root, where `R = ℤ_[p]`; that is not the point.  The
+narrowing is not a property of the Taylor–Wiles construction, which
+presents over `𝒪 = W(k)`, and hypotheses that a caller cannot supply
+locally are how unfaithful interfaces spread.)
+
+**(b) is much cheaper than the 2026-07-25 survey recorded.**  Two
+things that survey got wrong, both checked mechanically:
+
+* the `PatchingVendored/` chain — `Ultraproduct`, `InverseLimit`,
+  `Module`, `Over`, `System`, `Algebra`, `Lemmas`, `AdicTopology`,
+  `StructureFiniteness`, `TopologicallyFG` — contains **zero**
+  occurrences of `ℤ_[p]`.  It is already coefficient-generic and needs
+  no regeneralization at all;
+* no `WittVector` theory is needed HERE.  `𝒪` does not have to be
+  literally `WittVector p k`: it is produced EXISTENTIALLY by this
+  leaf, exactly like `M₀`, so "for a finite field `k` there is a
+  complete DVR with residue field `k`, finite free over `ℤ_[p]`" stays
+  inside the sorried arithmetic where it belongs — it is part of the
+  classical Taylor–Wiles construction, not a new commutative-algebra
+  obligation on the proven side.
+
+The properties of `𝒪` the PROVEN side actually consumes are, in
+dependency order: local, Noetherian, `𝔪_𝒪` spanned by a length-one
+regular sequence (`𝒪` a DVR), finite residue field, compact and
+totally disconnected in its topology, and topologically finitely
+generated over `ℤ`.  All hold for `W(k)` with `k` finite.
+
+THE REPAIR AS MADE (2026-07-26) — `𝒪` IN THE PRESENTATION ROLE ONLY.
+
+`𝒪` is carried by `TaylorWilesCoefficients` (a bundle: local
+Noetherian DVR, compact totally disconnected Hausdorff, finite residue
+field, topologically finitely generated over `ℤ`) as a field of
+`PatchedModule`, `TaylorWilesSystem` and `TaylorWilesTower` and as a
+parameter of `TaylorWilesLevel`/`TaylorWilesLevelRaw`.  It replaces
+`ℤ_[p]` in exactly ONE role — the presentation ring of `pres`, hence
+also `PatchedModule`'s `R_∞` (whose `Λ` is purely a presentation ring:
+the vendored `PatchingAlgebra.lift` already takes the presentation ring
+`Rₒₒ` decoupled from the patching base).  **The DIAMOND role keeps
+`ℤ_[p]`** — `taylorWilesAug`, `bIdeal`, `diamond`, `coordM`/`freeM`,
+`projM_eq_zero` are unchanged.
+
+Why that is enough, and honest: the freeness certificate over
+`𝒪[Δ_{Q_n}]` implies freeness over `ℤ_p[Δ_{Q_n}]` of rank
+`[k:𝔽_p]·d_𝒪`, since `𝒪` is finite free over `ℤ_[p]`; the bottom module
+is correspondingly `ℤ_p`-free; and the patching endgame consumes only
+that `dim 𝒪[[x₁,…,x_q]] = q + 1 = dim ℤ_p[[S₁,…,S_q]]`, the depth
+bound coming from the DIAMOND side and the dimension bound from the
+PRESENTATION side.  So the interface records a true, slightly weaker
+form of Diamond's Thm. 2.1, and the obstruction is gone: the only
+surjection onto `k` the interface forces is `𝒪 ↠ k`, satisfied by
+`𝒪 = W(k)`.
+
+Keeping the diamond role over `ℤ_[p]` also avoids a new structure
+field: `ringHom_mvPowerSeries_eq_of_taylorWilesAug_le_ker` (LEAF 7 of
+`exists_patchedModule_of_fields`) derives the level-independence of
+`toRuniv ∘ diamond` from the UNIQUENESS of `ℤ_[p] →+* Runiv`
+(`subsingleton_ringHom_padicInt`), which FAILS over a general `𝒪`; had
+the diamond role moved too, the interface would have had to carry a
+shared `structMap : 𝒪 →+* Runiv` together with
+`((toRuniv n).comp (diamond n)).comp C = structMap`.
+
+WHAT THIS LEAF NOW OWES, beyond the arithmetic already listed: the
+existence of `𝒪` itself, i.e. `WittVector p k` presented as a
+`TaylorWilesCoefficients`.  That is deliberate — it is part of the
+classical Taylor–Wiles construction, not a commutative-algebra
+obligation on the proven side, and mathlib's `WittVector` layer (which
+has `quotientPEquiv` and `isAdicCompleteIdealSpanP` but neither
+`Algebra ℤ_[p] (𝕎 k)` nor `ResidueField (𝕎 k) ≃+* k`) would otherwise
+have to be built before this leaf could even be stated faithfully.
+`TaylorWilesCoefficients.padicInt` witnesses that the bundle is
+INHABITED, so the leaf is not vacuously unstatable.
 -/
 theorem exists_taylorWilesBottomLevel.{s, t, uK, uW, uR}
     {p : ℕ} (hpodd : Odd p) [Fact p.Prime]
@@ -6623,9 +7833,9 @@ theorem exists_taylorWilesBottomLevel.{s, t, uK, uW, uR}
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     (hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
       Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q) :
-    ∃ (q d : ℕ) (M0 : Type) (_ : AddCommGroup M0) (_ : Module T M0)
-      (_ : Nontrivial M0),
-      Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 M0) :=
+    ∃ (q d : ℕ) (coeff : TaylorWilesCoefficients) (M0 : Type)
+      (_ : AddCommGroup M0) (_ : Module T M0) (_ : Nontrivial M0),
+      Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0) :=
   sorry
 
 set_option linter.checkUnivs false in
@@ -6689,12 +7899,12 @@ the SAME `M₀`.  The `R`-action descends to the `T`-action through
 the Hecke-side classifying map by the weak-universality certificate
 `hfact` à la Carayol (hypotheses `hψ`, `hψalg`, `hψπ`).
 
-# FORMAL-CONTENT AUDIT (2026-07-25) — THE LEVEL-WISE CUT IS DEFECTIVE
+# FORMAL-CONTENT AUDIT (2026-07-25) — THE LEVEL-WISE CUT WAS DEFECTIVE; REPAIRED 2026-07-26
 
 **Ingredients 1–4 above record the INTENDED content; the proof below
-carries NONE of it.**  The statement as cut on 2026-07-25 is NOT
+carries NONE of it.**  The statement as cut on 2026-07-25 was NOT
 provable from its named inputs, and for a bottom datum with `p`-power
-torsion `M₀` it is outright FALSE.  Write `Λ = MvPowerSeries (Fin q) ℤ_[p]`,
+torsion `M₀` it was outright FALSE.  Write `Λ = MvPowerSeries (Fin q) ℤ_[p]`,
 `𝔫 = taylorWilesAug p q`, `𝔪 = IsLocalRing.maximalIdeal Λ`, and let
 `L : TaylorWilesLevelRaw p ψ q d n M₀` be ANY raw level.  Then:
 
@@ -6727,15 +7937,24 @@ the bottom leaf loses exactly the invariant `bIdeal ≤ 𝔫`, equivalently
 "`M₀` is `ℤ_[p]`-FREE of rank `d`", which is what the arithmetic
 actually produces (`𝔟_n = ker(Λ ↠ ℤ_p[Δ_{Q_n}])` lies in the
 augmentation ideal at EVERY level, and `M₀ = H¹(X₀(N), ℤ_p)_𝔪` is
-`ℤ_p`-free).  **CUT REPAIR**: add the field
-`bIdeal_le_aug : bIdeal ≤ taylorWilesAug p q` to `TaylorWilesLevelRaw`
-(and to `TaylorWilesLevel`, where the same computation applies).  It
-holds for the intended objects at every level, it is what makes
-`M₀ ≅ ℤ_p^d` visible to this leaf, and with it the statement stops
-being false — while remaining genuinely arithmetic, since the ring
-side (a `q`-generator quotient `R` of `Λ` carrying a `Λ`-algebra
+`ℤ_p`-free).  **CUT REPAIR, MADE 2026-07-26**: the field
+`bIdeal_le_aug : bIdeal ≤ taylorWilesAug p q` was added to
+`TaylorWilesLevelRaw` (and to `TaylorWilesLevel`, where the same
+computation applies; `nonempty_taylorWilesLevel_of_raw` carries it
+across).  It holds for the intended objects at every level, it is what
+makes `M₀ ≅ ℤ_p^d` visible to this leaf, and with it the statement
+stops being false — while remaining genuinely arithmetic, since the
+ring side (a `q`-generator quotient `R` of `Λ` carrying a `Λ`-algebra
 structure with `ker diamond ⊆ 𝔪^n` and `R/𝔫R ≅ Runiv`) is still not
 derivable from `hbot`.
+
+Note this defect is INDEPENDENT of the residual-field obstruction
+recorded at `exists_taylorWilesBottomLevel` above, which hit this leaf
+identically and was repaired the same day by route (b) — the
+presentation ring of `pres` is now `MvPowerSeries (Fin q) coeff.carrier`
+for a `TaylorWilesCoefficients` supplied by the bottom leaf, so this
+leaf no longer forces `k ≃+* ZMod p` either.  Both defects are fixed;
+what remains open here is the arithmetic of ingredients 1–4.
 
 VACUITY AUDIT: being unprovable through its named inputs, the leaf is
 discharged here through the EMPTINESS of its hypothesis package, by
@@ -6808,11 +8027,12 @@ theorem exists_taylorWilesLevelRaw.{s, t, uK, uW, uR}
         (ρT.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).coeff 1)
     (_hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
       Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q)
-    (q d : ℕ) (M0 : Type) [AddCommGroup M0] [Module T M0]
+    (q d : ℕ) (coeff : TaylorWilesCoefficients)
+    (M0 : Type) [AddCommGroup M0] [Module T M0]
     (_hM0 : Nontrivial M0)
-    (_hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 M0))
+    (_hbot : Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d 0 coeff M0))
     (n : ℕ) :
-    Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d n M0) := by
+    Nonempty (TaylorWilesLevelRaw.{0, 0, 0, s, uR} p ψ q d n coeff M0) := by
   exfalso
   -- the odd-prime dichotomy, inlined (see the VACUITY AUDIT above)
   have hp := (Fact.out : p.Prime)
@@ -6981,7 +8201,7 @@ theorem exists_taylorWilesTower.{s, t, uK, uW, uR}
     (hTWq : ∀ r n : ℕ, ∃ Q : Finset ℕ,
       Q.card = r ∧ IsTaylorWilesPrimeSet ρbar p n Q) :
     Nonempty (TaylorWilesTower.{0, 0, 0, s, uR} p ψ) := by
-  obtain ⟨q, d, M0, iAG, iMod, iNt, hbot⟩ :=
+  obtain ⟨q, d, coeff, M0, iAG, iMod, iNt, hbot⟩ :=
     exists_taylorWilesBottomLevel.{s, t, uK, uW, uR} hpodd hW hρbar hirr
       hadic hcomplete hranku hρuniv hπuniv hunivred hfact hrankT hρT hπ hred
       ψ hψalg hψπ hψ hTWq
@@ -6989,6 +8209,7 @@ theorem exists_taylorWilesTower.{s, t, uK, uW, uR}
   letI := iMod
   exact ⟨{ q := q
            d := d
+           coeff := coeff
            M0 := M0
            addCommGroupM0 := iAG
            moduleM0 := iMod
@@ -6997,7 +8218,7 @@ theorem exists_taylorWilesTower.{s, t, uK, uW, uR}
              (nonempty_taylorWilesLevel_of_raw iNt
                (exists_taylorWilesLevelRaw.{s, t, uK, uW, uR} hpodd hW hρbar
                  hirr hadic hcomplete hranku hρuniv hπuniv hunivred hfact
-                 hrankT hρT hπ hred ψ hψalg hψπ hψ hTWq q d M0 iNt
+                 hrankT hρT hπ hred ψ hψalg hψπ hψ hTWq q d coeff M0 iNt
                  hbot n).some).some }⟩
 
 /-- **Existence of the Taylor–Wiles system** (patching leaf 2a;
@@ -7167,6 +8388,7 @@ theorem exists_taylorWilesSystem.{s, t, uK, uW, uR}
       rw [map_add, ha, hb, add_zero]
   exact ⟨{ q := tw.q
            d := tw.d
+           coeff := tw.coeff
            R := fun n => (tw.level n).R
            commRingR := fun n => (tw.level n).commRingR
            pres := fun n => (tw.level n).pres
@@ -7227,37 +8449,37 @@ theorem PatchedModule.nonempty_transport.{v, w, x, y, s, uR} {p : ℕ}
   letI := P.addCommGroupM0
   letI := P.moduleM0
   haveI : Nontrivial P.M0 := P.nontrivialM0
-  haveI : Module.Finite (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf := P.finiteMinf
+  haveI : Module.Finite (MvPowerSeries (Fin P.q) P.coeff.carrier) P.Minf := P.finiteMinf
   -- The `Λ`-module structure on `M₀` through `ψ ∘ toRuniv`; `proj_smul`
   -- says exactly that `proj` is `Λ`-linear for it.
-  letI : Module (MvPowerSeries (Fin P.q) ℤ_[p]) P.M0 :=
+  letI : Module (MvPowerSeries (Fin P.q) P.coeff.carrier) P.M0 :=
     Module.compHom P.M0 (ψ.comp P.toRuniv)
-  have hsmulM0 : ∀ (x : MvPowerSeries (Fin P.q) ℤ_[p]) (z : P.M0),
+  have hsmulM0 : ∀ (x : MvPowerSeries (Fin P.q) P.coeff.carrier) (z : P.M0),
       x • z = ψ (P.toRuniv x) • z := fun _ _ => rfl
-  let projₗ : P.Minf →ₗ[MvPowerSeries (Fin P.q) ℤ_[p]] P.M0 :=
+  let projₗ : P.Minf →ₗ[MvPowerSeries (Fin P.q) P.coeff.carrier] P.M0 :=
     { toFun := P.proj
       map_add' := P.proj.map_add
       map_smul' := fun x m => by
         simpa only [RingHom.id_apply, hsmulM0] using P.proj_smul x m }
   have hker : LinearMap.ker projₗ =
       RingHom.ker P.toRuniv •
-        (⊤ : Submodule (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf) := by
+        (⊤ : Submodule (MvPowerSeries (Fin P.q) P.coeff.carrier) P.Minf) := by
     refine le_antisymm (fun m hm => P.mem_smul_top_of_proj_eq_zero m hm) ?_
     rw [Submodule.smul_le]
     intro a ha m _
     show P.proj (a • m) = 0
     rw [P.proj_smul, RingHom.mem_ker.mp ha, map_zero, zero_smul]
   -- The `Type 0` model of `M_∞` and the induced `Type 0` model of `M₀`.
-  set Minf₀ := Module.Finite.repr (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf with hMinf₀
-  set e : Minf₀ ≃ₗ[MvPowerSeries (Fin P.q) ℤ_[p]] P.Minf :=
-    Module.Finite.reprEquiv (MvPowerSeries (Fin P.q) ℤ_[p]) P.Minf with he
-  set 𝔞 : Ideal (MvPowerSeries (Fin P.q) ℤ_[p]) := RingHom.ker P.toRuniv with h𝔞
+  set Minf₀ := Module.Finite.repr (MvPowerSeries (Fin P.q) P.coeff.carrier) P.Minf with hMinf₀
+  set e : Minf₀ ≃ₗ[MvPowerSeries (Fin P.q) P.coeff.carrier] P.Minf :=
+    Module.Finite.reprEquiv (MvPowerSeries (Fin P.q) P.coeff.carrier) P.Minf with he
+  set 𝔞 : Ideal (MvPowerSeries (Fin P.q) P.coeff.carrier) := RingHom.ker P.toRuniv with h𝔞
   have hmap : Submodule.map
-      (e : Minf₀ →ₗ[MvPowerSeries (Fin P.q) ℤ_[p]] P.Minf) (𝔞 • ⊤) = 𝔞 • ⊤ := by
+      (e : Minf₀ →ₗ[MvPowerSeries (Fin P.q) P.coeff.carrier] P.Minf) (𝔞 • ⊤) = 𝔞 • ⊤ := by
     rw [Submodule.map_smul'', Submodule.map_top, LinearEquiv.range]
-  set M0₀ := Minf₀ ⧸ (𝔞 • ⊤ : Submodule (MvPowerSeries (Fin P.q) ℤ_[p]) Minf₀)
+  set M0₀ := Minf₀ ⧸ (𝔞 • ⊤ : Submodule (MvPowerSeries (Fin P.q) P.coeff.carrier) Minf₀)
     with hM0₀
-  set g : M0₀ ≃ₗ[MvPowerSeries (Fin P.q) ℤ_[p]] P.M0 :=
+  set g : M0₀ ≃ₗ[MvPowerSeries (Fin P.q) P.coeff.carrier] P.M0 :=
     (Submodule.Quotient.equiv _ _ e hmap).trans
       ((Submodule.quotEquivOfEq _ _ hker.symm).trans
         (projₗ.quotKerEquivOfSurjective P.proj_surjective)) with hg
@@ -7269,18 +8491,19 @@ theorem PatchedModule.nonempty_transport.{v, w, x, y, s, uR} {p : ℕ}
     intro t z; exact g.apply_symm_apply _
   letI : Module T M0₀ :=
     Function.Injective.module T (g.toLinearMap.toAddMonoidHom) g.injective hgsmul
-  have hΛT : ∀ (x : MvPowerSeries (Fin P.q) ℤ_[p]) (z : M0₀),
+  have hΛT : ∀ (x : MvPowerSeries (Fin P.q) P.coeff.carrier) (z : M0₀),
       x • z = ψ (P.toRuniv x) • z := by
     intro x z
     refine g.injective ?_
     rw [map_smul, hgsmul, hsmulM0]
   haveI : Nontrivial M0₀ := g.toEquiv.nontrivial
-  haveI : Module.Finite (MvPowerSeries (Fin P.q) ℤ_[p]) Minf₀ :=
+  haveI : Module.Finite (MvPowerSeries (Fin P.q) P.coeff.carrier) Minf₀ :=
     Module.Finite.equiv e.symm
   refine ⟨{ q := P.q
+            coeff := P.coeff
             Minf := ULift.{v} Minf₀
             finiteMinf := Module.Finite.equiv
-              (ULift.moduleEquiv (R := MvPowerSeries (Fin P.q) ℤ_[p])
+              (ULift.moduleEquiv (R := MvPowerSeries (Fin P.q) P.coeff.carrier)
                 (M := Minf₀)).symm
             exists_isRegular := ?_
             toRuniv := P.toRuniv
@@ -7295,11 +8518,11 @@ theorem PatchedModule.nonempty_transport.{v, w, x, y, s, uR} {p : ℕ}
             mem_smul_top_of_proj_eq_zero := ?_ }⟩
   · obtain ⟨rs, hlen, hmem, hreg⟩ := P.exists_isRegular
     refine ⟨rs, hlen, hmem, ?_⟩
-    exact ((ULift.moduleEquiv (R := MvPowerSeries (Fin P.q) ℤ_[p])
+    exact ((ULift.moduleEquiv (R := MvPowerSeries (Fin P.q) P.coeff.carrier)
       (M := Minf₀)).trans e |>.isRegular_congr rs).mpr hreg
   · intro z
     obtain ⟨m, hm⟩ := Submodule.Quotient.mk_surjective
-      (𝔞 • ⊤ : Submodule (MvPowerSeries (Fin P.q) ℤ_[p]) Minf₀) z.down
+      (𝔞 • ⊤ : Submodule (MvPowerSeries (Fin P.q) P.coeff.carrier) Minf₀) z.down
     exact ⟨ULift.up m, congrArg ULift.up hm⟩
   · intro x m
     show ULift.up (Submodule.Quotient.mk (x • m.down)) =
@@ -7308,12 +8531,12 @@ theorem PatchedModule.nonempty_transport.{v, w, x, y, s, uR} {p : ℕ}
     rfl
   · intro m hm
     have hm' : (Submodule.Quotient.mk m.down :
-        Minf₀ ⧸ (𝔞 • ⊤ : Submodule (MvPowerSeries (Fin P.q) ℤ_[p]) Minf₀)) = 0 :=
+        Minf₀ ⧸ (𝔞 • ⊤ : Submodule (MvPowerSeries (Fin P.q) P.coeff.carrier) Minf₀)) = 0 :=
       congrArg ULift.down hm
-    have hmem : m.down ∈ (𝔞 • ⊤ : Submodule (MvPowerSeries (Fin P.q) ℤ_[p]) Minf₀) := by
+    have hmem : m.down ∈ (𝔞 • ⊤ : Submodule (MvPowerSeries (Fin P.q) P.coeff.carrier) Minf₀) := by
       rwa [Submodule.Quotient.mk_eq_zero] at hm'
     have hmapU : Submodule.map (ULift.moduleEquiv
-        (R := MvPowerSeries (Fin P.q) ℤ_[p]) (M := Minf₀)).symm.toLinearMap
+        (R := MvPowerSeries (Fin P.q) P.coeff.carrier) (M := Minf₀)).symm.toLinearMap
         (𝔞 • ⊤) = 𝔞 • ⊤ := by
       rw [Submodule.map_smul'', Submodule.map_top, LinearEquiv.range]
     rw [← hmapU]
@@ -7388,8 +8611,9 @@ This is where the `Λ`-versus-`R_∞` bookkeeping happens, once:
 theorem nonempty_patchedModule_of_patchingData.{v, w, s, uR, u}
     {p : ℕ} [Fact p.Prime] {q : ℕ}
     {Runiv : Type uR} [CommRing Runiv] {T : Type s} [CommRing T] (ψ : Runiv →+* T)
+    (coeff : TaylorWilesCoefficients)
     {Rinf : Type u} [CommRing Rinf] [IsLocalRing Rinf]
-    (lift : MvPowerSeries (Fin q) ℤ_[p] →+* Rinf) (hlift : Function.Surjective lift)
+    (lift : MvPowerSeries (Fin q) coeff.carrier →+* Rinf) (hlift : Function.Surjective lift)
     (θ : Rinf →+* Runiv) (hθ : Function.Surjective θ)
     {Minf : Type v} [AddCommGroup Minf] [Module Rinf Minf]
     (hfin : Module.Finite Rinf Minf)
@@ -7403,11 +8627,12 @@ theorem nonempty_patchedModule_of_patchingData.{v, w, s, uR, u}
       m ∈ RingHom.ker θ • (⊤ : Submodule Rinf Minf)) :
     Nonempty (PatchedModule.{v, w, s, uR} p ψ) := by
   classical
-  letI : Module (MvPowerSeries (Fin q) ℤ_[p]) Minf := Module.compHom Minf lift
+  letI : Module (MvPowerSeries (Fin q) coeff.carrier) Minf := Module.compHom Minf lift
   haveI hlh : IsLocalHom lift := .of_surjective lift hlift
-  obtain ⟨g, hg⟩ : ∃ g : Rinf → MvPowerSeries (Fin q) ℤ_[p], ∀ b, lift (g b) = b :=
+  obtain ⟨g, hg⟩ : ∃ g : Rinf → MvPowerSeries (Fin q) coeff.carrier, ∀ b, lift (g b) = b :=
     ⟨fun b => (hlift b).choose, fun b => (hlift b).choose_spec⟩
-  have hgmem : ∀ a ∈ rs, g a ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) := by
+  have hgmem : ∀ a ∈ rs,
+      g a ∈ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) coeff.carrier) := by
     intro a ha
     rw [IsLocalRing.mem_maximalIdeal]
     intro hu
@@ -7415,6 +8640,7 @@ theorem nonempty_patchedModule_of_patchingData.{v, w, s, uR, u}
   have hmaplift : (rs.map g).map lift = rs := by
     simp [List.map_map, Function.comp_def, hg]
   refine ⟨{ q := q
+            coeff := coeff
             Minf := Minf
             moduleMinf := inferInstance
             finiteMinf := moduleFinite_compHom lift hlift hfin
@@ -7562,42 +8788,61 @@ continuous (`MvPowerSeries.WithPiTopology.continuous_C`), so it carries
 subalgebra and contains each `X i`.  (iii) That image is dense
 (`MvPowerSeries.WithPiTopology.denseRange_toMvPowerSeries`), so
 `closure (adjoin ℤ (range X)) = ⊤`. -/
-theorem topologicallyFG_int_mvPowerSeries (p : ℕ) [Fact p.Prime] (q : ℕ)
-    [Algebra ℤ (MvPowerSeries (Fin q) ℤ_[p])] :
-    Algebra.TopologicallyFG ℤ (MvPowerSeries (Fin q) ℤ_[p]) := by
+theorem topologicallyFG_int_mvPowerSeries {O : Type*} [CommRing O]
+    [TopologicalSpace O] [IsTopologicalRing O]
+    (hO : Algebra.TopologicallyFG ℤ O) (q : ℕ)
+    [Algebra ℤ (MvPowerSeries (Fin q) O)] :
+    Algebra.TopologicallyFG ℤ (MvPowerSeries (Fin q) O) := by
   classical
-  refine ⟨⟨Finset.univ.image (MvPowerSeries.X (σ := Fin q) (R := ℤ_[p])), ?_⟩⟩
-  set Λ := MvPowerSeries (Fin q) ℤ_[p]
-  have hcoe : ((Finset.univ.image (MvPowerSeries.X (σ := Fin q) (R := ℤ_[p])) : Finset Λ) : Set Λ)
-      = Set.range (MvPowerSeries.X (σ := Fin q) (R := ℤ_[p])) := by
-    simp
+  obtain ⟨sO, hsO⟩ := hO.out
+  refine ⟨⟨sO.image (MvPowerSeries.C (σ := Fin q) (R := O)) ∪
+    Finset.univ.image (MvPowerSeries.X (σ := Fin q) (R := O)), ?_⟩⟩
+  set Λ := MvPowerSeries (Fin q) O
+  set gen : Set Λ := (MvPowerSeries.C (σ := Fin q) (R := O)) '' (sO : Set O) ∪
+    Set.range (MvPowerSeries.X (σ := Fin q) (R := O)) with hgen
+  have hcoe : ((sO.image (MvPowerSeries.C (σ := Fin q) (R := O)) ∪
+      Finset.univ.image (MvPowerSeries.X (σ := Fin q) (R := O)) : Finset Λ) : Set Λ) = gen := by
+    simp [hgen]
   rw [hcoe]
-  set A : Subalgebra ℤ Λ := Algebra.adjoin ℤ (Set.range (MvPowerSeries.X (σ := Fin q) (R := ℤ_[p])))
+  set A : Subalgebra ℤ Λ := Algebra.adjoin ℤ gen with hA
   set B : Subalgebra ℤ Λ := A.topologicalClosure with hB
   have hXB : ∀ i : Fin q, (MvPowerSeries.X i : Λ) ∈ B :=
-    fun i => A.le_topologicalClosure (Algebra.subset_adjoin ⟨i, rfl⟩)
-  have hCB : ∀ a : ℤ_[p], (MvPowerSeries.C a : Λ) ∈ B := by
+    fun i => A.le_topologicalClosure (Algebra.subset_adjoin (Or.inr ⟨i, rfl⟩))
+  have hCB : ∀ a : O, (MvPowerSeries.C a : Λ) ∈ B := by
     intro a
-    have hmem : a ∈ closure (Set.range (Int.cast : ℤ → ℤ_[p])) :=
-      PadicInt.denseRange_intCast a
-    have himg : (MvPowerSeries.C : ℤ_[p] → Λ) '' closure (Set.range (Int.cast : ℤ → ℤ_[p]))
-        ⊆ closure ((MvPowerSeries.C : ℤ_[p] → Λ) '' Set.range (Int.cast : ℤ → ℤ_[p])) :=
+    have hmem : a ∈ closure ((Algebra.adjoin ℤ (sO : Set O) : Subalgebra ℤ O) : Set O) :=
+      hsO a
+    have himg : (MvPowerSeries.C : O → Λ) ''
+          closure ((Algebra.adjoin ℤ (sO : Set O) : Subalgebra ℤ O) : Set O)
+        ⊆ closure ((MvPowerSeries.C : O → Λ) ''
+          ((Algebra.adjoin ℤ (sO : Set O) : Subalgebra ℤ O) : Set O)) :=
       image_closure_subset_closure_image MvPowerSeries.WithPiTopology.continuous_C
     have h2 : (MvPowerSeries.C a : Λ) ∈
-        closure ((MvPowerSeries.C : ℤ_[p] → Λ) '' Set.range (Int.cast : ℤ → ℤ_[p])) :=
+        closure ((MvPowerSeries.C : O → Λ) ''
+          ((Algebra.adjoin ℤ (sO : Set O) : Subalgebra ℤ O) : Set O)) :=
       himg ⟨a, hmem, rfl⟩
-    have h3 : ((MvPowerSeries.C : ℤ_[p] → Λ) '' Set.range (Int.cast : ℤ → ℤ_[p])) ⊆ (A : Set Λ) := by
-      rintro _ ⟨_, ⟨n, rfl⟩, rfl⟩
-      have hcast : (MvPowerSeries.C ((n : ℤ) : ℤ_[p]) : Λ) = (n : Λ) :=
-        map_intCast (MvPowerSeries.C (σ := Fin q) (R := ℤ_[p])) n
-      rw [hcast]
-      exact intCast_mem A n
-    have h4 : closure ((MvPowerSeries.C : ℤ_[p] → Λ) '' Set.range (Int.cast : ℤ → ℤ_[p]))
+    have h3mem : ∀ x ∈ (Algebra.adjoin ℤ (sO : Set O) : Subalgebra ℤ O),
+        (MvPowerSeries.C x : Λ) ∈ A := by
+      intro x hx
+      induction hx using Algebra.adjoin_induction with
+      | mem y hy => exact Algebra.subset_adjoin (Or.inl ⟨y, hy, rfl⟩)
+      | algebraMap n =>
+        have hcast : (MvPowerSeries.C (algebraMap ℤ O n) : Λ) = (n : Λ) := by simp
+        rw [hcast]
+        exact intCast_mem A n
+      | add x y _ _ ihx ihy => rw [map_add]; exact add_mem ihx ihy
+      | mul x y _ _ ihx ihy => rw [map_mul]; exact mul_mem ihx ihy
+    have h3 : ((MvPowerSeries.C : O → Λ) ''
+        ((Algebra.adjoin ℤ (sO : Set O) : Subalgebra ℤ O) : Set O)) ⊆ (A : Set Λ) := by
+      rintro _ ⟨x, hx, rfl⟩
+      exact h3mem x hx
+    have h4 : closure ((MvPowerSeries.C : O → Λ) ''
+          ((Algebra.adjoin ℤ (sO : Set O) : Subalgebra ℤ O) : Set O))
         ⊆ (B : Set Λ) := by
       rw [hB, Subalgebra.topologicalClosure_coe]
       exact closure_mono h3
     exact h4 h2
-  have hpoly : ∀ φ : MvPolynomial (Fin q) ℤ_[p], ((φ : Λ)) ∈ B := by
+  have hpoly : ∀ φ : MvPolynomial (Fin q) O, ((φ : Λ)) ∈ B := by
     intro φ
     induction φ using MvPolynomial.induction_on with
     | C a =>
@@ -7612,7 +8857,7 @@ theorem topologicallyFG_int_mvPowerSeries (p : ℕ) [Fact p.Prime] (q : ℕ)
   rw [dense_iff_closure_eq]
   refine Set.eq_univ_of_univ_subset ?_
   rw [← (MvPowerSeries.WithPiTopology.denseRange_toMvPowerSeries
-    (R := ℤ_[p]) (σ := Fin q)).closure_range]
+    (R := O) (σ := Fin q)).closure_range]
   refine closure_minimal ?_ isClosed_closure
   rintro _ ⟨φ, rfl⟩
   have hmemB := hpoly φ
@@ -7646,25 +8891,26 @@ without ever computing `𝔪_Λ` itself, by exhibiting the composite
 `ψ = PadicInt.toZMod ∘ constantCoeff : Λ →+* ZMod p` as a surjection with
 kernel `𝔪_Λ` (`mem_maximalIdeal_mvPowerSeries` plus
 `PadicInt.ker_toZMod`). -/
-theorem finite_quotient_maximalIdeal_pow_mvPowerSeries (p : ℕ) [Fact p.Prime] (q k : ℕ) :
-    Finite (MvPowerSeries (Fin q) ℤ_[p] ⧸
-      maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) ^ k) := by
-  haveI : IsNoetherianRing (MvPowerSeries (Fin q) ℤ_[p]) :=
+theorem finite_quotient_maximalIdeal_pow_mvPowerSeries {O : Type*} [CommRing O]
+    [IsLocalRing O] [IsNoetherianRing O]
+    (hOres : Finite (O ⧸ maximalIdeal O)) (q k : ℕ) :
+    Finite (MvPowerSeries (Fin q) O ⧸
+      maximalIdeal (MvPowerSeries (Fin q) O) ^ k) := by
+  haveI : IsNoetherianRing (MvPowerSeries (Fin q) O) :=
     PowerSeriesAdicComplete.isNoetherianRing_mvPowerSeries q
-  haveI : NeZero p := ⟨(Fact.out : p.Prime).ne_zero⟩
-  set ψ : MvPowerSeries (Fin q) ℤ_[p] →+* ZMod p :=
-    (PadicInt.toZMod).comp MvPowerSeries.constantCoeff with hψ
+  haveI := hOres
+  set ψ : MvPowerSeries (Fin q) O →+* O ⧸ maximalIdeal O :=
+    (Ideal.Quotient.mk (maximalIdeal O)).comp MvPowerSeries.constantCoeff with hψ
   have hsurj : Function.Surjective ψ := by
     intro z
-    obtain ⟨y, hy⟩ := ZMod.ringHom_surjective (PadicInt.toZMod (p := p)) z
+    obtain ⟨y, hy⟩ := Ideal.Quotient.mk_surjective z
     exact ⟨MvPowerSeries.C y, by simp [hψ, hy]⟩
-  have hker : RingHom.ker ψ = maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) := by
+  have hker : RingHom.ker ψ = maximalIdeal (MvPowerSeries (Fin q) O) := by
     ext f
-    rw [RingHom.mem_ker, mem_maximalIdeal_mvPowerSeries, ← PadicInt.ker_toZMod,
-      RingHom.mem_ker]
-    rfl
-  haveI : Finite (MvPowerSeries (Fin q) ℤ_[p] ⧸ maximalIdeal (MvPowerSeries (Fin q) ℤ_[p])) :=
-    Finite.of_equiv (ZMod p)
+    rw [RingHom.mem_ker, mem_maximalIdeal_mvPowerSeries, hψ, RingHom.comp_apply,
+      Ideal.Quotient.eq_zero_iff_mem]
+  haveI : Finite (MvPowerSeries (Fin q) O ⧸ maximalIdeal (MvPowerSeries (Fin q) O)) :=
+    Finite.of_equiv (O ⧸ maximalIdeal O)
       ((Ideal.quotEquivOfEq hker.symm).trans
         (RingHom.quotientKerEquivOfSurjective hsurj)).symm.toEquiv
   exact Ideal.finite_quotient_pow (IsNoetherian.noetherian _) k
@@ -8289,8 +9535,8 @@ The instantiation follows the handoff map in the docstring of
 theorem exists_patchedModule_of_fields.{a, b, c, s, uR} {p : ℕ} [Fact p.Prime]
     {Runiv : Type uR} [CommRing Runiv] [IsLocalRing Runiv] [IsNoetherianRing Runiv]
     {T : Type s} [CommRing T] {ψ : Runiv →+* T}
-    (q d : ℕ) (R : ℕ → Type a) [iR : ∀ n, CommRing (R n)]
-    (pres : ∀ n, MvPowerSeries (Fin q) ℤ_[p] →+* R n)
+    (q d : ℕ) (coeff : TaylorWilesCoefficients) (R : ℕ → Type a) [iR : ∀ n, CommRing (R n)]
+    (pres : ∀ n, MvPowerSeries (Fin q) coeff.carrier →+* R n)
     (hpres : ∀ n, Function.Surjective (pres n))
     (dia : ∀ n, MvPowerSeries (Fin q) ℤ_[p] →+* R n)
     (tR : ∀ n, R n →+* Runiv) (htR : ∀ n, Function.Surjective (tR n))
@@ -8324,7 +9570,22 @@ theorem exists_patchedModule_of_fields.{a, b, c, s, uR} {p : ℕ} [Fact p.Prime]
   haveI hTFG : ∀ [inst : Algebra ℤ (MvPowerSeries (Fin q) ℤ_[p])],
       Algebra.TopologicallyFG ℤ (MvPowerSeries (Fin q) ℤ_[p]) := by
     intro inst
-    exact topologicallyFG_int_mvPowerSeries p q
+    exact topologicallyFG_int_mvPowerSeries (topologicallyFG_int_padicInt p) q
+  -- ### the coefficient ring `𝒪` in its PRESENTATION role: `R_∞ = 𝒪[[x₁, …, x_q]]`
+  -- (the diamond role above keeps `ℤ_[p]`; see `TaylorWilesSystem.coeff`)
+  haveI : IsNoetherianRing (MvPowerSeries (Fin q) coeff.carrier) :=
+    isNoetherianRing_mvPowerSeries q
+  haveI : CompactSpace (MvPowerSeries (Fin q) coeff.carrier) :=
+    inferInstanceAs (CompactSpace ((Fin q →₀ ℕ) → coeff.carrier))
+  haveI : T2Space (MvPowerSeries (Fin q) coeff.carrier) :=
+    inferInstanceAs (T2Space ((Fin q →₀ ℕ) → coeff.carrier))
+  haveI : TotallyDisconnectedSpace (MvPowerSeries (Fin q) coeff.carrier) :=
+    inferInstanceAs (TotallyDisconnectedSpace ((Fin q →₀ ℕ) → coeff.carrier))
+  haveI hadicP : IsAdicTopology (MvPowerSeries (Fin q) coeff.carrier) := inferInstance
+  haveI hTFGP : ∀ [inst : Algebra ℤ (MvPowerSeries (Fin q) coeff.carrier)],
+      Algebra.TopologicallyFG ℤ (MvPowerSeries (Fin q) coeff.carrier) := by
+    intro inst
+    exact topologicallyFG_int_mvPowerSeries coeff.topologicallyFG q
   -- ### nontriviality of the levels
   haveI hMnt : ∀ n, Nontrivial (M n) := fun n => (hprM n).nontrivial
   -- the annihilator of each level module, the shared brick behind the
@@ -8364,14 +9625,14 @@ theorem exists_patchedModule_of_fields.{a, b, c, s, uR} {p : ℕ} [Fact p.Prime]
   -- `continuousSMul_of_continuous_algebraMap`)
   haveI iRfin : ∀ (n k : ℕ), Finite (R n ⧸ maximalIdeal (R n) ^ k) := fun n k =>
     finite_quotient_maximalIdeal_pow_of_surjective (pres n) (hpres n) k
-      (finite_quotient_maximalIdeal_pow_mvPowerSeries p q k)
+      (finite_quotient_maximalIdeal_pow_mvPowerSeries coeff.finite_residueField q k)
   haveI iRcsmul : ∀ n, ContinuousSMul (MvPowerSeries (Fin q) ℤ_[p]) (R n) := fun n =>
     continuousSMul_of_continuous_algebraMap
       (continuous_of_finite_quotient_maximalIdeal_pow (dia n) (iRfin n))
   -- LEAF 6 (`algebra_uniformlyBoundedRank_of_surjective`)
   haveI hRubr : Algebra.UniformlyBoundedRank R :=
     algebra_uniformlyBoundedRank_of_surjective R pres hpres
-      (finite_quotient_maximalIdeal_pow_mvPowerSeries p q)
+      (finite_quotient_maximalIdeal_pow_mvPowerSeries coeff.finite_residueField q)
   haveI iRtower : ∀ n, IsScalarTower (MvPowerSeries (Fin q) ℤ_[p]) (R n) (M n) :=
     fun n => .of_algebraMap_smul fun r m => (hdia n r m).symm
   -- ### the bottom ring
@@ -8429,7 +9690,7 @@ theorem exists_patchedModule_of_fields.{a, b, c, s, uR} {p : ℕ} [Fact p.Prime]
     (Submodule.quotEquivOfEq _ _ (hkerprM n).symm).trans
       ((prMₗ n).quotKerEquivOfSurjective (hprM n))
   -- ### the patched objects
-  let lift : MvPowerSeries (Fin q) ℤ_[p] →+* PatchingAlgebra R F :=
+  let lift : MvPowerSeries (Fin q) coeff.carrier →+* PatchingAlgebra R F :=
     PatchingAlgebra.lift R F pres
   have hliftsurj : Function.Surjective lift :=
     PatchingAlgebra.lift_surjective R F pres hprescont hpres
@@ -8443,7 +9704,8 @@ theorem exists_patchedModule_of_fields.{a, b, c, s, uR} {p : ℕ} [Fact p.Prime]
     (taylorWilesAug p q) sM
   -- ### the regular sequence, produced in the diamond copy and pushed forward
   obtain ⟨ts, htslen, htsreg, htsspan⟩ :=
-    exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries p q
+    exists_isRegular_ofList_eq_maximalIdeal_mvPowerSeries
+      (exists_isRegular_ofList_eq_maximalIdeal_padicInt p) q
   have htsmem : ∀ x ∈ ts, x ∈ maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) := by
     intro x hx
     rw [← htsspan]
@@ -8501,7 +9763,7 @@ theorem exists_patchedModule_of_fields.{a, b, c, s, uR} {p : ℕ} [Fact p.Prime]
           (PatchingModule (MvPowerSeries (Fin q) ℤ_[p]) M F)) := fun m hm =>
     mem_ker_smul_top_of_quotientEquivOver_mkQ_eq_zero (MvPowerSeries (Fin q) ℤ_[p]) R M F
       (taylorWilesAug p q) sR sM m hm
-  exact nonempty_patchedModule_of_patchingData ψ lift hliftsurj θ hθsurj inferInstance
+  exact nonempty_patchedModule_of_patchingData ψ coeff lift hliftsurj θ hθsurj inferInstance
     (ts.map (algebraMap (MvPowerSeries (Fin q) ℤ_[p]) (PatchingAlgebra R F)))
     (by simpa using htslen) hmemRinf hregRinf hM0 projA hprojAsurj hprojAsmul hprojAker
 
@@ -8626,7 +9888,7 @@ theorem TaylorWilesSystem.exists_patchedModule_natural.{a, b, c, s, uR}
   letI := S.moduleCoeffM
   letI := S.addCommGroupM0
   letI := S.moduleM0
-  exact exists_patchedModule_of_fields S.q S.d S.R S.pres S.pres_surjective S.diamond
+  exact exists_patchedModule_of_fields S.q S.d S.coeff S.R S.pres S.pres_surjective S.diamond
     S.toRuniv S.toRuniv_surjective S.ker_toRuniv S.M S.diamond_smul S.bIdeal
     S.bIdeal_le S.freeM S.M0 S.nontrivialM0 S.projM S.projM_surjective S.projM_smul
     (fun n m => ⟨(S.projM_eq_zero_iff n m).mp, (S.projM_eq_zero_iff n m).mpr⟩)

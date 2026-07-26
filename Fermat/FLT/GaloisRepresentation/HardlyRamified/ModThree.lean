@@ -32637,6 +32637,265 @@ theorem exists_pow_eq_one_of_isOpen_ker_ray_class
   have hfin := (pow_eq_zero_iff h3).mp hzero
   linear_combination hfin
 
+/-- **The global Frobenius acts on roots of unity of order prime to `v`
+by the `N v`-th power** (sorry node, created 2026-07-26 as sub-leaf (A1)
+of `exists_conductor_artinSymbol_span_eq_one_ray_class` below, consumed
+through the base-case leaf
+`artinSymbol_span_eq_one_of_cyclotomic_ray_class` just below): for a
+finite place `v` of a number field `F` and `m ≥ 1` with `m ∉ v` — i.e.
+`v ∤ (m)`, equivalently the residue characteristic of `v` does not
+divide `m` — the global arithmetic Frobenius `globalFrob v ∈ Γ F` sends
+every `ζ ∈ F̄` with `ζ ^ m = 1` to `ζ ^ (N v)`, `N v = Ideal.absNorm
+v.asIdeal` the absolute norm.
+
+This is the ONE piece of genuine arithmetic in the cyclotomic base case
+of Artin reciprocity, and it is bounded: `globalFrob v` is a genuine
+arithmetic Frobenius (`Field.AbsoluteGaloisGroup.isArithFrobAt_adicArithFrob`,
+`Chebotarev.lean`), so it induces `x ↦ x ^ (N v)` on the residue field
+of a prime of `𝓞_{F̄}` above `v`; the group `μ_m` of `m`-th roots of
+unity consists of algebraic integers and, `m` being prime to the residue
+characteristic, reduces INJECTIVELY into that residue field (the
+polynomial `X ^ m − 1` stays separable, `m` being invertible there).
+Both `globalFrob v ζ` and `ζ ^ (N v)` lie in `μ_m` and have the same
+reduction, so they are equal.
+
+The `v ∤ (m)` hypothesis is LOAD-BEARING and not decoration: at `v ∣ m`
+the reduction of `μ_m` is not injective (`ζ ≡ 1` for `ζ` of `p`-power
+order) and `globalFrob v` — well-defined only modulo inertia, which is
+nontrivial in `F(ζ_m)/F` there — does not act by any power at all.
+Relatedly, the conclusion is INDEPENDENT of the choice of Frobenius
+lift precisely because inertia at `v` acts trivially on `μ_m` when
+`v ∤ (m)`; no unramifiedness hypothesis on any character is needed.
+
+Nearby in tree, but not a substitute: `exists_algEquiv_map_zeta_eq_pow_absNorm`
+and `exists_algEquiv_map_zeta_eq_pow_natCard_of_not_dvd` (`Chebotarev.lean`)
+assert the EXISTENCE of some `σ ∈ Gal(E/F)` with `σ ζ = ζ ^ (N I)` for a
+cyclotomic `E/F`; this leaf identifies WHICH element does it, namely
+`globalFrob v`, which is what the Artin symbol is built from. -/
+theorem globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (m : ℕ) (hm : 0 < m)
+    (v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F))
+    (hv : (m : NumberField.RingOfIntegers F) ∉ v.asIdeal)
+    (ζ : AlgebraicClosure F) (hζ : ζ ^ m = 1) :
+    globalFrob v ζ = ζ ^ Ideal.absNorm v.asIdeal := by
+  sorry
+
+/-- **Artin reciprocity in the CYCLOTOMIC case — Childress's base case**
+(sorry node, created 2026-07-26 as sub-leaf (A2) of
+`exists_conductor_artinSymbol_span_eq_one_ray_class` below, consumed
+through the descent leaf
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class` just
+below): if the multiplicative `χ : Γ F → 𝔽̄₃` is trivial on the closed
+subgroup `Γ_{F(ζ_m)}` — i.e. `χ σ = 1` whenever `σ` fixes every `m`-th
+root of unity (`hcyc`) — then its Artin symbol `c` on ideals kills the
+ray `P⁺_{F,(m)}`: `c ((δ)) = 1` for every nonzero totally positive
+`δ ≡ 1 (mod m 𝓞_F)`.
+
+**This is Childress, *Class Field Theory* (Universitext, 2009),
+pp. 113–114 together with Exercise 5.6** — the case `K = F(ζ_m)` of
+Theorem 5.2.1(ii), and then its subextensions, which is exactly what
+`hcyc` says (`χ` cuts out a subfield of `F(ζ_m)`). It is the ONLY part
+of Artin reciprocity that is proven directly rather than by descent, and
+it is BOUNDED: no class field theory, no index inequality, no Artin
+Lemma.
+
+**Route, and it is complete** (all four steps are elementary given the
+sub-leaf `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class`,
+supplied here as the hypothesis `hfrob`):
+
+1. *`χ` is a character of `(ℤ/mℤ)ˣ` through the cyclotomic character.*
+   By `hcyc`, `χ σ` depends only on the action of `σ` on `μ_m`, which is
+   `ζ ↦ ζ ^ t(σ)` for a unique `t(σ) ∈ (ℤ/mℤ)ˣ`; multiplicativity of
+   `χ` (`hmul`) makes `ψ : t ↦ χ σ` well defined and multiplicative.
+2. *`c` is the norm residue character on ideals prime to `m`.* By
+   `hfrob` and `hcfrob`, `c (v.asIdeal) = χ (globalFrob v) = ψ (N v)`
+   for every `v ∤ (m)`; by `hcmul` and unique factorization of ideals
+   (the same induction as `eq_of_forall_asIdeal_eq_ray_class` above, run
+   under the side condition "coprime to `(m)`", which is preserved by
+   the factorization), `c I = ψ (N I)` for every nonzero `I` coprime to
+   `(m)`.
+3. *`(δ)` IS coprime to `(m)`.* If a prime `v` contained both `δ` and
+   `m` then, `δ - 1 ∈ (m) ⊆ v` giving `1 = δ - (δ - 1) ∈ v`, a
+   contradiction. So step 2 applies to `I = (δ)`.
+4. *The norm of `δ` is `≡ 1 (mod m)` and POSITIVE.* `Ideal.absNorm
+   (span {δ}) = |Algebra.norm ℤ δ|` (`Ideal.absNorm_span_singleton`);
+   `δ ≡ 1 (mod m)` forces `Algebra.norm ℤ δ ≡ 1 (mod m)` (the
+   multiplication matrix of `δ` in an integral basis is congruent to the
+   identity mod `m`, so its determinant is `≡ 1`); and total positivity
+   forces `Algebra.norm ℤ δ > 0`, since the norm is the product of the
+   real embeddings times the product of `|φ|²` over the pairs of
+   conjugate complex embeddings (`NumberField.InfinitePlace.prod_eq_abs_norm`).
+   Hence `N ((δ)) ≡ 1 (mod m)` as an element of `(ℤ/mℤ)ˣ`, and
+   `c ((δ)) = ψ (1) = 1`.
+
+**Total positivity is load-bearing precisely at step 4** and nowhere
+else: without it `Algebra.norm ℤ δ` may be negative, `absNorm` picks up
+the absolute value, and `N ((δ)) ≡ −1 (mod m)` — for which `ψ` need not
+be trivial. This is the archimedean factor `sgn(a)` of the product
+formula (Neukirch *ANT* VI (5.3)), and it is why the narrow ray, not the
+ray, appears throughout this cluster. -/
+theorem artinSymbol_span_eq_one_of_cyclotomic_ray_class
+    (F : Type*) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (m : ℕ) (hm : 0 < m)
+    (hcyc : ∀ σ : Γ F,
+      (∀ ζ : AlgebraicClosure F, ζ ^ m = 1 → σ ζ = ζ) → χ σ = 1)
+    (hfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      (m : NumberField.RingOfIntegers F) ∉ v.asIdeal →
+      ∀ ζ : AlgebraicClosure F, ζ ^ m = 1 →
+        globalFrob v ζ = ζ ^ Ideal.absNorm v.asIdeal)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (δ : NumberField.RingOfIntegers F) (hδ0 : δ ≠ 0)
+    (hδpos : ∀ φ : F →+* ℝ,
+      0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ))
+    (hδcong : δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers F)}) :
+    c (Ideal.span {δ}) = 1 := by
+  sorry
+
+set_option maxHeartbeats 1000000 in
+/-- **Artin's DESCENT: reciprocity from the cyclotomic base case**
+(sorry node, created 2026-07-26 as sub-leaf (A3) of
+`exists_conductor_artinSymbol_span_eq_one_ray_class` below; it IS that
+leaf, with the cyclotomic base case
+`artinSymbol_span_eq_one_of_cyclotomic_ray_class` — at EVERY number
+field `E`, not merely at `F` — added as the explicit hypothesis
+`hcycl`). This is the unbounded remainder of the reciprocity law, and
+the hypothesis is exactly the input the literature's proof consumes.
+
+**Why the hypothesis quantifies over all `E`, and why it is not a
+cheat.** Artin's proof of reciprocity for `M/F` does NOT reduce `M` to a
+cyclotomic extension of `F` — abelian extensions of `F` are not
+cyclotomic (Kronecker–Weber holds only over `ℚ`). It base-changes to an
+auxiliary field `E/F` supplied by Artin's Lemma, over which `M E` DOES
+sit inside `E(ζ_m)`, and applies the base case THERE. So the base case
+is genuinely needed at fields other than `F`, and stating `hcycl` with
+`E` universally quantified is what makes the sub-leaf above a consumed
+input rather than a floating brick.
+
+**Route, from Childress ch. 5 §2** (all references to that book), which
+is where the remaining work lies. Write `M` for the finite CYCLIC
+extension of `F` cut out by `ker χ`, `G = Gal(M/F)`, `A : I_F(m) → G`
+the Artin map, so `c = ι ∘ A` for the embedding `ι : G ↪ 𝔽̄₃ˣ` induced
+by `χ`. Theorem 5.2.1(ii) assembles THREE inputs:
+
+1. *`A` is surjective*, so `[I_F(m) : ker A] = #G` — this is Chebotarev
+   and it is IN TREE (`dense_conjClasses_globalFrob`,
+   `exists_globalFrob_restrictNormalHom_conj`, `Chebotarev.lean`).
+2. *the norm index equality* `[I_F(m) : P⁺_{F,m} · N_{M/F}(m)] = #G`
+   (Childress ch. 4: the Universal Norm Index Inequality `≤` together
+   with the Global Cyclic Norm Index Equality `≥`). NOT in tree. Only
+   the `≥` half is actually needed here, since `≤` follows from 1. and
+   3. below.
+3. *Proposition 5.2.2*: `ker A ⊆ P⁺_{F,m} · N_{M/F}(m)`, for `m`
+   admissible and divisible by all ramified primes. NOT in tree; this is
+   the genuine crux, it is where Artin's Lemma enters, and it is the
+   step that consumes `hcycl`.
+
+Given 1–3 the conclusion is pure counting: `ker A ⊆ P⁺·N` between two
+subgroups of the SAME finite index forces `ker A = P⁺·N ⊇ P⁺`. Dually,
+in the character language of this file: `c (P⁺·N)` is a subgroup `μ_e`
+of `μ_n`, `[I : P⁺N] = n/e` by 1. and 3., and 2. forces `e = 1`, i.e.
+`c` is trivial on `P⁺`.
+
+**Artin's Lemma (5.2.8), in the form actually used.** For `M/F` cyclic
+of degree `n`, `S` a finite set of rational primes and `p` a prime of
+`𝓞_F`, there are `m` prime to `S` and to `p`, and an extension `E/F`,
+with (i) `M ∩ E = F`, (ii) `M(ζ_m) = E(ζ_m)`, hence `M E ⊆ E(ζ_m)` —
+which is what puts `χ_E` in the scope of `hcycl` — (iii)
+`M ∩ F(ζ_m) = F`, and (iv) **`p` splits completely in `E/F`**. Its input
+is the Van der Waerden auxiliary-prime lemmas 5.2.3–5.2.7, whose own
+input is Dirichlet's theorem on primes in arithmetic progressions, which
+IS in the pin (`Nat.forall_exists_prime_gt_and_eq_mod`,
+`Nat.infinite_setOf_prime_and_eq_mod`,
+`Mathlib/NumberTheory/LSeries/PrimesInAP.lean`).
+
+**How Prop 5.2.2 consumes `hcycl`** (Childress pp. 121–123). Given
+`𝔞 = ∏ p_i^{γ_i}` in `ker A`, write `p_i^{γ_i}/(K/F) = σ^{d_i}`, so
+`n ∣ ∑ d_i`. Apply Artin's Lemma at each `p_i` to get `m_i, E_i`
+(pairwise coprime `m_i`); pick `𝔟_F = N_{E/F} 𝔅_E` with
+`𝔟_F/(K/F) = σ`. Then `p_i^{γ_i} 𝔟_F^{−d_i}` is a norm from `E_i`
+(clause (iv): `p_i` splits completely in `E_i/F`), say
+`= N_{E_i/F} 𝔄_{E_i}`, and `𝔄_{E_i} ∈ ker (I_{E_i} → Gal(K E_i/E_i))`
+by the Consistency Property. Since `K E_i ⊆ E_i(ζ_{m_i})`, the base case
+`hcycl` at `E := E_i` applies and yields
+`𝔄_{E_i} = (α_{E_i}) · N_{K E_i/E_i} 𝔄_{K E_i}` with `α_{E_i} ≫ 0` and
+`α_{E_i} ≡ 1 (mod m_i m 𝓞_{E_i})`. Taking `N_{E_i/F}` and multiplying
+over `i` gives `𝔞 𝔟_F^{-∑d_i} ∈ P⁺_{F,m} N_{K/F}(m)`, and `n ∣ ∑ d_i`
+absorbs the `𝔟_F` factor.
+
+**A NEGATIVE RESULT, worth keeping: the obvious base-change descent is
+VACUOUS.** One is tempted to descend along `E/F` directly: the composite
+`χ_E := χ ∘ Field.absoluteGaloisGroup.map (algebraMap F E)` is
+multiplicative, trivial on the preimage of `V`, unramified at every
+finite place of `E`, and its Artin symbol satisfies
+`c_E ((γ)𝓞_E) = c ((γ)) ^ [E:F]` (because `w(γ) = e(w|v)·v(γ)`,
+`χ_E(Frob_w) = χ(Frob_v)^{f(w|v)}` and `∑_{w|v} e f = [E:F]`); so if
+`[E:F]` were prime to `ℓ` one could conclude `c ((γ)) = 1` from
+`c ((γ))^{ℓ^k} = 1`. **But `[E:F]` is an `ℓ`-POWER in Artin's
+construction** — `E` is the fixed field of the subgroup of
+`Gal(M(ζ_m)/F) ≅ ⟨σ⟩ × Gal(F(ζ_m)/F)` generated by `σ × τ` and the
+decomposition group at `p`, and its degree over `F` is the order of `τ`,
+chosen DIVISIBLE by `n = ℓ^j` — so `c ((γ))^{[E:F]} = 1` is vacuous.
+That is exactly why clause (iv) is in Artin's Lemma: the descent must be
+run on the NON-principal ideal `𝔄 = ∏_v w_v^{v(γ)}` (one prime of `E`
+above each `v`), for which `N_{E/F} 𝔄 = (γ)` because `f(w_v|v) = 1`.
+
+**Mathlib survey (2026-07-25, re-checked 2026-07-26): there is NOTHING
+to build on.** Ray class groups, narrow class groups, the Hilbert class
+field, the Artin map/symbol, Artin reciprocity, idele class groups and
+Kronecker–Weber are ALL absent from the pin, and `~/cs/FLT` has no class
+field theory either. What exists is plain `ClassGroup`, the
+`HeightOneSpectrum` factorization API, `NumberField.InfinitePlace`,
+abstract Frobenius as `IsArithFrobAt` (`Mathlib/RingTheory/Frobenius.lean`,
+with `isConj_arithFrobAt`), abelian CFT over `ℚ` only
+(`IsCyclotomicExtension.Rat.galEquivZMod`), and full Dirichlet in
+arithmetic progressions. The dependency order for a fleet is: Artin's
+Lemma (via Van der Waerden 5.2.3–5.2.7), then Prop 5.2.2, then the
+`≥` half of the norm index equality. -/
+theorem exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class
+    (F : Type u) [Field F] [NumberField F]
+    (χ : Γ F → Dickson.K 3)
+    (hmul : ∀ a b : Γ F, χ (a * b) = χ a * χ b)
+    (V : Subgroup (Γ F)) (hVopen : IsOpen (V : Set (Γ F)))
+    (hVker : ∀ a ∈ V, χ a = 1)
+    (hunr : ∀ w : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      ∀ c : Γ F, ∀ σ ∈ localInertiaGroup w,
+        χ (c * Field.absoluteGaloisGroup.map
+          (algebraMap F (IsDedekindDomain.HeightOneSpectrum.adicCompletion F w)) σ * c⁻¹) = 1)
+    (ℓ : ℕ) (hℓ : ℓ.Prime) (hℓ3 : ℓ ≠ 3) (k : ℕ)
+    (hord : ∀ a : Γ F, χ a ^ (ℓ ^ k) = 1)
+    (c : Ideal (NumberField.RingOfIntegers F) → Dickson.K 3)
+    (hcmul : ∀ I J : Ideal (NumberField.RingOfIntegers F), I ≠ ⊥ → J ≠ ⊥ →
+      c (I * J) = c I * c J)
+    (hcfrob : ∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers F),
+      c v.asIdeal = χ (globalFrob v))
+    (hcycl : ∀ (E : Type u) [Field E] [NumberField E]
+      (χ' : Γ E → Dickson.K 3), (∀ a b : Γ E, χ' (a * b) = χ' a * χ' b) →
+      ∀ m : ℕ, 0 < m →
+      (∀ σ : Γ E, (∀ ζ : AlgebraicClosure E, ζ ^ m = 1 → σ ζ = ζ) → χ' σ = 1) →
+      ∀ c' : Ideal (NumberField.RingOfIntegers E) → Dickson.K 3,
+      (∀ I J : Ideal (NumberField.RingOfIntegers E), I ≠ ⊥ → J ≠ ⊥ →
+        c' (I * J) = c' I * c' J) →
+      (∀ v : IsDedekindDomain.HeightOneSpectrum (NumberField.RingOfIntegers E),
+        c' v.asIdeal = χ' (globalFrob v)) →
+      ∀ δ : NumberField.RingOfIntegers E, δ ≠ 0 →
+        (∀ φ : E →+* ℝ,
+          0 < φ (algebraMap (NumberField.RingOfIntegers E) E δ)) →
+        δ - 1 ∈ Ideal.span {(m : NumberField.RingOfIntegers E)} →
+        c' (Ideal.span {δ}) = 1) :
+    ∃ mm : Ideal (NumberField.RingOfIntegers F), mm ≠ ⊥ ∧
+      ∀ δ : NumberField.RingOfIntegers F, δ ≠ 0 →
+        (∀ φ : F →+* ℝ,
+          0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
+        δ - 1 ∈ mm → c (Ideal.span {δ}) = 1 := by
+  sorry
+
 set_option maxHeartbeats 1000000 in
 /-- **Artin reciprocity for SOME modulus — the reciprocity law proper**
 (sorry node, created 2026-07-26 as sub-leaf (A) of
@@ -32746,7 +33005,29 @@ with `isConj_arithFrobAt`), abelian CFT over `ℚ` only
 Dirichlet in arithmetic progressions. So this leaf is not a bounded
 missing piece; it is the reciprocity law and nothing less. The
 dependency order for a fleet is 1., 3. (via Artin's Lemma and the
-cyclotomic norm-residue base case), then 2. -/
+cyclotomic norm-residue base case), then 2.
+
+**DECOMPOSED 2026-07-26** into the three leaves stated immediately above
+— `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class` (the
+Frobenius acts on prime-to-`v` roots of unity by the `N v`-th power),
+`artinSymbol_span_eq_one_of_cyclotomic_ray_class` (Childress's
+cyclotomic BASE CASE, pp. 113–114 and Exercise 5.6), and
+`exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class`
+(Artin's DESCENT, which takes the base case at every number field as an
+explicit hypothesis) — and PROVEN here as glue over them. See those
+three docstrings for the mathematics; the split is exactly the one
+Childress's own proof makes, and it isolates two genuinely bounded,
+separately ownable leaves from the unbounded one.
+
+FAITHFULNESS (audited 2026-07-26, statement UNCHANGED). Numerically
+sanity-checked with PARI/GP at `F = ℚ(√3)` (`h = 1`, `Cl⁺ ≅ ℤ/2`,
+`bnrconductor` of the narrow ray class field `= [(1), [1,1]]`): all 38
+totally positive principal generators `a + b√3` with `1 ≤ a ≤ 8`,
+`|b| ≤ 3` lie in the TRIVIAL narrow ray class, i.e. the Artin symbol
+kills every one of them, while `(√3)` — principal but not totally
+positive — has narrow class `[1]`, i.e. Artin symbol `−1`. So the
+conclusion is consistent and the total-positivity hypothesis is
+load-bearing, exactly as the consumer's docstring records. -/
 theorem exists_conductor_artinSymbol_span_eq_one_ray_class
     (F : Type*) [Field F] [NumberField F]
     (χ : Γ F → Dickson.K 3)
@@ -32769,7 +33050,17 @@ theorem exists_conductor_artinSymbol_span_eq_one_ray_class
         (∀ φ : F →+* ℝ,
           0 < φ (algebraMap (NumberField.RingOfIntegers F) F δ)) →
         δ - 1 ∈ mm → c (Ideal.span {δ}) = 1 := by
-  sorry
+  -- (A3) Artin's descent, which needs the cyclotomic base case at every
+  -- number field `E` — not merely at `F`, because the descent runs over the
+  -- auxiliary field supplied by Artin's Lemma
+  refine exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class F χ hmul
+    V hVopen hVker hunr ℓ hℓ hℓ3 k hord c hcmul hcfrob ?_
+  intro E _ _ χ' hmul' m hm hcyc c' hcmul' hcfrob' δ hδ0 hδpos hδcong
+  -- (A2) the cyclotomic base case, over (A1) the Frobenius action on `μ_m`
+  exact artinSymbol_span_eq_one_of_cyclotomic_ray_class E χ' hmul' m hm hcyc
+    (fun v hv ζ hζ =>
+      globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class E m hm v hv ζ hζ)
+    c' hcmul' hcfrob' δ hδ0 hδpos hδcong
 
 set_option maxHeartbeats 1000000 in
 /-- **One unramified prime may be struck off the modulus** (sorry node,
@@ -33096,7 +33387,15 @@ makes (Childress, *Class Field Theory* (Universitext, 2009), Theorem
   Chebotarev surjectivity); its docstring carries the full route, the
   mathlib survey, and a NEGATIVE result — the naive base-change descent
   along Artin's auxiliary field is vacuous, because that field has
-  `ℓ`-power degree over `F`.
+  `ℓ`-power degree over `F`. **Itself PROVEN as glue 2026-07-26** over
+  three further leaves along Childress's own proof:
+  `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class` (A1, the
+  Frobenius acts on prime-to-`v` roots of unity by the `N v`-th power),
+  `artinSymbol_span_eq_one_of_cyclotomic_ray_class` (A2, the cyclotomic
+  base case, pp. 113–114 and Exercise 5.6 — bounded and elementary), and
+  `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class`
+  (A3, Artin's descent, which takes A2 at EVERY number field as an
+  explicit hypothesis and carries the unbounded remainder).
 * (B) `artinSymbol_span_eq_one_of_pos_of_conductor_ray_class` — the
   conductor step: an everywhere-finite-unramified `χ` has conductor
   supported on the archimedean places only, so the modulus improves to
@@ -33238,8 +33537,13 @@ just above:
 * (ii) `artinSymbol_span_eq_one_of_pos_primePow_ray_class` (PROVEN as
   glue 2026-07-26) — the same statement as `hpos` for a `χ` killed by
   `ℓ^k`, `ℓ ≠ 3` prime; itself decomposed into the reciprocity leaf
-  `exists_conductor_artinSymbol_span_eq_one_ray_class` (SORRY — Artin
-  reciprocity for SOME modulus) and the conductor leaf
+  `exists_conductor_artinSymbol_span_eq_one_ray_class` (PROVEN as glue
+  2026-07-26 — Artin reciprocity for SOME modulus — over the three
+  Childress leaves
+  `globalFrob_apply_eq_pow_absNorm_of_pow_eq_one_ray_class`,
+  `artinSymbol_span_eq_one_of_cyclotomic_ray_class` and
+  `exists_conductor_artinSymbol_span_eq_one_of_cyclotomic_ray_class`,
+  all three SORRY) and the conductor leaf
   `artinSymbol_span_eq_one_of_pos_of_conductor_ray_class` (PROVEN
   2026-07-26 — an everywhere-finite-unramified character has conductor
   `(1)` — by a descending induction on the modulus over its own single
