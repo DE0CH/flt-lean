@@ -1384,10 +1384,106 @@ theorem differentIdeal_exponent_le_wild_of_residueDegreeOne
   exact differentIdeal_exponent_le_of_intEisenstein_approx K q hq v hmem e he x hgen hx hc0 c
     (d + 2 * e + 2) hc d le_rfl hd
 
+/-- **Local monogenicity at `Q`, packaged globally** (sorry leaf,
+2026-07-26 — the first of the two honest inputs to
+`exists_generator_minpolyDerivative_le_of_wild` below).
+
+Asks for a single element: an `x ∈ 𝓞_K` with `ℚ(x) = K` whose
+CONDUCTOR `𝔠(x) = conductor ℤ x` — mathlib's largest ideal of `𝓞_K`
+contained in the subring `ℤ[x]` — is prime to `Q`.  Equivalently:
+`ℤ[x]` and `𝓞_K` agree after localizing at `Q`.
+
+No ramification hypothesis: the statement is made for an arbitrary
+height-one prime `v = Q` of `𝓞_K`, and it is classical in that
+generality.
+
+**Why it is TRUE.**  Locally, `𝓞_{K_Q}` is a complete DVR whose residue
+extension `k(Q)/𝔽_q` is finite, hence separable (finite fields are
+perfect), so `𝓞_{K_Q} = ℤ_q[y]` is MONOGENIC — Serre, *Corps Locaux*
+I §6 Prop. 15: take `y = ω + π` with `ω̄` a generator of `k(Q)` over
+`𝔽_q` and `π` a uniformizer.  Approximating `y` by a global `x ∈ 𝓞_K`
+that is `≡ 0` modulo every other prime above `q` makes `ℤ[x]` equal to
+`𝓞_K` after localizing at `Q`, i.e. `𝔠(x) ⊄ Q`; and the pigeonhole
+correction `x ↦ x + q^N·θ` of `exists_generator_sub_mem_span_sq`
+upgrades `x` to a generator of `K/ℚ` without disturbing either
+property (the increment lies in `Q²` and in every other prime above
+`q`).
+
+**THE GENERATOR MUST BE A `Q`-UNIT WHEN `f > 1` — measured, not
+guessed** (PARI/GP, 2026-07-26, on `K = ℚ(√2,√5)`, `q = 2`, the unique
+prime `Q` above `2`, `e = f = 2`, `d = 3`).  Exhaustive search over the
+box `[−3,3]⁴` of integral-basis coordinates:
+
+* over ALL generators, `min ord_Q (F'(x)) = 3` — the bound, attained;
+* over generators with `ord_Q x = 1` (a UNIFORMIZER),
+  `min ord_Q (F'(x)) = 5 = d + e·(f−1)`;
+* over generators with `ord_Q x = 0` (a `Q`-UNIT),
+  `min ord_Q (F'(x)) = 3`.
+
+So `𝔠(x) ⊆ Q` — indeed `ord_Q 𝔠(x) = e(f−1) = 2` — for EVERY
+uniformizer generator, and the deficit is exactly the index of
+`ℤ_q[π]` in `W[π]`.  This is why `exists_generator_uniformizer_at`,
+which serves the `f = 1` route, cannot serve this one: its output is a
+uniformizer by construction. -/
+theorem exists_generator_conductor_notLE
+    (K : Type*) [Field K] [NumberField K]
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K)) :
+    ∃ x : NumberField.RingOfIntegers K,
+      Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤ ∧
+      ¬ (conductor ℤ x ≤ v.asIdeal) :=
+  sorry
+
+/-- **Serre's bound on the different exponent, in full generality**
+(sorry leaf, 2026-07-26 — the second of the two honest inputs to
+`exists_generator_minpolyDerivative_le_of_wild` below).
+
+`Q^d ∣ 𝔡_{K/ℚ}` implies `d ≤ e − 1 + e·v_q(e)` (Serre, *Corps Locaux*
+III §6 Prop. 13), for an arbitrary height-one prime `Q` above `q` — no
+wildness and no residue-degree hypothesis.
+
+**Status of the two halves, and why this statement and not a narrower
+one.**
+
+* The `f = 1` half is ALREADY PROVEN in this file, by the elementary
+  global route: `differentIdeal_exponent_le_wild_of_residueDegreeOne`.
+* The `f > 1` half is co-extensive with
+  `differentIdeal_exponent_le_wild_of_residueDegreeGtOne` below, which
+  is currently derived from
+  `exists_generator_minpolyDerivative_le_of_wild`, which is in turn
+  derived from THIS statement.  There is no Lean cycle — this leaf is
+  sorried outright — but the detour is a bookkeeping artefact of the
+  2026-07-26 cut and should be collapsed by the cluster's owner once
+  this leaf is discharged: everything downstream wants only the
+  inequality.
+* The tame case is included and costs nothing: there `v_q(e) = 0` and
+  the bound is the classical `d = e − 1`.
+
+**WHY THE CUT AT `exists_generator_minpolyDerivative_le_of_wild` WAS A
+NET LOSS** (established 2026-07-26; see the numerical measurement
+recorded on `exists_generator_conductor_notLE` above).  By mathlib's
+`conductor_mul_differentIdeal`, `(F'(x)) = 𝔠(x)·𝔡`, so
+`ord_Q (F'(x)) = ord_Q 𝔠(x) + d`.  Since the bound is ATTAINED
+(`d = 3` in the worked example), asking for a generator with
+`ord_Q (F'(x)) ≤ e − 1 + e·v_q(e)` forces `ord_Q 𝔠(x) = 0` — i.e. the
+generator-shaped leaf implies BOTH this inequality AND local
+monogenicity at `Q`.  It is therefore strictly stronger than the
+inequality that the tree actually needs; the local-field theory the cut
+was made to avoid ((M1), the different under localization) was replaced
+by different local-field theory ((M4), monogenicity of a complete DVR
+extension), not removed. -/
+theorem differentIdeal_exponent_le_serre
+    (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
+    (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
+    (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
+    (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (d : ℕ) (hd : v.asIdeal ^ d ∣ differentIdeal ℤ (NumberField.RingOfIntegers K)) :
+    d ≤ e - 1 + e * e.factorization q :=
+  sorry
+
 /-- **A global generator whose minimal-polynomial derivative has small
-`Q`-order** (sorry leaf, 2026-07-26 — the SINGLE remaining leaf of the
-wild different bound at a prime of residue degree `> 1`; it replaces
-the Eisenstein-presentation cut recorded on
+`Q`-order** (PROVEN 2026-07-26 over the two leaves
+`exists_generator_conductor_notLE` and `differentIdeal_exponent_le_serre`
+above; it replaces the Eisenstein-presentation cut recorded on
 `exists_eisensteinDerivative_dvd_of_wild`).
 
 Asks for one element: an `x ∈ 𝓞_K` with `ℚ(x) = K` such that, writing
@@ -1432,37 +1528,45 @@ bound `e − 1 + e·v_2(e) = 3` is SHARP; a search over the box `[−3,3]⁴`
 of integral-basis coordinates finds generators attaining
 `ord_Q (F'(x)) = 3` and none below it.
 
-**A FULLY GLOBAL ATTACK — no completions, no local fields** (worked out
-2026-07-26; this is the recommended route, and the reason the cut was
-made here).  The `f = 1` route
-(`differentIdeal_exponent_le_wild_of_residueDegreeOne`) breaks at
-exactly one point: its digits are taken in `ℤ` because `𝓞_K/Q = 𝔽_q`.
-Replace `ℤ` by the subring `A := ℤ[u] ⊆ 𝓞_K` for a global
-**approximate Teichmüller lift** `u`:
+**THE RECORDED "FULLY GLOBAL ATTACK" IS REFUTED** (2026-07-26).  The
+previous version of this docstring proposed replacing the `f = 1`
+route's digit ring `ℤ` by `A := ℤ[u]` for an approximate Teichmüller
+lift `u`, and asserted that "steps 3–6 of the `f = 1` route go through
+with `ℤ` replaced by `A`", the passage from `π` to `x = u + π` being
+"the extra work".  That passage is not extra work, it is the whole
+obstruction, and the route cannot be repaired:
 
-* Fix a precision `N`.  `𝓞_K/Q^N` is a FINITE ring and `X^{q^f} − X`
-  has derivative `−1`, a unit; so Newton iteration *inside that finite
-  quotient* lifts a generator `ū` of `𝓞_K/Q ≅ 𝔽_{q^f}` to an exact
-  root of `X^{q^f} − X` there, and surjectivity of `𝓞_K ↠ 𝓞_K/Q^N`
-  pulls it back to `u ∈ 𝓞_K` with `u^{q^f} ≡ u (mod Q^N)`.  This is
-  Hensel's lemma performed in a finite quotient — elementary, and
-  entirely global.
-* `A = ℤ[u]` then has the two properties that `ℤ` had when `f = 1`:
-  (i) **every `y ∈ 𝓞_K` is congruent mod `Q` to an element of `A`**,
-  because `𝔽_q[ū] = 𝔽_{q^f}`; and (ii) **`ord_Q` takes values in
-  `e·ℤ` on `A`, up to precision `N`**, because `u` agrees to precision
-  `N` with the true Teichmüller lift `ω ∈ 𝓞_{L₀}`, on which `ord_Q` is
-  `e·ord_{L₀}`.  Property (ii) is precisely what the refuted attack was
-  missing: "order in `e·ℤ`" imposed by fiat is not the same as
-  "coefficient in the unramified subring" — but a `Q^N`-approximate
-  Teichmüller lift really does carve an approximate copy of `𝓞_{L₀}`
-  out of `𝓞_K`.
-* With `A` in place, `exists_intCoeff_eisenstein_approx` above
-  generalizes verbatim (it is already stated for an abstract Dedekind
-  `R`, and uses only `hres` and `ord_Q P = e`; take `P = q ∈ A`), and
-  steps 3–6 of the `f = 1` route go through with `ℤ` replaced by `A`.
-  The extra work is the passage from the minimal polynomial of `π` over
-  `A` to `F = minpoly ℤ x` for `x = u + π`.
+* The `f = 1` route's generator is a UNIFORMIZER at `Q`
+  (`exists_generator_uniformizer_at`).  Measured in PARI/GP on
+  `K = ℚ(√2,√5)`, `q = 2`, `e = f = 2`, `d = 3`, bound `= 3`: over the
+  box `[−3,3]⁴` of integral-basis coordinates the minimum of
+  `ord_Q (F'(x))` is `3` over all generators and over the `Q`-UNIT
+  generators, but `5 = d + e(f−1)` over the UNIFORMIZER generators.  So
+  no uniformizer generator can satisfy this statement when `f > 1`;
+  `ord_Q 𝔠(x) = e(f−1) > 0` for every one of them.
+* Structurally: with `x = π` a uniformizer, `ord_Q F(0) = e·f` while
+  `ord_Q g(0) = e` for the degree-`e` Eisenstein approximant `g`, so
+  the cofactor `H = F /ₘ g` has `ord_Q H(0) = e(f−1) ≠ 0`.  The `f = 1`
+  proof's step "the cofactor is a `Q`-unit" — which is what converts
+  `ord_Q F'(x)` into `ord_Q g'(π)` — therefore fails by exactly the
+  deficit measured above.
+* And with the correct generator `x = u + π` (a `Q`-unit) the `f = 1`
+  route's RIGIDITY input dies too: it needs the terms `a_i x^i`,
+  `i < e`, to have pairwise distinct `Q`-orders mod `e`, which holds
+  because `ord_Q x = 1`.  At a `Q`-unit `x` every such term has order
+  `≡ 0 (mod e)` and the distinct-residues argument is vacuous.
+
+**One salvageable observation, corrected** (2026-07-26).  The claim
+that `A = ℤ[u]` needs an *approximate Teichmüller* lift is right for
+the RING, and unnecessary for the ℤ-MODULE: if `w₀,…,w_{f−1} ∈ 𝓞_K`
+are ANY lifts of an `𝔽_q`-basis of `𝓞_K/Q`, then the ℤ-module
+`D = ℤw₀ + ⋯ + ℤw_{f−1}` already has both properties the digit
+expansion needs — it surjects onto `𝓞_K/Q`, and `ord_Q` is EXACTLY
+`e·ℤ` on `D ∖ {0}` (write `a = q^μ b` with `μ` minimal; then `b̄ ≠ 0`
+by independence, so `ord_Q a = e·μ`), with no precision loss and no
+Hensel lifting.  Products leave `D`, which is why the RING `ℤ[u]`
+genuinely needs the Teichmüller condition — and it is also why the
+polynomial division of steps 3–6 cannot be run inside `D`.
 
 **A second global alternative — base change to `ℚ(ζ_{q^f−1})`.**  Let
 `F₀ = ℚ(ζ_m)`, `m = q^f − 1`, in which `q` is unramified with residue
@@ -1489,6 +1593,28 @@ construction — there are no free coefficients to choose, only a single
 generator `x`, and the quantity bounded is the honest
 `ord_Q ((minpoly ℤ x)'(x))`.
 
+**HOW IT IS NOW PROVED** (2026-07-26), and what the two inputs are.
+mathlib's `conductor_mul_differentIdeal` gives the exact factorization
+`𝔠(x)·𝔡_{K/ℚ} = (F'(x))` for any generator `x`; taking `ord_Q` turns
+this statement into the conjunction of
+
+* `exists_generator_conductor_notLE` — a generator with `𝔠(x) ⊄ Q`
+  (local monogenicity at `Q`), and
+* `differentIdeal_exponent_le_serre` — `Q^d ∣ 𝔡 → d ≤ e−1+e·v_q(e)`,
+
+and nothing else.  Concretely: if the conclusion failed then
+`Q^{B+1} ∣ (F'(x)) = 𝔠(x)·𝔡` with `B` the bound, and `Q ∤ 𝔠(x)` moves
+the whole power onto `𝔡` (`Prime.pow_dvd_of_dvd_mul_left`), whence
+`B + 1 ≤ B`.
+
+The hypotheses `hq`, `hmem` and `he` are forwarded to the bound;
+`hwild` and `hres` are NOT used — both inputs hold for an arbitrary
+height-one prime, so this statement is true in the tame case and at
+residue degree one as well.  They are underscored so that the fact is
+mechanically visible, and retained so that the signature still matches
+what `differentIdeal_exponent_le_wild_of_residueDegreeGtOne` below
+passes.
+
 Both-ways audit: an existence statement about one algebraic integer,
 implied by the classical theorem (Serre III §6 Prop. 13) and checked
 numerically above; not vacuous — `Algebra.adjoin ℚ {x} = ⊤` forces `x`
@@ -1499,16 +1625,36 @@ theorem exists_generator_minpolyDerivative_le_of_wild
     (K : Type*) [Field K] [NumberField K] (q : ℕ) (hq : q.Prime)
     (v : HeightOneSpectrum (NumberField.RingOfIntegers K))
     (hmem : (q : NumberField.RingOfIntegers K) ∈ v.asIdeal)
-    (hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
-    (hres : ¬ ∀ y : NumberField.RingOfIntegers K,
+    (_hwild : q ∣ Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal)
+    (_hres : ¬ ∀ y : NumberField.RingOfIntegers K,
       ∃ c : ℤ, y - (c : NumberField.RingOfIntegers K) ∈ v.asIdeal)
     (e : ℕ) (he : e = Ideal.ramificationIdx' (Ideal.span {(q : ℤ)}) v.asIdeal) :
     ∃ x : NumberField.RingOfIntegers K,
       Algebra.adjoin ℚ {(algebraMap (NumberField.RingOfIntegers K) K x)} = ⊤ ∧
       WithZero.exp (-((e - 1 + e * e.factorization q : ℕ) : ℤ)) ≤
         v.intValuation (Polynomial.aeval x
-          (Polynomial.derivative (minpoly ℤ x))) :=
-  sorry
+          (Polynomial.derivative (minpoly ℤ x))) := by
+  classical
+  obtain ⟨x, hgen, hcond⟩ := exists_generator_conductor_notLE K v
+  refine ⟨x, hgen, ?_⟩
+  by_contra hlt
+  rw [not_le] at hlt
+  have h1 : v.intValuation (Polynomial.aeval x (Polynomial.derivative (minpoly ℤ x)))
+      ≤ WithZero.exp (-(((e - 1 + e * e.factorization q : ℕ) : ℤ) + 1)) :=
+    le_exp_neg_succ_of_lt_exp_neg hlt
+  have h2 : v.asIdeal ^ (e - 1 + e * e.factorization q + 1) ∣
+      Ideal.span {Polynomial.aeval x (Polynomial.derivative (minpoly ℤ x))} := by
+    rw [← v.intValuation_le_pow_iff_dvd]
+    push_cast
+    push_cast at h1
+    exact h1
+  rw [← conductor_mul_differentIdeal ℤ ℚ K x hgen] at h2
+  have hprime : Prime v.asIdeal := v.asIdeal.prime_of_isPrime v.ne_bot v.isPrime
+  have hnd : ¬ v.asIdeal ∣ conductor ℤ x := by rwa [Ideal.dvd_iff_le]
+  have h3 := hprime.pow_dvd_of_dvd_mul_left (e - 1 + e * e.factorization q + 1) hnd h2
+  have hfin := differentIdeal_exponent_le_serre K q hq v hmem e he
+    (e - 1 + e * e.factorization q + 1) h3
+  omega
 
 /-- **The wild different-exponent bound at a prime of residue degree
 `> 1`** (PROVEN 2026-07-26 over the single leaf
@@ -1554,7 +1700,8 @@ theorem differentIdeal_exponent_le_wild_of_residueDegreeGtOne
 /-- **The local Eisenstein presentation of the different at a wild
 prime of residue degree `> 1`** (PROVEN 2026-07-26 over
 `differentIdeal_exponent_le_wild_of_residueDegreeGtOne` above, whose
-own single leaf is `exists_generator_minpolyDerivative_le_of_wild`).
+own leaves are, since 2026-07-26, `exists_generator_conductor_notLE`
+and `differentIdeal_exponent_le_serre`).
 Statement identical to `exists_eisensteinDerivative_dvd_of_wild` below,
 with the extra hypothesis `hres` that `𝓞_K/Q ≠ 𝔽_q`, i.e.
 `f(Q∣q) > 1`.
