@@ -74,30 +74,47 @@ Three consequences shape everything below.
   which is what makes "initial among such" the coarse space of the
   moduli *stack* rather than of some rigidified variant.
 
-* **`Y_0(N)`, not `X_0(N)`.**  The affine coarse space suffices, so no
-  compactification, no cusps and no genus theory are needed here: the
-  statement "`X_0(N)(ℚ)` consists only of cusps" is literally
-  "`Y_0(N)(ℚ) = ∅`".  This is a deliberate scope cut — it removes an
-  entire missing theory (the smooth compactification of a coarse moduli
-  space, and the rationality of its cusps) from the critical path without
-  weakening any statement.
+* **`Y_0(N)`, not `X_0(N)`, in the STATEMENTS.**  The level statements
+  are about the affine coarse space: "`X_0(N)(ℚ)` consists only of
+  cusps" is literally "`Y_0(N)(ℚ) = ∅`", and phrasing them affinely
+  keeps the cusps out of the *interface* consumed by
+  `FreyCurve/MazurTorsion.lean`.
+
+  It does NOT keep them out of the *proofs*, and an earlier version of
+  this docstring claimed otherwise.  Rank `0` bounds `#X_0(N)(ℚ)`; only
+  the count of rational cusps turns that bound into emptiness of
+  `Y_0(N)(ℚ)`.  So the compactification is on the critical path after
+  all, and it is built below (`IsX0Compactification`, `IsJacobianOf`,
+  `card_le_of_rankZeroJacobian`) — used by the seven single-prime
+  levels, and stated so that the four sieve levels can reuse it.
 
 ## FAITHFULNESS AUDIT
 
-There are exactly three claim-shapes here, and each is true.  Shapes 1
-and 3 are single sorry nodes; shape 2 is now a proven bridge over two
-sorried inputs:
+There are four claim-shapes here, and each is true.  Shapes 1 and 2 are
+now proven, each over strictly fewer sorried inputs than the node it
+replaced; shape 3 is now proven at seven of its eleven named levels over
+shape 4, and shape 4 is the compactification layer:
 
 1. `exists_coarseModuliY0 N` — the `Γ₀(N)`-moduli problem over `ℚ` admits
    a coarse moduli space.  TRUE: this is the classical existence
    statement for `Y_0(N)` (Deligne–Rapoport, Katz–Mazur; or classically
    via the `j`-line and the modular polynomial).  It is now PROVEN from a
    split of the level: `exists_coarseModuliY0_of_pos` (`N ≥ 1`) carries
-   the citation — Katz–Mazur Theorem 6.6.1 and (8.1.1), together with a
-   faithfulness audit of the one place where this module's level
-   structure is weaker than theirs — and `exists_coarseModuliY0_zero`
-   disposes of `N = 0`, which lies outside their theorem, from the
-   elementary leaf `isEmpty_of_gamma0Datum_zero`.
+   the citation — Katz–Mazur Theorem 6.6.1 and (8.1.1) — and
+   `exists_coarseModuliY0_zero` disposes of `N = 0`, which lies outside
+   their theorem, from `isEmpty_of_gamma0Datum_zero` — itself PROVEN
+   2026-07-26, so the `N = 0` half of this shape is now sorry-free
+   outright and the citation at `_of_pos` is the only remaining input.
+
+   The audit at `exists_coarseModuliY0_of_pos` used to record one place
+   where this module's level structure was *weaker* than Katz–Mazur's,
+   and hence one place where the moduli problem here was strictly larger
+   than `[Γ₀(N)]` and the citation did not literally apply.  **That is
+   repaired as of 2026-07-26**: `CyclicSubgroupOfOrder` now carries a
+   `flat` field, so the level structure is finite *locally free* in
+   Katz–Mazur's sense (6.7.1) and the two moduli problems agree over
+   `(Ell/ℚ)`.  See the docstring of `CyclicSubgroupOfOrder` for the
+   `Spec ℚ[ε]` counterexample that the field excludes.
 
 2. The bridge from the Weierstrass phrasing to the moduli problem.  This
    was one node, `nonempty_gamma0Datum_of_stable`; it is now PROVEN
@@ -122,6 +139,16 @@ sorried inputs:
    42, 45, 50, 54, 63, 75` — nor any product of two distinct primes
    outside `{6, 10, 14, 15, 21}` — lies in that list.
 
+4. The compactification layer: `X_0(N) ⊇ Y_0(N)` with its finite cusp
+   locus, `J_0(N)` by its Albanese universal property, the rank-`0`
+   input, the Eichler–Shimura counts, and the reduction bound.  TRUE —
+   each of its five leaves carries its own justification, and each is a
+   named classical theorem rather than a repackaging of its consumer.
+   The one hypothesis worth flagging is positivity of the genus, carried
+   inside `HasRankZeroJacobian`: without it the reduction bound is FALSE
+   at `N = 1`, where `X_0(1) = ℙ¹` has a trivial Jacobian and infinitely
+   many rational points.
+
 *Amended 2026-07-26.*  Shape 3 no longer covers the semiprime family
 directly: `y0HasNoRationalPoint_prod_two_primes` is now PROVEN, and its
 content sits in the two nodes `y0HasNoRationalPoint_prime` (Mazur 1978,
@@ -132,9 +159,66 @@ decomposition, both about the degeneracy map `Y_0(N) ⟶ Y_0(M)` for
 `M ∣ N`, and both TRUE:
 
 4. `CyclicSubgroupOfOrder.ofDvd` — the sub-level structure `C[M] ⊆ C`,
-   i.e. the kernel of `[N / M]` on `C`.
+   i.e. the `M`-torsion of `C`, the kernel of `[M]`.
 
 5. `liesIn_ofDvd_iff` — that kernel commutes with base change.
+
+*Amended again 2026-07-26.*  Shapes 4 and 5 are both now PROVEN, over a
+single geometric leaf that replaces them:
+
+6. `exists_torsionSubscheme` — for a cyclic subgroup scheme `C` of order
+   `N` and ANY `M`, the `M`-torsion subfunctor of `C` is cut out by a
+   closed subscheme of `E`, finite over the base.  TRUE: `C` is a finite
+   flat commutative group scheme, `C[M]` is the fibre product of `[M]`
+   with the zero section, and closed immersions are stable under base
+   change and closed under composition.
+
+   Everything else in shapes 4 and 5 is now proven from it: the subgroup
+   axioms and the cyclic-of-order-`M` condition in
+   `CyclicSubgroupOfOrder.ofTorsion` (the arithmetic input being
+   `nsmul_eq_zero_iff_mem_zmultiples_div`: in `ℤ/N` with `M ∣ N` the
+   `M`-torsion is the subgroup generated by `N / M`, of order exactly
+   `M`), and base-change compatibility in `liesIn_ofDvd_iff` (from
+   additivity and — for the converse direction — injectivity of
+   `RelPoint.along`, which is where cartesianness of the square is used).
+
+   Note the earlier statement of shape 4 described `C[M]` as the kernel
+   of `[N / M]`.  That was a slip: in `ℤ/N` that kernel has order `N / M`,
+   not `M`.  The object the degeneracy map needs is the unique subgroup
+   of ORDER `M`, i.e. the kernel of `[M]`, generated by `N / M`.  The
+   definition now says so.
+
+*Amended a third time 2026-07-26: the compactification exists.*  Shape 3
+no longer covers the two uniform statements either.  `Y_0(N)` is affine
+and every route to `Y_0(N)(ℚ) = ∅` runs through the PROPER model, so
+`y0HasNoRationalPoint_prime` and
+`y0HasNoRationalPoint_semiprime_of_mazurPrimes` are now proven from
+statements about `X_0(N)`, over the interface `IsCompactificationY0`:
+
+7. `exists_compactificationY0` — the coarse space `Y_0(N)` is a smooth
+   affine curve over `ℚ` and has a smooth proper compactification.  TRUE
+   (Deligne–Rapoport III.1 / Katz–Mazur 8.2 for normality, plus the
+   proper normal model of a function field).
+
+8. `cuspidal_x0_prime` — Mazur 1978, Theorem 1: every rational point of
+   `X_0(p)` is a cusp, for `p ∉ mazurIsogenyPrimes`.
+
+9. `cuspidal_x0_semiprime_of_mazurPrimes` — Kenku's determination on the
+   `61` residual semiprime levels, likewise on `X_0(pq)`.
+
+Both 8 and 9 are quantified over EVERY model of the interface, so a
+degenerate `X` cannot discharge them; and the passage from "cuspidal on
+`X`" to "empty on `Y`" is no longer an informal remark but the proven
+`y0HasNoRationalPoint_of_cuspidal`, resting on the equally proven
+`y0HasNoRationalPoint_of_isEmpty` (one coarse space suffices, by
+initiality).
+
+The remaining missing subtree for 8 and 9 is `J_0(N)`: the Jacobian as an
+abelian variety over `ℚ`, Abel–Jacobi from a rational cusp, and reduction
+at a good prime.  With the interface in place the rank-`0` criterion can
+now be STATED honestly — its conclusion is `∀ x : X(ℚ), hX.IsCusp x` and
+the cusp count enters as a count of `X(𝔽_ℓ)` — which it could not be
+while the module stopped at `Y_0(N)`.
 
 The lemma they support, `y0HasNoRationalPoint_of_dvd`, is checked
 against the ground truth by observing that the Mazur–Kenku list is
@@ -153,22 +237,51 @@ statement about the genuine `Y_0(N)`.
 
 ## What is NOT here, and is the next decomposition
 
-This module deliberately stops at the coarse moduli space.  It does not
-build, and the twelve level nodes still need:
+The compactification layer (`IsX0Compactification`, `IsJacobianOf`,
+`HasRankZeroJacobian`, `card_le_of_rankZeroJacobian`) is now written as
+an INTERFACE, and the seven single-prime levels are proven over it.
+What the interface's five leaves still need, and none of it exists at
+this pin:
 
-* `J_0(N)` and its Mordell–Weil group (`Y_0(N)(ℚ) = ∅` is proved by
-  bounding `J_0(N)(ℚ)`);
-* the Hecke algebra and the Eisenstein / winding quotient, which is what
-  supplies the rank-`0` input;
-* for the higher-genus levels, Chabauty–Coleman.
+* the smooth compactification of a coarse moduli space, and the cusps
+  of `X_0(N)` with their field of definition
+  (`exists_x0Compactification`, `exists_rationalCusps`);
+* `J_0(N)` as an actual abelian scheme, its Mordell–Weil group, and the
+  reduction map with its formal-group kernel
+  (`card_le_of_rankZeroJacobian`);
+* `S_2(Γ_0(N))`, the Hecke algebra, `L`-functions of modular abelian
+  varieties and Kolyvagin–Logachev, which supply the rank-`0` input
+  (`hasRankZeroJacobian_of_kenkuLevel`), and Eichler–Shimura, which
+  supplies the point counts (`exists_x0Compactification_mod_prime`).
 
-Those are three independent subtrees, none of which exists at this pin.
+Chabauty–Coleman is **not** on this list: the 2026-07-26 reconnaissance
+found `rank J_0(N)(ℚ) = 0` at all eleven named levels, so none of them
+needs it.  The four levels `45, 54, 63, 75` need a multi-prime
+Mordell–Weil sieve instead, which is a strengthening of
+`card_le_of_rankZeroJacobian` rather than a new theory.
 -/
 module
 
 public import Fermat.FLT.Modularity.AbelianScheme
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
 public import Mathlib.AlgebraicGeometry.Morphisms.Finite
+-- `AlgebraicGeometry.Flat`: the flatness half of "finite locally free", which
+-- is what makes `CyclicSubgroupOfOrder` the Katz–Mazur moduli problem
+-- `[Γ₀(N)]` rather than a strictly larger one.  See the `flat` field of
+-- `CyclicSubgroupOfOrder` and the faithfulness audit of
+-- `exists_coarseModuliY0_of_pos`.
+public import Mathlib.AlgebraicGeometry.Morphisms.Flat
+-- The finiteness of the `K`-points of a finite scheme over a geometric
+-- point, which is what makes `isEmpty_of_gamma0Datum_zero` reachable:
+-- `LocallyQuasiFinite` and `IsLocallyArtinian.of_locallyQuasiFinite`,
+-- `IsArtinianScheme.finite`, and `pointEquivClosedPoint`.
+public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
+public import Mathlib.AlgebraicGeometry.Artinian
+public import Mathlib.AlgebraicGeometry.AlgClosed.Basic
+-- `Scheme.residueField` / `Scheme.fromSpecResidueField`, used to produce a
+-- geometric point above an arbitrary point of the base.
+public import Mathlib.AlgebraicGeometry.ResidueField
+public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.AlgebraicGeometry.EllipticCurve.Affine.Point
 -- The group law on `(E⁄K).Point` needs `DecidableEq K`, and the classical
 -- instance for `AlgebraicClosure ℚ` — the one every torsion statement in
@@ -180,6 +293,8 @@ public import Mathlib.CategoryTheory.Limits.Shapes.Pullback.IsPullback.Defs
 -- object, which is the coarse moduli space of the (empty) `Γ₀(0)`-problem
 -- in `exists_coarseModuliY0_zero`.
 public import Mathlib.AlgebraicGeometry.Limits
+-- `ZMod ℓ` is the base ring of the reduction `X_0(N)_{𝔽_ℓ}`; see `SpecF`.
+public import Mathlib.Data.ZMod.Basic
 
 @[expose] public section
 
@@ -222,15 +337,43 @@ def RelPoint.along {E' T' E T : Scheme.{u}} {f' : E' ⟶ T'} {f : E ⟶ T}
 
 /-- **A cyclic subgroup scheme of order `N` of an abelian scheme.**
 
-The data is a closed subscheme `ι : C ⟶ E`, finite over the base, whose
-relative points form a subgroup of the relative points of `E` at every
-base point, and whose geometric fibres are cyclic of order exactly `N`.
+The data is a closed subscheme `ι : C ⟶ E`, **finite and flat** over the
+base, whose relative points form a subgroup of the relative points of `E`
+at every base point, and whose geometric fibres are cyclic of order
+exactly `N`.
 
-Three remarks on the axioms.
+Four remarks on the axioms.
 
 * Closedness and finiteness are what make this a subgroup *scheme*
   rather than a subfunctor; see the module docstring for why that
   distinction is load-bearing for faithfulness.
+* **`flat` is not decoration; it is what makes this the Katz–Mazur
+  moduli problem.**  Katz–Mazur **(6.7.1)** (p. 167) define a *cyclic
+  group of order `N`* to be a "finite locally free commutative
+  `S`-group-scheme, of rank `N`, and cyclic", and `IsFinite` together
+  with `Flat` is exactly finite locally free (a finitely presented flat
+  module is projective, and finite projective over a commutative ring is
+  locally free).  Dropping flatness — as this structure did until
+  2026-07-26 — makes the moduli problem STRICTLY LARGER than `[Γ₀(N)]`,
+  so that the coarse-space existence theorem cited at
+  `exists_coarseModuliY0_of_pos` does not apply to it.  The gap is real
+  rather than notional, and here is the witness that was recorded when
+  it was found:
+
+  > Over `T = Spec ℚ[ε]` take `E = E₀ ×_ℚ ℚ[ε]` and a rational point `P`
+  > of exact order `2` on `E₀`.  Then `C = Spec(ℚ[ε] × ℚ)` — the zero
+  > section together with the *non-flat* thickening `ℚ[ε] ↠ ℚ` of the
+  > `P`-component of `E[2]` — is closed in `E`, finite over `T`,
+  > contains the zero section, and is closed under the group law
+  > (`P + P = 0`), and its unique geometric fibre is `ℤ/2`.  Without
+  > `flat` that is a `CyclicSubgroupOfOrder` of order `2` which is not a
+  > Katz–Mazur `[Γ₀(2)]`-structure.  With `flat` it is excluded, because
+  > `ℚ[ε] × ℚ` is not a flat `ℚ[ε]`-module.
+
+  Note that the witness is *non-reduced over the base*, which is why the
+  omission was invisible at every base this development actually
+  evaluates the moduli problem at — and why it had to be repaired in the
+  interface rather than worked around at a leaf.
 * The subgroup conditions are stated at *every* base point `g : T' ⟶ T`,
   which is the functor-of-points way of saying that the group law of `E`
   restricts to `C`; no naturality is required because `LiesIn` is a
@@ -241,7 +384,20 @@ Three remarks on the axioms.
   `C` in a cyclic group of order `N`.  In residue characteristic `0` —
   the only case used here — this is equivalent to `C` being finite étale
   with cyclic geometric fibres, so nothing is lost by phrasing it
-  pointwise. -/
+  pointwise.
+
+**Why `geom_cyclic` and not a `rank = N` field.**  Katz–Mazur pin the
+*rank* of the finite locally free group scheme; this structure pins the
+*cardinality of the geometric fibres*.  Over a base in which `N` is
+invertible — in particular over any `ℚ`-scheme, which is the only case
+the modular-curve layer evaluates — a finite flat group scheme is étale
+(Cartier's theorem; Waterhouse, *Introduction to Affine Group Schemes*,
+Thm. 11.4, or Tate, *Finite flat group schemes*, §3.7 in
+Cornell–Silverman–Stevens), so its rank equals the number of points of
+any geometric fibre and the two conditions agree.  Carrying the fibre
+condition rather than the rank keeps the level structure statable
+without `Scheme.Hom.finrank`, and is the form the descent leaf
+`exists_cyclicSubgroupOfOrder_of_galoisStable` naturally produces. -/
 structure CyclicSubgroupOfOrder {E T : Scheme.{u}} {f : E ⟶ T}
     (ab : AbelianSchemeStruct f) (N : ℕ) where
   /-- the underlying scheme of the subgroup -/
@@ -252,6 +408,9 @@ structure CyclicSubgroupOfOrder {E T : Scheme.{u}} {f : E ⟶ T}
   isClosedImmersion : IsClosedImmersion ι
   /-- the subgroup scheme is finite over the base -/
   isFinite : IsFinite (ι ≫ f)
+  /-- the subgroup scheme is flat over the base; together with `isFinite`
+  this is Katz–Mazur's "finite locally free" -/
+  flat : AlgebraicGeometry.Flat (ι ≫ f)
   /-- the zero section lies in `C` -/
   zero_liesIn : ∀ {T' : Scheme.{u}} (g : T' ⟶ T),
     RelPoint.LiesIn ι (ab.zero g)
@@ -382,8 +541,11 @@ def Y0HasNoRationalPoint (N : ℕ) : Prop :=
 
 /-! ### The existence of `Y_0(N)`, and the bridge from Weierstrass curves -/
 
-/-- **The `Γ₀(0)`-moduli problem is supported on the empty scheme** (sorry
-leaf).
+/-! ### The degenerate level `N = 0`
+
+**The `Γ₀(0)`-moduli problem is supported on the empty scheme** — PROVEN
+2026-07-26; this subsection was a single sorry leaf until then, and the
+argument recorded here by its finder is the one that was carried out.
 
 TRUE, and *elementary* — no modular-curve theory enters.  Suppose
 `d : Gamma0Datum 0 T` and `T` had a point `x`.  Embedding the residue field
@@ -407,10 +569,113 @@ REACHABLE.  Formalising the argument needs exactly three things, all
 present: stability of `IsFinite` under base change
 (`AlgebraicGeometry.IsFinite` is an `IsStableUnderBaseChange` morphism
 property), affineness of a scheme finite over a field, and the finiteness of
-the set of `K`-algebra maps out of an Artinian `K`-algebra. -/
+the set of `K`-algebra maps out of an Artinian `K`-algebra.
+
+PROVEN 2026-07-26, along exactly those lines, from the two helper lemmas
+`finite_sections_of_isFinite` and `infinite_zmultiples_of_addOrderOf_eq_zero`
+below. -/
+
+/-- **The sections of a finite morphism over a fixed geometric point are
+finite in number.**
+
+For `g : C ⟶ T` finite and `t : Spec K ⟶ T` a geometric point (`K`
+algebraically closed), the `K`-points of `C` lying over `t` form a finite
+set.
+
+The proof is the classical one, and every step is mathlib API: `IsFinite`
+is stable under base change, so `C ×_T Spec K` is finite over `Spec K`; a
+quasi-finite quasi-compact scheme over an artinian one is artinian
+(`IsLocallyArtinian.of_locallyQuasiFinite`), and an artinian scheme has a
+finite underlying space (`IsArtinianScheme.finite`); and
+`AlgebraicGeometry.pointEquivClosedPoint` identifies the sections of a
+morphism of locally finite type to `Spec K` with the closed points of its
+source.  A `K`-point of `C` over `t` induces such a section by the
+universal property of the pullback, injectively. -/
+theorem finite_sections_of_isFinite {C T : Scheme.{u}} (g : C ⟶ T) [IsFinite g]
+    {K : Type u} [Field K] [IsAlgClosed K] (t : Spec (CommRingCat.of K) ⟶ T) :
+    Finite {w : Spec (CommRingCat.of K) ⟶ C // w ≫ g = t} := by
+  classical
+  let P : Scheme.{u} := Limits.pullback g t
+  let π : P ⟶ Spec (CommRingCat.of K) := Limits.pullback.snd g t
+  -- `IsFinite` is stable under base change, so the fibre is finite over `Spec K`.
+  haveI : IsFinite π := inferInstanceAs (IsFinite (Limits.pullback.snd g t))
+  -- A quasi-finite, quasi-compact scheme over an artinian one is artinian,
+  -- hence has a finite underlying space.
+  haveI : IsLocallyArtinian P := IsLocallyArtinian.of_locallyQuasiFinite π
+  haveI : CompactSpace P := QuasiCompact.compactSpace_of_compactSpace π
+  haveI : IsArtinianScheme P := ⟨⟩
+  haveI : Finite P := IsArtinianScheme.finite
+  -- A section of `π` is determined by the closed point of `P` it hits, and a
+  -- `K`-point of `C` over `t` induces such a section.
+  refine Finite.of_injective
+    (fun w => (pointEquivClosedPoint π)
+      ⟨Limits.pullback.lift w.1 (𝟙 _) (by rw [Category.id_comp]; exact w.2),
+        Limits.pullback.lift_snd _ _ _⟩) ?_
+  intro w₁ w₂ h
+  have h2 := congrArg Subtype.val ((pointEquivClosedPoint π).injective h)
+  refine Subtype.ext ?_
+  have h3 := congrArg (· ≫ Limits.pullback.fst g t) h2
+  simp only [Limits.pullback.lift_fst] at h3
+  exact h3
+
+/-- **An element of infinite additive order generates an infinite
+subgroup.** `Nat.card` of `zmultiples y` is `addOrderOf y`, and a `Nat.card`
+of `0` on a nonempty type means infinite. -/
+theorem infinite_zmultiples_of_addOrderOf_eq_zero {G : Type u} [AddCommGroup G]
+    (y : G) (h : addOrderOf y = 0) : Infinite (AddSubgroup.zmultiples y) := by
+  have hc := Nat.card_zmultiples y
+  rw [h] at hc
+  exact (Nat.card_eq_zero.mp hc).resolve_left (not_isEmpty_iff.mpr ⟨0⟩)
+
+/-- **The `Γ₀(0)`-moduli problem is supported on the empty scheme**
+(PROVEN 2026-07-26; formerly a sorry leaf).
+
+`[Γ₀(N)]` is a moduli problem only for `N ≥ 1`, so this degenerate level
+lies outside the Katz–Mazur theorem cited at
+`exists_coarseModuliY0_of_pos`; separating it off is what makes that
+citation honest.  See the section comment above for the full argument and
+for why the split exists. -/
 theorem isEmpty_of_gamma0Datum_zero {T : Scheme.{0}} (d : Gamma0Datum 0 T) :
-    IsEmpty T :=
-  sorry
+    IsEmpty T := by
+  classical
+  by_contra hne
+  rw [not_isEmpty_iff] at hne
+  obtain ⟨x⟩ := hne
+  -- A geometric point of `T` above `x`: the algebraic closure of the residue
+  -- field at `x`.
+  let K := AlgebraicClosure (T.residueField x)
+  let t : Spec (CommRingCat.of K) ⟶ T :=
+    Spec.map (CommRingCat.ofHom (algebraMap (T.residueField x) K)) ≫
+      T.fromSpecResidueField x
+  -- `geom_cyclic` states its conclusion under `ab.addCommGroup t`; bring that
+  -- instance into the context so `addOrderOf` and `zmultiples` elaborate here.
+  letI := d.ab.addCommGroup t
+  obtain ⟨y, -, hyord, hyall⟩ := d.cyc.geom_cyclic K t
+  -- The level structure has infinite order at this geometric point …
+  haveI : Infinite (AddSubgroup.zmultiples y) :=
+    infinite_zmultiples_of_addOrderOf_eq_zero y hyord
+  -- … yet every element of `⟨y⟩` gives a distinct `K`-point of `d.cyc.C`
+  -- over `t`, and those are finite in number because `d.cyc.ι ≫ d.f` is
+  -- a finite morphism.
+  haveI := d.cyc.isFinite
+  haveI : Finite {w : Spec (CommRingCat.of K) ⟶ d.cyc.C //
+      w ≫ (d.cyc.ι ≫ d.f) = t} := finite_sections_of_isFinite _ t
+  have hex : ∀ z : AddSubgroup.zmultiples y,
+      ∃ w : Spec (CommRingCat.of K) ⟶ d.cyc.C, w ≫ d.cyc.ι = (z.1 : _ ⟶ d.E) :=
+    fun z => (hyall z.1).mpr z.2
+  choose w hw using hex
+  have hspec : ∀ z : AddSubgroup.zmultiples y, w z ≫ (d.cyc.ι ≫ d.f) = t := by
+    intro z
+    rw [← Category.assoc, hw z]
+    exact z.1.2
+  haveI : Finite (AddSubgroup.zmultiples y) := by
+    refine Finite.of_injective (fun z => (⟨w z, hspec z⟩ :
+      {w : Spec (CommRingCat.of K) ⟶ d.cyc.C // w ≫ (d.cyc.ι ≫ d.f) = t})) ?_
+    intro z₁ z₂ hz
+    have h1 : w z₁ = w z₂ := congrArg Subtype.val hz
+    refine Subtype.ext (Subtype.ext ?_)
+    rw [← hw z₁, ← hw z₂, h1]
+  exact not_finite (AddSubgroup.zmultiples y)
 
 /-- **Existence of the coarse moduli space, degenerate level `N = 0`**
 (PROVEN, from `isEmpty_of_gamma0Datum_zero`).
@@ -500,39 +765,47 @@ against the text).
 * *`N ≥ 1`.*  `[Γ₀(N)]` is defined only for `N ≥ 1`; the level `N = 0` is
   handled separately and degenerately by `exists_coarseModuliY0_zero`.
 
-## FAITHFULNESS AUDIT: one genuine mismatch, and why it is harmless
+## FAITHFULNESS AUDIT: the one mismatch, and its REPAIR (2026-07-26)
 
 Katz–Mazur **(6.7.1)** (p. 167) define a *cyclic group of order `N`* to be
 a "finite locally free commutative `S`-group-scheme, of rank `N`, and
-cyclic".  `CyclicSubgroupOfOrder` above asks instead for a closed subgroup
-scheme that is **finite** over the base with **geometric fibres** cyclic of
-order `N`; it does **not** ask for flatness.  Over a non-reduced base these
-differ, and the gap is real rather than notional:
+cyclic".
 
-> Over `T = Spec ℚ[ε]` take `E = E₀ ×_ℚ ℚ[ε]` and a rational point `P` of
-> exact order `2` on `E₀`.  Then `C = Spec(ℚ[ε] × ℚ)` — the zero section
-> together with the *non-flat* thickening `ℚ[ε] ↠ ℚ` of the `P`-component
-> of `E[2]` — is closed in `E`, finite over `T`, contains the zero section,
-> and is closed under the group law (`P + P = 0`), and its unique geometric
-> fibre is `ℤ/2`.  So it is a `CyclicSubgroupOfOrder` of order `2` that is
-> not a Katz–Mazur `[Γ₀(2)]`-structure.
+Until 2026-07-26 `CyclicSubgroupOfOrder` asked only for a closed subgroup
+scheme **finite** over the base with **geometric fibres** cyclic of order
+`N` — it did **not** ask for flatness.  That made the moduli problem here
+strictly *larger* than `[Γ₀(N)]`, so the theorem cited above did not
+literally apply to it, and the gap was real rather than notional: over
+`T = Spec ℚ[ε]` the non-flat thickening `C = Spec(ℚ[ε] × ℚ)` of a
+`2`-torsion component satisfied every axiom and is not a KM
+`[Γ₀(2)]`-structure.  The counterexample is written out in full in the
+docstring of `CyclicSubgroupOfOrder`, where it now serves as the
+justification for the axiom rather than as an open defect.
 
-So the moduli problem here is a priori *larger* than `[Γ₀(N)]`, and the
-cited theorem does not literally apply to it.  It does apply after one
-extra step, which a successor closing this node must supply: over a
-`ℚ`-scheme `E[N]` is finite étale, the support of such a `C` is open and
-closed in `E[N]` (its geometric fibres all have exactly `N` points), and
-the corresponding open-and-closed subgroup scheme is a canonical finite
-locally free "flatification" `C ⊆ C^♭ ⊆ E[N]` with the same geometric
-fibres, formed compatibly with base change.  Flatification is therefore a
-natural retraction of this moduli problem onto `[Γ₀(N)]`, and a natural
-transformation out of one is the same thing as a natural transformation out
-of the other — so the two problems have the same coarse space and the
-citation transfers.
+**The repair was made in the interface**, which is where it belonged: the
+field `CyclicSubgroupOfOrder.flat` requires `AlgebraicGeometry.Flat
+(ι ≫ f)`, so the level structure is finite *and* flat over the base,
+i.e. finite locally free.  A flatification retraction — the route a
+successor would otherwise have had to supply — is no longer needed, and
+the earlier plan to build one (`C ⊆ C^♭ ⊆ E[N]`, open and closed in the
+`N`-torsion, formed compatibly with base change) is retired rather than
+merely deferred.
 
-This mismatch is recorded rather than repaired because repairing it means
-adding a flat variant of `CyclicSubgroupOfOrder` to the interface, which is
-a change to the moduli problem itself and not to this node.
+**What remains, and why it is not a mismatch.**  KM pin the *rank*;
+`geom_cyclic` pins the *number of points of each geometric fibre*.  Over
+a `ℚ`-scheme — and every base at which `IsCoarseModuliY0 N (str : Y ⟶
+SpecQ)` evaluates the problem is a `ℚ`-scheme, since a datum comes with
+a structure map `g : T ⟶ SpecQ` — a finite flat group scheme is étale by
+Cartier's theorem, so rank and geometric-fibre cardinality coincide, and
+"cyclic" in KM's fppf-local sense coincides with cyclicity of the
+geometric fibres.  So over `(Ell/ℚ)` the two moduli problems are the
+same, and the citation applies to this one on the nose.
+
+The step in that paragraph — Cartier's theorem — is a *statement about
+the citation's hypotheses*, not a hidden lemma of the formalisation:
+nothing below consumes it, and it is recorded so that a successor
+closing this node knows precisely which classical fact reconciles the
+two phrasings.
 
 ## Why it is IRREDUCIBLE at this pin
 
@@ -672,7 +945,18 @@ What is ABSENT, and is the actual content of this leaf:
 So the honest cut for a successor is: build the reduced induced
 structure, or go through `CommAlgCat.FiniteEtale` on affines and glue.
 The algebra-side scaffolding is fresher than the module docstring's
-"no modular curves anywhere" survey would suggest. -/
+"no modular curves anywhere" survey would suggest.
+
+**NOTE ON THE `flat` FIELD** (added to `CyclicSubgroupOfOrder`
+2026-07-26, when the level structure was corrected to Katz–Mazur's
+"finite locally free").  This leaf now owes a proof of
+`AlgebraicGeometry.Flat (ι ≫ f)` as well, and that costs it **nothing**:
+the base here is `SpecQ = Spec ℚ`, a field, over which every module is
+flat.  So the extra field is discharged by flatness of `C` as a
+`ℚ`-scheme, whichever construction of `C` a successor chooses, and no
+part of the descent argument above has to change.  The strengthening of
+the interface is paid for entirely by the *general-base* consumers, not
+here. -/
 theorem exists_cyclicSubgroupOfOrder_of_galoisStable {A : Scheme.{0}} {f : A ⟶ SpecQ}
     (ab : AbelianSchemeStruct f) (N : ℕ) (y : GeomFibrePt f (𝟙 SpecQ))
     (hy : letI := ab.addCommGroup (specAlgClos ℚ ≫ 𝟙 SpecQ)
@@ -791,20 +1075,119 @@ pointwise.  It is obtained instead from the *universal property* of
 pushed.  This is the only place in the module where `universal` is used,
 and it is why that field was stated. -/
 
-/-- **The sub-level structure `C[M] ⊆ C` of a cyclic subgroup scheme of
-order `N`, for `M ∣ N`** (sorry node).
+/-! #### The cyclic group theory behind `C[M]`
 
-TRUE, and it is the kernel of multiplication by `N / M` on `C`: over a
-base where `C` is finite étale with geometric fibres cyclic of order `N`,
-the fibres of that kernel are the unique order-`M` subgroups, so the
-kernel is again finite, closed in `C` — hence closed in `E` — and cyclic
-of order exactly `M` on geometric fibres.
+Three elementary facts about a cyclic group of order `N`, isolated here
+so that `CyclicSubgroupOfOrder.ofTorsion` below is pure bookkeeping.  In
+`ℤ/N` with `M ∣ N` the unique subgroup of order `M` is generated by
+`N / M` and is exactly the `M`-torsion; that is the content of the second
+lemma, and it is what makes `C[M]` a `Γ₀(M)`-structure. -/
+
+/-- **The generator of the `M`-torsion of a cyclic group of order `N`**:
+`(N / M) • y` has order exactly `M` when `y` has order `N` and `M ∣ N`. -/
+theorem addOrderOf_nsmul_div_of_dvd {G : Type*} [AddCommGroup G] {M N : ℕ}
+    (hN : N ≠ 0) (hMN : M ∣ N) (y : G) (hy : addOrderOf y = N) :
+    addOrderOf ((N / M) • y) = M := by
+  have hM : M ≠ 0 := by rintro rfl; exact hN (Nat.eq_zero_of_zero_dvd hMN)
+  have hMd : M * (N / M) = N := Nat.mul_div_cancel' hMN
+  have hd : N / M ≠ 0 := by rintro h; rw [h, mul_zero] at hMd; exact hN hMd.symm
+  rw [addOrderOf_nsmul' _ hd, hy, Nat.gcd_eq_right (Nat.div_dvd_of_dvd hMN),
+    Nat.div_div_self hMN hN]
+
+/-- **The `M`-torsion of a cyclic group of order `N` is the subgroup
+generated by `N / M`**, for `M ∣ N`.  This is the group-theoretic heart
+of the degeneracy map: it identifies the *condition* `M • x = 0`, which
+is what a torsion subscheme cuts out, with *membership in a cyclic
+subgroup of order `M`*, which is what a `Γ₀(M)`-structure demands. -/
+theorem nsmul_eq_zero_iff_mem_zmultiples_div {G : Type*} [AddCommGroup G] {M N : ℕ}
+    (hN : N ≠ 0) (hMN : M ∣ N) (y : G) (hy : addOrderOf y = N)
+    {x : G} (hx : x ∈ AddSubgroup.zmultiples y) :
+    M • x = 0 ↔ x ∈ AddSubgroup.zmultiples ((N / M) • y) := by
+  obtain ⟨k, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp hx
+  have hM : M ≠ 0 := by rintro rfl; exact hN (Nat.eq_zero_of_zero_dvd hMN)
+  have hMd : M * (N / M) = N := Nat.mul_div_cancel' hMN
+  have hzero : M • ((N / M) • y) = 0 := by
+    rw [smul_smul, hMd, ← hy, addOrderOf_nsmul_eq_zero]
+  constructor
+  · intro h
+    rw [← natCast_zsmul (k • y) M, smul_smul, ← addOrderOf_dvd_iff_zsmul_eq_zero, hy] at h
+    have hdk : ((N / M : ℕ) : ℤ) ∣ k := by
+      have hNc : ((N : ℕ) : ℤ) = (M : ℤ) * ((N / M : ℕ) : ℤ) := by
+        exact_mod_cast congrArg (Nat.cast : ℕ → ℤ) hMd.symm
+      rw [hNc] at h
+      exact (mul_dvd_mul_iff_left (by exact_mod_cast hM : (M : ℤ) ≠ 0)).mp h
+    obtain ⟨j, rfl⟩ := hdk
+    exact AddSubgroup.mem_zmultiples_iff.mpr
+      ⟨j, by rw [← natCast_zsmul y (N / M), smul_smul, mul_comm]⟩
+  · intro h
+    obtain ⟨j, hj⟩ := AddSubgroup.mem_zmultiples_iff.mp h
+    rw [← hj, smul_comm, hzero, smul_zero]
+
+/-- **The `M`-torsion sits inside the ambient cyclic group.** -/
+theorem mem_zmultiples_of_mem_nsmul_div {G : Type*} [AddCommGroup G] {M N : ℕ} {y x : G}
+    (h : x ∈ AddSubgroup.zmultiples ((N / M) • y)) : x ∈ AddSubgroup.zmultiples y := by
+  obtain ⟨j, rfl⟩ := AddSubgroup.mem_zmultiples_iff.mp h
+  exact AddSubgroup.mem_zmultiples_iff.mpr
+    ⟨j * ((N / M : ℕ) : ℤ), by rw [← natCast_zsmul y (N / M), smul_smul]⟩
+
+/-- **The `M`-torsion of a cyclic subgroup scheme is again cut out by a
+closed subscheme, finite over the base** (sorry node).
+
+TRUE: `C` is finite flat over `T` with cyclic geometric fibres, hence a
+finite flat commutative group scheme, so multiplication by `M` is an
+endomorphism of `C` over `T` and `C[M]` is the fibre product of
+`[M] : C ⟶ C` with the zero section `T ⟶ C`.  The zero section of a
+scheme finite — hence separated — over `T` is a closed immersion, closed
+immersions are stable under base change, and closed immersions compose;
+so `C[M] ⟶ C ⟶ E` is a closed immersion and `C[M] ⟶ T` is finite.  On
+relative points, membership of `C[M]` is membership of `C` together with
+`M • x = 0`, which is what the characterisation below records.
+
+This holds for EVERY `M`, with no divisibility hypothesis and no
+constraint relating `M` to `N`: for `M = 0` the condition `0 • x = 0` is
+vacuous and `C` itself works, and in general `C[M] = C[gcd (M, N)]`.
+Keeping the leaf free of hypotheses it does not need is deliberate — the
+arithmetic that `M ∣ N` buys is entirely group-theoretic and is
+discharged in `CyclicSubgroupOfOrder.ofTorsion` below, so this node
+carries only the geometry.
 
 IRREDUCIBLE at this mathlib pin for the same reason as
-`nonempty_gamma0Datum_of_stable`: it needs the kernel of an endomorphism
-of a finite flat group scheme as a *scheme*, i.e. a fibre product, and
-the composite of closed immersions — none of which is packaged for the
-functor-of-points presentation used here.
+`nonempty_gamma0Datum_of_stable`: the functor-of-points presentation used
+here carries the group law on `RelPoint` rather than as a morphism
+`E ×_T E ⟶ E`, so `[M] : C ⟶ C` is not available as a morphism of
+schemes and the fibre product cannot be formed.  Supplying it needs the
+group law as a morphism, which is the same missing theory.
+
+**FLATNESS IS PART OF THIS LEAF** (added at integration, 2026-07-26, and
+it is not decoration).  `CyclicSubgroupOfOrder` acquired a `flat` field —
+that field is what makes the structure Katz–Mazur's finite *locally free*
+`[Γ₀(N)]` rather than a strictly larger moduli problem; see the field's
+own docstring for the `Spec ℚ[ε]` counterexample.  This leaf and
+`CyclicSubgroupOfOrder.ofDvd` were written independently, against the
+structure BEFORE and AFTER that field existed, so they merged cleanly and
+then could not build: `ofTorsion` had no flatness to put in the field.
+Carrying it here is the right place — `C[M]` is a torsion subscheme of an
+already-flat `C`, so whatever construction discharges this leaf produces
+flatness along with finiteness, and no separate argument is needed.  It
+is threaded through `ofTorsion`'s `hflat` argument to `ofDvd`. -/
+theorem exists_torsionSubscheme {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {N : ℕ} (c : CyclicSubgroupOfOrder ab N) (M : ℕ) :
+    ∃ (C' : Scheme.{u}) (ι' : C' ⟶ E), IsClosedImmersion ι' ∧ IsFinite (ι' ≫ f) ∧
+      AlgebraicGeometry.Flat (ι' ≫ f) ∧
+      ∀ (T' : Scheme.{u}) (g : T' ⟶ T) (x : RelPoint f g),
+        letI := ab.addCommGroup g
+        RelPoint.LiesIn ι' x ↔ (RelPoint.LiesIn c.ι x ∧ M • x = 0) :=
+  sorry
+
+/-- **A torsion subscheme of a cyclic subgroup scheme of order `N` is a
+cyclic subgroup scheme of order `M`, for `M ∣ N`** (PROVEN).
+
+This is everything about `C[M]` that is not the representability handled
+by `exists_torsionSubscheme`: the subgroup axioms, which follow from
+`smul_zero` / `smul_add` / `smul_neg` because `M • (-)` is additive, and
+the level condition `geom_cyclic`, which is
+`nsmul_eq_zero_iff_mem_zmultiples_div` applied fibre by fibre with
+generator `(N / M) • y`.
 
 `hN` excludes `N = 0`.  It is not cosmetic: `N = 0` asks the geometric
 fibres of a scheme FINITE over the base to be infinite cyclic, so
@@ -812,10 +1195,91 @@ fibres of a scheme FINITE over the base to be infinite cyclic, so
 reason (finiteness of `ι ≫ f`) that this development does not have the
 machinery to exploit, and without `hN` the statement would read as the
 false claim that an infinite cyclic group has a subgroup of order `M`. -/
+noncomputable def CyclicSubgroupOfOrder.ofTorsion {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
+    (c : CyclicSubgroupOfOrder ab N)
+    {C' : Scheme.{u}} (ι' : C' ⟶ E) (hcl : IsClosedImmersion ι')
+    (hfin : IsFinite (ι' ≫ f)) (hflat : AlgebraicGeometry.Flat (ι' ≫ f))
+    (hmem : ∀ (T' : Scheme.{u}) (g : T' ⟶ T) (x : RelPoint f g),
+      letI := ab.addCommGroup g
+      RelPoint.LiesIn ι' x ↔ (RelPoint.LiesIn c.ι x ∧ M • x = 0)) :
+    CyclicSubgroupOfOrder ab M where
+  C := C'
+  ι := ι'
+  isClosedImmersion := hcl
+  isFinite := hfin
+  flat := hflat
+  zero_liesIn g := by
+    letI := ab.addCommGroup g
+    refine (hmem _ g _).mpr ⟨c.zero_liesIn g, ?_⟩
+    show M • (0 : RelPoint f g) = 0
+    exact smul_zero M
+  add_liesIn hx hy := by
+    rename_i T' g x y
+    letI := ab.addCommGroup g
+    obtain ⟨hx1, hx2⟩ := (hmem _ g x).mp hx
+    obtain ⟨hy1, hy2⟩ := (hmem _ g y).mp hy
+    refine (hmem _ g _).mpr ⟨c.add_liesIn hx1 hy1, ?_⟩
+    show M • (x + y) = 0
+    rw [smul_add, hx2, hy2, add_zero]
+  neg_liesIn hx := by
+    rename_i T' g x
+    letI := ab.addCommGroup g
+    obtain ⟨hx1, hx2⟩ := (hmem _ g x).mp hx
+    refine (hmem _ g _).mpr ⟨c.neg_liesIn hx1, ?_⟩
+    show M • (-x) = 0
+    rw [smul_neg, hx2, neg_zero]
+  geom_cyclic := by
+    intro K _ _ t
+    letI := ab.addCommGroup t
+    obtain ⟨y, hyC, hyord, hyall⟩ := c.geom_cyclic K t
+    refine ⟨(N / M) • y, ?_, addOrderOf_nsmul_div_of_dvd hN hMN y hyord, ?_⟩
+    · refine (hmem _ t _).mpr ⟨(hyall _).mpr (AddSubgroup.mem_zmultiples_iff.mpr
+        ⟨((N / M : ℕ) : ℤ), natCast_zsmul y (N / M)⟩), ?_⟩
+      rw [smul_smul, Nat.mul_div_cancel' hMN, ← hyord, addOrderOf_nsmul_eq_zero]
+    · intro x
+      rw [hmem _ t x, hyall x]
+      constructor
+      · rintro ⟨h1, h2⟩
+        exact (nsmul_eq_zero_iff_mem_zmultiples_div hN hMN y hyord h1).mp h2
+      · intro h
+        have h1 : x ∈ AddSubgroup.zmultiples y := mem_zmultiples_of_mem_nsmul_div h
+        exact ⟨h1, (nsmul_eq_zero_iff_mem_zmultiples_div hN hMN y hyord h1).mpr h⟩
+
+/-- **The sub-level structure `C[M] ⊆ C` of a cyclic subgroup scheme of
+order `N`, for `M ∣ N`** (PROVEN 2026-07-26 over `exists_torsionSubscheme`).
+
+`C[M]` is the `M`-torsion of `C` — NOT, as an earlier version of this
+docstring said, the kernel of `[N / M]`: in `ℤ/N` the kernel of `N / M`
+has order `N / M`, whereas the sub-level structure wanted by the
+degeneracy map `Y_0(N) ⟶ Y_0(M)` is the unique subgroup of order `M`,
+which is the kernel of `[M]` and is generated by `N / M`.
+
+The construction is `exists_torsionSubscheme` (the geometry: the torsion
+subfunctor is a closed subscheme, finite over the base) fed to
+`CyclicSubgroupOfOrder.ofTorsion` (the arithmetic: that subscheme is
+cyclic of order exactly `M`). -/
 noncomputable def CyclicSubgroupOfOrder.ofDvd {E T : Scheme.{u}} {f : E ⟶ T}
-    {ab : AbelianSchemeStruct f} {M N : ℕ} (_hN : N ≠ 0) (_hMN : M ∣ N)
-    (_c : CyclicSubgroupOfOrder ab N) : CyclicSubgroupOfOrder ab M :=
-  sorry
+    {ab : AbelianSchemeStruct f} {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
+    (c : CyclicSubgroupOfOrder ab N) : CyclicSubgroupOfOrder ab M :=
+  CyclicSubgroupOfOrder.ofTorsion hN hMN c (exists_torsionSubscheme c M).choose_spec.choose
+    (exists_torsionSubscheme c M).choose_spec.choose_spec.1
+    (exists_torsionSubscheme c M).choose_spec.choose_spec.2.1
+    (exists_torsionSubscheme c M).choose_spec.choose_spec.2.2.1
+    (exists_torsionSubscheme c M).choose_spec.choose_spec.2.2.2
+
+/-- **Membership in `C[M]`, on relative points** (PROVEN): a relative
+point lies in `C[M]` exactly when it lies in `C` and is killed by `M`.
+
+This is the *only* interface to `CyclicSubgroupOfOrder.ofDvd` that
+anything downstream should use; the underlying scheme is obtained by
+choice from `exists_torsionSubscheme` and is not otherwise pinned. -/
+theorem CyclicSubgroupOfOrder.liesIn_ofDvd_iff_mem {E T : Scheme.{u}} {f : E ⟶ T}
+    {ab : AbelianSchemeStruct f} {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
+    (c : CyclicSubgroupOfOrder ab N) (T' : Scheme.{u}) (g : T' ⟶ T) (x : RelPoint f g) :
+    letI := ab.addCommGroup g
+    RelPoint.LiesIn (c.ofDvd hN hMN).ι x ↔ (RelPoint.LiesIn c.ι x ∧ M • x = 0) :=
+  (exists_torsionSubscheme c M).choose_spec.choose_spec.2.2.2 T' g x
 
 /-- **The degeneracy map on `Γ₀`-data, `(E, C) ↦ (E, C[M])` for `M ∣ N`.**
 
@@ -833,13 +1297,79 @@ noncomputable def Gamma0Datum.ofDvd {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
   relativeDimensionOne := d.relativeDimensionOne
   cyc := d.cyc.ofDvd hN hMN
 
-/-- **The degeneracy map is compatible with base change, on the level
-structure** (sorry node).
+/-! #### The map on relative points induced by a cartesian square
 
-TRUE: `C'[M]` is the kernel of `N / M` on `C'`, `C' = C ×_T T'` as a
-subgroup scheme of `E'` by `hb.liesIn_iff`, and forming the kernel of an
-endomorphism commutes with base change.  So a relative point of `E'` lies
-in `C'[M]` exactly when its image lies in `C[M]`.
+`RelPoint.along hb.map hb.isPullback.w` is additive by two of the axioms
+of `IsBaseChangeOf`, and INJECTIVE because the square is cartesian — a
+`T''`-point of `E'` is determined by its two projections.  Injectivity is
+what makes the torsion condition `M • x = 0` descend in *both*
+directions, which is exactly what `liesIn_ofDvd_iff` needs. -/
+
+/-- **An additive map commutes with `nsmul`.**  Stated for bare functions
+with the two homomorphism equations as hypotheses, rather than for an
+`AddMonoidHom`, because `RelPoint.along` is not packaged as one and the
+group structures here come from `AbelianSchemeStruct.addCommGroup` rather
+than from instance synthesis. -/
+theorem map_nsmul_of_map_add {A B : Type*} [AddMonoid A] [AddMonoid B]
+    (F : A → B) (h0 : F 0 = 0) (hadd : ∀ x y, F (x + y) = F x + F y) :
+    ∀ (n : ℕ) (x : A), F (n • x) = n • F x
+  | 0, x => by simpa using h0
+  | n + 1, x => by
+      rw [succ_nsmul, hadd, map_nsmul_of_map_add F h0 hadd n x, succ_nsmul]
+
+/-- **`RelPoint.along` preserves the zero section**, restated in the
+group structures of `AbelianSchemeStruct.addCommGroup`. -/
+theorem along_zero {N : ℕ} {T' T : Scheme.{u}} {h : T' ⟶ T} {d' : Gamma0Datum N T'}
+    {d : Gamma0Datum N T} (hb : IsBaseChangeOf h d' d) {T'' : Scheme.{u}} (g : T'' ⟶ T') :
+    letI := d'.ab.addCommGroup g
+    letI := d.ab.addCommGroup (g ≫ h)
+    RelPoint.along hb.map hb.isPullback.w (0 : RelPoint d'.f g) = 0 :=
+  hb.map_zero g
+
+/-- **`RelPoint.along` is additive**, restated in the group structures of
+`AbelianSchemeStruct.addCommGroup`. -/
+theorem along_add {N : ℕ} {T' T : Scheme.{u}} {h : T' ⟶ T} {d' : Gamma0Datum N T'}
+    {d : Gamma0Datum N T} (hb : IsBaseChangeOf h d' d) {T'' : Scheme.{u}} {g : T'' ⟶ T'}
+    (x y : RelPoint d'.f g) :
+    letI := d'.ab.addCommGroup g
+    letI := d.ab.addCommGroup (g ≫ h)
+    RelPoint.along hb.map hb.isPullback.w (x + y)
+      = RelPoint.along hb.map hb.isPullback.w x + RelPoint.along hb.map hb.isPullback.w y :=
+  hb.map_add x y
+
+/-- **`RelPoint.along` commutes with multiplication by a natural
+number.** -/
+theorem along_nsmul {N : ℕ} {T' T : Scheme.{u}} {h : T' ⟶ T} {d' : Gamma0Datum N T'}
+    {d : Gamma0Datum N T} (hb : IsBaseChangeOf h d' d) {T'' : Scheme.{u}} {g : T'' ⟶ T'}
+    (n : ℕ) (x : RelPoint d'.f g) :
+    letI := d'.ab.addCommGroup g
+    letI := d.ab.addCommGroup (g ≫ h)
+    RelPoint.along hb.map hb.isPullback.w (n • x)
+      = n • RelPoint.along hb.map hb.isPullback.w x :=
+  letI := d'.ab.addCommGroup g
+  letI := d.ab.addCommGroup (g ≫ h)
+  map_nsmul_of_map_add _ (along_zero hb g) (fun a b => along_add hb a b) n x
+
+/-- **`RelPoint.along` is injective along a cartesian square.**  A
+`T''`-point of the pullback `E'` is determined by its projections to `T'`
+and to `E`; the projection to `T'` is the fixed base point `g`, so the
+projection to `E` — which is exactly `RelPoint.along` — determines it. -/
+theorem along_inj {N : ℕ} {T' T : Scheme.{u}} {h : T' ⟶ T} {d' : Gamma0Datum N T'}
+    {d : Gamma0Datum N T} (hb : IsBaseChangeOf h d' d) {T'' : Scheme.{u}} {g : T'' ⟶ T'}
+    {a b : RelPoint d'.f g}
+    (hab : RelPoint.along hb.map hb.isPullback.w a
+        = RelPoint.along hb.map hb.isPullback.w b) : a = b :=
+  Subtype.ext (hb.isPullback.hom_ext (by rw [a.2, b.2]) (congrArg Subtype.val hab))
+
+/-- **The degeneracy map is compatible with base change, on the level
+structure** (PROVEN 2026-07-26).
+
+`C'[M]` is the `M`-torsion of `C'`, `C'` is the pullback of `C` as a
+subgroup scheme of `E'` by `hb.liesIn_iff`, and the torsion CONDITION
+`M • x = 0` transfers across `RelPoint.along` in both directions: forward
+because `along` is additive (`along_nsmul`, `along_zero`), backward
+because it is injective (`along_inj`, which is where cartesianness of the
+square is used and the only place in this module where it is).
 
 This is the *only* axiom of `IsBaseChangeOf` that the degeneracy map does
 not inherit verbatim from `hb`, because the other four mention only data
@@ -850,8 +1380,17 @@ theorem liesIn_ofDvd_iff {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
     {T'' : Scheme.{u}} {g : T'' ⟶ T'} (x : RelPoint d'.f g) :
     RelPoint.LiesIn (d'.ofDvd hN hMN).cyc.ι x ↔
       RelPoint.LiesIn (d.ofDvd hN hMN).cyc.ι
-        (RelPoint.along hb.map hb.isPullback.w x) :=
-  sorry
+        (RelPoint.along hb.map hb.isPullback.w x) := by
+  show RelPoint.LiesIn (d'.cyc.ofDvd hN hMN).ι x ↔
+    RelPoint.LiesIn (d.cyc.ofDvd hN hMN).ι (RelPoint.along hb.map hb.isPullback.w x)
+  rw [CyclicSubgroupOfOrder.liesIn_ofDvd_iff_mem hN hMN d'.cyc _ g x,
+    CyclicSubgroupOfOrder.liesIn_ofDvd_iff_mem hN hMN d.cyc _ (g ≫ h) _]
+  constructor
+  · rintro ⟨h1, h2⟩
+    exact ⟨(hb.liesIn_iff x).mp h1, by rw [← along_nsmul hb M x, h2, along_zero hb g]⟩
+  · rintro ⟨h1, h2⟩
+    refine ⟨(hb.liesIn_iff x).mpr h1, along_inj hb ?_⟩
+    rw [along_nsmul hb M x, h2, along_zero hb g]
 
 /-- **A base change of `Γ₀(N)`-data induces a base change of the
 degenerated `Γ₀(M)`-data.**
@@ -897,6 +1436,140 @@ theorem y0HasNoRationalPoint_of_dvd {M N : ℕ} (hN : N ≠ 0) (hMN : M ∣ N)
   refine ⟨fun x => (hM Y' str' cM).elim ⟨x.1 ≫ u, ?_⟩⟩
   rw [Category.assoc, hu, x.2]
 
+/-! ### One coarse space suffices, and the smooth compactification
+
+`Y0HasNoRationalPoint N` quantifies over EVERY coarse moduli space of the
+`Γ₀(N)`-problem, which is the right statement but the wrong thing to work
+with: a level computation is carried out on one model.  The first lemma
+below closes that gap once and for all — emptiness at a single coarse
+space propagates to all of them, by the same initiality argument as
+`y0HasNoRationalPoint_of_dvd` with `M = N`.
+
+The rest of this section is the **compactification interface**, which the
+module docstring names as the next decomposition and which is built here.
+Its purpose is to move the two remaining uniform statements — Mazur's
+prime theorem and Kenku's semiprime range — off the affine `Y_0(N)` and
+onto `X_0(N)`, which is where their proofs live and where the only known
+routes (rank `0` plus reduction, and Chabauty–Coleman) can even be
+phrased.  See the docstring of `y0HasNoRationalPoint_semiprime_of_mazurPrimes`
+for why they CANNOT be phrased against `Y_0(N)` alone. -/
+
+/-- **Emptiness at one coarse space propagates to all of them** (PROVEN).
+
+Any two coarse spaces of the `Γ₀(N)`-problem are canonically
+`ℚ`-isomorphic by initiality, so it is enough to exhibit ONE with no
+rational point.  The proof does not even need the isomorphism: initiality
+of `str'` against the natural transformation `classify` of `str` gives a
+`ℚ`-morphism `u : Y' ⟶ Y` along which a rational point of `Y'` pushes to
+one of `Y`.
+
+This is what lets every level computation below be performed on a single
+chosen model. -/
+theorem y0HasNoRationalPoint_of_isEmpty {N : ℕ} {Y : Scheme.{0}} {str : Y ⟶ SpecQ}
+    (hc : IsCoarseModuliY0 N str) (he : IsEmpty (RelPoint str (𝟙 SpecQ))) :
+    Y0HasNoRationalPoint N := by
+  intro Y' str' hc'
+  obtain ⟨u, ⟨hu, -⟩, -⟩ := hc'.universal str (fun g d => hc.classify g d)
+    (by intro _ _ h _ _ hg _ _ hb; exact hc.classify_natural h hg hb)
+  exact ⟨fun x => he.elim ⟨x.1 ≫ u, by rw [Category.assoc, hu, x.2]⟩⟩
+
+/-- **`str_X : X ⟶ Spec ℚ` is the smooth compactification of the coarse
+space `str_Y : Y ⟶ Spec ℚ`.**
+
+`Y_0(N)` is a smooth affine curve over `ℚ`; `X_0(N)` is the unique smooth
+proper curve containing it as a dense open subscheme, and the finite
+complement is the set of cusps.  The interface records exactly that: an
+open immersion `j` over `ℚ` with dense image into a proper smooth `X`.
+
+**Why these four conditions and no fewer.**  A smooth curve has a smooth
+compactification that is unique up to unique isomorphism *given the
+curve*, so `IsOpenImmersion j`, `IsDominant j`, `IsProper strX` and
+`Smooth strX` together pin `X` down as tightly as `IsCoarseModuliY0` pins
+`Y` — and `Y` is already pinned by initiality.  Dropping density would
+allow `X = Y ⊔ (anything proper)`; dropping properness would allow
+`X = Y` with no cusps at all.  Neither would make any statement below
+FALSE — the leaves are quantified over all models of the interface, so a
+degenerate model only makes them harder — but both would make the
+interface useless to the layer it exists to enable, since `J_0(N)` and
+reduction at a good prime are statements about the proper model.
+
+**Why there is no cusp DATA here.**  Cuspidality is a property, not a
+choice: a rational point of `X` is a cusp exactly when it does not come
+from a rational point of `Y` (`IsCompactificationY0.IsCusp`).  For an
+open immersion that is the honest scheme-theoretic condition, and
+carrying a `Finset` of cusps instead would be an invitation to state a
+count as a hypothesis — which is precisely the smuggling that
+`y0HasNoRationalPoint_semiprime_of_mazurPrimes`'s docstring warns
+against. -/
+structure IsCompactificationY0 {Y X : Scheme.{0}} (strY : Y ⟶ SpecQ) (strX : X ⟶ SpecQ) where
+  /-- the inclusion of the affine coarse space -/
+  j : Y ⟶ X
+  /-- the inclusion is a morphism over `ℚ` -/
+  over : j ≫ strX = strY
+  /-- `Y` is an open subscheme of `X` -/
+  isOpenImmersion : IsOpenImmersion j
+  /-- `Y` is DENSE in `X`: `X` is a compactification of `Y`, not of
+  something smaller -/
+  isDominant : IsDominant j
+  /-- `X` is proper over `ℚ` -/
+  proper : IsProper strX
+  /-- `X` is smooth over `ℚ` -/
+  smooth : Smooth strX
+
+/-- **A rational point of `X_0(N)` is a cusp when it does not come from a
+rational point of `Y_0(N)`.**
+
+For an open immersion this is the scheme-theoretic condition: a
+`ℚ`-point of `X` whose image lies in the open subscheme `Y` factors
+through `Y`, so the points that do not factor are exactly the ones
+supported on the closed complement.
+
+The condition `y ≫ strY = 𝟙` is not imposed and is not missing: it
+follows from `y ≫ j = x.1` and `IsCompactificationY0.over`. -/
+def IsCompactificationY0.IsCusp {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    (hX : IsCompactificationY0 strY strX) (x : RelPoint strX (𝟙 SpecQ)) : Prop :=
+  ¬ ∃ y : SpecQ ⟶ Y, y ≫ hX.j = x.1
+
+/-- **`X_0(N)(ℚ)` cuspidal implies `Y_0(N)(ℚ) = ∅`** (PROVEN).
+
+This is the bridge the module was missing, and it is the step that the
+sentence "`X_0(N)(ℚ)` consists only of cusps is literally `Y_0(N)(ℚ) = ∅`"
+in the module docstring was asserting informally.  It is now a proof: a
+rational point of `Y` maps to a rational point of `X` that visibly comes
+from `Y`, hence is not a cusp; so if every rational point of `X` is a
+cusp then `Y` has none, and `y0HasNoRationalPoint_of_isEmpty` carries
+that from this one model to every coarse space. -/
+theorem y0HasNoRationalPoint_of_cuspidal {N : ℕ} {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ}
+    {strX : X ⟶ SpecQ} (hc : IsCoarseModuliY0 N strY)
+    (hX : IsCompactificationY0 strY strX)
+    (hall : ∀ x : RelPoint strX (𝟙 SpecQ), hX.IsCusp x) : Y0HasNoRationalPoint N := by
+  refine y0HasNoRationalPoint_of_isEmpty hc ⟨fun y => ?_⟩
+  exact hall ⟨y.1 ≫ hX.j, by rw [Category.assoc, hX.over, y.2]⟩ ⟨y.1, rfl⟩
+
+/-- **Existence of the smooth compactification `X_0(N)`** (sorry node).
+
+TRUE, and classical, in two independent halves:
+
+* the coarse space `Y_0(N)` is a smooth affine curve over `ℚ` — normality
+  of a coarse moduli space of a smooth DM stack of dimension one, plus
+  "normal curve = smooth curve" (Deligne–Rapoport III.1, Katz–Mazur 8.2);
+* a smooth curve over a field has a smooth compactification, unique up to
+  unique isomorphism — the standard function-field construction, the
+  proper normal model of the function field of `Y`.
+
+For `N = 0` the moduli problem is supported on the empty base (a scheme
+finite over its base cannot have infinite cyclic geometric fibres), so
+`Y_0(0)` is the empty scheme and `X = Y = ∅` satisfies every condition
+vacuously; the statement is therefore uniform in `N`.
+
+IRREDUCIBLE at this mathlib pin: neither the normality of coarse spaces
+nor the smooth compactification of a curve exists here, and both are
+genuinely separate theories from anything else in this module. -/
+theorem exists_compactificationY0 {N : ℕ} {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
+    (_hc : IsCoarseModuliY0 N strY) :
+    ∃ (X : Scheme.{0}) (strX : X ⟶ SpecQ), Nonempty (IsCompactificationY0 strY strX) :=
+  sorry
+
 /-! ### The prime levels, and the finite residue of the semiprime family -/
 
 /-- **The twelve primes admitting a rational cyclic isogeny of that
@@ -909,6 +1582,40 @@ statement carrying the same list is
 `FreyCurve/MazurTorsion.lean`, which is downstream of this module and so
 cannot be used here. -/
 def mazurIsogenyPrimes : Finset ℕ := {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}
+
+/-- **Mazur 1978, Theorem 1** (sorry node): for every prime
+`p ∉ mazurIsogenyPrimes`, every rational point of `X_0(p)` is a cusp.
+
+TRUE — Mazur, *Rational isogenies of prime degree*, Invent. Math. 44
+(1978), Theorem 1: `X_0(p)(ℚ)` consists of the two cusps `0` and `∞` for
+every prime `p ∉ {2, 3, 5, 7, 11, 13, 17, 19, 37, 43, 67, 163}`.
+
+**This is the statement in the shape Mazur proves it**, which is the
+point of routing `y0HasNoRationalPoint_prime` through it.  The argument
+is: the Eisenstein quotient `J̃` of `J_0(p)` has Mordell–Weil rank `0`
+(Mazur, *Modular curves and the Eisenstein ideal*, Publ. Math. IHÉS 47
+(1977)); `x ↦ [x − ∞]` embeds `X_0(p)(ℚ)` in `J̃(ℚ)`, which is therefore
+finite; and a specialisation argument at `3` forces the image to be
+cuspidal for `p ≥ 23`, `p ∉ {37, 43, 67, 163}`.  Every object in that
+sentence — `J_0(p)`, the Hecke algebra, the Eisenstein ideal, the
+Mordell–Weil theorem, reduction of an abelian variety — is a subtree that
+does not exist at this pin, and none of it can be *stated* against the
+affine `Y_0(p)`.
+
+Quantified over every model of `IsCompactificationY0`, so it is at least
+as strong as the `Y_0(p)` statement it replaces and cannot be discharged
+by a degenerate choice of `X`.
+
+Note the conclusion is genuinely stronger than the elliptic-curve
+statement `WeierstrassCurve.prime_mem_cyclicIsogenyDegrees` in
+`FreyCurve/MazurTorsion.lean` (which is downstream of this module and so
+unusable here): it rules out rational points of a COARSE space, which
+need not be represented by a pair `(E, C)` defined over `ℚ`. -/
+theorem cuspidal_x0_prime {p : ℕ} (_hp : p.Prime) (_hmem : p ∉ mazurIsogenyPrimes)
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    (_hc : IsCoarseModuliY0 p strY) (hX : IsCompactificationY0 strY strX)
+    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x :=
+  sorry
 
 /-- **Mazur's rational isogenies of prime degree, on the modular curve**
 (sorry node): `Y_0(p)(ℚ) = ∅` for every prime `p` outside
@@ -939,9 +1646,41 @@ prove this node and *derive* the elliptic-curve one from it through
 
 IRREDUCIBLE at this pin: Mazur's argument is the Eisenstein ideal in the
 Hecke algebra acting on `J_0(p)`, none of which exists here.  See the
-module docstring for the three missing subtrees. -/
+module docstring for the three missing subtrees.
+
+PROVEN 2026-07-26 over the compactification interface: the content is now
+`cuspidal_x0_prime`, which is Mazur's Theorem 1 in the form he states and
+proves it — a statement about `X_0(p)`, not about `Y_0(p)`. -/
 theorem y0HasNoRationalPoint_prime {p : ℕ} (hp : p.Prime)
-    (hmem : p ∉ mazurIsogenyPrimes) : Y0HasNoRationalPoint p :=
+    (hmem : p ∉ mazurIsogenyPrimes) : Y0HasNoRationalPoint p := by
+  obtain ⟨Y, strY, ⟨hc⟩⟩ := exists_coarseModuliY0 p
+  obtain ⟨X, strX, ⟨hX⟩⟩ := exists_compactificationY0 hc
+  exact y0HasNoRationalPoint_of_cuspidal hc hX (cuspidal_x0_prime hp hmem hc hX)
+
+/-- **Kenku's semiprime determination, on `X_0(pq)`** (sorry node): for
+distinct primes `p, q` both in `mazurIsogenyPrimes` with
+`p * q ∉ {6, 10, 14, 15, 21}`, every rational point of `X_0(pq)` is a
+cusp.
+
+TRUE, and FINITE: `61` explicit levels, the smallest `2 · 11 = 22` and
+the largest `67 · 163 = 10921`.  Sources: Kenku, Math. Proc. Cambridge
+Philos. Soc. **85** (1979) 21–23 (`X_0(35)`, `X_0(39)`); ibid. **87**
+(1980) 15–20 (`X_0(65)`, `X_0(91)`); J. London Math. Soc. (2) **22**
+(1980) 249–256; ibid. **23** (1981) 415–427; J. Number Theory **15**
+(1982) 199–202.
+
+This is `y0HasNoRationalPoint_semiprime_of_mazurPrimes` moved onto the
+compactification, which is where its two available routes live; see that
+node's docstring for why neither can be stated against the affine
+`Y_0(pq)`.  Every one of the `61` levels has genus `≥ 2`, so none is an
+elliptic-curve rank computation. -/
+theorem cuspidal_x0_semiprime_of_mazurPrimes {p q : ℕ} (_hp : p.Prime)
+    (_hq : q.Prime) (_hpq : p ≠ q) (_hpm : p ∈ mazurIsogenyPrimes)
+    (_hqm : q ∈ mazurIsogenyPrimes)
+    (_hmem : p * q ∉ ({6, 10, 14, 15, 21} : Finset ℕ))
+    {Y X : Scheme.{0}} {strY : Y ⟶ SpecQ} {strX : X ⟶ SpecQ}
+    (_hc : IsCoarseModuliY0 (p * q) strY) (hX : IsCompactificationY0 strY strX)
+    (x : RelPoint strX (𝟙 SpecQ)) : hX.IsCusp x :=
   sorry
 
 /-- **Kenku's semiprime determination, on the residual finite range**
@@ -985,13 +1724,360 @@ from finite to empty *is* the cusp count.  A criterion whose hypothesis
 is equivalent to its conclusion would be a false economy, so the honest
 next decomposition is the compactification interface first
 (`X_0(N) ⊇ Y_0(N)` proper smooth, with its rational cusps), then
-`J_0(N)` as an abelian scheme, and only then the two criteria. -/
+`J_0(N)` as an abelian scheme, and only then the two criteria.
+
+**The first of those three steps is DONE (2026-07-26).**
+`IsCompactificationY0` above is the compactification interface, and this
+node is now proven from `cuspidal_x0_semiprime_of_mazurPrimes`, which is
+the same assertion about `X_0(pq)`.  What remains for a later owner is
+step two — `J_0(N)` as an abelian variety over `ℚ`, with Abel–Jacobi from
+a rational cusp and reduction at a good prime — and only then step three,
+the rank-`0` criterion.  Note that with the interface in place the
+rank-`0` criterion CAN now be stated honestly: its conclusion is
+`∀ x : X(ℚ), hX.IsCusp x`, and the cusp count enters as a count of
+`X(𝔽_ℓ)`, not as a hypothesis about `X(ℚ)`. -/
 theorem y0HasNoRationalPoint_semiprime_of_mazurPrimes {p q : ℕ} (hp : p.Prime)
     (hq : q.Prime) (hpq : p ≠ q) (hpm : p ∈ mazurIsogenyPrimes)
     (hqm : q ∈ mazurIsogenyPrimes)
     (hmem : p * q ∉ ({6, 10, 14, 15, 21} : Finset ℕ)) :
-    Y0HasNoRationalPoint (p * q) :=
+    Y0HasNoRationalPoint (p * q) := by
+  obtain ⟨Y, strY, ⟨hc⟩⟩ := exists_coarseModuliY0 (p * q)
+  obtain ⟨X, strX, ⟨hX⟩⟩ := exists_compactificationY0 hc
+  exact y0HasNoRationalPoint_of_cuspidal hc hX
+    (cuspidal_x0_semiprime_of_mazurPrimes hp hq hpq hpm hqm hmem hc hX)
+
+/-! ### The compactification `X_0(N)`, its cusps, and `J_0(N)`
+
+`Y_0(N)(ℚ) = ∅` cannot be proved on the affine curve alone.  The
+classical route bounds the rational points of the **compactification**:
+`rank J_0(N)(ℚ) = 0` makes `J_0(N)(ℚ)` finite, hence `X_0(N)(ℚ)` injects
+into `X_0(N)(𝔽_ℓ)` for a good odd prime `ℓ`; and `Y_0(N)(ℚ) = ∅` follows
+only when that count is already exhausted by points known to be rational
+— the **cusps**, which live in `X_0(N) ∖ Y_0(N)`.  So the step from
+*finite* to *empty* IS the cusp count, and any criterion phrased over
+`Y_0(N)` alone would have to assume it as a hypothesis equivalent to its
+own conclusion.
+
+This subsection therefore builds, in the order that observation forces:
+
+1. `IsX0Compactification` — `Y_0(N) ⊆ X_0(N)` as an open subscheme of a
+   smooth proper curve with finite complement;
+2. `IsJacobianOf` and `HasRankZeroJacobian` — `J_0(N)` by its Albanese
+   universal property, and the two arithmetic inputs;
+3. `card_le_of_rankZeroJacobian` — the reduction bound;
+4. `y0HasNoRationalPoint_of_witnessPrime` — the assembly, PROVEN, and
+   what the seven single-prime levels below call.
+
+The arithmetic that feeds it is the Magma reconnaissance recorded in the
+`#### Reconnaissance` block below. -/
+
+/-- **`Spec 𝔽_ℓ`**, the base over which a modular curve is reduced.
+
+`ℓ` is not asked to be prime here — primality is a hypothesis where it
+matters, in `card_le_of_rankZeroJacobian`. -/
+noncomputable abbrev SpecF (ℓ : ℕ) : Scheme.{0} := Spec (CommRingCat.of (ZMod ℓ))
+
+/-- **A section of `Y` pushed into `X`.**  If `j : Y ⟶ X` is a morphism
+over `S`, a section of `strY` composed with `j` is a section of `strX`.
+For `S = Spec ℚ` and `j` the open immersion `Y_0(N) ⊆ X_0(N)` this is
+the inclusion `Y_0(N)(ℚ) → X_0(N)(ℚ)`. -/
+def sectionAlong {X Y S : Scheme.{0}} {strX : X ⟶ S} {strY : Y ⟶ S} (j : Y ⟶ X)
+    (hj : j ≫ strX = strY) (y : RelPoint strY (𝟙 S)) : RelPoint strX (𝟙 S) :=
+  ⟨y.1 ≫ j, by rw [Category.assoc, hj, y.2]⟩
+
+/-- **The number of `ℚ`-rational cusps of `X_0(N)`.**
+
+The cusps of `X_0(N)` are indexed by pairs `(d, a)` with `d ∣ N` and
+`a ∈ (ℤ/gcd(d, N/d))ˣ`, and `Γ_ℚ` permutes the `φ(gcd(d, N/d))` cusps
+above a given `d` transitively, through the cyclotomic character of
+`ℚ(ζ_{gcd(d, N/d)})`.  So the cusps above `d` are rational exactly when
+`φ(gcd(d, N/d)) = 1`, and this is the number of such divisors.
+
+The TOTAL number of cusps is `∑_{d ∣ N} φ(gcd(d, N/d))`, which is
+strictly larger at two of the seven levels below — `12` against `6` at
+`N = 36`, and `12` against `4` at `N = 50`.  Counting against the total
+rather than against the rational count would make the level statements
+unprovable there, and is the trap this definition exists to avoid.
+
+Values consumed below, each by `decide`:
+`20 ↦ 6`, `24 ↦ 8`, `28 ↦ 6`, `30 ↦ 8`, `36 ↦ 6`, `42 ↦ 8`, `50 ↦ 4`. -/
+def numRationalCusps (N : ℕ) : ℕ :=
+  (N.divisors.filter fun d => Nat.totient (Nat.gcd d (N / d)) = 1).card
+
+/-- **`strX : X ⟶ S` is the smooth compactification of the coarse moduli
+space `strY : Y ⟶ S`, with `j : Y ⟶ X` the open immersion.**
+
+`X` is proper and smooth of relative dimension `1` over `S`,
+geometrically connected, and contains `Y` as an open subscheme with
+FINITE complement — that complement is the cusp locus.
+
+This pins `X` as the genuine `X_0(N)`: `Y` is pinned up to unique
+isomorphism by the initiality clause carried in the `coarse` field, a
+nonempty open of a connected curve is dense, and a smooth proper curve
+containing a given smooth curve as a dense open is its unique smooth
+compactification.  Dropping `finite_compl` would break exactly that —
+`X` could then be any curve receiving `Y`, with the cusp count
+meaningless.
+
+The base `S` is general on purpose: the same structure over `Spec 𝔽_ℓ`
+with `ℓ ∤ N` is the good reduction `X_0(N)_{𝔽_ℓ}`, and
+`card_le_of_rankZeroJacobian` relates the two. -/
+structure IsX0Compactification (N : ℕ) {X Y S : Scheme.{0}} (strX : X ⟶ S)
+    (strY : Y ⟶ S) (j : Y ⟶ X) where
+  /-- `j` is a morphism over the base -/
+  comm : j ≫ strX = strY
+  /-- `Y` is a coarse moduli space for the `Γ₀(N)`-problem -/
+  coarse : IsCoarseModuliY0 N strY
+  /-- `Y` is an open subscheme of `X` -/
+  isOpen : IsOpenImmersion j
+  /-- `X` is proper over the base -/
+  isProper : IsProper strX
+  /-- `X` is a smooth curve over the base -/
+  smooth : SmoothOfRelativeDimension 1 strX
+  /-- `X` is geometrically connected -/
+  connected : GeometricallyConnected strX
+  /-- the complement of `Y` in `X` — the cusp locus — is finite -/
+  finite_compl : (Set.range j.base)ᶜ.Finite
+
+/-- **`ab` is the Jacobian of the curve `strX`, based at `o`.**
+
+Stated by the Albanese universal property, in the same
+functor-of-points style as `IsCoarseModuliY0`: the Abel–Jacobi map
+`x ↦ [x] − [o]` is a natural transformation from the points of `X` to
+the points of an abelian scheme sending `o` to `0`, and it is INITIAL
+among all such.  For a smooth proper geometrically connected curve the
+Albanese variety with a base point is exactly the Jacobian, so this
+determines `(J, aj)` up to unique isomorphism — which is what makes
+`HasRankZeroJacobian` a statement about `J_0(N)` rather than about some
+arbitrary abelian scheme that happens to receive `X(ℚ)`.
+
+Note what is deliberately NOT a field here: injectivity of `aj` on
+points.  It holds exactly when the genus is positive — for genus `0` the
+Jacobian is trivial — so it is an independent condition, and it is
+carried explicitly by `HasRankZeroJacobian` instead. -/
+structure IsJacobianOf {X J S : Scheme.{0}} (strX : X ⟶ S) {jstr : J ⟶ S}
+    (ab : AbelianSchemeStruct jstr) (o : RelPoint strX (𝟙 S)) where
+  /-- the Abel–Jacobi map `x ↦ [x] − [o]` on relative points -/
+  aj : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint strX g → RelPoint jstr g
+  /-- the Abel–Jacobi map is natural -/
+  aj_pre : ∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+    (hg : h ≫ g = g') (x : RelPoint strX g),
+    aj g' (RelPoint.pre h hg x) = RelPoint.pre h hg (aj g x)
+  /-- the base point is sent to the origin -/
+  aj_base : aj (𝟙 S) o = ab.zero (𝟙 S)
+  /-- `(J, aj)` is initial among abelian schemes under `X` -/
+  universal : ∀ {A : Scheme.{0}} {astr : A ⟶ S} (ab' : AbelianSchemeStruct astr)
+    (c : ∀ {T : Scheme.{0}} (g : T ⟶ S), RelPoint strX g → RelPoint astr g),
+    (∀ {T' T : Scheme.{0}} (h : T' ⟶ T) {g : T ⟶ S} {g' : T' ⟶ S}
+      (hg : h ≫ g = g') (x : RelPoint strX g),
+      c g' (RelPoint.pre h hg x) = RelPoint.pre h hg (c g x)) →
+    c (𝟙 S) o = ab'.zero (𝟙 S) →
+    ∃! u : J ⟶ A, u ≫ astr = jstr ∧
+      ∀ {T : Scheme.{0}} (g : T ⟶ S) (x : RelPoint strX g),
+        (c g x).1 = (aj g x).1 ≫ u
+
+/-- **`rank J_0(N)(ℚ) = 0`, together with `genus X_0(N) ≥ 1`.**
+
+The two arithmetic inputs of the reduction argument, packaged as one
+existential over the Jacobian because both are statements about it:
+
+* `J(ℚ)` is FINITE — for an abelian variety over a number field the
+  Mordell–Weil group is finitely generated, so finiteness is exactly
+  rank `0`;
+* the Abel–Jacobi map is INJECTIVE on rational points, which is
+  positivity of the genus.
+
+The second is not decoration.  Without it the reduction criterion below
+is FALSE: at `N = 1` the curve `X_0(1) = ℙ¹` has trivial Jacobian, hence
+finite `J(ℚ)`, and infinitely many rational points.
+
+Both hold at all eleven Kenku levels — see
+`hasRankZeroJacobian_of_kenkuLevel`. -/
+def HasRankZeroJacobian {X : Scheme.{0}} (strX : X ⟶ SpecQ) : Prop :=
+  ∃ (J : Scheme.{0}) (jstr : J ⟶ SpecQ) (ab : AbelianSchemeStruct jstr)
+    (o : RelPoint strX (𝟙 SpecQ)) (jac : IsJacobianOf strX ab o),
+    Finite (RelPoint jstr (𝟙 SpecQ)) ∧ Function.Injective (jac.aj (𝟙 SpecQ))
+
+/-- **The eleven levels of Kenku's non-prime-power determination**, i.e.
+the eleven named level nodes below.  All eleven have
+`rank J_0(N)(ℚ) = 0`; seven of them additionally have a single witness
+prime (`x0WitnessTable`), and the remaining four — `45, 54, 63, 75` —
+need a multi-prime Mordell–Weil sieve. -/
+def kenkuLevels : List ℕ := [20, 24, 28, 30, 36, 42, 45, 50, 54, 63, 75]
+
+/-- **The witness table `(N, ℓ, #X_0(N)(𝔽_ℓ))` for the seven levels that
+close on a single prime.**
+
+Computed with Magma from Eichler–Shimura,
+`#X_0(N)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(N)))`; see the
+`#### Reconnaissance` block below for the full table with genus and
+cusp data.  In every row the count EQUALS `numRationalCusps N`, which is
+precisely why these seven close on one prime.
+
+Two entries are traps for anyone regenerating this table.  `N = 30`
+needs `ℓ = 17`: the small primes `7, 11, 13` give `12, 20, 16`, all
+strictly larger than `8`.  And `N = 36`, `N = 50` must be counted
+against their RATIONAL cusps (`6` and `4`), not against their `12`
+cusps. -/
+def x0WitnessTable : List (ℕ × ℕ × ℕ) :=
+  [(20, 3, 6), (24, 5, 8), (28, 5, 6), (30, 17, 8), (36, 5, 6), (42, 11, 8), (50, 3, 4)]
+
+/-- **Existence of the compactified coarse moduli space `X_0(N)` over
+`ℚ`** (sorry node).
+
+TRUE and classical: `Y_0(N)` is a smooth affine curve over `ℚ` and every
+smooth curve over a field has a unique smooth projective
+compactification; for `Y_0(N)` it is the modular curve `X_0(N)` of
+Deligne–Rapoport, obtained directly as the coarse space of the moduli
+problem of GENERALISED elliptic curves with `Γ₀(N)`-structure, the added
+points being the cusps.
+
+This leaf SUBSUMES `exists_coarseModuliY0` — its `coarse` field is
+exactly that statement — so a successor closing that node has closed
+half of this one; what remains is the compactification proper.
+
+IRREDUCIBLE at this pin for the same reason as `exists_coarseModuliY0`:
+neither modular curves nor a smooth-compactification theorem for curves
+exists anywhere in `Mathlib`. -/
+theorem exists_x0Compactification (N : ℕ) (hN : 0 < N) :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecQ) (strY : Y ⟶ SpecQ) (j : Y ⟶ X),
+      Nonempty (IsX0Compactification N strX strY j) :=
   sorry
+
+/-- **`X_0(N)` has `numRationalCusps N` rational cusps, and no cusp is
+the image of a rational point of `Y_0(N)`** (sorry node).
+
+TRUE and classical; see `numRationalCusps` for the divisor count and the
+Galois action on the cusps.  The second conjunct is immediate from the
+definition of a cusp — it lies in `X ∖ Y` — but it is exactly what the
+emptiness argument consumes, so it is stated rather than left implicit.
+
+Quantified over every compactification rather than over a chosen one:
+`IsX0Compactification` pins `(X, Y, j)` up to isomorphism so the
+statement is invariant, and `exists_x0Compactification` supplies an
+instance so it is not vacuous.
+
+IRREDUCIBLE at this pin: the cusps of `X_0(N)` do not exist here in any
+form. -/
+theorem exists_rationalCusps (N : ℕ) {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (h : IsX0Compactification N strX strY j) :
+    ∃ s : Finset (RelPoint strX (𝟙 SpecQ)), s.card = numRationalCusps N ∧
+      ∀ p ∈ s, ∀ y : RelPoint strY (𝟙 SpecQ), sectionAlong j h.comm y ≠ p :=
+  sorry
+
+/-- **`rank J_0(N)(ℚ) = 0` and `genus X_0(N) ≥ 1` at the eleven Kenku
+levels** (sorry node).
+
+TRUE, by the reconnaissance recorded below: decomposing the cuspidal
+subspace `S_2(Γ_0(N))` into newform factors and evaluating `L(A, 1)` on
+each, EVERY factor at EVERY one of the eleven levels has `L(A, 1) ≠ 0`;
+so `J_0(N)` has analytic rank `0`, hence Mordell–Weil rank `0` by
+Kolyvagin–Logachev, hence finite `J_0(N)(ℚ)`.  Positivity of the genus
+is classical and holds at all eleven — the genus values, in the order of
+`kenkuLevels`, are `1, 1, 2, 3, 1, 5, 3, 2, 4, 5, 5`.
+
+IRREDUCIBLE at this pin, and the deepest of the five leaves here: it
+needs `S_2(Γ_0(N))`, the Hecke algebra, `L`-functions of modular abelian
+varieties and Gross–Zagier/Kolyvagin. -/
+theorem hasRankZeroJacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
+    {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {j : Y ⟶ X}
+    (h : IsX0Compactification N strX strY j) : HasRankZeroJacobian strX :=
+  sorry
+
+/-- **The reduction `X_0(N)_{𝔽_ℓ}` and its Eichler–Shimura point count,
+at the seven witness primes** (sorry node).
+
+TRUE: for `ℓ ∤ N` the modular curve has good reduction at `ℓ` and its
+special fibre is the coarse space of the same `Γ₀(N)`-problem over
+`𝔽_ℓ`; being proper over a finite field it has finitely many rational
+points; and Eichler–Shimura evaluates the count as
+`ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(N)))`.  The seven rows of `x0WitnessTable` are
+that formula computed with Magma.
+
+IRREDUCIBLE at this pin: neither the integral model of `X_0(N)`, nor its
+reduction, nor the Hecke operators exist here. -/
+theorem exists_x0Compactification_mod_prime (N ℓ m : ℕ)
+    (h : (N, ℓ, m) ∈ x0WitnessTable) :
+    ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecF ℓ) (strY : Y ⟶ SpecF ℓ) (j : Y ⟶ X),
+      Nonempty (IsX0Compactification N strX strY j) ∧
+        Finite (RelPoint strX (𝟙 (SpecF ℓ))) ∧
+        Nat.card (RelPoint strX (𝟙 (SpecF ℓ))) = m :=
+  sorry
+
+/-- **The rank-`0` reduction bound, `#X_0(N)(ℚ) ≤ #X_0(N)(𝔽_ℓ)`** (sorry
+node — this is the criterion).
+
+TRUE, and classical.  `hJ` makes `J_0(N)(ℚ)` finite, hence torsion; for
+`ℓ` an odd prime of good reduction the reduction map on torsion
+`J_0(N)(ℚ) → J_0(N)(𝔽_ℓ)` is INJECTIVE, its kernel being the points of a
+formal group over `ℤ_ℓ`, which is torsion-free for `ℓ` odd; Abel–Jacobi
+based at a rational point embeds `X_0(N)(ℚ)` into `J_0(N)(ℚ)` and
+commutes with reduction; so `X_0(N)(ℚ)` injects into `X_0(N)(𝔽_ℓ)`.
+
+**Every hypothesis is load-bearing**, and the leaf is false without any
+one of them — which is why none is trimmed:
+
+* without finiteness in `hJ`, a positive-rank Jacobian gives infinitely
+  many rational points already in genus `1`;
+* without injectivity in `hJ`, `N = 1` refutes it: `X_0(1) = ℙ¹` has
+  trivial Jacobian and infinitely many rational points;
+* without `hℓ2` the formal-group argument fails at `ℓ = 2`, where
+  `2`-torsion can die under reduction;
+* without `hℓN` there is no good reduction at `ℓ` and the special fibre
+  is not a smooth curve.
+
+The conclusion bounds every `Finset` of rational points rather than
+`Nat.card`, because `Nat.card` of an infinite type is `0` and the bound
+would then hold vacuously; the `Finset` form also carries finiteness.
+
+IRREDUCIBLE at this pin: it needs the integral model of `X_0(N)`, the
+reduction map on the Jacobian, and the formal group of an abelian
+scheme. -/
+theorem card_le_of_rankZeroJacobian {N : ℕ} {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {j : Y ⟶ X} (hX : IsX0Compactification N strX strY j)
+    (hJ : HasRankZeroJacobian strX) {ℓ : ℕ} (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2)
+    (hℓN : ¬ ℓ ∣ N) {X' Y' : Scheme.{0}} {strX' : X' ⟶ SpecF ℓ}
+    {strY' : Y' ⟶ SpecF ℓ} {j' : Y' ⟶ X'}
+    (hX' : IsX0Compactification N strX' strY' j') (m : ℕ)
+    (hfin : Finite (RelPoint strX' (𝟙 (SpecF ℓ))))
+    (hm : Nat.card (RelPoint strX' (𝟙 (SpecF ℓ))) = m)
+    (s : Finset (RelPoint strX (𝟙 SpecQ))) : s.card ≤ m :=
+  sorry
+
+/-- **The single-prime criterion** (PROVEN): at a level whose Jacobian
+has rank `0`, and which has a witness prime whose point count equals the
+number of rational cusps, `Y_0(N)(ℚ) = ∅`.
+
+The argument is pure counting, and it is the reason the interface above
+is shaped as it is.  Take the compactification `Y ⊆ X` over `ℚ` and the
+reduction `X'` over `𝔽_ℓ`.  The `c = numRationalCusps N` rational cusps
+are `c` distinct rational points of `X`, none of them the image of a
+rational point of `Y`.  A rational point of `Y` would therefore push
+forward to a `(c+1)`-st one, giving a `Finset` of `X(ℚ)` of size
+`c + 1`; but the reduction bound caps every such `Finset` by
+`#X'(𝔽_ℓ) = c`.  So `Y(ℚ)` is empty — and
+`y0HasNoRationalPoint_of_isEmpty` propagates that to every coarse moduli
+space at once.
+
+This is exactly the step that cannot be taken on the affine curve: rank
+`0` bounds `#X_0(N)(ℚ)`, and only the cusp count turns that bound into
+emptiness of `Y_0(N)(ℚ)`. -/
+theorem y0HasNoRationalPoint_of_witnessPrime (N ℓ : ℕ) (hN : 0 < N)
+    (hℓ : ℓ.Prime) (hℓ2 : ℓ ≠ 2) (hℓN : ¬ ℓ ∣ N) (hlevel : N ∈ kenkuLevels)
+    (htable : (N, ℓ, numRationalCusps N) ∈ x0WitnessTable) :
+    Y0HasNoRationalPoint N := by
+  classical
+  obtain ⟨X, Y, strX, strY, j, ⟨hX⟩⟩ := exists_x0Compactification N hN
+  obtain ⟨X', Y', strX', strY', j', ⟨hX'⟩, hfin, hcard⟩ :=
+    exists_x0Compactification_mod_prime N ℓ (numRationalCusps N) htable
+  obtain ⟨s, hscard, hsnot⟩ := exists_rationalCusps N hX
+  refine y0HasNoRationalPoint_of_isEmpty hX.coarse ⟨fun y => ?_⟩
+  have hp : sectionAlong j hX.comm y ∉ s := fun hmem => hsnot _ hmem y rfl
+  have hle : (insert (sectionAlong j hX.comm y) s).card ≤ numRationalCusps N :=
+    card_le_of_rankZeroJacobian hX (hasRankZeroJacobian_of_kenkuLevel N hlevel hX)
+      hℓ hℓ2 hℓN hX' _ hfin hcard _
+  rw [Finset.card_insert_of_notMem hp, hscard] at hle
+  omega
 
 /-! ### The twelve levels of Kenku's non-prime-power determination
 
@@ -1107,14 +2193,23 @@ The `gcd` of `#J_0(N)(𝔽_ℓ)` over `3 ≤ ℓ < 60`, which bounds
 `#J_0(N)(ℚ)`, is `512`, `243`, `6144` and `2560` respectively — so the
 sieve has a genuinely finite search space, but one prime is not enough.
 
-**All eleven remain IRREDUCIBLE here for the same reason**, and it is
-not the arithmetic above: nothing in this development yet has `X_0(N)`
-as a scheme, its cusps, `J_0(N)`, Mordell–Weil, or reduction mod `ℓ`.
-The arithmetic is settled; the *interface* is what is missing.  See the
-sibling node `y0HasNoRationalPoint_prod_two_primes`, which owns that
-shared layer. -/
+**The interface that was missing here now exists** (2026-07-26), in the
+subsection above: `IsX0Compactification` (`X_0(N)` with its cusp locus),
+`IsJacobianOf` / `HasRankZeroJacobian` (`J_0(N)` and the rank-`0`
+input), and `card_le_of_rankZeroJacobian` (reduction mod `ℓ`).  The
+seven single-prime levels are PROVEN over it by
+`y0HasNoRationalPoint_of_witnessPrime`, and what remains open is that
+subsection's five leaves — none of them level-specific.
 
-/-- **`Y_0(20)(ℚ) = ∅`** (sorry node; `X_0(20)` has genus `1`).  Ogg,
+**The four sieve levels `45, 54, 63, 75` are still open**, and what they
+need is a multi-prime strengthening of `card_le_of_rankZeroJacobian`:
+the bound must intersect the images of `X_0(N)(𝔽_ℓ) → J_0(N)(𝔽_ℓ)` over
+several `ℓ` at once, rather than reduce at a single one.  That is a
+strengthening of one leaf, not a new theory, and it reuses every other
+piece unchanged. -/
+
+/-- **`Y_0(20)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(20)` has genus `1`).  Ogg,
 *Rational points on certain elliptic modular curves*, Proc. Sympos. Pure
 Math. 24 (1973): `X_0(20)` is an elliptic curve of Mordell–Weil rank `0`
 over `ℚ` whose six rational points are its six cusps.
@@ -1123,18 +2218,22 @@ ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(20)(ℚ) = 0`,
 all six cusps are rational, and `#X_0(20)(𝔽_3) = 6`; so the six cusps
 exhaust `X_0(20)(ℚ)`.  (`ℓ = 7` also gives `6`.) -/
 theorem y0HasNoRationalPoint_twenty : Y0HasNoRationalPoint 20 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 20 3 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
-/-- **`Y_0(24)(ℚ) = ∅`** (sorry node; `X_0(24)` has genus `1`; Ogg
+/-- **`Y_0(24)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(24)` has genus `1`; Ogg
 1973).
 
 ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(24)(ℚ) = 0`,
 all eight cusps are rational, and `#X_0(24)(𝔽_5) = 8`; so the eight
 cusps exhaust `X_0(24)(ℚ)`.  (`ℓ = 7` and `ℓ = 11` also give `8`.) -/
 theorem y0HasNoRationalPoint_twentyFour : Y0HasNoRationalPoint 24 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 24 5 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
-/-- **`Y_0(28)(ℚ) = ∅`** (sorry node; `X_0(28)` has genus `2`; Ogg,
+/-- **`Y_0(28)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(28)` has genus `2`; Ogg,
 *Hyperelliptic modular curves*, Bull. Soc. Math. France 102 (1974)).
 
 ROUTE (rank-`0` reduction, closes on one prime).  **This level does NOT
@@ -1144,9 +2243,11 @@ has `L(A, 1) ≠ 0`), hence Mordell–Weil rank `0`.  All six cusps are
 rational and `#X_0(28)(𝔽_5) = 6`, so the six cusps exhaust
 `X_0(28)(ℚ)`.  (`ℓ = 17` also gives `6`.) -/
 theorem y0HasNoRationalPoint_twentyEight : Y0HasNoRationalPoint 28 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 28 5 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
-/-- **`Y_0(30)(ℚ) = ∅`** (sorry node; `X_0(30)` has genus `3`).  This is
+/-- **`Y_0(30)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(30)` has genus `3`).  This is
 the minimal level with three distinct prime factors.
 
 ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(30)(ℚ) = 0`
@@ -1155,9 +2256,11 @@ and `#X_0(30)(𝔽_17) = 8`; so the eight cusps exhaust `X_0(30)(ℚ)`.
 Note the small primes are *not* good enough here — `ℓ = 7, 11, 13` give
 `12, 20, 16` — so `ℓ = 17` is the witness to use. -/
 theorem y0HasNoRationalPoint_thirty : Y0HasNoRationalPoint 30 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 30 17 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
-/-- **`Y_0(36)(ℚ) = ∅`** (sorry node; `X_0(36)` has genus `1`; Ogg
+/-- **`Y_0(36)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(36)` has genus `1`; Ogg
 1973).
 
 ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(36)(ℚ) = 0`.
@@ -1166,9 +2269,11 @@ ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(36)(ℚ) = 0`.
 over `ℚ(ζ_3)`), and `#X_0(36)(𝔽_5) = 6`; so the six rational cusps
 exhaust `X_0(36)(ℚ)`. -/
 theorem y0HasNoRationalPoint_thirtySix : Y0HasNoRationalPoint 36 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 36 5 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
-/-- **`Y_0(42)(ℚ) = ∅`** (sorry node; `X_0(42)` has genus `5`).  The
+/-- **`Y_0(42)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(42)` has genus `5`).  The
 second minimal level with three distinct prime factors.
 
 ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(42)(ℚ) = 0`
@@ -1177,7 +2282,8 @@ rational, and `#X_0(42)(𝔽_11) = 8`; so the eight cusps exhaust
 `X_0(42)(ℚ)`.  Despite the genus being `5`, this is the cheapest kind of
 argument — no Chabauty–Coleman is involved. -/
 theorem y0HasNoRationalPoint_fortyTwo : Y0HasNoRationalPoint 42 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 42 11 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
 /-- **`Y_0(45)(ℚ) = ∅`** (sorry node; `X_0(45)` has genus `3`).
 
@@ -1189,11 +2295,43 @@ and **no** prime `ℓ < 100` attains `#X_0(45)(𝔽_ℓ) = 4`: the minimum over
 `3 ≤ ℓ < 60` is `8`, at `ℓ = 7`.  So a single reduction leaves a factor
 of `2` unaccounted for, and the four rational points must be pinned by
 intersecting the images of `X_0(45)(𝔽_ℓ) → J_0(45)(𝔽_ℓ)` over several
-`ℓ` simultaneously.  `#J_0(45)(ℚ)` divides `512`. -/
+`ℓ` simultaneously.  `#J_0(45)(ℚ)` divides `512`.
+
+SIEVE DATA (recomputed from scratch with Magma on 2026-07-26 by a second
+owner, *independently* of the pass that produced the table above; every
+entry of that table for all eleven levels — genus, cusps, `c(N)`, best
+`ℓ`, `#X_0(N)(𝔽_ℓ)` — was reproduced exactly, so the reconnaissance is
+confirmed rather than merely inherited).  `#X_0(45)(𝔽_ℓ)` over
+`3 ≤ ℓ < 60`: `7 ↦ 8`, `11 ↦ 16`, `13 ↦ 20`, `17 ↦ 16`, `19 ↦ 8`,
+`23 ↦ 24`, `29 ↦ 32`, `31 ↦ 32`, `37 ↦ 68`, `41 ↦ 32`, `43 ↦ 32`,
+`47 ↦ 40`, `53 ↦ 64`, `59 ↦ 64`.  So `ℓ = 19` is a *second* witness for
+the minimum `8`, which the table above does not record.  The Jacobian
+orders `#J_0(45)(𝔽_ℓ) = det(ℓ + 1 − T_ℓ ∣ S_2(Γ_0(45)))` are `512, 2048,
+4096, 5120, 4096, 13824, 28672, 32768, 110592, 53248, 64000, 89600,
+180224, 229376` at those same `ℓ`; their `gcd` is `512`, attained already
+at `ℓ = 7`.  Hence `#J_0(45)(ℚ) ∣ 512` and `J_0(45)(ℚ)` is a `2`-group.
+
+**WHY THIS LEAF IS NOT HARDER THAN ITS SEVEN SINGLE-PRIME SIBLINGS
+*HERE*** (2026-07-26; this note is shared by all four sieve levels and is
+written out only at this one).  The split "seven close on one prime, four
+need a sieve" is a fact about the CLASSICAL arguments.  It is **not** a
+difficulty ordering for this development, and reading it as one produces
+phantom work.  All eleven levels are blocked on exactly the same absent
+object — `X_0(N)` as a scheme, its cusps, `J_0(N)`, Mordell–Weil, and
+reduction mod `ℓ` — none of which exists in `Mathlib` or in `~/cs/FLT`
+(re-surveyed 2026-07-26: `Mathlib/AlgebraicGeometry/` contains no abelian
+variety and no modular curve of any kind).  Once that layer exists, a
+sieve level costs one extra *finite* computation over a single-prime
+level, and the arithmetic for it is fully recorded above.  Until it
+exists, neither kind can be advanced by any amount of effort spent at
+the level nodes themselves.  The shared layer is owned by the sibling
+node `y0HasNoRationalPoint_prod_two_primes`; that is where work on these
+eleven has to go first. -/
 theorem y0HasNoRationalPoint_fortyFive : Y0HasNoRationalPoint 45 :=
   sorry
 
-/-- **`Y_0(50)(ℚ) = ∅`** (sorry node; `X_0(50)` has genus `2`; Ogg
+/-- **`Y_0(50)(ℚ) = ∅`** (PROVEN 2026-07-26 over
+`y0HasNoRationalPoint_of_witnessPrime`; `X_0(50)` has genus `2`; Ogg
 1974).
 
 ROUTE (rank-`0` reduction, closes on one prime): `rank J_0(50)(ℚ) = 0`
@@ -1203,7 +2341,8 @@ cusps exhaust `X_0(50)(ℚ)`.  This is the tightest of the seven
 single-prime levels — the count matches `c(N)` exactly at the smallest
 available prime. -/
 theorem y0HasNoRationalPoint_fifty : Y0HasNoRationalPoint 50 :=
-  sorry
+  y0HasNoRationalPoint_of_witnessPrime 50 3 (by decide) (by decide) (by decide)
+    (by decide) (by decide) (by decide)
 
 /-- **`Y_0(54)(ℚ) = ∅`** (sorry node; `X_0(54)` has genus `4`).
 
@@ -1213,7 +2352,23 @@ ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `ℓ < 100` attains `#X_0(54)(𝔽_ℓ) = 4`: the minimum over `3 ≤ ℓ < 60` is
 `6`, at `ℓ = 5`.  This is the *closest* of the four sieve levels — the
 single-prime bound overshoots by only `2` — so it is the natural one to
-attempt first.  `#J_0(54)(ℚ)` divides `243`. -/
+attempt first.  `#J_0(54)(ℚ)` divides `243`.
+
+SIEVE DATA (independently recomputed with Magma 2026-07-26; see the
+`N = 45` docstring for the provenance note and for the shared warning
+that these four are *not* harder than the seven single-prime levels at
+this pin).  `#X_0(54)(𝔽_ℓ)` over `3 ≤ ℓ < 60`: `5 ↦ 6`, `7 ↦ 12`,
+`11 ↦ 12`, `13 ↦ 12`, `17 ↦ 18`, `19 ↦ 30`, `23 ↦ 24`, `29 ↦ 30`,
+`31 ↦ 30`, `37 ↦ 12`, `41 ↦ 42`, `43 ↦ 48`, `47 ↦ 48`, `53 ↦ 54`,
+`59 ↦ 60`.  The minimum `6` at `ℓ = 5` is attained ONCE — no second
+witness — which is why this level, despite overshooting by only `2`, has
+no cheap second prime to pair with.  Jacobian orders
+`#J_0(54)(𝔽_ℓ) = det(ℓ + 1 − T_ℓ ∣ S_2(Γ_0(54)))`: `972` at `ℓ = 5`,
+`6561` at `7`, `19440` at `11`, `26244` at `13`, then `104976, 236196,
+311040, 777600, 944784, 944784, 3048192, 3779136, 5225472, 8266860,
+12441600`.  Their `gcd` is `243 = 3⁵`, so `#J_0(54)(ℚ) ∣ 3⁵` and
+`J_0(54)(ℚ)` is a `3`-group — note `#J(𝔽_7) = 3⁸` is already a pure
+power of `3`, so the prime `7` alone forces the `3`-group conclusion. -/
 theorem y0HasNoRationalPoint_fiftyFour : Y0HasNoRationalPoint 54 :=
   sorry
 
@@ -1223,7 +2378,20 @@ ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `rank J_0(63)(ℚ) = 0` (all three newform factors have `L(A, 1) ≠ 0`).
 `X_0(63)` has `8` cusps of which `4` are rational, and no prime
 `ℓ < 100` attains `#X_0(63)(𝔽_ℓ) = 4`: the minimum over `3 ≤ ℓ < 60` is
-`8`, at `ℓ = 5`.  `#J_0(63)(ℚ)` divides `6144`. -/
+`8`, at `ℓ = 5`.  `#J_0(63)(ℚ)` divides `6144`.
+
+SIEVE DATA (independently recomputed with Magma 2026-07-26; see the
+`N = 45` docstring for provenance and for the shared warning that these
+four are *not* harder than the seven single-prime levels at this pin).
+`#X_0(63)(𝔽_ℓ)` over `3 ≤ ℓ < 60`: `5 ↦ 8`, `11 ↦ 8`, `13 ↦ 16`,
+`17 ↦ 24`, `19 ↦ 16`, `23 ↦ 24`, `29 ↦ 32`, `31 ↦ 40`, `37 ↦ 16`,
+`41 ↦ 40`, `43 ↦ 64`, `47 ↦ 48`, `53 ↦ 48`, `59 ↦ 48`.  So `ℓ = 11` is a
+*second* witness for the minimum `8`, which the table above does not
+record.  Jacobian orders
+`#J_0(63)(𝔽_ℓ) = det(ℓ + 1 − T_ℓ ∣ S_2(Γ_0(63)))`: `6144` at `ℓ = 5`,
+then `135168, 589824, 2156544, 2359296, 7796736, 25804800, 42467328,
+42467328, 116582400, 254803968, 249495552, 396472320, 589234176`.  Their
+`gcd` is `6144 = 2¹¹·3`, attained already at `ℓ = 5`. -/
 theorem y0HasNoRationalPoint_sixtyThree : Y0HasNoRationalPoint 63 :=
   sorry
 
@@ -1233,7 +2401,22 @@ ROUTE (rank-`0` **Mordell–Weil sieve** — one prime is not enough).
 `rank J_0(75)(ℚ) = 0` (all four newform factors have `L(A, 1) ≠ 0`).
 `X_0(75)` has `12` cusps of which `4` are rational, and no prime
 `ℓ < 100` attains `#X_0(75)(𝔽_ℓ) = 4`: the minimum over `3 ≤ ℓ < 60` is
-`8`, at `ℓ = 7`.  `#J_0(75)(ℚ)` divides `2560`. -/
+`8`, at `ℓ = 7`.  `#J_0(75)(ℚ)` divides `2560`.
+
+SIEVE DATA (independently recomputed with Magma 2026-07-26; see the
+`N = 45` docstring for provenance and for the shared warning that these
+four are *not* harder than the seven single-prime levels at this pin).
+`#X_0(75)(𝔽_ℓ)` over `3 ≤ ℓ < 60`: `7 ↦ 8`, `11 ↦ 20`, `13 ↦ 16`,
+`17 ↦ 16`, `19 ↦ 18`, `23 ↦ 24`, `29 ↦ 16`, `31 ↦ 38`, `37 ↦ 48`,
+`41 ↦ 28`, `43 ↦ 40`, `47 ↦ 40`, `53 ↦ 64`, `59 ↦ 92`.  The minimum `8`
+at `ℓ = 7` is attained ONCE.  Jacobian orders
+`#J_0(75)(𝔽_ℓ) = det(ℓ + 1 − T_ℓ ∣ S_2(Γ_0(75)))`: `28160` at `ℓ = 7`,
+then `409600, 599040, 1638400, 2560000, 7464960, 13107200, 40140800,
+92897280, 81920000, 148608000, 206080000, 522649600, 1284505600`.  Their
+`gcd` is `2560 = 2⁹·5`.  Unlike the other three sieve levels the bound is
+NOT attained at the best counting prime — `#J(𝔽_7) = 11·2560` — so at
+least two primes are needed here even to pin the order of `J_0(75)(ℚ)`,
+before any question about which torsion points are cuspidal arises. -/
 theorem y0HasNoRationalPoint_seventyFive : Y0HasNoRationalPoint 75 :=
   sorry
 
