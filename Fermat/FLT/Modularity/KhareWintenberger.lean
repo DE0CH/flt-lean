@@ -156,6 +156,13 @@ public import Mathlib.AlgebraicGeometry.Morphisms.QuasiCompact
 -- through `IsLocallyArtinian.of_topologicalKrullDim_le_zero`.
 public import Mathlib.AlgebraicGeometry.Morphisms.Proper
 public import Mathlib.AlgebraicGeometry.Artinian
+-- The connected ⟹ irreducible upgrade of the Bertini cut (2026-07-26) states
+-- `IsLocallyNoetherian` in the signature of
+-- `exists_isOpen_isIrreducible_of_isDomain_stalk`, and its topological half
+-- `irreducibleSpace_of_connectedSpace_of_locallyIrreducible` is proven with
+-- `IsClopen.eq_univ`; both must therefore be re-exported, not merely reachable.
+public import Mathlib.AlgebraicGeometry.Noetherian
+public import Mathlib.Topology.Connected.Clopen
 -- Base change of schemes: `IsFormOver` (the twisted-moduli form cut,
 -- 2026-07-25) is stated with `Limits.pullback`, so the `HasPullbacks`
 -- instance for `Scheme` must be re-exported, not merely available.
@@ -196,6 +203,15 @@ public import Mathlib.RingTheory.KrullDimension.Polynomial
 public import Mathlib.RingTheory.KrullDimension.Field
 public import Mathlib.RingTheory.FiniteType
 public import Mathlib.RingTheory.Spectrum.Prime.Topology
+-- `exists_isOpen_isIrreducible_primeSpectrum` (PROVEN 2026-07-26, the affine
+-- heart of the connected ⟹ irreducible upgrade) states `Localization.AtPrime`
+-- in its signature, and its proof runs on the minimal-prime API: finiteness
+-- over a noetherian ring, and the order isomorphism between the primes of
+-- `A_p` and the primes of `A` below `p`.
+public import Mathlib.RingTheory.Localization.AtPrime.Basic
+public import Mathlib.RingTheory.Ideal.MinimalPrime.Noetherian
+public import Mathlib.RingTheory.Ideal.MinimalPrime.Localization
+public import Mathlib.AlgebraicGeometry.AffineScheme
 public import Mathlib.Algebra.Algebra.Rat
 -- The Bertini DECOMPOSITION (2026-07-26): the hyperplane parameter space is
 -- `Fin (n+1) → ℚ` and Zariski-genericity on it is stated as "off the zero
@@ -1134,8 +1150,13 @@ Bertini smoothness; no `hdim`),
 `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` (SORRY —
 Bertini/Lefschetz connectedness, **the sole consumer of `hdim`** and the
 deepest of the geometric leaves) and
-`geometricallyIrreducible_of_smooth_of_geometricallyConnected` (SORRY —
-smooth + connected ⟹ irreducible, formal and reusable), assembled by
+`geometricallyIrreducible_of_smooth_of_geometricallyConnected` (**PROVEN
+2026-07-26** — no longer a leaf: cut into the point-set topology
+`irreducibleSpace_of_connectedSpace_of_locallyIrreducible` (PROVEN), the
+minimal-prime bookkeeping `exists_isOpen_isIrreducible_primeSpectrum` /
+`exists_isOpen_isIrreducible_of_isDomain_stalk` (both PROVEN), and the single
+surviving leaf `isDomain_stalk_of_smooth_over_field` (SORRY — "smooth over a
+field ⟹ the local rings are domains", a pure mathlib gap)), assembled by
 multiplying the two genericity polynomials),
 `exists_realApproximationBall_of_affine_geometricallyIrreducible` (**PROVEN
 2026-07-26** — no longer a leaf: the `ℝ`-topology half, a whole BOX of
@@ -1147,13 +1168,13 @@ name below plus the ring-map dictionary `ringHom_uliftRat_ext`,
 IMPLICIT FUNCTION THEOREM is NOT used: a sign change along an arc plus
 `intermediate_value_uIcc` produces the zero, which is all the statement
 asks for),
-`exists_realArc_of_affine_geometricallyIrreducible` (SORRY — what is left of
-the scheme-to-real-manifold bridge after that reduction: a smooth
-geometrically irreducible affine `ℚ`-variety of dimension `> 1` with a real
-point carries a NONCONSTANT CONTINUOUS ARC of real points `γ : ℝ → (A →+* ℝ)`.
-Item 6 of the missing-machinery list, in its minimal useful form — one chart
-of `X(ℝ)` suffices; no tangent space, no Jacobian, no implicit function
-theorem),
+`exists_realArc_of_affine_geometricallyIrreducible` (**PROVEN 2026-07-26** —
+what was left of the scheme-to-real-manifold bridge after that reduction: a
+smooth geometrically irreducible affine `ℚ`-variety of dimension `> 1` with a
+real point carries a NONCONSTANT CONTINUOUS ARC of real points
+`γ : ℝ → (A →+* ℝ)`. This was item 6 of the missing-machinery list, and it was
+closed in its minimal useful form over ONE Euclidean chart — no tangent space,
+no Jacobian, no implicit function theorem. Item 6 is therefore CLOSED),
 `exists_normalRealPoint_of_affine_curve` (**PROVEN 2026-07-26** — no longer
 a leaf: it is now BLGGT Prop. 3.1.1's own assembly over the next three
 names),
@@ -1223,8 +1244,10 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    (projective closure, the Enriques–Severi–Zariski connectedness theorem,
    and openness of the geometrically-connected locus — the only place `hdim`
    is used) and `geometricallyIrreducible_of_smooth_of_geometricallyConnected`
-   ("smooth over a field ⟹ regular" and "connected + normal ⟹ irreducible",
-   both small and general), with
+   (PROVEN 2026-07-26; of its own cut only
+   `isDomain_stalk_of_smooth_over_field` — "smooth over a field ⟹ the local
+   rings are domains" — survives, the "connected + normal ⟹ irreducible" half
+   having been discharged outright), with
    `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible` PROVEN over
    them. The real-topology approximation is now a SEPARATE item, 6 below, and
    the elementary nonzerodivisor step a third,
@@ -1240,6 +1263,16 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    Jacobian and `HasStrictFDerivAt.implicitFunction` are all struck out, and a
    single chart of `X(ℝ)` discharges the item. Independent of items 1–5 and
    startable on its own; it is real analysis, not arithmetic and not Bertini.
+   **SHRUNK AGAIN, 2026-07-26**: the arc itself is now PROVEN and the item is
+   owned by `exists_realPointChart_of_affine_geometricallyIrreducible` — "one
+   nonempty open `U ⊆ ℝ^d`, `d ≥ 1`, mapping continuously and INJECTIVELY into
+   `X(ℝ)`", with the coordinates, `hx` and the arc all discharged by
+   `realPoint_ext_of_coords`, `exists_bounded_reparam` and
+   `exists_continuousLine_of_isOpen`. Two claims recorded here are also
+   CORRECTED at that leaf: smooth ⟹ locally standard smooth **is** in mathlib
+   (`Algebra.IsSmoothAt.exists_notMem_isStandardSmooth`), and so is the
+   implicit function theorem in exactly the form wanted, so what is missing is
+   assembly of existing parts rather than new theory.
 4. **Picard schemes / Jacobians as schemes**, with the torsor formalism
    and the "incompressible neighbourhood" existence statement — step (ii),
    and by far the largest of the four. Owned by
@@ -1260,17 +1293,25 @@ MISSING MACHINERY for the surviving geometric leaves, in dependency order
    only Lang–Weil and the spreading-out limit argument are genuinely missing.
 
 Each is an independently ownable subproject; 1, 3, 5 and 6 are the ones that
-can be started without the others, and items 3 (Bertini), 5 (Lang–Weil +
-spreading out) and 6 (real points as a manifold) are now leaves of their own --
+can be started without the others, and items 3 (Bertini) and 5 (Lang–Weil +
+spreading out) are now leaves of their own --
 `exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible` /
 `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` /
-`geometricallyIrreducible_of_smooth_of_geometricallyConnected`,
+`geometricallyIrreducible_of_smooth_of_geometricallyConnected` (item 3 --
+their consumer `exists_bertiniGenericLocus_of_affine_geometricallyIrreducible`
+is PROVEN over them), and
 `exists_bound_forall_zmodSolvable_of_geometricallyIrreducible` together with
-`exists_bound_forall_formallySmooth_integralSystemModel`,
-`exists_realArc_of_affine_geometricallyIrreducible`,
-`exists_bound_forall_padicAlgHom_of_geometricallyIrreducible` and
-`exists_realArc_of_affine_geometricallyIrreducible` -- so each
-can be attacked without any of the others. The elementary
+`exists_bound_forall_formallySmooth_integralSystemModel` (item 5) -- so each
+can be attacked without any of the others.
+
+ITEM 6 IS NOW CLOSED (2026-07-26): `exists_realArc_of_affine_geometricallyIrreducible`
+is PROVEN over one Euclidean chart, and so is its consumer
+`exists_realApproximationBall_of_affine_geometricallyIrreducible`. It is
+listed here no longer as a leaf but as a completed subproject; the two
+`exists_bound_forall_padicAlgHom` / `_padicPoint` statements are likewise
+PROVEN and are not leaves either.
+
+The elementary
 `exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` was a fourth
 such starting point and is PROVEN (2026-07-26); it needed no missing-machinery
 item at all, and in particular not "smooth over a field implies reduced" --
@@ -1509,8 +1550,8 @@ itself PROVEN over the hyperplane PARAMETER SPACE and its three branches
 `exists_bertiniSmoothLocus_...`, `exists_bertiniConnectedLocus_...` and
 `geometricallyIrreducible_of_smooth_of_geometricallyConnected`, all SORRY)
 and `exists_realApproximationBall_of_affine_geometricallyIrreducible`
-(PROVEN 2026-07-26 over the single leaf
-`exists_realArc_of_affine_geometricallyIrreducible`, SORRY))
+(PROVEN 2026-07-26 over
+`exists_realArc_of_affine_geometricallyIrreducible`, itself PROVEN))
 and steps (ii)+(iii) are `exists_normalRealPoint_of_affine_curve`
 (PROVEN 2026-07-26 over `exists_normalSplitPoint_of_affine_curve`, which is
 Moret–Bailly's theorem proper, plus the two arithmetic leaves that buy the
@@ -2049,7 +2090,28 @@ the openness of the smooth locus of a family (mathlib has the ABSOLUTE
 statement `Algebra.isOpen_smoothLocus` for a single algebra, not the relative
 one for the fibres of a morphism). A prover should expect to build the
 incidence variety `Z` and generic smoothness (the algebraic Sard theorem) —
-both reusable well beyond this leaf. -/
+both reusable well beyond this leaf.
+
+ABSENCE AUDIT 2026-07-26 (measured on this pin, not inherited — CLAUDE.md's
+"absent from the pin is often wrong" rule says to check before building, so
+this records the check rather than the belief). `Scheme.Hom.smoothLocus` and
+`Scheme.Hom.isOpen_smoothLocus`
+(`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:293,302`) are about the
+locus in the SOURCE where one fixed morphism is smooth; there is no statement
+anywhere about the locus in the BASE over which the fibres of a family are
+smooth, which is what this leaf needs. There is no `Bertini` anywhere in
+mathlib, and none in `~/cs/FLT` either (zero hits for `bertini` across its
+`FLT/` tree). So both halves must genuinely be built.
+
+FAITHFULNESS AUDIT 2026-07-26: the statement was re-derived and stands,
+including at the two degenerate dimensions that `hdim`'s absence admits. At
+`dim = 0`, smooth + geometrically irreducible over `ℚ` forces `A ≅ ℚ`, a
+generic `ℓ_v` is a nonzero constant, and `A ⧸ (ℓ_v)` is the ZERO ring, whose
+`Spec` is the empty scheme — smooth over `ℚ` vacuously. At `dim = 1` a
+generic line meets the curve transversally, so `A ⧸ (ℓ_v)` is a finite
+REDUCED `ℚ`-algebra, and in characteristic zero finite reduced is étale hence
+smooth. Neither degenerate case needs an exception, which is why omitting
+`hdim` here is a genuine strengthening and not an oversight. -/
 theorem exists_bertiniSmoothLocus_of_affine_geometricallyIrreducible
     (hsmooth : AlgebraicGeometry.Smooth g)
     (hft : AlgebraicGeometry.LocallyOfFiniteType g)
@@ -2111,7 +2173,30 @@ the descent to a basic open `D(F)` are as in the smoothness leaf.
 MACHINERY MISSING AT THIS PIN: the projective closure of an affine scheme,
 the connectedness theorem, and openness of the geometrically-connected locus
 of a family (EGA IV 9.7.7). This is the deepest of the surviving geometric
-leaves. -/
+leaves.
+
+ABSENCE AUDIT 2026-07-26 (measured on this pin). `GeometricallyConnected`
+exists (`Mathlib/AlgebraicGeometry/Geometrically/Connected.lean`) and is
+stable under base change, but nothing there or anywhere else states that the
+locus in the BASE over which the fibres of a family are geometrically
+connected is open — the file's results all run the other way, deducing
+`ConnectedSpace` of a total space from connectedness of the base. There is no
+`Bertini` and no Enriques–Severi–Zariski statement in mathlib, and none in
+`~/cs/FLT`. All three ingredients must be built.
+
+FAITHFULNESS AUDIT 2026-07-26: statement re-derived and confirmed, including
+the two points where it is delicate. (a) `hdim` is load-bearing exactly as
+the counterexample above says: `A = ℚ[s,t]/(s²+t²−1)` is smooth,
+geometrically irreducible (`s²+t²−1` is irreducible over `ℚ̄`) and of
+dimension `1`, and a general rational line meets the conic in two distinct
+geometric points, so the section is nonempty but DISCONNECTED — every
+hypothesis of the leaf except `hdim` holds while the conclusion fails. (b)
+Nonemptiness, which `GeometricallyConnected` demands through
+`ConnectedSpace`'s `Nonempty`, does follow from `hdim` and not merely from
+irreducibility: `X̄ ∩ H` has dimension `dim X − 1`, strictly larger than
+`dim (X̄ ∩ H ∩ H_∞) = dim X − 2`, so `X̄ ∩ H ⊄ H_∞` and the affine part is
+nonempty — an inequality that degenerates at `dim X = 1` and is a second,
+independent reason the `dim = 1` case fails. -/
 theorem exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible
     (hsmooth : AlgebraicGeometry.Smooth g)
     (hft : AlgebraicGeometry.LocallyOfFiniteType g)
@@ -2126,10 +2211,247 @@ theorem exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible
           (affineLinearForm (AlgebraicGeometry.Spec.preimage g) x v) ≫ g) :=
   sorry
 
+/-- **CONNECTED + LOCALLY IRREDUCIBLE ⟹ IRREDUCIBLE** (**PROVEN 2026-07-26** —
+pure point-set topology, no scheme theory and no noetherian hypothesis).
+
+If every point of a connected space has an irreducible OPEN neighbourhood then
+the whole space is irreducible.
+
+THE PROOF, and why the hypothesis has to be an OPEN neighbourhood. Fix `x₀`
+and let `Z = irreducibleComponent x₀`. For `y ∈ Z` pick an irreducible open
+`U ∋ y`. Then `U ∩ Z ≠ ∅`, and `Z` is irreducible, so no open set can separate
+`U` from `Z`: `Z ⊆ closure U`. Since `closure U` is irreducible and `Z` is a
+MAXIMAL irreducible set, `closure U = Z`, whence `U ⊆ Z`. So `Z` is a union of
+open sets, i.e. open; it is also closed (components are), and nonempty; a
+connected space has no proper nonempty clopen subset, so `Z = univ` and the
+space is irreducible.
+
+The openness is load-bearing and the statement is FALSE with "irreducible
+neighbourhood" weakened to "irreducible subset containing the point": two
+lines crossing at the origin form a connected space in which every point lies
+on an irreducible subset (one of the lines) but which is reducible. What fails
+there is exactly the step above — the origin has no irreducible *open*
+neighbourhood, since every open neighbourhood meets both lines.
+
+Cut out of `geometricallyIrreducible_of_smooth_of_geometricallyConnected` on
+2026-07-26: it is the half of "smooth + connected ⟹ irreducible" that carries
+no geometry, and separating it leaves the geometric content in exactly one
+place, `isDomain_stalk_of_smooth_over_field`. -/
+theorem irreducibleSpace_of_connectedSpace_of_locallyIrreducible
+    {X : Type*} [TopologicalSpace X] [ConnectedSpace X]
+    (hloc : ∀ x : X, ∃ U : Set X, IsOpen U ∧ x ∈ U ∧ IsIrreducible U) :
+    IrreducibleSpace X := by
+  obtain ⟨x₀⟩ := (inferInstance : Nonempty X)
+  have key : ∀ y ∈ irreducibleComponent x₀,
+      ∃ U : Set X, IsOpen U ∧ y ∈ U ∧ U ⊆ irreducibleComponent x₀ := by
+    intro y hy
+    obtain ⟨U, hUo, hyU, hUirr⟩ := hloc y
+    refine ⟨U, hUo, hyU, ?_⟩
+    have hZsub : irreducibleComponent x₀ ⊆ _root_.closure U := by
+      intro z hz
+      by_contra hzn
+      obtain ⟨w, -, hwU, hwc⟩ :=
+        (isIrreducible_irreducibleComponent (x := x₀)).2 U (_root_.closure U)ᶜ hUo
+          isClosed_closure.isOpen_compl ⟨y, hy, hyU⟩ ⟨z, hz, hzn⟩
+      exact hwc (subset_closure hwU)
+    have heq : _root_.closure U = irreducibleComponent x₀ :=
+      eq_irreducibleComponent (hUirr.isPreirreducible.closure) hZsub
+    exact heq ▸ subset_closure
+  have hZopen : IsOpen (irreducibleComponent x₀) := by
+    rw [isOpen_iff_forall_mem_open]
+    intro y hy
+    obtain ⟨U, hUo, hyU, hUZ⟩ := key y hy
+    exact ⟨U, hUZ, hUo, hyU⟩
+  have hZuniv : irreducibleComponent x₀ = Set.univ :=
+    IsClopen.eq_univ ⟨isClosed_irreducibleComponent, hZopen⟩ ⟨x₀, mem_irreducibleComponent⟩
+  rw [irreducibleSpace_def, Set.top_eq_univ, ← hZuniv]
+  exact isIrreducible_irreducibleComponent
+
 open CategoryTheory AlgebraicGeometry in
-/-- **SMOOTH + GEOMETRICALLY CONNECTED ⟹ GEOMETRICALLY IRREDUCIBLE** (sorry
-node, 2026-07-26 — the formal half of Bertini irreducibility, isolated so
-that the Lefschetz content lives alone in
+/-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE DOMAINS** (sorry node, 2026-07-26 —
+the ONLY genuinely geometric ingredient left in the connected ⟹ irreducible
+upgrade, and a pure mathlib gap).
+
+For `Z` smooth over `Spec K` with `K` any field, every local ring `𝒪_{Z,z}` is
+an integral domain.
+
+THE CLASSICAL ARGUMENT, and the two mathlib gaps it names. A smooth morphism
+has geometrically regular fibres (EGA IV 17.5.1), so `Z` is a regular scheme
+over any field; and a regular local ring is an integral domain. Neither half
+exists at this pin, and the second is a well-known gap:
+
+* **smooth over a field ⟹ the local rings are REGULAR.** Mathlib's
+  `AlgebraicGeometry/Morphisms/Smooth.lean` never mentions regularity (a
+  2026-07-26 sweep of the pin found ZERO cross-references between the
+  `Algebra.Smooth`/`RingHom.Smooth`/`AlgebraicGeometry.Smooth` hierarchy and
+  `IsRegularLocalRing`/`IsRegularRing`). The classical route is Cohen's
+  structure theorem: formal smoothness makes the completion `𝒪̂_{Z,z}` a
+  power-series ring over the residue field, and a local ring whose completion
+  is regular is regular.
+* **regular local ⟹ IsDomain.** Also absent — `Mathlib/RingTheory/`
+  `RegularLocalRing/Defs.lean` has only `IsRegularLocalRing` and
+  `IsRegularRing` with a handful of instances (PIDs, Dedekind domains,
+  polynomial rings over a regular base), and its own docstring records even
+  "regular local ⟹ regular" as an open TODO. The classical route is the
+  associated graded ring: for a regular local ring `gr_𝔪(R)` is a polynomial
+  ring over `R/𝔪`, hence a domain, and a filtered ring with domain associated
+  graded and `⋂ 𝔪ⁿ = 0` (Krull) is a domain.
+
+Both are general, reusable, and would be genuine mathlib contributions; the
+second in particular is consumed by every "regular ⟹ normal ⟹ irreducible"
+argument in algebraic geometry. Note this SUBSUMES the weaker "smooth over a
+field ⟹ reduced": the sibling
+`exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` was proven on
+2026-07-26 by a different route (associated primes) and no longer needs it,
+but any future consumer of reducedness can take it from here.
+
+Stated with `hf` an explicit hypothesis rather than an instance because the
+call site has `Smooth` as a hypothesis of a theorem, not in the instance
+cache. -/
+theorem isDomain_stalk_of_smooth_over_field {K : Type u} [Field K]
+    {Z : AlgebraicGeometry.Scheme.{u}}
+    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
+    (hf : AlgebraicGeometry.Smooth f) (z : Z) :
+    IsDomain (Z.presheaf.stalk z) :=
+  sorry
+
+/-- **A PRIME WITH DOMAIN LOCALIZATION HAS AN IRREDUCIBLE OPEN NEIGHBOURHOOD
+IN `Spec R`** (**PROVEN 2026-07-26** — the affine heart of the
+connected ⟹ irreducible upgrade; pure commutative algebra, no scheme theory
+and no smoothness).
+
+If `R` is noetherian and `R_p` is a domain then `p` has an irreducible open
+neighbourhood in `Spec R`. Both hypotheses are needed: without noetherianity
+there can be infinitely many minimal primes and the neighbourhood below is
+not open; without the domain hypothesis `p` may lie on several components,
+and then no neighbourhood of it is irreducible.
+
+THE PROOF. `R_p` is a domain, so `⊥` is its least prime; the order
+isomorphism `IsLocalization.AtPrime.orderIsoOfPrime` carries the primes of
+`R_p` onto the primes of `R` below `p`, so there is a LEAST prime `q ≤ p`,
+and it is the unique minimal prime of `R` below `p`. Noetherianity makes
+`minimalPrimes R` finite, so
+`U := Spec R ∖ ⋃ {V(q') : q' ∈ minimalPrimes R, q' ≠ q}` is open; `p ∈ U` by
+that uniqueness, and every prime contains some minimal prime, so a prime in
+`U` contains `q`, i.e. `U ⊆ V(q)`. Finally `V(q)` is irreducible because `q`
+is prime, and a nonempty open subset of an irreducible set is irreducible. -/
+theorem exists_isOpen_isIrreducible_primeSpectrum {R : Type u} [CommRing R]
+    [IsNoetherianRing R] (p : PrimeSpectrum R)
+    (hp : IsDomain (Localization.AtPrime p.asIdeal)) :
+    ∃ U : Set (PrimeSpectrum R), IsOpen U ∧ p ∈ U ∧ IsIrreducible U := by
+  classical
+  haveI : p.asIdeal.IsPrime := p.isPrime
+  have hbot : (⊥ : Ideal (Localization.AtPrime p.asIdeal)).IsPrime := Ideal.isPrime_bot
+  set e := IsLocalization.AtPrime.orderIsoOfPrime (Localization.AtPrime p.asIdeal) p.asIdeal
+    with he
+  set q : Ideal R := (e ⟨⊥, hbot⟩).1 with hqdef
+  have hq : q.IsPrime := (e ⟨⊥, hbot⟩).2.1
+  have hqle : q ≤ p.asIdeal := (e ⟨⊥, hbot⟩).2.2
+  have hleast : ∀ r : Ideal R, r.IsPrime → r ≤ p.asIdeal → q ≤ r := by
+    intro r hr hrle
+    have h1 : (⟨⊥, hbot⟩ : {P : Ideal (Localization.AtPrime p.asIdeal) // P.IsPrime}) ≤
+        e.symm ⟨r, hr, hrle⟩ := Subtype.mk_le_mk.mpr bot_le
+    have h2 := e.monotone h1
+    rw [e.apply_symm_apply] at h2
+    exact h2
+  have huniq : ∀ r ∈ minimalPrimes R, r ≤ p.asIdeal → r = q := by
+    intro r hr hrle
+    have hr' := (IsMinimalPrime.iff_minimal r).mp hr
+    have h1 : q ≤ r := hleast r hr'.1 hrle
+    exact le_antisymm (hr'.2 hq h1) h1
+  set S : Set (Ideal R) := minimalPrimes R \ {q} with hSdef
+  have hSfin : S.Finite := (minimalPrimes.finite_of_isNoetherianRing R).subset Set.sdiff_subset
+  set U : Set (PrimeSpectrum R) := (⋃ r ∈ S, PrimeSpectrum.zeroLocus (r : Set R))ᶜ with hUdef
+  have hUopen : IsOpen U :=
+    (hSfin.isClosed_biUnion fun r _ => PrimeSpectrum.isClosed_zeroLocus _).isOpen_compl
+  have hpU : p ∈ U := by
+    simp only [hUdef, Set.mem_compl_iff, Set.mem_iUnion, not_exists, exists_prop, not_and]
+    intro r hrS hpz
+    exact hrS.2 (huniq r hrS.1 (PrimeSpectrum.mem_zeroLocus _ _ |>.mp hpz))
+  have hUsub : U ⊆ PrimeSpectrum.zeroLocus (q : Set R) := by
+    intro x hx
+    obtain ⟨r, hrmin, hrle⟩ :=
+      Ideal.exists_minimalPrimes_le (I := (⊥ : Ideal R)) (J := x.asIdeal) bot_le
+    have hrq : r = q := by
+      by_contra hne
+      refine hx ?_
+      simp only [Set.mem_iUnion, exists_prop]
+      exact ⟨r, ⟨hrmin, hne⟩, (PrimeSpectrum.mem_zeroLocus _ _).mpr hrle⟩
+    exact (PrimeSpectrum.mem_zeroLocus _ _).mpr (hrq ▸ hrle)
+  have hqrad : q.radical.IsPrime := by rw [hq.radical]; exact hq
+  have hirr : IsIrreducible (PrimeSpectrum.zeroLocus (q : Set R)) :=
+    (PrimeSpectrum.isIrreducible_zeroLocus_iff q).mpr hqrad
+  exact ⟨U, hUopen, hpU,
+    hirr.isPreirreducible.subset_irreducible ⟨p, hpU⟩ hUopen (subset_refl U) hUsub⟩
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A POINT WITH DOMAIN STALK ON A LOCALLY NOETHERIAN SCHEME HAS AN
+IRREDUCIBLE OPEN NEIGHBOURHOOD** (**PROVEN 2026-07-26** over
+`exists_isOpen_isIrreducible_primeSpectrum` — elementary, and entirely
+independent of smoothness).
+
+The transport is done on an affine CHART rather than an affine open:
+`Scheme.exists_Spec_apply_eq` produces an open immersion
+`f : Spec R ⟶ Z` hitting `z`, which is cheaper to work with than
+`IsAffineOpen.isoSpec` because it moves both the noetherian hypothesis and
+the stalk across in one step and leaves no subtype coercions behind.
+
+* `R` is noetherian: `isLocallyNoetherian_of_isOpenImmersion` transports
+  `IsLocallyNoetherian` along `f`, and `isLocallyNoetherian_Spec` reads it
+  off as `IsNoetherianRing R`.
+* `R_y` is a domain: `f.stalkMap y` is an isomorphism because `f` is an open
+  immersion, and `Spec.stalkIso` identifies the stalk of `Spec R` at `y` with
+  `Localization.AtPrime y.asIdeal`; `MulEquiv.isDomain` moves the hypothesis
+  across both.
+* The open irreducible neighbourhood is then produced in `Spec R` by the
+  affine lemma and pushed forward along `f.base`, which is an open embedding,
+  so the image is open (`IsOpenMap`) and still irreducible
+  (`IsIrreducible.image`). -/
+theorem exists_isOpen_isIrreducible_of_isDomain_stalk {Z : AlgebraicGeometry.Scheme.{u}}
+    [AlgebraicGeometry.IsLocallyNoetherian Z] (z : Z)
+    (hz : IsDomain (Z.presheaf.stalk z)) :
+    ∃ U : Set Z, IsOpen U ∧ z ∈ U ∧ IsIrreducible U := by
+  obtain ⟨R, f, hf, y, hy⟩ := AlgebraicGeometry.Scheme.exists_Spec_apply_eq (X := Z) z
+  haveI := hf
+  haveI : AlgebraicGeometry.IsLocallyNoetherian (AlgebraicGeometry.Spec R) :=
+    AlgebraicGeometry.isLocallyNoetherian_of_isOpenImmersion f
+  haveI : IsNoetherianRing R := AlgebraicGeometry.isLocallyNoetherian_Spec.mp inferInstance
+  subst hy
+  haveI : IsDomain ((AlgebraicGeometry.Spec R).presheaf.stalk y) :=
+    (asIso (f.stalkMap y)).symm.commRingCatIsoToRingEquiv.toMulEquiv.isDomain _
+  haveI : IsDomain (Localization.AtPrime y.asIdeal) :=
+    (AlgebraicGeometry.Spec.stalkIso R y).symm.commRingCatIsoToRingEquiv.toMulEquiv.isDomain _
+  obtain ⟨U, hUopen, hyU, hUirr⟩ := exists_isOpen_isIrreducible_primeSpectrum y inferInstance
+  refine ⟨f.base '' U, ?_, ⟨y, hyU, rfl⟩, ?_⟩
+  · exact f.isOpenEmbedding.isOpenMap _ hUopen
+  · exact hUirr.image _ f.continuous.continuousOn
+
+open CategoryTheory AlgebraicGeometry in
+/-- **SMOOTH OVER A FIELD ⟹ LOCALLY IRREDUCIBLE** (**PROVEN 2026-07-26** over
+the two leaves above).
+
+Smoothness enters twice and in two different ways, which is exactly why the
+two leaves are separate: it supplies the domain stalks
+(`isDomain_stalk_of_smooth_over_field`, the geometric content), and — through
+`Smooth ⟹ LocallyOfFinitePresentation ⟹ LocallyOfFiniteType` and
+`LocallyOfFiniteType.isLocallyNoetherian` over the noetherian base `Spec K` —
+the local noetherianity that
+`exists_isOpen_isIrreducible_of_isDomain_stalk` needs. -/
+theorem exists_isOpen_isIrreducible_of_smooth_over_field {K : Type u} [Field K]
+    {Z : AlgebraicGeometry.Scheme.{u}}
+    (f : Z ⟶ AlgebraicGeometry.Spec (CommRingCat.of K))
+    (hf : AlgebraicGeometry.Smooth f) (z : Z) :
+    ∃ U : Set Z, IsOpen U ∧ z ∈ U ∧ IsIrreducible U := by
+  have : AlgebraicGeometry.Smooth f := hf
+  have : AlgebraicGeometry.IsLocallyNoetherian Z :=
+    AlgebraicGeometry.LocallyOfFiniteType.isLocallyNoetherian f
+  exact exists_isOpen_isIrreducible_of_isDomain_stalk z
+    (isDomain_stalk_of_smooth_over_field f hf z)
+
+open CategoryTheory AlgebraicGeometry in
+/-- **SMOOTH + GEOMETRICALLY CONNECTED ⟹ GEOMETRICALLY IRREDUCIBLE**
+(**PROVEN 2026-07-26** over the four names above — the formal half of Bertini
+irreducibility, isolated so that the Lefschetz content lives alone in
 `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible`).
 
 A scheme smooth over `ℚ` whose geometric fibres are connected has
@@ -2150,26 +2472,41 @@ parameter space occur here: it is the standard chain
 extends `Nonempty`), which is what `IrreducibleSpace` also demands, so no
 extra hypothesis is needed.
 
-MACHINERY MISSING AT THIS PIN: "smooth over a field ⟹ regular" is not stated
-in mathlib's `AlgebraicGeometry/Morphisms/Smooth.lean` at this pin (it only
-ever TAKES regularity/reducedness as a hypothesis), and neither is "connected
-+ normal ⟹ irreducible" for schemes. Both are small, general and reusable —
-this leaf is the natural place to add them. Note that the sibling
-`exists_nonZeroDivisorLocus_of_affine_geometricallyIrreducible` needs the
-same missing ingredient in its weaker form "smooth over a field ⟹ reduced",
-so a prover who builds it here discharges part of that leaf too.
-
 Stated for a general scheme `X` over `Spec (ULift ℚ)` rather than for the
 hyperplane sections alone, both because it is true at that generality and
 because the concrete base `ULift ℚ` is what every statement in this file
-uses, so the call site matches syntactically. -/
+uses, so the call site matches syntactically.
+
+**PROVEN 2026-07-26** over the five names immediately above it, of which
+exactly ONE is still open:
+
+* `irreducibleSpace_of_connectedSpace_of_locallyIrreducible` (PROVEN) — the
+  point-set topology;
+* `exists_isOpen_isIrreducible_primeSpectrum` (PROVEN) and
+  `exists_isOpen_isIrreducible_of_isDomain_stalk` (PROVEN) — the
+  minimal-prime bookkeeping that turns a domain stalk into an irreducible
+  open neighbourhood;
+* **`isDomain_stalk_of_smooth_over_field` (SORRY)** — "smooth over a field ⟹
+  the local rings are domains", the sole surviving leaf and the only place
+  where any geometry is used;
+* `exists_isOpen_isIrreducible_of_smooth_over_field` (PROVEN) — the assembly.
+
+So the whole connected ⟹ irreducible upgrade is reduced to one sharply
+stated mathlib gap. See the cut note on the topological lemma for why that is
+the right split. -/
 theorem geometricallyIrreducible_of_smooth_of_geometricallyConnected
     {X : AlgebraicGeometry.Scheme.{u}}
     (h : X ⟶ AlgebraicGeometry.Spec (CommRingCat.of (ULift.{u} ℚ)))
     (hsm : AlgebraicGeometry.Smooth h)
     (hconn : AlgebraicGeometry.GeometricallyConnected h) :
-    AlgebraicGeometry.GeometricallyIrreducible h :=
-  sorry
+    AlgebraicGeometry.GeometricallyIrreducible h := by
+  have : AlgebraicGeometry.Smooth h := hsm
+  refine ⟨AlgebraicGeometry.geometrically_iff_of_isClosedUnderIsomorphisms.mpr fun K _ y ↦ ?_⟩
+  have : ConnectedSpace ↥(Limits.pullback h y) :=
+    AlgebraicGeometry.pullback_of_geometrically hconn.geometrically_connectedSpace K y
+  exact irreducibleSpace_of_connectedSpace_of_locallyIrreducible
+    (fun z ↦ exists_isOpen_isIrreducible_of_smooth_over_field
+      (Limits.pullback.snd h y) inferInstance z)
 
 open CategoryTheory AlgebraicGeometry in
 /-- **BERTINI in characteristic zero: the generic hyperplane section is
@@ -2217,7 +2554,9 @@ as the section is known to be SMOOTH. So the three conditions separate:
 * `exists_bertiniConnectedLocus_of_affine_geometricallyIrreducible` (SORRY) —
   a nonzero `F₂` off whose zero locus the section is geometrically connected.
   **This is the sole consumer of `hdim`**, and it is false at `dim = 1`.
-* `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (SORRY) —
+* `geometricallyIrreducible_of_smooth_of_geometricallyConnected` (**PROVEN
+  2026-07-26**, over the single surviving leaf
+  `isDomain_stalk_of_smooth_over_field`) —
   smooth + geometrically connected ⟹ geometrically irreducible, for any
   scheme over `Spec (ULift ℚ)`. Pure formalities: smooth over a field ⟹
   regular ⟹ local rings are domains, and a connected locally noetherian
@@ -2265,10 +2604,168 @@ theorem exists_bertiniGenericLocus_of_affine_geometricallyIrreducible
   exact ⟨hsm, geometricallyIrreducible_of_smooth_of_geometricallyConnected _ hsm hcn⟩
 
 open CategoryTheory AlgebraicGeometry in
-/-- **A NONCONSTANT CONTINUOUS ARC OF REAL POINTS** (sorry node, 2026-07-26 —
-the ENTIRE scheme-to-real-topology content of the real-approximation leaf
-below, isolated; it is item 6 of the module's missing-machinery list in its
-minimal useful form).
+/-- **The coordinates separate real points** (PROVEN, 2026-07-26). Two ring
+maps `A →+* ℝ` agreeing on the coordinates `xᵢ` are EQUAL: they automatically
+agree on the image of the base map as well, because a ring map out of
+`ULift ℚ` is unique (`ringHom_uliftRat_ext`), and `hx` says those two families
+generate `A` as a ring. This is the only place `hx` is used in the arc leaf
+below, and it is exactly what turns "nonconstant as a family of ring maps"
+into "nonconstant IN A COORDINATE". -/
+theorem realPoint_ext_of_coords {A : CommRingCat.{u}}
+    (pre : CommRingCat.of (ULift.{u} ℚ) ⟶ A)
+    {n : ℕ} (x : Fin n → A)
+    (hx : Subring.closure (Set.range pre.hom ∪ Set.range x) = ⊤)
+    {φ ψ : A →+* ℝ} (h : ∀ i, φ (x i) = ψ (x i)) : φ = ψ := by
+  refine RingHom.eq_of_eqOn_set_dense hx ?_
+  rintro a (⟨q, rfl⟩ | ⟨i, rfl⟩)
+  · exact RingHom.congr_fun (ringHom_uliftRat_ext (φ.comp pre.hom) (ψ.comp pre.hom)) q
+  · exact h i
+
+/-- **A bounded reparametrisation of the whole real line** (PROVEN,
+2026-07-26): `t ↦ (r/2)·t/(1+|t|)` is continuous on all of `ℝ`, never exceeds
+`r/2` in absolute value, vanishes at `0` and is nonzero at `1`. It is what
+lets a LOCAL chart produce an arc defined on ALL of `ℝ`, which is the shape
+the arc leaf's consumer wants. -/
+theorem exists_bounded_reparam {r : ℝ} (hr : 0 < r) :
+    ∃ s : ℝ → ℝ, Continuous s ∧ (∀ t, |s t| ≤ r / 2) ∧ s 0 = 0 ∧ s 1 ≠ 0 := by
+  have hden : ∀ t : ℝ, (0:ℝ) < 1 + |t| := fun t => by positivity
+  refine ⟨fun t => (r / 2) * (t / (1 + |t|)), ?_, ?_, by norm_num, ?_⟩
+  · exact continuous_const.mul (continuous_id.div (by fun_prop) fun t => (hden t).ne')
+  · intro t
+    have key : |t / (1 + |t|)| ≤ 1 := by
+      rw [abs_div, abs_of_pos (hden t), div_le_one (hden t)]
+      linarith [abs_nonneg t]
+    calc |(r / 2) * (t / (1 + |t|))| = |r / 2| * |t / (1 + |t|)| := abs_mul _ _
+      _ ≤ |r / 2| * 1 := mul_le_mul_of_nonneg_left key (abs_nonneg _)
+      _ = r / 2 := by rw [mul_one, abs_of_pos (by linarith : (0:ℝ) < r / 2)]
+  · have h1 : |(1:ℝ)| = 1 := abs_one
+    simp only [h1]
+    positivity
+
+/-- **A nonempty open subset of a POSITIVE-dimensional Euclidean space carries a
+nonconstant continuous line defined on all of `ℝ`** (PROVEN, 2026-07-26).
+
+Push `exists_bounded_reparam` along one coordinate direction out of `z₀`: the
+displacement has norm at most `r/2`, so the whole line stays inside
+`Metric.ball z₀ r ⊆ U`, and it is nonconstant because the reparametrisation
+separates `0` from `1`. `0 < d` is LOAD-BEARING — in `ℝ⁰` every map is
+constant. -/
+theorem exists_continuousLine_of_isOpen {d : ℕ} (hd : 0 < d) (U : Set (Fin d → ℝ))
+    (hU : IsOpen U) (z₀ : Fin d → ℝ) (hz₀ : z₀ ∈ U) :
+    ∃ ζ : ℝ → (Fin d → ℝ), Continuous ζ ∧ (∀ t, ζ t ∈ U) ∧ ζ 0 ≠ ζ 1 := by
+  obtain ⟨r, hr, hball⟩ := Metric.isOpen_iff.mp hU z₀ hz₀
+  obtain ⟨s, hscont, hsabs, hs0, hs1⟩ := exists_bounded_reparam hr
+  set j₀ : Fin d := ⟨0, hd⟩ with hj₀
+  set e : Fin d → ℝ := fun j => if j = j₀ then 1 else 0 with he
+  have hnorme : ‖e‖ ≤ 1 :=
+    (pi_norm_le_iff_of_nonneg zero_le_one).mpr fun j => by
+      rw [he]; by_cases h : j = j₀ <;> simp [h]
+  refine ⟨fun t => z₀ + s t • e, by fun_prop, ?_, ?_⟩
+  · intro t
+    apply hball
+    rw [Metric.mem_ball, dist_eq_norm, show z₀ + s t • e - z₀ = s t • e from by abel,
+      norm_smul, Real.norm_eq_abs]
+    calc |s t| * ‖e‖ ≤ (r / 2) * 1 :=
+          mul_le_mul (hsabs t) hnorme (norm_nonneg _) (by linarith)
+      _ < r := by linarith
+  · intro hcon
+    have hco := congrFun hcon j₀
+    simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, he, hs0, add_zero,
+      if_true, mul_one] at hco
+    exact hs1 (by linarith)
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A EUCLIDEAN CHART ON `X(ℝ)`** (sorry node, 2026-07-26 — the residual
+scheme-to-real-topology content of item 6, after the coordinate bookkeeping
+and the arc construction below it have been discharged).
+
+For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` of
+dimension `> 1` WITH A REAL POINT, there is a positive `d`, a nonempty open
+`U ⊆ ℝ^d` and a map `Φ : ℝ^d → (A →+* ℝ)` which is CONTINUOUS in every
+regular function (`z ↦ Φ z a` is continuous on `U`, for every `a : A`) and
+INJECTIVE on `U`. In words: `X(ℝ)` contains a topologically embedded
+`d`-dimensional Euclidean patch, `d ≥ 1`.
+
+WHY IT IS TRUE. `A →+* ℝ` *is* `X(ℝ)` — no compatibility over `ℚ` has to be
+imposed, since a ring map out of `ℚ` is unique (`ringHom_uliftRat_ext`).
+`hreal` says `X(ℝ) ≠ ∅`; `hsmooth` makes `X(ℝ)` a real-analytic manifold near
+any of its points, of dimension `dim X`; `hgi` and `hdim` make that dimension
+at least `1`. A single chart of that manifold is the required `(U, Φ)`.
+
+**NOTE WHAT THIS CUT BUYS, AND WHAT IT DOES NOT.** It buys everything that is
+not manifold theory: no coordinates `x`, no `hx`, no nonconstancy, no arc.
+Those are discharged by `realPoint_ext_of_coords`,
+`exists_bounded_reparam` and `exists_continuousLine_of_isOpen`, all PROVEN
+here, and `exists_realArc_of_affine_geometricallyIrreducible` is PROVEN below
+from this leaf alone. What it does NOT buy is the manifold structure itself,
+which is the genuine missing machinery.
+
+EVERY HYPOTHESIS IS LOAD-BEARING, and the third is the one worth recording:
+
+* `hreal` — without a real point `A →+* ℝ` is EMPTY, so no total `Φ` exists at
+  all (`Spec ℚ[t]/(t²+1)`).
+* `hdim` — at `dim X = 0` the set `X(ℝ)` is finite, so nothing injects an open
+  `U ⊆ ℝ^d`, `d ≥ 1`, into it.
+* `hsmooth` — **it is not implied by `hgi` and `hdim`.** The affine cone
+  `x² + y² + z² = 0` over `ℚ` is geometrically irreducible of dimension `2`,
+  yet its real points are the single point `(0,0,0)`; it fails only smoothness,
+  at the origin. So a singular geometrically irreducible surface can have a
+  ZERO-dimensional real locus, and smoothness is exactly what excludes that.
+* `hft` is implied by `hsmooth` (smooth ⟹ locally of finite presentation) and
+  is carried only to keep the hypothesis list parallel with the sibling
+  Bertini leaves.
+
+THE ATTACK PATH, since the survey behind this cut found that far more of it is
+already in mathlib than the module's missing-machinery list claims:
+
+1. `AlgebraicGeometry.Smooth` is `HasRingHomProperty @Smooth RingHom.Smooth`
+   (`Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:73`), so on affines
+   `hsmooth` gives `RingHom.Smooth (Spec.preimage g).hom`, i.e. `A` is a
+   smooth `ℚ`-algebra.
+2. Base change to `ℝ` and localise at the real point. **Smooth ⟹ LOCALLY
+   STANDARD SMOOTH IS IN MATHLIB** — `Algebra.IsSmoothAt.exists_notMem_isStandardSmooth`
+   and `Algebra.Smooth.exists_span_eq_top_isStandardSmooth`
+   (`Mathlib/RingTheory/Smooth/StandardSmoothOfFree.lean:102,153`), plus
+   `RingHom.smooth_iff_locally_isStandardSmooth`
+   (`Mathlib/RingTheory/RingHom/LocallyStandardSmooth.lean:45`). This is the
+   ingredient the module's item 6 assumed was missing; it is not.
+3. A `SubmersivePresentation` (`Mathlib/RingTheory/Extension/Presentation/Submersive.lean`)
+   is literally a polynomial system with an INVERTIBLE JACOBIAN, so it hands
+   over `P : Fin c → MvPolynomial (Fin m) ℝ` with `c < m` and a surjective
+   differential at the real point.
+4. Evaluation of a multivariate polynomial is analytic — hence strictly
+   differentiable — by `AnalyticOnNhd.eval_continuousLinearMap`
+   (`Mathlib/Analysis/Analytic/Polynomial.lean:73`), with
+   `MvPolynomial.continuous_eval` for the continuity.
+5. Then the IMPLICIT FUNCTION THEOREM applies verbatim:
+   `HasStrictFDerivAt.implicitFunction` with `hf' : f'.range = ⊤`
+   (`Mathlib/Analysis/Calculus/Implicit.lean:474`), whose
+   `implicitToOpenPartialHomeomorph` (`:467`) supplies both the CONTINUITY
+   (`tendsto_implicitFunction`, `:508`) and the INJECTIVITY
+   (`OpenPartialHomeomorph.injOn` on its open `source`) demanded here, and
+   whose parameter space is `f'.ker`, of dimension `m - c ≥ 1`.
+
+What remains genuinely missing is only the bookkeeping that glues 1–5
+together: mathlib has no functor from schemes to real manifolds, so the
+identification of `X(ℝ)` with the zero locus in `ℝ^m` has to be written by
+hand. That is a real subproject, but it is assembly of existing parts, not new
+theory — which is a strictly better position than the one item 6 records. -/
+theorem exists_realPointChart_of_affine_geometricallyIrreducible
+    (hsmooth : AlgebraicGeometry.Smooth g)
+    (hft : AlgebraicGeometry.LocallyOfFiniteType g)
+    (hgi : AlgebraicGeometry.GeometricallyIrreducible g)
+    (hreal : HasRationalPoint g (ULift.{u} ℝ))
+    (hdim : 1 < topologicalKrullDim (AlgebraicGeometry.Spec A)) :
+    ∃ (d : ℕ) (U : Set (Fin d → ℝ)) (z₀ : Fin d → ℝ) (Φ : (Fin d → ℝ) → (A →+* ℝ)),
+      0 < d ∧ IsOpen U ∧ z₀ ∈ U ∧
+      (∀ a : A, ContinuousOn (fun z => Φ z a) U) ∧ Set.InjOn Φ U :=
+  sorry
+
+open CategoryTheory AlgebraicGeometry in
+/-- **A NONCONSTANT CONTINUOUS ARC OF REAL POINTS** (**PROVEN 2026-07-26**
+over the single leaf `exists_realPointChart_of_affine_geometricallyIrreducible`
+— all of this node except the Euclidean chart on `X(ℝ)` itself is now
+discharged).
 
 For a smooth, geometrically irreducible affine `ℚ`-variety `Spec A` of
 dimension `> 1` with a real point, presented in coordinates `x : Fin n → A`,
@@ -2288,16 +2785,25 @@ to all of `ℝ` by being constant outside a compact interval. Nonconstancy in
 `X(ℝ)` is nonconstancy in some COORDINATE because the `xᵢ` generate `A` over
 the base and so separate real points — that is what `hx` is for.
 
-MACHINERY MISSING AT THIS PIN: mathlib has no functor from schemes to real
-manifolds, so `X(ℝ) ⊆ ℝⁿ` must be identified as a submanifold before any of
-this can be said. **NOTE WHAT THE CUT BUYS.** Only the EXISTENCE OF ONE
-NONCONSTANT ARC is needed — not the implicit function theorem, not the
-tangent space, not the Jacobian. Its consumer replaces the implicit function
-theorem with the INTERMEDIATE VALUE THEOREM along the arc, which is why the
-whole of the surrounding real-approximation statement is PROVEN below from
-this alone. So a prover needs the manifold structure only far enough to
-produce a single nonconstant path — one chart suffices — or indeed any other
-route to a positive-dimensional connected piece of `X(ℝ)`.
+**THE PROOF BELOW REDUCES ALL OF THAT TO ONE CHART** (2026-07-26), namely to
+`exists_realPointChart_of_affine_geometricallyIrreducible`, and everything
+else here is now PROVEN:
+
+* `exists_bounded_reparam` and `exists_continuousLine_of_isOpen` turn the
+  chart's open set into a nonconstant continuous line defined on ALL of `ℝ` —
+  a bounded reparametrisation `t ↦ (r/2)·t/(1+|t|)` pushed along one
+  coordinate direction, which is cheaper than the "constant outside a compact
+  interval" extension this docstring used to propose, and manifestly
+  continuous;
+* `realPoint_ext_of_coords` turns the chart's INJECTIVITY into nonconstancy IN
+  A COORDINATE, which is the only place `hx` is used.
+
+So the surviving gap is exactly the Euclidean patch on `X(ℝ)`, with no
+coordinates and no arcs left in it. Only the EXISTENCE OF ONE NONCONSTANT ARC
+is needed here — not the tangent space, not the Jacobian — because this node's
+consumer replaces the implicit function theorem with the INTERMEDIATE VALUE
+THEOREM along the arc; the implicit function theorem reappears one level down,
+inside the chart leaf, where mathlib already supplies it.
 
 EVERY HYPOTHESIS IS LOAD-BEARING: `hreal` supplies a point to start from (and
 without it the statement is FALSE — `Spec ℚ[t]/(t²+1)` has no real point at
@@ -2317,8 +2823,16 @@ theorem exists_realArc_of_affine_geometricallyIrreducible
       Set.range x) = ⊤) :
     ∃ γ : ℝ → (A →+* ℝ),
       (∀ i : Fin n, Continuous fun t => γ t (x i)) ∧
-      ∃ (i : Fin n) (t₁ t₂ : ℝ), γ t₁ (x i) ≠ γ t₂ (x i) :=
-  sorry
+      ∃ (i : Fin n) (t₁ t₂ : ℝ), γ t₁ (x i) ≠ γ t₂ (x i) := by
+  obtain ⟨d, U, z₀, Φ, hd, hU, hz₀, hΦcont, hΦinj⟩ :=
+    exists_realPointChart_of_affine_geometricallyIrreducible g hsmooth hft hgi hreal hdim
+  obtain ⟨ζ, hζcont, hζU, hζne⟩ := exists_continuousLine_of_isOpen hd U hU z₀ hz₀
+  refine ⟨fun t => Φ (ζ t), fun i => (hΦcont (x i)).comp_continuous hζcont hζU, ?_⟩
+  by_contra hcon
+  push Not at hcon
+  exact hζne (hΦinj (hζU 0) (hζU 1)
+    (realPoint_ext_of_coords (AlgebraicGeometry.Spec.preimage g) x hx
+      (fun i => hcon i 0 1)))
 
 open CategoryTheory AlgebraicGeometry in
 /-- **THE REAL APPROXIMATION: a whole BOX of parameters keeps a real point**
@@ -2550,10 +3064,10 @@ short. So this is now proven over:
   off a proper `ℚ`-rational closed subset, the section is smooth and
   geometrically irreducible;
 * `exists_realApproximationBall_of_affine_geometricallyIrreducible` (**PROVEN
-  2026-07-26** over the single leaf
-  `exists_realArc_of_affine_geometricallyIrreducible`, SORRY — a nonconstant
-  continuous arc of real points; the `ℝ`-topology step needs the INTERMEDIATE
-  VALUE THEOREM along that arc, not the implicit function theorem) — every
+  2026-07-26** over `exists_realArc_of_affine_geometricallyIrreducible`, which
+  is itself **PROVEN** — a nonconstant continuous arc of real points; the
+  `ℝ`-topology step needs the INTERMEDIATE VALUE THEOREM along that arc, not
+  the implicit function theorem) — every
   rational parameter in a nonempty real BOX gives a section with a real point;
 * `exists_rat_mem_box_eval_ne_zero` (PROVEN) — the reconciliation: a nonzero
   rational polynomial has a rational non-root in every real box, so the
@@ -8483,9 +8997,16 @@ in the sibling leaf's docstring — items 7–9 are now the two leaves of
    INDEPENDENT of `λ` — this is what makes the `λ`-adic and `𝔭`-adic
    Tate modules members of ONE compatible system, i.e. the fields
    `matchℓ` and `matchp`, and it is the deepest item in the list.
-   **Leaf**: `Fermat.exists_weilFrobeniusSystem_of_mult`, which
+   `Fermat.exists_weilFrobeniusSystem_of_mult`, which
    quantifies the `D`-rational system `P` BEFORE the ideal, so that one
    family of polynomials serves every residue characteristic.
+   **No longer a leaf** (2026-07-26): once the frame was pinned to the
+   real multiplication by `j`/`hj` it became an ASSEMBLY, and the two
+   leaves are now `Fermat.exists_algebraicClosureEmbedding_of_tateFrame_mult`
+   (the frame's coefficient ring is `𝒪_{D,I}`, which is what supplies the
+   injectivity of `ι`) and `Fermat.exists_intWeilPolynomial_of_mult` (the
+   Frobenius characteristic polynomial is `X² - a_w X + b_w` with
+   `a_w, b_w ∈ 𝒪_D` independent of `I`).  Dispatch at those, not here.
 
 WHY THE CUT NEEDED A DEFINITION. "There is a rank-two representation
 whose reduction is `A[λ]`" and "there is a `D`-rational compatible
@@ -12447,30 +12968,109 @@ repeat it). Statement: `Γ F` compact, `τ : Γ F → GL_2(L)` continuous,
 `L/ℚ_3` finite ⟹ a `Γ F`-stable `O_L`-lattice exists (take the
 `O_L`-span of `τ(g_i)·O_L²` over coset representatives of the open
 subgroup stabilizing one lattice). Where each ingredient stands:
-* compactness of the absolute Galois group — mathlib has
-  `instance [IsGalois k K] : CompactSpace Gal(K/k)`
-  (`Mathlib/FieldTheory/Galois/Profinite.lean`), and `Γ F` is
-  `Gal(F̄/F)` with `IsGalois F F̄` in characteristic zero;
+* compactness of the absolute Galois group — AVAILABLE, but NOT by
+  `inferInstance`: the tree's own
+  `instance [Algebra.IsAlgebraic K L] : CompactSpace (L ≃ₐ[K] L)`
+  (`Fermat/FLT/Mathlib/FieldTheory/Galois/Infinite.lean:93`) is
+  strictly better than mathlib's `IsGalois`-based one (algebraicity
+  only, no separability), but `Field.absoluteGaloisGroup` is a `def`,
+  so it must be summoned as
+  `inferInstanceAs (CompactSpace (AlgebraicClosure F ≃ₐ[F] AlgebraicClosure F))`
+  — the idiom already used at `ModThree.lean:37174`;
 * `O_L` module-finite over `ℤ_3` — `IsIntegralClosure.finite`
-  (`Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean`): `ℤ_3` is
-  a Noetherian integrally closed domain and `L/ℚ_3` is finite
-  separable;
+  (`Mathlib/RingTheory/DedekindDomain/IntegralClosure.lean:174`): `ℤ_3`
+  is a Noetherian integrally closed domain (both free from
+  `IsDiscreteValuationRing ℤ_[p]`, `PadicIntegers.lean:521`) and
+  `L/ℚ_3` is finite separable;
 * the lattice is FREE of rank `2` — `O_L` is Dedekind and local
   (`isLocalRing_of_finite_padicInt`, in this file), hence a DVR, hence
-  a PID;
-* `O_L` OPEN in `L` and the lattice stabilizer OPEN in
-  `Module.End L (Fin 2 → L)` — via `IsModuleTopology.instPi` /
-  `IsModuleTopology.iso`; no direct pin support, this is where the work
-  starts;
-* an open subgroup of a compact group has finite index — not found in
-  mathlib under an obvious name; a short covering argument;
+  a PID; alternatively `IsIntegralClosure.module_free`
+  (`IntegralClosure.lean:182`) gives `Module.Free ℤ_3 O_L` outright;
+* `O_L` OPEN in `L` — **CORRECTED 2026-07-26 (round 5): the "no direct
+  pin support, this is where the work starts" verdict was WRONG.** The
+  technique is in-tree and worked out:
+  `isOpen_span_natCast_pow` and `isOpen_pow_of_natCast_mem`
+  (`Fermat/FLT/Modularity/TateModule.lean:2752`, `:2793`) prove exactly
+  "a lattice is open" for a ring carrying the `ℤ_q`-module topology, by
+  transporting through `Module.Free.chooseBasis`'s `equivFun` +
+  `IsModuleTopology.continuous_of_linearMap` + `isOpen_set_pi` +
+  `IsLocalRing.isOpen_maximalIdeal_pow ℤ_[q] n`. The same file supplies
+  `compactSpace_of_isModuleTopology_padicInt` (`:2725`),
+  `t2Space_of_isModuleTopology_padicInt` (`:2736`) and
+  `exists_pow_subset_of_mem_nhds` (`:2812`);
+* an open subgroup of a compact group has finite index — **CORRECTED
+  2026-07-26 (round 5): no covering argument is owed.** It is
+  `Subgroup.quotient_finite_of_isOpen`
+  (`Mathlib/Topology/Algebra/OpenSubgroup.lean:287`) composed with
+  `Subgroup.finiteIndex_of_finite_quotient`
+  (`Mathlib/GroupTheory/Index.lean:719`); mathlib has no single bundled
+  name, which is why the earlier grep missed it, and the tree already
+  open-codes the composition at `ModThree.lean:37176`;
 * transporting `τ` to a `GaloisRep F O_L (Fin 2 → O_L)` is the
   EXPENSIVE half, not the lattice: it needs `moduleTopology ℤ_3 O_L` to
   agree with the subspace topology from `L`, and the doctrine warning
   about concrete modules inside topology-carrying steps applies in
-  full. This is a self-contained development, not a lemma — and it may
+  full. Round 5 confirms this is where ALL the remaining work is, and
+  that it is a genuine hole rather than a lookup: a repo-wide sweep of
+  BOTH trees found **no** `GaloisRep` descent to a subring of any kind
+  — no `GaloisRep.restrictScalars`, no Galois-stable-lattice
+  development, and `GaloisRep.baseChange`
+  (`GaloisRep.lean:161`) goes only UP, along an `Algebra A B`. The
+  `p`-adic ring-of-integers hull
+  (`exists_padicIntegers_dvr_hull_of_continuousSMul`,
+  `PadicIntegralClosure.lean:320`) does NOT close it either: it starts
+  from an `R` that is already `Module.Finite ℤ_[p]`, so it presupposes
+  the integrality this step is trying to produce. (The reverse half is
+  in-tree and cheap — `finiteDimensional_padic_fractionRing`,
+  `PadicIntegralClosure.lean:136` — which is the Old ⟹ New direction.)
+  This is a self-contained development, not a lemma — and it may
   not be sorried in passing, since a sorried lattice step IS the "one
   citation for two" the ROUTE AUDIT rejects.
+
+WORK PLAN for that development (round 5, so the next owner starts at
+step 4 rather than at a blank page). Steps 1–3 are now lookups, step 5
+is standard, and essentially all of the cost is in step 6:
+
+1. `CompactSpace (Γ F)` — the `inferInstanceAs` idiom above.
+2. `U := {g | τ g '' Λ₀ ⊆ Λ₀ ∧ τ g⁻¹ '' Λ₀ ⊆ Λ₀}` is a SUBGROUP (the
+   two-sided form is what makes it one; the naive preimage of the
+   integral matrices is only a submonoid) and is OPEN, because
+   `Mat₂(O_L)` is open in `Mat₂(L) ≅ End_L(L²)`. That reduces to
+   `O_L` open in `L`, i.e. a full `ℤ_3`-lattice in a finite-dimensional
+   `ℚ_3`-space is open — the `TateModule.lean:2752` technique verbatim,
+   with `chooseBasis` + `isOpen_set_pi` and `ℤ_3` open in `ℚ_3`.
+3. `U` has finite index — the two-lemma composition above.
+4. `Λ := ⨆ i, τ (gᵢ) '' Λ₀` over coset representatives is `Γ F`-stable:
+   for `g` and each `i`, `g * gᵢ = gⱼ * u` with `u ∈ U`, so
+   `τ(g * gᵢ) '' Λ₀ = τ(gⱼ) '' Λ₀`. The Lean cost here is the `Finset`
+   bookkeeping over `Quotient (QuotientGroup.leftRel U)`, not the
+   mathematics.
+5. `Λ` is f.g. and torsion-free over the DVR `O_L`, hence free, and it
+   spans `L²`, hence of rank `2` — giving `e : Λ ≃ₗ[O_L] (Fin 2 → O_L)`.
+6. CONTINUITY of `g ↦ e.conj (τ g |_Λ)` into
+   `moduleTopology O_L (End_{O_L} (Fin 2 → O_L))`. The route that
+   avoids the concrete-module blowup the doctrine warns about is to
+   go through `ℤ_3` rather than `O_L`: the module topology over `O_L`
+   agrees with the one over `ℤ_3` because `O_L` is module-finite over
+   `ℤ_3`, `End_{O_L}(O_L²)` is then finite free over `ℤ_3`, and
+   continuity into a finite free `ℤ_3`-module is continuity of
+   coordinates, each of which factors through the already-continuous
+   `τ` and the topological embedding `ℤ_3 ↪ ℚ_3`.
+
+   **The one pin gap this exposes**: the transitivity lemma that step 6
+   opens with — for `S` an `R`-algebra with `[Module.Finite R S]` and
+   `[IsModuleTopology R S]`, the `S`-module topology on an `S`-module
+   `M` COINCIDES with the `R`-module topology (an equality of
+   topologies, and correspondingly `IsModuleTopology R M ↔
+   IsModuleTopology S M`) — is NOT in our mathlib pin. It IS in the
+   reference project as `moduleTopology.trans` / `IsModuleTopology.trans`
+   (`~/cs/FLT/FLT/Mathlib/Topology/Algebra/Module/ModuleTopology.lean`,
+   `:169` and `:194` respectively, alongside
+   `of_continuous_isOpenMap_algebraMap` at `:212`, which is the natural
+   tool for "`O_L` carries the `ℤ_3`-module topology"). That project's
+   pin has drifted, so these need a signature audit rather than a
+   verbatim copy. Vendoring the three is the recommended first commit
+   of the development.
 
 (2) FIXING THE CARRIER — returning the representation over the
 integers of `ℚ_3(ψ₃ E)`, i.e. over `O_{E_λ}` — REJECTED. It does make
@@ -12563,6 +13163,60 @@ instances the literature DOES cover.)
 (6) TOTAL ODDNESS of `ρ|_{G_F}` — REJECTED as REDUNDANT, same source:
 `IsHardlyRamified.det` fixes the determinant outright, so oddness is
 already a consequence of `hρ` and no instance is deleted.
+
+ROUND-5 AUDIT (2026-07-26). Round 5 asked the one question rounds 2–4
+left open: is the exclusion set `{w | w ∣ 2} ∪ {w ∣ 3} ∪ {w ∣ ℓ}`
+COMPLETE — i.e. can the `3`-adic member still ramify at some
+`w ∉ badF`, so that a FIFTH `hbad` is owed? Answer: NO, the set is
+complete, and the proof is recorded here because the missing fifth
+hypothesis is otherwise an entirely reasonable thing for the next
+auditor to propose (it does delete instances, so the sharp test does
+not by itself dispose of it).
+
+(7) EXCLUDING THE LEVEL — adding `hbadlevel`, i.e. demanding that
+`badF` also contain the places where the Hilbert newform underlying
+`heckeF` is ramified — REJECTED as REDUNDANT. The hypotheses already
+force that level to be supported over `2` and `ℓ`:
+
+* `hirrF` gives `ρbar|_{G_F}` irreducible, hence `ρ|_{G_F}`
+  irreducible (a reducible representation has reducible reduction);
+* let `{σ_λ}` be the compatible system of the cuspidal `π` underlying
+  `heckeF`. Both `σ_ℓ` and `ρ|_{G_F}` are unramified outside a finite
+  set, so both factor through `Γ_{F,S}` for one finite `S`, and `hmod`
+  says their Frobenius characteristic polynomials agree at every
+  `w ∉ badF` — a set of density `1`. Chebotarev plus Brauer–Nesbitt
+  therefore give `σ_ℓ^{ss} ≅ (ρ|_{G_F})^{ss}`;
+* by irreducibility that is an isomorphism `σ_ℓ ≅ ρ|_{G_F}` on the
+  nose, and `ρ` is hardly ramified, so `σ_ℓ` is unramified outside the
+  places over `2` and `ℓ`. Local–global compatibility at `w ∤ ℓ` then
+  says `π_w` is unramified there, so the level of `π` is supported
+  over `2` and `ℓ`, and `σ_3` is unramified outside the places over
+  `2`, `3` and `ℓ` — exactly the set already excluded by `hbad2`,
+  `hbad3`, `hbadℓ`. No instance is deleted.
+
+THE INTERLOCK, which is the load-bearing part and was not visible
+before round 4: **rounds 3 and 4 are NOT independent narrowings —
+`hirrF` is what makes `hbad2`/`hbad3`/`hbadℓ` SUFFICIENT.** Drop
+`hirrF` from the argument above and it stops at
+`σ_ℓ^{ss} ≅ (ρ|_{G_F})^{ss}`, which does not bound the ramification of
+`σ_ℓ` itself: a `σ_ℓ` that is STEINBERG at some `w₀ ∤ 2·3·ℓ` — a
+nonsplit extension of characters, with unipotent nontrivial inertia at
+`w₀` — has unramified semisimplification, satisfies `hmod` at `w₀`,
+and yet its `3`-adic partner `σ_3` is ramified at `w₀`, where
+`charFrob` is not choice-independent. So without `hirrF` a genuine
+fifth exclusion IS owed. Do not remove or weaken `hirrF` on the
+grounds that it "only" handles Eisenstein systems; it is also the
+reason the ramification exclusion is closed.
+
+Recorded for the same reason, as a correction to the round-4 note's
+"NOT implied by `hirr`": the CONVERSE does hold. `Γ F → Γ ℚ` is
+injective with image the subgroup fixing `F`, so `ρbar.map` is a
+restriction, and an invariant subspace for `Γ ℚ` is one for `Γ F` —
+hence `hirrF ⟹ hirr`, and `hirr` is now a formally redundant
+hypothesis of this statement. It is deliberately LEFT IN PLACE:
+removing it deletes no instance, changes the signature of two proven
+assemblies and their call site, and would cost the integrator a
+conflict for nothing.
 
 RESIDUAL FAITHFULNESS GAP, NAMED (2026-07-26, round 4; flagged, NOT
 repaired here — it is a cut-level change). Even with `hirrF`, the true
@@ -17129,8 +17783,23 @@ that can honestly meet it, the construction
 `exists_threeadicRealization_of_witness`, where `τ` is the actual
 Brauer-descended member; the two former leaves are now short PROVEN
 projections of these fields, so every downstream consumer is
-unchanged. See `blggt_threeadicMember_flatAtThreePow` and
-`blggt_threeadicMember_stableLineAtTwo` for the residual citations.
+unchanged.
+
+ABSORPTION (2026-07-26 — the repair completed). The two fields were
+briefly supplied by a pair of dedicated citation leaves
+(`blggt_threeadicMember_flatAtThreePow`,
+`blggt_threeadicMember_stableLineAtTwo`), each quantified over a package
+satisfying only the Frobenius match — so, as their own HONESTY AUDIT
+said, the counterexample above applied to them verbatim and they were no
+more derivable than the leaves they replaced. Both are now DELETED: their
+conclusions are clauses (2) and (3) of the existential of
+`blggt_threeadicBrauerSum_of_witness`, which is the one declaration in
+the tree that CHOOSES `τ` and can therefore honestly assert its local
+shape. That is deduplication rather than a larger citation — BLGGT's
+compatible systems already assert crystallinity at the places over the
+residue characteristic, so the construction leaf had been UNDER-asserting
+relative to its own source. Read that docstring for the mathematics of
+both local shapes.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): this
 interface may only be inhabited by the independent Brauer-descent
@@ -17400,16 +18069,28 @@ theorem heckePoly_transport {E : Type*} [Field E] {Lℓ : Type*}
   rw [hτ, hEq]
 
 /-- **Brauer descent, `3`-adic side — the geometric core of the Brauer
-sum** (sorry node — BLGGT §5.3; THE citation sub-leaf of the `3`-adic
-realization, in its narrowest form to date): given the descended
+sum** (sorry node — BLGGT §5.3; THE single citation sub-leaf of the
+`3`-adic realization): given the descended
 rational Hecke system `(S₀, Pv)` produced on the `ℓ`-adic side
 (`exists_heckeField_system_of_witness`), the SAME system is realized
 `3`-adically — there are a finite exceptional set `S₁`, a coefficient
 ring `A` which is a local DOMAIN module-finite over `ℤ_3` (classically
 the integers `O_{E_λ}` of the completion of the Hecke field at a place
 `λ | 3`), a representation `τ` of `G_ℚ` on `Fin 2 → A`, and a
-comparison embedding `ιA : A → ℚ̄_3`, with `τ`'s Frobenius
-characteristic polynomials away from `S₁` the `ψ₃`-images of `Pv`.
+comparison embedding `ιA : A → ℚ̄_3`, such that
+
+1. `τ`'s Frobenius characteristic polynomials away from `S₁` are the
+   `ψ₃`-images of `Pv` (Carayol, at the unramified places);
+2. `τ` has the Fontaine–Laffaille local shape at `3`: every `3`-power
+   level of the stable lattice is finite flat over `ℤ_3`;
+3. `τ` has the expected Weil–Deligne type at `2`: a stable line with
+   unramified quadratic quotient.
+
+Clauses (2) and (3) were ABSORBED here on 2026-07-26 from two separate
+sorried leaves; see the ABSORPTION section at the end of this docstring
+for why they belong to this citation and nowhere else, and for the full
+mathematics of both local shapes. All three clauses are parts of one
+BLGGT compatible system, so this is a single citation, not three.
 
 CITATION-SHRINKING CUT (2026-07-25, extended the same day). This leaf
 replaces the earlier `exists_threeadicBrauerSum_of_witness` citation,
@@ -17584,7 +18265,276 @@ identity that this leaf cites; there is no shallower in-tree route, and
 no route through the forbidden modules.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
+through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`.
+
+------------------------------------------------------------------
+## ABSORPTION OF THE TWO LOCAL SHAPES (2026-07-26): clauses (2) and (3)
+
+The existential now asserts, besides the Frobenius match (1), the local
+shape of `τ` at `3` (2) and at `2` (3). These were two separate sorried
+leaves between 2026-07-25 and 2026-07-26
+(`blggt_threeadicMember_flatAtThreePow`,
+`blggt_threeadicMember_stableLineAtTwo`), each quantified over a package
+satisfying only the Frobenius match; their own HONESTY AUDIT recorded
+that they were therefore no more derivable than the interface-level
+leaves they had replaced. Both are DELETED and folded in here.
+
+**Why this is deduplication, not a larger citation.** A compatible
+system in the sense of BLGGT §5.1 is by DEFINITION de Rham (crystalline
+at the good places) at the places over its own residue characteristic,
+and strictly compatible at every finite place of different residue
+characteristic. So the source being cited already contains both local
+shapes; asserting only the Frobenius match was UNDER-asserting relative
+to BLGGT. Precedent: the independent 2026-07-26 audits at
+`threeadicRealization_unramifiedTransfer_of_witness` and at the
+conductor node reached the same verdict for a `level` field ("it is
+DEDUPLICATION, not hiding — the construction leaf currently
+under-asserts relative to its own source").
+
+**Why it must be HERE and nowhere else.** This is the one declaration in
+the tree that CHOOSES `τ`. Any statement quantified over an abstract
+package constrained only by `compat` cannot carry either local shape:
+`compat` pins `τ` at most up to semisimplification, and both shapes are
+invisible to semisimplification — see the two counterexample analyses
+below.
+
+### Clause (2), the local shape at `3` — Fontaine–Laffaille
+
+For every `m ≥ 1` the `3`-power level `T/3^m T` of the stable lattice
+`T = Fin 2 → A` is the group of `ℚ̄_3`-points of the generic fibre of a
+finite flat group scheme over `ℤ_3` (`GaloisRep.HasFlatProlongationAt`).
+
+Classically: the compatible system attached to the descended eigensystem
+has parallel weight `2` and conductor prime to `3`, so `τ` is
+crystalline at `3` with Hodge–Tate weights `{0, 1}` (Carayol/Taylor
+local-global compatibility at `p = ℓ` for `p` prime to the level). Over
+`ℤ_3` the absolute ramification index is `e = 1 < 2 = p - 1`, exactly the
+Fontaine–Laffaille range: `T` is the Tate module of a `3`-divisible group
+`𝒢` over `ℤ_3`, and the levels `T/3^m T` are the `ℚ̄_3`-points of the
+generic fibres of `𝒢[3^m]`.
+
+LEVEL AUDIT: asserted on the `3`-POWER levels only — those are the
+levels of the `3`-divisible group. Arbitrary congruence quotients are
+reached from these by Raynaud's closure of finite flat group schemes
+under quotients (`hasFlatProlongationAt_of_surjective`), consumed by
+`threeadicRealization_hasFlatProlongationAt_of_finite_quotient`, so
+demanding them here would re-obligate something the tree already has.
+Only `1 ≤ m` is asserted: at `m = 0` the ideal `3^0` is the unit ideal,
+the level is a single point, and the transport discharges it outright.
+
+WHY `compat` CANNOT GIVE IT (the counterexample, load-bearing): flatness
+at `3` is a property of the EXTENSION CLASS, invisible to
+semisimplification. The two extensions of `ℤ/3` by `μ_3` over `ℚ_3`
+corresponding to `1` and to `3` in `ℚ_3^×/(ℚ_3^×)^3` have the same
+semisimplification and the same Frobenius characteristic polynomials, and
+exactly one of them is finite flat over `ℤ_3` (Kummer).
+
+ROUTE AUDIT (2026-07-25, carried over verbatim — FIVE candidate
+discharges and cuts, all five refuted or found empty; read this before
+spending a worker on a "cheaper route"):
+
+* *no subsingleton collapse*. `A ⧸ 3^m` is a NONZERO finite ring for
+  every `m ≥ 1`: `A` is a nonzero `ℤ_3`-module-finite FREE algebra, so
+  `3` cannot be a unit in `A` (else `A` would be a `ℚ_3`-algebra and a
+  finitely generated free `ℤ_3`-module at once, forcing `A = 0`), i.e.
+  `3 ∈ 𝔪_A`. Hence the level is `(A ⧸ 3^m)^2 ≠ 0` and
+  `hasFlatProlongationAt_of_subsingleton` is unavailable;
+* *no junk witness*. `GaloisRep.HasFlatProlongationAt` is a genuinely
+  RESTRICTIVE condition on a finite `Γ ℚ_3`-module, not a shape
+  condition: every finite `Γ ℚ_3`-module is the point group of a finite
+  étale `ℚ_3`-Hopf algebra, but only some admit a finite FLAT `𝒪ᵥ`-model.
+  Over `ℤ_3` (`e = 1 < p - 1 = 2`) Raynaud/Oort–Tate classify the
+  order-`3` group schemes: the generic fibre of one is `ℤ/3(ω^i · ψ)`
+  with `0 ≤ i ≤ e = 1` and `ψ` UNRAMIFIED. Explicit non-example: the
+  quadratic characters of `G_{ℚ_3}` are the unramified one, the one
+  cutting out `ℚ_3(√-3) = ℚ_3(ζ_3)` — which IS `ω` — and the one cutting
+  out `ℚ_3(√3)`; the last is ramified and is not `ω`, so `ℤ/3` with that
+  character has NO finite flat model over `ℤ_3`;
+* *the reduction to level `1` is FALSE* (the shortcut most worth
+  refuting explicitly). One is tempted to run
+  `0 → T/3^m → T/3^{m+1} → T/3 → 0` and induct, using "an extension of
+  flat by flat is flat". That is FALSE for GALOIS MODULES: over an
+  absolutely unramified base with `e < p - 1` the comparison
+  `Ext¹_fl → Ext¹_Γ` is INJECTIVE (Fontaine's uniqueness of
+  prolongations) but NOT surjective. Witness: `Ext¹(ℤ/p, μ_p)`, where
+  the flat classes are `ℤ_p^× / (ℤ_p^×)^p` inside the Galois classes
+  `ℚ_p^× / (ℚ_p^×)^p` (Kummer) — index `p`, the missing class being that
+  of the uniformizer `p` itself, i.e. the Tate-curve/multiplicative-
+  reduction extension `ℚ_p(p^{1/p})`. Same phenomenon as the classical
+  criterion that a multiplicative-reduction curve has `E[p]` finite flat
+  at `p` iff `p ∣ v(Δ)`. So flatness of ALL levels is strictly more than
+  flatness of the first, and the induction cannot be repaired;
+* *the `p`-divisible-group cut is EQUIVALENT, not a reduction*.
+  Replacing this clause by "`T` is the Tate module of a `3`-divisible
+  group over `ℤ_3`" relocates the same sorry: the easy direction is the
+  present statement, and the converse is a theorem (Tate; via Fontaine's
+  `e < p - 1` uniqueness). Worse, the cut STRENGTHENS it, since a
+  `PDivisibleGroup` interface also carries transition maps this statement
+  does not need. Deliberately NOT done;
+* *the `ℤ_3`-native restatement is cosmetic*. `𝒪ᵥ ≅ ℤ_3` at `v = (3)`
+  (`Rat.HeightOneSpectrum.adicCompletionIntegers.padicIntEquiv`, with
+  `Rat.HeightOneSpectrum.adicCompletion.padicEquiv` on the generic
+  fibre), so a finite flat Hopf `ℤ_3`-algebra base-changes to an
+  `𝒪ᵥ`-one; restating over `ℤ_3` makes it strictly stronger at zero
+  gain. The bridge, worth recording for whoever DOES formalize the
+  input: `(primesEquiv v₃ : ℕ) = 3` is available from
+  `Rat.HeightOneSpectrum.natGenerator_dvd_iff` /
+  `Rat.HeightOneSpectrum.span_natGenerator` (both stated through
+  `IsIntegralClosure.intEquiv`) together with
+  `asIdeal_toHeightOneSpectrum_eq_span` of
+  `GroupScheme/ConnectedEtale.lean`, and the `ℤ_[a] ≃+* ℤ_[b]` transport
+  along `a = b` is a one-line `subst` (`Fact` is a `Prop`, so the
+  instance argument is proof-irrelevant).
+
+CONSUMPTION NOTE for whoever formalizes the input (a non-obvious finding
+of the same pass): `GaloisRep.hasFlatProlongationAt_of_hopf_package` of
+`Deformations/RepresentationTheory/FlatProlongation.lean` — the tree's
+only general producer of a flat-prolongation package — is UNUSABLE here.
+It requires a base ring `R` with `Algebra R ℚ` (its points comparison
+runs through `ℚ̄` and `algHomEquivOfFinite`), i.e. a group scheme over
+the LOCALIZATION `ℤ_(3)`, whereas Fontaine–Laffaille produces one over
+the COMPLETION `ℤ_3`, which does not map to `ℚ`. The input must be fed
+either through the `padicIntEquiv` bridge above or straight into the
+definition of `GaloisRep.HasFlatProlongationAt` (which is purely local).
+
+MISSING-MACHINERY AUDIT (2026-07-25, dependency order — none of this
+exists in mathlib or in this tree; each item named as the statement an
+owner would be dispatched at):
+
+1. *`p`-divisible groups over a complete DVR*: a structure carrying a
+   system of finite flat Hopf `𝒪`-algebras `H m` with the `p^m`-torsion
+   inclusions, its generic-fibre point functor, and its Tate module.
+   (Everything needed to STATE this is present — `HopfAlgebra`,
+   `Module.Flat`, `Module.Finite`, and the convolution monoid on points
+   — so this is the first buildable item, but on its own it buys no
+   reduction.)
+2. *Filtered `φ`-modules / strongly divisible `ℤ_p`-lattices in
+   Hodge–Tate weights `[0, p-2]` (Fontaine–Laffaille modules)*, and the
+   FL functor to finite `Γ ℚ_p`-modules.
+3. *The Fontaine–Laffaille equivalence*: the FL functor of (2) is an
+   equivalence onto the finite flat models of (1) in the range
+   `e < p - 1`. Stating the crystalline side needs the period ring
+   `B_cris` (mathlib has `WittVector` and nothing above it), the deepest
+   missing prerequisite of the whole chain.
+4. *Local-global compatibility at `p = ℓ`* (Carayol, Taylor): the
+   `3`-adic member of a parallel-weight-`2` compatible system of
+   conductor prime to `3` is crystalline at `3` with Hodge–Tate weights
+   `{0, 1}`. Not stateable before (3).
+
+Item 4 composed with items 3–1 IS clause (2); there is no intermediate
+at which that sorry can honestly be split.
+
+Literature for (2): Fontaine–Laffaille, *Construction de représentations
+p-adiques*, Ann. Sci. ÉNS 15 (1982); Raynaud, *Schémas en groupes de
+type (p, …, p)*, Bull. SMF 102 (1974); Carayol, Ann. Sci. ÉNS 19 (1986)
+and Taylor, Invent. Math. 98 (1989) (the weight-2 local shape at primes
+over `p` prime to the level); Breuil, *Groupes p-divisibles, groupes
+finis et modules filtrés*, Ann. of Math. 152 (2000) (the range-free
+refinement); BLGGT §5.5. FLT blueprint ch. 4: "flat at 3".
+
+### Clause (3), the local shape at `2` — the Weil–Deligne type
+
+There are an `A`-basis `b` of the stable lattice and an unramified
+square-trivial character `δ` of `G_{ℚ_2}` with
+
+  `τ g v ≡ δ g 1 • v  (mod A · b 0)`  for all `g` and all `v`.
+
+That single clause is the whole classical content. It already forces the
+line `A · b 0` to be `G_{ℚ_2}`-STABLE (take `v = b 0`: both
+`τ g (b 0) - δ g 1 • b 0` and `δ g 1 • b 0` lie in the line), so the
+shape "extension of the unramified quadratic `δ` by something, in a basis
+adapted to the lattice" is stated without ever mentioning a matrix. The
+matrix reading — upper-triangularity with `δ g 1` on the diagonal — is
+PROVEN from it in `threeadicRealization_weilDeligneType_two_of_witness`.
+
+WHY THIS IS PART OF THE CITATION. `ρ`'s type at `2` is an extension of an
+unramified square-trivial character by its cyclotomic twist
+(`hρ.isTameAtTwo` with the cyclotomic determinant). The type is carried
+across the compatible system by STRICT COMPATIBILITY: a single
+Weil–Deligne representation `WD_v(R)` over the coefficient field
+reproduces `WD(r_λ|G_{F_v})^{F-ss}` for every `λ` of residue
+characteristic differing from that of `v` (BLGGT §5.1, the display
+`ς WD_v(R) ≅ WD(r_λ|G_{F_v})^{F-ss}`; here `v = 2` and the places
+compared are `λ | ℓ` and `λ | 3`, legitimate because `2 ∉ {ℓ, 3}`).
+Strict compatibility of the system through which the descent runs is
+Carayol's theorem for Hilbert newforms — the local constituent is pinned
+at EVERY finite place, not merely almost all — and membership of `ρ` in
+such a system is BLGGT Theorem 5.5.1. The stable-lattice normalization of
+the descent turns the `E_λ`-rational stable line into a saturated
+`A`-line, i.e. the first vector of an `A`-basis, which is why a basis may
+be demanded. `δ` is handed over as a `GaloisRep` because it IS the
+quotient character of the constant type — in particular continuous, being
+the local component of the compatible system's unramified twist.
+
+DISCHARGE-ROUTE AUDIT (2026-07-25, carried over; all three closed, and
+the FIRST is what forced the cut-level repair):
+
+* *From the carrier's own fields* — impossible. `compat` pins
+  characteristic polynomials only at primes `q ∉ S₁` with `q ∉ {2,3,ℓ}`;
+  nothing mentions the decomposition group at `2`, and no formal argument
+  recovers a local type at `2` from Frobenius data away from `2` — that
+  recovery IS strict compatibility, i.e. the citation itself.
+* *The odd-prime dichotomy* (collapse) — closed by the circularity guard,
+  and independently by declaration order: the only two in-tree
+  dichotomies are `Modularity/Interface.lean`'s
+  `not_isIrreducible_of_isHardlyRamified_of_odd` (banned) and this
+  module's own headline `not_isIrreducible_of_isHardlyRamified_of_five_le`,
+  declared BELOW.
+* *The `3`-adic classification* — closed by circularity, and this is the
+  route that looks promising: `τ`'s determinant, unramifiedness and
+  flatness are established elsewhere, so three of the four hardly ramified
+  conditions are in hand. But every theorem in that chain
+  (`ModThree.lean`'s `mod_three`, `mod_three_reducible`,
+  `mod_three_of_stable_line`; `Threeadic.lean`'s
+  `exists_global_triangular_of_residual_trivial_quotient`,
+  `exists_frobenius_triangular`, `three_adic`) takes the WHOLE
+  `IsHardlyRamified` structure as a single hypothesis — none takes the
+  four conditions separately — and the tame-at-`2` field is genuinely
+  consumed (`quotCharacter_unramified_at_two`, on the path
+  `mod_three → mod_three_of_stable_line`). Supplying it would require
+  `threeadicRealization_isTameAtTwo_of_witness`, which is proven THROUGH
+  this clause.
+
+FAITHFULNESS RE-CHECK (2026-07-25, carried over): neither vacuous nor
+inertia-widened. NOT VACUOUS — `A` is a local ring, hence nontrivial, so
+`Submodule.span A {b 0}` is a PROPER submodule for every basis `b`; the
+congruence clause therefore carries real content (the rank-`1` quotient
+by that line is the character `δ`), and no junk witness can be assembled
+from the hypotheses alone. NOT WIDENED — `δ`'s unramifiedness is
+quantified over `AddSubgroup.inertia` only, while the congruence is
+quantified over the whole decomposition group `Γ ℚ_[2]`; that is the
+correct shape and it matches `IsHardlyRamified.isTameAtTwo` verbatim.
+
+PACKAGING NOTE (2026-07-25, carried over): demanding a BASIS rather than
+a bare surjection adds no literature content — over the local ring `A`
+the two forms are equivalent. A surjection `πq : A² ↠ A` has one of
+`πq e₀`, `πq e₁` a unit (the non-units of a local ring form an ideal),
+and the triangular change of basis this determines is invertible,
+yielding a basis `b` with `πq (b 0) = 0`, `πq (b 1) = 1`, hence
+`ker πq = A · b 0`. So restating in quotient form would shrink nothing.
+
+Literature for (3) (page-level checks 2026-07-25 against the downloaded
+sources): BLGGT, Ann. of Math. 179 (2014) — §5.1 for the definition of a
+strictly compatible system (the display quoted above) and Theorem 5.5.1;
+Carayol, *Sur les représentations `l`-adiques associées aux formes
+modulaires de Hilbert*, Ann. Sci. ÉNS (4) 19 (1986) 409–468, Théorème (A)
+p. 410: a strictly compatible system `{σ_λ}` with `σ_λ|W_p ≅ σ_λ(π_p)` at
+EVERY finite place `p` of residue characteristic different from that of
+`λ`, `σ(π_p)` being the `F`-semisimple degree-`2` Weil–Deligne
+representation of the Hecke correspondence (§0.5). Khare–Wintenberger,
+Invent. Math. 178 (2009) 485–504, for the same constancy inside the
+minimal-lifting induction (paywalled; NOT page-verified — the two
+references above are the load-bearing ones). FLT blueprint ch. 4: "tame
+at 2".
+
+### Scope of the absorption
+
+What it buys: the automorphic citation now asserts what its source
+actually proves, and the sorry count drops by two with no mathematics
+hidden. What it does NOT buy: clauses (2) and (3) remain CITED, not
+proven — the missing-machinery chain above is untouched, and this leaf is
+still the single residual citation of the whole `3`-adic construction.
+-/
 theorem blggt_threeadicBrauerSum_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -17622,11 +18572,30 @@ theorem blggt_threeadicBrauerSum_of_witness
         isTopologicalRing_moduleTopology_of_finite 3 A
       ∃ (τ : GaloisRep ℚ A (Fin 2 → A))
         (ιA : A →+* AlgebraicClosure ℚ_[3]),
-        ∀ (q : ℕ) (hq : q.Prime),
+        -- (1) Frobenius compatibility away from `S₁` (Carayol)
+        (∀ (q : ℕ) (hq : q.Prime),
           hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₁ →
           q ≠ 2 → q ≠ 3 → q ≠ ℓ →
           (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map ιA =
-            (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψ₃ :=
+            (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψ₃) ∧
+        -- (2) the local shape at `3`: Fontaine–Laffaille on the
+        -- `3`-power levels of the stable lattice
+        (∀ m : ℕ, 1 ≤ m →
+          (τ.baseChange (A ⧸ Ideal.span {(3 : A) ^ m})).HasFlatProlongationAt
+            (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+              (Fact.out : Nat.Prime 3))) ∧
+        -- (3) the local shape at `2`: the Weil–Deligne type, as a
+        -- stable line with unramified quadratic quotient
+        (∃ (b : Module.Basis (Fin 2) A (Fin 2 → A))
+          (δ : GaloisRep ℚ_[2] A A),
+          (AddSubgroup.inertia
+              ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+                AddSubgroup Z2bar)
+              (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+          (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) ∧
+          ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → A),
+            τ.map (algebraMap ℚ ℚ_[2]) g v - δ g 1 • v ∈
+              Submodule.span A {b 0}) :=
   sorry
 
 /-- **Brauer descent, `3`-adic side — the virtual sum is a true
@@ -17762,17 +18731,34 @@ theorem exists_threeadicBrauerSum_of_witness
       (_ : Function.Injective (algebraMap ℤ_[3] A))
       (τ : GaloisRep ℚ A (Fin 2 → A))
       (ιA : A →+* AlgebraicClosure ℚ_[3]) (_ : Function.Injective ιA),
-      ∀ (q : ℕ) (hq : q.Prime),
+      -- (1) Frobenius compatibility away from `S₁` (Carayol)
+      (∀ (q : ℕ) (hq : q.Prime),
         hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₁ →
         q ≠ 2 → q ≠ 3 → q ≠ ℓ →
         (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map ιA =
-          (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψ₃ := by
+          (Pv hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ψ₃) ∧
+      -- (2) the local shape at `3` (Fontaine–Laffaille)
+      (∀ m : ℕ, 1 ≤ m →
+        (τ.baseChange (A ⧸ Ideal.span {(3 : A) ^ m})).HasFlatProlongationAt
+          (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
+            (Fact.out : Nat.Prime 3))) ∧
+      -- (3) the local shape at `2` (the Weil–Deligne type)
+      (∃ (b : Module.Basis (Fin 2) A (Fin 2 → A))
+        (δ : GaloisRep ℚ_[2] A A),
+        (AddSubgroup.inertia
+            ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
+              AddSubgroup Z2bar)
+            (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
+        (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) ∧
+        ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → A),
+          τ.map (algebraMap ℚ ℚ_[2]) g v - δ g 1 • v ∈
+            Submodule.span A {b 0}) := by
   classical
   -- (a) the NARROWED BLGGT citation: the Brauer sum comes back over a
   -- bare local domain, module-finite over `ℤ_3`, with no topology, no
   -- `ℤ_3`-injectivity and no injectivity of the comparison embedding
   -- asserted
-  obtain ⟨S₁, A, hCR, hDom, hAlg, hFin, τ, ιA, hmatch⟩ :=
+  obtain ⟨S₁, A, hCR, hDom, hAlg, hFin, τ, ιA, hmatch, hflat, hline⟩ :=
     blggt_threeadicBrauerSum_of_witness hℓodd hℓ5 hZinj hrank hρ hW hρbar
       hirr π hπsurj hπ Wit S₀ Pv hPv
   -- (a') locality of the coefficient ring is no longer part of the
@@ -17795,456 +18781,13 @@ theorem exists_threeadicBrauerSum_of_witness
   -- spelled out — the anonymous constructor does not propagate the
   -- topology from the positional component that supplies it
   haveI hTR := isTopologicalRing_moduleTopology_of_finite 3 A
+  -- The two LOCAL-SHAPE clauses (2) and (3) are carried through verbatim:
+  -- they are chosen by the citation together with `τ`, and nothing here
+  -- touches the representation or the lattice.
   refine ⟨S₁, A, hCR, hDom, moduleTopology ℤ_[3] A, hTR, hAlg, hLR, hFin, ?_,
     injective_algebraMap_of_ringHom_charZero ιA, τ, ιA,
-    injective_of_finite_padicInt_charZero (p := 3) ιA, hmatch⟩
+    injective_of_finite_padicInt_charZero (p := 3) ιA, hmatch, hflat, hline⟩
   exact @IsModuleTopology.mk ℤ_[3] _ A _ _ (moduleTopology ℤ_[3] A) rfl
-
-/-- **The Fontaine–Laffaille local shape at `3` of the Brauer-descended
-member, on the `3`-power levels of the stable lattice** (sorry node —
-the LITERATURE JOINT of the flatness transfer; re-cut 2026-07-25 to the
-CONSTRUCTION SITE, see the CUT AUDIT below): for the `3`-adic member
-`τ` produced by the Brauer descent — i.e. any coefficient package
-`(A, τ, ιA)` whose Frobenius characteristic polynomials away from `S₁`
-are the Hecke-field interpolants of `charFrob ρ` — and every `m ≥ 1`,
-the `3`-power level `(A ⧸ 3^m) ⊗_A (Fin 2 → A)`, i.e. `T/3^m T` for the
-stable lattice `T = Fin 2 → A`, is the group of `ℚ̄_3`-points of the
-generic fibre of a finite flat group scheme over `ℤ_3` — the package
-spelled by `GaloisRep.HasFlatProlongationAt`.
-
-Classically: the compatible system attached to the descended
-eigensystem has parallel weight `2` and conductor prime to `3`, so its
-`3`-adic member `τ` is crystalline at `3` with Hodge–Tate weights
-`{0, 1}` (Carayol/Taylor local-global compatibility at `p = ℓ` for `p`
-prime to the level). Over `ℤ_3` the absolute ramification index is
-`e = 1 < 2 = p - 1`, which is exactly the Fontaine–Laffaille range: the
-crystalline lattice `T = Fin 2 → A` is the Tate module of a
-`3`-divisible group `𝒢` over `ℤ_3` (Fontaine–Laffaille in weight `2`;
-Raynaud, Breuil for the range-free refinement), and the levels
-`T/3^m T` are precisely the `ℚ̄_3`-points of the generic fibres of the
-finite flat group schemes `𝒢[3^m]`. This is the honest shape of the
-literature input: the statement is asserted exactly on the `3`-power
-levels, which are the levels of the `3`-divisible group, and NOT on
-arbitrary congruence quotients — those are reached from these by
-Raynaud's closure of finite flat group schemes under quotients, an
-unconditional brick (`hasFlatProlongationAt_of_surjective`) consumed by
-the transport `threeadicRealization_hasFlatProlongationAt_of_finite_quotient`
-rather than smuggled in here. Only positive levels (`1 ≤ m`) are
-asserted: at `m = 0` the ideal `3^0 = (1)` is the unit ideal, the level
-is a single point, and the transport discharges that case outright with
-the trivial Hopf algebra.
-
-CUT AUDIT (2026-07-25 — why this leaf exists and where it came from).
-The obligation used to be stated as
-`threeadicRealization_hasFlatProlongationAt_threePow`, quantified over
-EVERY `Rlz : ThreeadicRealization`. In that position it was
-UNDISCHARGEABLE, and not for want of Fontaine–Laffaille: the interface
-constrains `τ` only through `compat`, i.e. through characteristic
-polynomials of Frobenius at almost all `q ∉ {2, 3, ℓ}`, which pins `τ`
-at most up to SEMISIMPLIFICATION (Chebotarev + Brauer–Nesbitt, and only
-if `τ` is continuous, which the interface does not require). Flatness at
-`3` is a property of the EXTENSION CLASS, invisible to
-semisimplification: the two extensions of `ℤ/3` by `μ_3` over `ℚ_3`
-corresponding to `1` and to `3` in `ℚ_3^×/(ℚ_3^×)^3` have the same
-semisimplification and the same Frobenius characteristic polynomials,
-and exactly one of them is finite flat over `ℤ_3` (Kummer). So the local
-shape at `3` is now a FIELD of `ThreeadicRealization`
-(`flatAtThreePow`), supplied at the construction
-`exists_threeadicRealization_of_witness` by THIS leaf, where the
-descended data is in hand; the old leaf survives as a short PROVEN
-projection of the field, so no consumer changed.
-
-HONESTY AUDIT of the relocation (2026-07-25, stated plainly because it
-bounds what the repair achieved). This leaf is quantified over a
-package `(A, τ, ιA)` satisfying the Frobenius match `hcompat` and
-nothing else, so the counterexample above applies to it verbatim: it is
-no more derivable from its own hypotheses than the leaf it replaces. The
-repair is STRUCTURAL, and what it buys is real but bounded:
-
-* the interface now DECLARES the local shape instead of pretending to
-  imply it, so any future inhabitant of `ThreeadicRealization` from
-  another source must supply it rather than silently inheriting a false
-  derivation;
-* the obligation is concentrated at the single construction site, where
-  the eventual honest discharge lives.
-
-That honest discharge is to fold the two local-shape conclusions into
-the EXISTENTIAL of `blggt_threeadicBrauerSum_of_witness` — the automorphic
-citation, which chooses `τ` and can therefore assert its local shape;
-BLGGT's own notion of a compatible system already includes de
-Rham/crystalline at the places over the residue characteristic, so this
-is not an enlargement of what is being cited. It was NOT done in this
-pass only because `blggt_threeadicBrauerSum_of_witness` was concurrently
-owned by another worktree (declaration-level ownership, `CLAUDE.md`);
-whoever holds it next should absorb this leaf and
-`blggt_threeadicMember_stableLineAtTwo` into it and delete both.
-
-Literature: Fontaine–Laffaille, *Construction de représentations
-p-adiques*, Ann. Sci. ÉNS 15 (1982); Raynaud, *Schémas en groupes de
-type (p, …, p)*, Bull. SMF 102 (1974); Carayol, Ann. Sci. ÉNS 19 (1986)
-and Taylor, Invent. Math. 98 (1989) (the weight-2 local shape at primes
-over `p` prime to the level); Breuil, *Groupes p-divisibles, groupes
-finis et modules filtrés*, Ann. of Math. 152 (2000) (the range-free
-refinement); BLGGT §5.5. FLT blueprint ch. 4: "flat at 3".
-
-ROUTE AUDIT (2026-07-25, inherited verbatim from the leaf this replaces
-— FIVE candidate discharges and cuts checked, all five refuted or found
-empty; read this before spending a worker on a "cheaper route"). The
-statement is FAITHFUL as written: it is not false, its conclusion is not
-satisfiable by any junk witness, and it admits NO honest decomposition
-inside the present tree:
-
-* *no subsingleton collapse*. `A ⧸ 3^m` is a NONZERO finite ring for
-  every `m ≥ 1`: `A` is a nonzero `ℤ_3`-module-finite FREE algebra, so
-  `3` cannot be a unit in `A` (else `A` would be a `ℚ_3`-algebra and a
-  finitely generated free `ℤ_3`-module at once, forcing `A = 0`), i.e.
-  `3 ∈ 𝔪_A`. Hence the level is `(A ⧸ 3^m)^2 ≠ 0` and
-  `hasFlatProlongationAt_of_subsingleton` is unavailable;
-* *no junk witness*. `GaloisRep.HasFlatProlongationAt` is a genuinely
-  RESTRICTIVE condition on a finite `Γ ℚ_3`-module, not a shape
-  condition: every finite `Γ ℚ_3`-module is the point group of a finite
-  étale `ℚ_3`-Hopf algebra (the Gelfand-duality machinery of
-  `KnownIn1980s/EllipticCurves/Flat.lean`), but only some of those admit
-  a finite FLAT `𝒪ᵥ`-model. Over `ℤ_3` (`e = 1 < p - 1 = 2`)
-  Raynaud/Oort–Tate classify the order-`3` group schemes: the generic
-  fibre of one is `ℤ/3(ω^i · ψ)` with `0 ≤ i ≤ e = 1` and `ψ`
-  UNRAMIFIED. An explicit non-example is therefore available: the
-  quadratic characters of `G_{ℚ_3}` are the unramified one, the one
-  cutting out `ℚ_3(√-3) = ℚ_3(ζ_3)` — which IS `ω` — and the one cutting
-  out `ℚ_3(√3)`; the last is ramified and is not `ω`, so `ℤ/3` with that
-  character has NO finite flat model over `ℤ_3`;
-* *the reduction to level `1` is FALSE* (the shortcut most worth
-  refuting explicitly). One is tempted to run
-  `0 → T/3^m → T/3^{m+1} → T/3 → 0` and induct, using "an extension of
-  flat by flat is flat". That extension-closure statement is FALSE at
-  the level of GALOIS MODULES: over an absolutely unramified base with
-  `e < p - 1` the comparison `Ext¹_fl → Ext¹_Γ` is INJECTIVE (Fontaine's
-  uniqueness of prolongations) but NOT surjective. The standard witness
-  is `Ext¹(ℤ/p, μ_p)`, where the flat classes are `ℤ_p^× / (ℤ_p^×)^p`
-  inside the Galois classes `ℚ_p^× / (ℚ_p^×)^p` (Kummer theory) — index
-  `p`, the missing class being that of the uniformizer `p` itself, i.e.
-  exactly the Tate-curve/multiplicative-reduction extension
-  `ℚ_p(p^{1/p})`. This is the same phenomenon as the classical criterion
-  that a multiplicative-reduction curve has `E[p]` finite flat at `p`
-  iff `p ∣ v(Δ)`. So flatness of ALL levels is strictly more than
-  flatness of the first, and the induction cannot be repaired;
-* *the `p`-divisible-group cut is EQUIVALENT, not a reduction*.
-  Replacing this leaf by "`T` is the Tate module of a `3`-divisible
-  group over `ℤ_3`" relocates the same sorry: the easy direction is the
-  present statement, and the converse is a theorem (Tate; via Fontaine's
-  `e < p - 1` uniqueness the compatible system of finite flat models
-  assembles into a `3`-divisible group). Worse, the cut STRENGTHENS the
-  leaf, since a `PDivisibleGroup` interface also carries transition maps
-  this statement does not need. Introducing that interface here would be
-  sorry-shuffling and is deliberately NOT done;
-* *the `ℤ_3`-native restatement is cosmetic*. `𝒪ᵥ ≅ ℤ_3` at `v = (3)`
-  (mathlib: `Rat.HeightOneSpectrum.adicCompletionIntegers.padicIntEquiv`,
-  with `Rat.HeightOneSpectrum.adicCompletion.padicEquiv` on the generic
-  fibre), so a finite flat Hopf `ℤ_3`-algebra base-changes to an
-  `𝒪ᵥ`-one. Restating the leaf over `ℤ_3` therefore makes it strictly
-  stronger at zero mathematical gain. The bridge itself is worth
-  recording for whoever DOES formalize the input:
-  `(primesEquiv v₃ : ℕ) = 3` is available from
-  `Rat.HeightOneSpectrum.natGenerator_dvd_iff` /
-  `Rat.HeightOneSpectrum.span_natGenerator` (both stated through
-  `IsIntegralClosure.intEquiv`) together with
-  `asIdeal_toHeightOneSpectrum_eq_span` of
-  `GroupScheme/ConnectedEtale.lean`, and the `ℤ_[a] ≃+* ℤ_[b]` transport
-  along `a = b` is a one-line `subst` (`Fact` is a `Prop`, so the
-  instance argument is proof-irrelevant).
-
-CONSUMPTION NOTE for whoever formalizes the input (a non-obvious finding
-of the same pass): `GaloisRep.hasFlatProlongationAt_of_hopf_package` of
-`Deformations/RepresentationTheory/FlatProlongation.lean` — the tree's
-only general producer of a flat-prolongation package — is UNUSABLE here.
-It requires a base ring `R` with `Algebra R ℚ` (its points comparison
-runs through `ℚ̄` and `algHomEquivOfFinite`), i.e. a group scheme over
-the LOCALIZATION `ℤ_(3)`, whereas Fontaine–Laffaille produces one over
-the COMPLETION `ℤ_3`, which does not map to `ℚ`. The input must
-therefore be fed either through the `padicIntEquiv` bridge above or
-straight into the definition of `GaloisRep.HasFlatProlongationAt` (which
-is purely local: the witness lives over `𝒪ᵥ` and the equivariance is for
-`Γ Kᵥ`).
-
-MISSING-MACHINERY AUDIT (2026-07-25, dependency order — none of this
-exists in mathlib or in this tree, and the leaf is blocked on all of it;
-each item named as the statement an owner would be dispatched at):
-
-1. *`p`-divisible groups over a complete DVR*: a structure carrying a
-   system of finite flat Hopf `𝒪`-algebras `H m` with the `p^m`-torsion
-   inclusions, its generic-fibre point functor, and its Tate module.
-   (Everything needed to STATE this is present — `HopfAlgebra`,
-   `Module.Flat`, `Module.Finite`, and the convolution monoid on points
-   — so this is the first buildable item, but on its own it buys no
-   reduction.)
-2. *Filtered `φ`-modules / strongly divisible `ℤ_p`-lattices in
-   Hodge–Tate weights `[0, p-2]` (Fontaine–Laffaille modules)*, and the
-   FL functor to finite `Γ ℚ_p`-modules.
-3. *The Fontaine–Laffaille equivalence*: the FL functor of (2) is an
-   equivalence onto the finite flat models of (1) in the range
-   `e < p - 1`. Stating the crystalline side needs the period ring
-   `B_cris` (mathlib has `WittVector` and nothing above it), which is
-   the deepest missing prerequisite of the whole chain.
-4. *Local-global compatibility at `p = ℓ`* (Carayol, Taylor): the
-   `3`-adic member of a parallel-weight-`2` compatible system of
-   conductor prime to `3` is crystalline at `3` with Hodge–Tate weights
-   `{0, 1}`. Not stateable before (3).
-
-Item 4 composed with items 3–1 IS this leaf; there is no intermediate at
-which the sorry can honestly be split.
-
-SOUNDNESS AUDIT (both ways, 2026-07-25): (i) direct — for the package
-produced by the Brauer descent this is Fontaine–Laffaille applied to the
-crystalline lattice of item 4 above; for an abstract package the
-abstract-quantification caveat of pillar β applies (and see the HONESTY
-AUDIT above, which says exactly how far that caveat reaches here), and
-(ii) collapse — the hypothesis set (an irreducible hardly ramified
-mod-`ℓ` representation, `ℓ ≥ 5`) is classically unsatisfiable (headline
-below), so the statement is classically true for every package.
-
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. -/
-theorem blggt_threeadicMember_flatAtThreePow
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
-    (Wit : PotentialModularityWitness ℓ O ρ)
-    (S₁ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
-    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
-    [Algebra ℤ_[3] A] [IsLocalRing A] [Module.Finite ℤ_[3] A]
-    [Module.Free ℤ_[3] A] [IsModuleTopology ℤ_[3] A]
-    (τ : GaloisRep ℚ A (Fin 2 → A))
-    (ιA : A →+* AlgebraicClosure ℚ_[3])
-    (hιA : Function.Injective ιA)
-    (hcompat : ∀ (q : ℕ) (hq : q.Prime),
-      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₁ →
-      q ≠ 2 → q ≠ 3 → q ≠ ℓ →
-      ∀ P : Polynomial Wit.E,
-        (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ιO =
-          P.map Wit.ψℓ →
-        (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map ιA =
-          P.map Wit.ψ₃) :
-    ∀ m : ℕ, 1 ≤ m →
-      (τ.baseChange (A ⧸ Ideal.span {(3 : A) ^ m})).HasFlatProlongationAt
-        (Nat.Prime.toHeightOneSpectrumRingOfIntegersRat
-          (Fact.out : Nat.Prime 3)) :=
-  sorry
-
-/-- **The Weil–Deligne type at `2` of the Brauer-descended member, as a
-stable line with unramified quadratic quotient** (sorry node — the
-SHRUNK LITERATURE JOINT of the tameness transfer; cut out 2026-07-24 in
-matrix coordinates, re-cut coordinate-free 2026-07-25, re-cut to the
-CONSTRUCTION SITE 2026-07-25): for the `3`-adic member `τ` produced by
-the Brauer descent there are an `A`-basis `b` of the stable lattice
-`Fin 2 → A` and an unramified square-trivial character `δ` of `G_{ℚ_2}`
-such that `G_{ℚ_2}` acts on the quotient of the lattice by the line
-`A · b 0` through `δ`:
-
-  `τ g v ≡ δ g 1 • v  (mod A · b 0)`  for all `g` and all `v`.
-
-That single clause is the whole classical content. It already forces the
-line `A · b 0` to be `G_{ℚ_2}`-STABLE (take `v = b 0`: both
-`τ g (b 0) - δ g 1 • b 0` and `δ g 1 • b 0` lie in the line), so the
-shape "extension of the unramified quadratic `δ` by something, in a
-basis adapted to the lattice" is stated without ever mentioning a
-matrix. The matrix reading — upper-triangularity with `δ g 1` on the
-diagonal — is PROVEN from this clause in
-`threeadicRealization_weilDeligneType_two_of_witness`.
-
-WHY THIS IS THE CITATION. `ρ`'s type at `2` is an extension of an
-unramified square-trivial character by its cyclotomic twist
-(`hρ.isTameAtTwo` together with the cyclotomic determinant). The type is
-carried across the compatible system by STRICT COMPATIBILITY, which is
-exactly the property that a single Weil–Deligne representation `WD_v(R)`
-over the coefficient field reproduces `WD(r_λ|G_{F_v})^{F-ss}` for every
-`λ` whose residue characteristic differs from that of `v` (BLGGT §5.1,
-the display `ς WD_v(R) ≅ WD(r_λ|G_{F_v})^{F-ss}`; here `v = 2` and the
-two places compared are `λ | ℓ` and `λ | 3`, legitimate because
-`2 ∉ {ℓ, 3}`). Strict compatibility of the system through which the
-descent runs is Carayol's theorem for Hilbert newforms — the local
-constituent is pinned at EVERY finite place, not merely almost all — and
-the membership of `ρ` in such a system is BLGGT Theorem 5.5.1. Finally
-the stable-lattice normalization of the descent turns the `E_λ`-rational
-stable line into a saturated `A`-line, i.e. into the first vector of an
-`A`-basis, which is why the basis `b` may be demanded here. The
-character `δ` is handed over as a `GaloisRep` because it IS the quotient
-character of the constant type — in particular continuous, being the
-local component of the compatible system's nebentypus-free unramified
-twist.
-
-CUT AUDIT (2026-07-25 — why this leaf exists and where it came from).
-The obligation used to be stated as
-`threeadicRealization_stableLineAtTwo_of_witness`, quantified over EVERY
-`Rlz : ThreeadicRealization`. In that position it was UNDISCHARGEABLE
-for the reason recorded at its flatness sibling
-`blggt_threeadicMember_flatAtThreePow`, applied at `2` instead of `3`:
-`compat` equates characteristic polynomials of Frobenius at unramified
-places `q ∉ {2, 3, ℓ}` and therefore carries NO information at `2` at
-all, let alone inertia information. So the local type at `2` is now a
-FIELD of `ThreeadicRealization` (`stableLineAtTwo`), supplied at the
-construction `exists_threeadicRealization_of_witness` by THIS leaf; the
-old leaf survives as a short PROVEN projection of the field, so no
-consumer changed. The HONESTY AUDIT at the flatness sibling — what the
-relocation does and does not buy, and the eventual absorption into
-`blggt_threeadicBrauerSum_of_witness` — applies here verbatim.
-
-DISCHARGE-ROUTE AUDIT (2026-07-25, carried over from the leaf this
-replaces, where three candidate discharges were enumerated
-independently; all three are closed, so the leaf stands at its
-irreducible size — and the FIRST of them is precisely the finding that
-forced the cut-level repair above).
-
-* *From the carrier's own fields* — impossible, and that is WHY the
-  local shape is now a field rather than a derived leaf. Before the
-  repair `ThreeadicRealization` recorded only `S₁`, `A`, `τ`, `ιA`,
-  `ιA_injective` and `compat`, and `compat` pins characteristic
-  polynomials only at primes `q ∉ S₁` with `q ∉ {2, 3, ℓ}`. Nothing in
-  the structure mentioned the decomposition group at `2`, and no formal
-  argument recovers a local type at `2` from Frobenius data away from
-  `2` — that recovery IS strict compatibility, i.e. the citation
-  itself. The same closure applies to THIS leaf's hypothesis set, which
-  is the same Frobenius data under a different name.
-* *The odd-prime dichotomy* (collapse) — closed by the circularity
-  guard below, and independently by declaration order: the only two
-  in-tree dichotomies are `Modularity/Interface.lean`'s
-  `not_isIrreducible_of_isHardlyRamified_of_odd` (banned) and this
-  module's own headline
-  `not_isIrreducible_of_isHardlyRamified_of_five_le`, declared BELOW
-  this leaf.
-* *The `3`-adic classification* — closed by circularity. This is the
-  route worth recording, because it is the one that looks promising:
-  `τ`'s determinant, unramifiedness and flatness are all established
-  elsewhere, so three of the four hardly ramified conditions for `τ`
-  are already in hand. But every theorem in that chain
-  (`ModThree.lean`'s `mod_three`, `mod_three_reducible`,
-  `mod_three_of_stable_line`; `Threeadic.lean`'s
-  `exists_global_triangular_of_residual_trivial_quotient`,
-  `exists_frobenius_triangular`, `three_adic`) takes the WHOLE
-  `IsHardlyRamified` structure as a single hypothesis — none takes the
-  four conditions separately — and the tame-at-`2` field is genuinely
-  consumed (`quotCharacter_unramified_at_two`, on the path
-  `mod_three → mod_three_of_stable_line`). Supplying it would require
-  `threeadicRealization_isTameAtTwo_of_witness`, which is proven THROUGH
-  this leaf.
-
-FAITHFULNESS RE-CHECK (2026-07-25, carried over): neither vacuous nor
-inertia-widened. NOT VACUOUS — `A` is a local ring, hence nontrivial,
-so `Submodule.span A {b 0}` is a PROPER submodule for every basis `b`;
-the congruence clause therefore carries real content (it says the
-rank-`1` quotient by that line is the character `δ`), and no junk
-witness can be assembled from the hypotheses alone. NOT WIDENED —
-`δ`'s unramifiedness is quantified over `AddSubgroup.inertia` only,
-while the congruence is quantified over the whole decomposition group
-`Γ ℚ_[2]`; that is the correct shape and it matches
-`IsHardlyRamified.isTameAtTwo` verbatim.
-
-PACKAGING NOTE (2026-07-25, carried over): demanding a BASIS rather
-than a bare surjection adds no literature content — over the local ring
-`A` the two forms are equivalent. A surjection `πq : A² ↠ A` has one of
-`πq e₀`, `πq e₁` a unit (the non-units of a local ring form an ideal),
-and the triangular change of basis this determines is invertible,
-yielding a basis `b` with `πq (b 0) = 0`, `πq (b 1) = 1`, hence
-`ker πq = A · b 0`. So restating this citation in quotient form would
-shrink nothing: it would merely reproduce the statement of
-`threeadicRealization_isTameAtTwo_of_witness`, which this leaf already
-implies through the proven transports below.
-
-Literature (page-level checks 2026-07-25 against the downloaded
-sources): BLGGT, *Potential automorphy and change of weight*, Ann. of
-Math. 179 (2014) — §5.1 for the definition of a strictly compatible
-system (the display quoted above) and Theorem 5.5.1 for "a potentially
-diagonalizable, totally odd, regular algebraic polarized `l`-adic
-representation with `r̄|_{G_F(ζ_l)}` irreducible is part of a strictly
-pure compatible system"; Carayol, *Sur les représentations `l`-adiques
-associées aux formes modulaires de Hilbert*, Ann. Sci. ÉNS (4) 19 (1986)
-409–468, Théorème (A) p. 410: a strictly compatible system `{σ_λ}` with
-`σ_λ|W_p ≅ σ_λ(π_p)` at EVERY finite place `p` of residue
-characteristic different from that of `λ`, `σ(π_p)` being the
-`F`-semisimple degree-`2` Weil–Deligne representation of the Hecke
-correspondence (§0.5). Khare–Wintenberger, *Serre's modularity
-conjecture (I)*, Invent. Math. 178 (2009) 485–504, for the same
-constancy inside the minimal-lifting induction (paywalled; NOT
-page-verified here — the two references above are the load-bearing
-ones). FLT blueprint ch. 4: "tame at 2".
-
-SOUNDNESS AUDIT (both ways; 2026-07-24, re-checked 2026-07-25 for the
-coordinate-free form and again for the construction-site form): (i)
-direct — for the package produced by the Brauer descent this is the
-Weil–Deligne-type transfer above, read in a saturated basis; for an
-abstract package the abstract-quantification caveat of pillar β applies,
-and (ii) collapse — the hypothesis set is classically unsatisfiable (the
-headline `not_isIrreducible_of_isHardlyRamified_of_five_le` below
-refutes `hirr`), so the statement is classically true for every package.
-
-CIRCULARITY GUARD (inherited from pillar β, load-bearing): no discharge
-through `Family.lean`, `Lift.lean`, or `Modularity/Interface.lean`. In
-particular the odd-prime dichotomy
-`not_isIrreducible_of_isHardlyRamified_of_odd` is NOT available: it
-routes `ℓ ≥ 5` through this module's own headline, whose proof consumes
-pillar β and hence this leaf. -/
-theorem blggt_threeadicMember_stableLineAtTwo
-    {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
-    {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
-    [IsTopologicalRing O] [Algebra ℤ_[ℓ] O] [IsLocalRing O]
-    [Module.Finite ℤ_[ℓ] O] [IsModuleTopology ℤ_[ℓ] O]
-    (hZinj : Function.Injective (algebraMap ℤ_[ℓ] O))
-    {ρ : GaloisRep ℚ O (Fin 2 → O)}
-    (hrank : Module.rank O (Fin 2 → O) = 2)
-    (hρ : IsHardlyRamified hℓodd hrank ρ)
-    {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
-    [TopologicalSpace k] [DiscreteTopology k]
-    {W : Type v} [AddCommGroup W] [Module k W] [Module.Finite k W]
-    [Module.Free k W]
-    (hW : Module.rank k W = 2) {ρbar : GaloisRep ℚ k W}
-    (hρbar : IsHardlyRamified hℓodd hW ρbar)
-    (hirr : ρbar.IsIrreducible)
-    (π : O →+* k) (hπsurj : Function.Surjective π)
-    (hπ : ∀ (q : ℕ) (hq : q.Prime), q ≠ 2 → q ≠ ℓ →
-      (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map π =
-        ρbar.charFrob hq.toHeightOneSpectrumRingOfIntegersRat)
-    (Wit : PotentialModularityWitness ℓ O ρ)
-    (S₁ : Finset (HeightOneSpectrum (NumberField.RingOfIntegers ℚ)))
-    {A : Type u} [CommRing A] [TopologicalSpace A] [IsTopologicalRing A]
-    [Algebra ℤ_[3] A] [IsLocalRing A] [Module.Finite ℤ_[3] A]
-    [Module.Free ℤ_[3] A] [IsModuleTopology ℤ_[3] A]
-    (τ : GaloisRep ℚ A (Fin 2 → A))
-    (ιA : A →+* AlgebraicClosure ℚ_[3])
-    (hιA : Function.Injective ιA)
-    (hcompat : ∀ (q : ℕ) (hq : q.Prime),
-      hq.toHeightOneSpectrumRingOfIntegersRat ∉ S₁ →
-      q ≠ 2 → q ≠ 3 → q ≠ ℓ →
-      ∀ P : Polynomial Wit.E,
-        (ρ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map Wit.ιO =
-          P.map Wit.ψℓ →
-        (τ.charFrob hq.toHeightOneSpectrumRingOfIntegersRat).map ιA =
-          P.map Wit.ψ₃) :
-    ∃ (b : Module.Basis (Fin 2) A (Fin 2 → A))
-      (δ : GaloisRep ℚ_[2] A A),
-      (AddSubgroup.inertia
-          ((IsLocalRing.maximalIdeal Z2bar).toAddSubgroup :
-            AddSubgroup Z2bar)
-          (Field.absoluteGaloisGroup ℚ_[2]) ≤ δ.ker) ∧
-      (∀ g : Field.absoluteGaloisGroup ℚ_[2], δ g * δ g = 1) ∧
-      ∀ (g : Field.absoluteGaloisGroup ℚ_[2]) (v : Fin 2 → A),
-        τ.map (algebraMap ℚ ℚ_[2]) g v - δ g 1 • v ∈
-          Submodule.span A {b 0} :=
-  sorry
 
 /-- **Brauer descent, `3`-adic side — construction of the raw
 realization** (DECOMPOSED 2026-07-24 — now a PROVEN assembly over the
@@ -18300,16 +18843,22 @@ gives the universally quantified `compat` clause). The exceptional set
 of the realization is the union `S₁ ∪ S₀`, so that both matches are
 available at every good prime.
 
-LOCAL-SHAPE FIELDS (2026-07-25, the CUT-LEVEL REPAIR): the two
-local-shape components of the interface, `flatAtThreePow` at `3` and
-`stableLineAtTwo` at `2`, are supplied HERE — by
-`blggt_threeadicMember_flatAtThreePow` and
-`blggt_threeadicMember_stableLineAtTwo`, whose hypotheses are exactly
-the descended data this proof has in hand. They used to be
-condition-transfer leaves quantified over EVERY realization, in which
-position they were undischargeable: `compat` pins `τ` only up to
-semisimplification, and both local shapes are invisible to that. This
-node stays PROVEN; the residual citations are the two leaves named. -/
+LOCAL-SHAPE FIELDS (2026-07-25, the CUT-LEVEL REPAIR; ABSORBED
+2026-07-26): the two local-shape components of the interface,
+`flatAtThreePow` at `3` and `stableLineAtTwo` at `2`, are supplied HERE.
+They used to be condition-transfer leaves quantified over EVERY
+realization, in which position they were undischargeable: `compat` pins
+`τ` only up to semisimplification, and both local shapes are invisible
+to that. A first repair moved them to the construction site as two
+dedicated citation leaves; since 2026-07-26 they are instead clauses
+(2) and (3) of the existential of `blggt_threeadicBrauerSum_of_witness`
+itself, and are consumed here verbatim as `hflat` and `hline`. That
+removed two sorries without weakening anything: the citation is the
+declaration that chooses `τ`, and BLGGT's compatible systems already
+carry crystallinity at the places over the residue characteristic, so
+the citation had been under-asserting relative to its own source. This
+node stays PROVEN, and its single residual citation is now the Brauer-sum
+leaf alone. -/
 theorem exists_threeadicRealization_of_witness
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {O : Type u} [CommRing O] [IsDomain O] [TopologicalSpace O]
@@ -18340,7 +18889,7 @@ theorem exists_threeadicRealization_of_witness
   -- (ii) the `3`-adic Brauer sum realizing that same system on a
   -- stable lattice (BLGGT §5.3)
   obtain ⟨S₁, A, hA₁, hA₂, hA₃, hA₄, hA₅, hA₆, hA₇, hA₈, hAinj, τ, ιA,
-    hιA, hmatch⟩ :=
+    hιA, hmatch, hflat, hline⟩ :=
     exists_threeadicBrauerSum_of_witness hℓodd hℓ5 hZinj hrank hρ hW
       hρbar hirr π hπsurj hπ Wit S₀ Pv hPv
   -- (iii) freeness normalization of the lattice (formal, `ℤ_3` a PID)
@@ -18363,18 +18912,18 @@ theorem exists_threeadicRealization_of_witness
       (hPv q hq (fun h => hqS (Finset.mem_union_right _ h)) hq2 hq3 hqℓ)
       (hmatch q hq (fun h => hqS (Finset.mem_union_left _ h)) hq2 hq3 hqℓ)
       hP
-  -- glue: the realization. The two LOCAL-SHAPE fields are supplied
-  -- HERE, where `τ` is the actual Brauer-descended member — they are
-  -- not derivable from `compat` (see the structure's CUT-LEVEL REPAIR
-  -- paragraph), which is exactly why they are fields
+  -- glue: the realization. The two LOCAL-SHAPE fields are the local-shape
+  -- clauses of the Brauer-descent citation itself (ABSORBED 2026-07-26 —
+  -- see the ABSORPTION note in `blggt_threeadicBrauerSum_of_witness`):
+  -- the citation chooses `τ`, so it is the only thing in the tree that
+  -- can assert `τ`'s local shape, and BLGGT's own compatible systems
+  -- already carry crystallinity at the places over the residue
+  -- characteristic. They are not derivable from `compat` (see the
+  -- structure's CUT-LEVEL REPAIR paragraph), which is why they are fields
   exact ⟨{ S₁ := S₁ ∪ S₀, A := A, τ := τ, ιA := ιA,
            ιA_injective := hιA, compat := hcompat,
-           flatAtThreePow :=
-             blggt_threeadicMember_flatAtThreePow hℓodd hℓ5 hZinj hrank hρ
-               hW hρbar hirr π hπsurj hπ Wit (S₁ ∪ S₀) τ ιA hιA hcompat,
-           stableLineAtTwo :=
-             blggt_threeadicMember_stableLineAtTwo hℓodd hℓ5 hZinj hrank hρ
-               hW hρbar hirr π hπsurj hπ Wit (S₁ ∪ S₀) τ ιA hιA hcompat }⟩
+           flatAtThreePow := hflat,
+           stableLineAtTwo := hline }⟩
 
 /-- **Condition transfer, determinant — cyclotomic across the system**
 (PROVEN): the Brauer-descended `3`-adic member has cyclotomic
@@ -18690,8 +19239,14 @@ modulaires de Hilbert*, Ann. Sci. ÉNS 19 (1986), Théorème (A) p. 410
 characteristic different from that of `λ`); BLGGT, *Potential
 automorphy and change of weight*, Ann. of Math. 179 (2014), §5.1, §5.5.
 
-ROUTE AUDIT (2026-07-25): no formal route exists in the interface. The
-only arithmetic datum `ThreeadicRealization` carries is `compat`, which
+ROUTE AUDIT (2026-07-25; the datum inventory CORRECTED 2026-07-26): no
+formal route exists in the interface. This audit used to say that the
+only arithmetic datum `ThreeadicRealization` carries is `compat`; that
+became FALSE with the 2026-07-25 cut-level repair, which added the
+local-shape fields `flatAtThreePow` (at `3`) and `stableLineAtTwo` (at
+`2`). The route is closed anyway, and for a reason unaffected by the
+correction: `ℓ ≥ 5`, so neither local-shape field says anything at `ℓ`,
+and the only remaining datum is `compat`, which
 equates CHARACTERISTIC POLYNOMIALS OF FROBENIUS at unramified places
 away from the finite set `Rlz.S₁`; Frobenius data determines at most
 the semisimplification of `τ` and says nothing whatsoever about the
@@ -19131,8 +19686,14 @@ ROUTE AUDIT (2026-07-25, re-checked at the split): the *charFrob cut*
 out of `Rlz.compat` is again rejected — `compat` equates
 characteristic polynomials of Frobenius at unramified places away from
 the finite set `Rlz.S₁` and therefore carries no inertia information
-whatsoever, and `ThreeadicRealization` carries no other arithmetic
-datum. Sharper form of the same objection, recorded here so it is not
+whatsoever. (CORRECTED 2026-07-26: this audit used to add "and
+`ThreeadicRealization` carries no other arithmetic datum", which has been
+FALSE since the 2026-07-25 cut-level repair gave the structure the two
+local-shape fields `flatAtThreePow` and `stableLineAtTwo`. The rejection
+stands regardless, and is now the sharper claim: those two fields are
+local data at `3` and at `2` respectively, so neither says anything about
+inertia at a prime `p ∉ {2, 3}`, which is what this node needs.) Sharper
+form of the same objection, recorded here so it is not
 re-litigated: Frobenius data pins at most the SEMISIMPLIFICATION of
 `τ`, and semisimplification destroys exactly the information at stake —
 over `ℚ` the extensions of `1` by the `3`-adic cyclotomic character are
@@ -19912,10 +20473,13 @@ in the CUT, not in the difficulty.
 
 The local shape at `3` is therefore now a FIELD of the interface
 (`ThreeadicRealization.flatAtThreePow`), supplied at the construction
-site by `blggt_threeadicMember_flatAtThreePow` — which is where the
-classical discussion, the five-route audit, the Fontaine–Laffaille
-literature and the missing-machinery chain now live. Read that
-docstring, not this one, for the mathematics.
+site out of clause (2) of `blggt_threeadicBrauerSum_of_witness` — which
+is where the classical discussion, the five-route audit, the
+Fontaine–Laffaille literature and the missing-machinery chain now live.
+Read that docstring, not this one, for the mathematics. (Between
+2026-07-25 and 2026-07-26 that content sat in a separate leaf,
+`blggt_threeadicMember_flatAtThreePow`; it was absorbed into the
+Brauer-sum citation and deleted.)
 
 This declaration is kept, with its signature unchanged, purely so that
 its consumer
@@ -19927,8 +20491,8 @@ visible signature of the repair: everything the old proof would have had
 to extract from those hypotheses is now carried by the realization
 itself.
 
-SOUNDNESS: inherited verbatim from the field, hence from
-`blggt_threeadicMember_flatAtThreePow`.
+SOUNDNESS: inherited verbatim from the field, hence from clause (2) of
+`blggt_threeadicBrauerSum_of_witness`.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): respected —
 the only input is a field of the interface; nothing routes through
@@ -20251,9 +20815,12 @@ NOTHING at `2`, let alone anything about inertia at `2`.
 
 The local type at `2` is therefore now a FIELD of the interface
 (`ThreeadicRealization.stableLineAtTwo`), supplied at the construction
-site by `blggt_threeadicMember_stableLineAtTwo` — which is where the
-strict-compatibility discussion and the Carayol/BLGGT literature now
-live. Read that docstring, not this one, for the mathematics.
+site out of clause (3) of `blggt_threeadicBrauerSum_of_witness` — which
+is where the strict-compatibility discussion and the Carayol/BLGGT
+literature now live. Read that docstring, not this one, for the
+mathematics. (Between 2026-07-25 and 2026-07-26 that content sat in a
+separate leaf, `blggt_threeadicMember_stableLineAtTwo`; it was absorbed
+into the Brauer-sum citation and deleted.)
 
 This declaration is kept, with its signature unchanged, purely so that
 its consumer `threeadicRealization_weilDeligneType_two_of_witness` and
@@ -20261,8 +20828,8 @@ the downstream tameness transfer need no edit; its hypotheses beyond
 `Rlz` are consequently unused, hence the `linter.unusedVariables`
 suppression above.
 
-SOUNDNESS: inherited verbatim from the field, hence from
-`blggt_threeadicMember_stableLineAtTwo`.
+SOUNDNESS: inherited verbatim from the field, hence from clause (3) of
+`blggt_threeadicBrauerSum_of_witness`.
 
 CIRCULARITY GUARD (inherited from pillar β, load-bearing): respected —
 the only input is a field of the interface; nothing routes through
