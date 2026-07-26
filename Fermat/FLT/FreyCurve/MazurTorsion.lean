@@ -25488,6 +25488,44 @@ theorem newtonPolygon_single_segment_root {L : Type*} [Field L] {f : L → ℝ}
     rw [hsum0, htermN] at hkey
     exact absurd hkey.symm (ne_of_gt (lt_trans zero_lt_one hgt))
 
+attribute [local instance] Valued.toNormedField in
+/-- **Integral over the valuation ring implies spectral norm `≤ 1`** (PROVEN
+2026-07-26): the FORWARD direction of `isIntegral_of_spectralNorm_le_one`
+(`AbsoluteGaloisGroup.lean`), which the repo had only in the converse
+direction and mathlib not at all (mathlib has `spectralValue_le_one_iff`,
+about a polynomial, but nothing tying integrality to the spectral NORM).
+
+Proof, entirely inside mathlib's spectral-norm API and avoiding any appeal
+to `minpoly.isIntegrallyClosed_eq_field_fractions`: let `P` be a monic
+polynomial over `𝒪 = Valued.v.integer` killing `x`. Its coefficients have
+valuation `≤ 1`, hence norm `≤ 1` (`Valued.toNormedField.norm_le_one_iff`),
+so `spectralValue (P.map 𝒪.subtype) ≤ 1` by `spectralValue_le_one_iff`; and
+`x` is a root of that monic polynomial, so `spectralNorm K L x ≤
+spectralValue (P.map 𝒪.subtype)` by `norm_root_le_spectralValue` applied to
+the power-multiplicative nonarchimedean `spectralAlgNorm K L`.
+
+This belongs upstream next to `isIntegral_of_spectralNorm_le_one` in
+`AbsoluteGaloisGroup.lean`; it is stated here to avoid a rebuild of that
+file's whole downstream cone. -/
+lemma spectralNorm_le_one_of_isIntegral
+    {K L Γ₀ : Type*} [LinearOrderedCommGroupWithZero Γ₀] [Field K] [Field L]
+    [Valued K Γ₀] [(Valued.v : Valuation K Γ₀).RankOne] [Algebra K L]
+    [Algebra.IsAlgebraic K L]
+    {x : L} (hx : IsIntegral (Valued.v : Valuation K Γ₀).integer x) :
+    spectralNorm K L x ≤ 1 := by
+  obtain ⟨P, hPm, hPx⟩ := hx
+  have hmap : (P.map (Valued.v : Valuation K Γ₀).integer.subtype).Monic := hPm.map _
+  have hsv : spectralValue (P.map (Valued.v : Valuation K Γ₀).integer.subtype) ≤ 1 := by
+    refine (spectralValue_le_one_iff hmap).mpr fun n => ?_
+    rw [Polynomial.coeff_map]
+    exact Valued.toNormedField.norm_le_one_iff.mpr (P.coeff n).2
+  have haev : Polynomial.aeval x (P.map (Valued.v : Valuation K Γ₀).integer.subtype) = 0 := by
+    rw [← Subring.algebraMap_def, Polynomial.aeval_map_algebraMap K, Polynomial.aeval_def]
+    exact hPx
+  refine le_trans (le_of_eq (spectralAlgNorm_def (K := K) (L := L) x).symm) (le_trans ?_ hsv)
+  exact norm_root_le_spectralValue (f := spectralAlgNorm K L) spectralAlgNorm_isPowMul
+    isNonarchimedean_spectralNorm hmap haev
+
 section SupersingularDivisionPolynomial
 
 variable {p : ℕ} (hp : p.Prime)
@@ -25557,54 +25595,364 @@ theorem natDegree_reduction_ΨSq_eq_zero_of_supersingular
     (TorsionCard.smul_some_eq_zero_iff _ hpZ hns).mpr hx₀
   exact WeierstrassCurve.Affine.Point.some_ne_zero hns (hss _ hzero)
 
+/-- **`p` generates the maximal ideal of the good-reduction model `ℤ_(p) ⊆ ℚ`**
+(PROVEN 2026-07-26): `𝔪 = (v_p).map (𝓞 ℚ → ℤ_(p))` by
+`Localization.AtPrime.map_eq_maximalIdeal`, and `v_p = (p)` by
+`asIdeal_toHeightOneSpectrumRingOfIntegersRat`, so the image span is `(p)`.
+(This is the ABSOLUTE UNRAMIFIEDNESS of `ℚ` at `p`, in the localization
+rather than the completion — the companion of
+`maximalIdeal_adicCompletionIntegers_eq_span`.) -/
+lemma maximalIdeal_localizationAtPrime_eq_span :
+    IsLocalRing.maximalIdeal Rp = Ideal.span {(p : Rp)} := by
+  have h : Ideal.map (algebraMap (NumberField.RingOfIntegers ℚ) Rp)
+        hp.toHeightOneSpectrumRingOfIntegersRat.asIdeal
+      = Ideal.map (algebraMap (NumberField.RingOfIntegers ℚ) Rp)
+        (Ideal.span {(p : NumberField.RingOfIntegers ℚ)}) :=
+    congrArg _ (asIdeal_toHeightOneSpectrumRingOfIntegersRat hp)
+  rw [← Localization.AtPrime.map_eq_maximalIdeal, h, Ideal.map_span, Set.image_singleton,
+    map_natCast]
+
+open scoped WeierstrassCurve.Affine in
+/-- **The coefficient dictionary** (PROVEN 2026-07-26): a coefficient of `Ψ²ₙ`
+of the base change of `E` to `ℚ̄_p` is the image of the corresponding
+coefficient of the INTEGRAL MODEL over `ℤ_(p)`. This is the `map_ΨSq` /
+`coeff_map` chain of
+`coeff_Φ_mem_and_isUnit_coeff_ΨSq_of_hasGoodReduction`, packaged for the
+constant coefficient specifically. -/
+lemma coeff_baseChange_ΨSq_eq (E : WeierstrassCurve ℚ)
+    [E.HasGoodReduction Rp] (n : ℤ) (i : ℕ) :
+    (((E.map (algebraMap ℚ Kp))⁄Lp).ΨSq n).coeff i =
+      (algebraMap Kp Lp) ((algebraMap ℚ Kp) ((algebraMap Rp ℚ)
+        (((WeierstrassCurve.integralModel Rp E).ΨSq n).coeff i))) := by
+  -- NB: under `open scoped WeierstrassCurve.Affine` the notation `⁄` is the
+  -- REDUCIBLE `WeierstrassCurve.Affine.baseChange`, a different constant from
+  -- `WeierstrassCurve.baseChange`, so `rw [WeierstrassCurve.baseChange]` finds
+  -- no pattern here.  Both unfold to `map`, and `map_map` is `rfl`.
+  have h1 : ((E.map (algebraMap ℚ Kp))⁄Lp)
+      = E.map ((algebraMap Kp Lp).comp (algebraMap ℚ Kp)) :=
+    WeierstrassCurve.map_map E (algebraMap ℚ Kp) (algebraMap Kp Lp)
+  have h2 : E.map ((algebraMap Kp Lp).comp (algebraMap ℚ Kp))
+      = (WeierstrassCurve.integralModel Rp E).map
+        (((algebraMap Kp Lp).comp (algebraMap ℚ Kp)).comp (algebraMap Rp ℚ)) := by
+    conv_lhs => rw [← WeierstrassCurve.baseChange_integralModel_eq Rp E]
+    rw [WeierstrassCurve.baseChange, WeierstrassCurve.map_map]
+  rw [h1, h2, WeierstrassCurve.map_ΨSq, Polynomial.coeff_map]
+  rfl
+
+/-- **What `hconst` says about the integral model** (PROVEN 2026-07-26): if the
+reduced `Ψ²_p` is a constant then, the reduction being elliptic (so
+`Ψ²_p(Ẽ) ≠ 0` by `ΨSq_ne_zero_of_isElliptic`), it is a NONZERO constant — i.e.
+the constant coefficient of `Ψ²_p` of the integral model is a UNIT of `ℤ_(p)`
+and every coefficient of index `≥ 1` lies in the maximal ideal. -/
+lemma isUnit_coeff_zero_and_mem_maximalIdeal
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] [E.HasGoodReduction Rp]
+    (hconst : ((E.reduction Rp).ΨSq ((p : ℕ) : ℤ)).natDegree = 0) :
+    IsUnit ((((WeierstrassCurve.integralModel Rp E)).ΨSq ((p : ℕ) : ℤ)).coeff 0) ∧
+      ∀ i : ℕ, 1 ≤ i →
+        (((WeierstrassCurve.integralModel Rp E)).ΨSq ((p : ℕ) : ℤ)).coeff i ∈
+          IsLocalRing.maximalIdeal Rp := by
+  classical
+  haveI hell : (E.reduction Rp).IsElliptic :=
+    (WeierstrassCurve.hasGoodReduction_iff_isElliptic_reduction Rp).mp inferInstance
+  have hn : ((p : ℕ) : ℤ) ≠ 0 := by exact_mod_cast hp.ne_zero
+  have hred : (E.reduction Rp).ΨSq ((p : ℕ) : ℤ) =
+      ((WeierstrassCurve.integralModel Rp E).ΨSq ((p : ℕ) : ℤ)).map
+        (IsLocalRing.residue Rp) := by
+    rw [WeierstrassCurve.reduction, WeierstrassCurve.map_ΨSq]
+  have hne : (E.reduction Rp).ΨSq ((p : ℕ) : ℤ) ≠ 0 :=
+    WeierstrassCurve.ΨSq_ne_zero_of_isElliptic _ hn
+  have hhigh : ∀ i : ℕ, 1 ≤ i →
+      (((WeierstrassCurve.integralModel Rp E)).ΨSq ((p : ℕ) : ℤ)).coeff i ∈
+        IsLocalRing.maximalIdeal Rp := by
+    intro i hi
+    have h0 : ((E.reduction Rp).ΨSq ((p : ℕ) : ℤ)).coeff i = 0 :=
+      Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+    rw [hred, Polynomial.coeff_map] at h0
+    exact (IsLocalRing.residue_eq_zero_iff _).mp h0
+  refine ⟨?_, hhigh⟩
+  refine IsLocalRing.notMem_maximalIdeal.mp fun hm => hne ?_
+  rw [hred]
+  refine Polynomial.ext fun j => ?_
+  rw [Polynomial.coeff_map, Polynomial.coeff_zero]
+  rcases Nat.eq_zero_or_pos j with rfl | hj
+  · exact (IsLocalRing.residue_eq_zero_iff _).mpr hm
+  · exact (IsLocalRing.residue_eq_zero_iff _).mpr (hhigh j hj)
+
+/-- **The second-order vanishing, ODD `p`** (PROVEN 2026-07-26): for `p` odd,
+`Ψ²_p = (preΨ'_p)²` (`ΨSq_ofNat`, whose `Ψ₂Sq` factor is `1` for odd `n`), so
+the reduction of `preΨ'_p` is a nonzero CONSTANT too (a square has twice the
+degree, and the residue field is a domain). Hence `b₀` is a unit and
+`bⱼ ∈ 𝔪` for `j ≥ 1`; and `deg preΨ'_p ≤ (p² − 1)/2` by `natDegree_preΨ'_le`,
+so `bᵢ = 0` once `2i > p² − 1`. A coefficient of the SQUARE of index `i` is
+`Σ_{j+k=i} bⱼ b_k`, and every term either has `j = 0` (so `k = i`, `b_k = 0`)
+or `k = 0` (so `j = i`, `bⱼ = 0`) or both indices `≥ 1` — hence lies in `𝔪²`. -/
+lemma coeff_ΨSq_integralModel_mem_maximalIdeal_sq_of_odd
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] [E.HasGoodReduction Rp] (hodd : ¬ Even p)
+    (hconst : ((E.reduction Rp).ΨSq ((p : ℕ) : ℤ)).natDegree = 0)
+    {i : ℕ} (hi : p ^ 2 - 1 < 2 * i) :
+    (((WeierstrassCurve.integralModel Rp E)).ΨSq ((p : ℕ) : ℤ)).coeff i ∈
+      IsLocalRing.maximalIdeal Rp ^ 2 := by
+  classical
+  set W := WeierstrassCurve.integralModel Rp E
+  set g := W.preΨ' p with hg
+  have hsq : W.ΨSq ((p : ℕ) : ℤ) = g ^ 2 := by
+    rw [hg, WeierstrassCurve.ΨSq_ofNat, if_neg hodd, mul_one]
+  have hred : (E.reduction Rp).ΨSq ((p : ℕ) : ℤ) =
+      (g.map (IsLocalRing.residue Rp)) ^ 2 := by
+    rw [WeierstrassCurve.reduction, WeierstrassCurve.map_ΨSq, hsq, Polynomial.map_pow]
+  have hgdeg : (g.map (IsLocalRing.residue Rp)).natDegree = 0 := by
+    have h := hconst
+    rw [hred, Polynomial.natDegree_pow] at h
+    omega
+  have hgmem : ∀ j : ℕ, 1 ≤ j → g.coeff j ∈ IsLocalRing.maximalIdeal Rp := by
+    intro j hj
+    have h0 : (g.map (IsLocalRing.residue Rp)).coeff j = 0 :=
+      Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+    rw [Polynomial.coeff_map] at h0
+    exact (IsLocalRing.residue_eq_zero_iff _).mp h0
+  have hgtop : g.coeff i = 0 := by
+    have hle : g.natDegree ≤ (p ^ 2 - 1) / 2 := by
+      have h := W.natDegree_preΨ'_le p
+      rw [if_neg hodd] at h
+      exact h
+    exact Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+  rw [hsq, show (g ^ 2 : Polynomial Rp) = g * g from sq g, Polynomial.coeff_mul,
+    show (IsLocalRing.maximalIdeal Rp) ^ 2
+      = IsLocalRing.maximalIdeal Rp * IsLocalRing.maximalIdeal Rp from sq _]
+  refine Ideal.sum_mem _ fun x hx => ?_
+  have hxsum : x.1 + x.2 = i := Finset.mem_antidiagonal.mp hx
+  rcases Nat.eq_zero_or_pos x.1 with h1 | h1
+  · have hx2 : x.2 = i := by omega
+    rw [hx2, hgtop, mul_zero]
+    exact Ideal.zero_mem _
+  · rcases Nat.eq_zero_or_pos x.2 with h2 | h2
+    · have hx1 : x.1 = i := by omega
+      rw [hx1, hgtop, zero_mul]
+      exact Ideal.zero_mem _
+    · exact Ideal.mul_mem_mul (hgmem x.1 h1) (hgmem x.2 h2)
+
+/-- **The second-order vanishing, `p = 2`** (PROVEN 2026-07-26): here
+`Ψ²_2 = Ψ₂Sq = 4X³ + b₂X² + 2b₄X + b₆` (`ΨSq_two`) and `p² − 1 = 3`, so only
+`i = 2` and `i = 3` are at stake (higher coefficients vanish). At `i = 3` the
+coefficient is `4 = 2² ∈ 𝔪²`. At `i = 2` it is `b₂ = a₁² + 4a₂`, and `hconst`
+gives `b₂ ∈ 𝔪 = (2)`; since `4a₂ ∈ 𝔪` this puts `a₁² ∈ 𝔪`, whence `a₁ ∈ 𝔪`
+(`𝔪` is prime), whence `a₁² ∈ 𝔪²` and `b₂ = a₁² + 4a₂ ∈ 𝔪²`. This is the
+`v(b₂) ≥ 2` computation that supersingularity at `2` forces. -/
+lemma coeff_ΨSq_integralModel_mem_maximalIdeal_sq_of_even
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] [E.HasGoodReduction Rp] (heven : Even p)
+    (hconst : ((E.reduction Rp).ΨSq ((p : ℕ) : ℤ)).natDegree = 0)
+    {i : ℕ} (hi : p ^ 2 - 1 < 2 * i) :
+    (((WeierstrassCurve.integralModel Rp E)).ΨSq ((p : ℕ) : ℤ)).coeff i ∈
+      IsLocalRing.maximalIdeal Rp ^ 2 := by
+  classical
+  have hp2 : p = 2 := (Nat.Prime.even_iff hp).mp heven
+  set W := WeierstrassCurve.integralModel Rp E
+  obtain ⟨-, hmem⟩ := isUnit_coeff_zero_and_mem_maximalIdeal hp E hconst
+  have hcast : ((p : ℕ) : ℤ) = 2 := by rw [hp2]; norm_num
+  have hpc : ((p : ℕ) : Rp) = 2 := by
+    have h := congrArg (fun n : ℕ => (n : Rp)) hp2
+    simpa using h
+  have hΨ : W.ΨSq ((p : ℕ) : ℤ) = W.Ψ₂Sq := by
+    rw [hcast, WeierstrassCurve.ΨSq_two]
+  have h2mem : (2 : Rp) ∈ IsLocalRing.maximalIdeal Rp := by
+    rw [maximalIdeal_localizationAtPrime_eq_span hp, ← hpc]
+    exact Ideal.mem_span_singleton_self _
+  have h4mem : (4 : Rp) ∈ IsLocalRing.maximalIdeal Rp ^ 2 := by
+    rw [pow_two, show (4 : Rp) = 2 * 2 by norm_num]
+    exact Ideal.mul_mem_mul h2mem h2mem
+  have hi2 : 2 ≤ i := by rw [hp2] at hi; omega
+  have hcf : ∀ j : ℕ, W.Ψ₂Sq.coeff j =
+      (if j = 3 then (4 : Rp) else 0) + (if j = 2 then W.b₂ else 0)
+        + (if j = 1 then 2 * W.b₄ else 0) + (if j = 0 then W.b₆ else 0) := by
+    have hΨ₂ : W.Ψ₂Sq = Polynomial.C (4 : Rp) * Polynomial.X ^ 3
+        + Polynomial.C W.b₂ * Polynomial.X ^ 2
+        + Polynomial.C (2 * W.b₄) * Polynomial.X ^ 1 + Polynomial.C W.b₆ := by
+      rw [WeierstrassCurve.Ψ₂Sq, pow_one]
+    intro j
+    rw [hΨ₂]
+    simp only [Polynomial.coeff_add, Polynomial.coeff_C_mul, Polynomial.coeff_X_pow,
+      Polynomial.coeff_C, mul_ite, mul_one, mul_zero]
+  rw [hΨ]
+  rcases Nat.lt_or_ge i 4 with hlt | hge
+  · interval_cases i
+    · have hb₂ : W.b₂ ∈ IsLocalRing.maximalIdeal Rp := by
+        have h := hmem 2 (by norm_num)
+        rwa [hΨ, hcf 2, if_neg (by norm_num), if_pos rfl, if_neg (by norm_num),
+          if_neg (by norm_num), zero_add, add_zero, add_zero] at h
+      have hb₂eq : W.b₂ = W.a₁ ^ 2 + 4 * W.a₂ := rfl
+      have h4a₂ : (4 : Rp) * W.a₂ ∈ IsLocalRing.maximalIdeal Rp :=
+        Ideal.mul_mem_right _ _ (by
+          rw [show (4 : Rp) = 2 * 2 by norm_num]
+          exact Ideal.mul_mem_right _ _ h2mem)
+      have ha₁sq : W.a₁ ^ 2 ∈ IsLocalRing.maximalIdeal Rp := by
+        have heq : W.a₁ ^ 2 = W.b₂ - 4 * W.a₂ := by rw [hb₂eq]; ring
+        rw [heq]
+        exact Ideal.sub_mem _ hb₂ h4a₂
+      have ha₁ : W.a₁ ∈ IsLocalRing.maximalIdeal Rp :=
+        (IsLocalRing.maximalIdeal.isMaximal Rp).isPrime.mem_of_pow_mem 2 ha₁sq
+      rw [hcf 2, if_neg (by norm_num), if_pos rfl, if_neg (by norm_num), if_neg (by norm_num),
+        zero_add, add_zero, add_zero, hb₂eq]
+      exact Ideal.add_mem _ (Ideal.pow_mem_pow ha₁ 2) (Ideal.mul_mem_right _ _ h4mem)
+    · rw [hcf 3, if_pos rfl, if_neg (by norm_num), if_neg (by norm_num), if_neg (by norm_num),
+        add_zero, add_zero, add_zero]
+      exact h4mem
+  · rw [hcf i, if_neg (by omega), if_neg (by omega), if_neg (by omega), if_neg (by omega),
+      add_zero, add_zero, add_zero]
+    exact Ideal.zero_mem _
+
+/-- **The second-order vanishing** (PROVEN 2026-07-26, by the two cases above):
+once `2i > p² − 1`, the `i`-th coefficient of `Ψ²_p` of the integral model
+lies in `𝔪²`. This is the sharper half of the single-segment Newton polygon —
+the half that `hconst` alone (which only gives `𝔪`) does not supply. -/
+lemma coeff_ΨSq_integralModel_mem_maximalIdeal_sq
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] [E.HasGoodReduction Rp]
+    (hconst : ((E.reduction Rp).ΨSq ((p : ℕ) : ℤ)).natDegree = 0)
+    {i : ℕ} (hi : p ^ 2 - 1 < 2 * i) :
+    (((WeierstrassCurve.integralModel Rp E)).ΨSq ((p : ℕ) : ℤ)).coeff i ∈
+      IsLocalRing.maximalIdeal Rp ^ 2 := by
+  by_cases heven : Even p
+  · exact coeff_ΨSq_integralModel_mem_maximalIdeal_sq_of_even hp E heven hconst hi
+  · exact coeff_ΨSq_integralModel_mem_maximalIdeal_sq_of_odd hp E heven hconst hi
+
+/-- **Transport** (PROVEN 2026-07-26): the image in `ℚ̄_p` of any element of the
+good-reduction model `ℤ_(p)` has spectral norm `≤ 1` — by
+`mem_localValuationSubring_of_algebraMap_localizationAtPrime` (it is integral
+over `ℤ_p`) and the forward lemma `spectralNorm_le_one_of_isIntegral`. -/
+lemma spectralNorm_algebraMap_localizationAtPrime_le_one (r : Rp) :
+    spectralNorm Kp Lp ((algebraMap Kp Lp) ((algebraMap ℚ Kp) (algebraMap Rp ℚ r))) ≤ 1 :=
+  spectralNorm_le_one_of_isIntegral
+    (mem_localValuationSubring_of_algebraMap_localizationAtPrime hp r)
+
 open scoped WeierstrassCurve.Affine in
 set_option backward.isDefEq.respectTransparency false in
 /-- **From a CONSTANT reduced division polynomial to the single-segment
-Newton polygon over `ℚ̄_p`** (sorry node, cut 2026-07-26 — this is what
-remains of `spectralNorm_coeff_ΨSq_of_good_of_supersingular` once
-`natDegree_reduction_ΨSq_eq_zero_of_supersingular` above has consumed the
+Newton polygon over `ℚ̄_p`** (PROVEN 2026-07-26; cut 2026-07-26 out of
+`spectralNorm_coeff_ΨSq_of_good_of_supersingular` once
+`natDegree_reduction_ΨSq_eq_zero_of_supersingular` above had consumed the
 geometry): the constant coefficient of `Ψ²_p` is a UNIT and every
 coefficient satisfies `|aᵢ| ^ (p² − 1) ≤ (|p| ²) ^ i`.
 
-TWO SEPARABLE PIECES, and the second is the only real mathematics left:
+TWO SEPARABLE PIECES, both now discharged by the bricks just above:
 
 * *Transport.* `hconst` says the reduction of `Ψ²_p` of the INTEGRAL MODEL
   is a nonzero constant (nonzero by `ΨSq_ne_zero_of_isElliptic`), i.e. its
   coefficient `c₀` is a unit of `R = ℤ_(p)` and `cᵢ ∈ 𝔪_R = (p)` for
-  `i ≥ 1`. The coefficients over `ℚ̄_p` are the images of the `cᵢ` — the
-  dictionary is the `hmap`/`map_ΨSq`/`coeff_map` chain already used in
-  `coeff_Φ_mem_and_isUnit_coeff_ΨSq_of_hasGoodReduction` above — so
-  `|a₀| = 1` and `|aᵢ| ≤ |p|`. The one mathlib gap here is *`x` integral
-  over `𝒪ᵥ` implies `spectralNorm x ≤ 1`*: the repo has only the converse
-  (`isIntegral_of_spectralNorm_le_one`, `AbsoluteGaloisGroup.lean`). It is
-  the usual ultrametric argument on a monic equation (if `|x| > 1` then
-  `|xⁿ|` strictly dominates every lower term), or `spectralValue_le_one_iff`
-  plus "the minimal polynomial of an integral element over an integrally
-  closed ring has integral coefficients".
+  `i ≥ 1` — that is `isUnit_coeff_zero_and_mem_maximalIdeal` together with
+  `maximalIdeal_localizationAtPrime_eq_span`. The coefficients over `ℚ̄_p`
+  are the images of the `cᵢ` (`coeff_baseChange_ΨSq_eq`, the
+  `map_ΨSq`/`coeff_map` chain of
+  `coeff_Φ_mem_and_isUnit_coeff_ΨSq_of_hasGoodReduction`), so `|a₀| = 1`
+  and `|aᵢ| ≤ |p|`. The mathlib gap this used to name — *`x` integral over
+  `𝒪ᵥ` implies `spectralNorm x ≤ 1`*, of which the repo had only the
+  converse `isIntegral_of_spectralNorm_le_one` — is now
+  `spectralNorm_le_one_of_isIntegral`, proven just above
+  `section SupersingularDivisionPolynomial` from
+  `spectralValue_le_one_iff` and `norm_root_le_spectralValue`.
 
 * *The second-order vanishing.* `|aᵢ| ≤ |p|` gives the required bound only
-  for `i ≤ (p² − 1)/2`; for larger `i` one needs `|aᵢ| ≤ |p| ²`, i.e.
-  `cᵢ ∈ 𝔪_R ²`. For ODD `p` this is formal: `Ψ²_p = (preΨ'_p) ²` by
-  `ΨSq_ofNat`, the polygon of `preΨ'_p` is the segment
-  `(0,0)–((p²−1)/2, 1)` (which IS what `hconst` gives, since a coefficient
-  of `preΨ'_p` of index `≥ 1` reduces to `0`), and a coefficient of the
-  SQUARE of index `i > (p²−1)/2 = deg preΨ'_p` is a sum of products
-  `b_j b_{i−j}` with BOTH indices `≥ 1`, hence lies in `𝔪_R ²`. For `p = 2`,
-  `Ψ²_2 = Ψ₂Sq = 4x³ + b₂x² + 2b₄x + b₆` and the statement is `v(b₂) ≥ 2`,
-  which holds because supersingularity at `2` forces `a₁ ∈ 𝔪_R` and
-  `b₂ = a₁² + 4a₂`.
+  for `2i ≤ p² − 1`; for larger `i` one needs `|aᵢ| ≤ |p| ²`, i.e.
+  `cᵢ ∈ 𝔪_R ²`, which is
+  `coeff_ΨSq_integralModel_mem_maximalIdeal_sq`. For ODD `p` it is formal:
+  `Ψ²_p = (preΨ'_p) ²` by `ΨSq_ofNat`, the polygon of `preΨ'_p` is the
+  segment `(0,0)–((p²−1)/2, 1)` (which IS what `hconst` gives, since a
+  coefficient of `preΨ'_p` of index `≥ 1` reduces to `0`), and a
+  coefficient of the SQUARE of index `i > (p²−1)/2 = deg preΨ'_p` is a sum
+  of products `b_j b_{i−j}` with BOTH indices `≥ 1`, hence lies in
+  `𝔪_R ²`. For `p = 2`, `Ψ²_2 = Ψ₂Sq = 4x³ + b₂x² + 2b₄x + b₆` and the
+  statement is `v(b₂) ≥ 2`, which holds because `b₂ = a₁² + 4a₂` and
+  `hconst` forces `a₁ ∈ 𝔪_R`.
 
-So the honest shape of the remainder is one general polynomial lemma (the
-Newton polygon of a square is twice the Newton polygon of the root) plus a
-two-line characteristic-`2` computation. -/
+The third range, `i > p² − 1`, is handled by `natDegree_ΨSq` over `ℚ̄_p`
+(where `(p : ℚ̄_p) ≠ 0`): the coefficient is simply `0`. -/
 theorem spectralNorm_coeff_ΨSq_of_natDegree_reduction_eq_zero
     (E : WeierstrassCurve ℚ) [E.IsElliptic] [E.HasGoodReduction Rp]
     (hconst : ((E.reduction Rp).ΨSq ((p : ℕ) : ℤ)).natDegree = 0) :
     spectralNorm Kp Lp ((((E.map (algebraMap ℚ Kp))⁄Lp).ΨSq ((p : ℕ) : ℤ)).coeff 0) = 1 ∧
     ∀ i : ℕ, spectralNorm Kp Lp
         ((((E.map (algebraMap ℚ Kp))⁄Lp).ΨSq ((p : ℕ) : ℤ)).coeff i) ^ (p ^ 2 - 1) ≤
-      (spectralNorm Kp Lp ((p : ℕ) : Lp) ^ 2) ^ i :=
-  sorry
+      (spectralNorm Kp Lp ((p : ℕ) : Lp) ^ 2) ^ i := by
+  classical
+  set W := WeierstrassCurve.integralModel Rp E
+  set c : ℕ → Rp := fun i => (W.ΨSq ((p : ℕ) : ℤ)).coeff i
+  set ι : Rp →+* Lp :=
+    ((algebraMap Kp Lp).comp (algebraMap ℚ Kp)).comp (algebraMap Rp ℚ)
+  set π : ℝ := spectralNorm Kp Lp ((p : ℕ) : Lp) with hπ
+  -- the coefficient dictionary
+  have hdict : ∀ i : ℕ,
+      (((E.map (algebraMap ℚ Kp))⁄Lp).ΨSq ((p : ℕ) : ℤ)).coeff i = ι (c i) :=
+    fun i => coeff_baseChange_ΨSq_eq hp E _ i
+  -- every image of the model has spectral norm `≤ 1`
+  have hle1 : ∀ r : Rp, spectralNorm Kp Lp (ι r) ≤ 1 :=
+    spectralNorm_algebraMap_localizationAtPrime_le_one hp
+  have hnn : ∀ x : Lp, 0 ≤ spectralNorm Kp Lp x := fun x => spectralNorm_nonneg x
+  have hpι : ι (p : Rp) = ((p : ℕ) : Lp) := map_natCast ι p
+  have hmul : ∀ x y : Lp, spectralNorm Kp Lp (x * y) =
+      spectralNorm Kp Lp x * spectralNorm Kp Lp y := fun x y => spectralAlgNorm_mul x y
+  have hπeq : spectralNorm Kp Lp (ι (p : Rp)) = π := by rw [hpι, hπ]
+  have hπsq : spectralNorm Kp Lp ((ι (p : Rp)) ^ 2) = π ^ 2 := by
+    rw [pow_two, hmul, hπeq, pow_two]
+  have hπ1 : π ≤ 1 := hπeq ▸ hle1 (p : Rp)
+  have hπ0 : 0 ≤ π := hnn _
+  obtain ⟨hu, hmem⟩ := isUnit_coeff_zero_and_mem_maximalIdeal hp E hconst
+  -- PART 1 : the constant coefficient is a UNIT, so its norm is exactly `1`
+  have hpart1 : spectralNorm Kp Lp (ι (c 0)) = 1 := by
+    obtain ⟨u, hu'⟩ := hu
+    have hc0 : c 0 = (u : Rp) := hu'.symm
+    have hinv : c 0 * ((u⁻¹ : Rpˣ) : Rp) = 1 := by
+      rw [hc0]; simp
+    have h1 : spectralNorm Kp Lp (ι (c 0)) * spectralNorm Kp Lp (ι ((u⁻¹ : Rpˣ) : Rp)) = 1 := by
+      rw [← hmul, ← map_mul, hinv, map_one, spectralNorm_one]
+    nlinarith [hle1 (c 0), hle1 ((u⁻¹ : Rpˣ) : Rp), hnn (ι (c 0)),
+      hnn (ι ((u⁻¹ : Rpˣ) : Rp))]
+  refine ⟨by rw [hdict 0]; exact hpart1, fun i => ?_⟩
+  rw [hdict i]
+  have hp2 : 4 ≤ p ^ 2 := by simpa using Nat.pow_le_pow_left hp.two_le 2
+  have hN : 1 ≤ p ^ 2 - 1 := by omega
+  rcases Nat.eq_zero_or_pos i with rfl | hi1
+  · rw [hpart1, one_pow, pow_zero]
+  by_cases h2 : 2 * i ≤ p ^ 2 - 1
+  · -- SMALL `i` : `cᵢ ∈ 𝔪 = (p)` gives `|aᵢ| ≤ |p|`, and `2i ≤ p² − 1` finishes
+    have hdvd : (p : Rp) ∣ c i := by
+      have hcm := hmem i hi1
+      rw [maximalIdeal_localizationAtPrime_eq_span hp, Ideal.mem_span_singleton] at hcm
+      exact hcm
+    obtain ⟨d, hd⟩ := hdvd
+    have hbnd : spectralNorm Kp Lp (ι (c i)) ≤ π := by
+      rw [hd, map_mul, hmul, hπeq]
+      nlinarith [hle1 d, hnn (ι d), hπ0]
+    calc spectralNorm Kp Lp (ι (c i)) ^ (p ^ 2 - 1) ≤ π ^ (p ^ 2 - 1) :=
+          pow_le_pow_left₀ (hnn _) hbnd _
+      _ ≤ π ^ (2 * i) := pow_le_pow_of_le_one hπ0 hπ1 h2
+      _ = (π ^ 2) ^ i := by rw [← pow_mul, Nat.mul_comm]
+  · rw [Nat.not_le] at h2
+    by_cases hbig : p ^ 2 - 1 < i
+    · -- BEYOND THE DEGREE : the coefficient vanishes (`deg Ψ²_p = p² − 1`)
+      have hpL : (((p : ℕ) : ℤ) : Lp) ≠ 0 := by
+        have hne : ((p : ℕ) : Lp) ≠ 0 := Nat.cast_ne_zero.mpr hp.ne_zero
+        simpa using hne
+      have hdeg : (((E.map (algebraMap ℚ Kp))⁄Lp).ΨSq ((p : ℕ) : ℤ)).natDegree
+          = p ^ 2 - 1 := by
+        rw [WeierstrassCurve.natDegree_ΨSq _ hpL]
+        simp
+      have hz : (((E.map (algebraMap ℚ Kp))⁄Lp).ΨSq ((p : ℕ) : ℤ)).coeff i = 0 :=
+        Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
+      rw [hdict i] at hz
+      rw [hz, spectralNorm_zero, zero_pow (by omega)]
+      positivity
+    · -- LARGE `i` : the second-order vanishing `cᵢ ∈ 𝔪² = (p²)` gives `|aᵢ| ≤ |p|²`
+      rw [Nat.not_lt] at hbig
+      have hdvd : (p : Rp) ^ 2 ∣ c i := by
+        have hcm := coeff_ΨSq_integralModel_mem_maximalIdeal_sq hp E hconst h2
+        rw [maximalIdeal_localizationAtPrime_eq_span hp, Ideal.span_singleton_pow,
+          Ideal.mem_span_singleton] at hcm
+        exact hcm
+      obtain ⟨d, hd⟩ := hdvd
+      have hbnd : spectralNorm Kp Lp (ι (c i)) ≤ π ^ 2 := by
+        rw [hd, map_mul, map_pow, hmul, hπsq]
+        nlinarith [hle1 d, hnn (ι d), hπ0, sq_nonneg π]
+      calc spectralNorm Kp Lp (ι (c i)) ^ (p ^ 2 - 1) ≤ (π ^ 2) ^ (p ^ 2 - 1) :=
+            pow_le_pow_left₀ (hnn _) hbnd _
+        _ ≤ (π ^ 2) ^ i := pow_le_pow_of_le_one (by positivity) (by nlinarith) hbig
 
 end SupersingularDivisionPolynomial
 
@@ -25615,7 +25963,7 @@ set_option backward.isDefEq.respectTransparency false in
 SUPERSINGULAR prime is the single segment from `(0, 0)` to `(p² − 1, 2)`**
 (DERIVED 2026-07-26 from the PROVEN
 `natDegree_reduction_ΨSq_eq_zero_of_supersingular` — which is where
-supersingularity is consumed — and the remaining sorry node
+supersingularity is consumed — and the now equally PROVEN
 `spectralNorm_coeff_ΨSq_of_natDegree_reduction_eq_zero`, both just above;
 originally cut 2026-07-26 out of
 `spectralNorm_torsion_abscissa_of_good_of_supersingular` below, which is now
@@ -25733,12 +26081,12 @@ HOW IT IS PROVED (2026-07-26), by the DIVISION-POLYNOMIAL route, which
 avoids formal groups altogether — mathlib's
 `RingTheory/FormalGroup/Basic.lean` is embryonic (group axioms only: no
 height, no `[p]`-series, no Newton polygon), so the formal-group route
-would have needed that theory built first. Four steps, of which only the
-second is still open:
+would have needed that theory built first. Four steps, all of them now
+PROVEN (the second was the last to close, on 2026-07-26):
 1. `TorsionCard.smul_some_eq_zero_iff` (PROVEN, same development) turns
    `p · (x, y) = 0` into `Ψ²_p(x) = 0`.
-2. `spectralNorm_coeff_ΨSq_of_good_of_supersingular` (the ONE remaining
-   sorry node, above) says the Newton polygon of `Ψ²_p` is the single
+2. `spectralNorm_coeff_ΨSq_of_good_of_supersingular` (PROVEN 2026-07-26,
+   above) says the Newton polygon of `Ψ²_p` is the single
    segment from `(0, 0)` to `(p² − 1, 2)`: unit constant coefficient and
    `|aᵢ| ^ (p² − 1) ≤ (|p| ²) ^ i` throughout. This is where
    supersingularity is consumed.
