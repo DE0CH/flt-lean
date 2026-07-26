@@ -19243,9 +19243,122 @@ noncomputable def localSplitSubgroup {kk' : Type u} [Field kk']
       a * b * a⁻¹ * b⁻¹ = x})).topologicalClosure
 
 /-- **Global class field theory: the Artin map of the Hilbert class
-field of `ℚ(μ_p)`, equivariantly** (E3c support leaf (ii-a); SORRY NODE
-— this is the whole and only class-field-theoretic content of the
-Eisenstein pillar, re-cut 2026-07-25 out of
+field of `ℚ(μ_p)`, with equivariance checked only on FROBENIUS
+elements** (E3c support leaf (ii-a-1); SORRY NODE — the class-field
+theoretic core, re-cut 2026-07-26 out of `exists_artinMap_classGroup`
+below, which is now PROVEN over it): for `χ` the mod-`p` cyclotomic
+character `ω` of `Γℚ` (`hχcyc`, so `ker χ = Γ_{ℚ(μ_p)}`) and any model
+`CF` of `ℚ(μ_p)`, there is a map `art : Γℚ → Cl(𝓞 CF)` with
+
+* (i) `art` is a homomorphism on `ker χ`;
+* (ii) `art` is SURJECTIVE from `ker χ` onto the class group;
+* (iii) `art` is trivial on an OPEN NORMAL subgroup `H ≤ ker χ` of `Γℚ`
+  — the continuity of the Artin map, in the elementary first-order form
+  that avoids putting a topology on `Cl(𝓞 CF)`;
+* (iv) `art` is conjugation-equivariant **on the Frobenius conjugates
+  only**: for every rational place `v`, every `g : Γℚ` and every `σ`
+  with `ω(σ) = u`, if the conjugate `g · Frob_v · g⁻¹` lies in `ker χ`
+  then `art (σ (g Frob_v g⁻¹) σ⁻¹) = classGroupGalAut CF (σ_u)
+  (art (g Frob_v g⁻¹))`;
+* (v) every element of `ker χ` killed by `art` lies in
+  `localSplitSubgroup χ p`.
+
+WHAT THIS CUT ACHIEVES (2026-07-26). The previous leaf asked for
+equivariance at EVERY `n ∈ ker χ`; that quantifier is now discharged
+here at Frobenius conjugates only, and the passage to all of `ker χ` is
+PROVEN in `exists_artinMap_classGroup` below from Chebotarev density
+(`GaloisRepresentation.dense_conjClasses_globalFrob`, proven in
+`Fermat/FLT/GaloisRepresentation/Chebotarev.lean`) together with (i) and
+(iii). This matters because clause (iv) is exactly the CLASSICAL
+statement of the equivariance of the Artin symbol — Neukirch I
+(9.1)–(9.2), `(σ𝔞, H/K) = σ (𝔞, H/K) σ⁻¹`, whose two ingredients are
+`Frob_{σ𝔞} = σ Frob_𝔞 σ⁻¹` (mathlib HAS this: `IsArithFrobAt.conj` in
+`Mathlib/RingTheory/Frobenius.lean`, and the uniqueness upgrade
+`AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt` beside it) and
+`[σ𝔞] = classGroupGalAut(σ)[𝔞]` (essentially
+`classGroup_mulEquiv_mk0` above) — whereas the old quantifier over all
+of `ker χ` was not a statement about Frobenius elements at all and had
+no classical proof one could follow. The reduction is the standard
+"check a Galois-equivariance on Frobenius elements and extend by
+density"; it is what the missing pieces (1)–(2) of the audit below are
+FOR, and it is now the only place they are needed.
+
+The two clauses added relative to the old leaf, (iii) and the
+`ker χ`-membership side condition in (iv), are free for the true Artin
+map: `art` factors through `Gal(H/ℚ(μ_p))` for `H` the Hilbert class
+field, so it is trivial on `Gal(ℚ̄/H)`, which is open (`H/ℚ` is finite)
+and normal in `Γℚ` (`H/ℚ` is Galois, `H` being canonical and
+`ℚ(μ_p)/ℚ` Galois).
+
+THE PIN (audit RE-VERIFIED 2026-07-25 directly against the mathlib pin
+in `.lake`): mathlib has `ClassGroup`, its functoriality
+(`ClassGroup.mulEquiv`), finiteness of the class group of a number
+field, ideal norms, the whole LOCAL ramification/inertia theory
+(`Mathlib/NumberTheory/RamificationInertia/`), and — new to this audit —
+the arithmetic Frobenius `arithFrobAt` with its existence, uniqueness at
+an unramified prime and CONJUGATION-EQUIVARIANCE
+(`Mathlib/RingTheory/Frobenius.lean`), which this project extends to the
+profinite setting in
+`Fermat/FLT/Deformations/RepresentationTheory/Frobenius.lean`
+(`arithFrobAt'`). But there is still NO global class field theory of any
+kind: no Artin map and no Artin symbol of an IDEAL (no
+`ArtinMap`/`artinSymbol` anywhere), no Hilbert class field, no ray class
+groups, no idele class group, no "maximal unramified abelian extension".
+Building this leaf therefore still means building unramified global CFT;
+the pieces, in dependency order, are: (1) the Artin symbol of an
+unramified prime in an abelian extension, with its
+conjugation-equivariance — REACHABLE NOW, it is `arithFrobAt` plus
+`IsArithFrobAt.conj` plus `AlgHom.IsArithFrobAt.eq_of_isUnramifiedAt`;
+(2) its multiplicative extension to the ideal group, and the dictionary
+between a Frobenius element of `Γℚ` and the class of the underlying
+prime of `𝓞 CF`; (3) Artin reciprocity — principal ideals are in the
+kernel; (4) the existence theorem for the Hilbert class field, i.e.
+surjectivity and the kernel computation; (5) the translation between
+"an inertia subgroup of `Γ_K` at a finite place" and "a `Γℚ`-conjugate
+of the image of `localInertiaGroup`", which is what clause (v) is stated
+in terms of. Clause (iv) is where (1) and (2) enter; (iii) and clause
+(ii)/(v) are where (3) and (4) enter.
+
+Soundness: the hypothesis set is inhabited (`χ = ω`, `CF` the
+cyclotomic field) and the conclusion holds for every inhabitant, `art`
+being the Artin map of the Hilbert class field of `ℚ(μ_p)` composed
+with `Γ_{ℚ(μ_p)} ↠ Gal(H/ℚ(μ_p)) ≅ Cl(ℚ(μ_p))` (Neukirch VI (6.8),
+(6.9)). For `p = 2` the model is `CF = ℚ`, `Cl(ℤ) = 1`, and `art ≡ 1`
+with `H = ⊤` inhabits every clause. -/
+theorem exists_artinMap_classGroup_frobenius
+    {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
+    (χ : Field.absoluteGaloisGroup ℚ →* kk')
+    (hχcyc : ∀ g : Field.absoluteGaloisGroup ℚ, χ g =
+      algebraMap ℤ_[p] kk'
+        (cyclotomicCharacter (AlgebraicClosure ℚ) p g.toRingEquiv))
+    (CF : Type) [Field CF] [NumberField CF] [IsCyclotomicExtension {p} ℚ CF] :
+    ∃ art : Field.absoluteGaloisGroup ℚ → ClassGroup (𝓞 CF),
+      (∀ g h : Field.absoluteGaloisGroup ℚ, χ g = 1 → χ h = 1 →
+        art (g * h) = art g * art h) ∧
+      (∀ c : ClassGroup (𝓞 CF), ∃ n : Field.absoluteGaloisGroup ℚ,
+        χ n = 1 ∧ art n = c) ∧
+      (∃ H : Subgroup (Field.absoluteGaloisGroup ℚ), H.Normal ∧
+        IsOpen (H : Set (Field.absoluteGaloisGroup ℚ)) ∧
+        ∀ x ∈ H, χ x = 1 ∧ art x = 1) ∧
+      (∀ (u : (ZMod p)ˣ) (σ g : Field.absoluteGaloisGroup ℚ)
+          (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
+        χ σ = ZMod.castHom (dvd_refl p) kk' (u : ZMod p) →
+        χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
+        art (σ * (g * GaloisRepresentation.globalFrob v * g⁻¹) * σ⁻¹) =
+          classGroupGalAut CF
+            ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u)
+            (art (g * GaloisRepresentation.globalFrob v * g⁻¹))) ∧
+      (∀ (n : Field.absoluteGaloisGroup ℚ) (hn : n ∈ MonoidHom.ker χ),
+        art n = 1 → (⟨n, hn⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) :=
+  sorry
+
+/-- **Global class field theory: the Artin map of the Hilbert class
+field of `ℚ(μ_p)`, equivariantly** (E3c support leaf (ii-a); PROVEN
+2026-07-26 over `exists_artinMap_classGroup_frobenius` above, which
+carries the same conclusion with the conjugation-equivariance clause
+weakened to Frobenius conjugates only — the passage to all of `ker χ`
+is the Chebotarev-density argument proven here. Originally cut
+2026-07-25 out of
 `hilbertClassField_ker_vanishing_of_classGroup_twisted_hom_vanishing`
 below, which is now PROVEN over it): for `χ` the mod-`p` cyclotomic
 character `ω` of `Γℚ` (`hχcyc`, so `ker χ = Γ_{ℚ(μ_p)}`) and any model
@@ -19281,25 +19394,32 @@ for odd `p`, so there are no real places and the narrow and wide class
 groups agree; for `p = 2`, `K = ℚ` and `Cl(ℤ) = 1`, so the statement is
 trivially inhabited.)
 
-THE PIN (audit RE-VERIFIED 2026-07-25 directly against the mathlib pin
-in `.lake`): mathlib has `ClassGroup`, its functoriality
-(`ClassGroup.mulEquiv`), finiteness of the class group of a number
-field, ideal norms, and the whole LOCAL ramification/inertia theory
-(`Mathlib/NumberTheory/RamificationInertia/`, including Hilbert theory,
-inertia and Frobenius) — but NO global class field theory of any kind:
-no Artin map and no Artin symbol (no `ArtinMap`/`artinSymbol`
-anywhere), no Hilbert class field, no ray class groups, no idele class
-group, no "maximal unramified abelian extension". Building this leaf
-therefore means building unramified global CFT; the pieces, in
-dependency order, are: (1) the Frobenius/Artin symbol of an unramified
-prime in an abelian extension, with its conjugation-equivariance (this
-one is reachable from the pin's Frobenius theory); (2) its multiplicative
-extension to the ideal group; (3) Artin reciprocity — principal ideals
-are in the kernel; (4) the existence theorem for the Hilbert class
-field, i.e. surjectivity and the kernel computation; (5) the
-translation between "an inertia subgroup of `Γ_K` at a finite place"
-and "a `Γℚ`-conjugate of the image of `localInertiaGroup`", which is
-what clause (iv) is stated in terms of.
+THE CUT EXECUTED HERE (2026-07-26). Everything is inherited verbatim
+from `exists_artinMap_classGroup_frobenius` above EXCEPT clause (iii),
+whose quantifier over all of `ker χ` is PROVEN here from the leaf's
+Frobenius-only version by Chebotarev density. The pin audit — mathlib
+has the arithmetic Frobenius and its conjugation-equivariance, but no
+Artin map, no Artin symbol of an ideal and no Hilbert class field —
+now lives on that leaf, since this declaration is proven.
+
+The density argument, in full, because it is short and it is what makes
+the reduction legitimate. Fix `u`, `σ` with `ω(σ) = u`, and write
+`θ := classGroupGalAut CF (σ_u)`. Let `H ≤ ker χ` be the open normal
+subgroup of clause (iii) of the leaf, on which `art = 1`. Given
+`n ∈ ker χ`, the translate `n·H` is an OPEN neighbourhood of `n`, so by
+`GaloisRepresentation.dense_conjClasses_globalFrob` (Chebotarev density
+for `K = ℚ`, PROVEN in
+`Fermat/FLT/GaloisRepresentation/Chebotarev.lean`) it contains a
+Frobenius conjugate `x = g · Frob_v · g⁻¹`. Write `x = n · h` with
+`h ∈ H`; then `n = x · h⁻¹` with `χ h⁻¹ = 1` and `art h⁻¹ = 1`, so
+`art n = art x` by (i). Conjugating, `σ n σ⁻¹ = (σ x σ⁻¹)(σ h⁻¹ σ⁻¹)`,
+and `σ h⁻¹ σ⁻¹ ∈ H` by NORMALITY of `H`, so `art (σ n σ⁻¹) =
+art (σ x σ⁻¹)` by (i) again — `χ` of a conjugate of a `ker χ` element
+is `1` because `kk'` is commutative. Clause (iv) of the leaf applies to
+`x`, giving `art (σ x σ⁻¹) = θ (art x) = θ (art n)`. No topology on
+`Cl(𝓞 CF)` and no closure argument is needed: the openness of `H` does
+all the work, and `H ≤ ker χ` is what keeps the witness `x` inside
+`ker χ` where clause (iv) is stated.
 
 Soundness: the hypothesis set is inhabited (`χ = ω`, `CF` the
 cyclotomic field) and the conclusion holds for every inhabitant by the
@@ -19322,8 +19442,47 @@ theorem exists_artinMap_classGroup
           classGroupGalAut CF
             ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u) (art n)) ∧
       (∀ (n : Field.absoluteGaloisGroup ℚ) (hn : n ∈ MonoidHom.ker χ),
-        art n = 1 → (⟨n, hn⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) :=
-  sorry
+        art n = 1 → (⟨n, hn⟩ : MonoidHom.ker χ) ∈ localSplitSubgroup χ p) := by
+  obtain ⟨art, hhom, hsurj, ⟨H, hHnormal, hHopen, hHtriv⟩, hfrob, hker⟩ :=
+    exists_artinMap_classGroup_frobenius χ hχcyc CF
+  refine ⟨art, hhom, hsurj, ?_, hker⟩
+  intro u σ n hn hσ
+  set θ := classGroupGalAut CF ((IsCyclotomicExtension.Rat.galEquivZMod p CF).symm u)
+  -- conjugation preserves the kernel of `χ` (`kk'` is commutative)
+  have hconjker : ∀ x : Field.absoluteGaloisGroup ℚ, χ x = 1 → χ (σ * x * σ⁻¹) = 1 := by
+    intro x hx
+    rw [map_mul, map_mul, hx, mul_one, ← map_mul, mul_inv_cancel, map_one]
+  -- Chebotarev: the Frobenius conjugates are dense in `Γℚ`
+  have hdense := GaloisRepresentation.dense_conjClasses_globalFrob (K := ℚ) ∅
+  -- the open neighbourhood `n · H` of `n`
+  have hUopen : IsOpen ((fun y => n * y) '' (H : Set (Field.absoluteGaloisGroup ℚ))) :=
+    (Homeomorph.mulLeft n).isOpenMap _ hHopen
+  have hUne : ((fun y => n * y) '' (H : Set (Field.absoluteGaloisGroup ℚ))).Nonempty :=
+    ⟨n, ⟨1, H.one_mem, by simp⟩⟩
+  obtain ⟨x, ⟨h, hhH, hxh⟩, v, -, g, hxg⟩ :=
+    dense_iff_inter_open.mp hdense _ hUopen hUne
+  -- `x = n * h` is a Frobenius conjugate lying in `ker χ`
+  have hxeq : x = n * h := hxh.symm
+  have hχh : χ h = 1 := (hHtriv h hhH).1
+  have hχx : χ x = 1 := by rw [hxeq, map_mul, hn, hχh, one_mul]
+  have hnx : n = x * h⁻¹ := by rw [hxeq]; group
+  have harth : art h⁻¹ = 1 := (hHtriv _ (H.inv_mem hhH)).2
+  have hχhinv : χ h⁻¹ = 1 := (hHtriv _ (H.inv_mem hhH)).1
+  have hconjh : σ * h⁻¹ * σ⁻¹ ∈ H := hHnormal.conj_mem _ (H.inv_mem hhH) σ
+  have harthc : art (σ * h⁻¹ * σ⁻¹) = 1 := (hHtriv _ hconjh).2
+  have hχhc : χ (σ * h⁻¹ * σ⁻¹) = 1 := (hHtriv _ hconjh).1
+  -- `art` does not see the `H`-part, before or after conjugation
+  have hartn : art n = art x := by
+    rw [hnx, hhom _ _ hχx hχhinv, harth, mul_one]
+  have hsplit : σ * n * σ⁻¹ = (σ * x * σ⁻¹) * (σ * h⁻¹ * σ⁻¹) := by
+    rw [hnx]; group
+  have hartcn : art (σ * n * σ⁻¹) = art (σ * x * σ⁻¹) := by
+    rw [hsplit, hhom _ _ (hconjker x hχx) hχhc, harthc, mul_one]
+  -- the leaf's Frobenius-only equivariance, at `x`
+  have hfx : art (σ * x * σ⁻¹) = θ (art x) := by
+    subst hxg
+    exact hfrob u σ g v hσ hχx
+  rw [hartcn, hfx, hartn]
 
 /-- **Class field theory: an everywhere-unramified equivariant
 homomorphism on `Γ_{ℚ(μ_p)}` is seen by the twisted homomorphisms out of
