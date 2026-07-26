@@ -749,7 +749,11 @@ become five separate literature nodes:
     `{7, 11, 13, 17, 19, 37, 43, 67, 163}` — and that node was in turn
     PROVEN on 2026-07-26 over FOUR leaves, split by the genus of `X_0(p)`:
     the two genus-`0`-below levels `not_cyclicIsogeny_fortyNine` and
-    `not_cyclicIsogeny_oneHundredSixtyNine`, and, for the other seven
+    `not_cyclicIsogeny_oneHundredSixtyNine` (the latter itself PROVEN
+    2026-07-26 over the Atkin–Lehner descent leaf
+    `classPoly676_of_stable_cyclic_subgroup_order_169` plus the PROVEN
+    class-number half `MazurLevel169.classPoly676_no_rat_root`), and, for
+    the other seven
     primes, `jInvariant_mem_of_isogenyPrime_ge_eleven` (the eleven
     `j`-invariants with a rational `p`-isogeny) together with
     `not_cyclicIsogeny_sq_of_jInvariant` (the finite check on them).
@@ -4939,11 +4943,14 @@ prime is in is decided by the genus of the level BELOW, `X_0(p)`.
 * `p ∈ {7, 13}` — `X_0(p)` has **genus `0`**, so infinitely many curves
   over `ℚ` carry a cyclic `p`-isogeny and nothing whatever pins `j(E)`.
   The level `p²` therefore has to be faced as a curve in its own right.
-  These are the two concrete nodes `not_cyclicIsogeny_fortyNine` (now
-  PROVEN, 2026-07-26, over the genus-`1` curve `X_0(49) = 49a1`: one moduli
-  leaf plus one `2`-descent leaf, four of whose congruence obstructions are
-  discharged here) and `not_cyclicIsogeny_oneHundredSixtyNine` (genus `8`,
-  still a leaf).
+  These are the two concrete levels, and **BOTH ARE NOW PROVEN** (2026-07-26,
+  by two owners working concurrently; the halves were merged at integration):
+  `not_cyclicIsogeny_fortyNine`, over the genus-`1` curve `X_0(49) = 49a1` —
+  one moduli leaf plus one `2`-descent leaf, four of whose congruence
+  obstructions are discharged here — and
+  `not_cyclicIsogeny_oneHundredSixtyNine` (genus `8`), over the Atkin–Lehner
+  descent leaf `classPoly676_of_stable_cyclic_subgroup_order_169`; see the
+  section note at that level.
 * `p ∈ {11, 17, 19, 37, 43, 67, 163}` — `X_0(p)` has genus `≥ 1` with
   finitely many rational points, so a cyclic `p`-isogeny already pins
   `j(E)` to an explicit finite list, and the level `p²` becomes a finite
@@ -5334,10 +5341,252 @@ theorem WeierstrassCurve.not_cyclicIsogeny_fortyNine
   obtain ⟨x, y, hxy, hne⟩ := E.exists_x0FortyNine_point g hg hstable
   exact hne (MazurLevelFortyNine.rational_point_x0FortyNine x y hxy)
 
-/-- **No rational cyclic `169`-isogeny** (sorry node — level `X_0(169)`,
-introduced 2026-07-26 by the split of `not_cyclicIsogeny_sq_of_isogenyPrime`
-along the genus of `X_0(p)`): no elliptic curve over `ℚ` carries a
-Galois-stable cyclic subgroup of order `169`.
+/-!
+###### Level `169`: the Atkin–Lehner descent, cut 2026-07-26 along the
+class number of the discriminant `−676`
+
+`not_cyclicIsogeny_oneHundredSixtyNine` is now PROVEN from two nodes: the
+Atkin–Lehner half `classPoly676_of_stable_cyclic_subgroup_order_169` (a
+`sorry`, and Kenku's whole argument), and the class-number half
+`MazurLevel169.classPoly676_no_rat_root`, which is PROVEN here. This is
+the same shape as levels `27`, `32` and `81` — a leaf that PINS `j(E)`
+plus an arithmetic leaf that KILLS the pinned value — the only difference
+being that at `169` the pinned value is irrational, so the second leaf is
+a statement about a class polynomial rather than about a single rational.
+
+**RANK AND EIGENVALUE DATA, computed fresh 2026-07-26** (Magma
+`NewformDecomposition` of `CuspidalSubspace(ModularSymbols(169, 2, +1))`,
+with `LRatio` and `AtkinLehnerOperator`; untrusted searcher, never a
+proof). `S_2(Γ_0(169))` is entirely new (`X_0(13)` has genus `0`) and
+splits into three Galois-conjugacy classes of newforms:
+
+    A_f     dim    L(A_f,1)/Ω    w_169
+    A_1      2        4            −1
+    A_2      3        0            +1
+    A_3      3       64/7          −1
+
+`2 + 3 + 3 = 8 = genus X_0(169)` ✓, and the `w_169 = +1` part has
+dimension `3 = genus (X_0(169)/w_169)` ✓ (the quotient genus asserted by
+the previous version of this docstring, now cross-checked).
+
+Three consequences, and they REPLACE the older prose, which said that
+"Kenku works through the Atkin–Lehner quotient":
+
+* **The `w_169 = −1` part has rank `0`.** Both minus factors have
+  `L(A_f, 1) ≠ 0`, so by Kolyvagin–Logachev `rank J_0(169)^−(ℚ) = 0`.
+  THAT is Kenku's input, and it is the reason his argument exists at all.
+* **The Atkin–Lehner quotient is a TRAP, exactly as at level `125`.** The
+  single vanishing factor is the `w_169 = +1` one, i.e. the Jacobian of
+  `X_0(169)/w_169`; its sign of functional equation is `−w_169 = −1`, so
+  every conjugate has odd analytic rank and
+  `rank J(X_0(169)/w_169)(ℚ) = 3 = genus`. Chabauty–Coleman therefore
+  FAILS on the quotient — that curve is the split Cartan modular curve
+  `X_s(13)`, the "cursed curve", whose rational points were determined
+  only in 2019 (Balakrishnan–Dogra–Müller–Tuitman–Vonk, *Explicit
+  Chabauty–Kim for the split Cartan modular curve of level 13*, Ann. of
+  Math. 189 (2019), 885–944, by QUADRATIC Chabauty: `7` rational points,
+  one cusp and six CM points). Do not reach for the quotient.
+* **Chabauty–Coleman does apply to `X_0(169)` itself**:
+  `rank J_0(169)(ℚ) = 0 + 3 = 3 < 8 = genus`. So, precisely as predicted
+  for this level from the level-`125` data, the node is not beyond
+  standard technique, only beyond this development's vocabulary.
+
+**Why the cut is at the discriminant `−676`.** Kenku's argument, in the
+shape the table above supports, is: for `P ∈ X_0(169)(ℚ)` the class
+`[P] − [w_169 P]` lies in the minus part, which has rank `0`, hence is
+torsion; a torsion-plus-reduction argument forces `P = w_169 P` or `P`
+cuspidal; and the fixed points of `w_169` on `X_0(N)`, `N = p²`, are the
+CM points of discriminant `−4N` (the pair `(E, C)` with `E = ℂ/O`,
+`O = ℤ[√−N]` and `C = ker √−N`, which is cyclic of order `N` because
+`O/(√−N) ≅ ℤ/N`). Here `−4·169 = −676`, an order of conductor `13` in
+`ℚ(i)`.
+
+Two independent confirmations that there are exactly `6` such points, so
+that none of them is rational:
+
+* `h(−676) = 6` (PARI/GP `qfbclassno(-676)`; also by the conductor
+  formula `h(f²d_K) = h(d_K)·f/[O_K^* : O^*]·∏_{p|f}(1 − (d_K/p)/p)`
+  `= 1 · 13/2 · (1 − 1/13) = 6`, using that `13 ≡ 1 mod 4` splits in
+  `ℚ(i)`);
+* Riemann–Hurwitz for the degree-`2` map `X_0(169) → X_0(169)/w_169`,
+  `g = 2g' − 1 + f/2`, i.e. `8 = 2·3 − 1 + f/2`, so `f = 6` — computed
+  from the Magma dimensions above and agreeing with the class number on
+  the nose.
+
+`h(−676) = 6 > 1` is what makes the `j`-invariant of a `w_169`-fixed
+point irrational, and it is the statement the second leaf below
+discharges: the degree-`6` Hilbert class polynomial `H_{−676}` (PARI/GP
+`polclass(-676)`, irreducible over `ℚ`) has no rational root.
+-/
+
+namespace MazurLevel169
+
+/-- **The Hilbert class polynomial of discriminant `−676` has no rational
+root** (PROVEN 2026-07-26): the degree-`6` monic integer polynomial
+
+  `H_{−676}(X) = X⁶ − 297704363274819300973648925452724352 X⁵ − …`
+
+(PARI/GP `polclass(-676)`, whose roots are the six `j`-invariants of the
+elliptic curves with CM by the order `ℤ[13i]` of discriminant `−676`) has
+no root in `ℚ`.
+
+This is the class-number half of level `169`: `h(−676) = 6`, so `H_{−676}`
+is irreducible of degree `6` and in particular has no linear factor. See
+the section note above for why the discriminant `−676` is the one that
+occurs — it is the discriminant of the `w_169`-fixed points of
+`X_0(169)`.
+
+The proof does NOT go through irreducibility, which would be expensive.
+It is the rational root theorem plus one congruence:
+
+1. clearing `x.den⁶` in the hypothesis shows `x.den ∣ x.num⁶`, and
+   `x.num` and `x.den` are coprime, so `x.den = 1` and `x` is an integer;
+2. `H_{−676} mod 5 = X⁶ + 3X⁵ + 4X⁴ + 3X³ + 2X² + 4X + 4` takes the
+   values `4, 1, 3, 2, 1` at `0, 1, 2, 3, 4`, so it has no root in
+   `ZMod 5` — five cases, by `decide`.
+
+The prime `5` is the smallest with no root; `17, 29, 37, 41, 53` also
+work (PARI/GP `polrootsmod`). -/
+theorem classPoly676_no_rat_root (x : ℚ)
+    (h : x ^ 6
+        - 297704363274819300973648925452724352 * x ^ 5
+        - 162434321923500244963691319577164899941782327177547776 * x ^ 4
+        + 1250093798808181921331239024003439064057314451090248756625408 * x ^ 3
+        - 25139996004850385022058823419251332525548857652725838427880085782528 * x ^ 2
+        + 183121307244468811013362819441915945367491906284343782971561865394520064 * x
+        - 437940714559143999422451459680237045189874838812636812209273628143801860096 = 0) :
+    False := by
+  have hd0 : ((x.den : ℚ)) ≠ 0 := Nat.cast_ne_zero.mpr x.den_nz
+  have hNq : ((x.num : ℚ)) = x * ((x.den : ℚ)) := (div_eq_iff hd0).mp (Rat.num_div_den x)
+  -- Clear the denominator: `x.num⁶` is `x.den` times an integer.
+  have key : ((x.num : ℚ)) ^ 6 =
+      297704363274819300973648925452724352 * (x.num : ℚ) ^ 5 * (x.den : ℚ)
+      + 162434321923500244963691319577164899941782327177547776 *
+          (x.num : ℚ) ^ 4 * (x.den : ℚ) ^ 2
+      - 1250093798808181921331239024003439064057314451090248756625408 *
+          (x.num : ℚ) ^ 3 * (x.den : ℚ) ^ 3
+      + 25139996004850385022058823419251332525548857652725838427880085782528 *
+          (x.num : ℚ) ^ 2 * (x.den : ℚ) ^ 4
+      - 183121307244468811013362819441915945367491906284343782971561865394520064 *
+          (x.num : ℚ) * (x.den : ℚ) ^ 5
+      + 437940714559143999422451459680237045189874838812636812209273628143801860096 *
+          (x.den : ℚ) ^ 6 := by
+    rw [hNq]; linear_combination ((x.den : ℚ)) ^ 6 * h
+  have keyZ : (x.num) ^ 6 =
+      297704363274819300973648925452724352 * x.num ^ 5 * (x.den : ℤ)
+      + 162434321923500244963691319577164899941782327177547776 *
+          x.num ^ 4 * (x.den : ℤ) ^ 2
+      - 1250093798808181921331239024003439064057314451090248756625408 *
+          x.num ^ 3 * (x.den : ℤ) ^ 3
+      + 25139996004850385022058823419251332525548857652725838427880085782528 *
+          x.num ^ 2 * (x.den : ℤ) ^ 4
+      - 183121307244468811013362819441915945367491906284343782971561865394520064 *
+          x.num * (x.den : ℤ) ^ 5
+      + 437940714559143999422451459680237045189874838812636812209273628143801860096 *
+          (x.den : ℤ) ^ 6 := by
+    exact_mod_cast key
+  have hdvd : (x.den : ℤ) ∣ x.num ^ 6 :=
+    ⟨297704363274819300973648925452724352 * x.num ^ 5
+      + 162434321923500244963691319577164899941782327177547776 * x.num ^ 4 * (x.den : ℤ)
+      - 1250093798808181921331239024003439064057314451090248756625408 *
+          x.num ^ 3 * (x.den : ℤ) ^ 2
+      + 25139996004850385022058823419251332525548857652725838427880085782528 *
+          x.num ^ 2 * (x.den : ℤ) ^ 3
+      - 183121307244468811013362819441915945367491906284343782971561865394520064 *
+          x.num * (x.den : ℤ) ^ 4
+      + 437940714559143999422451459680237045189874838812636812209273628143801860096 *
+          (x.den : ℤ) ^ 5, by linear_combination keyZ⟩
+  -- Coprimality of numerator and denominator: `x` is an integer.
+  have h2 : x.den ∣ x.num.natAbs ^ 6 := by
+    have := Int.natAbs_dvd_natAbs.mpr hdvd
+    simpa [Int.natAbs_pow] using this
+  have hden1 : x.den = 1 :=
+    Nat.Coprime.eq_one_of_dvd (Nat.Coprime.pow_right 6 x.reduced.symm) h2
+  rw [hden1] at keyZ
+  push_cast at keyZ
+  -- No root modulo `5`.
+  have key5 : ∀ z : ZMod 5, z ^ 6 ≠
+      297704363274819300973648925452724352 * z ^ 5
+      + 162434321923500244963691319577164899941782327177547776 * z ^ 4
+      - 1250093798808181921331239024003439064057314451090248756625408 * z ^ 3
+      + 25139996004850385022058823419251332525548857652725838427880085782528 * z ^ 2
+      - 183121307244468811013362819441915945367491906284343782971561865394520064 * z
+      + 437940714559143999422451459680237045189874838812636812209273628143801860096 := by
+    decide
+  refine key5 (x.num : ZMod 5) ?_
+  have hcast := congrArg (fun t : ℤ => (t : ZMod 5)) keyZ
+  push_cast at hcast
+  linear_combination hcast
+
+end MazurLevel169
+
+/-- **Kenku's Atkin–Lehner descent at level `169`** (sorry node,
+introduced 2026-07-26 by the cut of `not_cyclicIsogeny_oneHundredSixtyNine`
+along the class number of `−676`): if `E/ℚ` carries a Galois-stable cyclic
+subgroup of order `169`, then `j(E)` is a root of the Hilbert class
+polynomial of discriminant `−676`.
+
+This is the whole content of Kenku, "The modular curve `X_0(169)` and
+rational isogeny", J. London Math. Soc. (2) 22 (1980), 239–244, short of
+the final class-number check, which is the sibling
+`MazurLevel169.classPoly676_no_rat_root` (PROVEN). In modular terms it
+says: every non-cuspidal rational point of `X_0(169)` is fixed by the
+Atkin–Lehner involution `w_169`, and the `w_169`-fixed points are the CM
+points of discriminant `−4·169 = −676`. See the section note above for the
+Magma rank data that makes the first half go — `rank J_0(169)^−(ℚ) = 0`,
+because both `w_169 = −1` newform factors have `L(A_f, 1) ≠ 0` — and for
+the two independent computations of the fixed-point count `6`.
+
+**VACUITY AUDIT.** Like every level node in this file
+(`exists_x0ThirtyTwo_point`, `not_cyclicIsogeny_eightyOne_of_j`,
+`not_cyclicIsogeny_sq_of_jInvariant`, …) the hypotheses here are jointly
+unsatisfiable — no elliptic curve over `ℚ` has a rational cyclic
+`169`-isogeny — so this leaf is vacuously true and cannot be proven by
+exhibiting a witness. What makes the cut a REDUCTION rather than a
+renaming is that the class-number half is now closed: whoever attacks this
+leaf has to produce only the Atkin–Lehner descent, and no longer has to
+also settle the arithmetic of the fixed points.
+
+IRREDUCIBLE at this mathlib pin: `X_0(169)`, `J_0(169)`, the Atkin–Lehner
+involution, Kolyvagin–Logachev and the theory of complex multiplication
+are all absent. Missing machinery in dependency order, for whoever
+continues: (1) modular curves as schemes over `ℚ` with their cuspidal
+divisors; (2) `Pic⁰`/`J_0(N)` and Mordell–Weil; (3) the Atkin–Lehner
+involution and the eigenspace decomposition of `J_0(N)`; (4) the
+analytic-rank input — Eichler–Shimura plus Kolyvagin–Logachev — to turn
+`L(A_f, 1) ≠ 0` into `rank = 0`; (5) CM theory over `ℚ`, to identify the
+fixed points with the class group of `ℤ[13i]`. Steps (1)–(4) are shared
+verbatim with `not_isogenyCharacter_of_prime_ge_twentyThree` and
+`not_cyclicIsogeny_oneHundredTwentyFive`, which is the argument for
+building them once.
+
+The polynomial is written out rather than named because the development has
+no Hilbert class polynomial; the coefficients are PARI/GP
+`polclass(-676)` (2026-07-26, untrusted searcher — the values are
+classical), and the SAME literal appears in the sibling leaf, which is
+what makes the two compose. -/
+theorem WeierstrassCurve.classPoly676_of_stable_cyclic_subgroup_order_169
+    (E : WeierstrassCurve ℚ) [E.IsElliptic]
+    (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 169)
+    (hstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples g,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples g) :
+    E.j ^ 6
+      - 297704363274819300973648925452724352 * E.j ^ 5
+      - 162434321923500244963691319577164899941782327177547776 * E.j ^ 4
+      + 1250093798808181921331239024003439064057314451090248756625408 * E.j ^ 3
+      - 25139996004850385022058823419251332525548857652725838427880085782528 * E.j ^ 2
+      + 183121307244468811013362819441915945367491906284343782971561865394520064 * E.j
+      - 437940714559143999422451459680237045189874838812636812209273628143801860096 = 0 :=
+  sorry
+
+/-- **No rational cyclic `169`-isogeny** (PROVEN 2026-07-26 over the two
+leaves above — level `X_0(169)`, introduced by the split of
+`not_cyclicIsogeny_sq_of_isogenyPrime` along the genus of `X_0(p)`): no
+elliptic curve over `ℚ` carries a Galois-stable cyclic subgroup of order
+`169`.
 
 The second of the two primes where `X_0(p)` has genus `0`: `X_0(13)` is a
 rational curve, so infinitely many elliptic curves over `ℚ` admit a cyclic
@@ -5345,22 +5594,26 @@ rational curve, so infinitely many elliptic curves over `ℚ` admit a cyclic
 curve is not genus `1`: **`X_0(169)` has genus `8`** (`index = 182`,
 `14` cusps, of which `2` are rational; Magma 2026-07-26), and its
 Atkin–Lehner quotient `X_0(169)/w_169` still has genus `3`, so no quotient
-trick reduces it to an elliptic curve.
+trick reduces it to an elliptic curve — and, worse, that quotient is the
+"cursed curve" `X_s(13)`, where the rank equals the genus (section note
+above).
 
 This level is exactly the subject of Kenku, "The modular curve `X_0(169)`
 and rational isogeny", J. London Math. Soc. (2) 22 (1980), 239–244, which
-shows `X_0(169)(ℚ)` consists of its two rational cusps. It is the hardest of
-the nine levels for the same reason `X_0(125)` is the hardest of the four
-prime powers (see `not_cyclicIsogeny_oneHundredTwentyFive`): the level below
-is genus `0`, so splitting along `X_0(13)` would produce a Hauptmodul leaf
-plus a level-`169` leaf carrying the entire content — a decomposition that
-relocates the work without reducing it, and it is deliberately NOT done
-here.
+shows `X_0(169)(ℚ)` consists of its two rational cusps. It is the hardest
+of the nine levels for the same reason `X_0(125)` is the hardest of the
+four prime powers (see `not_cyclicIsogeny_oneHundredTwentyFive`): the level
+below is genus `0`, so splitting along `X_0(13)` would produce a
+Hauptmodul leaf plus a level-`169` leaf carrying the entire content — a
+decomposition that relocates the work without reducing it, and it is
+deliberately NOT done here. The cut that WAS done instead peels off the
+arithmetic of the `w_169`-fixed points, which is the one half of Kenku's
+argument that today's vocabulary can express.
 
-IRREDUCIBLE at this mathlib pin: the route is the rational points of a
-genus-`8` curve (Kenku works through the Atkin–Lehner quotient and the
-Eisenstein/rank input at level `13`), and no modular curve, Jacobian or
-Chabauty machinery exists in this development. -/
+Assembly (this proof): the descent leaf pins `j(E)` as a root of
+`H_{−676}`, and `MazurLevel169.classPoly676_no_rat_root` says that
+polynomial has no rational root, while `j(E) ∈ ℚ` because `E` is defined
+over `ℚ`. -/
 theorem WeierstrassCurve.not_cyclicIsogeny_oneHundredSixtyNine
     (E : WeierstrassCurve ℚ) [E.IsElliptic]
     (g : (E⁄(AlgebraicClosure ℚ)).Point) (hg : addOrderOf g = 169)
@@ -5370,7 +5623,8 @@ theorem WeierstrassCurve.not_cyclicIsogeny_oneHundredSixtyNine
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) :
     False :=
-  sorry
+  MazurLevel169.classPoly676_no_rat_root E.j
+    (E.classPoly676_of_stable_cyclic_subgroup_order_169 g hg hstable)
 
 /-- **The eleven `j`-invariants with a rational `p`-isogeny, `p` one of the
 seven isogeny primes with `X_0(p)` of genus `≥ 1`** (sorry node, introduced
