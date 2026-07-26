@@ -22381,9 +22381,644 @@ structure ModularTateModuleData (M : ℕ) where
 attribute [instance] ModularTateModuleData.addCommGroup
   ModularTateModuleData.module ModularTateModuleData.moduleFinite
 
+/-! #### Proving the newform factor: the sub-cut, executed (2026-07-26)
+
+`exists_newformFactor_modularHeckeAlgebraQ` asks for a `ℚ`-linear
+multiplicative injection `K_g ↪ 𝕋_ℚ` carrying `a_q(g)` to `T_q·ι(1)`.
+Write `A := modularHeckeAlgebraQ M`, `λ : A ↠ K_g` for the eigenvalue
+character and `m := ker λ`. Its three conditions FORCE the local factor
+`ε·A` (`ε := ι 1`, an idempotent because `ι` is multiplicative) to be
+the FIELD `K_g`: `ι(K_g)` is a `ℚ`-subalgebra of `A` with unit `ε`
+containing every `T_q·ε = ι(a_q)`, hence containing
+`ε·Algebra.adjoin ℚ {T_q} = ε·A`, and it is contained in `ε·A`; so
+`ε·A ≅ K_g`, which in an Artinian ring says that `ε` is the primitive
+idempotent at `m` and `m·ε = 0`. So the leaf is EXACTLY the assertion
+that `𝕋_ℚ` is étale at the maximal ideal of a newform of exact level
+`M`; no weaker reading of it is available.
+
+Four of the five steps are discharged here.
+
+* `finiteDimensional_modularHeckeAlgebraQ` — `dim_ℚ 𝕋_ℚ < ∞`, the
+  Sturm-bound input. It needs NO new arithmetic: the file's
+  `heckeSubring_moduleFinite` (`𝕋_ℤ` is a finite `ℤ`-module) already
+  carries it, because `𝕋_ℚ` sits inside the `ℚ`-span of `𝕋_ℤ`.
+* `exists_eigenvalueChar_heckeSubalgebra` and
+  `exists_eigenvalueChar_modularHeckeAlgebraQ` — the eigenvalue
+  characters `χ : 𝕋_ℂ → ℂ` and `λ : 𝕋_ℚ ↠ K_g`, each by one
+  `Algebra.adjoin` induction into the subalgebra of operators acting on
+  `g` by a scalar, the scalar being unique because `a₁(g) = 1`.
+  Surjectivity of `λ` is the eigenform recursion
+  `qCoeff_mem_of_forall_prime_mem` together with
+  `heckeField_finiteDimensional`.
+* `exists_isIdempotentElem_of_isMaximal` — the Artinian idempotent at a
+  maximal ideal: pure commutative algebra, from mathlib's
+  `IsArtinianRing.quotNilradicalPowEquivPi`.
+* `newformEtaleIdempotent_spec` — the COMPLEX half: from the line
+  hypothesis, `eC·g = g`, and `eC` annihilates every `b ∈ 𝕋_ℂ` with
+  `b·g = 0`. That is precisely "the local factor of `𝕋_ℂ` at `χ` is the
+  line `ℂ·eC`", and it is where the analytic sibling
+  `exists_heckeOp_newform_etaleIdempotent` is consumed.
+
+WHAT IS LEFT, AND WHY THE SUGGESTED SUB-CUT WAS ONE STEP SHORT. The
+sub-cut recorded on the leaf proposed to obtain `m·ε = 0` from (a)
+`𝕋_ℂ` is the `ℂ`-span of `𝕋_ℚ`, (b) finite dimensionality and (c) the
+line hypothesis, "by the structure theory of Artinian commutative
+rings". That does not close. (a) gives a SURJECTION
+`𝕋_ℚ ⊗_ℚ ℂ ↠ 𝕋_ℂ` and nothing more; and the local factor
+`A_m ⊗_ℚ ℂ` splits into `[K_g:ℚ]` blocks indexed by the embeddings
+`σ : K_g ↪ ℂ`, all of the same dimension `dim_{K_g} A_m`, of which the
+line hypothesis controls exactly ONE — the block at the identity
+embedding, i.e. the eigensystem of `g` itself and not those of its
+conjugates `g^σ`. Two further inputs are needed, both genuinely
+arithmetic:
+
+* INJECTIVITY of `𝕋_ℚ ⊗_ℚ ℂ → End_ℂ S₂(Γ₀(M))`: a `ℚ`-independent
+  family in `𝕋_ℚ` stays `ℂ`-independent. This is the rational structure
+  of `S₂(Γ₀(M))` — the archimedean guise of exactly the hypothesis
+  `ModularTateModuleData.padic_indep` — and it is FALSE for a general
+  `ℚ`-subalgebra of a `ℂ`-algebra: `ℚ(√2)·1 ⊆ ℂ` is `2`-dimensional
+  over `ℚ` and `1`-dimensional over `ℂ`.
+* CONJUGATE-INVARIANCE: the blocks at `σ ≠ id` must be controlled too.
+  Classically they are, because `Aut(ℂ)` acts on `S₂(Γ₀(M))` compatibly
+  with the RATIONAL `q`-expansion formula for `T_q`
+  (`exists_cuspForm_ringEquiv_conj` above is this file's form of
+  Shimura's rationality theorem), so the block at `σ` is a ring-twist of
+  the block at the identity.
+
+Both are packaged into the single residual leaf
+`modularHeckeAlgebraQ_etale_at_newform`, stated as the DESCENT it really
+is: the `ℂ`-side étaleness supplied by `eC` descends to the `ℚ`-side.
+That keeps `exists_heckeOp_newform_etaleIdempotent` genuinely consumed,
+and it is the one place where `IsWeightTwoNewform` (exact level, as
+opposed to merely `IsWeightTwoEigenform`) is used: at an OLD maximal
+ideal — `g` of level `M' ∣ M`, `M' ≠ M`, seen at level `M` — the
+oldform multiplicity makes `A_m` non-reduced and the conclusion FALSE,
+so no weaker hypothesis will do. -/
+
+/-- The two packagings of the weight-2 Hecke operator agree at a prime
+and a positive level. `heckeEndo` is the packaging used by the
+Sturm-bound/integrality section near the top of this file (hence by
+`heckeSubring`); `heckeOp` is the one used by the Eichler–Shimura seam.
+Both are characterized by the slash-sum `heckeTransform`, and a cusp
+form is determined by its underlying function. -/
+theorem heckeOp_eq_heckeEndo {M q : ℕ} (hM : 0 < M) (hq : q.Prime) :
+    heckeOp M q = heckeEndo M q := by
+  refine LinearMap.ext fun f => DFunLike.coe_injective ?_
+  rw [heckeOp_coe hM hq, coe_heckeEndo hM hq]
+
+/-- The `ℚ`-algebra structure `modularEndRatAlgebra` acts on cusp forms
+through the complex scalars. -/
+theorem modularEnd_algebraMap_rat_apply {M : ℕ} (r : ℚ)
+    (f : CuspForm (Gamma0GL M) 2) :
+    (algebraMap ℚ (Module.End ℂ (CuspForm (Gamma0GL M) 2)) r) f = (r : ℂ) • f :=
+  rfl
+
+/-- **`𝕋_ℚ` is a finite-dimensional `ℚ`-algebra** (PROVEN, 2026-07-26 —
+step (b) of the newform-factor sub-cut, and it costs NO new arithmetic
+input). `𝕋_ℚ = Algebra.adjoin ℚ {T_q}` is contained in the `ℚ`-span of
+the Hecke SUBRING `𝕋_ℤ = ℤ[T_q]`, because that span is closed under
+multiplication (`Algebra.adjoin_eq_span` reduces the containment to the
+generating submonoid); and `𝕋_ℤ` is a finite `ℤ`-module by the file's
+arithmetic leaf `heckeSubring_moduleFinite`, so a finite `ℤ`-generating
+set of `𝕋_ℤ` spans `𝕋_ℚ` over `ℚ`. The Sturm bound enters only through
+that leaf. -/
+theorem finiteDimensional_modularHeckeAlgebraQ {M : ℕ} (hM : 0 < M) :
+    FiniteDimensional ℚ ↥(modularHeckeAlgebraQ M) := by
+  classical
+  obtain ⟨t, ht⟩ := (heckeSubring_moduleFinite M).fg_top
+  set s : Finset (Module.End ℂ (CuspForm (Gamma0GL M) 2)) :=
+    t.image (fun x : ↥(heckeSubring M) =>
+      (x : Module.End ℂ (CuspForm (Gamma0GL M) 2))) with hs
+  have key : ∀ y : ↥(heckeSubring M),
+      (y : Module.End ℂ (CuspForm (Gamma0GL M) 2)) ∈
+        Submodule.span ℚ (s : Set (Module.End ℂ (CuspForm (Gamma0GL M) 2))) := by
+    intro y
+    have hy : y ∈ Submodule.span ℤ (t : Set ↥(heckeSubring M)) := ht ▸ Submodule.mem_top
+    induction hy using Submodule.span_induction with
+    | mem x hx =>
+        refine Submodule.subset_span ?_
+        simp only [hs, Finset.coe_image, Set.mem_image, Finset.mem_coe]
+        exact ⟨x, hx, rfl⟩
+    | zero => simp
+    | add a b _ _ ha hb => simpa using Submodule.add_mem _ ha hb
+    | smul c a _ ha =>
+        have h1 : ((c • a : ↥(heckeSubring M)) :
+              Module.End ℂ (CuspForm (Gamma0GL M) 2))
+            = (c : ℚ) • (a : Module.End ℂ (CuspForm (Gamma0GL M) 2)) := by
+          rw [Int.cast_smul_eq_zsmul]
+          exact map_zsmul (Subring.subtype (heckeSubring M)) c a
+        rw [h1]
+        exact Submodule.smul_mem _ _ ha
+  have hle : Subalgebra.toSubmodule (modularHeckeAlgebraQ M)
+      ≤ Submodule.span ℚ (s : Set (Module.End ℂ (CuspForm (Gamma0GL M) 2))) := by
+    rw [modularHeckeAlgebraQ, Algebra.adjoin_eq_span]
+    refine Submodule.span_le.mpr ?_
+    have hsub : Submonoid.closure {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+        ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q} ≤ (heckeSubring M).toSubmonoid := by
+      refine Submonoid.closure_le.mpr ?_
+      rintro φ ⟨q, hq, rfl⟩
+      rw [heckeOp_eq_heckeEndo hM hq]
+      exact heckeEndo_mem_heckeSubring M hq
+    intro x hx
+    exact key ⟨x, hsub hx⟩
+  haveI : Module.Finite ℚ
+      ↥(Submodule.span ℚ (s : Set (Module.End ℂ (CuspForm (Gamma0GL M) 2)))) :=
+    Module.Finite.span_of_finite ℚ s.finite_toSet
+  exact FiniteDimensional.of_subalgebra_toSubmodule
+    (Submodule.finiteDimensional_of_le hle)
+
+/-- **The complex Hecke algebra `𝕋_ℂ` is commutative**: the same two
+nested `Algebra.adjoin` inductions as `modularHeckeAlgebraQ_mul_comm`,
+run over `ℂ`. The generic `heckeSubalgebra_mul_comm` does NOT apply — it
+asks for commutation of `heckeOp M m` and `heckeOp M n` at ALL indices,
+and `heckeOp` is junk off the primes. -/
+theorem heckeSubalgebra_heckeOp_mul_comm {M : ℕ} (hM : 0 < M) :
+    ∀ a ∈ heckeSubalgebra (heckeOp M), ∀ b ∈ heckeSubalgebra (heckeOp M),
+      a * b = b * a := by
+  have hgen : ∀ (q : ℕ), q.Prime →
+      ∀ a ∈ heckeSubalgebra (heckeOp M),
+        heckeOp M q * a = a * heckeOp M q := by
+    intro q hq a ha
+    have ha' : a ∈ Algebra.adjoin ℂ
+        {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+          ∃ n : ℕ, n.Prime ∧ φ = heckeOp M n} := ha
+    clear ha
+    induction ha' using Algebra.adjoin_induction with
+    | mem x hx =>
+        obtain ⟨n, hn, rfl⟩ := hx
+        exact heckeOp_mul_comm hM hq hn
+    | algebraMap r => exact (Algebra.commutes r (heckeOp M q)).symm
+    | add x y hx hy ihx ihy => rw [mul_add, add_mul, ihx, ihy]
+    | mul x y hx hy ihx ihy =>
+        rw [← mul_assoc, ihx, mul_assoc, ihy, ← mul_assoc]
+  intro a ha b hb
+  have hb' : b ∈ Algebra.adjoin ℂ
+      {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+        ∃ n : ℕ, n.Prime ∧ φ = heckeOp M n} := hb
+  clear hb
+  induction hb' using Algebra.adjoin_induction with
+  | mem x hx =>
+      obtain ⟨n, hn, rfl⟩ := hx
+      exact (hgen n hn a ha).symm
+  | algebraMap r => exact (Algebra.commutes r a).symm
+  | add x y hx hy ihx ihy => rw [mul_add, add_mul, ihx, ihy]
+  | mul x y hx hy ihx ihy =>
+      rw [← mul_assoc, ihx, mul_assoc, ihy, ← mul_assoc]
+
+/-- **The complex eigenvalue character** `χ : 𝕋_ℂ → ℂ` of a normalized
+weight-2 eigenform `g`: every element of the complex Hecke algebra acts
+on `g` by a scalar — one `Algebra.adjoin` induction into the
+`ℂ`-subalgebra of such operators, based on
+`heckeOp_apply_eq_smul_of_isWeightTwoEigenform` — and the scalar is
+unique because `a₁(g) = 1` makes `c • g` determine `c`. -/
+theorem exists_eigenvalueChar_heckeSubalgebra {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g) :
+    ∃ chi : ↥(heckeSubalgebra (heckeOp M)) →ₐ[ℂ] ℂ,
+      ∀ b : ↥(heckeSubalgebra (heckeOp M)),
+        (b : Module.End ℂ (CuspForm (Gamma0GL M) 2)) g = chi b • g := by
+  classical
+  have huniq : ∀ a b : ℂ, a • g = b • g → a = b := by
+    intro a b h
+    have h1 := congrArg (fun f => qCoeff M f 1) h
+    simpa only [qCoeff_smul, hg.qCoeff_one, mul_one] using h1
+  set C : Subalgebra ℂ (Module.End ℂ (CuspForm (Gamma0GL M) 2)) :=
+    { carrier := {φ | ∃ c : ℂ, φ g = c • g}
+      mul_mem' := by
+        rintro x y ⟨cx, hx⟩ ⟨cy, hy⟩
+        refine ⟨cx * cy, ?_⟩
+        show (x * y) g = _
+        rw [Module.End.mul_apply, hy, map_smul, hx, smul_smul, mul_comm]
+      one_mem' := ⟨1, by simp⟩
+      add_mem' := by
+        rintro x y ⟨cx, hx⟩ ⟨cy, hy⟩
+        refine ⟨cx + cy, ?_⟩
+        show (x + y) g = _
+        rw [LinearMap.add_apply, hx, hy, add_smul]
+      zero_mem' := ⟨0, by simp⟩
+      algebraMap_mem' := fun c => ⟨c, by simp⟩ } with hC
+  have hle : ∀ b ∈ heckeSubalgebra (heckeOp M), ∃ c : ℂ, b g = c • g := by
+    intro b hb
+    have hb' : b ∈ Algebra.adjoin ℂ
+        {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+          ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q} := hb
+    refine Algebra.adjoin_le (S := C) ?_ hb'
+    rintro φ ⟨q, hq, rfl⟩
+    exact ⟨qCoeff M g q, heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg hq⟩
+  choose c hc using fun b : ↥(heckeSubalgebra (heckeOp M)) => hle (b : _) b.2
+  refine ⟨{ toFun := c, map_one' := ?_, map_mul' := ?_, map_zero' := ?_,
+            map_add' := ?_, commutes' := ?_ }, hc⟩
+  · refine huniq _ _ ?_
+    rw [← hc 1]
+    simp
+  · intro x y
+    refine huniq _ _ ?_
+    rw [← hc (x * y)]
+    show ((x : Module.End ℂ (CuspForm (Gamma0GL M) 2)) * y) g = _
+    rw [Module.End.mul_apply, hc y, map_smul, hc x, smul_smul, mul_comm]
+  · refine huniq _ _ ?_
+    rw [← hc 0]
+    simp
+  · intro x y
+    refine huniq _ _ ?_
+    rw [← hc (x + y)]
+    show ((x : Module.End ℂ (CuspForm (Gamma0GL M) 2)) + y) g = _
+    rw [LinearMap.add_apply, hc x, hc y, add_smul]
+  · intro r
+    refine huniq _ _ ?_
+    rw [← hc (algebraMap ℂ _ r)]
+    simp
+
+/-- **The rational eigenvalue character** `λ : 𝕋_ℚ ↠ K_g` of a
+normalized weight-2 eigenform `g`: every element of the RATIONAL Hecke
+algebra acts on `g` by a scalar lying in the Hecke field, and `λ` is
+SURJECTIVE — its image is a `ℚ`-subalgebra of `K_g` containing every
+`a_q(g)` at a prime, hence (by the eigenform recursions,
+`qCoeff_mem_of_forall_prime_mem`) every `a_n(g)`, hence all of
+`K_g = ℚ({a_n})`; the last step because `K_g/ℚ` is algebraic
+(`heckeField_finiteDimensional`), so the intermediate-field adjoin and
+the algebra adjoin agree. -/
+theorem exists_eigenvalueChar_modularHeckeAlgebraQ {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g) :
+    ∃ lam : ↥(modularHeckeAlgebraQ M) →ₐ[ℚ] heckeField M g,
+      (∀ t : ↥(modularHeckeAlgebraQ M),
+        (t : Module.End ℂ (CuspForm (Gamma0GL M) 2)) g = ((lam t : ℂ)) • g) ∧
+      (∀ q : ℕ, ∀ hq : q.Prime,
+        lam ⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩
+          = heckeCoeff M g q) ∧
+      Function.Surjective lam := by
+  classical
+  haveI hKfin : FiniteDimensional ℚ (heckeField M g) :=
+    heckeField_finiteDimensional hM hg
+  have huniq : ∀ a b : heckeField M g, ((a : ℂ)) • g = ((b : ℂ)) • g → a = b := by
+    intro a b h
+    have h1 := congrArg (fun f => qCoeff M f 1) h
+    simp only [qCoeff_smul, hg.qCoeff_one, mul_one] at h1
+    exact Subtype.ext h1
+  set D : Subalgebra ℚ (Module.End ℂ (CuspForm (Gamma0GL M) 2)) :=
+    { carrier := {φ | ∃ c : heckeField M g, φ g = ((c : ℂ)) • g}
+      mul_mem' := by
+        rintro x y ⟨cx, hx⟩ ⟨cy, hy⟩
+        refine ⟨cx * cy, ?_⟩
+        show (x * y) g = _
+        rw [Module.End.mul_apply, hy, map_smul, hx, smul_smul]
+        norm_num [mul_comm]
+      one_mem' := ⟨1, by simp⟩
+      add_mem' := by
+        rintro x y ⟨cx, hx⟩ ⟨cy, hy⟩
+        refine ⟨cx + cy, ?_⟩
+        show (x + y) g = _
+        rw [LinearMap.add_apply, hx, hy, ← add_smul]
+        norm_num
+      zero_mem' := ⟨0, by simp⟩
+      algebraMap_mem' := fun r =>
+        ⟨algebraMap ℚ (heckeField M g) r, by
+          rw [modularEnd_algebraMap_rat_apply]
+          norm_num⟩ } with hD
+  have hle : ∀ t ∈ modularHeckeAlgebraQ M,
+      ∃ c : heckeField M g, t g = ((c : ℂ)) • g := by
+    intro t ht
+    have ht' : t ∈ Algebra.adjoin ℚ
+        {φ : Module.End ℂ (CuspForm (Gamma0GL M) 2) |
+          ∃ q : ℕ, q.Prime ∧ φ = heckeOp M q} := ht
+    refine Algebra.adjoin_le (S := D) ?_ ht'
+    rintro φ ⟨q, hq, rfl⟩
+    exact ⟨heckeCoeff M g q,
+      heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg hq⟩
+  choose c hc using fun t : ↥(modularHeckeAlgebraQ M) => hle (t : _) t.2
+  have hlam : ∀ q : ℕ, ∀ hq : q.Prime,
+      c ⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩ = heckeCoeff M g q := by
+    intro q hq
+    refine huniq _ _ ?_
+    rw [← hc ⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩]
+    exact heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg hq
+  let lam : ↥(modularHeckeAlgebraQ M) →ₐ[ℚ] heckeField M g :=
+    { toFun := c
+      map_one' := by
+        refine huniq _ _ ?_
+        rw [← hc 1]
+        simp
+      map_mul' := by
+        intro x y
+        refine huniq _ _ ?_
+        rw [← hc (x * y)]
+        show ((x : Module.End ℂ (CuspForm (Gamma0GL M) 2)) * y) g = _
+        rw [Module.End.mul_apply, hc y, LinearMap.map_smul, hc x, smul_smul]
+        norm_num [mul_comm]
+      map_zero' := by
+        refine huniq _ _ ?_
+        rw [← hc 0]
+        simp
+      map_add' := by
+        intro x y
+        refine huniq _ _ ?_
+        rw [← hc (x + y)]
+        show ((x : Module.End ℂ (CuspForm (Gamma0GL M) 2)) + y) g = _
+        rw [LinearMap.add_apply, hc x, hc y, ← add_smul]
+        norm_num
+      commutes' := by
+        intro r
+        refine huniq _ _ ?_
+        rw [← hc (algebraMap ℚ _ r)]
+        show (algebraMap ℚ (Module.End ℂ (CuspForm (Gamma0GL M) 2)) r) g = _
+        rw [modularEnd_algebraMap_rat_apply]
+        norm_num }
+  have hlamc : ∀ t : ↥(modularHeckeAlgebraQ M), lam t = c t := fun _ => rfl
+  refine ⟨lam, fun t => by rw [hlamc]; exact hc t,
+    fun q hq => by rw [hlamc]; exact hlam q hq, ?_⟩
+  have halg : ∀ x ∈ Set.range (qCoeff M g), IsAlgebraic ℚ x := by
+    rintro x ⟨m, rfl⟩
+    exact ((IsIntegral.of_finite ℚ (heckeCoeff M g m)).map
+      (heckeField M g).val).isAlgebraic
+  have hto : (heckeField M g).toSubalgebra
+      = Algebra.adjoin ℚ (Set.range (qCoeff M g)) :=
+    IntermediateField.adjoin_toSubalgebra_of_isAlgebraic halg
+  have hRprime : ∀ q : ℕ, q.Prime →
+      qCoeff M g q ∈ Subalgebra.map (heckeField M g).val lam.range := by
+    intro q hq
+    exact ⟨heckeCoeff M g q,
+      ⟨⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩, hlam q hq⟩, rfl⟩
+  have hRall : ∀ m : ℕ,
+      qCoeff M g m ∈ Subalgebra.map (heckeField M g).val lam.range :=
+    qCoeff_mem_of_forall_prime_mem hg hRprime
+  have hsubR : (heckeField M g).toSubalgebra
+      ≤ Subalgebra.map (heckeField M g).val lam.range := by
+    rw [hto]
+    exact Algebra.adjoin_le (by rintro x ⟨m, rfl⟩; exact hRall m)
+  intro x
+  obtain ⟨y, hy, hyx⟩ := hsubR x.2
+  obtain ⟨z, hz⟩ := hy
+  refine ⟨z, ?_⟩
+  have hcz : c z = y := hz
+  rw [hlamc, hcz]
+  exact Subtype.ext hyx
+
+/-- **The Artinian idempotent at a maximal ideal** (PROVEN, 2026-07-26 —
+pure commutative algebra, used below at both `𝕋_ℚ` and `𝕋_ℂ`): in a
+commutative Artinian ring `A` with maximal ideal `m` there are an
+idempotent `e` and an exponent `n` with `1 − e ∈ m` and `yⁿ·e = 0` for
+every `y ∈ m`. Equivalently `e` cuts out the `m`-primary factor of the
+Chinese-remainder decomposition `A ≅ ∏_{m'} A/m'ⁿ`, which is exactly
+what mathlib's `IsArtinianRing.quotNilradicalPowEquivPi` provides once
+the nilradical is killed by a power (`isNilpotent_nilradical`). The
+`1 − e ∈ m` clause comes last: `e ≠ 0` because its image in `A/mⁿ` is
+`1`, hence `e ∉ m` (an `e ∈ m` would give `e = eⁿ⁺¹ = 0`), and an
+idempotent of the FIELD `A/m` that is nonzero is `1`. -/
+theorem exists_isIdempotentElem_of_isMaximal {A : Type*} [CommRing A]
+    [IsArtinianRing A] {m : Ideal A} (hm : m.IsMaximal) :
+    ∃ (e : A) (n : ℕ), e * e = e ∧ (1 - e) ∈ m ∧ ∀ y ∈ m, y ^ n * e = 0 := by
+  classical
+  haveI : m.IsMaximal := hm
+  obtain ⟨n₀, hn₀⟩ := IsArtinianRing.isNilpotent_nilradical (R := A)
+  have hnil : nilradical A ^ (n₀ + 1) = ⊥ := by
+    simp [pow_succ, hn₀]
+  set n := n₀ + 1 with hndef
+  let e0 : (A ⧸ nilradical A ^ n) ≃ₐ[A] A := hnil ▸ (AlgEquiv.quotientBot A A)
+  let F : A ≃ₐ[A] ∀ I : MaximalSpectrum A, A ⧸ I.asIdeal ^ n :=
+    e0.symm.trans (IsArtinianRing.quotNilradicalPowEquivPi A n)
+  have hFapp : ∀ (x : A) (I : MaximalSpectrum A),
+      F x I = Ideal.Quotient.mk (I.asIdeal ^ n) x := by
+    intro x I
+    have hx : F x = algebraMap A (∀ I : MaximalSpectrum A, A ⧸ I.asIdeal ^ n) x := by
+      conv_lhs => rw [show x = algebraMap A A x from rfl]
+      rw [AlgEquiv.commutes]
+    rw [hx]
+    rfl
+  set i0 : MaximalSpectrum A := ⟨m, hm⟩ with hi0
+  set e : A := F.symm (Pi.single i0 1) with hedef
+  have hFe : F e = Pi.single i0 1 := by rw [hedef, AlgEquiv.apply_symm_apply]
+  have hsingle : (Pi.single i0 1 : ∀ I : MaximalSpectrum A, A ⧸ I.asIdeal ^ n) *
+      Pi.single i0 1 = Pi.single i0 1 := by
+    funext I
+    simp only [Pi.mul_apply]
+    by_cases h : I = i0
+    · subst h; rw [Pi.single_eq_same, mul_one]
+    · rw [Pi.single_eq_of_ne h, mul_zero]
+  have hidem : e * e = e := by
+    have h := congrArg F.symm hsingle
+    rw [map_mul, ← hedef] at h
+    exact h
+  have hkill : ∀ y ∈ m, y ^ n * e = 0 := by
+    intro y hy
+    have hFy : F (y ^ n * e) = 0 := by
+      rw [map_mul, hFe]
+      funext I
+      simp only [Pi.mul_apply, Pi.zero_apply]
+      by_cases h : I = i0
+      · subst h
+        rw [Pi.single_eq_same, mul_one, hFapp, Ideal.Quotient.eq_zero_iff_mem]
+        exact Ideal.pow_mem_pow hy n
+      · rw [Pi.single_eq_of_ne h, mul_zero]
+    have h := congrArg F.symm hFy
+    simpa using h
+  have hne : e ≠ 0 := by
+    intro h
+    have h1 : (Pi.single i0 1 : ∀ I : MaximalSpectrum A, A ⧸ I.asIdeal ^ n) = 0 := by
+      rw [← hFe, h, map_zero]
+    have h2 : (1 : A ⧸ m ^ n) = 0 := by
+      have hh := congrFun h1 i0
+      simpa using hh
+    have h3 : (m ^ n : Ideal A) = ⊤ := by
+      rw [Ideal.eq_top_iff_one, ← Ideal.Quotient.eq_zero_iff_mem]
+      simpa using h2
+    exact hm.ne_top (top_le_iff.mp (h3 ▸ Ideal.pow_le_self (n := n) (by omega)))
+  have hnotmem : e ∉ m := by
+    intro hem
+    have h := hkill e hem
+    rw [show e ^ n * e = e ^ (n + 1) by ring,
+      (show IsIdempotentElem e from hidem).pow_succ_eq n] at h
+    exact hne h
+  refine ⟨e, n, hidem, ?_, hkill⟩
+  haveI : Field (A ⧸ m) := Ideal.Quotient.field m
+  have hq : (Ideal.Quotient.mk m e) * (Ideal.Quotient.mk m e - 1) = 0 := by
+    rw [mul_sub, mul_one, ← map_mul, hidem, sub_self]
+  rcases mul_eq_zero.mp hq with h | h
+  · exact absurd (Ideal.Quotient.eq_zero_iff_mem.mp h) hnotmem
+  · rw [← Ideal.Quotient.eq_zero_iff_mem, map_sub, map_one, sub_eq_zero]
+    exact (sub_eq_zero.mp h).symm
+
+/-- **The complex newform factor is the line `ℂ·eC`** (PROVEN,
+2026-07-26 — the COMPLEX half of the newform-factor sub-cut, and the
+place where the analytic sibling `exists_heckeOp_newform_etaleIdempotent`
+is consumed). From the hypotheses of
+`exists_newformFactor_modularHeckeAlgebraQ` on the étale idempotent
+`eC`:
+
+* `eC·g = g` — the Artinian idempotent of `𝕋_ℂ` at the eigenvalue
+  character `χ` satisfies the generalized-eigen condition, so the line
+  hypothesis identifies it with a multiple `c·eC`; `χ` of that is `1`,
+  which forces `χ(eC) ≠ 0`, and an idempotent scalar that is nonzero is
+  `1`;
+* `b·eC = 0` whenever `b ∈ 𝕋_ℂ` kills `g` — because `(T_q − a_q)·b·eC =
+  b·((T_q − a_q)·eC) = 0` by the eigen-relation on `eC`, so the line
+  hypothesis gives `b·eC = c'·eC`, and `χ(b·eC) = χ(b)·1 = 0` forces
+  `c' = 0`.
+
+Together these say that the local factor of `𝕋_ℂ` at `χ` is exactly
+`ℂ·eC`, i.e. `𝕋_ℂ` is étale there.
+
+REDUNDANT HYPOTHESIS AUDIT: `_heC0` (`eC ≠ 0`) is NOT used and is
+underscored to make that mechanically visible — the line hypothesis
+together with the Artinian idempotent already forces `eC ≠ 0`, since
+`c·eC` has `χ`-value `1`. It is kept in the signature so that the
+`heC0` of the consumer `exists_newformFactor_modularHeckeAlgebraQ`,
+whose statement is fixed, is still passed somewhere rather than being
+silently dropped. -/
+theorem newformEtaleIdempotent_spec {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoEigenform M g)
+    (eC : Module.End ℂ (CuspForm (Gamma0GL M) 2))
+    (heCmem : eC ∈ heckeSubalgebra (heckeOp M)) (_heC0 : eC ≠ 0)
+    (heCidem : eC * eC = eC)
+    (heCeig : ∀ q : ℕ, q.Prime → heckeOp M q * eC = qCoeff M g q • eC)
+    (heCline : ∀ a ∈ heckeSubalgebra (heckeOp M),
+      (∀ q : ℕ, q.Prime → ∃ n : ℕ,
+        (heckeOp M q - qCoeff M g q •
+          (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) ^ n * a = 0) →
+      ∃ c : ℂ, a = c • eC) :
+    eC g = g ∧
+      ∀ b ∈ heckeSubalgebra (heckeOp M),
+        b g = 0 → b * eC = 0 := by
+  classical
+  obtain ⟨chi, hchi⟩ := exists_eigenvalueChar_heckeSubalgebra hM hg
+  have hu : ∀ a b : ℂ, a • g = b • g → a = b := by
+    intro a b hab
+    have h := congrArg (fun f => qCoeff M f 1) hab
+    simpa only [qCoeff_smul, hg.qCoeff_one, mul_one] using h
+  haveI hSfin : FiniteDimensional ℂ (CuspForm (Gamma0GL M) 2) :=
+    cuspForm_finiteDimensional M hM
+  haveI hBfin : FiniteDimensional ℂ ↥(heckeSubalgebra (heckeOp M)) :=
+    FiniteDimensional.of_injective
+      ((heckeSubalgebra (heckeOp M)).val.toLinearMap) Subtype.coe_injective
+  letI hBcomm : CommRing ↥(heckeSubalgebra (heckeOp M)) :=
+    { (inferInstance : Ring ↥(heckeSubalgebra (heckeOp M))) with
+      mul_comm := fun a b =>
+        Subtype.ext (heckeSubalgebra_heckeOp_mul_comm hM a.1 a.2 b.1 b.2) }
+  haveI hBart : IsArtinianRing ↥(heckeSubalgebra (heckeOp M)) :=
+    isArtinian_of_tower ℂ inferInstance
+  have hchisurj : Function.Surjective chi := fun z =>
+    ⟨algebraMap ℂ _ z, chi.commutes z⟩
+  have hmax : (RingHom.ker chi).IsMaximal :=
+    RingHom.ker_isMaximal_of_surjective chi hchisurj
+  obtain ⟨eX, k, hidemX, hunitX, hkillX⟩ := exists_isIdempotentElem_of_isMaximal hmax
+  have hTq : ∀ q : ℕ, q.Prime →
+      (heckeOp M q - qCoeff M g q • (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2)))
+        ∈ heckeSubalgebra (heckeOp M) := fun q hq =>
+    sub_mem (hecke_mem_heckeSubalgebra hq) (Subalgebra.smul_mem _ (one_mem _) _)
+  have hkerTq : ∀ (q : ℕ) (hq : q.Prime),
+      (⟨_, hTq q hq⟩ : ↥(heckeSubalgebra (heckeOp M))) ∈ RingHom.ker chi := by
+    intro q hq
+    rw [RingHom.mem_ker]
+    refine hu _ _ ?_
+    rw [← hchi ⟨_, hTq q hq⟩]
+    show (heckeOp M q -
+      qCoeff M g q • (1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) g = (0 : ℂ) • g
+    rw [LinearMap.sub_apply, LinearMap.smul_apply, Module.End.one_apply,
+      heckeOp_apply_eq_smul_of_isWeightTwoEigenform hM hg hq, sub_self, zero_smul]
+  set eCb : ↥(heckeSubalgebra (heckeOp M)) := ⟨eC, heCmem⟩ with heCbdef
+  obtain ⟨cX, hcX⟩ := heCline (eX : Module.End ℂ (CuspForm (Gamma0GL M) 2)) eX.2 (by
+    intro q hq
+    refine ⟨k, ?_⟩
+    have h := hkillX _ (hkerTq q hq)
+    have h2 := congrArg
+      (fun z : ↥(heckeSubalgebra (heckeOp M)) =>
+        (z : Module.End ℂ (CuspForm (Gamma0GL M) 2))) h
+    simpa using h2)
+  have hchieX : chi eX = 1 := by
+    have h := hunitX
+    rw [RingHom.mem_ker, map_sub, map_one, sub_eq_zero] at h
+    exact h.symm
+  have hcXb : eX = cX • eCb := Subtype.ext hcX
+  have h1 : cX * chi eCb = 1 := by
+    rw [← hchieX, hcXb, map_smul, smul_eq_mul]
+  have hne0 : chi eCb ≠ 0 := by
+    intro h
+    rw [h, mul_zero] at h1
+    exact zero_ne_one h1
+  have hidemC : chi eCb * chi eCb = chi eCb := by
+    rw [← map_mul]
+    congr 1
+    exact Subtype.ext heCidem
+  have hchieC : chi eCb = 1 :=
+    mul_right_cancel₀ hne0 (by rw [one_mul]; exact hidemC)
+  have hpart1 : eC g = g := by
+    have h := hchi eCb
+    rw [hchieC, one_smul] at h
+    exact h
+  refine ⟨hpart1, ?_⟩
+  intro b hb hbg
+  set bb : ↥(heckeSubalgebra (heckeOp M)) := ⟨b, hb⟩ with hbbdef
+  have hchib : chi bb = 0 := by
+    refine hu _ _ ?_
+    rw [← hchi bb]
+    show b g = (0 : ℂ) • g
+    rw [hbg, zero_smul]
+  obtain ⟨c', hc'⟩ := heCline (b * eC) (mul_mem hb heCmem) (by
+    intro q hq
+    refine ⟨1, ?_⟩
+    rw [pow_one, ← mul_assoc,
+      heckeSubalgebra_heckeOp_mul_comm hM _ (hTq q hq) _ hb, mul_assoc,
+      sub_mul, heCeig q hq, smul_mul_assoc, one_mul, sub_self, mul_zero])
+  have hz : chi (bb * eCb) = 0 := by rw [map_mul, hchib, zero_mul]
+  have hz2 : chi (bb * eCb) = c' := by
+    rw [show bb * eCb = c' • eCb from Subtype.ext hc', map_smul, smul_eq_mul,
+      hchieC, mul_one]
+  rw [hc', hz2.symm.trans hz, zero_smul]
+
+/-- **Rational descent of the newform idempotent** (sorry node,
+2026-07-26 — the residual ARITHMETIC content of the newform factor; the
+section note above records why the sub-cut suggested on the leaf stops
+one step short of it).
+
+Hypotheses: `lam` is the eigenvalue character of the RATIONAL Hecke
+algebra (`exists_eigenvalueChar_modularHeckeAlgebraQ`); `e` is the
+Artinian idempotent at its kernel
+(`exists_isIdempotentElem_of_isMaximal`, whence `hidem`, `hlame` and the
+nilpotence `hnil`); and `eC` is the newform's COMPLEX étale idempotent
+with the two properties that `newformEtaleIdempotent_spec` extracts from
+the line hypothesis — it fixes `g`, and it annihilates everything in
+`𝕋_ℂ` killing `g`, i.e. the local factor of `𝕋_ℂ` at the character of
+`g` is the line `ℂ·eC`.
+
+Conclusion: the same holds rationally — `ker λ` annihilates `e`, so the
+local factor `e·𝕋_ℚ` is the FIELD `K_g` and `λ` restricted to it is an
+isomorphism. That is the only thing the assembly of
+`exists_newformFactor_modularHeckeAlgebraQ` still needs.
+
+WHY THIS IS NOT FORMAL. `𝕋_ℚ ⊗_ℚ ℂ` surjects onto `𝕋_ℂ` but need not
+inject; and even granting injectivity, the local factor
+`(e·𝕋_ℚ) ⊗_ℚ ℂ` splits into `[K_g : ℚ]` blocks indexed by the
+embeddings `σ : K_g ↪ ℂ`, of which `eC` controls only the one at the
+identity. The two missing arithmetic inputs are the rational structure
+of `S₂(Γ₀(M))` (a `ℚ`-independent family of Hecke operators stays
+`ℂ`-independent — the archimedean twin of
+`ModularTateModuleData.padic_indep`) and the compatibility of the
+`Aut(ℂ)`-action on cusp forms with the Hecke operators
+(`exists_cuspForm_ringEquiv_conj`, Shimura rationality), which makes the
+block at `σ` a ring-twist of the block at the identity.
+
+EXACT LEVEL IS ESSENTIAL: for `g` of level `M' ∣ M` with `M' ≠ M`, seen
+at level `M`, the oldform multiplicity makes `e·𝕋_ℚ` non-reduced and the
+conclusion FALSE. That is what `IsWeightTwoNewform` is doing here, and
+it is why this cannot be weakened to `IsWeightTwoEigenform`.
+(Diamond–Shurman §5.8, Theorem 5.8.2 and Proposition 5.8.5;
+Atkin–Lehner.) -/
+theorem modularHeckeAlgebraQ_etale_at_newform {M : ℕ} (hM : 0 < M)
+    {g : CuspForm (Gamma0GL M) 2} (hg : IsWeightTwoNewform M g)
+    (lam : ↥(modularHeckeAlgebraQ M) →ₐ[ℚ] heckeField M g)
+    (hlam : ∀ t : ↥(modularHeckeAlgebraQ M),
+      (t : Module.End ℂ (CuspForm (Gamma0GL M) 2)) g = ((lam t : ℂ)) • g)
+    (e : ↥(modularHeckeAlgebraQ M)) (hidem : e * e = e) (hlame : lam e = 1)
+    (hnil : ∀ y : ↥(modularHeckeAlgebraQ M), lam y = 0 → ∃ n : ℕ, y ^ n * e = 0)
+    (eC : Module.End ℂ (CuspForm (Gamma0GL M) 2))
+    (heCmem : eC ∈ heckeSubalgebra (heckeOp M)) (heCidem : eC * eC = eC)
+    (heCg : eC g = g)
+    (heCann : ∀ b ∈ heckeSubalgebra (heckeOp M), b g = 0 → b * eC = 0) :
+    ∀ y : ↥(modularHeckeAlgebraQ M), lam y = 0 → y * e = 0 :=
+  sorry
+
 /-- **The newform factor of the ANALYTIC rational Hecke algebra**
-(sorry node — the ANALYTIC half of the 2026-07-26 seventh
-decomposition; NO geometry occurs in it).
+(PROVEN 2026-07-26 over the single leaf
+`modularHeckeAlgebraQ_etale_at_newform` — the ANALYTIC half of the
+2026-07-26 seventh decomposition; NO geometry occurs in it).
 
 Let `g` be a weight-2 newform of level EXACTLY `M`, and suppose given
 the newform's étale idempotent `eC` on the COMPLEX side — nonzero,
@@ -22408,17 +23043,22 @@ that factor, `ι 1` its unit idempotent — classically the sum of the
 étale idempotents of the `Gal(ℚ̄/ℚ)`-conjugates of `g` — and
 `ι (a_q(g)) = T_q · ι 1` the eigenvalue relation.
 
-SUGGESTED SUB-CUT for whoever takes this leaf, in dependency order:
-(a) `𝕋_ℂ := heckeSubalgebra (heckeOp M)` is the `ℂ`-span of `𝕋_ℚ`
-(one `Algebra.adjoin` induction, cheap); (b) `𝕋_ℚ` is
-finite-dimensional over `ℚ` (the only genuinely analytic input, and
-the one that needs the Sturm bound — note `SturmFiniteness` and
-`heckeField_finiteDimensional` already exist in this file);
-(c) the eigenvalue character `λ : 𝕋_ℚ →+* K_g`, `t·g = λ(t)·g`, is a
-surjective `ℚ`-algebra map (adjoin induction plus
-`heckeOp_apply_eq_smul_of_isWeightTwoEigenform`); (d) `ker λ` is
-generated by an idempotent, from (a)+(b)+the line hypothesis by the
-structure theory of Artinian commutative rings; `ι` is the section.
+STATUS (2026-07-26): PROVEN over ONE residual leaf,
+`modularHeckeAlgebraQ_etale_at_newform`. The sub-cut suggested when
+this node was cut had four steps, (a) `𝕋_ℂ` is the `ℂ`-span of `𝕋_ℚ`,
+(b) `dim_ℚ 𝕋_ℚ < ∞`, (c) the surjective eigenvalue character
+`λ : 𝕋_ℚ ↠ K_g`, (d) `ker λ` generated by an idempotent "from
+(a)+(b)+the line hypothesis by the structure theory of Artinian
+commutative rings". Steps (b) and (c) are now PROVEN
+(`finiteDimensional_modularHeckeAlgebraQ`,
+`exists_eigenvalueChar_modularHeckeAlgebraQ`), (a) turned out not to
+be needed at all (only `𝕋_ℚ ⊆ 𝕋_ℂ` is used), and (d) turned out NOT
+to follow from (a)+(b)+(c): see the section note above, where the two
+missing arithmetic inputs — the rational structure of `S₂(Γ₀(M))` and
+the `Aut(ℂ)`-conjugation of newforms — are identified, and the residual
+leaf is stated as the descent of the complex étaleness (which IS proven
+here, `newformEtaleIdempotent_spec`) to the rational side. The section
+above assembles all of it; the proof below is the glue.
 
 FAITHFULNESS: the conclusion is VERBATIM the `newformFactor` field of
 `ModularRationalHeckePackage` with `T` instantiated at the concrete
@@ -22444,8 +23084,70 @@ theorem exists_newformFactor_modularHeckeAlgebraQ {M : ℕ} (hM : 0 < M)
       (∀ x y : heckeField M g, ι (x * y) = ι x * ι y) ∧
       (∀ q : ℕ, q.Prime →
         (ι (heckeCoeff M g q) : Module.End ℂ (CuspForm (Gamma0GL M) 2)) =
-          heckeOp M q * (ι 1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) :=
-  sorry
+          heckeOp M q * (ι 1 : Module.End ℂ (CuspForm (Gamma0GL M) 2))) := by
+  classical
+  haveI hAfin : FiniteDimensional ℚ ↥(modularHeckeAlgebraQ M) :=
+    finiteDimensional_modularHeckeAlgebraQ hM
+  letI hAcomm : CommRing ↥(modularHeckeAlgebraQ M) := modularHeckeAlgebraQCommRing hM
+  haveI hAart : IsArtinianRing ↥(modularHeckeAlgebraQ M) :=
+    isArtinian_of_tower ℚ inferInstance
+  obtain ⟨lam, hact, hprime, hsurj⟩ :=
+    exists_eigenvalueChar_modularHeckeAlgebraQ hM hg.toIsWeightTwoEigenform
+  have hmax : (RingHom.ker lam).IsMaximal :=
+    RingHom.ker_isMaximal_of_surjective lam hsurj
+  obtain ⟨e, N, hidem, hunit, hkill⟩ := exists_isIdempotentElem_of_isMaximal hmax
+  have hlame : lam e = 1 := by
+    have h := hunit
+    rw [RingHom.mem_ker, map_sub, map_one, sub_eq_zero] at h
+    exact h.symm
+  obtain ⟨heCg, heCann⟩ :=
+    newformEtaleIdempotent_spec hM hg.toIsWeightTwoEigenform eC heCmem heC0
+      heCidem heCeig heCline
+  have hleaf := modularHeckeAlgebraQ_etale_at_newform hM hg lam hact e hidem hlame
+    (fun y hy => ⟨N, hkill y (RingHom.mem_ker.mpr hy)⟩) eC heCmem heCidem heCg heCann
+  have hcancel : ∀ u v : ↥(modularHeckeAlgebraQ M), lam u = lam v → e * u = e * v := by
+    intro u v huv
+    have h0 : lam (u - v) = 0 := by rw [map_sub, huv, sub_self]
+    have h1 := hleaf (u - v) h0
+    rw [mul_comm] at h1
+    rw [← sub_eq_zero, ← mul_sub]
+    exact h1
+  choose sec hsec using hsurj
+  have hlamiota : ∀ x : heckeField M g, lam (e * sec x) = x := by
+    intro x
+    rw [map_mul, hlame, hsec, one_mul]
+  refine ⟨{ toFun := fun x => e * sec x
+            map_add' := ?_
+            map_smul' := ?_ }, ?_, ?_, ?_⟩
+  · intro x y
+    have h : lam (sec (x + y)) = lam (sec x + sec y) := by
+      rw [hsec, map_add, hsec, hsec]
+    rw [hcancel _ _ h, mul_add]
+  · intro r x
+    have h : lam (sec (r • x)) = lam (r • sec x) := by
+      rw [hsec, map_smul, hsec]
+    rw [RingHom.id_apply, hcancel _ _ h, mul_smul_comm]
+  · intro a b hab
+    simp only [LinearMap.coe_mk, AddHom.coe_mk] at hab
+    rw [← hlamiota a, ← hlamiota b, hab]
+  · intro x y
+    simp only [LinearMap.coe_mk, AddHom.coe_mk]
+    have h : lam (sec (x * y)) = lam (sec x * sec y) := by
+      rw [hsec, map_mul, hsec, hsec]
+    rw [hcancel _ _ h,
+      show (e * sec x) * (e * sec y) = e * (sec x * sec y) by
+        rw [show (e * sec x) * (e * sec y) = (e * e) * (sec x * sec y) by ring, hidem]]
+  · intro q hq
+    simp only [LinearMap.coe_mk, AddHom.coe_mk]
+    have h1 : e * sec 1 = e := by
+      have h : lam (sec 1) = lam 1 := by rw [hsec, map_one]
+      rw [hcancel _ _ h, mul_one]
+    have h2 : lam (sec (heckeCoeff M g q))
+        = lam ⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩ := by
+      rw [hsec, hprime q hq]
+    rw [hcancel _ _ h2, h1,
+      mul_comm e ⟨heckeOp M q, heckeOp_mem_modularHeckeAlgebraQ hq⟩]
+    rfl
 
 /-- **Inhabitation of the geometric carrier** (sorry node — the
 GEOMETRIC half of the 2026-07-26 seventh decomposition, and now THE
