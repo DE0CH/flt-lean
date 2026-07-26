@@ -4970,9 +4970,56 @@ theorem WeierstrassCurve.no_torsion_order_24 (E : WeierstrassCurve ℚ)
   simp only [Finset.mem_insert, Finset.mem_singleton] at h
   omega
 
-/-- **`X_1(25)` in Tate coordinates: the origin never has order `25`**
-(sorry node — literature citation; RESTATED in Tate coordinates and
-RE-AUDITED 2026-07-26, see the REFUTED block below): `X_1(25)` has genus
+/-- **`X_1(N)(ℚ)` is cuspidal at the seven rank-zero levels: in Tate
+coordinates the origin never has order `N`, for
+`N ∈ {11, 13, 17, 19, 21, 25, 27}`** (sorry node — ONE literature
+citation for SEVEN levels; GENERALISED from the level-`25` node
+2026-07-26, whose audit this docstring is and remains).
+
+WHY THESE SEVEN AND NOT OTHERS. The proof is the same theorem at each,
+and it is the one described in the REFUTED block below: `X_1(N)/ℚ` with
+its rational cusps, `rank J_1(N)(ℚ) = 0` (from `L(A, 1) ≠ 0` for every
+`ℚ`-simple factor `A`, via Kolyvagin–Logachev or Kato), and injectivity
+of torsion under reduction at a good odd prime. It applies exactly when
+BOTH inputs hold, and both were re-verified independently with Magma on
+2026-07-26 (untrusted searcher; statement check only, never a proof):
+
+* every `ℚ`-simple factor of `J_1(N)` has `LRatio(A, 1) ≠ 0` for
+  `N ∈ {11, 13, 17, 19, 21, 25, 27}` — the factor dimensions and ratios
+  are `11`: `(1, 1/25)`; `13`: `(2, 1/361)`; `17`: `(1, 1/16), (4,
+  1/21316)`; `19`: `(1, 1/9), (6, 1/2134521)`; `21`: `(1, 1/8), (2,
+  1/169), (2, 1/49)`; `25`: `(4, 1/5041), (8, 1/10272025)`; `27`:
+  `(1, 1/9), (12, 1/8267805027)`;
+* `min_p #X_1(N)(𝔽_p) = φ(N)/2 = #(rational cusps)` at each, with
+  `#X_1(N)(𝔽_p) = p + 1 − Tr(T_p ∣ S_2(Γ_1(N)))`: the minima are
+  `5, 6, 8, 9, 6, 10, 9` and the genera `1, 2, 5, 7, 5, 12, 13`.
+
+Embedding `X_1(N)(ℚ) ↪ J_1(N)(ℚ)` at a rational cusp and reducing at a
+good odd prime realising the minimum is then injective on the finite
+group `J_1(N)(ℚ)`, so `#X_1(N)(ℚ) ≤ φ(N)/2`, which the rational cusps
+already exhaust. Hence every rational point is a cusp — which IS this
+node.
+
+**IT BREAKS AT `37`, AND EXACTLY THERE.** `J_1(37)` has a factor of
+dimension `1` with `LRatio(1) = 0` (the elliptic curve `37a`, of rank
+`1`), alongside seven factors with `LRatio ≠ 0`. So the whole-Jacobian
+argument fails and levels `37, 43, 67, 163` need the winding /
+Eisenstein quotient instead — they are deliberately NOT in the
+hypothesis of this node. Levels `16, 18, 24` satisfy the `L(1) ≠ 0`
+half but not the point-count half, and are anyway already closed
+elementarily elsewhere in this file.
+
+Of the seven, `21` and `27` are at present closed in this file by other
+routes (`no_torsion_order_21`'s structural argument and
+`no_torsion_order_27_of_j`, Olson's CM theorem), so the levels this node
+is *currently* wired to serve are `11, 13, 17, 19, 25` — but the
+statement is proved for all seven at once, and the two extra levels cost
+nothing.
+
+Everything below is the level-`25` audit, kept verbatim because it is
+the instance where the seven-level structure was found.
+
+`X_1(25)` has genus
 `12` and no non-cuspidal
 rational point (subsumed in Mazur 1977, Thm 8). The `X_0` shortcut is
 NOT available at this level: a rational cyclic `25`-isogeny does exist
@@ -5125,12 +5172,32 @@ the point is the origin, so this node IS the plane model of `X_1(25)`
 in the `(b, c)`-coordinates rather than a statement quantified over all
 curves. The passage between the two is the PROVEN
 `exists_tateNormalForm`; everything above about genus, witnesses and
-citation is unchanged by the restatement. -/
+citation is unchanged by the restatement.
+
+GENERALISED 2026-07-26. The whole of the above is now a corollary of the
+single node `tateNormalForm_origin_order_ne_of_cuspidalRankZero`
+immediately below, which states it uniformly for the SEVEN levels whose
+proof is the same theorem. That node, not this one, is where the work
+is; this one is PROVEN from it by instantiating `N := 25`. -/
+theorem WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero
+    (N : ℕ)
+    (hN : N = 11 ∨ N = 13 ∨ N = 17 ∨ N = 19 ∨ N = 21 ∨ N = 25 ∨ N = 27)
+    (b c : ℚ)
+    [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
+    (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
+    addOrderOf (Affine.Point.some 0 0 h00) ≠ N :=
+  sorry
+
+/-- **No rational point of order `25`** (PROVEN 2026-07-26 by
+instantiating the seven-level node above at `N = 25`). All the
+mathematical content, the citation and the audit are in that node's
+docstring and in this one; nothing is specific to `25` any more. -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_25 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
     addOrderOf (Affine.Point.some 0 0 h00) ≠ 25 :=
-  sorry
+  WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero 25
+    (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))) b c h00
 
 /-- **No rational point of order `25`** (PROVEN 2026-07-26 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
