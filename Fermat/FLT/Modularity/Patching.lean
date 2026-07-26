@@ -192,6 +192,11 @@ public import Mathlib.RingTheory.Ideal.Quotient.Noetherian
 public import Mathlib.LinearAlgebra.Basis.VectorSpace
 -- `Module.Free.of_divisionRing`: the dimension-zero base case
 public import Mathlib.LinearAlgebra.Charpoly.BaseChange
+-- `Ideal.ramificationIdx_le_finrank` (used in the different-ideal bound) and
+-- `IsLocalRing.maximalIdeal` (the `p`-adic tower) were both reached only
+-- transitively, hence not re-exported; both are used here directly.
+public import Mathlib.NumberTheory.RamificationInertia.Basic
+public import Mathlib.RingTheory.LocalRing.MaximalIdeal.Basic
 public import Mathlib.NumberTheory.Padics.ProperSpace
 -- the `CompactSpace ℤ_[p]` instance behind closedness of `ψ`'s range
 public import Mathlib.Topology.Algebra.Module.Compact
@@ -2780,7 +2785,9 @@ what the upgrade consumes, all of it pure commutative algebra:
 
 section ProfinitePadicTower
 
-open IsLocalRing
+-- `_root_` is REQUIRED: inside `namespace GaloisRepresentation.Modularity`
+-- a bare `open IsLocalRing` does not bring `maximalIdeal` into scope here.
+open _root_.IsLocalRing
 
 universe uTA uTR
 
@@ -4817,7 +4824,7 @@ parameters `(p, x₁, …, x_q)` spanning the maximal ideal
 
 section AuslanderBuchsbaum
 
-open RingTheory.Sequence IsLocalRing Pointwise CategoryTheory Abelian Limits
+open RingTheory.Sequence _root_.IsLocalRing Pointwise CategoryTheory Abelian Limits
 
 /-- **Coset prime avoidance** (E. Davis; Kaplansky, *Commutative
 Rings*, Thm. 124; PROVEN): if none of the finitely many primes
@@ -7011,7 +7018,7 @@ theorem nonempty_patchedModule_of_patchingData.{v, w, s, uR, u}
 
 section PatchingInstantiation
 
-open IsLocalRing
+open _root_.IsLocalRing
 open scoped MvPowerSeries.WithPiTopology
 
 attribute [local instance] Module.quotientAnnihilator
