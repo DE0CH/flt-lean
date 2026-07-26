@@ -139,6 +139,13 @@ public import Mathlib.NumberTheory.ModularForms.Basic
 public import Mathlib.NumberTheory.ModularForms.CongruenceSubgroups
 public import Mathlib.NumberTheory.ModularForms.QExpansion
 public import Mathlib.NumberTheory.ModularForms.NormTrace
+public import Mathlib.NumberTheory.ModularForms.Petersson
+public import Mathlib.NumberTheory.ModularForms.Bounds
+public import Mathlib.Analysis.Complex.UpperHalfPlane.Measure
+public import Mathlib.Analysis.Complex.UpperHalfPlane.Manifold
+public import Mathlib.MeasureTheory.Integral.Bochner.Set
+public import Mathlib.MeasureTheory.Integral.Bochner.ContinuousLinearMap
+public import Mathlib.MeasureTheory.Measure.OpenPos
 public import Mathlib.Data.Matrix.Mul
 import Mathlib.NumberTheory.ModularForms.LevelOne.DimensionFormula
 import Mathlib.Topology.Algebra.IntermediateField
@@ -24979,8 +24986,203 @@ theorem eq_smul_of_pow_sub_smul_apply_eq_zero_of_selfAdjointForm
   rw [hNapp] at hfin
   exact sub_eq_zero.mp hfin
 
+section PeterssonProduct
+
+-- `_root_.`-qualified deliberately: this file lives inside
+-- `namespace GaloisRepresentation.Modularity`, where a bare `open X` can bind to a
+-- nested, nearly-empty `X` instead of the root one.
+open _root_.MeasureTheory _root_.UpperHalfPlane
+
+/-- **THE INVARIANT MEASURE ON `ℍ` IS OPEN-POSITIVE** (PROVEN 2026-07-26 —
+NOT in the pin, and needed by every "a form vanishing a.e. vanishes"
+argument): a nonempty open subset of the upper half plane has nonzero
+`dx dy / y²`-measure.
+
+Proof: `UpperHalfPlane.coe` is an open embedding (`isOpenEmbedding_coe`), so
+the comap of Lebesgue measure on `ℂ` is open-positive
+(`Measure.IsOpenPosMeasure.comap`); and `(volume : Measure ℍ)` is that comap
+`withDensity (1/y)²` (`UpperHalfPlane.volume_def`), a density that is
+everywhere nonzero because `y > 0` on `ℍ`, so the comap is absolutely
+continuous with respect to it (`withDensity_absolutelyContinuous'`) and
+open-positivity transfers along `≪`.
+
+Deliberately a `theorem` and not an `instance`: it is wanted at exactly one
+place (`cuspForm_eq_zero_of_setIntegral_petersson_self_eq_zero` below, via
+`haveI`), and registering it globally would put a measure-theoretic instance
+into the search path of this 37k-line module for no other consumer. -/
+theorem upperHalfPlane_volume_isOpenPosMeasure :
+    (volume : Measure ℍ).IsOpenPosMeasure := by
+  haveI h1 : ((volume : Measure ℂ).comap UpperHalfPlane.coe).IsOpenPosMeasure :=
+    Measure.IsOpenPosMeasure.comap _ UpperHalfPlane.isOpenEmbedding_coe
+  rw [UpperHalfPlane.volume_def]
+  refine Measure.AbsolutelyContinuous.isOpenPosMeasure
+    (μ := (volume : Measure ℂ).comap UpperHalfPlane.coe) ?_
+  have hmk : Measurable (fun z : ℍ ↦ (NNReal.mk z.im z.im_pos.le : NNReal)) := by
+    rw [← measurable_coe_nnreal_real_iff]
+    exact Complex.measurable_im.comp UpperHalfPlane.measurable_coe
+  refine withDensity_absolutelyContinuous' ?_ ?_
+  · exact (((measurable_const.div hmk).pow_const 2).coe_nnreal_ennreal).aemeasurable
+  · filter_upwards with z
+    simp only [ne_eq, ENNReal.coe_eq_zero, one_div]
+    intro hcon
+    exact absurd (congrArg NNReal.toReal hcon) (by simpa using z.im_pos.ne')
+
+/-- **THE PETERSSON DOMAIN** (sorry leaf — cut 2026-07-26 out of
+`exists_peterssonProduct_selfAdjoint_heckeOp` below, which is PROVEN over
+it; Diamond–Shurman *A First Course in Modular Forms* §5.4–§5.5, Theorem
+5.5.3): there is a set `D ⊆ ℍ` of FINITE invariant volume, containing a
+nonempty open set, over which the Petersson integrand pairs the good Hecke
+operators `T_q`, `q ∤ M`, self-adjointly.
+
+The intended witness is a fundamental domain for `Γ₀(M)` acting on `ℍ`; the
+three conjuncts are, in order, its finite volume, the fact that it has
+interior, and the unfolding computation.  Everything ELSE that the Petersson
+product needs — integrability, additivity, homogeneity, conjugate symmetry
+and DEFINITENESS — is proven below from these three, so this is all that is
+left of the analysis.
+
+WHY THIS IS NOT PHRASED WITH `MeasureTheory.IsFundamentalDomain`, which is
+the first thing anyone will try.  `Gamma0GL M` contains `-1` (the image of
+`-I ∈ Γ₀(M) ⊆ SL(2,ℤ)`), which acts TRIVIALLY on `ℍ`.  So
+`IsFundamentalDomain (Gamma0GL M) D volume` is FALSE for every `D` of
+positive measure: its `aedisjoint` field would demand
+`AEDisjoint volume ((-1) • D) D`, i.e. `volume D = 0`.  A fundamental domain
+here exists only for the quotient by `±1`, and the pin has no action of that
+quotient on `ℍ` — hence the hand-rolled conjuncts.  (Checked against this
+pin: `IsFundamentalDomain` occurs nowhere in `Mathlib/NumberTheory`, and no
+subset of `ℍ` is registered as one anywhere.)
+
+WHAT THE PIN SUPPLIES for whoever attacks this (checked 2026-07-26):
+
+* `Mathlib/Analysis/Complex/UpperHalfPlane/Measure.lean` — the INVARIANT
+  measure `dx dy / y²` as `(volume : Measure ℍ)`, with the instance
+  `SMulInvariantMeasure (GL (Fin 2) ℝ) ℍ volume`.  The change of variables
+  is therefore DONE;
+* `Mathlib/NumberTheory/ModularForms/Petersson.lean` — `petersson_slash`,
+  the full `GL₂⁺` transformation law, which is the identity the unfolding
+  argument runs on;
+* `Mathlib/NumberTheory/Modular.lean` — the standard set `𝒟` for `SL(2,ℤ)`
+  with `exists_smul_mem_fd`, `eq_one_or_neg_one_of_mem_fdo_mem_fd`,
+  `isClosed_fd`, `fdo_eq_interior_fd` (so the SECOND conjunct is immediate
+  for `𝒟`, since `𝒟ᵒ` is open, nonempty and contained in `𝒟`);
+* MISSING and the real work: `volume 𝒟 ≠ ⊤` (no measure computation on `ℍ`
+  exists in the pin at all), the coset union `⋃ᵢ γᵢ 𝒟` over
+  representatives of `Γ₀(M) \ SL(2,ℤ)` — `(Gamma0 M).FiniteIndex` is an
+  instance but no explicit representatives exist — and the double-coset
+  unfolding for the third conjunct.
+
+`~/cs/FLT` does NOT help: its only inner-product material,
+`AutomorphicForm/QuaternionAlgebra/InnerProduct.lean`, is the definite
+quaternionic setting where the "integral" is a finite sum over a class set.
+
+FAITHFULNESS.  A degenerate witness cannot cheapen the consumer: the
+conclusion of `exists_peterssonProduct_selfAdjoint_heckeOp` is UNCHANGED by
+this cut, and definiteness of the resulting form is DERIVED below rather
+than assumed, so any `D` satisfying these three conjuncts really does prove
+the consumer.  In particular `D = ∅` is ruled out by the second conjunct. -/
+theorem exists_peterssonDomain {M : ℕ} (hM : 0 < M) :
+    ∃ D : Set ℍ,
+      volume D ≠ ⊤ ∧
+      (∃ U : Set ℍ, IsOpen U ∧ U.Nonempty ∧ U ⊆ D) ∧
+      (∀ q : ℕ, q.Prime → ¬ q ∣ M → ∀ f g : CuspForm (Gamma0GL M) 2,
+        (∫ τ in D, petersson (2 : ℤ) ⇑g ⇑(heckeOp M q f) τ)
+          = ∫ τ in D, petersson (2 : ℤ) ⇑(heckeOp M q g) ⇑f τ) :=
+  sorry
+
+/-- **THE PETERSSON INTEGRAND IS INTEGRABLE OVER ANY FINITE-VOLUME SET**
+(PROVEN 2026-07-26): no fundamental-domain property is needed, only that
+`volume D < ∞`.  The integrand is continuous
+(`UpperHalfPlane.petersson_continuous` on the continuity of a modular form,
+`ModularFormClass.continuous`) and GLOBALLY BOUNDED for a cusp form
+(`CuspFormClass.petersson_bounded_left`, which needs the arithmeticity
+instance on `Gamma0GL M` and hence `0 < M`), and a bounded measurable
+function on a finite-measure set is integrable
+(`Measure.integrableOn_of_bounded`). -/
+theorem peterssonIntegrableOn {M : ℕ} (hM : 0 < M) {D : Set ℍ}
+    (hD : volume D ≠ ⊤) (f g : CuspForm (Gamma0GL M) 2) :
+    IntegrableOn (petersson (2 : ℤ) ⇑g ⇑f) D volume := by
+  haveI : NeZero M := ⟨hM.ne'⟩
+  obtain ⟨C, hC⟩ := CuspFormClass.petersson_bounded_left (2 : ℤ) (Gamma0GL M) g f
+  refine Measure.integrableOn_of_bounded hD ?_ (M := C) ?_
+  · exact (UpperHalfPlane.petersson_continuous (2 : ℤ) (ModularFormClass.continuous g)
+      (ModularFormClass.continuous f)).aestronglyMeasurable
+  · exact Filter.Eventually.of_forall fun τ => hC τ
+
+/-- The diagonal Petersson integrand is a NONNEGATIVE REAL:
+`petersson 2 f f τ = |f τ|² · y²`.  This is what turns definiteness into a
+statement about a real integral of a nonnegative function. -/
+theorem petersson_self_eq_ofReal {M : ℕ} (f : CuspForm (Gamma0GL M) 2) (τ : ℍ) :
+    petersson (2 : ℤ) ⇑f ⇑f τ = ((Complex.normSq (f τ) * τ.im ^ (2 : ℤ) : ℝ) : ℂ) := by
+  simp only [petersson, Complex.ofReal_mul, Complex.normSq_eq_conj_mul_self,
+    Complex.ofReal_zpow]
+
+/-- **DEFINITENESS OF THE PETERSSON PRODUCT, PROVEN — and it needs only that
+the domain has INTERIOR** (2026-07-26).  If `∫_D petersson 2 f f = 0` and
+`D` contains a nonempty open `U`, then `f = 0`.
+
+This is the observation that removes definiteness from the analytic leaf
+entirely, and it is worth stating why it is cheap.  The integrand is
+`|f τ|²y² ≥ 0`, so a vanishing integral forces it to vanish ALMOST
+EVERYWHERE on `D` (`setIntegral_eq_zero_iff_of_nonneg_ae`, using
+`peterssonIntegrableOn`).  Restricting to `U` and using that `volume` is
+open-positive on `ℍ` (`upperHalfPlane_volume_isOpenPosMeasure` above) plus
+continuity of `f`, the a.e. statement upgrades to `f = 0` ON `U`
+(`Measure.eqOn_open_of_ae_eq`).  A holomorphic function on `ℍ` vanishing on
+a nonempty open set vanishes identically — `ℍ` is connected, which is
+packaged as `UpperHalfPlane.eq_zero_of_frequently`.
+
+So NO positivity of the Petersson product, NO fundamental-domain property
+and NO finite-dimensionality is used: an open subset of the domain suffices.
+(`hM` is consumed only through `peterssonIntegrableOn`.) -/
+theorem cuspForm_eq_zero_of_setIntegral_petersson_self_eq_zero {M : ℕ} (hM : 0 < M)
+    {D : Set ℍ} (hDvol : volume D ≠ ⊤) {U : Set ℍ} (hUo : IsOpen U) (hUne : U.Nonempty)
+    (hUD : U ⊆ D) {f : CuspForm (Gamma0GL M) 2}
+    (h : (∫ τ in D, petersson (2 : ℤ) ⇑f ⇑f τ) = 0) : f = 0 := by
+  haveI := upperHalfPlane_volume_isOpenPosMeasure
+  set F : ℍ → ℝ := fun τ => Complex.normSq (f τ) * τ.im ^ (2 : ℤ) with hFdef
+  have hpt : ∀ τ : ℍ, petersson (2 : ℤ) ⇑f ⇑f τ = ((F τ : ℝ) : ℂ) :=
+    petersson_self_eq_ofReal f
+  have hfun : petersson (2 : ℤ) ⇑f ⇑f = fun τ : ℍ => ((F τ : ℝ) : ℂ) := funext hpt
+  have hintC : IntegrableOn (fun τ : ℍ => ((F τ : ℝ) : ℂ)) D volume := by
+    have h1 := peterssonIntegrableOn hM hDvol f f
+    rwa [hfun] at h1
+  have hintF : IntegrableOn F D volume := by
+    show Integrable F (volume.restrict D)
+    simpa using hintC.re
+  have h0 : (∫ τ in D, F τ) = 0 := by
+    rw [hfun, integral_complex_ofReal] at h
+    exact_mod_cast h
+  have hnn : (0 : ℍ → ℝ) ≤ᵐ[volume.restrict D] F := by
+    filter_upwards with τ
+    have h1 : (0 : ℝ) < τ.im ^ (2 : ℤ) := by positivity
+    exact mul_nonneg (Complex.normSq_nonneg _) h1.le
+  have hae : F =ᵐ[volume.restrict D] 0 :=
+    (setIntegral_eq_zero_iff_of_nonneg_ae hnn hintF).mp h0
+  have haef : (⇑f : ℍ → ℂ) =ᵐ[volume.restrict D] 0 := by
+    filter_upwards [hae] with τ hτ
+    have him : (τ.im : ℝ) ^ (2 : ℤ) ≠ 0 := by positivity
+    have hns : Complex.normSq (f τ) = 0 := by
+      have h1 := hτ
+      simp only [hFdef, Pi.zero_apply] at h1
+      exact (mul_eq_zero.mp h1).resolve_right him
+    simpa [Complex.normSq_eq_zero] using hns
+  have haeU : (⇑f : ℍ → ℂ) =ᵐ[volume.restrict U] 0 :=
+    ae_mono (Measure.restrict_mono hUD le_rfl) haef
+  have heq : Set.EqOn (⇑f : ℍ → ℂ) 0 U :=
+    Measure.eqOn_open_of_ae_eq haeU hUo
+      (ModularFormClass.continuous f).continuousOn continuousOn_const
+  obtain ⟨τ₀, hτ₀⟩ := hUne
+  have hfreq : ∃ᶠ z in nhdsWithin τ₀ {τ₀}ᶜ, (⇑f : ℍ → ℂ) z = 0 := by
+    refine Filter.Eventually.frequently ?_
+    filter_upwards [nhdsWithin_le_nhds (hUo.mem_nhds hτ₀)] with z hz
+    exact heq hz
+  have hzero : (⇑f : ℍ → ℂ) = 0 :=
+    UpperHalfPlane.eq_zero_of_frequently (ModularFormClass.holo f) hfreq
+  exact DFunLike.coe_injective (by simpa using hzero)
+
 /-- **THE PETERSSON PRODUCT ON `S₂(Γ₀(M))`, WITH THE GOOD HECKE
-OPERATORS SELF-ADJOINT FOR IT** (sorry leaf — cut 2026-07-26 out of
+OPERATORS SELF-ADJOINT FOR IT** (PROVEN 2026-07-26 over the single leaf
+`exists_peterssonDomain` above; cut 2026-07-26 out of
 `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`, which is PROVEN
 over it; Diamond–Shurman *A First Course in Modular Forms* §5.5,
 Theorem 5.5.3): there is a form `B` on `S₂(Γ₀(M))` that is additive and
@@ -25017,41 +25219,28 @@ character). At `q ∣ M` the same computation gives no such identity, and
 indeed `U_q` is genuinely non-semisimple — see the FAITHFULNESS AUDIT on
 the consumer below, whose counterexample lives at `M = M'q³`.
 
-DEPENDENCY MAP for whoever attacks this (checked against this pin,
-2026-07-26). Mathlib supplies more than the earlier note claimed, but
-still not the integral:
+PROOF (2026-07-26).  The form is the honest integral,
+`B f g = ∫_D petersson 2 g f`, over the domain supplied by
+`exists_peterssonDomain` above — so the "intended witness" is now written
+in Lean rather than described in prose.  Of the five conjuncts, FOUR are
+discharged here and only self-adjointness comes from the leaf:
 
-* `Mathlib/Analysis/Complex/UpperHalfPlane/Measure.lean` — the INVARIANT
-  measure `dx dy / y²` on `ℍ` as `(volume : Measure ℍ)`, with
-  `SMulInvariantMeasure (GL (Fin 2) ℝ) ℍ volume`. This is the measure
-  the product integrates against, and the invariance needed for the
-  change of variables is already there;
-* `Mathlib/NumberTheory/ModularForms/Petersson.lean` — the integrand
-  `petersson k f g τ = conj (f τ) * g τ * τ.im ^ k`, and crucially
-  `petersson_slash`, the transformation law
-  `petersson k (f ∣[k] g) (f' ∣[k] g) τ = |det g|^(k−2) · σ g (petersson k f f' (g • τ))`,
-  which is the identity the unfolding argument runs on;
-* `Mathlib/NumberTheory/ModularForms/Bounds.lean` —
-  `CuspFormClass.petersson_bounded_left/right`, boundedness of the
-  integrand for a cusp form, hence integrability once the domain has
-  finite volume;
-* MISSING, and this is the real work: a measure-theoretic fundamental
-  domain. `Mathlib/NumberTheory/Modular.lean` has the standard set `𝒟`
-  for `SL(2,ℤ)` with `exists_smul_mem_fd` and the disjointness of `𝒟ᵒ`
-  from its translates, but NOWHERE in mathlib is any modular group's
-  domain registered as `MeasureTheory.IsFundamentalDomain` (grep: that
-  predicate occurs only in `MeasureTheory/Group/FundamentalDomain.lean`
-  and `MeasureTheory/Measure/Haar/Quotient.lean`). Three further steps
-  are then needed: the `±1` nuisance (the kernel of the action must be
-  quotiented out before any domain can be a fundamental domain for the
-  group itself), the union `⋃ᵢ γᵢ 𝒟` over coset representatives of
-  `Γ₀(M) \ SL(2,ℤ)`, and finally the unfolding computation for the
-  double coset.
+* ADDITIVITY is `integral_add` over `peterssonIntegrableOn` (which needs
+  only that `D` has finite volume);
+* HOMOGENEITY is `integral_const_mul`, which holds UNCONDITIONALLY — no
+  integrability hypothesis, since the Bochner integral of a
+  non-integrable function is `0`;
+* CONJUGATE SYMMETRY is `UpperHalfPlane.petersson_symm` followed by
+  `integral_conj`, also unconditional;
+* DEFINITENESS is `cuspForm_eq_zero_of_setIntegral_petersson_self_eq_zero`
+  above — and the point of that lemma is that definiteness needs NO
+  positivity of the product and NO fundamental-domain property, only that
+  `D` has nonempty interior, because a holomorphic function vanishing a.e.
+  on an open subset of the connected space `ℍ` vanishes identically.
 
-`~/cs/FLT` does NOT help here: its only inner-product material,
-`AutomorphicForm/QuaternionAlgebra/InnerProduct.lean`, is the definite
-quaternionic setting, where the "integral" is a finite sum over a class
-set — no analysis and nothing transferable.
+That last item is why the leaf below is weaker than the "there is a
+positive-definite inner product" statement one would expect: the analysis
+that survives is exactly finite volume, interior, and the unfolding.
 
 FORMAL-CONTENT NOTE. The consumer uses DEFINITENESS only (not
 positivity) and does NOT use finite-dimensionality; both are stated
@@ -25066,8 +25255,38 @@ theorem exists_peterssonProduct_selfAdjoint_heckeOp {M : ℕ} (hM : 0 < M) :
       (∀ f : CuspForm (Gamma0GL M) 2, B f f = 0 → f = 0) ∧
       (∀ q : ℕ, q.Prime → ¬ q ∣ M →
         ∀ f g : CuspForm (Gamma0GL M) 2,
-          B (heckeOp M q f) g = B f (heckeOp M q g)) :=
-  sorry
+          B (heckeOp M q f) g = B f (heckeOp M q g)) := by
+  obtain ⟨D, hDvol, ⟨U, hUo, hUne, hUD⟩, hDsa⟩ := exists_peterssonDomain hM
+  refine ⟨fun f g => ∫ τ in D, petersson (2 : ℤ) ⇑g ⇑f τ, ?_, ?_, ?_, ?_, ?_⟩
+  · intro f₁ f₂ g
+    have hpt : ∀ τ : ℍ, petersson (2 : ℤ) ⇑g ⇑(f₁ + f₂) τ
+        = petersson (2 : ℤ) ⇑g ⇑f₁ τ + petersson (2 : ℤ) ⇑g ⇑f₂ τ := by
+      intro τ
+      simp only [petersson, CuspForm.coe_add, Pi.add_apply]
+      ring
+    simp only [hpt]
+    exact integral_add (peterssonIntegrableOn hM hDvol f₁ g)
+      (peterssonIntegrableOn hM hDvol f₂ g)
+  · intro a f g
+    have hpt : ∀ τ : ℍ, petersson (2 : ℤ) ⇑g ⇑(a • f) τ
+        = a * petersson (2 : ℤ) ⇑g ⇑f τ := by
+      intro τ
+      simp only [petersson, CuspForm.IsGLPos.coe_smul, Pi.smul_apply, smul_eq_mul]
+      ring
+    simp only [hpt]
+    exact integral_const_mul a _
+  · intro f g
+    have hpt : ∀ τ : ℍ, petersson (2 : ℤ) ⇑f ⇑g τ
+        = starRingEnd ℂ (petersson (2 : ℤ) ⇑g ⇑f τ) := fun τ =>
+      UpperHalfPlane.petersson_symm (2 : ℤ) ⇑g ⇑f τ
+    simp only [hpt]
+    exact integral_conj
+  · intro f hf
+    exact cuspForm_eq_zero_of_setIntegral_petersson_self_eq_zero hM hDvol hUo hUne hUD hf
+  · intro q hq hqM f g
+    exact hDsa q hq hqM f g
+
+end PeterssonProduct
 
 /-- **SEMISIMPLICITY OF THE GOOD HECKE OPERATORS on `S₂(Γ₀(M))`** (PROVEN
 2026-07-26 over the single analytic leaf
@@ -25124,11 +25343,14 @@ level `M'·q²`, so `h(q·) ∈ S₂(Γ₀(M))`, and `U_q ∘ V_q = id` gives
 good-prime hypothesis is not decoration; the same phenomenon is exactly
 what makes the consumer node's own counterexample work.
 
-DEPENDENCY NOTE. Everything analytic now lives in the single leaf
-`exists_peterssonProduct_selfAdjoint_heckeOp` above, whose docstring
-carries the full map of what this mathlib pin does and does not
-provide (invariant measure and the `petersson` transformation law: yes;
-a measure-theoretic fundamental domain for any modular group: no). -/
+DEPENDENCY NOTE (updated 2026-07-26).
+`exists_peterssonProduct_selfAdjoint_heckeOp` is itself now PROVEN, over
+the single remaining leaf `exists_peterssonDomain`, whose docstring carries
+the full map of what this mathlib pin does and does not provide (invariant
+measure and the `petersson` transformation law: yes; any measure-theoretic
+fundamental domain for a modular group, or any computation of `volume 𝒟`:
+no).  So the analysis under this node is now exactly: a `Γ₀(M)`-fundamental
+domain of finite volume, plus the double-coset unfolding. -/
 theorem heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level {M : ℕ} (hM : 0 < M)
     {q : ℕ} (hq : q.Prime) (hqM : ¬ q ∣ M) (c : ℂ)
     {v : CuspForm (Gamma0GL M) 2} {n : ℕ}
@@ -25823,7 +26045,34 @@ Atkin–Lehner material in mathlib or in `~/cs/FLT`.  This is shared with the
 sibling leaf `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`
 (good-prime semisimplicity), which needs the SAME inner product and
 self-adjointness of `T_q` — so whoever builds the Petersson product should
-expect to discharge both. -/
+expect to discharge both.  As of 2026-07-26 that shared prerequisite is
+CUT DOWN to the single leaf `exists_peterssonDomain` above: the Petersson
+product itself (`exists_peterssonProduct_selfAdjoint_heckeOp`) is PROVEN
+over it, definiteness included.
+
+AUDIT 2026-07-26 — THIS CUT IS A RESTATEMENT, NOT A REDUCTION.  Write
+`K := {v | ∀ n, n.Coprime M → qCoeff M v n = 0}`, a submodule (an
+intersection of kernels of the functionals `qCoeffL M n`).  The consumer
+`mem_oldSubspace_of_qCoeff_coprime_eq_zero` below is exactly `K ≤ old`, and
+the converse `old ≤ K` is already PROVEN
+(`qCoeff_eq_zero_of_mem_oldSubspace`).  Then THIS LEAF AND THAT CONSUMER
+ARE LOGICALLY EQUIVALENT:
+
+* (leaf ⇒ consumer) is the three-line splitting argument written out below;
+* (consumer ⇒ leaf) take `W` to be ANY complement of `old`, which exists in
+  any vector space (`Submodule.exists_isCompl`); then `old ⊔ W = ⊤` by
+  construction, and `v ∈ W` with vanishing good coefficients means `v ∈ K ≤
+  old`, so `v ∈ W ⊓ old = ⊥`.
+
+Two consequences worth knowing before anyone is dispatched here.  First,
+there is NO cheaper attack hiding in the shape of the statement: nothing is
+gained by choosing `W` cleverly, because if `K ⊋ old` then EVERY complement
+of `old` fails the second conjunct (a dimension count: `dim (W ⊓ K) ≥ dim W
++ dim K − dim S₂ = dim K − dim old > 0`).  Second, the leaf is therefore
+neither vacuous nor weakened — it carries the full strength of
+Diamond–Shurman 5.7.1, and that is the theorem a prover must actually
+produce, via the Petersson-orthogonal complement and the Atkin–Lehner
+involutions `W_Q`. -/
 theorem exists_oldSubspace_complement_vanishing (M : ℕ) (hM : 0 < M) :
     ∃ W : Submodule ℂ (CuspForm (Gamma0GL M) 2),
       (⨆ p ∈ M.primeFactors,
@@ -25856,14 +26105,17 @@ CONVERSE inclusion is elementary and is now PROVEN and consumed here:
 Split `w = a + b` with `a` old and `b` in the complement; `a` has vanishing
 good coefficients by the converse, hence so does `b = w − a`, hence `b = 0`.
 
-DEPENDENCY NOTE.  `V_p` itself is BUILT and sorry-free (`degeneracyOp` above,
-with `degeneracyOp_coe` and `qCoeff_degeneracyOp`), so nothing definitional
-remains anywhere in this cluster.  What the remaining leaf needs is the
-Petersson inner product on `S₂(Γ₀(M))` and the involutions `W_Q`; note that
-NO `exists_peterssonProduct_selfAdjoint_heckeOp` declaration exists in this
-tree as of 2026-07-26, contrary to an earlier note here, so the Petersson
-product is genuinely unbuilt and is shared with the sibling leaf
-`heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`. -/
+DEPENDENCY NOTE (corrected 2026-07-26 — the previous version of this
+paragraph was STALE and said the opposite).  `V_p` itself is BUILT and
+sorry-free (`degeneracyOp` above, with `degeneracyOp_coe` and
+`qCoeff_degeneracyOp`), so nothing definitional remains anywhere in this
+cluster.  What the remaining leaf needs is the Petersson inner product on
+`S₂(Γ₀(M))` and the involutions `W_Q`.  Contrary to the note that stood
+here, `exists_peterssonProduct_selfAdjoint_heckeOp` DOES exist in this tree
+and is PROVEN, over the single leaf `exists_peterssonDomain`; so the
+Petersson product is available as a definite conjugate-symmetric form as
+soon as that domain leaf is discharged, and the domain leaf is SHARED with
+the sibling `heckeOp_eq_smul_of_generalizedEigen_of_not_dvd_level`. -/
 theorem mem_oldSubspace_of_qCoeff_coprime_eq_zero {M : ℕ} (hM : 0 < M)
     {w : CuspForm (Gamma0GL M) 2}
     (hwc : ∀ n : ℕ, Nat.Coprime n M → qCoeff M w n = 0) :
