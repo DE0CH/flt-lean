@@ -887,7 +887,7 @@ limit, bijectivity of the frame, `O`-linearity of the Galois action and
 the `j`-compatibility clause — is PROVEN in
 `exists_tateFrame_of_adicCoefficientRing` from those three. -/
 
-/-! #### The three sub-leaves of `exists_levelwiseTateFrame`
+/-! #### The sub-leaves of `exists_levelwiseTateFrame`
 
 The levelwise frame is itself assembled below, and the assembly is the
 inverse-limit bookkeeping: what the geometry has to supply is a frame at
@@ -901,13 +901,21 @@ different statements — the second is a statement about the inverse limit
 and is what the parent consumes — and only the first is a textbook fact
 about abelian varieties.
 
-Since 2026-07-26 the lifting step is itself PROVEN, over
-`exists_mem_torsion_act_uniformizer_eq` (also PROVEN) and hence over the
-single geometric fact `exists_nsmul_eq_geomFibrePt` — divisibility of an
-abelian variety. So the geometry that is still open beneath the levelwise
-frame is exactly two statements: the RANK COUNT (`exists_levelTateFrame`)
-and DIVISIBILITY (`exists_nsmul_eq_geomFibrePt`). Everything between them
-is commutative algebra proven here. -/
+**Both single-level statements are now PROVEN** (2026-07-26), and so is
+the lifting step. The geometry still open beneath the levelwise frame is
+exactly TWO statements, both about abelian varieties and nothing else:
+
+* `exists_nsmul_eq_geomFibrePt` — DIVISIBILITY. It is what discharges
+  `exists_mem_torsion_act_uniformizer_eq` (`·π` carries `A[Iⁿ⁺¹]` onto
+  `A[Iⁿ]`), which in turn feeds both `exists_levelTateFrame_succ` and
+  `exists_levelTateFrame`. No rank, no `hdim`.
+* `card_torsion_of_isMaximal` — the RANK COUNT, in its residual form:
+  `#A[I] = (#𝒪_D/I)²`, the degree formula for the isogeny `I`.
+  **This is the only consumer of `hdim`.**
+
+Everything between those two and `exists_levelwiseTateFrame` is
+commutative algebra proven here — the tower recursion below, and the
+single-level algebra collected in the `LevelFrame` namespace. -/
 
 /-- **A level-`J` frame on the `J`-torsion of a geometric fibre**: a
 parametrization
@@ -938,42 +946,6 @@ def IsLevelTateFrame {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct 
   (∀ (a : NumberField.RingOfIntegers D)
       (u : Fin 2 → NumberField.RingOfIntegers D ⧸ J),
     c (fun i => Ideal.Quotient.mk J a * u i) = m.act a (c u))
-
-/-- **The `Iⁿ`-torsion is free of rank two over `𝒪_D/Iⁿ`, at each single
-level `n`** (sorry node — abelian varieties; Mumford *Abelian Varieties*
-§18, Silverman *AEC* III.7, Taylor 2002 §2).
-
-**This is where the rank count lives, and it is the only genuinely
-geometric input of the levelwise frame.** No compatibility in `n` is
-asserted: the frames at different levels are chosen independently, and
-tying them together is the business of `exists_levelTateFrame_succ` and
-of the recursion in `exists_levelwiseTateFrame`.
-
-The argument. `A_x` is an abelian variety of dimension `g = [D:ℚ]` over
-an algebraically closed field of characteristic zero — that is `hdim`
-together with the properness, smoothness and connectedness carried by
-`ab` — so `H₁(A_x, ℚ)` has `ℚ`-dimension `2g`. The real multiplication
-makes it a module over the FIELD `D`, hence free, of `D`-dimension
-`2g/[D:ℚ] = 2`; **this is exactly where `hdim` enters, and it is why the
-rank is two over the coefficient ring rather than over `ℤ_q`.** Tensoring
-with `ℚ_q` and projecting to the factor of `D ⊗ ℚ_q = ∏_{I ∣ q} D_I` cut
-out by `I` gives a two-dimensional `D_I`-space; `A[Iⁿ]` is its
-`𝒪_{D,I}`-lattice modulo `Iⁿ`, and `𝒪_{D,I}/Iⁿ = 𝒪_D/Iⁿ`.
-
-At `n = 0` the statement is trivial on both sides: `I⁰ = ⊤`, the
-quotient ring is trivial (so the source is a singleton), and `A[⊤] = 0`
-because `1 ∈ ⊤` acts as the identity. -/
-theorem exists_levelTateFrame
-    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
-    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
-    (m : Mult ab (NumberField.RingOfIntegers D))
-    {F : Type u} [Field F] [NumberField F]
-    (x : Spec (CommRingCat.of F) ⟶ S)
-    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
-    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) (n : ℕ) :
-    ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) → GeomFibrePt f x,
-      IsLevelTateFrame m x (I ^ n) c :=
-  sorry
 
 /-- **Membership in the `J`-torsion, unfolded** (PROVEN): a geometric
 point of the fibre lies in `A[J]` exactly when every element of `J`
@@ -1142,6 +1114,465 @@ theorem exists_mem_torsion_act_uniformizer_eq
     exact Ideal.mul_mem_mul hb hj
   · show π • (j • (a • w)) = y
     rw [smul_smul, mul_comm, ← smul_smul, hπz₀, hjy]
+
+/-! #### The commutative algebra behind a single-level frame
+
+Everything in the `LevelFrame` namespace below is pure module theory
+over a Dedekind domain `R`, stated for an ABSTRACT `R`-module `P`; it is
+applied at `P = GeomFibrePt f x` in `exists_levelTateFrame`.  Keeping it
+abstract is deliberate and not cosmetic: at the concrete `GeomFibrePt`
+the `AddCommGroup` and `Module` instances are `letI`-introduced from
+`ab`/`m`, so every intermediate statement would have to carry them, and
+`Module.End`-shaped instance searches at a concrete module are the
+measured performance trap of this development.
+
+The content is the following chain.  Write `A[J]` for the `J`-torsion.
+With `π ∈ I ∖ I²` a uniformizer and `·π : A[Iᵏ⁺¹] ↠ A[Iᵏ]` surjective
+for every `k` (that is the sibling leaf above, and NOTHING else about
+the geometry is used beyond the residual cardinality):
+
+* `(π) ⊔ Iⁿ⁺¹ = I` — unique factorisation of ideals: the left side
+  divides `Iⁿ⁺¹`, hence is a power `Iⁱ`; `i ≥ 1` because it is `≤ I`,
+  and `i ≤ 1` because `π ∉ I²`.
+* the kernel of `·π` on `A[Iⁿ⁺¹]` is exactly `A[I]`, since an element
+  killed by `π` and by `Iⁿ⁺¹` is killed by their sum;
+* hence `#A[Iⁿ] = (#A[I])ⁿ = q^{2n}` by induction, `q = #(𝒪_D/I)`;
+* `I • A[Iᵏ⁺¹] = A[Iᵏ]`, so `Iᵏ • A[Iⁿ⁺ᵏ] = A[Iⁿ]`;
+* two generators lift: a pair generating `A[Iⁿ]` lifts through `·π` to a
+  pair generating `A[Iⁿ⁺¹]`, because the lifted span `N` satisfies
+  `A[Iⁿ⁺¹] = N + A[I]` (kernel computation) and then
+  `A[I] = Iⁿ • A[Iⁿ⁺¹] = Iⁿ • N + Iⁿ • A[I] ⊆ N`;
+* at level one the two generators come from the cardinality: `A[I]` is a
+  vector space over the residue field `k = 𝒪_D/I` with `q²` elements,
+  hence of `k`-dimension two;
+* finally a surjection `(𝒪_D/Iⁿ)² ↠ A[Iⁿ]` between finite sets of equal
+  cardinality is a bijection, which is the frame. -/
+
+namespace LevelFrame
+
+section Ideals
+
+variable {R : Type*} [CommRing R] [IsDedekindDomain R]
+
+/-- **`(π) ⊔ Iⁿ⁺¹ = I` for `π ∈ I ∖ I²`** (PROVEN).  In a Dedekind
+domain an ideal containing `Iⁿ⁺¹` divides it, hence is a power of the
+prime `I`; being `≤ I` rules out the zeroth power and containing `π`
+rules out the higher ones. -/
+theorem span_singleton_sup_pow_eq {I : Ideal R} (hI : I.IsMaximal) (hI0 : I ≠ ⊥)
+    {π : R} (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2) (n : ℕ) :
+    Ideal.span {π} ⊔ I ^ (n + 1) = I := by
+  have hprime : Prime I := Ideal.prime_of_isPrime hI0 hI.isPrime
+  have hJle : Ideal.span {π} ⊔ I ^ (n + 1) ≤ I :=
+    sup_le (Ideal.span_le.2 (by simpa using hπ)) (Ideal.pow_le_self n.succ_ne_zero)
+  obtain ⟨i, _, hass⟩ :=
+    (dvd_prime_pow hprime (n + 1)).mp (Ideal.dvd_iff_le.mpr le_sup_right)
+  have hJeq : Ideal.span {π} ⊔ I ^ (n + 1) = I ^ i :=
+    le_antisymm (Ideal.dvd_iff_le.mp hass.symm.dvd) (Ideal.dvd_iff_le.mp hass.dvd)
+  have hπJ : π ∈ Ideal.span {π} ⊔ I ^ (n + 1) :=
+    Submodule.mem_sup_left (Ideal.mem_span_singleton_self π)
+  match i, hJeq with
+  | 0, hJeq =>
+      rw [pow_zero, Ideal.one_eq_top] at hJeq
+      exact absurd (top_le_iff.mp (hJeq ▸ hJle)) hI.ne_top
+  | 1, hJeq => simpa using hJeq
+  | (j + 2), hJeq =>
+      exact absurd (Ideal.pow_le_pow_right (by omega) (hJeq ▸ hπJ)) hπ2
+
+end Ideals
+
+section Torsion
+
+variable {R : Type*} [CommRing R] {P : Type*} [AddCommGroup P] [Module R P]
+
+/-- **Membership in the `J`-torsion of an abstract module** (PROVEN). -/
+theorem mem_tors_iff (J : Ideal R) (y : P) :
+    y ∈ Submodule.torsionBySet R P (J : Set R) ↔ ∀ a ∈ J, a • y = 0 :=
+  ⟨fun h a ha => (Submodule.mem_torsionBySet_iff _ _).mp h ⟨a, ha⟩,
+    fun h => (Submodule.mem_torsionBySet_iff _ _).mpr fun a => h a a.2⟩
+
+/-- **A bigger ideal has smaller torsion** (PROVEN). -/
+theorem tors_mono {J J' : Ideal R} (h : J ≤ J') :
+    Submodule.torsionBySet R P (J' : Set R) ≤ Submodule.torsionBySet R P (J : Set R) := by
+  intro y hy
+  rw [mem_tors_iff] at hy ⊢
+  exact fun a ha => hy a (h ha)
+
+/-- **`A[⊤] = 0`** (PROVEN): `1 ∈ ⊤` acts as the identity. -/
+theorem tors_top : Submodule.torsionBySet R P ((⊤ : Ideal R) : Set R) = ⊥ := by
+  ext y
+  rw [mem_tors_iff]
+  simp only [Submodule.mem_bot]
+  refine ⟨fun h => by simpa using h 1 trivial, ?_⟩
+  rintro rfl a _
+  simp
+
+variable (I : Ideal R)
+
+/-- **`I • A[Iⁿ⁺¹] ≤ A[Iⁿ]`** (PROVEN). -/
+theorem smul_tors_le (n : ℕ) :
+    I • Submodule.torsionBySet R P ((I ^ (n + 1) : Ideal R) : Set R)
+      ≤ Submodule.torsionBySet R P ((I ^ n : Ideal R) : Set R) := by
+  rw [Submodule.smul_le]
+  intro a ha y hy
+  rw [mem_tors_iff] at hy ⊢
+  intro b hb
+  rw [smul_smul]
+  exact hy _ (by rw [pow_succ]; exact Ideal.mul_mem_mul hb ha)
+
+variable {π : R}
+
+/-- **Surjectivity of `·π` upgrades the previous inequality to an
+equality**: `I • A[Iⁿ⁺¹] = A[Iⁿ]` (PROVEN). -/
+theorem smul_tors_eq (hπ : π ∈ I)
+    (hsurj : ∀ (k : ℕ) (y : P), y ∈ Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R) →
+      ∃ z ∈ Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R), π • z = y)
+    (n : ℕ) :
+    I • Submodule.torsionBySet R P ((I ^ (n + 1) : Ideal R) : Set R)
+      = Submodule.torsionBySet R P ((I ^ n : Ideal R) : Set R) := by
+  refine le_antisymm (smul_tors_le I n) ?_
+  intro y hy
+  obtain ⟨z, hz, rfl⟩ := hsurj n y hy
+  exact Submodule.smul_mem_smul hπ hz
+
+/-- **`Iᵏ • A[Iⁿ⁺ᵏ] = A[Iⁿ]`** (PROVEN, by iterating `smul_tors_eq`). -/
+theorem pow_smul_tors (hπ : π ∈ I)
+    (hsurj : ∀ (k : ℕ) (y : P), y ∈ Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R) →
+      ∃ z ∈ Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R), π • z = y)
+    (n k : ℕ) :
+    I ^ k • Submodule.torsionBySet R P ((I ^ (n + k) : Ideal R) : Set R)
+      = Submodule.torsionBySet R P ((I ^ n : Ideal R) : Set R) := by
+  induction k with
+  | zero => simp
+  | succ k ih =>
+      rw [pow_succ, Submodule.mul_smul, show n + (k + 1) = (n + k) + 1 by omega,
+        smul_tors_eq I hπ hsurj (n + k)]
+      exact ih
+
+/-- **The kernel of `·π` on `A[Iⁿ⁺¹]` is `A[I]`** (PROVEN): an element
+killed by `π` and by `Iⁿ⁺¹` is killed by `(π) ⊔ Iⁿ⁺¹ = I`. -/
+theorem mem_tors_of_smul_eq_zero [IsDedekindDomain R] (hI : I.IsMaximal) (hI0 : I ≠ ⊥)
+    (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2) (n : ℕ) {z : P}
+    (hz : z ∈ Submodule.torsionBySet R P ((I ^ (n + 1) : Ideal R) : Set R))
+    (h : π • z = 0) :
+    z ∈ Submodule.torsionBySet R P ((I : Ideal R) : Set R) := by
+  rw [mem_tors_iff]
+  intro a ha
+  rw [← span_singleton_sup_pow_eq hI hI0 hπ hπ2 n] at ha
+  obtain ⟨u, hu, v, hv, rfl⟩ := Submodule.mem_sup.mp ha
+  rw [add_smul]
+  obtain ⟨c, rfl⟩ := Ideal.mem_span_singleton'.mp hu
+  rw [mul_smul, h, smul_zero, zero_add]
+  exact (mem_tors_iff _ _).mp hz v hv
+
+end Torsion
+
+section Frame
+
+variable {R : Type*} [CommRing R] [IsDedekindDomain R] {P : Type*} [AddCommGroup P] [Module R P]
+
+/-- **The `Iⁿ`-torsion of an abstract module is free of rank two over
+`R/Iⁿ`** (PROVEN 2026-07-26), given only that the `I`-torsion has
+`(#R/I)²` elements and that multiplication by a uniformizer `π` carries
+each torsion level onto the previous one.
+
+This is the whole algebraic content of `exists_levelTateFrame`; the two
+hypotheses `hsurj` and `hcard` are its two geometric inputs, supplied
+there by `exists_mem_torsion_act_uniformizer_eq` and by
+`card_torsion_of_isMaximal`. -/
+theorem exists_linearEquiv_tors_pow
+    (I : Ideal R) (hI : I.IsMaximal) (hI0 : I ≠ ⊥) [Finite (R ⧸ I)]
+    {π : R} (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (hsurj : ∀ (k : ℕ) (y : P), y ∈ Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R) →
+      ∃ z ∈ Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R), π • z = y)
+    (hcard : Nat.card (Submodule.torsionBySet R P ((I : Ideal R) : Set R))
+      = Nat.card (R ⧸ I) ^ 2)
+    (n : ℕ) :
+    Nonempty ((Fin 2 → R ⧸ I ^ n) ≃ₗ[R]
+      (Submodule.torsionBySet R P ((I ^ n : Ideal R) : Set R))) := by
+  letI : Field (R ⧸ I) := Ideal.Quotient.field I
+  have hq2 : 2 ≤ Nat.card (R ⧸ I) := Finite.one_lt_card (α := R ⧸ I)
+  -- the cardinality at every level, by induction along `·π`
+  have hcardn : ∀ k : ℕ,
+      Nat.card (Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R))
+        = Nat.card (R ⧸ I) ^ (2 * k) := by
+    intro k
+    induction k with
+    | zero => simp
+    | succ k ih =>
+        have hmem : ∀ z : (Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)),
+            π • (z : P) ∈ Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R) := fun z =>
+          smul_tors_le I k (Submodule.smul_mem_smul hπ z.2)
+        set g : (Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)) →ₗ[R]
+            (Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R)) :=
+          LinearMap.codRestrict _
+            ((LinearMap.lsmul R P π).comp
+              (Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)).subtype) hmem with hg
+        have hgapp : ∀ z, ((g z : _) : P) = π • (z : P) := fun z => rfl
+        have hgsurj : Function.Surjective g := by
+          intro y
+          obtain ⟨z, hz, hzy⟩ := hsurj k (y : P) y.2
+          exact ⟨⟨z, hz⟩, Subtype.ext (by rw [hgapp]; exact hzy)⟩
+        have hkercard : Nat.card (LinearMap.ker g)
+            = Nat.card (Submodule.torsionBySet R P ((I : Ideal R) : Set R)) := by
+          refine Nat.card_congr ⟨fun z => ⟨(z.1 : P), ?_⟩, fun y => ⟨⟨(y : P), ?_⟩, ?_⟩,
+            fun _ => rfl, fun _ => rfl⟩
+          · refine mem_tors_of_smul_eq_zero I hI hI0 hπ hπ2 k z.1.2 ?_
+            have hz0 : ((g z.1 : _) : P) = 0 := by rw [LinearMap.mem_ker.mp z.2]; rfl
+            rwa [hgapp] at hz0
+          · exact tors_mono (Ideal.pow_le_self k.succ_ne_zero) y.2
+          · simp only [LinearMap.mem_ker]
+            exact Subtype.ext (by rw [hgapp]; exact (mem_tors_iff _ _).mp y.2 π hπ)
+        have hquot : Nat.card
+            ((Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)) ⧸ LinearMap.ker g)
+            = Nat.card (Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R)) :=
+          Nat.card_congr (g.quotKerEquivOfSurjective hgsurj).toEquiv
+        rw [Submodule.card_eq_card_quotient_mul_card (LinearMap.ker g), hkercard, hquot, ih,
+          hcard]
+        ring
+  -- two generators at every level
+  have hgen : ∀ k : ℕ, ∃ a : Fin 2 → P,
+      (∀ i, a i ∈ Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R)) ∧
+      Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R)
+        ≤ Submodule.span R (Set.range a) := by
+    intro k
+    induction k with
+    | zero =>
+        refine ⟨0, fun i => zero_mem _, ?_⟩
+        rw [pow_zero, Ideal.one_eq_top, tors_top]
+        exact bot_le
+    | succ k ih =>
+        rcases Nat.eq_zero_or_pos k with rfl | hk
+        · -- level one: the residual space is two-dimensional
+          simp only [zero_add, pow_one]
+          haveI hfin : Finite (Submodule.torsionBySet R P ((I : Ideal R) : Set R)) := by
+            refine (Nat.card_ne_zero.mp ?_).2
+            rw [hcard]
+            exact pow_ne_zero 2 (by omega)
+          haveI : Module.Finite (R ⧸ I)
+              (Submodule.torsionBySet R P ((I : Ideal R) : Set R)) := Module.Finite.of_finite
+          have hrank : Module.finrank (R ⧸ I)
+              (Submodule.torsionBySet R P ((I : Ideal R) : Set R)) = 2 := by
+            haveI := Fintype.ofFinite (R ⧸ I)
+            haveI := Fintype.ofFinite (Submodule.torsionBySet R P ((I : Ideal R) : Set R))
+            have hcc := Module.card_eq_pow_finrank (K := R ⧸ I)
+              (V := (Submodule.torsionBySet R P ((I : Ideal R) : Set R)))
+            rw [← Nat.card_eq_fintype_card, ← Nat.card_eq_fintype_card, hcard] at hcc
+            exact (Nat.pow_right_injective hq2 hcc).symm
+          set b := Module.finBasisOfFinrankEq (R ⧸ I)
+            (Submodule.torsionBySet R P ((I : Ideal R) : Set R)) hrank with hb
+          refine ⟨fun i => ((b i : _) : P), fun i => (b i).2, ?_⟩
+          have hbspanR : Submodule.span R (Set.range (fun i => b i)) = ⊤ := by
+            have hres := Submodule.restrictScalars_span R (R ⧸ I)
+              Ideal.Quotient.mk_surjective (Set.range (fun i => b i))
+            rw [b.span_eq] at hres
+            simpa using hres.symm
+          intro y hy
+          have hmem : (⟨y, hy⟩ : (Submodule.torsionBySet R P ((I : Ideal R) : Set R)))
+              ∈ Submodule.span R (Set.range (fun i => b i)) := by
+            rw [hbspanR]; trivial
+          obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun R).mp hmem
+          refine (Submodule.mem_span_range_iff_exists_fun R).mpr ⟨c, ?_⟩
+          have h2 := Subtype.ext_iff.mp hc
+          simpa using h2
+        · -- inductive step: lift the generators through `·π`
+          obtain ⟨a, hamem, haspan⟩ := ih
+          choose b hbmem hbeq using fun i => hsurj k (a i) (hamem i)
+          refine ⟨b, hbmem, ?_⟩
+          have hNle : Submodule.span R (Set.range b)
+              ≤ Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R) :=
+            Submodule.span_le.mpr (by rintro _ ⟨i, rfl⟩; exact hbmem i)
+          have hA : Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)
+              ≤ Submodule.span R (Set.range b)
+                ⊔ Submodule.torsionBySet R P ((I : Ideal R) : Set R) := by
+            intro z hz
+            have hpz : π • z ∈ Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R) :=
+              smul_tors_le I k (Submodule.smul_mem_smul hπ hz)
+            obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun R).mp (haspan hpz)
+            have hwN : (∑ i, c i • b i) ∈ Submodule.span R (Set.range b) :=
+              Submodule.sum_mem _ fun i _ =>
+                Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
+            have hpw : π • (∑ i, c i • b i) = π • z := by
+              rw [Finset.smul_sum]
+              rw [show (∑ i, π • c i • b i) = ∑ i, c i • a i from
+                Finset.sum_congr rfl fun i _ => by rw [smul_comm, hbeq i]]
+              exact hc
+            have hzw : z - (∑ i, c i • b i)
+                ∈ Submodule.torsionBySet R P ((I : Ideal R) : Set R) := by
+              refine mem_tors_of_smul_eq_zero I hI hI0 hπ hπ2 k (sub_mem hz (hNle hwN)) ?_
+              rw [smul_sub, hpw, sub_self]
+            have hz' : (∑ i, c i • b i) + (z - (∑ i, c i • b i)) = z := by abel
+            rw [← hz']
+            exact Submodule.add_mem_sup hwN hzw
+          have hB : Submodule.torsionBySet R P ((I : Ideal R) : Set R)
+              ≤ Submodule.span R (Set.range b) := by
+            have h1 := pow_smul_tors I hπ hsurj 1 k
+            rw [show (1 : ℕ) + k = k + 1 by omega, pow_one] at h1
+            rw [← h1]
+            calc I ^ k • Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)
+                ≤ I ^ k • (Submodule.span R (Set.range b)
+                    ⊔ Submodule.torsionBySet R P ((I : Ideal R) : Set R)) :=
+                  Submodule.smul_mono le_rfl hA
+              _ = I ^ k • Submodule.span R (Set.range b)
+                    ⊔ I ^ k • Submodule.torsionBySet R P ((I : Ideal R) : Set R) :=
+                  Submodule.smul_sup _ _ _
+              _ ≤ Submodule.span R (Set.range b) := by
+                  refine sup_le (Submodule.smul_le.mpr fun r _ y hy => Submodule.smul_mem _ _ hy)
+                    (Submodule.smul_le.mpr fun r hr y hy => ?_)
+                  have hry : r • y = 0 :=
+                    (mem_tors_iff _ _).mp hy r (Ideal.pow_le_self (by omega) hr)
+                  rw [hry]
+                  exact Submodule.zero_mem _
+          exact hA.trans (sup_le le_rfl hB)
+  -- assemble: a surjection between finite sets of equal cardinality
+  obtain ⟨a, hamem, haspan⟩ := hgen n
+  have hcardQ : Nat.card (R ⧸ I ^ n) = Nat.card (R ⧸ I) ^ n := by
+    haveI := hI.isPrime
+    have h := _root_.cardQuot_pow_of_prime (S := R) (P := I) hI0 (i := n)
+    simpa [Submodule.cardQuot_apply] using h
+  haveI : Finite (R ⧸ I ^ n) := by
+    refine (Nat.card_ne_zero.mp ?_).2
+    rw [hcardQ]
+    exact pow_ne_zero n (by omega)
+  set a' : Fin 2 → (Submodule.torsionBySet R P ((I ^ n : Ideal R) : Set R)) :=
+    fun i => ⟨a i, hamem i⟩ with ha'
+  have hspanR : Submodule.span R (Set.range a') = ⊤ := by
+    rw [eq_top_iff]
+    rintro ⟨y, hy⟩ -
+    obtain ⟨c, hc⟩ := (Submodule.mem_span_range_iff_exists_fun R).mp (haspan hy)
+    refine (Submodule.mem_span_range_iff_exists_fun R).mpr ⟨c, ?_⟩
+    exact Subtype.ext (by simpa [ha'] using hc)
+  have hspanS : Submodule.span (R ⧸ I ^ n) (Set.range a') = ⊤ := by
+    have hres := Submodule.restrictScalars_span R (R ⧸ I ^ n)
+      Ideal.Quotient.mk_surjective (Set.range a')
+    rw [hspanR] at hres
+    simpa using hres
+  set φ := Fintype.linearCombination (R ⧸ I ^ n) a' with hφ
+  have hsurjφ : Function.Surjective φ := by
+    rw [← LinearMap.range_eq_top, hφ, Fintype.range_linearCombination, hspanS]
+  have hcards : Nat.card (Fin 2 → R ⧸ I ^ n)
+      = Nat.card (Submodule.torsionBySet R P ((I ^ n : Ideal R) : Set R)) := by
+    rw [Nat.card_pi, hcardn n, hcardQ]
+    simp [Finset.prod_const, ← pow_mul, mul_comm]
+  have hbij : Function.Bijective φ :=
+    (Nat.bijective_iff_surjective_and_card φ).mpr ⟨hsurjφ, hcards⟩
+  exact ⟨(LinearEquiv.ofBijective φ hbij).restrictScalars R⟩
+
+end Frame
+
+end LevelFrame
+
+/-- **The `I`-torsion of a geometric fibre has `(#𝒪_D/I)²` elements**
+(sorry node — ABELIAN VARIETIES; Mumford *Abelian Varieties* §6 and §18,
+Silverman *AEC* III.7, Taylor 2002 §2).
+
+**This is where the rank count lives, and it is the only genuinely
+geometric input of `exists_levelTateFrame`** — everything else about a
+single-level frame is the commutative algebra of the `LevelFrame`
+namespace above, and everything about the TOWER is
+`exists_levelTateFrame_succ` and the recursion in
+`exists_levelwiseTateFrame`.
+
+The argument. `A_x` is an abelian variety of dimension `g = [D:ℚ]` over
+an algebraically closed field of characteristic zero — that is `hdim`
+together with the properness, smoothness and connectedness carried by
+`ab` — so `H₁(A_x, ℚ)` has `ℚ`-dimension `2g`. The real multiplication
+makes it a module over the FIELD `D`, hence free, of `D`-dimension
+`2g/[D:ℚ] = 2`; **this is exactly where `hdim` enters, and it is why the
+rank is two over the coefficient ring rather than over `ℤ_q`.** Tensoring
+with `ℚ_q` and projecting to the factor of `D ⊗ ℚ_q = ∏_{I ∣ q} D_I` cut
+out by `I` gives a two-dimensional `D_I`-space; `A[I]` is its
+`𝒪_{D,I}`-lattice modulo `I`, a two-dimensional vector space over the
+residue field `𝒪_D/I`, whence the cardinality `(#𝒪_D/I)²`.
+
+Equivalently, and this is the form in which the literature states it:
+multiplication by `I` is an isogeny of degree `N(I)²`, since it is
+`[N(I)]` up to the `D`-action on a two-dimensional `D`-space.
+
+WHY THE STATEMENT IS A CARDINALITY AND NOT A FRAME.  Stating the leaf as
+"`A[I]` is free of rank two over `𝒪_D/I`" would be the `n = 1` case of
+its own consumer, and a consumer of a frame has to carry the frame's
+five clauses through every algebraic step.  A cardinality is a single
+number, it is what the degree formula actually gives, and — because
+`A[I]` is killed by `I` and so is automatically a vector space over the
+residue FIELD `𝒪_D/I` — it is equivalent to the rank statement at level
+one with no further geometry.  The passage from level one to level `n`
+is then pure algebra: see the section note above. -/
+theorem card_torsion_of_isMaximal
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) :
+    Nat.card (m.torsion x I).1
+      = Nat.card (NumberField.RingOfIntegers D ⧸ I) ^ 2 :=
+  sorry
+
+/-- **The `Iⁿ`-torsion is free of rank two over `𝒪_D/Iⁿ`, at each single
+level `n`** (PROVEN 2026-07-26 over the single geometric leaf
+`card_torsion_of_isMaximal` and the sibling
+`exists_mem_torsion_act_uniformizer_eq`).
+
+No compatibility in `n` is asserted: the frames at different levels are
+chosen independently, and tying them together is the business of
+`exists_levelTateFrame_succ` and of the recursion in
+`exists_levelwiseTateFrame`.
+
+HOW IT IS PROVEN.  A uniformizer `π ∈ I ∖ I²` comes from
+`exists_mem_notMem_sq_of_isMaximal`; `·π` is surjective from each level
+onto the previous one by the sibling leaf; and the residual cardinality
+is the geometric leaf.  `LevelFrame.exists_linearEquiv_tors_pow` then
+produces an `𝒪_D`-linear equivalence `(𝒪_D/Iⁿ)² ≃ A[Iⁿ]`, whose
+underlying function is the frame: the five clauses of
+`IsLevelTateFrame` are, in order, membership in the torsion,
+additivity, injectivity, surjectivity onto the torsion, and
+`𝒪_D`-semilinearity — and each of them is a clause of the linear
+equivalence read through the coercion `A[Iⁿ] → GeomFibrePt f x`, because
+`Mult.module` DEFINES `a • y` to be `m.act a y` and
+`AbelianSchemeStruct.addCommGroup` DEFINES `y + z` to be `ab.add y z`.
+
+At `n = 0` the statement is trivial on both sides: `I⁰ = ⊤`, the
+quotient ring is trivial (so the source is a singleton), and `A[⊤] = 0`
+because `1 ∈ ⊤` acts as the identity; that case is subsumed by the
+general argument. -/
+theorem exists_levelTateFrame
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) (n : ℕ) :
+    ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) → GeomFibrePt f x,
+      IsLevelTateFrame m x (I ^ n) c := by
+  haveI : I.IsMaximal := hI
+  have hI0 : I ≠ ⊥ :=
+    (I.bot_lt_of_maximal (NumberField.RingOfIntegers.not_isField D)).ne'
+  obtain ⟨π, hπ, hπ2⟩ := exists_mem_notMem_sq_of_isMaximal hI hI0
+  haveI : Finite (NumberField.RingOfIntegers D ⧸ I) :=
+    Ideal.finiteQuotientOfFreeOfNeBot I hI0
+  letI := ab.addCommGroup (specAlgClos F ≫ x)
+  letI := m.module (specAlgClos F ≫ x)
+  obtain ⟨e⟩ :=
+    LevelFrame.exists_linearEquiv_tors_pow (P := GeomFibrePt f x) I hI hI0 hπ hπ2
+      (fun k y hy => exists_mem_torsion_act_uniformizer_eq m x I hI π hπ hπ2 k y hy)
+      (card_torsion_of_isMaximal m x hdim I hI) n
+  refine ⟨fun u => (e u : GeomFibrePt f x), fun u => (e u).2, ?_, ?_, ?_, ?_⟩
+  · intro u v
+    exact congrArg Subtype.val (e.map_add u v)
+  · intro u v huv
+    exact e.injective (Subtype.ext huv)
+  · intro y hy
+    obtain ⟨u, hu⟩ := e.surjective ⟨y, hy⟩
+    exact ⟨u, congrArg Subtype.val hu⟩
+  · intro a u
+    have hsmul : (fun i => Ideal.Quotient.mk (I ^ n) a * u i) = a • u := by
+      funext i
+      show Ideal.Quotient.mk (I ^ n) a * u i = a • u i
+      rw [Algebra.smul_def, Ideal.Quotient.algebraMap_eq]
+    rw [hsmul]
+    exact congrArg Subtype.val (e.map_smul a u)
 
 open _root_.NumberField in
 /-- **A level-`n` frame lifts through multiplication by `π` to a level
