@@ -86,7 +86,10 @@ The chain, in the order the assembly uses it:
    with the four deformation-condition clauses
    `isHilbertBaseChangeClause`, `isHilbertFibreProductClause`,
    `isHilbertFiniteFramesClause`, `isHilbertProLimitClause` and the
-   Brauer–Nesbitt clause `isHilbertResidualRigidityClause`.
+   Brauer–Nesbitt clause `isHilbertResidualRigidityClause` (PROVEN
+   2026-07-26 over `BrauerNesbittConjugacy.lean`'s abstract dimension-`2`
+   core `exists_linearEquiv_of_charpoly_eq`, under the added `[Finite k]`
+   that core is proven with; the other four are still leaves).
 4. `HilbertHeckeAlgebra` — `T_F`, carrying finiteness AND FREENESS of
    `T_F` over `ℤ_[ℓ]`, generation by Hecke operators, and the
    **Hecke-valued Galois representation** `ρT : G_F → GL₂(T_F)` reducing
@@ -165,6 +168,14 @@ public import Mathlib.RingTheory.Finiteness.Basic
 public import Mathlib.LinearAlgebra.TensorProduct.Pi
 public import Mathlib.LinearAlgebra.Dimension.Constructions
 public import Mathlib.Topology.Algebra.Algebra
+-- proof-only: the abstract dimension-`2` Brauer–Nesbitt core
+-- `exists_linearEquiv_of_charpoly_eq`, which discharges
+-- `isHilbertResidualRigidityClause` below. `BrauerNesbittConjugacy.lean` sits
+-- in `GaloisRepresentation/` and imports only `GaloisRep.lean`, `BrauerNesbitt.lean`,
+-- `Chebotarev.lean` and mathlib, so it is OUTSIDE the circularity guard
+-- (nothing from `Family.lean`, `Lift.lean`, `Modularity/*` or `Deformation.lean`);
+-- `Deformation.lean`, the consumer of this module, already imports it too.
+import Fermat.FLT.GaloisRepresentation.BrauerNesbittConjugacy
 
 @[expose] public section
 
@@ -1161,16 +1172,63 @@ theorem isHilbertProLimitClause (ℓ : ℕ) [Fact ℓ.Prime]
     IsHilbertProLimitClause ℓ F :=
   sorry
 
-/-- **Brauer–Nesbitt over `F`** (LEAF): equal characteristic polynomials at
-every element identify a framed representation with the irreducible
-`ρbar|_{G_F}` up to conjugation. See `IsHilbertResidualRigidityClause` for
-the argument and for why the `ℚ`-level twin is the harder statement. -/
+/-- **Brauer–Nesbitt over `F`** (PROVEN 2026-07-26): equal characteristic
+polynomials at every element identify a framed representation with the
+irreducible `ρbar|_{G_F}` up to conjugation. See
+`IsHilbertResidualRigidityClause` for the argument and for why the `ℚ`-level
+twin is the harder statement.
+
+The proof is a direct application of the abstract dimension-`2` Brauer–Nesbitt
+core `exists_linearEquiv_of_charpoly_eq` (`BrauerNesbittConjugacy.lean`), which
+is exactly this statement for representations of an ABSTRACT group and carries
+no topology: the charpolys here are given at every `g ∈ G_F`, so — unlike the
+`ℚ`-level twin `exists_conj_of_charFrob_eq`, which is the same core preceded by
+a Chebotarev density argument turning Frobenius data into all-of-`G` data —
+there is nothing to do before invoking it. The only glue is the passage between
+`Module.rank` and `Module.finrank`, `Module.finrank k (Fin 2 → k) = 2`, and the
+translation of the intertwining `e ∘ τ g = ρbar g ∘ e` into the equality of
+`GaloisRep`s `τ.conj e = ρbar|_{G_F}` (`GaloisRep.ext` plus
+`GaloisRep.conj_apply`), verbatim as in `exists_conj_of_charFrob_eq_away`'s
+final step.
+
+HYPOTHESIS ADDED, AND WHY (2026-07-26, part of proving it). This theorem —
+NOT the clause `IsHilbertResidualRigidityClause`, which is unchanged and stays
+general — carries `[Finite k]`. Brauer–Nesbitt itself is true over an arbitrary
+field, but the dimension-`2` proof available here goes through
+`false_of_trace_toModuleEnd_eq_zero`, whose endgame needs the commutant
+`D = End_A W` to be a FIELD (little Wedderburn) and `D/k` to be SEPARABLE — and
+the latter genuinely fails over an imperfect field: for `k = 𝔽₂(t)` and
+`D = k(√t)` every `k`-trace on `D` vanishes identically, which is precisely the
+configuration that argument must exclude. So `[Finite k]` is not decoration
+here; it is the hypothesis the available core is proven under.
+
+Nothing downstream loses anything: `k` is the RESIDUE field of the deformation
+problem, and every consumer of this module in the chain that reaches
+`exists_finiteIndex_isIntegral_charpolyCoeff_of_isHardlyRamified` already
+carries `[Finite k]` (and `[DiscreteTopology k]`) in its own binder list. The
+only declaration that had to grow the binder is the four-line wrapper
+`exists_isWeaklyUniversal_hilbertDeformationDatum` below, which is where this
+theorem is applied; the arithmetic-free machine leaf
+`exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses` still takes the
+GENERAL clause as its hypothesis and is untouched. -/
 theorem isHilbertResidualRigidityClause (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V] (ρbar : GaloisRep ℚ k V) :
-    IsHilbertResidualRigidityClause F ρbar :=
-  sorry
+    IsHilbertResidualRigidityClause F ρbar := by
+  intro hrank hirrF τ hcp
+  have hfrV : Module.finrank k V = 2 :=
+    Module.finrank_eq_of_rank_eq (by exact_mod_cast hrank)
+  have hfrW : Module.finrank k (Fin 2 → k) = 2 := by simp
+  obtain ⟨e, he⟩ := exists_linearEquiv_of_charpoly_eq hfrV hfrW
+    (ρbar.map (algebraMap ℚ F)).toRepresentation τ.toRepresentation hirrF hcp
+  refine ⟨e, GaloisRep.ext fun σ => LinearMap.ext fun x => ?_⟩
+  have h1 : e (τ σ (e.symm x)) = (ρbar.map (algebraMap ℚ F)) σ (e (e.symm x)) :=
+    he σ (e.symm x)
+  rw [e.apply_symm_apply] at h1
+  calc (τ.conj e) σ x = (e.conj (τ σ)) x := by rw [GaloisRep.conj_apply]
+    _ = e (τ σ (e.symm x)) := by rw [LinearEquiv.conj_apply]; rfl
+    _ = (ρbar.map (algebraMap ℚ F)) σ x := h1
 
 /-- **Existence of the `F`-level universal deformation ring `R_F`, over the
 deformation-condition package** (LEAF — item 2 of the audit's
@@ -1253,10 +1311,17 @@ The cut is the `ℚ`-level one: the Schlessinger machine
 (`exists_isWeaklyUniversal_hilbertDeformationDatum_of_clauses`, which
 contains no arithmetic) over the four clauses that make
 `IsHilbertHardlyRamified` a deformation condition, plus residual
-rigidity. -/
+rigidity.
+
+`[Finite k]` (added 2026-07-26 with the proof of
+`isHilbertResidualRigidityClause`, which is the only place it is used) is the
+hypothesis under which the residual-rigidity clause is discharged; see that
+theorem's docstring for why the available dimension-`2` Brauer–Nesbitt core
+needs it and why no consumer loses anything — the residue field of the
+deformation problem is finite in every consumer of this module. -/
 theorem exists_isWeaklyUniversal_hilbertDeformationDatum
     (ℓ : ℕ) [Fact ℓ.Prime] (F : Type u) [Field F] [NumberField F]
-    {k : Type u} [Field k] [TopologicalSpace k]
+    {k : Type u} [Field k] [Finite k] [TopologicalSpace k]
     {V : Type v} [AddCommGroup V] [Module k V] [Module.Finite k V]
     [Module.Free k V]
     {ρbar : GaloisRep ℚ k V}
