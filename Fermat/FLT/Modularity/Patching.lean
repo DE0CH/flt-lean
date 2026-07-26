@@ -247,6 +247,13 @@ public import Mathlib.NumberTheory.NumberField.Discriminant.Different
 import Mathlib.NumberTheory.RamificationInertia.Basic
 -- proof-only: `NumberField.not_dvd_discr_iff_forall_mem`, the
 -- unramified-implies-coprime-to-discriminant dictionary
+public import Mathlib.NumberTheory.RamificationInertia.Basic
+-- `Ideal.ramificationIdx_le_finrank`, the `e ≤ [L:K]` bound used in
+-- `differentIdeal_exponent_le`'s consumer.  This used to arrive
+-- transitively; it stopped doing so under the module system (a
+-- transitive `public import` upstream became private), which showed up
+-- as `Unknown constant Ideal.ramificationIdx_le_finrank`.  Naming it
+-- here makes the file independent of that chain.
 public import Mathlib.RingTheory.Ideal.Quotient.PowTransition
 -- `Ideal.Quotient.factorPow`: the transition maps `R ⧸ I ^ m → R ⧸ I ^ n`
 -- of the `p`-adic quotient tower in the pro-finite limit upgrade
