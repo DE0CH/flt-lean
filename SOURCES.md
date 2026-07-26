@@ -23,7 +23,22 @@ Populated 2026-07-22 on the shared-terminal machine.
   (md5 `33324a29860440c9c73fc031eda45746`.)
 - `neukirch1999ant.pdf` / `.txt` — Neukirch, *Algebraic Number
   Theory* (Grundlehren 322). Clean text layer.
-  (md5 `6f69e8276623e871b9bad9779ed3e075`.)
+  (md5 `6f69e8276623e871b9bad9779ed3e075`.) NOTE: Neukirch proves the
+  global reciprocity law COHOMOLOGICALLY (VI §5, via local CFT + the
+  class field axiom for idele classes); for **Artin's own proof**
+  (Artin's Lemma and the cyclotomic descent) use Childress below.
+- `childress2009cft.pdf` / `.txt` — Childress, *Class Field Theory*
+  (Universitext, Springer 2009). Clean text layer. The classical,
+  ideal-theoretic proof of Artin Reciprocity: Theorem 5.2.1 (statement,
+  with clause (ii) — the modulus may be taken divisible only by the
+  ramified primes), Proposition 5.2.2 (`ker A ⊆ P⁺·N`), Lemmas
+  5.2.3–5.2.7 (Van der Waerden's auxiliary-prime lemmas), Lemma 5.2.8
+  (**Artin's Lemma**), and ch. 5 §1 p. 107 (the conductor is not
+  divisible by any unramified prime). This is the reference cited by the
+  reciprocity leaves in `ModThree.lean`.
+  (md5 `3900c4cf249e1bd00b326f4632dfb02f`; downloaded 2026-07-26 —
+  domain_index 0 gave a self-signed-certificate TLS error, index 2
+  worked.)
 - `mazur1977eisenstein.pdf` — Mazur, *Modular curves and the
   Eisenstein ideal*, Publ. IHÉS 47. Open access from Numdam
   (`PMIHES_1977__47__33_0.pdf`). Has a text layer from Numdam.
