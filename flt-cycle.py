@@ -878,10 +878,40 @@ def tag_release(head):
         for t in existing.stdout.split():
             if re.fullmatch(r"v\d+", t):
                 nums.append(int(t[1:]))
-        nxt = max(nums, default=0) + 1
+        nums.sort()
+        nxt = (nums[-1] if nums else 0) + 1
         tag = f"v{nxt}"
+        prev = f"v{nums[-1]}" if nums else None
+
+        # THE TAG MESSAGE IS THE CHANGELOG (Deyao, 2026-07-26: "i no longer have
+        # a useful commit message anymore").
+        #
+        # `git log main` is ~45% bare "Merge branch 'flt-lean-N' into merger"
+        # lines -- 87 of the 196 commits in v4..v5 -- because that is git's
+        # default subject and the merger takes it. The real subjects live one
+        # level down on the branches ("MazurTorsion: exists_… PROVEN over two
+        # new bricks"), so the information is not lost, only buried under the
+        # merge commits that carry none.
+        #
+        # So the annotation lists the NON-MERGE subjects of the range. That
+        # makes `git tag -n999 v5` a release note and `git log v4..v5
+        # --no-merges` the same view, without asking anyone to change how they
+        # commit. Truncated at 200 entries: a tag object is not a database, and
+        # the range is always reconstructible.
+        body = [f"green release {tag}"]
+        if prev:
+            log = run(["git", "-C", REPO, "log", "--no-merges",
+                       "--format=%s", f"{prev}..{head}"])
+            subjects = [s for s in log.stdout.splitlines() if s.strip()]
+            body.append("")
+            body.append(f"{len(subjects)} non-merge commit(s) since {prev}.")
+            body.append("")
+            body += [f"  {s}" for s in subjects[:200]]
+            if len(subjects) > 200:
+                body.append(f"  … {len(subjects) - 200} more "
+                            f"(git log --no-merges {prev}..{tag})")
         made = run(["git", "-C", REPO, "tag", "-a", tag, head,
-                    "-m", f"green release {tag}"])
+                    "-m", "\n".join(body)])
         if made.returncode != 0:
             print(f"  (tag {tag} not created: "
                   f"{made.stderr.strip()[:120]} -- release continues)")
