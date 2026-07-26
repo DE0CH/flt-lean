@@ -4170,8 +4170,148 @@ theorem WeierstrassCurve.exists_x0Three_param_of_stableThreeSubgroup
     X0Three.param_of_tateInvariants E.j E'.j a₁ a₃ ha3 hDne hJ hJ'
   exact ⟨u, E', hE', φ, hgal, hker, hu0, h1, h2⟩
 
+namespace X0Nine
+
+/-- **An `X_0(9)` parameter is never `0`** (PROVEN 2026-07-26): if
+`J · s⁹(s² + 9s + 27) = (s + 9)³(s³ + 243s² + 2187s + 6561)³` then `s ≠ 0`,
+whatever `J` is.
+
+`s = 0` is the width-`9` cusp, and the relation is self-policing there: the
+left side vanishes identically while the right side is `9³ · 6561³ ≠ 0`.
+This is what lets the Fricke image `27/s` be formed without carrying a
+nondegeneracy hypothesis around. -/
+lemma param_ne_zero (s J : ℚ)
+    (h : J * (s ^ 9 * (s ^ 2 + 9 * s + 27))
+      = (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3) : s ≠ 0 := by
+  rintro rfl
+  norm_num at h
+
+/-- **The Fricke involution `w₉ : s ↦ 27/s` on the `X_0(9)` `j`-map, cleared
+of denominators** (PROVEN 2026-07-26): the `X_0(9)` relation evaluated at
+`27/s` IS the second relation of `exists_x0Nine_param_of_cyclicNineChain`.
+
+Until this lemma existed, that was an unchecked docstring claim, and it is
+the kind of claim whose failure would have made the leaf FALSE AS STATED
+rather than merely hard — so it is worth having the kernel say it. The
+computation, which is exact with no slack:
+
+  `(27/s)⁹((27/s)² + 9(27/s) + 27) = 27¹⁰(s² + 9s + 27)/s¹¹`,
+  `(27/s + 9)³ = 729(s + 3)³/s³`,
+  `(27/s)³ + 243(27/s)² + 2187(27/s) + 6561 = 6561(s³ + 9s² + 27s + 3)/s³`,
+
+so after multiplying through by `s¹²` the two sides differ by the constant
+`27¹⁰` on the left and `729 · 6561³` on the right — and
+`729 · 6561³ = 3⁶ · 3²⁴ = 3³⁰ = 27¹⁰`, so they agree exactly. That is the
+`/ 27 ^ 10` in the `linear_combination` below; the identity would have been
+false for any other pair of cusp normalisations, which is the sense in which
+this is a real check and not a formality.
+
+Note the degree drop `s⁹ ⇝ s` and `(s + 9)³(cubic)³ ⇝ (s + 3)³(cubic)³` in
+the conclusion: `w₉` swaps the two rational cusps `s = 0` and `s = ∞`, and
+that is exactly what the shift from `243, 2187, 6561` to `9, 27, 3` records
+— the reversed coefficient list of the same cubic. -/
+lemma fricke_clear (s J : ℚ) (hs : s ≠ 0)
+    (h : J * ((27 / s) ^ 9 * ((27 / s) ^ 2 + 9 * (27 / s) + 27))
+      = ((27 / s) + 9) ^ 3
+        * ((27 / s) ^ 3 + 243 * (27 / s) ^ 2 + 2187 * (27 / s) + 6561) ^ 3) :
+    J * (s * (s ^ 2 + 9 * s + 27)) = (s + 3) ^ 3 * (s ^ 3 + 9 * s ^ 2 + 27 * s + 3) ^ 3 := by
+  field_simp at h
+  linear_combination h / 27 ^ 10
+
+end X0Nine
+
+/-- **`X_0(9)` moduli for a cyclic `9`-chain, in FRICKE-PAIR form** (SORRY
+LEAF, cut 2026-07-26 out of `exists_x0Nine_param_of_cyclicNineChain`, which
+is now PROVEN over it): for a chain `E --φ--> E' --ψ--> E''` of two rational
+`3`-isogenies whose composite has cyclic kernel `⟨h⟩` of order `9`, there is
+a rational `s` at which BOTH curves satisfy the SAME degree-`12` `X_0(9)`
+`j`-relation — `E` at `s`, and `E''` at the Fricke image `27/s`.
+
+**THIS IS THE SAME STATEMENT AS ITS CONSUMER, RESHAPED, NOT A WEAKENING.**
+The two are interderivable by `X0Nine.fricke_clear` and
+`X0Nine.param_ne_zero`, both PROVEN just above, and the derivation in one
+direction is the consumer's whole proof. Nothing mathematical was discharged
+by this cut; what it buys is that the modular content is now visible in the
+statement:
+
+* both conjuncts are the ONE function `j₉`, applied at `s` and at `27/s`,
+  rather than two different-looking polynomial identities of degrees `12`
+  and `4`;
+* the appearance of `27/s` says in the statement what only the docstring
+  said before — that `E'' = E/⟨h⟩` is the image of `(E, ⟨h⟩)` under the
+  Fricke involution `w₉`, which is the actual geometric input;
+* `s ≠ 0` does NOT have to be hypothesised: it follows from the first
+  conjunct (`X0Nine.param_ne_zero`), because `s = 0` is a cusp where the
+  relation is self-policing.
+
+**WHAT IS STILL MISSING IS EXACTLY WHAT WAS MISSING BEFORE**, and the two
+warnings in the consumer's docstring still apply verbatim — the generator's
+`x`-coordinate can generate a cubic field, so the level-`3` Tate-normal-form
+trick does not transpose; and the content is "a `Gal`-stable pair `(E, C)`
+is a non-cuspidal rational point of `X_0(9) ≅ P¹`". So does the offered
+cheaper cut: prove it only for curves carrying a stable cyclic `27`-subgroup,
+the only case `exists_x0Three_chainParameters` ever applies it to.
+
+**WHAT IS NEWLY AVAILABLE, and it is half of this leaf.**
+`WeierstrassCurve.exists_x0Nine_hauptmodul` became FULLY PROVEN on
+2026-07-26 (its last leaf, `MazurLevel9.exists_tateParam`, was closed;
+`#print axioms` is clean). It says precisely: a curve whose geometric points
+contain a point of order `9` generating a `Gal`-stable cyclic subgroup
+admits a rational `s` with the FIRST conjunct here. `h` satisfies its
+hypotheses (`addOrderOf h = 9` follows from `h9`, `h3`), so the first
+conjunct is now free.
+
+What is NOT free, and is the whole remaining content, is that the SAME `s`
+works for `E''` at `27/s`. That cannot be obtained by applying
+`exists_x0Nine_hauptmodul` a second time to `E''`: the `j`-relation has
+degree `12` in `s`, so it does not pin the parameter down, and an
+independently produced parameter for `E''` need not be the Fricke image of
+the one produced for `E`. A successor needs the moduli statement itself —
+that the hauptmodul is a bijection `X_0(9)(ℚ) → P¹(ℚ)` — or the cheaper
+level-`27` cut above. Do not attempt to assemble the two conjuncts from two
+separate applications of the hauptmodul node; that route is a dead end and
+this paragraph exists to say so. -/
+theorem WeierstrassCurve.exists_x0Nine_frickePair_of_cyclicNineChain
+    (E E' E'' : WeierstrassCurve ℚ) [E.IsElliptic] [E'.IsElliptic] [E''.IsElliptic]
+    (φ : (E⁄(AlgebraicClosure ℚ)).Point →+ (E'⁄(AlgebraicClosure ℚ)).Point)
+    (ψ : (E'⁄(AlgebraicClosure ℚ)).Point →+ (E''⁄(AlgebraicClosure ℚ)).Point)
+    (hφgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E⁄(AlgebraicClosure ℚ)).Point),
+        φ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (φ Pt))
+    (hψgal : ∀ (σ : Field.absoluteGaloisGroup ℚ)
+        (Pt : (E'⁄(AlgebraicClosure ℚ)).Point),
+        ψ (Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom Pt) =
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom (ψ Pt))
+    (h : (E⁄(AlgebraicClosure ℚ)).Point)
+    (h9 : (9 : ℕ) • h = 0) (h3 : (3 : ℕ) • h ≠ 0)
+    (hhstable : ∀ σ : Field.absoluteGaloisGroup ℚ,
+      ∀ x ∈ AddSubgroup.zmultiples h,
+        Affine.Point.map
+          (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
+          AddSubgroup.zmultiples h)
+    (hφker : ∀ Pt : (E⁄(AlgebraicClosure ℚ)).Point,
+      φ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples ((3 : ℕ) • h))
+    (hψker : ∀ Pt : (E'⁄(AlgebraicClosure ℚ)).Point,
+      ψ Pt = 0 ↔ Pt ∈ AddSubgroup.zmultiples (φ h)) :
+    ∃ s : ℚ,
+      E.j * (s ^ 9 * (s ^ 2 + 9 * s + 27)) =
+        (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3 ∧
+      E''.j * ((27 / s) ^ 9 * ((27 / s) ^ 2 + 9 * (27 / s) + 27)) =
+        ((27 / s) + 9) ^ 3
+          * ((27 / s) ^ 3 + 243 * (27 / s) ^ 2 + 2187 * (27 / s) + 6561) ^ 3 :=
+  sorry
+
+
 /-- **`X_0(9)`: the hauptmodul parameter of a rational cyclic `9`-isogeny**
-(sorry leaf, cut 2026-07-26 out of `x0Three_param_mul_ne_729`): for a chain
+(PROVEN 2026-07-26 over the single reshaped leaf
+`exists_x0Nine_frickePair_of_cyclicNineChain` just above, by the two proven
+algebra bricks `X0Nine.param_ne_zero` and `X0Nine.fricke_clear`; cut
+2026-07-26 out of `x0Three_param_mul_ne_729`): for a chain
 `E --φ--> E' --ψ--> E''` of two rational `3`-isogenies whose composite has
 CYCLIC kernel `⟨h⟩` of order `9` (`9h = 0`, `3h ≠ 0`, `ker φ = ⟨3h⟩`,
 `ker ψ = ⟨φ h⟩`, everything `Gal(ℚ̄/ℚ)`-stable and equivariant), there is a
@@ -4183,7 +4323,11 @@ rational `X_0(9)` hauptmodul value `s = (η(τ)/η(9τ))³` carrying both `j`-ma
 The first of these is exactly the `X_0(9)`-relation that
 `exists_x0TwentySeven_moduliPoint` below already consumes, and
 `x0Nine_fibre_over_CM` above already analyses; the second is its composite
-with the Fricke involution `w₉ : s ↦ 27/s`, cleared of denominators.
+with the Fricke involution `w₉ : s ↦ 27/s`, cleared of denominators — a
+claim that was unchecked until 2026-07-26 and is now a THEOREM,
+`X0Nine.fricke_clear` above.  It holds exactly, with the two cusp
+normalisations matching on the nose (`729 · 6561³ = 27¹⁰`); had they not,
+this leaf would have been false as stated rather than merely open.
 
 **Numerical anchor** (class `27a`, checked against PARI/GP `ellisomat`):
 for `E = 27a1` (`j = −12288000`) with its cyclic `9`-subgroup, `s = −3`,
@@ -4263,8 +4407,11 @@ theorem WeierstrassCurve.exists_x0Nine_param_of_cyclicNineChain
       E.j * (s ^ 9 * (s ^ 2 + 9 * s + 27)) =
         (s + 9) ^ 3 * (s ^ 3 + 243 * s ^ 2 + 2187 * s + 6561) ^ 3 ∧
       E''.j * (s * (s ^ 2 + 9 * s + 27)) =
-        (s + 3) ^ 3 * (s ^ 3 + 9 * s ^ 2 + 27 * s + 3) ^ 3 :=
-  sorry
+        (s + 3) ^ 3 * (s ^ 3 + 9 * s ^ 2 + 27 * s + 3) ^ 3 := by
+  obtain ⟨s, h1, h2⟩ :=
+    WeierstrassCurve.exists_x0Nine_frickePair_of_cyclicNineChain E E' E'' φ ψ hφgal hψgal
+      h h9 h3 hhstable hφker hψker
+  exact ⟨s, h1, X0Nine.fricke_clear s E''.j (X0Nine.param_ne_zero s E.j h1) h2⟩
 
 /-- **Non-backtracking along a cyclic `9`-isogeny** (PROVEN 2026-07-26 over
 the single level-`9` leaf `exists_x0Nine_param_of_cyclicNineChain`, together
