@@ -190,11 +190,19 @@ genuinely modular-curve-theoretic inputs:
   `≥ 4` into the shape `y² + (1 − c)xy − by = x³ − bx²` with the point
   at the origin. So the content that remains sits in the eight
   Tate-coordinate nodes `tateNormalForm_origin_order_ne_11`, …,
-  `_163` — plane models of `X_1(ℓ)` in the `(b, c)`-coordinates — all
-  IRREDUCIBLE at this mathlib pin: all eight `ℓ` ARE rational isogeny
-  degrees, so the `X_0` shortcut provably stops there and only
-  `X_1(ℓ)` excludes the point. See the section notes before them for
-  the witnesses, the genera and the missing-machinery list.
+  `_163` — plane models of `X_1(ℓ)` in the `(b, c)`-coordinates. All
+  eight `ℓ` ARE rational isogeny degrees, so the `X_0` shortcut
+  provably stops there and only `X_1(ℓ)` excludes the point. See the
+  section notes before them for the witnesses, the genera and the
+  missing-machinery list. **Updated 2026-07-26**: the first four
+  (`11, 13, 17, 19`) are no longer sorry nodes — they were RELOCATED
+  below `tateNormalForm_origin_order_ne_of_cuspidalRankZero` and are
+  now one-line instantiations of it, level `11`'s own argument being
+  complete (they still report `sorryAx`, because that node proves all
+  seven of its levels in ONE term; see its axiom audit). Only
+  `37, 43, 67, 163` are still IRREDUCIBLE at this pin, and the reason
+  is identified: `J_1(37)` has a rank-`1` factor, so those four need
+  the winding/Eisenstein quotient rather than the whole Jacobian.
 * `no_composite_torsion_order` (PROVEN 2026-07-25 as the eleven-way
   case split over its `Finset` hypothesis): no rational point of
   order `n ∈ {14, 15, 16, 18, 20, 21, 24, 25, 27, 35, 49}` — the
@@ -13375,8 +13383,8 @@ theorem WeierstrassCurve.no_torsion_order_25 (E : WeierstrassCurve ℚ)
     (fun b c hell h00 =>
       @WeierstrassCurve.tateNormalForm_origin_order_ne_25 b c hell h00) E Q
 
-/-- **No rational point of order `11`** (sorry node — IRREDUCIBLE
-literature citation, audited 2026-07-25): `X_1(11)` is the elliptic
+/-- **No rational point of order `11`** (PROVEN 2026-07-26 — see the
+RELOCATED note at the end; the historical audit follows): `X_1(11)` is the elliptic
 curve of genus `1` whose Mordell–Weil group over `ℚ` is `ℤ/5`, and all
 five of its rational points are cusps. Billing–Mahler, "On exceptional
 points on cubic curves" (J. London Math. Soc. 15, 1940); subsumed in
@@ -13398,12 +13406,47 @@ plane model of `X_1(11)` in the `(b, c)`-coordinates rather than a
 statement quantified over all curves. The passage between the two is
 the PROVEN `exists_tateNormalForm`; everything above about genus,
 witnesses and citation is unchanged by the restatement.
+
+RELOCATED AND PROVEN 2026-07-26. This node is now the one-line
+instantiation of `tateNormalForm_origin_order_ne_of_cuspidalRankZero` at
+`N = 11`. That node covers `N ∈ {11, 13, 17, 19, 21, 25, 27}` uniformly
+but was declared thousands of lines BELOW this one, so it could not be
+applied here; the whole block — levels `11, 13, 17, 19`, their
+`no_torsion_order_N` wrappers and `no_prime_torsion_ge_eleven` — was
+moved below it, exactly as level `25` had already been moved. Nothing
+about the statement changed.
+
+Level `11`'s MATHEMATICS is complete: the uniform node discharges
+`N = 11` through the explicit plane quintic `x1Eleven_plane_ne_zero`
+(`F₁₁(b, c) = 0`, bidegree `(5, 7)`), which is PROVEN via the birational
+map to the rank-`0` curve `11a3`. So the paragraph above — "a formal
+proof needs `X_1(11)` as an arithmetic curve together with a rank-`0`
+Mordell–Weil computation; neither exists here" — is now HISTORICAL: the
+plane model is the arithmetic curve, and the rank-`0` input is the
+`11a3` point count. It is kept because it records why the `X_0` shortcut
+is unavailable at this level, which is still true.
+
+AXIOM AUDIT, and it is the price of the uniform route (measured
+2026-07-26, `#print axioms`). This node still reports `sorryAx`, and so
+do levels `13`, `21` and `27`. That is NOT a gap in their own arguments:
+`tateNormalForm_origin_order_ne_of_cuspidalRankZero` proves all seven
+levels in ONE proof term with a single `rcases hN`, so instantiating it
+at `N = 11` drags in the sibling branches `N = 17, 19, 25`, which end at
+the still-open leaves `x1Seventeen_preΨ'_ne_zero`,
+`x1Nineteen_preΨ'_ne_zero` and `x1TwentyFive_plane_eq_line`. Closing
+those three clears the taint from all seven levels at once. The
+alternative — hoisting the uniform node's `key`/`back` helpers into
+standalone lemmas so each level gets its own proof term — would make
+`11, 13, 21, 27` axiom-clean today, at the cost of reopening a cut that
+was deliberately unified; that is a cut-level decision, deliberately not
+taken here.
 -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_11 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
     addOrderOf (Affine.Point.some 0 0 h00) ≠ 11 :=
-  sorry
+  WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero 11
+    (Or.inl rfl) b c h00
 
 /-- **No rational point of order `11`** (PROVEN 2026-07-25 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
@@ -13417,8 +13460,8 @@ theorem WeierstrassCurve.no_torsion_order_11 (E : WeierstrassCurve ℚ)
     (fun b c hell h00 =>
       @WeierstrassCurve.tateNormalForm_origin_order_ne_11 b c hell h00) E Q
 
-/-- **No rational point of order `13`** (sorry node — IRREDUCIBLE
-literature citation, audited 2026-07-25): `X_1(13)` has genus `2` and no
+/-- **No rational point of order `13`** (PROVEN 2026-07-26 — see the
+RELOCATED note at the end; the historical audit follows): `X_1(13)` has genus `2` and no
 non-cuspidal rational point. Mazur–Tate, "Points of order 13 on elliptic
 curves" (Invent. Math. 22, 1973); subsumed in Mazur 1977, Thm 7.
 
@@ -13443,12 +13486,24 @@ plane model of `X_1(13)` in the `(b, c)`-coordinates rather than a
 statement quantified over all curves. The passage between the two is
 the PROVEN `exists_tateNormalForm`; everything above about genus,
 witnesses and citation is unchanged by the restatement.
+
+RELOCATED AND PROVEN 2026-07-26. This node is now the one-line
+instantiation of `tateNormalForm_origin_order_ne_of_cuspidalRankZero` at
+`N = 13`; see the level-`11` node above for why the block had to move.
+Nothing about the statement changed.
+
+Where the remaining content sits, so nobody dispatches here by mistake:
+the uniform node discharges `N = 13` through the explicit plane curve
+`x1Thirteen_plane_ne_zero` (`F₁₃(b, c) = 0`, bidegree `(7, 10)`), which
+is PROVEN from the Kubert model `x1Thirteen_kubert_ne_zero` — and THAT
+is the one open leaf of this level. This node has nothing left to prove.
 -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_13 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
     addOrderOf (Affine.Point.some 0 0 h00) ≠ 13 :=
-  sorry
+  WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero 13
+    (Or.inr (Or.inl rfl)) b c h00
 
 /-- **No rational point of order `13`** (PROVEN 2026-07-25 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
@@ -13462,8 +13517,8 @@ theorem WeierstrassCurve.no_torsion_order_13 (E : WeierstrassCurve ℚ)
     (fun b c hell h00 =>
       @WeierstrassCurve.tateNormalForm_origin_order_ne_13 b c hell h00) E Q
 
-/-- **No rational point of order `17`** (sorry node — IRREDUCIBLE
-literature citation, audited 2026-07-25): `X_1(17)` has genus `5` and no
+/-- **No rational point of order `17`** (PROVEN 2026-07-26 — see the
+RELOCATED note at the end; the historical audit follows): `X_1(17)` has genus `5` and no
 non-cuspidal rational point (Mazur 1977, Thm 7).
 
 The `X_0` shortcut is NOT available: `17` is in Kenku's list, and
@@ -13480,12 +13535,25 @@ plane model of `X_1(17)` in the `(b, c)`-coordinates rather than a
 statement quantified over all curves. The passage between the two is
 the PROVEN `exists_tateNormalForm`; everything above about genus,
 witnesses and citation is unchanged by the restatement.
+
+RELOCATED AND PROVEN 2026-07-26. This node is now the one-line
+instantiation of `tateNormalForm_origin_order_ne_of_cuspidalRankZero` at
+`N = 17`; see the level-`11` node above for why the block had to move.
+Nothing about the statement changed.
+
+Where the remaining content sits, so nobody dispatches here by mistake:
+the uniform node discharges `N = 17` through the PROVEN residual node
+`tateNormalForm_origin_preΨ'_residual` down to the single leaf
+`x1Seventeen_preΨ'_ne_zero` — stated in `preΨ'` form because `F₁₇` has
+`~60` terms of bidegree `(12, 18)`, too large to write out. This node
+has nothing left to prove.
 -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_17 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
     addOrderOf (Affine.Point.some 0 0 h00) ≠ 17 :=
-  sorry
+  WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero 17
+    (Or.inr (Or.inr (Or.inl rfl))) b c h00
 
 /-- **No rational point of order `17`** (PROVEN 2026-07-25 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
@@ -13499,8 +13567,8 @@ theorem WeierstrassCurve.no_torsion_order_17 (E : WeierstrassCurve ℚ)
     (fun b c hell h00 =>
       @WeierstrassCurve.tateNormalForm_origin_order_ne_17 b c hell h00) E Q
 
-/-- **No rational point of order `19`** (sorry node — IRREDUCIBLE
-literature citation, audited 2026-07-25): `X_1(19)` has genus `7` and no
+/-- **No rational point of order `19`** (PROVEN 2026-07-26 — see the
+RELOCATED note at the end; the historical audit follows): `X_1(19)` has genus `7` and no
 non-cuspidal rational point (Mazur 1977, Thm 7).
 
 The `X_0` shortcut is NOT available: `19` is in Kenku's list. The
@@ -13517,12 +13585,25 @@ plane model of `X_1(19)` in the `(b, c)`-coordinates rather than a
 statement quantified over all curves. The passage between the two is
 the PROVEN `exists_tateNormalForm`; everything above about genus,
 witnesses and citation is unchanged by the restatement.
+
+RELOCATED AND PROVEN 2026-07-26. This node is now the one-line
+instantiation of `tateNormalForm_origin_order_ne_of_cuspidalRankZero` at
+`N = 19`; see the level-`11` node above for why the block had to move.
+Nothing about the statement changed.
+
+Where the remaining content sits, so nobody dispatches here by mistake:
+the uniform node discharges `N = 19` through the PROVEN residual node
+`tateNormalForm_origin_preΨ'_residual` down to the single leaf
+`x1Nineteen_preΨ'_ne_zero` — stated in `preΨ'` form because `F₁₉` has
+`~90` terms of bidegree `(15, 22)`, too large to write out. This node
+has nothing left to prove.
 -/
 theorem WeierstrassCurve.tateNormalForm_origin_order_ne_19 (b c : ℚ)
     [(WeierstrassCurve.tateNormalForm b c).IsElliptic]
     (h00 : (WeierstrassCurve.tateNormalForm b c).toAffine.Nonsingular 0 0) :
     addOrderOf (Affine.Point.some 0 0 h00) ≠ 19 :=
-  sorry
+  WeierstrassCurve.tateNormalForm_origin_order_ne_of_cuspidalRankZero 19
+    (Or.inr (Or.inr (Or.inr (Or.inl rfl)))) b c h00
 
 /-- **No rational point of order `19`** (PROVEN 2026-07-25 from the
 Tate-coordinate node above through `no_torsion_order_of_tateNormalForm`):
@@ -13551,13 +13632,30 @@ each of which is a separate node above. Every prime `ℓ ≥ 11` outside
 those eight — infinitely many — is discharged outright by Mazur's
 isogeny theorem.
 
-The mathematical content that remains is entirely in the eight nodes,
-all IRREDUCIBLE at this mathlib pin, and in the `X_0` node
-`prime_mem_cyclicIsogenyDegrees` they are cut against. The dependence on
-that node is now explicit in the tree instead of being folded into the
-same `sorry`: this theorem and the isogeny theorem always shared their
-citation, and the section note records why using one for the other is a
-reduction and not a circle. -/
+The mathematical content that remains is in the eight nodes and in the
+`X_0` node `prime_mem_cyclicIsogenyDegrees` they are cut against. The
+dependence on that node is now explicit in the tree instead of being
+folded into the same `sorry`: this theorem and the isogeny theorem
+always shared their citation, and the section note records why using
+one for the other is a reduction and not a circle.
+
+RELOCATED 2026-07-26, and the remaining content is now FOUR nodes, not
+eight. Levels `11, 13, 17, 19` moved down here together with this
+theorem, because they are one-line instantiations of
+`tateNormalForm_origin_order_ne_of_cuspidalRankZero` (declared above)
+and could not be applied where they used to live. Level `11`'s own
+argument is complete (the plane quintic `x1Eleven_plane_ne_zero`, PROVEN);
+`13`, `17` and `19` each have exactly one open leaf beneath them
+(`x1Thirteen_kubert_ne_zero`, `x1Seventeen_preΨ'_ne_zero`,
+`x1Nineteen_preΨ'_ne_zero`). Note that all four still report `sorryAx`,
+because the uniform node proves its seven levels in one term and so
+carries its own open branches into every instantiation — see the axiom
+audit in the level-`11` docstring above. Only `37, 43, 67, 163` are still
+IRREDUCIBLE at this pin — the rank-`0` point count that closes the small
+levels needs the WHOLE of `J_1(N)` to have rank `0`, and `J_1(37)` does
+not (its first `ℚ`-simple factor is the rank-`1` curve `37a`), so those
+four need the winding/Eisenstein quotient. This theorem's own proof is
+unchanged; only its position in the file is. -/
 theorem WeierstrassCurve.no_prime_torsion_ge_eleven (E : WeierstrassCurve ℚ)
     [E.IsElliptic] {ℓ : ℕ} (hℓ : ℓ.Prime) (h11 : 11 ≤ ℓ) (Q : (E⁄ℚ).Point) :
     addOrderOf Q ≠ ℓ := by
