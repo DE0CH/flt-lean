@@ -336,13 +336,161 @@ limit, bijectivity of the frame, `O`-linearity of the Galois action and
 the `j`-compatibility clause — is PROVEN in
 `exists_tateFrame_of_adicCoefficientRing` from those three. -/
 
-/-- **The `Iⁿ`-torsion is free of rank two over `𝒪_D/Iⁿ`, compatibly in
-`n`** (sorry node — abelian varieties; Mumford *Abelian Varieties* §18,
-Silverman *AEC* III.7, Taylor 2002 §2).
+/-! #### The two sub-leaves of `exists_levelwiseTateFrame`
 
-This is the finite-level form of "the Tate module has rank two", and it
-is the ONLY place in the Tate-module cluster where the dimension count
-is used. Concretely it asks for maps
+Frames at EVERY level, COMPATIBLY along multiplication by `π`, is two
+difficulties at once, and they belong to two different theories. They
+are cut apart here:
+
+* `exists_torsionFrame` — ABELIAN VARIETIES. At ONE level, `A[J]` is
+  free of rank two over `𝒪_D/J`. **This is where `hdim` lives**: it is
+  the only statement in the cluster that knows `A ⟶ S` is an abelian
+  scheme of relative dimension `[D:ℚ]`, and the rank is two over the
+  COEFFICIENT RING — not over `ℤ_q` — precisely because `H₁(A_x, ℚ)` is
+  a module over the FIELD `D`, hence free, of `D`-dimension
+  `2g/[D:ℚ] = 2`.
+* `exists_torsionFrame_lift` — COMMUTATIVE ALGEBRA. Given frames at
+  levels `n` and `n+1`, the level-`(n+1)` one can be REPLACED by one
+  lying over the given level-`n` one. No geometry enters, because both
+  freeness statements are hypotheses. The argument: multiplication by
+  `π` carries a level-`(n+1)` frame to a level-`n` frame (well-defined
+  because `π · Iⁿ ⊆ Iⁿ⁺¹`, injective on `𝒪_D/Iⁿ` because the
+  annihilator of `π` in `𝒪_D/Iⁿ⁺¹` is `Iⁿ/Iⁿ⁺¹`, and surjective onto
+  `A[Iⁿ]` because the annihilator of `Iⁿ` in `𝒪_D/Iⁿ⁺¹` is
+  `π · 𝒪_D/Iⁿ⁺¹`, which is `hπ`/`hπ2` through `I = (π) + Iⁿ⁺¹`); the
+  frames at a fixed level form a torsor under `GL₂(𝒪_D/Iⁿ)`; and
+  `GL₂(𝒪_D/Iⁿ⁺¹) → GL₂(𝒪_D/Iⁿ)` is surjective because the kernel of
+  `𝒪_D/Iⁿ⁺¹ → 𝒪_D/Iⁿ` sits inside the maximal ideal, so a determinant
+  that is a unit downstairs lifts to a unit upstairs.
+
+`exists_levelwiseTateFrame` is then a plain recursion on `n`, carried
+out below. Its `n = 0` base case is the ZERO frame: `I⁰ = ⊤` makes
+`𝒪_D/I⁰` the trivial ring and `A[I⁰] = 0`.
+
+Note what this cut BUYS. Choosing a frame at each level independently
+and hoping they are compatible is exactly what fails: the frames at
+level `n` form a `GL₂(𝒪_D/Iⁿ)`-torsor of size `|GL₂(𝒪_D/Iⁿ)|`, and a
+compatible system is a point of an inverse limit. Packaging the
+compatibility as a LIFTING step turns that inverse limit into an
+ordinary recursion, which is why no compactness or König argument
+appears in the assembly below. -/
+
+/-- **The level-`J` frame conditions**: `c` is an `𝒪_D`-linear
+bijection from `(𝒪_D/J)²` onto the `J`-torsion of the geometric fibre.
+
+Spelled out — additive, semilinear, injective, onto — rather than
+packaged as a `LinearEquiv`, because the module structure on
+`GeomFibrePt f x` lives behind the `letI` of
+`AbelianSchemeStruct.addCommGroup` (see the `TatePt` docstring); every
+statement in this file that mentions the geometric points states its
+additivity and semilinearity by hand for that reason. -/
+def IsTorsionFrame {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+    (J : Ideal (NumberField.RingOfIntegers D))
+    (c : (Fin 2 → NumberField.RingOfIntegers D ⧸ J) → GeomFibrePt f x) : Prop :=
+  (∀ u, c u ∈ (m.torsion x J).1) ∧
+  (∀ u v, c (u + v) = ab.add (c u) (c v)) ∧
+  Function.Injective c ∧
+  (∀ y ∈ (m.torsion x J).1, ∃ u, c u = y) ∧
+  (∀ (a : NumberField.RingOfIntegers D) u,
+    c (fun i => Ideal.Quotient.mk J a * u i) = m.act a (c u))
+
+/-- **`A[Iⁿ]` is free of rank two over `𝒪_D/Iⁿ`** (sorry node — abelian
+varieties; Mumford *Abelian Varieties* §18, Silverman *AEC* III.7,
+Taylor 2002 §2).
+
+ONE level at a time — no compatibility in `n`, which is the separate
+sub-leaf `exists_torsionFrame_lift`. This is the ONLY statement of the
+Tate-module cluster in which the dimension count occurs, and hence the
+only one that consumes `hdim`.
+
+The argument. `A_x` is an abelian variety of dimension `g = [D:ℚ]` over
+an algebraically closed field of characteristic zero — that is `hdim`
+together with the properness, smoothness and connectedness carried by
+`ab` — so `H₁(A_x, ℤ)` is free of `ℤ`-rank `2g`, and the real
+multiplication makes it a torsion-free, hence projective, module over
+the Dedekind domain `𝒪_D`, of `D`-rank `2g/[D:ℚ] = 2`. A projective
+`𝒪_D`-module of rank two is `𝒪_D ⊕ 𝔞` for an invertible ideal `𝔞`, and
+`A[Iⁿ] = H₁/IⁿH₁ = 𝒪_D/Iⁿ ⊕ 𝔞/Iⁿ𝔞`; since `𝒪_D/Iⁿ` is LOCAL, the
+invertible module `𝔞/Iⁿ𝔞` over it is free of rank one, so the sum is
+free of rank two. (The locality is not a technicality: over a general
+base the class of `𝔞` obstructs freeness, and it is exactly the
+reduction mod `Iⁿ` that kills it.)
+
+At `n = 0` the statement is trivial on both sides: `I⁰ = ⊤`, the
+quotient ring is trivial, and `A[⊤] = 0`. -/
+theorem exists_torsionFrame
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) (n : ℕ) :
+    ∃ c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) → GeomFibrePt f x,
+      IsTorsionFrame m x (I ^ n) c :=
+  sorry
+
+/-- **A level-`(n+1)` frame can be moved to lie over a given level-`n`
+frame** (sorry node — commutative algebra only).
+
+Both freeness statements are HYPOTHESES here (`hc` and `hc'`), so no
+abelian variety enters: this is the statement that the map
+
+  `{frames at level n+1} → {frames at level n}`,   `c' ↦ π · c' ∘ lift`
+
+is surjective, which is what turns "a frame at each level" into "a
+COMPATIBLE system of frames" and hence
+`exists_levelwiseTateFrame` into an ordinary recursion.
+
+The proof in three steps, all inside `𝒪_D`:
+
+1. *The map is well defined and is a level-`n` frame.* `π · c' u`
+   depends only on `u mod Iⁿ` because `π · Iⁿ ⊆ Iⁿ⁺¹` annihilates
+   `A[Iⁿ⁺¹]`; it is injective on `𝒪_D/Iⁿ` because the annihilator of
+   `π` in `𝒪_D/Iⁿ⁺¹` is `Iⁿ/Iⁿ⁺¹`; and it lands ONTO `A[Iⁿ]` because
+   the annihilator of `Iⁿ` in `𝒪_D/Iⁿ⁺¹` is `π · (𝒪_D/Iⁿ⁺¹)`. The last
+   two are `(Iⁿ⁺¹ : Iⁿ) = I` and `I = (π) + Iⁿ⁺¹`, both consequences of
+   `hπ`, `hπ2` and the fact that `𝒪_D` is a Dedekind domain: `π ∉ I²`
+   makes `π` a uniformizer at `I`.
+2. *Frames at a level form a `GL₂` torsor.* Two frames at level `n`
+   differ by the `𝒪_D/Iⁿ`-linear automorphism `c⁻¹ ∘ (π · c' ∘ lift)`
+   of `(𝒪_D/Iⁿ)²` — linear precisely because a frame is additive and
+   semilinear.
+3. *`GL₂` reduction is surjective.* Lift that automorphism's matrix
+   entrywise along `𝒪_D/Iⁿ⁺¹ ↠ 𝒪_D/Iⁿ`. Its determinant reduces to a
+   unit and the kernel `Iⁿ/Iⁿ⁺¹` lies in the maximal ideal of the local
+   ring `𝒪_D/Iⁿ⁺¹`, so the lifted determinant is a unit and the lifted
+   matrix is invertible. Precomposing `c'` with its inverse gives `d`.
+
+`hI` is what makes `𝒪_D/Iⁿ⁺¹` local, and it is used nowhere else. -/
+theorem exists_torsionFrame_lift
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] (x : Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2) (n : ℕ)
+    (c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) → GeomFibrePt f x)
+    (hc : IsTorsionFrame m x (I ^ n) c)
+    (c' : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ (n + 1)) → GeomFibrePt f x)
+    (hc' : IsTorsionFrame m x (I ^ (n + 1)) c') :
+    ∃ d : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ (n + 1)) → GeomFibrePt f x,
+      IsTorsionFrame m x (I ^ (n + 1)) d ∧
+      ∀ u, m.act π (d u) =
+        c (fun i => Ideal.Quotient.factor
+          (Ideal.pow_le_pow_right (Nat.le_succ n)) (u i)) :=
+  sorry
+
+/-- **The `Iⁿ`-torsion is free of rank two over `𝒪_D/Iⁿ`, compatibly in
+`n`** (PROVEN 2026-07-26 by recursion over `exists_torsionFrame` and
+`exists_torsionFrame_lift`; abelian varieties: Mumford *Abelian
+Varieties* §18, Silverman *AEC* III.7, Taylor 2002 §2).
+
+This is the finite-level form of "the Tate module has rank two".
+Concretely it asks for maps
 
   `c n : (𝒪_D/Iⁿ)²  →  A[Iⁿ]`
 
@@ -363,7 +511,24 @@ its `𝒪_{D,I}`-lattice modulo `πⁿ`, and `𝒪_{D,I}/πⁿ = 𝒪_D/Iⁿ` by
 `hπ`/`hπ2` (which make `π` a uniformizer at `I`).
 
 At `n = 0` the statement is trivial on both sides: `I⁰ = ⊤`, the
-quotient ring is trivial, and `A[⊤] = 0`. -/
+quotient ring is trivial, and `A[⊤] = 0`.
+
+## What is proven here, and what was pushed down
+
+That argument is now split between the two sub-leaves above:
+`exists_torsionFrame` carries all of it EXCEPT the compatibility in
+`n`, and `exists_torsionFrame_lift` carries the compatibility. What is
+proven here is the recursion that assembles them — plus the `n = 0`
+base case, which is the zero frame, `I⁰ = ⊤` making both
+`𝒪_D/I⁰` and `A[I⁰]` trivial.
+
+The recursion is worth naming because it is the reason the assembly
+needs no compactness argument. A compatible system of frames is a point
+of `lim_n {frames at level n}`, and the frame sets are nonempty finite
+`GL₂(𝒪_D/Iⁿ)`-torsors, so the limit is nonempty by König — but only if
+one knows the transition maps are surjective. Stating that surjectivity
+AS the sub-leaf (`exists_torsionFrame_lift`) replaces the limit by a
+`Nat.rec`, which is what is done below. -/
 theorem exists_levelwiseTateFrame
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -386,8 +551,49 @@ theorem exists_levelwiseTateFrame
       (∀ (n : ℕ) (u : Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ (n + 1)),
         m.act π (c (n + 1) u) =
           c n (fun i => Ideal.Quotient.factor
-            (Ideal.pow_le_pow_right (Nat.le_succ n)) (u i))) :=
-  sorry
+            (Ideal.pow_le_pow_right (Nat.le_succ n)) (u i))) := by
+  classical
+  -- `I⁰ = ⊤`, so the level-zero quotient ring — and hence the level-zero
+  -- index set of the frame — is a singleton.
+  have htop0 : (I ^ 0 : Ideal (NumberField.RingOfIntegers D)) = ⊤ :=
+    (pow_zero I).trans Ideal.one_eq_top
+  haveI hsub0 : Subsingleton (NumberField.RingOfIntegers D ⧸ I ^ 0) :=
+    Ideal.Quotient.subsingleton_iff.mpr htop0
+  -- ### The base case: the zero frame at level `0`
+  have base : IsTorsionFrame m x (I ^ 0) (fun _ => ab.zero (specAlgClos F ≫ x)) := by
+    letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+    letI : Module (NumberField.RingOfIntegers D) (GeomFibrePt f x) :=
+      m.module (specAlgClos F ≫ x)
+    refine ⟨fun _ => Submodule.zero_mem _, fun _ _ => (ab.zero_add _).symm,
+      fun u v _ => Subsingleton.elim u v, fun y hy => ⟨0, ?_⟩,
+      fun a _ => (smul_zero a).symm⟩
+    -- `1 ∈ I⁰`, so every point of `A[I⁰]` is killed by `1`.
+    have h1 := (Submodule.mem_torsionBySet_iff _ _).mp hy ⟨1, by simp [htop0]⟩
+    rw [one_smul] at h1
+    exact h1.symm
+  -- ### The recursion
+  -- A frame at level `n`, packaged with its defining conditions so that
+  -- the recursion can carry both.
+  let Frame : ℕ → Type u := fun n =>
+    { c : (Fin 2 → NumberField.RingOfIntegers D ⧸ I ^ n) → GeomFibrePt f x //
+      IsTorsionFrame m x (I ^ n) c }
+  have key : ∀ (n : ℕ) (cn : Frame n), ∃ d : Frame (n + 1), ∀ u,
+      m.act π (d.1 u) =
+        cn.1 (fun i => Ideal.Quotient.factor
+          (Ideal.pow_le_pow_right (Nat.le_succ n)) (u i)) := by
+    intro n cn
+    obtain ⟨c', hc'⟩ := exists_torsionFrame m x hdim I hI (n + 1)
+    obtain ⟨d, hd, hdc⟩ :=
+      exists_torsionFrame_lift m x I hI π hπ hπ2 n cn.1 cn.2 c' hc'
+    exact ⟨⟨d, hd⟩, hdc⟩
+  choose step hstep using key
+  let s : (n : ℕ) → Frame n := fun n =>
+    Nat.rec (motive := Frame) ⟨fun _ => ab.zero (specAlgClos F ≫ x), base⟩ step n
+  -- `s (n + 1)` is *definitionally* `step n (s n)`, which is what makes
+  -- the compatibility clause come out of `hstep` with no further work.
+  exact ⟨fun n => (s n).1, fun n => (s n).2.1, fun n => (s n).2.2.1,
+    fun n => (s n).2.2.2.1, fun n => (s n).2.2.2.2.1, fun n => (s n).2.2.2.2.2,
+    fun n u => hstep n (s n) u⟩
 
 /-- **The pointwise stabilizer of the `J`-torsion is open in `Γ_F`**
 (sorry node — arithmetic of abelian varieties; Silverman *AEC* III.7,
