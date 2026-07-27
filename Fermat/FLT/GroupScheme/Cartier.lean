@@ -132,7 +132,7 @@ theorem derivation_iterate_pow_mul (D : Derivation K A A) (x : A) (n : ℕ) :
             - (Nat.factorial n) • (D x ^ n * (D x * y))) := by
       rw [pow_succ, Module.End.mul_apply, hstep, map_add, map_nsmul, smul_sub,
         Nat.factorial_succ, smul_smul]
-      simp only [smul_eq_mul, nsmul_eq_mul, Nat.cast_mul, Nat.cast_add, Nat.cast_one]
+      simp only [nsmul_eq_mul, Nat.cast_mul, Nat.cast_add, Nat.cast_one]
       ring
     rw [h3]
     exact add_mem h1 (nsmul_mem h2 (n + 1))
@@ -210,7 +210,7 @@ def pointDual : A →ₐ[K] DualNumber A where
         TrivSqZeroExt.snd_zero, map_zero]
   map_add' a b := by
     refine TrivSqZeroExt.ext ?_ ?_ <;>
-      simp only [fst_inl_add_inr, snd_inl_add_inr, TrivSqZeroExt.fst_add, TrivSqZeroExt.snd_add,
+      simp only [TrivSqZeroExt.fst_add, TrivSqZeroExt.snd_add,
         TrivSqZeroExt.fst_inl, TrivSqZeroExt.fst_inr, TrivSqZeroExt.snd_inl,
         TrivSqZeroExt.snd_inr, add_zero, zero_add, map_add]
   commutes' k := by
@@ -249,7 +249,7 @@ lemma fstHom_comp_shearDual :
     (TrivSqZeroExt.fstHom K A A).comp (shearDual D hmul hone) = aug K A := by
   apply Algebra.TensorProduct.ext'
   intro a b
-  simp [Algebra.ofId]
+  simp
 
 /-- The first component of `φ` is the identity: this is the right counitality law. -/
 @[simp] lemma fst_phiDual (a : A) : TrivSqZeroExt.fst (phiDual D hmul hone a) = a := by
@@ -398,8 +398,11 @@ theorem isIdempotentElem_ker_counit :
     rw [linearIndependent_iff']
     intro s c hsum
     by_contra hcc
-    push_neg at hcc
-    obtain ⟨i0, hi0s, hi0⟩ := hcc
+    obtain ⟨i0, hi0s, hi0⟩ : ∃ i ∈ s, c i ≠ 0 := by
+      by_contra hall
+      exact hcc fun i hi => by
+        by_contra hci
+        exact hall ⟨i, hi, hci⟩
     have htne : (s.filter (fun i => c i ≠ 0)).Nonempty :=
       ⟨i0, Finset.mem_filter.mpr ⟨hi0s, hi0⟩⟩
     obtain ⟨hms, hcm⟩ :=
