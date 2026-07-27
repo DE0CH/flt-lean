@@ -11,6 +11,7 @@ public import Mathlib.AlgebraicGeometry.Morphisms.FinitePresentation
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.AlgebraicGeometry.Geometrically.Reduced
 public import Mathlib.AlgebraicGeometry.GammaSpecAdjunction
+public import Mathlib.AlgebraicGeometry.PullbackCarrier
 public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 
 /-!
@@ -56,8 +57,13 @@ direct images of quasi-coherent sheaves at all.
   identification of `(pullback.snd p q) ⁻¹ᵁ V` with `pullback p (V.ι ≫ q)` is needed.
 * `HasAffineFactorizationAt p q m y` — the local predicate the reduction turns on: near
   `y`, `m` factors through an AFFINE scheme.
-* `hasAffineFactorizationAt_section` — **LEAF**: the predicate holds at every point of the
-  section `σ`.  Properness of `p` (through the closed image of `pullback.snd p q`) plus
+* `range_pullbackMapComp`, `sliceIso`, `range_sliceIncl` — the range of a base change is
+  the preimage of the range, applied to `pullbackMapComp` and to the slice.  The second is
+  the one with content: the underlying set of a fibre product of schemes is not the fibre
+  product of the underlying sets, so "the fibre of `pullback.snd p q` over `σ.base s` is
+  the slice" needs the base-change square, not a diagram chase on points.
+* `hasAffineFactorizationAt_section` — **PROVEN**: the predicate holds at every point of
+  the section `σ`.  Properness of `p` (through the closed image of `pullback.snd p q`) plus
   the contracted slice; this is the one classical step that is genuinely local.
 * `hasAffineFactorizationAt_of_section` — **LEAF**: it then holds *everywhere*.  This is
   the open-and-closed / connected-fibres spreading argument, and it is where
@@ -307,23 +313,88 @@ subscheme with `pullback p (g ≫ q)` before `existsUnique_comp_snd_eq_of_spec` 
 applied to it, and that identification is a pullback-pasting isomorphism whose transport
 across `Category.assoc` on the index morphism is dependent-type noise with no mathematical
 content.  Writing the piece as `pullback p (g ≫ q)` from the start means
-`existsUnique_comp_snd_eq_of_spec` applies to it *verbatim*, with `q := g ≫ q`. -/
+`existsUnique_comp_snd_eq_of_spec` applies to it *verbatim*, with `q := g ≫ q`.
+
+Written as `pullback.map` rather than as the equal `pullback.lift`, because that is the
+form `AlgebraicGeometry.Scheme.Pullback.range_map` is stated for, and `range_pullbackMapComp`
+below — the computation of its range as a preimage — is what makes the local step of the
+rigidity lemma go through. -/
 noncomputable def pullbackMapComp {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
     {V : Scheme.{u}} (g : V ⟶ Y) : pullback p (g ≫ q) ⟶ pullback p q :=
-  pullback.lift (pullback.fst p (g ≫ q)) (pullback.snd p (g ≫ q) ≫ g)
-    (by rw [Category.assoc]; exact pullback.condition)
+  pullback.map p (g ≫ q) p q (𝟙 X) g (𝟙 S) (by simp) (by simp)
 
 @[reassoc (attr := simp)]
 theorem pullbackMapComp_fst {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
     {V : Scheme.{u}} (g : V ⟶ Y) :
     pullbackMapComp p q g ≫ pullback.fst p q = pullback.fst p (g ≫ q) :=
-  pullback.lift_fst _ _ _
+  (pullback.lift_fst _ _ _).trans (Category.comp_id _)
 
 @[reassoc (attr := simp)]
 theorem pullbackMapComp_snd {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
     {V : Scheme.{u}} (g : V ⟶ Y) :
     pullbackMapComp p q g ≫ pullback.snd p q = pullback.snd p (g ≫ q) ≫ g :=
   pullback.lift_snd _ _ _
+
+/-- **THE RANGE OF `pullbackMapComp` IS THE PREIMAGE OF THE RANGE OF `g`**, because
+`pullbackMapComp p q g` is the base change of `g` along `pullback.snd p q`. -/
+theorem range_pullbackMapComp {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
+    {V : Scheme.{u}} (g : V ⟶ Y) :
+    Set.range (pullbackMapComp p q g).base =
+      (pullback.snd p q).base ⁻¹' Set.range g.base := by
+  rw [pullbackMapComp, Scheme.Pullback.range_map]
+  simp
+
+/-! ### The slice is the base change of the section -/
+
+section Slice
+
+variable {X Y S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S) (σ : S ⟶ Y) (hσ : σ ≫ q = 𝟙 S)
+
+/-- **The canonical isomorphism `X ≅ X ×_S S` supplied by the section `σ`.**
+
+`σ ≫ q = 𝟙 S` makes `pullback p (σ ≫ q)` a pullback along an identity, hence a copy of
+`X`.  Composing the inverse of this with `pullbackMapComp p q σ` recovers `sliceIncl`, and
+that is what exhibits the slice as the BASE CHANGE of `σ` along `pullback.snd p q` — which
+is the only thing needed to compute its range. -/
+noncomputable def sliceIso : X ⟶ pullback p (σ ≫ q) :=
+  pullback.lift (𝟙 X) p (by rw [Category.id_comp, hσ, Category.comp_id])
+
+@[reassoc (attr := simp)]
+theorem sliceIso_fst : sliceIso p q σ hσ ≫ pullback.fst p (σ ≫ q) = 𝟙 X :=
+  pullback.lift_fst _ _ _
+
+@[reassoc (attr := simp)]
+theorem sliceIso_snd : sliceIso p q σ hσ ≫ pullback.snd p (σ ≫ q) = p :=
+  pullback.lift_snd _ _ _
+
+instance : IsIso (sliceIso p q σ hσ) := by
+  refine ⟨pullback.fst p (σ ≫ q), sliceIso_fst p q σ hσ, ?_⟩
+  refine pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, sliceIso_fst, Category.comp_id, Category.id_comp]
+  · rw [Category.assoc, sliceIso_snd, Category.id_comp, pullback.condition, hσ,
+      Category.comp_id]
+
+theorem sliceIso_comp : sliceIso p q σ hσ ≫ pullbackMapComp p q σ = sliceIncl p q σ hσ := by
+  refine pullback.hom_ext ?_ ?_
+  · rw [Category.assoc, pullbackMapComp_fst, sliceIso_fst, sliceIncl_fst]
+  · rw [Category.assoc, pullbackMapComp_snd, sliceIso_snd_assoc, sliceIncl_snd]
+
+/-- **THE SLICE IS EXACTLY THE PART OF `X ×_S Y` LYING OVER THE SECTION.**
+
+This is the fact that makes the local step of the rigidity lemma work: it says the fibre of
+`pullback.snd p q` over `σ.base s` is entirely covered by the slice, so `hconst` — which
+constrains `m` only on the slice — pins `m` on that whole fibre.  Note that the underlying
+set of a fibre product of schemes is *not* the fibre product of the underlying sets, so this
+is a real statement and not bookkeeping; it holds because `sliceIncl` is a base change of
+`σ`, and the range of a base change IS the preimage of the range. -/
+theorem range_sliceIncl :
+    Set.range (sliceIncl p q σ hσ).base = (pullback.snd p q).base ⁻¹' Set.range σ.base := by
+  rw [← sliceIso_comp p q σ hσ, ← range_pullbackMapComp p q σ]
+  rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp]
+  rw [Set.range_eq_univ.mpr (fun z => ((ConcreteCategory.bijective_of_isIso
+    (sliceIso p q σ hσ).base).surjective z)), Set.image_univ]
+
+end Slice
 
 /-! ### The local predicate the rigidity lemma turns on -/
 
@@ -347,33 +418,76 @@ def HasAffineFactorizationAt {X Y Z S : Scheme.{u}} (p : X ⟶ S) (q : Y ⟶ S)
     ∃ (R : CommRingCat.{u}) (j : Spec R ⟶ Z) (n : pullback p (g ≫ q) ⟶ Spec R),
       pullbackMapComp p q g ≫ m = n ≫ j
 
-/-- **AT EVERY POINT OF THE SECTION, `m` FACTORS THROUGH AN AFFINE** (sorry node — the
-local half of the rigidity lemma).
+/-- **AT EVERY POINT OF THE SECTION, `m` FACTORS THROUGH AN AFFINE** (PROVEN 2026-07-27 —
+the local half of the rigidity lemma).
 
 This is the one step that is genuinely local, and it is the only place properness of `p`
-is used.  The argument is classical and short:
+is used.  It uses NEITHER the pushforward hypothesis, NOR connectedness of `q`, NOR
+separatedness of `r` — the hypothesis list is exactly what the proof consumes.  The
+argument is classical and short:
 
-* `π := pullback.snd p q` is proper, being a base change of `p`, hence a CLOSED map;
-* the fibre `π ⁻¹ (σ.base s)` is the fibre `X_s` of the contracted slice — `σ` is a
-  section of `q`, hence an immersion, so the residue field of `σ.base s` in `Y` is the
-  residue field of `s` in `S` and the fibre of `π` over `σ.base s` is exactly the fibre of
-  `sliceIncl p q σ hσ` over `s`.  `hconst` therefore sends that whole fibre to the single
-  point `c.base s`;
-* choose an affine open `U ⊆ Z` containing `c.base s`.  Then `m ⁻¹ (Zᶜ ∖ U)` is closed and
-  misses `π ⁻¹ (σ.base s)`, so `V := Y ∖ π '' (m ⁻¹ (Z ∖ U))` is an open neighbourhood of
-  `σ.base s` over which `m` lands in `U`;
-* `U` affine gives `U ≅ Spec Γ(Z, U)`, and `IsOpenImmersion.lift` produces the required
-  `n : pullback p (V.ι ≫ q) ⟶ Spec Γ(Z, U)`.
-
-**What it needs that is not in this file**: the identification of `Set.range (sliceIncl …)`
-with `π ⁻¹ (Set.range σ)`, which is "the range of a base change is the preimage of the
-range" for the square exhibiting `sliceIncl` as the base change of `σ` along `π`.  Nothing
-here needs the pushforward theorem, connectedness, or separatedness. -/
+* `π := pullback.snd p q` is proper, being a base change of `p`, hence a CLOSED map
+  (`Scheme.Hom.isClosedMap`);
+* `Set.range (sliceIncl p q σ hσ) = π ⁻¹ (Set.range σ)` — `range_sliceIncl` above — so the
+  fibre of `π` over `σ.base s` is entirely covered by the slice.  `hconst` therefore sends
+  that whole fibre to the single point `c.base s`.  This is the step with actual content:
+  the underlying set of a fibre product of schemes is *not* the fibre product of the
+  underlying sets, and what rescues it is that `sliceIncl` is a base change of `σ`;
+* choose an affine open `U ⊆ Z` containing `c.base s`.  Then `C := m ⁻¹ (Uᶜ)` is closed and
+  misses that fibre, so `W := Y ∖ π '' C` is an open neighbourhood of `σ.base s` over which
+  `m` lands in `U`;
+* `U` affine gives `U ≅ Spec Γ(Z, U)` (`IsAffineOpen.isoSpec`), and `IsOpenImmersion.lift`
+  produces the required `n : pullback p (W.ι ≫ q) ⟶ Spec Γ(Z, U)` — its range hypothesis is
+  discharged by `range_pullbackMapComp`, again a base-change range computation. -/
 theorem hasAffineFactorizationAt_section {X Y Z S : Scheme.{u}} {p : X ⟶ S} {q : Y ⟶ S}
     [IsProper p] (σ : S ⟶ Y) (hσ : σ ≫ q = 𝟙 S) {m : pullback p q ⟶ Z}
     (c : S ⟶ Z) (hconst : sliceIncl p q σ hσ ≫ m = p ≫ c) (s : S) :
-    HasAffineFactorizationAt p q m (σ.base s) :=
-  sorry
+    HasAffineFactorizationAt p q m (σ.base s) := by
+  classical
+  -- an affine open neighbourhood `U` of the point `c s` the slice is contracted to
+  obtain ⟨U, hU, hcU, -⟩ :=
+    exists_isAffineOpen_mem_and_subset (X := Z) (x := c.base s) (U := ⊤) trivial
+  -- the closed set of points that `m` throws outside `U`, and its closed image in `Y`
+  set C := ⇑m.base ⁻¹' ((U : Set Z)ᶜ) with hCdef
+  have hCclosed : IsClosed C := (U.2.isClosed_compl).preimage m.base.hom.continuous
+  have hclosed : IsClosed ((pullback.snd p q).base '' C) :=
+    (pullback.snd p q).isClosedMap C hCclosed
+  set W : Y.Opens := ⟨((pullback.snd p q).base '' C)ᶜ, hclosed.isOpen_compl⟩ with hWdef
+  -- points of `X ×_S Y` lying over `W` are sent into `U`
+  have hsub : ∀ w, (pullback.snd p q).base w ∈ W → m.base w ∈ U := by
+    intro w hw
+    by_contra hcon
+    exact hw ⟨w, hcon, rfl⟩
+  have hqσ : ∀ t : S, q (σ t) = t := by
+    intro t
+    rw [← Scheme.Hom.comp_apply, hσ]
+    simp
+  -- the section's point lies in `W`, because the whole fibre over it is the slice
+  have hWs : σ.base s ∈ W := by
+    rintro ⟨w, hwC, hw⟩
+    have hwr : w ∈ Set.range (sliceIncl p q σ hσ).base := by
+      rw [range_sliceIncl]
+      exact ⟨s, hw.symm⟩
+    obtain ⟨x, rfl⟩ := hwr
+    have e1 : (pullback.snd p q) ((sliceIncl p q σ hσ) x) = σ (p x) := by
+      rw [← Scheme.Hom.comp_apply, sliceIncl_snd, Scheme.Hom.comp_apply]
+    have e2 : m ((sliceIncl p q σ hσ) x) = c (p x) := by
+      rw [← Scheme.Hom.comp_apply, hconst, Scheme.Hom.comp_apply]
+    have hsx : σ (p x) = σ s := by rw [← e1, hw]
+    have hps : p x = s := by rw [← hqσ (p x), hsx, hqσ]
+    refine hwC ?_
+    rw [e2, hps]
+    exact hcU
+  have hrange : Set.range (pullbackMapComp p q W.ι ≫ m) ⊆ Set.range U.ι := by
+    rw [Scheme.Hom.comp_base, TopCat.coe_comp, Set.range_comp, range_pullbackMapComp,
+      Scheme.Opens.range_ι, Scheme.Opens.range_ι]
+    rintro _ ⟨w, hw, rfl⟩
+    exact hsub w hw
+  refine ⟨W.toScheme, W.ι, inferInstance, by rw [Scheme.Opens.range_ι]; exact hWs,
+    Γ(Z, U), hU.isoSpec.inv ≫ U.ι,
+    IsOpenImmersion.lift U.ι (pullbackMapComp p q W.ι ≫ m) hrange ≫ hU.isoSpec.hom, ?_⟩
+  rw [Category.assoc, ← Category.assoc hU.isoSpec.hom, Iso.hom_inv_id, Category.id_comp,
+    IsOpenImmersion.lift_fac]
 
 /-- **THE AFFINE FACTORIZATION SPREADS FROM THE SECTION TO ALL OF `Y`** (sorry node — the
 global half of the rigidity lemma).
@@ -487,7 +601,8 @@ leaves, with the assembly below PROVEN over them** (2026-07-27):
 
 1. *(local)* `hasAffineFactorizationAt_section` — for `s : S`, `m` factors through an
    affine near `σ.base s`.  This is where properness of `p` (closed image of
-   `pullback.snd p q` in `Y`) and `hconst` are consumed, and it uses nothing else;
+   `pullback.snd p q` in `Y`) and `hconst` are consumed, and it uses nothing else.
+   **This one is PROVEN** (2026-07-27), so of the four steps only 2 and 4 remain open;
 2. *(spreading)* `hasAffineFactorizationAt_of_section` — the affine-factorization locus,
    open by construction, is also closed, so `GeometricallyConnected q` plus the section
    makes it all of `Y`.  `IsSeparated r` is consumed here;
