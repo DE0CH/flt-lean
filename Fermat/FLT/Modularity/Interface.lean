@@ -22851,16 +22851,257 @@ theorem jacobiSum_mem_of_mem_decompCarry (CF : Type) [Field CF] [NumberField CF]
       cycGalRingOfIntegersEquiv_one, RingHom.id_apply]
   rwa [hid] at hmem2
 
+/-- **THE CARRY IDENTITY, SUMMED OVER A SUBSET OF `(ZMod m)ˣ`** (PROVEN
+2026-07-27; pure `ZMod m` arithmetic, no number theory whatever).
+
+Write `⟨x⟩ := (x : ZMod m).val ∈ [0, m)`. For a single `u`, put
+`X := −a·u⁻¹` and `Y := −c·u⁻¹` in `ZMod m`; then `X + Y = −(a+c)·u⁻¹`
+and `ZMod.val_add` splits into the two cases
+`ZMod.val_add_of_lt` / `ZMod.val_add_val_of_le`, giving
+
+  `⟨X⟩ + ⟨Y⟩ = ⟨X + Y⟩ + m · [m ≤ ⟨X⟩ + ⟨Y⟩]`.
+
+Summing over `D` turns the three Stickelberger exponents into the carry
+COUNT:
+
+  `N a + N c = N (a+c) + m · #{u ∈ D : carry at u}`,
+  `N a := ∑_{u ∈ D} ⟨−a·u⁻¹⟩`.
+
+**No hypothesis on `a`, `c` or `D` is needed** — the identity is an
+instance of `val_add` and holds even when a residue vanishes (the
+`p ∤ a`, `p ∤ c`, `p ∤ a+c` hypotheses of the Stickelberger statements
+are needed for the *Gauss-sum* half, not for this one). This is the
+entire combinatorial content of Stickelberger's carry formula;
+everything else is the valuation of a Gauss sum. -/
+theorem sum_decompVal_add_eq_add_mul_carryCard {m : ℕ} [NeZero m]
+    (D : Finset (ZMod m)ˣ) (a c : ℕ) :
+    (∑ u ∈ D, ((-(a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val)
+      + (∑ u ∈ D, ((-(c : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val)
+      = (∑ u ∈ D, ((-((a + c : ℕ) : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val)
+        + m * (D.filter (fun u : (ZMod m)ˣ =>
+            m ≤ ((-(a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val
+              + ((-(c : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m)).val)).card := by
+  classical
+  rw [← Finset.sum_add_distrib, Finset.card_filter, Finset.mul_sum, ← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun u _ => ?_
+  set X := (-(a : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m) with hX
+  set Y := (-(c : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m) with hY
+  have hXY : (-((a + c : ℕ) : ZMod m)) * ((u⁻¹ : (ZMod m)ˣ) : ZMod m) = X + Y := by
+    rw [hX, hY]; push_cast; ring
+  rw [hXY]
+  by_cases h : m ≤ X.val + Y.val
+  · rw [if_pos h]
+    have h2 := ZMod.val_add_val_of_le h
+    omega
+  · rw [if_neg h, ZMod.val_add_of_lt (by omega)]
+    omega
+
+/-- **VALUATION ALGEBRA: `v(J) ≥ n` FROM `J^k · G_s = G_a · G_c` AND ONE
+EXACT VALUATION** (PROVEN 2026-07-27; Dedekind-domain bookkeeping, no
+arithmetic input).
+
+The shape is exactly the one the Gauss-sum route produces: the
+factorisation `J(χᵃ,χᶜ)·g(χ^{a+c}) = g(χᵃ)·g(χᶜ)` raised to the `k`-th
+power, together with `q`-valuations `≥ N_a`, `≥ N_c` for the two
+numerator factors and the EXACT valuation `N_s` for the denominator
+factor. Given `N_a + N_c = N_s + n·k` one gets `q^n ∣ (J)`.
+
+Why the exactness hypothesis on `G_s` alone is enough, and why it
+cannot be dropped: only the denominator's valuation is subtracted, so
+only it must be pinned; the numerators contribute lower bounds, which
+is all the conclusion needs.
+
+Proof: `Ideal.dvd_iff_le` moves everything into the ideal monoid, which
+is a UFM for a Dedekind domain (`Ideal.uniqueFactorizationMonoid`).
+Write `(G_s) = q^{N_s}·T` with `q ∤ T` (that is what
+`G_s ∉ q^{N_s+1}` says), cancel `q^{N_s}` (`mul_dvd_mul_iff_left`,
+legitimate since `q ≠ ⊥`), strip `T` with
+`Prime.pow_dvd_of_dvd_mul_right`, and finally descend from
+`(q^n)^k ∣ (J)^k` to `q^n ∣ (J)` by
+`UniqueFactorizationMonoid.pow_dvd_pow_iff_dvd` — the one step that
+genuinely needs unique factorisation, and the reason `k ≠ 0` is
+required. -/
+theorem span_singleton_le_pow_of_mul_eq_of_exact_val {A : Type*} [CommRing A]
+    [IsDedekindDomain A] {q : Ideal A} (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    {J Ga Gc Gs : A} {Na Nc Ns n k : ℕ} (hk : k ≠ 0)
+    (heq : J ^ k * Gs = Ga * Gc)
+    (hamem : Ga ∈ q ^ Na) (hcmem : Gc ∈ q ^ Nc)
+    (hsmem : Gs ∈ q ^ Ns) (hsnot : Gs ∉ q ^ (Ns + 1))
+    (hsum : Na + Nc = Ns + n * k) :
+    Ideal.span {J} ≤ q ^ n := by
+  classical
+  have hqp : Prime q := Ideal.prime_of_isPrime hq0 hq
+  have hda : q ^ Na ∣ Ideal.span {Ga} :=
+    Ideal.dvd_iff_le.mpr ((Ideal.span_singleton_le_iff_mem _).mpr hamem)
+  have hdc : q ^ Nc ∣ Ideal.span {Gc} :=
+    Ideal.dvd_iff_le.mpr ((Ideal.span_singleton_le_iff_mem _).mpr hcmem)
+  have hds : q ^ Ns ∣ Ideal.span {Gs} :=
+    Ideal.dvd_iff_le.mpr ((Ideal.span_singleton_le_iff_mem _).mpr hsmem)
+  obtain ⟨T, hT⟩ := hds
+  have hTnd : ¬ q ∣ T := by
+    rintro ⟨T', rfl⟩
+    apply hsnot
+    have hdd : q ^ (Ns + 1) ∣ Ideal.span {Gs} := ⟨T', by rw [hT, pow_succ]; ring⟩
+    exact (Ideal.span_singleton_le_iff_mem _).mp (Ideal.dvd_iff_le.mp hdd)
+  have hspan : Ideal.span {J} ^ k * Ideal.span {Gs} = Ideal.span {Ga} * Ideal.span {Gc} := by
+    rw [Ideal.span_singleton_pow, Ideal.span_singleton_mul_span_singleton,
+      Ideal.span_singleton_mul_span_singleton, heq]
+  have hdvd : q ^ (Na + Nc) ∣ Ideal.span {J} ^ k * Ideal.span {Gs} := by
+    rw [hspan, pow_add]; exact mul_dvd_mul hda hdc
+  rw [hT, hsum, pow_add] at hdvd
+  have hqNs : (q : Ideal A) ^ Ns ≠ 0 := pow_ne_zero _ (by simpa using hq0)
+  have hdvd2 : q ^ (n * k) ∣ Ideal.span {J} ^ k * T := by
+    refine (mul_dvd_mul_iff_left hqNs).mp ?_
+    calc q ^ Ns * q ^ (n * k) ∣ Ideal.span {J} ^ k * (q ^ Ns * T) := hdvd
+      _ = q ^ Ns * (Ideal.span {J} ^ k * T) := by ring
+  have hdvd3 : q ^ (n * k) ∣ Ideal.span {J} ^ k := hqp.pow_dvd_of_dvd_mul_right _ hTnd hdvd2
+  rw [pow_mul] at hdvd3
+  exact Ideal.dvd_iff_le.mp ((UniqueFactorizationMonoid.pow_dvd_pow_iff_dvd hk).mp hdvd3)
+
+/-- **STICKELBERGER FOR GAUSS SUMS, PACKAGED INSIDE `𝓞 CF`** (SORRY
+LEAF, cut 2026-07-27 out of `span_jacobiSum_le_decompCarryPow_of_two_le`
+below, which is now PROVEN over it — with `htwo` unused, see below).
+
+`G a` is `g(χᵃ)^p`, the `p`-th power of the Gauss sum of `χᵃ` against a
+primitive additive character of `F = 𝓞 CF ⧸ q`. The Gauss sum itself
+lives in the compositum `L = CF(ζ_ℓ)`, `ℓ` the rational prime under
+`q`; its `p`-th power is `Gal(L/CF)`-invariant, because
+`σ_t(g(χᵃ)) = χᵃ(t)⁻¹·g(χᵃ)` and `χ` is `p`-torsion — **so `G a` is an
+element of `𝓞 CF` and the compositum never appears in this statement.**
+That is the whole point of this cut: it is the largest piece of the
+Gauss-sum route that can be stated without building `L`, `𝓞 L`, the
+prime `𝒬 ∣ q` and the Teichmüller character into the interface.
+
+**(i) the multiplicative relation** is mathlib's
+`jacobiSum_mul_nontrivial : jacobiSum χ φ * gaussSum (χ*φ) ψ =
+gaussSum χ ψ * gaussSum φ ψ` (valid because `χᵃ·χᶜ ≠ 1`, which is
+exactly `p ∤ a+c`), raised to the `p`-th power. Note it is an EQUATION
+in `𝓞 CF`, with no division and no invertibility side condition.
+
+**(ii) the valuation** is Stickelberger's congruence. With `d :=
+(ℓ^f − 1)/p`, `f := #D` the residue degree, `ω` the Teichmüller
+character of `F` and `π := ζ_ℓ − 1` (a uniformiser at `𝒬`, `e(𝒬/q) =
+ℓ − 1`), the congruence `g(ω^{−k}) ≡ −π^{s_ℓ(k)}/γ(k) (mod 𝒬^{s_ℓ(k)+1})`
+gives `v_𝒬(g(ω^{−k})) = s_ℓ(k)`, the base-`ℓ` digit sum. Here `χ = ω^d`,
+so `v_𝒬(g(χᵃ)) = s_ℓ(⟨−a⟩_p·d)`; the classical digit identity
+`s_ℓ(m(ℓ^f−1)/p) = ((ℓ−1)/p)·∑_{i<f} ⟨mℓ^i⟩_p` and `v_𝒬 = (ℓ−1)·v_q` on
+`𝓞 CF` then give, after multiplying by `p`,
+
+  `v_q(g(χᵃ)^p) = ∑_{i<f} ⟨−a·ℓ^i⟩_p = ∑_{u ∈ D} ⟨−a·u⟩_p`,
+
+the last step because `D`, the decomposition group of `q`, is generated
+by the Frobenius `ℓ` and has order `f`. Since `D` is a group, summing
+`⟨−a·u⟩` and `⟨−a·u⁻¹⟩` over `D` give the same number, so the
+`u⁻¹` written below (matching the parent's carry predicate) is not a
+different normalisation.
+
+**FOUR SUB-STEPS FOR WHOEVER TAKES THIS LEAF**, in dependency order —
+none of them exists in mathlib or in `~/cs/FLT` (surveyed 2026-07-26,
+re-checked 2026-07-27: `Mathlib/NumberTheory/GaussSum.lean` has only
+`gaussSum_mul_gaussSum_eq_card`, `gaussSum_sq`, `gaussSum_frob`, and
+there is no Teichmüller character anywhere in the pin):
+
+1. the compositum `L = CF(ζ_ℓ)`, a prime `𝒬 ∣ q` of `𝓞 L` with
+   `e(𝒬/q) = ℓ − 1`, and `v_𝒬 = (ℓ−1)·v_q` on `𝓞 CF`;
+2. the Teichmüller character `ω : Fˣ → 𝓞 L` with `ω(x) ≡ x (mod 𝒬)`,
+   and the identification `χ = ω^d`;
+3. **Stickelberger's congruence** `v_𝒬(g(ω^{−k})) = s_ℓ(k)` — the deep
+   step (Ireland–Rosen ch. 14 §3; Washington §6.1–6.2; Lang,
+   *Cyclotomic Fields* ch. 1);
+4. the digit identity `s_ℓ(m(ℓ^f−1)/p) = ((ℓ−1)/p)·∑_{i<f}⟨mℓ^i⟩_p`
+   and `D = ⟨ℓ⟩` (decomposition group generated by Frobenius).
+
+**CONSISTENCY CHECK ON THE NORMALISATION** (this is what fixes the sign
+and rules out an off-by-`⟨a⟩` error): `g(χᵃ)·g(χ^{−a}) = χᵃ(−1)·#F`, so
+`v_q(G a) + v_q(G (−a)) = p·f`; and the formula above gives
+`∑_{u ∈ D}(⟨−a·u⟩ + ⟨a·u⟩) = ∑_{u ∈ D} p = p·#D = p·f`. The two agree
+identically, for every `a` prime to `p`.
+
+**THREE EXPLICIT VERIFICATIONS OF THE VALUATION CLAUSE** (2026-07-27;
+computed in closed form, not sampled — the sign convention is the one
+thing here that a plausible-looking statement can get wrong, and a
+wrong sign would make this leaf FALSE rather than merely hard).
+
+* `p = 3`, `ℓ = 2`, `f = 2`, `D = (ZMod 3)ˣ`, `F = 𝔽₄`, `d = 1`. Here
+  `ζ_ℓ = −1`, so `L = CF` and `e = 1`. `Tr : 𝔽₄ → 𝔽₂` is `x ↦ x + x²`,
+  so `Tr(1) = 0` and `Tr(ω) = Tr(ω²) = 1`, giving
+  `g(χ) = 1 − χ(ω) − χ(ω²) = 1 − ζ₃ − ζ₃² = 2`. Thus `G 1 = 2³ = 8`,
+  and `2` is inert in `ℤ[ζ₃]`, so `v_q(G 1) = 3`. The formula:
+  `N 1 = ⟨−1⟩ + ⟨−1·2⟩ = 2 + 1 = 3`. ✓ (Same for `a = 2`, by symmetry.)
+  The relation then reads `J(χ,χ)·g(χ²) = g(χ)²`, i.e. `2·J = 4`, so
+  `J = 2` and `v_q(J) = 1` — and the carry count is `1` (carry at
+  `u = 1` only). ✓
+* `p = 3`, `ℓ = 7`, `f = 1`, `d = 2`, `D = {1}`. Classically
+  `g(χ)³ = 7·J(χ,χ)` for a cubic character, and `7 = q·q̄` with
+  `v_q(7) = 1`, `v_q(J) = 1`; so `v_q(G 1) = 2`. The formula:
+  `N 1 = ⟨−1⟩_3 = 2`. ✓ Cross-checked against Stickelberger directly:
+  `v_𝒬(g(χ)) = s_7(⟨−1⟩_3·d) = s_7(4) = 4`, and `3·4/(ℓ−1) = 12/6 = 2`.
+  ✓ This is the case that pins the `e = ℓ − 1` factor, which the first
+  example cannot see.
+* `p = 5`, `ℓ = 11`, `f = 1`, `d = 2`, `D = {1}`: `N a = 5 − a`, and
+  `v_𝒬(g(χᵃ)) = s_11(⟨−a⟩·2) = 2(5−a)`, so
+  `v_q(G a) = 5·2(5−a)/10 = 5 − a`. ✓
+
+Each of the three also reproduces the parent's carry formula
+`v_q(J) = #carries` through the assembly below, which is the
+independent check that the two clauses fit together.
+
+**WHAT THIS BUYS.** `span_jacobiSum_le_decompCarryPow_of_two_le` follows
+from this leaf plus `sum_decompVal_add_eq_add_mul_carryCard` and
+`span_singleton_le_pow_of_mul_eq_of_exact_val`, **without using its
+`2 ≤ #carries` hypothesis** — the Gauss-sum route is uniform in the
+carry count. So once this leaf is closed, the case split in
+`span_jacobiSum_le_decompCarryPow` (elementary route for `≤ 1`, this
+route for `≥ 2`) becomes redundant and the whole node is one
+application. The `htwo` binder is kept only because the statement is
+already consumed with it. -/
+theorem exists_gaussSumPow_of_jacobiSum (CF : Type) [Field CF] [NumberField CF]
+    [IsCyclotomicExtension {p} ℚ CF]
+    {q : Ideal (𝓞 CF)} [Fintype (𝓞 CF ⧸ q)] (hq : q.IsPrime) (hq0 : q ≠ ⊥)
+    (hpq : (p : 𝓞 CF) ∉ q)
+    (χ : MulChar (𝓞 CF ⧸ q) (𝓞 CF)) (hχ1 : χ ≠ 1)
+    (hχp : ∀ x : 𝓞 CF ⧸ q, x ≠ 0 → χ x ^ p = 1)
+    (hχcong : ∀ x : 𝓞 CF ⧸ q,
+      Ideal.Quotient.mk q (χ x) = x ^ ((Nat.card (𝓞 CF ⧸ q) - 1) / p)) :
+    ∃ G : ℕ → 𝓞 CF,
+      (∀ a c : ℕ, ¬ (p ∣ a) → ¬ (p ∣ c) → ¬ (p ∣ (a + c)) →
+          jacobiSum (χ ^ a) (χ ^ c) ^ p * G (a + c) = G a * G c) ∧
+      (∀ a : ℕ, ¬ (p ∣ a) →
+          G a ∈ q ^ (∑ u ∈ Finset.univ.filter (fun u : (ZMod p)ˣ =>
+              Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q),
+              ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val) ∧
+          G a ∉ q ^ ((∑ u ∈ Finset.univ.filter (fun u : (ZMod p)ˣ =>
+              Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q),
+              ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val) + 1)) :=
+  sorry
+
 /-- **STICKELBERGER PROPER — THE JACOBI-SUM CARRY FORMULA AT CARRY
-COUNT `≥ 2`** (SORRY LEAF, cut 2026-07-27 out of
+COUNT `≥ 2`** (PROVEN 2026-07-27 over
+`exists_gaussSumPow_of_jacobiSum` above; cut 2026-07-27 out of
 `span_jacobiSum_le_decompCarryPow` below, which is now PROVEN over this
 leaf and `jacobiSum_mem_of_mem_decompCarry` above).
 
+**STATUS 2026-07-27: PROVEN, and its `htwo` hypothesis is UNUSED.**
+The proof is the classical Gauss-sum reduction, in three pieces: the
+Gauss-sum valuation `exists_gaussSumPow_of_jacobiSum` (the one
+remaining sorry, and the only place any arithmetic lives), the purely
+combinatorial `sum_decompVal_add_eq_add_mul_carryCard`, and the
+Dedekind bookkeeping `span_singleton_le_pow_of_mul_eq_of_exact_val`.
+Since the route is uniform in the carry count, `htwo` is never
+consulted — it is retained only because the statement is already
+consumed with it, and it may be deleted whenever the consumer is
+rewritten.
+
+Everything below this line is the analysis that preceded the proof; it
+is kept because its content is still correct and still describes where
+the difficulty now sits (namely, entirely inside
+`exists_gaussSumPow_of_jacobiSum`).
+
 This is the residue of the deep node after the elementary route has
 been driven to its limit. The hypothesis `2 ≤ #{carries}` is not a
-convenience: the elementary argument gives EXACTLY `v_q(J) ≥ 1`, so
-carry counts `0` and `1` are now closed and everything at `2` and above
-is open.
+convenience for the ELEMENTARY route: that argument gives EXACTLY
+`v_q(J) ≥ 1`, so carry counts `0` and `1` are closed by it and
+everything at `2` and above needed a different idea.
 
 **WHY THE ELEMENTARY ROUTE STOPS AT `1`, and the check that refutes
 this claim.** Reducing mod `q` turns `J(χᵃ,χᶜ)` into a power sum over
@@ -22879,9 +23120,17 @@ a proof of `v_q(J) ≥ 2` that uses only congruences mod `q` and the
 
 **AXIS SEARCHED.** Congruence-and-Galois arguments inside `𝓞 CF` — mod
 `q` reduction of the Jacobi sum, the `D`-action on exponent pairs, the
-norm relation `J·J̄ = #F`, and the resulting duality (below). Not
-searched, because it is known to work and is known to be large: the
-Gauss-sum route through the compositum.
+norm relation `J·J̄ = #F`, and the resulting duality (below). That axis
+is exhausted, and the verdict above stands.
+
+**THE UNSEARCHED AXIS WAS TAKEN (2026-07-27)**: the Gauss-sum route
+through the compositum, described below. It works, and the surprise is
+how little of it has to enter a STATEMENT: `g(χᵃ)^p` is
+`Gal(L/CF)`-invariant, so the whole apparatus can be packaged as the
+existence of a function `ℕ → 𝓞 CF`
+(`exists_gaussSumPow_of_jacobiSum`) and the compositum `L`, the prime
+`𝒬`, the Teichmüller character and the digit sums never appear outside
+that leaf's proof.
 
 **A STRUCTURAL FACT worth having before attacking this.** For `a`, `c`,
 `a+c` all prime to `p`, `J(χᵃ,χᶜ)·J(χ^{−a},χ^{−c}) = #F`, whose
@@ -22941,8 +23190,29 @@ theorem span_jacobiSum_le_decompCarryPow_of_two_le (CF : Type) [Field CF] [Numbe
       ≤ q ^ (Finset.univ.filter (fun u : (ZMod p)ˣ =>
           Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q ∧
           p ≤ ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
-            + ((-(c : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)).card :=
-  sorry
+            + ((-(c : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val)).card := by
+  classical
+  haveI : NeZero p := ⟨hp.out.ne_zero⟩
+  obtain ⟨G, hGmul, hGval⟩ :=
+    exists_gaussSumPow_of_jacobiSum CF hq hq0 hpq χ hχ1 hχp hχcong
+  -- the parent's index set is the carry-subset of the decomposition group `D`
+  have hfilter : (Finset.univ.filter (fun u : (ZMod p)ˣ =>
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q ∧
+          p ≤ ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
+            + ((-(c : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val))
+      = (Finset.univ.filter (fun u : (ZMod p)ˣ =>
+          Ideal.map ((cycGalRingOfIntegersEquiv CF u : 𝓞 CF →+* 𝓞 CF)) q = q)).filter
+          (fun u : (ZMod p)ˣ =>
+            p ≤ ((-(a : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val
+              + ((-(c : ZMod p)) * ((u⁻¹ : (ZMod p)ˣ) : ZMod p)).val) := by
+    rw [Finset.filter_filter]
+  rw [hfilter]
+  -- `J^p · G(a+c) = G a · G c`, the two lower bounds, the exact valuation at `a+c`,
+  -- and the summed carry identity `N a + N c = N (a+c) + #carries · p`
+  exact span_singleton_le_pow_of_mul_eq_of_exact_val hq hq0 hp.out.ne_zero
+    (hGmul a c ha hc hac) (hGval a ha).1 (hGval c hc).1
+    (hGval (a + c) hac).1 (hGval (a + c) hac).2
+    ((sum_decompVal_add_eq_add_mul_carryCard _ a c).trans (by ring))
 
 /-- **THE JACOBI-SUM CARRY FORMULA — the deep node of the Stickelberger
 chain** (cut 2026-07-27 out of `span_gaussPowOfJacobiSums_le_localPow`
