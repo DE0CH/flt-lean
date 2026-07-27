@@ -27322,16 +27322,93 @@ along this axis:
   either: `X₀ ⊔ Spec ℚ` with a bare HBAV at the extra point is fine and has
   no level structure there.
 
-THE AXIS NOT SEARCHED, recorded so the next owner starts there rather than
-repeating the above: a STAGED-CONSTRUCTION cut, in which an intermediate
-object is named as data and handed across the seam — e.g. the moduli space
-of `λ`-level structures alone, with `X₀ ⟶ Y` finite étale, or the coarse
-space plus a rigidification datum. Nothing here refutes such a cut; it needs
-a new interface written, which is cheap in the sense of "STATING a theory is
-not PROVING it", and it is the only route by which the analytic
-uniformization (which supplies connectedness) could be separated from the
-GIT/deformation-theoretic construction (which supplies representability and
-smoothness).
+THE STAGED-CONSTRUCTION AXIS — NOW SEARCHED (2026-07-27), AND THE VERDICT IS
+"available, not refuted, and NOT WORTH TAKING". The previous version of this
+paragraph recorded this axis as unsearched and invited the next owner to take
+it. It has now been searched, and the result is written out in full because
+the invitation was the misleading half: the cut is constructible, and it buys
+no mathematical reduction while risking a false second leaf.
+
+*The shape.* An intermediate `Y` is named as data, `X₀ ⟶ Y` is asserted
+étale, and `fX₀ := (X₀ ⟶ Y) ≫ fY`.
+
+*The geometry assembly IS available at this pin* — this was the part that
+looked like it needed new infrastructure, and it does not. Checked against
+`.lake/packages/mathlib`:
+
+* `Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:204` — the instance
+  `SmoothOfRelativeDimension (n + m) (f ≫ g)`;
+* `Mathlib/AlgebraicGeometry/Morphisms/Etale.lean:107` — the instance
+  `[Etale f] : SmoothOfRelativeDimension 0 f`;
+* `Mathlib/AlgebraicGeometry/Morphisms/Smooth.lean:167` —
+  `SmoothOfRelativeDimension n` is `IsStableUnderBaseChange`.
+
+So clause 1 of the conclusion falls out of `0 + n = n`, and clauses 2–4 out
+of the ordinary composition instances. No new geometry API is needed for the
+assembly.
+
+*Why it is nevertheless a trap, with the witness.* If the intermediate leaf
+asserts only GEOMETRY of `Y` — `SmoothOfRelativeDimension (finrank ℚ D) fY`,
+separated, locally of finite type, quasi-compact, geometrically connected —
+then `Y := 𝔸^{[D:ℚ]}_ℚ` discharges it outright, and the second leaf is this
+leaf again with one inert extra hypothesis. Sorry count `+1`, mathematical
+content unchanged. Any staged cut of a MODULI statement whose first stage
+does not itself carry a moduli property has this shape.
+
+*The honest form, and it needs NO new definitions.* Give `Y` the `λ`-only
+moduli package: `IsSplitLevelStructure` is already stated one ideal at a
+time, and `Fermat.PolarizationStruct`'s level set `𝒩` is already a
+parameter, so `𝒩 := {lam}` with `frp`, `kp`, `ρ₀p`, `Λp` dropped from the
+universal-level and fineness clauses is expressible today, verbatim in this
+leaf's own vocabulary.
+
+*Where the risk then sits.* The second stage has to hold for an ARBITRARY
+`Y` carrying that package, and its soundness rests on an argument nobody has
+written down: `Y ⊔ Y` is excluded by `GeometricallyConnected fY`, and a
+nontrivial connected étale cover `Y ⟶ M` of the true `λ`-space is excluded
+because the fineness clause read at `F = ` the function field of `M` demands
+an `F`-point of `Y`, i.e. a rational section — but that argument is
+informal, and a prover of the second stage would be leaning on it silently.
+THE CHECK THAT WOULD REFUTE THE CUT: exhibit a geometrically connected `Y`
+satisfying the `λ`-package whose full `𝔭`-level cover is geometrically
+DISCONNECTED.
+
+*Why it was not taken.* "Rapoport at level `λ`" and "adjoin full `𝔭`-level
+structure" are the same construction — the GIT/deformation input and the
+analytic uniformization are needed in identical form for both — so the cut
+moves no mathematics across the seam. What it would buy is exactly the four
+shape clauses, and those are already the cheap ones (leaf A2 above takes
+`Smooth` out of `SmoothOfRelativeDimension` in one line).
+
+THE ONE PIECE OF INFRASTRUCTURE THAT WOULD CHANGE THIS ANSWER, and the item
+to build before attempting any staged cut here: **base-change transport of
+the `Fermat.AbelianSchemeStruct` / `Mult` / `DualStruct` / `SymHomStruct` /
+`PolarizationStruct` vocabulary along a morphism `q : S' ⟶ S`.** Every
+staged cut attempted above collapses into "the second leaf produces
+everything" for one reason only — the family cannot be moved across the
+seam. That transport is bookkeeping rather than mathematics: all five
+structures are functors of points over
+`Fermat.RelPoint f g = {x : T ⟶ A // x ≫ f = g}`
+(`Modularity/AbelianScheme.lean:107`), and for the pulled-back family
+`f' : A ×_S S' ⟶ S'` the universal property of the pullback gives
+`RelPoint f' g' ≃ RelPoint f (g' ≫ q)` for every `g' : T ⟶ S'`. That
+equivalence is what has to be written — it is NOT `Fermat.RelPoint.pre`
+(`:120`), which is precomposition in `T` and not a base change in `S` — and
+once it exists every algebraic field of all five structures transports by
+transport along it. The only fields needing real input are
+`AbelianSchemeStruct`'s `proper`, `smooth` and `connected`, each of which is
+a base-change stability statement about a mathlib morphism property. Nothing in this file consumes such transport
+today, so writing it is a separate task with its own consumer, not
+something to smuggle into this leaf.
+
+THE OTHER AXIS STILL NOT SEARCHED: a cut that separates the analytic
+uniformization (which supplies connectedness) from the GIT/deformation
+input (which supplies representability and smoothness) by naming the
+COMPLEX-ANALYTIC datum. The obstruction there is that
+`GeometricallyConnected` is the all-extensions form and this pin has no
+"test over a single algebraically closed extension" criterion — the same
+gap `geometricallyIrreducible_of_smooth_of_geometricallyConnected` above
+had to route around.
 
 **FAITHFULNESS QUESTION — NARROW CLASS GROUP versus CONNECTEDNESS:
 SETTLED 2026-07-27, and the answer was NO. The previous form of this leaf
@@ -28023,7 +28100,66 @@ is imaginary quadratic, and an induction from an imaginary quadratic field
 is odd. Note this is consistent with the COUPLING AUDIT rather than in
 tension with it: twisting by `μ` changes `det` by `μ²` and `μ(c)² = 1` at
 complex conjugation, so the twist that breaks the determinant condition
-PRESERVES oddness, and preserves `hdih` as well. -/
+PRESERVES oddness, and preserves `hdih` as well.
+
+CUT-AXIS AUDIT (2026-07-27) — FOUR AXES SEARCHED, ALL CLOSED, AND THE ONE
+THING TO BUILD FIRST. Recorded in the form the fleet's doctrine asks for:
+which axis, and what would refute the verdict.
+
+1. *Space versus real point.* Already refuted, in the DESCENT/SEAM section
+   docstring above and in the FORM-cut docstring: an EVEN twist `X_R` has
+   `X_R(ℝ) = ∅`, satisfies every geometric clause, and satisfies the
+   level-structure clause vacuously over totally real fields. Any cut that
+   hands a bare `X` to a second leaf dies to it. Not re-searched.
+
+2. *Split the two level structures.* The conclusion asks for
+   `IsTwistedLevelStructure lam m ρbar x` and
+   `IsTwistedLevelStructure frp m ρbarp x` at the same `x`. Both are read
+   off ONE descent — Lemma 4.4 describes `X_{R,ψ}(F)` for the single
+   cocycle `R = ρbar ⊕ ρbarp` — and a leaf producing only the `λ` half
+   hands the second leaf a bare `X`, i.e. axis 1. Closed.
+
+3. *Descend the four shape clauses along the form.* `IsFormOver ℚ̄ fX fX₀`
+   plus `Smooth fX₀` does not give `Smooth fX` at this pin: that is fpqc
+   DESCENT of a morphism property along `Spec ℚ̄ ⟶ Spec ℚ`, and what
+   mathlib records for `Smooth`, `SmoothOfRelativeDimension`, `IsSeparated`
+   and `QuasiCompact` is `IsStableUnderBaseChange`, which is the opposite
+   direction. `Spec ℚ̄ ⟶ Spec ℚ` is faithfully flat but not of finite
+   presentation, so even the fppf statements would not apply verbatim.
+   THE CHECK THAT WOULD REFUTE THIS: find a descent-along-faithfully-flat
+   lemma for morphism properties in `.lake/packages/mathlib`; grepping
+   `IsStableUnderBaseChange` / `descends` there found none.
+
+4. *Stage the construction through a Galois-descent-datum interface* —
+   name the semilinear `Γ_ℚ`-action on `X₀ ⊗ ℚ̄` and the 1-cocycle
+   `σ ↦ (ρbar(σ) ρ₀(σ)⁻¹, ρbarp(σ) ρ₀p(σ)⁻¹)` as data, then split into
+   "the datum exists" and "descent is effective, and Lemma 4.4 describes
+   the points". This is the only axis that is NOT closed, and it cannot be
+   taken today because **the interface does not exist anywhere.** Checked
+   2026-07-27 across all three places: mathlib has no descent data for
+   schemes; `~/cs/FLT` has none; and the only file in THIS tree named for
+   it, `Fermat/FLT/Mathlib/AlgebraicGeometry/EllipticCurve/GaloisDescent.lean`,
+   is an EMPTY STUB — 35 lines of header, docstring and an empty
+   `namespace WeierstrassCurve`, with ZERO declarations. Its docstring
+   promises quadratic descent for Weierstrass data and delivers nothing, so
+   a grep for "GaloisDescent" in this tree finds a filename and no content.
+
+So: writing a scheme-level Galois-descent interface is the first step for
+anyone attacking this leaf, and it is a SEPARATE task with its own
+consumers — not something to introduce inside this declaration. Note it
+would also serve the `𝔞`-side: the same interface is what would let
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` be cut into a
+construction over a field containing `μ_{ℓp}` plus a descent to `ℚ` along
+the standard level module `ρ₀`.
+
+WHAT IS GENUINELY MISSING FROM THE PIN for the construction itself, so the
+next owner does not re-survey (checked 2026-07-27 over `Fermat/`,
+`.lake/packages/mathlib` and `~/cs/FLT`): descent data for schemes,
+effectivity of descent, `H¹(G, Γ)` classifying twists of a scheme with a
+`Γ`-action, and the theory of complex multiplication supplying the CM point
+of `X_Dih`. `AbelianVariety`, `AbelianScheme` and `HilbertModular` occur in
+mathlib zero times, and in `~/cs/FLT` only inside two `KnownIn1980s` files
+that assume rather than construct. -/
 theorem exists_twistedHilbertBlumenthalDescent_of_split
     {ℓ : ℕ} (hℓodd : Odd ℓ) [Fact ℓ.Prime] (hℓ5 : 5 ≤ ℓ)
     {k : Type u} [Field k] [Finite k] [Algebra ℤ_[ℓ] k]
@@ -28438,23 +28574,69 @@ now PROVEN, so only TWO of the three names above are live:
 `exists_twistedHilbertBlumenthalDescent_of_split`. Both are geometry; the
 representation-theoretic half is done and needs no owner.
 
-AUDIT UPDATE V (2026-07-27, latest) — **ONE of those two is FALSE AS STATED
-and must not be dispatched at.** `HasSplitHilbertBlumenthalModuli` asserts
-`GeometricallyIrreducible fX₀` while its fineness clause quantifies over
-every polarized object; the components of a Hilbert–Blumenthal moduli space
-are indexed by `Cl⁺(D)`, and `D = ℚ(√3)` (`h = 1`, `h⁺ = 2`) supplies an
-object satisfying every hypothesis that no `F`-point of a geometrically
-irreducible `X₀` can receive. So
-`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` (the sorry
-node) and `exists_splitHilbertBlumenthalModuli_of_standardLevelModule` (its
-assembly) are unprovable, and `exists_splitHilbertBlumenthalModuli` — hence
-this declaration's own proof — rests on them. The verdict, the refutation of
-the two obvious repairs (`𝒩 = ⊤`; carrying Rapoport's `𝔞` as data — both see
-only `Cl(D)`, which is trivial for the witness), and the machinery the real
-repair needs (AMPLENESS on `Fermat.AbelianSchemeStruct`) are on
-`exists_splitHilbertBlumenthalModuli_of_standardLevelModule`. Only
-`exists_twistedHilbertBlumenthalDescent_of_split` is a dispatchable leaf
-under this declaration today.
+AUDIT UPDATE V (2026-07-27) — **RETRACTED THE SAME DAY; SEE AUDIT UPDATE VI
+IMMEDIATELY BELOW BEFORE ACTING ON IT.** It read: "ONE of those two is FALSE
+AS STATED and must not be dispatched at",
+`HasSplitHilbertBlumenthalModuli` asserting `GeometricallyIrreducible fX₀`
+while its fineness clause quantifies over every polarized object, with
+`D = ℚ(√3)` (`h = 1`, `h⁺ = 2`) as the witness; it concluded that
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` and
+`exists_splitHilbertBlumenthalModuli_of_standardLevelModule` were unprovable
+and that only `exists_twistedHilbertBlumenthalDescent_of_split` was
+dispatchable. The refutation was CORRECT; the "do not dispatch" verdict and
+the prescribed repair were not, and both are now obsolete.
+
+AUDIT UPDATE VI (2026-07-27, later) — **THE REPAIR LANDED AND BOTH LEAVES ARE
+DISPATCHABLE.** `Fermat.PolarizationStruct` now carries POSITIVITY AS DATA —
+the polarization module `𝔞`, its cone `𝔞pos`, an isomorphism
+`𝔞 ≅ Hom^sym_{𝒪_D}(A, A^∨)` (`lam_surjective`), and `hom = λ_a` for a
+positive `a` (`posElt`, `posElt_pos`, `hom_eq_lam`) — and
+`HasSplitHilbertBlumenthalModuli` takes `𝔞` as a PARAMETER shared by `pol₀`
+and `polB`, with `𝔞pos := totallyPositiveElts D`. `X₀` is then the class-`𝔞`
+component and fineness ranges over the objects of class `𝔞`, so the two
+clauses are about the same component. This declaration instantiates
+`𝔞 := ⊤`, the principal narrow class.
+
+TWO CORRECTIONS TO UPDATE V THAT ARE WORTH KEEPING, because each of them was
+load-bearing for a wrong conclusion:
+
+* "carrying Rapoport's `𝔞` as data sees only `Cl(D)`" was right about a bare
+  MODULE isomorphism and wrong as an objection to the repair: it is the pair
+  `(𝔞, 𝔞pos)` that pins `Cl⁺`, because two identifications `𝔞 ≅ Hom^sym`
+  differ by a unit `u` with `u𝔞 = 𝔞`, and demanding that both carry `hom` to
+  a POSITIVE element forces `u` totally positive — which is exactly the
+  equivalence defining the narrow class group. Positivity had to be DATA and
+  not a `Prop` derived downstream: `λ` and `−λ` have the same kernel and
+  induce the same pairing up to inversion, so no axiom in this module's
+  torsion/Galois vocabulary can distinguish them.
+* "the machinery the real repair needs is AMPLENESS on
+  `Fermat.AbelianSchemeStruct`" pointed at the wrong subtree twice over, and
+  BOTH halves of that are worth knowing. First, it was not the binding
+  constraint: positivity is invisible to torsion — `λ` and `−λ` have the same
+  kernel and induce the same pairing up to inversion — so no amount of
+  ampleness would have let a `Prop`-valued positivity be derived in this
+  module's vocabulary. Second, the absence it asserted is NO LONGER an
+  absence, and the refuting check is one grep: `Fermat.IsAmpleSheaf`
+  (`Modularity/AmpleSheaf.lean:156`) and the relative Picard functor with
+  `Pic⁰` as `Fermat.IsRelPicZeroOf` (`ModularCurve/RelativePicard.lean:302`,
+  with `exists_relPicZero` at `:432`) were both written on 2026-07-27, over
+  `Fermat.modTensor` / `Fermat.IsInvertibleSheaf`. What genuinely remains
+  missing is only the IDENTIFICATION of `Fermat.DualStruct.dualScheme` with
+  that `Pic⁰` — `dualScheme` does not occur in `RelativePicard.lean` — which
+  is what Mumford's `φ_L` would need. Note also that
+  `Modularity/AbelianScheme.lean:1210`'s "there is NO ampleness of any kind"
+  is stale for the same reason.
+
+DO NOT RE-PROPOSE pushing `h⁺(D) = 1` upstream: `D` is produced to hit a
+prescribed residue field and the route quantifies over all `ℓ`, so the
+hypothesis would have a real-quadratic case that is Gauss's class-number-one
+problem. That reasoning is recorded on `Fermat.PolarizationStruct` and on
+`HasSplitHilbertBlumenthalModuli`.
+
+BOTH leaves under this declaration are live and dispatchable today:
+`exists_splitHilbertBlumenthalFamily_of_standardLevelModule` (Rapoport §1)
+and `exists_twistedHilbertBlumenthalDescent_of_split` (Taylor Lemma 4.4).
+Each carries its own CUT-AXIS AUDIT saying which axes have been searched.
 
 One correction to the AUDIT UPDATE above, worth stating because it was
 load-bearing for the cut and is not quite what that paragraph says. The new
@@ -28471,7 +28653,9 @@ producing them is part of Rapoport's leaf. Anyone auditing the claim
 suffices to STATE the normalization as bundled data, and does not suffice
 to WRITE a canonical normalized level module.
 
-AUDIT UPDATE V (2026-07-27) — this node now takes
+AUDIT UPDATE VII (2026-07-27; it carried the label "AUDIT UPDATE V" until
+2026-07-27, colliding with the retracted falsity verdict above — the two are
+unrelated) — this node now takes
 `hstdp : ∃ Λp, IsStandardLevelModule p ρbarp Λp` and passes it through. That
 is the determinant coupling `det ρbarp = χ̄_p`, which the COUPLING AUDIT on
 `exists_twistedHilbertBlumenthalDescent_of_split` shows that leaf entails and
