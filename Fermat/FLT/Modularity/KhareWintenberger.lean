@@ -429,6 +429,14 @@ public import Mathlib.Analysis.Normed.Module.FiniteDimension
 public import Mathlib.RingTheory.Smooth.StandardSmoothOfFree
 public import Mathlib.RingTheory.Extension.Presentation.Submersive
 public import Mathlib.RingTheory.Localization.Away.Basic
+-- proof-only: `X_pow_sub_C_irreducible_of_prime`, used to build the quadratic
+-- extension `F(sqrt d)` inside `exists_quadraticExtension_trivial_of_isTotallyReal`.
+-- Nothing from it occurs in a SIGNATURE, so a plain (non-`public`) import suffices.
+import Mathlib.FieldTheory.KummerPolynomial
+-- proof-only: `DivisionSemiring.to_moduleIsTorsionFree`, which supplies the
+-- `Module.IsTorsionFree` side conditions of `IsAlgClosure.equivOfEquiv` used in
+-- `exists_ringEquiv_algebraicClosure_uliftReal_complex`.
+import Mathlib.Algebra.Module.Torsion.Field
 
 @[expose] public section
 
@@ -9889,9 +9897,171 @@ theorem exists_anticyclotomicDihedralCocycle (kp : Type u) [Field kp] [Finite kp
       (∃ g, e g = 1 ∧ ν g ^ (4 : ℕ) ≠ 1) :=
   sorry
 
+/-- **The image of `Γ L → Γ K` contains everything that fixes ONE embedded copy
+of `L` in `Kᵃˡᵍ`** (PROVEN 2026-07-27).
+
+`Field.absoluteGaloisGroup.map (algebraMap K L)` is built from an arbitrarily
+chosen `IsAlgClosed.lift`, so "the subgroup `Γ L ≤ Γ K`" is well defined only up
+to conjugacy. This lemma pins that ambiguity down once and for all: it produces
+the `K`-embedding `φ : L →ₐ[K] Kᵃˡᵍ` that the chosen closure map determines, and
+shows every `g : Γ K` fixing `φ L` pointwise really is in the image of `Γ L`.
+
+PROOF. `L/K` algebraic makes `Lᵃˡᵍ` algebraic over `Kᵃˡᵍ` through
+`ι := AlgebraicClosure.map (algebraMap K L)`, and an algebraic extension of an
+algebraically closed field is trivial
+(`IsAlgClosed.algebraMap_bijective_of_isIntegral`), so `ι` is BIJECTIVE. Pull `L`
+back along `ι` to get `φ`; for `g` fixing `φ L`, conjugating `g` by `ι` produces
+an honest `L`-automorphism of `Lᵃˡᵍ` whose image under `map` is `g`, by
+`Field.absoluteGaloisGroup.lift_map` and injectivity of `ι`.
+
+RELATION TO `normal_range_absoluteGaloisGroup_map`. That theorem computes the
+same range as `Z.fixingSubgroup` and then uses `Normal K L` to conclude the
+range is a NORMAL subgroup. This lemma is exactly the half of its range
+computation that does NOT need normality — which is what makes it usable here,
+since a totally real `F` need not be normal over `ℚ`. -/
+theorem exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map
+    {K L : Type*} [Field K] [Field L] [Algebra K L] [Algebra.IsAlgebraic K L] :
+    ∃ φ : L →ₐ[K] AlgebraicClosure K,
+      ∀ g : Field.absoluteGaloisGroup K, (∀ y : L, g (φ y) = φ y) →
+        g ∈ Set.range (Field.absoluteGaloisGroup.map (algebraMap K L)) := by
+  classical
+  haveI : Algebra.IsAlgebraic K (AlgebraicClosure L) :=
+    Algebra.IsAlgebraic.trans (R := K) (S := L) (A := AlgebraicClosure L)
+  set ι : AlgebraicClosure K →+* AlgebraicClosure L :=
+    AlgebraicClosure.map (algebraMap K L) with hι
+  letI : Algebra (AlgebraicClosure K) (AlgebraicClosure L) := ι.toAlgebra
+  haveI : IsScalarTower K (AlgebraicClosure K) (AlgebraicClosure L) :=
+    IsScalarTower.of_algebraMap_eq' (by
+      ext x
+      exact (AlgebraicClosure.map_algebraMap (algebraMap K L) x).symm)
+  haveI : Algebra.IsAlgebraic (AlgebraicClosure K) (AlgebraicClosure L) :=
+    Algebra.IsAlgebraic.tower_top (K := K) (AlgebraicClosure K) (A := AlgebraicClosure L)
+  have hbij : Function.Bijective ι :=
+    IsAlgClosed.algebraMap_bijective_of_isIntegral (k := AlgebraicClosure K)
+      (K := AlgebraicClosure L)
+  set ε : AlgebraicClosure K ≃+* AlgebraicClosure L := RingEquiv.ofBijective ι hbij with hε
+  have hεapp : ∀ x, ε x = ι x := fun _ => rfl
+  set φr : L →+* AlgebraicClosure K :=
+    (ε.symm : AlgebraicClosure L →+* AlgebraicClosure K).comp
+      (algebraMap L (AlgebraicClosure L)) with hφr
+  set φ : L →ₐ[K] AlgebraicClosure K :=
+    { toRingHom := φr
+      commutes' := fun x => by
+        show ε.symm (algebraMap L (AlgebraicClosure L) (algebraMap K L x)) = _
+        have h1 : (algebraMap L (AlgebraicClosure L)) (algebraMap K L x)
+            = ι (algebraMap K (AlgebraicClosure K) x) := by
+          rw [hι, AlgebraicClosure.map_algebraMap]
+        rw [h1, ← hεapp, RingEquiv.symm_apply_apply] } with hφ
+  have hφapp : ∀ y : L, φ y = ε.symm (algebraMap L (AlgebraicClosure L) y) := fun _ => rfl
+  refine ⟨φ, fun τ hfix => ?_⟩
+  set σ0 : AlgebraicClosure L ≃+* AlgebraicClosure L :=
+    (ε.symm.trans τ.toRingEquiv).trans ε with hσ0
+  have hσ0app : ∀ w, σ0 w = ε (τ (ε.symm w)) := fun _ => rfl
+  have hcomm : ∀ y : L, σ0 (algebraMap L (AlgebraicClosure L) y)
+      = algebraMap L (AlgebraicClosure L) y := by
+    intro y
+    rw [hσ0app, ← hφapp, hfix y, hφapp, RingEquiv.apply_symm_apply]
+  set σ : Field.absoluteGaloisGroup L := AlgEquiv.ofRingEquiv (f := σ0) hcomm with hσ
+  refine ⟨σ, ?_⟩
+  apply AlgEquiv.ext
+  intro x
+  apply ι.injective
+  have hx : ε.symm (ι x) = x := by rw [← hεapp]; exact ε.symm_apply_apply x
+  have hrhs : σ (ι x) = ι (τ x) := by
+    show σ0 (ι x) = ι (τ x)
+    rw [hσ0app, hx, hεapp]
+  exact (Field.absoluteGaloisGroup.lift_map (algebraMap K L) σ x).trans hrhs
+
+/-- **`(ULift ℝ)ᵃˡᵍ` is `ℂ`, compatibly with the real place** (PROVEN
+2026-07-27). The Moret-Bailly cut states its real points over the `Type u` copy
+`ULift ℝ`, so the archimedean leaf below has to talk about
+`AlgebraicClosure (ULift ℝ)` rather than about `ℂ` itself; this lemma is the
+bridge, and it is the ONLY place where the two are compared.
+
+PROOF. `IsAlgClosure.equivOfEquiv` transports an algebraic closure along a ring
+isomorphism of base fields — here `ULift.ringEquiv : ULift ℝ ≃+* ℝ` — and
+`IsAlgClosure.equivOfEquiv_algebraMap` is exactly the stated compatibility.
+`IsAlgClosure ℝ ℂ` is assembled from `Complex.isAlgClosed` and `ℂ/ℝ` being
+finite, hence algebraic.
+
+INSTANCE NOTE, and it cost a cycle: do NOT route this through a hand-built
+`Algebra (ULift ℝ) ℂ` plus `IsScalarTower (ULift ℝ) ℝ ℂ`. Mathlib already has a
+`SMul (ULift ℝ) ℝ` coming from `ULift`'s own action, distinct from the
+`Algebra.toSMul` of any hand-built algebra structure, so the `IsScalarTower`
+one proves is not the one `Algebra.IsAlgebraic.trans` then asks for and instance
+search fails on a goal that prints exactly like the hypothesis in context.
+`equivOfEquiv` needs no `ULift` algebra structure at all. -/
+theorem exists_ringEquiv_algebraicClosure_uliftReal_complex :
+    ∃ θ : AlgebraicClosure (ULift.{u} ℝ) ≃+* ℂ,
+      ∀ r : ULift.{u} ℝ,
+        θ (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) r) = (r.down : ℂ) := by
+  haveI : IsAlgClosure ℝ ℂ := ⟨Complex.isAlgClosed, inferInstance⟩
+  refine ⟨IsAlgClosure.equivOfEquiv (AlgebraicClosure (ULift.{u} ℝ)) ℂ
+    (ULift.ringEquiv : ULift.{u} ℝ ≃+* ℝ), fun r => ?_⟩
+  rw [IsAlgClosure.equivOfEquiv_algebraMap]
+  rfl
+
+/-- **Complex conjugation on `(ULift ℝ)ᵃˡᵍ` is nontrivial and fixes every
+totally real subfield** (PROVEN 2026-07-27) — the archimedean content of the
+real-place leaf below, isolated from all the closure-map bookkeeping.
+
+WHAT IT SAYS. There is a nontrivial `τ ∈ Γ (ULift ℝ)` such that for EVERY
+totally real number field `E` and EVERY ring hom `ψ : E → (ULift ℝ)ᵃˡᵍ`, `τ`
+fixes `ψ E` pointwise. Note the quantifier order: one `τ` works for all `E` and
+all `ψ` simultaneously, which is what lets the consumer apply it to the
+infinitely many conjugates `σ⁻¹ ∘ φ` of a single embedding.
+
+PROOF. Transport along `θ` of the previous lemma. `τ := θ⁻¹ ∘ conj ∘ θ` is a
+`ULift ℝ`-algebra automorphism because `θ` matches the two real places and
+`conj` fixes `ℝ`; it is nontrivial because `conj I = -I ≠ I`; and it fixes
+`ψ E` because `θ ∘ ψ : E →+* ℂ` is a complex embedding of a totally real field,
+hence real (`NumberField.IsTotallyReal.complexEmbedding_isReal`).
+
+This is where — and the ONLY where — total realness of the base is consumed. -/
+theorem exists_ne_one_absoluteGaloisGroup_uliftReal_fixes_isTotallyReal :
+    ∃ τ : Field.absoluteGaloisGroup (ULift.{u} ℝ), τ ≠ 1 ∧
+      ∀ (E : Type v) [Field E] [NumberField.IsTotallyReal E]
+        (ψ : E →+* AlgebraicClosure (ULift.{u} ℝ)) (y : E), τ (ψ y) = ψ y := by
+  classical
+  obtain ⟨θ, hθ⟩ := exists_ringEquiv_algebraicClosure_uliftReal_complex.{u}
+  let conjE : ℂ ≃+* ℂ :=
+    { toFun := starRingEnd ℂ
+      invFun := starRingEnd ℂ
+      left_inv := fun z => by simp
+      right_inv := fun z => by simp
+      map_mul' := map_mul _
+      map_add' := map_add _ }
+  let τ0 : AlgebraicClosure (ULift.{u} ℝ) ≃+* AlgebraicClosure (ULift.{u} ℝ) :=
+    (θ.trans conjE).trans θ.symm
+  have hτ0app : ∀ w, τ0 w = θ.symm (starRingEnd ℂ (θ w)) := fun _ => rfl
+  have hcomm : ∀ r : ULift.{u} ℝ,
+      τ0 (algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) r)
+        = algebraMap (ULift.{u} ℝ) (AlgebraicClosure (ULift.{u} ℝ)) r := by
+    intro r
+    rw [hτ0app, hθ r, Complex.conj_ofReal, ← hθ r, RingEquiv.symm_apply_apply]
+  refine ⟨AlgEquiv.ofRingEquiv (f := τ0) hcomm, ?_, ?_⟩
+  · intro h
+    have h1 : (AlgEquiv.ofRingEquiv (f := τ0) hcomm) (θ.symm Complex.I) = θ.symm Complex.I := by
+      rw [h]; rfl
+    have h1' : θ.symm (starRingEnd ℂ (θ (θ.symm Complex.I))) = θ.symm Complex.I := h1
+    rw [RingEquiv.apply_symm_apply, Complex.conj_I] at h1'
+    have h2 : (-Complex.I : ℂ) = Complex.I := θ.symm.injective h1'
+    have h3 : (2 : ℂ) * Complex.I = 0 := by linear_combination -h2
+    rcases mul_eq_zero.mp h3 with h4 | h4
+    · exact absurd h4 (by norm_num)
+    · exact Complex.I_ne_zero h4
+  · intro E _ _ ψ y
+    have hreal : NumberField.ComplexEmbedding.IsReal
+        ((θ : AlgebraicClosure (ULift.{u} ℝ) →+* ℂ).comp ψ) :=
+      NumberField.IsTotallyReal.complexEmbedding_isReal _
+    have hy : starRingEnd ℂ (θ (ψ y)) = θ (ψ y) :=
+      RingHom.congr_fun (NumberField.ComplexEmbedding.isReal_iff.mp hreal) y
+    show θ.symm (starRingEnd ℂ (θ (ψ y))) = ψ y
+    rw [hy, RingEquiv.symm_apply_apply]
+
 /-- **THE REAL-PLACE LEAF: over a totally real base, the whole conjugacy
-class of complex conjugation is in the image of `Γ_F`** (sorry node, cut
-2026-07-26 — no class field theory in it; this is the archimedean half of
+class of complex conjugation is in the image of `Γ_F`** (PROVEN 2026-07-27;
+cut 2026-07-26 — no class field theory in it; this is the archimedean half of
 `exists_dihedralOddGaloisRep_of_charThree`).
 
 WHAT IT SAYS, AND WHY IT IS TRUE. Let `F` be a totally real number field
@@ -9917,18 +10087,53 @@ made for that chosen map. That bookkeeping — not the mathematics, which is
 the two lines above — is the content of discharging it.
 
 FAITHFULNESS. It is not vacuous: `ℚ` itself is totally real, so the `F = ℚ`
-instance already asserts that `Γ_ℝ → Γ_ℚ` is nontrivial. -/
+instance already asserts that `Γ_ℝ → Γ_ℚ` is nontrivial.
+
+HOW IT WAS DISCHARGED (2026-07-27), since the docstring above correctly
+predicted that the bookkeeping, not the mathematics, is the work. Two lemmas
+immediately above split it cleanly in two, and NEITHER touches
+`Field.absoluteGaloisGroup.map` itself:
+
+* `exists_ne_one_absoluteGaloisGroup_uliftReal_fixes_isTotallyReal` supplies one
+  `τ` that fixes the image of EVERY ring hom out of EVERY totally real number
+  field. That single quantifier order is what makes the `∀ σ` here free: the
+  conjugate copy `σ⁻¹ ∘ φ` is just another such ring hom.
+* `exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map` converts
+  "fixes the embedded copy of `F`" back into "is in the image of `Γ_F`",
+  WITHOUT needing `Normal ℚ F` — which matters, because a totally real `F` need
+  not be normal over `ℚ` and so `normal_range_absoluteGaloisGroup_map` does not
+  apply here. -/
 theorem exists_realConj_mem_range_of_isTotallyReal
     (F : Type u) [Field F] [NumberField F] [NumberField.IsTotallyReal F] :
     ∃ τ : Field.absoluteGaloisGroup (ULift.{u} ℝ), τ ≠ 1 ∧
       ∀ σ : Field.absoluteGaloisGroup ℚ,
         σ * (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ) * σ⁻¹ ∈
-          Set.range (Field.absoluteGaloisGroup.map (algebraMap ℚ F)) :=
-  sorry
+          Set.range (Field.absoluteGaloisGroup.map (algebraMap ℚ F)) := by
+  classical
+  obtain ⟨τ, hτ1, hτfix⟩ :=
+    exists_ne_one_absoluteGaloisGroup_uliftReal_fixes_isTotallyReal.{u, u}
+  obtain ⟨φ, hφ⟩ :=
+    exists_algHom_forall_fixes_mem_range_absoluteGaloisGroup_map (K := ℚ) (L := F)
+  refine ⟨τ, hτ1, fun σ => hφ _ ?_⟩
+  intro y
+  -- `c := map (algebraMap ℚ (ULift ℝ)) τ` fixes EVERY embedded copy of `F`, in
+  -- particular the conjugate copy `σ⁻¹ ∘ φ`; that is the whole content.
+  have hfix : Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ (σ⁻¹ (φ y))
+      = σ⁻¹ (φ y) := by
+    apply (AlgebraicClosure.map (algebraMap ℚ (ULift.{u} ℝ))).injective
+    rw [Field.absoluteGaloisGroup.lift_map (algebraMap ℚ (ULift.{u} ℝ)) τ]
+    exact hτfix F ((AlgebraicClosure.map (algebraMap ℚ (ULift.{u} ℝ))).comp
+      ((σ⁻¹ : Field.absoluteGaloisGroup ℚ).toAlgHom.toRingHom.comp
+        (φ : F →+* AlgebraicClosure ℚ))) y
+  show σ (Field.absoluteGaloisGroup.map (algebraMap ℚ (ULift.{u} ℝ)) τ (σ⁻¹ (φ y))) = φ y
+  rw [hfix]
+  show (σ * σ⁻¹) (φ y) = φ y
+  rw [mul_inv_cancel]
+  rfl
 
 /-- **THE QUADRATIC-DESCENT LEAF: `F(√d)` kills the quadratic character**
-(sorry node, cut 2026-07-26 — Kummer theory of a quadratic extension, no
-class field theory in it).
+(PROVEN 2026-07-27; cut 2026-07-26 — Kummer theory of a quadratic
+extension, no class field theory in it).
 
 WHAT IT SAYS. Given an imaginary quadratic `ℚ(√d)` presented by `d < 0`
 and a square root `x` of `d` in `ℚᵃˡᵍ`, and given that a character
@@ -9955,7 +10160,19 @@ BOTH square roots of `d` so the chase does not need to track a sign.
 FAITHFULNESS. `hd` and `hx` are both consumed (`hd` for irreducibility of
 `X² − d` over `F`, `hx` to identify what `Γ_L` must fix), and the
 conclusion mentions no representation, so it cannot be discharged
-vacuously. -/
+vacuously.
+
+HOW IT WAS DISCHARGED (2026-07-27). The non-functoriality is absorbed by the
+already-proven `exists_conj_absoluteGaloisGroup_map_comp`, not worked around:
+it gives ONE conjugator `c` with
+`map (algebraMap ℚ L) = c * (map (algebraMap ℚ F) ∘ map (algebraMap F L)) * c⁻¹`,
+and since `ℤˣ` is COMMUTATIVE the character `e` cannot see `c` at all. So the
+goal reduces to `e (map (algebraMap ℚ L) τ) = 1`, i.e. to `Γ_L` fixing `x` —
+and that is the sign-free chase the docstring predicts, because `L` contains
+both square roots of `d`, so `ι x = ± algebraMap L Lᵃˡᵍ (√d)` and `τ` fixes
+either one. `L` itself is `AdjoinRoot (X² − d)`, irreducible by
+`X_pow_sub_C_irreducible_of_prime` since a square in a totally real `F` has
+nonnegative real part under every (real) complex embedding while `d < 0`. -/
 theorem exists_quadraticExtension_trivial_of_isTotallyReal
     (d : ℚ) (hd : d < 0) (x : AlgebraicClosure ℚ)
     (hx : x ^ 2 = algebraMap ℚ (AlgebraicClosure ℚ) d)
@@ -9966,8 +10183,84 @@ theorem exists_quadraticExtension_trivial_of_isTotallyReal
       Module.finrank F L = 2 ∧
       ∀ τ : Field.absoluteGaloisGroup L,
         e (Field.absoluteGaloisGroup.map (algebraMap ℚ F)
-            (Field.absoluteGaloisGroup.map (algebraMap F L) τ)) = 1 :=
-  sorry
+            (Field.absoluteGaloisGroup.map (algebraMap F L) τ)) = 1 := by
+  classical
+  -- STEP 1. `d < 0` and `F` totally real ⟹ `d` is not a square in `F`: a square
+  -- has nonnegative real part under the (real!) embedding `ψ : F →+* ℂ`.
+  have hnsq : ∀ b : F, b ^ 2 ≠ algebraMap ℚ F d := by
+    intro b hb
+    have hdR : (d : ℝ) < 0 := by exact_mod_cast hd
+    let ψ : F →ₐ[ℚ] ℂ := IsAlgClosed.lift
+    have hψa : ψ (algebraMap ℚ F d) = (d : ℂ) := ψ.commutes d
+    have hsq : (ψ b) ^ 2 = (d : ℂ) := by rw [← hψa, ← hb, map_pow]
+    have hreal : NumberField.ComplexEmbedding.IsReal (ψ : F →+* ℂ) :=
+      NumberField.IsTotallyReal.complexEmbedding_isReal _
+    have him : (ψ b).im = 0 :=
+      Complex.conj_eq_iff_im.mp
+        (RingHom.congr_fun (NumberField.ComplexEmbedding.isReal_iff.mp hreal) b)
+    have hre := congrArg Complex.re hsq
+    rw [pow_two, Complex.mul_re, him, Complex.ratCast_re] at hre
+    nlinarith [mul_self_nonneg (ψ b).re]
+  -- STEP 2. So `X ^ 2 - C d` is irreducible over `F` and `L := F(sqrt d)` is a
+  -- quadratic extension.
+  have hmonic : (Polynomial.X ^ 2 - Polynomial.C (algebraMap ℚ F d) : Polynomial F).Monic :=
+    Polynomial.monic_X_pow_sub_C _ two_ne_zero
+  have hirr : Irreducible (Polynomial.X ^ 2 - Polynomial.C (algebraMap ℚ F d) : Polynomial F) :=
+    X_pow_sub_C_irreducible_of_prime Nat.prime_two hnsq
+  haveI : Fact (Irreducible (Polynomial.X ^ 2 - Polynomial.C (algebraMap ℚ F d) :
+      Polynomial F)) := ⟨hirr⟩
+  refine ⟨AdjoinRoot (Polynomial.X ^ 2 - Polynomial.C (algebraMap ℚ F d) : Polynomial F),
+    inferInstance, inferInstance, ?_, ?_⟩
+  · rw [(AdjoinRoot.powerBasis' hmonic).finrank]
+    simp
+  · intro τ
+    set p : Polynomial F := Polynomial.X ^ 2 - Polynomial.C (algebraMap ℚ F d) with hp
+    set L := AdjoinRoot p with hL
+    set s : L := AdjoinRoot.root p with hs
+    set fQL : ℚ →+* L := (algebraMap F L).comp (algebraMap ℚ F) with hfQL
+    have h0 : s ^ 2 - algebraMap F L (algebraMap ℚ F d) = 0 := by
+      have h := AdjoinRoot.aeval_eq (f := p) p
+      rw [AdjoinRoot.mk_self] at h
+      rw [hp] at h
+      simpa [hs] using h
+    have hs2 : s ^ 2 = fQL d := by
+      rw [sub_eq_zero.mp h0, hfQL]; rfl
+    -- STEP 3. `map (algebraMap ℚ F) ∘ map (algebraMap F L)` is only CONJUGATE to
+    -- `map (algebraMap ℚ L)`; `ℤˣ` is commutative, so `e` cannot see the
+    -- conjugator and the two have the same `e`-value.
+    obtain ⟨c, hcconj⟩ :=
+      exists_conj_absoluteGaloisGroup_map_comp (algebraMap ℚ F) (algebraMap F L)
+    have hg0 : Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+        (Field.absoluteGaloisGroup.map (algebraMap F L) τ)
+          = c⁻¹ * Field.absoluteGaloisGroup.map fQL τ * c := by
+      rw [hfQL, hcconj τ]
+      group
+    -- STEP 4. `Γ L` fixes `x` because `L` contains BOTH square roots of `d`, so
+    -- the chase through `lift_map` needs no sign bookkeeping.
+    have hmain : e (Field.absoluteGaloisGroup.map fQL τ) = 1 := by
+      rw [he]
+      apply (AlgebraicClosure.map fQL).injective
+      rw [Field.absoluteGaloisGroup.lift_map fQL τ x]
+      have hmapd : AlgebraicClosure.map fQL (algebraMap ℚ (AlgebraicClosure ℚ) d)
+          = algebraMap L (AlgebraicClosure L) (fQL d) :=
+        AlgebraicClosure.map_algebraMap fQL d
+      have hix2 : (AlgebraicClosure.map fQL x) ^ 2
+          = (algebraMap L (AlgebraicClosure L) s) ^ 2 := by
+        rw [← map_pow, hx, hmapd, ← hs2, map_pow]
+      have hfac : (AlgebraicClosure.map fQL x - algebraMap L (AlgebraicClosure L) s) *
+          (AlgebraicClosure.map fQL x + algebraMap L (AlgebraicClosure L) s) = 0 := by
+        linear_combination hix2
+      rcases mul_eq_zero.mp hfac with h | h
+      · have hval : AlgebraicClosure.map fQL x = algebraMap L (AlgebraicClosure L) s := by
+          linear_combination h
+        rw [hval]
+        exact τ.commutes s
+      · have hval : AlgebraicClosure.map fQL x = -algebraMap L (AlgebraicClosure L) s := by
+          linear_combination h
+        rw [hval, map_neg]
+        exact congrArg Neg.neg (τ.commutes s)
+    rw [hg0, map_mul, map_mul, map_inv, hmain]
+    simp
 
 /-- **An odd dihedral auxiliary level representation** (sorry node, cut
 2026-07-26 — the second ARITHMETIC leaf of the representability half; no
