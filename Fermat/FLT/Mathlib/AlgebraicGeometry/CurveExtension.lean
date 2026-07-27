@@ -13,6 +13,13 @@ public import Mathlib.AlgebraicGeometry.FunctionField
 public import Mathlib.AlgebraicGeometry.Geometrically.Connected
 public import Mathlib.RingTheory.DiscreteValuationRing.TFAE
 public import Mathlib.RingTheory.RegularLocalRing.Defs
+public import Mathlib.RingTheory.KrullDimension.Polynomial
+public import Mathlib.RingTheory.Ideal.KrullsHeightTheorem
+public import Mathlib.RingTheory.Jacobson.Ring
+public import Mathlib.RingTheory.Jacobson.Polynomial
+public import Mathlib.RingTheory.Jacobson.Artinian
+public import Mathlib.RingTheory.QuasiFinite.Basic
+public import Mathlib.SetTheory.Cardinal.NatCard
 
 /-!
 # Extension of a morphism over the missing points of a smooth curve
@@ -67,14 +74,20 @@ restriction is a morphism over the base).  Both are `Mathlib`-ready.
 
 ## The leaves
 
-Only four things are left open here, and none of them mentions a modular curve.
+Only three things are left open here, and none of them mentions a modular curve.
 
 | leaf | content |
 | --- | --- |
 | `isDiscreteValuationRing_stalk_of_smoothOfRelativeDimension_one` | smooth of relative dimension one over a field ⟹ the local rings away from the generic point are DVRs |
 | `smoothOfRelativeDimension_one_of_isDiscreteValuationRing_stalk` | the CONVERSE over a **perfect** field: DVR local rings ⟹ smooth of relative dimension one |
 | `isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected` | smooth over a field + geometrically connected ⟹ integral |
-| `infinite_of_smoothOfRelativeDimension_one` | a nonempty smooth proper curve over a field has infinitely many points |
+
+`infinite_of_smoothOfRelativeDimension_one` — a nonempty smooth curve over a field has
+infinitely many points — was the fourth, and is **PROVEN** as of 2026-07-27, over two
+`Mathlib`-shaped commutative-algebra lemmas proven here beside it,
+`MvPolynomial.card_le_height_of_isMaximal` and
+`Algebra.not_module_finite_of_isStandardSmoothOfRelativeDimension_one`.  Neither needs
+regularity theory; the inputs are Krull's height theorem and the Nullstellensatz.
 
 **The first two are the two directions of ONE classical equivalence** ("regular ⟺ smooth
 over a perfect field", in dimension one, where regular ⟺ DVR), and it is worth saying so
@@ -372,7 +385,126 @@ theorem isIntegral_of_smoothOfRelativeDimension_of_geometricallyConnected {n : �
     IsIntegral X :=
   sorry
 
-/-- **A nonempty smooth curve over a field has infinitely many points** (sorry leaf).
+/-! ### The commutative-algebra input to infinitude
+
+Two `Mathlib`-shaped lemmas, both proven outright here, which together say that a nonzero
+standard smooth algebra of relative dimension one over a field is *not* finite-dimensional.
+That is the entire arithmetic content of `infinite_of_smoothOfRelativeDimension_one` below;
+everything else in that proof is scheme-level bookkeeping. -/
+
+/-- **A maximal ideal of a polynomial ring over a field has height at least the number of
+variables** (PROVEN).
+
+This is the half of "`dim k[x₁ … xₙ] = n` and the ring is equidimensional" that
+`Mathlib` does not state: `MvPolynomial.ringKrullDim_of_isNoetherianRing` gives the
+supremum of the heights, which is the *wrong* inequality for the application below.
+
+The proof is the induction that `MvPolynomial.ringKrullDim_of_isNoetherianRing` itself uses,
+`Finite.induction_empty_option`, with the two `Mathlib` inputs at the `Option` step being
+`Polynomial.height_eq_height_add_one` (a maximal ideal of `R[X]` has height one more than its
+contraction, for noetherian `R`) and `Polynomial.isMaximal_comap_C_of_isJacobsonRing` (that
+contraction is again maximal, this being the Nullstellensatz).  Note the statement needs no
+finiteness hypothesis of its own — for infinite `ι` the left-hand side is `0`. -/
+theorem _root_.MvPolynomial.card_le_height_of_isMaximal (k : Type u) [Field k]
+    (ι : Type) [Finite ι] :
+    ∀ (M : Ideal (MvPolynomial ι k)), M.IsMaximal → (Nat.card ι : ℕ∞) ≤ M.height := by
+  induction ι using Finite.induction_empty_option with
+  | of_equiv e H =>
+      intro M hM
+      let f := (MvPolynomial.renameEquiv k e.symm).toRingEquiv
+      have h1 : (M.map f).IsMaximal := Ideal.map_isMaximal_of_equiv f (hp := hM)
+      have h2 := H _ h1
+      rwa [RingEquiv.height_map, Nat.card_congr e] at h2
+  | h_empty => intro M _; simp
+  | h_option IH =>
+      rename_i α _
+      intro M hM
+      let f := (MvPolynomial.optionEquivLeft k α).toRingEquiv
+      have h1 : (M.map f).IsMaximal := Ideal.map_isMaximal_of_equiv f (hp := hM)
+      have h2 : ((M.map f).under (MvPolynomial α k)).IsMaximal := by
+        rw [Ideal.under, Polynomial.algebraMap_eq]
+        exact Polynomial.isMaximal_comap_C_of_isJacobsonRing (M.map f)
+      have h3 := Polynomial.height_eq_height_add_one ((M.map f).under (MvPolynomial α k)) (M.map f)
+      have h4 := IH _ h2
+      rw [RingEquiv.height_map] at h3
+      rw [Finite.card_option, Nat.cast_add, Nat.cast_one, h3]
+      exact add_le_add h4 le_rfl
+
+/-- **A nonzero standard smooth algebra of relative dimension one over a field is not a finite
+module** (PROVEN).
+
+This is the precise form in which "a smooth curve is one-dimensional, hence infinite" is
+needed, and it is where the `1` in `SmoothOfRelativeDimension 1` is finally consumed.
+
+THE ARGUMENT.  Were `B` finite over `k`, `Module.finite_iff_krullDimLE_zero` (finite type over
+an artinian base) would give `Ring.KrullDimLE 0 B`.  Choose a submersive presentation
+`B ≃ k[Xᵢ : i : ι] / (f_j : j : σ)` of dimension `1`, so `#ι - #σ = 1`, and a maximal ideal
+`M` of `A := k[Xᵢ]` containing the kernel `I`.  Dimension zero upstairs makes *every* prime of
+`A` over `I` maximal, so `M` is a MINIMAL prime over `I`; Krull's height theorem
+(`Ideal.height_le_spanRank_toENat_of_mem_minimalPrimes`) then bounds `height M ≤ #σ`, while
+`MvPolynomial.card_le_height_of_isMaximal` bounds it below by `#ι`.  Hence `#ι ≤ #σ` and the
+presentation's dimension is `0`, not `1`.
+
+**Regularity theory is not needed**, matching the experience of the sibling leaf
+`isReduced_of_smooth_field` in `Fermat/FLT/Modularity/MoretBailly.lean`: the only inputs are
+Krull's height theorem and the Nullstellensatz, both of which `Mathlib` has. -/
+theorem _root_.Algebra.not_module_finite_of_isStandardSmoothOfRelativeDimension_one
+    (k B : Type u) [Field k] [CommRing B] [Nontrivial B] [Algebra k B]
+    [Algebra.IsStandardSmoothOfRelativeDimension 1 k B] :
+    ¬ Module.Finite k B := by
+  intro hfin
+  haveI : Algebra.IsStandardSmooth k B :=
+    Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth 1
+  have hKD : Ring.KrullDimLE 0 B := (Module.finite_iff_krullDimLE_zero k B).mp hfin
+  obtain ⟨ι, σ, hσ, hι, P, hPdim⟩ :=
+    ‹Algebra.IsStandardSmoothOfRelativeDimension 1 k B›.out
+  haveI := hσ
+  haveI := hι
+  set Q := P.toPresentation with hQ
+  -- The quotient of the polynomial ring by the kernel has Krull dimension zero.
+  have hKD' : Ring.KrullDimLE 0 (Q.Ring ⧸ Q.ker) := by
+    rw [Ring.krullDimLE_iff, ringKrullDim_eq_of_ringEquiv Q.quotientEquiv.toRingEquiv]
+    exact Ring.krullDimLE_iff.mp hKD
+  have hne : Q.ker ≠ ⊤ := by
+    intro h
+    haveI : Subsingleton (Q.Ring ⧸ Q.ker) := (Ideal.Quotient.subsingleton_iff).mpr h
+    haveI : Subsingleton B := Q.quotientEquiv.toEquiv.symm.subsingleton
+    exact absurd ‹Nontrivial B› (not_nontrivial_iff_subsingleton.mpr ‹_›)
+  obtain ⟨M, hM, hIM⟩ := Ideal.exists_le_maximal Q.ker hne
+  -- Every prime containing the kernel is maximal, so `M` is minimal over the kernel.
+  have hpm : ∀ q : Ideal Q.Ring, q.IsPrime → Q.ker ≤ q → q.IsMaximal := by
+    intro q hq hle
+    haveI := hq
+    haveI : (q.map (Ideal.Quotient.mk Q.ker)).IsPrime :=
+      Ideal.map_isPrime_of_surjective Ideal.Quotient.mk_surjective (by rwa [Ideal.mk_ker])
+    haveI := hKD'
+    have hq' : Ideal.comap (Ideal.Quotient.mk Q.ker) (q.map (Ideal.Quotient.mk Q.ker)) = q := by
+      rw [Ideal.comap_map_of_surjective _ Ideal.Quotient.mk_surjective,
+        ← RingHom.ker_eq_comap_bot, Ideal.mk_ker, sup_eq_left.mpr hle]
+    rw [← hq']
+    exact Ideal.comap_isMaximal_of_surjective _ Ideal.Quotient.mk_surjective
+  have hmin : M ∈ Q.ker.minimalPrimes := by
+    refine ⟨⟨hM.isPrime, hIM⟩, fun q hq hqle => ?_⟩
+    exact le_of_eq ((hpm q hq.1 hq.2).eq_of_le hM.ne_top hqle).symm
+  -- Krull's height theorem against the lower bound for maximal ideals.
+  have h1 : M.height ≤ Cardinal.toENat Q.ker.spanRank :=
+    Ideal.height_le_spanRank_toENat_of_mem_minimalPrimes _ _ hmin
+  have h2 : Cardinal.toENat Q.ker.spanRank ≤ (Nat.card σ : ℕ∞) := by
+    have hfinr : (Set.range Q.relation).Finite := Set.finite_range _
+    have hle : Q.ker.spanFinrank ≤ Nat.card σ := by
+      rw [← Q.span_range_relation_eq_ker]
+      refine (Submodule.spanFinrank_span_le_ncard_of_finite hfinr).trans ?_
+      rw [← Nat.card_coe_set_eq]
+      exact Finite.card_range_le _
+    rw [Submodule.FG.spanRank_eq_spanFinrank Q.fg_ker]
+    simpa using hle
+  have h3 : (Nat.card ι : ℕ∞) ≤ M.height := MvPolynomial.card_le_height_of_isMaximal k ι M hM
+  have h4 : Nat.card ι ≤ Nat.card σ := by exact_mod_cast h3.trans (h1.trans h2)
+  rw [hQ, Algebra.Presentation.dimension, Nat.sub_eq_zero_of_le h4] at hPdim
+  exact absurd hPdim (by norm_num)
+
+/-- **A nonempty smooth curve over a field has infinitely many points** (**PROVEN
+2026-07-27**, over the two `Mathlib`-shaped algebra lemmas just above).
 
 **RECONCILED AT INTEGRATION, 2026-07-27.**  Two branches cut this leaf on the same day,
 here with `[IsProper strX]` and in `CurveCompactification.lean` without it, and since that
@@ -382,28 +514,61 @@ consumer over there,
 `isDominant_of_finite_compl_of_smoothOfRelativeDimension_one`, applies it to an OPEN
 subscheme `U.ι ≫ strX`, and an open of a proper scheme is not proper — so with `IsProper`
 in the signature that consumer cannot be discharged at all.  The statement is true without
-it (see the argument below, which never uses properness), and `isDominant_of_finite_compl`
-just below keeps its own `[IsProper strX]` because its other steps want it.
+it — the proof below never uses properness — and `isDominant_of_finite_compl` just below
+keeps its own `[IsProper strX]` because its other steps want it.  (An older version of this
+docstring claimed `IsProper` was "load-bearing".  It is not; that claim is now corrected.)
 
-TRUE: `X` is one-dimensional, so it has a generic point and infinitely many closed points —
-over a finite field because there are closed points of every residue degree, over an infinite
-field already among the rational points of any affine chart.  What must be ruled out is
-exactly the degenerate possibility that `X` is a finite set, which is what a
-`topologicalKrullDim ≤ 0` scheme would be.
+**THE STATEMENT IS A POINT COUNT, AND MUST STAY ONE.**  Do not "strengthen" it to
+`1 ≤ topologicalKrullDim X`: `Spec` of a discrete valuation ring has dimension one and
+exactly TWO points, so the dimension statement is strictly weaker than what the consumers
+need.  What converts dimension into infinitude here is that the local models are of FINITE
+TYPE over a field, hence Jacobson — a positive-dimensional finite-type algebra has infinitely
+many maximal ideals — and that is exactly the content of
+`Algebra.not_module_finite_of_isStandardSmoothOfRelativeDimension_one` above.
 
-This is the missing half of "the open part of a compactification is dense": the complement of
-`Y` in `X` is FINITE by hypothesis, so `Y` is nonempty as soon as `X` is infinite, and then
-density is formal.  Compare step 2 of `isDominant_of_isX0Compactification` in `X0.lean`,
-which is the same observation at `𝔽_ℓ` and has a separate owner.
-
-`IsProper strX` is load-bearing: `𝔸¹ ∖ {closed points}` is not a counterexample, but the leaf
-is stated for the proper case because that is where it is consumed and because properness is
-what makes "curve" mean "complete curve". -/
+THE PROOF, which is entirely bookkeeping once that lemma is in hand.  Suppose `X` is finite.
+Pick a point `x`; smoothness of relative dimension one supplies affine opens `x ∈ V ⊆ X` and
+`U ⊆ Spec K` with `Γ(Spec K, U) ⟶ Γ(X, V)` standard smooth of relative dimension one.  `Spec`
+of a field is a one-point space, so `U = ⊤` and the source ring is `K` up to `ΓSpecIso`;
+transporting along that isomorphism (`RingHom.IsStandardSmoothOfRelativeDimension.equiv`)
+makes `B := Γ(X, V)` a standard smooth `K`-algebra of relative dimension one.  It is
+nontrivial because `V ∋ x`, and `PrimeSpectrum B ≃ V` is finite because `X` is; a finite
+spectrum makes `B` quasi-finite over `K` (`Algebra.QuasiFinite.iff_finite_comap_preimage_singleton`,
+using finite presentation) and therefore finite over `K` (`Module.Finite.of_quasiFinite`,
+`K` being artinian).  That is what the algebra lemma forbids. -/
 theorem infinite_of_smoothOfRelativeDimension_one
     {X : Scheme.{u}} (strX : X ⟶ Spec (CommRingCat.of K))
     [SmoothOfRelativeDimension 1 strX] [Nonempty X] :
-    Infinite X :=
-  sorry
+    Infinite X := by
+  rw [← not_finite_iff_infinite]
+  intro hfin
+  obtain ⟨x⟩ := ‹Nonempty X›
+  obtain ⟨U, hU, V, hV, hxV, hle, hstd⟩ :=
+    SmoothOfRelativeDimension.exists_isStandardSmoothOfRelativeDimension (n := 1) (f := strX) x
+  have hUtop : U = ⊤ := by
+    have hmem : strX.base x ∈ U := hle hxV
+    refine le_antisymm le_top fun y _ => ?_
+    exact Subsingleton.elim y (strX.base x) ▸ hmem
+  subst hUtop
+  -- transport the base along `Γ(Spec K, ⊤) ≅ K`
+  let ε : K ≃+* Γ(Spec (CommRingCat.of K), ⊤) :=
+    (Scheme.ΓSpecIso (CommRingCat.of K)).symm.commRingCatIsoToRingEquiv
+  have hstd' : RingHom.IsStandardSmoothOfRelativeDimension 1
+      (((strX.appLE ⊤ V hle).hom).comp (ε : K →+* _)) := by
+    simpa using hstd.comp (RingHom.IsStandardSmoothOfRelativeDimension.equiv ε)
+  letI : Algebra K Γ(X, V) := (((strX.appLE ⊤ V hle).hom).comp (ε : K →+* _)).toAlgebra
+  haveI : Algebra.IsStandardSmoothOfRelativeDimension 1 K Γ(X, V) := hstd'
+  -- the points of `V` are the points of `Spec Γ(X, V)`
+  let hom : ↥V ≃ₜ ↥(Spec Γ(X, V)) := Scheme.homeoOfIso hV.isoSpec
+  haveI : Finite ↥V := Subtype.finite
+  haveI : Finite (PrimeSpectrum Γ(X, V)) := Finite.of_equiv _ hom.toEquiv
+  haveI : Nontrivial Γ(X, V) := PrimeSpectrum.nontrivial (hom ⟨x, hxV⟩)
+  haveI : Algebra.FinitePresentation K Γ(X, V) :=
+    (Algebra.IsStandardSmoothOfRelativeDimension.isStandardSmooth 1).finitePresentation
+  haveI : Algebra.QuasiFinite K Γ(X, V) :=
+    Algebra.QuasiFinite.iff_finite_comap_preimage_singleton.mpr fun _ => Set.toFinite _
+  exact Algebra.not_module_finite_of_isStandardSmoothOfRelativeDimension_one K Γ(X, V)
+    Module.Finite.of_quasiFinite
 
 /-- **An open subscheme with finite complement of a smooth proper curve is dense** (PROVEN
 over `infinite_of_smoothOfRelativeDimension_one`).
