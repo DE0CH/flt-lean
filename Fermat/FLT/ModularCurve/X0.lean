@@ -308,6 +308,10 @@ public import Fermat.FLT.Modularity.AbelianScheme
 -- `proj` nor `projToSpec`, which is exactly what makes a non-public import
 -- sufficient.
 import Fermat.FLT.ModularCurve.EllipticScheme
+-- The smooth-compactification theorem for curves over a field, which is what
+-- turns `Y_0(N)` into `X_0(N)`; see `exists_compactificationY0` and
+-- `exists_x0Compactification` below.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.CurveCompactification
 public import Mathlib.AlgebraicGeometry.Morphisms.ClosedImmersion
 public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 -- `AlgebraicGeometry.Flat`: the flatness half of "finite locally free", which
@@ -4371,29 +4375,125 @@ theorem y0HasNoRationalPoint_of_cuspidal {N : ℕ} {Y X : Scheme.{0}} {strY : Y 
   refine y0HasNoRationalPoint_of_isEmpty hc ⟨fun y => ?_⟩
   exact hall ⟨y.1 ≫ hX.j, by rw [Category.assoc, hX.«over», y.2]⟩ ⟨y.1, rfl⟩
 
-/-- **Existence of the smooth compactification `X_0(N)`** (sorry node).
+/-- **The degenerate level `N = 0` has an EMPTY coarse space** (PROVEN).
 
-TRUE, and classical, in two independent halves:
+`isEmpty_of_gamma0Datum_zero` says the `Γ₀(0)`-problem has no object over
+a nonempty base, so every base carrying a datum is initial and the empty
+scheme carries a natural transformation out of the problem.  Initiality
+of `Y` then produces a morphism `Y ⟶ ∅`, which is only possible when `Y`
+is itself empty.
 
-* the coarse space `Y_0(N)` is a smooth affine curve over `ℚ` — normality
-  of a coarse moduli space of a smooth DM stack of dimension one, plus
-  "normal curve = smooth curve" (Deligne–Rapoport III.1, Katz–Mazur 8.2);
-* a smooth curve over a field has a smooth compactification, unique up to
-  unique isomorphism — the standard function-field construction, the
-  proper normal model of the function field of `Y`.
+This is what makes the compactification statement uniform in `N`: at
+`N = 0` there is nothing to compactify, and `X = Y = ∅` discharges every
+clause vacuously rather than by a separate citation. -/
+theorem isEmpty_of_isCoarseModuliY0_zero {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
+    (hc : IsCoarseModuliY0 0 strY) : IsEmpty Y := by
+  classical
+  have hinit : ∀ {T : Scheme.{0}}, Gamma0Datum 0 T → Limits.IsInitial T := by
+    intro T d
+    have : IsEmpty T := isEmpty_of_gamma0Datum_zero d
+    exact isInitialOfIsEmpty
+  obtain ⟨u, -, -⟩ :=
+    hc.universal (Y' := (∅ : Scheme.{0})) (emptyIsInitial.to SpecQ)
+      (fun {_T} _g d => ⟨(hinit d).to _, (hinit d).hom_ext _ _⟩)
+      (by intro _ _ _ _ _ _ d' _ _; exact Subtype.ext ((hinit d').hom_ext _ _))
+  exact Function.isEmpty u.base
+
+/-- **`Y_0(N)` is a geometrically connected smooth curve over `ℚ`, for
+`N ≥ 1`** (sorry leaf — the MODULAR half of the compactification).
+
+TRUE and classical: for `N ≥ 1` the coarse moduli space of the
+`Γ₀(N)`-problem over `ℚ` is a smooth affine geometrically connected curve.
+Smoothness is normality of the coarse space of a smooth Deligne–Mumford
+stack of dimension one together with "normal curve = smooth curve"
+(Deligne–Rapoport III.1; Katz–Mazur 8.2, and 8.2.1 for the
+`ℤ[1/N]`-smoothness that specialises to this); geometric connectedness is
+the irreducibility of `Γ_0(N)\ℍ` together with the fact that the moduli
+problem is defined over `ℚ` (Deligne–Rapoport IV.5.5, or Shimura 6.6).
+
+**This is the ONLY modular input to `X_0(N)`'s existence.**  Everything
+else — that a smooth curve over a field has a smooth proper
+compactification with finite complement — is
+`AlgebraicGeometry.exists_isSmoothCompactification`, which is general
+algebraic geometry and lives in
+`Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.
+Separating the two is the point of this leaf: a successor can attack the
+modular half without touching curve theory, and vice versa.
+
+`hN : 0 < N` is REQUIRED and the statement is FALSE without it.  At
+`N = 0` the coarse space is EMPTY (`isEmpty_of_isCoarseModuliY0_zero`),
+and both `IsIntegral` and `GeometricallyConnected` carry nonemptiness —
+`IsIntegral` through `IrreducibleSpace`, `GeometricallyConnected` through
+`ConnectedSpace`.  So the conclusion is unsatisfiable at the degenerate
+level, which is handled separately and vacuously below.
+
+The four conclusions are exactly the hypotheses of
+`exists_isSmoothCompactification`, and none is decoration:
+`QuasiCompact` and `IsSeparated` are what Nagata's compactification
+consumes, `IsIntegral` is what makes the relative normalization integral,
+and `SmoothOfRelativeDimension 1` is what pins the relative dimension of
+the compactification to `1` rather than leaving it arbitrary.
+
+IRREDUCIBLE at this pin: the coarse space is available here only through
+`IsCoarseModuliY0`, i.e. through its universal property, and no property
+of a scheme beyond that universal property can be extracted without the
+Deligne–Rapoport/Katz–Mazur construction, which does not exist at this
+pin in any form. -/
+theorem isSmoothCurve_of_isCoarseModuliY0 {N : ℕ} (_hN : 0 < N) {Y : Scheme.{0}}
+    {strY : Y ⟶ SpecQ} (_hc : IsCoarseModuliY0 N strY) :
+    IsIntegral Y ∧ QuasiCompact strY ∧ IsSeparated strY ∧
+      SmoothOfRelativeDimension 1 strY ∧ GeometricallyConnected strY :=
+  sorry
+
+/-- **Existence of the smooth compactification `X_0(N)`** (PROVEN, over
+one modular leaf plus general curve theory; formerly a sorry node).
+
+The two halves the previous version of this docstring named as
+"independent" are now genuinely separated, and only the first is still
+modular:
+
+* `isSmoothCurve_of_isCoarseModuliY0` — `Y_0(N)` is a geometrically
+  connected smooth curve over `ℚ` for `N ≥ 1` (Deligne–Rapoport III.1,
+  Katz–Mazur 8.2).  Still a leaf.
+* `AlgebraicGeometry.exists_isSmoothCompactification` — every smooth
+  curve over a perfect field embeds as a dense open subscheme of a smooth
+  proper curve with finite complement.  Now a THEOREM, proved in
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean` from
+  Nagata compactification plus the relative normalization, over four
+  named leaves of its own, none of which mentions modular curves.
 
 For `N = 0` the moduli problem is supported on the empty base (a scheme
 finite over its base cannot have infinite cyclic geometric fibres), so
-`Y_0(0)` is the empty scheme and `X = Y = ∅` satisfies every condition
-vacuously; the statement is therefore uniform in `N`.
-
-IRREDUCIBLE at this mathlib pin: neither the normality of coarse spaces
-nor the smooth compactification of a curve exists here, and both are
-genuinely separate theories from anything else in this module. -/
+`Y_0(0)` is the empty scheme by `isEmpty_of_isCoarseModuliY0_zero`, and
+`X = Y` with `j = 𝟙` satisfies every condition vacuously — properness
+because a morphism out of an empty scheme is a closed immersion, hence
+finite, hence proper, and smoothness because
+`SmoothOfRelativeDimension` quantifies over the points of the source.
+The statement is therefore uniform in `N` without a citation covering the
+degenerate level. -/
 theorem exists_compactificationY0 {N : ℕ} {Y : Scheme.{0}} {strY : Y ⟶ SpecQ}
-    (_hc : IsCoarseModuliY0 N strY) :
-    ∃ (X : Scheme.{0}) (strX : X ⟶ SpecQ), Nonempty (IsCompactificationY0 strY strX) :=
-  sorry
+    (hc : IsCoarseModuliY0 N strY) :
+    ∃ (X : Scheme.{0}) (strX : X ⟶ SpecQ), Nonempty (IsCompactificationY0 strY strX) := by
+  rcases Nat.eq_zero_or_pos N with rfl | hN
+  · -- Degenerate level: `Y = ∅`, and `X = Y` compactifies it vacuously.
+    haveI : IsEmpty Y := isEmpty_of_isCoarseModuliY0_zero hc
+    haveI : SmoothOfRelativeDimension 1 strY := ⟨fun x => isEmptyElim x⟩
+    exact ⟨Y, strY, ⟨{ j := 𝟙 Y
+                       over := Category.id_comp strY
+                       isOpenImmersion := inferInstance
+                       isDominant := inferInstance
+                       proper := inferInstance
+                       smooth := SmoothOfRelativeDimension.smooth (n := 1) (f := strY) }⟩⟩
+  · obtain ⟨hint, hqc, hsep, hsmd, -⟩ := isSmoothCurve_of_isCoarseModuliY0 hN hc
+    haveI := hint; haveI := hqc; haveI := hsep; haveI := hsmd
+    obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification (K := ℚ) strY
+    haveI := hX.smooth
+    exact ⟨X, strX, ⟨{ j := j
+                       over := hX.comm
+                       isOpenImmersion := hX.isOpenImmersion
+                       isDominant := hX.isDominant
+                       proper := hX.isProper
+                       smooth := SmoothOfRelativeDimension.smooth (n := 1) (f := strX) }⟩⟩
 
 /-! ### The prime levels, and the finite residue of the semiprime family -/
 
@@ -5706,7 +5806,8 @@ def x0WitnessTable : List (ℕ × ℕ × ℕ) :=
   [(20, 3, 6), (24, 5, 8), (28, 5, 6), (30, 17, 8), (36, 5, 6), (42, 11, 8), (50, 3, 4)]
 
 /-- **Existence of the compactified coarse moduli space `X_0(N)` over
-`ℚ`** (sorry node).
+`ℚ`** (PROVEN, over `exists_coarseModuliY0` and one modular leaf;
+formerly a sorry node).
 
 TRUE and classical: `Y_0(N)` is a smooth affine curve over `ℚ` and every
 smooth curve over a field has a unique smooth projective
@@ -5715,17 +5816,43 @@ Deligne–Rapoport, obtained directly as the coarse space of the moduli
 problem of GENERALISED elliptic curves with `Γ₀(N)`-structure, the added
 points being the cusps.
 
-This leaf SUBSUMES `exists_coarseModuliY0` — its `coarse` field is
-exactly that statement — so a successor closing that node has closed
-half of this one; what remains is the compactification proper.
+This node SUBSUMES `exists_coarseModuliY0` — its `coarse` field is
+exactly that statement — and that half is now PROVEN, so the proof below
+simply obtains the coarse space and compactifies it.  What remains open
+is split cleanly in two, and neither half is modular-curve-specific
+except the first:
 
-IRREDUCIBLE at this pin for the same reason as `exists_coarseModuliY0`:
-neither modular curves nor a smooth-compactification theorem for curves
-exists anywhere in `Mathlib`. -/
+* `isSmoothCurve_of_isCoarseModuliY0` supplies the four properties of
+  `Y_0(N)` that the compactification theorem consumes, plus geometric
+  connectedness;
+* `AlgebraicGeometry.exists_isSmoothCompactification` and
+  `AlgebraicGeometry.geometricallyConnected_of_isSmoothCompactification`
+  supply the compactification itself, from
+  `Fermat/FLT/Mathlib/AlgebraicGeometry/CurveCompactification.lean`.
+
+Note `connected` and `finite_compl` — the two clauses beyond
+`IsCompactificationY0` — come from the general theory and not from
+anything modular: geometric connectedness is inherited from `Y_0(N)`
+along a dense open immersion, and finiteness of the cusp locus is
+finiteness of the complement of a dense open in an irreducible curve.
+Neither is assumed here, which is what keeps the interface from
+smuggling in a cusp count; see `exists_rationalCusps` for the count
+itself, which is a genuinely separate and still-open statement. -/
 theorem exists_x0Compactification (N : ℕ) (hN : 0 < N) :
     ∃ (X Y : Scheme.{0}) (strX : X ⟶ SpecQ) (strY : Y ⟶ SpecQ) (j : Y ⟶ X),
-      Nonempty (IsX0Compactification N strX strY j) :=
-  sorry
+      Nonempty (IsX0Compactification N strX strY j) := by
+  obtain ⟨Y, strY, ⟨hc⟩⟩ := exists_coarseModuliY0 N
+  obtain ⟨hint, hqc, hsep, hsmd, hconn⟩ := isSmoothCurve_of_isCoarseModuliY0 hN hc
+  haveI := hint; haveI := hqc; haveI := hsep; haveI := hsmd; haveI := hconn
+  obtain ⟨X, strX, j, hX⟩ := exists_isSmoothCompactification (K := ℚ) strY
+  exact ⟨X, Y, strX, strY, j,
+    ⟨{ comm := hX.comm
+       coarse := hc
+       isOpen := hX.isOpenImmersion
+       isProper := hX.isProper
+       smooth := hX.smooth
+       connected := geometricallyConnected_of_isSmoothCompactification hX
+       finite_compl := hX.finite_compl }⟩⟩
 
 /-- **The `ℚ`-rational cusps of `X_0(N)`, INDEXED by the divisors that
 carry one.**
