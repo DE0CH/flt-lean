@@ -58,6 +58,11 @@ public import Fermat.FLT.Modularity.PatchingVendored.TopologicallyFG
 public import Fermat.FLT.Modularity.PatchingVendored.System
 -- `Infinite ℤ_[p]` (through `CharZero`), used by `charP_of_ringHom_padicInt`.
 public import Mathlib.Algebra.CharZero.Infinite
+-- Krull's intersection theorem (`Ideal.iInf_pow_smul_eq_bot_of_isLocalRing`) and
+-- `Module.projective_lifting_property`: the two mathlib pillars of the
+-- Taylor–Wiles pigeonhole hoisted in at the end of this module.
+public import Mathlib.RingTheory.Filtration
+public import Mathlib.Algebra.Module.Projective
 
 /-!
 # Taylor–Wiles patching: the BASE-FIELD-INDEPENDENT core
@@ -3527,5 +3532,427 @@ theorem nonempty_taylorWilesSystem_of_tower.{a, b, c, s, uR}
            projM_smul := fun n => (tw.level n).projM_smul
            projM_eq_zero_iff := fun n m =>
              ⟨(tw.level n).projM_eq_zero m, hzero n m⟩ }⟩
+
+/-! ### The Taylor–Wiles pigeonhole, and the limit extraction over the DIAMOND
+ring
+
+HOISTED here on 2026-07-27 from
+`Fermat/FLT/GaloisRepresentation/HardlyRamified/HilbertModularity.lean`,
+VERBATIM (no restatement of either theorem, no change to either proof).  The
+two pigeonhole theorems are pure commutative algebra — no base field, no Galois
+representation, no Hecke algebra — so `HilbertModularity.lean` was never their
+home; they lived there only because the `F`-level extraction that was meant to
+consume them lived there, and that leaf was deleted on 2026-07-27 when the
+`ℚ`-level extraction was hoisted into this module and made to serve both base
+fields.
+
+Here they are on the correct side of the import order: this module is BELOW
+both `Modularity/Patching.lean` and `HardlyRamified/HilbertModularity.lean`, so
+a consumer written here is visible to both base fields, which a consumer written
+in `HilbertModularity.lean` would not be.
+
+The two theorems below the pigeonhole are new (2026-07-27) and are what the
+pigeonhole's own docstring records as its intended use: they turn the
+finite-level data of a `TaylorWilesSystem` — the freeness certificate `freeM`
+over the DIAMOND quotients `Λ ⧸ 𝔟_n`, the shrinking `bIdeal_le`, and the bottom
+control theorem `projM_eq_zero_iff` — into the limit statement
+`M₀ ≅ (Λ ⧸ 𝔫)^d`, i.e. the bottom Hecke module is free of rank `d` over
+`Λ ⧸ 𝔫 = ℤ_p`.  That is exactly the conclusion the CUT AUDIT of
+`exists_hilbertTaylorWilesLevels` identifies as the one the system's fields DO
+give ("the fields give only `M₀ ≅ (Λ ⧸ 𝔫)^d`, a statement about the diamond
+ring — which is what the bottom Hecke module actually is"), and it is the
+invariant that `TaylorWilesLevel.bIdeal_le_aug` was added to guarantee ("it is
+the invariant that makes `M₀ ≅ ℤ_p^d` rather than `(ℤ_p/p^a)^d`").
+-/
+
+/-- **The Taylor–Wiles pigeonhole, as pure commutative algebra over a Noetherian
+local ring** (PROVEN 2026-07-27), and in the SHARP form: given the family, the
+kernel bound holds for *every* surjection `φ : R^rank ↠ M` — nothing has to be
+constructed, and in particular no inverse limit is taken.
+
+Let `R` be a Noetherian local ring with maximal ideal `𝔪`, let `𝔞 ≤ R` be an
+ideal, and let `M` be an `R`-module admitting, for EVERY `d`, a surjection
+`ψ_d : R^rank ↠ M` with `ker ψ_d ⊆ (𝔞 ⊔ 𝔪^d)·R^rank`. Then ANY surjection
+`φ : R^rank ↠ M` already satisfies `ker φ ⊆ 𝔞·R^rank`.
+
+ROUTE — two steps, and **no completeness is used anywhere**:
+
+1. RIGIDITY. Fix `e ≥ 1`. Since `R^rank` is free, hence projective, and `ψ_e` is
+   onto, `φ` lifts to `u : R^rank →ₗ R^rank` with `ψ_e ∘ u = φ`. Then `u` is
+   SURJECTIVE: for `y`, pick `z` with `φ z = ψ_e y`; then `y - u z ∈ ker ψ_e`,
+   which sits inside `𝔪·R^rank` because `𝔞 ≤ 𝔪` and `𝔪^e ≤ 𝔪`; so
+   `⊤ = range u ⊔ 𝔪·⊤` and Nakayama
+   (`Submodule.le_of_le_smul_of_le_jacobson_bot`) gives `range u = ⊤`. A
+   surjective endomorphism of a Noetherian module is injective (Orzech,
+   `IsNoetherian.injective_of_surjective_endomorphism`), so `u` is BIJECTIVE.
+   Since `u` is a bijective `R`-linear endomorphism it maps `J·R^rank` onto
+   `J·R^rank` for every ideal `J`; and `ker φ = u⁻¹(ker ψ_e)`. Hence
+   `ker φ ⊆ (𝔞 ⊔ 𝔪^e)·R^rank` — for the SAME `φ`, and for every `e`.
+2. KRULL. Therefore `ker φ ⊆ ⋂_e (𝔞·R^rank + 𝔪^e·R^rank)`. Passing to
+   `P = R^rank ⧸ 𝔞·R^rank`, that intersection becomes `⋂_e 𝔪^e·P`, which is `⊥`
+   by Krull's intersection theorem for a finite module over a Noetherian local
+   ring (`Ideal.iInf_pow_smul_eq_bot_of_isLocalRing`). So `ker φ ⊆ 𝔞·R^rank`.
+
+The case `𝔞 = ⊤` is separate and trivial (`⊤·⊤ = ⊤`); otherwise `𝔞 ≤ 𝔪` since
+`R` is local, which is what step 1 needs.
+
+The uniformity of `rank` across all `d` — the field `d` of
+`TaylorWilesSystem`, which is a field of the SYSTEM and not of the
+level — is exactly what makes step 1 possible: `u` is an endomorphism of ONE
+free module only because every `ψ_d` has the same source. -/
+theorem ker_le_smul_of_forall_sup_maximalIdeal_pow
+    {R : Type*} [CommRing R] [IsNoetherianRing R] [IsLocalRing R]
+    {rank : ℕ} {M : Type*} [AddCommGroup M] [Module R M]
+    (𝔞 : Ideal R) (φ : (Fin rank → R) →ₗ[R] M) (hφsurj : Function.Surjective φ)
+    (h : ∀ d : ℕ, ∃ ψ : (Fin rank → R) →ₗ[R] M, Function.Surjective ψ ∧
+      ∀ x, ψ x = 0 →
+        x ∈ (𝔞 ⊔ IsLocalRing.maximalIdeal R ^ d) • (⊤ : Submodule R (Fin rank → R))) :
+    ∀ x, φ x = 0 → x ∈ 𝔞 • (⊤ : Submodule R (Fin rank → R)) := by
+  classical
+  have hjac : IsLocalRing.maximalIdeal R ≤ Ideal.jacobson ⊥ :=
+    IsLocalRing.maximalIdeal_le_jacobson _
+  by_cases ha : 𝔞 = ⊤
+  · intro x _
+    rw [ha, Submodule.top_smul]
+    exact Submodule.mem_top
+  have haM : 𝔞 ≤ IsLocalRing.maximalIdeal R := IsLocalRing.le_maximalIdeal ha
+  -- STEP 1 (RIGIDITY): the SAME `φ` has its kernel inside `(𝔞 ⊔ 𝔪^e)·R^rank`
+  -- for EVERY `e`, because any two surjections from `R^rank` onto `M` differ by
+  -- an automorphism of `R^rank`.
+  have key : ∀ e : ℕ, ∀ x : Fin rank → R, φ x = 0 →
+      x ∈ (𝔞 ⊔ IsLocalRing.maximalIdeal R ^ e) •
+        (⊤ : Submodule R (Fin rank → R)) := by
+    intro e x hx
+    rcases Nat.eq_zero_or_pos e with rfl | he
+    · rw [pow_zero, Ideal.one_eq_top, sup_top_eq, Submodule.top_smul]
+      exact Submodule.mem_top
+    obtain ⟨ψ, hψsurj, hψker⟩ := h e
+    obtain ⟨u, hu⟩ := Module.projective_lifting_property ψ φ hψsurj
+    have huapp : ∀ z, ψ (u z) = φ z := fun z => congrFun (congrArg DFunLike.coe hu) z
+    have hψm : ∀ y, ψ y = 0 →
+        y ∈ IsLocalRing.maximalIdeal R • (⊤ : Submodule R (Fin rank → R)) := by
+      intro y hy
+      refine Submodule.smul_mono_left ?_ (hψker y hy)
+      exact sup_le haM (Ideal.pow_le_self he.ne')
+    have husurj : Function.Surjective u := by
+      rw [← LinearMap.range_eq_top, ← top_le_iff]
+      refine Submodule.le_of_le_smul_of_le_jacobson_bot
+        (Module.finite_def.mp inferInstance) hjac ?_
+      intro y _
+      obtain ⟨z, hz⟩ := hφsurj (ψ y)
+      have hsub : y - u z ∈
+          IsLocalRing.maximalIdeal R • (⊤ : Submodule R (Fin rank → R)) := by
+        refine hψm _ ?_
+        rw [map_sub, huapp z, hz, sub_self]
+      have hy : y = u z + (y - u z) := by abel
+      rw [hy]
+      exact Submodule.add_mem _ (Submodule.mem_sup_left ⟨z, rfl⟩)
+        (Submodule.mem_sup_right hsub)
+    have huinj : Function.Injective u :=
+      IsNoetherian.injective_of_surjective_endomorphism u husurj
+    have hux : u x ∈ (𝔞 ⊔ IsLocalRing.maximalIdeal R ^ e) •
+        (⊤ : Submodule R (Fin rank → R)) := by
+      refine hψker _ ?_
+      rw [huapp x, hx]
+    have hmapu : Submodule.map u ((𝔞 ⊔ IsLocalRing.maximalIdeal R ^ e) •
+          (⊤ : Submodule R (Fin rank → R)))
+        = (𝔞 ⊔ IsLocalRing.maximalIdeal R ^ e) •
+          (⊤ : Submodule R (Fin rank → R)) := by
+      rw [Submodule.map_smul'', Submodule.map_top, LinearMap.range_eq_top.mpr husurj]
+    rw [← hmapu] at hux
+    obtain ⟨y, hy, hyx⟩ := hux
+    exact huinj hyx ▸ hy
+  -- STEP 2 (KRULL): `⋂_e (𝔞·R^rank + 𝔪^e·R^rank) = 𝔞·R^rank`.
+  intro x hx
+  set Q : Submodule R (Fin rank → R) := 𝔞 • ⊤ with hQ
+  have hgen : ∀ J : Ideal R, Submodule.map Q.mkQ (J • (⊤ : Submodule R (Fin rank → R)))
+      = J • (⊤ : Submodule R ((Fin rank → R) ⧸ Q)) := by
+    intro J
+    rw [Submodule.map_smul'', Submodule.map_top, LinearMap.range_eq_top.mpr Q.mkQ_surjective]
+  have hQbot : (𝔞 : Ideal R) • (⊤ : Submodule R ((Fin rank → R) ⧸ Q)) = ⊥ := by
+    rw [← hgen 𝔞, hQ]
+    exact Submodule.mkQ_map_self (p := Q)
+  have hstep : ∀ i : ℕ, Submodule.map Q.mkQ
+      ((𝔞 ⊔ IsLocalRing.maximalIdeal R ^ i) • (⊤ : Submodule R (Fin rank → R)))
+      = IsLocalRing.maximalIdeal R ^ i • (⊤ : Submodule R ((Fin rank → R) ⧸ Q)) := by
+    intro i
+    rw [hgen, Submodule.sup_smul, hQbot, bot_sup_eq]
+  have hmem : Q.mkQ x ∈
+      ⨅ i : ℕ, IsLocalRing.maximalIdeal R ^ i • (⊤ : Submodule R ((Fin rank → R) ⧸ Q)) := by
+    rw [Submodule.mem_iInf]
+    intro i
+    rw [← hstep i]
+    exact ⟨x, key i x hx, rfl⟩
+  have hkrull := Ideal.iInf_pow_smul_eq_bot_of_isLocalRing
+    (R := R) (M := (Fin rank → R) ⧸ Q) (I := IsLocalRing.maximalIdeal R)
+    (IsLocalRing.maximalIdeal.isMaximal R).ne_top
+  rw [hkrull, Submodule.mem_bot] at hmem
+  exact (Submodule.Quotient.mk_eq_zero Q).mp hmem
+
+/-- **The Taylor–Wiles pigeonhole** (PROVEN 2026-07-27; pure commutative
+algebra: no base field, no Galois theory, no `ψ`, no arithmetic).
+
+`S = 𝒪⟦y₁, …, y_q⟧` and `M` is presented, for EVERY `d`, as a quotient of the
+SAME finite free module `S^rank`, by a surjection whose kernel is contained in
+`(𝔞 ⊔ 𝔪_S^d)·S^rank`. Conclusion: one surjection whose kernel is contained in
+`𝔞·S^rank` outright. This single statement is the `d → ∞` step of Taylor–Wiles
+patching.
+
+WHERE IT IS CONSUMED (2026-07-27):
+`exists_surjective_ker_le_of_forall_linearEquiv_pi_quotient` immediately below,
+which feeds it the family coming from a coordinate presentation
+`M_n ≅ (S ⧸ 𝔟_n)^d` at every depth together with a bottom control map
+`M_n ↠ M₀`.  That is the use the previous version of this docstring described as
+intended but unwritten, and it is written now.
+
+The reading below is retained because it is what the statement means. The free
+module is the DIAMOND ring's `Λ^rank`, never the presentation ring's `S^rank` —
+the latter reading was the dead interface, and a proof of a since-deleted leaf
+built on it asserted `M₀ ≅ R_F^rank`, the output of patching. The use is:
+freeness puts every depth's `Λ^rank ↠ N_d ↠ M₀` on the SAME free `Λ`-module with
+kernel inside `(𝔫 ⊔ 𝔪_Λ^d)·Λ^rank`, and the SHARP form proven above — *every*
+surjection `Λ^rank ↠ M₀` then has kernel inside `𝔫·Λ^rank` — applies to the
+surjection coming from the patched module's `Λ`-basis with nothing further to
+construct. That sharpness is why this lemma survived the cut repair.
+
+ROUTE AS PROVEN (2026-07-27). The only input actually used is
+`coeff.isNoetherianRing` — through `isNoetherianRing_mvPowerSeries`, which makes
+`S = 𝒪⟦y₁, …, y_q⟧` Noetherian — together with `coeff.isLocalRing`, which
+mathlib's `MvPowerSeries` instance propagates to `S`. Everything else is
+`ker_le_smul_of_forall_sup_maximalIdeal_pow` above: the witness is simply the
+`φ` supplied by `h 0`, and the whole content is that *any* surjection
+`S^rank ↠ M` already has `ker ⊆ 𝔞·S^rank`, because any two surjections from the
+SAME free module `S^rank` differ by an automorphism of `S^rank` (Nakayama for
+surjectivity, Orzech for injectivity), so the `𝔪_S^e`-bound of `φ_e` transfers
+verbatim to `φ` for every `e`, and Krull's intersection theorem removes the
+`𝔪_S^e` summand.
+
+**CORRECTION TO THE ORIGINAL ROUTE, AND A FIELD THAT IS NOT NEEDED.** The route
+recorded here on 2026-07-26 went through finiteness of `S ⧸ 𝔪_S^c`, a
+pigeonhole on the finite set `Hom_S(S^rank, M ⧸ 𝔪_S^c M)`, a diagonal
+extraction of a compatible system `(ψ_c)`, and an inverse limit assembled using
+`𝔪_𝒪`-adic completeness of `𝒪`. It flagged that completeness as the likeliest
+missing hypothesis and pre-authorised adding `isAdicComplete` as a field of
+`TaylorWilesCoefficients`.
+
+**No such field was added, and none is needed.** None of
+`coeff.finite_residueField`, `coeff.compactSpace`, `coeff.t2Space`,
+`coeff.totallyDisconnectedSpace`, `coeff.topologicallyFG` or
+`coeff.exists_isRegular_maximalIdeal` is used either — the finiteness of the
+residue field, which the old route needed to make the pigeonhole set finite, is
+irrelevant once no pigeonhole is performed. If a later audit records this leaf
+as blocked on adic completeness, the refuting check is one line: read the proof
+below, which closes it over `IsNoetherianRing` and `IsLocalRing` alone.
+
+NON-VACUITY. The hypothesis is a family indexed by `ℕ`, and it is not
+satisfiable by repeating one member: the conclusion drops the `𝔪_S^d` summand
+entirely, which no single `d` provides. It is also not vacuous downward: the
+hypothesis is satisfied by the finite Taylor–Wiles levels of a
+`TaylorWilesSystem`, over the DIAMOND ring — `freeM` supplies the
+coordinates and `bIdeal_le` the kernel bound.
+
+References: Taylor–Wiles, Ann. of Math. 141 (1995), §2 (the original
+pigeonhole); Diamond, Invent. Math. 128 (1997); Kisin, Ann. of Math. 170 (2009),
+§3; Fujiwara, *Deformation rings and Hecke algebras in the totally real case*,
+§3. -/
+theorem exists_surjective_ker_le_of_forall_maximalIdeal_pow
+    (coeff : TaylorWilesCoefficients) (q rank : ℕ)
+    {M : Type u} [AddCommGroup M] [Module (MvPowerSeries (Fin q) coeff.carrier) M]
+    (𝔞 : Ideal (MvPowerSeries (Fin q) coeff.carrier))
+    (h : ∀ d : ℕ, ∃ φ : (Fin rank → MvPowerSeries (Fin q) coeff.carrier)
+          →ₗ[MvPowerSeries (Fin q) coeff.carrier] M,
+        Function.Surjective φ ∧ ∀ x, φ x = 0 →
+          x ∈ (𝔞 ⊔ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) coeff.carrier) ^ d) •
+            (⊤ : Submodule (MvPowerSeries (Fin q) coeff.carrier)
+              (Fin rank → MvPowerSeries (Fin q) coeff.carrier))) :
+    ∃ φ : (Fin rank → MvPowerSeries (Fin q) coeff.carrier)
+          →ₗ[MvPowerSeries (Fin q) coeff.carrier] M,
+      Function.Surjective φ ∧ ∀ x, φ x = 0 →
+        x ∈ 𝔞 • (⊤ : Submodule (MvPowerSeries (Fin q) coeff.carrier)
+              (Fin rank → MvPowerSeries (Fin q) coeff.carrier)) := by
+  haveI : IsNoetherianRing (MvPowerSeries (Fin q) coeff.carrier) :=
+    isNoetherianRing_mvPowerSeries q
+  obtain ⟨φ, hφsurj, -⟩ := h 0
+  exact ⟨φ, hφsurj, ker_le_smul_of_forall_sup_maximalIdeal_pow 𝔞 φ hφsurj h⟩
+
+/-- **A tuple all of whose coordinates lie in `I` lies in `I·R^ι`** (PROVEN
+2026-07-27), for a finite index type.  Decompose `x = ∑ᵢ Pi.single i (x i)` and
+apply the vendored `Submodule.single_mem_smul_top_pi`
+(`Fermat/FLT/Mathlib/RingTheory/AdicCompletion/Finite.lean`), which is the
+converse direction of `Submodule.apply_mem_of_mem_smul_top_pi` there. -/
+theorem mem_smul_top_pi_of_forall_mem {R : Type*} [CommRing R]
+    {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (I : Ideal R) (x : ι → R) (hx : ∀ i, x i ∈ I) :
+    x ∈ I • (⊤ : Submodule R (ι → R)) := by
+  classical
+  have hsum : ∑ i, Pi.single i (x i) = x := Finset.univ_sum_single x
+  rw [← hsum]
+  refine Submodule.sum_mem _ fun i _ => ?_
+  refine Submodule.single_mem_smul_top_pi I ?_ i
+  simpa using Submodule.smul_mem_smul (hx i) (Submodule.mem_top (x := (1 : R)))
+
+set_option maxHeartbeats 1000000 in
+/-- **THE LIMIT EXTRACTION** (PROVEN 2026-07-27), and the consumer the two
+pigeonhole theorems above were written for.
+
+Input, all of it finite-level: a tower of modules `M_n` over
+`S = 𝒪⟦y₁, …, y_q⟧`, each presented in COORDINATES over a shrinking quotient,
+`fM n : M_n ≃ₗ[S] (S ⧸ 𝔟_n)^d` with `𝔟_n ⊆ 𝔪_S^n`, together with a bottom
+control map `prM n : M_n ↠ M₀` whose kernel is contained in `𝔫·M_n` for a
+LEVEL-INDEPENDENT ideal `𝔫`.  Output, a limit statement: ONE surjection
+`φ : S^d ↠ M₀` with `ker φ ⊆ 𝔫·S^d`.
+
+Combined with the reverse inclusion — which is automatic whenever `𝔫`
+annihilates `M₀`, as it does at the intended instantiation — this says
+`M₀ ≅ (S ⧸ 𝔫)^d`.
+
+PROOF.  At depth `n` compose the coordinate quotient `S^d ↠ (S ⧸ 𝔟_n)^d` with
+`(fM n).symm` and `prM n`.  The composite is surjective, and its kernel is
+inside `(𝔫 ⊔ 𝔪_S^n)·S^d`: an element killed by it lands in `𝔫·M_n`, which
+pushes forward along the linear equivalence and pulls back along the (surjective)
+coordinate quotient to `𝔫·S^d` up to `ker` of that quotient, whose coordinates
+lie in `𝔟_n ⊆ 𝔪_S^n` (`mem_smul_top_pi_of_forall_mem`).  That is exactly the
+family `exists_surjective_ker_le_of_forall_maximalIdeal_pow` consumes, and it
+removes the `𝔪_S^n` summand.
+
+Note `n` enters ONLY through `𝔟_n ⊆ 𝔪_S^n`; the depth-`n` datum is otherwise
+the depth-`0` datum, which is why the conclusion is a genuine limit statement
+and not a restatement of any single level. -/
+theorem exists_surjective_ker_le_of_forall_linearEquiv_pi_quotient
+    (coeff : TaylorWilesCoefficients) (q d : ℕ)
+    (𝔫 : Ideal (MvPowerSeries (Fin q) coeff.carrier))
+    (M : ℕ → Type v) [∀ n, AddCommGroup (M n)]
+    [∀ n, Module (MvPowerSeries (Fin q) coeff.carrier) (M n)]
+    (bI : ℕ → Ideal (MvPowerSeries (Fin q) coeff.carrier))
+    (hbI : ∀ n, bI n ≤ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) coeff.carrier) ^ n)
+    (fM : ∀ n, M n ≃ₗ[MvPowerSeries (Fin q) coeff.carrier]
+      (Fin d → MvPowerSeries (Fin q) coeff.carrier ⧸ bI n))
+    {M0 : Type u} [AddCommGroup M0] [Module (MvPowerSeries (Fin q) coeff.carrier) M0]
+    (prM : ∀ n, M n →ₗ[MvPowerSeries (Fin q) coeff.carrier] M0)
+    (hprM : ∀ n, Function.Surjective (prM n))
+    (hprMzero : ∀ (n : ℕ) (m : M n), prM n m = 0 →
+      m ∈ (𝔫 • ⊤ : Submodule (MvPowerSeries (Fin q) coeff.carrier) (M n))) :
+    ∃ φ : (Fin d → MvPowerSeries (Fin q) coeff.carrier)
+        →ₗ[MvPowerSeries (Fin q) coeff.carrier] M0,
+      Function.Surjective φ ∧ ∀ x, φ x = 0 →
+        x ∈ 𝔫 • (⊤ : Submodule (MvPowerSeries (Fin q) coeff.carrier)
+          (Fin d → MvPowerSeries (Fin q) coeff.carrier)) := by
+  classical
+  refine exists_surjective_ker_le_of_forall_maximalIdeal_pow coeff q d 𝔫 ?_
+  intro n
+  set S := MvPowerSeries (Fin q) coeff.carrier
+  -- the coordinate quotient `S^d ↠ (S ⧸ 𝔟_n)^d`
+  let π : (Fin d → S) →ₗ[S] (Fin d → S ⧸ bI n) :=
+    LinearMap.pi fun i => (bI n).mkQ ∘ₗ LinearMap.proj i
+  have hπapp : ∀ (x : Fin d → S) (i : Fin d), π x i = (bI n).mkQ (x i) := fun _ _ => rfl
+  have hπsurj : Function.Surjective π := by
+    intro y
+    choose x hx using fun i => (bI n).mkQ_surjective (y i)
+    exact ⟨x, funext hx⟩
+  have hπker : ∀ x : Fin d → S, π x = 0 → ∀ i, x i ∈ bI n := by
+    intro x hx i
+    have h0 : (bI n).mkQ (x i) = 0 := by rw [← hπapp x i, hx]; rfl
+    rwa [Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero] at h0
+  refine ⟨(prM n) ∘ₗ ((fM n).symm.toLinearMap ∘ₗ π), ?_, ?_⟩
+  · exact (hprM n).comp ((fM n).symm.surjective.comp hπsurj)
+  · intro x hx
+    have h1 : (fM n).symm (π x) ∈ (𝔫 • ⊤ : Submodule S (M n)) := hprMzero n _ hx
+    have hmapf : Submodule.map (fM n).toLinearMap (𝔫 • (⊤ : Submodule S (M n)))
+        = 𝔫 • (⊤ : Submodule S (Fin d → S ⧸ bI n)) := by
+      rw [Submodule.map_smul'', Submodule.map_top, LinearEquiv.range]
+    have h2 : π x ∈ 𝔫 • (⊤ : Submodule S (Fin d → S ⧸ bI n)) := by
+      rw [← hmapf]
+      exact ⟨_, h1, (fM n).apply_symm_apply _⟩
+    have hmapπ : Submodule.map π (𝔫 • (⊤ : Submodule S (Fin d → S)))
+        = 𝔫 • (⊤ : Submodule S (Fin d → S ⧸ bI n)) := by
+      rw [Submodule.map_smul'', Submodule.map_top, LinearMap.range_eq_top.mpr hπsurj]
+    rw [← hmapπ] at h2
+    obtain ⟨z, hz, hzx⟩ := h2
+    have hxz : ∀ i, (x - z) i ∈ bI n := by
+      refine hπker _ ?_
+      rw [map_sub, hzx, sub_self]
+    have hxzmem : x - z ∈ IsLocalRing.maximalIdeal S ^ n •
+        (⊤ : Submodule S (Fin d → S)) :=
+      mem_smul_top_pi_of_forall_mem _ _ fun i => hbI n (hxz i)
+    have hsplit : x = z + (x - z) := by abel
+    rw [hsplit]
+    exact Submodule.add_mem _
+      (Submodule.smul_mono_left le_sup_left hz)
+      (Submodule.smul_mono_left le_sup_right hxzmem)
+
+/-- **The limit extraction at the DIAMOND ring `Λ = ℤ_p⟦y₁, …, y_q⟧`** (PROVEN
+2026-07-27): the previous theorem instantiated at
+`TaylorWilesCoefficients.padicInt p` and at the level-independent augmentation
+ideal `𝔫 = taylorWilesAug p q`.
+
+This is the shape the finite-level Taylor–Wiles data actually has, and every
+hypothesis is a field of `TaylorWilesSystem` read at the raw-field interface
+`exists_patchedModule_of_fields` uses: `bIdeal_le` is `hbI`, `freeM` is `fM`
+(the coordinate presentation over the DIAMOND quotients
+`Λ ⧸ 𝔟_n = ℤ_p[Δ_{Q_n}]`, never over the presentation ring), and
+`projM`/`projM_surjective`/`projM_eq_zero_iff` are `prM`/`hprM`/`hprMzero` at
+the level-independent augmentation ideal.  `prM` is asked for `Λ`-LINEAR because
+that is what the system's `diamond_smul` + `projM_smul` + `ker_toRuniv` produce;
+`exists_patchedModule_of_fields` builds exactly this map as its `prMₗ`.
+
+Since `𝔫` also ANNIHILATES `M₀` (same three fields), the kernel bound is an
+equality and the statement reads `M₀ ≅ (Λ ⧸ 𝔫)^d = ℤ_p^d`: the bottom Hecke
+module is free of rank `d` over `ℤ_p`.  That is the invariant
+`TaylorWilesLevel.bIdeal_le_aug` was added to guarantee ("it is the invariant
+that makes `M₀ ≅ ℤ_p^d` rather than `(ℤ_p/p^a)^d`"), and it is what the CUT
+AUDIT of `exists_hilbertTaylorWilesLevels` records as the content the system's
+fields DO carry.
+
+The `letI`s are not decoration: `(TaylorWilesCoefficients.padicInt p).carrier`
+is `ℤ_[p]` by `rfl` but not by INSTANCE SYNTHESIS, so the two module instances
+have to be supplied with their bodies visible (`letI`, not `haveI` — a `haveI`
+forgets the body and the resulting instance is then not definitionally equal to
+the one the statement carries).
+
+STATUS (2026-07-27) — NAMING THE CONSUMER THAT MUST EXIST.  This theorem has no
+consumer yet, and that is a fact about the endgame rather than about this
+theorem.  The patching endgame in this module reaches `Function.Injective ψ`
+through `PatchedModule.injective`, i.e. through Auslander–Buchsbaum freeness of
+`M_∞` over the PRESENTATION ring `R_∞ = 𝒪⟦x₁, …, x_q⟧`; that route never sees
+the diamond-ring family, so it cannot consume this.  The consumer that must
+exist is the OTHER half of the Taylor–Wiles output, which nothing in the tree
+currently demands: `M_∞` free of rank `r` over `R_∞` gives `M₀ ≅ R_univ^r`, and
+comparing that with `M₀ ≅ ℤ_p^d` proven here yields `R_univ` finite free over
+`ℤ_p` and `M₀` free over `R_univ` — the multiplicity-one half of `R = T`.  That
+comparison is a `PatchedModule`-interface theorem and is not written.
+
+THE CHECK THAT WOULD REFUTE THIS NOTE: exhibit an in-cone declaration whose
+proof needs a bound on `ker(Λ^d ↠ M₀)` rather than merely a surjection
+`Λ^d ↠ M₀` (which `fM 0` and `prM 0` already give for free).  Every step of
+`exists_patchedModule_of_fields` that touches `M₀` — `hM0finΛ`, `hM0finR`, the
+bottom identifications `sM` — needs only the surjection. -/
+theorem exists_surjective_ker_le_taylorWilesAug
+    {p : ℕ} [Fact p.Prime] (q d : ℕ)
+    (M : ℕ → Type v) [∀ n, AddCommGroup (M n)]
+    [∀ n, Module (MvPowerSeries (Fin q) ℤ_[p]) (M n)]
+    (bI : ℕ → Ideal (MvPowerSeries (Fin q) ℤ_[p]))
+    (hbI : ∀ n, bI n ≤ IsLocalRing.maximalIdeal (MvPowerSeries (Fin q) ℤ_[p]) ^ n)
+    (fM : ∀ n, M n ≃ₗ[MvPowerSeries (Fin q) ℤ_[p]]
+      (Fin d → MvPowerSeries (Fin q) ℤ_[p] ⧸ bI n))
+    {M0 : Type u} [AddCommGroup M0] [Module (MvPowerSeries (Fin q) ℤ_[p]) M0]
+    (prM : ∀ n, M n →ₗ[MvPowerSeries (Fin q) ℤ_[p]] M0)
+    (hprM : ∀ n, Function.Surjective (prM n))
+    (hprMzero : ∀ (n : ℕ) (m : M n), prM n m = 0 →
+      m ∈ (taylorWilesAug p q • ⊤ :
+        Submodule (MvPowerSeries (Fin q) ℤ_[p]) (M n))) :
+    ∃ φ : (Fin d → MvPowerSeries (Fin q) ℤ_[p])
+        →ₗ[MvPowerSeries (Fin q) ℤ_[p]] M0,
+      Function.Surjective φ ∧ ∀ x, φ x = 0 →
+        x ∈ taylorWilesAug p q • (⊤ : Submodule (MvPowerSeries (Fin q) ℤ_[p])
+          (Fin d → MvPowerSeries (Fin q) ℤ_[p])) := by
+  letI iM : ∀ n,
+      Module (MvPowerSeries (Fin q) (TaylorWilesCoefficients.padicInt p).carrier) (M n) :=
+    fun n => inferInstanceAs (Module (MvPowerSeries (Fin q) ℤ_[p]) (M n))
+  letI iM0 :
+      Module (MvPowerSeries (Fin q) (TaylorWilesCoefficients.padicInt p).carrier) M0 :=
+    inferInstanceAs (Module (MvPowerSeries (Fin q) ℤ_[p]) M0)
+  exact exists_surjective_ker_le_of_forall_linearEquiv_pi_quotient
+    (TaylorWilesCoefficients.padicInt p) q d (taylorWilesAug p q) M bI hbI fM prM hprM
+    hprMzero
 
 end GaloisRepresentation.Modularity
