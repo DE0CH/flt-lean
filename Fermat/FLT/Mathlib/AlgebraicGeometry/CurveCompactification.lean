@@ -703,7 +703,35 @@ and it only works because the chart does not demand `𝒜₀ ≅ K`.)
 
 `Mathlib` has no Nagata/Japanese-ring theory and no projective closure at this pin; it does
 have `HomogeneousIdeal`, `GradedRing`, and the quotient grading, which is what this is to be
-built from. -/
+built from.
+
+**A CHEAPER ROUTE THAN THE SATURATED IDEAL ABOVE (2026-07-27, from the author of
+`nonempty_projChart_mvPolynomial`, which closed by an analogous reversal).**  Do not construct
+`I` and prove it saturated; construct `A` as an IMAGE instead, and the saturation is what you
+get for free rather than what you have to prove.
+
+Grade `B[t]` (a one-variable polynomial ring over `B`) by `t`-degree, and define a GRADED
+`K`-algebra map `Φ : A' → B[t]` by sending `a ∈ 𝒜'_d` to `q (C.awayIso ⟦a / f'^d⟧) · t^d`.  It
+is multiplicative because `(ab)/f'^{d+e} = (a/f'^d)(b/f'^e)` in the away-localisation, and
+additive within each degree; so it is determined on the `GradedRing` decomposition of `A'`.
+Take `A := Φ.range` with the induced grading and `f := Φ f' = t` (note `f'/f' = 1`, so
+`Φ f' = q 1 · t = t`, giving `f ∈ 𝒜 1` on the nose).  Then:
+
+* `Algebra.FiniteType 𝒜₀ A` and `Module.Finite K 𝒜₀` are inherited from `A'` because `A` is a
+  quotient of `A'` and `𝒜₀` a quotient of `𝒜'₀` — no separate argument for either;
+* `(A_f)₀ = B` **by construction**: `(A_t)₀ = {a/t^d : a ∈ 𝒜_d}` is exactly the union over `d`
+  of `q (C.awayIso ⟦𝒜'_d / f'^d⟧)`, which is `q '' B' = B` since `q` is surjective and
+  `B' = (A'_{f'})₀`.  Surjectivity is where `q` is consumed and injectivity is by construction
+  of the image — the two places the saturated-ideal route needs real work;
+* the DEGENERATE case is automatic: for `B = 0`, `q 1 = 0` so `A = 0` and `𝒜₀ = 0`, which is
+  finite over `K` and not `≅ K` — exactly the reason `ProjChart` asks only for
+  `Module.Finite K 𝒜₀`.
+
+**The check that would refute this note**: that `Φ` cannot be assembled as a ring hom from its
+degreewise pieces at this pin.  It is assembled from `DirectSum.toSemiring` / the `GradedRing`
+decomposition of `A'`, and the degreewise pieces are `HomogeneousLocalization.Away.mk` composed
+with `C.awayIso.hom` and `q`; if that assembly is genuinely unavailable, the note is wrong and
+the saturated-ideal route stands. -/
 theorem nonempty_projChart_of_surjective {B B' : CommRingCat.{u}}
     {b' : CommRingCat.of K ⟶ B'} (_C : ProjChart K B' b') (q : B' ⟶ B)
     (_hq : Function.Surjective q.hom) : Nonempty (ProjChart K B (b' ≫ q)) :=
