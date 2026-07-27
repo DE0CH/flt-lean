@@ -154,6 +154,9 @@ Every replacement is an EQUIVALENCE, so no statement was weakened at any step:
   `descent_system_no_solution` declarations, and the GAP recorded on each of
   them on 2026-07-27: the covering collection is not established, so the
   Chabauty runs close the leaves modulo a descent step that is not on record.
+  **At level `13` that gap is now moot** (2026-07-27): `rank J(ℚ) = 0` is sharp
+  there, and the rank-`0` determination of `X(ℚ)` has no covering collection in
+  it — see the rank-`0` section on `X13.descent_system_no_solution`.
 * `<level>.descent_system_no_solution` → `<level>.descent_system_no_solution_pos`
   and `..._neg` (BOTH levels, 2026-07-27) by `rcases` on the sign disjunct.
   The two branches are independently dispatchable, but **the claim that made
@@ -166,8 +169,12 @@ Every replacement is an EQUIVALENCE, so no statement was weakened at any step:
   `E_d` (at `b ∈ ℚ*²` resp. `2ℚ*²`), and both meet uncomputed twists at every
   other `b`.  The `σ`-substitution `(a, b, u, v) ↦ (b, b − a, u, −v)` carries
   either branch's system to the other's, so they cannot differ in difficulty.
-  The level-`13` claim on the same line has NOT been re-audited and is subject
-  to the same twist correction.
+  **At level `13` the two branches were never distinct in the first place**
+  (correction, 2026-07-27): `−1 = i²`, so the relabelling `(u, v) ↦ (v, u)`
+  carries one branch to the other and `X13.descent_system_no_solution_neg` is
+  PROVEN from `X13.descent_system_no_solution_pos`.  Level `13` has ONE branch
+  to close, not two — and by the twist correction above it needs no Chabauty
+  run to close it either.
 
 What each step removed is a layer of Lean-specific interface: first the
 obligation to exhibit a *structure*, then the obligation to reason about a
@@ -2090,39 +2097,77 @@ which Magma's `Chabauty` succeeds with bound `N = 4`, returning five group
 elements whose rational `x`-coordinates are exactly `∞`, `0` and `−1` — all
 three degenerate, i.e. `ab(a + b) = 0`.
 
-**Cost note, and the reason the level-`13` pair is NOT the cheaper one.**
-Unlike level `18`, where the sibling branch has rank `0`, here BOTH branches
-sit on the same rank-`1` curve `E(K) ≅ ℤ` (torsion trivial, `RankBounds` sharp
-at `1 ≤ r ≤ 1`, generator with `x = −1 − i`, `Norm(𝔣) = 1352`,
-`j = 768 − 512i`).  So `p`-adic elliptic Chabauty is needed for this branch AND
-for its sibling — two runs, not one. -/
+The rank-`1` curve of that route is `E(K) ≅ ℤ` (torsion trivial, `RankBounds`
+sharp at `1 ≤ r ≤ 1`, generator with `x = −1 − i`, `Norm(𝔣) = 1352`,
+`j = 768 − 512i`).
+
+**COST NOTE CORRECTED (2026-07-27).**  The paragraph that stood here said that
+level `13` needs a `p`-adic elliptic Chabauty run on this branch AND on its
+sibling — "two runs, not one".  That is wrong twice over.
+
+*First, the sibling needs no run at all.*  `descent_system_no_solution_neg` is
+now **PROVEN** from this declaration by the relabelling `(u, v) ↦ (v, u)`.  The
+hypotheses `IsCoprime u v` and `ab(a + b) = uv` are symmetric in `u` and `v`,
+and the two sign conditions `C̃ = v² − u²` and `C̃ = u² − v²` are exchanged by
+the swap; concretely `−(v − u·i)² = (i·(v − u·i))² = (u + v·i)²`.  So
+"`−1 = i²`, hence the two descent classes coincide" — which the opening audit
+identified correctly — does not mean "two covers of one curve to compute".  At
+the level of this INTEGRAL system it means the second branch is the first one
+relabelled, and is free.
+
+*Second, this branch needs no elliptic-Chabauty run either.*  See the rank-`0`
+section on `descent_system_no_solution` below: `rank J(ℚ) = 0` is sharp for the
+genus-`2` curve, and the rank-`0` determination of `X(ℚ)` contains **no
+covering collection at all**, so it is untouched by the GAP that blocks the
+`ℚ(i)` route.  The `N = 4` run recorded above remains a correct corroboration
+of the ANSWER; it is not needed for the proof. -/
 theorem descent_system_no_solution_pos (a b u v : ℤ) (hab : Int.gcd a b = 1)
     (huv : IsCoprime u v) (hB : a * b * (a + b) = u * v)
     (hC : a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3 = v ^ 2 - u ^ 2) :
     a * b * (a + b) = 0 := sorry
 
-/-- **THE `δ = −1` BRANCH OF THE DESCENDED SYSTEM** (opened 2026-07-27; sibling
-of `descent_system_no_solution_pos` above).
+/-- **THE `δ = −1` BRANCH OF THE DESCENDED SYSTEM — PROVEN 2026-07-27 from its
+sibling `descent_system_no_solution_pos`, by the relabelling `(u, v) ↦ (v, u)`.**
 
 `C̃ = u² − v²` with `B̃ = uv` says that the homogeneous cubic is MINUS a square
 in `ℤ[i]`:
 
     C̃(a, b) + 2i·B̃(a, b) = −(v − u·i)².
 
-Magma's `Chabauty` on this cover succeeds with bound `N = 12` and returns only
-`x = ∞`, i.e. `b = 0`; with `gcd(a, b) = 1` that forces `a = ±1` and
-`ab(a + b) = 0`.  **The conclusion is stated in the common weak form
-`ab(a + b) = 0` rather than the stronger `b = 0` that the computation actually
-gives**, so that the two branches assemble uniformly and so that nothing rests
-on the stronger reading being correctly transcribed.
+But `−1 = i²` is a square in `K = ℚ(i)`, and concretely
 
-Note `−1 = i²` is a square in `K = ℚ(i)`, so `δ = −1` and `δ = +1` are the same
-class here and this cover lives on the SAME rank-`1` curve as its sibling —
-which is why level `13` needs two Chabauty runs where level `18` needs one. -/
+    −(v − u·i)² = (i·(v − u·i))² = (u + v·i)²,
+
+which is the `δ = +1` form `(v′ + u′·i)²` at `(u′, v′) = (v, u)`.  At the level
+of the integral system that is nothing more than a relabelling: `IsCoprime u v`
+and `ab(a + b) = uv` are symmetric in `u` and `v`, and `C̃ = u² − v²` is
+`C̃ = v′² − u′²` after the swap.  So this branch is
+`descent_system_no_solution_pos` applied to `(a, b, v, u)` and carries no
+independent arithmetic.
+
+**This CORRECTS the audit that opened the two branches**, which recorded that
+at level `13` "both live on one rank-`1` curve and need a Chabauty run each"
+and that the two branches are "independently dispatchable".  They are not.  The
+`−1 = i²` coincidence, which that audit identified correctly, is exactly what
+makes the second branch FREE — not what makes it a second cover to compute.
+Level `13` has ONE branch to close, not two.
+
+*Why the same relabelling does NOT apply at level `18`*: there the descent is
+`C̃ = ±(v² − 2u²)` with `B̃ = uv`, and the swap sends `v² − 2u²` to `u² − 2v²`,
+not to `2u² − v²`, because `−1` is not a square in `ℚ(√−2)`.  The level-`18`
+pair `X18.descent_system_no_solution_pos` / `_neg` is genuinely two statements
+and its split is sound.
+
+*Superseded record, kept because it corroborates the answer*: Magma's
+`Chabauty` on this cover succeeded with bound `N = 12` and returned only
+`x = ∞`.  That run is consistent with the conclusion but is no longer part of
+any route — and it went through the `ℚ(i)` covering collection, which is the
+step recorded as MISSING on `descent_system_no_solution` below. -/
 theorem descent_system_no_solution_neg (a b u v : ℤ) (hab : Int.gcd a b = 1)
     (huv : IsCoprime u v) (hB : a * b * (a + b) = u * v)
     (hC : a ^ 3 + a ^ 2 * b - 2 * a * b ^ 2 - b ^ 3 = u ^ 2 - v ^ 2) :
-    a * b * (a + b) = 0 := sorry
+    a * b * (a + b) = 0 :=
+  descent_system_no_solution_pos a b v u hab huv.symm (by rw [hB]; ring) hC
 
 /-- **THE DESCENDED SYSTEM, AFTER THE `ℤ[i]` DESCENT** (opened 2026-07-27,
 replacing the `t`-form below, which is PROVEN over it by
@@ -2168,12 +2213,17 @@ below, added 2026-07-27, which applies verbatim at this level too.  Refuting
 check: re-run `RankBounds`/`Chabauty`; rank `≥ 2`, or a sixth element with
 rational `x`, overturns this.
 
-**CORRECTION to "the two levels are structurally parallel", which is how this
-pair is usually dispatched.**  They are parallel in shape but NOT in cost.  At
-level `18` one of the two branches has RANK `0` (torsion `ℤ/3`), so only one
-Chabauty computation is needed there; at level `13` both covers sit on the same
-RANK-`1` curve, so Chabauty is needed TWICE.  Level `13` is therefore strictly
-the more expensive of the two to formalise, not the easier one.
+**"CORRECTION to the two levels are structurally parallel" — ITSELF CORRECTED
+(2026-07-27).**  What stood here said: at level `18` one branch has rank `0` so
+only one Chabauty computation is needed, whereas at level `13` both covers sit
+on one rank-`1` curve so Chabauty is needed TWICE, making level `13` strictly
+the more expensive of the two.  **The cost conclusion is exactly backwards.**
+`−1 = i²` makes the two level-`13` branches the same statement relabelled, so
+the `−` branch is FREE (`descent_system_no_solution_neg` is proven from `_pos`);
+and the rank-`0` section below removes the need for a Chabauty run on the `+`
+branch as well.  Level `13` needs ZERO elliptic-Chabauty runs and has one leaf,
+where level `18` has two leaves and needs one run.  The two levels are indeed
+not parallel in cost — the asymmetry just runs the other way.
 
 **Numerical corroboration, extended 2026-07-27** to all coprime `(a, b)` with
 `|a|, |b| ≤ 2000` (previously `400`): no non-degenerate solution at either
@@ -2215,8 +2265,77 @@ the residue classes, whereas here `v² − u²` with `gcd(u, v) = 1` takes every
 odd residue mod `8` (PARI, 2026-07-27).  Recorded so nobody spends the cycle
 looking for the level-`13` analogue.
 
+**THE GAP ABOVE IS REAL, BUT THE ROUTE IT BLOCKS IS UNNECESSARY:
+`rank J(ℚ) = 0` CLOSES THIS LEAF WITH NO COVERING COLLECTION AT ALL**
+(2026-07-27, Magma re-run from scratch).  This does not retract the GAP — as a
+criticism of the `ℚ(i)` elliptic-Chabauty route it stands, and the twist by `b`
+is exactly as described.  What it retracts is "a complete route needs the
+covering collection": that is true only of THAT route.  The covering collection
+exists because the route passes through `K = ℚ(i)`, where the twist parameter
+appears; the classical route does not pass through `K` and has no twist
+parameter.
+
+    C : y² = f(x),  f = sext13,  disc(C) = 2²⁰ · 13²
+    RankBounds(J)      = 0 0        — SHARP: rank is 0, not merely `≤ 1`
+    TorsionSubgroup(J) = ℤ/19,  so  #J(ℚ) = 19
+    Chabauty0(J)       = {(1 : ±1 : 0), (−1 : ±1 : 1), (0 : ±1 : 1)}  — SIX
+
+`Chabauty0` on a rank-`0` Jacobian is not a search: it is the Mazur–Tate
+argument, and it returns a PROVABLY complete `C(ℚ)`.  Its certificate is
+elementary once the rank is known, and every number in it is checkable here:
+
+1. `#J(ℚ) = 19` — rank `0` together with the torsion computation;
+2. `3` is a prime of good reduction, since `3 ∤ 2²⁰ · 13²`;
+3. `#J(𝔽₃) = 19`, and `J(ℚ) → J(𝔽₃)` is injective because the kernel of
+   reduction is pro-`3` while `gcd(19, 3) = 1`;
+4. `C(ℚ) ↪ J(ℚ)` by Abel–Jacobi at the rational base point `(0, 1)`, and this
+   commutes with reduction, so `C(ℚ) ↪ C(𝔽₃)`;
+5. `#C(𝔽₃) = 6` — **already PROVEN here**, by `decide`, as `X13.card_X13_F3`;
+6. six rational points are exhibited (`X13.sixPts`), so `C(ℚ)` is exactly those
+   six, with `x ∈ {∞, 0, −1}`, i.e. `ab(a + b) = 0`.
+
+`p = 5` gives the same certificate independently (`#C(𝔽₅) = 6`, `#J(𝔽₅) = 19`),
+which is a second check on items `3`–`5`.  Items `1`–`6` are precisely what the
+`JacobianPackage` structure at the top of this file axiomatises — which is why
+the file already carries both directions, `redPt_injective` (package ⟹
+injectivity of reduction) and `nonempty_jacobianPackage_of_redPt_injective`.
+
+**So the residual content of this leaf is ONE fact — `rank J₁(13)(ℚ) = 0` —
+and NOT a Chabauty computation, and not the covering collection.**
+
+**IRREDUCIBILITY VERDICT, with the axis named** (so that the next reader can
+refute it rather than redo the survey).  Every step in this file between
+`X13.exists_jacobianPackage` and `descent_system_no_solution_pos` is an
+EQUIVALENCE — the file's own audits say so at each step ("reversible in one
+`ring` identity", "EQUIVALENT, not weaker", "the two branches are the same
+statement relabelled") — so no further Diophantine re-encoding of the leaf can
+reduce it: each such step trades one statement for an equally strong one, which
+is why the sorry COUNT has never moved.  The axis searched is *Diophantine
+re-encodings and descent routes over imaginary quadratic fields*.  The axis NOT
+searched, and the only one that can move the leaf, is *a genuine `Pic⁰` of a
+genus-`2` curve with Mordell–Weil finiteness*.
+
+**RECOMMENDED RE-CUT — not performed here, because it reorders a region of the
+file that this owner was not dispatched at.**  The file's dependency direction
+is currently the reverse of the mathematics: `X13.redPt_injective_three` and
+`X13.exists_jacobianPackage` are derived FROM this Diophantine leaf, when the
+mathematics derives the Diophantine leaf from them.  Inverting it — making
+`X13.redPt_injective_three` the sorried leaf, moving `X13.sixPts`,
+`X13.sixPtsData_injective` and `X13.red_sixPts` above this point, and proving
+`descent_system_no_solution_pos` from it through `X13.card_X13_F3` — would put
+the sorry exactly where the content is, and would make the residual obligation
+legible as "Mordell–Weil for `J₁(13)`" instead of as "one more sextic
+Diophantine equation".  It does not change the leaf count.
+
+**Refuting checks** for this whole section: re-run `RankBounds(J)` (a lower
+bound `> 0` overturns it), `TorsionSubgroup(J)` (anything but `ℤ/19` overturns
+item `1`), `#Jacobian(ChangeRing(C, GF(3)))` (anything but `19` overturns item
+`3`), and `Chabauty0(J)` (a seventh point overturns the conclusion).
+
 **PROVEN since 2026-07-27** from the two sign branches above, by `rcases` on
-`hC` and nothing more.
+`hC` and nothing more — and since 2026-07-27 the `_neg` branch is itself proven
+from `_pos`, so the whole of `X13` now rests on the single leaf
+`X13.descent_system_no_solution_pos`.
 
 **NAME COLLISION — there are TWO `descent_system_no_solution` in this file.**
 This one is `Fermat.Hyperelliptic.X13.descent_system_no_solution` (level `13`,
