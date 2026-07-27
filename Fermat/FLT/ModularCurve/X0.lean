@@ -8412,6 +8412,32 @@ the scheme-theoretic data bundled in `CyclicSubgroupOfOrder` and the
 algebraic data of a Hopf algebra — Yoneda plus `Γ ⊣ Spec` — and carries no
 arithmetic at all.
 
+**THE HOPF AXIOMS DO NOT HAVE TO BE CHECKED BY HAND: mathlib already has the
+bridge** (surveyed 2026-07-27, and this is the single most useful thing to
+know before starting).  `Mathlib/Algebra/Category/CommHopfAlgCat.lean` has
+
+    instance (A : (CommAlgCat R)ᵒᵖ) [GrpObj A] : HopfAlgebra R A.unop
+
+(and its `MonObj ⟹ Bialgebra R` analogue in `CommBialgCat.lean`).  So
+coassociativity, counitality and the antipode identities are *derived* from
+the group-object diagrams; nothing about `comul`/`counit`/`antipode` needs to
+be written in tensor-product form.  What must be produced is a `GrpObj`
+structure on the fibre viewed in `(CommAlgCat K)ᵒᵖ`, and the transport is
+assembled from equivalences that all exist:
+`AlgebraicGeometry.AffineScheme.equivCommRingCat : AffineScheme ≌ CommRingCatᵒᵖ`
+and `CommAlgCat.commAlgCatEquivUnder (R) : CommAlgCat R ≌ Under R`, over the
+base `Spec K`.  Mathlib's own group schemes are already phrased this way —
+`Mathlib/AlgebraicGeometry/Group/Smooth.lean` works with
+`GrpObj (Over.mk f)` in the cartesian-monoidal `Over` category.
+
+The one genuinely new step is the YONEDA direction, which
+`AbelianSchemeStruct` does not provide: `ofMorphisms`
+(`Fermat/FLT/Modularity/AbelianScheme.lean`) goes from morphisms TO the
+functor of points, and here one needs the converse — evaluate `ab.add` at the
+tautological point of `C_K ×_K C_K` to get `m`, and use the naturality fields
+`ab.pre_add` / `ab.pre_zero` (plus `c.add_liesIn` / `c.zero_liesIn` /
+`c.neg_liesIn` to see that the result lands in `C`) to check the diagrams.
+
 `N` plays no role, and neither does algebraic closedness of `K`; both are
 deliberately absent from the statement.  The statement is discharged
 VACUOUSLY when the fibre is empty (take `A` the zero ring, which is a finite
