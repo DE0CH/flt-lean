@@ -1635,9 +1635,11 @@ with finite fibres", and no leaf has to redo that step.
 
 **STATUS OF THE FOUR, 2026-07-27 (updated).**
 
-* `isRegularLocalRing_stalk_of_smooth` — OPEN, and it is a **HOIST**, not a
-  proof; see its docstring.  It now unblocks TWO leaves, not one (the other is
-  `exists_isWeaklyRegular_span_eq_maximalIdeal` below).
+* `isRegularLocalRing_stalk_of_smooth` — **PROVEN 2026-07-27**, in one line
+  over the hoisted `isRegularLocalRing_stalk_of_smooth_over_field`, once the
+  bundled-`K` instance defect in its own signature was repaired (see its
+  docstring).  It was never mathematics: it was a HOIST and then a BINDER.
+  It also unblocks `exists_isWeaklyRegular_span_eq_maximalIdeal` below.
 * `ringKrullDim_quotient_map_maximalIdeal_stalkMap` — **PROVEN**, over the new
   ring-level lemma `ringKrullDim_quotient_of_quasiFinite`.  The hand-written
   affine descent the survey called for turned out to be already in mathlib as
@@ -1653,10 +1655,11 @@ with finite fibres", and no leaf has to redo that step.
   DIFFERENT (module-finite) theorem and not to that leaf. -/
 
 /-- **SMOOTH OVER A FIELD ⟹ THE STALKS ARE REGULAR LOCAL RINGS**
-(sorry leaf — **FALSE AS STATED**; see the FALSITY AUDIT below.  The
-mathematics is finished and sitting one line away; what blocks this leaf is
-its own SIGNATURE, and repairing it is a CLUSTER-LEVEL change that this
-declaration cannot make alone.)
+(**PROVEN 2026-07-27**, in one line.  It was previously a sorry leaf and it was
+FALSE AS STATED — the FALSITY AUDIT below is kept as the record of why, since
+the same defect has been reintroduced into this file twice after being
+repaired.  Nothing was proven to close it: the mathematics had already been
+hoisted, and the signature was then repaired across the whole family.)
 
 **THE HOIST THIS LEAF ASKED FOR IS DONE (2026-07-27).**  The earlier version
 of this docstring said the proof —
@@ -1697,30 +1700,42 @@ itself, which is not even a domain — and a regular local ring IS a domain
 `KhareWintenberger.lean`).  So the conclusion fails.  The same counterexample
 refutes the sibling `ringKrullDim_stalk_eq_of_isFinite_endo` below.
 
-**THE REPAIR, AND WHY IT IS NOT MADE HERE.**  Replace `{K : CommRingCat.{u}}
-[Field K]` with `{K : Type u} [Field K]` and `Spec K` with
-`Spec (CommRingCat.of K)` — the idiom `Modularity/AbelianScheme.lean` uses
-everywhere and the one mathlib uses.  Under that signature this leaf closes in
-ONE LINE,
+**THE REPAIR IS DONE, AND THIS LEAF IS CLOSED (2026-07-27).**  The binder is
+now `{K : Type u} [Field K]` with base `Spec (CommRingCat.of K)` — the idiom
+`Modularity/AbelianScheme.lean` uses everywhere and the one mathlib uses.
+Under that signature the theorem is the ONE-LINE citation written below, with
+no mathematics left to do.  **Everything above this paragraph is a record of
+the defect, not a live warning**: the counterexample no longer applies, because
+`[Field K]` now constrains the very ring `Spec (CommRingCat.of K)` is built
+from.
 
-    GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field
-      g ‹Smooth g› x
+The conversion was made across the WHOLE family in ONE commit, because a file
+mixing the two conventions is worse than one with the bug throughout: with a
+bundled `K` and a local `[Field ↥K]` both in scope, instance search for
+`CommRing ↥K` is ambiguous at every boundary between the styles.  The fourteen
+declarations converted together were `isRegularLocalRing_stalk_of_smooth`,
+`ringKrullDim_stalk_eq_of_isFinite_endo`, `flat_of_finite_fibres_endo`,
+`nonempty_module_infKernel_of_squareZero`,
+`eq_zero_of_nsmul_eq_zero_of_squareZero`, `formallyUnramified_mulByNat`,
+`finite_preimage_mulByNat_of_field_prime_to_char`,
+`isQuasiAffine_ker_mulByNat_of_field_char`,
+`isAffine_ker_mulByNat_of_field_char`, `finite_ker_mulByNat_of_field_char`,
+`isFinite_ker_mulByNat_of_field_char`, `finite_preimage_mulByNat_of_field_char`,
+`finite_preimage_mulByNat_of_field` and `flat_mulByNat_of_field`.  No proof
+body changed.  The recursion terminates at the two consumers that instantiate
+at a residue field (`finite_preimage_mulByNat`, `flat_fiberMap_mulByNat`),
+which now pass `↥(S.residueField _)`: `Scheme.residueField` is *defined* as
+`CommRingCat.of _`, so the pin is discharged by `rfl`.
 
-with no mathematics left to do.  But the signature is shared by a CLUSTER of
-seven declarations in this file, which pass `K` to one another:
-`isRegularLocalRing_stalk_of_smooth`, `ringKrullDim_stalk_eq_of_isFinite_endo`,
-`flat_of_finite_fibres_endo`, `finite_preimage_mulByNat_of_field_prime_to_char`,
-`finite_preimage_mulByNat_of_field_char`, `finite_preimage_mulByNat_of_field`
-and `flat_mulByNat_of_field`.  Changing one forces changing all: this leaf's
-only consumer, `flat_of_finite_fibres_endo`, also calls
-`ringKrullDim_stalk_eq_of_isFinite_endo`, which had a live owner in another
-worktree when this was found, so a unilateral restatement here would collide
-head-on with theirs.  Nothing OUTSIDE this file consumes any of the seven, so
-the repair is contained — it just needs ONE owner for the whole cluster. -/
+**IF YOU OPEN A NEW DECLARATION IN THIS FAMILY, USE THE CONVERTED SHAPE.**  The
+defect was found three times in this file — repaired across eleven
+declarations, reintroduced in a declaration opened after that repair, then
+found again in a third cluster.  Reintroducing the bundled binder anywhere
+re-creates the ambiguity for everyone. -/
 theorem isRegularLocalRing_stalk_of_smooth {X : Scheme.{u}} {K : Type u} [Field K]
     (g : X ⟶ Spec (CommRingCat.of K)) [Smooth g] (x : X) :
     IsRegularLocalRing (X.presheaf.stalk x) :=
-  sorry
+  GaloisRepresentation.Modularity.isRegularLocalRing_stalk_of_smooth_over_field g ‹Smooth g› x
 
 /-- **THE FIBRE OF A QUASI-FINITE ALGEBRA OVER A LOCAL RING IS ZERO-DIMENSIONAL**
 (PROVEN 2026-07-27 — the ring-level core of
@@ -2626,9 +2641,24 @@ theorem locallyQuasiFinite_of_formallyUnramified {X Y : Scheme.{u}} (u : X ⟶ Y
 of `finite_preimage_mulByNat_of_field_prime_to_char`, and the only thing
 in that half of the old cube leaf that mathlib does not already have).
 
-**FALSITY AUDIT (2026-07-27): THIS LEAF IS FALSE AS STATED, AND SO IS ITS
-CONSUMER `eq_zero_of_nsmul_eq_zero_of_squareZero`.  DO NOT ATTEMPT A PROOF
-BEFORE THE STATEMENT IS REPAIRED.**  The defect is an INSTANCE DIAMOND in
+**FALSITY AUDIT (2026-07-27) — REPAIRED THE SAME DAY; THIS SECTION IS NOW A
+RECORD, NOT A WARNING.**  The audit read: *this leaf is FALSE as stated, and so
+is its consumer `eq_zero_of_nsmul_eq_zero_of_squareZero`; do not attempt a
+proof before the statement is repaired.*  That was correct, and the repair
+described at its end HAS BEEN APPLIED — the binder is now
+`(K : Type u) [Field K]` with base `Spec (CommRingCat.of K)`, converted across
+the whole `_of_field` family in one commit.  **So this leaf is now OPEN, not
+false, and the counterexample below no longer applies**: the `[Field K]`
+instance is the very one the geometry uses.  The section is kept in full
+because the same defect has been introduced into this file three times, and
+because the counterexample is the cheapest way to recognise it again.
+
+Keep it that way: **a new declaration in this family must use the unbundled
+shape.**  A file that mixes the two conventions is worse than one with the bug
+throughout, since instance search for `CommRing ↥K` is then ambiguous at every
+boundary between the styles.
+
+What the audit found:  The defect is an INSTANCE DIAMOND in
 the binder `(K : CommRingCat.{u}) [Field K]`, and it is invisible to every
 reader because the two halves of the statement never meet in any of the
 already-proven declarations of this cluster — this leaf is the first place
@@ -2676,8 +2706,9 @@ structure.  Conclusion FALSE.
 only because it rests on this false leaf; the six-line module argument in
 it is correct, and it is the LEAF that is wrong.
 
-*The repair, and it is a CUT-LEVEL repair, not a leaf-level one.*  Pin the
-field structure by taking the base field UNBUNDLED, exactly as
+*The repair — APPLIED 2026-07-27, and it was a CUT-LEVEL repair, not a
+leaf-level one.*  Pin the field structure by taking the base field UNBUNDLED,
+exactly as
 `exists_isRegularLocalRing_quotient_indepList_of_smooth_over_field`
 (`Fermat/FLT/Modularity/KhareWintenberger.lean:4113`) already does in this
 project for the same reason:
@@ -2776,9 +2807,13 @@ need a further patching diagram and the group law — so "prove Milnor
 patching" is a necessary but not sufficient plan.
 
 **ROUTE CORRECTION (2026-07-27).  BOTH HALVES OF THE PARAGRAPH ABOVE ARE
-WRONG, AND THE ROUTE IS MUCH CHEAPER THAN IT RECORDS.  This assumes the
-FALSITY AUDIT's repair has been applied, since step 1 is exactly what the
-unpinned `[Field K]` blocks.**
+WRONG, AND THE ROUTE IS MUCH CHEAPER THAN IT RECORDS.  This assumed the
+FALSITY AUDIT's repair had been applied, since step 1 is exactly what the
+unpinned `[Field K]` blocked — AND IT NOW HAS BEEN, so this is the live route
+and the paragraph above it is the dead one.**  Concretely, `Subsingleton ↥(Spec
+(CommRingCat.of K))` and `Unique ↥(Spec (CommRingCat.of K))` both synthesize
+under the repaired binder (one-line `example`, verified 2026-07-27), which is
+exactly the input step 1 needs and could not previously get.
 
 *1. Milnor patching FOR SCHEMES is not needed — the problem is
 AFFINE-LOCAL.*  Once the field structure is pinned, `Spec K` is a ONE-POINT
@@ -3591,28 +3626,38 @@ through declarations already in this file — `IsQuasiAffine` over `K̄` gives
 transports along the surjection into
 `isFinite_ker_mulByNat_of_finite_preimage`.
 
-What blocks it is that **`Spec K` is not known to be a ONE-POINT scheme here**, so
-`Spec K̄ ⟶ Spec K` is not known to be surjective.  `(K : CommRingCat.{u})
-[Field K]` puts a `Field` structure on the CARRIER `↑K` that Lean cannot connect
-to `K`'s own `CommRing` instance, and at this pin the two are genuinely
-independent: under `[Field K]`, `Subsingleton ↥(Spec K)` and `Unique ↥(Spec K)`
-both FAIL to synthesize while `Nonempty ↥(Spec K)` succeeds — whereas all three
-succeed for `Spec (CommRingCat.of F)` with `(F : Type u) [Field F]` and for
-`Spec (S.residueField s)`, which is how `locallyQuasiFinite_mulByNat` below
-actually instantiates this family.  So `hchar : ringChar K = p` constrains a
-field structure that need not be the one `Spec K` is built from, and as written
-the leaf asks for `ker[p]` over a base not known to be a field at all.
+What USED TO block it is that **`Spec K` was not known to be a ONE-POINT scheme
+here**, so `Spec K̄ ⟶ Spec K` was not known to be surjective.  The old binder
+`(K : CommRingCat.{u}) [Field K]` put a `Field` structure on the CARRIER `↑K`
+that Lean could not connect to `K`'s own `CommRing` instance, and at this pin
+the two are genuinely independent: under that binder, `Subsingleton ↥(Spec K)`
+and `Unique ↥(Spec K)` both FAILED to synthesize while `Nonempty ↥(Spec K)`
+succeeded — whereas all three succeed for `Spec (CommRingCat.of F)` with
+`(F : Type u) [Field F]` and for `Spec (S.residueField s)`, which is how
+`locallyQuasiFinite_mulByNat` below actually instantiates this family.  So
+`hchar : ringChar K = p` constrained a field structure that need not be the one
+`Spec K` was built from, and as written the leaf asked for `ker[p]` over a base
+not known to be a field at all.
 
-That is a FAITHFULNESS defect that makes the leaf HARDER than the theorem it is
-meant to be, so a prover cannot repair it from inside.  The repair is a
-cut-level restatement of the whole `_of_field`/`_of_field_char` family
-(`finite_preimage_mulByNat_of_field`, this leaf,
+**THAT DEFECT IS REPAIRED (2026-07-27), AND ROUTE 9 IS THEREFORE OPEN.**  The
+whole `_of_field` / `_of_field_char` family — this leaf,
 `isAffine_ker_mulByNat_of_field_char`, `finite_ker_mulByNat_of_field_char`,
-`isFinite_ker_mulByNat_of_field_char`) from `(K : CommRingCat.{u}) [Field K]` to
-`(F : Type u) [Field F]` with base `Spec (CommRingCat.of F)`, after which route 9
-goes through exactly as described above and this leaf becomes "the cube over an
-ALGEBRAICALLY CLOSED field".  Refute by synthesizing `Subsingleton ↥(Spec K)`
-from `[Field K]` alone — that is a one-line `example`.
+`isFinite_ker_mulByNat_of_field_char`, `finite_preimage_mulByNat_of_field_char`,
+`finite_preimage_mulByNat_of_field` and eight more — was converted in ONE commit
+from `(K : CommRingCat.{u}) [Field K]` to `(K : Type u) [Field K]` with base
+`Spec (CommRingCat.of K)`.  No proof body changed.  `Subsingleton` and `Unique`
+on `↥(Spec (CommRingCat.of K))` now synthesize, `hchar` now constrains the
+actual base, and **route 9 goes through exactly as described above**, leaving
+this leaf as "the cube over an ALGEBRAICALLY CLOSED field".
+
+**So a successor should attack route 9 FIRST**, before any of the eight refuted
+cube-free routes: it is the one axis those eight sweeps never ranged over, and
+the only thing that had ever blocked it was this signature.  Everything else it
+needs is already here — `AbelianSchemeStruct.baseChange`, `baseChange_mulByNat`,
+`Surjective` stable under base change
+(`Mathlib/AlgebraicGeometry/PullbackCarrier.lean:431`), and the descent back in
+through `isFinite_ker_mulByNat_of_finite_preimage`.  A skeleton for it was built
+and typechecked, and died only on the defect now repaired.
 
 **`hp` and `hchar` are deliberately carried even though the statement is true
 without them** (`ker[n]` is quasi-affine for every `n ≠ 0`): without them this
