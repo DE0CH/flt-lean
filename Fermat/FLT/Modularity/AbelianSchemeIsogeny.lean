@@ -2048,25 +2048,158 @@ theorem finite_preimage_mulByNat_of_isFinite_ker
 
 end AbelianSchemeStruct
 
-/-- **`ker[p]` has FINITELY MANY POINTS in characteristic `p`** (sorry leaf —
-the theorem of the cube; this is the irreducible residue, cut down 2026-07-27
-from `finite_preimage_mulByNat_of_field_char`).
+/-- **`ker[p]` is an AFFINE SCHEME in characteristic `p`** (sorry leaf — the
+theorem of the cube; cut 2026-07-27 out of `finite_ker_mulByNat_of_field_char`,
+which is now PROVEN over it).
+
+**HONESTY FIRST: this is a CHANGE OF SHAPE, NOT a reduction of content.**  For a
+scheme proper over a field, *affine* and *finite* are equivalent, and the
+equivalence is exactly what the bridge below proves — so a prover here owes
+neither more nor less than a prover owed at the old leaf.  Nobody should read
+this cut as progress on the mathematics.  What it does buy, and the only reason
+it was made:
+
+* the residue is now a property of the SCHEME `ker[p]` alone, with no morphism
+  bookkeeping, no `∀ s : Spec K` packaging and no Zariski's-main-theorem step
+  left in it;
+* and it is *literally the sentence the classical argument produces* — the
+  ample-line-bundle proof does not produce "the point set is finite", it
+  produces "`𝒪_Z` is ample, hence `Z` is quasi-affine, hence (being proper)
+  affine".  A future prover who builds the cube can now stop one step earlier.
+
+**The bridge, PROVEN** (`finite_ker_mulByNat_of_field_char` immediately below):
+`ker[p] ⟶ Spec K` is proper as a base change of `[p]` (`isProper_mulByNat`), so
+with `IsAffineHom` — free from this leaf, since `Spec K` is affine — mathlib's
+`IsFinite.iff_isProper_and_isAffineHom` makes it a FINITE morphism, and
+`Scheme.Hom.finite_preimage_singleton` reads off the finite fibre.
+
+**The classical proof, in the order that produces `IsAffine`.**  Mumford
+*Abelian Varieties* §6, Application 2 of the theorem of the cube:
+
+1. `A` carries a symmetric AMPLE invertible sheaf `L` (`A` is projective — a
+   theorem, via the theta divisor).
+2. The cube gives `[n]^* L ≅ L^{n²}`.
+3. `[p]` is constant on `Z = ker[p]` (it factors through the zero section), so
+   `([p]^* L)|_Z ≅ 𝒪_Z`; with 2, `(L|_Z)^{p²} ≅ 𝒪_Z`.
+4. `L|_Z` is ample (restriction of an ample sheaf to a closed subscheme), hence
+   so is `(L|_Z)^{p²} ≅ 𝒪_Z`; a scheme with `𝒪` ample is quasi-affine, and a
+   proper quasi-affine scheme is AFFINE.  That is this leaf.
+
+The second classical route, `[p] = V ∘ F`, produces finiteness rather than
+affineness and needs the Verschiebung, hence `Pic⁰` and the dual abelian
+variety.
+
+**MISSING MACHINERY at this pin — every claim re-run 2026-07-27 against this
+worktree's own `.lake/packages/mathlib`, not inherited.**
+`grep -rl Ample Mathlib/AlgebraicGeometry/` → EMPTY (mathlib's only `Ample` is
+`Analysis/Convex/AmpleSet.lean`).  `grep -rli picard Mathlib/AlgebraicGeometry/`
+→ only `EllipticCurve/Weierstrass.lean`.
+`grep -rliE "line bundle|invertible sheaf|InvertibleSheaf" Mathlib/AlgebraicGeometry/`
+→ EMPTY, and `Mathlib/AlgebraicGeometry/Modules/` is `Presheaf.lean`,
+`Sheaf.lean`, `Tilde.lean` only — there is no invertible-sheaf theory to build
+`Pic` on.  `grep -rli theoremOfTheCube Mathlib/` → EMPTY.
+`grep -rli frobenius Mathlib/AlgebraicGeometry/` → EMPTY.
+`grep -rl CohenMacaulay Mathlib/` → EMPTY.  `~/cs/FLT`'s only `Ample`/`Picard`
+hits are `import Mathlib.RingTheory.PicardGroup`.  **Re-run those seven greps
+before believing this paragraph**; a hit on any of them means the leaf may be
+far cheaper than it looks.
+
+**ROUTES SEARCHED AND REFUTED, each with the check that would refute the
+refutation** (2026-07-27; the axis searched was *everything cube-free that is
+expressible at this pin*).
+
+1. *Dimension count* — "all fibres of `[p]` are translates of `ker[p]`
+   (the shearing above proves exactly this, schematically), so
+   `dim A = dim [p](A) + dim ker[p]`; if `[p]` is dominant then
+   `dim ker[p] = 0`."  Blocked TWICE: mathlib has no fibre-dimension theorem
+   for schemes (`grep -rn "fiber.*dimension\|dim.*fiber" Mathlib/AlgebraicGeometry/`
+   → EMPTY), and *dominance of `[p]` is not available here* — in this file
+   surjectivity of `[n]` is derived FROM finite fibres
+   (`flat_of_finite_fibres_endo` → `flat_mulByNat` → `universallyOpen_mulByNat`
+   → `surjective_mulByNat`), so using it would be circular.  Refute by
+   exhibiting a cube-free proof that `[p]` is dominant.
+2. *Lie algebra*, the sibling's route: `d[p] = p · id = 0` in characteristic
+   `p`.  Refute by finding any other differential-geometric invariant that
+   separates — note `ker[p] ⊇ ker F` is infinitesimal with
+   `Lie(ker[p]) = Lie(A)`, so the tangent space at the origin has FULL
+   dimension `g` and no smoothness data can bound `dim ker[p]`.  This is the
+   structural reason the leaf is hard, not an accident of the write-up.
+3. *Leverage the prime-to-`p` sibling.*  For `ℓ` prime to `p`, `[ℓ]` restricts
+   to an AUTOMORPHISM of `ker[p]` (choose `ℓ'` with `ℓℓ' ≡ 1 mod p`; then
+   `[ℓ'] ∘ [ℓ] = [1 + p·m] = id` on `ker[p]`), so it carries no dimension
+   information about `ker[p]`.  Dually, `[p](A)` contains `A[ℓⁿ]` for every
+   `ℓ ≠ p` — but concluding `[p](A) = A` from that needs the prime-to-`p`
+   torsion to be dense, i.e. `#A[ℓ] = ℓ^{2g}`, i.e. degree theory, which does
+   not exist here either.  Refute by producing that density cube-free.
+4. *Specialize to dimension 1* and use this project's division polynomials.
+   Refuted by the consumers: `AbelianSchemeStruct` is instantiated in
+   `Fermat/FLT/ModularCurve/X0.lean` at the JACOBIAN of a modular curve, so
+   `g > 1` is genuinely needed.  Refute by showing every consumer is an
+   elliptic curve.
+5. *Quasi-finiteness at the origin, spread by `isOpen_quasiFiniteAt`* —
+   refuted before dispatch: openness alone does not propagate the locus off the
+   origin, and the translations that would do it are not `K`-morphisms at
+   non-rational points.
+
+**AN ALTERNATIVE CUT, recorded but NOT taken.**  The shearing makes
+"`ker[p]` is finite" equivalent to the weaker-*looking*
+`∃ x : A, (⇑([p]) ⁻¹' {[p] x}).Finite` — ONE finite fibre anywhere suffices.
+`kerShear_kerUnshear` above is one of the two round trips; the other,
+`(u,k) ↦ (u,u+k) ↦ (u,k)`, is provable by the same `pre_add` computation, and
+together they make `kerShear` an isomorphism, after which a fibre transports
+along a base change to `κ(x)` (quasi-finiteness being stable under base change).
+It was not taken because the only cube-free way to *produce* one finite fibre is
+a generic-point argument, which needs precisely the fibre-dimension theory
+refuted in 1 — so the existential form would be more attackable in appearance
+only.  A prover who first builds fibre dimension should take this cut instead.
+
+**`hp` and `hchar` are deliberately carried even though the statement is true
+without them** (`ker[n]` is affine for every `n ≠ 0`): without them this leaf
+would silently duplicate the content the prime-to-characteristic sibling needs.
+Carrying them records that this is exactly the residue the Lie-algebra route
+cannot reach. -/
+theorem isAffine_ker_mulByNat_of_field_char {X : Scheme.{u}}
+    (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
+    (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) :
+    IsAffine (pullback (ab.mulByNat p) ab.zeroSection) :=
+  sorry
+
+/-- **`ker[p]` has FINITELY MANY POINTS in characteristic `p`** (PROVEN
+2026-07-27 over `isAffine_ker_mulByNat_of_field_char`; it used to be the sorry
+itself, cut down 2026-07-27 from `finite_preimage_mulByNat_of_field_char`).
 
 `Spec K` has a single point, so this is one finite set: the underlying space of
-`ker[p]` is finite, i.e. `ker[p]` is zero-dimensional.  That is the weakest
-form the residue can be put in, and it is deliberately the form the leaf is
-stated in — everything else on the route (properness, Zariski's main theorem,
-the shearing) is proven above, so a prover here owes ONLY the dimension
-statement.
+`ker[p]` is finite, i.e. `ker[p]` is zero-dimensional.
+
+**The proof is the "proper + affine ⟹ finite" bridge**, and it is pure scheme
+theory with no abelian-variety content left in it.  `ker[p] ⟶ Spec K` is a base
+change of `[p]`, hence PROPER (`isProper_mulByNat`); the leaf says the source is
+an AFFINE scheme, and `Spec K` is affine, so the morphism is an affine morphism
+(`isAffineHom_of_isAffine`).  Mathlib's
+`IsFinite.iff_isProper_and_isAffineHom` then makes it a FINITE morphism, which
+is `LocallyQuasiFinite` and `QuasiCompact`, so
+`Scheme.Hom.finite_preimage_singleton` reads off the finite fibre.
+
+Note this is a genuinely *different* route to `IsFinite` from the one
+`isFinite_ker_mulByNat_of_field_char` below takes (that one goes through
+Zariski's main theorem).  Both are kept: the ZMT bridge
+`isFinite_ker_mulByNat_of_finite_preimage` is stated over an arbitrary base and
+is what the general-`n` chain uses, while the affine bridge is what makes the
+residue match the shape the theorem of the cube produces.
 
 For the mathematics — why `d[p] = 0` kills the cheap route, the two classical
-cube proofs, and the verified survey of what is missing from the pin — see
-`isFinite_ker_mulByNat_of_field_char` just below, which is the consumer. -/
+cube proofs, the re-verified survey of what is missing from the pin, and the
+five refuted cube-free routes — see `isAffine_ker_mulByNat_of_field_char` just
+above, which is now the leaf. -/
 theorem finite_ker_mulByNat_of_field_char {X : Scheme.{u}}
     (K : CommRingCat.{u}) [Field K] {fK : X ⟶ Spec K} (ab : AbelianSchemeStruct fK)
     (p : ℕ) (hp : p.Prime) (hchar : ringChar K = p) :
-    ∀ s : Spec K, (⇑(pullback.snd (ab.mulByNat p) ab.zeroSection) ⁻¹' {s}).Finite :=
-  sorry
+    ∀ s : Spec K, (⇑(pullback.snd (ab.mulByNat p) ab.zeroSection) ⁻¹' {s}).Finite := by
+  haveI : IsProper (ab.mulByNat p) := ab.isProper_mulByNat p
+  haveI := isAffine_ker_mulByNat_of_field_char K ab p hp hchar
+  haveI : IsFinite (pullback.snd (ab.mulByNat p) ab.zeroSection) :=
+    IsFinite.iff_isProper_and_isAffineHom.mpr ⟨inferInstance, inferInstance⟩
+  exact fun s => Scheme.Hom.finite_preimage_singleton _ s
 
 /-- **`ker[p]` is a finite group scheme in characteristic `p`** — equivalently,
 `[p]` is an ISOGENY (PROVEN 2026-07-27 over `finite_ker_mulByNat_of_field_char`,
@@ -2078,9 +2211,18 @@ all fibres are finite as soon as this ONE fibre is
 (`finite_preimage_mulByNat_of_isFinite_ker`).  So the whole residue became the
 single statement every textbook actually proves: `ker[p]` is finite, of order
 `p^{2g}`; and by `isFinite_ker_mulByNat_of_finite_preimage` even that is
-reduced to a bare POINT SET being finite, which is the leaf
-`finite_ker_mulByNat_of_field_char` above.  The chain from there to
-`finite_preimage_mulByNat_of_field_char` is entirely proven.
+reduced to a bare POINT SET being finite, `finite_ker_mulByNat_of_field_char`
+above.  The chain from there to `finite_preimage_mulByNat_of_field_char` is
+entirely proven.
+
+**Where the leaf is now** (2026-07-27, second cut).
+`finite_ker_mulByNat_of_field_char` is itself PROVEN; the sole remaining leaf on
+this route is `isAffine_ker_mulByNat_of_field_char` — "`ker[p]` is an AFFINE
+scheme" — which for a proper `K`-scheme is EQUIVALENT to finiteness, so the cut
+changed the shape and not the content.  It was made because affineness is
+literally what the ample-line-bundle argument outputs.  The refuted cube-free
+routes and the re-verified missing-machinery survey live in that leaf's
+docstring; read it before attacking anything here.
 
 **So the honest remaining content is "`ker[p]` is zero-dimensional"** —
 properness, Zariski's main theorem and the shearing supply everything else.
