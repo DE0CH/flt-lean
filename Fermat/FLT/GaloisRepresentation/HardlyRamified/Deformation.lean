@@ -72,6 +72,7 @@ them without a human. Do not re-wrap it.
 - `exists_finiteIndex_isIntegral_charpolyCoeff_quotient_minimalPrime_of_isWeaklyUniversal_isTraceGenerated`
 - `exists_framedGaloisRep_baseChange_traceSubring`
 - `exists_relations_le_smul_of_minimal_mvPowerSeries_presentation`
+- `exists_obstructionCocycle_smallExtension_section`
 
 Both former strata above them were narrowed on 2026-07-25 into those
 leaves, and every statement they replace is now PROVEN here — including
@@ -367,9 +368,18 @@ public import Mathlib.RepresentationTheory.Homological.ContCohomology.Functorial
 -- `cohomologyIsoQuot` they rest on: our pin computes `continuousCohomology` but offers no
 -- way to get AT a class, so an explicit cocycle could not be turned into one. Vendored from
 -- `~/cs/FLT` on 2026-07-27 (pin-drift audit in the file's own header) and `public` because
--- `exists_obstructionCocycle_relationSpace_sha2` below mentions `bdryKer` and `cocycleClass`
--- in its SIGNATURE.
+-- `exists_obstructionCocycle_smallExtension_section` and
+-- `exists_obstructionCocycle_relationSpace_sha2` below mention `bdryKer` and `cocycleClass`
+-- in their SIGNATURES.
 public import Fermat.FLT.Mathlib.RepresentationTheory.Homological.ContCohomology.Basic
+-- `IsSmallExtension` and its constructor `isSmallExtension_quotientLift`: the
+-- small-extension API of deformation theory, absent from mathlib and from
+-- `~/cs/FLT` (written 2026-07-27, see that file's header). `public` because
+-- `exists_obstructionCocycle_smallExtension_section` below carries
+-- `IsSmallExtension` as a HYPOTHESIS in its signature; the companion
+-- `apply_smul_of_residueEquiv` (a `k`-functional on `M ⧸ 𝔪·M` is `S`-semilinear)
+-- is what makes the annihilator `K_ψ` an ideal rather than a subgroup.
+public import Fermat.FLT.Mathlib.RingTheory.SmallExtension
 -- `Module.Dual`: Böckle's obstruction map has the DUAL of the minimal
 -- relation space as its source, so `Module.Dual` appears in the SIGNATURE of
 -- `exists_injective_dual_relationSpace_to_sha2` below and this must be public.
@@ -17056,10 +17066,171 @@ theorem ker_le_of_exists_section_of_ker_le_sq_sup
     simpa [hθ, hφj] using hzero
   exact Ideal.Quotient.eq_zero_iff_mem.mp hmk
 
-/-- **Böckle's obstruction COCYCLE, with its lifting criterion** (sorry node,
-cut out of `exists_obstructionHom_relationSpace_sha2` below on 2026-07-27,
-which is now PROVEN over it; this is the same statement one level lower, at
-the level of explicit 2-cocycles rather than of cohomology classes):
+/-- **Böckle's obstruction COCYCLE, along a SMALL EXTENSION** (sorry node, cut
+out of `exists_obstructionCocycle_relationSpace_sha2` below on 2026-07-27, which
+is now PROVEN over it; that node in turn was cut out of
+`exists_obstructionHom_relationSpace_sha2` below on the same day):
+
+for a minimal, `ℤ_ℓ`-compatible presentation `φ : Λ[[x₁,…,x_g]] ↠ D.R` of the
+weakly universal, trace-generated hardly ramified deformation ring, there is a
+`k`-LINEAR map
+
+`oc : (ker φ/𝔪_S·ker φ)^∨ → Z²(Γ_ℚ, ad⁰ ρbar)`
+
+into the CONTINUOUS 2-COCYCLES of `ad⁰`, such that (a) the class of `oc ψ` lies
+in `Ш²_S(ad⁰)` for every `ψ`, and (b) whenever `oc ψ` is a COBOUNDARY, EVERY
+small extension `S ⧸ K ↠ D.R` whose ideal `K` is pinned as the annihilator
+`{j ∈ ker φ : ψ(j̄) = 0}` admits a ring-theoretic section.
+
+**What changed at this cut, and why it is the right one.** The node below used
+to assert the EXISTENCE of the ideal `K_ψ` as part of the same breath as the
+obstruction theory. Those are two entirely different obligations: producing
+`K_ψ` is ideal theory, and it is now DONE — see the proof below, which builds it
+as the annihilator of `ψ` inside `ker φ` and verifies `𝔪_S·ker φ ≤ K_ψ ≤ ker φ`
+and the pinning `↔`. What remains here is exactly the obstruction calculus, and
+it now receives the small extension as a HYPOTHESIS (`IsSmallExtension`) rather
+than having to manufacture it. That is the shape of the statement in the
+literature: one is handed a small extension and asked whether the deformation
+lifts along it.
+
+**Why the hypothesis is `IsSmallExtension` and not just the two inclusions.**
+They are equivalent (`isSmallExtension_quotientLift` derives one from the other,
+and is what the consumer below uses), but the named predicate is what carries the
+mathematics: `𝔪_S · ker(S⧸K ↠ D.R) = 0` is precisely the condition making the
+kernel a square-zero ideal and a vector space over the residue field
+(`IsSmallExtension.ker_sq_eq_bot`, `IsSmallExtension.isTorsionBySet_ker`), which
+is why the obstruction is a cohomology class with coefficients in `ad⁰ ⊗ k`
+rather than in an unstructured abelian group.
+
+**The mathematics this leaf still owes.** Obstruction theory produces the
+explicit 2-cocycle
+
+`c(σ, τ) = ρ̃(σ) ρ̃(τ) ρ̃(στ)⁻¹ − 1 ∈ ad⁰`
+
+attached to any continuous set-theoretic lift `ρ̃` of `D.ρ` along the small
+extension `S ⧸ K ↠ D.R`, and reads the lifting criterion off it: `ρ̃` can be
+corrected to a homomorphism exactly when `c` is a coboundary. The lift makes
+`S ⧸ K` a hardly ramified deformation, so weak universality (`hw`) supplies a
+compatible `D.R → S ⧸ K` and trace generation (`ht`) forces its composite with
+`S ⧸ K ↠ D.R` to be the identity — i.e. makes it the SECTION asked for. That
+last step is where `ht` is consumed: without it the compatible map need not be
+unique, hence need not split.
+
+**Cocycles are taken in the HOMOGENEOUS model**, `Z² = ker(d² : C²→C³)` for
+`C^n = TopRep.homogeneousCochains`, because that is the model our pin actually
+computes `continuousCohomology` with. Writing the inhomogeneous `c(σ,τ)` above
+in it costs the standard dictionary
+`F(g₀,g₁,g₂) = g₀ · c(g₀⁻¹g₁, g₁⁻¹g₂)`, which is a translation, not a missing
+theory.
+
+**MACHINERY AUDIT — items (1)–(4) are now DISCHARGED; only (5) remains, and it
+is what conjunct (a) rests on.** (This supersedes the five-item audit that stood
+on the node below, and then on the node below that. A stale "this is impossible"
+note costs more than an open sorry, so the discharges are recorded explicitly.)
+
+1. *No small-extension API anywhere.* **DISCHARGED 2026-07-27.** Written as
+   `Fermat/FLT/Mathlib/RingTheory/SmallExtension.lean`: `IsSmallExtension`,
+   `ker_le_maximalIdeal`, `ker_sq_eq_bot`, `isTorsionBySet_ker`, the constructor
+   `isSmallExtension_quotientLift`, the local-quotient instances
+   (`IsLocalRing.instQuotientOfNontrivial`, `IsLocalRing.maximalIdeal_quotient`)
+   and the semilinearity lemma `apply_smul_of_residueEquiv`. It was genuinely
+   absent from mathlib, from our pin and from `~/cs/FLT` — the audit's own
+   refuting grep was re-run and still found nothing — and it is now consumed
+   both in the SIGNATURE of this leaf and in the proof below.
+2. *No obstruction class exists as a formal object.* **DISCHARGED**: the arrow
+   `ContinuousCohomology.cocycleClass` exists, so a cocycle can be turned into a
+   class. What is still missing is the cocycle `c(σ,τ)` itself, which is what
+   this leaf asserts to exist.
+3. *No inhomogeneous cochains in our pin.* STILL TRUE, and NOT BINDING: the
+   homogeneous model has elements and a cocycle condition, and the dictionary
+   above expresses `c(σ,τ)` inside it.
+4. *No long exact sequence, no connecting map, no cup product.* **DISCHARGED for
+   the part this leaf needs**: the binding gap was the absence of any `Z/B` model
+   of `continuousCohomology`, now vendored (`cohomologyIsoQuot`, `cocycleClass`).
+   A cup product is still absent and is still needed by
+   `rank_sha2_le_rank_sha1_twist` below, but NOT here.
+5. *Liftability of the four hardly ramified local conditions along a small
+   extension* is nowhere stated. REFUTED BY: a lemma about `IsHardlyRamified`
+   being preserved under a square-zero surjection. **STILL OPEN**, and this is
+   the single binding item now; it is what conjunct (a) — the landing in `Ш²`
+   rather than merely in `H²` — rests on. With (1) in hand it is now expressible:
+   the statement wanted is `IsSmallExtension π → IsHardlyRamified … → …`.
+
+References: Böckle, *Presentations of universal deformation rings*; Mazur,
+*Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
+*Fermat's Last Theorem*, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII;
+Schlessinger, *Functors of Artin rings*.
+
+**CIRCULARITY GUARD — MOVED HERE, NOT DROPPED.** This is its FOURTH move (off
+`rank_relationSpace_le_of_rank_sha2_le`, then off
+`exists_injective_dual_relationSpace_to_sha2`, then off
+`exists_obstructionHom_relationSpace_sha2`, and now off
+`exists_obstructionCocycle_relationSpace_sha2`); a guard on a proven consumer
+guards nothing, so it belongs on whichever declaration still contains the
+`sorry`. The BANNED INPUTS clause binds: neither
+`not_isIrreducible_of_isHardlyRamified_of_five_le`
+(`Modularity/KhareWintenberger.lean`) nor
+`not_isIrreducible_of_isHardlyRamified_of_odd` (`Modularity/Interface.lean`)
+— nor anything proven over them — may be used to discharge this leaf, since
+their intended proofs run through modularity lifting, which is proven over the
+very bound this leaf supplies. A green build and an honest `#print axioms`
+would BOTH survive such a discharge; only a human reading catches it. `hℓ5`
+is carried for the same reason: it keeps
+`IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired to the
+prime `3`) inapplicable, so that route stays closed mathematically rather than
+merely by import scope. -/
+theorem exists_obstructionCocycle_smallExtension_section
+    (hℓ5 : 5 ≤ ℓ)
+    {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
+    (hirr : ρbar.IsIrreducible)
+    (D : HardlyRamifiedDeformation hℓOdd ρbar)
+    (hw : D.IsWeaklyUniversal) (ht : D.IsTraceGenerated) :
+    letI := D.commRing; letI := D.algebra
+    ∀ (Λ : Type u) (_ : CommRing Λ) (_ : IsDomain Λ) (_ : IsLocalRing Λ)
+      (_ : IsNoetherianRing Λ) (_ : Algebra ℤ_[ℓ] Λ)
+      (_ : Module.Finite ℤ_[ℓ] Λ),
+      IsLocalRing.maximalIdeal Λ = Ideal.span {(ℓ : Λ)} →
+      ∀ (g : ℕ) (φ : MvPowerSeries (Fin g) Λ →+* D.R)
+        (hsurj : Function.Surjective φ),
+        φ.comp (algebraMap ℤ_[ℓ] (MvPowerSeries (Fin g) Λ)) =
+          algebraMap ℤ_[ℓ] D.R →
+        RingHom.ker φ ≤
+          IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) ^ 2 ⊔
+            Ideal.span {(ℓ : MvPowerSeries (Fin g) Λ)} →
+        letI : Module k (↥(RingHom.ker φ) ⧸
+            (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+              (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) :=
+          Module.compHom _
+            (residueRingEquivOfSurjective (D.π.comp φ)
+              (D.π_surjective.comp hsurj)).symm.toRingHom
+        ∃ oc : Module.Dual k (↥(RingHom.ker φ) ⧸
+              (IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+                (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)))) →ₗ[k]
+            ↥(TopModuleCat.ker
+              ((TopRep.homogeneousCochains (adZeroTopRep ρbar)).d 2 3)),
+          (∀ ψ, ContinuousCohomology.cocycleClass (adZeroTopRep ρbar) 2 (oc ψ) ∈
+            Sha2 ρbar (hardlyRamifiedPlaces ℓ)) ∧
+          ∀ ψ, oc ψ ∈ (ContinuousCohomology.bdryKer (adZeroTopRep ρbar) 2).hom.range →
+            ∀ (K : Ideal (MvPowerSeries (Fin g) Λ))
+              (hK : K ≤ RingHom.ker φ),
+              letI := D.isLocalRing
+              letI : Nontrivial (MvPowerSeries (Fin g) Λ ⧸ K) :=
+                Ideal.Quotient.nontrivial_of_le_ker hK
+              IsSmallExtension (Ideal.Quotient.lift K φ fun _ ha => hK ha) →
+              (∀ j : ↥(RingHom.ker φ),
+                (j : MvPowerSeries (Fin g) Λ) ∈ K ↔
+                  ψ (Submodule.Quotient.mk j) = 0) →
+              ∃ s : D.R →+* (MvPowerSeries (Fin g) Λ ⧸ K),
+                ∀ a : D.R, ∃ x : MvPowerSeries (Fin g) Λ,
+                  φ x = a ∧ s a = Ideal.Quotient.mk K x :=
+  sorry
+
+/-- **Böckle's obstruction COCYCLE, with its lifting criterion** (PROVEN
+2026-07-27 over the single leaf `exists_obstructionCocycle_smallExtension_section`
+above, which is the same statement with the small extension supplied as a
+HYPOTHESIS instead of produced; this node was itself cut out of
+`exists_obstructionHom_relationSpace_sha2` below on 2026-07-27, which is PROVEN
+over it):
 
 for a minimal, `ℤ_ℓ`-compatible presentation `φ : Λ[[x₁,…,x_g]] ↠ D.R` of the
 weakly universal, trace-generated hardly ramified deformation ring, there is a
@@ -17072,96 +17243,44 @@ in `Ш²_S(ad⁰)` for every `ψ`, and (b) whenever `oc ψ` is a COBOUNDARY the
 surjection `S ⧸ K_ψ ↠ D.R` admits a ring-theoretic section, for the ideal
 `K_ψ = {j ∈ ker φ : ψ(j̄) = 0}` pinned by the `↔`.
 
-**Why this cut, and what it buys.** The node below asks for a map into
-`Ш²_S(ad⁰)`, whose elements are cohomology CLASSES — objects with no chosen
-representative. Obstruction theory does not produce a class directly; it
-produces the explicit 2-cocycle
+**What the proof below contributes: the ideal `K_ψ`, and the fact that it
+presents a SMALL EXTENSION.** That is the whole of the difference between this
+node and the leaf above, and it is ordinary ideal theory rather than obstruction
+theory:
 
-`c(σ, τ) = ρ̃(σ) ρ̃(τ) ρ̃(στ)⁻¹ − 1 ∈ ad⁰`
+* `K_ψ := {x ∈ ker φ : ψ(x̄) = 0}` is an IDEAL of `S`, not merely an additive
+  subgroup. The only non-formal point is closure under multiplication by `S`,
+  and it holds because a `k`-functional on `ker φ/𝔪_S·ker φ` is `S`-SEMILINEAR:
+  the `S`-action on the relation space is the `k`-action pushed through
+  `S ↠ S/𝔪_S ≃ k`, so `ψ(c·w) = c̄·ψ(w)`. That is
+  `apply_smul_of_residueEquiv`, proven in
+  `Fermat/FLT/Mathlib/RingTheory/SmallExtension.lean`; without it the
+  construction would only give a subgroup and the pushout would leave ideal
+  theory.
+* `𝔪_S·ker φ ≤ K_ψ` because `𝔪_S·ker φ` maps to `0` in the relation space, and
+  `K_ψ ≤ ker φ` by construction. Those two inclusions say exactly that
+  `S ⧸ K_ψ ↠ D.R` is a SMALL extension, which is `isSmallExtension_quotientLift`
+  — the constructor of the small-extension API — and is the last hypothesis the
+  leaf above needs.
+* the pinning `↔` is then definitional.
 
-attached to any continuous set-theoretic lift `ρ̃` of `D.ρ` along the small
-extension `S ⧸ K_ψ ↠ D.R`, and reads the lifting criterion off it: `ρ̃` can be
-corrected to a homomorphism exactly when `c` is a coboundary. So the cocycle
-level is where the mathematics happens, and the class level is a wrapper.
-Until 2026-07-27 that wrapper could not even be written down here — see the
-machinery audit below — which is why the node below was stated monolithically.
-
-**What discharges the wrapper**, and it is now proven rather than assumed:
-`ContinuousCohomology.cocycleClass` (`k`-linear, so `ψ ↦ [oc ψ]` is `k`-linear
-because `oc` is) together with `cocycleClass_eq_zero_iff` (a class vanishes
-exactly when its cocycle is a coboundary), both vendored in
-`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`.
+So the `K` in the statement is not an unconstrained existential: for `ψ ≠ 0` the
+kernel of `S ⧸ K_ψ ↠ D.R` is the `k`-line `ker φ/K_ψ ≅ k`, which is what makes
+this Böckle's statement rather than a weaker one.
 
 **Cocycles are taken in the HOMOGENEOUS model**, `Z² = ker(d² : C²→C³)` for
 `C^n = TopRep.homogeneousCochains`, because that is the model our pin actually
-computes `continuousCohomology` with. Writing the inhomogeneous `c(σ,τ)` above
-in it costs the standard dictionary
-`F(g₀,g₁,g₂) = g₀ · c(g₀⁻¹g₁, g₁⁻¹g₂)`, which is a translation, not a missing
-theory — that is the difference between this leaf and the previous state,
-where there was no model of `H²` with elements at all.
+computes `continuousCohomology` with. `ContinuousCohomology.cocycleClass` turns
+such a cocycle into a class and `cocycleClass_eq_zero_iff` reads the vanishing of
+that class back as the cocycle being a coboundary; both are vendored in
+`Fermat/FLT/Mathlib/RepresentationTheory/Homological/ContCohomology/Basic.lean`.
 
-**MACHINERY AUDIT — what remains missing, and the check that would refute each
-item** (this supersedes the audit that stood on the node below; items 3 and 4
-of that audit are now DISCHARGED and are recorded as such, because a stale
-"this is impossible" note costs more than an open sorry):
-
-1. *No small-extension API anywhere.* Nothing in `Fermat/` or `~/cs/FLT`
-   defines a small/square-zero extension of local rings together with the
-   lifting problem for a representation along it; mathlib has only generic
-   `I ^ 2 = ⊥` algebra (`RingTheory/Derivation/ToSquareZero.lean`,
-   `TrivSqZeroExt`) and the formal-smoothness lifting criteria. REFUTED BY:
-   `grep -rn "SmallExtension\|IsSmallExtension" Fermat/ ~/cs/FLT/FLT/` finding
-   a definition. STILL OPEN as of 2026-07-27 (re-checked; only this docstring
-   and the one below hit).
-2. *No obstruction class exists as a formal object.* REFUTED BY: a `def` whose
-   value lies in `continuousCohomology 2 _`. Now PARTIALLY discharged: the
-   ARROW exists (`ContinuousCohomology.cocycleClass`), so a cocycle can be
-   turned into a class; what is still missing is the cocycle `c(σ,τ)` itself,
-   which is what this leaf asserts to exist.
-3. *No inhomogeneous cochains in our pin.* STILL TRUE, and now known to be
-   NOT BINDING: the homogeneous model has elements and a cocycle condition,
-   and the dictionary above expresses `c(σ,τ)` inside it. The earlier audit's
-   inference "no `C(Gⁿ,X)` ⟹ the 2-cocycle cannot be written" does not hold.
-4. *No long exact sequence, no connecting map, no cup product* for continuous
-   cohomology in our pin. **DISCHARGED for the part this leaf needed**: the
-   binding gap was not a long exact sequence at all but the absence of any
-   `Z/B` model of `continuousCohomology`, i.e. of a way to name a class. That
-   is now vendored (`cohomologyIsoQuot`, `cocycleClass`); see that file's
-   header for the pin-drift audit. A cup product is still absent and is still
-   needed by `rank_sha2_le_rank_sha1_twist` below, but NOT by this leaf.
-5. *Liftability of the four hardly ramified local conditions along a small
-   extension* is nowhere stated. REFUTED BY: a lemma about `IsHardlyRamified`
-   being preserved under a square-zero surjection. STILL OPEN; this is what
-   conjunct (a) — the landing in `Ш²` rather than merely in `H²` — rests on,
-   and it is the natural next cut once (1) exists.
-
-So the binding item is now **(1)**, the small-extension API, together with the
-construction of `ρ̃` and `c` over it. Items 4 and the class-level wrapper are
-done; item 3 is a non-obstruction.
-
-References: Böckle, *Presentations of universal deformation rings*; Mazur,
-*Deforming Galois representations*, §1.6–1.7; Darmon–Diamond–Taylor,
-*Fermat's Last Theorem*, §2.6–2.7; Neukirch–Schmidt–Wingberg, ch. VIII.
-
-**CIRCULARITY GUARD — MOVED HERE, NOT DROPPED.** The guard sat on
-`exists_obstructionHom_relationSpace_sha2` below until that became PROVEN over
-this leaf on 2026-07-27; a guard on a proven consumer guards nothing, so it
-belongs here, on the declaration that still contains the `sorry`. It has now
-been moved THREE times for this reason (off
-`rank_relationSpace_le_of_rank_sha2_le`, then off
-`exists_injective_dual_relationSpace_to_sha2`, then off the node below). The
-BANNED INPUTS clause binds: neither
-`not_isIrreducible_of_isHardlyRamified_of_five_le`
-(`Modularity/KhareWintenberger.lean`) nor
-`not_isIrreducible_of_isHardlyRamified_of_odd` (`Modularity/Interface.lean`)
-— nor anything proven over them — may be used to discharge this leaf, since
-their intended proofs run through modularity lifting, which is proven over the
-very bound this leaf supplies. A green build and an honest `#print axioms`
-would BOTH survive such a discharge; only a human reading catches it. `hℓ5`
-is carried for the same reason: it keeps
-`IsHardlyRamified.mod_three_reducible` (`ModThree.lean`, hard-wired to the
-prime `3`) inapplicable, so that route stays closed mathematically rather than
-merely by import scope. -/
+**MACHINERY AUDIT and CIRCULARITY GUARD — MOVED, NOT DROPPED.** Both now sit on
+`exists_obstructionCocycle_smallExtension_section` above, which is where the
+`sorry` is. Item (1) of that audit — the missing small-extension API, which was
+the binding item when this node was stated — is DISCHARGED: the API exists, is
+verified, and is consumed by the proof below. Nothing in that proof touches
+either banned input; it is ideal theory only. -/
 theorem exists_obstructionCocycle_relationSpace_sha2
     (hℓ5 : 5 ≤ ℓ)
     {ρbar : GaloisRep ℚ k V} (h : IsHardlyRamified hℓOdd hdim ρbar)
@@ -17203,8 +17322,71 @@ theorem exists_obstructionCocycle_relationSpace_sha2
                   ψ (Submodule.Quotient.mk j) = 0) ∧
               ∃ s : D.R →+* (MvPowerSeries (Fin g) Λ ⧸ K),
                 ∀ a : D.R, ∃ x : MvPowerSeries (Fin g) Λ,
-                  φ x = a ∧ s a = Ideal.Quotient.mk K x :=
-  sorry
+                  φ x = a ∧ s a = Ideal.Quotient.mk K x := by
+  letI := D.commRing; letI := D.algebra; letI := D.isLocalRing
+  intro Λ _ _ _ _ _ _ hΛmax g φ hsurj hcompat hmin
+  obtain ⟨oc, hsha, hsec⟩ :=
+    exists_obstructionCocycle_smallExtension_section hℓOdd hdim hℓ5 h hirr D hw ht Λ ‹_› ‹_› ‹_› ‹_› ‹_› ‹_› hΛmax g φ hsurj
+      hcompat hmin
+  refine ⟨oc, hsha, fun ψ hψ => ?_⟩
+  -- `K_ψ`, the annihilator of `ψ` inside `ker φ`: an IDEAL of `S`, because a
+  -- `k`-functional on `ker φ / 𝔪·ker φ` is `S`-semilinear.
+  have hzero : ∃ hx : (0 : MvPowerSeries (Fin g) Λ) ∈ RingHom.ker φ,
+      ψ (Submodule.Quotient.mk ⟨(0 : MvPowerSeries (Fin g) Λ), hx⟩) = 0 := by
+    refine ⟨(RingHom.ker φ).zero_mem, ?_⟩
+    have h0 : (⟨(0 : MvPowerSeries (Fin g) Λ), (RingHom.ker φ).zero_mem⟩ :
+        ↥(RingHom.ker φ)) = 0 := rfl
+    rw [h0, (Submodule.Quotient.mk_eq_zero _).2 (Submodule.zero_mem _), map_zero]
+  have hadd : ∀ a b : MvPowerSeries (Fin g) Λ,
+      (∃ hx : a ∈ RingHom.ker φ, ψ (Submodule.Quotient.mk ⟨a, hx⟩) = 0) →
+      (∃ hx : b ∈ RingHom.ker φ, ψ (Submodule.Quotient.mk ⟨b, hx⟩) = 0) →
+      ∃ hx : a + b ∈ RingHom.ker φ, ψ (Submodule.Quotient.mk ⟨a + b, hx⟩) = 0 := by
+    rintro a b ⟨ha, hψa⟩ ⟨hb, hψb⟩
+    refine ⟨(RingHom.ker φ).add_mem ha hb, ?_⟩
+    have hsplit : (⟨a + b, (RingHom.ker φ).add_mem ha hb⟩ : ↥(RingHom.ker φ)) =
+        ⟨a, ha⟩ + ⟨b, hb⟩ := rfl
+    rw [hsplit, Submodule.Quotient.mk_add, map_add, hψa, hψb, add_zero]
+  have hsmul : ∀ (c a : MvPowerSeries (Fin g) Λ),
+      (∃ hx : a ∈ RingHom.ker φ, ψ (Submodule.Quotient.mk ⟨a, hx⟩) = 0) →
+      ∃ hx : c • a ∈ RingHom.ker φ, ψ (Submodule.Quotient.mk ⟨c • a, hx⟩) = 0 := by
+    rintro c a ⟨ha, hψa⟩
+    refine ⟨(RingHom.ker φ).smul_mem c ha, ?_⟩
+    have hsplit : (⟨c • a, (RingHom.ker φ).smul_mem c ha⟩ : ↥(RingHom.ker φ)) =
+        c • ⟨a, ha⟩ := rfl
+    rw [hsplit, Submodule.Quotient.mk_smul,
+      _root_.apply_smul_of_residueEquiv
+        (residueRingEquivOfSurjective (D.π.comp φ) (D.π_surjective.comp hsurj)) ψ,
+      hψa, smul_zero]
+  obtain ⟨K, hKmem⟩ : ∃ K : Ideal (MvPowerSeries (Fin g) Λ),
+      ∀ x : MvPowerSeries (Fin g) Λ, x ∈ K ↔
+        ∃ hx : x ∈ RingHom.ker φ, ψ (Submodule.Quotient.mk ⟨x, hx⟩) = 0 :=
+    ⟨{ carrier := {x : MvPowerSeries (Fin g) Λ |
+          ∃ hx : x ∈ RingHom.ker φ, ψ (Submodule.Quotient.mk ⟨x, hx⟩) = 0}
+       add_mem' := fun ha hb => hadd _ _ ha hb
+       zero_mem' := hzero
+       smul_mem' := hsmul }, fun _ => Iff.rfl⟩
+  have hKle : K ≤ RingHom.ker φ := fun x hx => ((hKmem x).1 hx).1
+  have hKmul : IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) * RingHom.ker φ ≤ K := by
+    refine Ideal.mul_le.2 fun x hx j hj => ?_
+    refine (hKmem _).2 ⟨(RingHom.ker φ).mul_mem_left x hj, ?_⟩
+    have hmem : (x • (⟨j, hj⟩ : ↥(RingHom.ker φ))) ∈
+        IsLocalRing.maximalIdeal (MvPowerSeries (Fin g) Λ) •
+          (⊤ : Submodule (MvPowerSeries (Fin g) Λ) ↥(RingHom.ker φ)) :=
+      Submodule.smul_mem_smul hx Submodule.mem_top
+    have heq : (⟨x * j, (RingHom.ker φ).mul_mem_left x hj⟩ : ↥(RingHom.ker φ)) =
+        x • ⟨j, hj⟩ := rfl
+    rw [heq, (Submodule.Quotient.mk_eq_zero _).2 hmem, map_zero]
+  have hKiff : ∀ j : ↥(RingHom.ker φ),
+      (j : MvPowerSeries (Fin g) Λ) ∈ K ↔ ψ (Submodule.Quotient.mk j) = 0 := by
+    intro j
+    refine ⟨fun hj => ?_, fun hj => (hKmem _).2 ⟨j.2, ?_⟩⟩
+    · obtain ⟨hj1, hj2⟩ := (hKmem _).1 hj
+      have hjeq : (⟨(j : MvPowerSeries (Fin g) Λ), hj1⟩ : ↥(RingHom.ker φ)) = j := rfl
+      rwa [hjeq] at hj2
+    · simpa using hj
+  exact ⟨K, hKle, hKmul, hKiff,
+    hsec ψ hψ K hKle (isSmallExtension_quotientLift hsurj hKle hKmul) hKiff⟩
+
 
 /-- **Böckle's obstruction homomorphism, with its lifting criterion** (PROVEN
 2026-07-27 over the single leaf `exists_obstructionCocycle_relationSpace_sha2`

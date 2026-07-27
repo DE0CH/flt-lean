@@ -76,10 +76,9 @@ Every one of the original five leaves has now been cut down; the remaining leave
 | `locallyOfFiniteType_fromNormalization` | Nagata/Japanese rings: the normalization of a finite-type `K`-algebra is of finite type |
 | `topologicalKrullDim_normalization_le_one` | dimension = transcendence degree, so the normalized model is a curve |
 | `smoothOfRelativeDimension_one_fromNormalization` | normal + dimension one + perfect base ⟹ smooth (unchanged; the deepest) |
-| `universallyOpen_of_specField` | a field extension `Spec L ⟶ Spec K` is universally open (Stacks `0383`) |
 
 `exists_isOpenImmersion_isProper`, `isFinite_fromNormalization`,
-`finite_compl_range_toNormalization`, `denseRange_of_isPullback`
+`finite_compl_range_toNormalization`, `universallyOpen_of_specField`, `denseRange_of_isPullback`
 and `geometricallyConnected_of_isSmoothCompactification` are now THEOREMS over those.  What was
 removed from them was, in each case, real: the integrality half of finiteness (free from
 `Mathlib`), the entire noetherian-ness bookkeeping and point-set argument behind the finite
@@ -100,7 +99,9 @@ would NOT have been enough, and for the two hypotheses that had to be added to m
 base change of `j` rather than an arbitrary lift.
 
 Restricted to the field base the consumer actually has, it is now PROVEN, over the sharper
-and entirely classical `universallyOpen_of_specField`.  Everything else that was inside it —
+and entirely classical `universallyOpen_of_specField` — which is itself now proven outright
+from `Mathlib`, so this whole path is sorry-free; see the CORRECTION in that declaration's
+docstring, which retracts its own "not free at this pin" audit.  Everything else inside it —
 that `m` is a base change of `j` (a pasting of pullback squares), that the range of a
 pullback projection is the preimage of the range (`range_base_of_isPullback`, proven here by
 transporting `Mathlib`'s `Scheme.Pullback.range_fst` along `IsPullback.isoPullback`), and the
@@ -754,37 +755,54 @@ theorem range_base_of_isPullback {P X Y Z : Scheme.{u}}
   rw [← Scheme.Pullback.range_fst f g, ← h.isoPullback_hom_fst]
   exact (Scheme.Hom.surjective (f := h.isoPullback.hom)).range_comp _
 
-/-- **A field extension is universally open** (sorry leaf — the base-change input behind
-`denseRange_of_isPullback`, and the only thing left of the old
-`geometricallyConnected_of_isSmoothCompactification`).
+/-- **A field extension is universally open** (PROVEN — `Mathlib` has it, see the audit
+correction below).  The base-change input behind `denseRange_of_isPullback`, and the last
+thing that was left of the old `geometricallyConnected_of_isSmoothCompactification`.
 
 TRUE and classical: for any field extension `L / K` the morphism `Spec L ⟶ Spec K` is
 universally open.  Stacks tag `0383`; EGA IV 2.4.9.  No hypothesis relating `L` to `K` is
 needed, because a ring homomorphism between fields is automatically injective, so every
 `y : Spec L ⟶ Spec K` IS a field extension.
 
-**Why this is not free at this pin.**  `Mathlib`'s only route from flatness to openness is
-`AlgebraicGeometry.UniversallyOpen.of_flat`, which additionally requires
-`LocallyOfFinitePresentation`.  `Spec L ⟶ Spec K` is certainly flat — every `K`-module is
-free — but it is of finite presentation exactly when `L / K` is FINITE (Zariski's lemma: a
-finitely generated `K`-algebra which is a field is finite over `K`).  The consumer quantifies
-over ALL field extensions of `K`, since `GeometricallyConnected` runs over every `L`, in
-particular infinite ones such as `ℚ̄ / ℚ` — which is precisely the modular application — so
-the finitely presented case does not suffice.
+## CORRECTION to the previous "why this is not free at this pin" audit (2026-07-27)
 
-The classical proof writes `L` as the filtered union of its finitely generated
-`K`-subextensions, where `UniversallyOpen.of_flat` does apply, and descends openness through
-the limit.  `Mathlib.AlgebraicGeometry.AffineTransitionLimit` is the nearest available
-machinery at this pin.
+That audit was WRONG, and it was wrong in the way this project's doctrine warns about: it
+surveyed exactly one route, found it blocked, and concluded the leaf was expensive.  It said
+`Mathlib`'s only route from flatness to openness is `AlgebraicGeometry.UniversallyOpen.of_flat`,
+which additionally requires `LocallyOfFinitePresentation` — true of *that* lemma, and the
+observation that `Spec L ⟶ Spec K` is of finite presentation exactly when `L / K` is FINITE
+(Zariski's lemma) is also correct, so the `of_flat` route genuinely cannot serve a consumer
+quantifying over all `L`, `ℚ̄ / ℚ` included.  What the audit missed is that `of_flat` is not
+the only route: the very same file, `Mathlib/AlgebraicGeometry/Morphisms/UniversallyOpen.lean`,
+closes with a strictly more general instance
+
+  `instance [IsIntegral Y] [Subsingleton Y] : UniversallyOpen f`
+
+for an ARBITRARY `f : X ⟶ Y`.  A one-point integral scheme is the spectrum of a field, so this
+says that **every** morphism into `Spec K` is universally open — no flatness hypothesis, no
+finite presentation, no relation between source and target at all.  It is backed by
+`PrimeSpectrum.isOpenMap_comap_algebraMap_tensorProduct_of_field`, i.e. by the ring-level fact
+that `Spec (A ⊗[K] B) ⟶ Spec B` is open for any two `K`-algebras, which is the statement the
+transcendence/colimit argument below was going to reconstruct by hand.
+
+Both instances needed to fire it are already in `Mathlib` too: `Unique (Spec (.of K))` for a
+field (`AlgebraicGeometry/Scheme.lean`) and `IsIntegral (Spec R)` for `[IsDomain R]`
+(`AlgebraicGeometry/Properties.lean`).  So the proof is `inferInstance`, and the filtered-colimit
+development over `Mathlib.AlgebraicGeometry.AffineTransitionLimit` that the audit prescribed is
+not needed and should not be written.
+
+The declaration is kept rather than inlined at its one call site so that
+`denseRange_of_isPullback` continues to read as a statement about a named classical input, and
+so that the correction above is recorded where the next reader of that audit will find it.
 
 Note what is NOT needed and should not be added: surjectivity, faithful flatness, and
 quasi-compactness of anything play no part.  Only openness of the base-changed projection is
 consumed, and it is consumed through `Mathlib`'s own
-`UniversallyOpen.isStableUnderBaseChange`, so the leaf is stated in exactly the form that
+`UniversallyOpen.isStableUnderBaseChange`, so the statement is in exactly the form that
 instance takes. -/
 theorem universallyOpen_of_specField {L : Type u} [Field L]
     (y : Spec (CommRingCat.of L) ⟶ Spec (CommRingCat.of K)) : UniversallyOpen y :=
-  sorry
+  inferInstance
 
 /-- **A dominant morphism stays dominant after base change along a field extension** (PROVEN
 over `universallyOpen_of_specField`).
@@ -879,9 +897,10 @@ is used at the degenerate level `N = 0`, where the curve is empty — deliberate
 ask for it.  Only `Fermat.IsX0Compactification`, which is restricted to `N ≥ 1`, does.
 
 The density-of-base-change step is `denseRange_of_isPullback` above, itself now a THEOREM
-over the single leaf `universallyOpen_of_specField`; the closure-of-a-connected-set half is
-`connectedSpace_of_denseRange`, proven at the top of this file.  So nothing sorried remains
-on this path except the universal openness of a field extension.  Note that only
+over `universallyOpen_of_specField`, which is in turn PROVEN from `Mathlib`'s
+`[IsIntegral Y] [Subsingleton Y]` instance for `UniversallyOpen`; the closure-of-a-connected-set
+half is `connectedSpace_of_denseRange`, proven at the top of this file.  So **nothing sorried
+remains on this path at all**.  Note that only
 `h.isDominant` and `h.comm` are consumed — properness, smoothness and the finiteness of the
 complement play no part, which is why the leaf above carries none of them. -/
 theorem geometricallyConnected_of_isSmoothCompactification {Y X : Scheme.{u}}
