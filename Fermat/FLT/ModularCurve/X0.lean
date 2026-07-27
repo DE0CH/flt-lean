@@ -15665,6 +15665,324 @@ theorem lFunction_apply_one_eq_two_pi_mul_cuspPeriod (N : ℕ)
     L 1 = 2 * (Real.pi : ℂ) * cuspPeriod a :=
   sorry
 
+/-! ### The reduction to newforms, along the period
+
+`cuspPeriod_ne_zero_of_kenkuLevel` is PROVEN below by Atkin–Lehner
+descent on the level.  The classical reduction is the Euler-factor
+identity `L(f, s) = L(g, s) ∏ (1 - β_p p^{-s})` for a `p`-stabilization
+`f(τ) = g(τ) - β_p g(pτ)`; in *period* language it is a one-line change
+of variables, because `∫₀^∞ g(ipy) dy = (1/p) ∫₀^∞ g(iu) du`, whence
+
+> `cuspPeriod f = (1 - β_p / p) · cuspPeriod g`.
+
+That identity is `cuspPeriod_of_isStabilizationOf`, and it is PROVEN
+here.  What is left open is exactly three statements, none of which is
+analysis-on-the-period any more:
+
+* `integrableOn_qSeriesAt` — the period integral converges (decay of a
+  weight-two cusp form at BOTH ends of the imaginary axis);
+* `stabilizationRoot_ne_natCast` — `β_p ≠ p` (Deligne/Atkin–Lehner:
+  `|β_p| ≤ √p < p`);
+* `cuspPeriod_ne_zero_of_isNewEigenformAt` — the arithmetic gate, now
+  quantified over NEWFORMS only.
+
+The newform predicate is `IsNewEigenformAt`, and it is only *stated*.
+It is deliberately NOT `Modularity/Interface.lean`'s `IsWeightTwoNewform`
+— that module is DOWNSTREAM of this one (it `public import`s this file
+through `FreyCurve/MazurTorsion.lean`), so its carrier is not available
+here; and it is stated over a different eigenform carrier
+(`GaloisRepresentation.Modularity.IsWeightTwoEigenform`, which reads its
+coefficients off `qCoeff` rather than carrying them).  Reconciling the
+two is a cut-level repair for whoever hoists one of them. -/
+
+section CuspPeriodReduction
+
+open _root_.MeasureTheory
+
+/-- **The `q`-series of `a` on the imaginary axis, indexed from `0`**
+(PROVEN — it is a definition).
+
+`cuspPeriod` sums from `n = 1`; this sums from `m = 0`, which is the
+index on which the `p`-stabilization reindexing `m ↦ pm` is a plain
+injection.  The two agree on `Set.Ioi 0` because `a 0 = 0` for a cusp
+form (`cuspPeriod_eq_integral_qSeriesAt`).
+
+Outside `Set.Ioi 0` the `tsum` diverges and is junk; the integral does
+not see it. -/
+noncomputable def qSeriesAt (a : ℕ → ℂ) (y : ℝ) : ℂ :=
+  ∑' m : ℕ, a m * Complex.exp (-(2 * (Real.pi : ℂ) * m * (y : ℂ)))
+
+/-- **The `q`-series of an eigenform converges on the positive imaginary
+axis** (PROVEN) — this is exactly `IsWeightTwoEigenform`'s
+`qExpansionSummable` field, transported along `τ = iy`.
+
+`qExpansionSummable` is the field added on 2026-07-27 to kill the junk
+witness `f := 0` with `a` completely multiplicative and `a_p := 2^{p²}`;
+without it every statement below about `cuspPeriod` is false, because a
+non-summable `tsum` is `0` and the period is junk.  See the
+`SOUNDNESS AUDIT` in `ModularCurve/WeightTwoEigenform.lean`. -/
+theorem summable_qSeriesAt {N : ℕ} {f : CuspForm (Gamma0GL N) 2} {a : ℕ → ℂ}
+    (hf : IsWeightTwoEigenform N f a) {y : ℝ} (hy : 0 < y) :
+    Summable fun m : ℕ => a m * Complex.exp (-(2 * (Real.pi : ℂ) * m * (y : ℂ))) := by
+  have h := hf.qExpansionSummable ⟨(y : ℂ) * Complex.I, by simpa using hy⟩
+  rw [← summable_nat_add_iff 1]
+  refine h.congr fun n => ?_
+  congr 1
+  congr 1
+  push_cast
+  linear_combination (2 * (Real.pi : ℂ) * ((n : ℂ) + 1) * (y : ℂ)) * Complex.I_sq
+
+/-- **`cuspPeriod` is the integral of the `0`-indexed `q`-series**
+(PROVEN): the two integrands differ only in the `m = 0` term, which is
+`a 0 = 0` because `f` is a cusp form. -/
+theorem cuspPeriod_eq_integral_qSeriesAt {N : ℕ} {f : CuspForm (Gamma0GL N) 2} {a : ℕ → ℂ}
+    (hf : IsWeightTwoEigenform N f a) :
+    cuspPeriod a = ∫ y in Set.Ioi (0 : ℝ), qSeriesAt a y := by
+  rw [cuspPeriod]
+  refine setIntegral_congr_fun measurableSet_Ioi fun y hy => ?_
+  have hs := summable_qSeriesAt hf (Set.mem_Ioi.mp hy)
+  rw [qSeriesAt, hs.tsum_eq_zero_add, hf.zero, zero_mul, zero_add]
+  exact (tsum_congr fun n => by push_cast; ring).symm
+
+/-- **`a` is the `p`-stabilization of `b` with root `β`** (PROVEN — it
+is a definition): coefficientwise, `f(τ) = g(τ) - β g(pτ)`.
+
+`β = 0` is the degenerate case `a = b`, which is what carries a form of
+level `M` up to a level with the same prime support (there `Γ₀(N) ≤
+Γ₀(M)` and the coefficient sequence is unchanged).  `β` is not a free
+parameter once `a` and `b` are genuine eigenforms: evaluating at `n = p`
+gives `β = b p - a p`. -/
+def IsStabilizationOf (p : ℕ) (β : ℂ) (a b : ℕ → ℂ) : Prop :=
+  ∀ n : ℕ, a n = b n - β * (if p ∣ n then b (n / p) else 0)
+
+/-- **The `q`-series of a `p`-stabilization** (PROVEN):
+`qSeriesAt a y = qSeriesAt b y - β · qSeriesAt b (py)`.
+
+Pure reindexing: the subtracted family is supported on the multiples of
+`p`, and `m ↦ pm` is injective with `(pm)/p = m`, so it resums to the
+same series evaluated at `py`.  This is the coefficient-level form of
+`f(τ) = g(τ) - β g(pτ)` restricted to `τ = iy`. -/
+theorem qSeriesAt_of_isStabilizationOf {p : ℕ} (hp : 0 < p) {β : ℂ} {a b : ℕ → ℂ}
+    (hab : IsStabilizationOf p β a b) {y : ℝ}
+    (hsb : Summable fun m : ℕ => b m * Complex.exp (-(2 * (Real.pi : ℂ) * m * (y : ℂ))))
+    (hsbp : Summable fun m : ℕ =>
+      b m * Complex.exp (-(2 * (Real.pi : ℂ) * m * (((p : ℝ) * y : ℝ) : ℂ)))) :
+    qSeriesAt a y = qSeriesAt b y - β * qSeriesAt b ((p : ℝ) * y) := by
+  classical
+  set E : ℕ → ℂ := fun m => Complex.exp (-(2 * (Real.pi : ℂ) * m * (y : ℂ))) with hE
+  set g : ℕ → ℂ := fun m => β * (if p ∣ m then b (m / p) else 0) * E m with hg
+  have hinj : Function.Injective (fun k : ℕ => p * k) := fun x y h => by
+    simpa [Nat.mul_right_inj hp.ne'] using h
+  have hgi : ∀ k : ℕ, g (p * k) = β * (b k * Complex.exp
+      (-(2 * (Real.pi : ℂ) * k * (((p : ℝ) * y : ℝ) : ℂ)))) := by
+    intro k
+    simp only [hg, hE, Dvd.intro k rfl, if_pos, Nat.mul_div_cancel_left k hp]
+    push_cast
+    ring_nf
+  have hsupp : Function.support g ⊆ Set.range (fun k : ℕ => p * k) := by
+    intro m hm
+    by_cases hd : p ∣ m
+    · exact ⟨m / p, (Nat.mul_div_cancel' hd)⟩
+    · exact absurd (by simp [hg, hd]) hm
+  have hgsum : Summable g := by
+    refine (Function.Injective.summable_iff hinj ?_).mp ?_
+    · intro x hx
+      have : ¬ p ∣ x := fun hd => hx ⟨x / p, Nat.mul_div_cancel' hd⟩
+      simp [hg, this]
+    · exact (hsbp.mul_left β).congr fun k => (hgi k).symm
+  have hgtsum : ∑' m : ℕ, g m = β * qSeriesAt b ((p : ℝ) * y) := by
+    rw [← hinj.tsum_eq hsupp]
+    rw [show (fun k : ℕ => g (p * k)) = fun k : ℕ => β * (b k * Complex.exp
+      (-(2 * (Real.pi : ℂ) * k * (((p : ℝ) * y : ℝ) : ℂ)))) from funext hgi]
+    rw [tsum_mul_left]
+    rfl
+  have hsplit : qSeriesAt a y = (∑' m : ℕ, b m * E m) - ∑' m : ℕ, g m := by
+    rw [← hsb.tsum_sub hgsum]
+    refine tsum_congr fun m => ?_
+    rw [hab m, hg]
+    ring
+  rw [hsplit, hgtsum]
+  rfl
+
+/-- **THE REDUCTION TO NEWFORMS, IN PERIOD LANGUAGE** (PROVEN
+2026-07-27): a `p`-stabilization multiplies the period by
+`1 - β_p / p`.
+
+This replaces the Euler-factor identity
+`L(f, s) = L(g, s) (1 - β_p p^{-s})` by a change of variables:
+`∫₀^∞ g(ipy) dy = (1/p) ∫₀^∞ g(iu) du`
+(`MeasureTheory.integral_comp_mul_left_Ioi`), so the `-β g(p·)` term
+contributes `-β/p` times the same period.
+
+`hint` is the only input the identity cannot supply itself: without
+integrability the integral is junk `0` and `integral_sub` does not
+apply.  It is the leaf `integrableOn_qSeriesAt` below.
+
+Note the factor is `1 - β/p` and NOT `1 - β_p p^{-s}` at `s = 1`
+evaluated formally — the two agree, but the derivation here never
+mentions `L`, which is why this leaf is independent of
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`. -/
+theorem cuspPeriod_of_isStabilizationOf {N M : ℕ} {f : CuspForm (Gamma0GL N) 2}
+    {g : CuspForm (Gamma0GL M) 2} {a b : ℕ → ℂ}
+    (hf : IsWeightTwoEigenform N f a) (hb : IsWeightTwoEigenform M g b)
+    (hint : IntegrableOn (qSeriesAt b) (Set.Ioi (0 : ℝ)))
+    {p : ℕ} (hp : 0 < p) {β : ℂ} (hab : IsStabilizationOf p β a b) :
+    cuspPeriod a = (1 - β / p) * cuspPeriod b := by
+  have hp' : (0 : ℝ) < (p : ℝ) := by exact_mod_cast hp
+  have hint2 : IntegrableOn (fun y : ℝ => qSeriesAt b ((p : ℝ) * y)) (Set.Ioi (0 : ℝ)) :=
+    (integrableOn_Ioi_comp_mul_left_iff (qSeriesAt b) 0 hp').mpr (by simpa using hint)
+  have hscale : (∫ y in Set.Ioi (0 : ℝ), qSeriesAt b ((p : ℝ) * y))
+      = ((p : ℝ)⁻¹) • ∫ y in Set.Ioi (0 : ℝ), qSeriesAt b y := by
+    simpa using integral_comp_mul_left_Ioi (qSeriesAt b) 0 hp'
+  have hPb : cuspPeriod b = ∫ y in Set.Ioi (0 : ℝ), qSeriesAt b y :=
+    cuspPeriod_eq_integral_qSeriesAt hb
+  have hpc : ((p : ℂ)) ≠ 0 := by
+    simpa using (Nat.cast_ne_zero (R := ℂ)).mpr hp.ne'
+  calc cuspPeriod a = ∫ y in Set.Ioi (0 : ℝ), qSeriesAt a y :=
+        cuspPeriod_eq_integral_qSeriesAt hf
+    _ = ∫ y in Set.Ioi (0 : ℝ), (qSeriesAt b y - β * qSeriesAt b ((p : ℝ) * y)) := by
+        refine setIntegral_congr_fun measurableSet_Ioi fun y hy => ?_
+        have hy0 : (0 : ℝ) < y := Set.mem_Ioi.mp hy
+        exact qSeriesAt_of_isStabilizationOf hp hab (summable_qSeriesAt hb hy0)
+          (summable_qSeriesAt hb (mul_pos hp' hy0))
+    _ = (∫ y in Set.Ioi (0 : ℝ), qSeriesAt b y)
+          - ∫ y in Set.Ioi (0 : ℝ), β * qSeriesAt b ((p : ℝ) * y) :=
+        integral_sub hint (hint2.const_mul β)
+    _ = (1 - β / p) * cuspPeriod b := by
+        rw [integral_const_mul, hscale, hPb, Complex.real_smul]
+        push_cast
+        field_simp
+
+/-- **`a` is OLD at level `N`** (PROVEN — it is a definition): `a` is a
+`p`-stabilization, for some prime `p ∣ N`, of the coefficient sequence
+of an eigenform of a PROPER divisor level.
+
+Two classical situations are covered, and both are needed:
+
+* `β ≠ 0`, `p ∤ M`: the genuine `p`-stabilization
+  `f(τ) = g(τ) - β g(pτ)` of a form new away from `p`;
+* `β = 0`: `a = b`, i.e. `g` itself viewed in `S₂(Γ₀(N))` through
+  `Γ₀(N) ≤ Γ₀(M)`, which is what happens when `M` and `N` have the same
+  prime support.
+
+Being a ONE-step descent is enough: a stabilization tower
+`stab_{p₁}(stab_{p₂}(g))` exhibits `stab_{p₂}(g)` as an eigenform of an
+intermediate proper divisor level, so the recursion in
+`cuspPeriod_ne_zero_of_kenkuLevel` terminates on the divisor order. -/
+def IsOldEigenformAt (N : ℕ) (a : ℕ → ℂ) : Prop :=
+  ∃ M : ℕ, M ∣ N ∧ M ≠ N ∧ ∃ (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ),
+    IsWeightTwoEigenform M g b ∧
+      ∃ (p : ℕ) (β : ℂ), p.Prime ∧ p ∣ N ∧ IsStabilizationOf p β a b
+
+/-- **`a` is NEW at level `N`** (PROVEN — it is a definition): not old.
+
+By Atkin–Lehner theory the normalized eigenforms of `S₂(Γ₀(N))` are
+exactly the newforms of every level `M ∣ N` together with their
+stabilizations, so `IsNewEigenformAt N a` holds precisely for the
+newforms of level `N`.  That equivalence is *not* proven here and is not
+needed: the descent below only ever consumes the negation, which is
+`IsOldEigenformAt` by definition, and the positive direction is the
+hypothesis of the arithmetic leaf
+`cuspPeriod_ne_zero_of_isNewEigenformAt` — where a WEAKER predicate
+would only make that leaf harder, never false. -/
+def IsNewEigenformAt (N : ℕ) (a : ℕ → ℂ) : Prop := ¬ IsOldEigenformAt N a
+
+/-- **The period integral of a weight-two eigenform converges** (sorry
+leaf) — the one analytic input the stabilization identity cannot supply
+itself.
+
+TRUE, and classical: `qSeriesAt a y = f (iy)` on `Set.Ioi 0`, and a
+weight-two cusp form on `Γ₀(M)` decays exponentially at BOTH ends of the
+imaginary axis — at `y → ∞` from the `q`-expansion, and at `y → 0`
+because `f` vanishes at the cusp `0` as well, which is exactly what
+mathlib's `CuspForm` asserts (`zero_at_cusps'`, quantified over EVERY
+cusp).  Continuity of `f` transported through the `ℍ`-coercion gives the
+measurability.
+
+**This leaf is SHARED with the sibling
+`lFunction_apply_one_eq_two_pi_mul_cuspPeriod`**, whose Mellin argument
+needs the same two-ended decay; whoever proves that one should expect to
+prove this one on the way, and the two should then be stated once.  The
+*axis not searched*: deducing integrability from `hL` instead, which
+would make this leaf a corollary of the Mellin identity rather than an
+input to it. -/
+theorem integrableOn_qSeriesAt {M : ℕ} {g : CuspForm (Gamma0GL M) 2} {b : ℕ → ℂ}
+    (hb : IsWeightTwoEigenform M g b) :
+    IntegrableOn (qSeriesAt b) (Set.Ioi (0 : ℝ)) :=
+  sorry
+
+/-- **A stabilization root is never `p`** (sorry leaf) — Deligne, and it
+is the ONLY place the reduction needs a bound on Hecke eigenvalues.
+
+TRUE.  Evaluating `hab` at `n = p` gives `β = b p - a p`, so `β` is not
+a free parameter, and Atkin–Lehner pins it in each of the two cases:
+
+* `p ∤ M'`: `β` is a root of `X² - b_p X + p`, and `|β| = √p < p` by
+  Deligne (Ramanujan–Petersson in weight two, i.e. Eichler–Shimura plus
+  the Weil conjectures for curves).  Equivalently `β = p` would force
+  `b_p = p + 1`.
+* `p ∣ M'`: `U_p` on the old space `⟨g, g(p·)⟩` has eigenvalues `b_p`
+  and `0`, so `β ∈ {0, b_p}`, and `|b_p| ≤ √p < p`.
+
+**EXACTLY CHECKED at every level this file uses** (PARI/GP, 2026-07-27,
+rational arithmetic — not floating point).  For each of the thirteen
+Kenku levels `N`, each divisor level `M ∣ N` with `S₂(Γ₀(M))^{new} ≠ 0`,
+and each prime `p ∣ N`, the characteristic polynomial `P` of the Hecke
+operator on the newspace was computed and evaluated at the forbidden
+value: `P(p+1) ≠ 0` when `p ∤ M`, and `P(p) ≠ 0` when `p ∣ M`.  All
+**45** checks came back nonzero (smallest value `1`, at `N = M = 42`,
+`p = 2`).  So no stabilization root at any level reachable from
+`kenkuLevels` equals `p`.  PARI/GP is an untrusted searcher: this
+establishes that the statement is not false, and is not a proof.
+
+The *axis not searched*: a direct proof of `β ≠ p` from the interface's
+`hecke`/`atkin` recursions alone, without any archimedean bound.  Those
+recursions constrain only the RELATIONS among the `a_p`, never their
+size — which is the same gap that made `qExpansionSummable` necessary —
+so it is unlikely to exist, but nobody has ruled it out. -/
+theorem stabilizationRoot_ne_natCast {M M' : ℕ} {g : CuspForm (Gamma0GL M) 2}
+    {g' : CuspForm (Gamma0GL M') 2} {a b : ℕ → ℂ}
+    (ha : IsWeightTwoEigenform M g a) (hb : IsWeightTwoEigenform M' g' b)
+    {p : ℕ} (hp : p.Prime) (hpM : p ∣ M) (hM' : M' ∣ M) {β : ℂ}
+    (hab : IsStabilizationOf p β a b) : β ≠ (p : ℂ) :=
+  sorry
+
+/-- **THE ARITHMETIC GATE: a NEWFORM of a divisor of a Kenku level has
+nonzero period** (sorry leaf).  This is what remains of
+`cuspPeriod_ne_zero_of_kenkuLevel` after the reduction, and it is the
+only declaration in this cluster that still mentions `kenkuLevels`.
+
+TRUE, by the PARI/GP reconnaissance recorded on
+`cuspPeriod_ne_zero_of_kenkuLevel` below: for each of the thirteen
+levels, EVERY newform of EVERY divisor `M ∣ N` was enumerated
+(`mfinit([M,2],0)`) and `|L(f, 1)|` computed at every complex
+embedding — `vanishing = 0` in all thirteen cases, smallest `0.3302`.
+Controls `37`, `65`, `91` vanish as they must, which is why they are not
+in `kenkuLevels`.
+
+**What this leaf still needs, and the check that would refute it.**  An
+explicit certified basis of `S₂(Γ₀(M))^{new}` — dimension formulas plus
+certified `q`-expansions — which is what would make the PARI computation
+replayable inside Lean.  That is a large missing theory: refute with
+`grep -rn "newform\|Newform\|dimension.*cusp\|CuspFormBasis" Fermat/
+.lake/packages/mathlib/ ~/cs/FLT/`.  It is the real gate on the whole
+cluster, and after this cut it is the ONLY one — the analysis and the
+Atkin–Lehner bookkeeping are gone.
+
+The *axis not searched*: `fin_cases hN`, which is mechanically available
+and is not a decomposition (it multiplies the frontier by thirteen and
+moves no theory); and the Fricke functional equation, which is safe only
+here, AFTER the reduction — a `p`-stabilization is a Hecke eigenform but
+not a `W_N`-eigenform, so it has no Fricke sign, whereas a newform of
+level `M` does. -/
+theorem cuspPeriod_ne_zero_of_isNewEigenformAt (N : ℕ) (hN : N ∈ kenkuLevels) (M : ℕ)
+    (hM : M ∣ N) (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ)
+    (hb : IsWeightTwoEigenform M g b) (hnew : IsNewEigenformAt M b) :
+    cuspPeriod b ≠ 0 :=
+  sorry
+
+end CuspPeriodReduction
+
 /-- **The period of a weight-two eigenform is nonzero at the thirteen
 Kenku levels** (sorry node) — the ARITHMETIC half of
 `lFunction_apply_one_ne_zero_of_kenkuLevel`, and the ONLY declaration in
@@ -15715,8 +16033,10 @@ vanishes (min of the rest `0.4252`), `N = 91` has `7` of which `2` vanish
 in `kenkuLevels`.  PARI/GP is an untrusted searcher: this establishes
 that the statement is not false, and is not a proof.
 
-**THE NEXT CUT, and the period picture is what makes it cheap.**  `hf`
-ranges over the normalized Hecke eigenforms of `S_2(Γ_0(N))`, which by
+**DECOMPOSED 2026-07-27, ALONG THE PERIOD — this node is now PROVEN**
+by Atkin–Lehner descent on the level, and the change of variables that
+makes it cheap is `cuspPeriod_of_isStabilizationOf` above.  `hf` ranges
+over the normalized Hecke eigenforms of `S_2(Γ_0(N))`, which by
 Atkin–Lehner theory are the newforms `g` of every level `M ∣ N` together
 with their `p`-stabilizations `f(τ) = g(τ) - β_p g(pτ)`.  In `L`-function
 language the stabilization correction is the Euler-factor identity
@@ -15727,13 +16047,29 @@ g(iu) du`, so
 > `cuspPeriod f = (1 - β_p / p) · cuspPeriod g`,
 
 and `β_p` is a root of `X² - a_p(g) X + p` (or `0`), so `|β_p| ≤ √p < p`
-by Deligne and the factor is never zero.  That is the reduction to
-newforms, and it is the first thing a prover of THIS leaf should write.
-What it needs *stated* — not proven — is the old/new decomposition, i.e.
-a `newform` predicate at level `M`; that does not exist at this pin in
-mathlib, in `~/cs/FLT`, or here.  Refute with
-`grep -rn "newform\|Newform\|oldform\|degeneracy" Fermat/
-.lake/packages/mathlib/ ~/cs/FLT/`.
+by Deligne and the factor is never zero.  Both halves are now written:
+the identity is PROVEN (`cuspPeriod_of_isStabilizationOf`, axiom-clean),
+and `β_p ≠ p` is the named leaf `stabilizationRoot_ne_natCast`.
+
+The old/new decomposition is needed only *stated*, and it is stated as
+`IsNewEigenformAt` — the negation of a one-step stabilization descent,
+which is all the recursion below consumes.  The claim that it coincides
+with the classical newform predicate is Atkin–Lehner and is NOT proven;
+it is not needed either, because the positive direction appears only as
+a hypothesis of `cuspPeriod_ne_zero_of_isNewEigenformAt`, where a weaker
+predicate makes that leaf harder rather than false.
+
+The residue after the cut is THREE leaves, and only the last carries the
+`L`-value numerics: `integrableOn_qSeriesAt` (convergence of the period
+integral, shared with the sibling Mellin leaf),
+`stabilizationRoot_ne_natCast` (Deligne), and
+`cuspPeriod_ne_zero_of_isNewEigenformAt` (the arithmetic gate, now
+quantified over NEWFORMS only).  The old note that a newform predicate
+"does not exist at this pin in mathlib, in `~/cs/FLT`, or here" is
+CORRECTED: `GaloisRepresentation.Modularity.IsWeightTwoNewform` exists,
+in `Modularity/Interface.lean` — but that module is DOWNSTREAM of this
+one and states itself over a different eigenform carrier, so it is not
+usable here.
 
 **The axis searched, so the next reader need not redo it.**  A cut on
 `N` (`fin_cases hN`, thirteen goals) is mechanically available and is
@@ -15744,16 +16080,44 @@ exponentially convergent `(1 + ε) ∑ (aₙ/n) e^{-2πn/√N}` that PARI
 evaluates — is **FALSE as stated for this leaf's hypotheses**: a
 `p`-stabilization is a Hecke eigenform but is *not* a `W_N`-eigenform, so
 it has no Fricke sign.  That cut only becomes available *after* the
-reduction to newforms above, and in that order it is safe.
+reduction to newforms above, and in that order it is safe — so it is now
+available, on `cuspPeriod_ne_zero_of_isNewEigenformAt`.
 
 The *axis not searched*: proving the thirteen levels through an explicit
 basis of `S_2(Γ_0(N))` (dimension formulas plus certified `q`-expansions),
 which is what would make the PARI computation replayable inside Lean.
-That is a large missing theory, and it is the real gate on this leaf. -/
+That is a large missing theory, and after this cut it is the real — and
+the only — gate, sitting on
+`cuspPeriod_ne_zero_of_isNewEigenformAt`. -/
 theorem cuspPeriod_ne_zero_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
     (f : CuspForm (Gamma0GL N) 2) (a : ℕ → ℂ) (hf : IsWeightTwoEigenform N f a) :
-    cuspPeriod a ≠ 0 :=
-  sorry
+    cuspPeriod a ≠ 0 := by
+  have hN0 : N ≠ 0 := by
+    simp only [kenkuLevels, List.mem_cons, List.not_mem_nil, or_false] at hN
+    rcases hN with h | h | h | h | h | h | h | h | h | h | h | h | h <;> omega
+  have key : ∀ M : ℕ, M ∣ N → ∀ (g : CuspForm (Gamma0GL M) 2) (b : ℕ → ℂ),
+      IsWeightTwoEigenform M g b → cuspPeriod b ≠ 0 := by
+    intro M
+    induction M using Nat.strong_induction_on with
+    | _ M ih =>
+      intro hM g b hb
+      by_cases hold : IsOldEigenformAt M b
+      · obtain ⟨M', hM'M, hM'ne, g', b', hb', p, β, hp, hpM, hab⟩ := hold
+        have hM0 : 0 < M := Nat.pos_of_ne_zero fun h => hN0 (by simpa [h] using hM)
+        have hlt : M' < M := lt_of_le_of_ne (Nat.le_of_dvd hM0 hM'M) hM'ne
+        have hb'ne : cuspPeriod b' ≠ 0 := ih M' hlt (hM'M.trans hM) g' b' hb'
+        rw [cuspPeriod_of_isStabilizationOf hb hb' (integrableOn_qSeriesAt hb') hp.pos hab]
+        refine mul_ne_zero ?_ hb'ne
+        have hpc : ((p : ℂ)) ≠ 0 := by
+          simpa using (Nat.cast_ne_zero (R := ℂ)).mpr hp.pos.ne'
+        have hne := stabilizationRoot_ne_natCast hb hb' hp hpM hM'M hab
+        intro hzero
+        apply hne
+        have h1 : β / (p : ℂ) = 1 := by linear_combination -hzero
+        field_simp at h1
+        exact h1
+      · exact cuspPeriod_ne_zero_of_isNewEigenformAt N hN M hM g b hb hold
+  exact key N dvd_rfl f a hf
 
 /-- **`L(f, 1) ≠ 0` for every weight-two eigenform at the thirteen Kenku
 levels** (PROVEN 2026-07-27, from the two leaves above) — the ANALYTIC
@@ -16688,7 +17052,7 @@ is how rationality of a curve is expressible at a pin that has affine but
 not projective space.
 
 The open leaves under this node, and the single theory each one needs, are the
-TEN below.  **This table was REGENERATED at integration (2026-07-27) from a
+TWELVE below.  **This table was REGENERATED at integration (2026-07-27) from a
 comment-stripped scan of the merged source, not merged as prose** — two branches
 edited it in the same release.  `lFunction_apply_one_ne_zero_of_kenkuLevel` was
 decomposed along the period and is now PROVEN (its two successors are rows five
@@ -16706,14 +17070,20 @@ row and is now PROVEN too, in
 | `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` | Mellin transform at `s = 1` | no |
-| `cuspPeriod_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
+| `integrableOn_qSeriesAt` | decay of a cusp form at both cusps | no |
+| `stabilizationRoot_ne_natCast` | Deligne / Atkin–Lehner bounds | no |
+| `cuspPeriod_ne_zero_of_isNewEigenformAt` | `L`-value numerics | **yes** |
 | `isTorsion_jacobian_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev | no |
 | `exists_affineLine_of_not_injective_aj` | Riemann–Roch | no |
 | `exists_const_of_affineLine_to_abelianScheme` | rigidity of abelian varieties | no |
 | `hasNonconstantAbelianMap_of_one_le_x0Genus` | genus formula | **yes** |
 
-Only two of the ten mention `N` or `kenkuLevels` at all, and each of
-the other eight is a named classical theorem stated for an arbitrary
+(`cuspPeriod_ne_zero_of_kenkuLevel` was the sixth row until 2026-07-27,
+when it was decomposed along Atkin–Lehner descent into rows six to
+eight and PROVEN from them.)
+
+Only two of the twelve mention `N` or `kenkuLevels` at all, and each of
+the other ten is a named classical theorem stated for an arbitrary
 object — which is what makes them dispatchable independently, and
 reusable by the rest of the modular-curve subtree. -/
 theorem hasRankZeroJacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
