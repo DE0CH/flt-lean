@@ -29762,7 +29762,7 @@ theorem exists_ideal_artinIdealMap_congr_of_kerChar
     exact N.mul_mem (hNnorm.conj_mem _ (N.inv_mem hn) x) (N.inv_mem hm)
 
 /-- **THE COUNTING STEP: inverting the Artin map — NO class field theory**
-(E3c support leaf (ii-a-1-i-B-2-c); SORRY NODE, cut 2026-07-27 out of
+(E3c support leaf (ii-a-1-i-B-2-c); **PROVEN 2026-07-27**, cut 2026-07-27 out of
 `exists_artinMap_of_unramifiedAbelianSubgroup` below): given an ideal-level
 Artin symbol `art0` with the four clauses of
 `exists_artinIdealMap_of_unramifiedAbelianSubgroup` and the Chebotarev
@@ -29775,9 +29775,11 @@ API — and contains no arithmetic at all.** That is the point of isolating it:
 it can be proven today, with nothing from class field theory. The argument,
 written out so it can be rechecked:
 
-1. `N ≤ ker χ` (`hNker`) and `N.Normal` (`hNnorm`), so `Q := ker χ / N` is a
-   group, ABELIAN by `hNab`, of order `N.relIndex (ker χ) = Nat.card (Cl)`
-   (`hNcard`) — in particular finite, `Cl` of a number field being finite.
+1. `N.Normal` (`hNnorm`) makes `N.subgroupOf (ker χ)` normal in `ker χ`, so
+   `Q := ker χ / N` is a group, of order
+   `N.relIndex (ker χ) = Nat.card (Cl)` (`hNcard`, which holds by DEFINITION
+   of `Subgroup.relIndex` and `Subgroup.index`) — in particular finite, `Cl`
+   of a number field being finite (`NumberField.instFintypeClassGroup`).
 2. `I ↦ ⟦art0 I⟧ ∈ Q` is well defined on nonzero ideals (`hart0ker`) and
    multiplicative (`hart0mul`), hence a monoid hom on `(Ideal (𝓞 CF))⁰`.
 3. It DESCENDS to `Cl(𝓞 CF)`: if `ClassGroup.mk0 I = ClassGroup.mk0 J` then
@@ -29802,7 +29804,21 @@ Faithfulness: the conclusion is NOT satisfiable by junk. Clause three demands
 as `h_K > 1`, and clause four pins `art` on Frobenius conjugates. The
 hypotheses `hχcyc`, `ι`, `hfrob`, `hNopen` and `hNinert` of the parent are
 deliberately ABSENT here — none of them is needed for the algebra, and their
-absence is what certifies that this leaf carries no class field theory. -/
+absence is what certifies that this leaf carries no class field theory.
+
+**`hNab` IS REDUNDANT, and the proof does not use it** (found 2026-07-27 while
+proving this leaf; the binder is kept, underscore-prefixed, so that the
+signature the parent applies positionally is unchanged). Step 1 above listed it
+as the source of `Q`'s commutativity, but commutativity of `Q` is never needed
+and is in any case FREE: `Φ : Cl(𝓞 CF) →* Q` is a surjective homomorphism from
+an abelian group, so `Q` is abelian whether or not `hNab` is assumed. What
+actually forces `Q` to be a quotient of `Cl` is `hart0surj` — i.e. Chebotarev,
+already discharged by the sibling leaf — so the abelianness that `hNab`
+expresses arrives with the surjection rather than being an extra input. This is
+a statement about THIS leaf only: `hNab` remains genuinely load-bearing in the
+parent `exists_artinMap_of_unramifiedAbelianSubgroup`, whose docstring's
+"`hNinert` AND `hNab` ARE LOAD-BEARING" paragraph is about pinning `N = Γ_H`
+and is unaffected. -/
 theorem exists_artinMap_of_artinIdealMap
     {kk' : Type u} [Field kk'] [Finite kk'] [Algebra ℤ_[p] kk'] [CharP kk' p]
     (χ : Field.absoluteGaloisGroup ℚ →* kk')
@@ -29812,7 +29828,7 @@ theorem exists_artinMap_of_artinIdealMap
     (N : Subgroup (Field.absoluteGaloisGroup ℚ))
     (hNnorm : N.Normal)
     (hNker : ∀ x ∈ N, χ x = 1)
-    (hNab : ∀ a b : Field.absoluteGaloisGroup ℚ, χ a = 1 → χ b = 1 →
+    (_hNab : ∀ a b : Field.absoluteGaloisGroup ℚ, χ a = 1 → χ b = 1 →
       a * b * a⁻¹ * b⁻¹ ∈ N)
     (hNcard : N.relIndex (MonoidHom.ker χ) = Nat.card (ClassGroup (𝓞 CF)))
     (art0 : Ideal (𝓞 CF) → Field.absoluteGaloisGroup ℚ)
@@ -29837,8 +29853,148 @@ theorem exists_artinMap_of_artinIdealMap
           (v : IsDedekindDomain.HeightOneSpectrum (𝓞 ℚ)),
         χ (g * GaloisRepresentation.globalFrob v * g⁻¹) = 1 →
         art (g * GaloisRepresentation.globalFrob v * g⁻¹) =
-          ClassGroup.mk0 (frobIdeal g v)) :=
-  sorry
+          ClassGroup.mk0 (frobIdeal g v)) := by
+  classical
+  -- `Q := ker χ ⧸ N` is a group: `N` is normal in `Γℚ`, hence in `ker χ`.
+  haveI hMnorm : (N.subgroupOf (MonoidHom.ker χ)).Normal := hNnorm.subgroupOf _
+  -- `art0 I` always lands in `ker χ` (`hart0ker`).
+  have hker0 : ∀ I : Ideal (𝓞 CF), art0 I ∈ MonoidHom.ker χ := fun I =>
+    MonoidHom.mem_ker.mpr (hart0ker I)
+  -- Two elements of `ker χ` have the same class in `Q` when they differ by `N`.
+  have hkey : ∀ a b : (MonoidHom.ker χ),
+      (a : Field.absoluteGaloisGroup ℚ) * (b : Field.absoluteGaloisGroup ℚ)⁻¹ ∈ N →
+      (QuotientGroup.mk a :
+          (MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)) = QuotientGroup.mk b := by
+    intro a b h
+    rw [QuotientGroup.eq, Subgroup.mem_subgroupOf]
+    have h1 : (b : Field.absoluteGaloisGroup ℚ)⁻¹ * (a : Field.absoluteGaloisGroup ℚ) ∈ N :=
+      hNnorm.mem_comm h
+    simpa using N.inv_mem h1
+  -- A member of `(Ideal (𝓞 CF))⁰` really is a nonzero ideal.
+  have hnb : ∀ I : (Ideal (𝓞 CF))⁰, (I : Ideal (𝓞 CF)) ≠ ⊥ := by
+    intro I
+    have h := I.2
+    rw [mem_nonZeroDivisors_iff_ne_zero] at h
+    simpa [Ideal.zero_eq_bot] using h
+  -- STEP 2/3a: multiplying by a principal ideal does not move the class of `art0`
+  -- (`hart0mul` together with `hart0prin`).
+  have hprin : ∀ x : 𝓞 CF, x ≠ 0 → ∀ I : Ideal (𝓞 CF), I ≠ ⊥ →
+      (QuotientGroup.mk (⟨art0 I, hker0 I⟩ : (MonoidHom.ker χ)) :
+          (MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)) =
+        QuotientGroup.mk ⟨art0 (Ideal.span {x} * I), hker0 _⟩ := by
+    intro x hx I hI
+    refine hkey _ _ ?_
+    have h1 : art0 (Ideal.span {x}) ∈ N := hart0prin x hx
+    have hspan : (Ideal.span {x} : Ideal (𝓞 CF)) ≠ ⊥ := by
+      simpa [Ideal.span_singleton_eq_bot] using hx
+    have h3 := N.mul_mem (N.inv_mem h1) (hart0mul (Ideal.span {x}) I hspan hI)
+    simpa [mul_assoc] using h3
+  -- STEP 3b: hence the symbol DESCENDS through `ClassGroup.mk0`, by
+  -- `ClassGroup.mk0_eq_mk0_iff`.
+  have hdesc : ∀ I J : (Ideal (𝓞 CF))⁰, ClassGroup.mk0 I = ClassGroup.mk0 J →
+      (QuotientGroup.mk (⟨art0 (I : Ideal (𝓞 CF)), hker0 _⟩ : (MonoidHom.ker χ)) :
+          (MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)) =
+        QuotientGroup.mk ⟨art0 (J : Ideal (𝓞 CF)), hker0 _⟩ := by
+    intro I J h
+    obtain ⟨x, y, hx, hy, heq⟩ := ClassGroup.mk0_eq_mk0_iff.mp h
+    calc (QuotientGroup.mk (⟨art0 (I : Ideal (𝓞 CF)), hker0 _⟩ : (MonoidHom.ker χ)) :
+            (MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ))
+        = QuotientGroup.mk ⟨art0 (Ideal.span {x} * (I : Ideal (𝓞 CF))), hker0 _⟩ :=
+          hprin x hx _ (hnb I)
+      _ = QuotientGroup.mk ⟨art0 (Ideal.span {y} * (J : Ideal (𝓞 CF))), hker0 _⟩ := by
+          rw [heq]
+      _ = QuotientGroup.mk ⟨art0 (J : Ideal (𝓞 CF)), hker0 _⟩ := (hprin y hy _ (hnb J)).symm
+  -- STEP 2: and it is multiplicative (`hart0mul`).
+  have hmul : ∀ I J : Ideal (𝓞 CF), I ≠ ⊥ → J ≠ ⊥ →
+      (QuotientGroup.mk (⟨art0 (I * J), hker0 _⟩ : (MonoidHom.ker χ)) :
+          (MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)) =
+        QuotientGroup.mk (⟨art0 I, hker0 _⟩ : (MonoidHom.ker χ)) *
+          QuotientGroup.mk (⟨art0 J, hker0 _⟩ : (MonoidHom.ker χ)) := by
+    intro I J hI hJ
+    rw [← QuotientGroup.mk_mul]
+    refine hkey _ _ ?_
+    simpa [mul_assoc] using N.inv_mem (hart0mul I J hI hJ)
+  -- STEP 4a: `hart0surj` (Chebotarev, discharged by the sibling leaf) says the
+  -- symbol is ONTO `Q`.
+  have hsurj : ∀ q : (MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ),
+      ∃ I : (Ideal (𝓞 CF))⁰,
+        (QuotientGroup.mk (⟨art0 (I : Ideal (𝓞 CF)), hker0 _⟩ : (MonoidHom.ker χ)) :
+          (MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)) = q := by
+    intro q
+    obtain ⟨a, rfl⟩ := QuotientGroup.mk_surjective q
+    obtain ⟨I, hI, hIN⟩ :=
+      hart0surj (a : Field.absoluteGaloisGroup ℚ) (MonoidHom.mem_ker.mp a.2)
+    have hI0 : I ∈ (Ideal (𝓞 CF))⁰ := by
+      rw [mem_nonZeroDivisors_iff_ne_zero]
+      simpa [Ideal.zero_eq_bot] using hI
+    exact ⟨⟨I, hI0⟩, hkey _ _ (by simpa [mul_inv_rev] using N.inv_mem hIN)⟩
+  -- A choice of ideal representative for each ideal class (`ClassGroup.mk0_surjective`).
+  obtain ⟨rep, hrep⟩ : ∃ rep : ClassGroup (𝓞 CF) → (Ideal (𝓞 CF))⁰,
+      ∀ c, ClassGroup.mk0 (rep c) = c :=
+    ⟨fun c => (ClassGroup.mk0_surjective c).choose,
+      fun c => (ClassGroup.mk0_surjective c).choose_spec⟩
+  have hΦmul : ∀ c d : ClassGroup (𝓞 CF),
+      (QuotientGroup.mk (⟨art0 (rep (c * d) : Ideal (𝓞 CF)), hker0 _⟩ : (MonoidHom.ker χ)) :
+          (MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)) =
+        QuotientGroup.mk (⟨art0 (rep c : Ideal (𝓞 CF)), hker0 _⟩ : (MonoidHom.ker χ)) *
+          QuotientGroup.mk (⟨art0 (rep d : Ideal (𝓞 CF)), hker0 _⟩ : (MonoidHom.ker χ)) := by
+    intro c d
+    have h1 : ClassGroup.mk0 (rep (c * d)) = ClassGroup.mk0 (rep c * rep d) := by
+      rw [hrep, map_mul, hrep, hrep]
+    rw [hdesc _ _ h1]
+    exact hmul _ _ (hnb (rep c)) (hnb (rep d))
+  -- STEP 4b, THE COUNTING STEP: `Φ : Cl(𝓞 CF) →* Q` is surjective, and the two
+  -- groups have the same finite cardinality by `hNcard` (which is `Nat.card Q`
+  -- by definition of `Subgroup.relIndex`/`Subgroup.index`), hence `Φ` is
+  -- BIJECTIVE. This is the only use of `hNcard`.
+  obtain ⟨E, hE⟩ : ∃ E : ClassGroup (𝓞 CF) ≃*
+      ((MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)),
+      ∀ I : (Ideal (𝓞 CF))⁰, E (ClassGroup.mk0 I) =
+        QuotientGroup.mk (⟨art0 (I : Ideal (𝓞 CF)), hker0 _⟩ : (MonoidHom.ker χ)) := by
+    refine ⟨MulEquiv.ofBijective (MonoidHom.mk' (fun c => QuotientGroup.mk
+        (⟨art0 (rep c : Ideal (𝓞 CF)), hker0 _⟩ : (MonoidHom.ker χ))) hΦmul) ?_,
+      fun I => hdesc _ _ (hrep _)⟩
+    rw [Nat.bijective_iff_surjective_and_card]
+    refine ⟨fun q => ?_, hNcard.symm⟩
+    obtain ⟨I, hI⟩ := hsurj q
+    exact ⟨ClassGroup.mk0 I, (hdesc _ _ (hrep _)).trans hI⟩
+  -- STEP 5: assemble `art x := if χ x = 1 then Φ⁻¹ ⟦x⟧ else 1`.
+  refine ⟨fun x => if hx : χ x = 1 then
+      E.symm (QuotientGroup.mk ⟨x, MonoidHom.mem_ker.mpr hx⟩) else 1, ?_, ?_, ?_, ?_⟩
+  · -- homomorphy on `ker χ`
+    intro g h hg hh
+    dsimp only
+    have hgh : χ (g * h) = 1 := by rw [map_mul, hg, hh, one_mul]
+    rw [dif_pos hgh, dif_pos hg, dif_pos hh, ← map_mul, ← QuotientGroup.mk_mul]
+    rfl
+  · -- triviality on `N`
+    intro x hx
+    dsimp only
+    rw [dif_pos (hNker x hx)]
+    rw [show (QuotientGroup.mk (⟨x, MonoidHom.mem_ker.mpr (hNker x hx)⟩ : (MonoidHom.ker χ)) :
+        (MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)) = 1 from
+      (QuotientGroup.eq_one_iff _).mpr (Subgroup.mem_subgroupOf.mpr hx), map_one]
+  · -- surjectivity onto `Cl(𝓞 CF)` from `ker χ`
+    intro c
+    dsimp only
+    obtain ⟨a, ha⟩ := QuotientGroup.mk_surjective (E c)
+    refine ⟨(a : Field.absoluteGaloisGroup ℚ), MonoidHom.mem_ker.mp a.2, ?_⟩
+    rw [dif_pos (MonoidHom.mem_ker.mp a.2)]
+    rw [show (QuotientGroup.mk (⟨(a : Field.absoluteGaloisGroup ℚ),
+        MonoidHom.mem_ker.mpr (MonoidHom.mem_ker.mp a.2)⟩ : (MonoidHom.ker χ)) :
+        (MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)) = QuotientGroup.mk a from rfl,
+      ha, MulEquiv.symm_apply_apply]
+  · -- the Artin symbol formula, `hart0frob` transported through `Φ⁻¹`
+    intro g v hgv
+    dsimp only
+    rw [dif_pos hgv]
+    rw [show (QuotientGroup.mk (⟨g * GaloisRepresentation.globalFrob v * g⁻¹,
+        MonoidHom.mem_ker.mpr hgv⟩ : (MonoidHom.ker χ)) :
+        (MonoidHom.ker χ) ⧸ N.subgroupOf (MonoidHom.ker χ)) =
+        E (ClassGroup.mk0 (frobIdeal g v)) from by
+      rw [hE]
+      exact (hkey _ _ (by simpa using hart0frob g v hgv)).symm]
+    rw [MulEquiv.symm_apply_apply]
 
 /-- **THE RECIPROCITY HALF: the Artin map of the unramified class
 field, computed on Frobenius elements by the class of the underlying
