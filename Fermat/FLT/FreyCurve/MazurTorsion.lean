@@ -1057,12 +1057,66 @@ types, so `λ¹²χ_N^{-s}` is unramified everywhere (including at `∞`, since
 `s` is even) and therefore trivial by class field theory — `ℚ` has no
 nontrivial everywhere-unramified abelian extension.
 
-MACHINERY AUDIT (2026-07-26). Missing here: tame-inertia theory at `N`,
-Raynaud's classification, the Tate-curve description of the character at
-potentially multiplicative reduction, and the class-field-theoretic
-triviality of an everywhere-unramified abelian character of `ℚ`. None of
-these is modular and none touches the Eisenstein ideal; the last is the
-only one for which mathlib is likely to have usable pieces.
+MACHINERY AUDIT — **CORRECTED 2026-07-27.** The 2026-07-26 version read:
+"Missing here: tame-inertia theory at `N`, Raynaud's classification, the
+Tate-curve description of the character at potentially multiplicative
+reduction, and the class-field-theoretic triviality of an
+everywhere-unramified abelian character of `ℚ`. None of these is modular
+and none touches the Eisenstein ideal; the last is the only one for which
+mathlib is likely to have usable pieces." Its guess about the last item
+was right, and understated:
+
+* **Minkowski IS in mathlib and is ALREADY IMPORTED by this file.**
+  `Mathlib.NumberTheory.NumberField.ExistsRamified` (in the import block
+  above) provides `NumberField.exists_not_isUnramifiedIn`,
+  `NumberField.exists_not_isUnramifiedAt_int` and
+  `NumberField.finrank_eq_one_of_unramified` — "a number field
+  unramified over `ℤ` has rank one", i.e. exactly `ℚ` has no nontrivial
+  everywhere-unramified extension, abelian or not. So the class-field
+  half is NOT a missing theory; what is missing is only the BRIDGE from
+  `Algebra.IsUnramifiedAt` (ramification of ideals) to
+  `localInertiaGroup` (inertia inside `Γ ℚᵥ`).
+* The idiom for saying "this character is trivial on inertia at `v`"
+  already exists in the tree, fully worked, in
+  `GaloisRepresentation.cyclotomicCharacterModL_eq_one_of_mem_localInertiaGroup`
+  (`HardlyRamified/Threeadic.lean`) — but only at `ℓ = 3`; a general-`ℓ`
+  version is a prerequisite for the cut below.
+
+Genuinely missing, and unchanged from the previous audit: tame-inertia
+theory at `N`, Raynaud's classification, and the Tate-curve description
+at potentially multiplicative reduction.
+
+EXECUTABLE CUT (drafted 2026-07-27; NOT yet carried out — recorded so
+the next owner need not redo the survey). The two halves of the proof
+above separate cleanly into three sorried sub-leaves plus glue:
+
+* `A` (local at `N`, the Serre–Raynaud content): `∃ e r`, the enumerated
+  conditions `e ∈ {1,2,3,4,6}`, `r ≤ e`, `e` even → `r` even, and
+  `(e,r) = (4,2) → N ≡ 3 (mod 4)`, together with
+  `∀ σ ∈ localInertiaGroup vN, λ(map σ)¹² = χ(map σ)^(12r/e)`.
+* `B` (unramified away from `N`): for every prime `q ≠ N`,
+  `∀ σ ∈ localInertiaGroup vq, λ(map σ)¹² = 1`.
+* `C` (Minkowski, stated Galois-theoretically): a CONTINUOUS
+  `ψ : Γ ℚ →* (ZMod N)ˣ` trivial on `localInertiaGroup v` for every
+  finite place `v` is trivial. This is the leaf that
+  `ExistsRamified` should discharge once the ideal-to-inertia bridge
+  exists — it needs `ExistsRamified` only STATED against the bridge, not
+  a new theory.
+
+Glue: put `ψ σ := λ(σ)¹² · χ(σ)^{-s}` with `s := 12r/e`, feed `A` and
+`B` (plus general-`ℓ` triviality of `χ` on inertia away from `N`) into
+`C`. Two obligations the glue must discharge and that are easy to
+overlook: (i) `s * e = 12 * r` needs `e ∣ 12r`, which follows from the
+enumeration by `interval_cases`/`omega`; (ii) `C` REQUIRES continuity of
+`ψ`, and the leaf hands `lam` over as a bare `MonoidHom` — continuity
+must be DERIVED from `hlam`, by factoring `λ` through the already
+continuous `E.galoisRep N` (if `galoisRep N σ = galoisRep N τ` then
+`λ(σ)•g = λ(τ)•g`, and `addOrderOf g = N` cancels `g`). Without (ii)
+the sub-leaf `C` is FALSE as stated for an arbitrary abstract
+homomorphism: `Γ ℚ` is not topologically finitely generated, so
+Nikolov–Segal does not apply and a non-open finite-index subgroup — hence
+a discontinuous character trivial on every inertia group — is not
+excluded.
 
 This leaf is INDEPENDENT of the formal-immersion leaf: nothing here uses
 potentially good reduction away from `N`. -/
@@ -1353,12 +1407,139 @@ theorem mazurIsogeny_resultantElimination {N : ℕ} [Fact N.Prime]
     subst h97
     interval_cases a5 <;> norm_num at d5
 
-/-- **The Frobenius characteristic-polynomial relation** (sorry leaf —
-Serre–Tate plus Hasse–Weil; Mazur 1978 §5, [Michaud-Jacobs, proof of
-Prop. 4.3]): at a prime `q ∉ {2, N}` of potentially good reduction, the
-value `λ(σ_q)` of the isogeny character at the global arithmetic
-Frobenius is a root, in `ZMod N`, of `X² − aX + q` for some RATIONAL
-INTEGER `a` with `a² ≤ 4q`.
+/-- **Eigenvalue relation in rank two** (PROVEN 2026-07-27): on a
+`2`-dimensional space over a field, an eigenvalue `c` of `f` — witnessed
+by a NONZERO eigenvector — satisfies the characteristic quadratic
+`c² − (tr f)·c + det f = 0`.
+
+Pure linear algebra: Cayley–Hamilton (`LinearMap.aeval_self_charpoly`)
+against `GaloisRepresentation.charpoly_eq_quadratic_of_finrank_two`
+(`charpoly f = X² − (tr f)X + det f` in rank two), applied to the
+eigenvector and then divided by it. This is step 1 of
+`exists_frobeniusTrace_of_potentiallyGoodReduction`, isolated so that the
+elliptic-curve leaf below carries no linear algebra at all. -/
+theorem mazurIsogeny_eigenvalue_quadratic_of_finrank_two
+    {F : Type*} [Field F] {V : Type*} [AddCommGroup V] [Module F V]
+    [Module.Finite F V] [Module.Free F V]
+    (hfr : Module.finrank F V = 2) (f : V →ₗ[F] V)
+    {v : V} (hv : v ≠ 0) {c : F} (hfv : f v = c • v) :
+    c ^ 2 - LinearMap.trace F V f * c + LinearMap.det f = 0 := by
+  classical
+  have hCH := f.aeval_self_charpoly
+  rw [GaloisRepresentation.charpoly_eq_quadratic_of_finrank_two hfr f] at hCH
+  -- Cayley–Hamilton, applied to the eigenvector
+  have h0 : f (f v) - (LinearMap.trace F V f) • (f v) + (LinearMap.det f) • v = 0 := by
+    have happ := congrArg (fun e : Module.End F V => e v) hCH
+    simpa only [map_add, map_sub, map_mul, map_pow, Polynomial.aeval_X,
+      Polynomial.aeval_C, Module.End.mul_apply, Module.End.pow_apply,
+      Function.iterate_succ, Function.iterate_zero, Function.comp_apply, id_eq,
+      Module.algebraMap_end_apply, LinearMap.add_apply, LinearMap.sub_apply,
+      LinearMap.zero_apply] using happ
+  -- rewrite the eigenvector relation twice, then cancel the eigenvector
+  have hsmul : (c ^ 2 - LinearMap.trace F V f * c + LinearMap.det f) • v = 0 := by
+    rw [hfv, map_smul, hfv, smul_smul, smul_smul, ← pow_two] at h0
+    rw [add_smul, sub_smul]
+    exact h0
+  rcases smul_eq_zero.mp hsmul with h | h
+  · exact h
+  · exact absurd h hv
+
+/-- **The integral Frobenius trace at a prime of potentially good
+reduction** (sorry leaf — Serre–Tate plus Hasse–Weil; Mazur 1978 §5,
+[Michaud-Jacobs, proof of Prop. 4.3]). This is the leaf CUT OUT of
+`exists_frobeniusTrace_of_potentiallyGoodReduction` (2026-07-27): at a
+prime `q ∉ {2, N}` where `E` has potentially good reduction, the trace of
+the mod-`N` representation at the global arithmetic Frobenius is the
+reduction of a RATIONAL INTEGER `a` obeying the Hasse–Weil bound
+`a² ≤ 4q`.
+
+Everything else that the parent leaf used to bundle is now PROVEN there:
+the eigenvalue step (`mazurIsogeny_eigenvalue_quadratic_of_finrank_two`
+above) and the determinant step
+(`WeilPairing.det_galoisRep_eq_cyclotomic` composed with
+`GaloisRepresentation.cyclotomicCharacterModL_globalFrob`). So this
+statement is exactly the arithmetic input and nothing else.
+
+Proof (not formalised). `hpg` gives `v_q(j(E)) ≥ 0`, so `E` acquires good
+reduction over a finite totally ramified `K/ℚ_q`; the residue field of
+`K` is still `𝔽_q`, so `G_K` surjects onto `Gal(𝔽̄_q/𝔽_q)` and a
+Frobenius lift may be taken inside `G_K`. Néron–Ogg–Shafarevich makes
+`ρ_{E,N}|_{G_K}` unramified, Serre–Tate (Invent. Math. 15 (1972), Thm 3)
+identifies `Frob` with the `q`-power Frobenius of the good model
+`Ẽ/𝔽_q`, and Hasse–Weil bounds its trace `a_q(Ẽ) ∈ ℤ` by `2√q`.
+
+MACHINERY AUDIT (2026-07-27, replacing a STALE one — see the parent's
+docstring). What is genuinely missing is only:
+
+1. the criterion `0 ≤ v_q(j(E)) ⟹ potentially good reduction`, and the
+   tame totally ramified good model it produces — absent from this tree
+   and from mathlib (verified 2026-07-26 and re-checked 2026-07-27);
+2. the Hasse–Weil bound `|#Ẽ(𝔽_q) − q − 1| ≤ 2√q` over a finite field —
+   absent from mathlib and from `~/cs/FLT`;
+3. the identification of the Serre–Tate Frobenius trace with `a_q(Ẽ)`.
+
+What is NOT missing, and must not be rebuilt: the mod-`N` representation
+itself is `WeierstrassCurve.galoisRep` (`EllipticCurve/Torsion.lean`),
+publicly imported here; and the Néron–Ogg–Shafarevich reduction transfer
+already exists, PROVEN and axiom-clean, as
+`WeilPairing.exists_frobenius_reduction_model` — for every prime outside
+a finite set it conjugates `ρ_{E,N}(σ_q)` onto the `q`-power Frobenius
+`WeilPairing.frobeniusTorsionEnd` of a reduced curve over `𝔽_q`. That
+discharges the GOOD-reduction case of items 1 and 3 outright; only the
+potentially-good-but-not-good case, and the Hasse bound, remain. Point
+counting over a finite field (`natCard_affine_point_eq/_le/_pos`) is
+being developed in `EllipticCurve/TorsionReduction.lean`, which as of
+2026-07-27 exists only on the unreleased branch `flt-lean-132` — check
+whether it has landed before building anything in that direction.
+
+FAITHFULNESS CONCERN (2026-07-27 — inherited verbatim from the parent
+leaf, NOT introduced by this cut; flagged for an author, not repaired
+here). `GaloisRepresentation.globalFrob` is well-defined only **up to
+inertia at `q`**, and its own docstring says so explicitly, adding that
+"every statement below is conjugation-invariant and concerns places where
+the representations at hand are unramified". At a prime of potentially
+good but NOT good reduction `ρ_{E,N}` is precisely NOT unramified, so
+that caveat does not cover this leaf: different Frobenius lifts `σ` and
+`στ` (`τ ∈ I_q`) can have different traces. For semistability defect
+`e ≤ 2` this is harmless (the two traces are `±a`, both obeying the
+bound), but for `e ∈ {3, 4, 6}` — which forces `j(E) ∈ {0, 1728}` — the
+trace of a lift outside `G_K` is `ζ_e · a`, and its being congruent mod
+`N` to a rational integer of square `≤ 4q` is not automatic. The
+situation is believed vacuous in the intended application, because
+FAITHFULNESS AUDIT B on `potentiallyGoodReduction_of_isogenyCharacter`
+records that the only `j`-invariants available for a prime `N > 19` are
+five integers, none of them `0` or `1728` — but that reasoning is not
+available to a prover of this leaf without circularity.
+
+**The check that would refute this concern**: exhibit `E/ℚ` with
+`j(E) ∈ {0, 1728}`, a prime `q ∉ {2, N}` of potentially good reduction
+with semistability defect `e ∈ {3, 4, 6}`, and a Frobenius lift `σ`
+outside `G_K` for which no integer `a` with `a² ≤ 4q` satisfies
+`(a : ZMod N) = tr ρ_{E,N}(σ)`. Conversely, showing that `tr ρ(στ)` is
+always such a reduction — e.g. because the isogeny hypothesis forces
+`ρ|_{I_q}` to be scalar, so that `στ` is a Frobenius for a twist with the
+same Hasse bound — settles the leaf as stated. Either outcome is a
+correct and complete resolution. -/
+theorem WeierstrassCurve.exists_integerFrobeniusTrace_of_potentiallyGoodReduction
+    (E : WeierstrassCurve ℚ) [E.IsElliptic] {N : ℕ}
+    (hN : N.Prime) (hN23 : 23 ≤ N)
+    (hpg : ∀ q : ℕ, q.Prime → q ≠ 2 → q ≠ N → 0 ≤ padicValRat q E.j)
+    {q : ℕ} (hq : q.Prime) (hq2 : q ≠ 2) (hqN : q ≠ N) :
+    ∃ a : ℤ, a ^ 2 ≤ 4 * (q : ℤ) ∧
+      (a : ZMod N) =
+        LinearMap.trace (ZMod N)
+          ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N)
+          (E.galoisRep N hN.pos (GaloisRepresentation.globalFrob
+            hq.toHeightOneSpectrumRingOfIntegersRat)) :=
+  sorry
+
+/-- **The Frobenius characteristic-polynomial relation** (PROVEN
+2026-07-27 from `exists_integerFrobeniusTrace_of_potentiallyGoodReduction`
+and `mazurIsogeny_eigenvalue_quadratic_of_finrank_two`; Mazur 1978 §5,
+[Michaud-Jacobs, proof of Prop. 4.3]): at a prime `q ∉ {2, N}` of
+potentially good reduction, the value `λ(σ_q)` of the isogeny character
+at the global arithmetic Frobenius is a root, in `ZMod N`, of
+`X² − aX + q` for some RATIONAL INTEGER `a` with `a² ≤ 4q`.
 
 This is the ONE input the resultant elimination needs, and it is now the
 only unproven ingredient of
@@ -1384,14 +1565,33 @@ Proof (not formalised), in three steps.
    `a_q(Ẽ) ∈ ℤ` of the good-reduction model `Ẽ/𝔽_{q^f}`, and Hasse–Weil
    bounds it by `2√q`.
 
-MACHINERY AUDIT (2026-07-26). Step 2's cyclotomic half exists here and is
-proven. What does NOT exist in this development is the mod-`N` Galois
-representation `ρ_{E,N} : Γ_ℚ → GL₂(ZMod N)` attached to an elliptic
-curve over `ℚ` together with its `det = χ_N` and its Néron–Ogg–Shafarevich
-/ Serre–Tate comparison with the reduced curve, nor the Hasse–Weil bound
-over a finite field. Those are the three theories a prover of this leaf
-must supply; none of them is modular, and none of them touches the
-Eisenstein ideal.
+MACHINERY AUDIT — **CORRECTED 2026-07-27; the previous version was
+STALE and wrong on two of its three claims.** It read: "What does NOT
+exist in this development is the mod-`N` Galois representation
+`ρ_{E,N} : Γ_ℚ → GL₂(ZMod N)` attached to an elliptic curve over `ℚ`
+together with its `det = χ_N` and its Néron–Ogg–Shafarevich / Serre–Tate
+comparison with the reduced curve, nor the Hasse–Weil bound over a finite
+field." In fact, re-checked by grep and by `#print axioms` against the
+built module:
+
+* the representation EXISTS — `WeierstrassCurve.galoisRep`
+  (`EllipticCurve/Torsion.lean`), on `E[N]` as a `Module.End (ZMod N)`
+  rather than a matrix group, publicly imported here;
+* `det = χ_N` EXISTS and is PROVEN for a GENERAL `E/ℚ` —
+  `WeilPairing.det_galoisRep_eq_cyclotomic`, publicly imported and
+  already consumed twice inside this very file (at the
+  `cyclotomicCharacterModL` triviality argument and at the
+  Frey-curve character splitting);
+* the Néron–Ogg–Shafarevich comparison EXISTS in the good-reduction case
+  as `WeilPairing.exists_frobenius_reduction_model` (PROVEN, and its
+  `#print axioms` is clean: `[propext, Classical.choice, Quot.sound]`);
+* only the HASSE–WEIL bound, and the potentially-good-but-not-good
+  reduction model, are genuinely absent.
+
+Consequently steps 1 and 2 are now discharged HERE, and the residue is
+isolated as `exists_integerFrobeniusTrace_of_potentiallyGoodReduction`
+above — read its own MACHINERY AUDIT and its FAITHFULNESS CONCERN before
+attacking it.
 
 FAITHFULNESS. `q ≠ 2` and `q ≠ N` are both genuinely needed: `q = 2` is
 excluded because the formal-immersion input `hpg` is silent there, and
@@ -1415,8 +1615,64 @@ theorem WeierstrassCurve.exists_frobeniusTrace_of_potentiallyGoodReduction
           hq.toHeightOneSpectrumRingOfIntegersRat) : ZMod N)) ^ 2
         - (a : ZMod N) * ((lam (GaloisRepresentation.globalFrob
             hq.toHeightOneSpectrumRingOfIntegersRat) : ZMod N))
-        + ((q : ℕ) : ZMod N) = 0 :=
-  sorry
+        + ((q : ℕ) : ZMod N) = 0 := by
+  classical
+  haveI : Fact N.Prime := ⟨hN⟩
+  haveI : Fact q.Prime := ⟨hq⟩
+  have hNpos : 0 < N := hN.pos
+  have hodd : Odd N := hN.odd_of_ne_two (by omega)
+  set σq := GaloisRepresentation.globalFrob
+    hq.toHeightOneSpectrumRingOfIntegersRat
+  set ρ := E.galoisRep N hNpos
+  -- the eigenvector: `g` lies in the `N`-torsion and is nonzero
+  have hgN : ((N : ℤ)) • g = 0 := by
+    rw [natCast_zsmul, ← hg]
+    exact addOrderOf_nsmul_eq_zero g
+  have hgmem : g ∈ Submodule.torsionBy ℤ (E⁄(AlgebraicClosure ℚ)).Point (N : ℤ) :=
+    (Submodule.mem_torsionBy_iff _ _).mpr hgN
+  set G : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N := ⟨g, hgmem⟩
+  have hg0 : g ≠ 0 := by
+    intro h
+    rw [h, addOrderOf_zero] at hg
+    omega
+  have hG0 : G ≠ 0 := fun h => hg0 (congrArg Subtype.val h)
+  -- the `N`-torsion is `2`-dimensional over `ZMod N`
+  have hfr : Module.finrank (ZMod N)
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N) = 2 :=
+    Module.finrank_eq_of_rank_eq
+      ((E.map (algebraMap ℚ (AlgebraicClosure ℚ))).p_torsion_rank
+        (Nat.cast_ne_zero.mpr hNpos.ne'))
+  -- the `ZMod N`-action on the torsion is the `ℕ`-action through `val`
+  have hsmulcoe : ∀ (c : ZMod N)
+      (P : (E.map (algebraMap ℚ (AlgebraicClosure ℚ))).nTorsion N),
+      (c • P).1 = (c.val) • P.1 := by
+    intro c P
+    haveI : NeZero N := ⟨hNpos.ne'⟩
+    conv_lhs => rw [← ZMod.natCast_rightInverse c]
+    rw [Nat.cast_smul_eq_nsmul]
+    simp
+  -- STEP 1: `hlam` says exactly that `G` is an eigenvector with eigenvalue `λ(σ_q)`
+  have heig : ρ σq G = ((lam σq : ZMod N)) • G := by
+    refine Subtype.ext ?_
+    show Affine.Point.map
+      (σq : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom g = _
+    have hGval : G.1 = g := rfl
+    rw [hlam σq, hsmulcoe, hGval]
+    rfl
+  -- STEP 2: the determinant is `q`, by the Weil pairing and the cyclotomic character
+  have hdet : LinearMap.det (ρ σq) = ((q : ℕ) : ZMod N) := by
+    have h1 : LinearMap.det (ρ σq) =
+        ((GaloisRepresentation.cyclotomicCharacterModL N σq : (ZMod N)ˣ) : ZMod N) := by
+      rw [WeilPairing.cyclotomicCharacterModL_eq_toZMod]
+      exact WeilPairing.det_galoisRep_eq_cyclotomic E N hNpos hodd σq
+    rw [h1, GaloisRepresentation.cyclotomicCharacterModL_globalFrob hq hqN]
+  -- STEP 3: the trace is the reduction of a rational integer obeying Hasse–Weil
+  obtain ⟨a, ha, hatr⟩ :=
+    E.exists_integerFrobeniusTrace_of_potentiallyGoodReduction hN hN23 hpg hq hq2 hqN
+  refine ⟨a, ha, ?_⟩
+  have hquad := mazurIsogeny_eigenvalue_quadratic_of_finrank_two hfr (ρ σq) hG0 heig
+  rw [← hdet, hatr]
+  exact hquad
 
 /-- **Signature `≠ 6` is impossible for `N ≥ 23`, `N ≠ 37`** (PROVEN
 2026-07-26 from `exists_frobeniusTrace_of_potentiallyGoodReduction` and
