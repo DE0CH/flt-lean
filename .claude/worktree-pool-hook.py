@@ -153,6 +153,31 @@ def git(args, cwd):
 TARGET_RE = re.compile(r"\*\*`([^`]+)`\*\*")
 
 
+MERGE_CLAIM = os.path.join(HOME, ".flt-merge-batch.inflight")
+
+
+def staging_owner():
+    """Evidence that a merge worker already holds the staging worktree.
+
+    Two mergers share one .lake and corrupt each other's build, so this errs
+    toward DENYING: a stale claim blocking a dispatch is recoverable by
+    deleting one file, whereas two concurrent mergers is not.
+
+    The claim file is what `flt-cycle.py claim` creates when a merger takes a
+    batch, so it is the fleet's existing signal. A /proc cwd scan is NOT used:
+    the merger drives builds with `ssh host 'cd ~/flt-staging && ...'`, so its
+    local cwd is elsewhere and the scan reports "free" while it is working —
+    verified 2026-07-27.
+    """
+    if os.path.exists(MERGE_CLAIM):
+        try:
+            n = sum(1 for line in open(MERGE_CLAIM) if line.strip())
+        except OSError:
+            n = "?"
+        return f"{MERGE_CLAIM} exists ({n} branches claimed)"
+    return None
+
+
 def record_inflight(worktree_path, prompt, kind, payload):
     """Append one in-flight record. Called INSIDE the pool flock, so
     concurrent dispatches serialise here exactly as they do for the queue.
@@ -622,6 +647,16 @@ def main():
         queue = read_queue()
 
         def auto_queue(reason):
+            # THE MERGE WORKER IS NEVER QUEUED. It allocates no pool worktree,
+            # nothing in the fleet can progress past a full merge batch, and a
+            # queued merger is a stalled fleet. It is resolved before this lock
+            # is ever taken; reaching here means something upstream mangled the
+            # placeholder, which is a defect, not a capacity problem.
+            if STAGING_PLACEHOLDER in prompt:
+                deny(f"refusing to queue a {STAGING_PLACEHOLDER} task — the "
+                     f"merge worker is dispatched IMMEDIATELY and never waits "
+                     f"in {QUEUE_FILE}. Spawn it directly with "
+                     f"{STAGING_PLACEHOLDER} in the prompt.")
             queue.append(prompt)
             write_queue(queue)
             deny(f"{reason} — this task has been QUEUED (position "
@@ -645,6 +680,49 @@ def main():
                 deny(f"the task queue ({QUEUE_FILE}) is empty — nothing to "
                      f"pop; dispatch directly with {PLACEHOLDER} in the "
                      f"prompt.")
+            # THE MERGE WORKER NEVER WAITS IN LINE. If a staging task is
+            # anywhere in the queue, it jumps FIFO and dispatches immediately:
+            # it consumes NO pool worktree, and nothing else in the fleet can
+            # make progress past a full merge batch anyway, so queueing it
+            # behind ordinary work is always wrong.
+            #
+            # This is also the bug of 2026-07-27: the pre-lock staging check
+            # fires only on the SPAWNED prompt, and a pop's prompt is just the
+            # sentinel, so a QUEUED staging task was popped into an ordinary
+            # pool worktree with {{FLT_STAGING}} never substituted. The merge
+            # worker task was silently consumed, the agent got a numbered
+            # worktree and a different task, and ~105 branches sat unmerged
+            # for 25 minutes while the pool looked healthy.
+            staging_idx = next(
+                (i for i, t in enumerate(queue)
+                 if STAGING_PLACEHOLDER in split_base(t)), None)
+            if staging_idx is not None:
+                task_body = split_base(queue[staging_idx])
+                if not os.path.isdir(STAGING_WORKTREE):
+                    deny(f"a queued task uses {STAGING_PLACEHOLDER} but "
+                         f"{STAGING_WORKTREE} does not exist — it stays in "
+                         f"{QUEUE_FILE}; create the staging worktree first.")
+                busy = staging_owner()
+                if busy is not None:
+                    deny(f"a merge worker is already live in "
+                         f"{STAGING_WORKTREE} ({busy}) — NEVER run two: "
+                         f"they share one .lake and corrupt each other's "
+                         f"build. The task stays in {QUEUE_FILE}; retry once "
+                         f"that worker reports.")
+                queue.pop(staging_idx)
+                write_queue(queue)
+                tool_input["prompt"] = task_body.replace(
+                    STAGING_PLACEHOLDER, STAGING_WORKTREE)
+                record_inflight(
+                    STAGING_WORKTREE, tool_input["prompt"], "staging", payload)
+                emit({
+                    "hookSpecificOutput": {
+                        "hookEventName": "PreToolUse",
+                        "permissionDecision": "allow",
+                        "updatedInput": tool_input,
+                    }
+                })
+
             task_body = split_base(queue[0])
             worktree_path = allocate_worktree(pool_fh)
             if worktree_path is None:
