@@ -7798,10 +7798,22 @@ Lean's declaration order forced the four assembled declarations —
 `y0HasNoRationalPoint_semiprime_of_mazurPrimes` — down into
 `### The twelve levels of Kenku's non-prime-power determination`, where
 they sit immediately before their consumer
-`y0HasNoRationalPoint_prod_two_primes`.  What stays HERE is the
-partition itself: the three `List ℕ` definitions, the three open leaves,
-and `mem_smallSemiprimeLevels`.  Nothing about the mathematics changed
-with the move.
+`y0HasNoRationalPoint_prod_two_primes`.
+
+**Amended later the same day: the other two leaves followed them.**
+`y0HasNoRationalPoint_x0TwentySix` and
+`y0HasNoRationalPoint_of_chabautySemiprimeLevel` were relocated into that
+same block, by a mechanically pure move, and both are now PROVEN over the
+shared criterion `y0HasNoRationalPoint_of_cardLeCusps`.  The open content
+of `26, 65, 91` is now the two point-count leaves `card_le_x0TwentySix`
+and `card_le_of_chabautySemiprimeLevel`, which live down there beside the
+compactification machinery they are stated over.  So what stays HERE is
+the partition itself: the three `List ℕ` definitions,
+`y0HasNoRationalPoint_of_isolatedSemiprime` (the `56`-level descent —
+PROVEN, over `mem_isolatedJInvariants_of_stable` and
+`not_stable_of_mem_isolatedJInvariants`, and needing none of that
+machinery) and `mem_smallSemiprimeLevels`.  Nothing about the
+mathematics changed with either move.
 
 **The count.**  `mazurIsogenyPrimes` has `12` elements, so `66` unordered
 pairs; `5` give the excluded products `6, 10, 14, 15, 21`; `61` remain.
@@ -8314,172 +8326,6 @@ theorem y0HasNoRationalPoint_of_isolatedSemiprime {p q : ℕ}
     (mem_isolatedJInvariants_of_stable hp E (q • g) hordp
       (stable_zmultiples_nsmul q hstable))
     (p • g) hordq (stable_zmultiples_nsmul p hstable)
-
-/-- **`Y_0(26)(ℚ) = ∅`** (sorry node, introduced 2026-07-27).
-
-TRUE: `26` is not in the Mazur–Kenku list.  `X_0(26)` has genus `2`, four
-rational cusps, and `rank J_0(26)(ℚ) = 0` — indeed `J_0(26) ~ 26a × 26b`
-with both factors elliptic of rank `0`.
-
-**Why this is its own leaf and not folded in with `35, 39`.**  The rank
-is `0`, so `card_le_of_rankZeroJacobian` applies — and it is NEVER SHARP.
-Over the odd primes `3 ≤ ℓ < 60` with `ℓ ∤ 26` the Eichler–Shimura counts
-`#X_0(26)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(26)))` are
-
-    ℓ  =  3  5  7 11 17 19 23 29 31 37 41 43 47 53 59
-    #  =  6 10  8  8 24 12 28 22 32 42 42 50 32 42 76
-
-with minimum `6 > 4 = numRationalCusps 26`.  So
-`y0HasNoRationalPoint_of_witnessPrime` cannot close `26` for ANY choice
-of prime, and a successor must use the multi-prime Mordell–Weil sieve
-instead — the same route as `45, 54, 63, 75`, whose apparatus
-(`x0SieveLevels`, `card_le_of_sieve`, `y0HasNoRationalPoint_of_sieveLevel`)
-is already in this file and is the thing to reuse.  The sieve has to cut
-the `6` points of `X_0(26)(𝔽_3)` down to the `4` cusps, using
-`J_0(26)(ℚ) ≅ ℤ/21ℤ`.
-
-**Do not dispatch a prover at this expecting a witness prime**; that is
-the mistake the table above exists to prevent.
-
-Attribution: not a Kenku paper title; genus `2` and rank `0` place it
-inside Ogg's classical method — see the section docstring.
-
-## THE CUT IS BLOCKED BY DECLARATION ORDER, NOT BY MATHEMATICS
-## (audited and MEASURED 2026-07-27 — read this before dispatching)
-
-The right decomposition is known, it is three lines long, and it
-**compiles**.  What blocks taking it *here* is that every declaration it
-needs is defined **about 900 lines BELOW this point** in this same file.
-The two halves are:
-
-* a criterion, provable from `exists_x0Compactification`,
-  `exists_rationalCusps` and `y0HasNoRationalPoint_of_isEmpty`, identical
-  in shape to `y0HasNoRationalPoint_of_sieveLevel`:
-
-      theorem y0HasNoRationalPoint_of_cardLeCusps (N : ℕ) (hN : 0 < N)
-          (hbound : ∀ {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ}
-              {jm : Y ⟶ X}, IsX0Compactification N strX strY jm →
-              ∀ t : Finset (RelPoint strX (𝟙 SpecQ)), t.card ≤ numRationalCusps N) :
-          Y0HasNoRationalPoint N
-
-* and the single residual leaf it consumes, which is where the sieve
-  goes:
-
-      theorem card_le_x0TwentySix {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
-          {strY : Y ⟶ SpecQ} {jm : Y ⟶ X}
-          (hX : IsX0Compactification 26 strX strY jm)
-          (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps 26
-
-  after which this node is `y0HasNoRationalPoint_of_cardLeCusps 26
-  (by norm_num) (fun hX t => card_le_x0TwentySix hX t)`.
-
-Both were written out and verified green in a scratch module importing
-`Fermat.FLT.ModularCurve.X0` on 2026-07-27; the only reason they are not
-in the file is that `IsX0Compactification`, `numRationalCusps`,
-`sectionAlong`, `exists_x0Compactification` and `exists_rationalCusps`
-all come after this line.  **A CLEAN SCRATCH MODULE PROVES NOTHING ABOUT
-DECLARATION ORDER** — that is the trap this note exists to record, and it
-is the reason the cut was designed, verified, and then not taken.
-
-**So the task at this node is a RELOCATION, not a proof.**  Moving
-`y0HasNoRationalPoint_x0TwentySix` below `exists_rationalCusps` drags
-`y0HasNoRationalPoint_of_smallSemiprimeLevel`,
-`cuspidal_x0_semiprime_of_mazurPrimes` and
-`y0HasNoRationalPoint_semiprime_of_mazurPrimes` with it, and on
-2026-07-27 that whole block was under concurrent edit by another owner
-(`y0HasNoRationalPoint_of_witnessSemiprimeLevel`, immediately above).
-Whoever takes it should first check `~/.flt-inflight.jsonl` for owners in
-this block and do the move in one commit.
-
-**Then, and only then, the deeper cut becomes available.**  Once
-`card_le_x0TwentySix` sits beside the sieve machinery it should NOT stay
-a single leaf: `exists_x0Sieve`'s proof is five lines, and `26` needs
-only its own two inputs — `hasRankZeroJacobian_x0TwentySix` (rank `0` at
-`26`, Kolyvagin–Logachev, the same statement as
-`hasRankZeroJacobian_of_kenkuLevel`) and `exists_sharpSievePrime_twentySix`
-(the arithmetic residue) — because `exists_x0NeronDatum` and
-`neronReduction_injective` are already universal in `ℓ` and in `N`.
-Adding `26` to `x0SieveLevels` and `kenkuLevels` instead would be
-simpler still, and is the right move whenever those two lists are not
-under concurrent edit; on 2026-07-27 both were. -/
-theorem y0HasNoRationalPoint_x0TwentySix : Y0HasNoRationalPoint 26 :=
-  sorry
-
-/-- **`Y_0(65)(ℚ) = Y_0(91)(ℚ) = ∅`** (sorry node, introduced
-2026-07-27) — the two genuinely hard levels of the `61`.
-
-TRUE: neither `65` nor `91` is in the Mazur–Kenku list.  This is Kenku,
-*The modular curves `X_0(65)` and `X_0(91)` and rational isogeny*, Math.
-Proc. Cambridge Philos. Soc. **87** (1980) 15–20 — and the fact that
-Kenku treated exactly these two together is the historical confirmation
-of the arithmetic reason they are grouped here.
-
-**Why no counting argument can work, however sharp it looks.**
-
-| `N` | genus | `rank J_0(N)` | rational cusps | `ℓ` | `#X_0(N)(𝔽_ℓ)` |
-|-----|-------|---------------|----------------|-----|------------------|
-| `65` | `5` | `1` | `4` | `3` | `4` |
-| `91` | `7` | `2` | `4` | `5` | `4` |
-
-The counts ARE equal to the cusp number, which makes these two look like
-`35` and `39`.  They are not: `card_le_of_rankZeroJacobian` needs
-`HasRankZeroJacobian`, and that is FALSE at both — `J_0(65)` contains the
-rank-`1` elliptic curve `65a`, and `J_0(91)` contains a rank-`1` factor
-twice over.  With positive rank, `J_0(N)(ℚ)` is infinite and the
-Abel–Jacobi image is not bounded by any point count.  **The sharp-looking
-count is a trap, and it is the reason these two are split off from
-`witnessSemiprimeLevels` rather than listed beside them.**
-
-Both analytic ranks are unconditional as LOWER bounds on the Mordell–Weil
-rank in the sense that matters here: the vanishing at `65` occurs at a
-`1`-dimensional factor, so Gross–Zagier and Kolyvagin give
-`rank J_0(65)(ℚ) ≥ 1` outright.
-
-What is left is Chabauty–Coleman, whose hypothesis `rank < genus` holds
-at both (`1 < 5` and `2 < 7`).  IRREDUCIBLE at this pin, and strictly
-harder than every other leaf in this block: Chabauty–Coleman exists in
-this development in no form at all — it needs `p`-adic integration of
-differentials on the curve and the Coleman integral, on top of the
-Jacobian and its Mordell–Weil group.
-
-## WHICH AXIS THE IRREDUCIBILITY VERDICT WAS SEARCHED ON (2026-07-27)
-
-The verdict above is about the **theory** axis: no route to a BOUND on
-`#X_0(N)(ℚ)` exists here for positive rank, and that was re-checked —
-`card_le_of_rankZeroJacobian` and `card_le_of_sieve` both consume
-`HasRankZeroJacobian`, which is FALSE at `65` and `91`, so neither can be
-weakened into service by any amount of interface work.  Nothing was found
-on the `~/cs/FLT` or `Mathlib` axes either: neither has a Coleman
-integral, a `p`-adic differential, or a Jacobian of a curve.
-
-What the verdict does **not** cover, and what a successor should take, is
-the **placement** axis.  The node still decomposes into one criterion and
-one leaf, exactly as `26` does above, and the criterion is shared:
-
-    theorem card_le_of_chabautySemiprimeLevel {N : ℕ}
-        (hN : N ∈ chabautySemiprimeLevels) {X Y : Scheme.{0}}
-        {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jm : Y ⟶ X}
-        (hX : IsX0Compactification N strX strY jm)
-        (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps N
-
-    theorem y0HasNoRationalPoint_of_chabautySemiprimeLevel (N : ℕ)
-        (hN : N ∈ chabautySemiprimeLevels) : Y0HasNoRationalPoint N := by
-      have hpos : 0 < N := by fin_cases hN <;> norm_num
-      exact y0HasNoRationalPoint_of_cardLeCusps N hpos
-        (fun hX t => card_le_of_chabautySemiprimeLevel hN hX t)
-
-Verified green in a scratch module on 2026-07-27, and blocked in place by
-the same declaration-order obstruction recorded under
-`y0HasNoRationalPoint_x0TwentySix` — `IsX0Compactification`,
-`numRationalCusps` and `exists_rationalCusps` are all defined below this
-line.  **The gain from taking it is real but modest**: it moves the leaf
-off the coarse moduli space and onto a point count for `X_0(N)`, which is
-the only form in which Chabauty–Coleman can ever be applied, and it makes
-`exists_rationalCusps` — already proven here — carry the cusp half.  It
-does not make the leaf any less deep. -/
-theorem y0HasNoRationalPoint_of_chabautySemiprimeLevel (N : ℕ)
-    (_hN : N ∈ chabautySemiprimeLevels) : Y0HasNoRationalPoint N :=
-  sorry
 
 /-- **The arithmetic behind the case split** (PROVEN): if `p, q` are
 distinct members of `mazurIsogenyPrimes`, NEITHER of them isolated, and
@@ -10564,8 +10410,7 @@ nonzero, so analytic rank `0` on every factor, hence Mordell–Weil rank
 `0` by Kolyvagin–Logachev.  Likewise `S_2(Γ_0(39))` is `3`-dimensional
 and all new with `L(f, 1) = 0.8267…, 0.4797…, 0.7964…`.  (Contrast `65`
 and `91`, whose sharp-looking counts are a trap precisely because their
-ranks are `1` and `2`; see
-`y0HasNoRationalPoint_of_chabautySemiprimeLevel`.) -/
+ranks are `1` and `2`; see `card_le_of_chabautySemiprimeLevel`.) -/
 def kenkuLevels : List ℕ := [20, 24, 28, 30, 35, 36, 39, 42, 45, 50, 54, 63, 75]
 
 /-- **The witness table `(N, ℓ, #X_0(N)(𝔽_ℓ))` for the nine levels that
@@ -17449,7 +17294,7 @@ that are needed. -/
 
 /-! #### The semiprime chain, relocated here by declaration order
 
-The four declarations immediately below belong, thematically, to the
+The declarations immediately below belong, thematically, to the
 `#### The `61` semiprime levels` block far above, beside the partition
 and the three leaves they consume.  They sit here instead because
 `y0HasNoRationalPoint_of_witnessSemiprimeLevel` was CLOSED on 2026-07-27
@@ -17458,7 +17303,19 @@ whole compactification/Jacobian/reduction section in between.  Lean's
 declaration order then forces the chain — the `35, 39` leaf, the
 five-way dispatch over `smallSemiprimeLevels`, the cuspidality statement
 on `X_0(pq)` and the `Y_0(pq)` form — down past that section.  Nothing
-about the mathematics moved; only the position did. -/
+about the mathematics moved; only the position did.
+
+**The `26` and the `65, 91` nodes joined this block on 2026-07-27**, for
+exactly the same reason and by a MECHANICALLY PURE move (166 lines, line
+count and non-blank line multiset unchanged, zero references from the
+moved text into the `8389` lines it jumped).  Their own docstrings had
+recorded the obstruction and the intended cut verbatim: both needed
+`IsX0Compactification`, `numRationalCusps`, `sectionAlong`,
+`exists_x0Compactification` and `exists_rationalCusps`, all of which are
+declared above this point and none of which was declared above their old
+position.  With the move taken, the cut is available and both nodes are
+now PROVEN over `y0HasNoRationalPoint_of_cardLeCusps` and one residual
+point-count leaf each. -/
 
 /-- **`Y_0(35)(ℚ) = Y_0(39)(ℚ) = ∅`** (PROVEN 2026-07-27; introduced as a
 sorry node the same day).
@@ -17509,6 +17366,243 @@ theorem y0HasNoRationalPoint_of_witnessSemiprimeLevel (N : ℕ)
       (by decide) (by decide) (by decide)
   · exact y0HasNoRationalPoint_of_witnessPrime 39 5 (by decide) (by decide) (by decide)
       (by decide) (by decide) (by decide)
+
+/-- **The cusp-count criterion** (PROVEN 2026-07-27): if every `Finset` of
+`X_0(N)(ℚ)` is capped by the number of rational cusps, then
+`Y_0(N)(ℚ) = ∅`.
+
+Identical in shape to `y0HasNoRationalPoint_of_sieveLevel` and
+`y0HasNoRationalPoint_of_witnessPrime`, with the counting bound taken as
+a HYPOTHESIS rather than derived from a rank-`0` Jacobian.  That is the
+whole point: `card_le_of_rankZeroJacobian` and `card_le_of_sieve` both
+consume `HasRankZeroJacobian`, which is FALSE at `65` and `91`, so
+neither of the two existing criteria can serve those levels.  Abstracting
+the bound leaves a criterion that is agnostic about *how* the count is
+obtained — rank `0` plus a witness prime, a Mordell–Weil sieve, or
+Chabauty–Coleman.
+
+The proof is the same three lines as its two siblings: the
+`c = numRationalCusps N` rational cusps of `exists_rationalCusps` are `c`
+distinct rational points of `X_0(N)`, none of them the image of a
+rational point of `Y_0(N)`, so a rational point of `Y_0(N)` would give a
+`Finset` of `X_0(N)(ℚ)` of size `c + 1` — which `hbound` forbids.
+`y0HasNoRationalPoint_of_isEmpty` then propagates emptiness from this one
+coarse moduli space to every one.
+
+Note `hbound` is stated with `X`, `Y`, `strX`, `strY`, `jm` IMPLICIT and
+universally quantified inside it, so a caller supplies one uniform bound
+rather than a bound at the particular compactification this proof
+happens to obtain from `exists_x0Compactification`.  That is what makes
+the residual leaves (`card_le_x0TwentySix`,
+`card_le_of_chabautySemiprimeLevel`) statements about `X_0(N)` rather
+than about a chosen model. -/
+theorem y0HasNoRationalPoint_of_cardLeCusps (N : ℕ) (hN : 0 < N)
+    (hbound : ∀ {X Y : Scheme.{0}} {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ}
+        {jm : Y ⟶ X}, IsX0Compactification N strX strY jm →
+        ∀ t : Finset (RelPoint strX (𝟙 SpecQ)), t.card ≤ numRationalCusps N) :
+    Y0HasNoRationalPoint N := by
+  classical
+  obtain ⟨X, Y, strX, strY, j, ⟨hX⟩⟩ := exists_x0Compactification N hN
+  obtain ⟨s, hscard, hsnot⟩ := exists_rationalCusps N hX
+  refine y0HasNoRationalPoint_of_isEmpty hX.coarse ⟨fun y => ?_⟩
+  have hp : sectionAlong j hX.comm y ∉ s := fun hmem => hsnot _ hmem y rfl
+  have hle : (insert (sectionAlong j hX.comm y) s).card ≤ numRationalCusps N :=
+    hbound hX _
+  rw [Finset.card_insert_of_notMem hp, hscard] at hle
+  omega
+
+/-- **`#X_0(26)(ℚ) ≤ 4`** (sorry LEAF, introduced 2026-07-27 by the
+relocation that made the cut available): every `Finset` of rational
+points of `X_0(26)` has at most `numRationalCusps 26 = 4` elements.
+
+TRUE, and this is where ALL of the `26` mathematics now lives — the
+`Y_0(26)(ℚ) = ∅` node above it is a three-line assembly.
+
+**The route, and why no witness prime exists.**  `rank J_0(26)(ℚ) = 0`
+(`J_0(26) ~ 26a × 26b`, both elliptic of rank `0`), so
+`card_le_of_rankZeroJacobian` applies — and it is NEVER SHARP here.  Over
+the odd primes `3 ≤ ℓ < 60` with `ℓ ∤ 26` the Eichler–Shimura counts
+`#X_0(26)(𝔽_ℓ) = ℓ + 1 − Tr(T_ℓ ∣ S_2(Γ_0(26)))` are
+
+    ℓ  =  3  5  7 11 17 19 23 29 31 37 41 43 47 53 59
+    #  =  6 10  8  8 24 12 28 22 32 42 42 50 32 42 76
+
+with minimum `6 > 4 = numRationalCusps 26`.  So
+`y0HasNoRationalPoint_of_witnessPrime` cannot close `26` for ANY choice
+of prime, and a prover must use the multi-prime Mordell–Weil sieve
+instead — the same route as `45, 54, 63, 75`, whose apparatus
+(`x0SieveLevels`, `card_le_of_sieve`, `exists_x0Sieve`) is already in
+this file and is the thing to reuse.  The sieve has to cut the `6` points
+of `X_0(26)(𝔽_3)` down to the `4` cusps, using `J_0(26)(ℚ) ≅ ℤ/21ℤ`.
+
+**Do not dispatch a prover at this expecting a witness prime**; that is
+the mistake the table above exists to prevent.
+
+**THE PREFERRED FIX IS NOT A PROOF OF THIS LEAF.**  `card_le_of_sieve`
+is already universal in `N` given `N ∈ x0SieveLevels`, and
+`exists_x0NeronDatum` and `neronReduction_injective` are already
+universal in `ℓ` and in `N`.  So adding `26` to `x0SieveLevels` and
+`kenkuLevels` discharges this leaf outright, at the cost of extending
+`exists_x0Sieve`'s own two inputs — `hasRankZeroJacobian_of_kenkuLevel`
+(rank `0` at `26`: Kolyvagin–Logachev, exactly as at `35, 39`) and
+`exists_sharpSievePrime` (the arithmetic residue) — by one level each.
+That was not done here only because all four of `x0SieveLevels`,
+`kenkuLevels`, `exists_sharpSievePrime` and `card_le_of_sieve` were under
+concurrent ownership on 2026-07-27.  **Whoever finds them free should
+take that route and delete this leaf rather than prove it.**
+
+Attribution: not a Kenku paper title; genus `2` and rank `0` place it
+inside Ogg's classical method — see the section docstring. -/
+theorem card_le_x0TwentySix {X Y : Scheme.{0}} {strX : X ⟶ SpecQ}
+    {strY : Y ⟶ SpecQ} {jm : Y ⟶ X}
+    (hX : IsX0Compactification 26 strX strY jm)
+    (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps 26 :=
+  sorry
+
+/-- **`Y_0(26)(ℚ) = ∅`** (PROVEN 2026-07-27 over `card_le_x0TwentySix`;
+introduced as a sorry node the same day).
+
+TRUE: `26` is not in the Mazur–Kenku list.  `X_0(26)` has genus `2`, four
+rational cusps, and `rank J_0(26)(ℚ) = 0` — indeed `J_0(26) ~ 26a × 26b`
+with both factors elliptic of rank `0`.
+
+**The whole content is now `card_le_x0TwentySix` immediately above**, and
+this node is the three-line assembly the audit below predicted.  See that
+leaf's docstring for the arithmetic: why NO witness prime is sharp at
+`26` (the `ℓ`-by-`ℓ` table), why the multi-prime sieve is the route, and
+why adding `26` to `x0SieveLevels` and `kenkuLevels` is a better fix than
+proving the leaf directly.
+
+## THE HISTORY, KEPT BECAUSE THE TRAP IT RECORDS IS GENERAL
+## (audited and MEASURED 2026-07-27; DISCHARGED by the move, same day)
+
+The cut above was designed and verified BEFORE it could be taken.  It was
+blocked *in place* because every declaration it needs —
+`IsX0Compactification`, `numRationalCusps`, `sectionAlong`,
+`exists_x0Compactification`, `exists_rationalCusps` — is defined roughly
+`8400` lines below where this node used to sit, in the
+`### The compactification `X_0(N)`, its cusps, and `J_0(N)`` section.
+The decomposition compiled green in a scratch module importing
+`Fermat.FLT.ModularCurve.X0`, which proved exactly nothing about whether
+it could be placed: **A CLEAN SCRATCH MODULE PROVES NOTHING ABOUT
+DECLARATION ORDER.**  That is the reusable lesson, and it is why the
+audit correctly said the task here was a RELOCATION, not a proof.
+
+The relocation was taken on 2026-07-27 and was mechanically pure: `166`
+lines moved verbatim, total line count and non-blank line multiset
+unchanged, and a comment-stripped scan showing that the moved text
+referenced only `Y0HasNoRationalPoint` and `chabautySemiprimeLevels` —
+neither of them among the `223` declarations in the region jumped over.
+The audit's other prediction, that the move would drag
+`y0HasNoRationalPoint_of_smallSemiprimeLevel`,
+`cuspidal_x0_semiprime_of_mazurPrimes` and
+`y0HasNoRationalPoint_semiprime_of_mazurPrimes` with it, had already been
+overtaken: all three had themselves been relocated into this same block
+when `y0HasNoRationalPoint_of_witnessSemiprimeLevel` closed, so the move
+landed in front of them and dragged nothing. -/
+theorem y0HasNoRationalPoint_x0TwentySix : Y0HasNoRationalPoint 26 :=
+  y0HasNoRationalPoint_of_cardLeCusps 26 (by norm_num)
+    (fun hX t => card_le_x0TwentySix hX t)
+
+/-- **`#X_0(65)(ℚ) ≤ 4` and `#X_0(91)(ℚ) ≤ 4`** (sorry LEAF, introduced
+2026-07-27 by the relocation that made the cut available): the point
+count for the two genuinely hard levels of the `61`, and where ALL of
+their mathematics now lives.
+
+TRUE: neither `65` nor `91` is in the Mazur–Kenku list.  This is Kenku,
+*The modular curves `X_0(65)` and `X_0(91)` and rational isogeny*, Math.
+Proc. Cambridge Philos. Soc. **87** (1980) 15–20 — and the fact that
+Kenku treated exactly these two together is the historical confirmation
+of the arithmetic reason they are grouped here.
+
+**Why no counting argument can work, however sharp it looks.**
+
+| `N` | genus | `rank J_0(N)` | rational cusps | `ℓ` | `#X_0(N)(𝔽_ℓ)` |
+|-----|-------|---------------|----------------|-----|------------------|
+| `65` | `5` | `1` | `4` | `3` | `4` |
+| `91` | `7` | `2` | `4` | `5` | `4` |
+
+The counts ARE equal to the cusp number, which makes these two look like
+`35` and `39`.  They are not: `card_le_of_rankZeroJacobian` needs
+`HasRankZeroJacobian`, and that is FALSE at both — `J_0(65)` contains the
+rank-`1` elliptic curve `65a`, and `J_0(91)` contains a rank-`1` factor
+twice over.  With positive rank, `J_0(N)(ℚ)` is infinite and the
+Abel–Jacobi image is not bounded by any point count.  **The sharp-looking
+count is a trap, and it is the reason these two are split off from
+`witnessSemiprimeLevels` rather than listed beside them.**
+
+Both analytic ranks are unconditional as LOWER bounds on the Mordell–Weil
+rank in the sense that matters here: the vanishing at `65` occurs at a
+`1`-dimensional factor, so Gross–Zagier and Kolyvagin give
+`rank J_0(65)(ℚ) ≥ 1` outright.
+
+What is left is Chabauty–Coleman, whose hypothesis `rank < genus` holds
+at both (`1 < 5` and `2 < 7`).  IRREDUCIBLE at this pin, and strictly
+harder than every other leaf in this block: Chabauty–Coleman exists in
+this development in no form at all — it needs `p`-adic integration of
+differentials on the curve and the Coleman integral, on top of the
+Jacobian and its Mordell–Weil group.
+
+## WHICH AXIS THE IRREDUCIBILITY VERDICT WAS SEARCHED ON (2026-07-27)
+
+The verdict above is about the **theory** axis: no route to a BOUND on
+`#X_0(N)(ℚ)` exists here for positive rank, and that was re-checked —
+`card_le_of_rankZeroJacobian` and `card_le_of_sieve` both consume
+`HasRankZeroJacobian`, which is FALSE at `65` and `91`, so neither can be
+weakened into service by any amount of interface work.  Nothing was found
+on the `~/cs/FLT` or `Mathlib` axes either: neither has a Coleman
+integral, a `p`-adic differential, or a Jacobian of a curve.
+
+What the verdict did **not** cover, and what was TAKEN on 2026-07-27, is
+the **placement** axis.  The node decomposes into one criterion and one
+leaf, exactly as `26` does above, and the criterion is shared: this
+declaration is the point count, and `y0HasNoRationalPoint_of_cardLeCusps`
+turns it into `Y_0(N)(ℚ) = ∅`.  **The gain is real but modest** — it
+moves the open content off the coarse moduli space and onto a point count
+for `X_0(N)`, which is the only form in which Chabauty–Coleman can ever
+be applied, and it makes `exists_rationalCusps` — already proven here —
+carry the cusp half.  It does not make this leaf any less deep.
+
+Taking it required a RELOCATION and not a proof: this node and `26` both
+sat roughly `8400` lines ABOVE `IsX0Compactification`, `numRationalCusps`,
+`sectionAlong`, `exists_x0Compactification` and `exists_rationalCusps`.
+See `y0HasNoRationalPoint_x0TwentySix` for the purity record of the move,
+and for the general lesson that a clean scratch module says nothing about
+declaration order.
+
+**`hN` is why this is ONE leaf and not two.**  `chabautySemiprimeLevels`
+is `[65, 91]`, so a prover discharges it with `fin_cases hN` and two
+independent Chabauty–Coleman computations; there is no shared argument
+between the levels beyond the method itself.  A successor that wants them
+owned separately should split this into `card_le_x0SixtyFive` and
+`card_le_x0NinetyOne` and re-derive this by `fin_cases` — the assembly
+below is unaffected either way. -/
+theorem card_le_of_chabautySemiprimeLevel {N : ℕ}
+    (hN : N ∈ chabautySemiprimeLevels) {X Y : Scheme.{0}}
+    {strX : X ⟶ SpecQ} {strY : Y ⟶ SpecQ} {jm : Y ⟶ X}
+    (hX : IsX0Compactification N strX strY jm)
+    (t : Finset (RelPoint strX (𝟙 SpecQ))) : t.card ≤ numRationalCusps N :=
+  sorry
+
+/-- **`Y_0(65)(ℚ) = Y_0(91)(ℚ) = ∅`** (PROVEN 2026-07-27 over
+`card_le_of_chabautySemiprimeLevel`; introduced as a sorry node the same
+day) — the two genuinely hard levels of the `61`.
+
+TRUE: neither `65` nor `91` is in the Mazur–Kenku list.  This is Kenku,
+*The modular curves `X_0(65)` and `X_0(91)` and rational isogeny*, Math.
+Proc. Cambridge Philos. Soc. **87** (1980) 15–20.
+
+The whole content is the leaf immediately above, whose docstring carries
+the point-count table, the positive-rank trap that makes `65, 91` look
+like `35, 39` when they are not, and the irreducibility audit with the
+axis it was searched on.  This declaration is the three-line assembly:
+`0 < N` by `fin_cases` over `chabautySemiprimeLevels`, then the shared
+cusp-count criterion. -/
+theorem y0HasNoRationalPoint_of_chabautySemiprimeLevel (N : ℕ)
+    (hN : N ∈ chabautySemiprimeLevels) : Y0HasNoRationalPoint N := by
+  have hpos : 0 < N := by fin_cases hN <;> norm_num
+  exact y0HasNoRationalPoint_of_cardLeCusps N hpos
+    (fun hX t => card_le_of_chabautySemiprimeLevel hN hX t)
 
 /-- **The five small semiprime levels, assembled** (PROVEN): a case split
 of `smallSemiprimeLevels` into the three method classes.
@@ -17609,13 +17703,17 @@ each is settled by one of:
 **The rank-`0`-plus-reduction route is now REALISED in this file**, and
 that is what changed on 2026-07-27: `y0HasNoRationalPoint_of_witnessPrime`
 is exactly that criterion, and `35, 39` — two of the five residual levels
-— are closed by it.  What remains of the `61` is `26` (needs the
-multi-prime sieve, `y0HasNoRationalPoint_x0TwentySix`), `65, 91` (need
-Chabauty–Coleman, `y0HasNoRationalPoint_of_chabautySemiprimeLevel`) and
-the `56` isolated-prime levels
-(`y0HasNoRationalPoint_of_isolatedSemiprime`).  Note that this node
-itself is PROVEN — it is those three leaves, not this assembly, that
-carry what is left.
+— are closed by it.  **Amended later the same day:** all five level
+statements are now PROVEN, and what remains of the `61` has moved down
+one layer, onto point counts for `X_0(N)` and the isolated-prime descent:
+`card_le_x0TwentySix` (`26`, needs the multi-prime sieve),
+`card_le_of_chabautySemiprimeLevel` (`65, 91`, needs Chabauty–Coleman),
+and — for the `56` isolated-prime levels, whose descent
+`y0HasNoRationalPoint_of_isolatedSemiprime` is itself PROVEN —
+`mem_isolatedJInvariants_of_stable` and
+`not_stable_of_mem_isolatedJInvariants`.  Note that this node itself is
+PROVEN: it is those four leaves, not this assembly, that carry what is
+left.
 
 Neither criterion was stated as a leaf when this module was written,
 deliberately.  Both are statements about `X_0(pq)` — the SMOOTH
