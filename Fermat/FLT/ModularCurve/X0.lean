@@ -16951,75 +16951,98 @@ theorem numRationalCusps_pos_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels) :
 
 /-- **`Pic⁰` is representable: the degree-zero relative Picard functor of
 a smooth proper geometrically connected curve over `ℚ` carrying a
-rational point is an abelian scheme** (sorry node) — LEVEL-FREE and
-CURVE-GENERAL, in the same spirit as `fg_relPoint_of_abelianScheme`
-below: no `N`, no modular curve, no `IsX0Compactification`.
+rational point is an abelian scheme** (PROVEN 2026-07-27 — it is the
+`S = SpecQ` instance of `Fermat.exists_relPicZero`, and nothing else).
 
-TRUE and classical: this is Grothendieck's representability theorem for
-the relative Picard functor (FGA, exposé 232; Bosch–Lütkebohmert–Raynaud,
-*Néron Models* 8.2/1 and 9.4/4; Stacks 0D2C), specialised to a curve,
-where the degree-zero part is represented by an abelian scheme — the
-Jacobian.
+Grothendieck's representability theorem (FGA, exposé 232;
+Bosch–Lütkebohmert–Raynaud, *Néron Models* 8.2/1 and 9.4/4; Stacks 0D2C),
+specialised to a curve, where the degree-zero part is represented by an
+abelian scheme — the Jacobian.
 
-The section `o` is load-bearing twice over.  It is what makes the naive
-quotient `Pic(X_T)/Pic(T)` — `RelPicEquiv` — already the relative Picard
-functor, with no fppf sheafification anywhere (BLR 8.1/4), which is the
-only reason `IsRelPicZeroOf` is statable at a pin with no site theory;
-and it is what the Abel–Jacobi fields `aj`, `aj_spec`, `aj_base` are
-based at.
+**THIS NODE IS NOW A ONE-LINE INSTANCE, AND THAT IS THE WHOLE POINT.**
+The sorried statement lives ONCE, over an arbitrary base and
+universe-polymorphically, in `ModularCurve/RelativePicard.lean` as
+`exists_relPicZero`.  It has to be there rather than here because its
+other consumer — `exists_albaneseOfCurve`, ~4700 lines below — needs
+`S = Spec ℤ_(ℓ)` and `S = Spec 𝔽_ℓ`, which this `SpecQ` statement cannot
+serve; and a declaration reachable from only one of two consumers forces
+two independently sorried copies of one classical theorem, which is the
+single most expensive object this development produces.  Anything that
+needs representability over `ℚ` should call THIS; anything that needs it
+over another base should call `exists_relPicZero` directly.
+
+The section `o` is load-bearing twice over, and travels with the general
+statement.  It is what makes the naive quotient `Pic(X_T)/Pic(T)` —
+`RelPicEquiv` — already the relative Picard functor, with no fppf
+sheafification anywhere (BLR 8.1/4), which is the only reason
+`IsRelPicZeroOf` is statable at a pin with no site theory; and it is what
+the Abel–Jacobi fields `aj`, `aj_spec`, `aj_base` are based at.
 
 The three geometric hypotheses are exactly what `IsX0Compactification`
 supplies, and each is load-bearing: without properness `Pic⁰` is not
 proper, without smoothness it is not smooth, and without geometric
 connectedness `f_*𝒪_X = 𝒪_S` fails universally, so the quotient
-presentation above is not the Picard functor at all.
-
-**What this leaf still needs**, none of which exists at this pin:
-cohomology and base change for a proper morphism, the `𝒪(D)`/divisor
-dictionary on a relative curve, the smoothness criterion for `Pic⁰`
-(`H²` vanishing on a curve), and properness of `Pic⁰`.  The module
-docstring of `ModularCurve/RelativePicard.lean` records the survey behind
-that list — including that the pin has **no tensor product of sheaves of
-modules at all**, which is why `modTensor` had to be written before the
-statement could be made. -/
+presentation above is not the Picard functor at all.  The inventory of
+what the proof still needs is on `exists_relPicZero`, not duplicated
+here. -/
 theorem exists_relPicZeroOf {X : Scheme.{0}} {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hsmooth : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) (o : RelPoint strX (𝟙 SpecQ)) :
     ∃ (J : Scheme.{0}) (jstr : J ⟶ SpecQ) (ab : AbelianSchemeStruct jstr),
       Nonempty (IsRelPicZeroOf strX ab o) :=
-  sorry
+  exists_relPicZero strX hproper hsmooth hconn o
 
 /-- **Autoduality: a representing object for `Pic⁰` is the Albanese**
-(sorry node) — the second half of the cut, and again LEVEL-FREE and
-CURVE-GENERAL.
+(sorry node — but see below: it is DEAD MATHEMATICS, kept sorried only
+by Lean's declaration order) — LEVEL-FREE and CURVE-GENERAL.
 
 TRUE, and this is the classical "autoduality of the Jacobian" step.
 Given `P : IsRelPicZeroOf strX ab o`, the fields `inj`, `sheaf_zero` and
 `sheaf_add` exhibit `J` as an abelian *subscheme* of `Pic_{X/ℚ}`, and
 `aj` puts the image of the Abel–Jacobi map inside it.  For a smooth
 proper geometrically connected curve that image generates `Pic⁰` as a
-group, and an abelian subscheme containing a generating set is
-everything, so `J = Pic⁰`.  The universal property then follows from
-autoduality: a pointed `φ : X ⟶ A` into an abelian scheme pulls line
-bundles back, giving `A^∨ = Pic⁰_A ⟶ Pic⁰_X = J^∨`, and biduality
-(`A^∨∨ = A`, `J^∨∨ = J`) turns that into the wanted `u : J ⟶ A`, with
-`u ≫ astr = jstr` and `c = u ∘ aj` by construction.
+group, so `J = Pic⁰`; the universal property then follows from
+autoduality and biduality, and uniqueness from rigidity plus generation.
 
-Uniqueness of `u` is the rigidity argument recorded on
-`exists_jacobianOf_x0` below and is NOT weakened here: `u` is a bare
-morphism of schemes, and two such agreeing on `aj(X)` agree on the
-subgroup it generates, which is all of `J`.
+## ⚠ DO NOT PROVE THIS LEAF.  IT HAS NO MATHEMATICAL CONTENT LEFT.
 
-**What this leaf still needs**: the dual abelian scheme, biduality, the
-theorem that `aj(X)` generates `Pic⁰`, and the rigidity lemma (a
-morphism of abelian schemes over a field is a homomorphism followed by a
-translation).  None of the four exists at this pin — `Modularity/
-AbelianScheme.lean`'s own docstring already records `A^∨ = Pic⁰_{A/S}`
-as out of reach — and that is precisely the theory this cut isolates.
+Every ingredient it needs is ALREADY IN THIS FILE, further down, as of
+2026-07-27, and the statement below is EXACTLY
 
-The three geometric hypotheses are load-bearing for the *generation*
-step, which is where the curve enters; they are not needed to state the
-conclusion.
+    ⟨(P.isAlbaneseOf ⟨hproper, hsmooth, hconn⟩).isJacobianOf⟩
+
+* `IsRelPicZeroOf.isAlbaneseOf` (PROVEN) turns `P` into an
+  `IsAlbaneseOf`, over an ARBITRARY base, over the two named leaves
+  `IsRelPicZeroOf.exists_albaneseFactorisation` (autoduality and
+  biduality) and `IsRelPicZeroOf.eq_of_aj_eq` (generation, i.e.
+  `Sym^g C ↠ Pic⁰`);
+* `IsAlbaneseOf.isJacobianOf` (PROVEN) turns that into an `IsJacobianOf`,
+  supplying the `∃!` over arbitrary `S`-morphisms out of
+  `isAdditiveOn_of_post_zero` (relative RIGIDITY, also PROVEN).
+
+So the two genuinely open pieces of autoduality are those two named
+general-base leaves, and a prover dispatched HERE would be writing a
+THIRD copy of a rigidity/generation argument that already exists twice.
+
+**WHAT ACTUALLY BLOCKS IT, and the exact repair.**  `RelPoint.post`,
+`IsAdditiveOn`, `isAdditiveOn_of_post_zero`, `IsAlbaneseOf`,
+`IsAlbaneseOf.isJacobianOf`, `IsRelPicZeroOf.exists_albaneseFactorisation`,
+`IsRelPicZeroOf.eq_of_aj_eq` and `IsRelPicZeroOf.isAlbaneseOf` are all
+declared BELOW this point, in one contiguous block that begins at
+`RelPoint.post` and ends at `IsRelPicZeroOf.isAlbaneseOf`.  Move that
+block — and ONLY that block; `exists_albaneseOfCurve` and
+`exists_relativeJacobian`, which follow it, must stay where they are — to
+just above `exists_relPicZeroOf`.  It depends on nothing but
+`AbelianSchemeStruct`, `RelPoint`, `IsJacobianOf` (declared far above),
+`IsRelPicZeroOf` (imported from `ModularCurve/RelativePicard.lean`) and
+the `ProperPushforward` shim (imported at the top of this file), so it is
+a pure relocation with no import change and no semantic change.  Then
+replace the `sorry` below by the one line above and delete this section.
+
+That relocation was NOT done on 2026-07-27 because the block was owned by
+two other concurrent worktrees at the time.  It is bookkeeping for
+whoever next has this file to themselves; it is not new mathematics, and
+it should not be dispatched as a proof task.
 
 Stated with `Nonempty` because `IsJacobianOf` is DATA — it carries the
 Abel–Jacobi map as a field — so the bare structure is not a proposition
@@ -18898,10 +18921,18 @@ row and is now PROVEN too, in
 `locallyIntegrableOn_axisRestrict` and `isBigO_atTop_coeff` — mathlib's
 `AbstractFuncEq` / `MellinEqDirichlet` supply the analysis.
 
+Updated in the same integration: `exists_relPicZeroOf` is now PROVEN as the
+`SpecQ` instance of the general-base `exists_relPicZero`, which lives in
+`ModularCurve/RelativePicard.lean` and is the row below; and the autoduality
+node `isJacobianOf_of_isRelPicZeroOf` is DEAD MATHEMATICS, still sorried only
+because the proven glue it needs is declared below it in this file (see its
+docstring).
+
 | leaf | theory | level-specific? |
 |---|---|---|
-| `exists_relPicZeroOf` | representability of `Pic⁰` | no |
-| `isJacobianOf_of_isRelPicZeroOf` | autoduality / biduality | no |
+| `exists_relPicZero` (in `RelativePicard.lean`) | representability of `Pic⁰` | no |
+| `IsRelPicZeroOf.exists_albaneseFactorisation` | autoduality / biduality | no |
+| `IsRelPicZeroOf.eq_of_aj_eq` | `Sym^g C ↠ Pic⁰` (Riemann–Roch) | no |
 | `exists_descentHeight_of_abelianScheme` | Weil heights / Northcott | no |
 | `finite_quotient_nsmul_of_abelianScheme` | weak Mordell–Weil | no |
 | `lFunction_apply_one_eq_two_pi_mul_cuspPeriod` | Mellin transform at `s = 1` | no |
