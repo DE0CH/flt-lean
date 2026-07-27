@@ -519,6 +519,18 @@ public import Mathlib.RingTheory.Artinian.Module
 -- `IsLocalRing.of_isMaximal_nilradical`: a ring whose nilradical is maximal is
 -- local, which is how `R ⧸ mⁿ` is seen to be local.
 public import Mathlib.RingTheory.KrullDimension.Zero
+-- `AlgebraicGeometry.AffineSpace` — `𝔸(n; S)`, with its `CanonicallyOver S`
+-- instance.  This is the pin-available stand-in for `ℙ¹_ℚ` used to cut
+-- `ajMor_eq_const_of_not_injective` into Riemann–Roch and rigidity: mathlib has
+-- `Proj` but no projective space, and it *does* have affine space, so
+-- "`X` is rational" is written as "`X` contains a dense open copy of `𝔸¹_ℚ`".
+public import Mathlib.AlgebraicGeometry.AffineSpace
+-- `AlgebraicGeometry.isReduced_of_smooth_over_field` — a scheme smooth over a
+-- field is reduced.  Absent from the pin; supplied by the project's own shim
+-- tree.  Reached only PRIVATELY through `ModularCurve.EllipticScheme`, so it is
+-- imported publicly here for use in `ajMor_eq_const_of_not_injective`, whose
+-- appeal to `ext_of_isDominant_of_isSeparated` needs `IsReduced X`.
+public import Fermat.FLT.Mathlib.AlgebraicGeometry.Morphisms.SmoothReduced
 
 @[expose] public section
 
@@ -14728,62 +14740,215 @@ theorem IsJacobianOf.isIso_of_ajMor_eq_const {X J : Scheme.{0}} {strX : X ⟶ Sp
     rw [← Category.assoc, (jac.aj g x).2, key g x]
   exact ⟨⟨z, h2.trans h1.symm, hz⟩⟩
 
+/-- **A curve whose Abel–Jacobi map is not injective on `ℚ`-points
+contains a DENSE AFFINE LINE** (sorry leaf, 2026-07-27) — the whole
+RIEMANN–ROCH half of `ajMor_eq_const_of_not_injective`, separated at last
+from its rigidity half.
+
+TRUE and classical, in three steps:
+
+1. **Abel.**  `aj x = aj y` with `x ≠ y` two rational points gives
+   `[x] − [o] = [y] − [o]` in `Pic⁰`, so the nonzero degree-`0` divisor
+   `x − y` is principal: some `f ∈ ℚ(X)ˣ` has `div f = x − y`, i.e.
+   exactly one simple pole, at `y`.
+2. **Degree `1`.**  That `f` is a morphism `X → ℙ¹_ℚ` of degree
+   `deg (div f)_∞ = 1`, so `ℚ(X) = ℚ(ℙ¹)`; both curves being smooth and
+   proper, `f` is an isomorphism and `X ≅ ℙ¹_ℚ`.
+3. **Removing the pole.**  Pulling back `𝔸¹ = ℙ¹ ∖ {∞}` along `f` gives
+   an open immersion `u : 𝔸¹_ℚ ⟶ X` over `ℚ` with image `X ∖ {y}`, dense
+   because `X` is an irreducible curve.
+
+**WHY `𝔸¹` AND NOT `ℙ¹` — this is the axis the previous audit had not
+searched.**  The consumer's earlier docstring recorded a further cut at
+"`X ≅ ℙ¹_ℚ`" as declined, because mathlib at this pin has `Proj` but no
+projective space, so `ℙ¹_ℚ` would have to be written down first; it
+concluded the cut "becomes the right cut the moment either Riemann–Roch
+or `ℙ¹` lands".  Neither has landed — but `Mathlib.AlgebraicGeometry.
+AffineSpace` supplies `𝔸(n; S)` with its `CanonicallyOver` instance, and
+for a smooth proper geometrically connected curve
+
+> `X ≅ ℙ¹_ℚ`  ⟺  `X` contains a dense open subscheme isomorphic to `𝔸¹_ℚ`
+
+(left to right: delete the pole; right to left: the smooth proper model
+of `𝔸¹` is `ℙ¹`, and a smooth proper curve is determined by a dense open
+subscheme).  So rationality of `X` IS expressible at this pin, and the
+cut IS available — it just had to be phrased affinely.  Nothing about the
+mathematics changes.
+
+**ALL THREE GEOMETRIC HYPOTHESES ARE LOAD-BEARING, each with its own
+counterexample**, so a proof that does not consume all three is wrong:
+
+* `hcurve` (relative dimension `1`).  `X = ℙ¹ × E` for an elliptic curve
+  `E`, `o = (0, 0)`: smooth, proper, geometrically connected, Albanese
+  `E`, and `aj (t, e) = e` collapses every `ℙ¹`-fibre so is not
+  injective.  But `X` is a *surface* and no curve is dense in it, so the
+  conclusion fails.
+* `hconn`.  `X = ℙ¹ ⊔ ℙ¹`: smooth, proper, of relative dimension `1`,
+  with trivial Albanese, so `aj` is constant and not injective.  The
+  image of `𝔸¹` is irreducible and can never be dense in a disconnected
+  space, so the conclusion fails.
+* `hproper`.  `X = 𝔾ₘ = 𝔸¹ ∖ {0}` over `ℚ`: smooth, geometrically
+  connected, of relative dimension `1`, and its Albanese in the category
+  of ABELIAN schemes is trivial (`𝔾ₘ` is affine, so every map to a proper
+  group scheme is constant), so `aj` is constant while `𝔾ₘ(ℚ) = ℚˣ` is
+  infinite — `hni` holds.  But an open immersion `𝔸¹ ↪ 𝔾ₘ` would exhibit
+  `𝔸¹` as `𝔾ₘ` minus finitely many points, whose smooth compactification
+  is `ℙ¹` minus `2 + #S ≥ 2` points, not `1`.  So the conclusion fails.
+
+`IsOpenImmersion u` is recorded even though the consumer needs only
+`IsDominant u`: it is the honest content of step 3 (`X ∖ {y} ≅ 𝔸¹`, i.e.
+`X` is RATIONAL), whereas dominance alone would say only that `X` is
+unirational — the same thing for curves, by Lüroth, but only after a
+theorem.  Stating the stronger form costs a prover nothing and keeps the
+leaf reusable.
+
+IRREDUCIBLE at this pin, ALONG THE GEOMETRIC AXIS (divisors and linear
+systems on `X`): Riemann–Roch for curves does not exist in `Mathlib`, in
+`~/cs/FLT`, or here.  What mathlib *does* have, and what a prover should
+start from, is `Mathlib/AlgebraicGeometry/AlgebraicCycle`,
+`.../OrderOfVanishing.lean`, `.../FunctionField.lean` and
+`.../Birational/RationalMap.lean` — divisors, orders of vanishing, the
+function field and rational maps are all present; the sheaf cohomology
+that computes `h⁰(D)` is what is missing.  **The check that would refute
+this verdict:** an `h⁰`, a genus, or a Riemann–Roch statement appearing
+in any of the three trees. -/
+theorem exists_affineLine_of_not_injective_aj {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
+    (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
+    (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
+    {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
+    (jac : IsJacobianOf strX ab o) (hni : ¬ Function.Injective (jac.aj (𝟙 SpecQ))) :
+    ∃ u : 𝔸(Unit; SpecQ) ⟶ X, IsOpenImmersion u ∧ IsDominant u ∧
+      u ≫ strX = 𝔸(Unit; SpecQ) ↘ SpecQ :=
+  sorry
+
+/-- **RIGIDITY: every morphism `𝔸¹_ℚ ⟶ A` to an abelian scheme over `ℚ`
+is CONSTANT** (sorry leaf, 2026-07-27) — "there are no rational curves in
+an abelian variety", in the form this file can state it, and the second
+half of `ajMor_eq_const_of_not_injective`.
+
+TRUE and classical, in two steps:
+
+1. `A` is proper (`ab.proper`) and `𝔸¹_ℚ` is a dense open subscheme of
+   the smooth curve `ℙ¹_ℚ`, so `φ` extends to a morphism `ℙ¹_ℚ → A`: a
+   rational map from a smooth curve to a proper scheme is defined
+   everywhere.
+2. In characteristic `0`, `H⁰(ℙ¹, Ω¹) = 0`, so the pullback along that
+   extension of every invariant differential of `A` vanishes; the
+   extended morphism has zero differential and is therefore constant.
+
+**The constant is a `ℚ`-POINT**, which is what `c ≫ astr = 𝟙 SpecQ`
+records and what the consumer needs in order to identify it with the zero
+section.  It is rational because `𝔸¹_ℚ` has rational points (the origin),
+so the image point has residue field `ℚ`.
+
+**`ab.proper` is LOAD-BEARING** and the statement is FALSE without it:
+take `A = 𝔾ₐ = 𝔸¹_ℚ` with its additive group structure — smooth,
+geometrically connected, a commutative group scheme with a functorial
+group law, everything an `AbelianSchemeStruct` asks for EXCEPT properness
+— and `φ = 𝟙`, which is not constant.  So a proof must use properness of
+`A`, and a proof that does not is wrong.  (`ab.smooth` and `ab.connected`
+are not needed for the argument above; they are carried because
+`AbelianSchemeStruct` is the file's bundled notion and splitting it would
+create an interface with no producer.)
+
+**Not vacuous.**  The degenerate case `A = Spec ℚ` is discharged by
+`c = 𝟙`, but the statement has real content for every positive-dimensional
+`A`: it is exactly the classical rigidity that makes Abel–Jacobi
+injective in positive genus.
+
+IRREDUCIBLE at this pin, along the axis searched (morphisms out of
+rational curves): neither the extension of a rational map from a smooth
+curve to a proper target, nor the vanishing `H⁰(ℙ¹, Ω¹) = 0`, nor "an
+abelian variety contains no rational curve", exists in `Mathlib`, in
+`~/cs/FLT`, or here.  `Mathlib/AlgebraicGeometry/Birational/RationalMap.lean`
+and `Mathlib/AlgebraicGeometry/ValuativeCriterion.lean` are the closest
+available inputs and are where a prover should start.  **The check that
+would refute this verdict:** a rational-map extension theorem, or any
+statement about `Ω¹` of a proper curve, appearing in any of the three
+trees. -/
+theorem exists_const_of_affineLine_to_abelianScheme {A : Scheme.{0}} {astr : A ⟶ SpecQ}
+    (ab : AbelianSchemeStruct astr) (φ : 𝔸(Unit; SpecQ) ⟶ A)
+    (hφ : φ ≫ astr = 𝔸(Unit; SpecQ) ↘ SpecQ) :
+    ∃ c : SpecQ ⟶ A, c ≫ astr = 𝟙 SpecQ ∧ φ = (𝔸(Unit; SpecQ) ↘ SpecQ) ≫ c :=
+  sorry
+
 /-- **A curve whose Abel–Jacobi map is not injective on `ℚ`-points has a
-CONSTANT Abel–Jacobi map** (sorry node) — LEVEL-FREE, and after the
-2026-07-27 split this is where the whole Riemann–Roch content of
-`injective_aj_of_not_isIso_jacobian` now lives, alone.
+CONSTANT Abel–Jacobi map** (PROVEN 2026-07-27 by decomposition; formerly
+the single deepest leaf of this cluster) — LEVEL-FREE, and the place
+where the whole geometric content of `injective_aj_of_not_isIso_jacobian`
+used to live undivided.
 
-TRUE and classical, in two named steps:
+**The cut taken, and why it is now available.**  The previous docstring
+of this node recorded a further cut at "`X ≅ ℙ¹_ℚ`" as *declined*,
+because mathlib has `Proj` but no projective space, and said it "becomes
+the right cut the moment either Riemann–Roch or `ℙ¹` lands".  Neither has
+landed.  What the audit had not asked is whether rationality of a curve
+must be phrased with `ℙ¹` at all — and it need not: mathlib DOES have
+`AlgebraicGeometry.AffineSpace`, and for a smooth proper geometrically
+connected curve "`X ≅ ℙ¹_ℚ`" is equivalent to "`X` contains a dense open
+copy of `𝔸¹_ℚ`".  So the two classical theorems are now separated:
 
-1. **Riemann–Roch.**  If `aj x = aj y` with `x ≠ y` two rational points,
-   then `[x] − [o] = [y] − [o]` in `Pic⁰`, so `x − y` is a principal
-   divisor: some `f ∈ ℚ(X)ˣ` has divisor `x − y`, i.e. a single simple
-   pole.  That `f` is a degree-`1` morphism `X → ℙ¹`, hence an
-   isomorphism, so `X ≅ ℙ¹_ℚ` and `genus X = 0`.
-2. **Rigidity / no rational curves in an abelian variety.**  Every
-   morphism `ℙ¹ → A` to an abelian scheme is constant, so `ajMor` is the
-   constant morphism at `ajMor ∘ o = 0`, which is `strX ≫ zero`.
+* `exists_affineLine_of_not_injective_aj` — **Riemann–Roch**: a
+  non-injective Abel–Jacobi map makes `x − y` principal, hence gives a
+  degree-`1` map to `ℙ¹`, hence `X ∖ {y} ≅ 𝔸¹_ℚ`.  This is the only half
+  that uses `hproper`, `hcurve` and `hconn`, and its docstring records a
+  separate counterexample for each of the three.
+* `exists_const_of_affineLine_to_abelianScheme` — **rigidity**: there are
+  no rational curves in an abelian variety, so `𝔸¹_ℚ ⟶ J` is constant.
+  This half uses only `ab.proper`, and is FALSE without it (`𝔾ₐ`).
 
-**The three geometric hypotheses may NOT be dropped**, and the statement
-is FALSE without them — `X` must be a *curve*.  Counterexample with `X`
-smooth, proper and geometrically connected but of dimension `2`: take
-`X = ℙ¹ × E` for an elliptic curve `E`, `o = (0, 0)`.  Its Albanese is
-`E`, so `aj (t, e) = e` is not injective (it collapses every
-`ℙ¹`-fibre), yet `ajMor` is the projection `ℙ¹ × E → E` and is very far
-from constant.  This is why `h.isProper`, `h.smooth` (relative dimension
-`1` — the curve condition) and `h.connected` are all passed through, and
-why they must be passed through *here* rather than kept upstream: the
-formal half `isIso_of_ajMor_eq_const` needs none of them.
+**The glue below is real mathematics-free bookkeeping, and it is what the
+cut buys.**  Three ingredients, none of them geometric:
+
+1. `ext_of_isDominant_of_isSeparated` (mathlib) upgrades "constant on the
+   dense `𝔸¹`" to "constant on `X`".  It needs `IsReduced X`, which is
+   `isReduced_of_smooth_over_field` applied to `hcurve` — a project shim,
+   since a smooth scheme over a field being reduced is itself absent from
+   the pin — and `IsSeparated jstr`, which is `ab.proper`.
+2. `(jac.aj strX ⟨𝟙 X, _⟩).2` says `ajMor ≫ jstr = strX`, i.e. `ajMor` is
+   a morphism over `ℚ`; that is what lets the two sides be compared over
+   the separated `jstr`.
+3. `aj_eq_ajMor` and `aj_base` at the base point `o` pin the constant `c`
+   to be the zero section: `c = o.1 ≫ ajMor = (aj (𝟙 SpecQ) o).1 = 0`.
+   This is where `o` is consumed, and it is why the conclusion is
+   `strX ≫ zero` rather than merely "`ajMor` factors through `Spec ℚ`".
 
 **Why `ajMor` and not `aj`.**  `aj` is a natural transformation over all
 test schemes; `ajMor` is a single morphism of schemes over `ℚ`, and by
-`aj_eq_ajMor` they carry the same information.  Both steps above are
-statements about morphisms of schemes, so the leaf is stated in the form
-they produce.
-
-IRREDUCIBLE at this pin, ALONG THE AXIS SEARCHED (divisors and linear
-systems on `X`): Riemann–Roch for curves does not exist in `Mathlib`.
-What mathlib *does* have, and what a prover should start from, is
-`Mathlib/AlgebraicGeometry/AlgebraicCycle`, `.../OrderOfVanishing.lean`,
-`.../FunctionField.lean` and `.../RationalMap.lean` — divisors, orders
-of vanishing and the function field are all present; the sheaf
-cohomology that computes `h⁰(D)` is what is missing.
-
-**The axis NOT searched**, and where the next owner should start: a
-further cut at "`X ≅ ℙ¹_ℚ`", separating step 1 from step 2 above into two
-independent classical theorems.  That was deliberately not taken here,
-because it needs `ℙ¹_ℚ` written down as a scheme over `ℚ` (mathlib has
-`Proj` but no projective space at this pin) and it produces two leaves
-each of which still needs a theory absent from mathlib — so it would
-split the node without making either half closable.  It becomes the
-right cut the moment either Riemann–Roch or `ℙ¹` lands. -/
+`aj_eq_ajMor` they carry the same information.  Both halves above are
+statements about morphisms of schemes, so the node is stated in the form
+they produce. -/
 theorem ajMor_eq_const_of_not_injective {X J : Scheme.{0}} {strX : X ⟶ SpecQ}
     (hproper : IsProper strX) (hcurve : SmoothOfRelativeDimension 1 strX)
     (hconn : GeometricallyConnected strX) {jstr : J ⟶ SpecQ}
     {ab : AbelianSchemeStruct jstr} {o : RelPoint strX (𝟙 SpecQ)}
     (jac : IsJacobianOf strX ab o) (hni : ¬ Function.Injective (jac.aj (𝟙 SpecQ))) :
-    jac.ajMor = strX ≫ (ab.zero (𝟙 SpecQ)).1 :=
-  sorry
+    jac.ajMor = strX ≫ (ab.zero (𝟙 SpecQ)).1 := by
+  obtain ⟨u, -, hdom, hu⟩ :=
+    exists_affineLine_of_not_injective_aj hproper hcurve hconn jac hni
+  haveI := hdom
+  haveI : Smooth strX := SmoothOfRelativeDimension.smooth (n := 1) (f := strX)
+  haveI : IsReduced X := isReduced_of_smooth_over_field (K := ℚ) strX
+  haveI : IsProper jstr := ab.proper
+  -- `ajMor` is a morphism over `ℚ`: it is the underlying map of a relative point.
+  have hajover : jac.ajMor ≫ jstr = strX :=
+    (jac.aj strX ⟨𝟙 X, Category.id_comp strX⟩).2
+  -- Rigidity on the dense affine line.
+  obtain ⟨c, hc, hφ⟩ := exists_const_of_affineLine_to_abelianScheme ab (u ≫ jac.ajMor)
+    (by rw [Category.assoc, hajover, hu])
+  -- Density plus reducedness of `X` and separatedness of `J` propagate constancy.
+  have hconst : jac.ajMor = strX ≫ c := by
+    refine ext_of_isDominant_of_isSeparated jstr ?_ u ?_
+    · rw [hajover, Category.assoc, hc, Category.comp_id]
+    · rw [← Category.assoc, hu]
+      exact hφ
+  -- The base point pins the constant to the origin.
+  have hcz : c = (ab.zero (𝟙 SpecQ)).1 := by
+    have h1 : o.1 ≫ jac.ajMor = (ab.zero (𝟙 SpecQ)).1 := by
+      rw [← jac.aj_eq_ajMor (𝟙 SpecQ) o, jac.aj_base]
+    rw [hconst, ← Category.assoc, o.2, Category.id_comp] at h1
+    exact h1
+  rw [hconst, hcz]
 
 /-- **A curve with a NONTRIVIAL Jacobian has injective Abel–Jacobi**
 (PROVEN 2026-07-27, by decomposition) — LEVEL-FREE: this is the
@@ -14808,10 +14973,13 @@ field.  So `¬ IsIso jstr` is a faithful, pin-available rendering of
 resulting implication "`aj` not injective on `ℚ`-points ⟹ `IsIso jstr`"
 factors through the constancy of the Abel–Jacobi *morphism*:
 
-* `ajMor_eq_const_of_not_injective` — Riemann–Roch plus rigidity, and it
-  is where the depth now lives, alone.  It is the only half that uses
-  `hproper`, `hcurve`, `hconn`, and it is FALSE without them (see its
-  docstring for the `ℙ¹ × E` counterexample).
+* `ajMor_eq_const_of_not_injective` — Riemann–Roch plus rigidity, where
+  the depth lives.  Itself a PROVEN assembly since 2026-07-27, over
+  `exists_affineLine_of_not_injective_aj` (Riemann–Roch: `X` contains a
+  dense `𝔸¹_ℚ`) and `exists_const_of_affineLine_to_abelianScheme`
+  (rigidity: no rational curves in an abelian variety).  It is the only
+  half that uses `hproper`, `hcurve`, `hconn`; each of the three has its
+  own counterexample recorded on the Riemann–Roch leaf.
 * `IsJacobianOf.isIso_of_ajMor_eq_const` — PROVEN here from the Albanese
   universal property alone, with no geometry whatsoever.
 
@@ -15206,7 +15374,13 @@ Kolyvagin–Logachev — and is now a proven assembly over one leaf each.
 The seam is `L(f, 1) ≠ 0`, stated through the interface in
 `ModularCurve/WeightTwoEigenform.lean`.
 
-The nine open leaves under this node, and the single theory each one
+**Sixth round (2026-07-27).**  `ajMor_eq_const_of_not_injective` was
+carrying Riemann–Roch AND rigidity, and is now a proven assembly over one
+leaf each; the seam is "`X` contains a dense open copy of `𝔸¹_ℚ`", which
+is how rationality of a curve is expressible at a pin that has affine but
+not projective space.
+
+The ten open leaves under this node, and the single theory each one
 needs, are:
 
 | leaf | theory | level-specific? |
@@ -15218,11 +15392,12 @@ needs, are:
 | `exists_isLFunctionOf_of_isWeightTwoEigenform` | Hecke continuation | no |
 | `lFunction_apply_one_ne_zero_of_kenkuLevel` | `L`-value numerics | **yes** |
 | `isTorsion_jacobian_of_lFunction_ne_zero` | Eichler–Shimura + Kolyvagin–Logachev | no |
-| `ajMor_eq_const_of_not_injective` | Riemann–Roch | no |
+| `exists_affineLine_of_not_injective_aj` | Riemann–Roch | no |
+| `exists_const_of_affineLine_to_abelianScheme` | rigidity of abelian varieties | no |
 | `hasNonconstantAbelianMap_of_one_le_x0Genus` | genus formula | **yes** |
 
-Only two of the nine mention `N` or `kenkuLevels` at all, and each of
-the other seven is a named classical theorem stated for an arbitrary
+Only two of the ten mention `N` or `kenkuLevels` at all, and each of
+the other eight is a named classical theorem stated for an arbitrary
 object — which is what makes them dispatchable independently, and
 reusable by the rest of the modular-curve subtree. -/
 theorem hasRankZeroJacobian_of_kenkuLevel (N : ℕ) (hN : N ∈ kenkuLevels)
