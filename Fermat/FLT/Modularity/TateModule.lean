@@ -142,6 +142,12 @@ public import Mathlib.AlgebraicGeometry.Morphisms.Finite
 public import Mathlib.AlgebraicGeometry.Morphisms.QuasiFinite
 public import Mathlib.AlgebraicGeometry.ZariskisMainTheorem
 public import Fermat.FLT.Deformations.RepresentationTheory.GaloisRep
+-- `GaloisRepresentation.globalFrob` and `dense_conjClasses_globalFrob`: the
+-- Chebotarev density input of `det_eq_cyclotomicCharacter_of_globalFrob`.
+-- Adds only `Chebotarev` and `BrauerNesbitt` to this module's import cone,
+-- and this module's sole consumer (`Modularity.KhareWintenberger`) already
+-- has both; there is no cycle (`Chebotarev`'s cone does not meet `Modularity`).
+public import Fermat.FLT.GaloisRepresentation.Chebotarev
 -- `IsDedekindDomain.HeightOneSpectrum.natCard_under_maximalIdeal`: the residue
 -- cardinality at `w` in the Frobenius specification of
 -- `adicArithFrob_rootsOfUnity_pow_absNorm`
@@ -181,6 +187,12 @@ public import Mathlib.RingTheory.DedekindDomain.Ideal.Lemmas
 -- 2026-07-26) states the determinant of Frobenius to be the absolute
 -- norm of the place, so `absNorm` occurs in a STATEMENT here
 public import Mathlib.RingTheory.Ideal.Norm.AbsNorm
+-- `Submodule.isInternal_prime_power_torsion_of_is_torsion_by_ideal`: the
+-- CRT splitting `A[p] = ⨁_{J ∣ p} A[J^(e_J)]` used by
+-- `LevelFrame.card_tors_eq_sq`.  This adds NOTHING to the import cone —
+-- the module imports only `Algebra.Module.Torsion.Basic` and
+-- `RingTheory.DedekindDomain.Ideal.Lemmas`, both already above.
+public import Mathlib.Algebra.Module.DedekindDomain
 -- `NumberField.IsTotallyReal`: the real-multiplication field of a
 -- Hilbert–Blumenthal family is totally real, in both leaf STATEMENTS
 public import Mathlib.NumberTheory.NumberField.InfinitePlace.TotallyRealComplex
@@ -1744,11 +1756,455 @@ theorem exists_linearEquiv_tors_pow
 
 end Frame
 
+section RankCount
+
+variable {R : Type*} [CommRing R] [IsDedekindDomain R] {P : Type*} [AddCommGroup P] [Module R P]
+
+/-- **The tower count with the exponent left free** (PROVEN 2026-07-27).
+
+This is the induction inside `exists_linearEquiv_tors_pow` with the
+residual rank `r` a parameter instead of specialised to `2`.  It is what
+turns a single residual count at a prime `J` into a count at every power
+`J ^ n`, and it is the piece the CRT assembly of
+`card_torsion_of_isMaximal` consumes at EACH prime above `p` — where the
+ranks are not yet known to be equal, so the specialised version cannot be
+used. -/
+theorem card_tors_pow (I : Ideal R) (hI : I.IsMaximal) (hI0 : I ≠ ⊥)
+    {π : R} (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (hsurj : ∀ (k : ℕ) (y : P), y ∈ Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R) →
+      ∃ z ∈ Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R), π • z = y)
+    (r : ℕ)
+    (hcard : Nat.card (Submodule.torsionBySet R P ((I : Ideal R) : Set R))
+      = Nat.card (R ⧸ I) ^ r) (n : ℕ) :
+    Nat.card (Submodule.torsionBySet R P ((I ^ n : Ideal R) : Set R))
+      = Nat.card (R ⧸ I) ^ (r * n) := by
+  induction n with
+  | zero =>
+      simp only [pow_zero, Ideal.one_eq_top, Nat.mul_zero]
+      rw [tors_top]
+      simp
+  | succ k ih =>
+      have hmem : ∀ z : (Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)),
+          π • (z : P) ∈ Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R) := fun z =>
+        smul_tors_le I k (Submodule.smul_mem_smul hπ z.2)
+      set g : (Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)) →ₗ[R]
+          (Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R)) :=
+        LinearMap.codRestrict _
+          ((LinearMap.lsmul R P π).comp
+            (Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)).subtype) hmem with hg
+      have hgapp : ∀ z, ((g z : _) : P) = π • (z : P) := fun z => rfl
+      have hgsurj : Function.Surjective g := by
+        intro y
+        obtain ⟨z, hz, hzy⟩ := hsurj k (y : P) y.2
+        exact ⟨⟨z, hz⟩, Subtype.ext (by rw [hgapp]; exact hzy)⟩
+      have hkercard : Nat.card (LinearMap.ker g)
+          = Nat.card (Submodule.torsionBySet R P ((I : Ideal R) : Set R)) := by
+        refine Nat.card_congr ⟨fun z => ⟨(z.1 : P), ?_⟩, fun y => ⟨⟨(y : P), ?_⟩, ?_⟩,
+          fun _ => rfl, fun _ => rfl⟩
+        · refine mem_tors_of_smul_eq_zero I hI hI0 hπ hπ2 k z.1.2 ?_
+          have hz0 : ((g z.1 : _) : P) = 0 := by rw [LinearMap.mem_ker.mp z.2]; rfl
+          rwa [hgapp] at hz0
+        · exact tors_mono (Ideal.pow_le_self k.succ_ne_zero) y.2
+        · simp only [LinearMap.mem_ker]
+          exact Subtype.ext (by rw [hgapp]; exact (mem_tors_iff _ _).mp y.2 π hπ)
+      have hquot : Nat.card
+          ((Submodule.torsionBySet R P ((I ^ (k + 1) : Ideal R) : Set R)) ⧸ LinearMap.ker g)
+          = Nat.card (Submodule.torsionBySet R P ((I ^ k : Ideal R) : Set R)) :=
+        Nat.card_congr (g.quotKerEquivOfSurjective hgsurj).toEquiv
+      rw [Submodule.card_eq_card_quotient_mul_card (LinearMap.ker g), hkercard, hquot, ih,
+        hcard]
+      ring
+
+/-- **Termwise equality from an equality of products under a termwise
+inequality** (PROVEN): over `ℕ`, `∏ f = ∏ g` with `f i ≤ g i` throughout
+and `f` positive forces `f i₀ = g i₀`.
+
+Mathlib's `Finset.prod_eq_prod_iff_of_le` needs `IsOrderedCancelMonoid`,
+which `(ℕ, *)` is NOT (`0 * a = 0 * b`), so it does not apply here; the
+positivity hypothesis is what replaces cancellation. -/
+theorem eq_of_prod_eq_of_le {ι : Type*} {s : Finset ι} {f g : ι → ℕ}
+    (hpos : ∀ i ∈ s, 0 < f i) (hle : ∀ i ∈ s, f i ≤ g i)
+    (heq : ∏ i ∈ s, f i = ∏ i ∈ s, g i) {i₀ : ι} (hi₀ : i₀ ∈ s) :
+    f i₀ = g i₀ := by
+  classical
+  rw [← Finset.mul_prod_erase _ _ hi₀, ← Finset.mul_prod_erase _ _ hi₀] at heq
+  have hA : 0 < ∏ i ∈ s.erase i₀, f i :=
+    Finset.prod_pos fun i hi => hpos i (Finset.mem_of_mem_erase hi)
+  have hAB : ∏ i ∈ s.erase i₀, f i ≤ ∏ i ∈ s.erase i₀, g i :=
+    Finset.prod_le_prod' fun i hi => hle i (Finset.mem_of_mem_erase hi)
+  by_contra hne
+  have hlt : f i₀ < g i₀ := lt_of_le_of_ne (hle i₀ hi₀) hne
+  have hcontr : f i₀ * (∏ i ∈ s.erase i₀, f i) < g i₀ * (∏ i ∈ s.erase i₀, g i) :=
+    calc f i₀ * (∏ i ∈ s.erase i₀, f i)
+        < g i₀ * (∏ i ∈ s.erase i₀, f i) := Nat.mul_lt_mul_right hA |>.mpr hlt
+      _ ≤ g i₀ * (∏ i ∈ s.erase i₀, g i) := Nat.mul_le_mul_left _ hAB
+  exact absurd heq (Nat.ne_of_lt hcontr)
+
+end RankCount
+
+section Assembly
+
+open _root_.NumberField
+
+variable {D : Type*} [Field D] [NumberField D]
+variable {P : Type*} [AddCommGroup P] [Module (𝓞 D) P]
+
+/-- **`#(𝒪_D ⧸ Jⁿ) = #(𝒪_D ⧸ J)ⁿ`** (PROVEN), read off the
+multiplicativity of the absolute norm — `Ideal.absNorm` is a bundled
+`MonoidWithZeroHom`, so `map_pow` is the whole proof. -/
+theorem card_quotient_pow (J : Ideal (𝓞 D)) (n : ℕ) :
+    Nat.card (𝓞 D ⧸ J ^ n) = Nat.card (𝓞 D ⧸ J) ^ n := by
+  have h := map_pow (Ideal.absNorm (S := 𝓞 D)) J n
+  simpa [Ideal.absNorm_apply, Submodule.cardQuot_apply] using h
+
+/-- **THE ARITHMETIC BRIDGE: the residual rank is two, from parity plus
+the integer count** (PROVEN 2026-07-27).  This is the entire non-geometric
+content of `card_torsion_of_isMaximal`, isolated as a statement about an
+arbitrary `𝒪_D`-module `P` — no schemes, no abelian varieties.
+
+WHAT IT SAYS.  Write `r_J` for the `𝒪_D/J`-dimension of `P[J]`.  Given
+
+* `hcard`  — the INTEGER count `#P[p] = p^(2g)`, `g = [D : ℚ]`;
+* `hsurj`  — surjectivity of `·π` from each torsion level onto the
+  previous one, at every maximal `J` (divisibility);
+* `heven`  — every `r_J` is EVEN;
+* `hnz`    — every `P[J]` is nonzero,
+
+the conclusion `r_I = 2` follows for every maximal `I`.  The audit above
+is right that `hcard` ALONE is insufficient — its counterexample `M₁` has
+`(r_{J₁}, r_{J₂}) = (1, 3)` — and right that faithfulness and
+divisibility do not rescue it; what rescues it is `heven`, which kills
+`M₁` outright, together with `hnz`, which kills the surviving parity-even
+distribution `(0, 4)`.
+
+HOW IT IS PROVEN.  `p 𝒪_D = ∏_{J ∣ p} J^(e_J)` is a product of pairwise
+comaximal ideals, so `P[p] = ⨁_J P[J^(e_J)]` EXACTLY — that is mathlib's
+`Submodule.isInternal_prime_power_torsion_of_is_torsion_by_ideal`, with
+no ramification caveat, because `p 𝒪_D` IS that product.  The tower
+lemma `card_tors_pow` gives `#P[J^(e_J)] = #(𝒪_D/J)^(r_J e_J)`, and
+multiplicativity of the absolute norm converts that to
+`#(𝒪_D/J^(e_J))^(r_J)` and gives `∏_J #(𝒪_D/J^(e_J)) = #(𝒪_D/p𝒪_D)
+= p^g`.  So writing `n_J := #(𝒪_D/J^(e_J)) ≥ 2`,
+
+  `∏_J n_J^(r_J) = #P[p] = p^(2g) = (∏_J n_J)^2 = ∏_J n_J^2`,
+
+while `r_J ≥ 2` for every `J` by `heven` and `hnz`.  A product of terms
+each at least the corresponding term of another product can only be equal
+to it termwise, so `n_J^(r_J) = n_J^2` and hence `r_J = 2`, for every `J`
+at once.
+
+NOTE THE RAMIFICATION IDENTITY IS NOT USED.  One expects to need
+`Σ_J e_J f_J = g` (`Ideal.sum_ramification_inertia`); the absolute norm
+supplies it implicitly through `Ideal.absNorm_span_natCast`, which is why
+neither `ramificationIdx'` nor `inertiaDeg'` appears anywhere below. -/
+theorem card_tors_eq_sq
+    (I : Ideal (𝓞 D)) (hI : I.IsMaximal)
+    (p : ℕ) (hp : p.Prime) (hpI : (p : 𝓞 D) ∈ I)
+    (hsurj : ∀ J : Ideal (𝓞 D), J.IsMaximal → ∀ π ∈ J, π ∉ J ^ 2 →
+      ∀ (k : ℕ) (y : P), y ∈ Submodule.torsionBySet (𝓞 D) P ((J ^ k : Ideal (𝓞 D)) : Set (𝓞 D)) →
+        ∃ z ∈ Submodule.torsionBySet (𝓞 D) P ((J ^ (k + 1) : Ideal (𝓞 D)) : Set (𝓞 D)),
+          π • z = y)
+    (hcard : Nat.card (Submodule.torsionBySet (𝓞 D) P
+        ((Ideal.span {(p : 𝓞 D)} : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = p ^ (2 * Module.finrank ℚ D))
+    (heven : ∀ J : Ideal (𝓞 D), J.IsMaximal → (p : 𝓞 D) ∈ J →
+      ∃ r, Nat.card (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)))
+        = Nat.card (𝓞 D ⧸ J) ^ (2 * r))
+    (hnz : ∀ J : Ideal (𝓞 D), J.IsMaximal → (p : 𝓞 D) ∈ J →
+      Nat.card (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D))) ≠ 1) :
+    Nat.card (Submodule.torsionBySet (𝓞 D) P ((I : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = Nat.card (𝓞 D ⧸ I) ^ 2 := by
+  classical
+  set 𝔞 : Ideal (𝓞 D) := Ideal.span {(p : 𝓞 D)} with h𝔞def
+  have hpne : (p : 𝓞 D) ≠ 0 := Nat.cast_ne_zero.mpr hp.ne_zero
+  have h𝔞 : 𝔞 ≠ ⊥ := by simpa [h𝔞def, Ideal.span_singleton_eq_bot] using hpne
+  set S : Finset (Ideal (𝓞 D)) := (UniqueFactorizationMonoid.factors 𝔞).toFinset with hSdef
+  set e : Ideal (𝓞 D) → ℕ := fun J => (UniqueFactorizationMonoid.factors 𝔞).count J with hedef
+  -- ### basic facts about the factorisation of `p 𝒪_D`
+  have hprod : ∏ J ∈ S, J ^ e J = 𝔞 := by
+    rw [hSdef, hedef, ← Finset.prod_multiset_count, ← associated_iff_eq]
+    exact UniqueFactorizationMonoid.factors_prod h𝔞
+  have he1 : ∀ J ∈ S, 1 ≤ e J := fun J hJ =>
+    Multiset.one_le_count_iff_mem.mpr (Multiset.mem_toFinset.mp hJ)
+  have hprime : ∀ J ∈ S, Prime J := fun J hJ =>
+    UniqueFactorizationMonoid.prime_of_factor J (Multiset.mem_toFinset.mp hJ)
+  have hJbot : ∀ J ∈ S, J ≠ ⊥ := fun J hJ => (hprime J hJ).ne_zero
+  have hmax : ∀ J ∈ S, J.IsMaximal := fun J hJ =>
+    (Ideal.isPrime_of_prime (hprime J hJ)).isMaximal (hJbot J hJ)
+  have hlepow : ∀ J ∈ S, 𝔞 ≤ J ^ e J := by
+    intro J hJ
+    rw [← hprod]
+    exact Ideal.dvd_iff_le.mp (Finset.dvd_prod_of_mem _ hJ)
+  have hmemp : ∀ J ∈ S, (p : 𝓞 D) ∈ J := by
+    intro J hJ
+    have h1 : 𝔞 ≤ J :=
+      le_trans (hlepow J hJ) (Ideal.pow_le_self (by have := he1 J hJ; omega : e J ≠ 0))
+    exact h1 (Ideal.mem_span_singleton_self _)
+  have hI0 : I ≠ ⊥ := by
+    intro h
+    rw [h] at hpI
+    exact hpne (Ideal.mem_bot.mp hpI)
+  have hIS : I ∈ S := by
+    rw [hSdef, Multiset.mem_toFinset]
+    have hIdvd : I ∣ 𝔞 := Ideal.dvd_iff_le.mpr (by rw [h𝔞def, Ideal.span_le]; simpa using hpI)
+    obtain ⟨q, hq, hassoc⟩ :=
+      UniqueFactorizationMonoid.exists_mem_factors_of_dvd h𝔞
+        (Ideal.prime_of_isPrime hI0 hI.isPrime).irreducible hIdvd
+    rwa [associated_iff_eq.mp hassoc]
+  -- ### the CRT splitting of `P[p]`, and its cardinality
+  have hequiv : ∀ K : Ideal (𝓞 D), 𝔞 ≤ K →
+      Nat.card (Submodule.torsionBySet (𝓞 D)
+          (Submodule.torsionBySet (𝓞 D) P ((𝔞 : Ideal (𝓞 D)) : Set (𝓞 D))) (K : Set (𝓞 D)))
+        = Nat.card (Submodule.torsionBySet (𝓞 D) P ((K : Ideal (𝓞 D)) : Set (𝓞 D))) := by
+    intro K hK
+    refine Nat.card_congr ⟨fun z => ⟨(z.1 : P), ?_⟩, fun y => ⟨⟨(y : P), tors_mono hK y.2⟩, ?_⟩,
+      fun _ => rfl, fun _ => rfl⟩
+    · rw [mem_tors_iff]
+      intro a ha
+      have h := (mem_tors_iff (P := (Submodule.torsionBySet (𝓞 D) P
+        ((𝔞 : Ideal (𝓞 D)) : Set (𝓞 D)))) K z.1).mp z.2 a ha
+      simpa using congrArg Subtype.val h
+    · rw [mem_tors_iff]
+      intro a ha
+      exact Subtype.ext (by simpa using (mem_tors_iff K (y : P)).mp y.2 a ha)
+  have hint := Submodule.isInternal_prime_power_torsion_of_is_torsion_by_ideal
+    (M := (Submodule.torsionBySet (𝓞 D) P ((𝔞 : Ideal (𝓞 D)) : Set (𝓞 D)))) h𝔞
+    (Submodule.torsionBySet_isTorsionBySet ((𝔞 : Ideal (𝓞 D)) : Set (𝓞 D)))
+  have hcardprod : Nat.card (Submodule.torsionBySet (𝓞 D) P ((𝔞 : Ideal (𝓞 D)) : Set (𝓞 D)))
+      = ∏ J ∈ S, Nat.card (Submodule.torsionBySet (𝓞 D) P
+          ((J ^ e J : Ideal (𝓞 D)) : Set (𝓞 D))) := by
+    have h1 := Nat.card_congr (Equiv.ofBijective _ hint).symm
+    rw [h1, Nat.card_congr (DirectSum.linearEquivFunOnFintype (𝓞 D)
+      (ι := { x // x ∈ S }) (M := fun J : S =>
+        (Submodule.torsionBySet (𝓞 D)
+          (Submodule.torsionBySet (𝓞 D) P ((𝔞 : Ideal (𝓞 D)) : Set (𝓞 D)))
+          (((J : Ideal (𝓞 D)) ^ e (J : Ideal (𝓞 D)) : Ideal (𝓞 D)) : Set (𝓞 D))))).toEquiv,
+      Nat.card_pi]
+    rw [← Finset.prod_coe_sort S (fun J => Nat.card (Submodule.torsionBySet (𝓞 D) P
+      ((J ^ e J : Ideal (𝓞 D)) : Set (𝓞 D))))]
+    exact Finset.prod_congr rfl fun J _ => hequiv _ (hlepow J J.2)
+  -- ### the count at each prime power, from the tower lemma
+  have hper : ∀ J ∈ S, ∃ r : ℕ, 1 ≤ r ∧
+      Nat.card (Submodule.torsionBySet (𝓞 D) P ((J : Ideal (𝓞 D)) : Set (𝓞 D)))
+        = Nat.card (𝓞 D ⧸ J) ^ (2 * r) ∧
+      Nat.card (Submodule.torsionBySet (𝓞 D) P ((J ^ e J : Ideal (𝓞 D)) : Set (𝓞 D)))
+        = Nat.card (𝓞 D ⧸ J ^ e J) ^ (2 * r) := by
+    intro J hJ
+    obtain ⟨π, hπ, hπ2⟩ := exists_mem_notMem_sq_of_isMaximal (hmax J hJ) (hJbot J hJ)
+    obtain ⟨r, hr⟩ := heven J (hmax J hJ) (hmemp J hJ)
+    refine ⟨r, ?_, hr, ?_⟩
+    · rcases Nat.eq_zero_or_pos r with h0 | h
+      · exact absurd (by rw [hr, h0]; simp) (hnz J (hmax J hJ) (hmemp J hJ))
+      · exact h
+    · rw [card_tors_pow J (hmax J hJ) (hJbot J hJ) hπ hπ2
+        (hsurj J (hmax J hJ) π hπ hπ2) (2 * r) hr (e J), card_quotient_pow, ← pow_mul]
+      ring_nf
+  choose! r hr1 hrlvl hrpow using hper
+  -- ### the same product, computed in the RING: `∏_J #(𝒪_D/J^(e_J)) = p^g`
+  have hringprod : ∏ J ∈ S, Nat.card (𝓞 D ⧸ J ^ e J) = p ^ Module.finrank ℚ D := by
+    have h1 : ∏ J ∈ S, Ideal.absNorm (J ^ e J) = Ideal.absNorm 𝔞 := by
+      rw [← map_prod, hprod]
+    have h2 : Ideal.absNorm 𝔞 = p ^ Module.finrank ℚ D := by
+      rw [h𝔞def, Ideal.absNorm_span_natCast, NumberField.RingOfIntegers.rank]
+    simpa [Ideal.absNorm_apply, Submodule.cardQuot_apply, h2] using h1
+  -- ### each factor is at least two, which is what makes the comparison strict
+  have hn2 : ∀ J ∈ S, 2 ≤ Nat.card (𝓞 D ⧸ J ^ e J) := by
+    intro J hJ
+    have hne0 : Ideal.absNorm (J ^ e J) ≠ 0 := by
+      rw [Ne, Ideal.absNorm_eq_zero_iff]
+      exact pow_ne_zero _ (fun h0 => hJbot J hJ (by rwa [Ideal.zero_eq_bot] at h0))
+    have hne1 : Ideal.absNorm (J ^ e J) ≠ 1 := by
+      rw [Ne, Ideal.absNorm_eq_one_iff]
+      intro htop
+      exact (hmax J hJ).ne_top (top_le_iff.mp
+        (htop ▸ Ideal.pow_le_self (by have := he1 J hJ; omega : e J ≠ 0)))
+    have := hne0; have := hne1
+    rw [Ideal.absNorm_apply, Submodule.cardQuot_apply] at hne0 hne1
+    omega
+  -- ### conclude: every `r J` is one, i.e. every residual rank is two
+  have hkey : ∀ J ∈ S, r J = 1 := by
+    intro J hJ
+    have hfg : ∀ K ∈ S, Nat.card (𝓞 D ⧸ K ^ e K) ^ 2 ≤ Nat.card (𝓞 D ⧸ K ^ e K) ^ (2 * r K) :=
+      fun K hK => Nat.pow_le_pow_right (by have := hn2 K hK; omega) (by have := hr1 K hK; omega)
+    have hpos : ∀ K ∈ S, 0 < Nat.card (𝓞 D ⧸ K ^ e K) ^ 2 := fun K hK => by
+      have := hn2 K hK; positivity
+    have heqprod : ∏ K ∈ S, Nat.card (𝓞 D ⧸ K ^ e K) ^ 2
+        = ∏ K ∈ S, Nat.card (𝓞 D ⧸ K ^ e K) ^ (2 * r K) := by
+      have hR : ∏ K ∈ S, Nat.card (𝓞 D ⧸ K ^ e K) ^ (2 * r K)
+          = p ^ (2 * Module.finrank ℚ D) := by
+        rw [show (∏ K ∈ S, Nat.card (𝓞 D ⧸ K ^ e K) ^ (2 * r K))
+            = ∏ K ∈ S, Nat.card (Submodule.torsionBySet (𝓞 D) P
+              ((K ^ e K : Ideal (𝓞 D)) : Set (𝓞 D))) from
+          Finset.prod_congr rfl fun K hK => (hrpow K hK).symm, ← hcardprod, hcard]
+      rw [Finset.prod_pow, hringprod, hR, ← pow_mul, Nat.mul_comm]
+    have hJeq := eq_of_prod_eq_of_le hpos hfg heqprod hJ
+    have h2 := hn2 J hJ
+    have h3 := hr1 J hJ
+    have := Nat.pow_right_injective h2 hJeq
+    omega
+  rw [hrlvl I hIS, hkey I hIS]
+
+end Assembly
+
 end LevelFrame
 
+/-! ### The three geometric inputs of the rank count
+
+The audit under `card_torsion_of_isMaximal` below establishes that no
+collection of INTEGER counts determines the residual ranks `r_J`, and
+invites exactly one refutation: a constraint pinning `r_J` without a
+rational-homology input.  PARITY is such a constraint, and
+`LevelFrame.card_tors_eq_sq` is the proof that parity plus the integer
+count closes the argument.  What is left is these three leaves.  Each is
+a UNIVERSAL fact about abelian schemes, reusable well beyond this file. -/
+
+open _root_.NumberField in
+/-- **`#A[N] = N^(2g)`: the degree of `[N]`, in characteristic zero**
+(sorry leaf — ABELIAN VARIETIES; Mumford *Abelian Varieties* §6 (theorem
+of the cube) and §18, Milne *Abelian Varieties* I.7).
+
+`A_x` is an abelian variety of dimension `g = [D : ℚ]` over an
+algebraically closed field of characteristic zero — that is `hdim`
+together with the properness, smoothness and connectedness carried by
+`ab` — and `[N]` is an isogeny of degree `N^(2g)`, étale in
+characteristic zero, so its kernel has exactly `N^(2g)` geometric points.
+
+WHAT ALREADY EXISTS, and what is genuinely missing.
+`Modularity/AbelianSchemeIsogeny.lean` presents `[N]` as **finite locally
+free**: `flat_mulByNat`, `finite_preimage_mulByNat`,
+`surjective_mulByNat` and `locallyOfFinitePresentation_mulByNat` are all
+PROVEN there.  What is missing is only the DEGREE — there is no `degree`
+of a finite locally free morphism at this pin, and no theorem of the
+cube.  So this leaf is `AbelianSchemeIsogeny.lean`'s natural successor
+rather than a fresh development.
+
+NOTE THE REAL MULTIPLICATION IS NOT USED.  `m` enters only to phrase the
+statement through `Mult.torsion`; the content is about `[N]` on `A`, and
+`Ideal.span {(N : 𝒪_D)}`-torsion IS `N`-torsion because the ideal is
+generated by `N`.  A successor may freely restate it over `ab` alone. -/
+theorem card_torsion_span_natCast
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (N : ℕ) (hN : N ≠ 0) :
+    Nat.card (m.torsion x (Ideal.span {(N : NumberField.RingOfIntegers D)})).1
+      = N ^ (2 * Module.finrank ℚ D) :=
+  sorry
+
+open _root_.NumberField in
+/-- **The residual rank is EVEN at every maximal `J`** (sorry leaf —
+POLARIZATION; Mumford *Abelian Varieties* §16, §20, §23).
+
+This is the input that defeats the counterexample of the audit below:
+`M₁` there has `r_{J₁} = 1`, so parity alone excludes it, and parity is
+drawn from the polarization rather than from `H₁(A, ℚ)`.
+
+THE ARGUMENT.  An `𝒪_D`-linear polarization `λ : A ⟶ A^∨` induces, via
+the canonical Weil pairing on `A × A^∨`, an `𝒪_D`-bilinear ALTERNATING
+pairing on the `J`-torsion — that is exactly
+`PolarizationStruct.pairing` together with `pairing_add_left`,
+`pairing_add_right`, `pairing_self` and `pairing_act` in
+`Modularity/AbelianScheme.lean`, all PROVEN there from the axioms.  If
+the pairing is moreover NONDEGENERATE, `A[J]` is a symplectic vector
+space over the residue field `𝒪_D/J`, and a symplectic space has even
+dimension.
+
+WHY THIS IS NOT CIRCULAR — the refuting check of the audit below, run.
+The audit warns that if the `𝒪_D`-linear polarization has to be obtained
+from `A^∨ ≅ A ⊗_{𝒪_D} 𝔠`, whose classical proof CLASSIFIES the
+`𝒪_D`-module structure of the homology, then the rank has been smuggled
+in and the route is circular.  It is not, for two independent reasons.
+
+(i) FORMAL.  Parity is strictly weaker than `r_J = 2`: the distribution
+`(r_{J₁}, r_{J₂}) = (0, 4)` satisfies parity and the integer counts, and
+is excluded here only by `card_torsion_ne_one_of_isMaximal`.  An input
+that leaves `(0, 4)` standing cannot presuppose `r_J = 2`.  This is a
+proof, not an analogy, and it is checkable without any geometry.
+
+(ii) MATHEMATICAL.  The `𝔠`-polarization theorem is about WHICH
+polarizations exist (principality, the Steinitz class of `H₁`), not about
+whether an `𝒪_D`-linear one exists at all.  For the latter: `A` is
+projective, so carries SOME polarization `λ₀`; its Rosati involution is
+positive, and a totally real field admits no nontrivial positive
+involution — if `σ ≠ id` had order two then `D = D^σ(√d)` with `d`
+totally positive, and `Tr(y σ(y)) = -Tr(d) < 0` at `y = √d`, contradicting
+positivity.  So the Rosati involution is the identity on `𝒪_D`, which
+says precisely `λ₀ ∘ ι(a) = ι(a)^∨ ∘ λ₀`: `λ₀` is ALREADY `𝒪_D`-linear,
+with no averaging, no `𝔠` and no homology input.  This is what
+`DualStruct.weil_act` axiomatises.
+
+THE CHECK THAT WOULD REFUTE (ii), and it is the residual gap.  Exhibit an
+`A` with `𝒪_D`-action whose `End⁰(A)` is strictly larger than `D` and for
+which NO polarization has `D` stable under its Rosati involution — the
+argument above assumes `†` preserves `D`, which is automatic when
+`End⁰(A) = D` and needs Albert's classification otherwise.  Reason (i) is
+independent of this and already suffices to license the cut.
+
+WHAT IS STILL MISSING at this pin, both checkable by reading
+`Modularity/AbelianScheme.lean`: nothing asserts that a
+`DualStruct`/`PolarizationStruct` EXISTS for a given `ab`/`m`, and
+`PolarizationStruct` does not assert its induced pairing nondegenerate
+(only `DualStruct.weil_nondegenerate` is an axiom, and that is the
+canonical `A × A^∨` pairing, not the polarized one).  Mathlib has NO
+"nondegenerate alternating ⇒ even `finrank`" lemma either — verified
+2026-07-27 — so that piece must be built from
+`LinearMap.BilinForm.finrank_orthogonal` by induction on hyperbolic
+planes.
+
+NOTE the classical argument is cleanest on the RATIONAL Tate module
+`V_J`, where nondegeneracy holds for ANY isogeny `λ` and the
+prime-to-`J`-degree condition disappears; that is why this leaf is stated
+as its CONCLUSION (parity) rather than as the existence of a
+`J`-nondegenerate pairing, which would be false for a polarization whose
+degree `J` divides. -/
+theorem even_dim_torsion_of_isMaximal
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) :
+    ∃ r, Nat.card (m.torsion x I).1
+      = Nat.card (NumberField.RingOfIntegers D ⧸ I) ^ (2 * r) :=
+  sorry
+
+open _root_.NumberField in
+/-- **`A[J] ≠ 0` at every maximal `J`** (sorry leaf — Mumford *Abelian
+Varieties* §19, `End(A) ↪ End(T_p A)`).
+
+Equivalently: `𝒪_D ⊗ ℤ_p` acts FAITHFULLY on `T_p A`, so no factor of
+`𝒪_D ⊗ ℤ_p = ∏_{J ∣ p} 𝒪_J` annihilates it.
+
+THIS IS NOT THE FAITHFULNESS THE AUDIT BELOW DISMISSES.  That audit's
+counterexample `M₁` is faithful as an `𝒪_D`-MODULE, and so is the
+parity-even variant with `(r_{J₁}, r_{J₂}) = (0, 4)`; module-faithfulness
+constrains only the SUM `Σ_J r_J e_J f_J`.  What is needed, and what this
+leaf states, is nonvanishing at each SINGLE `J`.  Together with
+`even_dim_torsion_of_isMaximal` it gives `r_J ≥ 2` for every `J`, which
+is exactly the hypothesis `LevelFrame.card_tors_eq_sq` consumes.
+
+The statement is a cardinality rather than "there is a nonzero point"
+because that is the form the assembly uses; the two agree because `A[J]`
+is finite (it embeds in `A[p]`, of order `p^(2g)`). -/
+theorem card_torsion_ne_one_of_isMaximal
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) :
+    Nat.card (m.torsion x I).1 ≠ 1 :=
+  sorry
+
 /-- **The `I`-torsion of a geometric fibre has `(#𝒪_D/I)²` elements**
-(sorry node — ABELIAN VARIETIES; Mumford *Abelian Varieties* §6 and §18,
-Silverman *AEC* III.7, Taylor 2002 §2).
+(PROVEN 2026-07-27 over the three geometric leaves
+`card_torsion_span_natCast`, `even_dim_torsion_of_isMaximal` and
+`card_torsion_ne_one_of_isMaximal`, and the arithmetic bridge
+`LevelFrame.card_tors_eq_sq`; the audit below is preserved because it is
+what forced the three-way cut, and its counterexample still stands).
 
 **This is where the rank count lives, and it is the only genuinely
 geometric input of `exists_levelTateFrame`** — everything else about a
@@ -1899,18 +2355,46 @@ involution is positive and trivial on `𝒪_D` — which is exactly what
 `DualStruct.weil_act` axiomatises) without a rank input, the route is
 sound and this leaf splits three ways.
 
-THE VOCABULARY NOW EXISTS — verified 2026-07-27, and it is NOT yet on
-`main`. `DualStruct`, `PolarizationStruct`, `PolarizationStruct.pairing`
-and its six lemmas (`pairing_add_left`, `pairing_add_right`,
-`pairing_self` — alternating, `pairing_gal`, `pairing_act`,
-`galSMul_hom`) live in `Modularity/AbelianScheme.lean` as of commit
-`4ff8dde1` on branch `flt-lean-169`. Two gaps remain between that layer
-and this leaf, both checkable by reading the structure: nothing asserts
-a `DualStruct`/`PolarizationStruct` EXISTS for a given `ab`/`m`, and
+THE VOCABULARY NOW EXISTS — verified 2026-07-27, and it IS on `main`
+(commit `4ff8dde1`, originally branch `flt-lean-169`). `DualStruct`,
+`PolarizationStruct`, `PolarizationStruct.pairing` and its six lemmas
+(`pairing_add_left`, `pairing_add_right`, `pairing_self` — alternating,
+`pairing_gal`, `pairing_act`, `galSMul_hom`) live in
+`Modularity/AbelianScheme.lean`. Two gaps remain between that layer and
+this leaf, both checkable by reading the structure: nothing asserts a
+`DualStruct`/`PolarizationStruct` EXISTS for a given `ab`/`m`, and
 `PolarizationStruct` does not assert that its induced pairing is
 nondegenerate (only `DualStruct.weil_nondegenerate` is an axiom, and
 that is the canonical `A × A^∨` pairing, not the polarized one). Those
-two gaps are precisely the second bullet above. -/
+two gaps are precisely the second bullet above, and they are now the
+content of `even_dim_torsion_of_isMaximal` rather than of this leaf.
+
+RESOLUTION (2026-07-27) — THE CUT, AND WHAT SURVIVED OF THE AUDIT.
+The audit's VERDICT survives verbatim: no collection of integer counts
+determines the `r_J`, and its counterexample `M₁` stands. Its REASON
+— "only `H₁(A, ℚ)` being a `D`-vector space can force `r_J = 2`" — was
+too strong, and it named its own refutation. Parity is that refutation,
+and it is drawn from the polarization, not from rational homology.
+
+So this leaf is now PROVEN, over four pieces:
+
+* `LevelFrame.card_tors_eq_sq` — PROVEN here, the whole arithmetic
+  bridge: CRT at `p 𝒪_D = ∏_J J^(e_J)` (mathlib's
+  `Submodule.isInternal_prime_power_torsion_of_is_torsion_by_ideal`),
+  the tower relation from `LevelFrame.card_tors_pow`, and the
+  termwise-equality argument. It needs no ramification identity — the
+  absolute norm supplies `Σ_J e_J f_J = g` implicitly.
+* `card_torsion_span_natCast` — `#A[N] = N^(2g)`, the degree of `[N]`.
+* `even_dim_torsion_of_isMaximal` — parity, from an `𝒪_D`-linear
+  polarization.
+* `card_torsion_ne_one_of_isMaximal` — `A[J] ≠ 0` at each single `J`.
+
+THE REFUTING CHECK THE AUDIT ASKED FOR WAS RUN, AND THE ROUTE IS NOT
+CIRCULAR; the argument is recorded in full under
+`even_dim_torsion_of_isMaximal`, and its formal half is this: parity
+leaves `(r_{J₁}, r_{J₂}) = (0, 4)` standing, so an input yielding only
+parity cannot presuppose `r_J = 2`. That half needs no geometry and no
+`𝔠`-polarization theory to check. -/
 theorem card_torsion_of_isMaximal
     {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
     {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
@@ -1920,8 +2404,19 @@ theorem card_torsion_of_isMaximal
     (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
     (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal) :
     Nat.card (m.torsion x I).1
-      = Nat.card (NumberField.RingOfIntegers D ⧸ I) ^ 2 :=
-  sorry
+      = Nat.card (NumberField.RingOfIntegers D ⧸ I) ^ 2 := by
+  classical
+  letI : AddCommGroup (GeomFibrePt f x) := ab.addCommGroup (specAlgClos F ≫ x)
+  letI : Module (NumberField.RingOfIntegers D) (GeomFibrePt f x) :=
+    m.module (specAlgClos F ≫ x)
+  haveI : I.IsMaximal := hI
+  obtain ⟨p, n, -, hpI, hp, -⟩ := Ideal.exists_prime_and_absNorm_eq_pow I
+  exact LevelFrame.card_tors_eq_sq (P := GeomFibrePt f x) I hI p hp hpI
+    (fun J hJ π hπ hπ2 k y hy =>
+      exists_mem_torsion_act_uniformizer_eq m x J hJ π hπ hπ2 k y hy)
+    (card_torsion_span_natCast m x hdim p hp.ne_zero)
+    (fun J hJ _ => even_dim_torsion_of_isMaximal m x J hJ)
+    (fun J hJ _ => card_torsion_ne_one_of_isMaximal m x J hJ)
 
 /-- **The `Iⁿ`-torsion is free of rank two over `𝒪_D/Iⁿ`, at each single
 level `n`** (PROVEN 2026-07-26 over the single geometric leaf
@@ -4840,11 +5335,15 @@ merged onto the assembly of that leaf on 2026-07-26 as a single opaque
 sorried `have`. It is cut here into five statements, of which exactly
 ONE is open and it is the only deep one:
 
-* `det_eq_cyclotomicCharacter_of_tateFrame` (SORRY NODE — the geometric
-  input, and the only open leaf of the clause): the determinant of the
-  frame representation IS the `q`-adic cyclotomic character, as a
-  character of the whole of `Γ_F`. No exceptional set and nothing local
-  appears: the bad places enter only at the second step.
+* `det_eq_cyclotomicCharacter_of_tateFrame` (PROVEN 2026-07-27 — the
+  determinant of the frame representation IS the `q`-adic cyclotomic
+  character, as a character of the whole of `Γ_F`; no exceptional set and
+  nothing local appears in ITS statement). Its geometric content was cut
+  out on 2026-07-27 along the CHEBOTAREV axis into
+  `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` (SORRY NODE — the
+  same identity at the global Frobenius elements away from a finite set
+  of places, which is where the bad places really live), the propagation
+  being `det_eq_cyclotomicCharacter_of_globalFrob` (PROVEN, density).
 * `exists_weilPairing_of_tateFrame` (PROVEN 2026-07-26 over the leaf
   above): the frame carries an alternating `O`-bilinear form with unit
   discriminant on which `Γ_F` acts through the cyclotomic character.
@@ -5224,9 +5723,283 @@ theorem bilin_alternating_apply_det_apply {R : Type*} [CommRing R]
     bilin_alternating_apply_det E halt M, key u v]
   ring
 
+/-! ### Chebotarev density: from the Frobenius determinants to all of `Γ_F`
+
+The determinant identity below is NOT proven from a characteristic-zero
+Weil pairing.  It is CUT along the axis the elliptic analogue in this
+tree already uses (`EllipticCurve/WeilPairing.lean`'s
+`det_galoisRep_eq_cyclotomic`, and, in the exact continuity/density
+spelling copied here, `Modularity/Interface.lean`'s
+`det_eq_cyclotomicCharacter_of_charFrob_coeff_zero`): the geometry is
+asked for ONLY at the global Frobenius elements away from a finite set of
+places, and the value at a general `σ ∈ Γ_F` is then forced, because both
+sides are continuous class functions and the Frobenius conjugacy classes
+are DENSE (`GaloisRepresentation.dense_conjClasses_globalFrob`).
+
+This is a genuine weakening, not a repackaging: the remaining leaf
+`det_globalFrob_eq_cyclotomicCharacter_of_tateFrame` constrains `τ` only
+at Frobenius elements, and everything below it here is PROVEN. -/
+
+/-- **A free module carrying the module topology over a `T2Space` ring is
+a `T2Space`** (PROVEN; vendored in argument from the reference project
+`~/cs/FLT`'s `FLT/Mathlib/Topology/Algebra/Module/ModuleTopology.lean`,
+re-checked against our pin).
+
+`{0}` is the preimage of the closed set `{0}` under the continuous
+injective linear map `M → (ι → R)` given by the coordinates of a basis,
+and a topological additive group with `{0}` closed is Hausdorff.
+
+This is what supplies `T2Space O` for the coefficient ring `O` of a Tate
+frame: `exists_adicCoefficientRing` produces `O` together with
+`Module.Free ℤ_[q] O` and `IsModuleTopology ℤ_[q] O`, and `ℤ_[q]` is a
+metric space.  Without it the agreement locus of the two characters below
+is not closed and the density argument does not start. -/
+theorem t2Space_of_free_isModuleTopology (R : Type*) {M : Type*} [CommRing R]
+    [AddCommGroup M] [Module R M] [Module.Free R M]
+    [TopologicalSpace R] [TopologicalSpace M] [T2Space R] [IsTopologicalRing R]
+    [IsModuleTopology R M] : T2Space M := by
+  have := IsModuleTopology.topologicalAddGroup R M
+  rw [IsTopologicalAddGroup.t2Space_iff_zero_closed]
+  let f := (Module.Free.chooseBasis R M).repr.toLinearMap
+  let g : (Module.Free.ChooseBasisIndex R M →₀ R) →ₗ[R]
+      (Module.Free.ChooseBasisIndex R M → R) :=
+    { __ := Finsupp.coeFnAddHom
+      map_smul' := fun _ _ => rfl }
+  suffices hpre : (g.comp f) ⁻¹' {0} = {0} by
+    rw [← hpre]
+    exact IsClosed.preimage
+      (IsModuleTopology.continuous_of_linearMap (g.comp f)) isClosed_singleton
+  ext x
+  simp only [Set.mem_preimage, Set.mem_singleton_iff]
+  constructor
+  · intro hx
+    have h0 : (Module.Free.chooseBasis R M).repr x = 0 :=
+      Finsupp.ext fun i => congrFun hx i
+    have := congrArg (Module.Free.chooseBasis R M).repr.symm h0
+    simpa using this
+  · rintro rfl
+    simp [g, f]
+
+/-- **Two continuous characters of `Γ K` that agree at almost every global
+Frobenius agree everywhere** (PROVEN, Chebotarev density in abstract
+form).
+
+The agreement locus is CLOSED because both sides are continuous into the
+Hausdorff ring `O`; it is CONJUGATION-INVARIANT because a multiplicative
+`O`-valued function on a group is a class function when `O` is
+commutative (`f (g x g⁻¹) = f x` after cancelling `f g · f g⁻¹ = 1`); and
+it contains the union of the Frobenius conjugacy classes away from `S`,
+which is DENSE by `GaloisRepresentation.dense_conjClasses_globalFrob`.
+Hence it is everything.
+
+Stated for bare multiplicative FUNCTIONS rather than bundled monoid homs,
+so that a consumer need not build a `MonoidHom` out of a composite of
+coercions in order to apply it. -/
+theorem eq_of_eq_globalFrob_of_continuous {K : Type u} [Field K] [NumberField K]
+    {O : Type*} [CommRing O] [TopologicalSpace O] [T2Space O]
+    (f₁ f₂ : Field.absoluteGaloisGroup K → O)
+    (hm₁ : ∀ a b, f₁ (a * b) = f₁ a * f₁ b) (ho₁ : f₁ 1 = 1)
+    (hm₂ : ∀ a b, f₂ (a * b) = f₂ a * f₂ b) (ho₂ : f₂ 1 = 1)
+    (hc₁ : Continuous f₁) (hc₂ : Continuous f₂)
+    (Sbad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers K)))
+    (h : ∀ v ∉ Sbad, f₁ (GaloisRepresentation.globalFrob v) =
+      f₂ (GaloisRepresentation.globalFrob v))
+    (σ : Field.absoluteGaloisGroup K) : f₁ σ = f₂ σ := by
+  classical
+  have hconj : ∀ (f : Field.absoluteGaloisGroup K → O)
+      (_ : ∀ a b, f (a * b) = f a * f b) (_ : f 1 = 1)
+      (g x : Field.absoluteGaloisGroup K), f (g * x * g⁻¹) = f x := by
+    intro f hm ho g x
+    have hgg : f g * f g⁻¹ = 1 := by rw [← hm, mul_inv_cancel, ho]
+    calc f (g * x * g⁻¹) = f g * f x * f g⁻¹ := by rw [hm, hm]
+      _ = f x * (f g * f g⁻¹) := by ring
+      _ = f x := by rw [hgg, mul_one]
+  have hclosed : IsClosed {x : Field.absoluteGaloisGroup K | f₁ x = f₂ x} :=
+    isClosed_eq hc₁ hc₂
+  have hsub : {x : Field.absoluteGaloisGroup K |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers K), v ∉ Sbad ∧
+        ∃ g, x = g * GaloisRepresentation.globalFrob v * g⁻¹} ⊆
+      {x : Field.absoluteGaloisGroup K | f₁ x = f₂ x} := by
+    rintro x ⟨v, hv, g, rfl⟩
+    simp only [Set.mem_setOf_eq, hconj f₁ hm₁ ho₁, hconj f₂ hm₂ ho₂]
+    exact h v hv
+  have hσ : σ ∈ closure {x : Field.absoluteGaloisGroup K |
+      ∃ v : HeightOneSpectrum (NumberField.RingOfIntegers K), v ∉ Sbad ∧
+        ∃ g, x = g * GaloisRepresentation.globalFrob v * g⁻¹} := by
+    rw [(GaloisRepresentation.dense_conjClasses_globalFrob (K := K) Sbad).closure_eq]
+    trivial
+  exact closure_minimal hsub hclosed hσ
+
+/-- **The determinant of a framed representation is the cyclotomic
+character as soon as it is so at almost every global Frobenius** (PROVEN).
+
+The specialization of `eq_of_eq_globalFrob_of_continuous` to the two
+characters of the determinant clause.  Continuity of the left side is
+`GaloisRep.det`, which is a `ContinuousMonoidHom` by
+`IsModuleTopology.continuous_det`; continuity of the right side is
+mathlib's `cyclotomicCharacter.continuous` pushed along the continuous
+`Field.absoluteGaloisGroup.map` and the continuous `algebraMap ℤ_[q] O`
+(continuous because `O` carries the `ℤ_[q]`-module topology).
+
+Note where the topological pin is used: `Module.Free ℤ_[q] O` and
+`IsModuleTopology ℤ_[q] O` are needed ONLY to know that `O` is Hausdorff,
+which is what makes the agreement locus closed.  Both are supplied by
+`exists_adicCoefficientRing`, so no consumer has to prove anything new. -/
+theorem det_eq_cyclotomicCharacter_of_globalFrob
+    {F : Type u} [Field F] [NumberField F]
+    (q : ℕ) [Fact q.Prime]
+    (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O]
+    [Algebra ℤ_[q] O] [Module.Free ℤ_[q] O] [IsModuleTopology ℤ_[q] O]
+    (τ : GaloisRep F O (Fin 2 → O))
+    (Sbad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)))
+    (h : ∀ v ∉ Sbad,
+      LinearMap.det (τ (GaloisRepresentation.globalFrob v)) =
+        algebraMap ℤ_[q] O
+          ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+            ((Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+              (GaloisRepresentation.globalFrob v)).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q]))
+    (σ : Field.absoluteGaloisGroup F) :
+    LinearMap.det (τ σ) =
+      algebraMap ℤ_[q] O
+        ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+          ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) :
+            ℤ_[q]ˣ) : ℤ_[q]) := by
+  haveI : T2Space O := t2Space_of_free_isModuleTopology ℤ_[q]
+  refine eq_of_eq_globalFrob_of_continuous
+    (fun γ => LinearMap.det (τ γ))
+    (fun γ => algebraMap ℤ_[q] O
+      ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+        ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) γ).toRingEquiv) :
+          ℤ_[q]ˣ) : ℤ_[q]))
+    ?_ ?_ ?_ ?_ ?_ ?_ Sbad h σ
+  · intro a b
+    show τ.det (a * b) = τ.det a * τ.det b
+    rw [map_mul]
+  · show τ.det 1 = 1
+    rw [map_one]
+  · intro a b
+    have hmul : ∀ x y : Field.absoluteGaloisGroup ℚ,
+        (x * y).toRingEquiv = x.toRingEquiv * y.toRingEquiv := fun _ _ => rfl
+    rw [map_mul, hmul, map_mul, Units.val_mul, map_mul]
+  · have hone : (1 : Field.absoluteGaloisGroup ℚ).toRingEquiv = 1 := rfl
+    rw [map_one, hone, map_one, Units.val_one, map_one]
+  · exact (ContinuousMonoidHom.continuous_toFun τ.det).congr fun _ => rfl
+  · exact ((continuous_algebraMap ℤ_[q] O).comp
+      (Units.continuous_val.comp
+        ((cyclotomicCharacter.continuous q ℚ (AlgebraicClosure ℚ)).comp
+          (Field.absoluteGaloisGroup.map (algebraMap ℚ F)).continuous_toFun))).congr
+      fun _ => rfl
+
+/-- **The determinant of a Tate frame at the global Frobenius elements**
+(SORRY NODE, cut 2026-07-27 out of
+`det_eq_cyclotomicCharacter_of_tateFrame` along the CHEBOTAREV axis —
+THE geometric input of the determinant clause; Silverman *AEC* III.8 for
+the elliptic case, Mumford *Abelian Varieties* §16/§20 for the polarized
+case in general, Taylor 2002 §2 and Carayol for the Hilbert–Blumenthal
+normalization used here).
+
+For a Tate frame `φ`/`τ` as in `exists_tateFrame_of_adicCoefficientRing`,
+there is a FINITE set of finite places of `F` outside which
+
+  `det (τ (Frob_v)) = χ_cyc(Frob_v)`.
+
+The general identity at every `σ ∈ Γ_F` follows from this by
+`det_eq_cyclotomicCharacter_of_globalFrob` (Chebotarev density), which is
+PROVEN; so this leaf is all that remains of the determinant clause.
+
+WHY THIS AXIS, AND NOT THE POLARIZATION AXIS.  The classical char-0 route
+— choose an `𝒪_D`-linear polarization, transport the canonical Weil
+pairing `T_I A × T_I A^∨ → 𝒪_{D,I}(1)` along it, refine to an
+`𝒪_D`-bilinear form by trace duality along the inverse different, and
+read the determinant off the second exterior power — is REAL but needs a
+theory that does not exist here.  Checked 2026-07-27, and each of these
+is refutable by one grep:
+
+* `Modularity/AbelianScheme.lean` DOES now carry `DualStruct`,
+  `PolarizationStruct` and `PolarizationStruct.pairing` with its six
+  proven lemmas, and this IS on `main` (an earlier version of this
+  docstring said it was only on branch `flt-lean-169`; that is stale).
+  REFUTING CHECK: `grep -n 'structure DualStruct' Fermat/FLT/Modularity/AbelianScheme.lean`.
+* But NO existence theorem for either structure exists anywhere in the
+  tree, and this leaf's hypotheses supply neither.  REFUTING CHECK: grep
+  `DualStruct` outside `AbelianScheme.lean` — every hit is prose.
+* And `PolarizationStruct` is satisfiable by the CONSTANT ZERO map: all
+  six of its fields hold for `hom := fun _ => d.dualAb.zero _`
+  (`hom_add` by `zero_add`, `pre_hom` by `pre_zero`, `hom_act` by the
+  `act a 0 = 0` derivation already written at `Mult.module`,
+  `hom_torsion` because a `Submodule` contains `0`, and `weil_self`
+  because `weil_add_right` at `z = z' = 0` gives `w = w * w` in a group).
+  So `PolarizationStruct` adds NOTHING over `DualStruct` until a
+  nondegeneracy axiom is added to it, and the polarized pairing it
+  induces may be identically `1`.  REFUTING CHECK: exhibit a field of
+  `PolarizationStruct` that the zero map fails.
+* Trace duality along the inverse different is fully available in mathlib
+  (`Submodule.traceDual`, `FractionalIdeal.dual`, `differentIdeal` and
+  `traceForm_nondegenerate`) but is used NOWHERE in this project or in
+  `~/cs/FLT` except as an ideal-theoretic black box.
+
+The Chebotarev axis relocates the burden to characteristic `q` instead,
+which is where the elliptic proof in this tree actually went
+(`det_frobeniusTorsionEnd` computes `det Frob = q` from the
+divisor-theoretic pairing ON THE REDUCTION).  What it needs, and what a
+successor must build, is an INTEGRAL MODEL for `f : A ⟶ S`: a
+good-reduction hypothesis at almost all `v`, the reduction `A_v`, and the
+comparison of `A[I^n]` with the torsion of that reduction.  Néron models
+are in neither mathlib nor `~/cs/FLT` nor this project — but note that a
+statement, not a proof, of the model may be all a further cut needs (see
+`exists_x0Sieve`'s history for the same pattern).
+
+FAITHFULNESS.  The exceptional set is genuinely necessary here and is NOT
+an artifact: `χ_cyc` is ramified at `q`, so the identity at `Frob_v` is
+false for `v ∣ q`, exactly as in
+`det_eq_cyclotomicCharacter_of_charFrob_coeff_zero`, whose `Sp` inserts
+the place of `p` for this reason.  No exceptional set survives into the
+consumer, because density removes it.
+
+The pinning hypotheses `j`, `hφj`, `hcplt`, `hdense`, `hker` are carried
+verbatim from the consumer and are load-bearing there for the reason
+recorded below it: without them the `O`-structure transported to `T` is
+an arbitrary embedding `O ↪ End_{ℤ_q[Γ_F]}(T)` and the determinant
+becomes `χ₁ · ψ⁻¹(χ₂)` rather than `χ_cyc`.  Do not weaken them. -/
+theorem det_globalFrob_eq_cyclotomicCharacter_of_tateFrame
+    {A S : Scheme.{u}} {f : A ⟶ S} {ab : AbelianSchemeStruct f}
+    {D : Type u} [Field D] [NumberField D] [NumberField.IsTotallyReal D]
+    (m : Mult ab (NumberField.RingOfIntegers D))
+    {F : Type u} [Field F] [NumberField F]
+    (x : Spec (CommRingCat.of F) ⟶ S)
+    (hdim : SmoothOfRelativeDimension (Module.finrank ℚ D) f)
+    (q : ℕ) [Fact q.Prime]
+    (I : Ideal (NumberField.RingOfIntegers D)) (hI : I.IsMaximal)
+    (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
+    (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
+    (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
+    [Algebra ℤ_[q] O]
+    (j : NumberField.RingOfIntegers D →+* O)
+    (hcplt : IsAdicComplete (Ideal.span {j π}) O)
+    (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
+      z - j a ∈ Ideal.span {j π} ^ n)
+    (hker : ∀ (n : ℕ) (a : NumberField.RingOfIntegers D),
+      j a ∈ Ideal.span {j π} ^ n ↔ a ∈ I ^ n)
+    (τ : GaloisRep F O (Fin 2 → O)) (φ : (Fin 2 → O) → TatePt m x I π)
+    (hφadd : ∀ (u u' : Fin 2 → O) (n : ℕ),
+      (φ (u + u')).1 n = ab.add ((φ u).1 n) ((φ u').1 n))
+    (hφbij : Function.Bijective φ)
+    (hφequiv : ∀ (σ : Field.absoluteGaloisGroup F) (u : Fin 2 → O) (n : ℕ),
+      (φ (τ σ u)).1 n = ab.galSMul x σ ((φ u).1 n))
+    (hφj : ∀ (a : NumberField.RingOfIntegers D) (u : Fin 2 → O) (n : ℕ),
+      (φ (j a • u)).1 n = m.act a ((φ u).1 n)) :
+    ∃ Sbad : Finset (HeightOneSpectrum (NumberField.RingOfIntegers F)),
+      ∀ v ∉ Sbad,
+        LinearMap.det (τ (GaloisRepresentation.globalFrob v)) =
+          algebraMap ℤ_[q] O
+            ((cyclotomicCharacter (AlgebraicClosure ℚ) q
+              ((Field.absoluteGaloisGroup.map (algebraMap ℚ F)
+                (GaloisRepresentation.globalFrob v)).toRingEquiv) : ℤ_[q]ˣ) : ℤ_[q]) :=
+  sorry
+
 /-- **The determinant of a Tate frame is the cyclotomic character**
-(SORRY NODE since 2026-07-26 — THE geometric input of the determinant
-clause, and the only open leaf of this section; Silverman *AEC* III.8 for
+(PROVEN 2026-07-27 over `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame`
+by Chebotarev density; Silverman *AEC* III.8 for
 the elliptic case, Mumford *Abelian Varieties* §16/§20 for the polarized
 case in general, Taylor 2002 §2 and Carayol for the Hilbert–Blumenthal
 normalization used here).
@@ -5238,6 +6011,27 @@ multiplication through `j` — the determinant of `τ` is the `q`-adic
 cyclotomic character:
 
   `det (τ σ) = χ_cyc(σ)` for EVERY `σ ∈ Γ_F`.
+
+WHERE THE LEAF WENT (2026-07-27). This declaration is no longer sorried.
+It is PROVEN from `det_globalFrob_eq_cyclotomicCharacter_of_tateFrame`,
+which asserts the same identity ONLY at the global Frobenius elements
+outside a finite set of places, by
+`det_eq_cyclotomicCharacter_of_globalFrob` (Chebotarev density; both
+sides are continuous class functions and the Frobenius conjugacy classes
+are dense). Everything below in this docstring describes the CLASSICAL
+char-0 route and the state of the polarization layer; it is retained
+because it remains the honest account of the OTHER axis, but the open
+obligation now lives at the Frobenius leaf, whose own docstring says what
+a successor must build (an integral model for `f : A ⟶ S`).
+
+Note the cut is a genuine weakening rather than the kind of equivalent
+repackaging the audit below rightly complains about: the Frobenius leaf
+constrains `τ` only on a set of elements, and recovering the rest is a
+real argument. Note also the two INSTANCE hypotheses `Module.Free ℤ_[q] O`
+and `IsModuleTopology ℤ_[q] O` added 2026-07-27: they are used only to
+know `O` is Hausdorff, without which the agreement locus is not closed
+and the density argument does not start. They cost consumers nothing —
+`exists_adicCoefficientRing` already produces both.
 
 WHY THIS, AND NOT THE PAIRING, IS THE LEAF (FORMAL-CONTENT AUDIT,
 2026-07-26). Until this date the open leaf of the clause was
@@ -5304,23 +6098,31 @@ pairing on `I`-torsion: bi-additive, `Γ_F`-equivariant through
 `PolarizationStruct.pairing` with `pairing_add_left`,
 `pairing_add_right`, `pairing_self` (alternating), `galSMul_hom`,
 `pairing_gal` (equivariance through the cyclotomic character) and
-`pairing_act` (`R`-bilinearity) — all proven from the axioms. As of
-2026-07-27 this is commit `4ff8dde1` on branch `flt-lean-169` and is NOT
-yet on `main`; check `git log --all --oneline -- Fermat/FLT/Modularity/AbelianScheme.lean`
-before concluding it is absent.
+`pairing_act` (`R`-bilinearity) — all proven from the axioms.
 
-WHY THAT LAYER STILL DOES NOT CLOSE THIS LEAF — three gaps, each
-checkable in one reading of the structure, and a successor should
-confirm all three are still open before building anything:
+SECOND CORRECTION, 2026-07-27 (the paragraph above said this layer was
+"commit `4ff8dde1` on branch `flt-lean-169` and NOT yet on `main`"):
+IT IS ON `main`. Verified by
+`grep -n 'structure DualStruct' Fermat/FLT/Modularity/AbelianScheme.lean`
+against `origin/main`. Do not go looking for a branch to merge.
 
-1. IT IS LEVEL ONE. `DualStruct.weil` is a pairing on `I`-TORSION,
-   `GeomFibrePt f x → GeomFibrePt dualMap x → rootsOfUnity n (F̄)` for
-   an integer `n ∈ I`. The determinant identity is a statement about the
-   whole `I`-adic tower: it needs pairings on `A[I^k]` valued in
-   `μ_(q^k)`, COMPATIBLE with the transition maps `·π`, so that they
-   assemble into `∧²_O T_I A ≅ O(1)`. Nothing at level one gives that.
-   REFUTING CHECK: find a `weil`-like field indexed by `I ^ k` with a
-   compatibility axiom, or a lemma deriving one.
+WHY THAT LAYER STILL DOES NOT CLOSE THIS LEAF — three gaps. Gap 1 as
+previously written was WRONG and is corrected below; a successor should
+re-run each REFUTING CHECK rather than trust this list:
+
+1. THE LEVELS EXIST; THE COMPATIBILITY DOES NOT. The previous version of
+   this item said "IT IS LEVEL ONE … nothing at level one gives that",
+   and its own refuting check refutes it: `DualStruct.weil` quantifies
+   the ideal INSIDE the field —
+   `weil : ∀ {F} [Field F] (x) (I : Ideal R) (n : ℕ), (n : R) ∈ I → …` —
+   so `weil x (I ^ k) (q ^ k)` is available for every `k` (the side
+   condition `(q ^ k : R) ∈ I ^ k` follows from `hqI`), as are all five
+   axioms at `I ^ k`. The whole tower of pairings on `A[I^k]` valued in
+   `μ_(q^k)` is therefore already there. What is genuinely absent is any
+   axiom relating consecutive levels along the transition maps `·π`,
+   without which they do not assemble into `∧²_O T_I A ≅ O(1)`.
+   REFUTING CHECK for what remains: find a field or lemma relating
+   `weil x (I ^ (k+1)) (q ^ (k+1))` to `weil x (I ^ k) (q ^ k)`.
 2. NO EXISTENCE IS ASSERTED. Both structures are bundled DATA, by
    deliberate design ("the dual is a BUNDLED DATUM, not a construction"
    — representing `Pic⁰` is Grothendieck representability). This leaf's
@@ -5330,12 +6132,27 @@ confirm all three are still open before building anything:
    to take a `PolarizationStruct` hypothesis — and the latter is a cut
    decision, not a repair, since it relocates the burden onto every
    consumer.
-3. THE POLARIZED PAIRING IS NOT ASSERTED NONDEGENERATE. Only
-   `DualStruct.weil_nondegenerate` is an axiom, and it is about the
-   canonical `A × A^∨` pairing. `PolarizationStruct.pairing` is
-   `weil (·) (hom ·)`, which is degenerate exactly on `ker λ`; perfection
-   of the pairing is what the classical argument above uses when it says
-   "the pairing is perfect".
+3. THE POLARIZED PAIRING IS NOT ASSERTED NONDEGENERATE — and this is
+   much worse than it sounds. Only `DualStruct.weil_nondegenerate` is an
+   axiom, and it is about the canonical `A × A^∨` pairing.
+   `PolarizationStruct.pairing` is `weil (·) (hom ·)`, which is
+   degenerate exactly on `ker λ`; perfection is what the classical
+   argument above uses when it says "the pairing is perfect".
+   SHARPENED 2026-07-27, checked field by field: `PolarizationStruct` is
+   satisfiable by the CONSTANT ZERO map `hom := fun _ => d.dualAb.zero _`
+   — `hom_add` by `zero_add`, `pre_hom` by `pre_zero`, `hom_act` by the
+   `act a 0 = 0` derivation already written inside `Mult.module`,
+   `hom_torsion` because `Mult.torsion` is a `Submodule` and so contains
+   `0`, and `weil_self` because `weil_add_right` at `z = z' = 0` gives
+   `w = w * w` in a group. So `PolarizationStruct d` is INHABITED for
+   every `DualStruct d` and adds no mathematical content whatever over
+   it; under that witness every `pairing_*` lemma degenerates to the
+   trivial pairing `≡ 1`. The repair belongs in
+   `Modularity/AbelianScheme.lean` (a nondegeneracy field on
+   `PolarizationStruct`, or an isogeny/finite-kernel condition on `hom`)
+   and is NOT this leaf's to make.
+   REFUTING CHECK: exhibit a field of `PolarizationStruct` that the
+   constant zero map fails to satisfy.
 
 The same three gaps block the sibling `card_torsion_of_isMaximal`,
 where gap 1 does NOT bite (that leaf is level one), and where the layer
@@ -5430,7 +6247,7 @@ theorem det_eq_cyclotomicCharacter_of_tateFrame
     (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
     (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
     (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
-    [Algebra ℤ_[q] O]
+    [Algebra ℤ_[q] O] [Module.Free ℤ_[q] O] [IsModuleTopology ℤ_[q] O]
     (j : NumberField.RingOfIntegers D →+* O)
     (hcplt : IsAdicComplete (Ideal.span {j π}) O)
     (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
@@ -5450,8 +6267,13 @@ theorem det_eq_cyclotomicCharacter_of_tateFrame
         algebraMap ℤ_[q] O
           ((cyclotomicCharacter (AlgebraicClosure ℚ) q
             ((Field.absoluteGaloisGroup.map (algebraMap ℚ F) σ).toRingEquiv) :
-              ℤ_[q]ˣ) : ℤ_[q]) :=
-  sorry
+              ℤ_[q]ˣ) : ℤ_[q]) := by
+  -- The geometry is asked for only at the global Frobenius elements …
+  obtain ⟨Sbad, hSbad⟩ :=
+    det_globalFrob_eq_cyclotomicCharacter_of_tateFrame m x hdim q I hI hqI π hπ hπ2 O j
+      hcplt hdense hker τ φ hφadd hφbij hφequiv hφj
+  -- … and Chebotarev density propagates the identity to all of `Γ_F`.
+  exact fun σ => det_eq_cyclotomicCharacter_of_globalFrob q O τ Sbad hSbad σ
 
 /-- **A Tate frame carries the `𝒪_D`-linear Weil pairing** (PROVEN
 2026-07-26 over `det_eq_cyclotomicCharacter_of_tateFrame`,
@@ -5527,7 +6349,7 @@ theorem exists_weilPairing_of_tateFrame
     (hqI : (q : NumberField.RingOfIntegers D) ∈ I)
     (π : NumberField.RingOfIntegers D) (hπ : π ∈ I) (hπ2 : π ∉ I ^ 2)
     (O : Type u) [CommRing O] [TopologicalSpace O] [IsTopologicalRing O] [IsLocalRing O]
-    [Algebra ℤ_[q] O]
+    [Algebra ℤ_[q] O] [Module.Free ℤ_[q] O] [IsModuleTopology ℤ_[q] O]
     (j : NumberField.RingOfIntegers D →+* O)
     (hcplt : IsAdicComplete (Ideal.span {j π}) O)
     (hdense : ∀ (n : ℕ) (z : O), ∃ a : NumberField.RingOfIntegers D,
