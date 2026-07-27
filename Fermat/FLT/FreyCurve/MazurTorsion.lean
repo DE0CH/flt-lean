@@ -125,6 +125,12 @@ public import Fermat.FLT.KnownIn1980s.EllipticCurves.PointReduction
 -- arrived on a branch that also carried a rival `14a4` route in
 -- `MordellWeil.lean`, which was not taken, so it is not re-exported from there.
 public import Fermat.FLT.EllipticCurve.TorsionReduction
+-- the kernel-polynomial criterion for a rational cyclic `p`-isogeny
+-- (`WeierstrassCurve.IsKernelPolynomial`, `exists_point_of_isKernelPolynomial`),
+-- cut out of `exists_isogenyCurve_of_genusOneJTable` below. `IsKernelPolynomial`
+-- appears in SIGNATURE position there, where a merely transitive import is not
+-- re-exported, so this must be a `public import`.
+public import Fermat.FLT.EllipticCurve.KernelPolynomial
 -- mathlib's reduction theory of Weierstrass equations over a DVR
 -- (`IsMinimal`, `HasGoodReduction`, `reduction`). It already reaches this file
 -- publicly through `TorsionReduction → GoodReduction`, and is named here
@@ -22404,8 +22410,78 @@ hypothesis is load-bearing rather than decoration. -/
 theorem x0GenusOneTable_pos {p ℓ m : ℕ} (h : (p, ℓ, m) ∈ x0GenusOneTable) : p ≠ 0 := by
   fin_cases h <;> decide
 
-/-- **LEAF — every tabulated `j`-value is REALISED by a curve carrying a
-rational `p`-isogeny** (sorry leaf, introduced 2026-07-27 by the cut of
+/-- **LEAF — the six kernel-polynomial certificates** (sorry leaf, introduced
+2026-07-27 by the cut of `exists_isogenyCurve_of_genusOneJTable`, which is
+PROVEN over it).
+
+For each row `(p, j₀)` of `genusOneJTable`: an elliptic curve `E/ℚ` with
+`j(E) = j₀`, a monic `f ∈ ℚ[X]` and a multiplier `m` forming a
+`WeierstrassCurve.IsKernelPolynomial` certificate at level `p` — i.e. `f` has
+degree `(p−1)/2`, divides the `p`-division polynomial `ΨSq p`, `m` is a
+primitive root mod `p`, and the root set of `f` is stable under
+`x(P) ↦ x(m ⬝ P)` (written multiplied-out as a divisibility in `ℚ[X]`).
+
+**NOTHING GALOIS-THEORETIC IS LEFT HERE.** The subgroup, its exact order `p`,
+and its stability under `Gal(ℚ̄/ℚ)` are all discharged once and for all by
+`WeierstrassCurve.exists_point_of_isKernelPolynomial`
+(`Fermat/FLT/EllipticCurve/KernelPolynomial.lean`, PROVEN 2026-07-27, axioms
+`[propext, Classical.choice, Quot.sound]`).  What remains is arithmetic in
+`ℚ[X]` for six explicit curves: two divisibilities and a degree, per row.
+
+**THE CERTIFICATES, computed and verified in PARI/GP 2026-07-27** (untrusted
+searcher; each must still be re-verified in Lean, which is exactly what this
+leaf asks).  In every row `f ∣ elldivpol(E, p)` holds, `disc f ≠ 0`, and
+`f ∣ ∑ᵢ fᵢ ⬝ A^i ⬝ B^(d−i)` where `[A, B] = ellxn(E, m)` is the
+multiplication-by-`m` abscissa map — all six confirmed:
+
+| `p` | `j₀` | model `[a₁,a₂,a₃,a₄,a₆]` | `m` | kernel polynomial `f` |
+|-----|------|--------------------------|-----|------------------------|
+| 11 | `−24729001` | `[1,1,1,−30,−76]` | 2 | `x⁵ + 14x⁴ + 63x³ + 62x² − 230x − 439` |
+| 11 | `−32768` | `[0,−1,1,−7,10]` | 2 | `x⁵ − 9x⁴ + 17x³ + 20x² − 73x + 43` |
+| 11 | `−121` | `[1,1,0,−2,−7]` | 2 | `x⁵ + 14x⁴ + 30x³ − 37x² − 76x + 1` |
+| 17 | `−297756989/2` | `[1,0,1,−3041,64278]` | 3 | `x⁸ − 226x⁷ + 18372x⁶ − 543828x⁵ − 9242705x⁴ + 1127218758x³ − 33006143963x² + 437271444481x − 2252576338909` |
+| 17 | `−882216989/131072` | `[1,1,0,−660,−7600]` | 3 | `x⁸ + 230x⁷ + 10840x⁶ − 17600x⁵ − 8729600x⁴ − 122880000x³ + 339968000x² + 12615680000x + 41943040000` |
+| 19 | `−884736` | `[0,0,1,−38,90]` | 2 | `x⁹ − 38x⁸ + 437x⁷ − 1444x⁶ − 7942x⁵ + 82308x⁴ − 274360x³ + 390963x² − 130321x − 130321` |
+
+`m` is `znprimroot(p)` in each case (`2, 2, 2, 3, 3, 2`); `2` is NOT usable at
+`p = 17`, where it has order `8` and hence order `4` in `(ℤ/17)ˣ/±1`, too small
+to reach all `8` abscissae — the `generates` field would then be unprovable.
+
+**A TRAP FOR ANYONE REGENERATING THIS TABLE.** At the fifth row
+(`j₀ = −882216989/131072`) the kernel polynomial is **REDUCIBLE**: the
+`17`-division polynomial factors with degrees `[4, 4, 136]` and there is NO
+irreducible rational factor of degree `8`, so `f` is the PRODUCT of the two
+quartics.  A search that looks only for an irreducible factor of degree
+`(p−1)/2` finds nothing there and wrongly concludes the row is false.  The
+other five rows do have an irreducible factor of the right degree
+(`[5, 55]`, `[5, 55]`, `[5, 55]`, `[8, 68, 68]`, `[9, 171]`).
+
+**The model is free and that is what makes the table small.** Only `j(E) = j₀`
+is demanded, and a rational cyclic `p`-isogeny is invariant under quadratic
+twisting, so the minimal twists above (conductors `121, 121, 121, 14450,
+14450, 361`) may be used rather than `WeierstrassCurve.ofJ j₀`; their
+coefficients are what keeps the certificates writable.  All six `j₀` are
+`≠ 0, 1728`.
+
+WHAT A PROVER OWES, per row: `E.j = j₀` (rational arithmetic on an explicit
+model); `f.Monic` and `f.natDegree = (p−1)/2` (`decide`/`norm_num` on an
+explicit polynomial); `(m : ZMod p) ≠ 0` and `generates` (`decide` over `ZMod
+p`); and the two divisibilities, each of which is an identity `ΨSq p = f * q`
+resp. `∑ᵢ … = f * q'` with an explicit cofactor `q`, verifiable by `ring` once
+`ΨSq p` and `Φ m` have been unfolded to explicit polynomials.  THE COST SITS
+ENTIRELY IN THAT UNFOLDING — `ΨSq 11` has degree `120`, `ΨSq 17` degree `288`,
+`ΨSq 19` degree `360` — and the natural sub-cut, if this proves too large in
+one piece, is a per-row lemma computing `E.ΨSq p` for the explicit model. -/
+theorem exists_kernelPolynomial_of_genusOneJTable (p : ℕ) (j₀ : ℚ)
+    (_h : (p, j₀) ∈ genusOneJTable) :
+    ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (f : Polynomial ℚ) (m : ℕ),
+      E.j = j₀ ∧ E.IsKernelPolynomial p f m :=
+  sorry
+
+/-- **Every tabulated `j`-value is REALISED by a curve carrying a
+rational `p`-isogeny** (PROVEN 2026-07-27 over
+`exists_kernelPolynomial_of_genusOneJTable` and the kernel-polynomial
+criterion; opened the same day by the cut of
 `exists_x0GenusOnePoints`, which is PROVEN over it).
 
 Asserts, for each of the six pairs of `genusOneJTable`: there is an elliptic
@@ -22462,24 +22538,43 @@ statement trivial (every `E` has points of order `p` over `ℚ̄`); dropping
 `E.j = j₀` would make it useless to the consumer.  With both, it is the
 existence half of Mazur's isogeny theorem at `p ∈ {11, 17, 19}`.
 
-IRREDUCIBLE at this mathlib pin only in that arithmetic half — mathlib already
-supplies `WeierstrassCurve.ofJ` and its `j`.  The CHECK that would refute the
-residual irreducibility: a construction of the order-`p` kernel, e.g. a
-rational factor of degree `(p − 1)/2` of the `p`-division polynomial of one of
-the six models above, which the Vélu and division-polynomial material already
-in this file's import cone (`Fermat.FLT.EllipticCurve.Velu`,
-`Mathlib.AlgebraicGeometry.EllipticCurve.DivisionPolynomial.Degree`) can
-consume. -/
+**THE RESIDUAL IRREDUCIBILITY WAS REFUTED, 2026-07-27, by exactly the CHECK the
+previous version of this docstring named.**  That check read: "a construction of
+the order-`p` kernel, e.g. a rational factor of degree `(p − 1)/2` of the
+`p`-division polynomial of one of the six models above".  It has been carried
+out in general, once, as
+`WeierstrassCurve.exists_point_of_isKernelPolynomial`
+(`Fermat/FLT/EllipticCurve/KernelPolynomial.lean`, PROVEN): a monic `f` of
+degree `(p−1)/2` dividing `ΨSq p` whose root set is stable under the abscissa
+of multiplication by a primitive root `m` mod `p` yields a point of exact order
+`p` with Galois-stable span.  The mechanism is a degree count: the iterates
+`x(m^i ⬝ P)` are roots of `f` and exhaust `x(⟨P⟩ ∖ 0)`, whose cardinality is at
+least `(p−1)/2` because `Q ↦ x(Q)` is at most `2`-to-`1`, while `f` has at most
+`(p−1)/2` roots — so the root set of `f` IS `x(⟨P⟩ ∖ 0)`, and Galois, which
+permutes the roots of the rational `f`, permutes `⟨P⟩`.
+
+So this theorem is PROVEN, over `exists_kernelPolynomial_of_genusOneJTable`
+above, and the whole residue is polynomial arithmetic over `ℚ` for six explicit
+curves.  AXIS SEARCHED by the refutation: the division-polynomial /
+kernel-polynomial axis, which the earlier audit named but did not walk. -/
 theorem exists_isogenyCurve_of_genusOneJTable (p : ℕ) (j₀ : ℚ)
-    (_h : (p, j₀) ∈ genusOneJTable) :
+    (h : (p, j₀) ∈ genusOneJTable) :
     ∃ (E : WeierstrassCurve ℚ) (_hE : E.IsElliptic) (g : (E⁄(AlgebraicClosure ℚ)).Point),
       addOrderOf g = p ∧
       (∀ σ : Field.absoluteGaloisGroup ℚ, ∀ x ∈ AddSubgroup.zmultiples g,
         WeierstrassCurve.Affine.Point.map
           (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ).toAlgHom x ∈
           AddSubgroup.zmultiples g) ∧
-      E.j = j₀ :=
-  sorry
+      E.j = j₀ := by
+  have hp : p.Prime := by fin_cases h <;> decide
+  have hp2 : p ≠ 2 := by fin_cases h <;> decide
+  obtain ⟨E, hE, f, m, hj, hker⟩ := exists_kernelPolynomial_of_genusOneJTable p j₀ h
+  haveI := hE
+  obtain ⟨g, hord, hstab⟩ :=
+    WeierstrassCurve.exists_point_of_isKernelPolynomial
+      (L := AlgebraicClosure ℚ) hp hp2 hker
+  exact ⟨E, hE, g, hord, fun σ x hx => hstab (σ : AlgebraicClosure ℚ ≃ₐ[ℚ] AlgebraicClosure ℚ) x hx,
+    hj⟩
 
 /-- **Each tabulated `j`-value is attained at a rational point of `Y_0(p)`**
 (PROVEN over the leaf above, via `IsJMapOn.classify_jm`).
