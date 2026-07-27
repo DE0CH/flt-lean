@@ -2674,6 +2674,222 @@ theorem exists_spanning_of_finite_of_not_linearIndependent
     dsimp only
     rw [dif_pos hj, hιapp, hidx]
 
+/-- **HECKE OPERATORS AT DISTINCT PRIMES COMMUTE** (PROVEN, 2026-07-27):
+`T_q T_r = T_r T_q` in `End_ℂ(S₂(Γ₀(N)))`, at ALL pairs of primes (so
+including the `U_q` at the bad primes).
+
+NO ARITHMETIC INPUT — this is the coefficient formula `qCoeff_heckeEndo`
+read twice and the `q`-expansion principle
+`cuspForm_eq_of_forall_qCoeff_eq`. Expanding both orders gives, for each
+`m`, the same four terms
+`a_{qrm}(f) + 1_{q∤N}1_{q∣m}·q·a_{r(m/q)}(f) + 1_{r∤N}1_{r∣m}·r·a_{q(m/r)}(f)
+  + 1_{q∤N}1_{r∤N}1_{qr∣m}·qr·a_{m/(qr)}(f)`,
+and the only inputs are `q ≠ r ⟹ Nat.Coprime q r` (so `r ∣ qm ↔ r ∣ m`)
+together with `Nat.mul_div_assoc` and `Nat.div_div_eq_div_mul`. The
+`q = r` case is the identity.
+
+This is Diamond–Shurman Proposition 5.2.4 / Shimura ch. 3 in the weight-2
+level-`N` case; it is proven here rather than cited because at weight 2
+the coefficient formula already carries the whole double-coset content. -/
+theorem heckeEndo_mul_comm {N : ℕ} (hN : 0 < N) {a b : ℕ} (ha : a.Prime) (hb : b.Prime) :
+    heckeEndo N a * heckeEndo N b = heckeEndo N b * heckeEndo N a := by
+  rcases eq_or_ne a b with rfl | hab
+  · rfl
+  have hcop : Nat.Coprime a b := (Nat.coprime_primes ha hb).mpr hab
+  have hbam : ∀ m : ℕ, (b ∣ a * m) ↔ b ∣ m := fun m => hcop.symm.dvd_mul_left
+  have habm : ∀ m : ℕ, (a ∣ b * m) ↔ a ∣ m := fun m => hcop.dvd_mul_left
+  refine LinearMap.ext fun f => cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+  rw [Module.End.mul_apply, Module.End.mul_apply,
+    qCoeff_heckeEndo hN ha, qCoeff_heckeEndo hN hb,
+    qCoeff_heckeEndo hN hb, qCoeff_heckeEndo hN hb,
+    qCoeff_heckeEndo hN ha, qCoeff_heckeEndo hN ha]
+  have hidx : b * (a * m) = a * (b * m) := by ring
+  rw [hidx]
+  by_cases haN : a ∣ N
+  · by_cases hbN : b ∣ N
+    · simp [haN, hbN]
+    · simp only [if_pos haN, if_neg hbN, add_zero]
+      by_cases hbm : b ∣ m
+      · rw [if_pos ((hbam m).mpr hbm), if_pos hbm, Nat.mul_div_assoc a hbm]
+      · rw [if_neg (fun h => hbm ((hbam m).mp h)), if_neg hbm]
+  · by_cases hbN : b ∣ N
+    · simp only [if_pos hbN, if_neg haN, add_zero]
+      by_cases ham : a ∣ m
+      · rw [if_pos ((habm m).mpr ham), if_pos ham, Nat.mul_div_assoc b ham]
+      · rw [if_neg (fun h => ham ((habm m).mp h)), if_neg ham]
+    · simp only [if_neg haN, if_neg hbN]
+      by_cases ham : a ∣ m
+      · by_cases hbm : b ∣ m
+        · have habdvd : a * b ∣ m := Nat.Coprime.mul_dvd_of_dvd_of_dvd hcop ham hbm
+          have hbma : b ∣ m / a := (Nat.dvd_div_iff_mul_dvd ham).mpr habdvd
+          have hamb : a ∣ m / b := (Nat.dvd_div_iff_mul_dvd hbm).mpr
+            (by rwa [mul_comm] at habdvd)
+          rw [if_pos ((hbam m).mpr hbm), if_pos ham, if_pos hbma,
+            if_pos ((habm m).mpr ham), if_pos hbm, if_pos hamb,
+            Nat.mul_div_assoc a hbm, Nat.mul_div_assoc b ham,
+            Nat.div_div_eq_div_mul, Nat.div_div_eq_div_mul,
+            show a * b = b * a from mul_comm a b]
+          ring
+        · have hnb : ¬ b ∣ m / a := fun h => hbm (h.trans (Nat.div_dvd_of_dvd ham))
+          rw [if_neg (fun h => hbm ((hbam m).mp h)), if_pos ham, if_neg hnb,
+            if_pos ((habm m).mpr ham), if_neg hbm, Nat.mul_div_assoc b ham]
+          ring
+      · by_cases hbm : b ∣ m
+        · have hna : ¬ a ∣ m / b := fun h => ham (h.trans (Nat.div_dvd_of_dvd hbm))
+          rw [if_pos ((hbam m).mpr hbm), if_neg ham,
+            if_neg (fun h => ham ((habm m).mp h)), if_pos hbm, if_neg hna,
+            Nat.mul_div_assoc a hbm]
+          ring
+        · rw [if_neg (fun h => hbm ((hbam m).mp h)), if_neg ham,
+            if_neg (fun h => ham ((habm m).mp h)), if_neg hbm]
+
+/-- **`𝕋` IS COMMUTATIVE** (PROVEN, 2026-07-27): any two elements of the
+Hecke algebra commute.
+
+`heckeSubring N` is `Subring.closure` of the generating set `{T_q}`, and
+`heckeEndo_mul_comm` says the generators commute pairwise; the passage to
+the closure is the standard two-step centralizer argument
+(`Subring.closure_le` into `Subring.centralizer`, once to put the closure
+inside the centralizer of the generators, once more to put it inside the
+centralizer of a fixed element of the closure). -/
+theorem heckeSubring_mul_comm {N : ℕ} (hN : 0 < N)
+    {S T : Module.End ℂ (CuspForm (Gamma0GL N) 2)}
+    (hS : S ∈ heckeSubring N) (hT : T ∈ heckeSubring N) : S * T = T * S := by
+  have hgen : ∀ U ∈ heckeSubring N, ∀ q : ℕ, q.Prime →
+      heckeEndo N q * U = U * heckeEndo N q := by
+    have hle : heckeSubring N ≤ Subring.centralizer
+        {U | ∃ q : ℕ, q.Prime ∧ U = heckeEndo N q} := by
+      refine Subring.closure_le.mpr ?_
+      rintro U ⟨q, hq, rfl⟩ V ⟨r, hr, rfl⟩
+      exact heckeEndo_mul_comm hN hr hq
+    intro U hU q hq
+    exact hle hU (heckeEndo N q) ⟨q, hq, rfl⟩
+  have hle2 : heckeSubring N ≤ Subring.centralizer {T} := by
+    refine Subring.closure_le.mpr ?_
+    rintro U ⟨q, hq, rfl⟩ V hV
+    rw [Set.mem_singleton_iff] at hV
+    subst hV
+    exact (hgen V hT q hq).symm
+  exact (hle2 hS T rfl).symm
+
+/-- **LEFT-NONDEGENERACY of the Hecke duality pairing `𝕋 × S₂ → ℂ`,
+`(T, f) ↦ a₁(T f)`** (PROVEN, 2026-07-27): a Hecke operator `T ∈ 𝕋` with
+`a₁(T f) = 0` for every cusp form `f` is `0`.
+
+This is the companion of `cuspForm_eq_zero_of_forall_qCoeff_one_heckeSubring`
+above (right-nondegeneracy) and is where COMMUTATIVITY is used, which is
+why it could not be written before `heckeSubring_mul_comm`: for each `m`,
+`exists_mem_heckeSubring_qCoeff` supplies `S ∈ 𝕋` with
+`a_m(g) = a₁(S g)`, so `a_m(T f) = a₁(S (T f)) = a₁(T (S f)) = 0`, and the
+`q`-expansion principle gives `T f = 0` for every `f`.
+
+Note the asymmetry that makes commutativity unavoidable here: the kernel
+`{T : a₁ ∘ T = 0}` is a RIGHT ideal for free, and the argument needs it to
+be a left ideal. -/
+theorem heckeSubring_eq_zero_of_forall_qCoeff_one {N : ℕ} (hN : 0 < N)
+    {T : Module.End ℂ (CuspForm (Gamma0GL N) 2)} (hT : T ∈ heckeSubring N)
+    (h : ∀ f : CuspForm (Gamma0GL N) 2, qCoeff N (T f) 1 = 0) :
+    T = 0 := by
+  refine LinearMap.ext fun f => cuspForm_eq_of_forall_qCoeff_eq fun m => ?_
+  rw [LinearMap.zero_apply, qCoeff_zero_cuspForm]
+  obtain ⟨S, hS, hSe⟩ := exists_mem_heckeSubring_qCoeff hN m
+  rw [hSe (T f)]
+  have hcomm : S * T = T * S := heckeSubring_mul_comm hN hS hT
+  have hval : S (T f) = T (S f) := by
+    have := congrArg (fun U : Module.End ℂ (CuspForm (Gamma0GL N) 2) => U f) hcomm
+    simpa [Module.End.mul_apply] using this
+  rw [hval, h (S f)]
+
+/-- **`S₂(Γ₀(N); ℚ)`**: the weight-2 level-`N` cusp forms all of whose
+`q`-expansion coefficients are RATIONAL, as a `ℤ`-submodule of
+`S₂(Γ₀(N))`. Exactly `integralCuspForms` above with `ℤ` relaxed to `ℚ`,
+and stated as a `ℤ`-submodule for the same reason: only the additive
+structure and the `ℂ`-span are ever used, so no `Module ℚ` instance on
+the cusp space has to be manufactured. -/
+noncomputable def rationalCuspForms (N : ℕ) :
+    Submodule ℤ (CuspForm (Gamma0GL N) 2) where
+  carrier := {f | ∀ m : ℕ, ∃ r : ℚ, qCoeff N f m = (r : ℂ)}
+  add_mem' := by
+    rintro f g hf hg m
+    obtain ⟨x, hx⟩ := hf m
+    obtain ⟨y, hy⟩ := hg m
+    refine ⟨x + y, ?_⟩
+    rw [← qCoeffL_apply, map_add, qCoeffL_apply, qCoeffL_apply, hx, hy]
+    push_cast
+    ring
+  zero_mem' := by
+    intro m
+    exact ⟨0, by rw [qCoeff_zero_cuspForm]; norm_num⟩
+  smul_mem' := by
+    rintro c f hf m
+    obtain ⟨x, hx⟩ := hf m
+    refine ⟨c * x, ?_⟩
+    rw [← qCoeffL_apply, map_zsmul, qCoeffL_apply, hx, zsmul_eq_mul]
+    push_cast
+    ring
+
+/-- **`S₂(Γ₀(N); ℚ)` is Hecke stable** (PROVEN, 2026-07-27): the same
+`ℤ`-coefficient formula that gives `heckeEndo_mem_integralCuspForms`
+above, read over `ℚ`. No arithmetic input. -/
+theorem heckeEndo_mem_rationalCuspForms {N : ℕ} (hN : 0 < N) {q : ℕ} (hq : q.Prime)
+    {f : CuspForm (Gamma0GL N) 2} (hf : f ∈ rationalCuspForms N) :
+    heckeEndo N q f ∈ rationalCuspForms N := by
+  intro m
+  obtain ⟨x, hx⟩ := hf (q * m)
+  obtain ⟨y, hy⟩ := hf (m / q)
+  refine ⟨x + (if q ∣ N then 0 else if q ∣ m then (q : ℚ) * y else 0), ?_⟩
+  rw [qCoeff_heckeEndo hN hq f m, hx, hy]
+  split_ifs <;> push_cast <;> ring
+
+/-- **SHIMURA'S RATIONALITY THEOREM: the cusp forms with RATIONAL
+`q`-expansion `ℂ`-span `S₂(Γ₀(N))`** (sorry leaf, opened 2026-07-27 as
+the single arithmetic residue of `heckeSubring_zRank_le` below).
+
+Shimura, *Introduction to the Arithmetic Theory of Automorphic
+Functions*, Theorem 3.52; equivalently Diamond–Shurman §6.5, where this
+`ℚ`-structure is what defines the `Aut(ℂ)`-action `f ↦ f^σ`. The
+classical proof is the `q`-expansion principle on the **`ℚ`-model** of
+`X₀(N)`: weight-2 cusp forms are global differentials, `X₀(N)` and its
+cusp `∞` are defined over `ℚ`, the uniformizer `q` is `ℚ`-rational, and
+flat base change gives `H⁰(X₀(N)_ℚ, Ω) ⊗_ℚ ℂ = H⁰(X₀(N)_ℂ, Ω)`.
+
+WHY THIS IS A LEGITIMATE INPUT TO `heckeSubring_zRank_le` AND NOT A
+CIRCLE. This leaf is STRICTLY WEAKER than the node
+`exists_heckeSubring_zForm` it serves:
+
+* it needs only the `ℚ`-model of `X₀(N)`, not the INTEGRAL one — the
+  distinction the docstring of `exists_rational_qExpansion_spanning`
+  below already draws between rationality and BOUNDED DENOMINATORS;
+* it does not imply the node. `𝕋 = ℤ[1/2] ⊆ ℂ` at `D = 1` violates the
+  node (not finitely generated) while the rational forms still span. So
+  rationality gives the RANK half only, which is exactly leaf 2, and
+  leaves the DISCRETENESS half (`heckeSubring_moduleFinite_int`)
+  untouched — as it must, since discreteness is where the integral model
+  is unavoidable.
+
+**REDUNDANCY TO COLLECT, for the owner of the `q`-expansion cluster
+below.** `exists_qCoeff_rational_relations` (and hence
+`exists_rational_qExpansion_spanning`) is currently proven from
+`integralCuspForms_span_eq_top`, i.e. THROUGH `exists_heckeSubring_zForm`
+— it obtains a `ℚ`-statement by way of the `ℤ`-form, the most expensive
+available route, exactly as `heckeSubring_moduleFinite` does for
+finiteness. Its proof extracts a `ℂ`-basis from the integral lattice and
+then only ever uses that the selected forms have RATIONAL coefficients,
+so replacing `exists_linearIndependent ℂ (integralCuspForms N)` +
+`integralCuspForms_span_eq_top hN` by `exists_linearIndependent ℂ
+(rationalCuspForms N)` + `rationalCuspForms_span_eq_top hN` re-proves it
+verbatim from THIS leaf and removes the `ℤ`-form from the whole
+rationality cluster's cone. That rewiring is left to that declaration's
+owner; it is not done here because this owner's mandate is the two
+`ℤ`-form leaves.
+
+SOUNDNESS: `0 < N` is inherited from the consumer. At genus-zero levels
+`S₂(Γ₀(N)) = 0` and the statement is `⊥ = ⊤` in the zero module, i.e.
+true; at `N = 0` the level is junk and nothing is claimed. -/
+theorem rationalCuspForms_span_eq_top {N : ℕ} (hN : 0 < N) :
+    Submodule.span ℂ ((rationalCuspForms N : Set (CuspForm (Gamma0GL N) 2))) = ⊤ :=
+  sorry
+
 /-- **LEAF 1 OF 2 FOR THE `ℤ`-FORM — DISCRETENESS: `𝕋` is a finitely
 generated `ℤ`-module** (sorry leaf, cut 2026-07-27).
 
@@ -2712,7 +2928,45 @@ case, which that proof already discharges separately.
 SOUNDNESS: `0 < N` is inherited from the node and is not needed
 mathematically — at `N = 0` every `heckeEndo 0 q` is the junk value `0`,
 so `𝕋` is the prime subring and finiteness is immediate, exactly as
-`heckeSubring_moduleFinite` discharges it below. -/
+`heckeSubring_moduleFinite` discharges it below.
+
+**ATOMICITY AUDIT (2026-07-27, by the owner who proved leaf 2). The axis
+searched was LATTICE-SHAPED cuts; along that axis this leaf is
+irreducible, and the obvious cut is a RESTATEMENT in DEAD END 8's sense.**
+
+The one natural decomposition is "`∃ L : Submodule ℤ S₂`, `L.FG`, `L`
+`heckeEndo`-stable, `span ℂ L = ⊤`" — which is verbatim
+`exists_heckeStable_lattice` below, and from which this leaf follows in
+one step (restrict `𝕋 → End_ℤ(L)`, injective because `L` `ℂ`-spans, and
+`End_ℤ(L)` is finite over the noetherian `ℤ`; that IS the existing proof
+of `heckeSubring_moduleFinite`). But the converse also holds, so nothing
+is gained: given `Module.Finite ℤ 𝕋` and any `ℂ`-basis `f_1, …, f_D` of
+`S₂`, the lattice `L = ∑_k 𝕋·f_k` is finitely generated (finitely many
+generators of `𝕋` times `D` vectors), Hecke stable (it is a `𝕋`-module)
+and `ℂ`-spanning (it contains the `f_k`). So "stable full-rank lattice"
+and this leaf are EQUIVALENT, and cutting along it buys a relabelling.
+
+WHAT DOES **NOT** HELP, checked rather than assumed:
+
+* `rationalCuspForms_span_eq_top` above — the citation that closes leaf 2
+  — is useless here. It gives `𝕋 ↪ End_ℚ(S₂(ℚ))` and, with
+  left-nondegeneracy, `𝕋 ↪ ℚ^D`; that bounds the RANK and cannot bound
+  denominators. `ℤ[1/2] ⊆ ℂ` at `D = 1` satisfies every consequence of
+  rationality and is not finitely generated. This is the same
+  counterexample the cut docstring already records, and it is exactly why
+  the two leaves separate.
+* `integralCuspForms_fg` above is not enough either: `𝕋 → End_ℤ(S₂(ℤ))`
+  is defined and lands in a finite `ℤ`-module, but its kernel is the
+  annihilator of the `ℂ`-span of `S₂(ℤ)`, and killing that kernel is
+  `integralCuspForms_span_eq_top`, i.e. this cluster's consumer. Any
+  route through the integral cusp forms is therefore circular, not merely
+  blocked by declaration order.
+
+So what is genuinely missing is an integral structure that is NOT built
+from the `q`-expansions — classically `H₁(X₀(N), ℤ)`, or the integral
+model `X₀(N)/ℤ`. A successor should attack it as the construction of such
+a lattice, and should not expect a further cut of this statement to be
+available first. -/
 theorem heckeSubring_moduleFinite_int {N : ℕ} (hN : 0 < N) :
     Module.Finite ℤ (heckeSubring N) :=
   sorry
@@ -2747,13 +3001,121 @@ with content rather than by an empty quantifier.
 
 SOUNDNESS: `0 < N` is inherited from the node. At `N = 0`, `𝕋` is the
 prime subring `ℤ·1`, of rank `≤ 1`, so the statement is true there too
-whenever `D ≥ 1`. -/
+whenever `D ≥ 1`.
+
+PROVEN 2026-07-27 over the single strictly weaker citation
+`rationalCuspForms_span_eq_top` (SHIMURA'S RATIONALITY THEOREM) above —
+so the RANK half of Eichler–Shimura is no longer needed anywhere, and
+what remains of this cluster's integral input is the DISCRETENESS leaf
+`heckeSubring_moduleFinite_int` alone. The derivation, with every step
+but the citation discharged here:
+
+1. `𝕋` preserves the `ℚ`-structure `rationalCuspForms N` (the
+   endomorphisms that do form a subring, and the generators `T_q` do by
+   `heckeEndo_mem_rationalCuspForms`), and `a₁` of a rational form is
+   rational. So `Λ : 𝕋 → ℚ^D`, `Λ(U) = (a₁(U e_j))_j`, is a `ℤ`-linear
+   map into a `D`-DIMENSIONAL `ℚ`-vector space, once `e` is a `ℂ`-basis
+   of `S₂` drawn from the rational forms — which is what the citation
+   supplies, and where the cardinality `D` is forced.
+2. `Λ` is INJECTIVE on `𝕋`: `Λ(U) = 0` makes `a₁(U ·)` vanish on a
+   `ℂ`-basis hence everywhere, and `heckeSubring_eq_zero_of_forall_qCoeff_one`
+   (left-nondegeneracy, i.e. COMMUTATIVITY) gives `U = 0`.
+3. `D + 1` elements of `𝕋` therefore give `D + 1` vectors of `ℚ^D`, which
+   are `ℚ`-dependent; `LinearIndependent.iff_fractionRing ℤ ℚ` turns the
+   `ℤ`-independence assumption into `ℚ`-independence, and
+   `LinearIndependent.fintype_card_le_finrank` closes it with
+   `D + 1 ≤ D`.
+
+WHY RATIONALITY IS THE RIGHT RESIDUE, i.e. why the `ℤ`-form was more
+than this leaf needed. The obstruction is not the `ℂ`-dimension of the
+span of `𝕋` — that is `≤ D` for free from the pairing — but the
+`ℚ`-dimension: `ℤ[√2] ⊆ ℂ` has `ℂ`-span of dimension `1 = D` and
+`ℤ`-rank `2`. Cutting rank down to `D` needs the values `a₁(U f)` to lie
+in a FIXED finite-dimensional `ℚ`-subspace of `ℂ`, and a `ℚ`-rational
+`q`-expansion structure is precisely what puts them in `ℚ`. Nothing
+integral is used, and nothing integral would help. -/
 theorem heckeSubring_zRank_le {N : ℕ} (hN : 0 < N)
     (T : Fin (Module.finrank ℂ (CuspForm (Gamma0GL N) 2) + 1) →
         Module.End ℂ (CuspForm (Gamma0GL N) 2))
     (hT : ∀ i, T i ∈ heckeSubring N) :
-    ¬ LinearIndependent ℤ T :=
-  sorry
+    ¬ LinearIndependent ℤ T := by
+  classical
+  haveI := cuspForm_finiteDimensional N hN
+  -- (0) `𝕋` preserves the rational structure
+  have hstab : ∀ U ∈ heckeSubring N, ∀ f ∈ rationalCuspForms N,
+      U f ∈ rationalCuspForms N := by
+    have hle : heckeSubring N ≤
+        ({ carrier := {U | ∀ f ∈ rationalCuspForms N, U f ∈ rationalCuspForms N}
+           mul_mem' := fun {_ _} hu hv f hf => hu _ (hv f hf)
+           one_mem' := fun _ hf => hf
+           add_mem' := fun {_ _} hu hv f hf =>
+             (rationalCuspForms N).add_mem (hu f hf) (hv f hf)
+           zero_mem' := fun _ _ => (rationalCuspForms N).zero_mem
+           neg_mem' := fun {_} hu f hf => (rationalCuspForms N).neg_mem (hu f hf) } :
+          Subring (Module.End ℂ (CuspForm (Gamma0GL N) 2))) := by
+      refine Subring.closure_le.mpr ?_
+      rintro U ⟨q, hq, rfl⟩ f hf
+      exact heckeEndo_mem_rationalCuspForms hN hq hf
+    exact fun U hU => hle hU
+  revert T hT
+  set D := Module.finrank ℂ (CuspForm (Gamma0GL N) 2) with hDdef
+  intro T hT
+  -- (1) a `ℂ`-basis of `S₂(Γ₀(N))` drawn from the rational forms
+  obtain ⟨b, hbsub, hbspan, hbli⟩ :=
+    exists_linearIndependent ℂ ((rationalCuspForms N : Set (CuspForm (Gamma0GL N) 2)))
+  rw [rationalCuspForms_span_eq_top hN] at hbspan
+  let B : Module.Basis b ℂ (CuspForm (Gamma0GL N) 2) :=
+    Module.Basis.mk hbli (by rw [Subtype.range_coe, hbspan])
+  haveI : Fintype b := FiniteDimensional.fintypeBasisIndex B
+  have hcard : Fintype.card b = D := (Module.finrank_eq_card_basis B).symm
+  let e : Module.Basis (Fin D) ℂ (CuspForm (Gamma0GL N) 2) :=
+    B.reindex (Fintype.equivFinOfCardEq hcard)
+  have hemem : ∀ i : Fin D, (e i) ∈ rationalCuspForms N := by
+    intro i
+    have hval2 : e i =
+        (((Fintype.equivFinOfCardEq hcard).symm i : b) : CuspForm (Gamma0GL N) 2) := by
+      simp [e, Module.Basis.reindex_apply, B, Module.Basis.mk_apply]
+    rw [hval2]
+    exact hbsub ((Fintype.equivFinOfCardEq hcard).symm i).2
+  -- (2) the rational coordinate map `Λ : 𝕋 → ℚ^D`
+  have hval : ∀ (U : Module.End ℂ (CuspForm (Gamma0GL N) 2)), U ∈ heckeSubring N →
+      ∀ i : Fin D, ∃ r : ℚ, qCoeff N (U (e i)) 1 = (r : ℂ) :=
+    fun U hU i => hstab U hU _ (hemem i) 1
+  intro hli
+  set Λ : Fin (D + 1) → (Fin D → ℚ) := fun i j => (hval (T i) (hT i) j).choose with hΛdef
+  have hΛspec : ∀ i j, qCoeff N (T i (e j)) 1 = ((Λ i j : ℚ) : ℂ) :=
+    fun i j => (hval (T i) (hT i) j).choose_spec
+  -- (3) `Λ` is `ℤ`-independent, by left-nondegeneracy of the pairing
+  have hΛli : LinearIndependent ℤ Λ := by
+    rw [Fintype.linearIndependent_iff]
+    intro g hg
+    have hUmem : (∑ i, g i • T i) ∈ heckeSubring N :=
+      sum_mem fun i _ => Subring.zsmul_mem _ (hT i) (g i)
+    have hzero : (∑ i, g i • T i) = 0 := by
+      refine heckeSubring_eq_zero_of_forall_qCoeff_one hN hUmem ?_
+      have hmap : (qCoeffL N 1).comp (∑ i, g i • T i) = 0 := by
+        refine e.ext fun j => ?_
+        have happ : (∑ i, g i • T i) (e j) = ∑ i, g i • (T i (e j)) := by
+          simp only [LinearMap.sum_apply, LinearMap.smul_apply]
+        have hj : (∑ i, g i • Λ i) j = (0 : Fin D → ℚ) j := by rw [hg]
+        rw [Finset.sum_apply] at hj
+        simp only [Pi.smul_apply, zsmul_eq_mul, Pi.zero_apply] at hj
+        have hjc : ((∑ i, (g i : ℚ) * Λ i j : ℚ) : ℂ) = 0 := by rw [hj]; norm_num
+        simp only [LinearMap.comp_apply, LinearMap.zero_apply, qCoeffL_apply, happ]
+        rw [← qCoeffL_apply, map_sum]
+        simp only [map_zsmul, qCoeffL_apply, zsmul_eq_mul, hΛspec]
+        rw [← hjc]
+        push_cast
+        ring
+      intro f
+      have hf := congrArg (fun L : CuspForm (Gamma0GL N) 2 →ₗ[ℂ] ℂ => L f) hmap
+      simpa only [LinearMap.comp_apply, LinearMap.zero_apply, qCoeffL_apply] using hf
+    exact Fintype.linearIndependent_iff.mp hli g hzero
+  -- (4) `D + 1` independent vectors in a `D`-dimensional `ℚ`-space
+  have hΛQ : LinearIndependent ℚ Λ := (LinearIndependent.iff_fractionRing ℤ ℚ).mp hΛli
+  have hle := hΛQ.fintype_card_le_finrank
+  rw [Fintype.card_fin, Module.finrank_fin_fun] at hle
+  omega
 
 /-- **`𝕋` IS A `ℤ`-FORM: `rank_ℤ 𝕋 = dim_ℂ S₂(Γ₀(N))`** (PROVEN
 2026-07-27 by DECOMPOSITION into the two strictly weaker leaves
