@@ -1047,10 +1047,11 @@ is two, along the source's own seam `00R7 = approximation + 00MP`:
   plus `Algebra.IsPushout`.
 * `flat_of_rTensor_injective_of_flat_quotientMap` — **10.99.10**, the local
   criterion of flatness in the Noetherian setting.  **PROVEN 2026-07-27**; it
-  was itself cut in two along Matsumura 22.3's own seam, and what remains under
-  it is the single leaf `lTensor_subtype_injective_of_pow_le` — the HOMOLOGICAL
-  half, which needs no Noetherian hypothesis at all.  See the section note
-  "10.99.10 CUT" below.
+  was itself cut in two along Matsumura 22.3's own seam, and its HOMOLOGICAL
+  half `lTensor_subtype_injective_of_pow_le` — which needs no Noetherian
+  hypothesis at all — is **PROVEN 2026-07-27** as well, over the general local
+  criterion in `Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`.  See
+  the section note "10.99.10 CUT" below.
 
 and 00MP itself (`flat_of_flat_of_flat_quotientMap_noetherian`) is PROVEN
 here, because its OTHER half is proven outright:
@@ -1073,12 +1074,13 @@ the local criterion (10.99.10) and the approximation.
 
 **AND A SECOND CORRECTION, 2026-07-27, to the sentence immediately above.**  The
 local criterion is no longer missing either: it is PROVEN below, and its own
-Noetherian content (Artin–Rees + Krull) is written out.  What is missing under
-it is one purely homological leaf, `lTensor_subtype_injective_of_pow_le`, which
-carries none of the hypotheses that made this route look expensive — no
-Noetherian, no finiteness, no locality.  So of the three items in the original
-survey — Tor, the local criterion, Noetherian approximation — only the third
-remains, plus the `I`-adic induction inside that one leaf.
+Noetherian content (Artin–Rees + Krull) is written out.  Its purely homological
+half `lTensor_subtype_injective_of_pow_le` — which carries none of the
+hypotheses that made this route look expensive: no Noetherian, no finiteness,
+no locality — is **PROVEN 2026-07-27** over the general local criterion in
+`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`.  So of the three items
+in the original survey — Tor, the local criterion, Noetherian approximation —
+only the third remains.
 
 **AXIS SEARCHED.**  Cuts of 00R7 along the Stacks proof's own structure.  Not
 searched: whether a *different* proof of 00R7 exists that avoids approximation
@@ -1241,8 +1243,10 @@ independent halves:
    `Iⁿ·(A ⊗_B 𝔞)` for every `n`, and the intersection of those is zero because
    `A ⊗_B 𝔞` is a FINITE `A`-module and `I·A ⊆ 𝔪_A`.
 
-Half (2) is proven below in full; half (1) is the single remaining leaf
-`lTensor_subtype_injective_of_pow_le`.  Both halves are stated with `B`-modules
+Half (2) is proven below in full; half (1) is
+`lTensor_subtype_injective_of_pow_le`, **PROVEN 2026-07-27** over the general
+local criterion in `Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`.
+Both halves are stated with `B`-modules
 only — no quotient rings occur in any statement — which is the design decision
 recorded in that leaf's docstring.
 
@@ -1289,9 +1293,21 @@ lemma tmul_mem_map_smul_top {B A : Type u} [CommRing B] [CommRing A] [Algebra B 
     rw [TensorProduct.tmul_add]
     exact Submodule.add_mem _ hx hy
 
-/-- **THE HOMOLOGICAL HALF OF THE LOCAL CRITERION** (SORRY LEAF, cut out of
-`flat_of_rTensor_injective_of_flat_quotientMap` on 2026-07-27; read the section
-note above first).
+/-- **THE HOMOLOGICAL HALF OF THE LOCAL CRITERION** (**PROVEN 2026-07-27**, cut
+out of `flat_of_rTensor_injective_of_flat_quotientMap` earlier the same day;
+read the section note above first).
+
+**HOW IT CLOSED.**  Not by the `I`-adic induction prescribed under "WHAT PROVING
+IT COSTS" below — that route needs the graded isomorphism
+`Iⁿ/Iⁿ⁺¹ ⊗_{B/I} A/IA ≅ IⁿA/Iⁿ⁺¹A`, which is exactly the piece the missing `Tor`
+long exact sequence would supply.  It closed instead over the **general,
+module-theoretic** local criterion now proven in the shim tree:
+`Module.Flat.rTensor_ideal_subtype_injective`
+(`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`), whose dévissage never
+leaves the category of modules — see that file's docstring for the four steps.
+Everything below the horizontal rule is kept as the record of the classical
+route and of why the statement is shaped this way; it is history, not an open
+task.
 
 *Let `B → A` be a ring map and `I ⊆ B` an ideal, `J = I·A`.  Assume
 `Tor₁^B(B/I, A) = 0` and that `A/J` is flat over `B/I`.  Then for every `n : ℕ`
@@ -1354,18 +1370,35 @@ change-of-rings chase in Lean-level detail — the two `TensorProduct.lift`s `F`
 and `G`, why a kernel must NOT be computed directly, and the `Module Rₙ Q`
 instance hazard.  That plan transfers to a general `I` verbatim.
 
-**So these two leaves should have ONE owner**: a proof of this leaf specialises
-to `flat_quotientMap_pow_of_flat_quotientMap`, and the principal case is
-strictly easier to attack first because `(t)/(t^n)` is nilpotent in `B/(t^n)`,
-which is the case of the local criterion that needs no separatedness. -/
+**These two leaves had ONE owner, and that is how both closed** (2026-07-27):
+the general statement `Module.Flat.rTensor_subtype_injective_of_pow_smul_top_le`
+in `Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean` proves this leaf and
+`Module.Flat.of_flat_quotient_of_pow_eq_bot` — hence
+`flat_quotientMap_pow_of_flat_quotientMap` — at once, because both are the SAME
+dévissage read at `J ^ k • Z ≤ Y` with `Z` the base ring. -/
 theorem lTensor_subtype_injective_of_pow_le {B A : Type u}
     [CommRing B] [CommRing A] [Algebra B A] {I : Ideal B}
     (_hIJ : I ≤ (I.map (algebraMap B A)).comap (algebraMap B A))
     (_htor : Function.Injective (LinearMap.rTensor A I.subtype))
     (_hquot : (Ideal.quotientMap (I.map (algebraMap B A)) (algebraMap B A) _hIJ).Flat)
     (n : ℕ) {𝔠 : Ideal B} (_h : I ^ n ≤ 𝔠) :
-    Function.Injective (LinearMap.lTensor A 𝔠.subtype) :=
-  sorry
+    Function.Injective (LinearMap.lTensor A 𝔠.subtype) := by
+  -- `A ⧸ IA` is flat over `B ⧸ I`, restated as a module rather than a ring map
+  have hQflat : Module.Flat (B ⧸ I) (A ⧸ Ideal.map (algebraMap B A) I) := by
+    rw [← RingHom.flat_algebraMap_iff]
+    exact _hquot
+  -- `A ⧸ IA` is `(B ⧸ I) ⊗[B] A`, which is the shape the general criterion wants
+  have hker : I • (⊤ : Submodule B A)
+      = LinearMap.ker (Ideal.Quotient.mkₐ B (Ideal.map (algebraMap B A) I)).toLinearMap := by
+    rw [Ideal.smul_top_eq_map]
+    ext x
+    simp [Ideal.Quotient.eq_zero_iff_mem]
+  have hflat : Module.Flat (B ⧸ I) ((B ⧸ I) ⊗[B] A) :=
+    _root_.Module.Flat.flat_quotTensor_of_flat (J := I)
+      (Ideal.Quotient.mkₐ B (Ideal.map (algebraMap B A) I)).toLinearMap
+      Ideal.Quotient.mk_surjective hker hQflat
+  exact (𝔠.subtype.lTensor_inj_iff_rTensor_inj A).2
+    (_root_.Module.Flat.rTensor_ideal_subtype_injective hflat _htor n _h)
 
 /-- **PROVEN** — the form of the leaf above that the Artin–Rees descent actually
 consumes: for EVERY ideal `𝔞` (no containment hypothesis), an element of
@@ -1949,11 +1982,13 @@ rediscover that it is false.
 approximation half is PROVEN — its owner took the second design decision, how if
 at all to state a filtered colimit, and the answer is **not to**; see the section
 note "THE COLIMIT-API DECISION" above.  The local criterion 10.99.10 is PROVEN
-too, down to one homological leaf; see the section note "10.99.10 CUT".  So the
-residue of 00R7 is still exactly two open leaves, but they are now
+too, down to one homological leaf; see the section note "10.99.10 CUT".  That
+leaf, `lTensor_subtype_injective_of_pow_le`, is itself **PROVEN 2026-07-27** over
+the general local criterion in
+`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`, so the residue of 00R7
+is now the SINGLE open leaf
 `nonempty_flatNoetherianStage_of_essFinitePresentation` (Stacks 10.127.13 +
-10.128.3, i.e. 00R7's proof minus its last sentence) and
-`lTensor_subtype_injective_of_pow_le` — and 00MP's other half is PROVEN.
+10.128.3, i.e. 00R7's proof minus its last sentence).
 (This paragraph was rewritten at integration from the merged source: each branch
 named the other's leaf as still open under its own predecessor's name.) -/
 theorem flat_of_flat_of_flat_quotientMap_of_essFinitePresentation {R B A : Type u}
@@ -5471,17 +5506,18 @@ needed.  The hypothesis is kept in the signature (it costs the caller nothing �
 `mem_pow_smul_of_lTensor_ideal_eq_zero` has it anyway) and is underscored so the
 non-use is mechanically visible.
 
-**WHAT IS LEFT, AND WHY IT IS NOT HERE.**  The one general statement consumed is
+**NOTHING IS LEFT** (2026-07-27).  The one general statement consumed,
 `Module.Flat.of_flat_quotient_of_pow_eq_bot` in
-`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`, whose module docstring
-records the two available routes and the measurement behind the cut: **mathlib
-has no `Tor` long exact sequence at this pin** (`CategoryTheory/Monoidal/Tor.lean`
-defines `Tor` but proves only that higher `Tor` of a projective vanishes, and
-`CategoryTheory/Abelian/LeftDerived.lean` has no connecting map at all), so the
-classical two-step argument needs a small `Tor₁` theory built first, or the
-successive-approximation proof over `Module.Flat.iff_forall_isTrivialRelation`.
-Either is a THEORY BUILD, which is exactly why it belongs in the shim tree and
-not inside this 7000-line module.
+`Fermat/FLT/Mathlib/RingTheory/Flat/LocalCriterion.lean`, is now PROVEN.  The
+measurement behind the cut still stands — **mathlib has no `Tor` long exact
+sequence at this pin** (`CategoryTheory/Monoidal/Tor.lean` defines `Tor` but
+proves only that higher `Tor` of a projective vanishes, and
+`CategoryTheory/Abelian/LeftDerived.lean` has no connecting map at all) — but
+neither of the two routes recorded there was the one taken: the criterion closed
+over an elementary dévissage that never leaves the category of modules, needing
+only right-exactness of `- ⊗ M` and a free presentation.  That is a THEORY
+BUILD, which is exactly why it belongs in the shim tree and not inside this
+7000-line module.
 
 **FAITHFULNESS.**  `ψn` is passed as DATA together with its intertwining
 `hψn`, for the same reason `ψ` is in the atom: the map is
