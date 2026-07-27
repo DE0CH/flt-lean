@@ -466,6 +466,18 @@ public import Mathlib.FieldTheory.Perfect
 -- an unbundled `∃ (A : Type) (_ : CommRing A) (_ : Algebra R A), …` cannot be
 -- written, since the later binders need the earlier ones as instances.
 public import Mathlib.Algebra.Category.CommAlgCat.Basic
+-- `AlgebraicGeometry.pointsPi_injective`: `X(∏ Rᵢ) → ∏ X(Rᵢ)` is injective for
+-- `X` quasi-separated.  This is what reduces the count of `Spec R`-points of a
+-- proper scheme to the case of a LOCAL base ring, in
+-- `finite_hom_of_isProper`.
+public import Mathlib.AlgebraicGeometry.PointsPi
+-- `IsArtinianRing.quotNilradicalPowEquivPi`: `R ⧸ nilradical R ^ n` is the
+-- product of the `R ⧸ mᵢ ^ n` over the (finitely many) maximal ideals — the
+-- structure theorem behind `exists_pi_isLocalRing_ringEquiv`.
+public import Mathlib.RingTheory.Artinian.Module
+-- `IsLocalRing.of_isMaximal_nilradical`: a ring whose nilradical is maximal is
+-- local, which is how `R ⧸ mⁿ` is seen to be local.
+public import Mathlib.RingTheory.KrullDimension.Zero
 
 @[expose] public section
 
@@ -11242,50 +11254,279 @@ theorem finite_algHom_of_finiteType (R A : Type) [CommRing R] [CommRing A] [Alge
       congrArg (fun t : MvPolynomial (Fin n) R →ₐ[R] R => t q) hcomp
   exact Finite.of_injective _ hinj
 
+/-- **Ring homomorphisms out of a finite-type algebra into a finite ring form
+a finite set** (PROVEN 2026-07-27).
+
+The unbundled companion of `finite_algHom_of_finiteType`: the target is not
+required to be the base ring, and the maps are not required to be `R`-algebra
+maps.  Both weakenings are needed downstream, where the comparison ring is
+`Γ(Spec R, ⊤)` rather than `R` itself and the maps come out of `Spec.preimage`
+as bare ring homomorphisms.
+
+Same argument: `A` is a quotient of `R[x_1, …, x_n]`, so a ring map out of `A`
+is pinned by its restriction to `R` together with the `n` images of the
+variables — an injection into `(R →+* B) × (Fin n → B)`, which is finite
+because `R` and `B` are. -/
+theorem finite_ringHom_of_finiteType (R A B : Type) [CommRing R] [CommRing A] [CommRing B]
+    [Algebra R A] [Finite R] [Finite B] [Algebra.FiniteType R A] : Finite (A →+* B) := by
+  obtain ⟨n, p, hp⟩ :=
+    (Algebra.FiniteType.iff_quotient_mvPolynomial'' (R := R) (S := A)).mp inferInstance
+  haveI : Finite (R →+* B) := Finite.of_injective (fun φ : R →+* B => (φ : R → B))
+    (fun _ _ h => DFunLike.coe_injective h)
+  refine Finite.of_injective
+    (fun φ : A →+* B => (φ.comp (algebraMap R A), fun i : Fin n => φ (p (MvPolynomial.X i)))) ?_
+  intro φ ψ h
+  have h1 : φ.comp (algebraMap R A) = ψ.comp (algebraMap R A) := congrArg Prod.fst h
+  have h2 : ∀ i, φ (p (MvPolynomial.X i)) = ψ (p (MvPolynomial.X i)) :=
+    fun i => congrFun (congrArg Prod.snd h) i
+  have hcomp : φ.comp (p : MvPolynomial (Fin n) R →+* A)
+      = ψ.comp (p : MvPolynomial (Fin n) R →+* A) := by
+    refine MvPolynomial.ringHom_ext (fun r => ?_) (fun i => h2 i)
+    have hr : p (MvPolynomial.C r) = algebraMap R A r := by simp
+    simpa [hr] using congrArg (fun t : R →+* B => t r) h1
+  refine RingHom.ext fun a => ?_
+  obtain ⟨q, rfl⟩ := hp a
+  exact congrArg (fun t : MvPolynomial (Fin n) R →+* B => t q) hcomp
+
+/-- **An affine scheme locally of finite type over `Spec R` has finitely many
+`Spec B`-points, for `R` and `B` finite** (PROVEN 2026-07-27).
+
+This is the affine base case of the point count.  `Y` affine means
+`Y ≅ Spec Γ(Y, ⊤)`, so a morphism `Spec B ⟶ Y` is the same thing as a ring
+map `Γ(Y, ⊤) →+* B` — the injection is `Spec.preimage`, whose left inverse is
+`Spec.map`, so no fullness argument is needed.  `LocallyOfFiniteType` on an
+affine-to-affine morphism is exactly `RingHom.FiniteType` of the induced map
+on global sections (`HasRingHomProperty.iff_of_isAffine`), and
+`Γ(Spec R, ⊤) ≅ R` is finite, so `finite_ringHom_of_finiteType` applies with
+`Γ(Spec R, ⊤)` as the base. -/
+theorem finite_hom_spec_of_isAffine {R B : Type} [CommRing R] [Finite R] [CommRing B] [Finite B]
+    {Y : Scheme.{0}} [IsAffine Y] (g : Y ⟶ Spec (CommRingCat.of R)) [LocallyOfFiniteType g] :
+    Finite (Spec (CommRingCat.of B) ⟶ Y) := by
+  have hFT : RingHom.FiniteType (Scheme.Hom.appTop g).hom :=
+    (HasRingHomProperty.iff_of_isAffine (P := @LocallyOfFiniteType)).mp inferInstance
+  haveI : Finite Γ(Spec (CommRingCat.of R), ⊤) :=
+    Finite.of_equiv R (Scheme.ΓSpecIso (CommRingCat.of R)).commRingCatIsoToRingEquiv.symm.toEquiv
+  letI : Algebra Γ(Spec (CommRingCat.of R), ⊤) Γ(Y, ⊤) := (Scheme.Hom.appTop g).hom.toAlgebra
+  haveI : Algebra.FiniteType Γ(Spec (CommRingCat.of R), ⊤) Γ(Y, ⊤) := hFT
+  haveI : Finite (Γ(Y, ⊤) →+* B) :=
+    finite_ringHom_of_finiteType Γ(Spec (CommRingCat.of R), ⊤) Γ(Y, ⊤) B
+  refine Finite.of_injective
+    (fun h : Spec (CommRingCat.of B) ⟶ Y => (Spec.preimage (h ≫ Y.isoSpec.hom)).hom)
+    (Function.LeftInverse.injective
+      (g := fun φ : Γ(Y, ⊤) →+* B => Spec.map (CommRingCat.ofHom φ) ≫ Y.isoSpec.inv) ?_)
+  intro h
+  simp only [CommRingCat.ofHom_hom, Spec.map_preimage, Category.assoc, Iso.hom_inv_id,
+    Category.comp_id]
+
+/-- **The LOCAL case of the point count**: a scheme proper over `Spec R` with
+`R` finite has finitely many `Spec B`-points, for `B` a finite LOCAL ring
+(PROVEN 2026-07-27).
+
+This is where properness is used, and it is used only through
+`QuasiCompact`: `Spec R` is compact, so `X` is compact, so `X.affineCover`
+admits a FINITE affine subcover `𝒰`.
+
+Locality of `B` is what makes a morphism `h : Spec B ⟶ X` factor through a
+single chart, and the argument is the one in `Mathlib`'s
+`AlgebraicGeometry.pointsPi_surjective`: every point of `Spec B` specialises
+to the closed point, so the whole image of `h` lies in any open containing
+`h (closedPoint B)` — take the chart `𝒰.idx (h (closedPoint B))`.  The
+resulting map to `Σ i, (Spec B ⟶ 𝒰.X i)` is injective because
+`IsOpenImmersion.lift_fac` makes `p ↦ p.2 ≫ 𝒰.f p.1` a left inverse. -/
+theorem finite_hom_of_isLocalRing_of_isProper {R B : Type} [CommRing R] [Finite R]
+    [CommRing B] [Finite B] [IsLocalRing B]
+    {X : Scheme.{0}} (f : X ⟶ Spec (CommRingCat.of R)) [IsProper f] :
+    Finite (Spec (CommRingCat.of B) ⟶ X) := by
+  haveI : CompactSpace X := QuasiCompact.compactSpace_of_compactSpace f
+  set 𝒰 := X.affineCover.finiteSubcover with h𝒰
+  have key : ∀ h : Spec (CommRingCat.of B) ⟶ X,
+      Set.range ⇑h ⊆ Set.range ⇑(𝒰.f (𝒰.idx (h (IsLocalRing.closedPoint B)))) := by
+    intro h
+    rintro _ ⟨x, rfl⟩
+    exact ((IsLocalRing.specializes_closedPoint x).map h.continuous).mem_open
+      (𝒰.f _).opensRange.2 (𝒰.covers _)
+  haveI : ∀ i, Finite (Spec (CommRingCat.of B) ⟶ 𝒰.X i) := by
+    intro i
+    exact finite_hom_spec_of_isAffine (R := R) (𝒰.f i ≫ f)
+  refine Finite.of_injective
+    (fun h : Spec (CommRingCat.of B) ⟶ X =>
+      (⟨𝒰.idx (h (IsLocalRing.closedPoint B)),
+        IsOpenImmersion.lift (𝒰.f _) h (key h)⟩ : Σ i, (Spec (CommRingCat.of B) ⟶ 𝒰.X i)))
+    (Function.LeftInverse.injective
+      (g := fun p : Σ i, (Spec (CommRingCat.of B) ⟶ 𝒰.X i) => p.2 ≫ 𝒰.f p.1) ?_)
+  intro h
+  exact IsOpenImmersion.lift_fac _ _ _
+
+/-- **`R ⧸ mⁿ` is a local ring, for `m` maximal and `n ≠ 0`** (PROVEN
+2026-07-27).
+
+The nilradical of `R ⧸ mⁿ` is the image of `m`: radicals commute with
+surjections whose kernel is contained in the ideal
+(`Ideal.map_radical_of_surjective`), `radical (mⁿ) = radical m = m`, and the
+image of a maximal ideal under a surjection with kernel below it is maximal.
+A ring whose nilradical is maximal is local
+(`IsLocalRing.of_isMaximal_nilradical`). -/
+theorem quotPow_isLocalRing (R : Type) [CommRing R] (I : Ideal R) [I.IsMaximal]
+    {m : ℕ} (hm : m ≠ 0) : IsLocalRing (R ⧸ I ^ m) := by
+  have hker : RingHom.ker (Ideal.Quotient.mk (I ^ m)) ≤ I := by
+    rw [Ideal.mk_ker]; exact Ideal.pow_le_self hm
+  have hnil : nilradical (R ⧸ I ^ m) = Ideal.map (Ideal.Quotient.mk (I ^ m)) I := by
+    have h1 : (0 : Ideal (R ⧸ I ^ m)) = Ideal.map (Ideal.Quotient.mk (I ^ m)) (I ^ m) := by
+      rw [Ideal.map_quotient_self]; rfl
+    rw [nilradical, h1,
+      ← Ideal.map_radical_of_surjective Ideal.Quotient.mk_surjective (le_of_eq Ideal.mk_ker),
+      Ideal.radical_pow (I := I) hm, Ideal.IsPrime.radical inferInstance]
+  haveI : (nilradical (R ⧸ I ^ m)).IsMaximal := by
+    rw [hnil]
+    exact Ideal.IsMaximal.map_of_surjective_of_ker_le Ideal.Quotient.mk_surjective hker
+  exact IsLocalRing.of_isMaximal_nilradical _
+
+/-- **A finite commutative ring is a finite product of local rings** (PROVEN
+2026-07-27).
+
+The Artinian structure theorem, specialised.  `R` finite makes `R` Artinian,
+so its nilradical is nilpotent, say `nilradical R ^ (n+1) = ⊥`; then
+`Mathlib`'s `IsArtinianRing.quotNilradicalPowEquivPi` identifies
+`R ≅ R ⧸ nilradical R ^ (n+1)` with `∏_{m maximal} R ⧸ mⁿ⁺¹`, a product over
+the FINITELY many maximal ideals, each factor local by `quotPow_isLocalRing`.
+
+The index type and the factors are bundled as `CommRingCat.{0}` objects for
+the same reason `CommAlgCat` is used below: an unbundled
+`∃ (S : ι → Type) (_ : ∀ i, CommRing (S i)), …` cannot be written, because the
+later binders need the earlier ones as instances. -/
+theorem exists_pi_isLocalRing_ringEquiv (R : Type) [CommRing R] [Finite R] :
+    ∃ (ι : Type) (_ : Finite ι) (S : ι → CommRingCat.{0}),
+      (∀ i, IsLocalRing (S i)) ∧ Nonempty (R ≃+* ∀ i, S i) := by
+  obtain ⟨n, hn⟩ := IsArtinianRing.isNilpotent_nilradical (R := R)
+  have hn' : nilradical R ^ (n + 1) = ⊥ := by
+    rw [pow_succ, hn, zero_mul]; rfl
+  refine ⟨MaximalSpectrum R, inferInstance,
+    fun I => CommRingCat.of (R ⧸ I.asIdeal ^ (n + 1)), fun I => ?_, ⟨?_⟩⟩
+  · haveI := I.isMaximal
+    exact quotPow_isLocalRing R I.asIdeal (Nat.succ_ne_zero n)
+  · exact ((RingEquiv.quotientBot R).symm.trans
+      ((Ideal.quotEquivOfEq hn'.symm).trans
+        (IsArtinianRing.quotNilradicalPowEquivPi R (n + 1)).toRingEquiv))
+
+/-- **A scheme proper over `Spec R` with `R` finite has finitely many
+`Spec R`-points** (PROVEN 2026-07-27).
+
+The general base ring is reduced to the local one by
+`exists_pi_isLocalRing_ringEquiv` together with `Mathlib`'s
+`AlgebraicGeometry.pointsPi_injective`: writing `R ≅ ∏ᵢ Sᵢ` with each `Sᵢ`
+finite local, the canonical map `X(∏ᵢ Sᵢ) → ∏ᵢ X(Sᵢ)` is injective because
+`X` is quasi-separated (which properness supplies), and each factor is finite
+by `finite_hom_of_isLocalRing_of_isProper`.
+
+This is the step the previous version of the docstring below described as
+"run the argument on each connected component"; the component decomposition is
+the ring decomposition, and it is the only place where non-local `R` — a
+composite `ℓ` for the consumer — costs anything. -/
+theorem finite_hom_of_isProper {R : Type} [CommRing R] [Finite R]
+    {X : Scheme.{0}} (f : X ⟶ Spec (CommRingCat.of R)) [IsProper f] :
+    Finite (Spec (CommRingCat.of R) ⟶ X) := by
+  classical
+  haveI : QuasiSeparatedSpace X := quasiSeparatedSpace_of_quasiSeparated f
+  obtain ⟨ι, hι, S, hloc, ⟨e⟩⟩ := exists_pi_isLocalRing_ringEquiv R
+  haveI := hι
+  haveI : Finite (∀ i, S i) := Finite.of_equiv R e.toEquiv
+  haveI hSfin : ∀ i, Finite (S i) := by
+    intro i
+    exact Finite.of_surjective (fun x : ∀ j, S j => x i)
+      (fun y => ⟨Function.update (fun j => (1 : S j)) i y, by simp⟩)
+  haveI : ∀ i, IsLocalRing (S i) := hloc
+  haveI : ∀ i, Finite (Spec (S i) ⟶ X) := fun i =>
+    finite_hom_of_isLocalRing_of_isProper (R := R) (B := S i) f
+  haveI : Finite (Spec (CommRingCat.of (∀ i, S i)) ⟶ X) :=
+    Finite.of_injective _ (pointsPi_injective S X)
+  refine Finite.of_injective
+    (fun h : Spec (CommRingCat.of R) ⟶ X =>
+      Spec.map (CommRingCat.ofHom (e : R →+* ∀ i, S i)) ≫ h)
+    (Function.LeftInverse.injective
+      (g := fun k : Spec (CommRingCat.of (∀ i, S i)) ⟶ X =>
+        Spec.map (CommRingCat.ofHom (e.symm : (∀ i, S i) →+* R)) ≫ k) ?_)
+  intro h
+  have hid : CommRingCat.ofHom (e : R →+* ∀ i, S i)
+      ≫ CommRingCat.ofHom (e.symm : (∀ i, S i) →+* R) = 𝟙 _ := by
+    ext x
+    simp
+  simp only [← Category.assoc, ← Spec.map_comp, hid, Spec.map_id, Category.id_comp]
+
+/-- **Any finite set injects into the `R`-points of a finite-type `R`-algebra,
+for `R` finite and nontrivial** (PROVEN 2026-07-27).
+
+Pure packaging, and it is what makes the statement below equivalent to plain
+finiteness of the set of sections: `MvPolynomial (Fin k) R →ₐ[R] R` is
+`Fin k → R` by `MvPolynomial.aeval`, which has `|R| ^ k ≥ 2 ^ k ≥ k` elements,
+so taking `k` to be the cardinality of the set gives room for an injection.
+No naturality is asked for — the statement below quantifies over an arbitrary
+injective function — which is why an arbitrary embedding of finite types
+suffices here. -/
+theorem exists_finiteType_algHom_injection_of_finite {R : Type} [CommRing R] [Finite R]
+    [Nontrivial R] (S : Type) [Finite S] :
+    ∃ A : CommAlgCat.{0} R, Algebra.FiniteType R A ∧
+      ∃ g : S → (A →ₐ[R] R), Function.Injective g := by
+  classical
+  haveI : Fintype R := Fintype.ofFinite R
+  haveI : Fintype S := Fintype.ofFinite S
+  have hcard : Fintype.card S ≤ Fintype.card (Fin (Fintype.card S) → R) := by
+    rw [Fintype.card_fun, Fintype.card_fin]
+    calc Fintype.card S ≤ 2 ^ Fintype.card S := Nat.lt_two_pow_self.le
+      _ ≤ Fintype.card R ^ Fintype.card S := Nat.pow_le_pow_left Fintype.one_lt_card _
+  obtain ⟨emb⟩ := Function.Embedding.nonempty_of_card_le hcard
+  refine ⟨CommAlgCat.of R (MvPolynomial (Fin (Fintype.card S)) R), inferInstance,
+    fun s => MvPolynomial.aeval (emb s), ?_⟩
+  intro s t hst
+  refine emb.injective (funext fun i => ?_)
+  simpa using DFunLike.congr_fun hst (MvPolynomial.X i)
+
 /-- **The sections of a proper morphism to `Spec R` are cut out by ONE
-finite-type `R`-algebra** (sorry node — the scheme-theoretic half of
-`finite_relPoint_of_x0Compactification_finiteField`).
+finite-type `R`-algebra** (PROVEN 2026-07-27, by decomposition — the
+scheme-theoretic half of `finite_relPoint_of_x0Compactification_finiteField`).
 
-TRUE, and this is the standard "finitely many points over a finite field"
-argument with the algebra factored out:
+The route actually taken is NOT the one the previous version of this docstring
+sketched, and the difference is worth recording because it removes the only
+place a real gap could have hidden.  That plan built the bundled algebra out of
+the finite affine cover, `A := ∏ᵢ Γ(X, Uᵢ)`, and sent a section to the
+projection onto the least chart it factors through — which forces the proof to
+show that every section factors through a single chart, false for a section of
+a `P¹` over a disconnected base, and hence forces a connected-component
+argument INSIDE the construction of `A`.
 
-1. `IsProper f` gives `UniversallyClosed f`, hence `QuasiCompact f`
-   (`AlgebraicGeometry.UniversallyClosed`'s instance at priority `900`),
-   and `Spec R` is compact, so `X` is a compact space;
-2. so `X.affineCover` has a FINITE subfamily of affine opens
-   `U_1, …, U_n` covering `X`, and `LocallyOfFiniteType f` makes each
-   `Γ(X, U_i)` a finite-type `R`-algebra;
-3. every section `s : Spec R ⟶ X` factors through some `U_i`.  For `R`
-   LOCAL this is exactly
-   `AlgebraicGeometry.Scheme.preimage_eq_top_of_closedPoint_mem`: pick
-   `U_i` containing the image of the closed point, and the preimage of
-   `U_i` is already all of `Spec R`.  For general finite `R`, `Spec R` is
-   a finite discrete space (`R` is Artinian) and the argument is run on
-   each connected component;
-4. take `A := ∏_i Γ(X, U_i)` — a finite product of finite-type algebras
-   is finite type — and send `s` to the projection onto the factor of the
-   LEAST `i` through which it factors, composed with the induced
-   `Γ(X, U_i) →ₐ[R] R`.  That is injective: two sections through the same
-   chart differ already on that chart, and two sections through different
-   least charts kill different idempotents of the product.
+Instead the two obligations are separated:
 
-Stated as ONE bundled algebra rather than as a family precisely so that
-step 4's product bookkeeping lives inside this leaf and not in the
-assembly.  `CommAlgCat.{0} R` is used because an unbundled
-`∃ (A : Type) (_ : CommRing A) (_ : Algebra R A), …` cannot be written —
-the third binder needs the second as an instance.
+* the CONTENT is `finite_hom_of_isProper` — the set of sections is finite,
+  proved by reducing the base to a local ring
+  (`exists_pi_isLocalRing_ringEquiv`, the Artinian structure theorem) and
+  running the chart argument there, where a section really does factor through
+  one chart;
+* the PACKAGING is `exists_finiteType_algHom_injection_of_finite` — a finite
+  set injects into `MvPolynomial (Fin k) R →ₐ[R] R` for `k` its cardinality,
+  which needs no geometry at all.
 
-REMAINING WORK is entirely items 2–4; nothing modular appears anywhere in
-it, and nothing about `R` beyond `Finite R` is used.  The one place a
-real gap could hide is step 3 for NON-LOCAL `R`, i.e. composite `ℓ`; the
-consumer only ever supplies a prime `ℓ`, but the statement is kept at
-`Finite R` because that is the honest hypothesis and the component
-argument is routine. -/
+That the second step is available at all is the observation that `g` is asked
+only to be an INJECTIVE FUNCTION, not a natural or structural one; so for
+nontrivial finite `R` this statement carries exactly the information
+`Finite (RelPoint f (𝟙 _))` and nothing more.  For `Subsingleton R` the source
+`Spec R` is empty, hence initial, so `RelPoint` is a subsingleton and the
+identity algebra `R` discharges it.
+
+`CommAlgCat.{0} R` is used because an unbundled
+`∃ (A : Type) (_ : CommRing A) (_ : Algebra R A), …` cannot be written — the
+third binder needs the second as an instance. -/
 theorem exists_finiteType_algHom_injection_of_isProper {R : Type} [CommRing R] [Finite R]
     {X : Scheme.{0}} (f : X ⟶ Spec (CommRingCat.of R)) [IsProper f] :
     ∃ A : CommAlgCat.{0} R, Algebra.FiniteType R A ∧
-      ∃ g : RelPoint f (𝟙 (Spec (CommRingCat.of R))) → (A →ₐ[R] R), Function.Injective g :=
-  sorry
+      ∃ g : RelPoint f (𝟙 (Spec (CommRingCat.of R))) → (A →ₐ[R] R), Function.Injective g := by
+  rcases subsingleton_or_nontrivial R with hR | hR
+  · haveI : IsEmpty (Spec (CommRingCat.of R)) := inferInstanceAs (IsEmpty (PrimeSpectrum R))
+    haveI : Subsingleton (Spec (CommRingCat.of R) ⟶ X) :=
+      ⟨fun a b => (isInitialOfIsEmpty (X := Spec (CommRingCat.of R))).hom_ext a b⟩
+    exact ⟨CommAlgCat.of R R, inferInstance, fun _ => AlgHom.id R R,
+      fun a b _ => Subtype.ext (Subsingleton.elim a.1 b.1)⟩
+  · haveI := finite_hom_of_isProper f
+    haveI : Finite (RelPoint f (𝟙 (Spec (CommRingCat.of R)))) := inferInstance
+    exact exists_finiteType_algHom_injection_of_finite _
 
 /-- **A scheme proper over `Spec R` with `R` finite has finitely many
 sections** (PROVEN 2026-07-27, by decomposition).
@@ -11337,8 +11578,11 @@ The previous docstring's verdict "IRREDUCIBLE at this pin: there is no
 'finite type over a finite ring implies finitely many points' lemma to
 appeal to" was right about `Mathlib` and wrong about irreducibility: the
 statement splits cleanly into scheme theory
-(`exists_finiteType_algHom_injection_of_isProper`, still open) and
-algebra (`finite_algHom_of_finiteType`, proven). -/
+(`exists_finiteType_algHom_injection_of_isProper`) and algebra
+(`finite_algHom_of_finiteType`).  **Both halves are now PROVEN
+(2026-07-27), so this whole node is closed**, and the missing `Mathlib`
+lemma it wanted is available here as `finite_hom_of_isProper`:
+`Finite (Spec R ⟶ X)` for `f : X ⟶ Spec R` proper and `R` finite. -/
 theorem finite_relPoint_of_x0Compactification_finiteField (N ℓ : ℕ) (hℓ : ℓ ≠ 0)
     {X Y : Scheme.{0}} {strX : X ⟶ SpecF ℓ} {strY : Y ⟶ SpecF ℓ} {j : Y ⟶ X}
     (h : IsX0Compactification N strX strY j) :
@@ -11464,9 +11708,9 @@ and they are now three leaves rather than one:
 * `finite_relPoint_of_x0Compactification_finiteField` — a proper scheme
   over a finite field has finitely many rational points (no modular
   curves involved).  PROVEN 2026-07-27 by decomposition, into
-  `finite_algHom_of_finiteType` (algebra, proven) and
-  `exists_finiteType_algHom_injection_of_isProper` (scheme theory, open,
-  and with no modular content whatsoever);
+  `finite_algHom_of_finiteType` (algebra) and
+  `exists_finiteType_algHom_injection_of_isProper` (scheme theory) — both
+  of them PROVEN 2026-07-27, and with no modular content whatsoever;
 * `card_relPoint_x0_finiteField` — Eichler–Shimura evaluates the count
   (Hecke operators and `S_2(Γ_0(N))`).  STILL OPEN, and the only one of
   the three that still carries modular content.
