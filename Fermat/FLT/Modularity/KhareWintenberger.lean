@@ -7787,9 +7787,393 @@ because `n`, `m` and the degrees of the `f i` are fixed, and it is exactly what
 makes the numeric-bound conclusion (rather than a density statement) available.
 See the parent leaf's docstring for why no density weakening is possible. -/
 
-/-- **ITEM 4: BERTINI OVER FINITE FIELDS** (SORRY LEAF, cut 2026-07-27) —
+/-- The restriction of `h` to the affine plane parametrised by
+`(s, t) ↦ v + s·u₁ + t·u₂`, as a polynomial in two variables.
+
+No linear-independence condition is imposed on `(u₁, u₂)`: the degenerate
+triples are harmless because for `d ≥ 2` they are automatically NOT good
+sections (a section along a degenerate parametrisation is a univariate
+polynomial in a linear form, hence reducible over `𝔽̄_p`), so they are
+absorbed into Bertini's exceptional count rather than excluded by hand.
+Dropping the condition is what makes the averaging identity below a single
+translation bijection. -/
+noncomputable def planeSection {N : ℕ} {R : Type*} [CommRing R]
+    (h : MvPolynomial (Fin N) R) (v u₁ u₂ : Fin N → R) : MvPolynomial (Fin 2) R :=
+  MvPolynomial.bind₁
+    (fun i => MvPolynomial.C (v i) + MvPolynomial.C (u₁ i) * MvPolynomial.X 0
+      + MvPolynomial.C (u₂ i) * MvPolynomial.X 1) h
+
+/-- **PROVEN**: evaluating a plane section at `(s, t)` is evaluating `h` at the
+corresponding point of the plane. -/
+theorem eval_planeSection {N : ℕ} {R : Type*} [CommRing R]
+    (h : MvPolynomial (Fin N) R) (v u₁ u₂ : Fin N → R) (st : Fin 2 → R) :
+    MvPolynomial.eval st (planeSection h v u₁ u₂)
+      = MvPolynomial.eval (fun i => v i + u₁ i * st 0 + u₂ i * st 1) h := by
+  have hin : ∀ i : Fin N, MvPolynomial.eval₂Hom (RingHom.id R) st
+      (MvPolynomial.C (v i) + MvPolynomial.C (u₁ i) * MvPolynomial.X 0
+        + MvPolynomial.C (u₂ i) * MvPolynomial.X 1)
+      = v i + u₁ i * st 0 + u₂ i * st 1 := by
+    intro i
+    simp only [map_add, map_mul, MvPolynomial.eval₂Hom_C, MvPolynomial.eval₂Hom_X',
+      RingHom.id_apply]
+  show MvPolynomial.eval₂Hom (RingHom.id R) st _ = _
+  rw [planeSection, MvPolynomial.eval₂Hom_bind₁]
+  simp only [hin]
+  rfl
+
+/-- The number of `𝔽_p`-points of the hypersurface cut out by `h`. -/
+noncomputable def zeroCount {N p : ℕ} [Fact p.Prime] (h : MvPolynomial (Fin N) (ZMod p)) : ℕ :=
+  (Finset.univ.filter (fun a : Fin N → ZMod p => MvPolynomial.eval a h = 0)).card
+
+/-- **THE AVERAGING IDENTITY** (PROVEN 2026-07-27) — Schmidt Chapter V §5, the
+double count that turns a bound on plane sections into a bound on `h` itself.
+
+Summing the point count of `planeSection h v u₁ u₂` over ALL triples
+`(v, u₁, u₂) ∈ (𝔽_p^N)³` gives `p^{2N} · p² · N(h)`. The proof is one
+translation bijection: for each fixed `(s, t)` the shear
+`v ↦ v + s·u₁ + t·u₂` permutes `𝔽_p^N`, so the inner sum over `v` is `N(h)`
+however `(u₁, u₂, s, t)` were chosen.
+
+This is where the count-versus-nonemptiness distinction is cashed in: the
+identity is an EQUALITY, so a lower bound `p ≤ 2·N(section)` on a positive
+proportion of the planes transports to a lower bound of the right order for
+`N(h)`. Nonemptiness of the sections would give only `N(h) ≥ #good/p^{2N+2}`,
+which is a full power of `p` short. -/
+theorem sum_zeroCount_planeSection {N p : ℕ} [Fact p.Prime]
+    (h : MvPolynomial (Fin N) (ZMod p)) :
+    ∑ w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p),
+        zeroCount (planeSection h w.1 w.2.1 w.2.2)
+      = p ^ (2 * N) * p ^ 2 * zeroCount h := by
+  classical
+  have hcardA : Fintype.card (Fin N → ZMod p) = p ^ N := by
+    simp [ZMod.card]
+  have hpow : p ^ N * p ^ N = p ^ (2 * N) := by rw [← pow_add, two_mul]
+  have hstep : ∀ w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p),
+      zeroCount (planeSection h w.1 w.2.1 w.2.2)
+        = ∑ st : Fin 2 → ZMod p,
+            (if MvPolynomial.eval (fun i => w.1 i + w.2.1 i * st 0 + w.2.2 i * st 1) h = 0
+              then 1 else 0) := by
+    intro w
+    rw [zeroCount, Finset.card_filter]
+    exact Finset.sum_congr rfl fun st _ => by rw [eval_planeSection]
+  rw [Finset.sum_congr rfl fun w _ => hstep w, Finset.sum_comm]
+  have hinner : ∀ st : Fin 2 → ZMod p,
+      ∑ w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p),
+          (if MvPolynomial.eval (fun i => w.1 i + w.2.1 i * st 0 + w.2.2 i * st 1) h = 0
+            then 1 else 0)
+        = p ^ (2 * N) * zeroCount h := by
+    intro st
+    have hbij : Function.Bijective
+        (fun w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p) =>
+          ((fun i => w.1 i + w.2.1 i * st 0 + w.2.2 i * st 1), w.2.1, w.2.2)) := by
+      constructor
+      · rintro ⟨v, u₁, u₂⟩ ⟨v', u₁', u₂'⟩ hEq
+        simp only [Prod.mk.injEq] at hEq
+        obtain ⟨h1, h2, h3⟩ := hEq
+        subst h2
+        subst h3
+        have hvv : v = v' := by
+          funext i
+          have := congrFun h1 i
+          simpa using this
+        subst hvv
+        rfl
+      · rintro ⟨a, u₁, u₂⟩
+        refine ⟨((fun i => a i - u₁ i * st 0 - u₂ i * st 1), u₁, u₂), ?_⟩
+        simp only [Prod.mk.injEq, and_true]
+        funext i
+        ring
+    rw [Fintype.sum_bijective _ hbij _
+      (fun w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p) =>
+        (if MvPolynomial.eval w.1 h = 0 then 1 else 0)) (fun w => rfl)]
+    rw [Fintype.sum_prod_type]
+    have hconst : ∀ v : Fin N → ZMod p,
+        ∑ _y : (Fin N → ZMod p) × (Fin N → ZMod p),
+          (if MvPolynomial.eval v h = 0 then 1 else 0)
+          = p ^ (2 * N) * (if MvPolynomial.eval v h = 0 then 1 else 0) := by
+      intro v
+      rw [Finset.sum_const, Finset.card_univ, smul_eq_mul, Fintype.card_prod, hcardA, hpow]
+    rw [Finset.sum_congr rfl fun v _ => hconst v, ← Finset.mul_sum]
+    congr 1
+    rw [zeroCount, Finset.card_filter]
+  rw [Finset.sum_congr rfl fun st _ => hinner st, Finset.sum_const, Finset.card_univ,
+    smul_eq_mul]
+  have hcard2 : Fintype.card (Fin 2 → ZMod p) = p ^ 2 := by simp [ZMod.card]
+  rw [hcard2]
+  ring
+
+/-- **PROVEN**: a constant is never absolutely irreducible — over a field a
+nonzero constant is a unit and the zero constant is not irreducible. This is
+what makes the `d = 0` case of item 4 vacuous, and (since every polynomial in
+NO variables is constant) the `N = 0` case as well. -/
+theorem not_irreducible_map_of_totalDegree_zero {N p : ℕ} [Fact p.Prime]
+    (h : MvPolynomial (Fin N) (ZMod p)) (hdeg : h.totalDegree = 0) :
+    ¬ Irreducible (MvPolynomial.map
+        (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) := by
+  rw [MvPolynomial.totalDegree_eq_zero_iff_eq_C] at hdeg
+  rw [hdeg, MvPolynomial.map_C]
+  intro hirr
+  set a := algebraMap (ZMod p) (AlgebraicClosure (ZMod p)) (h.coeff 0) with ha
+  rcases eq_or_ne a 0 with h0 | h0
+  · rw [h0, MvPolynomial.C_0] at hirr
+    exact not_irreducible_zero hirr
+  · exact hirr.not_isUnit ((isUnit_iff_ne_zero.mpr h0).map
+      (MvPolynomial.C : AlgebraicClosure (ZMod p) →+*
+        MvPolynomial (Fin N) (AlgebraicClosure (ZMod p))))
+
+/-- **PROVEN**: a `ℕ`-valued finsupp of total degree at most one is `0` or a
+`Finsupp.single _ 1`. This is the shape of the monomials of a polynomial of
+total degree `1`, and it is what makes the degree-one count below elementary. -/
+theorem finsupp_eq_zero_or_single_of_sum_le_one {N : ℕ} (m : Fin N →₀ ℕ)
+    (hm : (m.sum fun _ e => e) ≤ 1) : m = 0 ∨ ∃ j, m = Finsupp.single j 1 := by
+  classical
+  rcases Nat.eq_zero_or_pos (m.sum fun _ e => e) with h0 | h0
+  · left
+    ext j
+    by_contra hj
+    have hjmem : j ∈ m.support := Finsupp.mem_support_iff.mpr (by simpa using hj)
+    have hle := Finset.single_le_sum (f := fun k => m k) (fun k _ => Nat.zero_le _) hjmem
+    rw [Finsupp.sum] at h0
+    simp only [Finsupp.coe_zero, Pi.zero_apply] at hj
+    omega
+  · right
+    have hsum : ∑ j ∈ m.support, m j = 1 := by
+      rw [Finsupp.sum] at hm h0
+      omega
+    have hne : m.support.Nonempty := by
+      rw [Finset.nonempty_iff_ne_empty]
+      intro he
+      rw [he] at hsum
+      simp at hsum
+    have hcard : m.support.card = 1 := by
+      have hle : m.support.card ≤ ∑ j ∈ m.support, m j := by
+        calc m.support.card = ∑ _j ∈ m.support, 1 := by simp
+          _ ≤ ∑ j ∈ m.support, m j :=
+              Finset.sum_le_sum (fun j hj =>
+                Nat.one_le_iff_ne_zero.mpr (Finsupp.mem_support_iff.mp hj))
+      have hpos := Finset.card_pos.mpr hne
+      omega
+    obtain ⟨j, hj⟩ := Finset.card_eq_one.mp hcard
+    refine ⟨j, ?_⟩
+    have hmj : m j = 1 := by
+      rw [hj] at hsum
+      simpa using hsum
+    have hsing := Finsupp.support_eq_singleton.mp hj
+    rw [← hmj]
+    exact hsing.2
+
+/-- **THE DEGREE-ONE HYPERSURFACE COUNT** (PROVEN 2026-07-27) — the `d = 1` case
+of item 4, which the Bertini/averaging route cannot reach because
+`exists_count_of_absolutelyIrreducible_plane` needs `d ≥ 2`.
+
+This has nothing to do with Schmidt: `h` of total degree `1` is `c₀ + ∑ cⱼ Xⱼ`
+with some `cᵢ ≠ 0`, and solving for `Xᵢ` embeds `{b : bᵢ = 0}` (which has
+`p^{N−1}` elements) into the zero set. NO IRREDUCIBILITY HYPOTHESIS IS NEEDED,
+and the bound is in fact an equality — only `≥` is stated because that is all
+item 4 consumes.
+
+The proof is the three steps one would expect. (1) `totalDegree h = 1` gives a
+support element of degree `1`, which `finsupp_eq_zero_or_single_of_sum_le_one`
+identifies as `single i 1`, so `cᵢ = coeff (single i 1) h ≠ 0`. (2) Evaluation
+is affine in the `i`-th coordinate:
+`eval (update b i x) h = eval (update b i 0) h + cᵢ · x`, by splitting the
+support sum of `MvPolynomial.eval_eq'` at `single i 1` — every OTHER monomial
+`m` in the support has `m i = 0`, being `0` or `single j 1` with `j ≠ i`, so its
+product factor is untouched by `update … i`. (3) `(x, b) ↦ update b i x` is an
+equivalence `ZMod p × {b // bᵢ = 0} ≃ (Fin N → ZMod p)`, which pins
+`#{b // bᵢ = 0} = p^{N−1}`; then `b ↦ update b i (−eval b h / cᵢ)` injects that
+set into the zero set. -/
+theorem card_zeros_of_totalDegree_one {N p : ℕ} [Fact p.Prime]
+    (h : MvPolynomial (Fin N) (ZMod p)) (hdeg : h.totalDegree = 1) :
+    p ^ (N - 1) ≤ zeroCount h := by
+  classical
+  have hdegle : ∀ m ∈ h.support, (m.sum fun _ e => e) ≤ 1 := by
+    intro m hm
+    rw [← hdeg]
+    exact MvPolynomial.le_totalDegree hm
+  -- Step 1: some variable occurs in `h`.
+  obtain ⟨i, hi⟩ : ∃ i : Fin N, MvPolynomial.coeff (Finsupp.single i 1) h ≠ 0 := by
+    have hne : h.support.Nonempty := by
+      rw [Finset.nonempty_iff_ne_empty]
+      intro hemp
+      have h0 : h = 0 := MvPolynomial.support_eq_empty.mp hemp
+      rw [h0, MvPolynomial.totalDegree_zero] at hdeg
+      exact absurd hdeg (by norm_num)
+    obtain ⟨m, hm, hmsup⟩ :=
+      Finset.exists_mem_eq_sup h.support hne (fun s : Fin N →₀ ℕ => s.sum fun _ e => e)
+    have hm1 : (m.sum fun _ e => e) = 1 := by
+      rw [← hmsup]; exact hdeg
+    rcases finsupp_eq_zero_or_single_of_sum_le_one m (le_of_eq hm1) with h0 | ⟨j, hj⟩
+    · rw [h0] at hm1; simp [Finsupp.sum] at hm1
+    · exact ⟨j, by rw [← hj]; exact MvPolynomial.mem_support_iff.mp hm⟩
+  have hNpos : 0 < N := i.pos
+  set c := MvPolynomial.coeff (Finsupp.single i 1) h with hcdef
+  -- Step 2: evaluation is affine in the `i`-th coordinate.
+  have haffine : ∀ (b : Fin N → ZMod p) (x : ZMod p),
+      MvPolynomial.eval (Function.update b i x) h
+        = MvPolynomial.eval (Function.update b i 0) h + c * x := by
+    intro b x
+    have hprod : ∀ m : Fin N →₀ ℕ, m i = 0 → ∀ y z : ZMod p,
+        ∏ k, (Function.update b i y) k ^ m k = ∏ k, (Function.update b i z) k ^ m k := by
+      intro m hm y z
+      refine Finset.prod_congr rfl (fun k _ => ?_)
+      by_cases hk : k = i
+      · subst hk; rw [hm]; simp
+      · simp [Function.update_of_ne hk]
+    have hsingle : ∀ y : ZMod p,
+        ∏ k, (Function.update b i y) k ^ (Finsupp.single i 1) k = y := by
+      intro y
+      rw [Finset.prod_eq_single i]
+      · simp
+      · intro k _ hk
+        simp [Ne.symm hk]
+      · intro hk; simp at hk
+    have hmi : ∀ m ∈ h.support, m ≠ Finsupp.single i 1 → m i = 0 := by
+      intro m hm hmne
+      rcases finsupp_eq_zero_or_single_of_sum_le_one m (hdegle m hm) with h0 | ⟨j, hj⟩
+      · rw [h0]; simp
+      · subst hj
+        have hji : j ≠ i := by rintro rfl; exact hmne rfl
+        simp [hji]
+    rw [MvPolynomial.eval_eq', MvPolynomial.eval_eq']
+    by_cases hmem : Finsupp.single i 1 ∈ h.support
+    · rw [← Finset.add_sum_erase _ _ hmem, ← Finset.add_sum_erase _ _ hmem, hsingle, hsingle]
+      have hrest : ∑ m ∈ h.support.erase (Finsupp.single i 1),
+            MvPolynomial.coeff m h * ∏ k, (Function.update b i x) k ^ m k
+          = ∑ m ∈ h.support.erase (Finsupp.single i 1),
+            MvPolynomial.coeff m h * ∏ k, (Function.update b i 0) k ^ m k := by
+        refine Finset.sum_congr rfl (fun m hm => ?_)
+        rw [hprod m (hmi m (Finset.mem_of_mem_erase hm) (Finset.ne_of_mem_erase hm)) x 0]
+      rw [hrest, ← hcdef]
+      ring
+    · have hc0 : c = 0 := by
+        rw [hcdef]
+        by_contra hne
+        exact hmem (MvPolynomial.mem_support_iff.mpr hne)
+      rw [hc0, zero_mul, add_zero]
+      refine Finset.sum_congr rfl (fun m hm => ?_)
+      rw [hprod m (hmi m hm (fun hcon => hmem (hcon ▸ hm))) x 0]
+  -- Step 3: count.
+  have hsplit : Fintype.card (ZMod p) * Fintype.card {b : Fin N → ZMod p // b i = 0}
+      = Fintype.card (Fin N → ZMod p) := by
+    rw [← Fintype.card_prod]
+    refine Fintype.card_congr ?_
+    refine ⟨fun q => Function.update q.2.1 i q.1,
+      fun a => (a i, ⟨Function.update a i 0, by simp⟩), ?_, ?_⟩
+    · rintro ⟨x, ⟨b, hb⟩⟩
+      refine Prod.ext ?_ ?_
+      · simp
+      · refine Subtype.ext ?_
+        simp only [Function.update_idem]
+        rw [← hb, Function.update_eq_self]
+    · intro a
+      simp only [Function.update_idem]
+      exact Function.update_eq_self i a
+  have hcardsub : Fintype.card {b : Fin N → ZMod p // b i = 0} = p ^ (N - 1) := by
+    have h1 : Fintype.card (ZMod p) = p := ZMod.card p
+    have h2 : Fintype.card (Fin N → ZMod p) = p ^ N := by simp [ZMod.card]
+    rw [h1, h2] at hsplit
+    have hp0 : 0 < p := Nat.Prime.pos Fact.out
+    have hpw : p * p ^ (N - 1) = p ^ N := by
+      rw [← pow_succ']
+      congr 1
+      omega
+    rw [← hpw] at hsplit
+    exact Nat.eq_of_mul_eq_mul_left hp0 hsplit
+  have hcardfilter : (Finset.univ.filter (fun b : Fin N → ZMod p => b i = 0)).card
+      = p ^ (N - 1) := by
+    rw [← hcardsub, Fintype.card_subtype]
+  rw [zeroCount, ← hcardfilter]
+  refine Finset.card_le_card_of_injOn
+    (fun b => Function.update b i (-(MvPolynomial.eval b h) / c)) ?_ ?_
+  · intro b hb
+    simp only [Finset.coe_filter, Set.mem_setOf_eq, Finset.mem_univ, true_and] at hb ⊢
+    have hbu : Function.update b i 0 = b := by rw [← hb, Function.update_eq_self]
+    rw [haffine b _, hbu]
+    field_simp
+    ring
+  · intro b hb b' hb' hEq
+    simp only [Finset.coe_filter, Set.mem_setOf_eq, Finset.mem_univ, true_and] at hb hb'
+    funext j
+    by_cases hj : j = i
+    · subst hj; rw [hb, hb']
+    · have hjj := congrFun hEq j
+      simpa [Function.update_of_ne hj] using hjj
+
+/-- **BERTINI OVER FINITE FIELDS, IN COUNTING FORM** (SORRY LEAF, cut
+2026-07-27) — Schmidt Chapter V, Theorem 4C together with E. Noether's Theorem
+2A; this is ALL of the genuinely missing content of item 4.
+
+For `p` past a bound depending only on `N` and `d`, at least half of the `p^{3N}`
+parametrised affine planes `(s, t) ↦ v + s·u₁ + t·u₂` cut an absolutely
+irreducible plane curve of total degree exactly `d` out of an absolutely
+irreducible hypersurface `h` of total degree `d`.
+
+WHY THIS SHAPE. Schmidt's Theorem 4C gives the sharp form `#bad ≤ ψ(d)·p^{3N−1}`
+with `ψ(d) = 2d^κ`; the statement here is the weaker consequence
+`#good ≥ p^{3N}/2`, obtained by absorbing `ψ` into the threshold `B₀` (take
+`B₀ ≥ 2ψ(d)`). Nothing downstream needs the sharp constant, and the weaker form
+carries no `ψ` to thread through the assembly. The good set is delivered as a
+`Finset` rather than as a filter of a decidable predicate, which is what keeps
+`Irreducible` (undecidable) out of the statement.
+
+DEGENERATE TRIPLES ARE NOT EXCLUDED and need not be: for `d ≥ 2` a section along
+a parametrisation with `u₁, u₂` dependent is a univariate polynomial in a linear
+form, hence reducible over `𝔽̄_p`, so such triples are automatically outside any
+`G` satisfying the conclusion. Their number is `O(p^{2N+1})`, comfortably inside
+the `p^{3N}/2` slack for `N ≥ 2`; for `N ≤ 1` the conclusion is reached in the
+consumer without this leaf (`N = 0` forces `d = 0`, and `N = 1` forces `d ≤ 1`
+by absolute irreducibility, both handled by the degenerate branches).
+
+WHAT IS ACTUALLY MISSING: Bertini's irreducibility theorem proved by ELIMINATION
+THEORY (Schmidt Chapter V §1 — no schemes, no generic smoothness), and E.
+Noether's Theorem 2A on the forms cutting out the absolutely-irreducible locus,
+which is what makes "bad plane" a constructible condition of bounded degree and
+hence countable by the Lang–Weil-free upper bounds of his Chapter IV §3.
+
+CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
+theorem exists_bertiniGoodPlaneCount (N d : ℕ) :
+    ∃ B₀ : ℕ, ∀ (p : ℕ) [Fact p.Prime], B₀ < p →
+      ∀ h : MvPolynomial (Fin N) (ZMod p), h.totalDegree = d →
+        Irreducible (MvPolynomial.map
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) →
+        ∃ G : Finset ((Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p)),
+          (∀ w ∈ G, (planeSection h w.1 w.2.1 w.2.2).totalDegree = d ∧
+            Irreducible (MvPolynomial.map
+              (algebraMap (ZMod p) (AlgebraicClosure (ZMod p)))
+              (planeSection h w.1 w.2.1 w.2.2))) ∧
+          p ^ (3 * N) ≤ 2 * G.card :=
+  sorry
+
+/-- **ITEM 4: BERTINI OVER FINITE FIELDS** (PROVEN 2026-07-27 over
+`exists_bertiniGoodPlaneCount` and `card_zeros_of_totalDegree_one`) —
 Schmidt Chapter V, Theorems 4B/4C and 5A: from PLANE curves to an absolutely
 irreducible HYPERSURFACE in `N` variables.
+
+WHAT IS PROVEN HERE, and what was cut off. The averaging is carried out in full
+— `sum_zeroCount_planeSection` is the exact double count, and the assembly below
+is `ℕ`-arithmetic with `c = 4`. The `d = 1` branch, which the plane-curve
+hypothesis cannot reach because it needs `d ≥ 2`, is
+`card_zeros_of_totalDegree_one` and is PROVEN. Exactly ONE sub-leaf is left open:
+`exists_bertiniGoodPlaneCount`, which carries all of the Bertini/Noether
+content.
+
+THE ARITHMETIC, in full, so it can be checked without reading the proof. Write
+`T = p^{3N}` for the number of parametrised planes, `G` for the good ones, `S`
+for the total plane-section count and `V = N(h)`:
+
+  `T ≤ 2|G|` (Bertini), `p ≤ 2·N(section)` on `G` (item 3), `S = p^{2N}·p²·V`.
+
+Then `p^{3N}·p ≤ 2|G|·p ≤ 4·S = 4·p^{2N+2}·V`, and `3N + 1 = (2N + 2) + (N − 1)`
+for `N ≥ 1`, so cancelling `p^{2N+2}` gives `p^{N−1} ≤ 4V`.
+
+DEGENERATE `N` AND `d` ARE DISPOSED OF FIRST and are cheap: `d = 0` is vacuous
+(`not_irreducible_map_of_totalDegree_zero`), `d = 1` is the elementary sub-leaf,
+and `N = 0` never arises once `d ≥ 1` because every polynomial in no variables
+is constant. In particular the old note that `N = 1` and `N = 2` need separate
+treatment is WRONG and has been removed: the averaging argument is uniform in
+`N ≥ 1` — at `N = 1` the "planes" are all of `𝔸¹` and Bertini is trivial, at
+`N = 2` they are the affine transformations of the plane.
 
 Given the plane-curve count, an absolutely irreducible `h ∈ 𝔽_p[X₁,…,X_N]` of
 total degree `d` has at least `c⁻¹ p^{N−1}` points over `𝔽_p`, for all `p` past
@@ -7801,19 +8185,12 @@ plane count `N(M) ≥ q/2` rather than with `N(M) ≥ 1`: it then yields
 existential here because `ψ(d)` is Schmidt's `2d^κ` and pinning it buys nothing
 — every consumer only needs SOME constant.
 
-WHAT IS ACTUALLY MISSING. Two things, both Chapter V and both elementary:
-Bertini's irreducibility theorem in the counting form of his Theorem 4C (proved
-by ELIMINATION THEORY in his §1 — no schemes, no generic smoothness), and E.
-Noether's Theorem 2A on the forms cutting out the absolutely-irreducible locus,
-which is what makes "bad manifold" a constructible condition of bounded degree.
-
-DEGENERATE `N` ARE IN SCOPE AND ARE CHEAP, so a prover should dispose of them
-first rather than be surprised by them: at `N = 0` no element of
-`MvPolynomial (Fin 0) 𝔽̄_p ≅ 𝔽̄_p` is irreducible (units and `0` only), so the
-hypothesis is vacuous; at `N = 1` absolute irreducibility over an algebraically
-closed field forces `d = 1`, giving exactly one root and `p⁰ = 1 ≤ c`; at
-`N = 2` the statement IS `hcurve` for `d ≥ 2`, is a nonzero linear form for
-`d = 1` (exactly `p` zeros), and vacuous for `d = 0`.
+WHAT IS ACTUALLY MISSING, after this proof: ONLY
+`exists_bertiniGoodPlaneCount` — Bertini's irreducibility theorem in the
+counting form of Schmidt's Theorem 4C (proved by ELIMINATION THEORY in his §1 —
+no schemes, no generic smoothness) together with E. Noether's Theorem 2A on the
+forms cutting out the absolutely-irreducible locus, which is what makes "bad
+plane" a constructible condition of bounded degree.
 
 CIRCULARITY GUARD: inherited from the parent; polynomials over `ZMod p` only. -/
 theorem exists_bound_forall_hypersurfaceCount_of_planeCurveCount
@@ -7829,36 +8206,166 @@ theorem exists_bound_forall_hypersurfaceCount_of_planeCurveCount
         Irreducible (MvPolynomial.map
           (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) h) →
         p ^ (N - 1) ≤ c * (Finset.univ.filter
-          (fun a : Fin N → ZMod p => MvPolynomial.eval a h = 0)).card :=
+          (fun a : Fin N → ZMod p => MvPolynomial.eval a h = 0)).card := by
+  rcases Nat.lt_or_ge d 2 with hd | hd
+  · -- `d ≤ 1`: constants are never irreducible, and a linear form cuts a hyperplane.
+    interval_cases d
+    · exact ⟨0, 1, fun p _ _ h hdeg hirr =>
+        absurd hirr (not_irreducible_map_of_totalDegree_zero h hdeg)⟩
+    · refine ⟨0, 1, fun p _ _ h hdeg _ => ?_⟩
+      rw [one_mul]
+      exact card_zeros_of_totalDegree_one h hdeg
+  · -- `d ≥ 2`: Bertini plus the averaging identity.
+    obtain ⟨B₀, hB₀⟩ := exists_bertiniGoodPlaneCount N d
+    refine ⟨max B₀ (250 * d ^ 5), 4, ?_⟩
+    intro p _ hp h hdeg hirr
+    have hpB₀ : B₀ < p := lt_of_le_of_lt (le_max_left _ _) hp
+    have hpd : 250 * d ^ 5 < p := lt_of_le_of_lt (le_max_right _ _) hp
+    -- `N = 0` is impossible: every polynomial in no variables is constant.
+    have hN : 1 ≤ N := by
+      rcases Nat.eq_zero_or_pos N with hN0 | hN0
+      · subst hN0
+        exfalso
+        have hC : h = MvPolynomial.C (h.coeff 0) := by
+          have hx := (MvPolynomial.isEmptyRingEquiv (ZMod p) (Fin 0)).symm_apply_apply h
+          rw [MvPolynomial.isEmptyRingEquiv_eq_coeff_zero,
+            MvPolynomial.isEmptyRingEquiv_symm_apply] at hx
+          exact hx.symm
+        rw [hC, MvPolynomial.totalDegree_C] at hdeg
+        omega
+      · exact hN0
+    show p ^ (N - 1) ≤ 4 * zeroCount h
+    obtain ⟨G, hGgood, hGcard⟩ := hB₀ p hpB₀ h hdeg hirr
+    -- Each good plane section is an absolutely irreducible plane curve of degree `d`.
+    have hgoodcount : ∀ w ∈ G, p ≤ 2 * zeroCount (planeSection h w.1 w.2.1 w.2.2) := by
+      intro w hw
+      obtain ⟨hdeg', hirr'⟩ := hGgood w hw
+      exact hcurve d hd p hpd _ hdeg' hirr'
+    have hGp : G.card * p ≤ 2 * ∑ w ∈ G, zeroCount (planeSection h w.1 w.2.1 w.2.2) := by
+      have hle := Finset.sum_le_sum hgoodcount
+      rwa [Finset.sum_const, smul_eq_mul, ← Finset.mul_sum] at hle
+    have hsub : ∑ w ∈ G, zeroCount (planeSection h w.1 w.2.1 w.2.2)
+        ≤ ∑ w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p),
+            zeroCount (planeSection h w.1 w.2.1 w.2.2) :=
+      Finset.sum_le_sum_of_subset (Finset.subset_univ G)
+    have hSum := sum_zeroCount_planeSection (p := p) h
+    have hmain : p ^ (3 * N) * p ≤ 4 * (p ^ (2 * N) * p ^ 2 * zeroCount h) := by
+      calc p ^ (3 * N) * p ≤ (2 * G.card) * p := Nat.mul_le_mul_right _ hGcard
+        _ = 2 * (G.card * p) := by ring
+        _ ≤ 2 * (2 * ∑ w ∈ G, zeroCount (planeSection h w.1 w.2.1 w.2.2)) :=
+              Nat.mul_le_mul_left _ hGp
+        _ ≤ 2 * (2 * ∑ w : (Fin N → ZMod p) × (Fin N → ZMod p) × (Fin N → ZMod p),
+                zeroCount (planeSection h w.1 w.2.1 w.2.2)) :=
+              Nat.mul_le_mul_left _ (Nat.mul_le_mul_left _ hsub)
+        _ = 4 * (p ^ (2 * N) * p ^ 2 * zeroCount h) := by rw [hSum]; ring
+    have hfac : p ^ (3 * N) * p = (p ^ (2 * N) * p ^ 2) * p ^ (N - 1) := by
+      rw [← pow_succ, ← pow_add, ← pow_add]
+      congr 1
+      omega
+    rw [hfac] at hmain
+    have hcancel : (p ^ (2 * N) * p ^ 2) * p ^ (N - 1)
+        ≤ (p ^ (2 * N) * p ^ 2) * (4 * zeroCount h) := by
+      calc (p ^ (2 * N) * p ^ 2) * p ^ (N - 1)
+          ≤ 4 * (p ^ (2 * N) * p ^ 2 * zeroCount h) := hmain
+        _ = (p ^ (2 * N) * p ^ 2) * (4 * zeroCount h) := by ring
+    have hpos : 0 < p ^ (2 * N) * p ^ 2 := by
+      have hp0 : 0 < p := Nat.Prime.pos (Fact.out)
+      positivity
+    exact Nat.le_of_mul_le_mul_left hcancel hpos
+
+/-- The number of `𝔽_p`-points of the integral system `f`. -/
+noncomputable def systemCount {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ)
+    (p : ℕ) [Fact p.Prime] : ℕ :=
+  (Finset.univ.filter (fun a : Fin n → ZMod p =>
+    ∀ i, MvPolynomial.eval₂ (Int.castRingHom (ZMod p)) a (f i) = 0)).card
+
+/-- **THE BIRATIONAL HYPERSURFACE MODEL, SPREAD OUT OVER `ℤ[1/D]`** (SORRY LEAF,
+cut 2026-07-27) — Schmidt Chapter VI, Theorem 4D together with Lemma 7C; this is
+ALL of the genuinely missing content of item 5.
+
+For a FIXED integral system `f` there are `D, e, d, C` such that whenever `p > D`
+and the variety of `f` over `𝔽̄_p` is irreducible, there is an absolutely
+irreducible hypersurface `S ⊆ 𝔸^{e+1}_{𝔽_p}` of total degree `d` whose
+`𝔽_p`-points exceed those of `f` by at most `C·p^{e−1}`.
+
+WHY THE CONCLUSION IS A COUNTING INEQUALITY AND NOT A BIRATIONAL EQUIVALENCE.
+The consumer needs nothing else, and stating it this way keeps the whole notion
+of birational equivalence — for which this development has no API — inside the
+leaf rather than in its interface. Schmidt's Theorem 4D produces `S` birational
+to `V` with proper closed `L ⊆ V`, `M ⊆ S` and `V ∖ L ≅ S ∖ M`; his Lemma 7C
+(Chapter IV §3, elementary upper bounds, needing no input from item 4) gives
+`N(M) = O(p^{e−1})`. The displayed inequality is exactly
+`N(S) ≤ N(V) + N(M)` combined with that bound.
+
+WHY `p · N(S) ≤ p · N(V) + C·p^e` RATHER THAN `N(S) ≤ N(V) + C·p^{e−1}`. The
+two are equivalent for `e ≥ 1`, but `ℕ`-subtraction makes `p^{e−1}` collapse to
+`1` at `e = 0` and the second form then says nothing. The multiplied form is
+correct at `e = 0` too, where it forces `N(S) = N(V)` for `p > C` — which is the
+truth, since a proper closed subset of a `0`-dimensional irreducible variety is
+empty.
+
+WHAT `e`, `d`, `C` ARE, AND WHY THEY MAY BE CHOSEN BEFORE `p`. `e` is the
+dimension of the variety of `f` over `ℚ̄`, and `d`, `C` come from the model over
+`ℤ[1/D]`; spreading out makes ONE construction serve every `p > D`. The
+hypothesis is not vacuous-by-cheating at the primes where this fails: if the
+variety over `ℚ̄` is empty, then `1 ∈ I·ℤ[x][1/N]` for some `N`, so for `p ∤ N`
+the ideal over `𝔽̄_p` is the unit ideal and its radical is NOT prime; if it is
+nonempty but reducible, its components spread out and the reduction is reducible
+for `p > D`. Either way the leaf's hypothesis fails for large `p` and nothing is
+claimed.
+
+ONE THING THE LITERATURE DOES NOT GIVE YOU DIRECTLY, and it is the reason item 5
+is not simply "cite Theorem 7A": Schmidt's Theorem 7A is ASYMPTOTIC IN THE FIELD
+EXTENSION — `N_v = q^{ve} + o(q^{v(e−1/2)})` as `v → ∞` over `𝔽_{q^v}` for a
+FIXED base — with implied constants depending on the variety over that base. The
+statement needed here is uniform in `p` for a fixed integral system, a DIFFERENT
+QUANTIFIER ORDER, and the bridge is precisely the spreading out demanded above.
+Chapter V's Theorem 5A, by contrast, is already uniform (its constant depends
+only on `N` and `d`), which is why item 4 needs no such care.
+
+CIRCULARITY GUARD: inherited from the parent; no Galois representation, no
+modular form, nothing from `Family.lean`, `Lift.lean` or
+`Modularity/Interface.lean`. -/
+theorem exists_birationalHypersurfaceModel {n m : ℕ} (f : Fin m → MvPolynomial (Fin n) ℤ) :
+    ∃ D e d C : ℕ, ∀ (p : ℕ) [Fact p.Prime], D < p →
+      (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime →
+      ∃ S : MvPolynomial (Fin (e + 1)) (ZMod p),
+        S.totalDegree = d ∧
+        Irreducible (MvPolynomial.map
+          (algebraMap (ZMod p) (AlgebraicClosure (ZMod p))) S) ∧
+        p * zeroCount S ≤ p * systemCount f p + C * p ^ e :=
   sorry
 
-/-- **ITEM 5: THE LANG–WEIL INDUCTION ON DIMENSION** (SORRY LEAF, cut
-2026-07-27) — Schmidt Chapter VI §7, Theorem 7A via Lemmas 7B and 7C: from
-hypersurfaces to a general variety, which is where the SYSTEM `f : Fin m → …`
-(as opposed to a single equation) is handled.
+/-- **ITEM 5: THE LANG–WEIL INDUCTION ON DIMENSION** (PROVEN 2026-07-27 over
+`exists_birationalHypersurfaceModel`) — Schmidt Chapter VI §7, Theorem 7A via
+Lemmas 7B and 7C: from hypersurfaces to a general variety, which is where the
+SYSTEM `f : Fin m → …` (as opposed to a single equation) is handled.
 
 The hypersurface COUNT of item 4 is taken as a HYPOTHESIS rather than applied
 inside, so that this leaf is exactly "the reduction", provable by someone who
 takes the hypersurface case as given. The consumer below discharges it with
 `exists_bound_forall_hypersurfaceCount_of_planeCurveCount`.
 
-WHAT IS LEFT: the passage from `Ideal.IsPrime` of the radical over
-`AlgebraicClosure (ZMod p)` to an absolutely irreducible defining EQUATION —
-i.e. Schmidt's Theorem 4D, that every variety is birationally equivalent to a
-hypersurface — the induction on dimension itself, and Lemma 7C's upper bound
-`N(W) = O(q^{dim W})` for the lower-dimensional pieces, which is his Chapter IV
-§3 "elementary upper bounds" and needs no input from item 4.
+THE REDUCTION, in full. With `S` the birational hypersurface model in `e + 1`
+variables and `V = N(f)`, item 4 at `(N, d) = (e + 1, d)` gives `p^e ≤ c·N(S)`
+and the model gives `p·N(S) ≤ p·V + C·p^e`. If `V = 0` then
+`p^{e+1} ≤ c·p·N(S) ≤ c·C·p^e`, so `p ≤ cC`; taking `B > cC` therefore forces
+`V ≥ 1`, which IS `IntegralSystemSolvable f (ZMod p)`. Note this is where the
+COUNT rather than nonemptiness is indispensable: an assumption `N(S) ≥ 1` is
+worth nothing against an error term of size `C·p^e` — see the CUT-QUALITY AUDIT
+in the subsection header.
 
-ONE THING THE LITERATURE DOES NOT GIVE YOU DIRECTLY, and it is the reason this
-leaf is not simply "cite Theorem 7A": Schmidt's Theorem 7A is ASYMPTOTIC IN THE
-FIELD EXTENSION — `N_v = q^{vd} + o(q^{v(d−1/2)})` as `v → ∞` over `𝔽_{q^v}` for
-a FIXED base — with implied constants depending on the variety over that base.
-The statement needed here is uniform in `p` for a FIXED integral system, which
-is a different quantifier order. The bridge is spreading out: the birational
-model and the exceptional loci are defined over `ℤ[1/D]` for a single `D`
-depending only on `f`, so one construction serves every `p > D`. Chapter V's
-Theorem 5A, by contrast, IS already uniform (its constant depends only on `N`
-and `d`), which is why item 4 above needs no such care.
+WHAT IS LEFT is exactly `exists_birationalHypersurfaceModel`: Schmidt's Theorem
+4D (every variety is birationally equivalent to a hypersurface), Lemma 7C's
+upper bound `N(W) = O(q^{dim W})` for the lower-dimensional pieces (his Chapter
+IV §3 "elementary upper bounds", needing no input from item 4), and the
+spreading-out that makes one model serve every `p > D`.
+
+THE QUANTIFIER TRAP the literature does not hand over — Theorem 7A is asymptotic
+in the FIELD EXTENSION for a fixed base, whereas this leaf needs uniformity in
+`p` for a fixed integral system — is discharged inside
+`exists_birationalHypersurfaceModel`, whose docstring records it in full. It is
+noted here because it is the reason this leaf is not simply "cite Theorem 7A".
 
 CIRCULARITY GUARD: inherited from the parent; no Galois representation, no
 modular form, nothing from `Family.lean`, `Lift.lean` or
@@ -7873,8 +8380,33 @@ theorem exists_bound_forall_zmodSolvable_of_hypersurfaceCount
           (fun a : Fin N → ZMod p => MvPolynomial.eval a h = 0)).card) :
     ∃ B : ℕ, ∀ (p : ℕ) [Fact p.Prime], B < p →
       (integralSystemIdeal f (AlgebraicClosure (ZMod p))).radical.IsPrime →
-      IntegralSystemSolvable f (ZMod p) :=
-  sorry
+      IntegralSystemSolvable f (ZMod p) := by
+  obtain ⟨D, e, d, C, hmodel⟩ := exists_birationalHypersurfaceModel f
+  obtain ⟨B₁, c, hc⟩ := hhyp (e + 1) d
+  refine ⟨max (max D B₁) (c * C), ?_⟩
+  intro p _ hp hprime
+  have hpD : D < p := lt_of_le_of_lt (le_trans (le_max_left _ _) (le_max_left _ _)) hp
+  have hpB₁ : B₁ < p := lt_of_le_of_lt (le_trans (le_max_right _ _) (le_max_left _ _)) hp
+  have hpcC : c * C < p := lt_of_le_of_lt (le_max_right _ _) hp
+  obtain ⟨S, hSdeg, hSirr, hSle⟩ := hmodel p hpD hprime
+  have h1 : p ^ e ≤ c * zeroCount S := by
+    have hcS := hc p hpB₁ S hSdeg hSirr
+    rw [Nat.add_sub_cancel] at hcS
+    exact hcS
+  by_contra hno
+  have hVC : systemCount f p = 0 := by
+    rw [systemCount, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
+    exact fun a _ ha => hno ⟨a, ha⟩
+  rw [hVC, mul_zero, zero_add] at hSle
+  have h2 : p * p ^ e ≤ (c * C) * p ^ e := by
+    calc p * p ^ e = p ^ e * p := by ring
+      _ ≤ (c * zeroCount S) * p := Nat.mul_le_mul_right _ h1
+      _ = c * (p * zeroCount S) := by ring
+      _ ≤ c * (C * p ^ e) := Nat.mul_le_mul_left _ hSle
+      _ = (c * C) * p ^ e := by ring
+  have hppos : 0 < p ^ e := pow_pos (Nat.Prime.pos Fact.out) e
+  have hle := Nat.le_of_mul_le_mul_right h2 hppos
+  omega
 
 /-- **ITEMS 4 AND 5, ASSEMBLED** (PROVEN 2026-07-27): the Bertini-plus-induction
 reduction, with the plane-curve COUNT granted. This is the leaf that used to be
@@ -8008,20 +8540,26 @@ five-item route is realised in the file rather than merely described):
   until 2026-07-27; see the CUT-QUALITY AUDIT above items 4 and 5 for why that
   had to be strengthened, and note the strengthening cost nothing — the same
   `exists_stepanovAuxiliary` data gives the count once `2d² ≤ M` is used.
-* item 4 — `exists_bound_forall_hypersurfaceCount_of_planeCurveCount`: **OPEN**.
-  Schmidt Chapter V: Bertini by elimination theory, plus averaging over
-  2-dimensional linear manifolds. Elementary and uniform in `q`.
-* item 5 — `exists_bound_forall_zmodSolvable_of_hypersurfaceCount`: **OPEN**.
-  Schmidt Chapter VI §7: birational reduction to a hypersurface and induction on
-  dimension. This is the one that needs spreading out, because Schmidt's own
-  Theorem 7A is asymptotic in the field extension rather than uniform in `p`.
+* item 4 — `exists_bound_forall_hypersurfaceCount_of_planeCurveCount`:
+  **PROVEN** (2026-07-27) over the single sub-leaf
+  `exists_bertiniGoodPlaneCount`; its `d = 1` branch,
+  `card_zeros_of_totalDegree_one`, is proven too. The averaging over 2-dimensional linear
+  manifolds is carried out in full as `sum_zeroCount_planeSection`, an exact
+  double count over ALL `p^{3N}` parametrised planes (no linear-independence
+  side condition — degenerate parametrisations are automatically bad sections
+  for `d ≥ 2`, so Bertini absorbs them). `c = 4`.
+* item 5 — `exists_bound_forall_zmodSolvable_of_hypersurfaceCount`: **PROVEN**
+  (2026-07-27) over `exists_birationalHypersurfaceModel`. The reduction is the
+  arithmetic `p^{e+1} ≤ c·p·N(S) ≤ c·(p·V + C·p^e)`, so `V = 0` forces
+  `p ≤ cC`; the geometric content — Schmidt Theorem 4D, Lemma 7C and the
+  spreading out that makes Theorem 7A's field-extension asymptotic into
+  uniformity in `p` — is entirely inside the sub-leaf.
 
 So after the 2026-07-27 work the remaining open leaves under this node are
 `exists_stepanovNormalisation`, `exists_stepanovDiscriminant`,
-`exists_stepanovNormPolynomial`,
-`exists_bound_forall_hypersurfaceCount_of_planeCurveCount` and
-`exists_bound_forall_zmodSolvable_of_hypersurfaceCount`; all the glue between
-them is written and compiles, and this leaf itself has nothing left to prove.
+`exists_stepanovNormPolynomial`, `exists_bertiniGoodPlaneCount` and
+`exists_birationalHypersurfaceModel`; all the glue between them is written and
+compiles, and this leaf itself has nothing left to prove.
 
 NOTE ON THE FREE-FLOATING RULE, and how it was discharged: proven bricks stacked
 in front of a sorried consumer are free-floating and not allowed here, so item 1
